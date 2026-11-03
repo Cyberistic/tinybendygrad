@@ -5143,6 +5143,163 @@ def sym_451.go(i: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_451(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_451.pat(x, u), sym_451.go(S.Cls.is_int(S.Dt.cls(sy_dt1(x, u))), x, u))
 
+# ---- single-entry substitution -----------------------------------------------------
+#
+# `t.substitute({key: val})`, which is what `symbolic.py:235` needs, reached WITHOUT Bend's `Map`:
+# `Map.put` has no call site in this tree, the language guide never names it, and
+# `nn/onnx.bend:722` records that it LOSES KEYS.
+#
+# NO MUTUAL RECURSION IS NEEDED: a rebuild that walks the tree has a node case and a src-list case
+# that would call each other, which Bend refuses -- but a FOLD over `toposort_nocalls`, CHILDREN
+# FIRST, only LOOKS UP answers already computed, so the two cases never meet.
+#
+# THE FUEL IS `Arena.budget(ar)` AND NOT `Arena.next(ar)`, AND THAT IS MEASURED: on a five-node
+# tree with ONE WHERE over two arms, `toposort_nocalls(next, ...)` returns TWO nodes and
+# `toposort_nocalls(budget, ...)` returns FOUR (`.agents/slop/sym92/probe-topo.bend`). A worklist
+# entry is pushed once per EDGE into a node plus once for the root, so the node count is a LOWER
+# bound and not the bound. **`codegen/__init__.bend:415`'s `UOp.substitute` uses the SAME
+# `Arena.next` expression, so its toposort is truncated on any graph with a non-tree shape.**
+type Ky is Data:
+  Ky{k: U32, n: U32}
+
+def Ky.k(x: Ky) -> U32:
+  match x:
+    case Ky{k, n}: k
+
+def Ky.n(x: Ky) -> U32:
+  match x:
+    case Ky{k, n}: n
+
+type S1 is Data:
+  S1{t: List<&2, Ky>, f: O.Found}
+
+def S1.t(x: S1) -> List<&2, Ky>:
+  match x:
+    case S1{t, f}: t
+
+def S1.f(x: S1) -> O.Found:
+  match x:
+    case S1{t, f}: f
+
+type S1s is Data:
+  S1s{l: List<&2, U32>, ch: Bool}
+
+def S1s.l(x: S1s) -> List<&2, U32>:
+  match x:
+    case S1s{l, ch}: l
+
+def S1s.ch(x: S1s) -> Bool:
+  match x:
+    case S1s{l, ch}: ch
+
+# A MISSING ENTRY MEANS UNCHANGED, because every src is answered BEFORE its parent in the
+# post-order list -- so the default is the old index itself.
+def s1.get(tbl: List<&2, Ky>, +k: U32) -> U32:
+  match tbl:
+    case Nil{}: k
+    case +h <> t: Bool.pick(U32, U32.is_eq(Ky.k(h), k), Ky.n(h), s1.get(t, k))
+
+def s1.ss.add(+n: U32, s: U32, +acc: S1s) -> S1s:
+  S1s{List.append(&2, U32, S1s.l(acc), [n]), Bool.or(S1s.ch(acc), Bool.not(U32.is_eq(n, s)))}
+
+def s1.ss(ss: List<&2, U32>, +tbl: List<&2, Ky>, acc: S1s) -> S1s:
+  match ss:
+    case Nil{}: acc
+    case +s <> t: s1.ss(t, tbl, s1.ss.add(s1.get(tbl, s), s, acc))
+
+# the table comes in and the ARENA comes in separately, because a minted node's arena is the grown
+# one and not the one the fold was handed.
+def s1.put.t(tbl: List<&2, Ky>, +i: U32, +n: U32, +f: O.Found) -> S1:
+  S1{List.append(&2, Ky, tbl, [Ky{i, n}]), f}
+
+# op, arg and tag are PROPERTIES OF THE ORIGINAL and are read out of the fold's arena, which is what
+# `mint_replace` does in this file for the same reason.
+def s1.one.mint(+i: U32, +s: S1s, +st: S1) -> S1:
+  +ar = O.Found.ar(S1.f(st))
+  +m = O.UOp.new(ar, O.Arena.op(ar, i), S1s.l(s), O.Arena.arg(ar, i), O.Arena.tag(ar, i))
+  s1.put.t(S1.t(st), i, O.Found.i(m), m)
+
+def s1.one.ch(ch: Bool, +i: U32, +s: S1s, +st: S1) -> S1:
+  match ch:
+    case False{}: s1.put.t(S1.t(st), i, i, S1.f(st))
+    case True{} : s1.one.mint(i, s, st)
+
+# the KEY ITSELF is answered by `val` and never descended into.
+def s1.one.eq(eq: Bool, +i: U32, +val: U32, +s: S1s, +st: S1) -> S1:
+  match eq:
+    case True{} : s1.put.t(S1.t(st), i, val, S1.f(st))
+    case False{}: s1.one.ch(S1s.ch(s), i, s, st)
+
+def s1.fold(ts: List<&2, U32>, +st: S1, +key: U32, +val: U32) -> S1:
+  match ts:
+    case Nil{}: st
+    case +i <> rest:
+      +s = s1.ss(O.Arena.srcs(O.Found.ar(S1.f(st)), i), S1.t(st), S1s{Nil{}, False{}})
+      s1.fold(rest, s1.one.eq(U32.is_eq(i, key), i, val, s, st), key, val)
+
+def s1.sub(+ar: O.Arena, +sink: U32, +key: U32, +val: U32) -> O.Found:
+  +st = s1.fold(O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, sink), S1{Nil{}, mint_ar(ar)}, key, val)
+  +n = s1.get(S1.t(st), sink)
+  O.Found{O.Found.ar(S1.f(st)), n}
+
+# ---- `symbolic.py:259`, `fold_where_closure` ---------------------------------------
+#
+#   (UPat.var("cond").where(UPat.var("t"), UPat.var("f")), fold_where_closure)
+#
+# "in cond.where(t, f), cond is True within t and False within f" -- so the closure folds each arm
+# with the condition CONSTANT, and the rule only fires when the condition actually OCCURS in one of
+# the arms (`bool_slice`) and no INDEX gate is involved (those belong to the valid/store-coalescing
+# machinery).
+def sym_259.ix(bs: List<&2, U32>, +ar: O.Arena, acc: Bool) -> Bool:
+  match bs:
+    case Nil{}: acc
+    case h <> t: sym_259.ix(t, ar, Bool.or(acc, O.eq_op(O.Arena.op(ar, h), O.OpsINDEX{})))
+
+# `u.op_in_backward_slice_with_self(Ops.INDEX)` -- the node ITSELF included, which is why the
+# reader is `backward_slice_with_self` and not `backward_slice`.
+def sym_259.ixs(+x: F.Folded, +u: U32) -> Bool:
+  +ar = F.Folded.ar(x)
+  +fu = O.Arena.budget(ar)
+  Bool.or(sym_259.ix(O.UOp.backward_slice_with_self(fu, ar, sy_src0(x, u)), ar, False{}),
+    Bool.or(sym_259.ix(O.UOp.backward_slice_with_self(fu, ar, sy_src1(x, u)), ar, False{}),
+             sym_259.ix(O.UOp.backward_slice_with_self(fu, ar, sy_src2(x, u)), ar, False{})))
+
+def sym_259.occ(+x: F.Folded, +u: U32) -> Bool:
+  +ar = F.Folded.ar(x)
+  +bt = sym_280.bt(x)
+  +fu = O.Arena.budget(ar)
+  +c = sy_src0(x, u)
+  Bool.or(F.UOp.bool_slice_has(fu, ar, bt, sy_src1(x, u), c),
+          F.UOp.bool_slice_has(fu, ar, bt, sy_src2(x, u), c))
+
+def sym_259.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +ar = F.Folded.ar(x)
+  +c = sy_src0(x, u)
+  +bt = O.UOp.const(ar, O.CBool{True{}})
+  +bf = O.UOp.const(O.Found.ar(bt), O.CBool{False{}})
+  # THE ARENA IS THE ONE THE CONSTS OPENED, not the one the graph was handed: an arena is a chain
+  # of slots, so two chains minted from the SAME base assign the same indices to DIFFERENT nodes.
+  # MEASURED: passing `ar` here rendered the substituted condition as `?` -- a wrong node, silently.
+  +tt = s1.sub(O.Found.ar(bf), sy_src1(x, u), c, O.Found.i(bt))
+  +ff = s1.sub(O.Found.ar(tt), sy_src2(x, u), c, O.Found.i(bf))
+  Some{mint_where(ff, c, O.Found.i(tt), O.Found.i(ff))}
+
+def sym_259.not_ix(ix: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ix:
+    case True{} : None{}
+    case False{}: sym_259.mk(x, u)
+
+def sym_259.hit(occ: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match occ:
+    case True{} : sym_259.not_ix(sym_259.ixs(x, u), x, u)
+    case False{}: None{}
+
+def sym_259.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3))
+
+def sym_259(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_259.pat(x, u), sym_259.hit(sym_259.occ(x, u), x, u))
+
 # symbolic.py:308  (UPat.var('x').cast(name="a").cast(name="b"),
 #                     lambda x,a,b: x.cast(b.dtype) if can_lossless_cast(x.dtype, a.dtype) else None)
 # IF THE INTERMEDIATE CAST DOES NOT NARROW, the pair is ONE cast to the outer dtype. `:186`
@@ -5574,57 +5731,58 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{80, [O.OpsMUL{}], Nil{}, },   # 253
     O.PMEntry{81, [O.OpsMUL{}], Nil{}, },   # 254
     O.PMEntry{82, [O.OpsWHERE{}], Nil{}, },   # 256
-    O.PMEntry{83, [O.OpsCMPNE{}], Nil{}, },   # 260
-    O.PMEntry{84, [O.OpsWHERE{}], Nil{}, },   # 262
-    O.PMEntry{85, [O.OpsWHERE{}], Nil{}, },   # 264
-    O.PMEntry{86, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # 266
-    O.PMEntry{87, [O.OpsADD{}], Nil{}, },   # 269
-    O.PMEntry{88, [O.OpsADD{}], Nil{}, },   # 272
-    O.PMEntry{89, [O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsPARAM{}, O.OpsSPECIAL{}], Nil{}, },   # 274
-    O.PMEntry{90, [O.OpsRANGE{}], Nil{}, },   # 276
-    O.PMEntry{91, [O.OpsWHERE{}], Nil{}, },   # 278
-    O.PMEntry{92, [O.OpsWHERE{}], Nil{}, },   # 279
-    O.PMEntry{93, [O.OpsMAX{}], Nil{}, },   # 280
-    O.PMEntry{94, [O.OpsMAX{}], Nil{}, },   # 284
-    O.PMEntry{95, [O.OpsOR{}], Nil{}, },   # 284
-    O.PMEntry{96, [O.OpsAND{}], Nil{}, },   # 284
-    O.PMEntry{97, [O.OpsADD{}], Nil{}, },   # 284
-    O.PMEntry{98, [O.OpsMUL{}], Nil{}, },   # 284
-    O.PMEntry{99, [O.OpsFLOORDIV{}], Nil{}, },   # 287
-    O.PMEntry{100, [O.OpsCMPLT{}], Nil{}, },   # 290
-    O.PMEntry{101, [O.OpsCMPLT{}], Nil{}, },   # 292
-    O.PMEntry{102, [O.OpsADD{}], Nil{}, },   # 295
-    O.PMEntry{103, [O.OpsMUL{}], Nil{}, },   # 296
-    O.PMEntry{104, [O.OpsCMPLT{}], Nil{}, },   # symbolic.py:299
-    O.PMEntry{105, [O.OpsCMPLT{}], Nil{}, },   # 300
-    O.PMEntry{106, [O.OpsCMPNE{}], Nil{}, },   # 302
-    O.PMEntry{107, [O.OpsFLOORMOD{}], Nil{}, },   # 304
-    O.PMEntry{108, [O.OpsFLOORDIV{}], Nil{}, },   # 305
-    O.PMEntry{109, [O.OpsCAST{}], Nil{}, },   # 308
-    O.PMEntry{110, [O.OpsCAST{}], Nil{}, },   # symbolic.py:309
-    O.PMEntry{111, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # symbolic.py:312
-    O.PMEntry{112, [O.OpsCAST{}], Nil{}, },   # 316
-    O.PMEntry{113, [O.OpsAFTER{}], Nil{}, },   # 318
-    O.PMEntry{114, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
-    O.PMEntry{115, [O.OpsEND{}], Nil{}, },   # 324
-    O.PMEntry{116, [O.OpsFLOORDIV{}], Nil{}, },   # divandmod.py:101
-    O.PMEntry{117, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}, },   # divandmod.py:103
-    O.PMEntry{118, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMULACC{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # weak.py:89
-    O.PMEntry{119, [O.OpsPOW{}], Nil{}, },   # symbolic.py:451
-    O.PMEntry{120, [O.OpsSTORE{}], Nil{}, },   # 453
-    O.PMEntry{121, [O.OpsSTORE{}], Nil{}, },   # 454
-    O.PMEntry{122, [O.OpsSTORE{}], Nil{}, },   # 458
-    O.PMEntry{123, [O.OpsSTORE{}], Nil{}, },   # 460
-    O.PMEntry{124, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{125, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{126, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{127, [O.OpsMUL{}], Nil{}, },   # symbolic.py:465
-    O.PMEntry{128, [O.OpsMUL{}], Nil{}, },   # symbolic.py:466
-    O.PMEntry{129, [O.OpsMUL{}], Nil{}, },   # symbolic.py:467
-    O.PMEntry{130, [O.OpsREDUCE{}], Nil{}, },   # symbolic.py:469
-    O.PMEntry{131, [O.OpsMUL{}], Nil{}, },   # 471
-    O.PMEntry{132, [O.OpsMUL{}], Nil{}, },   # 473
-    O.PMEntry{133, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{83, [O.OpsWHERE{}], Nil{}, },   # symbolic.py:259
+    O.PMEntry{84, [O.OpsCMPNE{}], Nil{}, },   # 260
+    O.PMEntry{85, [O.OpsWHERE{}], Nil{}, },   # 262
+    O.PMEntry{86, [O.OpsWHERE{}], Nil{}, },   # 264
+    O.PMEntry{87, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # 266
+    O.PMEntry{88, [O.OpsADD{}], Nil{}, },   # 269
+    O.PMEntry{89, [O.OpsADD{}], Nil{}, },   # 272
+    O.PMEntry{90, [O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsPARAM{}, O.OpsSPECIAL{}], Nil{}, },   # 274
+    O.PMEntry{91, [O.OpsRANGE{}], Nil{}, },   # 276
+    O.PMEntry{92, [O.OpsWHERE{}], Nil{}, },   # 278
+    O.PMEntry{93, [O.OpsWHERE{}], Nil{}, },   # 279
+    O.PMEntry{94, [O.OpsMAX{}], Nil{}, },   # 280
+    O.PMEntry{95, [O.OpsMAX{}], Nil{}, },   # 284
+    O.PMEntry{96, [O.OpsOR{}], Nil{}, },   # 284
+    O.PMEntry{97, [O.OpsAND{}], Nil{}, },   # 284
+    O.PMEntry{98, [O.OpsADD{}], Nil{}, },   # 284
+    O.PMEntry{99, [O.OpsMUL{}], Nil{}, },   # 284
+    O.PMEntry{100, [O.OpsFLOORDIV{}], Nil{}, },   # 287
+    O.PMEntry{101, [O.OpsCMPLT{}], Nil{}, },   # 290
+    O.PMEntry{102, [O.OpsCMPLT{}], Nil{}, },   # 292
+    O.PMEntry{103, [O.OpsADD{}], Nil{}, },   # 295
+    O.PMEntry{104, [O.OpsMUL{}], Nil{}, },   # 296
+    O.PMEntry{105, [O.OpsCMPLT{}], Nil{}, },   # symbolic.py:299
+    O.PMEntry{106, [O.OpsCMPLT{}], Nil{}, },   # 300
+    O.PMEntry{107, [O.OpsCMPNE{}], Nil{}, },   # 302
+    O.PMEntry{108, [O.OpsFLOORMOD{}], Nil{}, },   # 304
+    O.PMEntry{109, [O.OpsFLOORDIV{}], Nil{}, },   # 305
+    O.PMEntry{110, [O.OpsCAST{}], Nil{}, },   # 308
+    O.PMEntry{111, [O.OpsCAST{}], Nil{}, },   # symbolic.py:309
+    O.PMEntry{112, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # symbolic.py:312
+    O.PMEntry{113, [O.OpsCAST{}], Nil{}, },   # 316
+    O.PMEntry{114, [O.OpsAFTER{}], Nil{}, },   # 318
+    O.PMEntry{115, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
+    O.PMEntry{116, [O.OpsEND{}], Nil{}, },   # 324
+    O.PMEntry{117, [O.OpsFLOORDIV{}], Nil{}, },   # divandmod.py:101
+    O.PMEntry{118, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}, },   # divandmod.py:103
+    O.PMEntry{119, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMULACC{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # weak.py:89
+    O.PMEntry{120, [O.OpsPOW{}], Nil{}, },   # symbolic.py:451
+    O.PMEntry{121, [O.OpsSTORE{}], Nil{}, },   # 453
+    O.PMEntry{122, [O.OpsSTORE{}], Nil{}, },   # 454
+    O.PMEntry{123, [O.OpsSTORE{}], Nil{}, },   # 458
+    O.PMEntry{124, [O.OpsSTORE{}], Nil{}, },   # 460
+    O.PMEntry{125, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{126, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{127, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{128, [O.OpsMUL{}], Nil{}, },   # symbolic.py:465
+    O.PMEntry{129, [O.OpsMUL{}], Nil{}, },   # symbolic.py:466
+    O.PMEntry{130, [O.OpsMUL{}], Nil{}, },   # symbolic.py:467
+    O.PMEntry{131, [O.OpsREDUCE{}], Nil{}, },   # symbolic.py:469
+    O.PMEntry{132, [O.OpsMUL{}], Nil{}, },   # 471
+    O.PMEntry{133, [O.OpsMUL{}], Nil{}, },   # 473
+    O.PMEntry{134, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -5688,9 +5846,9 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 58: sym_196(x, u)
     case 59: sym_197(x, u)
     case 60: sy_wself(x, u)
-    case 93: sym_280(x, u)
-    case 107: sym_304(x, u)
-    case 114: sym_322(x, u)
+    case 94: sym_280(x, u)
+    case 108: sym_304(x, u)
+    case 115: sym_322(x, u)
     case _: None{}
 
 def sym_dispatch(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -5999,7 +6157,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 54, 55, 56, 57, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 108, 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 54, 55, 56, 57, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 109, 110, 111, 112, 113, 114, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -6058,54 +6216,55 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 80: sym_253(x, u)
     case 81: sym_254(x, u)
     case 82: sym_256(x, u)
-    case 83: sym_260(x, u)
-    case 84: sym_262(x, u)
-    case 85: sym_264(x, u)
-    case 86: sym_266(x, u)
-    case 87: sym_269(x, u)
-    case 88: sym_272(x, u)
-    case 89: sym_274(x, u)
-    case 90: sym_276(x, u)
-    case 91: sym_278(x, u)
-    case 92: sym_279(x, u)
-    case 94: sym_284(x, u)
+    case 83: sym_259(x, u)
+    case 84: sym_260(x, u)
+    case 85: sym_262(x, u)
+    case 86: sym_264(x, u)
+    case 87: sym_266(x, u)
+    case 88: sym_269(x, u)
+    case 89: sym_272(x, u)
+    case 90: sym_274(x, u)
+    case 91: sym_276(x, u)
+    case 92: sym_278(x, u)
+    case 93: sym_279(x, u)
     case 95: sym_284(x, u)
     case 96: sym_284(x, u)
     case 97: sym_284(x, u)
     case 98: sym_284(x, u)
-    case 99: sym_287(x, u)
-    case 100: sym_290(x, u)
-    case 101: sym_292(x, u)
-    case 102: sym_295(x, u)
-    case 103: sym_296(x, u)
-    case 104: sym_299(x, u)
-    case 105: sym_300(x, u)
-    case 106: sym_302(x, u)
-    case 108: sym_305(x, u)
-    case 109: sym_308(x, u)
-    case 110: sym_309(x, u)
-    case 111: sym_312(x, u)
-    case 112: sym_316(x, u)
-    case 113: sym_318(x, u)
-    case 115: sym_324(x, u)
-    case 116: dm_101(x, u)
-    case 117: dm_103(x, u)
-    case 118: wk_89(x, u)
-    case 119: sym_451(x, u)
-    case 120: sym_453(x, u)
-    case 121: sym_454(x, u)
-    case 122: sym_458(x, u)
-    case 123: sym_460(x, u)
-    case 124: sym_462(x, u)
-    case 125: sym_463(x, u)
-    case 126: sym_464(x, u)
-    case 127: sym_465(x, u)
-    case 128: sym_466(x, u)
-    case 129: sym_467(x, u)
-    case 130: sym_469(x, u)
-    case 131: sym_471(x, u)
-    case 132: sym_473(x, u)
-    case 133: sym_444(x, u)
+    case 99: sym_284(x, u)
+    case 100: sym_287(x, u)
+    case 101: sym_290(x, u)
+    case 102: sym_292(x, u)
+    case 103: sym_295(x, u)
+    case 104: sym_296(x, u)
+    case 105: sym_299(x, u)
+    case 106: sym_300(x, u)
+    case 107: sym_302(x, u)
+    case 109: sym_305(x, u)
+    case 110: sym_308(x, u)
+    case 111: sym_309(x, u)
+    case 112: sym_312(x, u)
+    case 113: sym_316(x, u)
+    case 114: sym_318(x, u)
+    case 116: sym_324(x, u)
+    case 117: dm_101(x, u)
+    case 118: dm_103(x, u)
+    case 119: wk_89(x, u)
+    case 120: sym_451(x, u)
+    case 121: sym_453(x, u)
+    case 122: sym_454(x, u)
+    case 123: sym_458(x, u)
+    case 124: sym_460(x, u)
+    case 125: sym_462(x, u)
+    case 126: sym_463(x, u)
+    case 127: sym_464(x, u)
+    case 128: sym_465(x, u)
+    case 129: sym_466(x, u)
+    case 130: sym_467(x, u)
+    case 131: sym_469(x, u)
+    case 132: sym_471(x, u)
+    case 133: sym_473(x, u)
+    case 134: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
