@@ -27766,3 +27766,64 @@ re-certified at `7e1b51dd` after the `substitute` fix -- and the audit that foun
 `unbound` **are **ported"** **when **nothing **called **them), **and **one **probe **was
 **vacuous **because **its **two **sides **interned **to **ONE **NODE.**  **NONE **OF **THE
 **FIVE **WOULD **HAVE **GONE **RED.
+
+THE WORKLIST DESIGN IS MEASURED, PIECE BY PIECE -- and the blocker was never recursion, it was the SCRUTINEE RULE
+
+**⇒ AND **`9d2a651c9` **SAID **"THE **HONEST **STATEMENT **IS: ... **BLOCKED **BY **A
+**REWRITE **I **HAVE **NOT **DONE"** **AND **THAT **WAS **STILL **TOO **VAGUE.  FOUR
+**MINIMAL **FILES, **EACH **ONE **A **RULING:**
+
+**1. `match` ON A COMPUTED VALUE IS REFUSED -- EVEN INSIDE A SELF-RECURSIVE DEF.**
+   The blocker is NOT mutual recursion and not termination.  A def that self-calls
+   still cannot write `match Nat.is_zero(k):`; the error is *"a match cannot
+   scrutinize a computed value: give it its own def"*, and "give it its own def"
+   is what reintroduces the forward reference.  **SO EVERY SCRUTINEE MUST BE A
+   PARAMETER OR A FIELD.**
+
+**2. EVERY SCRUTINEE CAN BE A FIELD, MATCHED IN ONE PATTERN.**  A work item whose
+   fields ARE the values to decide on lets ONE `match fuel wk` dispatch everything:
+   `case 1n++k Go{Some{v}, True{}}: ...` -- the nested constructor is part of the
+   pattern, so nothing is matched locally.
+
+**3. THE FUEL MUST BE THE FIRST ARGUMENT.**  The checker *"reads arguments left to
+   right: each passed unchanged until one shrinks"*, and a work item is a NEW value
+   every step.  With the fuel inside the Data (`w(wk: W)` holding `n: Nat`) the
+   answer is *"a decreasing self-call ... observed : w"*; with `w(fuel: Nat, wk: W)`
+   it is accepted.  **THE FUEL CANNOT RIDE IN THE WORK ITEM.**
+
+**4. `case 1n++k:` IS WHAT LETS ONE STEP SPEND THE FUEL TWICE.**  The extra `+` is a
+   COPYABLE successor binder.  Without it: *"expected : m / observed : m (consumed
+   more than once)"* -- which reads like a termination failure and is a LINEARITY
+   failure.  This was already measured at `9d2a651c9`; it is repeated here because
+   a state machine spends the fuel on BOTH the nested call and the continuation.
+
+**⇒ AND **A FIFTH CONSTRAINT **THAT **RULES **OUT **THE **OBVIOUS **SHAPE: a NESTED
+field binder cannot be marked copyable -- `Some{+v}` answers *"expected : a bound
+variable"*.  **SO A VALUE USED TWICE MUST TRAVEL AS TWO FIELDS COMPUTED AT
+CONSTRUCTION AND NOT AS ONE DESTRUCTURED RECORD:** `RJoin{SBind.ar(b), SBind.i(b), ...}`
+and not `RJoin{b}` then `SBind.ar(b)` / `SBind.i(b)`.
+
+**⇒ AND **THE RESULTING SHAPE, WHICH IS WHAT THE NEXT UNIT SHOULD BUILD:**
+
+    type RWk is Data:
+      RCall{...}                                    -- a call to resolve
+      RSrcs{ar, lin: Maybe<U32>, binds, xs, acc}     -- the src loop
+      RJoin{ar2, i2, lin, binds, t, acc}             -- arm 1's CONTINUATION
+    def sc_resolve(fuel: Nat, w: RWk) -> Maybe<SBind>:   -- FUEL FIRST
+      match fuel w:
+        ... arm 1: +prev = sc_resolve(k, RCall{...})
+                   sc_resolve(k, RJoin{SBind.ar(prev), SBind.i(prev), ...})
+        ... arm 2/3: sc_resolve(k, RSrcs{..., acc ++ [x]})
+        ... xs Nil: assemble
+
+**THE `RJoin` ITEM IS THE WHOLE TRICK:** a non-tail self-call cannot be followed by
+another, so the continuation becomes a WORK ITEM carrying the nested result's two
+projections.  **NONE **OF **THIS **IS **WRITTEN **YET, **AND **I **AM **NOT
+**STARTING **A ~150-LINE **STATE **MACHINE **AT **THE **END **OF **THIS **SESSION
+**WITH **THE **TREE **GREEN -- **but **the **design **is **no **longer **a **guess,
+**and **the **refusal **in `sc_ab2.of` **now **has **a **reason **that **is **true.
+
+**⇒ AND **THE **VALUE **IS **ALSO **MEASURED **AND **IT **IS **LOW:** arm 1 fires only
+for a LINEAR call whose src is ANOTHER LINEAR call, and nothing in the port produces
+one yet because `create_linear_with_vars` is not ported.  **A **REFUSAL **ON **AN
+**UNREACHABLE **PATH **IS **CHEAPER **THAN **A **STATE **MACHINE **NOBODY **RUNS.
