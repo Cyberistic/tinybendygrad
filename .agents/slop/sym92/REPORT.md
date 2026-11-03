@@ -361,3 +361,26 @@ would need dedup for no reader. It needs a dtype READER, which is why it is in `
 `:436`/`:437` need `parse_valid` (absent) and `uop_given_valid` (`symbolic.py:340`, absent) on top of
 this, and `:437` also the `IMAGE` ContextVar. `divandmod.py:108` is unchanged: `UOp.simplify`,
 `UOp.gcd(*uops)`, `UOp.divide_exact`, and the `usum` cycle.
+
+## 2026-11-03 (final, 7): `:259`'s remaining work is THREE MEASURED BEND FACTS, not a missing port
+
+Attempting `fold_where_closure` through the ported `UOp.substitute` measured three obstacles, all in
+the probe `.agents/slop/sym92/probe-sub.bend`:
+
+1. **`Map.put` IS UNUSED IN THIS PORT.** `rg -c 'Map\.put\(' tinybendygrad --glob '*.bend'` answers
+   FOUR hits, all `RrMap.put` -- a hand-rolled record in `schedule/rangify.bend`, not Bend's `Map`.
+   And `nn/onnx.bend:722` records why: "`Map.put` LOSES KEYS and `Map.get` answers a `Sigma`". So
+   building the one-entry `dvars` map that `substitute` wants is the UNVERIFIED part, and the
+   existing caller has to be tested before anything is built on it.
+2. **`substitute` ANSWERS `Maybe<&2, U32>` AND `None` MEANS UNCHANGED** (`walk_rewrite.of` maps
+   index `0` to `None`), so a caller that wants the substituted node must fall back to the ORIGINAL
+   index -- not to a fresh `Found`.
+3. **ITS THREE-TUPLE CANNOT BE DESTRUCTURED IN A `let`.** `(a2, r, m2) = <call>` is a match on a
+   computed value and is refused; it must be destructured on a PARAMETER, and that parameter is
+   AFFINE and not `+`, because the tuple carries a `Maybe` (a `Type`, not a `Data`).
+
+So `:259` is not gated on a missing capability -- `bool_slice` is done and `substitute` exists -- but
+on three constraints of the language that the port has never exercised, and the first of them
+(`Map.put`) is flagged as LOSSY by the tree's own note. The next attempt should settle `Map.put`
+with a one-entry round-trip before building the rule on it, or write a single-entry substitution
+and say why.
