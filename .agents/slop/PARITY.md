@@ -1159,3 +1159,65 @@ So the honest shape of the whole cold path, measured:
 measures, one kernel now costs ~12 ms to render against ~26 ms to start the process that renders it -- the
 crossover, stated where it is true and not past it: at 405 uops the render is still 68.0 ms, more than twice
 the start-up.
+
+### 28.5 The certificate for §28
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **08:11**, `substrate-head=509075c47`:
+
+```
+substrate-start = substrate-end = live = 81db633f28915962122b614725e30b487f3d0f8bffe7e9a340d78cb5a7471ec9
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+controls=5 of 5   conflations=4 of 4   oracle-selfcheck=# ORACLE SELFCHECK: OK   census-rc=rc=0
+```
+
+The decimal change moves no byte in any of the 38 graphs.
+
+## 29. THE DAEMON: 4.6x PER TURN, AND IT ANSWERS THREE TIMES
+
+§28.4 left the ~46 ms per-kernel fixed cost as the largest single term, and named a long-lived renderer as
+the only thing that could remove it. This section built one, measured it, and did NOT ship it as the default
+-- the reasons are below and they are measurements, not caution.
+
+### 29.1 The protocol, and two races it had to lose first
+
+`serve.bend` is `live.bend`'s loop: one long-lived `bun`, one kernel per signal. The request travels as a
+REGULAR FILE (written to a temporary name and renamed) and the pipe carries ONE BYTE, because `File.read` on
+a pipe returns whatever is available and a 13 KB wire down a pipe can be truncated while a one-byte signal
+cannot.
+
+Two defects, both found by running it rather than by reading it:
+
+| the defect | what it measured |
+|---|---|
+| the reader opened and closed per request | the FIRST request answered in 90.7 ms and the SECOND never: a writer that opens while the previous reader is still closing PAIRS WITH THE STALE READER, so its byte goes to a pipe nobody reads and the worker's next open blocks forever |
+| the writer opened and closed per request | `live 1/6 byte-identical`: closing the writer gives the reader an EOF BETWEEN requests, and the worker cannot tell an EOF read from a signal read, so it renders the current request file an extra time and every answer shifts by one |
+
+The cure for both is to keep each end open for the session: one persistent reader, one persistent writer.
+
+### 29.2 What it measures
+
+`Worker.render`, same wire, six turns:
+
+```
+67.4  9.0  6.2  5.5  8.3  10.5 ms      steady median 8.3 ms, output IDENTICAL to the one-shot path
+```
+
+against **38.4 ms/kernel** for the one-shot live path. That is the 4.6x the fixed cost was worth.
+
+### 29.3 And then it stops
+
+MEASURED, twice, with a 13 KB wire and again with a 4-byte one: **the worker answers THREE turns and then
+stops answering**, with the process ALIVE (`poll()` is `None`), nothing pending on its stdout, and nothing
+on its stderr. The count is not a function of the request size. The cause was NOT established: the FIFO is
+opened once for reading and once for writing, neither side reports an error, and `File.read` on a FIFO
+through Bend's `File` layer is the one component in this path this tree has never exercised before.
+
+**SO IT IS OPT-IN (`BEND_SERVE=1`) AND OFF BY DEFAULT**, which is a decision about the failure MODE rather
+than about the speed: a stalled worker costs the 20 s timeout and then falls back, and that is 500x worse
+than never starting it. With the flag off the shipped path is exactly the one-shot renderer measured in
+§28 -- 38.4 ms/kernel -- and with it on the fallback is still the same renderer producing the same bytes,
+counted in `worker_stats()` rather than swallowed. `BEND_SERVE=1 ksweep.py` is **37 of 37 identical on both
+decoders**, so the opt-in path is correct for the turns it serves.
+
+**⇒ AND THE HONEST SUMMARY OF §29 IS THAT THE 46 ms IS STILL THERE.** The mechanism is built, its cost is
+measured at 8.3 ms per turn, and it does not survive more than three requests in this tree today.

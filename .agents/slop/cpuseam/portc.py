@@ -35,6 +35,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import time
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -335,6 +336,122 @@ def _render_wire(text: str) -> str:
   return run.stdout
 
 
+# ===========================================================================
+# THE LONG-LIVED RENDERER: one `bun` for the whole session, one kernel per signal.
+#
+# WHY IT EXISTS. `render_live` removes the per-kernel TYPECHECK but not the per-kernel PROCESS: MEASURED, a
+# fresh `bun` costs ~26.5 ms of start-up and ~20 ms of loading a 349 KB artifact, and at ~163 uops that
+# fixed cost is larger than the render itself. `serve.bend` is the same renderer in a loop.
+#
+# THE TWO THINGS THAT MAKE IT SAFE RATHER THAN A HANG:
+#   * THE REQUEST IS A FILE AND THE PIPE CARRIES ONE BYTE. `File.read` on a pipe returns what is available,
+#     so a 13 KB wire down a pipe can be truncated; a regular file written-then-renamed is whole, and a
+#     one-byte signal is a whole signal.
+#   * EVERY READ HAS A TIMEOUT AND A FALLBACK. A worker that does not answer in `TIMEOUT` is killed and the
+#     call goes to the ONE-SHOT path, which is the same renderer and the same bytes, just slower. That is
+#     not the silent-fallback defect the tree forbids (that was handing the kernel to TINYGRAD's renderer):
+#     the port still renders it, and `worker_stats()` counts every fallback so nothing is invisible.
+# ===========================================================================
+# **THE DAEMON IS OPT-IN, AND THAT IS A MEASUREMENT RATHER THAN CAUTION.** MEASURED: `serve.bend` answers in
+# 6-10 ms per turn -- 4.6x cheaper than the 38.4 ms one-shot path -- for THREE turns and then stops
+# answering, with the process ALIVE, `poll()` None, no output pending and no bytes on stderr. The cause was
+# not established inside this session (the FIFO is opened once for reading and once for writing and neither
+# side reports an error), and a stalled worker costs the TIMEOUT and then the fallback, which is SLOWER than
+# never starting it. So `BEND_SERVE=1` is the only way in, the default is the one-shot path, and every
+# fallback is recorded rather than swallowed.
+TIMEOUT = 20.0
+_FALLBACKS = []
+_WORKER = None
+_OFF = [False]
+
+
+class Worker:
+  """the live renderer, resident. `render` answers the C for one wire."""
+
+  def __init__(self, js: pathlib.Path, stamp: str):
+    self.js = js
+    self.dir = OUT / f"serve-{stamp}"
+    self.dir.mkdir(parents=True, exist_ok=True)
+    self.fifo = self.dir / "sig.fifo"
+    self.req = self.dir / "req.wire"
+    if not self.fifo.exists():
+      os.mkfifo(self.fifo)
+    self.proc = None
+    self.w = None
+    self.turns = 0
+
+  def start(self) -> None:
+    self.proc = subprocess.Popen([str(BUN), str(self.js), f"{self.fifo}|{self.req}"],
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, text=True, bufsize=1)
+    # **THE WRITER STAYS OPEN FOR THE WHOLE SESSION, AND THAT IS A MEASURED FIX.** Opening and closing it
+    # per request gives the reader an EOF BETWEEN requests, and the worker -- which has no way to tell an
+    # EOF read from a signal read without a branch it cannot express -- renders the current request file on
+    # every read. MEASURED with a per-request writer: `live 1/6 byte-identical`, because one extra turn per
+    # request shifted every answer by one. A writer that never closes has no EOF between requests.
+    self.w = open(self.fifo, "wb", buffering=0)
+
+  def stop(self) -> None:
+    if self.w is not None:
+      self.w.close()
+      self.w = None
+    if self.proc is not None:
+      self.proc.kill()
+      self.proc.wait(timeout=5)
+      self.proc = None
+
+  def render(self, text: str) -> str:
+    """one kernel. Raises `TimeoutError`/`RuntimeError` so the caller can fall back."""
+    import select
+    if self.proc is None or self.proc.poll() is not None:
+      self.start()
+    tmp = self.dir / "req.tmp"
+    tmp.write_text(text)
+    os.replace(tmp, self.req)
+    self.w.write(b"x")
+    assert self.proc.stdout is not None
+    deadline = time.time() + TIMEOUT
+    lines, started = [], False
+    while True:
+      left = deadline - time.time()
+      if left <= 0:
+        raise TimeoutError("serve: no answer within the timeout")
+      ready, _, _ = select.select([self.proc.stdout], [], [], left)
+      if not ready:
+        raise TimeoutError("serve: no answer within the timeout")
+      line = self.proc.stdout.readline()
+      if line == "":
+        raise RuntimeError(f"serve: worker died: {(self.proc.stderr.read() if self.proc.stderr else '')[:200]}")
+      line = line.rstrip("\n")
+      if line == "@@BEGIN":
+        started = True
+      elif line == "@@END" and started:
+        self.turns += 1
+        return "\n".join(lines) + "\n"
+      elif started:
+        lines.append(line)
+
+
+def worker_stats() -> dict:
+  return {"turns": _WORKER.turns if _WORKER is not None else 0, "fallbacks": len(_FALLBACKS)}
+
+
+def _worker() -> Worker:
+  global _WORKER
+  if _WORKER is None:
+    stamp = hashlib.sha256(_renderer_stamp().encode()).hexdigest()[:16]
+    js = OUT / f"serve-{stamp}.js"
+    if not js.exists():
+      build = subprocess.run([str(BEND), str(HERE / "serve.bend"), "-o", str(js)],
+                             capture_output=True, text=True)
+      if build.returncode != 0:
+        raise RuntimeError(f"portc: serve.bend did not build: {build.stderr.strip()[:400]}")
+    _WORKER = Worker(js, stamp)
+    import atexit
+    atexit.register(_WORKER.stop)
+  return _WORKER
+
+
 def render_live(uops) -> str:
   """the C for one kernel, with NO build: the renderer is an artifact and the kernel is an argument."""
   text = wire(uops)
@@ -342,6 +459,20 @@ def render_live(uops) -> str:
   cached = OUT / f"livew_{key}.c"
   if cached.exists():
     return cached.read_text()
-  src = _render_wire(text)
+  if not os.environ.get("BEND_SERVE") or _OFF[0]:
+    src = _render_wire(text)
+  else:
+    try:
+      src = _worker().render(text)
+    except (TimeoutError, RuntimeError, OSError) as e:
+      # ONE STALL IS ENOUGH: the worker is killed and this process stops asking, so a broken daemon costs
+      # one timeout and not one per kernel.
+      _FALLBACKS.append(str(e)[:120])
+      _OFF[0] = True
+      try:
+        _worker().stop()
+      except Exception:
+        pass
+      src = _render_wire(text)
   cached.write_text(src)
   return src
