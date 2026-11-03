@@ -21,7 +21,7 @@ import sys
 from tinygrad.uop.ops import UOp, Ops, ParamArg, AddrSpace, AxisType
 from tinygrad.dtype import dtypes
 
-from tinygrad.schedule import resolve_linear_call
+from tinygrad.schedule import resolve_linear_call, pm_post_sched_cache
 
 STACK = UOp(Ops.STACK)
 
@@ -182,6 +182,16 @@ def main():
     otop = UOp(Ops.CALL, src=(olinp,))
     orr = resolve_linear_call(otop, {})
     a("ab_arm2", int(orr.src[0] is ocallp))
+
+    # ---- `enter_calls` -- ops.py:1841 ----
+    from tinygrad.uop.ops import graph_rewrite
+    epp = param(0, vmin=(0, 7), nm=None)
+    ecall = UOp(Ops.CALL, src=(epp,))
+    epx = param(0, vmin=(0, 9), nm=None)
+    er0 = graph_rewrite(ecall, pm_post_sched_cache, ctx=(epx,), walk=True)
+    er1 = graph_rewrite(ecall, pm_post_sched_cache, ctx=(epx,), walk=True, enter_calls=True)
+    a("ec_default", int(er0.src[0] is epp))
+    a("ec_enter", int(er1.src[0] is epx))
 
     print("\n".join(out))
 

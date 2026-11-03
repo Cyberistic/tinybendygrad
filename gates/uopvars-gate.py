@@ -85,6 +85,8 @@ ROWS = (
     "ab_arm1",
     "ab_arm2",
     "ab_arm3",
+    "ec_default",
+    "ec_enter",
 )
 
 GATE = Gate(
@@ -107,7 +109,7 @@ if __name__ == "__main__":
     sys.exit(
         main(
             GATE,
-            "uopvars-gate: 41 rows, 2 lanes -- `is_variable` (ops.py:1009), "
+            "uopvars-gate: 43 rows, 2 lanes -- `is_variable` (ops.py:1009), "
             "`unbound` (:1027) and `variables` (:1037), WALL C of "
             "`schedule/__init__.bend`'s deferral, AND `sc_linear_binds` "
             "(`__init__.py:104-106`), the CONSUMER that makes the first two "

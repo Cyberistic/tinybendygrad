@@ -539,6 +539,56 @@ def abrows(+fx: ABF) -> IO(Unit):
     p2 : Unit <- IO.print(String.concat(["ab_arm2=", ab_arm2(fx)]))
     IO.print(String.concat(["ab_arm3=", ab_arm3(fx)]))
 
+
+# ---- `enter_calls` -- ops.py:1841, AND THE PORT ENTERED CALLS BY DEFAULT -------
+# MEASURED 2026-11-03 on a CALL whose body is a slot-0 PARAM, `ctx=(px,)`, with `pp`
+# and `px` DIFFERENT nodes (the first attempt interned them and the probe was
+# vacuous -- a probe that cannot tell its two sides apart is not a probe):
+#   ec_default  CPython's DEFAULT leaves the body UNTOUCHED; the port rewrote it
+#   ec_enter    `enter_calls=True` rewrites it, on both sides
+type ECF is Data:
+  ECF{ar: O.Arena, call: U32, pp: U32, px: U32}
+
+def ECF.ar(x: ECF) -> O.Arena:
+  match x:
+    case ECF{ar, call, pp, px}: ar
+
+def ECF.call(x: ECF) -> U32:
+  match x:
+    case ECF{ar, call, pp, px}: call
+
+def ECF.pp(x: ECF) -> U32:
+  match x:
+    case ECF{ar, call, pp, px}: pp
+
+def ECF.px(x: ECF) -> U32:
+  match x:
+    case ECF{ar, call, pp, px}: px
+
+def ecfx() -> ECF:
+  +pp = param(O.Arena.empty(), pa(0, rng(7), SP.Aalu{}, None{}, None{}))
+  +call = O.UOp.new(O.Found.ar(pp), O.OpsCALL{}, [O.Found.i(pp)], O.ANone{}, O.TNone{})
+  +px = param(O.Found.ar(call), pa(0, rng(9), SP.Aalu{}, None{}, None{}))
+  ECF{O.Found.ar(px), O.Found.i(call), O.Found.i(pp), O.Found.i(px)}
+
+def ec_src0.of(m: Maybe<&2, U32>, +ar: O.Arena) -> U32:
+  match m:
+    case None{}: O.ParamArg.no_slot()
+    case Some{s}: O.Arena.src0(ar, s)
+
+def ec_default(+fx: ECF) -> String:
+  +rw = CG.graph_rewrite(ECF.ar(fx), ECF.call(fx), CG.pm_post_sched_cache(), [ECF.px(fx)], True{})
+  bf(U32.is_eq(ec_src0.of(CG.Rewritten.sink(rw), CG.Rewritten.ar(rw)), ECF.pp(fx)))
+
+def ec_enter(+fx: ECF) -> String:
+  +rw = CG.graph_rewrite_ec(ECF.ar(fx), ECF.call(fx), CG.pm_post_sched_cache(), [ECF.px(fx)], True{})
+  bf(U32.is_eq(ec_src0.of(CG.Rewritten.sink(rw), CG.Rewritten.ar(rw)), ECF.px(fx)))
+
+def ecrows(+fx: ECF) -> IO(Unit):
+  do IO<Unit>:
+    p1 : Unit <- IO.print(String.concat(["ec_default=", ec_default(fx)]))
+    IO.print(String.concat(["ec_enter=", ec_enter(fx)]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -562,4 +612,5 @@ def main() -> IO(Unit):
     subrows(subfx())
     ab3rows(subscall())
     p9 : Unit <- IO.print(String.concat(["subs_named=", subs_named()]))
-    abrows(abfx())
+    p8 : Unit <- abrows(abfx())
+    ecrows(ecfx())

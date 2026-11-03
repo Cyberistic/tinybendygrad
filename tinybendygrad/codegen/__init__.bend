@@ -71,13 +71,35 @@ import ./../LAWS/spec.bend as S
 # ============================================================================
 
 # Fold over a node's srcs, looking each up in `repl`. If absent, the
-# original `s` is its own replacement (the toposort guarantees `s` was
-# visited first).
+# original `s` is its own replacement.
+#
+# THE PARENTHETICAL THAT USED TO BE HERE -- "the toposort guarantees `s` was
+# visited first" -- IS FALSE UNDER `enter_calls=False`, AND IT WAS LOAD-BEARING.
+# `R.cu32` answers DEFAULT `0` for an absent key, and `0` is a LEGAL arena index.
+# MEASURED 2026-11-03, the first run after the default became `toposort_nocalls`:
+# a CALL's body is not visited, so `repl[body]` is absent and the CALL was rebuilt
+# pointing at node **0**. The row said `ec_default=0` and the cause was not the
+# walk at all. `Map.has` is the presence test the assumption needed.
+def wr.has.of(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
+  match r:
+    case Tuple{m, v}: v
+
+def wr.has(+m: Map<&2, U32>, +k: U32) -> Bool:
+  wr.has.of(Map.has(&2, U32, m, U32.show(k)))
+
+def wr.rebuild.one.of(hit: Bool, +s: U32, +repl: Map<&2, U32>) -> U32:
+  match hit:
+    case True{}: R.cu32(repl, s)
+    case False{}: s
+
+def wr.rebuild.one(+s: U32, +repl: Map<&2, U32>) -> U32:
+  wr.rebuild.one.of(wr.has(repl, s), s, repl)
+
 def wr.rebuild.go(+srcs: List<&2, U32>, +ar: O.Arena, +u: U32, +repl: Map<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match srcs:
     case Nil{}: acc
     case +s <> t:
-      wr.rebuild.go(t, ar, u, repl, List.append(&2, U32, acc, [R.cu32(repl, s)]))
+      wr.rebuild.go(t, ar, u, repl, List.append(&2, U32, acc, [wr.rebuild.one(s, repl)]))
 
 # Mint a new node with the rewritten srcs, and record `u -> i` in the map.
 # The grown arena is the `Found.ar` half of `O.UOp.new` and it is THREADED,
@@ -151,7 +173,23 @@ def walk_rewrite.put(+sink: U32, p: (O.Arena & Map<&2, U32>)) -> (O.Arena & Mayb
 # arena-indexed U32 (the `ctx[0]` from Python's `RewriteContext`), and the
 # rule bodies read it back as such. This untyped `List<&2, U32>` is the
 # wall-passing shape until the typed `CTX` record lands.
+# `enter_calls=True` -- ops.py:1841. THE DEFAULT IS `enter_calls=False` AND BOTH
+# DRIVERS USED TO ENTER CALLS. Upstream's `pm_post_sched_cache` says so in its own
+# comment ("Resolve positional arguments **outside kernel bodies**"), and MEASURED
+# 2026-11-03 on a CALL whose body is a slot-0 PARAM, with `ctx=(px,)` and `pp`/`px`
+# DIFFERENT nodes (same fixture interned them on the first attempt, which made the
+# probe vacuous):
+#
+#   CPython graph_rewrite(..., walk=True)                   src0 is pp  (UNTOUCHED)
+#   CPython graph_rewrite(..., walk=True, enter_calls=True)  src0 is px  (rewritten)
+#   THE PORT, before this commit                             src0 is px  (WRONG)
+#
+# `toposort` and `toposort_nocalls` are upstream's two orders (`ops.py:3404/3415`),
+# so the flag is a CHOICE OF WALK and not a filter applied afterwards.
 def walk_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+  walk_rewrite.put(sink, wr.go(O.UOp.toposort_nocalls(U32.to_nat(O.Arena.next(ar)), ar, sink), pm, ctx, (ar, Map.new(&2, U32))))
+
+def walk_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
   walk_rewrite.put(sink, wr.go(O.UOp.toposort(U32.to_nat(O.Arena.next(ar)), ar, sink), pm, ctx, (ar, Map.new(&2, U32))))
 
 # THE PASS BOUND. `REWRITE_STACK_LIMIT = 250000` upstream (ops.py:1622) bounds a
@@ -206,6 +244,9 @@ def walk_rewrite.lift(p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>)) -> Rewritten
 # caps nothing on the walk path, because `walk_rewrite` is not a loop.
 def walk_rewrite.counted(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
   walk_rewrite.lift(walk_rewrite(ar, sink, pm, ctx))
+
+def walk_rewrite_ec.counted(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
+  walk_rewrite.lift(walk_rewrite_ec(ar, sink, pm, ctx))
 
 def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, +w: Rewritten) -> Rewritten:
   walk_rewrite.lift(walk_rewrite(Rewritten.ar(w), sink, pm, ctx))
@@ -285,6 +326,9 @@ def unified_rewrite.go(fuel: Nat, +done: U32, +prev: U32, +w: Rewritten, +pm: O.
 def unified_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
   unified_rewrite.go(Nat.sub(FIXPOINT_PASSES(), 1n), 1, 0, walk_rewrite.lift(walk_rewrite(ar, sink, pm, ctx)), pm, ctx)
 
+def unified_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
+  unified_rewrite.go(Nat.sub(FIXPOINT_PASSES(), 1n), 1, 0, walk_rewrite.lift(walk_rewrite_ec(ar, sink, pm, ctx)), pm, ctx)
+
 # `graph_rewrite` -- the dispatcher, ops.py:1888-1890. Upstream's body is two
 # statements and only the SECOND is the dispatch:
 #
@@ -297,6 +341,10 @@ def unified_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U3
 # carry it. The second is a ternary on one Bool, and THAT is what is ported.
 def graph_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, walk: Bool) -> Rewritten:
   Bool.pick(Rewritten, walk, walk_rewrite.counted(ar, sink, pm, ctx), unified_rewrite(ar, sink, pm, ctx))
+
+# `graph_rewrite(..., enter_calls=True)` -- the SAME dispatch over the `ec` walks.
+def graph_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, walk: Bool) -> Rewritten:
+  Bool.pick(Rewritten, walk, walk_rewrite_ec.counted(ar, sink, pm, ctx), unified_rewrite_ec(ar, sink, pm, ctx))
 
 # ============================================================================
 # `UOp.substitute` -- ops.py:514. Upstream spells it
