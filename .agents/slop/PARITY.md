@@ -4988,3 +4988,44 @@ The decode is 9,516 characters at ~95 ns each (`String.split` recursing once per
 405 records. §92 established the cost is linear in characters, §91 and §104 established that every cheaper
 way to read those characters is slower or refused. **SO THE DECODE'S 1.61 ms IS CHARACTER-BOUND AND THE ONLY
 REMAINING LEVER IS A SHORTER WIRE -- WHICH §103 computed at 2.4% for a 13% cut and §80 measured at 0.9900.**
+
+## 112. `render_kernel` BUILT THE METAL PREFIX ON THE CLANG LANE: 0.9717 / 0.9585 / 0.9452, 69 OF 90
+
+`Bool.pick` is strict, and `render_kernel` chose its two arms with one. So every C render built the METAL
+arm and threw it away: `metal_prefix(bufs, kus)` walks all 405 uops through `wmma_helpers.go`, and
+`metal_unpack`/`metal_args` build a string per buffer -- none of it reaching the output.
+
+Measured by the compiler's own JS, not by a model: the compiled `$..._render_kernel` evaluates
+`$..._metal_prefix(_bufs_0, _kus_0)` and `$...__render_defines(...)` in the SAME expression, so both run.
+
+### 112.1 The change: dispatch on a Bool PARAMETER, which is the one form Bend keeps lazy
+
+```
+def render_kernel.go(m: Bool, dev, cpu, fn, kernel, bufs, kus, lb) -> String:
+  match m:
+    case True{}:  <metal>
+    case False{}: <base>
+def render_kernel(...) -> String: render_kernel.go(U32.is_eq(dev, 3), ...)
+```
+
+A `match` cannot scrutinize a computed value, so the Bool is hoisted into a parameter; the `+`-ownership
+prefixes had to be mirrored onto the helper's parameters or Bend refuses with `bufs (consumed more than
+once)`.
+
+### 112.2 Three interleaved A/B runs against the same base build, 90 rounds total
+
+```
+run 1:  base 4.04 ms   new 3.72 ms   ratio min 0.7239 p25 0.8999 median 0.9717  18/26 faster
+run 2:  base 3.55 ms   new 3.62 ms   ratio min 0.6549 p25 0.9294 median 0.9585  28/34 faster
+run 3:  base 4.02 ms   new 3.57 ms   ratio min 0.5553 p25 0.8888 median 0.9452  23/30 faster
+```
+
+**BOTH ARMS ARE BYTE-IDENTICAL (`same C: True`, 4,426 bytes) AT 37 OF 37 ON BOTH DECODERS, `ALL PROOFS
+CHECK`, opbattery 39/39, portexec 7/7, and both e2e fixtures.** The change is KEPT: the median is at or
+under the keeper line in all three runs and 69 of 90 paired rounds are faster.
+
+**⇒ AND IT ANSWERS A QUESTION THE RECORD HAD ASKED THE WRONG WAY ROUND.** §74 and §96-§102 all attacked the
+work that REACHES the output. This is work that never reaches it: a strict `Bool.pick` whose untaken arm is
+a whole-kernel walk. The base build's absolute medians (3.55-4.04 ms) also show the machine was busier than
+the 3.3 ms the earlier turns recorded, which is why the PAIRED ratio and not the median of absolute times is
+the verdict.

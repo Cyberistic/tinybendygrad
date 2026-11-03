@@ -2788,13 +2788,23 @@ def metal_prefix(+bs: List<&2, BArg>, +kus: List<&2, KU>) -> List<&2, String>:
 # cstyle.py:312-314 IS THE CLANG OVERRIDE: it emits the vector typedefs. METAL DOES
 # NOT -- `MetalRenderer.render_kernel` calls the BASE, which has no `_render_defines`
 # at all, which is why upstream's Metal text has native `float2` and no `typedef`.
-def render_kernel(+dev: U32, cpu: Bool, +fn: String, +kernel: List<&2, String>,
+# **`Bool.pick` IS STRICT, SO THIS USED TO BUILD THE METAL PREFIX ON THE CLANG LANE AND THROW IT AWAY**
+# -- `metal_prefix` walks every uop (`wmma_helpers.go`) and `metal_unpack`/`metal_args` build a string per
+# buffer. The arm is now chosen by a `match` on a Bool PARAMETER, which is the only form Bend evaluates
+# lazily (a `match` cannot scrutinize a computed value). MEASURED, `PARITY.md` §112.
+def render_kernel.go(m: Bool, +dev: U32, cpu: Bool, +fn: String, +kernel: List<&2, String>,
+                     +bufs: List<&2, BArg>, +kus: List<&2, KU>, +lb: U32) -> String:
+  match m:
+    case True{}:
+      String.concat([String.join(metal_prefix(bufs, kus), "\n"), "\n",
+        render_kernel_body(3, fn, metal_unpack(bufs) <> kernel, metal_extra_args(), lb)])
+    case False{}:
+      String.concat([String.join(_render_defines(dev, cpu, kus), "\n"), "\n",
+        render_kernel_body(dev, fn, kernel, ku_args(dev, bufs), lb)])
+
+def render_kernel(+dev: U32, +cpu: Bool, +fn: String, +kernel: List<&2, String>,
                   +bufs: List<&2, BArg>, +kus: List<&2, KU>, +lb: U32) -> String:
-  Bool.pick(String, U32.is_eq(dev, 3),
-    String.concat([String.join(metal_prefix(bufs, kus), "\n"), "\n",
-      render_kernel_body(3, fn, metal_unpack(bufs) <> kernel, metal_extra_args(), lb)]),
-    String.concat([String.join(_render_defines(dev, cpu, kus), "\n"), "\n",
-      render_kernel_body(dev, fn, kernel, ku_args(dev, bufs), lb)]))
+  render_kernel.go(U32.is_eq(dev, 3), dev, cpu, fn, kernel, bufs, kus, lb)
 
 # THE WHOLE KERNEL, FROM THE UOP LIST -- cstyle.py:268-278's `render`, FOR THE
 # ONE-LINE CASE (NO LINEAR BODIES, NO EXTERN DECLARATIONS).
