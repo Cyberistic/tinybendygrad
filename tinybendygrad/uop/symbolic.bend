@@ -573,16 +573,29 @@ def sy_ccast(+x: F.Folded, +u: U32, dt: S.Dt) -> Maybe<&1, U32>:
 def sy_logical_not(+ar: O.Arena, x: U32) -> U32:
   sy_alu2(ar, O.OpsCMPNE{}, x, O.Found.i(O.UOp.const(ar, O.CBool{True{}})))
 
-# `UOp.usum(*us)` / `UOp.uprod(*us)` -- mixin/elementwise.py:40-41, a LEFT fold
-# from `self`. The `or_`/`and_` special case for a bool `self` is NOT PORTED;
-# every caller in symbolic.py that reaches a bool is a rule this file defers.
-def sy_usum.go(t: List<&2, U32>, +ar: O.Arena, base: U32) -> U32:
+# `UOp.usum(*us)` / `UOp.uprod(*us)` -- mixin/elementwise.py:40-41:
+#     reduce(operator.or_  if self.dtype is dtypes.bool else operator.add,      uops, self)
+#     reduce(operator.and_ if self.dtype is dtypes.bool else operator.mul,      uops, self)
+# **THE BOOL ARM WAS NOT PORTED**, which the old comment here admitted and no caller could see,
+# because every caller in `symbolic.py` that reaches a bool is a rule this file defers. **THE PORT SAID
+# `ADD` WHERE THE SOURCE SAYS `OR`, AND A COMMENT THAT ADMITS A DIVERGENCE IS STILL A DIVERGENCE** --
+# on a bool `self` the two are different nodes, and `:176` rewrites `ADD` to `OR` only later, so the
+# raw `usum` answer differed.
+# (`uprod` was NOT the same case: `sy_uprod` at :6452 already reads the op off the receiver's dtype.
+# A first version of this edit claimed both were missing and that claim was WRONG.)
+def sy_usum.op(orb: Bool) -> O.Op:
+  match orb:
+    case True{}: O.OpsOR{}
+    case _: O.OpsADD{}
+
+def sy_usum.go(t: List<&2, U32>, +ar: O.Arena, base: U32, +orb: Bool) -> U32:
   match t:
     case Nil{}: base
-    case u <> r: sy_usum.go(r, ar, sy_alu2(ar, O.OpsADD{}, base, u))
+    case u <> r: sy_usum.go(r, ar, sy_alu2(ar, sy_usum.op(orb), base, u), orb)
 
-def sy_usum(+ar: O.Arena, base: U32, us: List<&2, U32>) -> U32:
-  sy_usum.go(us, ar, base)
+def sy_usum(+ar: O.Arena, +base: U32, us: List<&2, U32>) -> U32:
+  sy_usum.go(us, ar, base, F.dt_is(F.folded(ar), base, S.boolean()))
+
 
 # `UOp.split_uop` -- ops.py:685,
 #     if self.op is sep: for s in self.src: yield from s.split_uop(sep)
