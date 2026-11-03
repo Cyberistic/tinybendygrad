@@ -3798,3 +3798,42 @@ turn; the nine rounds that favour the chunked build put the effect at the instru
 ksweep 37/37 both decoders · opbattery 39/39 · portexec 7/7
 emit-mm and emit-f64 byte-identical · substrate unchanged (harness only)
 ```
+
+## 86. THE DECOMPOSITION ON THE §85 BUILD, AND WHAT THE RENDER'S 64% IS MADE OF
+
+Every earlier decomposition predates the frame protocol, so this one is rebuilt against §85. It is three
+points, not four: a frame has to be consumed to stay in sync, so "read" is not separable from the turn.
+
+```
+stub (IPC + frame read + prints)   0.35 ms    6%
+decode                             1.60 ms   29%
+render                             3.49 ms   64%
+                                   ------
+                                   5.44 ms
+```
+
+**THE PROTOCOL TERM COLLAPSED FROM 1.37 ms TO 0.35 ms** -- that is §84 showing up in the decomposition, and
+it is the whole of what the file round trip was worth.
+
+### 86.1 The render is 40% string construction, and it has no builder
+
+Ablating `ku_text` to a constant (the dispatch and the state still run; every expression subtree is skipped)
+prices the entire class:
+
+```
+full render 5.41 ms   expression text ablated 3.22 ms   ratio 0.60
+-> building the C text is 2.16 ms of the turn, 40%
+```
+
+That 2.16 ms is `String.concat` over an immutable `String`, and **the runtime has no mutable builder to
+replace it with**: the whole string surface is `String.append`, `concat`, `contains`, `drop`, `ends_with`,
+`eq`, `from_list`, `get`, `is_empty`, `is_lt`, `join`, `length`, `lines`, `map`, `order`. `from_list` goes
+through a `List<Char>`, which is one cons per character -- strictly worse.
+
+**⇒ SO THE LARGEST REMAINING TERM IS THE PRODUCT ITSELF.** 2.16 ms to build 4,426 bytes of C, through an
+API that copies rather than appends in place, with no builder anywhere in the language. The other ~1.3 ms
+is dispatch, state and records, and four attempts on its identifiable sites have measured neutral (§72
+0.9976, §79.1 0.9934, §80 0.9900, §81 0.9751/1.0075).
+
+This is the same shape as §44 (no mutable container) and §57 (no branch on a computed value): **a property
+of the language the port is written in, measured rather than asserted.**
