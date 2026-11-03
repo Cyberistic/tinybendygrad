@@ -973,3 +973,32 @@ THE SAME QUESTION NOW APPLIES TO EVERY ROW THIS SESSION DID NOT OPEN. `:171` was
 same way except that its `mk` was fine and the FIXPOINT was lying; `:263`'s `mk` is not fine. A
 sweep that calls `pat`, then `mk`, then `sy_simp.n(1n)` on a fixture for every resposed row would
 name every dead body at once, and that sweep is the instrument this lane is missing.
+
+## 28. `:255` IS ALIVE; THE GUARD I WROTE SUPPRESSED IT (reverted)
+
+MEASURED 2026-11-04, `.agents/slop/sym92/probe-255.bend`, `(y + x*c0) + x*c1` on int8:
+
+    sym_246.pat(node)    True
+    sym_246(node)        (add y (mul x (add c1 c2)))      the rule FIRES
+    sy_simplify(node)    (add y (mul x (add c1 c2)))      and through the fixpoint
+
+So `:255` is NOT dead -- unlike `:263`, which was -- and the "both rows unchanged" reading that
+prompted the guard was the reading of a tree where MY GUARD was suppressing the rule. The guard is
+reverted and the file is byte-identical to `ae3e3c91`.
+
+**THIS IS THE SECOND TIME IN THIS SESSION THAT A GUARD I WROTE DELETED A WORKING RULE** (the first
+was `:309`/`:311`, fixed by rebuilding the bounds table from the minted node's arena). Both times the
+probe's two rows BOTH read "unchanged", and both times that is exactly what a correct guard looks
+like -- which is why the PAIR has to be read as "one fires, one refuses" and never as "both agree".
+
+WHY THE `:255` GUARD WAS WRONG, by inspection and not by another guess: the `no_overflow` half is the
+`sym_248` machinery, which is known good (`:259`/`:261` verified with it), and the `fits` half reads
+the minted SUM node's value through `sy_val` on a fold built from that node's own arena. That is the
+same shape `:259`'s increment check uses... except `:259` reads the CONST it minted through
+`mint_const_like` and this one reads an ALU node's `arg`, which is not a value at all. **`c0+c1` is
+an ADD node, and `sy_val` on an ADD answers `None{}` -- so `vf` answered False for every graph.**
+That is the bug, it is one line, and it is NOT fixed here because it was found at the end of the
+session and a one-line fix at the end of a long session is how the two reverts above happened.
+
+THE NEXT STEP IS NAMED AND SMALL: for `fits(x, c0.vmin+c1.vmin)` the two constants must be READ from
+`cside` and ADDED, not read off the sum node -- `H.i64_add` of the two `CInt` payloads, then `fits`.
