@@ -1604,3 +1604,63 @@ defect (§27), a real 17.5% defect (§31), and a 27% lead that evaporates under 
 **A rewrite whose best case is a quarter of a first run, with no measured site driving it, is not the next
 step -- it is a project**, and the tree is better served by the certificate and the four defects already
 removed than by a half-finished emitter.
+
+## 37. "ONE BUFFER PER LINE" TESTED AND REVERTED: THE COST IS CALL OVERHEAD, NOT STRING BUILDING
+
+§36 declined the emitter rewrite as a project. That was a scope judgement, so this section TESTED the
+mechanical half of it instead of arguing about it -- and the test says the hypothesis behind it is wrong.
+
+### 37.1 Where the cost is, measured before touching anything
+
+Three readings on the 405-uop wire, same artifact (`live-63eb554dd99d40c9.js`), median of 7:
+
+```
+startup floor (one-line wire)   22.6 ms
+decode only                     26.8 ms   -> decode  ~4.2 ms
+decode + render                 51.1 ms   -> render ~24.3 ms
+```
+
+**THE DECODE IS 4.2 ms AND THE RENDER IS 24.3 ms**, so the "compact fixed-arity wire" the last section named
+would recover at most a sixth of what is left, and the emitter is where the work is.
+
+### 37.2 And the renderer is not quadratic
+
+Render time (floor subtracted) on four real kernels:
+
+| uops | render | per uop |
+|---|---|---|
+| 46 | 7.3 ms | 0.159 ms |
+| 68 | 9.6 ms | 0.141 ms |
+| 219 | 18.7 ms | 0.085 ms |
+| 405 | 27.7 ms | 0.068 ms |
+
+**The per-uop cost FALLS with size**, so this is `~7 ms fixed + ~0.05 ms/uop` and not an O(n^2) structure.
+There is no list-index defect to remove here either.
+
+### 37.3 The hypothesis, tested
+
+`String.concat(xs)` compiles to `head + concat(tail)` -- a right fold. `String.join(xs, "")` compiles to
+`head + (sep + recurse)` -- **the same shape**, which is readable in the artifact itself. So "accumulate into
+one buffer instead of concatenating per token" is, mechanically, a substitution of one right fold for
+another, and that is exactly what was tested: all **89** `String.concat` sites in `cstyle.bend` routed
+through `def cat(+xs) -> String: String.join(xs, "")`, byte-identical by construction (empty separator).
+
+```
+concat (old)  min 52.0  p25 53.2  median 53.7 ms
+join   (new)  min 51.7  p25 53.4  median 54.1 ms
+ratio new/old min 0.8345  p25 0.9413  median 1.0021  max 1.1373
+rounds where the new artifact is faster: 5 of 12
+```
+
+**NEUTRAL -- A COIN FLIP -- AND THEREFORE REVERTED**, per the rule that an unmeasured gain is not kept.
+`ksweep 37 of 37` passed on the changed artifact, so the substitution was correct and simply did not help.
+
+### 37.4 What that establishes
+
+The renderer's ~0.05 ms/uop is **Bend's call overhead per emitted token, not the characters it copies**: both
+string-building shapes cost the same, so the cost is in the number of Bend-level calls a line makes, and the
+only lever left is to EMIT FEWER, LARGER PIECES -- a semantic rewrite of every `ku_text_*` function
+(≈15 of them) rather than the mechanical substitution this section could test and revert in one cycle.
+
+**A NEGATIVE RESULT IS A RESULT**: the last section's guess about where to push now has a measurement against
+it, and the number a rewrite would have to beat is 24.3 ms per 405-uop kernel, of which ~7 ms is fixed.
