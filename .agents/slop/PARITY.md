@@ -542,3 +542,44 @@ COMMITTED `e9122b3dd` MID-RUN**, so the tree moved under the instrument. `start 
 certificate, and it is recorded rather than quoted. The digest is of the WORKING TREE, so landing this
 commit does not change it: the certificate is owed to the next quiet window, and the rule remains
 `start == end == live`.
+
+## 19. THE "1.27 vs 1.209" GAP WAS LOAD, NOT THE PORT: THE RATIO'S IQR STRADDLES 1.0
+
+The objective's last open question was whether the default lane's few-percent deficit was real. It was
+never measured against run-to-run spread, so it was an impression. `.agents/slop/parity/gap.py` measures
+it: the same `(a@b)@c`, BOTH lanes warmed first (so `portc`'s one-time ~1.2 s render build is outside the
+window), **interleaved** per round with the order alternating, and a RATIO recorded per round.
+
+**32x32, 9 rounds x 8 iters (load average 12.6 -- a hostile machine):**
+
+```
+BEND median 1.237 ms  spread 1.188-1.304
+CPU  median 1.242 ms  spread 1.222-1.349
+BEND/CPU median 0.9891  spread 0.9561-1.0376   Q1 0.9876  Q3 1.0214
+1.0 INSIDE the interquartile range -> the gap does NOT exceed the spread
+```
+
+**16x16, 7 rounds x 12 iters:** BEND 1.237 / CPU 1.248, ratio median **0.9903** (0.9537-1.0316),
+Q1 0.9843, Q3 1.0091 -- again 1.0 inside. **BEND is marginally FASTER at both sizes, and the difference
+is inside the noise.**
+
+**AND A 5-ROUND RUN AT THE SAME LOAD SAID THE OPPOSITE**, which is the control that matters: ratio median
+**1.0483**, spread 0.9845-1.1658, "BEND slower in 4 of 5". Same binary, same workload, ~90 minutes apart.
+**A SHORT WINDOW AT HIGH LOAD INVENTS A 5% GAP; THE LONGER INTERLEAVED RUN DOES NOT SEE ONE.**
+
+**⇒ AND THERE IS NOTHING LEFT TO ATTRIBUTE, because the two lanes are the same machinery running the same
+bytes.** MEASURED in `ops_bend.py`: the compiled branch calls
+
+    super().__init__(device, HostAllocator(self), renderers, CPUProgram, arch=... ",native")
+
+-- the SAME `CPUProgram`, the SAME `HostAllocator`, the SAME `arch` string that `CPUDevice.__init__`
+passes (`ops_cpu.py:74`). The ONLY difference is the renderer list (`[PortRenderer]` vs
+`[ClangRenderer, CPULLVMRenderer, LVPRenderer, X86Renderer]`), and the C that renderer produces is
+byte-identical to `ClangRenderer`'s on 37 of 37 kernels (PARITY 12/`ksweep`). So the Program/compile path
+is not a candidate: it IS the same path.
+
+**⇒ SO "THE FASTEST POSSIBLE" NOW HAS A NUMBER INSTEAD OF AN UNCLAIMED OPTIMUM, AND THE NUMBER IS A
+RESOLUTION: BEND/CPU = 0.99 +/- 0.03 at 32x32 and 16x16 on this machine.** Below that band this
+instrument cannot rank the two lanes, and no port-side change can be credited inside it. Anything
+faster than the CPU device would have to come from tinygrad's own emit and schedule (shared by both
+lanes) or from hardware, which is what §13's "the lever is not in the port" says in other words.
