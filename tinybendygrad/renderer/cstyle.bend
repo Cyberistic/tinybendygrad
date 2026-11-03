@@ -2019,6 +2019,9 @@ def render_access(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, +sdt: S.Dt, +name
 def render_cast(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, op: O.Op, img: Bool, val: String) -> String:
   String.concat(["(", render_type(dev, d, numel, a, op, img), ")(", val, ")"])
 
+def render_cast_p(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, op: O.Op, img: Bool, +val: List<&2, String>) -> List<&2, String>:
+  List.concat(&2, String, [[String.concat(["(", render_type(dev, d, numel, a, op, img), ")("])], val, [")"]])
+
 # ===========================================================================
 # `render_index` -- cstyle.py:168-173. SIX branches in Python and they reduce to
 # TWO, and the reduction is the interesting part of this def:
@@ -2288,8 +2291,9 @@ def ku_const_cast_f32(+dt: S.Dt, +dev: U32, k: KU, +f: F32) -> String:
               U.f32_repr(f)))))
 
 # THE GENERIC CAST: `f"({ctx.render_cast(x, ctx[x.src[0]])})"` (cstyle.py:40).
-def ku_cast_generic(dev: U32, +k: KU, +r: Rows) -> String:
-  String.concat(["(", render_cast(dev, KU.dtype(k), KU.numel(k), KU.addr(k), O.OpsCAST{}, False{}, rt(r, KU.src0(k))), ")"])
+def ku_cast_generic(dev: U32, +k: KU, +r: Rows) -> List<&2, String>:
+  List.concat(&2, String, [["("], render_cast_p(dev, KU.dtype(k), KU.numel(k), KU.addr(k), O.OpsCAST{},
+    False{}, rtp(r, KU.src0(k))), [")"]])
 
 # ===========================================================================
 # `render_index` -- cstyle.py:169-174. THE `KU`-WORLD TWIN OF THIS FILE'S
@@ -2311,25 +2315,29 @@ def ku_cast_generic(dev: U32, +k: KU, +r: Rows) -> String:
 #   * the GLOBAL arm is `(buf+idx)`, and the index's parens are stripped ONLY
 #     when the index's OWN arg is `Ops.ADD`.
 # ===========================================================================
-def ku_const_cast_flt.go(m: Maybe<&1, F32>, dev: U32, +k: KU, +r: Rows) -> String:
+def ku_const_cast_flt.go(m: Maybe<&1, F32>, dev: U32, +k: KU, +r: Rows) -> List<&2, String>:
   match m:
-    case Some{f}: ku_const_cast_f32(KU.dtype(k), dev, k, f)
+    case Some{f}: [ku_const_cast_f32(KU.dtype(k), dev, k, f)]
     case None{}: ku_cast_generic(dev, k, r)
 
-def ku_const_cast_flt(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_const_cast_flt(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_const_cast_flt.go(ku_const_float_at(kus, KU.src0(k)), dev, k, r)
 
-def ku_const_cast2.go(m: Maybe<&1, H.I64>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_const_cast2.go(m: Maybe<&1, H.I64>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   match m:
-    case Some{i}: ku_const_cast_int(KU.dtype(k), dev, k, i)
+    case Some{i}: [ku_const_cast_int(KU.dtype(k), dev, k, i)]
     case None{}: ku_const_cast_flt(dev, k, kus, r)
 
-def ku_const_cast2(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_const_cast2(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_const_cast2.go(ku_const_int_at(kus, KU.src0(k)), dev, k, kus, r)
 
-def ku_const_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
-  Bool.pick(String, ku_is_const_at(kus, KU.src0(k)),
-    ku_const_cast2(dev, k, kus, r), ku_cast_generic(dev, k, r))
+def ku_const_cast_by(b: Bool, +dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  match b:
+    case True{}: ku_const_cast2(dev, k, kus, r)
+    case False{}: ku_cast_generic(dev, k, r)
+
+def ku_const_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  ku_const_cast_by(ku_is_const_at(kus, KU.src0(k)), dev, k, kus, r)
 
 def ku_render_index.aluconst.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                                  +r: Rows) -> String:
   match m:
@@ -2366,7 +2374,7 @@ def ku_text_range(dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: R
 # of `ku_text_go` called the outer one, which called the inner one, so a CAST line evaluated
 # `ku_is_const_at` twice and BOTH arms twice: `ku_const_cast2` and `ku_cast_generic` each ran twice and one of
 # each was thrown away. MEASURED in `PARITY.md` §38. One call, byte-identical.
-def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_const_cast(dev, k, kus, r)
 
 # ===========================================================================
@@ -2479,7 +2487,7 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, 
     case O.OpsENDIF{}: ["}"]
     case O.OpsIF{}: [ku_text_if(dev, k, kus, r)]
     case O.OpsBACKEDGE{}: [ku_text_backedge(dev, k, kus, r)]
-    case O.OpsCAST{}: [ku_text_cast(dev, k, kus, r)]
+    case O.OpsCAST{}: ku_text_cast(dev, k, kus, r)
     case O.OpsBITCAST{}: [ku_text_bitcast(dev, k, kus, r)]
     case O.OpsBARRIER{}: [barrier.of(dev)]
     case O.OpsINDEX{}: [ku_render_index(dev, k, kus, r)]

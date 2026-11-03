@@ -4301,3 +4301,42 @@ the A/B is the arbiter, and it says 0.905.
 proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec 7/7 · emit-mm and emit-f64 byte-identical
 ```
+
+## 97. THE CAST ARM JOINS THE PIECE PATH: 0.9671 AND 0.9265, 35 OF 54 ROUNDS
+
+§96 converted the ALU path and the statement assembly. The non-ALU arms still materialised a String and
+handed it to the one-piece wrapper. This section converts the largest of them -- CAST, which §89's ablation
+priced at 0.69 ms, the renderer's most expensive class.
+
+### 97.1 What changed
+
+```
+ku_cast_generic      String.concat(["(", render_cast(..., rt(r, src0)), ")"])
+                     -> List.concat([["("], render_cast_p(..., rtp(r, src0)), [")"]])
+render_cast_p        NEW: ["(" <> render_type <> ")("] Cons val Cons [")"]
+ku_text_cast         -> List<&2, String>
+ku_const_cast/_by    -> pieces; the const arms wrap their String, the generic arm Conses
+ku_const_cast2       -> pieces, so the int/float arms wrap and the fallthrough Conses
+```
+
+The source's TEXT is now Consed into the cast expression instead of copied into it -- one fewer copy per
+cast -- and `render_type`'s output, which is itself a string, becomes a single piece.
+
+### 97.2 Measured
+
+```
+same C: True | bytes: 4426
+run 1 (24 rounds): before 4.50 ms  after 4.35 ms   median 0.9671   14/24
+run 2 (30 rounds): before 4.55 ms  after 4.20 ms   median 0.9265   21/30
+```
+
+**35 OF 54 ROUNDS, BOTH MEDIANS UNDER THE KEEPER LINE -- ~4% ON THE TURN.**
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec 7/7 · emit-mm and emit-f64 byte-identical
+```
+
+**⇒ AND THE DECOMPOSITION ON THE §96 BUILD WAS `stub 0.38 / decode 1.64 / render 2.85`**, so the render is
+now 58% of the turn, decode 34%, protocol 8%. LOAD, STORE and INDEX remain un-converted; §89 measured LOAD
+and INDEX at noise, so CAST was the only one of the four with a price.
