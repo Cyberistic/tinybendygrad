@@ -7832,6 +7832,123 @@ def cf.top(keep: Bool, fuel: Nat, +ar: Arena, i: U32) -> H.I64:
 def UOp.const_factor(fuel: Nat, +ar: Arena, +i: U32) -> H.I64:
   cf.top(cf.keep(Arena.op(ar, i)), fuel, ar, i)
 
+# `UOp.divides` -- ops.py:1069, "self / v as the same shape, or None when it is not exact".
+#
+# THE STACK ARM IS NOT PORTED AND THE REASON IS MEASURED: it is a FOLD over the srcs, so a def
+# that answers one node and a def that answers a list would call each other, and Bend has no
+# forward declarations to express that (the same wall `const_factor`'s TODO recorded -- which the
+# FLATTENING got past there is unavailable here, because this arm REBUILDS a STACK rather than
+# collecting a gcd). A STACK operand therefore DECLINES here where CPython rebuilds it. That is a
+# gap, named, and the arms that ARE written are a tree recursion with no list.
+#
+# THE ANSWER IS A RECORD AND NOT A `Maybe<Found>`: the ADD and MUL arms need TWO chained
+# self-calls and then a decision on both, and a `match` may not scrutinise a local binder -- so
+# `ok` travels in a `Dv` and the decision happens in a def whose PARAMETER it is.
+type Dv is Data:
+  Dv{ok: Bool, f: Found, i: U32}
+
+def Dv.ok(d: Dv) -> Bool:
+  match d:
+    case Dv{ok, f, i}: ok
+
+def Dv.f(d: Dv) -> Found:
+  match d:
+    case Dv{ok, f, i}: f
+
+def Dv.i(d: Dv) -> U32:
+  match d:
+    case Dv{ok, f, i}: i
+
+def dv.no(+f: Found) -> Dv: Dv{False{}, f, 0}
+
+def dv.yes(+f: Found, i: U32) -> Dv: Dv{True{}, f, i}
+
+def dv.is1(+v: H.I64) -> Bool: Cmp.is_eq(H.i64_cmp(v, H.i64_of_i32(1)))
+
+# `self.const_like(self.val//v) if self.val%v == 0 else None`
+def dv.const2(z: Bool, +f: Found, +val: H.I64, +v: H.I64) -> Dv:
+  match z:
+    case True{}:
+      +c = UOp.const(Found.ar(f), CInt{H.i64_div(val, v)})
+      dv.yes(c, Found.i(c))
+    case False{}: dv.no(f)
+
+# `d0 + d1` when BOTH divided; the arena is `db`'s because it is the one that was grown last.
+def dv.add(ok: Bool, +da: Dv, +db: Dv) -> Dv:
+  match ok:
+    case True{}:
+      +m = UOp.alu(Found.ar(Dv.f(db)), OpsADD{}, [Dv.i(da), Dv.i(db)])
+      dv.yes(m, Found.i(m))
+    case False{}: dv.no(Dv.f(db))
+
+# `d0 * self.src[1]` if `src[0]` divided, else `self.src[0] * d1` if `src[1]` did.
+def dv.mul.b(ok1: Bool, +da: Dv, +db: Dv, s0: U32) -> Dv:
+  match ok1:
+    case True{}:
+      +m = UOp.alu(Found.ar(Dv.f(db)), OpsMUL{}, [s0, Dv.i(db)])
+      dv.yes(m, Found.i(m))
+    case False{}: dv.no(Dv.f(db))
+
+def dv.mul.a(ok0: Bool, +da: Dv, +db: Dv, s0: U32, s1: U32) -> Dv:
+  match ok0:
+    case True{}:
+      +m = UOp.alu(Found.ar(Dv.f(db)), OpsMUL{}, [Dv.i(da), s1])
+      dv.yes(m, Found.i(m))
+    case False{}: dv.mul.b(Dv.ok(db), da, db, s0)
+
+# `self // v if self.arg.multiple_of % v == 0 else None`
+def dv.defs3(z: Bool, +f: Found, +v: H.I64, +i: U32) -> Dv:
+  match z:
+    case True{}:
+      +c = UOp.const(Found.ar(f), CInt{v})
+      +q = UOp.alu(Found.ar(c), OpsFLOORDIV{}, [i, Found.i(c)])
+      dv.yes(q, Found.i(q))
+    case False{}: dv.no(f)
+
+def dv.defs2(m: Maybe<&2, U32>, +f: Found, +v: H.I64, +i: U32) -> Dv:
+  match m:
+    case Some{k}: dv.defs3(H.i64_is_zero(H.i64_mod(H.i64_of_i32(k), v)), f, v, i)
+    case None{}  : dv.no(f)
+
+def dv.mo(arg: Arg) -> Maybe<&2, U32>:
+  match arg:
+    case AParam{pa}: ParamArg.multiple_of(pa)
+    case _         : None{}
+
+def dv.defs.op(+ar: Arena, +i: U32, d: Bool, +f: Found, +v: H.I64) -> Dv:
+  match d:
+    case True{} : dv.defs2(dv.mo(Arena.arg(ar, i)), f, v, i)
+    case False{}: dv.no(f)
+
+def dv.const1(+ar: Arena, +i: U32, +v: H.I64, +f: Found) -> Dv:
+  +val = cf.cv(cval_arg(Arena.arg(ar, i)))
+  dv.const2(H.i64_is_zero(H.i64_mod(val, v)), f, val, v)
+
+# The node case. `op` is a PARAMETER because a `match` may not scrutinise `Arena.op(ar, i)`.
+def UOp.divides.op(fuel: Nat, op: Op, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
+  match fuel:
+    case 0n: Dv{False{}, Found{ar, 0}, 0}
+    case 1n++p:
+      match op:
+        case OpsCONST{}: dv.const1(ar, i, v, Dv.f(Dv{False{}, Found{ar, 0}, 0}))
+        case OpsADD{}  :
+          +da = UOp.divides.op(p, Arena.op(ar, Arena.src(ar, i, 0)), ar, v, Arena.src(ar, i, 0))
+          +db = UOp.divides.op(p, Arena.op(ar, Arena.src(ar, i, 1)), Found.ar(Dv.f(da)), v, Arena.src(ar, i, 1))
+          dv.add(Bool.and(Dv.ok(da), Dv.ok(db)), da, db)
+        case OpsMUL{}  :
+          +ma = UOp.divides.op(p, Arena.op(ar, Arena.src(ar, i, 0)), ar, v, Arena.src(ar, i, 0))
+          +mb = UOp.divides.op(p, Arena.op(ar, Arena.src(ar, i, 1)), Found.ar(Dv.f(ma)), v, Arena.src(ar, i, 1))
+          dv.mul.a(Dv.ok(ma), ma, mb, Arena.src(ar, i, 0), Arena.src(ar, i, 1))
+        case _         : dv.defs.op(ar, i, GroupOp.defines(op), Found{ar, 0}, v)
+
+def UOp.divides.one(one: Bool, fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
+  match one:
+    case True{} : Dv{True{}, Found{ar, i}, i}
+    case False{}: UOp.divides.op(fuel, Arena.op(ar, i), ar, v, i)
+
+def UOp.divides(fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
+  UOp.divides.one(dv.is1(v), fuel, ar, v, i)
+
 # `index` -- ops.py:578. `UOp(Ops.INDEX, src=(self,)+tuple(new_srcs))`, and above it
 # a guard: a STACK indexed by ONE CONST is not an INDEX at all, it is that element
 # of the STACK's own srcs. `st.index(1)` answers `st.src[1]`, and that is the row
