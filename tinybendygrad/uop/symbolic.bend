@@ -3095,13 +3095,33 @@ def sym_247.mk(m: Maybe<&1, O.Found>, +x: F.Folded, +p: U32, +v: U32) -> Maybe<&
       Some{mint_bin(s, O.OpsMUL{}, v, O.Found.i(s))}
     case None{}: None{}
 
+# **THE GUARD `:256`/`:258` CARRY AND THIS BODY DID NOT:**
+#   (x.dtype in dtypes.wints or c.arg == -1) and fits(x, c.vmin+1)
+# `x + x*c` becomes `x*(c+1)`, so the INCREMENTED constant must fit the operand's dtype, and the
+# dtype half exists because a weak operand would promote differently.
+def sym_247.iv(m: Maybe<&2, O.Const>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{O.CInt{i}}: fits(dt, H.i64_add(i, H.i64_of_i32(1)))
+    case _: False{}
+
+def sym_247.ok(+x: F.Folded, +u: U32) -> Bool:
+  +p = sym_247.pp(x, u)
+  +v = sym_247.vv(x, u)
+  Bool.and(Bool.or(dt_in(DTS_INTWEAK(), sy_dt1(x, v)), p_is_const_neg1(x, sym_245.cside(x, p))),
+           sym_247.iv(sy_val(x, sym_245.cside(x, p)), sy_dt1(x, v)))
+
 def sym_247.put(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +p = sym_247.pp(x, u)
   +v = sym_247.vv(x, u)
   sym_247.mk(mint_const_like(mint_ar(sy_ar(x)), x, v, O.CInt{H.i64_of_i32(1)}), x, p, v)
 
+def sym_247.hit(ok: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: sym_247.put(x, u)
+    case _: None{}
+
 def sym_247(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sy_tri_f(sym_247.pat(x, u), sym_247.put(x, u))
+  sym_247.hit(Bool.and(sym_247.pat(x, u), sym_247.ok(x, u)), x, u)
 
 def p_add2(+x: F.Folded, +s: U32) -> Bool:
   Bool.and(sy_is_op(x, s, O.OpsADD{}), sy_nsrc_is(x, s, 2))
