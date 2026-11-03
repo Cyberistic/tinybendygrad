@@ -4498,3 +4498,54 @@ portexec 7/7 · emit-mm and emit-f64 byte-identical
 **⇒ AND THE PIECE HELPERS HAD TO BE HOISTED**: `strip_pieces`/`ku_src_pieces` lived beside the ALU path at
 ~1830 and `ku_render_index.global` sits at ~1627, so the file needed them above their first user -- the
 same forward-reference rule that has shaped every change since §83.
+
+## 101. THE PER-CLASS ABLATIONS ARE CONFOUNDED, AND THE CORRECTION CHANGES WHAT IS ABOVE THE LINE
+
+§98 and §100 named their targets from "ablate an arm to a constant, measure the delta". That method has a
+defect this section found by arithmetic instead of by another run:
+
+```
+49 i64_dec calls measured at 0.38 ms  ->  7.8 us a call
+```
+
+**A DECIMAL RENDER IS TEN DIVISIONS AND TEN CHARACTERS; 7.8 MICROSECONDS IS TWENTY THOUSAND OPERATIONS.**
+It is not the decimal that costs that. **ABLATING A TEXT PRODUCER TO A CONSTANT ALSO SHRINKS THE C**: the 51
+int constants render to 279 characters of the 4,426 the kernel emits, so "return `0`" removes the decimals
+AND six percent of the product, and the delta is both.
+
+### 101.1 The corrected reading
+
+Every per-class figure this record has quoted for a TEXT arm carries that inflation. Scaling by the output
+it removes: CAST's 0.41 ms loses roughly 50 casts x 10 characters = 500 of 4,426 (11%), and `i64_dec`'s
+0.38 loses 279 (6%). **The ranking survives -- CAST is still the largest -- but the magnitudes are upper
+bounds, and a class at 5-6% is at the line, not above it.**
+
+**⇒ AND IT EXPLAINS A PATTERN THAT WAS PUZZLING: the arm-level and part-level ablations kept disagreeing**
+(§98's `cast_all` 0.18 against `i64_dec` 0.65 in the SAME run), because each subtracts a different amount
+of output and each run's baseline drifted under load.
+
+### 101.2 The decomposition, which has no such confound
+
+```
+stub (IPC + frame)   0.34 ms    8%
+decode               1.54 ms   37%
+render               2.28 ms   55%     (2.99 at §96 -> 2.85 -> 2.28; -0.71 across §97-§100)
+                     ------
+                     4.15 ms
+```
+
+**THE RENDER IS DOWN 24% SINCE §96 AND THE DECODE IS NOW 37% OF THE TURN** -- and the decode's attribution
+(§91: 0.9 one linear pass, 0.43 `nums`, 0.2 records; §92: chunking neutral) has no arm left that a code
+change can take without restructuring the runtime's `String.split`.
+
+### 101.3 What is left, corrected
+
+| class | raw ablation | corrected (minus its output share) |
+|---|---|---|
+| CAST | 0.41 ms (10%) | ~0.20 ms (5%) |
+| whole `ku_text` | 0.56 ms (16%) | ~0.20 ms (5%) |
+| ALU / INDEX / LOAD / STORE | -0.08 to -0.45 (noise) | nothing |
+
+**THERE IS NO CLASS ABOVE THE KEEPER LINE LEFT IN THE RENDER**, and the remaining arms (STORE, LOAD,
+BITCAST, RANGE, WMMA, STACK, IF, BACKEDGE, BUFFER, SPECIAL) are each one materialisation of a short string
+that the statement then copies once -- the piece path has taken everything with a price.
