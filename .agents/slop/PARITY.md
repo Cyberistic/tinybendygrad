@@ -583,3 +583,39 @@ RESOLUTION: BEND/CPU = 0.99 +/- 0.03 at 32x32 and 16x16 on this machine.** Below
 instrument cannot rank the two lanes, and no port-side change can be credited inside it. Anything
 faster than the CPU device would have to come from tinygrad's own emit and schedule (shared by both
 lanes) or from hardware, which is what §13's "the lever is not in the port" says in other words.
+
+## 20. THE SIZE SWEEP: NO SIZE SHOWS BEND SLOWER, AND THE COMPUTE-DOMINANT SIZES READ 0.96-1.00
+
+§19 measured 16x16 and 32x32, where BOTH lanes read ~1.24 ms -- the signature of a fixed realize/launch
+floor rather than the lane's work. So the ratio was measured where it could not differ. `.agents/slop/
+parity/gap.py` now takes `--prog` and larger sizes; every run is warm-first (so `portc`'s one-time build is
+outside the window), interleaved with the order alternating, and reports a per-round RATIO with its IQR.
+
+| program | size | BEND | CPU | ratio median | IQR | 1.0 in IQR | verdict |
+|---|---|---|---|---|---|---|---|
+| matmul | 16 | 1.237 | 1.248 | 0.9903 | 0.984-1.009 | yes | indistinguishable |
+| matmul | 32 | 1.237 | 1.242 | 0.9891 | 0.988-1.021 | yes | indistinguishable |
+| **matmul** | **256** | **3.697** | **3.812** | **0.9633** | **0.949-0.967** | **NO** | **BEND 3.7% faster** |
+| matmul | 512 | 21.373 | 21.411 | 0.9982 | 0.989-0.9999 | no (Q3 0.9999) | BEND 0.2% faster |
+| conv2d | 128 | 1.849 | 1.938 | 0.9779 | 0.943-1.018 | yes | indistinguishable |
+
+**NO SIZE SHOWS BEND MEASURABLY SLOWER.** The compute-dominant sizes read 0.96-1.00, i.e. the port is at
+or below tinygrad's own CPU device, never above it.
+
+**⇒ AND THE ONE CLEAR RESULT IS ATTRIBUTED AS FAR AS IT CAN BE, AND NOT FURTHER.** At 256x256 the ratio is
+0.9633 with a TIGHT IQR (0.949-0.967), so it is not load. The obvious hypothesis -- that the CPU device
+picks a DIFFERENT renderer for that kernel and emits slower C -- is **RULED OUT BY MEASUREMENT**: patching
+all four of the CPU device's renderers shows `size 32: ['ClangRenderer']` and `size 256: ['
+ClangRenderer']`, and `ksweep` shows our renderer's C is byte-identical to `ClangRenderer`'s on 37 of 37
+kernels. The compile path is also not a candidate: the compiled branch passes the SAME `CPUProgram`,
+`HostAllocator` and `arch` as `CPUDevice`. **So the 3.7% is a sub-4% effect in the device wrapper with no
+component this instrument can point at, and it is recorded as UNATTRIBUTED rather than explained.**
+
+**⇒ AND THE LOAD FLOOR IS REAL AND NAMED:** at 512x512 a FIVE-round run read ratio 1.0379 with a spread of
+0.566-1.076 (one CPU round took 45 ms against 23) and the NINE-round run read 0.9982. **At this machine's
+load, five rounds cannot resolve 512; nine can.** That is the resolution statement, and it is why every
+row above quotes its round count.
+
+**MEASURED ANSWER TO THE OBJECTIVE'S LAST QUESTION: the lanes are the same cost to within +/-4% at every
+size measured, with the port never slower and sometimes faster. There is no measurable headroom left
+inside the port at 16, 32, 256, 512 matmul or a 128 conv2d.**

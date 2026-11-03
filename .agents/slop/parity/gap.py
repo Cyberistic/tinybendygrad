@@ -30,21 +30,33 @@ from tinygrad import Context, Tensor  # noqa: E402
 
 
 def mats(size: int):
+  # np arrays, not `.tolist()`: at 512 a list round-trip dominates the setup and is not part of anything
+  # being measured.
   rng = np.random.default_rng(7)
-  return [np.asarray(rng.random((size, size), dtype=np.float32)).tolist() for _ in range(3)]
+  return [rng.random((size, size), dtype=np.float32) for _ in range(3)]
+
+
+def conv_inputs(size: int):
+  rng = np.random.default_rng(7)
+  return (rng.random((1, 1, size, size), dtype=np.float32),
+          rng.random((4, 1, 3, 3), dtype=np.float32))
 
 
 def one(dev: str, iters: int) -> float:
   """median ms per realize, on `dev`, with the kernel already warm (render + compile done)."""
   with Context(DEV=dev):
-    ms = mats(int(dev_size))
-    ts = [Tensor(m).realize() for m in ms]
-    a, b, c = ts
-    _ = ((a @ b) @ c).realize().numpy()
+    if dev_prog == "conv":
+      x, w = (Tensor(v).realize() for v in conv_inputs(int(dev_size)))
+      run = lambda: x.conv2d(w, padding=1).realize()   # noqa: E731
+    else:
+      ts = [Tensor(m).realize() for m in mats(int(dev_size))]
+      a, b, c = ts
+      run = lambda: ((a @ b) @ c).realize()            # noqa: E731
+    _ = run().numpy()
     xs = []
     for _i in range(iters):
       t = time.perf_counter()
-      out = ((a @ b) @ c).realize()
+      out = run()
       xs.append((time.perf_counter() - t) * 1000.0)
     _ = out.numpy()
   return statistics.median(xs)
@@ -55,14 +67,17 @@ def main() -> int:
   ap.add_argument("--size", type=int, default=32)
   ap.add_argument("--iters", type=int, default=8)
   ap.add_argument("--rounds", type=int, default=5)
+  # ADDS A PROGRAM WHERE COMPUTE, NOT LAUNCH OVERHEAD, IS THE COST: at 16 and 32 both lanes read ~1.24 ms,
+  # which is the signature of a fixed realize/launch floor rather than the lane's work.
+  ap.add_argument("--prog", choices=("matmul", "conv"), default="matmul")
   args = ap.parse_args()
-  global dev_size
-  dev_size = args.size
+  global dev_size, dev_prog
+  dev_size, dev_prog = args.size, args.prog
 
   # WARM BOTH LANES FIRST: the port's renderer build is one-time and must not land in a timed window.
   one("BEND", 2), one("CPU", 2)
 
-  print(f"# size {args.size}x{args.size}  iters {args.iters}  rounds {args.rounds}  (median ms per realize)")
+  print(f"# prog {args.prog}  size {args.size}  iters {args.iters}  rounds {args.rounds}  (median ms per realize)")
   print(f"{'round':>5} {'BEND':>9} {'CPU':>9} {'BEND/CPU':>9}")
   ratios, bends, cpus = [], [], []
   for r in range(1, args.rounds + 1):
@@ -92,6 +107,6 @@ def main() -> int:
   return 0
 
 
-dev_size = 32
+dev_size, dev_prog = 32, "matmul"
 if __name__ == "__main__":
   sys.exit(main())
