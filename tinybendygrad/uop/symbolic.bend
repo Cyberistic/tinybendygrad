@@ -5855,10 +5855,39 @@ def sym_290.put(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32, +a: U32) -> Maybe<
       Some{mint_bin(s, O.OpsCMPLT{}, sy_src1(x, a), O.Found.i(s))}
     case None{}: None{}
 
+# **THE GUARD `:304` CARRIES AND THIS BODY DID NOT: `fits(x, c1.vmin-c0.vmin)`.**
+# The constant moves across the comparison as `c1-c0`, so the DIFFERENCE must fit the operand's dtype;
+# both payloads are READ and SUBTRACTED rather than read off a node, because a `sy_val` of an ALU
+# node is `None{}` -- the mistake `:255` was reverted for.
+def sym_290.cv(m: Maybe<&2, O.Const>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{O.CInt{i}}: Some{i}
+    case _: None{}
+
+def sym_290.sub(m: Maybe<&1, H.I64>, n: Maybe<&1, H.I64>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{+p}:
+      match n:
+        case Some{+q}: Some{H.i64_sub(p, q)}
+        case None{}: None{}
+    case None{}: None{}
+
+def sym_290.fit(m: Maybe<&1, H.I64>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{+v}: fits(dt, v)
+    case None{}: False{}
+
+def sym_290.hit(ok: Bool, +x: F.Folded, +u: U32, +a: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}:
+      sym_290.put(mint_const_like(mint_ar(sy_ar(x)), x, sy_src0(x, a), O.CInt{H.i64_of_i32(4294967295)}), x, u, a)
+    case _: None{}
+
 def sym_290.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +a = sy_src0(x, u)
-  m = mint_const_like(mint_ar(sy_ar(x)), x, sy_src0(x, a), O.CInt{H.i64_of_i32(4294967295)})
-  sym_290.put(m, x, u, a)
+  sym_290.hit(sym_290.fit(sym_290.sub(sym_290.cv(sy_val(x, sy_src1(x, u))),
+                                      sym_290.cv(sy_val(x, sy_src0(x, a)))),
+                                 sy_dt1(x, sy_src1(x, a))), x, u, a)
 
 def sym_290(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_290.pat(x, u), sym_290.mk(x, u))
