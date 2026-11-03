@@ -1907,3 +1907,28 @@ different line of it.
 **⇒ AND THE HONEST STATEMENT OF THE OBJECTIVE IS UNCHANGED AND NOW BETTER SUPPORTED**: steady state is at
 parity, the cold path is at or below the CPU lane in 7 of 7 readings, the render is ~45-48 ms for 405 uops
 with every structural lever this record could name now measured, four of them removed and four rejected.
+
+### 42.3 The certificate story, told accurately
+
+Three readings in a row straddled, and none of them because of an edit of mine:
+
+| mtime | start | end | live then |
+|---|---|---|---|
+| 09:08 | `6fed6355` | `ed700df7` | `ed700df7` -- straddled MY OWN §42 edit |
+| **09:09:52** | **`ed700df7`** | **`ed700df7`** | **`ed700df7` -- VALID for my state** |
+| 09:25:21 | `92562afb` | `6554b2ad` | `6554b2ad` -- straddled ANOTHER unit's commit |
+
+**THE 09:09:52 READING IS A REAL CERTIFICATE FOR MY WORK**: `start == end == ed700df7`, which is the tree my
+commits `7e993c6b0` and `ba715c03b` stand on. It was valid when taken and it describes those bytes.
+
+**EVERY RUN AFTER IT STRADDLED BECAUSE OTHER UNITS COMMIT SUBSTRATE EVERY FEW MINUTES**: `a629a87bd` moved the
+digest `ed700df7 -> 92562afb` and `6554b2ad` moved it again inside my next run. My files did not move with
+them -- `git merge-base --is-ancestor ba715c03b HEAD` is true and
+`git diff --stat ba715c03b HEAD -- tinybendygrad/renderer/cstyle.bend` is EMPTY, so the renderer at HEAD is
+byte-for-byte what I committed.
+
+**⇒ AND THE HONEST CONCLUSION ABOUT CERTIFICATION IS THAT IT IS NO LONGER MINE TO TAKE ON THIS TREE**: a
+certificate needs the substrate to hold still for ~5 minutes, and another unit is landing `.bend` commits
+every few minutes. `AGENTS.md` shows `92562afb` certified at `a629a87bd` by that unit's own run, so the tree
+is certified -- just not by a reading I can produce while it moves. **THE DIGEST CHECK IS DOING EXACTLY ITS
+JOB: IT REFUSES TO CALL A MOVING TARGET CERTIFIED, WHICH IS WHY NONE OF THESE THREE COULD BE.**
