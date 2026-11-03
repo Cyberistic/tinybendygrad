@@ -3449,6 +3449,25 @@ def sym_292(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_292.pat(x, u), sym_292.c(sy_val(x, sy_src1(x, u)), x, u))
 
 
+# symbolic.py:458  (UPat(Ops.STORE, src=(UPat(), invalid_pat), name="x"),
+#                     lambda i,x: UOp(Ops.NOOP).after(*x.src))
+# A STORE WHOSE VALUE IS INVALID STORES NOTHING: the node becomes `NOOP.after(*srcs)`, which is
+# an AFTER over a fresh NOOP and the store's own srcs -- the effect keeps its dependencies and
+# loses its write.
+def sym_458.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTORE{}), sy_nsrc_is(x, u, 2)),
+    p_invalid(x, sy_src1(x, u)))
+
+def sym_458.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +n = O.UOp.new(sy_ar(x), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
+  # `NOOP.after(*srcs)` IS `AFTER(noop, *srcs)`: the NOOP is the FIRST SOURCE and the store's
+  # own srcs follow it. The first version dropped it and answered `(after (index b c0) bad)`.
+  Some{O.UOp.new(O.Found.ar(n), O.OpsAFTER{},
+    List.append(&2, U32, [O.Found.i(n)], O.Arena.srcs(O.Found.ar(n), u)), O.ANone{}, O.TNone{})}
+
+def sym_458(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_458.pat(x, u), sym_458.mk(x, u))
+
 # symbolic.py:318  an AFTER waits only on the EFFECT ops; any other dependency is replaced by
 # ITS OWN SRCS, and the result is deduped:
 #   x.replace(src=(x.src[0],)+tuple(dedup(flatten([(y,) if y.op in FENCE else y.src
@@ -3972,10 +3991,11 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{94, [O.OpsAFTER{}], Nil{}, },   # 318
     O.PMEntry{95, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
     O.PMEntry{96, [O.OpsEND{}], Nil{}, },   # 324
-    O.PMEntry{97, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{98, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{99, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{100, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{97, [O.OpsSTORE{}], Nil{}, },   # 458
+    O.PMEntry{98, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{99, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{100, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{101, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -4349,7 +4369,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 96, 97, 98, 99, 100]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 96, 97, 98, 99, 100, 101]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4420,10 +4440,11 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 93: sym_316(x, u)
     case 94: sym_318(x, u)
     case 96: sym_324(x, u)
-    case 97: sym_462(x, u)
-    case 98: sym_463(x, u)
-    case 99: sym_464(x, u)
-    case 100: sym_444(x, u)
+    case 97: sym_458(x, u)
+    case 98: sym_462(x, u)
+    case 99: sym_463(x, u)
+    case 100: sym_464(x, u)
+    case 101: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
