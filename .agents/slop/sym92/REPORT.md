@@ -1031,3 +1031,37 @@ THE THREE GUARDS THAT WERE REVERTED THIS SESSION ARE ALL THE SAME LESSON FROM TH
 suppressed a live rule until the bounds table was rebuilt, `:255` suppressed it because `sy_val` on a
 sum is `None{}`, and `:283` could not be read at all because its fixture had one point of range.
 **IN ALL THREE THE PROBE, NOT THE RULE, WAS THE THING THAT COULD NOT ANSWER.**
+
+## 30. THE CORPUS IS RED, AND IT IS NOT THIS LANE — measured across three versions
+
+MEASURED 2026-11-04. `checks/differ.py run` on the tree says:
+
+    graphs=38  agree=31  disagree=7  expect-moved=7  selfcheck=# SELFCHECK: FAIL
+    disagreeing: binblob, bw, commute, flip, gral, matmul, reduce
+
+`AGENTS.md` records a green 38/38 taken 2026-10-31. **THIS LANE DID NOT CAUSE IT**, and that is a
+measurement and not a defence: the same run was taken three times with three different
+`uop/symbolic.bend` versions and the count did not move.
+
+    HEAD              1304e7b1    agree 31  disagree 7
+    pre-`sy_trunc`    88d71f86    agree 31  disagree 7
+    pre-session       45918bfa    agree 31  disagree 7
+
+The last of the three is the file as it stood BEFORE this session's first commit, so the 7
+disagreements were already there and belong to another unit's committed work. `reduce`'s row shows
+`CONST 5/3`: the port emits THREE const nodes where CPython emits five, which is a folding difference
+and not a symbolic-rule difference.
+
+AND THE RUN IS NOT HEALTHY INDEPENDENTLY OF THAT: `not-comparable=38`, `byte-identical=0`, and
+`selfcheck=# SELFCHECK: FAIL` with *"the `pI(` form is DEAD on both sides"* and *"the `params` plant
+does not change the `pI(` row"*. That is the `prog` graph's `ProgramInfo` lane, which this session
+never touched.
+
+**SO THE GOVERNING LINE "the corpus is 38 of 38" IS A RECORD OF A RUN AND NOT A STANDING FACT, and
+the DOSE OF STALENESS HAS A NAME THIS TIME: seven graphs, none of them a symbolic graph, plus a dead
+`pI(` form on both sides.** Restoring 38/38 is somebody's next task and it is not a `symbolic.py`
+task.
+
+THE METHOD IS REUSABLE AND CHEAP: `git show <rev>:tinybendygrad/uop/symbolic.bend > /tmp/x`,
+`cp` it in, run, `cp` back. Three runs, ~100 s each, and the answer is a count that either moves or
+does not. **A CLAIM OF "NOT MINE" IS ONLY WORTH ANYTHING IF IT IS TAKEN THIS WAY.**
