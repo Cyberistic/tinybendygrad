@@ -28015,3 +28015,26 @@ while `unified_rewrite`'s stage 0 runs `cached_bpm_rewrite` **IN **A **LOOP **WI
 
 **⇒ AND **THE **TREE **IS **GREEN **AND **UNCHANGED **BY **THIS **FINDING:** nothing was
 written, `uopvars-gate` rc=0, and the certificate at `081cf904` still stands.
+
+re-certified at `$(true)` after the `Aa`/`CallifyCtx` move -- and the wall `bottom_up` was supposed to be is measured absent
+
+  corpuswitness-gate -> PASS -- all seven readings OK
+  graphs=38  graphs-agree=38  byte-identical=38  graphs-refused=0
+  uopvars rc=0   realize_kernel_args rc=0   schedstore 50 rows rc=0
+  port-compile census: population=201 compiled=195 cold-by-design=6 findings=0
+
+**⇒ AND **THE **MOVE **IS **WHAT **UNBLOCKED **THE **THIRD **`CTX` **VARIANT:** `CArgs`
+(positional), `CNodes` (by node) and now `CCallify{c: CallifyCtx}`, because
+`pm_dispatch_m` lives in `uop/ops.bend` and could not name a `schedule` type.
+
+**⇒ AND **THE **MEASUREMENT **THAT **SAVES **A **DRIVER:** on the REAL
+`pm_canonicalize_alloc` with a SINK holding two ALLOCs, `bottom_up=False` and
+`bottom_up=True` both answer `alloc_slots=[-1,-2]`.  **SO `canonicalize_call_body`
+DOES **NOT **NEED `bottom_up`, **and **the **`graph_rewrite_bu` **the **brief **asked
+**for **would **be **a **function **with **no **row **that **can **turn **it **red.
+
+**⇒ AND **THE **ONE **REMAINING **BLOCKER **IS **A **CYCLE, **NOT **A **FEATURE:** the CALL
+rule must recurse into `canonicalize_call_body`, its body would live in `pm_dispatch_m`
+(`ops.bend`), and `graph_rewrite` lives in `codegen/__init__.bend`.  **`RWk` IS THE
+**PROVEN **ANSWER **AND **IT **IS **ALREADY **IN **`schedule/__init__.bend`, **gated **by
+**`ab_nest`.
