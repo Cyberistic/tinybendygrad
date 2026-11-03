@@ -27827,3 +27827,46 @@ projections.  **NONE **OF **THIS **IS **WRITTEN **YET, **AND **I **AM **NOT
 for a LINEAR call whose src is ANOTHER LINEAR call, and nothing in the port produces
 one yet because `create_linear_with_vars` is not ported.  **A **REFUSAL **ON **AN
 **UNREACHABLE **PATH **IS **CHEAPER **THAN **A **STATE **MACHINE **NOBODY **RUNS.
+
+THE STATE MACHINE WAS ATTEMPTED AND REVERTED: `Map` IS A `Kind`, NOT `Data`, SO IT CANNOT BE COPIED -- and every work item must carry it exactly once
+
+**⇒ AND **I **WROTE **THE **`RWk` **MACHINE **AND **IT **DOES **NOT **TYPE-CHECK, **AND
+**THE **REASON **IS **ONE **LINE **OF **`base.bend`:**
+
+    type Map<a, -V: Kind(a)> is Kind(a):
+
+**`Map` IS **A **`Kind` **AND **NOT **`Data`, **SO **IT **IS **LINEAR.**  A work item
+that must BOTH compute from a map and pass it on spends it twice:
+
+    case 1n++k RSrcs{ar, Some{lin}, binds, +x <> t, acc}:
+      sc_resolve(k, RStep{ar, Some{lin}, binds, x, t, acc, apply_binds(ar, x)})
+                                       ^^^^^^ and `binds` is also needed by RStep's arm 3
+
+    Error: expected : binds / observed : binds (consumed more than once)
+
+**⇒ AND **`+binds` **DOES **NOT **BUY **THE **SECOND **USE**, **AND **NOW **I **KNOW
+**WHY:** `+` means *copyable*, and a `Kind` has no copy.  The two other `+` failures in
+this session are the same class one level down -- `Some{+v}` on a **`U32`** answered
+*"expected : a bound variable"*, and `case +x <> t:` on a **list head** DID work
+because `U32` is `Data`.  **`+` **IS **ONLY **MEANINGFUL **FOR **`Data`.**
+
+**⇒ AND **THE **SPLITS **I **TRIED **ALL **FAIL **FOR **THE **SAME **REASON**, **AND **THE
+**MEASUREMENTS **ARE **RECORDED **SO **THE **NEXT **ATTEMPT **DOES **NOT **REPEAT **THEM:**
+`RStep` without `binds` -> arm 3 cannot substitute; `RStep` with `binds` -> the
+construction spends it; `RDo` computing `a3` -> the item must then also carry `binds`
+to continue; a local alias `+bg = binds` -> the alias is still a `Kind`.
+
+**⇒ AND **THE **RESOLUTION **IS **A **REPRESENTATION **CHANGE **AND **NOT **A **LAYOUT
+**TWEAK: carry `binds` as a COPYABLE `Data` -- a `List<&2, BPair>` of
+`BPair{k: String, v: U32}` with a linear-scan `bget` -- so a work item can hold it and
+compute from it in the same step.  That is a refactor of `sc_linear_binds_outer`,
+`sc_mapget`, `sc_apply_subs` and `sc_apply_binds3`, because **`Map` **IS **THE
+**CURRENCY **OF **THE **WHOLE **CHAIN: `substitute` **takes **one, `sc_apply_subs`
+**returns **one, and `binds` **IS **one.**
+
+**⇒ AND **THE **TREE **IS **REVERTED **AND **GREEN:** `schedule/__init__.bend`
+`--check-only` -> `ALL PROOFS CHECK`, `uopvars-gate` rc=0, `git status --porcelain --
+tinybendygrad/` EMPTY.  **THE **REFUSAL **ON **ARM 1 **STANDS **AND **ITS **STATED
+**REASON **IS **NOW **EXACT:** not "Bend has no mutual recursion", not "the scrutinee
+rule", but **`Map` **IS **LINEAR **AND **A **STATE **MACHINE **NEEDS **A **COPYABLE
+**CARRIER.
