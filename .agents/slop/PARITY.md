@@ -4204,3 +4204,52 @@ itself -- pieces Consed, joined once -- and its prize is the 78.2% bucket, not a
 The estimate in §93 (2.33 ms of copying) stands as an upper bound on that prize; the five sites under
 `st_pay_x` total 12,000 characters, i.e. about 1.2 ms of the nested work, and they are re-copied because
 they are nested, not because any single call is slow.
+
+## 95. THE PIECE-LIST TRANSFORMATION: ATTEMPTED, PLUMBED, AND THE BLOCKER IS `strip_parens`
+
+§93 specified the transformation. This section started it. The storage layer was written and compiles:
+
+```
+type Rows is Data:
+  Rows{ts: List<&2, List<&2, String>>, n: U32}     -- pieces per uop, not a string
+
+def rtp(+r: Rows, +i: U32) -> List<&2, String>     -- the pieces
+def rt(+r: Rows, +i: U32) -> String: String.join(rtp(r, i), "")   -- the 21 non-ALU sites are unchanged
+def st_put(+st, x: String) -> St: st_put.p([x], st)               -- storage is uniform: a 1-piece list
+def st_set(+st, i, x: String) -> St: st_set.p(st, i, [x])         -- and st_set.p takes pieces
+```
+
+`ksweep 37 of 37` on both decoders with it in place, i.e. the plumbing is correct and **buys nothing on its
+own**: `ku_text` still returns a String, so every list holds one fully-built piece and every character is
+still copied.
+
+### 95.1 The blocker, and it is not the size
+
+The ALU path cannot simply Cons its sources, because `ku_alu_srcs` STRIPS PARENTHESES from a source that
+has the parent's own op:
+
+```
+Bool.and(O.eq_op(ku_op_at(kus, h), op), ku_strips(op)) -> H.strip_parens(rt(r, h))
+```
+
+`H.strip_parens` is `String.take(String.drop(s, 1n), len - 2n)` -- it needs the CHARACTERS, so a source's
+pieces would have to be joined before stripping, and the copy comes back exactly where the amplification
+lives (`(a+b)+c` chains are the deep ones, and they are the ones that strip).
+
+**THE FIX IS KNOWN AND CLEAN**: `cfo_bin` builds `["(", ...a..., sym, ...b..., ")"]`, so a source built by
+the ALU path ALWAYS has `(` as its first piece and `)` as its last. Stripping is then dropping the first
+and last PIECE -- a fold over pieces, O(pieces) and ZERO characters copied. That is a new
+`strip_pieces` and it is the load-bearing piece of the whole transformation.
+
+### 95.2 What is left, and why it is not in this commit
+
+With the plumbing in place and `strip_pieces` designed, the rest is mechanical and large: `ku_text`'s return
+and its 20 arms (the 19 non-ALU arms wrap, the ALU arm passes through), the 9 `cfo_*` plus `cfo_xs1..3`
+and `xs_at` to pieces, `code_for_op.of` / `code_for_clang.of` / `code_for_base.of`, and `_render.plain` /
+`decl` / `named` / `range` / `special` / `stmt` / `emit` to carry `l` as pieces and `String.join` once.
+
+**IT IS REVERTED, AND THE REASON IS THE ONE RULE THAT HAS HELD ALL SESSION: A CHANGE THAT MEASURES NOTHING
+DOES NOT LAND.** The plumbing alone is neutral by construction (one-piece lists), and shipping it would put
+a type change through the renderer -- and a corpus re-run -- for zero. The next unit of work is
+`strip_pieces` plus the arms, and it is a single coherent change; doing half of it is what makes a
+renderer broken rather than slow.
