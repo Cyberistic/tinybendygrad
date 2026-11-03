@@ -187,3 +187,33 @@ ops in one row, because the pattern is `GroupOp.Binary` and the op is CARRIED).
 2. **EVERY MINT READS THE ARENA ITS LAST OPERAND OPENED.** `mint_one_sub` (`:465-467`) built the
    MUL from the arena *before* the negated const, so its second src named an index that arena did
    not hold and the answer rendered `?`. One arena late is a silent hole, not an error.
+
+## 2026-11-03 (final, 2): 134 of 141
+
+`gates/symrules-cases.rows`: **223** graphs, **223 of 223 agree**. `symrules-gate` rc=0:
+**134 entries, 134 mapped, 0 broken, 0 unresolved**. `symclosure-gate` PASS: **132 rows,
+101 mint arms**. `PROOF-ALL`: `ALL PROOFS CHECK`.
+
+`:299` (`lt_folding`) landed and was NOT gated on `const_factor` -- `pop_const(MUL)` answers the
+factor directly. Its three spelling-only-right-once facts are in the commit message; the one that
+matters most is that `ns` holds the TERM and `ps` the POPPED node, and swapping them gives a wrong
+ANSWER (`mul x c0`) rather than a crash.
+
+### Seven remain. Each is now a NAMED missing def, not a guess
+
+| citation | what is missing |
+|---|---|
+| `symbolic.py:193` | an **int -> `F32` conversion**. The rule is `math.log2(c.val)` then `.exp2()`; `F32.log2` exists and folds a `CFloat`, and `f32_of` answers `0.0` for a `CInt`, which is a LIE for this rule. Nothing in `helpers.bend`/`base.bend` converts an `I64` to `F32` -- `base.bend:54` has only `F32.from_bits`. |
+| `symbolic.py:252` | **nothing -- it is DEAD UPSTREAM.** Its pattern raises `NotImplementedError` from `shape` when constructed, and no fixture fires on either side. |
+| `symbolic.py:259` | `bool_slice` + `substitute` (TODOs in `fold.bend`). |
+| `divandmod.py:108` | `const_factor` (`ops.py:1048`) + `divides`, for the ~7 arms of `fold_divmod_general` that `divandmod.bend` does not have. Composed once, measured, REVERTED. |
+| `symbolic.py:436` | `uop_given_valid` + `bool_slice`. |
+| `symbolic.py:437` | the same, plus the `IMAGE` ContextVar. |
+| `symbolic.py:451` | `xpow_int` (`transcendental.py:267-282`): square-and-multiply over the exponent's bits with `& udt.max` masking. `xpow` (the float arm) IS ported, and a float-only row would decline on every int POW -- the `divandmod:108` defect again, so it is not shipped. |
+
+### The scoreboard for the session
+
+`symbolic.py` and its two companion tables went from **116 PORTED / 25 MISSING** to
+**134 PORTED / 7 MISSING**, and every one of the 18 that moved was measured against CPython on
+both sides: `:302`, `weak.py:89`, the nine `movement.py` rows, `:469`, `:171`, `:465`, `:466`,
+`:467`, `:309` (with `UOp.overflows` WRITTEN), `:312`, `:299`.
