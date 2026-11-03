@@ -2291,3 +2291,8 @@ trust because it holds the C identical and interleaves 14 times.
 
 `ksweep 37 of 37 on BOTH decoders`, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`, `opbattery 39 of 39`,
 and the §49/§50 artifacts emit the SAME C on the 405-uop wire.
+
+### 50.4 The certificate
+
+`substrate-start = substrate-end = live = 2ffdeda54a59...`, 38 graphs, 38 answered, 38 agree, 0 refused,
+38 byte-identical. `618fe7d65` -- the op index table -- moves no byte.
