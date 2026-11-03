@@ -1932,3 +1932,43 @@ certificate needs the substrate to hold still for ~5 minutes, and another unit i
 every few minutes. `AGENTS.md` shows `92562afb` certified at `a629a87bd` by that unit's own run, so the tree
 is certified -- just not by a reading I can produce while it moves. **THE DIGEST CHECK IS DOING EXACTLY ITS
 JOB: IT REFUSES TO CALL A MOVING TARGET CERTIFIED, WHICH IS WHY NONE OF THESE THREE COULD BE.**
+
+## 43. A COST MAP BY PLANT: WHAT EACH COMPONENT IS WORTH, MEASURED BY REMOVING IT
+
+Every attempt to *find* the render's 24 ms by reading code has produced a candidate that measured neutral
+(§37, §40, §41, §42). So this section stops reading and REMOVES each component in turn, on a scratch copy,
+and measures the marginal contribution. A plant is not a change -- the file is restored after each one, and
+`git status` is empty and `ksweep 37 of 37` passes at the end.
+
+All readings: 8 interleaved rounds, order alternated, 405-uop wire, and the figure is
+`1 - median(planted)/median(real)` **of the whole command, which includes ~22 ms of `bun` start-up**.
+
+| planted to a constant | median real | median planted | component is at most |
+|---|---|---|---|
+| `render_dtype` | 51.4 ms | 50.1 ms | **2.5%** |
+| `rt` (the rendered-name list lookup) | 48.3 ms | 47.1 ms | **2.4%** |
+| `ku_text` (ALL per-line text) | 47.5 ms | 40.5 ms | **14.7%** |
+| `_render.named` + `emit` + `stmt` | 48.0 ms | 38.5 ms | **19.8%** |
+
+### 43.1 What the map says
+
+Of a ~47 ms command, **~22 ms is start-up** and **~4 ms is the decode** (§37), leaving **~21 ms of render**:
+
+* **type rendering is at most 0.5 ms** -- 2.5% of the command. Any cache, any fast path, any rewrite of
+  `render_dtype` is worth nothing. This kills the one optimisation idea the record had left for types.
+* **the rendered-name lookups are at most 0.5 ms** -- 2.4%. A different `r` representation (the O(n) list
+  walk `rt` does) cannot pay either.
+* **all per-line text is at most 3.1 ms** -- 14.7%, and that is the ENTIRE `ku_text_*` family, ~15 functions
+  that §37-§42 kept trying to shave.
+* **the statement machinery around it adds at most 1.1 ms on top** -- 19.8% minus 14.7%.
+
+**⇒ SO THE ~21 ms IS NOT IN ANY ONE COMPONENT.** It is spread across the per-uop loop itself: the 14-arm
+dispatch, `st_put`/`st_c`/`push`/`pop`, `ku_is_decl`, `ku_inline` (itself `cc_at`, `ku_src_is_reg`,
+`ku_is_const_at` and friends), and the constant `st` record copying that a `Data`-threaded renderer does on
+every step. **That is a shape, not a site** -- which is why four fixes aimed at sites measured neutral and why
+`child_count`'s apparent 27% evaporated under direct measurement (§36).
+
+**THE HONEST CONCLUSION, AND IT IS THE ONE THING THIS SECTION ADDS**: the remaining render cost is the price
+of the renderer being a `St`-threaded, `Data`-copying Bend program at all. Reducing it means replacing the
+data flow (a mutable arena, or an emitter that writes into one buffer by index) rather than editing any
+function in it -- and that is a different program, not a bigger slice of this one.
