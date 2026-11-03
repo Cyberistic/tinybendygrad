@@ -249,6 +249,37 @@ MEASURED, `DEV=BEND` on the default path:
 | agreement with CPython | `0.000e+00` | `0.000e+00` |
 | tinygrad's own CPU device | 1.209 ms | — |
 
-Gates unchanged: `ops_bend_exec-e2e` `7 match` (pinned to the interpreter lane), `ops_python_exec` 365
-rows x 2 lanes / 0 unpinned, `ALL PROOFS CHECK`, substrate digest still `8e7ab117...` so the 38/38
-corpus run remains CURRENT.
+Gates: `ops_bend_exec-e2e` now measures BOTH lanes (see §12), `ops_python_exec` 365 rows x 2 lanes / 0
+unpinned, `ALL PROOFS CHECK`.
+
+**A CORRECTION TO THIS SECTION AS FIRST WRITTEN:** it said the substrate digest was "still `8e7ab117...`
+so the corpus run remains CURRENT". That was true when measured and FALSE within the hour: another
+unit's `.bend` edits moved the digest to `f98e515f...`, which is what `AGENTS.md` now records and what
+the corpus was re-run at (`graphs-agree=38`, `substrate-head=f6921b283`). **A DIGEST TRANSCRIBED INTO
+PROSE GOES STALE THE NEXT TIME ANYONE EDITS A `.bend` FILE.** Re-derive it
+(`differ.substrate_digest()`) instead of quoting it.
+
+## 12. `ops_bend_exec-e2e` MEASURES BOTH LANES, AND IT CAN GO RED ON EITHER
+
+The gate pinned itself to the interpreter lane, which meant the DEFAULT lane -- the one every user gets
+-- had no gate of its own. It now runs both, from ONE case list:
+
+```
+E2E_LANE=interpreter  BEND_C=0  captures the packet a DEV='BEND' run produces, replays it through the
+                               port's executor binary, and REFUSES a case that rendered no packet
+E2E_LANE=compiled     BEND_C=1  the default lane; renders C with the port's own cstyle.bend, so it
+        BEND_PORT_C=1          produces no packet and the packet-rendered refusal does not apply
+```
+
+`BEND_C` is read by `ops_bend` at IMPORT time, so the parent spawns ITSELF with `E2E_LANE=compiled` for
+the second lane and folds the child's exit status into its own.
+
+```
+# interpreter: 7 match, 0 mismatch-or-refused
+# compiled:    7 match, 0 mismatch-or-refused
+```
+
+**AND THE FOLD IS PROVEN, NOT ASSERTED.** A plant that forces the CHILD to exit 1 makes the gate return
+**rc=1** while both lanes still print `7 match` -- so the parent's verdict really does depend on the lane
+it did not run itself. Without that fold the gate would have measured half of what it claims, which is
+the same defect as a lane that silently falls back.

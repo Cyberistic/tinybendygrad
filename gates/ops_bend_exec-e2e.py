@@ -23,7 +23,7 @@ lived at `__file__.parent` because `__file__` WAS `.agents/slop/`; moving it
 without moving the output would have put untracked `.txt` inside `gates/`.
 `main` still returns 0 only when every case MATCHES.
 """
-import pathlib, sys
+import os, pathlib, subprocess, sys
 from tinygrad import Tensor, Context, Device
 from tinygrad.dtype import dtypes
 
@@ -37,14 +37,21 @@ CAP = []
 # path here because this file had none, and `sys.path[0]` when a gate is run is `gates/`.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-# **THIS GATE MEASURES THE INTERPRETER LANE, SO IT PINS IT.** `BEND_C` is read by `ops_bend` at import
-# time, and since 2026-11-02 its default is `1` (the compiled lane, 168x faster). This instrument is the
-# INTERPRETER's: it captures the packet a `DEV='BEND'` run produces and replays it through
-# `OB.executor()`, so with the compiled lane selected nothing is captured and every case reports a
-# mismatch. MEASURED, before this line: `0 match, 7 mismatch-or-refused`. Pinned, not defaulted --
-# a lane this gate does not measure must not be able to change its verdict.
-import os as _os
-_os.environ["BEND_C"] = "0"
+# **THIS GATE MEASURES BOTH LANES, AND IT SAYS WHICH ONE IT IS RUNNING.**
+#
+# `BEND_C` is read by `ops_bend` at IMPORT time, so a lane cannot be switched inside one process: the
+# gate PINS its lane here and, when it is the interpreter, spawns ITSELF with `E2E_LANE=compiled` for
+# the other one. Two lanes, one source of truth for the seven cases.
+#
+#  * interpreter (`BEND_C=0`) -- captures the packet a `DEV='BEND'` run produces and replays it through
+#    `OB.executor()`. It CANNOT inherit the default: since 2026-11-02 that is the compiled lane, nothing
+#    is captured, and every case reported a mismatch. MEASURED before the pin: `0 match, 7
+#    mismatch-or-refused`.
+#  * compiled (`BEND_C=1`, `BEND_PORT_C=1`) -- the DEFAULT lane, rendering C with the port's own
+#    `cstyle.bend`. It produces no packet, so the packet-rendered REFUSAL check does not apply to it.
+LANE = os.environ.get("E2E_LANE", "interpreter")
+os.environ["BEND_C"] = "1" if LANE == "compiled" else "0"
+os.environ["BEND_PORT_C"] = "1"
 import ops_bend as OB
 OB.executor  # the cached builder; reading it is what makes the import real
 
@@ -160,18 +167,28 @@ def main():
     same = repr(got) == repr(want)
     # **AND A CASE THAT RENDERED NO PACKET DID NOT RUN ON THE DEVICE AT ALL.** THAT IS A
     # REFUSAL, NOT A MATCH: THE COMPARISON WAS AGAINST A NUMBER THIS DEVICE NEVER PRODUCED.
-    if not CAP:
+    if not CAP and LANE == "interpreter":
       print(f'== {name}: REFUSED -- no packet was rendered, so this case did not run on BEND; '
             f'the answer {got} came from somewhere else')
       bad += 1
       continue
     ok, bad = (ok + 1, bad) if same else (ok, bad + 1)
-    print(f'== {name}: bend={got} python={want} {"MATCH" if same else "MISMATCH"}')
+    print(f'== {LANE}/{name}: bend={got} python={want} {"MATCH" if same else "MISMATCH"}')
     if CAP:
       OUT.mkdir(parents=True, exist_ok=True)
       (OUT / f'packet-{name}.rows').write_text(CAP[-1][1].lib.decode())
-  print(f'# {ok} match, {bad} mismatch-or-refused')
-  return 0 if bad == 0 else 1
+  print(f'# {LANE}: {ok} match, {bad} mismatch-or-refused')
+  if LANE == "compiled":
+    return 0 if bad == 0 else 1
+  # THE OTHER LANE, IN ITS OWN PROCESS, because `BEND_C` is read at import time. Its rows are printed
+  # by the child and its verdict is folded into THIS gate's exit status: a lane that fails must fail
+  # the gate, or the gate is only measuring half of what it claims.
+  child = subprocess.run([sys.executable, __file__], capture_output=True, text=True,
+                         env={**os.environ, "E2E_LANE": "compiled"})
+  print(child.stdout.rstrip())
+  if child.stderr.strip():
+    print(child.stderr.rstrip()[-800:])
+  return 0 if (bad == 0 and child.returncode == 0) else 1
 
 
 if __name__ == '__main__':
