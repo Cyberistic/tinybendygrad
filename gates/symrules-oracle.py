@@ -91,17 +91,22 @@ def parse(p, memo):
   if tk.kind == "(":
     head = p.take()
     name = head.text.lower()
-    dt = None
+    suf = None
     if p.peek() is not None and p.peek().kind == ":":
       p.take()
-      dt = DT[p.take().text]
+      suf = p.take().text
     srcs = []
     while p.peek() is not None and p.peek().kind != ")":
       srcs.append(parse(p, memo))
     p.take()  # the )
     op = Ops[name.upper()]
-    if dt is not None:
-      return UOp(op, tuple(srcs), dt)
+    # A REDUCE's suffix is its ROP and not a dtype: `arg` is `(Ops, num_axes)` and the axes are
+    # the srcs after the first. `(reduce:add x (range c8))` -- MEASURED, `UPat(...).reduce(arg=
+    # Ops.ADD)` normalises to `(Ops.ADD, 0)` and a real graph states the count.
+    if op is Ops.REDUCE and suf is not None:
+      return UOp(op, tuple(srcs), arg=(Ops[suf.upper()], len(srcs)-1))
+    if suf is not None:
+      return UOp(op, tuple(srcs), DT[suf])
     return UOp(op, tuple(srcs))
   w = tk.text
   if w == "bt":
@@ -141,6 +146,8 @@ def sh(u):
     return "bad"
   if u.op is Ops.PARAM:
     return u.arg.name
+  if u.op is Ops.REDUCE and isinstance(u.arg, tuple):
+    return "(reduce:" + u.arg[0].name.lower() + " " + " ".join(sh(s) for s in u.src) + ")"
   dt = u.arg if isinstance(u.arg, __import__("tinygrad").dtype.DType) else None
   head = u.op.name.lower() + (":" + dt.name if dt is not None else "")
   return "(" + head + " " + " ".join(sh(s) for s in u.src) + ")"

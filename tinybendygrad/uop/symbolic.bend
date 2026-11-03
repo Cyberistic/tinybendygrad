@@ -4348,6 +4348,125 @@ def mv_21(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found> : mv_run(6, x, u)
 def mv_24(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found> : mv_run(7, x, u)
 def mv_27(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found> : mv_run(8, x, u)
 
+# ---- `symbolic.py:469`, `reduce_mul_chain` ----------------------------------------
+#
+#   (UPat(Ops.MUL).reduce(name="r", allow_any_len=True), reduce_mul_chain)
+#
+# A REDUCE whose FIRST src is a MUL, any number of srcs: the factors of that MUL which do
+# NOT depend on the reduced axes can be pulled OUT of the reduce, because `sum(x*m)` is
+# `sum(x)*m` when `m` is constant over the axis. `MAX` is the same rewrite only when the
+# multiply is monotone, so `vmin >= 0` is required there, and an UNSIGNED multiply wraps,
+# which is the guard that has nothing to do with the factors at all.
+#
+# `prod` IS NOT `upod` FROM 1: `helpers.py:14` is `reduce(operator.mul, x, 1)`, so every
+# product here starts from a weak CONST 1 -- `1*i0*i1`, three nodes for two factors, and the
+# oracle's answer carries all three.
+def rm469.has(us: List<&2, U32>, +k: U32) -> Bool:
+  match us:
+    case Nil{}: False{}
+    case h <> t: Bool.or(U32.is_eq(h, k), rm469.has(t, k))
+
+# `all(r not in m_parents for r in r.src[1:])` -- no axis is below the factor.
+def rm469.none_in(axes: List<&2, U32>, +ps: List<&2, U32>, acc: Bool) -> Bool:
+  match axes:
+    case Nil{}: acc
+    case h <> t: rm469.none_in(t, ps, Bool.and(acc, Bool.not(rm469.has(ps, h))))
+
+def rm469.ge0(m: Maybe<&2, F.Bnd>) -> Bool:
+  match m:
+    case Some{+b}: Bool.not(F.bnd.lt(b, F.bnd_zero()))
+    case None{}: False{}
+
+# `m not in r.src[1:] and all(r not in m_parents ...) and (r.arg[0] != MAX or m.vmin >= 0)`
+def rm469.outside(rop: O.Op, +axes: List<&2, U32>, +x: F.Folded, +m: U32) -> Bool:
+  +ar = F.Folded.ar(x)
+  Bool.and(Bool.not(rm469.has(axes, m)),
+    Bool.and(rm469.none_in(axes, O.UOp.backward_slice(O.Arena.budget(ar), ar, m), True{}),
+      Bool.or(Bool.not(O.eq_op(rop, O.OpsMAX{})), rm469.ge0(F.UOp.vmin(ar, sym_280.bt(x), m)))))
+
+type Rm469 is Data:
+  Rm469{ins: List<&2, U32>, outs: List<&2, U32>}
+
+def Rm469.ins(p: Rm469) -> List<&2, U32>:
+  match p:
+    case Rm469{ins, outs}: ins
+
+def Rm469.outs(p: Rm469) -> List<&2, U32>:
+  match p:
+    case Rm469{ins, outs}: outs
+
+def rm469.put(out: Bool, t: U32, +acc: Rm469) -> Rm469:
+  match out:
+    case True{} : Rm469{Rm469.ins(acc), List.append(&2, U32, Rm469.outs(acc), [t])}
+    case False{}: Rm469{List.append(&2, U32, Rm469.ins(acc), [t]), Rm469.outs(acc)}
+
+def rm469.part(ts: List<&2, U32>, +rop: O.Op, +axes: List<&2, U32>, +x: F.Folded, +acc: Rm469) -> Rm469:
+  match ts:
+    case Nil{}: acc
+    case +t <> rest: rm469.part(rest, rop, axes, x, rm469.put(rm469.outside(rop, axes, x, t), t, acc))
+
+def rm469.empty(xs: List<&2, U32>) -> Bool:
+  match xs:
+    case Nil{}: True{}
+    case _: False{}
+
+# `functools.reduce(operator.mul, xs, 1)`: the accumulator is ALREADY the CONST 1.
+def rm469.prod(xs: List<&2, U32>, +f: O.Found, acc: U32) -> O.Found:
+  match xs:
+    case Nil{}: f
+    case +h <> t:
+      +f2 = mint_bin(f, O.OpsMUL{}, acc, h)
+      rm469.prod(t, f2, O.Found.i(f2))
+
+# `prod(inside) if len(inside) else r.src[0].const_like(1)` -- `const_like` is the SRC's
+# dtype and not `weakint`, so this is `mint_cst_dt` and not a bare CONST.
+def rm469.first(+x: F.Folded, +u: U32, +ins: List<&2, U32>, +f: O.Found) -> Maybe<&1, O.Found>:
+  match ins:
+    case Nil{}: mint_cst_dt(f, sy_dt1(x, sy_src0(x, u)), O.CInt{H.i64_of_i32(1)})
+    case _   : Some{rm469.prod(ins, f, O.Found.i(f))}
+
+def rm469.rop(a: O.Arg) -> O.Op:
+  match a:
+    case O.AReduce{rop, num_axes}: rop
+    case _: O.OpsNOOP{}
+
+def rm469.ok(+rop: O.Op, +x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.or(O.eq_op(rop, O.OpsADD{}), O.eq_op(rop, O.OpsMAX{})),
+           Bool.or(Bool.not(O.eq_op(rop, O.OpsMAX{})), Bool.not(S.Dt.is_unsigned(sy_dt1(x, u)))))
+
+def rm469.emit4(+r: O.Found, +p: Rm469, +one: O.Found) -> Maybe<&1, O.Found>:
+  +po = rm469.prod(Rm469.outs(p), r, O.Found.i(one))
+  Some{mint_bin(po, O.OpsMUL{}, O.Found.i(r), O.Found.i(po))}
+
+def rm469.emit3(f: Maybe<&1, O.Found>, +x: F.Folded, +u: U32, +axes: List<&2, U32>, +p: Rm469, +one: O.Found) -> Maybe<&1, O.Found>:
+  match f:
+    case Some{+v}: rm469.emit4(mint_replace(v, x, u, List.append(&2, U32, [O.Found.i(v)], axes)), p, one)
+    case None{}: None{}
+
+def rm469.emit(none: Bool, +x: F.Folded, +u: U32, +axes: List<&2, U32>, +p: Rm469, +one: O.Found) -> Maybe<&1, O.Found>:
+  match none:
+    case True{} : None{}
+    case False{}: rm469.emit3(rm469.first(x, u, Rm469.ins(p), one), x, u, axes, p, one)
+
+def rm469.run(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +ar = F.Folded.ar(x)
+  +axes = O.Arena.src_from(ar, u, 1)
+  +ts = O.UOp.split_uop(O.Arena.budget(ar), ar, sy_src0(x, u), O.OpsMUL{})
+  +p = rm469.part(ts, rm469.rop(sy_arg(x, u)), axes, x, Rm469{Nil{}, Nil{}})
+  rm469.emit(rm469.empty(Rm469.outs(p)), x, u, axes, p, O.UOp.const(ar, O.CInt{H.i64_of_i32(1)}))
+
+def rm469.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsREDUCE{}), sy_nsrc_ge(x, u, 2)),
+           sy_is_op(x, sy_src0(x, u), O.OpsMUL{}))
+
+def rm469.guard(ok: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{} : rm469.run(x, u)
+    case False{}: None{}
+
+def sym_469(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(rm469.pat(x, u), rm469.guard(rm469.ok(rm469.rop(sy_arg(x, u)), x, u), x, u))
+
 # symbolic.py:308  (UPat.var('x').cast(name="a").cast(name="b"),
 #                     lambda x,a,b: x.cast(b.dtype) if can_lossless_cast(x.dtype, a.dtype) else None)
 # IF THE INTERMEDIATE CAST DOES NOT NARROW, the pair is ONE cast to the outer dtype. `:186`
@@ -4817,9 +4936,10 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{118, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
     O.PMEntry{119, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
     O.PMEntry{120, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{121, [O.OpsMUL{}], Nil{}, },   # 471
-    O.PMEntry{122, [O.OpsMUL{}], Nil{}, },   # 473
-    O.PMEntry{123, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{121, [O.OpsREDUCE{}], Nil{}, },   # symbolic.py:469
+    O.PMEntry{122, [O.OpsMUL{}], Nil{}, },   # 471
+    O.PMEntry{123, [O.OpsMUL{}], Nil{}, },   # 473
+    O.PMEntry{124, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -5194,7 +5314,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 53, 54, 55, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 105, 106, 107, 108, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 53, 54, 55, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 105, 106, 107, 108, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -5288,9 +5408,10 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 118: sym_462(x, u)
     case 119: sym_463(x, u)
     case 120: sym_464(x, u)
-    case 121: sym_471(x, u)
-    case 122: sym_473(x, u)
-    case 123: sym_444(x, u)
+    case 121: sym_469(x, u)
+    case 122: sym_471(x, u)
+    case 123: sym_473(x, u)
+    case 124: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -6665,17 +6786,6 @@ def fz_dtnm(d: S.Dt) -> String:
 def fz_part(nm: String, k: Nat) -> String:
   Maybe.default(&2, String, List.get(&2, String, String.split(nm, Char.from_u32(58)), k), "")
 
-def fz_arg.dt.of(dt: S.Dt) -> O.Arg:
-  match dt:
-    case S.Dt{0, 0, S.CVoid{}, _}: O.ANone{}
-    case _: O.ADt{dt}
-
-def fz_arg(op: O.Op, nm: String) -> O.Arg:
-  match op:
-    case O.OpsCAST{}: fz_arg.dt.of(fz_dt(fz_part(nm, 1n)))
-    case O.OpsBITCAST{}: fz_arg.dt.of(fz_dt(fz_part(nm, 1n)))
-    case _: O.ANone{}
-
 def fz_op(nm: String) -> O.Op:
   match nm:
     case "noop": O.OpsNOOP{}
@@ -6729,6 +6839,31 @@ def fz_op(nm: String) -> O.Op:
     # through `fz_build`, and the case file should never be able to state an op nobody has.
     case _: O.OpsNOOP{}
 
+def fz_arg.dt.of(dt: S.Dt) -> O.Arg:
+  match dt:
+    case S.Dt{0, 0, S.CVoid{}, _}: O.ANone{}
+    case _: O.ADt{dt}
+
+# A REDUCE'S SUFFIX IS ITS ROP AND NOT A DTYPE, and it is the one op whose arg is a PAIR:
+# `(reduce:add x (range c8))` states `AReduce{OpsADD, 1}`, with the axis count read off the
+# srcs because `num_axes` IS `len(srcs)-1` -- `UPat(...).reduce()` writes `(op, 0)` and a real
+# graph writes the count. A suffix-less `(reduce ...)` is `ANone`, which is Python's `arg=None`.
+# A `match` CANNOT SCRUTINISE A COMPUTED VALUE, so the suffix is handed to its own def.
+def fz_arg.rop2(r: String, n: U32) -> O.Arg:
+  match r:
+    case "": O.ANone{}
+    case _ : O.AReduce{fz_op(r), U32.sub(n, 1)}
+
+def fz_arg.rop(nm: String, n: U32) -> O.Arg: fz_arg.rop2(fz_part(nm, 1n), n)
+
+def fz_arg(op: O.Op, nm: String, n: U32) -> O.Arg:
+  match op:
+    case O.OpsCAST{}: fz_arg.dt.of(fz_dt(fz_part(nm, 1n)))
+    case O.OpsBITCAST{}: fz_arg.dt.of(fz_dt(fz_part(nm, 1n)))
+    case O.OpsREDUCE{}: fz_arg.rop(nm, n)
+    case _: O.ANone{}
+
+
 # THE BUILD. One def, and every def it calls does NOT call back, so this is a fold
 # and not a cycle. A frame is pushed on a HEAD and popped on a CLOSE, and `St.root`
 # is the finished node: a list tail cannot carry what the frame above has to be
@@ -6770,8 +6905,8 @@ def fz_deliver(+st: St, i: U32) -> St: fz_deliver.at(St.stk(st), st, i)
 def fz_close.give(+f: O.Found, u: List<&2, Frm>, r: Maybe<&2, U32>) -> St:
   fz_deliver(St{O.Found.ar(f), u, r}, O.Found.i(f))
 
-def fz_close.new.of(+op: O.Op, ar: O.Arena, nm: String, srcs: List<&2, U32>) -> O.Found:
-  O.UOp.new(ar, op, srcs, fz_arg(op, nm), O.TNone{})
+def fz_close.new.of(+op: O.Op, ar: O.Arena, nm: String, +srcs: List<&2, U32>) -> O.Found:
+  O.UOp.new(ar, op, srcs, fz_arg(op, nm, U32.from_nat(List.length(&2, U32, srcs))), O.TNone{})
 
 def fz_close.new(ar: O.Arena, +nm: String, srcs: List<&2, U32>) -> O.Found:
   fz_close.new.of(fz_op(fz_part(nm, 0n)), ar, nm, srcs)
@@ -6926,6 +7061,7 @@ def fz_render.param(a: O.Arg) -> String:
 def fz_head.sfx(a: O.Arg, nm: String) -> String:
   match a:
     case O.ADt{dt}: String.concat([nm, ":", fz_dtnm(dt)])
+    case O.AReduce{rop, num_axes}: String.concat([nm, ":", R.op_lower(rop)])
     case _: nm
 
 def fz_head.of(op: O.Op, a: O.Arg, ar: O.Arena) -> String:
