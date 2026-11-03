@@ -809,8 +809,7 @@ def paramarg(pa: ParamArg, owner: UOp | None = None) -> str:
   # that moves between upstream commits, R3) and `real:<bool>` (an allocation state), and
   # `Buffer` has no `slot` attribute at all -- MEASURED -- so there was never a slot
   # there to compare. Everything about a Buffer that IS stable and IS meaningful --
-  # `size`, `dtype`, `device`, `offset` -- is ALREADY one of ParamArg's own thirteen
-  # fields and is already compared above, so presence is the finest split the two sides
+  # `size`, `dtype`, `device`, `offset` -- is ALREADY one of ParamArg's own fields and is already compared above, so presence is the finest split the two sides
   # can both make. `trace_num` is a per-process counter and is never read.
   #
   # `N` FOR ABSENCE, and this is a TEXT change from the `unrealized` it replaces -- on
@@ -825,7 +824,6 @@ def paramarg(pa: ParamArg, owner: UOp | None = None) -> str:
     u(pa.slot), dt(pa.dtype),
     _size(owner),
     "r(" + i64(pa.vmin_vmax[0]) + "," + i64(pa.vmin_vmax[1]) + ")" if pa.vmin_vmax is not None else ATOMS["none"],
-    u(pa.multiple_of) if pa.multiple_of is not None else ATOMS["none"],
     bstr(pa.name) if pa.name is not None else ATOMS["none"],
     ATOMS["addr"] + (pa.addrspace.name if pa.addrspace is not None else "None"),
     _carg(pa.device),
@@ -925,28 +923,20 @@ def cdepth(n: UOp) -> int:
   return argdepth(n.arg) if n.op is Ops.RANGE else 0
 
 
-def ctag(t) -> str:
-  # DEFECT 18, FOUND BY WIDENING (2026-10-04, `--graph lin`). This read `carg(t)` -- the
-  # OP-DISPATCHING entry point, which takes `(op, x)` -- with ONE argument, so it raised
-  # `TypeError: carg() missing 1 required positional argument: 'x'` on the first non-None
-  # tag in the corpus. Every one of the thirteen earlier graphs has `tag is None` on every
-  # node, so R6 had never been asked a question: it was a FIELD that could not be read, and
-  # the eight-field row still said `N` on both sides, so the field agreed by never being
-  # evaluated. `_carg` is the value grammar `ctag` wanted -- a tag is `UOp.tagstr`'s
-  # `bool | str | int | tuple[UOp,...] | None` (ops.py:277) and has no op to dispatch on.
-  #
-  # IT IS NOT COSMETIC, and the graph that found it says why. `lin` is the first corpus graph
-  # to carry a tag at all, because a tag is what a renderer attaches to an INSTRUCTION, and
-  # `full_rewrite_to_sink` is the first corpus graph to be a kernelized program. So the
-  # field and the fixture arrived together: without a linearized program there was nothing
-  # to tag, and without a tag the field was unreadable -- and neither fact is visible from
-  # the other.
-  return ATOMS["none"] if t is None else _carg(t)
+# **R6 IS GONE BECAUSE UPSTREAM DELETED ITS SUBJECT** (`PARITY.md` §118): `UOp.tagstr` and `UOp.tag` are
+# absent from the vendored `tinygrad/` at HEAD (`find tinygrad -name '*.py' | xargs grep -ln tagstr` answers
+# nothing), so the column this file used to emit -- `ctag(n.tag)`, `bool | str | int | tuple[UOp,...] | None`
+# -- had no counterpart on the CPython side and the corpus stopped dead on `allred` with
+# `AttributeError: 'UOp' object has no attribute 'tag'`. **A FIELD ONE SIDE CANNOT PRODUCE IS NOT A CHECK**,
+# so the column is DELETED rather than emitted as a constant on both sides: a constant is a label, and this
+# file's own rule is that every field must be able to go red. The port's arena still CARRIES a tag; that is
+# dead state with a named removal (§118), and once it is gone the two models agree again by ARITY and not by
+# agreement on a string.
 
 
 def row_of(n: UOp, k: int, ix: dict) -> str:
   return " ".join(chunk(v) for v in [u(k), n.op.name, n.dtype.name, cshape(n), u(cdepth(n)),
-                                     ctag(n.tag), carg(n.op, n.arg, n), tup([u(ix[id(s)]) for s in n.src])])
+                                     carg(n.op, n.arg, n), tup([u(ix[id(s)]) for s in n.src])])
 
 
 # ---------------------------------------------------------------------------
@@ -1146,6 +1136,8 @@ def _storage(op: Ops, slot: int, dtype, size: int | None = None, **arg) -> UOp:
       src       = ()   -> `_shape` raises `IndexError` at ops.py:356 on `src[0]`
       vmin_vmax = 16   -> not a size; multiple_of/name/addrspace/device shift one place
 
+  (`multiple_of` has since been DELETED upstream as well, so the shift example below now moves
+  `name` where it once moved `multiple_of` -- the point is the SHIFT and not the field list.)
   and the SHIFT IS THE PART THAT MATTERS: where the node HAS a `src`, nothing raises at
   all and the graph is simply WRONG. This file had 6 such call sites (`_variable`,
   `g_loop`, `g_gate` x2, `g_getaddr`, `plant_dtype`) and MEASURED `_variable`'s silent
@@ -1190,7 +1182,7 @@ def _variable(name: str, slot: int = 0):
   owner decision and not a harness one."""
   from tinygrad.dtype import AddrSpace
   return _storage(Ops.PARAM, slot, dtypes.weakint, None,
-                  vmin_vmax=(1, 100), multiple_of=1, name=name, addrspace=AddrSpace.ALU)
+                  vmin_vmax=(1, 100), name=name, addrspace=AddrSpace.ALU)
 
 
 def g_sym():
@@ -2717,7 +2709,7 @@ class Node:
 
   def __init__(self, nid: str, f: list[str]):
     self.nid = nid
-    self.op, self.dtype, self.shape, self.depth, self.tag, self.arg, self.src = f[1:]
+    self.op, self.dtype, self.shape, self.depth, self.arg, self.src = f[1:]
     self.cores: dict[str, str] = {}
     # The child's COMMUTATIVE-CANONICAL core. A parent's `src` comparison under `equiv`
     # must use these and not `cores`, because a non-commutative parent of a commutative
@@ -2760,7 +2752,7 @@ class Node:
     ks = [self.ecores[c] for c in self.src]
     if self.op in COMM:
       ks = sorted(ks)
-    return hashlib.sha256((f"{self.op}\x00{self.depth}\x00{self.tag}\x00{self.arg}\x00"
+    return hashlib.sha256((f"{self.op}\x00{self.depth}\x00{self.arg}\x00"
                            + "|".join(ks)).encode()).hexdigest()
 
   @property
@@ -2774,12 +2766,12 @@ class Node:
     # differ must never give for a node that is present on both sides. Measured: with the
     # child ops in order, `--plant srcswap` printed `ONLY-PY=1 / ONLY-BEND=1` for the MUL
     # and never named its `src`.
-    return (f"{self.op}\x00{self.tag}\x00{erase_depth(erase(self.arg))}\x00"
+    return (f"{self.op}\x00{erase_depth(erase(self.arg))}\x00"
             + ",".join(sorted(self.kidop[c] for c in self.src)))
 
   def full(self, side: str) -> str:
     return (f"  {side}#{self.nid} {self.op} dtype={self.dtype} shape={self.shape} "
-            f"depth={self.depth} tag={self.tag} arg={self.arg} src={self.src}")
+            f"depth={self.depth} arg={self.arg} src={self.src}")
 
 
 def value_starts(arg: str, letter: str) -> list[tuple[int, int]]:
@@ -2922,27 +2914,27 @@ def devnames(lines: list[str]) -> set[str]:
 # single-index row would have counted one of the two -- which is precisely the "a ledger
 # that misses its own row is worse than no ledger" defect that `--plant opt` already
 # caught once for `E`.
-WIRE = ("id", "op", "dtype", "shape", "depth", "tag", "arg", "src")
+WIRE = ("id", "op", "dtype", "shape", "depth", "arg", "src")
 LEDGER = (
-  ("z", (6,), "a realized BUFFER: device-object PRESENCE only",
+  ("z", (5,), "a realized BUFFER: device-object PRESENCE only",
    "Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/"
    "device/offset are already ParamArg fields 2/3/8 and ARE compared"),
-  ("y", (6,), "a bytes arg: CONTENT compared; the residual is the bytes CONST",
+  ("y", (5,), "a bytes arg: CONTENT compared; the residual is the bytes CONST",
    "MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` "
    "(:1801) compares them, so the column is the full byte list; this row used to say "
    "LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` "
    "(ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), "
    "and graphcmp.bend's `konst` has no bytes arm at all"),
-  ("u", (6,), "a UOp nested in an arg: identity NOT compared",
+  ("u", (5,), "a UOp nested in an arg: identity NOT compared",
    "measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no "
    "arena index here; the port's ATuple also spells PERMUTE's literal ints"),
-  ("q", (6,), "an applied option the port cannot resolve: COUNT only",
+  ("q", (5,), "an applied option the port cannot resolve: COUNT only",
    "ops.bend:978 types applied_opts/opts_to_apply as List<U32>; upstream's elements are "
    "`Opt` dataclasses and no port file writes a non-empty list"),
-  ("X!", (6,), "an AxisType member with no counterpart at this tree",
+  ("X!", (5,), "an AxisType member with no counterpart at this tree",
    "measured at 3138973dc: `list(AxisType)` is DEVICE..PLACEHOLDER (8). The port keeps "
    "AXIS_REDUCE and AXIS_UNROLL, DELETED upstream by 78d482262, for six committed files"),
-  ("BAD", (6,), "the port's arena bottom: not a node",
+  ("BAD", (5,), "the port's arena bottom: not a node",
    "ops.bend:1154 -- a read of an index that was never interned"),
   ("?", (2, 3), "the port's fold produced no Derived for this node, in BOTH columns",
    "PORT-ONLY, no upstream counterpart: `UOp.shape` always raises or returns a tuple "
@@ -2962,7 +2954,7 @@ LEDGER = (
     "and measures `?=32` over 16 nodes again, against `?=0` on the unmutated copy of the same "
     "tree, 52 rows on both. All four `fold.bend` line numbers here are MEASURED; both this "
     "entry cited before (`fold.bend:2564`, `fold.bend:699`) were WRONG."),
-  ("E", (6,), "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
+  ("E", (5,), "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
    "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic "
    "`vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 "
    "attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could "
@@ -3083,10 +3075,10 @@ def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]
   recs = {}
   for ln in lines:
     f = unchunks(ln)
-    if len(f) != 8:
-      raise SystemExit(f"{side}: expected 8 chunks, got {len(f)}: {ln[:90]!r}")
+    if len(f) != 7:
+      raise SystemExit(f"{side}: expected 7 chunks, got {len(f)}: {ln[:90]!r}")
     recs[f[0][1:]] = f
-  kids = {nid: [x[1:] for x in f[7][2:-1].split(",") if x] for nid, f in recs.items()}
+  kids = {nid: [x[1:] for x in f[6][2:-1].split(",") if x] for nid, f in recs.items()}
   for nid, cs in kids.items():
     for c in cs:
       if c not in recs:
@@ -3113,7 +3105,7 @@ def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]
       n.cores[c] = node[c].core
       n.ecores[c] = node[c].key(True)
       n.kidop[c] = node[c].op
-    n.core = hashlib.sha256((f"{n.op}\x00{n.depth}\x00{n.tag}\x00{n.arg}\x00"
+    n.core = hashlib.sha256((f"{n.op}\x00{n.depth}\x00{n.arg}\x00"
                              + "|".join(n.cores[c] for c in kids[nid])).encode()).hexdigest()
     bycore.setdefault(n.core, []).append(n)
     byequiv.setdefault(n.key(True), []).append(n)
@@ -3123,7 +3115,7 @@ def build(lines: list[str], side: str) -> tuple[dict[str, Node], dict[str, Node]
   return node, bycore, byequiv
 
 
-FIELDS = ("dtype", "shape", "depth", "tag", "arg", "src")
+FIELDS = ("dtype", "shape", "depth", "arg", "src")
 
 
 def mismatches(a: Node, b: Node, equiv: bool = False) -> list[str]:

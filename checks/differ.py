@@ -1175,7 +1175,7 @@ CANON_REF = re.compile(r"i(\d+)")
 
 
 def unchunk(line):
-    """The eight `<len>:<value>` fields. THE LENGTH PREFIX IS THE PARSE: a field cannot
+    """The seven `<len>:<value>` fields. THE LENGTH PREFIX IS THE PARSE: a field cannot
     contain a space, so nothing here can be confused for a delimiter and no regex is needed."""
     out, i = [], 0
     while i < len(line):
@@ -1215,7 +1215,7 @@ def canon_key(i, parsed, at, keys, live):
 
 
 def canon_rows(rows):
-    """`rows` -> THE CANONICAL FORM: canonical ids, canonical order, same eight fields.
+    """`rows` -> THE CANONICAL FORM: canonical ids, canonical order, same seven fields.
 
     The ids are assigned by SORTING the subtree labels, so they are a function of the graph
     alone. Ties -- two nodes whose entire subtrees are equal -- are resolved by the original
@@ -1226,9 +1226,9 @@ def canon_rows(rows):
     parsed = []
     for ln in rows:
         f = unchunk(ln)
-        if len(f) != 8:
-            raise ValueError(f"a row that is not eight length-prefixed fields: {ln[:60]!r}")
-        parsed.append((f[0].removeprefix("i"), *f[1:7], tuple(CANON_REF.findall(f[7]))))
+        if len(f) != 7:
+            raise ValueError(f"a row that is not seven length-prefixed fields: {ln[:60]!r}")
+        parsed.append((f[0].removeprefix("i"), *f[1:6], tuple(CANON_REF.findall(f[6]))))
     at = {nid: i for i, (nid, *_r) in enumerate(parsed)}
     if len(at) != len(parsed):
         raise ValueError("two rows claim one id, so the id column is not injective")
@@ -1258,12 +1258,12 @@ def canon_bijection(rows):
     ids, refs = [], set()
     for ln in rows:
         f = unchunk(ln)
-        if len(f) != 8:
-            return False, f"not eight fields: {ln[:60]!r}"
+        if len(f) != 7:
+            return False, f"not seven fields: {ln[:60]!r}"
         if not f[0].startswith("i"):
             return False, f"the id field is {f[0]!r}"
         ids.append(int(f[0][1:]))
-        refs.update(int(k) for k in CANON_REF.findall(f[7]))
+        refs.update(int(k) for k in CANON_REF.findall(f[6]))
     n = len(ids)
     if sorted(ids) != list(range(1, n + 1)):
         return False, f"the id column is not 1..{n} each once ({len(ids)} rows, {len(set(ids))} ids)"
@@ -2512,7 +2512,7 @@ def plant(only=None):
                             f[1] = "AFTER"
                         if kind == "number":
                             f[0] = CANON_REF.sub(lambda m: f"i{rot[int(m.group(1))]}", f[0])
-                            f[7] = CANON_REF.sub(lambda m: f"i{rot[int(m.group(1))]}", f[7])
+                            f[6] = CANON_REF.sub(lambda m: f"i{rot[int(m.group(1))]}", f[6])
                         out.append(" ".join(f"{len(x)}:{x}" for x in f))
                     return ("\n".join(out) + "\n").encode()
 

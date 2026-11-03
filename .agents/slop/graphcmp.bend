@@ -8,7 +8,7 @@
 # `UOp.range(4, AxisType.WEAK, 0, 1)` against `UOp(Ops.RANGE, (c1,), (AxisType.WEAK,
 # 0, 1))`. A pretty diff over those is a diff over two upstream trees.
 #
-# So this file emits the NORMAL FORM: op, dtype name, shape, arg nesting depth, tag, a
+# So this file emits the NORMAL FORM: op, dtype name, shape, arg nesting depth, a
 # STRUCTURAL arg, and the ordered child edges. The rules and their `tinygrad/...:line`
 # citations live in graphcmp.py's header, which is the single place they are written
 # down; this file is the port-side IMPLEMENTATION of them.
@@ -18,7 +18,7 @@
 #
 # THE WIRE FORMAT is one line per arena node, eight self-delimiting chunks:
 #
-#     <id> <op> <dtype> <shape> <depth> <tag> <arg> <src>
+#     <id> <op> <dtype> <shape> <depth> <arg> <src>
 #
 # A chunk is `<bytecount>:<bytes>`, so the COUNT OF SPACES IS NOT A FORMAT -- the reader
 # walks the counts. `.agents/slop/pin-tree-oracle-report.md` records `^(\S+) = ` on row
@@ -353,18 +353,20 @@ def bufo(m: Maybe<&2, U32>) -> String:
 # (`ops.bend:3037`) reaches the owner's `src[0]` instead. THAT is why this def takes the
 # arena and the node index: `carg(op, x, owner)` on the CPython side threads the owner
 # for exactly this one field, and a def that cannot see the owner cannot see the size.
-def paramarg.of(+slot: U32, +dtx: S.Dt, +size: Maybe<&2, U32>, +vmin_vmax: Maybe<&2, O.PyRange>, +multiple_of: Maybe<&2, U32>,
+def paramarg.of(+slot: U32, +dtx: S.Dt, +size: Maybe<&2, U32>, +vmin_vmax: Maybe<&2, O.PyRange>,
   +name: Maybe<&2, String>, +addrspace: S.Addr, +device: Maybe<&2, S.Dev>, +volatile: Bool, +image: Maybe<&2, O.Img>,
   +buffer: Maybe<&2, U32>, +bind_on_realize: Bool, +val: Maybe<&2, O.Const>) -> String:
-  String.concat(["P(", i(slot), ",", dt(dtx), ",", mum(size), ",", mm(vmin_vmax), ",", mum(multiple_of), ",", nm(name),
+  String.concat(["P(", i(slot), ",", dt(dtx), ",", mum(size), ",", mm(vmin_vmax), ",", nm(name),
     ",", addr1(addrspace), ",", dm(device), ",", bo(volatile), ",", imgm(image), ",", bufo(buffer), ","
     bo(bind_on_realize), ",", valm(val), ")"])
 
 def paramarg(+ar: O.Arena, self: U32, pa: O.ParamArg) -> String:
   match pa:
+    # THE PATTERN BINDS ALL THIRTEEN AND THE ROW CARRIES TWELVE: `multiple_of` is still IN the port's
+    # record and is GONE from upstream's (`PARITY.md` §119), so it is bound and not emitted.
     case O.ParamArg{slot, dtx, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer,
       bind_on_realize, val}:
-      paramarg.of(slot, dtx, O.ParamArg.size(ar, self), vmin_vmax, multiple_of, name, addrspace, device, volatile,
+      paramarg.of(slot, dtx, O.ParamArg.size(ar, self), vmin_vmax, name, addrspace, device, volatile,
         image, buffer, bind_on_realize, val)
 
 def custom_fn(c: O.CustomFunction) -> String:
@@ -626,14 +628,6 @@ def argstr(+ar: O.Arena, self: U32, a: O.Arg, depth: U32) -> String:
     # It is not a node, so it must not read as an agreeing one.
     case O.ABad{}: "BAD"
 
-def tagstr(t: O.Tag) -> String:
-  match t:
-    case O.TNone{}: "N"
-    case O.TBool{tb}: bo(tb)
-    case O.TStr{s}: bstr(s)
-    case O.TInt{ti}: i(ti)
-    case O.TTuple{xs}: us(xs)
-
 # ===========================================================================
 # THE SHAPE COLUMN. `u.shape` (ops.py:454-456) is `self._shape` or a raise, and `_shape`
 # is `None` for the ten ops that have no shape (ops.py:331-338), so the column is
@@ -724,7 +718,7 @@ def srclist(+ar: O.Arena, +k: U32) -> String:
 def row(+ar: O.Arena, +tb: F.Table, +k: U32) -> String:
   String.concat([chunk(i(k)), " ", chunk(O.Ops.name.of(O.Arena.op(ar, k))), " ",
     chunk(dt_str(F.UOp.dtype(ar, tb, k))), " ", chunk(shape_str(F.UOp.shape(ar, tb, k))), " ",
-    chunk(i(O.Arena.depth(ar, k))), " ", chunk(tagstr(O.Arena.tag(ar, k))), " ",
+    chunk(i(O.Arena.depth(ar, k))), " ",
     chunk(argstr(ar, k, O.Arena.arg(ar, k), O.Arena.depth(ar, k))), " ", chunk(srclist(ar, k))])
 
 def rows.go(+ar: O.Arena, +tb: F.Table, ks: List<&2, U32>) -> IO(Unit):

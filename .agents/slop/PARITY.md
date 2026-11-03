@@ -5274,3 +5274,50 @@ emit-mm and emit-f64 byte-identical
 **SO THE RENDERER AGREES WITH CPYTHON BYTE FOR BYTE ON 37 KERNELS AND 39 OPS, AND THE 38-GRAPH CORPUS
 AGREEMENT IS UNCERTIFIED UNTIL THE TAG IS REMOVED FROM BOTH SIDES.** That is the next unit's first task, and
 it is a port feature removal with a harness row deletion, not a measurement.
+
+## 119. THE CORPUS MEASURES AGAIN: THE TAG AND `multiple_of` COLUMNS ARE GONE, AND 7 FIXTURES MOVED
+
+§118 left the corpus crashing on `allred` with `AttributeError: 'UOp' object has no attribute 'tag'`. The
+column is now DELETED on both sides rather than emitted as a constant (a constant is a label), and the same
+pass found the second deleted field:
+
+```
+R6 tag          ctag(n.tag)            UOp.tagstr is ABSENT from the vendored tree at HEAD
+    multiple_of ParamArg.multiple_of   also absent from upstream's ParamArg at HEAD
+```
+
+`graphcmp.py`: `row_of`, `Node.__init__`, the three identity strings (`core`, the loose key, the repr), the
+`n.core` digest, `WIRE`, `FIELDS`, the ledger's ARG index (6 -> 5), `build()`'s 7-chunk check and the rot
+transform. `graphcmp.bend`: the `tagstr` def, the tag column, and `paramarg` (the pattern still binds all
+THIRTEEN fields because the port's record keeps them; the ROW carries twelve). `checks/differ.py`: the
+canonical path is 7 fields (`canon_rows`, the well-formedness check, the rot transform).
+
+### 119.1 What the corpus says now, which it could not say before
+
+```
+graphs=38  graphs-answered=38  graphs-agree=31  graphs-disagree=7  graphs-refused=0
+expect-moved=7   stable-pairs=5 of 5   stable-failed=0 of 5
+```
+
+**AND ALL SEVEN DISAGREE ON NODE COUNT WITH `field-mismatches=0` ON EVERY ONE** -- so this is not the row,
+it is the GRAPH:
+
+```
+g        py rows  bend rows
+matmul      24        20      py-only: CONST 0, CONST 2, STACK(17,18,7), PERMUTE(16,19)
+reduce      11         8
+commute     18        16
+binblob     25        21
+flip        31        29
+bw          39        34
+gral        48        52      (this one the port has MORE)
+```
+
+**⇒ SO THE RE-VENDOR ALSO MOVED SEVEN OF THE PORT'S HAND-BUILT GRAPH FIXTURES**, which is the class §116
+named when it said the re-pin was the easy half: `test/` and the corpus models are built from upstream's uop
+construction, and 223 upstream commits moved it. `kept` is untouched: `ksweep` 37/37 and `opbattery` 39/39
+compare the RENDERER, and the renderer has not moved.
+
+**AND THE OLD ARTIFACTS ARE NOT OVERWRITTEN SILENTLY:** `D0-run-summary.txt` now reads
+`graphs-disagree=7`, `expect-moved=7`, so the certificate is a MEASUREMENT of the disagreement instead of a
+crash or a stale green.
