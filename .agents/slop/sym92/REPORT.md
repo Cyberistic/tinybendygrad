@@ -685,3 +685,29 @@ THE THREE WAYS OUT, none of them small and all of them measurable:
    (same idea, threaded through every caller);
 3. declaring the two rows UNPORTABLE-IN-THIS-LAYOUT with this cycle as the evidence, which is what
    this entry now does.
+
+## 2026-11-03 (final, 18): I SHIPPED A BROKEN `symbolic.bend` AND A FALSE PORTED ROW, AND THE CHECK I RAN COULD NOT SEE IT
+
+The previous commit (`f07c230e3`) left `symbolic.bend` NOT COMPILING and `gates/symrules.rows` with a
+PORTED row for `:437` whose body no longer existed.
+
+TWO MISTAKES, and the second is the dangerous one:
+
+1. I reverted the `sym_437` BODY but not its ROW: `sym_table` still cited `symbolic.py:437` and
+   `sym_dispatch` still called `sym_437`. A row that names a def nothing defines is exactly the
+   "row that cannot go red" this tree forbids -- it READ as PORTED and the census counted it.
+2. **I VERIFIED WITH THE WRONG INSTRUMENT.** The command that reported `ALL PROOFS CHECK` ran
+   `tinybendygrad/LAWS/PROOF-ALL.bend`, and that aggregate does NOT compile `uop/symbolic.bend`.
+   `symbolic.bend --check-only` says `SOME PROOFS FAIL / observed : sym_437`. A GREEN AGGREGATE OVER
+   A FILE IT DOES NOT INCLUDE IS NOT A CHECK OF THAT FILE, and I had been using it as one all
+   session.
+
+REPAIRED: the row and its dispatch arm are gone, every tag above `120` is shifted down in `PMEntry`,
+in the `case N:` arms AND in `MINT_TAGS()` -- the third list is the one the first attempt missed, and
+`symclosure-gate` caught it at `mint=104 MINT_TAGS=105`. Verified after the repair:
+`symbolic.bend --check-only` = ALL PROOFS CHECK; `symclosure-gate` PASS (104 == 104);
+`symrules-gate` GREEN 137/137; `symrules-oracle --compare` **232 of 232 agree**; census 137 / 4.
+
+THE RULE THIS TREE ALREADY HAD, WHICH I HAD BEEN READING AS A FORMALITY: verify the FILE, not an
+aggregate that cites it. `checks/port-compile-gate.py` exists for exactly this and sweeps every file
+one at a time.
