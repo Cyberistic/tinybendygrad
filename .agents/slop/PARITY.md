@@ -4124,3 +4124,44 @@ substring allocations for four cons cells -- one per character scanned -- to sav
 
 **⇒ AND THAT CLOSES THE DECODE.** 0.9 ms of one linear pass, 0.43 ms of `nums` whose only cheaper form is a
 pass with MORE allocations, and 0.3 ms of record building.
+
+## 93. THE TEXT CLASS IS 17.5x COPY AMPLIFICATION, AND THE ARITHMETIC CLOSES IT
+
+§86 priced the whole text class at 2.16 ms by ablating `ku_text`. This section asks WHY, by counting the
+characters actually fed to `String.concat` in one render.
+
+```
+concat: 11,909 parts, 77,500 characters fed
+rendered: 4,426 characters
+AMPLIFICATION = 17.5x
+```
+
+### 93.1 And it accounts for the whole class
+
+`String.concat` is `h + concat(t)` over JS strings, so every character fed to it is copied. At the ~30 ns a
+character that JS string concatenation costs at these sizes:
+
+```
+77,500 characters x 30 ns = 2.33 ms        §86's ablation of the same class: 2.16 ms
+```
+
+**THE TEXT CLASS IS NOT "BUILDING THE C". IT IS COPYING IT 17.5 TIMES.** Every expression's text is
+materialised, then copied again by its parent, then again by the statement that embeds it -- a leaf inside
+a depth-d expression is copied d times before the kernel's single `String.join`.
+
+### 93.2 The fix has a shape, a size, and a price -- and it is not in this commit
+
+The only way to stop copying is to stop materialising: every `ku_text_*` / `cfo_*` / `render_*` would
+return a `List<String>` of PIECES, parents would Cons their children's lists (O(1) per piece, no character
+copied), and ONE `String.join(list, "")` at the statement would make the string once. That is a functional
+builder in a language with no builder -- exactly what §86 said was missing, constructed instead of assumed.
+
+Its size is the problem: it is most of `cstyle.bend`'s text path -- every arm of `ku_text.go`, the `cfo_*`
+family, `render_cast`/`render_type`/`render_dtype`, `_render.plain`/`decl`, `st_kernel` -- about sixty
+definitions changing one type. Its measured expectation is ~2 ms of a 4.9 ms turn, **the largest single
+prize left on this side**, and a byte-identical gate set that will catch any mistake in it.
+
+**⇒ IT IS NOT STARTED HERE, AND THAT IS A BUDGET DECISION, NOT A MEASUREMENT ONE.** A sixty-definition
+type change cannot be finished and verified inside this turn, and a half-converted text path is a broken
+renderer. The measurement is the deliverable: **17.5x, 2.33 ms of copying, and the exact shape that removes
+it.**
