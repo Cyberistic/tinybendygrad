@@ -27927,3 +27927,48 @@ certificate covers the port and not just a tree that happens to be green.
 **`RWk` **STATE **MACHINE **IS **THE **PATTERN **TO **COPY** -- fuel first, scrutinees as
 fields, one computation per step -- and `UOp.substitute` is the existing proof that a
 per-node fixpoint plus a rebuild of the replacement is expressible.
+
+`bottom_up` IS TWO JOBS, NOT ONE -- and the second is a LAYERING MOVE with a measured reason
+
+**⇒ AND **THE **DRIVER **HALF **IS **SMALL **AND **THE **PATTERN **ALREADY **EXISTS:
+upstream's `bottom_up=True` is `RewriteContext(pm=None, bpm=pm, ...)` and applies `bpm` to
+a FIXPOINT per node before descending.  `UOp.substitute` **IS **THAT **SHAPE** already --
+`sub_fix` is the per-node fixpoint and `sub_one` rebuilds the REPLACEMENT from its own
+srcs -- so `graph_rewrite_bu` is `walk_rewrite` with a `wr.step_bu`, about twenty lines,
+and the `1n++`/fuel-first/one-computation-per-step discipline is measured and in use.
+
+**⇒ AND **`enter_calls` **IS **ALREADY **IN **AND **GATED:** `walk_rewrite_ec`,
+`unified_rewrite_ec`, `graph_rewrite_ec`, with `ec_default`/`ec_enter` and three plants.
+**THE **OBJECTIVE'S **PHRASE **"`bottom_up`/`enter_calls`"** **IS **HALF **DONE **AND **I
+**SHOULD **HAVE **SAID **SO **EARLIER.**  **WHAT **IS **MISSING **IS **ONLY **THE **`bottom_up`
+**HALF.
+
+**⇒ AND **THE **SECOND **JOB **IS **WHY **`canonicalize_call_body` **CANNOT **FOLLOW
+**IMMEDIATELY, **AND **IT **IS **A **CYCLE **AND **NOT **AN **OMISSION:**
+
+    tinybendygrad/uop/ops.bend imports: Base, helpers, LAWS/spec, renderer/estimates
+    tinybendygrad/schedule/__init__.bend imports: ..., uop/ops.bend, uop/fold.bend
+
+**SO `ops.bend` CANNOT **IMPORT `schedule`.**  And `canonicalize_call_body`'s rule body
+must DISPATCH FROM `pm_dispatch_m` (that is where every tag's body lives), whose ctx is
+the `CTX` this session just typed -- **AND **THE **VALUE **THAT **BODY **NEEDS **IS:**
+
+    type CallifyCtx is Data:
+      CallifyCtx{replacements: List<&2, U32>, allocs: List<&2, Aa>, views: List<&2, U32>, stores: List<&2, U32>}
+
+**A **SCHEDULE **TYPE, **WITH **48 **REFERENCES **AND **A **FIELD **WHOSE **ELEMENT **TYPE
+(`Aa`) **IS **ALSO **A **SCHEDULE **TYPE.**  **⇒ **SO **`CTX` **GAINS **NO **`CCallify`
+**VARIANT **UNTIL **`Aa` **AND **`CallifyCtx` **MOVE **INTO **`uop/ops.bend`, **WHICH **IS
+**A **RENAME **ACROSS **48 **SITES **AND **IS **NOT **A **RENAME **I **WILL **START
+**WITHOUT **SAYING **SO -- **`schedule/__init__.bend` **IS **THE **FILE **THIS **SESSION
+**HAS **EDITED **MOST.**
+
+**⇒ AND **THE **ORDER **IS **THEREFORE: (1) `graph_rewrite_bu` **with **a **gate **that
+**shows **it **DIFFERS **from `walk_rewrite`; (2) **move **`Aa`/`CallifyCtx` **into
+**`uop/ops.bend`; (3) **add **`CTX.CCallify`; (4) **`canonicalize_call_body`.  **EACH
+**IS **A **SEPARATE **CERTIFY **CYCLE **AND **NOTHING **ABOUT **THEM **IS **A **GUESS
+**ANY MORE.
+
+**⇒ AND **THE **CERTIFICATE **IS **TAKEN **AND **PUSHED **REGARDLESS:** `081cf904`, seven
+of seven readings OK, `PASS -- the claim is ESTABLISHED`, and it covers the whole `CTX`
+increment.
