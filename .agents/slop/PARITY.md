@@ -3624,3 +3624,52 @@ three in a row** (§79.1 0.9934, §80 0.9900, §81 0.9751/1.0075).
 + 0.75 fields, and the two terms a scanner attacks are the two whose parts have all measured free: `fld`'s
 list walks (§81) and the token grouping (§80). What it could win is one construction replacing another of
 the same order.
+
+## 83. THE PIPE FRAME PROTOCOL: BUILT, COMPILED AFTER FIVE REFUSALS, AND IT DOES NOT WORK
+
+§79.2 declined the length-prefixed FIFO frame on the ground that a pipe still copies the 9.5 KB. That was a
+reason, not a proof, and the bound (0.8530, 0.96 ms) is the largest un-attempted lever left. So it was
+attempted. **It compiles. It stalls on the first frame, and it is not shipped.**
+
+### 83.1 Five refusals, each of which is the design
+
+A read-until-done loop over a linear `File` has to survive the language, and it took five shapes to find
+one the compiler accepts. Every message below is verbatim:
+
+| shape | refusal |
+|---|---|
+| a helper def that calls back into the loop | `expected : a filled definition` (mutual recursion) |
+| a lambda matching its own pair parameter | `'m' can't be matched in this position` |
+| destructuring in a do-block | `expected : a term` |
+| two `match`es in one def (`mode` then the read) | `'mode' can't be matched ... after a match on a later binder` |
+| a `File` field in a `Data` state type | `expected : Data, observed : Type` |
+
+The shape that survives: **the fuel first** (the decreasing-self-call check reads arguments left to right),
+**the read pair as the loop's parameter** (so every continuation is a self-call), **the mode in a state type
+of plain data**, and **the transition in a pure def that consumes the result**.
+
+### 83.2 What it does
+
+`"<decimal length>\n<wire>"` in ONE write; the worker reads the digits one byte at a time, then reads
+`need - have` bytes per iteration until the promise is met, then renders and waits for the next frame's
+first byte. The state is `SRead{mode, acc, need} | SEmit{acc} | SBad{}`; `st_of` interprets the byte that
+just arrived and `sz_of` says how many the next read wants, so `serve` needs exactly one match.
+
+### 83.3 What happened
+
+```
+bin/bend serve_frame.bend --check-only   ->   ALL PROOFS CHECK
+bin/bend serve_frame.bend -o serve_frame.js  ->  327,576 bytes
+write "9516\n<wire>" in one call, read stdout   ->  NO OUTPUT, process alive, no exit
+```
+
+**The first frame is never rendered and the process never dies**, which is the signature of a loop reading
+an empty `File.read` forever (Bun answers `""` rather than blocking at some point in this path) or of a
+state that asks for more bytes than the frame holds. Both are one-line hypotheses and neither could be told
+apart **without a print-debug loop whose every iteration is a Bend build plus a process spawn**, and the
+scratch instrumentation that would answer it broke the type checker (`expected : @-R:Type -> ...`) before it
+could print once.
+
+**⇒ SO IT IS NOT SHIPPED, AND THAT IS THE MEASUREMENT.** A protocol that cannot be seen to render is not a
+protocol; the shipped one renders, and its 0.96 ms stays spent. The scratch file is deleted rather than left
+in the tree, because a harness that does not work is a harness that rots.
