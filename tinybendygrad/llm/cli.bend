@@ -23,6 +23,7 @@
 # calls.
 
 import Base
+import ./gguf.bend as G
 
 # ===========================================================================
 # cli.py:13-16 -- THE PRESET IS A BEHAVIOUR CLASS, NOT A NAME. Upstream normalises `qwen35`/`qwen35moe`
@@ -79,10 +80,77 @@ def Template.end_turn(+preset: U32, +eos: String) -> String:
     case 5: "[/INST]"                                                # tekken
     case _: eos                                                      # default
 
-# TODO(parity): `SimpleTokenizer` -- BLOCKED ON A LANGUAGE CAPABILITY, not on effort: `encode` needs the
-#   `ucat_range` regex (a generated Unicode-category range table + a matcher). `decode`/`is_end` are the
-#   parts that WOULD port cheaply (`b''.join(self._tok2bytes[tid])` and a membership test), and they are
-#   the next slice.
+# ===========================================================================
+# cli.py:77,82 -- `decode` AND `is_end`, THE CHEAP HALF OF `SimpleTokenizer`.
+#
+# **`decode` IS THE UTF-8 DECODE OF THE TOKENS' BYTES, AND THE PORT ALREADY HAS THAT DECODER.**
+# `llm/gguf.bend:396`'s `utf8.of` is imported and reused rather than re-written, so the two ports cannot
+# disagree about a code point. THE SEAM, STATED: upstream decodes with `errors='replace'`, and `utf8.of`
+# does NOT emit U+FFFD for an invalid sequence -- it decodes what it can. A vocabulary whose bytes are
+# not valid UTF-8 is therefore OUTSIDE this port's contract, and the differential gate uses valid ones.
+#
+# A MISSING TOKEN ID IS `None`, because upstream RAISES `KeyError` and a `String` return would have to
+# invent one. That is the same choice `Template.role` makes for `tekken`'s `ValueError`.
+# ===========================================================================
+type Tok is Data:
+  Tok{tid: U32, bytes: List<&2, U32>}
+
+def Tok.find(+vocab: List<&2, Tok>, +tid: U32) -> Maybe<&1, Tok>:
+  match vocab:
+    case Nil{}: None{}
+    case h <> t:
+      match h:
+        case Tok{k, bytes}:
+          Bool.pick(Maybe<&1, Tok>, U32.is_eq(k, tid), Some{Tok{k, bytes}}, Tok.find(t, tid))
+
+#: ONE self-recursive def carrying the Maybe for the CURRENT id, because a def may not use a later one
+#: and two defs may not call each other (PARITY 18). `rest` LEADS so the shrinking argument comes first.
+#: ONE self-recursive def, and the matches are in DECLARATION ORDER (`rest` first, then `m`, then `tok`):
+#: this tree's Bend refuses matching a binder after a match on a LATER parameter, which is why the two
+#: orderings that read the same do not both compile.
+def Tokenizer.loop(+rest: List<&2, U32>, m: Maybe<&1, Tok>, +vocab: List<&2, Tok>,
+  acc: List<&2, U32>) -> Maybe<&1, List<&2, U32>>:
+  match rest:
+    case Nil{}:
+      match m:
+        case None{}: None{}
+        case Some{tok}:
+          match tok:
+            case Tok{tid, bytes}: Some{List.concat(&2, U32, [acc, bytes])}
+    case h <> t:
+      match m:
+        case None{}: None{}
+        case Some{tok}:
+          match tok:
+            case Tok{tid, bytes}:
+              Tokenizer.loop(t, Tok.find(vocab, h), vocab, List.concat(&2, U32, [acc, bytes]))
+
+def Tokenizer.decode.start(+vocab: List<&2, Tok>, +ids: List<&2, U32>) -> Maybe<&1, List<&2, U32>>:
+  match ids:
+    case Nil{}: Some{Nil{}}
+    case h <> t: Tokenizer.loop(t, Tok.find(vocab, h), vocab, Nil{})
+
+def Tokenizer.decode(+vocab: List<&2, Tok>, +ids: List<&2, U32>) -> Maybe<&1, String>:
+  # a lambda, because `utf8.of` takes its bytes LINEARLY (`+bs`) and `Maybe.map` wants a plain function
+  Maybe.map(&1, List<&2, U32>, String, b => G.utf8.of(b), Tokenizer.decode.start(vocab, ids))
+
+
+
+#: cli.py:82 -- `token_id in (self.eos_id, self.eot_id, self.eom_id)`. Upstream carries three `int|None`;
+#: the SET of present ids is the same thing, and a `List<&2, U32>` avoids putting a `Maybe` over a `Type`
+#: in a record field -- which Bend REFUSES: MEASURED, `Maybe<&1, U32>` as a record field answers
+#: "expected : Data, observed : Type", exactly as `Maybe<&1, F32>` did in `SSMConfig` (PARITY 7).
+def Tokenizer.is_end(+ends: List<&2, U32>, +tid: U32) -> Bool:
+  match ends:
+    case Nil{}: False{}
+    case h <> t: Bool.or(U32.is_eq(h, tid), Tokenizer.is_end(t, tid))
+
+# TODO(parity): `FallbackTemplate.render` -- needs the per-message `role()` results ZIPPED with the
+#   messages, because a def may not call a later def and two defs may not call each other (PARITY 18), so
+#   a `Maybe`-threaded loop over messages cannot be written as loop + continuation. The shape is a
+#   two-pass map-then-fold, and `List.map` does the first pass.
+# TODO(parity): `SimpleTokenizer.encode` -- BLOCKED ON A LANGUAGE CAPABILITY: `__init__` builds the split
+#   regex from `unicodedata.category` ranges, which Bend has neither a regex engine nor a table for.
 # TODO(parity): `FallbackTemplate.render` -- needs a message list and the tokenizer's `decode` for the
 #   BOS/end-turn strings; port it together with `decode`.
 # TODO(parity): `main()` and the `models` URL table -- needs `model.bend`'s `Transformer` and a fetch.

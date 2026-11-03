@@ -474,7 +474,9 @@ rule is what makes it countable: `start == end == live`.**)
 | piece of `cli.py` | state |
 |---|---|
 | `FallbackTemplate.role` / `.end_turn` | **PORTED AND GATED** — `gates/llm_cli_template-gate.py` |
-| `SimpleTokenizer` | **NOT PORTABLE AS WRITTEN** — see below |
+| `SimpleTokenizer.decode` / `.is_end` | **PORTED AND GATED** — `gates/llm_cli_tokenizer-gate.py` |
+| `SimpleTokenizer.encode` | **NOT PORTABLE AS WRITTEN** — see below |
+| `FallbackTemplate.render` | not ported: needs the map-then-fold shape (see the file's TODO) |
 | `main()` + the `models` URL table | not ported: needs `model.bend`'s `Transformer` and a fetch |
 
 The gate compares all **38 rows** (6 presets × 3 roles, plus `end_turn`) against upstream's own
@@ -630,3 +632,33 @@ row above quotes its round count.
 **MEASURED ANSWER TO THE OBJECTIVE'S LAST QUESTION: the lanes are the same cost to within +/-4% at every
 size measured, with the port never slower and sometimes faster. There is no measurable headroom left
 inside the port at 16, 32, 256, 512 matmul or a 128 conv2d.**
+
+## 21. THE TOKENIZER'S CHEAP HALF IS PORTED AND GATED, AND IT RE-USES THE EXISTING UTF-8 DECODER
+
+`SimpleTokenizer.decode` and `.is_end` are the parts of the 223-line module that need no regex:
+
+```
+rows  10 port / 10 upstream, 0 differ
+llm_cli_tokenizer: PASS -- decode and is_end match upstream on 5 id lists and 5 end ids
+```
+
+**AND IT GOES RED:** making `is_end` stop at the head of its list makes the gate exit **1** with
+`row 6: port='end/3\tFalse' upstream='end/3\tTrue'`. Clean: exit 0.
+
+**`decode` RE-USES `llm/gguf.bend`'s `utf8.of` RATHER THAN GROWING A SECOND DECODER**, so the two ports
+cannot disagree about a code point. The gate pins that across a 2-byte code point (U+00E9), a 4-byte one
+(U+1F642), an empty list, a mixed list, and an ABSENT id (upstream raises `KeyError`; the port answers
+`None`, printed `NONE`).
+
+**TWO SEAMS, STATED RATHER THAN HIDDEN:**
+- upstream decodes with `errors='replace'`; `utf8.of` emits no U+FFFD for an invalid sequence, so a
+  vocabulary with invalid bytes is OUTSIDE this port's contract and the gate uses valid UTF-8 only.
+- `is_end` takes the SET of present end ids (`List<&2, U32>`) instead of upstream's three `int|None`,
+  because a `Maybe` over a `Type` cannot be a record field — MEASURED, `Maybe<&1, U32>` there answers
+  "expected : Data, observed : Type", the same message `Maybe<&1, F32>` gave in `SSMConfig` (PARITY 7).
+
+**`FallbackTemplate.render` REMAINS UNPORTED, AND THE REASON IS THE SAME WALL §18 NAMES.** It threads a
+`Maybe` (`role()` fails for tekken) through a loop over messages, and a loop whose continuation consumes a
+`Maybe` cannot be written as loop + helper here: a def may not use a later def, and two defs may not call
+each other. The expressible shape is a TWO-PASS map-then-fold (`List.map` then one recursive fold that
+pops the `Maybe` off a list), and that is what its `TODO(parity)` records.
