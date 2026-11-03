@@ -7929,6 +7929,41 @@ def fz_head.of(op: O.Op, a: O.Arg, ar: O.Arena) -> String:
     case O.OpsPARAM{}: fz_render.param(a)
     case _: fz_head.sfx(a, R.op_lower(op))
 
+# ---- `ops.py:495`, `UOp.simplify` --------------------------------------------------
+#
+#     if self.op is Ops.CONST: return self
+#     if self.op is Ops.SINK and all(...): return self
+#     return graph_rewrite(self, symbolic, name="simplify")
+#
+# IT IS BUILT HERE AND NOT ON `codegen`'s `graph_rewrite`, AND THAT IS MEASURED:
+# `graph_rewrite(ar, i, sym_table(), CArgs{Nil{}}, False{})` on `(mul xi c1)` records
+# `repl: 0->0 1->1 2->0 3->0 4->0` -- ONE entry, an IDENTITY, and the rewritable node `3` a MISS.
+# The reason is structural: a `PMEntry` carries the tag, the ops and the reject set, but the BODY for
+# each tag is `sym_dispatch`, which lives in THIS file, and `codegen/__init__.bend` does not import
+# symbolic (the dependency runs the other way, for `substitute`). A table with no dispatcher cannot
+# apply a rule.
+#
+# SO THE PASS IS `sym_f` -- the scanner this file already trusts -- and `simplify` is its FIXPOINT,
+# which is what `walk=False` is upstream. `sy_novel` is what `sym_try` uses to answer "did the rule
+# change the node", so a `None` from `sym_f` IS "no change" and the loop stops.
+#
+# THE PASS CAP IS A CAP AND IT IS NAMED: upstream runs to a fixpoint with no bound, this runs at most
+# 8 passes. A graph that needs more answers its 8th iterate rather than looping; that is a divergence
+# class this def cannot see, and `SIMPLIFY_PASSES` is where to raise it.
+def sy_simp.go(m: Maybe<&1, O.Found>, +f: O.Found) -> O.Found:
+  match m:
+    case Some{+g}: g
+    case None{}  : f
+
+def sy_simp.n(fuel: Nat, +f: O.Found) -> O.Found:
+  match fuel:
+    case 0n: f
+    case 1n+p:
+      sy_simp.n(p, sy_simp.go(sym_f(F.folded(O.Found.ar(f)), O.Found.i(f)), f))
+
+def sy_simplify(+ar: O.Arena, i: U32) -> Maybe<&1, O.Found>:
+  Some{sy_simp.n(8n, O.Found{ar, i})}
+
 def fz_head(+ar: O.Arena, +u: U32) -> String: fz_head.of(O.Arena.op(ar, u), O.Arena.arg(ar, u), ar)
 
 # A LEAF IS NOT A NODE WITH NO SRCS. `fz_head` answers a CONST's value and a PARAM's name
