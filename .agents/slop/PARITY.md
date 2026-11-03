@@ -3052,3 +3052,55 @@ ratio min 0.7893  p25 0.9488  median 0.9717  max 1.5357   11 of 14 faster
 **AND THIS IS THE FIRST CHANGE IN SIX ATTEMPTS THAT CAME FROM THE PROFILE RATHER THAN FROM A CALL COUNT** --
 §47 established that a call count is not a cost, and §60/§61 spent three sections on counts without finding
 this. The instrument that worked was the one that measured TIME in the process that pays it.
+
+### 70.1 The certificate for §70
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **17:07:48**, `substrate-head=10753a429`:
+
+```
+substrate-start = substrate-end = 8da9007c6012...
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+controls=5 of 5   conflations=4 of 4
+```
+
+and it covers §70 by construction: `git merge-base --is-ancestor 88cbf273f 10753a429` is TRUE and
+`git diff --stat 88cbf273f 10753a429 -- live.bend cstyle.bend` is EMPTY, so the tree the run describes is the
+tree the reordered op table is in. (The `live` digest afterwards is a later unit's commit.)
+
+## 71. THE WORKER AT 20 TURNS: WHAT LEADS IS THE READ, AND THE 1 GiB BOUND IS INNOCENT
+
+§70's profile was two turns and mostly idle. This one is twenty turns driven 50 ms apart
+(`--cpu-prof-interval=10`, 154 680 samples):
+
+| self% | self ms | |
+|---|---|---|
+| **14.2** | 430.1 | **`read`** -- the FIFO wait, i.e. idle |
+| 3.4 | 103.7 | `Uint8Array` |
+| 2.3 | 70.7 | `char_len` |
+| 2.1 | 63.5 | `decode` |
+| 1.9 | 60.1 | `helpers_i64_of_hi_lo` |
+| 1.6 | 49.4 | `List_get` (two sites) |
+| 1.3 | 37.1 | `String_split` (two sites) |
+| 0.1 | 5.3 | `List_set` |
+
+### 71.1 The one suspect it raised, tested and cleared
+
+`Uint8Array` 3.4% + `decode` 2.1% is the request file being read, and `serve.bend` asked
+`File.read(f, 1073741824)` -- a ONE GIBIBYTE maximum for an 8.7 KB wire. If the runtime allocated the max,
+that would be 5.5% of the turn for nothing. Bounded it to 1 MiB, byte-identical, and measured the two serve
+artifacts against each other over 12 interleaved rounds:
+
+```
+ratio 1MiB/1GiB  min 0.8934  p25 0.9512  median 1.0086  max 1.0958   6 of 12 faster
+```
+
+**NEUTRAL, SO REVERTED** -- the runtime does not allocate the maximum, it grows the buffer to the read size.
+A suspicion that reads well and measures as nothing, which is the fourth time this record has caught one
+(§37, §40, §41, this).
+
+**⇒ AND THE RANKING SAYS WHAT THE LAST SIX SECTIONS SAID**: with the read-idle excluded (14.2%) the port's
+own sites are `char_len` 2.3, `i64_of_hi_lo` 1.9, `List_get` 1.6, `String_split` 1.3, `List_set` 0.1 -- and
+`char_len` + `String_split` + `List_get` are the decoder and the name walks that §58 and §60 already
+attributed. **`i64_of_hi_lo` AT 1.9% IS THE ONE ITEM THIS RANKING ADDS**, and it is the CONST payload's I64
+constructor: a two-field record literal, called 28.5 times per uop (§46), i.e. another diffuse site rather
+than a defect.
