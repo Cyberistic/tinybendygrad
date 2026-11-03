@@ -2631,3 +2631,46 @@ branch on a computed value), one is diffuse by construction, one was removed twi
 rendering. **THAT IS THE HONEST END OF THIS AXIS** -- not a claim that the goal is impossible, but a claim that
 on this renderer, in this language, with byte-identity as the oracle, the remaining 10 ms is accounted for
 and none of it is waste.
+
+## 60. THE LOOP ATTRIBUTED BY CALL COUNT: TWO O(index) LOOKUPS AND A CALL PER UOP
+
+§59's plants were confounded (removing a decision changes the C). This is the other instrument: counters in
+every function of the LIVE artifact -- one render, normal exit, so the dump cannot be lost the way a killed
+worker's is -- on the same 405-uop wire.
+
+```
+total calls 682,252 for 405 uops -> 1,685 per uop
+
+  cstyle__render_one_go    405   1.0/uop     cstyle_rt            1,497   3.7/uop
+  cstyle__render_one       405   1.0/uop     cstyle_cc_at         1,016   2.5/uop
+  cstyle_st_put            406   1.0/uop     cstyle_ku_text         340   0.8/uop
+  cstyle__render_named     336   0.8/uop     cstyle_ku_inline       340   0.8/uop
+  cstyle__render_emit      340   0.8/uop     cstyle_ku_is_decl       84   0.2/uop
+  cstyle__render_stmt       84   0.2/uop     cstyle_st_c             84   0.2/uop
+  cstyle_child_count         1     --        push/pop                84   0.2/uop
+```
+
+### 60.1 What it says
+
+**EVERY LOOP FUNCTION IS AT ITS MINIMUM: one dispatch, one `st_put` and one emit per uop.** There is no
+redundancy left to remove -- §39 already took the doubled `emit`/`stmt` and §33/§34/§38 the doubled decimals
+and casts. `ku_is_decl`, `st_c` and `push`/`pop` fire only 0.2 times per uop, i.e. on the declarations.
+
+**AND THE TWO FUNCTIONS THAT ARE NOT AT A MINIMUM ARE BOTH O(INDEX) LIST WALKS:**
+
+* `rt` -- **3.7 calls per uop** -- is `List.get(r, i)`: the rendered-name table, walked from the head every
+  time. 1 497 walks per render at an average index near 200 is ~300 000 cons steps.
+* `cc_at` -- **2.5 calls per uop** -- is the same shape on the child-count table: ~200 000 cons steps.
+
+**⇒ SO THE ~4 ms "LOOP" IS ~6 PER-UOP LOOKUPS THAT EACH WALK A LINKED LIST TO AN INDEX.** That is the same
+wall as §44 and §57: a table indexed by position needs a mutable array or O(1) indexing, and `langs/core.bend`
+has neither -- `$List$get` is a `for(;;)` walk down the cells, which is precisely the cost being paid.
+
+**REVERSING THE TABLES DOES NOT HELP AND THE ARITHMETIC IS WORTH STATING**: `rt` is called with `i` and its
+sources are usually just below `i`, so a head-is-latest list costs `n - 1 - i` instead of `i` -- the sum over
+i = 0..n-1 is `n^2/2` either way. The shape is symmetric; only random access fixes it.
+
+**THIS IS THE ATTRIBUTION THE LAST SECTION COULD NOT GET, AND IT AGREES WITH THE PROFILE** (§52: `List_set`
+2.9% + `List_get` 1.9% self, with the walks attributed to their callers) **AND WITH THE SCALING** (§37: render
+7.3 ms at 46 uops, 18.7 at 219, 27.7 at 405 -- superlinear, not quadratic, because the average index grows
+with n while the fixed cost does not).
