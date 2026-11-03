@@ -5400,6 +5400,65 @@ def UOp.vmin(ar: O.Arena, bt: BTable, i: U32) -> Maybe<&2, Bnd>:
 def UOp.vmax(ar: O.Arena, bt: BTable, i: U32) -> Maybe<&2, Bnd>:
   Maybe.map(&2, Bnd2, Bnd, Bnd2.hi, UOp.min_max(ar, bt, i))
 
+# `overflows` -- ops.py:661: `self.vmin < dtype.min or dtype.max < self.vmax`.
+#
+# FOUR ANSWERS AND EACH IS A MEASUREMENT:
+# - a FLOAT dtype's bounds ARE the infinities, so neither clause can hold;
+# - a dtype of 64 BITS OR MORE has bounds that do not fit `I64`, and they cannot be exceeded
+#   either, so both clauses are FALSE for the same reason;
+# - a bound the sweep does not answer is answered `True`, which BLOCKS a rewrite upstream
+#   would make. That is the safe direction: every caller guards on `not overflows`.
+def ovf.mag(k: U32) -> H.I64: H.i64_shl(H.i64_of_i32(1), U32.to_nat(k))
+
+def ovf.min_b(signed: Bool, bits: U32) -> Bnd:
+  match signed:
+    case True{} : BndInt{True{}, ovf.mag(U32.sub(bits, 1))}
+    case False{}: BndInt{False{}, H.i64_of_i32(0)}
+
+def ovf.max_b(signed: Bool, bits: U32) -> Bnd:
+  match signed:
+    case True{} : BndInt{False{}, H.i64_sub(ovf.mag(U32.sub(bits, 1)), H.i64_of_i32(1))}
+    case False{}: BndInt{False{}, H.i64_sub(ovf.mag(bits), H.i64_of_i32(1))}
+
+def ovf.lt_min(signed: Bool, bits: U32, +v: Bnd) -> Bool:
+  match signed:
+    case True{} : bnd.lt(v, ovf.min_b(True{}, bits))
+    case False{}: bnd.lt(v, ovf.min_b(False{}, bits))
+
+def ovf.gt_max(signed: Bool, bits: U32, +v: Bnd) -> Bool:
+  match signed:
+    case True{} : bnd.lt(ovf.max_b(True{}, bits), v)
+    case False{}: bnd.lt(ovf.max_b(False{}, bits), v)
+
+def ovf.wide(n: Bool, +signed: Bool, +bits: U32, +vmin: Bnd, +vmax: Bnd) -> Bool:
+  match n:
+    case True{} : False{}
+    case False{}: Bool.or(ovf.lt_min(signed, bits, vmin), ovf.gt_max(signed, bits, vmax))
+
+def ovf.hi(+a: Bnd, hi: Maybe<&2, Bnd>, signed: Bool, +bits: U32, wide: Bool) -> Bool:
+  match hi:
+    case Some{+b}: ovf.wide(wide, signed, bits, a, b)
+    case None{}  : True{}
+
+def ovf.lo(lo: Maybe<&2, Bnd>, hi: Maybe<&2, Bnd>, signed: Bool, +bits: U32, wide: Bool) -> Bool:
+  match lo:
+    case Some{+a}: ovf.hi(a, hi, signed, bits, wide)
+    case None{}  : True{}
+
+def ovf.f(+ar: O.Arena, +bt: BTable, +i: U32, w: Bool, sgn: Maybe<&1, Bool>, +bits: U32) -> Bool:
+  match w:
+    case True{} : False{}
+    case False{}: ovf.lo(UOp.vmin(ar, bt, i), UOp.vmax(ar, bt, i), Maybe.default(&1, Bool, sgn, False{}), bits, U32.is_gt(bits, 63))
+
+def ovf.cls(ar: O.Arena, bt: BTable, i: U32, +cls: S.Cls, +bits: U32) -> Bool:
+  match cls:
+    case S.CFloat{}    : False{}
+    case S.CWeakFloat{}: False{}
+    case _             : ovf.f(ar, bt, i, False{}, S.Cls.sgn(cls), bits)
+
+def UOp.overflows(ar: O.Arena, bt: BTable, i: U32, +dt: S.Dt) -> Bool:
+  ovf.cls(ar, bt, i, S.Dt.cls(dt), S.Dt.bits(dt))
+
 # The main fold ONCE, then the sweep over the FINISHED table, for `Ranged`'s reason: the
 # sweep reads dtypes, and only a complete main table answers one everywhere. The main
 # `Table` is not a field -- the sweep closed over it.
