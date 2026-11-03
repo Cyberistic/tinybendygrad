@@ -33,7 +33,7 @@
 # UPSTREAM-BLOB	movement.py	790ef23661fac2b9c292bab949377215aa93d37d
 # UPSTREAM-BLOB	symbolic.py	4215370e02d319167044265456023419d62aeeab
 # UPSTREAM-BLOB	weak.py	b91f0c4a74e4516a8ed927c0db4ed51684fc3fba
-# PORT-BLOB	uop/symbolic.bend	3a3162bc8b7d02f86fa04245a95f66fb8098969e
+# PORT-BLOB	uop/symbolic.bend	e35f175ce9a4afe5d7ba4a16d1f0327b211a1725
 #
 1	symbolic.py:82	STACK	sym_table	0	PORTED
 2	symbolic.py:83	BITCAST,CAST,EXP2,LOG2,NEG,RECIPROCAL,SIN,SQRT,TRUNC	sym_table	1	PORTED
@@ -109,20 +109,20 @@
 72	symbolic.py:230	ADD,AND,CMPEQ,CMPNE,MAX,MUL,OR,XOR	sym_table	59	PORTED
 73	symbolic.py:243	OR	sym_table	60	PORTED
 74	symbolic.py:245	ADD	sym_table	61	PORTED
-75	symbolic.py:246	ADD	MISSING	-	MISSING
-76	symbolic.py:247	ADD	sym_table	62	PORTED
-77	symbolic.py:248	ADD	sym_table	63	PORTED
-78	symbolic.py:249	ADD	sym_table	64	PORTED
-79	symbolic.py:250	ADD	sym_table	65	PORTED
-80	symbolic.py:251	ADD	sym_table	66	PORTED
+75	symbolic.py:246	ADD	sym_table	62	PORTED
+76	symbolic.py:247	ADD	sym_table	63	PORTED
+77	symbolic.py:248	ADD	sym_table	64	PORTED
+78	symbolic.py:249	ADD	sym_table	65	PORTED
+79	symbolic.py:250	ADD	sym_table	66	PORTED
+80	symbolic.py:251	ADD	sym_table	67	PORTED
 81	symbolic.py:252	MUL	MISSING	-	MISSING
 82	symbolic.py:253	MUL	MISSING	-	MISSING
 83	symbolic.py:254	MUL	MISSING	-	MISSING
-84	symbolic.py:256	WHERE	sym_table	67	PORTED
+84	symbolic.py:256	WHERE	sym_table	68	PORTED
 85	symbolic.py:259	WHERE	MISSING	-	MISSING
-86	symbolic.py:260	CMPNE	sym_table	68	PORTED
-87	symbolic.py:262	WHERE	sym_table	69	PORTED
-88	symbolic.py:264	WHERE	sym_table	70	PORTED
+86	symbolic.py:260	CMPNE	sym_table	69	PORTED
+87	symbolic.py:262	WHERE	sym_table	70	PORTED
+88	symbolic.py:264	WHERE	sym_table	71	PORTED
 89	symbolic.py:266	ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,FDIV,FLOORDIV,FLOORMOD,MAX,MUL,OR,POW,SHL,SHR,SUB,THREEFRY,XOR	MISSING	-	MISSING
 90	symbolic.py:269	ADD	MISSING	-	MISSING
 91	symbolic.py:272	ADD	MISSING	-	MISSING
@@ -164,15 +164,15 @@
 127	symbolic.py:454	STORE	MISSING	-	MISSING
 128	symbolic.py:458	STORE	MISSING	-	MISSING
 129	symbolic.py:460	STORE	MISSING	-	MISSING
-130	symbolic.py:462	RECIPROCAL	sym_table	71	PORTED
-131	symbolic.py:463	RECIPROCAL	sym_table	72	PORTED
-132	symbolic.py:464	RECIPROCAL	sym_table	73	PORTED
+130	symbolic.py:462	RECIPROCAL	sym_table	72	PORTED
+131	symbolic.py:463	RECIPROCAL	sym_table	73	PORTED
+132	symbolic.py:464	RECIPROCAL	sym_table	74	PORTED
 133	symbolic.py:465	MUL	MISSING	-	MISSING
 134	symbolic.py:466	MUL	MISSING	-	MISSING
 135	symbolic.py:467	MUL	MISSING	-	MISSING
 136	symbolic.py:469	REDUCE	MISSING	-	MISSING
 137	symbolic.py:471	MUL	MISSING	-	MISSING
 138	symbolic.py:473	MUL	MISSING	-	MISSING
-139	symbolic.py:444	SINK	sym_table	74	PORTED
+139	symbolic.py:444	SINK	sym_table	75	PORTED
 140	symbolic.py:108	WHERE	rm_table	0	PORTED
 141	symbolic.py:109	STACK	rm_table	1	PORTED
