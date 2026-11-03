@@ -2793,3 +2793,35 @@ graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical
 That is HEAD, on a tree another unit had just moved, and it is the first reading in several turns where all
 three digests agree **and** the head is the commit I am standing on. The whole of this session's renderer work
 is inside it.
+
+## 64. AFTER THE PACKAGING, THE PORT'S COLD PATH IS 22% FASTER THAN tinygrad's CPU -- 5 OF 5
+
+§34.4 recorded seven seeds where the port was "at or below" the CPU lane. That was BEFORE §49, §50, §53, §54
+and §62. Re-run with everything in place (`e2ecold.py`, fresh process, 5 kernels, shapes shifted per seed,
+checksums compared):
+
+| seed | CPU | BEND | ratio |
+|---|---|---|---|
+| 21 | 633.1 ms | **434.9 ms** | 0.6869 |
+| 22 | 367.8 ms | **278.4 ms** | 0.7569 |
+| 23 | 398.7 ms | **338.7 ms** | 0.8495 |
+| 24 | 510.8 ms | **409.6 ms** | 0.8019 |
+| 25 | 349.1 ms | **273.8 ms** | 0.7843 |
+
+```
+ratio median 0.7843  min 0.6869  max 0.8495   BEND faster in 5 of 5   median saving 21.6%
+```
+
+**NOT "AT OR BELOW" ANY MORE: 22% FASTER, EVERY SEED, AND THE BAND DOES NOT COME NEAR 1.0.** The checksums
+are identical in every row, so this is the same arithmetic through the same compiled C -- what differs is the
+path to it: tinygrad's CPU lane renders and compiles each kernel in its own Python orchestration, while the
+port renders through a packed daemon whose output is content-cached.
+
+**⇒ AND THAT IS THE HONEST STATEMENT OF THE OBJECTIVE**: the port's STEADY STATE is parity, because both lanes
+execute byte-identical C (that is what the 38-graph corpus and 37-kernel sweep exist to guarantee); its COLD
+PATH is now measurably faster, by 22% on this shape, for a reason that is not the arithmetic.
+
+**WHAT THIS IS NOT**: it is not the port's renderer being faster. §60-§63 measure that renderer at ~10 ms per
+405-uop kernel against `ClangRenderer`'s 0.12-2.54 ms, and that gap is real. What the port has is a cheaper
+*way to reach* the compiled C, not cheaper C -- and for a program that compiles many kernels once, the way is
+what a user waits for.
