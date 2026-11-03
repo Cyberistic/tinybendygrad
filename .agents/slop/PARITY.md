@@ -2150,3 +2150,43 @@ three milliseconds. **A CALL COUNT IS NOT A COST**, and §46 presented one as th
 component exceeds ~3 ms, the ten axes already measured stand, and the remaining cost is spread thinner than
 any hypothesis in this record has assumed. **THE RENDER IS FLAT BECAUSE IT IS A THOUSAND THINGS OF TWO
 MILLISECONDS, NOT BECAUSE THE INSTRUMENT IS BLUNT.**
+
+## 48. THE DECODER, MEASURED PER CHARACTER: 0.15 us EACH, ~4.6 ms TOTAL
+
+§46 counted 150 984 split calls (21%) and guessed ~4 ms. §47 learned that a call count is not a cost. So this
+measures CHARACTERS instead, with a plant that changes nothing else: **the same 405 uops, the same render,
+each line padded with 200 ignored characters** -- the parser takes the first eight fields and the extra one is
+dropped.
+
+```
+wire 13 152 B  ->  padded 94 556 B   (+81 404 characters to scan)
+same output bytes: True
+
+normal wire              min 47.8  median 48.5 ms
+padded wire (+81k chars) min 59.1  median 60.5 ms
+
+scanning 81 000 extra characters costs 12.0 ms  ->  0.15 us per character
+the wire's ~31 000 scanned characters therefore cost ~4.6 ms
+```
+
+**AND THAT AGREES WITH THE INDEPENDENT READING**: §37 measured the whole decode (start-up subtracted) at
+**4.2 ms**. Two different instruments, one number -- so the split chain is not *part* of the decode, it very
+nearly *is* the decode.
+
+### 48.1 What the lever is worth, and why it is bounded
+
+0.15 us/char times the wire means the decoder's cost is **linear in the TEXT**, and the only way to cut it is
+to emit less text. The wire is 32.5 bytes per uop:
+
+```
+CONST f32 ALU - 1 none - -        27 chars: op 5, dt 3, addr 4, shape 1, numel 1, kind 4, payload 1, srcs 1, spaces 7
+```
+
+Coding the four name fields (`op` 2 chars, `dt` 1, `addr` 1, `kind` 2) removes about 10 of those 27 -- **37%
+of the wire, so ~1.7 ms of the 4.6**, i.e. **~3.5% of a 47 ms command**, and it needs four generated tables
+(75 ops, 16 dtypes, 4 address spaces, 17 arg kinds) whose only guard is `portc.op_table_cover`'s coverage
+check and `ksweep`'s 37 kernels.
+
+**⇒ SO THE DECODER'S CEILING IS 4.6 ms AND THE BEST AVAILABLE CHANGE IS 1.7 OF IT.** That is above ab33's
+noise floor (§38 resolved 1.1%), so it is a real target rather than a rounding -- but it is also the whole of
+what this axis contains, and it is a coded wire with four tables to get right, not a one-line change.
