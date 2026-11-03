@@ -997,3 +997,85 @@ to `live.bend` and produced `start=2688060f...` against `end=01f74e5c...` -- a r
 true and whose certificate was VOID. The digest caught it. **A .bend EDIT IS A SUBSTRATE CHANGE EVEN WHEN IT
 IS A COMMENT**, which is the trap, and the tree's own advice -- freeze the substrate before taking the
 reading -- is the only defence.
+
+## 27. THE RENDERER, 2x: A STRING-KEYED TYPE MAP BUILT SIX TIMES PER DTYPE
+
+§26.5 named the renderer as the target and guessed at `I64`. **THE GUESS WAS WRONG IN ITS FIRST HALF and this
+section retracts it before fixing anything:** `type I64 is Data: I64{hi: U32, lo: U32}` in
+`helpers.bend:1648` -- **`I64` WAS ALREADY A U32 PAIR**, and `i64_of_hi_lo` compiles to
+`{$: "I64", hi, lo}`, a two-field object literal. A function that cheap cannot be 12% of a render in SELF
+time; what 12% means is that it is CALLED millions of times, and a profile's leaf ranks are a map of the call
+COUNT, not of the cost. Reading them as "this function is expensive" is the mistake this section started
+with.
+
+### 27.1 The real cause, from the call tree rather than the leaf list
+
+Same 405-uop kernel, `bun --cpu-prof --cpu-prof-interval=50` (**2 062 samples at 50 us**, where the previous
+reading had 183 at 1 ms and could not resolve this):
+
+| total% | function |
+|---|---|
+| 81.8% | `cstyle.render` |
+| 66.6% | `List_append` |
+| 58.3% | `render_dtype` |
+| 57.9% | `rd_base_name` |
+| 54.0% | `type_map_over` |
+| 53.4% | `Kv_go` -> **`Map_set` 53.4%** |
+| 53.1% | `type_map_of` -> `type_map_clang` 53.1% |
+
+**`type_map.of(dev)` BUILDS the device's type map on every call**, and the map's keys are `String`s, so every
+insert hashes a string a character at a time -- which is why `char_len` (15.0%) and `Char_cmp` (2.0%) were
+sitting at the top of the leaf list with no obvious caller. The code built it SIX TIMES PER DTYPE:
+`rd_name` called `rd_base_name` three times on one line, and `rd_body` called `rd_name` in BOTH arms of a
+`Bool.pick`, which evaluates both.
+
+### 27.2 The change
+
+`rd_name` and `rd_body` now take the base name from ONE lookup (`rd_name_at`, `rd_body_at`), so a dtype
+render builds the map once instead of six times. Nothing else moves: the same name is looked up once instead
+of six times, and the emitted C is identical.
+
+### 27.3 Measured
+
+Render of the same fixture kernels, `bun` run only, 5 runs each:
+
+| uops | before | after | speed-up |
+|---|---|---|---|
+| 46 | 93.4 ms | **41.7 ms** | 2.24x |
+| 219 | 115.5 ms | **62.1 ms** | 1.86x |
+| 405 | 190.9 ms | **94.0 ms** | 2.03x |
+
+and the number that matters for a real program, `compile.py` cold with every kernel compared against
+`ClangRenderer`: **89.8 ms -> 43.8 ms per kernel (2.05x), 6/6 byte-identical.**
+
+End to end (`e2ecold.py`, fresh process, 5 kernels, checksums identical):
+
+| seed | CPU cold wall | BEND cold wall |
+|---|---|---|
+| 5 | 212.7 ms | 615.6 ms |
+| 6 | 209.0 ms | 594.1 ms |
+| 7 | 209.3 ms | 565.0 ms |
+
+**AND THE HONEST READING OF THAT TABLE IS THAT THE GAP BARELY MOVED** -- it was ~415 ms and is ~380 ms --
+because for these SMALL kernels the ~46 ms of fixed cost (26.5 ms `bun` start-up plus module load) and the
+~10 ms decode are most of what is left, and the render is now a minority of the difference. The render win is
+real and it is what a LARGE kernel feels: at 405 uops the path halved.
+
+### 27.4 Corrected: the same measurement, and what leads now
+
+With the map hoisted, the leaf list on the same kernel is:
+
+| self% | function |
+|---|---|
+| 12.4% | `helpers_i64_of_hi_lo` |
+| 9.6% | `helpers_i64_shl_put` |
+| 7.4% | `char_len` |
+| 3.5% | `nat_divmod` |
+| 2.4% | `helpers_div_qbit` |
+| 1.9% | `Map_bit_go` |
+
+`i64_shl_put` + `nat_divmod` + `div_qbit` is **integer -> DECIMAL conversion, done by bit-serial division**:
+round this tree's I64 by 10, thirty-two bit steps at a time, for every integer constant the kernel carries.
+That is the next target and it is named here with its composition rather than guessed at; the fix is in
+`helpers.bend`'s decimal printing (chunked division by a power of ten), and it is not attempted in this
+commit.

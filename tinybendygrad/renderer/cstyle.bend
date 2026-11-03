@@ -738,8 +738,17 @@ def rd_name.of(vect: Bool, unders: String, plain: String) -> String:
 def rd_base_name(+dev: U32, +d: S.Dt) -> String: type_name(type_map.of(dev), d)
 
 
-def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String:
-  rd_name.of(Bool.and(vect, has_space(rd_base_name(dev, d))), under(rd_base_name(dev, d)), rd_base_name(dev, d))
+# **`rd_base_name` IS COMPUTED ONCE, AND THAT IS A MEASURED CHANGE.** `type_map.of(dev)` BUILDS the device's
+# type map on every call -- a `Map` whose keys are Strings, so each insert hashes a string -- and this line
+# called `rd_base_name` THREE times, while `rd_body` below called `rd_name` in both arms of a `Bool.pick`,
+# i.e. SIX map builds to render ONE dtype. MEASURED with `bun --cpu-prof` on a 405-uop kernel: `render_dtype`
+# was 58% of the whole render and `Map_set` inside `type_map_clang` was 53%, with `char_len` 15% (String-key
+# hashing walks the key a character at a time). Nothing about the answer changes: the same name is looked up
+# once instead of six times.
+def rd_name_at(+nm: String, vect: Bool) -> String:
+  rd_name.of(Bool.and(vect, has_space(nm)), under(nm), nm)
+
+def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String: rd_name_at(rd_base_name(dev, d), vect)
 
 # `Bool.pick(-A, c, a, b)` ANSWERS `a` WHEN `c` IS TRUE -- so the UNDERSCORED
 # spelling is the `b` arm and the plain one is the `a` arm. This line had them the
@@ -753,9 +762,11 @@ def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String:
 
 
 
-def rd_body(+dev: U32, +d: S.Dt, +sz: U32) -> String:
+def rd_body_at(+nm: String, +sz: U32) -> String:
   Bool.pick(String, U32.is_gt(sz, 1),
-    String.concat([rd_name(dev, d, True{}), U32.show(sz)]), rd_name(dev, d, False{}))
+    String.concat([rd_name_at(nm, True{}), U32.show(sz)]), rd_name_at(nm, False{}))
+
+def rd_body(+dev: U32, +d: S.Dt, +sz: U32) -> String: rd_body_at(rd_base_name(dev, d), sz)
 
 # `is_image_shape(shape)` -- wall (c), so the test arrives as a `Bool`.
 def rd_image(mutable: Bool) -> String:
