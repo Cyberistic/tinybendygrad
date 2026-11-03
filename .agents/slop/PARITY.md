@@ -3180,3 +3180,41 @@ form).
 **⇒ SO THE I64 AUDIT IS CLOSED WITH A NEGATIVE**: one reachable defect, found in §72, worth 0.5% and below the
 instrument's floor; two unreachable lookalikes; and one apparent pair that is the language's strictness rather
 than a defect.
+
+## 74. THE WORKER AT 60 TURNS: THE LEADER IS THE FILE READ, AND IT IS THE PROTOCOL
+
+§71's 20-turn profile was still read-idle dominated. This one drives 60 turns back-to-back so the worker never
+waits (`--cpu-prof-interval=10`, 147 822 samples, 3.56 s):
+
+| self% | self ms | |
+|---|---|---|
+| **8.8** | 312.2 | **`Uint8Array`** |
+| **5.6** | 199.7 | **`char_len`** |
+| **5.3** | 188.2 | **`decode`** |
+| 1.7 | 60.8 | `u32_to_word` |
+| 1.5 / 1.3 | 54.9 / 45.8 | `List_get` (two sites) |
+| 1.2 / 0.5 | 43.4 / 20.2 | `String_split` (two sites) |
+| 0.5 | 18.3 | `ops_eq_op` |
+| 0.4 | 17.0 | `List_set` |
+
+**`Uint8Array` + `decode` = 14.1% IS THE WORKER READING ITS REQUEST FILE** -- 8.7 KB per turn, sixty times.
+It is the protocol, not the renderer: the caller writes the kernel to a file and signals with one byte, because
+a pipe can deliver a 13 KB wire truncated (§29).
+
+### 74.1 The one lever it suggested, tested twice, rejected twice
+
+`serve.bend` reads with `File.read(f, 1073741824)`, so the first suspicion was that the runtime allocates the
+maximum. Two bounds were tried against it, both byte-identical, both interleaved on the worker itself:
+
+```
+1 MiB  vs 1 GiB    ratio median 1.0086   6 of 12 faster
+64 KiB vs 1 GiB    ratio median 1.0454   7 of 16 faster
+```
+
+**NEUTRAL AND THEN WORSE.** The runtime grows the buffer to the data, so the 14.1% is the 522 KB actually
+copied and decoded across sixty turns -- about 0.9 ms per turn of real I/O, not an over-allocation.
+
+**⇒ AND THE REST OF THE RANKING IS §67's SPLIT, MEASURED FROM THE OTHER SIDE**: `char_len` 5.6% + `String_split`
+1.7% is the decoder's per-character scan, `List_get` 2.8% is the name walks of §60, and there is nothing
+between them. **THE 60-TURN PROFILE AGREES WITH THE 20-TURN ONE, THE ONE-SHOT ONE (§52), THE CALL COUNTS (§60)
+AND THE PLANTS (§56/§58) -- FIVE INSTRUMENTS, ONE SHAPE.**
