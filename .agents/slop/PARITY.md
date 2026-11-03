@@ -4393,3 +4393,58 @@ run 2 (30 rounds): before 4.57 ms  after 4.18 ms   median 0.9311   19/30
 proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec 7/7 · emit-mm and emit-f64 byte-identical
 ```
+
+## 99. THE DECIMAL WAS THE COST ALL ALONG: `u32_dec` BY DIVISION, 0.9460 / 0.9582
+
+§98 left CAST as the render's most expensive class at 0.89 ms after three passes at it. This section
+ablates INSIDE CAST against §98 -- `i64_dec`, `render_type`, `ku_cast_wrapped`, and the whole arm:
+
+```
+i64_dec       full 4.69 -> 4.09   saves 0.65 ms (13.9%)
+render_type   full 4.26 -> 4.19   saves 0.09 ms ( 2.2%)
+wrapped       full 4.31 -> 4.27   saves 0.11 ms ( 2.6%)
+cast_all      full 4.02 -> 4.05   saves 0.18 ms ( 4.4%)   <- noise; the four runs disagree
+```
+
+**`i64_dec` IS 0.65 ms ON ITS OWN -- 13.9% OF THE TURN, AND MORE THAN ABLATING THE WHOLE CAST ARM SAID.**
+(The arm-level figure is the unreliable one of the four: its `full` reading drifted 0.67 ms across the run
+while the others did not.)
+
+### 99.1 Why §90's "neutral" was neutral, and this is not
+
+§90 swapped the I64 fold for `U32.show` and measured 1.0069, because **`U32.show` is `u32_to_word` plus a
+fold, and `u32_to_word` builds THIRTY-TWO CONS CELLS per number in the language prelude**. One expensive
+decimal for another. This walks the digits instead:
+
+```
+u32_nd(fuel, n)      -- how many digits: n < 10 ? 1 : 1 + u32_nd(n / 10)
+u32_dec.go(fuel, n, acc) -- one U32.div, one U32.mod and ONE CONS PER DIGIT
+u32_dec(n)           -- String.from_list(...)
+```
+
+Two passes of at most ten native-arithmetic steps, and `i64_dec` now takes this path when `hi32(x) == 0`
+(47 of the 51 int constants on the 405-uop wire); negative and wide values keep the fold, so the text
+cannot move.
+
+**THE SHAPE OF THE CHANGE IS THE ONE THIS LANGUAGE KEEPS DEMANDING**: `match` cannot scrutinise `n < 10`, so
+the count is its own def; and BOTH defs must put the FUEL FIRST, because "a decreasing self-call" reads its
+arguments left to right and `n` is divided rather than passed unchanged.
+
+### 99.2 Measured
+
+```
+same C: True | bytes: 4426
+run 1 (26 rounds): before 4.44 ms  after 4.37 ms   median 0.9460   20/26
+run 2 (30 rounds): before 4.28 ms  after 4.11 ms   median 0.9582   19/30
+```
+
+**39 OF 56 ROUNDS, BOTH MEDIANS UNDER THE KEEPER LINE -- ~4-5%.**
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec 7/7 · emit-mm and emit-f64 byte-identical
+```
+
+**⇒ AND `U32.show` IS STILL CALLED ~1,500 TIMES A RENDER** (§86 priced the whole decimal class at 0.26 ms
+then, before the NUMBERS grew cheaper elsewhere). Replacing those call sites with `u32_dec` is the next
+slice, and it is now known to be worth something rather than guessed.

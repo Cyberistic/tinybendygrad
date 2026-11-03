@@ -2226,11 +2226,34 @@ def i64_dec.digits.at(+c: U32) -> U32: Bool.pick(U32, U32.is_zero(c), 1, c)
 
 def i64_dec.digits(+x: I64) -> U32: i64_dec.digits.at(i64_dec.dig(x, 19n, i64_of_i32(1), 0))
 
-def i64_dec(+x: I64) -> String:
+# **A DECIMAL BY DIVISION, NOT BY A 32-CELL BIT LIST.** `U32.show` is `u32_to_word` (thirty-two cons cells
+# per number, in the language prelude) plus a fold, which is why §90's swap to it measured NEUTRAL: both
+# formatters are expensive. MEASURED (`PARITY.md` §99): `i64_dec` is **0.65 ms of a 4.7 ms turn, 13.9%**,
+# the largest single cost inside CAST. This walks the digits: one `U32.div`/`U32.mod` and one cons per
+# DIGIT (at most ten), then one `String.from_list`. Negative and wide values keep the fold, so the text
+# cannot move.
+def u32_nd(fuel: Nat, +n: U32) -> Nat:
+  match fuel:
+    case 0n: 1n
+    case 1n+k: Bool.pick(Nat, U32.is_lt(n, 10), 1n, Nat.add(1n, u32_nd(k, U32.div(n, 10))))
+
+def u32_dec.go(fuel: Nat, +n: U32, +acc: List<&2, Char>) -> List<&2, Char>:
+  match fuel:
+    case 0n: acc
+    case 1n+k:
+      u32_dec.go(k, U32.div(n, 10),
+        List.append(&2, Char, [Char.from_u32(U32.add(48, U32.mod(n, 10)))], acc))
+
+def u32_dec(+n: U32) -> String: String.from_list(u32_dec.go(u32_nd(10n, n), n, Nil{}))
+
+def i64_dec.slow(+x: I64) -> String:
   i64_dec.put(i64_is_neg(x),
     i64_dec.text(i64_dec.trim(List.reverse(&2, U32,
       i64_dec.go(U32.to_nat(i64_dec.digits(i64_abs(x))), Nil{},
         u64_divmod(i64_abs(x), i64_of_i32(10))))), SNil{}))
+
+def i64_dec(+x: I64) -> String:
+  Bool.pick(String, U32.is_eq(hi32(x), 0), u32_dec(lo32(x)), i64_dec.slow(x))
 def i64_mod(a: I64, b: I64) -> I64:
   divmod_r(i64_divmod(a, b))
 
