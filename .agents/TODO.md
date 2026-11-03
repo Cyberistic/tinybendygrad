@@ -27695,3 +27695,51 @@ port entered call bodies where upstream's table was written to run OUTSIDE them,
 default `0` is a legal arena index, so an unvisited src became **NODE 0** rather than
 itself.  **A **COMMENT **THAT **NAMES **A **GUARANTEE **THE **CODE **DOES **NOT
 **CHECK **IS **A **DEFECT **WAITING **FOR **A **CHANGE **TO **TRIP **IT.**
+
+CORRECTION: MUTUAL RECURSION IS IMPOSSIBLE, BUT THE WORKLIST SHAPE IS NOT -- and I wrote the stronger claim
+
+**⇒ AND **`f6921b283` **AND **`2af8ad467` **BOTH **SAY **"a **faithful **port **is **MUTUAL
+**RECURSION **between **two **defs -- **which **Bend **does **not **have"**, **AND **THAT
+**IS **TRUE **AND **IT **IS **NOT **THE **WHOLE **ANSWER.  MEASURED **2026-11-03, **four
+**minimal **files **in **a **scratch **directory:**
+
+    def f(n: Nat) -> Nat:  ... case 1n+m: g(m) ...    <- `g` defined AFTER `f`
+    def g(n: Nat) -> Nat: f(n)
+
+    Error: expected : a filled definition ... observed : g
+
+**⇒ AND **SO **THE **DEFINED-BEFORE-USE **RULE **IS **CONFIRMED **AND **MUTUAL
+**RECURSION **IS **GENUINELY **UNAVAILABLE.
+
+**⇒ AND **BUT **THE **SHAPE **THE **WORKLIST **ACTUALLY **NEEDS **IS **ONE **SELF
+**RECURSIVE **DEF, **AND **THAT **WORKS -- **INCLUDING **A **NON-TAIL **SELF-CALL
+**WHOSE **RESULT **FEEDS **ANOTHER **SELF-CALL:**
+
+    def h(n: Nat, xs: List<U32>) -> U32:
+      match n:
+        case 0n: 0
+        case 1n++m:
+          match xs:
+            case Nil{}: 0
+            case x <> t:
+              +r = h(m, [x])        <- NON-TAIL
+              U32.add(r, h(m, t))   <- and the fuel is read TWICE
+
+**IT **COMPILES **AND **RUNS.  **THE **TWO **THINGS **THAT **MADE **IT **POSSIBLE **ARE
+**BOTH **LANGUAGE **DETAILS **I **HAD **NOT **MEASURED:**
+
+  * **`case 1n++m:`** -- a COPYABLE successor binder, so the fuel can be spent twice.
+    Without the extra `+` the error is `expected : m / observed : m (consumed more
+    than once)`, which reads like a termination failure and is a LINEARITY failure.
+  * **A NON-TAIL SELF-CALL** is fine. The termination checker is satisfied by the
+    `Nat` shrinking on EVERY self-call, so the list recursion must spend fuel too --
+    which is why `h` takes `n` at all.
+
+**⇒ AND **SO **THE **HONEST **STATEMENT **IS: **`resolve_linear_call`'s **arm **1 **and
+`canonicalize_call_body`'s **recursive **`graph_rewrite` **are **NOT **BLOCKED **by **a
+**missing **language **feature.  THEY **ARE **BLOCKED **BY **A **REWRITE **I **HAVE **NOT
+**DONE: **merge `sc_apply_binds`/`sc_ab_srcs`/`sc_resolve` **into **ONE **self-recursive
+**def **that **carries a work item, **so **the **cycle **becomes **a **self-call.  **THE
+**REFUSAL **STAYS **UNTIL **THAT **LANDS -- **but **its **stated **REASON **is **now
+**narrower **than **the **one **in **the **code, **and **a **wrong **reason **is **how **a
+**refusal **becomes **permanent.
