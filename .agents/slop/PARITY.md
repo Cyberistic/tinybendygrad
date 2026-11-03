@@ -4844,3 +4844,22 @@ portexec 7/7 · emit-mm and emit-f64 byte-identical
 THE TURN COUNT PRODUCES A CALL COUNT THAT IS OFF BY TWO ORDERS OF MAGNITUDE. The site that the profile's
 *mechanism* named (string equality as ordering) was real and worth 9.4%; the number the profile gave for it
 was not.
+
+### 108.3 The two single-character `String.eq` sites, measured: AT THE LINE, NOT KEPT
+
+§108 left 91 `String.eq` calls a render, and named two of them: `strip_pieces`' `String.eq(h, "(")` and the
+frame decoder's `is_nl`, `String.eq(text, "\n")`. Both became literal patterns -- `match s: case "(": ...`,
+which compiles to `===` -- and both are byte-identical at 37 of 37 on both decoders:
+
+```
+run 1 (26 rounds): before 3.34 ms  after 3.18 ms   median 0.9729   21/26
+run 2 (30 rounds): before 3.21 ms  after 3.24 ms   median 0.9813   17/30
+```
+
+**REVERTED: THE PAIR STRADDLES THE KEEPER LINE (0.9729 THEN 0.9813) AND THE SECOND RUN IS ABOVE IT.** 38 of 56
+rounds and a ~2% effect is what the arithmetic predicted from 91 compares a render, and it is not enough
+evidence to land a change -- the same standard that reverted §72, §79.1, §80, §81, §87, §90, §92, §94 and
+§104.
+
+**⇒ SO THE `eq_dt` FIX WAS THE WHOLE OF THAT MECHANISM**: 3,253 compares a render to 91 was worth 9.4%;
+the last 91 are worth ~2% and cannot be separated from the instrument.
