@@ -944,3 +944,56 @@ renderer's own JS.
 2. **The bigger number is the renderer itself.** 0.35 ms/uop against upstream's 0.13 ms per WHOLE KERNEL is
    two to three orders of magnitude, and it is the port's own code, not the harness. It is now the named next
    target, and it is a change to `cstyle.bend`, not to any instrument here.
+
+### 26.5 WHAT THE RENDERER SPENDS ITS TIME ON, PROFILED RATHER THAN GUESSED
+
+`bun --cpu-prof --cpu-prof-md` on the literal driver for `r_2_14_14_4_4_3_3` (405 uops, 4 427 B of C). The
+profile covers a **305.9 ms** run at a 1 ms interval, so it is **183 samples**: the ordering below is
+readable and the percentages are coarse.
+
+| self% | function |
+|---|---|
+| 14.2% | `char_len` |
+| 12.6% | `helpers_i64_of_hi_lo` |
+| 4.2 / 3.6 / 2.8 / 2.5 / 1.7 / 1.7 / 1.6 / 1.2 / 1.1 / 1.0 / 1.0 / 0.9 / 0.9 / 0.8 | `Map_seek_go`, `Map_bit_go`, `Map_ins_splice_bit`, `Map_bit_go_chr`, `Map_ins_go`, `Map_ins_go`, `Map_get_leaf`, `Map_ins_splice`, `Map_bit_go`, `Map_seek_go`, `Map_seek_go`, `Map_ins_go`, `Map_ins_go`, `Map_diff` |
+| 2.8% | `uop_ops_eq_cls_sel` |
+| 2.1% | `helpers_i64_shl_put` |
+| 1.6% | `helpers_div_fit_put` |
+
+**THE RENDERER IS NOT SPENDING ITS TIME BUILDING STRINGS.** `$String_concat` is 1.2% and `$List_get` 1.4%.
+**IT IS SPENDING IT IN THE PORT's `I64` REPRESENTATION, WHICH IS A BIT-MAP**: `i64_of_hi_lo` builds a 64-bit
+value by INSERTING ITS BITS one at a time (`Map_ins_splice_bit`, `Map_bit_go`, `Map_seek_go`), so every
+integer constant a kernel carries costs a walk of that structure, and every `i64` shift re-walks it. `char_len`
+at 14.2% is the other half: a per-character UTF-8 length, on the hottest path of emitting C.
+
+**SO THE 0.35 ms/uop IS NOT "Bend is slow" AND IT IS NOT THE HARNESS. It is two concrete representations
+paying per token**, and the next step is one of those two -- `I64` in `helpers.bend` (a bit-map where a pair
+of `U32` would do) or the per-character length in the C emitter. **THIS SECTION DOES NOT CLAIM EITHER IS
+CHEAP TO CHANGE**: `helpers.bend` is law-proved, so its `I64` laws move with it, and that is a change to the
+substrate rather than to an instrument. It is recorded here because a number was measured and a cause was
+named, which is cheaper than the guess this section started with.
+
+### 26.6 THE CERTIFICATE, AND WHICH RUN IT IS
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **2026-11-03 07:11**, `substrate-head=d157f13e3d2d`:
+
+```
+substrate-start = substrate-end = live = 01f74e5cac3a583ba8e0684426161e8c7d215b7e9cc4db07ffba4b13decee406
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+controls=5 of 5   conflations=4 of 4   oracle-selfcheck=# ORACLE SELFCHECK: OK   census-rc=rc=0
+```
+
+**THE RUN THAT PROVES THIS IS NOT ONE THIS SECTION STARTED.** The corpus is a SINGLETON
+(`runs/graphcmp/.corpus.lock`), and while this section was being written another unit held it twice -- both
+of my own attempts exited **3** with the holder's pid and the reason, which is the lock working. The run that
+landed is the one already on disk, and `live` matches it, so it describes THIS worktree: `substrate_digest()`
+is over the WORKING TREE, and the commits after it (`4cb30288e`, `9a57d0611`) touched `ops_bend.py`,
+`tinybendygrad/renderer/live.bend` -- which was already on disk when the run started -- and `.agents/slop/`,
+none of which moves the digest. **A CERTIFICATE IS ABOUT THE TREE, NOT ABOUT WHO PRESSED GO**, and the check
+is the three digests, not authorship.
+
+**AND THE MEASUREMENT THIS SECTION MADE IS WHY THAT MATTERS**: the first run of §26 straddled a comment edit
+to `live.bend` and produced `start=2688060f...` against `end=01f74e5c...` -- a run whose 38/38 verdict was
+true and whose certificate was VOID. The digest caught it. **A .bend EDIT IS A SUBSTRATE CHANGE EVEN WHEN IT
+IS A COMMENT**, which is the trap, and the tree's own advice -- freeze the substrate before taking the
+reading -- is the only defence.
