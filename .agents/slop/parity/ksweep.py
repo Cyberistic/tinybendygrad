@@ -31,6 +31,16 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, ROOT + "/.agents/slop/cpuseam")
 os.environ.pop("BEND_C", None)
 os.environ.pop("BEND_PORT_C", None)
+# **`PARALLEL=0` IS WHAT MAKES THIS INSTRUMENT ABLE TO SEE ITS OWN SUBJECT.**
+# `tinygrad/engine/realize.py:239` compiles in FORKED WORKERS whenever more than one kernel is pending:
+#     pool = None if len(todo) == 1 else get_worker_pool()
+# and `get_worker_pool()` returns None when `PARALLEL == 0` (`engine/worker.py:43`). So a ONE-kernel
+# program rendered in the parent and was captured, while a THREE-kernel program (`softmax`) compiled in
+# children and every renderer hook in the parent stayed silent -- MEASURED `render=0` with
+# `exec_kernel=3` and a CORRECT answer, which cost two sessions' worth of wrong hypotheses (disk cache,
+# CACHELEVEL, program cache, the CALL shape). MEASURED after this line: `softmax` 0 -> 2 renders,
+# `argmax` 0 -> 2.
+os.environ["PARALLEL"] = "0"
 
 import numpy as np  # noqa: E402
 import ops_bend  # noqa: E402

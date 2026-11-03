@@ -339,7 +339,22 @@ int ops, bitops, argmax, embedding, cumsum, softmax, layernorm, threefry), captu
 **20 of 20 real kernels are BYTE-IDENTICAL to upstream.** That is the third surface this session has
 measured, and the widest: 7 (e2e gate) -> 31 (op battery) -> 20 real kernels here.
 
-**AND FOUR PROGRAMS' KERNELS ARE EXECUTED BUT NEVER RENDERED HERE — CHARACTERISED, NOT EXPLAINED.**
+**RESOLVED 2026-11-03: THE BLIND SPOT WAS TINYGRAD'S FORKED COMPILE WORKERS.** `realize.py:239` reads
+`pool = None if len(todo) == 1 else get_worker_pool()`, and `get_worker_pool()` returns `None` only when
+`PARALLEL == 0` (`engine/worker.py:43`). So a ONE-kernel program rendered in the parent and was captured,
+while a THREE-kernel program (`softmax`) compiled in CHILDREN where no parent-side hook can see it —
+`exec_kernel=3`, `render=0`, correct answer. `ksweep` now sets `PARALLEL=0`, and:
+
+```
+# programs that ran: 24; kernels captured: 30
+# programs whose kernels were COMPARED: 24 of 24
+# kernels: 30 byte-identical, 0 differ
+```
+
+**30 of 30 kernels, 24 of 24 programs, all byte-identical.** The superseded note is kept below, because
+the five hypotheses it killed are the reason this took as long as it did.
+
+**AND FOUR PROGRAMS' KERNELS WERE EXECUTED BUT NEVER RENDERED (superseded note, kept for the record).**
 The instrument now counts BOTH sides, so the gap is a number rather than a note:
 
 ```
@@ -358,3 +373,48 @@ unchanged), `CACHELEVEL=0`, a fresh process with `softmax` as the FIRST op, and 
 
 **A blind spot that is counted is a coverage claim; one that is dropped is a slogan.** The remaining work
 is to find that memo and either bypass it or hook it, so all 30 kernels are compared.
+
+## 15. THE ksweep BLIND SPOT: WHAT THIS SESSION RULED OUT, AND THE EVIDENCE IT DID NOT RESOLVE
+
+`PARITY.md` 14 records that 4 of 24 programs execute 10 kernels that `ksweep` never renders. An attempt
+to find the memoisation at or above the CALL `UOp` produced the following, all MEASURED, and **did not
+resolve it**. It is written down so the next attempt starts here instead of from the top.
+
+**WHAT FIRES AND WHAT DOES NOT, for `x.softmax(axis=2)` on a (2,3,4) buffer:**
+
+```
+exec_kernel      3x        <- the kernels run and the answer is correct (5.6e-17 vs numpy)
+ClangRenderer.render   silent
+Compiler.compile       silent
+linearize              silent
+get_runtime           3x
+```
+
+**RULED OUT, each by a measurement:**
+- the disk cache: `~/Library/Caches/tinygrad` (156 MB) deleted, behaviour unchanged;
+- `CACHELEVEL=0`;
+- the in-process program cache / a stale first result: `softmax` as the FIRST op in a fresh process is
+  still silent;
+- a broken hook: a control, `(x * 2).realize()`, renders exactly one kernel in the same context;
+- the wrong renderer class: the CPU device's renderer IS `ClangRenderer`
+  (`type(Device['CPU'].renderer)`), and patching all four of its renderers
+  (`ClangRenderer`, `CPULLVMRenderer`, `LVPRenderer`, `X86Renderer`) still shows `mul` -> ClangRenderer
+  and `softmax`/`argmax` -> NONE;
+- the primitives: `max`, `exp`, `sum`, `div` each render ONE kernel, so `softmax`'s composites are not
+  the cause;
+- `linearize`: patching it in `tinygrad/codegen/late/linearizer.py` fires 0x even for `max`, which DID
+  render -- so that is the wrong symbol (the name is imported into `tinygrad.codegen`, and patching a
+  module attribute does not affect an already-imported reference). **This one is a mistake of mine, not a
+  finding**, and it is recorded because it cost a cycle.
+
+**WHAT THE EVIDENCE POINTS AT, AND WHY IT DID NOT SETTLE IT:** the CALL uop passed to `exec_kernel`
+carries `src = [PROGRAM:ProgramInfo, ..., PARAM:ParamArg]`, and `UOp.to_elf` reads the ELF from
+`self.src[3].arg` -- but for these kernels `src[3]` is a `BITCAST:DType`, not a buffer. So either this
+tinygrad version's CALL shape is not what `to_elf` expects for the CPU device, or the compiled form is
+attached somewhere that is neither `render` nor `compile` nor `linearize`. **Resolving it needs someone
+who knows this tinygrad's codegen path; it is not a port defect and not a renderer defect.**
+
+**WHAT TO DO NEXT, concretely:** hook `tinygrad.codegen.to_program` (the function that builds the CALL,
+`tinygrad/codegen/__init__.py:515`), by the name `tinygrad.codegen` exports, not the module that defines
+it -- and read `tinygrad/codegen/__init__.py:511`'s `to_program_key` first, because a key that is too
+coarse would explain every observation above in one stroke.
