@@ -5695,7 +5695,7 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{44, [O.OpsMUL{}],                     Nil{},                           },   # 171
     O.PMEntry{45, [O.OpsADD{}],                     Nil{},                           },   # 176
     O.PMEntry{46, [O.OpsMAX{}],                     Nil{},                           },   # 177
-    O.PMEntry{47, [O.OpsMUL{}], Nil{}, },   # symbolic.py:171
+    O.PMEntry{47, [O.OpsMUL{}], Nil{}, },   # 175
     O.PMEntry{48, [O.OpsMUL{}],                     Nil{},                           },   # 179
     O.PMEntry{49, [O.OpsMUL{}],                     Nil{},                           },   # 181
     O.PMEntry{50, [O.OpsMUL{}],                     Nil{},                           },   # 185
@@ -5729,7 +5729,7 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{78, [O.OpsADD{}], Nil{}, },   # 262
     O.PMEntry{79, [O.OpsADD{}], Nil{}, },   # 263
     O.PMEntry{80, [O.OpsMUL{}], Nil{}, },   # 253
-    O.PMEntry{81, [O.OpsMUL{}], Nil{}, },   # 254
+    O.PMEntry{81, [O.OpsMUL{}], Nil{}, },   # 265
     O.PMEntry{82, [O.OpsWHERE{}], Nil{}, },   # 267
     O.PMEntry{83, [O.OpsWHERE{}], Nil{}, },   # symbolic.py:270
     O.PMEntry{84, [O.OpsCMPNE{}], Nil{}, },   # 260
