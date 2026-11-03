@@ -476,7 +476,7 @@ rule is what makes it countable: `start == end == live`.**)
 | `FallbackTemplate.role` / `.end_turn` | **PORTED AND GATED** — `gates/llm_cli_template-gate.py` |
 | `SimpleTokenizer.decode` / `.is_end` | **PORTED AND GATED** — `gates/llm_cli_tokenizer-gate.py` |
 | `SimpleTokenizer.encode` | **NOT PORTABLE AS WRITTEN** — see below |
-| `FallbackTemplate.render` | not ported: needs the map-then-fold shape (see the file's TODO) |
+| `FallbackTemplate.render` | **PORTED AND GATED** — `gates/llm_cli_render-gate.py` |
 | `main()` + the `models` URL table | not ported: needs `model.bend`'s `Transformer` and a fetch |
 
 The gate compares all **38 rows** (6 presets × 3 roles, plus `end_turn`) against upstream's own
@@ -667,3 +667,32 @@ pops the `Maybe` off a list), and that is what its `TODO(parity)` records.
 `substrate-start == substrate-end == live == 53cda1fd5ba4...`, `graphs-agree=38`,
 `byte-identical=38`, `graphs-refused=0`. The digest is taken over the WORKING TREE, and this note is
 outside the walk, so writing it does not invalidate the certificate.
+
+## 22. `FallbackTemplate.render` IS PORTED AND GATED -- THE MAP-THEN-FOLD SHAPE WORKS
+
+```
+rows  12 port / 12 upstream, 0 differ
+llm_cli_render: PASS -- 6 presets x 4 content forms, both raise paths, nogen and a non-empty bos
+```
+
+**AND IT GOES RED:** dropping the trailing assistant role makes it exit **1** with
+`row 11: port='bos\tBOS…yoEOS' upstream='bos\tBOS…yoEOS<|start_header_id|>assistant…'`. Clean: exit 0.
+
+The 12 rows cover all six presets, all four content forms (`CText`, `CParts`, `CEmpty`, `CBad`), BOTH
+raise paths (`tekken` + `system`, and a non-text part), `add_generation_prompt=False`, and a non-empty
+`bos`. **`glm4`'s `<sop>` prefix and `tekken`'s `[INST]`…`[/INST]` are in the compared text**, so the
+preset branches are exercised rather than assumed.
+
+**FOUR LANGUAGE FACTS THIS COST, EACH A COMPILE CYCLE, ALL RECORDED IN THE FILE:**
+1. the map-then-fold is FORCED: a `Maybe`-threaded loop is not expressible (a def may not use a later
+   def; two defs may not call each other), so pass 1 resolves every message and pass 2 folds;
+2. `Maybe<&1, String>` cannot be a RECORD FIELD ("expected : Data, observed : Type"), so `RMsg` carries
+   one `ok: Bool` plus two strings -- either failure makes the whole render fail, so one bit suffices;
+3. `Maybe.default(&1, String, …)` is REFUSED for the same reason (`String` is a `Type`), though
+   `&2` is accepted (`helpers.bend:3024`), so extraction goes through two local projections that MATCH A
+   PARAMETER instead;
+4. a local `+r = Template.role(...)` is also refused (`Maybe<&1, String>` is not `Data`), so the pure
+   projections are called where needed rather than bound.
+
+**`render` IS NOW THE LAST PIECE OF `cli.bend` THAT CAN BE PORTED.** What remains in that file is `encode`
+(regex + `unicodedata`) and `main()` (needs `model.Transformer`).

@@ -145,10 +145,109 @@ def Tokenizer.is_end(+ends: List<&2, U32>, +tid: U32) -> Bool:
     case Nil{}: False{}
     case h <> t: Bool.or(U32.is_eq(h, tid), Tokenizer.is_end(t, tid))
 
-# TODO(parity): `FallbackTemplate.render` -- needs the per-message `role()` results ZIPPED with the
-#   messages, because a def may not call a later def and two defs may not call each other (PARITY 18), so
-#   a `Maybe`-threaded loop over messages cannot be written as loop + continuation. The shape is a
-#   two-pass map-then-fold, and `List.map` does the first pass.
+# ===========================================================================
+# cli.py:126-141 -- `render`. **THE MAP-THEN-FOLD SHAPE, BECAUSE THE DIRECT SHAPE IS NOT EXPRESSIBLE.**
+#
+# Upstream threads a `Maybe` (`role()` raises for tekken) through a `for` over messages. Here a loop whose
+# continuation consumes a `Maybe` cannot be loop + helper: a def may not use a later def, and two defs may
+# not call each other (PARITY 18). So PASS 1 resolves every message into a record of ALREADY-RESOLVED
+# `Maybe`s, and PASS 2 is ONE recursive fold over that list with a single chain of matches per step.
+#
+# THE CONTENT VARIANTS ARE UPSTREAM'S FOUR CASES, INCLUDING THE TWO THAT RAISE: a non-text part and a
+# content that is neither a string, a list nor None. Upstream raises `RuntimeError`; the port answers
+# `None`, which is the same choice `Template.role` makes for tekken's `ValueError`.
+# ===========================================================================
+type Content is Data:
+  CText{text: String}          # isinstance(content, str)
+  CParts{text: String}         # list of {type: text} parts, already joined
+  CEmpty{}                     # content is None or absent
+  CBad{what: String}           # a non-text part, or a content type upstream refuses
+
+type Msg is Data:
+  Msg{role: String, content: Content}
+
+#: **ONE `ok` BIT, NOT TWO `Maybe`s, AND THAT IS A LANGUAGE CONSTRAINT RATHER THAN A SIMPLIFICATION.**
+#: MEASURED: a record field typed `Maybe<&1, String>` is REFUSED -- "expected : Data, observed : Type" --
+#: the same message `Maybe<&1, F32>` gave in `SSMConfig` (PARITY 7). Either failure makes the whole render
+#: fail, so one bit carries it and the two strings are "" when `ok` is False.
+type RMsg is Data:
+  RMsg{ok: Bool, role: String, content: String}
+
+# **`Maybe.default` CANNOT TAKE A `String` PAYLOAD** -- MEASURED: `Maybe.default(&1, String, ...)` answers
+# "expected : Data, observed : Type", because `String` is a `Type`. (`Maybe.default(&2, String, ...)` IS
+# used in `helpers.bend:3024`, so the constraint is on the depth.) Matching a PARAMETER has no such
+# constraint, so the two projections below are the way out.
+def Template.ok(m: Maybe<&1, String>) -> Bool:
+  match m:
+    case None{}: False{}
+    case Some{s}: True{}
+
+def Template.str.or(m: Maybe<&1, String>, d: String) -> String:
+  match m:
+    case None{}: d
+    case Some{s}: s
+
+def Content.text(+c: Content) -> Maybe<&1, String>:
+  match c:
+    case CText{t}: Some{t}
+    case CParts{t}: Some{t}
+    case CEmpty{}: Some{""}
+    case CBad{what}: None{}
+
+# PASS 1: one self-recursive map, so the result can be `List<&2, RMsg>` (`List.map` returns `List<&1, _>`).
+def Template.render.prep(+msgs: List<&2, Msg>, +preset: U32, acc: List<&2, RMsg>) -> List<&2, RMsg>:
+  match msgs:
+    case Nil{}: List.reverse(&2, RMsg, acc)
+    case h <> t:
+      match h:
+        # the projections are INLINED and the binders are `+`: a local `+r = Template.role(...)` would need
+        # `Maybe<&1, String>` to be `Data`, and it is a `Type` (MEASURED: "expected : Data, observed : Type"
+        # pointing at the binder). Calling the pure projections twice is the cheap way out.
+        case Msg{+role, +content}:
+          Template.render.prep(t, preset,
+            RMsg{Bool.and(Template.ok(Template.role(preset, role)),
+                          Template.ok(Content.text(content))),
+                 Template.str.or(Template.role(preset, role), ""),
+                 Template.str.or(Content.text(content), "")} <> acc)
+
+# PASS 2: ONE fold. The matches are in declaration order (`xs`, then `h`, then its fields), which is what
+# this tree's Bend requires; matching a binder from an earlier parameter after a later one is refused.
+def Template.render.fold(+xs: List<&2, RMsg>, +preset: U32, +eos: String, acc: String)
+  -> Maybe<&1, String>:
+  match xs:
+    case Nil{}: Some{acc}
+    case h <> t:
+      match h:
+        case RMsg{ok, role, content}:
+          match ok:
+            case False{}: None{}
+            case True{}:
+              Template.render.fold(t, preset, eos,
+                String.concat([acc, role, content, Template.end_turn(preset, eos)]))
+
+def Template.render.join(m: Maybe<&1, String>, r: Maybe<&1, String>) -> Maybe<&1, String>:
+  match m:
+    case None{}: None{}
+    case Some{s}:
+      match r:
+        case None{}: None{}
+        case Some{rs}: Some{String.concat([s, rs])}
+
+#: `... + self.role("assistant") if add_generation_prompt else out` -- the LAST Maybe consumption, so it
+#: does not recurse and cannot cycle.
+def Template.render.tail(m: Maybe<&1, String>, +preset: U32, +gen: Bool) -> Maybe<&1, String>:
+  match gen:
+    case False{}: m
+    case True{}: Template.render.join(m, Template.role(preset, "assistant"))
+
+#: cli.py:126 -- `bos` is the tokenizer's BOS token ALREADY DECODED (the same seam `end_turn` takes its
+#: eos through), and `<sop>` is prefixed for `glm4`, exactly as upstream does.
+def Template.render(+preset: U32, +bos: String, +eos: String, +msgs: List<&2, Msg>, +gen: Bool)
+  -> Maybe<&1, String>:
+  +head = String.concat([bos, Bool.pick(String, U32.is_eq(preset, 4), "<sop>", "")])
+  Template.render.tail(Template.render.fold(Template.render.prep(msgs, preset, Nil{}), preset, eos, head),
+    preset, gen)
+
 # TODO(parity): `SimpleTokenizer.encode` -- BLOCKED ON A LANGUAGE CAPABILITY: `__init__` builds the split
 #   regex from `unicodedata.category` ranges, which Bend has neither a regex engine nor a table for.
 # TODO(parity): `FallbackTemplate.render` -- needs a message list and the tokenizer's `decode` for the
