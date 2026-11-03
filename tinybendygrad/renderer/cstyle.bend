@@ -2126,22 +2126,28 @@ def ku_const_val(+kus: List<&2, KU>, i: U32) -> U32: ku_const_val.go(ku_const_in
 def ku_cast_wrapped(dev: U32, d: S.Dt, v: String) -> String:
   String.concat(["(", render_cast(dev, d, 1, S.Aalu{}, O.OpsCAST{}, False{}, v), ")"])
 
+# **THE CAST IS COMPUTED ONCE TOO, AND FOR THE SAME REASON AS THE DECIMAL ABOVE.** `ku_cast_wrapped` is in
+# FOUR arms of the chain below and `Bool.pick` evaluates every arm, so the port was rendering the same cast
+# four times per integer constant and using one -- and a cast render is a `render_cast` -> `render_dtype`,
+# i.e. a whole dtype render each time. MEASURED in `PARITY.md` §34.
+def ku_const_cast_int_w(+s: String, +w: String, +d: S.Dt, +dev: U32, +i: H.I64) -> String:
+  Bool.pick(String, O.eq_dt(d, S.int64()), String.concat([s, "l"]),
+      Bool.pick(String, O.eq_dt(d, S.uint64()), String.concat([s, "ul"]),
+        # **A u32 CONST IS TRUNCATED, NOT PRINTED SIGNED.** cstyle.py:29 is
+        # `f"{truncate[x.dtype](c.val)}u"`, so upstream writes `4294967169u` where the port wrote
+        # `-127u` -- valid C, different text, and a divergence on 71 lines of `sin`. MEASURED
+        # 2026-11-03: `sin` was the LAST of six transcendentals to stop being byte-identical.
+        Bool.pick(String, O.eq_dt(d, S.uint32()), String.concat([U32.show(H.lo32(i)), "u"]),
+          Bool.pick(String, O.eq_dt(d, S.boolean()), Bool.pick(String, H.i64_is_neg(i), "0", "1"),
+            Bool.pick(String, O.eq_dt(d, S.uint8()), w,
+              Bool.pick(String, O.eq_dt(d, S.uint16()), w,
+                Bool.pick(String, O.eq_dt(d, S.int8()), w,
+                  Bool.pick(String, O.eq_dt(d, S.int16()), w,
+                    s))))))))
+
 def ku_const_cast_int_at(+s: String, +dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
   match dt:
-    case d:
-      Bool.pick(String, O.eq_dt(d, S.int64()), String.concat([s, "l"]),
-        Bool.pick(String, O.eq_dt(d, S.uint64()), String.concat([s, "ul"]),
-          # **A u32 CONST IS TRUNCATED, NOT PRINTED SIGNED.** cstyle.py:29 is
-          # `f"{truncate[x.dtype](c.val)}u"`, so upstream writes `4294967169u` where the port wrote
-          # `-127u` -- valid C, different text, and a divergence on 71 lines of `sin`. MEASURED
-          # 2026-11-03: `sin` was the LAST of six transcendentals to stop being byte-identical.
-          Bool.pick(String, O.eq_dt(d, S.uint32()), String.concat([U32.show(H.lo32(i)), "u"]),
-            Bool.pick(String, O.eq_dt(d, S.boolean()), Bool.pick(String, H.i64_is_neg(i), "0", "1"),
-              Bool.pick(String, O.eq_dt(d, S.uint8()), ku_cast_wrapped(dev, d, s),
-                Bool.pick(String, O.eq_dt(d, S.uint16()), ku_cast_wrapped(dev, d, s),
-                  Bool.pick(String, O.eq_dt(d, S.int8()), ku_cast_wrapped(dev, d, s),
-                    Bool.pick(String, O.eq_dt(d, S.int16()), ku_cast_wrapped(dev, d, s),
-                      s))))))))
+    case d: ku_const_cast_int_w(s, ku_cast_wrapped(dev, d, s), d, dev, i)
 
 # **THE DECIMAL IS COMPUTED ONCE AND PASSED IN, AND THAT IS A MEASURED CHANGE.** `Bool.pick` is STRICT here,
 # so every arm of the chain below is EVALUATED and one is chosen: this def used to call `H.i64_dec(i)` SEVEN

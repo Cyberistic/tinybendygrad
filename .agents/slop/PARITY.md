@@ -1452,3 +1452,44 @@ controls=5 of 5   conflations=4 of 4
 
 The same digest also covers §32's `helpers.bend` (commit `445396e21`), which had no certificate of its own --
 one run certifies the tree as it stands, which is the whole point of a worktree digest.
+
+## 34. THE SAME STRICT-`Bool.pick` DEFECT, ONE ARM OVER: FOUR CAST RENDERS PER CONSTANT
+
+§33 hoisted the DECIMAL out of `ku_const_cast_int`'s strict chain. The chain had a second instance of the
+same defect and it was not a formatting call: `ku_cast_wrapped(dev, d, s)` appeared in **four** arms (uint8,
+uint16, int8, int16), and `Bool.pick` evaluates every arm -- so the port rendered the same cast four times
+per integer constant and used one. A cast render is `render_cast` -> `render_dtype`, i.e. a whole dtype
+render each time.
+
+Fixed the same way: the wrapper computes the cast once and the chain takes it as `w`.
+
+### 34.1 Measured
+
+`.agents/slop/parity/ab33.py`, 12 interleaved rounds with the order alternated, 405-uop wire, load average
+around 7:
+
+| | min | p25 | median |
+|---|---|---|---|
+| before the cast hoist | 51.3 ms | 51.9 ms | 52.2 ms |
+| after | **49.7 ms** | **51.0 ms** | **51.3 ms** |
+
+```
+ratio new/old   min 0.9283   p25 0.9713   median 0.9767   max 0.9976
+rounds where the new artifact is faster: 12 of 12
+```
+
+**12 of 12, median 0.977 -- a smaller effect than §33's 4.6%, as it should be: four dtype renders are cheaper
+than six decimal folds, and the band stops at 0.9976 rather than crossing 1.0.**
+
+### 34.2 Where that leaves the render, measured on the same wire
+
+```
+§31 (type map per uop)      77.0 ms
+§33 (7 -> 1 decimals)       53.5 ms  min
+§34 (4 -> 1 casts)          49.7 ms  min      total 1.55x since §31
+```
+
+**AND THE COMPOSITION OF THE REMAINING 49.7 ms IS NOW KNOWN**: ~26 ms of it is `bun` start-up and module
+load, so the render itself is **~24 ms for 405 uops, ~0.06 ms/uop** -- against the ~0.35 ms/uop §26 measured.
+The next five percent would each cost a corpus run and a re-read of a flat profile; the profile no longer has
+a site above 8% that the port owns.
