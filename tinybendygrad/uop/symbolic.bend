@@ -3522,6 +3522,51 @@ def sym_473.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_473(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_473.pat(x, u), sym_473.mk(x, u))
 
+# symbolic.py:453  (UPat.store(UPat(Ops.INDEX, name="index"), UPat.load(UPat(Ops.INDEX, name="index")),
+#                                name="x"), lambda index,x: UOp(Ops.NOOP).after(*x.src))
+# STORING BACK THE VALUE THAT WAS JUST LOADED FROM THE SAME INDEX IS A NO-OP, and the effect
+# becomes `NOOP.after(*x.src)` -- the store's OWN srcs, NOOP first.
+def p_load_of(+x: F.Folded, +s: U32, +k: U32) -> Bool:
+  Bool.and(sy_is_op(x, s, O.OpsLOAD{}),
+    Bool.and(sy_nsrc_ge(x, s, 1), p_same(sy_src0(x, s), k)))
+
+def sym_453.pat(+x: F.Folded, +u: U32) -> Bool:
+  +k = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTORE{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(sy_is_op(x, k, O.OpsINDEX{}), p_load_of(x, sy_src1(x, u), k)))
+
+def sym_453.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +n = O.UOp.new(sy_ar(x), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
+  Some{O.UOp.new(O.Found.ar(n), O.OpsAFTER{},
+    List.append(&2, U32, [O.Found.i(n)], O.Arena.srcs(O.Found.ar(n), u)), O.ANone{}, O.TNone{})}
+
+def sym_453(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_453.pat(x, u), sym_453.mk(x, u))
+
+# symbolic.py:454  (UPat.store(UPat(Ops.INDEX, name="index"),
+#                    UPat.var("gate").where(UPat.var("alt"), UPat.load(UPat(Ops.INDEX, name="index")))),
+#                    lambda index, gate, alt: UOp.store(index.src[0].index(index.src[1].valid(gate)), alt))
+# THE GATED-READ-MODIFY-WRITE: the gate belongs on the INDEX, so the load's own index is gated
+# and the store carries the ungated `alt`. `:460` is the same shape with an Invalid else-branch.
+def sym_454.pat(+x: F.Folded, +u: U32) -> Bool:
+  +k = sy_src0(x, u)
+  +v = sy_src1(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTORE{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(Bool.and(sy_is_op(x, k, O.OpsINDEX{}), sy_nsrc_ge(x, k, 2)),
+      Bool.and(Bool.and(sy_is_op(x, v, O.OpsWHERE{}), sy_nsrc_is(x, v, 3)),
+        p_load_of(x, sy_src2(x, v), k))))
+
+def sym_454.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +k = sy_src0(x, u)
+  +v = sy_src1(x, u)
+  +z = O.UOp.new(sy_ar(x), O.OpsCONST{}, Nil{}, O.APy{O.CInvalid{}}, O.TNone{})
+  +g = mint_where(z, sy_src0(x, v), sy_src1(x, k), O.Found.i(z))
+  +i = mint_bin(g, O.OpsINDEX{}, sy_src0(x, k), O.Found.i(g))
+  Some{mint_bin(i, O.OpsSTORE{}, O.Found.i(i), sy_src1(x, v))}
+
+def sym_454(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_454.pat(x, u), sym_454.mk(x, u))
+
 # symbolic.py:458  (UPat(Ops.STORE, src=(UPat(), invalid_pat), name="x"),
 #                     lambda i,x: UOp(Ops.NOOP).after(*x.src))
 # A STORE WHOSE VALUE IS INVALID STORES NOTHING: the node becomes `NOOP.after(*srcs)`, which is
@@ -4064,14 +4109,16 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{94, [O.OpsAFTER{}], Nil{}, },   # 318
     O.PMEntry{95, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
     O.PMEntry{96, [O.OpsEND{}], Nil{}, },   # 324
-    O.PMEntry{97, [O.OpsSTORE{}], Nil{}, },   # 458
-    O.PMEntry{98, [O.OpsSTORE{}], Nil{}, },   # 460
-    O.PMEntry{99, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{100, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{101, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{102, [O.OpsMUL{}], Nil{}, },   # 471
-    O.PMEntry{103, [O.OpsMUL{}], Nil{}, },   # 473
-    O.PMEntry{104, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{97, [O.OpsSTORE{}], Nil{}, },   # 453
+    O.PMEntry{98, [O.OpsSTORE{}], Nil{}, },   # 454
+    O.PMEntry{99, [O.OpsSTORE{}], Nil{}, },   # 458
+    O.PMEntry{100, [O.OpsSTORE{}], Nil{}, },   # 460
+    O.PMEntry{101, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{102, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{103, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{104, [O.OpsMUL{}], Nil{}, },   # 471
+    O.PMEntry{105, [O.OpsMUL{}], Nil{}, },   # 473
+    O.PMEntry{106, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -4445,7 +4492,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103, 104]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4516,14 +4563,16 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 93: sym_316(x, u)
     case 94: sym_318(x, u)
     case 96: sym_324(x, u)
-    case 97: sym_458(x, u)
-    case 98: sym_460(x, u)
-    case 99: sym_462(x, u)
-    case 100: sym_463(x, u)
-    case 101: sym_464(x, u)
-    case 102: sym_471(x, u)
-    case 103: sym_473(x, u)
-    case 104: sym_444(x, u)
+    case 97: sym_453(x, u)
+    case 98: sym_454(x, u)
+    case 99: sym_458(x, u)
+    case 100: sym_460(x, u)
+    case 101: sym_462(x, u)
+    case 102: sym_463(x, u)
+    case 103: sym_464(x, u)
+    case 104: sym_471(x, u)
+    case 105: sym_473(x, u)
+    case 106: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
