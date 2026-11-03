@@ -327,10 +327,22 @@ int ops, bitops, argmax, embedding, cumsum, softmax, layernorm, threefry), captu
 **20 of 20 real kernels are BYTE-IDENTICAL to upstream.** That is the third surface this session has
 measured, and the widest: 7 (e2e gate) -> 31 (op battery) -> 20 real kernels here.
 
-**AND FOUR PROGRAMS PRODUCED NO KERNEL AT ALL, WHICH IS AN INSTRUMENT GAP AND NOT A PARITY RESULT.**
-`softmax`, `layernorm`, `threefry` and `argmax` return CORRECT values (`softmax` to 5.6e-17 against numpy,
-`argmax` exact), so their kernels run somewhere the `ClangRenderer.render` hook does not see; `CACHELEVEL=0`
-does not change it and a control (`x*2`) captures one kernel in the same context. **The cause was not
-established.** A program that compiles no kernel exercises nothing, so the instrument prints the count of
-covered programs beside the kernel count and names the zero-kernel ones rather than folding them into a
-coverage claim.
+**AND FOUR PROGRAMS' KERNELS ARE EXECUTED BUT NEVER RENDERED HERE — CHARACTERISED, NOT EXPLAINED.**
+The instrument now counts BOTH sides, so the gap is a number rather than a note:
+
+```
+# EXECUTED-NOT-COMPARED (kernels ran, the C was never rendered here): 4
+#     softmax(exec=3), layernorm(exec=3), threefry(exec=2), argmax(exec=2)
+# programs whose kernels were COMPARED: 20 of 24
+```
+
+So the population is **20 kernels compared + 10 executed-but-not-compared**, and the coverage claim is
+about the 20. MEASURED, to characterise the other 10: `exec_kernel` fires 3x for `softmax` and its CALL
+carries a `CallInfo` with 3-5 srcs, while `ClangRenderer.render`, `Compiler.compile` AND `linearize` are
+ALL silent -- so those kernels reach the device with their compiled form already attached. **WHICH PATH
+ATTACHED IT WAS NOT ESTABLISHED.** Ruled out: the disk cache (`~/Library/Caches/tinygrad` cleared, 156 MB,
+unchanged), `CACHELEVEL=0`, a fresh process with `softmax` as the FIRST op, and a broken hook (a control
+`x*2` renders one kernel in the same context). Ruled in: something memoises at or above the CALL `UOp`.
+
+**A blind spot that is counted is a coverage claim; one that is dropped is a slogan.** The remaining work
+is to find that memo and either bypass it or hook it, so all 30 kernels are compared.

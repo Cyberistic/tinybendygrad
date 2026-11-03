@@ -39,6 +39,7 @@ sys.modules["tinygrad.runtime.ops_bend"] = ops_bend
 from tinygrad import Context, Tensor  # noqa: E402
 from tinygrad.dtype import dtypes  # noqa: E402
 from tinygrad.renderer.cstyle import ClangRenderer  # noqa: E402
+import tinygrad.engine.realize as _RZ  # noqa: E402
 import portc  # noqa: E402
 
 # **A REALIZED BUFFER IS NOT CONSTANT-FOLDABLE.** Without `.realize()` the inputs are CONSTANT Tensors,
@@ -95,6 +96,20 @@ def main() -> int:
     cap.append((list(uops), src))
     return src
 
+  # **COUNT EXECUTED KERNELS TOO, SO COVERAGE IS MEASURED AND NOT IMPLIED.** For four programs
+  # (`softmax`, `layernorm`, `threefry`, `argmax`) `ClangRenderer.render` never fires while the program
+  # computes the CORRECT answer: MEASURED `exec_kernel` fires 3x for `softmax` and its CALL carries a
+  # `CallInfo` with 3-5 srcs, but `render`, `Compiler.compile` AND `linearize` are all silent -- so those
+  # kernels reach the device with their compiled form already attached, and WHICH PATH ATTACHED IT WAS
+  # NOT ESTABLISHED. They are reported as EXECUTED-NOT-COMPARED rather than counted as covered.
+  executed = {"n": 0}
+  _orig_exec = _RZ.exec_kernel
+
+  def _count_exec(device, ast, *a, **k):
+    executed["n"] += 1
+    return _orig_exec(device, ast, *a, **k)
+
+  _RZ.exec_kernel = _count_exec
   ClangRenderer.render = grab
   ran, failed_runs = [], []
   # **THE TENSORS MUST BE BUILT INSIDE THE CPU CONTEXT.** `programs()` constructs them eagerly, so
@@ -103,19 +118,26 @@ def main() -> int:
   with Context(DEV="CPU"):
     progs = programs()
     for name, mk in progs:
-      start = len(cap)
+      start, start_ex = len(cap), executed["n"]
       try:
         _ = mk().realize().numpy()
-        ran.append((name, start, len(cap)))
+        ran.append((name, start, len(cap), executed["n"] - start_ex))
       except Exception as e:
         failed_runs.append((name, f"{type(e).__name__}: {str(e)[:90]}"))
   ClangRenderer.render = orig
 
   print(f"# programs that ran: {len(ran)}; kernels captured: {len(cap)}")
-  zero = [n for n, a, b in ran if b == a]
-  if zero:
-    # A PROGRAM THAT COMPILES NO KERNEL EXERCISES NOTHING: say so rather than count it as covered.
-    print(f"# NO kernel (folded to nothing, or served from cache): {len(zero)} -- {', '.join(zero)}")
+  # A PROGRAM WHOSE KERNELS WERE NEVER RENDERED HERE EXERCISES NOTHING IN *THIS* INSTRUMENT: name it,
+  # with its executed-kernel count, instead of folding it into a coverage claim.
+  blind = [(n, ex) for n, a, b, ex in ran if b == a and ex > 0]
+  none = [(n, ex) for n, a, b, ex in ran if b == a and ex == 0]
+  if blind:
+    print(f"# EXECUTED-NOT-COMPARED (kernels ran, the C was never rendered here): {len(blind)} -- "
+          + ", ".join(f"{n}(exec={ex})" for n, ex in blind))
+  if none:
+    print(f"# NO kernel at all (folded away): {len(none)} -- " + ", ".join(n for n, _ in none))
+  compared_programs = sum(1 for _n, a, b, _ex in ran if b > a)
+  print(f"# programs whose kernels were COMPARED: {compared_programs} of {len(ran)}")
   for n, why in failed_runs:
     print(f"# ORACLE REFUSED {n}: {why}")
 
