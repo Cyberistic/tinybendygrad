@@ -27896,3 +27896,34 @@ the verdict it certifies.
 RESOLVES NESTED LINEAR CALLS, `ab_arm1` and `ab_arm3` are asked of CPython and AGREE
 (they were `port_only` divergences an hour ago), and `ab_nest` is the one row that
 exercises the continuation.
+
+THE `CTX` INCREMENT'S ACCEPTANCE EVIDENCE IS TAKEN: run and repro in ONE window, and the witness is PASS on all seven readings
+
+  verdict.current     OK   recorded=081cf904548235c5,081cf904548235c5  live=081cf904548235c5  rows=2  verdict=CURRENT
+  witness.fresh       OK   FRESH  order=mtime(W2)>=mtime(W1)  delta_ms=+91.353
+  freshness.source    OK   via=os.stat().st_mtime_ns  git_asked=NO
+  witness.substrate   OK   CURRENT  rows=3 of 3  recorded=081cf904548235c5  live=081cf904548235c5
+  verdict.reported    OK   reported=rc=0 derived=rc=0 verdict=AGREE  graphs=38 agree=38
+  claim               OK   REPRODUCIBLE
+  corpuswitness-gate: PASS -- the claim is ESTABLISHED
+
+**⇒ AND **THE **FOUR **REFUSALS **BEFORE **IT **WERE **CONTENTION **AND **THEY **WERE **NOT
+**WORKED **AROUND:** three were `runs/graphcmp/.corpus.lock` held by another pid and one was
+the tree moving `70925b14` -> `53cda1fd` mid-run.  **THE **WINDOW **WAS **FOUND **BY
+**RETRYING **THE **PAIR** -- and only on `rc=3`, the lock refusal, so a real failure would
+have stopped the loop rather than being buried by it.  Attempt 5 succeeded.
+
+**⇒ AND **THE **RUN **AND **THE **REPRO **WERE **BACK **TO **BACK **IN **ONE **SCRIPT,**
+because the gap between them is exactly where another unit takes the lock.
+
+**⇒ AND **`081cf904...` **INCLUDES **THE **WHOLE `CTX` **INCREMENT** -- `type CTX` with
+`CArgs`/`CNodes`, the 46 rewritten signatures, and the corrected sentinel header -- so the
+certificate covers the port and not just a tree that happens to be green.
+
+**⇒ AND **NEXT, AND **UNFINISHED: `bottom_up` **AND `canonicalize_call_body`.  `enter_calls`
+**IS **ALREADY **IN **(`walk_rewrite_ec`/`unified_rewrite_ec`/`graph_rewrite_ec`, gated by
+`ec_default`/`ec_enter`), so what remains is the `bottom_up` half: upstream selects
+`pm=None, bpm=pm` and applies `bpm` to a FIXPOINT per node before descending.  THE
+**`RWk` **STATE **MACHINE **IS **THE **PATTERN **TO **COPY** -- fuel first, scrutinees as
+fields, one computation per step -- and `UOp.substitute` is the existing proof that a
+per-node fixpoint plus a rebuild of the replacement is expressible.
