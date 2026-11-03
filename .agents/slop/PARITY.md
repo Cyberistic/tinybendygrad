@@ -4746,3 +4746,50 @@ refuses changes it cannot measure.
 either already a piece path (`ADD`, `MUL`, `WHERE` through the ALU capture; `CAST` §97; `INDEX` §100;
 `LOAD` §102) or emits no text (`CONST`, `PARAM`). The remaining 2% is `RANGE`/`STACK`/`BUFFER`/`BUFFER`,
 and the four arms the reviewer named are 0.00%.
+
+## 107. THE FIRST FULL PROFILE SINCE §74, AND WHY ITS RANKING CANNOT BE TRUSTED
+
+§74's profile was taken when the render was 6.44 ms and its leader was the file round trip, which §84
+removed. This is the first profile of the shipped worker since then: 1,500 real turns, `--cpu-prof-interval=10`.
+
+```
+duration 30.02 s for 1500 turns = 20,013 us a turn -- THE REAL TURN IS 3.9 ms, SO THE PROFILER IS 5x
+OVERHEAD and every per-turn figure below is inflated by roughly that factor.
+
+self%   function
+ 2.2    $String_split            4.3 with split_push   the decode's pass and nums' splits
+ 2.1    $String_split_push
+ 1.8    helpers_i64_of_hi_lo      the I64 BOXING (called by i64_shl_lo/hi 2,204, div_shift 640, i64_or 485 ...)
+ 1.6    $String_concat
+ 1.3    $List_reverse_go          the decode's `kus` reverse and i64_dec's
+ 1.2    $String_order_go  (x2)    STRING EQUALITY, which the runtime implements as ORDERING
+ 1.2    $List_get
+ 0.7    Ops_value + eq_op
+```
+
+### 107.1 The new finding, and why it is not a lever
+
+`String_order` is called 39,478 times and **88% of that -- 34,757 calls -- is `Ops.eq_dt`**, the dtype
+equality the render asks constantly (`is_f64`, `is_half`, `dtw`, `render_dtype`):
+
+```
+$String_eq called by:  Ops.eq_dt 34,757   strip_pieces 2,884   is_nl 1,765   live.flag 76
+```
+
+**23 CALLS A TURN AT EVEN 100 NS IS 2.3 US -- 0.06% OF A 3.9 MS TURN, NOT THE 5.4% THE TOTAL COLUMN SHOWS.**
+The profiler charges its own per-sample cost to whatever is on the stack, so a cheap function called often
+looks expensive: **THIS INSTRUMENT CANNOT RANK CHEAP, HIGH-FREQUENCY SITES**, which is the same lesson §79.1
+taught when `Ops.value`'s 12,600 calls measured neutral.
+
+### 107.2 What the profile does say with confidence
+
+Nothing above 4.3%, and the top four are all mechanisms this record has already measured:
+`String_split`/`nums` (closed three ways: §91 refused scanner, §92 linear sweep, §104 13% slower), the I64
+boxing (§72's both-arms fix measured 0.9976, §99 replaced the decimal), `String_concat` (§96-§102's piece
+path took the text class from 2.16 to 1.18), and `List_get` (§75-§81 took the index-addressed lists from
+805,127 steps to 292,446 to ~189,000).
+
+**⇒ SO THE NEXT PROFILE SHOULD NOT BE THIS ONE.** A sampling interval that makes a useful profile here needs
+the samples to cost less than the work they attribute, and at 10 us a sample against sub-microsecond
+functions that is not true. The honest next instrument is an end-to-end A/B on a named change, which is what
+has produced every landed win since §89.
