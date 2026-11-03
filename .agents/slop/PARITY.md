@@ -3729,3 +3729,25 @@ chunks (`_chunks`), the DAEMON does not. Measured on the OLD worker before this 
 pre-existing and not introduced here. Its cost is not a wrong answer: `render_live` catches the dead worker,
 falls back to the one-shot path, and **disables the daemon for the rest of the session** -- so ONE large
 kernel makes every later kernel slower. That is the next slice, and it is a defect, not an optimisation.
+
+### 84.4 The daemon turn, measured through the shipped path
+
+```
+portc._worker().render(wire) x12:  median 5.28 ms, outputs identical, fallbacks 0 of 12
+```
+
+The file protocol's 5.83-5.92 ms (§84.2) is now **5.28 ms**, and the daemon is what `render_live` uses by
+default, so that is the number a caller sees.
+
+### 84.5 The chunked-frame fix for §84.3 was started and REVERTED
+
+The fix is the right one -- the caller already cuts chunks at row boundaries and `serve` can decode them one
+at a time (`L.kus(h)` per chunk, appended) -- and the DECODER half was written and compiles. **The FRAMING
+half was not: a chunked frame needs a third mode in the worker's state machine** (read the chunk's length,
+read the chunk, repeat until the total is consumed), and the first attempt left the live path at `1 of 37`
+byte-identical. Shipping that would have been a broken daemon in exchange for a defect that is at least
+*visible* today: `render_live` catches the dead worker and falls back, so the large-kernel case is slow, not
+wrong.
+
+**⇒ SO THE DEFECT STAYS OPEN AND MEASURED**: a kernel above ~810 uops kills the daemon and downgrades the
+session to the one-shot path. It is the next slice, and it needs the third mode, not a re-run of this one.
