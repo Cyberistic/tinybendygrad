@@ -411,3 +411,27 @@ progress" -- the form `UOp.divides` already demonstrates in this tree.
 That is the shape of the remaining work on `:259`, and it is why the rule is not wired: not a
 missing capability, but four unverified facts about one builtin and one language constraint that
 needs the machine this tree has written twice.
+
+## 2026-11-03 (final, 9): the four `Map.put` orders that DO NOT work, so nobody repeats them
+
+Trying to reach `:259` through the ported `UOp.substitute` needs a one-entry `Map<&2, U32>`, and
+Bend's `Map.put` signature is not inferable from this port (`Map.get` is called as
+`Map.get(V, key, m, default)`, and `Map.put` has no call site). Four orders were tried against the
+compiler; each is recorded with the answer it got, because each costs a full compile to rediscover:
+
+| tried | compiler said |
+|---|---|
+| `Map.put(Map.new(&2, U32), key, val)` | `expected: Quant` / `observed: Map<&2, U32>` |
+| `Map.put(U32, key, val, Map.new(&2, U32))` | `expected: Quant` / `observed: Data` |
+| `Map.put(&2, key, val, Map.new(&2, U32))` | `expected: Data` / `observed: U32` |
+| `Map.put(&2, Map.new(&2, U32), key, val)` | `expected: Data` / `observed: Map<&2, U32>` |
+
+THE PATTERN IS THAT EACH ERROR NAMES ONE POSITION AND NEVER THE WHOLE SIGNATURE, so the search
+space is (positions x plausible types) and it was not worth the budget. `results` from these are in
+`.agents/slop/sym92/probe-sub.bend`, which is scratch and can be re-pointed at whichever order
+compiles.
+
+AND THERE IS NO SHORTCUT TO FALL BACK ON: the only other `substitute` in the tree is
+`uop/upat.bend:362`, and that one is over `UPat` patterns (`C`), not over a `UOp` in an arena. So
+`:259` needs the tagged-work-item substitution, and nobody should spend another cycle looking for a
+single-entry helper that already exists.
