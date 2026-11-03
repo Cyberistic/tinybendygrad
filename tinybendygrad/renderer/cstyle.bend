@@ -1791,9 +1791,10 @@ def ku_is_decl(+k: KU) -> Bool:
 def _render.plain(dev: U32, i: U32, +k: KU, kus: List<&2, KU>, cc: List<&2, U32>,
                   +st: St, +l: String, nm: String, ix: U32) -> St:
   +st0 = _render.pop(st, k)
-  +st1 = Bool.pick(St, O.eq_op(KU.op(k), O.OpsCAST{}),
-    st_kernel(st0, String.concat([ku_indent(St.depth(st0)), l, ";"])),
-    st_kernel(st0, String.concat([ku_indent(St.depth(st0)), l])))
+  # THE SEMICOLON IS THE WHOLE DIFFERENCE, so it is chosen as a STRING (two literals, free) and the line is
+  # assembled ONCE. The previous spelling built two `st_kernel` calls and discarded one.
+  +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), l,
+    Bool.pick(String, O.eq_op(KU.op(k), O.OpsCAST{}), ";", "")]))
   +st2 = st_c(st1, ix)
   _render.push(st2, k)
 def uops_to_dtypes.put(+x: DtN, +acc: List<&2, DtN>) -> List<&2, DtN>:
@@ -2441,18 +2442,34 @@ def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, KU>, cc: List<&2, U32>,
     KU.numel(k), KU.addr(k), KU.op(k), False{}), " ", nm, " = ", l, Bool.pick(String, semi, ";", "")]))
   +st2 = st_c(st1, ix)
   _render.push(st2, k)
-def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
-  Bool.pick(St, ku_is_decl(k),
-    _render.decl(dev, i, k, kus, cc, st, l, nm, ix, semi),
-    _render.plain(dev, i, k, kus, cc, st, l, nm, ix))
+# **`match` ON A BOOL PARAMETER IS THE CURE FOR THE WHOLE `Bool.pick` CLASS, AND THIS IS WHY IT IS NEEDED
+# HERE.** `Bool.pick(St, is_decl, decl(...), plain(...))` is STRICT: it assembles the DECLARATION and the
+# PLAIN statement both -- each with `_render.pop`, `st_kernel`, a `String.concat` and `st_c` -- and throws one
+# away. `match` cannot scrutinize a computed value ("a match cannot scrutinize a computed value: give it its
+# own def"), but it CAN scrutinize a PARAMETER, so the bool is passed in and only the chosen arm runs.
+# MEASURED in `PARITY.md` §39.
+def _render.stmt_by(b: Bool, +dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
+  match b:
+    case True{}: _render.decl(dev, i, k, kus, cc, st, l, nm, ix, semi)
+    case False{}: _render.plain(dev, i, k, kus, cc, st, l, nm, ix)
 
 # `if u.op not in {Ops.RANGE, Ops.BUFFER, Ops.BINARY} and u.dtype != dtypes.void:`
 # -- cstyle.py:257. IT IS THE TEST FOR "IS THIS A DECLARATION", AND THE
 # DECLARATION IS `"{type} {name} = {text};"`.
+def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
+  _render.stmt_by(ku_is_decl(k), dev, i, k, kus, cc, st, l, nm, ix, semi)
+
+# **`_render.stmt` USED TO RUN FOR EVERY UOP, INLINED OR NOT.** The `Bool.pick` below is strict, so even when
+# a uop is INLINED -- which is the common case for casts and indexes -- the full statement was assembled
+# (`_render.pop`, `render_type`, a `String.concat`, `st_c`) and thrown away. Same cure as `_render.stmt`:
+# the bool goes in as a PARAMETER and `match` runs one arm. MEASURED in `PARITY.md` §39.
+def _render.emit_by(b: Bool, dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
+  match b:
+    case True{}: st_set(st, i, l)
+    case False{}: _render.stmt(dev, i, k, kus, cc, st, l, nm, ix, semi)
+
 def _render.emit(dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
-  Bool.pick(St, ku_inline(KU.op(k), k, kus, cc, i),
-    st_set(st, i, l),
-    _render.stmt(dev, i, k, kus, cc, st, l, nm, ix, semi))
+  _render.emit_by(ku_inline(KU.op(k), k, kus, cc, i), dev, i, k, kus, cc, st, l, nm, ix, semi)
 
 # THE STATEMENT -- cstyle.py:256-261.
 def _render.range(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, st: St) -> St:

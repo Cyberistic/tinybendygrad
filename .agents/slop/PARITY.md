@@ -1720,3 +1720,53 @@ ALL FUNCTIONS IN THE CAST PATH, not the share of any one kernel's lines.
 **KEPT, NOT REVERTED**, on the rule that the measurement must decide: 8 of 12 and a median under 1.0 with a
 provable dedup behind it. §37's `concat` -> `join` was 5 of 12 and 1.0021 and was reverted; this is the
 other side of the same line.
+
+## 39. THE GENERAL CURE FOR THE `Bool.pick` CLASS: `match` ON A BOOL PARAMETER
+
+§33, §34 and §38 each removed one instance of the same defect: `Bool.pick` is STRICT, so it evaluates every
+arm and throws all but one away. This section found the CURE, and the cure is in the language rather than in
+the call sites:
+
+* `match` cannot scrutinize a **computed** value -- Bend says so: *"a match cannot scrutinize a computed
+  value: give it its own def"*.
+* `match` CAN scrutinize a **parameter**. So the condition becomes an argument and only the chosen arm runs.
+
+```bend
+def _render.stmt(...) -> St:                       # was: Bool.pick(St, is_decl, decl(...), plain(...))
+  _render.stmt_by(ku_is_decl(k), ...)              #      which built BOTH statements
+
+def _render.stmt_by(b: Bool, ...) -> St:
+  match b:
+    case True{}: _render.decl(...)
+    case False{}: _render.plain(...)
+```
+
+Three sites, all on the hot spine (§38's call tree):
+
+| site | what it was doing | self% before |
+|---|---|---|
+| `_render.stmt` | assembling the DECLARATION and the PLAIN statement, discarding one | 8.1% |
+| `_render.plain` | two `st_kernel` calls differing only by `";"` | (inside) |
+| `_render.emit` | assembling the full statement **even when the uop was INLINED** | 15.1% |
+
+`_render.plain` did not need the pattern: its arms differ by one literal, so the `Bool.pick` moved inside the
+`String.concat` and the line is assembled once. `_render.emit` did need it, and that one matters most --
+casts and indexes are usually inlined, so the discarded statement was being built for the common case.
+
+### 39.1 Measured, each change and then the pair
+
+12 interleaved rounds each, order alternated, 405-uop wire:
+
+| | min | p25 | median | ratio median | faster |
+|---|---|---|---|---|---|
+| `stmt` + `plain` | 50.2 | 51.0 | 51.3 | **0.9718** | 11/12 |
+| `emit` | 46.6 | 47.1 | 47.8 | **0.9723** | 10/12 |
+| **both, against the certified §34 artifact** | **47.9** | **49.1** | **49.6** | **0.9447** | **12/12** |
+
+`ratio min 0.7304  p25 0.9221  median 0.9447  max 0.9727` -- **every round faster, and the worst round is
+still 2.7% faster**, which is the strongest reading in this record (the §33 change had a max of 1.0233).
+
+### 39.2 Byte-identical
+
+`ksweep 37 of 37 on BOTH decoders`, `cstyle.bend ALL PROOFS CHECK`. The discarded arms were pure: they built
+`St` values and strings that nothing read, so removing them cannot change the C, and it does not.
