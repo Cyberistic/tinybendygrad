@@ -495,3 +495,27 @@ itself.
 So the three rows are one measured decision away: WHICH table is `symbolic` here. Everything else --
 the driver, the context, the answer shape, the import direction -- is in place, and `parse_valid` and
 `uop_given_valid` are small once that is answered.
+
+## 2026-11-03 (final, 12): `graph_rewrite` is NOT `simplify`, MEASURED -- and `sy_simplify` was reverted
+
+`simplify` looked like a one-liner: `graph_rewrite(ar, i, sym_table(), CArgs{Nil{}}, False{})`. It
+compiles. It DOES NOTHING.
+
+    port   add_x_0=(add xi c0)      mul_x_1=(mul xi c1)      x_plus_x=(add xi xi)
+    cpython add_x_0=xi              mul_x_1=xi               x_plus_x=(mul xi c2)
+
+Three shapes that the port's OWN `sym` scanner rewrites (the corpus prints `symf=(mul xi c2)` for
+`x+x`) come back UNCHANGED through `graph_rewrite` with an empty `CArgs` and `walk=False`. So the
+table is right and the DRIVER is not: either `CArgs{Nil{}}` is not the context `unified_rewrite`
+wants, or that arm needs something the header already names -- *"the port has ONE table and both
+drivers read it top-down"*.
+
+IT WAS REVERTED WITH ITS IMPORT. A def that answers "no change" for every input is worse than no def:
+it would make `uop_given_valid` look like it worked, because a no-op substitution is exactly what a
+valid that does not apply is supposed to produce.
+
+THE PATTERN, AGAIN, AND IT IS NOW THE THIRD TIME: `toposort` needed `budget` and not `next`;
+`Map.put` had no call site; `graph_rewrite` is not `simplify`. **A DRIVER THAT EXISTS IS NOT A DRIVER
+THAT WORKS.** The next unit should measure `graph_rewrite` the way this one measured `toposort` --
+print `Rewritten.passes` and `Rewritten.sink` on ONE node that `sym` rewrites -- before building
+`uop_given_valid` on it.
