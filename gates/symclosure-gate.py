@@ -133,9 +133,19 @@ def distinct_rules(pm) -> int:
     return len({(id(e[0]), id(e[1])) for v in pm.pdict.values() for e in v})
 
 
+# **`^def` AND NOT `def`.** MEASURED 2026-11-03: a COMMENT that records "there is no `def
+# fold_add_divmod_recombine`" made this function answer True for it, and the gate reported the body
+# as LANDED. A discovery that matches prose is a discovery that reads its own diary -- the same
+# failure as a census that counts its own comments.
 def port_has(name: str) -> bool:
-    pat = re.compile(rf"def {re.escape(name)}\b")
+    pat = re.compile(rf"^def {re.escape(name)}\b", re.M)
     return any(pat.search(p.read_text(errors="ignore")) for p in PKG.rglob("*.bend"))
+
+
+# THE PORT RENAMES BODIES, SO A NAME CHECK IS NOT A BODY CHECK. Both of these are MEASURED:
+# `fold_const_where` is `sy_fcw` (and `sy_fcw_f`), and a gate that asks for the upstream name would
+# call a ported body absent. Every entry here is a fact about this tree and not a convenience.
+RENAMED = {"fold_const_where": "sy_fcw"}
 
 
 def main() -> int:
@@ -189,8 +199,8 @@ def main() -> int:
     if not sig: bad.append("sym_rewrite is gone")
     if DT_PAIRS_DISAGREE != 0: bad.append("the dtype chain no longer matches CPython over 400 pairs")
 
-    absent = [n for n in MISSING if not port_has(n)]
-    landed = [n for n in MISSING if port_has(n)]
+    absent = [n for n in MISSING if not port_has(RENAMED.get(n, n))]
+    landed = [n for n in MISSING if port_has(RENAMED.get(n, n))]
     print(f"bodies.absent\t{len(absent)}\t{','.join(absent)}")
     print(f"bodies.landed\t{len(landed)}\t{','.join(landed)}")
     if len(absent) != len(MISSING):
