@@ -27665,3 +27665,33 @@ SAYS **THE **TREE **DID **NOT **MOVE **DURING **THE **RUN; **IT **SAYS **NOTHING
     substrate-start == substrate-end == 8e7ab117989c661ff9f6c390e631ec0d0b8d575d16985aeb07552385c5c71669
     D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
     corpuswitness-gate -> PASS -- the claim is ESTABLISHED
+
+`enter_calls` IS FIXED, THE CORPUS IS GREEN AT `f98e515f`, AND THE CORPUS DID **NOT** DISCRIMINATE THE FIX
+
+  graphs=38  graphs-agree=38  graphs-disagree=0  byte-identical=38  graphs-refused=0
+  substrate-start == substrate-end == f98e515f978f114322d95798c6515092a7d5465d6391c0fca1d4cddc748ad8c9
+  D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
+  corpuswitness-gate -> PASS -- the claim is ESTABLISHED
+
+**⇒ AND **THE **NEGATIVE **RESULT **FIRST, **BECAUSE **IT **IS **THE **ONE **THAT
+**COULD **MISLEAD: **THE **CORPUS **STAYED **GREEN **ACROSS **A **CHANGE **THAT
+**ALTERS **WHICH **NODES **EVERY **REWRITE **VISITS.**  **SO **THE **CORPUS **DOES
+**NOT **EXERCISE **THE **DEFAULT **WALK **OVER **A **CALL **BODY **IN **ANY **GRAPH
+**IT **HAS** -- **and **`substrate-start == substrate-end` **only **says **the **tree
+**did **not **move, **not **that **the **run **could **see **this.**  **THE **PROOF
+**FOR **THIS **FIX **IS **THE **`ec_*` **ROWS **AND **THEIR **THREE **PLANTS, **NOT
+**THE **CORPUS.  A **GREEN **CORPUS **OVER **A **CHANGE **IT **CANNOT **SEE **IS
+**NOT **EVIDENCE **FOR **THAT **CHANGE -- **IT **IS **EVIDENCE **THAT **NOTHING **ELSE
+**BROKE, **WHICH **IS **A **DIFFERENT **AND **SMALLER **CLAIM.
+
+**⇒ AND **THE **CORPUS **IS **STILL **WORTH **TAKING, **AND **FOR **EXACTLY **THAT
+**SMALLER **CLAIM:** `codegen/__init__.bend` **IS **SUBSTRATE, **the **walk **is **what
+**every **pass **runs **on, **and **a **change **there **that **no **graph **exercises
+**could **still **have **moved **one.  **IT **DID **NOT.**
+
+**⇒ AND **THE **TWO **DEFECTS **ARE **BOTH **REAL **AND **BOTH **WERE **SILENT:** the
+port entered call bodies where upstream's table was written to run OUTSIDE them, and
+`wr.rebuild.go`'s stated guarantee was false the moment that changed -- `R.cu32`'s
+default `0` is a legal arena index, so an unvisited src became **NODE 0** rather than
+itself.  **A **COMMENT **THAT **NAMES **A **GUARANTEE **THE **CODE **DOES **NOT
+**CHECK **IS **A **DEFECT **WAITING **FOR **A **CHANGE **TO **TRIP **IT.**
