@@ -6,12 +6,12 @@ Nothing in this file is remembered.
 | reading | value | instrument |
 |---|---|---|
 | census rows | **141** (139 `symbolic.py`, 2 `pm_remove_invalid`) | `gates/symrules.rows` |
-| PORTED | **114** | `gates/symrules-census.py` |
-| MISSING | **27** | `gates/symrules-census.py` |
-| port entries mapped | **114**, 0 broken, 0 unresolved | `gates/symrules-gate.py` (rc=0) |
-| behavioural witnesses | **190**, 190 agree, 0 diverge | `gates/symrules-oracle.py --compare` |
-| table rows | **112**, tags 0..111 unique | `gates/symclosure-gate.py` `tags.unique` |
-| mint arms | **81** == `MINT_TAGS` | `symclosure-gate` `mint.arms` |
+| PORTED | **116** | `gates/symrules-census.py` |
+| MISSING | **25** | `gates/symrules-census.py` |
+| port entries mapped | **116**, 0 broken, 0 unresolved | `gates/symrules-gate.py` (rc=0) |
+| behavioural witnesses | **194**, 194 agree, 0 diverge | `gates/symrules-oracle.py --compare` |
+| table rows | **114**, tags 0..113 unique | `gates/symclosure-gate.py` `tags.unique` |
+| mint arms | **83** == `MINT_TAGS` | `symclosure-gate` `mint.arms` |
 | index arms | **31** | `symclosure-gate` `dispatch.arms` |
 | `bodies.absent` | **2** (`fold_add_divmod_recombine`, `reduce_collapse`) | `symclosure-gate` |
 
@@ -19,7 +19,7 @@ Nothing in this file is remembered.
 
 ## What the case lane is
 
-`gates/symrules-cases.rows` holds 190 graphs; the port's own driver reads the whole file and
+`gates/symrules-cases.rows` holds 194 graphs; the port's own driver reads the whole file and
 prints one line per case, and `gates/symrules-oracle.py` builds the SAME graphs in CPython from
 the same file. The comparison is on `symf`, the Found-family lane, because a rule that MINTS
 leaves an index-lane answer past the end of the arena.
@@ -87,9 +87,9 @@ Measured by `rg -c 'def <helper>'` over `uop/*.bend` and the `TODO` markers in `
 | `divandmod.py:101,103,108` (3) | a SECOND table (`pm_divandmod`) — `vmin` landed, the table
   does not exist |
 | `weak.py:89` | the weak table (`wk_*` bodies exist, the matcher is not composed) |
-| `:129` (`fold_add_divmod_recombine`) | PORTABLE NOW — `split_uop`, `pop_const` and
-  `backward_slice` all landed; it is a ~60-line fold over term pairs with `_quotient_base`, and
-  it is one of the two `bodies.absent` |
+| `:129` | **PORTED** (this session) — and it was the last portable one. `pop_const` DEFAULTS TO
+  `ADD` (identity 0) and not MUL (identity 1), which is what makes `t = xa + a - pa` zero on
+  non-ADDs |
 
 ## The two rules the sweep unblocked and the one it did not
 
@@ -103,7 +103,7 @@ and not FLOORMOD's. The fix belongs in `uop/fold.bend`.
 
 ## How to continue
 
-1. `:129` first — its helpers exist and it clears a `bodies.absent` row. **THE SEMANTICS ARE
+1. `:129` IS DONE. **ITS SEMANTICS ARE
    MEASURED** (`ops.py:1082`, read today): `pop_const(op=Ops.ADD)` — the DEFAULT IS `ADD`, not
    `MUL` — answers `(src[0], src[1].val)` when `op` matches and `src[1]` is a CONST, and
    **`(self, identity_element(op, dtype))`** otherwise, where the identity is **0 for ADD and 1
@@ -112,7 +112,10 @@ and not FLOORMOD's. The fix belongs in `uop/fold.bend`.
    `t == 0`, `t % D == 0`, `k == 0`, and the answer is the base. A port that defaulted to `MUL`
    would compute `t = 1` and refuse. THE WITNESS IS MEASURED: `(x%3) + (x//3)*3` -> `(mul x c1)`
    and `(x%3)*5 + (x//3)*15` -> `(mul x c5)`, both from CPython, both refused by the port today.
-2. The movement table next: it is 9 rows and one new `PatternMatcher` transcription, and it needs
+2. `:302` is DONE too (`canonicalize_simplex`, which the `vmin` sweep unblocked).
+3. The movement table next: it is 9 rows and one new `PatternMatcher` transcription, and it needs
    `UOp._mop` (a builder, not a fold) before a single one can fire.
-3. `divandmod` and `weak` are one table each, mirroring `rm_table`'s shape.
-4. Everything else above is a substrate TODO in `uop/ops.bend`, and this file names the line.
+4. `divandmod:108` and `weak:89` are one COMPOSITION each (`div_and_mod_symbolic` is already
+   inside `sym`; `pm_uncast_const` is not), and both bodies need `const_factor`/`derived_dtypes`.
+5. Everything else above is a substrate TODO in `uop/ops.bend` or `uop/weak.bend`, and this file
+   names the line for each.
