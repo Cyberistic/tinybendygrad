@@ -580,11 +580,11 @@ def ec_src0.of(m: Maybe<&2, U32>, +ar: O.Arena) -> U32:
     case Some{s}: O.Arena.src0(ar, s)
 
 def ec_default(+fx: ECF) -> String:
-  +rw = CG.graph_rewrite(ECF.ar(fx), ECF.call(fx), CG.pm_post_sched_cache(), [ECF.px(fx)], True{})
+  +rw = CG.graph_rewrite(ECF.ar(fx), ECF.call(fx), CG.pm_post_sched_cache(), O.CArgs{[ECF.px(fx)]}, True{})
   bf(U32.is_eq(ec_src0.of(CG.Rewritten.sink(rw), CG.Rewritten.ar(rw)), ECF.pp(fx)))
 
 def ec_enter(+fx: ECF) -> String:
-  +rw = CG.graph_rewrite_ec(ECF.ar(fx), ECF.call(fx), CG.pm_post_sched_cache(), [ECF.px(fx)], True{})
+  +rw = CG.graph_rewrite_ec(ECF.ar(fx), ECF.call(fx), CG.pm_post_sched_cache(), O.CArgs{[ECF.px(fx)]}, True{})
   bf(U32.is_eq(ec_src0.of(CG.Rewritten.sink(rw), CG.Rewritten.ar(rw)), ECF.px(fx)))
 
 def ecrows(+fx: ECF) -> IO(Unit):
@@ -621,6 +621,40 @@ def ab_nest() -> String:
   +top = O.UOp.new(O.Found.ar(outer), O.OpsCALL{}, [O.Found.i(outer)], O.ANone{}, O.TNone{})
   ab_nest.of(SC.sc_resolve_linear_call(O.Found.ar(top), O.Found.i(top), Map.new(&2, U32)))
 
+
+# ---- `CTX` -- THE TYPED REWRITER CONTEXT -------------------------------------
+# `CArgs` IS ALREADY EXERCISED END TO END by `ec_enter`: tag 3 of
+# `pm_post_sched_cache` reads `ctx[slot]` through `CTX.at`/`pm_r_param_m`, so the
+# positional variant is measured by a row that AGREES WITH CPYTHON.
+#
+# `CNodes` HAS NO CPYTHON COUNTERPART -- upstream's ctx is an arbitrary Python
+# object, and this type is the PORT's -- so `ctx_nodes` and `ctx_miss` are
+# `port_only`: they pin that the node-keyed payload is present and that an ABSENT
+# node answers `None{}` and not default `0` (`0` is a legal arena index, the trap
+# `wr.rebuild.one` was fixed for).
+def ctx_one.of(m: Maybe<&2, U32>, +want: U32) -> String:
+  match m:
+    case None{}: "0"
+    case Some{i}: bf(U32.is_eq(i, want))
+
+def ctx_one(m: Maybe<&2, U32>, +want: U32) -> String:
+  ctx_one.of(m, want)
+
+def ctx_nodes() -> String:
+  +n = param(O.Arena.empty(), pa(0, rng(7), SP.Aalu{}, None{}, None{}))
+  +m = Map.set(&2, U32, Map.new(&2, U32), U32.show(O.Found.i(n)), 7)
+  ctx_one(O.CTX.at(O.CNodes{m}, 0n, O.Found.i(n)), 7)
+
+def ctx_miss.of(m: Maybe<&2, U32>) -> String:
+  match m:
+    case None{}: "1"
+    case Some{_}: "0"
+
+def ctx_miss() -> String:
+  +n = param(O.Arena.empty(), pa(0, rng(7), SP.Aalu{}, None{}, None{}))
+  +m = Map.set(&2, U32, Map.new(&2, U32), "4294967295", 7)
+  ctx_miss.of(O.CTX.at(O.CNodes{m}, 0n, O.Found.i(n)))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -647,4 +681,6 @@ def main() -> IO(Unit):
     p8 : Unit <- abrows(abfx())
     p7 : Unit <- ecrows(ecfx())
     p6 : Unit <- IO.print(String.concat(["sub_nocalls=", sub_nocalls(ecfx())]))
-    IO.print(String.concat(["ab_nest=", ab_nest()]))
+    p5 : Unit <- IO.print(String.concat(["ab_nest=", ab_nest()]))
+    c2 : Unit <- IO.print(String.concat(["ctx_nodes=", ctx_nodes()]))
+    IO.print(String.concat(["ctx_miss=", ctx_miss()]))

@@ -89,6 +89,8 @@ ROWS = (
     "ec_enter",
     "sub_nocalls",
     "ab_nest",
+    "ctx_nodes",
+    "ctx_miss",
 )
 
 GATE = Gate(
@@ -96,20 +98,22 @@ GATE = Gate(
     bend="gates/uopvars.bend",
     oracle="gates/uopvars-oracle.py",
     rows=len(ROWS),
+    compared=len(ROWS) - 2,
     # `compared` must be stated when `port_only` is used: it defaults to `rows`, and
     # gatekit checks the COMPARED count against it (measured, `gatekit.py:715`).
     # `ab_arm1`/`ab_arm3` are PORT-ONLY: CPython's `apply_binds` is a closure and arm 1
     # RECURSES there where the port REFUSES (measured), so the oracle cannot carry them
     # and a `py` pin on them would be a claim about a row that must not exist.
+    port_only=["ctx_nodes", "ctx_miss"],
     pins=[(lane, row) for lane in ("py", "bd") for row in ROWS
-          ],
+          if not (lane == "py" and row in ("ctx_nodes", "ctx_miss"))],
 )
 
 if __name__ == "__main__":
     sys.exit(
         main(
             GATE,
-            "uopvars-gate: 45 rows, 2 lanes -- `is_variable` (ops.py:1009), "
+            "uopvars-gate: 47 rows, 2 lanes -- `is_variable` (ops.py:1009), "
             "`unbound` (:1027) and `variables` (:1037), WALL C of "
             "`schedule/__init__.bend`'s deferral, AND `sc_linear_binds` "
             "(`__init__.py:104-106`), the CONSUMER that makes the first two "

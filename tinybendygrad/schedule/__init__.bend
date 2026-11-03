@@ -2057,7 +2057,7 @@ def apply_binds(+ar: O.Arena, +si: U32) -> U32:
 #   5. A DOWNSTREAM ITEM CARRIES `lin` AS A `U32`, NOT A `Maybe` -- reconstructing
 #      `Some{lin}` and then passing it is what made a `Map` look linear.
 type RWk is Data:
-  RCall{ar: O.Arena, call: U32, outer: Map<&2, U32>, body: Maybe<&2, U32>, ctx: List<&2, U32>}
+  RCall{ar: O.Arena, call: U32, outer: Map<&2, U32>, body: Maybe<&2, U32>, ctx: O.CTX}
   RSrcs{ar: O.Arena, lin: Maybe<&2, U32>, binds: Map<&2, U32>, xs: List<&2, U32>, acc: List<&2, U32>}
   RStep{ar: O.Arena, lin: U32, binds: Map<&2, U32>, x: U32, t: List<&2, U32>,
         acc: List<&2, U32>, arm: U32}
@@ -2089,7 +2089,7 @@ def sc_resolve(fuel: Nat, w: RWk) -> Maybe<&2, SBind>:
     case 1n++k RStep{+ar, lin, +binds, +x, t, acc, 3}:
       sc_resolve(k, RDo{ar, lin, binds, t, acc, sc_apply_binds3(ar, x, binds)})
     case 1n++k RStep{+ar, lin, +binds, +x, t, acc, 1}:
-      +prev = sc_resolve(k, RCall{ar, x, binds, sc_body(ar, x), sc_src_from(ar, x, 1)})
+      +prev = sc_resolve(k, RCall{ar, x, binds, sc_body(ar, x), O.CArgs{sc_src_from(ar, x, 1)}})
       sc_resolve(k, RJoin{prev, lin, binds, t, acc})
     case 1n++k RDo{+ar, lin, +binds, t, acc, None{}}: None{}
     case 1n++k RDo{+ar, lin, +binds, t, acc, Some{+b}}:
@@ -2101,7 +2101,7 @@ def sc_resolve(fuel: Nat, w: RWk) -> Maybe<&2, SBind>:
 
 def sc_ab2.of(arm: U32, +ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SBind>:
   match arm:
-    case 1: sc_resolve(O.Arena.budget(ar), RCall{ar, si, binds, sc_body(ar, si), sc_src_from(ar, si, 1)})
+    case 1: sc_resolve(O.Arena.budget(ar), RCall{ar, si, binds, sc_body(ar, si), O.CArgs{sc_src_from(ar, si, 1)}})
     case 2: Some{SBind{ar, si}}
     case _: sc_apply_binds3(ar, si, binds)
 
@@ -2109,7 +2109,7 @@ def sc_apply_binds(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SB
   sc_ab2.of(apply_binds(ar, si), ar, si, binds)
 
 def sc_resolve_linear_call(+ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
-  sc_resolve(O.Arena.budget(ar), RCall{ar, call, outer, sc_body(ar, call), sc_src_from(ar, call, 1)})
+  sc_resolve(O.Arena.budget(ar), RCall{ar, call, outer, sc_body(ar, call), O.CArgs{sc_src_from(ar, call, 1)}})
 
 # ---------------------------------------------------------------------------
 # 9. `canonicalize_alloc` -- __init__.py:235-237. NEEDS ctx, and it is the

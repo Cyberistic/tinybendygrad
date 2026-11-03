@@ -126,25 +126,25 @@ def wr.step.rebuild(u: U32, p: (O.Arena & Map<&2, U32>)) -> (O.Arena & U32 & Map
   (ar, +repl) = p
   (ar, R.cu32(repl, u), repl)
 
-def wr.step.scan(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, +rebuilt: U32) -> Map<&2, U32>:
+def wr.step.scan(+ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: O.CTX, +rebuilt: U32) -> Map<&2, U32>:
   wr.step.try_rule(u, O.pm_rewrite_m(pm, ar, u, ctx), repl, rebuilt)
 
-def wr.step.seen.go(ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: List<&2, U32>, +rebuilt: U32) -> Map<&2, U32>:
+def wr.step.seen.go(ar: O.Arena, +pm: O.PMEntrys, +u: U32, +repl: Map<&2, U32>, +ctx: O.CTX, +rebuilt: U32) -> Map<&2, U32>:
   wr.step.scan(ar, pm, u, repl, ctx, rebuilt)
 
 # The triple in, the pair out, with the rule applied. `rebuilt` is NOT what the
 # rule reads; it is only what `try_rule` falls back to when no rule fires. The
 # rule is tried on `u`, the ORIGINAL node (see the header).
-def wr.step.of(+pm: O.PMEntrys, +u: U32, +ctx: List<&2, U32>, p: (O.Arena & U32 & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
+def wr.step.of(+pm: O.PMEntrys, +u: U32, +ctx: O.CTX, p: (O.Arena & U32 & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
   (+ar, rebuilt, repl) = p
   (ar, wr.step.seen.go(ar, pm, u, repl, ctx, rebuilt))
 
-def wr.step(+pm: O.PMEntrys, +u: U32, +ctx: List<&2, U32>, acc: (O.Arena & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
+def wr.step(+pm: O.PMEntrys, +u: U32, +ctx: O.CTX, acc: (O.Arena & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
   (ar, repl) = acc
   wr.step.of(pm, u, ctx, wr.step.rebuild(u, wr.rebuild(ar, u, repl)))
 
 # Fold over the toposort list. Returns the grown arena and the replace map.
-def wr.go(lst: List<&2, U32>, +pm: O.PMEntrys, +ctx: List<&2, U32>, acc: (O.Arena & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
+def wr.go(lst: List<&2, U32>, +pm: O.PMEntrys, +ctx: O.CTX, acc: (O.Arena & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
   match lst:
     case Nil{}: acc
     case +u <> t: wr.go(t, pm, ctx, wr.step(pm, u, ctx, acc))
@@ -186,10 +186,10 @@ def walk_rewrite.put(+sink: U32, p: (O.Arena & Map<&2, U32>)) -> (O.Arena & Mayb
 #
 # `toposort` and `toposort_nocalls` are upstream's two orders (`ops.py:3404/3415`),
 # so the flag is a CHOICE OF WALK and not a filter applied afterwards.
-def walk_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+def walk_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
   walk_rewrite.put(sink, wr.go(O.UOp.toposort_nocalls(U32.to_nat(O.Arena.next(ar)), ar, sink), pm, ctx, (ar, Map.new(&2, U32))))
 
-def walk_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+def walk_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
   walk_rewrite.put(sink, wr.go(O.UOp.toposort(U32.to_nat(O.Arena.next(ar)), ar, sink), pm, ctx, (ar, Map.new(&2, U32))))
 
 # THE PASS BOUND. `REWRITE_STACK_LIMIT = 250000` upstream (ops.py:1622) bounds a
@@ -242,13 +242,13 @@ def walk_rewrite.lift(p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>)) -> Rewritten
 
 # `walk_rewrite` as the dispatcher reports it: ONE pass, never capped. Upstream
 # caps nothing on the walk path, because `walk_rewrite` is not a loop.
-def walk_rewrite.counted(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
+def walk_rewrite.counted(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> Rewritten:
   walk_rewrite.lift(walk_rewrite(ar, sink, pm, ctx))
 
-def walk_rewrite_ec.counted(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
+def walk_rewrite_ec.counted(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> Rewritten:
   walk_rewrite.lift(walk_rewrite_ec(ar, sink, pm, ctx))
 
-def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, +w: Rewritten) -> Rewritten:
+def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -> Rewritten:
   walk_rewrite.lift(walk_rewrite(Rewritten.ar(w), sink, pm, ctx))
 
 # ---------------------------------------------------------------------------
@@ -308,7 +308,7 @@ def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, +w: Rewr
 # arms need.
 def unified_rewrite.same(+prev: U32, w: Rewritten) -> Bool: U32.is_eq(prev, Rewritten.index(w, prev))
 
-def unified_rewrite.go(fuel: Nat, +done: U32, +prev: U32, +w: Rewritten, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
+def unified_rewrite.go(fuel: Nat, +done: U32, +prev: U32, +w: Rewritten, +pm: O.PMEntrys, +ctx: O.CTX) -> Rewritten:
   match fuel:
     case 0n: Bool.pick(Rewritten, unified_rewrite.same(prev, w), Rewritten.hit(w, done), Rewritten.cap(w, done))
     case 1n+f: Bool.pick(Rewritten, unified_rewrite.same(prev, w), Rewritten.hit(w, done), unified_rewrite.go(f, U32.add(done, 1), Rewritten.index(w, prev), walk_rewrite.pass(Rewritten.index(w, prev), pm, ctx, w), pm, ctx))
@@ -323,10 +323,10 @@ def unified_rewrite.go(fuel: Nat, +done: U32, +prev: U32, +w: Rewritten, +pm: O.
 # where the graph reached its fixed point on pass 2 -- a counter that grows by one
 # on the arm that happened to stop the loop, which is a counter of WHICH ARM
 # STOPPED rather than of PASSES RUN.
-def unified_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
+def unified_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> Rewritten:
   unified_rewrite.go(Nat.sub(FIXPOINT_PASSES(), 1n), 1, 0, walk_rewrite.lift(walk_rewrite(ar, sink, pm, ctx)), pm, ctx)
 
-def unified_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> Rewritten:
+def unified_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> Rewritten:
   unified_rewrite.go(Nat.sub(FIXPOINT_PASSES(), 1n), 1, 0, walk_rewrite.lift(walk_rewrite_ec(ar, sink, pm, ctx)), pm, ctx)
 
 # `graph_rewrite` -- the dispatcher, ops.py:1888-1890. Upstream's body is two
@@ -339,11 +339,11 @@ def unified_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2,
 # `unified_rewrite`'s header: the port has ONE table and both drivers read it
 # top-down, so `bottom_up=True` is not expressible and this signature does not
 # carry it. The second is a ternary on one Bool, and THAT is what is ported.
-def graph_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, walk: Bool) -> Rewritten:
+def graph_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, walk: Bool) -> Rewritten:
   Bool.pick(Rewritten, walk, walk_rewrite.counted(ar, sink, pm, ctx), unified_rewrite(ar, sink, pm, ctx))
 
 # `graph_rewrite(..., enter_calls=True)` -- the SAME dispatch over the `ec` walks.
-def graph_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, walk: Bool) -> Rewritten:
+def graph_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, walk: Bool) -> Rewritten:
   Bool.pick(Rewritten, walk, walk_rewrite_ec.counted(ar, sink, pm, ctx), unified_rewrite_ec(ar, sink, pm, ctx))
 
 # ============================================================================
@@ -568,7 +568,7 @@ def grw_row.mapn(nm: String, m: Map<&2, U32>) -> IO(Unit): grw_row.go(nm, U32.sh
 
 # `graph_rewrite(..., walk=True)` -- the one-pass arm. Its map is keyed by the
 # ORIGINAL graph, so the toposort is taken in the arena the call was GIVEN.
-def grw_rows.walk(+pfx: String, +ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> IO(Unit):
+def grw_rows.walk(+pfx: String, +ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> IO(Unit):
   +w = graph_rewrite(ar, sink, pm, ctx, True{})
   +topo = O.UOp.toposort(U32.to_nat(O.Arena.next(ar)), ar, sink)
   do IO<Unit>:
@@ -584,7 +584,7 @@ def grw_rows.walk(+pfx: String, +ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx:
 # sink IT handed back. Reading it over the original toposort would answer `NOOP`
 # for every key: `O.Arena.node` is TOTAL on a stale index, which is the hazard
 # this file's header names.
-def grw_rows.fix(+pfx: String, +ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> IO(Unit):
+def grw_rows.fix(+pfx: String, +ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> IO(Unit):
   +w = graph_rewrite(ar, sink, pm, ctx, False{})
   +ar2 = Rewritten.ar(w)
   +topo = O.UOp.toposort(U32.to_nat(O.Arena.next(ar2)), ar2, Rewritten.index(w, 0))
@@ -599,7 +599,7 @@ def grw_rows.fix(+pfx: String, +ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: 
 # THE BOUND, REACHED. `unified_rewrite.go` is entered with zero fuel and a `prev`
 # of 0, so the pass it runs cannot confirm anything and `cap` is the arm taken.
 # This is the row that makes `capped` load-bearing.
-def grw_rows.cap(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>) -> IO(Unit):
+def grw_rows.cap(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX) -> IO(Unit):
   +w = unified_rewrite.go(0n, 1, 0, walk_rewrite.lift(walk_rewrite(ar, sink, pm, ctx)), pm, ctx)
   do IO<Unit>:
     grw_row.go("grw_cap_passes", U32.show(Rewritten.passes(w)))
@@ -610,7 +610,7 @@ def grw_rows.cap(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>)
 # reader that recovered the sink as `next - 4` would encode the fixture's node
 # COUNT rather than its sink; carrying all three makes the offsets the builder's
 # business and leaves the gate reading names.
-type Fx is Data: Fx{ar: O.Arena, sink: U32, ctx: List<&2, U32>}
+type Fx is Data: Fx{ar: O.Arena, sink: U32, ctx: O.CTX}
 
 # Build the fixture: a SINK[PARAM{0}, PARAM{1}, ALLOC]. `ar` grows as we mint each
 # node; the final `ar` carries the whole graph. `ctx` is [A, B, buf]: A and B are
@@ -629,11 +629,11 @@ def fixture.graph() -> Fx:
   +ca = ctx_param(O.Found.ar(sk), 99)
   +cb = ctx_param(O.Found.ar(ca), 100)
   +bf = test_buffer(O.Found.ar(cb))
-  Fx{O.Found.ar(bf), O.Found.i(sk), [O.Found.i(ca), O.Found.i(cb), O.Found.i(bf)]}
+  Fx{O.Found.ar(bf), O.Found.i(sk), O.CArgs{[O.Found.i(ca), O.Found.i(cb), O.Found.i(bf)]}}
 
 def Fx.ar(f: Fx) -> O.Arena: match f: case Fx{ar, sink, ctx}: ar
 def Fx.sink(f: Fx) -> U32: match f: case Fx{ar, sink, ctx}: sink
-def Fx.ctx(f: Fx) -> List<&2, U32>: match f: case Fx{ar, sink, ctx}: ctx
+def Fx.ctx(f: Fx) -> O.CTX: match f: case Fx{ar, sink, ctx}: ctx
 
 # F2's rule table: the ALLOC rule of `pm_post_sched_cache` ALONE. It exists
 # because CPython's `unified_rewrite` RAISES on F1 (IndexError at
@@ -654,7 +654,7 @@ def fixture.alloc_only() -> Fx:
   +al = test_alloc(ar0)
   +sk = fixture.sink1(O.Found.ar(al), O.Found.i(al))
   +bf = test_buffer(O.Found.ar(sk))
-  Fx{O.Found.ar(bf), O.Found.i(sk), [O.Found.i(bf), O.Found.i(bf), O.Found.i(bf)]}
+  Fx{O.Found.ar(bf), O.Found.i(sk), O.CArgs{[O.Found.i(bf), O.Found.i(bf), O.Found.i(bf)]}}
 
 def main.go(+f1: Fx, +f2: Fx) -> IO(Unit):
   do IO<Unit>:
