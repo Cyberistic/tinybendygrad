@@ -1249,3 +1249,37 @@ THE RANGE ALGEBRA IS NOT A BLOCKER, and the header's "blocker ABSENT" note was w
 as SET and `ranges(c)` as PROBES. MEASURED by reading the argument roles, not by name.
 
 **SO ROWS 19 AND 20 LEAVE THIS LANE AS A NOTE, AND THE HEADER SAYS SO.**
+
+## 37. THE CHAIN TO THE LAST THREE ROWS IS NOW FULLY SPECIFIED, AND IT IS FOUR STEPS
+
+Sections 24, 33 and 35 said the three rows need a base lane and a substitute. MEASURED, step by
+step, the chain is:
+
+    1. `s1` -> a MULTI-ENTRY substitute.
+       MEASURED: `s1.get` ALREADY scans a `List<&2, Ky>` -- the table IS the dict, and `Ky{k, n}` is
+       the pair. `s1.sub(ar, sink, key, val)` takes ONE pair; generalising it to a list of pairs is
+       the whole change. And `s1` REUSES THE SAME ARENA (`O.UOp.new(ar, ...)`), so a pre-minted
+       value keeps its index -- which is what makes the values `ugv` needs (fake VARIABLES) usable.
+       The SEMANTICS match upstream's dict: ugv's two dicts never have a value that is a key of the
+       SAME dict (`{X:newX}` then `{newX:X}`), so simultaneous and sequential agree for this use.
+
+    2. `ugv` -> `uop_given_valid`, using that multi-substitute and the port's `sy_parse_valid`
+       (already present) and `sy_uprod`.
+
+    3. `ugv`'s `.simplify()` -> the BASE fixpoint, not `sym_f`.
+       MEASURED: `sym_f` is `sym_rewrite_f(sym_table(), x, u)`, so it CANNOT be the base one while
+       the valid rows live in `sym_table`. Upstream's `ops.py:492` re-enters `symbolic` (:247), NOT
+       `sym` (:463) -- so upstream's base fixpoint excludes `pm_simplify_valid`, and the port's must
+       too. **THIS IS THE CYCLE, AND IT IS BROKEN BY TABLE SEPARATION (section 34): the valid rows go
+       in their OWN table with their OWN two-arm dispatcher, and the base fixpoint never sees them.**
+
+    4. `simplify_valid` and `gated_given_valid` -> the two new rows, in that table.
+
+**SO THE THREE ROWS ARE NOT BLOCKED ON A SUBSTRATE. THEY ARE BLOCKED ON FOUR DEFS, AND THE FIRST OF
+THE FOUR IS A SMALL GENERALISATION OF A FUNCTION THAT IS ALREADY THERE AND VERIFIED.** The record
+previously said "needs a base lane" as if that were an architecture; it is a table split, and the
+table split is two arms.
+
+`divandmod.py:103` is separate: it needs `UOp.gcd` and `UOp.divide_exact` (both absent), and
+`usum` -- which the port HAS as `sy_usum`, now with the bool arm fixed, but which `divandmod.bend`
+cannot reach because `symbolic` imports `divandmod`.
