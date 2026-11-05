@@ -7454,8 +7454,9 @@ def f32_is(m: Maybe<&1, O.Const>, want: F32) -> Bool: F32.is_eq(f32_of(m), want)
 # THE COUNT ROWS. `len_sym`, `len_rm` and `rej` are COUNTS and not booleans,
 # because a MISSING rule and a MISSPELLED reject set are both invisible to a
 # boolean. `skip` is the arithmetic that makes the port auditable:
-# `len_sym + skip == total_sym == 127`, Python's own rule count for the blocks
-# `sym` composes, and every one of the 114 is named in the TODO block below.
+# `len_sym + skip == total_sym == 133` -- Python's own rule count for the blocks
+# `sym` composes AT THIS PIN -- and every one of the three is named in the TODO
+# block below.
 def t_len_sym() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(sym_table())))
 
 def t_len_rm() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(rm_table())))
@@ -7474,7 +7475,20 @@ def t_len_rm() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(rm_
 # `gates/symrules-census.py` DERIVES that number from upstream's AST and
 # CROSS-CHECKS it against the live matcher, and `gates/symrules.rows` is the
 # table it prints.  This arithmetic is the port's own copy of it.
-def t_total() -> U32: U32.add(U32.add(U32.add(U32.add(14, 48), 9), 1), U32.add(U32.add(46, 3), U32.add(U32.add(1, 2), U32.add(14, 1))))
+# **THE TOTAL, AND IT MOVED WITH THE RE-VENDOR AND WITH THE PORT.** The old arithmetic was
+# `14 + 47 + 1 + 47 + 2 + 14 + 2` = 127, then `14 + 48 + 9 + 1 + 46 + 3 + 1 + 2 + 14 + 1` = 139 --
+# both are counts at OLD pins, and this file kept the 139 while the tree moved.
+#
+# MEASURED 2026-11-04 against `gates/symrules-census.py`'s AST walk of the SAME upstream:
+# `sym` is 133 rules, and the port's `sym_table` holds 130, so `skip` is 3 -- and the census's three
+# MISSING rows are EXACTLY those three: `symbolic.py:450` and `:451` (`pm_simplify_valid`, two
+# rows) and `divandmod.py:103` (one row). **130 + 3 = 133 = upstream `sym`, so the port is short
+# EXACTLY the three rules the census names and NOTHING ELSE** -- which is the statement this row was
+# supposed to make, and it could not make it while carrying a count from an old pin.
+#
+# `len_sym + skip == total_sym` is the ARITHMETIC that makes the port auditable: a MISSING rule and a
+# MISSPELLED reject set are both invisible to a boolean.
+def t_total() -> U32: 133
 
 def t_skip() -> U32: U32.sub(t_total(), t_len_sym())
 
