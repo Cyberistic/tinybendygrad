@@ -5411,3 +5411,40 @@ which is what §121.1 did (`mm: new == HEAD`, `f64: new == HEAD`, byte-identical
 ("DIFFERS") when it is a missing input, and a missing input and a wrong output look the same in a shell
 script. The record's own rule ("A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO GATE") applies
 to the *inputs* too: the expectation must live IN the tree.
+
+## 122. THE FIVE NAMES WITH A SPACE, AS A MATCH: 0.9931 / 0.9867 / 0.9846 / 1.0096 / 1.0065 -- REVERTED
+
+§121's census on the 642-uop kernel named the split SITES, and one of them is not the decoder's:
+
+```
+split SITES called per render
+     779  ysplit          <- the decoder's nums payloads
+     400  under_split     <- the RENDERER's dtype names
+       1  kus             <- the wire itself
+       1  ku_param_base_go
+```
+
+`under_split` is `.replace(" ", "_")` (`cstyle.py:189`), and the port spells it as a split-and-rejoin because
+`String.replace` IS A WALL: `String.split` splits on ONE CHAR. **BUT THE TABLE OF NAMES IS CLOSED AND FIVE OF
+THEM CONTAIN A SPACE** -- "signed char", "unsigned char", "unsigned short", "unsigned int", "unsigned long" --
+so the whole thing is a `match` with a literal answer per arm, and `has_space` is the same five names.
+
+MEASURED, and it is NEUTRAL:
+
+```
+same C: True | bytes: 5649
+wall 30 rounds: median 0.9931  16/30     cpu 16 rounds: median 0.9867  13/16
+wall 34 rounds: median 0.9908  19/34     cpu 14 rounds: median 1.0096   6/14
+wall 30 rounds: median 1.0374  14/30     cpu 16 rounds: median 1.0065   8/16
+```
+
+**⇒ REVERTED, AND THE REASON IS THE THING §108 MEASURED AND §110.2's REVERT CONFIRMED AGAIN: A `match` ON A
+STRING IS NOT `===`.** The compiler emits the literal arms as a chain of FIRST-CHARACTER compares with a
+`slice` per character (11 `char_code` and 25 `slice` calls in `under.of` alone), so the change replaced 2,220
+recursive split calls over 2,220 characters with 400 chains of up to five arms of ~10 characters each.
+**THE TWO COST THE SAME, AND THE PORT'S OWN `Ops` TABLE IS THE PROOF: `op_by_idx` is a `match` on a STRING
+and it is ordered BY MEASURED FREQUENCY precisely because the arms cost their position.**
+
+**⇒ AND THIS IS THE SIXTH TIME A SHAPE MEASURED IN ONE PLACE WAS NOT A MEASUREMENT OF ANOTHER** (§113's
+`nums` merge, §114's merge, §120's blocked view, §121's `fld` in a different caller, §110.2's `fld` in the
+renderer, and now this). **THE ONLY INSTRUMENT THAT SETTLES IT IS AN END-TO-END A/B ON THE CHANGE ITSELF.**
