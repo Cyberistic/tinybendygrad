@@ -1319,3 +1319,36 @@ FIVE IS DONE (`s1.multi`).**
 `divandmod.py:103` is separate: it needs `UOp.gcd` and `UOp.divide_exact` (both absent) and a
 `usum` that `divandmod.bend` can reach (the port has `sy_usum`, now with its bool arm fixed, but
 `symbolic` imports `divandmod`, so the direction is wrong).
+
+## 39. `ugv`'s BOUNDS ARE FINITE IN THIS LANE, AND THAT REMOVES THE LAST DOUBT
+
+Section 38 left `ugv`'s fake variables with a question: upstream's `UOp.variable(name, v0, v1, dtype)`
+takes `PyConst` bounds, so upstream can make a fake variable with an INFINITE bound, and the port's
+`UOp.variable(ar, nm, lo: H.I64, hi: H.I64, mo, dt)` cannot.
+
+MEASURED, and the doubt is unfounded HERE: the port's `parse_valid` GATES ON THE DTYPE --
+
+    pv.gate:  Bool.and(eq_op(op(ar, lt), OpsCMPLT{}),
+                       S.Cls.is_int(S.Dt.cls(sy_dt1(folded(ar), src(ar, lt, 0)))))
+
+so **an expr in a valid clause is always an INT**. An int node's `_min_max` is WRAPPED INTO ITS
+DTYPE (`upstream: wrapped(self.dtype, ...)`), so its bounds are FINITE INTS. **THEREFORE EVERY FAKE
+VARIABLE `ugv` NEEDS HAS FINITE I64 BOUNDS, AND `UOp.variable`'s I64 PAIR IS ENOUGH.**
+
+That also fixes the bound TYPE question: upstream's bound is a `PyConst` and the port's const bound
+is an `H.I64` (the port's `parse_valid` returns `Pv{ok, e, up, c}` with `c: H.I64`), so the port's
+bound is an `I64` on both sides -- the const's own value, and the expr's `Bnd` CONVERTED (a
+`BndInt{neg, mag}` is an I64 in two operations).
+
+SO THE FOUR REMAINING DEFS ARE:
+
+    ugv                the bounds map (expr -> (lo, hi)), the fake variables, the two-phase
+                       substitute through `s1.multi` (DONE), and `.simplify()` = `sy_simplify`
+                       (unchanged -- no base variant is needed, section 38)
+    simplify_valid     priority-sort the clauses and join them with `uprod`
+    gated_given_valid  the dtype checks plus `cond.where(ugv(cond, x, try_simplex=False), i)`
+    the two TABLE ROWS + two arms in each lane + the outer entry
+
+**AND NOTHING IN THAT LIST IS A SUBSTRATE WALL ANY MORE.** The walls were `vmin`/`vmax` (present),
+`ranges` (present), `bool_slice` (present), `substitute` (present, and now MULTI-entry), `simplify`
+(present, and the base fixpoint is not a cycle), and the fake variables (finite I64 bounds, present).
