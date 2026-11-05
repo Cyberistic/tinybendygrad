@@ -5348,3 +5348,66 @@ FRONT, so **block 0 has a VARIABLE length** (`((n-1) & 15) + 1`) and every block
 lookup is `d < b0 -> (0, d)` else `(1 + (d-b0)/16, (d-b0) % 16)`. A block-of-N view of an APPEND-AT-FRONT
 list is not `d/N`; `ku_at`'s view is `d/N` only because §76 built it by cutting a FINISHED list in one
 forward pass, where the partial block is LAST and the arithmetic starts from the front.
+
+## 121. THE DECODER'S `fld` WAS THE LARGEST GROUP IN THE DECODE: 0.9083 / 0.9598 / 0.9628, KEPT
+
+§113 attributed the decode to "wire split 0.78 / records 0.43 / nums 0.54" and §114 attacked the `nums`
+split (1.0546, reverted). The census that names the groups was taken on the 405-uop wire, so it was re-taken
+on the CURRENT build and a **642-uop** kernel, and the answer is different:
+
+```
+live decoder calls per render (642 uops, 15,346 wire chars)
+   5,870  fld        <- the largest group in the decode, by 2x
+   2,814  u32
+   1,286  nums
+     779  ysplit
+     687  nums_go
+     642  ku_ws, op_of, op_by_idx, dt_of, addr_of, arg_of
+```
+
+**`fld` IS `List.get`, so it walks `i+1` conses, and the nine reads of a nine-field row cost 45 steps.**
+5,870 calls a render is 5,870 walks, and the decoder's `fld` group is larger than every `KU_*` accessor in
+the renderer combined.
+
+### 121.1 The change: nine names instead of nine indexes
+
+`ku_ws.r` binds the nine fields in ONE walk of nine conses and `ku_ws.of` takes them by name. **§110.2
+measured this exact shape in `cstyle.bend` at 0.9796 and reverted it** -- the decoder is a different call
+site with 4x the count, so the shape is re-measured here rather than assumed.
+
+```
+same C: True | bytes: 5649
+wall 26 rounds:  base 6.02 ms  new 5.96 ms  median 0.9289  17/26
+wall 34 rounds:  base 6.78 ms  new 6.36 ms  median 0.9354  20/34
+wall 30 rounds:  base 5.67 ms  new 5.45 ms  median 0.9083  23/30
+cpu  12 rounds:  base 14.897 ms new 14.789 ms median 0.9862  7/12
+cpu  14 rounds:  base 15.243 ms new 14.971 ms median 0.9693  11/14
+cpu  16 rounds:  base 14.795 ms new 14.085 ms median 0.9598  14/16
+cpu  14 rounds:  base 14.170 ms new 13.698 ms median 0.9628  12/14
+```
+
+**KEPT: 60 of 66 CPU rounds faster, four CPU medians 0.9598-0.9862 and three wall medians 0.9083-0.9354.**
+Byte-identical at 37 of 37 on both decoders, `ALL PROOFS CHECK`, opbattery 39/39, portexec 7/7, and the two
+e2e fixtures are byte-identical to HEAD's own output (measured against HEAD's output, because the
+`/tmp/out_a_*.txt` expectations this session inherited are NOT in the tree -- §121.3).
+
+### 121.2 Why §110.2's 0.9796 DID NOT PREDICT THIS
+
+§110.2 replaced `fld` in `cstyle.bend`, whose `fld` calls are ~45 steps over a NINE-element list -- the same
+shape. **THE DIFFERENCE IS THE CALLER, NOT THE SHAPE**: the decoder's `fld` is 5,870 calls against the
+renderer's 3,763, and §110.2 measured at a 3.5 ms turn where the decoder was a third of it. **A SHAPE
+MEASURED IN ONE PLACE IS NOT A MEASUREMENT OF THE OTHER PLACE**, which is §113's own lesson applied to
+§110.2's own conclusion.
+
+### 121.3 THE FIXTURE EXPECTATIONS THIS SESSION INHERITED ARE NOT IN THE TREE
+
+`/tmp/out_a_mm.txt` and `/tmp/out_a_f64.txt` were the comparison this record has been quoting, and they are
+GONE: `/tmp` was cleared between sessions. The fixtures themselves (`checks/.e2e-fixture/*/emit-*.bend`)
+ARE tracked, and their outputs are compared to **CPython's** by `run-kernel.sh` and `run-f64.sh` -- not to a
+stored file. So the honest comparison for a renderer change is HEAD's output vs the new build's output,
+which is what §121.1 did (`mm: new == HEAD`, `f64: new == HEAD`, byte-identical).
+
+**⇒ AND A GATE THAT COMPARES AGAINST A FILE THAT NO LONGER EXISTS IS NOT A GATE**: it reads as a failure
+("DIFFERS") when it is a missing input, and a missing input and a wrong output look the same in a shell
+script. The record's own rule ("A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO GATE") applies
+to the *inputs* too: the expectation must live IN the tree.

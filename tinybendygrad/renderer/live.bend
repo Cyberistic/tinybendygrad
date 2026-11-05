@@ -228,10 +228,54 @@ def arg_of(kind: String, +p: String) -> C.KUArg:
     case _: C.KANone{}
 
 # ---------------------------------------------------------------- one uop line -> one KU
+# **THE NINE FIELDS ARE BOUND BY NINE NAMES, NOT READ BY INDEX.** `fld` is `List.get`, so it walks `i+1`
+# conses: nine reads of a nine-element list cost 45 steps, and MEASURED (`PARITY.md` §121) the decoder makes
+# 5,870 `fld` calls a render -- the single largest group in the decode, and every one of them walks.
+# `ku_ws.r` takes the list newest-first (which is how `ku_all` collects it) and binds the nine fields in
+# ONE walk of nine conses. §110.2 measured the same shape in `cstyle.bend` at 0.9796 and reverted it; the
+# decoder is a different call site with 4x the count, so the shape is re-measured here.
+
+def ku_ws.of(a: String, b: String, c: String, d: String, e: String, f: String,
+             g: String, h: String, i: String) -> C.KU:
+  C.KU{op_of(a), dt_of(b), addr_of(c), u32(e), nums(d), arg_of(f, g), nums(h), u32(i)}
+
+def ku_ws.bad() -> C.KU:
+  ku_ws.of("", "", "", "", "", "", "", "", "")
+
+def ku_ws.r(+ws: List<&2, String>) -> C.KU:
+  match ws:
+    case a <> t1:
+      match t1:
+        case b <> t2:
+          match t2:
+            case c <> t3:
+              match t3:
+                case d <> t4:
+                  match t4:
+                    case e <> t5:
+                      match t5:
+                        case f <> t6:
+                          match t6:
+                            case g <> t7:
+                              match t7:
+                                case h <> t8:
+                                  match t8:
+                                    case i <> _: ku_ws.of(a, b, c, d, e, f, g, h, i)
+                                    case Nil{}: ku_ws.bad()
+                                case Nil{}: ku_ws.bad()
+                            case Nil{}: ku_ws.bad()
+                        case Nil{}: ku_ws.bad()
+                    case Nil{}: ku_ws.bad()
+                case Nil{}: ku_ws.bad()
+            case Nil{}: ku_ws.bad()
+        case Nil{}: ku_ws.bad()
+    case Nil{}: ku_ws.bad()
+
 def ku_ws(+ws: List<&2, String>) -> C.KU:
-  C.KU{op_of(fld(ws, 0n)), dt_of(fld(ws, 1n)), addr_of(fld(ws, 2n)), u32(fld(ws, 4n)),
-       nums(fld(ws, 3n)), arg_of(fld(ws, 5n), fld(ws, 6n)), nums(fld(ws, 7n)),
-       u32(fld(ws, 8n))}
+  ku_ws.r(ws)
+
+
+
 
 def ku_of(l: String) -> C.KU: ku_ws(String.split(l, ' '))
 
