@@ -5448,3 +5448,59 @@ and it is ordered BY MEASURED FREQUENCY precisely because the arms cost their po
 **⇒ AND THIS IS THE SIXTH TIME A SHAPE MEASURED IN ONE PLACE WAS NOT A MEASUREMENT OF ANOTHER** (§113's
 `nums` merge, §114's merge, §120's blocked view, §121's `fld` in a different caller, §110.2's `fld` in the
 renderer, and now this). **THE ONLY INSTRUMENT THAT SETTLES IT IS AN END-TO-END A/B ON THE CHANGE ITSELF.**
+
+## 123. THE CONST LOOKUP WAS ASKED 797 TIMES AND 551 OF THEM WERE ABOUT A NON-CONST: REVERTED
+
+The §121 census named the render's groups, and the biggest one is not a term but a QUESTION:
+
+```
+RENDERER (cstyle) total calls: 83,617
+   3,718  St_r          3,520  KU_op       3,069  ku_at       3,069  ku_at_go
+   2,964  KU_srcs       2,727  KU_addr     2,673  Rows_n      2,256  KU_src0
+```
+
+3,069 `ku_at` calls over **592 DISTINCT source indices** -- five lookups per source -- and the callers are:
+
+```
+     797  ku_is_const_at      <- "is this source a CONST?"
+     594  ku_src_is_reg
+     586  ku_op_at
+     320  ku_src0_at
+     203  ku_const_int_at
+```
+
+**AND THE 797 ARE 246 IN THE CHANGED BUILD: 551 OF THEM WERE ABOUT A UOP THAT IS NOT A CONST.** The cause is
+`Bool.and`/`Bool.or` being STRICT: `ku_inline2a`'s first arm is
+`Bool.and(O.eq_op(op, OpsCAST{}), ku_is_const_at(kus, KU.src0(k)))`, so the LOOKUP was built for every uop
+and not only for the 43 that are casts.
+
+### 123.1 Two changes, and the one that carried the work
+
+(a) **THE `is_const` FLAG ON THE `KU` RECORD**, like `cc` (§75): the wire's KIND column already says whether
+a uop's arg is a const payload ("i"/"f"/"t"), so the flag is free at decode time and the render reads it as
+a field. (b) **THE ORDER FIX**: the four op comparisons first, the const lookup last, so it is asked only for
+a CAST.
+
+```
+same C: True | bytes: 5649
+wall 30 rounds:  median 0.8480  18/30      (load 10.8 -- the machine was busy)
+wall 34 rounds:  median 0.9852  22/34      (load 9.9)
+wall 30 rounds:  median 0.9658  18/30
+wall 34 rounds:  median 0.9729  20/34
+cpu  12 rounds:  median 1.0067   6/12
+cpu  16 rounds:  median 0.9690  13/16
+cpu  20 rounds:  median 1.0019  10/20
+cpu  20 rounds:  median 0.9846  14/20
+cpu  20 rounds:  median 0.9917  11/20
+cpu  20 rounds:  median 0.9855  14/20
+```
+
+**⇒ REVERTED: the wall medians are 0.8480/0.9852/0.9658/0.9729 and the CPU medians 0.9690-1.0067, so
+SEVEN OF ELEVEN READINGS ARE AT OR UNDER THE LINE AND FOUR ARE NOT, and no instrument clears it.** The
+call count DID fall (797 -> 246) and the C is byte-identical, so the mechanism is real and the win is not:
+**the 551 removed lookups were ~2,900 list steps of 11,025, i.e. 0.26% of the turn, and the flag's cost
+(642 records one word wider, plus a `match` per read) is the same size.**
+
+**⇒ AND THE ORDER FIX ALONE IS NOT THE CHANGE EITHER:** with the flag in place the lookup is a FIELD READ
+rather than a LOOKUP, so the 551 calls were already cheap by the time the order mattered. **THE TWO CHANGES
+ARE NOT INDEPENDENT, AND MEASURING THEM TOGETHER MEASURED NEITHER.**
