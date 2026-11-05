@@ -5621,6 +5621,51 @@ def s1.sub(+ar: O.Arena, +sink: U32, +key: U32, +val: U32) -> O.Found:
   +n = s1.get(S1.t(st), sink)
   O.Found{O.Found.ar(S1.f(st)), n}
 
+# **THE MULTI-ENTRY FORM, AND IT IS THE FIRST STEP TO `:450`/`:451`.** `s1.sub` takes ONE
+# (key, value) pair; upstream's `uop.substitute` takes a DICT and applies every pair AT ONCE.
+# `s1.get` ALREADY scans a `List<&2, Ky>`, so the table IS the dict -- what is missing is that the
+# WALK consults the whole table rather than one key.
+#
+# THE SEMANTICS MATCH, and it is worth saying WHY, because "sequential vs simultaneous" is the
+# question a reader should ask: `s1.one.eq` REPLACES the key with the value and does NOT descend
+# into the value, so the values are not themselves substituted. Upstream's `ugv` substitutes
+# `{X:newX}` and then `{newX:X}` -- in each dict a value is never a key of the SAME dict -- so
+# simultaneous and sequential agree for every use upstream makes.
+#
+# AND THE ARENA IS THE SAME ONE, so a pre-minted value keeps its index: `s1` REUSES the arena
+# (`O.UOp.new(ar, ...)`) rather than growing one, which is what lets `ugv` pass FAKE VARIABLES as
+# values. (Upstream keeps them as OBJECTS; the port keeps them as INDICES into the same arena.)
+# "IS i A KEY IN tbl", and the replacement for it. `s1.get` CANNOT answer the first question:
+# its default is the key ITSELF, so "absent" and "present, mapped to itself" are the same answer --
+# and a table that maps a key to ITSELF is a legitimate table (upstream's `substitute` may be given
+# `{X: X}`), so the default cannot be overloaded. `s1.find` says PRESENT or ABSENT, and the
+# replacement comes with it.
+def s1.find(tbl: List<&2, Ky>, +k: U32) -> Maybe<&2, U32>:
+  match tbl:
+    case Nil{}: None{}
+    case +h <> t: Bool.pick(Maybe<&2, U32>, U32.is_eq(Ky.k(h), k), Some{Ky.n(h)}, s1.find(t, k))
+
+def s1.multi.one(found: Maybe<&2, U32>, +i: U32, +s: S1s, +st: S1) -> S1:
+  match found:
+    case Some{+n}: s1.one.eq(True{}, i, n, s, st)
+    case None{}: s1.one.eq(False{}, i, i, s, st)
+
+def s1.multi.fold(ts: List<&2, U32>, +st: S1, +tbl: List<&2, Ky>) -> S1:
+  match ts:
+    case Nil{}: st
+    case +i <> rest:
+      +s = s1.ss(O.Arena.srcs(O.Found.ar(S1.f(st)), i), S1.t(st), S1s{Nil{}, False{}})
+      s1.multi.fold(rest, s1.multi.one(s1.find(tbl, i), i, s, st), tbl)
+
+# THE ENTRY: ONE walk, EVERY pair. `s1.sub` is this with a one-pair table, so it is KEPT as the
+# one-pair spelling and this is the many-pair one.
+def s1.multi(+ar: O.Arena, +sink: U32, +tbl: List<&2, Ky>) -> O.Found:
+  +st = s1.multi.fold(O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, sink), S1{Nil{}, mint_ar(ar)}, tbl)
+  # THE ROOT'S OWN REPLACEMENT: if the sink IS a key, the answer is that key's replacement and the
+  # walk's copy of it is irrelevant.
+  +n = Bool.pick(U32, Maybe.is_some(&2, U32, s1.find(tbl, sink)), s1.get(S1.t(st), sink), s1.get(S1.t(st), sink))
+  O.Found{O.Found.ar(S1.f(st)), n}
+
 # ---- `symbolic.py:259`, `fold_where_closure` ---------------------------------------
 #
 #   (UPat.var("cond").where(UPat.var("t"), UPat.var("f")), fold_where_closure)
