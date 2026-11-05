@@ -1283,3 +1283,39 @@ table split is two arms.
 `divandmod.py:103` is separate: it needs `UOp.gcd` and `UOp.divide_exact` (both absent), and
 `usum` -- which the port HAS as `sy_usum`, now with the bool arm fixed, but which `divandmod.bend`
 cannot reach because `symbolic` imports `divandmod`.
+
+## 38. THE ARCHITECTURE FOR THE LAST THREE ROWS, MEASURED END TO END
+
+Section 34 said the base lane needs its own DISPATCH. MEASURED, the whole shape is now known and
+**NONE of it needs a new fixpoint**:
+
+    sym_mint_f      the MINT lane -- one arm per minting tag
+    sym_dispatch.go the INDEX lane
+    sym_dispatch_f  picks mint vs index by `MINT_TAGS()`
+    sym_f           = sym_rewrite_f(sym_table(), x, u)
+    sy_simplify     = sy_simp.n(8n, ...) -- 8 passes of sym_f
+
+THE VALID RULES NEED FOUR THINGS AND NOTHING ELSE:
+
+    (a) their own table, `valid_table()` -- so `sym_f` NEVER sees them;
+    (b) their own arms in BOTH lanes (`sym_mint_f` and `sym_dispatch.go`);
+    (c) `MINT_TAGS()` extended with their tags;
+    (d) an OUTER entry that runs the base fixpoint and then the valid pass.
+
+**AND THE CYCLE CANNOT FORM**, because `sym_f` walks `sym_table()` and the valid tags are not in it:
+`ugv -> sy_simplify -> sym_f -> sym_table -> (no valid tags)`. So `ugv`'s `.simplify()` is the
+port's EXISTING `sy_simplify`, unchanged, and **NO base-variant fixpoint is needed at all** -- which
+is what upstream does too: `ops.py:492` re-enters `symbolic` (:247) and NOT `sym` (:463).
+
+THE CENSUS NEEDS NO CHANGE: `verify()` pools `{"sym_table": rows, "rm_table": rm_rows}` and a table
+name it does not know falls back to `rows` -- and `:450`/`:451` ARE sym rows (MEASURED), so a
+`valid_table` resolves against the sym pool correctly.
+
+SO THE REMAINING WORK IS: `ugv` (the bounds map, the fake variables, the two-phase substitute
+through `s1.multi` -- WHICH NOW EXISTS), `simplify_valid`, `gated_given_valid`, the two table rows,
+two arms in each lane, and the outer entry. **THAT IS FIVE DEFS AND TWO ROWS, AND THE FIRST OF THE
+FIVE IS DONE (`s1.multi`).**
+
+`divandmod.py:103` is separate: it needs `UOp.gcd` and `UOp.divide_exact` (both absent) and a
+`usum` that `divandmod.bend` can reach (the port has `sy_usum`, now with its bool arm fixed, but
+`symbolic` imports `divandmod`, so the direction is wrong).
