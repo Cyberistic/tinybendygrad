@@ -1215,3 +1215,37 @@ THE THREE ROWS STAY MISSING, and the full chain is now short and measured: gener
 with `Arena.budget` as fuel -> `uop_given_valid` -> `simplify_valid` and `gated_given_valid` in a
 separate `valid_table` behind a two-arm `sym_valid_f` (section 34) -> and `divandmod.py:103` after
 that, which additionally wants `UOp.gcd`, `UOp.divide_exact` and a `usum` it can reach.
+
+## 36. ROWS 19 AND 20 ARE NOT GAPS IN THIS LANE, AND MEASURING THAT CHANGED THE ANSWER
+
+Section 33/35 left rows 19 and 20 as "the blocker is absent, whether the BODY exists is a separate
+question". MEASURED, and the answer is that they are **NOT GAPS IN THE SYMBOLIC LANE AT ALL**:
+
+    upstream pm_drop_and_clauses   is composed by schedule/indexing.py:160
+    upstream pm_move_where_on_load is composed by codegen/__init__.py:283
+
+**NEITHER IS PART OF `sym`.** `sym = symbolic + pm_simplify_valid + PatternMatcher([...])`
+(`symbolic.py:463`), and the census's upstream side is exactly `sym` plus `pm_remove_invalid` --
+133 + 2 rows. The `drop_and_clauses` rule at `:414` has **NO CENSUS ROW** (measured: no sym row
+between 412 and 418), because upstream never puts it in the table this lane ports.
+
+SO "row 19 is DEFERRED" was the wrong question. The question is "does the port's
+`schedule/indexing.bend` compose a `pm_drop_and_clauses`?", and the port's file at `:822` carries
+upstream's own line as a COMMENT:
+
+    #   return graph_rewrite(UOp.sink(*axes_out[::-1]), symbolic+..., name="reshape")
+
+**THE PORT'S SCHEDULER LANE IS ITSELF BEHIND THREE NAMED WALLS** (`usum` is W3, the `%`//`//` arms
+of `_min_max` are W2, `graph_rewrite` is W3), and upstream's line composes
+`symbolic+pm_simplify_valid+pm_drop_and_clauses`. So the missing piece is a SCHEDULER-lane change
+that needs a third matcher -- and a third matcher in THIS file would make its citation
+UNRESOLVABLE, because the census pools a new table name against the SY rows and `drop_and_clauses`
+is not one of them. **THE FIX BELONGS TO THE SCHEDULER LANE, NOT TO `symbolic.bend`, AND ADDING IT
+HERE WOULD MAKE THE CENSUS RED.**
+
+THE RANGE ALGEBRA IS NOT A BLOCKER, and the header's "blocker ABSENT" note was wrong about that:
+`sym_90.any(ar, rt, SET, PROBES)` answers "is any probe in PROBES among SET's range heads", and
+`drop_and_clauses`'s test -- `any(r in x.ranges for r in c.ranges)` -- is the SAME FUNCTION with `x`
+as SET and `ranges(c)` as PROBES. MEASURED by reading the argument roles, not by name.
+
+**SO ROWS 19 AND 20 LEAVE THIS LANE AS A NOTE, AND THE HEADER SAYS SO.**

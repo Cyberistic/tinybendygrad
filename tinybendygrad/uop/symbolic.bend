@@ -82,13 +82,15 @@
 #                                            "remove-invalid", while `rm469.pat` is `REDUCE` whose
 #                                            src0 is `MUL` and `rm469.run` splits on `O.OpsMUL`,
 #                                            which is this fold exactly. Census row `:482` PORTED.
-#  19  400-403 fold  drop_and_clauses + pm_drop_and_clauses  blocker ABSENT (`ranges`,
-#                                            fold.bend:5273). NOT A CENSUS ROW AT ALL: it lives in
-#                                            `pm_drop_and_clauses`, a SEPARATE matcher, so the
-#                                            census cannot answer whether the body exists.
-#  20  406-425 fold  where_on_load + pm_move_where_on_load  blocker ABSENT (`ranges`,
-#                                            `backward_slice_with_self`). Same: a separate matcher,
-#                                            invisible to the census.
+#  19  400-403 fold  drop_and_clauses + pm_drop_and_clauses  **NOT THIS LANE'S**: upstream composes
+#                                            it in `schedule/indexing.py:160`, NOT in `sym`, and it
+#                                            has NO CENSUS ROW -- the census pools `sym` + 
+#                                            `pm_remove_invalid` only. The port's scheduler lane
+#                                            is behind its own named walls (`usum` W3, `_min_max`
+#                                            W2, `graph_rewrite` W3), and the RANGE ALGEBRA is
+#                                            NOT a blocker: `sym_90.any` IS that algebra.
+#  20  406-425 fold  where_on_load + pm_move_where_on_load  **NOT THIS LANE'S**: upstream composes it
+#                                            in `codegen/__init__.py:283`, also not in `sym`.
 # **THE CENSUS CANNOT SEE THESE TWO, SO "PORTED" AND "NOT A ROW" LOOK THE SAME FROM OUTSIDE IT.**
 # Six of the ten items in this list are now accounted for; rows 19 and 20 are the two that no
 # instrument in this tree currently answers.
