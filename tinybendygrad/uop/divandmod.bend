@@ -4,11 +4,22 @@
 # and `fold_divmod_general`. Upstream, four of the 109 lines are the matcher and
 # eighty-nine are the big rule, so this file ports the matcher in full and THREE
 # arms of `fold_divmod_general` -- :8, :61 and :108 -- and the TODO block names
-# every line of the rest with the wall behind it. The one wall is `UOp._min_max`
-# (uop/fold.bend:2243 symbol=reshape_ds.of), which upstream's (ops.py:1104) is P3 and not written: the remaining 60 lines are
-# all interval arithmetic over symbolic UOps, which :11 needs too except that a
-# CONST's `_min_max` IS `(val, val)` and a PARAM's IS `arg.vmin_vmax`, both plain
-# field reads, and :15 needs no range at all.
+# every line of the rest with the wall behind it.
+#
+# **THE WALLS ARE HALF STALE, AND MEASURED (2026-11-06).** THE HEADER USED TO SAY "THE ONE
+# WALL IS `UOp._min_max`", AND TWO OF THE THREE WALLS THE TODO BLOCK NAMED ARE GONE:
+#
+#   * `divides` -- THE PORT HAS IT (`ops.bend:7972`), A FULL RECURSION OVER ADD/MUL/CONST
+#     CARRYING A `Dv`, AND IT ANSWERS THE SAME AS UPSTREAM'S ON FOUR MEASURED CASES.
+#   * `_min_max` -- THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax` (`fold.bend:5399`/`5402`) AND THEY
+#     MATCH UPSTREAM'S ON FIVE MEASURED CASES.
+#   * `const_factor` -- THE PORT HAS IT (`ops.bend:7855`) AS A FULL GCD FOLD.
+#
+# **WHAT IS ACTUALLY LEFT IS SCOPE AND THREE SHAPE PROBLEMS, NOT MISSING PRIMITIVES:**
+# `UOp.divide_exact` (WHICH NEEDS A MULTISET OVER `split_uop(MUL)` FACTORS, AND THE PORT HAS
+# NO MULTISET AND NO `Map`), THE CARTESIAN PRODUCT IN `fold_divmod_congruence`, AND THE MUTUAL
+# RECURSION IN `nest_by_factor`. THE BODIES ARE `F.Bnd` INTERVALS RATHER THAN UPSTREAM'S
+# `PyConst`, SO THE ARMS' COMPARISONS ARE OVER A `Maybe` BOUND.
 #
 # `fold_divmod_general` also RECURSES at :61 (`nest_by_factor` calls it on
 # `x//div`), and Bend refuses mutual recursion, so even the shape of that rule is
@@ -853,8 +864,14 @@ def trees() -> Gate:
 # is the same shape `ops.bend` and `fold.bend` use.
 # TODO(p3) divandmod.py:13  symbol=fold_divmod_general  the RANGE HALF of `x//y` being a point -- PORTED for
 #   CONST/CONST only, where `_min_max` (ops.py:1127) is four identical `a//b` and
-#   the test is always true. Outside CONST/CONST it needs `_min_max`. WALL:
-#   `UOp._min_max`, P3. See uop/fold.bend:2243 symbol=reshape_ds.of.
+#   the test is always true. Outside CONST/CONST it needs `_min_max`. **THE `_min_max` WALL IS
+#   MEASURED FALSE (2026-11-06): THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax`
+#   (`fold.bend:5399`/`5402`) AND THEY MATCH UPSTREAM'S `_min_max` ON ALL FIVE MEASURED CASES
+#   -- `x[0..10]`, `y[-5..5]`, `x*4[0..40]`, `x+y[-5..15]`, `x*4+8[8..48]` (PAIRED PROBES:
+#   `.agents/slop/sym92/probe-vminmax.bend` AND `probe-vminmax.py`, AND THE TWO PRINT
+#   BYTE-IDENTICAL OUTPUT). WHAT IS LEFT IS SCOPE, NOT A WALL: THE PORT'S BOUNDS ARE A
+#   `F.Bnd` (AN INTERVAL WITH AN INFINITY TAG) RATHER THAN UPSTREAM'S `PyConst`, SO THE
+#   COMPARISONS THE ARMS NEED ARE OVER A `Maybe` BOUND AND NOT OVER A CONSTANT.**
 # TODO(p3) divandmod.py:17-19 `# split uops for the rest of the processing` --
 #   `x.pop_const()` and `split_uop(Ops.ADD)`, both op-shape walks over a fuel-bound
 #   src list. Neither has a caller once line 23 is gone, so neither is written.
@@ -868,10 +885,19 @@ def trees() -> Gate:
 # require y to be a scalar constant > 0, and every one is behind a wall:
 # TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
 #   the mod case is handled by remove_nested_mod below` -- needs
-#   `x.src[1].divides(c)`. WALL: `divides` (ops.py:1067) needs `gcd` (ops.py:1083)
-#   needs a `Counter` fold. uop/fold.bend:2233 symbol=reshape_ds.go.
+#   `x.src[1].divides(c)`. **THE WALL THIS NAMED IS MEASURED FALSE (2026-11-06): `divides` IS
+#   NOT THE BLOCKER.** THE PORT'S `UOp.divides` (`ops.bend:7972`) IS A FULL RECURSION OVER
+#   ADD/MUL/CONST CARRYING A `Dv` RECORD, AND IT ANSWERS THE SAME AS UPSTREAM'S ON ALL FOUR
+#   MEASURED CASES -- `(x*4).divides(4)` IS `MUL(x, 1)`, `(x*4+8).divides(4)` IS
+#   `ADD(MUL(x, 1), 2)`, AND `(x*6).divides(4)` AND `x.divides(4)` ARE BOTH `none` (PAIRED
+#   PROBES: `.agents/slop/sym92/probe-divides.bend` AND `probe-divides.py`). THE OLD WALL SAID
+#   "`divides` NEEDS `gcd` NEEDS A `Counter` FOLD", BUT THE FILE IT NAMED -- `ops.bend` -- HAS
+#   THAT IMPLEMENTATION ALREADY. **WHAT IS LEFT IS SCOPE, NOT A WALL: THE STACK ARM OF
+#   `divides` IS NOT PORTED (SEEN AT `ops.bend:7955`'s OWN NOTE), SO A STACK OPERAND DECLINES
+#   WHERE UPSTREAM REBUILDS IT.**
 # TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
-#   `divides`, same wall.
+#   `divides`, AND THE SAME MEASUREMENT APPLIES: THE WALL IS GONE AND WHAT IS LEFT IS THE
+#   STACK ARM AND THE `usum` OVER THE REWRITTEN LIST.
 # TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
 #   `fold_divmod_congruence: fold if a is congruent to an expression whose range is
 #   between 0 and c` -- the WORST one. `itertools.product` over per-term sign
@@ -886,6 +912,11 @@ def trees() -> Gate:
 #   numerator` -- `math.gcd(*factors, c)`, `divides`, `.simplify()` and
 #   `new_x.vmin >= 0`. WALL: `gcd`, `_min_max`, `simplify`. `math.gcd` over a
 #   VARIADIC fold is a fold over a list, which is expressible; the rest is not.
+#   **MEASURED 2026-11-06: `divides` AND `_min_max` ARE NO LONGER WALLS (SEE THE TWO PAIRS
+#   ABOVE). `gcd` IS HALF A WALL: THE PORT HAS `H.gcd` (`helpers.bend:2299`) FOR TWO I64s AND
+#   `UOp.const_factor` (`ops.bend:7855`) AS A FULL GCD FOLD OVER THE MUL FACTORS, BUT NOT THE
+#   VARIADIC `math.gcd(*factors, c)` OVER A LIST OF FACTORS -- WHICH IS A FOLD OVER A LIST AND
+#   THEREFORE EXPRESSIBLE. WHAT IS LEFT IS SCOPE.**
 # TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
 #   x%c -> (x//f%(c//f))*f + b where b=x%f` and `DIV identity holds for any
 #   sign of x; MOD reconstruction needs x.vmin>=0` -- the set comprehension
