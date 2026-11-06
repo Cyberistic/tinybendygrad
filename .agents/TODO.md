@@ -28179,6 +28179,20 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       CHECK FIRING.
 - [ ] `UOp.gcd` / `UOp.divide_exact` / a `usum` reachable from `divandmod.bend` — all ABSENT, and
       they are standalone primitives that can be built and oracle-tested without the rewriter.
+- [x] **THE BODY-VERIFICATION INSTRUMENT RAN FOR THE FIRST TIME EVER: 232 CASES, 219 AGREE, 13
+      DIVERGE.** `gates/symrules-oracle.py` HAD NO PORT SIDE AT ALL AND ITS CPYTHON HALF
+      REFUSED EVERY CASE (`KeyError: 'FLOORDIV'`; **24 OF THE 232 CASES SPELL `floordiv` OR
+      `floormod`**), SO **THE CENSUS's 134 GREEN ROWS WERE GREEN ON CITATION AND OP SET ALONE**
+      -- AND THE PROOF IS THAT A TABLE ENTRY WITH **NO BODY AT ALL** MAKES THE `divandmod.py:103`
+      ROW GREEN (MEASURED). THE PORT's SIDE IS NEW (`gates/symrules-driver.bend`) AND THE
+      THIRTEEN DIVERGENCES FALL INTO THREE CLASSES: **FIVE ARE THE `ne`/`eq` PRIMITIVE SWAP**
+      (THE PORT LEAVES A `CMPNE` WHERE UPSTREAM REWRITES IT TO `CMPEQ(CMPEQ(...), False)`, AND
+      THE TWO `CMPNE`s ARE THE SAME NODE), **THREE ARE THE PORT REWRITING WHERE UPSTREAM
+      DECLINES** (`r243` `r256` `r174`), AND **FIVE ARE UPSTREAM REWRITING WHERE THE PORT
+      DECLINES** (`r82` `r295` `r296` `r453` `p193a`). RUN IT WITH
+      `.agents/slop/sym92/symrules-verify.sh`.
+- [ ] THE THREE CLASS-B AND CLASS-C DIVERGENCES ARE THE NEXT THING TO LOOK AT, AND THEY ARE
+      REAL FINDINGS RATHER THAN RENDERING: THE INSTRUMENT CAN NOW SEE THEM.
 - [ ] THE CORPUS IS RED (31/38, seven graphs: binblob bw commute flip gral matmul reduce) and it is
       NOT this lane: MEASURED across three `symbolic.bend` versions (HEAD, pre-`sy_trunc`,
       pre-session) and the count never moved. The run is also unhealthy on its own terms
