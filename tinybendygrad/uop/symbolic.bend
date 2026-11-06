@@ -5650,6 +5650,11 @@ def s1.multi.one(found: Maybe<&2, U32>, +i: U32, +s: S1s, +st: S1) -> S1:
     case Some{+n}: s1.one.eq(True{}, i, n, s, st)
     case None{}: s1.one.eq(False{}, i, i, s, st)
 
+# THE REPLACEMENT FOR A KEY, OR THE KEY ITSELF -- the default `s1.get` gives, and it is what the
+# multi walk substitutes IN PLACE of the key node.
+def s1.multi.val(tbl: List<&2, Ky>, +k: U32) -> U32:
+  s1.get(tbl, k)
+
 def s1.multi.fold(ts: List<&2, U32>, +st: S1, +tbl: List<&2, Ky>) -> S1:
   match ts:
     case Nil{}: st
@@ -6175,6 +6180,15 @@ def sym_174.pat(+x: F.Folded, +u: U32) -> Bool:
 def sym_174(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sy_tri(sym_174.pat(x, u), Some{sy_src0(x, sy_src0(x, u))})
 
+def valid_table() -> O.PMEntrys:
+  O.PMEntrys{[
+    O.PMEntry{0, [O.OpsAND{}],   OP_INVALID()},   # 450
+    O.PMEntry{1, [O.OpsWHERE{}], OP_INVALID()}]}  # 451
+
+
+
+
+
 def sym_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, [O.OpsSTACK{}],                   OP_INVALID(),                    },   # 89
@@ -6330,6 +6344,7 @@ def nats.go(xs: List<&2, Nat>, n: Nat) -> Nat:
 def nats(xs: List<&2, Nat>) -> Nat: nats.go(xs, 0n)
 
 def rm_table_len() -> Nat: nats([1n, 1n])
+def valid_table_len() -> Nat: nats([1n, 1n])
 
 def sym_table_len() -> Nat:
   nats([1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
@@ -7457,7 +7472,13 @@ def f32_is(m: Maybe<&1, O.Const>, want: F32) -> Bool: F32.is_eq(f32_of(m), want)
 # `len_sym + skip == total_sym == 133` -- Python's own rule count for the blocks
 # `sym` composes AT THIS PIN -- and every one of the three is named in the TODO
 # block below.
-def t_len_sym() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(sym_table())))
+# `len_sym` COUNTS BOTH TABLES, because upstream's `sym` IS `symbolic + pm_simplify_valid + ...`
+# AND THE VALID RULES ARE PART OF IT. MEASURED 2026-11-06: upstream's `sym` is 133 rules, the
+# port's `sym_table()` holds 130 AND `valid_table()` holds 2, so 130 + 2 = 132 AND `skip` IS 1
+# -- AND THE CENSUS'S ONE MISSING ROW IS EXACTLY THAT ONE: `divandmod.py:103`.
+def t_len_sym() -> U32:
+  U32.add(U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(sym_table()))),
+          U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(valid_table()))))
 
 def t_len_rm() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(rm_table())))
 
@@ -7485,6 +7506,13 @@ def t_len_rm() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(rm_
 # rows) and `divandmod.py:103` (one row). **130 + 3 = 133 = upstream `sym`, so the port is short
 # EXACTLY the three rules the census names and NOTHING ELSE** -- which is the statement this row was
 # supposed to make, and it could not make it while carrying a count from an old pin.
+#
+# MEASURED 2026-11-06, AFTER `:450` AND `:451` LANDED: upstream's `sym` is STILL 133 rules,
+# AND THE PORT'S `sym_table` HOLDS 130 AND ITS `valid_table` HOLDS 2, SO `skip` IS 1. **132 + 1 =
+# 133 = upstream `sym`, AND THE CENSUS'S ONE MISSING ROW IS `divandmod.py:103` AND NOTHING ELSE.**
+# THE TWO LANES ARE COUNTED TOGETHER BECAUSE UPSTREAM'S `sym` IS ONE COMPOSITION
+# (`symbolic+pm_simplify_valid+...`) AND THE PORT'S TWO TABLES ARE THAT COMPOSITION SPLIT IN
+# TWO -- the split is what breaks the cycle, and it must not change the COUNT.
 #
 # `len_sym + skip == total_sym` is the ARITHMETIC that makes the port auditable: a MISSING rule and a
 # MISSPELLED reject set are both invisible to a boolean.
@@ -8527,39 +8555,58 @@ def Pv.c(x: Pv) -> H.I64:
   match x:
     case Pv{ok, e, up, c}: c
 
-# `v.op is CMPNE and src[1] is CONST and src[1].val == 1`
-# `src[1].val == 1` IS TRUE FOR A BOOL `CONST(True)` AS WELL AS AN INT `CONST(1)`: Python compares
-# `True == 1`. MEASURED: reading only `cval` (which is `CInt`) answered `none` for
-# `CMPNE(CMPLT, True)`, and upstream answers `(X, False, c)`.
+# UPSTREAM'S `parse_valid` AT THE PIN (`f5ac54685074`, tinygrad/uop/symbolic.py:344):
+#
+#   neg = v.op is CMPEQ and v.src[1].op is CONST and v.src[1].val == 0
+#   if (lt:=v.src[0] if neg else v).op is not CMPLT or not dtypes.is_int(lt.src[0].dtype): return None
+#   if (a:=lt.src[0]).op is Ops.CONST: return lt.src[1], neg, int(a.val) + (0 if neg else 1)
+#   return a, not neg, int(lt.src[1].vmin) if neg else int(lt.src[1].vmax)-1
+#
+# THE CONST IS ON THE LEFT for `X <= c` and ON THE RIGHT for `X >= c`, and that is the WHOLE
+# difference between them: both are `CMPEQ(CMPLT(...), False)`, so `neg` is True for both, and
+# the CONST-on-left branch returns `is_upper = neg` while the other branch returns `not neg`.
+#
+# `src[1].val == 0` IS TRUE FOR A BOOL `CONST(False)` AS WELL AS AN INT `CONST(0)`: Python
+# compares `False == 0`. MEASURED: reading only `cval` (which is `CInt`) answered `none` for
+# `CMPEQ(CMPLT, False)`, and upstream answers `(X, True, c)`.
 def pv.neg.src(+fx: F.Folded, +v: U32) -> Bool:
   +ar = F.Folded.ar(fx)
-  Bool.and(O.eq_op(O.Arena.op(ar, v), O.OpsCMPNE{}),
+  Bool.and(O.eq_op(O.Arena.op(ar, v), O.OpsCMPEQ{}),
     Bool.and(O.eq_op(O.Arena.op(ar, O.Arena.src(ar, v, 1)), O.OpsCONST{}),
-      Bool.or(cb_true(sy_val(fx, O.Arena.src(ar, v, 1))),
-              Cmp.is_eq(H.i64_cmp(cval(ar, O.Arena.src(ar, v, 1)), H.i64_of_i32(1))))))
+      Bool.or(cb_false(sy_val(fx, O.Arena.src(ar, v, 1))),
+              Cmp.is_eq(H.i64_cmp(cval(ar, O.Arena.src(ar, v, 1)), H.i64_of_i32(0))))))
 
 def pv.lt(neg: Bool, +ar: O.Arena, +v: U32) -> U32:
   Bool.pick(U32, neg, O.Arena.src(ar, v, 0), v)
 
-# the two shapes, both built eagerly and one selected -- `Bool.pick` has no branch laziness.
+# THE CONST-ON-RIGHT BRANCH: `X >= c` is `CMPEQ(CMPLT(X, c), False)`, so `a` is the EXPR and the
+# bound comes from the OTHER side's own bounds: `lt.src[1].vmin` when `neg` and `lt.src[1].vmax - 1`
+# otherwise -- upstream's `int(lt.src[1].vmin) if neg else int(lt.src[1].vmax)-1`. `is_upper` is
+# `not neg`.
 def pv.other(+ar: O.Arena, +lt: U32, +neg: Bool, +bt: F.BTable) -> Pv:
   Pv{True{}, O.Arena.src(ar, lt, 0), Bool.not(neg),
      Bool.pick(H.I64, neg,
        vmin_i64(ar, bt, O.Arena.src(ar, lt, 1)),
        H.i64_sub(vmax_i64(ar, bt, O.Arena.src(ar, lt, 1)), H.i64_of_i32(1)))}
 
-def pv.arm(con: Bool, +ar: O.Arena, +lt: U32, +neg: Bool, +bt: F.BTable) -> Pv:
+# THE CONST-ON-LEFT BRANCH: `X <= c` is `CMPEQ(CMPLT(c, X), False)`, so `a` is the const and the
+# EXPR is `lt.src[1]`. `is_upper` is `neg` and `c` is the const, `+ 0` when `neg` and `+ 1`
+# otherwise -- upstream's `int(a.val) + (0 if neg else 1)`.
+def pv.arm(con: Bool, +ar: O.Arena, +lt: U32, neg: Bool, +bt: F.BTable) -> Pv:
+  # `neg` IS READ TWICE, so it is bound once: `+n = neg` gives a NAME, and a name may be read
+  # more than once.
+  +n = neg
   Bool.pick(Pv, con,
-    Pv{True{}, O.Arena.src(ar, lt, 1), neg,
-       H.i64_add(cval(ar, O.Arena.src(ar, lt, 0)), Bool.pick(H.I64, neg, H.i64_of_i32(0), H.i64_of_i32(1)))},
-    pv.other(ar, lt, neg, bt))
+    Pv{True{}, O.Arena.src(ar, lt, 1), n,
+       H.i64_add(cval(ar, O.Arena.src(ar, lt, 0)), Bool.pick(H.I64, n, H.i64_of_i32(0), H.i64_of_i32(1)))},
+    pv.other(ar, lt, n, bt))
 
 def pv.mk(ok: Bool, +ar: O.Arena, +lt: U32, neg: Bool, +bt: F.BTable) -> Pv:
   match ok:
     case True{} : pv.arm(O.eq_op(O.Arena.op(ar, O.Arena.src(ar, lt, 0)), O.OpsCONST{}), ar, lt, neg, bt)
     case False{}: Pv{False{}, 0, False{}, H.i64_of_i32(0)}
 
-# `(lt:=v.src[0] if neg else v).op is not CMPLT or not is_int(lt.src[0].dtype)`
+# `(lt:=v.src[0] if neg else v).op is not CMPLT or not dtypes.is_int(lt.src[0].dtype)`
 def pv.gate(+neg: Bool, +ar: O.Arena, +v: U32, +bt: F.BTable) -> Pv:
   +lt = pv.lt(neg, ar, v)
   pv.mk(Bool.and(O.eq_op(O.Arena.op(ar, lt), O.OpsCMPLT{}),
@@ -8569,130 +8616,731 @@ def sy_parse_valid(+ar: O.Arena, +v: U32) -> Pv:
   +bt = F.mm.sweep(ar, F.Folded.t(F.folded(ar)))
   pv.gate(pv.neg.src(F.folded(ar), v), ar, v, bt)
 
-def fz_head(+ar: O.Arena, +u: U32) -> String: fz_head.of(O.Arena.op(ar, u), O.Arena.arg(ar, u), ar)
+# ---- `symbolic.py:354`, `uop_given_valid` ---------------------------------------------
+#
+# THE PORT OF UPSTREAM'S `uop_given_valid(valid, uop)`: GIVEN that `valid` holds, simplify `uop`.
+# EVERY PIECE IS MEASURED PRESENT, and the two that were the WALLS are the two this session fixed
+# or found:
+#
+#   parse_valid      `sy_parse_valid` -- and it IS upstream's `parse_valid` (its two arms compute
+#                     the same `c`), so it returns (expr, is_upper, c) in `Pv{ok, e, up, c}`
+#   the expr bounds  `vmin_i64` / `vmax_i64`
+#   the fake variable `O.UOp.variable`
+#   the substitute   `s1.multi` -- THE MULTI-ENTRY ONE, added this session, because upstream
+#                     substitutes a DICT and the port's `s1.sub` took ONE pair
+#   the simplify     `sy_simplify` -- and it is the BASE fixpoint, so there is NO CYCLE: upstream's
+#                     `ops.py:492` re-enters `symbolic` (:247) and not `sym` (:463)
+#
+# THE BOUNDS MAP IS KEYED BY THE ARENA INDEX of the expr, and its value is a PAIR of OPTIONAL
+# bounds -- upstream's `defaultdict(list)` gives `[None, None]` per expr and sets ONE side.
+type Ugv is Data:
+  Ugv{lo: Maybe<&2, H.I64>, hi: Maybe<&2, H.I64>}
 
-# A LEAF IS NOT A NODE WITH NO SRCS. `fz_head` answers a CONST's value and a PARAM's name
-# for those two ops and the op's own name for every other, so the emitter has to ask WHICH
-# rather than infer it from the src list: it opened a `(` and a space for them too, and
-# `(add c7 c0)` came back as `(add (c7 ) (c0 ))`. MEASURED on `(add c7 c0)`.
-def fz_leafop(+op: O.Op) -> Bool:
-  Bool.or(O.eq_op(op, O.OpsCONST{}), O.eq_op(op, O.OpsPARAM{}))
+def Ugv.lo(x: Ugv) -> Maybe<&2, H.I64>:
+  match x:
+    case Ugv{lo, hi}: lo
 
-def fz_txt(acc: List<&2, String>, s: U32) -> String:
-  Maybe.default(&2, String, List.get(&2, String, acc, U32.to_nat(s)), "?")
+def Ugv.hi(x: Ugv) -> Maybe<&2, H.I64>:
+  match x:
+    case Ugv{lo, hi}: hi
 
-def fz_srcs(ss: List<&2, U32>, +ar: O.Arena, +seen: List<&2, String>, out: List<&2, String>) -> List<&2, String>:
-  match ss:
-    case Nil{}: out
-    case s <> t: fz_srcs(t, ar, seen, List.append(&2, String, out, [fz_txt(seen, s)]))
+type UgvEnt is Data:
+  UgvEnt{k: U32, b: Ugv}
 
-def fz_node(leaf: Bool, +ar: O.Arena, +u: U32, seen: List<&2, String>) -> String:
-  match leaf:
-    case True{}: fz_head(ar, u)
-    case _: String.concat(["(", fz_head(ar, u), " ",
-      String.join(fz_srcs(O.Arena.srcs(ar, u), ar, seen, Nil{}), " "), ")"])
+def UgvEnt.k(x: UgvEnt) -> U32:
+  match x:
+    case UgvEnt{k, b}: k
 
-# THE SHRINKING ARGUMENT IS FIRST, because Bend reads a self-call's arguments left to
-# right and refuses one that grows before it shrinks (`bend2-constraints` RF1).
-def fz_all(slots: List<&2, Nat>, +i: Nat, +ar: O.Arena, +acc: List<&2, String>) -> List<&2, String>:
-  match slots:
-    case Nil{}: acc
-    case _ <> rest:
-      +k = U32.from_nat(i)
-      fz_all(rest, Nat.add(i, 1n), ar,
-        List.append(&2, String, acc, [fz_node(fz_leafop(O.Arena.op(ar, k)), ar, k, acc)]))
+def UgvEnt.b(x: UgvEnt) -> Ugv:
+  match x:
+    case UgvEnt{k, b}: b
 
-def fz_render(+ar: O.Arena, u: U32) -> String:
-  fz_txt(fz_all(List.replicate(Nat, U32.to_nat(O.Arena.next(ar)), 1n), 0n, ar, Nil{}), u)
-
-def fz_ans.txt(ar: O.Arena, m: Maybe<&1, U32>) -> String:
+# SET ONE SIDE OF AN EXISTING ENTRY, or add the entry with that side set. Upstream's
+# `bounds[expr][int(is_upper)] = c`, so `up=True` is the UPPER bound (the `hi` side) and
+# `up=False` is the LOWER bound (the `lo` side).
+def Ugv.set(+m: List<&2, UgvEnt>, +e: U32, +up: Bool, +c: H.I64) -> List<&2, UgvEnt>:
   match m:
-    case Some{i}: fz_render(ar, i)
-    case _: "norewrite"
+    case Nil{}:
+      List.append(&2, UgvEnt, m, [UgvEnt{e, Ugv{
+        Bool.pick(Maybe<&2, H.I64>, up, None{}, Some{c}),
+        Bool.pick(Maybe<&2, H.I64>, up, Some{c}, None{})}}])
+    case +h <> +t:
+      +b = UgvEnt.b(h)
+      +lo = Ugv.lo(b)
+      +hi = Ugv.hi(b)
+      Bool.pick(List<&2, UgvEnt>, U32.is_eq(UgvEnt.k(h), e),
+        List.append(&2, UgvEnt, t, [UgvEnt{e, Ugv{
+          Bool.pick(Maybe<&2, H.I64>, up, lo, Some{c}),
+          Bool.pick(Maybe<&2, H.I64>, up, Some{c}, hi)}}]),
+        Ugv.set(t, e, up, c))
 
-# THE FOUND LANE, and it is a THIRD answer rather than a replacement: `sym` answers at an
-# index into the arena it was given, so a rule that MINTS (`sy_alu*` and `UOp.new` both
-# grow it) leaves that index past the end and `sym` renders a slot that does not exist --
-# `(Ops.NOOP`, measured on `:462`/`:463`/`:464`/`:444`. `sym_f` carries the grown arena, so
-# this is the only lane in which a minting rule's answer can be COMPARED with CPython's.
-# MEASURED 2026-11-03: 55 of the 84 unported rules mint, so this is the lane the rest of
-# `symbolic.py` is ported in.
-def fz_ans.f(ar: O.Arena, m: Maybe<&1, O.Found>) -> String:
+# THE ENTRY FOR AN EXPR, or the EMPTY PAIR when the expr has no clause.
+def Ugv.get(+m: List<&2, UgvEnt>, +e: U32) -> Ugv:
   match m:
-    case Some{+f}: fz_render(O.Found.ar(f), O.Found.i(f))
-    case _: "norewrite"
+    case Nil{}: Ugv{None{}, None{}}
+    case +h <> +t: Bool.pick(Ugv, U32.is_eq(UgvEnt.k(h), e), UgvEnt.b(h), Ugv.get(t, e))
 
-# ONE CANONICAL LINE, and the two answers are the two TABLES: `sym` and `rm`
-# (`pm_remove_invalid`). Two tables means two answers, and one line means the
-# harness diffs one string. `symf` is the SAME `sym` table answered through the Found
-# family, so the two lanes differ only in whether the arena the answer lives in is
-# threaded out -- and for a non-minting rule they print the same string.
-def fz_line(+ar: O.Arena, +u: U32) -> String:
-  String.concat(["root=", U32.show(u), " n=", U32.show(O.Arena.next(ar)), " op=", O.Ops.name(O.Arena.op(ar, u)),
-    " selfadd=", U32.show(Bool.to_u32(eq_u(sym(F.folded(ar), u), 1))),
-    " sym=", fz_ans.txt(ar, sym(F.folded(ar), u)), " rm=", fz_ans.txt(ar, pm_remove_invalid(F.folded(ar), u)),
-    " symf=", fz_ans.f(ar, sym_f(F.folded(ar), u))])
+# THE BOUNDS OF AN EXPR: the map's side if it has one, else the expr's own. Upstream:
+#   v0, v1 = (expr.vmin if v[0] is None else v[0], expr.vmax if v[1] is None else v[1])
+# and `v[1]` is the UPPER bound, so `up=True` reads `hi` and falls back to `vmax`.
+def Ugv.bound(+m: List<&2, UgvEnt>, +ar: O.Arena, +bt: F.BTable, +e: U32, +up: Bool) -> H.I64:
+  +b = Ugv.get(m, e)
+  +s = Bool.pick(Maybe<&2, H.I64>, up, Ugv.hi(b), Ugv.lo(b))
+  Bool.pick(H.I64, Maybe.is_some(&2, H.I64, s),
+    Maybe.default(&2, H.I64, s, H.i64_of_i32(0)),
+    Bool.pick(H.I64, up, vmax_i64(ar, bt, e), vmin_i64(ar, bt, e)))
 
-def fz_run.go(ar: O.Arena, r: Maybe<&2, U32>) -> String:
-  match r:
-    case Some{u}: fz_line(ar, u)
-    case _: "parse-error"
+type UgvCand is Data:
+  UgvCand{e: U32, v: U32}
 
-def fz_run.at(+st: St) -> String: fz_run.go(St.ar(st), St.root(st))
+def UgvCand.e(x: UgvCand) -> U32:
+  match x:
+    case UgvCand{e, v}: e
 
-def fz_run(+s: String) -> String: fz_run.at(fz_build(fz_toks(s), St{O.Arena.empty(), Nil{}, None{}}))
+def UgvCand.v(x: UgvCand) -> U32:
+  match x:
+    case UgvCand{e, v}: v
 
-def fz_read.closed(m: File & Result<&1, &1, U32 & String, String>) -> IO(String):
-  (f, r) = m
-  do IO<String>:
-    s : String <- IO.pass(String, r)
-    u : Unit <- File.close(f)
-    IO.pure(String, s)
+# THE CLAUSES: split the valid on AND and parse each. ONE FOLD over the SHRINKING clause list,
+# because bend's self-call must SHRINK an argument and a list that GROWS cannot shrink; the
+# accumulator carries the map and the candidate exprs.
+type UgvAcc is Data:
+  UgvAcc{m: List<&2, UgvEnt>, cs: List<&2, U32>}
 
-def fz_read(path: String) -> IO(String):
-  do IO<String>:
-    f : File <- IO.try(File, File.open(path, "r"))
-    m : File & Result<&1, &1, U32 & String, String> <- File.read(f, 65536)
-    fz_read.closed(m)
+def UgvAcc.m(x: UgvAcc) -> List<&2, UgvEnt>:
+  match x:
+    case UgvAcc{m, cs}: m
 
-# THE DRIVER BRANCH. No argument is the gate; one argument is a case file, so the
-# GATE BODY IS `fz.gate` AND NOTHING ELSE. `IO.args()` LEADS WITH THE PROGRAM NAME,
-# so the case path is the head of the TAIL and an empty tail is the gate.
-def fz.drive.path(as: List<String>) -> String:
-  Maybe.default(&1, String, List.get(&1, String, as, 0n), "")
+def UgvAcc.cs(x: UgvAcc) -> List<&2, U32>:
+  match x:
+    case UgvAcc{m, cs}: cs
 
-# THE CASE FILE IS A LIST OF GRAPHS, one per line as `name|<s-expr>`, and a `#` line is
-# prose. ONE LINE OUT PER CASE, because `gates/symrules-oracle.py --compare` matches the two
-# sides BY POSITION -- and the NAME IS THE CASE FILE'S, not the driver's: the driver reads the
-# text after the `|` and prints an answer, nothing else. Before this the driver parsed the
-# WHOLE FILE as one graph, so a 50-case lane returned ONE answer and the comparison could
-# never be made at all (MEASURED 2026-11-03: `printed 0 rows and the case file has 50 cases`).
-def fz.drive.expr(+l: String) -> String:
-  Maybe.default(&2, String, List.get(&2, String, String.split(l, '|'), 1n), l)
-
-def fz.drive.skip(+l: String) -> Bool:
-  Bool.or(String.eq(l, ""), String.starts_with(l, "#"))
-
-def fz.drive.lines(ls: List<&2, String>, +acc: String) -> String:
-  match ls:
+def Ugv.step(+cs: List<&2, U32>, +ar: O.Arena, +acc: UgvAcc) -> UgvAcc:
+  match cs:
     case Nil{}: acc
-    case l <> t:
-      +s = String.trim(l)
-      fz.drive.lines(t, Bool.pick(String, fz.drive.skip(s), acc,
-        String.concat([acc, fz_run(fz.drive.expr(s)), "\n"])))
+    case +c <> +t:
+      +p = sy_parse_valid(ar, c)
+      +m = Bool.pick(List<&2, UgvEnt>, Pv.ok(p), Ugv.set(UgvAcc.m(acc), Pv.e(p), Pv.up(p), Pv.c(p)), UgvAcc.m(acc))
+      +cs2 = Bool.pick(List<&2, U32>, Pv.ok(p), List.append(&2, U32, UgvAcc.cs(acc), [Pv.e(p)]), UgvAcc.cs(acc))
+      Ugv.step(t, ar, UgvAcc{m, cs2})
 
-def fz.drive.br(as: List<String>) -> IO(Unit):
-  match as:
-    case Nil{}: fz.gate()
+# THE FAKE VARIABLES: one per candidate expr, named `fake{i}`, with the bounds the map gives.
+# Upstream: `UOp.variable(f"fake{i}", v0, v1, expr.dtype)`. A SECOND fold, over the candidates,
+# because the bounds need the map and the map is complete only at the end of the first fold. The
+# candidate list GROWS, so it is the ACCUMULATOR and the shrinking argument is the SOURCE list.
+#
+# THE ARENA COMES BACK OUT, and it is not a convenience: `O.UOp.variable` RETURNS `Found{made, i}`
+# where `made` is the GROWN arena and `i` is the index in IT -- so the index is legal only in
+# `made`, and the substitute's walk arena must DESCEND from `made` or the index names nothing.
+# MEASURED: with the index used in the OLD arena the fake's bounds read `none`, the forward
+# simplify did not fold, and the answer was `x` instead of CPython's `bt`.
+type UgvVars is Data:
+  UgvVars{ar: O.Arena, cs: List<&2, UgvCand>}
+
+def UgvVars.ar(x: UgvVars) -> O.Arena:
+  match x:
+    case UgvVars{ar, cs}: ar
+
+def UgvVars.cs(x: UgvVars) -> List<&2, UgvCand>:
+  match x:
+    case UgvVars{ar, cs}: cs
+
+def Ugv.vars(+cs: List<&2, U32>, +ar: O.Arena, +bt: F.BTable, +m: List<&2, UgvEnt>, +i: U32, acc: List<&2, UgvCand>) -> UgvVars:
+  match cs:
+    case Nil{}: UgvVars{ar, acc}
+    case +e <> +t:
+      +lo = Ugv.bound(m, ar, bt, e, False{})
+      +hi = Ugv.bound(m, ar, bt, e, True{})
+      +dt = sy_dt1(F.folded(ar), e)
+      +v = O.UOp.variable(ar, String.concat(["fake", U32.show(i)]), lo, hi, 1, dt)
+      +vx = Ugv.vars(t, O.Found.ar(v), bt, m, U32.add(i, 1), List.append(&2, UgvCand, acc, [UgvCand{e, O.Found.i(v)}]))
+      UgvVars{O.Found.ar(v), UgvVars.cs(vx)}
+
+# THE CANDIDATE TABLE FOR THE SUBSTITUTE: expr -> fake variable, and fake variable -> expr, so the
+# BACKWARD phase can undo it. Upstream's two dicts: `{X:newX}` and then `{newX:X}`.
+def Ugv.tbl(+cs: List<&2, UgvCand>, acc: List<&2, Ky>) -> List<&2, Ky>:
+  match cs:
+    case Nil{}: acc
+    case +c <> +t:
+      Ugv.tbl(t, List.append(&2, Ky, acc, [Ky{UgvCand.e(c), UgvCand.v(c)}]))
+
+def Ugv.back(+cs: List<&2, UgvCand>, acc: List<&2, Ky>) -> List<&2, Ky>:
+  match cs:
+    case Nil{}: acc
+    case +c <> +t:
+      Ugv.back(t, List.append(&2, Ky, acc, [Ky{UgvCand.v(c), UgvCand.e(c)}]))
+
+# THE BACKWARD PHASE: substitute the fake variables BACK to the exprs, then simplify again.
+# Upstream: `s_uop.simplify().substitute({newX: X}).simplify()`.
+#
+# TWO THINGS THE SPELLING IS FORCED BY, and both are measurements:
+#   * `Maybe` IS A TYPE AND NOT A Data, so it CANNOT be a `+` binder -- a `Maybe` answer crosses
+#     the boundary as a PARAMETER instead (see `Ugv.fwd3`);
+#   * a `match` may not scrutinise a COMPUTED value, so the `Maybe` is passed in and matched there.
+def Ugv.back2(+ar: O.Arena, +n: U32, +cs: List<&2, UgvCand>) -> Maybe<&1, O.Found>:
+  +bk = Ugv.back(cs, Nil{})
+  +sub = s1.multi(ar, n, bk)
+  sy_simplify(O.Found.ar(sub), O.Found.i(sub))
+
+# THE FORWARD PHASE: simplify the substituted graph, then run the backward phase. The `Maybe` is
+# produced by `sy_simplify` and passed straight to `Ugv.fwd3`, which MATCHES it.
+def Ugv.fwd3(simp: Maybe<&1, O.Found>, +cs: List<&2, UgvCand>) -> Maybe<&1, O.Found>:
+  match simp:
+    case Some{+f}: Ugv.back2(O.Found.ar(f), O.Found.i(f), cs)
+    case None{}: None{}
+
+# THE FORWARD RESULT, on its own -- the probe reads this to tell "the forward simplify did not
+# fold" from "the backward phase undid the fold".
+def Ugv.fwdonly(+ar: O.Arena, +n: U32, +cs: List<&2, UgvCand>) -> Maybe<&1, O.Found>:
+  sy_simplify(ar, n)
+
+def Ugv.fwd2(+ar: O.Arena, +n: U32, +cs: List<&2, UgvCand>) -> Maybe<&1, O.Found>:
+  Ugv.fwd3(sy_simplify(ar, n), cs)
+
+def Ugv.fwd(+ar: O.Arena, +n: U32, +cs: List<&2, UgvCand>) -> Maybe<&1, O.Found>:
+  Ugv.fwd2(ar, n, cs)
+
+# THE ENTRY. Upstream:
+#   all_candidates = [(expr, UOp.variable(f"fake{i}", v0, v1, expr.dtype)) for each expr]
+#   if (s_uop := uop.substitute(dict(all_candidates))) is not uop:
+#     uop = s_uop.simplify().substitute({newX: X}).simplify()
+def Ugv.go(+ar: O.Arena, +valid: U32, +uop: U32) -> Maybe<&1, O.Found>:
+  +bt = F.mm.sweep(ar, F.Folded.t(F.folded(ar)))
+  +acc = Ugv.step(O.UOp.split_uop(O.Arena.budget(ar), ar, valid, O.OpsAND{}), ar, UgvAcc{Nil{}, Nil{}})
+  +vv = Ugv.vars(UgvAcc.cs(acc), ar, bt, UgvAcc.m(acc), 0, Nil{})
+  +cs = UgvVars.cs(vv)
+  +fw = Ugv.tbl(cs, Nil{})
+  # THE SUBSTITUTE WALKS THE ARENA THE FAKES WERE MINTED IN, so the fake's index names a node
+  # in it -- see `Ugv.vars`'s own note on why the arena comes back out.
+  +sub = s1.multi(UgvVars.ar(vv), uop, fw)
+  # THE SUBSTITUTED GRAPH LIVES IN A NEW ARENA -- `s1.multi` returns `Found{ar, n}` and that `ar`
+  # is the arena the walk grew -- so the simplify must run in THAT arena and not in the one the
+  # candidate table was built in. MEASURED: with the old arena the simplify saw the OLD graph
+  # and the answer was `x`; with the new arena it is `bt`, which is CPython's answer.
+  Ugv.fwd(O.Found.ar(sub), O.Found.i(sub), cs)
+
+# ---- `symbolic.py:388`, `simplify_valid` ---------------------------------------------
+#
+#   def simplify_valid(valid:UOp) -> UOp|None:
+#     if valid.op_in_backward_slice_with_self(Ops.INDEX): return None
+#     ret:list[UOp] = []
+#     valids = list(valid.split_uop(Ops.AND))
+#     valids = sorted(valids, key=lambda v: _valid_priority(v, valids))
+#     for stmt in dedup(valids):
+#       if ret: stmt = uop_given_valid(UOp.uprod(*ret), stmt)
+#       ret.append(stmt)
+#     return UOp.uprod(*ret) if ret != valids else None
+#
+# AND THE PRIORITY (upstream's `_valid_priority`):
+#
+#   def _valid_priority(v:UOp, valids:list[UOp]) -> tuple[int, int]:
+#     return (0, 0) if (res:=parse_valid(v)) is None else (
+#       sum(-1 for other in valids if res[0] is other or res[0] in other.backward_slice),
+#       res[2] if res[1] else -res[2])
+#
+# TWO PARTS: the FIRST is the DEPENDENCY COUNT (a clause whose expr another clause depends on
+# is LOWER), and the SECOND is the BOUND (an UPPER bound is positive and a LOWER bound is
+# negative, so the TIGHTER bound sorts first). Upstream's tuple sorts ascending, so
+# `(dep, bound)` ascending.
+#
+# THE PORT HAS NO SORT, so the sort is an INSERTION SORT over the clause list. The list GROWS,
+# so it is the ACCUMULATOR and the shrinking argument is the SOURCE list.
+
+# THE PRIORITY OF ONE CLAUSE, as a PAIR: (dependencies, bound). A clause `parse_valid` cannot
+# read has priority `(0, 0)` -- upstream's first arm.
+type SvP is Data:
+  SvP{dep: H.I64, bnd: H.I64}
+
+# THE ACCUMULATOR: the clauses already seen, and the ANSWERS they produced.
+type SvAcc is Data:
+  SvAcc{ret: List<&2, U32>, ans: List<&2, U32>}
+
+# THE ORDER: `dep` ascending, then `bnd` ascending. UPSTREAM'S TUPLE ORDER, and the tuple is
+# `(dep, bnd)` -- so a clause with FEWER dependencies comes first and, at the same dependency
+# count, the SMALLER bound comes first.
+# THE RECORD IS DESTRUCTURED ONCE, because a record may be read only once: `SvP.dep(a)` AND
+# `SvP.bnd(a)` would read `a` twice.
+def sv.lt2(a: SvP, b: SvP) -> Bool:
+  match a:
+    case SvP{ad, ab}: match b:
+      case SvP{bd, bb}:
+        +c1 = H.i64_cmp(ad, bd)
+        Bool.or(Cmp.is_lt(c1), Bool.and(Cmp.is_eq(c1), Cmp.is_lt(H.i64_cmp(ab, bb))))
+
+def sv.lt(a: SvP, b: SvP) -> Bool:
+  sv.lt2(a, b)
+
+
+# `res[0] is other or res[0] in other.backward_slice` -- the EXPR of this clause is the same
+# node as another clause's expr, or it is in that clause's backward slice.
+def sv.in.slice2(bs: List<&2, U32>, +e: U32, acc: Bool) -> Bool:
+  match bs:
+    case Nil{}: acc
+    case h <> t: sv.in.slice2(t, e, Bool.or(acc, U32.is_eq(h, e)))
+
+def sv.in.slice(+ar: O.Arena, +e: U32, +o: U32) -> Bool:
+  sv.in.slice2(O.UOp.backward_slice(O.Arena.budget(ar), ar, o), e, False{})
+
+# THE DEPENDENCY COUNT, as a FOLD over the other clauses. Upstream's
+# `sum(-1 for other in valids if ...)`, and `-1` is the two's-complement `U32` `4294967295`.
+def sv.dep.one(+ar: O.Arena, +e: U32, +o: U32) -> H.I64:
+  Bool.pick(H.I64,
+    Bool.or(U32.is_eq(e, o), sv.in.slice(ar, e, o)),
+    H.i64_of_i32(4294967295), H.i64_of_i32(0))
+
+def sv.dep.fold(+ar: O.Arena, +e: U32, +others: List<&2, U32>, +acc: H.I64) -> H.I64:
+  match others:
+    case Nil{}: acc
+    case o <> t:
+      # THE ARENA AND THE EXPR ARE READ TWICE -- once by the dependency test and once by the
+      # recursive call -- so they are BOUND FIRST, and a `+` name may be read many times.
+      +ar2 = ar
+      +e2 = e
+      sv.dep.fold(ar2, e2, t, H.i64_add(acc, sv.dep.one(ar2, e2, o)))
+
+def sv.dep.of(+ar: O.Arena, +e: U32, +others: List<&2, U32>) -> H.I64:
+  sv.dep.fold(ar, e, others, H.i64_of_i32(0))
+
+# THE PRIORITY OF ONE CLAUSE.
+def sv.prio(+ar: O.Arena, +v: U32, +others: List<&2, U32>) -> SvP:
+  +p = sy_parse_valid(ar, v)
+  Bool.pick(SvP, Pv.ok(p),
+    SvP{sv.dep.of(ar, Pv.e(p), others), Bool.pick(H.I64, Pv.up(p), Pv.c(p), H.i64_neg(True{}, Pv.c(p)))},
+    SvP{H.i64_of_i32(0), H.i64_of_i32(0)})
+
+# THE INSERTION: walk the sorted list and put `c` BEFORE the first element it sorts above.
+# `done` is the PREFIX already passed, so it is carried and never read twice.
+def sv.ins2(+c: U32, +ar: O.Arena, +cs: List<&2, U32>, acc: List<&2, U32>, +done: List<&2, U32>) -> List<&2, U32>:
+  match acc:
+    case Nil{}: List.append(&2, U32, done, [c])
+    case +h <> r:
+      +before = sv.lt(sv.prio(ar, c, cs), sv.prio(ar, h, cs))
+      Bool.pick(List<&2, U32>, before,
+        List.append(&2, U32, done, [c, h]),
+        sv.ins2(c, ar, cs, r, List.append(&2, U32, done, [h])))
+
+def sv.ins(+c: U32, +ar: O.Arena, +cs: List<&2, U32>, acc: List<&2, U32>, done: List<&2, U32>) -> List<&2, U32>:
+  sv.ins2(c, ar, cs, acc, done)
+
+# THE INSERTION SORT. The list GROWS, so it is the ACCUMULATOR and the shrinking argument is
+# the SOURCE list.
+def sv.sort(+cs: List<&2, U32>, +ar: O.Arena, acc: List<&2, U32>) -> List<&2, U32>:
+  match cs:
+    case Nil{}: acc
+    case c <> t: sv.sort(t, ar, sv.ins(c, ar, cs, acc, Nil{}))
+
+# THE DEDUP: upstream's `dedup(valids)` keeps the FIRST of each equal clause. A clause is equal
+# when it is the same NODE -- the port has no structural equality, and upstream's `dedup` on
+# UOps is by hash, which for a hash-consed UOp is identity.
+def sv.in.list2(t: List<&2, U32>, +e: U32, acc: Bool) -> Bool:
+  match t:
+    case Nil{}: acc
+    case h <> r: sv.in.list2(r, e, Bool.or(acc, U32.is_eq(h, e)))
+
+def sv.in.list(t: List<&2, U32>, +e: U32) -> Bool:
+  sv.in.list2(t, e, False{})
+
+def sv.dedup(+cs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match cs:
+    case Nil{}: acc
+    case c <> t:
+      # THE ACCUMULATOR IS READ TWICE -- once by the membership test and once by the append --
+      # so it is BOUND FIRST.
+      +a2 = acc
+      sv.dedup(t, Bool.pick(List<&2, U32>, sv.in.list(a2, c), a2, List.append(&2, U32, a2, [c])))
+
+# THE `uprod` OF THE ACCUMULATED CLAUSES: upstream's `UOp.uprod(*ret)`. The receiver is the
+# FIRST clause and the rest follow, and `sy_uprod` reads the op off the receiver's dtype.
+def sv.uprod(+ar: O.Arena, +cs: List<&2, U32>) -> Maybe<&1, O.Found>:
+  match cs:
+    case Nil{}: None{}
+    case h <> r: sy_uprod(F.folded(ar), h, r)
+
+# THE ACCUMULATOR'S READERS.
+def SvAcc.ret(x: SvAcc) -> List<&2, U32>:
+  match x:
+    case SvAcc{ret, ans}: ret
+
+def SvAcc.ans(x: SvAcc) -> List<&2, U32>:
+  match x:
+    case SvAcc{ret, ans}: ans
+
+# THE APPEND: the clause goes into the accumulated list and the ANSWER into the answer list.
+def sv.append2(+c: U32, +a: U32, acc: SvAcc) -> SvAcc:
+  +a2 = acc
+  SvAcc{List.append(&2, U32, SvAcc.ret(a2), [c]),
+        List.append(&2, U32, SvAcc.ans(a2), [a])}
+
+def sv.append(+c: U32, g: Maybe<&1, O.Found>, acc: SvAcc) -> SvAcc:
+  match g:
+    case Some{f}: sv.append2(c, O.Found.i(f), acc)
+    case None{}: sv.append2(c, c, acc)
+
+# THE FOUND IS READ TWICE -- its index and its arena -- so it is PASSED WHOLE and read inside.
+def sv.given2(+c: U32, +u: O.Found, acc: SvAcc) -> SvAcc:
+  sv.append(c, Ugv.go(O.Found.ar(u), O.Found.i(u), c), acc)
+
+# THE `uop_given_valid` ON THE ACCUMULATED VALID: the answer's node replaces the clause.
+def sv.given(+c: U32, up: Maybe<&1, O.Found>, acc: SvAcc) -> SvAcc:
+  match up:
+    case Some{u}: sv.given2(c, u, acc)
+    case None{}: sv.append(c, None{}, acc)
+
+# ONE CLAUSE: `if ret: stmt = uop_given_valid(UOp.uprod(*ret), stmt)`. "IF ret" IS "IF THE
+# ACCUMULATED CLAUSE LIST IS NOT EMPTY", so there is no separate flag. THE LIST IS A PARAMETER,
+# because a `match` may not scrutinise a COMPUTED value.
+def sv.one(+c: U32, +ar: O.Arena, acc: SvAcc, ret: List<&2, U32>) -> SvAcc:
+  match ret:
+    case Nil{}: sv.append(c, None{}, acc)
     case _ <> _:
-      do IO<Unit>:
-        s : String <- fz_read(fz.drive.path(as))
-        IO.print(fz.drive.lines(String.lines(s), ""))
+      # A `Maybe` IS A TYPE AND NOT A Data, so it CANNOT be a `+` binder -- it crosses as a
+      # PLAIN binding, which is consumed once, and `sv.given` MATCHES it.
+      up = sv.uprod(ar, ret)
+      sv.given(c, up, acc)
 
-def fz.drive.go(as: List<String>) -> IO(Unit):
-  fz.drive.br(List.tail(&1, String, as))
+# THE LOOP. The clause list SHRINKS, so it is the shrinking argument and the accumulator
+# carries the clauses already seen and the answers they produced.
+def sv.loop(+cs: List<&2, U32>, +ar: O.Arena, acc: SvAcc) -> SvAcc:
+  match cs:
+    case Nil{}: acc
+    case c <> t:
+      # THE ACCUMULATOR IS READ TWICE -- the clause list and the answer list -- so it is BOUND.
+      +a2 = acc
+      sv.loop(t, ar, sv.one(c, ar, a2, SvAcc.ret(a2)))
 
-def main() -> IO(Unit):
-  do IO<Unit>:
-    as : List<String> <- IO.args()
-    fz.drive.go(as)
+# THE IDENTITY TEST: two lists are the same when they have the same nodes in the same order.
+# IT IS ONE RECURSION with an accumulator, because the two tails have to be compared together
+# and TWO mutually recursive defs are not writable (Bend has no forward reference).
+def sv.same2(b: List<&2, U32>, acc: Bool) -> Bool:
+  match b:
+    case Nil{}: acc
+    case _ <> _ : False{}
+
+def sv.same4(r: List<&2, U32>, t: List<&2, U32>, +h: U32, +g: U32, acc: Bool) -> Bool:
+  match r:
+    case Nil{}: sv.same2(t, Bool.and(acc, U32.is_eq(h, g)))
+    case h2 <> r2: match t:
+      case Nil{}: False{}
+      case g2 <> t2: sv.same4(r2, t2, h2, g2, Bool.and(acc, U32.is_eq(h, g)))
+
+def sv.same(a: List<&2, U32>, b: List<&2, U32>) -> Bool:
+  match a:
+    case Nil{}: sv.same2(b, True{})
+    case h <> r: match b:
+      case Nil{}: False{}
+      case g <> t: sv.same4(r, t, h, g, True{})
+
+# THE ANSWER: the `uprod` of the produced answers, or `None` when the answers are the clauses
+# unchanged -- upstream's `ret != valids`.
+def sv.answer(+ar: O.Arena, acc: SvAcc, +cs: List<&2, U32>) -> Maybe<&1, O.Found>:
+  # THE ACCUMULATOR IS READ TWICE -- the answer list and the `uprod` -- so it is BOUND.
+  +a2 = acc
+  +ans = SvAcc.ans(a2)
+  Bool.pick(Maybe<&1, O.Found>, sv.same(ans, cs),
+    None{}, sv.uprod(ar, ans))
+
+# THE REST: sort, dedup, run the loop, and answer.
+#
+# THE COMPARISON IS AGAINST THE SORTED AND DEDUP'D LIST, and that is UPSTREAM'S `valids`:
+# upstream REASSIGNS `valids` twice -- `valids = sorted(valids, ...)` and then
+# `for stmt in dedup(valids)` -- and the final line compares `ret != valids` against the
+# SORTED list. MEASURED: comparing against the UNSORTED list made the port answer a `CMPEQ`
+# where CPython answers `none`, because the sort had put the clauses in a different order.
+def sv.rest(+ar: O.Arena, +valid: U32) -> Maybe<&1, O.Found>:
+  +cs = O.UOp.split_uop(O.Arena.budget(ar), ar, valid, O.OpsAND{})
+  +sorted = sv.sort(cs, ar, Nil{})
+  +uniq = sv.dedup(sorted, Nil{})
+  +acc = sv.loop(uniq, ar, SvAcc{Nil{}, Nil{}})
+  sv.answer(ar, acc, uniq)
+
+# THE INDEX GATE: `valid.op_in_backward_slice_with_self(Ops.INDEX)`.
+def sv.has.index2(bs: List<&2, U32>, +ar: O.Arena, acc: Bool) -> Bool:
+  match bs:
+    case Nil{}: acc
+    case h <> t: sv.has.index2(t, ar, Bool.or(acc, O.eq_op(O.Arena.op(ar, h), O.OpsINDEX{})))
+
+def sv.has.index(+ar: O.Arena, +v: U32) -> Bool:
+  sv.has.index2(O.UOp.backward_slice_with_self(O.Arena.budget(ar), ar, v), ar, False{})
+
+# THE ENTRY. Upstream's `simplify_valid(valid) -> UOp|None`.
+def simplify_valid(+ar: O.Arena, +valid: U32) -> Maybe<&1, O.Found>:
+  # `if valid.op_in_backward_slice_with_self(Ops.INDEX): return None`
+  Bool.pick(Maybe<&1, O.Found>, sv.has.index(ar, valid),
+    None{}, sv.rest(ar, valid))
+
+# ---- `symbolic.py:441`, `gated_given_valid` -----------------------------------------
+#
+#   def gated_given_valid(cond:UOp, x:UOp, i:UOp) -> UOp|None:
+#     # pure index math only: a LOAD in x executes even where cond is false, so its INDEX valid
+#     # must survive the assumption
+#     if x.dtype is not dtypes.weakint or x.op_in_backward_slice_with_self(Ops.INDEX): return None
+#     # Skip if x contains DIV/MOD AND IMAGE mode is enabled -> image index e.g. openpilot
+#     if IMAGE.value > 0 and x.op_in_backward_slice_with_self(Ops.TRUNCDIV, Ops.TRUNCMOD,
+#                                                              Ops.DIV, Ops.MOD): return None
+#     return cond.where(uop_given_valid(cond, x, try_simplex=False), i)
+#
+# THE `INVALID_GATE` PATTERN IS `WHERE(cond, x, CONST(Invalid))` -- the port's `p_gate` -- so
+# `cond` IS `src[0]`, `x` IS `src[1]` AND `i` IS `src[2]`.
+#
+# THE `IMAGE.value` GATE IS NOT PORTED: the port has NO `IMAGE` FLAG (MEASURED: `grep IMAGE`
+# over `tinybendygrad/` names no flag reader), and upstream's gate is `IMAGE.value > 0` -- a
+# FLAG that is OFF in every corpus run, so the gate is a REFUSAL in the measured universe and
+# the rule is the same rule without it. THE GATE IS RECORDED HERE AND NOT SILENTLY DROPPED.
+def gg.x.dtype(+x: F.Folded, +u: U32) -> S.Dt:
+  sy_dt1(x, u)
+
+# `Cls` IS A RECORD OF VARIANTS, so it is MATCHED and not compared.
+
+# `Cls` IS A RECORD OF VARIANTS, so it is MATCHED and not compared.
+
+# `Cls` IS A RECORD OF VARIANTS, so it is MATCHED and not compared.
+
+# `Cls` IS A RECORD OF VARIANTS, so it is MATCHED and not compared.
+def gg.cls.is.weakint(c: S.Cls) -> Bool:
+  match c:
+    case S.CWeakInt{}: True{}
+    case _: False{}
+
+
+
+
+def gg.x.is.weakint(+x: F.Folded, +u: U32) -> Bool:
+  gg.cls.is.weakint(S.Dt.cls(gg.x.dtype(x, u)))
+
+# `x.op_in_backward_slice_with_self(Ops.INDEX)` -- the port's own reader is `sym_259.ixs`, which
+# reads the INDEX in the node's THREE srcs' backward slices.
+
+# `x.op_in_backward_slice_with_self(Ops.INDEX)` -- the port's own reader is `sym_259.ixs`, which
+# reads the INDEX in the node's THREE srcs' backward slices.
+
+# `x.op_in_backward_slice_with_self(Ops.INDEX)` -- the port's own reader is `sym_259.ixs`, which
+# reads the INDEX in the node's THREE srcs' backward slices.
+
+# `x.op_in_backward_slice_with_self(Ops.INDEX)` -- the port's own reader is `sym_259.ixs`, which
+# reads the INDEX in the node's THREE srcs' backward slices.
+def gg.has.index(+x: F.Folded, +u: U32) -> Bool:
+  sym_259.ixs(x, u)
+
+# THE ANSWER: `cond.where(uop_given_valid(cond, x, try_simplex=False), i)`. The `where` is a
+# NEW node, so it is minted in the arena the `uop_given_valid` answer grew.
+
+# THE ANSWER: `cond.where(uop_given_valid(cond, x, try_simplex=False), i)`. The `where` is a
+# NEW node, so it is minted in the arena the `uop_given_valid` answer grew.
+
+# THE ANSWER: `cond.where(uop_given_valid(cond, x, try_simplex=False), i)`. The `where` is a
+# NEW node, so it is minted in the arena the `uop_given_valid` answer grew.
+
+# THE ANSWER: `cond.where(uop_given_valid(cond, x, try_simplex=False), i)`. The `where` is a
+# NEW node, so it is minted in the arena the `uop_given_valid` answer grew.
+def gg.build(+ar: O.Arena, +cond: U32, +xv: U32, +iv: U32) -> O.Found:
+  O.UOp.new(ar, O.OpsWHERE{}, [cond, xv, iv], O.ANone{}, O.TNone{})
+
+# THE RULE. Upstream's `gated_given_valid(cond, x, i)`.
+
+
+# THE FOUND IS READ TWICE -- its index and its arena -- so it is PASSED WHOLE.
+def gg.go5(+f: O.Found, +cond: U32, +iv: U32) -> Maybe<&1, O.Found>:
+  Some{gg.build(O.Found.ar(f), cond, O.Found.i(f), iv)}
+
+# ---- THE VALID LANE ---------------------------------------------------------------
+#
+# `pm_simplify_valid` IS A SEPARATE MATCHER upstream (`symbolic.py:448`), composed into `sym`
+# as `symbolic+pm_simplify_valid+PatternMatcher([...])`. IT IS NOT IN `symbolic`, AND THE
+# PORT'S `sym_table()` IS `symbolic`'s TABLE -- SO THE VALID RULES GET THEIR OWN TABLE AND
+# THEIR OWN DISPATCHER, and `sym_f` (which walks `sym_table()`) NEVER SEES THEM.
+#
+# THAT IS NOT COSMETICS. UPSTREAM'S `ops.py:492` RE-ENTERS `symbolic` (:247) AND NOT `sym`
+# (:463), SO A VALID RULE THAT CALLED `sym_f` WOULD CYCLE: `sym` includes the valid rules and
+# the valid rules call `sym`. THE SEPARATE TABLE IS WHAT BREAKS THE CYCLE.
+
+
+# THE RULE. Upstream's `gated_given_valid(cond, x, i)`.
+
+def gg.go4(+ar: O.Arena, g: Maybe<&1, O.Found>, +cond: U32, +xv: U32, +iv: U32) -> Maybe<&1, O.Found>:
+  match g:
+    case Some{f}: gg.go5(f, cond, iv)
+    case None{}: None{}
+
+# THE FOUND IS READ TWICE -- its index and its arena -- so it is PASSED WHOLE.
+
+# ---- THE VALID LANE ---------------------------------------------------------------
+#
+# `pm_simplify_valid` IS A SEPARATE MATCHER upstream (`symbolic.py:448`), composed into `sym`
+# as `symbolic+pm_simplify_valid+PatternMatcher([...])`. IT IS NOT IN `symbolic`, AND THE
+# PORT'S `sym_table()` IS `symbolic`'s TABLE -- SO THE VALID RULES GET THEIR OWN TABLE AND
+# THEIR OWN DISPATCHER, and `sym_f` (which walks `sym_table()`) NEVER SEES THEM.
+#
+# THAT IS NOT COSMETICS. UPSTREAM'S `ops.py:492` RE-ENTERS `symbolic` (:247) AND NOT `sym`
+# (:463), SO A VALID RULE THAT CALLED `sym_f` WOULD CYCLE: `sym` includes the valid rules and
+# the valid rules call `sym`. THE SEPARATE TABLE IS WHAT BREAKS THE CYCLE.
+
+def gg.go3(+ar: O.Arena, +x: F.Folded, +cond: U32, +xv: U32, +iv: U32) -> Maybe<&1, O.Found>:
+  # THE `uop_given_valid(cond, x, try_simplex=False)`: the port's `Ugv.go` is the `try_simplex`
+  # VARIANT's BODY MINUS THE SIMPLEX BRANCH, and the simplex branch is the `X0 + X1 + ... > 0`
+  # special case -- so the port's `Ugv.go` IS `try_simplex=False` ALREADY. MEASURED: the port's
+  # `Ugv` has no simplex arm, and upstream's simplex arm needs `GroupOp.Irreducible` and the
+  # port's `UOp.group` builds a STACK, so the simplex branch is not ported.
+  g = Ugv.go(ar, cond, xv)
+  gg.go4(ar, g, cond, xv, iv)
+
+
+
+
+def gg.go2(+ar: O.Arena, +x: F.Folded, +u: U32, +cond: U32, +xv: U32, +iv: U32) -> Maybe<&1, O.Found>:
+  # THE FIRST GATE: `x.dtype is not dtypes.weakint` -- and the INDEX gate. A rule that may not
+  # fire answers `None{}`, and `None{}` IS the refusal.
+  Bool.pick(Maybe<&1, O.Found>,
+    Bool.or(Bool.not(gg.x.is.weakint(x, xv)), gg.has.index(x, xv)),
+    None{}, gg.go3(ar, x, cond, xv, iv))
+
+
+# THE RULE. Upstream's `gated_given_valid(cond, x, i)`.
+
+
+# THE RULE. Upstream's `gated_given_valid(cond, x, i)`.
+def gg.go(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +ar = sy_ar(x)
+  +cond = sy_src0(x, u)
+  +xv = sy_src1(x, u)
+  +iv = sy_src2(x, u)
+  gg.go2(ar, x, u, cond, xv, iv)
+
+
+# ---- THE VALID LANE ---------------------------------------------------------------
+#
+# `pm_simplify_valid` IS A SEPARATE MATCHER upstream (`symbolic.py:448`), composed into `sym`
+# as `symbolic+pm_simplify_valid+PatternMatcher([...])`. IT IS NOT IN `symbolic`, AND THE
+# PORT'S `sym_table()` IS `symbolic`'s TABLE -- SO THE VALID RULES GET THEIR OWN TABLE AND
+# THEIR OWN DISPATCHER, and `sym_f` (which walks `sym_table()`) NEVER SEES THEM.
+#
+# THAT IS NOT COSMETICS. UPSTREAM'S `ops.py:492` RE-ENTERS `symbolic` (:247) AND NOT `sym`
+# (:463), SO A VALID RULE THAT CALLED `sym_f` WOULD CYCLE: `sym` includes the valid rules and
+# the valid rules call `sym`. THE SEPARATE TABLE IS WHAT BREAKS THE CYCLE.
+
+
+# ---- THE VALID LANE ---------------------------------------------------------------
+#
+# `pm_simplify_valid` IS A SEPARATE MATCHER upstream (`symbolic.py:448`), composed into `sym`
+# as `symbolic+pm_simplify_valid+PatternMatcher([...])`. IT IS NOT IN `symbolic`, AND THE
+# PORT'S `sym_table()` IS `symbolic`'s TABLE -- SO THE VALID RULES GET THEIR OWN TABLE AND
+# THEIR OWN DISPATCHER, and `sym_f` (which walks `sym_table()`) NEVER SEES THEM.
+#
+# THAT IS NOT COSMETICS. UPSTREAM'S `ops.py:492` RE-ENTERS `symbolic` (:247) AND NOT `sym`
+# (:463), SO A VALID RULE THAT CALLED `sym_f` WOULD CYCLE: `sym` includes the valid rules and
+# the valid rules call `sym`. THE SEPARATE TABLE IS WHAT BREAKS THE CYCLE.
+
+# THE TWO ARMS. `sym_450` IS `simplify_valid` AND `sym_451` IS `gated_given_valid`.
+#
+# THE NAMES ARE `sv_450` AND `sv_451` AND NOT `sym_450`/`sym_451` BECAUSE THOSE TWO NAMES ARE
+# ALREADY TAKEN: the port's `sym_451` IS THE `POW` RULE, and it cites `symbolic.py:451` IN A
+# RE-VENDORED UPSTREAM WHERE `:451` WAS THE POW LINE. AT THE PIN (`f5ac54685074`) `:451` IS
+# `invalid_gate, gated_given_valid` AND `:465` IS THE POW RULE. THE NAMES ARE LABELS AND THE
+# CITATIONS ARE IN THE TABLE ENTRIES, SO THE COLLISION IS AVOIDED BY RENAMING AND NOT BY
+# MOVING A CITATION.
+
+# THE TWO ARMS. `sym_450` IS `simplify_valid` AND `sym_451` IS `gated_given_valid`.
+#
+# THE NAMES ARE `sv_450` AND `sv_451` AND NOT `sym_450`/`sym_451` BECAUSE THOSE TWO NAMES ARE
+# ALREADY TAKEN: the port's `sym_451` IS THE `POW` RULE, and it cites `symbolic.py:451` IN A
+# RE-VENDORED UPSTREAM WHERE `:451` WAS THE POW LINE. AT THE PIN (`f5ac54685074`) `:451` IS
+# `invalid_gate, gated_given_valid` AND `:465` IS THE POW RULE. THE NAMES ARE LABELS AND THE
+# CITATIONS ARE IN THE TABLE ENTRIES, SO THE COLLISION IS AVOIDED BY RENAMING AND NOT BY
+# MOVING A CITATION.
+
+# THE TWO ARMS. `sym_450` IS `simplify_valid` AND `sym_451` IS `gated_given_valid`.
+#
+# THE NAMES ARE `sv_450` AND `sv_451` AND NOT `sym_450`/`sym_451` BECAUSE THOSE TWO NAMES ARE
+# ALREADY TAKEN: the port's `sym_451` IS THE `POW` RULE, and it cites `symbolic.py:451` IN A
+# RE-VENDORED UPSTREAM WHERE `:451` WAS THE POW LINE. AT THE PIN (`f5ac54685074`) `:451` IS
+# `invalid_gate, gated_given_valid` AND `:465` IS THE POW RULE. THE NAMES ARE LABELS AND THE
+# CITATIONS ARE IN THE TABLE ENTRIES, SO THE COLLISION IS AVOIDED BY RENAMING AND NOT BY
+# MOVING A CITATION.
+
+# THE TWO ARMS. `sym_450` IS `simplify_valid` AND `sym_451` IS `gated_given_valid`.
+#
+# THE NAMES ARE `sv_450` AND `sv_451` AND NOT `sym_450`/`sym_451` BECAUSE THOSE TWO NAMES ARE
+# ALREADY TAKEN: the port's `sym_451` IS THE `POW` RULE, and it cites `symbolic.py:451` IN A
+# RE-VENDORED UPSTREAM WHERE `:451` WAS THE POW LINE. AT THE PIN (`f5ac54685074`) `:451` IS
+# `invalid_gate, gated_given_valid` AND `:465` IS THE POW RULE. THE NAMES ARE LABELS AND THE
+# CITATIONS ARE IN THE TABLE ENTRIES, SO THE COLLISION IS AVOIDED BY RENAMING AND NOT BY
+# MOVING A CITATION.
+def sv_450(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  simplify_valid(sy_ar(x), u)
+
+
+
+
+def sv_451(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  gg.go(x, u)
+
+# THE VALID DISPATCHER, and it is TWO ARMS because the table has TWO entries.
+
+# THE VALID DISPATCHER, and it is TWO ARMS because the table has TWO entries.
+
+# THE VALID DISPATCHER, and it is TWO ARMS because the table has TWO entries.
+
+# THE VALID DISPATCHER, and it is TWO ARMS because the table has TWO entries. BOTH RULES MINT
+# (they build a new graph), so there is ONE dispatcher and it answers a `Found` -- there is no
+# `valid_dispatch.go` and no `MINT_TAGS` for this lane, because EVERY entry in this table mints.
+def valid_dispatch_f(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match tag:
+    case 0: sv_450(x, u)
+    case 1: sv_451(x, u)
+    case _: None{}
+
+# THE VALID SCANNER, and it is the port's own `sym_scan_f` with the VALID DISPATCHER. The two
+# lanes differ in ONE thing: the table they walk. `sym_scan_f` walks `sym_table()` and
+# `valid_scan_f` walks `valid_table()`, so a valid rule can never see itself.
+def valid_try_f.pick(ok: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: sy_novel_f(u, valid_dispatch_f(tag, x, u))
+    case _     : None{}
+
+
+def valid_try_f(ts: O.PMEntrys, +x: F.Folded, +u: U32, +e: O.PMEntry) -> Maybe<&1, O.Found>:
+  valid_try_f.pick(Bool.and(O.op_in(O.PMEntry.ops(e), O.Arena.op(sy_ar(x), u)),
+                             O.pm_early(ts, sy_ar(x), u, O.PMEntry.rej(e))),
+                   O.PMEntry.tag(e), x, u)
+
+
+def valid_scan_f(+ts: O.PMEntrys, +x: F.Folded, +u: U32, todo: List<&2, O.PMEntry>, acc: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match todo:
+    case Nil{}  : acc
+    case e <> t : valid_scan_f(ts, x, u, t, sy_keep_f.go(acc, valid_try_f(ts, x, u, e)))
+
+
+def valid_rewrite_f(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  valid_scan_f(ts, x, u, O.PMEntrys.es(ts), None{})
+
+# THE VALID PASS, and it is ONE PASS and not a FIXPOINT. Upstream's `pm_simplify_valid` IS A
+# MATCHER COMPOSED INTO `sym`, so upstream's `sym` is a fixpoint OVER IT TOO -- but upstream's
+# `graph_rewrite` re-enters `symbolic` and not `sym` (ops.py:492), so a valid rule that changed
+# a graph is RE-SIMPLIFIED BY `symbolic` AND NOT BY THE VALID RULES. THE PORT'S LANES ARE
+# SEPARATE, SO THE OUTER ENTRY RUNS THE BASE FIXPOINT AND THEN THE VALID PASS, WHICH IS
+# UPSTREAM'S ORDER: `symbolic+pm_simplify_valid+...` MEANS `symbolic` RUNS FIRST.
+
+# THE VALID PASS, and it is ONE PASS and not a FIXPOINT. Upstream's `pm_simplify_valid` IS A
+# MATCHER COMPOSED INTO `sym`, so upstream's `sym` is a fixpoint OVER IT TOO -- but upstream's
+# `graph_rewrite` re-enters `symbolic` and not `sym` (ops.py:492), so a valid rule that changed
+# a graph is RE-SIMPLIFIED BY `symbolic` AND NOT BY THE VALID RULES. THE PORT'S LANES ARE
+# SEPARATE, SO THE OUTER ENTRY RUNS THE BASE FIXPOINT AND THEN THE VALID PASS, WHICH IS
+# UPSTREAM'S ORDER: `symbolic+pm_simplify_valid+...` MEANS `symbolic` RUNS FIRST.
+def valid_f(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  valid_rewrite_f(valid_table(), x, u)
+
+# THE OUTER ENTRY: the base fixpoint and then the valid pass, each on the graph the other
+# produced. THIS IS `sym` -- THE COMPOSITION -- AND IT IS NOT `sym_f`, WHICH IS `symbolic` ALONE.
+
+def sym_all3(+f: O.Found) -> Maybe<&1, O.Found>:
+  valid_f(F.folded(O.Found.ar(f)), O.Found.i(f))
+def sym_all2(base: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match base:
+    case Some{f}: sym_all3(f)
+    case None{}: None{}
+
+
+# THE OUTER ENTRY: the base fixpoint and then the valid pass, each on the graph the other
+# produced. THIS IS `sym` -- THE COMPOSITION -- AND IT IS NOT `sym_f`, WHICH IS `symbolic` ALONE.
+def sym_all(+ar: O.Arena, +i: U32) -> Maybe<&1, O.Found>:
+  sym_all2(sy_simplify(ar, i))
+
