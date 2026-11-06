@@ -5692,3 +5692,54 @@ ALGORITHM** (a `strchr` loop with a per-token copy), so the `.c` side can be wri
 SLOW algorithm, so the C lane would keep the prelude's cost and the JS lane would get the win. **THE C LANE
 IS NOT THE SHIPPED DAEMON** (the daemon is `bun`), so the honest choice is: implement the `.c` side with the
 same `strchr` algorithm (so the C lane is no slower than today) and let the JS lane have the native split.
+
+## 127. THE WIRE SPLIT IS AN EFFECT NOW: 0.7789 WALL / 0.9189 AND 0.9002 CPU, 30 OF 30 AND 29 OF 30
+
+§126 settled the seam; this is the implementation. `tinybendygrad/renderer/wire.js` and `wire.c` sit beside
+`live.bend`, `live.bend` gains the effect and splits its decoder in two, and the daemon's frame machine
+threads the `IO`.
+
+### 127.1 The shape
+
+```bend
+@unsafe
+def Wire.split(s: String) -> IO(List<&2, String>):
+  import "./wire.c"
+  import "./wire.js"
+
+def kus_bytes(+xs: List<&2, String>) -> List<&2, C.KU>:
+  List.reverse(&2, C.KU, ku_all(xs, 0n, Nil{}, Nil{}))
+
+def kus(+text: String) -> IO(List<&2, C.KU>):
+  IO.bind(List<&2, String>, List<&2, C.KU>, Wire.split(text), xs => IO.pure(List<&2, C.KU>, kus_bytes(xs)))
+```
+
+**THE PURE HALF STAYS PURE**, so `gen_kus.py`'s generated `kus()` -- the LITERAL path, which builds the KUs
+in bend and never touches the wire -- is untouched.
+
+### 127.2 The measurement
+
+```
+same C: True | bytes: 5649
+wall 30 rounds:  prelude 5.59 ms   effect 4.28 ms   ratio median 0.7789  27/30 faster
+cpu  14 rounds:  base 14.274 ms   new 12.969 ms    ratio median 0.9189  14/14 faster
+cpu  16 rounds:  base 15.594 ms   new 13.677 ms    ratio median 0.9002  15/16 faster
+```
+
+**KEPT: 27 of 30 wall rounds and 29 of 30 CPU rounds faster, with byte-identical C.** The gates:
+`ksweep` 37/37 on BOTH decoders, `opbattery` 39/39, `portexec` 7/7.
+
+### 127.3 AND §125's ABLATION WAS WRONG ABOUT WHAT IT MEASURED
+
+§125 said "the wire split is 92.6% of the turn" because replacing `String.split(text, ' ')` with `Nil{}` took
+the turn from 5.58 ms to 0.42 ms. **THAT ABLATION ALSO STARVED THE PORT'S OWN WALK** -- `ku_all` walks the
+token list, so with no tokens there was nothing to walk. The split's OWN cost is about 1.0 ms and the walk
+is the rest.
+
+**⇒ AND THE INSTRUMENTED PARTS CONFIRM IT:** in both builds the port's `ku_ws` accounts for ~3.8-4.6 ms of
+the turn, `nums` 1.6-1.9 ms and `u32` 0.5 ms. **THE EFFECT MOVES THE SPLIT'S ~1 ms AND LEAVES THE PORT'S
+WALK ALONE, WHICH IS EXACTLY WHY THE RATIO IS 0.78 AND NOT THE 0.07 THE EFFECT'S OWN COST WOULD PREDICT.**
+
+**⇒ THE CORRECTED STATEMENT OF THE DECODE'S COST:** the prelude's per-character split is ~1.0 ms of a
+5.6 ms turn (18%), the port's token walk and KU construction is ~4.2 ms (75%), and the effect removes the
+first. **THE NEXT LEVER IS THE WALK, AND §121's `ku_ws.r` IS ITS FIRST HALF.**

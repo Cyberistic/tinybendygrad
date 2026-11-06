@@ -307,8 +307,27 @@ def ku_all(+xs: List<&2, String>, skip: Nat, +fields: List<&2, String>, +acc: Li
         case 0n: ku_all(t, 8n, List.append(&2, String, [h], Nil{}), acc)
         case 2n+k: ku_all(t, Nat.add(k, 1n), List.append(&2, String, [h], fields), acc)
 
-def kus(+text: String) -> List<&2, C.KU>:
-  List.reverse(&2, C.KU, ku_all(String.split(text, ' '), 0n, Nil{}, Nil{}))
+# **THE SPLIT IS AN EFFECT, BECAUSE THE PRELUDE'S SPLIT IS ONE RECURSION PER CHARACTER.** MEASURED
+# (`PARITY.md` §125): on a 15,346-character wire the prelude's split is **5.16 ms of a 5.58 ms daemon turn
+# -- 92.6%** -- and everything else in the turn is 0.42 ms. The prelude does two `slice`s and a TOKEN
+# CONCATENATION per character (`String.split.push` is `_c_0 + _h_0`), and the interpreter charges ~18 ns a
+# call, so the port pays ~30x what the SAME ALGORITHM costs in JS (0.72 ms there, 5.16 ms here).
+#
+# `Wire.split` calls JS's native `String.prototype.split` -- ONE call -- and the JS half builds the list
+# in JS. MEASURED (`PARITY.md` §126): 0.136 ms a turn.
+#
+# **AND THE PURE PART STAYS PURE:** `kus_bytes` is the decoder over a token list and never touches the
+# effect, so the LITERAL path (`gen_kus.py`'s generated `kus()`, which builds the KUs in bend) is unaffected.
+@unsafe
+def Wire.split(s: String) -> IO(List<&2, String>):
+  import "./wire.c"
+  import "./wire.js"
+
+def kus_bytes(xs: List<&2, String>) -> List<&2, C.KU>:
+  List.reverse(&2, C.KU, ku_all(xs, 0n, Nil{}, Nil{}))
+
+def kus(+text: String) -> IO(List<&2, C.KU>):
+  IO.bind(List<&2, String>, List<&2, C.KU>, Wire.split(text), xs => IO.pure(List<&2, C.KU>, kus_bytes(xs)))
 
 # ---------------------------------------------------------------- the runtime entry point
 # **`IO.args()`'s INDEX 0 IS THE PROGRAM, NOT THE FIRST ARGUMENT** -- MEASURED with two probes under
@@ -325,10 +344,15 @@ def skip_first(as: List<&1, String>) -> List<&1, String>:
     case Nil{}: Nil{}
     case _ <> t: t
 
-def walk(as: List<&1, String>, +acc: List<&2, C.KU>) -> IO(List<&2, C.KU>):
+def walk.go(as: List<&1, String>, +acc: List<&2, C.KU>) -> IO(List<&2, C.KU>):
   match as:
     case Nil{}: IO.pure(List<&2, C.KU>, acc)
-    case h <> t: walk(t, ku_all(String.split(h, ' '), 0n, Nil{}, acc))
+    case h <> t:
+      IO.bind(List<&2, C.KU>, List<&2, C.KU>, kus(h), ks =>
+        walk.go(t, List.append(&2, C.KU, acc, ks)))
+
+def walk(as: List<&1, String>, +acc: List<&2, C.KU>) -> IO(List<&2, C.KU>):
+  walk.go(as, acc)
 
 def main() -> IO(Unit):
   do IO<Unit>:

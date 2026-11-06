@@ -14,12 +14,18 @@ type St is Data:
 # MEASURED (`PARITY.md` §84.3): a 1,215-uop kernel killed the daemon and the caller fell back for the rest
 # of the session. `L.kus` is the renderer's own decode, so the daemon now splits exactly what the one-shot
 # path splits, and the frame says where the chunks end with a ZERO-LENGTH chunk.
-def decode.go(+cs: List<&2, String>, +acc: List<&2, C.KU>) -> List<&2, C.KU>:
+# **THE DECODE IS AN `IO` NOW, BECAUSE THE SPLIT IS AN EFFECT** (`PARITY.md` §125/§126): the prelude's
+# `String.split` is one recursion per character and it was 5.16 ms of a 5.58 ms daemon turn -- 92.6% -- so
+# the wire is split by `Wire.split`, whose JS half calls the native `String.prototype.split` (0.136 ms a
+# turn). THE PURE HALF (`L.kus_bytes`) IS UNCHANGED AND THE LITERAL PATH NEVER COMES HERE.
+def decode.go(+cs: List<&2, String>, +acc: List<&2, C.KU>) -> IO(List<&2, C.KU>):
   match cs:
-    case Nil{}: acc
-    case h <> t: decode.go(t, List.append(&2, C.KU, acc, L.kus(h)))
+    case Nil{}: IO.pure(List<&2, C.KU>, acc)
+    case h <> t:
+      IO.bind(List<&2, C.KU>, List<&2, C.KU>, L.kus(h), ks =>
+        decode.go(t, List.append(&2, C.KU, acc, ks)))
 
-def decode(+cs: List<&2, String>) -> List<&2, C.KU>: decode.go(cs, Nil{})
+def decode(+cs: List<&2, String>) -> IO(List<&2, C.KU>): decode.go(cs, Nil{})
 
 def begun() -> String: "@@BEGIN"
 def ended() -> String: "@@END"
@@ -84,10 +90,11 @@ def serve(fuel: Nat, m: (File & Result<&1, &1, U32 & String, String>), s: St) ->
         case SEmit{chunks}:
           +cs = chunks
           IO.bind(Unit, Unit, IO.print(begun()), _ =>
-            IO.bind(Unit, Unit, IO.print(C.render(C.dev_clang(), True{}, decode(cs))), _ =>
-              IO.bind(Unit, Unit, IO.print(ended()), _ =>
-                IO.bind((File & Result<&1, &1, U32 & String, String>), Unit, File.read(f, 1),
-                  io => serve(k, io, SRead{0n, "", 0n, Nil{}})))))
+            IO.bind(List<&2, C.KU>, Unit, decode(cs), ks =>
+              IO.bind(Unit, Unit, IO.print(C.render(C.dev_clang(), True{}, ks)), _ =>
+                IO.bind(Unit, Unit, IO.print(ended()), _ =>
+                  IO.bind((File & Result<&1, &1, U32 & String, String>), Unit, File.read(f, 1),
+                    io => serve(k, io, SRead{0n, "", 0n, Nil{}}))))))
 
 def pick(n: Nat, +xs: List<&2, String>) -> String:
   Maybe.default(&2, String, List.get(&2, String, xs, n), "")
