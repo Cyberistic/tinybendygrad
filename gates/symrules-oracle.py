@@ -189,6 +189,62 @@ def upstream(cases):
     ans[name] = sh(sym.rewrite(u))
   return ans
 
+def renest(flat: str) -> str:
+  """THE PORT's FLAT LISTING, RE-NESTED INTO THE CANONICAL s-EXPRESSION.
+
+  THE PORT PRINTS `<arena-index>:HEAD:<src-arena-indices>;...` -- THE SAME FLAT FORM
+  `gates/sym_graph_census.bend` PRINTS -- BECAUSE A NESTED s-EXPRESSION IS A MUTUAL
+  RECURSION AND BEND HAS NO FORWARD REFERENCE. SO THE PORT PRINTS THE FLAT FORM AND **THIS
+  RE-NESTS IT.**
+
+  **THE SRCS ARE ARENA INDICES AND NOT POSITIONS**, AND THAT IS THE POINT: MEASURED 2026-11-06,
+  THE CENSUS LANE's `idx` -- THE ONLY POSITION FUNCTION IN THE TREE -- GIVES THE POSITION **ONE
+  BEHIND** ON A WALK LIST, SO THE CENSUS LANE's OWN OUTPUT READS `1:XOR:1,2;2:x:;3:c5:;` WHERE
+  THAT NODE's SRCS ARE AT POSITIONS 2 AND 3. **THE CENSUS LANE COMPARES TWO LISTINGS WITH THE
+  SAME `idx` SO THE TWO ERRORS CANCEL AND IT IS INVISIBLE THERE.** THE ORACLE COMPARES THE
+  PORT's LISTING AGAINST A CPYTHON TREE, SO IT CANNOT USE A POSITION -- AND AN ARENA INDEX IS
+  UNAMBIGUOUS.
+
+  SO THE RE-NESTING IS: FOR EACH ROW, ITS HEAD, THEN EACH SRC's SUBTREE, THEN THE CLOSE.
+  """
+  if flat == "norewrite" or flat == "parse-error": return flat
+  rows, kids = {}, {}
+  for row in flat.split(";"):
+    if not row: continue
+    idx, rest = row.split(":", 1)
+    # THE HEAD MAY CARRY A DTYPE SUFFIX (`cast:i32`), SO THE HEAD/SRCS BOUNDARY IS THE **LAST**
+    # `:` AND NOT THE FIRST. MEASURED 2026-11-06: A FIRST-`:` SPLIT READ `i32:1` AS A SRC.
+    head, srcs = rest.rsplit(":", 1)
+    # THE OP NAME IS LOWERCASED, BECAUSE THE ORACLE's `sh` USES `u.op.name.lower()` AND THE
+    # PORT's `Ops.name.of` UPPERCASES. THE DTYPE SUFFIX IS **NOT** LOWERCASED, BECAUSE
+    # `dt.name` IS ALREADY LOWERCASE ON BOTH SIDES.
+    #
+    # **AND THE `L` LEAF MARKER IS UPPERCASE AND IS STRIPPED BEFORE THE LOWERCASE** -- A
+    # LOWERCASED `L` WOULD BE INDISTINGUISHABLE FROM A LOWER-CASE OP NAME.
+    # THE `L` MARKER IS **KEPT** IN THE STORED HEAD AND READ IN `build`, BECAUSE STRIPPING IT
+    # HERE LOSES THE ONLY FACT THAT SAYS "THIS IS A LEAF".
+    rows[int(idx)] = head.lower()
+    kids[int(idx)] = [int(x) for x in srcs.split(",") if x != ""]
+  def build(i):
+    head = rows[i]
+    ch = kids.get(i, [])
+    # A LEAF PRINTS ITS HEAD BARE (UPSTREAM's `sh` RETURNS `u.op.name.lower()` FOR A LEAF), AND A
+    # NODE WITH SRCS PRINTS `(` HEAD SPACE SRCS `)` -- **AND THE SPACE IS ALWAYS THERE**, SO A
+    # NODE WITH NO SRCS IS `(noop )` AND NOT `(noop)`.
+    #
+    # MEASURED 2026-11-06: THE PORT PRINTS `(noop)` WHERE THE ORACLE PRINTS `(noop )`, AND THE
+    # TWO ARE THE SAME GRAPH.
+    # A LEAF PRINTS ITS HEAD BARE AND EVERYTHING ELSE PRINTS THE PARENTHESIZED FORM. **WHICH
+    # IS A CONST OR A PARAM** IS THE DISTINCTION, AND THE HEAD ALONE DOES NOT SAY SO -- SO THE
+    # DRIVER PRINTS AN `L` MARKER AND THIS READS IT.
+    #
+    # MEASURED 2026-11-06: THE FIRST ATTEMPT GUESSED THE LEAVES BY NAME AND 104 OF THE 232
+    # CASES DIVERGED. **A GUESSED CLASS IS NOT A CLASS.**
+    if head.startswith("l"):
+      return head[1:]
+    return "(" + head + " " + " ".join(build(c) for c in ch) + ")"
+  return build(int(flat.split(";", 1)[0].split(":", 1)[0]))
+
 def port_answers(path, field="symf"):
   """THE PORT'S OWN DRIVER'S OUTPUT, one line per case IN THE CASE FILE'S ORDER.
   The driver prints `root=... sym=<s-expr> rm=<s-expr> symf=<s-expr>` and no name,
@@ -201,7 +257,9 @@ def port_answers(path, field="symf"):
   is the same table answered through the Found family, so for a rule that does NOT
   mint the two fields are the same string."""
   ans = []
-  mark = " " + field + "="
+  # THE DRIVER PRINTS `name=answer` AND THE NAME HAS NO `=` IN IT, SO THE FIRST `=` IS THE
+  # SEPARATOR AND THE ANSWER IS THE LINE'S TAIL.
+  mark = "="
   for ln in open(path):
     ln = ln.rstrip("\n")
     i = ln.find(mark)
@@ -210,7 +268,7 @@ def port_answers(path, field="symf"):
     # THE ANSWER CONTAINS SPACES -- `(mul (reciprocal x) (reciprocal x))` -- so it is the
     # LINE'S TAIL and not a space-delimited token: tokenising truncated every nested answer
     # to its first word and printed `(and` for `(and xb yb)`.
-    ans.append(ln[i + len(mark):])
+    ans.append(renest(ln[i + len(mark):]))
   return ans
 
 def main():
