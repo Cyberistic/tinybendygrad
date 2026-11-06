@@ -5504,3 +5504,57 @@ call count DID fall (797 -> 246) and the C is byte-identical, so the mechanism i
 **⇒ AND THE ORDER FIX ALONE IS NOT THE CHANGE EITHER:** with the flag in place the lookup is a FIELD READ
 rather than a LOOKUP, so the 551 calls were already cheap by the time the order mattered. **THE TWO CHANGES
 ARE NOT INDEPENDENT, AND MEASURING THEM TOGETHER MEASURED NEITHER.**
+
+## 124. THE STRIP WALKED THE PIECE LIST TWICE: 47,640 CONS STEPS, AND IT MEASURED NEUTRAL
+
+§123 ended with the claim that the render's remaining cost is "not in any named term", and named the
+`List.append` group as the one shape left. So the census was taken on the APPEND group, and the answer is
+that the group is NOT one thing: 99,919 append calls of which 63,269 are recursive steps and 36,650 are
+base cases, spread over 22 call sites, and the biggest site by cons-steps walked is `drop_last`.
+
+**AND THE REASON IS A REAL FIND:** `strip_pieces` walks a piece list to find its head "(" and `drop_last`
+walks it AGAIN to drop its tail:
+
+```
+per render: drop_last 120 entries / 23,760 steps   strip_pieces 120 entries / 23,880 steps
+the piece lists it sees: mean 199, max 373 (histogram 8-31: 4, 32-127: 32, 128-511: 84)
+```
+
+**47,640 cons steps a render to remove ONE parenthesis pair -- the list walked twice for one strip.** The
+one-walk form (carry the accumulator through `strip_pieces` and drop the tail at the end) is byte-identical
+at 37 of 37 on both decoders and measured:
+
+```
+same C: True | bytes: 5649
+wall 30 rounds: median 0.9881  16/30      cpu 16 rounds: median 0.9995   8/16
+wall 34 rounds: median 1.0125  15/34      cpu 16 rounds: median 1.0046   4/16
+```
+
+**⇒ REVERTED, AND THE ARITHMETIC SAYS WHY: 47,640 cons steps ARE ~0.04 ms OF A 3.1 ms TURN (0.8 ns A STEP).**
+§120 measured the same lesson from the other side (33,000 steps bought nothing) and this is the third
+measurement of it. **THE LIST STEPS ARE NOT THE COST. THE CALLS ARE: 83,617 cstyle calls at ~18 ns is the
+1.5 ms the render takes, and no group of them is bigger than ~3,700** -- `St_r` 3,718, `KU_op` 3,520,
+`KU_srcs` 2,964, `KU_addr` 2,727, `Rows_n` 2,673.
+
+### 124.1 And the `St` record, measured rather than modelled (§111's refusal)
+
+`St` is rebuilt 1,391 times a render and each rebuild reads the five fields it does not change, so the
+accessors cost ~7,000 calls. **The split-record refactor (hot fields in one record, cold in another) would
+save ~2,800 of them -- ~50 us, ~1.6% -- which is BELOW the keeper line before it is measured.** §111
+refused this on a cost model; the model now has an instrument behind it and the answer is the same.
+
+### 124.2 What the census says the turn IS
+
+```
+RENDERER  83,617 cstyle calls | 11,025 List_get | 99,919 List.append (63,269 recursive steps)
+DECODER   10,890 live calls  | 22,965 String_split (one per wire character) | 4,669 String.concat
+```
+
+`String.concat` is 4,669 calls over 6,860 list elements (max 11) -- the piece path of §96-§102 is still
+the biggest string term, and it is already the optimised shape. **`String.split` at 22,965 is one call per
+WIRE CHARACTER and it is the decode's floor** (§91's scanner, §92's chunking and §104's base-64 all closed
+it).
+
+**⇒ SO THE TURN IS 83,617 + 10,890 CALLS AND EVERY GROUP OF THEM IS UNDER 4%.** There is no single lever
+left in the call profile, and the honest statement of the objective is that the daemon turn is at the floor
+of what this runtime's per-call cost allows.
