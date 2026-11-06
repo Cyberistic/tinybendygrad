@@ -45,6 +45,26 @@ DT = {"weakint": dtypes.weakint, "bool": dtypes.bool, "i8": dtypes.int8, "u8": d
       "i64": dtypes.int64, "u64": dtypes.uint64, "f16": dtypes.float16, "bf16": dtypes.bfloat16,
       "f32": dtypes.float32, "f64": dtypes.float64, "weakfloat": dtypes.weakfloat}
 
+# THE PORT'S OP VOCABULARY, AND IT IS THE PORT's OWN TABLE (`tinybendygrad/uop/symbolic.bend`'s
+# `fz_op`, ITS `:8201` DEF) RATHER THAN A SECOND COPY OF IT. MEASURED 2026-11-06: THE ORACLE
+# DID `Ops[name.upper()]` AND CRASHED WITH `KeyError: 'FLOORDIV'` ON THE FIRST CASE THAT
+# SPELLS IT -- AND **24 OF THE 232 CASES SPELL `floordiv` OR `floormod`.** SO THE ORACLE
+# REFUSED EVERY CASE, AND A BODY-VERIFICATION INSTRUMENT THAT REFUSES EVERY CASE VERIFIES
+# NOTHING.
+#
+# THE FOUR NAMES THAT ARE NOT `name.upper()` ARE THE PORT's, AND THEIR MEANING IS THE PORT's
+# `fz_op`'s: `floordiv` IS `Ops.DIV`, `floormod` IS `Ops.MOD`, `cdiv` IS `Ops.TRUNCDIV` AND
+# `cmod` IS `Ops.TRUNCMOD`. UPSTREAM HAS NO `FLOORDIV` AND NO `FLOORMOD` -- IT HAS `DIV` AND
+# `MOD` -- SO THE SPELLING IS THE PORT's AND THE MAPPING IS THE PORT's TOO.
+#
+# THE OTHER DIRECTION MATTERS AS WELL: UPSTREAM'S `Ops` HAS NAMES THE PORT's VOCABULARY DOES
+# NOT (`SDOT`, `DOT`, ...), AND `Ops[name.upper()]` FOR THOSE WOULD BUILD A GRAPH THE PORT
+# CANNOT READ. SO THE TABLE IS **BOTH** DIRECTIONS: THE PORT's SPELLINGS AND THE UPSTREAM
+# ONES THAT ARE THE SAME OP.
+OPS = {op.name.lower(): op for op in Ops}
+OPS.update({"floordiv": Ops.DIV, "floormod": Ops.MOD, "cdiv": Ops.TRUNCDIV, "cmod": Ops.TRUNCMOD,
+            "reciprocal": Ops.RECIP})
+
 
 class Tok:
   def __init__(self, kind, text):
@@ -99,7 +119,7 @@ def parse(p, memo):
     while p.peek() is not None and p.peek().kind != ")":
       srcs.append(parse(p, memo))
     p.take()  # the )
-    op = Ops[name.upper()]
+    op = OPS[name]
     # A REDUCE's suffix is its ROP and not a dtype: `arg` is `(Ops, num_axes)` and the axes are
     # the srcs after the first. `(reduce:add x (range c8))` -- MEASURED, `UPat(...).reduce(arg=
     # Ops.ADD)` normalises to `(Ops.ADD, 0)` and a real graph states the count.
