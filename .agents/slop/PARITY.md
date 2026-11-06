@@ -5558,3 +5558,67 @@ it).
 **⇒ SO THE TURN IS 83,617 + 10,890 CALLS AND EVERY GROUP OF THEM IS UNDER 4%.** There is no single lever
 left in the call profile, and the honest statement of the objective is that the daemon turn is at the floor
 of what this runtime's per-call cost allows.
+
+## 125. THE WIRE SPLIT IS 92.6% OF THE TURN, AND THE PORT ALREADY HAS THE SEAM THAT BEATS IT
+
+§124 ended with "there is no single lever left in the call profile", and that was WRONG, because the census
+was counting CALLS and the biggest term is not calls but a per-character ALGORITHM. The measurement is an
+ABLATION: the same daemon with `kus`'s `String.split(text, ' ')` replaced by `Nil{}` (wrong output, timing
+only):
+
+```
+full 5.58 ms   no-wire-split 0.42 ms   ⇒ THE WIRE SPLIT IS 5.16 ms OF 5.58 ms (92.6%)
+```
+
+**EVERYTHING ELSE IN THE TURN IS 0.42 ms.** And the split is 15,346 characters, 15,346 recursive calls, two
+`slice`s per character, and a TOKEN CONCATENATION per character (`String.split.push` is `_c_0 + _h_0`).
+
+### 125.1 The same algorithm, measured in JS on the same wire
+
+```
+prelude split (the port's algorithm): 0.719 ms
+native s.split(" ") + the list built in JS: 0.299 ms
+the same algorithm INDEXING the string (no slices): 0.38 ms
+the token as an array, joined at the end: 0.57 ms
+```
+
+**⇒ THE PORT PAYS 5.16 ms WHERE THE SAME ALGORITHM IN JS COSTS 0.72 ms**, because the interpreter charges
+~18 ns a call and the split makes two calls a character. **THE PORT CANNOT BEAT THE PRELUDE IN BEND -- BUT IT
+CAN CALL THE NATIVE ONE, AND THE MECHANISM IS ALREADY IN THE TREE.**
+
+### 125.2 The seam, and why it is legitimate
+
+`tinybendygrad/sz.bend`'s `Sz.read_dir` is an effect: `@unsafe def Sz.read_dir(path: String) ->
+IO(List<String>)` with `import "./runtime/sz.js"`, and its JS returns `{ $: CID(Con), head: <a JS string>,
+tail: xs }`. **THE RUNTIME'S STRING *IS* A JS STRING** (`str_out` is `s.replace(...)`), so an effect that
+takes a `String` receives a JS string and can call `s.split(" ")` on it.
+
+So the effect is ONE LINE of JS and ONE def of bend:
+
+```
+@unsafe
+def Wire.split(s: String) -> IO(List<String>):
+  import "./runtime/wire.c"
+  import "./runtime/wire.js"
+```
+
+**AND THE C SIDE IS A SECOND PROBLEM:** the port's effects have BOTH a `.c` and a `.js`, because the
+compiled lane is C. `sz.c` is 100 lines of C for `opendir`. **A `String.split` IN C IS THE SAME ALGORITHM**,
+so the C side can be a straightforward `strchr` loop -- and the C LANE IS NOT THE SHIPPED DAEMON (the daemon
+is `bun`), so the C side can be a REFUSAL if it must be. That is the decision the next turn has to make.
+
+### 125.3 What it is worth, and what it costs
+
+```
+the wire split:  5.16 ms -> ~0.3-0.5 ms   (the effect's own cost + the list walk)
+the turn:        5.58 ms -> ~0.9-1.1 ms
+```
+
+**⇒ THIS IS THE FIRST BIG RATIO IN THE RECORD** (§112 was 4%, and every census-led change since has been
+under 4%). **⇒ AND IT IS NOT A NEW MECHANISM: the port has shipped JS effects for `os.walk`, for the CPU
+device's compile/exec and for the fp8 conversions, and the DECODER is the only hot path that is still pure.**
+
+**⇒ THE DECODER IS `live.bend`, AND `live.bend` IS IN THE PORT'S TREE, SO THE EFFECT BELONGS THERE**
+(`tinybendygrad/renderer/wire.js` beside `live.bend`), and the `kus` call site becomes
+`IO.bind(...)` -- WHICH MEANS THE DECODER BECOMES AN `IO` EFFECT INSTEAD OF A PURE FUNCTION, and the
+`serve.bend` frame machine has to thread it.
