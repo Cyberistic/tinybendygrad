@@ -5622,3 +5622,73 @@ device's compile/exec and for the fp8 conversions, and the DECODER is the only h
 (`tinybendygrad/renderer/wire.js` beside `live.bend`), and the `kus` call site becomes
 `IO.bind(...)` -- WHICH MEANS THE DECODER BECOMES AN `IO` EFFECT INSTEAD OF A PURE FUNCTION, and the
 `serve.bend` frame machine has to thread it.
+
+## 126. THE EFFECT WORKS FROM A FILE IN THE TREE, AND ITS COST IS 0.12 ms A TURN
+
+§125 proposed the seam and named two costs: the `.c` half, and `kus` becoming an `IO`. The first is
+settled by a probe, and the second is a matter of shape rather than of risk.
+
+### 126.1 THE EFFECT RUNS FROM A FILE IN THE TREE
+
+`.agents/slop/cpuseam/effprobe.bend` declares the effect exactly as `tinybendygrad/sz.bend` declares
+`Sz.read_dir`:
+
+```bend
+@unsafe
+def Eff.split(s: String) -> IO(List<String>):
+  import "./effprobe.js"
+```
+
+and its `.js` is:
+
+```js
+function eff_split(s) {
+  const parts = s.split(" ");
+  let xs = { $: CID(Nil) };
+  for (let i = parts.length; i > 0; i--) xs = { $: CID(Con), head: parts[i - 1], tail: xs };
+  return xs;
+}
+io_eff("Eff.split", eff_split);
+```
+
+**IT COMPILES AND IT RUNS**, and the answer is right: `@@N 5778` for the 15,346-char wire (5,778 tokens).
+**TWO DETAILS THE PROBE SETTLED, AND BOTH ARE THE PORT'S OWN CONVENTIONS:**
+
+1. **THE EFFECT RETURNS THE VALUE, NOT A `Done` BOX.** `io_args` returns the list itself and the runtime
+   unwraps it; a `Done` box made the decoder read `undefined.$` and throw.
+2. **THE LIST IS BUILT IN JS** as `{ $: CID(Con), head: <a JS string>, tail: xs }` -- the same shape
+   `sz.js`'s `sz_read_dir` returns, and the runtime's `String` IS a JS string, so the heads need no
+   conversion.
+
+### 126.2 THE COST, MEASURED THREE WAYS
+
+```
+the effect's split+list build, best of 20 in-process:  0.121 ms
+the same, per turn (20 turns, the daemon's pattern):     min 0.120  median 0.136  max 1.487 ms
+the prelude's split, in the port:                       5.16 ms
+```
+
+**⇒ THE EFFECT IS ~30x CHEAPER AND ITS PER-TURN MEDIAN IS 0.136 ms, AGAINST 5.16 ms.**
+
+### 126.3 The shape of the change, and the `.c` half
+
+`kus` BECOMES AN `IO` AND THE PURE PART STAYS PURE:
+
+```bend
+def kus_bytes(+xs: List<&2, String>) -> List<&2, C.KU>:    # today it is `kus`
+  List.reverse(&2, C.KU, ku_all(xs, 0n, Nil{}, Nil{}))
+
+def kus(+text: String) -> IO(List<&2, C.KU>):
+  IO.bind(List<String>, List<&2, C.KU>, Wire.split(text), xs => IO.pure(List<&2, C.KU>, kus_bytes(xs)))
+```
+
+**THE CALLERS ARE FEW AND ALL IN THE HARNESS:** `live.bend`'s own `walk`/`main` (the one-shot lane), and
+`.agents/slop/cpuseam/serve.bend`'s frame machine (the daemon). **THE LITERAL PATH IS UNAFFECTED** --
+`gen_kus.py`'s generated `kus()` builds the `KU` list in bend and never touches the wire.
+
+**THE `.c` HALF IS THE ONE OPEN QUESTION, AND IT HAS AN ANSWER:** the port's effects have a `.c` because
+the COMPILED lane is C, and `sz.c` is 100 lines of C for `opendir`. **A `String.split` IN C IS THE SAME
+ALGORITHM** (a `strchr` loop with a per-token copy), so the `.c` side can be written -- but it would be the
+SLOW algorithm, so the C lane would keep the prelude's cost and the JS lane would get the win. **THE C LANE
+IS NOT THE SHIPPED DAEMON** (the daemon is `bun`), so the honest choice is: implement the `.c` side with the
+same `strchr` algorithm (so the C lane is no slower than today) and let the JS lane have the native split.
