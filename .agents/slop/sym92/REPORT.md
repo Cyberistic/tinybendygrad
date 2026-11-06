@@ -1352,3 +1352,180 @@ SO THE FOUR REMAINING DEFS ARE:
 **AND NOTHING IN THAT LIST IS A SUBSTRATE WALL ANY MORE.** The walls were `vmin`/`vmax` (present),
 `ranges` (present), `bool_slice` (present), `substitute` (present, and now MULTI-entry), `simplify`
 (present, and the base fixpoint is not a cycle), and the fake variables (finite I64 bounds, present).
+
+## 40. `uop_given_valid` IS DONE AND MEASURED AGAINST CPYTHON
+
+`Ugv` is written, compiles, and ANSWER. The CPython half is `.agents/slop/sym92/probe-ugv.py` and
+the port's half is `.agents/slop/sym92/probe-ugv.bend`; they print the same fields.
+
+    field       CPython                     the port
+    valid       (cmpeq (cmplt c5 x) bf)     CMPEQ
+    pv.ok       true                        true
+    pv.up       true                        true
+    pv.c        5                           0:5          (the port's I64 is hi:lo)
+    target      (add x y)                   ADD
+    ugv         (add x y)                   ADD
+    A target    (cmplt x c7)                CMPLT
+    A ugv       bt                           bt            <- FIRES
+    B target    (cmplt x c3)                CMPLT
+    B ugv       (cmplt x c3)                CMPLT         <- REFUSES
+    C pv.up     false                       false
+    C pv.c      0                           0:0
+    C target    (cmplt x c0)                CMPLT
+    C ugv       bf                           bf            <- the LOWER-bound path
+
+CASE A IS THE DISCRIMINATOR: `x < 7` given `x <= 5` is ALWAYS TRUE, so the answer is `bt`. A port
+that no-ops answers `(CMPLT x c7)` and a port that substitutes without folding answers `x`. B AND C
+ARE THE REFUSING HALF OF THE PAIR: B's bound does not decide the comparison and C's LOWER bound
+decides it the other way.
+
+### 40a. FOUR DEFECTS FOUND BY MEASURING, AND THE FIX FOR EACH
+
+**1. `parse_valid`'s NEGATION SHAPE WAS THE PRE-RE-VENDOR ONE.** The port's `pv.neg.src` read
+`CMPNE` with a const `1`. Upstream AT THE PIN (`f5ac54685074`, tinygrad/uop/symbolic.py:344) reads
+`CMPEQ` with `src[1].val == 0`, because upstream HEAD's `logical_not` is `cast(bool).eq(False)`
+(tinygrad/mixin/elementwise.py:57) and the port's own `sy_logical_not` still writes the OLD
+`ne(True)` shape (tinybendygrad/uop/symbolic.bend:596-601). FIXED: `pv.neg.src` now reads `CMPEQ`
+and a const `False`/`0`, and `pv` was re-pointed at upstream's two branches.
+
+**2. THE CONST IS ON THE LEFT FOR `X <= c` AND ON THE RIGHT FOR `X >= c`.** MEASURED on CPython:
+`x <= 5` is `CMPEQ(CMPLT(5, x), False)` and `x >= 5` is `CMPEQ(CMPLT(x, 5), False)`. Both are
+`CMPEQ(CMPLT(...), False)`, so `neg` is True for BOTH, and the CONST-ON-LEFT branch returns
+`is_upper = neg` while the other returns `is_upper = not neg`. The port's `pv.arm`/`pv.other` now
+carry upstream's polarity exactly.
+
+**3. `is_upper=True` IS THE UPPER BOUND, AND THE PORT HAD IT BACKWARDS.** Upstream's
+`bounds[expr][int(is_upper)] = c` puts the `c` at index 1 when `is_upper`, and
+`v0, v1 = (expr.vmin if v[0] is None else v[0], expr.vmax if v[1] is None else v[1])` reads index 1
+as the UPPER bound. The port's `Ugv.set` and `Ugv.bound` had `up=True` writing and reading the
+LOWER side. FIXED: `up=True` is now `hi` in both.
+
+**4. `O.UOp.variable` RETURNS A NEW ARENA, AND THE INDEX IS LEGAL ONLY IN IT.** `O.UOp.new`
+(`tinybendygrad/uop/ops.bend:2797`) returns `Found{made, i}` where `made` is the GROWN arena -- the
+arena has no mutable store (`ops.bend:2802-2811`), so every mint is a new value. `Ugv.vars` was
+reading `O.Found.i(v)` and throwing `O.Found.ar(v)` away, so the fake's index named NOTHING in the
+arena the substitute walked. MEASURED: the fake's bounds read `none`, the forward simplify did not
+fold, and the answer was `x` instead of `bt`. FIXED: `Ugv.vars` now returns `UgvVars{ar, cs}` and
+`Ugv.go` walks `UgvVars.ar(vv)`.
+
+**AND THE FORWARD SIMPLIFY MUST RUN IN THE SUBSTITUTED GRAPH'S ARENA.** `s1.multi` grows its own
+arena, so `Ugv.go` passes `O.Found.ar(sub)` to the forward phase and not the arena the table was
+built in. With the old arena the simplify saw the OLD graph.
+
+### 40b. THE TWO BENDS THE PORT LEARNED, AND THEY ARE NOT ABOUT EFFECT
+
+- `Maybe` IS A TYPE AND NOT A Data, so it CANNOT be a `+` binder. A `Maybe` answer crosses a
+  boundary as a PLAIN parameter (consumed once) and the `match` is on the PARAMETER, because a
+  `match` may not scrutinise a COMPUTED value.
+- A `+` PARAMETER MAY BE READ ONCE. `neg` read twice in `pv.arm` is bound once with `+n = neg`.
+- THERE IS NO FORWARD REFERENCE in Bend, so a mutually recursive pair is not writable. The
+  probe's s-expression printer is therefore ONE LEVEL DEEP, and the port's own renderer lives in
+  `gates/sym_graph_census.bend`.
+
+## 41. `simplify_valid`, `gated_given_valid`, AND THE VALID LANE ARE DONE AND MEASURED
+
+The census reads `134 entries, 134 mapped and CHECKED, 0 BROKEN` and ONE upstream rule is still
+MISSING: `divandmod.py:103`.
+
+    row  upstream          ops    table        tag   state
+    120  symbolic.py:450   AND    valid_table   0    PORTED
+    121  symbolic.py:451   WHERE  valid_table   1    PORTED
+
+THE CPYTHON HALF IS `.agents/slop/sym92/probe-valid.py` AND THE PORT'S HALF IS `probe-valid.bend`,
+AND THEY PRINT THE SAME FIELDS:
+
+    field                    the port      CPython
+    simplify_valid           none          none
+    gated (weakint)          WHERE         where
+    gated (int32)            none          none
+
+THE REFUSING HALF IS `gated(int32)`: upstream's gate is `x.dtype is not dtypes.weakint`, so an
+INT32 `x` REFUSES and a WEAKINT one FIRES. THE PORT DOES BOTH.
+
+### 41a. `simplify_valid`'s COMPARISON IS AGAINST THE SORTED LIST
+
+UPSTREAM REASSIGNS `valids` TWICE -- `valids = sorted(valids, ...)` and then
+`for stmt in dedup(valids)` -- AND THE FINAL LINE COMPARES `ret != valids` AGAINST THE **SORTED**
+LIST. THE PORT COMPARED AGAINST THE **UNSORTED** ONE, AND MEASURED: THE PORT ANSWERED A `CMPEQ`
+WHERE CPYTHON ANSWERS `none`, BECAUSE THE SORT HAD PUT THE CLAUSES IN A DIFFERENT ORDER.
+
+### 41b. THE VALID LANE IS A SEPARATE TABLE, AND THAT IS THE CYCLE BREAK
+
+`pm_simplify_valid` IS A SEPARATE MATCHER UPSTREAM (`symbolic.py:448`) AND IS COMPOSED INTO `sym`
+AS `symbolic+pm_simplify_valid+PatternMatcher([...])`. THE PORT'S `sym_table()` IS `symbolic`'s
+TABLE, SO THE VALID RULES GET `valid_table()` AND THEIR OWN DISPATCHER, AND `sym_f` -- WHICH WALKS
+`sym_table()` -- NEVER SEES THEM.
+
+**THAT IS NOT COSMETICS. UPSTREAM'S `ops.py:492` RE-ENTERS `symbolic` (:247) AND NOT `sym` (:463),
+SO A VALID RULE THAT CALLED `sym_f` WOULD CYCLE: `sym` INCLUDES THE VALID RULES AND THE VALID RULES
+CALL `sym`.** THE SEPARATE TABLE IS WHAT BREAKS IT. `sym_all` IS THE OUTER ENTRY: THE BASE FIXPOINT
+AND THEN THE VALID PASS, WHICH IS UPSTREAM'S ORDER.
+
+BOTH VALID RULES MINT, SO THERE IS ONE DISPATCHER (`valid_dispatch_f`) AND NO `valid_dispatch.go`
+AND NO `MINT_TAGS` FOR THE LANE -- EVERY ENTRY IN IT MINTS.
+
+### 41c. THE DEF NAMES ARE `sv_450` AND `sv_451` AND NOT `sym_450`/`sym_451`
+
+THE PORT'S `sym_451` IS THE `POW` RULE, AND IT CITED `symbolic.py:451` IN A RE-VENDORED UPSTREAM
+WHERE `:451` WAS THE POW LINE. **AT THE PIN (`f5ac54685074`) `:451` IS
+`invalid_gate, gated_given_valid` AND `:465` IS THE POW RULE.** THE NAMES ARE LABELS AND THE
+CITATIONS ARE IN THE TABLE ENTRIES, SO THE COLLISION IS AVOIDED BY RENAMING AND NOT BY MOVING A
+CITATION.
+
+### 41d. THE `IMAGE.value` GATE IS NOT PORTED, AND IT IS RECORDED
+
+UPSTREAM'S `gated_given_valid` HAS A SECOND GATE: `if IMAGE.value > 0 and
+x.op_in_backward_slice_with_self(Ops.TRUNCDIV, Ops.TRUNCMOD, Ops.DIV, Ops.MOD): return None`.
+**THE PORT HAS NO `IMAGE` FLAG** (MEASURED: `grep IMAGE` over `tinybendygrad/` NAMES NO FLAG
+READER), AND THE GATE IS OFF IN EVERY CORPUS RUN, SO THE RULE IS THE SAME RULE WITHOUT IT. THE
+GATE IS WRITTEN DOWN IN THE DEF'S OWN COMMENT AND NOT SILENTLY DROPPED.
+
+### 41e. `gated_given_valid`'s `try_simplex=False` IS THE PORT'S `Ugv.go` ALREADY
+
+UPSTREAM'S `uop_given_valid` HAS A `try_simplex` PARAMETER AND THE SIMPLEX BRANCH IS THE
+`X0 + X1 + ... > 0` SPECIAL CASE, WHICH NEEDS `GroupOp.Irreducible`. THE PORT'S `Ugv` HAS NO
+SIMPLEX ARM AND THE PORT'S `UOp.group` BUILDS A STACK, SO THE PORT'S `Ugv.go` IS
+`try_simplex=False` ALREADY. THAT IS STATED IN THE DEF AND NOT LEFT TO BE GUESSED.
+
+### 41f. THE COUNT ROWS MOVE, AND THEY MOVE TOGETHER
+
+    upstream's `sym` is 133 rules
+    the port's `sym_table` holds 130 and its `valid_table` holds 2
+    so the port's own audit reads  len_sym=132  total_sym=133  skip=1
+
+AND THE CENSUS'S ONE REMAINING MISSING ROW IS `divandmod.py:103` AND NOTHING ELSE. `t_len_sym`
+COUNTS **BOTH** TABLES, BECAUSE UPSTREAM'S `sym` IS ONE COMPOSITION AND THE PORT'S TWO TABLES
+ARE THAT COMPOSITION SPLIT IN TWO -- THE SPLIT IS WHAT BREAKS THE CYCLE AND IT MUST NOT CHANGE THE
+COUNT.
+
+## 42. THE CLOSURE GATE'S PINS AND ITS `MISSING` LIST WERE BOTH STALE
+
+BOTH CHANGES ARE MEASUREMENTS AND NEITHER IS A RELAXATION.
+
+**THE PINS ARE STALE.** THE GATE IMPORTS `tinygrad` FROM THE WORKING TREE AND MEASURES WHATEVER
+IS VENDORED, AND THE PINS WERE TAKEN ON 2026-11-03, BEFORE THE RE-VENDOR TO `f5ac54685074`.
+MEASURED AT THE PIN -- AND `tinygrad/uop/symbolic.py` IS BYTE-IDENTICAL TO `git show
+f5ac54685074:tinygrad/uop/symbolic.py` (BOTH HASH `466a4f01d5185b6c`) -- `symbolic_simple` IS 74
+RULES (PINNED 71) AND `symbolic` IS 119 (PINNED 122). **THE MOVE IS IN BOTH DIRECTIONS: A PIN THAT
+ONLY EVER GROWS IS A PIN THAT WAS NEVER MEASURED.**
+
+**`MISSING` IS TWO AND NOT FOUR.** `fold_const_where` LANDED AS `sy_fcw`
+(`uop/symbolic.bend:6152`) AND `lift_reduce_gate` LANDED AS `sym_90` (`uop/symbolic.bend:6683`),
+AND THE CENSUS AGREES: `:209` AND `:97` ARE PORTED. THE GATE'S OWN CHECK FIRES WHEN A
+PINNED-ABSENT BODY LANDS, AND IT FIRED.
+
+`fold_add_divmod_recombine` AND `reduce_collapse` ARE STILL ABSENT: `:135` IS PORTED ONLY BECAUSE
+ITS RULE'S BODY IS THE ADD RULE AND NOT `fold_add_divmod_recombine` ITSELF, AND `reduce_collapse`
+IS ROW 15 OF `codegen/simplify.bend`'S OWN INVENTORY ("WALL: UOp.variable + subs").
+
+## 43. THE BEND SPELLINGS THIS LANE LEARNED, AND THEY ARE NOT ABOUT EFFECT
+
+- `Maybe` IS A TYPE AND NOT A Data, so it CANNOT BE A `+` BINDER. IT CROSSES A BOUNDARY AS A
+  PLAIN BINDING (CONSUMED ONCE), AND THE `match` IS ON THE PARAMETER, BECAUSE A `match` MAY NOT
+  SCRUTINISE A COMPUTED VALUE.
+- A `+` PARAMETER MAY BE READ ONCE. A VALUE READ TWICE IS BOUND ONCE (`+n = neg`), AND A RECORD
+  READ TWICE IS DESTRUCTURED ONCE (`case SvP{ad, ab}`).
+- THERE IS NO FORWARD REFERENCE, SO A MUTUALLY RECURSIVE PAIR IS NOT WRITABLE. THE IDENTITY TEST
+  AND THE INSERTION SORT ARE THEREFORE ONE RECURSION WITH AN ACCUMULATOR.
+- `List.append` PREPENDS ON A BORROWED LIST (MEASURED ELSEWHERE IN THIS TREE), SO THE INSERTION
+  SORT'S `done` PREFIX IS BUILT WITH IT AND THE ORDER WAS VERIFIED BY THE PROBE, NOT ASSUMED.
