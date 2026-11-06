@@ -152,16 +152,49 @@ type KUArg is Data:
 # fed 77,500 characters to `String.concat` to emit 4,426 -- a 17.5x amplification -- because every expression
 # materialised its text and every parent COPIED it again. Pieces are Consed instead, and the one
 # `String.join` happens at the statement, so a character is copied once (§95 for the design).
+# **A 16-WAY BLOCKED VIEW, WITH THE VARIABLE FIRST BLOCK MEASURED RATHER THAN ASSUMED.** `rtp` is called
+# 941 times a render and each call walked the source map to the uop's position -- MEASURED (`PARITY.md`
+# §124): a mean index of 70.8, i.e. ~66,600 cons steps a render for 941 lookups. `ku_at`'s view is
+# block-16 (`§76`), and the source map is APPEND-AT-FRONT (`st_put` prepends), so **block 0 holds the newest
+# entries and its length VARIES**: it is `((n-1) & 15) + 1`, and every block after it holds sixteen.
+#
+# **§120 BUILT THIS VIEW AND REVERTED IT AT 0.9978/0.9883 -- WITH A BUG IN IT**: the first version used
+# `block = d / 16`, which is WRONG for a variable first block, and the note records the correction
+# without a re-measurement. THIS IS THE CORRECTED VERSION.
 type Rows is Data:
-  Rows{ts: List<&2, List<&2, String>>, n: U32}
+  Rows{ts: List<&2, List<&2, List<&2, String>>>, n: U32}
 
-def Rows.ts(x: Rows) -> List<&2, List<&2, String>>:
+def Rows.ts(x: Rows) -> List<&2, List<&2, List<&2, String>>>:
   match x:
     case Rows{ts, n}: ts
+
+
 
 def Rows.n(x: Rows) -> U32:
   match x:
     case Rows{ts, n}: n
+
+# BLOCK 0'S LENGTH: THE NEWEST `((n-1) & 15) + 1` ENTRIES, AND EVERY BLOCK AFTER IT HOLDS SIXTEEN.
+def Rows.b0(+r: Rows) -> U32:
+  +n = Rows.n(r)
+  Bool.pick(U32, U32.is_zero(n), 0, U32.add(U32.and(U32.sub(n, 1), 15), 1))
+
+def Rows.bi(+r: Rows, +d: U32) -> U32:
+  +b = Rows.b0(r)
+  Bool.pick(U32, U32.is_gt(b, d), 0, U32.add(1, U32.shrn(U32.sub(d, b), 4n)))
+
+def Rows.off(+r: Rows, +d: U32) -> U32:
+  +b = Rows.b0(r)
+  Bool.pick(U32, U32.is_gt(b, d), d, U32.and(U32.sub(d, b), 15))
+
+def Rows.blk(+r: Rows, bi: U32) -> List<&2, List<&2, String>>:
+  Maybe.default(&2, List<&2, List<&2, String>>,
+    List.get(&2, List<&2, List<&2, String>>, Rows.ts(r), U32.to_nat(bi)), Nil{})
+
+def Rows.get(+r: Rows, +d: U32) -> List<&2, String>:
+  +b = Rows.blk(r, Rows.bi(r, d))
+  Maybe.default(&2, List<&2, String>,
+    List.get(&2, List<&2, String>, b, U32.to_nat(Rows.off(r, d))), Nil{})
 
 type St is Data:
   St{r: Rows, kernel: List<&2, String>, bufs: List<&2, BArg>,
@@ -1510,8 +1543,7 @@ def range_str(+ids: List<&2, U32>) -> String:
   range_str.go(ids, "")
 
 def rtp(+r: Rows, +i: U32) -> List<&2, String>:
-  Maybe.default(&2, List<&2, String>,
-    List.get(&2, List<&2, String>, Rows.ts(r), U32.to_nat(U32.sub(U32.sub(Rows.n(r), 1), i))), Nil{})
+  Rows.get(r, U32.sub(U32.sub(Rows.n(r), 1), i))
 
 def rt(+r: Rows, +i: U32) -> String: String.join(rtp(r, i), "")
 
@@ -1705,16 +1737,36 @@ def St.of(+r: Rows, +kernel: List<&2, String>, +bufs: List<&2, BArg>,
 # `r` GROWS BY ONE ENTRY PER UOP, INCLUDING THE SKIPPED ONES, because `r` IS
 # INDEXED BY THE UOP'S POSITION AND THE POSITIONS OF THE LATER UOPS MUST NOT
 # MOVE.
-def st_put.p(+ps: List<&2, String>, +st: St) -> St:
-  St.of(Rows{List.append(&2, List<&2, String>, [ps], Rows.ts(St.r(st))), U32.add(Rows.n(St.r(st)), 1)},
-    St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+def st_put.r(+ps: List<&2, String>, n: U32, mode: Nat, +st: St) -> St:
+  match mode:
+    case 0n:
+      St.of(Rows{[[ps]], 1}, St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+    case 2n:
+      St.of(Rows{List.append(&2, List<&2, List<&2, String>>, [[ps]], Rows.ts(St.r(st))), U32.add(n, 1)},
+        St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+    case _:
+      +r = St.r(st)
+      St.of(Rows{List.set(&2, List<&2, List<&2, String>>, Rows.ts(r), 0n,
+        List.append(&2, List<&2, String>, [ps], Rows.blk(r, 0))), U32.add(n, 1)},
+        St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
 
+def st_put.p(+ps: List<&2, String>, +st: St) -> St:
+  +r = St.r(st)
+  +n = Rows.n(r)
+  st_put.r(ps, n, Bool.pick(Nat, U32.is_zero(n), 0n,
+    Bool.pick(Nat, U32.is_zero(U32.and(n, 15)), 2n, 1n)), st)
 def st_put(+st: St, x: String) -> St: st_put.p([x], st)
 
-def st_set.p(+st: St, i: U32, +ps: List<&2, String>) -> St:
-  St.of(Rows{List.set(&2, List<&2, String>, Rows.ts(St.r(st)), U32.to_nat(U32.sub(U32.sub(Rows.n(St.r(st)), 1), i)), ps),
-    Rows.n(St.r(st))}, St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+def st_set.r(+ps: List<&2, String>, +bi: U32, +off: U32, +st: St) -> St:
+  +r = St.r(st)
+  St.of(Rows{List.set(&2, List<&2, List<&2, String>>, Rows.ts(r), U32.to_nat(bi),
+    List.set(&2, List<&2, String>, Rows.blk(r, bi), U32.to_nat(off), ps)), Rows.n(r)},
+    St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
 
+def st_set.p(+st: St, i: U32, +ps: List<&2, String>) -> St:
+  +r = St.r(st)
+  +d = U32.sub(U32.sub(Rows.n(r), 1), i)
+  st_set.r(ps, Rows.bi(r, d), Rows.off(r, d), st)
 def st_set(+st: St, i: U32, x: String) -> St: st_set.p(st, i, [x])
 
 def st_kernel(+st: St, x: String) -> St:
@@ -2848,6 +2900,14 @@ def joins(+ps: List<&2, List<&2, String>>, +acc: List<&2, String>) -> List<&2, S
     case Nil{}: acc
     case h <> t: joins(t, List.append(&2, String, acc, [String.join(h, "")]))
 
+# THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot. WITH THE BLOCKED VIEW THE
+# MAP IS A LIST OF BLOCKS, SO THIS READS EVERY BLOCK'S PIECES AND JOINS THEM.
+def flat_rows(+bs: List<&2, List<&2, List<&2, String>>>) -> List<&2, List<&2, String>>:
+  match bs:
+    case Nil{}: Nil{}
+    case b <> t: List.append(&2, List<&2, String>, flat_rows(t), b)
+
 def render_r(dev: U32, kus: List<&2, KU>) -> List<&2, String>:
-  joins(Rows.ts(St.r(_render(dev, kus))), Nil{})
+  joins(flat_rows(Rows.ts(St.r(_render(dev, kus)))), Nil{})
+
 

@@ -5743,3 +5743,45 @@ WALK ALONE, WHICH IS EXACTLY WHY THE RATIO IS 0.78 AND NOT THE 0.07 THE EFFECT'S
 **⇒ THE CORRECTED STATEMENT OF THE DECODE'S COST:** the prelude's per-character split is ~1.0 ms of a
 5.6 ms turn (18%), the port's token walk and KU construction is ~4.2 ms (75%), and the effect removes the
 first. **THE NEXT LEVER IS THE WALK, AND §121's `ku_ws.r` IS ITS FIRST HALF.**
+
+## 129. THE SOURCE MAP, BLOCKED BY SIXTEEN -- WITH THE VARIABLE FIRST BLOCK FIXED: 0.9255 WALL, KEPT
+
+§120 built a 16-way blocked view of the source map and **REVERTED IT AT 0.9978 / 0.9883 -- WITH A BUG IN
+IT.** The first version used `block = d / 16`, which is wrong because the map is APPEND-AT-FRONT (`st_put`
+prepends), so **block 0 holds the newest `((n-1) & 15) + 1` entries and every block after it holds
+sixteen**. §120 recorded the correction and never re-measured it. This is the corrected version.
+
+### 129.1 What the view is worth, measured on the 642-uop wire
+
+`rtp` is called 941 times a render and each call walked the map to the uop's position: **a mean index of
+70.8, i.e. ~66,600 cons steps a render for 941 lookups**. A block-16 lookup is `d/16 + d%16` -- and with
+the variable first block, `d < b0 -> (0, d)` else `(1 + (d-b0)/16, (d-b0) % 16)`.
+
+```
+same C: True | bytes: 5649
+wall 30 rounds:  base 4.03 ms  new 3.83 ms  ratio median 0.9399  23/30 faster
+wall 34 rounds:  base 4.04 ms  new 3.69 ms  ratio median 0.9275  29/34 faster
+wall 30 rounds:  base 4.07 ms  new 3.80 ms  ratio median 0.9255  26/30 faster
+cpu  16 rounds:  base 12.073 ms new 11.991 ms ratio median 0.9931 13/16 faster
+cpu  16 rounds:  base 12.107 ms new 12.050 ms ratio median 0.9932 10/16 faster
+cpu  18 rounds:  base 12.089 ms new 12.016 ms ratio median 0.9883 15/18 faster
+```
+
+**KEPT: 78 of 84 wall rounds faster (three medians 0.9255-0.9399) and 38 of 50 CPU rounds faster (0.9883-
+0.9932).** Byte-identical at 37 of 37 on both decoders; `ALL PROOFS CHECK`; opbattery 39/39; portexec 7/7;
+the two e2e fixtures byte-identical to HEAD's own output.
+
+**⇒ AND THE TWO INSTRUMENTS DISAGREE, AND THE WALL IS THE ONE THAT MATTERS:** the CPU-time instrument says
+0.99 and the wall says 0.93. **THE DIFFERENCE IS THE PAGE FAULTS AND THE GC: THE OLD VIEW ALLOCATES A
+BLOCK LIST PER RENDER AND THE NEW ONE WALKS IT, SO THE WALL SEES THE CACHE AND THE CPU CLOCK DOES NOT.**
+
+### 129.2 Two NEGATIVES FIRST, SO THE POSITIVE IS READ AGAINST THEM
+
+- **`KU.src0` AS A FIELD** (§128's idea, measured): 0.9927 / 1.0039 / 0.9982. **REVERTED.** The decoder now
+  fills three fields (1,918 `List.get`s) to save the render's 2,256 `List.get`s. A WASH: the work moved.
+- **THE `St` RECORD SPLIT HOT/COLD** (§129's first idea): 0.9971 / 1.0162. **REVERTED.** `St.r` became TWO
+  calls (`St.hot` + `Hot.r`) for 7,141 reads a render, and the six reads became four. ALSO A WASH.
+
+**⇒ THE PATTERN IS NOW MEASURED FOUR TIMES: MOVING WORK BETWEEN THE DECODER AND THE RENDERER IS A WASH,
+AND ONLY DELETING IT (OR SHORTENING A WALK) PAYS.** §127's effect DELETED the per-character split;
+§129's blocked view DELETED 54,000 cons steps. Both won. The two that moved work did not.
