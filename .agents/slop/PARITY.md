@@ -5802,3 +5802,39 @@ wall 30 rounds: median 0.9539  17/30
 saving is below this machine's resolution: the turn's wall medians move by ±0.05 between runs. **THE
 KEEPER LINE IS ~0.97 AND A CHANGE THAT SAVES 1,000 CALLS OF 100,000 IS A 1% CHANGE, WHICH IS THE SAME
 SIZE AS THE NOISE.**
+
+## 130. THE `is_vec` FLAG: WALL 0.954, CPU 1.02 -- REVERTED, AND THE TWO INSTRUMENTS EXPLAIN IT
+
+The census named `KU_op` 3,520, `KU_addr` 2,727 and `KU_numel` 2,173, and the CALLERS of those reads said
+where the work is:
+
+```
+  2,256  KU_srcs <- KU_src0
+  1,284  KU_numel <- uops_to_dtypes.one
+  1,188  KU_addr <- ku_inline2b2a
+    642  KU_op   <- _render_one
+    642  KU_addr <- uops_to_dtypes.one
+    594  KU_op   <- ku_text / _render_emit / _render_named
+```
+
+**`uops_to_dtypes.one` READ `KU.addr` 642 TIMES, `KU.numel` 1,284 TIMES AND `KU.dtype` 642 TIMES -- 2,568
+CALLS A RENDER -- TO ANSWER "IS THIS AN ALU UOP WITH numel > 1 AND A NON-VOID DTYPE?", AND THE WIRE'S FIELDS
+1, 2 AND 4 ANSWER IT BEFORE THE UOP EXISTS.** So the flag went on the record, exactly like §75's `cc`:
+
+```
+wall 30 rounds: median 0.9767  16/30      cpu 16 rounds: median 1.0098   6/16
+wall 34 rounds: median 0.9547  21/34      cpu 18 rounds: median 1.0232   4/18
+wall 30 rounds: median 0.9358  18/30      cpu 18 rounds: median 1.0211   4/18
+wall 34 rounds: median 0.9722  23/34
+wall 30 rounds: median 0.9430  18/30
+```
+
+**⇒ REVERTED, AND THE TWO INSTRUMENTS SAY WHY.** The wall says ~0.95 (88 of 128 rounds faster) and the CPU
+clock says ~1.02 (18 of 68 rounds faster). **§129 EXPLAINED THE DISAGREEMENT: THE WALL SEES THE CACHE AND
+THE CPU CLOCK DOES NOT.** A ninth field makes every `KU` record one word wider, so every one of the 132,000
+record reads moves more memory -- invisible to the CPU clock, visible to the wall. **§129's VIEW NARROWED THE
+DATA AND MOVED BOTH; THIS ONE WIDENED IT AND MOVED THEM APART.**
+
+**⇒ AND THE GENERAL RULE IS NOW MEASURED IN BOTH DIRECTIONS: A CHANGE THAT NARROWS WHAT THE RENDER TOUCHES
+WINS ON BOTH INSTRUMENTS; A CHANGE THAT MOVES CALLS BETWEEN THE DECODER AND THE RENDERER IS A WASH; AND A
+CHANGE THAT WIDENS A RECORD THE RENDER READS 132,000 TIMES A RENDER IS A LOSS ON THE CPU CLOCK.**
