@@ -28139,10 +28139,14 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       together — `MINT_TAGS` had nine dead tags and was missing 48.
 - [x] VERIFIED 8 cases against CPython with `probe-swap.bend`/`probe-swap.py` (identical), and
       `:316`/`:471` with their own probe pairs.
-- [ ] `:450` (`simplify_valid`) and `:451` (`gated_given_valid`) — blocked on a BASE DISPATCH LANE.
-      `ops.py:492` re-enters `symbolic` (:247), NOT `sym` (:463), so upstream has no cycle; Bend
-      refuses the cycle at NAME RESOLUTION (measured, `cycle-probe.bend`), so the base lane needs
-      its own dispatch (~130 duplicated arms: a deliberate LOC trade, not a bug fix).
+- [x] `:450` (`simplify_valid`) and `:451` (`gated_given_valid`) — DONE 2026-11-06. **THE CYCLE
+      WAS NOT A DISPATCH PROBLEM: IT WAS A TABLE PROBLEM.** `sym_rewrite_f` ALREADY TOOK THE
+      TABLE AS A PARAMETER, AND THE VALID RULES GOT THEIR OWN TABLE (`valid_table()`) WITH THEIR
+      OWN DISPATCHER (`valid_dispatch_f`) -- SO NO ARM WAS DUPLICATED AND NO LOC WAS SPENT. THE
+      KEY IS THAT `sym_f` WALKS `sym_table()` AND NEVER SEES `valid_table()`, AND UPSTREAM'S
+      `ops.py:492` RE-ENTERS `symbolic` (:247) AND NOT `sym` (:463) -- SO THE PORT'S TWO TABLES
+      ARE UPSTREAM'S ONE COMPOSITION SPLIT IN TWO, AND THE SPLIT IS WHAT BREAKS THE CYCLE.
+      `sym_all` IS THE OUTER ENTRY: THE BASE FIXPOINT AND THEN THE VALID PASS.
 - [ ] `UOp.gcd(*uops)` and `UOp.divide_exact(v)` — ABSENT from the port. Prerequisites all exist
       (`split_uop`, `pop_const`, `const_factor`, `divides`); they need a multiset (Counter
       intersection / subtraction) over node lists.
@@ -28163,10 +28167,16 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       verified against CPython (`const_like(2)` on int8 == `CAST(CONST 2, i8)`; 200 wraps to -56).
 - [x] Recorded the CUES for the three guards that could not be read (`:309`, `:255`, `:283`): in all
       three THE PROBE, not the rule, was what could not answer.
-- [ ] `symbolic.py:450`/`:451` + `divandmod.py:103` still MISSING. MEASURED: `sym_rewrite_f` already
-      takes the table as a PARAMETER, but the cycle runs through `sym_dispatch_f`, which is STATIC --
-      so a base TABLE cannot break it and the base lane needs its own DISPATCH (~130 duplicated
-      arms). A deliberate LOC trade, not a bug fix.
+- [x] `symbolic.py:450`/`:451` — DONE 2026-11-06 (see the item above). `divandmod.py:103` is the
+      ONE remaining MISSING row and it is NOT this lane's blocker.
+- [x] **THE GATE'S OWN PINS AND `MISSING` LIST WERE BOTH STALE, AND THE GATE TOLD ME SO.**
+      `symclosure-gate.py` imports `tinygrad` from the working tree and MEASURES whatever is
+      vendored, and its pins were taken BEFORE the re-vendor to `f5ac54685074`: `symbolic_simple`
+      IS 74 rules (pinned 71) and `symbolic` IS 119 (pinned 122) -- **THE MOVE IS IN BOTH
+      DIRECTIONS, AND A PIN THAT ONLY EVER GROWS IS A PIN THAT WAS NEVER MEASURED.** AND
+      `MISSING` LISTED FOUR BODIES OF WHICH TWO HAD LANDED (`fold_const_where` IS `sy_fcw` AND
+      `lift_reduce_gate` IS `sym_90`), WHICH IS THE GATE'S OWN "A PINNED-ABSENT BODY LANDED"
+      CHECK FIRING.
 - [ ] `UOp.gcd` / `UOp.divide_exact` / a `usum` reachable from `divandmod.bend` — all ABSENT, and
       they are standalone primitives that can be built and oracle-tested without the rewriter.
 - [ ] THE CORPUS IS RED (31/38, seven graphs: binblob bw commute flip gral matmul reduce) and it is
@@ -28175,3 +28185,35 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       (`not-comparable=38`, `pI(` dead on both sides).
 - [ ] THE MISSING INSTRUMENT: a sweep that calls `pat`, then `mk`, then `sy_simp.n(1n)` on a fixture
       per row. `:263` was dead and PORTED; that sweep would name every such body at once.
+
+### Session 2026-11-06 — the `symbolic.py` census is 134/134 with ONE upstream rule MISSING
+
+- [x] **`uop_given_valid` (`symbolic.py:354`) IS PORTED AND MEASURED.** THE BOUNDS MAP, THE FAKE
+      VARIABLES, AND THE TWO-PHASE SUBSTITUTE THROUGH `s1.multi`. VERIFIED AS A PAIR: ONE CASE
+      THAT FIRES (`x < 7` GIVEN `x <= 5` IS `bt`) AND TWO THAT REFUSE (`x < 3` GIVEN `x <= 5`
+      STAYS A COMPARISON, AND `x < 0` GIVEN `x >= 0` IS `bf` THROUGH THE LOWER-BOUND PATH).
+- [x] **FOUR DEFECTS THE MEASUREMENT FOUND**, each recorded where it lives:
+      (1) `parse_valid`'s NEGATION SHAPE WAS THE PRE-RE-VENDOR ONE (`CMPNE` + CONST 1; upstream at
+      the pin is `CMPEQ` + CONST 0, because `logical_not` is `cast(bool).eq(False)`);
+      (2) THE CONST IS ON THE LEFT for `X <= c` AND ON THE RIGHT for `X >= c`, AND THAT IS THE
+      WHOLE DIFFERENCE BETWEEN THEM; (3) `is_upper=True` IS THE UPPER BOUND AND THE PORT HAD IT
+      BACKWARDS; (4) `O.UOp.variable` RETURNS A NEW ARENA AND THE INDEX IS LEGAL ONLY IN IT --
+      THE PORT READ THE INDEX AND THREW THE ARENA AWAY, SO THE FAKE'S BOUNDS READ `none` AND THE
+      FORWARD SIMPLIFY DID NOT FOLD.
+- [x] **`simplify_valid` (`:388`) AND `gated_given_valid` (`:441`) ARE PORTED** AND THE `:450`
+      AND `:451` ROWS ARE PORTED. THE REFUSING HALF IS THE DTYPE GATE: AN INT32 `x` REFUSES AND A
+      WEAKINT ONE FIRES.
+- [x] **THE CYCLE WAS A TABLE PROBLEM AND NOT A DISPATCH PROBLEM** (see the item above), SO NO
+      ARM WAS DUPLICATED.
+- [x] **THE COUNT ROWS MOVE TOGETHER**: UPSTREAM'S `sym` IS 133, THE PORT'S `sym_table` HOLDS 130
+      AND ITS `valid_table` HOLDS 2, SO THE PORT'S OWN AUDIT READS `len_sym=132 total_sym=133
+      skip=1` -- AND THE CENSUS'S ONE REMAINING MISSING ROW IS `divandmod.py:103`.
+- [ ] `divandmod.py:103` (`fold_divmod_general`) — THE ONE REMAINING MISSING ROW. IT NEEDS
+      `UOp.gcd` AND `UOp.divide_exact` (BOTH ABSENT) AND A `usum` REACHABLE FROM `divandmod.bend`
+      (THE `symbolic -> divandmod` IMPORT DIRECTION FORBIDS IT TODAY).
+- [ ] `UOp.gcd` / `UOp.divide_exact` / a `usum` reachable from `divandmod.bend` — all ABSENT, and
+      they are standalone primitives that can be built and oracle-tested without the rewriter.
+- [ ] THE CORPUS IS RED (31/38) and it is NOT this lane: MEASURED across three `symbolic.bend`
+      versions (HEAD, pre-`sy_trunc`, pre-session) and the count never moved. **THE CORPUS HAS NOT
+      BEEN RE-RUN SINCE THE VALID LANE LANDED, AND THE VALID LANE ADDS TWO RULES TO `sym`, SO THE
+      NEXT CORPUS RUN IS THE FIRST THAT CAN SEE THEM.**
