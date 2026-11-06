@@ -5785,3 +5785,20 @@ BLOCK LIST PER RENDER AND THE NEW ONE WALKS IT, SO THE WALL SEES THE CACHE AND T
 **⇒ THE PATTERN IS NOW MEASURED FOUR TIMES: MOVING WORK BETWEEN THE DECODER AND THE RENDERER IS A WASH,
 AND ONLY DELETING IT (OR SHORTENING A WALK) PAYS.** §127's effect DELETED the per-character split;
 §129's blocked view DELETED 54,000 cons steps. Both won. The two that moved work did not.
+
+### 129.1b THE FOLLOW-UP (`one b0` per lookup) MEASURED BELOW THE LINE -- REVERTED
+
+`Rows.get` called `Rows.bi` and `Rows.off`, and BOTH called `Rows.b0` (2,970 calls a render for 941
+lookups), so a lookup computed block 0's length twice. Folding it into one `b0` per lookup:
+
+```
+wall 30 rounds: median 0.9503  17/30      cpu 16 rounds: median 0.9983   9/16
+wall 34 rounds: median 0.9880  19/34      cpu 16 rounds: median 1.0011   8/16
+wall 30 rounds: median 0.9539  17/30
+```
+
+**⇒ REVERTED: three wall medians of 0.9503/0.9880/0.9539 and two CPU medians of 0.9983/1.0011 do not clear
+0.97 CONSISTENTLY, AND THE WALL MEDIANS SCATTER AROUND IT (0.9503, 0.9539, 0.9880).** A ~1,000-call
+saving is below this machine's resolution: the turn's wall medians move by ±0.05 between runs. **THE
+KEEPER LINE IS ~0.97 AND A CHANGE THAT SAVES 1,000 CALLS OF 100,000 IS A 1% CHANGE, WHICH IS THE SAME
+SIZE AS THE NOISE.**
