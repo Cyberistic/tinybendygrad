@@ -50,19 +50,40 @@ from tinygrad.uop.symbolic import commutative, pm_data_invalid, symbolic, symbol
 # `commutative` is EIGHT placements and **ONE** rule (`UPat(GroupOp.Commutative)`), and
 # `symbolic` is 335 placements and **122** rules. A work estimate taken off the first number
 # would have been 2.7x too large, and it was the number this gate's own PASS line printed.
+#
+# RE-PINNED 2026-11-06. THE OLD PINS WERE MEASURED ON 2026-11-03, BEFORE THE RE-VENDOR TO
+# `f5ac54685074`, AND THE GATE IMPORTS `tinygrad` FROM THE WORKING TREE -- SO IT MEASURES
+# WHATEVER IS VENDORED AND THE PINS MUST MOVE WITH THE VENDOR. MEASURED AT THE PIN:
+# `tinygrad/uop/symbolic.py` IS BYTE-IDENTICAL TO `git show f5ac54685074:tinygrad/uop/symbolic.py`
+# (BOTH HASH `466a4f01d5185b6c`), SO THESE ARE THE PIN'S NUMBERS AND NOT A READING OF A
+# MOVING TREE.
+#
+# THE MOVE IS IN BOTH DIRECTIONS: `symbolic_simple` WENT 71 -> 74 RULES AND `symbolic` WENT
+# 122 -> 119. A PIN THAT ONLY EVER GROWS IS A PIN THAT WAS NEVER MEASURED.
 TABLES = (
     ("pm_data_invalid", pm_data_invalid, 81, 14),
-    ("symbolic_simple", symbolic_simple, 213, 71),
+    ("symbolic_simple", symbolic_simple, 216, 74),
     ("commutative", commutative, 8, 1),
-    ("symbolic", symbolic, 335, 122),
+    ("symbolic", symbolic, 332, 119),
     ("pm_reduce_unparented", pm_reduce_unparented, 1, 1),
-    ("pm_reduce_collapse", pm_reduce_collapse, 342, 129),
+    ("pm_reduce_collapse", pm_reduce_collapse, 339, 126),
     ("pm_reduce_simplify", pm_reduce_simplify, 2, 2),
 )
 
-# THE FOUR RULE BODIES THAT HAVE NO PORT, pinned by name so a commit that lands one is visible
+# THE RULE BODIES THAT HAVE NO PORT, pinned by name so a commit that lands one is visible
 # here and the list cannot quietly stay the same size.
-MISSING = ("fold_add_divmod_recombine", "fold_const_where", "lift_reduce_gate", "reduce_collapse")
+#
+# MEASURED 2026-11-06: THIS LIST WAS FOUR AND IS TWO. `fold_const_where` AND
+# `lift_reduce_gate` LANDED -- `fold_const_where` IS `sy_fcw` (`uop/symbolic.bend:6152`) AND
+# `lift_reduce_gate` IS `sym_90` (`uop/symbolic.bend:6683`) -- AND THE CENSUS AGREES: THE
+# UPSTREAM RULES THAT USE THEM ARE PORTED. `:209` (fold_const_where) IS `sym_table` TAG 65 AND
+# `:97` (lift_reduce_gate) IS TAG 6, BOTH `PORTED`.
+#
+# `fold_add_divmod_recombine` AND `reduce_collapse` ARE STILL ABSENT, AND THEIR ABSENCE IS
+# MEASURED: `:135` (fold_add_divmod_recombine) IS PORTED ONLY BECAUSE ITS RULE'S BODY IS THE
+# ADD RULE AND NOT fold_add_divmod_recombine ITSELF, AND `reduce_collapse` IS ROW 15 OF
+# `codegen/simplify.bend`'s OWN INVENTORY ("WALL: UOp.variable + subs").
+MISSING = ("fold_add_divmod_recombine", "reduce_collapse")
 
 # The scan families a composed, REBUILDING table needs. `m` answers an index and cannot carry a
 # rule that mints; `f` answers a `Found` and can. Both must be in the tree or the composition is
