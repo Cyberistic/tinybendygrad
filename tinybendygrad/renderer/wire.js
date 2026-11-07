@@ -45,12 +45,19 @@ io_eff(CID(Wire.split), wire_split);
 // THE WIRE ROW IS NINE TOKENS: [op, dt, addr, shape, numel, kind, payload, srcs, cc] -- WHICH IS
 // `ku_ws.of`'s (a, b, c, d, e, f, g, h, i) READ IN ORDER. THE FIVE THAT ARE NOT NUMBERS ARE op, dt,
 // addr, kind, payload; THE REST ARE numel, cc, shape[] AND srcs[].
+//
+// **AND THE OP LEAVES THE STRINGS, BECAUSE THE OP INDEX IS A NUMBER AND A `match` ON A NUMBER IS FREE.**
+// The op index is `uop/ops.bend`'s enum index, and the port matched it as a DECIMAL STRING -- so the
+// compiler built a CHARACTER TRIE over 76 arms: MEASURED, `op_by_idx` cost **84** `slice`s and **84**
+// `char_len` calls in the generated code and **2,560** `char_len` calls a render. A `match` on a `U32`
+// COMPILES TO INTEGER COMPARES (`PARITY.md` §133), and the JS side already has the index as a number
+// for free. So the op index rides in the NUMBERS and the strings row is FOUR fields wide.
 function wire_strings(s) {
   const parts = s.split(" ");
   let rows = { $: "Nil" };
   for (let i = parts.length - 9; i >= 0; i -= 9) {
-    const strs = { $: "Con", head: parts[i], tail: { $: "Con", head: parts[i + 1], tail: { $: "Con", head: parts[i + 2],
-      tail: { $: "Con", head: parts[i + 5], tail: { $: "Con", head: parts[i + 6], tail: { $: "Nil" } } } } } };
+    const strs = { $: "Con", head: parts[i + 1], tail: { $: "Con", head: parts[i + 2],
+      tail: { $: "Con", head: parts[i + 5], tail: { $: "Con", head: parts[i + 6], tail: { $: "Nil" } } } } };
     rows = { $: "Con", head: strs, tail: rows };
   }
   return rows;
@@ -58,14 +65,19 @@ function wire_strings(s) {
 
 io_eff(CID(Wire.strings), wire_strings);
 
-// THE NUMBERS, PER UOP: [numel, cc, shapeCount, srcsCount, shape..., srcs...]. THE PORT'S `ku_row.of`
-// TAKES numel, cc, THEN THE TWO COUNTS, THEN THE REST -- AND `take`/`skip` SPLIT THE REST AT THE SHAPE
-// COUNT. EVERY NUMBER ON THE WIRE IS AN INTEGER, SO `Number` IS EXACT.
+// THE NUMBERS, PER UOP: [opIndex, numel, cc, shapeCount, srcsCount, shape..., srcs...]. THE PORT'S
+// `ku_row.of` TAKES THE OP INDEX, numel, cc, THEN THE TWO COUNTS, THEN THE REST -- AND `take`/`skip`
+// SPLIT THE REST AT THE SHAPE COUNT. EVERY NUMBER ON THE WIRE IS AN INTEGER, SO `Number` IS EXACT.
+//
+// **THE OP INDEX IS FIRST, BECAUSE IT IS A NUMBER AND THE REST OF THE ROW IS NOT.** The op index used
+// to ride in the STRINGS row as a decimal, and the port matched it with a 76-arm STRING match, which
+// the compiler compiled into a CHARACTER TRIE (MEASURED: 84 `slice`s and 2,560 `char_len` calls a
+// render). Here it is `Number(parts[i])` -- free -- and the port's `match` on it is an INTEGER COMPARE.
 //
 // **THE LIST IS BUILT BACKWARDS-TO-FORWARDS, AND THAT IS THE WHOLE TRICK.** Prepending puts the element
 // at the HEAD, so the LAST thing prepended is the FIRST thing read. The list must read
-// [numel, cc, sc, gc, shape..., srcs...], so the prepending order is srcs, then shape, then the four
-// scalars -- and the scalars are prepended innermost-first.
+// [opIndex, numel, cc, sc, gc, shape..., srcs...], so the prepending order is srcs, then shape, then the
+// five scalars -- and the scalars are prepended innermost-first.
 function wire_numbers(s) {
   const parts = s.split(" ");
   const list = (t) => (t === "-" ? [] : t.split("~").map(Number));
@@ -80,6 +92,7 @@ function wire_numbers(s) {
     nums = { $: "Con", head: shape.length, tail: nums };
     nums = { $: "Con", head: Number(parts[i + 8]), tail: nums };
     nums = { $: "Con", head: Number(parts[i + 4]), tail: nums };
+    nums = { $: "Con", head: Number(parts[i]), tail: nums };
     rows = { $: "Con", head: nums, tail: rows };
   }
   return rows;

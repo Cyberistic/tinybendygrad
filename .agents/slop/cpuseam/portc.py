@@ -302,7 +302,13 @@ def op_table_cover(enum_src: str, exec_src: str, live_src: str) -> tuple[list[st
   members = [m[3:] for m in _re.findall(r"^\s+(Ops[A-Z0-9_]+)\{\}", body, _re.M)]
   tbl = live_src[live_src.index("def op_by_idx("):]
   tbl = tbl[:tbl.index("def op_of(")]
-  have = set(int(m) for m in _re.findall(r'case "(\d+)": O\.Ops', tbl))
+  # **THE ARM KEY MAY BE A NUMBER OR A STRING, AND BOTH ARE READ.** `live.bend`'s op table was keyed by
+  # the enum index as a DECIMAL STRING, and `PARITY.md` §133 changed it to a `U32` because a `match` on a
+  # String in Bend COMPILES TO A CHARACTER TRIE (84 `slice`s and 2,560 `char_len` calls a render) while a
+  # `match` on a `U32` IS AN INTEGER COMPARE. **⇒ THIS CHECK'S SUBJECT IS THE COVERAGE, NOT THE
+  # SPELLING** -- so it reads both, and a table that spelled one key would still be checked.
+  have = set(int(m) for m in _re.findall(r'case "(\d+)": O\.Ops', tbl)) | \
+         set(int(m) for m in _re.findall(r'case (\d+): O\.Ops', tbl))
   return members, [m for i, m in enumerate(members) if i not in have]
 
 

@@ -678,11 +678,64 @@ def type_map.of(+dev: U32) -> Map<&2, String>:
 # multi-character substring replace has no primitive -- render.bend gap (b)).
 # What the C names actually need is small and closed: FIVE of `DType.name`'s
 # values contain a space and each becomes the same string with the space turned
-# into an underscore. So the port SPLITS on ' ' and rejoins with '_', which is
-# exact for every name in the table rather than a first-occurrence guess, and
-# the gate's `under_*` rows are what says so.
+# into an underscore.
+#
+# **AND THE FIVE ARE A `match`, NOT A SPLIT, AND THAT IS A MEASURED CHANGE.** The port used to SPLIT
+# the name on ' ' and rejoin it with '_', which is exact -- but the prelude's `String.split` is ONE
+# RECURSION PER CHARACTER, so each split costs two `slice`s and a token concatenation per character.
+# MEASURED on the 642-uop wire: `under_split` **400** times a render, which is **2,620** recursive
+# `String.split` calls and **13,853** `char_len` calls -- the largest remaining term in the turn.
+#
+# **THE NAME IS FROM A CLOSED SET, AND THAT IS THE PORT'S OWN FACT.** `rd_base_name` reads
+# `rd_base_dev`, which is a `match` on the device over a `match` on the dtype's SHORT CODE, so every
+# name it can produce is one of the twenty-six literals in `rd_base_plain` / `rd_base_clang` /
+# `rd_base_opencl` / `rd_base_metal` / `rd_base_cuda` / `rd_base_hip` -- plus the short code itself,
+# which is the `_` arm's passthrough. **EXACTLY FIVE OF THOSE CONTAIN A SPACE** (`signed char`,
+# `unsigned char`, `unsigned int`, `unsigned long`, `unsigned short`), and the port's own comment
+# above says so. So the split is a `match` on five literals, and the `_` arm is `nm` UNCHANGED --
+# which is exact, because no other name in the set contains a space.
+#
 # ===========================================================================
 
+# **THE FIVE, AND THE UNDERSCORED FORM IS A LITERAL.** `cstyle.py:189` is
+# `name.replace(" ", "_") if sz > 1 else name` -- the replace is UNCONDITIONAL on the `sz > 1` branch,
+# and there is NO "has a space" test upstream. The port had one (`has_space`) because the port's
+# `under` was the general replace and the port wanted to avoid it for a name with no space -- and that
+# test cost a split. **⇒ THE FIVE ARE A `match` AND THE `_` ARM IS THE NAME UNCHANGED, WHICH IS THE
+# ANSWER FOR EVERY OTHER NAME IN THE SET.** So `has_space` IS GONE: a name with no space IS its own
+# underscored form, and the underscored form is what the dtype path needs.
+#
+# **AND THE MATCH IS ON THE SHORT CODE, NOT ON THE C NAME, AND THAT IS THE SECOND MEASURED CHANGE.**
+# A `match` on a String in Bend COMPILES TO PER-CHARACTER COMPARES WITH A `slice` PER CHARACTER
+# (`PARITY.md` §122), so matching the eleven-character C name `"signed char"` costs eleven slices --
+# which is the same per-character cost the split paid, and MEASURED: the first cut of this change
+# replaced 400 splits with 200 five-arm string matches and the CPU clock read 0.9938, i.e. NOTHING.
+# **THE SHORT CODE IS TWO TO FOUR CHARACTERS** (`i8`, `u8`, `u16`, `u32`, `u64`, `f32`, ...) and it is
+# what `rd_base_dev` ALREADY matches on, so matching the code is the cheap half of the comparison.
+#
+# THE SET IS CLOSED, AND THAT IS THE PORT'S OWN FACT: `rd_base_name` reads `rd_base_dev`, which is a
+# `match` on the device over a `match` on the dtype's SHORT CODE, so every name it can produce is one of
+# the twenty-six literals in `rd_base_plain` / `rd_base_clang` / `rd_base_opencl` / `rd_base_metal` /
+# `rd_base_cuda` / `rd_base_hip` -- plus the short code itself, which is the `_` arm's passthrough.
+# **EXACTLY FIVE OF THOSE CONTAIN A SPACE** (`signed char`, `unsigned char`, `unsigned int`,
+# `unsigned long`, `unsigned short`), and the port's own comment above says so.
+#
+# **⇒ AND THE DEVICE MATTERS ONLY WHERE IT OVERRIDES A SPACED CODE.** MEASURED over the six devices:
+# OpenCL overrides ALL FIVE (`i8`->`char`, `u8`->`uchar`, `u16`->`ushort`, `u32`->`uint`, `u64`->`ulong`),
+# Metal and CUDA override `u32` (->`uint`), and Clang, HIP and the base override NONE. So the
+# underscored form is the plain one for every device but OpenCL, Metal and CUDA's `u32` -- and THAT is
+# what `under_code` answers, in a match on the short code.
+#
+# **⇒ AND THE TABLE WAS CHECKED OVER EVERY (DEVICE, CODE) PAIR, NOT BY READING IT.** The first cut
+# forgot OpenCL's `u32` -- OpenCL maps `u32` to `uint`, which has NO SPACE, so its underscored form is
+# `uint` and not `unsigned_int` -- and the probe over all 120 pairs found it. MEASURED: the probe calls
+# the COMPILED `under_code` and `rd_base_dev` over six devices and twenty codes and compares against a
+# table computed from the port's OWN `rd_base_*` matches; the fixed table is **120 of 120**.
+# **THE GENERAL REPLACE, FOR THE ONE CALL THAT NEEDS IT.** `wmma_name_of` is
+# `f"WMMA_{dims}_{in}_{out}".replace(" ", "_")` -- UNCONDITIONAL, and its parts are `U32.show` and the
+# dtype's SHORT CODE, so they carry no space today -- but "today" is not a proof, and this def is the
+# general one. MEASURED: it is called ONCE a render (the WMMA path), so the general replace is not on
+# the hot path.
 def under_split(nm: String) -> List<&2, String>: String.split(nm, ' ')
 
 # ONE SELF-CALL, and the underscore goes in FRONT of every part after the first.
@@ -699,14 +752,9 @@ def under_tail.go(parts: List<&2, String>, seen: Bool) -> String:
     case Nil{}: ""
     case h <> t: String.concat([Bool.pick(String, seen, "_", ""), h, under_tail.go(t, True{})])
 
-def under(nm: String) -> String: under_tail.go(under_split(nm), False{})
+def under_general(nm: String) -> String: under_tail.go(under_split(nm), False{})
 
-def has_space.of(parts: List<&2, String>) -> Bool:
-  match parts:
-    case Nil{}: False{}
-    case _ <> _: True{}
-
-def has_space(nm: String) -> Bool: has_space.of(under_split(nm))
+def under(nm: String) -> String: under_general(nm)
 
 # ===========================================================================
 # `_render_dtype` -- cstyle.py:180-190. THE most-read def in the file: it
@@ -783,12 +831,10 @@ def rd_prefix(+dev: U32, +a: S.Addr) -> String:
 def rd_suffix(+a: S.Addr, override_ptr: Bool) -> String:
   Bool.pick(String, Bool.or(is_mem_addr(a), override_ptr), "*", "")
 
-# THE NAME, with the `sz > 1` underscore. `Bool.and(vect, has_space(..))` is
-# exactly Python's `if sz > 1: ..replace(" ", "_")` because the replace is a
-# no-op for a name with no space -- so the conjunction is the same answer and not
-# an approximation of it.
-def rd_name.of(vect: Bool, unders: String, plain: String) -> String:
-  Bool.pick(String, vect, unders, plain)
+# THE NAME, with the `sz > 1` underscore. `cstyle.py:189` is
+# `name.replace(" ", "_") if sz > 1 else name`, and there is NO "has a space" test upstream -- the
+# replace is unconditional on the `sz > 1` branch. `under_code` IS that replace (see its own comment),
+# so `rd_name_at(dev, d, True{})` IS the replace and `rd_name_at(dev, d, False{})` IS the plain name.
 # **THE TYPE NAME IS A MATCH, NOT A MAP, AND THAT IS A MEASURED CHANGE.** `type_map.of(dev)` BUILDS the
 # device's fourteen-to-sixteen-entry `Map` on every call, its keys are `String`s, and the port's `Map` is a
 # hashed trie: a profile of the SHIPPED path (`.agents/slop/cpuseam/out/live-*.js`, the artifact the daemon
@@ -866,6 +912,29 @@ def rd_base_dev(dev: U32, nm: String) -> String:
     case _: rd_base_plain(nm)
 
 
+# OPENCL OVERRIDES ALL FIVE SPACED CODES, SO ITS UNDERSCORED FORM IS THE OVERRIDE'S.
+def under_code_opencl(dev: U32, plain: String, opencl: String) -> String:
+  match dev:
+    case 2: opencl
+    case _: plain
+
+# OPENCL, METAL AND CUDA OVERRIDE `u32` ALONE, AND THE OTHERS DO NOT.
+def under_code_u32(dev: U32, plain: String) -> String:
+  match dev:
+    case 2: "uint"
+    case 3: "uint"
+    case 4: "uint"
+    case _: plain
+
+def under_code(dev: U32, nm: String) -> String:
+  match nm:
+    case "i8": under_code_opencl(dev, "signed_char", "char")
+    case "u8": under_code_opencl(dev, "unsigned_char", "uchar")
+    case "u16": under_code_opencl(dev, "unsigned_short", "ushort")
+    case "u32": under_code_u32(dev, "unsigned_int")
+    case "u64": under_code_opencl(dev, "unsigned_long", "ulong")
+    case _: rd_base_dev(dev, nm)
+
 # **`rd_base_name` IS COMPUTED ONCE, AND THAT IS A MEASURED CHANGE.** `type_map.of(dev)` BUILDS the device's
 # type map on every call -- a `Map` whose keys are Strings, so each insert hashes a string -- and this line
 # called `rd_base_name` THREE times, while `rd_body` below called `rd_name` in both arms of a `Bool.pick`,
@@ -875,10 +944,26 @@ def rd_base_dev(dev: U32, nm: String) -> String:
 # once instead of six times.
 def rd_base_name(+dev: U32, +d: S.Dt) -> String: rd_base_dev(dev, dt_name(d))
 
-def rd_name_at(+nm: String, vect: Bool) -> String:
-  rd_name.of(Bool.and(vect, has_space(nm)), under(nm), nm)
+# **`Bool.pick` EVALUATES BOTH ARMS, AND THAT IS MEASURED.** `Bool.pick` is a `match` in the prelude, but
+# the COMPILER turns it into a FUNCTION CALL, so its two arms are JS ARGUMENTS and both are built before
+# the call. MEASURED on the 642-uop wire: `rd_body_at` **100** calls, `rd_name_at` **200** calls --
+# TWICE the number of bodies -- and every one of them built BOTH the underscored name and the plain one.
+# With the split-based `under` that was **400** `under_split` calls a render.
+#
+# **⇒ SO THE ARMS ARE CHOSEN WITH A `match`, WHICH THE COMPILER MAKES A REAL `if`.** A `match` on a
+# `Bool` is a branch, and only the taken arm runs.
+#
+# **⇒ AND THE UNDERSCORED ARM TAKES THE DEVICE AND THE SHORT CODE, NOT THE C NAME.** The C name is up to
+# thirteen characters (`"unsigned short"`) and a `match` on it is a per-character compare with a `slice`
+# per character; the SHORT CODE is two to four (`u16`) and it is what `rd_base_dev` already matches on.
+# So the underscored arm reads the code and the device -- MEASURED: `under_code` **83** calls a render
+# and the whole underscored arm costs a handful of slices each.
+def rd_name_at(+dev: U32, +d: S.Dt, vect: Bool) -> String:
+  match vect:
+    case True{}: under_code(dev, dt_name(d))
+    case False{}: rd_base_name(dev, d)
 
-def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String: rd_name_at(rd_base_name(dev, d), vect)
+def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String: rd_name_at(dev, d, vect)
 
 # `Bool.pick(-A, c, a, b)` ANSWERS `a` WHEN `c` IS TRUE -- so the UNDERSCORED
 # spelling is the `b` arm and the plain one is the `a` arm. This line had them the
@@ -892,11 +977,16 @@ def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String: rd_name_at(rd_base_name(
 
 
 
-def rd_body_at(+nm: String, +sz: U32) -> String:
-  Bool.pick(String, U32.is_gt(sz, 1),
-    String.concat([rd_name_at(nm, True{}), U32.show(sz)]), rd_name_at(nm, False{}))
+# **THE `sz > 1` TEST IS A BRANCH, NOT A `Bool.pick`.** `Bool.pick`'s arms are eager (see `rd_name_at`),
+# so the old line built the vector spelling AND the scalar spelling for EVERY body. MEASURED: `rd_body_at`
+# 100 calls and `rd_name_at` 200 -- twice the number of bodies. A `match` on the test runs one arm.
+def rd_body_at(+dev: U32, +d: S.Dt, +sz: U32, vect: Bool) -> String:
+  match vect:
+    case True{}: String.concat([rd_name_at(dev, d, True{}), U32.show(sz)])
+    case False{}: rd_name_at(dev, d, False{})
 
-def rd_body(+dev: U32, +d: S.Dt, +sz: U32) -> String: rd_body_at(rd_base_name(dev, d), sz)
+def rd_body(+dev: U32, +d: S.Dt, +sz: U32) -> String:
+  rd_body_at(dev, d, sz, U32.is_gt(sz, 1))
 
 # `is_image_shape(shape)` -- wall (c), so the test arrives as a `Bool`.
 def rd_image(mutable: Bool) -> String:

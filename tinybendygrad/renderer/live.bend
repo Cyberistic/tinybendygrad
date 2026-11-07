@@ -104,87 +104,96 @@ def addr_of(nm: String) -> S.Addr:
 # members. MEASURED over the 5 fixture kernels (782 uops): eight op names cover
 # 86% of every uop rendered. The MAPPING is unchanged -- only the order of the comparisons -- so the C
 # cannot move, and `ksweep` and the corpus are the proof.
-def op_by_idx(nm: String) -> O.Op:
+#
+# **AND THE ARM KEY IS A `U32`, NOT A STRING, AND THAT IS THE THIRD MEASURED CHANGE.** The key used to be
+# the enum index as a DECIMAL STRING, and a `match` on a String in Bend COMPILES TO A CHARACTER TRIE --
+# MEASURED on the 642-uop wire: `op_by_idx` compiled to **84** `slice`s and **84** `char_len` calls, and
+# cost **2,560** `char_len` calls a render, THE LARGEST SINGLE TERM LEFT IN THE TURN. A `match` on a
+# `U32` COMPILES TO INTEGER COMPARES (`PARITY.md` §133) and a runtime `U32` IS A PLAIN JS NUMBER, so the
+# arm costs ONE integer compare and no slice at all. **⇒ SO THE OP INDEX RIDES IN THE WIRE's NUMBERS**
+# (`wire.js`'s `wire_numbers`), where the JS side has it as a number for free, and the strings row is
+# FOUR fields wide (dt, addr, kind, payload).
+def op_by_idx(nm: U32) -> O.Op:
   match nm:
-    case "30": O.OpsADD{}
-    case "16": O.OpsINDEX{}
-    case "57": O.OpsCONST{}
-    case "21": O.OpsCAST{}
-    case "31": O.OpsMUL{}
-    case "18": O.OpsLOAD{}
-    case "37": O.OpsCMPLT{}
-    case "19": O.OpsSTORE{}
-    case "13": O.OpsAFTER{}
-    case "5": O.OpsPARAM{}
-    case "49": O.OpsWHERE{}
-    case "52": O.OpsRANGE{}
-    case "54": O.OpsEND{}
-    case "17": O.OpsSHRINK{}
-    case "42": O.OpsAND{}
-    case "32": O.OpsSHL{}
-    case "12": O.OpsSINK{}
-    case "14": O.OpsSTACK{}
-    case "1": O.OpsBUFFER{}
-    case "0": O.OpsSPECIAL{}
-    case "2": O.OpsALLOC{}
-    case "3": O.OpsNOOP{}
-    case "4": O.OpsREWRITE_ERROR{}
-    case "7": O.OpsCALL{}
-    case "8": O.OpsPROGRAM{}
-    case "9": O.OpsLINEAR{}
-    case "10": O.OpsSOURCE{}
-    case "11": O.OpsBINARY{}
-    case "15": O.OpsGETADDR{}
-    case "20": O.OpsWMMA{}
-    case "22": O.OpsBITCAST{}
-    case "23": O.OpsEXP2{}
-    case "24": O.OpsLOG2{}
-    case "25": O.OpsSIN{}
-    case "26": O.OpsSQRT{}
-    case "27": O.OpsRECIP{}
-    case "28": O.OpsNEG{}
-    case "29": O.OpsTRUNC{}
-    case "33": O.OpsSHR{}
-    case "34": O.OpsTRUNCDIV{}
-    case "35": O.OpsMAX{}
-    case "36": O.OpsTRUNCMOD{}
-    case "38": O.OpsCMPNE{}
-    case "39": O.OpsCMPEQ{}
-    case "40": O.OpsXOR{}
-    case "41": O.OpsOR{}
-    case "43": O.OpsTHREEFRY{}
-    case "44": O.OpsSUB{}
-    case "45": O.OpsFDIV{}
-    case "46": O.OpsPOW{}
-    case "47": O.OpsDIV{}
-    case "48": O.OpsMOD{}
-    case "50": O.OpsMULACC{}
-    case "51": O.OpsBARRIER{}
-    case "53": O.OpsIF{}
-    case "55": O.OpsENDIF{}
-    case "56": O.OpsBACKEDGE{}
-    case "58": O.OpsCUSTOM{}
-    case "59": O.OpsCUSTOMI{}
-    case "60": O.OpsINS{}
-    case "61": O.OpsCONTIGUOUS_BACKWARD{}
-    case "62": O.OpsDETACH{}
-    case "63": O.OpsSTAGE{}
-    case "64": O.OpsCOPY{}
-    case "65": O.OpsMSELECT{}
-    case "66": O.OpsMSTACK{}
-    case "67": O.OpsCUSTOM_FUNCTION{}
-    case "68": O.OpsRESHAPE{}
-    case "69": O.OpsPERMUTE{}
-    case "70": O.OpsEXPAND{}
-    case "71": O.OpsPAD{}
-    case "72": O.OpsUNSHARD{}
-    case "73": O.OpsREDUCE{}
-    case "74": O.OpsALLREDUCE{}
-    case "75": O.OpsPYLITERAL{}
-    case "6": O.OpsREFPARAM{}
+    case 30: O.OpsADD{}
+    case 16: O.OpsINDEX{}
+    case 57: O.OpsCONST{}
+    case 21: O.OpsCAST{}
+    case 31: O.OpsMUL{}
+    case 18: O.OpsLOAD{}
+    case 37: O.OpsCMPLT{}
+    case 19: O.OpsSTORE{}
+    case 13: O.OpsAFTER{}
+    case 5: O.OpsPARAM{}
+    case 49: O.OpsWHERE{}
+    case 52: O.OpsRANGE{}
+    case 54: O.OpsEND{}
+    case 17: O.OpsSHRINK{}
+    case 42: O.OpsAND{}
+    case 32: O.OpsSHL{}
+    case 12: O.OpsSINK{}
+    case 14: O.OpsSTACK{}
+    case 1: O.OpsBUFFER{}
+    case 0: O.OpsSPECIAL{}
+    case 2: O.OpsALLOC{}
+    case 3: O.OpsNOOP{}
+    case 4: O.OpsREWRITE_ERROR{}
+    case 7: O.OpsCALL{}
+    case 8: O.OpsPROGRAM{}
+    case 9: O.OpsLINEAR{}
+    case 10: O.OpsSOURCE{}
+    case 11: O.OpsBINARY{}
+    case 15: O.OpsGETADDR{}
+    case 20: O.OpsWMMA{}
+    case 22: O.OpsBITCAST{}
+    case 23: O.OpsEXP2{}
+    case 24: O.OpsLOG2{}
+    case 25: O.OpsSIN{}
+    case 26: O.OpsSQRT{}
+    case 27: O.OpsRECIP{}
+    case 28: O.OpsNEG{}
+    case 29: O.OpsTRUNC{}
+    case 33: O.OpsSHR{}
+    case 34: O.OpsTRUNCDIV{}
+    case 35: O.OpsMAX{}
+    case 36: O.OpsTRUNCMOD{}
+    case 38: O.OpsCMPNE{}
+    case 39: O.OpsCMPEQ{}
+    case 40: O.OpsXOR{}
+    case 41: O.OpsOR{}
+    case 43: O.OpsTHREEFRY{}
+    case 44: O.OpsSUB{}
+    case 45: O.OpsFDIV{}
+    case 46: O.OpsPOW{}
+    case 47: O.OpsDIV{}
+    case 48: O.OpsMOD{}
+    case 50: O.OpsMULACC{}
+    case 51: O.OpsBARRIER{}
+    case 53: O.OpsIF{}
+    case 55: O.OpsENDIF{}
+    case 56: O.OpsBACKEDGE{}
+    case 58: O.OpsCUSTOM{}
+    case 59: O.OpsCUSTOMI{}
+    case 60: O.OpsINS{}
+    case 61: O.OpsCONTIGUOUS_BACKWARD{}
+    case 62: O.OpsDETACH{}
+    case 63: O.OpsSTAGE{}
+    case 64: O.OpsCOPY{}
+    case 65: O.OpsMSELECT{}
+    case 66: O.OpsMSTACK{}
+    case 67: O.OpsCUSTOM_FUNCTION{}
+    case 68: O.OpsRESHAPE{}
+    case 69: O.OpsPERMUTE{}
+    case 70: O.OpsEXPAND{}
+    case 71: O.OpsPAD{}
+    case 72: O.OpsUNSHARD{}
+    case 73: O.OpsREDUCE{}
+    case 74: O.OpsALLREDUCE{}
+    case 75: O.OpsPYLITERAL{}
+    case 6: O.OpsREFPARAM{}
     case _: O.OpsCONST{}
 
-def op_of(+nm: String) -> O.Op: op_by_idx(nm)
+def op_of(+nm: U32) -> O.Op: op_by_idx(nm)
 
 # ---------------------------------------------------------------- numbers
 # **NO `List.reverse` HERE, AND THAT IS MEASURED, NOT STYLE.** `List.append(&2, A, acc, [h])` APPENDS, so
@@ -235,9 +244,16 @@ def arg_of(kind: String, +p: String) -> C.KUArg:
 # ONE walk of nine conses. §110.2 measured the same shape in `cstyle.bend` at 0.9796 and reverted it; the
 # decoder is a different call site with 4x the count, so the shape is re-measured here.
 
+# **THE TOKEN PATH's OP IS A STRING AND THE EFFECT PATH's IS A NUMBER, AND ONE READER SERVES BOTH.**
+# `ku_ws` reads the wire's NINE tokens, so its op is the enum index as a DECIMAL STRING; the effect path
+# reads a `U32` straight from the wire's numbers. `op_of` takes the NUMBER, so the token path parses the
+# string here -- and `U32.read` is the prelude's character-at-a-time fold, which is why the effect path
+# exists at all (`PARITY.md` §131/§132).
+def op_of_str(+nm: String) -> U32: Maybe.default(&2, U32, U32.read(nm), 0)
+
 def ku_ws.of(a: String, b: String, c: String, d: String, e: String, f: String,
              g: String, h: String, i: String) -> C.KU:
-  C.KU{op_of(a), dt_of(b), addr_of(c), u32(e), nums(d), arg_of(f, g), nums(h), u32(i)}
+  C.KU{op_of(op_of_str(a)), dt_of(b), addr_of(c), u32(e), nums(d), arg_of(f, g), nums(h), u32(i)}
 
 def ku_ws.bad() -> C.KU:
   ku_ws.of("", "", "", "", "", "", "", "", "")
@@ -353,28 +369,35 @@ def take(n: U32, xs: List<&2, U32>) -> List<&2, U32>:
 def skip(n: U32, xs: List<&2, U32>) -> List<&2, U32>:
   List.drop(&2, U32, xs, U32.to_nat(n))
 
-def ku_row.of(a: String, b: String, c: String, d: String, e: String, numel: U32, cc: U32,
+# **THE ROW IS FOUR STRINGS AND THE OP INDEX IS A NUMBER.** The effect's strings row is (dt, addr, kind,
+# payload) -- the op index LEFT the strings because a `match` on a String is a character trie and a
+# `match` on a `U32` is an integer compare (see `op_by_idx`). So the numbers row is
+# [opIndex, numel, cc, shapeCount, srcsCount, shape..., srcs...] and `ku_row.n` binds the op index FIRST.
+def ku_row.of(op: U32, a: String, b: String, c: String, d: String, numel: U32, cc: U32,
               +sc: U32, +gc: U32, +rest: List<&2, U32>) -> C.KU:
   +sh = take(sc, rest)
   +sr = take(gc, skip(sc, rest))
-  C.KU{op_of(a), dt_of(b), addr_of(c), numel, sh, arg_of(d, e), sr, cc}
+  C.KU{op_of(op), dt_of(a), addr_of(b), numel, sh, arg_of(c, d), sr, cc}
 
-def ku_row.n(+nums: List<&2, U32>, a: String, b: String, c: String, d: String, e: String) -> C.KU:
+def ku_row.n(+nums: List<&2, U32>, a: String, b: String, c: String, d: String) -> C.KU:
   match nums:
-    case n0 <> t1:
+    case op <> t1:
       match t1:
-        case n1 <> t2:
+        case n0 <> t2:
           match t2:
-            case n2 <> t3:
+            case n1 <> t3:
               match t3:
-                case n3 <> t4: ku_row.of(a, b, c, d, e, n0, n1, n2, n3, t4)
+                case n2 <> t4:
+                  match t4:
+                    case n3 <> t5: ku_row.of(op, a, b, c, d, n0, n1, n2, n3, t5)
+                    case Nil{}: ku_ws.bad()
                 case Nil{}: ku_ws.bad()
             case Nil{}: ku_ws.bad()
         case Nil{}: ku_ws.bad()
     case Nil{}: ku_ws.bad()
 
-# **THE ROW IS EXACTLY FIVE STRINGS, AND THAT IS MEASURED.** The effect's row is (op, dt, addr, kind,
-# payload) and NOTHING ELSE, so the fifth's tail is Nil -- and the sixth arm (`case _ <> _`) is the
+# **THE ROW IS EXACTLY FOUR STRINGS, AND THAT IS MEASURED.** The effect's row is (dt, addr, kind,
+# payload) and NOTHING ELSE, so the fourth's tail is Nil -- and the fifth arm (`case _ <> _`) is the
 # MALFORMED case, not the good one. (`ku_ws.r`, the token path's reader, binds NINE fields and wants a
 # tenth, because the token path's row is nine tokens plus the next row's first token; the two readers
 # are NOT the same shape and must not be copied from one another.)
@@ -388,11 +411,8 @@ def ku_row.s(+strs: List<&2, String>, +nums: List<&2, U32>) -> C.KU:
               match s3:
                 case d <> s4:
                   match s4:
-                    case e <> s5:
-                      match s5:
-                        case Nil{}: ku_row.n(nums, a, b, c, d, e)
-                        case _ <> _: ku_ws.bad()
-                    case Nil{}: ku_ws.bad()
+                    case Nil{}: ku_row.n(nums, a, b, c, d)
+                    case _ <> _: ku_ws.bad()
                 case Nil{}: ku_ws.bad()
             case Nil{}: ku_ws.bad()
         case Nil{}: ku_ws.bad()
