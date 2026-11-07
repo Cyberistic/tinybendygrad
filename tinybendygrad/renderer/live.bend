@@ -71,31 +71,45 @@ def maybe_name(nm: String) -> Maybe<&2, String>:
 # the address space and the arg kind travel as ONE CHARACTER each. `kind` is the biggest saving -- the string
 # `range_PLACEHOLDER` was 17 bytes for one fact. The op NAME stays textual: coding it needs a 75-arm table
 # whose only guard is a coverage check, and the win here is already 44% of the wire.
-def dt_of(nm: String) -> S.Dt:
+#
+# **⇒ AND THE THREE CODES ARE MATCHED AS NUMBERS, AND THAT IS A MEASURED CHANGE.** A `match` on a String
+# in Bend COMPILES TO A CHARACTER TRIE: the generated code slices the first character
+# (`slice(0, char_len(s))`) AND slices the rest (`slice(char_len(s))`) TO TEST THE LENGTH -- **TWO SLICES
+# AND TWO `char_len` PER CALL** -- and these three cost **2,873 `char_len` CALLS A RENDER** (MEASURED:
+# `dt_of` 1,284, `arg_of` 898, `addr_of` 691). **A `match` on a `U32` COMPILES TO INTEGER COMPARES** (one
+# per arm, no slice, no `char_len`), and `charCodeAt` IS FREE IN JS -- SO THE CODES RIDE IN THE WIRE's
+# NUMBERS (`wire.js`'s `wire_numbers`) AND THE PORT MATCHES THEM AS NUMBERS.
+#
+# **⇒ AND THE ARM KEYS ARE THE CHAR CODES, WITH THE LITERAL THEY REPLACE BESIDE THEM.** A computed arm
+# key IS REFUSED ("expected : a pattern"), so the table cannot derive its own keys, and this is the
+# SECOND source of truth in the tree -- **⇒ AND IT IS CHECKED BY A PROBE, NOT BY READING**: the probe
+# calls the COMPILED `dt_of` / `addr_of` / `arg_of` over EVERY code and compares against the port's own
+# string table. MEASURED: **38 of 38** (`PARITY.md` §134).
+def dt_of(nm: U32) -> S.Dt:
   match nm:
-    case "1": S.single()
-    case "2": S.int32()
-    case "3": S.uint32()
-    case "4": S.int64()
-    case "5": S.uint64()
-    case "6": S.uint8()
-    case "7": S.int8()
-    case "8": S.uint16()
-    case "9": S.int16()
-    case "b": S.boolean()
-    case "v": S.void()
-    case "w": S.weakint()
-    case "W": S.weakfloat()
-    case "h": S.half()
-    case "B": S.bfloat16()
-    case "d": S.double()
+    case 49: S.single()      # "1"
+    case 50: S.int32()       # "2"
+    case 51: S.uint32()      # "3"
+    case 52: S.int64()       # "4"
+    case 53: S.uint64()      # "5"
+    case 54: S.uint8()       # "6"
+    case 55: S.int8()        # "7"
+    case 56: S.uint16()      # "8"
+    case 57: S.int16()       # "9"
+    case 98: S.boolean()     # "b"
+    case 118: S.void()       # "v"
+    case 119: S.weakint()    # "w"
+    case 87: S.weakfloat()   # "W"
+    case 104: S.half()       # "h"
+    case 66: S.bfloat16()    # "B"
+    case 100: S.double()     # "d"
     case _: S.void()
 
-def addr_of(nm: String) -> S.Addr:
+def addr_of(nm: U32) -> S.Addr:
   match nm:
-    case "g": S.AGlobal{}
-    case "l": S.ALocal{}
-    case "r": S.AReg{}
+    case 103: S.AGlobal{}    # "g"
+    case 108: S.ALocal{}     # "l"
+    case 114: S.AReg{}       # "r"
     case _: S.Aalu{}
 
 # ENUM-PIN 56feedfd5ba184a9
@@ -213,27 +227,51 @@ def nums(s: String) -> List<&2, U32>:
 # ---------------------------------------------------------------- the arg, tagged by `kind`
 # THE TAG CARRIES WHAT WOULD OTHERWISE NEED SLICING: `range_GLOBAL` is an axis AND an arg kind, and
 # `wmma_f32` is an input dtype AND an arg kind, so the payload is always the plain list of numbers.
-def arg_of(kind: String, +p: String) -> C.KUArg:
-  match kind:
-    case "i": C.KAConst{O.CInt{H.i64_of_hi_lo(u32(field(p, 0n)), u32(field(p, 1n)))}}
-    case "f": C.KAConst{O.CFloat{F.F32.from_bits(u32(p))}}
-    case "t": C.KAConst{O.CBool{truth(p)}}
-    case "p": C.KAParam{u32(field(p, 0n)), maybe_name(field(p, 1n)), flag(field(p, 2n)),
+#
+# **⇒ AND THE KIND IS TWO NUMBERS, AND THE MATCH IS ON THE FIRST.** Eleven of the nineteen kinds are
+# TWO CHARACTERS ("RW", "M1") and eight are one, so the first character's code separates the two
+# groups and the second picks inside the two-character group. MEASURED: the port's `match` on the
+# kind's STRING cost **898 `char_len` calls a render** (two slices and two `char_len` per call), and
+# this is an INTEGER COMPARE (see `dt_of`'s comment).
+#
+# **⇒ AND THE TWO-CHARACTER GROUP IS ONE ARM WITH A SECOND MATCH, NOT ELEVEN ARMS.** The first
+# character's code is `82` ("R") for the eight ranges and `77` ("M") for the three wmma's, so those two
+# arms hold the second match. **⇒ AND THE `W` IN "RW" IS THE SECOND CHARACTER, so `kindC1` IS 87
+# FOR "RW" AND 0 FOR A ONE-CHARACTER KIND** -- which is why the one-character arms do not test it.
+# THE EIGHT RANGES: "RW" "RG" "RL" "RD" "RU" "RR" "RO" "RP" -- AND THE SECOND CHARACTER IS THE ONE
+# THAT SEPARATES THEM.
+def arg_of.range(kind1: U32, +p: String) -> C.KUArg:
+  match kind1:
+    case 87: C.KARange{O.AXIS_WEAK{}, nums(p)}         # "RW"
+    case 71: C.KARange{O.AXIS_GLOBAL{}, nums(p)}       # "RG"
+    case 76: C.KARange{O.AXIS_LOCAL{}, nums(p)}        # "RL"
+    case 68: C.KARange{O.AXIS_DEVICE{}, nums(p)}       # "RD"
+    case 85: C.KARange{O.AXIS_UPCAST{}, nums(p)}       # "RU"
+    case 82: C.KARange{O.AXIS_WARP{}, nums(p)}         # "RR"
+    case 79: C.KARange{O.AXIS_LOOP{}, nums(p)}         # "RO"
+    case 80: C.KARange{O.AXIS_PLACEHOLDER{}, nums(p)}  # "RP"
+    case _: C.KANone{}
+
+# THE THREE WMMA's: "M1" "M2" "M3" -- AND THE SECOND CHARACTER IS THE INPUT DTYPE.
+def arg_of.wmma(kind1: U32, +p: String) -> C.KUArg:
+  match kind1:
+    case 49: C.KAWmma{nums(p), S.single()}    # "M1"
+    case 50: C.KAWmma{nums(p), S.half()}      # "M2"
+    case 51: C.KAWmma{nums(p), S.bfloat16()}  # "M3"
+    case _: C.KANone{}
+
+def arg_of(kind0: U32, kind1: U32, +p: String) -> C.KUArg:
+  match kind0:
+    case 105: C.KAConst{O.CInt{H.i64_of_hi_lo(u32(field(p, 0n)), u32(field(p, 1n)))}}   # "i"
+    case 102: C.KAConst{O.CFloat{F.F32.from_bits(u32(p))}}                             # "f"
+    case 116: C.KAConst{O.CBool{truth(p)}}                                            # "t"
+    case 112: C.KAParam{u32(field(p, 0n)), maybe_name(field(p, 1n)), flag(field(p, 2n)),  # "p"
                             u32(field(p, 3n))}
-    case "RW": C.KARange{O.AXIS_WEAK{}, nums(p)}
-    case "RG": C.KARange{O.AXIS_GLOBAL{}, nums(p)}
-    case "RL": C.KARange{O.AXIS_LOCAL{}, nums(p)}
-    case "RD": C.KARange{O.AXIS_DEVICE{}, nums(p)}
-    case "RU": C.KARange{O.AXIS_UPCAST{}, nums(p)}
-    case "RR": C.KARange{O.AXIS_WARP{}, nums(p)}
-    case "RO": C.KARange{O.AXIS_LOOP{}, nums(p)}
-    case "RP": C.KARange{O.AXIS_PLACEHOLDER{}, nums(p)}
-    case "x": C.KAIndex{u32(p), False{}}
-    case "s": C.KASink{p}
-    case "q": C.KASpecial{field(p, 0n), u32(field(p, 1n)), field(p, 2n)}
-    case "M1": C.KAWmma{nums(p), S.single()}
-    case "M2": C.KAWmma{nums(p), S.half()}
-    case "M3": C.KAWmma{nums(p), S.bfloat16()}
+    case 120: C.KAIndex{u32(p), False{}}                                              # "x"
+    case 115: C.KASink{p}                                                              # "s"
+    case 113: C.KASpecial{field(p, 0n), u32(field(p, 1n)), field(p, 2n)}              # "q"
+    case 82: arg_of.range(kind1, p)                                                    # "R*"
+    case 77: arg_of.wmma(kind1, p)                                                     # "M*"
     case _: C.KANone{}
 
 # ---------------------------------------------------------------- one uop line -> one KU
@@ -251,9 +289,33 @@ def arg_of(kind: String, +p: String) -> C.KUArg:
 # exists at all (`PARITY.md` §131/§132).
 def op_of_str(+nm: String) -> U32: Maybe.default(&2, U32, U32.read(nm), 0)
 
+# **⇒ AND THE TOKEN PATH's THREE CODES ARE STRINGS AND THE EFFECT PATH's ARE NUMBERS, FOR THE SAME
+# REASON.** `dt_of` / `addr_of` / `arg_of` match on the CHAR CODES (see their own comments), so the
+# token path converts. **⇒ AND THE CONVERSION IS THE FIRST CHARACTER's CODE, AND 0 FOR AN EMPTY
+# STRING** -- so an absent code is 0, which is NOT one of the tables' keys and so falls to the `_` arm.
+# **⇒ AND THE KIND's SECOND CHARACTER IS 0 FOR A ONE-CHARACTER KIND**, exactly as the wire's JS says.
+def code_of.get(nm: String) -> Maybe<&2, Char>: String.get(nm, 0n)
+def code_of.at(nm: String, n: Nat) -> Maybe<&2, Char>: String.get(nm, n)
+
+def code_of.of(c: Maybe<&2, Char>) -> U32:
+  match c:
+    case Some{ch}: Char.to_u32(ch)
+    case _: 0
+
+def code_of(nm: String) -> U32: code_of.of(code_of.get(nm))
+
+def code1_of(nm: String) -> U32: code_of.of(code_of.at(nm, 1n))
+
 def ku_ws.of(a: String, b: String, c: String, d: String, e: String, f: String,
              g: String, h: String, i: String) -> C.KU:
-  C.KU{op_of(op_of_str(a)), dt_of(b), addr_of(c), u32(e), nums(d), arg_of(f, g), nums(h), u32(i)}
+  # **⇒ THE KIND IS READ TWICE, SO IT IS BOUND ONCE.** A consumed parameter can only be read once
+  # ("consumed more than once"), and the kind's FIRST and SECOND characters are two reads -- so the
+  # kind is BOUND to a local first, and the local is read twice.
+  +kind = f
+  +k0 = code_of(kind)
+  +k1 = code1_of(kind)
+  C.KU{op_of(op_of_str(a)), dt_of(code_of(b)), addr_of(code_of(c)), u32(e), nums(d),
+       arg_of(k0, k1, g), nums(h), u32(i)}
 
 def ku_ws.bad() -> C.KU:
   ku_ws.of("", "", "", "", "", "", "", "", "")
@@ -369,53 +431,64 @@ def take(n: U32, xs: List<&2, U32>) -> List<&2, U32>:
 def skip(n: U32, xs: List<&2, U32>) -> List<&2, U32>:
   List.drop(&2, U32, xs, U32.to_nat(n))
 
-# **THE ROW IS FOUR STRINGS AND THE OP INDEX IS A NUMBER.** The effect's strings row is (dt, addr, kind,
-# payload) -- the op index LEFT the strings because a `match` on a String is a character trie and a
-# `match` on a `U32` is an integer compare (see `op_by_idx`). So the numbers row is
-# [opIndex, numel, cc, shapeCount, srcsCount, shape..., srcs...] and `ku_row.n` binds the op index FIRST.
-def ku_row.of(op: U32, a: String, b: String, c: String, d: String, numel: U32, cc: U32,
-              +sc: U32, +gc: U32, +rest: List<&2, U32>) -> C.KU:
+# **THE ROW IS ONE STRING AND EVERYTHING ELSE IS A NUMBER.** The effect's strings row is JUST THE
+# PAYLOAD -- the op index AND THE THREE CODES LEFT the strings because a `match` on a String is a
+# character trie and a `match` on a `U32` is an integer compare (see `op_by_idx`, `dt_of`, `addr_of`
+# and `arg_of`). So the numbers row is
+# [opIndex, dtCode, addrCode, kindC0, kindC1, numel, cc, shapeCount, srcsCount, shape..., srcs...]
+# and `ku_row.n` binds them IN THAT ORDER.
+def ku_row.of(op: U32, dt: U32, addr: U32, k0: U32, k1: U32, numel: U32, cc: U32,
+              +sc: U32, +gc: U32, +rest: List<&2, U32>, +payload: String) -> C.KU:
   +sh = take(sc, rest)
   +sr = take(gc, skip(sc, rest))
-  C.KU{op_of(op), dt_of(a), addr_of(b), numel, sh, arg_of(c, d), sr, cc}
+  C.KU{op_of(op), dt_of(dt), addr_of(addr), numel, sh, arg_of(k0, k1, payload), sr, cc}
 
-def ku_row.n(+nums: List<&2, U32>, a: String, b: String, c: String, d: String) -> C.KU:
+def ku_row.n(+nums: List<&2, U32>, +payload: String) -> C.KU:
   match nums:
     case op <> t1:
       match t1:
-        case n0 <> t2:
+        case dt <> t2:
           match t2:
-            case n1 <> t3:
+            case addr <> t3:
               match t3:
-                case n2 <> t4:
+                case k0 <> t4:
                   match t4:
-                    case n3 <> t5: ku_row.of(op, a, b, c, d, n0, n1, n2, n3, t5)
+                    case k1 <> t5:
+                      match t5:
+                        case numel <> t6:
+                          match t6:
+                            case cc <> t7:
+                              match t7:
+                                case sc <> t8:
+                                  match t8:
+                                    case gc <> t9: ku_row.of(op, dt, addr, k0, k1, numel, cc, sc, gc, t9, payload)
+                                    case Nil{}: ku_ws.bad()
+                                case Nil{}: ku_ws.bad()
+                            case Nil{}: ku_ws.bad()
+                          case Nil{}: ku_ws.bad()
+                        case Nil{}: ku_ws.bad()
+                      case Nil{}: ku_ws.bad()
                     case Nil{}: ku_ws.bad()
+                  case Nil{}: ku_ws.bad()
                 case Nil{}: ku_ws.bad()
+              case Nil{}: ku_ws.bad()
             case Nil{}: ku_ws.bad()
+          case Nil{}: ku_ws.bad()
         case Nil{}: ku_ws.bad()
+      case Nil{}: ku_ws.bad()
     case Nil{}: ku_ws.bad()
 
-# **THE ROW IS EXACTLY FOUR STRINGS, AND THAT IS MEASURED.** The effect's row is (dt, addr, kind,
-# payload) and NOTHING ELSE, so the fourth's tail is Nil -- and the fifth arm (`case _ <> _`) is the
-# MALFORMED case, not the good one. (`ku_ws.r`, the token path's reader, binds NINE fields and wants a
-# tenth, because the token path's row is nine tokens plus the next row's first token; the two readers
-# are NOT the same shape and must not be copied from one another.)
+# **THE ROW IS EXACTLY ONE STRING, AND THAT IS MEASURED.** The effect's row is the PAYLOAD and NOTHING
+# ELSE, so its tail is Nil -- and the second arm (`case _ <> _`) is the MALFORMED case, not the good one.
+# (`ku_ws.r`, the token path's reader, binds NINE fields and wants a tenth, because the token path's row
+# is nine tokens plus the next row's first token; the two readers are NOT the same shape and must not be
+# copied from one another.)
 def ku_row.s(+strs: List<&2, String>, +nums: List<&2, U32>) -> C.KU:
   match strs:
-    case a <> s1:
+    case payload <> s1:
       match s1:
-        case b <> s2:
-          match s2:
-            case c <> s3:
-              match s3:
-                case d <> s4:
-                  match s4:
-                    case Nil{}: ku_row.n(nums, a, b, c, d)
-                    case _ <> _: ku_ws.bad()
-                case Nil{}: ku_ws.bad()
-            case Nil{}: ku_ws.bad()
-        case Nil{}: ku_ws.bad()
+        case Nil{}: ku_row.n(nums, payload)
+        case _ <> _: ku_ws.bad()
     case Nil{}: ku_ws.bad()
 
 def ku_row(+s: List<&2, String>, +n: List<&2, U32>) -> C.KU:
