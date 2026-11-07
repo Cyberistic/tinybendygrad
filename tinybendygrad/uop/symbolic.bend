@@ -4130,10 +4130,24 @@ def sym_473.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_473(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_473.pat(x, u), sym_473.mk(x, u))
 
-# symbolic.py:453  (UPat.store(UPat(Ops.INDEX, name="index"), UPat.load(UPat(Ops.INDEX, name="index")),
-#                                name="x"), lambda index,x: UOp(Ops.NOOP).after(*x.src))
+# symbolic.py:467  (UPat.store(UPat(Ops.INDEX, name="index"), UPat.load(UPat(Ops.INDEX, name="index"))),
+#                                lambda index: UOp(Ops.NOOP).after(index))
 # STORING BACK THE VALUE THAT WAS JUST LOADED FROM THE SAME INDEX IS A NO-OP, and the effect
-# becomes `NOOP.after(*x.src)` -- the store's OWN srcs, NOOP first.
+# becomes `NOOP.after(index)`.
+#
+# **THE RE-VENDOR CHANGED THE RULE AND THE PORT CHANGED WITH IT.** AT THE OLD PIN
+# (`5c2bf39d6`) THE RULE WAS `lambda index, x: UOp(Ops.NOOP).after(*x.src)` -- IT SPREAD **ALL**
+# OF THE STORE's SRCS, SO THE ANSWER WAS `AFTER(NOOP, INDEX, LOAD)` -- AND THE PORT's `sym_453`
+# DID EXACTLY THAT. AT THE CURRENT PIN (`f5ac54685074`) THE RULE IS `lambda index:
+# UOp(Ops.NOOP).after(index)` -- **ONE** SRC -- SO THE ANSWER IS `AFTER(NOOP, INDEX)`.
+#
+# MEASURED 2026-11-07 BY THE BODY-VERIFICATION INSTRUMENT: THE PORT ANSWERED
+# `AFTER(NOOP, INDEX, LOAD)` AND UPSTREAM ANSWERED `(after (noop ) (index b c0))` ON THE CASE
+# `r453` -- **AND THE PORT's ANSWER CARRIES A LOAD THAT UPSTREAM's DOES NOT, WHICH IS A WRONG
+# KERNEL SHAPE AND NOT A COSMETIC DIFFERENCE.**
+#
+# THE OLD PIN's LINE WAS `:453` AND THE CURRENT ONE IS `:467`, AND THE PORT's COMMENT SAID `:453`
+# BECAUSE THAT IS WHERE THE RULE WAS WHEN THE PORT WAS WRITTEN.
 def p_load_of(+x: F.Folded, +s: U32, +k: U32) -> Bool:
   Bool.and(sy_is_op(x, s, O.OpsLOAD{}),
     Bool.and(sy_nsrc_ge(x, s, 1), p_same(sy_src0(x, s), k)))
@@ -4143,10 +4157,14 @@ def sym_453.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTORE{}), sy_nsrc_is(x, u, 2)),
     Bool.and(sy_is_op(x, k, O.OpsINDEX{}), p_load_of(x, sy_src1(x, u), k)))
 
+# THE ANSWER IS `AFTER(NOOP, index)` -- **THE INDEX AND NOT THE STORE's SRCS**. THE OLD PIN's RULE
+# SPREAD `*x.src` AND THE PORT's ANSWER CARRIED THE LOAD; THE CURRENT PIN's RULE TAKES THE INDEX
+# ALONE. MEASURED: UPSTREAM's `UOp(Ops.NOOP).after(index)` HAS TWO SRCS AND THE PORT's HAD
+# THREE.
 def sym_453.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +n = O.UOp.new(sy_ar(x), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
   Some{O.UOp.new(O.Found.ar(n), O.OpsAFTER{},
-    List.append(&2, U32, [O.Found.i(n)], O.Arena.srcs(O.Found.ar(n), u)), O.ANone{}, O.TNone{})}
+    List.append(&2, U32, [O.Found.i(n)], [sy_src0(x, u)]), O.ANone{}, O.TNone{})}
 
 def sym_453(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_453.pat(x, u), sym_453.mk(x, u))
@@ -6164,6 +6182,15 @@ def sy_fcw(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # of `src[0]`'s OWN `src[1]`. THE `x2` IS ONE NAMED VAR IN TWO PLACES, so the identity test is
 # the pattern and not a guard.
 #
+# **THE ZERO GUARD, AND UPSTREAM DELETED THE RULE BECAUSE IT NEEDS ONE.** AT THE CURRENT PIN
+# (`f5ac54685074`) UPSTREAM HAS **NO SUCH RULE AT ALL** -- AND THE COMMENT IT LEFT BEHIND AT
+# `:180` SAYS WHY: **"can be wrong if x or x2 is 0"**. `(x * 0) / 0` IS `0 / 0` AND NOT `x`.
+#
+# MEASURED 2026-11-07 BY THE BODY-VERIFICATION INSTRUMENT: THE PORT's RULE FIRES ON THE ZERO
+# CASE -- `sym_174.pat(zero case)=TRUE` ON `(mul (mul x c0) (reciprocal c0))` -- AND UPSTREAM
+# DECLINES THE SAME GRAPH (`NONE`). **SO THE PORT WAS PRODUCING A WRONG KERNEL** AND THE RULE
+# NEEDS THE GUARD UPSTREAM's COMMENT NAMES.
+#
 # THE ANSWER IS `x` -- AN EXISTING NODE -- so this rule is one of the few in the 88 that the
 # index-only family CARRIES AS IS. That is measured and not assumed: `gates/symclosure-gate.py`
 # pins `wall.sym_rewrite_index_only True` and 55 of the 88 mint, so a rule that RETURNS A NODE
@@ -6171,7 +6198,9 @@ def sy_fcw(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 def sym_174.deep(+x: F.Folded, +a: U32, +b: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, a, O.OpsMUL{}), sy_nsrc_is(x, a, 2)),
     Bool.and(sy_is_op(x, b, O.OpsRECIP{}),
-             U32.is_eq(sy_src0(x, b), sy_src1(x, a))))
+      Bool.and(U32.is_eq(sy_src0(x, b), sy_src1(x, a)),
+        # **THE ZERO GUARD**: `x2` IS THE DIVISOR, AND `(x * 0) / 0` IS `0 / 0` AND NOT `x`.
+        Bool.not(p_is_const_0(x, sy_src1(x, a))))))
 
 def sym_174.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsMUL{}), sy_nsrc_is(x, u, 2)),

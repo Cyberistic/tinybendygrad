@@ -130,19 +130,31 @@ def main():
       ok += 1
       continue
     bad.append((tag, cited[tag], body, bc, body_pat, cited_pat))
-    if bc not in new:
+    # A RULE UPSTREAM DELETED IS ONE WHOSE **PATTERN** IS IN NEITHER PIN'S SET. THE TEST IS NOT
+    # "IS THE BODY's CITED LINE A RULE AT THE NEW PIN" -- A RULE THAT MOVED LEAVES A RULE AT
+    # THE NEW PIN'S LINE AND THE CITED LINE IS A *DIFFERENT* RULE. MEASURED 2026-11-06: THE
+    # LINE TEST SAID 12 DELETED AND THE PATTERN TEST SAYS 6, AND THE PATTERN TEST IS THE RIGHT
+    # ONE BECAUSE A MOVED RULE IS NOT DELETED.
+    if body_pat not in set(new.values()):
       deleted.append((tag, cited[tag], body, bc, body_pat))
 
   print("THE TABLE ENTRIES WHOSE DISPATCH SENDS A BODY THAT IS NOT THE CITED RULE")
+  print("  (THE BODIES ARE RIGHT AND THE TABLE's CITATIONS ARE STALE: THE TABLE WAS RE-POINTED TO")
+  print("   THE NEW PIN AND THE RULE NAMES AND COMMENTS STILL CITE THE OLD ONE)")
   for tag, c, body, bc, bp, cp in bad:
     print("  tag %-3d cites %-4s  dispatches %-9s (its comment says the old %-4s)" % (tag, c, body, bc))
     print("      the body ports : %s" % bp[:100])
     print("      the citation is: %s" % cp[:100])
   print("  %d of %d entries dispatch a body that is not the cited rule" % (len(bad), len(cited)))
-  print("THE PORT's RULES WHOSE UPSTREAM RULE WAS DELETED AT THE PIN")
+  print("THE PORT's RULES WHOSE UPSTREAM RULE THE TEXT TEST SAYS UPSTREAM NO LONGER HAS")
+  print("  (**THIS IS A CANDIDATE LIST AND NOT A VERDICT.** A RULE UPSTREAM REWROTE HAS A DIFFERENT")
+  print("   PATTERN AND A DIFFERENT ANSWER, AND A RULE UPSTREAM DELETED HAS NO ANSWER AT ALL, AND")
+  print("   ONLY THE BEHAVIOURAL TEST -- CPYTHON's OWN `sym.rewrite` ON THE NAMED GRAPH -- TELLS THEM")
+  print("   APART. MEASURED 2026-11-07: FOUR OF THE FIVE ARE REWRITES AND ONE (`sym_174`) IS A")
+  print("   GENUINE DELETION, AND `gates/symrules-oracle.py` SEES EXACTLY THAT ONE.)")
   for tag, c, body, bc, bp in deleted:
     print("  tag %-3d dispatches %-9s  (its comment says the old %d)" % (tag, body, bc))
-    print("      the deleted rule: %s" % bp[:100])
+    print("      the rule: %s" % bp[:100])
   print("  %d entries dispatch a rule upstream no longer has" % len(deleted))
   if bad:
     print("symbody-gate: FAIL")
