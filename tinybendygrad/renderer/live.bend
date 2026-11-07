@@ -323,11 +323,114 @@ def Wire.split(s: String) -> IO(List<&2, String>):
   import "./wire.c"
   import "./wire.js"
 
+# **THE WIRE'S TWO LISTS, IN TWO EFFECTS.** BEND'S LIST IS MONOMORPHIC, SO A ROW CANNOT HOLD BOTH STRINGS
+# AND NUMBERS, AND A ROW CANNOT BE A PAIR OF LISTS OF DIFFERENT KINDS -- SO THE EFFECT GIVES ONE LIST PER
+# KIND AND THE PORT WALKS THEM IN STEP.
+#
+# `Wire.strings` RETURNS, PER UOP, THE FIVE STRINGS (op, dt, addr, kind, payload).
+# `Wire.numbers` RETURNS, PER UOP, THE NUMBERS (numel, cc, shapeCount, srcsCount, shape..., srcs...).
+#
+# WHY THE NUMBERS AT ALL: the port's `U32.read` is the PRELUDE's character-at-a-time fold, and at runtime a
+# string is a JS string, so the compiler emits `slice(0, char_len(s))` AND `slice(char_len(s))` PER CHARACTER.
+# MEASURED (`PARITY.md` §131): the wire's 2,814 numbers cost 21,294 `char_len` calls and ~42,000 string
+# allocations a render, where the SAME ALGORITHM IN JS IS 0.015-0.025 ms -- forty times faster.
+@unsafe
+def Wire.strings(s: String) -> IO(List<&2, List<&2, String>>):
+  import "./wire.c"
+  import "./wire.js"
+
+@unsafe
+def Wire.numbers(s: String) -> IO(List<&2, List<&2, U32>>):
+  import "./wire.c"
+  import "./wire.js"
+
 def kus_bytes(xs: List<&2, String>) -> List<&2, C.KU>:
   List.reverse(&2, C.KU, ku_all(xs, 0n, Nil{}, Nil{}))
 
+def take(n: U32, xs: List<&2, U32>) -> List<&2, U32>:
+  List.take(&2, U32, xs, U32.to_nat(n))
+
+def skip(n: U32, xs: List<&2, U32>) -> List<&2, U32>:
+  List.drop(&2, U32, xs, U32.to_nat(n))
+
+def ku_row.of(a: String, b: String, c: String, d: String, e: String, numel: U32, cc: U32,
+              +sc: U32, +gc: U32, +rest: List<&2, U32>) -> C.KU:
+  +sh = take(sc, rest)
+  +sr = take(gc, skip(sc, rest))
+  C.KU{op_of(a), dt_of(b), addr_of(c), numel, sh, arg_of(d, e), sr, cc}
+
+def ku_row.n(+nums: List<&2, U32>, a: String, b: String, c: String, d: String, e: String) -> C.KU:
+  match nums:
+    case n0 <> t1:
+      match t1:
+        case n1 <> t2:
+          match t2:
+            case n2 <> t3:
+              match t3:
+                case n3 <> t4: ku_row.of(a, b, c, d, e, n0, n1, n2, n3, t4)
+                case Nil{}: ku_ws.bad()
+            case Nil{}: ku_ws.bad()
+        case Nil{}: ku_ws.bad()
+    case Nil{}: ku_ws.bad()
+
+# **THE ROW IS EXACTLY FIVE STRINGS, AND THAT IS MEASURED.** The effect's row is (op, dt, addr, kind,
+# payload) and NOTHING ELSE, so the fifth's tail is Nil -- and the sixth arm (`case _ <> _`) is the
+# MALFORMED case, not the good one. (`ku_ws.r`, the token path's reader, binds NINE fields and wants a
+# tenth, because the token path's row is nine tokens plus the next row's first token; the two readers
+# are NOT the same shape and must not be copied from one another.)
+def ku_row.s(+strs: List<&2, String>, +nums: List<&2, U32>) -> C.KU:
+  match strs:
+    case a <> s1:
+      match s1:
+        case b <> s2:
+          match s2:
+            case c <> s3:
+              match s3:
+                case d <> s4:
+                  match s4:
+                    case e <> s5:
+                      match s5:
+                        case Nil{}: ku_row.n(nums, a, b, c, d, e)
+                        case _ <> _: ku_ws.bad()
+                    case Nil{}: ku_ws.bad()
+                case Nil{}: ku_ws.bad()
+            case Nil{}: ku_ws.bad()
+        case Nil{}: ku_ws.bad()
+    case Nil{}: ku_ws.bad()
+
+def ku_row(+s: List<&2, String>, +n: List<&2, U32>) -> C.KU:
+  ku_row.s(s, n)
+
+def kus_rows.go(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>, +acc: List<&2, C.KU>) -> List<&2, C.KU>:
+  match ss:
+    case Nil{}: acc
+    case s <> st:
+      match ns:
+        case Nil{}: acc
+        case n <> nt: kus_rows.go(st, nt, List.append(&2, C.KU, [ku_row(s, n)], acc))
+
+# **THE ROWS ARE IN WIRE ORDER, AND THAT IS MEASURED.** The JS walks the tokens from the LAST row to the
+# first and PREPENDS each one, so the FIRST row ends up at the head -- the same order the token path
+# produces (`ku_all` reads the tokens in reverse and `ku_ws` reverses each row back). So the walk here
+# PREPENDS each KU (which is O(1): `List.append(xs, ys)` COPIES `xs`, so `List.append([x], acc)` is the
+# cheap form and `List.append(acc, [x])` is the O(n) one -- MEASURED: the O(n) form cost +91,096
+# `List.append` calls a render and was a REGRESSION) and the list is REVERSED ONCE at the end, which is
+# O(n).
+def kus_rows(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>) -> List<&2, C.KU>:
+  List.reverse(&2, C.KU, kus_rows.go(ss, ns, Nil{}))
+
+# **THE TWO EFFECTS, BOUND IN STEP.** `Wire.strings` GIVES THE FIVE CODES AND THE PAYLOAD PER UOP AND
+# `Wire.numbers` GIVES THE NUMBERS PER UOP, AND THE PORT WALKS THE TWO LISTS TOGETHER.
+def kus_rows.io(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>) -> IO(List<&2, C.KU>):
+  IO.pure(List<&2, C.KU>, kus_rows(ss, ns))
+
+def kus.io(+text: String) -> IO(List<&2, C.KU>):
+  IO.bind(List<&2, List<&2, String>>, List<&2, C.KU>, Wire.strings(text), ss =>
+    IO.bind(List<&2, List<&2, U32>>, List<&2, C.KU>, Wire.numbers(text), ns =>
+      kus_rows.io(ss, ns)))
+
 def kus(+text: String) -> IO(List<&2, C.KU>):
-  IO.bind(List<&2, String>, List<&2, C.KU>, Wire.split(text), xs => IO.pure(List<&2, C.KU>, kus_bytes(xs)))
+  kus.io(text)
 
 # ---------------------------------------------------------------- the runtime entry point
 # **`IO.args()`'s INDEX 0 IS THE PROGRAM, NOT THE FIRST ARGUMENT** -- MEASURED with two probes under
