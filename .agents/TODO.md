@@ -28252,3 +28252,33 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       versions (HEAD, pre-`sy_trunc`, pre-session) and the count never moved. **THE CORPUS HAS NOT
       BEEN RE-RUN SINCE THE VALID LANE LANDED, AND THE VALID LANE ADDS TWO RULES TO `sym`, SO THE
       NEXT CORPUS RUN IS THE FIRST THAT CAN SEE THEM.**
+
+decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NOW, AND THE WALL CLOCK
+                                       SAYS 0.80.** `Wire.strings` AND `Wire.numbers` (`renderer/wire.js`)
+                                       GIVE, PER UOP, THE FIVE STRINGS AND THE NUMBERS; `live.bend`'s
+                                       `kus` BINDS THEM AND WALKS THE TWO LISTS IN STEP. MEASURED on the
+                                       642-uop wire against `86909c31a`: **WALL 0.4690 / 0.6600 / 0.8005**
+                                       (faster 85/100), **CPU 0.7592 / 0.8426 / 0.8506** (faster 30/30),
+                                       `same C: True` (5,649 bytes, byte-identical). THE CALL CENSUS IS
+                                       THE PROOF THE WORK MOVED: `u32` 2,814 -> **296**, `char_len` 37,537
+                                       -> **13,853**, `List.append` 100,290 -> **86,907**. THE EFFECTS
+                                       COST **0.212-0.240 ms** IN JS, UNDER THE ~0.8 ms THEY REPLACE.
+                                       GATES: `ksweep` 37/37 ON BOTH DECODERS, `opbattery` 39/39,
+                                       `portexec` 7/7, `PROOF-ALL` rc=0. SEE `PARITY.md` §132.
+- [x] **THE SHAPE IS TWO EFFECTS, AND BEND'S MONOMORPHIC LIST IS WHY.** A ROW CANNOT HOLD BOTH STRINGS
+      AND NUMBERS AND CANNOT BE A PAIR OF LISTS OF DIFFERENT KINDS -- SO ONE LIST PER KIND AND THE PORT
+      WALKS THEM IN STEP.
+- [x] **THREE DEFECTS FOUND AND FIXED, EACH A CLASS.** (1) **A `#` COMMENT IN A `.js` FILE IS A JS
+      SYNTAX ERROR** -- THE COMPILER COPIES THE `.js` VERBATIM, SO THE DAEMON NEVER PARSED AND THE
+      WORKER NEVER ANSWERED, WHICH LOOKS EXACTLY LIKE A HANG. (2) **`List.append(xs, ys)` IS `xs ++ ys`
+      AND COPIES `xs`** -- SO `List.append(acc, [x])` IS O(n) AND THE ROW WALK WAS O(n^2) (+91,096
+      APPENDS A RENDER, A REGRESSION). (3) **A READER MUST NOT BE COPIED FROM A READER OF A DIFFERENT
+      SHAPE** -- `ku_row.s` WAS COPIED FROM `ku_ws.r` (WHICH WANTS A TENTH FIELD) AND EVERY ROW TOOK
+      THE `bad()` ARM, SO THE RENDER CAME OUT EMPTY WHILE THE DECODER BUILT 642 CORRECT KUs.
+- [x] **THE C LANE OF `live.bend` IS NOT A WORKING LANE, AND THAT IS MEASURED.** `wire.c`'s BLOCK IS
+      `#ifdef CID(Wire.split)`, THE COMPILER REWRITES IT TO `CID_Wire_split`, AND `CID_Wire_split` IS
+      **NOT DEFINED** IN THE EMITTED C (`cc -c` SUCCEEDS, SO THE BLOCK IS NOT COMPILED). A C HALF FOR
+      THE TWO NEW EFFECTS WAS WRITTEN AND **REVERTED** -- DEAD CODE IN A DEAD BLOCK IS NOT A FIX.
+- [ ] **THE RENDERER'S OWN `arg_of` PAYLOAD SPLITTING IS THE NEXT TERM.** THE 13,853 REMAINING
+      `char_len` CALLS ARE THE RENDERER'S `arg_of`, WHICH SPLITS EACH PAYLOAD ON `~` WITH THE PRELUDE'S
+      PER-CHARACTER RECURSION. IT IS THE SAME CLASS AS THE DECODE'S NUMBERS AND IT IS THE SAME FIX.
