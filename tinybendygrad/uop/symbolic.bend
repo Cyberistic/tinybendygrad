@@ -1653,6 +1653,21 @@ def mint_not(+f: O.Found, v: U32) -> O.Found:
   +c = O.UOp.const(O.Found.ar(f), O.CBool{False{}})
   mint_bin(c, O.OpsCMPEQ{}, v, O.Found.i(c))
 
+# `x.ne(y)` AT THE PIN IS `x.eq(y).logical_not()` (mixin/elementwise.py:332-336 AT
+# `f5ac54685074`), AND `eq` IS `_binop(Ops.CMPEQ, y, False)`. SO `ne` IS **TWO** NODES DEEP:
+# `CMPEQ(CMPEQ(x, y), False)`.
+#
+# MEASURED 2026-11-07 ON CPYTHON AT THE PIN:
+#   `x.ne(CONST(0))` IS `Ops.CMPEQ` WHOSE SRC0 IS AN `Ops.CMPEQ` WITH `x` AND `CONST(0)`,
+#   AND WHOSE SRC1 IS `CONST(False)`.
+#
+# **AND THIS IS NOT A STYLISTIC CHOICE: THE PRE-PIN SHAPE WAS THE PRIMITIVE `CMPNE`, AND A
+# GRAPH THAT SAYS `CMPNE` IS NOT UPSTREAM's GRAPH.** THE PORT's OWN `sym_134` COMMENT
+# RECORDS THE SAME SWAP FOR `logical_not`.
+def mint_ne(+f: O.Found, x: U32, y: U32) -> O.Found:
+  +eq = mint_bin(f, O.OpsCMPEQ{}, x, y)
+  mint_not(eq, O.Found.i(eq))
+
 # `x.reciprocal()` at an explicit arena.
 def mint_recip(+f: O.Found, v: U32) -> O.Found: mint_un(f, O.OpsRECIP{}, v)
 
@@ -3926,17 +3941,37 @@ def sym_183.pat(+x: F.Folded, +u: U32) -> Bool:
 def sym_183(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sy_tri(sym_183.pat(x, u), fold_bitcast(x, u, sy_src0(x, u)))
 
-# symbolic.py:189  (UPat.var("x").cast(dtypes.bool), lambda x: x != 0)
+# symbolic.py:196  (UPat.var("x").cast(dtypes.bool), lambda x: x != 0)
 # A CAST TO bool IS A COMPARISON AGAINST ZERO, and the CAST's OWN dtype is the
 # constraint -- `p_cast_at` reads the arg, which is the pattern constraint and not
 # worth a fold round-trip.
+#
+# **AND `x != 0` IS `CMPEQ(CMPEQ(x, 0), False)` AT THE CURRENT PIN AND NOT `CMPNE(x, 0)`.**
+# MEASURED 2026-11-07 ON CPYTHON: `x.ne(CONST(0))` IS `Ops.CMPEQ` WHOSE SRC0 IS AN `Ops.CMPEQ`
+# WITH `x` AND `CONST(0)`, AND WHOSE SRC1 IS `CONST(False)`. **THE PORT's `CMPNE(x, 0)` IS A
+# DIFFERENT NODE**, AND EVERY RULE THAT BUILDS IT MAKES THE PORT's GRAPH DIFFER FROM UPSTREAM's.
+#
+# **AND THIS IS THE ROOT CAUSE OF SEVEN OF THE EIGHT REMAINING DIVERGENCES** -- `r84`, `r189`,
+# `r243`, `r256`, `x451a`, `x451b` AND `x451c` -- SO IT IS WORTH SAYING PRECISELY:
+#
+#   * UPSTREAM's `ne` IS `eq(v).logical_not()`, AND `logical_not` IS `CMPEQ(x, False)` AT THE
+#     PIN, SO `ne` IS **TWO NODES** DEEP.
+#   * THE PORT's `CMPNE` IS **ONE** NODE, AND `sym_134`'s OWN COMMENT (ITS `:2735`) RECORDS THE
+#     SWAP: "THE PRIMITIVE SWAPPED AT THE 2026-11-03 RE-VENDOR, AND THIS RULE IS THE SMALLEST
+#     PLACE IT SHOWS."
+#   * SO THE SWAP IS A KNOWN DIVERGENCE AND NOT A NEW DEFECT -- **AND IT IS THE PORT's `mint_not`
+#     (WHICH BUILDS `CMPEQ(x, False)`) THAT IS UPSTREAM's SHAPE.**
+#
+# **AND `mint_not` IS RIGHT HERE**, SO THE ANSWER IS BUILT WITH IT: `CMPEQ(CMPEQ(x, 0), False)`
+# IS `mint_not` OF `CMPEQ(x, 0)`.
 def sym_189.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsCAST{}), sy_nsrc_is(x, u, 1)),
     p_cast_at(x, u, S.boolean()))
 
 def sym_189.put(+x: F.Folded, +u: U32, +f: O.Found) -> O.Found:
   +z = O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(0)})
-  mint_bin(z, O.OpsCMPNE{}, sy_src0(x, u), O.Found.i(z))
+  +eq = mint_bin(z, O.OpsCMPEQ{}, sy_src0(x, u), O.Found.i(z))
+  mint_not(eq, O.Found.i(eq))
 
 def sym_189.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match hit:
@@ -5357,7 +5392,9 @@ def sym_193(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 #
 # EVERY SHAPE BELOW WAS READ OFF THE ANSWER AND NOT GUESSED, because three of them are not the
 # obvious node: `const_like(1)` on a u32 node is `CAST(CONST 1)`; `.eq(v)` is
-# `CMPNE(CMPNE(x, v), True)` -- TWO nodes, not a CMPEQ; and `-one` is `MUL(one, CONST -1)`.
+# `CMPEQ(x, v)` -- **ONE** node, and it USED TO BE `CMPNE(CMPNE(x, v), True)`, which is the
+# PRE-PIN SPELLING, and the shape was re-read on CPython at `f5ac54685074` on 2026-11-07;
+# and `-one` is `MUL(one, CONST -1)`.
 # The mask is a BARE weakint `CONST(2**bits - 1)`, because `_broadcasted` keeps a weak CONST weak.
 def xi.mask(bits: U32) -> H.I64:
   H.i64_sub(H.i64_shl(H.i64_of_i32(1), U32.to_nat(bits)), H.i64_of_i32(1))
@@ -5380,13 +5417,16 @@ def xi.masked(+f: O.Found, v: U32, bits: U32) -> O.Found:
   mint_bin(k, O.OpsAND{}, v, O.Found.i(k))
 
 # `((exponent >> i) & 1).ne(0)` -- three nodes and two bare consts.
+#
+# **AND `ne(0)` AT THE PIN IS `CMPEQ(CMPEQ(an, 0), False)` AND NOT `CMPNE(an, 0)`.** SEE
+# `mint_ne` -- MEASURED ON CPYTHON AT `f5ac54685074`.
 def xi.cond(+f: O.Found, ex: U32, i: U32) -> O.Found:
   +ci = O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(i)})
   +sh = mint_bin(ci, O.OpsSHR{}, ex, O.Found.i(ci))
   +o1 = O.UOp.const(O.Found.ar(sh), O.CInt{H.i64_of_i32(1)})
   +an = mint_bin(o1, O.OpsAND{}, O.Found.i(sh), O.Found.i(o1))
   +z = O.UOp.const(O.Found.ar(an), O.CInt{H.i64_of_i32(0)})
-  mint_bin(z, O.OpsCMPNE{}, O.Found.i(an), O.Found.i(z))
+  mint_ne(z, O.Found.i(an), O.Found.i(z))
 
 # ONE DEF, because the stop test and the step would otherwise call each other and Bend refuses
 # mutual recursion. `Bool.pick` is eager, so the tail is built and thrown away once `v` is 0 --
@@ -5450,12 +5490,18 @@ def xi.hi(ofl: Bool, +x: F.Folded, +u: U32) -> H.I64:
                                  S.Dt.bits(sy_dt1(x, sy_src1(x, u)))))
     case False{}: vmax_i64(F.Folded.ar(x), sym_280.bt(x), sy_src1(x, u))
 
-# `sb.eq(v)` IS TWO NODES: `CMPNE(CMPNE(x, v), True)`.
+# `sb.eq(v)` AT THE PIN IS **ONE** NODE: `CMPEQ(x, v)`.
+#
+# **AND THIS USED TO BE TWO NODES, `CMPNE(CMPNE(x, v), True)`.** MEASURED 2026-11-07 ON
+# CPYTHON AT `f5ac54685074`: `sb.eq(-1)` IS `(cmpeq sb (cast -1))` AND `sb.eq(1)` IS
+# `(cmpeq sb (cast 1))` -- **ONE** NODE EACH. THE PRE-PIN SPELLING WAS `eq(v)` =
+# `ne(v).logical_not()` AND BOTH HALVES WERE PRIMITIVES, SO IT WAS TWO.
+#
+# **AND THE EXTRA NODE IS VISIBLE IN THE GRAPH**, WHICH IS WHY THE `x451a`/`x451c` CASES
+# DIVERGED: THE PORT's `xpow_int` ANSWER HAD `cmpne` WHERE UPSTREAM HAD `cmpeq`.
 def xi.eq2(+f: O.Found, x: U32, v: H.I64) -> O.Found:
   +c = O.UOp.const(O.Found.ar(f), O.CInt{v})
-  +n = mint_bin(c, O.OpsCMPNE{}, x, O.Found.i(c))
-  +t = O.UOp.const(O.Found.ar(n), O.CBool{True{}})
-  mint_bin(t, O.OpsCMPNE{}, O.Found.i(n), O.Found.i(t))
+  mint_bin(c, O.OpsCMPEQ{}, x, O.Found.i(c))
 
 # `ret.const_like(1)` -- the node's OWN dtype, which for an i32 ret is `CAST(CONST 1)`.
 def xi.one_like(+f: O.Found, dt: S.Dt) -> O.Found:
@@ -5474,7 +5520,7 @@ def xi.tail(+r: O.Found, +x: F.Folded, +u: U32, +dt: S.Dt, +b: O.Found) -> Maybe
   +k1 = O.UOp.const(O.Found.ar(one), O.CInt{H.i64_of_i32(1)})
   +an = mint_bin(k1, O.OpsAND{}, ex, O.Found.i(k1))
   +z0 = O.UOp.const(O.Found.ar(an), O.CInt{H.i64_of_i32(0)})
-  +nz = mint_bin(z0, O.OpsCMPNE{}, O.Found.i(an), O.Found.i(z0))
+  +nz = mint_ne(z0, O.Found.i(an), O.Found.i(z0))
   +n1 = O.UOp.const(O.Found.ar(nz), O.CInt{H.i64_neg(True{}, H.i64_of_i32(1))})
   +mo = mint_bin(n1, O.OpsMUL{}, O.Found.i(one), O.Found.i(n1))
   +in1 = mint_where(mo, O.Found.i(nz), O.Found.i(mo), O.Found.i(one))

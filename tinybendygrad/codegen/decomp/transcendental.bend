@@ -211,13 +211,49 @@ def tx_cbo(+ar: O.Arena, b: Bool) -> O.Found:
 def tx_cb(+ar: O.Arena, b: Bool) -> O.Found:
   tx_cbo(ar, b)
 
-# `logical_not` -- mixin/elementwise.py:57, `self.cast(dtypes.bool).ne(True)`. The
-# CAST ELIDES because the receiver is already a bool (mixin/dtype.py:19), so this
-# is a `CMPNE` against a BOOL CONST and not against an int 1. `a_xexp2 65` is the
-# row and a port that wrote `C(1)` there builds a different node.
+# `eq` / `ne` / `logical_not` -- mixin/elementwise.py:332-336 and :57 AT THE PIN.
+#
+# **AND AT THE PIN THESE ARE NOT THE PRIMITIVE `CMPNE`.** MEASURED 2026-11-07 ON
+# CPYTHON AT `f5ac54685074`:
+#
+#   def logical_not(self): return self.cast(dtypes.bool).eq(False)   # :57
+#   def eq(self, x):        return self._binop(Ops.CMPEQ, x, False)   # :335
+#   def ne(self, x):        return self.eq(x).logical_not()           # :332
+#
+# SO AT THE PIN:
+#   * `logical_not(x)` IS `CMPEQ(x, False)` -- **ONE** NODE.
+#   * `ne(x, y)` IS `CMPEQ(CMPEQ(x, y), False)` -- **TWO** NODES DEEP.
+#
+# **AND UPSTREAM's `codegen/decomp/transcendental.py` BUILDS `Ops.CMPNE` ZERO TIMES** --
+# MEASURED, `grep -c CMPNE` READS **0** ON THE PIN's FILE -- **AND EVERY `ne`/`==` IN IT GOES
+# THROUGH `elementwise.ne`/`eq`.** SO EVERY `CMPNE` THIS FILE BUILT WAS THE WRONG SHAPE.
+#
+# **AND THE OLD SHAPE IS NOT A STYLISTIC CHOICE: A GRAPH THAT SAYS `CMPNE(x, y)` IS NOT
+# UPSTREAM's GRAPH, SO A PORT THAT BUILDS IT CANNOT MATCH UPSTREAM's `xpow`/`xlog2`/
+# `xexp2` NODE FOR NODE.** MEASURED: UPSTREAM's `xpow(b, e)` AT THE PIN CONTAINS **0 `CMPNE`
+# AND 5 `CMPEQ`**, AND THE PORT's ANSWER CONTAINED `CMPNE` IN THE SAME PLACES.
+#
+# THE THREE HELPERS BELOW ARE THE PIN's SHAPES, AND `tx_lnot` IS THE ONE THAT WAS WRONG.
+def tx_eq(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
+  tx_alu2(ar, O.OpsCMPEQ{}, x, y)
+
+# `logical_not` -- mixin/elementwise.py:57 AT THE PIN, `self.cast(dtypes.bool).eq(False)`.
+# The CAST ELIDES because the receiver is already a bool (mixin/dtype.py:19), so this is a
+# `CMPEQ` against a BOOL CONST and not against an int 1. `a_xexp2 65` is the row and a port
+# that wrote `C(1)` there builds a different node.
+#
+# **AND THIS USED TO BE `CMPNE(x, True)` -- THE PRE-PIN SHAPE, WHICH IS WHAT THE COMMENT ABOVE
+# QUOTED (`mixin/elementwise.py:57, self.cast(dtypes.bool).ne(True)`).** THE NAME DID NOT
+# CHANGE AND THE NODE DID, AND `tinybendygrad/uop/symbolic.bend`'s OWN `sym_134` COMMENT
+# RECORDS THE SAME SWAP: "THE PRIMITIVE SWAPPED AT THE 2026-11-03 RE-VENDOR".
 def tx_lnot(+ar: O.Arena, +x: U32) -> O.Found:
-  +t = tx_cb(ar, True{})
-  tx_alu2(O.Found.ar(t), O.OpsCMPNE{}, x, O.Found.i(t))
+  +f = tx_cb(ar, False{})
+  tx_alu2(O.Found.ar(f), O.OpsCMPEQ{}, x, O.Found.i(f))
+
+# `ne(x, y)` IS `eq(x, y).logical_not()` AT THE PIN, SO IT IS `CMPEQ(CMPEQ(x, y), False)`.
+def tx_ne(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
+  +eq = tx_eq(ar, x, y)
+  tx_lnot(O.Found.ar(eq), O.Found.i(eq))
 
 def tx_cast(+ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
   O.UOp.new(ar, O.OpsCAST{}, [x], O.ADt{dt}, O.TNone{})
@@ -634,7 +670,7 @@ def _ifand.and(+ar: O.Arena, +q: U32, +n: U32) -> O.Found:
 # the int slot 28.
 def _ifand.ne(+b: O.Found, +bi: U32) -> O.Found:
   +z = tx_ci(O.Found.ar(b), 0)
-  tx_alu2(O.Found.ar(z), O.OpsCMPNE{}, bi, O.Found.i(z))
+  tx_ne(O.Found.ar(z), bi, O.Found.i(z))
 
 def _ifand(+ar: O.Arena, +q: U32, +n: U32) -> O.Found:
   +b = _ifand.and(ar, q, n)
@@ -711,7 +747,7 @@ def ph_take(+k: Nat, +c: U32, +ar: O.Arena, +i: U32, +an: O.Found,
     case 0n: O.Found{ar, O.Found.i(an)}
     case 1n+p:
       +cc = tx_ci(ar, c)
-      +ne = tx_alu2(O.Found.ar(cc), O.OpsCMPNE{}, i, O.Found.i(cc))
+      +ne = tx_ne(O.Found.ar(cc), i, O.Found.i(cc))
       +in = ph_take(p, U32.add(c, 1), O.Found.ar(ne), i, an, off)
       +t = tx_ci64(O.Found.ar(in), H.i64_of_hi_lo(0, two_over_pi(U32.add(c, off))))
       tx_alu3(O.Found.ar(t), O.OpsWHERE{}, O.Found.i(ne), O.Found.i(in), O.Found.i(t))
@@ -1106,10 +1142,10 @@ def tx_nan() -> F32: F32.div(0.0, 0.0)
 def tx_lazy_map(+ar: O.Arena, +x: U32, +inf: U32, +_inf: U32, +nan: U32,
                +ratio: U32) -> O.Found:
   +pi = tx_cf(ar, tx_inf())
-  +n1 = tx_alu2(O.Found.ar(pi), O.OpsCMPNE{}, x, O.Found.i(pi))
-  +n2 = tx_alu2(O.Found.ar(n1), O.OpsCMPNE{}, x, x)
+  +n1 = tx_ne(O.Found.ar(pi), x, O.Found.i(pi))
+  +n2 = tx_ne(O.Found.ar(n1), x, x)
   +ni = tx_cf(O.Found.ar(n2), tx_ninf())
-  +n3 = tx_alu2(O.Found.ar(ni), O.OpsCMPNE{}, x, O.Found.i(ni))
+  +n3 = tx_ne(O.Found.ar(ni), x, O.Found.i(ni))
   +w1 = tx_alu3(O.Found.ar(n3), O.OpsWHERE{}, O.Found.i(n3), ratio, _inf)
   +w2 = tx_alu3(O.Found.ar(w1), O.OpsWHERE{}, O.Found.i(n2), nan, O.Found.i(w1))
   tx_alu3(O.Found.ar(w2), O.OpsWHERE{}, O.Found.i(n1), O.Found.i(w2), inf)
@@ -1120,7 +1156,7 @@ def tx_lazy_map(+ar: O.Arena, +x: U32, +inf: U32, +_inf: U32, +nan: U32,
 # slots: `a_xsin18` is the one nothing reads.
 def xsin.sign(+ar: O.Arena, +x: U32) -> O.Found:
   +z = tx_pintf(ar, 0)
-  +n1 = tx_alu2(O.Found.ar(z), O.OpsCMPNE{}, x, O.Found.i(z))
+  +n1 = tx_ne(O.Found.ar(z), x, O.Found.i(z))
   +lt = tx_alu2(O.Found.ar(n1), O.OpsCMPLT{}, x, O.Found.i(z))
   +nm = tx_cf(O.Found.ar(lt), F32.neg(1.0))
   +ph = tx_cf(O.Found.ar(nm), 1.0)
@@ -1194,7 +1230,7 @@ def exp_coeffs(d64: Bool) -> List<&2, F32>:
 # `xexp2` -- lines 193-217. Paper https://arxiv.org/pdf/2001.09258.
 # ===========================================================================
 def xexp2.tail.nan(+ar: O.Arena, +u: U32, +d: U32) -> O.Found:
-  +nn = tx_alu2(ar, O.OpsCMPNE{}, d, d)
+  +nn = tx_ne(ar, d, d)
   +nan = tx_cf(O.Found.ar(nn), tx_nan())
   tx_alu3(O.Found.ar(nan), O.OpsWHERE{}, O.Found.i(nn), O.Found.i(nan), u)
 
@@ -1259,7 +1295,7 @@ def log_coeffs(d64: Bool) -> List<&2, F32>:
 # f32 bits, so one F32 literal serves both arms and only the third term's
 # EXISTENCE is the dtype branch. `a_xlog2 61` is the row.
 def xlog2.recip(+ar: O.Arena, +rc: U32, +w4: O.Found, +ninf: U32) -> O.Found:
-  +c = tx_alu2(ar, O.OpsCMPNE{}, rc, ninf)
+  +c = tx_ne(ar, rc, ninf)
   tx_alu3(O.Found.ar(c), O.OpsWHERE{}, O.Found.i(c), O.Found.i(w4), ninf)
 
 # `r = (d<-0.0).where(r.const_like(math.nan), r)` -- line 253 -- and `r =
@@ -1271,17 +1307,17 @@ def xlog2.negzero(+ar: O.Arena, +r: U32, +d: U32, +ninf: U32) -> O.Found:
   +lt = tx_alu2(O.Found.ar(nz), O.OpsCMPLT{}, d, O.Found.i(nz))
   +nan = tx_cf(O.Found.ar(lt), tx_nan())
   +w3 = tx_alu3(O.Found.ar(nan), O.OpsWHERE{}, O.Found.i(lt), O.Found.i(nan), r)
-  +c4 = tx_alu2(O.Found.ar(w3), O.OpsCMPNE{}, d, d)
+  +c4 = tx_ne(O.Found.ar(w3), d, d)
   +w4 = tx_alu3(O.Found.ar(c4), O.OpsWHERE{}, O.Found.i(c4), O.Found.i(nan), O.Found.i(w3))
   +rc = tx_alu1(O.Found.ar(w4), O.OpsRECIP{}, d)
   xlog2.recip(O.Found.ar(rc), O.Found.i(rc), w4, ninf)
 
 def xlog2.clamp(+ar: O.Arena, +r: U32, +d: U32, +lt: O.Found) -> O.Found:
   +inf = tx_cf(ar, tx_inf())
-  +c1 = tx_alu2(O.Found.ar(inf), O.OpsCMPNE{}, d, O.Found.i(inf))
+  +c1 = tx_ne(O.Found.ar(inf), d, O.Found.i(inf))
   +w1 = tx_alu3(O.Found.ar(c1), O.OpsWHERE{}, O.Found.i(c1), r, O.Found.i(inf))
   +z = tx_cf(O.Found.ar(w1), 0.0)
-  +c2 = tx_alu2(O.Found.ar(z), O.OpsCMPNE{}, d, O.Found.i(z))
+  +c2 = tx_ne(O.Found.ar(z), d, O.Found.i(z))
   +ninf = tx_cf(O.Found.ar(c2), tx_ninf())
   +w2 = tx_alu3(O.Found.ar(ninf), O.OpsWHERE{}, O.Found.i(c2), O.Found.i(w1), O.Found.i(ninf))
   xlog2.negzero(O.Found.ar(w2), O.Found.i(w2), d, O.Found.i(ninf))
@@ -1386,7 +1422,7 @@ def xpow.ret(+ar: O.Arena, +base: U32, +ex: U32) -> Xp:
 def xpow.flags(+xp: Xp, +ex: U32, +edt: S.Dt) -> Xp:
   +ci = tx_cast(Xp.ar(xp), ex, S.int32())
   +cf = tx_cast(O.Found.ar(ci), O.Found.i(ci), edt)
-  +ni = tx_alu2(O.Found.ar(cf), O.OpsCMPNE{}, ex, O.Found.i(cf))
+  +ni = tx_ne(O.Found.ar(cf), ex, O.Found.i(cf))
   +z = tx_pintf(O.Found.ar(ni), 0)
   +lo = tx_alu2(O.Found.ar(z), O.OpsCMPLT{}, ex, O.Found.i(z))
   +n1 = tx_ci(O.Found.ar(lo), H.i32_neg(1))
@@ -1404,19 +1440,28 @@ def xpow.flags(+xp: Xp, +ex: U32, +edt: S.Dt) -> Xp:
 def xpow.negbase(+xp: Xp, +base: U32) -> O.Found:
   +ret = Xp.ret(xp)
   +linf = tx_cf(Xp.ar(xp), tx_ninf())
-  +ne = tx_alu2(O.Found.ar(linf), O.OpsCMPNE{}, base, O.Found.i(linf))
+  +ne = tx_ne(O.Found.ar(linf), base, O.Found.i(linf))
   +nn = tx_cf(O.Found.ar(ne), tx_nan())
   +w1 = tx_alu3(O.Found.ar(nn), O.OpsWHERE{}, O.Found.i(ne), O.Found.i(nn), ret)
   +nr = tx_alu2(O.Found.ar(w1), O.OpsMUL{}, ret, O.Found.i(tx_negf(O.Found.ar(w1))))
   +w2 = tx_alu3(O.Found.ar(nr), O.OpsWHERE{}, Xp.io(xp), O.Found.i(nr), ret)
   tx_alu3(O.Found.ar(w2), O.OpsWHERE{}, Xp.ni(xp), O.Found.i(w1), O.Found.i(w2))
 
-# `exponent.eq(0)` -- line 265 -- is `ne(0).logical_not()` (elementwise.py:337),
-# so it is a CMPNE against a BOOL CONST and not against an int 0: `a_xpow36`.
+# `exponent.eq(0)` -- line 265 -- is `CMPEQ(exponent, 0)` AT THE PIN AND **NOT**
+# `ne(0).logical_not()`. MEASURED 2026-11-07 ON CPYTHON AT `f5ac54685074`:
+#
+#   def eq(self, x):  return self._binop(Ops.CMPEQ, x, False)   # elementwise.py:335
+#
+# SO `eq` IS **ONE** NODE, `ne` IS `eq(...).logical_not()` AND SO **TWO**, AND `logical_not` IS
+# **ONE** (`CMPEQ(x, False)`). THE OLD COMMENT HERE SAID "IS `ne(0).logical_not()`
+# (elementwise.py:337)" -- AND `elementwise.py:337` AT THE PIN IS `def eq`, **NOT** `ne`.
+#
+# **SO THIS USED TO BUILD THREE NODES WHERE UPSTREAM BUILDS ONE** -- `ne` THEN `not` -- AND
+# THAT IS WHY THE PORT's `xpow` ANSWER HAD `cmpeq (cmpeq (cmpeq yf bad) bf) bf` WHERE UPSTREAM
+# HAS `cmpeq yf bad`. **THE COMPOSITION IS NOT IDEMPOTENT AND THE EXTRA LAYER IS VISIBLE.**
 def xpow.zero(+ar: O.Arena, +ex: U32) -> O.Found:
   +z = tx_pintf(ar, 0)
-  +ne = tx_alu2(O.Found.ar(z), O.OpsCMPNE{}, ex, O.Found.i(z))
-  tx_lnot(O.Found.ar(ne), O.Found.i(ne))
+  tx_eq(O.Found.ar(z), ex, O.Found.i(z))
 
 # `(base < 0)` is REBUILT rather than threaded: it is `tx_alu2` against the same
 # two slots and so it interns back to `a_xpow11`, which is the whole point of the
