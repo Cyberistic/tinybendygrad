@@ -1,0 +1,47 @@
+# THE DELETED-RULES SWEEP: THE CANDIDATES' GRAPHS.
+#
+#   .agents/slop/sym92/deadrules-sweep.sh
+#
+# **ONE LINE PER SHAPE, AND THE NAME IS THE PORT RULE THAT CLAIMS IT.** THESE ARE THE
+# `deadrules.py` CANDIDATES -- THE PORT RULES THAT CITE AN UPSTREAM RULE THE RE-VENDOR DELETED
+# -- AND THE SWEEP ASKS EACH SHAPE A DIFFERENT QUESTION: **DOES THE PORT REWRITE IT AND DOES
+# UPSTREAM?**
+#
+# **AND THE QUESTION IS BEHAVIOURAL BECAUSE NO TEXT COMPARISON SETTLES IT.** MEASURED
+# 2026-11-08, THREE TIMES, IN THIS LANE:
+#   * THE **WHOLE RULE LINE** OVER-REPORTS DELETIONS (UPSTREAM REWORDED THE BODY OF RULES IT
+#     KEPT).
+#   * THE **PATTERN ALONE** ALSO OVER-REPORTS (UPSTREAM REMOVED A PATTERN's NAME).
+#   * THE **OP SET** UNDER-REPORTS, AND FOR EVERY PATTERN THAT NAMES NO OP IT IS THE **EMPTY
+#     SET** -- WHICH APPEARS **54 TIMES** AMONG THE NEW PIN's RULES, SO IT CANNOT DISTINGUISH
+#     THEM. **THE `deadrules.py` INSTRUMENT READ "0 of 117" FOR THAT REASON.**
+#
+# **AND THE SPELLINGS ARE THE PORT's OWN s-EXPRESSION DIALECT**, WHICH IS WHAT
+# `gates/symrules-cases.rows` USES AND WHAT `gates/symrules-oracle.py` PARSES, **SO BOTH SIDES
+# SEE ONE GRAPH.**
+#
+# THE CONSTS ARE `c1` (3), `c2` (2) AND `n1` (-1); THE VARIABLES ARE `x` AND `y`.
+dr125|(floordiv x n1)
+dr246|(add (add y (mul x c1)) (mul x c2))
+dr247|(add x (mul x c1))
+dr253|(mul n1 (add x c1))
+dr279|(where (cmplt x c1) c2 x)
+dr290|(cmplt (add c2 x) c1)
+dr296|(mul (mul x c1) y)
+dr300|(cmplt (mul x n1) (mul y n1))
+dr471|(mul n1 (add x y))
+dr473|(mul (add x y) c1)
+dr462|(reciprocal (mul x x))
+dr463|(reciprocal (mul (mul x x) x))
+dr464|(reciprocal (mul x c1))
+dr132|(cmpne xb bf)
+dr174|(div (mul x y) y)
+dr191|(floordiv (floordiv x c1) c2)
+dr274|(floordiv (floordiv x c1) c2)
+dr287|(floordiv (floordiv x c1) c2)
+dr295|(add (add x c1) y)
+dr302|(cmplt x c1)
+dr97|(floordiv (add x c1) c2)
+dr97b|(floormod (add x c1) c2)
+dr97c|(floordiv (add x c1) c1)
+dr101|(floordiv (add (floordiv x c1) c2) c2)
