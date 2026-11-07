@@ -1682,10 +1682,107 @@ def ku_op_at(+kus: List<&2, List<&2, KU>>, i: U32) -> O.Op: ku_op_at.go(ku_at(ku
   match m:
     case Some{k}: KUArg.is_const(KU.arg(k))
     case None{}: False{}
+# **⇒ AND THE OP EQUALITY IS A MATCH ON THE TWO TAGS, NOT A COMPARISON OF TWO NUMBERS.** MEASURED
+# (`PARITY.md` §138): `O.eq_op` IS `U32.is_eq(Ops.value(x), Ops.value(y))`, **⇒ AND `Ops.value`
+# COMPILES TO A **76-ARM `===` CHAIN ON THE TAG** (THE GENERATED CODE IS `if (_op_0.$ ===
+# "OpsSPECIAL") ... else if (_op_0.$ === "OpsBUFFER")`), **⇒ SO `O.eq_op` WAS ~152 STRING
+# COMPARISONS.** MEASURED ON THE 782-UOP WIRE: **30,640 `Ops.value` CALLS AND 15,320 `O.eq_op` CALLS A
+# RENDER** (~40 AND ~20 A UOP), **⇒ AND EVERY SINGLE `Ops.value` CALL CAME FROM `O.eq_op`** (30,640 =
+# 2 x 15,320). **⇒ AND THE PROFILE PUTS THEM AT `uop_ops_Ops_value` 0.293 ms AND `uop_ops_eq_op`
+# 0.193 ms A TURN -- A THIRD OF THE PORT's 1.412 ms.**
+#
+# **⇒ AND THE PORT ALREADY SPELLS VARIANT EQUALITY THIS WAY** (`ops.bend`'s OWN `eq_opt_u32`,
+# `eq_opt_str`, `eq_optbool` AND `eq_optarg` ALL USE `match x y:` WITH ONE ARM PER VARIANT) -- **⇒ AND
+# A MATCH ON TWO SCRUTINEES COMPILES TO NESTED TAG COMPARISONS** (MEASURED IN THE GENERATED CODE:
+# `if (_x_0.$ === "OpsA") { if (_y_0.$ === "OpsA") ... }`), **⇒ SO THE AVERAGE COST IS TWO
+# COMPARISONS INSTEAD OF 152.**
+#
+# **⇒ AND THIS IS A LOCAL SPELLING BECAUSE `ops.bend`'s OWN `eq_op` IS NOT MINE TO CHANGE** (ANOTHER
+# UNIT HAS AN UNCOMMITTED EDIT IN IT), **⇒ AND THE 24 CALL SITES IN THIS FILE ARE.**
+def eq_op(x: O.Op, y: O.Op) -> Bool:
+  match x y:
+    case O.OpsSPECIAL{} O.OpsSPECIAL{}: True{}
+    case O.OpsBUFFER{} O.OpsBUFFER{}: True{}
+    case O.OpsALLOC{} O.OpsALLOC{}: True{}
+    case O.OpsNOOP{} O.OpsNOOP{}: True{}
+    case O.OpsREWRITE_ERROR{} O.OpsREWRITE_ERROR{}: True{}
+    case O.OpsPARAM{} O.OpsPARAM{}: True{}
+    case O.OpsREFPARAM{} O.OpsREFPARAM{}: True{}
+    case O.OpsCALL{} O.OpsCALL{}: True{}
+    case O.OpsPROGRAM{} O.OpsPROGRAM{}: True{}
+    case O.OpsLINEAR{} O.OpsLINEAR{}: True{}
+    case O.OpsSOURCE{} O.OpsSOURCE{}: True{}
+    case O.OpsBINARY{} O.OpsBINARY{}: True{}
+    case O.OpsSINK{} O.OpsSINK{}: True{}
+    case O.OpsAFTER{} O.OpsAFTER{}: True{}
+    case O.OpsSTACK{} O.OpsSTACK{}: True{}
+    case O.OpsGETADDR{} O.OpsGETADDR{}: True{}
+    case O.OpsINDEX{} O.OpsINDEX{}: True{}
+    case O.OpsSHRINK{} O.OpsSHRINK{}: True{}
+    case O.OpsLOAD{} O.OpsLOAD{}: True{}
+    case O.OpsSTORE{} O.OpsSTORE{}: True{}
+    case O.OpsWMMA{} O.OpsWMMA{}: True{}
+    case O.OpsCAST{} O.OpsCAST{}: True{}
+    case O.OpsBITCAST{} O.OpsBITCAST{}: True{}
+    case O.OpsEXP2{} O.OpsEXP2{}: True{}
+    case O.OpsLOG2{} O.OpsLOG2{}: True{}
+    case O.OpsSIN{} O.OpsSIN{}: True{}
+    case O.OpsSQRT{} O.OpsSQRT{}: True{}
+    case O.OpsRECIP{} O.OpsRECIP{}: True{}
+    case O.OpsNEG{} O.OpsNEG{}: True{}
+    case O.OpsTRUNC{} O.OpsTRUNC{}: True{}
+    case O.OpsADD{} O.OpsADD{}: True{}
+    case O.OpsMUL{} O.OpsMUL{}: True{}
+    case O.OpsSHL{} O.OpsSHL{}: True{}
+    case O.OpsSHR{} O.OpsSHR{}: True{}
+    case O.OpsTRUNCDIV{} O.OpsTRUNCDIV{}: True{}
+    case O.OpsMAX{} O.OpsMAX{}: True{}
+    case O.OpsTRUNCMOD{} O.OpsTRUNCMOD{}: True{}
+    case O.OpsCMPLT{} O.OpsCMPLT{}: True{}
+    case O.OpsCMPNE{} O.OpsCMPNE{}: True{}
+    case O.OpsCMPEQ{} O.OpsCMPEQ{}: True{}
+    case O.OpsXOR{} O.OpsXOR{}: True{}
+    case O.OpsOR{} O.OpsOR{}: True{}
+    case O.OpsAND{} O.OpsAND{}: True{}
+    case O.OpsTHREEFRY{} O.OpsTHREEFRY{}: True{}
+    case O.OpsSUB{} O.OpsSUB{}: True{}
+    case O.OpsFDIV{} O.OpsFDIV{}: True{}
+    case O.OpsPOW{} O.OpsPOW{}: True{}
+    case O.OpsDIV{} O.OpsDIV{}: True{}
+    case O.OpsMOD{} O.OpsMOD{}: True{}
+    case O.OpsWHERE{} O.OpsWHERE{}: True{}
+    case O.OpsMULACC{} O.OpsMULACC{}: True{}
+    case O.OpsBARRIER{} O.OpsBARRIER{}: True{}
+    case O.OpsRANGE{} O.OpsRANGE{}: True{}
+    case O.OpsIF{} O.OpsIF{}: True{}
+    case O.OpsEND{} O.OpsEND{}: True{}
+    case O.OpsENDIF{} O.OpsENDIF{}: True{}
+    case O.OpsBACKEDGE{} O.OpsBACKEDGE{}: True{}
+    case O.OpsCONST{} O.OpsCONST{}: True{}
+    case O.OpsCUSTOM{} O.OpsCUSTOM{}: True{}
+    case O.OpsCUSTOMI{} O.OpsCUSTOMI{}: True{}
+    case O.OpsINS{} O.OpsINS{}: True{}
+    case O.OpsCONTIGUOUS_BACKWARD{} O.OpsCONTIGUOUS_BACKWARD{}: True{}
+    case O.OpsDETACH{} O.OpsDETACH{}: True{}
+    case O.OpsSTAGE{} O.OpsSTAGE{}: True{}
+    case O.OpsCOPY{} O.OpsCOPY{}: True{}
+    case O.OpsMSELECT{} O.OpsMSELECT{}: True{}
+    case O.OpsMSTACK{} O.OpsMSTACK{}: True{}
+    case O.OpsCUSTOM_FUNCTION{} O.OpsCUSTOM_FUNCTION{}: True{}
+    case O.OpsRESHAPE{} O.OpsRESHAPE{}: True{}
+    case O.OpsPERMUTE{} O.OpsPERMUTE{}: True{}
+    case O.OpsEXPAND{} O.OpsEXPAND{}: True{}
+    case O.OpsPAD{} O.OpsPAD{}: True{}
+    case O.OpsUNSHARD{} O.OpsUNSHARD{}: True{}
+    case O.OpsREDUCE{} O.OpsREDUCE{}: True{}
+    case O.OpsALLREDUCE{} O.OpsALLREDUCE{}: True{}
+    case O.OpsPYLITERAL{} O.OpsPYLITERAL{}: True{}
+    case _ _: False{}
+
 
 def ku_is_const_at(+kus: List<&2, List<&2, KU>>, +i: U32) -> Bool: ku_is_const_at.go(ku_at(kus, i))  def ku_is_cast_at.go(m: Maybe<&2, KU>) -> Bool:
   match m:
-    case Some{k}: O.eq_op(KU.op(k), O.OpsCAST{})
+    case Some{k}: eq_op(KU.op(k), O.OpsCAST{})
     case None{}: False{}
 
 def ku_is_cast_at(+kus: List<&2, List<&2, KU>>, +i: U32) -> Bool: ku_is_cast_at.go(ku_at(kus, i))  def ku_src0_at.go(m: Maybe<&2, KU>) -> U32:
@@ -1787,8 +1884,8 @@ def ku_text_wmma(dev: U32, +k: KU, +r: Rows) -> String:
 # THE STRIP IS THE SAME-OP TEST AND IT IS NOT COSMETIC: it is what makes
 # `((x)+(y))` AND `((x)+(y)+(z))` COMPOSE.
 def ku_strips(+op: O.Op) -> Bool:
-  Bool.or(Bool.or(O.eq_op(op, O.OpsADD{}), O.eq_op(op, O.OpsMUL{})),
-    Bool.or(O.eq_op(op, O.OpsXOR{}), Bool.or(O.eq_op(op, O.OpsOR{}), O.eq_op(op, O.OpsAND{}))))
+  Bool.or(Bool.or(eq_op(op, O.OpsADD{}), eq_op(op, O.OpsMUL{})),
+    Bool.or(eq_op(op, O.OpsXOR{}), Bool.or(eq_op(op, O.OpsOR{}), eq_op(op, O.OpsAND{}))))
 
 # ===========================================================================
 # THE WALK -- the port of `cstyle.py:208-266`'s BODY. THE STATE IS SIX THINGS
@@ -1903,13 +2000,13 @@ def ku_indent(depth: U32) -> String:
   ku_indent.go(U32.to_nat(depth), "")
 
 def ku_inline2a(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
-  Bool.or(Bool.and(O.eq_op(op, O.OpsCAST{}), ku_is_const_at(kus, KU.src0(k))),
-    Bool.or(Bool.or(O.eq_op(op, O.OpsINDEX{}), O.eq_op(op, O.OpsSHRINK{})),
-      Bool.or(O.eq_op(op, O.OpsCUSTOMI{}), O.eq_op(op, O.OpsREFPARAM{}))))
+  Bool.or(Bool.and(eq_op(op, O.OpsCAST{}), ku_is_const_at(kus, KU.src0(k))),
+    Bool.or(Bool.or(eq_op(op, O.OpsINDEX{}), eq_op(op, O.OpsSHRINK{})),
+      Bool.or(eq_op(op, O.OpsCUSTOMI{}), eq_op(op, O.OpsREFPARAM{}))))
 
 # `(u.op is Ops.LOAD and u.src[0].addrspace == AddrSpace.REG and child_count[u] == 1)`
 def ku_inline2b2a(+op: O.Op, +k: KU) -> Bool:
-  Bool.and(Bool.or(O.eq_op(op, O.OpsCAST{}), O.eq_op(op, O.OpsBITCAST{})),
+  Bool.and(Bool.or(eq_op(op, O.OpsCAST{}), eq_op(op, O.OpsBITCAST{})),
     Bool.or(is_global(KU.addr(k)), is_local(KU.addr(k))))
 
 # `(u.op in {Ops.STACK, *(GroupOp.ALU-{Ops.WHERE}), Ops.CAST, Ops.BITCAST} and child_count[u] == 1)`
@@ -1924,7 +2021,7 @@ def ku_src_is_reg(+kus: List<&2, List<&2, KU>>, k: KU) -> Bool:
   ku_src_is_reg.go(ku_at(kus, KU.src0(k)))
 
 def ku_is_alu_ex_where(+op: O.Op) -> Bool:
-  Bool.and(R.is_alu(op), Bool.not(O.eq_op(op, O.OpsWHERE{})))
+  Bool.and(R.is_alu(op), Bool.not(eq_op(op, O.OpsWHERE{})))
 
 # ===========================================================================
 # THE WALK, ONE UOP AT A TIME. cstyle.py:221-262.
@@ -1945,16 +2042,16 @@ def ku_shape_str(+ss: List<&2, U32>) -> String:
   ku_shape_str.go(ss, "")
 
 def ku_not_stmt_op(+op: O.Op) -> Bool:
-  Bool.not(Bool.or(Bool.or(O.eq_op(op, O.OpsRANGE{}), O.eq_op(op, O.OpsBUFFER{})),
-    O.eq_op(op, O.OpsBINARY{})))
+  Bool.not(Bool.or(Bool.or(eq_op(op, O.OpsRANGE{}), eq_op(op, O.OpsBUFFER{})),
+    eq_op(op, O.OpsBINARY{})))
 
 def _render.pop(+st: St, +k: KU) -> St:
-  Bool.pick(St, Bool.or(O.eq_op(KU.op(k), O.OpsENDIF{}),
-    Bool.or(O.eq_op(KU.op(k), O.OpsEND{}), O.eq_op(KU.op(k), O.OpsBACKEDGE{}))),
+  Bool.pick(St, Bool.or(eq_op(KU.op(k), O.OpsENDIF{}),
+    Bool.or(eq_op(KU.op(k), O.OpsEND{}), eq_op(KU.op(k), O.OpsBACKEDGE{}))),
     st_depth(st, U32.sub(St.depth(st), 1)), st)
 
 def _render.push(+st: St, +k: KU) -> St:
-  Bool.pick(St, Bool.or(O.eq_op(KU.op(k), O.OpsIF{}), O.eq_op(KU.op(k), O.OpsRANGE{})),
+  Bool.pick(St, Bool.or(eq_op(KU.op(k), O.OpsIF{}), eq_op(KU.op(k), O.OpsRANGE{})),
     st_depth(st, U32.add(St.depth(st), 1)), st)
 def DtN.dt(x: DtN) -> S.Dt:
   match x:
@@ -2015,18 +2112,18 @@ def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows,    
     case h <> t:
       +ps = rtp(r, h)
       ku_alu_srcs.go(op, k, kus, r, t, List.append(&2, List<&2, String>, acc,
-        [ku_src_pieces(Bool.and(O.eq_op(ku_op_at(kus, h), op), ku_strips(op)), ps)]))
+        [ku_src_pieces(Bool.and(eq_op(ku_op_at(kus, h), op), ku_strips(op)), ps)]))
 
 def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, List<&2, String>>:
   ku_alu_srcs.go(op, k, kus, r, KU.srcs(k), Nil{})
 
 def ku_inline2b1(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
-  Bool.and(O.eq_op(op, O.OpsLOAD{}),
+  Bool.and(eq_op(op, O.OpsLOAD{}),
     Bool.and(ku_src_is_reg(kus, k), U32.is_eq(cc_at(k), 1)))
 def ku_inline_op_set(+op: O.Op) -> Bool:
-  Bool.or(O.eq_op(op, O.OpsSTACK{}),
+  Bool.or(eq_op(op, O.OpsSTACK{}),
     Bool.or(ku_is_alu_ex_where(op),
-      Bool.or(O.eq_op(op, O.OpsCAST{}), O.eq_op(op, O.OpsBITCAST{}))))
+      Bool.or(eq_op(op, O.OpsCAST{}), eq_op(op, O.OpsBITCAST{}))))
 
 def ku_inline2b2b(+op: O.Op, +k: KU) -> Bool:
   Bool.and(ku_inline_op_set(op), U32.is_eq(cc_at(k), 1))
@@ -2043,7 +2140,7 @@ def _render.plain(dev: U32, i: U32, +k: KU, kus: List<&2, List<&2, KU>>,
   # THE SEMICOLON IS THE WHOLE DIFFERENCE, so it is chosen as a STRING (two literals, free) and the line is
   # assembled ONCE. The previous spelling built two `st_kernel` calls and discarded one.
   +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), String.join(l, ""),
-    Bool.pick(String, O.eq_op(KU.op(k), O.OpsCAST{}), ";", "")]))
+    Bool.pick(String, eq_op(KU.op(k), O.OpsCAST{}), ";", "")]))
   +st2 = st_c(st1, ix)
   _render.push(st2, k)
 def uops_to_dtypes.put(+x: DtN, +acc: List<&2, DtN>) -> List<&2, DtN>:
@@ -2073,7 +2170,7 @@ def ku_inline2(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
 
 # `(u.op is Ops.CAST and u.src[0].op is Ops.CONST) or u.op in {Ops.INDEX, Ops.SHRINK, Ops.CUSTOMI, Ops.REFPARAM}`
 def ku_inline(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
-  Bool.and(Bool.or(Bool.not(O.eq_op(op, O.OpsCAST{})), U32.is_eq(KU.numel(k), 1)),
+  Bool.and(Bool.or(Bool.not(eq_op(op, O.OpsCAST{})), U32.is_eq(KU.numel(k), 1)),
     ku_inline2(op, k, kus))
 
 def BArg.image(b: BArg) -> Bool:
