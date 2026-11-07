@@ -5892,3 +5892,91 @@ The seven stale fixtures are NOT a fixture problem. MEASURED against the re-vend
 FIXTURE-STALENESS, AND FIXING THEM MEANS CHANGING THE PORT'S PERMUTE REPRESENTATION** -- which touches
 `ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the renderer's `ku_render_index` and
 `schedule/rangeify.bend`. **THAT IS A PORT CHANGE, NOT A CERTIFICATE CHANGE, AND IT IS BIGGER THAN A TURN.**
+
+## 132. THE DECODE'S NUMBERS, PARSED IN JS: WALL 0.80, CPU 0.85, AND THE SHAPE IS TWO EFFECTS
+
+§131 measured the number parsing at ~0.8 ms of a ~3.7 ms turn and named the shape it could not find. **THE
+SHAPE IS TWO EFFECTS, AND IT IS LANDED.**
+
+### 132.1 What landed
+
+`Wire.strings` AND `Wire.numbers` (`tinybendygrad/renderer/wire.js`), TWO effects that split the wire and
+return, PER UOP, THE FIVE STRINGS (op, dt, addr, kind, payload) AND THE NUMBERS (numel, cc, shapeCount,
+srcsCount, shape..., srcs...). `live.bend`'s `kus` binds them and walks the two lists in step
+(`kus_rows.go` -> `ku_row` -> `ku_row.s` -> `ku_row.n` -> `ku_row.of`).
+
+**BEND'S LIST IS MONOMORPHIC, AND THAT IS WHY THERE ARE TWO.** A row cannot hold both strings and numbers,
+and it cannot be a pair of lists of different kinds -- so the effect gives one list per kind and the port
+walks them together.
+
+### 132.2 The measurements
+
+On the 642-uop wire (`/tmp/wire_now.txt`, 15,346 chars), against `86909c31a`:
+
+| instrument | ratio (min / p25 / median) | faster |
+|---|---|---|
+| **WALL** (the daemon-side turn, frame write to `@@END`) | 0.4690 / 0.6600 / **0.8005** | **85/100** |
+| **CPU** (`getrusage` per render) | 0.7592 / 0.8426 / **0.8506** | **30/30** |
+
+`same C: True`, 5,649 bytes, byte-identical.
+
+### 132.3 The call census, and it is the proof that the WORK MOVED
+
+Measured by instrumenting the compiled JS (the callee definitions wrapped with counters, printed when the
+daemon emits `@@END`):
+
+| | OLD (§129) | NEW (§132) | change |
+|---|---|---|---|
+| `u32` (the port's number parse) | 2,814 | **296** | **−2,518** |
+| `char_len` (the prelude's per-character slice) | 37,537 | **13,853** | **−23,684** |
+| `List.append` | 100,290 | **86,907** | **−13,383** |
+| `List_reverse_go` | 848 | 206 | −642 |
+| `List_take` / `List_drop` | 0 / 0 | 2,518 / 642 | +3,160 |
+| `ku_row_s` / `ku_row_n` / `ku_row_of` | 0 | 642 each | +1,926 |
+
+**⇒ THE 2,518 NUMBERS THE PORT USED TO PARSE ARE NOW PARSED IN JS, AND THE 23,684 CHARACTER SLICES ARE
+GONE.** The remaining 13,853 `char_len` calls are the RENDERER's own `arg_of` payload splitting, which is
+a different thing and is not touched by this change.
+
+**⇒ AND THE TWO EFFECTS COST 0.212-0.240 ms IN JS** (measured in isolation, 200 rounds after 20 warm-ups:
+`/tmp/effcost.js`), which is well under the ~0.8 ms they replace.
+
+### 132.4 Three defects that cost a day, and each is a class
+
+1. **A `#` COMMENT IN A `.js` FILE IS A JS SYNTAX ERROR.** The WIP `wire.js` had `# TWO LISTS BEGIN, ...`
+   (a Bend-style comment). The compiler copies the `.js` verbatim into the output, which IS JS, so the line
+   was a syntax error, the daemon's JS NEVER PARSED, and the worker never answered -- **which looks exactly
+   like a hang.** MEASURED: the instrumented build printed `error: Syntax Error ... Unexpected end of
+   file`. **⇒ A SYNTAX ERROR IN A FOREIGN HALF IS A HANG, AND THE INSTRUMENT THAT PROVES IT IS `bun` ON
+   THE COMPILED FILE.** The tree's other `.js` files (`sz.js`, `ops_cpu.js`) have no `#` lines; that is the
+   rule and this change broke it.
+2. **`List.append(xs, ys)` IS `xs ++ ys` AND IT COPIES `xs`.** So `List.append(acc, [x])` IS O(n) AND THE
+   ROW WALK WAS O(n²). MEASURED: the O(n) form cost **+91,096** `List.append` calls a render and was a
+   **REGRESSION** (the wall clock read 1.05 and the CPU clock 0.91). `List.append([x], acc)` IS THE O(1)
+   FORM, and it is what the port's own `ku_all` uses. **⇒ THE CHEAP FORM AND THE EXPENSIVE FORM ARE THE
+   SAME CALL WITH THE ARGUMENTS SWAPPED, AND A WALK THAT BUILDS A LIST MUST SAY WHICH.**
+3. **A READER MUST NOT BE COPIED FROM A READER OF A DIFFERENT SHAPE.** `ku_row.s` was written by copying
+   `ku_ws.r`, which binds NINE fields and wants a TENTH (the token path's row is nine tokens plus the next
+   row's first token). The effect's row is EXACTLY FIVE strings, so the fifth's tail IS Nil -- and the
+   copied reader took the `Nil` arm, i.e. `ku_ws.bad()`, for EVERY row. MEASURED: the render came out as
+   `void test() { }` -- empty -- while the decoder had built 642 correct KUs. **⇒ A MALFORMED ROW THAT IS
+   ACCEPTED IS WORSE THAN A REJECTED ONE, BECAUSE IT RENDERS.**
+
+### 132.5 And the C lane, which is NOT a working lane for `live.bend` -- measured, not assumed
+
+`live.bend` imports BOTH `./wire.c` AND `./wire.js`, and `wire.c`'s block is `#ifdef CID(Wire.split)`. The
+compiler rewrites that to `#ifdef CID_Wire_split`, and **`CID_Wire_split` IS NOT DEFINED** in the emitted C
+(MEASURED: `grep -n 'define CID_Wire_split' /tmp/live_c_lane.c` answers nothing), so **THE `.c` HALF IS
+DEAD IN THE C LANE** -- and `io_eff(CID_Wire_split, wire_split_run, 0)` passes THREE arguments to a
+TWO-argument `io_eff`, which would not compile if the block were live. MEASURED: `cc -c
+/tmp/live_c_lane.c` succeeds, so the block is not compiled. **⇒ THE C LANE OF `live.bend` HAS NEVER HAD A
+WORKING `Wire.split` EITHER, AND THIS CHANGE DID NOT MAKE IT WORSE.** A C half was written for the two new
+effects and then **REVERTED**, because dead code in a dead block is not a fix and it is not a
+contribution. (The renderer is built to JS only: `portc.py:364` builds `-o str(js)`.)
+
+### 132.6 The gates
+
+`ksweep` **37/37 byte-identical on BOTH decoders** (the token path AND the live decoder), `opbattery`
+**39/39**, `portexec` **7/7**, `PROOF-ALL.bend` **rc=0**. The port-compile gate's census: `live.bend` is in
+the **FOREIGN** class (it was already, for `Wire.split`), and the one FINDING is `kuconv.bend`, which is
+**UNCHANGED BY THIS CHANGE** (`diff -q` against `HEAD` answers nothing).
