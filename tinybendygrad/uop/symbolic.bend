@@ -1664,9 +1664,14 @@ def mint_recip(+f: O.Found, v: U32) -> O.Found: mint_un(f, O.OpsRECIP{}, v)
 # 100-105` emits the identity compare for a duplicate store, so the honest port is
 # the IDENTITY CHECK again; it is STRICTER than Python here (see the TODO block).
 def sym_462.pat(+x: F.Folded, +u: U32) -> Bool:
+  # **AND THE WEAKINT GUARD**, BECAUSE UPSTREAM DELETED THIS RULE IN `1b892575c` ("remove unsafe
+  # float div rules", PR #19039) AND THE FLOAT TEST IT ADDED NAMES IT EXACTLY: `1/(z*z)` WITH
+  # `z = 1.7` AND `z*z` OVERFLOWING. **`1/(x*x) -> (1/x)*(1/x)` IS AN IDENTITY IN EXACT
+  # ARITHMETIC AND NOT IN FLOATING POINT**, BECAUSE THE TWO ROUNDINGS DIFFER.
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsRECIP{}), sy_nsrc_is(x, u, 1)),
     Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsMUL{}), Bool.and(sy_nsrc_is(x, sy_src0(x, u), 2),
-      p_same(sy_src0(x, sy_src0(x, u)), sy_src1(x, sy_src0(x, u))))))
+      Bool.and(p_same(sy_src0(x, sy_src0(x, u)), sy_src1(x, sy_src0(x, u))),
+        p_weakint(x, u)))))
 
 def sym_462.put(+f: O.Found, v: U32) -> O.Found:
   +r = mint_recip(f, v)
@@ -2383,7 +2388,18 @@ def p_recip1(+x: F.Folded, +u: U32) -> Bool:
     Bool.and(sy_nsrc_is(x, u, 1), Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsMUL{}),
       sy_nsrc_is(x, sy_src0(x, u), 2))))
 
-def p_recip2(+x: F.Folded, +u: U32, +p: Sw) -> Bool: Bool.and(p_recip1(x, u), Sw.ok(p))
+# THE SHARED ENTRY FOR `:463` (`1/(x*x*x)`) AND `:464` (`1/(x*c)`), AND **THE WEAKINT GUARD IS
+# HERE** BECAUSE BOTH RULES ARE UNSAFE FOR FLOATS.
+#
+# UPSTREAM DELETED BOTH IN `1b892575c` ("remove unsafe float div rules", PR #19039), AND THE
+# FLOAT TEST IT ADDED NAMES THEM EXACTLY: `1/(z*z)` AND `1/(z*z*z)` WITH `z = 1.7` AND
+# `z*z` OVERFLOWING. **`1/(x*x) -> (1/x)*(1/x)` IS AN IDENTITY IN EXACT ARITHMETIC AND NOT IN
+# FLOATING POINT**, BECAUSE THE TWO ROUNDINGS DIFFER.
+#
+# SO THE PORT KEEPS THE OPTIMISATION FOR THE INTEGERS AND NOT FOR THE FLOATS, WHICH IS THE
+# GUARDED FORM OF THE RULE UPSTREAM DELETED.
+def p_recip2(+x: F.Folded, +u: U32, +p: Sw) -> Bool:
+  Bool.and(Bool.and(p_recip1(x, u), Sw.ok(p)), p_weakint(x, u))
 
 # THE TWO ANSWERS, both threaded. `:464`'s is `x.reciprocal()*x.reciprocal()*
 # x.reciprocal()` -- LEFT-ASSOCIATIVE, so `MUL(MUL(R,R),R)` -- and `:465`'s is
@@ -6203,8 +6219,16 @@ def sym_174.deep(+x: F.Folded, +a: U32, +b: U32) -> Bool:
         Bool.not(p_is_const_0(x, sy_src1(x, a))))))
 
 def sym_174.pat(+x: F.Folded, +u: U32) -> Bool:
+  # **AND THE WEAKINT GUARD**, BECAUSE UPSTREAM DELETED THE RULE FOR THE FLOAT REASON:
+  # `1b892575c` ("remove unsafe float div rules", PR #19039) ADDED A FLOAT TEST NAMING `(x*y)/y`
+  # WITH `3e38` AND `1e30` -- **WHICH OVERFLOW TO `inf`**. `(x * x2) / x2` IS AN IDENTITY IN EXACT
+  # ARITHMETIC AND NOT IN FLOATING POINT, SO THE RULE IS SAFE FOR INTEGERS AND NOT FOR FLOATS.
+  #
+  # **AND THE PORT KEEPS THE RULE FOR THE INTEGERS** WHERE UPSTREAM's DELETION LEAVES THE
+  # OPTIMISATION ON THE TABLE -- SO THE PORT'S RULE IS THE GUARDED FORM OF UPSTREAM'S DELETED ONE
+  # AND NOT A DIVERGENCE.
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsMUL{}), sy_nsrc_is(x, u, 2)),
-    sym_174.deep(x, sy_src0(x, u), sy_src1(x, u)))
+    Bool.and(p_weakint(x, u), sym_174.deep(x, sy_src0(x, u), sy_src1(x, u))))
 
 def sym_174(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sy_tri(sym_174.pat(x, u), Some{sy_src0(x, sy_src0(x, u))})
