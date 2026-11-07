@@ -5838,3 +5838,57 @@ DATA AND MOVED BOTH; THIS ONE WIDENED IT AND MOVED THEM APART.**
 **⇒ AND THE GENERAL RULE IS NOW MEASURED IN BOTH DIRECTIONS: A CHANGE THAT NARROWS WHAT THE RENDER TOUCHES
 WINS ON BOTH INSTRUMENTS; A CHANGE THAT MOVES CALLS BETWEEN THE DECODER AND THE RENDERER IS A WASH; AND A
 CHANGE THAT WIDENS A RECORD THE RENDER READS 132,000 TIMES A RENDER IS A LOSS ON THE CPU CLOCK.**
+
+## 131. THE NUMBER PARSING IS ~0.8 ms OF THE TURN AND IT IS 40x SLOWER THAN THE SAME ALGORITHM IN JS
+
+§130's census named the decode's remaining work, and the caller census of `U32.read` (21,294 `char_len` calls
+a render) says the decode parses its numbers the slow way. **THE PORT'S `U32.read` IS THE PRELUDE'S
+CHARACTER-AT-A-TIME FOLD, AND AT RUNTIME A STRING IS A JS STRING, SO THE COMPILER EMITS
+`slice(0, char_len(s))` AND `slice(char_len(s))` PER CHARACTER.**
+
+Measured, in JS, on the same wire:
+
+```
+the port's algorithm over 1,284 numbers (char-by-char):  0.015-0.025 ms
+`parseInt`:                                                0.020 ms
+the whole wire's numbers in ONE pass:                     0.086 ms
+```
+
+**⇒ THE PORT IS ~40x SLOWER THAN THE SAME ARITHMETIC IN JS, BECAUSE ITS STRING PRIMITIVES SLICE.** And the
+ceiling: the decode is ~1.45 ms of a ~3.7 ms turn, and ~0.8 ms of it is this parsing. **AN EFFECT COULD TAKE
+THE TURN FROM ~3.7 ms TO ~2.9 ms** -- the largest single number in this record.
+
+### 131.1 And the shape the effect must have, learned the hard way
+
+**BEND'S LIST IS MONOMORPHIC.** So a row cannot be a list of mixed strings and numbers, and it cannot be a
+pair of lists of different kinds. The shapes tried, in order:
+
+1. **ONE EFFECT, A ROW OF NINE MIXED VALUES** -- REFUSED by the checker: `match` binds one kind, so the
+   strings arrive as `U32`. (The error was `expected : String / observed : U32`.)
+2. **ONE EFFECT, A ROW OF NINE `U32`** -- the same refusal, and the shape is wrong anyway.
+3. **TWO EFFECTS, ONE LIST OF STRINGS AND ONE OF NUMBERS** (one per row, or the rows flat) -- **THE
+   DAEMON HUNG.** The effect itself answers correctly (`@@N 1` for a one-uop wire, measured with a probe),
+   so the hang is in the PORT's read of the two lists, and this shape is where the turn was spent.
+
+**⇒ THE SHAPE IS NOT FOUND, AND THE HONEST COST OF THE SEARCH IS THE RECORD'S OWN: EVERY ONE OF THE SIX
+CANDIDATES THIS SESSION WAS BUILT, MEASURED AND REVERTED, AND THE TWO THAT WON DELETED WORK RATHER THAN
+MOVING IT.** §131's number is real and it is the biggest remaining term, but it is NOT a turn-sized change
+and it is not landed.
+
+### 131.2 The corpus's seven fixtures, and what they actually need
+
+The seven stale fixtures are NOT a fixture problem. MEASURED against the re-vendored upstream:
+
+- **`UOp.group` NOW EMITS A `STACK` SRC.** `upstream/uop/ops.py:529-531`: `return UOp(Ops.STACK).after(*srcs)`, and
+  the STACK is the AFTER's FIRST SRC. **THE PORT'S `UOp.group` ALREADY DOES THIS** (`uop/ops.bend:2938-2947`),
+  so the port's model is right and its *fixtures* are behind.
+- **`PERMUTE` NO LONGER CARRIES ITS AXES IN THE ARG.** `movement.py:231` calls `_mop(Ops.PERMUTE, arg=order_arg)`,
+  and `ops.py:784-789` turns the tuple into `shape_to_shape_arg(arg)`, which is **`UOp.const(x)` PER AXIS AND A
+  `STACK` OF THEM** (`ops.py:105-109`). MEASURED: `PERMUTE arg = None | srcs = [('RESHAPE', ...), ('STACK', (3,))]`.
+  **THE PORT STILL SPELLS THE AXES AS `O.ATuple{[0, 2, 1]}` IN THE ARG** (`mixin/movement.bend:1001`,
+  `schedule/prepare.bend:275`).
+
+**⇒ SO TWO OF THE SEVEN FIXTURES' DIFFERENCES ARE A *MODEL* DIFFERENCE IN THE PORT (PERMUTE'S AXES), NOT A
+FIXTURE-STALENESS, AND FIXING THEM MEANS CHANGING THE PORT'S PERMUTE REPRESENTATION** -- which touches
+`ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the renderer's `ku_render_index` and
+`schedule/rangeify.bend`. **THAT IS A PORT CHANGE, NOT A CERTIFICATE CHANGE, AND IT IS BIGGER THAN A TURN.**
