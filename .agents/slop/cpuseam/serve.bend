@@ -37,10 +37,24 @@ def parse_len(+s: String) -> Nat: U32.to_nat(Maybe.default(&2, U32, U32.read(s),
 def read_pay(need: Nat, +acc: String) -> U32:
   U32.from_nat(Nat.max(1n, Nat.sub(need, String.length(acc))))
 
+# **⇒ AND THE LENGTH IS EIGHT DIGITS AND **NO NEWLINE**, AND IT IS READ IN **ONE READ**.**
+# MEASURED (`PARITY.md` §134.6/§134.7): THE RUNTIME's READ IS "READ EXACTLY N"
+# (`references/bend/bend2/effs/file_read.js:57`'s LOOP IS `while (got < len)`), SO A READ OF N WAITS
+# FOR N BYTES. **⇒ AND THE OLD PROTOCOL's VARIABLE-WIDTH LENGTH LINE COULD NOT BE READ IN ONE READ**,
+# BECAUSE THE PORT DOES NOT KNOW HOW MANY BYTES THE LINE IS BEFORE IT READS IT -- SO IT READ IT **ONE
+# BYTE AT A TIME**, AND MEASURED: **20 READS FOR THE 782-UOP WIRE's 3 CHUNKS** (17 LENGTH BYTES + 3
+# PAYLOADS), **EVERY READ CARRYING A `fstatSync`** (`file_read_room`).
+# **⇒ SO THE LENGTH IS A FIXED-WIDTH FIELD: EIGHT ZERO-PADDED DIGITS AND NO NEWLINE** (A NEWLINE WOULD
+# BE A NINTH BYTE, AND THE PAYLOAD's FIRST BYTE WOULD HAVE TO BE CARRIED). **AND A ZERO-LENGTH CHUNK IS
+# EIGHT ZEROS**, WHICH IS THE END MARKER.
 def st_len.x(+acc: String, +text: String, +chunks: List<&2, String>) -> St:
-  Bool.pick(St, is_nl(text),
-    Bool.pick(St, Nat.is_eq(parse_len(acc), 0n), SEmit{chunks}, SRead{1n, "", parse_len(acc), chunks}),
-    SRead{0n, String.concat([acc, text]), 0n, chunks})
+  # **⇒ AND THE EIGHT DIGITS ARE READ WHOLE, SO THE SPLIT IS NOT NEEDED -- BUT ONLY ONCE EIGHT BYTES HAVE
+  # ARRIVED.** MEASURED: THE RUNTIME's READ IS "READ EXACTLY N", SO A READ OF EIGHT RETURNS EIGHT BYTES
+  # **OR IT BLOCKS** -- SO `acc` IS EIGHT BYTES ON THE FIRST READ, AND THE `String.length` TEST IS
+  # DEFENSIVE RATHER THAN LOAD-BEARING. **⇒ AND A ZERO LENGTH IS THE END MARKER** (EIGHT ZEROS).
+  +whole = String.concat([acc, text])
+  Bool.pick(St, Nat.is_lt(String.length(whole), 8n), SRead{0n, whole, 0n, chunks},
+    Bool.pick(St, Nat.is_eq(parse_len(whole), 0n), SEmit{chunks}, SRead{1n, "", parse_len(whole), chunks}))
 
 def st_len(r: Result<&1, &1, U32 & String, String>, +acc: String, +chunks: List<&2, String>) -> St:
   match r:
@@ -64,7 +78,9 @@ def st_of(mode: Nat, r: Result<&1, &1, U32 & String, String>, +acc: String, +nee
 
 def sz_of(s: St) -> U32:
   match s:
-    case SRead{mode, acc, need, chunks}: Bool.pick(U32, Nat.is_eq(mode, 0n), 1, read_pay(need, acc))
+    # **⇒ AND MODE 0 ASKS FOR EIGHT BYTES -- THE LENGTH FIELD'S WIDTH.** MEASURED: THE OLD MODE ASKED
+    # FOR ONE, AND THE WIRE COST 20 READS; THIS COSTS 2 PER CHUNK (THE LENGTH AND THE PAYLOAD).
+    case SRead{mode, acc, need, chunks}: Bool.pick(U32, Nat.is_eq(mode, 0n), 8, read_pay(need, acc))
 # THE EMIT STATE ASKS FOR NOTHING. MEASURED: a read of 0 bytes returns immediately, and a read of 1
 # byte here BLOCKS on the next frame -- which is exactly why the first version printed nothing.
     case SEmit{acc}: 0
@@ -93,7 +109,12 @@ def serve(fuel: Nat, m: (File & Result<&1, &1, U32 & String, String>), s: St) ->
             IO.bind(List<&2, C.KU>, Unit, decode(cs), ks =>
               IO.bind(Unit, Unit, IO.print(C.render(C.dev_clang(), True{}, ks)), _ =>
                 IO.bind(Unit, Unit, IO.print(ended()), _ =>
-                  IO.bind((File & Result<&1, &1, U32 & String, String>), Unit, File.read(f, 1),
+                  # **⇒ AND THE READ AFTER THE RENDER IS THE **WHOLE LENGTH FIELD** TOO, NOT ONE BYTE.**
+                  # MEASURED: THE OLD PROTOCOL READ **ONE BYTE** HERE (THE "SIGNAL"), AND THAT BYTE WAS THE
+                  # FIRST DIGIT OF THE NEXT FRAME's LENGTH LINE -- SO THE OLD PROTOCOL's FIRST READ AND
+                  # ITS POST-RENDER READ WERE THE SAME READ. WITH A FIXED-WIDTH FIELD THE POST-RENDER READ
+                  # MUST ASK FOR THE WHOLE FIELD, OR IT EATS ITS FIRST DIGIT.
+                  IO.bind((File & Result<&1, &1, U32 & String, String>), Unit, File.read(f, 8),
                     io => serve(k, io, SRead{0n, "", 0n, Nil{}}))))))
 
 def pick(n: Nat, +xs: List<&2, String>) -> String:
@@ -103,7 +124,14 @@ def serve_after(r: Result<&1, &1, U32 & String, File>) -> IO(Unit):
   match r:
     case Done{f}:
       do IO<Unit>:
-        io : (File & Result<&1, &1, U32 & String, String>) <- File.read(f, 1)
+        # **⇒ AND THE FIRST READ IS THE **WHOLE LENGTH FIELD**, EIGHT BYTES, NOT ONE.** MEASURED: THE OLD
+        # FIRST READ ASKED FOR **ONE BYTE** AND THE OLD PROTOCOL's VARIABLE-WIDTH LINE TOLERATED IT (THE
+        # BYTE WAS A DIGIT AND `acc` STARTED EMPTY) -- BUT WITH A FIXED-WIDTH FIELD THE FIRST BYTE IS
+        # **PART OF THE LENGTH**, AND A READ THAT EATS IT READS A **SEVEN-DIGIT** NUMBER. MEASURED, THE
+        # SYMPTOM WAS EXACT: THE STATE LOGGED `need=84745` WHERE THE LENGTH IS **8474**, AND THE READS
+        # LOGGED `TEXT n=1 [0]` THEN `TEXT n=8 [00084745]` -- **EIGHT DIGITS AND THE PAYLOAD's FIRST
+        # BYTE**, BECAUSE THE FIELD'S EIGHT BYTES PLUS ONE MORE ARRIVED IN THE SECOND READ.
+        io : (File & Result<&1, &1, U32 & String, String>) <- File.read(f, 8)
         serve(1000000n, io, SRead{0n, "", 0n, Nil{}})
     case Fail{error}: IO.die(Unit, 1, "serve: fifo could not be opened")
 

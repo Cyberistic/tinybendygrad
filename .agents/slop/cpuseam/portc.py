@@ -539,7 +539,17 @@ class Worker:
     # splits -- one `String.split` over 28 KB overflows this runtime's stack, and §84.3 measured a 1,215-uop
     # kernel killing the worker and downgrading the rest of the session to the one-shot path.
     parts = _chunks(text)
-    self.w.write("".join(f"{len(c)}\n{c}" for c in parts).encode() + b"0\n")
+    # **⇒ AND THE LENGTH IS A FIXED-WIDTH FIELD, BECAUSE THE RUNTIME's READ IS "READ EXACTLY N".**
+    # MEASURED (`PARITY.md` §134.6/§134.7): `references/bend/bend2/effs/file_read.js:57`'s LOOP IS
+    # `while (got < len)`, SO A READ OF N BYTES WAITS FOR N BYTES -- WHICH IS WHY A 32-BYTE READ OF THE
+    # LENGTH LINE HANGS (THE LINE IS 5 BYTES AND THE PAYLOAD MAY NOT ALL BE THERE YET). **⇒ AND A
+    # VARIABLE-WIDTH LENGTH CANNOT BE READ IN ONE READ, BECAUSE THE PORT DOES NOT KNOW HOW MANY BYTES
+    # THE LINE IS BEFORE IT READS IT** -- SO THE OLD MACHINE READ THE LENGTH **ONE BYTE AT A TIME**
+    # (`sz_of` ASKED FOR 1 IN MODE 0), AND MEASURED: **20 READS FOR THE 782-UOP WIRE's 3 CHUNKS**
+    # (17 LENGTH BYTES + 3 PAYLOADS), **EVERY READ CARRYING A `fstatSync` IN THE RUNTIME**
+    # (`file_read_room`).
+    # **⇒ SO THE LENGTH IS EIGHT ZERO-PADDED DIGITS, AND THE DAEMON READS EIGHT BYTES IN ONE READ.**
+    self.w.write("".join(f"{len(c):08d}{c}" for c in parts).encode() + b"00000000")
     import queue
     deadline = time.time() + TIMEOUT
     lines, started = [], False
