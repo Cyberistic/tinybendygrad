@@ -28152,6 +28152,38 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       intersection / subtraction) over node lists.
 - [ ] `divandmod.py:103` (`fold_divmod_general`) — then needs `UOp.usum` reachable from
       `divandmod.bend` (the `symbolic -> divandmod` import direction forbids it today).
+- [x] **THE LAST MISSING CENSUS ROW IS NOT A DEAD ENTRY: IT FIRES ON ORDINARY GRAPHS, AND THE
+      SWEEP FOUND IT BEHAVIOURALLY.** MEASURED 2026-11-08 WITH
+      `.agents/slop/sym92/deadrules-sweep.sh` (NEW): **UPSTREAM's ANSWER FOR `(x*y)/y` IS
+      `(div (mul c1 x) c1)`, AND THE RULE THAT PRODUCES IT IS `tinygrad/uop/divandmod.py:103`'s
+      `fold_divmod_general`** — MEASURED BY ASKING THE MATCHER WHICH PATTERN FIRED:
+      **PATTERN 117 IS `UPat({DIV, MOD}, dtype=weakint, name="d")` WITH `src=None`**, **AND ITS
+      FUNCTION IS `tinygrad.uop.divandmod.fold_divmod_general`.** **SO THE PORT DECLINES A
+      REWRITE UPSTREAM PERFORMS, ON A GRAPH AS ORDINARY AS `(x*y)/y`.** **AND THE SWEEP READS
+      `24 CASES 23 AGREE 1 DIVERGE` AND THE ONE DIVERGENCE IS THIS ROW.**
+      **⇒ THE SWEEP SETTLES THE `deadrules.py` LIST OF 23 BEHAVIOURALLY: FOURTEEN ARE KEPT
+      UPSTREAM RULES THAT WERE REWORDED (AND THE PORT MATCHES THEM), AND THE REST ARE DELETED
+      UPSTREAM RULES THE PORT ALSO DECLINES — EXCEPT THIS ONE.**
+      **⇒ AND THE SWEEP USES THE SAME 2,397-LINE DRIVER WITH ITS CASES PATH OVERRIDED BY
+      `IO.args()`** (INDEX 1, THE TREE's CONVENTION), **SO THERE IS NO SECOND COPY OF THE
+      DRIVER.**
+- [x] **THE `divandmod` LANE'S CPYTHON ORACLE WAS SWEPT AND THE BLOB WAS STILL IN THE OBJECT
+      STORE.** MEASURED 2026-11-08: `tinybendygrad/uop/divandmod.bend`'s HEADER NAMES
+      `.agents/slop/dm-oracle.py` **BY NAME** **AND THE FILE WAS ABSENT**, **AND
+      `git rev-list --all --objects` STILL NAMED THREE `dm-oracle.py` BLOBS** — THE LARGEST
+      (`6065cd94bc2360eed4f9a56343e3458a144017e2`, 3346 B) **IS RESTORED AND RE-POINTED AT
+      THE PIN.** **A SWEPT FILE IS NOT A LOST FILE WHEN THE BLOB IS STILL IN THE OBJECT STORE,
+      AND "IT WAS DELETED" IS NOT A REASON TO REBUILD IT.**
+      **AND THE RESTORED FILE REFUSED TO RUN AND EVERY REASON WAS THE RE-VENDOR DRIFT:**
+      `Ops.FLOORDIV`/`Ops.FLOORMOD` ARE NOW `Ops.DIV`/`Ops.MOD` (**THE SAME DRIFT THAT MADE
+      `gates/decomp_graph_census-oracle.py` REFUSE WITH `KeyError: 'FLOORDIV'`**), AND
+      `UOp.variable(..., multiple_of=N)` IS GONE **AND `multiple_of` IS NOT A FIELD OF
+      `ParamArg` AT ALL** (MEASURED, UPSTREAM's `ops.py` AT THE PIN MENTIONS IT **ZERO TIMES**),
+      **SO THE FOUR `multiple_of` CASES ARE DROPPED RATHER THAN REWRITTEN INTO SOMETHING ELSE,
+      BECAUSE A CASE THAT MEANS SOMETHING ELSE IS NOT A CASE.**
+      **⇒ AND `.agents/slop/dm-compare.py` (NEW) READS `19 AGREE AND 0 DIVERGE` FOR THE LANE'S
+      OWN 19 COMPARABLE ROOTS, AND ITS PLANT PROVES THE ROW CAN GO RED** (`dm_1`'s `cm`/`cq`
+      SWAPPED READS **5 DIVERGE**).
 
 ### Session 2026-11-04 addendum — the guard audit CLOSED, and two defects found by probes
 
