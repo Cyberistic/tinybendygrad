@@ -1859,8 +1859,16 @@ def st_set.p(+st: St, i: U32, +ps: List<&2, String>) -> St:
   st_set.r(ps, Rows.bi(r, d), Rows.off(r, d), st)
 def st_set(+st: St, i: U32, x: String) -> St: st_set.p(st, i, [x])
 
+# **⇒ AND THE KERNEL's LINES ARE **PREPENDED**, AND REVERSED ONCE AT THE READ.** MEASURED
+# (`PARITY.md` §137): `List.append(xs, ys)` IN BEND **COPIES `xs`**, SO `List.append(acc, [x])` IS O(n)
+# AND `List.append([x], acc)` IS O(1). **⇒ AND `st_kernel` WAS THE O(n) FORM, AND IT IS CALLED ONCE
+# PER EMITTED LINE.** MEASURED, THE CENSUS OF THE `List.append` ENTRY CALLS (THE RECURSION EXCLUDED):
+# `st_kernel` **407 CALLS COPYING 82,039 ELEMENTS (MAX 404)**, `chunk_close` 49/1,176, `List_concat`
+# 2,897/3,890, AND EVERY OTHER SITE UNDER 1,000. **⇒ SO `st_kernel` IS 90% OF THE ~91,000 ELEMENTS
+# COPIED A RENDER, AND `$List_append`'s SELF TIME IS 0.979 ms A TURN -- HALF THE PORT's 1.99 ms.**
+# **⇒ AND THE PREPENDED LIST IS REVERSED ONCE, AT THE ONE READER THAT CARES ABOUT THE ORDER** (`:2983`).
 def st_kernel(+st: St, x: String) -> St:
-  St.of(St.r(st), List.append(&2, String, St.kernel(st), [x]), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+  St.of(St.r(st), List.append(&2, String, [x], St.kernel(st)), St.bufs(st), St.c(st), St.depth(st), St.name(st))
 
 def st_bufs(+st: St, x: BArg) -> St:
   St.of(St.r(st), St.kernel(st), List.append(&2, BArg, St.bufs(st), [x]), St.c(st), St.depth(st), St.name(st))
@@ -2980,7 +2988,9 @@ def render_kernel(+dev: U32, +cpu: Bool, +fn: String, +kernel: List<&2, String>,
 # ONE-LINE CASE (NO LINEAR BODIES, NO EXTERN DECLARATIONS).
 def render(+dev: U32, cpu: Bool, +kus: List<&2, KU>) -> String:
   +st = _render(dev, kus)
-  render_kernel(dev, cpu, St.name(st), St.kernel(st), St.bufs(st), kus, 1)
+  # **⇒ AND THE REVERSE HAPPENS HERE, ONCE, BECAUSE `st_kernel` PREPENDS.** THE OTHER READERS OF
+  # `St.kernel` COPY THE LIST THROUGH UNCHANGED, SO THEY ARE NOT AFFECTED.
+  render_kernel(dev, cpu, St.name(st), List.reverse(&2, String, St.kernel(st)), St.bufs(st), kus, 1)
 
 # THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
 
