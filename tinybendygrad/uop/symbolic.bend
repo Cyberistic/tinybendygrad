@@ -5277,24 +5277,28 @@ def sym_299.run(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_299(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_299.pat(x, u), sym_299.run(x, u))
 
-# ---- `symbolic.py:193`, a positive const to the power of x -------------------------
+# ---- `symbolic.py:200`, a positive const to the power of x -------------------------
 #
 #   (UPat.cvar("c").alu(Ops.POW, UPat.var("x")),
-#     lambda c,x: c if c.val == 1
-#       else (x*math.log2(c.val)).exp2() if c.val > 0 and dtypes.is_float(x.dtype) else None)
+#     lambda c,x: (x*math.log2(c.val)).exp2() if c.val > 0 and dtypes.is_float(x.dtype) else None)
 #
-# `c**x` is `exp2(x*log2(c))` and `1**x` is `1` -- and the `1` is the CONST NODE ITSELF, not a
-# rebuilt one, so the const arm answers an index it did not mint.
+# `c**x` is `exp2(x*log2(c))`.
+#
+# **AND THE `c.val == 1` ARM IS GONE AT THE CURRENT PIN.** AT THE OLD PIN (`5c2bf39d6`) THE RULE
+# WAS `lambda c,x: c if c.val == 1 else (x*math.log2(c.val)).exp2() if ...` -- SO `1**x` WAS THE
+# CONST `1` ITSELF. **AT THE CURRENT PIN (`f5ac54685074`) THE `c.val == 1` ARM IS NOT THERE**,
+# SO `1**x` GOES THE FLOAT WAY AND THE ANSWER IS `(exp2 (mul xf f0.0))`.
+#
+# MEASURED 2026-11-07 BY THE BODY-VERIFICATION INSTRUMENT ON THE CASE `p193a` (`(pow c1 xf)`):
+# UPSTREAM ANSWERS `(exp2 (mul xf f0.0))` AND THE PORT ANSWERED THE CONST `c1` -- **THE PORT WAS
+# IMPLEMENTING THE OLD PIN's RULE.**
+#
+# THE ARITHMETIC IS THE SAME (`1**x` IS `1`), BUT THE GRAPHS ARE NOT, AND THE REFERENCE IS
+# UPSTREAM's GRAPH.
 #
 # BOTH CONST CLASSES ARE READ, because `UPat.cvar` matches a VALUE and a float const is one: a
 # `CInt` reaches `F32` through `U32.to_f32` and a `CFloat` is already the number. A version that
 # read only `CInt` would answer `exp2(x*log2(0))` for a float const.
-def sym_193.is1(c: O.Const) -> Bool:
-  match c:
-    case O.CInt{i}: Cmp.is_eq(H.i64_cmp(i, H.i64_of_i32(1)))
-    case O.CFloat{f}: F32.is_eq(f, 1.0)
-    case _: False{}
-
 def sym_193.pos(c: O.Const) -> Bool:
   match c:
     case O.CInt{i}: Cmp.is_gt(H.i64_cmp(i, H.i64_of_i32(0)))
@@ -5325,17 +5329,17 @@ def sym_193.go2(p: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case True{} : sym_193.go3(sym_193.flt(x, u), x, u)
     case False{}: None{}
 
-def sym_193.go1(one: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  match one:
-    case True{} : Some{O.Found{sy_ar(x), sy_src0(x, u)}}
-    case False{}: sym_193.go2(sym_193.pos(sy_maybe_c2(sy_val(x, sy_src0(x, u)))), x, u)
+# THE ENTRY IS THE CONSTANT'S POSITIVENESS AND THE EXPONENT'S FLOATNESS -- **AND NOT "IS THE
+# CONST ONE"**, BECAUSE UPSTREAM's CURRENT RULE HAS NO `c.val == 1` ARM.
+def sym_193.go1(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sym_193.go2(sym_193.pos(sy_maybe_c2(sy_val(x, sy_src0(x, u)))), x, u)
 
 def sym_193.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsPOW{}), sy_nsrc_is(x, u, 2)),
            sy_is_const(x, sy_src0(x, u)))
 
 def sym_193(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sy_tri_f(sym_193.pat(x, u), sym_193.go1(sym_193.is1(sy_maybe_c2(sy_val(x, sy_src0(x, u)))), x, u))
+  sy_tri_f(sym_193.pat(x, u), sym_193.go1(x, u))
 
 # ---- `transcendental.py:267`, `xpow_int` -------------------------------------------
 #
