@@ -1,0 +1,23 @@
+# THE SIX TABLE ENTRIES THAT DISPATCH A RULE UPSTREAM NO LONGER HAS, AND WHAT EACH ONE'S
+# BEHAVIOUR IS. MEASURED 2026-11-06.
+#
+# THE TEXT TEST FINDS SIX AND THE BEHAVIOURAL TEST SPLITS THEM IN TWO, AND THE BEHAVIOURAL TEST
+# IS THE ONE THAT COUNTS: A RULE THAT UPSTREAM REWROTE HAS A DIFFERENT PATTERN AND A DIFFERENT
+# ANSWER, AND A RULE THAT UPSTREAM DELETED HAS NO ANSWER AT ALL.
+#
+# tag  body     the rule                        upstream's answer          the verdict
+19    sym_125  (x // -1)                       (mul x -1)                 REWRITTEN -- NOT EXTRA
+53    sym_174  ((x*x2) / x2)                   NONE                       **EXTRA -- UPSTREAM DECLINES**
+101   sym_295  ((x+c1) + y)                    (add y (add x 1))          REWRITTEN -- NOT EXTRA
+104   sym_300  (x*-1 < y*-1)                   (cmplt y x)                REWRITTEN -- NOT EXTRA
+106   sym_302  ((x<1).ne(True))                 NONE                       **EXTRA -- UPSTREAM DECLINES**
+119   sym_453  (store(index) load(index))       (after (noop) (index ...))  **EXTRA -- DIFFERENT ANSWER**
+#
+# AND THE THREE EXTRA ONES ARE THE DIVERGENCES THE BODY-VERIFICATION INSTRUMENT SAW:
+#
+#   sym_174 -> r174  `(mul (mul x y) (reciprocal y))` -- THE PORT ANSWERS `x` AND UPSTREAM DECLINES
+#   sym_302 -> THE `(x<1).ne(True)` FAMILY
+#   sym_453 -> r453  `(store (index b c0) (load (index b c0)))` -- THE PORT KEEPS THE LOAD AND
+#             UPSTREAM REWRITES IT TO `(after (noop) (index ...))`
+#
+# MEASURED, EVERY ANSWER ABOVE IS CPYTHON's OWN `sym.rewrite` ON THE NAMED GRAPH.
