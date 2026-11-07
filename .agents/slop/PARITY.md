@@ -5980,3 +5980,116 @@ contribution. (The renderer is built to JS only: `portc.py:364` builds `-o str(j
 **39/39**, `portexec` **7/7**, `PROOF-ALL.bend` **rc=0**. The port-compile gate's census: `live.bend` is in
 the **FOREIGN** class (it was already, for `Wire.split`), and the one FINDING is `kuconv.bend`, which is
 **UNCHANGED BY THIS CHANGE** (`diff -q` against `HEAD` answers nothing).
+
+## 133. THE OP INDEX IS A NUMBER AND THE DTYPE NAME IS A CODE: WALL 0.956, CPU 0.970
+
+§132 left the renderer's own per-character work as the largest term. This section deletes three string
+tries and is the second win of the session.
+
+### 133.0 The census that named the terms
+
+MEASURED by instrumenting the compiled JS (each callee wrapped with a counter, printed at `@@END`), on the
+642-uop wire, AFTER §132: `char_len` **13,853** a render, and the split was
+
+| site | char_len a render | what it is |
+|---|---|---|
+| `op_by_idx` | **2,560** | the op-name match -- the LARGEST term |
+| `dt_of` | 1,284 | the dtype-code match |
+| `arg_of` | 898 | the arg-kind match |
+| `addr_of` | 691 | the addrspace match |
+| `$U32_read` / `_go` | 628 / 812 | the prelude's number parse |
+| `rd_base_plain` / `rd_base_clang` | 594 / 374 | the C-name matches |
+| `under_split` | 2,620 (as `String.split` calls) | the prelude's per-character split |
+
+### 133.1 A `match` ON A STRING IS A CHARACTER TRIE, AND A `match` ON A `U32` IS AN INTEGER COMPARE
+
+**MEASURED:** `op_by_idx` (76 arms keyed by the enum index as a DECIMAL STRING) compiled to **84** `slice`s
+and **84** `char_len` calls, and cost **2,560** `char_len` calls a render. The compiler builds a TRIE: it
+compares the first character, slices, compares the second, slices. **A `match` on a `U32` COMPILES TO
+INTEGER COMPARES** (MEASURED on a four-arm probe: `if (_n_0 == 30) ...`), and a runtime `U32` IS A PLAIN
+JS NUMBER (`_n_0 === 0` in the emitted code), so an arm costs ONE integer compare and no slice.
+
+**⇒ SO THE OP INDEX RIDES IN THE WIRE's NUMBERS.** `wire.js`'s `wire_numbers` prepends `Number(parts[i])`
+and the strings row is FOUR fields wide (dt, addr, kind, payload). **THE OP TRIE IS GONE -- IT DOES NOT
+APPEAR IN THE CENSUS AT ALL.**
+
+**⇒ AND `portc.py`'s OP-TABLE COVERAGE CHECK NOW READS BOTH SPELLINGS** (`case "30": O.Ops` AND
+`case 30: O.Ops`), because its subject is the COVERAGE and not the SPELLING. The ENUM-PIN is UNCHANGED --
+it hashes the enum's MEMBER NAMES, not the table's form.
+
+### 133.2 The underscored name is a match on the SHORT CODE
+
+The port split the C name on ' ' and rejoined it with '_' -- exact, but the prelude's `String.split` is one
+recursion per character (MEASURED: 400 `under_split` calls, 2,620 recursive `String.split` calls, and the
+13,853 `char_len` calls).
+
+**THE NAME IS FROM A CLOSED SET, AND THAT IS THE PORT'S OWN FACT.** `rd_base_name` reads `rd_base_dev`,
+which is a `match` on the device over a `match` on the dtype's SHORT CODE, so every name it can produce is
+one of the twenty-six literals in `rd_base_plain` / `rd_base_clang` / `rd_base_opencl` / `rd_base_metal` /
+`rd_base_cuda` / `rd_base_hip` -- plus the short code itself, which is the `_` arm's passthrough.
+**EXACTLY FIVE OF THOSE CONTAIN A SPACE** (`signed char`, `unsigned char`, `unsigned int`,
+`unsigned long`, `unsigned short`), and the port's own comment above `under_split` already said so.
+
+**⇒ SO `under_code` MATCHES THE CODE** (two to four characters) and answers the underscored form as a
+LITERAL, and the device is consulted ONLY where it OVERRIDES a spaced code: OpenCL overrides all five
+(`i8`->`char`, `u8`->`uchar`, `u16`->`ushort`, `u32`->`uint`, `u64`->`ulong`), Metal and CUDA override
+`u32` (->`uint`), and Clang, HIP and the base override none.
+
+**⇒ AND `has_space` IS GONE.** `cstyle.py:189` is `name.replace(" ", "_") if sz > 1 else name` -- the
+replace is UNCONDITIONAL on the `sz > 1` branch and there is NO "has a space" test upstream. The port had
+one because its `under` was the general replace; with the closed set, a name with no space IS its own
+underscored form, so the test has no subject left.
+
+### 133.3 `Bool.pick` EVALUATES BOTH ARMS
+
+**MEASURED:** `Bool.pick` is a `match` in the prelude, but the COMPILER turns it into a FUNCTION CALL, so
+its two arms are JS ARGUMENTS and both are built before the call. `rd_body_at` called `rd_name_at` TWICE
+-- once with `True` and once with `False` -- so every dtype render built BOTH the underscored name and the
+plain one: MEASURED `rd_name_at` **200** calls for **100** bodies.
+
+**⇒ SO THE ARMS ARE CHOSEN WITH A `match`, WHICH THE COMPILER MAKES A REAL `if`.** Now `rd_name_at` is
+**100** calls and `under_code` is **83** -- the `sz > 1` bodies only (MEASURED: 17 bodies at `sz = 1`, 83
+at `sz = 4`).
+
+### 133.4 Two defects the byte comparison and the probe caught, and each is a class
+
+1. **THE UNDERSCORED FORM OF A NAME WITH NO SPACE IS THE NAME, AND "THE NAME" IS THE DEVICE's C NAME.**
+   The first cut had `under_code`'s `_` arm answer the SHORT CODE, so `f32` came back as `f32` and the
+   rendered kernel read `f324` where CPython says `float4`. **`same C: False` CAUGHT IT, AND THAT IS
+   WHY THE BYTE COMPARISON RUNS BEFORE THE MEASUREMENT.**
+2. **A CLOSED SET IS NOT THE SAME AS A UNIFORM SET.** The first cut forgot OpenCL's `u32`: OpenCL maps
+   `u32` to `uint`, which has NO SPACE, so its underscored form is `uint` and not `unsigned_int`. A probe
+   over every (device, code) pair found it. **MEASURED: the probe calls the COMPILED `under_code` and
+   `rd_base_dev` over six devices and twenty codes and compares against a table computed from the port's
+   OWN `rd_base_*` matches -- the fixed table is 120 of 120.**
+
+### 133.5 The measurements
+
+On the 642-uop wire, `same C: True`, 5,649 bytes, byte-identical.
+
+| | min | p25 | **median** | faster |
+|---|---|---|---|---|
+| **WALL** vs §132 | 0.4735 | 0.8836 | **0.9564** | **100/150** |
+| **CPU** vs §132 | 0.7555 | 0.9358 | **0.9703** | **27/40** |
+| **WALL** vs §129 (cumulative) | 0.3772 | 0.6094 | **0.7458** | **121/150** |
+| **CPU** vs §129 (cumulative) | 0.7365 | 0.8032 | **0.8237** | **39/40** |
+
+**⇒ THE TURN IS ~3.44 ms WALL, DOWN FROM ~4.53 ms AT THE §129 BASELINE.**
+
+THE CALL CENSUS AFTER: `char_len` **13,853 -> 9,579**, and the remaining terms are `dt_of` 1,284,
+`arg_of` 898, `addr_of` 691, the prelude's `U32.read` 628/812, `rd_base_plain` 594, `rd_base_clang` 374 and
+`under_code` 166. **`op_by_idx` IS GONE.**
+
+### 133.6 The gates, and one that is RED AT HEAD
+
+`ksweep` **37/37 byte-identical on BOTH decoders**, `opbattery` **39/39**, `portexec` **7/7**,
+`PROOF-ALL` **rc=0**, `cstyle.bend` **ALL PROOFS CHECK**. The port-compile census: `cstyle.bend` COMPILES,
+`live.bend` is COLD-BY-DESIGN (the memory ceiling, the same class as before), and the one FINDING is
+`kuconv.bend`, **UNCHANGED by this commit**.
+
+**`gates/cstyle_render_census-gate.py` IS REFUSED, AND IT IS REFUSED IDENTICALLY AT HEAD.** MEASURED: the
+error is `expected : List<&2, String> / observed : String` at `cfo_row` line 357, and the gate's driver
+passes `["a","b","c"]` to `C.code_for_op.of`, whose third argument has been `List<&2, List<&2, String>>`
+since before this session (MEASURED: `git show HEAD:tinybendygrad/renderer/cstyle.bend | grep
+'def code_for_op.of'` and the signature is IDENTICAL, only the line number moved). **⇒ IT IS A PRE-EXISTING
+FAILURE AND NOT THIS CHANGE'S, AND IT IS NOT FIXED HERE.**
