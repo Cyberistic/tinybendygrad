@@ -208,23 +208,25 @@ def renest(flat: str) -> str:
   SO THE RE-NESTING IS: FOR EACH ROW, ITS HEAD, THEN EACH SRC's SUBTREE, THEN THE CLOSE.
   """
   if flat == "norewrite" or flat == "parse-error": return flat
-  rows, kids = {}, {}
+  rows, kids, isleaf = {}, {}, {}
   for row in flat.split(";"):
     if not row: continue
     idx, rest = row.split(":", 1)
     # THE HEAD MAY CARRY A DTYPE SUFFIX (`cast:i32`), SO THE HEAD/SRCS BOUNDARY IS THE **LAST**
     # `:` AND NOT THE FIRST. MEASURED 2026-11-06: A FIRST-`:` SPLIT READ `i32:1` AS A SRC.
     head, srcs = rest.rsplit(":", 1)
-    # THE OP NAME IS LOWERCASED, BECAUSE THE ORACLE's `sh` USES `u.op.name.lower()` AND THE
-    # PORT's `Ops.name.of` UPPERCASES. THE DTYPE SUFFIX IS **NOT** LOWERCASED, BECAUSE
-    # `dt.name` IS ALREADY LOWERCASE ON BOTH SIDES.
+    # THE `L` LEAF MARKER IS **READ BEFORE THE LOWERCASE**, AND THAT IS THE WHOLE POINT:
+    # **THREE OPS HAVE A LOWERCASED NAME THAT STARTS WITH `l`** -- `linear`, `load` AND
+    # `log2` -- SO A CHECK ON THE LOWERCASED HEAD STRIPS THE `l` OFF THEM AND RENDERS `log2` AS
+    # `og2`. MEASURED 2026-11-07: THAT IS WHAT THE `x451*` DIVERGENCES WERE, AND THEY WERE A
+    # BUG IN **THIS** FILE AND NOT IN THE PORT.
     #
-    # **AND THE `L` LEAF MARKER IS UPPERCASE AND IS STRIPPED BEFORE THE LOWERCASE** -- A
-    # LOWERCASED `L` WOULD BE INDISTINGUISHABLE FROM A LOWER-CASE OP NAME.
-    # THE `L` MARKER IS **KEPT** IN THE STORED HEAD AND READ IN `build`, BECAUSE STRIPPING IT
-    # HERE LOSES THE ONLY FACT THAT SAYS "THIS IS A LEAF".
-    rows[int(idx)] = head.lower()
+    # SO THE MARKER IS A **SEPARATE FLAG** AND NOT A PREFIX OF THE HEAD, AND THE HEAD IS
+    # LOWERCASE ONCE.
+    leaf = head.startswith("~")
+    rows[int(idx)] = head[1:] if leaf else head.lower()
     kids[int(idx)] = [int(x) for x in srcs.split(",") if x != ""]
+    isleaf[int(idx)] = leaf
   def build(i):
     head = rows[i]
     ch = kids.get(i, [])
@@ -234,14 +236,11 @@ def renest(flat: str) -> str:
     #
     # MEASURED 2026-11-06: THE PORT PRINTS `(noop)` WHERE THE ORACLE PRINTS `(noop )`, AND THE
     # TWO ARE THE SAME GRAPH.
-    # A LEAF PRINTS ITS HEAD BARE AND EVERYTHING ELSE PRINTS THE PARENTHESIZED FORM. **WHICH
-    # IS A CONST OR A PARAM** IS THE DISTINCTION, AND THE HEAD ALONE DOES NOT SAY SO -- SO THE
-    # DRIVER PRINTS AN `L` MARKER AND THIS READS IT.
     #
     # MEASURED 2026-11-06: THE FIRST ATTEMPT GUESSED THE LEAVES BY NAME AND 104 OF THE 232
     # CASES DIVERGED. **A GUESSED CLASS IS NOT A CLASS.**
-    if head.startswith("l"):
-      return head[1:]
+    if isleaf.get(i, False):
+      return head
     return "(" + head + " " + " ".join(build(c) for c in ch) + ")"
   return build(int(flat.split(";", 1)[0].split(":", 1)[0]))
 

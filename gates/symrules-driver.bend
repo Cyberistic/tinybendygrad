@@ -62,15 +62,18 @@ def fx.head.of(a: O.Arg, op: O.Op) -> String:
     case O.AReduce{rop, num_axes}: String.concat(["reduce:", String.to_lower(O.Ops.name.of(rop))])
     case _: O.Ops.name.of(op)
 
-# THE `L` MARKER IS ON A LEAF -- A CONST OR A PARAM -- AND A PARAM IS A LEAF.
+# THE LEAF MARKER IS `~` AND NOT `L`, AND **THE `L` WAS AMBIGUOUS**: THE PORT's OP NAMES ARE
+# UPPERCASE AND `LOG2` STARTS WITH `L`, SO A `L` MARKER READS `LOG2` AS A LEAF AND RENDERS IT
+# `og2`. MEASURED 2026-11-07: THAT WAS THE `x451*` DIVERGENCE, AND IT WAS A BUG IN THE MARKER
+# AND NOT IN THE PORT. **`~` STARTS NO OP NAME.**
 def fx.head.par(par: Bool, a: O.Arg, op: O.Op) -> String:
   match par:
-    case True{}: String.concat(["L", fx.pname.of(a)])
+    case True{}: String.concat(["~", fx.pname.of(a)])
     case False{}: fx.head.of(a, op)
 
 def fx.head.at(cst: Bool, par: Bool, a: O.Arg, op: O.Op) -> String:
   match cst:
-    case True{}: String.concat(["L", SY.fz_render.cval(fx.cval.of(a))])
+    case True{}: String.concat(["~", SY.fz_render.cval(fx.cval.of(a))])
     case False{}: fx.head.par(par, a, op)
 
 # THE LIST HELPERS, AND `fx.lhead`/`fx.ltail` READ THE LIST THE PORT's OWN WAY.
