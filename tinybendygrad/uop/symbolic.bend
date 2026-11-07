@@ -1831,6 +1831,24 @@ def simplify_pow_f(+f: O.Found, +x: F.Folded, +u: U32, c: U32) -> Maybe<&1, O.Fo
 # `invalid_pat.broadcast()` IS A STACK WHOSE SRCS ARE ALL INVALID, and the port tested
 # only `src[0]`. MEASURED 2026-11-03: `(stack bad x)` answered `bad` where CPython answers
 # `norewrite` -- a rule that fires on a stack it must not touch.
+#
+# **AND THE ANSWER IS NOT THE FIRST SRC. UPSTREAM'S `:89` IS
+# `(invalid_pat.broadcast(name="s"), lambda i,s: i.expand(s.shape))`, SO THE ANSWER IS AN
+# `EXPAND` OF THE INVALID INTO THE STACK's SHAPE.**
+#
+# MEASURED 2026-11-07 ON CPYTHON AT `f5ac54685074`:
+#   `(stack bad)`      -> `(expand Invalid 1)`
+#   `(stack bad bad)`  -> `(expand Invalid 2)`
+# **AND THE `1` AND THE `2` ARE THE STACK's SHAPE -- A STACK OF `N` INVALID CONSTS HAS THE
+# SHAPE `(N,)` -- SO THE EXPAND's SECOND SRC IS `STACK(CONST(N))`.**
+#
+# **AND `UPat.broadcast` AT THE PIN IS `UPat(Ops.STACK, self.match_dtype, src=self)`
+# (`ops.py:1481`) -- A STACK WITH **ONE** SRC -- SO THE PATTERN MATCHES A STACK OF **ONE** OR
+# MORE INVALID CONSTS AND THE PORT's `all_invalid` TEST IS THE RIGHT ONE.**
+#
+# **AND THE OLD ANSWER WAS A WRONG KERNEL AND NOT A COSMETIC DIFFERENCE**: THE PORT's
+# `sym_82` ANSWERED `sy_src0(x, u)` -- THE INVALID ITSELF -- WHERE UPSTREAM ANSWERS AN
+# `EXPAND`, SO THE PORT PRODUCED A DIFFERENT SHAPE FOR EVERY BROADCASTED INVALID.
 def all_invalid.go(srcs: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
@@ -1840,7 +1858,25 @@ def sym_82.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTACK{}), sy_nsrc_ge(x, u, 1)),
     all_invalid.go(sy_srcs(x, u), x, True{}))
 
-def sym_82(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sy_tri(sym_82.pat(x, u), Some{sy_src0(x, u)})
+# THE SHAPE CONST, AND **IT IS A PLAIN INT CONST AND NOT A TUPLE**. MEASURED 2026-11-07 ON
+# CPYTHON AT THE PIN: UPSTREAM's EXPAND NODE IS `EXPAND(CONST(Invalid), CONST(2))` -- THE
+# SECOND SRC IS A `CONST` WHOSE ARG IS THE **COUNT**, AND ITS DTYPE IS `weakint`.
+#
+# **AND THE PORT's `STACK(CONST(N))` SPELLING WAS WRONG FOR THIS NODE** -- IT IS THE SPELLING
+# `tinybendygrad/schedule/prepare.bend`'s `pr_shp1` USES FOR A *SHAPE* ARG, AND IT ANSWERED
+# `(expand bad (stack c2))` WHERE UPSTREAM ANSWERS `(expand bad c2)`. **THE SHAPE OF A STACK
+# IS `(N,)` BUT THE NODE UPSTREAM BUILDS CARRIES `N` ITSELF, NOT THE TUPLE.**
+def sym_82.shape(+f: O.Found, n: U32) -> O.Found:
+  O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(n)})
+
+def sym_82.put(+x: F.Folded, +u: U32, +f: O.Found) -> O.Found:
+  +inv = O.UOp.invalid(O.Found.ar(f))
+  +sh = sym_82.shape(inv, sy_nsrc(x, u))
+  O.UOp.new(O.Found.ar(sh), O.OpsEXPAND{}, [O.Found.i(inv), O.Found.i(sh)], O.ANone{}, O.TNone{})
+
+def sym_82(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_82.pat(x, u),
+    Some{sym_82.put(x, u, mint_ar(sy_ar(x)))})
 
 # symbolic.py:81  (UPat(GroupOp.Unary|{CAST, BITCAST}, src=(invalid_pat,)), lambda i: i)
 def sym_83.pat(+x: F.Folded, +u: U32) -> Bool:
@@ -6490,7 +6526,6 @@ def sym_table_len() -> Nat:
 # first-class functions: see the header.
 def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   match tag:
-    case 0: sym_82(x, u)
     case 1: sym_83(x, u)
     case 5: sym_89(x, u)
     case 7: sym_92(x, u)
@@ -6829,10 +6864,11 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 58, 59, 60, 61, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 98, 99, 100, 101, 102, 103, 104, 105, 106, 108, 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129]
+def MINT_TAGS() -> List<&2, U32>: [0, 2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 58, 59, 60, 61, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 98, 99, 100, 101, 102, 103, 104, 105, 106, 108, 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
+    case 0: sym_82(x, u)
     case 2: sym_84(x, u)
     case 3: sym_87(x, u)
     case 4: sym_88(x, u)
