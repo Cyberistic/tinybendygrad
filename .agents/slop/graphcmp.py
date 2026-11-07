@@ -2857,7 +2857,7 @@ def split_top(s: str) -> list[str]:
 def row_ops(lines: list[str]) -> dict[str, int]:
   """The `op` column's census over an emitted stream, COUNTED and not declared.
 
-  Field 1 of the eight length-prefixed fields is the op, so this is the same parse
+  Field 1 of the seven length-prefixed fields is the op, so this is the same parse
   `unchunks` does and no pattern is involved. It exists because a refusal has to be able to
   SAY what it cannot compare: the `# rows py=.. bend=.. CALL nodes py=.. bend=..` line, whose
   numbers are counted from the two row sets and not asserted, because a hard-written `4`
@@ -3578,7 +3578,16 @@ def selfcheck(dev: str = "CPU") -> int:
         f = unchunks(ln)
       except ValueError:
         continue
-      if len(f) == 8 and f[1] == "PROGRAM":
+      # **⇒ SEVEN FIELDS, NOT EIGHT, AND THAT IS THE SAME ROW-FORMAT CHANGE.** The `tag` column was
+      # DELETED from the row by `0021a7c33` ("PARITY 119: the corpus measures again"), and `WIRE` above
+      # IS THE SEVEN-FIELD LIST (`("id", "op", "dtype", "shape", "depth", "arg", "src")`) AND `row_of`
+      # EMITS SEVEN. **⇒ AND THIS READER STILL ASKED FOR EIGHT**, so `prog_args` FOUND NO `PROGRAM`
+      # ROW AT ALL, and the selfcheck reported "the py side's `--graph prog` emits 0 `pI(` rows, not 1
+      # -- the `pI(` form is DEAD on the py side" **WHILE THE FORM WAS RIGHT THERE IN THE OUTPUT**:
+      # MEASURED, `runs/graphcmp/D/D2-canon-py-prog.txt` CARRIES
+      # `3:i51 7:PROGRAM 4:void 1:R 2:i0 201:pI(...) 6:n(i50)` -- SEVEN FIELDS, WITH THE `pI(` PAYLOAD.
+      # **⇒ A FORM NO GRAPH REACHES IS A LABEL, AND A READER THAT CANNOT SEE A FORM SAYS IT IS DEAD.**
+      if len(f) == 7 and f[1] == "PROGRAM":
         out.append(f[ARG])
     return out
   pclean, pplant = prog_args(emit_py("prog", None)), prog_args(emit_py("prog", "params"))
@@ -3683,7 +3692,7 @@ def split_debug(rows: list[str]) -> tuple[list[str], list[str]]:
       f = unchunks(ln)
     except ValueError:
       continue                       # a blank separator line, not a row
-    (trace if len(f) == 8 and f[1] == "SITE" else graph).append(ln)
+    (trace if len(f) == 7 and f[1] == "SITE" else graph).append(ln)
   return graph, trace
 
 
