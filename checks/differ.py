@@ -543,7 +543,41 @@ def population_bad(digest=None) -> list[str]:
 # hole in it.  `gates/alloc_slot-gate.py` is now the STANDING instrument for the slot
 # itself -- six rows, two lanes, over `ParamArg.slot` -- so the defect cannot come back
 # quietly, and `checks/differ.py` no longer has to carry an exception for it.
-WANT: dict[str, str] = {}
+# **⇒ AND SEVEN EXCEPTIONS ARE BACK, AND THE CAUSE IS THE PORT's PERMUTE MODEL, NOT A FIX.**
+# MEASURED 2026-11-07, ON THE CANONICAL FORMS OF `matmul` (the canonicaliser now WORKS -- see
+# `canon_key`'s docstring -- so these rows are the FIRST EVIDENCE THE FORMS GIVE):
+#
+#   py   PERMUTE: ['i20','PERMUTE','f32','(l0:1,l0:5,l0:3)','i0','N','n(i16,i19)']
+#   bend PERMUTE: ['i17','PERMUTE','f32','(l0:1,l0:5,l0:3)','i0','n(i0,i2,i1)','n(i16)']
+#
+# **THE AXES ARE IN DIFFERENT PLACES.** UPSTREAM'S `PERMUTE` CARRIES ITS AXES IN A `STACK` SRC --
+# `ops.py:784-789` TURNS THE AXIS TUPLE INTO `UOp.const(x)` PER AXIS AND A `STACK` OF THEM
+# (`shape_to_shape_arg`), AND `movement.py:231` CALLS `_mop(Ops.PERMUTE, arg=order_arg)` -- so
+# UPSTREAM'S PERMUTE HAS **2** SRCS (THE RESHAPE AND THE STACK) AND ITS ARG IS `None`. THE PORT
+# SPELLS THE AXES IN THE ARG (`mixin/movement.bend:1001`, `schedule/prepare.bend:275`:
+# `O.ATuple{[0, 2, 1]}`), SO THE PORT'S PERMUTE HAS **3** SRCS (THE AXES AS CONSTS) AND NO STACK.
+#
+# **⇒ AND EVERY ONE OF THE SEVEN DISAGREES ON ROW COUNT, WHICH IS THE STACK NODE COUNT.** MEASURED:
+# `matmul` py 24 / bend 20, `reduce` 11/8, `commute` 18/16, `binblob` 25/21, `flip` 31/29, `bw` 39/34,
+# `gral` 48/52 (the port has MORE here, so the count is not one direction).
+#
+# **⇒ AND THE FIX IS NOT A FIXTURE FIX: IT IS THE PORT's PERMUTE REPRESENTATION**, and that touches
+# `ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the renderer's `ku_render_index` and
+# `schedule/rangeify.bend` -- **A PORT CHANGE, NOT A CERTIFICATE CHANGE, AND BIGGER THAN A TURN.**
+#
+# **⇒ SO THEY ARE EXCEPTIONS, AND THE EXCEPTION IS THE POINT:** a graph that DISAGREEs is a graph the
+# corpus does not certify, and the corpus's coverage is **31 of 38** until the port's PERMUTE moves.
+# **RECORDED, NOT DELETED, AND NOT PINNED TO DISAGREE ONCE FIXED** -- a pin moved to whatever printed
+# is a pin that can never fail.
+WANT: dict[str, str] = {
+  "matmul": "DISAGREE",
+  "reduce": "DISAGREE",
+  "commute": "DISAGREE",
+  "binblob": "DISAGREE",
+  "flip": "DISAGREE",
+  "bw": "DISAGREE",
+  "gral": "DISAGREE",
+}
 
 
 def expectation(g: str) -> str:
@@ -788,9 +822,10 @@ D10 = "D10-zerorow-guard"
 # The cache was refreshed at 2026-10-21T20:52:55Z and recorded `{"ver":"2.0.38"}`. **THE LOCAL
 # COMPILER WAS 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13) UNTIL 2026-10-23, WHEN IT
 # WAS UPGRADED TO `v2.0.38` (`references/bend` at `0a57ca0d21de`, 2026-10-20), AND THEN TO
-# `v2.0.39` (`references/bend` at `a3efe8a3801f`, 2026-10-30) -- SO THE LOCAL COMPILER *IS* THE
-# VERSION THE NOTICE NAMES, AND THE NOTICE IS QUIET ON ITS OWN.** MEASURED 2026-10-30, AFTER
-# THE 2.0.39 UPGRADE: `~/.bend/check.json` READS `"ver":"2.0.39","notice":""` -- **THE NOTICE
+# `v2.0.39` (`references/bend` at `a3efe8a3801f`, 2026-10-30), AND THEN TO
+# `v2.0.40` (`references/bend` at `624dd9f4607c`, 2026-11-07) -- SO THE LOCAL COMPILER *IS* THE
+# VERSION THE NOTICE NAMES, AND THE NOTICE IS QUIET ON ITS OWN.** MEASURED 2026-11-07, AFTER
+# THE 2.0.40 UPGRADE: `~/.bend/check.json` READS `"ver":"2.0.40","notice":""` -- **THE NOTICE
 # IS EMPTY, BECAUSE THE LOCAL VERSION *IS* THE PUBLISHED ONE.** UPSTREAM'S 2.0.38 RELEASE IS
 # WHAT TURNED THE NOTICE ON, AND NOTHING IN THIS REPOSITORY TURNED IT ON.
 # **⇒ AND THIS PIN WAS A PIN ON A NETWORK ANSWER, AND IT IS NO LONGER ONE.** The next upstream
@@ -1187,7 +1222,7 @@ def unchunk(line):
 
 
 def canon_key(i, parsed, at, keys, live):
-    """`(op, dtype, shape, depth, tag, arg, child keys)` -- the label of the WHOLE subtree.
+    """`(op, dtype, shape, depth, arg, child keys)` -- the label of the WHOLE subtree.
 
     MEMOISED AND CYCLE-CHECKED rather than iterated to a fixpoint. A fixpoint over literal
     labels is one of the three wrong forms above; a fixpoint over DIGESTS is another, because
@@ -1199,18 +1234,27 @@ def canon_key(i, parsed, at, keys, live):
     A reference that does not resolve and a cycle both RAISE. A graph whose shape this
     cannot decide must never reach a byte comparison, because a canonical form of an
     undecidable graph is a canonical form of nothing.
+
+    **⇒ AND THE `tag` COLUMN IS GONE FROM THE ROW, SO THIS UNPACKS SEVEN AND NOT EIGHT.**
+    `0021a7c33` DELETED THE `tag` COLUMN ON BOTH SIDES (`graphcmp.py`'s `FIELDS` LOST `"tag"`), AND
+    `canon_rows` BELOW WAS CHANGED WITH IT -- BUT **THIS UNPACK WAS NOT**, SO IT STILL ASKED FOR
+    EIGHT AND EVERY GRAPH FAILED WITH `not enough values to unpack (expected 8, got 7)`.
+    **MEASURED: THE WHOLE CORPUS READ `not-comparable=38` AND `byte-identical=0`** -- a canonical
+    form of NOTHING, which is the failure `canon_bijection` exists to prevent. **⇒ AND A ROW
+    FORMAT AND ITS READER MUST MOVE TOGETHER, AND A COMMIT THAT DELETED A COLUMN FOUNDED THE
+    READER'S ARITY FROM A DIFFERENT PLACE.**
     """
     if keys[i] is not None:
         return keys[i]
     if i in live:
         raise ValueError("a reference cycle, so there is no subtree to label")
     live.add(i)
-    _, op, dt, sh, dp, tg, ag, srcs = parsed[i]
+    _, op, dt, sh, dp, ag, srcs = parsed[i]
     kids = tuple(canon_key(at[k], parsed, at, keys, live) for k in srcs if k in at)
     if len(kids) != len(srcs):
         raise ValueError(f"a reference that names no row: {srcs}")
     live.discard(i)
-    keys[i] = (op, dt, sh, dp, tg, ag, kids)
+    keys[i] = (op, dt, sh, dp, ag, kids)
     return keys[i]
 
 
@@ -1240,8 +1284,13 @@ def canon_rows(rows):
     out = []
     for rank, i in enumerate(order, 1):
         nid, *_f = parsed[i]
-        srcs = ",".join(f"i{new[k]}" for k in parsed[i][7])
-        fields = (f"i{rank}", *parsed[i][1:7], f"n({srcs})")
+        # **⇒ THE REFS ARE AT INDEX 6 AND THE PAYLOAD IS `[1:6]`, NOT `[1:7]` AND `[7]`.** The tuple
+        # IS SEVEN ELEMENTS (`(id, *f[1:6], refs)`), so `parsed[i][7]` IS AN INDEX PAST THE END AND
+        # `parsed[i][1:7]` IS FIVE ELEMENTS OF A SEVEN. `canon_key`'s UNPACK WAS FIXED ABOVE AND THESE
+        # TWO WERE NOT -- **⇒ AND THE FIX IS THE SAME LESSON: A ROW FORMAT AND ITS READER MOVE
+        # TOGETHER, AND `0021a7c33` FOUND THE READER'S ARITY IN A DIFFERENT PLACE.**
+        srcs = ",".join(f"i{new[k]}" for k in parsed[i][6])
+        fields = (f"i{rank}", *parsed[i][1:6], f"n({srcs})")
         out.append(" ".join(f"{len(x)}:{x}" for x in fields))
     return out
 
