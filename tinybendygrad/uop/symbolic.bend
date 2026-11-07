@@ -2943,12 +2943,19 @@ def sym_188(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_188.pat(x, u),
     Some{mint_bitcast(mint_ar(sy_ar(x)), sy_src0(x, sy_src0(x, u)), sy_dt1(x, u))})
 
-# `y IS logical_not(x)`: `CMPNE(x, CONST(True))`, which is what `mixin/elementwise.py`'s
-# `logical_not` is on a bool node (`self.cast(bool).ne(True)`, and the cast is a no-op).
+# `y IS logical_not(x)`: AT THE PIN `logical_not()` IS `CMPEQ(x, CONST(False))` --
+# `mixin/elementwise.py:57` AT `f5ac54685074` IS `self.cast(dtypes.bool).eq(False)`.
+#
+# **AND THIS USED TO BE `CMPNE(x, CONST(True))`, WHICH IS THE PRE-PIN SPELLING** (`ne(True)`).
+# THE NAME DID NOT CHANGE AND THE NODE DID, AND THE PORT's OWN `sym_134` COMMENT RECORDS THE
+# SAME SWAP: "THE PRIMITIVE SWAPPED AT THE 2026-11-03 RE-VENDOR".
+#
+# **AND `p_not_of` IS LOAD-BEARING FOR TWO RULES** -- `sym_243` (`x | x.logical_not()`) AND
+# `sym_256` (`x.logical_not().where(t, f)`) -- **SO THE SWAP AFFECTED BOTH.**
 def p_not_of(+x: F.Folded, +n: U32, +v: U32) -> Bool:
-  Bool.and(sy_is_op(x, n, O.OpsCMPNE{}),
+  Bool.and(sy_is_op(x, n, O.OpsCMPEQ{}),
     Bool.and(sy_nsrc_is(x, n, 2),
-      Bool.and(p_is_const_true(x, sy_src1(x, n)), p_same(sy_src0(x, n), v))))
+      Bool.and(p_is_const_false(x, sy_src1(x, n)), p_same(sy_src0(x, n), v))))
 
 # symbolic.py:243  (UPat.var("x", dtype=dtypes.bool) | UPat.var("x", dtype=dtypes.bool).logical_not(),
 #                     lambda x: x.const_like(True))
