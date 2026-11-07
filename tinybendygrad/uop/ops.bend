@@ -5680,9 +5680,11 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 
 
-# TODO(p3) ops.py:1048  def const_factor
-#   # *** uop symbolic stuff ***
-
+# *** uop symbolic stuff ***
+# **AND `const_factor` IS DONE -- MEASURED 2026-11-08: `def UOp.const_factor(fuel, ar, i) ->
+# H.I64` IS AT `:7752` AND `def UOp.divides(fuel, ar, v, i) -> Dv` IS AT `:7972`.** THE `TODO`
+# THAT USED TO STAND HERE WAS STALE AGAINST A `DONE` NOTE ELEVEN LINES BELOW IT, **AND A `TODO`
+# BESIDE A `DONE` FOR THE SAME DEF IS A LEDGER THAT DISAGREES WITH ITSELF.**
 
 
 # DONE(p3) ops.py:1048 def const_factor -- `UOp.const_factor` above, FLATTENED: the def and
@@ -8595,10 +8597,13 @@ def vr.expr.rows(+ar: Arena) -> IO(Unit):
     c : Unit <- vr.expr.row("vr_expr_unnamed", ar, 3)
     vr.expr.row("vr_expr_nonparam", ar, 4)
 
-# TODO(p3) ops.py:1048  def const_factor
+# DONE(p3) ops.py:1048  def const_factor
 #   `def const_factor(self) -> int: """largest known int that divides self"""` --
 #   five arms, a `math.gcd` over the STACK and ADD srcs, and a positional read for
 #   MUL. Four of the five arms are one `match` each and are trivially expressible.
+#   **AND IT IS DONE: `def UOp.const_factor(fuel, ar, i) -> H.I64` IS ABOVE, AT `:7752`.**
+#   **MEASURED 2026-11-08 -- THIS NOTE USED TO SAY `TODO` WHILE THE DEF TWO HUNDRED LINES
+#   ABOVE SAID `DONE`, AND THE TWO DISAGREED.**
 #
 #   THE BLOCKER IS THE OTHER TWO, AND IT IS NOT A PORTING DIFFICULTY: computing
 #   `x.const_factor()` for a src means CALLING this def, and this def's STACK/ADD

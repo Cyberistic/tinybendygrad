@@ -943,16 +943,43 @@ def trees() -> Gate:
 #   beyond P3 at the call site.
 #
 # WHAT NEXT, in the order the walls fall.
-#   1. `_min_max` (ops.py:1104) unblocks `dm_point`'s range half, the `x.vmin>=0`
-#      and `b.vmin/b.vmax` guards in `nest_by_factor` and `factor_remainder`, and
-#      the float-CONST cases in BOTH Fast Inline Rules. It is the unlock for
-#      FIVE of the nine TODOs above.
-#   2. `const_factor` / `divides` / `gcd` (ops.py:1058/1067/1083) unblock
-#      `nested_div`, `remove_nested_mod` and `gcd_with_remainder` -- three more,
-#      and they are all one `Counter` fold.
-#   3. `simplify` / `ssimplify` (ops.py:513/520) is what `fold_divmod_general`
-#      line 78 calls on `UOp.gcd(...)`, and `ops.bend` records it as the largest
-#      single unlock in ITS half too.
+#
+# **AND THIS LIST WAS STALE BY TWO ITEMS AND IT WAS MEASURED 2026-11-08.** THE ITEMS 1 AND 2
+# BELOW ARE DONE AND HAVE BEEN DONE:
+#   * `_min_max` (ops.py:1104) IS `fold.bend:7380` ("DONE(p3) ops.py:1094 def _min_max"), AND
+#     THE HEADER ABOVE ALREADY SAID "THE `_min_max` WALL IS MEASURED FALSE (2026-11-06)".
+#   * `const_factor` IS `ops.bend:7855` (`def UOp.const_factor(fuel, ar, i) -> H.I64`) AND
+#     `divides` IS `ops.bend:7972` (`def UOp.divides(fuel, ar, v, i) -> Dv`).
+#
+# **SO THE TWO THAT REMAIN ARE:**
+#   1. `UOp.gcd` (ops.py:1073) AND `UOp.divide_exact` (ops.py:1079) -- AND THEY ARE **ONE**
+#      SHAPE, NOT TWO: **BOTH NEED A COUNTER OVER NODE LISTS**, AND UPSTREAM'S `UOp` IS
+#      HASHABLE BY IDENTITY (`ops.py:219-220`: `__hash__ = tuple.__hash__` AND
+#      `__eq__` IS `self is other`), **SO THE COUNTER's KEYS ARE NODES.**
+#      **AND THE PORT HAS NO INTEGER-KEYED MAP AT ALL** -- MEASURED, `helpers.bend:502` SAYS
+#      "Bend's `Map` IS STRING-KEYED ONLY, SO THE SET IS A LINEAR SCAN", AND THE PORT HAS NO
+#      `HashMap` AND NO `HashSet`.
+#      **BUT THE PORT HAS THE HONEST SPELLING ALREADY, TWICE**: `dedup_u32` (`helpers.bend:509`)
+#      AND `merge_dicts` (`helpers.bend:2467`) ARE BOTH "A LIST OF PAIRS WITH A LINEAR SCAN",
+#      **SO A COUNTER OVER `U32` KEYS IS A LIST OF `(U32, Nat)` PAIRS AND A FOLD -- AND THE
+#      PORT's own `merge_dicts` NOTE SAYS EXACTLY THAT: "A LIST OF PAIRS IS THE HONEST
+#      REPRESENTATION".** **SO THE CLAIM "THE PORT HAS NO MULTISET" IS A CLAIM ABOUT A
+#      CONTAINER AND NOT ABOUT A CAPABILITY.**
+#   2. `simplify` / `ssimplify` (ops.py:513/520) IS WHAT `fold_divmod_general` LINE 78
+#      CALLS ON `UOp.gcd(...)`, AND `ops.bend` RECORDS IT AS THE LARGEST SINGLE UNLOCK IN ITS
+#      HALF TOO.
+#
+# **AND MEASURED 2026-11-08: THE MISSING ROW IS NOT DEAD.** `.agents/slop/sym92/
+# deadrules-sweep.sh` READS `24 CASES 23 AGREE 1 DIVERGE` AND THE ONE DIVERGENCE IS
+# `(x*y)/y`, **WHOSE UPSTREAM ANSWER IS `(div (mul c1 x) c1)` AND WHOSE RULE IS THIS ONE** --
+# MEASURED BY ASKING THE MATCHER WHICH PATTERN FIRED: **PATTERN 117 IS `UPat({DIV, MOD},
+# dtype=weakint, name="d")` WITH `src=None`**, **AND ITS FUNCTION IS
+# `tinygrad.uop.divandmod.fold_divmod_general`.** **SO THE PORT DECLINES A REWRITE UPSTREAM
+# PERFORMS, ON A GRAPH AS ORDINARY AS `(x*y)/y` -- SO THIS ROW IS A REAL GAP AND NOT A
+# COSMETIC ONE.**
+# **AND THE ARM THAT ANSWERS IT IS `divide_by_gcd` (LINE 66)**, BECAUSE UPSTREAM's
+# `UOp.gcd(x, y)` IS `y` AND NOT A CONSTANT 1 -- MEASURED, `UOp.gcd(x, y)` ANSWERS THE PARAM
+# `y`.
 #   4. Only after those three does `fold_divmod_congruence` become a question, and
 #      only after THAT does the cartesian product need a shape.
 #
