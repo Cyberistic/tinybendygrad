@@ -5911,11 +5911,32 @@ def sym_305(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # `sy_simplify` -- which spends `8n`, an EVEN number -- therefore always returned the ORIGINAL.
 # `.agents/slop/sym92/sweep-171.bend` names this rule (tag 101) out of the 27 entries that can fire
 # on ADD, one single-entry table at a time.
-def sym_295.inner(+x: F.Folded, +u: U32) -> U32: sy_src0(x, u)
+# THE INNER ALU IS EITHER SIDE OF THE ROOT, BECAUSE **UPSTREAM's `UPat.alu` IS A DISJUNCTION
+# OVER BOTH ORDERS FOR A COMMUTATIVE OP** (`ops.py:1494`: `list(asrc) if op in GroupOp.Commutative`).
+#
+# MEASURED 2026-11-07 ON THE CASE `r295` (`(add y (add x c1))`): UPSTREAM ANSWERS
+# `(add (add x y) 1)` AND THE PORT DECLINED, **BECAUSE THE PORT's `sym_295.inner` WAS
+# `sy_src0(x, u)` -- THE ROOT's SRC0 AND NOT ITS SRC1.**
+#
+# **AND THE OSCILLATION THIS POSITIONALITY WAS AVOIDING IS NOT REINTRODUCED, BECAUSE
+# `sym_161` (THE CONSTANT FOLDING) IS TAG 40 AND `sym_295` IS TAG 101, SO THE FOLDING RUNS
+# FIRST.** THE OSCILLATING SHAPE WAS `x op (c1 op c2)`, AND ITS INNER IS CONST-OP-CONST, WHICH
+# `sym_161` FOLDS TO A SINGLE CONST -- SO BY THE TIME `sym_295` SEES IT, ITS `src1` IS A CONST AND
+# NOT AN ALU-WITH-A-CONST, AND THE RULE DOES NOT MATCH.
+#
+# **UPSTREAM HAS THE SAME ORDER AND THE SAME PROPERTY**, WHICH IS WHY UPSTREAM's TWO-SIDED `:309`
+# DOES NOT OSCILLATE EITHER.
+def sym_295.inner(+x: F.Folded, +u: U32) -> U32:
+  Bool.pick(U32, sym_284.alu2c(x, sy_src0(x, u), sy_op(x, u)), sy_src0(x, u), sy_src1(x, u))
+
+# THE OTHER SIDE IS THE NON-CONST PART, AND IT IS THE SIDE THAT IS NOT THE INNER.
+def sym_295.outer(+x: F.Folded, +u: U32, +i: U32) -> U32:
+  Bool.pick(U32, U32.is_eq(i, sy_src0(x, u)), sy_src1(x, u), sy_src0(x, u))
 
 def sym_295.pat(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(Bool.and(sy_nsrc_is(x, u, 2), sym_284.alu2c(x, sy_src0(x, u), sy_op(x, u))),
-    Bool.not(sy_is_const(x, sy_src1(x, u))))
+  +i = sym_295.inner(x, u)
+  Bool.and(Bool.and(sy_nsrc_is(x, u, 2), sym_284.alu2c(x, i, sy_op(x, u))),
+    Bool.not(sy_is_const(x, sym_295.outer(x, u, i))))
 
 # **THE GUARD `:309`/`:311` CARRY AND THIS BODY DID NOT: `no_overflow(m:=x op y)`, plus, for `*`,
 # `x.dtype in wints or c1.arg == -1`.** `no_overflow(u)` is `fits(u, u.vmin) and fits(u, u.vmax)`
@@ -5949,8 +5970,10 @@ def sym_295.hit(ok: Bool, +s: O.Found, +x: F.Folded, +u: U32, +i: U32) -> Maybe<
     case _: None{}
 
 def sym_295.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  +i = sy_src0(x, u)
-  +s = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.v(x, i), sy_src1(x, u))
+  +i = sym_295.inner(x, u)
+  # THE OTHER SIDE IS THE NON-CONST PART, AND IT IS THE SIDE THAT IS NOT THE INNER -- SO THE
+  # ANSWER IS THE SAME WHichever SIDE THE INNER WAS ON.
+  +s = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.v(x, i), sym_295.outer(x, u, i))
   sym_295.hit(Bool.and(sym_295.opok(x, u, i), sym_295.no_ov(s, O.Found.i(s))), s, x, u, i)
 
 def sym_295(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
