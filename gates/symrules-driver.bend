@@ -22,7 +22,21 @@ import ./sym_graph_census.bend as GC
 # THE PORT's `sym_f` IS USED AND NOT `sym`: `sym` ANSWERS AN INDEX INTO THE ARENA IT GREW, AND
 # `rewrite` THROWS THAT ARENA AWAY, SO A RULE THAT MINTS LEAVES THE INDEX PAST THE END.
 
-def CASES() -> String: "gates/symrules-cases.rows"
+# THE CASES FILE, AND **IT IS OVERRIDABLE BY `IO.args()` SO THAT ONE DRIVER SERVES BOTH THE
+# PINNED CASES AND A SWEEP.** MEASURED 2026-11-08: `IO.args()` WORKS WITH `bin/bend`
+# (`./bin/bend gates/symrules-driver.bend /tmp/other.rows`), **AND `IO.args()`'s INDEX 0 IS THE
+# PROGRAM, NOT THE FIRST ARGUMENT** -- `tinybendygrad/runtime/ops_bend.bend` READS ITS LANE
+# FROM INDEX **1** FOR THE SAME REASON, SO IT IS THE TREE's CONVENTION AND NOT A NEW ONE.
+#
+# **AND THE OVERRIDE IS WHAT MAKES THE DELETED-RULES SWEEP POSSIBLE WITHOUT A SECOND COPY OF
+# THE DRIVER**: THE 2,397-LINE DRIVER IS THE TRUTH ABOUT HOW THE PORT REWRITES, AND A COPY OF
+# IT WOULD BE A SECOND TRUTH THAT COULD DRIFT.
+def CASES_DEFAULT() -> String: "gates/symrules-cases.rows"
+
+def CASES_OF(as: List<&1, String>) -> String:
+  Maybe.default(&1, String, List.get(&1, String, as, 1n), CASES_DEFAULT())
+
+def CASES() -> String: CASES_DEFAULT()
 
 def SEP() -> Char: '|'
 
@@ -2390,7 +2404,9 @@ def fx.read.closed(m: File & Result<&1, &1, U32 & String, String>) -> IO(String)
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    f : File <- IO.try(File, File.open(CASES(), "r"))
+    as : List<String> <- IO.args()
+    path : String <- IO.pure(String, CASES_OF(as))
+    f : File <- IO.try(File, File.open(path, "r"))
     m : File & Result<&1, &1, U32 & String, String> <- File.read(f, 4000000)
     s : String <- fx.read.closed(m)
     IO.print(fx.rows(String.lines(s), ""))
