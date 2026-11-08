@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>30klinesofcode — record</title>
+<style>
+  :root{--paper:#F4F2ED;--ink:#16161A;--muted:#6E6A63;--faint:#9A958C;--rule:#D6D1C7;--accent:#3DA639}
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--paper);color:var(--ink);font:12px/1.6 ui-monospace,Menlo,monospace;padding:26px 34px 60px}
+  h1{font-size:14px;font-weight:600;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:4px 0 20px;font-size:10.5px}
+  .drop{border:1px dashed var(--rule);padding:26px;text-align:center;color:var(--muted);margin-bottom:18px}
+  .drop.hot{border-color:var(--accent);color:var(--ink)}
+  .beat{display:grid;grid-template-columns:44px 1fr 190px;gap:16px;padding:12px 0;border-top:1px solid var(--rule);align-items:start}
+  .id{color:var(--faint);font-size:10px;padding-top:2px}
+  .text{font:14px/1.65 -apple-system,sans-serif;color:var(--ink)}
+  .dir{font-size:10px;color:var(--faint);margin-top:5px}
+  .cue{font-size:9.5px;color:var(--faint);margin-top:4px;letter-spacing:.06em}
+  .ctrl{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+  button{font:11px ui-monospace,Menlo,monospace;background:none;border:1px solid var(--rule);color:var(--ink);padding:4px 9px;cursor:pointer}
+  button:hover{border-color:var(--ink)}
+  button.rec{border-color:var(--accent);color:#1F6B22}
+  button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .dur{color:var(--faint);font-size:10px;min-width:44px;text-align:right}
+  .done .id::before{content:"✓ ";color:var(--accent)}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--rule);padding:9px 34px;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted)}
+  audio{height:26px;width:170px}
+  kbd{border:1px solid var(--rule);padding:0 4px;font-size:9.5px}
+</style>
+</head>
+<body>
+<h1>record — one clip per beat</h1>
+<p class="sub">Drop a lesson .json. Each clip is named after its beat id, which is the only thing the sync cares about.
+   <kbd>space</kbd> record/stop on the focused beat · <kbd>p</kbd> play it back.</p>
+
+<div class="drop" id="drop">drop <b>content/lessons/02.4.json</b> here, or click to choose</div>
+<input type="file" id="file" accept=".json" hidden>
+<div id="list"></div>
+
+<div class="bar">
+  <div id="status">no lesson loaded</div>
+  <div><button id="all" disabled>download all</button></div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s)
+let lesson = null, clips = new Map(), recorder = null, current = null
+
+const mime = () => ["audio/webm;codecs=opus","audio/mp4","audio/webm"].find(m => MediaRecorder.isTypeSupported(m)) || ""
+const ext = (m) => m.includes("mp4") ? "m4a" : "webm"
+
+$("#drop").onclick = () => $("#file").click()
+$("#file").onchange = (e) => e.target.files[0] && load(e.target.files[0])
+$("#drop").ondragover = (e) => { e.preventDefault(); $("#drop").classList.add("hot") }
+$("#drop").ondragleave = () => $("#drop").classList.remove("hot")
+$("#drop").ondrop = (e) => { e.preventDefault(); $("#drop").classList.remove("hot"); load(e.dataTransfer.files[0]) }
+
+async function load(file) {
+  lesson = JSON.parse(await file.text())
+  if (!lesson.beats?.length) return alert("no beats in this lesson")
+  clips.clear()
+  render()
+  $("#status").textContent = `${lesson.id} — ${lesson.title} · ${lesson.beats.length} beats`
+  $("#drop").textContent = `${lesson.id} loaded — drop another to switch`
+}
+
+function render() {
+  $("#list").innerHTML = lesson.beats.map((b, i) => `
+    <div class="beat" data-id="${b.id}" tabindex="0">
+      <div class="id">${b.id}</div>
+      <div>
+        <div class="text">${escapeHtml(b.text)}</div>
+        ${b.direction ? `<div class="dir">${escapeHtml(b.direction)}</div>` : ""}
+        <div class="cue">${(b.cue?.claims || []).join(" · ") || "no cue"}</div>
+      </div>
+      <div class="ctrl">
+        <span class="dur"></span>
+        <button class="play" disabled>play</button>
+        <button class="rec">record</button>
+        <button class="dl" disabled>save</button>
+      </div>
+    </div>`).join("")
+  refresh()
+}
+
+function escapeHtml(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])) }
+
+$("#list").addEventListener("click", async (e) => {
+  const row = e.target.closest(".beat"); if (!row) return
+  const id = row.dataset.id
+  if (e.target.classList.contains("rec")) return clips.has(id) ? redo(id) : record(id, row)
+  if (e.target.classList.contains("play")) return play(id)
+  if (e.target.classList.contains("dl")) return save(id)
+})
+
+$("#list").addEventListener("keydown", (e) => {
+  const row = e.target.closest(".beat"); if (!row) return
+  const id = row.dataset.id
+  if (e.code === "Space") { e.preventDefault(); recorder ? stop() : record(id, row) }
+  if (e.key === "p" && clips.has(id)) play(id)
+})
+
+async function record(id, row) {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 48000 } })
+  const type = mime(), chunks = []
+  recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined)
+  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data)
+  recorder.onstop = () => {
+    stream.getTracks().forEach(t => t.stop())
+    const blob = new Blob(chunks, { type: type || "audio/webm" })
+    clips.set(id, { blob, ext: ext(type || "audio/webm"), url: URL.createObjectURL(blob) })
+    recorder = null; current = null
+    refresh()
+  }
+  current = id
+  recorder.start()
+  row.classList.add("recording")
+  row.querySelector(".rec").classList.add("on")
+  row.querySelector(".rec").textContent = "stop"
+}
+
+function stop() { if (recorder) recorder.stop() }
+
+function refresh() {
+  for (const row of document.querySelectorAll(".beat")) {
+    const id = row.dataset.id, c = clips.get(id)
+    row.querySelector(".rec").textContent = "record"
+    row.querySelector(".rec").classList.remove("on")
+    row.classList.toggle("done", !!c)
+    row.querySelector(".play").disabled = !c
+    row.querySelector(".dl").disabled = !c
+    row.querySelector(".dur").textContent = c ? `${(c.blob.size / 16000).toFixed(1)}s` : ""
+  }
+  $("#all").disabled = clips.size === 0
+}
+
+function play(id) { if (clips.has(id)) new Audio(clips.get(id).url).play() }
+
+function save(id) {
+  const c = clips.get(id); if (!c) return
+  const a = document.createElement("a")
+  a.href = c.url
+  a.download = `${lesson.id}/${id}.${c.ext}`
+  a.click()
+}
+
+$("#all").onclick = async () => {
+  for (const id of [...clips.keys()]) { save(id); await new Promise(r => setTimeout(r, 350)) }
+  $("#status").textContent = "saved — put them in content/voice/<lesson>/ then run sync.py clips"
+}
+</script>
+</body>
+</html>

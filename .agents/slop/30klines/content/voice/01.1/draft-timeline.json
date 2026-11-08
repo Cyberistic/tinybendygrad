@@ -1,0 +1,37 @@
+{
+  "lesson": "01.1",
+  "mode": "clips",
+  "audio": null,
+  "duration": 55.191,
+  "gap": 0.18,
+  "verified": true,
+  "draft": true,
+  "voice": "Samantha",
+  "beats": [
+    {
+      "id": "b1",
+      "start": 0.0,
+      "end": 9.228
+    },
+    {
+      "id": "b2",
+      "start": 9.408,
+      "end": 19.385
+    },
+    {
+      "id": "b3",
+      "start": 19.565,
+      "end": 36.182
+    },
+    {
+      "id": "b4",
+      "start": 36.362,
+      "end": 47.729
+    },
+    {
+      "id": "b5",
+      "start": 47.909,
+      "end": 55.191
+    }
+  ]
+}

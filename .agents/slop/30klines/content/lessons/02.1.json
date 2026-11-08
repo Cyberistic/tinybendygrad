@@ -1,0 +1,123 @@
+{
+  "id": "02.1",
+  "stage": "02",
+  "order": 1,
+  "kind": "line",
+  "title": "a UOp is op, src, arg",
+  "summary": "The entire intermediate representation is a dataclass with three fields.",
+  "minutes": 5,
+  "refs": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "start": 228,
+      "end": 233,
+      "sha": "1e0b2da30e395f0035178f98e6768ad3c7e00522935e13b33349ed7c1ca73fc6"
+    }
+  ],
+  "claims": [
+    {
+      "id": "02.1.1",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        229,
+        230,
+        231
+      ],
+      "text": "Three fields: op, src, arg. op is a member of Ops, a closed enum; src is a tuple of other UOps; arg is anything the op needs. A graph node is these three."
+    },
+    {
+      "id": "02.1.2",
+      "ref": 0,
+      "kind": "cost",
+      "lines": [
+        230
+      ],
+      "text": "src is a tuple, so a node cannot be edited. You never mutate the graph — you build a new node and let hash-consing collapse the duplicate. Every rewrite is a pure function because of this one choice."
+    },
+    {
+      "id": "02.1.3",
+      "ref": 0,
+      "kind": "reason",
+      "lines": [
+        232,
+        233
+      ],
+      "text": "There is no dtype field. dtype is a recursive_property computed from op, src and arg, cached on the node. Store less, derive more — which only works if the derivation is total."
+    },
+    {
+      "id": "02.1.4",
+      "ref": 0,
+      "kind": "trap",
+      "lines": [
+        231
+      ],
+      "text": "arg is Any. A constant, an axis, a device string, a reduce operation all live in the same untyped hole, and op decides how to read it. It is the one place the IR gives up on types, and it buys a very compact node."
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "text": "A UOp is a dataclass with three fields. That is the entire intermediate representation, and the next three hours are built on it.",
+      "cue": {
+        "claims": [
+          "02.1.1"
+        ]
+      },
+      "direction": "hold on the class body"
+    },
+    {
+      "id": "b2",
+      "text": "op is a member of a closed enum. src is a tuple of other UOps. So a node points down into a DAG, and the DAG is made of nothing but these three fields.",
+      "cue": {
+        "claims": [
+          "02.1.1"
+        ],
+        "lines": [
+          229,
+          230
+        ]
+      },
+      "direction": "point at src with the cursor"
+    },
+    {
+      "id": "b3",
+      "text": "src is a tuple, and tuples do not mutate. You never edit a node. You build a new one and let the cache collapse the duplicate. That single choice is why every rewrite in this codebase can be a pure function.",
+      "cue": {
+        "claims": [
+          "02.1.2"
+        ],
+        "lines": [
+          230
+        ]
+      },
+      "direction": "pause after 'pure function'"
+    },
+    {
+      "id": "b4",
+      "text": "There is no dtype field. dtype is a property computed from op, src and arg, then cached on the node. Store less and derive more — as long as the derivation always terminates.",
+      "cue": {
+        "claims": [
+          "02.1.3"
+        ],
+        "lines": [
+          233
+        ]
+      },
+      "direction": "highlight the decorator, then the body"
+    },
+    {
+      "id": "b5",
+      "text": "And arg is Any. A constant, an axis, a device name, a reduction. op decides how to read it. It is the one place this IR gives up on types, and it is why the node stays at three fields.",
+      "cue": {
+        "claims": [
+          "02.1.4"
+        ],
+        "lines": [
+          231
+        ]
+      },
+      "direction": "end on arg"
+    }
+  ]
+}

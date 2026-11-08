@@ -1,0 +1,182 @@
+{
+  "id": "01.2",
+  "stage": "01",
+  "order": 2,
+  "kind": "line",
+  "title": "every constructor ends at a UOp",
+  "summary": "Seven input types, five branches, one exit. The type union is documentation; line 90 is the enforcement.",
+  "minutes": 6,
+  "refs": [
+    {
+      "file": "tinygrad/tensor.py",
+      "start": 57,
+      "end": 98,
+      "sha": "130f043384451b3c57fceda3403d9386527168f14f1785d886139e726499a763"
+    }
+  ],
+  "claims": [
+    {
+      "id": "01.2.1",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90
+      ],
+      "text": "Every branch assigns to the same local, `data`, and every branch assigns a UOp. `None`, a Python constant, a numpy scalar, bytes, a list, an ndarray, a Path — seven inputs, one type out."
+    },
+    {
+      "id": "01.2.2",
+      "ref": 0,
+      "kind": "reason",
+      "lines": [
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87
+      ],
+      "text": "The last three branches are not convenience. Bytes need a dtype, a list needs one inferred from Python, a Path becomes a DISK: buffer sized by stat().st_size. Three different buffer origins, and the Path one does not read the file."
+    },
+    {
+      "id": "01.2.3",
+      "ref": 0,
+      "kind": "trap",
+      "lines": [
+        89,
+        90
+      ],
+      "text": "This is the only gate in the function. The signature advertises seven unions; a wrong object that slips past the branches dies here, not at the type checker."
+    },
+    {
+      "id": "01.2.4",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        92,
+        93,
+        94,
+        95
+      ],
+      "text": "Two writes follow: move the node to the requested device (skipped when it already is, or when it is a const with no device), then cast. The device lookup is lazy, inside the conditional — a const never pays for it."
+    },
+    {
+      "id": "01.2.5",
+      "ref": 0,
+      "kind": "cost",
+      "lines": [
+        97,
+        98
+      ],
+      "text": "The Tensor registers itself with `all_tensors` only after the cast has succeeded. If any branch raised, nothing is half-built and nothing leaks into the scope map."
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "text": "Seven input types, one exit. Watch the bottom of the constructor — that is where the argument is made.",
+      "cue": {
+        "claims": [
+          "01.2.1"
+        ]
+      },
+      "direction": "jump to line 71, scroll slowly"
+    },
+    {
+      "id": "b2",
+      "text": "None becomes a constant zero. A number becomes a constant. A numpy scalar becomes a constant. Those three lines never touch memory — there is nothing to allocate yet.",
+      "cue": {
+        "claims": [
+          "01.2.1"
+        ],
+        "lines": [
+          71,
+          76
+        ]
+      },
+      "direction": "rest on the three const lines"
+    },
+    {
+      "id": "b3",
+      "text": "Then three that do. Bytes get a dtype and go through frompy. A list or tuple gets a dtype inferred from Python, then frompy again. A Path becomes a DISK buffer, sized from stat dot st size. Notice: the file is not read. Only measured.",
+      "cue": {
+        "claims": [
+          "01.2.2"
+        ],
+        "lines": [
+          79,
+          87
+        ]
+      },
+      "direction": "emphasise 'not read'"
+    },
+    {
+      "id": "b4",
+      "text": "Line ninety is the only gate in the whole function. If it is not a UOp by now, raise. The type union in the signature is documentation. This assert is the enforcement.",
+      "cue": {
+        "claims": [
+          "01.2.3"
+        ],
+        "lines": [
+          90
+        ]
+      },
+      "direction": "single line highlight"
+    },
+    {
+      "id": "b5",
+      "text": "Two writes follow. Move it to the device you asked for, then cast. And look at where the device lookup happens — inside the conditional. A constant has no device, so it never pays for one.",
+      "cue": {
+        "claims": [
+          "01.2.4"
+        ],
+        "lines": [
+          92,
+          95
+        ]
+      },
+      "direction": "trace the ternary with the cursor"
+    },
+    {
+      "id": "b6",
+      "text": "The last two lines are the discipline of the whole file. The Tensor joins all tensors only after construction has succeeded. Nothing is registered twice, nothing is left half-built.",
+      "cue": {
+        "claims": [
+          "01.2.5"
+        ],
+        "lines": [
+          98
+        ]
+      },
+      "direction": "full stop"
+    },
+    {
+      "id": "b7",
+      "text": "One object in, one UOp out, on every path. Which is why the next stage is allowed to forget that Tensors exist.",
+      "cue": {},
+      "direction": "hand off to stage 02"
+    }
+  ]
+}

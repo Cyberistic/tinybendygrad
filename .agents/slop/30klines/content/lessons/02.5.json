@@ -1,0 +1,148 @@
+{
+  "id": "02.5",
+  "stage": "02",
+  "order": 5,
+  "kind": "line",
+  "title": "toposort without recursion",
+  "summary": "An explicit stack, a visited flag, and a dict that remembers insertion order.",
+  "minutes": 5,
+  "refs": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "start": 281,
+      "end": 293,
+      "sha": "5059375d248d69f559b06bdc1949e88907abdd126330667fc5cf96cc14eaec68"
+    }
+  ],
+  "claims": [
+    {
+      "id": "02.5.1",
+      "ref": 0,
+      "kind": "reason",
+      "lines": [
+        283,
+        284
+      ],
+      "text": "The stack holds pairs: the node, and whether its sources have been expanded. It is iterative because a deep graph would blow Python's recursion limit long before it blew memory."
+    },
+    {
+      "id": "02.5.2",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        287,
+        288,
+        289,
+        290,
+        291,
+        292
+      ],
+      "text": "A node is emitted only on its second pop. The first pop pushes it back under its own sources, so it necessarily comes out after all of them."
+    },
+    {
+      "id": "02.5.3",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        286
+      ],
+      "text": "`in cache` is the whole cost model. Because UOps are hash-consed, this is an identity test against a dict keyed by identity — linear in nodes, not in nodes times depth."
+    },
+    {
+      "id": "02.5.4",
+      "ref": 0,
+      "kind": "trap",
+      "lines": [
+        293
+      ],
+      "text": "The return type is a dict, not a list. Insertion order is the topological order, so it is a set that remembers when you arrived. Callers get dedup and ordering for free."
+    },
+    {
+      "id": "02.5.5",
+      "ref": 0,
+      "kind": "reason",
+      "lines": [
+        290
+      ],
+      "text": "src_without_body is what gets walked by default: a call's body is not part of the caller's dependency graph unless enter_calls is set. That is a scheduling decision hidden in one keyword."
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "text": "To rewrite a graph you need its nodes in dependency order. The obvious implementation is recursion. This one is not.",
+      "cue": {
+        "claims": [
+          "02.5.1"
+        ]
+      },
+      "direction": "open on the signature"
+    },
+    {
+      "id": "b2",
+      "text": "The stack holds pairs. The node, and whether we have already looked inside it. False means not yet. True means yes, and now it may be emitted.",
+      "cue": {
+        "claims": [
+          "02.5.1"
+        ],
+        "lines": [
+          283
+        ]
+      },
+      "direction": "highlight the stack type"
+    },
+    {
+      "id": "b3",
+      "text": "You only come out on the second pop. That is the trick. The node goes back on the stack underneath its own sources, so anything it depends on is guaranteed to be emitted before it.",
+      "cue": {
+        "claims": [
+          "02.5.2"
+        ],
+        "lines": [
+          287,
+          292
+        ]
+      },
+      "direction": "walk the push/pop with the cursor"
+    },
+    {
+      "id": "b4",
+      "text": "And look at the guard. If the node is in the cache, skip it. That line costs nothing because of the previous lesson: UOps are hash-consed, so membership is an identity comparison, not a structural one.",
+      "cue": {
+        "claims": [
+          "02.5.3"
+        ],
+        "lines": [
+          286
+        ]
+      },
+      "direction": "call back to 2.4 explicitly"
+    },
+    {
+      "id": "b5",
+      "text": "The default walk is src without body. A call body is not part of the caller's dependency graph unless you ask for it. One keyword, and it is a scheduling decision.",
+      "cue": {
+        "claims": [
+          "02.5.5"
+        ],
+        "lines": [
+          290
+        ]
+      },
+      "direction": "quiet, parenthetical"
+    },
+    {
+      "id": "b6",
+      "text": "And it returns a dict, not a list. Insertion order is the topological order. It is a set that remembers when you arrived, which is exactly what every caller needs.",
+      "cue": {
+        "claims": [
+          "02.5.4"
+        ],
+        "lines": [
+          293
+        ]
+      },
+      "direction": "close the stage"
+    }
+  ]
+}
