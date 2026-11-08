@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>30klinesofcode — dashboard</title>
+<link rel="stylesheet" href="design.css">
+<style>
+  .body{display:grid; grid-template-columns:248px 1fr 292px; height:calc(100vh - 45px)}
+
+  /* ---- left rail ---- */
+  .rail{border-right:1px solid var(--rule); padding:18px 0 0}
+  .rail .k{padding:0 18px 10px}
+  .srow{display:grid; grid-template-columns:24px 1fr auto; white-space:nowrap; align-items:baseline;
+        gap:6px; padding:7px 16px 7px 17px; color:var(--muted); border-left:2px solid transparent}
+  .srow .n{color:var(--faint)}
+  .srow .t{font-size:11px; overflow:hidden; text-overflow:ellipsis}
+  .srow .c{font-size:10px; color:var(--faint)}
+  .srow.active{color:var(--ink); border-left-color:var(--accent); background:var(--paper-2)}
+  .srow.active .n{color:var(--accent-ink)}
+  .srow.done .t{color:var(--ink-2)}
+  .srow.done .n::after{content:"·"; color:var(--accent); margin-left:2px}
+
+  /* ---- main ---- */
+  .main{padding:26px 34px 0; overflow:hidden}
+  .lede{display:grid; grid-template-columns:1fr 300px; gap:40px; padding-bottom:22px}
+  .lede h1{font-size:19px; line-height:1.35; letter-spacing:-.015em; font-weight:600; max-width:22ch}
+  .lede .prose{font-size:13.5px; max-width:52ch; margin-top:10px}
+  .resume{display:flex; align-items:center; justify-content:space-between; gap:20px;
+          border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
+          padding:11px 0; margin:0 0 24px}
+  .resume .l{display:flex; gap:10px; align-items:baseline; font-size:11.5px}
+  .resume .l .where{color:var(--faint)}
+  .resume .go{font-size:11px; color:var(--muted); border:1px solid var(--rule-2); padding:4px 9px}
+
+  .sechead{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px}
+  .band{display:grid; grid-template-columns:34px 1fr 150px 74px 16px; gap:14px; align-items:center;
+        padding:11px 0; border-bottom:1px solid var(--rule)}
+  .band .n{color:var(--faint); font-size:11px}
+  .band .name{font-size:12.5px}
+  .band .name small{display:block; color:var(--faint); font-size:10px; margin-top:2px}
+  .band .c{text-align:right; font-size:11px; color:var(--muted)}
+  .band .st{text-align:right; font-size:11px; color:var(--faint)}
+  .band.active .n{color:var(--accent-ink)}
+  .band.active .name{font-weight:600}
+  .band.active .ticks i.on{background:var(--ink)}
+  .band.active .st{color:var(--accent-ink)}
+  .band.dim{color:var(--faint)}
+  .band:hover{background:var(--paper-2)}
+
+  /* ---- aside ---- */
+  .aside{border-left:1px solid var(--rule); padding:26px 22px}
+  .block{padding-bottom:20px; margin-bottom:20px; border-bottom:1px solid var(--rule)}
+  .block:last-child{border-bottom:0}
+  .big{font-size:38px; line-height:1; letter-spacing:-.03em; margin:8px 0 6px}
+  .big span{font-size:14px; color:var(--muted); letter-spacing:0}
+  .mini{display:grid; grid-template-columns:1fr auto; gap:2px 10px; font-size:10.5px; color:var(--muted); margin-top:12px}
+  .mini .b{grid-column:1/-1; height:3px; background:var(--rule); position:relative; margin:3px 0 8px}
+  .mini .b i{position:absolute; left:0; top:0; bottom:0; background:var(--ink)}
+  .census{display:grid; grid-template-columns:1fr auto; gap:3px; font-size:10.5px; color:var(--muted)}
+  .census .v{color:var(--ink)}
+  .pin{font-size:10.5px; color:var(--muted); line-height:1.7}
+  .pin code{color:var(--ink); font-size:11px}
+  .drift{margin-top:10px; padding-top:9px; border-top:1px dashed var(--rule-2); color:var(--warn); font-size:10.5px}
+</style></head>
+<body>
+<div class="top">
+  <div class="brand">30klinesofcode <span class="dim">tinygrad, line by line</span></div>
+  <div class="right">
+    <span>pinned <span class="num">1fa9e382</span></span>
+    <span><span class="sig"></span> <span class="num">4,820</span> / 24,600</span>
+  </div>
+</div>
+
+<div class="body">
+  <nav class="rail">
+    <div class="k">stages</div>
+    <div class="srow done"><span class="n">01</span><span class="t">user space &amp; tensor</span><span class="c">2,301</span></div>
+    <div class="srow active"><span class="n">02</span><span class="t">lazy capture &amp; uop</span><span class="c">2,566</span></div>
+    <div class="srow"><span class="n">03</span><span class="t">codegen &amp; execution</span><span class="c">602</span></div>
+    <div class="srow"><span class="n">04</span><span class="t">schedule</span><span class="c">933</span></div>
+    <div class="srow"><span class="n">05</span><span class="t">rangeify</span><span class="c">244</span></div>
+    <div class="srow"><span class="n">06</span><span class="t">decompose &amp; rewrite</span><span class="c">445</span></div>
+    <div class="srow"><span class="n">07</span><span class="t">placement &amp; memory</span><span class="c">351</span></div>
+    <div class="srow"><span class="n">08</span><span class="t">linearize &amp; optimize</span><span class="c">812</span></div>
+    <div class="srow"><span class="n">09</span><span class="t">render</span><span class="c">2,101</span></div>
+    <div class="srow"><span class="n">10</span><span class="t">compile &amp; runtime</span><span class="c">2,530</span></div>
+    <div class="k" style="padding-top:22px">other</div>
+    <div class="srow"><span class="n">—</span><span class="t">deep dives</span><span class="c">18</span></div>
+    <div class="srow"><span class="n">—</span><span class="t">playground</span><span class="c"></span></div>
+    <div class="srow"><span class="n">—</span><span class="t">visualizer</span><span class="c"></span></div>
+  </nav>
+
+  <main class="main">
+    <div class="lede">
+      <div>
+        <h1>thirty thousand lines. every one of them.</h1>
+        <p class="prose">A compiler is not a mystery, it is a <em>list of rewrites</em>. We start at
+        <code>Tensor</code>, jump to the kernel that actually runs, then walk back through every
+        stage that transformed it — with the source open the whole time.</p>
+      </div>
+      <div>
+        <div class="k">current lesson</div>
+        <div class="prose" style="font-size:12px; margin-top:8px">02.4 — the UOp is a singleton<br>
+        <span style="color:var(--faint)">why <code>UOp(ADD, a, b)</code> twice returns one object</span></div>
+      </div>
+    </div>
+
+    <div class="resume">
+      <div class="l"><span class="arw">→</span> continue <b>02.4 · the UOp is a singleton</b>
+        <span class="where">uop/ops.py:192</span></div>
+      <div class="go">press <b>r</b></div>
+    </div>
+
+    <div class="sechead">
+      <div class="k">the pipeline, by line budget</div>
+      <div class="k">12,885 code lines · 10 stages</div>
+    </div>
+
+    <div class="band done"><span class="n">01</span>
+      <span class="name">user space &amp; tensor<small>tensor.py · mixin/* · dtype.py</small></span>
+      <span class="ticks" data-on="100" data-hot="0"></span>
+      <span class="c">2,301</span><span class="st">✓</span></div>
+
+    <div class="band active"><span class="n">02</span>
+      <span class="name">lazy capture &amp; uop<small>uop/ops.py · upat.py · symbolic.py</small></span>
+      <span class="ticks" data-on="41" data-hot="12"></span>
+      <span class="c">2,566</span><span class="st">7/19</span></div>
+
+    <div class="band dim"><span class="n">03</span>
+      <span class="name">codegen &amp; execution<small>the fast-forward — one program, all the way down</small></span>
+      <span class="ticks" data-on="0" data-hot="0"></span>
+      <span class="c">602</span><span class="st">—</span></div>
+
+    <div class="band dim"><span class="n">04</span>
+      <span class="name">schedule<small>create_schedule · transform_to_call</small></span>
+      <span class="ticks" data-on="0" data-hot="0"></span>
+      <span class="c">933</span><span class="st">—</span></div>
+
+    <div class="band dim"><span class="n">05</span>
+      <span class="name">rangeify<small>get_kernel_graph · bufferize</small></span>
+      <span class="ticks" data-on="0" data-hot="0"></span>
+      <span class="c">244</span><span class="st">—</span></div>
+
+    <div class="band dim"><span class="n">06</span>
+      <span class="name">decompose &amp; rewrite<small>codegen/decomp · pattern matcher</small></span>
+      <span class="ticks" data-on="0" data-hot="0"></span>
+      <span class="c">445</span><span class="st">—</span></div>
+
+    <div class="band dim"><span class="n">07</span>
+      <span class="name">placement &amp; memory<small>shapetracker · views · allocation</small></span>
+      <span class="ticks" data-on="0" data-hot="0"></span>
+      <span class="c">351</span><span class="st">—</span></div>
+
+    <div class="band dim"><span class="n">08</span>
+      <span class="name">linearize &amp; optimize<small>linearizer · beam search</small></span>
+      <span class="ticks" data-on="0" data-hot="0"></span>
+      <span class="c">812</span><span class="st">—</span></div>
+
+    <div class="band dim"><span class="n">09</span>
+      <span class="name">render<small>cstyle · wgsl · ptx · llvmir</small></span>
+      <span class="ticks" data-on="0" data-hot="0"></span>
+      <span class="c">2,101</span><span class="st">—</span></div>
+
+    <div class="band dim"><span class="n">10</span>
+      <span class="name">compile &amp; runtime<small>engine/realize · device · drivers</small></span>
+      <span class="ticks" data-on="0" data-hot="0"></span>
+      <span class="c">2,530</span><span class="st">—</span></div>
+
+    <div class="k" style="display:flex; justify-content:space-between; margin-top:16px">
+      <span>next · 03 codegen &amp; execution — the fast-forward</span>
+      <span>j k move · r resume · ? shortcuts</span>
+    </div>
+  </main>
+
+  <aside class="aside">
+    <div class="block">
+      <div class="k">coverage</div>
+      <div class="big">19.6<span>%</span></div>
+      <div style="font-size:10.5px; color:var(--muted)">4,820 of 24,600 code lines</div>
+      <div class="mini">
+        <span>compiler spine</span><span>31%</span><span class="b"><i style="width:31%"></i></span>
+        <span>backends</span><span>0%</span><span class="b"><i style="width:0%"></i></span>
+        <span>runtime &amp; drivers</span><span>0%</span><span class="b"><i style="width:0%"></i></span>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="k">census</div>
+      <div class="census" style="margin-top:9px">
+        <span>files</span><span class="v">123</span>
+        <span>code</span><span class="v">24,600</span>
+        <span>comments</span><span class="v">5,403</span>
+        <span>blank</span><span class="v">4,508</span>
+        <span>total</span><span class="v">34,511</span>
+      </div>
+      <div style="font-size:10px; color:var(--faint); margin-top:9px; line-height:1.6">
+        excludes <code>runtime/autogen</code> — 180k generated register tables.
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="k">pin</div>
+      <div class="pin" style="margin-top:8px">
+        commit <code>1fa9e382</code><br>
+        source <code>tinygrad@1fa9e382</code><br>
+        verified <span class="num">2026-11-08</span>
+      </div>
+      <div class="drift">↑ upstream moved 412 lines. 9 lessons cite shifted lines.</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+  // draw tick bars: n marks, first `on` dark, next `hot` green
+  for (const el of document.querySelectorAll('.ticks')) {
+    const on = Math.round(+el.dataset.on/100*28), hot = Math.round(+el.dataset.hot/100*28), n = 28;
+    el.innerHTML = Array.from({length:n}, (_,i) =>
+      `<i class="${i < on ? 'on' : (i < on + hot ? 'hot' : '')}"></i>`).join('');
+  }
+</script>
+</body></html>

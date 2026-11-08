@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>30klinesofcode — graph rewrite</title>
+<link rel="stylesheet" href="design.css">
+<style>
+  .body{display:grid; grid-template-rows:auto 1fr auto; height:calc(100vh - 45px)}
+  .meta{display:flex; justify-content:space-between; align-items:center; padding:11px 24px;
+        border-bottom:1px solid var(--rule); font-size:10.5px; color:var(--muted)}
+  .meta .l{display:flex; gap:14px; align-items:baseline}
+  .meta b{color:var(--ink); font-weight:500}
+  .meta .p{color:var(--faint)}
+  .split{display:grid; grid-template-columns:1fr 208px 1fr; min-height:0}
+  .pane{position:relative; min-width:0; display:flex; align-items:center; justify-content:center}
+  .pane + .pane{border-left:1px solid var(--rule)}
+  .pane .tag{position:absolute; top:14px; left:20px; font-size:9.5px; letter-spacing:.16em;
+             text-transform:uppercase; color:var(--faint)}
+  .pane .counts{position:absolute; top:14px; right:20px; font-size:9.5px; color:var(--faint)}
+  .grid{position:absolute; inset:0; opacity:.5;
+        background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+        background-size:34px 34px; background-position:-1px -1px;
+        mask-image:radial-gradient(ellipse at 50% 50%, #000 40%, transparent 76%)}
+  svg{position:relative; z-index:1; width:100%; height:auto}
+  .nbox{fill:var(--paper); stroke:var(--rule-2)}
+  .nbox.chg{stroke:var(--accent); stroke-width:1.4}
+  .nbox.ghost{stroke:var(--rule-2); stroke-dasharray:3 3; fill:none}
+  .ntx{font:10px var(--mono); fill:var(--ink)}
+  .ntx.ghost{fill:var(--faint)}
+  .edge{stroke:#A8A296; stroke-width:1; fill:none}
+  .edge.new{stroke:var(--accent); stroke-width:1.4}
+  .elab{font:8.5px var(--mono); fill:var(--faint)}
+
+  .rules{border-left:1px solid var(--rule); border-right:1px solid var(--rule); padding:14px 0; overflow:hidden}
+  .rules .k{padding:0 16px 10px}
+  .rule{padding:6px 16px; font-size:10.5px; color:var(--muted); display:flex; justify-content:space-between; gap:8px}
+  .rule .c{color:var(--faint); font-size:9.5px}
+  .rule.on{background:var(--paper-2); color:var(--ink); box-shadow:inset 2px 0 0 var(--accent)}
+  .rules .sum{margin-top:14px; padding:10px 16px 0; border-top:1px solid var(--rule); font-size:9.5px; color:var(--faint); line-height:1.75}
+  .rules .sum b{color:var(--ink); display:block; margin-bottom:4px}
+
+  .film{display:flex; align-items:center; gap:14px; padding:12px 24px; border-top:1px solid var(--rule)}
+  .strip{display:flex; gap:3px; flex:1; align-items:center}
+  .strip i{flex:1; height:14px; background:var(--paper-3)}
+  .strip i.done{background:var(--rule-2)}
+  .strip i.now{background:var(--accent)}
+  .film .lab{font-size:9.5px; color:var(--faint); white-space:nowrap}
+  .legend{display:flex; gap:18px; font-size:9.5px; color:var(--muted)}
+  .legend s{text-decoration:none; color:var(--accent)}
+</style></head>
+<body>
+<div class="top">
+  <div class="brand">30klinesofcode <span class="dim">tinygrad, line by line</span></div>
+  <div class="right"><span><span class="sig"></span> live trace</span><span class="num">06 · decompose &amp; rewrite</span></div>
+</div>
+
+<div class="body">
+  <div class="meta">
+    <div class="l">
+      <span>graph_rewrite</span><span class="p">/</span>
+      <span>pass <b>7</b> of <b>23</b></span><span class="p">/</span>
+      <span>rule <b>pm_reduce</b></span><span class="p">/</span>
+      <span>codegen/__init__.py <b>254</b></span>
+    </div>
+    <div class="l">
+      <span>118 → <b>94</b> uops</span><span class="p">·</span>
+      <span>depth 7 → 5</span><span class="p">·</span>
+      <span>0.42 ms</span>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="pane">
+      <div class="tag">before</div><div class="counts">118 uops</div><div class="grid"></div>
+      <svg viewBox="0 0 760 620" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,7 z" fill="#A8A296"/></marker>
+        </defs>
+        <g transform="translate(78 0)">
+
+        <rect class="nbox" x="115" y="52" width="110" height="28"/><text class="ntx" x="170" y="70" text-anchor="middle">BUFFER a</text>
+        <rect class="nbox" x="275" y="52" width="110" height="28"/><text class="ntx" x="330" y="70" text-anchor="middle">BUFFER b</text>
+
+        <rect class="nbox" x="195" y="152" width="110" height="28"/><text class="ntx" x="250" y="170" text-anchor="middle">ADD</text>
+
+        <rect class="nbox chg" x="195" y="252" width="110" height="28"/><text class="ntx" x="250" y="270" text-anchor="middle">RELU</text>
+
+        <rect class="nbox ghost" x="375" y="252" width="110" height="28"/><text class="ntx ghost" x="430" y="270" text-anchor="middle">EXPAND</text>
+
+        <rect class="nbox" x="195" y="352" width="110" height="28"/><text class="ntx" x="250" y="370" text-anchor="middle">REDUCE_AXIS</text>
+
+        <rect class="nbox" x="195" y="452" width="110" height="28"/><text class="ntx" x="250" y="470" text-anchor="middle">STORE</text>
+
+        <path class="edge" d="M170 80 V116 H250 V152" marker-end="url(#ar)"/>
+        <path class="edge" d="M330 80 V116 H250"/>
+        <path class="edge" d="M250 180 V252" marker-end="url(#ar)"/>
+        <path class="edge" d="M305 266 H375" marker-end="url(#ar)"/>
+        <path class="edge" d="M430 280 V316 H250 V352" marker-end="url(#ar)"/>
+        <path class="edge" d="M250 380 V452" marker-end="url(#ar)"/>
+
+        <text class="elab" x="182" y="44">4×4 f32</text>
+        <text class="elab" x="342" y="44">4×4 f32</text>
+        <text class="elab" x="316" y="222">elementwise</text>
+        <text class="elab" x="316" y="300">broadcast for the reduce</text>
+        <text class="elab" x="262" y="416">→ scalar</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="rules">
+      <div class="k">rules in this pass</div>
+      <div class="rule"><span>pm_movement</span><span class="c">41</span></div>
+      <div class="rule on"><span>pm_reduce</span><span class="c">12</span></div>
+      <div class="rule"><span>pm_devectorize</span><span class="c">9</span></div>
+      <div class="rule"><span>pm_add_load</span><span class="c">5</span></div>
+      <div class="rule"><span>pm_const_fold</span><span class="c">3</span></div>
+      <div class="rule"><span>pm_cleanup</span><span class="c">2</span></div>
+      <div class="sum"><b>why</b>EXPAND distributes over<br>RELU and folds into the<br>reduce loop.</div>
+      <div class="sum"><b>cost</b>−24 nodes · −2 depth<br>+1 load vector width</div>
+    </div>
+
+    <div class="pane">
+      <div class="tag">after</div><div class="counts">94 uops</div><div class="grid"></div>
+      <svg viewBox="0 0 760 620" preserveAspectRatio="xMidYMid meet">
+        <g transform="translate(78 0)">
+        <rect class="nbox" x="115" y="52" width="110" height="28"/><text class="ntx" x="170" y="70" text-anchor="middle">BUFFER a</text>
+        <rect class="nbox" x="275" y="52" width="110" height="28"/><text class="ntx" x="330" y="70" text-anchor="middle">BUFFER b</text>
+        <rect class="nbox" x="195" y="152" width="110" height="28"/><text class="ntx" x="250" y="170" text-anchor="middle">ADD</text>
+        <rect class="nbox chg" x="195" y="252" width="110" height="28"/><text class="ntx" x="250" y="270" text-anchor="middle">RELU</text>
+        <rect class="nbox" x="195" y="352" width="110" height="28"/><text class="ntx" x="250" y="370" text-anchor="middle">REDUCE_AXIS</text>
+        <rect class="nbox" x="195" y="452" width="110" height="28"/><text class="ntx" x="250" y="470" text-anchor="middle">STORE</text>
+
+        <path class="edge" d="M170 80 V116 H250 V152" marker-end="url(#ar)"/>
+        <path class="edge" d="M330 80 V116 H250"/>
+        <path class="edge" d="M250 180 V252" marker-end="url(#ar)"/>
+        <path class="edge new" d="M250 280 V352" marker-end="url(#ar)"/>
+        <path class="edge" d="M250 380 V452" marker-end="url(#ar)"/>
+
+        <text class="elab" x="182" y="44">4×4 f32</text>
+        <text class="elab" x="342" y="44">4×4 f32</text>
+        <text class="elab" x="262" y="322" fill="#1F6B22">fused · 1 loop</text>
+        <text class="elab" x="262" y="416">→ scalar</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="film">
+    <div class="lab">rewrite</div>
+    <div class="strip" id="strip"></div>
+    <div class="legend"><span><s>—</s> changed edge</span><span>┈ removed node</span><span>118 → 94</span></div>
+    <div class="lab">7 / 23</div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('strip').innerHTML = Array.from({length:23},(_,i)=>
+    `<i class="${i<6?'done':i===6?'now':''}"></i>`).join('');
+</script>
+</body></html>

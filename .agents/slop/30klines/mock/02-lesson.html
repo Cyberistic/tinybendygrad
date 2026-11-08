@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>30klinesofcode — lesson 02.4</title>
+<link rel="stylesheet" href="design.css">
+<style>
+  .body{display:grid; grid-template-columns:236px 1.15fr 1fr; height:calc(100vh - 45px - 34px)}
+  .crumb{display:flex; gap:8px; align-items:baseline; padding:9px 24px; border-bottom:1px solid var(--rule); font-size:11px; color:var(--muted)}
+  .crumb .sep{color:var(--faint)}
+  .crumb b{color:var(--ink); font-weight:500}
+
+  /* ---- rail ---- */
+  .rail{border-right:1px solid var(--rule); padding:16px 0; overflow:hidden}
+  .rail .k{padding:0 16px 8px}
+  .rail .stage{font-size:12px; padding:0 16px 14px; line-height:1.45}
+  .rail .stage .c{color:var(--faint); font-size:10px}
+  .l{display:grid; grid-template-columns:28px 1fr auto; gap:4px; padding:7px 14px 7px 16px;
+     color:var(--muted); font-size:11px; border-left:2px solid transparent; line-height:1.4}
+  .l .n{color:var(--faint)}
+  .l.active{color:var(--ink); border-left-color:var(--accent); background:var(--paper-2)}
+  .l.active .n{color:var(--accent-ink)}
+  .l .ok{color:var(--accent); font-size:10px}
+
+  /* ---- source ---- */
+  .src{border-right:1px solid var(--rule); overflow:hidden; display:flex; flex-direction:column}
+  .src .head{display:flex; justify-content:space-between; align-items:center; padding:8px 16px;
+             border-bottom:1px solid var(--rule); font-size:10.5px; color:var(--muted)}
+  .code{padding:12px 0 0; font-size:10.5px; line-height:18px; overflow:hidden}
+  .row{display:grid; grid-template-columns:18px 42px 1fr; align-items:start; padding-right:10px}
+  .row .ln{grid-column:2; padding-top:3px; color:var(--faint); text-align:right; padding-right:12px; font-size:10px; user-select:none}
+  .row .ct{grid-column:3; color:#2A2A30; white-space:pre-wrap; overflow-wrap:anywhere}
+  .row.hl{background:var(--wash)}
+  .row.hl .ct{color:var(--ink)}
+  .row.hl .ln{color:var(--accent-ink)}
+  .row.hl{border-left:2px solid var(--accent); padding-left:0}
+  .row:not(.hl){border-left:2px solid transparent}
+  .ct .c{color:#8C877C; font-style:italic}
+  .ct .kw{color:#4A4A52}
+  .ct .hit{color:var(--accent-ink); border-bottom:1px solid var(--accent)}
+  .pin{grid-column:1; justify-self:center; color:var(--accent-ink); font-size:9px; line-height:19px; font-weight:600}
+  .pin.on{color:var(--accent-ink)}
+
+  /* ---- explanation ---- */
+  .why{padding:16px 26px 0; overflow:hidden}
+  .why h2{font-size:13px; font-weight:600; margin-bottom:2px}
+  .why .sub{font-size:10.5px; color:var(--faint); margin-bottom:14px}
+  .claim{display:grid; grid-template-columns:18px 1fr; gap:10px; padding:9px 0; border-top:1px solid var(--rule)}
+  .claim .m{width:15px; height:15px; border:1px solid var(--rule-2); border-radius:50%;
+            font-size:9px; line-height:13px; text-align:center; color:var(--muted); margin-top:1px}
+  .claim:first-of-type{border-top:0}
+  .claim .t{font-size:11.5px; line-height:1.6; color:var(--ink-2)}
+  .claim .t code{color:var(--ink); font-size:11.5px; background:var(--paper-2); padding:0 3px}
+  .claim .t b{color:var(--ink); font-weight:600}
+
+  .sect{margin-top:18px}
+  .trace{font-size:10px; line-height:1.85; color:var(--muted); margin-top:7px}
+  .trace .lvl1{padding-left:0} .trace .lvl2{padding-left:14px} .trace .lvl3{padding-left:28px}
+  .trace .here{color:var(--accent-ink)}
+  .trace .loc{color:var(--faint); font-size:9.5px}
+
+  .gwrap{margin-top:9px; border:1px solid var(--rule); padding:12px 10px 8px; position:relative}
+  .gcap{font-size:9.5px; color:var(--faint); margin-top:6px; display:flex; justify-content:space-between}
+  .verdict{margin-top:14px; border-top:1px solid var(--rule); padding-top:10px; font-size:10.5px; color:var(--muted)}
+  .verdict .ok{color:var(--accent-ink)}
+
+  /* ---- transport ---- */
+  .transport{display:flex; align-items:center; justify-content:space-between; height:34px;
+             padding:0 20px; border-top:1px solid var(--rule); font-size:10.5px; color:var(--muted)}
+  .transport .mid{display:flex; gap:16px; align-items:center}
+  .transport b{color:var(--ink); font-weight:500}
+  .transport .key{border:1px solid var(--rule-2); padding:1px 5px; font-size:9.5px}
+</style></head>
+<body>
+<div class="top">
+  <div class="brand">30klinesofcode <span class="dim">tinygrad, line by line</span></div>
+  <div class="right"><span><span class="sig"></span> tracing <span class="num">example 01</span></span>
+    <span class="num">4,820 / 24,600</span></div>
+</div>
+
+<div class="crumb">
+  <span>02</span><span class="sep">/</span><span>lazy capture &amp; uop</span>
+  <span class="sep">/</span><b>02.4 the UOp is a singleton</b>
+  <span class="sep">·</span><span>uop/ops.py 190–203</span>
+</div>
+
+<div class="body">
+  <nav class="rail">
+    <div class="k">stage 02 · 7 of 19</div>
+    <div class="stage">lazy capture &amp; uop<br><span class="c">nothing has run yet</span></div>
+    <div class="l"><span class="n">2.1</span><span>a Tensor holds a UOp</span><span class="ok">✓</span></div>
+    <div class="l"><span class="n">2.2</span><span>src, arg, and the graph</span><span class="ok">✓</span></div>
+    <div class="l"><span class="n">2.3</span><span>Ops is a closed set</span><span class="ok">✓</span></div>
+    <div class="l active"><span class="n">2.4</span><span>the UOp is a singleton</span><span></span></div>
+    <div class="l"><span class="n">2.5</span><span>toposort and the cache</span><span></span></div>
+    <div class="l"><span class="n">2.6</span><span>rewriting with patterns</span><span></span></div>
+    <div class="l"><span class="n">2.7</span><span>symbolic ranges</span><span></span></div>
+    <div class="k" style="padding-top:18px">after this</div>
+    <div class="l"><span class="n">2.8</span><span>why nothing runs</span><span></span></div>
+    <div class="l"><span class="n">2.9</span><span>the first realize</span><span></span></div>
+  </nav>
+
+  <section class="src">
+    <div class="head"><span>tinygrad/uop/ops.py</span><span>read-only · pinned 1fa9e382</span></div>
+    <div class="code">
+<div class="row"><span class="ln">188</span><span class="ct"></span><span></span></div>
+<div class="row"><span class="ln">189</span><span class="ct"></span><span></span></div>
+<div class="row"><span class="ln">190</span><span class="ct"><span class="kw">class</span> UOpMetaClass(type):</span><span></span></div>
+<div class="row"><span class="ln">191</span><span class="ct">  ucache:dict[tuple, weakref.ReferenceType[UOp]] = {}</span><span></span></div>
+<div class="row"><span class="ln">192</span><span class="ct">  <span class="kw">def</span> __call__(cls, op:Ops, src:tuple[UOp,...]=tuple(), arg:Any=None):</span><span></span></div>
+<div class="row hl"><span class="ln">193</span><span class="ct">    <span class="c"># NOTE: the key must separate nodes of different dtype: a CONST's</span></span><span><span class="pin on">1</span></span></div>
+<div class="row hl"><span class="ln">194</span><span class="ct">    <span class="c">    dtype is the type of its arg, and True == 1 as dict keys</span></span><span></span></div>
+<div class="row hl"><span class="ln">195</span><span class="ct">    <span class="kw">if</span> (wret:=UOpMetaClass.ucache.get(key:=(op, src, arg, type(arg)), None)) <span class="kw">is not</span> None <span class="kw">and</span> (ret:=wret()) <span class="kw">is not</span> None: <span class="hit">return ret</span></span><span><span class="pin on">2</span></span></div>
+<div class="row hl"><span class="ln">196</span><span class="ct">    UOpMetaClass.ucache[key] = weakref.ref(created:=super().__call__(op, src, arg))</span><span><span class="pin on">3</span></span></div>
+<div class="row"><span class="ln">197</span><span class="ct">    <span class="kw">if</span> SPEC &gt; 1:</span><span></span></div>
+<div class="row"><span class="ln">198</span><span class="ct">      <span class="kw">from</span> tinygrad.uop.spec <span class="kw">import</span> spec_full</span><span></span></div>
+<div class="row"><span class="ln">199</span><span class="ct">      <span class="kw">if</span> SPEC &gt; 2:</span><span></span></div>
+<div class="row"><span class="ln">200</span><span class="ct">        <span class="c"># SPEC=3 checks the shape</span></span><span></span></div>
+<div class="row"><span class="ln">201</span><span class="ct">        _ = created._shape</span><span></span></div>
+<div class="row"><span class="ln">202</span><span class="ct">      <span class="kw">with</span> Context(CHECK_OOB=0): fret = cast(bool|None, spec_full.rewrite(created))</span><span></span></div>
+<div class="row"><span class="ln">203</span><span class="ct">      <span class="kw">if</span> fret <span class="kw">is not</span> True: <span class="kw">raise</span> RuntimeError(f"SPEC ISSUE {fret}: {created}")</span><span></span></div>
+<div class="row"><span class="ln">204</span><span class="ct">    <span class="hit">return created</span></span><span></span></div>
+<div class="row"><span class="ln">205</span><span class="ct"></span><span></span></div>
+<div class="row"><span class="ln">206</span><span class="ct"><span class="c"># recursive_property replaces functools.cached_property in recursive UOp</span></span><span></span></div>
+<div class="row"><span class="ln">207</span><span class="ct"><span class="c"># functions to prevent RecursionError</span></span><span></span></div>
+<div class="row"><span class="ln">208</span><span class="ct"><span class="kw">class</span> recursive_property:</span><span></span></div>
+<div class="row"><span class="ln">209</span><span class="ct">  <span class="kw">def</span> __init__(self, fxn):</span><span></span></div>
+<div class="row"><span class="ln">210</span><span class="ct">    self.fxn = fxn</span><span></span></div>
+<div class="row"><span class="ln">211</span><span class="ct">    self.nm = fxn.__name__</span><span></span></div>
+<div class="row"><span class="ln">212</span><span class="ct">    self.__doc__ = fxn.__doc__</span><span></span></div>
+<div class="row"><span class="ln"></span><span class="ln" style="color:var(--faint)">⋯</span><span class="ct" style="color:var(--faint); font-style:italic">184 more lines in this file · 1,545 in uop/ops.py</span></div>
+    </div>
+  </section>
+
+  <section class="why">
+    <h2>what this does</h2>
+    <div class="sub">four lines, and the whole compiler starts comparing nodes with <code>is</code>.</div>
+
+    <div class="claim"><span class="m">1</span><span class="t">The cache key is <b>(op, src, arg, type(arg))</b>. Four things, no
+      identity. Two nodes that agree on all four <b>are</b> the same node.</span></div>
+    <div class="claim"><span class="m">2</span><span class="t">A hit returns the live object, or <b>nothing</b> — the weakref may
+      have died. A cache that hands back a dead pointer is a crash, so the miss path is the safe one.</span></div>
+    <div class="claim"><span class="m">3</span><span class="t">A miss stores a <b>weak</b> reference before the constructor returns,
+      so dropping every Tensor frees the graph. No global registry, no leak.</span></div>
+
+    <div class="sect">
+      <div class="k">call trace</div>
+      <div class="trace">
+        <div class="lvl1">Tensor.__add__ <span class="loc">elementwise.py:266</span></div>
+        <div class="lvl2">→ Tensor.add <span class="loc">elementwise.py:83</span></div>
+        <div class="lvl3">→ _binop → _broadcasted</div>
+        <div class="lvl3">→ Tensor.alu <span class="loc">tensor.py:114</span></div>
+        <div class="lvl3">→ UOp.alu → <span class="here">UOpMetaClass.__call__</span></div>
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="k">effect</div>
+      <div class="gwrap">
+        <svg width="100%" height="86" viewBox="0 0 380 86">
+          <defs><marker id="a" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 z" fill="#8C877C"/></marker></defs>
+          <rect x="8" y="14" width="72" height="24" fill="none" stroke="#BDB7A9"/>
+          <text x="44" y="30" font-size="9" text-anchor="middle" fill="#16161A">BUFFER a</text>
+          <rect x="8" y="52" width="72" height="24" fill="none" stroke="#BDB7A9"/>
+          <text x="44" y="68" font-size="9" text-anchor="middle" fill="#16161A">BUFFER b</text>
+          <rect x="150" y="33" width="72" height="24" fill="none" stroke="#3DA639"/>
+          <text x="186" y="49" font-size="9" text-anchor="middle" fill="#1F6B22">ADD</text>
+          <line x1="80" y1="26" x2="146" y2="40" stroke="#8C877C" stroke-width="1" marker-end="url(#a)"/>
+          <line x1="80" y1="64" x2="146" y2="50" stroke="#8C877C" stroke-width="1" marker-end="url(#a)"/>
+          <text x="96" y="26" font-size="8" fill="#9A958C">src[0]</text>
+          <text x="96" y="70" font-size="8" fill="#9A958C">src[1]</text>
+          <line x1="222" y1="45" x2="252" y2="45" stroke="#8C877C" stroke-width="1" marker-end="url(#a)"/>
+          <text x="262" y="42" font-size="8.5" fill="#6E6A63">UOp(ADD, a, b)</text>
+          <text x="262" y="56" font-size="8.5" fill="#3DA639">0x7f3a91c04e40</text>
+          <text x="8" y="83" font-size="8" fill="#9A958C">second call returns the same address</text>
+        </svg>
+        <div class="gcap"><span>a + b, twice</span><span>1 allocation</span></div>
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="k">next in this stage</div>
+      <div class="trace">
+        <div class="lvl1">2.5 &nbsp;toposort and the cache <span class="loc">ops.py:263</span></div>
+        <div class="lvl1">2.6 &nbsp;rewriting with patterns <span class="loc">upat.py:1,548</span></div>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <span class="ok">✓</span> determinism: <b>is</b> replaces deep equality everywhere downstream.<br>
+      <span class="arw">→</span> try it: <b>playground</b> · <code>a+b is a+b</code> → <span class="ok">True</span>
+    </div>
+  </section>
+</div>
+
+<div class="transport">
+  <div><span class="key">←</span> prev &nbsp; <b>step 4 / 11</b> &nbsp; next <span class="key">→</span></div>
+  <div class="mid"><span class="key">space</span> play &nbsp; <span class="key">g</span> graph &nbsp; <span class="key">⏎</span> open playground</div>
+  <div>trace · 118 nodes · 4 rewrites</div>
+</div>
+</body></html>

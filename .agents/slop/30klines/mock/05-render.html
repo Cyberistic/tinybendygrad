@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>30klinesofcode — render</title>
+<link rel="stylesheet" href="design.css">
+<style>
+  .body{display:grid; grid-template-rows:auto 1fr auto; height:calc(100vh - 45px)}
+  .meta{display:flex; justify-content:space-between; align-items:center; padding:11px 24px;
+        border-bottom:1px solid var(--rule); font-size:10.5px; color:var(--muted)}
+  .meta .l{display:flex; gap:14px; align-items:baseline}
+  .meta b{color:var(--ink); font-weight:500}
+  .meta .p{color:var(--faint)}
+
+  .split{display:grid; grid-template-columns:322px 1fr 286px; min-height:0}
+  .col{overflow:hidden; display:flex; flex-direction:column}
+  .col + .col{border-left:1px solid var(--rule)}
+  .chead{display:flex; justify-content:space-between; padding:9px 16px; border-bottom:1px solid var(--rule);
+         font-size:9.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--faint)}
+
+  .lin{padding:10px 0; font-size:10.5px; line-height:1.85}
+  .lin .r{display:grid; grid-template-columns:26px 1fr; padding:0 16px 0 0}
+  .lin .i{color:var(--faint); text-align:right; padding-right:10px; font-size:9.5px}
+  .lin .o{color:var(--ink-2)}
+  .lin .o .op{color:var(--ink)}
+  .lin .o .a{color:var(--muted)}
+  .lin .r.hi{background:var(--wash); box-shadow:inset 2px 0 0 var(--accent)}
+  .lin .r.hi .i{color:var(--accent-ink)}
+  .lin .r.hi .o{color:var(--ink)}
+  .lin .ind1{padding-left:14px} .lin .ind2{padding-left:28px}
+  .lin .rng{color:var(--faint)}
+  .lin .cmt{color:var(--faint); font-style:italic}
+
+  .src{padding:14px 0 4px; font-size:11.5px; line-height:21px; overflow:hidden}
+  .src .row{display:grid; grid-template-columns:40px 1fr; align-items:start; padding-right:14px}
+  .src .ln{color:var(--faint); text-align:right; padding-right:14px; font-size:9.5px; padding-top:1px}
+  .src .ct{white-space:pre-wrap; color:var(--ink-2)}
+  .src .row.hl{background:var(--wash); box-shadow:inset 2px 0 0 var(--accent)}
+  .src .row.hl .ct{color:var(--ink)}
+  .src .row.hl .ln{color:var(--accent-ink)}
+  .ct .d{color:#7A756B}
+  .ct .fn{color:#2E2E34}
+  .ct .num{color:#6E6A63}
+  .ct .s{color:#5F6B3A}
+
+  .map{padding:14px 18px}
+  .mline{display:grid; grid-template-columns:52px 1fr; gap:10px; padding:8px 0; border-top:1px solid var(--rule); font-size:10px}
+  .mline:first-child{border-top:0}
+  .mline .from{color:var(--faint); font-size:9.5px}
+  .mline .to{color:var(--ink-2); line-height:1.6}
+  .mline .to code{color:var(--ink); font-size:10.5px}
+  .note{margin-top:14px; border-top:1px solid var(--rule); padding-top:10px; font-size:9.5px; color:var(--muted); line-height:1.75}
+  .note b{color:var(--ink); display:block; margin-bottom:3px; font-weight:500}
+
+  .map2{margin-top:auto; border-top:1px solid var(--rule); padding:10px 16px 12px}
+  .map2 .h{display:flex; justify-content:space-between; font-size:9.5px; letter-spacing:.13em;
+           text-transform:uppercase; color:var(--faint); margin-bottom:8px}
+  .srow{display:grid; grid-template-columns:1.4fr 62px 84px; gap:10px; padding:6px 0;
+        border-top:1px solid var(--rule); font-size:10px; color:var(--muted)}
+  .srow:first-of-type{border-top:0}
+  .srow .f{color:var(--ink-2)}
+  .srow .g{color:var(--accent-ink)}
+  .srow .u{color:var(--faint); text-align:right}
+  .fold{margin-top:auto; border-top:1px solid var(--rule); padding:12px 16px; font-size:9.5px; color:var(--muted); line-height:1.8}
+  .fold b{color:var(--ink); display:block; margin-bottom:4px; font-weight:500}
+
+  .stages{display:flex; align-items:stretch; border-top:1px solid var(--rule)}
+  .stages div{flex:1; padding:9px 14px; border-right:1px solid var(--rule); font-size:9.5px; color:var(--faint);
+              display:flex; justify-content:space-between; gap:8px}
+  .stages div:last-child{border-right:0}
+  .stages .now{color:var(--ink); box-shadow:inset 0 -2px 0 var(--accent)}
+  .stages .n{color:var(--faint)}
+</style></head>
+<body>
+<div class="top">
+  <div class="brand">30klinesofcode <span class="dim">tinygrad, line by line</span></div>
+  <div class="right"><span><span class="sig"></span> kernel k0</span><span class="num">09 · render</span></div>
+</div>
+
+<div class="body">
+  <div class="meta">
+    <div class="l">
+      <span>render</span><span class="p">/</span>
+      <span>renderer <b>WGSLRenderer</b></span><span class="p">/</span>
+      <span>renderer/wgsl.py <b>41</b></span><span class="p">/</span>
+      <span>41 lines out</span>
+    </div>
+    <div class="l">
+      <span>k0 · add + relu</span><span class="p">·</span>
+      <span>0.02 ms</span><span class="p">·</span>
+      <span>3 bindings</span>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="col">
+      <div class="chead"><span>linearized</span><span>34 uops</span></div>
+      <div class="lin">
+        <div class="r"><span class="i">0</span><span class="o"><span class="op">DEFINE_GLOBAL</span> <span class="a">out</span></span></div>
+        <div class="r"><span class="i">1</span><span class="o"><span class="op">DEFINE_GLOBAL</span> <span class="a">a</span></span></div>
+        <div class="r"><span class="i">2</span><span class="o"><span class="op">DEFINE_GLOBAL</span> <span class="a">b</span></span></div>
+        <div class="r"><span class="i">3</span><span class="o"><span class="op">SPECIAL</span> <span class="a">gid.x</span></span></div>
+        <div class="r"><span class="i">4</span><span class="o"><span class="rng">RANGE</span> <span class="a">0..16</span> <span class="cmt">→ i</span></span></div>
+        <div class="r ind1"><span class="i">5</span><span class="o"><span class="op">IF</span> <span class="a">i &lt; 16</span></span></div>
+        <div class="r ind2"><span class="i">6</span><span class="o"><span class="op">LOAD</span> <span class="a">a[i]</span></span></div>
+        <div class="r ind2"><span class="i">7</span><span class="o"><span class="op">LOAD</span> <span class="a">b[i]</span></span></div>
+        <div class="r ind2"><span class="i">8</span><span class="o"><span class="op">ADD</span> <span class="a">f32</span></span></div>
+        <div class="r ind2"><span class="i">9</span><span class="o"><span class="op">MAX</span> <span class="a">0.0</span></span></div>
+        <div class="r ind2 hi"><span class="i">10</span><span class="o"><span class="op">STORE</span> <span class="a">out[i]</span></span></div>
+        <div class="r ind1"><span class="i">11</span><span class="o"><span class="op">ENDIF</span></span></div>
+        <div class="r"><span class="i">12</span><span class="o"><span class="op">END</span></span></div>
+        <div class="r"><span class="i">13</span><span class="o"></span></div>
+        <div class="r"><span class="i">14</span><span class="o"><span class="cmt"># 34 of 118 uops reach the renderer;</span></span></div>
+        <div class="r"><span class="i">15</span><span class="o"><span class="cmt"># the other 84 folded away</span></span></div>
+      </div>
+      <div class="fold"><b>not rendered</b>84 uops folded by decomposition and<br>
+        the range index; 0 survived as dead code.</div>
+    </div>
+
+    <div class="col">
+      <div class="chead"><span>tinygrad/renderer/wgsl.py → kernel</span><span>wgsl</span></div>
+      <div class="src">
+<div class="row"><span class="ln">1</span><span class="ct"><span class="d">@group(0) @binding(0)</span> <span class="fn">var</span>&lt;storage, read_write&gt; out: array&lt;f32&gt;;</span></div>
+<div class="row"><span class="ln">2</span><span class="ct"><span class="d">@group(0) @binding(1)</span> <span class="fn">var</span>&lt;storage, read&gt; a: array&lt;f32&gt;;</span></div>
+<div class="row"><span class="ln">3</span><span class="ct"><span class="d">@group(0) @binding(2)</span> <span class="fn">var</span>&lt;storage, read&gt; b: array&lt;f32&gt;;</span></div>
+<div class="row"><span class="ln">4</span><span class="ct"></span></div>
+<div class="row"><span class="ln">5</span><span class="ct"><span class="d">@compute</span> <span class="d">@workgroup_size(64)</span></span></div>
+<div class="row"><span class="ln">6</span><span class="ct"><span class="fn">fn</span> k0(<span class="d">@builtin(global_invocation_id)</span> gid: vec3&lt;u32&gt;) {</span></div>
+<div class="row"><span class="ln">7</span><span class="ct">  <span class="fn">let</span> i = gid.x;</span></div>
+<div class="row"><span class="ln">8</span><span class="ct">  <span class="fn">if</span> (i &lt; <span class="num">16u</span>) {</span></div>
+<div class="row hl"><span class="ln">9</span><span class="ct">    out[i] = max(a[i] + b[i], <span class="num">0.0</span>);</span></div>
+<div class="row"><span class="ln">10</span><span class="ct">  }</span></div>
+<div class="row"><span class="ln">11</span><span class="ct">}</span></div>
+<div class="row"><span class="ln">12</span><span class="ct"></span></div>
+<div class="row"><span class="ln">13</span><span class="ct"></span></div>
+<div class="row"><span class="ln"></span><span class="ct" style="color:var(--faint); font-size:9px; letter-spacing:.13em">KERNEL k1 · REDUCE SUM</span></div>
+<div class="row"><span class="ln">1</span><span class="ct"><span class="d">@group(0) @binding(0)</span> <span class="fn">var</span>&lt;storage, read_write&gt; out: array&lt;f32&gt;;</span></div>
+<div class="row"><span class="ln">2</span><span class="ct"><span class="d">@group(0) @binding(1)</span> <span class="fn">var</span>&lt;storage, read&gt; a: array&lt;f32&gt;;</span></div>
+<div class="row"><span class="ln">3</span><span class="ct"></span></div>
+<div class="row"><span class="ln">4</span><span class="ct"><span class="d">@compute</span> <span class="d">@workgroup_size(1)</span></span></div>
+<div class="row"><span class="ln">5</span><span class="ct"><span class="fn">fn</span> k1() {</span></div>
+<div class="row"><span class="ln">6</span><span class="ct">  <span class="fn">var</span> acc = <span class="num">0.0</span>;</span></div>
+<div class="row"><span class="ln">7</span><span class="ct">  <span class="fn">for</span> (<span class="fn">var</span> i = <span class="num">0u</span>; i &lt; <span class="num">16u</span>; i++) { acc += a[i]; }</span></div>
+<div class="row"><span class="ln">8</span><span class="ct">  out[0] = acc;</span></div>
+<div class="row"><span class="ln">9</span><span class="ct">}</span></div>
+      </div>
+
+      <div class="map2">
+        <div class="h"><span>source map</span><span>python → kernel → uop</span></div>
+        <div class="srow"><span class="f">elementwise.py:266</span><span class="g">k0:9</span><span class="u">6–10</span></div>
+        <div class="srow"><span class="f">elementwise.py:83</span><span class="g">k0:9</span><span class="u">8</span></div>
+        <div class="srow"><span class="f">tensor.py:114</span><span class="g">k0:7</span><span class="u">3–4</span></div>
+        <div class="srow"><span class="f">tensor.py:217</span><span class="g">k1:6</span><span class="u">—</span></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="chead"><span>line 9</span><span>mapping</span></div>
+      <div class="map">
+        <div class="mline"><span class="from">BUFFER</span><span class="to"><code>a</code>, <code>b</code>, <code>out</code><br>
+          <span style="color:var(--faint); font-size:9.5px">binding 0–2 · 3 of 3 slots</span></span></div>
+        <div class="mline"><span class="from">RANGE</span><span class="to"><code>i</code><br>
+          <span style="color:var(--faint); font-size:9.5px">flattened from (4,4) → 0..16</span></span></div>
+        <div class="mline"><span class="from">ALU</span><span class="to"><code>a[i] + b[i]</code><br>
+          <span style="color:var(--faint); font-size:9.5px">ADD · f32 · no index arithmetic</span></span></div>
+        <div class="mline"><span class="from">ALU</span><span class="to"><code>max(…, 0.0)</code><br>
+          <span style="color:var(--faint); font-size:9.5px">RELU lowered to MAX</span></span></div>
+        <div class="mline"><span class="from">STORE</span><span class="to"><code>out[i] =</code><br>
+          <span style="color:var(--faint); font-size:9.5px">the one write in this kernel</span></span></div>
+
+        <div class="note"><b>why the guard</b>The range is 16 but the workgroup is 64. Threads
+          16–63 exit on line 8 — one wasted branch, no wasted memory.</div>
+        <div class="note"><b>what is not here</b>No bounds check on <code>a</code> or <code>b</code>:
+          the range was proven to fit at compile time.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stages">
+    <div><span>rangeify</span><span class="n">0.11</span></div>
+    <div><span>decomp</span><span class="n">0.03</span></div>
+    <div><span>linearize</span><span class="n">0.03</span></div>
+    <div class="now"><span>render</span><span class="n">0.02 ms</span></div>
+    <div><span>compile</span><span class="n">0.09</span></div>
+  </div>
+</div>
+</body></html>

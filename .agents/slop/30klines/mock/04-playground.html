@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head>
+<meta charset="utf-8">
+<title>30klinesofcode — playground</title>
+<link rel="stylesheet" href="design.css">
+<style>
+  .body{display:grid; grid-template-rows:auto 1fr auto; height:calc(100vh - 45px)}
+  .bar{display:flex; align-items:center; justify-content:space-between; gap:16px;
+       padding:8px 20px; border-bottom:1px solid var(--rule); font-size:10.5px; color:var(--muted)}
+  .bar .l{display:flex; gap:14px; align-items:center}
+  .file{border:1px solid var(--rule-2); padding:3px 8px; color:var(--ink); font-size:10px}
+  .file.dim{border-color:transparent; color:var(--faint)}
+  .run{border:1px solid var(--accent); color:var(--accent-ink); padding:3px 10px; font-size:10px}
+  .ok{color:var(--accent-ink)}
+
+  .split{display:grid; grid-template-columns:53% 1fr; min-height:0}
+  .editor{border-right:1px solid var(--rule); overflow:hidden; padding:14px 0; display:flex; flex-direction:column}
+  .row{display:grid; grid-template-columns:40px 1fr; align-items:start; font-size:11.5px; line-height:21px}
+  .row .ln{color:#4A4E55; text-align:right; padding-right:14px; font-size:10px}
+  .row .ct{white-space:pre-wrap; color:var(--ink-2)}
+  .row.hl{background:var(--wash); box-shadow:inset 2px 0 0 var(--accent)}
+  .row.hl .ct{color:var(--ink)}
+  .row.hl .ln{color:var(--accent-ink)}
+  .ct .k{color:#B9B6AE; text-transform:none; letter-spacing:0; font-size:inherit}
+  .ct .c{color:#5E6167; font-style:italic}
+  .ct .n{color:#D9D4C7}
+  .ct .s{color:#9DA57C}
+
+  .insp{display:flex; flex-direction:column; min-width:0}
+  .tabs{display:flex; gap:0; border-bottom:1px solid var(--rule); padding:0 8px}
+  .tab{padding:9px 12px; font-size:10.5px; color:var(--muted); border-bottom:1px solid transparent; margin-bottom:-1px}
+  .tab.on{color:var(--ink); border-bottom-color:var(--accent)}
+  .tab .c{color:var(--faint); font-size:9px; margin-left:5px}
+
+  .panel{padding:16px 20px; overflow:hidden; flex:1; display:flex; flex-direction:column}
+  .k{font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint)}
+  .big{font-size:34px; letter-spacing:-.02em; margin:6px 0 2px; line-height:1}
+  .big small{font-size:11px; color:var(--muted); letter-spacing:0; margin-left:8px}
+
+  .heat{display:grid; grid-template-columns:repeat(4,1fr); gap:2px; width:240px; margin-top:12px}
+  .heat div{height:34px; display:flex; align-items:center; justify-content:center; font-size:9.5px; color:#E8E6E1}
+  .glabel{display:grid; grid-template-columns:repeat(4,1fr); gap:2px; width:240px; font-size:8.5px; color:var(--faint); margin-top:4px; text-align:center}
+
+  table{border-collapse:collapse; width:100%; font-size:10.5px}
+  th{text-align:left; font-weight:400; color:var(--faint); font-size:9.5px; padding:0 0 6px}
+  td{padding:5px 0; border-top:1px solid var(--rule); color:var(--ink-2)}
+  td.r{text-align:right}
+  td .nm{color:var(--ink)}
+
+  .two{display:grid; grid-template-columns:250px 1fr; gap:26px; align-items:start; flex:1; align-content:start}
+  .wg{border:1px solid var(--rule); padding:10px 12px; font-size:9.5px; line-height:1.7; color:var(--muted); margin-top:12px}
+  .wg b{color:var(--ink-2); font-weight:400}
+
+  .console{margin-top:auto; border-top:1px solid var(--rule); padding:10px 20px 0 14px}
+  .chead{display:flex; justify-content:space-between; font-size:9px; letter-spacing:.14em;
+         text-transform:uppercase; color:var(--faint); margin-bottom:6px}
+  .cout{font-size:11px; color:var(--ink-2); line-height:1.7}
+  .cout.dim{color:var(--faint); font-size:10px}
+  .pipe{display:grid; grid-template-columns:repeat(5,1fr); border-top:1px solid var(--rule); margin-top:22px}
+  .pipe div{padding:10px 12px 0; border-right:1px solid var(--rule)}
+  .pipe div:last-child{border-right:0}
+  .pipe .s{font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint)}
+  .pipe .t{font-size:13px; margin-top:3px}
+  .pipe .t.hot{color:var(--accent-ink)}
+  .foot{display:flex; justify-content:space-between; align-items:center; padding:9px 20px;
+        border-top:1px solid var(--rule); font-size:9.5px; color:var(--muted)}
+  .foot .l{display:flex; gap:18px}
+  .dot{width:6px; height:6px; background:var(--accent); display:inline-block; margin-right:6px}
+</style></head>
+<body>
+<div class="top">
+  <div class="brand">30klinesofcode <span class="dim">playground</span></div>
+  <div class="right"><span class="ok">● webgpu</span><span>apple m3 · 8 bindings</span>
+    <span class="num">example 01</span></div>
+</div>
+
+<div class="body">
+  <div class="bar">
+    <div class="l">
+      <span class="file">examples/01_add_relu_sum.py</span>
+      <span class="file dim">02_matmul.py</span>
+      <span class="file dim">03_softmax.py</span>
+      <span class="file dim">+</span>
+    </div>
+    <div class="l">
+      <span class="run">run ▸ <span style="color:var(--faint)">⌘⏎</span></span>
+      <span><span class="dot"></span>executed in 1.42 ms</span>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="editor">
+      <div class="row"><span class="ln">1</span><span class="ct"><span class="k">from</span> tinygrad <span class="k">import</span> Tensor</span></div>
+      <div class="row"><span class="ln">2</span><span class="ct"></span></div>
+      <div class="row"><span class="ln">3</span><span class="ct">a = Tensor.randn(<span class="n">4</span>, <span class="n">4</span>)</span></div>
+      <div class="row"><span class="ln">4</span><span class="ct">b = Tensor.randn(<span class="n">4</span>, <span class="n">4</span>)</span></div>
+      <div class="row hl"><span class="ln">5</span><span class="ct">c = (a + b).relu()</span></div>
+      <div class="row"><span class="ln">6</span><span class="ct">out = c.sum()</span></div>
+      <div class="row"><span class="ln">7</span><span class="ct"></span></div>
+      <div class="row"><span class="ln">8</span><span class="ct"><span class="k">print</span>(out.numpy())</span></div>
+      <div class="row"><span class="ln">9</span><span class="ct"></span></div>
+      <div class="row"><span class="ln">10</span><span class="ct"><span class="c"># nothing above has run. line 8 is the boundary.</span></span></div>
+
+      <div class="console">
+        <div class="chead"><span>console</span><span>stdout</span></div>
+        <div class="cout">3.4123</div>
+        <div class="cout dim">[2 kernels, 1.42 ms, 4x4 f32]</div>
+      </div>
+    </div>
+
+    <div class="insp">
+      <div class="tabs">
+        <div class="tab">uops<span class="c">118</span></div>
+        <div class="tab">schedule<span class="c">2</span></div>
+        <div class="tab">linearized<span class="c">34</span></div>
+        <div class="tab">wgsl<span class="c">41</span></div>
+        <div class="tab on">output</div>
+      </div>
+
+      <div class="panel">
+        <div class="two">
+          <div>
+            <div class="k">result</div>
+            <div class="big">3.4123<small>f32</small></div>
+            <div style="font-size:9.5px; color:var(--faint)">scalar · device WEBGPU</div>
+
+            <div class="k" style="margin-top:22px">c, before the reduce</div>
+            <div class="heat" id="heat"></div>
+            <div class="glabel"><span>0</span><span>1</span><span>2</span><span>3</span></div>
+          </div>
+
+          <div>
+            <div class="k">kernels</div>
+            <table style="margin-top:8px">
+              <tr><th>kernel</th><th>shape</th><th class="r">time</th></tr>
+              <tr><td><span class="nm">k0 · add + relu</span></td><td>4×4</td><td class="r">0.61 ms</td></tr>
+              <tr><td><span class="nm">k1 · reduce sum</span></td><td>4×4 → 1</td><td class="r">0.42 ms</td></tr>
+            </table>
+
+            <div class="k" style="margin-top:20px">wgsl for k0</div>
+            <div class="wg">
+<b>@compute</b> @workgroup_size(64)<br>
+<b>fn</b> k0(@builtin(global_invocation_id) gid: vec3&lt;u32&gt;) {<br>
+&nbsp;&nbsp;<b>let</b> i = gid.x;<br>
+&nbsp;&nbsp;out[i] = max(a[i] + b[i], 0.0);<br>
+}
+            </div>
+          </div>
+        </div>
+
+        <div class="pipe">
+          <div><div class="s">realize</div><div class="t">0.08</div></div>
+          <div><div class="s">schedule</div><div class="t">0.11</div></div>
+          <div><div class="s">linearize</div><div class="t">0.03</div></div>
+          <div><div class="s">render</div><div class="t">0.02</div></div>
+          <div><div class="s">dispatch</div><div class="t hot">1.18</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="l"><span><span class="dot"></span>2 kernels · 1.42 ms</span><span>webgpu</span><span>4×4 f32</span></div>
+    <div class="l"><span>⚠ subset: 37 of 75 ops available in the browser</span><span>lin 34 · wgsl 41</span></div>
+  </div>
+</div>
+
+<script>
+  const vals = [[1.24,0.00,2.31,0.42],[0.88,3.02,0.00,1.11],[2.74,0.31,1.09,0.00],[0.00,1.66,2.02,3.88]];
+  const max = 3.88;
+  document.getElementById('heat').innerHTML = vals.flat().map(v=>{
+    const a = v===0 ? 0.04 : 0.10 + 0.55*(v/max);
+    return `<div style="background:rgba(61,166,57,${a.toFixed(2)});border:1px solid rgba(61,166,57,.35)">${v? v.toFixed(2):'0'}</div>`;
+  }).join('');
+</script>
+</body></html>

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>30klinesofcode — the course</title>
+<link rel="stylesheet" href="design.css">
+<style>
+  .nav{display:flex; gap:22px; font-size:11px; color:var(--muted)}
+  .nav b{color:var(--ink); font-weight:500}
+  .nav .sep{color:var(--faint)}
+
+  .body{display:grid; grid-template-columns:470px 1fr; height:calc(100vh - 45px)}
+  .hero{padding:54px 44px 0 34px; border-right:1px solid var(--rule)}
+  .hero h1{font-size:28px; line-height:1.22; letter-spacing:-.025em; font-weight:600}
+  .hero h1 span{color:var(--faint)}
+  .hero .prose{margin-top:20px; font-size:14px; line-height:1.75; max-width:38ch}
+  .hero .prose + .prose{margin-top:12px}
+  .hero .prose em{font-style:normal; border-bottom:1px solid var(--rule-2)}
+  .cta{display:flex; gap:12px; margin-top:26px; font-size:11px}
+  .cta a{border:1px solid var(--ink); padding:7px 13px; color:var(--ink)}
+  .cta a.ghost{border-color:var(--rule-2); color:var(--muted)}
+  .how{margin-top:30px; padding-top:16px; border-top:1px solid var(--rule)}
+  .how .hl{display:grid; grid-template-columns:14px 1fr; gap:8px; margin-top:7px; font-size:11px; color:var(--muted); line-height:1.6}
+  .how .g{color:var(--accent)}
+  .meta{margin-top:26px; padding-top:16px; border-top:1px solid var(--rule); font-size:10px; color:var(--faint); line-height:1.9}
+  .meta b{color:var(--ink-2); font-weight:400}
+
+  .map{padding:26px 40px 18px 34px; overflow:hidden; position:relative; display:flex; flex-direction:column}
+  .maphead{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px}
+  .act{margin-top:22px; padding-top:16px; border-top:1px solid var(--rule)}
+  .act:first-of-type{margin-top:6px; border-top:0; padding-top:0}
+  .act .h{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px}
+  .act .h .l{display:flex; gap:10px; align-items:baseline}
+  .act .rn{font-size:10px; color:var(--faint); letter-spacing:.14em}
+  .act .nm{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2)}
+  .act .hint{font-size:9.5px; color:var(--faint); font-style:italic}
+
+  .st{display:grid; grid-template-columns:30px 1fr 34ch 62px 36px; gap:12px; align-items:baseline;
+      padding:10px 0; border-left:1px solid var(--rule); margin-left:6px; padding-left:16px; position:relative}
+  .st::before{content:""; position:absolute; left:-3.5px; top:18px; width:6px; height:6px;
+              background:var(--paper); border:1px solid var(--rule-2)}
+  .st.done::before{background:var(--ink); border-color:var(--ink)}
+  .st.now::before{background:var(--accent); border-color:var(--accent); width:7px; height:7px; left:-4px}
+  .st .n{color:var(--faint); font-size:10.5px}
+  .st .t{font-size:12.5px}
+  .st .q{font-size:10.5px; color:var(--faint)}
+  .st .c{text-align:right; font-size:10px; color:var(--muted)}
+  .st .s{text-align:right; font-size:9.5px; color:var(--faint)}
+  .st.now .t{font-weight:600}
+  .st.now .n{color:var(--accent-ink)}
+  .st.dim .t,.st.dim .q{color:var(--faint)}
+
+  .act2 .st{border-left-color:var(--accent)}
+  .act2 .h .nm{color:var(--accent-ink)}
+
+  .cov{margin-top:auto; padding-top:16px; border-top:1px solid var(--rule)}
+  .covhead{display:flex; justify-content:space-between; margin-bottom:8px}
+  .segbar{display:flex; gap:2px; height:26px; align-items:stretch}
+  .segbar div{background:var(--paper-3); position:relative; overflow:hidden}
+  .segbar div i{position:absolute; inset:0 auto 0 0; background:var(--ink)}
+  .segbar div.now i{background:var(--accent)}
+  .covmeta{display:flex; justify-content:space-between; margin-top:9px; font-size:10px; color:var(--muted)}
+  .covmeta b{color:var(--ink); font-weight:500}
+  .foot{margin-top:14px; display:flex; justify-content:space-between;
+        border-top:1px solid var(--rule); padding-top:10px; font-size:9.5px; color:var(--faint)}
+  .foot .l{display:flex; gap:18px}
+</style></head>
+<body>
+<div class="top">
+  <div class="brand">30klinesofcode <span class="dim">tinygrad, line by line</span></div>
+  <div class="nav">
+    <b>course</b><span class="sep">·</span><span>deep dives</span><span class="sep">·</span>
+    <span>playground</span><span class="sep">·</span><span>visualizer</span>
+  </div>
+  <div class="right"><span>pinned <span class="num">1fa9e382</span></span><span class="num">4,820 / 24,600</span></div>
+</div>
+
+<div class="body">
+  <section class="hero">
+    <h1>thirty thousand lines.<br><span>every one of them.</span></h1>
+    <p class="prose">tinygrad compiles a tensor program to a GPU kernel in about thirty thousand lines
+      of Python. This course reads every line that matters, in the order that makes it make sense.</p>
+    <p class="prose">We do not start at <em>line one</em>. We start at <code>Tensor</code>, jump straight to
+      the kernel that actually runs, and then walk back through each stage that transformed it —
+      because the end tells you what the middle is <em>for</em>.</p>
+    <div class="cta"><a href="#">start · stage 01 →</a><a class="ghost" href="#">skip to the kernel →</a></div>
+    <div class="how">
+      <div class="k">how to read this</div>
+      <div class="hl"><span class="g">▸</span><span>every claim is pinned to a line of real source, not pseudocode.</span></div>
+      <div class="hl"><span class="g">▸</span><span>every stage runs the same 8-line program, so you watch one thing change.</span></div>
+      <div class="hl"><span class="g">▸</span><span>every graph is generated by running tinygrad, not drawn by hand.</span></div>
+    </div>
+    <div class="meta">
+      <b>24,600</b> code lines · <b>123</b> files · <b>10</b> stages<br>
+      pinned to <b>tinygrad@1fa9e382</b> · re-audited <b>2026-11-08</b><br>
+      progress is computed, never typed.
+    </div>
+  </section>
+
+  <section class="map">
+    <div class="maphead">
+      <div class="k">the course</div>
+      <div class="k">lines · state</div>
+    </div>
+
+    <div class="act">
+      <div class="h"><div class="l"><span class="rn">I</span><span class="nm">the surface</span></div>
+        <span class="hint">what you write</span></div>
+      <div class="st done"><span class="n">01</span><span class="t">user space &amp; tensor</span>
+        <span class="q">what is a Tensor, really?</span><span class="c">2,301</span><span class="s">✓</span></div>
+      <div class="st now"><span class="n">02</span><span class="t">lazy capture &amp; uop</span>
+        <span class="q">why has nothing run yet?</span><span class="c">2,566</span><span class="s">7/19</span></div>
+    </div>
+
+    <div class="act act2">
+      <div class="h"><div class="l"><span class="rn">II</span><span class="nm">the destination</span></div>
+        <span class="hint">fast-forward to the end</span></div>
+      <div class="st"><span class="n">03</span><span class="t">codegen &amp; execution</span>
+        <span class="q">what does this program become?</span><span class="c">602</span><span class="s">—</span></div>
+    </div>
+
+    <div class="act">
+      <div class="h"><div class="l"><span class="rn">III</span><span class="nm">the machinery</span></div>
+        <span class="hint">rewind, one layer at a time</span></div>
+      <div class="st dim"><span class="n">04</span><span class="t">schedule</span>
+        <span class="q">which ops belong in one kernel?</span><span class="c">933</span><span class="s">—</span></div>
+      <div class="st dim"><span class="n">05</span><span class="t">rangeify</span>
+        <span class="q">how does a shape become a loop?</span><span class="c">244</span><span class="s">—</span></div>
+      <div class="st dim"><span class="n">06</span><span class="t">decompose &amp; rewrite</span>
+        <span class="q">how does RELU become MAX?</span><span class="c">445</span><span class="s">—</span></div>
+      <div class="st dim"><span class="n">07</span><span class="t">placement &amp; memory</span>
+        <span class="q">where does the buffer actually live?</span><span class="c">351</span><span class="s">—</span></div>
+      <div class="st dim"><span class="n">08</span><span class="t">linearize &amp; optimize</span>
+        <span class="q">in what order do the loops run?</span><span class="c">812</span><span class="s">—</span></div>
+      <div class="st dim"><span class="n">09</span><span class="t">render</span>
+        <span class="q">how does a UOp become text?</span><span class="c">2,101</span><span class="s">—</span></div>
+      <div class="st dim"><span class="n">10</span><span class="t">compile &amp; runtime</span>
+        <span class="q">what launches, and when?</span><span class="c">2,530</span><span class="s">—</span></div>
+    </div>
+
+    <div class="act">
+      <div class="h"><div class="l"><span class="rn">IV</span><span class="nm">after</span></div>
+        <span class="hint">tools, not lessons</span></div>
+      <div class="st dim"><span class="n">↗</span><span class="t">deep dives</span>
+        <span class="q">the ideas that need their own page</span><span class="c">18</span><span class="s">—</span></div>
+      <div class="st dim"><span class="n">↗</span><span class="t">playground</span>
+        <span class="q">edit the program, watch the kernels change</span><span class="c">—</span><span class="s">—</span></div>
+      <div class="st dim"><span class="n">↗</span><span class="t">visualizer</span>
+        <span class="q">the graph alone, full screen</span><span class="c">—</span><span class="s">—</span></div>
+    </div>
+
+    <div class="cov">
+      <div class="covhead"><span class="k">coverage by stage</span><span class="k">12,885 code lines</span></div>
+      <div class="segbar" id="segbar"></div>
+      <div class="covmeta"><span><b>4,820</b> of <b>24,600</b> code lines · 19.6%</span>
+        <span>next · <b>2.5 toposort and the cache</b></span></div>
+    </div>
+
+    <div class="foot">
+      <div class="l"><span>deep dives · 18</span><span>tinygrad-notes · 12</span><span>adventures · 7</span></div>
+      <div>one example, every stage: <b>01_add_relu_sum.py</b></div>
+    </div>
+  </section>
+</div>
+<script>
+  const segs = [2301,2566,602,933,244,445,351,812,2101,2530];
+  const fill = [1, .41, 0, 0, 0, 0, 0, 0, 0, 0];
+  const tot = segs.reduce((a,b)=>a+b,0);
+  document.getElementById('segbar').innerHTML = segs.map((v,i)=>
+    `<div class="${i===1?'now':''}" style="width:${(v/tot*100).toFixed(2)}%">`+
+    `<i style="width:${(fill[i]*100).toFixed(0)}%"></i></div>`).join('');
+</script>
+</body></html>
