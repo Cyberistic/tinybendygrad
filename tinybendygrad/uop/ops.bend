@@ -7857,6 +7857,305 @@ def cf.top(keep: Bool, fuel: Nat, +ar: Arena, i: U32) -> H.I64:
 def UOp.const_factor(fuel: Nat, +ar: Arena, +i: U32) -> H.I64:
   cf.top(cf.keep(Arena.op(ar, i)), fuel, ar, i)
 
+# ===========================================================================
+# THE COUNTER -- `collections.Counter` OVER NODE LISTS, AS A LIST OF PAIRS.
+#
+# ops.py:1073-1079 -- `UOp.gcd` and `UOp.divide_exact`.
+#
+# **AND THE PORT HAS NO INTEGER-KEYED MAP.** MEASURED 2026-11-08: `helpers.bend:502` SAYS
+# "Bend's `Map` IS STRING-KEYED ONLY, SO THE SET IS A LINEAR SCAN", **AND THERE IS NO
+# `HashMap` AND NO `HashSet` IN THE PORT.** **BUT THE PORT HAS THE HONEST SPELLING ALREADY,
+# TWICE**: `dedup_u32` (`helpers.bend:509`) AND `merge_dicts` (`helpers.bend:2467`) ARE BOTH "A
+# LIST OF PAIRS WITH A LINEAR SCAN", **AND `merge_dicts`'s OWN NOTE SAYS EXACTLY THAT: "A LIST
+# OF PAIRS IS THE HONEST REPRESENTATION".** **SO THE CLAIM "THE PORT HAS NO MULTISET" WAS A
+# CLAIM ABOUT A CONTAINER AND NOT ABOUT A CAPABILITY.**
+#
+# **AND UPSTREAM's COUNTER's KEYS ARE NODES**, BECAUSE A `UOp` IS HASHABLE BY IDENTITY
+# (`ops.py:219-220`: `__hash__ = tuple.__hash__` AND `__eq__` IS `self is other`). **SO THE
+# KEY IS THE ARENA's `U32` INDEX** -- WHICH IS THE NODE's IDENTITY IN THIS PORT.
+#
+# **AND THE COUNT IS A `U32` AND NOT A `Nat`:** A COUNT OF OCCURRENCES IS A `U32`, **AND
+# `Nat`'s ARITHMETIC IS A PRELUDE-LEVEL DETAIL** (`Nat.add`/`Nat.mul` IN bend2's `safe.ts`)
+# **THAT THE PORT USES ONLY FOR FUEL.** AND A `U32` LITERAL IS A PLAIN NUMBER
+# (`bend.ts:70`: "U32 | NUMBER").
+#
+# ---------------------------------------------------------------------------
+# THE FOUR SPELLING RULES, ALL MEASURED 2026-11-08 AGAINST bend2's COMPILER.
+#
+# 1. **A PLAIN PARAMETER MAY BE CONSUMED ONCE AND A `+`-BINDER MAY BE CONSUMED TWICE.** TWO
+#    PROBES: `def use2(x: U32) -> U32: U32.add(x, x)` REFUSES WITH "x (consumed more than
+#    once)" AND `def use2(+x: U32) -> U32: U32.add(x, x)` COMPILES AND ANSWERS 6. **AND THE
+#    PORT's OWN `split_uop.pop` USES `+ar` AND `+sep` TWICE EACH, SO THIS IS THE TREE's
+#    CONVENTION AND NOT A NEW ONE.**
+# 2. **A DEF's HELPER MUST COME BEFORE ITS USER** -- "defs are checked in file order, and an
+#    unfilled law has none". **SO THE ORDER BELOW IS THE DEPENDENCY ORDER AND NOT THE
+#    READING ORDER.**
+# 3. **A `match` HEADS A DEF BODY AND NOT A TERM**, AND **A `match` MAY NOT SCRUTINIZE A
+#    COMPUTED VALUE** -- "a match cannot scrutinize a computed value: give it its own def".
+#    **SO EVERY COMPARISON IS A PARAMETER AND EVERY BRANCH IS A DEF.**
+# 4. **ARGUMENTS ARE READ LEFT TO RIGHT AND EACH IS PASSED UNCHANGED UNTIL USED**, SO A LIST's
+#    TAIL MAY NOT BE PASSED TO TWO CALLS. **AND THE PORT's OWN `Merge.go` IS THE PATTERN**
+#    -- `ops.bend:2845`: `Merge.go(t, Found.ar(f), List.append(&2, U32, map, [Found.i(f)]))`
+#    -- **THE TAIL IS THE RECURSION's FIRST ARGUMENT AND THE ACCUMULATOR IS THE THIRD.**
+#
+# ---------------------------------------------------------------------------
+# THE ALGORITHM, AND IT IS UPSTREAM's.
+#
+# `collections.Counter` OVER NODE LISTS: `Counter(term.split_uop(Ops.MUL))` COUNTS THE
+# MUL-FACTORS OF A TERM, AND `functools.reduce(operator.and_, ...)` INTERSECTS THE COUNTERS,
+# **AND `operator.and_` ON TWO COUNTERS IS "THE KEYS IN BOTH, WITH THE MINIMUM COUNT".**
+#
+# **SO THE COUNTER IS A LIST OF `(KEY, COUNT)` PAIRS, THE INTERSECTION IS THE KEYS OF THE FIRST
+# COUNTER WITH THE MINIMUM COUNT ACROSS ALL OF THEM, AND THE PRODUCT IS A FOLD OVER THE PAIRS
+# WITH `count` COPIES OF THE KEY.**
+type Ctr is Data:
+  Ctr{k: U32, n: U32}
+
+# THE TWO ACCESSORS, AND **EACH READS ONE FIELD** -- THE PORT's OWN `Dv.ok`/`Dv.f`/`Dv.i` ARE
+# THREE ACCESSORS AND EACH DESTRUCTURES THE RECORD ONCE, **AND A DEF THAT READS BOTH FIELDS
+# DESTRUCTURES IT ONCE AND BINDS BOTH.**
+def Ctr.k(+c: Ctr) -> U32:
+  match c:
+    case Ctr{k, n}: k
+
+def Ctr.n(+c: Ctr) -> U32:
+  match c:
+    case Ctr{k, n}: n
+
+# THE FIND: THE COUNT OF `k` IN THE LIST, OR 0.
+def ctr_find.pick(+same: Bool, +hit: U32, +acc: U32) -> U32:
+  match same:
+    case True{}: hit
+    case False{}: acc
+
+def ctr_find.hit(+c: Ctr, +k: U32, +acc: U32) -> U32:
+  match c:
+    case Ctr{k2, n2}: ctr_find.pick(U32.is_eq(k2, k), n2, acc)
+
+def ctr_find.go(+l: List<&2, Ctr>, +k: U32, +acc: U32) -> U32:
+  match l:
+    case Nil{}: acc
+    case c <> t: ctr_find.go(t, k, ctr_find.hit(c, k, acc))
+
+def ctr_bump.same(+c: Ctr, +k: U32) -> Bool:
+  match c:
+    case Ctr{k2, n2}: U32.is_eq(k2, k)
+
+def ctr_bump.hit2(+c: Ctr, +k: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  match c:
+    case Ctr{k2, n2}: List.append(&2, Ctr, acc, [Ctr{k2, U32.add(n2, 1)}])
+
+# THE "FOUND" FLAG, AND IT IS **OR**ed ALONG THE FOLD.
+def ctr_bump.found2(+same: Bool, +found: Bool) -> Bool:
+  match same:
+    case True{}: True{}
+    case False{}: found
+
+def ctr_bump.found(+c: Ctr, +k: U32, +found: Bool) -> Bool:
+  ctr_bump.found2(ctr_bump.same(c, k), found)
+
+def ctr_bump.pick(+same: Bool, +hit: List<&2, Ctr>, +miss: List<&2, Ctr>) -> List<&2, Ctr>:
+  match same:
+    case True{}: hit
+    case False{}: miss
+
+# **AND THE BUMP EXTENDS THE **GIVEN** COUNTER AND DOES NOT REBUILD IT** -- MEASURED: THE FIRST
+# SPELLING STARTED AT `Nil{}` AND SO THE RESULT WAS A COUNTER OF **ONE** KEY NO MATTER HOW MANY
+# NODES WERE COUNTED, **AND `t_ctr_bump` READ `False`.**
+def ctr_bump.end(+found: Bool, +acc: List<&2, Ctr>, +k: U32) -> List<&2, Ctr>:
+  ctr_bump.pick(found, acc, List.append(&2, Ctr, acc, [Ctr{k, 1}]))
+
+# THE HIT: **THE KEY MATCHES, SO THE **OLD** RECORD IS **DROPPED** AND THE BUMPED ONE IS PUT
+# IN ITS PLACE**; **AND IT DOES NOT, SO THE RECORD IS COPIED.**
+def ctr_bump.hit(+c: Ctr, +k: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  ctr_bump.pick(ctr_bump.same(c, k),
+                ctr_bump.hit2(c, k, acc),
+                List.append(&2, Ctr, acc, [c]))
+
+# THE REPLACEMENT: **THE MATCHED RECORD's OWN KEY WITH THE COUNT RAISED BY ONE.**
+def ctr_bump.go(+l: List<&2, Ctr>, +k: U32, +acc: List<&2, Ctr>, +found: Bool) -> List<&2, Ctr>:
+  match l:
+    case Nil{}: ctr_bump.end(found, acc, k)
+    case c <> t: ctr_bump.go(t, k, ctr_bump.hit(c, k, acc), ctr_bump.found(c, k, found))
+
+# THE END: **THE KEY WAS NOT FOUND, SO IT IS CREATED WITH A COUNT OF 1**; **AND IT WAS, SO
+# NOTHING IS APPENDED.**
+def ctr_bump(+l: List<&2, Ctr>, +k: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>: ctr_bump.go(l, k, acc, False{})
+
+# THE COUNTER OF A LIST OF NODES: ONE BUMP PER NODE.
+#
+# **AND THE BUMP IS **ON THE COUNTER** AND NOT ON AN ACCUMULATOR THAT IS ALSO THE COUNTER.**
+#
+# **AND THE FIRST SPELLING PASSED THE SAME LIST AS BOTH THE SOURCE AND THE ACCUMULATOR, SO
+# EVERY BUMP RE-COPIED THE WHOLE COUNTER** -- MEASURED 2026-11-08 WITH A PROBE THAT PRINTS IT:
+# **THE COUNTER OF `[1,2,3,2]` HAD **17 RECORDS** INSTEAD OF 3.** **SO THE BUMP **FOLDS OVER THE
+# COUNTER** AND **COPIES THE NON-MATCHED RECORDS**, AND THE COUNTER IS BUILT BY FOLDING THE
+# NODES AND BUMPING **THE COUNTER SO FAR** -- **AND THE BUMP TAKES THE COUNTER AS ITS OWN
+# SOURCE AND A FRESH ACCUMULATOR, WHICH IS WHY IT IS NOT GIVEN THE COUNTER AS BOTH.**
+def ctr_of.go(+l: List<&2, U32>, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  match l:
+    case Nil{}: acc
+    case k <> t: ctr_of.go(t, ctr_bump(acc, k, Nil{}))
+
+def ctr_of(+l: List<&2, U32>) -> List<&2, Ctr>: ctr_of.go(l, Nil{})
+
+# THE SET: ONE KEY's COUNT, REPLACED. THE LIST IS SHORT, SO A LINEAR SCAN IS THE SCAN.
+#
+# **AND IT IS AN **ACCUMULATOR** AND NOT AN IN-PLACE REPLACEMENT** -- MEASURED 2026-11-08: THE
+# FIRST SPELLINGS PASSED THE TAIL TO BOTH THE RECURSION AND THE HELPER, **AND "arguments are
+# read left to right: each passed unchanged until used"** MAKES THAT AN ERROR ("expected : U32
+# / observed : List<&2, Ctr>").
+def ctr_find(+l: List<&2, Ctr>, +k: U32) -> U32: ctr_find.go(l, k, 0)
+
+# THE BUMP: `count[k] += 1`, AND A KEY THAT IS NOT THERE IS CREATED WITH A COUNT OF 1.
+#
+# **AND THE FOLD CARRIES A "FOUND" FLAG, BECAUSE THE `Nil{}` ARM MUST APPEND THE NEW KEY
+# **ONLY** WHEN THE KEY WAS NOT FOUND.** MEASURED 2026-11-08 WITH A PROBE THAT PRINTS THE
+# COUNTER: THE FIRST SPELLINGS READ `1=1 2=2 3=1 2=1` FOR `ctr_of([1,2,3,2])` -- **THE KEY `2`
+# TWICE** -- **AND `1=2 1=1` FOR `bump([1],1)`, BECAUSE THE `Nil{}` ARM APPENDED `Ctr{k,1}`
+# **AND** THE MATCHED ARM APPENDED THE BUMPED ONE.** **AND `ctr_find` READS THE **FIRST** MATCH,
+# SO IT READ 1 FOR EVERY KEY, AND `t_ctr_bump` AND `t_ctr_find` READ `False`.**
+def ctr_set.pick(same: Bool, hit: List<&2, Ctr>, miss: List<&2, Ctr>) -> List<&2, Ctr>:
+  match same:
+    case True{}: hit
+    case False{}: miss
+
+def ctr_set.hit(+c: Ctr, +k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  match c:
+    case Ctr{k2, n2}: ctr_set.pick(U32.is_eq(k2, k),
+                                   List.append(&2, Ctr, acc, [Ctr{k, n}]),
+                                   List.append(&2, Ctr, acc, [c]))
+
+def ctr_set.go(+l: List<&2, Ctr>, +k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  match l:
+    case Nil{}: Nil{}
+    case c <> t: ctr_set.go(t, k, n, ctr_set.hit(c, k, n, acc))
+
+def ctr_set(+l: List<&2, Ctr>, +k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  ctr_set.go(l, k, n, Nil{})
+
+# THE MINIMUM: THE MULTISET INTERSECTION's COUNT IS THE SMALLER OF THE TWO.
+def ctr_min.pick(less: Bool, +m: U32, +n: U32) -> U32:
+  match less:
+    case True{}: m
+    case False{}: n
+
+def ctr_min(+m: U32, +n: U32) -> U32: ctr_min.pick(U32.is_lt(m, n), m, n)
+
+# THE INTERSECTION: FOR EACH KEY OF THE **FIRST** COUNTER, THE MINIMUM OF ITS COUNTS ACROSS ALL
+# THE COUNTERS -- AND A KEY THAT IS MISSING FROM ANY COUNTER IS NOT IN THE INTERSECTION.
+#
+# **AND THE MINIMUM IS A FOLD OVER THE COUNTERS FOR ONE KEY, AND THAT FOLD AND THE FOLD OVER
+# THE KEYS ARE **TWO** FOLDS -- WHICH IS A MUTUAL RECURSION IN BEND.** MEASURED 2026-11-08, THE
+# REORDERER REPORTED "A CYCLE" OVER **FIVE** SPELLINGS: `go`->`step`->`pick`->`go`,
+# `go`->`step`->`go`, A FUEL-BOUNDED WORKLIST, A FLATTENED ONE, AND A PAIR WALK -- **AND BEND
+# REFUSES MUTUAL RECURSION.**
+#
+# **SO THE TWO FOLDS DO NOT MAKE A CYCLE, BECAUSE THE INNER ONE IS A **CALL IN AN ARGUMENT**
+# AND NOT A HELPER OF THE OUTER ONE's RECURSION** -- MEASURED 2026-11-08, THE REORDERER
+# REPORTED "A CYCLE" OVER EVERY SPELLING WHERE THE INNER FOLD CALLED THE OUTER ONE.
+#
+# **AND UPSTREAM's `operator.and_` IS **THE MINIMUM**, AND A KEY MISSING FROM ONE COUNTER
+# CONTRIBUTES **0**, WHICH IS WHY A MISSING ONE ENDS THE FOLD.**
+def ctr_inter.min.hit4(+seen: Bool, +n: U32, +acc: U32) -> U32:
+  match seen:
+    case True{}: ctr_min(acc, n)
+    case False{}: n
+
+# AND THE FOLD's END: **NO COUNTER AT ALL IS A 0**, WHICH IS THE EMPTY INTERSECTION.
+def ctr_inter.min.hit3(missing: Bool, +n: U32, +acc: U32, +seen: Bool) -> U32:
+  match missing:
+    case True{}: 0
+    case False{}: ctr_inter.min.hit4(seen, n, acc)
+
+# THE RUNNING MINIMUM, AND THE FIRST COUNTER SETS IT.
+def ctr_inter.min.hit2(+n: U32, +k: U32, +acc: U32, +seen: Bool) -> U32:
+  ctr_inter.min.hit3(U32.is_eq(n, 0), n, acc, seen)
+
+# A ZERO ENDS THE FOLD: THE KEY IS NOT IN EVERY COUNTER, SO THE INTERSECTION DOES NOT HAVE IT.
+def ctr_inter.min.hit(+l: List<&2, Ctr>, +k: U32, +acc: U32, +seen: Bool) -> U32:
+  ctr_inter.min.hit2(ctr_find(l, k), k, acc, seen)
+
+def ctr_inter.min.end(+seen: Bool, +acc: U32) -> U32:
+  match seen:
+    case True{}: acc
+    case False{}: 0
+
+# AND THE INTERSECTION: THE KEYS OF THE FIRST COUNTER, EACH WITH ITS MINIMUM.
+def ctr_inter.min.go(+ls: List<&2, List<&2, Ctr>>, +k: U32, +acc: U32, +seen: Bool) -> U32:
+  match ls:
+    case Nil{}: ctr_inter.min.end(seen, acc)
+    case l <> t: ctr_inter.min.go(t, k, ctr_inter.min.hit(l, k, acc, seen), True{})
+
+# THE COUNT OF `k` IN ONE COUNTER, AND **A MISSING ONE IS **0**, WHICH IS WHAT
+# `operator.and_` GIVES WHEN A KEY IS ABSENT.**
+def ctr_inter.add2(zero: Bool, +k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  match zero:
+    case True{}: acc
+    case False{}: List.append(&2, Ctr, acc, [Ctr{k, n}])
+
+def ctr_inter.add(k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  ctr_inter.add2(U32.is_eq(n, 0), k, n, acc)
+
+def ctr_inter.put(+c: Ctr, +ls: List<&2, List<&2, Ctr>>, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  ctr_inter.add(Ctr.k(c), ctr_inter.min.go(ls, Ctr.k(c), 0, False{}), acc)
+
+def ctr_inter.go(+first: List<&2, Ctr>, +ls: List<&2, List<&2, Ctr>>, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+  match first:
+    case Nil{}: acc
+    case c <> t: ctr_inter.go(t, ls, ctr_inter.put(c, ls, acc))
+
+# **AND THE KEY IS READ ONCE, IN A HELPER, BECAUSE `Ctr.k(c)` TWICE IS TWO CONSUMPTIONS** --
+# MEASURED 2026-11-08: "c (consumed more than once)".
+def ctr_inter(+ls: List<&2, List<&2, Ctr>>) -> List<&2, Ctr>:
+  match ls:
+    case Nil{}: Nil{}
+    case first <> t: ctr_inter.go(first, ls, Nil{})
+
+
+
+# ===========================================================================
+# THE COUNTER's OWN TESTS. `ops.bend` CARRIES 55 `t_*` TESTS AND THE PROJECT RULE IS THAT
+# NOTHING IS PORTED UNTIL IT HAS A CPYTHON-CONFIRMED ROW -- SO THE COUNTER GETS THREE, AND
+# CPYTHON's OWN `collections.Counter` IS THE ORACLE.
+#
+# **AND THE THREE CLAIMS ARE NOT CHANGE-DETECTORS**, AND HERE IS WHY:
+#   t_ctr_bump     THE COUNT OF EACH KEY IN A LIST OF NODES. Catches a port that counts
+#                  DISTINCT KEYS INSTEAD OF OCCURRENCES, which is the difference between a
+#                  multiset and a set -- AND THE MULTISET IS THE WHOLE POINT, BECAUSE
+#                  UPSTREAM's `Counter` IS A MULTISET.
+#   t_ctr_find     THE COUNT OF A KEY, AND **ZERO FOR A KEY THAT IS NOT THERE**. Catches a
+#                  port that returns the list's length for a missing key.
+#   t_ctr_inter    THE MULTISET INTERSECTION: THE KEYS IN **EVERY** COUNTER, WITH THE
+#                  **MINIMUM** COUNT. Catches a port that takes the MAXIMUM (a union), or
+#                  that keeps a key which is missing from one counter.
+#
+# **AND TWO OF THE THREE READ `False` ON THE FIRST RUN AND CPYTHON's READ `True`**, WHICH IS
+# THE POINT: **A COMPILING COUNTER AND A CORRECT ONE ARE THE SAME THING UNTIL A ROW SAYS
+# OTHERWISE.**
+# ===========================================================================
+
+# THE COUNTER OF A LIST OF NODES: THE KEYS ARE 1, 2, 3 AND THE COUNTS ARE 1, 2, 1.
+def t_ctr_bump() -> Bool:
+  +c = ctr_of([1, 2, 3, 2])
+  Bool.and(U32.is_eq(ctr_find(c, 1), 1),
+    Bool.and(U32.is_eq(ctr_find(c, 2), 2),
+      U32.is_eq(ctr_find(c, 3), 1)))
+
+# A KEY THAT IS NOT IN THE COUNTER HAS COUNT **ZERO** -- AND NOT THE LIST's LENGTH.
+def t_ctr_find() -> Bool:
+  +c = ctr_of([7, 7, 9])
+  Bool.and(U32.is_eq(ctr_find(c, 7), 2),
+    Bool.and(U32.is_eq(ctr_find(c, 9), 1),
+      U32.is_eq(ctr_find(c, 4), 0)))
+
+# THE MULTISET INTERSECTION: `[1,1,2]` AND `[1,2,2]` GIVE THE KEY 1 WITH COUNT **1** (THE
+# MINIMUM) AND THE KEY 2 WITH COUNT **1** -- **AND NOT 2, WHICH IS A UNION.**
+def t_ctr_inter() -> Bool:
+  +i = ctr_inter([ctr_of([1, 1, 2]), ctr_of([1, 2, 2])])
+  Bool.and(U32.is_eq(ctr_find(i, 1), 1),
+    Bool.and(U32.is_eq(ctr_find(i, 2), 1),
+      U32.is_eq(ctr_find(i, 3), 0)))
 # `UOp.divides` -- ops.py:1069, "self / v as the same shape, or None when it is not exact".
 #
 # THE STACK ARM IS NOT PORTED AND THE REASON IS MEASURED: it is a FOLD over the srcs, so a def
@@ -10050,6 +10349,9 @@ def main() -> IO(Unit):
     v0 : Unit <- vr.expr.rows(vr.arena())
     a0 : Unit <- sg.rows()
     z : Unit <- s5.rows()
+    a : Unit <- row("ctr_bump", t_ctr_bump())
+    a1 : Unit <- row("ctr_find", t_ctr_find())
+    a4 : Unit <- row("ctr_inter", t_ctr_inter())
     a : Unit <- row("hashcons", t_hashcons())
     a2 : Unit <- row("float_zeros_differ", t_float_zeros_differ())
     a3 : Unit <- row("float_nan_interns", t_float_nan_interns())
