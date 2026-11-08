@@ -28150,6 +28150,24 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
 - [ ] `UOp.gcd(*uops)` and `UOp.divide_exact(v)` — ABSENT from the port. Prerequisites all exist
       (`split_uop`, `pop_const`, `const_factor`, `divides`); they need a multiset (Counter
       intersection / subtraction) over node lists.
+- [x] **THE MULTISET IS NOW A LIST OF PAIRS, AND THE CLAIM WAS ABOUT A CONTAINER AND NOT ABOUT A
+      CAPABILITY.** MEASURED 2026-11-08: `helpers.bend:502` SAYS "Bend's `Map` IS STRING-KEYED
+      ONLY, SO THE SET IS A LINEAR SCAN" **AND THERE IS NO `HashMap` AND NO `HashSet` IN THE
+      PORT** -- **BUT THE PORT HAS THE HONEST SPELLING ALREADY, TWICE**: `dedup_u32`
+      (`helpers.bend:509`) AND `merge_dicts` (`helpers.bend:2467`) ARE BOTH "A LIST OF PAIRS WITH
+      A LINEAR SCAN", **AND `merge_dicts`'s OWN NOTE SAYS "A LIST OF PAIRS IS THE HONEST
+      REPRESENTATION".** **AND UPSTREAM's COUNTER's KEYS ARE NODES** (`ops.py:219-220`:
+      `__hash__ = tuple.__hash__` AND `__eq__` IS `self is other`), **SO THE KEY IS THE ARENA's
+      `U32` INDEX, WHICH IS THE NODE's IDENTITY IN THIS PORT.**
+      **⇒ THE COUNTER IS IN `tinybendygrad/uop/ops.bend` AS A LIST OF `(U32, U32)` PAIRS, AND
+      ITS THREE CLAIMS ARE CPYTHON-CONFIRMED AGAINST CPYTHON's OWN `collections.Counter`**
+      (`t_ctr_bump` AND `t_ctr_find` AND `t_ctr_inter` ALL READ **True**).
+      **⇒ AND THE FOUR BEND SPELLING RULES ARE NOW IN THE FILE**: A **PLAIN** PARAMETER MAY BE
+      CONSUMED **ONCE** AND A **`+`**-BINDER **TWICE**; A HELPER COMES BEFORE ITS USER; A
+      `match` MAY NOT BE A CALL's ARGUMENT AND MAY NOT SCRUTINIZE A COMPUTED VALUE; AND
+      ARGUMENTS ARE READ LEFT TO RIGHT, SO A LIST's TAIL MAY NOT BE PASSED TO TWO CALLS.
+      **⇒ SO `UOp.gcd` AND `UOp.divide_exact` NEED THE COUNTER (DONE) AND `UOp.simplify` (STILL
+      ABSENT) AND NOT A CONTAINER.**
 - [ ] `divandmod.py:103` (`fold_divmod_general`) — then needs `UOp.usum` reachable from
       `divandmod.bend` (the `symbolic -> divandmod` import direction forbids it today).
 - [x] **THE LAST MISSING CENSUS ROW IS NOT A DEAD ENTRY: IT FIRES ON ORDINARY GRAPHS, AND THE
