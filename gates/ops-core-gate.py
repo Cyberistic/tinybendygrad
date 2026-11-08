@@ -68,6 +68,8 @@ ROWS = (
     # `valid`, four rows, and the three srcs are DISTINGUISHABLE BY CLASS so an order swap fails
     # rather than passing on a count.
     "valid_is_where", "valid_src0", "valid_src1", "valid_src2",
+    # THE COUNTER's THREE CLAIMS -- **AND CPYTHON's OWN `collections.Counter` IS THE ORACLE.**
+    "ctr_bump", "ctr_find", "ctr_inter",
 )
 
 GATE = Gate(

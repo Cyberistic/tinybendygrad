@@ -42,6 +42,8 @@ A `0` here is a correct answer and not a failure: these rows are CLAIMS, and thr
 `0` precisely because a comparator that answered True for every pair would be wrong.
 """
 
+import collections
+
 from tinygrad import dtypes
 from tinygrad.dtype import AddrSpace, ConstFloat, Invalid, InvalidType
 from tinygrad.uop.ops import AxisType, Ops, ParamArg, UOp
@@ -108,6 +110,26 @@ def sg_ctor(a) -> str:
     return "other"
 
 
+def _ctr_bump() -> bool:
+    """THE COUNT OF EACH KEY IN A LIST OF NODES -- A MULTISET AND NOT A SET."""
+    c = collections.Counter([1, 2, 3, 2])
+    return c[1] == 1 and c[2] == 2 and c[3] == 1
+
+
+def _ctr_find() -> bool:
+    """THE COUNT OF A KEY, AND **ZERO FOR A KEY THAT IS NOT THERE**."""
+    c = collections.Counter([7, 7, 9])
+    return c[7] == 2 and c[9] == 1 and c[4] == 0
+
+
+def _ctr_inter() -> bool:
+    """THE MULTISET INTERSECTION: THE KEYS IN **EVERY** COUNTER, WITH THE **MINIMUM** COUNT."""
+    a, b = collections.Counter([1, 1, 2]), collections.Counter([1, 2, 2])
+    keys = sorted(set(a) & set(b))
+    return (keys == [1, 2] and min(a[1], b[1]) == 1 and min(a[2], b[2]) == 1
+            and 3 not in keys)
+
+
 def main() -> None:
     nan = ConstFloat(float("nan"))
 
@@ -119,6 +141,13 @@ def main() -> None:
 
     rows = (
         # 1-5: CONST identity. `UOp.const` interns in `ucache`, so identity IS hash-consing.
+        # THE COUNTER's THREE CLAIMS, **AND CPYTHON's OWN `collections.Counter` IS THE
+        # ORACLE** -- SO THE PORT's ANSWER AND PYTHON's ARE TWO INDEPENDENT COMPUTATIONS OF
+        # THE SAME PROPERTY, AND NOT A RESTATEMENT OF THE EXPECTED NUMBERS.
+        ("ctr_bump", _ctr_bump()),
+        ("ctr_find", _ctr_find()),
+        ("ctr_inter", _ctr_inter()),
+
         ("hashcons_same_index", UOp.const(3, dtypes.int32) is UOp.const(3, dtypes.int32)),
         ("zeros_differ", UOp.const(ConstFloat(0.0), F32) is not UOp.const(ConstFloat(-0.0), F32)),
         ("nan_interns", UOp.const(nan, F32) is UOp.const(ConstFloat(float("nan")), F32)),

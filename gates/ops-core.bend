@@ -161,6 +161,11 @@ def valid_rows(+f: O.Found) -> IO(Unit):
     prow(String.concat(["valid_src2=",
       O.sg.ctor(O.Arena.arg(O.Found.ar(f), O.Arena.src(O.Found.ar(f), O.Found.i(f), 2)))]))
 
+# THE COUNTER'S THREE CLAIMS ARE AT THE END: **AND THEY ARE THE FIRST ROWS THAT NEED A
+# **MULTISET**, WHICH IS THE PRIMITIVE `UOp.gcd` AND `UOp.divide_exact` ARE BLOCKED ON.**
+# **AND THE COMMENT IS HERE AND NOT INSIDE THE `do` BLOCK** -- MEASURED 2026-11-08: A COMMENT
+# INSIDE A `do` BLOCK BREAKS IT ("the keyword 'def' cannot head one"), **AND THE PORT's OWN
+# FILE PUTS ITS COMMENTS ABOVE THE BLOCK.**
 def rows() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("hashcons_same_index", O.t_hashcons())
@@ -188,5 +193,8 @@ def rows() -> IO(Unit):
     y : Unit <- ss_rows("ss_cast_param", g_ss_cast_param())
     v : Unit <- valid_rows(g_valid())
     row("pynest_signed_zero_interns", O.t_pynest_signed_zero_interns())
+    row("ctr_bump", O.t_ctr_bump())
+    row("ctr_find", O.t_ctr_find())
+    row("ctr_inter", O.t_ctr_inter())
 
 def main() -> IO(Unit): rows()
