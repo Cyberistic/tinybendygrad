@@ -21,6 +21,7 @@ import argparse
 import hashlib
 import json
 import pathlib
+import shutil
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -80,13 +81,23 @@ def caller_frame():
 def main() -> int:
   ap = argparse.ArgumentParser()
   ap.add_argument("--example", default="add_relu_sum")
-  ap.add_argument("--tree", default=str(HERE.parent.parent.parent.parent / "references" / "tinygrad-latest"))
+  # HERE is …/30klines/tools/recorder, so parents[4] is the repo root
+  ap.add_argument("--tree", default=str(HERE.parents[4] / "references" / "tinygrad-latest"))
   ap.add_argument("--keep-graphs", type=int, default=6, help="how many changed passes to keep in full")
   args = ap.parse_args()
   sys.path.insert(0, str(pathlib.Path(args.tree).resolve()))
 
   from tinygrad import Tensor
   from tinygrad.uop.ops import RewriteContext
+
+  # The repo also contains a pinned tinygrad/ at its root. If sys.path resolves
+  # there instead of the vendored tree, every line number in every lesson is
+  # measured against the wrong source and nothing complains. So: refuse.
+  src = pathlib.Path(__import__("tinygrad").__file__).resolve()
+  if not src.is_relative_to(pathlib.Path(args.tree).resolve()):
+    print(f"REFUSED: imported {src}, expected the tree at {args.tree}", file=sys.stderr)
+    return 2
+  print(f"source         {src.parent.parent}")
 
   steps: list[dict] = []
   armed = {"on": False}
@@ -107,7 +118,9 @@ def main() -> int:
         "pass": name,
         "caller": frame.f_code.co_name,
         "file": pathlib.Path(frame.f_code.co_filename).name,
-        "line": frame.f_lineno,
+        # the function's first line: f_lineno is the executing instruction, which
+        # moves with the statement and can land inside a decorator or a helper
+        "line": frame.f_code.co_firstlineno,
         "stage": stage_of(frame),
         "before": before["n"],
         "after": after["n"],
@@ -142,7 +155,11 @@ def main() -> int:
   keep = sorted(teaching, key=lambda s: -(s["added"] + s["removed"]))[:args.keep_graphs]
   keep_ids = {s["i"] for s in keep}
 
+  for s in steps:
+    s["kept"] = s["i"] in keep_ids
+
   dest = OUT / args.example
+  shutil.rmtree(dest / "graphs", ignore_errors=True)   # a stale before/after pair is a wrong figure
   (dest / "graphs").mkdir(parents=True, exist_ok=True)
 
   for s in steps:

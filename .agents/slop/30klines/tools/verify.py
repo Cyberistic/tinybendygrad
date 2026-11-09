@@ -87,6 +87,21 @@ def main() -> int:
                           f"{ref['file']}:{ref['start']}-{ref['end']}")
       declared.setdefault(ref["file"], set()).update(claim["lines"])
 
+    fig = lesson.get("figure")
+    if fig:
+      trace = CONTENT / "traces" / fig["trace"]
+      if not (trace / "steps.json").exists():
+        failures.append(f"{lid}: figure names trace {fig['trace']}, which has not been recorded")
+      else:
+        steps = json.loads((trace / "steps.json").read_text())["steps"]
+        step = next((x for x in steps if x["i"] == fig["step"]), None)
+        if step is None:
+          failures.append(f"{lid}: figure names step {fig['step']}, absent from {fig['trace']}")
+        else:
+          for side in ("before", "after"):
+            if not (trace / "graphs" / f"{fig['step']:03d}-{side}.json").exists():
+              failures.append(f"{lid}: figure step {fig['step']} has no {side} graph")
+
     for beat in lesson["beats"]:
       totals["beats"] += 1
       if not beat["text"].strip():
@@ -109,8 +124,9 @@ def main() -> int:
   for file, lines in sorted(declared.items()):
     print(f"  {file:34} {len(lines):>4} lines")
 
+  figures = sum(1 for p in LESSONS.glob("*.json") if json.loads(p.read_text()).get("figure"))
   print(f"\nlessons {len(list(LESSONS.glob('*.json')))} · refs {totals['refs']} · "
-        f"claims {totals['claims']} · beats {totals['beats']} · filled {filled}")
+        f"claims {totals['claims']} · beats {totals['beats']} · figures {figures} · filled {filled}")
   if failures:
     print(f"\n{len(failures)} failure(s):")
     for f in failures:

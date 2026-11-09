@@ -22,9 +22,18 @@ TRACES = ROOT / "content" / "traces"
 def main() -> int:
   ap = argparse.ArgumentParser()
   ap.add_argument("--example", default="add_relu_sum")
+  ap.add_argument("--lesson", help="take the trace and step from a lesson's figure block")
   ap.add_argument("--step", type=int, default=None, help="pass index; default: the biggest non-pattern pass")
   ap.add_argument("--out", default=str(ROOT / "packages" / "visualizer" / "src" / "data.json"))
   args = ap.parse_args()
+
+  if args.lesson:
+    lesson = json.loads((ROOT / "content" / "lessons" / f"{args.lesson}.json").read_text())
+    fig = lesson.get("figure")
+    if not fig:
+      print(f"{args.lesson} declares no figure", file=sys.stderr)
+      return 2
+    args.example, args.step = fig["trace"], fig["step"]
 
   dest = TRACES / args.example
   steps = json.loads((dest / "steps.json").read_text())["steps"]

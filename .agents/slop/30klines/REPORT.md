@@ -2,6 +2,25 @@
 
 What exists, and the command that proves it. Nothing here is asserted without a transcript.
 
+## 0. The recorder was measuring the wrong tree, and a guard caught it
+
+The first run of `record.py` put the vendored tree on `sys.path`, then imported
+`tinygrad` — and got **this repo's pinned tree**, because the computed path was
+one directory short. Every line number it reported was measured against the old
+source. Nothing fails when this happens; the numbers just belong to a different
+program.
+
+The fix is a refusal, not a convention:
+
+```
+REFUSED: imported .../tinybendygrad/tinygrad/__init__.py,
+         expected the tree at .../references/tinygrad-latest
+```
+
+and it now prints `source` on every run. `transform_to_call` moved from
+`__init__.py:257` (pinned) to `268` (latest) — which is exactly the drift a
+citation would have carried silently.
+
 ## 1. The tree is on latest tinygrad
 
 `references/tinygrad-latest` is a shallow clone at `6295132e` (2026-11-08, `fix valid dropped
@@ -29,7 +48,8 @@ uv run --no-project --with tabulate --with numpy --python 3.12 \
 
 ## 2. Five lessons exist, with scripts
 
-`content/lessons/*.json` — 01.1, 01.2, 02.1, 02.2, 02.3, 02.4, 02.5. 33 claims, 42 narration beats.
+`content/lessons/*.json` — 01.1, 01.2, 02.1, 02.2, 02.3, 02.4, 02.5, 04.1.
+38 claims, 48 narration beats, and one lesson that carries a recorded figure.
 
 ```
 python3 .agents/slop/30klines/tools/verify.py --tree references/tinygrad-latest
@@ -37,7 +57,7 @@ python3 .agents/slop/30klines/tools/verify.py --tree references/tinygrad-latest
     tinygrad/tensor.py                   39 lines
     tinygrad/uop/__init__.py              6 lines
     tinygrad/uop/ops.py                  27 lines
-  lessons 7 · refs 8 · claims 33 · beats 42 · filled 0
+  lessons 8 · refs 9 · claims 38 · beats 48 · figures 1 · filled 0
   ✓ every ref matches the tree
 ```
 
@@ -148,7 +168,9 @@ cd packages/visualizer && bun test
   9 pass, 0 fail
 ```
 
-`art/09-viz-react-flow.png` is that page.
+`art/09-viz-react-flow.png` is that page, and `art/10-lesson-04-1-figure.png` is the same
+view built from lesson 04.1's own `figure` block — `export.py --lesson 04.1` reads the trace
+and step out of the lesson, so the picture and the citation cannot disagree.
 
 ## 6. What is not done
 

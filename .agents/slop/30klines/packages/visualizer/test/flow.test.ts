@@ -57,20 +57,27 @@ describe("diff", () => {
 })
 
 describe("a recorded pass on disk", () => {
-  const dir = `${import.meta.dir}/../../../content/traces/add_relu_sum/graphs`
-  const load = (f: string) => JSON.parse(readFileSync(`${dir}/${f}`, "utf8")) as UOp[]
+  // Resolve by caller, not by index: a re-record renumbers passes, and a test
+  // that pins an index is a change detector, not a check.
+  const root = `${import.meta.dir}/../../../content/traces/add_relu_sum`
+  const steps = JSON.parse(readFileSync(`${root}/steps.json`, "utf8")).steps as
+    { i: number; caller: string; stage: string; kept: boolean }[]
+  const pass = (caller: string) => {
+    const s = steps.find((x) => x.caller === caller && x.kept)
+    if (!s) throw new Error(`no kept pass for ${caller} — re-record with a bigger --keep-graphs`)
+    const load = (side: string) =>
+      JSON.parse(readFileSync(`${root}/graphs/${String(s.i).padStart(3, "0")}-${side}.json`, "utf8")) as UOp[]
+    return { before: load("before"), after: load("after") }
+  }
 
   test("transform_to_call keeps the count and changes every node", () => {
-    const before = load("093-before.json")
-    const after = load("093-after.json")
+    const { before, after } = pass("transform_to_call")
     expect(before.length).toBe(after.length) // the number that would say "nothing happened"
     expect(summarize(before, after)).not.toContain("+0 / −0") // the structure that disagrees
   })
 
   test("get_kernel_graph removes more than half the graph", () => {
-    const before = load("250-before.json")
-    const after = load("250-after.json")
-    const gone = removed(before, after)
-    expect(gone.length).toBeGreaterThan(before.length / 2)
+    const { before, after } = pass("get_kernel_graph")
+    expect(removed(before, after).length).toBeGreaterThan(before.length / 2)
   })
 })

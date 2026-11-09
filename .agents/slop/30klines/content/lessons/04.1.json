@@ -1,0 +1,146 @@
+{
+  "id": "04.1",
+  "stage": "04",
+  "order": 1,
+  "kind": "trace",
+  "title": "a pass that changes everything and nothing",
+  "summary": "transform_to_call rewrites 21 nodes into 21 nodes. A count says it did nothing; +15/−15 says it replaced the graph.",
+  "minutes": 6,
+  "refs": [
+    {
+      "file": "tinygrad/schedule/__init__.py",
+      "start": 268,
+      "end": 277,
+      "sha": "82b9f3c18152c4865943eaeb877d618972d1b9d85eec009d23f567ba6ec6abd5"
+    }
+  ],
+  "figure": {
+    "trace": "add_relu_sum",
+    "step": 93,
+    "note": "the pass at line 274, recorded from the shipped example"
+  },
+  "claims": [
+    {
+      "id": "04.1.1",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        273,
+        274,
+        275
+      ],
+      "text": "Three statements do the work: collect a context, rewrite a new sink from the collected stores, then wrap the result in a call. Two VIZ hooks bookend them and do nothing unless VIZ is on."
+    },
+    {
+      "id": "04.1.2",
+      "ref": 0,
+      "kind": "trap",
+      "lines": [
+        272,
+        273
+      ],
+      "text": "The collection happens first on purpose. The comment says the replacement map is gathered before the rewrites change node identity — after that, the map's keys no longer name the nodes they were built from."
+    },
+    {
+      "id": "04.1.3",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        274
+      ],
+      "text": "The second rewrite does not take `big_sink`. It takes a fresh sink built from `ctx.stores`, bottom-up. The input graph is not edited; it is abandoned, and a new one is assembled from the stores that survived."
+    },
+    {
+      "id": "04.1.4",
+      "ref": 0,
+      "kind": "reason",
+      "lines": [
+        275
+      ],
+      "text": "`ret.call(*ctx.replacements, precompile=True)` turns the whole tensor program into one CALL node. The graph is not smaller afterwards — it is re-homed, from a pile of stores to a kernel with arguments."
+    },
+    {
+      "id": "04.1.5",
+      "ref": 0,
+      "kind": "cost",
+      "lines": [
+        269,
+        276
+      ],
+      "text": "Both VIZ lines rewrite with an empty PatternMatcher, which does nothing but return a graph. They exist so that turning on VIZ shows you the graph at exactly these two moments — before and after the re-homing."
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "text": "This is the pass where the tensor program stops being a pile of stores and becomes a kernel call. Four statements, and the last one is the one to watch.",
+      "cue": {
+        "claims": [
+          "04.1.1"
+        ]
+      },
+      "direction": "open on the function, whole body visible"
+    },
+    {
+      "id": "b2",
+      "text": "First it collects. The comment above the call is the whole reason for the order: the replacement map is gathered before these rewrites change node identities. Build the map after, and every key points at a node that no longer exists.",
+      "cue": {
+        "claims": [
+          "04.1.2"
+        ],
+        "lines": [
+          272,
+          273
+        ]
+      },
+      "direction": "read the comment aloud"
+    },
+    {
+      "id": "b3",
+      "text": "Then note what the second rewrite is given. Not the big sink. A brand new sink, built from the stores that were collected, walked bottom up. The old graph is not edited. It is abandoned.",
+      "cue": {
+        "claims": [
+          "04.1.3"
+        ],
+        "lines": [
+          274
+        ]
+      },
+      "direction": "underline ctx.stores"
+    },
+    {
+      "id": "b4",
+      "text": "And this is why the figure on the right is interesting. Twenty one nodes before, twenty one after. If you only counted, you would say nothing happened. Fifteen in, fifteen out — every node replaced.",
+      "cue": {
+        "claims": [
+          "04.1.4"
+        ]
+      },
+      "direction": "let the graph settle; this is the beat the whole lesson exists for"
+    },
+    {
+      "id": "b5",
+      "text": "A count that is right and a structure that is wrong is the failure a count cannot see. That is not a slogan here. It is this pass.",
+      "cue": {
+        "claims": [
+          "04.1.4"
+        ]
+      },
+      "direction": "pause before and after this line"
+    },
+    {
+      "id": "b6",
+      "text": "The two VIZ lines do nothing — an empty pattern matcher just returns the graph. They are there so that if you run this with VIZ on, you get a picture at exactly the two moments that matter.",
+      "cue": {
+        "claims": [
+          "04.1.5"
+        ],
+        "lines": [
+          269,
+          276
+        ]
+      },
+      "direction": "light, closing"
+    }
+  ]
+}
