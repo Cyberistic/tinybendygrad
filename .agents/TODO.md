@@ -28400,9 +28400,21 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
 - [ ] **A `usum` REACHABLE FROM `divandmod.bend`** — **THE `symbolic -> divandmod` IMPORT
       DIRECTION FORBIDS IT TODAY**, **AND IT IS NEEDED BY THE `factor_remainder` ARM
       (`divandmod.py:83-96`), WHICH IS STILL UNPORTED.**
-- [ ] **THE `fold_divmod_general` ARMS THAT ARE STILL UNPORTED** — `nested_div` (`:23`),
-      `remove_nested_mod` (`:27-35`), `fold_divmod_congruence` (`:42-48`), `gcd_with_remainder`
-      (`:50-55`) AND `nest_by_factor` (`:57-70`). **AND `nest_by_factor` RECURSES
+- [x] **`nested_div` (`divandmod.py:23`) IS PORTED** (2026-11-09, `e8a5fdae1`) — **AND IT IS THE
+      FIRST ARM THAT NEEDS **NO** `usum`, **AND SO IT WAS REACHABLE WITHOUT MOVING THE WALL.**
+      **AND FOUR SUBSTITUTIONS ARE MEASURED AND STATED AT THE DEF:** THE `k` IS **THE MOD's**
+      DIVISOR'S `divides` (NOT THE **DIV's**); THE `k.vmin > 0` TEST IS AN **I64** COMPARISON
+      (**`H.lo32` LOSES THE SIGN AND `-1` READS AS `4294967295`); THE DIVIDEND IS **THE MOD's**
+      `src[0]`; AND THE ANSWER IS MINTED IN **THE `k`'s OWN ARENA** (**MINTING IT IN A GROWN ONE
+      LEAVES THE `k`'s INDEX STALE**). **AND THE ARM GOES **BEFORE** THE `divide_by_gcd` ARM**
+      (**UPSTREAM's CONSTANT-DENOMINATOR RULES PRECEDE THE VARIABLE-DENOMINATOR FALLBACK**).
+      **AND THE THREE ROWS ASK **THE ARM** AND NOT THE MATCHER** (MEASURED: THE MATCHER ANSWERS
+      `(x%2)//4` WITH `0` **VIA THE **RANGE** ARM**), **AND THREE PLANTS ARE MEASURED FIRING, ONE
+      PER GUARD** -- **AND THE `nd_rewrite` ROW READS THE **VALUES** AND NOT ONLY THE **SHAPES**,
+      BECAUSE A PLANT THAT REPLACED THE DIVIDEND **DID NOT** GO RED UNDER A SHAPE-ONLY ROW.**
+- [ ] **THE `fold_divmod_general` ARMS THAT ARE STILL UNPORTED** — `remove_nested_mod` (`:27-35`),
+      `fold_divmod_congruence` (`:42-48`), `gcd_with_remainder` (`:50-55`) AND `nest_by_factor`
+      (`:57-70`). **AND `nest_by_factor` RECURSES
       (`fold_divmod_general(x//div)`) AND BEND REFUSES MUTUAL RECURSION, **SO THAT ONE IS A
       SHAPE PROBLEM AND NOT ONLY ARITHMETIC.**
 - [x] `UOp.gcd` / `UOp.divide_exact` — **BOTH IN** (2026-11-09, `4a8d15ab6`). **AND THE PORT
