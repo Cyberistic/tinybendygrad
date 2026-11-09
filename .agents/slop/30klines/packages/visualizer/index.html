@@ -6,6 +6,7 @@
 <style>
   :root{--paper:#F4F2ED;--ink:#16161A;--muted:#6E6A63;--faint:#9A958C;--rule:#D6D1C7;--accent:#3DA639}
   *{box-sizing:border-box;margin:0}
+  #root{display:flex;flex-direction:column;height:100vh;min-height:0}
   body{background:var(--paper);color:var(--ink);font:12px/1.5 ui-monospace,"SF Mono",Menlo,monospace;height:100vh;display:flex;flex-direction:column}
   .top{display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 22px;border-bottom:1px solid var(--rule);flex:0 0 auto}
   .brand{font-size:13px}.brand span{color:var(--faint);font-size:11px}
@@ -13,11 +14,23 @@
   .meta b{color:var(--ink);font-weight:500}
   .sum{color:var(--accent);border-left:1px solid var(--rule);padding-left:16px}
   main{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;flex:1;min-height:0}
-  .panel{display:flex;flex-direction:column;min-width:0}
+  .panel{display:flex;flex-direction:column;min-width:0;min-height:0}
   .panel + .panel{border-left:1px solid var(--rule)}
   header{display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--rule);
          font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-  .canvas{position:relative;height:calc(100vh - 78px)}
+  .canvas{position:relative;flex:1;min-height:0}
+  main{flex:1;min-height:0}
+  .scrub{display:flex;align-items:center;gap:12px;padding:8px 16px;border-top:1px solid var(--rule);flex:0 0 auto}
+  .rail{display:flex;align-items:flex-end;gap:2px;flex:1;height:26px;overflow-x:auto;overflow-y:hidden}
+  .tick{width:9px;flex:0 0 9px;border:0;background:var(--rule);cursor:pointer;padding:0;align-self:flex-end}
+  .tick.past{background:var(--ink)}
+  .tick.cur{background:var(--accent)}
+  .tick.pat{opacity:.45}
+  .count{font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums}
+  button.ctl{background:none;border:1px solid var(--rule2);color:var(--ink);font:11px ui-monospace,monospace;padding:4px 10px;cursor:pointer}
+  .state{text-transform:uppercase;letter-spacing:.12em;font-size:9px;color:var(--faint)}
+  .state.playing{color:var(--accent)}
+  .state.complete{color:var(--ink)}
   .react-flow__attribution{display:none}
 </style>
 </head>

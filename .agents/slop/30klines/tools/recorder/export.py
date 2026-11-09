@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Pick one recorded pass and hand it to the React Flow view.
+"""Export every kept pass of a recorded trace for the visualizer.
 
-    python3 tools/recorder/export.py --step 93
+    python3 tools/recorder/export.py                 # the whole run
+    python3 tools/recorder/export.py --lesson 04.1   # one lesson, positioned at its figure
 
-Writes packages/visualizer/src/data.json. The step number is the recorder's, so
-a lesson can cite a figure by pass index and the figure cannot drift: it is the
-same JSON the caption counts.
+The page is a scrubbable timeline, so it needs the sequence, not one frame.
 """
 from __future__ import annotations
 
@@ -22,41 +21,38 @@ TRACES = ROOT / "content" / "traces"
 def main() -> int:
   ap = argparse.ArgumentParser()
   ap.add_argument("--example", default="add_relu_sum")
-  ap.add_argument("--lesson", help="take the trace and step from a lesson's figure block")
-  ap.add_argument("--step", type=int, default=None, help="pass index; default: the biggest non-pattern pass")
+  ap.add_argument("--lesson", help="open at this lesson's figure")
   ap.add_argument("--out", default=str(ROOT / "packages" / "visualizer" / "src" / "data.json"))
   args = ap.parse_args()
 
+  start_at = None
   if args.lesson:
     lesson = json.loads((ROOT / "content" / "lessons" / f"{args.lesson}.json").read_text())
     fig = lesson.get("figure")
     if not fig:
       print(f"{args.lesson} declares no figure", file=sys.stderr)
       return 2
-    args.example, args.step = fig["trace"], fig["step"]
+    args.example, start_at = fig["trace"], fig["step"]
 
   dest = TRACES / args.example
   steps = json.loads((dest / "steps.json").read_text())["steps"]
-  teaching = [s for s in steps if s.get("stage") != "pattern" and (s["added"] or s["removed"])]
 
-  if args.step is None:
-    chosen = max(teaching, key=lambda s: s["added"] + s["removed"])
-  else:
-    chosen = next((s for s in steps if s["i"] == args.step), None)
-    if chosen is None:
-      print(f"no step {args.step} in {dest}/steps.json", file=sys.stderr)
-      return 2
+  out = []
+  for step in steps:
+    if not step.get("kept"):
+      continue
+    before = json.loads((dest / "graphs" / f"{step['i']:03d}-before.json").read_text())
+    after = json.loads((dest / "graphs" / f"{step['i']:03d}-after.json").read_text())
+    out.append({**step, "before": before, "after": after})
 
-  before = json.loads((dest / "graphs" / f"{chosen['i']:03d}-before.json").read_text())
-  after = json.loads((dest / "graphs" / f"{chosen['i']:03d}-after.json").read_text())
-
+  start = next((i for i, s in enumerate(out) if s["i"] == start_at), 0)
   pathlib.Path(args.out).write_text(json.dumps({
     "example": args.example,
-    "step": {**chosen, "before": before, "after": after},
+    "start": start,
+    "steps": out,
   }, indent=1) + "\n")
 
-  print(f"step {chosen['i']} · {chosen['caller']} · {chosen['file']}:{chosen['line']}")
-  print(f"  {len(before)} -> {len(after)} nodes  +{chosen['added']}/-{chosen['removed']}")
+  print(f"{len(out)} kept passes · opens at index {start} ({out[start]['caller']})")
   print(f"  wrote {pathlib.Path(args.out).relative_to(ROOT)}")
   return 0
 

@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@xyflow/react": "^12.12.1",
+    "effect": "^4.1.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   }

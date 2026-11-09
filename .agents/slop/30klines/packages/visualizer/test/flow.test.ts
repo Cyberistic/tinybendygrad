@@ -62,8 +62,8 @@ describe("a recorded pass on disk", () => {
   const root = `${import.meta.dir}/../../../content/traces/add_relu_sum`
   const steps = JSON.parse(readFileSync(`${root}/steps.json`, "utf8")).steps as
     { i: number; caller: string; stage: string; kept: boolean }[]
-  const pass = (caller: string) => {
-    const s = steps.find((x) => x.caller === caller && x.kept)
+  const pass = (caller: string, exact?: number) => {
+    const s = steps.find((x) => x.caller === caller && x.kept && (exact === undefined || x.i === exact))
     if (!s) throw new Error(`no kept pass for ${caller} — re-record with a bigger --keep-graphs`)
     const load = (side: string) =>
       JSON.parse(readFileSync(`${root}/graphs/${String(s.i).padStart(3, "0")}-${side}.json`, "utf8")) as UOp[]
@@ -76,8 +76,14 @@ describe("a recorded pass on disk", () => {
     expect(summarize(before, after)).not.toContain("+0 / −0") // the structure that disagrees
   })
 
-  test("get_kernel_graph removes more than half the graph", () => {
-    const { before, after } = pass("get_kernel_graph")
-    expect(removed(before, after).length).toBeGreaterThan(before.length / 2)
+  test("at least one get_kernel_graph pass halves the graph", () => {
+    // the caller runs more than once; only some of those runs do the big cut
+    const cuts = steps
+      .filter((s) => s.caller === "get_kernel_graph" && s.kept)
+      .map((s) => {
+        const { before, after } = pass("get_kernel_graph", s.i)
+        return removed(before, after).length / before.length
+      })
+    expect(Math.max(...cuts)).toBeGreaterThan(0.5)
   })
 })

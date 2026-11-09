@@ -1,396 +1,7964 @@
 {
  "example": "add_relu_sum",
- "step": {
-  "added": 15,
-  "after": [
-   {
-    "i": 0,
-    "op": "Ops.CONST",
-    "arg": "1",
-    "dtype": "dtypes.weakint",
-    "src": []
-   },
-   {
-    "i": 1,
-    "op": "Ops.PARAM",
-    "arg": "ParamArg(0, dtypes.f32, d\u2026",
-    "dtype": "dtypes.f32",
-    "src": [
-     0
-    ]
-   },
-   {
-    "i": 2,
-    "op": "Ops.STACK",
-    "arg": "None",
-    "dtype": "dtypes.void",
-    "src": []
-   },
-   {
-    "i": 3,
-    "op": "Ops.RESHAPE",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     1,
-     2
-    ]
-   },
-   {
-    "i": 4,
-    "op": "Ops.CONST",
-    "arg": "0.0",
-    "dtype": "dtypes.weakfloat",
-    "src": []
-   },
-   {
-    "i": 5,
-    "op": "Ops.CONST",
-    "arg": "4",
-    "dtype": "dtypes.weakint",
-    "src": []
-   },
-   {
-    "i": 6,
-    "op": "Ops.PARAM",
-    "arg": "ParamArg(1, dtypes.f32, d\u2026",
-    "dtype": "dtypes.f32",
-    "src": [
-     5
-    ]
-   },
-   {
-    "i": 7,
-    "op": "Ops.CONST",
-    "arg": "2",
-    "dtype": "dtypes.weakint",
-    "src": []
-   },
-   {
-    "i": 8,
-    "op": "Ops.STACK",
-    "arg": "None",
-    "dtype": "dtypes.weakint",
-    "src": [
-     7,
-     7
-    ]
-   },
-   {
-    "i": 9,
-    "op": "Ops.RESHAPE",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     6,
-     8
-    ]
-   },
-   {
-    "i": 10,
-    "op": "Ops.COPY",
-    "arg": "METAL",
-    "dtype": "dtypes.f32",
-    "src": [
-     9
-    ]
-   },
-   {
-    "i": 11,
-    "op": "Ops.PARAM",
-    "arg": "ParamArg(2, dtypes.f32, d\u2026",
-    "dtype": "dtypes.f32",
-    "src": [
-     5
-    ]
-   },
-   {
-    "i": 12,
-    "op": "Ops.RESHAPE",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     11,
-     8
-    ]
-   },
-   {
-    "i": 13,
-    "op": "Ops.COPY",
-    "arg": "METAL",
-    "dtype": "dtypes.f32",
-    "src": [
-     12
-    ]
-   },
-   {
-    "i": 14,
-    "op": "Ops.ADD",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     10,
-     13
-    ]
-   },
-   {
-    "i": 15,
-    "op": "Ops.CMPLT",
-    "arg": "None",
-    "dtype": "dtypes.bool",
-    "src": [
-     4,
-     14
-    ]
-   },
-   {
-    "i": 16,
-    "op": "Ops.WHERE",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     15,
-     14,
-     4
-    ]
-   },
-   {
-    "i": 17,
-    "op": "Ops.REDUCE",
-    "arg": "(Ops.ADD, 2)",
-    "dtype": "dtypes.f32",
-    "src": [
-     16
-    ]
-   },
-   {
-    "i": 18,
-    "op": "Ops.STORE",
-    "arg": "None",
-    "dtype": "dtypes.void",
-    "src": [
-     3,
-     17
-    ]
-   },
-   {
-    "i": 19,
-    "op": "Ops.AFTER",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     3,
-     18
-    ]
-   },
-   {
-    "i": 20,
-    "op": "Ops.SINK",
-    "arg": "None",
-    "dtype": "dtypes.void",
-    "src": [
-     19
-    ]
-   }
-  ],
-  "before": [
-   {
-    "i": 0,
-    "op": "Ops.CONST",
-    "arg": "1",
-    "dtype": "dtypes.weakint",
-    "src": []
-   },
-   {
-    "i": 1,
-    "op": "Ops.BUFFER",
-    "arg": "ParamArg(2, dtypes.f32, d\u2026",
-    "dtype": "dtypes.f32",
-    "src": [
-     0
-    ]
-   },
-   {
-    "i": 2,
-    "op": "Ops.STACK",
-    "arg": "None",
-    "dtype": "dtypes.void",
-    "src": []
-   },
-   {
-    "i": 3,
-    "op": "Ops.RESHAPE",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     1,
-     2
-    ]
-   },
-   {
-    "i": 4,
-    "op": "Ops.CONST",
-    "arg": "0.0",
-    "dtype": "dtypes.weakfloat",
-    "src": []
-   },
-   {
-    "i": 5,
-    "op": "Ops.CONST",
-    "arg": "4",
-    "dtype": "dtypes.weakint",
-    "src": []
-   },
-   {
-    "i": 6,
-    "op": "Ops.BUFFER",
-    "arg": "ParamArg(0, dtypes.f32, d\u2026",
-    "dtype": "dtypes.f32",
-    "src": [
-     5
-    ]
-   },
-   {
-    "i": 7,
-    "op": "Ops.CONST",
-    "arg": "2",
-    "dtype": "dtypes.weakint",
-    "src": []
-   },
-   {
-    "i": 8,
-    "op": "Ops.STACK",
-    "arg": "None",
-    "dtype": "dtypes.weakint",
-    "src": [
-     7,
-     7
-    ]
-   },
-   {
-    "i": 9,
-    "op": "Ops.RESHAPE",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     6,
-     8
-    ]
-   },
-   {
-    "i": 10,
-    "op": "Ops.COPY",
-    "arg": "METAL",
-    "dtype": "dtypes.f32",
-    "src": [
-     9
-    ]
-   },
-   {
-    "i": 11,
-    "op": "Ops.BUFFER",
-    "arg": "ParamArg(1, dtypes.f32, d\u2026",
-    "dtype": "dtypes.f32",
-    "src": [
-     5
-    ]
-   },
-   {
-    "i": 12,
-    "op": "Ops.RESHAPE",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     11,
-     8
-    ]
-   },
-   {
-    "i": 13,
-    "op": "Ops.COPY",
-    "arg": "METAL",
-    "dtype": "dtypes.f32",
-    "src": [
-     12
-    ]
-   },
-   {
-    "i": 14,
-    "op": "Ops.ADD",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     10,
-     13
-    ]
-   },
-   {
-    "i": 15,
-    "op": "Ops.CMPLT",
-    "arg": "None",
-    "dtype": "dtypes.bool",
-    "src": [
-     4,
-     14
-    ]
-   },
-   {
-    "i": 16,
-    "op": "Ops.WHERE",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     15,
-     14,
-     4
-    ]
-   },
-   {
-    "i": 17,
-    "op": "Ops.REDUCE",
-    "arg": "(Ops.ADD, 2)",
-    "dtype": "dtypes.f32",
-    "src": [
-     16
-    ]
-   },
-   {
-    "i": 18,
-    "op": "Ops.STORE",
-    "arg": "None",
-    "dtype": "dtypes.void",
-    "src": [
-     3,
-     17
-    ]
-   },
-   {
-    "i": 19,
-    "op": "Ops.AFTER",
-    "arg": "None",
-    "dtype": "dtypes.f32",
-    "src": [
-     3,
-     18
-    ]
-   },
-   {
-    "i": 20,
-    "op": "Ops.SINK",
-    "arg": "None",
-    "dtype": "dtypes.void",
-    "src": [
-     19
-    ]
-   }
-  ],
-  "caller": "transform_to_call",
-  "file": "__init__.py",
-  "i": 93,
-  "kept": true,
-  "line": 268,
-  "pass": "unified_rewrite",
-  "removed": 15,
-  "stage": "schedule"
- }
+ "start": 0,
+ "steps": [
+  {
+   "added": 1,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      11,
+      8
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      10,
+      13
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      15,
+      14,
+      4
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      3,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      19
+     ]
+    }
+   ],
+   "caller": "linear_with_vars",
+   "file": "tensor.py",
+   "i": 2,
+   "kept": true,
+   "line": 165,
+   "pass": "unified_rewrite",
+   "removed": 17,
+   "stage": "frontend"
+  },
+  {
+   "added": 2,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      4
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      11,
+      8
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      10,
+      13
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      15,
+      14,
+      4
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      3,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      19
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      19,
+      20
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 5,
+   "kept": true,
+   "line": 504,
+   "pass": "walk_rewrite",
+   "removed": 18,
+   "stage": "uop"
+  },
+  {
+   "added": 5,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 4,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      3,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      2,
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      7,
+      4
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      0,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      11,
+      10,
+      0
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      13
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 6,
+   "kept": true,
+   "line": 504,
+   "pass": "walk_rewrite",
+   "removed": 15,
+   "stage": "uop"
+  },
+  {
+   "added": 3,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      0,
+      1
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": []
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 41,
+   "kept": true,
+   "line": 504,
+   "pass": "unified_rewrite",
+   "removed": 1,
+   "stage": "uop"
+  },
+  {
+   "added": 1,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      0
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      5,
+      6
+     ]
+    }
+   ],
+   "caller": "contiguous_view",
+   "file": "ops.py",
+   "i": 52,
+   "kept": true,
+   "line": 896,
+   "pass": "unified_rewrite",
+   "removed": 5,
+   "stage": "uop"
+  },
+  {
+   "added": 0,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 4,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0,
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CONST",
+     "arg": "-1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 7,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      6
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5,
+      7
+     ]
+    }
+   ],
+   "caller": "simplify",
+   "file": "ops.py",
+   "i": 83,
+   "kept": true,
+   "line": 485,
+   "pass": "unified_rewrite",
+   "removed": 8,
+   "stage": "uop"
+  },
+  {
+   "added": 1,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      0
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      5,
+      6
+     ]
+    }
+   ],
+   "caller": "contiguous_view",
+   "file": "ops.py",
+   "i": 84,
+   "kept": true,
+   "line": 896,
+   "pass": "unified_rewrite",
+   "removed": 5,
+   "stage": "uop"
+  },
+  {
+   "added": 0,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 4,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0,
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CONST",
+     "arg": "-1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 7,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      6
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5,
+      7
+     ]
+    }
+   ],
+   "caller": "simplify",
+   "file": "ops.py",
+   "i": 85,
+   "kept": true,
+   "line": 485,
+   "pass": "unified_rewrite",
+   "removed": 8,
+   "stage": "uop"
+  },
+  {
+   "added": 15,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      11,
+      8
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      10,
+      13
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      15,
+      14,
+      4
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      3,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      19
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      11,
+      8
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      10,
+      13
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      15,
+      14,
+      4
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      3,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      19
+     ]
+    }
+   ],
+   "caller": "transform_to_call",
+   "file": "__init__.py",
+   "i": 93,
+   "kept": true,
+   "line": 268,
+   "pass": "unified_rewrite",
+   "removed": 15,
+   "stage": "schedule"
+  },
+  {
+   "added": 3,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      11,
+      8
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      10,
+      13
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      15,
+      14,
+      4
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      2
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      20
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      11,
+      8
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      10,
+      13
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      15,
+      14,
+      4
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      3,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      19
+     ]
+    }
+   ],
+   "caller": "prepare_rangeify",
+   "file": "prepare.py",
+   "i": 107,
+   "kept": true,
+   "line": 267,
+   "pass": "unified_rewrite",
+   "removed": 2,
+   "stage": "schedule"
+  },
+  {
+   "added": 15,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 11,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      10,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      11
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      13,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      15
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      16,
+      11
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      12,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      18,
+      4
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      20
+     ]
+    },
+    {
+     "i": 22,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      21
+     ]
+    },
+    {
+     "i": 23,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      22
+     ]
+    },
+    {
+     "i": 24,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      23
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      11,
+      8
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.COPY",
+     "arg": "METAL",
+     "dtype": "dtypes.f32",
+     "src": [
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      10,
+      13
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      15,
+      14,
+      4
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      2
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      20
+     ]
+    }
+   ],
+   "caller": "prepare_rangeify",
+   "file": "prepare.py",
+   "i": 128,
+   "kept": true,
+   "line": 267,
+   "pass": "unified_rewrite",
+   "removed": 12,
+   "stage": "schedule"
+  },
+  {
+   "added": 0,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "False",
+     "dtype": "dtypes.bool",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "True",
+     "dtype": "dtypes.bool",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.OR",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      0,
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.OR",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      2,
+      1
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CONST",
+     "arg": "Invalid",
+     "dtype": "dtypes.bool",
+     "src": []
+    },
+    {
+     "i": 7,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      3,
+      5,
+      6
+     ]
+    }
+   ],
+   "caller": "run_rangeify",
+   "file": "indexing.py",
+   "i": 148,
+   "kept": true,
+   "line": 180,
+   "pass": "unified_rewrite",
+   "removed": 6,
+   "stage": "schedule"
+  },
+  {
+   "added": 0,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "False",
+     "dtype": "dtypes.bool",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "True",
+     "dtype": "dtypes.bool",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.OR",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      0,
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.OR",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      2,
+      1
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CONST",
+     "arg": "Invalid",
+     "dtype": "dtypes.bool",
+     "src": []
+    },
+    {
+     "i": 7,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      3,
+      5,
+      6
+     ]
+    }
+   ],
+   "caller": "run_rangeify",
+   "file": "indexing.py",
+   "i": 149,
+   "kept": true,
+   "line": 180,
+   "pass": "unified_rewrite",
+   "removed": 6,
+   "stage": "schedule"
+  },
+  {
+   "added": 3,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.PLACEHOLDER, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.PLACEHOLDER, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      2
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      2
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 151,
+   "kept": true,
+   "line": 504,
+   "pass": "unified_rewrite",
+   "removed": 3,
+   "stage": "uop"
+  },
+  {
+   "added": 3,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.PLACEHOLDER, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1,
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.PLACEHOLDER, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      4
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.PLACEHOLDER, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0,
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.PLACEHOLDER, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      6
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 10,
+     "op": "Ops.MOD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      8,
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      10
+     ]
+    }
+   ],
+   "caller": "_apply_reshape",
+   "file": "indexing.py",
+   "i": 162,
+   "kept": true,
+   "line": 146,
+   "pass": "unified_rewrite",
+   "removed": 9,
+   "stage": "schedule"
+  },
+  {
+   "added": 5,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1,
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      4
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.PLACEHOLDER, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1,
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.PLACEHOLDER, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      2,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      4
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 163,
+   "kept": true,
+   "line": 504,
+   "pass": "unified_rewrite",
+   "removed": 5,
+   "stage": "uop"
+  },
+  {
+   "added": 1,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      0
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.MOD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0,
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      2
+     ]
+    }
+   ],
+   "caller": "_apply_reshape",
+   "file": "indexing.py",
+   "i": 164,
+   "kept": true,
+   "line": 146,
+   "pass": "unified_rewrite",
+   "removed": 3,
+   "stage": "schedule"
+  },
+  {
+   "added": 27,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      11,
+      7
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 15,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      15,
+      14
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      16,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 22,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      21
+     ]
+    },
+    {
+     "i": 23,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 24,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      23,
+      21
+     ]
+    },
+    {
+     "i": 25,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      22,
+      24
+     ]
+    },
+    {
+     "i": 26,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      25,
+      21
+     ]
+    },
+    {
+     "i": 27,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      26
+     ]
+    },
+    {
+     "i": 28,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      27,
+      18
+     ]
+    },
+    {
+     "i": 29,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      28
+     ]
+    },
+    {
+     "i": 30,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      29
+     ]
+    },
+    {
+     "i": 31,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      30,
+      29,
+      4
+     ]
+    },
+    {
+     "i": 32,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      31,
+      15,
+      17
+     ]
+    },
+    {
+     "i": 33,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      32
+     ]
+    },
+    {
+     "i": 34,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      33
+     ]
+    },
+    {
+     "i": 35,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      34
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 11,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      10,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      11
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      13,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      15
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.RESHAPE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      16,
+      11
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      12,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      18,
+      4
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 2)",
+     "dtype": "dtypes.f32",
+     "src": [
+      20
+     ]
+    },
+    {
+     "i": 22,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      21
+     ]
+    },
+    {
+     "i": 23,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      22
+     ]
+    },
+    {
+     "i": 24,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      23
+     ]
+    }
+   ],
+   "caller": "run_rangeify",
+   "file": "indexing.py",
+   "i": 173,
+   "kept": true,
+   "line": 180,
+   "pass": "unified_rewrite",
+   "removed": 16,
+   "stage": "schedule"
+  },
+  {
+   "added": 9,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.f32, \u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 4,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      4,
+      3
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.weaki\u2026",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5,
+      6
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      2,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.f32, \u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      8,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      0,
+      11
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      2,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      5,
+      3
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      4,
+      6
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      7,
+      3
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      2,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 11,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      11,
+      10
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      10
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      12,
+      13
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      16,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      17
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      18,
+      20
+     ]
+    },
+    {
+     "i": 22,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      21,
+      17
+     ]
+    },
+    {
+     "i": 23,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      16,
+      22
+     ]
+    },
+    {
+     "i": 24,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      23,
+      14
+     ]
+    },
+    {
+     "i": 25,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      15,
+      24
+     ]
+    },
+    {
+     "i": 26,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      0,
+      25
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 211,
+   "kept": true,
+   "line": 504,
+   "pass": "unified_rewrite",
+   "removed": 23,
+   "stage": "uop"
+  },
+  {
+   "added": 6,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.f32, \u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.weaki\u2026",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5,
+      4
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      3,
+      6
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      2,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.f32, \u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      8,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      0,
+      11
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      12,
+      5
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.STACK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": []
+    },
+    {
+     "i": 2,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.f32, \u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 4,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      4,
+      3
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.weaki\u2026",
+     "dtype": "dtypes.weakint",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5,
+      6
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      2,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(-1, dtypes.f32, \u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      1
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      8,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      0,
+      11
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      12,
+      4
+     ]
+    }
+   ],
+   "caller": "reduce_collapse",
+   "file": "simplify.py",
+   "i": 216,
+   "kept": true,
+   "line": 134,
+   "pass": "unified_rewrite",
+   "removed": 6,
+   "stage": "codegen"
+  },
+  {
+   "added": 5,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      11,
+      7
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 15,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      15,
+      14
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      16,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 22,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      21
+     ]
+    },
+    {
+     "i": 23,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 24,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      23,
+      21
+     ]
+    },
+    {
+     "i": 25,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      22,
+      24
+     ]
+    },
+    {
+     "i": 26,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      25,
+      21
+     ]
+    },
+    {
+     "i": 27,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      26
+     ]
+    },
+    {
+     "i": 28,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      27,
+      18
+     ]
+    },
+    {
+     "i": 29,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      28
+     ]
+    },
+    {
+     "i": 30,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      29
+     ]
+    },
+    {
+     "i": 31,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      30,
+      15,
+      17
+     ]
+    },
+    {
+     "i": 32,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      31
+     ]
+    },
+    {
+     "i": 33,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      32
+     ]
+    },
+    {
+     "i": 34,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      33
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      11,
+      7
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 15,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      15,
+      14
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      16,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 22,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      21
+     ]
+    },
+    {
+     "i": 23,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 24,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      23,
+      21
+     ]
+    },
+    {
+     "i": 25,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      22,
+      24
+     ]
+    },
+    {
+     "i": 26,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      25,
+      21
+     ]
+    },
+    {
+     "i": 27,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      26
+     ]
+    },
+    {
+     "i": 28,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      27,
+      18
+     ]
+    },
+    {
+     "i": 29,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      28
+     ]
+    },
+    {
+     "i": 30,
+     "op": "Ops.CMPLT",
+     "arg": "None",
+     "dtype": "dtypes.bool",
+     "src": [
+      4,
+      29
+     ]
+    },
+    {
+     "i": 31,
+     "op": "Ops.WHERE",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      30,
+      29,
+      4
+     ]
+    },
+    {
+     "i": 32,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      31,
+      15,
+      17
+     ]
+    },
+    {
+     "i": 33,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      32
+     ]
+    },
+    {
+     "i": 34,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      33
+     ]
+    },
+    {
+     "i": 35,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      34
+     ]
+    }
+   ],
+   "caller": "get_kernel_graph",
+   "file": "rangeify.py",
+   "i": 217,
+   "kept": true,
+   "line": 340,
+   "pass": "unified_rewrite",
+   "removed": 6,
+   "stage": "schedule"
+  },
+  {
+   "added": 6,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      8,
+      7
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      9,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      11
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      11
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      12,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      15
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16,
+      8,
+      10
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      11,
+      7
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 15,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      15,
+      14
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      16,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 22,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      21
+     ]
+    },
+    {
+     "i": 23,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 24,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      23,
+      21
+     ]
+    },
+    {
+     "i": 25,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      22,
+      24
+     ]
+    },
+    {
+     "i": 26,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      25,
+      21
+     ]
+    },
+    {
+     "i": 27,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      26
+     ]
+    },
+    {
+     "i": 28,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      27,
+      18
+     ]
+    },
+    {
+     "i": 29,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      28
+     ]
+    },
+    {
+     "i": 30,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      29
+     ]
+    },
+    {
+     "i": 31,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      30,
+      15,
+      17
+     ]
+    },
+    {
+     "i": 32,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      31
+     ]
+    }
+   ],
+   "caller": "split_store",
+   "file": "rangeify.py",
+   "i": 241,
+   "kept": true,
+   "line": 323,
+   "pass": "unified_rewrite",
+   "removed": 20,
+   "stage": "schedule"
+  },
+  {
+   "added": 8,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      8,
+      7
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      9,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      11
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      11
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      12,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      15
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16,
+      8,
+      10
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      8,
+      7
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      9,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      11
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      11
+     ]
+    },
+    {
+     "i": 15,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      12,
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      15
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      16,
+      8,
+      10
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      17
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 242,
+   "kept": true,
+   "line": 504,
+   "pass": "walk_rewrite",
+   "removed": 8,
+   "stage": "uop"
+  },
+  {
+   "added": 4,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      2
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      2
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      2
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      2
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 247,
+   "kept": true,
+   "line": 504,
+   "pass": "walk_rewrite",
+   "removed": 4,
+   "stage": "uop"
+  },
+  {
+   "added": 5,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      2
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      2
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      2
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      2
+     ]
+    }
+   ],
+   "caller": "split_store",
+   "file": "rangeify.py",
+   "i": 248,
+   "kept": true,
+   "line": 323,
+   "pass": "walk_rewrite",
+   "removed": 5,
+   "stage": "schedule"
+  },
+  {
+   "added": 6,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      2
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      2
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      2
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      2
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 250,
+   "kept": true,
+   "line": 504,
+   "pass": "walk_rewrite",
+   "removed": 6,
+   "stage": "uop"
+  },
+  {
+   "added": 5,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      2
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      2
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      2
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      6,
+      2
+     ]
+    }
+   ],
+   "caller": "split_store",
+   "file": "rangeify.py",
+   "i": 251,
+   "kept": true,
+   "line": 323,
+   "pass": "walk_rewrite",
+   "removed": 5,
+   "stage": "schedule"
+  },
+  {
+   "added": 7,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      3,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      7,
+      8
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      7,
+      9
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      6,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      11
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      12
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.CONST",
+     "arg": "0.0",
+     "dtype": "dtypes.weakfloat",
+     "src": []
+    },
+    {
+     "i": 5,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 6,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 3)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      9,
+      7
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      11,
+      7
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      6,
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.CONST",
+     "arg": "2",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 15,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 0)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.MUL",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      15,
+      14
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 1)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 18,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.weakint",
+     "src": [
+      16,
+      17
+     ]
+    },
+    {
+     "i": 19,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      13,
+      18
+     ]
+    },
+    {
+     "i": 20,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 21,
+     "op": "Ops.RANGE",
+     "arg": "(AxisType.WEAK, 2)",
+     "dtype": "dtypes.weakint",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 22,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      21
+     ]
+    },
+    {
+     "i": 23,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      5
+     ]
+    },
+    {
+     "i": 24,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      23,
+      21
+     ]
+    },
+    {
+     "i": 25,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      22,
+      24
+     ]
+    },
+    {
+     "i": 26,
+     "op": "Ops.END",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      25,
+      21
+     ]
+    },
+    {
+     "i": 27,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      20,
+      26
+     ]
+    },
+    {
+     "i": 28,
+     "op": "Ops.INDEX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      27,
+      18
+     ]
+    },
+    {
+     "i": 29,
+     "op": "Ops.ADD",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      19,
+      28
+     ]
+    },
+    {
+     "i": 30,
+     "op": "Ops.MAX",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      4,
+      29
+     ]
+    },
+    {
+     "i": 31,
+     "op": "Ops.REDUCE",
+     "arg": "(Ops.ADD, 0)",
+     "dtype": "dtypes.f32",
+     "src": [
+      30,
+      15,
+      17
+     ]
+    },
+    {
+     "i": 32,
+     "op": "Ops.STORE",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      31
+     ]
+    },
+    {
+     "i": 33,
+     "op": "Ops.AFTER",
+     "arg": "None",
+     "dtype": "dtypes.f32",
+     "src": [
+      1,
+      32
+     ]
+    },
+    {
+     "i": 34,
+     "op": "Ops.SINK",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      33
+     ]
+    }
+   ],
+   "caller": "get_kernel_graph",
+   "file": "rangeify.py",
+   "i": 252,
+   "kept": true,
+   "line": 340,
+   "pass": "unified_rewrite",
+   "removed": 28,
+   "stage": "schedule"
+  },
+  {
+   "added": 1,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, True\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      3,
+      4
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, True\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      3,
+      4
+     ]
+    }
+   ],
+   "caller": "create_linear_with_vars",
+   "file": "__init__.py",
+   "i": 266,
+   "kept": true,
+   "line": 279,
+   "pass": "unified_rewrite",
+   "removed": 1,
+   "stage": "schedule"
+  },
+  {
+   "added": 9,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(5, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(6, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      4,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      1,
+      4
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.LINEAR",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      6,
+      9
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(3, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.ALLOC",
+     "arg": "ParamArg(4, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      4,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.PARAM",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      1,
+      4
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.LINEAR",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      6,
+      9
+     ]
+    }
+   ],
+   "caller": "resolve_linear_call",
+   "file": "__init__.py",
+   "i": 273,
+   "kept": true,
+   "line": 108,
+   "pass": "walk_rewrite",
+   "removed": 9,
+   "stage": "schedule"
+  },
+  {
+   "added": 6,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(5, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(6, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      4,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      1,
+      4
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.LINEAR",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      6,
+      9
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      2
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, True\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      3,
+      4
+     ]
+    }
+   ],
+   "caller": "create_linear_with_vars",
+   "file": "__init__.py",
+   "i": 274,
+   "kept": true,
+   "line": 279,
+   "pass": "unified_rewrite",
+   "removed": 1,
+   "stage": "schedule"
+  },
+  {
+   "added": 3,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(5, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(6, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      4,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      1,
+      4
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.LINEAR",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      6,
+      9
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(5, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(6, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      4,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      1,
+      4
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.LINEAR",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      6,
+      9
+     ]
+    }
+   ],
+   "caller": "create_linear_with_vars",
+   "file": "__init__.py",
+   "i": 293,
+   "kept": true,
+   "line": 279,
+   "pass": "unified_rewrite",
+   "removed": 3,
+   "stage": "schedule"
+  },
+  {
+   "added": 13,
+   "after": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "512",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(7, dtypes.i8, de\u2026",
+     "dtype": "dtypes.i8",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.CONST",
+     "arg": "0",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 3,
+     "op": "Ops.CONST",
+     "arg": "16",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 4,
+     "op": "Ops.SHRINK",
+     "arg": "None",
+     "dtype": "dtypes.i8",
+     "src": [
+      1,
+      2,
+      3
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.BITCAST",
+     "arg": "dtypes.f32",
+     "dtype": "dtypes.f32",
+     "src": [
+      4
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 7,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      6
+     ]
+    },
+    {
+     "i": 8,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      5,
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CONST",
+     "arg": "256",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 10,
+     "op": "Ops.SHRINK",
+     "arg": "None",
+     "dtype": "dtypes.i8",
+     "src": [
+      1,
+      9,
+      3
+     ]
+    },
+    {
+     "i": 11,
+     "op": "Ops.BITCAST",
+     "arg": "dtypes.f32",
+     "dtype": "dtypes.f32",
+     "src": [
+      10
+     ]
+    },
+    {
+     "i": 12,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      6
+     ]
+    },
+    {
+     "i": 13,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      11,
+      12
+     ]
+    },
+    {
+     "i": 14,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 15,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      14
+     ]
+    },
+    {
+     "i": 16,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      15,
+      5,
+      11
+     ]
+    },
+    {
+     "i": 17,
+     "op": "Ops.LINEAR",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      13,
+      16
+     ]
+    }
+   ],
+   "before": [
+    {
+     "i": 0,
+     "op": "Ops.CONST",
+     "arg": "4",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 1,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(5, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 2,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(0, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 3,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      1,
+      2
+     ]
+    },
+    {
+     "i": 4,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(6, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 5,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(1, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      0
+     ]
+    },
+    {
+     "i": 6,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      4,
+      5
+     ]
+    },
+    {
+     "i": 7,
+     "op": "Ops.CONST",
+     "arg": "1",
+     "dtype": "dtypes.weakint",
+     "src": []
+    },
+    {
+     "i": 8,
+     "op": "Ops.BUFFER",
+     "arg": "ParamArg(2, dtypes.f32, d\u2026",
+     "dtype": "dtypes.f32",
+     "src": [
+      7
+     ]
+    },
+    {
+     "i": 9,
+     "op": "Ops.CALL",
+     "arg": "CallInfo(None, None, Fals\u2026",
+     "dtype": "dtypes.void",
+     "src": [
+      8,
+      1,
+      4
+     ]
+    },
+    {
+     "i": 10,
+     "op": "Ops.LINEAR",
+     "arg": "None",
+     "dtype": "dtypes.void",
+     "src": [
+      3,
+      6,
+      9
+     ]
+    }
+   ],
+   "caller": "substitute",
+   "file": "ops.py",
+   "i": 294,
+   "kept": true,
+   "line": 504,
+   "pass": "walk_rewrite",
+   "removed": 6,
+   "stage": "uop"
+  }
+ ]
 }
