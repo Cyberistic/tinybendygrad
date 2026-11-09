@@ -52,10 +52,13 @@ from gatekit import Gate, main
 # would pin the answer twice over, which is how the two copies drift apart.
 ROWS = (
     "hashcons_same_index", "zeros_differ", "nan_interns", "bool_vs_int_key", "backedge_srcs",
-    "tag_bool_vs_int_interns", "tag_true_vs_false_splits", "tag_none_vs_zero_interns",
+    # THE TOP-LEVEL `arg` LANE -- **AND IT REPLACES THE THREE `tag_*` ROWS**, because upstream
+    # DELETED `UOp.tag` in `fb518b44e` (an ANCESTOR of the pin `f5ac54685074`), so upstream's
+    # pin CANNOT answer a question about a slot it no longer has. THE PROPERTY IS THE SAME ONE
+    # -- `type(arg)` splits the key -- and the port's `arg` carries the type in itself.
+    "arg_bool_vs_int_splits", "arg_none_vs_int_splits", "arg_int_same_interns",
     "const_bool_vs_int_splits", "pynest_bool_vs_int_interns", "pynest_int_distinct_interns",
     "pynest_none_vs_zero_interns", "pynest_cfloat_vs_int_interns",
-    "pynest_signed_zero_interns",
     # `pop_const`, TWO rows per fixture: `_hits` is the PAIR of conditions and `_val` is the
     # popped value, and they fail independently. A reader that always refused would satisfy every
     # `_val` row; a reader that ignored the `op` argument would satisfy every `_hits` row.
@@ -68,8 +71,18 @@ ROWS = (
     # `valid`, four rows, and the three srcs are DISTINGUISHABLE BY CLASS so an order swap fails
     # rather than passing on a count.
     "valid_is_where", "valid_src0", "valid_src1", "valid_src2",
+    "pynest_signed_zero_interns",
     # THE COUNTER's THREE CLAIMS -- **AND CPYTHON's OWN `collections.Counter` IS THE ORACLE.**
     "ctr_bump", "ctr_find", "ctr_inter",
+    # `UOp.gcd` -- ops.py:1073. THE GCD OF TWO UNRELATED VARIABLES IS **1** (A CONST WITH NO
+    # SRCS) AND THE GCD OF `x*z` WITH ITSELF IS **THE SHARED FACTOR** (A MUL). **AND CPYTHON's OWN
+    # `UOp.gcd` IS THE ORACLE.**
+    "gcd_const", "gcd_shared",
+    # `UOp.divide_exact` -- ops.py:1038-1047. THE `self IS v` ANSWER IS **1**, **A CONST THAT
+    # DOES NOT DIVIDE **2** GIVES **NONE**, **`x*y` DIVIDED BY `y` IS **A MUL**, AND **`x*2`
+    # DIVIDED BY `x` IS **THE CONSTANT** -- **AND CPYTHON's OWN `UOp.divide_exact` IS THE
+    # ORACLE.**
+    "de_same", "de_const_none", "de_mul", "de_const_out",
 )
 
 GATE = Gate(
@@ -81,6 +94,6 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "ops-core-gate: 32 rows, 3 lanes -- CONST identity, the arg-type asymmetry, "
-                        "pop_const's two conditions, ssimplify's three arms and valid's node "
-                        "shape all agree with CPython"))
+    sys.exit(main(GATE, "ops-core-gate: 41 rows, 3 lanes -- CONST identity, the arg-type asymmetry, "
+                        "pop_const's two conditions, ssimplify's three arms, valid's node shape, "
+                        "the top-level arg lane and UOp.gcd all agree with CPython"))

@@ -59,18 +59,112 @@ def b(value: bool) -> str:
 def pa(val):
     """The port's `pa_with`: a PARAM differing in EXACTLY ONE FIELD, `val`.
 
-    Thirteen fields in `ops.py:26-38`, and the fixture has to set all of them or the row stops
-    being about `val`: a comparator that dropped any other field could not satisfy this pair, and
-    one that dropped `val` cannot pass it.
+    **AND THE FIXTURE SPELLS UPSTREAM's OWN FIELD ORDER AT THE PIN** -- MEASURED 2026-11-08: THE
+    ORACLE CRASHED WITH "ParamArg.__init__() takes from 3 to 13 positional arguments but 14 were
+    given", **AND `git show f5ac54685074:tinygrad/uop/ops.py` READS THE FIELDS AS
+    `slot, dtype, vmin_vmax, name, addrspace, device, volatile, image, buffer, bind_on_realize,
+    val, spec` -- TWELVE OF THEM, WITH **NO `multiple_of`**, WHILE THE OLD FIXTURE PASSED THREE
+    `None`s BETWEEN `vmin_vmax` AND `addrspace`.** **SO THE FIXTURE IS RE-SPELLED AT THE PIN's
+    OWN ORDER AND THE FIXTURE SETS EVERY FIELD**, because a fixture that dropped one would stop
+    the row being about `val`: a comparator that dropped any other field could not satisfy this
+    pair, and one that dropped `val` cannot pass it.
     """
-    return UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtypes.int32, None, None, None, None,
+    return UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtypes.int32, None, None,
                                                AddrSpace.GLOBAL, None, False, None, None,
-                                               False, val))
+                                               False, val, None))
 
 
-def tagged(tag):
-    """A SINK carrying a bare Python value in the TAG slot, where `type(tag)` is absent."""
-    return UOp(Ops.SINK, src=(), arg=None, tag=tag)
+def argd(value):
+    """A SINK carrying a bare Python value in the `arg` slot.
+
+    **AND THIS IS THE **REPLACEMENT** FOR THE `tagged()` HELPER, AND THE REPLACEMENT IS A
+    MEASUREMENT AND NOT A WHIM** -- MEASURED 2026-11-08: THE ORACLE CRASHED WITH "TypeError:
+    UOpMetaClass.__call__() got an unexpected keyword argument 'tag'", **AND UPSTREAM DELETED
+    `UOp.tag` IN `fb518b44e` ("delete UOp.tag [pr] (#18954)", 2026-10-21), AND
+    `git merge-base --is-ancestor fb518b44e f5ac54685074` ANSWERS YES** -- **SO AT THE PIN
+    THERE IS NO `tag` SLOT AT ALL, AND `rg '\btag\b' tinygrad/uop/ops.py` FINDS **NOTHING**.**
+
+    **THE PIN's KEY IS `(op, src, arg, type(arg))` (`ops.py:194`), SO `type(arg)` IS THE ONLY
+    THING THAT SPLITS THE KEY BY A PYTHON TYPE** -- and THAT is the question the three rows
+    below ask, in upstream's own spelling.
+
+    **AND THE PORT's `arg` CARRIES THAT TYPE IN ITSELF** -- `APy{CBool{…}}` and
+    `APy{CInt{…}}` are different `Arg` values and `ANone{}` is a third -- so the port can
+    answer it too, and the port's rows are `arg_bool_vs_int_splits`, `arg_none_vs_int_splits`
+    and `arg_int_same_interns`.
+    """
+    return UOp(Ops.SINK, src=(), arg=value)
+
+
+def _de_same() -> bool:
+    """THE `self IS v` ANSWER IS **1** -- A CONST WITH NO SRCS."""
+    x = UOp.variable("x", 0, 4, dtype=dtypes.weakint)
+    g = x.divide_exact(x)
+    return g is not None and g.op is Ops.CONST and len(g.src) == 0
+
+
+def _de_const_none() -> bool:
+    """**`x` DOES NOT DIVIDE **2**, SO THE ANSWER IS **NONE**."""
+    x = UOp.variable("x", 0, 4, dtype=dtypes.weakint)
+    return x.divide_exact(UOp.const(2, dtypes.weakint)) is None
+
+
+def _de_mul() -> bool:
+    """**`x*y` DIVIDED BY `y` IS **A MUL** -- AND THE CONSTANT IS **STRIPPED** BY `pop_const`.
+
+    **AND THE **VALUE** OF THE LEFT SRC IS READ AND NOT ONLY ITS **SHAPE** -- MEASURED
+    2026-11-09: A PLANT THAT REPLACED THE PRODUCT's **START** WITH **1** DID NOT MAKE THE GATE GO
+    RED, BECAUSE THE ROW ASKED "IS IT A CONST?" AND A PLANTED **1** IS ALSO A CONST. **A ROW THAT
+    CANNOT GO RED IS WORSE THAN NO ROW.**
+    """
+    x = UOp.variable("x", 0, 4, dtype=dtypes.weakint)
+    y = UOp.variable("y", 0, 4, dtype=dtypes.weakint)
+    mxy = UOp(Ops.MUL, (x, y), dtypes.weakint)
+    g = mxy.divide_exact(y)
+    if g is None or g.op is not Ops.MUL or len(g.src) != 2: return False
+    # THE LEFT SRC IS THE CONSTANT FACTOR's QUOTIENT AND THE RIGHT IS THE SURVIVING FACTOR.
+    left, right = g.src
+    return left.op is Ops.CONST and left.arg == 1 and right is x
+
+
+def _de_const_out() -> bool:
+    """**`x*2` DIVIDED BY `x` IS **THE CONSTANT** -- A CONST WITH NO SRCS.
+
+    **AND THIS IS THE ROW THAT CATCHES A `divide_exact` THAT DOES NOT STRIP THE CONSTANT**:
+    the popped numerator is `x` with the constant `2`, and the popped divisor is `x` with the
+    constant `1`, so the answer is `const//div_const` = `2` and **NO** factor survives.
+    """
+    x = UOp.variable("x", 0, 4, dtype=dtypes.weakint)
+    mx2 = UOp(Ops.MUL, (x, UOp.const(2, dtypes.weakint)), dtypes.weakint)
+    g = mx2.divide_exact(x)
+    # **AND THE **VALUE** IS READ**: the answer is `const//div_const` = `2//1` = **2**, and a
+    # planted **1** IS A DIFFERENT CONST.
+    return g is not None and g.op is Ops.CONST and len(g.src) == 0 and g.arg == 2
+
+
+def _gcd_const() -> bool:
+    """THE GCD OF TWO UNRELATED VARIABLES IS **1** -- A CONST WITH NO SRCS.
+
+    CPython's OWN `UOp.gcd` is the oracle, so the port's answer and this one are two independent
+    computations of the same property rather than a restatement of an expected number.
+    """
+    x = UOp.variable("x", 0, 4, dtype=dtypes.weakint)
+    y = UOp.variable("y", 0, 4, dtype=dtypes.weakint)
+    g = UOp.gcd(x, y)
+    return g.op is Ops.CONST and len(g.src) == 0
+
+
+def _gcd_shared() -> bool:
+    """THE GCD OF `x*z` WITH ITSELF IS **THE SHARED FACTOR** -- A MUL.
+
+    **AND THE CONSTANT IS **STRIPPED** BY `pop_const`**, which is what makes the counter `{x:1,
+    z:1}` and not `{x:1, z:1, 3:1}` -- so the answer's shape carries the popping.
+    """
+    x = UOp.variable("x", 0, 4, dtype=dtypes.weakint)
+    z = UOp.variable("z", 0, 4, dtype=dtypes.weakint)
+    mxz = UOp(Ops.MUL, (x, z), dtypes.weakint)
+    g = UOp.gcd(mxz, mxz)
+    return g.op is Ops.MUL and len(g.src) == 2
 
 
 def i64_text(v: int) -> str:
@@ -144,20 +238,24 @@ def main() -> None:
         # THE COUNTER's THREE CLAIMS, **AND CPYTHON's OWN `collections.Counter` IS THE
         # ORACLE** -- SO THE PORT's ANSWER AND PYTHON's ARE TWO INDEPENDENT COMPUTATIONS OF
         # THE SAME PROPERTY, AND NOT A RESTATEMENT OF THE EXPECTED NUMBERS.
-        ("ctr_bump", _ctr_bump()),
-        ("ctr_find", _ctr_find()),
-        ("ctr_inter", _ctr_inter()),
-
         ("hashcons_same_index", UOp.const(3, dtypes.int32) is UOp.const(3, dtypes.int32)),
         ("zeros_differ", UOp.const(ConstFloat(0.0), F32) is not UOp.const(ConstFloat(-0.0), F32)),
         ("nan_interns", UOp.const(nan, F32) is UOp.const(ConstFloat(float("nan")), F32)),
         ("bool_vs_int_key", UOp.const(True, dtypes.bool) is not UOp.const(3, dtypes.int32)),
         ("backedge_srcs", backedge.src[0].op is Ops.SPECIAL and backedge.src[1].op is Ops.RANGE),
 
-        # 6-14: the arg-type lane. `type(arg)` is in the key; `type(tag)` is not.
-        ("tag_bool_vs_int_interns", tagged(True) is tagged(1)),
-        ("tag_true_vs_false_splits", not (tagged(True) is tagged(False))),
-        ("tag_none_vs_zero_interns", tagged(None) is tagged(0)),
+        # THE TOP-LEVEL `arg` LANE -- **AND IT REPLACES THE THREE `tag_*` ROWS**, because upstream
+        # DELETED `UOp.tag` BEFORE the pin (`fb518b44e`, an ancestor of the pin) and so upstream's
+        # pin CANNOT answer a question about a slot it no longer has. **THE PROPERTY IS THE SAME
+        # ONE** -- `type(arg)` splits the key -- and the port's `arg` carries the type in itself,
+        # so BOTH lanes can answer it.
+        #
+        # MEASURED AT THE PIN: `arg=True` vs `arg=1` is False, `arg=None` vs `arg=0` is False,
+        # `arg=1` vs `arg=1` is True.
+        ("arg_bool_vs_int_splits", argd(True) is not argd(1)),
+        ("arg_none_vs_int_splits", argd(None) is not argd(0)),
+        ("arg_int_same_interns", argd(1) is argd(1)),
+
         ("const_bool_vs_int_splits", not (UOp(Ops.CONST, src=(), arg=True) is UOp(Ops.CONST, src=(), arg=1))),
         ("pynest_bool_vs_int_interns", pa(True) is pa(1)),
         ("pynest_int_distinct_interns", pa(1) is pa(2)),
@@ -167,6 +265,7 @@ def main() -> None:
     )
     rows = list(rows)
     last = rows.pop()                       # pynest_signed_zero_interns, which the driver prints LAST
+
     # `pop_const` -- ops.py:1082. `(src[0], src[1].val) if op is self.op and src[1].op is
     # CONST else (self, None)`. TWO rows per fixture, and the fixtures are chosen so the two
     # conditions fail SEPARATELY: a wrong second src, and a wrong op. The fourth is the row that
@@ -215,6 +314,19 @@ def main() -> None:
         rows.append((f"valid_src{k-1}", sg_ctor(s.arg)))
 
     rows.append(last)
+
+    # THE COUNTER's THREE CLAIMS, **AND CPYTHON's OWN `collections.Counter` IS THE ORACLE** --
+    # SO THE PORT's ANSWER AND PYTHON's ARE TWO INDEPENDENT COMPUTATIONS OF THE SAME PROPERTY,
+    # AND NOT A RESTATEMENT OF THE EXPECTED NUMBERS.
+    rows.extend((("ctr_bump", _ctr_bump()), ("ctr_find", _ctr_find()), ("ctr_inter", _ctr_inter())))
+    # `UOp.gcd` -- ops.py:1073. **AND CPYTHON's OWN `UOp.gcd` IS THE ORACLE**, so the port's
+    # answer and this one are two independent computations of the same property.
+    rows.extend((("gcd_const", _gcd_const()), ("gcd_shared", _gcd_shared())))
+    # `UOp.divide_exact` -- ops.py:1038-1047. **AND CPYTHON's OWN `UOp.divide_exact` IS THE
+    # ORACLE**, so the port's answer and this one are two independent computations of the same
+    # property.
+    rows.extend((("de_same", _de_same()), ("de_const_none", _de_const_none()),
+                 ("de_mul", _de_mul()), ("de_const_out", _de_const_out())))
 
 
 

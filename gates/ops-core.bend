@@ -173,9 +173,18 @@ def rows() -> IO(Unit):
     c : Unit <- row("nan_interns", O.t_float_nan_interns())
     d : Unit <- row("bool_vs_int_key", O.t_dtype_key())
     e : Unit <- row("backedge_srcs", O.t_cycle())
-    f : Unit <- row("tag_bool_vs_int_interns", O.t_tag_bool_vs_int_interns())
-    g : Unit <- row("tag_true_vs_false_splits", O.t_tag_true_vs_false_splits())
-    h : Unit <- row("tag_none_vs_zero_interns", O.t_tag_none_vs_zero_interns())
+    # THE TOP-LEVEL `arg` LANE -- **AND IT REPLACES THE THREE `tag_*` ROWS**: upstream DELETED
+    # `UOp.tag` in `fb518b44e`, an ANCESTOR of the pin `f5ac54685074`, so upstream's pin cannot
+    # answer a question about a slot it no longer has. THE PROPERTY IS THE SAME ONE -- `type(arg)`
+    # splits the key -- and the port's `arg` carries the type in itself.
+    #
+    # **AND THE PORT's OWN `t_tag_*` TESTS STAY IN `ops.bend`**: they are the port's coverage of
+    # a DELETED upstream concept, and `.agents/TODO.md` records the over-split as LATENT and
+    # UNREACHABLE ("The port has no `rtag` def and no `TBool{…}` construction"). **A ROW THAT
+    # LEAVES THE GATE DOES NOT LEAVE THE TREE.**
+    f : Unit <- row("arg_bool_vs_int_splits", O.t_arg_bool_vs_int_splits())
+    g : Unit <- row("arg_none_vs_int_splits", O.t_arg_none_vs_int_splits())
+    h : Unit <- row("arg_int_same_interns", O.t_arg_int_same_interns())
     i : Unit <- row("const_bool_vs_int_splits", O.t_const_bool_vs_int_splits())
     j : Unit <- row("pynest_bool_vs_int_interns", O.t_pynest_bool_vs_int_interns())
     k : Unit <- row("pynest_int_distinct_interns", O.t_pynest_int_distinct_interns())
@@ -196,5 +205,16 @@ def rows() -> IO(Unit):
     row("ctr_bump", O.t_ctr_bump())
     row("ctr_find", O.t_ctr_find())
     row("ctr_inter", O.t_ctr_inter())
+    # `UOp.gcd` -- ops.py:1073. THE GCD OF TWO UNRELATED VARIABLES IS **1**, A CONST WITH NO
+    # SRCS; AND THE GCD OF `x*z` WITH ITSELF IS **THE SHARED FACTOR**, A MUL. **AND CPYTHON's OWN
+    # `UOp.gcd` IS THE ORACLE.**
+    row("gcd_const", O.t_gcd_const())
+    row("gcd_shared", O.t_gcd_shared())
+    # `UOp.divide_exact` -- ops.py:1038-1047. **AND CPYTHON's OWN `UOp.divide_exact` IS THE
+    # ORACLE.**
+    row("de_same", O.t_de_same())
+    row("de_const_none", O.t_de_const_none())
+    row("de_mul", O.t_de_mul())
+    row("de_const_out", O.t_de_const_out())
 
 def main() -> IO(Unit): rows()
