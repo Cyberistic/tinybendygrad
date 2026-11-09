@@ -29,14 +29,15 @@ uv run --no-project --with tabulate --with numpy --python 3.12 \
 
 ## 2. Five lessons exist, with scripts
 
-`content/lessons/{01.1, 01.2, 02.1, 02.4, 02.5}.json` — 23 claims, 30 narration beats.
+`content/lessons/*.json` — 01.1, 01.2, 02.1, 02.2, 02.3, 02.4, 02.5. 33 claims, 42 narration beats.
 
 ```
 python3 .agents/slop/30klines/tools/verify.py --tree references/tinygrad-latest
-  coverage       64 / 26106 lines  (0.25%)
-    tinygrad/tensor.py                   38 lines
-    tinygrad/uop/ops.py                  26 lines
-  lessons 5 · refs 5 · claims 23 · beats 30 · filled 0
+  coverage       72 / 26106 lines  (0.28%)
+    tinygrad/tensor.py                   39 lines
+    tinygrad/uop/__init__.py              6 lines
+    tinygrad/uop/ops.py                  27 lines
+  lessons 7 · refs 8 · claims 33 · beats 42 · filled 0
   ✓ every ref matches the tree
 ```
 
@@ -102,9 +103,25 @@ python3 tools/voice/draft.py 01.1
   55.2s of draft narration
 ```
 
-## 4. What is not done
+## 4. The player is real, and it is driven by the timeline
 
-- Four lessons is not a course. Stage 01 needs eight, stage 02 needs nineteen.
-- No React app yet: the six screens are `mock/*.html`, the player is `track.ts` only.
+`tools/player/build.py` cuts the source out of the vendored tree, inlines the timeline,
+copies the clips, and bundles the page with bun. The page imports `track.ts` — the same file
+`bun test` covers — so the player has no timing logic of its own to drift.
+
+```
+python3 tools/player/build.py 02.4
+  content/player/02.4/index.html  (7 clips, 1 refs, 14 source lines)
+```
+
+`art/07-player-b2.png` and `art/08-player-b6.png` are the same page at two beats:
+b2 highlights line 184 and the effect claim; b6 highlights 186–193 and the SPEC claim, with
+its own narration. `?beat=b6` is a shareable frame, which is also how the screenshots were taken.
+
+## 5. What is not done
+
+- Seven lessons is not a course. Stage 01 needs eight, stage 02 needs nineteen.
+- No React app yet: the six screens are `mock/*.html` and the player is a bundled
+  single-page build, not the TanStack app.
 - The draft voice is macOS `say`. The real takes are the user's to record.
 - The trace recorder (SPEC §6.1) is designed, not written.

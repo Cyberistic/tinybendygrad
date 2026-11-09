@@ -1,0 +1,145 @@
+{
+  "id": "02.3",
+  "stage": "02",
+  "order": 3,
+  "kind": "line",
+  "title": "Ops is a closed set, in a load-bearing order",
+  "summary": "The enum is the vocabulary, and its declaration order is part of the scheduling semantics.",
+  "minutes": 5,
+  "refs": [
+    {
+      "file": "tinygrad/uop/__init__.py",
+      "start": 7,
+      "end": 20,
+      "sha": "0875dfa61e0e52816d6d75ff9fa7db3bf7cc25f41e9bcb2e1af1d8c856649a3e"
+    }
+  ],
+  "claims": [
+    {
+      "id": "02.3.1",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        8,
+        9
+      ],
+      "text": "`FastEnum` is an IntEnum that keeps Enum's string form and makes `auto()` globally unique across every subclass — the next value is one past the maximum of all values in all subclasses. Two enums cannot share a number."
+    },
+    {
+      "id": "02.3.2",
+      "ref": 0,
+      "kind": "reason",
+      "lines": [
+        9
+      ],
+      "text": "Global uniqueness is what lets the IR store an op as a small int and still compare enums from different files. It is a compile-time property maintained by a generated counter, not by an explicit numbering."
+    },
+    {
+      "id": "02.3.3",
+      "ref": 0,
+      "kind": "trap",
+      "lines": [
+        12
+      ],
+      "text": "\"The order of these Ops controls the order of the toposort.\" That comment is a warning: reordering the enum changes traversal order, and traversal order reaches the scheduler. This is not a cosmetic list."
+    },
+    {
+      "id": "02.3.4",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        16,
+        17
+      ],
+      "text": "BUFFER is bound storage; ALLOC is unbound global storage. They are adjacent because they are adjacent in meaning, and the comment is the only place that distinction is written down."
+    },
+    {
+      "id": "02.3.5",
+      "ref": 0,
+      "kind": "reason",
+      "lines": [
+        13
+      ],
+      "text": "This is the complete vocabulary. If an operation is not a member here, the compiler cannot express it — there is no extension point above the enum, only below it."
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "text": "Ops is not in ops dot py. It is here, in the package init, because everything imports it.",
+      "cue": {
+        "claims": [
+          "02.3.5"
+        ]
+      },
+      "direction": "note the file"
+    },
+    {
+      "id": "b2",
+      "text": "Before the enum there is a base class doing something subtle. FastEnum is an IntEnum that keeps Enum's string form, and makes auto unique across every subclass. The next value is one past the maximum of all values in all subclasses.",
+      "cue": {
+        "claims": [
+          "02.3.1"
+        ],
+        "lines": [
+          8,
+          9
+        ]
+      },
+      "direction": "highlight the generator expression"
+    },
+    {
+      "id": "b3",
+      "text": "Why bother? Because the IR stores an op as a small integer, and two enums in different files must not collide. That property is maintained by a counter, not by hand.",
+      "cue": {
+        "claims": [
+          "02.3.2"
+        ],
+        "lines": [
+          9
+        ]
+      },
+      "direction": "flat"
+    },
+    {
+      "id": "b4",
+      "text": "Now the comment above the class, which is the most important line in the file. The order of these ops controls the order of the toposort. Reorder this enum and you have changed traversal, and traversal reaches the scheduler.",
+      "cue": {
+        "claims": [
+          "02.3.3"
+        ],
+        "lines": [
+          12
+        ]
+      },
+      "direction": "slow down; this is the point"
+    },
+    {
+      "id": "b5",
+      "text": "And then the members themselves, each carrying a sentence you cannot get from the name. Buffer is bound storage. Alloc is unbound global storage. Adjacent, because they are adjacent in meaning.",
+      "cue": {
+        "claims": [
+          "02.3.4"
+        ],
+        "lines": [
+          16,
+          17
+        ]
+      },
+      "direction": "rest on the pair"
+    },
+    {
+      "id": "b6",
+      "text": "This list is the whole vocabulary. If it is not here, the compiler cannot say it. There is no extension point above this enum, only below it.",
+      "cue": {
+        "claims": [
+          "02.3.5"
+        ],
+        "lines": [
+          13
+        ]
+      },
+      "direction": "close"
+    }
+  ]
+}

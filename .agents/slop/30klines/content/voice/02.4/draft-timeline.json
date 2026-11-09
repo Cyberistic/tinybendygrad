@@ -1,0 +1,47 @@
+{
+  "lesson": "02.4",
+  "mode": "clips",
+  "audio": null,
+  "duration": 78.622,
+  "gap": 0.18,
+  "verified": true,
+  "draft": true,
+  "voice": "Samantha",
+  "beats": [
+    {
+      "id": "b1",
+      "start": 0.0,
+      "end": 11.665
+    },
+    {
+      "id": "b2",
+      "start": 11.845,
+      "end": 24.161
+    },
+    {
+      "id": "b3",
+      "start": 24.341,
+      "end": 36.534
+    },
+    {
+      "id": "b4",
+      "start": 36.714,
+      "end": 50.294
+    },
+    {
+      "id": "b5",
+      "start": 50.474,
+      "end": 61.268
+    },
+    {
+      "id": "b6",
+      "start": 61.448,
+      "end": 71.48
+    },
+    {
+      "id": "b7",
+      "start": 71.66,
+      "end": 78.622
+    }
+  ]
+}

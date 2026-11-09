@@ -1,0 +1,141 @@
+{
+  "id": "02.2",
+  "stage": "02",
+  "order": 2,
+  "kind": "line",
+  "title": "every operation is one line",
+  "summary": "There is no add(), no mul(), no relu(). There is one constructor and a parameter.",
+  "minutes": 4,
+  "refs": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "start": 598,
+      "end": 598,
+      "sha": "96594ef510f46d4173731ac8ec0d93eb3a6789a605453c0dbb06634161959765"
+    },
+    {
+      "file": "tinygrad/tensor.py",
+      "start": 114,
+      "end": 114,
+      "sha": "f911e5bc2863eeed59f1594545b28fc6388b95bd27d2e2e5a6e5abbfcd939cdd"
+    }
+  ],
+  "claims": [
+    {
+      "id": "02.2.1",
+      "ref": 0,
+      "kind": "effect",
+      "lines": [
+        598
+      ],
+      "text": "`alu` builds `UOp(op, src=(self, *src))`. Self is operand zero, always. Operand order is positional and load-bearing — CMPNE is not commutative and the scheduler relies on it."
+    },
+    {
+      "id": "02.2.2",
+      "ref": 0,
+      "kind": "reason",
+      "lines": [
+        598
+      ],
+      "text": "There is no `UOp.add`. The operation is a parameter, so one method serves the whole vocabulary. The compiler's entire elementwise surface is this line plus the enum."
+    },
+    {
+      "id": "02.2.3",
+      "ref": 1,
+      "kind": "effect",
+      "lines": [
+        114
+      ],
+      "text": "`Tensor.alu` is the same idea one level up: `_apply_uop` unwraps every Tensor argument to a UOp, calls the UOp method, and wraps the result back. The frontend never touches a node directly."
+    },
+    {
+      "id": "02.2.4",
+      "ref": 1,
+      "kind": "cost",
+      "lines": [
+        114
+      ],
+      "text": "The lambda `u[0].alu(op, *u[1:])` is why Tensor and UOp can share every mixin: the mixin only needs `alu`, `_uop` and `_wrap_uop`, and each type supplies its own."
+    },
+    {
+      "id": "02.2.5",
+      "ref": 0,
+      "kind": "trap",
+      "lines": [
+        598
+      ],
+      "text": "`**kwargs` is passed straight to the constructor, so a caller can set dtype or arg without a second node. Anything not in the intern key is a silent extra, not an error."
+    }
+  ],
+  "beats": [
+    {
+      "id": "b1",
+      "text": "You might expect an add method, a multiply method, a relu method. There is one method, and the operation is a parameter.",
+      "cue": {
+        "claims": [
+          "02.2.1"
+        ]
+      },
+      "direction": "open on line 598"
+    },
+    {
+      "id": "b2",
+      "text": "Self is operand zero, always. Everything else follows in the order you passed it. That order is load-bearing: compare-not-equal is not commutative, and later passes rely on which side is which.",
+      "cue": {
+        "claims": [
+          "02.2.1"
+        ],
+        "lines": [
+          598
+        ]
+      },
+      "direction": "underline the tuple"
+    },
+    {
+      "id": "b3",
+      "text": "And that is the whole elementwise surface. One constructor, one enum, one line. Adding a new operation to this compiler is adding a member to a list, not writing a method.",
+      "cue": {
+        "claims": [
+          "02.2.2"
+        ],
+        "lines": [
+          598
+        ]
+      },
+      "direction": "hold"
+    },
+    {
+      "id": "b4",
+      "text": "Now jump up to Tensor, same idea one level higher. Apply uop unwraps every argument, calls the UOp method, and wraps the result back into a Tensor. The frontend never touches a node.",
+      "cue": {
+        "claims": [
+          "02.2.3"
+        ]
+      },
+      "direction": "switch pane to tensor.py"
+    },
+    {
+      "id": "b5",
+      "text": "The lambda is the interesting part. It takes u zero, calls alu on it, and forwards the rest. That is why every mixin in this codebase can be written once and work on both Tensor and UOp.",
+      "cue": {
+        "claims": [
+          "02.2.4"
+        ],
+        "lines": [
+          114
+        ]
+      },
+      "direction": "trace the lambda"
+    },
+    {
+      "id": "b6",
+      "text": "One caveat: kwargs go straight to the constructor. Pass something the intern key does not name, and nothing complains. The cache is the only gate.",
+      "cue": {
+        "claims": [
+          "02.2.5"
+        ]
+      },
+      "direction": "quiet aside"
+    }
+  ]
+}
