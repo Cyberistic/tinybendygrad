@@ -3818,6 +3818,75 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         row still resolves), and a byte-identical twin.
                                         See `.agents/slop/unclaimed3/REPORT.md`.
 
+upstream-suite   [#........] 1/3     **THE UPSTREAM SUITE IS BEING PORTED ONE FILE AT A TIME,
+                                        AND THE FIRST FILE IS DONE.**
+                                        **⇒ THE ARCHITECTURE, AND IT IS THE TREE's OWN:**
+                                        UPSTREAM's `.py` TESTS CANNOT RUN AGAINST THE PORT
+                                        (`import tinygrad` RESOLVES TO THE VENDORED UPSTREAM
+                                        PYTHON, AND THE PORT IS `.bend`), SO EACH PORTED FILE
+                                        IS **A `.bend` DRIVER THAT CALLS THE PORT's DEFS AND
+                                        PRINTS `name=value` ROWS + A `.py` ORACLE THAT BUILDS
+                                        THE SAME GRAPH IN CPython's OWN `tinygrad` AND PRINTS
+                                        THE SAME ROWS + A GATE THAT DIFFS THEM
+                                        POSITIONALLY** (`gates/gatekit.py`).
+                                        **⇒ AND NO EXPECTED VALUE IS EVER TRANSCRIBED FROM
+                                        UPSTREAM's TEST INTO A `.bend` LITERAL.** THE UPSTREAM
+                                        EXPECTED VALUES ARE THE ORACLE's JOB; A ROW THAT
+                                        COMPARES THE PORT AGAINST A TYPED NUMBER TESTS THE
+                                        TRANSCRIPTION.
+                                        **⇒ AND EVERY ROW MUST GO RED ON A PLANT** (A TEXT
+                                        EDIT), OR IT IS WORSE THAN NO ROW.
+                                        **THE ORDER IS ASCENDING BY UPSTREAM FILE SIZE.**
+- [x] **`test/null/test_invalid_tensor.py` (16 LOC) -- PORTED, GREEN.** `gates/invalid-tensor.bend`
+      (the port side: `O.UOp.alu`, `O.UOp.where`, `O.UOp.invalid`, `O.UOp.is_invalid`) +
+      `gates/invalid-tensor-oracle.py` (the CPython side: the same graph in the vendored
+      upstream) + `gates/invalid-tensor-gate.py` (the positional diff). **19 ROWS, 3 LANES,
+      rc=0**: `cond_op=CMPLT` · `idx_op=STACK` · `out_op=WHERE` · `out_src2_op=CONST` ·
+      `out_src2_is_invalid=1` · `out_src0_is_cond=1` · `out_src1_is_idx=1`.
+      **THE PROPERTY IS THE UPSTREAM TEST's OWN NAME: `test_uop_where_keeps_invalid_bare` --
+      THE WHERE DOES NOT FOLD THE INVALID AWAY AND DOES NOT RE-SPELL IT.**
+      **⇒ AND THE ROWS SPELL THE OP **NAME** AND NOT A BOOLEAN ABOUT IT**, BECAUSE A BOOLEAN
+      ROW CANNOT TELL `CMPLT` FROM `CMPEQ` FROM `CMPNE` -- THREE WRONG ANSWERS THAT ALL PASS
+      A `=1`.
+      **⇒ AND IT IS NOT `gates/ops-core`'s `valid_*` ROWS**: THOSE ASK
+      `cond.where(self, self.const_like(Invalid))` -- A CONST `self` -- AND ANSWER THE **ARG**
+      CLASS OF EACH SRC (`sg_ctor`); THIS ONE ASKS ABOUT `out.src[2].op` AND
+      `out.src[2].is_invalid`, WHICH NO `sg_ctor` ROW CAN SEE, BECAUSE `sg_ctor` READS THE
+      ARG AND NOT THE OP.
+      **THE FOUR PLANTS, AND ALL FOUR GO RED:**
+      (A) `CMPLT` -> `CMPEQ` => `n=2 of 19: cond_op=CMPLT/CMPEQ, out_src0_op=CMPLT/CMPEQ`;
+      (B) THE WHERE's SRCS SWAPPED => `n=4 of 19: out_src0_op=CMPLT/STACK, out_src1_op=STACK/CMPLT`;
+      (C) **THE INVALID CAST INSTEAD OF BARE -- THE PLANT THE TEST IS NAMED FOR** =>
+      `n=2 of 19: out_src2_op=CONST/CAST, out_src2_is_invalid=1/0`;
+      (D) **THE INVALID DROPPED** => `n=2 of 19: out_src2_op=CONST/STACK, out_src2_is_invalid=1/0`.
+      **MEASURED: 297 MB PEAK RSS ON THE DRIVER UNDER THE 3072 MB WATCHDOG (`WITHIN-LIMITS`).**
+      **⇒ AND THE ARENA DISCIPLINE IS LOAD-BEARING AND WAS MEASURED, NOT ASSUMED**: THE FIRST
+      VERSION GAVE `cond`, `idx` AND `out` THEIR OWN ARENAS AND THE PORT PRINTED
+      `out_src0_op=CONST` WHERE CPython PRINTS `CMPLT` -- `O.Arena.src(ar, i, 0)` READS SLOT 0
+      **OF THE ARENA YOU PASS**, AND `cond`'s INDEX BELONGED TO A DIFFERENT ARENA. ONE ARENA,
+      EVERY NODE BUILT FROM THE PREVIOUS NODE's ARENA.
+      **⇒ AND THE `.bend` DRIVER IS **NOT** IN `gates/gates-pop.ledger.tsv` AND THAT IS CORRECT**:
+      THE LEDGER's POPULATION IS **PYTHON ENTRY POINTS**, AND A `.bend` DRIVER IS A GATE's
+      INPUT, NOT A GATE. THE TWO `.py` FILES ARE LEDGERED, AND `ledgerdue` STAYS AT **20 DUE**,
+      THE SAME 20 PRE-EXISTING ROWS.
+      **THE NEXT CANDIDATES, ASCENDING, AND THE REACHABILITY VERDICT IS PER FILE:**
+      `test/null/test_hashing.py` (18 LOC) · `test/null/test_arange.py` (22) ·
+      `test/null/test_tensor_io.py` (24) -- THE LAST TWO NEED THE PORT's DEVICE LAYER, WHICH
+      IS NOT MEASURED YET. `test/null/test_symbolic_ops.py` (13) AND
+      `test/null/test_tensor_variable.py` (13) NEED **SYMBOLIC VARIABLES** (`Variable`), AND
+      THE PORT's `Variable` SUPPORT IS **NOT MEASURED** -- MEASURE IT BEFORE PROMISING IT.
+      **⇒ AND `test/null/test_gguf.py` (13 LOC), `test/null/test_mnist_dataset.py` (15),
+      `test/null/test_objc.py` (17) ARE UNREACHABLE**: THE FIRST TWO NEED A DATASET DOWNLOAD
+      AND THE THIRD NEEDS A MACOS FRAMEWORK.
+      SEE `.agents/slop/upstream-suite/REPORT.md`.
+- [ ] **`test/null/test_hashing.py` (18 LOC) -- NOT STARTED.** THE CANDIDATE AFTER THIS ONE.
+- [ ] **`test/null/test_symbolic_ops.py` (13 LOC) AND `test/null/test_tensor_variable.py`
+      (13 LOC) -- NOT STARTED, AND THE REACHABILITY IS NOT YET MEASURED.** BOTH ASSERT THAT AN
+      UPSTREAM OPERATION **RAISES** (`ValueError` FOR A SYMBOLIC RESHAPE, `AssertionError` FOR
+      A CHUNK ALONG A SYMBOLIC DIM). **⇒ AND THE PORT HAS NO WAY TO ASK "DID THIS RAISE?"**: A
+      `.bend` ROW IS `name=value`, SO A RAISING OPERATION MUST BE SPELLED AS A **REFUSAL** --
+      AND WHETHER THE PORT's `Variable`/`Variable.bind` EXISTS AT ALL IS THE FIRST QUESTION.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
