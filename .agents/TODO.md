@@ -28368,11 +28368,19 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       `sym_464` ARE THE THREE GUARDED RECIPROCAL RULES THAT THE FLOAT-DIV FIX LANDED IN, SO
       **THAT FIX IS INVISIBLE IN THE INSTRUMENT -- A RULE THAT CANNOT BE REACHED IS A ROW
       THAT CANNOT GO RED.**
-- [ ] `divandmod.py:103` (`fold_divmod_general`) — THE ONE REMAINING MISSING ROW. IT NEEDS
-      `UOp.gcd` AND `UOp.divide_exact` (BOTH ABSENT) AND A `usum` REACHABLE FROM `divandmod.bend`
-      (THE `symbolic -> divandmod` IMPORT DIRECTION FORBIDS IT TODAY).
-- [ ] `UOp.gcd` / `UOp.divide_exact` / a `usum` reachable from `divandmod.bend` — all ABSENT, and
-      they are standalone primitives that can be built and oracle-tested without the rewriter.
+- [ ] `divandmod.py:103` (`fold_divmod_general`) — THE ONE REMAINING MISSING ROW. **AND ITS TWO
+      PRIMITIVES ARE NOW IN** — MEASURED 2026-11-09, `UOp.gcd` (`ops.py:1073`) AND
+      `UOp.divide_exact` (`ops.py:1038`) LANDED IN `tinybendygrad/uop/ops.bend` (`4a8d15ab6`) WITH
+      SIX CPYTHON-CONFIRMED ROWS AGAINST CPYTHON's OWN FUNCTIONS, **AND THE `ops-core` GATE IS
+      ALIVE AGAIN AT 41 ROWS AND THREE LANES** (`48aa36edd`) — **IT HAD BEEN REFUSED (rc=3) SINCE
+      UPSTREAM DELETED `UOp.tag` (`fb518b44e`, AN ANCESTOR OF THE PIN) AND THE ORACLE NAMED IT.**
+      **⇒ THE REMAINING WORK IS `sym_174`'s **BODY** AND A `usum` REACHABLE FROM `divandmod.bend`
+      (THE `symbolic -> divandmod` IMPORT DIRECTION FORBIDS IT TODAY) -- AND NOT THE PRIMITIVES.**
+- [x] `UOp.gcd` / `UOp.divide_exact` — **BOTH IN** (2026-11-09, `4a8d15ab6`). **AND THE PORT
+      SPELLS THEM WITH FOUR MEASURED SUBSTITUTIONS** (THE NODE HALF OF `pop_const`, THE UNSHAPED
+      `const_like`, `Counter.elements()` AS `H.make_tuple_rep`, AND THE NON-NEGATIVE COUNTS AS A
+      COMPARISON OF TWO UNSIGNED COUNTERS) **AND THE PRODUCT IS LEFT-NESTED, WHICH IS WHAT
+      `math.prod` GIVES.** **AND THE `divandmod.py:103` ITEM ABOVE IS WHAT IS LEFT.**
 - [ ] THE CORPUS IS RED (31/38) and it is NOT this lane: MEASURED across three `symbolic.bend`
       versions (HEAD, pre-`sy_trunc`, pre-session) and the count never moved. **THE CORPUS HAS NOT
       BEEN RE-RUN SINCE THE VALID LANE LANDED, AND THE VALID LANE ADDS TWO RULES TO `sym`, SO THE

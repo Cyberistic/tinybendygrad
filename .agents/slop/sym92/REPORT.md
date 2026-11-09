@@ -2163,3 +2163,130 @@ RE-VENDOR DRIFT THAT MADE `gates/decomp_graph_census-oracle.py` REFUSE WITH `Key
 'FLOORDIV'` AND THAT MADE `gates/symrules-oracle.py` REFUSE 24 OF ITS 232 CASES.**
 
 **MEASURED: THE GATE WAS ALREADY rc=3 BEFORE THIS CHANGE, SO THIS CHANGE DID NOT CAUSE IT.**
+
+## 53. `UOp.gcd` AND `UOp.divide_exact`, AND THE `ops-core` GATE IS ALIVE AGAIN
+
+**MEASURED 2026-11-09. THE COMMITS ARE `4a8d15ab6` (THE `.bend`) AND `48aa36edd` (THE GATE).**
+
+### 53a. AND THE GATE WAS REFUSED FOR A REASON THAT WAS **NOT** THE PORT's FAULT
+
+`gates/ops-core-gate.py` WAS REFUSED (rc=3) BEFORE THIS, AND **A REFUSED GATE COMPARES NOTHING.**
+THE ORACLE CRASHED WITH "TypeError: UOpMetaClass.__call__() got an unexpected keyword argument
+'tag'".
+
+**AND THE CRASH WAS RIGHT: UPSTREAM DELETED `UOp.tag` BEFORE THE PIN.** MEASURED:
+`fb518b44e` ("delete UOp.tag [pr] (#18954)", 2026-10-21) AND
+`git merge-base --is-ancestor fb518b44e f5ac54685074` ANSWERS **YES**; THE VENDORED
+`tinygrad/uop/ops.py:192` AND THE PIN BOTH READ
+`def __call__(cls, op:Ops, src:tuple[UOp,...]=tuple(), arg:Any=None)`; AND
+`rg '\btag\b' tinygrad/uop/ops.py` FINDS **NOTHING**.
+
+**⇒ THE THREE `tag_*` ROWS ASK A QUESTION UPSTREAM'S PIN CANNOT ANSWER, AND A ROW WHOSE ORACLE
+CANNOT COMPUTE IT MAKES THE **WHOLE GATE** DEAD.** MEASURED: THE ORACLE'S ROW ORDER ALSO
+DISAGREED WITH THE BEND LANE'S, AND **THE GATE COMPARES THE LANES **POSITIONALLY**
+(`gates/gatekit.py`: `bad = [(x, y) for x, y in zip(base, other) if x != y]`) -- **AND THAT
+MISMATCH WAS INVISIBLE WHILE THE GATE WAS REFUSED.**
+
+### 53b. AND THE PORT's `Tag` IS UPSTREAM's DELETED CONCEPT, NOT `type(arg)`
+
+THE PIN's KEY IS `(op, src, arg, type(arg))` (`ops.py:194`). THE PORT's `Node{op, src, arg, tag}`
+CARRIES A FOURTH FIELD WHICH IS UPSTREAM's DELETED `UOp.tag`. **AND THE PORT's `arg` ALREADY
+CARRIES THE TYPE IN ITSELF** -- `APy{CBool{...}}` AND `APy{CInt{...}}` ARE DIFFERENT `Arg` VALUES
+AND `ANone{}` IS A THIRD.
+
+**⇒ THE THREE `tag_*` ROWS ARE REPLACED BY THREE `arg_*` ROWS THAT ASK **THE SAME PROPERTY** IN
+UPSTREAM'S SURVIVING SPELLING, AND THE PORT's OWN `t_tag_*` TESTS STAY IN `ops.bend`** -- **A ROW
+THAT LEAVES THE GATE DOES NOT LEAVE THE TREE**, AND `.agents/TODO.md` ALREADY RECORDS THE
+OVER-SPLIT AS LATENT AND UNREACHABLE ("The port has no `rtag` def and no `TBool{…}` construction").
+
+### 53c. AND THE ORACLE'S `pa()` FIXTURE NAMED A `ParamArg` THAT THE PIN DOES NOT HAVE
+
+**MEASURED: THE CRASH WAS "ParamArg.__init__() takes from 3 to 13 positional arguments but 14
+were given"** -- **AND THE PIN's `ParamArg` (`ops.py:25-41`) HAS **TWELVE** FIELDS AND **NO
+`multiple_of`**, WHILE THE OLD FIXTURE PASSED **THREE** `None`s BETWEEN `vmin_vmax` AND
+`addrspace`.** THE FIXTURE IS RE-SPELLED AT THE PIN's OWN ORDER.
+
+### 53d. AND `UOp.gcd` IS UPSTREAM'S, LINE FOR LINE
+
+    terms, factors = zip(*[u.pop_const(Ops.MUL) for u in uops])
+    count = functools.reduce(operator.and_, [collections.Counter(term.split_uop(Ops.MUL)) for term in terms])
+    if not count: factors = tuple(u.const_factor() for u in uops)
+    return math.prod(count.elements(), start=uops[0].const_like(math.gcd(*factors)))
+
+**AND THE PORT SPELLS IT WITH FOUR MEASURED SUBSTITUTIONS, EACH STATED AT THE DEF:**
+
+  * **`pop_const(Ops.MUL)` RETURNS `(NODE, CONST)` UPSTREAM AND THE PORT HAS ONLY THE CONST
+    HALF**, **SO THE NODE HALF IS `UOp.pop_const_node` -- WHICH THIS BLOCK ADDS.**
+  * **`const_like` IS NOT PORTED AND THE PORT's ARENA HAS NO SHAPE FIELD**, **SO THE PORT SPELLS
+    THE **UNSHAPED** ONE, WHICH IS `UOp.const(b, dt)`** -- MEASURED 2026-11-07 ON CPYTHON: FOR
+    THE `(x*y)/y` CASE `x` IS A VARIABLE AND **HAS NO SHAPE**.
+  * **`Counter.elements()` REPEATS EACH KEY BY ITS COUNT AND THAT IS THE PORT's OWN
+    `H.make_tuple_rep`** (`helpers.bend:1309`) -- **SO THE PRODUCT IS A CONCATENATION OF THOSE AND
+    NOT A HAND-UNROLLED RECURSION.** **AND THE FIRST ATTEMPT AT THE PRODUCT WAS **250 HAND-UNROLLED
+    DEFS** -- **WHICH WAS THE WRONG SHAPE, AND THE PORT's OWN `make_tuple_rep` WAS ALREADY THERE.**
+  * **THE "ALL COUNTS ARE NON-NEGATIVE" TEST IS SPELLED AS A COMPARISON OF TWO **UNSIGNED**
+    COUNTERS** INSTEAD OF A SUBTRACTION AND A SIGN TEST, **AND THE TWO ARE THE SAME PROPERTY**:
+    UPSTREAM's DIFFERENCE IS NON-NEGATIVE IFF EVERY KEY OF THE DIVISOR's COUNTER IS PRESENT IN THE
+    NUMERATOR's COUNTER **AT LEAST AS MANY TIMES**.
+
+**AND THE PRODUCT'S SHAPE IS LEFT-NESTED, WHICH IS WHAT `math.prod` GIVES**: MEASURED, CPython's
+OWN `UOp.gcd(x*z, x*z)` IS `(mul (mul 1 x) z)` **AND THE PORT's ANSWER HAS THE SAME SHAPE** --
+`left_op=Ops.MUL left_nsrc=2 right_op=Ops.PARAM`.
+
+### 53e. AND THE PRODUCT's **START** IS THE CONSTANT FACTOR's QUOTIENT, AND I READ HALF A LINE
+
+**MEASURED 2026-11-09: `git show f5ac54685074:tinygrad/uop/ops.py` READS
+`return math.prod(new_count.elements(), start=self.const_like(const//div_const))`** -- **AND THE
+**FIRST** HALF OF THAT LINE IS WHAT I READ**, **SO THE PRODUCT HAD NO START AND THE ANSWER WAS `x`
+INSTEAD OF `(mul 1 x)`.** **⇒ THE PORT's `UOp.divide_exact.start` IS `const_like(const //
+div_const)`, AND THE `de_const_out` ROW IS THE ONE THAT CATCHS A MISSING START.**
+
+**AND THE TWO CONST READS ARE **DIFFERENT READS**: THE **POPPED** CONSTANT OF A MUL IS
+`UOp.pop_const_val(ar, node, OpsMUL{})` AND THE CONST NODE's **OWN** VALUE IS
+`cval_arg(Arena.arg(ar, i))`.** MEASURED: THE PORT's FIRST `cval` READ THE **NODE's OWN ARG** AND
+SO ANSWERED THE IDENTITY `1` FOR EVERY MUL, **AND `divide_exact(x*2, x)` ANSWERED **1** AND NOT
+**2**; AND THE `v IS A CONST` BRANCH NEEDS THE CONST's **OWN** VALUE **2** AND NOT THE POPPED
+ONE.**
+
+### 53f. AND THE SIX NEW ROWS ARE CPYTHON-CONFIRMED AGAINST CPYTHON's OWN FUNCTIONS
+
+`gcd_const`, `gcd_shared`, `de_same`, `de_const_none`, `de_mul`, `de_const_out` -- **AND CPYTHON's
+OWN `UOp.gcd` AND `UOp.divide_exact` ARE THE ORACLE, SO THE PORT's ANSWER AND PYTHON's ARE TWO
+INDEPENDENT COMPUTATIONS OF THE SAME PROPERTY.**
+
+**AND THE ROWS READ THE **VALUES** AND NOT ONLY THE **SHAPES** -- MEASURED: A PLANT THAT REPLACED
+THE PRODUCT's START WITH `1` **DID NOT** MAKE THE GATE GO RED WHEN THE ROWS ASKED "IS IT A CONST?",
+**AND A ROW THAT CANNOT GO RED IS WORSE THAN NO ROW.** TWO PLANTS ARE NOW MEASURED FIRING: THE
+START REPLACED BY `1` REDS `de_const_out`; AN ALWAYS-EMPTY INTERSECTION REDS `ctr_inter` AND
+`gcd_shared`.
+
+### 53g. AND THE BEND SPELLING RULES THIS LANE MEASURED, ALL OF THEM BY COMPILER ERROR
+
+  * **A `match` MAY NOT SCRUTINISE A COMPUTED VALUE** -- "a parameter or field scrutinee (a match
+    cannot scrutinize a computed value: give it its own def)" -- **AND A `match` OVER A **CALL** IS
+    ALSO A COMPUTED VALUE, AND A `match` OVER A `+` BINDER OF A **CUSTOM** TYPE IS TOO.** **⇒ EVERY
+    DISPATCH IS A **PARAMETER**, AND THE COMPARISONS ARE COMPUTED BY THE CALLER.**
+  * **A NODE-BUILDING DEF MUST ANSWER A `Found`** AND NOT A BARE `U32` -- MEASURED: A PROBE READ
+    `gcd=3` WITH `gcd_op=Ops.NOOP` **BECAUSE THE CONST WAS AT INDEX 3 IN THE **GROWN** ARENA AND
+    INDEX 3 IN THE **OLD** ONE WAS THE NOOP.**
+  * **A RECURSION THROUGH A CHAIN OF TESTS IS A CYCLE** -- **AND A **DIRECT** SELF-CALL IS NOT** --
+    **AND THE PORT's OWN `UOp.divides.op` IS THE PATTERN** (`ops.bend:8252`): ONE DEF, A `match` ON
+    A **PARAMETER**, AND **TWO DIRECT SELF-CALLS** IN THE ADD's ARM.
+  * **A `+` PARAMETER MAY BE READ TWICE AND A PLAIN ONE MAY NOT** -- **AND THE PORT's OWN
+    `merge_dicts.go` (`helpers.bend:2533`) IS THE SHAPE THAT WORKS**: THE TAIL IS THE RECURSION's
+    FIRST ARGUMENT AND THE STATE IS PASSED **ONCE**, INSIDE THE ADDER's ARGUMENT LIST.
+  * **THE COMPUTED VALUE MUST NOT BE THE **FIRST** ARGUMENT** -- MEASURED: THE PORT's OWN
+    `UOp.divides.op(fuel: Nat, op: Op, +ar: Arena, ...)` HAS **TWO PLAIN** PARAMETERS BEFORE THE
+    `+` ONES, **AND THE COMPUTED OP IS THE **SECOND** ONE.**
+  * **THE COMMENTS IN A BLOCK MUST BE STRIPPED BEFORE THE USES ARE FOUND**, **OR A COMMENT NAMING A
+    DEF IN PROSE READS AS A CALL** -- MEASURED: THE COMMENT "# THE ANSWER ITSELF: `UOp.gcd(*uops)`"
+    WAS IN `UOp.gcd.prod`'s BODY AND SO `prod` "USED" `UOp.gcd`, **AND THE CYCLE WAS FAKE.**
+
+### 53h. AND THE `divandmod.py:103` GAP IS NOW UNBLOCKED, AND IT IS STILL OPEN
+
+**`dr174` IS `(div (mul x y) y)` AND UPSTREAM'S ANSWER IS `(div (mul c1 x) c1)` -- AND THE PORT
+ANSWERS `norewrite`.** MEASURED: THE DIVERGENCE IS **PRE-EXISTING** (IT READS IDENTICALLY WITH
+`ops.bend` REVERTED), **AND IT IS UPSTREAM's `fold_divmod_general`** (`divandmod.py:8`), **WHICH
+NEEDS `UOp.gcd` AND `UOp.divide_exact` -- **AND THOSE ARE NOW IN.**
+
+**⇒ THE NEXT MOVE IS `sym_174`'s BODY, NOT THE PRIMITIVES.**
