@@ -28368,14 +28368,23 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       `sym_464` ARE THE THREE GUARDED RECIPROCAL RULES THAT THE FLOAT-DIV FIX LANDED IN, SO
       **THAT FIX IS INVISIBLE IN THE INSTRUMENT -- A RULE THAT CANNOT BE REACHED IS A ROW
       THAT CANNOT GO RED.**
-- [ ] `divandmod.py:103` (`fold_divmod_general`) — THE ONE REMAINING MISSING ROW. **AND ITS TWO
-      PRIMITIVES ARE NOW IN** — MEASURED 2026-11-09, `UOp.gcd` (`ops.py:1073`) AND
-      `UOp.divide_exact` (`ops.py:1038`) LANDED IN `tinybendygrad/uop/ops.bend` (`4a8d15ab6`) WITH
-      SIX CPYTHON-CONFIRMED ROWS AGAINST CPYTHON's OWN FUNCTIONS, **AND THE `ops-core` GATE IS
-      ALIVE AGAIN AT 41 ROWS AND THREE LANES** (`48aa36edd`) — **IT HAD BEEN REFUSED (rc=3) SINCE
-      UPSTREAM DELETED `UOp.tag` (`fb518b44e`, AN ANCESTOR OF THE PIN) AND THE ORACLE NAMED IT.**
-      **⇒ THE REMAINING WORK IS `sym_174`'s **BODY** AND A `usum` REACHABLE FROM `divandmod.bend`
-      (THE `symbolic -> divandmod` IMPORT DIRECTION FORBIDS IT TODAY) -- AND NOT THE PRIMITIVES.**
+- [x] `divandmod.py:103` (`fold_divmod_general`) — **THE ONE MISSING ROW IS CLOSED** (2026-11-09,
+      `a1a474081`). **AND THE ROW IS UPSTREAM's **SLOW** RULE AND THE ARM IS `divide_by_gcd`
+      (`divandmod.py:73-77`), AND THE PORT's OWN TODO BLOCK ALREADY SAID SO
+      (`divandmod.bend:983`).** **⇒ THE CENSUS READS `PORT ENTRIES 135 MAPPED 135 BROKEN 0
+      UNRESOLVED 0` AND IS **GREEN**, AND THE ROW READS `118  divandmod.py:103  DIV,MOD
+      sym_table  117  PORTED`.**
+- [ ] **THE `MOD` HALF OF `divide_by_gcd` IS **NOT** PORTED** — UPSTREAM'S `return ret*gcd if
+      d.op is Ops.MOD else ret` MULTIPLIES THE REMAINDER BY THE GCD, **AND THAT IS A **SECOND**
+      ANSWER SHAPE AND A NAMED WALL**, **AND IT IS SAID SO AT THE DEF.**
+- [ ] **A `usum` REACHABLE FROM `divandmod.bend`** — **THE `symbolic -> divandmod` IMPORT
+      DIRECTION FORBIDS IT TODAY**, **AND IT IS NEEDED BY THE `factor_remainder` ARM
+      (`divandmod.py:83-96`), WHICH IS STILL UNPORTED.**
+- [ ] **THE `fold_divmod_general` ARMS THAT ARE STILL UNPORTED** — `nested_div` (`:23`),
+      `remove_nested_mod` (`:27-35`), `fold_divmod_congruence` (`:42-48`), `gcd_with_remainder`
+      (`:50-55`) AND `nest_by_factor` (`:57-70`). **AND `nest_by_factor` RECURSES
+      (`fold_divmod_general(x//div)`) AND BEND REFUSES MUTUAL RECURSION, **SO THAT ONE IS A
+      SHAPE PROBLEM AND NOT ONLY ARITHMETIC.**
 - [x] `UOp.gcd` / `UOp.divide_exact` — **BOTH IN** (2026-11-09, `4a8d15ab6`). **AND THE PORT
       SPELLS THEM WITH FOUR MEASURED SUBSTITUTIONS** (THE NODE HALF OF `pop_const`, THE UNSHAPED
       `const_like`, `Counter.elements()` AS `H.make_tuple_rep`, AND THE NON-NEGATIVE COUNTS AS A
