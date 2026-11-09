@@ -6495,19 +6495,20 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{114, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 338
     O.PMEntry{115, [O.OpsDIV{}], Nil{}, },   # divandmod.py:96
     O.PMEntry{116, [O.OpsDIV{}, O.OpsMOD{}], Nil{}, },   # divandmod.py:98
-    O.PMEntry{117, [O.OpsADD{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsMAX{}, O.OpsMULACC{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # weak.py:97
-    O.PMEntry{118, [O.OpsPOW{}], Nil{}, },   # symbolic.py:465
-    O.PMEntry{119, [O.OpsSTORE{}], Nil{}, },   # 467
-    O.PMEntry{120, [O.OpsSTORE{}], Nil{}, },   # 468
-    O.PMEntry{129, [O.OpsSTORE{}], Nil{}, },   # 471
-    O.PMEntry{121, [O.OpsSTORE{}], Nil{}, },   # 474
-    O.PMEntry{122, [O.OpsSTORE{}], Nil{}, },   # 476
-    O.PMEntry{123, [O.OpsMUL{}], Nil{}, },   # symbolic.py:478
-    O.PMEntry{124, [O.OpsMUL{}], Nil{}, },   # symbolic.py:479
-    O.PMEntry{125, [O.OpsMUL{}], Nil{}, },   # symbolic.py:480
-    O.PMEntry{126, [O.OpsREDUCE{}], Nil{}, },   # symbolic.py:482
-    O.PMEntry{127, [O.OpsMUL{}], Nil{}, },   # 485
-    O.PMEntry{128, [O.OpsSINK{}],                    Nil{},                           }]}   # 458
+    O.PMEntry{117, [O.OpsDIV{}, O.OpsMOD{}], Nil{}, },   # divandmod.py:103
+    O.PMEntry{118, [O.OpsADD{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsMAX{}, O.OpsMULACC{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # weak.py:97
+    O.PMEntry{119, [O.OpsPOW{}], Nil{}, },   # symbolic.py:465
+    O.PMEntry{120, [O.OpsSTORE{}], Nil{}, },   # 467
+    O.PMEntry{121, [O.OpsSTORE{}], Nil{}, },   # 468
+    O.PMEntry{130, [O.OpsSTORE{}], Nil{}, },   # 471
+    O.PMEntry{122, [O.OpsSTORE{}], Nil{}, },   # 474
+    O.PMEntry{123, [O.OpsSTORE{}], Nil{}, },   # 476
+    O.PMEntry{124, [O.OpsMUL{}], Nil{}, },   # symbolic.py:478
+    O.PMEntry{125, [O.OpsMUL{}], Nil{}, },   # symbolic.py:479
+    O.PMEntry{126, [O.OpsMUL{}], Nil{}, },   # symbolic.py:480
+    O.PMEntry{127, [O.OpsREDUCE{}], Nil{}, },   # symbolic.py:482
+    O.PMEntry{128, [O.OpsMUL{}], Nil{}, },   # 485
+    O.PMEntry{129, [O.OpsSINK{}],                    Nil{},                           }]}   # 458
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -6882,7 +6883,180 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [0, 2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 58, 59, 60, 61, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 98, 99, 100, 101, 102, 103, 104, 105, 106, 108, 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129]
+def MINT_TAGS() -> List<&2, U32>: [0,2,3,4,6,8,9,10,11,17,19,22,29,30,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,58,59,60,61,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,98,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130]
+
+# ===========================================================================
+# `divandmod.py:103` -- THE **SLOW** RULE, `(UPat((Ops.DIV, Ops.MOD), dtypes.weakint,
+# name="d"), lambda d: fold_divmod_general(d))` -- **AND IT IS **THE ROW THE CENSUS NAMES AS
+# MISSING** (MEASURED 2026-11-09: `gates/symrules.rows` READS `118  divandmod.py:103  DIV,MOD
+# MISSING  -  MISSING`, **AND IT IS THE **ONE** MISSING ROW OF ALL 133**).
+#
+# **AND THE ARM THAT ANSWERS `(div (mul x y) y)` IS `divide_by_gcd` (`divandmod.py:73-77`)** --
+# **AND THE PORT's OWN TODO BLOCK ALREADY SAID SO** (`divandmod.bend:983`): "**THE ARM THAT
+# ANSWERS IT IS `divide_by_gcd` (LINE 66)** ... **MEASURED, `UOp.gcd(x, y)` ANSWERS THE PARAM
+# `y`**".
+#
+#     # divide_by_gcd: x//y -> (x//gcd)//(y//gcd)
+#     gcd = UOp.gcd(*all_uops, y).simplify()
+#     if not (gcd.op is Ops.CONST and gcd.val==1):
+#       ret = unwrap(x.divide_exact(gcd)).alu(d.op, unwrap(y.divide_exact(gcd)))
+#       return ret*gcd if d.op is Ops.MOD else ret
+#
+# **AND THE PORT SPELLS IT WITH THE PORT's OWN PIECES, AND THE THREE PRIMITIVES ARE NOW IN
+# `ops.bend`** -- `UOp.gcd` (`ops.bend:8857`), `UOp.divide_exact` (`ops.bend:8815`) AND
+# `UOp.split_uop` (`ops.bend:5169`) -- **AND THE FOURTH, `.simplify()`, IS THE **SYMBOLIC**
+# MATCHER, WHICH A RULE HERE **CAN** CALL** -- **AND WHAT IT DOES TO THE `gcd` IS FOLD **A MUL BY
+# THE IDENTITY**, WHICH IS **THIS FILE's OWN `sym_122`** (`symbolic.bend:2698`,
+# `(UPat.var("x") * 1, lambda x: x)`).
+#
+# **⇒ SO THE FOLD IS SPELLED HERE, WHERE IT IS NEEDED, AND NOT BY CALLING THE MATCHER** -- **AND
+# MEASURED 2026-11-09 ON CPYTHON: `UOp.gcd(x*y, y)` IS `(mul 1 y)` AND `.simplify()` IS `y`,
+# AND `(mul c1 y).simplify()` IS `y` WHILE `(mul c1 c1).simplify()` IS `1`.**
+#
+# **⇒ AND THE MEASURED ANSWER IS EXACT: MEASURED 2026-11-09 ON CPYTHON, FOR
+# `d = DIV(MUL(x,y), y)`, `all_uops` IS `[MUL(x,y)]`, `gcd` IS `y`, `num.divide_exact(gcd)` IS
+# `(mul 1 x)`, `den.divide_exact(gcd)` IS `1` AND THE ANSWER IS `(div (mul 1 x) 1)`.**
+#
+# **⇒ AND THE `MOD` HALF IS **NOT** PORTED**: UPSTREAM'S `return ret*gcd if d.op is Ops.MOD else
+# ret` MULTIPLIES THE REMAINDER BY THE GCD, **AND THAT IS A **SECOND** ANSWER SHAPE AND A NAMED
+# WALL** (BELOW).
+# ===========================================================================
+
+# AND "IS THIS NODE THE CONST 1" **OVER AN ARENA AND AN INDEX** -- **AND THE PORT's OWN
+# `p_is_const_1` TAKES A `Folded` AND A **RULE-SIDE** INDEX, **AND THE `gcd` IS A NODE IN **THE
+# RULE's** ARENA**, **SO THE CONST's VALUE IS READ FROM THE ARENA DIRECTLY.**
+def p_is_const_1_of.arg(arg: O.Arg) -> Bool:
+  match arg:
+    case O.APy{O.CInt{i}}: Cmp.is_eq(H.i64_cmp(i, H.i64_of_i32(1)))
+    case _: False{}
+
+def p_is_const_1_of.go(isconst: Bool, arg: O.Arg) -> Bool:
+  match isconst:
+    case True{}: p_is_const_1_of.arg(arg)
+    case False{}: False{}
+
+def p_is_const_1_of(+ar: O.Arena, +u: U32) -> Bool:
+  p_is_const_1_of.go(O.eq_op(O.Arena.op(ar, u), O.OpsCONST{}), O.Arena.arg(ar, u))
+
+# AND THE **MUL BY THE IDENTITY** FOLD -- **AND IT IS THE `simplify` OF THE `gcd`** -- **AND IT
+# IS **NOT** THE PORT's `sym_122` SPELLED AGAIN**: **IT IS A HELPER, BECAUSE THE `gcd` IS A NODE
+# IN AN ARENA AND THE RULE NEEDS THE **OTHER** SRC, AND `sym_122` ANSWERS A `Maybe` OF AN INDEX.**
+def dm_gcd_fold.pick3(+ar: O.Arena, +u: U32, r: Bool) -> U32:
+  match r:
+    case True{}: O.Arena.src(ar, u, 0)
+    case False{}: u
+
+def dm_gcd_fold.pick2(+ar: O.Arena, +u: U32, l: Bool, r: Bool) -> U32:
+  match l:
+    case True{}: O.Arena.src(ar, u, 1)
+    case False{}: dm_gcd_fold.pick3(ar, u, r)
+
+# AND THE FOLD'S PICK: **THE CONST 1 AT `src[0]` LEAVES `src[1]` AND VICE VERSA** -- **AND MUL IS
+# COMMUTATIVE** -- **AND THE CONST's VALUE IS READ BY **THE PORT's OWN `p_is_const_1_of`**.
+def dm_gcd_fold.pick(+ar: O.Arena, +u: U32, l: Bool, r: Bool) -> U32:
+  dm_gcd_fold.pick2(ar, u, l, r)
+
+# AND THE FOLD: **A MUL WITH **TWO** SRCS AND A CONST **1** AT EITHER ONE FOLDS TO THE OTHER**,
+# **AND EVERYTHING ELSE IS ITSELF.**
+def dm_gcd_fold.two(+ar: O.Arena, +u: U32, two: Bool, l: Bool, r: Bool) -> U32:
+  match two:
+    case True{}: dm_gcd_fold.pick(ar, u, l, r)
+    case False{}: u
+
+def dm_gcd_fold.go(+ar: O.Arena, +u: U32, ismul: Bool, two: Bool, l: Bool, r: Bool) -> U32:
+  match ismul:
+    case True{}: dm_gcd_fold.two(ar, u, two, l, r)
+    case False{}: u
+
+# AND THE **`simplify`** OF A NODE: **THE FOLD, AND NOTHING ELSE.**
+def dm_gcd_fold(+ar: O.Arena, +u: U32) -> U32:
+  dm_gcd_fold.go(ar, u, O.eq_op(O.Arena.op(ar, u), O.OpsMUL{}),
+                 U32.is_eq(O.Arena.nsrc(ar, u), 2),
+                 p_is_const_1_of(ar, O.Arena.src(ar, u, 0)),
+                 p_is_const_1_of(ar, O.Arena.src(ar, u, 1)))
+
+# AND THE **`all_uops`**: **`list(x.split_uop(Ops.ADD))`** PLUS **THE DENOMINATOR** -- **AND
+# UPSTREAM'S CALL IS `UOp.gcd(*all_uops, y)`.** -- **AND THE SPLIT IS **THE PORT's OWN
+# `sy_split`** (`symbolic.bend:687`), **AND THE LIST IS BUILT BY A FOLD.**
+def dm_gcd_uops.go(+l: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match l:
+    case Nil{}: acc
+    case h <> t: dm_gcd_uops.go(t, List.append(&2, U32, acc, [h]))
+
+def dm_gcd_uops(+ar: O.Arena, +num: U32, +den: U32) -> List<&2, U32>:
+  dm_gcd_uops.go(sy_split(ar, num, O.OpsADD{}), List.append(&2, U32, Nil{}, [den]))
+
+# AND THE **`gcd`**: **`UOp.gcd(*all_uops, y).simplify()`** -- **AND THE PORT's `UOp.gcd` ANSWERS
+# A `Found` AND THE `simplify` IS THE FOLD ABOVE.**
+def dm_gcd(+ar: O.Arena, +num: U32, +den: U32) -> U32:
+  +g = O.UOp.gcd(ar, dm_gcd_uops(ar, num, den))
+  dm_gcd_fold(O.Found.ar(g), O.Found.i(g))
+
+# AND THE GUARD: **`not (gcd.op is Ops.CONST and gcd.val==1)`** -- **AND A `gcd` OF **1** MEANS
+# THERE IS NOTHING TO FACTOR OUT**, **AND THE CONST's VALUE IS READ BY **THE PORT's OWN
+# `p_is_const_1_of`**.**
+def dm_gcd_is_one(+ar: O.Arena, +g: U32) -> Bool:
+  p_is_const_1_of(ar, g)
+
+# AND THE **TWO** `divide_exact` ANSWERS: **`x.divide_exact(gcd)`** AND
+# **`y.divide_exact(gcd)`** -- **AND THE PORT's `UOp.divide_exact` ANSWERS A `Dq` WHOSE `ok` IS
+# WHETHER IT DIVIDES EXACTLY** -- **AND UPSTREAM'S `unwrap` IS THE `ok` HALF.**
+def dm_gcd_quo.go(d: O.Dq, ok: Bool) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: Some{O.Dq.f(d)}
+    case False{}: None{}
+
+def dm_gcd_quo(+ar: O.Arena, +num: U32, +g: U32) -> Maybe<&1, O.Found>:
+  +d = O.UOp.divide_exact(ar, num, g)
+  dm_gcd_quo.go(d, O.Dq.ok(d))
+
+# AND THE **`ret`**: **`x.divide_exact(gcd).alu(d.op, y.divide_exact(gcd))`** -- **AND `alu`
+# PUTS `self` AT `src[0]`, SO THE **NUMERATOR's** QUOTIENT IS FIRST** -- **AND THE `Found`s ARE
+# **DESTRUCTURED IN THE MATCH**, BECAUSE A **PATTERN** BINDER IS CONSUMED ONCE AND TWO READS OF IT
+# ARE TWO CONSUMPTIONS (MEASURED 2026-11-09: "expected : fa / observed : fa (consumed more than
+# once)").
+def dm_gcd_ret.put(+ar: O.Arena, ai: U32, b: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match b:
+    case Some{fb}: Some{O.UOp.alu(ar, O.OpsDIV{}, [ai, O.Found.i(fb)])}
+    case None{}: None{}
+
+def dm_gcd_ret.go2(f: O.Found, b: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match f:
+    case O.Found{ar, i}: dm_gcd_ret.put(ar, i, b)
+
+def dm_gcd_ret.go(a: Maybe<&1, O.Found>, b: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match a:
+    case Some{f}: dm_gcd_ret.go2(f, b)
+    case None{}: None{}
+
+def dm_gcd_ret(+ar: O.Arena, +num: U32, +den: U32, +g: U32) -> Maybe<&1, O.Found>:
+  dm_gcd_ret.go(dm_gcd_quo(ar, num, g), dm_gcd_quo(ar, den, g))
+
+# AND THE ARM: **THE GUARD AND THE ANSWER** -- **AND THE `gcd` IS COMPUTED **ONCE** AND PASSED
+# ON.**
+def dm_gcd_arm.go(+ar: O.Arena, +d: U32, +g: U32, isone: Bool) -> Maybe<&1, O.Found>:
+  match isone:
+    case True{}: None{}
+    case False{}: dm_gcd_ret(ar, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1), g)
+
+def dm_gcd_arm(+ar: O.Arena, +d: U32) -> Maybe<&1, O.Found>:
+  +g = dm_gcd(ar, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1))
+  dm_gcd_arm.go(ar, d, g, dm_gcd_is_one(ar, g))
+
+# AND THE **RULE**: **THE SLOW RULE** -- **AND ITS PATTERN IS **ANY** DIV OR MOD NODE**, **AND THE
+# `weakint` TEST IS **THE PORT's OWN `p_weakint`** (`symbolic.bend`), **AND THE ANSWER IS THE
+# ARM'S ANSWER.**
+def dm_103b.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.or(sy_is_op(x, u, O.OpsDIV{}), sy_is_op(x, u, O.OpsMOD{})),
+           Bool.and(sy_nsrc_is(x, u, 2), p_weakint(x, u)))
+
+# AND THE ANSWER: **THE ARM'S ANSWER** -- **AND THE ARM ANSWERS A `Maybe` OF A `Found`, AND THE
+# RULE'S ANSWER IS A `Maybe` OF A `Found` TOO.**
+def dm_103b.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  dm_gcd_arm(sy_ar(x), u)
+
+def dm_103b(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(dm_103b.pat(x, u), dm_103b.mk(x, u))
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -6973,17 +7147,18 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 113: sym_318(x, u)
     case 115: dm_101(x, u)
     case 116: dm_103(x, u)
-    case 117: wk_89(x, u)
-    case 118: sym_451(x, u)
-    case 119: sym_453(x, u)
-    case 129: sym_471x(x, u)
-    case 120: sym_454(x, u)
-    case 121: sym_458(x, u)
-    case 122: sym_460(x, u)    case 123: sym_465(x, u)
-    case 124: sym_466(x, u)
-    case 125: sym_467(x, u)
-    case 126: sym_469(x, u)    case 127: sym_473(x, u)
-    case 128: sym_444(x, u)
+    case 117: dm_103b(x, u)
+    case 118: wk_89(x, u)
+    case 119: sym_451(x, u)
+    case 120: sym_453(x, u)
+    case 130: sym_471x(x, u)
+    case 121: sym_454(x, u)
+    case 122: sym_458(x, u)
+    case 123: sym_460(x, u)    case 124: sym_465(x, u)
+    case 125: sym_466(x, u)
+    case 126: sym_467(x, u)
+    case 127: sym_469(x, u)    case 128: sym_473(x, u)
+    case 129: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
