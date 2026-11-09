@@ -1,0 +1,35 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "0",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.CONST",
+  "arg": "1",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 2,
+  "op": "Ops.MOD",
+  "arg": "None",
+  "dtype": "dtypes.weakint",
+  "src": [
+   0,
+   1
+  ]
+ },
+ {
+  "i": 3,
+  "op": "Ops.SINK",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   2
+  ]
+ }
+]

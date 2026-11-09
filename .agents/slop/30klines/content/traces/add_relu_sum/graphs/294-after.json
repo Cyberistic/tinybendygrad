@@ -1,0 +1,162 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "512",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.BUFFER",
+  "arg": "ParamArg(7, dtypes.i8, de\u2026",
+  "dtype": "dtypes.i8",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 2,
+  "op": "Ops.CONST",
+  "arg": "0",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 3,
+  "op": "Ops.CONST",
+  "arg": "16",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 4,
+  "op": "Ops.SHRINK",
+  "arg": "None",
+  "dtype": "dtypes.i8",
+  "src": [
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "i": 5,
+  "op": "Ops.BITCAST",
+  "arg": "dtypes.f32",
+  "dtype": "dtypes.f32",
+  "src": [
+   4
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.CONST",
+  "arg": "4",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 7,
+  "op": "Ops.BUFFER",
+  "arg": "ParamArg(0, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   6
+  ]
+ },
+ {
+  "i": 8,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   5,
+   7
+  ]
+ },
+ {
+  "i": 9,
+  "op": "Ops.CONST",
+  "arg": "256",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 10,
+  "op": "Ops.SHRINK",
+  "arg": "None",
+  "dtype": "dtypes.i8",
+  "src": [
+   1,
+   9,
+   3
+  ]
+ },
+ {
+  "i": 11,
+  "op": "Ops.BITCAST",
+  "arg": "dtypes.f32",
+  "dtype": "dtypes.f32",
+  "src": [
+   10
+  ]
+ },
+ {
+  "i": 12,
+  "op": "Ops.BUFFER",
+  "arg": "ParamArg(1, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   6
+  ]
+ },
+ {
+  "i": 13,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   11,
+   12
+  ]
+ },
+ {
+  "i": 14,
+  "op": "Ops.CONST",
+  "arg": "1",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 15,
+  "op": "Ops.BUFFER",
+  "arg": "ParamArg(2, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   14
+  ]
+ },
+ {
+  "i": 16,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   15,
+   5,
+   11
+  ]
+ },
+ {
+  "i": 17,
+  "op": "Ops.LINEAR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   8,
+   13,
+   16
+  ]
+ }
+]

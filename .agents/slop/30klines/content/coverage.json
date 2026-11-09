@@ -1,0 +1,709 @@
+{
+ "commit": "6295132eb2568d32953bb0a1c615161200e91772",
+ "files": {
+  "tinygrad/schedule/__init__.py": {
+   "269": [
+    "04.1"
+   ],
+   "272": [
+    "04.1"
+   ],
+   "273": [
+    "04.1"
+   ],
+   "274": [
+    "04.1"
+   ],
+   "275": [
+    "04.1"
+   ],
+   "276": [
+    "04.1"
+   ]
+  },
+  "tinygrad/tensor.py": {
+   "114": [
+    "02.2"
+   ],
+   "44": [
+    "01.1"
+   ],
+   "45": [
+    "01.1"
+   ],
+   "46": [
+    "01.1"
+   ],
+   "47": [
+    "01.1"
+   ],
+   "48": [
+    "01.1"
+   ],
+   "49": [
+    "01.1"
+   ],
+   "50": [
+    "01.1"
+   ],
+   "51": [
+    "01.1"
+   ],
+   "52": [
+    "01.1"
+   ],
+   "53": [
+    "01.1"
+   ],
+   "54": [
+    "01.1"
+   ],
+   "55": [
+    "01.1"
+   ],
+   "71": [
+    "01.2"
+   ],
+   "72": [
+    "01.2"
+   ],
+   "73": [
+    "01.2"
+   ],
+   "74": [
+    "01.2"
+   ],
+   "75": [
+    "01.2"
+   ],
+   "76": [
+    "01.2"
+   ],
+   "77": [
+    "01.2"
+   ],
+   "78": [
+    "01.2"
+   ],
+   "79": [
+    "01.2"
+   ],
+   "80": [
+    "01.2"
+   ],
+   "81": [
+    "01.2"
+   ],
+   "82": [
+    "01.2"
+   ],
+   "83": [
+    "01.2"
+   ],
+   "84": [
+    "01.2"
+   ],
+   "85": [
+    "01.2"
+   ],
+   "86": [
+    "01.2"
+   ],
+   "87": [
+    "01.2"
+   ],
+   "88": [
+    "01.2"
+   ],
+   "89": [
+    "01.2"
+   ],
+   "90": [
+    "01.2"
+   ],
+   "92": [
+    "01.2"
+   ],
+   "93": [
+    "01.2"
+   ],
+   "94": [
+    "01.2"
+   ],
+   "95": [
+    "01.2"
+   ],
+   "97": [
+    "01.2"
+   ],
+   "98": [
+    "01.2"
+   ]
+  },
+  "tinygrad/uop/__init__.py": {
+   "12": [
+    "02.3"
+   ],
+   "13": [
+    "02.3"
+   ],
+   "16": [
+    "02.3"
+   ],
+   "17": [
+    "02.3"
+   ],
+   "8": [
+    "02.3"
+   ],
+   "9": [
+    "02.3"
+   ]
+  },
+  "tinygrad/uop/ops.py": {
+   "184": [
+    "02.4"
+   ],
+   "185": [
+    "02.4"
+   ],
+   "186": [
+    "02.4"
+   ],
+   "187": [
+    "02.4"
+   ],
+   "188": [
+    "02.4"
+   ],
+   "189": [
+    "02.4"
+   ],
+   "190": [
+    "02.4"
+   ],
+   "191": [
+    "02.4"
+   ],
+   "192": [
+    "02.4"
+   ],
+   "193": [
+    "02.4"
+   ],
+   "194": [
+    "02.4"
+   ],
+   "229": [
+    "02.1"
+   ],
+   "230": [
+    "02.1"
+   ],
+   "231": [
+    "02.1"
+   ],
+   "232": [
+    "02.1"
+   ],
+   "233": [
+    "02.1"
+   ],
+   "283": [
+    "02.5"
+   ],
+   "284": [
+    "02.5"
+   ],
+   "286": [
+    "02.5"
+   ],
+   "287": [
+    "02.5"
+   ],
+   "288": [
+    "02.5"
+   ],
+   "289": [
+    "02.5"
+   ],
+   "290": [
+    "02.5"
+   ],
+   "291": [
+    "02.5"
+   ],
+   "292": [
+    "02.5"
+   ],
+   "293": [
+    "02.5"
+   ],
+   "598": [
+    "02.2"
+   ]
+  }
+ },
+ "lessons": {
+  "01.1": {
+   "claims": [
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.1.1",
+     "kind": "reason",
+     "lines": [
+      44
+     ],
+     "text": "Tensor inherits RandMixin, not a base class with storage. The frontend is assembled from mixins; the data model is in none of them."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.1.2",
+     "kind": "effect",
+     "lines": [
+      55
+     ],
+     "text": "__slots__ names exactly three attributes: uop, is_param, grad. There is nowhere on a Tensor to put an element."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.1.3",
+     "kind": "cost",
+     "lines": [
+      55
+     ],
+     "text": "__slots__ also removes the instance __dict__. A Tensor is three pointers. tinygrad creates one Python object per graph node, so this is the difference between a graph that fits in memory and one that does not."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.1.4",
+     "kind": "trap",
+     "lines": [
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54
+     ],
+     "text": "The docstring calls it \"a multi-dimensional matrix containing elements of a single data type\". No field holds elements. Either they live behind uop, or they do not exist yet \u2014 and the second case is the design."
+    }
+   ],
+   "stage": "01",
+   "title": "a Tensor is three fields"
+  },
+  "01.2": {
+   "claims": [
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.2.1",
+     "kind": "effect",
+     "lines": [
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90
+     ],
+     "text": "Every branch assigns to the same local, `data`, and every branch assigns a UOp. `None`, a Python constant, a numpy scalar, bytes, a list, an ndarray, a Path \u2014 seven inputs, one type out."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.2.2",
+     "kind": "reason",
+     "lines": [
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87
+     ],
+     "text": "The last three branches are not convenience. Bytes need a dtype, a list needs one inferred from Python, a Path becomes a DISK: buffer sized by stat().st_size. Three different buffer origins, and the Path one does not read the file."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.2.3",
+     "kind": "trap",
+     "lines": [
+      89,
+      90
+     ],
+     "text": "This is the only gate in the function. The signature advertises seven unions; a wrong object that slips past the branches dies here, not at the type checker."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.2.4",
+     "kind": "effect",
+     "lines": [
+      92,
+      93,
+      94,
+      95
+     ],
+     "text": "Two writes follow: move the node to the requested device (skipped when it already is, or when it is a const with no device), then cast. The device lookup is lazy, inside the conditional \u2014 a const never pays for it."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "01.2.5",
+     "kind": "cost",
+     "lines": [
+      97,
+      98
+     ],
+     "text": "The Tensor registers itself with `all_tensors` only after the cast has succeeded. If any branch raised, nothing is half-built and nothing leaks into the scope map."
+    }
+   ],
+   "stage": "01",
+   "title": "every constructor ends at a UOp"
+  },
+  "02.1": {
+   "claims": [
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.1.1",
+     "kind": "effect",
+     "lines": [
+      229,
+      230,
+      231
+     ],
+     "text": "Three fields: op, src, arg. op is a member of Ops, a closed enum; src is a tuple of other UOps; arg is anything the op needs. A graph node is these three."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.1.2",
+     "kind": "cost",
+     "lines": [
+      230
+     ],
+     "text": "src is a tuple, so a node cannot be edited. You never mutate the graph \u2014 you build a new node and let hash-consing collapse the duplicate. Every rewrite is a pure function because of this one choice."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.1.3",
+     "kind": "reason",
+     "lines": [
+      232,
+      233
+     ],
+     "text": "There is no dtype field. dtype is a recursive_property computed from op, src and arg, cached on the node. Store less, derive more \u2014 which only works if the derivation is total."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.1.4",
+     "kind": "trap",
+     "lines": [
+      231
+     ],
+     "text": "arg is Any. A constant, an axis, a device string, a reduce operation all live in the same untyped hole, and op decides how to read it. It is the one place the IR gives up on types, and it buys a very compact node."
+    }
+   ],
+   "stage": "02",
+   "title": "a UOp is op, src, arg"
+  },
+  "02.2": {
+   "claims": [
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.2.1",
+     "kind": "effect",
+     "lines": [
+      598
+     ],
+     "text": "`alu` builds `UOp(op, src=(self, *src))`. Self is operand zero, always. Operand order is positional and load-bearing \u2014 CMPNE is not commutative and the scheduler relies on it."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.2.2",
+     "kind": "reason",
+     "lines": [
+      598
+     ],
+     "text": "There is no `UOp.add`. The operation is a parameter, so one method serves the whole vocabulary. The compiler's entire elementwise surface is this line plus the enum."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "02.2.3",
+     "kind": "effect",
+     "lines": [
+      114
+     ],
+     "text": "`Tensor.alu` is the same idea one level up: `_apply_uop` unwraps every Tensor argument to a UOp, calls the UOp method, and wraps the result back. The frontend never touches a node directly."
+    },
+    {
+     "file": "tinygrad/tensor.py",
+     "id": "02.2.4",
+     "kind": "cost",
+     "lines": [
+      114
+     ],
+     "text": "The lambda `u[0].alu(op, *u[1:])` is why Tensor and UOp can share every mixin: the mixin only needs `alu`, `_uop` and `_wrap_uop`, and each type supplies its own."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.2.5",
+     "kind": "trap",
+     "lines": [
+      598
+     ],
+     "text": "`**kwargs` is passed straight to the constructor, so a caller can set dtype or arg without a second node. Anything not in the intern key is a silent extra, not an error."
+    }
+   ],
+   "stage": "02",
+   "title": "every operation is one line"
+  },
+  "02.3": {
+   "claims": [
+    {
+     "file": "tinygrad/uop/__init__.py",
+     "id": "02.3.1",
+     "kind": "effect",
+     "lines": [
+      8,
+      9
+     ],
+     "text": "`FastEnum` is an IntEnum that keeps Enum's string form and makes `auto()` globally unique across every subclass \u2014 the next value is one past the maximum of all values in all subclasses. Two enums cannot share a number."
+    },
+    {
+     "file": "tinygrad/uop/__init__.py",
+     "id": "02.3.2",
+     "kind": "reason",
+     "lines": [
+      9
+     ],
+     "text": "Global uniqueness is what lets the IR store an op as a small int and still compare enums from different files. It is a compile-time property maintained by a generated counter, not by an explicit numbering."
+    },
+    {
+     "file": "tinygrad/uop/__init__.py",
+     "id": "02.3.3",
+     "kind": "trap",
+     "lines": [
+      12
+     ],
+     "text": "\"The order of these Ops controls the order of the toposort.\" That comment is a warning: reordering the enum changes traversal order, and traversal order reaches the scheduler. This is not a cosmetic list."
+    },
+    {
+     "file": "tinygrad/uop/__init__.py",
+     "id": "02.3.4",
+     "kind": "effect",
+     "lines": [
+      16,
+      17
+     ],
+     "text": "BUFFER is bound storage; ALLOC is unbound global storage. They are adjacent because they are adjacent in meaning, and the comment is the only place that distinction is written down."
+    },
+    {
+     "file": "tinygrad/uop/__init__.py",
+     "id": "02.3.5",
+     "kind": "reason",
+     "lines": [
+      13
+     ],
+     "text": "This is the complete vocabulary. If an operation is not a member here, the compiler cannot express it \u2014 there is no extension point above the enum, only below it."
+    }
+   ],
+   "stage": "02",
+   "title": "Ops is a closed set, in a load-bearing order"
+  },
+  "02.4": {
+   "claims": [
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.4.1",
+     "kind": "effect",
+     "lines": [
+      184
+     ],
+     "text": "The cache key is (op, src, arg, type(arg)) \u2014 four things, no identity. And type(arg) is there because True == 1 as a dict key, so a CONST's dtype would otherwise collide with a different node."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.4.2",
+     "kind": "trap",
+     "lines": [
+      184
+     ],
+     "text": "A hit must return a live object. The weakref may have died, so the check is `is not None` twice: the entry exists, and the referent exists. Returning a dead pointer is a crash, not a miss."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.4.3",
+     "kind": "cost",
+     "lines": [
+      185
+     ],
+     "text": "A miss stores a weak reference before the constructor returns. Drop every Tensor and the graph frees itself. No global registry, no shutdown step, no leak."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.4.4",
+     "kind": "effect",
+     "lines": [
+      186,
+      187,
+      188,
+      189,
+      190,
+      191,
+      192,
+      193
+     ],
+     "text": "The SPEC block runs only when SPEC > 1, and it runs on the freshly created node. It is a debug validator bolted into the constructor, not part of the semantics."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.4.5",
+     "kind": "reason",
+     "lines": [
+      194
+     ],
+     "text": "return created, on both paths. From here on `is` is equality, so the pattern matcher, the scheduler and the linearizer are all allowed to compare nodes by pointer."
+    }
+   ],
+   "stage": "02",
+   "title": "the UOp is a singleton"
+  },
+  "02.5": {
+   "claims": [
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.5.1",
+     "kind": "reason",
+     "lines": [
+      283,
+      284
+     ],
+     "text": "The stack holds pairs: the node, and whether its sources have been expanded. It is iterative because a deep graph would blow Python's recursion limit long before it blew memory."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.5.2",
+     "kind": "effect",
+     "lines": [
+      287,
+      288,
+      289,
+      290,
+      291,
+      292
+     ],
+     "text": "A node is emitted only on its second pop. The first pop pushes it back under its own sources, so it necessarily comes out after all of them."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.5.3",
+     "kind": "effect",
+     "lines": [
+      286
+     ],
+     "text": "`in cache` is the whole cost model. Because UOps are hash-consed, this is an identity test against a dict keyed by identity \u2014 linear in nodes, not in nodes times depth."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.5.4",
+     "kind": "trap",
+     "lines": [
+      293
+     ],
+     "text": "The return type is a dict, not a list. Insertion order is the topological order, so it is a set that remembers when you arrived. Callers get dedup and ordering for free."
+    },
+    {
+     "file": "tinygrad/uop/ops.py",
+     "id": "02.5.5",
+     "kind": "reason",
+     "lines": [
+      290
+     ],
+     "text": "src_without_body is what gets walked by default: a call's body is not part of the caller's dependency graph unless enter_calls is set. That is a scheduling decision hidden in one keyword."
+    }
+   ],
+   "stage": "02",
+   "title": "toposort without recursion"
+  },
+  "04.1": {
+   "claims": [
+    {
+     "file": "tinygrad/schedule/__init__.py",
+     "id": "04.1.1",
+     "kind": "effect",
+     "lines": [
+      273,
+      274,
+      275
+     ],
+     "text": "Three statements do the work: collect a context, rewrite a new sink from the collected stores, then wrap the result in a call. Two VIZ hooks bookend them and do nothing unless VIZ is on."
+    },
+    {
+     "file": "tinygrad/schedule/__init__.py",
+     "id": "04.1.2",
+     "kind": "trap",
+     "lines": [
+      272,
+      273
+     ],
+     "text": "The collection happens first on purpose. The comment says the replacement map is gathered before the rewrites change node identity \u2014 after that, the map's keys no longer name the nodes they were built from."
+    },
+    {
+     "file": "tinygrad/schedule/__init__.py",
+     "id": "04.1.3",
+     "kind": "effect",
+     "lines": [
+      274
+     ],
+     "text": "The second rewrite does not take `big_sink`. It takes a fresh sink built from `ctx.stores`, bottom-up. The input graph is not edited; it is abandoned, and a new one is assembled from the stores that survived."
+    },
+    {
+     "file": "tinygrad/schedule/__init__.py",
+     "id": "04.1.4",
+     "kind": "reason",
+     "lines": [
+      275
+     ],
+     "text": "`ret.call(*ctx.replacements, precompile=True)` turns the whole tensor program into one CALL node. The graph is not smaller afterwards \u2014 it is re-homed, from a pile of stores to a kernel with arguments."
+    },
+    {
+     "file": "tinygrad/schedule/__init__.py",
+     "id": "04.1.5",
+     "kind": "cost",
+     "lines": [
+      269,
+      276
+     ],
+     "text": "Both VIZ lines rewrite with an empty PatternMatcher, which does nothing but return a graph. They exist so that turning on VIZ shows you the graph at exactly these two moments \u2014 before and after the re-homing."
+    }
+   ],
+   "stage": "04",
+   "title": "a pass that changes everything and nothing"
+  }
+ },
+ "totals": {
+  "covered": 78,
+  "files_total": 116,
+  "files_touched": 4,
+  "total": 26106
+ },
+ "tree": "references/tinygrad-latest"
+}

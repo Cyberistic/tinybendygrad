@@ -1,0 +1,103 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "4",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.ALLOC",
+  "arg": "ParamArg(3, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 2,
+  "op": "Ops.PARAM",
+  "arg": "ParamArg(1, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 3,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   1,
+   2
+  ]
+ },
+ {
+  "i": 4,
+  "op": "Ops.ALLOC",
+  "arg": "ParamArg(4, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 5,
+  "op": "Ops.PARAM",
+  "arg": "ParamArg(2, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   4,
+   5
+  ]
+ },
+ {
+  "i": 7,
+  "op": "Ops.CONST",
+  "arg": "1",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 8,
+  "op": "Ops.PARAM",
+  "arg": "ParamArg(0, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   7
+  ]
+ },
+ {
+  "i": 9,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   8,
+   1,
+   4
+  ]
+ },
+ {
+  "i": 10,
+  "op": "Ops.LINEAR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   3,
+   6,
+   9
+  ]
+ }
+]

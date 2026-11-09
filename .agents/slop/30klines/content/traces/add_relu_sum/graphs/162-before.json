@@ -1,0 +1,107 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "0",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.CONST",
+  "arg": "1",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 2,
+  "op": "Ops.CONST",
+  "arg": "2",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 3,
+  "op": "Ops.RANGE",
+  "arg": "(AxisType.PLACEHOLDER, 1)",
+  "dtype": "dtypes.weakint",
+  "src": [
+   2
+  ]
+ },
+ {
+  "i": 4,
+  "op": "Ops.MUL",
+  "arg": "None",
+  "dtype": "dtypes.weakint",
+  "src": [
+   1,
+   3
+  ]
+ },
+ {
+  "i": 5,
+  "op": "Ops.ADD",
+  "arg": "None",
+  "dtype": "dtypes.weakint",
+  "src": [
+   0,
+   4
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.RANGE",
+  "arg": "(AxisType.PLACEHOLDER, 0)",
+  "dtype": "dtypes.weakint",
+  "src": [
+   2
+  ]
+ },
+ {
+  "i": 7,
+  "op": "Ops.MUL",
+  "arg": "None",
+  "dtype": "dtypes.weakint",
+  "src": [
+   2,
+   6
+  ]
+ },
+ {
+  "i": 8,
+  "op": "Ops.ADD",
+  "arg": "None",
+  "dtype": "dtypes.weakint",
+  "src": [
+   5,
+   7
+  ]
+ },
+ {
+  "i": 9,
+  "op": "Ops.CONST",
+  "arg": "4",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 10,
+  "op": "Ops.MOD",
+  "arg": "None",
+  "dtype": "dtypes.weakint",
+  "src": [
+   8,
+   9
+  ]
+ },
+ {
+  "i": 11,
+  "op": "Ops.SINK",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   10
+  ]
+ }
+]

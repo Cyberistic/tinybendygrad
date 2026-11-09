@@ -1,0 +1,18 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "2",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.RANGE",
+  "arg": "(AxisType.WEAK, 0)",
+  "dtype": "dtypes.weakint",
+  "src": [
+   0
+  ]
+ }
+]

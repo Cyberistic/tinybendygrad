@@ -1,0 +1,26 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.CONST",
+  "arg": "0",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 2,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   1
+  ]
+ }
+]

@@ -1,0 +1,76 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "4",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.PARAM",
+  "arg": "ParamArg(0, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 2,
+  "op": "Ops.RANGE",
+  "arg": "(AxisType.WEAK, 3)",
+  "dtype": "dtypes.weakint",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 3,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   1,
+   2
+  ]
+ },
+ {
+  "i": 4,
+  "op": "Ops.PARAM",
+  "arg": "ParamArg(1, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 5,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   4,
+   2
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   3,
+   5
+  ]
+ },
+ {
+  "i": 7,
+  "op": "Ops.END",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   6,
+   2
+  ]
+ }
+]

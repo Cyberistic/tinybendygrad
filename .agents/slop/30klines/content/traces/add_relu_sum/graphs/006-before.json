@@ -1,0 +1,138 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "0.0",
+  "dtype": "dtypes.weakfloat",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.CONST",
+  "arg": "4",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 2,
+  "op": "Ops.BUFFER",
+  "arg": "ParamArg(0, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   1
+  ]
+ },
+ {
+  "i": 3,
+  "op": "Ops.CONST",
+  "arg": "2",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 4,
+  "op": "Ops.STACK",
+  "arg": "None",
+  "dtype": "dtypes.weakint",
+  "src": [
+   3,
+   3
+  ]
+ },
+ {
+  "i": 5,
+  "op": "Ops.RESHAPE",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   2,
+   4
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.COPY",
+  "arg": "METAL",
+  "dtype": "dtypes.f32",
+  "src": [
+   5
+  ]
+ },
+ {
+  "i": 7,
+  "op": "Ops.BUFFER",
+  "arg": "ParamArg(1, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   1
+  ]
+ },
+ {
+  "i": 8,
+  "op": "Ops.RESHAPE",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   7,
+   4
+  ]
+ },
+ {
+  "i": 9,
+  "op": "Ops.COPY",
+  "arg": "METAL",
+  "dtype": "dtypes.f32",
+  "src": [
+   8
+  ]
+ },
+ {
+  "i": 10,
+  "op": "Ops.ADD",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   6,
+   9
+  ]
+ },
+ {
+  "i": 11,
+  "op": "Ops.CMPLT",
+  "arg": "None",
+  "dtype": "dtypes.bool",
+  "src": [
+   0,
+   10
+  ]
+ },
+ {
+  "i": 12,
+  "op": "Ops.WHERE",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   11,
+   10,
+   0
+  ]
+ },
+ {
+  "i": 13,
+  "op": "Ops.REDUCE",
+  "arg": "(Ops.ADD, 2)",
+  "dtype": "dtypes.f32",
+  "src": [
+   12
+  ]
+ },
+ {
+  "i": 14,
+  "op": "Ops.SINK",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   13
+  ]
+ }
+]

@@ -1,0 +1,70 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "False",
+  "dtype": "dtypes.bool",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.CONST",
+  "arg": "True",
+  "dtype": "dtypes.bool",
+  "src": []
+ },
+ {
+  "i": 2,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.bool",
+  "src": [
+   0,
+   1
+  ]
+ },
+ {
+  "i": 3,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.bool",
+  "src": [
+   2,
+   1
+  ]
+ },
+ {
+  "i": 4,
+  "op": "Ops.CONST",
+  "arg": "2",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 5,
+  "op": "Ops.RANGE",
+  "arg": "(AxisType.WEAK, 0)",
+  "dtype": "dtypes.weakint",
+  "src": [
+   4
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.CONST",
+  "arg": "Invalid",
+  "dtype": "dtypes.bool",
+  "src": []
+ },
+ {
+  "i": 7,
+  "op": "Ops.WHERE",
+  "arg": "None",
+  "dtype": "dtypes.weakint",
+  "src": [
+   3,
+   5,
+   6
+  ]
+ }
+]

@@ -83,7 +83,8 @@ def main() -> int:
   ap.add_argument("--example", default="add_relu_sum")
   # HERE is …/30klines/tools/recorder, so parents[4] is the repo root
   ap.add_argument("--tree", default=str(HERE.parents[4] / "references" / "tinygrad-latest"))
-  ap.add_argument("--keep-graphs", type=int, default=6, help="how many changed passes to keep in full")
+  ap.add_argument("--keep-graphs", type=int, default=0,
+                  help="how many changed passes to keep in full; 0 keeps every non-pattern pass")
   args = ap.parse_args()
   sys.path.insert(0, str(pathlib.Path(args.tree).resolve()))
 
@@ -152,7 +153,8 @@ def main() -> int:
 
   changed = [s for s in steps if s["added"] or s["removed"]]
   teaching = [s for s in changed if s["stage"] != "pattern"]
-  keep = sorted(teaching, key=lambda s: -(s["added"] + s["removed"]))[:args.keep_graphs]
+  keep = teaching if args.keep_graphs == 0 else \
+    sorted(teaching, key=lambda s: -(s["added"] + s["removed"]))[:args.keep_graphs]
   keep_ids = {s["i"] for s in keep}
 
   for s in steps:
