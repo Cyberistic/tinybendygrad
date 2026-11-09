@@ -47,6 +47,7 @@ import collections
 from tinygrad import dtypes
 from tinygrad.dtype import AddrSpace, ConstFloat, Invalid, InvalidType
 from tinygrad.uop.ops import AxisType, Ops, ParamArg, UOp
+from tinygrad.uop.symbolic import symbolic
 
 F32 = dtypes.float32
 
@@ -94,6 +95,60 @@ def argd(value):
     and `arg_int_same_interns`.
     """
     return UOp(Ops.SINK, src=(), arg=value)
+
+
+def _nd_arm(d):
+    """UPSTREAM's OWN ARM, `divandmod.py:23`'s `nested_div`, EVALUATED **AS ITS OWN TEXT**.
+
+    **AND THE ARM IS ASKED AND NOT THE MATCHER AND NOT `fold_divmod_general`** -- MEASURED
+    2026-11-09: `(x%2)//4` IS **NOT** REWRITTEN BY `nested_div` (THE `k` IS `None`, BECAUSE `2`
+    DOES NOT DIVIDE `4`), **AND `fold_divmod_general` ANSWERS `0` ANYWAY -- FROM THE **RANGE** ARM
+    (`divandmod.py:13`) -- **AND THE MATCHER ANSWERS THE SAME `0`.** **SO BOTH OF THOSE ASK A
+    DIFFERENT QUESTION, AND THE PORT's ROW ASKS **THIS** ARM.**
+
+    **AND THE ARM'S CONDITION IS **UPSTREAM's OWN TEXT** -- `if d.op is Ops.DIV and x.op is
+    Ops.MOD and (k := x.src[1].divides(c)) is not None and k.vmin > 0: return x.src[0] // y % k`
+    (`divandmod.py:23`) -- **SO THE ORACLE EVALUATES **UPSTREAM's OWN LINE** AND NOT A COPY OF
+    IT.**
+    """
+    x, y = d.src
+    if not (d.op is Ops.DIV and x.op is Ops.MOD): return None
+    if not (y.op is Ops.CONST and y.val > 0): return None
+    k = x.src[1].divides(y.val)
+    if k is None or not (k.vmin > 0): return None
+    return x.src[0] // y % k
+
+
+def _nd_rewrite() -> bool:
+    """`(x % 8) // 4` IS `(mod (div x 4) 2)` -- THE `nested_div` REWRITE.
+
+    **AND THE ANSWER IS READ AS A **TREE**, AND NOT AS A FLAG** -- so the row says the answer HAS
+    the shape upstream's has.
+    """
+    x = UOp.variable("x", 0, 20, dtype=dtypes.weakint)
+    d = UOp(Ops.DIV, (UOp(Ops.MOD, (x, UOp.const(8, dtypes.weakint)), dtypes.weakint),
+                      UOp.const(4, dtypes.weakint)), dtypes.weakint)
+    g = _nd_arm(d)
+    if g is None or g.op is not Ops.MOD: return False
+    inner = g.src[0]
+    return (inner.op is Ops.DIV and inner.src[0] is x and inner.src[1].op is Ops.CONST
+            and inner.src[1].arg == 4 and g.src[1].op is Ops.CONST and g.src[1].arg == 2)
+
+
+def _nd_neg() -> bool:
+    """`(x % -4) // 4` IS **NOT** REWRITTEN -- THE `k` IS **-1** AND `k.vmin > 0` FAILS."""
+    x = UOp.variable("x", 0, 20, dtype=dtypes.weakint)
+    d = UOp(Ops.DIV, (UOp(Ops.MOD, (x, UOp.const(-4, dtypes.weakint)), dtypes.weakint),
+                      UOp.const(4, dtypes.weakint)), dtypes.weakint)
+    return _nd_arm(d) is None
+
+
+def _nd_nodiv() -> bool:
+    """`(x % 2) // 4` IS **NOT** REWRITTEN -- `2` DOES NOT DIVIDE `4`."""
+    x = UOp.variable("x", 0, 20, dtype=dtypes.weakint)
+    d = UOp(Ops.DIV, (UOp(Ops.MOD, (x, UOp.const(2, dtypes.weakint)), dtypes.weakint),
+                      UOp.const(4, dtypes.weakint)), dtypes.weakint)
+    return _nd_arm(d) is None
 
 
 def _de_same() -> bool:
@@ -322,6 +377,13 @@ def main() -> None:
     # `UOp.gcd` -- ops.py:1073. **AND CPYTHON's OWN `UOp.gcd` IS THE ORACLE**, so the port's
     # answer and this one are two independent computations of the same property.
     rows.extend((("gcd_const", _gcd_const()), ("gcd_shared", _gcd_shared())))
+    # `nested_div` -- divandmod.py:23 -- **AND THE **ARM** IS EVALUATED, **AND NOT THE MATCHER AND
+    # NOT `fold_divmod_general`** (MEASURED 2026-11-09: `(x%2)//4` IS **NOT** REWRITTEN BY
+    # `nested_div` **AND THE OTHER TWO ANSWER IT VIA THE **RANGE** ARM**).
+    #
+    # **⇒ AND THE ROWS ARE **RIGHT AFTER** THE `gcd_*` ROWS IN **BOTH** LANES**, **BECAUSE THE
+    # GATE COMPARES THEM **POSITIONALLY** (`gates/gatekit.py`: `zip(base, other)`)**.
+    rows.extend((("nd_rewrite", _nd_rewrite()), ("nd_neg", _nd_neg()), ("nd_nodiv", _nd_nodiv())))
     # `UOp.divide_exact` -- ops.py:1038-1047. **AND CPYTHON's OWN `UOp.divide_exact` IS THE
     # ORACLE**, so the port's answer and this one are two independent computations of the same
     # property.

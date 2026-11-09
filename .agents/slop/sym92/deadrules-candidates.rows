@@ -36,6 +36,17 @@ dr463|(reciprocal (mul (mul x x) x))
 dr464|(reciprocal (mul x c1))
 dr132|(cmpne xb bf)
 dr174|(floordiv (mul x y) y)
+# THE `nested_div` ARM -- divandmod.py:23 -- AND ITS **TWO** GUARDS, BECAUSE A RULE THAT FIRES
+# ON A GUARD IS A RULE THAT FIRES WHERE UPSTREAM's DOES NOT.
+#
+# **AND THE CONSTS ARE `c4` (4), `c8` (8) AND `n4` (-4), WHICH ARE **NOT** IN THE HEADER's
+# `c1`/`c2`/`n1` SET -- MEASURED 2026-11-09: THE `nested_div` ARM IS **UNREACHABLE** WITH
+# `c1`/`c2`/`n1`, BECAUSE THE **RANGE** ARM (`:13`, "x//y IS CONSTANT") ANSWERS FIRST: MEASURED
+# ON CPYTHON, `(x%3)//3` IS `0` (BECAUSE `x%3` IS IN {0,1,2} AND `2//3 == 0`), `(x%2)//3` IS `0`,
+# AND `(x%3)//2` IS NOT REWRITTEN AT ALL. **⇒ THE ARM NEEDS `k >= c`, WHICH WITH `c1`/`c2`/`n1`
+# NEVER HAPPENS.** **⇒ `c8`/`c4` ARE THE CONSTS THAT REACH IT: `(x%8)//4` IS `(mod (div x 4) 2)`.**
+dr_nd|(floordiv (floormod x c8) c4)
+dr_nd_neg|(floordiv (floormod x n4) c4)
 dr191|(floordiv (floordiv x c1) c2)
 dr274|(floordiv (floordiv x c1) c2)
 dr287|(floordiv (floordiv x c1) c2)

@@ -37,6 +37,7 @@ import Base
 import ./../tinybendygrad/helpers.bend as H
 import ./../tinybendygrad/LAWS/spec.bend as S
 import ./../tinybendygrad/uop/ops.bend as O
+import ./../tinybendygrad/uop/symbolic.bend as SY
 
 # A Bool row is a 1-cell value, and the gate compares it against CPython's own 1-cell value, so
 # the row is the CLAIM's verdict rather than the test's identity: two implementations of the
@@ -210,6 +211,12 @@ def rows() -> IO(Unit):
     # `UOp.gcd` IS THE ORACLE.**
     row("gcd_const", O.t_gcd_const())
     row("gcd_shared", O.t_gcd_shared())
+    # `nested_div` -- divandmod.py:23 -- **AND THE THREE ROWS ARE **CPYTHON-CONFIRMED** AGAINST
+    # CPYTHON's OWN `fold_divmod_general`: `(floordiv (floormod x c8) c4)` IS `(mod (div x 4) 2)`,
+    # AND THE **TWO** GUARDS HOLD (THE NEGATIVE `k` AND THE `k` THAT DOES NOT DIVIDE).
+    row("nd_rewrite", SY.t_nd_rewrite())
+    row("nd_neg", SY.t_nd_neg())
+    row("nd_nodiv", SY.t_nd_nodiv())
     # `UOp.divide_exact` -- ops.py:1038-1047. **AND CPYTHON's OWN `UOp.divide_exact` IS THE
     # ORACLE.**
     row("de_same", O.t_de_same())
