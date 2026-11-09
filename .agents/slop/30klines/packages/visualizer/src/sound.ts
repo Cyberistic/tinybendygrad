@@ -16,9 +16,16 @@ const VOICES: Record<Cue, Voice> = {
 }
 
 let ctx: AudioContext | null = null
+let unlocked = false
+
+/** Chrome will not let an AudioContext start before a gesture. Call this from one. */
+export function unlockAudio(): void {
+  unlocked = true
+  if (ctx?.state === "suspended") void ctx.resume()
+}
 
 export function cue(name: Cue, enabled = true): void {
-  if (!enabled || typeof window === "undefined") return
+  if (!enabled || !unlocked || typeof window === "undefined") return
   const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!Ctor) return
   ctx ??= new Ctor()

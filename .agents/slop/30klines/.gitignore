@@ -1,1 +1,9 @@
 content/coverage/
+content/player/*/app.js
+content/player/*/app.ts
+apps/*/node_modules/
+apps/*/.tanstack/
+apps/*/dist/
+apps/*/src/routeTree.gen.ts
+packages/*/node_modules/
+packages/*/dist/

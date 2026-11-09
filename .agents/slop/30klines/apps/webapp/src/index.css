@@ -1,0 +1,76 @@
+@import "tailwindcss" source("./");
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-paper: #f4f2ed;
+  --color-paper2: #edeae2;
+  --color-ink: #16161a;
+  --color-ink2: #3c3c42;
+  --color-muted: #6e6a63;
+  --color-faint: #9a958c;
+  --color-rule: #d6d1c7;
+  --color-rule2: #bdb7a9;
+  --color-accent: #3da639;
+  --color-accent-ink: #1f6b22;
+  --color-wash: #e4efd9;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --radius-none: 0px;
+}
+
+@layer base {
+  * { border-color: var(--color-rule); }
+  html, body, #root { height: 100%; }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--color-wash); }
+}
+
+/* speed-highlight tokens, restrained to the paper palette */
+.shj-syn-kwd { color: #1f6b22; font-weight: 600; }
+.shj-syn-str { color: #8a5a2b; }
+.shj-syn-cmnt { color: #9a958c; font-style: italic; }
+.shj-syn-num { color: #6e6a63; }
+.shj-syn-func { color: #16161a; font-weight: 600; }
+.shj-syn-class, .shj-syn-type, .shj-syn-oper, .shj-syn-bool, .shj-syn-var { color: #3c3c42; }
+.shj-syn-deleted { color: #a12b22; }
+.shj-syn-insert { color: #1f6b22; }
+
+:root {
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}

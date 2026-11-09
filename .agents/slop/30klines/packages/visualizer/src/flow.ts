@@ -1,54 +1,55 @@
 /**
- * The VIZ adapter: a recorded UOp graph → React Flow nodes and edges.
+ * Recorded UOp graph → React Flow nodes, with identities that survive a rewrite.
  *
- * tinygrad's own VIZ lays this out with dagre in a worker (viz/js/worker.js).
- * We do the same job with a deterministic layered pass so the same graph
- * always produces the same picture — a figure that moves between builds is a
- * figure you cannot cite.
+ * The whole point of a rewrite view is continuity: a node that exists on both
+ * sides must be the SAME element, so React Flow can move it instead of
+ * replacing it. That means the id cannot be the toposort index (which changes
+ * every pass) — it has to be the node's shape.
  *
- * The diff is by structure, not by recorded id: ids are positions in one
- * graph's toposort, so they only mean something within that graph.
+ * Layout is layered: rank by depth from the sink, then order each rank by the
+ * mean position of its sources so the edges stop crossing.
  */
 
 export type UOp = { i: number; op: string; arg: string; dtype: string; src: number[] }
 
 export type NodeState = "same" | "added" | "removed"
 
-export type FlowNode = {
+export type Placed = {
   id: string
+  key: string
   position: { x: number; y: number }
-  data: { label: string; op: string; arg: string; dtype: string; state: NodeState }
-}
-
-export type FlowEdge = {
-  id: string
-  source: string
-  target: string
+  label: string
+  op: string
+  arg: string
   state: NodeState
 }
 
-export type Flow = { nodes: FlowNode[]; edges: FlowEdge[] }
+export type Edge = { id: string; source: string; target: string }
 
-const RANK_Y = 86
-const COL_X = 208
-/** A node's number is its label in tinygrad; keep it short and stable. */
-const label = (n: UOp) => (n.arg ? `${n.op}:${n.arg}` : n.op)
+const RANK_Y = 104
+const COL_X = 178
 
-/** Structural identity: two nodes are the same if they are the same shape. */
-function key(n: UOp, byIndex: Map<number, UOp>): string {
-  return `${n.op}|${n.arg}|${n.dtype}|${n.src.map((s) => (byIndex.get(s) ? key(byIndex.get(s)!, byIndex) : s)).join(",")}`
+/** tinygrad prints Ops.ADD; the graph reads better as ADD. */
+const shortOp = (op: string) => op.replace(/^Ops\./, "")
+const label = (n: UOp) => shortOp(n.op)
+
+/** Structural identity. Ids are indices into one graph, so they cannot travel. */
+export function keyOf(n: UOp, byIndex: Map<number, UOp>, seen = new Set<string>()): string {
+  const memo = (byIndex as unknown as { _keys?: Map<number, string> })._keys ?? new Map<number, string>()
+  ;(byIndex as unknown as { _keys?: Map<number, string> })._keys = memo
+  const hit = memo.get(n.i)
+  if (hit) return hit
+  const src = n.src.map((s) => {
+    const child = byIndex.get(s)
+    return child ? keyOf(child, byIndex, seen) : `#${s}`
+  })
+  const k = `${n.op}|${n.arg}|${n.dtype}|${src.join(",")}`
+  memo.set(n.i, k)
+  return k
 }
 
-/**
- * Longest path from the sink. The sink is rank 0 and sinks-to.
- * Iterative on purpose: graphs are deep and recursion here would be a footgun
- * for the same reason toposort is iterative in tinygrad.
- */
 function ranks(nodes: UOp[]): Map<number, number> {
-  // Depth from the leaves, then inverted so the sink is rank 0 and the picture
-  // reads top-down. Relaxed to a fixpoint rather than trusting the input order:
-  // the recorder emits toposort order, but a caller that hands us something
-  // else should get the same picture, not a flat line.
+  // depth from the leaves, relaxed to a fixpoint so input order cannot change it
   const rank = new Map<number, number>(nodes.map((n) => [n.i, 0]))
   for (let pass = 0; pass <= nodes.length; pass++) {
     let changed = false
@@ -66,12 +67,10 @@ function ranks(nodes: UOp[]): Map<number, number> {
   return rank
 }
 
-export function toFlow(nodes: UOp[], previous: UOp[] = []): Flow {
+/** Positions keyed by structural key, so two passes can be compared by shape. */
+export function layout(nodes: UOp[]): Map<string, { x: number; y: number }> {
+  const byIndex = new Map(nodes.map((n) => [n.i, n]))
   const rank = ranks(nodes)
-  const before = new Map<number, UOp>(previous.map((n) => [n.i, n]))
-  const prevKeys = new Set(previous.map((n) => key(n, before)))
-  const nowByIndex = new Map<number, UOp>(nodes.map((n) => [n.i, n]))
-
   const buckets = new Map<number, UOp[]>()
   for (const n of nodes) {
     const r = rank.get(n.i) ?? 0
@@ -79,55 +78,88 @@ export function toFlow(nodes: UOp[], previous: UOp[] = []): Flow {
     buckets.get(r)!.push(n)
   }
 
-  const flow: FlowNode[] = []
-  for (const [r, list] of [...buckets].sort((a, b) => a[0] - b[0])) {
-    list.sort((a, b) => a.op.localeCompare(b.op) || a.i - b.i)
-    const width = (list.length - 1) * COL_X
-    list.forEach((n, row) => {
-      const k = key(n, nowByIndex)
-      flow.push({
-        id: String(n.i),
-        position: { x: row * COL_X - width / 2, y: r * RANK_Y },
-        data: {
-          label: label(n),
-          op: n.op,
-          arg: n.arg,
-          dtype: n.dtype,
-          state: previous.length === 0 ? "same" : prevKeys.has(k) ? "same" : "added",
-        },
+  // two sweeps of barycentre: order a rank by where its sources sit in the next
+  const order = new Map<number, number>()
+  for (const [, list] of buckets) list.forEach((n, i) => order.set(n.i, i))
+  for (let sweep = 0; sweep < 2; sweep++) {
+    const rankKeys = [...buckets.keys()].sort((a, b) => b - a) // deepest first
+    for (const r of rankKeys) {
+      const list = buckets.get(r)!
+      list.sort((a, b) => {
+        const bary = (n: UOp) =>
+          n.src.length ? n.src.reduce((m, s) => m + (order.get(s) ?? 0), 0) / n.src.length : order.get(n.i) ?? 0
+        return bary(a) - bary(b)
       })
-    })
-  }
-
-  const edges: FlowEdge[] = []
-  for (const n of nodes) {
-    for (const s of n.src) {
-      if (!nowByIndex.has(s)) continue
-      edges.push({ id: `${n.i}->${s}`, source: String(n.i), target: String(s), state: "same" })
+      list.forEach((n, i) => order.set(n.i, i))
     }
   }
 
-  return { nodes: flow, edges }
+  const out = new Map<string, { x: number; y: number }>()
+  for (const [r, list] of [...buckets].sort((a, b) => a[0] - b[0])) {
+    const width = (list.length - 1) * COL_X
+    list.forEach((n, i) => {
+      out.set(keyOf(n, byIndex), { x: i * COL_X - width / 2, y: r * RANK_Y })
+    })
+  }
+  return out
 }
 
-/** The nodes that vanished: present before, absent now, matched structurally. */
-export function removed(previous: UOp[], nodes: UOp[]): FlowNode[] {
-  const nowByIndex = new Map(nodes.map((n) => [n.i, n]))
-  const nowKeys = new Set(nodes.map((n) => key(n, nowByIndex)))
-  const beforeByIndex = new Map(previous.map((n) => [n.i, n]))
-  return previous
-    .filter((n) => !nowKeys.has(key(n, beforeByIndex)))
-    .map((n) => ({
-      id: `gone-${n.i}`,
-      position: { x: 0, y: 0 },
-      data: { label: label(n), op: n.op, arg: n.arg, dtype: n.dtype, state: "removed" as const },
-    }))
+/**
+ * One graph for one transition: the "after" state, plus any node that only
+ * existed in "before" so it can fade out where it stood.
+ */
+export function compose(before: UOp[], after: UOp[]): { nodes: Placed[]; edges: Edge[] } {
+  const afterPos = layout(after)
+  const beforePos = layout(before)
+  const afterByIndex = new Map(after.map((n) => [n.i, n]))
+  const beforeByIndex = new Map(before.map((n) => [n.i, n]))
+
+  const beforeKeys = new Set(before.map((n) => keyOf(n, beforeByIndex)))
+  const nodes: Placed[] = []
+
+  for (const n of after) {
+    const key = keyOf(n, afterByIndex)
+    nodes.push({
+      id: key,
+      key,
+      position: afterPos.get(key) ?? { x: 0, y: 0 },
+      label: label(n),
+      op: shortOp(n.op),
+      arg: n.arg,
+      state: beforeKeys.has(key) ? "same" : "added",
+    })
+  }
+
+  for (const n of before) {
+    const key = keyOf(n, beforeByIndex)
+    if (afterPos.has(key)) continue
+    nodes.push({
+      id: `gone-${key}`,
+      key,
+      position: beforePos.get(key) ?? { x: 0, y: 0 },
+      label: label(n),
+      op: shortOp(n.op),
+      arg: n.arg,
+      state: "removed",
+    })
+  }
+
+  const edges: Edge[] = []
+  for (const n of after) {
+    const key = keyOf(n, afterByIndex)
+    for (const s of n.src) {
+      const child = afterByIndex.get(s)
+      if (child) edges.push({ id: `${key}>${keyOf(child, afterByIndex)}`, source: key, target: keyOf(child, afterByIndex) })
+    }
+  }
+
+  return { nodes, edges }
 }
 
-/** One line for the figure caption: what changed, in counts that cannot lie about both axes. */
+/** The caption: both axes, so a 21→21 pass cannot read as nothing. */
 export function summarize(before: UOp[], after: UOp[]): string {
-  const b = new Set(before.map((n) => key(n, new Map(before.map((x) => [x.i, x])))))
-  const a = new Set(after.map((n) => key(n, new Map(after.map((x) => [x.i, x])))))
+  const b = new Set(before.map((n) => keyOf(n, new Map(before.map((x) => [x.i, x])))))
+  const a = new Set(after.map((n) => keyOf(n, new Map(after.map((x) => [x.i, x])))))
   const added = [...a].filter((k) => !b.has(k)).length
   const gone = [...b].filter((k) => !a.has(k)).length
   return `${before.length} → ${after.length} nodes · +${added} / −${gone}`
