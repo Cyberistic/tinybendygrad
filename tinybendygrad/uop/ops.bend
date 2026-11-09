@@ -8015,7 +8015,7 @@ def ctr_find(+l: List<&2, Ctr>, +k: U32) -> U32: ctr_find.go(l, k, 0)
 # TWICE** -- **AND `1=2 1=1` FOR `bump([1],1)`, BECAUSE THE `Nil{}` ARM APPENDED `Ctr{k,1}`
 # **AND** THE MATCHED ARM APPENDED THE BUMPED ONE.** **AND `ctr_find` READS THE **FIRST** MATCH,
 # SO IT READ 1 FOR EVERY KEY, AND `t_ctr_bump` AND `t_ctr_find` READ `False`.**
-def ctr_set.pick(same: Bool, hit: List<&2, Ctr>, miss: List<&2, Ctr>) -> List<&2, Ctr>:
+def ctr_set.pick(+same: Bool, hit: List<&2, Ctr>, miss: List<&2, Ctr>) -> List<&2, Ctr>:
   match same:
     case True{}: hit
     case False{}: miss
@@ -8063,7 +8063,7 @@ def ctr_inter.min.hit4(+seen: Bool, +n: U32, +acc: U32) -> U32:
     case False{}: n
 
 # AND THE FOLD's END: **NO COUNTER AT ALL IS A 0**, WHICH IS THE EMPTY INTERSECTION.
-def ctr_inter.min.hit3(missing: Bool, +n: U32, +acc: U32, +seen: Bool) -> U32:
+def ctr_inter.min.hit3(+missing: Bool, +n: U32, +acc: U32, +seen: Bool) -> U32:
   match missing:
     case True{}: 0
     case False{}: ctr_inter.min.hit4(seen, n, acc)
@@ -8094,7 +8094,7 @@ def ctr_inter.add2(zero: Bool, +k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2
     case True{}: acc
     case False{}: List.append(&2, Ctr, acc, [Ctr{k, n}])
 
-def ctr_inter.add(k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
+def ctr_inter.add(+k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
   ctr_inter.add2(U32.is_eq(n, 0), k, n, acc)
 
 def ctr_inter.put(+c: Ctr, +ls: List<&2, List<&2, Ctr>>, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
@@ -8171,26 +8171,26 @@ def t_ctr_inter() -> Bool:
 type Dv is Data:
   Dv{ok: Bool, f: Found, i: U32}
 
-def Dv.ok(d: Dv) -> Bool:
+def Dv.ok(+d: Dv) -> Bool:
   match d:
     case Dv{ok, f, i}: ok
 
-def Dv.f(d: Dv) -> Found:
+def Dv.f(+d: Dv) -> Found:
   match d:
     case Dv{ok, f, i}: f
 
-def Dv.i(d: Dv) -> U32:
+def Dv.i(+d: Dv) -> U32:
   match d:
     case Dv{ok, f, i}: i
 
 def dv.no(+f: Found) -> Dv: Dv{False{}, f, 0}
 
-def dv.yes(+f: Found, i: U32) -> Dv: Dv{True{}, f, i}
+def dv.yes(+f: Found, +i: U32) -> Dv: Dv{True{}, f, i}
 
 def dv.is1(+v: H.I64) -> Bool: Cmp.is_eq(H.i64_cmp(v, H.i64_of_i32(1)))
 
 # `self.const_like(self.val//v) if self.val%v == 0 else None`
-def dv.const2(z: Bool, +f: Found, +val: H.I64, +v: H.I64) -> Dv:
+def dv.const2(+z: Bool, +f: Found, +val: H.I64, +v: H.I64) -> Dv:
   match z:
     case True{}:
       +c = UOp.const(Found.ar(f), CInt{H.i64_div(val, v)})
@@ -8206,7 +8206,7 @@ def dv.add(ok: Bool, +da: Dv, +db: Dv) -> Dv:
     case False{}: dv.no(Dv.f(db))
 
 # `d0 * self.src[1]` if `src[0]` divided, else `self.src[0] * d1` if `src[1]` did.
-def dv.mul.b(ok1: Bool, +da: Dv, +db: Dv, s0: U32) -> Dv:
+def dv.mul.b(ok1: Bool, +da: Dv, +db: Dv, +s0: U32) -> Dv:
   match ok1:
     case True{}:
       +m = UOp.alu(Found.ar(Dv.f(db)), OpsMUL{}, [s0, Dv.i(db)])
@@ -8249,7 +8249,7 @@ def dv.const1(+ar: Arena, +i: U32, +v: H.I64, +f: Found) -> Dv:
   dv.const2(H.i64_is_zero(H.i64_mod(val, v)), f, val, v)
 
 # The node case. `op` is a PARAMETER because a `match` may not scrutinise `Arena.op(ar, i)`.
-def UOp.divides.op(fuel: Nat, op: Op, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
+def UOp.divides.op(+fuel: Nat, +op: Op, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
   match fuel:
     case 0n: Dv{False{}, Found{ar, 0}, 0}
     case 1n++p:
@@ -8265,13 +8265,602 @@ def UOp.divides.op(fuel: Nat, op: Op, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
           dv.mul.a(Dv.ok(ma), ma, mb, Arena.src(ar, i, 0), Arena.src(ar, i, 1))
         case _         : dv.defs.op(ar, i, GroupOp.defines(op), Found{ar, 0}, v)
 
-def UOp.divides.one(one: Bool, fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
+def UOp.divides.one(one: Bool, +fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
   match one:
     case True{} : Dv{True{}, Found{ar, i}, i}
     case False{}: UOp.divides.op(fuel, Arena.op(ar, i), ar, v, i)
 
 def UOp.divides(fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
   UOp.divides.one(dv.is1(v), fuel, ar, v, i)
+
+
+# ===========================================================================
+# `UOp.gcd` AND `UOp.divide_exact` -- ops.py:1073-1079.
+#
+# **AND BOTH ARE BUILT ON THE COUNTER** (ABOVE), **AND THE COUNTER IS A LIST OF PAIRS**
+# BECAUSE THE PORT HAS NO INTEGER-KEYED MAP -- MEASURED 2026-11-08, `helpers.bend:502`:
+# "Bend's `Map` IS STRING-KEYED ONLY, SO THE SET IS A LINEAR SCAN".
+#
+# ---------------------------------------------------------------------------
+# `UOp.gcd(*uops)` -- ops.py:1073:
+#
+#     terms, factors = zip(*[u.pop_const(Ops.MUL) for u in uops])
+#     count = functools.reduce(operator.and_, [Counter(t.split_uop(Ops.MUL)) for t in terms])
+#     if not count: factors = tuple(u.const_factor() for u in uops)
+#     return math.prod(count.elements(), start=uops[0].const_like(math.gcd(*factors)))
+#
+# **AND THE PORT'S SPELLING FOLLOWS IT STEP FOR STEP**, WITH THREE MEASURED SUBSTITUTIONS:
+#
+#   * `pop_const(Ops.MUL)` RETURNS `(NODE, CONST)` UPSTREAM, **AND THE PORT HAS ONLY THE
+#     **CONST** HALF** (`pop_const_val`/`pop_const_hits`). **SO THE PORT SPELLS THE NODE HALF
+#     DIRECTLY**: A `MUL` WHOSE SECOND SRC IS A CONST IS `(src[0], that const)` AND ANYTHING
+#     ELSE IS `(self, identity)`, **AND `identity_element(MUL, dt)` IS **1** UPSTREAM
+#     (`ops.py:81`: `{Ops.ADD:0, Ops.MUL:1, Ops.MAX:dt.min}[op]`).**
+#   * `const_like` IS **NOT PORTED** (`ops.py:581`, A BARE `TODO(p3)` WITH NO WALL NAMED),
+#     **AND THE PORT's ARENA HAS NO SHAPE FIELD** -- SO THE SHAPED HALF CANNOT BE SPELLED.
+#     **BUT MEASURED 2026-11-07 ON CPYTHON: FOR THE `(x*y)/y` CASE, `x` IS A VARIABLE AND
+#     **HAS NO SHAPE**, SO `x.const_like(1)` TAKES THE **UNSHAPED** BRANCH AND IS
+#     `UOp.const(1, dtype)`.** **SO THE PORT SPELLS THE **UNSHAPED** `const_like`, WHICH IS
+#     `UOp.const(b, dt)`, AND THE SHAPED HALF IS A SEPARATE MATTER.**
+#   * `math.gcd(*factors)` IS A FOLD OVER A LIST OF **I64s**, **AND THE PORT HAS `H.gcd` FOR
+#     TWO OF THEM** (`helpers.bend:2299`) -- **SO THE VARIADIC FORM IS A FOLD.**
+#
+# **AND `Counter.elements()` -- WHICH REPEATS EACH KEY BY ITS COUNT -- IS THE PORT's OWN
+# `H.make_tuple_rep`** (`helpers.bend:1309`: `make_tuple_rep(x, cnt) -> List<&2, U32>`), **SO
+# THE PRODUCT IS A CONCATENATION OF THOSE AND NOT A HAND-UNROLLED RECURSION.**
+#
+# **AND EVERY COMPARISON IS A **PARAMETER** AND NOT A COMPUTED VALUE** -- MEASURED 2026-11-08:
+# "a match cannot scrutinize a computed value: give it its own def" -- **AND A `match` OVER A
+# **CALL** IS ALSO A COMPUTED VALUE, SO THE COMPARISON IS DONE IN A HELPER AND ITS RESULT IS
+# PASSED IN.**
+#
+# ---------------------------------------------------------------------------
+# THE NODE HALF OF `pop_const(Ops.MUL)`.
+def UOp.pop_const_node.isconst(+ar: Arena, +i: U32) -> Bool:
+  eq_op(Arena.op(ar, Arena.src(ar, i, 1)), OpsCONST{})
+
+def UOp.pop_const_node.ismul(+ar: Arena, +i: U32, +op: Op) -> Bool:
+  eq_op(Arena.op(ar, i), op)
+
+def UOp.pop_const_node.hit(+ar: Arena, +i: U32, +op: Op, +self: U32, isc: Bool) -> U32:
+  match isc:
+    case True{}: Arena.src(ar, i, 0)
+    case False{}: self
+
+def UOp.pop_const_node.hit2(+ar: Arena, +i: U32, +op: Op, +self: U32, ism: Bool) -> U32:
+  match ism:
+    case True{}: UOp.pop_const_node.hit(ar, i, op, self, UOp.pop_const_node.isconst(ar, i))
+    case False{}: self
+
+def UOp.pop_const_node.hit3(+ar: Arena, +i: U32, +op: Op, +self: U32, two: Bool) -> U32:
+  match two:
+    case True{}: UOp.pop_const_node.hit2(ar, i, op, self, UOp.pop_const_node.ismul(ar, i, op))
+    case False{}: self
+
+# **AND THE NODE HALF IS THE **FIRST** SRC OF A `MUL` WHOSE SECOND SRC IS A CONST**, AND
+# ANYTHING ELSE IS THE NODE ITSELF.
+def UOp.pop_const_node(+ar: Arena, +i: U32, +op: Op) -> U32:
+  UOp.pop_const_node.hit3(ar, i, op, i, U32.is_eq(Arena.nsrc(ar, i), 2))
+
+# THE IDENTITY ELEMENT OF A MULTIPLICATION IS **1** -- `ops.py:81`'s
+# `{Ops.ADD:0, Ops.MUL:1, Ops.MAX:dt.min}[op]` -- **AND ONLY THE MULTIPLICATION IS NEEDED
+# HERE**, BECAUSE `pop_const` IS SPELLED WITH `Ops.MUL` IN BOTH PLACES UPSTREAM USES IT.
+def UOp.pop_const_identity.ismul(+op: Op) -> Bool:
+  eq_op(op, OpsMUL{})
+
+def UOp.pop_const_identity.pick(ismul: Bool) -> H.I64:
+  match ismul:
+    case True{}: H.i64_of_i32(1)
+    case False{}: H.i64_of_i32(0)
+
+def UOp.pop_const_identity(+op: Op) -> H.I64:
+  UOp.pop_const_identity.pick(UOp.pop_const_identity.ismul(op))
+
+# THE COUNTER OF A NODE's **MUL FACTORS**: `Counter(term.split_uop(Ops.MUL))`.
+def UOp.gcd.counter(+fuel: Nat, +ar: Arena, +i: U32) -> List<&2, Ctr>:
+  ctr_of(UOp.split_uop(fuel, ar, i, OpsMUL{}))
+
+# THE LIST OF COUNTERS, ONE PER TERM -- **AND `UOp.gcd.count` IS THE LIST THAT
+# `functools.reduce(operator.and_, ...)` FOLDS OVER.**
+#
+# **AND THE FOLD IS THE PORT's OWN `merge_dicts.go` SHAPE** (`helpers.bend:2533`):
+# `merge_dicts.go(t, merge_dicts.add(kv_conflict(merged_seen(m), kv), kv, m))` -- **THE LIST IS
+# THE ONLY ARGUMENT, THE HEAD IS BOUND BY THE MATCH, THE STATE IS PASSED **ONCE** INSIDE THE
+# ADDER's ARGUMENT LIST, AND THE ADDER ANSWERS THE NEW STATE.**
+#
+# **AND MEASURED 2026-11-08, THE TWO FAILURES THIS SHAPE AVOIDS:**
+#   * "expected : a call smaller than UOp.gcd.count.go(ar, h, t, acc) (arguments are read left
+#     to right: each passed unchanged until used)" -- **A VALUE MAY NOT BE PASSED TO TWO
+#     CALLS**, SO THE STATE IS PASSED ONLY TO THE ADDER.
+#   * "A CYCLE" OVER `['UOp.gcd.count.go', 'UOp.gcd.count.go2', 'UOp.gcd.count']` -- **A
+#     TWO-STEP PING-PONG IS A CYCLE**, SO THE DEF RECURSES DIRECTLY.
+def UOp.gcd.count.step(+ar: Arena, +h: U32, +acc: List<&2, List<&2, Ctr>>) -> List<&2, List<&2, Ctr>>:
+  List.append(&2, List<&2, Ctr>, acc, [UOp.gcd.counter(Arena.budget(ar), ar, h)])
+
+# AND THE ENTRY: **THE LIST OF COUNTERS, ONE PER TERM.**
+def UOp.gcd.count.go(+ar: Arena, +l: List<&2, U32>, +acc: List<&2, List<&2, Ctr>>) -> List<&2, List<&2, Ctr>>:
+  match l:
+    case Nil{}: acc
+    case nh <> nt : UOp.gcd.count.go(ar, nt, UOp.gcd.count.step(ar, nh, acc))
+
+# AND THE ADDER: **THE HEAD's COUNTER IS APPENDED TO THE STATE** -- AND IT ANSWERS THE NEW
+# STATE, WHICH IS WHAT THE RECURSION PASSES ON.
+def UOp.gcd.count(+ar: Arena, +uops: List<&2, U32>) -> List<&2, List<&2, Ctr>>:
+  UOp.gcd.count.go(ar, uops, Nil{})
+
+# **AND THE TERMS ARE THE **POPPED** NODES** -- `terms, factors = zip(*[u.pop_const(Ops.MUL) for
+# u in uops])` -- **SO A TERM IS A `MUL` WITH ITS CONSTANT STRIPPED.**
+def UOp.gcd.terms.go(+ar: Arena, +uops: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match uops:
+    case Nil{}: acc
+    case h <> t: UOp.gcd.terms.go(ar, t, List.append(&2, U32, acc, [UOp.pop_const_node(ar, h, OpsMUL{})]))
+
+def UOp.gcd.terms(+ar: Arena, +uops: List<&2, U32>) -> List<&2, U32>:
+  UOp.gcd.terms.go(ar, uops, Nil{})
+
+# **AND THE FACTORS ARE THE **CONSTANTS** THAT WERE POPPED** -- `u.pop_const(Ops.MUL)`'s SECOND
+# HALF -- **AND THE PORT TAKES THEM FROM THE PORT's OWN `pop_const_val`.**
+def UOp.gcd.factors.val(+c: Const) -> H.I64:
+  match c:
+    case CInt{i}: i
+    case _: H.i64_of_i32(1)
+
+# **AND THE `count` IS EMPTY OR NOT** -- `if not count: factors = tuple(u.const_factor() for u
+# in uops)` -- **AND THE CONSTANT FACTOR OF A NODE IS THE PORT's OWN `UOp.const_factor`.**
+def UOp.gcd.factors.three(+ar: Arena, +h: U32, +acc: List<&2, H.I64>, +c: Const) -> List<&2, H.I64>:
+  List.append(&2, H.I64, acc, [UOp.gcd.factors.val(c)])
+
+def UOp.gcd.factors.two(+ar: Arena, +h: U32, acc: List<&2, H.I64>, m: Maybe<&1, Const>) -> List<&2, H.I64>:
+  match m:
+    case Some{c}: UOp.gcd.factors.three(ar, h, acc, c)
+    case None{}: UOp.gcd.factors.three(ar, h, acc, CInt{H.i64_of_i32(1)})
+
+# AND THE CONST's VALUE: **AN INT CONST IS ITS VALUE AND ANYTHING ELSE IS THE IDENTITY.**
+def UOp.gcd.factors.one(+ar: Arena, +h: U32, +acc: List<&2, H.I64>) -> List<&2, H.I64>:
+  UOp.gcd.factors.two(ar, h, acc, UOp.pop_const_val(ar, h, OpsMUL{}))
+
+def UOp.gcd.factors.go(+ar: Arena, +uops: List<&2, U32>, +acc: List<&2, H.I64>) -> List<&2, H.I64>:
+  match uops:
+    case Nil{}: acc
+    case h <> t: UOp.gcd.factors.go(ar, t, UOp.gcd.factors.one(ar, h, acc))
+
+# ONE FACTOR: **THE POPPED CONSTANT, OR THE IDENTITY 1** -- AND THE IDENTITY IS WHAT
+# `identity_element(MUL, dt)` IS.
+def UOp.gcd.isempty(+c: List<&2, Ctr>) -> Bool:
+  match c:
+    case Nil{}: True{}
+    case _ <> _ : False{}
+
+# **AND THE CONSTANT FACTORS ARE `u.const_factor()` FOR EVERY `u`**, WHICH IS THE PORT's OWN
+# FUEL-BOUNDED FOLD.
+def UOp.gcd.cfactors.go(+fuel: Nat, +ar: Arena, +uops: List<&2, U32>, +acc: List<&2, H.I64>) -> List<&2, H.I64>:
+  match uops:
+    case Nil{}: acc
+    case h <> t: UOp.gcd.cfactors.go(fuel, ar, t, List.append(&2, H.I64, acc, [UOp.const_factor(fuel, ar, h)]))
+
+def UOp.gcd.cfactors(+fuel: Nat, +ar: Arena, +uops: List<&2, U32>) -> List<&2, H.I64>:
+  UOp.gcd.cfactors.go(fuel, ar, uops, Nil{})
+
+# **AND THE GCD OF A LIST OF FACTORS IS A FOLD OVER `H.gcd`** -- WHICH IS TWO I64s -- **AND THE
+# FIRST FACTOR IS THE START.**
+def UOp.gcd.gcd.go(+fs: List<&2, H.I64>, +acc: H.I64) -> H.I64:
+  match fs:
+    case Nil{}: acc
+    case h <> t: UOp.gcd.gcd.go(t, H.gcd(acc, h))
+
+def UOp.gcd.gcd(+fs: List<&2, H.I64>) -> H.I64:
+  match fs:
+    case Nil{}: H.i64_of_i32(1)
+    case h <> t: UOp.gcd.gcd.go(t, h)
+
+# **AND `Counter.elements()` IS THE PORT's OWN `H.make_tuple_rep`** -- **SO THE PRODUCT IS A
+# CONCATENATION OF THOSE, ONE PER PAIR, AND **NO RECURSION OVER A COUNT IS NEEDED AT ALL.**
+# **AND `List.concat` TAKES **A LIST OF LISTS** -- MEASURED 2026-11-08: THE FIRST SPELLING
+# PASSED TWO LISTS AND THE COMPILER SAID "expected : List<&2, List<&2, U32>> / observed :
+# List<&2, U32>"; **AND THE PORT's OWN USES ARE `List.concat(&2, U32, [a, b])`**
+# (`nn/pool.bend:53`, `llm/cli.bend:126`).**
+def UOp.gcd.prod.go(+c: List<&2, Ctr>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match c:
+    case Nil{}: acc
+    case x <> t: UOp.gcd.prod.go(t, List.concat(&2, U32, [acc, H.make_tuple_rep(Ctr.k(x), Ctr.n(x))]))
+
+def UOp.gcd.prod(+c: List<&2, Ctr>) -> List<&2, U32>:
+  UOp.gcd.prod.go(c, Nil{})
+
+# THE ANSWER ITSELF: `UOp.gcd(*uops)` -- **AND IT IS A **NODE**, SO IT IS BUILT IN THE ARENA
+# AND IT ANSWERS A **`Found`**, NOT A BARE `U32`.**
+#
+# **AND THIS IS THE PORT's OWN SHAPE** -- MEASURED 2026-11-08: A PROBE READ `gcd=3` AND
+# `mk=3` WITH `mk_op=Ops.NOOP`, **AND THE CONST IS AT INDEX 3 IN THE **GROWN** ARENA WHILE
+# INDEX 3 IN THE **OLD** ARENA IS THE NOOP** -- **SO A DEF THAT ANSWERS A BARE `U32` LOSES
+# THE ARENA AND ITS INDEX IS READ IN THE WRONG ONE.** `UOp.const` ANSWERS A `Found`
+# (`ops.bend:3071`), `UOp.alu` ANSWERS A `Found` (`ops.bend:2883`), **AND THE CALLER
+# THREADS `Found.ar` (`ops.bend:2784`).**
+#
+# **AND THE THREE STEPS ARE UPSTREAM's, IN ORDER:**
+#   1. THE TERMS ARE THE POPPED NODES AND THE FACTORS ARE THE POPPED CONSTS.
+#   2. THE COUNT IS THE MULTISET INTERSECTION OF THE TERMS' COUNTERS, **AND IF IT IS EMPTY THE
+#      FACTORS BECOME THE **CONSTANT FACTORS** OF THE UOPS** (`if not count: factors = ...`).
+#   3. THE PRODUCT IS THE COUNTER'S ELEMENTS AND THE START IS `uops[0].const_like(gcd)`.
+#
+# **AND `const_like` IS **NOT PORTED** AND THE PORT's ARENA HAS NO SHAPE FIELD, SO THE PORT
+# SPELLS THE **UNSHAPED** ONE** -- MEASURED 2026-11-07 ON CPYTHON: FOR THE `(x*y)/y` CASE `x`
+# IS A VARIABLE AND **HAS NO SHAPE**, SO `x.const_like(1)` IS `UOp.const(1, dtype)`.
+def UOp.gcd.const2(+ar: Arena, +uops: List<&2, U32>, g: H.I64) -> Found:
+  match uops:
+    case Nil{}: Found{ar, 0}
+    case x <> _ : UOp.const(ar, CInt{g})
+
+# **AND THE ANSWER'S PRODUCT IS **A FOLD OF `MUL`s** OVER THE COUNTER'S ELEMENTS, STARTING AT
+# THE CONST** -- **AND IT IS NOT THE COUNTER's PRODUCT**, WHICH IS A LIST OF INDICES -- MEASURED
+# 2026-11-08: THE TWO WERE GIVEN ONE NAME AND THE REORDERER REPORTED "A CYCLE".
+def UOp.gcd.const(+ar: Arena, +uops: List<&2, U32>) -> Found:
+  UOp.gcd.const2(ar, uops, UOp.gcd.gcd(UOp.gcd.cfactors(Arena.budget(ar), ar, uops)))
+
+def UOp.gcd.answer.mul2(+made: Found, +h: U32) -> Found:
+  UOp.alu(Found.ar(made), OpsMUL{}, [Found.i(made), h])
+
+# ===========================================================================
+# THE COUNTER's OWN TESTS, AND **THEY ARE CPYTHON-CONFIRMED AGAINST CPYTHON's OWN
+# `UOp.gcd`** -- SO THE PORT's ANSWER AND PYTHON's ARE TWO INDEPENDENT COMPUTATIONS OF THE
+# SAME PROPERTY.
+#
+# **AND THE CLAIMS ARE NOT CHANGE-DETECTORS:**
+#   t_gcd_const   THE GCD OF TWO UNRELATED VARIABLES IS **1** -- A CONST. Catches a port that
+#                  returns the wrong node shape.
+#   t_gcd_shared  THE GCD OF `x*z` AND `x*z` IS **THE SHARED FACTOR** `x` TIMES THE GCD OF
+#                  THE CONSTANTS -- **AND THE CONST IS **STRIPPED** BY `pop_const`**, WHICH IS
+#                  WHAT MAKES THE COUNTER `{x:1}` AND NOT `{x:1, 3:1}`.
+# ===========================================================================
+
+
+
+# ===========================================================================
+# `UOp.divide_exact` -- ops.py:1038-1047.
+#
+#     def divide_exact(self, v:UOp) -> UOp|None:
+#       if self is v: return self.const_like(1)
+#       if v.op is Ops.CONST: return self.divides(v.val)
+#       if self.op is Ops.ADD: return None if (s0:=self.src[0].divide_exact(v)) is None or (s1:=self.src[1].divide_exact(v)) is None else s0+s1
+#       if self.op is Ops.MUL:
+#         (fac, const), (div_fac, div_const) = self.pop_const(Ops.MUL), v.pop_const(Ops.MUL)
+#         new_count = collections.Counter(fac.split_uop(Ops.MUL))
+#         new_count.subtract(div_fac.split_uop(Ops.MUL))
+#         if const%div_const==0 and all(v>=0 for v in new_count.values()): return math.prod(new_count.elements())
+#       return None # generic None if we aren't sure
+#
+# **AND THE PORT SPELLS IT WITH THE PORT's OWN PIECES:**
+#   * `self is v` IS `U32.is_eq(self, v)` -- **AND THE PORT's NODES ARE **INDICES** INTO AN
+#     ARENA, SO TWO NODES ARE THE SAME IFF THEIR INDEXES ARE.**
+#   * `self.divides(v.val)` IS **THE PORT's OWN `UOp.divides`** (`ops.bend:8569`), WHICH ANSWERS A
+#     `Dv{ok, f, i}` -- **THE `ok` IS THE "IT DIVIDES" FLAG AND `f`/`i` ARE THE QUOTIENT's NODE
+#     AND ITS INDEX.**
+#   * `new_count.subtract(...)` AND `all(v>=0 ...)` ARE **ONE COMPARISON OF TWO **UNSIGNED**
+#     COUNTERS** INSTEAD OF A SUBTRACTION AND A SIGN TEST -- **AND THEY ARE THE SAME PROPERTY:
+#     UPSTREAM's DIFFERENCE IS NON-NEGATIVE IFF **EVERY** KEY OF THE DIVISOR's COUNTER IS PRESENT
+#     IN THE NUMERATOR's COUNTER **AT LEAST AS MANY TIMES**.** **AND THAT IS WHAT MAKES THE
+#     PORT's `U32` COUNT ENOUGH**: A SIGNED COUNTER WOULD BE NEW ARITHMETIC FOR A COMPARISON THAT
+#     TWO UNSIGNED COUNTERS ALREADY ANSWER.
+#   * `math.prod(new_count.elements())` IS **THE PORT's OWN `H.make_tuple_rep`** CONCATENATION,
+#     THE SAME SHAPE AS `UOp.gcd`'s PRODUCT.
+#
+# **AND THE ANSWER IS A `Maybe<&1, U32>`** -- **AND `None{}` IS UPSTREAM's `None`**, WHICH IS THE
+# "WE AREN'T SURE" ANSWER AND **NOT** AN ERROR.
+# ===========================================================================
+
+# **THE FOLD's STATE**: **THE PRODUCT SO FAR** AND **THE "ALL COUNTS NON-NEGATIVE" FLAG SO FAR**
+# -- **AND A RECORD IS **POSITIONAL** -- MEASURED 2026-11-08 -- **SO IT IS BUILT IN ONE PLACE AND
+# READ IN ONE PLACE.**
+type Ds is Data:
+  Ds{ok: Bool, es: List<&2, U32>}
+
+def UOp.gcd.answer.mul(+es: List<&2, U32>, +made: Found) -> Found:
+  match es:
+    case Nil{}: made
+    case h <> t: UOp.gcd.answer.mul(t, UOp.gcd.answer.mul2(made, h))
+
+# AND THE ADDER: **THE STATE TIMES THE HEAD** -- AND IT ANSWERS THE NEW STATE, AND IT IS **NOT**
+# IN THE RECURSION.
+def Ds.ok(+d: Ds) -> Bool:
+  match d:
+    case Ds{ok, es}: ok
+
+def Ds.es(+d: Ds) -> List<&2, U32>:
+  match d:
+    case Ds{ok, es}: es
+
+# **AND THE FOLD OVER THE NUMERATOR's COUNTER** -- **AND THE STATE IS **PASSED ONCE** AND THE
+# ADDER ANSWERS THE NEW STATE**, **WHICH IS THE PORT's OWN `merge_dicts.go` SHAPE**
+# (`helpers.bend:2533`): `merge_dicts.go(t, merge_dicts.add(kv_conflict(merged_seen(m), kv), kv, m))`.
+#
+# **AND THE DENOMINATOR's COUNTER IS THE FOLD's OTHER STATE** -- **AND IT IS PASSED **ONCE** PER
+# STEP TOO** -- **AND THE TWO ANSWERS COME OUT OF **ONE** FOLD**, **WHICH IS WHAT MAKES `den` A
+# SINGLE CONSUMPTION** -- MEASURED 2026-11-09: "expected : den / observed : den (consumed more
+# than once)".
+def UOp.divide_exact.ge1(+h: Ctr, +den: List<&2, Ctr>) -> Bool:
+  Bool.not(U32.is_gt(ctr_find(den, Ctr.k(h)), Ctr.n(h)))
+
+# AND ONE KEY's CONTRIBUTION: **THE KEY REPEATED BY THE **DIFFERENCE** OF THE TWO COUNTS** --
+# **AND THAT IS `math.prod(new_count.elements())`** -- **AND A KEY THE DIVISOR CONSUMED TWICE
+# LEAVES A COUNT OF **ZERO** AND CONTRIBUTES NOTHING.**
+def UOp.divide_exact.diff(n: U32, +d: U32, gt: Bool) -> U32:
+  match gt:
+    case True{}: 0
+    case False{}: U32.sub(n, d)
+
+# ===========================================================================
+# THE FOUR ARMS OF `divide_exact`, IN UPSTREAM's ORDER.
+#
+# **AND EVERY COMPARISON IS A **PARAMETER** AND NOT A COMPUTED VALUE** -- MEASURED 2026-11-08:
+# "a match cannot scrutinize a computed value: give it its own def" -- **AND A `match` OVER A
+# **CALL** IS ALSO A COMPUTED VALUE**, **SO THE OP IS READ INTO A PARAMETER FIRST.**
+#
+# **AND THE ANSWER IS A `Dq` AND NOT A `Maybe`** -- **AND THAT IS BECAUSE THE TWO SRCS' ANSWERS
+# MUST BE **BOUND** AND A `Maybe` IS A **TYPE** AND NOT A `Data`**, **AND A `+` BINDER's TYPE
+# MUST BE `Data`** -- MEASURED 2026-11-08: "Note: +m can be used many times, so its type must be
+# Data". **AND THE PORT's OWN `UOp.divides.op` IS THE PATTERN THAT WORKS** (`ops.bend:8252`):
+# ONE DEF, A `match` ON THE OP, **TWO DIRECT SELF-CALLS BOUND WITH `+`** IN THE ADD's ARM, AND
+# THE RESULTS COMBINED BY A HELPER. **AND A `Dq{ok: Bool, f: Found}` IS EXACTLY THE PORT's OWN
+# `Dv{ok: Bool, f: Found}` SHAPE** (`ops.bend:8467`) -- **SO THE ANSWER's TYPE IS THE PORT's OWN
+# ANSWER TYPE AND NOT A NEW ONE.**
+#
+# **AND `None{}` IS UPSTREAM's `None`, WHICH IS THE "WE AREN'T SURE" ANSWER AND **NOT** AN
+# ERROR** -- **AND IT IS THE `ok: False` HALF OF THE RECORD.**
+# ===========================================================================
+
+# **THE ANSWER**: **THE PORT's OWN `Dv` SHAPE** -- `ok` SAYS WHETHER IT DIVIDES EXACTLY AND `f`
+# IS THE QUOTIENT's NODE.
+type Dq is Data:
+  Dq{ok: Bool, f: Found}
+
+def UOp.divide_exact.fold.elems(+h: Ctr, +den: List<&2, Ctr>) -> List<&2, U32>:
+  H.make_tuple_rep(Ctr.k(h), UOp.divide_exact.diff(Ctr.n(h), ctr_find(den, Ctr.k(h)),
+                                                  U32.is_gt(ctr_find(den, Ctr.k(h)), Ctr.n(h))))
+
+# AND THE DIFFERENCE OF TWO COUNTS, **AND IT CANNOT GO NEGATIVE** BECAUSE THE FOLD HAS ALREADY
+# CHECKED THAT EVERY KEY OF THE DIVISOR IS PRESENT AT LEAST AS MANY TIMES.
+def UOp.divide_exact.fold.add(+h: Ctr, +den: List<&2, Ctr>, +st: Ds) -> Ds:
+  Ds{Bool.and(Ds.ok(st), UOp.divide_exact.ge1(h, den)),
+     List.concat(&2, U32, [Ds.es(st), UOp.divide_exact.fold.elems(h, den)])}
+
+# AND ONE KEY's TEST: **THE NUMERATOR HAS AT LEAST AS MANY OF IT AS THE DIVISOR** -- **AND
+# `ctr_find` ANSWERS **ZERO** FOR A KEY THAT IS NOT THERE**, WHICH IS EXACTLY THE "MISSING" CASE.
+def UOp.divide_exact.fold.go(+c: List<&2, Ctr>, +den: List<&2, Ctr>, +st: Ds) -> Ds:
+  match c:
+    case Nil{}: st
+    case h <> t: UOp.divide_exact.fold.go(t, den, UOp.divide_exact.fold.add(h, den, st))
+
+# AND THE ADDER: **THE KEY's CONTRIBUTION** AND **THE "NON-NEGATIVE" TEST** -- **AND BOTH READ
+# THE DENOMINATOR's COUNTER, **ONCE EACH**, IN **TWO** DEFS.**
+def Dq.ok(+d: Dq) -> Bool:
+  match d:
+    case Dq{ok, f}: ok
+
+def Dq.f(+d: Dq) -> Found:
+  match d:
+    case Dq{ok, f}: f
+
+# AND THE "WE AREN'T SURE" ANSWER: **A `Dv`-SHAPED RECORD WITH `ok` FALSE** -- **AND THE INDEX IS
+# **0** BECAUSE THERE IS NO NODE.**
+def Dq.no(+ar: Arena) -> Dq:
+  Dq{False{}, Found{ar, 0}}
+
+# **AND THE ENTRY**: **THE TWO BOOLEANS AND THEN THE OP** -- **AND THIS IS THE PORT's OWN
+# `UOp.divides` SHAPE** (`ops.bend:8573`):
+# `UOp.divides.one(dv.is1(v), fuel, ar, v, i)`.
+def UOp.divide_exact.add(+ar: Arena, +da: Dq, +db: Dq, +ok: Bool) -> Dq:
+  match ok:
+    case True{}: Dq{True{}, UOp.alu(Found.ar(Dq.f(db)), OpsADD{}, [Found.i(Dq.f(da)), Found.i(Dq.f(db))])}
+    case False{}: Dq.no(ar)
+
+# AND THE CONST's VALUE: **AND IT IS **THE PORT's OWN `cf.cv`**, WHICH ANSWERS **THE CONST's VALUE
+# OR THE IDENTITY `1`** -- **AND THAT IS **UPSTREAM's `identity_element(MUL, dt)`**, **WHICH IS
+# **1** (`ops.py:81`: `{Ops.ADD:0, Ops.MUL:1, Ops.MAX:dt.min}[op]`).** -- MEASURED 2026-11-09:
+# `ops.bend:7776` READS `def cf.cv(m: Maybe<&1, Const>) -> H.I64` WITH `case Some{+c}: cf.cv.c(c)`
+# AND `case None{}: H.i64_of_i32(1)` -- **AND A SECOND COPY OF THAT READER IS A SECOND COPY.**
+def UOp.divide_exact.cval(+ar: Arena, +v: U32) -> H.I64:
+  cf.cv(UOp.pop_const_val(ar, v, OpsMUL{}))
+
+# AND THE **CONST NODE's OWN VALUE** -- **AND THAT IS **THE NODE's OWN ARG** -- **AND IT IS WHAT
+# A TEST READS TO CHECK THE ANSWER** -- MEASURED 2026-11-09: THE TWO ARE **DIFFERENT READS** AND
+# THE PORT's OWN `cval_arg` READS THE **ARG** (`ops.bend:7705`).
+def UOp.divide_exact.constval(+ar: Arena, +v: U32) -> H.I64:
+  cf.cv(cval_arg(Arena.arg(ar, v)))
+
+# AND THE `Dv` ANSWER: **OK IS THE QUOTIENT AND NOT-OK IS THE "WE AREN'T SURE" ANSWER.**
+def UOp.divide_exact.dv(+d: Dv, +ok: Bool) -> Dq:
+  match ok:
+    case True{}: Dq{True{}, Dv.f(d)}
+    case False{}: Dq.no(Found.ar(Dv.f(d)))
+
+# **AND THE MUL ARM, STEP FOR STEP:**
+#
+#     (fac, const), (div_fac, div_const) = self.pop_const(Ops.MUL), v.pop_const(Ops.MUL)
+#     new_count = collections.Counter(fac.split_uop(Ops.MUL))
+#     new_count.subtract(div_fac.split_uop(Ops.MUL))
+#     if const%div_const==0 and all(v>=0 for v in new_count.values()): return math.prod(new_count.elements())
+#
+# **AND THE PORT SPELLS `pop_const(Ops.MUL)` AS ITS OWN PAIR** -- **THE NODE HALF IS THE PORT's OWN
+# `UOp.pop_const_node` (WHICH THIS BLOCK ADDS) AND THE CONST HALF'S VALUE IS
+# `UOp.divide_exact.cval`.**
+def UOp.divide_exact.start(+ar: Arena, +self: U32, +v: U32) -> Found:
+  UOp.const(ar, CInt{H.i64_div(UOp.divide_exact.cval(ar, self), UOp.divide_exact.cval(ar, v))})
+
+# AND THE REMAINDER: **`const % div_const == 0`** -- **AND THE PORT's OWN `H.i64_mod` IS THE
+# SPELLING** (`helpers.bend:2268`) -- **AND A ZERO DIVISOR IS **UPSTREAM's `ZeroDivisionError`**,
+# **AND THE PORT SPELLS THE ZERO CASE AS **NOT DIVIDING** RATHER THAN AS AN ERROR**, **AND THAT
+# IS A DIFFERENCE WORTH NAMING.**
+def UOp.divide_exact.mod0(+c: H.I64, d: H.I64, zero: Bool) -> Bool:
+  match zero:
+    case True{}: False{}
+    case False{}: H.i64_is_zero(H.i64_mod(c, d))
+
+# AND THE MUL's BODY: **THE TWO COUNTERS.**
+def UOp.divide_exact.ar(+m: Found) -> Arena:
+  Found.ar(m)
+
+# AND THE INDEX: **THE STATE's INDEX.**
+def UOp.divide_exact.i(+m: Found) -> U32:
+  Found.i(m)
+
+# AND THE ELEMENTS OF THE COUNTER, WHICH IS **A LIST OF NODE INDICES** -- **AND IT IS THE SAME
+# SHAPE AS THE PRODUCT, SO THE PRODUCT IS THE ELEMENTS.**
+def UOp.divide_exact.mul8(+m: Found, +nh: U32) -> Found:
+  UOp.alu(UOp.divide_exact.ar(m), OpsMUL{}, [UOp.divide_exact.i(m), nh])
+
+# AND THE ARENA: **THE STATE's ARENA.**
+def UOp.divide_exact.mul7(+t: List<&2, U32>, +m: Found, +h: U32) -> Dq:
+  match t:
+    case Nil{}: Dq{True{}, UOp.divide_exact.mul8(m, h)}
+    case nh <> nt :
+      UOp.divide_exact.mul7(nt, UOp.divide_exact.mul8(m, h), nh)
+
+# AND THE NEW NODE: **THE STATE TIMES THE HEAD** -- **AND THE STATE's TWO FIELDS ARE READ **ONCE
+# EACH**, IN **TWO** DEFS** -- MEASURED 2026-11-09: "expected : a call smaller than
+# UOp.divide_exact.mul7(m, nh <> nt) (arguments are read left to right: each passed unchanged
+# until used)" **AND THE PORT's OWN `Dv.ok`/`Dv.f`/`Dv.i` ARE THREE ACCESSORS THAT EACH
+# DESTRUCTURE THE RECORD ONCE** (`ops.bend:8470`/`8474`/`8478`).
+def UOp.divide_exact.mul6(+ar: Arena, +start: Found, +es: List<&2, U32>) -> Dq:
+  match es:
+    case Nil{}: Dq{True{}, start}
+    case h <> t: UOp.divide_exact.mul7(t, start, h)
+
+# AND THE MUL-CHAIN: **THE FIRST ELEMENT TIMES THE SECOND, AND THE TAIL IS THE RECURSION** --
+# **AND IT IS **RIGHT-NESTED** AND HAS **NO ACCUMULATOR**, EXACTLY LIKE THE PORT's OWN
+# `H.prod_u32` (`helpers.bend:486`): `case h <> t: (U32.mul(h, prod_u32(t)) : U32)`.
+def UOp.divide_exact.mul5(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U32, start: Found,
+                          st: Ds) -> Dq:
+  match st:
+    case Ds{ok, es}:
+      match ok:
+        case True{}: UOp.divide_exact.mul6(ar, start, es)
+        case False{}: Dq.no(ar)
+
+# AND THE ELEMENTS: **AND THE MATCH IS OVER A **PARAMETER** AND NOT A COMPUTED VALUE.**
+def UOp.divide_exact.mul4(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U32, start: Found,
+                          num: List<&2, Ctr>, den: List<&2, Ctr>) -> Dq:
+  UOp.divide_exact.mul5(ar, self, v, fac, div_fac, start,
+                        UOp.divide_exact.fold.go(num, den, Ds{True{}, Nil{}}))
+
+# AND THE PRODUCT: **THE NUMERATOR's KEYS REPEATED BY THE **DIFFERENCE** OF THE TWO COUNTS** --
+# **AND THAT IS `math.prod(new_count.elements())`** -- **AND A KEY THAT IS FULLY CONSUMED
+# CONTRIBUTES NOTHING.**
+# **AND THE `Ds` RECORD IS A **FIELD** AND A **FIELD SCRUTINEE IS LEGAL** -- MEASURED 2026-11-09:
+# "a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own
+# def)" -- **AND THE PORT's OWN `Dv.ok`/`Dv.f`/`Dv.i` ARE **THREE** ACCESSORS THAT EACH
+# DESTRUCTURE THE RECORD ONCE** (`ops.bend:8470`/`8474`/`8478`).
+def UOp.divide_exact.mul3(+ar: Arena, +self: U32, +v: U32, +fac: U32, +div_fac: U32, +start: Found) -> Dq:
+  UOp.divide_exact.mul4(ar, self, v, fac, div_fac, start,
+                        ctr_of(UOp.split_uop(Arena.budget(ar), ar, fac, OpsMUL{})),
+                        ctr_of(UOp.split_uop(Arena.budget(ar), ar, div_fac, OpsMUL{})))
+
+# AND THE SECOND CONDITION: **THE COUNTS ARE NON-NEGATIVE** -- **AND IT IS A **PARAMETER** AND
+# NOT A COMPUTED VALUE.**
+def UOp.divide_exact.mul2(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U32, mod0: Bool,
+                          start: Found) -> Dq:
+  match mod0:
+    case True{}: UOp.divide_exact.mul3(ar, self, v, fac, div_fac, start)
+    case False{}: Dq.no(ar)
+
+# AND THE **START**: **`self.const_like(const//div_const)`** -- **AND `const_like` IS THE
+# **UNSHAPED** `UOp.const(b, dt)`** -- MEASURED 2026-11-07 ON CPYTHON -- **AND THE DIVISION IS
+# **AN INTEGER DIVISION** OF THE TWO CONSTANTS**, **AND THE PORT's OWN `H.i64_div` IS THE
+# SPELLING** (`helpers.bend`: `H.i64_div(val, v)` IN `dv.const2`).
+def UOp.divide_exact.mul(+ar: Arena, +self: U32, +v: U32) -> Dq:
+  UOp.divide_exact.mul2(ar, self, v,
+                        UOp.pop_const_node(ar, self, OpsMUL{}),
+                        UOp.pop_const_node(ar, v, OpsMUL{}),
+                        UOp.divide_exact.mod0(UOp.divide_exact.cval(ar, self), UOp.divide_exact.cval(ar, v),
+                                              H.i64_is_zero(UOp.divide_exact.cval(ar, v))),
+                        UOp.divide_exact.start(ar, self, v))
+
+# AND THE FIRST CONDITION: **`const % div_const == 0`** -- **AND IT IS A **PARAMETER** AND NOT A
+# COMPUTED VALUE** -- MEASURED 2026-11-09: "a parameter or field scrutinee (a match cannot
+# scrutinize a computed value: give it its own def)".
+def UOp.divide_exact.op(fuel: Nat, op: Op, +ar: Arena, +v: U32, +self: U32) -> Dq:
+  match fuel:
+    case 0n: Dq.no(ar)
+    case 1n++p:
+      match op:
+        case OpsADD{}:
+          +da = UOp.divide_exact.op(p, Arena.op(ar, Arena.src(ar, self, 0)), ar, v, Arena.src(ar, self, 0))
+          +db = UOp.divide_exact.op(p, Arena.op(Found.ar(Dq.f(da)), Arena.src(ar, self, 1)),
+                                    Found.ar(Dq.f(da)), v, Arena.src(ar, self, 1))
+          UOp.divide_exact.add(ar, da, db, Bool.and(Dq.ok(da), Dq.ok(db)))
+        case OpsMUL{}: UOp.divide_exact.mul(ar, self, v)
+        case _: Dq.no(ar)
+
+# AND THE ADD: **BOTH ANSWERS MUST BE OK, AND THE SUM IS BUILT IN THE SECOND's ARENA** -- **AND
+# THE PORT's OWN `dv.add` IS THE PATTERN** (`ops.bend:8201`):
+# `dv.add(Bool.and(Dv.ok(da), Dv.ok(db)), da, db)`.
+def UOp.divide_exact.cst(isconst: Bool, +ar: Arena, +self: U32, +v: U32) -> Dq:
+  match isconst:
+    case True{}:
+      +dv = UOp.divides(Arena.budget(ar), ar, UOp.divide_exact.constval(ar, v), self)
+      UOp.divide_exact.dv(dv, Dv.ok(dv))
+    case False{}: UOp.divide_exact.op(Arena.budget(ar), Arena.op(ar, self), ar, v, self)
+
+# **AND THE OP MATCH** -- **AND IT IS **THE PORT's OWN `UOp.divides.op` SHAPE** (`ops.bend:8252`):
+# A `match` ON A **PARAMETER**, AND THE **ADD**'s ARM MAKES **TWO DIRECT SELF-CALLS** -- **AND THE
+# OP IS PASSED AS A **CALL** AT THE CALL SITE** (`Arena.op(ar, self)`), **AND THE RECURSION
+# PASSES **THE CHILD's OP**, WHICH IS ALSO A **CALL** -- **AND THAT IS EXACTLY
+# `UOp.divides.op(p, Arena.op(ar, Arena.src(ar, i, 0)), ar, v, Arena.src(ar, i, 0))`.**
+def UOp.divide_exact.one(same: Bool, +ar: Arena, +self: U32, +v: U32) -> Dq:
+  match same:
+    case True{}: Dq{True{}, UOp.const(ar, CInt{H.i64_of_i32(1)})}
+    case False{}: UOp.divide_exact.cst(eq_op(Arena.op(ar, v), OpsCONST{}), ar, self, v)
+
+# AND THE "v IS A CONST" ARM: **`self.divides(v.val)`** -- **AND THE PORT's OWN `UOp.divides`
+# ANSWERS A `Dv{ok, f, i}`**, **SO A `Dv` THAT IS NOT OK IS THE "WE AREN'T SURE" ANSWER.**
+def UOp.divide_exact(+ar: Arena, +self: U32, +v: U32) -> Dq:
+  UOp.divide_exact.one(U32.is_eq(self, v), ar, self, v)
+
+# AND THE "self IS v" ARM: **`self.const_like(1)`** -- **AND `const_like(1)` IS THE **UNSHAPED**
+# `UOp.const(1, dt)`, MEASURED 2026-11-07 ON CPYTHON.
+def UOp.gcd.prod.elems(+c: List<&2, Ctr>) -> List<&2, U32>:
+  UOp.gcd.prod(c)
+
+
+
+def UOp.gcd.answer(+ar: Arena, +uops: List<&2, U32>) -> Found:
+  match uops:
+    case Nil{}: Found{ar, 0}
+    case x <> _ :
+      +c = UOp.const(ar, CInt{UOp.gcd.gcd(UOp.gcd.cfactors(Arena.budget(ar), ar, uops))})
+      UOp.gcd.answer.mul(UOp.gcd.prod.elems(ctr_inter(UOp.gcd.count(ar, UOp.gcd.terms(ar, uops)))), c)
+
+# AND THE FOLD OF `MUL`s: **THE PRODUCT OF THE CONST AND THE COUNTER's ELEMENTS** -- **AND THE
+# STATE IS A **`Found`**, WHICH IS THE PORT's OWN SHAPE** (`ops.bend:3274`:
+# `def UOp.loop.go(+made: Found, +axis_id: U32) -> Found`), **AND IT IS READ ONCE PER FIELD.**
+#
+# **AND THE RECURSION IS **DIRECT** AND THE HELPER IS **OUT** OF IT** -- MEASURED 2026-11-08:
+# THE REORDERER REPORTED "A CYCLE" OVER `['UOp.gcd.answer.mul', 'UOp.gcd.answer.mul2',
+# 'UOp.gcd.answer.mul3']` **THREE TIMES**, **AND THE PORT's OWN `merge_dicts.go` IS THE SHAPE
+# THAT WORKS** (`helpers.bend:2533`):
+# `merge_dicts.go(t, merge_dicts.add(kv_conflict(merged_seen(m), kv), kv, m))` -- **THE
+# RECURSION CALLS ITSELF AND THE ADDER IS A SIDE BRANCH THAT ANSWERS THE NEW STATE.**
+#
+# **AND "arguments are read left to right: each passed unchanged until used" REFUSED EVERY
+# SPELLING THAT PASSED THE STATE TO BOTH THE ADDER AND THE RECURSION** -- **AND THE PORT's OWN
+# `merge_dicts.go` SOLVES IT: THE STATE IS PASSED **ONCE**, INSIDE THE ADDER's ARGUMENT LIST,
+# AND THE ADDER ANSWERS THE NEW STATE.**
+def UOp.gcd.mk2(+ar: Arena, +uops: List<&2, U32>, empty: Bool) -> Found:
+  match empty:
+    case True{}: UOp.gcd.const(ar, uops)
+    case False{}: UOp.gcd.answer(ar, uops)
+
+# **AND THE CONSTANT ANSWER: `uops[0].const_like(gcd(*factors))`** -- **AND THE PORT SPELLS THE
+# **UNSHAPED** `const_like`, WHICH IS `UOp.const(b, dt)`.**
+def UOp.gcd.mk(+ar: Arena, +uops: List<&2, U32>) -> Found:
+  UOp.gcd.mk2(ar, uops, UOp.gcd.isempty(ctr_inter(UOp.gcd.count(ar, UOp.gcd.terms(ar, uops)))))
+
+def UOp.gcd(+ar: Arena, +uops: List<&2, U32>) -> Found:
+  match uops:
+    case Nil{}: Found{ar, 0}
+    case h <> t: UOp.gcd.mk(ar, uops)
+
+# AND THE TWO ARMS: **THE COUNT IS EMPTY** AND **IT IS NOT** -- AND THE COMPARISON IS A
+# **PARAMETER** AND NOT A COMPUTED VALUE (MEASURED 2026-11-08).
 
 # `index` -- ops.py:578. `UOp(Ops.INDEX, src=(self,)+tuple(new_srcs))`, and above it
 # a guard: a STACK indexed by ONE CONST is not an INDEX at all, it is that element
@@ -10339,6 +10928,149 @@ def set_rows(+ar: Arena) -> IO(Unit):
     c : Unit <- set_row("set_end_two", ar, 3, 4, Some{[5, 6]})
     set_row("set_end_two_src", ar, 3, 4, Some{[6, 5]})
 
+# THE GCD OF TWO UNRELATED VARIABLES IS **1** -- **A CONST WITH NO SRCS.**
+#
+# **AND THE ARENA MUST BE THREADED BETWEEN THE TWO VARIABLES** -- MEASURED 2026-11-08:
+# A PROBE BUILT `x` AND `y` FROM **ONE** `Arena.empty()` AND READ `x=1 y=1 z=1 nodes=1` --
+# **BECAUSE `UOp.variable` ANSWERS A `Found` WHICH CARRIES THE **GROWN** ARENA, AND A CALLER
+# THAT IGNORES `Found.ar` GETS TWO SIBLING ARENAS** (`ops.bend:2784`: "def Found.ar(f: Found)
+# -> Arena"). **SO THE SECOND VARIABLE IS BUILT IN THE FIRST's ARENA.**
+def t_gcd_const() -> Bool:
+  +ar0 = Arena.empty()
+  +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar1 = Found.ar(fx)
+  +fy = UOp.variable(ar1, "y", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar2 = Found.ar(fy)
+  +g = UOp.gcd(ar2, [Found.i(fx), Found.i(fy)])
+  +ga = Found.ar(g)
+  Bool.and(eq_op(Arena.op(ga, Found.i(g)), OpsCONST{}), U32.is_eq(Arena.nsrc(ga, Found.i(g)), 0))
+
+# THE GCD OF `x*z` AND `x*z` IS **THE SHARED FACTOR** -- **AND THE CONSTANT IS **STRIPPED** BY
+# `pop_const`**, WHICH IS WHAT MAKES THE COUNTER `{x:1}` AND NOT `{x:1, 3:1}`.
+def t_gcd_shared() -> Bool:
+  +ar0 = Arena.empty()
+  +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar1 = Found.ar(fx)
+  +fz = UOp.variable(ar1, "z", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar2 = Found.ar(fz)
+  +mxz = UOp.alu(ar2, OpsMUL{}, [Found.i(fx), Found.i(fz)])
+  +ar3 = Found.ar(mxz)
+  +g = UOp.gcd(ar3, [Found.i(mxz), Found.i(mxz)])
+  +ga = Found.ar(g)
+  eq_op(Arena.op(ga, Found.i(g)), OpsMUL{})
+
+# ===========================================================================
+# THE **TOP-LEVEL** `arg` LANE -- **AND IT IS THE LANE THAT REPLACES THE THREE `tag_*` ROWS
+# IN `gates/ops-core-gate.py`.**
+#
+# **AND THE REPLACEMENT IS A MEASUREMENT, NOT A WHIM:** MEASURED 2026-11-08, UPSTREAM DELETED
+# `UOp.tag` IN `fb518b44e` ("delete UOp.tag [pr] (#18954)", 2026-10-21) **AND
+# `git merge-base --is-ancestor fb518b44e f5ac54685074` ANSWERS YES** -- SO AT THE PIN THERE IS
+# NO `tag` SLOT, **AND `rg '\btag\b' tinygrad/uop/ops.py` FINDS **NOTHING**.** THE PIN's KEY IS
+# `(op, src, arg, type(arg))` (`ops.py:194`), **SO `type(arg)` IS THE ONLY THING THAT SPLITS THE
+# KEY BY A PYTHON TYPE.**
+#
+# **AND THE PORT's `arg` CARRIES THAT TYPE IN ITSELF** -- `APy{CBool{…}}` AND `APy{CInt{…}}` ARE
+# DIFFERENT `Arg` VALUES AND `ANone{}` IS A THIRD -- **SO THE PORT CAN ANSWER THE QUESTION, AND
+# THE THREE ROWS BELOW ASK IT AT THE **TOP LEVEL** OF `arg`, WHICH THE `pynest_*` ROWS ASK **ONE
+# LEVEL DEEP** (INSIDE `ParamArg.val`) AND THE `const_bool_vs_int_splits` ROW ASKS ABOUT A
+# CONST's DTYPE-KEY.**
+#
+# **AND CPYTHON's OWN ANSWERS, MEASURED AT THE PIN:** `arg=True` vs `arg=1` is **False** (the
+# types differ), `arg=True` vs `arg=False` is **False**, `arg=None` vs `arg=0` is **False**
+# (`NoneType` is not `int`), `arg=True` vs `arg=True` is **True**, `arg=1` vs `arg=1` is
+# **True**, `arg=None` vs `arg=None` is **True**.
+# ===========================================================================
+
+# THE SAME `arg` ON TWO NODES: **ONE NODE** (the two interned together).
+def arg_same(a1: Arg, a2: Arg) -> Bool:
+  +u = UOp.new(Arena.empty(), OpsSINK{}, Nil{}, a1, TNone{})
+  +v = UOp.new(Found.ar(u), OpsSINK{}, Nil{}, a2, TNone{})
+  U32.is_eq(Found.i(u), Found.i(v))
+
+# **A `bool` AND AN `int` ARE **TWO** NODES** -- because `type(arg)` IS IN THE KEY.
+def t_arg_bool_vs_int_splits() -> Bool:
+  Bool.not(arg_same(APy{CBool{True{}}}, APy{CInt{H.i64_of_i32(1)}}))
+
+# **AND A `None` AND AN `int` ARE **TWO** NODES** -- `NoneType` is not `int`.
+def t_arg_none_vs_int_splits() -> Bool:
+  Bool.not(arg_same(ANone{}, APy{CInt{H.i64_of_i32(0)}}))
+
+# **AND THE CONTROL THAT THE COMPARATOR IS NOT "CROSS EVERY TYPE AGAINST EVERY OTHER"**: two
+# `int`s with the same value ARE ONE NODE.
+def t_arg_int_same_interns() -> Bool:
+  arg_same(APy{CInt{H.i64_of_i32(1)}}, APy{CInt{H.i64_of_i32(1)}})
+
+# ===========================================================================
+# `UOp.divide_exact` -- ops.py:1038-1047. **AND CPYTHON's OWN `UOp.divide_exact` IS THE
+# ORACLE.**
+#
+# **AND CPYTHON's ANSWERS, MEASURED AT THE PIN:**
+#   divide_exact(x, x)      = **1**
+#   divide_exact(x, 2)      = **None**   (`x` DOES NOT DIVIDE 2)
+#   divide_exact(x, y)      = **None**
+#   divide_exact(x*y, y)    = **(mul 1 x)**   -- **THE CONSTANT IS **STRIPPED** BY
+#                                `pop_const`, WHICH IS WHAT MAKES THE COUNTER `{x:1}`**
+#   divide_exact(x+y, y)    = **None**   (**AND `y` DOES NOT DIVIDE `x`**, SO THE ADD's FIRST
+#                                SRC FAILS)
+#   divide_exact(x*y, x)    = **(mul 1 y)**
+#   divide_exact(x*2, x)    = **2**      (**THE CONSTANT COMES OUT**)
+#   divide_exact(x*2, 2)    = **(mul x 1)**
+# ===========================================================================
+
+# **THE `self IS v` ANSWER IS **1** -- A CONST WITH NO SRCS.**
+def t_de_same() -> Bool:
+  +ar0 = Arena.empty()
+  +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar1 = Found.ar(fx)
+  +d = UOp.divide_exact(ar1, Found.i(fx), Found.i(fx))
+  +ga = Found.ar(Dq.f(d))
+  Bool.and(Dq.ok(d), eq_op(Arena.op(ga, Found.i(Dq.f(d))), OpsCONST{}))
+
+# **THE "v IS A CONST AND self DOES NOT DIVIDE IT" ANSWER IS **NONE**.**
+def t_de_const_none() -> Bool:
+  +ar0 = Arena.empty()
+  +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar1 = Found.ar(fx)
+  +c2 = UOp.const(ar1, CInt{H.i64_of_i32(2)})
+  +d = UOp.divide_exact(Found.ar(c2), Found.i(fx), Found.i(c2))
+  Bool.not(Dq.ok(d))
+
+# **THE `x*y DIVIDED BY y` ANSWER IS **A MUL** -- **AND THE CONSTANT IS **STRIPPED** BY
+# `pop_const`, WHICH IS WHAT MAKES THE COUNTER `{x:1}` AND NOT `{x:1, 2:1}`.**
+def t_de_mul() -> Bool:
+  +ar0 = Arena.empty()
+  +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar1 = Found.ar(fx)
+  +fy = UOp.variable(ar1, "y", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar2 = Found.ar(fy)
+  +mxy = UOp.alu(ar2, OpsMUL{}, [Found.i(fx), Found.i(fy)])
+  +ar3 = Found.ar(mxy)
+  +d = UOp.divide_exact(ar3, Found.i(mxy), Found.i(fy))
+  +ga = Found.ar(Dq.f(d))
+  +gi = Found.i(Dq.f(d))
+  +left = Arena.src(ga, gi, 0)
+  Bool.and(Dq.ok(d),
+           Bool.and(eq_op(Arena.op(ga, gi), OpsMUL{}),
+                    Bool.and(eq_op(Arena.op(ga, left), OpsCONST{}),
+                             Cmp.is_eq(H.i64_cmp(UOp.divide_exact.constval(ga, left), H.i64_of_i32(1))))))
+
+# **THE `x*2 DIVIDED BY x` ANSWER IS **THE CONSTANT** -- **A CONST WITH NO SRCS** -- **AND THAT IS
+# THE `pop_const` CONST HALF COMING OUT ALONE.**
+def t_de_const_out() -> Bool:
+  +ar0 = Arena.empty()
+  +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar1 = Found.ar(fx)
+  +c2 = UOp.const(ar1, CInt{H.i64_of_i32(2)})
+  +ar2 = Found.ar(c2)
+  +mx2 = UOp.alu(ar2, OpsMUL{}, [Found.i(fx), Found.i(c2)])
+  +ar3 = Found.ar(mx2)
+  +d = UOp.divide_exact(ar3, Found.i(mx2), Found.i(fx))
+  +ga = Found.ar(Dq.f(d))
+  Bool.and(Dq.ok(d),
+           Bool.and(eq_op(Arena.op(ga, Found.i(Dq.f(d))), OpsCONST{}),
+                    Cmp.is_eq(H.i64_cmp(UOp.divide_exact.constval(ga, Found.i(Dq.f(d))), H.i64_of_i32(2)))))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     u0 : Unit <- set_rows(set_ar())
@@ -10352,6 +11084,12 @@ def main() -> IO(Unit):
     a : Unit <- row("ctr_bump", t_ctr_bump())
     a1 : Unit <- row("ctr_find", t_ctr_find())
     a4 : Unit <- row("ctr_inter", t_ctr_inter())
+    g0 : Unit <- row("gcd_const", t_gcd_const())
+    g1 : Unit <- row("gcd_shared", t_gcd_shared())
+    d0 : Unit <- row("de_same", t_de_same())
+    d1 : Unit <- row("de_const_none", t_de_const_none())
+    d2 : Unit <- row("de_mul", t_de_mul())
+    d3 : Unit <- row("de_const_out", t_de_const_out())
     a : Unit <- row("hashcons", t_hashcons())
     a2 : Unit <- row("float_zeros_differ", t_float_zeros_differ())
     a3 : Unit <- row("float_nan_interns", t_float_nan_interns())
