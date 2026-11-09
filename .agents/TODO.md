@@ -80,6 +80,26 @@ backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
                                         **STEPS 2 AND 3 (`grad_set`, the `bw` graph) ARE
                                         NOT DONE AND ARE NOT THIS UNIT.**
 proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
+turn-cost       [###.......] 3/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangRenderer`'s
+                                        0.12-2.54 ms. **MEASURED ON THE 782-UOP WIRE, WITH
+                                        CLOCKS **INSIDE** THE DAEMON** (`PARITY.md` §136):
+                                        wall **3.97 ms** = read 0.73 (MOSTLY THE CALLER's WAIT)
+                                        + **decode 0.99** + **render 2.26** + ~0.99 (THE CALLER's
+                                        ROUND TRIP), ⇒⇒⇒ **THE PORT's OWN SHARE IS 82%**.
+                                        **⇒⇒⇒ §137 CUT THE **RENDER** BY 13%** (THE OP EQUALITY:
+                                        A 75-ARM CHAIN BECAME ONE COMPARISON PER LITERAL), AND
+                                        THE **WHOLE TURN** IS **0.9432**. `same C: True`.
+                                        **⇒⇒⇒ THE NEXT PORT-SIDE TERM IS THE **DECODE** (0.99 ms),
+                                        AND THEN THE RENDER's REMAINING LEAVES (`ku_text` 1.157,
+                                        `_render_decl` 0.523, `rd_base_*` 0.223).
+                                        **⇒⇒⇒ THE INSTRUMENTS ARE IN `.agents/slop/cpuseam/builds/`
+                                        (`drive.py`, `instrument.py`, `abrender.py`, `cpuab2.py`),
+                                        AND A BUILD IS **A SECOND SOURCE OF TRUTH** (§136), SO
+                                        THE MEASUREMENT **BUILDS INSIDE** IT.
+                                        **⇒⇒⇒ AND THE CORPUS CERTIFICATE IS **GREEN** ON
+                                        `64bc53f29` (`substrate-start == substrate-end`,
+                                        38 graphs / 31 agree / 7 RECORDED exceptions,
+                                        repro 339 of 339, `corpuswitness-gate` PASS).
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
                                         **324 bindings -> 308 laws -> 305 LINKED ->

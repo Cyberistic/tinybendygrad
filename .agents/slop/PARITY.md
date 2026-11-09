@@ -6570,3 +6570,378 @@ ms** -- **A 54% INSTRUMENT OVERHEAD ON THE VERY THING BEING MEASURED.** ⇒⇒�
 AND NOT AROUND THEM, AND WHY THE COUNTS ARE **INSIDE** THE FUNCTION BODIES AND NOT AT THE CALL
 SITES.**
 
+### 137 THE OP EQUALITY IS **ONE** COMPARISON PER LITERAL, AND THE RENDER IS **13% FASTER**
+
+**⇒ ⇒ ⇒ §136 FOUND THE TARGET -- **THE RENDER**, AT **2.26 ms** OF A **3.97 ms** TURN -- AND THIS
+SECTION IS **THE FIRST CHANGE THAT ATTACKS IT**. ⇒ ⇒ ⇒ THE RENDER's SHAPE WAS MEASURED (THE
+PROFILER's INCLUSIVE SAMPLES, NORMALISED TO ms A TURN): `_render_named` **2.389** →
+`ku_text` **1.157** + `_render_emit` **1.045** → `_render_stmt` **0.597** → `_render_decl`
+**0.523**; AND THE **LEAVES** UNDER IT ARE **66% OF THE RENDER**, AND **THE TOP LEAF IS
+`cstyle_eq_op` AT 0.746 ms** -- ⇒⇒⇒ ⇒⇒⇒ **THE 75-ARM CHAIN, AND NOT THE STRING OR LIST
+MACHINERY.**
+
+**⇒ ⇒ ⇒ ⇒⇒⇒ THE COUNT, MEASURED **INSIDE** THE FUNCTION BODY (SO THE CALL's SHAPE IS UNCHANGED):
+**30,608 `cstyle.eq_op` CALLS A TURN**, ~**39 A UOP** -- `ku_inline2a` 3,220 · `ku_strips` 3,010 ·
+`ku_inline_op_set` 1,932 · `ku_inline2b2a` 1,288 · `ku_not_stmt_op` 1,221 · `_render_pop` 1,221 ·
+`_render_push` 814 · `ku_inline` 644 · `ku_inline2b1` 644 · `ku_is_alu_ex_where` 644 ·
+`ku_alu_srcs_go` 602 · `_render_plain` 48. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **AND AT THE ENUM's ORDER AN `OpsADD`
+COMPARISON IS THE **30TH**, AN `OpsMUL` THE 31ST, AN `OpsLOAD` THE 18TH -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+**⇒⇒⇒ THE TURN PAID ~1.13 MILLION STRING TAG COMPARISONS.**
+
+**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ THE FIX, AND IT IS **THE HOUSE PATTERN** THAT WAS ALREADY THERE. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+AT **18 OF THE 19** CALL SITES THE SECOND ARGUMENT IS **A LITERAL** -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **SO THE
+QUESTION IS *IS THIS OP's TAG THE CONSTANT `OpsADD`?* -- WHICH IS **ONE** COMPARISON WHEN IT IS
+WRITTEN AS A MATCH **ON THE VARIABLE** WITH THE LITERAL AS THE **ONLY** ARM.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ **⇒⇒⇒ AND **FOUR SUCH PREDICATES ALREADY EXISTED** -- `is_index`, `is_cast`, `is_const`,
+`is_add` -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ `eq_op` WAS THE **LEFTOVER** THAT NONE OF THEM
+REPLACED**, AND THE CHANGE IS **18 MORE PREDICATES** AND **29 CALL SITES** REWRITTEN.**
+
+**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ MEASURED, IN ONE PROGRAM, ON THE SAME WORKLOAD** (THE ELEVEN OPS THE
+RENDER SEES, EACH COMPARED AGAINST ELEVEN LITERALS), **BY CPU TIME**: `eq_op` **1537 us** AND THE
+PREDICATES **293 us** -- **A RATIO OF 0.1906**, SO THE PREDICATES COST **80.9% LESS**. ⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ ⇒⇒⇒ **AND THE TWO FORMS' ANSWERS **AGREE** (MEASURED, `same T`), SO THIS IS NOT A SEMANTIC
+CHANGE.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ AND WHY A GENERIC HELPER IS NOT THE SHAPE: A `match` CANNOT
+SCRUTINIZE A **COMPUTED VALUE** (\"give it its own def\"), AND A NESTED `match` ON A CALL IS REFUSED
+TOO -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ SO THE LITERAL MUST BE ITS OWN ARM, WHICH IS WHY THERE IS
+**ONE PREDICATE PER LITERAL** AND NOT **ONE** HELPER.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ AND `eq_op`
+ITSELF STAYS, FOR THE **ONE** CALL SITE THAT COMPARES **TWO VARIABLES**
+(`eq_op(ku_op_at(kus, h), op)`).**
+
+**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ON THE TREE, THE **RENDER's OWN WALL** (THE CLOCK IS **INSIDE**
+THE RENDER, SO IT IS **THE PORT's WORK** AND NOT THE CALLER's WAIT), **100 PAIRED TURNS** -- THE TWO
+DAEMONS **ALTERNATED TURN BY TURN**, BECAUSE MEASURED, THE MACHINE RAN AT **LOAD AVERAGE 20–47**
+WITH OTHER UNITS' `tsc --noEmit` AT **354%/153%/131%** AND **A WHOLE-SIDE RUN's MEDIAN MOVED BY
+2.4x BETWEEN RUNS ON THE **SAME** BUILD -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ A WHOLE-SIDE RUN
+IS **A MEASUREMENT OF THE LOAD**; AN ALTERNATED PAIR IS **A COMPARISON**:**
+
+```
+RUN 1  RATIO 0.8573   80/100 FASTER   same C: True
+RUN 2  RATIO 0.8766   74/100 FASTER   same C: True
+RUN 3  RATIO 0.8763   75/100 FASTER   same C: True
+```
+
+**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ THE **WHOLE TURN** (THE CALLER's WALL) IS **0.9432**, BECAUSE THE
+RENDER's 13% IS DILUTED BY THE **DECODE** AND THE **CALLER's ROUND TRIP** -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+**⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE DECODE IS THE **NEXT** PORT-SIDE TERM, AT **0.99 ms** (§136).**
+
+**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ AND THE **CERTIFICATE**, TAKEN IN A **CLEAN WORKTREE** BECAUSE
+ANOTHER UNIT HAD AN IN-FLIGHT EDIT IN THE MAIN TREE (WHICH MOVED `substrate-end`):**
+
+```
+graphs=38  graphs-answered=38  graphs-agree=31  graphs-disagree=7  byte-identical=31
+graphs-refused=0  not-comparable=0  expect-moved=0
+stable-pairs 5 of 5   stable-failed 0 of 5   plants-disagree 8 of 8
+controls 5 of 5   conflations 4 of 4   cross 1 of 1
+selfcheck=# SELFCHECK: OK   oracle-selfcheck=# ORACLE SELFCHECK: OK   census-rc=rc=0
+substrate-start=0ed3d65e8ad42024…  substrate-end=0ed3d65e8ad42024…  substrate-head=64bc53f29
+repro: 339 of 339 files identical across two clean runs
+corpuswitness-gate: PASS -- the claim is ESTABLISHED
+```
+
+**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE **SEVEN** DISAGREEMENTS ARE THE **RECORDED** PERMUTE
+EXCEPTIONS (`matmul`, `reduce`, `commute`, `binblob`, `flip`, `bw`, `gral`) -- **UNCHANGED** BY THIS
+COMMIT, WHICH IS WHAT "THE C DID NOT MOVE" MEANS.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE
+PROOF GATE IS **GREEN**: `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` → **rc=0**,
+"ALL PROOFS CHECK".**
+
+**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND **TWO TOOLING NOTES §136 ESTABLISHED, BOTH REPAID**:
+**⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ (1) **A BUILD IS A SECOND SOURCE OF TRUTH**, AND IT DOES
+NOT ANNOUNCE ITSELF** -- MEASURED, `/tmp/serve_final135.js` WAS FROM **Nov 7 23:08** AND TWO FIXES
+LANDED AT **Nov 8 00:55** AND **00:57**, ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ SO EVERY
+NUMBER MEASURED AGAINST IT WAS A NUMBER ABOUT **A PROGRAM THAT IS NOT THE TREE**; ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ (2) **`RUSAGE_CHILDREN` IS **STALE UNTIL THE CHILD IS REAPED** --
+MEASURED, IT READ `(0.0, 0.0)` WHILE THE DAEMON WAS RUNNING AND THE NUMBERS ONLY APPEARED AFTER
+`kill(); wait()`** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+**⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ SO THE CPU CLOCK IS **THE DAEMON's OWN `process.cpuUsage()`**,
+READ **INSIDE** IT.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+**⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND ON A **LOADED** MACHINE EVEN THAT IS **NOISE**:
+MEASURED, THE RENDER's **CPU** RATIO READ **1.1746** (A LOSS) WHERE THE **WALL** READ **0.9029** (A
+WIN) ON THE **SAME** TURNS -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
