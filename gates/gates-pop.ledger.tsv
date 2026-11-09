@@ -215,6 +215,8 @@ gates/import-path-census-gate.py	py-main	-	0	1
 gates/indexread-gate.py	py-main	-	0	1
 gates/indexshort-gate.py	py-main	__file__.parent	0	1
 gates/indexstale-gate.py	py-main	__file__.parent	0	1
+gates/invalid-tensor-gate.py	py-main	-	0	1
+gates/invalid-tensor-oracle.py	py-main	-	0	1
 gates/js-lane-census.py	py-main	__file__.parent	1	1
 gates/lane-census.py	py-main	__file__.parent	0	1
 gates/lanewitness-gate.py	py-main	__file__.parent	0	1
