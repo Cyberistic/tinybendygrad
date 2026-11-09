@@ -1699,6 +1699,103 @@ def ku_op_at(+kus: List<&2, List<&2, KU>>, i: U32) -> O.Op: ku_op_at.go(ku_at(ku
 #
 # **⇒ AND THIS IS A LOCAL SPELLING BECAUSE `ops.bend`'s OWN `eq_op` IS NOT MINE TO CHANGE** (ANOTHER
 # UNIT HAS AN UNCOMMITTED EDIT IN IT), **⇒ AND THE 24 CALL SITES IN THIS FILE ARE.**
+#
+# **⇒⇒⇒ THE OP PREDICATES, **ONE PER LITERAL**, AND **EACH IS **ONE** COMPARISON**.
+#
+# ⇒⇒⇒ **WHY THEY EXIST, AND IT IS MEASURED.** `eq_op` IS **A MATCH ON TWO SCRUTINEES**, AND A
+# MATCH IN THIS LANGUAGE IS **A LINEAR CHAIN OF TAG COMPARISONS** -- **75 ARMS** -- ⇒⇒⇒ ⇒⇒⇒ SO
+# `eq_op(op, O.OpsADD{})` PAYS **THE CHAIN POSITION OF `OpsADD`** COMPARES, WHICH IS **30** AT
+# THE ENUM's ORDER. ⇒⇒⇒ ⇒⇒⇒ AND AT **18 OF THE 19** CALL SITES THE SECOND ARGUMENT IS **A
+# LITERAL**, ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ SO THE QUESTION IS *IS THIS OP's TAG THE CONSTANT `OpsADD`?* -- WHICH IS
+# **ONE** COMPARISON WHEN IT IS WRITTEN AS A MATCH **ON THE VARIABLE** WITH THE LITERAL AS THE
+# **ONLY** ARM, WHICH IS WHAT `is_add(op)` IS.
+#
+# ⇒⇒⇒ ⇒⇒⇒ MEASURED, IN ONE PROGRAM, ON THE SAME WORKLOAD (THE ELEVEN OPS THE RENDER SEES, EACH
+# COMPARED AGAINST ELEVEN LITERALS), BY **CPU TIME**: `eq_op` **1537 us** AND THE PREDICATES
+# **293 us** -- **A RATIO OF 0.1906**, SO THE PREDICATES COST **80.9% LESS**. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND
+# THE TWO FORMS' ANSWERS **AGREE** (MEASURED, `same T`), SO THIS IS NOT A SEMANTIC CHANGE.
+#
+# ⇒⇒⇒ ⇒⇒⇒ AND WHY A GENERIC HELPER IS NOT THE SHAPE: A `match` CANNOT SCRUTINIZE A **COMPUTED
+# VALUE** ("give it its own def"), AND A NESTED `match` ON A CALL IS REFUSED TOO -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+# SO THE LITERAL MUST BE ITS OWN ARM, WHICH IS WHY THERE IS **ONE PREDICATE PER LITERAL** AND NOT
+# **ONE** HELPER.
+#
+# ⇒⇒⇒ ⇒⇒⇒ AND **FOUR OF THEM ALREADY EXIST** (`is_index`, `is_cast`, `is_const`, `is_add`), SO
+# THIS IS THE **HOUSE PATTERN** AND NOT A NEW ONE -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND `eq_op` IS THE
+# **LEFTOVER** THAT NONE OF THEM REPLACED.
+def is_and(op: O.Op) -> Bool:
+  match op:
+    case O.OpsAND{}: True{}
+    case _: False{}
+def is_backedge(op: O.Op) -> Bool:
+  match op:
+    case O.OpsBACKEDGE{}: True{}
+    case _: False{}
+def is_binary(op: O.Op) -> Bool:
+  match op:
+    case O.OpsBINARY{}: True{}
+    case _: False{}
+def is_bitcast(op: O.Op) -> Bool:
+  match op:
+    case O.OpsBITCAST{}: True{}
+    case _: False{}
+def is_buffer(op: O.Op) -> Bool:
+  match op:
+    case O.OpsBUFFER{}: True{}
+    case _: False{}
+def is_customi(op: O.Op) -> Bool:
+  match op:
+    case O.OpsCUSTOMI{}: True{}
+    case _: False{}
+def is_end(op: O.Op) -> Bool:
+  match op:
+    case O.OpsEND{}: True{}
+    case _: False{}
+def is_endif(op: O.Op) -> Bool:
+  match op:
+    case O.OpsENDIF{}: True{}
+    case _: False{}
+def is_if(op: O.Op) -> Bool:
+  match op:
+    case O.OpsIF{}: True{}
+    case _: False{}
+def is_load(op: O.Op) -> Bool:
+  match op:
+    case O.OpsLOAD{}: True{}
+    case _: False{}
+def is_mul(op: O.Op) -> Bool:
+  match op:
+    case O.OpsMUL{}: True{}
+    case _: False{}
+def is_or(op: O.Op) -> Bool:
+  match op:
+    case O.OpsOR{}: True{}
+    case _: False{}
+def is_range(op: O.Op) -> Bool:
+  match op:
+    case O.OpsRANGE{}: True{}
+    case _: False{}
+def is_refparam(op: O.Op) -> Bool:
+  match op:
+    case O.OpsREFPARAM{}: True{}
+    case _: False{}
+def is_shrink(op: O.Op) -> Bool:
+  match op:
+    case O.OpsSHRINK{}: True{}
+    case _: False{}
+def is_stack(op: O.Op) -> Bool:
+  match op:
+    case O.OpsSTACK{}: True{}
+    case _: False{}
+def is_where(op: O.Op) -> Bool:
+  match op:
+    case O.OpsWHERE{}: True{}
+    case _: False{}
+def is_xor(op: O.Op) -> Bool:
+  match op:
+    case O.OpsXOR{}: True{}
+    case _: False{}
+
 def eq_op(x: O.Op, y: O.Op) -> Bool:
   match x y:
     case O.OpsSPECIAL{} O.OpsSPECIAL{}: True{}
@@ -1782,7 +1879,7 @@ def eq_op(x: O.Op, y: O.Op) -> Bool:
 
 def ku_is_const_at(+kus: List<&2, List<&2, KU>>, +i: U32) -> Bool: ku_is_const_at.go(ku_at(kus, i))  def ku_is_cast_at.go(m: Maybe<&2, KU>) -> Bool:
   match m:
-    case Some{k}: eq_op(KU.op(k), O.OpsCAST{})
+    case Some{k}: is_cast(KU.op(k))
     case None{}: False{}
 
 def ku_is_cast_at(+kus: List<&2, List<&2, KU>>, +i: U32) -> Bool: ku_is_cast_at.go(ku_at(kus, i))  def ku_src0_at.go(m: Maybe<&2, KU>) -> U32:
@@ -1884,8 +1981,8 @@ def ku_text_wmma(dev: U32, +k: KU, +r: Rows) -> String:
 # THE STRIP IS THE SAME-OP TEST AND IT IS NOT COSMETIC: it is what makes
 # `((x)+(y))` AND `((x)+(y)+(z))` COMPOSE.
 def ku_strips(+op: O.Op) -> Bool:
-  Bool.or(Bool.or(eq_op(op, O.OpsADD{}), eq_op(op, O.OpsMUL{})),
-    Bool.or(eq_op(op, O.OpsXOR{}), Bool.or(eq_op(op, O.OpsOR{}), eq_op(op, O.OpsAND{}))))
+  Bool.or(Bool.or(is_add(op), is_mul(op)),
+    Bool.or(is_xor(op), Bool.or(is_or(op), is_and(op))))
 
 # ===========================================================================
 # THE WALK -- the port of `cstyle.py:208-266`'s BODY. THE STATE IS SIX THINGS
@@ -2000,13 +2097,13 @@ def ku_indent(depth: U32) -> String:
   ku_indent.go(U32.to_nat(depth), "")
 
 def ku_inline2a(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
-  Bool.or(Bool.and(eq_op(op, O.OpsCAST{}), ku_is_const_at(kus, KU.src0(k))),
-    Bool.or(Bool.or(eq_op(op, O.OpsINDEX{}), eq_op(op, O.OpsSHRINK{})),
-      Bool.or(eq_op(op, O.OpsCUSTOMI{}), eq_op(op, O.OpsREFPARAM{}))))
+  Bool.or(Bool.and(is_cast(op), ku_is_const_at(kus, KU.src0(k))),
+    Bool.or(Bool.or(is_index(op), is_shrink(op)),
+      Bool.or(is_customi(op), is_refparam(op))))
 
 # `(u.op is Ops.LOAD and u.src[0].addrspace == AddrSpace.REG and child_count[u] == 1)`
 def ku_inline2b2a(+op: O.Op, +k: KU) -> Bool:
-  Bool.and(Bool.or(eq_op(op, O.OpsCAST{}), eq_op(op, O.OpsBITCAST{})),
+  Bool.and(Bool.or(is_cast(op), is_bitcast(op)),
     Bool.or(is_global(KU.addr(k)), is_local(KU.addr(k))))
 
 # `(u.op in {Ops.STACK, *(GroupOp.ALU-{Ops.WHERE}), Ops.CAST, Ops.BITCAST} and child_count[u] == 1)`
@@ -2021,7 +2118,7 @@ def ku_src_is_reg(+kus: List<&2, List<&2, KU>>, k: KU) -> Bool:
   ku_src_is_reg.go(ku_at(kus, KU.src0(k)))
 
 def ku_is_alu_ex_where(+op: O.Op) -> Bool:
-  Bool.and(R.is_alu(op), Bool.not(eq_op(op, O.OpsWHERE{})))
+  Bool.and(R.is_alu(op), Bool.not(is_where(op)))
 
 # ===========================================================================
 # THE WALK, ONE UOP AT A TIME. cstyle.py:221-262.
@@ -2042,16 +2139,16 @@ def ku_shape_str(+ss: List<&2, U32>) -> String:
   ku_shape_str.go(ss, "")
 
 def ku_not_stmt_op(+op: O.Op) -> Bool:
-  Bool.not(Bool.or(Bool.or(eq_op(op, O.OpsRANGE{}), eq_op(op, O.OpsBUFFER{})),
-    eq_op(op, O.OpsBINARY{})))
+  Bool.not(Bool.or(Bool.or(is_range(op), is_buffer(op)),
+    is_binary(op)))
 
 def _render.pop(+st: St, +k: KU) -> St:
-  Bool.pick(St, Bool.or(eq_op(KU.op(k), O.OpsENDIF{}),
-    Bool.or(eq_op(KU.op(k), O.OpsEND{}), eq_op(KU.op(k), O.OpsBACKEDGE{}))),
+  Bool.pick(St, Bool.or(is_endif(KU.op(k)),
+    Bool.or(is_end(KU.op(k)), is_backedge(KU.op(k)))),
     st_depth(st, U32.sub(St.depth(st), 1)), st)
 
 def _render.push(+st: St, +k: KU) -> St:
-  Bool.pick(St, Bool.or(eq_op(KU.op(k), O.OpsIF{}), eq_op(KU.op(k), O.OpsRANGE{})),
+  Bool.pick(St, Bool.or(is_if(KU.op(k)), is_range(KU.op(k))),
     st_depth(st, U32.add(St.depth(st), 1)), st)
 def DtN.dt(x: DtN) -> S.Dt:
   match x:
@@ -2118,12 +2215,12 @@ def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> Lis
   ku_alu_srcs.go(op, k, kus, r, KU.srcs(k), Nil{})
 
 def ku_inline2b1(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
-  Bool.and(eq_op(op, O.OpsLOAD{}),
+  Bool.and(is_load(op),
     Bool.and(ku_src_is_reg(kus, k), U32.is_eq(cc_at(k), 1)))
 def ku_inline_op_set(+op: O.Op) -> Bool:
-  Bool.or(eq_op(op, O.OpsSTACK{}),
+  Bool.or(is_stack(op),
     Bool.or(ku_is_alu_ex_where(op),
-      Bool.or(eq_op(op, O.OpsCAST{}), eq_op(op, O.OpsBITCAST{}))))
+      Bool.or(is_cast(op), is_bitcast(op))))
 
 def ku_inline2b2b(+op: O.Op, +k: KU) -> Bool:
   Bool.and(ku_inline_op_set(op), U32.is_eq(cc_at(k), 1))
@@ -2140,7 +2237,7 @@ def _render.plain(dev: U32, i: U32, +k: KU, kus: List<&2, List<&2, KU>>,
   # THE SEMICOLON IS THE WHOLE DIFFERENCE, so it is chosen as a STRING (two literals, free) and the line is
   # assembled ONCE. The previous spelling built two `st_kernel` calls and discarded one.
   +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), String.join(l, ""),
-    Bool.pick(String, eq_op(KU.op(k), O.OpsCAST{}), ";", "")]))
+    Bool.pick(String, is_cast(KU.op(k)), ";", "")]))
   +st2 = st_c(st1, ix)
   _render.push(st2, k)
 def uops_to_dtypes.put(+x: DtN, +acc: List<&2, DtN>) -> List<&2, DtN>:
@@ -2170,7 +2267,7 @@ def ku_inline2(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
 
 # `(u.op is Ops.CAST and u.src[0].op is Ops.CONST) or u.op in {Ops.INDEX, Ops.SHRINK, Ops.CUSTOMI, Ops.REFPARAM}`
 def ku_inline(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
-  Bool.and(Bool.or(Bool.not(eq_op(op, O.OpsCAST{})), U32.is_eq(KU.numel(k), 1)),
+  Bool.and(Bool.or(Bool.not(is_cast(op)), U32.is_eq(KU.numel(k), 1)),
     ku_inline2(op, k, kus))
 
 def BArg.image(b: BArg) -> Bool:
