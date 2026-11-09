@@ -6886,6 +6886,317 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def MINT_TAGS() -> List<&2, U32>: [0,2,3,4,6,8,9,10,11,17,19,22,29,30,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,58,59,60,61,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,98,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130]
 
 # ===========================================================================
+# `nested_div` -- divandmod.py:23. **AND IT IS THE **NEXT** UNPORTED ARM OF
+# `fold_divmod_general`, AND IT IS THE ONE THAT NEEDS **NO** `usum`.**
+#
+#     if d.op is Ops.DIV and x.op is Ops.MOD and (k := x.src[1].divides(c)) is not None and k.vmin > 0:
+#       return x.src[0] // y % k
+#
+# **AND IT IS INSIDE THE "** Constant Denominator Rules **" BLOCK** (`divandmod.py:19-21`), **SO
+# IT NEEDS `y` TO BE A CONST **GREATER THAN ZERO** -- **AND IT GOES **BEFORE** THE
+# `divide_by_gcd` ARM, **BECAUSE UPSTREAM's ORDER INSIDE `fold_divmod_general` IS THE
+# CONSTANT-DENOMINATOR RULES FIRST** (`divandmod.py:19-21`) **AND THE `divide_by_gcd` ARM IS IN
+# THE "** Variable Denominator / Fallback Rules **" BLOCK (`:72-96`).**
+#
+# **⇒ AND THE MEASURED ANSWERS ARE: MEASURED 2026-11-09 ON CPYTHON AT `f5ac54685074`,
+# `(floordiv (floormod x c8) c4)` IS `(mod (div x 4) 2)`; `(floordiv (floormod x n4) c4)` IS **NOT
+# REWRITTEN** (BECAUSE `k = -1` AND `k.vmin > 0` FAILS); AND `(floordiv (floormod x c2) c4)` IS
+# **NOT REWRITTEN** (BECAUSE `x.src[1].divides(c)` IS `None`, SINCE `2` DOES NOT DIVIDE `4`).**
+#
+# **⇒ AND THE **DIVIDEND** IS **THE MOD's** `src[0]`, NOT THE MOD NODE** -- MEASURED 2026-11-09:
+# THE PORT's ANSWER READ `(mod (div (mod x c8) c4) c2)` **AND UPSTREAM'S READS `(mod (div x 4)
+# c2)`**, **AND UPSTREAM's `x` IS `d.src[0]` (THE MOD NODE) **AND ITS `x.src[0]` IS THE MOD's
+# DIVIDEND.**
+#
+# **⇒ AND THE ANSWER IS MINTED IN **THE `k`'s OWN ARENA**, NOT IN THE INPUT's** -- MEASURED
+# 2026-11-09: THE PORT's ANSWER READ `6:MOD:5,6;5:DIV:3,4;...;4:~c4:;` **AND NODE `6` (THE `k`)
+# WAS **MISSING** FROM THE LISTING**, **BECAUSE THE `k` WAS MINTED IN THE INPUT's ARENA AND THE
+# ANSWER IN A **GROWN** ONE, **SO THE `k`'s INDEX WAS **STALE**.**
+#
+# **⇒ AND THE `k.vmin > 0` TEST IS AN **I64** COMPARISON AND NOT A `U32` ONE** -- MEASURED
+# 2026-11-09: A PROBE READ `probe=True` FOR THE NEGATIVE CASE, **AND THE REASON IS THAT THE
+# CONST's VALUE WAS READ WITH `H.lo32(i)` -- THE **LOW** 32 BITS -- AND `-1` AS AN I64 IS
+# ALL-ONES, **SO `lo32` IS `4294967295` WHICH IS **POSITIVE** IN A `U32`.** **THE SIGN IS LOST.**
+#
+# **⇒ AND THE `k` IS **THE **MOD's** DIVISOR** DIVIDED BY `c`** -- MEASURED 2026-11-09: A PROBE
+# READ `cval=4` **IN ALL THREE CASES**, **BECAUSE `sy_src1(x, u)` IS THE **DIV's** DIVISOR AND NOT
+# THE **MOD's**.**
+# ===========================================================================
+
+# AND THE **CONST's VALUE** OUT OF A `Maybe<&2, O.Const>` -- **AND THE `None` CASE IS **ZERO**,
+# WHICH IS THE PORT's OWN CONVENTION (`divandmod.bend`'s `dm_ival`).
+def dm_nd_val.of(m: Maybe<&2, O.Const>) -> Maybe<&2, U32>:
+  match m:
+    case Some{O.CInt{i}}: Some{H.lo32(i)}
+    case _: None{}
+
+def dm_nd_val.go(v: Maybe<&2, U32>) -> U32:
+  match v:
+    case Some{n}: n
+    case None{}: 0
+
+def dm_nd_val(+x: F.Folded, +u: U32) -> U32:
+  dm_nd_val.go(dm_nd_val.of(sy_val(x, u)))
+
+# AND THE **CONST's VALUE** AS AN `H.I64` -- **AND THE PORT's OWN `UOp.divides` TAKES **AN `H.I64`
+# DIVISOR** (`ops.bend:8273`)**.
+def dm_nd_val64.go(v: Maybe<&2, U32>) -> H.I64:
+  match v:
+    case Some{n}: H.i64_of_i32(n)
+    case None{}: H.i64_of_i32(0)
+
+def dm_nd_val64(+x: F.Folded, +u: U32) -> H.I64:
+  dm_nd_val64.go(dm_nd_val.of(sy_val(x, u)))
+
+# AND THE **`k.vmin > 0` GUARD** -- **AND IT IS AN **I64** COMPARISON** (MEASURED 2026-11-09: THE
+# SIGN IS LOST IF THE CONST's VALUE IS READ WITH `H.lo32`) **AND `Cmp` HAS NO `is_gt`, **SO THE
+# PORT's OWN `i64_le` SPELLING IS USED** (`helpers.bend:1705`: `Cmp.is_le(i64_cmp(a, b))` FOR
+# `a <= b`)** -- **AND `v > 0` IS `0 <= v`.**
+def dm_nd_positive.go(v: H.I64) -> Bool:
+  Cmp.is_le(H.i64_cmp(H.i64_of_i32(0), v))
+
+# AND THE **MOD's** DIVISOR: **THE MOD NODE IS `d.src[0]` AND ITS OWN SRC 1 IS THE MOD's
+# DIVISOR** -- MEASURED 2026-11-09: `sy_src1(x, u)` IS THE **DIV's** DIVISOR AND NOT THE MOD's.
+def dm_nd.moddiv(+x: F.Folded, +u: U32) -> U32:
+  sy_src1(x, sy_src0(x, u))
+
+# AND THE **`k`**: **`x.src[1].divides(c)`** -- **AND THE PORT's OWN `UOp.divides` ANSWERS A
+# `Dv{ok, f, i}` WHOSE `f` IS THE QUOTIENT's NODE** -- **AND FOR A CONST DIVISOR THE QUOTIENT IS
+# A **CONST** NODE** (MEASURED: `ops.bend`'s `dv.const2` MINTS `CONST(val // v)`).
+def dm_nd_k.go(d: O.Dv, ok: Bool) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: Some{O.Dv.f(d)}
+    case False{}: None{}
+
+def dm_nd_k(+x: F.Folded, +u: U32, c: H.I64) -> Maybe<&1, O.Found>:
+  +d = O.UOp.divides(U32.to_nat(O.Arena.next(sy_ar(x))), sy_ar(x), c, dm_nd.moddiv(x, u))
+  dm_nd_k.go(d, O.Dv.ok(d))
+
+# AND THE **`k`'s POSITIVENESS**, READ OFF THE `k`'s OWN NODE -- **AND THE VALUE IS AN `H.I64`,
+# BECAUSE THE SIGN MATTERS** (MEASURED 2026-11-09: THE `lo32` READ LOST IT).
+def dm_nd_val_of.go(arg: O.Arg) -> H.I64:
+  match arg:
+    case O.APy{O.CInt{i}}: i
+    case _: H.i64_of_i32(0)
+
+def dm_nd_val_of(+k: O.Found) -> H.I64:
+  dm_nd_val_of.go(O.Arena.arg(O.Found.ar(k), O.Found.i(k)))
+
+def dm_nd_k.pos.go(k: Maybe<&1, O.Found>) -> Bool:
+  match k:
+    case Some{kk}: dm_nd_positive.go(dm_nd_val_of(kk))
+    case None{}: False{}
+
+# AND THE **DIVIDEND**: **`x.src[0]` WHERE `x` IS THE **MOD** NODE** (MEASURED 2026-11-09: THE
+# PORT's ANSWER READ `(mod (div (mod x c8) c4) c2)` **AND UPSTREAM'S READS `(mod (div x 4) c2)`**).
+def dm_nd.dividend(+x: F.Folded, +u: U32) -> U32:
+  sy_src0(x, sy_src0(x, u))
+
+# AND THE ANSWER: **`x.src[0] // y % k`** -- **AND IT IS **THE PORT's OWN `mint_bin`** TWICE:
+# **FIRST THE DIV AND THEN THE MOD**, **AND IT IS MINTED IN **THE `k`'s OWN ARENA** (MEASURED
+# 2026-11-09: THE `k` WAS **STALE** WHEN THE ANSWER WAS MINTED IN THE INPUT's ARENA).
+def dm_nd_answer(+x: F.Folded, +u: U32, +k: O.Found) -> O.Found:
+  +q = mint_bin(mint_ar(O.Found.ar(k)), O.OpsDIV{}, dm_nd.dividend(x, u), sy_src1(x, u))
+  mint_bin(q, O.OpsMOD{}, O.Found.i(q), O.Found.i(k))
+
+# AND THE ARM'S GUARDS: **`d.op is Ops.DIV` AND `x.op is Ops.MOD`** -- **AND `x` IS `d.src[0]`
+# AND `y` IS `d.src[1]`** -- **AND THE PORT's OWN `sy_is_op` READS AN OP.**
+def dm_nd.pat.go(isdiv: Bool, ismod: Bool) -> Bool:
+  Bool.and(isdiv, ismod)
+
+def dm_nd.pat(+x: F.Folded, +u: U32) -> Bool:
+  dm_nd.pat.go(sy_is_op(x, u, O.OpsDIV{}),
+              sy_is_op(x, sy_src0(x, u), O.OpsMOD{}))
+
+# AND THE **CONSTANT DENOMINATOR** GUARD: **`y.op is Ops.CONST and y.val > 0`** -- **AND `c` IS
+# `y`'s VALUE** -- **AND THE PORT's OWN `sy_is_const` AND `dm_nd_val` ANSWER BOTH HALVES.**
+def dm_nd.cst.go(isconst: Bool, c: U32) -> Bool:
+  Bool.and(isconst, U32.is_gt(c, 0))
+
+def dm_nd.cst(+x: F.Folded, +u: U32, c: U32) -> Bool:
+  dm_nd.cst.go(sy_is_const(x, sy_src1(x, u)), c)
+
+# AND THE **`k` AND ITS POSITIVENESS**.
+def dm_nd.k2(+k: O.Found, positive: Bool) -> Maybe<&1, O.Found>:
+  match positive:
+    case True{}: Some{k}
+    case False{}: None{}
+
+def dm_nd.k.go(k: Maybe<&1, O.Found>, positive: Bool) -> Maybe<&1, O.Found>:
+  match k:
+    case Some{kk}: dm_nd.k2(kk, positive)
+    case None{}: None{}
+
+def dm_nd.k(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  dm_nd.k.go(dm_nd_k(x, u, dm_nd_val64(x, sy_src1(x, u))),
+             dm_nd_k.pos.go(dm_nd_k(x, u, dm_nd_val64(x, sy_src1(x, u)))))
+
+# AND THE ANSWER'S ASSEMBLY.
+def dm_nd.mk2(+x: F.Folded, +u: U32, k: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match k:
+    case Some{kk}: Some{dm_nd_answer(x, u, kk)}
+    case None{}: None{}
+
+def dm_nd.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  dm_nd.mk2(x, u, dm_nd.k(x, u))
+
+# AND THE **RULE** -- **AND THE **CONSTANT DENOMINATOR** GUARD IS **THE PORT's OWN
+# `dm_103b`-SHAPED PATTERN** -- **AND THE ARM'S ANSWER IS THE `Maybe` OF A `Found`.**
+def dm_nd.pat2(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(dm_nd.pat(x, u),
+           dm_nd.cst(x, u, dm_nd_val(x, sy_src1(x, u))))
+
+def dm_nd(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(dm_nd.pat2(x, u), dm_nd.mk(x, u))
+
+# AND THE ARM's ANSWER **WITHOUT** THE MATCHER's DISPATCH, **SO A ROW CAN ASK THE ARM DIRECTLY** --
+# **AND THE MATCHER's OWN PATH IS `sym_f`, WHICH THE ROWS DO **NOT** USE, **BECAUSE THE ROWS ARE
+# ABOUT THE **ARM** AND NOT ABOUT THE COMPOSITION.**
+def dm_nd.ans(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  dm_nd.mk(x, u)
+
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# ===========================================================================
+# THE `nested_div` ROWS -- divandmod.py:23. **AND THEY ARE **CPYTHON-CONFIRMED** AGAINST
+# CPYTHON's OWN `nested_div` ARM, **AND THE ROWS READ THE **ANSWER's SHAPE** AND ITS **VALUES**
+# AND NOT JUST "SOMETHING FIRED".**
+#
+# **AND THE MEASURED UPSTREAM ANSWERS (2026-11-09, ON CPYTHON AT `f5ac54685074`, **BY
+# EVALUATING UPSTREAM's OWN ARM TEXT** `divandmod.py:23`):**
+#   `(floordiv (floormod x c8) c4)`  ->  `(mod (div x 4) 2)`
+#   `(floordiv (floormod x n4) c4)`  ->  **NOT REWRITTEN** (THE `k = -1` AND `k.vmin > 0` FAILS)
+#   `(floordiv (floormod x c2) c4)`  ->  **NOT REWRITTEN** (`2` DOES NOT DIVIDE `4`)
+#
+# **⇒ AND THE ROWS ARE **HERE** BECAUSE THE ARM IS, **AND `gates/ops-core.bend` IMPORTS THIS
+# FILE AS `SY`.**
+#
+# **⇒ AND EVERY INDEX IS READ **ONCE** AND **EVERY NODE IS READ **ONCE** AND **EVERY LIST IS
+# READ **ONCE** -- MEASURED 2026-11-09, THE THREE FAILURES WERE "expected : nd / observed : nd
+# (consumed more than once)", "expected : i / observed : i (consumed more than once)" AND "expected
+# : s0 / observed : s0 (consumed more than once)".
+# ===========================================================================
+
+# AND THE **CONST's VALUE** IS **4** (THE DIVISOR) AND **2** (THE `k`) -- **AND EVERY VALUE IS
+# READ, AND NOT ONLY EVERY SHAPE**: MEASURED 2026-11-09, A PLANT THAT REPLACED THE **DIVIDEND**
+# WITH THE **MOD NODE** **DID NOT** GO RED WHEN THE ROW CHECKED ONLY THE SHAPE.
+def t_nd.isconst4.go(isconst: Bool, arg: O.Arg) -> Bool:
+  match arg:
+    case O.APy{O.CInt{i}}: Bool.and(isconst, Cmp.is_eq(H.i64_cmp(i, H.i64_of_i32(4))))
+    case _: False{}
+
+def t_nd.isconst4(+ar: O.Arena, +i: U32) -> Bool:
+  t_nd.isconst4.go(O.eq_op(O.Arena.op(ar, i), O.OpsCONST{}), O.Arena.arg(ar, i))
+
+def t_nd.isconst2.go(isconst: Bool, arg: O.Arg) -> Bool:
+  match arg:
+    case O.APy{O.CInt{i}}: Bool.and(isconst, Cmp.is_eq(H.i64_cmp(i, H.i64_of_i32(2))))
+    case _: False{}
+
+def t_nd.isconst2(+ar: O.Arena, +i: U32) -> Bool:
+  t_nd.isconst2.go(O.eq_op(O.Arena.op(ar, i), O.OpsCONST{}), O.Arena.arg(ar, i))
+
+# AND THE **ANSWER's NODE** IS READ **ONCE** -- **AND ITS OP **AND** ITS SRCS COME OFF IT**
+# (`ops.bend:1402`: `Arena.node(ar, i)` IS THE PORT's OWN SINGLE READ).
+def t_nd.shape8(+f: O.Found, +ans: O.Node, a1: U32, d0: U32, d1: U32) -> Bool:
+  +ar = O.Found.ar(f)
+  Bool.and(Bool.and(O.eq_op(O.Node.op(ans), O.OpsMOD{}),
+                    O.eq_op(O.Arena.op(ar, d0), O.OpsPARAM{})),
+           Bool.and(t_nd.isconst4(ar, d1), t_nd.isconst2(ar, a1)))
+
+
+def t_nd.shape7(+f: O.Found, +ans: O.Node, a1: U32, d0: U32, d1: U32) -> Bool:
+  t_nd.shape8(f, ans, a1, d0, d1)
+
+
+def t_nd.shape6(+f: O.Found, +ans: O.Node, a1: U32, +div: O.Node, div_srcs: List<&2, U32>) -> Bool:
+  match div_srcs:
+    case d0 <> d1 <> _:
+      t_nd.shape7(f, ans, a1, d0, d1)
+    case _: False{}
+
+
+def t_nd.shape5(+f: O.Found, +ans: O.Node, ans_srcs: List<&2, U32>) -> Bool:
+  match ans_srcs:
+    case a0 <> a1 <> _:
+      +div = O.Arena.node(O.Found.ar(f), a0)
+      t_nd.shape6(f, ans, a1, div, O.Node.src(div))
+    case _: False{}
+
+
+def t_nd.shape.go2(+f: O.Found) -> Bool:
+  match f:
+    case O.Found{ar, i}:
+      +nd = O.Arena.node(ar, i)
+      t_nd.shape5(f, nd, O.Node.src(nd))
+
+
+def t_nd.shape(+f: O.Found) -> Bool:
+  t_nd.shape.go2(f)
+
+
+def t_nd.shape.go(m: Maybe<&1, O.Found>) -> Bool:
+  match m:
+    case Some{f}: t_nd.shape.go2(f)
+    case None{}: False{}
+
+
+# AND "DID THE ARM FIRE" -- **AND `Maybe` HAS NO `is_some` IN THE PRELUDE** (MEASURED 2026-11-09:
+# `rg 'is_some' helpers.bend` AND `rg 'is_some' bend.ts` FIND **NOTHING**), **SO THE ROWS CARRY
+# THEIR OWN**, **AND THAT IS THE PORT's OWN CONVENTION** (`divandmod.bend`'s `dm_has`).
+def t_nd.some(m: Maybe<&1, O.Found>) -> Bool:
+  match m:
+    case Some{f}: True{}
+    case None{}: False{}
+
+# THE **`(x % k) // c`** GRAPH -- **AND `k` AND `c` ARE THE **MOD's** AND THE **DIV's** DIVISORS.
+def t_nd.graph(+k: H.I64, +c: H.I64) -> O.Found:
+  +ar0 = O.Arena.empty()
+  +fx = O.UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(20), 1, S.weakint())
+  +ar1 = O.Found.ar(fx)
+  +ck = O.UOp.const(ar1, O.CInt{k})
+  +ar2 = O.Found.ar(ck)
+  +cc = O.UOp.const(ar2, O.CInt{c})
+  +ar3 = O.Found.ar(cc)
+  +m = O.UOp.alu(ar3, O.OpsMOD{}, [O.Found.i(fx), O.Found.i(ck)])
+  +ar4 = O.Found.ar(m)
+  O.UOp.alu(ar4, O.OpsDIV{}, [O.Found.i(m), O.Found.i(cc)])
+
+# AND THE **`(x % 8) // 4` REWRITE**: **A MOD OF A DIV OF `x` BY THE CONST `4`, MODULO THE CONST
+# `2`** -- **AND THE `2` IS THE `k`, WHICH IS `8 // 4`.**
+def t_nd_rewrite() -> Bool:
+  +f = t_nd.graph(H.i64_of_i32(8), H.i64_of_i32(4))
+  +x = F.folded(O.Found.ar(f))
+  +u = O.Found.i(f)
+  t_nd.shape.go(dm_nd.ans(x, u))
+
+# AND THE **NEGATIVE** GUARD: **`(x % -4) // 4` IS **NOT** REWRITTEN** -- **AND THE `k` IS **-1**
+# AND `k.vmin > 0` FAILS.**
+def t_nd_neg() -> Bool:
+  +f = t_nd.graph(H.i64_neg(True{}, H.i64_of_i32(4)), H.i64_of_i32(4))
+  +x = F.folded(O.Found.ar(f))
+  +u = O.Found.i(f)
+  Bool.not(t_nd.some(dm_nd.ans(x, u)))
+
+# AND THE **NO-DIVIDE** GUARD: **`(x % 2) // 4` IS **NOT** REWRITTEN** -- **AND `2` DOES NOT
+# DIVIDE `4`.**
+def t_nd_nodiv() -> Bool:
+  +f = t_nd.graph(H.i64_of_i32(2), H.i64_of_i32(4))
+  +x = F.folded(O.Found.ar(f))
+  +u = O.Found.i(f)
+  Bool.not(t_nd.some(dm_nd.ans(x, u)))
+
+
+# ===========================================================================
 # `divandmod.py:103` -- THE **SLOW** RULE, `(UPat((Ops.DIV, Ops.MOD), dtypes.weakint,
 # name="d"), lambda d: fold_divmod_general(d))` -- **AND IT IS **THE ROW THE CENSUS NAMES AS
 # MISSING** (MEASURED 2026-11-09: `gates/symrules.rows` READS `118  divandmod.py:103  DIV,MOD
@@ -7050,10 +7361,18 @@ def dm_103b.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.or(sy_is_op(x, u, O.OpsDIV{}), sy_is_op(x, u, O.OpsMOD{})),
            Bool.and(sy_nsrc_is(x, u, 2), p_weakint(x, u)))
 
-# AND THE ANSWER: **THE ARM'S ANSWER** -- **AND THE ARM ANSWERS A `Maybe` OF A `Found`, AND THE
-# RULE'S ANSWER IS A `Maybe` OF A `Found` TOO.**
+# AND THE **TWO** ARMS ARE **FIRST-WINS** -- **AND THE `nested_div` ARM IS **FIRST** BECAUSE
+# UPSTREAM's CONSTANT-DENOMINATOR RULES PRECEDE THE VARIABLE-DENOMINATOR FALLBACK**
+# (`divandmod.py:19-21` AND `:72-96`) -- **AND THE PORT's OWN CONVENTION IS A **LEAF** OVER TWO
+# PARAMETERS (`divandmod.bend`'s `dm_first2.go`).
+def dm_103b.mk.go(a: Maybe<&1, O.Found>, b: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match a:
+    case Some{f}: Some{f}
+    case None{}: b
+
+# AND THE ANSWER: **THE `nested_div` ARM AND THEN THE `divide_by_gcd` ARM.**
 def dm_103b.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  dm_gcd_arm(sy_ar(x), u)
+  dm_103b.mk.go(dm_nd(x, u), dm_gcd_arm(sy_ar(x), u))
 
 def dm_103b(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(dm_103b.pat(x, u), dm_103b.mk(x, u))
