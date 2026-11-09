@@ -3,3 +3,6 @@ node_modules/
 .tanstack/
 dist/
 src/routeTree.gen.ts
+.env
+.env.*
+!.env.example
