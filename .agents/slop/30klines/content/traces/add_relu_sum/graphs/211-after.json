@@ -1,0 +1,866 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.op is a0', dtypes.v\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.arg == a1', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 2,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 3,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].op is a2', d\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 4,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src[0].src) == \u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 5,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].op is\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 6,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src[0].src[0].s\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 7,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].dtype\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 8,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 9,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[2].op is\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 10,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[2].arg =\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 11,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 12,
+  "op": "Ops.CUSTOMI",
+  "arg": "('r', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 13,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 14,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   12,
+   13
+  ]
+ },
+ {
+  "i": 15,
+  "op": "Ops.CUSTOMI",
+  "arg": "('upper', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 16,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 17,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   15,
+   16
+  ]
+ },
+ {
+  "i": 18,
+  "op": "Ops.CUSTOMI",
+  "arg": "('val', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 19,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[1]', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 20,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   18,
+   19
+  ]
+ },
+ {
+  "i": 21,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   14,
+   17,
+   20
+  ]
+ },
+ {
+  "i": 22,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[1].op is\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 23,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[1].arg =\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 24,
+  "op": "Ops.CUSTOMI",
+  "arg": "('lower', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 25,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   24,
+   16
+  ]
+ },
+ {
+  "i": 26,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[2]', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 27,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   18,
+   26
+  ]
+ },
+ {
+  "i": 28,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   22,
+   23,
+   11,
+   14,
+   25,
+   27
+  ]
+ },
+ {
+  "i": 29,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].op is\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 30,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 31,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src[0].src[0].s\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 32,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 33,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 34,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src[0].src[0].s\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 35,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 36,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 37,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 38,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src[0].src[0].s\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 39,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 40,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 41,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 42,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 43,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 44,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 45,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   12,
+   44
+  ]
+ },
+ {
+  "i": 46,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 47,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   24,
+   46
+  ]
+ },
+ {
+  "i": 48,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 49,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   15,
+   48
+  ]
+ },
+ {
+  "i": 50,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   37,
+   38,
+   39,
+   40,
+   41,
+   42,
+   43,
+   45,
+   47,
+   49,
+   20
+  ]
+ },
+ {
+  "i": 51,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 52,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 53,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 54,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src[0].src[0].s\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 55,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 56,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 57,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 58,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 59,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   12,
+   58
+  ]
+ },
+ {
+  "i": 60,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 61,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   24,
+   60
+  ]
+ },
+ {
+  "i": 62,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   51,
+   52,
+   53,
+   54,
+   55,
+   56,
+   57,
+   59,
+   61,
+   49,
+   20
+  ]
+ },
+ {
+  "i": 63,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   50,
+   62
+  ]
+ },
+ {
+  "i": 64,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   30,
+   31,
+   32,
+   33,
+   34,
+   35,
+   36,
+   63
+  ]
+ },
+ {
+  "i": 65,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 66,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 67,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 68,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 69,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src[0].src[0].s\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 70,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 71,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 72,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 73,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 74,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 75,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 76,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   12,
+   75
+  ]
+ },
+ {
+  "i": 77,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 78,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   24,
+   77
+  ]
+ },
+ {
+  "i": 79,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[0\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 80,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   15,
+   79
+  ]
+ },
+ {
+  "i": 81,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   68,
+   69,
+   70,
+   71,
+   72,
+   73,
+   74,
+   76,
+   78,
+   80,
+   20
+  ]
+ },
+ {
+  "i": 82,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 83,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 84,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 85,
+  "op": "Ops.CUSTOMI",
+  "arg": "('len(uop.src[0].src[0].s\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 86,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 87,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 88,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 89,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 90,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   12,
+   89
+  ]
+ },
+ {
+  "i": 91,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop.src[0].src[0].src[1\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 92,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   24,
+   91
+  ]
+ },
+ {
+  "i": 93,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   82,
+   83,
+   84,
+   85,
+   86,
+   87,
+   88,
+   90,
+   92,
+   80,
+   20
+  ]
+ },
+ {
+  "i": 94,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   81,
+   93
+  ]
+ },
+ {
+  "i": 95,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   65,
+   31,
+   32,
+   66,
+   67,
+   34,
+   35,
+   94
+  ]
+ },
+ {
+  "i": 96,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   64,
+   95
+  ]
+ },
+ {
+  "i": 97,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   3,
+   4,
+   29,
+   6,
+   7,
+   9,
+   10,
+   96
+  ]
+ },
+ {
+  "i": 98,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   21,
+   28,
+   97
+  ]
+ },
+ {
+  "i": 99,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   1,
+   2,
+   98
+  ]
+ }
+]

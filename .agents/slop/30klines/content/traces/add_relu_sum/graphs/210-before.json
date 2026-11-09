@@ -1,0 +1,1443 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.REDUCE",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 2,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   1
+  ]
+ },
+ {
+  "i": 3,
+  "op": "Ops.PYLITERAL",
+  "arg": "(Ops.ADD, 0)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 4,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.arg == {1}', dtypes\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   3
+  ]
+ },
+ {
+  "i": 5,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.CONST",
+  "arg": "0",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 7,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   6
+  ]
+ },
+ {
+  "i": 8,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.WHERE",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 9,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   7,
+   8
+  ]
+ },
+ {
+  "i": 10,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 3', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   7
+  ]
+ },
+ {
+  "i": 11,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   7,
+   6
+  ]
+ },
+ {
+  "i": 12,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.CMPLT",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 13,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   11,
+   12
+  ]
+ },
+ {
+  "i": 14,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   11
+  ]
+ },
+ {
+  "i": 15,
+  "op": "Ops.PYLITERAL",
+  "arg": "dtypes.bool",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 16,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.dtype is {1}', dtyp\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   11,
+   15
+  ]
+ },
+ {
+  "i": 17,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   11,
+   6
+  ]
+ },
+ {
+  "i": 18,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.RANGE",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 19,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   17,
+   18
+  ]
+ },
+ {
+  "i": 20,
+  "op": "Ops.CUSTOMI",
+  "arg": "('r', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 21,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   17
+  ]
+ },
+ {
+  "i": 22,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   19,
+   21
+  ]
+ },
+ {
+  "i": 23,
+  "op": "Ops.CUSTOMI",
+  "arg": "('upper', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 24,
+  "op": "Ops.CONST",
+  "arg": "1",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 25,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   11,
+   24
+  ]
+ },
+ {
+  "i": 26,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   23,
+   25
+  ]
+ },
+ {
+  "i": 27,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   26
+  ]
+ },
+ {
+  "i": 28,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   13,
+   14,
+   16,
+   22,
+   27
+  ]
+ },
+ {
+  "i": 29,
+  "op": "Ops.CUSTOMI",
+  "arg": "('val', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 30,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   7,
+   24
+  ]
+ },
+ {
+  "i": 31,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   29,
+   30
+  ]
+ },
+ {
+  "i": 32,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   31
+  ]
+ },
+ {
+  "i": 33,
+  "op": "Ops.CONST",
+  "arg": "2",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 34,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   7,
+   33
+  ]
+ },
+ {
+  "i": 35,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.CONST",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 36,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   34,
+   35
+  ]
+ },
+ {
+  "i": 37,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.arg == 0', dtypes.v\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   34
+  ]
+ },
+ {
+  "i": 38,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   36,
+   37
+  ]
+ },
+ {
+  "i": 39,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   9,
+   10,
+   28,
+   32,
+   38
+  ]
+ },
+ {
+  "i": 40,
+  "op": "Ops.CUSTOMI",
+  "arg": "('lower', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 41,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   40,
+   25
+  ]
+ },
+ {
+  "i": 42,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   41
+  ]
+ },
+ {
+  "i": 43,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   13,
+   14,
+   16,
+   22,
+   42
+  ]
+ },
+ {
+  "i": 44,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   30,
+   35
+  ]
+ },
+ {
+  "i": 45,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.arg == 0', dtypes.v\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   30
+  ]
+ },
+ {
+  "i": 46,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   44,
+   45
+  ]
+ },
+ {
+  "i": 47,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   29,
+   34
+  ]
+ },
+ {
+  "i": 48,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   47
+  ]
+ },
+ {
+  "i": 49,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   9,
+   10,
+   43,
+   46,
+   48
+  ]
+ },
+ {
+  "i": 50,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.AND",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 51,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   11,
+   50
+  ]
+ },
+ {
+  "i": 52,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.CMPEQ",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 53,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   17,
+   52
+  ]
+ },
+ {
+  "i": 54,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   17
+  ]
+ },
+ {
+  "i": 55,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.dtype is {1}', dtyp\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   17,
+   15
+  ]
+ },
+ {
+  "i": 56,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   17,
+   6
+  ]
+ },
+ {
+  "i": 57,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   56,
+   12
+  ]
+ },
+ {
+  "i": 58,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   56
+  ]
+ },
+ {
+  "i": 59,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.dtype is {1}', dtyp\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   56,
+   15
+  ]
+ },
+ {
+  "i": 60,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   56,
+   6
+  ]
+ },
+ {
+  "i": 61,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   60
+  ]
+ },
+ {
+  "i": 62,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   61
+  ]
+ },
+ {
+  "i": 63,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   56,
+   24
+  ]
+ },
+ {
+  "i": 64,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   40,
+   63
+  ]
+ },
+ {
+  "i": 65,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   64
+  ]
+ },
+ {
+  "i": 66,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   57,
+   58,
+   59,
+   62,
+   65
+  ]
+ },
+ {
+  "i": 67,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   17,
+   24
+  ]
+ },
+ {
+  "i": 68,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   67,
+   35
+  ]
+ },
+ {
+  "i": 69,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.arg == 0', dtypes.v\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   67
+  ]
+ },
+ {
+  "i": 70,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   68,
+   69
+  ]
+ },
+ {
+  "i": 71,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   66,
+   70
+  ]
+ },
+ {
+  "i": 72,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   56,
+   35
+  ]
+ },
+ {
+  "i": 73,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.arg == 0', dtypes.v\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   56
+  ]
+ },
+ {
+  "i": 74,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   72,
+   73
+  ]
+ },
+ {
+  "i": 75,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   67,
+   12
+  ]
+ },
+ {
+  "i": 76,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   67
+  ]
+ },
+ {
+  "i": 77,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.dtype is {1}', dtyp\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   67,
+   15
+  ]
+ },
+ {
+  "i": 78,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   67,
+   6
+  ]
+ },
+ {
+  "i": 79,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   78
+  ]
+ },
+ {
+  "i": 80,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   79
+  ]
+ },
+ {
+  "i": 81,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   67,
+   24
+  ]
+ },
+ {
+  "i": 82,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   40,
+   81
+  ]
+ },
+ {
+  "i": 83,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   82
+  ]
+ },
+ {
+  "i": 84,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   75,
+   76,
+   77,
+   80,
+   83
+  ]
+ },
+ {
+  "i": 85,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   74,
+   84
+  ]
+ },
+ {
+  "i": 86,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   71,
+   85
+  ]
+ },
+ {
+  "i": 87,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   53,
+   54,
+   55,
+   86
+  ]
+ },
+ {
+  "i": 88,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   12
+  ]
+ },
+ {
+  "i": 89,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   25
+  ]
+ },
+ {
+  "i": 90,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.dtype is {1}', dtyp\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   15
+  ]
+ },
+ {
+  "i": 91,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   6
+  ]
+ },
+ {
+  "i": 92,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   91,
+   18
+  ]
+ },
+ {
+  "i": 93,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   91
+  ]
+ },
+ {
+  "i": 94,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   92,
+   93
+  ]
+ },
+ {
+  "i": 95,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   24
+  ]
+ },
+ {
+  "i": 96,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   23,
+   95
+  ]
+ },
+ {
+  "i": 97,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   96
+  ]
+ },
+ {
+  "i": 98,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   88,
+   89,
+   90,
+   94,
+   97
+  ]
+ },
+ {
+  "i": 99,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   87,
+   98
+  ]
+ },
+ {
+  "i": 100,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   17,
+   12
+  ]
+ },
+ {
+  "i": 101,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   56,
+   18
+  ]
+ },
+ {
+  "i": 102,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   56
+  ]
+ },
+ {
+  "i": 103,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   101,
+   102
+  ]
+ },
+ {
+  "i": 104,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   23,
+   67
+  ]
+ },
+ {
+  "i": 105,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   104
+  ]
+ },
+ {
+  "i": 106,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   100,
+   54,
+   55,
+   103,
+   105
+  ]
+ },
+ {
+  "i": 107,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   52
+  ]
+ },
+ {
+  "i": 108,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   91,
+   12
+  ]
+ },
+ {
+  "i": 109,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   91
+  ]
+ },
+ {
+  "i": 110,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.dtype is {1}', dtyp\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   91,
+   15
+  ]
+ },
+ {
+  "i": 111,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   91,
+   6
+  ]
+ },
+ {
+  "i": 112,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   111
+  ]
+ },
+ {
+  "i": 113,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   112
+  ]
+ },
+ {
+  "i": 114,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   91,
+   24
+  ]
+ },
+ {
+  "i": 115,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   40,
+   114
+  ]
+ },
+ {
+  "i": 116,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   115
+  ]
+ },
+ {
+  "i": 117,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   108,
+   109,
+   110,
+   113,
+   116
+  ]
+ },
+ {
+  "i": 118,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   95,
+   35
+  ]
+ },
+ {
+  "i": 119,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.arg == 0', dtypes.v\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   95
+  ]
+ },
+ {
+  "i": 120,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   118,
+   119
+  ]
+ },
+ {
+  "i": 121,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   117,
+   120
+  ]
+ },
+ {
+  "i": 122,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   91,
+   35
+  ]
+ },
+ {
+  "i": 123,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.arg == 0', dtypes.v\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   91
+  ]
+ },
+ {
+  "i": 124,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   122,
+   123
+  ]
+ },
+ {
+  "i": 125,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   95,
+   12
+  ]
+ },
+ {
+  "i": 126,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   95
+  ]
+ },
+ {
+  "i": 127,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.dtype is {1}', dtyp\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   95,
+   15
+  ]
+ },
+ {
+  "i": 128,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   95,
+   6
+  ]
+ },
+ {
+  "i": 129,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   128
+  ]
+ },
+ {
+  "i": 130,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   129
+  ]
+ },
+ {
+  "i": 131,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   95,
+   24
+  ]
+ },
+ {
+  "i": 132,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   40,
+   131
+  ]
+ },
+ {
+  "i": 133,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   132
+  ]
+ },
+ {
+  "i": 134,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   125,
+   126,
+   127,
+   130,
+   133
+  ]
+ },
+ {
+  "i": 135,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   124,
+   134
+  ]
+ },
+ {
+  "i": 136,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   121,
+   135
+  ]
+ },
+ {
+  "i": 137,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   107,
+   89,
+   90,
+   136
+  ]
+ },
+ {
+  "i": 138,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   106,
+   137
+  ]
+ },
+ {
+  "i": 139,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   99,
+   138
+  ]
+ },
+ {
+  "i": 140,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   51,
+   14,
+   16,
+   139
+  ]
+ },
+ {
+  "i": 141,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   9,
+   10,
+   140,
+   32,
+   38
+  ]
+ },
+ {
+  "i": 142,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   39,
+   49,
+   141
+  ]
+ },
+ {
+  "i": 143,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   142
+  ]
+ },
+ {
+  "i": 144,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   24
+  ]
+ },
+ {
+  "i": 145,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   144
+  ]
+ },
+ {
+  "i": 146,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   145
+  ]
+ },
+ {
+  "i": 147,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   2,
+   4,
+   5,
+   143,
+   146
+  ]
+ }
+]

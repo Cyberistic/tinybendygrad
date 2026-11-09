@@ -1,0 +1,131 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CONST",
+  "arg": "1",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.PARAM",
+  "arg": "ParamArg(0, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 2,
+  "op": "Ops.CONST",
+  "arg": "4",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 3,
+  "op": "Ops.ALLOC",
+  "arg": "ParamArg(3, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   2
+  ]
+ },
+ {
+  "i": 4,
+  "op": "Ops.PARAM",
+  "arg": "ParamArg(1, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   2
+  ]
+ },
+ {
+  "i": 5,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   3,
+   4
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.AFTER",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   3,
+   5
+  ]
+ },
+ {
+  "i": 7,
+  "op": "Ops.ALLOC",
+  "arg": "ParamArg(4, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   2
+  ]
+ },
+ {
+  "i": 8,
+  "op": "Ops.PARAM",
+  "arg": "ParamArg(2, dtypes.f32, d\u2026",
+  "dtype": "dtypes.f32",
+  "src": [
+   2
+  ]
+ },
+ {
+  "i": 9,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   7,
+   8
+  ]
+ },
+ {
+  "i": 10,
+  "op": "Ops.AFTER",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   7,
+   9
+  ]
+ },
+ {
+  "i": 11,
+  "op": "Ops.CALL",
+  "arg": "CallInfo(None, None, Fals\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   1,
+   6,
+   10
+  ]
+ },
+ {
+  "i": 12,
+  "op": "Ops.AFTER",
+  "arg": "None",
+  "dtype": "dtypes.f32",
+  "src": [
+   1,
+   11
+  ]
+ },
+ {
+  "i": 13,
+  "op": "Ops.SINK",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   12
+  ]
+ }
+]

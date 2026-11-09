@@ -1,0 +1,395 @@
+{
+ "example": "add_relu_sum",
+ "step": {
+  "added": 15,
+  "after": [
+   {
+    "i": 0,
+    "op": "Ops.CONST",
+    "arg": "1",
+    "dtype": "dtypes.weakint",
+    "src": []
+   },
+   {
+    "i": 1,
+    "op": "Ops.PARAM",
+    "arg": "ParamArg(0, dtypes.f32, d\u2026",
+    "dtype": "dtypes.f32",
+    "src": [
+     0
+    ]
+   },
+   {
+    "i": 2,
+    "op": "Ops.STACK",
+    "arg": "None",
+    "dtype": "dtypes.void",
+    "src": []
+   },
+   {
+    "i": 3,
+    "op": "Ops.RESHAPE",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     1,
+     2
+    ]
+   },
+   {
+    "i": 4,
+    "op": "Ops.CONST",
+    "arg": "0.0",
+    "dtype": "dtypes.weakfloat",
+    "src": []
+   },
+   {
+    "i": 5,
+    "op": "Ops.CONST",
+    "arg": "4",
+    "dtype": "dtypes.weakint",
+    "src": []
+   },
+   {
+    "i": 6,
+    "op": "Ops.PARAM",
+    "arg": "ParamArg(1, dtypes.f32, d\u2026",
+    "dtype": "dtypes.f32",
+    "src": [
+     5
+    ]
+   },
+   {
+    "i": 7,
+    "op": "Ops.CONST",
+    "arg": "2",
+    "dtype": "dtypes.weakint",
+    "src": []
+   },
+   {
+    "i": 8,
+    "op": "Ops.STACK",
+    "arg": "None",
+    "dtype": "dtypes.weakint",
+    "src": [
+     7,
+     7
+    ]
+   },
+   {
+    "i": 9,
+    "op": "Ops.RESHAPE",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     6,
+     8
+    ]
+   },
+   {
+    "i": 10,
+    "op": "Ops.COPY",
+    "arg": "METAL",
+    "dtype": "dtypes.f32",
+    "src": [
+     9
+    ]
+   },
+   {
+    "i": 11,
+    "op": "Ops.PARAM",
+    "arg": "ParamArg(2, dtypes.f32, d\u2026",
+    "dtype": "dtypes.f32",
+    "src": [
+     5
+    ]
+   },
+   {
+    "i": 12,
+    "op": "Ops.RESHAPE",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     11,
+     8
+    ]
+   },
+   {
+    "i": 13,
+    "op": "Ops.COPY",
+    "arg": "METAL",
+    "dtype": "dtypes.f32",
+    "src": [
+     12
+    ]
+   },
+   {
+    "i": 14,
+    "op": "Ops.ADD",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     10,
+     13
+    ]
+   },
+   {
+    "i": 15,
+    "op": "Ops.CMPLT",
+    "arg": "None",
+    "dtype": "dtypes.bool",
+    "src": [
+     4,
+     14
+    ]
+   },
+   {
+    "i": 16,
+    "op": "Ops.WHERE",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     15,
+     14,
+     4
+    ]
+   },
+   {
+    "i": 17,
+    "op": "Ops.REDUCE",
+    "arg": "(Ops.ADD, 2)",
+    "dtype": "dtypes.f32",
+    "src": [
+     16
+    ]
+   },
+   {
+    "i": 18,
+    "op": "Ops.STORE",
+    "arg": "None",
+    "dtype": "dtypes.void",
+    "src": [
+     3,
+     17
+    ]
+   },
+   {
+    "i": 19,
+    "op": "Ops.AFTER",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     3,
+     18
+    ]
+   },
+   {
+    "i": 20,
+    "op": "Ops.SINK",
+    "arg": "None",
+    "dtype": "dtypes.void",
+    "src": [
+     19
+    ]
+   }
+  ],
+  "before": [
+   {
+    "i": 0,
+    "op": "Ops.CONST",
+    "arg": "1",
+    "dtype": "dtypes.weakint",
+    "src": []
+   },
+   {
+    "i": 1,
+    "op": "Ops.BUFFER",
+    "arg": "ParamArg(2, dtypes.f32, d\u2026",
+    "dtype": "dtypes.f32",
+    "src": [
+     0
+    ]
+   },
+   {
+    "i": 2,
+    "op": "Ops.STACK",
+    "arg": "None",
+    "dtype": "dtypes.void",
+    "src": []
+   },
+   {
+    "i": 3,
+    "op": "Ops.RESHAPE",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     1,
+     2
+    ]
+   },
+   {
+    "i": 4,
+    "op": "Ops.CONST",
+    "arg": "0.0",
+    "dtype": "dtypes.weakfloat",
+    "src": []
+   },
+   {
+    "i": 5,
+    "op": "Ops.CONST",
+    "arg": "4",
+    "dtype": "dtypes.weakint",
+    "src": []
+   },
+   {
+    "i": 6,
+    "op": "Ops.BUFFER",
+    "arg": "ParamArg(0, dtypes.f32, d\u2026",
+    "dtype": "dtypes.f32",
+    "src": [
+     5
+    ]
+   },
+   {
+    "i": 7,
+    "op": "Ops.CONST",
+    "arg": "2",
+    "dtype": "dtypes.weakint",
+    "src": []
+   },
+   {
+    "i": 8,
+    "op": "Ops.STACK",
+    "arg": "None",
+    "dtype": "dtypes.weakint",
+    "src": [
+     7,
+     7
+    ]
+   },
+   {
+    "i": 9,
+    "op": "Ops.RESHAPE",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     6,
+     8
+    ]
+   },
+   {
+    "i": 10,
+    "op": "Ops.COPY",
+    "arg": "METAL",
+    "dtype": "dtypes.f32",
+    "src": [
+     9
+    ]
+   },
+   {
+    "i": 11,
+    "op": "Ops.BUFFER",
+    "arg": "ParamArg(1, dtypes.f32, d\u2026",
+    "dtype": "dtypes.f32",
+    "src": [
+     5
+    ]
+   },
+   {
+    "i": 12,
+    "op": "Ops.RESHAPE",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     11,
+     8
+    ]
+   },
+   {
+    "i": 13,
+    "op": "Ops.COPY",
+    "arg": "METAL",
+    "dtype": "dtypes.f32",
+    "src": [
+     12
+    ]
+   },
+   {
+    "i": 14,
+    "op": "Ops.ADD",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     10,
+     13
+    ]
+   },
+   {
+    "i": 15,
+    "op": "Ops.CMPLT",
+    "arg": "None",
+    "dtype": "dtypes.bool",
+    "src": [
+     4,
+     14
+    ]
+   },
+   {
+    "i": 16,
+    "op": "Ops.WHERE",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     15,
+     14,
+     4
+    ]
+   },
+   {
+    "i": 17,
+    "op": "Ops.REDUCE",
+    "arg": "(Ops.ADD, 2)",
+    "dtype": "dtypes.f32",
+    "src": [
+     16
+    ]
+   },
+   {
+    "i": 18,
+    "op": "Ops.STORE",
+    "arg": "None",
+    "dtype": "dtypes.void",
+    "src": [
+     3,
+     17
+    ]
+   },
+   {
+    "i": 19,
+    "op": "Ops.AFTER",
+    "arg": "None",
+    "dtype": "dtypes.f32",
+    "src": [
+     3,
+     18
+    ]
+   },
+   {
+    "i": 20,
+    "op": "Ops.SINK",
+    "arg": "None",
+    "dtype": "dtypes.void",
+    "src": [
+     19
+    ]
+   }
+  ],
+  "caller": "transform_to_call",
+  "file": "__init__.py",
+  "i": 93,
+  "line": 263,
+  "pass": "unified_rewrite",
+  "removed": 15,
+  "stage": "schedule"
+ }
+}

@@ -1,0 +1,558 @@
+[
+ {
+  "i": 0,
+  "op": "Ops.CUSTOMI",
+  "arg": "('uop', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 1,
+  "op": "Ops.PYLITERAL",
+  "arg": "frozenset({Ops.MUL, Ops.S\u2026",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 2,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op in {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   1
+  ]
+ },
+ {
+  "i": 3,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 2', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   0
+  ]
+ },
+ {
+  "i": 4,
+  "op": "Ops.CONST",
+  "arg": "0",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 5,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   4
+  ]
+ },
+ {
+  "i": 6,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.CAST",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 7,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   5,
+   6
+  ]
+ },
+ {
+  "i": 8,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 1', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   5
+  ]
+ },
+ {
+  "i": 9,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   5,
+   4
+  ]
+ },
+ {
+  "i": 10,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.CONST",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 11,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   9,
+   10
+  ]
+ },
+ {
+  "i": 12,
+  "op": "Ops.CONST",
+  "arg": "1",
+  "dtype": "dtypes.weakint",
+  "src": []
+ },
+ {
+  "i": 13,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   0,
+   12
+  ]
+ },
+ {
+  "i": 14,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   13,
+   10
+  ]
+ },
+ {
+  "i": 15,
+  "op": "Ops.CUSTOMI",
+  "arg": "('a', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 16,
+  "op": "Ops.STORE",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   15,
+   0
+  ]
+ },
+ {
+  "i": 17,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   7,
+   8,
+   11,
+   14,
+   16
+  ]
+ },
+ {
+  "i": 18,
+  "op": "Ops.PYLITERAL",
+  "arg": "Ops.STACK",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 19,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   13,
+   18
+  ]
+ },
+ {
+  "i": 20,
+  "op": "Ops.CUSTOMI",
+  "arg": "('ituop0', dtypes.void)",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 21,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   10
+  ]
+ },
+ {
+  "i": 22,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   21
+  ]
+ },
+ {
+  "i": 23,
+  "op": "Ops.CUSTOM",
+  "arg": "('all([{0} for {1} in {2}\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   22,
+   20,
+   13
+  ]
+ },
+ {
+  "i": 24,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   7,
+   8,
+   11,
+   19,
+   23,
+   16
+  ]
+ },
+ {
+  "i": 25,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   5,
+   18
+  ]
+ },
+ {
+  "i": 26,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   6
+  ]
+ },
+ {
+  "i": 27,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 1', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   20
+  ]
+ },
+ {
+  "i": 28,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   4
+  ]
+ },
+ {
+  "i": 29,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   28,
+   10
+  ]
+ },
+ {
+  "i": 30,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   26,
+   27,
+   29
+  ]
+ },
+ {
+  "i": 31,
+  "op": "Ops.PYLITERAL",
+  "arg": "Invalid",
+  "dtype": "dtypes.void",
+  "src": []
+ },
+ {
+  "i": 32,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.arg == {1}', dtypes\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   20,
+   31
+  ]
+ },
+ {
+  "i": 33,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   21,
+   32
+  ]
+ },
+ {
+  "i": 34,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   30,
+   33
+  ]
+ },
+ {
+  "i": 35,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   34
+  ]
+ },
+ {
+  "i": 36,
+  "op": "Ops.CUSTOM",
+  "arg": "('all([{0} for {1} in {2}\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   35,
+   20,
+   5
+  ]
+ },
+ {
+  "i": 37,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   36,
+   14,
+   16
+  ]
+ },
+ {
+  "i": 38,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   36,
+   19,
+   23,
+   16
+  ]
+ },
+ {
+  "i": 39,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   17,
+   24,
+   37,
+   38
+  ]
+ },
+ {
+  "i": 40,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   39
+  ]
+ },
+ {
+  "i": 41,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   5,
+   10
+  ]
+ },
+ {
+  "i": 42,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   13,
+   6
+  ]
+ },
+ {
+  "i": 43,
+  "op": "Ops.CUSTOM",
+  "arg": "('len({0}.src) == 1', dty\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   13
+  ]
+ },
+ {
+  "i": 44,
+  "op": "Ops.INDEX",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   13,
+   4
+  ]
+ },
+ {
+  "i": 45,
+  "op": "Ops.CUSTOM",
+  "arg": "('{0}.op is {1}', dtypes.\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   44,
+   10
+  ]
+ },
+ {
+  "i": 46,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   41,
+   42,
+   43,
+   45,
+   16
+  ]
+ },
+ {
+  "i": 47,
+  "op": "Ops.CUSTOM",
+  "arg": "('all([{0} for {1} in {2}\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   35,
+   20,
+   13
+  ]
+ },
+ {
+  "i": 48,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   41,
+   19,
+   47,
+   16
+  ]
+ },
+ {
+  "i": 49,
+  "op": "Ops.CUSTOM",
+  "arg": "('all([{0} for {1} in {2}\u2026",
+  "dtype": "dtypes.void",
+  "src": [
+   22,
+   20,
+   5
+  ]
+ },
+ {
+  "i": 50,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   49,
+   42,
+   43,
+   45,
+   16
+  ]
+ },
+ {
+  "i": 51,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   25,
+   49,
+   19,
+   47,
+   16
+  ]
+ },
+ {
+  "i": 52,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   46,
+   48,
+   50,
+   51
+  ]
+ },
+ {
+  "i": 53,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   52
+  ]
+ },
+ {
+  "i": 54,
+  "op": "Ops.OR",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   40,
+   53
+  ]
+ },
+ {
+  "i": 55,
+  "op": "Ops.AND",
+  "arg": "None",
+  "dtype": "dtypes.void",
+  "src": [
+   2,
+   3,
+   54
+  ]
+ }
+]

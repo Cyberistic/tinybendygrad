@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>30klinesofcode — viz</title>
+<style>
+  :root{--paper:#F4F2ED;--ink:#16161A;--muted:#6E6A63;--faint:#9A958C;--rule:#D6D1C7;--accent:#3DA639}
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--paper);color:var(--ink);font:12px/1.5 ui-monospace,"SF Mono",Menlo,monospace;height:100vh;display:flex;flex-direction:column}
+  .top{display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 22px;border-bottom:1px solid var(--rule);flex:0 0 auto}
+  .brand{font-size:13px}.brand span{color:var(--faint);font-size:11px}
+  .meta{font-size:10.5px;color:var(--muted);display:flex;gap:16px;align-items:center}
+  .meta b{color:var(--ink);font-weight:500}
+  .sum{color:var(--accent);border-left:1px solid var(--rule);padding-left:16px}
+  main{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;flex:1;min-height:0}
+  .panel{display:flex;flex-direction:column;min-width:0}
+  .panel + .panel{border-left:1px solid var(--rule)}
+  header{display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--rule);
+         font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .canvas{position:relative;height:calc(100vh - 78px)}
+  .react-flow__attribution{display:none}
+</style>
+</head>
+<body><div id="root"></div><link rel="stylesheet" href="dist/app.css">
+<script type="module" src="dist/app.js"></script></body>
+</html>

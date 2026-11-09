@@ -118,7 +118,39 @@ python3 tools/player/build.py 02.4
 b2 highlights line 184 and the effect claim; b6 highlights 186–193 and the SPEC claim, with
 its own narration. `?beat=b6` is a shareable frame, which is also how the screenshots were taken.
 
-## 5. What is not done
+## 5. The recorder, and VIZ in React Flow
+
+`tools/recorder/record.py` wraps `RewriteContext.unified_rewrite` — a method, so every
+importer is caught — and snapshots the sink before and after each pass. No tinygrad source is
+patched.
+
+```
+uv run --no-project --with numpy --python 3.12 python tools/recorder/record.py
+  lazy graph      14 nodes
+  after schedule  18 nodes
+  rewrite passes  293 (231 changed the graph, 33 outside the pattern compiler)
+  digest          3084f7012aa42ca4      # identical on a second run
+```
+
+231 of the 293 changing passes are the pattern compiler simplifying its own generated Python
+(`upat.py`). They are labelled `stage: "pattern"` rather than dropped, because a filter that
+silently removes data is the thing this repo keeps getting bitten by.
+
+The pass worth a figure is `transform_to_call` at `schedule/__init__.py:263`: **21 nodes in,
+21 nodes out, +15/−15**. A count says nothing happened. The structure says everything did.
+
+`packages/visualizer` renders it: `src/flow.ts` is the adapter (recorded graph → React Flow
+nodes/edges, top-down ranks like VIZ's dagre config), `src/app.tsx` is the view, and 9 tests
+cover the adapter against the real recorded passes.
+
+```
+cd packages/visualizer && bun test
+  9 pass, 0 fail
+```
+
+`art/09-viz-react-flow.png` is that page.
+
+## 6. What is not done
 
 - Seven lessons is not a course. Stage 01 needs eight, stage 02 needs nineteen.
 - No React app yet: the six screens are `mock/*.html` and the player is a bundled
