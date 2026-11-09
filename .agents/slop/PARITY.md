@@ -6462,3 +6462,111 @@ MAKES THE PORT's 0.4% MEASURABLE AT ALL, BECAUSE **TWENTY READS' WORTH OF SYSCAL
 SIX DISTINCT DTYPES**) **⇒ AND ITS FIX IS A MEMO AND NOT A NUMERIC KEY** (THE CODES ARE UP TO ELEVEN
 CHARACTERS AND `pri` IS AMBIGUOUS FOR THE TWO fp8 PAIRS, AND THE DISTINCTION MATTERS ON CUDA), **⇒ SO IT
 IS A STRUCTURAL CHANGE TO `cstyle.bend` AND IT IS NOT TURN-SIZED.**
+
+### 136 THE PROFILE WAS MEASURING A **BLOCKED** PROCESS, AND THE BASELINE WAS A **STALE BUILD**
+
+**⇒ ⇒ ⇒ TWO FINDINGS, AND THE SECOND ONE INVALIDATED THE FIRST'S MEASUREMENT. ⇒ ⇒ ⇒ BOTH ARE
+RECORDED HERE BECAUSE THE CLASS IS THE POINT: **A BUILD AND A PROFILE ARE BOTH ARTEFACTS, AND BOTH
+CAN BE STALE, AND NEITHER ANNOUNCES ITSELF.**
+
+**⇒ ⇒ ⇒ FINDING ONE: THE PROFILER'S FEEDER WAS **BLOCKED**, SO THE PROFILE MEASURED AN IDLE PROCESS.
+MEASURED: THE OLD FEEDER (`/tmp/prof_wrap.js`) DID `fs.writeSync(fd, frame.repeat(frames))` -- **THE
+WHOLE BATCH AT ONCE** -- AND THE FIFO's BUFFER IS 64 KiB, SO 40 FRAMES (349 KiB) DO NOT FIT: THE
+WRITE BLOCKED, THE DAEMON SPENT ITS LIFE **BLOCKED IN `readvSync` WITH NO FRAME TO WORK ON**, AND A
+PROFILER THAT SAMPLES THE WALL CLOCK ATTRIBUTES THAT BLOCKED TIME TO `readvSync`/`fstatSync`.
+**⇒ ⇒ ⇒ THE CORRECT FEEDER (`/tmp/prof_wrap2.js`) WAITS FOR EACH `@@END` BEFORE IT WRITES THE NEXT
+FRAME.** MEASURED, THE CORRECTED PROFILE: `fstatSync` 14.071 ms/turn AND `readvSync` 12.615 ms/turn
+-- **AND BOTH ARE THE WAIT, NOT THE SYSCALL:** MEASURED, `os.fstat` ON A FIFO IS **0.653 us**, SO THE
+PROFILER's "1.32 ms A `fstatSync`" IS **2,000x THE TRUTH** AND IS THE POLLER's WAIT ATTRIBUTED TO THE
+SYSCALL's FRAME.
+
+**⇒ ⇒ ⇒ FINDING TWO, AND IT IS THE ONE THAT MATTERS: **`/tmp/serve_final135.js` WAS A BUILD OF A
+TREE THAT NO LONGER EXISTS.** MEASURED: THE BUILD IS FROM **Nov 7 23:08** AND TWO FIXES LANDED AT
+**Nov 8 00:55** (`f46431e0f`, "the kernel's lines are prepended: 82,039 elements copied a render
+become 10,494") AND **00:57** (`f009270b3`, "the op equality is a match on the two tags: 1.1 million
+comparisons become 30 thousand"). MEASURED BY THE COMPILED FORM: THE STALE BUILD's `st_kernel` CALLS
+`$$List_append(St_kernel(_st_0), [x])` -- **APPEND AT THE END, O(n)** -- AND HEAD's CALLS
+`$$List_append([x], St_kernel(_st_0))` -- **PREPEND, O(1)**. **⇒ ⇒ ⇒ ⇒ SO EVERY NUMBER MEASURED
+AGAINST THE STALE BUILD WAS A NUMBER ABOUT A PROGRAM THAT IS NOT THE TREE.** ⇒ ⇒ ⇒ AND THE BUILD's
+SIZE SAYS SO: **356,603 BYTES (STALE) AGAINST 362,309 (HEAD) -- A 5,706-BYTE DIFFERENCE.**
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ THE CORRECT MEASUREMENT, WITH CLOCKS **INSIDE** THE DAEMON's OWN PROCESS** (THE
+COMPILED FORM's `$serve_c6`/`$serve_c8`/`$serve_c12`, ON THE SAME 782-UOP WIRE, 40 TURNS, THE TREE's
+OWN `portc.Worker`):
+
+```
+caller's wall per turn      median 3.9728 ms
+  decode                    0.9947 ms/turn
+  render                    2.2649 ms/turn
+    walk (the 782 emits)    2.1381 ms/turn
+    kern (the assembly)     0.1051 ms/turn
+⇒⇒⇒ THE PORT's OWN SHARE (decode + render): 3.2596 ms = 82.0% OF 3.9728 ms
+```
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ SO THE PORT's OWN WORK IS **82%** OF THE TURN, AND §134.6's "THE PORT's OWN WORK IS
+~4%" WAS A MEASUREMENT OF A **BLOCKED** PROCESS. ⇒⇒⇒ AND THE TURN DECOMPOSES AS
+`read 0.73 (MOSTLY THE CALLER's WAIT) + decode 0.99 (THE PORT) + render 2.26 (THE PORT) + ~0.99 (THE
+CALLER's ROUND TRIP)`.
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ AND THE RENDER's 2.26 ms IS **THE NEXT PORT-SIDE TERM**, AND **NOTHING HAS EVER
+ATTACKED IT**: §132--§134 ALL CUT THE **DECODE**, WHICH IS 0.99 ms. MEASURED, THE RENDER's SHAPE
+(THE PROFILER's INCLUSIVE SAMPLES, NORMALISED TO ms A TURN, 40 TURNS, 1 SAMPLE = 1.493 ms):
+
+```
+2.687  render                    2.463  _render_one_go
+2.389  _render_named             1.157  ku_text_go      ← THE C TEXT
+1.045  _render_emit              0.597  _render_stmt_by
+0.560  kus_rows                  0.523  _render_decl
+```
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ AND THE CALL COUNTS, MEASURED **INSIDE** THE FUNCTION BODIES** (SO THE CALL's SHAPE
+IS UNCHANGED AND THE COUNT IS WHAT "CALLS A RENDER" MEANS):
+
+```
+List_append  17825   String_concat 13389   List_concat 3550   U32_show 731
+dt_of          782   arg_of          782   ku_text_go    644   ku_inline  644
+rd_base_clang  576   rd_body_at      574   rd_name_at    574   rd_base_plain 544
+st_kernel      407   ku_text_alu     294   code_for_base_of 294
+```
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ SO §135's "NEXT TERM IS THE C-NAME MATCH" IS **MEASURED AND IT IS SMALL**:
+`rd_base_clang`'s INCLUSIVE TIME IS **0.223 ms A TURN** FOR 576 CALLS, AND `O.eq_op` (WHICH §138's
+FIX ALREADY LANDED) IS **0.298 ms**. ⇒⇒⇒ **NEITHER IS THE 2.26 ms.** ⇒⇒⇒ ⇒⇒⇒ AND THE TWO LARGEST
+COUNTS ARE **17,825 `List.append` AND 13,389 `String.concat` A TURN** -- **23 LIST-APPENDS AND 17
+STRING-CONCATS PER UOP** -- SO THE NEXT QUESTION IS **THE LIST AND STRING MACHINERY**, NOT A TABLE.
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ AND THE PROBE THAT SETTLES THE ARGUMENT-ORDER QUESTION, BECAUSE THE
+COMPILED FORM AND THE SOURCE APPEAR TO DISAGREE ABOUT `List.append`'s ARGUMENT ORDER**
+(`.agents/slop/parity/probe/append-order.bend`, WHICH **RUNS** AND **IS TRACKED** (A `*probe.bend` FILE IS GITIGNORED BY `.gitignore:85`, AND THE TREE's CONVENTION FOR A COMMITTED PROBE IS A `probe/` **DIRECTORY** -- 57 ARE TRACKED)):
+
+```
+append([a],[b,c]) = a|b|c|
+append([b,c],[a]) = b|c|a|
+```
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **THE COMPILER DOES **NOT** REORDER** -- `base.bend`'s OWN
+`List.append(xs, ys)` PUTS `xs` FIRST, AND THE PROBE's OWN COMPILED FORM SHOWS IT
+(`$$List_append(["a"], ["b","c"])`). ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **SO THE SOURCE AND THE COMPILED FORM AGREE, AND
+THE STALE BUILD WAS SIMPLY THE PRE-FIX SOURCE.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND `base.bend`'s `List.append` IS
+**O(|xs|)** (IT WALKS TO THE TAIL AND REBUILDS) AND `List.set` IS **O(index)** -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND
+`st_kernel`'s CURRENT FORM IS THE O(1) PREPEND, WHICH IS WHY `f46431e0f` LANDED.
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ AND THE TOOLING RULES THIS SECTION ESTABLISHES, BOTH MEASURED
+THE HARD WAY:**
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ (1) **A BUILD IS A SECOND SOURCE OF TRUTH, AND IT DOES NOT
+ANNOUNCE ITSELF.** MEASURED: A STALE `/tmp/serve_instr.bc` (BUILT FROM A BROKEN INSTRUMENT) WAS SERVED
+FOR TWO RUNS, AND THE SYMPTOM WAS "bend: no effect registers undefined" **WITH THE SOURCE ALREADY
+FIXED**. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND `_serve_bin`'s CACHE NEVER REBUILDS, SO A FIXED SOURCE AND A BROKEN BINARY
+COEXIST. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **THE FIX IS TO MEASURE A BUILD THAT IS **KNOWN** TO BE FRESH**, AND THE
+CHEAPEST WAY TO KNOW IS TO **BUILD IT IN THE MEASUREMENT**, NOT TO FIND ONE IN `/tmp`.
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ (2) **THE INSTRUMENT MUST RUN UNDER `bun` AND NOT UNDER THE
+COMPILED EXECUTABLE.** MEASURED: `bun build --compile --minify` RELOCATES `require("fs")` INTO A
+MODULE SCOPE WHERE THE PATCH IS NOT. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND **A REST-ARGUMENTS WRAPPER IS NOT FREE**:
+MEASURED, WRAPPING SEVEN FUNCTIONS IN `(...a) => f(...a)` MOVED THE RENDER FROM **2.265 ms TO 3.494
+ms** -- **A 54% INSTRUMENT OVERHEAD ON THE VERY THING BEING MEASURED.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒
+⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THAT IS WHY THE CLOCKS ARE **INSIDE** THE FUNCTIONS
+AND NOT AROUND THEM, AND WHY THE COUNTS ARE **INSIDE** THE FUNCTION BODIES AND NOT AT THE CALL
+SITES.**
+
