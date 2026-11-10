@@ -527,7 +527,8 @@ def driver_text(path: Path, info: dict, moved: list[str], impl: list[str]) -> st
         # THE BARE-CONSTANT RULE REWROTE IT INSIDE THE STRING** **AND INSIDE
         # THE COMMENTS**, **AND THE ROW's VALUE CHANGED** -- **AND A ROW
         # WHOSE VALUE CHANGED IS **A DIFFERENCE**, **NOT** A MOVE.**
-        return _qualify_spans(text, port_defs, port_types, moved_names)
+        return _qualify_spans(text, port_defs, port_types, moved_names,
+                               type_field_names(info["lines"]))
 
     body = qualify("\n".join(moved)).split("\n")
     return "\n".join(hdr + body) + "\n"
@@ -571,6 +572,38 @@ def _code_spans(text: str) -> list[tuple[int, int]]:
     return spans
 
 
+def type_field_names(lines: list[str]) -> set[str]:
+    """=> **THE FIELD NAMES OF EVERY TYPE**, READ FROM **THE TYPE's OWN
+    DECLARATION** -- **AND **A FIELD NAME IS **A NAME**, **NOT **A
+    REFERENCE**, **SO IT MUST NOT BE QUALIFIED**.
+
+    **=> AND **A TYPE's CONSTRUCTOR** IS **THE LINE(S) AFTER**
+    `type X is Data:`**, **AND THE FIELDS ARE `name: Type` PAIRS** -- **AND
+    **THE LIST IS **THE DECLARATION ITSELF** -- **NOT **A SPELLING**.
+    **=> MEASURED 2026-11-10 ON `ops_nv.bend`: `seen` IS **A FIELD** OF THE
+    `Tr` TYPE**, **AND THE BARE-NAME RULE QUALIFIED IT TO `P.seen`**, **AND
+    BEND SAID "expected : a pattern (a binder or a constructor) / observed :
+    ../tinybendygrad/runtime/ops_nv.seen"**.
+    """
+    out: set[str] = set()
+    i = 0
+    n = len(lines)
+    while i < n:
+        l = lines[i]
+        if l.startswith('type '):
+            j = i + 1
+            while j < n and lines[j].strip() != '' \
+                    and not lines[j].startswith(('#', 'def ', 'type ', 'import ')):
+                body = lines[j]
+                for fm in re.finditer(r'([A-Za-z_][A-Za-z0-9_]*)\s*:', body):
+                    out.add(fm.group(1))
+                j += 1
+            i = j
+            continue
+        i += 1
+    return out
+
+
 def _apply(text: str, spans: list[tuple[int, int]], fn) -> str:
     out = []
     pos = 0
@@ -582,7 +615,8 @@ def _apply(text: str, spans: list[tuple[int, int]], fn) -> str:
     return "".join(out)
 
 
-def _qualify_spans(text: str, port_defs: set[str], port_types: set[str], moved_names: set[str]) -> str:
+def _qualify_spans(text: str, port_defs: set[str], port_types: set[str], moved_names: set[str],
+                   field_names: set[str]) -> str:
     """ THE QUALIFICATION, **AND IT **NEVER** TOUCHES A STRING OR A COMMENT**."""
     def once(chunk: str) -> str:
         # **=> AND **A `def` LINE'S OWN NAME** IS **NOT** A REFERENCE -- **AND
@@ -625,6 +659,13 @@ def _qualify_spans(text: str, port_defs: set[str], port_types: set[str], moved_n
             chunk = re.sub(rf"P\.{re.escape(h)}\(", f"{h}(", chunk)
         for d in sorted(port_defs, key=len, reverse=True):
             if d in moved_names:
+                continue
+            # **=> AND **A FIELD NAME** IS **A NAME**, **NOT **A REFERENCE** --
+            # **AND THE LIST IS **THE TYPE's OWN DECLARATION** -- **MEASURED
+            # 2026-11-10 ON `ops_nv.bend`: `seen` IS **A FIELD** OF THE `Tr`
+            # TYPE**, **AND THE RULE QUALIFIED IT**, **AND BEND SAID "expected
+            # : a pattern (a binder or a constructor)"**.
+            if d in field_names:
                 continue
             # **=> AND THE BARE-NAME RULE MUST NOT MATCH **A PREFIX OF A
             # LONGER DOTTED NAME** -- **MEASURED 2026-11-10 ON `ops_dsp.bend`:
