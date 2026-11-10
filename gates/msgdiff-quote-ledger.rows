@@ -1,0 +1,54 @@
+# msgdiff-quote-ledger.rows -- one row per (commit, claim) whose claim is a QUOTATION of
+# another commit's diff rather than a claim about its own diff.
+#
+# `gates/msgdiff-gate.py` reads this file when a message's claim disagrees with the commit's
+# OWN diff, and discharges the refusal when the row's claim RE-DERIVES from the repository.
+# A row is a CLAIM, not a verdict: the gate checks the claim's MECHANICAL part and cannot
+# read the reason in prose.
+#
+# WHY THIS EXISTS. The claim lanes are right to refuse "11 files changed" over a 3-file diff,
+# and right to refuse "P was deleted" when P is present in this commit's tree -- a claim that
+# describes THIS commit must match THIS diff. But a message may QUOTE another commit: a report
+# of what a sibling unit's commit did, or a quotation of a `git show --stat` line pasted into
+# a message body. Then the claim is about a DIFFERENT diff, and comparing it with this one is
+# the wrong comparison. `MESSAGE_DIFF_ACK` is the sanctioned escape and it is ENVIRONMENTAL
+# ONLY, so a faithful report of another unit's measurement makes the repo red for whoever runs
+# next -- and an environment variable is not a thing a commit can carry. The escape has to be
+# DURABLE, and it has to be a file BESIDE THE GATE, and it has to be CHECKED.
+#
+# THE CLAIM IS ONE COMPARISON AGAINST THE QUOTED COMMIT'S OWN DIFF, AND IT IS THE GATE'S.
+# The row says which commit is quoted; the gate asks whether THAT commit's own diff carries
+# the quoted value -- that many changed files, or that deleted path. If it does, the claim the
+# message carries is that commit's. If it does not -- or the quoted commit is not in the
+# repository -- the row discharges nothing and the refusal STANDS.
+#
+# => SO A LEDGER ROW CANNOT EXCUSE A COMMIT BY ASSERTING A REASON THE TREE DOES NOT BEAR
+#    OUT. The prose in column 5 is never read by the gate, and a row whose mechanical claim
+#    does not hold is REFUSED by the same code that reads the stem ledger.
+#
+# WHY A ROW IS PER (sha, kind, value) AND NOT PER sha. A message may quote TWO figures -- and
+# one of these quotes a figure AND a path, in the same sentence, about the same other commit.
+# A row that named a sha alone would discharge a claim the message never made. The key IS the
+# claim: this commit, this shape, this value.
+#
+# WHY A CLAIM IN THE SUBJECT IS NEVER DISCHARGED HERE. A subject describes its OWN commit, so
+# "N files changed" in a subject is a self-description and the diff is the right comparison.
+# The gate enforces that: a claim in the first line of the message is checked against this
+# commit's diff and the ledger is not consulted.
+#
+# COLUMNS (TAB separated, one row per (commit, claim)):
+#   sha    the commit whose MESSAGE carries the claim, 40 hex
+#   kind   file-count   the message's figure; the quoted commit's diff must change
+#                        exactly `value` files.
+#          path-deleted the message's path; the quoted commit's diff must DELETE
+#                        exactly `value`, under the same rename detection (`-M`) the
+#                        deletion lane uses.
+#   value  the number (file-count) or the path (path-deleted)
+#   other  the commit the message QUOTES, 40 hex
+#   reason one line: why the message's claim is that commit's claim
+sha	kind	value	other	reason
+8ec4631fa79d6dd704693438f3e005584743a88c	file-count	11	c7ad2ac4d9897e37eff0cb0a5837d482bf401f8a	QUOTATION of c7ad2ac4d's `git show --stat` line, pasted into the body; the figure is c7ad2ac4d's, not this commit's
+ee517b8191b3db5125291429fbbbe350398b7162	file-count	11	c7ad2ac4d9897e37eff0cb0a5837d482bf401f8a	QUOTATION of the same c7ad2ac4d stat line, which the message says was true when written
+951e589231d60bfc7fdfd2a609436579baf1afc3	file-count	435	591f6b4993364806eec638d1e69dce547028c132	QUOTATION of 591f6b499's diffstat, which the message names as the accident it repairs
+951e589231d60bfc7fdfd2a609436579baf1afc3	path-deleted	gates/README.md	591f6b4993364806eec638d1e69dce547028c132	THE SAME QUOTATION: the message reports 591f6b499's `delete mode 100644 gates/README.md`; this commit did not delete it and does not claim to
+6ed4e1c1e554f9b87aea93e928b0069f3efe3f33	file-count	6141	813bbec3ee1b7113d93bde1376d431d0b82b0658	QUOTATION of 813bbec3e's commit title, which carries the figure

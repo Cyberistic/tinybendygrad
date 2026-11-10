@@ -509,6 +509,69 @@ LEDGER_COLUMNS = ("sha", "stems", "kind", "anchor", "reason")
 LEDGER_KINDS = ("diff-mentions", "diff-other-gate", "child-has-stem")
 _LEDGER_CACHE = {}
 
+# ---- the QUOTE LEDGER: where a QUOTED claim is discharged --------------------------------
+# THE SECOND LEDGER, AND IT IS A SEPARATE FILE BECAUSE THE TWO CLAIMS HAVE DIFFERENT SHAPES.
+#
+# THE CLASS THIS EXISTS FOR. A claim in a commit message is usually a claim about THAT
+# commit's own diff: "N files changed" is checkable against the diff, and the lane refuses
+# when it disagrees; "P was deleted" is checkable against the diff's `D` entries, and the
+# lane refuses when P is present. But a message may also QUOTE another commit -- a report of
+# what a sibling unit's commit did -- and then the claim is about a DIFFERENT diff and the
+# comparison is against the wrong tree.
+#
+# MEASURED, THE CLASS IS FOUR COMMITS IN THIS TREE, AND NONE OF THE FOUR IS A LIAR:
+#
+#   8ec4631fa79  quotes `11 files changed`  -- c7ad2ac4d's `git show --stat` figure
+#   ee517b8191b  quotes `11 files changed`  -- the same figure, about the same commit
+#   951e589231d  quotes `435 changed files` -- 591f6b499's figure, which named the accident
+#                 -- and quotes its `delete mode 100644 gates/README.md`, which is the SAME
+#                    quotation: the path 591f6b499 deleted and not this commit.
+#   6ed4e1c1e55  quotes `6141 FILES DELETED` -- 813bbec3e's figure, in a quoted commit title
+#
+# `MESSAGE_DIFF_ACK` is the SANCTIONED ESCAPE AND IT IS ENVIRONMENTAL ONLY, so a faithful
+# report of another unit's measurement makes the repo red for whoever runs next -- and the
+# environment variable is not a thing a commit can carry. The escape has to be DURABLE, and
+# it has to be a FILE BESIDE THE GATE, and it has to be CHECKED.
+#
+# THE CLAIM IS MECHANICAL AND THE GATE CHECKS THE MECHANISM, NOT THE PROSE. A row says:
+#
+#   sha    the commit whose MESSAGE carries the claim (40 hex)
+#   kind   the shape of the claim, and the shape the gate checks:
+#            file-count   the message's figure. The quoted commit's diff must change
+#                         exactly `value` files.
+#            path-deleted the message's path. The quoted commit's diff must DELETE
+#                         exactly `value`.
+#   value  the number (file-count) or the path (path-deleted)
+#   other  the commit the message QUOTES (40 hex)
+#   reason one line of prose, WHICH THE GATE NEVER READS
+#
+# and the gate's check is ONE COMPARISON AGAINST THE QUOTED COMMIT's OWN DIFF. That is the
+# whole claim -- "the message's figure is `other`'s figure", "the message's path is `other`'s
+# deletion" -- and it is entirely re-derivable from the repository, so the ledger cannot
+# excuse a commit by asserting a reason the tree does not bear out. A row naming a commit
+# that does not exist, or whose diff does not have that many changed files, or does not
+# delete that path, REFUSES the row and the refusal STANDS.
+#
+# WHY IT IS A SEPARATE FILE AND NOT A FOURTH `kind` IN THE STEM LEDGER. The stem ledger's
+# columns are about STEMS and the stem lane's question is "does the diff contain this stem";
+# a quote is about ANOTHER COMMIT and its question is "does that other diff have this". The
+# two share no check, and folding them would make one row shape carry two claims whose
+# checks share nothing -- and the header row is what makes a row's shape checkable at all.
+#
+# WHY THE ROW IS PER (sha, kind, value) AND NOT PER sha. A message may quote TWO figures --
+# 8ec4631fa79 quotes `11 files changed` twice, in two places, and both are the same figure --
+# and a row that named a sha alone would discharge a claim the message never made. The row's
+# key IS the claim: this commit, this shape, this value.
+#
+# WHY A CLAIM IN THE SUBJECT IS NEVER DISCHARGED HERE. A subject describes its OWN commit,
+# so "N files changed" in a subject is a self-description and the diff is the right
+# comparison. The gate enforces that: a claim in the first line of the message is checked
+# against this commit's diff and the ledger is not consulted.
+QUOTE_LEDGER_FILE = "msgdiff-quote-ledger.rows"
+QUOTE_LEDGER_COLUMNS = ("sha", "kind", "value", "other", "reason")
+QUOTE_LEDGER_KINDS = ("file-count", "path-deleted")
+_QUOTE_LEDGER_CACHE = {}
+
 
 def _token(stem):
     """A stem as a token: not a piece of a longer word, but a `-gate` or `.py` tail is
@@ -564,6 +627,148 @@ def read_ledger(root):
     result = ({}, error) if error else (rows, None)
     _LEDGER_CACHE[key] = result
     return result
+
+
+def quote_ledger_path(root):
+    """The quote ledger, beside the gate. `gates/` holds a gate's own inputs."""
+    return Path(root) / "gates" / QUOTE_LEDGER_FILE
+
+
+def read_quote_ledger(root):
+    """({(sha, kind, value): (other, reason)}, error).
+
+    A MISSING or malformed ledger is an ERROR, not an empty ledger, for the same reason
+    the stem ledger's is: an empty ledger explains nothing, and a gate that cannot see
+    its inputs must REFUSE, not PASS. But an ABSENT ledger is not a refusal here: this
+    ledger DISCHARGES a refusal, it does not raise one, so a tree that has no quoted
+    claims needs no ledger and must not be made to fail for not having one."""
+    path = quote_ledger_path(root)
+    if not path.exists():
+        return {}, None
+    try:
+        stat = path.stat()
+    except OSError:
+        return {}, f"{QUOTE_LEDGER_FILE} is unreadable"
+    key = (str(path), stat.st_mtime_ns, stat.st_size)
+    if key in _QUOTE_LEDGER_CACHE:
+        return _QUOTE_LEDGER_CACHE[key]
+    rows, header, error = {}, None, None
+    for lineno, line in enumerate(path.read_text().splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        fields = line.split("\t")
+        if header is None:
+            header = fields
+            if tuple(header) != QUOTE_LEDGER_COLUMNS:
+                error = (f"{QUOTE_LEDGER_FILE}:{lineno} header is {header}, expected "
+                         f"{list(QUOTE_LEDGER_COLUMNS)}")
+                break
+            continue
+        if len(fields) != len(QUOTE_LEDGER_COLUMNS):
+            error = (f"{QUOTE_LEDGER_FILE}:{lineno} has {len(fields)} fields, expected "
+                     f"{len(QUOTE_LEDGER_COLUMNS)}")
+            break
+        sha, kind, value, other, reason = fields
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            error = f"{QUOTE_LEDGER_FILE}:{lineno} sha is not 40 hex: {sha!r}"
+            break
+        if kind not in QUOTE_LEDGER_KINDS:
+            error = (f"{QUOTE_LEDGER_FILE}:{lineno} kind is {kind!r}, expected one of "
+                     f"{list(QUOTE_LEDGER_KINDS)}")
+            break
+        if kind == "file-count" and not value.isdigit():
+            error = f"{QUOTE_LEDGER_FILE}:{lineno} value is not a number: {value!r}"
+            break
+        if kind == "path-deleted" and not value:
+            error = f"{QUOTE_LEDGER_FILE}:{lineno} value is an empty path"
+            break
+        if not re.fullmatch(r"[0-9a-f]{40}", other):
+            error = f"{QUOTE_LEDGER_FILE}:{lineno} other is not 40 hex: {other!r}"
+            break
+        rows[(sha, kind, value)] = (other, reason)
+    if error is None and header is None:
+        error = f"{QUOTE_LEDGER_FILE} has no header row"
+    result = ({}, error) if error else (rows, None)
+    _QUOTE_LEDGER_CACHE[key] = result
+    return result
+
+
+def explain_count(root, sha, n):
+    """(ok, why). Whether the message's `n files` figure is a QUOTATION of another commit.
+
+    THE CLAIM IS ONE COMPARISON AND IT IS THE GATE'S, NOT THE LEDGER'S. The ledger says
+    "this commit quotes that commit"; the gate asks whether THAT commit's own diff
+    changes exactly `n` files. If it does, the figure the message carries is that
+    commit's figure, and the message is not claiming that ITS OWN diff has `n` files.
+
+    A row naming a commit that is not in the repository, or whose diff does not have
+    that many changed files, is REFUSED: the row does not discharge anything, and the
+    lane's refusal STANDS. So the ledger cannot excuse a commit by asserting a reason
+    the tree does not bear out -- the same discipline the stem ledger has.
+    """
+    return explain_quote(root, sha, "file-count", str(n))
+
+
+def explain_deleted(root, sha, path):
+    """(ok, why). Whether the message's "P was deleted" is a QUOTATION of another commit.
+
+    THE SAME ONE COMPARISON, ON THE OTHER LANE. The quoted commit's diff must DELETE the
+    path, under the same rename detection the deletion lane uses (`-M`, so a MOVE is not a
+    deletion). If it does, the message is reporting THAT commit's deletion and not
+    claiming that THIS commit deleted the path.
+    """
+    return explain_quote(root, sha, "path-deleted", path)
+
+
+def explain_quote(root, sha, kind, value):
+    """(ok, why). Whether the message's claim is a QUOTATION of another commit.
+
+    THE CLAIM IS ONE COMPARISON AND IT IS THE GATE'S, NOT THE LEDGER'S. The ledger says
+    "this commit quotes that commit"; the gate asks whether THAT commit's own diff
+    carries the quoted value. If it does, the message is reporting THAT commit and not
+    claiming that ITS OWN diff carries the value.
+
+    A row naming a commit that is not in the repository, or whose diff does not carry
+    the value, is REFUSED: the row discharges nothing, and the lane's refusal STANDS.
+    So the ledger cannot excuse a commit by asserting a reason the tree does not bear
+    out -- the same discipline the stem ledger has.
+    """
+    rows, error = read_quote_ledger(root)
+    if error:
+        return False, f"the quote ledger does not read: {error}"
+    row = rows.get((_full_sha(root, sha), kind, value))
+    if row is None:
+        return False, f"no quote ledger row for {sha[:12]} and {value!r}"
+    other, _reason = row
+    # `git cat-file -e` PRINTS NOTHING AND EXITS 0 ON SUCCESS, and prints the error to
+    # stderr on failure. So the question is the EXIT STATUS, not the output -- and a
+    # check that reads stdout here would call every quoted commit ABSENT and discharge
+    # nothing, which is the shape where a ledger exists and does nothing.
+    if subprocess.run(("git", "cat-file", "-e", f"{other}^{{commit}}"),
+                      cwd=root, capture_output=True).returncode != 0:
+        return False, f"the quoted commit {other[:12]} is not in the repository"
+    _present, deleted, _removed, changed = commit_view(root, other)
+    if kind == "file-count":
+        if changed != int(value):
+            return False, (f"the quoted commit {other[:12]} changes {changed} file"
+                           f"{'s' if changed != 1 else ''}, not {value}")
+        return True, (f"the message quotes {other[:12]}, whose diff changes {value} "
+                      f"file{'s' if int(value) != 1 else ''}")
+    if value not in deleted:
+        return False, f"the quoted commit {other[:12]} does not delete {value}"
+    return True, f"the message quotes {other[:12]}, whose diff deletes {value}"
+
+
+def _full_sha(root, sha):
+    """The 40-hex form of a revision, or the revision itself if git cannot resolve it.
+
+    THE LEDGER'S KEY IS THE 40-Hex SHA, because a ledger keyed by a PREFIX would admit
+    two rows for one commit under two spellings, and a gate that reads one of them is
+    reading a population it did not choose. `git rev-parse` resolves a short sha to the
+    full one; a sha that is already full comes back unchanged.
+    """
+    full = _git(root, "rev-parse", sha).strip()
+    return full if re.fullmatch(r"[0-9a-f]{40}", full) else sha
 
 
 def _diff_added(root, sha, path):
@@ -740,7 +945,7 @@ def judge_message(root, sha, message, ack, verbose=False, ack_paths=""):
     checked = 0
     refusals = []
 
-    for tok, clause, _, kind in deletion_claims(message):
+    for tok, clause, verb_at, kind in deletion_claims(message):
         if kind == "skip" or not tok:
             unchecked["meta" if kind == "skip" else "no_path"] += 1
             continue
@@ -749,11 +954,39 @@ def judge_message(root, sha, message, ack, verbose=False, ack_paths=""):
             unchecked["renamed_or_absent"] += 1
             continue
         checked += 1
-        if not any(p in deleted for p in cands):
-            refusals.append((tok, clause, "present in this commit's tree, not deleted by it"))
+        if any(p in deleted for p in cands):
+            continue
+        # A QUOTATION IS NOT A SELF-DESCRIPTION. A path the message says was deleted may be
+        # a path ANOTHER commit deleted, reported in this message as the accident it
+        # repairs. The quote ledger names that commit, and the gate CHECKS it: the quoted
+        # commit's own diff must DELETE the path, or the row discharges nothing and the
+        # refusal stands. A claim in the SUBJECT is never a quotation -- a subject
+        # describes its own commit -- so the ledger is not consulted there, and the test
+        # is THE CLAIM's OWN position, not the message's.
+        quoted = False
+        if "\n" in message[:verb_at]:
+            ok, _why = explain_deleted(root, sha, tok)
+            quoted = ok
+        if quoted:
+            unchecked["unfalsifiable_count"] += 1
+            continue
+        refusals.append((tok, clause, "present in this commit's tree, not deleted by it"))
 
     for m in COUNT.finditer(message):
         n = int(m.group("a") or m.group("b"))
+        # A QUOTATION IS NOT A SELF-DESCRIPTION. A count that names ANOTHER commit's figure
+        # is a claim about THAT diff, and the comparison against this one is the wrong
+        # comparison. The quote ledger says which commit is quoted, and the gate CHECKS it:
+        # the quoted commit's own diff must change exactly `n` files, or the row does not
+        # discharge and the refusal stands. A count in the SUBJECT is never a quotation --
+        # a subject describes its own commit -- so the ledger cannot excuse a subject.
+        quoted = False
+        if "\n" in message[:m.start()]:
+            ok, _why = explain_count(root, sha, n)
+            quoted = ok
+        if quoted:
+            unchecked["unfalsifiable_count"] += 1
+            continue
         checked += 1
         if n != changed:
             refusals.append((f"{n} files", _clause(message, m.start())[0],

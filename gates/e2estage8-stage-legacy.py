@@ -25,7 +25,27 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+HERE = Path(__file__).resolve().parent
+# THE ROOT IS `HERE.parent` AND NOT `parents[3]`, AND THE REASON IS A MEASUREMENT.
+#
+# THIS FILE USED TO BE `.agents/slop/e2estage8/verdicts.py`, WHERE `parents[3]` WAS THE REPO
+# ROOT. IT WAS MOVED TO `gates/e2estage8-stage-legacy.py` AND THE CONSTANT CAME WITH IT --
+# AND `parents[3]` FROM `gates/` IS `/Users/cyberistic/src`, WHICH IS **ABOVE** THE REPO.
+# MEASURED BEFORE THE FIX: a bare run raised
+#
+#     FileNotFoundError: [Errno 2] No such file or directory:
+#       '/Users/cyberistic/src/.agents/slop/e2epy/artifacts/live.port.out'
+#
+# **⇒ THE INSTRUMENT WAS DEAD, AND IT WAS DEAD OVER 0 ROWS: IT NEVER REACHED A STAGE.**
+# ⇒ AND `gates/gates-pop.py`'s `--ledger check` HAD BEEN REPORTING IT FOR THE WHOLE TIME
+#   UNDER `RESOLVES OUTSIDE` -- the one finding it had left.
+#
+# ⇒ AND THE HOUSE STYLE IS ALREADY THIS: **123** OF THE `gates/*.py` ROOTS ARE `HERE.parent`,
+#   **19** ARE `parents[1]`, AND **30** ARE `parent.parent`. THE `parents[N]` FORMS ARE THE
+#   ONES THAT BAKE THE TREE's DEPTH INTO A CONSTANT, AND A MOVE THAT DOES NOT MOVE THE
+#   CONSTANT IS EXACTLY WHAT HAPPENED HERE. **`HERE.parent` IS NOT A MATTER OF TASTE: IT IS
+#   THE FORM THAT SURVIVES THE MOVE.**
+ROOT = HERE.parent
 DEFAULT = ROOT / ".agents/slop/e2epy/artifacts/live.port.out"
 HEADER = re.compile(r"^== (\d+)/\d+ (.*)$")
 VERDICT = re.compile(r"^  (stage \d+ [^:]*): (PASS|FAIL \(rc=-?\d+\)|SKIP -- .*)$")
