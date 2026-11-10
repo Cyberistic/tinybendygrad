@@ -301,7 +301,7 @@ def build(path: Path, info: dict) -> tuple[list[str], list[str]]:
     # INSTEAD OF **440**, **AND `diff` WAS NOT EMPTY.**  **AND THE BRIEF IS
     # EXPLICIT: *"IF THE PORT FILE STILL EMITS ROWS OF ITS OWN ... THOSE ROWS
     # STAY IN THE PORT FILE".***
-    driver_main = [l for l in main_block if l not in summary]
+    driver_main = list(main_block)
     drop.update(range(main_i, main_e))
     # **AND THE `main` BLOCK IS **NOT** IN `moved_blocks`** -- **AND THE
     # LINE `moved_blocks[-1] = (main_i, main_e)` **OVERWROTE THE LAST HELPER's
@@ -324,7 +324,54 @@ def build(path: Path, info: dict) -> tuple[list[str], list[str]]:
     moved: list[str] = []
     for s, e in moved_blocks:
         moved.extend(lines[s:e])
+    # **=> AND A **TYPE** NEVER MOVES -- **MEASURED 2026-11-10 ON
+    # `ops_qcom.bend`: THE TYPES SPLIT BETWEEN THE TWO FILES** -- **`Kf` AND
+    # `Two` WENT TO THE DRIVER AND THE PORT's OWN CODE SAID "a declared
+    # constructor (unknown: Kf)"** -- **=> AND A TYPE IS **A DEFINITION**, **SO
+    # IT MUST LIVE IN **ONE** FILE**, **AND THE PORT IS **THE** FILE THAT
+    # OWNS THE TYPES** -- **=> AND THE DRIVER NAMES THEM `P.<Type>`, **WHICH
+    # IS **THE PROVEN TOOL's OWN TYPE RULE**.
+    #
+    # **=> AND A `type` BLOCK IS **A GAP BETWEEN TWO DEFS**, **AND THE
+    # `block_start` COMMENT-PULL **CAN SWALLOW IT** -- **AND SO THE TYPE
+    # LINES ARE **RESTORED TO THE PORT** EXPLICITLY, **AND REMOVED FROM THE
+    # MOVED TEXT**.
+    type_lines = {i for i, l in enumerate(lines) if l.startswith('type ')}
+    moved = [l for l in moved if not l.startswith('type ')]
+    type_spans: list[tuple[int, int]] = []
+    for i in sorted(type_lines):
+        j = i + 1
+        # **=> AND THE CONSTRUCTOR IS **AS MANY LINES AS IT TAKES** --
+        # **MEASURED 2026-11-10 ON `ops_qcom.bend`: `type Pd is Data:` SPANS
+        # **TWO** LINES (`Pd{image_size: U32, ...` AND `    prg_offset: ...}`),
+        # **AND THE ONE-LINE RULE TOOK **ONE**, **AND THE PORT SAID "expected :
+        # a name (got the keyword 'def')"** -- **=> AND THE SPAN ENDS AT **A
+        # BLANK LINE, A `def`, A `type` OR AN `import`.**
+        while j < len(lines) and lines[j].strip() != '' \
+                and not lines[j].startswith(('#', 'def ', 'type ', 'import ')):
+            j += 1
+        type_spans.append((i, j + 1))
+    # **=> AND THE TYPE'S OWN LINES ARE **REMOVED FROM THE MOVED TEXT** TOO --
+    # **MEASURED 2026-11-10 ON `ops_qcom.bend`: THE PORT KEPT `Bi{off: U32,
+    # typ: U32}` **AND** THE DRIVER GOT **A SECOND COPY** OF IT, **AND THE
+    # DRIVER SAID "expected : 'def', 'type' or 'law' / observed : 'P'"** -- **=> AND
+    # THE COPY IS **THE `type` GAP BEING SWALLOWED BY THE PREVIOUS DEF's
+    # BLOCK** -- **AND THE PORT's OWN BLOCK ALREADY HOLDS IT**.
+    type_line_texts = set()
+    for a, b in type_spans:
+        for k in range(a, b):
+            drop.discard(k)
+            type_line_texts.add(lines[k])
+    moved = [l for l in moved if l not in type_line_texts]
     moved = order_all(moved)
+    # **=> AND A **TYPE** NEVER MOVES -- **MEASURED 2026-11-10 ON
+    # `ops_qcom.bend`: THE TYPES SPLIT BETWEEN THE TWO FILES** -- **`Kf` AND
+    # `Two` WENT TO THE DRIVER AND THE PORT's OWN CODE SAID "a declared
+    # constructor (unknown: Kf)"** -- **=> AND A TYPE IS **A DEFINITION**, **SO
+    # IT MUST LIVE IN **ONE** FILE**, **AND THE PORT IS **THE** FILE THAT
+    # OWNS THE TYPES** -- **=> AND THE DRIVER NAMES THEM `P.<Type>`, **WHICH
+    # IS **THE PROVEN TOOL's OWN TYPE RULE**.
+    moved = [l for l in moved if not l.startswith("type ")]
     # **=> AND THE DRIVER's `main` **REPLACES** THE PORT's ORIGINAL `main` **IN
     # THE ORDERED LIST** -- **AND IT GOES **LAST**, **BECAUSE BEND HAS NO
     # FORWARD REFERENCES** -- **AND THE ORDERING PUTS `main` LAST ANYWAY.**
@@ -349,10 +396,11 @@ def build(path: Path, info: dict) -> tuple[list[str], list[str]]:
     moved.extend(driver_main)
     # **AND THE PORT FILE KEEPS **EVERYTHING ELSE**, **IN ORDER**."
     impl = [l for k, l in enumerate(lines) if k not in drop]
-    # **AND THE PORT's NEW `main` IS **THE SUMMARY ROW ONLY**."
-    port_main = ["", "def main() -> IO(Unit):", "  do IO<Unit>:"]
-    port_main += ["    " + s.strip() for s in summary] or ["    IO.print(\"\")"]
-    impl = impl + port_main
+    # **=> AND THE PORT FILE GETS **NO `main`** -- **AND THAT IS **THE TREE's
+    # OWN SHAPE** (`tinybendygrad/renderer/amd/sqtt.bend` HAS NONE **AND EMITS
+    # **ZERO** ROWS**) -- **=> AND THE PORT's OWN SUMMARY ROW **MOVED WITH THE
+    # `main` THAT PRODUCED IT**, **AND THE UNION OF THE TWO FILES' ROWS IS
+    # STILL THE ORIGINAL SET**.
     return impl, moved
 
 
@@ -533,6 +581,19 @@ def _qualify_spans(text: str, port_defs: set[str], port_types: set[str], moved_n
         for d in sorted(port_defs, key=len, reverse=True):
             chunk = re.sub(rf"(?<![\w.]){re.escape(d)}\(", f"P.{d}(", chunk)
         for t in sorted(port_types, key=len, reverse=True):
+            # **=> AND A **TYPE CONSTRUCTOR PATTERN** (`Kf{nm: String}`) IS
+            # **NOT **A TYPE REFERENCE** -- **AND `P.Kf{...}` IS NOT VALID
+            # BEND** -- **MEASURED 2026-11-10 ON `ops_qcom.bend`: THE DRIVER
+            # SAID "expected : 'def', 'type' or 'law' / observed : 'P'"** --
+            # **=> AND **A TYPE NAME IMMEDIATELY FOLLOWED BY `{`** IS A
+            # **CONSTRUCTOR**, **AND IT STAYS BARE.**
+            # **=> AND A **TYPE NAME IN A PATTERN** (`case Pd{image_size, ...}`)
+            # **IS **A TYPE REFERENCE** **AND MUST BE `P.Pd`** -- **AND
+            # `gates/dtype-gate.bend:54` **IS THE PROOF**: IT READS
+            # `case P.Fix{fx, wi, ch, wf, i32, ub}: fx` -- **=> AND THE
+            # **EARLIER** REFUSAL (`P.Kf{...}`) WAS **NOT **THE PATTERN** **BUT
+            # **THE TYPE DECLARATION**, **WHICH HAD MOVED** -- **AND **IT** DOES
+            # **NOT** MOVE ANY MORE.
             chunk = re.sub(rf"(?<![\w.]){re.escape(t)}\b", f"P.{t}", chunk)
         for h in moved_names:
             chunk = re.sub(rf"P\.{re.escape(h)}\(", f"{h}(", chunk)
