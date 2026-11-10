@@ -125,10 +125,45 @@ def bounded_bend(path: Path) -> str:
         cwd=ROOT, capture_output=True, text=True, timeout=900,
     )
     both = r.stdout + r.stderr
+    # **THE **TOKEN **IS **A **CLAIM **ABOUT **THE **BOUNDS** **AND **NEVER **ABOUT **THE
+    # CHILD** -- **MEASURED 2026-11-10: `checks/bounded.py:47` SAYS **EXACTLY **THAT**, **AND
+    # IT **PRINTS **THE **TOKEN **AND **THE **COMPILER's **VERDICT **ON **THE **SAME **LINE**
+    # (`WITHIN-LIMITS  rc=1  ...  said=SOME PROOFS FAIL`).** **AND **THE **EXTRACTOR
+    # **REPORTED **A **FILE **AS **COMPILING **WHEN **IT **DID **NOT** -- **MEASURED BY **A
+    # **CONCURRENT **AGENT**: "the marker tool reported `WITHIN-LIMITS` for a port file that did
+    # not compile (`a declared constructor (unknown: Cx)`)".**
+    # **SO **THE **COMPILE **VERDICT **IS **READ **FROM **THE **COMPILER's **OWN **OUTPUT**,
+    # **AND **THE **BOUNDS **TOKEN **IS **A **SEPARATE **FACT**.**
+    for bad in ("SOME PROOFS FAIL", "Error:"):
+        if bad in both:
+            return "DOES-NOT-COMPILE"
+    if "ALL PROOFS CHECK" not in both:
+        return "NO-VERDICT"
     for token in ("WITHIN-LIMITS", "KILLED-ON-MEMORY", "TIMED-OUT"):
         if token in both:
             return token
     return "NO-TOKEN"
+
+
+def driver_name(port: Path, root: Path) -> str:
+    """**THE NAME OF THE DRIVER THIS TOOL WRITES FOR `port`** -- **AND IT IS **ONE
+    FUNCTION** SO THAT `external_users()`'s SELF-REFERENCE EXCLUSION AND THE DRIVER's
+    OWN NAME **CANNOT DRIFT**.
+
+    **THE PARENT DIRECTORY IS ADDED **ONLY WHEN THE BARE STEM SAYS NOTHING OR
+    **COLLIDES** -- **SO `schedule/__init__.bend` IS `gates/schedule-init-gate.bend`**,
+    **AND `renderer/amd/elf.bend` IS STILL `gates/elf-gate.bend`**, **AND NOBODY's
+    EXISTING DRIVER IS RENAMED.**
+    """
+    stem = port.stem
+    parent = port.parent.relative_to(root / "tinybendygrad")
+    # **AND THE LEADING UNDERSCORES OF A `__init__` ARE DROPPED** -- **BECAUSE
+    # `schedule-__init__-gate.bend` STILL SAYS `__init__` AND THE NAME IS HOW A
+    # READER FINDS THE GATE.**
+    clean = stem.strip("_") or stem
+    ambiguous = stem.startswith("_")
+    prefix = "-".join(parent.parts) if ambiguous and parent.parts else ""
+    return f"{prefix}-{clean}-gate.bend" if prefix else f"{clean}-gate.bend"
 
 
 def external_users(port: Path, root: Path) -> dict[str, set[str]]:
@@ -149,23 +184,34 @@ def external_users(port: Path, root: Path) -> dict[str, set[str]]:
     **AND **A DEF THAT ANOTHER FILE CALLS IS **THE PORT's API**, NOT THE GATE's
     FIXTURE** -- **SO IT STAYS IN THE PORT** AND THE DRIVER CALLS IT AS `P.<name>`.**
 
-    **AND **THE INSTRUMENTS ARE **NOT** CONSUMERS** -- **THE `gates/` DRIVERS ARE THE
-    THING THIS TOOL WRITES, **AND A DRIVER FROM A PREVIOUS RUN IS A **SELF-REFERENCE**:
-    MEASURED 2026-11-10 ON `elf.bend`: THE TOOL's OWN `gates/elf-gate.bend` SAID `P.row`,
-    **SO THE TOOL READ `row` AS **EXTERNALLY USED** AND LEFT IT IN THE PORT, **AND THE
-    FRESH DRIVER THEN SAID `P.row` FOR A DEF THAT HAD MOVED** -- **AND THE DRIVER DID
-    NOT COMPILE.** **AND THE FIXTURES ARE NOT CONSUMERS EITHER** -- **`checks/.e2e-fixture/`
-    IS A FIXTURE **FOR** THE PORT, **AND IT IMPORTS IT AS A CONSUMER** -- **SO IT IS KEPT.**
+    **AND **THE **DRIVER THIS TOOL IS ABOUT TO WRITE** IS **NOT** A CONSUMER** -- **IT IS
+    A **SELF-REFERENCE**: MEASURED 2026-11-10 ON `elf.bend`: THE TOOL's OWN
+    `gates/elf-gate.bend` SAID `P.row`, **SO THE TOOL READ `row` AS **EXTERNALLY USED**
+    AND LEFT IT IN THE PORT, **AND THE FRESH DRIVER THEN SAID `P.row` FOR A DEF THAT HAD
+    MOVED** -- **AND THE DRIVER DID NOT COMPILE.**
+
+    **AND **A **PRE-EXISTING** `gates/` DRIVER **IS** A CONSUMER** -- **AND THIS IS THE
+    DEFECT MEASURED 2026-11-10 ON `device.bend`: THE TOOL EXCLUDED **ALL** OF `gates/`,
+    **SO `gates/ops_dsp-gate.bend`'s `D.needs_compile` AND `gates/hcq2-gate.bend`'s
+    `D.dev_name` / `D.link_add` / `D.link_buffer_base` READ AS **ROW-ONLY**, **THE FOUR
+    DEFS MOVED OUT OF THE PORT, AND BOTH DRIVERS FAILED TO COMPILE WITH "expected : a
+    defined name".** **A GATE DRIVER FOR **ANOTHER** FILE IS **A CONSUMER OF THIS
+    PORT's API** LIKE ANY OTHER, **AND THE ONLY DRIVER THAT IS **NOT** A CONSUMER IS
+    **THE ONE THIS TOOL IS WRITING** -- **AND IT IS NAMED BY THE PORT's OWN PATH.**
     """
     port_res = port.resolve()
     port_rel = port_res.relative_to(root)
+    # **AND THE NAME OF **THE DRIVER THIS TOOL IS ABOUT TO WRITE** -- **AND IT COMES
+    # FROM **THE SAME FUNCTION** `main()` USES TO NAME IT, **SO THE TWO CANNOT DRIFT.**
+    self_driver = driver_name(port, root)
     found: dict[str, set[str]] = {}
     for cand in root.rglob("*.bend"):
         if cand.resolve() == port_res:
             continue
-        # **AND THE **INSTRUMENTS** -- **THE `gates/` DRIVERS** -- **ARE NOT CONSUMERS.**
+        # **AND ONLY **THE DRIVER THIS TOOL WRITES** IS NOT A CONSUMER** -- **EVERY
+        # OTHER `gates/` DRIVER IMPORTS OTHER PORTS AND CONSUMES THIS ONE's API TOO.
         rel_parts = cand.resolve().relative_to(root).parts
-        if len(rel_parts) > 1 and rel_parts[0] == "gates":
+        if len(rel_parts) > 1 and rel_parts[0] == "gates" and cand.name == self_driver:
             continue
         try:
             text = cand.read_text()
@@ -431,24 +477,18 @@ def main() -> int:
     for rel in args.apply:
         path = ROOT / rel
         impl, gate, moved, helpers = split(path)
-        # **⇒ AND THE DRIVER's NAME COMES FROM **THE PORT's PATH**, NOT FROM ITS BARE
+        # **AND THE DRIVER's NAME COMES FROM **THE PORT's PATH**, NOT FROM ITS BARE
         # STEM** -- **BECAUSE `schedule/__init__.bend` HAS THE STEM `__init__`, **AND
         # `gates/__init__-gate.bend` IS A NAME THAT SAYS NOTHING** -- **AND A GATE's NAME
         # IS HOW A READER FINDS IT.**
-        # **⇒ AND THE PARENT DIRECTORY IS ADDED **ONLY WHEN THE BARE STEM SAYS NOTHING
+        # **AND THE PARENT DIRECTORY IS ADDED **ONLY WHEN THE BARE STEM SAYS NOTHING
         # OR **COLLIDES**** -- **SO `schedule/__init__.bend` IS
         # `gates/schedule-init-gate.bend`**, **AND `renderer/amd/elf.bend` IS STILL
         # `gates/elf-gate.bend`**, **AND NOBODY'S EXISTING DRIVER IS RENAMED.**
-        stem = path.stem
-        parent = path.parent.relative_to(ROOT / "tinybendygrad")
-        # **⇒ AND THE LEADING UNDERSCORES OF A `__init__` ARE DROPPED** -- **BECAUSE
-        # `schedule-__init__-gate.bend` STILL SAYS `__init__` AND THE NAME IS HOW A
-        # READER FINDS THE GATE.**
-        clean = stem.strip("_") or stem
-        ambiguous = stem.startswith("_")
-        prefix = "-".join(parent.parts) if ambiguous and parent.parts else ""
-        name = f"{prefix}-{clean}-gate.bend" if prefix else f"{clean}-gate.bend"
-        driver = ROOT / "gates" / name
+        # **AND THE NAME COMES FROM **THE SAME FUNCTION** `external_users()` USES TO
+        # FIND **THE DRIVER TO EXCLUDE** -- **SO THE SELF-REFERENCE EXCLUSION AND THE
+        # DRIVER's OWN NAME CANNOT DRIFT.**
+        driver = ROOT / "gates" / driver_name(path, ROOT)
         print(f"  {rel}: {len(impl)} impl lines, {len(gate)} gate lines, {len(moved)} helper lines")
         # **THE DRIVER'S HEADER, IN THE TREE's OWN STYLE.**
         # **AND THE PORT's **IMPORTS** MOVE WITH THE ROWS** -- **MEASURED 2026-11-10:
@@ -547,8 +587,11 @@ def main() -> int:
         tok_a = bounded_bend(path)
         tok_b = bounded_bend(driver)
         print(f"    port file: {tok_a}   driver: {tok_b}")
+        # **AND **THE **CHECK **IS **THE **COMPILER's **VERDICT**, **AND **THE **TOKEN **IS
+        # **A **FACT **ABOUT **THE **BOUNDS** -- **AND **THEY **ARE **SEPARATE**.**
         if tok_a != "WITHIN-LIMITS" or tok_b != "WITHIN-LIMITS":
-            print("    **REFUSED: one of the two did not compile -- RESTORE BOTH.**")
+            print("    **REFUSED: one of the two did not compile (port=%s driver=%s) -- RESTORE BOTH.**"
+                  % (tok_a, tok_b))
             return 1
     return 0
 
