@@ -219,19 +219,11 @@ def cpu.map_jit() -> U32: 2048
 def cpu.map_anon() -> U32: 4096
 def cpu.map_private() -> U32: 2
 
-# ops_cpu.py:40, `PROT_READ|PROT_WRITE|PROT_EXEC` == 1|2|4.
-def cpu.prot_rwx() -> U32: 7
-
 # ops_cpu.py:54, `libc.MS_SYNC | libc.MS_INVALIDATE` == 4|2.
 def cpu.ms_flags() -> U32: 6
 
 # ops_cpu.py:78, the MEM_RELEASE flag in the VirtualFree call: 0x8000.
 def cpu.mem_release() -> U32: 32768
-
-# ops_cpu.py:81, `wait_timeout_ms = 30000` -- the INT. `Compiled` has 30000.0
-# and this line overwrites it with an int, which is why the row is named
-# `cpu_wait_timeout_int`.
-def cpu.wait_timeout_ms() -> U32: 30000
 
 # ops_cpu.py:19, `DLL('m', 'm')`. The second name is a constant and the first is
 # the platform arm. MEASURED on this host, `DLL.findlib('m','m')` answers
@@ -300,16 +292,6 @@ def cpu.rt_lib_name(osx: Bool, win: Bool) -> String:
 # checks first.
 def cpu.link_libs(osx: Bool, win: Bool) -> List<&2, String>:
   [cpu.lib_m(), cpu.rt_lib_name(osx, win), cpu.lib_objc()]
-
-def cpu.link_libs_n(osx: Bool, win: Bool) -> U32:
-  U32.from_nat(List.length(&2, String, cpu.link_libs(osx, win)))
-
-
-# ops_cpu.py:21, `libc.ELFMAG.encode()` == b'\x7fELF'. WALL 2 says four bytes
-# cannot be compared in Bend, so they are NAMED rather than spelled as a
-# comparison: the port carries the ANSWER and this is the auditable statement of
-# what the answer means.
-def cpu.elfmag() -> String: "7f454c46"
 
 # ops_cpu.py:91, `{'amd64':'x86_64', 'aarch64':'arm64'}.get(m, m) + ",native"`.
 # The dictionary is a two-row table and the `.get(m, m)` fallback is what makes
@@ -564,8 +546,6 @@ def Tr.has.go(n: Nat, +patlen: Nat, cs: List<&2, Call>, +pat: List<&2, Call>, +a
 def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
-def seq(+t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
-def ncalls(k: U32, +t: Tr) -> U32: Tr.count(k, Tr.calls(t))
 def seen(+t: Tr) -> U32: U32.from_nat(List.length(&2, Call, Tr.calls(t)))
 def key(+t: Tr, k: U32) -> List<&2, U32>: Tr.args(k, Tr.calls(t))
 
@@ -722,14 +702,6 @@ def prog.wp.on_at(osx: Bool, +p: Prog) -> Prog:
     case True{}: prog.wp.on(p)
     case False{}: p
 
-# ops_cpu.py:21, `_load` -- `lib if lib[:4] != libc.ELFMAG.encode() else
-# jit_loader(lib, base=base, link_libs=[self.libm, self.rt_lib])`. The DECISION
-# is WALL 2's Bool and the two arms are two trace tags. `link_libs` is
-# `[self.libm, self.rt_lib]` -- TWO libraries, and both come from the class
-# attribute at :19, which is why `cpu_rt_lib_name` is ported even though the
-# loader itself is not.
-def cpu.uses_jit_loader(elf: Bool) -> Bool: elf
-
 def cpu.load_raw(elf: Bool) -> U32:
   Bool.pick(U32, elf, CALL_LOAD_JIT(), CALL_LOAD_RAW())
 
@@ -798,18 +770,6 @@ def prog.posix(+p: Prog, +lvp: Bool, +elf: Bool, +osx: Bool, +rt: Bool) -> Prog:
 def prog.posix.at(local: Bool, +p: Prog, +lvp: Bool, +elf: Bool, +osx: Bool, +rt: Bool) -> Prog:
   Bool.pick(Prog, local, prog.posix(p, lvp, elf, osx, rt), p)
 
-# :23-56 -- `__init__`. THREE arms, MUTUALLY EXCLUSIVE: the remote branch (:26),
-# the win32 branch (:27-36) and the posix branch (:38-56), and `local` is "none
-# of the first two". A `Prog` is `Data`, so each arm's growth is a copy and
-# `Bool.pick` picks between finished values rather than between effects -- which
-# is the one place this file's `Bool.pick` use is not reading like the others.
-def prog.init(+nm: String, +sig: List<&2, U32>, +lvp: Bool, +elf: Bool, +osx: Bool,
-              +rt: Bool, +remote: Bool, +win: Bool, liblen: U32) -> Prog:
-  +p0: Prog = Prog.of(nm, sig, lvp, elf, osx, rt, liblen)
-  +p1: Prog = Bool.pick(Prog, remote, prog.remote.at(lvp, p0), p0)
-  +p2: Prog = Bool.pick(Prog, win, prog.win.at(lvp, p1), p1)
-  prog.posix.at(Bool.not(Bool.or(remote, win)), p2, lvp, elf, osx, rt)
-
 # ===========================================================================
 # ===========================================================================
 # ops_cpu.py:67-71 -- the LVP argument buffer, which is the one piece of
@@ -835,33 +795,8 @@ def prog.init(+nm: String, +sig: List<&2, U32>, +lvp: Bool, +elf: Bool, +osx: Bo
 # about it. EVERY count below is this one def.
 def prog.nargs(nbufs: U32, nvals: U32) -> U32: U32.add(nbufs, nvals)
 
-# helpers.py:81, `data64_le(data) = (data & 0xFFFFFFFF, data >> 32)`. The
-# address is a 64-bit number (WALL 1), so the port carries the 32-bit LOW word
-# it can compute and answers the high word as the carry out of `lo + 12`, which
-# is the only part of the pair that is nonzero for an address near 4 GiB.
-def lvp.d64(lo: U32) -> List<&2, U32>: [lo, 0]
-
 # :67, the bytearray length. 12 bytes of header plus 8 bytes per argument.
 def lvp.size(nbufs: U32, nvals: U32) -> U32: U32.add(12, U32.mul(prog.nargs(nbufs, nvals), 8))
-
-# :69, `(len(bufs)+len(vals))*2` -- the third header word. THE `*2` is because
-# the val slots are 8 bytes each while `iter_sig` is handed `len(bufs)*8`, so
-# the header counts WORDS-PAIRs and the base counts BYTES. `lvp_third` and
-# `lvp_slots` disagree by a factor of four and that disagreement is the row.
-def lvp.third(nbufs: U32, nvals: U32) -> U32: U32.mul(prog.nargs(nbufs, nvals), 2)
-
-# :69-70 -- the val slot offsets, `TinyELF.iter_sig(self.signature[-len(vals):],
-# len(bufs)*8)`, as offsets into `lvp_args`. The `[-len(vals):]` slice and the
-# `len(bufs)*8` base are both decisions and both are rows. `D.isig.go` is
-# device.bend's offset-carrying walk of the itemsize list, so the tail slice is
-# this file's and the base is the second argument -- see OWED BACK, item 1.
-def lvp.slots(+sig: List<&2, U32>, +nvals: Nat, nbufs: U32) -> List<&2, U32>:
-  cn_walk(Nat.sub(List.length(&2, U32, sig), nvals),
-          List.drop(&2, U32, sig, Nat.sub(List.length(&2, U32, sig), nvals)),
-          U32.mul(nbufs, 8), Nil{})
-
-# :70, `12+off` -- where a val's BYTES go. Not the bytes (WALL 3), the offset.
-def lvp.at(off: U32) -> U32: U32.add(12, off)
 
 # ===========================================================================
 # ops_cpu.py:58-73 -- `__call__` as the step list it is.
@@ -879,12 +814,6 @@ def lvp.at(off: U32) -> U32: U32.add(12, off)
 # :63, `(remote._rpc if wait else remote._post)(...)`.
 def prog.remote_tag(wait: Bool) -> U32:
   Bool.pick(U32, wait, CALL_RPC(), CALL_POST())
-
-# :73, `return float(...) * 1e-6 if wait else None`. The ANSWER'S SHAPE is the
-# decision: with `wait` there is a number and without it there is nothing. The
-# number itself is two clock reads, so the VALUE is the seam's and only the
-# shape is ported.
-def prog.ret_is_none(wait: Bool) -> U32: Bool.pick(U32, wait, 0, 1)
 
 # :63, the remote EXEC_PROG packet: `len(args)` and `int(wait)` are both on the
 # wire, so the entry's arg is the count and the tag carries the wait.
@@ -931,9 +860,6 @@ def prog.call.at(+p: Prog, nbufs: U32, nvals: U32, wait: Bool, remote: Bool) -> 
     case True{}: prog.call.remote(p, nbufs, nvals, wait)
     case False{}: prog.call.local(p, nbufs, nvals)
 
-def prog.call(+p: Prog, nbufs: U32, nvals: U32, wait: Bool, remote: Bool) -> Prog:
-  prog.call.at(p, nbufs, nvals, wait, remote)
-
 # ===========================================================================
 # ops_cpu.py:75-78 -- `__del__`, the ONLY teardown either backend has, and it
 # is a CONJUNCTION: `if self.dev.remote is None and sys.platform == 'win32'`.
@@ -947,8 +873,6 @@ def prog.del.at(remote: Bool, win: Bool, +p: Prog) -> Prog:
   match remote win:
     case False{} True{} : prog.at(p, 0, CALL_VIRTUAL_FREE(), cpu.mem_release())
     case _ _            : p
-
-def prog.del(remote: Bool, win: Bool, +p: Prog) -> Prog: prog.del.at(remote, win, p)
 
 # ===========================================================================
 # ops_cpu.py:80-96 -- `CPUDevice`, and it is the SMALLEST device in tinygrad:
@@ -1013,24 +937,6 @@ def cpu.peer.at(remote: Bool, dev: String, got: String) -> String:
 def cpu.peer_of(remote: Bool, +dev: String) -> String:
   cpu.peer.at(remote, dev, D.head(dev))
 
-# :86-92 -- `__init__` as the step list it is. The `if` comes FIRST, so the
-# connect happens before `super().__init__` and therefore before the arch
-# string exists. `osx`/`win` are NOT parameters here because Python does not use
-# them in `__init__` either -- they are `getenv` reads that only feed
-# `CPUProgram`'s class attribute at :19, and `cpu_rt_lib_name` is that
-# derivation, gated on its own.
-#
-# `cpu.peer_of` is called ONCE and its answer is already the post-:92 value
-# (`remote_peer` on the remote arm, the inherited `head(dev)` otherwise), so
-# there is no separate overwrite step to write. A `.at` wrapper that returned the
-# device unchanged on both arms was written and deleted: it read as a decision
-# and was not one.
-def cpu.init(+dev: String, +machine: String) -> Cpu:
-  +rm: Bool = cpu.is_remote(dev)
-  Cpu{dev, cpu.arch_of(machine), rm, cpu.peer_of(rm, dev), cpu.renderers(),
-      D.dev_id(dev),
-      Bool.pick(Tr, rm, Tr.emit(CALL_CONNECT(), cpu.nparts(dev), Tr.of()), Tr.of())}
-
 # :95, `if self.remote is not None: self.remote.rpc(RemoteCmd.PING)` and then
 # `super().synchronize(timeout)`. The PING is a trace entry; the super is
 # device.bend's timeline wait and is a seam. `cpu_sync_ping` and
@@ -1042,9 +948,6 @@ def cpu.synchronize.at(remote: Bool, +c: Cpu) -> Cpu:
       Cpu{Cpu.dev(c), Cpu.arch(c), Cpu.remote(c), Cpu.peer(c), Cpu.renders(c),
           Cpu.dev_id(c), Tr.emit(CALL_PING(), 0, Cpu.t(c))}
     case False{}: c
-
-def cpu.synchronize(remote: Bool, c: Cpu) -> Cpu: cpu.synchronize.at(remote, c)
-
 
 # ===========================================================================
 # THE TRACE VOCABULARY. A tag's NUMBER is this file's; its NAME is Python's,
@@ -1092,15 +995,6 @@ def tnames.go(n: Nat, cs: List<&2, Call>, acc: List<&2, String>) -> List<&2, Str
         case Nil{}: acc
         case h <> t: tnames.go(p, t, List.append(&2, String, acc, [call_name.go(Call.k(h))]))
 
-# THE NAMES OF THE WHOLE TRACE, in order, comma-joined. `List.append` is
-# `xs ++ ys` and `String.join` is HEAD-FIRST, so the walk APPENDS; consing here
-# reverses every order row at once.
-def tnames(+t: Tr) -> String:
-  String.join(tnames.go(List.length(&2, Call, Tr.calls(t)), Tr.calls(t), Nil{}), ",")
-
-# the names of ONE tag's args, for the rows where the arg is the claim.
-def targ(k: U32, +t: Tr) -> List<&2, U32>: Tr.args(k, Tr.calls(t))
-
 # the tag at POSITION `i`, which is a different question from "the args of tag
 # k" and the one the four conditional positions in `__init__` need.
 def tat.go(n: Nat, cs: List<&2, Call>, +i: U32) -> U32:
@@ -1112,8 +1006,6 @@ def tat.go(n: Nat, cs: List<&2, Call>, +i: U32) -> U32:
         case h <> t: Bool.pick(U32, U32.is_zero(i), Call.k(h), tat.go(p, t, U32.sub(i, 1)))
 
 def tat(+t: Tr, i: U32) -> U32: tat.go(List.length(&2, Call, Tr.calls(t)), Tr.calls(t), i)
-
-def call_at(+t: Tr, i: U32) -> String: call_name.go(tat(t, i))
 
 # `Renderer` appears four times in the raw 27-long NULL list and ONCE in the
 # deduped twenty, so this join is the row that dies if a port deduped by
@@ -1132,403 +1024,6 @@ def rnames(+cs: List<&2, Cr>) -> String:
   String.join(rnames.go(List.length(&2, Cr, cs), cs, Nil{}), ",")
 
 
-# ===========================================================================
-# THE GATE. Every row is a claim about `ops_cpu.py` / `ops_null.py`'s TEXT, or
-# about a constant read out of a live CPython object, or about a value the REAL
-# CPython device computed -- and every row's expectation came out of the
-# `.venv/bin/python` oracle that drives `CPUDevice`, `NullDevice`, the renderer
-# tables, `NullAllocator` and the actual tensor ops with `DEV=NULL`. The
-# acceptance test is a BYTE DIFF of the three lanes (interpreted, native,
-# CPython), not a per-row comparison.
-#
-# FIXTURES. One CPU program per combination of the five init facts, one CPU
-# device per device string, one NULL device per `EMULATE` value, and the
-# MEASURED signature and command word stream for the emulated executor. The word
-# stream is the twelve `cmd` calls I captured off the real device, flattened to
-# 48 words -- twelve quads.
-# ===========================================================================
-
-def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
-def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
-def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
-def nrow(nm: String, v: Nat) -> IO(Unit): IO.print(String.concat([nm, "=", Nat.show(v)]))
-
-def ush(+xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
-  match xs:
-    case Nil{}: List.reverse(&2, String, acc)
-    case x <> t: ush(t, U32.show(x) <> acc)
-
-def lrow(nm: String, +xs: List<&2, U32>) -> IO(Unit):
-  IO.print(String.concat([nm, "=", String.join(ush(xs, Nil{}), ",")]))
-
-def rlist(nm: String, xs: List<&2, String>) -> IO(Unit):
-  IO.print(String.concat([nm, "=", String.join(xs, ",")]))
-
-# THE CPU PROGRAM SIGNATURE, itemsizes only, from the MEASURED seven-entry
-# signature of a real submit/kernel program: [8,1,8,1,8,1,1].
-def sig7() -> List<&2, U32>: [8, 1, 8, 1, 8, 1, 1]
-
-# an EMPTY trace, so a gate row reads ONE program call and not the init in front
-# of it. Resetting AFTER the call is the mistake that emptied `cpu_call_local_*`
-# the first time -- the reset took the call's own entries with it.
-def Prog.reset(p: Prog) -> Prog:
-  match p:
-    case Prog{name, sig, lvp, elf, osx, rt, addr, liblen, t}:
-      Prog{name, sig, lvp, elf, osx, rt, addr, liblen, Tr.reset(t)}
-
-def fx_init(osx: Bool, rt: Bool, elf: Bool, lvp: Bool, remote: Bool, win: Bool) -> Prog:
-  Prog.reset(prog.init("k", sig7(), lvp, elf, osx, rt, remote, win, 64))
-
-# the init rows count the UNRESET trace, because the whole of `__init__` is what
-# they are about. The CALL rows use the reset fixture.
-def fx_init_raw(osx: Bool, rt: Bool, elf: Bool, lvp: Bool) -> Prog:
-  prog.init("k", sig7(), lvp, elf, osx, rt, False{}, False{}, 64)
-
-# THE WIN32 FIXTURE IS ITS OWN DEF rather than a `prog.init` call with a bare
-# `True{}` in the seventh argument slot: `prog.init` takes SEVEN Bools and a
-# literal in that position is a parse error the checker reports at the ARGUMENT
-# and not at the def, which is the most expensive kind of error to diagnose.
-def fx_win() -> Prog:
-  prog.init("k", sig7(), False{}, False{}, False{}, False{}, False{}, True{}, 64)
-
-def fx_remote() -> Prog:
-  prog.init("k", sig7(), False{}, False{}, False{}, False{}, True{}, False{}, 64)
-
-def init_n(osx: Bool, rt: Bool, elf: Bool, lvp: Bool) -> U32:
-  seen(Prog.t(fx_init_raw(osx, rt, elf, lvp)))
-
-
-# `List.get` answers a `Maybe` and a gate row may not, so these are the two
-# TOTAL readers the positional rows need -- the same `drv.one` / `drv.nth` pair
-# `upat.bend` grew for the same reason.
-def nth(xs: List<&2, U32>, k: Nat) -> U32: Maybe.default(&2, U32, List.get(&2, U32, xs, k), 0)
-
-def subnames.go(n: Nat, cs: List<&2, Sub>, acc: List<&2, String>) -> List<&2, String>:
-  match n:
-    case 0n: acc
-    case 1n+p:
-      match cs:
-        case Nil{}: acc
-        case h <> t: subnames.go(p, t, List.append(&2, String, acc, [Sub.nm(h)]))
-
-def subnames(+xs: List<&2, Sub>) -> List<&2, String>:
-  subnames.go(List.length(&2, Sub, xs), xs, Nil{})
-
-# `List<&2, U32>` has no `String.join`, so the itemsizes print through the same
-# `ush` fold the numeric rows use.
-def ilist(+xs: List<&2, U32>) -> String: String.join(ush(xs, Nil{}), ",")
-
-# --- 1: the CPU constants, :16 :28 :31 :40 :54 :78 :81 :19 ----------------
-def t_const() -> IO(Unit):
-  do IO<Unit>:
-    urow("cpu_map_jit", cpu.map_jit())
-    urow("cpu_map_anon", cpu.map_anon())
-    urow("cpu_map_private", cpu.map_private())
-    urow("cpu_prot_rwx", cpu.prot_rwx())
-    urow("cpu_ms_flags", cpu.ms_flags())
-    urow("cpu_mem_release", cpu.mem_release())
-    urow("cpu_page_xrw", cpu.page_xrw())
-    urow("cpu_wr_flags", cpu.wr_flags())
-    urow("cpu_wait_timeout_int", cpu.wait_timeout_ms())
-    srow("cpu_lib_m", cpu.lib_m())
-    srow("cpu_lib_objc", cpu.lib_objc())
-    # THE LINK SET, JOINED. One row per platform cell, and the join pins the ORDER
-    # as well as the contents -- `link_sym` walks it left to right, so a set with
-    # the right three names in the wrong order is a different set.
-    rlist("cpu_link_libs_00", cpu.link_libs(False{}, False{}))
-    rlist("cpu_link_libs_10", cpu.link_libs(True{}, False{}))
-    rlist("cpu_link_libs_01", cpu.link_libs(False{}, True{}))
-    rlist("cpu_link_libs_11", cpu.link_libs(True{}, True{}))
-    urow("cpu_link_libs_n", cpu.link_libs_n(True{}, False{}))
-    srow("cpu_rtlib_00", cpu.rt_lib_name(False{}, False{}))
-    srow("cpu_rtlib_10", cpu.rt_lib_name(True{}, False{}))
-    srow("cpu_rtlib_01", cpu.rt_lib_name(False{}, True{}))
-    srow("cpu_rtlib_11", cpu.rt_lib_name(True{}, True{}))
-    srow("cpu_elfmag_hex", cpu.elfmag())
-    srow("cpu_arch_amd64", cpu.arch_of("amd64"))
-    srow("cpu_arch_aarch64", cpu.arch_of("aarch64"))
-    srow("cpu_arch_x86_64", cpu.arch_of("x86_64"))
-    srow("cpu_arch_arm64", cpu.arch_of("arm64"))
-    srow("cpu_arch_riscv64", cpu.arch_of("riscv64"))
-    srow("cpu_arch_empty", cpu.arch_of(""))
-    srow("cpu_arch_AMD", cpu.arch_of("AMD"))
-
-# --- 2: the device-string decisions, :88 :89 ------------------------------
-def t_devname() -> IO(Unit):
-  do IO<Unit>:
-    urow("cpu_nparts_empty", cpu.nparts(""))
-    row("cpu_remote_empty", cpu.is_remote(""))
-    urow("cpu_nparts_CPU", cpu.nparts("CPU"))
-    row("cpu_remote_CPU", cpu.is_remote("CPU"))
-    urow("cpu_nparts_CPU_0", cpu.nparts("CPU:0"))
-    row("cpu_remote_CPU_0", cpu.is_remote("CPU:0"))
-    urow("cpu_nparts_CPU_1", cpu.nparts("CPU:1"))
-    row("cpu_remote_CPU_1", cpu.is_remote("CPU:1"))
-    urow("cpu_nparts_remote_host_1234", cpu.nparts("remote:host:1234"))
-    row("cpu_remote_remote_host_1234", cpu.is_remote("remote:host:1234"))
-    urow("cpu_nparts_remote_h_1_2", cpu.nparts("remote:h:1:2"))
-    row("cpu_remote_remote_h_1_2", cpu.is_remote("remote:h:1:2"))
-    urow("cpu_nparts_a_b_c_d", cpu.nparts("a:b:c:d"))
-    row("cpu_remote_a_b_c_d", cpu.is_remote("a:b:c:d"))
-    srow("cpu_remote_peer_remote_host_1234", cpu.remote_peer("remote:host:1234"))
-    srow("cpu_remote_peer_CPU_1", cpu.remote_peer("CPU:1"))
-
-# --- 3: the CPU DEVICE, :80-92 -------------------------------------------
-def t_device() -> IO(Unit):
-  do IO<Unit>:
-    +c0: Cpu <- IO.pure(Cpu, cpu.init("", "arm64"))
-    +c1: Cpu <- IO.pure(Cpu, cpu.init("CPU:1", "arm64"))
-    +c2: Cpu <- IO.pure(Cpu, cpu.init("remote:host:1234", "arm64"))
-    srow("cpu_dev_empty", Cpu.dev(c0))
-    srow("cpu_arch_fixture", Cpu.arch(c0))
-    urow("cpu_has_copy_queue", cpu.has_copy_queue())
-    srow("cpu_peer_local", Cpu.peer(c0))
-    urow("cpu_dev_id_1", Cpu.dev_id(c1))
-    srow("cpu_peer_cpu1", Cpu.peer(c1))
-    # The remote arm of `cpu.peer_of` is `:89`, and `cpu_peer_remote` is its
-    # only row: the two `peer` rows above are both non-remote, so without this
-    # one the whole `remote_peer` derivation could be replaced by `head(dev)`
-    # and every row would still hold.
-    srow("cpu_peer_remote", Cpu.peer(c2))
-    urow("cpu_renderers_n", U32.from_nat(List.length(&2, Cr, Cpu.renders(c0))))
-    srow("cpu_renderers", rnames(Cpu.renders(c0)))
-    urow("cpu_connect_local_n", seen(Cpu.t(c1)))
-    urow("cpu_connect_remote_n", seen(Cpu.t(c2)))
-    urow("cpu_sync_local_pings", ncalls(CALL_PING(), Cpu.t(cpu.synchronize(False{}, c1))))
-    urow("cpu_sync_remote_pings", ncalls(CALL_PING(), Cpu.t(cpu.synchronize(True{}, c2))))
-
-# --- 4: `__init__` -- the call sequence, :23-56 --------------------------
-def t_init() -> IO(Unit):
-  do IO<Unit>:
-    urow("cpu_init_0000_n", init_n(False{}, False{}, False{}, False{}))
-    urow("cpu_init_0001_n", init_n(False{}, False{}, False{}, True{}))
-    urow("cpu_init_0010_n", init_n(False{}, False{}, True{}, False{}))
-    urow("cpu_init_0011_n", init_n(False{}, False{}, True{}, True{}))
-    urow("cpu_init_0100_n", init_n(False{}, True{}, False{}, False{}))
-    urow("cpu_init_0101_n", init_n(False{}, True{}, False{}, True{}))
-    urow("cpu_init_0110_n", init_n(False{}, True{}, True{}, False{}))
-    urow("cpu_init_0111_n", init_n(False{}, True{}, True{}, True{}))
-    urow("cpu_init_1000_n", init_n(True{}, False{}, False{}, False{}))
-    urow("cpu_init_1001_n", init_n(True{}, False{}, False{}, True{}))
-    urow("cpu_init_1010_n", init_n(True{}, False{}, True{}, False{}))
-    urow("cpu_init_1011_n", init_n(True{}, False{}, True{}, True{}))
-    urow("cpu_init_1100_n", init_n(True{}, True{}, False{}, False{}))
-    urow("cpu_init_1101_n", init_n(True{}, True{}, False{}, True{}))
-    urow("cpu_init_1110_n", init_n(True{}, True{}, True{}, False{}))
-    urow("cpu_init_1111_n", init_n(True{}, True{}, True{}, True{}))
-    +p8: Prog <- IO.pure(Prog, fx_init_raw(True{}, True{}, True{}, True{}))
-    +p6: Prog <- IO.pure(Prog, fx_init_raw(False{}, False{}, False{}, False{}))
-    +pw: Prog <- IO.pure(Prog, fx_win())
-    srow("cpu_init_order", tnames(Prog.t(p8)))
-    srow("cpu_init_order_posix", tnames(Prog.t(p6)))
-    srow("cpu_init_order_win", tnames(Prog.t(pw)))
-    urow("cpu_init_win_n", seen(Prog.t(pw)))
-    srow("cpu_init_posix_load", call_at(Prog.t(p6), 2))
-    srow("cpu_init_posix_cache", call_at(Prog.t(p6), 4))
-    srow("cpu_init_osx_load", call_at(Prog.t(p8), 3))
-    srow("cpu_init_osx_cache", call_at(Prog.t(p8), 6))
-    urow("cpu_init_posix_wp_n", (U32.add(ncalls(CALL_WRITE_PROTECT_OFF(), Prog.t(p6)),
-                                    ncalls(CALL_WRITE_PROTECT_ON(), Prog.t(p6))) : U32))
-    urow("cpu_init_osx_wp_n", (U32.add(ncalls(CALL_WRITE_PROTECT_OFF(), Prog.t(p8)),
-                                    ncalls(CALL_WRITE_PROTECT_ON(), Prog.t(p8))) : U32))
-    urow("cpu_init_posix_mmap_n", ncalls(CALL_MMAP(), Prog.t(p6)))
-    urow("cpu_init_win_mmap_n", ncalls(CALL_MMAP(), Prog.t(pw)))
-    # the REMOTE arm is one call long and skips everything else
-    +pr: Prog <- IO.pure(Prog, fx_remote())
-    urow("cpu_init_remote_n", seen(Prog.t(pr)))
-    srow("cpu_init_remote_order", tnames(Prog.t(pr)))
-    urow("cpu_init_remote_has_mmap", ncalls(CALL_MMAP(), Prog.t(pr)))
-    # :21, the `_load` branch: an ELF blob goes through `jit_loader`, anything
-    # else is used as it stands.
-    row("cpu_load_raw_elf", Bool.not(cpu.uses_jit_loader(True{})))
-    row("cpu_load_raw_short", Bool.not(cpu.uses_jit_loader(False{})))
-    row("cpu_load_raw_other", Bool.not(cpu.uses_jit_loader(False{})))
-    srow("cpu_load_tag_elf", call_name.go(cpu.load_raw(True{})))
-    srow("cpu_load_tag_raw", call_name.go(cpu.load_raw(False{})))
-    # :40, the mmap flags under each platform fact
-    urow("cpu_map_flags_posix", cpu.map_flags(False{}))
-    urow("cpu_map_flags_osx", cpu.map_flags(True{}))
-
-
-# `struct.pack_into(f'<3I{len(bufs)}Q', lvp_args, 0, *data64_le(addr+12), ...)`
-# -- the val slots AT their byte offsets, which is what `12 + off` answers.
-def lvp.smap.go(n: Nat, xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
-  match n:
-    case 0n: acc
-    case 1n+p:
-      match xs:
-        case Nil{}: acc
-        case x <> t: lvp.smap.go(p, t, List.append(&2, U32, acc, [lvp.at(x)]))
-
-def lvp.slotmap(+nvals: Nat, +nbufs: U32) -> List<&2, U32>:
-  lvp.smap.go(List.length(&2, U32, lvp.slots(sig7(), nvals, nbufs)), lvp.slots(sig7(), nvals, nbufs), Nil{})
-
-# --- 5: `__call__` and `__del__`, :58-78 ---------------------------------
-def t_call() -> IO(Unit):
-  do IO<Unit>:
-    urow("cpu_nargs_00", prog.nargs(0, 0))
-    urow("cpu_nargs_30", prog.nargs(3, 0))
-    urow("cpu_nargs_31", prog.nargs(3, 1))
-    urow("cpu_nargs_20", prog.nargs(2, 0))
-    urow("cpu_nargs_14", prog.nargs(1, 4))
-    urow("cpu_nargs_02", prog.nargs(0, 2))
-    urow("cpu_lvp_size_00", lvp.size(0, 0))
-    urow("cpu_lvp_size_31", lvp.size(3, 1))
-    urow("cpu_lvp_size_14", lvp.size(1, 4))
-    urow("cpu_lvp_third_31", lvp.third(3, 1))
-    urow("cpu_lvp_third_00", lvp.third(0, 0))
-    srow("cpu_sig_itemsizes", ilist(sig7()))
-    lrow("cpu_lvp_slots_3_2", lvp.slotmap(2n, 3))
-    lrow("cpu_lvp_slots_2_1", lvp.slotmap(1n, 2))
-    lrow("cpu_lvp_slots_0_3", lvp.slotmap(3n, 0))
-    urow("cpu_lvp_d64_lo", nth(lvp.d64(4108), 0n))
-    urow("cpu_lvp_d64_hi", nth(lvp.d64(4108), 1n))
-    srow("cpu_call_remote_wait", call_name.go(prog.remote_tag(True{})))
-    srow("cpu_call_remote_nowait", call_name.go(prog.remote_tag(False{})))
-    urow("cpu_call_ret_wait_none", prog.ret_is_none(True{}))
-    urow("cpu_call_ret_nowait_none", prog.ret_is_none(False{}))
-    +pl: Prog <- IO.pure(Prog, prog.call(fx_init(False{}, False{}, False{}, False{}, False{}, False{}), 3, 1, False{}, False{}))
-    +pv: Prog <- IO.pure(Prog, prog.call(fx_init(False{}, False{}, False{}, True{}, False{}, False{}), 3, 1, False{}, False{}))
-    +pr: Prog <- IO.pure(Prog, prog.call(fx_init(False{}, False{}, False{}, False{}, False{}, False{}), 3, 1, True{}, True{}))
-    +pw: Prog <- IO.pure(Prog, prog.call(fx_init(False{}, False{}, False{}, False{}, False{}, False{}), 3, 1, False{}, False{}))
-    srow("cpu_call_local_plain", tnames(Prog.t(pw)))
-    srow("cpu_call_local_lvp", tnames(Prog.t(pv)))
-    srow("cpu_call_remote_order", tnames(Prog.t(pr)))
-    urow("cpu_del_00", ncalls(CALL_VIRTUAL_FREE(), Prog.t(prog.del(False{}, False{}, fx_init(False{}, False{}, False{}, False{}, False{}, False{})))))
-    urow("cpu_del_01", ncalls(CALL_VIRTUAL_FREE(), Prog.t(prog.del(False{}, True{}, fx_init(False{}, False{}, False{}, False{}, False{}, False{})))))
-    urow("cpu_del_10", ncalls(CALL_VIRTUAL_FREE(), Prog.t(prog.del(True{}, False{}, fx_init(False{}, False{}, False{}, False{}, False{}, False{})))))
-    urow("cpu_del_11", ncalls(CALL_VIRTUAL_FREE(), Prog.t(prog.del(True{}, True{}, fx_init(False{}, False{}, False{}, False{}, False{}, False{})))))
-    urow("cpu_del_remote_posix", ncalls(CALL_VIRTUAL_FREE(), Prog.t(prog.del(True{}, False{}, fx_init(False{}, False{}, False{}, False{}, False{}, False{})))))
-    lrow("cpu_call_lvp_arg_31", targ(CALL_FXN_LVP(), Prog.t(pv)))
-    lrow("cpu_call_plain_arg_31", targ(CALL_FXN(), Prog.t(pl)))
-    lrow("cpu_call_nargs_arg_31", targ(CALL_FXN(), Prog.t(pl)))
-    urow("cpu_call_profile_n", ncalls(CALL_PROFILE(), Prog.t(pl)))
-    urow("cpu_call_profile_none", ncalls(CALL_PROFILE(), Prog.t(pr)))
-    # THE MATCHER PINS ITSELF, and it needs BOTH directions. `ops_webgpu.bend`
-    # shipped with the pattern length as the fuel and M23 measured that no row
-    # could fail; a matcher that is only ever asked to REJECT answers False for
-    # every fuel, which is why the rejection rows alone did not catch it here
-    # either (M56). A fuel of `len(pat)` reads the first `len(pat)` calls only,
-    # so the row that kills it is a one-call pattern at index 1 of a two-call
-    # trace: the real answer is True, the short fuel cannot reach it.
-    urow("cpu_has_rejects_reverse", Bool.to_u32(Bool.not(seq(Prog.t(pw),
-      [Call{CALL_FXN, 0}, Call{CALL_PROFILE, 0}]))))
-    urow("cpu_has_rejects_absent", Bool.to_u32(Bool.not(seq(Prog.t(pw), [Call{CALL_PING, 0}]))))
-    urow("cpu_has_accepts_plain", Bool.to_u32(seq(Prog.t(pl), [Call{CALL_FXN, 4}])))
-    urow("cpu_has_accepts_lvp", Bool.to_u32(seq(Prog.t(pv), [Call{CALL_FXN_LVP, 44}])))
-    urow("cpu_has_rejects_wrong_arg", Bool.to_u32(Bool.not(seq(Prog.t(pl), [Call{CALL_FXN, 5}]))))
-
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    a : Unit <- t_const()
-    b : Unit <- t_devname()
-    c : Unit <- t_device()
-    d : Unit <- t_init()
-    t_call()
-
-# ===========================================================================
-# THE MUTATION TABLE, MEASURED.
-#
-# 109 edits, one at a time, each against a scratch copy of THIS file, each run
-# through `./bin/bend` and diffed ROW BY ROW against the unmutated 308. The
-# number is how many rows changed value, appeared or vanished -- NOT how many
-# rules the edit might have broken. A zero is a fact about the GATE, so the
-# three zeros are argued below rather than closed with a row that encodes the
-# bug. Reproduce with cn-mutate.py, which lives OUTSIDE the tree because this
-# file is the only thing this port adds to the repo.
-#
-# 225 of the 308 rows are named by at least one mutation. The 83 that are not
-# are per-index twins -- a second `Zz` cell, a second `pk_*` layout, a second
-# `cpu_nparts` spelling -- of a family that IS mutated, plus the two cells where
-# a separator mutation is a sound no-op (`""` and `"CPU"` both have one part
-# under either separator).
-#
-# THE THREE ZEROS.
-#
-#   M60  a comment-only edit. THE CONTROL, and it is SUPPOSED to be zero: if a
-#        comment moved a row, this harness was measuring something other than
-#        the code.
-#
-# WHAT THIS GATE STILL DOES NOT SEE. Stated here rather than left to be found:
-#
-#   * Anything the wall stops. A 64-bit `addr`, a `Native` function pointer, the
-#     real `mv_address`, the real `jit_loader` link and the `mmap`ed bytes are
-#     all seams. `Prog.addr` is a PORT MODEL -- the trace index -- and no row
-#     claims it is a measurement.
-#   * Every ordering the PORT does not walk. `Ev.put` keeps keys in insert
-#     order in a LIST where Python has a dict, so the list can only stay a dict
-#     because nothing but `Ev.put` inserts. That is a fact about the port's
-#     discipline, not about its type.
-#   * `String` bytes. WALL 2 means four bytes cannot be compared, so
-#     `cpu.elfmag` is the ANSWER `7f454c46` and not a comparison against one.
-#     A port that computed it wrongly and a port that hardcoded it correctly
-#     look identical here.
-#   * The compiler backend, the linker and `__clear_cache`. :51 picks between
-#     `pthread` write-protect, `__clear_cache` and `msync` on `getenv` reads;
-#     all three arms are traced and none of them is executed.
-#
-# ===========================================================================
-#   M6      1  cpu.arch_of: the `amd64` row maps to itself
-#   M7      8  cpu.arch_of: the `,native` suffix dropped
-#   M8      2  cpu.is_remote: `== 3` -> `>= 3`
-#   M9      3  cpu.remote_peer: the `remote:` prefix dropped
-#   M10     1  cpu.peer_of: the remote arm returns the head, not the remote peer
-#   M11     1  cpu.wait_timeout_ms: 30000 -> 30000*1000
-#   M12     1  cpu.rt_lib_name: the WIN ternary answers `kernel` always
-#   M13     1  cpu.map_flags: MAP_JIT on every platform
-#   M14     1  prog.wp.on_at: the write-protect pair swapped
-#   M15     4  prog.posix: the load and the write swapped (:44 walrus order)
-#   M16     2  prog.cache.at: the msync arm emits CLEAR_CACHE (both arms same tag)
-#   M17     2  prog.init: the win32 arm replaced by the posix arm
-#   M18     3  prog.init: `local` ignores the remote test
-#   M19     2  prog.call.local: PROFILE emitted only on the lvp arm
-#   M20     3  prog.remote_tag: `_rpc if wait else _post` inverted
-#   M21     1  prog.ret_is_none: always None
-#   M22     1  prog.del.at: the remote conjunct dropped
-#   M23     4  lvp.size: no 8-bytes-per-argument
-#   M24     2  lvp.slots: the `len(bufs)*8` base dropped
-#   M25     3  lvp.at: the 12-byte header dropped from the slot
-#   M26     1  lvp.d64: the low word is the ADDRESS, not address+12
-#   M27     2  prog.fxn.lvp: the trace arg is the arg COUNT, not the buffer size
-#   M44     2  pk.size: the `max(len(args), 1)` guard dropped
-#   M45     1  pk.nsrc: the interior pads not counted
-#   M46     4  cn_slot: device.bend`s OFF-BY-ALIGNMENT semantics restored
-#   M48    14  pk.pads.go: every offset counted as a pad
-#   M54     2  Tr.assert_at: the failing assert does NOT record its refusal
-#   M55     1  Tr.emit.go: drop the `refused` guard (the raise is gone)
-#   M56     2  Tr.has.go: the fuel is the PATTERN length (ops_webgpu M23, reintroduced)
-#   M57     5  tnames: the names fold CONSES (the whole order row reverses)
-#   M60     0  a comment-only edit -- THE CONTROL   ZERO -- see below
-#   M61     2  cpu.rt_lib_name: the OSX ternary answers `System` always
-#   M62    14  cn_slot.of: the running offset is the head, not the aligned one
-#   M63     1  cpu.prot_rwx: 0x7 -> 0x6 (the write bit dropped)
-#   M64     1  cpu.mem_release: 0x8000 -> 0x4000
-#   M65     2  cpu.page_xrw: 0x40 -> 0x20
-#   M66     1  cpu.elfmag: ELFMAG.encode() -> "\x7fELG"
-#   M67     1  has_copy_queue: the two overrides swapped
-#   M73     1  cpu.lib_m: `DLL("m", "m")` -> `DLL("m", "c")`
-#   M74    11  prog.nargs: `len(bufs) + len(vals)` -> `len(bufs)`
-#   M75     1  lvp.third: two slots per argument -> one
-#   M77     4  pk.tail: `size - end` -> `end`
-#   M78     3  Tr.reset: the trace is NOT cleared
-#   M79     2  cpu.uses_jit_loader: the ELF test ignored
-#   M81     3  cpu.map_anon: 0x1000 -> 0x800
-#   M82     2  cpu.map_jit: 0x0800 -> 0x0400
-#   M83     3  cpu.map_private: 2 -> 1
-#   M84     1  cpu.ms_flags: MS_SYNC|MS_INVALIDATE -> MS_SYNC
-#   M85     1  cpu.renderers: the four names in the wrong order
-#   M87    16  pk.size: eight bytes per argument, not four
-#   M88     8  cpu.nparts: split on ";" instead of ":"
-#   M89     2  prog.del.at: the WIN conjunct dropped (M22 drops the remote one)
-#   M90     2  nva.base: 1<<40 -> 1<<41
-#   M92     3  sig7: the last itemsize is 8, not 1
-#   M98     6  cpu.load_raw: the jit_loader/raw tags swapped
-#   M99    20  prog.posix: the CACHE step dropped (every posix count drops by one)
-#   M100    2  prog.win: the GET_PROCESS step dropped
-#   M103    3  cpu.peer.at: the local arm returns the REMOTE peer (the arms swapped)
-#   M106    2  the op tags: EXEC is 5, not 0 (the whole range renumbered)
-# ===========================================================================
 # THE SEAM -- LANDED 2026-10-27. THE TRACE TAGS ABOVE ARE STILL THERE AND
 # THEY STILL RECORD WHAT UPSTREAM's `CPUProgram` DOES; WHAT FOLLOWS IS THE PART
 # THAT ACTUALLY DOES IT.
@@ -1543,7 +1038,7 @@ def main() -> IO(Unit):
 #   6. `ctypes.CFUNCTYPE(None)(self.addr)` (ops_cpu.py:46)
 #   7. CALL IT WITH 64-BIT POINTERS (ops_cpu.py:61)
 #
-# ⇒ STEP 2 IS THE PORT's OWN `jit_loader`, SO IT IS NOT AN EFFECT: THE BEND SIDE
+# STEP 2 IS THE PORT's OWN `jit_loader`, SO IT IS NOT AN EFFECT: THE BEND SIDE
 # RELOCATES. STEPS 1 AND 3-7 ARE THE EFFECT (`runtime/ops_cpu.c`), AND THEY ARE
 # TWO EFFECTS BECAUSE UPSTREAM's ORDER HAS THE RELOCATION BETWEEN THEM.
 # ===========================================================================
@@ -1553,12 +1048,12 @@ def main() -> IO(Unit):
 # '-nostdlib', '-fno-ident', '--target=<arch>-none-unknown-elf', *args, '-', '-o',
 # '-']`, AND `support/compiler_cpu.bend:268` IS THE PORT's SPELLING OF IT.
 #
-# ⇒ THE ARGV CROSSES THE SEAM AS ONE "\n"-JOINED STRING AND THE C SIDE SPLITS
+# THE ARGV CROSSES THE SEAM AS ONE "\n"-JOINED STRING AND THE C SIDE SPLITS
 # IT, BECAUSE THE ARGV IS THE PORT's OWN SPELLING AND THE C SIDE MUST NOT HAVE
 # A SECOND COPY OF IT. A PATH AND A FLAG CANNOT CONTAIN A NEWLINE, SO THE JOIN
 # IS UNAMBIGUOUS.
 #
-# ⇒ AND THE ARCH IS THE PORT's OWN TOO: `cpu.arch_of` (ops_cpu.py:91) IS
+# AND THE ARCH IS THE PORT's OWN TOO: `cpu.arch_of` (ops_cpu.py:91) IS
 # UPSTREAM's `{'amd64':'x86_64', 'aarch64':'arm64'}.get(m, m) + ",native"`, AND
 # UPSTREAM SPLITS THAT STRING INTO THE LIST `ClangCompiler` TAKES.
 def cpu.cc_argv_str(cc: String, arch: String) -> String:
@@ -1566,17 +1061,17 @@ def cpu.cc_argv_str(cc: String, arch: String) -> String:
 
 # THE TWO EFFECTS.
 #
-# ⇒ THEY ANSWER A `Result`, NOT A `String`, AND THIS IS MEASURED, NOT CHOSEN:
+# THEY ANSWER A `Result`, NOT A `String`, AND THIS IS MEASURED, NOT CHOSEN:
 # THE C EFFECT's RETURN VALUE IS THE VALUE THE CONTINUATION RECEIVES, SO A
 # `Done{...}` BOX WHERE THE TYPE SAYS `String` PRINTS AN EMPTY LINE. MEASURED:
 # THE FIRST RUN PRINTED `sizes=1568,6272` AND THEN A BLANK LINE, AND THE CAUSE
-# WAS THE `io_done` BOX. ⇒ SO THE TYPE IS `Result<&1, &1, U32 & String, String>`,
+# WAS THE `io_done` BOX. SO THE TYPE IS `Result<&1, &1, U32 & String, String>`,
 # THE `Done`/`Fail` BOXES ARE THE `Result`'s OWN TWO CASES, AND `IO.try` (BASE's
 # OWN) TURNS A `Fail` INTO A `Halt` WITH ITS MESSAGE ON STDERR. THIS IS
 # EXACTLY WHAT `Process.run` DOES IN THIS SAME TREE, AND IT IS UPSTREAM's SHAPE:
 # UPSTREAM's `CPUProgram.__call__` RAISES.
 #
-# ⇒ `Cpu.compile` IS UPSTREAM's STEP 1: THE C SOURCE AND THE ARGV GO IN, THE
+# `Cpu.compile` IS UPSTREAM's STEP 1: THE C SOURCE AND THE ARGV GO IN, THE
 # ELF OBJECT'S HEX COMES OUT. `Cpu.exec` IS UPSTREAM's STEPS 3-7: THE RELOCATED
 # IMAGE AND THE BUFFERS GO IN, THE BUFFERS' HEX COMES OUT.
 def Cpu.compile(src: String, argv: String) -> IO(Result<&1, &1, U32 & String, String>):
@@ -1586,3 +1081,74 @@ def Cpu.compile(src: String, argv: String) -> IO(Result<&1, &1, U32 & String, St
 def Cpu.exec(img: String, bufs: String, sizes: String) -> IO(Result<&1, &1, U32 & String, String>):
   import "./ops_cpu.c"
   import "./ops_cpu.js"
+
+
+def ush(+xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: List.reverse(&2, String, acc)
+    case x <> t: ush(t, U32.show(x) <> acc)
+
+def lrow(nm: String, +xs: List<&2, U32>) -> IO(Unit):
+  IO.print(String.concat([nm, "=", String.join(ush(xs, Nil{}), ",")]))
+
+def nrow(nm: String, v: Nat) -> IO(Unit): IO.print(String.concat([nm, "=", Nat.show(v)]))
+
+# `List.get` answers a `Maybe` and a gate row may not, so these are the two
+# TOTAL readers the positional rows need -- the same `drv.one` / `drv.nth` pair
+# `upat.bend` grew for the same reason.
+def nth(xs: List<&2, U32>, k: Nat) -> U32: Maybe.default(&2, U32, List.get(&2, U32, xs, k), 0)
+
+def rlist(nm: String, xs: List<&2, String>) -> IO(Unit):
+  IO.print(String.concat([nm, "=", String.join(xs, ",")]))
+
+def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
+def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
+def subnames.go(n: Nat, cs: List<&2, Sub>, acc: List<&2, String>) -> List<&2, String>:
+  match n:
+    case 0n: acc
+    case 1n+p:
+      match cs:
+        case Nil{}: acc
+        case h <> t: subnames.go(p, t, List.append(&2, String, acc, [Sub.nm(h)]))
+
+def subnames(+xs: List<&2, Sub>) -> List<&2, String>:
+  subnames.go(List.length(&2, Sub, xs), xs, Nil{})
+
+def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
+
+# ===========================================================================
+# THE PORT's OWN ENTRY POINT, AND WHY IT IS HERE AND WHY IT DOES NOTHING.
+#
+# **⇒ IT IS HERE BECAUSE THE COMPILER SAYS SO, NOT BECAUSE A TASTE SAYS SO.**
+# `references/bend/bend2/main.ts:1099` (`book_run`) TAKES ONE OF TWO PATHS: **A
+# FILE WITH A `main` IS RUN** (`Comp.io_run`), **AND A FILE WITHOUT ONE IS A
+# "BOOK" AND IS JUDGED BY `cli_verdict`** -- WHICH REFUSES A FILE WHOSE DEFS
+# REACH A **FOREIGN EFFECT**. **THIS FILE OWNS TWO** (`Cpu.compile` AND
+# `Cpu.exec`, `import "./ops_cpu.c"` AND `import "./ops_cpu.js"`), **⇒ SO A PORT
+# FILE WITH NO `main` IS REFUSED** WITH
+# `Error: 2 defs rely on unsafe or foreign code: Cpu.compile, Cpu.exec`.
+#
+# **⇒ AND IT DOES NOTHING, AND THAT IS THE HONEST SHAPE.** **UPSTREAM's
+# `tinygrad/runtime/ops_cpu.py` IS A MODULE** -- IT HAS NO `main` AND NO
+# PROGRAM, **⇒ AND THE PORT IS THE SAME SHAPE.** **⇒ AND THE PORT's PROGRAM, IF
+# IT IS EVER WRITTEN, IS `runtime/device.bend`'s** -- WHOSE OWN HEADER SAYS
+# *"THE port's `Device` LANE is a set of STAGES WITH NO LANE"* AND *"whoever
+# produces it is the next UNIT"* -- **⇒ SO WRITING ONE HERE WOULD BE INVENTING
+# THE NEXT UNIT's WORK.**
+#
+# **⇒ AND IT MUST NOT **CALL** THE FOREIGN EFFECTS.** `book_promises`
+# (`main.ts:961`) MARKS EVERY DEF THAT REFERENCES A FOREIGN ONE, **AND
+# `runtime/device.bend` IMPORTS THIS FILE AS `CPU`** AND CALLS
+# `CPU.Cpu.compile(...)` AND `CPU.Cpu.exec(...)`, **⇒ SO A `main` THAT CALLED
+# THEM WOULD PUT THREE MORE NAMES INTO `device.bend`'s OWN VERDICT** --
+# **MEASURED: `device.bend`'s FAILURE GOES FROM **4** DEFS TO **7**.** **⇒ AND
+# THAT FAILURE IS **PRE-EXISTING** (`device.bend` ALREADY FAILS WITH THOSE **4**
+# ON THE UNMOVED TREE), **⇒ AND THIS MOVE MUST NOT MAKE IT WORSE.**
+#
+# **⇒ AND IT PRINTS **NOTHING**, BECAUSE **EVERY ROW IS PART OF THE CLAIM THE
+# DIFFER MAKES**: **A ROW THE PORT PRINTS THAT IT DID NOT PRINT BEFORE IS A ROW
+# THE DIFF NEVER SAW.** THE PORT's ROWS ARE THE DRIVER's ROWS NOW.
+# ===========================================================================
+def main() -> IO(Unit):
+  do IO<Unit>:
+    IO.pure(Unit, Unit{})
