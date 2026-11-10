@@ -99,16 +99,24 @@ export async function buildCompareData(): Promise<CompareData> {
   for (const bp of bendPaths) {
     const relBend = path.relative(root, bp).split(path.sep).join("/")
     const src = readFileSync(bp, "utf8")
+    // A port's basename mirrors its source: ops.bend ports ops.py. Without that
+    // guard, a file whose opening comment merely *mentions* another source (LAWS.bend
+    // cites tinygrad/uop/ops.py) claims that file and steals its pair.
+    const base = path.basename(relBend, ".bend")
+    const sane = (candidate: string | null) =>
+      candidate && pyFiles.has(candidate) && path.basename(candidate, ".py") === base ? candidate : null
+
     const head = src.split("\n").slice(0, 80).join("\n")
     const header = PY_HEADER.exec(head)?.[0]
-    let target = header && pyFiles.has(header) ? header : null
+    let target = sane(header ?? null)
     if (!target) {
       // the port does not always write `tinygrad/` — sz.bend says "# sz.py in Bend:"
       const bare = BARE_PY.exec(head)?.[1]
       if (bare) {
         for (const candidate of [`${bare}.py`, `tinygrad/${bare}.py`]) {
-          if (pyFiles.has(candidate)) {
-            target = candidate
+          const hit = sane(candidate)
+          if (hit) {
+            target = hit
             break
           }
         }
@@ -117,7 +125,7 @@ export async function buildCompareData(): Promise<CompareData> {
 
     if (!target) {
       const guess = `tinygrad/${relBend.replace(/^tinybendygrad\//, "").replace(/\.bend$/, ".py")}`
-      if (pyFiles.has(guess)) target = guess
+      target = sane(pyFiles.has(guess) ? guess : null) ?? (pyFiles.has(guess) ? guess : null)
     }
     if (!target) {
       pairs.push({ py: null, bend: relBend, bendLines: src.split("\n").length, bendDefs: bendSymbols(src).length })

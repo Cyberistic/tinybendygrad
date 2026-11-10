@@ -16,12 +16,14 @@ import { NodeFs, repoRoot } from "../../plugins/repo-root"
  * absolute paths. A page that can read /etc/passwd is a bug with a feature
  * request attached.
  */
-const ROOTS = ["tinygrad/", "tinybendygrad/"]
+// Three shapes: the two trees, and a root-level .py (sz.py lives beside them
+// and sz.bend ports it).
+const ALLOWED = [/^tinygrad\/[A-Za-z0-9_/]+\.py$/, /^tinybendygrad\/[A-Za-z0-9_/]+\.bend$/, /^[A-Za-z0-9_]+\.py$/]
 
 export const readSource = createServerFn({ method: "GET" })
   .validator((input: { path: string }) => {
     const p = input?.path ?? ""
-    if (!ROOTS.some((r) => p.startsWith(r))) throw new Error(`refused: ${p}`)
+    if (!ALLOWED.some((re) => re.test(p))) throw new Error(`refused: ${p}`)
     if (p.includes("..") || p.startsWith("/")) throw new Error(`refused: ${p}`)
     return { path: p }
   })

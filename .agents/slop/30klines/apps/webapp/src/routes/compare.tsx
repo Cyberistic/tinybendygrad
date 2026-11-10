@@ -39,7 +39,7 @@ function ComparePage() {
     files.find((f) => relPath((f.py ?? f.bend) as string) === pick) ??
     ({ py: compareData.pythonOnlyFiles.find((p) => relPath(p) === pick) ?? null, bend: null } as never)
 
-  const [sources, setSources] = useState<{ py?: string; bend?: string }>({})
+  const [sources, setSources] = useState<{ py?: string; bend?: string; error?: string }>({})
   const [leftPct, setLeftPct] = useState(50)
   const [focus, setFocus] = useState<{ side: Side; line: number } | null>(null)
   const pyRef = useRef<HTMLDivElement>(null)
@@ -54,7 +54,11 @@ function ComparePage() {
       if (entry.bend) next.bend = (await readSource({ data: { path: entry.bend } })).text
       if (!stale) setSources(next)
     }
-    Effect.runPromise(Effect.tryPromise({ try: load, catch: (e) => e as Error })).catch(() => setSources({}))
+    // a refused or failed read must say so: an empty pane and a broken read
+    // look identical, and that is how this hid
+    Effect.runPromise(Effect.tryPromise({ try: load, catch: (e) => e as Error })).catch((e) =>
+      setSources({ error: e instanceof Error ? e.message : String(e) }),
+    )
     return () => {
       stale = true
     }
@@ -190,7 +194,10 @@ function Pane(props: {
   if (!path) {
     const other = side === "py" ? "Python" : "Bend"
     return (
-      <div className="flex min-w-0 items-center justify-center p-6" style={{ width: `${width}%` }}>
+      <div
+        className="flex min-w-0 items-center justify-center p-6"
+        style={side === "py" ? { flex: `0 1 ${width}%` } : { flex: "1 1 0" }}
+      >
         <p className="max-w-[32ch] text-center text-[11px] leading-relaxed text-faint">
           No equivalent {other} file for{" "}
           <span className="text-muted">
@@ -201,7 +208,10 @@ function Pane(props: {
     )
   }
   return (
-    <div className="min-w-0 overflow-hidden" style={{ width: `${width}%` }}>
+    <div
+      className="min-w-0 overflow-hidden"
+      style={side === "py" ? { flex: `0 1 ${width}%` } : { flex: "1 1 0" }}
+    >
       <header className="sticky top-0 z-10 flex justify-between border-b border-rule bg-paper px-3 py-1.5 text-[10px] text-muted">
         <span className="truncate">{path}</span>
         <span className="text-faint">{lines.length}</span>

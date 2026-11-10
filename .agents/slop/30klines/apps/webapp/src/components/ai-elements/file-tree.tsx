@@ -116,7 +116,7 @@ export function FileTreeFile({
       <Button
         variant="ghost"
         size="sm"
-        className={cn("w-full justify-start font-normal", active && "bg-accent text-accent-foreground hover:bg-accent")}
+        className={cn("min-w-0 flex-1 justify-start overflow-hidden font-normal", active && "bg-accent text-accent-foreground hover:bg-accent")}
         aria-current={active ? "true" : undefined}
         onClick={() => onSelect?.(path)}
       >
