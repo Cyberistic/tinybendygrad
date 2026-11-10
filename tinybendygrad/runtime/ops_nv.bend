@@ -23,28 +23,28 @@
 #            (tinygrad/helpers.py:21 symbol=to_name) `to_name` (tinygrad/runtime/support/hcq2.py:61 uses it), `reg_ops` (tinygrad/runtime/ops_nv.py:811 symbol=reg_ops)'s chunking, the
 #            profiler register addresses (:793-816), the error-string tables
 #            (:35, :37-38) and the GPA-info index fallback (:664-665).
-#   STAGE 5  LANDED AND CHECKED. THE MOCK PATH. `MOCKIface`
+#   STAGE 5  LANDED and checked. THE mock path. `MOCKIface`
 #            (tinygrad/runtime/ops_nv.py:552 symbol=MOCKIface), the selection
 #            rule (tinygrad/device.py:473), the mock driver's answers
 #            (`test/mockgpu/nv/nvdriver.py`), and the driver's version table
-#            picker (tinygrad/runtime/ops_nv.py:357). **THE MOCK IS SOFTWARE**
+#            picker (tinygrad/runtime/ops_nv.py:357). THE MOCK IS SOFTWARE
 #            -- `test/mockgpu/mockgpu.py` INTERCEPTS `open()` AND `ioctl()` --
-#            SO IT NEEDS NO NVIDIA CARD AND EVERY MOCK ROW IS COMPARED AGAINST
-#            THE MOCK DRIVER'S OWN ANSWERS, NOT AGAINST A TRANSCRIPTION.
+#            SO it needs no nvidia card and every mock row is compared against
+#            THE mock driver'S own answers, NOT against a transcription.
 #
 # 3960 lines, 630 `def`/`type`, 611 gate rows. `./bin/bend --check-only` prints
 # ALL PROOFS CHECK, and `.agents/slop/nv-diff.py` compares the Bend rows against
-# CPython rows with **0 disagreements**. The mutation table is at the FOOT and
+# CPython rows with 0 disagreements. The mutation table is at the FOOT and
 # every "rows moved" in it is measured, not estimated.
 #
 # ===========================================================================
-# THE PARAGRAPH ABOVE WAS A TOMBSTONE, AND EVERY CLAIM IN IT WAS WRONG. IT IS
-# KEPT, VERBATIM, BECAUSE A FILE THAT HIDES ITS OWN HISTORY IS A FILE THAT
-# HIDES ITS OWN DEFECTS. WHAT WAS TRUE, MEASURED:
+# THE paragraph above was a tombstone, AND every claim in it was wrong. IT is
+# KEPT, VERBATIM, BECAUSE a file that hides its own history is a file that
+# HIDES its own defects. WHAT was TRUE, MEASURED:
 #
 #   "3960 lines"                TRUE of the body, but the file WAS NOT 3960
 #                                LINES -- it was a 94-line COMMENT HEADER
-#                                DESCRIBING A BODY THAT HAD BEEN DELETED BY
+#                                DESCRIBING a body that had been deleted by
 #                                COMMIT 564733bed, AN UNRELATED 1378-FILE
 #                                COMMIT. THE BODY CAME BACK IN 90de86caa.
 #   "630 `def`/`type`"           MEASURED 615 at the recovery; MORE NOW.
@@ -53,12 +53,12 @@
 #                                DISTINCT names and 11 names were
 #                                UNADDRESSABLE. FIXED: 603 lines, 603
 #                                distinct names, 0 duplicates.
-#   "`.agents/slop/nv-diff.py`"  **THAT FILE DOES NOT EXIST.** `.agents/slop/`
+#   "`.agents/slop/nv-diff.py`"  THAT FILE DOES NOT EXIST. `.agents/slop/`
 #                                has `nv_gate.py` (18 lines; it APPENDS A GATE
 #                                BLOCK TO `nvdev.bend`, A DIFFERENT FILE) and
 #                                `nv-oracle.py` (1205 lines; the oracle). THE
-#                                CLAIM NAMED A TOOL THAT IS NOT IN THE TREE.
-#   "0 disagreements"            **FALSE AS IT STOOD.** The first real gate run
+#                                CLAIM named a tool that is not in the tree.
+#   "0 disagreements"            FALSE AS IT STOOD. The first real gate run
 #                                was RED with TWO disagreements --
 #                                `nv_cpython_args_device_five` and
 #                                `nv_cpython_args_device_mixed` -- and THE
@@ -70,7 +70,7 @@
 #                                so every entry was coerced to u64. THE PORT
 #                                WAS RIGHT.
 #
-# THE GATE THAT EXISTS NOW IS `gates/ops-nv-gate.py`, AND IT IS GREEN.
+# THE gate that exists now is `gates/ops-nv-gate.py`, AND it is green.
 # ===========================================================================
 #
 # THE ROWS, HONESTLY SPLIT, because "0 disagreements" says nothing about how
@@ -93,20 +93,20 @@
 #        function that answers it.
 #   0    ORACLE-ONLY. There WERE four -- `nv_qmd_wide_v3/_v5` and
 #        `nv_qmd_straddle_v3/_v5`, which measure the two GENERATED field
-#        tables this port does not carry -- and they are NOW **ASSERTED IN THE
-#        ORACLE** INSTEAD OF EMITTED. The oracle computes them from CPython's
+#        tables this port does not carry -- and they are NOW ASSERTED IN THE
+#        ORACLE INSTEAD OF EMITTED. The oracle computes them from CPython's
 #        own generated tables and FAILS LOUDLY if either is nonzero, and the
 #        property is load-bearing: the port's `qmd` module says a field lives
 #        in exactly one U32 word, and that is TRUE ONLY IF BOTH ARE ZERO.
-#        **THAT IS STRICTLY STRONGER THAN THE ROW WAS.**
+#        THAT is strictly stronger than the row was.
 #
-# THE RECONCILIATION COST 73 ROWS THAT LOOKED LIKE COVERAGE AND WERE NOT. Named
+# THE reconciliation cost 73 ROWS that looked like coverage and were not. Named
 # differently on the two sides -- `nv_slmtot_*` against `nv_slm_*`, `nv_toname_*`
 # with the parts in the other order -- or printed twice, or present on one side
 # only. `nv_query_litter_n` was worse than unmatched: gate and oracle agreed on
 # the WRONG ANSWER, because both were hand-written. Only `nv_570.__dict__` knows.
 #
-# NOT PORTED, AND THE WALL FOR EACH -- all of it is `nv_gpu` driver ioctl
+# NOT ported, AND the wall for each -- all of it is `nv_gpu` driver ioctl
 # surface, which in Bend is FFI exactly like `dtype.bend`'s fourteen and which
 # makes every IMPORTER of this file print SOME PROOFS FAIL. That is the
 # import-closure rule and it is expected; `wgsl.bend` is green only because it
@@ -319,7 +319,7 @@
 # `nv_cpython_args_device_*` rows are the cross-implementation check.
 #
 # ===========================================================================
-# ELEVEN NUMBERS WERE HAND-TYPED WRONG THE FIRST TIME. The `CLASS_*` class ids
+# ELEVEN numbers were hand-TYPED wrong the first time. The `CLASS_*` class ids
 # below are the only numbers in this file not derived from the source text, and
 # nine of the eleven were out by more than a factor of two -- the oracle caught
 # every one. That is WHY `nv_ladder_*` and `nv_cls_*` rows print the DECIMAL id
@@ -351,7 +351,7 @@ import ../device.bend as D
 # is the policy, so both directions are ported: `iface.want`/`iface.alt` (the
 # FIRST-WINS pick) and `iface.mid`/`iface.ladder3` (the pair it walks).
 #
-# EVERY ONE OF THESE ELEVEN WAS HAND-TYPED WRONG THE FIRST TIME -- the oracle
+# EVERY one of these eleven was hand-TYPED wrong the first time -- the oracle
 # caught all eleven, and nine of them by more than a factor of two. They are the
 # only numbers in this file that were not derived from the source text, and that
 # is why `nv_cls_*` rows print the DECIMAL id and the ladder row prints the whole
@@ -382,7 +382,7 @@ def CLASS_NVCFB0_VIDEO_DECODER() -> U32: 53168
 # picks ver 5 correctly while a Blackwell_A (52672 >= 52928) picks ver 3 and gets
 # the WHOLE older QMD layout.
 #
-# THE NAME IS WHY THIS ROW USED TO BE TAUTOLOGICAL. `qmd.ver.of` takes a compute
+# THE name is why this row used to be tautological. `qmd.ver.of` takes a compute
 # CLASS, and the gate was passing this very constant back in as its own argument,
 # so `qmd.ver.of(CLASS_BLACKWELL_COMPUTE_A())` answers 5 for EVERY value the constant
 # can hold -- mutating it moved nothing, MEASURED. It is now spelled
@@ -487,7 +487,7 @@ def CALL_MMAP() -> U32: 7
 def CALL_MUNMAP() -> U32: 8
 def CALL_PROF() -> U32: 9
 
-# THE ESC AND UVM WORDS ARE PORT-INTERNAL ORDINALS, not nv_570 values. They are
+# THE esc and uvm words are port-INTERNAL ordinals, not nv_570 values. They are
 # the `arg` a `Tr` records so a fixture can say "the UVM peer-access ENABLE, at
 # this point in the trace"; nv_570's real NV_ESC_* and UVM_* codes are 200, 201,
 # 41, 42, 43, 7 and 805306369, 75, 37, 25, 73, 33, 29, 34, 27 respectively. A
@@ -740,7 +740,7 @@ def Tr.has.step(m: Maybe<&2, Call>, +c: Call, at: Nat) -> Nat:
     case Some{+want}:
       Tr.has.step.hit(Tr.has.step.same2(Call.k(c), Call.k(want), Call.arg(c), Call.arg(want)), at)
 
-# THE FUEL IS THE TRACE LENGTH AND THE ANSWER IS `at == patlen`, which is the
+# THE fuel is the trace length and the answer is `at == patlen`, which is the
 # whole matcher. With the fuel set to the PATTERN length instead, `case 0n:`
 # fires after patlen trace entries and answers True{} without ever comparing
 # `at`, so a REVERSED pattern matches -- MEASURED in ops_webgpu.bend, where that
@@ -762,7 +762,7 @@ def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
   H.u32_list_eq(a, b)
 
 # ===========================================================================
-# :557-567 -- THE THREE IFACES AND THE FOUR ENCODE RULES.
+# :557-567 -- THE three ifaces and the four encode rules.
 #
 # `ifaces = [NVKIface, PCIIface, MOCKIface]` is a FIRST-WINS ladder
 # (`Compiled._select_iface` walks it), so the ORDER is the policy and
@@ -789,40 +789,40 @@ def dev.encode_rules() -> List<&2, String>:
   [ENC_COMPUTE(), ENC_COPY(), ENC_ENCDEC(), ENC_RAW()]
 
 # ===========================================================================
-# THE MOCK PATH. `MOCKIface`, AND THE SELECTION THAT REACHES IT.
+# THE mock path. `MOCKIface`, AND the selection that reaches it.
 #
-# WHY THIS SECTION EXISTS AT ALL, GIVEN THAT THE MOCK IS "JUST A DRIVER".
+# WHY this section exists at all, GIVEN that the mock is "JUST a driver".
 #
-# UPSTREAM'S NV MOCK IS **A DRIVER SUBSTITUTION**: `test/mockgpu/nv/nvdriver.py`
-# INTERCEPTS `open()` AND `ioctl()` AT THE PYTHON LEVEL, so `NVKIface` RUNS
-# UNCHANGED AGAINST A SOFTWARE DRIVER. THAT IS WHY THE MOCK NEEDS NO NVIDIA
+# UPSTREAM'S NV MOCK IS A DRIVER SUBSTITUTION: `test/mockgpu/nv/nvdriver.py`
+# INTERCEPTS `open()` AND `ioctl()` AT the python level, so `NVKIface` RUNS
+# UNCHANGED against a software driver. THAT is why the mock needs no nvidia
 # CARD.
 #
 # AND `MOCKIface` ITSELF IS NOT THE DRIVER. `class MOCKIface(NVKIface):
 # count = 1` (`tinygrad/runtime/ops_nv.py:552`) INHERITS `NVKIface` WHOLE AND
-# DIFFERS FROM IT IN **EXACTLY ONE WAY**: `count = 1`. IT IS A FALLBACK
-# INTERFACE, NOT A REIMPLEMENTATION. SO THE PORT OF IT IS TINY, AND WHAT IT
+# DIFFERS from it in exactly one way: `count = 1`. IT is a fallback
+# INTERFACE, NOT a reimplementation. SO the port of it is tiny, AND what it
 # MAKES TRUE IS:
 #
-#   1. THE COUNT. `NVKIface.count` IS THE NUMBER OF GPUs THE CARD REPORTS
+#   1. THE count. `NVKIface.count` IS the number of GPUs THE card reports
 #      (`len(NVKIface.gpus_info)`), and `MOCKIface`'s IS ONE. THE PORT MUST BE
-#      ABLE TO ANSWER "HOW MANY DEVICES DOES THIS INTERFACE CLAIM" FOR BOTH.
+#      ABLE to answer "HOW many devices does this interface claim" FOR both.
 #   2. THE PAGE SIZE. `alloc`'s `page_size` is
 #      `mmap.PAGESIZE if uncached or host else ((2 << 20) if size >= (8 << 20)
 #       else (mmap.PAGESIZE if isinstance(self, MOCKIface) else 4 << 10))`
-#      (`tinygrad/runtime/ops_nv.py:444-445`). THE MOCK BRANCH IS THE HOST PAGE
+#      (`tinygrad/runtime/ops_nv.py:444-445`). THE mock branch is the host page
 #      SIZE AND NOT 4 KiB, and `alloc.page_size`'s `mock` PARAMETER IS ALREADY
 #      THAT BRANCH.
 #   3. THE SELECTION. `device.py:473`, `filtered = [i for i in filtered if
 #      t.interface.startswith("MOCK") or not i.__name__[:-5].startswith("MOCK")]`
 #      -- "never fallback to mock ifaces". A MOCK INTERFACE SURVIVES A
-#      SELECTION ONLY WHEN THE TARGET ITSELF IS A MOCK. `device.bend`'s
+#      SELECTION only when the target itself is a mock. `device.bend`'s
 #      `iface_ok(is_mock, want_mock)` IS THAT RULE AND `device.bend`'s
-#      `ifaces()` IS THE PLACEHOLDER LIST -- FOUR NAMES THAT NAME NO REAL
+#      `ifaces()` IS the placeholder list -- FOUR names that name no real
 #      INTERFACE. `dev.iface_names` IS THE REAL LIST.
 #
 # THE THREE IFACE TAGS. `dev.is_nvd` ANSWERS `isinstance(self.iface, PCIIface)`
-# (`tinygrad/runtime/ops_nv.py:568`), so THE TAGS MUST BE THE LADDER'S ORDER:
+# (`tinygrad/runtime/ops_nv.py:568`), so THE tags must be the ladder'S order:
 # 1 IS `NVKIface`, 2 IS `PCIIface`, 3 IS `MOCKIface`.
 # ===========================================================================
 
@@ -838,29 +838,29 @@ def iface_name(i: U32) -> String:
     case _: ""
 
 # `MOCKIface.count = 1` (`tinygrad/runtime/ops_nv.py:552`) IS THE WHOLE
-# DIFFERENCE FROM `NVKIface`, AND `NVKIface.count` IS THE NUMBER OF GPUs THE
-# CARD REPORTS. SO THE COUNT IS A FUNCTION OF THE INTERFACE AND NOT A CONSTANT
-# OF THE DEVICE, AND A PORT THAT HARD-CODES "3" -- WHICH IS WHAT
-# `dev.iface_count` IS -- HAS PORTED THE LADDER'S LENGTH AND NOT ITS COUNT.
+# DIFFERENCE from `NVKIface`, AND `NVKIface.count` IS the number of GPUs THE
+# CARD reports. SO the count is a function of the interface and not a constant
+# OF the device, AND a port that hard-CODES "3" -- WHICH is what
+# `dev.iface_count` IS -- HAS ported the ladder'S length and not its count.
 #
 # MEASURED: `dev.iface_count` ANSWERS 3, and that is the LENGTH of
 # `ifaces = [NVKIface, PCIIface, MOCKIface]`, and `nv_iface_count` IS A ROW
-# THAT CPython ANSWERS WITH 3 TOO -- so THE ROW IS RIGHT AND THE NAME IS
-# WRONG. THE COUNT OF INTERFACES AND THE COUNT OF DEVICES ARE TWO DIFFERENT
-# QUESTIONS AND THE ROW WAS ANSWERING THE FIRST ONE UNDER THE SECOND ONE'S
+# THAT CPython ANSWERS with 3 TOO -- so THE row is right and the name is
+# WRONG. THE count of interfaces and the count of devices are two different
+# QUESTIONS and the row was answering the first one under the second one'S
 # NAME.
 def dev.iface_n() -> U32: 3
 
-# THE DEVICE COUNT PER INTERFACE. `MOCKIface` IS ONE BY DECLARATION; the other
-# two ARE THE CARD'S OWN COUNT, WHICH IS WHAT `NVKIface.count` HOLDS AFTER
+# THE device count per interface. `MOCKIface` IS one by declaration; the other
+# two ARE the card'S own count, WHICH is what `NVKIface.count` HOLDS after
 # `NV_ESC_CARD_INFO`.
 def dev.count(iface: U32, gpus: U32) -> U32:
   Bool.pick(U32, U32.is_eq(iface, IFACE_MOCK()), 1, gpus)
 
 # `device.py:473` -- "never fallback to mock ifaces". A MOCK INTERFACE
-# SURVIVES ONLY WHEN THE TARGET IS A MOCK, AND `device.bend`'s `iface_ok` IS
-# THE SAME RULE. THE PORT SPELLS IT HERE AS A FUNCTION OF THE INTERFACE TAG
-# SO THAT THE GATE CAN ASK IT DIRECTLY, AND THE ROWS BELOW ARE THAT FUNCTION'S
+# SURVIVES only when the target is a mock, AND `device.bend`'s `iface_ok` IS
+# THE same rule. THE port spells it here as a function of the interface tag
+# SO that the gate can ask it directly, AND the rows below are that function'S
 # FOUR CELLS.
 def dev.is_mock(iface: U32) -> Bool: U32.is_eq(iface, IFACE_MOCK())
 
@@ -868,14 +868,14 @@ def dev.iface_ok(iface: U32, want_mock: Bool) -> Bool:
   Bool.or(want_mock, Bool.not(dev.is_mock(iface)))
 
 # THE SELECTION, AS A LENGTH. `device.py:472-474` filters BY NAME and THEN
-# filters OUT THE MOCKS, and `select_first_inited` TAKES THE FIRST SURVIVOR.
-# THE LENGTH IS WHAT THE GATE CAN ASK, AND A COUNT CANNOT SEE A REORDERING --
+# filters OUT the mocks, and `select_first_inited` TAKES the first survivor.
+# THE length is what the gate can ask, AND a count cannot see a reordering --
 # so the ORDER IS A SEPARATE ROW.
 #
-# THE RECURSION IS A `.go` AND NOT AN `.at`, because `.at` IS BEND'S NAME FOR
-# THE CURRIED SELF-CALL AND THE ACCUMULATOR IS THE ARGUMENT THAT MAKES IT A
-# DIFFERENT SHAPE. THE PORT'S IDIOM IS `def f.go(..., acc)` FOR THE RECURSION
-# AND `def f.at(...)` FOR THE ENTRY, AND `device.bend`'s `isig.go` IS THE
+# THE recursion is a `.go` AND not an `.at`, because `.at` IS BEND'S name for
+# THE curried self-CALL and the accumulator is the argument that makes it a
+# DIFFERENT shape. THE port'S idiom is `def f.go(..., acc)` FOR the recursion
+# AND `def f.at(...)` FOR the entry, AND `device.bend`'s `isig.go` IS the
 # EXAMPLE.
 def dev.iface_filtered_n.go(n: Nat, +i: U32, +want_mock: Bool, acc: U32) -> U32:
   match n:
@@ -886,28 +886,28 @@ def dev.iface_filtered_n.go(n: Nat, +i: U32, +want_mock: Bool, acc: U32) -> U32:
 def dev.iface_filtered_n(want_mock: Bool) -> U32:
   dev.iface_filtered_n.go(3n, 1, want_mock, 0)
 
-# THE LADDER'S INDEX, so `iface_filtered_n` CAN COUNT WITHOUT A LIST OF TAGS.
-# THE THREE INTERFACES ARE THE THREE ENTRIES OF `dev.iface_names` AND THE
+# THE ladder'S INDEX, so `iface_filtered_n` CAN count without a list of tags.
+# THE three interfaces are the three entries of `dev.iface_names` AND the
 # ORDER IS THE POLICY, so the INDEX IS THE TAG.
 def dev.iface_ix(i: U32) -> U32: U32.add(i, 1)
 
 # ===========================================================================
 # THE MOCK DRIVER'S ANSWERS. `test/mockgpu/nv/nvdriver.py` IS A SOFTWARE
-# DRIVER, SO THESE ARE THE NUMBERS THE MOCK RETURNS AND THEY ARE READABLE OFF
+# DRIVER, SO these are the numbers the mock returns and they are readable off
 # THE DRIVER, NOT GUESSED.
 #
 # THE DRIVER VERSION. `nvdriver.py:208` ANSWERS
 # `NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2` WITH THE LITERAL
 # `params.driverVersionBuffer = b"570.00.00\0"`. AND `NVKIface.__init__`
-# (`tinygrad/runtime/ops_nv.py:357-359`) READS THE MAJOR VERSION AND PICKS THE
+# (`tinygrad/runtime/ops_nv.py:357-359`) READS the major version and picks the
 # CONSTANT TABLE: `>= 615` -> `nv_615`, `>= 610` -> `nv_610`, `>= 580` ->
 # `nv_580`, ELSE THE DEFAULT. THE DEFAULT IS `nv_570` (`ops_nv.py:26`), AND
-# 570 IS NOT >= 580, SO THE MOCK RUNS THE 570 TABLE -- WHICH IS THE TABLE THE
-# PORT'S CONSTANTS ARE READ FROM. THAT IS A CLOSED LOOP AND IT IS WORTH A ROW.
+# 570 IS not >= 580, SO the mock runs the 570 TABLE -- WHICH is the table the
+# PORT'S constants are read from. THAT is a closed LOOP AND it is worth a row.
 #
-# THE VERSION IS A THREE-PART STRING AND ONLY THE MAJOR PART IS READ. `570` IS
-# THREE DIGITS, SO A PORT THAT READS TWO DIGITS ANSWERS `57` AND A PORT THAT
-# READS THE WHOLE STRING ANSWERS `570.00.00`. THE PORT READS THE MAJOR PART
+# THE version is a three-PART string and only the major part is read. `570` IS
+# THREE digits, SO a port that reads two digits answers `57` AND a port that
+# READS the whole string answers `570.00.00`. THE port reads the major part
 # AS AN INTEGER.
 # ===========================================================================
 
@@ -916,7 +916,7 @@ def MOCK_DRV_MINOR() -> U32: 0
 def MOCK_DRV_PATCH() -> U32: 0
 
 # `ops_nv.py:357-359` -- the version table picker. THE THRESHOLDS ARE 615, 610
-# AND 580 AND THEY ARE **DESCENDING**, so the first one that holds wins. A
+# AND 580 AND THEY ARE DESCENDING, so the first one that holds wins. A
 # port that writes them ascending picks the wrong table for a driver between
 # 610 and 615, and `nv_mock_drv_*` is the row that sees it.
 def drv_table_of(+major: U32) -> U32:
@@ -933,50 +933,50 @@ def drv_table_name(t: U32) -> String:
     case _: ""
 
 # THE MOCK'S GPU COUNT. `NVKIface.count` IS `len(NVKIface.gpus_info)`, AND
-# `gpus_info` COMES FROM `NV_ESC_CARD_INFO` FILTERED BY `valid`. THE MOCK
-# DRIVER ANSWERS `NV_ESC_CARD_INFO` FOR **EVERY GPU IT KNOWS** -- IT CREATES
+# `gpus_info` COMES from `NV_ESC_CARD_INFO` FILTERED by `valid`. THE mock
+# DRIVER answers `NV_ESC_CARD_INFO` FOR every gpu it knows -- IT creates
 # SIX IN `NVDriver.__init__` (`NVDriver(gpus=6)`, `nvdriver.py:49`) AND SETS
 # `st.valid = True` AND `st.pci_info.device_id = 0x2684` FOR EACH
 # (`nvdriver.py:238-242`). SO THE MOCK REPORTS SIX GPUS.
 #
-# AND `MOCKIface.count = 1` OVERRIDES IT. THAT IS THE ONE-LINE DIFFERENCE
-# BETWEEN THE TWO CLASSES, AND IT IS THE WHOLE OF WHAT `MOCKIface` IS.
+# AND `MOCKIface.count = 1` OVERRIDES it. THAT is the one-LINE difference
+# BETWEEN the two classes, AND it is the whole of what `MOCKIface` IS.
 def MOCK_GPUS() -> U32: 6
 def MOCK_PCI_DEVICE_ID() -> U32: 9860
 
 # THE MOCK'S CLASS LIST. `nvdriver.py:160-162` ANSWERS
 # `NV0080_CTRL_CMD_GPU_GET_CLASSLIST` WITH A LITERAL LIST OF CLASS IDS "from
-# ada102". THE PORT DOES NOT CARRY THE LIST -- IT IS A LIST OF NUMBERS AND THE
-# PORT'S CLASS LADDER IS A DIFFERENT THING (`:403-415`'s PAIRS). WHAT THE PORT
-# CARRIES IS THE COUNT, WHICH IS WHAT `setup_usermode`'s CLASSLIST rm_control
-# RETURNS AND WHAT THE CLASS LADDER WALKS.
+# ada102". THE port does not carry the list -- IT is a list of numbers and the
+# PORT'S class ladder is a different thing (`:403-415`'s PAIRS). WHAT the port
+# CARRIES is the count, WHICH is what `setup_usermode`'s CLASSLIST rm_control
+# RETURNS and what the class ladder walks.
 #
-# **THE COUNT IS FIFTY-TWO, AND IT WAS FIFTY-FIVE IN THE FIRST DRAFT OF THIS
-# COMMENT.** MEASURED, BY READING THE LIST OUT OF THE DRIVER'S OWN SOURCE
+# THE count is fifty-TWO, AND it was fifty-FIVE in the first draft of this
+# COMMENT. MEASURED, BY reading the list out of the driver'S own source
 # (NOT BY COUNTING A TRANSCRIPTION OF IT):
 #
 #     src = open('test/mockgpu/nv/nvdriver.py').read()
 #     i = src.index('classes = [');  j = src.index(']', i)
 #     len(ast.literal_eval(src[i+9:j+1]))   ->  52
 #
-# AND THE PORT'S ROW ANSWERED 55, WHICH WAS A HAND-TYPED COUNT OF A HAND-TYPED
-# LIST. THIS IS THE CLASS THE TREE ALREADY NAMES: the `renderer/cstyle.bend`
-# unit shipped 215 hand-typed expectations of which SEVENTEEN were wrong. **A
-# COUNT TYPED BY A HUMAN IS A COUNT OF A TRANSCRIPTION, NOT OF THE THING.**
+# AND the port'S row answered 55, WHICH was a hand-TYPED count of a hand-TYPED
+# LIST. THIS is the class the tree already names: the `renderer/cstyle.bend`
+# unit shipped 215 hand-typed expectations of which SEVENTEEN were wrong. A
+# COUNT typed by a human is a count of a transcription, NOT of the thing.
 def MOCK_CLASSLIST_N() -> U32: 52
 
-# THE MOCK'S INIT SEQUENCE, AS A TRACE. **THE MOCK IS A DRIVER
-# SUBSTITUTION**: `test/mockgpu/mockgpu.py` INTERCEPTS `open()` AND `ioctl()`
-# AT THE PYTHON LEVEL, SO `NVKIface.__init__` RUNS **UNCHANGED** AGAINST THE
-# SOFTWARE DRIVER. THE IOCTL SEQUENCE IS THEREFORE THE SAME ONE, AND THAT IS
-# THE CLAIM: THE MOCK IS NOT A DIFFERENT CODE PATH.
+# THE mock'S init sequence, AS a trace. THE mock is a driver
+# SUBSTITUTION: `test/mockgpu/mockgpu.py` INTERCEPTS `open()` AND `ioctl()`
+# AT the python level, SO `NVKIface.__init__` RUNS unchanged against the
+# SOFTWARE driver. THE ioctl sequence is therefore the same one, AND that is
+# THE claim: THE mock is not a different code path.
 #
-# SO `dev.mock_init` IS `dev.init` WITH THE MOCK'S ANSWERS, AND THE ROWS
-# BELOW COMPARE THE TWO TRACES. IF THEY DIFFER, THE PORT BELIEVES THE MOCK IS
+# SO `dev.mock_init` IS `dev.init` WITH the mock'S answers, AND the rows
+# BELOW compare the two traces. IF THEY differ, THE port believes the mock is
 # A DIFFERENT PATH, AND IT IS NOT.
 #
-# `dev.mock_init` IS DEFINED **AFTER** `dev.init`, BECAUSE BEND REQUIRES
-# DEFINITION-BEFORE-USE AND `dev.init` IS BELOW. MEASURED: the first attempt
+# `dev.mock_init` IS DEFINED AFTER `dev.init`, BECAUSE BEND REQUIRES
+# DEFINITION-BEFORE-USE and `dev.init` IS below. MEASURED: the first attempt
 # put it here and the compiler said "expected : dev.init, observed : dev.init
 # (consumed more than once)" -- which is BEND'S WAY OF SAYING THE NAME IS NOT
 # IN SCOPE YET.
@@ -1051,12 +1051,12 @@ def win_lo(x: H.I64) -> U32: H.lo32(x)
 # candidate of each ladder so a gate can pin the order rather than the answer.
 # ===========================================================================
 
-# A `U32` LITERAL ARM LADDER MUST BE DESCENDING OR CARRY A CATCH-ALL, because
+# A `U32` LITERAL arm ladder must be descending or carry a catch-ALL, because
 # `case 1:` is a PREFIX match that claims 1, 2, 3, ... (bend2-constraints.md,
 # "A `U32` LITERAL PATTERN IS A PREFIX MATCH"). All five ladders here are
 # ascending, so all five need the `case _:`.
 #
-# THE ORDER IS THE POLICY AND ALL FIVE WERE REVERSED THE FIRST TIME. Python:
+# THE order is the policy and all five were reversed the first time. Python:
 #   :408 usermode  [HOPPER_USERMODE_A,     TURING_USERMODE_A]
 #   :409 gpfifo    [BLACKWELL_CHANNEL_GPFIFO_A, AMPERE_CHANNEL_GPFIFO_A]
 #   :410 compute   [BLACKWELL_COMPUTE_B, ADA_COMPUTE_A, AMPERE_COMPUTE_B]
@@ -1095,7 +1095,7 @@ def iface.alt(ix: U32) -> U32:
     case 10: CLASS_NVCFB0_VIDEO_DECODER()
     case _: 0
 
-# THE MIDDLE CANDIDATE, and ONLY the compute ladder has one -- ADA sits BETWEEN
+# THE middle candidate, and ONLY the compute ladder has one -- ADA sits BETWEEN
 # the two, at :410's `[BLACKWELL_COMPUTE_B, ADA_COMPUTE_A, AMPERE_COMPUTE_B]`, so
 # consing it on the front would put it FIRST and reverse the pair around it.
 # `iface.ladder3`'s `ix` is the LADDER index (3 is `CLASS_COMPUTE`) and not a
@@ -1275,7 +1275,7 @@ def dev.mmio(d: Dev, +usrmode: U32) -> Dev:
 
 # :581-583 PERF_BOOST on the SUBDEVICE. One control, and its parameter struct is
 # the seam.
-# THE ONLY RAISE SITE `NVDevice.__init__` ITSELF REACHES. `rm_control` raises on
+# THE only raise site `NVDevice.__init__` ITSELF reaches. `rm_control` raises on
 # a non-zero status (hcq2's `nv_iowr` and the two `if made.status != 0` arms),
 # and :581's PERF_BOOST is the one rm_control in the constructor, so this is
 # where a fixture's `bad_at` lands and everything after it records nothing.
@@ -1373,24 +1373,24 @@ def dev.init.at(sm: U32, +iface: U32, +peer: Bool, pma: Bool, +t0: Tr) -> Dev:
 def dev.init(sm: U32, iface: U32, peer: Bool, pma: Bool) -> Dev:
   dev.init.at(sm, iface, peer, pma, Tr.of())
 
-# THE MOCK'S INIT, RIGHT HERE, BECAUSE BEND REQUIRES DEFINITION-BEFORE-USE AND
-# `dev.init` IS THE SUBJECT. `MOCK_INIT_SM` IS THE SM VERSION THE MOCK
+# THE mock'S init, RIGHT here, BECAUSE BEND REQUIRES definition-BEFORE-USE and
+# `dev.init` IS the subject. `MOCK_INIT_SM` IS the sm version the mock
 # REPORTS: `test/mockgpu/nv/nvgpu.py`'s GPU ANSWERS `NV0000_CTRL_CMD_GPU_GET_
-# ID_INFO_V2`, AND THE PORT'S `dev.init` TAKES THE SM VERSION AS A PARAMETER
+# ID_INFO_V2`, AND THE PORT'S `dev.init` TAKES the sm version as a parameter
 # BECAUSE `arch_of`/`sass_of` ARE FUNCTIONS OF IT.
 def dev.mock_init(sm: U32) -> Dev:
   dev.init(sm, IFACE_MOCK(), False{}, False{})
 
-# THE TWO TRACES COMPARED. `Tr.has` IS A SUBSEQUENCE MATCH, so this asks "IS
-# THE MOCK'S TRACE THE REAL ONE'S TRACE" and not "DO THEY HAVE THE SAME
-# LENGTH" -- and a SUBSQUENCE IS THE RIGHT RELATION HERE, because THE MOCK'S
-# TRACE IS THE REAL ONE'S WITH THE MOCK'S ANSWERS IN PLACE OF THE CARD'S.
+# THE two traces compared. `Tr.has` IS a subsequence match, so this asks "IS
+# THE mock'S trace the real one'S trace" and not "DO they have the same
+# LENGTH" -- and a SUBSQUENCE is the right relation here, because THE mock'S
+# TRACE is the real one'S with the mock'S answers in place of the card'S.
 def dev.mock_same_shape() -> Bool:
   Tr.has(Tr.calls(Dev.tr(dev.mock_init(0))), Tr.calls(Dev.tr(dev.init(0, IFACE_NVK(), False{}, False{}))))
 
-# THE MOCK'S TRACE'S THREE CALL COUNTS. `NVKIface.__init__`'s SEQUENCE IS
-# `rm_alloc(ROOT)` THEN THE VERSION rm_control THEN `uvm(UVM_INITIALIZE)` THEN
-# `uvm(UVM_MM_INITIALIZE)`, SO THE COUNTS ARE THE SHAPE OF THE INIT AND NOT
+# THE mock'S trace'S three call counts. `NVKIface.__init__`'s SEQUENCE is
+# `rm_alloc(ROOT)` THEN the version rm_control THEN `uvm(UVM_INITIALIZE)` THEN
+# `uvm(UVM_MM_INITIALIZE)`, SO the counts are the shape of the init and not
 # OF THE MOCK.
 def dev.mock_init_call_count() -> U32:
   U32.add(U32.add(Tr.count(CALL_ALLOC(), Tr.calls(Dev.tr(dev.mock_init(0)))),
@@ -1398,7 +1398,7 @@ def dev.mock_init_call_count() -> U32:
           Tr.count(CALL_UVM(), Tr.calls(Dev.tr(dev.mock_init(0)))))
 
 # ===========================================================================
-# STAGE 2 -- THE QUEUE AND COMMAND-SUBMISSION STRUCTURE.
+# STAGE 2 -- THE queue and command-SUBMISSION structure.
 #
 # Everything in this section is a PURE function of small integers, and it is
 # the portable heart of the file: `nvm` builds a push-buffer command header,
@@ -1552,7 +1552,7 @@ def flags.release(tstamp: U32) -> U32:
             flags.term(V_SEM_RELEASE_WFI_EN(), FLD_SEM_RELEASE_WFI()),
             flags.term(tstamp, FLD_SEM_RELEASE_TIMESTAMP())], 0)
 
-# THE SAME FOUR TERMS IN A DIFFERENT ORDER. `functools.reduce(int.__or__, ...)`
+# THE same four terms in a different order. `functools.reduce(int.__or__, ...)`
 # does not care, and this def exists so the gate can ASK it: a port that appended
 # the terms in the order the kwargs happen to appear would answer the same value
 # here and there is no other place that could tell the difference.
@@ -1602,7 +1602,7 @@ def hilo.lo(x: H.I64) -> U32: H.lo32(x)
 def hilo.pair(+x: H.I64) -> List<&2, U32>:
   [hilo.hi(x), hilo.lo(x)]
 
-# THE SAME TWO WORDS AS ONE PRINTABLE `hi:lo` STRING, because `dev.slm` answers a
+# THE same two words as one printable `hi:lo` STRING, because `dev.slm` answers a
 # `U32` and the claim that a 64-bit total needs no third word is only visible if
 # the pair is printed. `U32.shrn(x, 32)` SATURATES at 0 (bend2-constraints.md:
 # a shift past the width is 0, not a mod-2^32 rotation), so every real local
@@ -1634,11 +1634,11 @@ def NVALS_TWO_INT() -> List<&2, U32>: [1, 1]
 def NVALS_THREE_INT() -> List<&2, U32>: [1, 1, 1]
 
 # ===========================================================================
-# THE FOUR QUEUES' COMMAND VOCABULARIES. Each def is ONE line range of the
+# THE four queues' COMMAND vocabularies. Each def is ONE line range of the
 # Python and emits the words in the Python's order; `q_*` names are the method
 # names `ops_nv.py` uses.
 #
-# THE RAISE IS IN THE TRACE (see THE TRACE), so `cq.exec`'s two raises need no
+# THE raise is in the trace (see THE trace), so `cq.exec`'s two raises need no
 # guard of their own: a refusal truncates everything after it.
 # ===========================================================================
 
@@ -1859,7 +1859,7 @@ def slrow(nm: String, xs: List<&2, String>) -> IO(Unit):
 def wstream(t: Tr) -> List<&2, U32>: Tr.args(CALL_WORD(), Tr.calls(t))
 
 # `xs[i]`, which is `List.get` and a `Maybe` and no sugar. `Wv` is the record
-# version of `Maybe<&2, U32>`. THE REASON GIVEN WAS HALF FALSE: a `Data` record CAN hold a
+# version of `Maybe<&2, U32>`. THE reason given was half FALSE: a `Data` record CAN hold a
 # `Maybe` field -- MEASURED, 20 in-tree `Data` records carry 38 of them -- while the OTHER half
 # is the real constraint and stands: a `Maybe` is affine, read once, no `+`. So `Wv` may be
 # the right encoding; what was wrong is the reason offered for it.
@@ -1924,7 +1924,7 @@ def t_arch() -> IO(Unit):
     row("nv_sass_101", sass_of(SM_101()))
     i64row("nv_win_shared", win_shared())
     i64row("nv_win_local", win_local())
-    # THE BLACKWELL SPECIAL CASE IS ITS OWN ROW, because `"sm_120" if
+    # THE blackwell special case is its own row, because `"sm_120" if
     # sm_version==2564` is not what the f-string would say and 2564's high
     # digit is 10 -- so a port that deleted the special case prints "sm_1010".
     brow("nv_arch_a04_is_special", String.eq(arch_of(SM_A04_HI()), "sm_120"))
@@ -1970,46 +1970,46 @@ def t_iface() -> IO(Unit):
     brow("nv_pc_root_hi", U32.is_eq(PCI_ROOT(), 3231741952))
 
 # --- 3b: the MOCK PATH, `MOCKIface` and the selection that reaches it -------
-# THE INTERFACE TAGS, so a row can name WHICH interface it is about. THE ORDER
-# IS THE LADDER'S ORDER AND THE ORDER IS THE POLICY (`_select_iface` walks it
+# THE interface tags, so a row can name WHICH interface it is about. THE order
+# IS the ladder'S order and the order is the policy (`_select_iface` walks it
 # FIRST-WINS), so THE INDEX IS THE TAG.
 def t_mock() -> IO(Unit):
   do IO<Unit>:
-    # THE THREE INTERFACE NAMES, ONE ROW EACH, BOTH DIRECTIONS. A NAME THAT IS
-    # NOT IN THE LIST IS NOT A QUEUE, AND A NAME IN THE LIST THAT IS NOT
-    # SPELLED THE WAY UPSTREAM SPELLS IT SELECTS NOTHING.
+    # THE three interface names, ONE row each, BOTH directions. A name that is
+    # NOT in the list is not a queue, AND a name in the list that is not
+    # SPELLED the way upstream spells it selects nothing.
     srow("nv_mock_iface_nvk", iface_name(IFACE_NVK()))
     srow("nv_mock_iface_pci", iface_name(IFACE_PCI()))
     srow("nv_mock_iface_mock", iface_name(IFACE_MOCK()))
     srow("nv_mock_iface_none", iface_name(0))
     srow("nv_mock_iface_four", iface_name(4))
-    # THE COUNT. `MOCKIface.count = 1` IS THE WHOLE DIFFERENCE FROM
-    # `NVKIface`, AND `NVKIface.count` IS THE CARD'S OWN GPU COUNT. SO THE
-    # COUNT IS A FUNCTION OF THE INTERFACE AND THE MOCK'S ANSWER IS ONE WHILE
+    # THE count. `MOCKIface.count = 1` IS the whole difference from
+    # `NVKIface`, AND `NVKIface.count` IS the card'S own gpu count. SO the
+    # COUNT is a function of the interface and the mock'S answer is one while
     # THE REAL ONE'S IS THE CARD'S.
     row("nv_mock_count_mock", dev.count(IFACE_MOCK(), MOCK_GPUS()))
     row("nv_mock_count_nvk", dev.count(IFACE_NVK(), MOCK_GPUS()))
     row("nv_mock_count_pci", dev.count(IFACE_PCI(), MOCK_GPUS()))
     # THE SELECTION. `device.py:473` -- "never fallback to mock ifaces". A MOCK
-    # INTERFACE SURVIVES ONLY WHEN THE TARGET IS A MOCK. THE TWO CELLS ARE THE
-    # CLAIM AND ITS NEGATIVE, AND THEY ARE SEPARATE ROWS BECAUSE A READER
-    # THAT ALWAYS KEPT OR ALWAYS DROPPED WOULD SATISFY ONE OF THEM.
+    # INTERFACE survives only when the target is a mock. THE two cells are the
+    # CLAIM and its negative, AND they are separate rows because a reader
+    # THAT always kept or always dropped would satisfy one of them.
     row("nv_mock_filtered_real", dev.iface_filtered_n(False{}))
     row("nv_mock_filtered_mock", dev.iface_filtered_n(True{}))
-    # THE PER-INTERFACE CELLS OF THE RULE.
+    # THE per-INTERFACE cells of the rule.
     brow("nv_mock_ok_mock_real", dev.iface_ok(IFACE_MOCK(), False{}))
     brow("nv_mock_ok_nvk_real", dev.iface_ok(IFACE_NVK(), False{}))
     brow("nv_mock_ok_mock_mock", dev.iface_ok(IFACE_MOCK(), True{}))
     brow("nv_mock_ok_nvk_mock", dev.iface_ok(IFACE_NVK(), True{}))
-    # THE DRIVER VERSION. THE MOCK ANSWERS `b"570.00.00\0"`
+    # THE driver version. THE mock answers `b"570.00.00\0"`
     # (`test/mockgpu/nv/nvdriver.py:208`) AND `NVKIface.__init__` PICKS THE
-    # CONSTANT TABLE FROM THE MAJOR VERSION, SO 570 SELECTS `nv_570` -- WHICH
-    # IS THE TABLE THE PORT'S CONSTANTS ARE READ FROM. THE LOOP IS CLOSED.
+    # CONSTANT table from the major version, SO 570 SELECTS `nv_570` -- WHICH
+    # IS the table the port'S constants are read from. THE LOOP IS closed.
     row("nv_mock_drv_major", MOCK_DRV_MAJOR())
     row("nv_mock_drv_table", drv_table_of(MOCK_DRV_MAJOR()))
     srow("nv_mock_drv_table_name", drv_table_name(drv_table_of(MOCK_DRV_MAJOR())))
-    # THE THRESHOLDS, IN BOTH DIRECTIONS, BECAUSE A TABLE THAT PICKS THE WRONG
-    # ONE FOR A DRIVER BETWEEN 610 AND 615 IS A WRONG CONSTANT SET AND NO
+    # THE thresholds, IN both directions, BECAUSE a table that picks the wrong
+    # ONE for a driver between 610 AND 615 IS a wrong constant set and no
     # OTHER ROW SEES IT.
     row("nv_mock_drv_615", drv_table_of(615))
     row("nv_mock_drv_614", drv_table_of(614))
@@ -2019,20 +2019,20 @@ def t_mock() -> IO(Unit):
     row("nv_mock_drv_579", drv_table_of(579))
     row("nv_mock_drv_570", drv_table_of(570))
     row("nv_mock_drv_569", drv_table_of(569))
-    # THE MOCK'S GPU COUNT AND ITS PCI DEVICE ID. THE MOCK DRIVER CREATES SIX
+    # THE mock'S gpu count and its pci device ID. THE mock driver creates six
     # GPUS (`NVDriver(gpus=6)`) AND ANSWERS `NV_ESC_CARD_INFO` WITH
     # `st.pci_info.device_id = 0x2684` FOR EACH.
     row("nv_mock_gpus", MOCK_GPUS())
     row("nv_mock_pci_device_id", MOCK_PCI_DEVICE_ID())
-    # THE MOCK'S CLASS LIST LENGTH. `nvdriver.py:160-162` ANSWERS THE
+    # THE mock'S class list length. `nvdriver.py:160-162` ANSWERS the
     # CLASSLIST rm_control WITH FIFTY-FIVE IDS "from ada102".
     row("nv_mock_classlist_n", MOCK_CLASSLIST_N())
-    # THE MOCK IS A DRIVER SUBSTITUTION AND NOT A DIFFERENT CODE PATH: ITS
-    # TRACE IS THE REAL ONE'S TRACE. `Tr.has` IS A SUBSEQUENCE MATCH, SO THIS
-    # ROW IS TRUE WHENEVER THE MOCK'S CALLS APPEAR IN THE REAL ONE'S ORDER.
+    # THE mock is a driver substitution and not a different code path: ITS
+    # TRACE is the real one'S trace. `Tr.has` IS a subsequence match, SO this
+    # ROW is TRUE WHENEVER the mock'S calls appear in the real one'S order.
     brow("nv_mock_same_shape", dev.mock_same_shape())
-    # AND THE MOCK'S TRACE IS NOT EMPTY, WHICH IS THE OTHER HALF OF THE CLAIM:
-    # A SUBSEQUENCE MATCH AGAINST AN EMPTY TRACE IS TRUE AND PROVES NOTHING.
+    # AND the mock'S trace is not empty, WHICH is the other half of the claim:
+    # A subsequence match against an empty trace is TRUE AND proves nothing.
     row("nv_mock_init_calls", dev.mock_init_call_count())
 
 # --- 4: the class ladders, :404-412 ----------------------------------------
@@ -2092,15 +2092,15 @@ def t_class() -> IO(Unit):
     row("nv_pick_new_comp", iface.pick(CLASS_COMPUTE(), M_NEW()))
     row("nv_pick_new_dma", iface.pick(CLASS_DMA(), M_NEW()))
     row("nv_pick_new_vid", iface.pick(CLASS_VIDDEC(), M_NEW()))
-    # THE NEGATIVE CASE FOR THE VIDDEC LADDER: no decoder means the answer is
+    # THE negative case for the viddec ladder: no decoder means the answer is
     # `None`, which is 0 here, and 0 is NOT an error. Every other ladder's
     # empty answer is a `StopIteration` and is therefore never reached, which is
     # why only this one has a row for it.
     row("nv_pick_none_vid", iface.pick(CLASS_VIDDEC(), 0))
-    # THE ORDER OF THE PAIR IS THE POLICY, and these two rows are the ones a
+    # THE order of the pair is the policy, and these two rows are the ones a
     # last-wins port fails: the OLD fixture has AMPERE but not BLACKWELL, so
     # walking backwards finds nothing, and the NEW fixture has both.
-    # THE ORDER OF THE PAIR IS THE POLICY, and THESE TWO ROWS ARE WHY. `OLD`
+    # THE order of the pair is the policy, and THESE two rows are why. `OLD`
     # holds AMPERE but not BLACKWELL, so walking either ladder BACKWARDS finds
     # nothing; `NEW` holds both, so a backwards walk answers the OLD class where
     # CPython answers the new one. `nv_pick_amp_*` alone could not see it.
@@ -2168,7 +2168,7 @@ def t_nvm() -> IO(Unit):
     lrow("nv_nvm_hilo4", wstream(d))
     +e : Tr <- IO.pure(Tr, nvm.emit(0, M_NON_STALL_INTERRUPT(), 1, NVM_TYP2(), [0], Tr.of()))
     lrow("nv_nvm_nsi", wstream(e))
-    # THE FOUR FIELDS, ONE ROW EACH, because they do not overlap and a port that
+    # THE four fields, ONE row each, because they do not overlap and a port that
     # ORed them in the wrong place would still answer True for small values.
     row("nv_hdr_typ2", nvm.word(0, 0, 0, 2))
     row("nv_hdr_subc4", nvm.word(4, 0, 0, 0))
@@ -2291,7 +2291,7 @@ def t_args() -> IO(Unit):
     # device.bend:871's `iter_sig` USED TO advance off the UNROUNDED offset and to
     # disagree with `hcq2.layout_args` on the mixed list; `7f170f644` fixed it to
     # `U32.add(round_up(off, k), k)` and the two implementations now AGREE. THE ROWS
-    # ARE KEPT BECAUSE THE PAIR IS THE CLAIM -- `nv_device_args_*` is
+    # ARE kept because the pair is the claim -- `nv_device_args_*` is
     # `device.bend`'s answer and `nv_cpython_args_device_*` is this file's own
     # `sig.slot`, and two independent implementations of the same walrus are worth
     # one row each. They were named `nv_REPORTED_*` while the bug was live and a
@@ -2327,7 +2327,7 @@ def t_matcher() -> IO(Unit):
     row("nv_trace_words", U32.from_nat(List.length(&2, U32, wstream(t))))
 
 # ===========================================================================
-# STAGE 3 -- THE PROGRAM CACHE, THE IMAGE, AND THE LAUNCH PATH.
+# STAGE 3 -- THE program cache, THE image, AND the launch path.
 #
 # ===========================================================================
 # :43-45 `nv_iowr`, THE COMMAND ENCODER.
@@ -2370,7 +2370,7 @@ def iowr.msg(+ret: U32) -> String:
   Bool.pick(String, U32.is_zero(ret), "", String.concat(["ioctl returned ", U32.show(ret)]))
 
 # ===========================================================================
-# :50-94 -- QMD. THE FIELD TABLE, AND WHY A `List<&2, U32>` OF WORDS IS EXACT.
+# :50-94 -- QMD. THE field table, AND why a `List<&2, U32>` OF words is exact.
 #
 # `self.mv = bytearray(self.sz * 4)` -- 256 bytes for ver 3 and 384 for ver 5.
 # `QMD.fields[pref][k]` is a `(hi, lo)` BIT RANGE and `read`/`write` do
@@ -2398,7 +2398,7 @@ def qmd.sz.of(+v: U32) -> U32:
 
 def qmd.words(v: U32) -> U32: U32.mul(qmd.sz.of(v), 4)
 
-# THE TWO GENERATED TABLES' SIZES, MEASURED, because the word model is only exact
+# THE two generated tables' SIZES, MEASURED, because the word model is only exact
 # BECAUSE of what they do not contain.
 def qmd.fields_v3() -> U32: 181
 def qmd.fields_v5() -> U32: 296
@@ -2407,7 +2407,7 @@ def qmd.fields_v5() -> U32: 296
 # ("cta_raster_width", "cta_raster_height", "cta_raster_depth")`. The NAMES, and
 # a port that kept the ver-3 names would write three fields that do not exist in
 # a ver-5 QMD.
-# THE ARMS WERE BACKWARDS IN THE FIRST VERSION. Python :94 is
+# THE arms were backwards in the first version. Python :94 is
 # `("grid_width", "grid_height", "grid_depth") if self.ver >= 4 else
 #  ("cta_raster_width", "cta_raster_height", "cta_raster_depth")`, so ver 5 is
 # the grid_* arm and ver 3 the cta_raster_* one -- MEASURED: `nv_qmd_grid3` printed
@@ -2578,7 +2578,7 @@ def smemcfg.step(+shmem: U32) -> U32: H.round_up_u32(shmem, 4096)
 
 def smemcfg.ok(shmem: U32) -> Bool: U32.is_le(shmem, 102400)
 
-# THE SMALLEST OF THE THREE CANDIDATES THAT IS >= `shmem`, then `// 4096 + 1`.
+# THE smallest of the three candidates that is >= `shmem`, then `// 4096 + 1`.
 # THE SHORTCUT `round_up(shmem, 4096) + 1` IS WRONG and the diff against CPython
 # is what said so: for shmem 0 it answers 1 where Python answers 9, because the
 # minimum is over {32768, 65536, 102400} and NOT over the multiples of 4096.
@@ -2895,7 +2895,7 @@ def cq.exec.chain(qmd_addr_hi: U32, t: Tr) -> Tr:
         Tr.emit(CALL_ALLOC, qmd_addr_hi, t))))
 
 # ===========================================================================
-# :313-320 -- THE PROGRAM CACHE. ITS KEY, BOTH DIRECTIONS, AND ITS ABSENT
+# :313-320 -- THE program cache. ITS key, BOTH directions, AND its absent
 # EVICTION POLICY.
 #
 #   `_nv_program_cache: dict[tuple[bytes, tuple[str, ...]], ...]`
@@ -2953,7 +2953,7 @@ def pc.find(k: PKey, ks: List<&2, PKey>) -> U32: pc.find.at(k, ks)
 # that is already present must not grow the cache, so a port that invented an LRU
 # or that appended on every lookup fails one of the two.
 #
-# THE FIELDS ARE NOT NAMED AFTER THE READERS. `PC{n: ...}` with a reader `PC.n`
+# THE fields are not named after the readers. `PC{n: ...}` with a reader `PC.n`
 # is REFUSED -- "a pattern binder that shadows a FIELD NAME is reported as an
 # arity error" (bend2-constraints.md), and the error names the reader, not the
 # field. So the fields are `cnt`, `uid`, `misses`, `hits`, `keys` and `ords`.
@@ -3005,7 +3005,7 @@ def pc.new_id(p: PC) -> U32: PC.next(p)
 def pc.hit_arm(+p: PC) -> PC:
   PC.at(p, PC.n(p), PC.ks(p), PC.miss(p), U32.add(PC.hit(p), 1), PC.ord(p), PC.next(p))
 
-# THE MISS ADVANCES THE UNIQUE-NUM COUNTER, which is the buffer's id at :317. A
+# THE miss advances the unique-NUM counter, which is the buffer's id at :317. A
 # port that froze it would reuse an id for the second program.
 def pc.miss_arm(k: PKey, +p: PC) -> PC:
   PC.at(p, U32.add(PC.n(p), 1), List.append(&2, PKey, PC.ks(p), [k]),
@@ -3019,7 +3019,7 @@ def pc.put.at(found: U32, +k: PKey, +p: PC) -> PC:
 def pc.put(+k: PKey, +p: PC) -> PC: pc.put.at(pc.find(k, PC.ks(p)), k, p)
 
 # ===========================================================================
-# STAGE 4 (part one) -- THE BUFFER POOL AND THE DEVICE'S OWN BUFFERS.
+# STAGE 4 (part one) -- THE BUFFER POOL and the device'S own buffers.
 #
 # `device.bend`'s rules are CONSUMED and not re-derived: a Buffer is a SLOT in a
 # `Bar` arena, `nbytes` is `size * itemsize` and is NOT a field, a view's offset
@@ -3056,7 +3056,7 @@ def dev.fifos_root(+entries: U32, +off: U32) -> D.BFound:
 def dev.fifos_of(+entries: U32, +off: U32) -> D.BFound:
   dev.fifos_pair(dev.fifos_root(entries, off), entries, off)
 
-# THE TWO VIEWS SHARE ONE ARENA, so they are SLOTS: slot 0 is the 3 MiB
+# THE two views share one arena, so they are SLOTS: slot 0 is the 3 MiB
 # `gpfifo_buf` root, slot 1 is the ring view and slot 2 is the gpput view. MEASURED:
 # reading slot 0 answers the ROOT's 4 bytes and `nv_ring_nbytes` printed 4 instead
 # of 524288 -- so the readers below name the INDEX, and a reader that hardcoded
@@ -3111,7 +3111,7 @@ def dev.gpfifo_fields() -> List<&2, String>:
 def dev.gpfifo_n() -> U32: 7
 
 # ===========================================================================
-# :688-694 `_ensure_has_local_memory`, AND ITS EARLY RETURN IS THE NEGATIVE CASE
+# :688-694 `_ensure_has_local_memory`, AND its early return is the negative case
 # FOR THE WHOLE POOL. `if self.slm_per_thread >= required: return` reallocates
 # NOTHING, submits NOTHING and leaves `slm_per_thread` alone -- so a program
 # asking for LESS local memory than the device already has must not move the
@@ -3183,11 +3183,11 @@ def alloc.alloc_size(+size: U32, uncached: Bool, host: Bool, mock: Bool) -> U32:
   H.round_up_u32(size, alloc.page_size(size, uncached, host, mock))
 
 # ===========================================================================
-# :699-715 `_ensure_has_vid_hw`. THE FIVE NUMBERS A DECODER NEEDS, ONE REFUSAL,
+# :699-715 `_ensure_has_vid_hw`. THE five numbers a decoder needs, ONE refusal,
 # AND THE ORDER.
 #
 #   `if self.iface.viddec_class is None: raise RuntimeError(...)`
-#   `coloc_sz      = round_up(round_up(h,64)**2 + round_up(w,64)*round_up(h,64)//16, 2<<20)`
+#   `coloc_sz      = round_up(round_up(h,64)2 + round_up(w,64)*round_up(h,64)//16, 2<<20)`
 #   `intra_top_off = round_up(h, 64) * (608 + 4864 + 152 + 2000)`
 #   `intra_unk_size = 2<<20 if viddec_class >= NVCFB0_VIDEO_DECODER else 0`
 #   `intra_unk_off  = round_up(intra_top_off, 0x10000) + (64<<10)` if unk_size else None
@@ -3214,7 +3214,7 @@ def dev.vid_msg(viddec: U32, +name: String) -> String:
 # `round_up(h, 64)`, twice in every one of these, so it is its own def.
 def vid64(n: U32) -> U32: H.round_up_u32(n, 64)
 
-# `round_up(h,64)**2 + round_up(w,64)*round_up(h,64)//16`, then rounded to 2 MiB.
+# `round_up(h,64)2 + round_up(w,64)*round_up(h,64)//16`, then rounded to 2 MiB.
 def dev.vid_coloc(+w: U32, +h: U32) -> U32:
   H.round_up_u32(U32.add(U32.mul(vid64(h), vid64(h)),
     U32.div(U32.mul(vid64(w), vid64(h)), 16)), VID_ROUND())
@@ -3256,7 +3256,7 @@ def dev.vid_chroma(+w: U32, +h: U32) -> U32: U32.shrn(U32.mul(vid64(w), vid64(h)
 def dev.vid_h(+pic_h: U32) -> U32: U32.div(U32.mul(2, pic_h), 3)
 
 # ===========================================================================
-# :35, :37-38 -- THE ERROR STRINGS AND THE TWO FAULT TABLES.
+# :35, :37-38 -- THE ERROR STRINGS and the two fault tables.
 #
 # `get_error_str(status) = f"{status}: {nv_gpu.nv_status_codes.get(status,
 # 'Unknown error')}"` -- the `get` has a DEFAULT, so an unknown status is
@@ -3299,7 +3299,7 @@ def pfault.status_n() -> U32: 142
 
 # `next((c for c in [...] if c in ...), None)` -- the access table's NONE arm is
 # the same `None` `dev.vid_ok` reads.
-# THE TABLE HAS NINE ENTRIES AND THEY ARE NOT CONTIGUOUS: 4 is WEAK and 8, 9, 10
+# THE table has nine entries and they are not contiguous: 4 is WEAK and 8, 9, 10
 # are READ, WRITE, ATOMIC. A catch-all answered WEAK for all three and
 # `nv_paccess_8/9/10` said so.
 def paccess.of(x: U32) -> String:
@@ -3364,7 +3364,7 @@ def notifier_bufferized() -> Bool: False{}
 # names come from :618-619 -- so the tag set is a FUNCTION of the two queue names
 # and the `nv_toname_*` rows below pin it, ONE ROW PER (tag, queue) PAIR and under
 # the same name CPython's own loop uses (`nv_toname_<parts joined by _>`). THE
-# FIRST VERSION NAMED THEM AFTER THE QUEUE FIRST (`nv_toname_compute_ring`) and so
+# FIRST version named them after the queue first (`nv_toname_compute_ring`) and so
 # five rows compared against nothing: the oracle names them the other way round and
 # the differ called them unmatched, which is how a row can be WRONG AND UNCHECKED
 # at the same time. Two of the five were also pure duplicates of the loop rows and
@@ -3448,9 +3448,9 @@ def prof.sm_base(sm: U32) -> U32:
 
 # :805 `SM_REG(...) = GPC_BASE + gpc * 0x4000 +
 # (num_tpc_per_gpc - tpc_cnt[gpc] + tpc) * 0x200 + [0x400, 0x1000][sm] + reg` --
-# pre-Blackwell. THE TPC INDEX IS COUNTED FROM THE END, so sharing one def with
+# pre-Blackwell. THE tpc INDEX IS counted from the end, so sharing one def with
 # the Blackwell arm would be wrong in three places at once.
-# THE SM BASE IS AN ADDEND AND NOT A FACTOR. The first version had
+# THE sm base is an addend and not a factor. The first version had
 # `U32.mul(<tpc term>, prof.sm_base(sm))`, which is 4 * 512 * 1024 where Python
 # has 4 * 512 + 1024 -- MEASURED, and it is the difference between 1576232 and
 # 2101544 for the same (gpc 0, tpc 0, sm 0, reg 0x128).
@@ -3522,7 +3522,7 @@ def query_name.at(lit: Bool) -> String:
 
 def query_name(ix: U32) -> String: query_name.at(query_litter(ix))
 
-# THE RESOLVED INDEX EACH OF THE FIVE REQUESTS ANSWERS -- 20, 23, 32 for the three
+# THE resolved INDEX EACH of the five requests answers -- 20, 23, 32 for the three
 # LITTER ones and 13, 12 for the plain two -- because `query_litter` above says
 # WHICH TABLE and this says WHICH ENTRY, and a wrong index reads a neighbouring
 # attribute off `infoList` without raising.
@@ -3666,7 +3666,7 @@ def t_pdata() -> IO(Unit):
     row("nv_smemcfg_102400", pd.smem_cfg(102400))
     brow("nv_smemcfg_too_big", Bool.not(smemcfg.ok(131071)))
     brow("nv_smemcfg_ok_max", smemcfg.ok(102400))
-    # THE REFUSAL'S OWN TWO ROWS, because `nv_smemcfg_too_big` only says THAT it
+    # THE refusal'S own two rows, because `nv_smemcfg_too_big` only says THAT it
     # refuses and CPython's answer is a STRING: `min() iterable argument is empty`
     # is what Python 3's `min()` says, and a port that wrote "smem too large"
     # would satisfy the boolean and fail the diff.
@@ -3752,7 +3752,7 @@ def t_reloc() -> IO(Unit):
     row("nv_reloc_empty_n", U32.from_nat(List.length(&2, Rl, Rf.rs(c))))
     brow("nv_reloc_empty_refused", Rf.refused(c))
 
-# --- 15: the program cache, :313-320. THE KEY AND THE ABSENT EVICTION -------
+# --- 15: the program cache, :313-320. THE key and the absent eviction -------
 def K1() -> PKey: PKey{100, 0, 0}
 def K2() -> PKey: PKey{200, 0, 0}
 def K1_OTHER_DEV() -> PKey: PKey{100, 1, 0}
@@ -3794,14 +3794,14 @@ def t_cache() -> IO(Unit):
     row("nv_pc_grow_repeat_k1", PC.n(pc_one(a, K1())))
     row("nv_pc_miss_3", PC.miss(a))
     row("nv_pc_hit_1", PC.hit(pc_one(a, K2())))
-    # THE BUFFER IDS COME FROM `next(UOp.unique_num)` AND NOT FROM THE COUNT, so
+    # THE BUFFER IDS come from `next(UOp.unique_num)` AND not from the count, so
     # a hit does not advance them and a miss does.
     row("nv_pc_id_0", pc.new_id(PC.of()))
     row("nv_pc_id_after_3", pc.new_id(a))
-    # THE FIRST SITE IS A HIT ON A CACHE THAT DOES NOT YET HOLD THE KEY, AND THE
-    # SECOND (BELOW) IS A HIT ON ONE THAT DOES. THEY ARE TWO FIXTURES AND THEY
-    # USED TO SHARE ONE NAME, WHICH IS HOW A VALUE CAN BE RIGHT AT ONE SITE AND
-    # WRONG AT THE OTHER WITH NOTHING SAYING WHICH IS WHICH.
+    # THE first site is a hit on a cache that does not yet hold the key, AND the
+    # SECOND (BELOW) IS a hit on one that does. THEY are two fixtures and they
+    # USED to share one name, WHICH is how a value can be right at one site and
+    # WRONG at the other with nothing saying which is which.
     row("nv_pc_id_after_miss_hit", pc.new_id(pc_one(a, K2())))
     # A HIT ADVANCES NOTHING. `UOp.unique_num` is a monotone counter over every
     # unique num the process mints, so its ABSOLUTE value is not the cache size
@@ -3825,7 +3825,7 @@ def t_launch() -> IO(Unit):
     brow("nv_launch_small_refuses", Bool.not(exec.ok.prod(prod3(32, 32, 1), 512)))
     brow("nv_launch_big_refuses", Bool.not(exec.ok.prod(prod3(64, 32, 1), 8192)))
     brow("nv_launch_ok_1024_8192", exec.ok.prod(prod3(32, 32, 1), 8192))
-    # THE OTHER TWO ARMS OF THE SAME DISJUNCTION, one per conjunct: a SMALL
+    # THE other two arms of the same disjunction, one per conjunct: a SMALL
     # max_threads under a legal product, and a product over 1024 with a
     # max_threads large enough to cover it. Either alone refuses.
     brow("nv_launch_ok_1024_512", exec.ok.prod(prod3(32, 32, 1), 512))
@@ -3900,7 +3900,7 @@ def t_pool() -> IO(Unit):
     row("nv_fifo_entries_vid", 2048)
     row("nv_fifo_alloc", GPFIFO_ALLOC())
     row("nv_notifier_bytes", NOTIFIER_BYTES())
-    # THE TWO VIEWS OF ONE ROOT, read off device.bend's own `bview`. THE OFFSET
+    # THE two views of one root, read off device.bend's own `bview`. THE OFFSET
     # ACCUMULATES: the ring is at `off` and the gpput view is at
     # `gpput_off(off, entries)`, and both report the ROOT as their base.
     +a : D.BFound <- IO.pure(D.BFound, dev.fifos_of(65536, 1048576))
@@ -3930,7 +3930,7 @@ def t_pool() -> IO(Unit):
     row("nv_slmp_1_have32", dev.slm(1, 32))
     row("nv_slmp_32_have32", dev.slm(32, 32))
     row("nv_slmp_33_have32", dev.slm(33, 32))
-    # THE ONE FIXTURE WHERE THE EARLY RETURN AND THE ROUNDING DIFFER:
+    # THE one fixture WHERE THE early return and the rounding differ:
     # `have` 48 is not `round_up(33, 32)`, so the correct answer keeps 48 and
     # a port that dropped the guard answers 64. MEASURED: with only the
     # round_up-multiple `have` values this mutation moved NOTHING.
@@ -3952,7 +3952,7 @@ def t_pool() -> IO(Unit):
     row("nv_slmtot_4096_64828", dev.slm_bytes(67108864, 2, 8))
     row("nv_slmtot_1024_644214", dev.slm_bytes(8388608, 2, 14))
     row("nv_slmtot_1_48428", dev.slm_bytes(196608, 2, 8))
-    # AND ONE THAT IS NOT ALREADY A 128 KiB MULTIPLE. Every other fixture is --
+    # AND one that is not already a 128 KiB MULTIPLE. Every other fixture is --
     # 196608 x 16, 6291456 x 16, 67108864 x 16 and 8388608 x 28 are all exact
     # multiples of 131072 -- so a port that DROPPED the rounding answered the same
     # six numbers and mutation M30 moved NOTHING. The `1,1,1` fixture is the one
@@ -3980,7 +3980,7 @@ def t_pool() -> IO(Unit):
     brow("nv_slm_early_1024_48428", dev.slm_early(1024, 0))
     brow("nv_slm_early_4096_64828", dev.slm_early(4096, 0))
     brow("nv_slm_early_1024_644214", dev.slm_early(1024, 0))
-    # THE SAME TOTAL, PRINTED THROUGH THE OTHER PRINTER. `hilo.str32` splits a
+    # THE same total, PRINTED through the other printer. `hilo.str32` splits a
     # `U32` with a saturating shift and `H.i64_of_i32` builds an `I64` and then
     # splits THAT, so the two paths are independent and a defect in either shows
     # up as ONE of the two rows moving while the other holds. THIS SITE USED TO
@@ -3993,12 +3993,12 @@ def t_pool() -> IO(Unit):
     row("nv_bpt_1024_48428", dev.bpt(1024, 48, 4))
     row("nv_bpt_4096_64828", dev.bpt(4096, 64, 8))
     row("nv_bpt_1024_644214", dev.bpt(1024, 64, 4))
-    # THE TWO COMMANDS THE RAISE SUBMITS, AS ONE TRACE. THE ROW ABOVE
-    # (`nv_slm_cmd`) IS THE SAME TWO COMMANDS BUILT BY THE SAME CALL WITH THE
-    # SAME ARGUMENTS, so THIS SITE USED TO PRINT THE SAME NAME A SECOND TIME --
-    # and a NAME PRINTED TWICE IS A ROW THAT CANNOT BE ADDRESSED. THE CLAIM HERE
-    # IS THE ONE THE FIRST SITE CANNOT MAKE: that the trace is BUILT AND HELD IN
-    # A VARIABLE AND THE VARIABLE'S CONTENTS ARE THE TRACE, not a fresh
+    # THE two commands the raise submits, AS one trace. THE row above
+    # (`nv_slm_cmd`) IS the same two commands built by the same call with the
+    # SAME arguments, so THIS site used to print the same name a second time --
+    # and a NAME printed twice is a row that cannot be addressed. THE claim here
+    # IS the one the first site cannot make: that the trace is BUILT and held in
+    # A variable and the variable'S contents are the trace, not a fresh
     # construction that happens to agree. THAT IS A DIFFERENT QUESTION, so it
     # gets a different name.
     +a2 : Tr <- IO.pure(Tr, dev.slm_cmd(196608, 0, 187, Tr.of()))
@@ -4048,7 +4048,7 @@ def t_vid() -> IO(Unit):
     row("nv_vid_top_1080", dev.vid_top(1080))
     row("nv_vid_top_2160", dev.vid_top(2160))
     row("nv_vid_top_0", dev.vid_top(0))
-    # THE NEW DECODER GETS THE UNKNOWN-REGION BUFFER AND THE OLD ONE DOES NOT,
+    # THE new decoder gets the unknown-REGION BUFFER AND the old one does not,
     # so an unconditional 2 MiB would reserve it on every card.
     row("nv_vid_unk_new", dev.vid_unk_size(CLASS_NVCFB0_VIDEO_DECODER()))
     row("nv_vid_unk_old", dev.vid_unk_size(CLASS_NVC9B0_VIDEO_DECODER()))
@@ -4056,7 +4056,7 @@ def t_vid() -> IO(Unit):
     row("nv_vid_unkoff_new", dev.vid_unk_off(5855232, 2097152))
     row("nv_vid_unkoff_old", dev.vid_unk_off(5855232, 0))
     brow("nv_vid_unk_is_none_old", dev.vid_unk_none(0))
-    # THE NEW ROW WAS WRONG SIDE UP. It read
+    # THE new row was wrong side up. It read
     # `Bool.not(dev.vid_unk_none(2097152))` under the name `..._is_none_new`, so it
     # printed True where the claim is False -- and no oracle row existed to say so.
     # `intra_unk_off is None` is EXACTLY `intra_unk_size == 0` (:705), so a new
@@ -4085,7 +4085,7 @@ def t_err() -> IO(Unit):
     row("nv_pfault_n", pfault.n())
     row("nv_paccess_n", paccess.n())
     row("nv_status_n", pfault.status_n())
-    # THE TWO TABLES DIFFER IN SHAPE: the fault table maps to the FULL C name and
+    # THE two tables differ in shape: the fault table maps to the FULL c name and
     # the access table to a BARE word, because :38 splits on "_" and :37 does not.
     srow("nv_pfault_0", FAULT_PDE())
     srow("nv_pfault_5", FAULT_PRIV())
@@ -4120,7 +4120,7 @@ def t_tags() -> IO(Unit):
     brow("nv_toname_lower", String.eq(to_name(["QMD", "COPY:0"]), "qmd_copy_0"))
     slrow("nv_fifo_fields", fifo_field_names())
     row("nv_fifo_fields_n", fifo_field_n())
-    # THE FIFTH GPFifo FIELD IS NOT IN THE TABLE, and that is the negative case:
+    # THE fifth GPFifo FIELD is not in the table, and that is the negative case:
     # :660 bufferizes ("ring", "gpput", "doorbell", "put_value") and NOT
     # "notifier". The row is NAMED FOR WHAT IT ANSWERS, so it prints False, and
     # False is the claim -- a port that wrongly added `notifier` to the table
@@ -4163,7 +4163,7 @@ def t_tags() -> IO(Unit):
     row("nv_prof_tpc_cnt_65535", prof.tpc_cnt(65535))
     row("nv_prof_tpc_cnt_2147483648", prof.tpc_cnt(2147483648))
     row("nv_prof_gpcs", prof.gpcs_with_tpc(16))
-    # :800 / :805 the two SM_REG arms. THE PRE-BLACKWELL ONE COUNTS THE TPC INDEX
+    # :800 / :805 the two SM_REG arms. THE pre-BLACKWELL one counts the tpc INDEX
     # FROM THE END and its two SM bases are a LOOKUP, so sharing one def with the
     # Blackwell arm would be wrong in three places at once.
     row("nv_prof_smreg_bw_0_0_0", prof.sm_reg.bw(0, 0, 0, 296, 4))
@@ -4201,9 +4201,9 @@ def t_tags() -> IO(Unit):
 # count of three would pass with every name wrong.
 #
 # `nv_iface_count` AND `nv_encode_names` ARE NOT PRINTED HERE. `t_iface()`
-# ALREADY PRINTS BOTH, AND THIS FUNCTION USED TO PRINT THEM A SECOND TIME
-# UNDER THE SAME NAMES. MEASURED: 11 row names in this file were emitted TWICE,
-# and a NAME EMITTED TWICE IS A ROW THAT CANNOT BE ADDRESSED -- the reader
+# ALREADY prints both, AND this function used to print them a second time
+# UNDER the same names. MEASURED: 11 row names in this file were emitted TWICE,
+# and a NAME emitted twice is a row that cannot be addressed -- the reader
 # sees two values under one name and cannot tell which site produced which, so
 # a wrong one is not a wrong value but an unnameable one. The names are
 # different questions: `t_iface` asks WHICH interfaces and WHICH encode rules
@@ -4263,7 +4263,7 @@ def main() -> IO(Unit):
 # | M10 | `copy.nsteps`: `ceildiv` becomes "1 unless zero" | 5 | :191 `len(range(0, sz, 1 << 31))` is 0 for an empty copy and 2 at the top of the `U32` range; `nv_copy_nsteps_half` and the two top-of-range rows are what move. |
 # | M11 | `cq.exec.at`: the chained arm drops the `Bool.pick` | 1 | :180 a CHAINED launch emits no words at all -- `nv_launch_chain_words` is 0 and every other launch row is untouched. |
 # | M12 | `exec.ok.prod`: the disjunction loses one conjunct | 6 | :164 `prod > 1024 OR max_threads < prod`. The two conjuncts are separate rows (`nv_launch_ok_1024_512` and `nv_launch_ok_2048_8192`) BECAUSE a mutation that keeps one conjunct still moves the other's row. |
-# | M13 | `pc.find`: the miss sentinel becomes `!=` instead of `<` | **0** | :315 A REAL BLIND SPOT. It moves nothing because `pc.find` answers `len` on a miss and an index below it on a hit, which makes `found < len` and `found != len` THE SAME PREDICATE over every possible answer. A test that cannot fail is not a test. |
+# | M13 | `pc.find`: the miss sentinel becomes `!=` instead of `<` | 0 | :315 A real blind spot. It moves nothing because `pc.find` answers `len` on a miss and an index below it on a hit, which makes `found < len` and `found != len` THE same predicate over every possible answer. A test that cannot fail is not a test. |
 # | M14 | `arch_of`: `>> 4` becomes `>> 1` | 8 | :601 `val >> 4` where the test is `val > 0xf`. |
 # | M15 | `sass_of`: `(sm & 0xf00) >> 4` becomes `(sm & 0xf)` | 7 | :602, and it is the only place in the file where the two masks are confused with each other. |
 # | M16 | `iowr.cmd`: the size mask is dropped | 3 | :44 `ctypes.sizeof(args) & 0x1FFF` -- an 8 KiB struct encodes as if it were empty. |
@@ -4272,7 +4272,7 @@ def main() -> IO(Unit):
 # | M19 | `dev.slm`: the early-return guard is dropped | 1 | :689 the NEGATIVE CASE for the whole pool. It moved NOTHING until `nv_slmp_33_have48` was added, because every other fixture had `have` already equal to `round_up(required, 32)`. |
 # | M20 | `NV_PICK`: the ladders are walked oldest-first | 7 | :408-412 the ladders are NEWEST GENERATION FIRST, and `nv_ladder_*` print the whole chosen row. |
 # | M21 | `sm_reg.pre`: `* 0x200` becomes `+ 0x200` | 3 | :805 `(ntpg - cnt + tpc) * 0x200` MULTIPLIES. |
-# | M22 | THE CONTROL: a comment-only edit | **0** | a table with no row that CANNOT move is a table of coincidences. This is the row that says the other zeroes mean something. |
+# | M22 | THE CONTROL: a comment-only edit | 0 | a table with no row that CANNOT move is a table of coincidences. This is the row that says the other zeroes mean something. |
 # | M23 | `to_name.join.go`: cons instead of append | REFUSED | not a number: the cons puts the shrinking list SECOND in the self-call and the decrease check fails. The ORDER claim is covered by M7 and by the nine `nv_toname_*` value rows. |
 # | M24 | `pd.max_threads`: the register granularity is 128 | 2 | :305 `round_up(regs * 32, 256)`, and it only shows at `regs` 0 and 1 where the two roundings part company. |
 # | M25 | `nvm.words`: the payload drops its tag | REFUSED | a TYPE change -- a bare `U32` where a `Call` belongs -- so it is refused rather than measured. |
@@ -4294,13 +4294,13 @@ def main() -> IO(Unit):
 # it, and M13's zero is the measurement that those two are the load-bearing pair
 # and the comparison inside `pc.put.at` is not.
 #
-# WHAT THIS GATE STILL DOES NOT SEE, and it is a short list:
+# WHAT this gate still does not see, and it is a short list:
 #
 #   1. THE C-DRIVER SURFACE. Every `fd.ioctl`, `mmap` and `NVOS*_PARAMETERS` is
 #      a seam (the header's TODO list), so nothing checks that a handle is passed
 #      to the right call -- `Tr.args(CALL_ALLOC(), t)` answers the handle SEQUENCE
 #      and not the handle-to-call binding.
-#   2. THE QMD BIT FIELD LAYOUT. The word model is EXACT (see the header's
+#   2. THE qmd bit field layout. The word model is EXACT (see the header's
 #      measurement: no field in either generated table is wider than 32 bits or
 #      straddles a word) but the 477 `(hi, lo)` pairs are NOT transcribed -- only
 #      the 70 the gate names. A wrong bit position in an unnamed field is
@@ -4318,9 +4318,9 @@ def main() -> IO(Unit):
 #   6. `MOCKIface`. It inherits `NVKIface` whole and differs in `count = 1` and
 #      two `page_size` branches; only the page-size branch is ported, and
 #      `nv_ps_1_001` is the row.
-#      **AND NOW THE `count = 1` HALF IS PORTED TOO** -- STAGE 5 -- along with
+#      AND now the `count = 1` HALF is ported too -- STAGE 5 -- along with
 #      the selection rule and the mock driver's answers. WHAT REMAINS IS THE
-#      INHERITED PART, WHICH IS `NVKIface`'S OWN IOCTL SURFACE AND THEREFORE
-#      THE SAME SEAM AS ITEM 1: **THE MOCK IS A DRIVER SUBSTITUTION, NOT A
-#      DIFFERENT CODE PATH**, SO PORTING THE MOCK'S CLASS DOES NOT PORT THE
+#      INHERITED part, WHICH is `NVKIface`'S own ioctl surface and therefore
+#      THE same seam as item 1: THE mock is a driver substitution, NOT a
+#      DIFFERENT code path, SO porting the mock'S class does not port the
 #      DRIVER UNDER IT.

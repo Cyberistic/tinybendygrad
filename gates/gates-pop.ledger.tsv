@@ -252,6 +252,8 @@ gates/ops-core-gate.py	py-main	-	0	1
 gates/ops-core-oracle.py	py-main	-	0	1
 gates/ops-nv-gate.py	py-main	-	0	1
 gates/ops-nv-oracle.py	py-main	-	0	1
+gates/ops-nvme-gate.py	py-main	-	0	1
+gates/ops-nvme-oracle.py	py-main	-	0	1
 gates/ops_bend_exec-e2e.py	py-main	-	0	1
 gates/ops_dsp_render-gate.py	py-main	__file__.parent	0	1
 gates/ops_dsp_render-oracle.py	py-main	ROOT = Path(os.environ.get("PORT_ROOT", Path(__file__).resolve().parents[1]	0	1

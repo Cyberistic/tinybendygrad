@@ -39,19 +39,19 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-# THE TREE IS PASSED IN, NOT FOUND. `TINYGRAD_ROOT` names it, and a gate that lives OUTSIDE
+# THE tree is passed in, NOT found. `TINYGRAD_ROOT` names it, and a gate that lives OUTSIDE
 # the tree -- a COPY, in a temp directory -- still gets the tree's compiler and interpreter,
 # because the tree is a PARAMETER of the run and not a fact about where this file happens to
 # sit. `gates/reporoot.py` is this tree's own shape for FINDING a root, and it cannot be used
 # here: it walks UPWARD for a directory holding `pyproject.toml`, `tinybendygrad/` and
 # `tinygrad/`, and a copy in a temp directory has no such ancestor -- `RootNotFound`, which is
-# the right answer to "where is the tree?" and the wrong question. **THE TREE IS PASSED IN.**
+# the right answer to "where is the tree?" and the wrong question. THE TREE IS PASSED IN.
 _PASSED = os.environ.get("TINYGRAD_ROOT")
 ROOT = Path(_PASSED).resolve() if _PASSED else HERE.parent
 
 ART = HERE / "artifacts"
 
-# THE COMPILER, OR THE REFUSAL THAT STANDS IN FOR IT. `.gitignore:5` ignores `/bin/bend` and
+# THE compiler, OR the refusal that stands in for it. `.gitignore:5` ignores `/bin/bend` and
 # `git ls-tree -r HEAD -- bin/` is EMPTY, so a CLEAN CHECKOUT HAS NO COMPILER -- and every run
 # of `.github/workflows/edge-gates.yml` IS a clean checkout. MEASURED 2026-10-22 in a clean
 # checkout: `gates/mixin-op-gate.py` exited 1 in 0 s at 21 MB with
@@ -83,14 +83,14 @@ TMP = ".tmp."
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
 
-# THE SIXTH WORD, AND IT HAS NO EXIT OF ITS OWN. `UNASKABLE` is "the comparison this row
+# THE sixth WORD, AND it has no exit of its own. `UNASKABLE` is "the comparison this row
 # exists to make CANNOT BE MADE, and that is the declared design rather than a defect" -- a
 # `gates/docnum-claim-gate.py` site that names the instrument that prints its number and
 # transcribes nothing. It is deliberately NOT `PASS`: "the prose figure equals the instrument
 # figure" cannot be falsified when there is no prose figure, so a green that meant `UNASKABLE`
 # would be a green that measured nothing while claiming to have.
 #
-# WHY `SKIP` AND NOT A SIXTH NUMBER. `AGENTS.md`: "`SKIP` it could not run, so it measured
+# WHY `SKIP` AND not a sixth number. `AGENTS.md`: "`SKIP` it could not run, so it measured
 # nothing", and the comparison here is the thing that could not run -- not the command, which
 # `TOKEN_VERDICT` already distinguishes. `DEAD` is "it ran and emitted nothing" (it emitted a
 # row) and `REFUSED` is "a precondition was absent" (the site resolved and the command is
@@ -99,7 +99,7 @@ VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "
 # this without being told, and `checks/gatesweep.py:134` reads the exit through
 # `gatekit.VERDICT` and so needs no change -- 0 of the gates that sweep moves.
 #
-# THE COST, MEASURED, AND IT IS WHY EVERY CALLER RANKS IT LAST: `checks/gatesweep.py:134` maps
+# THE cost, MEASURED, AND it is why every caller ranks it last: `checks/gatesweep.py:134` maps
 # the EXIT to the word, and its summary prints `"%d did not finish"`. A gate whose only
 # verdict is `UNASKABLE` therefore sweeps as "did not finish", which is a wrong description of
 # a gate that ran and answered every row. So `UNASKABLE` must never be the aggregate unless
@@ -107,7 +107,7 @@ VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "
 UNASKABLE = "UNASKABLE"
 UNASKABLE_EXIT = SKIP
 
-# THE FIVE ARE ALL SPELLED. `return SKIP` had no site in THIS file and was reported as a vacant
+# THE five are all spelled. `return SKIP` had no site in THIS file and was reported as a vacant
 # slot, which is a claim about a NAME rather than about a CODE PATH: `SKIP` is produced by
 # `gates/msgdiff-gate.py` (3 sites) and `checks/wallcheck.py` (as 4), and `run()` below can only
 # ever return 0, 1, 3 or 5 -- so the four THIS FILE produces are reachable and 4 arrives from a
@@ -175,7 +175,7 @@ LANE_ROWS = ".rows"   # the oracle's EXPECTED VALUES, verbatim
 LANE_OUT = ".out"     # the two CAPTURED STREAMS, verbatim
 LANE_CMP = ".cmp"     # the rows that SURVIVED the exclusion list -- what the diff saw
 
-# HOW MANY ROW PAIRS A `DISAGREE` LINE SHOWS, AND HOW MANY TIMES A LANE IS RETRIED. Both are
+# HOW many row pairs a `DISAGREE` LINE shows, AND how many times a lane is retried. Both are
 # printed numbers, so both are DECLARED once and read where they are used: a bound written into a
 # message as a literal is a second number that can drift from the loop it describes. `SHOWN` is
 # the line's WIDTH and nothing else -- the disagreement's true size is counted separately and
@@ -209,7 +209,7 @@ def _said(stream, lines=3):
 
 # THE DEVICE PRECONDITION. `DEV` is `helpers.py:237`'s `_DEV("DEV", "")`, a `ContextVar`, and
 # `ContextVar.__init__` (`helpers.py:187`) does `self.value = getenv(key, default_value)` --
-# SO THE DEVICE IS READ FROM THE ENVIRONMENT ONCE, AT IMPORT. It is not inert, and it is not
+# SO the device is read from the environment once, AT import. It is not inert, and it is not
 # the port's: `device.py:59` writes `os.environ["DEV"]` back when a device is selected with
 # no `DEV` given, so an undeclared device becomes an inherited one.
 #
@@ -219,11 +219,11 @@ def _said(stream, lines=3):
 # `realize_graph_census-oracle.py:78` `"CPU"`, `ops_python_exec-gen.py:243`
 # `Context(DEV="PYTHON")`, and `device=None` in the rest -- which is a STRONGER claim than
 # "it does not depend on the device": it does not depend on an ambient one because it never
-# reads one. THE HAZARD IS REAL ONE DIRECTORY OVER: `checks/env-precond.py` declares
+# reads one. THE hazard is real one directory over: `checks/env-precond.py` declares
 # `DEV=CPU` for `runs/graphcmp/D` because `graphcmp.py:2839` supplies it as an argparse
 # DEFAULT in a third file `checks/differ.py` does not know exists.
 #
-# WHAT WAS MISSING IS NOT THE CHECK, IT IS THE DECLARATION: `gates/artifacts/<gate>/`
+# WHAT was missing is not the check, IT is the declaration: `gates/artifacts/<gate>/`
 # recorded nothing about a device, so a reader could not tell whether a gate HAD one.
 NO_DEVICE = "NO_DEVICE"
 
@@ -436,17 +436,17 @@ class Gate:
                  pins=None, port_only=None, warm="fatal", device=NO_DEVICE,
                  order="positional"):
         self.name = name
-        # A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF `run()`.
-        # MEASURED 2026-10-06: `_clear()` sat in `run()`, and **5 of 17 exits are AFTER the lanes write** —
+        # A gate clears its own output before any check can fail, NOT at the top of `run()`.
+        # MEASURED 2026-10-06: `_clear()` sat in `run()`, and 5 of 17 exits are AFTER the lanes write —
         # plus `gates/mixin-op-gate.py` and `gates/beautiful-mnist-gate.py` call `sys.exit(2)` *before*
         # `GATE.run()` is reached, so 6 artifacts survived a red run BYTE-IDENTICAL. Under this placement
         # both gates go rc=2 with an EMPTY directory.
         #
-        # **A CALLER-SIDE REPAIR HAS A CORRECT POSITION AND A PLAUSIBLE WRONG ONE:** wrapped before the
+        # A caller-SIDE repair has a correct position and a plausible wrong one: wrapped before the
         # first check it is EMPTY, wrapped between the drift check and `run()` it strands 6/6 STALE,
-        # because `sys.exit(2)` is two lines above it. **ONLY CONSTRUCTION IS BEFORE EVERY PATH.**
-        # THIS SURVIVES AN EARLY EXIT AT MODULE SCOPE, BEFORE `Gate(...)` EVEN EXISTS.
-        # A GATE'S INPUTS LIVE BESIDE THE GATE. `.agents/slop/` is being pruned, and a
+        # because `sys.exit(2)` is two lines above it. ONLY CONSTRUCTION IS BEFORE EVERY PATH.
+        # THIS survives an early exit at module scope, BEFORE `Gate(...)` EVEN exists.
+        # A gate'S inputs live beside the gate. `.agents/slop/` is being pruned, and a
         # prune took seven of nine driver and oracle files out from under these gates --
         # every one of them went red on "no such file" rather than on a value. A gate whose
         # inputs live somewhere the tree is clearing is a gate with a shelf life.
@@ -458,18 +458,18 @@ class Gate:
         self.port_only = list(port_only or [])
         self.pins = list(pins or [])
         self.warm_mode = warm
-        # THE ORDER MODE, AND IT IS VALIDATED AT CONSTRUCTION rather than at the
+        # THE order mode, AND it is validated at construction rather than at the
         # diff. A typo here would otherwise be a silently-positional gate that
         # LOOKS like a by-name one, and the failure would be a wall of
         # "disagreements" that names the wrong cause.
         if order not in ("positional", "by_name"):
             raise ValueError(f"order must be 'positional' or 'by_name', not {order!r}")
         self.order = order
-        # THE DEVICE PRECONDITION IS STATE, NOT AN ARGUMENT THE LANES SEE. Kept beside
+        # THE device precondition is state, NOT an argument the lanes see. Kept beside
         # `warm` because it is the same kind of declaration: something about the RUN's
         # standing conditions, checked once in `run()` and never threaded into a lane.
         self.device = device
-        # THE WARM CHECK'S OWN STDOUT, kept so a gate can REPRODUCE the shell's whole output
+        # THE warm check'S own stdout, kept so a gate can REPRODUCE the shell's whole output
         # rather than a summary of it. `--check-only` prints `ALL PROOFS CHECK` and
         # `Use --verdict for mathematical validity.` on stdout and both `.sh` gates let those
         # two lines through to the reader, so dropping them makes the artifact differ from the
@@ -477,16 +477,16 @@ class Gate:
         self.warm_out = ""
         self.dir = ART / name
         self.dir_rc = self._ensure_dir()      # CREATED here, before any module-scope `sys.exit(2)`
-        # A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF `run()`.
-        # MEASURED 2026-10-06: `_clear()` sat in `run()`, AND **5 OF 17 EXITS ARE AFTER THE LANES WRITE** --
+        # A gate clears its own output before any check can fail, NOT at the top of `run()`.
+        # MEASURED 2026-10-06: `_clear()` sat in `run()`, AND 5 OF 17 EXITS are after the lanes write --
         # PLUS `gates/mixin-op-gate.py` AND `gates/beautiful-mnist-gate.py` CALL `sys.exit(2)` *BEFORE*
-        # `GATE.run()` IS REACHED, SO **6 ARTIFACTS SURVIVED A RED RUN BYTE-IDENTICAL.** UNDER THIS
-        # PLACEMENT BOTH GATES GO rc=2 WITH AN EMPTY DIRECTORY.
+        # `GATE.run()` IS reached, SO 6 ARTIFACTS survived a red run BYTE-IDENTICAL. UNDER this
+        # PLACEMENT both gates go rc=2 WITH an empty directory.
         #
-        # **A CALLER-SIDE REPAIR HAS A CORRECT POSITION AND A PLAUSIBLE WRONG ONE:** WRAPPED BEFORE THE
-        # FIRST CHECK IT IS EMPTY; WRAPPED BETWEEN THE DRIFT CHECK AND `run()` IT STRANDS 6/6 STALE,
-        # BECAUSE `sys.exit(2)` IS TWO LINES ABOVE IT. **ONLY CONSTRUCTION IS BEFORE EVERY PATH**, AND IT
-        # SURVIVES AN EARLY EXIT AT MODULE SCOPE, BEFORE `Gate(...)` EVEN EXISTS.
+        # A caller-SIDE repair has a correct position and a plausible wrong one: WRAPPED before the
+        # FIRST check it is empty; WRAPPED between the drift check and `run()` IT strands 6/6 STALE,
+        # BECAUSE `sys.exit(2)` IS two lines above it. ONLY construction is before every path, AND it
+        # SURVIVES an early exit at module scope, BEFORE `Gate(...)` EVEN exists.
         self._clear()
 
     def _resolve(self, p):
@@ -520,13 +520,13 @@ class Gate:
         # tolerate the same measured flake, and NEITHER retries a real failure: 25 tries, and
         # a file that is genuinely cold or genuinely empty still fails.
         #
-        # WHAT COUNTS AS THE FLAKE IS `_said(stderr)` AND NOT THE EXIT STATUS -- see `_said`.
+        # WHAT counts as the flake is `_said(stderr)` AND not the exit status -- see `_said`.
         # The guard was `not stdout and rc != 0`, which is the flake's shape AND a type error's
         # shape, so a deterministic failure was retried 25 times and then reported AS the flake.
         for tries in range(1, TRIES + 1):
             if BEND == BEND_ABSENT:
-                # THE COMPILER IS NOT THERE, AND THAT IS A PRECONDITION THAT WAS ABSENT.
-                # **AND IT IS NOT A COLD DRIVER**, which is the case the two `warm` modes
+                # THE compiler is not there, AND that is a precondition that was absent.
+                # AND IT IS NOT A COLD DRIVER, which is the case the two `warm` modes
                 # disagree about: a cold driver is a driver that exists and says the substrate
                 # is cold, and `beautiful-mnist-gate.py` reports one and goes on; there is
                 # nothing here to report and nothing to go on TO. So this returns False for
@@ -546,7 +546,7 @@ class Gate:
             said = _said(out.stderr)
             if not said and not (out.stdout or "").strip():
                 continue  # the stack-overflow flake: no output at all
-            # REPORTED, THEN ANSWERED IN THE GATE'S OWN SHAPE. `warm="report"` is a ported
+            # REPORTED, THEN answered in the gate'S own shape. `warm="report"` is a ported
             # shell's `|| true`: the run continues and the lanes are still diffed, because
             # `beautiful-mnist-gate.sh:29` says in its own header that a cold driver is not
             # what this gate gates on. Failing here instead would be a VERDICT CHANGE, and it
@@ -646,7 +646,7 @@ class Gate:
                 return True
             if _said(r.stderr):
                 break  # bend NAMED it, so it is not the flake and 24 more tries cannot help
-        # THE COUNT IS WHAT THE LANE PRODUCED, NOT WHAT IT WAS ASKED FOR. The sentence used to
+        # THE count is what the lane produced, NOT what it was asked for. The sentence used to
         # print `self.rows` and no observed count, so nothing on it separated the three ways this
         # loop ends -- and `gates/cstyle_render_census-mutate.py:46` records the cost: a driver
         # mis-wired to emit nothing printed "did not produce 358 rows in 25 tries (the flake)", a
@@ -690,10 +690,10 @@ class Gate:
             # run refused for it must not first spend a `bend` warm check to say so.
             # `why` is printed BEFORE the return -- `checks/devpin.py`'s measured reason, "a
             # refusal you cannot read is a refusal you cannot test".
-            # A TUPLE IS NEVER `== PASS`. `(code, why) != 0` IS ALWAYS TRUE, SO THE BRANCH WAS ALWAYS
-            # TAKEN; AND `code` IN `!= PASS` IS A **LOAD**, NOT THE TUPLE'S FIRST ELEMENT, SO IT RAISED
-            # `NameError: name 'code' is not defined` ON **EVERY GATE**. THE WALRUS BINDS THE NAME;
-            # IT DOES NOT UNPACK IT INTO THE COMPARISON.
+            # A tuple is never `== PASS`. `(code, why) != 0` IS always TRUE, SO the branch was always
+            # TAKEN; AND `code` IN `!= PASS` IS a LOAD, NOT the tuple'S first element, SO it raised
+            # `NameError: name 'code' is not defined` ON every gate. THE walrus binds the name;
+            # IT does not unpack it into the comparison.
             code, why = device_precondition(self.device, os.environ.get("DEV"))
             if code != PASS:
                 if why:
@@ -702,10 +702,10 @@ class Gate:
                 return code
             if not self._warm():
                 return REFUSED          # the substrate could not be checked at all
-            # THE VERDICT THE ORACLE EARNED, NOT ONE THIS FILE GUESSES. `not self._oracle()`
+            # THE verdict the oracle earned, NOT one this file guesses. `not self._oracle()`
             # could only ever say `REFUSED`, which is why a silent non-zero oracle lost the
             # `DEAD` it had earned; `_oracle` now returns the exit, so `run()` returns it.
-            # THE WALRUS IS COMPARED, NOT UNPACKED -- a tuple is never `== PASS` (see above).
+            # THE walrus is compared, NOT unpacked -- a tuple is never `== PASS` (see above).
             if (ocode := self._oracle()) != PASS:
                 return ocode
             bd, bn, binp = (self.dir / _staged(n) for n in ("bd.out", "bn.out", "gate.bin"))
@@ -721,7 +721,7 @@ class Gate:
 
             lanes = {t: self.dir / _staged(f"{t}{LANE_ROWS if t == 'py' else LANE_OUT}")
                      for t in ("py", "bd", "bn")}
-            # DERIVED, NOT DECLARED, AND THIS IS A FIX. The check used to demand `self.rows` of
+            # DERIVED, NOT declared, AND this is a fix. The check used to demand `self.rows` of
             # EVERY lane, which makes the documented `port_only` shape UNREACHABLE: a port-only row
             # is by definition absent from the oracle, so the oracle lane is short by exactly
             # `len(port_only)`. `gates/README.md` claim 3 has therefore been describing a shape
@@ -740,7 +740,7 @@ class Gate:
                                  if tag == "py" and self.port_only else ""))
                     return DEAD if n == 0 else FAIL
 
-            # THE RAW ROWS, SNAPSHOTTED, BECAUSE A PIN IS A CLAIM ABOUT THEM. The filtered
+            # THE raw rows, SNAPSHOTTED, BECAUSE a PIN IS a claim about them. The filtered
             # files below are written to the lanes' OWN paths, so after filtering `lanes[tag]`
             # no longer names what the program printed -- it names what survived the exclusion.
             # A pin is exactly the claim a diff CANNOT express, and the excluded rows are
@@ -777,19 +777,19 @@ class Gate:
                 s.write_text("\n".join(kept) + "\n")
                 subs[tag] = s
 
-            # THE ALIGNMENT, AND IT IS THE ORDER MODE'S WHOLE JOB. "positional" is
+            # THE alignment, AND it is the order mode'S whole job. "positional" is
             # the original behaviour and the diff below is untouched by it. "by_name"
             # sorts each lane by ROW NAME first, which is what makes a driver that
             # groups its rows by RULE comparable with an oracle that groups them by
             # SOURCE ORDER.
             #
-            # THE SORT IS BY THE NAME ONLY -- THE WHOLE `name=value` LINE IS KEPT
+            # THE sort is by the name only -- THE whole `name=value` LINE is kept
             # INTACT, so the diff still compares VALUES and only the ALIGNMENT
             # changes. And the sort is STABLE, so two rows with the SAME name keep
             # their relative order, which is what makes a duplicate name visible as
             # a diff rather than as a silently-resolved one.
             #
-            # THE COST IS STATED IN THE CLASS DOCSTRING and it is REAL: a by-name
+            # THE cost is stated in the class docstring and it is REAL: a by-name
             # diff cannot see a row that MOVED. So this is only sound for a gate
             # whose ORDER is not a claim, and `ops-nv-gate.py` says which of its
             # claims are order-bearing and asserts those separately.
@@ -802,7 +802,7 @@ class Gate:
             for tag in ("bd", "bn"):
                 other = _lines(subs[tag])
                 if other != base:
-                    # THE COUNT IS A FIGURE OF ITS OWN AND NOT THE LIST'S LENGTH. `[:2]` printed
+                    # THE count is a figure of its own and not the list'S length. `[:2]` printed
                     # 2 of 8 and said nothing, so a reader who counted the pairs -- the only count
                     # the line offered -- undercounted 4x. MEASURED here, through the real `run()`
                     # and a stand-in `bin/bend` that answers 8 of 12 rows wrongly.

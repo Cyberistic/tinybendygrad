@@ -430,7 +430,7 @@ row("nv_args_mixed", lay([1, 4, 2, 8, 4, 1]))
 row("nv_args_at512", lay([8, 8, 8, 4, 4], 0x200))
 row("nv_args_at256", lay([8, 8, 8, 4, 4], 256))
 row("nv_args_at512_mixed", lay([1, 4, 2, 8, 4, 1], 0x200))
-# THE THREE `nv_cpython_args_device_*` ROWS, AND THE DEFECT THAT WAS IN THEM.
+# THE three `nv_cpython_args_device_*` ROWS, AND the defect that was in them.
 #
 # THE COPY HAD A SECOND IMPLEMENTATION OF `iter_sig`:
 #
@@ -456,8 +456,8 @@ row("nv_args_at512_mixed", lay([1, 4, 2, 8, 4, 1], 0x200))
 # the walrus: `iter_sig(..., AddrSpace.ALU)` -> [0, 4, 8, 16, 24, 28], and the
 # PORT printed exactly that.
 #
-# SO THE PORT WAS RIGHT AND THE ORACLE WAS WRONG, on TWO rows, for FIVE WEEKS.
-# A GATE THAT HAD BEEN RUNNING WOULD HAVE SAID SO; THE GATE DID NOT EXIST.
+# SO the port was right and the oracle was wrong, on TWO rows, for FIVE weeks.
+# A gate that had been running would have said so; THE gate did not exist.
 #
 # THE FIX ASKS UPSTREAM'S OWN `layout_args` -- the function `hcq2.py:113-115`
 # calls, and the one the port's `args.layout` models. `layout_args` builds
@@ -478,7 +478,7 @@ def dev_layout(items, base=0):
     return [o for o, _ in layout_args(w, base)]
 
 
-# THE `dev_bend_iter_sig` TRANSCRIPTION AND ITS THREE `nv_REPORTED_*` ROWS WERE
+# THE `dev_bend_iter_sig` TRANSCRIPTION and its three `nv_REPORTED_*` ROWS were
 # DELETED HERE. They encoded device.bend's OLD `Sig{round_up(off,k), off+k}`, which
 # answered 0,4,6,8,16,19 where `layout_args` answers 0,4,8,16,24,28, and
 # `7f170f644` fixed that file to `U32.add(round_up(off,k), k)`. A transcription of a
@@ -588,20 +588,20 @@ row("nv_qmd_words3", q3.sz * 4)
 row("nv_qmd_words5", q5.sz * 4)
 # the two generated tables, and the property the word model rests on
 #
-# THE WIDE AND STRADDLE COUNTS ARE **ASSERTED, NOT EMITTED**. They were four
+# THE wide and straddle counts are asserted, NOT emitted. They were four
 # rows the oracle printed (`nv_qmd_wide_v3/_v5`, `nv_qmd_straddle_v3/_v5`) and
 # the PORT does not carry them: this port does not carry the 477 unreferenced
 # fields of the two generated tables, so a Bend row for their width would be a
 # constant printing itself -- `ops_nv.bend`'s own header says so.
 #
-# A ROW NOBODY CAN COMPARE IS NOT A ROW. `gatekit.py` has no `oracle_only`
+# A row nobody can compare is not a row. `gatekit.py` has no `oracle_only`
 # category: `port_only` is "present in the port, absent from the oracle" and
 # `diverges` is "present in both, and the two differ", and a row present in
-# ONLY the oracle is neither. SO THE PROPERTY IS **ASSERTED HERE** -- the
+# ONLY the oracle is neither. SO THE PROPERTY IS ASSERTED HERE -- the
 # oracle computes the counts from CPython's own generated tables and FAILS
 # LOUDLY if either is nonzero -- and the counts stop being rows.
 #
-# THAT IS STRICTLY STRONGER THAN THE ROW WAS. A row is checked by a diff
+# THAT is strictly stronger than the row was. A row is checked by a diff
 # against a value the port prints; an assert is checked by the oracle itself,
 # and it fires when the property BREAKS rather than when a number moves. THE
 # WORD MODEL RESTS ON THIS: `ops_nv.bend`'s `qmd` module says a field lives in
@@ -631,7 +631,7 @@ row("nv_qmd_grid5", ",".join(q5.grid))
 # "oracle rows the gate does not print", which is the honest reading: four rows
 # asserted a number nothing checked.
 #
-# AND NOW THEY ARE NOT ROWS AT ALL: the block above ASSERTS them, which is
+# AND now they are not rows at all: the block above ASSERTS them, which is
 # stronger, and the four names are GONE from the oracle's output.
 
 # The address shifts. `QMD.set_program_addr` / `set_constant_buf_addr` apply
@@ -933,7 +933,7 @@ def _put(cache, key):
     return cache, False
 
 
-# THE COUNTS ARE READ, NOT TYPED, AND THE SEQUENCE WAS OFF BY ONE PUT.
+# THE counts are read, NOT typed, AND the sequence was off by one put.
 #
 # These seven rows were `0`, `1`, `3`, `3`, `3`, `3`, `0` -- literals sitting under a
 # `_put` chain that was already ONE PUT AHEAD of what the values describe. MEASURED:
@@ -968,7 +968,7 @@ _c, h2 = _put(_c, (200, ("NV:0",)))
 row("nv_pc_hit_1", 1 if h2 else 0)
 # `UOp.unique_num` is a GLOBAL counter and its absolute start is arbitrary, so
 # the port numbers from 0 and the oracle does too; what is claimed is the COUNT of
-# advances, and a MISS advances it while a HIT does not.  THE CLAIM WITH TEETH: a HIT
+# advances, and a MISS advances it while a HIT does not.  THE claim with teeth: a HIT
 # neither appends an id nor advances the counter.
 _uid = [0]
 
@@ -1023,7 +1023,7 @@ for _nm, _b, _t, _g in (("0_48428", 0, 2, 8), ("32_48428", 196608, 2, 8),
     # 64-bit total still fits the word model.
     row("nv_slmtot_%s" % _nm, _t2)
     row("nv_slmtot_%s_hi" % _nm, h64(_t2))
-# THE ONE FIXTURE THAT IS NOT ALREADY A 128 KiB MULTIPLE. Every `_b * _t * _g`
+# THE one fixture that is not already a 128 KiB MULTIPLE. Every `_b * _t * _g`
 # above is an exact multiple of 0x20000, so dropping the `round_up` changed none
 # of them and mutation M30 moved nothing. 1 x 1 x 1 is 1, and `round_up(1, 0x20000)`
 # is 131072.
@@ -1183,7 +1183,7 @@ row("nv_prof_sm_base_1", 0x1000)
 # only when the PLAIN name is absent, so "does this request take LITTER" is a
 # question about nv_570.__dict__ and has an answer.
 #
-# THIS BLOCK WAS WRONG AND IT IS THE ONE THAT MATTERS. It said two requests take
+# THIS block was wrong and it is the one that matters. It said two requests take
 # LITTER and named positions 1 and 3. Asking the dict: num_gpcs, num_tpc_per_gpc
 # and num_sm_per_tpc have NO plain INDEX at all (all three are 20, 23, 32 under
 # LITTER) and only max_warps_per_sm (13) and sm_version (12) have one -- so the
@@ -1329,7 +1329,7 @@ row("nv_hdr_mthd", g.NVC6B5_OFFSET_IN_UPPER >> 2)
 # 4, `mthd >> 2` is upstream's, and nvals=4 falls out of two uint64 UOps.
 row("nv_hdr_all", nvm(4, g.NVC6B5_OFFSET_IN_UPPER, _U64, _U64)[0])
 
-# :293 the copy step loop. THE THREE ROWS BELOW WERE DELETED AS TAUTOLOGIES:
+# :293 the copy step loop. THE three rows below were deleted as tautologies:
 # `nv_launch_at_equals` and `nv_launch_shift` were a hand-written `(512 + 0*4) ==
 # 512` and a hand-written `8` for a literal in the Python SOURCE, and
 # `nv_fault_refuses_viddec` was a hand-written `"False"`; none of the three asks
@@ -1341,18 +1341,18 @@ row("nv_reloc_kind_n", len(DT))
 
 
 # ==========================================================================
-# THE MOCK PATH. `MOCKIface` AND THE SELECTION THAT REACHES IT.
+# THE mock path. `MOCKIface` AND the selection that reaches it.
 #
-# **THE MOCK IS SOFTWARE, SO THE MOCK'S ANSWERS CAN BE ASKED OF THE MOCK.**
+# THE mock is software, SO the mock'S answers can be asked of the mock.
 # `test/mockgpu/nv/nvdriver.py` IS A SOFTWARE NVIDIA DRIVER IN THE VENDORED
-# TREE, IT IMPORTS CLEANLY WITH NO GPU AND NO /dev/nvidiactl, AND IT IS THE
-# SPECIFICATION OF WHAT THE PORT'S MOCK PATH MUST REPRODUCE.
+# TREE, IT imports cleanly with no gpu and no /dev/nvidiactl, AND it is the
+# SPECIFICATION of what the port'S mock path must reproduce.
 #
-# EVERY ROW BELOW IS READ OUT OF THE DRIVER OR OUT OF UPSTREAM'S OWN SOURCE --
-# NONE IS TYPED. AND ONE OF THEM **CAUGHT A PORT DEFECT**: the port's
+# EVERY row below is read out of the driver or out of upstream'S own source --
+# NONE IS typed. AND one of them caught a port defect: the port's
 # `MOCK_CLASSLIST_N` first answered FIFTY-FIVE, and the driver's own class list
 # has FIFTY-TWO entries. A hand-typed count of a hand-typed list is a count of
-# a TRANSCRIPTION; the row below READS THE LIST OUT OF THE DRIVER'S SOURCE.
+# a TRANSCRIPTION; the row below READS the list out of the driver'S source.
 # ==========================================================================
 import ast  # noqa: E402
 
@@ -1369,25 +1369,25 @@ def _driver_classlist():
     return ast.literal_eval(_MOCK_SRC[i + len("classes = "):j + 1])
 
 
-# THE THREE INTERFACE NAMES. UPSTREAM'S OWN `NVDevice.ifaces`, READ OUT OF
-# UPSTREAM -- SO A NAME THAT MOVES UPSTREAM MOVES HERE.
+# THE three interface names. UPSTREAM'S own `NVDevice.ifaces`, READ out of
+# UPSTREAM -- SO a name that moves upstream moves here.
 row("nv_mock_iface_nvk", NVDevice.ifaces[0].__name__)
 row("nv_mock_iface_pci", NVDevice.ifaces[1].__name__)
 row("nv_mock_iface_mock", NVDevice.ifaces[2].__name__)
 
 # `MOCKIface.count = 1` (`tinygrad/runtime/ops_nv.py:552`). UPSTREAM'S OWN
-# CLASS ATTRIBUTE, READ OUT OF THE CLASS.
+# CLASS attribute, READ out of the class.
 row("nv_mock_count_mock", MOCKIface.count)
 
-# THE REAL INTERFACE'S COUNT IS THE CARD'S, AND THE CARD IS WHAT THE DRIVER
+# THE real interface'S count is the card'S, AND the card is what the driver
 # SIMULATES. `NVDriver(gpus=6)` CREATES SIX.
 row("nv_mock_count_nvk", len(_DRV.gpus))
 row("nv_mock_count_pci", len(_DRV.gpus))
 
 # THE SELECTION. `device.py:473`, `filtered = [i for i in filtered if
 # t.interface.startswith("MOCK") or not i.__name__[:-5].startswith("MOCK")]`.
-# THE LIST IS UPSTREAM'S OWN `NVDevice.ifaces`, SO THE SURVIVORS ARE COUNTED
-# FROM THE REAL CLASSES AND NOT FROM A TRANSCRIPTION OF THEM.
+# THE list is upstream'S own `NVDevice.ifaces`, SO the survivors are counted
+# FROM the real classes and not from a transcription of them.
 def _survivors(want_mock):
     return [i for i in NVDevice.ifaces
             if want_mock or not i.__name__[:-5].startswith("MOCK")]
@@ -1396,7 +1396,7 @@ def _survivors(want_mock):
 row("nv_mock_filtered_real", len(_survivors(False)))
 row("nv_mock_filtered_mock", len(_survivors(True)))
 
-# THE PER-INTERFACE CELLS OF THE RULE, ASKED OF UPSTREAM'S OWN PREDICATE.
+# THE per-INTERFACE cells of the rule, ASKED of upstream'S own predicate.
 def _ok(iface, want_mock):
     return want_mock or not iface.__name__[:-5].startswith("MOCK")
 
@@ -1409,7 +1409,7 @@ row("nv_mock_ok_nvk_mock", _ok(NVKIface, True))
 # THE DRIVER VERSION. `nvdriver.py:208` ANSWERS
 # `NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2` WITH THE LITERAL
 # `params.driverVersionBuffer = b"570.00.00\0"`. THE ROW READS THE LITERAL
-# OUT OF THE DRIVER'S SOURCE, AND THE TABLE PICKER IS UPSTREAM'S OWN RULE.
+# OUT of the driver'S source, AND the table picker is upstream'S own rule.
 _i = _MOCK_SRC.index("driverVersionBuffer = b")
 _j = _MOCK_SRC.index("\n", _i)
 _VER_LITERAL = _MOCK_SRC[_i + len("driverVersionBuffer = "):_j].strip()
@@ -1429,14 +1429,14 @@ def _table_of(major):
 _TABLES = {615: "nv_615", 610: "nv_610", 580: "nv_580", 570: "nv_570"}
 row("nv_mock_drv_table", _table_of(int(_VER.split(".")[0])))
 row("nv_mock_drv_table_name", _TABLES[_table_of(int(_VER.split(".")[0]))])
-# THE THRESHOLDS, IN BOTH DIRECTIONS, BECAUSE A TABLE THAT PICKS THE WRONG
-# ONE FOR A DRIVER BETWEEN 610 AND 615 IS A WRONG CONSTANT SET AND NO OTHER
+# THE thresholds, IN both directions, BECAUSE a table that picks the wrong
+# ONE for a driver between 610 AND 615 IS a wrong constant set and no other
 # ROW SEES IT.
 for _maj in (615, 614, 610, 609, 580, 579, 570, 569):
     row("nv_mock_drv_%d" % _maj, _table_of(_maj))
 
-# THE MOCK'S GPU COUNT, THE PCI DEVICE ID IT REPORTS, AND THE CLASS LIST'S
-# LENGTH -- ALL READ OUT OF THE DRIVER, NONE TYPED.
+# THE mock'S gpu count, THE pci device ID IT reports, AND the class list'S
+# LENGTH -- ALL read out of the driver, NONE TYPED.
 row("nv_mock_gpus", len(_DRV.gpus))
 _i = _MOCK_SRC.index("st.pci_info.device_id = ")
 row("nv_mock_pci_device_id", int(_MOCK_SRC[_i + len("st.pci_info.device_id = "):].split()[0], 16))
