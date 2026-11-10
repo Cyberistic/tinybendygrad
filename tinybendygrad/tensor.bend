@@ -462,10 +462,11 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
   tn_alu.of(O.Merge.ar(my), Tensor.u(cond), O.OpsWHERE{},
     [O.Merge.at(mx, Tensor.u(x)), O.Merge.at(my, Tensor.u(y))])
 
-# `logical_not` -- elementwise.py:49. `return self.cast(dtypes.bool).ne(True)`, and
+# `logical_not` -- elementwise.py:57 AT `f5ac54685074`. `return
+# self.cast(dtypes.bool).eq(False)`, and
 # `.cast` is `self if self.dtype == (dt:=to_dtype(dtype)) else self._uop.alu(Ops.CAST,
 # arg=dt)` (mixin/dtype.py:38) -- IT FOLDS ON AN IDENTITY CAST. So the graph is
-# CAST(self, bool) -> CMPNE(cast, CONST(True)) when self is NOT bool and NO CAST AT ALL when
+# CAST(self, bool) -> CMPEQ(cast, CONST(False)) when self is NOT bool and NO CAST AT ALL when
 # it is, and that is not a carve-out: it is the whole of `cast`.
 #
 # `O.UOp.cast` (ops.bend:2776) MINTS THE NODE UNCONDITIONALLY -- `UOp.new(ar, OpsCAST{}, ...)`.
@@ -485,20 +486,34 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
 # bodies around the shared one.
 # `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1255`: `type Arena is Data: Arena{nodes,
 # shp}`), so a `Found` SNAPSHOTS the arena at its own construction and every index is
-# only meaningful in the arena value that index was minted in. `true_c.ar` has the
+# only meaningful in the arena value that index was minted in. `false_c.ar` has the
 # CAST AND the CONST (3 slots); `cast.ar` has the CAST only (2 slots). Building the
-# CMPNE in `cast.ar` therefore APPENDS it at the slot `O.Found.i(true_c)` already names
+# CMPEQ in `cast.ar` therefore APPENDS it at the slot `O.Found.i(false_c)` already names
 # -- the node becomes its own `src[1]`. MEASURED, `./bin/bend` on a `CInt` input, with
-# `O.Rng.sig` (uop/ops.bend:6109 symbol=Rng.sig) as the instrument: `CMPNE/2 Ops.CAST Ops.CMPNE` (src[1]
-# IS the top node) where CPython answers `CMPNE(CAST(CONST()), CONST())`
-# (`/tmp/cp_shape.py`, `tinygrad`). So the CMPNE is built in `true_c.ar`, the newest.
-def tn_logical_not.cmpne(+cast: O.Found, +true_c: O.Found) -> Tensor:
-  tn_alu.of(O.Found.ar(true_c), O.Found.i(cast), O.OpsCMPNE{}, [O.Found.i(true_c)])
+# `O.Rng.sig` (uop/ops.bend:6109 symbol=Rng.sig) as the instrument: `CMPEQ/2 Ops.CAST
+# Ops.CMPEQ` (src[1] IS the top node) where CPython answers `CMPEQ(CAST(CONST()),
+# CONST(False))` (`/tmp/cp_shape.py`, `tinygrad`). So the CMPEQ is built in `false_c.ar`,
+# the newest.
+#
+# `logical_not` -- elementwise.py:57 AT `f5ac54685074` -- is
+# `self.cast(dtypes.bool).eq(False)`, so it is a CAST and a CMPEQ against the CONST
+# `False`. THE NAME DID NOT CHANGE AND THE NODE DID: the pre-pin spelling was
+# `self.cast(dtypes.bool).eq(False)`, which builds `CMPEQ(x, CONST(False))`.
+# MEASURED 2026-11-10 ON CPYTHON AT THE PIN: `a.logical_not()` emits
+# `CMPEQ(CAST(a), CONST(False))`.
+#
+# AND THIS IS NOT A STYLISTIC CHOICE: UPSTREAM's OWN `symbolic.py:349` KEYS ON IT --
+# `neg = v.op is Ops.CMPEQ and v.src[1].op is Ops.CONST and v.src[1].val == 0` -- so a
+# graph that says `CMPNE` is NOT upstream's graph. AND THE PORT's OWN
+# `uop/symbolic.bend`'s `mint_not` ALREADY BUILDS THE `CMPEQ` SPELLING -- so THIS file was
+# the only half on the pre-pin spelling.
+def tn_logical_not.cmpeq(+cast: O.Found, +false_c: O.Found) -> Tensor:
+  tn_alu.of(O.Found.ar(false_c), O.Found.i(cast), O.OpsCMPEQ{}, [O.Found.i(false_c)])
 
 def tn_logical_not(+t: Tensor) -> Tensor:
   +cast = D.cast_at(F.folded(Tensor.ar(t)), Tensor.u(t), S.boolean())
-  +true_c = O.UOp.const(O.Found.ar(cast), O.CBool{True{}})
-  tn_logical_not.cmpne(cast, true_c)
+  +false_c = O.UOp.const(O.Found.ar(cast), O.CBool{False{}})
+  tn_logical_not.cmpeq(cast, false_c)
 
 # `bitwise_not` -- elementwise.py:145, body at :156-157. three arms, and all three are
 # PORTED:
@@ -614,7 +629,7 @@ def tn_dunder_neg(+t: Tensor) -> Tensor:
   tn_neg(t)
 
 # `__invert__` -- elementwise.py:264. `return self.bitwise_not()`. `bitwise_not`'s
-# BOOL ARM is ported (`tn_logical_not`, which is `self.cast(bool).ne(True)` at
+# BOOL ARM is ported (`tn_logical_not`, which is `self.cast(bool).eq(False)` at
 # elementwise.py:49 -- gated 4/4 at gates/tn_logical_not-gate.py). The arith
 # arms (`self ^ dtype.max` for unsigned, `self ^ -1` for signed, elementwise.py:157)
 # stay walled on the dtype fold + arith ops (tinybendygrad/tensor.bend:384 symbol=tn_sqrt -- `self.dtype` is a
@@ -915,16 +930,39 @@ def tn_rrshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # the no-broadcasting case branches on `least_upper_dtype(t.dtype, x.dtype)` and
 # builds `dt.const(dt.min+dt.max)`, and `tn_binop` does not promote.
 
-# `__ne__` -- elementwise.py:339, via `ne` at elementwise.py:333
-# (`self._binop(Ops.CMPNE, x, False)`). Same shape as `tn_cmplt` with `Ops.CMPNE`
-# instead of `Ops.CMPLT`. THE `False` IS HARDCODED UPSTREAM AND THERE IS NO `__rne__`, so
-# the dispatcher's `True{}` arm is never taken by any CPython method; it stays because
-# `tn_binop`'s two-operand shape is what the other fifteen share. The broadcasting case
-# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
+# `eq`'s ONE `CMPEQ` NODE. `tn_cmplt`'s SHAPE with `Ops.CMPEQ` instead of `Ops.CMPLT`.
+def tn_cmpeq.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_binop(rhs, lhs, O.OpsCMPEQ{})
+    case False{}: tn_binop(lhs, rhs, O.OpsCMPEQ{})
+
+def tn_cmpeq(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_cmpeq.go(False{}, lhs, rhs)
+
+# `ne` -- elementwise.py:332 AT `f5ac54685074` -- is `self.eq(x).logical_not()`, and
+# `eq` is `_binop(Ops.CMPEQ, x, False)` and `logical_not` is `cast(bool).eq(False)`.
+# SO `ne` IS TWO NODES DEEP: `CMPEQ(CMPEQ(x, y), CONST(False))`.
+#
+# MEASURED 2026-11-10 ON CPYTHON AT THE PIN, IN BOTH DIRECTIONS:
+#   `a != b`  ->  `CMPEQ(CMPEQ(a, b), CONST(False))`
+#   `3 != a`  ->  `CMPEQ(CMPEQ(3, a), CONST(False))`
+#
+# THE PRE-PIN SPELLING WAS `self._binop(Ops.CMPNE, x, False)` -- ONE `CMPNE` NODE -- SO THE
+# NAME DID NOT CHANGE AND **THE NODE COUNT** DID.
+#
+# AND UPSTREAM's OWN `symbolic.py:349` KEYS ITS NEGATION TEST ON `CMPEQ` WITH A `CONST 0`
+# -- so a graph that says `CMPNE` is NOT upstream's graph. AND THE PORT's OWN
+# `uop/symbolic.bend`'s `mint_ne` ALREADY BUILDS EXACTLY THIS (`CMPEQ(CMPEQ(x, y), False)`,
+# MEASURED 2026-11-07) -- so THIS file was the only half on the pre-pin spelling.
+#
+# THE `False` IS HARDCODED UPSTREAM AND THERE IS NO `__rne__`, so the dispatcher's `True{}`
+# arm is never taken by any CPython method; it stays because `tn_binop`'s two-operand shape
+# is what the other fifteen share. The broadcasting case stays walled on the SHAPE FOLD
+# (`nn/__init__.bend` measures it).
 def tn_cmpne.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_binop(rhs, lhs, O.OpsCMPNE{})
-    case False{}: tn_binop(lhs, rhs, O.OpsCMPNE{})
+    case True{}: tn_logical_not(tn_binop(rhs, lhs, O.OpsCMPEQ{}))
+    case False{}: tn_logical_not(tn_binop(lhs, rhs, O.OpsCMPEQ{}))
 
 def tn_cmpne(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmpne.go(False{}, lhs, rhs)
@@ -1059,8 +1097,8 @@ def tn_rmod(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_mod.go(True{}, lhs, rhs)
 
 # `__ge__` -- elementwise.py:327. `return (self < x).logical_not()`. The result of
-# `<` is a bool Tensor; `logical_not` (elementwise.py:49) IS `self.cast(bool).ne(True)`,
-# which `tn_logical_not` builds (`CAST(bool) -> CMPNE(cast, CONST(True))` -- gated
+# `<` is a bool Tensor; `logical_not` (elementwise.py:57) IS `self.cast(bool).eq(False)`,
+# which `tn_logical_not` builds (`CAST(bool) -> CMPEQ(cast, CONST(False))` -- gated
 # 8/8, gates/tn_logical_not-gate.py). So the composition
 # `tn_logical_not(tn_cmplt(t, x))` is a fully-portable chain. The no-broadcast case
 # is the only one `tn_cmplt`'s row covers; the broadcasting case of `__lt__` stays
@@ -1075,11 +1113,23 @@ def tn_dunder_ge(+t: Tensor, +x: Tensor) -> Tensor:
 def tn_dunder_le(+t: Tensor, +x: Tensor) -> Tensor:
   tn_logical_not(tn_rcmplt(t, x))
 
-# `eq` -- elementwise.py:336. `return self.ne(x).logical_not()`. The chain
-# `tn_logical_not(tn_cmpne(t, x))` is the no-broadcast case. The broadcasting
-# case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
+# `eq` -- elementwise.py:335 AT `f5ac54685074` -- is
+# `self._binop(Ops.CMPEQ, x, False)`, so it is ONE `CMPEQ` NODE and NOT a negation of a
+# `CMPNE`.
+#
+# THE NAME DID NOT CHANGE AND THE NODE DID: the pre-pin spelling was
+# `self.ne(x).logical_not()`, which builds `CMPNE(CMPNE(x, y), CONST(True))`; at the pin it
+# is `_binop(Ops.CMPEQ, x, False)`, which builds `CMPEQ(x, y)`. MEASURED 2026-11-10 ON
+# CPYTHON AT THE PIN: `a.eq(b)` emits `CMPEQ(a, b)`.
+#
+# AND UPSTREAM's OWN `symbolic.py:349` KEYS ITS NEGATION TEST ON `CMPEQ` WITH A `CONST 0`
+# -- so a graph that says `CMPNE` is NOT upstream's graph. AND THE PORT's OWN
+# `uop/symbolic.bend`'s `mint_ne` ALREADY USES THE PIN's SPELLING -- so THIS file was the
+# only half on the pre-pin spelling.
+#
+# The broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_eq(+t: Tensor, +x: Tensor) -> Tensor:
-  tn_logical_not(tn_cmpne(t, x))
+  tn_cmpeq(t, x)
 
 # `isnan` -- elementwise.py:603. `return self != self`. The CMPNE node has the
 # SAME tensor on both srcs, and a NaN is the only float where `x == x` is false,
@@ -1097,7 +1147,7 @@ def tn_isnan(+t: Tensor) -> Tensor:
 # built off the NEWEST arena each time -- the same `mo_arena` rule
 # (`mixin/op.bend:1083`) `mo_isfinite` was written against. The dtype stays bool
 # throughout: `+` of two bools is `xor` (bool), `or` of two bools is bool,
-# `logical_not` of a bool is `cast(bool).cmpne(True)`. Gated at
+# `logical_not` of a bool is `cast(bool).cmpeq(False)`. Gated at
 # `gates/tn_isfinite-gate.py` 4/4 rows.
 def tn_isfinite.cinf(+ar: O.Arena) -> O.Found:
   O.UOp.const(ar, O.CFloat{F32.mul(1.0e30, 1.0e30)})

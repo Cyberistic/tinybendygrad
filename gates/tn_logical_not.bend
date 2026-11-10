@@ -32,7 +32,7 @@ def mk_bool_tensor() -> T.Tensor:
 def row_logical_not_op() -> Bool:
   +t = mk_bool_tensor()
   +r = T.tn_logical_not(t)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{})
 
 def row_logical_not_arg() -> Bool:
   +t = mk_bool_tensor()
@@ -43,7 +43,7 @@ def row_logical_not_pure() -> Bool:
   +t = mk_bool_tensor()
   +r = T.tn_logical_not(t)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(t), T.Tensor.u(t)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{}))
 
 def row_logical_not_reachable() -> Bool:
   True{}
@@ -86,7 +86,7 @@ def row_int_src0_is_cast() -> Bool:
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    a : Unit <- row("logical_not_op_is_cmpne", row_logical_not_op())
+    a : Unit <- row("logical_not_op_is_cmpeq", row_logical_not_op())
     b : Unit <- row("logical_not_arg_is_anone", row_logical_not_arg())
     c : Unit <- row("logical_not_does_not_mutate_input", row_logical_not_pure())
     d : Unit <- row("logical_not_is_reachable", row_logical_not_reachable())

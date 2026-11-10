@@ -10,13 +10,13 @@ Run with the repo's venv so the import is the working tree's tinygrad:
     .venv/bin/python gates/tn_logical_not-oracle.py
 
 EIGHT ROWS, AND WHY EACH ONE IS NOT A CHANGE-DETECTOR:
-    logical_not_op_is_cmpne                   .logical_not() builds a CMPNE.
-    logical_not_arg_is_anone                   the CMPNE's arg is None.
+    logical_not_op_is_cmpeq                   .logical_not() builds a CMPEQ.
+    logical_not_arg_is_anone                   the CMPEQ's arg is None.
     logical_not_does_not_mutate_input          the input still has its original op.
     logical_not_is_reachable                  the def is callable (the wall was 0 defs).
     int_input_src1_is_const                   on an INT input, src[1] is a CONST.
-    int_input_graph_has_2_srcs                the CMPNE has exactly two srcs.
-    int_input_src1_is_not_self                the CMPNE is not its own src[1].
+    int_input_graph_has_2_srcs                the CMPEQ has exactly two srcs.
+    int_input_src1_is_not_self                the CMPEQ is not its own src[1].
     int_input_src0_is_cast                    src[0] is the bool CAST.
 
 THE LAST FOUR ARE THE ONES A `CBool{True}` INPUT CANNOT SEE. tinygrad interns CONST
@@ -36,9 +36,9 @@ c = UOp(Ops.CONST, src=(), arg=True)
 t = Tensor(c, device="PYTHON")
 r = t.logical_not()
 
-print(f"logical_not_op_is_cmpne={int(r.uop.op is Ops.CMPNE)}")
+print(f"logical_not_op_is_cmpeq={int(r.uop.op is Ops.CMPEQ)}")
 print(f"logical_not_arg_is_anone={int(r.uop.arg is None)}")
-print(f"logical_not_does_not_mutate_input={int(c.op is Ops.CONST and r.uop.op is Ops.CMPNE)}")
+print(f"logical_not_does_not_mutate_input={int(c.op is Ops.CONST and r.uop.op is Ops.CMPEQ)}")
 print(f"logical_not_is_reachable={int(1)}")
 
 i = Tensor(UOp(Ops.CONST, src=(), arg=4), device="PYTHON")
