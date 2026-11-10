@@ -100,20 +100,20 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 
-# THE FIVE VERDICTS, IMPORTED BY PATH from the file that OWNS them (`gatekit.py`, same dir), never
+# THE five verdicts, IMPORTED by path from the file that OWNS them (`gatekit.py`, same dir), never
 # re-spelled: a second copy of the vocabulary is the same fault as a second copy of a population, and a
 # runner maps any code outside the five to `DEAD`. Measured before this import: this file and
-# `checks/cl-port-gate.py` both refused with **2**, and both were scored `DEAD`.
+# `checks/cl-port-gate.py` both refused with 2, and both were scored `DEAD`.
 sys.path.insert(0, str(HERE))
 from gatekit import REFUSED  # noqa: E402  (after sys.path, deliberately)
 
-# WHAT THIS FILE CANNOT SEE, NAMED, because a meta-gate's blind spots are the ones no other
+# WHAT this file cannot see, NAMED, because a meta-gate's blind spots are the ones no other
 # instrument is checking. Four, and none is fixable by being cleverer about the tree:
 #   (1) a gate OUTSIDE the derived homes. `gate_homes()` MEASURES which top-level directories hold
-#       a gate that NAMES A ROOT, REFUSES ON A WRONG ONE and RESOLVES ON-REPO, and it prints every
+#       a gate that NAMES a root, REFUSES on a wrong one and RESOLVES on-REPO, and it prints every
 #       candidate it rejected with its own denominator -- so this hole is a NUMBER, not a list.
-#       MEASURED, and it answers the question `.agents/slop/UNIVERSE-CENSUS.md` left open: **2 of
-#       14** top-level directories of the commit tree qualify. `.agents` is rejected at **0 of 6**
+#       MEASURED, and it answers the question `.agents/slop/UNIVERSE-CENSUS.md` left open: 2 of
+#       14 top-level directories of the commit tree qualify. `.agents` is rejected at 0 of 6
 #       certified gates, and the three `.agents/slop/` files that pass every ROOT clause carry no
 #       `__main__` guard -- they are harnesses, not gates. So `HOMES`'s `("checks", "gates")` was
 #       RIGHT and `indexread-gate`'s `(".agents/slop", "checks", "gates")` was ALSO RIGHT, because
@@ -125,34 +125,34 @@ from gatekit import REFUSED  # noqa: E402  (after sys.path, deliberately)
 #       peaks at 1,468 MB against a 2,048 MB ceiling and four units are live.
 #   (4) a gate whose defect is in WHAT IT ASSERTS rather than where it stands: instances 1 and
 #       5 of the brief, and the whole of `sb-gate.sh`'s failure.
-# **THIS INSTRUMENT CLOSES THE "RELATIVE TO ITSELF" HALF OF THE CLASS AND IS BLIND TO THE
-# "LITERAL LIST INSTEAD OF A POPULATION" HALF -- AND IT IS THE BLIND ONE, BECAUSE A POPULATION
-# GATE IS ITSELF A POPULATION GATE.** That asymmetry is the honest shape of the result, and a
+# THIS instrument closes the "RELATIVE to itself" HALF of the class and is blind to the
+# "LITERAL list instead of a population" HALF -- AND it is the blind one, BECAUSE a population
+# GATE IS ITSELF A POPULATION GATE. That asymmetry is the honest shape of the result, and a
 # reader who takes only one thing from this file should take it.
 
-# THE ROOT SET IS NOT HERE. IT WAS `HOMES = ("checks", "gates")` ON THIS LINE, AND IT IS NOW
-# `gate_homes(ROOT)`, MEASURED -- see "THE ROOT SET, DERIVED" below, and the criterion paragraph
+# THE root set is not here. IT was `HOMES = ("checks", "gates")` ON this line, AND it is now
+# `gate_homes(ROOT)`, MEASURED -- see "THE root set, DERIVED" below, and the criterion paragraph
 # there that a reader can apply to a file they have never seen. The value is bound at the BOTTOM
 # of this module, next to `FIXTURES`, for the reason `_init_fixtures` records: the derivation
 # reads `root_facts`, and binding it here raised `NameError` at import.
 #
-# **`HOMES` IS THE MEASURED ROOT SET AND NOT A HAND LIST, AND THE LEDGER IS NOT WHAT PROVES IT.**
+# `HOMES` IS the measured root set and not a hand list, AND the ledger is not what proves it.
 # The old comment said a third home "is visible only because the ledger diffs", and
 # `gate-surface.py:walk_control` was handed this very list as the parameter it compares against,
-# so the two lists it was about to compare were the SAME list. **A LIST COMPARED WITH ITSELF
-# CANNOT DISAGREE, AND THAT IS WHY A META-GATE NEVER SETTLED THE QUESTION IT WAS BUILT TO SETTLE.**
+# so the two lists it was about to compare were the SAME list. A LIST COMPARED WITH ITSELF
+# CANNOT disagree, AND that is why a meta-GATE never settled the question it was built to settle.
 # `gate_roots.md()` -- `gate_homes` for the GATE-HOME question, `scan_roots` for the
 # COMMITTED-PYTHON question -- is the whole replacement, and it prints every candidate it
 # rejected WITH ITS OWN DENOMINATOR.
 LEDGER = HERE / "gates-pop.ledger.tsv"
 
-# THE GENERATED-DIRECTORY POPULATION IS NOT A SECOND LIST. It is `gates/gendirs.py`, loaded BY
+# THE generated-DIRECTORY population is not a second list. It is `gates/gendirs.py`, loaded BY
 # PATH, and `gates/retention-check.py` loads the same file the same way. MEASURED, and the reason
 # is the whole subject of this clause: `checks/gen/` is written by `checks/abi_gate.py:616`
 # through `bend -o` and was invisible to BOTH instruments -- clause III here because `HOMES` is a
 # two-item tuple, and `retention-check.py` because its registry was two `Output(...)` calls.
-# **A POPULATION DEFINED BY A THREE-ITEM LIST CANNOT BE WRONG ABOUT A FOURTH ITEM BECAUSE IT NEVER
-# LOOKS AT ONE.** Clause IV below is what looks at the fourth item.
+# A population defined by a three-ITEM list cannot be wrong about a fourth item because it never
+# LOOKS AT ONE. Clause IV below is what looks at the fourth item.
 def gendirs():
     """`gates/gendirs.py` by path, never by name: `gates/` is not a package, and putting it on
     `sys.path` would make `gendirs` a name any file in the tree could shadow -- an instrument
@@ -168,23 +168,23 @@ def gendirs():
     return mod
 
 
-# WHAT THIS FILE STILL CANNOT SEE AFTER CLAUSE IV, AND IT IS NOT THE GENERATED DIRECTORIES. A gate
+# WHAT this file still cannot see after clause iv, AND it is not the generated directories. A gate
 # that is BOTH outside `gate_homes()` AND named by no write site is invisible to every clause
 # here -- which is to say, a gate nobody runs and nobody writes. That is the only hole left and it
-# is stated rather than papered over. **WHAT CHANGED IS THAT THE HOLE HAS A SHAPE NOW:** it is the
+# is stated rather than papered over. WHAT changed is that the hole has a shape now: it is the
 # set of top-level directories `gate_homes()` REJECTED, and `report()` prints each with its own
 # numerator and denominator, so the hole is 12 named directories rather than an unexamined
 # assumption about two.
 
-# NO SUFFIX SET. THE POPULATION IS THE DIRECTORY AND THE LANGUAGE IS READ OUT OF THE FILE.
+# NO suffix set. THE population is the directory and the language is read out of the file.
 #
 # THIS USED TO BE `SUFFIXES = (".py", ".sh")`, and the prose above this line said "the scan
 # ENUMERATES and the regexes are only ever used to CLASSIFY what was already enumerated" --
 # which the very next line contradicted, because the tuple was applied to the ENUMERATION and
-# not to the classification. **A COMMENT THAT DENIES A DEFECT IS NOT A FIX FOR IT, AND THIS WAS
-# THE FILE THAT DEFINES THE CLASS.** MEASURED on the live tree by a directory walk against this
+# not to the classification. A comment that denies a defect is not a fix for it, AND this was
+# THE file that defines the class. MEASURED on the live tree by a directory walk against this
 # function's own `iterdir()`: 374 regular files across `checks/`+`gates/`, of which the tuple
-# admitted 174 and **200 were dropped before a byte of them was read**. Two of the dropped are
+# admitted 174 and 200 were dropped before a byte of them was read. Two of the dropped are
 # true members, and both were named by content rather than by name:
 #   `checks/nan_census.mjs` -- a tracked ES-module census driver, `node nan_census.mjs <workdir>`,
 #     and the file `checks/gate.py:200` and `checks/e2e.py:428` reach for a `.mjs` driver.
@@ -195,16 +195,16 @@ def gendirs():
 # `gates/gendirs.py` BY PATH, and `gates/gendirs.py:70 SOURCE_SUFFIXES` is
 # `(".py", ".sh", ".mjs", ".js")` -- so clause I and clause IV of ONE instrument disagreed about
 # what a source file is, in one file, and this file's own clause IV says two instruments holding
-# two lists "have no authority over each other". **THE CLASS WAS INSIDE THE CENSUS OF THE CLASS.**
+# two lists "have no authority over each other". THE class was inside the census of the class.
 #
 # WHAT REPLACES IT. `discover()` walks every REGULAR file in a home and `entry_reason()` asks
-# each one what language it is IN. A FILE THAT IS NOT A PROGRAM IN A LANGUAGE THIS INSTRUMENT CAN
+# each one what language it is IN. A file that is not a program in a language this instrument can
 # READ IS NOT SILENTLY BUCKETED: it is counted as OPAQUE and printed with its own denominator, so
 # a tree that grows a language MOVES A NUMBER instead of quietly losing a subject.
 SH_SHEBANG = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:\S*/)?(?:ba|da|k|z)?sh\b")
 NODE_SHEBANG = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:\S*/)?node\b")
-# AN ES MODULE, NOT THE WORD "import". **MEASURED TWICE, and both failures were a shape that
-# also matched ANOTHER LANGUAGE.** First `import\s+[\w{*]` put 39 `gates/*.bend` drivers into the
+# AN ES MODULE, NOT THE WORD "import". MEASURED TWICE, and both failures were a shape that
+# also matched ANOTHER LANGUAGE. First `import\s+[\w{*]` put 39 `gates/*.bend` drivers into the
 # population as `js-main`, because BEND HAS ITS OWN `import` KEYWORD and this tree ships 38
 # tracked `.bend` files in the gate homes (`import Base` matches `import\s+\w`). Then allowing
 # BEND'S OWN C-IMPORT SHAPE, `import "../runtime/sz.c"`, read `checks/c-context.bend` as
@@ -253,14 +253,14 @@ def suffix_of(p):
     return p.name[i:] if i > 0 else "(none)"
 
 
-# A MUTATION HARNESS'S STAGED REVISION IS A COPY, AND A COPY IS NOT A GATE. MEASURED 2026-10-25:
+# A mutation harness'S staged revision is a COPY, AND a COPY IS not a gate. MEASURED 2026-10-25:
 # `gates/__pycache__/` still holds the COMPILED forms of the SEVEN staging copies this tree's
 # mutation runs left in `gates/` -- `amd-mut-gate.py`, `amd-mut-oracle.py`, `crp-mut-gate.py`,
 # `crp-mut-oracle.py`, `cstyle-mut-oracle.py`, `.crp-mut-gate.py`, `.wgsl-mut-oracle.py` -- and
-# EVERY ONE NAMES THE FILE IT COPIES IN ITS OWN FIRST DOCSTRING LINE (`amd-mut-gate.py` opens
+# EVERY one names the file it copies in its own first docstring line (`amd-mut-gate.py` opens
 # `"""amd_dsl_census-gate.py -- ...`), which is the tree's `.gitignore` convention in words: "a
-# mutation harness stages a REVISION of a file". **THE FIVE UNOWNED ROWS `gates/ledgerdue-gate.py`
-# REPORTS ARE FIVE OF THIS FAMILY**, and a copy the ledger admitted is a row NOBODY CAN PAY: that
+# mutation harness stages a REVISION of a file". THE FIVE UNOWNED ROWS `gates/ledgerdue-gate.py`
+# REPORTS are five of this family, and a copy the ledger admitted is a row NOBODY can pay: that
 # gate names the COMMIT that owes a movement, and a file the tree never carried has no commit to
 # owe it.
 #
@@ -268,12 +268,12 @@ def suffix_of(p):
 # (`checks/index-arm-gate.py`). `gates/header-census-gate.py`'s `is_scratch` is the model -- a name
 # shape, no repository consulted.
 #
-# **THE LINE, and it is a line and not a fog.** The token `mut` STANDALONE, then `-`, then one of
+# THE LINE, and it is a line and not a fog. The token `mut` STANDALONE, then `-`, then one of
 # the three role words the tree gives a file a mutation run reads or asserts (`gate`, `oracle`,
 # `plant`), then `.py`. `mutate` IS A DIFFERENT WORD, so the SIXTEEN tracked `-mutate.py` harnesses
 # under the gate homes, `gates/mutkit.py` and `checks/walk-mutate.sh` all keep their place, and so
-# does a name that merely CONTAINS the letters. MEASURED 2026-10-25: this shape matches **0** of
-# the tracked files in the tree, **0** of the live entry points, and **5** of the ledger's rows --
+# does a name that merely CONTAINS the letters. MEASURED 2026-10-25: this shape matches 0 of
+# the tracked files in the tree, 0 of the live entry points, and 5 of the ledger's rows --
 # the five stale ones, which is the defect. It matches nothing else.
 MUT_SCRATCH = re.compile(r"-mut-(?:gate|oracle|plant)\.py$")
 
@@ -357,24 +357,24 @@ def code_of(src, blank=()):
             out.append(t._replace(string=""))
         elif t.type == tokenize.STRING and (
                 t.start[0] in docs
-                # THE VALUE, NOT THE TOKEN TEXT. MEASURED: the first version compared `t.string`,
+                # THE value, NOT the token text. MEASURED: the first version compared `t.string`,
                 # which for a fixture written `"...\n" + MAIN` is the SOURCE SPELLING (with a
                 # backslash-n) while the value is the EVALUATED string (with a newline). They are
                 # never equal, so nothing was blanked and the instrument kept reporting ITSELF
-                # off-repo while the fix "passed". **A COMPARISON THAT CANNOT SUCCEED LOOKS
-                # EXACTLY LIKE A COMPARISON THAT FOUND NOTHING.**
+                # off-repo while the fix "passed". A COMPARISON THAT CANNOT SUCCEED LOOKS
+                # EXACTLY like a comparison that found nothing.
                 or _value(t) in blank
-                # A FIXTURE WRITTEN `"..." + MAIN` IS SEVERAL TOKENS. MEASURED: `FALLBACK_PRE_FIX`
+                # A fixture written `"..." + MAIN` IS several tokens. MEASURED: `FALLBACK_PRE_FIX`
                 # holds `"sys.path.insert(...)  # the tinygrad tree\n" + MAIN`, so the source token
                 # is the CONCATENAND'S FIRST HALF and equals no fixture exactly -- and for
                 # `LIT_PY`, which is TWO adjacent literals, the offending token is the SECOND one
                 # and is a SUFFIX. So the test is SUBSTRING: this token's text appears inside a
                 # synthetic gate's text, which is not a guess, it is containment.
-                # **A COMPARISON THAT CAN NEVER SUCCEED LOOKS EXACTLY LIKE A COMPARISON THAT FOUND
-                # NOTHING**, and that is how the first version shipped a fix that did nothing.
+                # A comparison that can never succeed looks exactly like a comparison that found
+                # NOTHING, and that is how the first version shipped a fix that did nothing.
                 or any(len(v := _value(t) or "") >= 8 and v in f
                        for f in blank)):
-            # KEEP THE QUOTES AND THE LENGTH: `untokenize` reconstructs source from token
+            # KEEP the quotes and the length: `untokenize` reconstructs source from token
             # geometry, so a changed length silently shifts every column after it.
             out.append(t._replace(string=t.string[0] + " " * (len(t.string) - 2) + t.string[-1]))
         else:
@@ -401,42 +401,42 @@ def is_python_entry(src):
     return any(isinstance(n, ast.If) and "__main__" in ast.dump(n.test) for n in ast.walk(tree))
 
 
-# THE SHELL ENTRY CLASS, AND THE FIRST VERSION OF IT WAS WRONG BY 15 FILES. It read
+# THE shell entry class, AND the first version of it was wrong by 15 FILES. It read
 # `^\s*exec\b|^\s*\$\{?0` -- an `exec`, or a `$0` AT THE START OF A LINE. MEASURED on
-# `checks/*.sh`: that finds **2** entry points out of **17**. It misses `checks/e2e.sh`,
+# `checks/*.sh`: that finds 2 entry points out of 17. It misses `checks/e2e.sh`,
 # `checks/sb-gate.sh`, `checks/lintable-gate.sh`, `checks/walk-mutate.sh`, `checks/run-all.sh`
 # and ten more, because they spell their self-reference `_d=${0%/*}` and the `$0` sits in the
-# middle of a line. **THAT IS THE BRIEF'S OWN FAILURE, verbatim: one tokenizer's assumption,
-# missed by a belt that shared it.** `checks/sb-gate.sh` -- the gate in instance 1, the one that
+# middle of a line. THAT IS THE BRIEF'S OWN FAILURE, verbatim: one tokenizer's assumption,
+# missed by a belt that shared it. `checks/sb-gate.sh` -- the gate in instance 1, the one that
 # "applies its rules to itself and its three literal lanes only" -- was INVISIBLE to this file.
 #
-# THE FIX IS TWO TOKENIZERS THAT DO NOT SHARE A REGEX, and the population is their UNION, with
+# THE fix is two tokenizers that do not share a regex, and the population is their UNION, with
 # the disagreement REPORTED rather than resolved silently. `SH_ENTRANCE` (line-anchored) and
 # `SH_SELFREF` (a `$0` the shell would substitute) agree on 2 files and disagree on 15; a run
 # that prints only their union cannot tell you which token found what, so the report says so.
 #
 # `SH_SELFREF` WAS `\$\{?0\b` -- "any `$0` at all" -- AND IT IS NOW `\$\{0|["']\$0["']`, because
-# **MEASURED: `$0` IS NOT A SHELL TOKEN, IT IS A NAME, AND BEND EMITS IT AS A CPS VARIABLE IN
-# JAVASCRIPT.** `tinybendygrad/runtime/webgpu_call.mjs:315` is `const _cs_0 = $0;` and `:312` is
+# MEASURED: `$0` IS not a shell token, IT is a name, AND BEND EMITS it as a cps variable in
+# JAVASCRIPT. `tinybendygrad/runtime/webgpu_call.mjs:315` is `const _cs_0 = $0;` and `:312` is
 # `function ...($0, $1) {`, so the old token read two tracked `.mjs` files as `sh-dispatch` on a
 # variable name a shell would have replaced. The shell substitutes `$0` only inside `"$0"`, `'${0'`
 # or `${0`; a BARE `$0` is an identifier. MEASURED as a tightening rather than a guess: it matches
 # 17 of 17 `checks/*.sh` (denominator 17, same count, ZERO files lost), keeps `checks/bend`, and
-# drops both emitted-JavaScript false positives. **A TOKEN THAT MATCHES A FOREIGN LANGUAGE'S
-# LOCAL VARIABLE IS NOT A NARROWER POPULATION, IT IS A WIDER ONE.**
+# drops both emitted-JavaScript false positives. A TOKEN THAT MATCHES A FOREIGN LANGUAGE'S
+# LOCAL variable is not a narrower population, IT is a wider one.
 SH_ENTRANCE = re.compile(r"^\s*(?:exec\b|\$\{?0)", re.M)
 SH_SELFREF = re.compile(r"\$\{0|[\"']\$0[\"']")
 # `[^\S\n]` IS "WHITESPACE EXCEPT NEWLINE", so this matches the indentation a comment can have and
-# NOT the line break in front of it. IT WAS `^\s*`, AND `\s` INCLUDES `\n`, SO THE MATCH STARTED
-# ON THE PREVIOUS LINE AND **ATE ITS NEWLINE**: MEASURED 2026-10-19T16:25Z, `checks/run-f64.sh`
+# NOT the line break in front of it. IT was `^\s*`, AND `\s` INCLUDES `\n`, SO the match started
+# ON the previous line and ate its newline: MEASURED 2026-10-19T16:25Z, `checks/run-f64.sh`
 # went 447 -> 434 newlines and `checks/sb-gate.sh` 276 -> 264, because `^\s*` eats the newline
 # before EACH comment of a run. `awk 'END{print NR}'` on the first reads 448 and 435 -- THE SAME
 # THIRTEEN, under the other convention.
 #
-# **THE POPULATION DID NOT MOVE, AND THAT IS MEASURED, NOT ASSUMED** -- the whole question, because
+# THE population did not MOVE, AND that is measured, NOT assumed -- the whole question, because
 # a fix that changed the set of gates would be a different instrument wearing this one's name.
 # Over 1336 files under `HOMES` it eats 2537 newlines and changes 0 entries and 0 tokenizer
-# verdicts; tree-wide over 155 `.sh`, 237 newlines and 0/0/0. **WHY**: `SH_ENTRANCE` is anchored
+# verdicts; tree-wide over 155 `.sh`, 237 newlines and 0/0/0. WHY: `SH_ENTRANCE` is anchored
 # with `^\s*` TOO, and `\s` already spans newlines, so swallowing one cannot move a token across a
 # boundary the tokenizer cared about. The damage was invisible to every matcher here and visible
 # only to a reader counting lines -- which is the worst place for an instrument to be wrong.
@@ -507,30 +507,30 @@ def entry_reason(p):
     # CONCLUSIVE. Neither Python nor shell can spell `import {a} from "b"` or `export function`,
     # so a file that matches it is JavaScript with nothing left to decide. The reverse is NOT
     # true -- `console.log("REPRO stub: stage 3 gpu");` is a valid PYTHON expression statement --
-    # so testing Python first silently reclassifies short JavaScript stubs. **THE RESIDUAL IS
-    # NAMED RATHER THAN PATCHED**: a JavaScript file with no ESM syntax whose whole body is also a
+    # so testing Python first silently reclassifies short JavaScript stubs. THE RESIDUAL IS
+    # NAMED RATHER THAN PATCHED: a JavaScript file with no ESM syntax whose whole body is also a
     # valid Python program is read by the Python grammar, and there is no test for it here that is
     # not a list of JavaScript spellings -- which is the defect this file exists for. It counts 3
     # of the 19 `.mjs` in this tree, all three of them 40-byte stubs under `.agents/slop/`, and a
     # file it mislabels as `py-lib` is COUNTED as a module, never dropped.
     if NODE_SHEBANG.match(src) or JS_MODULE.search(src):
-        # ⇒ AND **A **FILE **THAT **PARSES **AS **PYTHON **IS **PYTHON**, **EVEN **WHEN **JAVASCRIPT
-        # **APPEARS **INSIDE **A **STRING **LITERAL.**  MEASURED 2026-10-30: `gates/bendfloat-gate.py`
-        # was classified `js-main` -- and it is a **PYTHON** **GATE** **WITH **A **`__main__` **GUARD**,
-        # **BECAUSE **`JS_MODULE`'s **`^[ \t]*` **ANCHOR **ALSO **MATCHES **THE **CONTINUATION **LINE
-        # **OF **A **MULTI-LINE **PYTHON **STRING**, **AND **THIS **FILE **SHIPS **A **JS **DRIVER **AS
-        # **A **STRING **LITERAL** (**`DRIVER = """import fs from "node:fs"; …"""`**).
+        # - AND a file that parses as python is python, EVEN when javascript
+        # APPEARS INSIDE A STRING LITERAL.  MEASURED 2026-10-30: `gates/bendfloat-gate.py`
+        # was classified `js-main` -- and it is a PYTHON GATE WITH A `__main__` GUARD,
+        # BECAUSE `JS_MODULE`'s `^[ \t]*` ANCHOR also matches the continuation line
+        # OF a multi-LINE python string, AND this file ships a js driver as
+        # A STRING LITERAL (`DRIVER = """import fs from "node:fs"; …"""`).
         #
-        # ⇒ AND **THE **COST **IS **NOT **COSMETIC:** **THE **LEDGER **ROW **SAID **`js-main`** **FOR
-        # **A **PYTHON **GATE** (**`gates/gates-pop.ledger.tsv:127`**), **AND **THE **SURFACE **CENSUS
-        # **ROUTED **IT **INTO **THE **`unread` **BUCKET**, **SO **ITS **DECLARATION **WAS **NEVER
-        # **READ.**  **⇒ AND **THE **RULE **IS **THE **GRAMMAR's:** **IF **THE **FILE **PARSES **AS
-        # **PYTHON**, **THE **PYTHON **GRAMMAR **DECIDES **WHAT **IT **IS** — **A **REGEX **CANNOT
-        # **TELL **A **STRING **LITERAL **FROM **CODE.**
+        # - AND the cost is not cosmetic: THE ledger row said `js-main` FOR
+        # A python gate (`gates/gates-pop.ledger.tsv:127`), AND the surface census
+        # ROUTED it into the `unread` BUCKET, SO its declaration was never
+        # READ.  - AND the rule is the grammar's: IF THE file parses as
+        # PYTHON, THE python grammar decides what it is — A regex cannot
+        # TELL A STRING LITERAL FROM CODE.
         #
-        # ⇒ AND **THE **ORDER **IS **UNCHANGED **FOR **EVERY **OTHER **FILE:** **A **`.mjs` **STUB **WITH
-        # **NO **ESM **SYNTAX **IS **NOT **VALID **PYTHON**, **SO **IT **STILL **FALLS **TO **THE
-        # **JAVASCRIPT **ARM.**
+        # - AND the order is unchanged for every other file: A `.mjs` STUB with
+        # NO esm syntax is not valid python, SO it still falls to the
+        # JAVASCRIPT ARM.
         if not NODE_SHEBANG.match(src):
             py_early = is_python_entry(src)
             # `is_python_entry` returns `True`, `False`, OR THE STRING `"UNPARSEABLE (...)"`, and
@@ -542,19 +542,19 @@ def entry_reason(p):
                 return "py-lib"
         return "js-lib" if JS_EXPORT.search(src) else "js-main"
     # `is_python_entry` returns `True`, `False`, OR THE STRING `"UNPARSEABLE (...)"`, and all
-    # three are tested EXPLICITLY. **MEASURED, and the first version of this fix wrote
-    # `if py is not False`**, which is true of that string too -- so `ast.parse` failing on a
+    # three are tested EXPLICITLY. MEASURED, and the first version of this fix wrote
+    # `if py is not False`, which is true of that string too -- so `ast.parse` failing on a
     # `checks/*.rows` fixture made 137 expected-value files answer `py-lib`, and the OPAQUE bucket
-    # this change exists to create stayed at ZERO while the module count went to 190. **A TEST
-    # THAT CANNOT FAIL LOOKS EXACTLY LIKE A TEST THAT PASSES**, and `is not False` cannot fail.
+    # this change exists to create stayed at ZERO while the module count went to 190. A TEST
+    # THAT cannot fail looks exactly like a test that passes, and `is not False` cannot fail.
     # An unparseable file is not Python, is not shell, and is not a module: it is OPAQUE, which
     # is a count rather than a bucket -- and that is the honest answer for a file that cannot be
     # read, because the alternative is to name it after a guess.
     py = is_python_entry(src)
     if py is True or (py is False and not is_literal_data(src)):
         return "py-main" if py else "py-lib"
-    # JAVASCRIPT BEFORE SHELL, and the ORDER is measured rather than preferred. **MEASURED:
-    # `SH_SELFREF` was `\$\{?0\b`, and `$0` is BEND'S CPS STATE VARIABLE IN EMITTED JAVASCRIPT**
+    # JAVASCRIPT BEFORE SHELL, and the ORDER is measured rather than preferred. MEASURED:
+    # `SH_SELFREF` was `\$\{?0\b`, and `$0` is BEND'S cps state variable in emitted javascript
     # -- `.agents/slop/e2e/webgpu_call.mjs:315` is `const _cs_0 = $0;` and `:312` is a closure
     # `function ...($0, $1)`. So the shell self-reference token is NOT shell-specific, and a
     # shell-first order classified two tracked `.mjs` files as `sh-dispatch` on the strength of a
@@ -727,15 +727,15 @@ def scratch(root):
 
 
 # ---- clause II: what each gate POPS FOR, and whether it can fail -----------------------
-# THE ROOT CONSTANT, AND WHY THE FIRST VERSION OF THIS WAS WRONG IN THE DIRECTION THAT
+# THE root constant, AND why the first version of this was wrong in the direction that
 # MATTERS. It read `(REPO|ROOT) = ... parents[n]` and called any `n > 0` FALSE, on the
 # reasoning that the depth is baked into the constant. MEASURED: that fires on 16 files, and
 # SIX of them are CORRECT -- `checks/differ.py:41` is `parents[1]`, and `parents[1]` OF A
 # FILE is its own directory, which IS the root for a file one level below it. A rule that
 # calls a working gate broken trains the reader to ignore it, which is the same failure as
-# `sb-gate.sh`'s literal list wearing the opposite face. **So the constant is EVALUATED, not
+# `sb-gate.sh`'s literal list wearing the opposite face. So the constant is EVALUATED, not
 # pattern-matched: the clause asks where the expression RESOLVES, and only a resolution that
-# is not the repo root is a finding.**
+# is not the repo root is a finding.
 #
 # TWO SPELLINGS, and both are accepted because both appear in this tree: `HERE.parents[n]`
 # where `HERE` is the file's DIRECTORY, and `Path(__file__).resolve().parents[n]` where the
@@ -745,7 +745,7 @@ ROOT_CONST = re.compile(
     r"^\s*(?:HERE\s*=\s*.*\n)?\s*(?:REPO|ROOT)\s*=\s*.*?"
     r"(?:__file__|HERE)\)?(?:\.resolve\(\))?\.parents\[(\d)\]",
     re.M)
-# THE INLINE FORM, AND IT IS A MISS THIS INSTRUMENT HAD BEFORE IT WAS WRITTEN AS A PLANT.
+# THE inline form, AND it is a miss this instrument had before it was written as a plant.
 # `checks/census.py:14` at `457b81619^` computed its root with NO CONSTANT AT ALL:
 #     sys.path.insert(0, str(HERE.parents[2]))            # the tinygrad tree
 # A regex anchored on `(REPO|ROOT)\s*=` cannot see it, and the instrument reported that file as
@@ -764,9 +764,9 @@ ROOT_INLINE = re.compile(
 REFUSE = re.compile(r"\brefuse\(|\bexit 3\b|not at the repo root|REFUSED, NOT A VERDICT")
 MARKER = re.compile(r"pyproject\.toml")
 
-# THE STRINGS IN THIS MODULE THAT ARE *SYNTHETIC GATES*, so their contents are DATA. Named by the
-# names this file already owns, not by a regex over the source: **a fixture is identified by what
-# it IS, not by how it is spelled**, and MEASURED, `sweep.py`'s `ORACLE` was a basename word-shape
+# THE strings in this module that are *SYNTHETIC gates*, so their contents are DATA. Named by the
+# names this file already owns, not by a regex over the source: a fixture is identified by what
+# it IS, not by how it is spelled, and MEASURED, `sweep.py`'s `ORACLE` was a basename word-shape
 # that 670 of 675 files satisfied and no gate named.
 def _fixture_strings():
     """The string TOKENS whose value is a synthetic gate, i.e. data to this instrument rather
@@ -782,22 +782,22 @@ def _fixture_strings():
 
 FIXTURES = ()          # rebound at the bottom of the module; see `_init_fixtures`
 
-# **THE **FIXTURES **OF **OTHER **FILES**, **BY **THE **FILE **THAT **OWNS **THEM.**  A **FIXTURE **IS
-# **DATA **ONLY **TO **THE **FILE **THAT **OWNS **IT**, **AND **THE **OWNING **FILE **IS **NOWNED **BY
-# **THE **PATH**, **NOT **BY **A **REGEX **OVER **THE **SOURCE** — **A **SHAPE **THAT **670 **OF **675
-# **FILES **SATISFIED **AND **NO **GATE **NAMED** (MEASURED, `sweep.py`'s `ORACLE`).
+# THE fixtures of other files, BY the file that owns them.  A fixture is
+# DATA only to the file that owns it, AND the owning file is nowned by
+# THE path, NOT by a regex over the source — A shape that 670 OF 675
+# FILES satisfied and no gate named (MEASURED, `sweep.py`'s `ORACLE`).
 #
-# **⇒ AND **WHY **THIS **IS **HERE **AT **ALL** (MEASURED 2026-10-29): **`checks/cites-census.py`'s
-# **OWN **TEST **NEEDLE** — **THE **STRING **`"pathlib.Path(__file__).resolve().parents[3]"`**, **WHICH
-# **IS **A **NEEDLE **THE **MATCHER **IS **TESTED **AGAINST** — **WAS **COUNTED **BY **THIS **FILE **AS
-# **A **GATE **THAT **"COMPUTES **A **ROOT **THAT **RESOLVES **OUTSIDE **THE **REPO"**, **BECAUSE **THE
-# **NEEDLE **WAS **A **BARE **LITERAL **IN **A **TUPLE **AND **NOT **A **NAMED **CONSTANT** — **AND
-# **THIS **FILE's **`FIXTURES` **IS **COLLECTED **FROM **NAMED **CONSTANTS**, **SO **A **BARE **LITERAL
-# **IS **NOT **COLLECTED **AND **A **NAMED **ONE **IS.**
+# - AND why this is here at all (MEASURED 2026-10-29): `checks/cites-census.py`'s
+# OWN test needle — THE string `"pathlib.Path(__file__).resolve().parents[3]"`, WHICH
+# IS a needle the matcher is tested against — WAS counted by this file as
+# A gate that "COMPUTES a root that resolves outside the repo", BECAUSE the
+# NEEDLE was a bare literal in a tuple and not a named constant — AND
+# THIS file's `FIXTURES` IS collected from named constants, SO a bare literal
+# IS NOT COLLECTED AND A NAMED ONE IS.
 #
-# **⇒ AND **THE **NEEDLE **IS **A **RECORD **OF **A **DEFECT** — **IT **IS **THE **SPELLING **THAT
-# **MADE **A **GATE **REPORT **ON **THE **WRONG **TREE** — **SO **IT **MUST **NOT **BE **DELETED**,
-# **ONLY **NOT **READ **AS **CODE.**
+# - AND the needle is a record of a defect — IT is the spelling that
+# MADE a gate report on the wrong tree — SO it must not be deleted,
+# ONLY NOT READ AS CODE.
 FIXTURE_NAMES_BY_FILE = {
     "checks/cites-census.py": ("NEEDLE_OFFREPO_ROOT",),
 }
@@ -806,7 +806,7 @@ FIXTURE_NAMES_BY_FILE = {
 def _fixtures_for(p):
     """THE **FIXTURE **STRINGS **OF **THE **FILE **THAT **OWNS **THEM**, **OR **NONE**.
 
-    **⇒ AND **A **FIXTURE **IS **DATA **ONLY **TO **THE **FILE **THAT **OWNS **IT** — **SO **THE
+    **AND **A **FIXTURE **IS **DATA **ONLY **TO **THE **FILE **THAT **OWNS **IT** — **SO **THE
     **BLANK **SET **IS **APPLIED **ONLY **WHEN **THE **FILE **BEING **READ **IS **THE **OWNING
     **FILE**, **AND **TO **NOTHING **ELSE** (MEASURED: **APPLYING **IT **UNCONDITIONALLY **BROKE
     **PLANTS **1 **AND **5**).**
@@ -867,15 +867,15 @@ def resolve_root(p, depth, expr):
     # read off the EXPRESSION ITSELF, because `checks/cl-port-gate.py:40` spells it
     # `Path(__file__).resolve().parents[3]` and says in its own comment that the depth is
     # deliberate.
-    # THE DISCRIMINATOR MUST BE THE **SHAPE** OF `HERE`'s OWN ASSIGNMENT, NEVER ITS NAME.
-    # MEASURED 2026-10-06: the guard here read `if "HERE" in expr`, and **TWO FILES WITH DIFFERENT SHAPES
-    # NAME THEIR VARIABLE `HERE`** — `checks/both-census.py` holds a DIRECTORY
+    # THE discriminator must be the shape of `HERE`'s OWN assignment, NEVER its name.
+    # MEASURED 2026-10-06: the guard here read `if "HERE" in expr`, and TWO files with different shapes
+    # NAME THEIR VARIABLE `HERE` — `checks/both-census.py` holds a DIRECTORY
     # (`HERE = pathlib.Path(__file__).resolve().parent`) and `checks/disagree-gate.py` holds A FILE
-    # (`HERE = Path(__file__).resolve()`). ONE OF THEM WAS THEREFORE MIS-MEASURED, AND IT WAS THE FILE:
-    # `parents[1]` FROM A FILE **IS** THE REPO ROOT, SO THE GATE REPORTED A WORKING GATE OFF-REPO.
-    # *** A VARIABLE'S NAME CANNOT TELL YOU WHETHER IT HOLDS A FILE OR A DIRECTORY. THIS IS THE `ORACLE`
-    # FAILURE AGAIN — *THE ROLE IS A PROPERTY OF THE DIRECTORY AND WAS BEING READ FROM THE FILE* — AND THE
-    # THIRD TIME IN THIS PROJECT THAT A DISCRIMINATOR HAS BEEN A NAME OR A LITERAL INSTEAD OF A SHAPE.***
+    # (`HERE = Path(__file__).resolve()`). ONE of them was therefore mis-MEASURED, AND it was the file:
+    # `parents[1]` FROM a file is the repo root, SO the gate reported a working gate off-REPO.
+    # * A variable'S name cannot tell you whether it holds a file or a directory. THIS is the `ORACLE`
+    # FAILURE again — *THE role is a property of the directory and was being read from the file* — AND the
+    # THIRD time in this project that a discriminator has been a name or a literal instead of a shape.*
     if "HERE" not in _root_expr(expr):
         return f.parents[depth]
     assignment = next((l for l in p.read_text(errors="replace").splitlines()
@@ -912,33 +912,33 @@ def root_facts(p, root):
     front of it, because that is the state in which the gate reports on the wrong tree.
     """
     src = p.read_text(errors="replace")
-    # THE ROOT SCANNERS READ CODE, NOT PROSE, AND NOT FIXTURES. `code_of` strips comments and
+    # THE root scanners read code, NOT prose, AND not fixtures. `code_of` strips comments and
     # docstrings, so this file's own comment quoting the very line the scanner hunts is not a
     # finding about itself. MEASURED: before the strip, this file reported ITSELF off-repo.
     #
-    # **AND THE STRIP IS NOT ENOUGH, WHICH IS THE SAME FAILURE ONE LAYER DEEPER.** `code_of`
+    # AND the strip is not enough, WHICH is the same failure one layer deeper. `code_of`
     # blanks only DOCSTRING tokens, deliberately, because a string that is an ARGUMENT can carry
-    # a path the scanner needs. But a string that is a **PLANT FIXTURE** carries a whole
+    # a path the scanner needs. But a string that is a PLANT FIXTURE carries a whole
     # SYNTHETIC SOURCE FILE: `FALLBACK_PRE_FIX["checks/census.py"]` (line 629) is the literal text
     # `sys.path.insert(0, str(HERE.parents[2]))`... MEASURED 2026-10-06: with the strip and
-    # nothing else, `ROOT_INLINE` matched **that string**, `resolve_root` evaluated it against the
+    # nothing else, `ROOT_INLINE` matched that string, `resolve_root` evaluated it against the
     # LIVE tree, and the run printed `gates/gates-pop.py ... resolves outside the repo` -- a
     # FALSE finding about a file whose own root is `HERE.parents[0]`. Plant 7 asserted only the
     # COMMENT layer (`lit_py`, which begins `# was:`), so it was green while the instrument was
-    # wrong about itself. **PROSE IS NOT CODE, AND A FIXTURE IS NOT EITHER: A STRING THAT HOLDS
-    # SOURCE IS DATA TO THIS INSTRUMENT WHOSE SOURCE IT IS NOT.** `FIXTURES` is the set of names
+    # wrong about itself. PROSE is not code, AND a fixture is not either: A string that holds
+    # SOURCE is data to this instrument whose source it is not. `FIXTURES` is the set of names
     # whose string values are synthetic gates, named by the module that OWNS them.
-    # **⇒ AND **THE **BLANK **SET **IS **THE **OWNING **FILE's**, **WHETHER **THAT **IS **THIS **FILE
-    # **OR **ANOTHER **ONE** — **AND **IT **IS **STILL **APPLIED **ONLY **TO **THE **OWNING **FILE.**
+    # - AND the blank set is the owning file's, WHETHER that is this file
+    # OR another one — AND it is still applied only to the owning file.
     blank = FIXTURES if p.resolve() == Path(__file__).resolve() else _fixtures_for(p)
     code = code_of(src, blank)    # noqa: E501
-    # **A FIXTURE IS DATA ONLY TO THE FILE THAT OWNS IT.** The blank set is applied when the file
+    # A fixture is data only to the file that owns it. The blank set is applied when the file
     # being read IS this file, and to nothing else. MEASURED: applying it unconditionally broke
     # plants 1 and 5 -- a plant writes `GOOD_ROOT` into a synthetic `checks/good.py` and then asks
     # `root_facts` about it, and with the blank on, the whole fixture was blanked, so `refuse(`
     # and `pyproject.toml` both vanished and `GOOD_ROOT` read as a gate with NO root assertion.
-    # Two plants went red, which is the right outcome: **A FIX THAT MAKES THE SUBJECT INVISIBLE
-    # MAKES THE SUBJECT PASS, AND THAT IS THE `artefacts_ok()` SHAPE.** Scoping the rule by the
+    # Two plants went red, which is the right outcome: A fix that makes the subject invisible
+    # MAKES the subject pass, AND that is the `artefacts_ok()` SHAPE. Scoping the rule by the
     # OWNING FILE is not a special case for this instrument; it is the definition of "fixture".
     asserts = bool(REFUSE.search(code)) and bool(MARKER.search(code))
     # `ROOT_CONST` FIRST, then `ROOT_INLINE`, and the order matters only for what gets REPORTED:
@@ -955,29 +955,29 @@ def root_facts(p, root):
     return ("__file__.parent" if re.search(r"^\s*HERE\s*=", code, re.M) else "-"), asserts, True
 
 
-# ---- THE ROOT SET, DERIVED, AND THE CRITERION THAT DERIVES IT ---------------------------
+# ---- THE root set, DERIVED, AND the criterion that derives it ---------------------------
 #
-# WHAT A GATE IS, IN ONE PARAGRAPH, FOR SOMEONE WHO HAS NEVER SEEN A FILE IN THIS TREE. **A file
+# WHAT a gate is, IN one paragraph, FOR someone who has never seen a file in this tree. A file
 # is a GATE of this repository iff the COMMIT TREE carries it (`git ls-tree -r HEAD` -- never the
 # index, which a reset empties, and never the working copy, which `chmod -R` and a stray write both
 # move), AND running that file AS A PROGRAM performs its measurement -- an `if __name__ ==
 # "__main__"` guard in Python, a shell file dispatching on `$0` or `exec`, an ES module that RUNS
 # its top level under `node` rather than exporting it -- AND it reports a verdict, meaning one of
-# the five statuses `gates/gatekit.py` names, carrying a denominator.** The four named cases:
+# the five statuses `gates/gatekit.py` names, carrying a denominator. The four named cases:
 #
 #   `checks/nan_census.mjs`      IN.  Tracked; JavaScript has no `__main__`, so the entry-point
 #                                      test is "the module RUNS rather than EXPORTS"; and its rows
 #                                      ARE the denominator it prints. A suffix set can never admit
 #                                      it and a shebang test can never see it.
 #   `checks/bend`                IN.  Tracked; `#!/bin/sh` plus `exec`; a two-line launcher is a
-#                                      gate whose subject happens to be a compiler. **A BASENAME IS
-#                                      NOT A PATH** -- `gate.txt` is four files -- **AND A BASENAME
-#                                      CAN BE A PROGRAM**, which is why `suffix_of` is hand-written
+#                                      gate whose subject happens to be a compiler. A BASENAME IS
+#                                      NOT A PATH -- `gate.txt` is four files -- AND A BASENAME
+#                                      CAN BE A PROGRAM, which is why `suffix_of` is hand-written
 #                                      and why no suffix test may decide membership.
 #   `.agents/slop/capstream/refsplit.py`   OUT.  It is tracked AND it HAS `__main__` -- MEASURED,
 #                                      `entry_reason` returns `py-main` for it -- so the first two
-#                                      clauses CANNOT reject it. **Only the root clause can, and
-#                                      that is the whole reason the root clause exists.** No gate in
+#                                      clauses CANNOT reject it. Only the root clause can, and
+#                                      that is the whole reason the root clause exists. No gate in
 #                                      `.agents/`'s own row resolves a root (`1` prefilter survivor
 #                                      of `5` immediate files, rejected), so `.agents` is not a home;
 #                                      the file is three levels below a directory this tree puts a
@@ -988,48 +988,48 @@ def root_facts(p, root):
 #                                      port's own source, and the port is what is being MEASURED --
 #                                      running it would be the subject auditing itself.
 #
-# THE ROOT CLAUSE, WHICH IS THE ONLY PART NOBODY HAD WRITTEN DOWN. **A gate home is a top-level
+# THE root clause, WHICH is the only part nobody had written down. A gate home is a top-level
 # directory of the commit tree holding, IN ITS OWN IMMEDIATE FILES, at least one tracked file that
-# is an ENTRY POINT and that NAMES A ROOT, REFUSES ON A WRONG ONE, and RESOLVES ON-REPO.** Every
+# is an ENTRY point and that NAMES a root, REFUSES on a wrong one, and RESOLVES on-REPO. Every
 # one of those four is already measured in this file -- `entry_reason`, `ROOT_CONST`/`ROOT_INLINE`,
 # `REFUSE`, `MARKER`, `resolve_root` -- so the declaration is read off the gates themselves rather
-# than transcribed. **THE SUBJECTS DECLARE THE UNIVERSE THEY LIVE IN, WHICH IS THE ONLY SHAPE OF
-# POPULATION THAT CANNOT ROT WITHOUT SOMETHING ELSE ROTING WITH IT.** "IMMEDIATE FILES" is not a
+# than transcribed. THE subjects declare the universe they live in, WHICH is the only shape of
+# POPULATION that cannot rot without something ELSE ROTING with it. "IMMEDIATE files" is not a
 # depth number but the coherence condition `_buckets` imposes; see `gate_homes`.
 #
 # MEASURED, live tree, and this is the answer `.agents/slop/UNIVERSE-CENSUS.md` refused to give
-# because no criterion existed to give it with: **2 of 14** top-level directories of the commit
-# tree qualify, over **869 immediate files read**, **18 prefilter survivors** and **17 certified
-# witnesses** (`checks` 16, `gates` 1). The twelve rejects each carry their own denominator, and
-# the load-bearing one is `.agents` at **1 survivor of 5** -- `.agents/TODO.md`, which survives the
+# because no criterion existed to give it with: 2 of 14 top-level directories of the commit
+# tree qualify, over 869 immediate files read, 18 prefilter survivors and 17 certified
+# witnesses (`checks` 16, `gates` 1). The twelve rejects each carry their own denominator, and
+# the load-bearing one is `.agents` at 1 survivor of 5 -- `.agents/TODO.md`, which survives the
 # prefilter because it quotes `__main__` and `refuse(` in prose and is then REJECTED because it
-# does not resolve a root. **THE PREFILTER OVER-ADMITS AND THE CLAUSE DECIDES, WHICH IS THE ONLY
-# ORDER IN WHICH THOSE TWO CAN COEXIST.**
+# does not resolve a root. THE prefilter over-ADMITS and the clause decides, WHICH is the only
+# ORDER in which those two can coexist.
 #
-# WHAT IT DOES NOT SETTLE, AND IT IS NOT SETTLED ANYWHERE ELSE EITHER. A home may be a directory
+# WHAT it does not settle, AND it is not settled anywhere ELSE EITHER. A home may be a directory
 # holding gates that never run (the hole named above), and a vendored upstream directory may hold
-# entry points (`test/` holds `4` immediate files and **307** across its 390 tracked ones) that are
+# entry points (`test/` holds `4` immediate files and 307 across its 390 tracked ones) that are
 # emphatically not gates. The root clause is what separates them -- an upstream pytest file names
 # no root and refuses on no root -- and it is a REAL PROPERTY, not a name, which is why this
 # derivation agrees with a hand list about `checks/` and disagrees with one about `test/`.
 #
-# THE PREFILTER, AND WHY IT CANNOT LOSE A WITNESS. Three literals, and `code_of` only ever REMOVES
+# THE prefilter, AND why it cannot lose a witness. Three literals, and `code_of` only ever REMOVES
 # text, so anything `code` holds `src` holds: `MARKER` is the literal `pyproject.toml`; `asserts`
 # needs one of `REFUSE`'s four alternatives; and `entry_reason` calls a file an entry only when
-# `ast` finds `__main__`, or a `sh` shebang, or ESM syntax. **A SKIP-IF-ABSENT MAY ADMIT A
-# CANDIDATE AND MUST NOT DROP ONE** -- the argument `gates/indexread-gate.py:offenders_of` makes,
+# `ast` finds `__main__`, or a `sh` shebang, or ESM syntax. A SKIP-IF-ABSENT MAY ADMIT A
+# CANDIDATE and must not drop one -- the argument `gates/indexread-gate.py:offenders_of` makes,
 # and the only direction that is sound. Measured cost of asking the question the cheap way, over
-# the whole derivation: **869 immediate files read in 0.37 s user**, against 14.4 s for the same 14
+# the whole derivation: 869 immediate files read in 0.37 s user, against 14.4 s for the same 14
 # candidates run through `entry_reason` recursively on all 7549 of their files.
 #
-# **`MARKER.pattern` IS THE REGEX `pyproject\.toml` AND THE PREFILTER NEEDS A LITERAL.** MEASURED,
+# `MARKER.pattern` IS the regex `pyproject\.toml` AND the prefilter needs a literal. MEASURED,
 # and this line is the bug's own post-mortem: the first version put `MARKER.pattern` in the tuple,
-# `"pyproject\.toml" in src` was a test no file can pass, `checks` answered **0 survivors of 311
-# files**, and the derivation reported a clean-looking **0 of 14** -- a census over a population
+# `"pyproject\.toml" in src` was a test no file can pass, `checks` answered 0 survivors of 311
+# files, and the derivation reported a clean-looking 0 of 14 -- a census over a population
 # the prefilter had emptied, which is `artefacts_ok()`'s shape wearing a denominator.
 # `pattern.replace("\\", "")` is the literal every match of an escaped-literal pattern contains,
-# derived rather than retyped so the two cannot drift. **`_CERTIFY` is ANDED AND `_CERTIFY_OR` IS
-# ORRED**, because `REFUSE` is an alternation: the first version conjoined all four of its
+# derived rather than retyped so the two cannot drift. `_CERTIFY` is ANDED AND `_CERTIFY_OR` IS
+# ORRED, because `REFUSE` is an alternation: the first version conjoined all four of its
 # alternatives and no file in the tree carries two of them, so every candidate was rejected.
 _CERTIFY = (MARKER.pattern.replace("\\", ""), "__main__")
 _CERTIFY_OR = ("refuse(", "exit 3", "not at the repo root", "REFUSED, NOT A VERDICT")
@@ -1099,15 +1099,15 @@ def gate_homes(root):
     homes, witnesses, rejected, absent, read_total = [], {}, [], [], 0
     for top in sorted({p.split("/")[0] for p in paths if "/" in p}):
         base = root / top
-        # `iterdir()`, NOT `os.walk`, AND THAT IS THE COHERENCE CONDITION RATHER THAN A SHALLOWNESS
+        # `iterdir()`, NOT `os.walk`, AND that is the coherence condition rather than a shallowness
         # ONE. `_buckets` enumerates a home's IMMEDIATE files and skips `__pycache__`, so a witness
         # three levels down would certify a home whose gates the population walk CANNOT REACH --
-        # **a home that certifies itself and then contributes nothing, which is `artefacts_ok()`
-        # one level up.** MEASURED, and the case is real: the recursive rule admits `.agents` on
+        # a home that certifies itself and then contributes nothing, which is `artefacts_ok()`
+        # one level up. MEASURED, and the case is real: the recursive rule admits `.agents` on
         # THREE gates that live three levels down -- `.agents/slop/{runsgate,e2esh}/plant.py` and
         # `.agents/slop/censroot/repro.py`, MEASURED at 3 of 3 -- while its FIVE immediate files
-        # certify nothing, so `checks` is admitted on **16** and `gates` on **1** and `.agents` on
-        # **0**. Under the recursive rule the population then holds `.agents/TODO.md`, a markdown
+        # certify nothing, so `checks` is admitted on 16 and `gates` on 1 and `.agents` on
+        # 0. Under the recursive rule the population then holds `.agents/TODO.md`, a markdown
         # file that `ast.parse`s -- `is_literal_data`'s own caveat, one level up.
         survivors, read = [], 0
         if base.is_dir():
@@ -1129,13 +1129,13 @@ def gate_homes(root):
             homes.append(top)
             witnesses[top] = [str(p.relative_to(root)) for p in good]
         elif not base.is_dir():
-            # **A DIRECTORY THE COMMIT TREE NAMES AND THE DISK DOES NOT CARRY IS NOT A DIRECTORY
-            # WITH NO GATES, AND `0/0` SAYS IT IS.** MEASURED on a synthetic repo: `mv gates
+            # A directory the commit tree names and the disk does not carry is not a directory
+            # WITH NO GATES, AND `0/0` SAYS IT IS. MEASURED on a synthetic repo: `mv gates
             # verify` with no commit leaves the commit tree naming `gates/`, and the reject row
             # read `gates 0/0` -- byte-identical to `.github 0/0` (an empty directory that really is
-            # empty) and to `docs 0/1` (a directory with a file and no gate). **THE MISSING
-            # DIRECTORY IS NOT INVISIBLE THE WAY A HAND-LIST TYPO IS: A TYPO NAMES NOTHING THAT
-            # EXISTS, WHILE A MISSING ONE NAMES SOMETHING THE TREE CARRIES.** It is named
+            # empty) and to `docs 0/1` (a directory with a file and no gate). THE MISSING
+            # DIRECTORY is not invisible the way a hand-LIST typo is: A typo names nothing that
+            # EXISTS, WHILE a missing one names something the tree carries. It is named
             # `ABSENT` so the two cannot be confused, and it is its OWN list rather than a third
             # reading of the reject row because `report_roots`'s prose ("no gate there names a
             # root...") is FALSE of a directory that is not there to be asked.
@@ -1228,33 +1228,33 @@ def report_roots(derivation, indent="   "):
           f"tracked file(s) read in total)")
 
 
-# ---- clause III: THE LEDGER -- A RETENTION RECORD, NOT A SECOND COPY OF THE POPULATION ----
+# ---- clause III: THE ledger -- A retention record, NOT a second COPY OF the population ----
 # THE LIVE LEDGER, resolved ONCE at import: the ONLY place a path is hard-wired, and it is read
 # by `plants()`'s inertness assertion and by nothing that writes.
 LEDGER_PATH = HERE / LEDGER.name
 
-# THE LEDGER IS A SHARED WRITABLE PATH, AND A READ-MODIFY-WRITE **WITHOUT **A **LOCK** IS **A
-# LOST **UPDATE**.  `checks/differ.py` takes an `fcntl.flock` for exactly this -- on the corpus's
-# artifact directory -- and this file writes the SAME KIND **OF **THING** (one shared ledger, one
+# THE ledger is a shared writable path, AND a read-MODIFY-WRITE without a lock is a
+# LOST UPDATE.  `checks/differ.py` takes an `fcntl.flock` for exactly this -- on the corpus's
+# artifact directory -- and this file writes the SAME KIND OF THING (one shared ledger, one
 # row per gate, written by the unit that owns each path).
 #
-# **⇒ AND **THE **WINDOW **IS **REAL **AND **IT **IS **SMALL**: **THE **READ **IS **AT
-# `:1304`** **AND **THE **WRITE **IS **AT **`:1319`**, **AND **BETWEEN **THEM **THE **MERGE **IS
-# COMPUTED **FROM **A **SNAPSHOT **OF **THE **OLD **LEDGER** — **SO **TWO **WRITES **THAT **BOTH
-# **READ **THE **SAME **OLD **LEDGER **AND **BOTH **WRITE **WILL **BOTH **KEEP **THE **OTHER's
-# **ROW**, **AND **ONE **OF **THE **TWO **WRITES **LOSES **THE **OTHER's **ROW.**  **⇒ MEASURED
-# **2026-10-29: **127 **INTERLEAVED **WRITES **BY **THREE **UNITS **LOST **NOTHING** — **BUT **THAT
-# **IS **NOT **A **PROOF**, **IT **IS **A **LUCK**, **AND **THE **INSTRUMENT **SHOULD **NOT **RELY
-# **ON **LUCK **FOR **A **RECORD.**
+# - AND the window is real and it is small: THE read is at
+# `:1304` AND the write is at `:1319`, AND between them the merge is
+# COMPUTED from a snapshot of the old ledger — SO two writes that both
+# READ the same old ledger and both write will both keep the other's
+# ROW, AND one of the two writes loses the other's ROW.  - MEASURED
+# 2026-10-29: 127 INTERLEAVED writes by three units lost nothing — BUT that
+# IS not a proof, IT is a luck, AND the instrument should not rely
+# ON LUCK FOR A RECORD.
 #
-# **⇒ AND **THE **LOCK **IS **THE **KERNEL's**, **NOT **A **PID **FILE**: **`fcntl.flock`** **ON **AN
-# **OPEN **FILE **DESCRIPTION** **RELEASES **WHEN **THE **HOLDER **DIES** (**NO **STALE **LOCK **TO
-# **RECLAIM**), **AND **IT **CANNOT **BE **STOLEN** (**THE **KERNEL **REFUSES**).  **⇒ AND **IT **IS
-# **RE-ENTRANT **INSIDE **ONE **PROCESS**, **BECAUSE **A **PLANT **CALLS **`write_ledger`** **AND
-# **THE **CLI **DOES **TOO**, **IN **THE **SAME **PROCESS** — **AND **A **RE-ENTRANT **LOCK **THAT
-# **RELEASED **ON **THE **INNER **EXIT** **WOULD **LET **A **SECOND **HOLDER **IN **WHILE **THE
-# **OUTER **ONE **STILL **BELIEVED **IT **HELD **THE **LEDGER** (**`checks/differ.py`'s **OWN
-# **`:135-139`** **RECORDS **THAT **EXACT **BUG **FOR **THE **CORPUS**).**
+# - AND the lock is the kernel's, NOT a pid file: `fcntl.flock` ON an
+# OPEN file description releases when the holder dies (NO stale lock to
+# RECLAIM), AND it cannot be stolen (THE kernel refuses).  - AND it is
+# RE-ENTRANT inside one process, BECAUSE a plant calls `write_ledger` AND
+# THE cli does too, IN the same process — AND a re-ENTRANT lock that
+# RELEASED on the inner exit would let a second holder in while the
+# OUTER one still believed it held the ledger (`checks/differ.py`'s OWN
+# `:135-139` RECORDS that exact bug for the corpus).
 LEDGER_LOCK = LEDGER_PATH.with_suffix(LEDGER_PATH.suffix + ".lock")
 _LOCK_FD: int | None = None
 _LOCK_DEPTH = 0
@@ -1264,12 +1264,12 @@ _LOCK_DEPTH = 0
 def ledger_lock(path=None):
     """HOLD **THE **LEDGER **FOR **THE **READ-MODIFY-WRITE**, **OR **REFUSE**.
 
-    **⇒ AND **THE **LOCK **IS **PER **LEDGER **FILE**, **NOT **ONE **FIXED **PATH** — **BECAUSE **A
+    **AND **THE **LOCK **IS **PER **LEDGER **FILE**, **NOT **ONE **FIXED **PATH** — **BECAUSE **A
     **PLANT **WRITES **A **SYNTHETIC **LEDGER **IN **A **TEMP **TREE**, **AND **A **LOCK **ON **A
     **DIFFERENT **FILE **PROTECTS **NOTHING**: **THE **LOCK **MUST **BE **ON **THE **FILE **THAT **IS
     **BEING **READ-AND-WRITTEN.**
 
-    **⇒ AND **A **REFUSAL **NAMES **THE **HOLDER**, **LIKE **`checks/differ.py`'s **CORPUS **LOCK
+    **AND **A **REFUSAL **NAMES **THE **HOLDER**, **LIKE **`checks/differ.py`'s **CORPUS **LOCK
     **DOES** — **AND **IT **NAMES **ONE **ONLY **IF **IT **IS **STILL **ALIVE**, **BECAUSE **THE
     **KERNEL **IS **THE **AUTHORITY **ON **WHETHER **THERE **IS **A **HOLDER**, **AND **THE **FILE **IS
     **ONLY **THE **HOLDER's **OWN **RECORD **OF **ITSELF** — **SO **A **NAME **WHOSE **PROCESS **IS
@@ -1295,7 +1295,7 @@ def ledger_lock(path=None):
             os.close(fd)
             yield _lock_refusal(llock)
             return
-        # THE FILE WE LOCKED MUST STILL BE THE FILE AT THAT PATH: a sweep that deletes it would
+        # THE file we locked must still be the file at that path: a sweep that deletes it would
         # leave this process holding an INODE nobody else can find, and the next holder would lock
         # a NEW file -- two holders, one ledger.
         try:
@@ -1322,7 +1322,7 @@ def ledger_lock(path=None):
 def _lock_refusal_text(lock_path=None) -> str:
     """THE **REFUSAL **TEXT**, **AS **A **STRING**, **SO **A **PLANT **CAN **ASSERT **ON **IT** —
     **A **PLANT **THAT **ASSERTS **ON **THE **BEHAVIOUR **AND **NOT **ON **THE **WORDS **IS **A
-    **PLANT **THAT **ROTS **WHEN **THE **WORDS **DO.**  **⇒ AND **THE **WORDS **ARE **STILL **HERE**
+    **PLANT **THAT **ROTS **WHEN **THE **WORDS **DO.**  **AND **THE **WORDS **ARE **STILL **HERE**
     **BECAUSE **A **REFUSAL **THAT **DOES **NOT **SAY **WHO **HOLDS **IT **IS **A **REFUSAL **A
     **CALLER **CANNOT **ACT **ON** — **AND **THE **PLANT **CHECKS **THAT **IT **DOES**."""
     lp = Path(lock_path) if lock_path is not None else LEDGER_LOCK
@@ -1361,32 +1361,32 @@ def _process_alive(pid: int) -> bool:
         return False
     return True
 
-# **A ROW IS NOT A CLAIM THAT A GATE EXISTS. IT IS A RECORD OF A GATE THAT WAS DISCOVERED, AND
-# `reason == RETIRED` IS WHAT IT SAYS WHEN THAT GATE IS GONE.** MEASURED, and both halves of this
+# A row is not a claim that a gate exists. IT is a record of a gate that was discovered, AND
+# `reason == RETIRED` IS what it says when that gate is gone. MEASURED, and both halves of this
 # sentence were defects before it:
 #
-#   THE ROWS WERE 100% DERIVABLE AND 36 BEHIND. `write_ledger(rows_of(_buckets(root)))` produces
-#   **213** rows and round-trips through the TSV byte-for-byte, so a row held nothing the tree did
-#   not -- and the file on disk held **177** of them, last accepted 2026-10-15 (`c60233c65`,
-#   "accept the gates-pop ledger snapshot: 173 -> 177"), which is **36** short of what the tree
-#   holds today. A COPY OF A MEASUREMENT THAT IS PERMANENTLY STALE IS NOT A POPULATION; IT IS A
+#   THE rows were 100% DERIVABLE and 36 BEHIND. `write_ledger(rows_of(_buckets(root)))` produces
+#   213 rows and round-trips through the TSV byte-for-byte, so a row held nothing the tree did
+#   not -- and the file on disk held 177 of them, last accepted 2026-10-15 (`c60233c65`,
+#   "accept the gates-pop ledger snapshot: 173 -> 177"), which is 36 short of what the tree
+#   holds today. A COPY OF a measurement that is permanently stale is not a population; IT is a
 #   HAND LIST NOBODY OWNS, and `gates/onnx_census-gate.py:11` says so in its own header: the
-#   ledger is "NOT MINE TO EDIT". **THE DENOMINATOR WAS THE PROBLEM AND ADDING ROWS IS THE WRONG
-#   FIRST MOVE BECAUSE IT MAKES THE NEXT DELETION THE ONLY THING THAT CAN TURN A GREEN GATE RED,
-#   WITH ERASURE AS THE ONLY REMEDY.** MEASURED on a synthetic tree: nothing moved `rc=0`, and a
+#   ledger is "NOT mine to edit". THE denominator was the problem and adding rows is the wrong
+#   FIRST MOVE BECAUSE it makes the next deletion the only thing that can turn a green gate red,
+#   WITH erasure as the only remedy. MEASURED on a synthetic tree: nothing moved `rc=0`, and a
 #   gate deleted CORRECTLY `rc=1` with `III GONE` -- indistinguishable from an accidental loss,
 #   and curable only by dropping the row, which erases the only evidence the gate ever existed.
 #
-#   SO THE SCHEMA IS THE FIX AND IT COSTS ONE COLUMN. `RETIRED` is a `reason` value, not a new
+#   SO the schema is the fix and it costs one column. `RETIRED` is a `reason` value, not a new
 #   field: a row's `reason` is either a discovered reason or `RETIRED`, `write_ledger` MERGES
 #   (it updates, adds, and RETIRES -- it never drops a line), and `gone` now means *left the
-#   population and not yet recorded as having left*. **THE LEDGER IS MONOTONIC: EVERY EDIT ADDS
-#   INFORMATION, SO THERE IS NO EDIT THAT MAKES IT GREEN BY ERASING.** That is the whole property
+#   population and not yet recorded as having left*. THE ledger is monotonic: EVERY edit adds
+#   INFORMATION, SO there is no edit that makes it green by erasing. That is the whole property
 #   the `red = 1` on `gone` was reaching for and could not hold, because `red` on an ABSENCE can
 #   only be answered by an absence.
 RETIRED = "gone"
 
-# **THE COLUMNS A `moved` VERDICT IS ALLOWED TO BE ABOUT, NAMED BY WHAT THEY ARE.**
+# THE columns a `moved` VERDICT is allowed to be about, NAMED by what they are.
 # `read_ledger` yields `(path, reason, root_const, asserts, onroot)`, so the tail is a FOUR-tuple
 # and `root_const` is its index 1. Index 2 and 3 are BOOLEANS the census decided; index 0 is the
 # word it classified by; index 1 is a QUOTATION of the gate's source. Index 1 is excluded because
@@ -1398,15 +1398,15 @@ def DECIDED(tail):
     return tail[0], tail[2], tail[3]
 
 
-# **A CELL THIS READER DID NOT READ IS NOT A `False`.** `read_ledger` used to coerce with
+# A cell this reader did not read is not a `False`. `read_ledger` used to coerce with
 # `f[3] == "1"`, so every spelling outside the writer's own `{"0", "1"}` -- `True`, `garbage`,
 # `""`, `0` on a True cell, `01`, `2`, `" 1"`, `"1 "` -- came back as `False`, and
 # `asserts_root=False` IS A CLAIM: "this gate does not assert its root". MEASURED 2026-10-20T00:18Z
-# on copies of the live ledger: **8 of 8 such spellings read back `False` and none of them was
-# visible anywhere.** And the coercion is WORSE THAN AN ARBITRARY WRONG ANSWER, because it is
-# right most of the time: **187 of the 224 live rows carry `asserts_root=0`**, so a corrupted cell
+# on copies of the live ledger: 8 of 8 such spellings read back `False` and none of them was
+# visible anywhere. And the coercion is WORSE THAN AN ARBITRARY WRONG ANSWER, because it is
+# right most of the time: 187 of the 224 live rows carry `asserts_root=0`, so a corrupted cell
 # disagrees with the writer's intent about one time in six and looks like a real decision the rest
-# -- **a corrupted column that is usually not wrong is a corruption nobody goes looking for.**
+# -- a corrupted column that is usually not wrong is a corruption nobody goes looking for.
 UNREADABLE = "UNREADABLE"
 
 
@@ -1445,12 +1445,12 @@ def read_ledger(path):
     out = []
     for line in body[1:]:
         f = line.split("\t")
-        # **THE PATH SURVIVES A ROW THIS READER CANNOT ACCOUNT FOR, AND THAT IS THE SHORT-ROW
-        # FIX.** A row with the wrong number of fields used to be DROPPED (`if len(f) >= 5`), and
+        # THE path survives a row this reader cannot account for, AND that is the short-ROW
+        # FIX. A row with the wrong number of fields used to be DROPPED (`if len(f) >= 5`), and
         # the drop was not a refusal, it was a hole. MEASURED 2026-10-20T00:18Z, cutting one live
-        # row to three fields made `report` print that gate as **NEW** -- a gate the ledger recorded
+        # row to three fields made `report` print that gate as NEW -- a gate the ledger recorded
         # on 2026-10-17 re-announced as a first sighting -- and shrank the denominator from `224` to
-        # `223` without one word about it. **REFUSING THE WHOLE ROW IS EXACTLY WHAT IT ALREADY DID**,
+        # `223` without one word about it. REFUSING the whole row is exactly what it already did,
         # which is the measurement that separated the two defects and decided between the options:
         # a bad cell is ONE column and a short row is FOUR, and the answer that refuses only what it
         # cannot read is the only one that is not the short-row defect. Arity is checked against
@@ -1472,7 +1472,7 @@ def ledger_line(row):
                      + [str(int(b)) if isinstance(b, bool) else b for b in row[3:]])
 
 
-# **THE CANONICAL SPELLING, ASKED OF THE WRITER INSTEAD OF SPELLED HERE.** `ledger_line` writes
+# THE canonical spelling, ASKED of the writer instead of spelled here. `ledger_line` writes
 # `int(...)`, so calling it over both booleans enumerates every value a boolean cell can legally
 # hold -- `int` over `(False, True)` IS exactly `{"0", "1"}`, which is why the generator rather
 # than the literal is the source. A `("0", "1")` written out at the reader would be a format
@@ -1483,7 +1483,7 @@ SPELLINGS = frozenset(ledger_line(("p", "r", "q", b, o)).split("\t")[3]
 
 
 class LedgerLocked(Exception):
-    """THE **LEDGER **IS **HELD **BY **ANOTHER **WRITER**.  **⇒ A **REFUSAL **IS **NOT **A
+    """THE **LEDGER **IS **HELD **BY **ANOTHER **WRITER**.  **A **REFUSAL **IS **NOT **A
     **CORRUPTION**, **AND **THE **DIFFERENCE **IS **THE **WHOLE **POINT**: **THE **SECOND **WRITE
     **SAYS **WHO **HAS **THE **LOCK **AND **EXITS**, **AND **THE **LEDGER **THE **FIRST **WRITE
     **IS **WRITING **IS **LEFT **EXACTLY **AS **IT **WAS.**"""
@@ -1516,11 +1516,11 @@ def write_ledger(rows, path=None, only=None):
     Returns the unaccountable paths, or None after a write.
     """
     lp = path or LEDGER_PATH
-    # **⇒ THE **READ **AND **THE **WRITE **ARE **INSIDE **THE **LOCK**, **BECAUSE **THE **BUG
-    # **THIS **LOCK **EXISTS **TO **PREVENT **IS **A **LOST **UPDATE**: **TWO **WRITERS **THAT **BOTH
-    # **READ **THE **SAME **OLD **LEDGER **AND **BOTH **WRITE **WILL **BOTH **KEEP **THE **OTHER's
-    # **ROW**, **AND **ONE **OF **THE **TWO **WRITES **LOSES **THE **OTHER's **ROW.**  **⇒ LOCKING
-    # **ONLY **THE **WRITE **WOULD **BE **A **LOCK **THAT **LOCKS **NOTHING.**
+    # - THE read and the write are inside the lock, BECAUSE the bug
+    # THIS lock exists to prevent is a lost update: TWO writers that both
+    # READ the same old ledger and both write will both keep the other's
+    # ROW, AND one of the two writes loses the other's ROW.  - LOCKING
+    # ONLY the write would be a lock that locks nothing.
     with ledger_lock(lp) as refusal:
         if refusal is not None:
             raise LedgerLocked(refusal)
@@ -1545,15 +1545,15 @@ def write_ledger(rows, path=None, only=None):
 
 LEDGER_HEADER = "path\treason\troot_const\tasserts_root\ton_root"
 LEDGER_FIELDS = LEDGER_HEADER.split("\t")
-# **THE HEADER IS ALSO THE FORMAT CONTRACT, AND THE ARITY COMES FROM IT** rather than from a `5`
+# THE header is also the format contract, AND the arity comes from it rather than from a `5`
 # written beside the check that needs it: `read_ledger` reads `len(f) != len(LEDGER_FIELDS)`, so
 # renaming or re-aritying the header changes what counts as a well-formed row with no edit here.
 
-# THE GENERATOR LINE, SPELLED THE WAY THIS TREE ALREADY SPELLS IT. `gates/opseven-pins.rows` and
+# THE generator line, SPELLED the way this tree already spells it. `gates/opseven-pins.rows` and
 # `gates/op_graph_census-pins.rows` both open with `# <file> -- GENERATED by `<gate> --<flag>`, which
 # is its ONLY writer.` and both gates refuse every other spelling. READ, NOT COPIED: this file is a
 # GENERATOR (`AGENTS.md`'s shared-writable-path class) whose default mode used to WRITE, so a reader
-# had no way to tell a record from a snapshot. **THE HEADER IS ALSO PART OF THE FORMAT CONTRACT**:
+# had no way to tell a record from a snapshot. THE header is also part of the format contract:
 # `read_ledger` drops comments and then ONE header line, so a reader of this file that skips neither
 # reads five tab-separated fields named `path` as a gate.
 LEDGER_PREAMBLE = (
@@ -1574,7 +1574,7 @@ LEDGER_PREAMBLE = (
 )
 
 
-# ---- THE COMMIT THAT MADE EACH MOVEMENT --------------------------------------------------
+# ---- THE commit that made each movement --------------------------------------------------
 def events(root, homes):
     """`{path: (introduced_by, removed_by)}` -- the commits that brought each path IN and took it
     OUT, from ONE `git log` over the homes.
@@ -1675,26 +1675,26 @@ def report(root, ledger_mode, ledger_path=None, only=None):
           f"{'/'.join(homes)}/ (+{len(libs)} module(s) with no entry guard, {len(opaque)} file(s) "
           f"OPAQUE -- readable\n   by no grammar in this instrument, which is a DENOMINATOR and "
           f"not a verdict: it is")
-    # **THE UNIT, PRINTED, BECAUSE `checks/gatesweep.py:walk` IS A DIFFERENT ONE AND A READER
-    # WITH TWO NUMBERS CANNOT RECONCILE THEM WITHOUT IT.** `os.walk` descends into `gates/oracles/`
+    # THE unit, PRINTED, BECAUSE `checks/gatesweep.py:walk` IS a different one and a reader
+    # WITH two numbers cannot reconcile them without it. `os.walk` descends into `gates/oracles/`
     # and `_buckets`' `iterdir()` does not; `gatesweep._prune` drops dotted names and `_buckets`
     # does not. MEASURED 2026-10-19 03:57Z: `WALK 258` against `CONTROL 261`, and the difference
-    # is EXACTLY `258 - 2 subdirectory + 5 dotted = 261`. **TWO INSTRUMENTS HOLDING TWO WALK RULES
-    # DISAGREEING BY A CONSTANT ARE NOT A DEFECT; TWO INSTRUMENTS HOLDING TWO LISTS ARE.**
+    # is EXACTLY `258 - 2 subdirectory + 5 dotted = 261`. TWO instruments holding two walk rules
+    # DISAGREEING by a constant are not a defect; TWO instruments holding two lists are.
     # THE OPAQUE DENOMINATOR, BY EXTENSION, because a single total cannot say WHICH language the
     # instrument cannot read and a reader who is not told that cannot tell whether 148 is right.
     # It moves when the tree gains a language, which is the entire reason it is printed.
     for suf, n in sorted(Counter(suffix_of(p) for p in opaque).items(), key=lambda kv: -kv[1]):
         print(f"     opaque {suf:8} {n:4} file(s)")
-    # **THE POPULATION RULE, PRINTED, WITH THE FILES IT EXCLUDED AND WHY THEY ARE EXCLUDED.**
+    # THE population rule, PRINTED, WITH the files it excluded and why they are excluded.
     # This file's own definition says a gate is a file the COMMIT TREE carries; the HOMES were
     # derived that way and the FILES were not, so the walk could admit another unit's
-    # in-flight scratch. MEASURED 2026-10-20T17:58Z: **4 files** under the homes were not
+    # in-flight scratch. MEASURED 2026-10-20T17:58Z: 4 files under the homes were not
     # carried by the commit tree, all of them `checks/.tmp-*`, another unit's scratch -- and
     # `gates/gates-pop.py`'s own header records a plain invocation writing exactly those into
-    # the shared ledger. **A FILE THE TREE DOES NOT CARRY IS NOT A GATE OF THIS REPOSITORY, AND
-    # A POPULATION THAT INCLUDES ANOTHER UNIT's WORK IN PROGRESS IS A CLAIM ON A FILE SOMEBODY
-    # ELSE OWNS.** The names are printed because a rule that excludes files without naming them
+    # the shared ledger. A file the tree does not carry is not a gate of this repository, AND
+    # A population that includes another unit's WORK in progress is a claim on a file somebody
+    # ELSE OWNS. The names are printed because a rule that excludes files without naming them
     # is the `artefacts_ok()` shape wearing a population.
     would_be = [(p, r) for p, r in uncarried if r is not None]
     print(f"     POPULATION RULE: the COMMIT TREE carries the gate ({derivation['source']}); "
@@ -1705,7 +1705,7 @@ def report(root, ledger_mode, ledger_path=None, only=None):
           f"the census measures.")
     for p, r in would_be:
         print(f"       not carried: {str(p.relative_to(root)):46} {r}")
-    # **THE SCRATCH RULE, PRINTED WITH ITS OWN DENOMINATOR AND THE NAMES IT EATS.** A mutation
+    # THE scratch rule, PRINTED with its own denominator and the names it eats. A mutation
     # harness stages a REVISION of a file (`.gitignore`), and a name that says so is not a gate --
     # MEASURED 2026-10-25 on the eight copies this tree left behind, each of which names the file
     # it copies in its own first docstring line. The rule is a NAME (`is_scratch`), so the names
@@ -1749,8 +1749,8 @@ def report(root, ledger_mode, ledger_path=None, only=None):
         print()
 
     prev = read_ledger(lpath)
-    # **THE DEFAULT IS THE HONEST ONE FOR A FIRST-EVER RUN: WITH NO `prev`, EVERY ROW THIS RUN
-    # FOUND IS NEW.** The alternative (`()` for all four) makes a ledger's initial write report
+    # THE default is the honest one for a first-EVER run: WITH no `prev`, EVERY row this run
+    # FOUND IS NEW. The alternative (`()` for all four) makes a ledger's initial write report
     # `IT ABSORBED 0 new` over a file it just filled -- and a count that reads zero on a write is
     # the one number in this report a reader would trust. They are hoisted BEFORE the branch
     # because a first-ever write must not raise `NameError` on the line that reports what it wrote.
@@ -1763,23 +1763,23 @@ def report(root, ledger_mode, ledger_path=None, only=None):
     else:
         old = {r[0]: r[1:] for r in prev}
         new = {r[0]: r[1:] for r in rows}
-        # **A ROW RECORDING A `RETIRED` GATE IS NOT A ROW THAT CLAIMS THE GATE IS HERE.** MEASURED,
+        # A row recording a `RETIRED` GATE is not a row that claims the gate is here. MEASURED,
         # and this is the one subtraction that makes the anti-evolution property real: with
         # `gone = set(old) - set(new)` over ALL rows, a tombstone and a live claim were
         # indistinguishable, so the only answer to `gone` was to erase the row -- the defect.
         retired = {k for k, v in old.items() if v[0] == RETIRED}
         added = sorted(set(new) - set(old))
-        # **A QUOTATION IS NOT A DECISION, AND A DIFF OVER QUOTATIONS HAS NO ACTIONABLE CONTENT.**
+        # A quotation is not a decision, AND a diff over quotations has no actionable content.
         # `r[1:]` is `(reason, root_const, asserts_root, on_root)`, and `root_const` is index 1 --
         # `m.group(0)` of `ROOT_CONST`/`ROOT_INLINE` flattened by `" ".join(...split())` and cut at
-        # the TSV width: **it is a PREFIX OF THE GATE'S OWN SOURCE TEXT, TRUNCATED MID-EXPRESSION**,
+        # the TSV width: it is a PREFIX of the gate'S own source text, TRUNCATED mid-EXPRESSION,
         # `Path sys.path.insert(0, str(Path(__file__).resolve().parents[1]` -- 63 characters and an
         # unclosed paren. It answers nothing a reader can act on, and it MOVES on a reformat.
         # MEASURED 2026-10-19T16:30Z on commit `325c422d9bd3`: it alone accounted for `5 changed`
         # across five files that added a `sys.path.insert(0, ...)` line, and `0 of the 5` moved a
         # boolean -- `asserts_root` and `on_root` are `SAME` on all five. The tree had genuinely
         # moved and the ledger's only reported change was a reformat seen through a column that
-        # carries no decision. **SO THE COMPARISON IS OVER THE THREE COLUMNS THAT DECIDE SOMETHING.**
+        # carries no decision. SO the comparison is over the three columns that decide something.
         moved = sorted(k for k in set(new) & set(old) if DECIDED(new[k]) != DECIDED(old[k]))
         # `gone` is an UNRECORDED departure; `back` is a tombstone whose gate came BACK, which is
         # `added` by another name and is cured the same way. Both are red; neither is erasure.
@@ -1789,7 +1789,7 @@ def report(root, ledger_mode, ledger_path=None, only=None):
         print(f"III LEDGER DIFF: {len(added)} new, {len(gone)} UNRECORDED departure(s), "
               f"{len(moved)} changed, {len(back)} returned, {len(still)} retired "
               f"({len(rows)} live of {len(prev)} row(s); a RETIRED row is a record, not a claim)")
-        # **EVERY MOVEMENT NAMES THE COMMIT THAT OWES IT.** Attribution is the queue. The payment
+        # EVERY movement names the commit that owes it. Attribution is the queue. The payment
         # is `--write-ledger --only <path>`, and it records that path alone. A bare
         # `--write-ledger` is refused: absorbing every row below is the central sweep, and it
         # makes this diff green without one gate having been measured.
@@ -1821,10 +1821,10 @@ def report(root, ledger_mode, ledger_path=None, only=None):
             print(f"III   retired {k} -- left the population, recorded, kept"
                   + (f"  (removed by {by})" if by else ""))
         for k in moved:
-            # NAME THE COLUMNS THAT MOVED. `old[k][0] -> new[k][0]` printed the REASON on both
+            # NAME the columns that moved. `old[k][0] -> new[k][0]` printed the REASON on both
             # sides of the arrow even when the reason was unchanged and a boolean was what
             # moved, so the line described a change it had not found.
-            # **AND A CELL THE LEDGER DID NOT CARRY IS NOT A CHANGE, IT IS A HOLE.** An arrow
+            # AND a cell the ledger did not carry is not a change, IT is a hole. An arrow
             # `UNREADABLE->False` says the gate stopped asserting; what is true is that the ledger
             # did not say, so the line names the hole, names what this run read instead, and names
             # the cure -- the content `325c422d9bd3` lacked when it reported `5 changed`.
@@ -1840,7 +1840,7 @@ def report(root, ledger_mode, ledger_path=None, only=None):
                   "RECORD. Stability is\n     the only state a set-difference gate can be quiet "
                   "about -- and it is reached by a MERGE,\n     never by a row being deleted.")
         print()
-    # **A PATHSPEC WRITE THAT LEAVES A MOVEMENT UNNAMED IS NOT GREEN.** This sits AFTER the
+    # A pathspec write that leaves a movement unnamed is not green. This sits AFTER the
     # ledger branch because a first-ever write has no `prev` and still has unnamed rows: write
     # mode used to return 0 whenever it wrote, which is right for a full merge and wrong for
     # `--only`. A movement this write was asked to record does not keep the run red; one it was
@@ -1848,17 +1848,17 @@ def report(root, ledger_mode, ledger_path=None, only=None):
     if ledger_mode != "check" and only is not None and any(
             k not in only for k in (*added, *gone, *moved, *back)):
         red = 1
-    # **⇒ AND **THE **WRITE **SUCCEEDED **AND **THE **RUN **IS **STILL **RED** — **AND **A **CALLER
-    # **THAT **READS **ONLY **THE **EXIT **STATUS **WOULD **REPORT **A **FAILURE **FOR **A
-    # **SUCCESS.**  **MEASURED 2026-10-29: **THREE **UNITS **PAID **127 **ROWS** **AND **EVERY **ONE
-    # **OF **THE **INVOCATIONS **EXITED **1**, **SO **THE **37/49/41 **UNIT **REPORTS **ALL **READ
-    # **"37 **FAILURES **FOR **37 **SUCCESSES"**.**  **⇒ AND **THE **EXIT **CODE **IS **RIGHT** — **A
-    # **PATHSPEC **WRITE **THAT **LEAVES **A **MOVEMENT **UNNAMED **IS **NOT **GREEN**, **AND **THAT
-    # **IS **THE **GATE's **JOB** — **BUT **THE **RUN **MUST **SAY **THAT **THE **WRITE **HAPPENED**,
-    # **BECAUSE **"RED" **ALONE **CANNOT **TELL **A **CALLER **WHICH **OF **THE **TWO **IT **IS
-    # **LOOKING **AT.**
+    # - AND the write succeeded and the run is still red — AND a caller
+    # THAT reads only the exit status would report a failure for a
+    # SUCCESS.  MEASURED 2026-10-29: THREE units paid 127 ROWS and every one
+    # OF the invocations exited 1, SO the 37/49/41 UNIT reports all read
+    # "37 FAILURES for 37 SUCCESSES".  - AND the exit code is right — A
+    # PATHSPEC write that leaves a movement unnamed is not green, AND that
+    # IS the gate's JOB — BUT the run must say that the write happened,
+    # BECAUSE "RED" ALONE cannot tell a caller which of the two it is
+    # LOOKING AT.
     if ledger_mode != "check":
-        # **A WRITE OF THE SHARED LEDGER WITHOUT A PATHSPEC IS THE CENTRAL SWEEP.** The CLI refuses
+        # A write of the shared ledger without a pathspec is the central sweep. The CLI refuses
         # it before it gets here; this is the same refusal for a caller that imported `report`.
         # `only is None` remains the full merge, and it is how the plants build a synthetic ledger.
         # It is not how the shared file is written.
@@ -1867,7 +1867,7 @@ def report(root, ledger_mode, ledger_path=None, only=None):
         if only is None and Path(lpath).resolve() == LEDGER_PATH.resolve():
             refuse("a write of the shared ledger without `--only PATH` is the central sweep, "
                    "refused. Name the paths this commit owns.")
-        # THE COUNTS ARE THE PATHS THIS WRITE ABSORBS, NOT THE DIFF. A pathspec that recorded every
+        # THE counts are the paths this write absorbs, NOT the diff. A pathspec that recorded every
         # NEW row above would be the sweep again, and the banner would be the line that hid it.
         scope = None if only is None else set(only)
 
@@ -1878,9 +1878,9 @@ def report(root, ledger_mode, ledger_path=None, only=None):
         abs_gone = [k for k in gone if took(k)]
         abs_moved = [k for k in moved if took(k)]
         abs_back = [k for k in back if took(k)]
-        # **⇒ A **LOCKED **LEDGER **IS **A **REFUSAL, **NOT **A **CRASH.**  **⇒ AND **THE
-        # **REFUSAL **NAMES **THE **HOLDER**, **BECAUSE **A **REFUSAL **THAT **DOES **NOT **SAY
-        # **WHO **HOLDS **IT **IS **A **REFUSAL **A **CALLER **CANNOT **ACT **ON.**
+        # - A locked ledger is a refusal, NOT a crash.  - AND the
+        # REFUSAL names the holder, BECAUSE a refusal that does not say
+        # WHO holds it is a refusal a caller cannot act on.
         try:
             unknown = write_ledger(rows, lpath, scope)
         except LedgerLocked as locked:
@@ -1891,7 +1891,7 @@ def report(root, ledger_mode, ledger_path=None, only=None):
                    f"the ledger. Nothing was written.")
         after = read_ledger(lpath) or []
         tombs = sum(1 for r in after if r[1] == RETIRED)
-        # **AND IT SAYS IT WROTE, IN THE PAST TENSE, WITH THE ROWS IT ABSORBED COUNTED.** The
+        # AND it says it wrote, IN the past tense, WITH the rows it absorbed counted. The
         # absorbed counts are the intersection of the diff with the pathspec, so a write that
         # names one path cannot claim it absorbed the rest. PLANT 12 asserts the line parses;
         # PLANT 14 asserts the intersection.
@@ -1927,16 +1927,16 @@ def report(root, ledger_mode, ledger_path=None, only=None):
     print(f"GATES-POP: {'RED' if red else 'OK'} -- {len(rows)} entry points, {named} name a root, "
           f"{named - unasserted} assert it, {offroot} resolve outside the repo; "
           f"{len(grows)} generated directories discovered (shared with retention-check)")
-    # **⇒ AND **THE **WRITE **SUCCEEDED **AND **THE **RUN **IS **STILL **RED** — **AND **A **CALLER
-    # **THAT **READS **ONLY **THE **EXIT **STATUS **WOULD **REPORT **A **FAILURE **FOR **A
-    # **SUCCESS.**  **MEASURED 2026-10-29: **THREE **UNITS **PAID **127 **ROWS** **AND **EVERY **ONE
-    # **OF **THE **INVOCATIONS **EXITED **1**, **SO **THE **37/49/41 **UNIT **REPORTS **ALL **READ
-    # **"37 **FAILURES **FOR **37 **SUCCESSES"**.**  **⇒ AND **THE **EXIT **CODE **IS **RIGHT** — **A
-    # **PATHSPEC **WRITE **THAT **LEAVES **A **MOVEMENT **UNNAMED **IS **NOT **GREEN**, **AND **THE
-    # **OTHER **CLAUSES **CAN **BE **RED **TOO** — **BUT **IT **IS **NOT **BECAUSE **THE **WRITE
-    # **FAILED.**  **⇒ AND **THE **LINE **IS **HERE**, **AFTER **THE **VERDICT **AND **AFTER **`red`
-    # **IS **SET**, **BECAUSE **A **LINE **THAT **PRINTS **BEFORE **THE **FACT **IT **REPORTS **IS **A
-    # **LINE **THAT **CAN **BE **WRONG.**
+    # - AND the write succeeded and the run is still red — AND a caller
+    # THAT reads only the exit status would report a failure for a
+    # SUCCESS.  MEASURED 2026-10-29: THREE units paid 127 ROWS and every one
+    # OF the invocations exited 1, SO the 37/49/41 UNIT reports all read
+    # "37 FAILURES for 37 SUCCESSES".  - AND the exit code is right — A
+    # PATHSPEC write that leaves a movement unnamed is not green, AND the
+    # OTHER clauses can be red too — BUT it is not because the write
+    # FAILED.  - AND the line is here, AFTER the verdict and after `red`
+    # IS set, BECAUSE a line that prints before the fact it reports is a
+    # LINE THAT CAN BE WRONG.
     if red and wrote_ok:
         print("III   THE WRITE SUCCEEDED AND **THIS **RUN **IS **STILL **RED**. **THE **EXIT "
               "**CODE **IS **1 **FOR **THE **RUN's **OWN **REASON** -- **A **PATHSPEC **WRITE "
@@ -2009,7 +2009,7 @@ def verdict_of(facts):
     return "off-repo" if not on_root else ("on-root+assert" if asserts else "on-root-bare")
 
 
-# THE PRE-FIX FIXTURES, VERBATIM FROM THIS REPO'S OWN HISTORY. Not retyped from memory: MEASURED,
+# THE pre-FIX fixtures, VERBATIM from this repo'S own history. Not retyped from memory: MEASURED,
 # the first version of plant 5 asserted `checks/census.py` in the `(REPO|ROOT) = HERE.parents[2]`
 # spelling because that is the spelling the BRIEF used, and the instrument reported the real
 # pre-fix `checks/census.py:14` as on-root and GREEN. A fixture retyped by hand agrees with the
@@ -2054,11 +2054,11 @@ GOOD_ROOT = ("from pathlib import Path\nHERE = Path(__file__).resolve().parent\n
              "REPO = HERE.parents[0]\n"
              "def refuse(*w):\n    raise SystemExit(2)\n"
              "refuse('x') if not (REPO / 'pyproject.toml').is_file() else None\n" + MAIN)
-# THE PLANT-7 FIXTURES, HOISTED OUT OF `_plants` AND INTO MODULE CONSTANTS. MEASURED, and this is
+# THE plant-7 FIXTURES, HOISTED out of `_plants` AND into module constants. MEASURED, and this is
 # the fourth measurement of the same fault: with `lit_py` living INSIDE the plant function, the
 # blanker could not see it -- `FIXTURES` is built from module-level names -- so `ROOT_INLINE` read
 # this file's own plant fixture as this file's own root and reported `gates/gates-pop.py`
-# off-repo. **A FIXTURE THAT IS NOT REACHABLE FROM THE BLANKER WILL BE READ AS CODE.** Plant 7
+# off-repo. A fixture that is not reachable from the blanker will be read as code. Plant 7
 # asserted the COMMENT layer only, and the STRING layer is where the finding actually lived.
 LIT_PY = ("# was: sys.path.insert(0, str(HERE.parents[2]))\n"
           "HERE = pathlib.Path(__file__).resolve().parent\nREPO = HERE.parents[0]\n" + MAIN)
@@ -2144,7 +2144,7 @@ def _plants():
                        "DERIVATION admitted", ok0,
                        f"found {len(e)} entry point(s): {sorted(got)}"))
 
-    # PLANT 6 -- **THE BELT THAT DISAGREED WITH THE INSTRUMENT.** Two tokenizers that share no
+    # PLANT 6 -- THE belt that disagreed with the instrument. Two tokenizers that share no
     # regex, and the assertion is that they DISAGREE on the live tree AND that the union is
     # strictly larger than the line-anchored one. MEASURED, this instrument shipped a
     # line-anchored `$0`/`exec` tokenizer that found 2 of 17 `checks/*.sh` entry points and
@@ -2152,10 +2152,10 @@ def _plants():
     # answers. The token is the same shape as the belt that ate a full stop: both read a
     # separator the subject did not use at that position. Asserting only "the union works"
     # would let the narrow tokenizer back in silently, so the DISAGREEMENT is itself the claim.
-    # PLANT 6's DENOMINATOR WAS ITSELF A SUFFIX SET, in the file that just had one removed.
+    # PLANT 6's DENOMINATOR was itself a suffix set, in the file that just had one removed.
     # `live_sh = sorted((HERE.parent / "checks").glob("*.sh"))` named ONE home BY HAND and ONE
-    # SUFFIX, so `union == len(live_sh)` was `17 == 17` over a population it had chosen -- **the
-    # assertion agreed with itself by construction**, which is the defect this file's own header
+    # SUFFIX, so `union == len(live_sh)` was `17 == 17` over a population it had chosen -- the
+    # assertion agreed with itself by construction, which is the defect this file's own header
     # calls `artefacts_ok()`'s shape. MEASURED: `checks/bend` is a tracked `#!/bin/sh` shim with
     # NO dot in its name, so it is a shell entry the suffix never held, and the true shell-entry
     # count across BOTH homes is 18 where this line said 17. The denominator is now the WALK and
@@ -2197,7 +2197,7 @@ def _plants():
 
     with tempfile.TemporaryDirectory() as td:
         r = Path(td); _tree(r, "checks", "gates")
-        # A GATE THE INSTRUMENT DOES NOT NOTICE: no `__main__`, no self-dispatch -- so clause I
+        # A gate the instrument does not notice: no `__main__`, no self-dispatch -- so clause I
         # files it under `sh-lib`/`py-lib` and it is NOT in the population. Asserted two ways:
         # (a) it really is out of the population, and (b) the report SAYS SO with a number, so
         # the exclusion is visible rather than silent. `checks/bounded.py` is the live instance.
@@ -2225,7 +2225,7 @@ def _plants():
         checks.append(("3: an EMPTY population is REFUSED (2), never green", rc_empty == 2,
                        f"rc={rc_empty}"))
 
-    # PLANT 4 -- **A NEW GATE THE INSTRUMENT MUST NOTICE.** The brief's requirement, and the
+    # PLANT 4 -- A new gate the instrument must notice. The brief's requirement, and the
     # one that no static property of this file can fake: the ledger diff has to MOVE when a
     # gate appears that nobody wrote down. Asserted as a DIFFERENCE and not as an assertion
     # about a count, because a count is what `artefacts_ok()` reported over a directory holding
@@ -2253,25 +2253,25 @@ def _plants():
         checks.append(("4: a NEW GATE nobody declared makes the ledger MOVE and the run RED",
                        ok4, f"rc={rc_new} said_added={'NEW  checks/undeclared.py' in said}"))
 
-    # PLANT 10 -- **A CORRECT DELETION IS NOT A DEFECT, AND ERASURE IS NOT A CURE.** The trap this
+    # PLANT 10 -- A correct deletion is not a defect, AND erasure is not a cure. The trap this
     # file used to be shaped by, and it is asserted in FOUR directions because the two failure
     # modes are independent and a plant that asserts one is satisfied by a check that cries wolf
     # on the other. MEASURED on the pre-fix code: nothing moved `rc=0`; a gate deleted CORRECTLY
     # `rc=1` with `III GONE`; and the ONLY available remedy was to drop the row, so the two ways to
-    # go green were "delete nothing" and "forget that it existed", and **deleting a gate correctly
-    # was indistinguishable from deleting one by accident.**
+    # go green were "delete nothing" and "forget that it existed", and deleting a gate correctly
+    # was indistinguishable from deleting one by accident.
     #   (a) a gate that LEFT and is not recorded is RED -- the ledger is out of date;
        #   (b) the same gate RETIRED (`--ledger write`, which keeps the row) is GREEN, and the row is
     #       STILL THERE with `reason=gone` -- a correct deletion is achievable and the price is one
     #       word in one row;
-    #   (c) **THE MERGE IS MONOTONIC ACROSS RUNS** -- a SECOND write over the same tree must not
+    #   (c) THE merge is monotonic across runs -- a SECOND write over the same tree must not
     #       drop the tombstone the first one wrote. This is the direction that is assertable HERE
     #       and the one a rewrite fails: PLANT 10 caught exactly that, in this file's own first
     #       merge, on the first run. The claim it replaces -- "a hand-erased row is still red" --
     #       is NOT assertable and was withdrawn: an erased tombstone is indistinguishable from a
     #       gate the ledger never knew, because the ledger is a plain file and `git diff` is the
-    #       only witness to a hand edit. **AN ASSERTION THAT NEEDS A WITNESS THIS INSTRUMENT DOES
-    #       NOT HOLD IS NOT A HARDER ASSERTION, IT IS A FALSE ONE**, and it would have sat in this
+    #       only witness to a hand edit. AN assertion that needs a witness this instrument does
+    #       NOT hold is not a harder assertion, IT is a FALSE ONE, and it would have sat in this
     #       suite green while measuring nothing.
     #   (d) a write over a tree that finds NOTHING retires rather than empties -- the merge, not a
     #       rewrite. Measured, the pre-fix write took a 3-row ledger down to 0 and printed
@@ -2324,23 +2324,23 @@ def _plants():
                    f"(rows {len(rows)} -> {len(after_two)} -> {len(after)}; tombstone kept={len(tomb)}"
                    f"x2; retired={sorted(departed)})"))
 
-    # PLANT 11 -- **THE ROOT SET IS A POPULATION, NOT A FLOOR, AND IT IS NOT PLANTED ANYWHERE.**
+    # PLANT 11 -- THE root set is a population, NOT a floor, AND it is not planted anywhere.
     # `HOMES = ("checks", "gates")` was replaced by `gate_homes()` in `3d92f5751`, and TWELVE plants
     # assert tokenizers, roots, the ledger and the opaque bucket -- and NONE of them asks what the
-    # derivation is FOR. **A POPULATION GATE WITH NO PLANT ON ITS OWN ROOT SET IS A LIST THAT
-    # HAPPENS TO BE COMPUTED**, and that is the shape the hand tuple had. Three directions:
+    # derivation is FOR. A population gate with no plant on its own root set is a list that
+    # HAPPENS TO BE COMPUTED, and that is the shape the hand tuple had. Three directions:
     #   (a) RENAME A HOME, COMMIT: the population MOVES -- the new name is found, the old name is
     #       not, and the entry count is UNCHANGED. A derivation that kept the old name would be a
     #       cache; a derivation that kept BOTH would be a union.
-    #   (b) DELETE A HOME, COMMIT: the population SHRINKS TO NOTHING. **A POPULATION THAT CANNOT
-    #       SHRINK IS A FLOOR, NOT A POPULATION**, and the strongest form of that claim is a
+    #   (b) DELETE a home, COMMIT: the population SHRINKS to nothing. A population that cannot
+    #       SHRINK IS A FLOOR, NOT A POPULATION, and the strongest form of that claim is a
     #       population that reaches ZERO -- which is also the state `report` REFUSES with 2, so the
     #       two agree instead of one papering over the other.
     #   (c) RENAME A HOME WITHOUT COMMITTING: the commit tree still names the old directory, the
-    #       disk does not carry it, and the run says `ABSENT`. **WITHOUT (c) THAT IS `0/0`** --
+    #       disk does not carry it, and the run says `ABSENT`. WITHOUT (c) THAT IS `0/0` --
     #       the same row `.github 0/0` prints for a directory that really is empty -- so a
-    #       DELETED home and an EMPTY one are indistinguishable. **A HAND-LIST TYPO IS INVISIBLE; A
-    #       MISSING DIRECTORY IS NOT, AND THIS IS WHERE IT BECOMES SAYABLE.**
+    #       DELETED home and an EMPTY one are indistinguishable. A hand-LIST typo is invisible; A
+    #       MISSING directory is not, AND this is WHERE IT becomes sayable.
     with tempfile.TemporaryDirectory() as td:
         r = Path(td)
         _tree(r, "checks", "gates")
@@ -2364,8 +2364,8 @@ def _plants():
         _, _, d3 = _roots(r)
         absent_row = "checks" in d3["absent"]
         not_zero = not any(row.split()[0] == "checks" for row in d3["rejected"])
-        # AND THE LAST HALF: rename it BACK and the population comes back. **A POPULATION THAT
-        # CANNOT SHRINK IS A FLOOR, AND ONE THAT CANNOT GROW AGAIN IS NOT A POPULATION EITHER.**
+        # AND the last half: rename it BACK and the population comes back. A population that
+        # CANNOT shrink is a floor, AND one that cannot grow again is not a population either.
         os.rename(r / "probe", r / "checks")
         h4, n4, _ = _roots(r)
         grew_back = h4 == h2 and n4 == n2
@@ -2376,7 +2376,7 @@ def _plants():
                    f"homes {h0}->{h1}->{h2}->{h4}, entries {n0}->{n1}->{n2}->{n4}, "
                    f"absent has 'checks'={absent_row}, no `checks 0/0` row={not_zero}"))
 
-    # PLANT 5 -- **THE REPLAY.** The three named instances at their PRE-FIX sources, read out of
+    # PLANT 5 -- THE REPLAY. The three named instances at their PRE-FIX sources, read out of
     # this repo's own git history, and asserted CAUGHT. Two of the three are `HERE.parents[2]`;
     # the third is `checks/census.py:14` at `457b81619^`, which has NO ROOT CONSTANT AT ALL --
     # it is a bare `sys.path.insert(0, str(HERE.parents[2]))` -- and the constant-only regex
@@ -2397,7 +2397,7 @@ def _plants():
                        "and the fixed form is clean", ok5,
                        f"caught={len(caught)}/3 fixed_form_clean={fixed_ok}"))
 
-    # PLANT 7 -- **PROSE IS NOT CODE.** A file whose CHANGELOG quotes the exact expression the
+    # PLANT 7 -- PROSE IS NOT CODE. A file whose CHANGELOG quotes the exact expression the
     # scanner hunts, and which must NOT be reported. MEASURED: `gates/gates-pop.py` did exactly
     # this to itself before `code_of` existed -- its own comment at :202 quotes
     # `sys.path.insert(0, str(HERE.parents[2]))`, the scanner found it, and the run said
@@ -2405,10 +2405,10 @@ def _plants():
     # languages, because `checks/sb-gate.sh:17` is the same trap in shell: a comment recording
     # that the gate USED to `cd $(dirname "$0")/../../..`, in a file that no longer does.
     #
-    # AND THE PLANT IS NOW STRONGER THAN ITS OWN PROSE SAYS. The fixtures are `LIT_PY`/`LIT_SH`,
+    # AND the plant is now stronger than its own prose says. The fixtures are `LIT_PY`/`LIT_SH`,
     # module constants, so `FIXTURES` can blank them -- and plant 8 asserts the INVERSE, which is
-    # the direction that was green while the instrument was wrong about itself: **this file, read
-    # by this file, must be ON-REPO.** A meta-instrument that cannot measure ITSELF cleanly is the
+    # the direction that was green while the instrument was wrong about itself: this file, read
+    # by this file, must be ON-REPO. A meta-instrument that cannot measure ITSELF cleanly is the
     # one measurement nobody else makes.
     with tempfile.TemporaryDirectory() as td:
         r = Path(td); _tree(r, "checks")
@@ -2420,20 +2420,20 @@ def _plants():
                    "finding (this file found itself)", ok7,
                    f"py_and_sh_both_reported_on_root={ok7}"))
 
-    # PLANT 8 -- **THIS FILE, READ BY THIS FILE, MUST BE ON-REPO.** The one direction plant 7
+    # PLANT 8 -- THIS file, READ by this file, MUST be on-REPO. The one direction plant 7
     # could not reach, and the one the instrument got WRONG while every plant was green.
     # MEASURED 2026-10-06: `gates/gates-pop.py` reported ITSELF off-repo. `ROOT_INLINE` had
     # matched the string literal `FALLBACK_PRE_FIX["checks/census.py"]` -- a SYNTHETIC GATE held
     # in a dict in this file's own body -- and `code_of`'s docstring blanking deliberately keeps
     # non-docstring strings, because "a string that is an ARGUMENT carries a path the scanner
-    # needs". Plant 7 asserted the COMMENT layer and passed. **PROSE IS NOT CODE; A FIXTURE IS NOT
-    # EITHER; AND A PLANT THAT COVERS THE COMMENT LAYER SAYS NOTHING ABOUT THE STRING LAYER.**
+    # needs". Plant 7 asserted the COMMENT layer and passed. PROSE is not code; A fixture is not
+    # EITHER; AND a plant that covers the comment layer says nothing about the string layer.
     self_facts = root_facts(Path(__file__), HERE.parent)
     checks.append(("8: THIS FILE READ BY THIS FILE IS ON-REPO -- a meta-instrument that cannot "
                    "measure itself cleanly is the one measurement nobody else makes",
                    self_facts[2], f"gates/gates-pop.py -> {self_facts}"))
 
-    # PLANT 9 -- **THE POPULATION IS A DIRECTORY, NOT A SUFFIX SET.** Four claims, four
+    # PLANT 9 -- THE population is a directory, NOT a suffix set. Four claims, four
     # directions, because the two halves fail apart and a plant that asserts only the half that
     # passes is a change-detector. `SUFFIXES = (".py", ".sh")` was the defect this plant exists
     # for, and its two halves were independent: the tuple dropped the file before a byte was
@@ -2465,15 +2465,15 @@ def _plants():
         bend_ok = not any(str(p.relative_to(r)).endswith(".bend") for p in pe + pl)
         rows_ok = "checks/expected.rows" in {str(p.relative_to(r)) for p in po}
         # AND THE LIVE WITNESS, because the fixture above is a shape I typed and a typed fixture
-        # agrees with the instrument by construction. MEASURED on this tree: **0 of the 140 real
-        # `checks/*.rows` files parse as Python**, so the real ones are OPAQUE too -- and the first
+        # agrees with the instrument by construction. MEASURED on this tree: 0 of the 140 real
+        # `checks/*.rows` files parse as Python, so the real ones are OPAQUE too -- and the first
         # version of this fixture was `k=v\nk2=v2`, which IS a valid Python `Assign`, so the plant
-        # was RED for a shape no file in the tree has. **A FIXTURE RETYPED BY HAND IS NOT A
-        # WITNESS; THE TREE IS.** Asserted live so a moved or re-spelled fixture is a FAIL.
+        # was RED for a shape no file in the tree has. A FIXTURE RETYPED BY HAND IS NOT A
+        # WITNESS; THE TREE IS. Asserted live so a moved or re-spelled fixture is a FAIL.
         live_rows = [p for h in HOMES for p in sorted((HERE.parent / h).iterdir())
                      if p.is_file() and p.name.endswith(".rows")]
         _, _, live_opaque, live_uncarried, _live_scratch = _buckets(HERE.parent)
-        # **THE POPULATION RULE MOVED THE DENOMINATOR, AND THE OLD ASSERTION DID NOT MOVE WITH IT.**
+        # THE population rule moved the denominator, AND the old assertion did not MOVE WITH it.
         # `_buckets` now excludes a file the commit tree does not carry BEFORE classification, so an
         # untracked `.rows` is `uncarried`, not `opaque`. Requiring it to be opaque fails the plant
         # for a rule that already excluded it. The witness is the files the tree carries: a carried
@@ -2494,9 +2494,9 @@ def _plants():
                         f"not opaque: {[str(p.relative_to(HERE.parent)) for p in not_opaque]}) "
                        f"-- entries={got}"))
 
-    # PLANT 12 -- **A READ CANNOT WRITE, AND A WRITE SAYS IT WROTE.** The defect this file shipped:
+    # PLANT 12 -- A read cannot write, AND a write says it wrote. The defect this file shipped:
     # `--ledger` DEFAULTED to `write`, so `gates/gates-pop.py` with no arguments rewrote a ledger
-    # SIXTY-ODD OTHER UNITS SHARE. MEASURED on the pre-boundary tree: a plain invocation changed
+    # SIXTY-ODD other units share. MEASURED on the pre-boundary tree: a plain invocation changed
     # `gates/gates-pop.ledger.tsv` by 13 added and 7 removed lines, 4 of them another unit's
     # in-flight `checks/.tmp-*` scratch, and the unit that caused it reverted the file and dropped
     # its own registration. Asserted through `main()` and `sys.argv` -- the ACTUAL default, not a
@@ -2525,22 +2525,22 @@ def _plants():
         sys.argv = argv0
     read_out = buf.getvalue()
     (a) = (LEDGER_PATH.read_bytes() if LEDGER_PATH.is_file() else None) == live_read
-    # ⇒ AND **(b) **MUST **NOT **DEPEND **ON **THE **LIVE **TREE's **STATE.**  MEASURED 2026-10-30:
-    # this assertion was `rc_plain == 1 and … "UNRECORDED departure" in read_out` -- i.e. **THE **LIVE
-    # **TREE **HAD **TO **HAVE **A **LEDGER **DRIFT** — **AND **A **DRIFT **IS **A **DEFECT, **SO **THE
-    # **ASSERTION **WAS **RED **WHENEVER **THE **TREE **WAS **CORRECT.**  **⇒ AND **THAT **IS **A **PLANT
-    # **THAT **CANNOT **PASS**, **AND **THE **FAILURE **IS **THE **TREE's **FAVOUR**: **REPAIRING **THE
-    # **LEDGER **TURNED **THE **PLANT **RED.**
+    # - AND (b) MUST not depend on the live tree's STATE.  MEASURED 2026-10-30:
+    # this assertion was `rc_plain == 1 and … "UNRECORDED departure" in read_out` -- i.e. THE LIVE
+    # TREE had to have a ledger drift — AND a drift is a defect, SO the
+    # ASSERTION was red whenever the tree was correct.  - AND that is a plant
+    # THAT cannot pass, AND the failure is the tree's FAVOUR: REPAIRING the
+    # LEDGER TURNED THE PLANT RED.
     #
-    # ⇒ AND **THE **FIX **IS **THE **PLANT's **OWN **SUBJECT:** **A **PLANT **MUST **PLANT **WHAT **IT
-    # **MEASURES**, **ON **A **SYNTHETIC **TREE, **SO **THE **ASSERTION **IS **ABOUT **THE **READER
-    # **AND **NOT **ABOUT **THE **TREE.**  **⇒ AND **THE **DRIFT **IS **PLANTED**: **A **SYNTHETIC **TREE
-    # **WITH **A **LEDGER **THAT **CARRIES **A **ROW **FOR **A **PATH **THE **TREE **DOES **NOT **HAVE**
-    # **IS **AN **UNRECORDED **DEPARTURE**, **BY **CONSTRUCTION.**
+    # - AND the fix is the plant's OWN subject: A plant must plant what it
+    # MEASURES, ON a synthetic tree, SO the assertion is about the reader
+    # AND not about the tree.  - AND the drift is planted: A synthetic tree
+    # WITH a ledger that carries a row for a path the tree does not have
+    # IS AN UNRECORDED DEPARTURE, BY CONSTRUCTION.
     with tempfile.TemporaryDirectory() as td:
         dr = Path(td)
         _tree(dr, "checks", "gates")
-        # A LEDGER WITH A ROW FOR A PATH THE TREE DOES NOT HAVE: an UNRECORDED DEPARTURE.
+        # A ledger with a row for a path the tree does not have: an UNRECORDED departure.
         drift_ledger = dr / HERE.relative_to(ROOT) / LEDGER.name
         drift_ledger.parent.mkdir(parents=True, exist_ok=True)
         drift_ledger.write_text(
@@ -2555,15 +2555,15 @@ def _plants():
         drift_out = dbuf.getvalue()
     (b) = (rc_drift == 1 and "III LEDGER DIFF:" in drift_out
            and "UNRECORDED departure" in drift_out
-           # THE LIVE READ'S rc FOLLOWS **ITS OWN **COUNT**, **NOT **THE **PHRASE:** the line reads
+           # THE live read'S rc FOLLOWS its own count, NOT the phrase: the line reads
            # "0 UNRECORDED departure(s)" when there are NONE, so the phrase is present either way.
            and rc_plain == (1 if re.search(r"[1-9]\d* UNRECORDED departure", read_out) else 0))
     with tempfile.TemporaryDirectory() as td:
         r = Path(td)
         r.mkdir(parents=True, exist_ok=True)
         _tree(r, "checks", "gates")
-        # **THE LEDGER PATH IS `report`'s, NOT `r / LEDGER.name`, AND GETTING THAT WRONG WAS THE
-        # PLANT'S FIRST RED.** `report` resolves it as `root / HERE.relative_to(ROOT) / LEDGER.name`,
+        # THE ledger path is `report`'s, NOT `r / LEDGER.name`, AND getting that wrong was the
+        # PLANT'S first red. `report` resolves it as `root / HERE.relative_to(ROOT) / LEDGER.name`,
         # so the write lands at `<tmp>/gates/` -- the same one-level mistake this file's own
         # `:1046` comment records for the live tree. A plant that asserts "the file appeared" must
         # therefore ASK `report` where it looks rather than spelling it a second time, or it is a
@@ -2604,14 +2604,14 @@ def _plants():
                    f"counts={nums[0] if nums else None} old_spelling_refused={e} header_names_writer={f} "
                    f"(--plant's own inertness window is measured separately by `plants()`)"))
 
-    # PLANT 13 -- **A CELL THE READER DID NOT READ IS `UNREADABLE`, AND A ROW IT CANNOT ACCOUNT
-    # FOR IS NOT DROPPED.** `read_ledger` coerced with `f[3] == "1"` and dropped `len(f) < 5`.
+    # PLANT 13 -- A cell the reader did not read is `UNREADABLE`, AND a row it cannot account
+    # FOR IS NOT DROPPED. `read_ledger` coerced with `f[3] == "1"` and dropped `len(f) < 5`.
     # Both were invisible, and they are NOT THE SAME DEFECT: a bad cell is ONE column, a short row
     # is FOUR, and a plant that asserts one of them passes a reader that is wrong about the other.
     # Both corruptions are applied to COPIES of a ledger this plant writes itself -- never the live
     # one -- and are read back through the SAME reader, with an UNBROKEN CONTROL FIRST.
     #
-    # **THE PLANT IS TWO-SIDED, AND THAT IS WHAT MAKES IT ABLE TO FAIL.** `control` is the
+    # THE plant is two-SIDED, AND that is what makes it able to fail. `control` is the
     # falsifier against over-refusal: a reader that marked every cell `UNREADABLE` would satisfy
     # every other clause here and fail this one. `sig` is the falsifier against the pre-fix reader:
     # coercing `== "1"` marks nothing, so `sig` reads `(0, 0)` where it asserts `(1, 4)`. There is
@@ -2636,15 +2636,15 @@ def _plants():
         #                                         here -- a reader that had to know it is 9 would
         #                                         break the day the preamble is reworded.
         # ONE CELL CORRUPTED. MEASURED, the pre-fix reader read `garbage` as `False` and `moved`
-        # nothing; here the cell is `UNREADABLE` and THE OTHER FOUR ARE UNCHANGED, so the reader
+        # nothing; here the cell is `UNREADABLE` and THE other four are unchanged, so the reader
         # still proves `checks/beta.py` asserts nothing about -- well, it proves it knows nothing
         # about ONE cell, which is what a reader that reads one bad column must say.
         hurt = list(beta.split("\t"))
         hurt[3] = "garbage"
         syn.write_text("\n".join(cells[:-3] + [alpha, "\t".join(hurt), gamma]) + "\n")
         bad = read_ledger(syn)
-        # **EVERY LOOKUP HERE TAKES A DEFAULT, BECAUSE A PLANT THAT CRASHES IS NOT A PLANT THAT
-        # FAILED.** MEASURED 2026-10-20T00:29Z against an over-refusing reader, `next(...)` raised
+        # EVERY lookup here takes a default, BECAUSE a plant that crashes is not a plant that
+        # FAILED. MEASURED 2026-10-20T00:29Z against an over-refusing reader, `next(...)` raised
         # `StopIteration` out of the suite -- so the run died with rc=1 and no `PLANTS: n/m` line at
         # all, which is the one outcome that cannot tell a falsified plant from a broken tree. The
         # rows are looked up by path and MISSED rather than demanded, and every clause below is
@@ -2663,7 +2663,7 @@ def _plants():
         g_row = next((x for x in cut if x[0] == "checks/gamma.py"), None)
         row = (len(cut) == 3 and g_row is not None
                and g_row[1:] == (UNREADABLE,) * (len(LEDGER_FIELDS) - 1))
-        # **THE TWO READ DIFFERENTLY, AND THAT IS ASSERTED AS A COUNT OF HOLES**: one row with a
+        # THE two read differently, AND that is asserted as a count of holes: one row with a
         # single unreadable cell beside a row with four. A reader that refused everything fails
         # `control`; a reader that refused nothing fails here.
         sig = (sum(c == UNREADABLE for c in (b_row or ())),
@@ -2676,7 +2676,7 @@ def _plants():
                    f"control={control} cell={cell} row={row} differs={differs} "
                    f"holes={sig} expected=(1, {len(LEDGER_FIELDS) - 1})"))
 
-    # PLANT 14 -- **A WRITE NAMES ITS PATHS, AND THE BARE FLAG IS THE CENTRAL SWEEP.** Three units
+    # PLANT 14 -- A write names its paths, AND the bare flag is the central sweep. Three units
     # declined to run `--write-ledger` because it MERGES: adding every row makes the diff green
     # without one gate having been measured. The flag without a path is therefore REFUSED, a named
     # path absorbs only itself, and an unaccountable path writes nothing. Asserted through `main()`
@@ -2708,7 +2708,7 @@ def _plants():
                and "gates/home-witness.py" not in body and "IT ABSORBED 1 new" in out_one)
         rc_two, out_two, _ = invoke("--write-ledger", "--only", "gates/home-witness.py")
         body2 = syn.read_text() if syn.is_file() else ""
-        # THE NAMED PATH IS THE ONLY REMAINING MOVEMENT, so this write is green. The next read must
+        # THE named path is the only remaining movement, so this write is green. The next read must
         # agree, or the write absorbed a row the check cannot see.
         rc_settled, _, _ = invoke()
         both = (rc_two == 0 and rc_settled == 0 and "checks/home-witness.py" in body2
@@ -2744,24 +2744,24 @@ def _plants():
                    f"(rc bare={rc_bare} one={rc_one} two={rc_two} settled={rc_settled} "
                    f"keep={rc_keep} ret={rc_ret} after={rc_after})"))
 
-    # PLANT 15 -- **THE **LEDGER **IS **A **SHARED **PATH, **AND **TWO **WRITERS **THAT **BOTH
-    # **READ **THE **SAME **OLD **LEDGER **WILL **LOSE **ONE **OF **THE **TWO **ROWS.**  The lock is
-    # what makes that impossible, and **A **LOCK **THAT **IS **NOT **EXERCISED **IS **A **LOCK
-    # **THAT **IS **NOT **PROVEN.**  MEASURED 2026-10-29: 127 interleaved writes by three units
-    # lost NOTHING -- **but **that **is **not **a **proof, **it **is **a **luck**, **and **an
-    # **instrument **must **not **rely **on **luck **for **a **record.**
+    # PLANT 15 -- THE ledger is a shared path, AND two writers that both
+    # READ the same old ledger will lose one of the two rows.  The lock is
+    # what makes that impossible, and A LOCK THAT IS NOT EXERCISED IS A LOCK
+    # THAT IS NOT PROVEN.  MEASURED 2026-10-29: 127 interleaved writes by three units
+    # lost NOTHING -- but that is not a proof, it is a luck, and an
+    # instrument must not rely on luck for a record.
     with tempfile.TemporaryDirectory() as td:
         r = Path(td)
         _tree(r, "checks", "gates")
         syn = r / HERE.relative_to(ROOT) / LEDGER.name
         lock = r / HERE.relative_to(ROOT) / (LEDGER.name + ".lock")
-        # **THE **HOLDER **IS **A **CHILD **PROCESS**, **SO **THE **REFUSAL **IS **A **REFUSAL **BY
-        # **ANOTHER **HOLDER** — **NOT **THIS **PROCESS's **OWN **RE-ENTRANCY** (which **would **be
-        # **A **PASS **WITH **NO **SECOND **HOLDER **AT **ALL**).
-        # THE HOLDER'S SCRIPT IS **A **FILE**, **NOT **AN **INLINE **`-c`** — **BECAUSE **A **STRING
-        # **WITH **AN **F-STRING **INSIDE **A **LIST **OF **STRINGS **IS **A **QUOTING **PROBLEM
-        # **WAITING **TO **HAPPEN**, **AND **A **PLANT **THAT **CANNOT **BE **READ **IS **A **PLANT
-        # **NOBODY **WILL **FIX.**
+        # THE holder is a child process, SO the refusal is a refusal by
+        # ANOTHER holder — NOT this process's OWN re-ENTRANCY (which would be
+        # A PASS WITH NO SECOND HOLDER AT ALL).
+        # THE holder'S script is a file, NOT an inline `-c` — BECAUSE a string
+        # WITH an f-STRING inside a list of strings is a quoting problem
+        # WAITING to happen, AND a plant that cannot be read is a plant
+        # NOBODY WILL FIX.
         holder_src = r / "holder.py"
         holder_src.write_text(
             "import fcntl, os, sys, time\n"
@@ -2785,8 +2785,8 @@ def _plants():
                 refused = True
             finally:
                 os.close(fd)
-            # AND THE WRITE PATH REFUSES **AND **WRITES **NOTHING** — **THE **SECOND **HALF**, **BECAUSE
-            # **A **LOCK **THAT **HOLDS **BUT **A **WRITE **THAT **IGNORES **IT **IS **NOT **A **LOCK**.
+            # AND the write path refuses and writes nothing — THE second half, BECAUSE
+            # A lock that holds but a write that ignores it is not a lock.
             before = syn.read_bytes() if syn.is_file() else b""
             wrote = False
             try:

@@ -24,11 +24,11 @@ It is now **every cell the two lanes themselves print**: eight shapes times six 
 them, DISCOVERED from the lanes' rows and CHECKED at RUN TIME (a lane that stops printing a
 cell is a REFUSED gate, not a smaller population).
 
-⇒ AND THE MEASUREMENT THAT FORCED IT. Reversing `d4160980e` AND `32e6633d0` in a FROZEN COPY
+AND THE MEASUREMENT THAT FORCED IT. Reversing `d4160980e` AND `32e6633d0` in a FROZEN COPY
 (a `git archive` of HEAD with both patches reverse-applied to `tinybendygrad/uop/spec.bend`, and
 the gate loaded FROM that copy so it reads THAT copy's `spec.bend`) makes **20 of the 48 cells
 disagree**. **THE OLD TWELVE CAUGHT 12. THE EIGHT IT MISSED WERE ALL OUTSIDE THE POPULATION**,
-and four of the eight were the `buffer0` cells the gate graded OUT BY NAME. **⇒ A POPULATION
+and four of the eight were the `buffer0` cells the gate graded OUT BY NAME. **A POPULATION
 THAT EXCLUDES CELLS IS A POPULATION THAT CANNOT SEE A DEFECT IN THE CELLS IT EXCLUDES.**
 
 "THE COMMIT'S JOB", KEPT AS THE SUBJECT'S HISTORY. `d4160980e` moved eight tests out of the
@@ -49,7 +49,7 @@ and `kg_4` (PARAM) still carry the OLD upstream's `src=()` -- ZERO srcs -- where
 upstream's `spec.py:92`, `:93`, `:160` and `:263` all carry `src=(p_size,)` or
 `src=(UPat(Ops.STACK, src=()),)`, which is EXACTLY ONE src. So for a zero-src BUFFER the
 port's `sh_17` fires and says `False` where upstream's `spec.py:93` cannot match and the
-scan continues. **⇒ AT THE COMMITTED TREE ALL 48 CELLS AGREE, AND THE GATE GRADES THEM ALL.**
+scan continues. **AT THE COMMITTED TREE ALL 48 CELLS AGREE, AND THE GATE GRADES THEM ALL.**
 
 THE PLANT, AND WHY IT IS A TEXT EDIT. `--plant` copies the WORKING COPY of
 `gates/specfold.bend` beside itself, edits the COPY, and runs THE WHOLE GATE against it. It
@@ -87,29 +87,29 @@ TABLES = ("sh", "te", "sp", "hq", "sk", "sf")
 SHAPES = ("reshape_f32", "reshape_i32", "range2", "range1",
           "backedge_int", "backedge_bool", "buffer0", "alloc0")
 
-# THE POPULATION, AND WHY IT IS NO LONGER A HAND LIST.
+# THE population, AND why it is no longer a hand list.
 #
 # IT WAS: twelve cells named by hand, on the criterion "the commit `d4160980e` decides these".
-# **⇒ THAT WAS A POPULATION TIED TO ONE COMMIT, AND THE TREE's DOCTRINE SAYS A POPULATION MUST
-# BE DERIVED BY DISCOVERY.**  IT IS NOW: **EVERY CELL THE TWO LANES THEMSELVES PRINT**, which is
+# - THAT was a population tied to one commit, AND the tree's DOCTRINE says a population must
+# BE derived by discovery.  IT is now: EVERY cell the two lanes themselves print, which is
 # `SHAPES x TABLES` -- 48 -- and it is CHECKED AT RUN TIME that both lanes printed exactly that
 # many rows, so a lane that stops measuring a cell is REFUSED, not a smaller population.
 #
-# **⇒ AND THE MEASUREMENT THAT FORCED THIS.**  REVERSING `d4160980e` AND `32e6633d0` IN A FROZEN
+# - AND the measurement that forced this.  REVERSING `d4160980e` AND `32e6633d0` IN a frozen
 # COPY (a `git archive` of HEAD with both patches reverse-applied to `tinybendygrad/uop/spec.bend`)
-# MAKES **20** OF THE 48 CELLS DISAGREE.  **THE OLD TWELVE-CAUGHT 12 OF THEM.  THE EIGHT IT
-# MISSED WERE ALL OUTSIDE THE POPULATION, AND FOUR OF THE EIGHT WERE THE `buffer0` CELLS THE
-# GATE GRADED OUT BY NAME.**  **⇒ A POPULATION THAT EXCLUDES CELLS IS A POPULATION THAT CANNOT
-# SEE A DEFECT IN THE CELLS IT EXCLUDES.**
+# MAKES 20 OF the 48 CELLS disagree.  THE old twelve-CAUGHT 12 OF them.  THE eight it
+# MISSED were all outside the population, AND four of the eight were the `buffer0` CELLS the
+# GATE graded out by name.  - A population that excludes cells is a population that cannot
+# SEE A DEFECT IN THE CELLS IT EXCLUDES.
 #
-# THE ANNOTATION, KEPT.  "BOTH FOLDS SKIP" (`9` on both sides) IS A REAL PROPERTY OF A CELL AND IT
-# IS NOW REPORTED PER CELL -- but it is NOT AN EXCLUSION.  A cell where both folds claim is a cell
+# THE annotation, KEPT.  "BOTH folds skip" (`9` on both sides) IS a real property of a cell and it
+# IS now reported per cell -- but it is NOT an exclusion.  A cell where both folds claim is a cell
 # whose verdict is that rule's business, and a cell where the port claims and upstream does not is
-# A DIVERGENCE, which is EXACTLY WHAT THE GATE IS FOR.
+# A divergence, which is EXACTLY what the gate is for.
 #
-# THE RULE NAME, KEPT AS PROVENANCE.  `RULE_OF_CELL` names the rule that CHANGED at each commit,
-# so a reader can see which rule a cell's verdict is about.  **IT IS AN ANNOTATION AND NOT A
-# CRITERION: THE POPULATION IS DERIVED, AND THE ANNOTATION IS NOT CONSULTED WHEN GRADING.**
+# THE rule name, KEPT as provenance.  `RULE_OF_CELL` names the rule that CHANGED at each commit,
+# so a reader can see which rule a cell's verdict is about.  IT IS AN ANNOTATION AND NOT A
+# CRITERION: THE population is derived, AND the annotation is not consulted when grading.
 RULE_OF_CELL = {
   ("reshape_f32", "te"): "te_5", ("range2", "sh"): "sh_12", ("range2", "te"): "sh_12",
   ("range2", "hq"): "sh_12", ("backedge_int", "sh"): "sh_15", ("backedge_int", "te"): "sh_15",
@@ -117,10 +117,10 @@ RULE_OF_CELL = {
   ("alloc0", "sp"): "pr_4", ("alloc0", "sk"): "kg_6", ("alloc0", "sf"): "te_2",
 }
 
-# THE RULE THAT SPEAKS FOR A CELL WHERE THE PORT CLAIMS AND UPSTREAM DOES NOT.  REPORTED, NOT
+# THE rule that speaks for a cell WHERE THE port claims and upstream does not.  REPORTED, NOT
 # HIDDEN, AND NOT AN EXCLUSION.  `sh_16`/`sh_17`/`te_3`/`kg_4` still carry the OLD upstream's
 # `src=()`, so the port's fold claims a zero-src PARAM/BUFFER where the current upstream's does
-# not -- a REAL DIVERGENCE THE GATE NOW GRADES INSTEAD OF EXPLAINING AWAY.
+# not -- a REAL divergence the gate now grades instead of explaining away.
 NOT_DECIDED = {
   ("buffer0", "sh"): "sh_17 -- the port's shared BUFFER rule still says `nsrc_is(0)`",
   ("buffer0", "te"): "sh_17 -- the port's shared BUFFER rule still says `nsrc_is(0)`",
@@ -263,7 +263,7 @@ def plant() -> int:
       print("  THE PLANT MOVED THE WRONG ROWS: only the RESHAPE fixture's rows may move.")
       bad += 1
 
-    # 2. THE CONTROL: a BYTE-IDENTICAL copy. The gate MUST STAY GREEN and no row may move.
+    # 2. THE control: a BYTE-IDENTICAL copy. The gate MUST stay green and no row may move.
     control_probe.write_text(src)
     control_status, control = verdict_of_probe(control_probe)
     same_bytes = control_probe.read_bytes() == PROBE.read_bytes()

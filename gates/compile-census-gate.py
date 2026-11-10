@@ -20,7 +20,7 @@ SITE. **AND `checks/compile-census.py` ITSELF IS UNREACHABLE**: named by no file
 `.github/workflows/` (10 files), not in `gates/edge-cost.rows`, not by `gates/edge-runner.py` and
 not by `checks/gatesweep.py`.
 
-⇒ **SO THE CENSUS's VERDICT GOES WHERE THE TREE ALREADY RUNS THE GATES: THE EDGE.** The edge is
+**SO THE CENSUS's VERDICT GOES WHERE THE TREE ALREADY RUNS THE GATES: THE EDGE.** The edge is
 `gates/edge-runner.py`, and it is the tree's committed surface that runs the gates and leaves a
 TRACE in git (`gates/edge-trace.rows`) beside a MEASURED cost ledger (`gates/edge-cost.rows`).
 **THE VERDICT IS A GATE OF ITS OWN, AND THE EDGE RUNS IT** -- and that is the answer to "a row in
@@ -56,13 +56,13 @@ VERDICTS (`gates/gatekit.py`'s `VERDICT` MAP, AND ITS EXITS ARE 0 FOR PASS, 1 FO
               did not judge it at all. A precondition was absent; that is not a finding.
     DEAD      it ran and emitted nothing.
 
-**⇒ AND THE DIFFERENCE BETWEEN STANDING-COLD AND BREAKAGE IS DECLARED, NOT INFERRED.** The
+**AND THE DIFFERENCE BETWEEN STANDING-COLD AND BREAKAGE IS DECLARED, NOT INFERRED.** The
 declaration is `gates/compile-census-standing.rows`, beside this file and IN GIT, and it names
 each standing-cold driver, the compiler's OWN error shape for it, and why it is standing. The
 shape is not a second vocabulary: it is one of `checks/substrate.py`'s `CAUSES` shapes, READ BY
 PATH, and this file REFUSES a declaration that names a shape the tree does not have.
 
-**⇒ AND A DECLARED SHAPE THAT NO LONGER MATCHES IS A BREAKAGE, NOT A STANDING-COLD.** The
+**AND A DECLARED SHAPE THAT NO LONGER MATCHES IS A BREAKAGE, NOT A STANDING-COLD.** The
 declaration says "this file is cold FOR THIS REASON"; a file whose error changed is no longer the
 declared case, and the gate says so instead of waving it through.
 
@@ -102,7 +102,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 
-# THE EDGE'S HOOK, DECLARED HERE AND READ BY THE EDGE. This gate holds no pin of its own -- it
+# THE edge'S hook, DECLARED here and read by the edge. This gate holds no pin of its own -- it
 # judges ANOTHER instrument's verdict -- so the edge's selection rule ("a member that holds a pin
 # its own code reads") would not see it. The tree's own escape, used by
 # `gates/edge-oracle-pin-gate.py`, and read BY PATH the way the edge reads `RED_IS`.
@@ -111,20 +111,20 @@ EDGE_CANDIDATE = True
 # THE CENSUS's OWN ARTEFACT. This gate does not re-run the census; it judges the census's
 # recorded verdict, and re-judges ONLY what the census cannot speak for (see `drift()` below).
 CENSUS_ROWS = ROOT / "checks" / "compile-census.rows"
-# THE DECLARED STANDING-COLD SET. Beside this gate and IN GIT, because a gate's REQUIRED INPUT
+# THE declared standing-COLD set. Beside this gate and IN GIT, because a gate's REQUIRED input
 # belongs beside the gate: `gates/artifacts/` is gitignored and is where runs WRITE.
 STANDING = HERE / "compile-census-standing.rows"
 # THE GATE's OWN ROWS. In git, beside the gate, and this file is its ONLY writer -- the shape
 # `gates/opname-census.rows` already has.
 VERDICT_ROWS = HERE / "compile-census-verdict.rows"
 
-# THE CEILINGS AND THE BOUND, ALL DECLARED HERE AND NONE OF THEM INVENTED.
+# THE ceilings and the bound, ALL declared here and NONE OF them invented.
 MB, SECONDS = 2048, 300
-# **HOW MANY FILES THIS GATE MAY RE-JUDGE.** The re-judgment is the census's DELTA -- the files
+# HOW many files this gate may re-JUDGE. The re-judgment is the census's DELTA -- the files
 # whose bytes moved since the census took its reading -- and the gate's cost IS that delta, so
 # the delta is what has to be bounded. The edge's budget is 30 s (`gates/edge-runner.py:BUDGET_SECONDS`),
 # and a `bin/bend --check-only` of a driver is ~1.5 s, so twelve re-judgments fit inside it with
-# room for the census's own bookkeeping. **OVER THE CAP THE GATE REFUSES** rather than running for
+# room for the census's own bookkeeping. OVER the cap the gate refuses rather than running for
 # minutes: "a precondition was absent" is the honest reading when the census does not describe
 # this tree, and the census is re-taken by `checks/compile-census.py`, which is the instrument that
 # CAN take it.
@@ -145,17 +145,17 @@ def _load(name: str, path: Path):
     return mod
 
 
-# THE TWO INSTRUMENTS THIS FILE USES, EACH OWNED BY THE TREE AND EACH LOADED BY PATH.
+# THE two instruments this file uses, EACH owned by the tree and each loaded by path.
 #   census  `checks/compile-census.py` -- the population (`discover()`), the verdict envelope
 #           (`judge()`), the error-shape vocabulary (`substrate.CAUSES`), and the sha.
 #   pc      `checks/port-compile-gate.py` -- the comment stripper, for the plant's proof.
 census = _load("compile_census_gate_census", ROOT / "checks" / "compile-census.py")
 pc = _load("compile_census_gate_port", ROOT / "checks" / "port-compile-gate.py")
 
-# THE COLUMNS OF THE CENSUS's ARTEFACT, IN THE ORDER IT WRITES THEM. The header names them too;
+# THE columns of the census's ARTEFACT, IN the order it writes them. The header names them too;
 # this is the reader's copy of that order and it is checked against the artefact's own header.
 COLUMNS = ("state", "peak_MB", "token", "file", "cause", "sha", "error", "first_line")
-# THE STATES THE CENSUS CAN WRITE. A LINE WHOSE `state` IS NOT ONE OF THESE IS NOT A ROW -- see
+# THE states the census can write. A line whose `state` IS not one of these is not a row -- see
 # `read_census()` for the measured reason.
 STATES = ("WARM", "COLD", "NO-MEASUREMENT", "NO-INSTRUMENT", "EMPTY")
 
@@ -283,7 +283,7 @@ def run() -> int:
     """The census's verdict. `PASS` / `FAIL` / `REFUSED` / `SKIP` / `DEAD`, and the counts beside
     the verdict, always."""
     if not (ROOT / "bin" / "bend").is_file():
-        # **THE ABSENT COMPILER IS A PRECONDITION THAT WAS ABSENT, AND IT IS NOT A COLD DRIVER.**
+        # THE absent compiler is a precondition that was absent, AND it is not a cold driver.
         # `gates/gatekit.py`'s own words: "The compiler's absence is SPOKEN BY A PROCESS THAT
         # EXISTS", and `gates/edge-plant.py`'s arm H measures the same thing for a gate.
         print("== REFUSED, NOT A VERDICT: compile-census-gate.py: `bin/bend` is absent, so no file "
@@ -331,7 +331,7 @@ def run() -> int:
                    "file": p, "cause": fresh["cause"], "sha": fresh["sha"], "error": fresh["error"],
                    "first_line": fresh["first_line"]}
         if row is None:
-            # A FILE IN THE POPULATION THAT THE CENSUS NEVER SAW AND THAT THE GATE DID NOT
+            # A file in the population that the census never saw and that the gate did not
             # RE-JUDGE. It cannot happen above (an uncovered file IS in `rejudge`), and the row
             # says so rather than being dropped.
             out_rows.append({"verdict": "DEAD", "file": p, "class": "NO-ROW",
@@ -403,14 +403,14 @@ def write_rows(rows: list[dict], taken: str) -> None:
 
 
 # --------------------------------------------------------------------------- the plant
-# THE SUBJECT IS A TEXT FILE THE PLANT WRITES, NOT A TRACKED FILE IT EDITS. A plant that MUTATES a
+# THE subject is a text file the plant writes, NOT a tracked file it edits. A plant that MUTATES a
 # tracked file is a plant that damages the tree it audits, and a plant that READS one out of git
 # plants nothing the moment HEAD carries the defect's fix.
 DRIVER = """# THE PLANT's DRIVER. A TEXT FILE, WRITTEN BY THE PLANT.
 import Base
 import ./../tinybendygrad/uop/ops.bend as O
 
-# TWO SHAPES, AND THE PLANT NEEDS BOTH.
+# TWO shapes, AND the plant needs both.
 #   plant_op    ONE statement on its own line.
 #   plant_pair  a LIST OPENER and its first element on ONE line, so a comment BETWEEN the two
 #               parts deletes the element and the file still COMPILES -- the shape a compiler's
@@ -427,10 +427,10 @@ def main() -> IO(Unit):
     IO.print("compile-census-plant")
 """
 
-# THE COMMENT-ONLY PROOF, AND IT IS `gates/ptx_render_census-gate.py`'s `_code_only`, COPIED FOR
+# THE comment-ONLY proof, AND it is `gates/ptx_render_census-gate.py`'s `_code_only`, COPIED for
 # THE REASON THAT FILE GIVES: the comment removal is `checks/port-compile-gate.py`'s own
-# `strip_comments()` (it knows a `#` inside a string is not a comment), and **THE BLANK-LINE DROP
-# IS WHAT MAKES THE PROOF COVER A WHOLE-LINE COMMENT** -- a comment on its own line contributes a
+# `strip_comments()` (it knows a `#` inside a string is not a comment), and THE BLANK-LINE DROP
+# IS what makes the proof cover a whole-LINE comment -- a comment on its own line contributes a
 # line that is EMPTY once the comment is stripped, and comparing LINE LISTS would call the most
 # comment-only edit there is "not comment-only".
 def code_only(text: str) -> str:
@@ -464,7 +464,7 @@ def plant() -> int:
                   "driver as compiling.")
             bad += 1
 
-        # THE PLANT: THE COMPILER IS NOT THERE. **THE CENSUS MUST SAY `REFUSED`, NOT `COLD`.**
+        # THE plant: THE compiler is not there. THE census must say `REFUSED`, NOT `COLD`.
         # `bin/bend` is absent from a CLEAN CHECKOUT (`.gitignore:5`, and `git ls-tree -r HEAD --
         # bin/` is EMPTY), so this is not a synthetic corner: it is what every GitHub Actions run
         # of `.github/workflows/edge-gates.yml` is.
@@ -481,11 +481,11 @@ def plant() -> int:
                   "that calls it a COLD driver has turned a precondition into a finding.")
             bad += 1
 
-        # THE FALSIFICATION: THE COMPILER IS THERE AND THE DRIVER IS BROKEN. The census must say
-        # COLD. **WITHOUT THIS ARM THE PLANT IS VACUOUS**: a census that refused everything would
+        # THE falsification: THE compiler is there and the driver is broken. The census must say
+        # COLD. WITHOUT this arm the plant is vacuous: a census that refused everything would
         # satisfy the plant arm, and a census that always said WARM would satisfy the control.
-        # **THE COMPILER IS PUT BACK WITH `shutil.copy2`, AND NOT WITH `write_bytes`, BECAUSE THE
-        # MODE IS PART OF IT.** MEASURED: `write_bytes` leaves the file 0644, and
+        # THE compiler is put back with `shutil.copy2`, AND not with `write_bytes`, BECAUSE the
+        # MODE IS PART OF IT. MEASURED: `write_bytes` leaves the file 0644, and
         # `checks/substrate.py:run()` picks the compiler with
         # `"./bin/bend" if os.access("./bin/bend", os.X_OK) else which("bend")` -- so a
         # non-executable `bin/bend` falls through to a `bend` that is not on PATH, the compiler
@@ -505,7 +505,7 @@ def plant() -> int:
                   "or the control arm is satisfied by a census that never finds anything.")
             bad += 1
 
-        # THE COMMENT-ONLY ARM: A COMMENT IS NOT A CHANGE OF THE CODE, AND THE CENSUS's VERDICT
+        # THE comment-ONLY arm: A comment is not a change of the code, AND the census's VERDICT
         # MUST NOT MOVE. The proof that the edit was comment-only is the COMMENT-STRIPPED BYTES
         # WITH THE BLANK LINES DROPPED.
         driver.write_text(DRIVER)
@@ -523,8 +523,8 @@ def plant() -> int:
                   "comment-only, or the census's verdict moved on a comment.")
             bad += 1
 
-        # THE TWO WRONG SHAPES, MEASURED RATHER THAN ASSUMED, AND THE PROOF IS WHAT CATCHES THEM.
-        # (a) A COMMENT APPENDED TO A LINE CARRYING TWO STATEMENTS DELETES THE SECOND -- and the
+        # THE two wrong shapes, MEASURED rather than assumed, AND the proof is what catches them.
+        # (a) A comment appended to a line carrying two statements deletes the second -- and the
         #     file may still COMPILE, so only the comment-stripped proof catches it.
         pair = next((i for i, ln in enumerate(original.split("\n"))
                      if ln.startswith("  [") and ln.rstrip().endswith(",")), None)
@@ -544,7 +544,7 @@ def plant() -> int:
                 print("  THE WRONG SHAPE DID NOT MISBEHAVE: it was comment-only after all, so it is "
                       "not a demonstration of anything.")
                 bad += 1
-        # (b) A WHOLE-LINE COMMENT AT COLUMN 0 DOES NOT BREAK A BEND FILE, and the proof must still
+        # (b) A whole-LINE comment at column 0 DOES not break a BEND FILE, and the proof must still
         #     call it comment-only -- which is what the blank-line drop buys.
         lines = original.split("\n")
         at = next((i for i, ln in enumerate(lines) if i and ln.startswith("  ")), None)
@@ -583,23 +583,23 @@ def build_tree(tree: Path) -> None:
         shutil.copy2(ROOT / rel, tree / rel)
     # THE INTERPRETER: a symlink, because it is large and read-only here.
     os.symlink(ROOT / ".venv", tree / ".venv")
-    # **THE PORT IS COPIED AND NOT SYMLINKED, AND THE REASON IS MEASURED.** A bend file imports
+    # THE port is copied and not symlinked, AND the reason is measured. A bend file imports
     # its neighbours BY A PATH SPELLING -- `import ./../tinybendygrad/uop/ops.bend as O` -- and the
     # compiler resolves that spelling against the tree it is given. MEASURED, in a copy whose
     # `tinybendygrad` was a SYMLINK: the driver's own import was refused with
     # "- expected : an import path of plain names (letters, digits, _ and -; the hub's files import
-    # the hub's)" and `- observed : './../tinybendygrad/uop/ops.bend'` -- **the very spelling every
+    # the hub's)" and `- observed : './../tinybendygrad/uop/ops.bend'` -- the very spelling every
     # driver in this tree uses, which compiles in the tree and does not compile in a copy whose
-    # port is a symlink.** Twelve megabytes and a hundred and seventy-six files is the price of a
+    # port is a symlink. Twelve megabytes and a hundred and seventy-six files is the price of a
     # copy the compiler agrees with, and the price is paid ONCE per plant run.
     shutil.copytree(ROOT / "tinybendygrad", tree / "tinybendygrad",
                     ignore=shutil.ignore_patterns("__pycache__"))
-    # **AND THE FROZEN ORACLE, BECAUSE `checks/substrate.py` REFUSES WITHOUT IT.** MEASURED, and
+    # AND the frozen oracle, BECAUSE `checks/substrate.py` REFUSES without it. MEASURED, and
     # the refusal is loud and correct: `checks/substrate.py:oracle_drift()` checks the sha256 of
     # every pinned oracle on EVERY run, and a copy without them answers
     # "ORACLE DRIFT: substrate/oracle-check.sh: MISSING -- the frozen oracle is gone" and exits 3
-    # before it judges a single file. **THE COPY IS A COPY OF THE TREE'S SUBSTRATE, NOT A HOLLOW
-    # SHELL**, and the pins come with it: `checks/substrate.py:ORACLE_PIN` is read by path, so the
+    # before it judges a single file. THE COPY IS a COPY OF the tree'S substrate, NOT a hollow
+    # SHELL, and the pins come with it: `checks/substrate.py:ORACLE_PIN` is read by path, so the
     # copy's own oracle list is the tree's and the bytes are the tree's.
     for name in census.substrate.ORACLE_PIN:
         src = ROOT / ".agents" / "slop" / name
@@ -610,7 +610,7 @@ def build_tree(tree: Path) -> None:
     shutil.copy2(ROOT / "bin" / "bend", tree / "bin" / "bend")
     os.chmod(tree / "bin" / "bend", 0o755)
     os.symlink(ROOT / "references", tree / "references")
-    # THE DRIVER: A TEXT FILE THE PLANT WRITES.
+    # THE driver: A text file the plant writes.
     (tree / "gates" / "plant-driver.bend").write_text(DRIVER)
 
 

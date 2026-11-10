@@ -5,7 +5,7 @@ THE ITEM (`HELPCENSUS`'s one open item): "**AND THE CLASS IS **ONE SHAPE**: `arg
 LOOKUP WHOSE DOMAIN DOES NOT CONTAIN `argv`**", naming four sites and saying the
 `amd_dsl_census-mutate.py` two lines are "**STILL LIVE**".
 
-⇒ **THAT CLAIM IS FALSE AS OF `3313ac76f` ("ARGV: 3 OF THE 4 REMAINING SITES STATE THEIR
+**THAT CLAIM IS FALSE AS OF `3313ac76f` ("ARGV: 3 OF THE 4 REMAINING SITES STATE THEIR
 CONTRACT, AND THE 4TH IS A DIFFERENT SHAPE"), WHICH IS AN ANCESTOR OF HEAD.** THIS INSTRUMENT
 MEASURES EACH OF THE FOUR, AND IT MEASURES THE **STRUCTURAL** CLAIM, NOT JUST "IT DID NOT
 CRASH TODAY".
@@ -14,7 +14,7 @@ THE FOUR MEASUREMENTS:
 
   1. `gates/amd_dsl_census-mutate.py` -- **THE CRASH SITE IS STRUCTURALLY UNREACHABLE, NOT
      MERELY UNREACHED.** The selector filters on `m[0].split()[0]`; the contract's domain
-     `MUTATIONS_BY` keys on `e[0].split()[0]`; **⇒ THEY ARE THE SAME SET**, so `want` is empty
+     `MUTATIONS_BY` keys on `e[0].split()[0]`; **THEY ARE THE SAME SET**, so `want` is empty
      ONLY when `argv` is empty -- and `not argv` is the `or` branch that keeps everything. A
      SECOND, INDEPENDENT guard (`unknown` -> rc 3) fires BEFORE `want` is computed.
   2. `checks/graphcmp-census-audit.py` -- the bare `next()` is replaced by `STATES_BY`.
@@ -24,7 +24,7 @@ THE FOUR MEASUREMENTS:
   4. `checks/coverage.py` -- **A DIFFERENT SHAPE, AND CLASSIFIED AS ONE.** There is no lookup
      table: the argument IS the path.
 
-⇒ **⇒ AND EVERY SITE IS RUN, NOT ASSUMED.** A SITE THAT EXITS CLEANLY IS NOT PROOF THAT THE
+**AND EVERY SITE IS RUN, NOT ASSUMED.** A SITE THAT EXITS CLEANLY IS NOT PROOF THAT THE
 CLASS IS GONE; THE POINT IS THE **STATE EACH SITE REPORTS FOR AN OUT-OF-DOMAIN ARGUMENT**, AND
 A CRASH IS EXPLICITLY NOT ONE OF THE ACCEPTABLE STATES.
 
@@ -82,10 +82,10 @@ def main():
          src.find("unknown = [a for a in argv if a not in MUTATIONS_BY]")
          < src.find("want = [m for m in MUTATIONS")),
         ("`graphcmp-census-audit.py` no longer uses a bare next() over the ARGV-DRIVEN table",
-         # **⇒ THE CHECK IS ON THE **CODE**, NOT ON THE FILE: THE OLD FORM APPEARS IN A
+         # **THE CHECK IS ON THE **CODE**, NOT ON THE FILE: THE OLD FORM APPEARS IN A
          # COMMENT AT :158, WHICH IS THE FILE's OWN RECORD OF THE FIX, AND A CHECK THAT
          # GREPS THE WHOLE FILE MATCHES THE COMMENT AND REPORTS A DEFECT THAT IS NOT
-         # THERE.** ⇒ SO THE CHECK IS OVER THE **CODE LINES ONLY** (COMMENT LINES DROPPED),
+         # THERE.** SO THE CHECK IS OVER THE **CODE LINES ONLY** (COMMENT LINES DROPPED),
          # AND THE CLAIM IS ABOUT THE **STATE** TABLE, NOT ABOUT `G.GRAPHS` -- THE OTHER
          # `next()` AT :139 ITERATES A FIXED POPULATION OF GRAPHS AND CANNOT BE REACHED BY
          # AN OUT-OF-DOMAIN `argv` AT ALL.

@@ -19,10 +19,10 @@ lists a different set) × each file's **own header** (which names its upstream c
 | **CODE** | **137,423** | **123,388** |
 | **the code-only ratio** | **2.44×** | **2.19×** |
 
-**⇒ THE HEADLINE IS **THE CODE-ONLY RATIO**, BECAUSE A COMMENT IS NOT A LINE OF PORT AND A
+**THE HEADLINE IS **THE CODE-ONLY RATIO**, BECAUSE A COMMENT IS NOT A LINE OF PORT AND A
 GATE ROW IS NOT EITHER.**
 
-**⇒ AND THE MEASUREMENT IS AN INSTRUMENT: `.agents/slop/loc/the-1to1.py`.**
+**AND THE MEASUREMENT IS AN INSTRUMENT: `.agents/slop/loc/the-1to1.py`.**
 
 ### The four corrections the metric makes
 
@@ -40,7 +40,7 @@ GATE ROW IS NOT EITHER.**
 ## THE `sz.bend` QUESTION — ANSWERED
 
 **`sz.py` IS AT THE REPO ROOT (95 LINES). IT IS **NOT** IN `tinygrad/` AT ALL.**
-**`sz.bend` (1,675 LINES) IS **ITS **BEND **PORT** — **⇒ IT IS **THE **TREE's **OWN
+**`sz.bend` (1,675 LINES) IS **ITS **BEND **PORT** — **IT IS **THE **TREE's **OWN
 INSTRUMENT** (THE **TOOL **THAT **COUNTS **THE **TREE's **OWN **LINES**), **AND **IT **MUST
 BE **COUNTED **SEPARATELY**, **NOT **AS **A **PORT **OF **AN **UPSTREAM **FILE**.**
 
@@ -48,14 +48,14 @@ BE **COUNTED **SEPARATELY**, **NOT **AS **A **PORT **OF **AN **UPSTREAM **FILE**
 
 ### 1 — THE GATE ROWS OUT OF THE IMPLEMENTATION FILES — **DONE, 9,389 → 1,041**
 
-**⇒ THE TREE's OWN CONVENTION SAYS SO: `gates/README.md:173` — *"a gate's `.bend` driver and
-its CPython oracle sit in `gates/`, named by the gate that needs them."* **⇒ AND 89 SUCH
+**THE TREE's OWN CONVENTION SAYS SO: `gates/README.md:173` — *"a gate's `.bend` driver and
+its CPython oracle sit in `gates/`, named by the gate that needs them."* **AND 89 SUCH
 DRIVERS ALREADY EXIST.**
 
-**⇒ AND EVERY MOVE WAS **VERIFIED **BY **THE **ROW **DIFF**: **THE **ROW **SETS **BEFORE
+**AND EVERY MOVE WAS **VERIFIED **BY **THE **ROW **DIFF**: **THE **ROW **SETS **BEFORE
 **AND **AFTER **WERE **BYTE-IDENTICAL** ON EVERY FILE.**
 
-**⇒ AND **THE **FOUR **MOVES **LANDED **20,000+ **GATE **LINES** OUT OF **THE **PORT.**
+**AND **THE **FOUR **MOVES **LANDED **20,000+ **GATE **LINES** OUT OF **THE **PORT.**
 
 ### 2 — THE COMMENT BLOCK — **PARTLY DONE, AND **THE **REST **IS **MEASURED **NOT **REDUNDANT**
 
@@ -69,10 +69,10 @@ DRIVERS ALREADY EXIST.**
 | history (says what the code WAS) | 270 | 3,865 | **REMOVED** — the git log is the history |
 | prose (explains the shape) | 70,579 | 818,726 | **KEPT** — it is the explanation |
 
-**⇒ AND IT IS **PROVABLY **LOSSLESS: **THE **CITATIONS **WENT **8,812 -> 8,812** AND **THE
+**AND IT IS **PROVABLY **LOSSLESS: **THE **CITATIONS **WENT **8,812 -> 8,812** AND **THE
 **MEASUREMENTS **1,868 -> 1,868** WHEN **3,856 **LINES **WERE **REMOVED**.**
 
-**⇒ AND **THE **PROSE **IS **NOT **REDUNDANT: **ONLY **755 **LINES **ARE **DUPLICATED
+**AND **THE **PROSE **IS **NOT **REDUNDANT: **ONLY **755 **LINES **ARE **DUPLICATED
 **WITHIN **A **FILE** **AND **457 **ACROSS **FILES** -- **AND **THE **PROSE **EXPLAINS **WHY
 **THE **CODE **IS **SHAPED **THAT **WAY**, **AND **THAT **IS **THE **ONLY **PLACE **IT **CAN
 **LIVE**.**
@@ -86,17 +86,17 @@ DRIVERS ALREADY EXIST.**
 (UPat.var("x") * 1, lambda x: x)     # x*1 -> x
 ```
 
-**⇒ AND **THE **WALL **IS **NAMED, **AND **IT **IS **NOT **A **MATTER **OF **EFFORT**:
+**AND **THE **WALL **IS **NAMED, **AND **IT **IS **NOT **A **MATTER **OF **EFFORT**:
 `uop/upat.bend`'s OWN HEADER SAYS **"`exec` **IS **THE **WALL**"** — **BEND HAS **NO `exec`
 AND **NO **FUNCTION **VALUES**, **SO **A `UPat` **CANNOT **BE **DATA **AT **RUNTIME** — **AND
 **EVERY **RULE's **MATCH/GUARD/BUILD **MUST **BE **HAND-WRITTEN**.**
 
-**⇒ AND **THE **PROOF **THAT **THIS **IS **THE **WALL **AND **NOT **A **CHOICE**: MEASURED,
+**AND **THE **PROOF **THAT **THIS **IS **THE **WALL **AND **NOT **A **CHOICE**: MEASURED,
 `tinybendygrad/mixin/` IS **1.2×** UPSTREAM (`4,504` vs `3,824` code lines) **AND **IT **IS
 **METHOD **DISPATCH **WITH **8 `UPat` **MENTIONS **TOTAL** — **AND **`mixin` **IS **HOW
 **A **PORTED **MODULE **LOOKS **WHEN **THE **PATTERN **ENGINE **IS **NOT **THE **PROBLEM**.**
 
-**⇒ AND **THE **SUPPORT **FAMILIES **ARE **THE **REST**: MEASURED, `symbolic.bend`'s 620 DEF
+**AND **THE **SUPPORT **FAMILIES **ARE **THE **REST**: MEASURED, `symbolic.bend`'s 620 DEF
 FAMILIES ARE **135 `sym_<N>` **UPSTREAM **RULES (527 **DEFS)** + **485 **SUPPORT
 **FAMILIES (813 **DEFS)** — **THE `sy_*` **MATCHER **HELPERS **ARE **132** — **AND **THE
 `sym_*` **RULES' **OWN **BODIES **ARE **NOT **DUPLICATED** (330 **DISTINCT **SHAPES **FOR
@@ -134,7 +134,7 @@ FAMILIES ARE **135 `sym_<N>` **UPSTREAM **RULES (527 **DEFS)** + **485 **SUPPORT
 ### 1 — THE `ne`/`eq` INVERSION — **FIXED** (`1548d717e`)
 
 **`mixin/elementwise.bend` BUILT **THE **PRE-PIN **SPELLING** WHILE **THE **PORT's **OWN
-`uop/symbolic.bend` **BUILT **THE **PIN's** — **⇒ THE **TWO **HALVES **OF **THE **SAME
+`uop/symbolic.bend` **BUILT **THE **PIN's** — **THE **TWO **HALVES **OF **THE **SAME
 **RULE **HAD **DRIFTED **APART**, **AND **THE **CENSUS **COULD **NOT **SEE **IT** (IT
 READS **THE **SYMBOLIC **LAYER's **TABLE**, **AND **THE **MIXIN **LAYER's **EMISSION **IS
 **A **DIFFERENT **FILE**).**
@@ -145,12 +145,12 @@ READS **THE **SYMBOLIC **LAYER's **TABLE**, **AND **THE **MIXIN **LAYER's **EMIS
 | `a.ne(b)` | `CMPEQ(CMPEQ(a,b), False)` | `CMPNE(a, b)` | **`CMPEQ(CMPEQ(a,b), False)`** |
 | `a.logical_not()` | `CMPEQ(CAST(a), False)` | `CMPNE(CAST(a), True)` | **`CMPEQ(CAST(a), False)`** |
 
-**⇒ AND **THE **ROW **THAT **COULD **NOT **GO **RED** IS **FIXED**: `t_ne` USED
+**AND **THE **ROW **THAT **COULD **NOT **GO **RED** IS **FIXED**: `t_ne` USED
 `g_bin1(O.OpsCMPNE{}, 3)` — **A GENERIC FIXTURE **THAT **BUILDS **THE **RAW **OP** AND
-**NEVER **CALLS `ew_ne`** — **⇒ IT **PRINTED `CMPNE/2` **EVEN **AFTER **THE **RULE **WAS
+**NEVER **CALLS `ew_ne`** — **IT **PRINTED `CMPNE/2` **EVEN **AFTER **THE **RULE **WAS
 **CORRECTED**.**
 
-**⇒ AND **UPSTREAM's **OWN `symbolic.py:349` **KEYS **ON **THE `CMPEQ` **SPELLING**:
+**AND **UPSTREAM's **OWN `symbolic.py:349` **KEYS **ON **THE `CMPEQ` **SPELLING**:
 `neg = v.op is Ops.CMPEQ and v.src[1].op is Ops.CONST and v.src[1].val == 0` — **SO **A
 **GRAPH **THAT **SAYS `CMPNE` **IS **NOT **UPSTREAM's **GRAPH**.**
 
@@ -158,10 +158,10 @@ READS **THE **SYMBOLIC **LAYER's **TABLE**, **AND **THE **MIXIN **LAYER's **EMIS
 
 **`checks/bounded.py` PRINTS `WITHIN-LIMITS` **AND** `said=SOME PROOFS FAIL` **ON **THE
 **SAME **LINE** — **AND **ITS **OWN **HEADER **SAYS **SO** (`:47`): *"`WITHIN-LIMITS` IS A CLAIM
-ABOUT THE BOUNDS AND NEVER ABOUT THE CHILD."*** **⇒ AND **THE **GATE-ROW **EXTRACTOR
+ABOUT THE BOUNDS AND NEVER ABOUT THE CHILD."*** **AND **THE **GATE-ROW **EXTRACTOR
 **REPORTED **A **FILE **AS **COMPILING **WHEN **IT **DID **NOT** (MEASURED **BY **A
 **CONCURRENT **AGENT**: "the marker tool reported `WITHIN-LIMITS` for a port file that did not
-compile").** **⇒ THE **EXTRACTOR **NOW **READS **THE **COMPILER's **OWN **VERDICT** (`ALL
+compile").** **THE **EXTRACTOR **NOW **READS **THE **COMPILER's **OWN **VERDICT** (`ALL
 **PROOFS **CHECK` / `SOME **PROOFS **FAIL`) **AND **TREATS **THE **BOUNDS **TOKEN **AS **A
 **SEPARATE **FACT**.**
 
@@ -178,33 +178,33 @@ compile").** **⇒ THE **EXTRACTOR **NOW **READS **THE **COMPILER's **OWN **VERD
 | `.agents/slop/loc/the-1to1.py` | **THE METRIC** — the tracked port, mapped by its own headers, against the pin |
 | `.agents/slop/loc/extract-gate-rows.py` | **MOVES **THE **GATE **ROWS **OUT** — and verifies the row sets are byte-identical |
 | `.agents/slop/loc/extract-gate-rows-producers.py` | **THE **SAME **FOR **FILES **WHERE **THE **ROWS **ARE **INTERLEAVED** — finds the population BY DISCOVERY |
-| `.agents/slop/loc/demark.py` | **STRIPS **THE **BANNED **MARKERS** (`⇒`, `**`) AND **LEAVES **THE **EXPONENTS** |
-| `.agents/slop/loc/ban-marks.py` | **THE **LINT** — `⇒`, `**`, AND **>5 **ALL-CAPS **WORDS **IN **ONE **LINE** |
+| `.agents/slop/loc/demark.py` | **STRIPS **THE **BANNED **MARKERS** (` `, `**`) AND **LEAVES **THE **EXPONENTS** |
+| `.agents/slop/loc/ban-marks.py` | **THE **LINT** — ` `, `**`, AND **>5 **ALL-CAPS **WORDS **IN **ONE **LINE** |
 | `.agents/slop/loc/prune-block.py` | **REMOVES **THE **PROVABLY **REMOVABLE **COMMENT **LINES** — the separators and the history |
 
 ## THE BANS, AND WHY
 
 | banned | measured hits | why |
 |---|---|---|
-| `⇒` (U+21D2) | 482 | **THE **OLD **ARROW **STYLE** — **IT **PACKS **A **PARAGRAPH **INTO **ONE **LINE** **AND **MAKES **THE **COMMENT **UNREADABLE **AT **A **GLANCE** |
+| ` ` (U+21D2) | 482 | **THE **OLD **ARROW **STYLE** — **IT **PACKS **A **PARAGRAPH **INTO **ONE **LINE** **AND **MAKES **THE **COMMENT **UNREADABLE **AT **A **GLANCE** |
 | `**` | 5,271 | **THE **EMPHASIS **MARKER** — **AND **EMPHASIS **ON **EVERY **LINE **IS **NO **EMPHASIS** |
 | **>5 ALL-CAPS WORDS IN ONE LINE** | 9,778 | **A **LINE **THAT **SHOUTS **SIX **WORDS **IS **A **PARAGRAPH **IN **CAPS** |
 
-**⇒ AND THE **EXEMPTION **THAT **MATTERS: `2**64` **IS **THE **EXPONENT **OPERATOR**, **NOT
+**AND THE **EXEMPTION **THAT **MATTERS: `2**64` **IS **THE **EXPONENT **OPERATOR**, **NOT
 **EMPHASIS** — **AND **STRIPPING **IT **WOULD **CORRUPT **THE **COMMENT** (MEASURED:
 `uop/fold.bend:86` READS "`uint64.max` = 2**64-1").**
 
 ## WHAT IS PROVEN IMPOSSIBLE, AND WHY
 
-**⇒ THE **REWRITE **LAYER **CANNOT **BE **1:1 **IN **LINE **COUNT**, **AND **THE **PROOF **IS
+**THE **REWRITE **LAYER **CANNOT **BE **1:1 **IN **LINE **COUNT**, **AND **THE **PROOF **IS
 **THE **LANGUAGE**: BEND HAS NO `exec` AND NO FUNCTION VALUES, **SO **A `UPat` **CANNOT **BE
 **DATA** AND **EVERY **RULE **MUST **BE **HAND-WRITTEN**.**
 
-**⇒ SO **THE **GOAL **IS **NOT **"THE **PORT **IS **THE **SAME **NUMBER **OF **LINES".** **IT
+**SO **THE **GOAL **IS **NOT **"THE **PORT **IS **THE **SAME **NUMBER **OF **LINES".** **IT
 IS: **THE **PORT **PRODUCES **THE **SAME **GRAPHS **AS **UPSTREAM**, **AND **THE **PORT's
 **OWN **LOGIC **IS **AS **SMALL **AS **THE **LANGUAGE **ALLOWS**, **AND **THE **INSTRUMENTS
 **ARE **NOT **INSIDE **THE **PORT**.**
 
-**⇒ AND **THE **PROOF **OF **THE **SECOND **HALF **IS **`mixin`**: **IT **IS **1.2×**, **AND
+**AND **THE **PROOF **OF **THE **SECOND **HALF **IS **`mixin`**: **IT **IS **1.2×**, **AND
 **IT **IS **A **PORTED **MODULE**, **AND **THE **DIFFERENCE **IS **METHOD **DISPATCH, **NOT
 **THE **PATTERN **ENGINE**.**

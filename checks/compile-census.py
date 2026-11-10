@@ -77,11 +77,11 @@ ROOT = Path(__file__).resolve().parents[1]
 HERE = Path(__file__).resolve().parent
 PY = ".venv/bin/python"
 
-# THE BEND LOCK, PER INVOCATION. `checks/bendlock.sh`'s own header says it: "**THE LOCK IS HELD
-# FOR THE WHOLE COMMAND, AND A COMMAND THAT RUNS **MANY** BENDS **MONOPOLISES IT** ... SO FOR A
-# GATE THAT RUNS MANY BENDS, **ACQUIRE THE LOCK **PER **INVOCATION**, NOT **ONCE **FOR **THE
-# **GATE** -- `gates/bendlock.py` **IS **THAT **LOCK** (it shares this path, so the two exclude
-# each other).**" **THIS CENSUS COMPILES MANY FILES** -- a hundred and more of them -- and it took
+# THE BEND LOCK, PER invocation. `checks/bendlock.sh`'s own header says it: "THE lock is held
+# FOR the whole command, AND a command that runs many bends monopolises it ... SO for a
+# GATE that runs many bends, ACQUIRE the lock per invocation, NOT once for the
+# GATE -- `gates/bendlock.py` IS THAT LOCK (it shares this path, so the two exclude
+# each other)." THIS CENSUS COMPILES MANY FILES -- a hundred and more of them -- and it took
 # the lock ONCE, which made it wait on itself, or not take it at all, which let it run beside
 # another unit's compiler. `gates/bendlock.py` is the same lock and the same path, so the two
 # exclude each other. MEASURED, the shape it fixes: `checks/bendlock.sh -- .venv/bin/python
@@ -90,18 +90,18 @@ PY = ".venv/bin/python"
 sys.path.insert(0, str(ROOT / "gates"))
 from bendlock import bend_lock  # noqa: E402
 
-# THE INSTRUMENT'S OWN POPULATION DECLARATION, LOADED BY PATH. Not re-typed here: a second copy of
+# THE instrument'S own population declaration, LOADED by path. Not re-typed here: a second copy of
 # the vocabulary is the same fault as a second copy of a population (`checks/cl-port-gate.py:65`).
 _spec = importlib.util.spec_from_file_location("substrate", ROOT / "checks" / "substrate.py")
 substrate = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(substrate)                      # module level is inert (it only defines)
 
-# THE WATCHDOG, AND IT IS `checks/substrate.py`'s OWN CONSTANT READ BY PATH -- the same file, the
+# THE watchdog, AND it is `checks/substrate.py`'s OWN constant read by path -- the same file, the
 # same arguments, the same verdict token. A second spelling of the watchdog's path is a second
 # instrument that can drift from the first.
 BOUNDED = substrate.BOUNDED
 
-# WHAT THE WALK DOES NOT SEE, AND WHY. Each is a MEASURED exclusion, not a preference; the counts
+# WHAT the walk does not see, AND why. Each is a MEASURED exclusion, not a preference; the counts
 # travel in the CENSUS line so the subtraction is a number and not a claim.
 SKIP_DIRS = {
     ".git": "VCS internals", "node_modules": "third-party", "__pycache__": "build output",
@@ -112,7 +112,7 @@ SKIP_DIRS = {
 
 # `checks/bounded.py`'s own verdict TOKEN, read off stderr. The exit status is the child's and cannot
 # mean one thing (`bounded.py`: `sh -c 'exit 3'` is a refusal at 0 MB and a kill at 2,988 MB).
-# MATCHED ANYWHERE IN THE LINE, NOT AT ITS START: `substrate.py:302` RE-EMITS the record with its own
+# MATCHED anywhere in the line, NOT at its start: `substrate.py:302` RE-EMITS the record with its own
 # `[substrate] <file>: ` prefix, so an anchored `^\[bounded\]` finds nothing and every file would be
 # counted NO-MEASUREMENT -- the census silently measuring zero, which is the defect this file exists
 # to remove. MEASURED on that defect: the anchored form returned `NO-TOKEN` for 2 of 2 files that
@@ -122,22 +122,22 @@ TOKEN_RC = re.compile(r"\[bounded\] (?P<token>WITHIN-LIMITS|KILLED-ON-MEMORY|TIM
 # `gates/gatekit.py:NOTICE` is bend's 42-byte update line on stderr; it is not the instrument's answer.
 NOTICE = substrate.NOTICE
 
-# THE SHAPE THE COMPILER'S ERROR DID NOT MATCH. It is a name here so that a reader of this
+# THE shape the compiler'S ERROR DID not match. It is a name here so that a reader of this
 # file's rows, and `gates/compile-census-gate.py`, can ask for the set of shapes the tree can
 # produce without re-typing it.
 UNATTRIBUTED = "UNATTRIBUTED"
 
-# THE COMPILER's OWN ERROR SHAPES. **THE NAMES ARE `checks/substrate.py`'s -- THE TREE's OWN
-# VOCABULARY, SO A READER WHO KNOWS ONE KNOWS THE OTHER -- AND THE PATTERNS ARE FIXED, BECAUSE
-# `checks/substrate.py:cause_of()` CANNOT MATCH A REAL BEND FAILURE.** MEASURED, three defects,
+# THE compiler's OWN ERROR SHAPES. THE names are `checks/substrate.py`'s -- THE tree's OWN
+# VOCABULARY, SO a reader who knows one knows the other -- AND the patterns are fixed, BECAUSE
+# `checks/substrate.py:cause_of()` CANNOT MATCH A REAL BEND FAILURE. MEASURED, three defects,
 # and `cause_of_lines()` above says what they are: the `^` anchor over a whole output, the JOINED
 # form the compiler does not print, and the `'def','type'` spacing the compiler does not print.
 #
-# THE ORDER IS THE TABLE's OWN ORDER (`checks/substrate.py:773`: "most specific first, so the
+# THE order is the table's OWN order (`checks/substrate.py:773`: "most specific first, so the
 # generic type-mismatch shape cannot swallow `a defined name`), and the last two arms are the ones
 # the tree's table lacks: an ARITY error ("expected : X with N fields") and the fallback.
 #
-# **⇒ AND A SHAPE IS A CLASS, NOT A VERDICT.** `MISSING-DEF` and `UNKNOWN-CTOR` are BREAKAGES in
+# - AND a shape is a class, NOT a verdict. `MISSING-DEF` and `UNKNOWN-CTOR` are BREAKAGES in
 # this tree and `SYNTAX` and `FOREIGN` are STANDING-COLD in it; the shape says WHICH, and
 # `gates/compile-census-standing.rows` says which files are allowed to be which.
 CAUSES = (
@@ -167,7 +167,7 @@ def cause_of_lines(output: str) -> tuple[str, str, str]:
           `cause_of()` answered `None` where the per-line search answers `('HOLES', '34')`.
       (b) **THE JOINED FORM.** The table's patterns are written for `- expected : X / observed : Y`
           ON ONE LINE, and the compiler prints the two halves on SEPARATE lines:
-          `- expected : a defined name` and `- observed : C.render_kernel`. ⇒ **THE PAIRS ARE
+          `- expected : a defined name` and `- observed : C.render_kernel`. **THE PAIRS ARE
           JOINED HERE, ONCE, AND THE TABLE IS THEN APPLIED TO THE FORM IT WAS WRITTEN FOR.**
           MEASURED, on the real output of `checks/.e2e-fixture/f64/emit-f64.bend`: the joined
           haystack answers `('MISSING-DEF', 'C.render_kernel')` where the table's own reader
@@ -177,7 +177,7 @@ def cause_of_lines(output: str) -> tuple[str, str, str]:
           own `FRAGMENT` regex gets this right (`'def',\\s*'type'\\s*or\\s*'law'`), so the tree has
           both spellings and only one of them matches.
 
-    ⇒ **THE CAUSE IS WHAT MAKES `COLD` A CLASS AND NOT A NOISE.** `COLD` alone says "the first
+**THE CAUSE IS WHAT MAKES `COLD` A CLASS AND NOT A NOISE.** `COLD` alone says "the first
     line was not `ALL PROOFS CHECK`", which every failure in the tree shares; the shape says
     WHICH failure, and the compiler's own wording is what names them."""
     lines = join_pairs(output.splitlines())
@@ -244,7 +244,7 @@ def compiler_words(path: str, mb: int, seconds: int) -> tuple[str, str]:
     and every real failure reads `UNATTRIBUTED`. MEASURED, on a synthetic three-line failure:
     `cause_of()` answered `None` where the per-line search answers `('HOLES', '34')`.
 
-    ⇒ **SO THE WORDS ARE ASKED FOR DIRECTLY, AND THE COST IS THE SIZE OF THE COLD CLASS AND NOT OF
+**SO THE WORDS ARE ASKED FOR DIRECTLY, AND THE COST IS THE SIZE OF THE COLD CLASS AND NOT OF
     THE POPULATION.** The envelope is `checks/bounded.py` under `gates/bendlock.py` -- the same
     watchdog and the same lock this census's other call uses -- and the shape is
     `checks/substrate.py`'s own `CAUSES` table applied LINE BY LINE (`cause_of_lines()` above).
@@ -310,7 +310,7 @@ def judge(path: str, mb: int, seconds: int) -> dict:
     CHECK**: a reader cannot tell a census that describes this tree from one that describes last
     week's.
     """
-    # THE LOCK IS TAKEN FOR THIS ONE COMPILATION AND RELEASED IMMEDIATELY AFTER, so a census over
+    # THE lock is taken for this one compilation and released immediately after, so a census over
     # a hundred files does not monopolise it for the whole run. See the import at the top of this
     # file for why it is PER INVOCATION and not once for the census.
     with bend_lock():
@@ -320,11 +320,11 @@ def judge(path: str, mb: int, seconds: int) -> dict:
                            env={k: v for k, v in os.environ.items() if k != "PYTHONPATH"})
     row = next((ln for ln in p.stdout.split("\n") if ln.startswith(("WARM", "COLD", "EMPTY",
                                                                     "NO INSTRUMENT"))), "")
-    # SEARCHED ACROSS THE LINE, NOT ANCHORED. MEASURED, AND IT COST A WHOLE 35-FILE RUN:
+    # SEARCHED across the line, NOT anchored. MEASURED, AND it cost a whole 35-FILE run:
     # `substrate.py:302` re-emits bounded.py's record as `[substrate] <file>: [bounded] WITHIN-LIMITS
     # ...`, so a `ln.startswith("[bounded] ")` test found nothing, every row came back `NO-TOKEN`, and
-    # the `NO-TOKEN -> NO-MEASUREMENT` rule below then labelled **35 of 35 files NO-MEASUREMENT while
-    # all 35 were WARM** -- a census measuring zero over a full population, which is the precise
+    # the `NO-TOKEN -> NO-MEASUREMENT` rule below then labelled 35 of 35 files NO-MEASUREMENT while
+    # all 35 were WARM -- a census measuring zero over a full population, which is the precise
     # failure this file was written to end. A census that cannot see its own instrument's verdict is
     # the `DEAD` of `gates/gatekit.py:55` wearing a count.
     tok = next((m for m in (TOKEN_RC.search(ln) for ln in p.stderr.split("\n")) if m), None)
@@ -347,7 +347,7 @@ def judge(path: str, mb: int, seconds: int) -> dict:
         state = state + "?NOTOKEN"
     peak = next((m.group(1) for m in
                  (re.search(r"peak-RSS=(\d+) MB", ln) for ln in p.stderr.split("\n")) if m), "")
-    # THE COMPILER's OWN WORDS, AND ONLY FOR THE FILES THAT ARE COLD. `checks/substrate.py` is the
+    # THE compiler's OWN words, AND only for the files that are cold. `checks/substrate.py` is the
     # verdict instrument and does not forward the compiler's output; `compiler_words()` asks again,
     # and the cost is the size of the COLD class and not of the population.
     cause, error = ("", "")
@@ -379,7 +379,7 @@ def main() -> int:
         settle(REFUSED, f"the walk found no .bend outside {substrate.POP_ROOT}/ and the skipped "
                         "directories; the population is empty and an empty census proves nothing")
 
-    # THE COMMITTED TREE, BY `ls-tree` AND NOT BY `ls-files`: `AGENTS.md` -- the index is ARMED
+    # THE committed tree, BY `ls-tree` AND not by `ls-files`: `AGENTS.md` -- the index is ARMED
     # (`jj` colocated snapshots stage into `.git/index`), so `ls-files` answers with intent-to-add
     # placeholders and would report scratch this tree cannot check out. `ls-tree -r HEAD` is the
     # tree. THE NUMBER IS A CAVEAT, NOT A FILTER: nothing is dropped below, because a `.bend` on
@@ -441,7 +441,7 @@ def main() -> int:
             print(f"{state:<15} {path:<48} [{r['token']}] {r['cause']:<22} {r['error']}")
 
     judged = len(pop)
-    # ANY STATE THAT IS NOT A MEASUREMENT IS COUNTED AS UNJUDGED, by PREFIX rather than by an
+    # ANY state that is not a measurement is counted as unjudged, by PREFIX rather than by an
     # enumeration: a new state added above that is not listed here would otherwise be silently
     # excluded from the denominator, which is the shape `AGENTS.md` calls a check that cannot be
     # wrong because it cannot be anything.

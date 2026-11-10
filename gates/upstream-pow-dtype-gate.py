@@ -10,7 +10,7 @@ is produced by calling upstream's own `Tensor.pow` and letting upstream's own C 
 upstream's own `clang` judge the result. THE SUBJECT IS A COMPILE FAILURE, so the oracle IS clang --
 a second implementation that cannot be wrong about whether the C it was handed is valid C.
 
-**⇒ AND **THE **FINDING BELOW **WAS **A **FINDING **AND **IS **NOW **A **HISTORY** — **THE **HONEST
+**AND **THE **FINDING BELOW **WAS **A **FINDING **AND **IS **NOW **A **HISTORY** — **THE **HONEST
 FORM **IS **TO **SAY **SO, **AND **THIS **FILE **SAYS **SO.** THE UPSTREAM **GUARD **WAS
 `raise RuntimeError("base needs to be float")`, **AND **IT **IS **NOW** `raise RuntimeError
 ("integers to negative integer powers are not allowed")` — **THE **CHANGE **CAME **IN **WITH **THE
@@ -33,7 +33,7 @@ THE THREE FACTS THAT MADE IT UPSTREAM'S, MEASURED NOT ASSUMED:
      float")`**, **AND **IT **WAS **GATED **ON** `isinstance(x, ConstType)` -- **THE **SAME **SYNTACTIC
      PROPERTY**, **SO **THE **GUARD **THAT **EXISTED **TO **KEEP **POW **OFF **THE **FLOAT **PATH
      **FIRED **FOR **ONE **SPELLING **OF **THE **EXPONENT **AND **NOT **FOR **THE **OTHER.**
-     **⇒ AND **IT **IS **GONE: **THE **CURRENT **GUARD **IS **THE **NEGATIVE-INTEGER-EXPONENT **ONE,
+     **AND **IT **IS **GONE: **THE **CURRENT **GUARD **IS **THE **NEGATIVE-INTEGER-EXPONENT **ONE,
      **AND **IT **IS **NOT **GATED **ON `isinstance(x, ConstType)` **AT **ALL.**
   3. `dtype_from_uop` calls itself "the dtype production rules, TOTAL over all Ops" (ops.py:122) and
      answers `dtypes.i32` for `POW(i32, i32)`. The node that SURVIVES the rewrite is `f32`. So the
@@ -78,12 +78,12 @@ PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 3: ["--plant", "refused"]}
-# WHY THE RED IS A FINDING: int32 ** <tensor> emits int2 = float2, which clang rejects.  THE CLASS
+# WHY the red is a finding: int32  <tensor> emits int2 = float2, which clang rejects.  THE class
 # IS THE WHOLE OF `RED_IS` -- a reader that compares the string to a class name cannot read a
 # class out of a sentence, so the sentence lives HERE and the field carries the class alone.
 RED_IS = "FINDING"
 
-# THE PIN IS BYTES, NOT A REVISION, AND IT IS A CHECK RATHER THAN A LABEL. The old one
+# THE PIN IS bytes, NOT a revision, AND it is a check rather than a label. The old one
 # compared `git show ad117c928^:tinygrad/uop/symbolic.py` with the working tree's bytes and
 # PRINTED the answer -- `IDENTICAL -- this is at the PIN` or `DIFFERS` -- and the exit code
 # ignored it entirely, so a pin that could not go red was carried as a line of prose. A
@@ -95,11 +95,11 @@ RED_IS = "FINDING"
 # file it checks is `sha256(x) == sha256(x)`, which cannot fail. `gates/blobpin-census-gate.py`
 # MEASURES that claim over every pin site in the tree and fails a derived one.
 #
-# THE THREE FILES ARE THE POW PATH THIS GATE'S OWN HEADER NAMES: `symbolic.py`'s
-# `simplify_pow`/`xpow` rewrites, `mixin/elementwise.py`'s pow guard -- **WHICH **WAS
-# `raise RuntimeError("base needs to be float")` **AND **IS **NOW** `raise RuntimeError
-# ("integers to negative integer powers are not allowed")`, **THE **CHANGE **ARRIVING **WITH **THE
-# 2026-10-17 **RE-VENDOR **TO **UPSTREAM `002630241`** -- and `codegen/decomp/transcendental.py`'s
+# THE three files are the pow path this gate'S own header names: `symbolic.py`'s
+# `simplify_pow`/`xpow` rewrites, `mixin/elementwise.py`'s pow guard -- WHICH WAS
+# `raise RuntimeError("base needs to be float")` AND IS NOW `raise RuntimeError
+# ("integers to negative integer powers are not allowed")`, THE CHANGE ARRIVING WITH THE
+# 2026-10-17 RE-VENDOR TO UPSTREAM `002630241` -- and `codegen/decomp/transcendental.py`'s
 # `xpow`. The rows are produced by CALLING upstream, so a change in any of the three can move them.
 DRIFT_PIN = {
   "tinygrad/uop/symbolic.py":
@@ -110,7 +110,7 @@ DRIFT_PIN = {
     "1d737c265c9f96b8f09d82b85eb660dbb91b558a5af88512075c5a20540d00c5",
 }
 
-# THE FIXTURE IS UPSTREAM'S OWN EXPRESSION, SPELLED FIVE WAYS. Every field is a dtype name or a
+# THE fixture is upstream'S own expression, SPELLED five ways. Every field is a dtype name or a
 # list of ints; nothing here invents a field name, because two of this session's agents MIS-SPELLED
 # A FIXTURE FIELD in their own oracle and reported a defect against it before catching it.
 # `label`/`expr`/`dtype` are all this file's, and all three are read back below.
@@ -160,7 +160,7 @@ except Exception as e:
     p = subprocess.run([str(PY), "-W", "ignore", "-c", script, str(i)], cwd=ROOT, env=env,
                        capture_output=True, text=True)
     line = next((l for l in p.stdout.splitlines() if l.startswith("VERDICT=")), None)
-    # CLANG'S OWN DIAGNOSTIC IS THE EVIDENCE, and it is NOT on the exception: tinygrad calls clang
+    # CLANG'S own diagnostic is the evidence, and it is NOT on the exception: tinygrad calls clang
     # with inherited stderr, so `CalledProcessError.stderr` is None and `str(e)` is just the argv.
     # The text is on THIS subprocess's stderr, because clang is this process's grandchild. Reading
     # `str(e)` alone prints an empty CLANG column on exactly the rows that matter.
@@ -197,7 +197,7 @@ def main(argv=None):
     planted = {"green": 0, "red": 1}[args.plant]
     print(f"upstream-pow-dtype-gate --plant {args.plant}: {len(bad)} of {len(rows)} rows do not "
           f"compile-and-run, live verdict {VERDICT[live]}, planted {VERDICT[planted]}")
-    # THE PLANTED VERDICT IS WHAT THIS PROCESS EXITS, AND THE LIVE VERDICT IS ONLY REPORTED.
+    # THE planted verdict is what this process exits, AND the live verdict is only reported.
     # A plant that exits the LIVE verdict measures the tree, not the planted state, and the two
     # can disagree: upstream currently compiles every row, so `--plant red` MUST still exit 1.
     return planted
@@ -211,7 +211,7 @@ def main(argv=None):
   # refuses when they differ, which is the house mechanism and the only shape in which this
   # pin can fail at all.
   #
-  # THE PIN AND THE OUTPUT CHECK ARE NOT THE SAME FACT. The PIN checks the BYTES of the
+  # THE PIN AND the output check are not the same fact. The PIN checks the BYTES of the
   # three upstream files the rows are produced from -- the INPUTS. The OUTPUT CHECK is the
   # six fixture rows, each run in its own process, and it is a fact about BEHAVIOUR: what
   # upstream's own `Tensor.pow` does with a non-constant exponent. A byte change that no row

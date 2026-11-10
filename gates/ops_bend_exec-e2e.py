@@ -37,7 +37,7 @@ CAP = []
 # path here because this file had none, and `sys.path[0]` when a gate is run is `gates/`.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-# **THIS GATE MEASURES BOTH LANES, AND IT SAYS WHICH ONE IT IS RUNNING.**
+# THIS gate measures both lanes, AND it says which one it is running.
 #
 # `BEND_C` is read by `ops_bend` at IMPORT time, so a lane cannot be switched inside one process: the
 # gate PINS its lane here and, when it is the interpreter, spawns ITSELF with `E2E_LANE=compiled` for
@@ -55,16 +55,16 @@ os.environ["BEND_PORT_C"] = "1"
 import ops_bend as OB
 OB.executor  # the cached builder; reading it is what makes the import real
 
-# **THE DEVICE NAME `BEND` MUST RESOLVE, AND IT STOPPED RESOLVING WHEN A FILE MOVED.**
+# THE device name `BEND` MUST resolve, AND it stopped resolving when a file moved.
 # MEASURED 2026-10-25: THIS INSTRUMENT DIED WITH `ModuleNotFoundError: No module named
 # 'tinygrad.runtime.ops_bend'`, BECAUSE TINYGRAD's LOADER (`tinygrad/device.py:39`) DOES
-# `importlib.import_module(f'tinygrad.runtime.ops_{x}')` -- **AND `ops_bend.py` USED TO LIVE
-# AT `tinygrad/runtime/ops_bend.py`, UNTIL `c2a66ea41` MOVED IT TO THE REPO ROOT** SO THAT
-# `tinygrad/` WOULD HOLD NO FILE OF OURS AND STAY PRISTINE AS THE ORACLE. **⇒ THE MOVE WAS
-# RIGHT AND IT BROKE THE DEVICE NAME, AND NOTHING RE-CHECKED IT.**
-# `importlib.import_module` CHECKS `sys.modules` FIRST, SO REGISTERING THE MODULE UNDER THE
-# NAME TINYGRAD LOOKS FOR MAKES THE DEVICE RESOLVE **WITHOUT PUTTING A FILE OF OURS BACK INTO
-# `tinygrad/`** -- WHICH IS THE WHOLE POINT OF THE MOVE. `get_class` THEN FINDS `BendDevice`
+# `importlib.import_module(f'tinygrad.runtime.ops_{x}')` -- AND `ops_bend.py` USED TO LIVE
+# AT `tinygrad/runtime/ops_bend.py`, UNTIL `c2a66ea41` MOVED it to the repo root so that
+# `tinygrad/` WOULD hold no file of ours and stay pristine as the oracle. - THE MOVE WAS
+# RIGHT and it broke the device name, AND nothing re-CHECKED it.
+# `importlib.import_module` CHECKS `sys.modules` FIRST, SO registering the module under the
+# NAME tinygrad looks for makes the device resolve without putting a file of ours back into
+# `tinygrad/` -- WHICH is the whole point of the MOVE. `get_class` THEN finds `BendDevice`
 # BY ITS NAME (`device.py:40`: `cname.lower() == x + "device"`), WHICH IS EXACTLY WHAT
 # `ops_bend.py` NAMES ITS DEVICE.
 sys.modules['tinygrad.runtime.ops_bend'] = OB
@@ -83,13 +83,13 @@ OB.BendProgram.__init__ = _init
 def cases():
   """THE CASES, AND **EACH ONE IS A MAKER**: IT BUILDS ITS OWN INPUTS **ON THE CURRENT DEVICE**.
 
-  **⇒ THE ORACLE MUST NOT BE THE SUBJECT.** MEASURED 2026-10-25: THE FIRST VERSION BUILT THE
+  **THE ORACLE MUST NOT BE THE SUBJECT.** MEASURED 2026-10-25: THE FIRST VERSION BUILT THE
   INPUTS ONCE, UNDER `Context(DEV='BEND')`, AND THE REFERENCE RE-USED THEM -- SO
   `ref(thunk)` RE-COMPUTED THE SAME THING **ON THE SAME BEND BUFFERS**, AND THE INSTRUMENT
   COMPARED THE WRONG ANSWER WITH ITSELF AND SAID `MATCH`. **THE THREE DEFECTS BELOW WERE ALL
   IN ONE INSTRUMENT, AND THEY COMPOUNDED:** THE DEVICE NAME DID NOT RESOLVE; THE `dot` CASE'S
   INPUTS WERE CONSTANT-FOLDED SO IT LAUNCHED NO KERNEL; AND THE REFERENCE RE-USED THE SUBJECT's
-  BUFFERS. **⇒ SO EACH CASE IS A MAKER, AND THE ORACLE BUILDS ITS OWN INPUTS.**
+  BUFFERS. **SO EACH CASE IS A MAKER, AND THE ORACLE BUILDS ITS OWN INPUTS.**
 
   **AND THE MATMUL's INPUTS MUST NOT BE CONSTANT-FOLDABLE.** `T.arange(16, dtype=f32) + 1` IS
   A **CONSTANT** TENSOR -- upstream's `Tensor.arange` CALLS `r.const()` UNLESS IT NEEDS
@@ -150,10 +150,10 @@ def main():
   for name, mk in cases():
     CAP.clear()
     try:
-      # **THE CASE MUST RUN ON THE BEND DEVICE, AND NOT ON WHATEVER THE DEFAULT IS.**
-      # MEASURED 2026-10-25: THE FIRST VERSION REALIZED THE INPUTS INSIDE
-      # `with Context(DEV='BEND')` BUT RAN THE `thunk` OUTSIDE IT -- **AND `Device.DEFAULT`
-      # IS `METAL` ON THIS MACHINE** -- SO A CASE COULD RUN ON THE GPU AND STILL BE REPORTED.
+      # THE case must run on the BEND DEVICE, AND not on whatever the default is.
+      # MEASURED 2026-10-25: THE first version realized the inputs inside
+      # `with Context(DEV='BEND')` BUT ran the `thunk` OUTSIDE it -- AND `Device.DEFAULT`
+      # IS `METAL` ON this machine -- SO a case could run on the gpu and still be reported.
       with Context(DEV='BEND'):
         got = mk()().tolist()
     except Exception as e:
@@ -165,8 +165,8 @@ def main():
       bad += 1
       continue
     same = repr(got) == repr(want)
-    # **AND A CASE THAT RENDERED NO PACKET DID NOT RUN ON THE DEVICE AT ALL.** THAT IS A
-    # REFUSAL, NOT A MATCH: THE COMPARISON WAS AGAINST A NUMBER THIS DEVICE NEVER PRODUCED.
+    # AND a case that rendered no packet did not run on the device at all. THAT is a
+    # REFUSAL, NOT a match: THE comparison was against a number this device never produced.
     if not CAP and LANE == "interpreter":
       print(f'== {name}: REFUSED -- no packet was rendered, so this case did not run on BEND; '
             f'the answer {got} came from somewhere else')
@@ -180,7 +180,7 @@ def main():
   print(f'# {LANE}: {ok} match, {bad} mismatch-or-refused')
   if LANE == "compiled":
     return 0 if bad == 0 else 1
-  # THE OTHER LANE, IN ITS OWN PROCESS, because `BEND_C` is read at import time. Its rows are printed
+  # THE other lane, IN its own process, because `BEND_C` is read at import time. Its rows are printed
   # by the child and its verdict is folded into THIS gate's exit status: a lane that fails must fail
   # the gate, or the gate is only measuring half of what it claims.
   child = subprocess.run([sys.executable, __file__], capture_output=True, text=True,

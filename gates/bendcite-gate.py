@@ -43,10 +43,10 @@ LINE**, so the two `base.bend`s are told apart by WHICH ONE HAS THE CITED LINE, 
 tie-break is recorded in the row's `how`. The compiler's tree is a RESOLUTION corpus and not a
 population: it is reported as its own stratum so a reader can subtract it.
 
-**⇒ AND **THE **COMPILER's **LINE **COUNT **IS **SPELLED **IN **ORDERS, **NOT **EXACTLY**, **AND **THAT
+**AND **THE **COMPILER's **LINE **COUNT **IS **SPELLED **IN **ORDERS, **NOT **EXACTLY**, **AND **THAT
 **IS **THE **POINT:** **`references/` **IS **`.gitignore`d** (**`.gitignore:2`**), **SO **THE **CLONE **IS **NOT
 **THE **REPOSITORY's **TO **OWN, **AND **ITS **LINE **COUNT **MOVES **WHENEVER **THE **CLONE **IS
-**UPDATED.**  **⇒ AND **AN **EXACT **COUNT **IN **A **COMMITTED **PROSE **ABOUT **A **GITIGNORED **FILE **IS
+**UPDATED.**  **AND **AN **EXACT **COUNT **IN **A **COMMITTED **PROSE **ABOUT **A **GITIGNORED **FILE **IS
 **A **CLAIM **THE **REPO **CANNOT **KEEP**, **AND **`checks/cites-census.py`'s **LANE **D **CHARGED **THE
 **DRIFT** — **THE **PORT's **OWN **56-LINE **`base.bend`** **IS **THE **TRACKED, **OWNED, **STABLE **FACT, **AND
 **"THREE **THOUSAND**-ODD" **IS **THE **ORDER **THE **ARGUMENT **NEEDS** (**A **POINTER **AT **:1251` **OR
@@ -284,16 +284,16 @@ class Corpus:
     comp_root = self.base / COMPILER_REL
     if comp_root.is_dir():
       self._walk(comp_root, self.extra)
-    # TWO PASSES, AND THE SECOND ONE IS THE FIX.  `_import_target` answers "does the file this
+    # TWO passes, AND the second one is the fix.  `_import_target` answers "does the file this
     # import names exist?" by asking `cand in self.bodies`, and `self.bodies` was filled in the
     # SAME loop that computed the aliases -- so an import pointing at a file LATER IN THE WALK
     # ORDER resolved to `None`.  MEASURED: `os.walk` visits `schedule/` before `uop/`, so
-    # **69 of the 170 files had a `None` alias**, and `O.GroupOp.movement` never resolved
-    # against `uop/ops.bend`.  **⇒ A RESOLVER THAT DEPENDS ON WHAT ELSE IS LOADED **AND **ON THE
-    # ORDER IT WAS LOADED **IN** IS **A **RESOLVER **WITH **A **HIDDEN **RULE.**  **⇒ SO **THE
-    # BODIES **GO **IN **FIRST**, **AND **THE **ALIASES **ARE **COMPUTED **AFTER**, **WHEN **EVERY
-    # **BODY **IS **PRESENT** **AND **THE **ORDER **OF **THE **WALK **CANNOT **CHANGE **THE
-    # ANSWER.**
+    # 69 of the 170 files had a `None` alias, and `O.GroupOp.movement` never resolved
+    # against `uop/ops.bend`.  - A resolver that depends on what ELSE IS loaded and on the
+    # ORDER it was loaded in is a resolver with a hidden rule.  - SO the
+    # BODIES go in first, AND the aliases are computed after, WHEN every
+    # BODY is present and the order of the walk cannot change the
+    # ANSWER.
     for rel in self.port + self.extra:
       body = (self.base / rel).read_text(encoding="utf-8", errors="replace").splitlines()
       self.bodies[rel] = body
@@ -331,7 +331,7 @@ class Corpus:
     if subject.startswith(PORT_REL + "/"):
       return (subject, "root-relative") if subject in self.bodies else (None, "absent")
     if subject.startswith("."):
-      # A SUBJECT SPELLED RELATIVE TO THE CITING FILE, the way the port spells its
+      # A subject spelled relative to the citing file, the way the port spells its
       # IMPORTS: `runtime/ops_python.bend` cites `../base.bend:54` for the file it
       # imports as `./../base.bend`.
       stack = citing.split("/")[:-1]
@@ -633,7 +633,7 @@ class Judge:
     if holds:
       return ("RESOLVES", why, extra)
     extra["delta"] = r["lo"] - decl if decl else 0
-    # **THE CLAIM'S STRENGTH IS THE VERDICT'S NAME.** A claim read off the POINTER'S OWN
+    # THE claim'S strength is the verdict'S name. A claim read off the POINTER'S own
     # LINE is a claim about that pointer; a claim read off the enclosing COMMENT BLOCK
     # is a claim about the paragraph, and the paragraph names things the pointer is not
     # about. MEASURED, of 12 sampled tier-two rows, at least 4 are pointers that are
@@ -641,8 +641,8 @@ class Judge:
     # "ops.bend:1036-1090 already has the `ops.ParamArg` pattern with 13 fields", and
     # `ops.bend:1036` IS inside the `ParamArg` arm; the block's names include
     # `ParamArg`, whose DECLARATION is at :869, and the pointer was called stale on it.
-    # Of 12 sampled tier-ONE rows, 0 were wrong. **A FALSE FAILURE IS WORSE THAN A
-    # MISSED ROW**, so the two strengths are two verdicts and only the strong one fails.
+    # Of 12 sampled tier-ONE rows, 0 were wrong. A FALSE FAILURE IS WORSE THAN A
+    # MISSED ROW, so the two strengths are two verdicts and only the strong one fails.
     if tier == "the citation's own line":
       return ("WRONG-LINE", why, extra)
     return ("WRONG-LINE-BY-BLOCK", why, extra)
@@ -687,7 +687,7 @@ class Judge:
     lo, hi = r["lo"], r["hi"]
     cited = body[lo - 1]
     span = "\n".join(body[lo - 1:hi]) if hi > lo else ""
-    # THE MENTION TEST COMES FIRST, AND IT IS THE ONLY TEST A NAME THE TARGET DOES NOT
+    # THE mention test comes first, AND it is the only test a name the target does not
     # DECLARE CAN PASS.
     for raw, name in toks:
       if re.search(rf"\b{re.escape(name)}\b", cited):
@@ -844,7 +844,7 @@ def _claimed_name(row) -> str:
     THE ROW DOES NOT CARRY **THE **NAME** **AS **A **FIELD**, **AND **THIS **PLANT **NEEDS **IT
     **TO **FIND **THE **CONSTRUCT's **SPAN **START** — **SO **IT **IS **READ **OUT **OF **THE
     **VERDICT's **`why`**, **WHICH **NAMES **IT**: **":1530 **is **inside **`t_softmax3.go` **(declared
-    **at **:1529)"**.  **⇒ AND **THIS **IS **A **READ **OF **THE **GATE's **OWN **OUTPUT**, **NOT **A
+    **at **:1529)"**.  **AND **THIS **IS **A **READ **OF **THE **GATE's **OWN **OUTPUT**, **NOT **A
     **SECOND **LIST** — **THE **VERDICT **TEXT **IS **WHERE **THE **NAME **LIVES.**
     """
     m = re.search(r"`([^`]+)`", row.get("why", ""))
@@ -903,8 +903,8 @@ def _plant() -> int:
     snap.mkdir(parents=True)
     shutil.copytree(ROOT / PORT_REL, snap / PORT_REL)
     base_rows, corpus = census(snap)
-    # THE POINTER THE PLANT MOVES IS DISCOVERED, NOT NAMED: the first row whose verdict
-    # is RESOLVES **BY A DECLARATION OR BY THE CONSTRUCT's BODY** -- a pointer that says
+    # THE pointer the plant moves is discovered, NOT named: the first row whose verdict
+    # is RESOLVES BY A DECLARATION OR BY THE CONSTRUCT's BODY -- a pointer that says
     # "the construct is AT line N" and not "the construct is MENTIONED at line N". A
     # mention-pointer does not break when the file moves, and a plant that asserted
     # otherwise would be asserting a property the instrument does not have.
@@ -917,21 +917,21 @@ def _plant() -> int:
     if target_row is None:
       print("PLANT arm-two REFUSED: the copy resolved no declaration-pointer", file=sys.stderr)
       return REFUSED
-    # THE EDIT MOVES THE CONSTRUCT PAST THE POINTER, which is what a unit inserting a
+    # THE edit moves the construct past the pointer, which is what a unit inserting a
     # block at the top of a file does: the construct's declaration line grows by `k` and
     # the pointer, which was inside the construct, is now ABOVE it.
     #
-    # **⇒ AND `k` **IS **COMPUTED **FROM **THE **SPAN **START**, **NOT **FROM **THE
-    # **DECLARATION** — **AND **THAT **IS **THE **THIRD **REASON **THIS **PLANT **DID **NOT **GO
-    # **RED. **A **CONSTRUCT's **SPAN **INCLUDES **THE **COMMENT **RUN **ABOVE **IT** (**THIS
-    # **FILE'S **OWN **RULE**, **`:178-182`**: **"A **POINTER **AT **THE **DOC **COMMENT **ABOVE **A
-    # **`def` **IS **A **POINTER **AT **THAT **`def`"**), **SO **MOVING **THE **DECLARATION **DOWN
-    # **BY **`k`** **MOVES **THE **SPAN's **START **DOWN **BY **`k`** **TOO**, **AND **THE
-    # **POINTER **CAN **STILL **LAND **ON **THE **DOC **COMMENT **OF **THE **MOVED **CONSTRUCT.**
-    # **⇒ SO **THE **PLANT **INSERTS **ENOUGH **LINES **THAT **THE **POINTER **LANDS **ABOVE **THE
-    # **WHOLE **SPAN**, **DOC **COMMENT **INCLUDED.**
-    # THE PATH IS **RELATIVE **TO **THE **ROOT** — `corpus.declares` **KEYS **ON **IT**, **AND **AN
-    # **ABSOLUTE **PATH **IS **NOT **A **KEY** — **SO **THE **LOOKUP **WAS **SILENTLY **MISSING**.
+    # - AND `k` IS computed from the span start, NOT from the
+    # DECLARATION — AND that is the third reason this plant did not go
+    # RED. A construct's SPAN includes the comment run above it (THIS
+    # FILE'S own rule, `:178-182`: "A pointer at the doc comment above a
+    # `def` IS a pointer at that `def`"), SO moving the declaration down
+    # BY `k` MOVES the span's START down by `k` TOO, AND the
+    # POINTER can still land on the doc comment of the moved construct.
+    # - SO the plant inserts enough lines that the pointer lands above the
+    # WHOLE SPAN, DOC COMMENT INCLUDED.
+    # THE path is relative to the root — `corpus.declares` KEYS on it, AND an
+    # ABSOLUTE path is not a key — SO the lookup was silently missing.
     target_path = target_row["target"]
     span_start = int(target_row["decl"])
     for decl, start, _end in corpus.declares(target_path, _claimed_name(target_row)):
@@ -947,26 +947,26 @@ def _plant() -> int:
     shutil.copytree(snap, moved)
     victim = moved / target_row["target"]
     body = victim.read_text(encoding="utf-8").splitlines()
-    # **⇒ THE **PLANT **INSERTS **CODE, **NOT **A **COMMENT** — **AND **THIS **ARM **USED **TO
-    # **INSERT **A **COMMENT**, **WHICH **IS **EXACTLY **WHAT **THE **GATE's **OWN **ARM-ONE
-    # **DOCSTRING **SAYS **CANNOT **WORK**: **"A **CONSTRUCT's **SPAN **INCLUDES **THE **COMMENT **RUN
-    # **ABOVE **IT**, **SO **A **POINTER **AT **A **DOC **COMMENT **STILL **HOLDS."**  **⇒ MEASURED:
-    # **ARM **TWO **DID **NOT **GO **RED** — **THE **PLANT **MOVED **THE **CONSTRUCT **BY **A **COMMENT
-    # **RUN **THE **READER **ABSORBED.**
-    # **⇒ AND **THE **INSERTED **BLOCK **IS **EXACTLY **`k` **LINES** **AND **IT **IS **NOT **A
-    # **CONSTRUCT** — **THE **FIRST **ATTEMPT **REPEATED **A **`def`/`z` **PAIR **`k` **TIMES**, **WHICH
-    # **IS **A **NESTED **DEF **AND **A **MALFORMED **ONE**, **AND **IT **MOVED **THE **DECLARATION
-    # **BY **`2k`** **LINES **RATHER **THAN **`k`**; **THE **SECOND **ATTEMPT **USED **ONE **VALID
-    # **`def`, **AND **THE **POINTER **THEN **LANDED **INSIDE **THAT **`def`'s **BODY** — **BECAUSE
-    # **A **CONSTRUCT's **SPAN **RUNS **TO **THE **NEXT **DECLARATION**, **SO **THE **INSERTED
-    # **BLOCK **WAS **A **CONSTRUCT **AND **THE **POINTER **FELL **INSIDE **IT.**
-    # **⇒ SO **THE **INSERTED **LINES **ARE **PLAIN **STATEMENTS** (A **BARE **CALL), **WHICH **ARE
-    # **NOT **A **CONSTRUCT** **AT **ALL** — **AND **THE **POINTER **THEN **LANDS **ON **A **LINE
-    # **THAT **HOLDS **NO **CONSTRUCT**, **WHICH **IS **EXACTLY **WHAT **THE **PLANT **NEEDS **TO
-    # **PROVE: **THAT **THE **READER **DISTINGUISHES **"THE **CONSTRUCT **IS **HERE" **FROM **"IT
-    # **WAS **HERE".**  **⇒ AND **IT **IS **STILL **CODE**, **NOT **A **COMMENT** — **WHICH **IS **THE
-    # **THING **THE **ARM-ONE **DOCSTRING **INSISTS **ON** (**"A **COMMENT **RUN **IS **ABSORBED
-    # **INTO **THE **CONSTRUCT's **SPAN"**).**
+    # - THE plant inserts code, NOT a comment — AND this arm used to
+    # INSERT a comment, WHICH is exactly what the gate's OWN arm-ONE
+    # DOCSTRING says cannot work: "A construct's SPAN includes the comment run
+    # ABOVE it, SO a pointer at a doc comment still holds."  - MEASURED:
+    # ARM two did not go red — THE plant moved the construct by a comment
+    # RUN THE READER ABSORBED.
+    # - AND the inserted block is exactly `k` LINES and it is not a
+    # CONSTRUCT — THE first attempt repeated a `def`/`z` PAIR `k` TIMES, WHICH
+    # IS a nested DEF AND a malformed one, AND it moved the declaration
+    # BY `2k` LINES rather than `k`; THE second attempt used one valid
+    # `def`, AND the pointer then landed inside that `def`'s BODY — BECAUSE
+    # A construct's SPAN runs to the next declaration, SO the inserted
+    # BLOCK was a construct and the pointer fell inside it.
+    # - SO the inserted lines are plain statements (A bare call), WHICH are
+    # NOT a construct at all — AND the pointer then lands on a line
+    # THAT holds no construct, WHICH is exactly what the plant needs to
+    # PROVE: THAT the reader distinguishes "THE construct is here" FROM "IT
+    # WAS here".  - AND it is still code, NOT a comment — WHICH is the
+    # THING the arm-ONE docstring insists on ("A comment run is absorbed
+    # INTO THE CONSTRUCT's SPAN").
     shift = ["IO.print(String.concat([\"PLANT: a line inserted above the construct the pointer \"," +
               " \"names\"]))"] + ["IO.print(String.concat([\"PLANT: shift\"]))"] * (k - 1)
     victim.write_text("\n".join(shift + body) + "\n")
@@ -984,7 +984,7 @@ def _plant() -> int:
     print(f"PLANT arm-two moved   : {dict(moved_v)}")
     if moved_v.get("WRONG-LINE", 0) <= base_v.get("WRONG-LINE", 0):
       bad.append("arm two did not add a stale pointer")
-    # THE CONTROL IS A SECOND COPY OF THE SAME SNAPSHOT, NOT THE LIVE TREE: the live
+    # THE control is a second COPY OF the same snapshot, NOT the live tree: the live
     # tree moves under the gate's feet, and a control taken from it would compare two
     # different trees.
     twin = td / "twin"

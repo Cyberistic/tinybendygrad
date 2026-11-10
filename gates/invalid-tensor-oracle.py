@@ -58,7 +58,7 @@ def opname(op: Ops) -> str:
     `AttributeError`. MEASURED 2026-11-10: THE FIRST VERSION OF THIS FILE CALLED `Ops.name(op)`
     AND DIED WITH "AttributeError: <enum 'Ops'> has no attribute 'name'".
 
-    ⇒ AND `op.name` IS UPSTREAM's OWN SPELLING AT THE PIN, SO THE ORACLE's NAMES ARE UPSTREAM's
+AND `op.name` IS UPSTREAM's OWN SPELLING AT THE PIN, SO THE ORACLE's NAMES ARE UPSTREAM's
     NAMES AND THE PORT's ARE THE PORT's OWN `Ops.name.of` -- TWO INDEPENDENT TABLES THAT MUST
     AGREE, WHICH IS WHAT MAKES THE ROW A COMPARISON AND NOT A RESTATEMENT.
     """
@@ -69,7 +69,7 @@ def main() -> None:
     # THE CONDITION. `UOp.const(0) < UOp.const(1)` -- upstream's `ElementwiseMixin.__lt__` at
     # the pin, which is `_binop(Ops.CMPLT, x, False)`.
     cond = UOp.const(0) < UOp.const(1)
-    # THE STACK. A **RAW** STACK with three CONST srcs -- the test spells it directly rather
+    # THE STACK. A RAW STACK with three CONST srcs -- the test spells it directly rather
     # than through `UOp.group`, which at the pin is `UOp(Ops.STACK).after(*srcs)`.
     idx = UOp(Ops.STACK, src=tuple(UOp.const(x) for x in range(3)))
     # THE INVALID. `UOp.invalid()` -- ops.py:635 at the pin.
@@ -94,10 +94,10 @@ def main() -> None:
         ("out_src0_op", opname(out.src[0].op)),
         ("out_src1_op", opname(out.src[1].op)),
         ("out_src2_op", opname(out.src[2].op)),
-        # ⇒ THE PROPERTY THE TEST IS NAMED FOR: THE THIRD SRC IS **BARE** -- A CONST -- AND IT IS
-        #   **STILL INVALID** AFTER THE WHERE.
+        # - THE property the test is named for: THE third SRC IS bare -- A CONST -- AND it is
+        #   STILL INVALID AFTER THE WHERE.
         ("out_src2_is_invalid", b(out.src[2].is_invalid)),
-        # AND THE THREE WHOLE NODES SURVIVE BY IDENTITY: upstream's `_broadcasted` promotes the
+        # AND the three whole nodes survive by identity: upstream's `_broadcasted` promotes the
         # operands to `least_upper_dtype`, which leaves a weakint STACK alone and short-circuits
         # the invalid (`if t._uop.base.is_invalid: return t`), so NOTHING is cast or replaced.
         ("out_src0_is_cond", b(out.src[0] is cond)),

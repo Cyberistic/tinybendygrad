@@ -46,36 +46,36 @@ import warnings
 from collections import Counter
 from pathlib import Path
 
-# THE ROOT IS SPELLED **`.parents[1]`** **AND **NOT **`.parent.parent`**, **AND **THE **TWO **ARE **THE
-# **SAME **DIRECTORY** (MEASURED: `checks/cites-census.py`'s **`.parent.parent`** **AND **`.parents[1]`**
-# **BOTH **ARE **THE **REPO **ROOT**).  **⇒ AND **THE **SPELLING **IS **THE **ONE **THE **TREE **USES**
-# **AND **THE **ONE **THE **INSTRUMENT **THAT **READS **THIS **FILE **CAN **SEE**:
-# **`gates/gates-pop.py`'s **`ROOT_CONST`** **MATCHES **`.parents[N]`** **AND **NOTHING **ELSE**, **AND
-# **`ROOT_INLINE`** **THE **SAME** — **SO **WITH **THE **OLD **SPELLING **THIS **FILE's **OWN **ROOT **WAS
-# **INVISIBLE **AND **THE **FILE **WAS **COUNTED **ONLY **BECAUSE **OF **A **FIXTURE **NEEDLE **THE
-# **MATCHER **IS **TESTED **AGAINST** (MEASURED 2026-10-29: **`230 **name **a **root` -> `229`** **WHEN
-# **THE **NEEDLE **WAS **BLANKED**, **WHICH **IS **THE **FIXTURE **STOPPED **MATCHING **AND **NOT **A
-# **ROOT **LOST**).  **⇒ AND **THE **SIBLING **GATES **SPELL **IT **`HERE = pathlib.Path(__file__).
-# resolve().parent`** **PLUS **A **`REPO`/`ROOT` **LINE**, **AND **THE **PATTERN **HAS **AN **OPTIONAL
-# **`HERE` **LINE** **EXACTLY **FOR **THAT.**
+# THE root is spelled `.parents[1]` AND not `.parent.parent`, AND the two are the
+# SAME DIRECTORY (MEASURED: `checks/cites-census.py`'s `.parent.parent` AND `.parents[1]`
+# BOTH are the repo root).  - AND the spelling is the one the tree uses
+# AND the one the instrument that reads this file can see:
+# `gates/gates-pop.py`'s `ROOT_CONST` MATCHES `.parents[N]` AND NOTHING ELSE, AND
+# `ROOT_INLINE` THE same — SO with the old spelling this file's OWN root was
+# INVISIBLE and the file was counted only because of a fixture needle the
+# MATCHER IS TESTED AGAINST (MEASURED 2026-10-29: `230 name a root` -> `229` WHEN
+# THE needle was blanked, WHICH is the fixture stopped matching and not a
+# ROOT lost).  - AND the sibling gates spell it `HERE = pathlib.Path(__file__).
+# resolve().parent` PLUS A `REPO`/`ROOT` LINE, AND the pattern has an optional
+# `HERE` LINE EXACTLY FOR THAT.
 ROOT = Path(__file__).resolve().parents[1]
 EXTS = (".md", ".py")
 
-# THE DIRECTORIES **THIS **CENSUS **DOES **NOT **CENSUS**, **BY **NAME**, **AND **WHY.  **⇒ AND **THE
-# **PRECEDENT **IS **THE **TREE's **OWN**: **`checks/compile-census.py:103-106`** **HAS **A
-# **`SKIP_DIRS`** **MAP **WITH **THE **REASON **FOR **EACH **ENTRY** — **".agents": "agent scratch,
-# 113 .bend under slop/, swept by checks/sweep.py"** — **AND **THE **REASON **IS **CARRIED **IN **THE
-# **MAP**, **NOT **ONLY **IN **A **COMMENT.**
+# THE directories this census does not census, BY name, AND why.  - AND the
+# PRECEDENT IS THE TREE's OWN: `checks/compile-census.py:103-106` HAS A
+# `SKIP_DIRS` MAP with the reason for each entry — ".agents": "agent scratch,
+# 113 .bend under slop/, swept by checks/sweep.py" — AND THE REASON IS CARRIED IN THE
+# MAP, NOT ONLY IN A COMMENT.
 #
-# **⇒ AND **WHY **THIS **CENSUS **NEEDS **IT** (MEASURED 2026-10-29): **THE **TREE **COMMITS **7,114
-# **FILES **UNDER **`.agents/slop/`**, **AND **428 **OF **THE **493 **FAILING **CLAIMS **NAMED **A
-# **PATH **UNDER **IT** — **ONE **DIRECTORY **ALONE** (`.agents/slop/citefix9/`) **ACCOUNTED **FOR **117
-# **OF **THEM.**  **⇒ A **COMMITTED **SCRATCH **FILE **IS **NOT **THE **TREE's **CLAIMS**: **IT **IS **A
-# **UNIT's **NOTES **ABOUT **THE **TREE, **AND **THE **NOTES **GO **STALE **AS **SOON **AS **THE **TREE
-# **MOVES** — **WHICH **IS **EXACTLY **WHAT **THE **LEDGER **IS.**
-# **⇒ AND **THE **OTHER **HALF**: **`.agents/TODO.md`** **IS **THE **LEDGER**, **AND **IT **RECORDS **THE
-# **CITATION **WORK **AS **IT **WAS**, **SO **ITS **LINE **COUNTS **ARE **STALE **BY **CONSTRUCTION** —
-# **A **HISTORY **IS **NOT **A **CLAIM **ABOUT **THE **PRESENT.**
+# - AND why this census needs it (MEASURED 2026-10-29): THE tree commits 7,114
+# FILES under `.agents/slop/`, AND 428 OF the 493 FAILING claims named a
+# PATH under it — ONE directory alone (`.agents/slop/citefix9/`) ACCOUNTED for 117
+# OF them.  - A committed scratch file is not the tree's CLAIMS: IT is a
+# UNIT's NOTES about the tree, AND the notes go stale as soon as the tree
+# MOVES — WHICH is exactly what the ledger is.
+# - AND the other half: `.agents/TODO.md` IS the ledger, AND it records the
+# CITATION work as it was, SO its line counts are stale by construction —
+# A history is not a claim about the present.
 SKIP_DIRS = {
     ".agents": "agent scratch -- 7,114 committed files, and 428 of 493 failing claims named one",
     "runs": "run artefacts -- and runs/margsym/snap/ is a SNAPSHOT OF THE PORT",
@@ -85,7 +85,7 @@ SKIP_DIRS = {
 def _skipped(rel: str) -> str:
     """THE **TOP-LEVEL **DIRECTORY **THIS **PATH **IS **UNDER**, **IF **ANY** — **OR **""**.
 
-    **⇒ AND **THE **RULE **IS **A **NAME **RULE **ON **A **TOP-LEVEL **DIRECTORY**, **NOT **A **GIT
+    **AND **THE **RULE **IS **A **NAME **RULE **ON **A **TOP-LEVEL **DIRECTORY**, **NOT **A **GIT
     **CALL**: **`git ls-files` **READS **THE **INDEX**, **AND **THIS **TREE's **INDEX **IS **ARMED **BY
     **DESIGN** — **AND **THE **RULE **IS **ABOUT **THE **PATH**, **NOT **ABOUT **WHAT **GIT **THINKS.**
     """
@@ -95,7 +95,7 @@ def _skipped(rel: str) -> str:
 PASS, FAIL, REFUSED, SKIP, DEAD = "PASS", "FAIL", "REFUSED", "SKIP", "DEAD"
 EXITS = {PASS: 0, FAIL: 1, REFUSED: 3, SKIP: 4, DEAD: 5}
 
-# THE EXTRACTORS DECLARE THEIR OWN POPULATION.  `git ls-tree -r HEAD` is git's own
+# THE extractors declare their own population.  `git ls-tree -r HEAD` is git's own
 # declaration of the tree.  `git ls-files` reads the INDEX, which this repo arms with
 # intent-to-add placeholders BY DESIGN (`jj git colocation`), so it answers hundreds of
 # paths HEAD does not contain -- and `git diff --cached` names 0.
@@ -136,7 +136,7 @@ REV = re.compile(r"^[0-9a-f]{7,40}\^?:")
 # says 1,590, so that FAIL was honest and stays).  What this fixes is the EVIDENCE, which
 # reported "claim says 590" for prose that says 1,590.
 UNIT = re.compile(r"\b([+-]?(?:\d{1,3}(?:,\d{3})+|\d+))\s+(lines?|rows?|files?|bytes?)\b")
-# *** A BARE EXTENSION IS NOT A FILENAME. ***  Measured 2026-10-14: `FILENAME.match(".txt")`
+# * A BARE EXTENSION IS NOT A FILENAME. *  Measured 2026-10-14: `FILENAME.match(".txt")`
 # is None, because the class demands one character before the dot -- so `token_kind(".txt")`
 # returns None and lane C asked `.agents/slop/TENSOR-SURFACE.md` whether a file
 # "contains .txt".  That is an EXTENSION MENTION, not a content claim, and the shape is
@@ -151,22 +151,22 @@ LOCATORISH = re.compile(r"[:=]\s*\d|\.(?:md|py|rows|out|err|tsv|txt|bend|c|h|js|
 # DELTA ("20 lines deleted") is a claim about a DIFF, and this census cannot see diffs.
 DELTA = re.compile(r"\b(add|added|adding|delet|remov|replac|chang|insert|net|grew|shrink|lost|dropped|"
                     r"removed|replaced|before|after|formerly|was)\w*\b", re.I)
-# **⇒ AND **THE **ARROW **SHAPE **IS **A **DELTA **TOO**, **AND **THE **VERB **LIST **ALONE **MISSED
-# **IT** — **BECAUSE **THE **LIST **HAS **NO **WORD **FOR **IT.**  MEASURED 2026-10-29: **THE **TABLE
-# **IN **`checks/no-shrink.py:13`** **READS **`2,736 ->    640 lines   2,096 LOST`**, **AND **`LOST`**
-# **WAS **NOT **IN **THE **VERB **LIST**, **SO **THE **CENSUS **READ **THE **`640`** — **THE **AFTER
-# **NUMBER — **AS **A **MAGNITUDE **ABOUT **THE **FILE's **CURRENT **SIZE**, **AND **`generate.bend`**
-# **IS **2,753 **LINES **NOW**, **SO **THE **ROW **WAS **A **FALSE **FAIL** **ABOUT **A **RECORD **OF
-# **2026-10-05.**
-# **⇒ AND **THE **SHAPE **IS **THE **DEFINITION**: **A **NUMBER **WITH **AN **ARROW **BEFORE **IT** **IS
-# **THE **AFTER **OF **A **PAIR**, **AND **A **PAIR **IS **A **DIFF.**  **⇒ AND **THE **VERB **LIST
-# **GROW **TOO** (**`LOST`**, **`DROPPED`**, **`BEFORE`**, **`AFTER`**, **`FORMERLY`**, **`WAS`**), **BECAUSE
-# **A **LIST **OF **VERBS **ONE **AUTHOR **USED **IS **A **LIST **OF **THAT **AUTHOR's **VERBS.**
+# - AND the arrow shape is a delta too, AND the verb list alone missed
+# IT — BECAUSE the list has no WORD FOR it.  MEASURED 2026-10-29: THE table
+# IN `checks/no-shrink.py:13` READS `2,736 ->    640 lines   2,096 LOST`, AND `LOST`
+# WAS not in the verb list, SO the census read the `640` — THE after
+# NUMBER — AS a magnitude about the file's CURRENT SIZE, AND `generate.bend`
+# IS 2,753 LINES now, SO the row was a FALSE FAIL about a record of
+# 2026-10-05.
+# - AND the shape is the definition: A number with an arrow before it is
+# THE after of a pair, AND a pair is a diff.  - AND the verb list
+# GROW too (`LOST`, `DROPPED`, `BEFORE`, `AFTER`, `FORMERLY`, `WAS`), BECAUSE
+# A list of verbs one author used is a list of that author's VERBS.
 ARROW = re.compile(r"\d[^\n]{0,12}->\s*\**\s*\d")
-# THE PROSE ANCHOR.  A CLAIM WITH A DATE GOES STALE HONESTLY; ONE WITHOUT LIES INDEFINITELY.
+# THE prose anchor.  A claim with a date goes stale honestly; ONE without lies indefinitely.
 MEASURED = re.compile(r"MEASURED[ :]+(20\d\d-\d\d-\d\d)")
 ISO = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
-# A DIGEST, A REV, AN EXIT STATUS AND A COMMAND ARE NOT FILE CONTENT.  Asking whether a
+# A digest, A rev, AN exit status and a command are not file content.  Asking whether a
 # file "contains" `46c52f30d` or `rc=0` or `git rev-parse HEAD` is a question about a
 # DIFFERENT KIND of claim, and answering it FAIL is a lie about what was asked.  These
 # were 8 of the 23 classifier faults in a hand-labelled sample of 36.
@@ -174,24 +174,24 @@ DIGEST = re.compile(r"^[0-9a-f]{7,64}$")
 EXITSTATUS = re.compile(r"^(rc=|exit\s)\d*\b")
 COMMAND = re.compile(r"^(git|cc|wc|grep|find|diff|clang|bend|pytest|ruff|python|node)\b")
 
-# **A **NEEDLE **THE **MATCHER **IS **TESTED **AGAINST **IS **A **FIXTURE**, **AND **A **FIXTURE **IS **A
-# **NAMED **CONSTANT** — **NOT **A **BARE **LITERAL**, **AND **NOT **ONLY **BECAUSE **IT **IS **TIDIER.**
-# **⇒ AND **THE **REASON **IT **IS **A **CONSTANT **AT **ALL** (MEASURED 2026-10-29): **THE
-# **INSTRUMENT **THAT **READS **THIS **FILE** — **`gates/gates-pop.py`** — **COUNTS **A **GATE **THAT
-# **"COMPUTES **A **ROOT **THAT **RESOLVES **OUTSIDE **THE **REPO"** — **AND **IT **WAS **COUNTING
-# **THIS **NEEDLE, **BECAUSE **A **BARE **LITERAL **IN **A **TUPLE **IS **NOT **COLLECTED **BY **THE
-# **MECHANISM **THAT **BLANKS **FIXTURES**, **WHICH **IS **BUILT **FROM **NAMED **CONSTANTS.**
-# **⇒ AND **THE **NEEDLE **IS **A **RECORD **OF **A **DEFECT** — **IT **IS **THE **SPELLING **THAT
-# **MADE **A **GATE **REPORT **ON **THE **WRONG **TREE** — **SO **IT **MUST **NOT **BE **DELETED**,
-# **ONLY **NOT **READ **AS **CODE.**
+# A needle the matcher is tested against is a fixture, AND a fixture is a
+# NAMED constant — NOT a bare literal, AND not only because it is tidier.
+# - AND the reason it is a constant at all (MEASURED 2026-10-29): THE
+# INSTRUMENT that reads this file — `gates/gates-pop.py` — COUNTS a gate that
+# "COMPUTES a root that resolves outside the repo" — AND it was counting
+# THIS needle, BECAUSE a bare literal in a tuple is not collected by the
+# MECHANISM that blanks fixtures, WHICH is built from named constants.
+# - AND the needle is a record of a defect — IT is the spelling that
+# MADE a gate report on the wrong tree — SO it must not be deleted,
+# ONLY NOT READ AS CODE.
 NEEDLE_OFFREPO_ROOT = "pathlib.Path(__file__).resolve().parents[3]"
 
-# THE RULE THE FIRST CHECK OF THIS SUBJECT BROKE.  A token must carry a `/` to be a PATH.
+# THE rule the first check of this subject broke.  A token must carry a `/` to be a PATH.
 # `ops.py:1398` is a BASENAME and names every `ops.py` in the tree; `denom/` is a
 # DIRECTORY and its trailing slash is a SUFFIX, not a path; and a string that merely
 # APPEARS in an instrument is not a citation, it is a mention (lane E).
 #
-# *** THE ORDER IS THE WHOLE FIX, AND GETTING IT WRONG IS INVISIBLE. ***  An earlier
+# * THE order is the whole fix, AND getting it wrong is invisible. *  An earlier
 # revision of this file tested the WHOLE token against FILENAME first, so `checks/differ.py:670`
 # and `ops.py:1398` both failed that test, both returned None, and lanes B, C and D
 # reported `NOTHING TO JUDGE` over a tree that cites positions on every page -- an
@@ -415,21 +415,21 @@ def prose(rel: str, text: str, fault: list | None = None) -> list[tuple[int, str
     if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
       doc = ast.get_docstring(node, clean=False)
       if doc:
-        # **⇒ AND **THE **DOCSTRING **IS **SCANNED **LINE **BY **LINE**, **WITH **ITS **OWN **LINE
-        # **NUMBERS** — **AND **THAT **IS **THE **FIX.**  MEASURED 2026-10-29: **THE **DOCSTRING **WAS
-        # **COLLAPSED **INTO **ONE **STRING** **AND **ATTACHED **TO **THE **FIRST **LINE** OF **THE
-        # **BODY** (`:405` **APPENDED **THE **WHOLE **TEXT **AS **ONE **"LINE"**), **SO **A **QUOTED **SPAN
-        # **FROM **DOCSTRING **LINE **8 **WAS **ATTRIBUTED **TO **LINE **2** — **AND **A **PATH **AND **A
-        # **NEEDLE **FROM **DIFFERENT **LINES **BECAME **ONE **CLAIM.**  **⇒ AND **THE **CONSEQUENCE
-        # **WAS **A **FALSE **FAIL**: **`checks/compile-census.py:2` -> `checks/bounded.py`** **WITH **THE
-        # **NEEDLE **`WARM`**, **WHICH **IS **ON **DOCSTRING **LINE **8** **AND **IS **NOT **A **TOKEN
-        # **OF **`bounded.py` **AT **ALL.**
+        # - AND the docstring is scanned line by line, WITH its own line
+        # NUMBERS — AND that is the fix.  MEASURED 2026-10-29: THE docstring was
+        # COLLAPSED into one string and attached to the first line of the
+        # BODY (`:405` APPENDED the whole text as one "LINE"), SO a quoted span
+        # FROM docstring line 8 WAS attributed to line 2 — AND a path and a
+        # NEEDLE from different lines became one claim.  - AND the consequence
+        # WAS A FALSE FAIL: `checks/compile-census.py:2` -> `checks/bounded.py` WITH THE
+        # NEEDLE `WARM`, WHICH is on docstring line 8 AND is not a token
+        # OF `bounded.py` AT ALL.
         #
-        # **⇒ AND **THIS **IS **THE **SAME **CLASS **AS **THE **`pin-cite-gate.py` **ATTRIBUTION
-        # **FAULT**: **A **CLAIM **MUST **BE **READ **ON **THE **LINE **IT **IS **ATTRIBUTED **TO**, **OR
-        # **IT **IS **NOT **A **CLAIM **ABOUT **THAT **LINE.**  **⇒ AND **THE **LINE **NUMBERS **ARE
-        # **THE **DOCSTRING's **OWN**, **NOT **THE **BODY's** — **THE **DOCSTRING **OPENS **ON **THE
-        # **BODY's **FIRST **LINE** **AND **SPANS **AS **MANY **PHYSICAL **LINES **AS **IT **HAS.**
+        # - AND this is the same class as the `pin-cite-gate.py` ATTRIBUTION
+        # FAULT: A claim must be read on the line it is attributed to, OR
+        # IT is not a claim about that line.  - AND the line numbers are
+        # THE docstring's OWN, NOT the body's — THE docstring opens on the
+        # BODY's FIRST line and spans as many physical lines as it has.
         first = node.body[0].lineno
         for k, dl in enumerate(doc.split("\n")):
           out.append((first + k, dl))
@@ -469,7 +469,7 @@ def lane_bcd(rel: str, lines: list[tuple[int, str]]) -> tuple[list[dict], Counte
         claims.append({"lane": "B", "kind": "position-prose", "file": rel,
                        "subject": base, "line": int(loc.split("-")[0]), "at": lineno})
         continue
-      # *** A PREDICATE MUST BE ADJACENT TO ITS PATH OR IT IS NOT THIS PATH'S PREDICATE. ***
+      # * A predicate must be adjacent to its path or it is not this path'S predicate. *
       # Taken from the quoted spans that START after the path, nearest first, and kept
       # only when nothing but a connector (`carries`, `has`, `:`, `->`) lies between.
       # THE GAP IS KEPT: whether `->` or `rc=` separates the path from the needle is the
@@ -487,7 +487,7 @@ def lane_bcd(rel: str, lines: list[tuple[int, str]]) -> tuple[list[dict], Counte
         continue
       u = UNIT.search(line, m.end())
       if u and _is_connector(line[m.end():u.start()]):
-        # THE DELTA TEST AND THE ANCHOR ARE TAKEN HERE, WHERE THE LINE IS IN HAND, AND
+        # THE delta test and the anchor are taken here, WHERE THE line is in hand, AND
         # STORED AS A BOOLEAN AND A STRING.  `int()` eats a leading `+`, and a date found
         # at judge time would be a SECOND parse of a line already in memory.
         window = line[max(m.end(), u.start() - 2):u.end() + 16]
@@ -530,7 +530,7 @@ def quoted_spans(s: str) -> list[tuple[int, int, str]]:
       break
     out.append((a, b + 1, s[a + 1:b]))
     i = b + 1
-  # AN APOSTROPHE IS NOT AN OPENING DELIMITER WHEN SOMETHING IS GLUED TO IT.  `` `x.bend`'s
+  # AN apostrophe is not an opening delimiter when something is glued to it.  `` `x.bend`'s
   # `y` `` put the span's start on the `'` -- one position BEFORE the code span the sentence
   # names -- so the needle was English prose (`` s `y`, which is `z` ``) and the verdict was
   # about a sentence.  `\w` alone does not catch it: the `'` follows the closing BACKTICK.
@@ -563,13 +563,13 @@ def needle_kind(needle: str, gap: str = "", line: str = "") -> str:
     `short`       1 row  `-n` is 2 characters; the length floor lived in a DEAD regex
   `text` is what is LEFT, and it is the only branch that can emit a FAIL."""
   t = needle.strip("*… ")
-  # ORDER IS LOAD-BEARING AND THE PLANTS PROVED IT.  `.txt` begins with `.`, which the
+  # ORDER is LOAD-BEARING and the plants proved it.  `.txt` begins with `.`, which the
   # fragment rule reads as a closing punctuation mark, so the EXTENSION test must come
   # first; and the fragment test must read the RAW needle, because `strip("*… ")` removes
   # the very leading space that proves the delimiters did not pair.
   if EXTENSION.match(t):
     return "reference"
-  # A NEEDLE SPANNING A NEWLINE IS A PROSE SCRAP, NOT A LITERAL FROM ONE LINE.  It exists
+  # A needle spanning a newline is a prose scrap, NOT a literal from one line.  It exists
   # only because `quoted_spans` is fed a whole `.py` DOCSTRING, and paired delimiters
   # inside one cannot bracket a string from two lines.  MEASURED 2026-10-15 over lane C's
   # 3,277 claims at HEAD effd160da52f: 14 FAIL rows retired, 0 PASS rows lost.
@@ -595,7 +595,7 @@ def needle_kind(needle: str, gap: str = "", line: str = "") -> str:
 
 
 def judge(c: dict) -> dict:
-  # A ROW THAT IS NOT A CLAIM IS NOT JUDGE'S BUSINESS.  `census` emits extractor-level
+  # A row that is not a claim is not judge'S business.  `census` emits extractor-level
   # refusals -- a file it could not read, a file whose prose it could not extract -- and
   # they carry their own verdict.  Without this they fell through every lane to the lane-E
   # tail and were reported as SKIP "a mention is not a claim", which is a verdict about a
@@ -825,20 +825,20 @@ def selftest(tree: Path) -> int:
                   judge({**base[1], "line": 99})["verdict"], FAIL))
     cases.append(("NUMERIC: the count moved, and the numeric lane knows",
                   judge(base[3])["verdict"], FAIL))
-    # *** SIX FALSE FAILS AND TWO TRUE FAILS, AND EVERY NEEDLE IS ONE THE 2026-10-14
-    # SAMPLE ACTUALLY PRODUCED. ***  Each of these scored FAIL before the split and each
+    # * SIX FALSE FAILS and two TRUE FAILS, AND every needle is one the 2026-10-14
+    # SAMPLE ACTUALLY PRODUCED. *  Each of these scored FAIL before the split and each
     # was, by hand, the MATCHER'S FAULT.  The subject file below contains NONE of them, so
     # every one of these six was a FAIL the instrument could not defend.
     #
-    # **⇒ AND THE `parents[3]` **NEEDLE **IS **A **NAMED **CONSTANT**, **NOT **A **BARE
-    # **LITERAL**, **AND **THAT **IS **A **FIX **AND **NOT **A **COSMETIC.**  MEASURED 2026-10-29:
-    # `gates/gates-pop.py` READ **THIS **FILE **AND **COUNTED **THE **NEEDLE **AS **A **GATE **THAT
-    # **"COMPUTES **A **ROOT **THAT **RESOLVES **OUTSIDE **THE **REPO"** — **SO **THE **INSTRUMENT
-    # **WAS **COUNTING **A **STRING **LITERAL **INSIDE **A **TEST **TUPLE **AS **A **ROOT
-    # **COMPUTATION.**  **⇒ AND **`gates/gates-pop.py` **ALREADY **HAS **THE **MECHANISM **FOR
-    # **THIS**: **`FIXTURES` **IS **"THE **SET **OF **NAMES **WHOSE **STRING **VALUES **ARE **SYNTHETIC
-    # **GATES"**, **AND **IT **IS **COLLECTED **FROM **NAMED **CONSTANTS** — **SO **A **BARE **LITERAL
-    # **IS **NOT **COLLECTED **AND **A **NAMED **ONE **IS.**
+    # - AND the `parents[3]` NEEDLE is a named constant, NOT a bare
+    # LITERAL, AND that is a fix and not a cosmetic.  MEASURED 2026-10-29:
+    # `gates/gates-pop.py` READ this file and counted the needle as a gate that
+    # "COMPUTES a root that resolves outside the repo" — SO the instrument
+    # WAS counting a string literal inside a test tuple as a root
+    # COMPUTATION.  - AND `gates/gates-pop.py` ALREADY has the mechanism for
+    # THIS: `FIXTURES` IS "THE set of names whose string values are synthetic
+    # GATES", AND it is collected from named constants — SO a bare literal
+    # IS NOT COLLECTED AND A NAMED ONE IS.
     for kind, needle, gap, src in (
             ("code", "declared_values()", "", ""),
             ("code", NEEDLE_OFFREPO_ROOT, "", ""),
@@ -857,7 +857,7 @@ def selftest(tree: Path) -> int:
       got, kindgot = judge(c)["verdict"], judge(c).get("needle_kind")
       cases.append((f"FALSE FAIL -> {kind}: {needle[:44]!r} is not a claim about the text",
                     (got, kindgot), (REFUSED, kind)))
-    # THE THOUSANDS SEPARATOR IS AN EXTRACTOR MATTER, SO A PLANT HAS TO DRIVE THE
+    # THE thousands separator is an extractor matter, SO a plant has to drive the
     # EXTRACTOR.  `judge` never sees the string the regex produced, so a `judge` plant
     # cannot fail when `UNIT` loses the comma grouping -- which is exactly how a fix like
     # this one gets silently reverted.
@@ -897,7 +897,7 @@ def selftest(tree: Path) -> int:
     subj.unlink()
     cases.append(("ABSENT: an unreadable subject is REFUSED, never a silent pass",
                   judge(base[0])["verdict"], REFUSED))
-    # *** THREE PLANTS, AND NOT ONE OF THEM ASSERTS "NO EXCEPTION". ***  A plant that scores
+    # * THREE plants, AND not one of them asserts "NO exception". *  A plant that scores
     # the absence of a crash reads PASS when the extractor is silent AND when the extractor
     # emits nothing at all -- the same constant on both sides, which is how a predecessor's
     # "first negative" was vacuous.  Each plant asserts on the ROW `census()` emits, and the
@@ -923,7 +923,7 @@ def selftest(tree: Path) -> int:
     cases.append(("NUL BEFORE ANY INDENT: the TokenError arm reaches the SAME verdict",
                   (bare.get("verdict"), bare.get("at"), bare.get("want")),
                   (REFUSED, 5, 5)))
-    # AND A CALLER WITH NOWHERE TO RECORD THE REFUSAL IS TOLD, NOT SILENTLY HANDED `[]`.
+    # AND a caller with nowhere to record the refusal is told, NOT silently handed `[]`.
     # "silent" is what `gates/nul-census-gate.py` renders a bare `prose()` call as, and a
     # green gate over a file nothing could read is the false pass this arm exists to deny.
     try:
@@ -936,7 +936,7 @@ def selftest(tree: Path) -> int:
     (d / "clean.py").write_text("# a comment\nx = 1\n")
     cases.append(("NUL CONTROL: a file that DOES tokenize emits no refusal row",
                   [c for c in census(["clean.py"], d)[0] if c["kind"] == "unproseable"], []))
-    # AND THE REFUSAL SURVIVES `judge` AND REACHES THE EXIT.  These two are the ones a
+    # AND the refusal survives `judge` AND reaches the exit.  These two are the ones a
     # mutation cannot see by mutating `prose()`: the row is correct and the RUN still exits
     # 0, which is the forbidden shape -- `PASS` printed beside a file nothing could read.
     cases.append(("UNPROSEABLE VERDICT: `judge` does not re-adjudicate the row as SKIP",
@@ -944,7 +944,7 @@ def selftest(tree: Path) -> int:
                   (REFUSED, REFUSED)))
     cases.append(("UNPROSEABLE REACHES THE EXIT: a census over one such file is REFUSED 3",
                   EXITS[worst([judge(indented)])], 3))
-    # THE GATE IS `__cause__`, AND THIS IS WHAT THE GATE IS FOR.  A `SystemError` from
+    # THE gate is `__cause__`, AND this is what the gate is for.  A `SystemError` from
     # anywhere else is not the tokenizer's and must not be answered with a position.  Driven
     # through `prose()` by patching the one call it makes, and asserted on WHAT ESCAPES.
     unrelated = SystemError("not the tokenizer")
@@ -1002,7 +1002,7 @@ def main() -> int:
     claims, unclass = census(paths)
     judged = [judge(c) for c in claims]
   if args.sample_fail:
-    # *** A STRIDE OVER SORTED ROWS IS NOT A SAMPLE. ***  An earlier revision took
+    # * A stride over sorted rows is not a sample. *  An earlier revision took
     # `fails[::step]` and got 40 rows of which 31 were one file and one heading word
     # (`DELETE`), because the rows are sorted by file and a stride therefore samples
     # whichever files DOMINATE the FAIL count rather than the FAIL population.  The
@@ -1049,7 +1049,7 @@ def main() -> int:
     # summary said `cell-label=2274`, and re-deriving it from the rows with this file's OWN
     # `needle_kind()` said `0`. The POPULATION matched exactly (3,267 both sides); only the BREAKDOWN
     # did not, so a reader tuning the classifier had nothing written down to tune against. A SECOND
-    # COPY OF A DERIVED SET IS A CONTRACT WITH NO GENERATOR -- publishing the value the summary USES is
+    # COPY OF a derived set is a contract with no generator -- publishing the value the summary USES is
     # what makes the summary a `Counter` over its own rows instead of a second opinion.
   if args.rows:
     Path(args.rows).write_text("".join(

@@ -7208,32 +7208,32 @@ FOUND WHILE VERIFYING THE `decomp_graph_census` AND `cstyle_render_census` REPAI
       * **`decomp_graph_census`**: `./bin/bend gates/decomp_graph_census.bend` READ **"expected : a
         def whose body is implemented before the def is used (defs are checked in file order, and
         an unfilled law has none) ... observed : `UOp.pop_const_node`"** AT
-        `tinybendygrad/uop/ops.bend:6992` (`UOp.gcd.terms.go`).  **⇒ AND IT IS A PURE
+        `tinybendygrad/uop/ops.bend:6992` (`UOp.gcd.terms.go`).  **AND IT IS A PURE
         **REORDERING**: AT `HEAD` THE DEF IS AT `:8342` AND THE USE AT `:8396` -- **DEF BEFORE
         USE, WHICH IS WHAT BEND REQUIRES** -- AND IN THE WORKING TREE THE USE IS AT `:6992` AND
         THE DEF AT `:7333`.**
       * **`cstyle_render_census`**: `./bin/bend gates/cstyle_render_census.bend` READ **"expected
         : a defined name ... observed : `P.UOp.expr`"** AT `tinybendygrad/uop/fold.bend:1067`.
-        **⇒ AND `UOp.expr` IS DEFINED IN `ops.bend` -- AT `:9441` IN HEAD AND AT `:8310` IN THE
-        WORKING TREE** -- **⇒ SO THE REFACTOR MOVED IT UP AND A USE IN `fold.bend` NOW PRECEDES
+        **AND `UOp.expr` IS DEFINED IN `ops.bend` -- AT `:9441` IN HEAD AND AT `:8310` IN THE
+        WORKING TREE** -- **SO THE REFACTOR MOVED IT UP AND A USE IN `fold.bend` NOW PRECEDES
         THE DEFINITION.**
-      **⇒ AND THE `decomp_graph_census` GATE **RECOVERED BY ITSELF** (rc=0, 43 rows, 31 declared
-      divergences) WHEN THE CONCURRENT UNIT FIXED THE ORDERING, **⇒ WHICH IS THE PROOF THAT THE
-      BREAKAGE WAS THEIRS AND NOT A DEFECT IN THE GATE** -- **⇒ A GATE THAT COMES BACK BY ITSELF
+      **AND THE `decomp_graph_census` GATE **RECOVERED BY ITSELF** (rc=0, 43 rows, 31 declared
+      divergences) WHEN THE CONCURRENT UNIT FIXED THE ORDERING, **WHICH IS THE PROOF THAT THE
+      BREAKAGE WAS THEIRS AND NOT A DEFECT IN THE GATE** -- **A GATE THAT COMES BACK BY ITSELF
       IS A GATE THAT WAS BROKEN BY SOMETHING UNDER IT.**
-- [ ] **⇒ AND NO INSTRUMENT IN THIS TREE MEASURES **FILE-ORDER VALIDITY** ACROSS A REFACTOR.**
-      **⇒ THE PORT's OWN COMPILE GATE MEASURES IT** -- `checks/port-compile-gate.py` COMPILES EVERY
-      FILE AND READS THE VERDICT TOKEN -- **⇒ AND IT IS THE WHOLE-SUITE COMMAND THIS SESSION WAS
-      FORBIDDEN TO RUN** (15+ MINUTES, MANY CHILDREN).  **⇒ SO THE CHECK THAT WOULD HAVE CAUGHT
-      THIS IN ONE RUN IS THE ONE COMMAND THE MACHINE CANNOT AFFORD RIGHT NOW, AND **⇒ THE CHEAP
+- [ ] **AND NO INSTRUMENT IN THIS TREE MEASURES **FILE-ORDER VALIDITY** ACROSS A REFACTOR.**
+      **THE PORT's OWN COMPILE GATE MEASURES IT** -- `checks/port-compile-gate.py` COMPILES EVERY
+      FILE AND READS THE VERDICT TOKEN -- **AND IT IS THE WHOLE-SUITE COMMAND THIS SESSION WAS
+      FORBIDDEN TO RUN** (15+ MINUTES, MANY CHILDREN).  **SO THE CHECK THAT WOULD HAVE CAUGHT
+      THIS IN ONE RUN IS THE ONE COMMAND THE MACHINE CANNOT AFFORD RIGHT NOW, AND **THE CHEAP
       INSTRUMENT IS THE SAME ONE THE GATES ALREADY USE**: A SINGLE `bend` ON THE FILE THAT USES THE
-      MOVED DEF.  **⇒ AND THE CLASS IS ONE MEASUREMENT AWAY FROM AN INSTRUMENT: "COMPILE EVERY
+      MOVED DEF.  **AND THE CLASS IS ONE MEASUREMENT AWAY FROM AN INSTRUMENT: "COMPILE EVERY
       FILE THAT NAMES A DEF, AND THE ONE THAT FAILS FIRST NAMES THE REORDER."**
-- [ ] **⇒ AND THE LEDGER's OWN `GITINDEX` SECTION NAMES THE HAZARD OF EDITING A PORT FILE UNDER
-      ANOTHER UNIT's ACTIVE REFACTOR, AND I DID NOT EDIT ONE** -- **⇒ BOTH BREAKAGES ARE **NOT
+- [ ] **AND THE LEDGER's OWN `GITINDEX` SECTION NAMES THE HAZARD OF EDITING A PORT FILE UNDER
+      ANOTHER UNIT's ACTIVE REFACTOR, AND I DID NOT EDIT ONE** -- **BOTH BREAKAGES ARE **NOT
       MINE** AND ARE **NOT** LANDED (THE REFACTOR IS UNCOMMITTED), AND FIXING THEM WOULD HAVE
       BEEN A SECOND EDIT UNDER A 5726-LINE IN-FLIGHT CHANGE, WHICH IS EXACTLY HOW A SILENT
-      REVERSION HAPPENS.**  **⇒ AND THIS IS THE THIRD TIME IN THIS SESSION THAT THE CORRECT MOVE
+      REVERSION HAPPENS.**  **AND THIS IS THE THIRD TIME IN THIS SESSION THAT THE CORRECT MOVE
       WAS TO **RECORD AND NOT TO EDIT** -- AND THE CLASS IS: **A GATE THAT CANNOT RUN **IS** A
       GATE THAT IS RED, AND THE DISTINCTION IS THE WHOLE DIFFICULTY.**
 
@@ -7252,13 +7252,13 @@ FOUND WHILE REPAIRING `decomp_graph_census` AND `rng_graph_census` (THE SAME RE-
       HAD ITS OWN `_xmm_sz_m_name` HELPER** (`:286`), WHICH COMPUTES THE SAME THREE-ARM
       THRESHOLD, **SO THE ROW IS NOW ANSWERED BY THE HELPER.**  **THE ORACLE'S IMPORT
       BLOCK IS REPOINTED AT `tinygrad.renderer.x86` AND `_xmm_sz_m` IS DROPPED.**
-      **⇒ LANDED: `73afaa549` (2026-11-10), ONE FILE, `gates/x86_isa-oracle.py`.**
-      **⇒ AND THE GATE NOW REACHES THE **REAL** WALL, WHICH IS THE `tag=` SHAPE AND NOT THE
+      **LANDED: `73afaa549` (2026-11-10), ONE FILE, `gates/x86_isa-oracle.py`.**
+      **AND THE GATE NOW REACHES THE **REAL** WALL, WHICH IS THE `tag=` SHAPE AND NOT THE
       IMPORT: BEFORE, `rc=3` WITH `ImportError: cannot import name 'rdef' from
       'tinygrad.renderer.isa'`; **AFTER, `TypeError: UOpMetaClass.__call__() got an unexpected
-      keyword argument 'tag'` AT `:189`'s `membase`.**  **⇒ SO THIS IS A **STRICT ADVANCE AND
+      keyword argument 'tag'` AT `:189`'s `membase`.**  **SO THIS IS A **STRICT ADVANCE AND
       NOT A FIX**, AND THE REMAINING WALL IS THE `x86` LANE's WORK -- THE NEXT ITEM.**
-      **⇒ AND THE ANSWER IS **UNCHANGED** BY THE REPOINT: `VMOVSSm`/`VMOVSDm`/`VMOVUPSm` ALL
+      **AND THE ANSWER IS **UNCHANGED** BY THE REPOINT: `VMOVSSm`/`VMOVSDm`/`VMOVUPSm` ALL
       EXIST AT THE PIN (`tinygrad/renderer/x86.py:71`), AND THE PIN'S OWN `_xmm_sz` (`:330-334`)
       RETURNS `VMOVUPS`/`VMOVSD`/`VMOVSS`.**
 - [ ] **THE ORACLE's NODE CONSTRUCTION IS ON THE PRE-PIN `tag=` SHAPE, AND THAT IS THE REAL
@@ -16306,58 +16306,58 @@ Progress: [=============================-------] 7/7
 FOUND WHILE REPAIRING `decomp_graph_census`, `rng_graph_census` AND `x86_isa` (THE SAME RE-VENDOR CASUALTY, A FOURTH GATE).
 
 - [x] **THE DRIVER DID NOT COMPILE, AND THE TYPE ERROR WAS THE SHAPE.** MEASURED: `./bin/bend
-      gates/cstyle_render_census.bend` READ `expected : List<&2, String>` AT `:357` -- **⇒ AND
+      gates/cstyle_render_census.bend` READ `expected : List<&2, String>` AT `:357` -- **AND
       THE PORT's OWN SIGNATURE SAYS WHY**: `tinybendygrad/renderer/cstyle.bend:1354` IS
       `def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt) ->
-      List<&2, String>` -- **⇒ SO `xs` IS **A LIST OF PIECE-LISTS** (OPERAND 0's PIECES,
+      List<&2, String>` -- **SO `xs` IS **A LIST OF PIECE-LISTS** (OPERAND 0's PIECES,
       OPERAND 1's PIECES), NOT A LIST OF STRINGS, AND THE DRIVER PASSED `["a", "b", "c"]`.**
-      **⇒ AND ITS FIRST TWO READERS PROVE IT**: `cfo_xs1(xs)` AND `cfo_xs2(xs)` (`:1211-1213`)
-      ARE `xs_at(xs, 0n)` AND `xs_at(xs, 1n)`.  **⇒ AND THE PORT's OWN CALLER PASSES EXACTLY
+      **AND ITS FIRST TWO READERS PROVE IT**: `cfo_xs1(xs)` AND `cfo_xs2(xs)` (`:1211-1213`)
+      ARE `xs_at(xs, 0n)` AND `xs_at(xs, 1n)`.  **AND THE PORT's OWN CALLER PASSES EXACTLY
       THAT**: `ku_alu_srcs` IS `-> List<&2, List<&2, String>>` (`:2214`) AND `ku_text_alu`
-      (`:2247-2248`) HANDS IT STRAIGHT TO `code_for_op.of`.  **⇒ AND THE JOIN IS
+      (`:2247-2248`) HANDS IT STRAIGHT TO `code_for_op.of`.  **AND THE JOIN IS
       `String.join(l, "")` -- AN **EMPTY** SEPARATOR**: MEASURED OFF THE PORT's OWN EMIT SITE,
-      `cstyle.bend:2936` IS `... " ", nm, " = ", String.join(l, ""), ...`.**  **⇒ SO THE FIX IS
+      `cstyle.bend:2936` IS `... " ", nm, " = ", String.join(l, ""), ...`.**  **SO THE FIX IS
       `String.join(C.code_for_op.of(dev, op_of(i), [["a"], ["b"], ["c"]], dt_of(dti)), "")` --
       AND IT IS **TWO** CHANGES, NOT ONE.**
 - [x] **THE ORACLE SPOKE **THREE** PRE-RENAME OP NAMES AND DID NOT EXIST AT THE PIN.**
       MEASURED: `gates/cstyle_render_census-oracle.py`'s `OPS` NAMED `Ops.RECIPROCAL`,
-      `Ops.CMOD` AND `Ops.CDIV`, **⇒ AND NONE OF THE THREE EXISTS AT THE PIN `f5ac54685074`**
+      `Ops.CMOD` AND `Ops.CDIV`, **AND NONE OF THE THREE EXISTS AT THE PIN `f5ac54685074`**
       (THE PIN's OWN `tinygrad/uop/__init__.py:57` READS `SQRT = auto(); RECIP = auto(); NEG =
-      auto(); TRUNC = auto()`), **⇒ SO THE ORACLE RAISED `AttributeError` AT IMPORT TIME AND THE
+      auto(); TRUNC = auto()`), **SO THE ORACLE RAISED `AttributeError` AT IMPORT TIME AND THE
       GATE WAS **`REFUSED`, NOT RED** (rc=3, "the oracle failed rc=1").**  UPSTREAM RENAMED THEM
       IN `1427aac3b` ("FLOORDIV/FLOORMOD -> DIV/MOD (#19047)", 2026-10-27): `Ops.RECIPROCAL` ->
-      `Ops.RECIP`, `Ops.CMOD` -> `Ops.TRUNCMOD`, `Ops.CDIV` -> `Ops.TRUNCDIV`.  **⇒ AND THE
+      `Ops.RECIP`, `Ops.CMOD` -> `Ops.TRUNCMOD`, `Ops.CDIV` -> `Ops.TRUNCDIV`.  **AND THE
       PORT's OWN `Op` ENUM SPELLS THEM THE SAME NEW WAY** (`OpsRECIP`, `OpsTRUNCMOD`,
-      `OpsTRUNCDIV`), **⇒ SO THE ROWS ARE UNCHANGED BY THE REPOINT.**
-- [x] **⇒ AND THE GATE's OWN `DIVERGES` PIN SAID `UNHANDLED(Ops.RECIPROCAL)`, WHICH IS THE
-      **PRE-RENAME** SPELLING, **⇒ SO THE GATE WENT RED WITH A PRECISE MESSAGE** ("bd's
-      cfo_1_reciprocal is not 'cfo_1_reciprocal=UNHANDLED(Ops.RECIPROCAL)'").  **⇒ AND THE
+      `OpsTRUNCDIV`), **SO THE ROWS ARE UNCHANGED BY THE REPOINT.**
+- [x] **AND THE GATE's OWN `DIVERGES` PIN SAID `UNHANDLED(Ops.RECIPROCAL)`, WHICH IS THE
+      **PRE-RENAME** SPELLING, **SO THE GATE WENT RED WITH A PRECISE MESSAGE** ("bd's
+      cfo_1_reciprocal is not 'cfo_1_reciprocal=UNHANDLED(Ops.RECIPROCAL)'").  **AND THE
       DIVERGENCE ITSELF IS UNCHANGED: THE PORT STILL REFUSES THIS ROW (`UNHANDLED(Ops.RECIP)`),
       SO THE PIN IS **REPOINTED AND NOT WEAKENED**, AND THE ROW STILL DIVERGES.**
-- [x] **⇒ MEASURED AFTER THE THREE FIXES: `.venv/bin/python gates/cstyle_render_census-gate.py`
+- [x] **MEASURED AFTER THE THREE FIXES: `.venv/bin/python gates/cstyle_render_census-gate.py`
       READS **"361 rows, 3 lanes byte-identical over the wide surface, 15 DECLARED divergences"**,
-      rc=0, 19 s, 3387 MB peak RSS.**  **⇒ BEFORE: `rc=3`, `REFUSED` -- THE GATE COULD NOT RUN
-      AT ALL.**  **⇒ AND THE GATE's OWN FOOTER NAMES WHAT IT NOW MEASURES**: "6 unmapped-dtype
+      rc=0, 19 s, 3387 MB peak RSS.**  **BEFORE: `rc=3`, `REFUSED` -- THE GATE COULD NOT RUN
+      AT ALL.**  **AND THE GATE's OWN FOOTER NAMES WHAT IT NOW MEASURES**: "6 unmapped-dtype
       refusals from the tinygrad drift where THE PORT IS RIGHT, and 9 refusals Bend cannot raise
       (5 dropped ALU ops, 4 empty workitem dicts) which the port now spells UNHANDLED(...) instead
       of the empty string; base float4 None AGREES and its pin is dropped; the ONE DEFECT it
       found (render_index's non-ALU branch stripping parens on an AReduce where CPython strips
       only on a literal-op arg) IS FIXED".**
-- [x] **⇒ AND THE ROW IS FALSIFIABLE, MEASURED BY PLANTING IT**: CHANGING THE JOIN SEPARATOR
+- [x] **AND THE ROW IS FALSIFIABLE, MEASURED BY PLANTING IT**: CHANGING THE JOIN SEPARATOR
       FROM `""` TO `","` (ONE CHARACTER, IN THE DRIVER) MAKES THE GATE GO **RED (rc=1)** WITH
       **"DISAGREE (bd): n=49 of 346 rows, 2 shown: [('cfo_0_sqrt=sqrt(a)',
-      'cfo_0_sqrt=sqrt,(,a,)'), ...]"**.  **⇒ AND THE PLANT WAS REVERTED AND THE GATE IS GREEN
-      AGAIN.**  **⇒ AND THE 46 ALU ROWS NOW RENDER** (`cfo_0_sqrt=sqrt(a)` `cfo_0_add=(a+b)`
-      `cfo_0_reciprocal=(1/a)` ...), **⇒ WHICH THEY DID NOT BEFORE, BECAUSE THE DRIVER DID NOT
+      'cfo_0_sqrt=sqrt,(,a,)'), ...]"**.  **AND THE PLANT WAS REVERTED AND THE GATE IS GREEN
+      AGAIN.**  **AND THE 46 ALU ROWS NOW RENDER** (`cfo_0_sqrt=sqrt(a)` `cfo_0_add=(a+b)`
+      `cfo_0_reciprocal=(1/a)` ...), **WHICH THEY DID NOT BEFORE, BECAUSE THE DRIVER DID NOT
       COMPILE.**
-- [ ] **⇒ AND THE GATE NEEDS **3.3–3.8 GB** OF PEAK RSS, WHICH IS **OVER** THE TREE's 3072 MB
-      WATCHDOG CEILING -- **⇒ SO IT MUST BE RUN AT A HIGHER CEILING** (`checks/bounded.py --mb
-      6144`) AND **⇒ AND THE `WITHIN-LIMITS` TOKEN IS READ, NOT THE EXIT CODE.**  MEASURED: AT
-      `--mb 3072` IT READS **`KILLED-ON-MEMORY`** (rc=-9, 3227 MB) **⇒ AND AT `--mb 6144` IT
+- [ ] **AND THE GATE NEEDS **3.3–3.8 GB** OF PEAK RSS, WHICH IS **OVER** THE TREE's 3072 MB
+      WATCHDOG CEILING -- **SO IT MUST BE RUN AT A HIGHER CEILING** (`checks/bounded.py --mb
+      6144`) AND **AND THE `WITHIN-LIMITS` TOKEN IS READ, NOT THE EXIT CODE.**  MEASURED: AT
+      `--mb 3072` IT READS **`KILLED-ON-MEMORY`** (rc=-9, 3227 MB) **AND AT `--mb 6144` IT
       READS **`WITHIN-LIMITS`** (3764 MB), rc=1 (THE GATE's OWN VERDICT BEFORE THE PIN
-      REPOINT) **⇒ AND rc=0 AFTER IT.**  **⇒ SO A GATE THAT NEEDS 3.3 GB IS A GATE THAT
+      REPOINT) **AND rc=0 AFTER IT.**  **SO A GATE THAT NEEDS 3.3 GB IS A GATE THAT
       `checks/bounded.py --mb 3072` **CANNOT RUN**, AND THE CEILING IS A MEASUREMENT AND NOT A
-      POLICY.**  **⇒ AND THE `KILLED-ON-MEMORY` TOKEN IS **NOT** A VERDICT ABOUT THE GATE** --
+      POLICY.**  **AND THE `KILLED-ON-MEMORY` TOKEN IS **NOT** A VERDICT ABOUT THE GATE** --
       IT IS A VERDICT ABOUT THE CEILING, AND A READER WHO CONFUSED THE TWO WOULD REPORT THE GATE
       AS RED WHEN IT IS GREEN.**
 
@@ -17797,13 +17797,13 @@ here and NOT fixed there.
       (`11 files changed, 212 insertions(+), 1009 deletions(-)`) and the ACK text quoting it.
       MEASURED: `REFUSED ... the message claims a change the diff does not witness (2 checked,
       2 uncheckable)`.
-      **⇒ IMPLEMENTED (`1a21a25b1`). MEASURED AFTER: `8ec4631fa79` READS `PASS: 8ec4631fa79 --
+      **IMPLEMENTED (`1a21a25b1`). MEASURED AFTER: `8ec4631fa79` READS `PASS: 8ec4631fa79 --
       0 deletion claims checked, 4 uncheckable`, AND A BARE RUN ON HEAD READS `PASS: HEAD --
-      0 deletion claims checked, 0 uncheckable`.** **⇒ AND THE FOUR THAT REFUSED ARE ALL FOUR
+      0 deletion claims checked, 0 uncheckable`.** **AND THE FOUR THAT REFUSED ARE ALL FOUR
       OF A CLASS, NOT FOUR INCIDENTS:** `8ec4631fa79` (`11 files changed`), `ee517b8191b` (the
       same figure), `951e589231d` (`435 changed files` AND `delete mode 100644
-      gates/README.md`), `6ed4e1c1e55` (`6141 FILES DELETED`) -- **⇒ ALL FOUR READ `PASS` NOW,
-      AND ALL FOUR BY THE SAME MECHANISM.** **⇒ AND THE GATE's OWN PLANT STILL PASSES:
+      gates/README.md`), `6ed4e1c1e55` (`6141 FILES DELETED`) -- **ALL FOUR READ `PASS` NOW,
+      AND ALL FOUR BY THE SAME MECHANISM.** **AND THE GATE's OWN PLANT STILL PASSES:
       `--plant: all states OK`, AND THE TEN REAL STEM LEDGER ROWS ALL RE-DERIVE WITH A BROKEN
       ROW DISCHARGING NOTHING.**
 - [x] **THREE COMMITS IN A ROW, WHICH IS WHAT MAKES IT A CLASS AND NOT AN INCIDENT:**
@@ -17811,9 +17811,9 @@ here and NOT fixed there.
       unit's staged index; reverted in `ee517b819`); `ee517b819` (a quoted `11 files` stat);
       `8ec4631fa` (the same figure quoted again). **THE FIRST IS A GATE EARNING ITS KEEP AND THE
       OTHER TWO ARE THE GATE EARNING ITS DISAGREEMENT WITH PROSE.**
-      **⇒ PROVABLY DONE (`1a21a25b1`). MEASURED: `c7ad2ac4d` READS `PASS` (IT IS THE REAL
+      **PROVABLY DONE (`1a21a25b1`). MEASURED: `c7ad2ac4d` READS `PASS` (IT IS THE REAL
       DEFECT AND IT WAS REVERTED, SO THE GATE STILL EARNS ITS KEEP), AND `ee517b8191b` AND
-      `8ec4631fa79` READ `PASS` -- **⇒ AND THE CLASS IS **FOUR**, NOT THREE: A WALK OF THE
+      `8ec4631fa79` READ `PASS` -- **AND THE CLASS IS **FOUR**, NOT THREE: A WALK OF THE
       COMMITS SINCE `2026-10-06T12:00` OVER THE GATE's OWN `COUNT` REGEX FINDS **6** PHRASES IN
       **4** COMMITS, SO THE GATE's OWN DOCSTRING CLAIM "ZERO such phrases" IS **FALSE** -- AND
       THE DOCSTRING IS WHAT SAYS THE LANE IS DORMANT.** (THE TWO THE WALK ADDS ARE
@@ -17825,31 +17825,31 @@ here and NOT fixed there.
       READ BY THE GATE** -- the same shape as `gates/cstyle-live.rows` and
       `indexread-baseline.rows`: a gate's required input belongs BESIDE THE GATE IN GIT, not in the
       environment of whoever ran it last.
-      **⇒ IMPLEMENTED (`1a21a25b1`). THE LEDGER IS `gates/msgdiff-quote-ledger.rows`, BESIDE THE
+      **IMPLEMENTED (`1a21a25b1`). THE LEDGER IS `gates/msgdiff-quote-ledger.rows`, BESIDE THE
       GATE AND IN GIT, AND IT IS THE **SECOND** LEDGER AFTER `gates/msgdiff-stem-ledger.rows` AND
-      IT CARRIES THE **SAME** DISCIPLINE.** **⇒ AND THE CLAIM IS **MECHANICAL**, NOT PROSE: A ROW
+      IT CARRIES THE **SAME** DISCIPLINE.** **AND THE CLAIM IS **MECHANICAL**, NOT PROSE: A ROW
       IS `(sha, kind, value, other, reason)` AND THE GATE'S CHECK IS **ONE COMPARISON AGAINST
       THE QUOTED COMMIT's OWN DIFF** -- `file-count` ASKS WHETHER THAT COMMIT'S DIFF CHANGES
       EXACTLY `value` FILES, AND `path-deleted` ASKS WHETHER IT **DELETES** `value` UNDER THE
       SAME `-M` RENAME DETECTION THE DELETION LANE USES. THE `reason` COLUMN IS **NEVER READ**,
       SO A ROW CANNOT EXCUSE A COMMIT BY ASSERTING A REASON THE TREE DOES NOT BEAR OUT: A ROW
       NAMING A COMMIT THAT IS NOT IN THE REPOSITORY, OR WHOSE DIFF DOES NOT CARRY THE VALUE,
-      **DISCHARGES NOTHING AND THE REFUSAL STANDS.** **⇒ ALL THREE FIGURES RE-DERIVE EXACTLY:
+      **DISCHARGES NOTHING AND THE REFUSAL STANDS.** **ALL THREE FIGURES RE-DERIVE EXACTLY:
       `c7ad2ac4d` -> 11 FILES CHANGED, `591f6b499` -> 435 FILES CHANGED, `813bbec3e` -> 6141
       FILES DELETED; AND `591f6b499` DELETES `gates/README.md` WHILE `951e589231d` DOES NOT
-      TOUCH IT AT ALL.** **⇒ AND A CLAIM IN THE **SUBJECT** IS NEVER A QUOTATION -- A SUBJECT
+      TOUCH IT AT ALL.** **AND A CLAIM IN THE **SUBJECT** IS NEVER A QUOTATION -- A SUBJECT
       DESCRIBES ITS OWN COMMIT -- AND THE GATE ENFORCES THAT BY THE CLAIM's OWN POSITION, NOT
       BY A MESSAGE-WIDE TEST.**
 - [x] **THE CHEAP ALTERNATIVE IS A MESSAGE CONVENTION:** do not put raw `N files changed` syntax
       in a message body, because the gate's regex cannot scope it to the enclosing commit. This
       costs the reader the exact figure, which is the thing the message is for, so the ledger is
       the better answer.
-      **⇒ PROVABLY OBSOLETE, AND THE REASON IS THE LEDGER LANDED: THE GATE's REGEX **CAN** NOW
+      **PROVABLY OBSOLETE, AND THE REASON IS THE LEDGER LANDED: THE GATE's REGEX **CAN** NOW
       SCOPE A COUNT TO THE ENCLOSING COMMIT, BECAUSE THE LEDGER SAYS WHICH COMMIT THE FIGURE IS
       **ANOTHER'S** AND THE GATE CHECKS THAT COMMIT's OWN DIFF. THE CONVENTION IS THEREFORE NOT
       ONLY UNNECESSARY, IT IS **OBSOLETE**: A MESSAGE THAT QUOTES A FIGURE NOW PASSES WITHOUT
       GIVING THE FIGURE UP, AND `951e589231d` -- WHICH QUOTED **TWO** FIGURES IN ONE SENTENCE --
-      IS THE PROOF.** **⇒ AND THE FIGURE IS THE THING THE MESSAGE IS FOR, SO THE LEDGER IS
+      IS THE PROOF.** **AND THE FIGURE IS THE THING THE MESSAGE IS FOR, SO THE LEDGER IS
       STRICTLY BETTER THAN THE CONVENTION, WHICH IS WHAT THE ITEM SAID IT WOULD BE.**
 - [ ] **THE DEFAULT INDEX'S GAP WIDENS WITH EVERY OUT-OF-BAND COMMIT, MEASURED.** Committing
       through `GIT_INDEX_FILE=.git/agent-index` leaves `.git/index` behind, so
@@ -17866,10 +17866,10 @@ here and NOT fixed there.
 **WHILE UNFIXED, A BARE SWEEP READS 55/56.** The green number is `55/56` with `MESSAGE_DIFF_ACK`
 set on HEAD; the other 55 are unaffected.
 
-      **⇒ STILL REAL, AND IT IS NOT MINE: THE ITEM SAYS SO ITSELF, AND THE INDEX IS A SHARED
+      **STILL REAL, AND IT IS NOT MINE: THE ITEM SAYS SO ITSELF, AND THE INDEX IS A SHARED
       WRITABLE PATH THAT FIVE OTHER AGENTS HOLD. THE FIX IS THE ONE `AGENTS.md` RECORDS AS THE
       MEASURED-SAFE FORM (`git commit --only` WITH AN EXPLICIT PATHSPEC), AND EVERY COMMIT THIS
-      SWEEP MADE USED IT.** **⇒ AND IT IS A DIFFERENT CLASS FROM THE FOUR ABOVE: THE INDEX IS
+      SWEEP MADE USED IT.** **AND IT IS A DIFFERENT CLASS FROM THE FOUR ABOVE: THE INDEX IS
       NOT A GATE THAT CANNOT RUN, IT IS A SHARED RESOURCE, AND A ROW THAT CANNOT GO RED IS
       NOT THE PROBLEM HERE -- A ROW THAT IS RIGHT AND CANNOT BE CHANGED IS.**
 ## DECOMPCENSUS — `codegen/decomp/` gets its FIRST gate, and its ORACLE was the thing that was wrong (2026-10-12)
@@ -18573,21 +18573,21 @@ FOUND WHILE REPAIRING `decomp_graph_census` (THE SAME RE-VENDOR CASUALTY, A DIFF
       NODES THE ORACLE RETURNS (`:176-180`) -- SO THE FIX IS NOT A ONE-LINE RENAME: IT IS
       "WHAT DOES UPSTREAM's `rangeify` BUILD INSTEAD OF A TAGGED COPY", AND THE ANSWER IS A
       QUESTION ABOUT THE PORT's OWN `rangeify.bend`, NOT ABOUT THE ORACLE.**
-      **⇒ STILL REAL, AND THE MEASUREMENT BELOW SAYS WHY IT CANNOT BE CLOSED BY A RENAME. THE
+      **STILL REAL, AND THE MEASUREMENT BELOW SAYS WHY IT CANNOT BE CLOSED BY A RENAME. THE
       ORACLE HAS **TWO** PRE-PIN DEPENDENCIES, NOT ONE: `rtag()` **AND `u.tag`** -- `sig()` AT
-      `gates/rng_graph_census-oracle.py:95-98` PRINTS `t={tagnm(u.tag)}`, **⇒ AND `u.tag` DOES
+      `gates/rng_graph_census-oracle.py:95-98` PRINTS `t={tagnm(u.tag)}`, **AND `u.tag` DOES
       NOT EXIST AT THE PIN EITHER.** MEASURED 2026-11-10:
       `.venv/bin/python -c "from tinygrad.uop.ops import UOp; print(hasattr(UOp,'rtag'),
       hasattr(UOp.const(3),'tag'))"` READS **`False False`**, AND THE ORACLE's `world()` RAISES
       `AttributeError: 'UOp' object has no attribute 'rtag'` WHEN CALLED DIRECTLY (MEASURED BY
-      LOADING THE MODULE BY PATH AND CALLING `world()` -- **⇒ SO THE FAILURE IS REPRODUCIBLE
+      LOADING THE MODULE BY PATH AND CALLING `world()` -- **SO THE FAILURE IS REPRODUCIBLE
       WITHOUT THE SUBSTRATE, AND THE SUBSTRATE IS NOT NEEDED TO SEE IT**).**
-      **⇒ AND THE GATE'S CURRENT `REFUSED` IS A **DIFFERENT** DEFECT RIGHT NOW, AND IT IS
+      **AND THE GATE'S CURRENT `REFUSED` IS A **DIFFERENT** DEFECT RIGHT NOW, AND IT IS
       **TRANSIENT**: IT READS `rc=3`, "bend said: ... a declared constructor (unknown:
-      ../tinybendygrad/uop/ops.DRng)" -- **⇒ AND `tinybendygrad/uop/ops.bend` HAS AN
+      ../tinybendygrad/uop/ops.DRng)" -- **AND `tinybendygrad/uop/ops.bend` HAS AN
       **UNCOMMITTED** 4,616-LINE DELETION IN THE WORKING TREE (MEASURED:
       `git diff --numstat -- tinybendygrad/uop/ops.bend` READS `1252  4616`), AND THE FILE WAS
-      MODIFIED **NINE SECONDS** BEFORE I MEASURED IT -- **⇒ SO THAT REFUSAL IS ANOTHER UNIT's
+      MODIFIED **NINE SECONDS** BEFORE I MEASURED IT -- **SO THAT REFUSAL IS ANOTHER UNIT's
       IN-FLIGHT REFACTOR, NOT THIS GATE.** THE `rtag` REFUSAL IS THE ONE THAT MATTERS.**
 - [x] **AND THE PORT's SIDE IS **NOT** THE BLOCKER AND THE QUESTION IS OPEN.** THE PORT's
       `tinybendygrad/schedule/rangeify.bend` COMPILES (`./bin/bend tinybendygrad/schedule/
@@ -18599,10 +18599,10 @@ FOUND WHILE REPAIRING `decomp_graph_census` (THE SAME RE-VENDOR CASUALTY, A DIFF
       THE INSTRUMENT CANNOT SEE.** **SO THIS IS A REAL GAP AND IT IS NOT MINE TO CLOSE: IT IS
       THE `rangeify` LANE's, AND THE FIX NEEDS THE UPSTREAM `rangeify.py` AT THE PIN READ FOR
       WHAT IT DOES INSTEAD OF `rtag`.**
-      **⇒ PROVABLY DONE (2026-11-10), AND THE ANSWER IS THE OPPOSITE OF THE ITEM's HOPE, AND
+      **PROVABLY DONE (2026-11-10), AND THE ANSWER IS THE OPPOSITE OF THE ITEM's HOPE, AND
       THAT IS THE FINDING.** **THE PORT **DOES** HAVE A "TAGGED COPY" CONCEPT, AND IT IS
       LOAD-BEARING, AND UPSTREAM AT THE PIN **DOES NOT** HAVE ONE AT ALL.**
-      **⇒ THE INSTRUMENT IS `.agents/slop/todo-sweep2/tagpin.py` (16 READINGS, ALL AS PREDICTED)
+      **THE INSTRUMENT IS `.agents/slop/todo-sweep2/tagpin.py` (16 READINGS, ALL AS PREDICTED)
       AND IT ANSWERS THE QUESTION IN BOTH DIRECTIONS:**
       - **UPSTREAM AT THE PIN HAS NO `tag`:** `pin ops.py has a tag FIELD` **NO**,
       `has def rtag(` **NO**, `has def tagstr(` **NO**, `names tag in the intern key` **NO**.
@@ -18610,22 +18610,22 @@ FOUND WHILE REPAIRING `decomp_graph_census` (THE SAME RE-VENDOR CASUALTY, A DIFF
       **`fb518b44e` "delete UOp.tag [pr] (#18954)", 2026-10-21, IS AN ANCESTOR OF `f5ac54685074`
       (MEASURED: `git merge-base --is-ancestor fb518b44e f5ac54685074` ANSWERS YES).** THAT
       COMMIT REMOVED `UOp.tag`, `UOp.rtag`, `UOp.tagstr`, **AND `tag` FROM THE INTERN KEY** --
-      `(op, src, arg, tag, type(arg))` -> `(op, src, arg, type(arg))` -- **⇒ SO THE TAG WAS
+      `(op, src, arg, tag, type(arg))` -> `(op, src, arg, type(arg))` -- **SO THE TAG WAS
       NOT AN OPTIONAL FIELD AT THE PIN, IT WAS NOT PART OF THE KEY AT ALL.**
       - **UPSTREAM's `rangeify.py` AT THE PIN HAS NO TAGGING STEP:** `pm_add_range_tags` **NO**,
       `pm_add_param_range_tags` **NO**, `calls .rtag(` **NO**. AND `get_rangeify_map` RUNS
-      `pm_add_buffers` THEN `split_kernels` -- **⇒ AND `pm_renumber_range` (`:319`) HAS NO
+      `pm_add_buffers` THEN `split_kernels` -- **AND `pm_renumber_range` (`:319`) HAS NO
       TAG GUARD, WHERE THE PORT's `renumber_range` HAS ONE.**
       - **THE PORT HAS IT, ACROSS NINETEEN FILES:** `port ops.bend declares type Tag is Data:`
       **YES**, `defines eq_tag` **YES**, `defines sg.tag` **YES**, `port rangeify.bend
       defines rf_rtag` **YES**, `defines rf_param_rtag` **YES**. MEASURED: `grep -rn 'Tag'
       tinybendygrad/ --include='*.bend'` ANSWERS **76** OCCURRENCES IN **19** FILES.
-      **⇒ AND THE CONSEQUENCE, WHICH IS THE POINT: **THE ORACLE CANNOT BE REPAIRED BY A RENAME.**
+      **AND THE CONSEQUENCE, WHICH IS THE POINT: **THE ORACLE CANNOT BE REPAIRED BY A RENAME.**
       THE ORACLE MIRRORS THE PORT's FIXTURE **INDEX FOR INDEX** (`world()`'s DOCSTRING SAYS
       "THE PORT'S FIXTURE, node for node"), AND THE PORT's FIXTURE HAS **FOUR** TAGGED COPIES
-      (`r0t` `pgt` `pat` `rgt`) THAT **PIN-CPYTHON CANNOT BUILD** -- **⇒ SO THE ORACLE CANNOT
+      (`r0t` `pgt` `pat` `rgt`) THAT **PIN-CPYTHON CANNOT BUILD** -- **SO THE ORACLE CANNOT
       PRODUCE THE PORT's FIXTURE AT ALL, AND A FIXTURE THAT CANNOT BE BUILT IS A LANE THAT
-      MEASURES NOTHING.** **⇒ AND THE PORT's SIDE IS **NOT** THIS SWEEP's: REMOVING `Tag` IS A
+      MEASURES NOTHING.** **AND THE PORT's SIDE IS **NOT** THIS SWEEP's: REMOVING `Tag` IS A
       NINETEEN-FILE REFACTOR, AND THE PORT'S `rangeify.bend` PORTS A RULE UPSTREAM DELETED --
       `pm_add_param_range_tags` -- WHICH IS A **PORT/PIN DIVERGENCE** AND IS THE `rangeify`
       LANE's TO SETTLE.**
@@ -18637,15 +18637,15 @@ FOUND WHILE REPAIRING `decomp_graph_census` (THE SAME RE-VENDOR CASUALTY, A DIFF
       AUDITS A FILE's MARKERS AND A SECTION THAT FIXES AN INSTRUMENT's BLINDNESS CAN BOTH BE
       TRUE WHILE THE GATE OVER THAT FILE IS DEAD**, AND THAT IS THE CLASS THIS ITEM IS.
 
-      **⇒ PROVABLY DONE (2026-11-10), AND IT IS NOW A **MEASUREMENT** RATHER THAN A CLASS
-      STATEMENT: THE THREE SECTIONS NAME `rangeify` IN BOTH DIRECTIONS, **⇒ AND THE FOURTH
+      **PROVABLY DONE (2026-11-10), AND IT IS NOW A **MEASUREMENT** RATHER THAN A CLASS
+      STATEMENT: THE THREE SECTIONS NAME `rangeify` IN BOTH DIRECTIONS, **AND THE FOURTH
       THING THAT WAS NEVER ASKED -- "CAN THE GATE OVER THAT FILE RUN AT ALL" -- HAS NOW BEEN
       ASKED, AND THE ANSWER IS NO, WITH A PIN CITATION: `fb518b44e` REMOVED `UOp.tag` FROM
       UPSTREAM AND `f5ac54685074` HAS NO `rtag`, NO `tag` FIELD, AND NO `tag` IN THE INTERN
-      KEY.** **⇒ AND THE CLASS IS GENERAL, AND IT IS WORTH NAMING IN ITS OWN RIGHT: A SECTION
+      KEY.** **AND THE CLASS IS GENERAL, AND IT IS WORTH NAMING IN ITS OWN RIGHT: A SECTION
       THAT AUDITS A FILE's MARKERS, A SECTION THAT FIXES AN INSTRUMENT's BLINDNESS, AND A
       SECTION THAT NAMES A GATE OVER THAT FILE CAN ALL BE TRUE WHILE **THE GATE IS DEAD** --
-      ⇒ AND A GATE THAT CANNOT BUILD ITS FIXTURE IS DEAD IN A WAY THAT NO AMOUNT OF READING
+AND A GATE THAT CANNOT BUILD ITS FIXTURE IS DEAD IN A WAY THAT NO AMOUNT OF READING
       THE FIXTURE WILL REVEAL, BECAUSE THE FIXTURE IS FINE AND THE **LANGUAGE** IT IS WRITTEN
       IN NO LONGER HAS THE CONSTRUCT.**
 ## DECOMP-PROMO -- the 11 PROMOTION rows have a FALSE cause, and fixing them needs a NUMERIC oracle (2026-10-14)
@@ -18876,10 +18876,10 @@ NINTH DERIVATIVE OF THE SAME CLASS.**
       the instrument itself produced, each by hand matched. The scanner reads the NEEDLE STRING as
       executed source. MEASURED: `itemsize` of the claim is a literal; the census runs and reports
       (`VERDICT: FAIL (exit 1)`), so nothing is actually broken in `cites-census.py`.
-      **⇒ PROVABLY DONE. MEASURED 2026-11-10: THE NEEDLE IS NOW A **NAMED CONSTANT**,
+      **PROVABLY DONE. MEASURED 2026-11-10: THE NEEDLE IS NOW A **NAMED CONSTANT**,
       `checks/cites-census.py:187` `NEEDLE_OFFREPO_ROOT = "pathlib.Path(__file__).resolve().parents[3]"`,
-      AND IT IS USED AT `:844` IN THE FIXTURE TABLE -- **⇒ AND THE GATE's OWN HEADER SAYS WHY
-      EXACTLY: "A BARE LITERAL IS NOT COLLECTED AND A NAMED ONE IS."** **⇒ AND
+      AND IT IS USED AT `:844` IN THE FIXTURE TABLE -- **AND THE GATE's OWN HEADER SAYS WHY
+      EXACTLY: "A BARE LITERAL IS NOT COLLECTED AND A NAMED ONE IS."** **AND
       `gates/gates-pop.py --ledger check` NO LONGER NAMES `checks/cites-census.py` AT ALL.**
 - [x] **THE RULE ALREADY EXISTS AND THIS FILE IS NOT COVERED BY IT.** `gates-pop.py:647-662` says
       "**PROSE IS NOT CODE, AND A FIXTURE IS NOT EITHER: A STRING THAT HOLDS SOURCE IS DATA TO THIS
@@ -18888,32 +18888,32 @@ NINTH DERIVATIVE OF THE SAME CLASS.**
       and correctly so ("applying it unconditionally broke plants 1 and 5"). **THE GAP IS THAT A FIXTURE
       IS DATA TO THE FILE THAT OWNS IT, AND THE OWNERSHIP TEST IS `p == gates-pop.py`, WHICH CANNOT
       KNOW ABOUT `cites-census.py`'s OWN fixture table.**
-      **⇒ PROVABLY DONE, AND THE MECHANISM IS EXACTLY WHAT THE ITEM ASKED FOR: A **PER-FILE
+      **PROVABLY DONE, AND THE MECHANISM IS EXACTLY WHAT THE ITEM ASKED FOR: A **PER-FILE
       REGISTRY**, `gates/gates-pop.py:801` `FIXTURE_NAMES_BY_FILE = {"checks/cites-census.py":
       ("NEEDLE_OFFREPO_ROOT",)}`, READ BY `_fixtures_for(p)` (`:806`), WHICH **APPLIES THE BLANK
-      SET ONLY WHEN THE FILE BEING READ IS THE OWNING FILE** -- **⇒ AND THE OWNERSHIP IS BY
+      SET ONLY WHEN THE FILE BEING READ IS THE OWNING FILE** -- **AND THE OWNERSHIP IS BY
       **PATH**, NOT BY A REGEX OVER THE SOURCE, WHICH IS THE SHAPE 670 OF 675 FILES SATISFIED AND
-      NO GATE NAMED.** **⇒ MEASURED: THE FALSE POSITIVE IS GONE -- `gates-pop.py --ledger check`
+      NO GATE NAMED.** **MEASURED: THE FALSE POSITIVE IS GONE -- `gates-pop.py --ledger check`
       PRINTS `checks/cites-census.py  py-main  root=OK  asserts=NO  ROOT =
       Path(__file__).resolve().parents[1]`.**
 - [x] **AND `checks/cites-census.py` IS NOT IN FLIGHT** -- `git ls-tree` says it is in HEAD and
       `git status` is clean -- so this is not a transient of another unit's work.
 
-      **⇒ PROVABLY OBSOLETE, AND THE ITEM PREDICTED ITS OWN OBSOLESCENCE: THE FIX LANDED IN
+      **PROVABLY OBSOLETE, AND THE ITEM PREDICTED ITS OWN OBSOLESCENCE: THE FIX LANDED IN
       `71a58399f` ("the LAST gate that computed a root OUTSIDE the repo, and it was a NEEDLE the
-      matcher is tested against"), WHICH IS AN ANCESTOR OF HEAD, **⇒ SO THE "NOT IN FLIGHT"
+      matcher is tested against"), WHICH IS AN ANCESTOR OF HEAD, **SO THE "NOT IN FLIGHT"
       PREMISE WAS TRUE AT THE TIME AND IS NO LONGER THE POINT -- THE FINDING IS FIXED IN GIT.**
-      **⇒ AND THE CLASS IS NOT GONE, IT MOVED: MEASURED 2026-11-10, `gates-pop.py --ledger check`
-      STILL PRINTED **ONE** `RESOLVES OUTSIDE` -- **⇒ AND IT WAS A **DIFFERENT** FILE, AND A
+      **AND THE CLASS IS NOT GONE, IT MOVED: MEASURED 2026-11-10, `gates-pop.py --ledger check`
+      STILL PRINTED **ONE** `RESOLVES OUTSIDE` -- **AND IT WAS A **DIFFERENT** FILE, AND A
       REAL DEFECT: `gates/e2estage8-stage-legacy.py:28` `ROOT = Path(__file__).resolve().parents[3]`,
       A FILE THAT USED TO BE `.agents/slop/e2estage8/verdicts.py` (WHERE `parents[3]` WAS THE REPO
-      ROOT) AND WAS MOVED TO `gates/` **WITHOUT** ITS CONSTANT.** **⇒ FIXED IN `1a21a25b1`: THE
+      ROOT) AND WAS MOVED TO `gates/` **WITHOUT** ITS CONSTANT.** **FIXED IN `1a21a25b1`: THE
       ROOT IS `HERE.parent` NOW, AND THE INSTRUMENT **IS ALIVE** -- IT HAD BEEN **DEAD OVER 0
       ROWS**, RAISING `FileNotFoundError: '/Users/cyberistic/src/.agents/slop/e2epy/artifacts/
       live.port.out'` -- AND IT READS `7 stage(s) emitted, 1 retired` WITH ALL THREE READERS
       AGREEING, rc=0, **AND IT IS FALSIFIABLE: PLANTING THE TRANSCRIPT BY REMOVING STAGE 5's
       DENOMINATOR ROW PRINTS `DENOMINATOR FAIL: stage 5: EMITTED, verdict PASS, and no denominator
-      counted` AND EXITS 1.** **⇒ AND `gates-pop.py --ledger check`'s `RESOLVES OUTSIDE` FINDING
+      counted` AND EXITS 1.** **AND `gates-pop.py --ledger check`'s `RESOLVES OUTSIDE` FINDING
       IS NOW **GONE** -- THE POPULATION HAS **ZERO** OFF-REPO ROOTS.**
 ## EXEC-CLOSE -- the 57% coverage gap is CLOSED, and it found WRONG ANSWERS, not just refusals (2026-10-14)
 
@@ -22068,20 +22068,20 @@ STILL THE PINNED TAG) **AND A MISSING COMPILER WAS MEASURED ***BY COPYING, NEVER
       REPORTED NOT TOUCHED.**** **ALSO `checks/graphcmp-census-audit.py:159` (UNGUARDED `next()`),
       `gates/tc_ptx_render-oracle.py:419` (`argv` AS A DICT KEY), `checks/coverage.py:53` (`sys.argv[1]` AS A
       PATH).**
-      **⇒ PROVABLY DONE (2026-11-10), AND THE ITEM's OWN CLAIM "**STILL LIVE**" IS **FALSE**:
+      **PROVABLY DONE (2026-11-10), AND THE ITEM's OWN CLAIM "**STILL LIVE**" IS **FALSE**:
       ALL FOUR NAMED SITES WERE FIXED IN `3313ac76f` ("ARGV: 3 OF THE 4 REMAINING SITES STATE
-      THEIR CONTRACT, AND THE 4TH IS A DIFFERENT SHAPE"), **⇒ WHICH IS AN ANCESTOR OF HEAD**
-      (MEASURED: `git merge-base --is-ancestor 3313ac76f HEAD` ANSWERS YES).** **⇒ AND THE ITEM
+      THEIR CONTRACT, AND THE 4TH IS A DIFFERENT SHAPE"), **WHICH IS AN ANCESTOR OF HEAD**
+      (MEASURED: `git merge-base --is-ancestor 3313ac76f HEAD` ANSWERS YES).** **AND THE ITEM
       ALSO SAID "**OUT OF GRANT, REPORTED NOT TOUCHED**" -- SO THIS ITEM WAS A **RECORD OF A
       HANDOFF**, AND THE HANDOFF WAS COMPLETED.**
-      **⇒ AND THE TWO LINES THE ITEM NAMES ARE **STILL THERE** -- `gates/amd_dsl_census-mutate.py:467`
+      **AND THE TWO LINES THE ITEM NAMES ARE **STILL THERE** -- `gates/amd_dsl_census-mutate.py:467`
       `want = [m for m in MUTATIONS if not argv or m[0].split()[0] in argv]` AND `:475`
-      `width = max(len(m[0]) for m in want)` -- **⇒ AND THE CRASH SITE IS **STRUCTURALLY
+      `width = max(len(m[0]) for m in want)` -- **AND THE CRASH SITE IS **STRUCTURALLY
       UNREACHABLE**, NOT MERELY UNREACHED TODAY.**
-      **⇒ THE INSTRUMENT IS `.agents/slop/todo-sweep2/argvcheck.py`, AND IT MEASURES **THE
+      **THE INSTRUMENT IS `.agents/slop/todo-sweep2/argvcheck.py`, AND IT MEASURES **THE
       STRUCTURAL CLAIM**, NOT "IT DID NOT CRASH TODAY":**
       - **`MUTATIONS_BY` IS BUILT FROM `MUTATIONS` AND KEYS ON `e[0].split()[0]` -- THE SAME
-      TOKEN THE SELECTOR FILTERS ON (`m[0].split()[0] in argv`).** **⇒ SO THE DOMAIN THE
+      TOKEN THE SELECTOR FILTERS ON (`m[0].split()[0] in argv`).** **SO THE DOMAIN THE
       CONTRACT NAMES **IS** THE DOMAIN THE SELECTOR READS, AND `want` IS EMPTY **ONLY** WHEN
       `argv` IS EMPTY -- AND `not argv` IS THE `or` BRANCH THAT KEEPS EVERYTHING.**
       - **A SECOND, INDEPENDENT GUARD FIRES FIRST**: `unknown = [a for a in argv if a not in
@@ -22089,19 +22089,19 @@ STILL THE PINNED TAG) **AND A MISSING COMPILER WAS MEASURED ***BY COPYING, NEVER
       `str.find` CALLS IN THE INSTRUMENT).
       - **`checks/graphcmp-census-audit.py`: THE BARE `next()` IS REPLACED BY `STATES_BY`.**
       - **`gates/tc_ptx_render-oracle.py`: EVERY OUT-OF-DOMAIN SELECTOR, `--help` INCLUDED, IS
-      REFUSED AT rc 3 WITH THE SELECTORS ON STDERR** -- **⇒ AND THAT IS THE FILE's OWN OUTPUT
+      REFUSED AT rc 3 WITH THE SELECTORS ON STDERR** -- **AND THAT IS THE FILE's OWN OUTPUT
       CHANNEL, BECAUSE STDOUT **IS** THE ARTIFACT** (`... > /tmp/pyall.rows`, THEN `diff`),
-      **⇒ SO A `--help` EXITING 0 HAVING WRITTEN NOTHING TO STDOUT WOULD BE THE `SILENT`
+      **SO A `--help` EXITING 0 HAVING WRITTEN NOTHING TO STDOUT WOULD BE THE `SILENT`
       SHAPE `gates/help-census.py` ALREADY HAS TWO ROWS OF.**
       - **`checks/coverage.py`: A DIFFERENT SHAPE, CLASSIFIED AS ONE** -- THERE IS NO LOOKUP
       TABLE; THE ARGUMENT **IS** THE PATH.
-      **⇒ AND EVERY SITE IS RUN WITH AN OUT-OF-DOMAIN ARGUMENT AND **NONE CRASHES**: MEASURED
+      **AND EVERY SITE IS RUN WITH AN OUT-OF-DOMAIN ARGUMENT AND **NONE CRASHES**: MEASURED
       `--help` -> rc 0 (A USAGE LINE) OR rc 3 (A REFUSAL NAMING THE DOMAIN), AND AN UNKNOWN
-      LABEL -> rc 3. **⇒ A SITE THAT EXITS CLEANLY IS NOT PROOF THAT THE CLASS IS GONE; THE
+      LABEL -> rc 3. **A SITE THAT EXITS CLEANLY IS NOT PROOF THAT THE CLASS IS GONE; THE
       POINT IS THE **STATE EACH SITE REPORTS**, AND A CRASH IS EXPLICITLY NOT AN ACCEPTABLE
-      STATE.** **⇒ AND THE INSTRUMENT'S FIRST VERSION REPORTED A DEFECT THAT WAS NOT THERE:
+      STATE.** **AND THE INSTRUMENT'S FIRST VERSION REPORTED A DEFECT THAT WAS NOT THERE:
       IT GREPPED THE WHOLE FILE FOR THE OLD `next()` FORM AND MATCHED **THE FILE's OWN COMMENT
-      RECORDING THE FIX** -- **⇒ SO THE CHECK IS OVER THE **CODE LINES ONLY** (COMMENT LINES
+      RECORDING THE FIX** -- **SO THE CHECK IS OVER THE **CODE LINES ONLY** (COMMENT LINES
       DROPPED), WHICH IS THE CLASS THIS LEDGER KEEPS FINDING.**
 - [x] **AND THE FIX MAKES THE CRASH SITE **STRUCTURALLY UNREACHABLE**, NOT GUARDED: `NOPE` ->
       `no mutation is labelled NOPE` PLUS LABELS ON STDERR, **rc 3** (THE FILE's OWN REFUSED, ALREADY AT `:193`).
@@ -22206,41 +22206,41 @@ DOCSTRING**: VERIFIED BY AST, **STRIPPING ALL DOCSTRINGS LEAVES THE EXECUTABLE C
       **UNTRACKED AND UN-GITIGNORED**, HOLDING **ANOTHER UNIT's LIVE WORK** (`a.log`, `b.log`, `c-C1.log`,
       `c-C2.log`, `port-words.txt`, ...). **IT DID NOT DELETE IT.** *(THE CALLER SAW `./--help/` IN `git status`
       EARLIER IN THE SESSION AND CALLED IT **LITTER** -- **IT WAS NEVER LITTER.**)*
-      **⇒ PROVABLY DONE (2026-11-10), AND THE RESIDUE IS **ONE FILE**, NOT THE FIVE THE ITEM
+      **PROVABLY DONE (2026-11-10), AND THE RESIDUE IS **ONE FILE**, NOT THE FIVE THE ITEM
       NAMES.** MEASURED: `a.log` **ABSENT**, `b.log` **ABSENT**, `c-C1.log` **ABSENT**,
       `c-C2.log` **ABSENT**, `port-words.txt` **ABSENT**, AND `--help/` HOLDS **ONE** FILE:
-      `nan.json` (299 B). **⇒ AND `nan.json` IS **ANOTHER UNIT's LIVE WORK**, COMMITTED TODAY
+      `nan.json` (299 B). **AND `nan.json` IS **ANOTHER UNIT's LIVE WORK**, COMMITTED TODAY
       INTO `refs/jj/keep/*` (`3e080d119` 2026-11-10 02:56, `f21908545` 03:56, `394eae369` 08:02)
-      **⇒ AND NONE OF THOSE IS AN ANCESTOR OF HEAD** (MEASURED:
-      `git merge-base --is-ancestor <sha> HEAD` ANSWERS NO FOR ALL THREE). **⇒ SO IT IS **NOT
+      **AND NONE OF THOSE IS AN ANCESTOR OF HEAD** (MEASURED:
+      `git merge-base --is-ancestor <sha> HEAD` ANSWERS NO FOR ALL THREE). **SO IT IS **NOT
       MINE TO DELETE**, AND THE ITEM's OWN LINE "**IT DID NOT DELETE IT**" IS THE RIGHT
       BEHAVIOUR.**
-      **⇒ AND THE CAUSE IS **FIXED**, MEASURED: `19eb01580` ("a DIRECTORY argument that looks
+      **AND THE CAUSE IS **FIXED**, MEASURED: `19eb01580` ("a DIRECTORY argument that looks
       like a FLAG created a directory NAMED `--help` AT THE REPO ROOT") REFUSES A FLAG-SHAPED
       ARGUMENT AND A PATH INSIDE THE REPO, **BOTH AT rc 3**. MEASURED TODAY:
       `zsh checks/run-f64.sh --help` READS "the work directory '--help' looks like a FLAG. This
       script's argument is a DIRECTORY; exit 3 (REFUSED)", AND `zsh checks/run-f64.sh
       .agents/slop/x` READS "RESOLVES TO '.../tinybendygrad/.agents/slop/x', INSIDE the repo ...
-      exit 3 (REFUSED)". **⇒ THE CREATION PATH IS CLOSED; ONLY THE RESIDUE REMAINS.**
-      **⇒ ⇒ AND THE FINDING IS BIGGER THAN THE RESIDUE: **NO INSTRUMENT IN THIS TREE LOOKS AT
+      exit 3 (REFUSED)". **THE CREATION PATH IS CLOSED; ONLY THE RESIDUE REMAINS.**
+      **AND THE FINDING IS BIGGER THAN THE RESIDUE: **NO INSTRUMENT IN THIS TREE LOOKS AT
       THE REPOSITORY ROOT's DIRECTORY SET AT ALL.** `checks/no-strays.py` CLAIMS "every **FILE**
       at the repository root" AND ITS `root_files()` IS `sorted(p for p in ROOT.iterdir() if
-      p.is_file() and p.name not in ROOT_ENTRIES)` -- **⇒ A STRAY ROOT **DIRECTORY** IS
+      p.is_file() and p.name not in ROOT_ENTRIES)` -- **A STRAY ROOT **DIRECTORY** IS
       INVISIBLE TO IT, **AND THAT IS NOT A DEFECT IN IT, BECAUSE THE CLAIM IS ABOUT FILES.** A
       SEARCH OVER EVERY `checks/*.py` AND `gates/*.py` FINDS **NO** INSTRUMENT THAT LOOKS AT THE
       ROOT's DIRECTORIES; THE ONE CANDIDATE, `gates/retention-check.py:150`, WALKS A DIRECTORY's
       SUBDIRECTORIES FOR THE `gates/artifacts/` RETENTION QUESTION, NOT THE ROOT's OWN.
-      **⇒ ⇒ AND THE INSTRUMENT IS `.agents/slop/todo-sweep2/rootdirs.py`, WHICH CLAIMS THE SET
+      **AND THE INSTRUMENT IS `.agents/slop/todo-sweep2/rootdirs.py`, WHICH CLAIMS THE SET
       AND **CAN GO RED**: THE OWNED SET IS **DISCOVERED** -- THE COMMIT TREE's ROOT DIRECTORIES
       BY `git ls-tree -d HEAD`, PLUS THE DIRECTORY MEMBERS OF `checks/no-strays.py`'s OWN
       `ROOT_ENTRIES` LOADED **BY PATH** -- AND THE PLANT, A DIRECTORY NAME THAT IS **DEFINITELY**
       NOT OWNED, MUST PRODUCE **FAIL** OR THE INSTRUMENT IS BROKEN AND ITS PASS IS NOT A
       VERDICT. MEASURED: **17** ROOT DIRECTORIES, **16** OWNED, **1** STRAY (`--help`), VERDICT
       **FAIL**, PLANT **FAIL**.**
-      **⇒ ⇒ AND `.gitignore` IS **NOT** THE FIX, AND `AGENTS.md` SAYS WHY: "`.gitignore` ...
-      **IS NOT A POPULATION**" -- **⇒ IGNORING `--help/` WOULD HIDE IT FROM `git status` WHILE
+      **AND `.gitignore` IS **NOT** THE FIX, AND `AGENTS.md` SAYS WHY: "`.gitignore` ...
+      **IS NOT A POPULATION**" -- **IGNORING `--help/` WOULD HIDE IT FROM `git status` WHILE
       THE INSTRUMENT STILL SEES IT, WHICH IS THE `gates/artifacts/` SHAPE THE LEDGER ALREADY
-      NAMES.** **⇒ AND THE RESIDUE IS NOT DELETED BECAUSE IT IS **ANOTHER UNIT's WORK**, AND A
+      NAMES.** **AND THE RESIDUE IS NOT DELETED BECAUSE IT IS **ANOTHER UNIT's WORK**, AND A
       UNIT THAT DELETED IT WOULD BE THE `c7ad2ac4d` ACCIDENT.**
 - [ ] **AND **`checks/coverage.py` IS A NEAR-DUPLICATE WHOSE TWIN IS **THE ONE CALLERS USE****: IT DIFFERS FROM
       `.agents/slop/e2e_port/coverage.py` BY **ONE LINE** (`:39`, THE `sys.path` DEPTH), AND

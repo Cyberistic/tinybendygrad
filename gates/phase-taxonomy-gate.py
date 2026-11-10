@@ -47,7 +47,7 @@ OWNS THE WORK (`P6` = `runtime/`, whose ContextVar work the note describes at
 `helpers.bend:52`; `P4` = `engine/`, whose clock the note asks for). And `p1` names a
 phase the table gives NO directory, so it cannot be naming ownership of work at all: the
 tree's own ledger calls it "a severity" (`.agents/TODO.md:11110`,
-`.agents/slop/WALLMAP.md:328`). **⇒ A CLAUSE THAT IS RED ON EVERY CLAIM IT JUDGES IS NOT
+`.agents/slop/WALLMAP.md:328`). **A CLAUSE THAT IS RED ON EVERY CLAIM IT JUDGES IS NOT
 A CLAUSE, IT IS A CHARGE, AND THE TREE'S OWN DOCUMENTS SAY WHAT IT WAS CHARGING.** The
 clause now measures the question the tree's documents answer, and it can still go red in
 every class: a claim in ANOTHER phase's directory, a claim naming a phase that owns no
@@ -109,7 +109,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PORT_NAME = "tinybendygrad"
 
-# THE MARKER GRAMMAR. A CLAIM is the tag at the START of a comment line; a MENTION is the same
+# THE marker grammar. A claim is the tag at the START of a comment line; a MENTION is the same
 # token anywhere else. THE DIFFERENCE IS NOT COSMETIC: MEASURED 2026-10-20, the tree's only
 # `TODO(pN)` is at `tinybendygrad/mixin/rand.bend:42`, inside the PROSE sentence *"Each
 # `TODO(pN)` below is the tracker."* -- there is NO `TODO(pN)` marker anywhere, and a census
@@ -119,13 +119,13 @@ MENTION = re.compile(r"TODO\(\s*([^)]*?)\s*\)")
 # ANY `# VERB(tag)` at the start of a comment line -- the WIDE shape, which also matches quoted
 # upstream Python. The CITATION below is what separates a marker from a quotation.
 MARK = re.compile(r"^\s*#\s*([A-Za-z_][A-Za-z0-9_]*)\(\s*([^)]*?)\s*\)")
-# THE MARKER GRAMMAR THE TREE'S OWN BRIEF GIVES: `# TODO(p3) <file>.py:<line>  <name>`
+# THE marker grammar the tree'S own brief gives: `# TODO(p3) <file>.py:<line>  <name>`
 # (`.agents/slop/brief-port.md:177`). A verb that appears in THAT form at least once is a
 # MARKER VERB; a verb that only ever appears in quoted upstream code is not.
 CITED = re.compile(r"^\s*#\s*[A-Za-z_][A-Za-z0-9_]*\([^)]*\)\s+[A-Za-z0-9_./]+\.(?:py|bend)\s*:")
 # A PHASE TOKEN IN A HEADING: `## Phase P0 -- toolchain`, `## Phases P3-P8 -- the port`.
 PHASE_HEAD = re.compile(r"^#{1,6}\s+Phases?\s+P(\d)\b", re.I)
-# A TABLE ROW WHOSE FIRST CELL IS A PHASE.
+# A table row whose first cell is a phase.
 PHASE_ROW = re.compile(r"^\|\s*P(\d)\s*\|(.*)$")
 # A BACKTICKED TOKEN -- how the table names its directories.
 CODE = re.compile(r"`([^`]+)`")
@@ -149,23 +149,23 @@ PHASEISH = re.compile(r"^[Pp]\d")
 DEFAULT_DECL = re.compile(
   r"(?<![A-Za-z0-9\-])p(\d)(?![A-Za-z0-9\-])[^\n]{0,24}?\b(?:is|are)\b[^\n]{0,24}?"
   r"\b(?:default|not a phase)\b", re.I)
-# A MARKER THAT SAYS WHAT ITS OWN TAG IS, AT THE POINT OF USE. This is the sentence the
+# A marker that says what its own tag is, AT the point of use. This is the sentence the
 # gate's own header asks for -- "NOBODY says what the scale means at the point of use" --
 # and it is the tree's OWN word for the one marker that is spelled like a phase claim and
 # is not one (`.agents/TODO.md:11110`: "`p1` ... = 'this file ports a superseded upstream'
 # -- a severity").
 #
-# THE PHRASE IS NOT "not a phase", AND THE REASON IS MEASURED, NOT STYLISTIC:
+# THE phrase is not "not a phase", AND the reason is measured, NOT stylistic:
 # `DEFAULT_DECL` reads "pN ... is a default | not a phase" out of the tree's PROSE to find
 # the DEFAULT, and it reads `.bend` files as well as `.md` ones. A marker that said "not a
 # phase" would be a SECOND default declaration and would take C3 red. "NOT A PHASE CLAIM"
 # carries the same meaning and is not in `DEFAULT_DECL`'s vocabulary.
 NOT_A_CLAIM = re.compile(r"\bNOT A (?:WORK|PHASE) CLAIM\b", re.I)
 
-# THE DECLARATION SEARCH COVERS PROSE AND PORT CODE. The gloss that WAS the definition lived in
+# THE declaration search covers prose and port code. The gloss that WAS the definition lived in
 # a `.bend` file, so a search that only read `.md` would have missed it.
 PROSE_EXT = (".md", ".bend")
-# DIRECTORIES THAT ARE NOT THE TREE'S OWN TEXT: a git object store, an upstream CLONE, a
+# DIRECTORIES that are not the tree'S own text: a git object store, an upstream CLONE, a
 # virtualenv, a build cache. `references/` is a clone of upstream (`.gitignore:2`).
 SKIP_DIRS = {".git", ".jj", "references", ".venv", "__pycache__", "node_modules",
              ".ruff_cache", "tinygrad.egg-info", "runs"}
@@ -489,7 +489,7 @@ def verdicts(c):
       c3 = ("PASS", len(declared[default]), "")
   # C4: every tag that is not the default is a PHASE CLAIM, and every claim is LOCATED.
   #
-  # WHAT "LOCATED" MEANS, AND WHY IT IS NOT "SITS IN THE PHASE'S DIRECTORY". A claim
+  # WHAT "LOCATED" MEANS, AND why it is not "SITS in the phase'S directory". A claim
   # names the phase that OWNS THE WORK -- that is the tree's own reading of the two
   # singletons (`helpers.bend:438` `TODO(p6)` is P6's `runtime/` ContextVar work;
   # `helpers.bend:2573` `TODO(p4)` is P4's `engine/` clock) -- and a phase owns work

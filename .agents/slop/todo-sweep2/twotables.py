@@ -5,17 +5,17 @@ THE CLASS. `.agents/TODO.md` PRINTS ITS CATEGORY LIST **TWICE**:
   - **THE HEAD TABLE**, at the top, in a fenced block: `name  [###....] 3/10  prose`.
   - **THE SUMMARY TABLE**, at the bottom: `• name — ████████░░ 39/49  80%`.
 
-⇒ **TWO PRINTS OF ONE LIST ARE TWO SOURCES OF TRUTH, AND A DOCUMENT THAT SAYS TWO THINGS
+**TWO PRINTS OF ONE LIST ARE TWO SOURCES OF TRUTH, AND A DOCUMENT THAT SAYS TWO THINGS
 ABOUT ONE FACT IS A DEFECT.** The two tables spell the SAME categories DIFFERENTLY (the head
 table's names are the SECTION titles, lower-cased and shortened; the summary table's are the
 section titles too, but truncated with an ellipsis), so a census that compares them by
 STRING EQUALITY reads **ZERO** disagreements on a file that HAS them.
 
-⇒ **⇒ SO THE MATCH IS BY **SECTION**, NOT BY NAME: a bar belongs to the section it names, and
+**SO THE MATCH IS BY **SECTION**, NOT BY NAME: a bar belongs to the section it names, and
 the two bars for one section are the two rows that name it. **A BAR WITH NO SECTION IS A BAR
 FOR A CATEGORY WHOSE ITEMS LIVE IN THE HEAD BLOCK's PROSE, AND IT IS NOT A DISAGREEMENT.**
 
-⇒ **AND THE MATCH MUST BE UNIQUE.** The tree has several sections whose titles are the same
+**AND THE MATCH MUST BE UNIQUE.** The tree has several sections whose titles are the same
 or nearly the same, and a census that picks the first match compares two different rows.
 
 USAGE:  .venv/bin/python .agents/slop/todo-sweep2/twotables.py
@@ -63,9 +63,9 @@ def main():
     def match(bar_name):
         """The ONE section a bar names, or None.
 
-        ⇒ **THE SHORTEST MATCHING TITLE WINS, NOT THE LONGEST.** A section title is
+**THE SHORTEST MATCHING TITLE WINS, NOT THE LONGEST.** A section title is
         `NAME — a long explanation of it`, and the bar's name is the `NAME` PART, so
-        `section.startswith(bar_name)` is the test. **⇒ AND WHEN TWO SECTIONS SHARE A
+        `section.startswith(bar_name)` is the test. **AND WHEN TWO SECTIONS SHARE A
         LEADING NAME, THE SHORTEST TITLE IS THE CATEGORY AND THE LONGER ONE IS A
         SUB-SECTION** -- `Lane liveness` (11 items) and `Lane liveness — ...` (a different
         heading) are different sections, and picking the LONGEST sent the first version of

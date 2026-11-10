@@ -79,7 +79,7 @@ in a row called `run.gated`. The corpus is now a real SINGLETON -- it holds an `
 run is REFUSED -- and that property is MEASURED by RUNNING the command, in a row that kept the
 name `run.gated`. The old source-level question was not dropped: it is now the row
 `run.readiness`, and it is still red, because a run that does not wait for the substrate to settle
-is a DIFFERENT hazard from two runs interleaving into one directory. **⇒ A DOCSTRING THAT NAMES A
+is a DIFFERENT hazard from two runs interleaving into one directory. **A DOCSTRING THAT NAMES A
 ROW IS A CITATION, AND A CITATION THAT NAMES A ROW MUST MOVE WHEN THE ROW MOVES.**
 
 DOCTRINE 2 -- `SKIP` IS NOT `PASS`, AND A ROW THAT CANNOT BE JUDGED IS NOT EMITTED. An absent
@@ -209,7 +209,7 @@ def mtime_ns(path: pathlib.Path) -> int:
   return os.stat(path).st_mtime_ns
 
 
-#: THE READINGS THE `claim` ROW IS THE CONJUNCTION OF. NAMED, AND THE NAMES ARE THIS FILE's OWN
+#: THE readings the `claim` ROW is the conjunction of. NAMED, AND the names are this file's OWN
 #: ROWS: a row of this gate that is not named here is not part of the claim. `control` is a
 #: PRECONDITION on the comparator and not a reading of the tree; `freshness.source` is the
 #: PROVENANCE of the clock, and it IS a conjunct because a reading taken with an instrument the
@@ -267,7 +267,7 @@ def main(argv=None) -> int:
   repro = a.repro or (run.parent / differ.REPRO_ARTIFACT)
   rows: list[str] = []
 
-  # --- THE COMPARATOR, BEFORE ANY VERDICT IT GUARDS -----------------------------------------
+  # --- THE comparator, BEFORE any verdict it guards -----------------------------------------
   # `==` on two strings is the identity, so this is not a second COMPARISON IMPLEMENTATION; what
   # would be one is a second `substrate_digest()`, and there is none. `control()` is the sibling's
   # own, and it requires BOTH directions -- two planted digests that must read STALE and the
@@ -292,7 +292,7 @@ def main(argv=None) -> int:
     print("corpuswitness-gate: REFUSED -- no run summary; nothing has been measured here")
     return REFUSED
 
-  # --- READING 1: IS W1'S VERDICT CURRENT? READ FROM THE INSTRUMENT THAT OWNS THE COMPARISON --
+  # --- READING 1: IS W1'S verdict current? READ from the instrument that owns the comparison --
   # `cvg().main` is RUN, not restated. Its stdout is captured and its `substrate` ROW is read;
   # its return code is deliberately ignored, because on this tree it is non-zero for a reason
   # (the `run.readiness` row, about `differ.py run` not being readiness-gated) that has nothing
@@ -313,13 +313,13 @@ def main(argv=None) -> int:
                     verdict=tok, read_from="corpusverdict-gate.py::substrate",
                     cvg_rc=f"{cvg_rc}(IGNORED)"))
 
-  # --- THE WITNESS's OWN ROWS, READ ONCE -------------------------------------------------------
+  # --- THE witness's OWN rows, READ once -------------------------------------------------------
   # `witness.substrate` JUDGES these rows and the `claim` row REPORTS the one the claim rests on.
   # Reading them twice would be a second parser of one file, and `witness.substrate` already
   # parses them with the sibling's own `rows_file`.
   got = C.rows_file(repro) if repro.is_file() else {}
 
-  # --- READING 2: IS W2 FRESH RELATIVE TO W1? THE MTIME, AND ONLY THE MTIME ------------------
+  # --- READING 2: IS W2 fresh relative to W1? THE mtime, AND only the mtime ------------------
   if not repro.is_file():
     rows.append(judge("witness.fresh", False, True, path=C.rel(repro)))
   else:
@@ -331,14 +331,14 @@ def main(argv=None) -> int:
                       delta_ms=f"{(m2 - m1) / 1e6:+.3f}",
                       summary_mtime_ns=m1, repro_mtime_ns=m2))
 
-  # --- WHICH INSTRUMENT PRODUCED READING 2, AND IT IS CHECKED RATHER THAN ASSERTED ------------
-  # THE ROW USED TO SAY `judge("freshness.source", True, False, ...)` -- A LITERAL `True`, WHICH
-  # IS THE SAME DEFECT THE `claim` ROW HAD: a row that cannot go red. The claim is that this
+  # --- WHICH instrument produced reading 2, AND it is checked rather than asserted ------------
+  # THE row used to say `judge("freshness.source", True, False, ...)` -- A literal `True`, WHICH
+  # IS the same defect the `claim` ROW had: a row that cannot go red. The claim is that this
   # gate's only clock still reads the FILESYSTEM, and `inspect.getsource` is the sibling's own
   # instrument for a claim about an instrument's SOURCE (the sibling's `run.readiness` row asks
   # `differ.cmd_run`'s source whether `run` is readiness-gated), so the check is in house style.
   #
-  # **THE DOCSTRING IS EXCLUDED ON PURPOSE.** These docstrings TALK ABOUT GIT -- the rule that
+  # THE docstring is excluded on purpose. These docstrings TALK about GIT -- the rule that
   # git is not asked is written down three times above -- so a check that grepped the whole
   # source would read the prose that explains the rule and report it as a violation of it. The
   # RETURN EXPRESSIONS are the code, and they are where the number comes from.
@@ -349,7 +349,7 @@ def main(argv=None) -> int:
                     via="os.stat().st_mtime_ns", git_asked="NO",
                     why="git-check-ignore-says-.gitignore:262:/runs/-so-git-status-is-blind-here"))
 
-  # --- READING 3: DOES W2 NAME THE LIVE SUBSTRATE? ITS WHOLE ROW SET, WITH THE DENOMINATOR ----
+  # --- READING 3: DOES W2 name the live substrate? ITS whole row set, WITH the denominator ----
   # `REPRO_PINS` and `REPRO_SUBSTRATE` are `differ`'s OWN declarations, loaded, never transcribed:
   # a literal `d10-transcript=` value here would be a pin that must be re-typed by hand whenever
   # the writer's row moves, which is the failure `differ.py:319` records.
@@ -372,7 +372,7 @@ def main(argv=None) -> int:
                       recorded=got.get(differ.REPRO_SUBSTRATE, "ABSENT")[:16],
                       live=live[:16], declared_by="differ.REPRO_PINS+REPRO_SUBSTRATE"))
 
-  # --- THE REPORTED VERDICT, DERIVED FROM COUNTS THE WITNESS ALREADY WROTE -------------------
+  # --- THE reported verdict, DERIVED from counts the witness already wrote -------------------
   # The state was the literal `True`, so a witness whose `repro-rc` said `rc=0` and whose
   # `repro-identical` said `0` produced the same `state=OK` as one whose counts agreed. `cmd_repro`
   # writes `repro-identical == repro-files` exactly when it writes `repro-rc=rc=0`. Those are
@@ -400,12 +400,12 @@ def main(argv=None) -> int:
                       reported=reported, derived=derived,
                       verdict="AGREE" if cohere else "DISAGREE", **report))
 
-  # --- WHAT IS CLAIMED. THE LINE, IN A ROW, SO IT CANNOT BE LOST IN PROSE. ---------------------
+  # --- WHAT is claimed. THE line, IN a row, SO it cannot be lost in prose. ---------------------
   # AND IT IS A DERIVATION, NOT A WORD. The row used to be `judge("claim", True, False,
   # verdict="REPRODUCIBLE")` -- a LITERAL, so a witness saying `repro-rc=rc=0` and one saying
   # `rc=1` produced a BYTE-IDENTICAL row, and `differ.py`'s own PLANT 3 names that shape: "if it
-  # does not go red, the row is a label". **THE CLAIM IS THE CONJUNCTION OF THIS GATE's OWN
-  # READINGS**, and one of the conjuncts is the CLOCK, which no other instrument in this tree
+  # does not go red, the row is a label". THE claim is the conjunction of this gate's OWN
+  # READINGS, and one of the conjuncts is the CLOCK, which no other instrument in this tree
   # reads -- so this row is NOT an echo of the witness: a witness that says `rc=0` and is four
   # days old still reds it. See the header for why (a) and (b) are the same operation here.
   by_name = {r.split("\t")[0]: r for r in rows}
@@ -416,7 +416,7 @@ def main(argv=None) -> int:
   rows.append(judge_state("claim", cstate, **{
     "verdict": cverdict,
     "conjuncts": ",".join(f"{n}:{cs[n]}" for n in CLAIM_CONJUNCTS),
-    # THE WITNESS's OWN ROW, SPELLED AS THE WITNESS SPELLS IT -- a hyphen is not a keyword
+    # THE witness's OWN row, SPELLED as the witness spells it -- a hyphen is not a keyword
     # argument's name, so this one field is passed through a dict. It is a REPORT of what the
     # witness recorded, not a second judgement of it: `witness.substrate` is where the pin on
     # this row is checked, against `differ.REPRO_PINS`.

@@ -4,30 +4,30 @@
 THE CLASS. A ledger's bar (`[###....] 3/10`) is a COUNT, and a count that is WRONG is a
 number that cannot go red: it says 3 of 10 when every item is ticked, so a reader who trusts
 the bar reads an unfinished category, and a reader who reads the items reads a finished one.
-**⇒ "A DOCUMENT MUST NOT SAY TWO THINGS ABOUT ONE FACT" -- AND HERE THE TWO THINGS ARE THE
+**"A DOCUMENT MUST NOT SAY TWO THINGS ABOUT ONE FACT" -- AND HERE THE TWO THINGS ARE THE
 BAR AND THE ITEMS, IN THE SAME FILE, FOR THE SAME CATEGORY.**
 
-⇒ **THE POPULATION IS DISCOVERED, NEVER NAMED.** A category is a `##`/`###` section, and a
+**THE POPULATION IS DISCOVERED, NEVER NAMED.** A category is a `##`/`###` section, and a
   category's ITEMS are the `- [ ]` / `- [x]` lines inside it.
 
-⇒ **AND THERE ARE **TWO** BAR TABLES, AND THAT IS ITSELF PART OF THE DEFECT.**
+**AND THERE ARE **TWO** BAR TABLES, AND THAT IS ITSELF PART OF THE DEFECT.**
   - **THE HEAD TABLE**, at the top of the file, in a fenced block: `name  [###....] 3/10  prose`.
   - **THE SUMMARY TABLE**, at the bottom: `• name — [###....] 3/10  76%`.
-  **⇒ THEY ARE THE SAME CATEGORY LIST PRINTED TWICE, AND THEY CAN DISAGREE.** A CENSUS THAT
+  **THEY ARE THE SAME CATEGORY LIST PRINTED TWICE, AND THEY CAN DISAGREE.** A CENSUS THAT
   READS ONE OF THEM HAS NOT READ THE LEDGER.
 
-⇒ **⇒ SO THE CENSUS READS **BOTH**, AND A CATEGORY IS "CONTRADICTED" WHEN **EITHER** BAR
+**SO THE CENSUS READS **BOTH**, AND A CATEGORY IS "CONTRADICTED" WHEN **EITHER** BAR
   DISAGREES WITH THE SECTION's OWN ITEMS.** The head table's bar is matched by NAME; the
   summary table's bar is matched by the SAME NAME. **A NAME THAT MATCHES NO SECTION IS
   REPORTED AS `NO SECTION` AND NOT AS A DEFECT** -- because a bar for a category whose items
   live in the head block's prose has no section to disagree with.
 
-⇒ **WHAT IS REPORTED.**
+**WHAT IS REPORTED.**
   - `BAR STALE`     -- a bar says < 100% and EVERY item is ticked. **THE BAR CANNOT GO RED.**
-  - `BAR AHEAD`     -- a bar says 100% and SOME item is open. **⇒ THE LEDGER PROMISES A
+  - `BAR AHEAD`     -- a bar says 100% and SOME item is open. **THE LEDGER PROMISES A
                        COMPLETION THAT IS NOT THERE, WHICH IS THE WORSE HALF.**
   - `THE TWO TABLES DISAGREE` -- the head table and the summary table print different
-                       fractions for the SAME category. **⇒ THE LEDGER SAYS TWO THINGS.**
+                       fractions for the SAME category. **THE LEDGER SAYS TWO THINGS.**
 
 USAGE:  .venv/bin/python .agents/slop/todo-sweep2/barcensus.py
 """
@@ -42,7 +42,7 @@ LEDGER = ROOT / ".agents/TODO.md"
 # THE HEAD TABLE: `name  [###....] 3/10  prose`, INSIDE the fenced block at the top.
 HEAD_BAR = re.compile(r"^(\S+)\s+(\[[#\.]+\])\s+(\d+)/(\d+)\s{0,3}")
 # THE SUMMARY TABLE: `• name — ████████░░ 39/49  80%`.
-# **⇒ NOTE THE DIFFERENCE FROM THE HEAD TABLE: THE HEAD TABLE WRAPS ITS BAR IN BRACKETS
+# **NOTE THE DIFFERENCE FROM THE HEAD TABLE: THE HEAD TABLE WRAPS ITS BAR IN BRACKETS
 # (`[###....] 3/10`) AND THE SUMMARY TABLE DOES **NOT** (`████░░░░ 39/49  80%`).** A census
 # that reads both with ONE regex reads exactly one of them, and reports the other as
 # ABSENT -- which is how the first version of this file matched **ZERO** summary rows and
@@ -83,16 +83,16 @@ def main():
             h2 = re.match(r"^(#{1,6})\s+", lines[j])
             if h2 and len(h2.group(1)) <= lvl:
                 break
-            # **⇒ AN ITEM MAY BE INDENTED.** The tree's items are `- [x]` at column 0 in most
+            # **AN ITEM MAY BE INDENTED.** The tree's items are `- [x]` at column 0 in most
             # sections and `  - [x]` under a sub-heading in others, and the FIRST version of
-            # this census matched column 0 ONLY -- **⇒ so it read a section with nine items
+            # this census matched column 0 ONLY -- **=> so it read a section with nine items
             # as a section with ZERO, and called its bar STALE.** A census that counts a
             # population it can only see when it happens to be flush left is a census of
             # the wrong population.
             #
-            # **⇒ AND THERE IS A **THIRD** STATE, `- [~]`, AND IT IS NOT A TICK AND NOT AN
+            # **AND THERE IS A **THIRD** STATE, `- [~]`, AND IT IS NOT A TICK AND NOT AN
             # OPEN ITEM.** The ledger's own summary table writes it as `(+1 [~])` beside a
-            # fraction -- **⇒ SO THE DENOMINATOR COUNTS A `[~]` AS NOT-DONE, AND A CENSUS
+            # fraction -- **SO THE DENOMINATOR COUNTS A `[~]` AS NOT-DONE, AND A CENSUS
             # THAT COUNTS ONLY `[ ]` AND `[x]` READS A SECTION WITH A PARTIAL ITEM AS A
             # FINISHED ONE.** THE FIRST VERSION OF THIS CENSUS DID EXACTLY THAT AND REPORTED
             # TWO SECTIONS AS STALE THAT ARE NOT.
@@ -114,10 +114,10 @@ def main():
     def find_section(bname):
         """The ONE section a bar names, or None.
 
-        ⇒ **A NAME THAT MATCHES MORE THAN ONE SECTION IS NOT A MATCH.** The tree has three
+**A NAME THAT MATCHES MORE THAN ONE SECTION IS NOT A MATCH.** The tree has three
         sections called `**NOT COMMITTED.**` and two called `Progress: [#########.] 9/10`,
         and a bar for one of them is a bar for a DIFFERENT one. A census that picks the
-        first match reports a disagreement that is not there -- **⇒ AND THE FIRST VERSION OF
+        first match reports a disagreement that is not there -- **AND THE FIRST VERSION OF
         THIS FILE DID EXACTLY THAT, AND REPORTED THREE `BAR AHEAD` ROWS THAT WERE ALL THE
         SAME AMBIGUITY.** So the match must be UNIQUE, and an ambiguous name is reported as
         AMBIGUOUS, not as a defect.

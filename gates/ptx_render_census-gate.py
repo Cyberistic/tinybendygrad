@@ -82,7 +82,7 @@ THE THREE DIVERGENCE GROUPS
     form of `amd_dsl`'s `Res{v: U32}` + `U32.shln` discarding the high fields: a field
     SILENTLY EMPTIED where CPython refuses. "A U32 shift is not an error, it is a smaller
     number"; an empty type field is not an error either, it is a kernel ptxas rejects.
-    ⇒ THE EMPTIED FIELD IS THE SIX EMPTY-STRING DTYPES -- these 18 rows and
+THE EMPTIED FIELD IS THE SIX EMPTY-STRING DTYPES -- these 18 rows and
     `f33_bf16cast.r1` (`%cast__0`) -- AND NOT weakint and weakfloat, whose port answers are
     legal PTX types. The refusal is the same; only the EMPTINESS is not.
 
@@ -183,14 +183,14 @@ def run_oracle():
                                  text=True, check=True).stdout)
 
 
-# THE ROW COUNT IS READ FROM THE POPULATION, NEVER TYPED.  A COUNT IN THE SOURCE IS A
-# SECOND COPY OF A FACT THE POPULATION ALREADY CARRIES, and it is the copy that goes
+# THE row count is read from the population, NEVER typed.  A count in the source is a
+# SECOND COPY OF a fact the population already carries, and it is the copy that goes
 # STALE: MEASURED, this file said 579 while the population held 593, and nothing said so
 # because the number was not compared with anything -- the gate was REFUSED on a compile
 # error, so the count was never consulted, and the axis that disagreed with it was the
 # axis's own stale copy.
 #
-# WHERE THE PIN WENT, AND WHY IT IS NOT LOST.  The pin is `gates/ptx_render_census-pins.rows`:
+# WHERE THE PIN WENT, AND why it is not lost.  The pin is `gates/ptx_render_census-pins.rows`:
 # 3 lanes x one row per population row, every VALUE spelled out, and `pins_hold()` compares
 # every one of them with the live lanes.  A population that GAINS a row is red there (the
 # pins file has no entry for it and the count check below fires), a population that LOSES
@@ -212,12 +212,12 @@ def run_oracle():
 # one. 15 - 1 = 14, and 579 + 14 = 593. The axis is now the generator's own output, so the
 # two numbers cannot disagree: `axis_hold()` checks the axis against the generator.
 #
-# THE POPULATION IS THE ORACLE'S OWN ROWS, read ONCE, because `build_divergences()` needs
+# THE population is the oracle'S own rows, read ONCE, because `build_divergences()` needs
 # CPython's `.mod` text anyway and running the oracle twice is a second chance to get two
 # different answers.
 ORACLE_ROWS = run_oracle()
 ROWS = len(ORACLE_ROWS)
-# THE DIVERGENCE COUNT IS DERIVED, AND IT IS ASSIGNED BELOW, AFTER THE THREE GROUPS
+# THE divergence count is derived, AND it is assigned below, AFTER the three groups
 # EXIST. The reason and the history are with the assignment.
 
 # --------------------------------------------------------------------------
@@ -232,7 +232,7 @@ DTYPES_ABSENT = {"void": ("", "", ""), "bf16": ("", "", ""),
 WEAKINT = ("", "", "")
 
 
-# GROUP 4 WAS HERE AND IT IS FIXED. `fmt_18` was the ONE row of a FOURTH group: the
+# GROUP 4 WAS here and it is fixed. `fmt_18` was the ONE row of a FOURTH group: the
 # port's `tc_ptx.bend` had `fmt_israw`, a `line[0] == "$"` early return, and upstream
 # `96397341d` ("dead code cleanups [PR] (#18593)", 2026-10-03) DELETED that early
 # return -- MEASURED, at that commit's parent `ptx.py` held NO OTHER `$` (ONE occurrence
@@ -272,7 +272,7 @@ FIXTURES = ["f01_alu", "f02_counter", "f03_cast5", "f04_end", "f05_regbuf4", "f0
 REFUSALS = {"f08_refuse": "PORT-REFUSED:INDEX", "f31_weakint": "PORT-ANSWERED",
             "f32_weakfloat": "PORT-ANSWERED", "f33_bf16cast": "PORT-ANSWERED",
             "f34_boolalu": "PORT-ANSWERED",
-            # f35 IS THE SIXTH, AND IT IS NOT A PORT DEFECT: ptx.py:225 refuses an
+            # f35 IS the sixth, AND it is not a port defect: ptx.py:225 refuses an
             # UN-INDEXED PARAM load -- no `string_rewrite` rule matches a LOAD whose
             # source is a PARAM rather than an INDEX -- and the PORT ANSWERS, because the
             # port has no string_rewrite stage to refuse IN. MEASURED: the port's own
@@ -283,7 +283,7 @@ REFUSALS = {"f08_refuse": "PORT-REFUSED:INDEX", "f31_weakint": "PORT-ANSWERED",
             "f35_loadvec": "PORT-ANSWERED"}
 
 # GROUP 3 -- the walk.
-# GROUP 3a IS GONE AND IT IS NOT A CARVE-OUT: `ptx.bend`'s alias arm read `Wal.r[0]`,
+# GROUP 3a IS gone and it is not a carve-OUT: `ptx.bend`'s alias arm read `Wal.r[0]`,
 # STEP ZERO, where ptx.py:190 (`self.r[u] = self.r[u.src[0]]`) and ptx.py:205
 # (`r[u.src[0]][u.src[1].src[0].val]`) both read `Wal.r[refs[0]]`. SIX ROWS DIVERGED --
 # `f07_reuse.r4`, `f10_loads.r4`, `.r6`, `.r8`, `.r9` and `f12_after.r5`, the port
@@ -298,12 +298,12 @@ REFUSALS = {"f08_refuse": "PORT-REFUSED:INDEX", "f31_weakint": "PORT-ANSWERED",
 # is the OTHER such gap, and it is older: `M9` has moved zero rows since this census was
 # first run, and the reason recorded for it -- "it moves nothing BECAUSE the alias arm
 # already returns the wrong register" -- was true only while that arm was broken.
-# GROUP 3b -- THE REGISTERS THE PORT ALLOCATES WHERE CPython REFUSES. THESE ARE THE
-# FINDING'S ACTUAL STRINGS, AND THEY STAY. THE REASON IS NOT ONE REASON: `f31_weakint.r1`,
+# GROUP 3b -- THE registers the port allocates WHERE CPython REFUSES. THESE are the
+# FINDING'S actual strings, AND they stay. THE reason is not one reason: `f31_weakint.r1`,
 # `f32_weakfloat.r2` and `f33_bf16cast.r1` are GROUP 1 reaching the walk and CPython
 # refuses at ptx.py:181 on the dtype; `f34_boolalu.r3` and `.r4` are NOT GROUP 1 -- CPython
 # refuses at ptx.py:92, on a CONST the walk never registered, and the port's walk AGREES
-# with CPython's there. AND ONLY ONE OF THE FIVE EMPTIES A FIELD: `f33_bf16cast.r1` is
+# with CPython's there. AND only one of the five empties a field: `f33_bf16cast.r1` is
 # `%cast__0`, an empty type where a real one belongs, while `%ridx_s32_0` and `%alu_f32_0`
 # are LEGAL PTX types -- weakint and weakfloat are dtypes CPython refuses and the port
 # answers, and the answer is not an emptied field. This unit is not `tc_ptx.bend`'s.
@@ -313,9 +313,9 @@ WEAK = {"f31_weakint.r1": "%ridx_s32_0", "f32_weakfloat.r2": "%alu_f32_0",
 
 
 # =====================================================================================
-# THE REASONS. EVERY DECLARED DIVERGENCE CARRIES ONE, AND EVERY REASON IS CHECKED.
+# THE reasons. EVERY declared divergence carries one, AND every reason is checked.
 # =====================================================================================
-# A DECLARED DIVERGENCE IS A PIN, AND A PIN WITHOUT A TRUE REASON IS A PIN THAT CANNOT
+# A declared divergence is a PIN, AND a PIN WITHOUT a TRUE REASON is a PIN THAT cannot
 # FAIL. `gatekit` pins both sides of every declared row, so a divergence whose VALUE moves
 # is red -- and the REASONS were PROSE, so a reason that stopped being true was not. The
 # three reasons are DATA now, and `reasons_hold()` reads the tree for each of them:
@@ -323,13 +323,13 @@ WEAK = {"f31_weakint.r1": "%ridx_s32_0", "f32_weakfloat.r2": "%alu_f32_0",
 #   * THE DTYPE TABLES. `PTXRenderer.types` and its two siblings are DICTS of 12 KEYS, so
 #     a dtype they do not name is a `KeyError` at ptx.py:181, and the port's three tables
 #     answer the EMPTY STRING for exactly six dtypes: `void`, `bfloat16` and the four fp8s.
-#   * THE MODULE. upstream's `ptx.py` renders a WHOLE PTX MODULE whose BODY is
+#   * THE module. upstream's `ptx.py` renders a WHOLE ptx module whose BODY is
 #     `string_rewrite`'s rules, and the port has no such stage, so it answers ABSENT.
 #   * A REFUSAL. Six fixtures are ones CPython REFUSES, and each refusal has a SITE in
 #     upstream's source. The site is the WITNESS and it is read from CPython's OWN
 #     traceback, so a re-vendor that MOVES a refusal is red with the move named.
 #
-# `REASON_RULES` IS THE NUMBER THE REASON CITES, AND `ABSENT` IS THE PORT'S OWN ANSWER --
+# `REASON_RULES` IS the number the reason cites, AND `ABSENT` IS the port'S own answer --
 # so the number lives in two files and in two places here, and BOTH are checked:
 # `reasons_hold()` against upstream's own rule table and against the number inside `ABSENT`,
 # and `gatekit`'s pin against the lane the driver wrote.
@@ -426,7 +426,7 @@ def reasons_hold() -> bool:
     if rules != REASON_RULES:
         bad.append(f"the reason says upstream's ptx.py has {REASON_RULES} string_rewrite rules; "
                    f"it has {rules}")
-    # THE NUMBER INSIDE THE PORT'S OWN ANSWER, so the two copies of it cross-check. A copy
+    # THE number inside the port'S own answer, so the two copies of it cross-check. A copy
     # nobody compares with anything is a copy that goes stale.
     said = re.search(r"string_rewrite\((\d+)\)", ABSENT)
     if said is None or int(said.group(1)) != REASON_RULES:
@@ -501,7 +501,7 @@ def rows_of(path):
     return out, order
 
 
-# THE THREE GROUPS, COMPUTED ONCE, and the count is their SUM. A group's MEMBERS are
+# THE three groups, COMPUTED once, and the count is their SUM. A group's MEMBERS are
 # DISCOVERED -- the dtype list, the `WEAK` dict, the fixture list -- so the total is a fact
 # about the table and the table's size is not a second copy of anything.
 _PY_ROWS = {l.split("=", 1)[0]: l.split("=", 1)[1] for l in ORACLE_ROWS}
@@ -540,13 +540,13 @@ DIVERGES = build_divergences()
 # `line[0] == "$"` early return (`return line if line[0]=="$" else "\t" + line.replace(...)`
 # became `return "\t" + line.replace(...)`), so a `$` line is INDENTED by the pin and
 # PASSED THROUGH by the port, whose `tc_ptx.bend` had `fmt_israw`. `fmt_18` is the
-# `$RAW` probe: the port said `$RAW`, CPython said `\t$RAW`. A FINDING, NOT A CARVE-OUT --
+# `$RAW` probe: the port said `$RAW`, CPython said `\t$RAW`. A finding, NOT a carve-OUT --
 # the port's `fmt` was stale against the pin -- and it was DECLARED so the exact wrong answer
 # was pinned on both sides and a reader could see it.
 # 59 -> 58 IS THAT FINDING FIXED. `tc_ptx.bend` has no `fmt_israw` any more, so `fmt_18` is
 # an ORDINARY COMPARED row and the table is its three groups again.
 #
-# THE COUNT IS DERIVED, NOT TYPED, AND IT IS A DIFFERENT KIND OF NUMBER FROM `ROWS`.
+# THE count is derived, NOT typed, AND it is a different kind of number from `ROWS`.
 # `ROWS` is a count of a DISCOVERABLE population (the oracle's own rows) and the house rule
 # is that such a count is not a pin -- it is READ, and the pins file's own per-lane row count
 # is what says so when the population moves. `N_DIVERGES` is the size of a HAND-DECLARED
@@ -560,7 +560,7 @@ DIVERGES = build_divergences()
 # a hand-typed number.
 N_DIVERGES = len(_G1) + len(_G2) + len(_G3)
 
-# THE HONEST COMPOSITION OF THE TABLE, DERIVED FROM THE TABLE AND NOT TYPED: how many rows
+# THE honest composition of the table, DERIVED from the table and not typed: how many rows
 # carry each REASON, and how the module rows divide between the three answers the port has.
 _REASONS = _row_reasons()
 _N_DTYPES = sum(1 for v in _REASONS.values() if v == "DTYPES")
@@ -593,7 +593,7 @@ def names_hold() -> bool:
     _, bn = rows_of_text(bd_txt.stdout)
     bad = []
     if len(pn) != ROWS:
-        # `ROWS` IS READ FROM THE POPULATION -- from ANOTHER RUN of the oracle, taken when
+        # `ROWS` IS read from the population -- from ANOTHER run of the oracle, taken when
         # this module was imported.  So this is not a tautology: it is the DETERMINISM
         # check, and a census whose own oracle answers differently twice is a census whose
         # population is not a set.  MEASURED, the oracle is deterministic; this says so on
@@ -753,8 +753,8 @@ def claims_hold() -> bool:
             "f07_reuse.r4": "%g0", "f10_loads.r4": "%g0", "f10_loads.r6": "%g1",
             "f10_loads.r8": "%g2", "f10_loads.r9": "{%g0, %g1, %g2}",
             "f12_after.r5": "%alu_f32_0",
-            # AND THE `rg_pick` HALF, WHICH HAD NO FIXTURE UNTIL `f37_twobufs`. THE THREE
-            # ROWS BELOW MOVED BY ONE STEP, AND WHY IS THE SAME RE-VENDOR AS EVERYTHING ELSE:
+            # AND the `rg_pick` HALF, WHICH had no fixture until `f37_twobufs`. THE three
+            # ROWS below moved by one step, AND why is the same re-VENDOR as everything ELSE:
             # upstream moved a BUFFER's size into a size CONST SRC, so the size CONST is now
             # step 0 and every INDEX in this fixture moved down one. `r8` is `r[5][1]` =
             # `%reg_f32_5`, the second INDEX's register; reading step zero now answers `NONE`
@@ -818,13 +818,13 @@ def pins_hold() -> bool:
         got = raw[lane].get(row)
         if got != val:
             miss.append(f"{lane}:{row}={got!r} != pinned {val!r}")
-    # THE PINS FILE'S OWN ROW COUNT, and it is the PIN for the count the source no longer
+    # THE pins file'S own row count, and it is the PIN for the count the source no longer
     # types.  `ROWS` is read from the POPULATION (the oracle's own rows), so a population
     # that GREW moves `ROWS` with it -- and the pins file, which was written against the
     # OLD population, is what says so.  WITHOUT THIS, a population that grew would be a
     # SILENT change: every pinned row would still match (the old rows are still there),
     # and the extra row would be compared against nothing.  THE COUNT IS NOT A NUMBER
-    # ANYMORE, IT IS A FILE, AND A FILE CAN BE STALE.
+    # ANYMORE, IT is a file, AND a file can be stale.
     per_lane = {}
     for l in lines[1:]:
         lane = l.split("\t", 1)[0]
@@ -862,7 +862,7 @@ def refresh_pins():
             print(f"--refresh needs a run first: {d / name} is missing", file=sys.stderr)
             return 3
     body = _pins_lines(PINS.read_text())[1:] if PINS.exists() else []
-    # THE FILE IS REBUILT, NEVER APPENDED TO. MEASURED: the first `--refresh` KEPT the old
+    # THE file is rebuilt, NEVER appended to. MEASURED: the first `--refresh` KEPT the old
     # body and added the three lanes to it, so a second run produced every pin TWICE --
     # 3216 rows for 1071 distinct ones. `pins_hold()` still passed, because a duplicate is
     # a duplicate OF THE SAME VALUE, which is exactly the kind of noise a check that
@@ -873,12 +873,12 @@ def refresh_pins():
         got, _ = rows_of(d / name)
         emitted[lane] = set(got)
         rows.update({(lane, k): v for k, v in got.items()})
-    # **AND A PIN FOR A ROW THAT NO LANE EMITS IS DROPPED, WHICH IS THE OTHER HALF OF
-    # "REBUILT".** MEASURED: `f14_skips` LOST a node -- upstream deleted `Ops.GROUP`, so the
+    # AND a PIN FOR a row that no lane emits is dropped, WHICH is the other half of
+    # "REBUILT". MEASURED: `f14_skips` LOST a node -- upstream deleted `Ops.GROUP`, so the
     # fixture's walk is one step shorter -- and the old file's `f14_skips.r8` survived the
     # merge because nothing in the lanes says that row does not exist. `pins_hold()` then
     # read `raw[lane].get("f14_skips.r8")` as `None` against a pinned `NONE` and the gate
-    # went RED ON A ROW THAT DOES NOT EXIST. The merge exists so that a LANE THAT DID NOT
+    # went RED on a row that does not exist. The merge exists so that a LANE that did not
     # RUN keeps its pins; a row no lane emits is not that, so it is dropped -- and the
     # population of a pins file is the rows the lanes EMIT, which is what the file's own
     # header says the lanes are.
@@ -897,7 +897,7 @@ def refresh_pins():
     # transposed columns and doubled the file. Writing the columns EXPLICITLY is the fix
     # and is also why `pins_hold()` asserts the header BEFORE it parses a single line.
     out = sorted(((r, l, v) for (l, r), v in rows.items()))
-    # THE PROVENANCE LINE IS WRITTEN HERE, NOT PASTED INTO THE OUTPUT. `--refresh` rewrites this
+    # THE provenance line is written here, NOT pasted into the output. `--refresh` rewrites this
     # file whole, so a header added by hand is erased by the next regeneration -- and
     # `gates/pins-shape-gate.py` asks every `gates/*.rows` to declare who writes it (`WRITER` matches
     # `GENERATED by ...`). A generated file's declaration has to come out of the generator.
@@ -909,12 +909,12 @@ def refresh_pins():
 
 
 # ---- the plant ---------------------------------------------------------------------------------
-# THE PLANT IS A TEXT EDIT ON THE FILE AS IT STANDS NOW, NEVER A READ OF `git show HEAD:`.
+# THE plant is a text edit on the file as it stands now, NEVER a read of `git show HEAD:`.
 # A plant that reads HEAD plants nothing the moment HEAD carries the defect's fix -- and
 # THIS defect's fix is already in HEAD's future, because the fix IS "regenerate the axis".
 # So the bytes come from the WORKING TREE and the edit is applied to them.
 #
-# THE ANCHOR IS THE WHOLE `ax14` HEADER AND ITS FIRST TWO ROWS, not one row: the `OpsNOOP`
+# THE anchor is the whole `ax14` HEADER and its first two rows, not one row: the `OpsNOOP`
 # row is not unique (ax21 has one too), and an anchor that is not unique is an anchor that
 # plants in two places at once. MEASURED, and the reason is in the header: the file is
 # GENERATED, so the `ax14` block is a fixed shape the generator emits, and the plant puts
@@ -922,13 +922,13 @@ def refresh_pins():
 PLANT_ANCHOR = ('def ax14() -> List<&2, P.Wk>:\n'
                 '  [  P.Wk{O.OpsNOOP{}, S.void(), S.Aalu{}, 1, "", [], 0, True{}},\n'
                 '    P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},')
-# THE PLANTED ROW IS THE ROW THE OLD AXIS HAD: `O.OpsGROUP{}`, the op upstream DELETED in
+# THE planted row is the row the old axis had: `O.OpsGROUP{}`, the op upstream DELETED in
 # `4e0192eaf remove Ops.GROUP (#18637)` (2026-10-06). It is not a plausible-looking op; it
 # is the EXACT text that was there, because the question the plant asks is "does the
 # compiler refuse a name the enum does not declare", and a made-up op would answer a
 # different question.
 PLANT_ROW = '    P.Wk{O.OpsGROUP{}, S.void(), S.Aalu{}, 1, "", [0, 0], 0, True{}},'
-# THE CONTROL'S ANCHOR IS A LINE THAT CARRIES ONE STATEMENT, so a comment appended at its
+# THE control'S anchor is a line that carries one statement, so a comment appended at its
 # END cannot swallow anything. The two-part line is the `ax14` LIST OPEN plus its first
 # element -- `  [  P.Wk{...},` -- and that is what SHAPE A below uses.
 CONTROL_ANCHOR = '    P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},\n' \
@@ -1025,7 +1025,7 @@ def plant() -> int:
             state, detail, _ = pc.judge(str(SCRATCH), 2048, 300)
         finally:
             SCRATCH.unlink(missing_ok=True)
-        # A COMMENT-ONLY EDIT IS PROVED BY THE COMMENT-STRIPPED BYTES, not by the verdict --
+        # A comment-ONLY edit is proved by the comment-STRIPPED bytes, not by the verdict --
         # and the proof drops BLANK LINES, because a WHOLE-LINE comment IS a blank line once
         # the comment is gone. MEASURED: without that, the most comment-only edit there is --
         # a comment on its own line -- reads as "not comment-only" for a difference of ONE
@@ -1071,15 +1071,15 @@ def plant() -> int:
 # ---- the reason plant -------------------------------------------------------------------
 # THE SUBJECT IS THIS FILE, because this file is where the REASON is declared.
 #
-# THE PLANT PUTS A STALE REASON INTO A COPY OF THIS FILE AND THE GATE MUST GO RED. The
+# THE plant puts a stale reason into a COPY OF this file and the gate must go red. The
 # bytes come from the WORKING TREE and never from `git show HEAD:` -- a plant that reads
 # HEAD plants nothing the moment HEAD carries the fix, and this fix IS in HEAD's future BY
 # CONSTRUCTION: the fix and the plant are the same commit.
 #
-# THE COPY SITS IN `gates/` BESIDE THIS ONE, so `HERE` and `ROOT` still resolve and the
+# THE COPY SITS in `gates/` BESIDE this one, so `HERE` and `ROOT` still resolve and the
 # copy IS this gate -- the same lanes, the same population, the same pins.
 REASON_SCRATCH = HERE / "_ptxreason_plantcase.py"
-# THE STALE REASON IS A SOURCE FRAGMENT AND NOT A LINE NUMBER: the declared site of f31's
+# THE stale reason is a source fragment and not a line number: the declared site of f31's
 # refusal, moved to a fragment upstream does not refuse on. A line number would be a bet on
 # a byte offset; the fragment is a bet on the CODE, which is what the reason actually
 # claims.
@@ -1091,7 +1091,7 @@ REASON_PLANT_TO = '"weakint", "self.types[u.dtype]"'
 # did not move.
 REASON_RULES_FROM = "REASON_RULES = 23"
 REASON_RULES_TO = "REASON_RULES = 24"
-# THE CONTROL'S ANCHOR IS A DECLARATION LINE and the comment goes on a LINE OF ITS OWN
+# THE control'S anchor is a declaration line and the comment goes on a LINE of its own
 # above it -- the most comment-only edit there is, and the one the blank-line-dropping
 # proof exists for.
 REASON_CONTROL_ANCHOR = "REASON_DTYPE_KEYS = 12"
@@ -1164,9 +1164,9 @@ def reason_plant() -> int:
 
 
 # ---- the fmt plant ---------------------------------------------------------------------
-# THE SUBJECT IS THE PORT, AND THE DEFECT IS THE ONE UPSTREAM DELETED.
+# THE subject is the port, AND the defect is the one upstream deleted.
 #
-# THE BYTES COME FROM THE WORKING TREE AND NEVER FROM `git show HEAD:`. A plant that reads
+# THE bytes come from the working tree and never from `git show HEAD:`. A plant that reads
 # HEAD plants nothing the moment HEAD carries the fix, and THIS fix IS IN HEAD'S FUTURE BY
 # CONSTRUCTION: the fix and the plant are the same commit, so a HEAD-reading plant would
 # plant NOTHING on the very commit that removes the defect.
@@ -1186,7 +1186,7 @@ FMT_PORT_IMPORTS = (("import ./../helpers.bend as H", "import ./../tinybendygrad
                     ("import ./../LAWS/spec.bend as S", "import ./../tinybendygrad/LAWS/spec.bend as S"),
                     ("import ./../uop/ops.bend as O", "import ./../tinybendygrad/uop/ops.bend as O"),
                     ("import ./tc.bend as T", "import ./../tinybendygrad/renderer/tc.bend as T"))
-# THE FIXED `fmt`, AND THE DEFECTIVE ONE. THE PLANT PUTS THE DEFECT BACK, AND IT PUTS BACK
+# THE fixed `fmt`, AND the defective one. THE plant puts the defect back, AND it puts back
 # `fmt_israw` WITH IT, because the fix REMOVED that def: upstream deleted the `$` early
 # return and the port deleted its reader with it.
 FMT_FIXED = ('def fmt(+line: String) -> String:\n'
@@ -1197,7 +1197,7 @@ FMT_DEFECT = ('def fmt_israw(+line: String) -> Bool: String.eq(String.take(line,
               'def fmt(+line: String) -> String:\n'
               '  Bool.pick(String, fmt_israw(line), line, String.concat([tab(), '
               'String.from_list(fmt_rep(String.to_list(line), fmt_rep_of(line), Nil{}))]))')
-# THE CONTROL'S ANCHOR IS A `def` LINE, and the comment goes on a LINE OF ITS OWN above it.
+# THE control'S anchor is a `def` LINE, and the comment goes on a LINE of its own above it.
 # A whole-line comment is the MOST comment-only edit there is, and it is the one the
 # blank-line-dropping proof exists for.
 FMT_CONTROL_ANCHOR = ("def fmt_rep(+cs: List<&2, Char>, +rep: String, "
@@ -1302,26 +1302,26 @@ def fmt_plant() -> int:
 
 
 # ---- the citations ---------------------------------------------------------------------
-# EVERY `ptx.py:NNN` IN THIS CENSUS'S OWN FIVE FILES IS A CLAIM ABOUT UPSTREAM'S `ptx.py`,
-# AND A CLAIM NOBODY CHECKS IS A LABEL. THE AUDIT THAT PRODUCED THIS SECTION FOUND FIFTY-
-# FIVE OF THE PORT'S UPSTREAM-LINE REFERENCES STALE BY ONE -- FORTY `ptx.py:NNN`
-# CITATIONS, NINE ARM SELECTOR ROWS AND SIX BARE CONTINUATIONS -- AND THE CAUSE WAS ONE
+# EVERY `ptx.py:NNN` IN this census'S own five files is a claim about upstream'S `ptx.py`,
+# AND a claim nobody checks is a label. THE audit that produced this section found fifty-
+# FIVE of the port'S upstream-LINE references stale by one -- FORTY `ptx.py:NNN`
+# CITATIONS, NINE arm selector rows and six bare continuations -- AND the cause was one
 # LINE: upstream `975127a10` ("use AFTER for RANGE ordering deps instead of multiple srcs",
 # #18618) INSERTED ONE LINE at upstream's 189, and every reference to a line at or after it
 # moved by one. A re-vendor does that again, and until this section NOTHING IN THE TREE WAS
 # WATCHING.
 #
-# THE DECLARATION IS TWO TABLES, AND THE SECOND ONE IS THE ONE THAT DOES THE WORK:
+# THE declaration is two tables, AND the second one is the one that does the work:
 #   * `PTX_CITE_CONTENT` -- what a cited LINE CARRIES: a fragment of the line, and for a
 #     SPAN the text of the line that ENDS it. The fragment must be UNIQUE to the line it
 #     names, so the declaration can tell a line from its neighbour.
-#   * `PTX_CITE_ORDER` -- WHICH CITATIONS EACH FILE MAKES, AND IN WHICH ORDER. THE ORDER
+#   * `PTX_CITE_ORDER` -- WHICH citations each file makes, AND in which order. THE order
 #     IS THE PIN. A citation's number is a claim about a LINE, and a claim that survives
 #     being edited onto a DIFFERENT line is not a claim: keyed by the line alone, every
 #     citation could be moved onto any other line that carries some content and the check
 #     would still be green. Keyed by the ORDER, a citation that moves is red.
 #
-# SO A CITATION CAN BE WRONG IN THREE WAYS, AND ALL THREE ARE CHECKED:
+# SO a citation can be wrong in three ways, AND all three are checked:
 #   1. the file's citations are not the declared ones -- one MOVED, one ADDED, one DROPPED;
 #   2. a cited line no longer carries what the declaration names -- UPSTREAM MOVED;
 #   3. the content the declaration names is no longer UNIQUE to the line it names.
@@ -1330,18 +1330,18 @@ def fmt_plant() -> int:
 # audit moved fifty-five numbers and found the moves WRONG, because a number is a
 # claim about a LINE and the line is what upstream moved.
 UPSTREAM_PTX = ROOT / "tinygrad" / "renderer" / "ptx.py"
-# THE POPULATION IS DISCOVERED BY A REGEX OVER THE TREE'S OWN WRITE SITES, never by a hand
+# THE population is discovered by a regex over the tree'S own write sites, never by a hand
 # list of CITATIONS: these five files are the ones that CITE upstream's `ptx.py`, and the
 # regex finds every citation in each of them, in order.
 #
-# AND THE POPULATION IS THE `ptx.py:NNN` FORM, WHICH IS A NAMED LIMIT AND NOT A CLAIM OF
+# AND the population is the `ptx.py:NNN` FORM, WHICH is a named limit and not a claim of
 # COMPLETENESS: the prose ALSO carries BARE upstream-line references -- the ARM SELECTOR's
 # eleven rows, a `ptx.py:NNN, NNN-NNN` continuation, a `ptx.py:NNN and NNN` continuation
 # and a `ptx.py:NNN/NNN` one -- and those are NOT in the population, because a bare number
 # in prose is indistinguishable from a row count and a regex that tried would be a LIST OF
-# SHAPES rather than a discovery. THEY WERE AUDITED BY HAND, IN THE SAME PASS, AND THEY
-# MOVED WITH THE SAME +1; they are NOT CHECKED. THAT IS THE BLIND SPOT, AND IT IS NAMED SO
-# A READER CAN SEE IT INSTEAD OF ASSUMING IT IS NOT THERE.
+# SHAPES rather than a discovery. THEY were audited by hand, IN the same pass, AND they
+# MOVED with the same +1; they are NOT checked. THAT is the blind spot, AND it is named so
+# A reader can see it instead of assuming it is not there.
 CITE_FILES = (
     ("port",   ROOT / "tinybendygrad" / "renderer" / "ptx.bend"),
     ("driver", HERE / "ptx_render_census.bend"),
@@ -1350,7 +1350,7 @@ CITE_FILES = (
     ("gen",    HERE / "ptx_render_census-gen.py"),
 )
 CITE_RE = re.compile(r"ptx\.py:(\d+)(?:-(\d+))?")
-# WHAT EACH CITED LINE CARRIES. MEASURED against upstream's `ptx.py` as it stands, and the
+# WHAT each cited line carries. MEASURED against upstream's `ptx.py` as it stands, and the
 # check RE-MEASURES it on every run -- a fragment that stops being unique, or stops being
 # on the line it names, is RED, which is how a re-vendor announces itself.
 PTX_CITE_CONTENT = {
@@ -1403,7 +1403,7 @@ PTX_CITE_CONTENT = {
   "229":        ("return self.render_kernel(kernel, name, bufs, c.items(), uops)", None),
   "232":        ("d not in dtypes.fp8s+(dtypes.bfloat16,)", None),
 }
-# WHICH CITATIONS EACH FILE MAKES, IN ORDER. MEASURED from the files as they stand, and the
+# WHICH citations each file makes, IN order. MEASURED from the files as they stand, and the
 # check compares them on every run: a file whose citations are not THESE is red, and the
 # first difference is NAMED -- which file, which citation, what it says now, what it said.
 PTX_CITE_ORDER = {
@@ -1499,18 +1499,18 @@ def cites_hold() -> bool:
 
 
 # ---- the cite plant --------------------------------------------------------------------
-# THE SUBJECT IS THE ORACLE, and the defect is a citation that MOVED OFF THE LINE IT
-# CLAIMS. THE BYTES COME FROM THE WORKING TREE and never from `git show HEAD:` -- a plant
+# THE subject is the oracle, and the defect is a citation that MOVED off the line it
+# CLAIMS. THE bytes come from the working tree and never from `git show HEAD:` -- a plant
 # that reads HEAD plants nothing the moment HEAD carries the fix, and this fix IS in HEAD's
 # future BY CONSTRUCTION: the fix and the plant are the same commit.
 CITE_SCRATCH = HERE / "_ptxcite_plantcase.py"
-# THE LINE THE CITATION CLAIMS, AND THE LINE IT IS MOVED ONTO. Upstream's 181 is the dtype
+# THE line the citation claims, AND the line it is moved onto. Upstream's 181 is the dtype
 # lookup -- `self.types[unwrap(u).dtype]` -- the line that RAISES `KeyError` for a dtype the
 # table does not name. Upstream's 182 is `c[prefix] += 1`, the `ssa` COUNTER. So the moved
 # citation names a line that carries something else ENTIRELY, and the gate must notice that
 # the claim moved with it.
 #
-# THE NUMBER IS AN INTEGER AND THE TEXT IS AN f-STRING, and that is not tidiness: a
+# THE number is an integer and the text is an f-STRING, and that is not tidiness: a
 # literal citation -- the file name, a colon, and a number -- IN THIS FILE would be a
 # CITATION OF THIS FILE, because the population is DISCOVERED by a regex over the tree's
 # own write sites, and the plant's whole subject is a COPY of another file. So this file
@@ -1518,7 +1518,7 @@ CITE_SCRATCH = HERE / "_ptxcite_plantcase.py"
 CITE_PLANT_LINE = 181
 CITE_PLANT_FROM = f"ptx.py:{CITE_PLANT_LINE}"
 CITE_PLANT_TO = f"ptx.py:{CITE_PLANT_LINE + 1}"
-# THE CONTROL'S ANCHOR IS A `def` LINE, and the comment goes on a LINE OF ITS OWN above it --
+# THE control'S anchor is a `def` LINE, and the comment goes on a LINE of its own above it --
 # the most comment-only edit there is, and the one the blank-line-dropping proof exists for.
 CITE_CONTROL_ANCHOR = "def F01_alu():"
 
@@ -1618,12 +1618,12 @@ if __name__ == "__main__":
     assert len(DIVERGES) == N_DIVERGES, (
         f"the table holds {len(DIVERGES)} rows and its three groups hold {N_DIVERGES} -- a "
         "divergence was added OUTSIDE a group builder, or two groups share a row")
-    # NO TYPED COUNT HERE EITHER.  `534` was a second copy of `ROWS - N_DIVERGES` and it
+    # NO typed count here either.  `534` was a second copy of `ROWS - N_DIVERGES` and it
     # was stale for the same reason `593` was: a number in the source is a copy nobody
     # compares with anything.  The comparison is still ASSERTED -- it is the shape of the
     # gate, not the value -- but the value is computed.
     assert GATE.compared == ROWS - N_DIVERGES
-    # THE MODULE ROWS HAVE EXACTLY THREE ANSWERS, AND THE THREE COUNTS ARE THE TABLE'S.
+    # THE module rows have exactly three answers, AND the three counts are the table'S.
     assert _N_RULES + _N_ANSWERED + _N_REFUSED == len(_G3), (
         f"the module rows divide into {_N_RULES} ABSENT, {_N_ANSWERED} PORT-ANSWERED and "
         f"{_N_REFUSED} PORT-REFUSED, which is not {len(_G3)} -- a fourth answer appeared")

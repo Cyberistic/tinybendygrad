@@ -62,19 +62,19 @@ EVERYTHING IS LOADED BY PATH AND NOTHING IS RE-TYPED: `gates/gates-pop.py:gate_h
 `checks/gatesweep.py:classify` and `checks/bounded.py:STATUS` are the readers. NO `bend`.
 
 **THIS FILE READS SHELL WITH ITS OWN LINE-PRESERVING STRIP, AND THE REASON IS MEASURED.**
-**⇒ AND **THE **REASON **HAS **CHANGED**, **AND **A **DOCSTRING **THAT **RECORDS **A **FAULT **THAT
+**AND **THE **REASON **HAS **CHANGED**, **AND **A **DOCSTRING **THAT **RECORDS **A **FAULT **THAT
 **NO **LONGER **EXISTS **IS **A **DOCSTRING **THAT **LIES** (MEASURED 2026-10-29: **`gates/gates-pop.py`'s
 **`shell_code()` **WAS **`re.sub(r"^\\s*#.*$", "", src, re.M)`**, **AND **`\\s*` **ATE **THE
 **NEWLINE**, **AND **THIS **FILE's **DOCSTRING **SAID **SO** — **BUT **`shell_code()` **HAS **SINCE
 **BEEN **REPAIRED** (**"Shell **source **with **`#` **COMMENTS **removed, **AND **NOT **ONE **LINE
 **MORE **THAN **IT **WAS**"**), **AND **IT **NOW **RETURNS **474 **LINES **FOR **A **474-LINE
-**`checks/run-f64.sh`**, **WHERE **THE **OLD **SHAPE **RETURNED **435**.)**  **⇒ AND **THE **REASON
+**`checks/run-f64.sh`**, **WHERE **THE **OLD **SHAPE **RETURNED **435**.)**  **AND **THE **REASON
 **THIS **FILE **STILL **NEEDS **ITS **OWN **STRIP **IS **THE **ONE **THAT **IS **STILL **TRUE**: **A
 **LINE **NUMBER **READ **OFF **A **STRIPPED **COPY **IS **A **WRONG **LINE **NUMBER **IF **THE **STRIP
 **DROPS **A **LINE**, **AND **THE **STRIP **MUST **BLANK **THE **COMMENT **AND **KEEP **THE **LINE** —
 **WHICH **IS **WHAT **THIS **FILE **DOES**, **BY **ITERATING **LINES.**
 
-**⇒ AND **THE **STALE **NUMBERS **ARE **THE **TELL**: **A **PROSE **THAT **SAYS **"448 **LINES"**
+**AND **THE **STALE **NUMBERS **ARE **THE **TELL**: **A **PROSE **THAT **SAYS **"448 **LINES"**
 **ABOUT **A **473-LINE **FILE** **IS **A **READING **THAT **ROTTED**, **AND **THE **CENSUS
 **(`checks/cites-census.py`) **IS **WHAT **SAYS **SO** — **IT **REPORTED **THIS **VERY **ROW **AS **A
 **FAIL**."**
@@ -111,18 +111,18 @@ gatekit = _load("svr_gatekit", HERE / "gatekit.py")
 bounded = _load("svr_bounded", ROOT / "checks" / "bounded.py")
 sweep = _load("svr_sweep", ROOT / "checks" / "gatesweep.py")
 
-# THE FIVE, INVERTED OFF `gatekit`'S OWN TABLE. `VERDICT` is `{code: word}`; iterating it as
+# THE five, INVERTED off `gatekit`'S own table. `VERDICT` is `{code: word}`; iterating it as
 # `word, code` is how the first run of this file reported `UNNAMED=5` on all 21 members -- the
 # word `"PASS"` was used as a code, matched nothing, and every cell fell through to the
-# `set -e` arm. **A MAP IS READ IN THE DIRECTION IT WAS BUILT, AND A LOOKUP THAT CANNOT SUCCEED
-# LOOKS EXACTLY LIKE A LOOKUP THAT FOUND NOTHING.**
+# `set -e` arm. A map is read in the direction it was built, AND a lookup that cannot succeed
+# LOOKS exactly like a lookup that found nothing.
 PASS, FAIL, REFUSED, SKIP, DEAD = (getattr(gatekit, n)
                                    for n in ("PASS", "FAIL", "REFUSED", "SKIP", "DEAD"))
 CODES = {word: code for code, word in gatekit.VERDICT.items()}
 
-# THE INTERPRETER THE TREE'S OWN RUNNER WOULD USE, read off its table and never re-spelled.
+# THE interpreter the tree'S own runner would use, read off its table and never re-spelled.
 RUNNER = sweep.RUNNERS["sh"][0]
-# THE THREE READERS' OUTPUT SHAPES. A declared PROBE SET with a printed denominator, not an
+# THE three readers' OUTPUT shapes. A declared PROBE set with a printed denominator, not an
 # expected value: `classify`'s branches are (token, rc==0-and-silent, rc==1-and-traceback), so
 # these three are the axes it actually branches on and one more would find nothing new.
 TEXTS = {"printed": "name=value\n", "silent": "", "traceback": "Traceback (most recent call last):\n"}
@@ -131,8 +131,8 @@ TOKENS = (bounded.WITHIN, bounded.MEMORY, bounded.TIMEOUT, bounded.UNSTARTED, bo
 # ---- the reader of one shell file, with line geometry REPAIRED --------------------------------
 # `\s*\d+\b` AND NOT `\s*\d+\s*(?:$|[;&|])`: the second form MISSED `exit 3 }` --
 # MEASURED, it dropped `checks/lint_demo.sh`'s only REFUSED site (`:27`) and reported 2 of
-# the five where the truth is 3. **A TERMINATOR SET THAT OMITS `}` IS A LIST, AND A LIST HERE
-# IS A SILENT LOSS: THE GATE STILL PRINTED A PLAUSIBLE NUMBER.**
+# the five where the truth is 3. A terminator set that omits `}` IS a list, AND a list here
+# IS a silent loss: THE gate still printed a plausible number.
 LITERAL = re.compile(r"(?:^|[;&|(]\s*|\s)exit\s+(\d+)\b")
 DYNAMIC = re.compile(r"(?:^|[;&|(]\s*|\s)exit\b(?!\s*\d)(?!\s*=)")
 TAIL_EXIT = re.compile(r"^\s*exit\s+\d+\s*$")
@@ -287,7 +287,7 @@ def guarded_inputs(root, path):
             if lit.startswith(("-", "/", "$")) or "(" in lit:
                 continue                       # a computed or substituted path: not resolvable here
             hit = root / lit
-            # THE REFUSAL IS LOOKED FOR ON THE GUARD'S LINE AND THE NEXT THREE, because a `||`
+            # THE refusal is looked for on the guard'S line and the next three, because a `||`
             # guard's remedy is routinely a brace group on the following lines
             # (`checks/classify.sh:27`) -- and a guard whose ABSENCE IS NOT REFUSED ON is a
             # different finding from one that is, so guessing here would merge two classes.
@@ -446,7 +446,7 @@ def main(argv):
     print(f"shellverdict-reach: {len(rows)} rows; {len(bad)} finding(s); "
           f"{len([r for r in rows if r.split(chr(9))[3] == 'UNRESOLVED'])} cell(s) UNRESOLVED "
           f"(charged to NEITHER verdict)")
-    # `DEAD` IS NOT ZERO AND NOT A PASS. A member whose cells cannot be read is a member that
+    # `DEAD` IS not zero and not a pass. A member whose cells cannot be read is a member that
     # cannot be scored, and a census that scores it is `artefacts_ok()`'s shape.
     return FAIL if bad else PASS
 
@@ -481,7 +481,7 @@ def _print_collisions():
 
 
 # ---- the plants ----------------------------------------------------------------------------
-# A SYNTHETIC TREE STILL HAS TO BE A TREE THE POPULATION WILL LOOK AT, and
+# A synthetic tree still has to be a tree the population will look at, and
 # `gates-pop.gate_homes()` admits a home only when an immediate file carries every marker in
 # `_CERTIFY` plus one of `_CERTIFY_OR` AND declares a root. The witnesses are COPIED FROM THE
 # REAL TREE'S OWN DERIVATION (`gate_homes(ROOT)[1]["witnesses"]`), so a witness that moves cannot
@@ -498,7 +498,7 @@ PLANTS = (("A a literal exit is LITERAL, not UNNAMED", GOOD, "LITERAL"),
           ("A an `exit \"$2\"` is UNRESOLVED, not green", DYN, "UNRESOLVED"),
           ('A an `exit` inside a string is NOT an exit site', PROSE, "UNNAMED"),
           ("A an `exec` and no exit is UNNAMED, not NO-SITE", NOEXIT, "UNNAMED"))
-# `<( )` IS THE REAL TREE'S FAILURE AND NOT A FIXTURE INVENTED FOR THIS FILE:
+# `<( )` IS the real tree'S failure and not a fixture invented for this file:
 # `gates/README.md` records it as the third reason the shell form was retired, and
 # `checks/run-f64.sh:214` / `checks/run-port-mm.sh:140` are live instances. `/bin/sh` is bash 3.2
 # in POSIX mode and disables process substitution, so the file does not PARSE there at all.
@@ -531,7 +531,7 @@ def plant(root):
             cells = {gatekit.VERDICT[gatekit.PASS]: ("UNRESOLVED", str(e))}
         got = cells[gatekit.VERDICT[gatekit.PASS]][0]
         results.append((f"  {what:<56} {got}", got == want, f"{got}, wanted {want}"))
-    # THE PLANT THAT MATTERS MOST: a file that CANNOT PARSE is UNRESOLVED on ALL FIVE, and an
+    # THE plant that matters most: a file that CANNOT parse is UNRESOLVED on ALL five, and an
     # UNRESOLVED row is not green -- `AGENTS.md`: "`DEAD` is not a zero and not a pass".
     f = d / "plant-reach.sh"
     f.write_text(UNPARSABLE)
@@ -543,7 +543,7 @@ def plant(root):
     allun = bool(cells) and all(s == "UNRESOLVED" for s, _ in cells.values())
     results.append(("  a file that cannot parse is UNRESOLVED on all five cells", allun,
                     f"{sum(1 for s, _ in cells.values() if s == 'UNRESOLVED')} of {len(cells)}"))
-    # AND THE CENSUS ITSELF GOES RED ON IT -- a plant that only asks `reach()` proves the CELL
+    # AND the census itself goes red on it -- a plant that only asks `reach()` proves the CELL
     # moved, not that the GATE moved, and a gate that cannot go red is a gate nobody reads.
     red_rows, _ = census(root)
     red = [r for r in red_rows if r.split("\t")[3] in

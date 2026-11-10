@@ -16,7 +16,7 @@ and asserts five things: the condition is a `CMPLT`, the stack is a `STACK`, the
 `WHERE`, the select's THIRD SRC is a **BARE CONST** (not a CAST, not an EXPAND), and that third
 src is **STILL INVALID** after the WHERE.
 
-⇒ AND THE FIFTH IS THE ONE THE TEST IS NAMED FOR: A WHERE THAT FOLDED THE INVALID AWAY, OR
+AND THE FIFTH IS THE ONE THE TEST IS NAMED FOR: A WHERE THAT FOLDED THE INVALID AWAY, OR
   RE-SPELLED IT AS A CAST, WOULD PASS THE FOURTH ROW AND FAIL THE FIFTH. A GATE THAT ONLY
   ASSERTED THE OP OF `out.src[2]` WOULD PASS ON A WHERE THAT DROPPED THE INVALID ALTOGETHER.
 
@@ -42,23 +42,23 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import Gate, main
 
-# THE ROWS, NAMED ONCE. THE ORDER IS THE ORDER BOTH LANES PRINT IN, AND THE GATE COMPARES THEM
-# **POSITIONALLY** (`gates/gatekit.py`: `zip(base, other)`), SO THE ORDER IS PART OF THE
+# THE rows, NAMED once. THE order is the order both lanes print in, AND the gate compares them
+# POSITIONALLY (`gates/gatekit.py`: `zip(base, other)`), SO THE ORDER IS PART OF THE
 # CONTRACT.
 ROWS = (
-    # THE CONDITION -- `UOp.const(0) < UOp.const(1)` IS A `CMPLT` OVER TWO CONST SRCS, AND THE
+    # THE condition -- `UOp.const(0) < UOp.const(1)` IS a `CMPLT` OVER two CONST SRCS, AND the
     # ORDER IS CPython's: `_binop(Ops.CMPLT, x, False)` PUTS `self` AT `src[0]`.
     "cond_op", "cond_nsrc", "cond_src0_op", "cond_src1_op",
-    # THE STACK -- A **RAW** STACK WITH THREE CONST SRCS. NOT `UOp.group`, WHICH AT THE PIN IS
+    # THE stack -- A raw stack with three CONST SRCS. NOT `UOp.group`, WHICH at the PIN IS
     # `UOp(Ops.STACK).after(*srcs)` AND IS THEREFORE AN `AFTER`.
     "idx_op", "idx_nsrc", "idx_src0_op", "idx_src1_op", "idx_src2_op",
     # THE INVALID, BEFORE ANY WHERE TOUCHES IT.
     "inv_op", "inv_is_invalid",
-    # THE WHERE, AND ITS THREE SRCS IN CPython's ORDER: `(cond, x, y)`.
+    # THE WHERE, AND its three srcs in CPython's ORDER: `(cond, x, y)`.
     "out_op", "out_nsrc", "out_src0_op", "out_src1_op", "out_src2_op",
-    # ⇒ THE PROPERTY THE TEST IS NAMED FOR.
+    # - THE property the test is named for.
     "out_src2_is_invalid",
-    # AND THE SRCS SURVIVE BY IDENTITY: upstream's `_broadcasted` leaves a weakint STACK alone
+    # AND the srcs survive by identity: upstream's `_broadcasted` leaves a weakint STACK alone
     # and short-circuits the invalid, so NOTHING is cast or replaced.
     "out_src0_is_cond", "out_src1_is_idx",
 )

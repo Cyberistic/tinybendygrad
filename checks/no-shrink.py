@@ -12,15 +12,15 @@ word of it**:
     tinybendygrad/uop/ops.bend                   8,334 -> 6,306 lines   2,386 LOST
     tinybendygrad/renderer/amd/generate.bend      2,736 ->    640 lines   2,096 LOST
 
-**⇒ AND **THIS **TABLE **IS **A **RECORD **OF **2026-10-05**, **NOT **A **CLAIM **ABOUT **THE **FILES'
+**AND **THIS **TABLE **IS **A **RECORD **OF **2026-10-05**, **NOT **A **CLAIM **ABOUT **THE **FILES'
 **SIZE **TODAY** — **AND **THE **DISTINCTION **IS **NOT **COSMETIC.**  MEASURED 2026-10-29:
 **`checks/cites-census.py`'s **LANE **D** **READ **THE **DIGITS **IN **THE **TABLE **AS **A **CLAIM
 **ABOUT **THE **SUBJECT's **CURRENT **LINE **COUNT**, **AND **`tinybendygrad/renderer/amd/generate.bend`
-**IS **2,753 **LINES **NOW** — **SO **THE **ROW **WAS **A **FALSE **FAIL.**  **⇒ AND **THE **FILES **GREW
+**IS **2,753 **LINES **NOW** — **SO **THE **ROW **WAS **A **FALSE **FAIL.**  **AND **THE **FILES **GREW
 **BACK**, **WHICH **IS **THE **WHOLE **POINT **OF **THE **TABLE**: **IT **RECORDS **WHAT **THE **RESIDUE
 **COST**, **AND **THE **CURE **IS **TO **MARK **IT **AS **WHAT **IT **IS **— **A **READING **OF **A
 **PAST **STATE — **NOT **TO **DELETE **IT, **AND **NOT **TO **RESTATE **IT **AS **A **NUMBER **THAT
-**HAD **BETTER **BE **TRUE.**  **⇒ AND **THE **TREE's **OWN **CLASS **IS **ALREADY **NAMED**: **A
+**HAD **BETTER **BE **TRUE.**  **AND **THE **TREE's **OWN **CLASS **IS **ALREADY **NAMED**: **A
 **HISTORY **IS **NOT **A **CLAIM **ABOUT **THE **PRESENT.**
 `ops.bend` had lost `AOpLit{op: Op}` -- a committed fix -- and every `ParamArg` def, including
 `ParamArg.no_slot`. `generate.bend` had lost **404 `def`s, 77% of the file**, and still compiled.
@@ -82,9 +82,9 @@ def main() -> int:
           f"{len(grew)} GREW, {len(shrank)} SHRANK, tolerance {args.tolerance} lines")
 
     # The empty-file trap, counted first because it is the cheapest way to pass a gate.
-    # THE UNPACK HERE WAS WRONG ON THE FIRST RUN -- `rows` holds 3-tuples and this asked for 4 --
-    # SO THE GATE RAISED ON A CLEAN TREE. A GUARD THAT CRASHES WHERE THERE IS NOTHING TO REPORT IS
-    # THE SAME DEFECT AS ONE THAT PASSES WHERE THERE IS EVERYTHING TO REPORT: both leave the caller
+    # THE unpack here was wrong on the first run -- `rows` holds 3-tuples and this asked for 4 --
+    # SO the gate raised on a clean tree. A guard that crashes WHERE THERE is nothing to report is
+    # THE same defect as one that passes WHERE THERE is everything to report: both leave the caller
     # with no verdict, and a caller that cannot tell "clean" from "crashed" will assume clean.
     empties = [path for _a, _d, path in rows
                if os.path.exists(os.path.join(ROOT, path))

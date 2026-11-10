@@ -64,7 +64,7 @@ PY, GCMP = ".venv/bin/python", ".agents/slop/graphcmp.py"
 # locale-colated sort fabricates diffs). `DEV=NULL` is the rebase gate's own setting;
 # graphcmp.py overrides it from its own `--dev`, which is why every artifact names its device.
 #
-# `BEND_NO_TELEMETRY=1` is REQUIRED, AND IT IS THE ONLY OFF-REPO INPUT IN THE MEASUREMENT.
+# `BEND_NO_TELEMETRY=1` is REQUIRED, AND it is the only off-REPO input in the measurement.
 # The compiler's daily check (`references/bend/bend2/main.ts:185-211`) fetches
 # `https://bend-lang.com/check` ONCE A DAY into `~/.bend/check.json` -- a file in the
 # DEVELOPER's HOME, not in this repository -- and prints `bend <published> is available` on
@@ -84,11 +84,11 @@ ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C
 
 # --------------------------------------------------------------------------- THE CORPUS LOCK
 #
-# ONE WRITER, ONE ARTEFACT DIRECTORY.  `runs/graphcmp/D/` is a SINGLETON: `run` and `repro`
+# ONE writer, ONE artefact directory.  `runs/graphcmp/D/` is a SINGLETON: `run` and `repro`
 # both write it, artifact by artifact, and a second run over the first one's artifacts
 # interleaves two verdicts into one directory.
 #
-# MEASURED 2026-10-23, AND IT IS THE DEFECT THIS LOCK EXISTS FOR: a `repro` started at 03:37
+# MEASURED 2026-10-23, AND it is the defect this lock exists for: a `repro` started at 03:37
 # and a `run` started at 03:45 ran CONCURRENTLY.  The `run` overwrote a green
 # `D0-run-summary.txt` -- and the summary it wrote was green too (35/35 agree, 35/35
 # byte-identical, 8/8 plants) while its OWN two substrate digests DISAGREED
@@ -98,7 +98,7 @@ ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C
 # stayed OK: a summary that says green and a witness that says the claim is not established.
 # Both processes had to be killed by hand.
 #
-# IT IS NOT THE BEND LOCK, AND THE MEASUREMENT IS WHY.  `checks/bendlock.sh` serialises
+# IT is not the BEND LOCK, AND the measurement is why.  `checks/bendlock.sh` serialises
 # COMPILER invocations; this serialises WRITERS to one directory -- two different resources,
 # and a lock is only a lock if every form of it shares one path.  `bendlock.sh`'s own header
 # says a command that runs MANY bends MONOPOLISES the lock for the WHOLE command (MEASURED: 26
@@ -111,15 +111,15 @@ ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C
 # `bendlock.sh`'s header prescribes for a many-bend command, is a SEPARATE change and is NOT
 # this one.
 #
-# THE OWNER IS A PID, AND THIS PROCESS IS THE WRITER.  The owner is the process that writes
+# THE owner is a pid, AND this process is the writer.  The owner is the process that writes
 # the artifacts -- `clean_run` calls `cmd_run` IN-PROCESS (see `one_run()`) -- so "is the owner
 # alive" is the whole liveness question.  There is no `bun` child to check, because there is no
 # shell in between: the bend lock's second check exists because its owner is a shell, and this
 # owner is not.
 #
-# **THE KERNEL IS THE LOCK, AND THAT IS THE SHAPE THAT CANNOT FAIL.**  `fcntl.flock` on an open
+# THE kernel is the lock, AND that is the shape that cannot fail.  `fcntl.flock` on an open
 # file description has three properties that the mkdir-and-write-a-PID shape does not:
-#   * THE LOCK IS RELEASED WHEN THE HOLDER DIES -- there is no stale lock to reclaim, and no
+#   * THE lock is released when the holder dies -- there is no stale lock to reclaim, and no
 #     window in which a killed run blocks the next one.  `checks/bendlock.sh` needs 300 s of
 #     stale-owner reclamation and a SECOND check for the `bun` child, because its owner is a
 #     shell that can die while its child lives; this lock has no such owner.
@@ -129,11 +129,11 @@ ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C
 #     cannot both win it, and a refusal is a REFUSAL rather than a race.
 # `checks/bendlock.sh` cannot use it: it is POSIX `sh`, where `flock(2)` does not exist.
 CORPUS_LOCK = ROOT / "runs/graphcmp/.corpus.lock"
-#: THE HOLDER'S OWN RECORD OF ITSELF, written into the lock file AFTER the lock is taken, so
+#: THE holder'S own record of itself, written into the lock file AFTER the lock is taken, so
 #: a refusal can NAME the holder: `<pid> <epoch>`.  It is a NAME, not the lock -- the lock is
 #: the `flock`, and this file says who holds it.
 _LOCK_FD: int | None = None
-#: **HOW DEEP THE HOLD IS.**  The lock is RE-ENTRANT inside one process, because `repro` runs
+#: HOW DEEP THE HOLD IS.  The lock is RE-ENTRANT inside one process, because `repro` runs
 #: `cmd_run` in the process that holds it -- and a re-entrant lock that released on the inner
 #: `drop_lock()` would let a SECOND HOLDER in while the outer one still believed it held the
 #: directory.  MEASURED 2026-10-23: that exact bug ran a corpus into the tree's evidence.
@@ -205,7 +205,7 @@ def take_lock() -> str | None:
         except OSError:
             os.close(fd)
             return _refusal()
-        # THE FILE WE LOCKED MUST STILL BE THE FILE AT THAT PATH.  A sweep that deletes
+        # THE file we locked must still be the file at that path.  A sweep that deletes
         # `runs/` would leave this process holding an INODE nobody else can find, and the
         # next holder would lock a NEW file -- two holders, one directory.
         try:
@@ -264,7 +264,7 @@ def drop_lock() -> None:
 
 
 
-# THE FROZEN SHELL ORACLE IS PINNED HERE, IN CODE, AND CHECKED ON EVERY RUN.
+# THE frozen shell oracle is pinned here, IN code, AND checked on every run.
 #
 # Both `.sh` shims carry a sha256 in a comment and claim the frozen copy "cannot drift
 # unnoticed". MEASURED 2026-10-05: nothing read it. The pin was CORRECT -- it is the hash of the
@@ -378,29 +378,29 @@ def population_digest(path=None) -> str:
     return h.hexdigest()
 
 
-# THE POPULATION'S IDENTITY, AS A CONTENT PIN. **THIS IS THE ONE PIN IN THIS FILE THAT A
-# GRAPH ADDITION MUST MOVE**, and moving it is a DELIBERATE EDIT: the diff that adds a graph
+# THE population'S identity, AS a content PIN. THIS is the one PIN IN this file that a
+# GRAPH ADDITION MUST MOVE, and moving it is a DELIBERATE EDIT: the diff that adds a graph
 # to `graphcmp.GRAPHS` carries this line, and a reader of that diff sees the corpus grow and
 # the pin move together.
 #
 # MEASURED 2026-10-22 over the live tree: `4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2`
-# over 35 graphs. **A PIN THAT IS A COUNT OF A DISCOVERABLE POPULATION IS NOT ONE OF THESE** --
+# over 35 graphs. A PIN THAT is a count of a discoverable population is not one of these --
 # the four count pins in `PINS` below are DERIVED, and this one is not, because a digest is
 # not a count: it moves when the population's CONTENT moves and it cannot be re-derived from
 # the population, which is the whole difference between a pin and a label.
 #
 # MEASURED 2026-10-30 over the live tree: `ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe`
-# over **36** graphs.  THE DELTA IS THE `api` GRAPH, and it is not a fixture change: `api` is
+# over 36 graphs.  THE DELTA IS THE `api` GRAPH, and it is not a fixture change: `api` is
 # the first graph whose BEND SIDE is built by the port's own TENSOR API, so it is the first
 # to reach the port's OPERATION layer (`mixin/elementwise.bend`, `mixin/dtype.bend`,
 # `mixin/gradient.bend`, `uop/weak.bend`), and the population's bytes moved because the
-# graph's SOURCE moved.  **THE POPULATION PIN IS A CONTENT PIN OVER THE POPULATION'S OWN
-# SOURCE, AND THAT IS WHY IT MOVED WHEN A FIXTURE'S SOURCE MOVED** -- the pin does not
+# graph's SOURCE moved.  THE population PIN IS a content PIN OVER the population'S own
+# SOURCE, AND that is why it moved when a fixture'S source moved -- the pin does not
 # care WHY the source moved, and it should not: a fixture that changes can flip a verdict
 # and is the same class of event as a new graph.
 #
 # MEASURED 2026-10-31 over the live tree: `f8dd8dc77a7ad90c8c0bd5e8898c4481d204c1914f1f31f7606762b6966b77f1`
-# over **37** graphs.  THE DELTA IS THE `grad` GRAPH, and it is the SECOND graph whose bend
+# over 37 graphs.  THE DELTA IS THE `grad` GRAPH, and it is the SECOND graph whose bend
 # side is not a hand-built arena: `grad`'s bend side is `mixin/gradient.bend`'s
 # `compute_gradient` -- the port's AUTODIFF -- so the corpus now executes the port's
 # 33-entry gradient rule table and the walk that drives it.  That is 494 defs the corpus
@@ -408,10 +408,10 @@ def population_digest(path=None) -> str:
 # gradient is not a graph you can hand-build, because a gradient is the OUTPUT of a walk.
 #
 # MEASURED 2026-10-31 over the live tree: `d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31`
-# over **38** graphs.  THE DELTA IS THE `gral` GRAPH, and it is the THIRD graph whose bend
+# over 38 graphs.  THE DELTA IS THE `gral` GRAPH, and it is the THIRD graph whose bend
 # side is not a hand-built arena: `gral`'s fixture carries one of EXP2, SQRT, TRUNC, POW
 # and MAX, so FIVE gradient rule BODIES fire rather than only the table's entry
-# conditions.  **⇒ AND `gral` IS THE GRAPH THAT FOUND THE PORT DEFECT**: the port's MAX
+# conditions.  - AND `gral` IS the graph that found the port defect: the port's MAX
 # rule built a SECOND inner WHERE (four WHEREs where CPython builds three), because it
 # computed slot 1's `(x.eq(y))` from the SWAPPED operands.  The port's own `max_n0`/
 # `max_n1` rows read 21 on both sides and COULD NOT SEE IT -- `size1` counts a shared
@@ -419,7 +419,7 @@ def population_digest(path=None) -> str:
 # FIXED in `tinybendygrad/mixin/gradient.bend`'s `gr_11`, and NO exception was added
 # here: `WANT` is still empty.
 #
-# THE 2026-10-22 DELTA BELOW IS KEPT BECAUSE IT IS THE PRECEDENT: the corpus's population
+# THE 2026-10-22 DELTA below is kept because it is the precedent: the corpus's population
 # did NOT change when the port's SPEC TABLES were fixed, and it could not have.
 # On 2026-10-22 the port's SPEC TABLES were fixed -- `fu_block.go`'s three
 # thresholds each read one more than the block base they select, so a block's FIRST rule was
@@ -467,16 +467,16 @@ def population_bad(digest=None) -> list[str]:
             f"the SAME COMMIT as the change."]
 
 
-# THE EXPECTATIONS, AS A TABLE OF **EXCEPTIONS** -- AND THE DEFAULT IS "AGREE".
+# THE expectations, AS a table of exceptions -- AND the default is "AGREE".
 #
-# **A GRAPH THAT IS NOT NAMED HERE IS EXPECTED TO AGREE.** So ADDING A GRAPH MUST NOT REQUIRE
+# A graph that is not named here is expected to agree. So ADDING a graph must not require
 # EDITING THIS TABLE: the corpus's population is DISCOVERED (`corpus()` reads `graphcmp.GRAPHS`
 # BY PATH, the generator's own declaration) and every graph in it is expected to agree unless
 # it is named here. What this table holds is the graphs that are NOT expected to agree, and
-# **THE COUNT OF EXCEPTIONS IS THE DENOMINATOR THAT MATTERS** -- not the number of graphs,
+# THE count of exceptions is the denominator that matters -- not the number of graphs,
 # which follows the population and is DERIVED (see `PINS`).
 #
-# **AND THE EXCEPTIONS ARE EMPTY TODAY, WHICH IS A MEASUREMENT AND NOT AN OMISSION.** Every
+# AND the exceptions are empty today, WHICH is a measurement and not an omission. Every
 # graph this corpus held on 2026-10-21 was a DISAGREE at some point, and each moved to AGREE
 # with a located cause. The causes are the port's history and they are recorded here because a
 # table that has been empty for a REASON is worth more than a table that was never full:
@@ -508,13 +508,13 @@ def population_bad(digest=None) -> list[str]:
 #             emission was a single `NOOP ... BAD` row and `diff --graph getaddr` exited 2
 #             `NOT WELL-POSED`.
 #
-# **A PREDICTION IS NOT A PIN.** It moves when the measurement moves, and it moves with the
+# A PREDICTION IS NOT A PIN. It moves when the measurement moves, and it moves with the
 # evidence written down next to it. That is why the causes above are PROSE and not rows: a
 # row here is a CLAIM the run checks, and a claim that holds for every graph in the corpus is
 # ONE NUMBER -- the population's identity, pinned by CONTENT in `POPULATION_PIN` -- and not
 # thirty-five.
 #
-# **THE EXCEPTIONS ARE EMPTY AGAIN, AND THE REASON IS A FIX AND NOT A WEAKENING.**
+# THE exceptions are empty again, AND the reason is a fix and not a weakening.
 # `api` was the ONLY exception this table held, and it was a DISAGREE on purpose:
 # MEASURED 2026-10-30, the two sides' ALLOC carried a DIFFERENT `ParamArg.slot` --
 #   CPython   ALLOC slot 0
@@ -522,13 +522,13 @@ def population_bad(digest=None) -> list[str]:
 # and the cause was `tinybendygrad/mixin/creation.bend`'s `cr_alloc`, which minted
 # `cr_alloc.arg(O.Arena.next(ar), dt, dev)` -- the arena's LENGTH -- where upstream mints
 # `next(UOp.unique_num)` (`tinygrad/uop/ops.py:1191`), a MONOTONE counter of ALLOCATIONS.
-# **THE ARGUMENT THAT JUSTIFIED IT WAS WRONG.** `uop/ops.bend:1359`'s comment said "the
+# THE argument that justified it was wrong. `uop/ops.bend:1359`'s comment said "the
 # arena's length IS that counter", and the arena's length counts EVERY node while
 # upstream's counter is spent at exactly three sites (ops.py:839, :1191, :1199) and
 # counts ALLOCATIONS.  The port now counts the ALLOCATION NODES in its arena, which is
 # upstream's counter SCOPED TO THE ARENA, and the graph AGREES.
 #
-# **THE CORPUS COULD NOT SEE THE DEFECT, AND THE REASON WAS STRUCTURAL**: every other
+# THE corpus could not see the defect, AND the reason was structural: every other
 # graph hand-builds its ALLOC and SPELLS the slot itself (`.agents/slop/graphcmp.bend`'s
 # `alloc(slot)`), so the port's own slot-minting was executed by NOTHING the corpus
 # compared.  `api` is the first graph whose bend side calls `cr_empty`, so it is the
@@ -538,36 +538,36 @@ def population_bad(digest=None) -> list[str]:
 # from 0 of 258 to 41, `tensor.bend` from 4 of 347 to 32, and `mixin/creation.bend`
 # entered the closure at 9 of 105), AND it found a real defect.
 #
-# **THE COVERAGE IS WHOLE AGAIN: 36 of 36.**  The exception's whole point was that a
+# THE COVERAGE IS WHOLE AGAIN: 36 of 36.  The exception's whole point was that a
 # graph which DISAGREEs is a graph the corpus does not certify, and `api` was the one
 # hole in it.  `gates/alloc_slot-gate.py` is now the STANDING instrument for the slot
 # itself -- six rows, two lanes, over `ParamArg.slot` -- so the defect cannot come back
 # quietly, and `checks/differ.py` no longer has to carry an exception for it.
-# **⇒ AND SEVEN EXCEPTIONS ARE BACK, AND THE CAUSE IS THE PORT's PERMUTE MODEL, NOT A FIX.**
+# - AND seven exceptions are back, AND the cause is the port's PERMUTE model, NOT a fix.
 # MEASURED 2026-11-07, ON THE CANONICAL FORMS OF `matmul` (the canonicaliser now WORKS -- see
 # `canon_key`'s docstring -- so these rows are the FIRST EVIDENCE THE FORMS GIVE):
 #
 #   py   PERMUTE: ['i20','PERMUTE','f32','(l0:1,l0:5,l0:3)','i0','N','n(i16,i19)']
 #   bend PERMUTE: ['i17','PERMUTE','f32','(l0:1,l0:5,l0:3)','i0','n(i0,i2,i1)','n(i16)']
 #
-# **THE AXES ARE IN DIFFERENT PLACES.** UPSTREAM'S `PERMUTE` CARRIES ITS AXES IN A `STACK` SRC --
-# `ops.py:784-789` TURNS THE AXIS TUPLE INTO `UOp.const(x)` PER AXIS AND A `STACK` OF THEM
+# THE axes are in different places. UPSTREAM'S `PERMUTE` CARRIES its axes in a `STACK` SRC --
+# `ops.py:784-789` TURNS the axis tuple into `UOp.const(x)` PER axis and a `STACK` OF them
 # (`shape_to_shape_arg`), AND `movement.py:231` CALLS `_mop(Ops.PERMUTE, arg=order_arg)` -- so
-# UPSTREAM'S PERMUTE HAS **2** SRCS (THE RESHAPE AND THE STACK) AND ITS ARG IS `None`. THE PORT
+# UPSTREAM'S permute has 2 SRCS (THE reshape and the stack) AND its ARG IS `None`. THE port
 # SPELLS THE AXES IN THE ARG (`mixin/movement.bend:1001`, `schedule/prepare.bend:275`:
-# `O.ATuple{[0, 2, 1]}`), SO THE PORT'S PERMUTE HAS **3** SRCS (THE AXES AS CONSTS) AND NO STACK.
+# `O.ATuple{[0, 2, 1]}`), SO the port'S permute has 3 SRCS (THE axes as consts) AND no stack.
 #
-# **⇒ AND EVERY ONE OF THE SEVEN DISAGREES ON ROW COUNT, WHICH IS THE STACK NODE COUNT.** MEASURED:
+# - AND every one of the seven disagrees on row count, WHICH is the stack node count. MEASURED:
 # `matmul` py 24 / bend 20, `reduce` 11/8, `commute` 18/16, `binblob` 25/21, `flip` 31/29, `bw` 39/34,
 # `gral` 48/52 (the port has MORE here, so the count is not one direction).
 #
-# **⇒ AND THE FIX IS NOT A FIXTURE FIX: IT IS THE PORT's PERMUTE REPRESENTATION**, and that touches
+# - AND the fix is not a fixture fix: IT is the port's PERMUTE representation, and that touches
 # `ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the renderer's `ku_render_index` and
-# `schedule/rangeify.bend` -- **A PORT CHANGE, NOT A CERTIFICATE CHANGE, AND BIGGER THAN A TURN.**
+# `schedule/rangeify.bend` -- A port change, NOT a certificate change, AND bigger than a turn.
 #
-# **⇒ SO THEY ARE EXCEPTIONS, AND THE EXCEPTION IS THE POINT:** a graph that DISAGREEs is a graph the
-# corpus does not certify, and the corpus's coverage is **31 of 38** until the port's PERMUTE moves.
-# **RECORDED, NOT DELETED, AND NOT PINNED TO DISAGREE ONCE FIXED** -- a pin moved to whatever printed
+# - SO they are exceptions, AND the exception is the point: a graph that DISAGREEs is a graph the
+# corpus does not certify, and the corpus's coverage is 31 of 38 until the port's PERMUTE moves.
+# RECORDED, NOT deleted, AND not pinned to disagree once fixed -- a pin moved to whatever printed
 # is a pin that can never fail.
 WANT: dict[str, str] = {
   "matmul": "DISAGREE",
@@ -597,19 +597,19 @@ def expectation(g: str) -> str:
 # Bend -- the reason `--plant-side` was removed), so `D5-plant-sym1.txt` carries the plant's
 # effect AND `sym`'s pre-existing `?` disagreements together.
 #
-# **IT IS A TUPLE OF PAIRS AND NOT A DICT, BECAUSE `gates/corpuslane-gate.py:244` ITERATES IT
-# AS PAIRS** -- `for plant, g in differ.PLANTS` -- so the shape is a CONTRACT with a consumer
+# IT is a tuple of pairs and not a dict, BECAUSE `gates/corpuslane-gate.py:244` ITERATES it
+# AS PAIRS -- `for plant, g in differ.PLANTS` -- so the shape is a CONTRACT with a consumer
 # and changing it would break that gate in a way no test here would notice.
 #
-# `params` is the PLANT FOR THE `pI(` FORM: it drops the LAST param of `prog`'s PROGRAM, so
+# `params` is the PLANT for the `pI(` FORM: it drops the LAST param of `prog`'s PROGRAM, so
 # the third component of the `pI(` row goes from three `P(...)` records to two. It is the only
 # plant that can reach a `ProgramInfo`, and the form was DEAD in both sides for the corpus's
 # whole life until `prog` joined (MEASURED 2026-10-22: the 34 graphs produced ZERO `pI(` rows).
 PLANTS = tuple((p, "matmul") for p in ("dtype", "srcswap", "shape", "bytes", "pyuop", "opt")) \
     + (("sym1", "sym"), ("params", "prog"))
-# THE PLANTS THE CORPUS'S OWN INSTRUMENT DECLARES AND THE CORPUS DOES NOT RUN.
+# THE plants the corpus'S own instrument declares and the corpus does not run.
 #
-# **THE PLANT POPULATION IS DISCOVERED, AND IT IS `graphcmp.PLANTS`** -- the generator's own
+# THE plant population is discovered, AND it is `graphcmp.PLANTS` -- the generator's own
 # declaration of the plants it can apply, read BY PATH from `.agents/slop/graphcmp.py`, which
 # MEASURED 10 members on 2026-10-22. `PLANTS` above is the corpus's SELECTION of them, and a
 # selection is not a population: a hand list of plants is the same class of defect as a hand
@@ -620,7 +620,7 @@ PLANTS = tuple((p, "matmul") for p in ("dtype", "srcswap", "shape", "bytes", "py
 # exercises" and "the number that exist" stop being different numbers nobody notices. Their
 # target is an EXPAND whose margin is `CONST 3`, and the corpus's own fixtures have none.
 #
-# **A PLANT ADDED TO `graphcmp.PLANTS` AND TO NEITHER LIST REDS THE CORPUS**, because a plant
+# A plant added to `graphcmp.PLANTS` AND to neither list reds the corpus, because a plant
 # the corpus's instrument declares and the corpus neither runs nor excuses is a plant whose
 # absence nobody would notice.
 PLANTS_UNWIRED = ("dsexpand", "disarm")
@@ -672,16 +672,16 @@ STAB = tuple((g, ()) for g in ("group", "sym", "loop", "gate")) + (("commute", (
 # `22`, so this gate reported a fully correct run unhealthy and sat retrying it -- a health
 # gate pinned to a count can be wrong in the direction of refusing to measure.
 #
-# **NINE OF THE SEVENTEEN ARE DERIVED, AND THAT IS THE POINT.** A COUNT OF A DISCOVERABLE
+# NINE of the seventeen are derived, AND that is the point. A count of a discoverable
 # POPULATION MUST NOT BE TYPED: a typed count is stale the moment the population moves, and a
 # stale count is either a red nobody can fix by doing the right thing or a green that hides a
-# growth. MEASURED 2026-10-06, `checks/corpus-figure.py` found the corpus at **34** while
+# growth. MEASURED 2026-10-06, `checks/corpus-figure.py` found the corpus at 34 while
 # `differ.py` pinned `graphs=25`, and printed `RUN HEALTH : OK` over the stale run -- "the
 # figure and the health gate were two witnesses to one stale run". So the counts below are
 # FUNCTIONS of the population, and the thing that must NOT move is the population's IDENTITY,
 # which is a CONTENT PIN (`POPULATION_PIN`).
 #
-# **AND THE DERIVED VALUES ARE STILL COMPARED AGAINST THE ARTEFACT** -- `unhealthy()` reads the
+# AND the derived values are still compared against the artefact -- `unhealthy()` reads the
 # run's own rows and compares them with these -- so a derived expectation is an EXPECTATION
 # and not a decoration: a run whose `graphs` row disagrees with the discovered corpus is RED.
 # THE NINE DERIVED ROWS, BY NAME -- so the fail-safe below can enumerate them, and so a reader
@@ -730,8 +730,8 @@ def derived_counts() -> dict[str, str]:
 
 PINS = {
     # `expect-moved` is the ONLY pin that asks whether the EXPECTATIONS HELD, and it is not a
-    # function of the corpus: it is a function of the PORT against the exceptions table. **It is
-    # 0 and it is a ZERO-TOLERANCE INVARIANT**, so it does not need re-pinning when the corpus
+    # function of the corpus: it is a function of the PORT against the exceptions table. It is
+    # 0 and it is a ZERO-TOLERANCE INVARIANT, so it does not need re-pinning when the corpus
     # grows -- a graph that joins and agrees contributes nothing, and a graph that joins and
     # disagrees is exactly what this counts. Nothing pinned it and nothing exited on it:
     # `cmd_run` used to return 0 whenever `unset` was empty, so a run in which a row was simply
@@ -742,7 +742,7 @@ PINS = {
     "expect-moved": "0",
     "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
-    # THE POPULATION'S IDENTITY, AS A CONTENT PIN. **THE ONE PIN A GRAPH ADDITION MUST MOVE**,
+    # THE population'S identity, AS a content PIN. THE one PIN A graph addition must MOVE,
     # and the one that replaces `graphs-unset`: a graph that joins the corpus and is not
     # re-decided leaves the pin stale, and a stale pin is a red in `unhealthy()` and a REFUSED
     # run in `cmd_run`. MEASURED 2026-10-22 over the live tree's 35 graphs.
@@ -753,20 +753,20 @@ PINS = {
     "oracle-selfcheck": "# ORACLE SELFCHECK: OK",
     **derived_counts(),
 }
-# THE SECOND WITNESS, AND WHY IT IS NOT AN EIGHTEENTH MEMBER OF `PINS`.
+# THE second witness, AND why it is not an eighteenth member of `PINS`.
 #
 # Every key above is a `key=value` row of `D0-run-summary.txt`. So `PINS` green is ONE run's rows
-# read out of ONE file, and the denominator of the health claim is **1 artifact, not 17** -- 12
+# read out of ONE file, and the denominator of the health claim is 1 artifact, not 17 -- 12
 # witnesses, 10 independent measurements, all from a single run (`.agents/slop/pinindep/REPORT.md`,
-# measured by perturbation, not by reading these lines). **ADDING A KEY HERE DOES NOT CHANGE THAT.**
+# measured by perturbation, not by reading these lines). ADDING a key here does not change that.
 # It would be the 18th row of the same file, which is the shape `pinindep` measured rather than the
 # defect it names.
 #
 # `cmd_repro` ALREADY makes the tree's only INDEPENDENT measurement -- two clean runs, sha256 over
 # every artifact, byte-compared (`:984-999`). It computed that verdict and printed it to stdout, and
 # nothing on disk could read it, so the second measurement had no memory. It is now written to
-# `REPRO_ARTIFACT`, and `REPRO_PINS` is the one pin table read from it: **the denominator for
-# "this run is healthy" becomes TWO artifact reads.**
+# `REPRO_ARTIFACT`, and `REPRO_PINS` is the one pin table read from it: the denominator for
+# "this run is healthy" becomes TWO artifact reads.
 #
 # ONE KEY, NOT THREE. `repro-files` is `len(snap())` -- a function of `declared()` and the `.err`
 # files beside it -- and it GROWS BY ONE after the first `repro`, so a literal there is an inventory
@@ -776,7 +776,7 @@ REPRO_ARTIFACT = "D0-repro.txt"
 # THE DIFFERING ROWS, when a repro FAILS. `repro` prints the differing bytes and then throws the
 # snapshots away; without this file the failure is a NOTIFICATION, not a finding.
 REPRO_DIFF_ARTIFACT = "D0-repro-diff.txt"
-# THE NAMES THIS FILE WRITES ONLY SOMETIMES. `D0-repro-diff.txt` is written ONLY inside the failure
+# THE names this file writes only sometimes. `D0-repro-diff.txt` is written ONLY inside the failure
 # branch of `cmd_repro` (`differ.py:2649`, which is followed by `return 1`), and a PASSING repro
 # DELETES it (`differ.py:2601-2604`). So its presence on disk means exactly "the last repro FAILED",
 # and its ABSENCE is not drift -- it is the normal state of a healthy corpus.
@@ -789,12 +789,12 @@ REPRO_DIFF_ARTIFACT = "D0-repro-diff.txt"
 # `checks/no-txt.py` reads it instead of retyping the name -- a second copy of a list is a contract
 # with no generator, and it rots silently.
 CONDITIONAL_ARTIFACTS = (REPRO_DIFF_ARTIFACT,)
-# THE SUMMARY ROWS THAT RECORD THE OBSERVER, NOT THE SUBJECT. `substrate-head` says WHICH COMMIT
+# THE summary rows that record the observer, NOT the subject. `substrate-head` says WHICH commit
 # measured the run; the rest of the summary says WHAT was measured. A comparison over the whole
 # file is therefore a comparison of the run AND the moment it was read, which is not the same claim
 # twice. See `snap()`.
 OBSERVER_ROWS = ("substrate-head",)
-# `d10-transcript` PINS D10's VERBATIM, WHICH IS THE ONE ARTIFACT THE CORPUS NEVER JUDGED.
+# `d10-transcript` PINS D10's VERBATIM, WHICH is the one artifact the corpus never judged.
 # MEASURED 2026-10-15: `snap()` byte-compares `D10-zerorow-guard.txt.err` across the two runs, so
 # `repro-rc=rc=0` proves it REPRODUCIBLE and says NOTHING about whether it is RIGHT -- and a `classify`
 # (`.agents/slop/graphcmp.py:1999`) that regressed to retrying would write `bend attempt 2` in BOTH
@@ -802,33 +802,33 @@ OBSERVER_ROWS = ("substrate-head",)
 # `snap()`'s OWN output for that file, read back by `d10_sha()` rather than recomputed, so the pin and
 # the sweep cannot disagree about which bytes are the claim.
 #
-# **IT IS A PIN OVER BYTES, SO A COSMETIC CHANGE TO `attempt_note`'s PROSE ALSO REDS IT.** Deliberate:
+# IT is a PIN OVER bytes, SO a cosmetic change to `attempt_note`'s PROSE also reds it. Deliberate:
 # the remedy for a red pin is to RE-TAKE (`checks/differ.py repro`), never to hand-edit -- which is
 # the rule `checks/corpus-figure.py:178` already states. An absent file answers `ABSENT`, which is
 # not the pin, so the arm is fail-safe in the direction that reports.
 D10 = "D10-zerorow-guard"
-# THE DELTA THIS PIN MOVED OVER, WITH ITS COUNT AND ITS REASON. **MEASURED 2026-10-22, AND IT
-# IS NOT THE PORT.** The transcript is `graphcmp.py`'s STDERR for `emit --side bend --bend-probe
+# THE delta this PIN MOVED over, WITH its count and its reason. MEASURED 2026-10-22, AND it
+# IS NOT THE PORT. The transcript is `graphcmp.py`'s STDERR for `emit --side bend --bend-probe
 # .agents/slop/graphcmp-empty.bend`, and it is ONE line:
 #     # bend attempt 1: 0 rows, ANSWER, rc=0, # prints no rows at all, stderr: <LAST 240 CHARS>
-# (`attempt_note`, `graphcmp.py:2364-2371`). **THOSE 240 CHARACTERS ARE THE COMPILER'S "A NEWER
-# BEND IS AVAILABLE" NOTICE**, and the notice is a NETWORK ANSWER: `bend2/main.ts:185-211` fetches
+# (`attempt_note`, `graphcmp.py:2364-2371`). THOSE 240 CHARACTERS are the compiler'S "A newer
+# BEND IS AVAILABLE" NOTICE, and the notice is a NETWORK ANSWER: `bend2/main.ts:185-211` fetches
 # `https://bend-lang.com/check` ONCE A DAY into `~/.bend/check.json` and prints
 # `bend <published> is available: run bend update` when the published version beats the local
-# `VERSION`. **SO BOTH VALUES OF THIS PIN WERE REBUILT BY HAND AND HASHED, AND THE OLD ONE IS
-# EXACTLY THE EMPTY-STDERR TRANSCRIPT:**
+# `VERSION`. SO both values of this PIN WERE rebuilt by hand and hashed, AND the old one is
+# EXACTLY THE EMPTY-STDERR TRANSCRIPT:
 #     stderr empty                      -> 9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84  (THIS PIN)
 #     stderr "bend 2.0.38 is available" -> f35b2d90bdbe49b0361af9fe392e162fc51b44b63caf22d6c2e75062eee343f9  (THE NOTICE's VALUE)
-# The cache was refreshed at 2026-10-21T20:52:55Z and recorded `{"ver":"2.0.38"}`. **THE LOCAL
+# The cache was refreshed at 2026-10-21T20:52:55Z and recorded `{"ver":"2.0.38"}`. THE LOCAL
 # COMPILER WAS 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13) UNTIL 2026-10-23, WHEN IT
 # WAS UPGRADED TO `v2.0.38` (`references/bend` at `0a57ca0d21de`, 2026-10-20), AND THEN TO
 # `v2.0.39` (`references/bend` at `a3efe8a3801f`, 2026-10-30), AND THEN TO
 # `v2.0.40` (`references/bend` at `624dd9f4607c`, 2026-11-07) -- SO THE LOCAL COMPILER *IS* THE
-# VERSION THE NOTICE NAMES, AND THE NOTICE IS QUIET ON ITS OWN.** MEASURED 2026-11-07, AFTER
-# THE 2.0.40 UPGRADE: `~/.bend/check.json` READS `"ver":"2.0.40","notice":""` -- **THE NOTICE
-# IS EMPTY, BECAUSE THE LOCAL VERSION *IS* THE PUBLISHED ONE.** UPSTREAM'S 2.0.38 RELEASE IS
-# WHAT TURNED THE NOTICE ON, AND NOTHING IN THIS REPOSITORY TURNED IT ON.
-# **⇒ AND THIS PIN WAS A PIN ON A NETWORK ANSWER, AND IT IS NO LONGER ONE.** The next upstream
+# VERSION the notice names, AND the notice is quiet on its own. MEASURED 2026-11-07, AFTER
+# THE 2.0.40 UPGRADE: `~/.bend/check.json` READS `"ver":"2.0.40","notice":""` -- THE NOTICE
+# IS empty, BECAUSE the local version *IS* THE published one. UPSTREAM'S 2.0.38 RELEASE is
+# WHAT turned the notice on, AND nothing in this repository turned it on.
+# - AND this PIN WAS a PIN ON a network answer, AND it is no longer one. The next upstream
 # release moved it again with NO REPO CHANGE AT ALL. `BEND_NO_TELEMETRY=1` (`main.ts:186-188`)
 # suppresses the check and puts the transcript BACK on the empty-stderr value, and it is NOW
 # APPLIED -- in `ENV` above, which every child of this driver inherits, and in
@@ -836,7 +836,7 @@ D10 = "D10-zerorow-guard"
 # is therefore back on the value it held BEFORE upstream's 2.0.38 release turned the notice on,
 # and it is the value a fresh clone with no network, no cache and no `~/.bend` produces.
 #
-# **⇒ AND THE PIN MOVED BACK, WHICH IS NOT A RE-FREEZE.** The rule above ("the remedy for a red
+# - AND the PIN MOVED back, WHICH is not a re-FREEZE. The rule above ("the remedy for a red
 # pin is to RE-TAKE, never to hand-edit") is about a pin whose SUBJECT moved; here the SUBJECT
 # was never the repository's, so removing the off-repo input is the only move that can be right,
 # and re-taking afterwards is what re-anchors the bytes. MEASURED 2026-10-22, five cases, the
@@ -848,52 +848,52 @@ D10 = "D10-zerorow-guard"
 # The corpus's own `repro` then compares the two clean runs byte for byte, so the claim "319 of
 # 319 identical" is a claim about the REPOSITORY and not about the developer's home directory.
 #
-# **THE CORPUS's OTHER DELTA, WHICH IS NOT THIS ONE.** Four changes moved the CORPUS between the
+# THE corpus's OTHER delta, WHICH is not this one. Four changes moved the CORPUS between the
 # pin's commit (`6ed9f4256`, 2026-10-15) and today, and NONE of them moved THIS transcript --
 # the probe compiles `tinybendygrad/uop/ops.bend` and prints a FIXED header, and the notice was
 # the only thing in the stderr. They are declared here because they are why the corpus's
-# POPULATION and the port's RULES moved. **COUNT AND REASON, EACH:**
-#   1. THE POPULATION GREW 34 -> 35 GRAPHS, BY ONE: `prog`. MEASURED: `graphcmp.GRAPHS` has 35
+# POPULATION and the port's RULES moved. COUNT and reason, EACH:
+#   1. THE population grew 34 -> 35 GRAPHS, BY one: `prog`. MEASURED: `graphcmp.GRAPHS` has 35
 #      members and `POPULATION_PIN` (`4a44f98e...`) equals `population_digest()`. REASON: `prog`
 #      is the FIRST graph whose `ProgramInfo` is COMPARED -- upstream's own
 #      `ProgramInfo.from_sink` over the `lin` kernel, whose three params are the three BUFFER
 #      params (out 4x5, left 4x3, right 3x5) -- so the `pI(` lane is alive where the 34 graphs
-#      produced ZERO `pI(` rows. COUNT OF THE ARTEFACTS: **9** (`repro-files` 310 -> 319): six
+#      produced ZERO `pI(` rows. COUNT OF THE ARTEFACTS: 9 (`repro-files` 310 -> 319): six
 #      `D1`/`D2` artefacts for `prog` plus `D1-graph-prog.txt.err`, plus the plant's
 #      `D5-plant-params.txt` and its `.err`.
-#   2. `tinybendygrad/renderer/nir_llvmir.bend` WAS STALE IN **4** PLACES AT ONCE: `arcp` in
+#   2. `tinybendygrad/renderer/nir_llvmir.bend` WAS STALE IN 4 PLACES AT ONCE: `arcp` in
 #      the flags; the three intrinsics `EXP2`/`LOG2`/`SQRT` in the AMD override and not in the
 #      base's; `half` kept on a non-Darwin host; and `amd_fp8s` with one answer where upstream
 #      has two. REASON: all four were RIGHT on 2026-10-01 and WRONG on 2026-10-20, because the
 #      2026-10-16 re-vendor moved the pin out from under the port (`06cf7f7da`).
 #   3. `tinybendygrad/renderer/tc_ptx.bend`'s `fmt` HAD UPSTREAM's DELETED `$` EARLY RETURN --
-#      **1** branch. REASON: upstream removed it in `96397341d` ("dead code cleanups [PR]
+#      1 branch. REASON: upstream removed it in `96397341d` ("dead code cleanups [PR]
 #      (#18593)", 2026-10-03) because it was DEAD CODE: at its parent `ptx.py` held exactly ONE
 #      occurrence of `$`, the `fmt` line itself, and nothing in `tinygrad/renderer/` could
 #      produce a `$`-prefixed line -- so the pin's defaults are FIVE EMPTY STRINGS and the
 #      port's target must not be a machine's (`87738d316`).
-#   4. `gates/ptx_render_census_axis.bend` WAS REGENERATED, and the axis was stale by **+14**
+#   4. `gates/ptx_render_census_axis.bend` WAS REGENERATED, and the axis was stale by +14
 #      ROWS. REASON: the 2026-10-16 re-vendor moved a BUFFER's SIZE out of the `ParamArg` and
-#      into a SIZE CONST SRC, so CPYTHON's OWN graphs gained a node -- **15** fixtures gained
+#      into a SIZE CONST SRC, so CPYTHON's OWN graphs gained a node -- 15 fixtures gained
 #      one and `f14_skips` LOST one, 15 - 1 = +14 -- and the axis now carries a
-#      `# UPSTREAM-PIN <path> <sha256>` line for each of the **7** files the oracle reads
+#      `# UPSTREAM-PIN <path> <sha256>` line for each of the 7 files the oracle reads
 #      (`a7b3cede3`).
 REPRO_PINS = {"repro-rc": "rc=0",
               "d10-transcript": "9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84"}
-# AND THE ROW THAT MAKES THE WITNESS FALSIFIABLE. Both pins above are claims about a COMPARISON,
+# AND the row that makes the witness falsifiable. Both pins above are claims about a COMPARISON,
 # not about a TIME, so nothing in `D0-repro.txt` said WHEN it was taken -- and a witness nobody
 # re-took is then indistinguishable from one taken a minute ago.
 # MEASURED 2026-10-18: `D0-repro.txt` was dated Oct 17 01:50, four lines, and `repro_bad()`
-# returned `[]`. So a STALE FILE WAS SERVING AS THE WITNESS, which is worse than the staleness:
+# returned `[]`. So a STALE file was serving as the witness, which is worse than the staleness:
 # a pin a stale file can satisfy reports success with no measurement behind it.
 #
 # IT IS A ROW AND NOT A PIN, and that is the whole distinction. A pin would have to move with
 # every port edit -- `pinindep`'s finding, and this file's own stated reason for leaving
 # `substrate` out of `PINS` (`:895-901`). This is a COMPARISON against `substrate_digest()`,
 # the generator's own declared population, which `gates/corpusverdict-gate.py:170` already
-# reads by path for the run summary. **ONE question, ONE mechanism, asked of both witnesses.**
+# reads by path for the run summary. ONE question, ONE mechanism, asked of both witnesses.
 REPRO_SUBSTRATE = "repro-substrate"
-# THE ARTIFACT NAMES ARE AN OUTPUT CONTRACT, NOT CONSTANTS, and this is the declaration of it.
+# THE artifact names are an output contract, NOT constants, and this is the declaration of it.
 # `oracle-run.sh` writes all `declared()` names and reads twelve of them by name in its own
 # summary block;
 # `oracle-repro.sh` reads one by name (`:61`) and globs five families (`:105`, `:114`); this file
@@ -904,7 +904,7 @@ REPRO_SUBSTRATE = "repro-substrate"
 LITERALS = ("D0-selfcheck", "D1-verdicts", "D2-bytediff", "D0-run-summary", "D4-cross-range",
             "D7-conf", "D8-dbg-012", "D8-dbg-03", "D9-stability", D10,
             "D0-coverage-census", "D8b-cpython-dbg1-reachability", "D0-ops-probe")
-# WHAT `cmd_repro` WRITES, HELD SEPARATELY FROM `LITERALS` ON PURPOSE.
+# WHAT `cmd_repro` WRITES, HELD separately from `LITERALS` ON purpose.
 #
 # `LITERALS` is ONE `cmd_run`'s output, and `artefacts_ok()` REQUIRES every member of the
 # population it is given after a run. `D0-repro.txt` is written by a DIFFERENT command, one `run`
@@ -913,15 +913,15 @@ LITERALS = ("D0-selfcheck", "D1-verdicts", "D2-bytediff", "D0-run-summary", "D4-
 # written down in its docstring. `declared()` below names it anyway, because the union is what the
 # `.txt` carve-out and the `UNEXPECTED` arm ask about: a `.txt` this file writes that nothing
 # declares is an orphan artifact, which is a different complaint from a declared one being absent.
-# **AND `D0-repro-diff.txt` WAS FORGOTTEN HERE, AND THE CONSEQUENCE WAS THAT THE CORPUS'S
-# CENTRAL INSTRUMENT COULD NOT COMPLETE.** `cmd_repro` WRITES IT WHEN THE TWO RUNS DIFFER, AND
-# IT LIVES IN `D/` -- **SO IT IS IN `present` BUT NOT IN `declared()`, WHICH IS
-# `UNEXPECTED` (`present - declared()`).** MEASURED 2026-10-25: ONE FAILED REPRO LEFT THE
-# FILE BEHIND, AND FROM THEN ON **EVERY** `clean_run` ATTEMPT SAW IT -- **SO `artefacts_ok()`
-# FAILED, `clean_run` RETRIED UP TO 9 TIMES AT ~278 s A RUN, AND THE REPRO TOOK ~84 MINUTES
-# INSTEAD OF ~9 AND STILL FAILED.** THE POISON IS SELF-PERPETUATING BECAUSE THE RESIDUE OF
-# A PAST FAILURE LINGERS. **=> AND THE FIX IS ONE TOKEN, BECAUSE `declared()` IS DERIVED FROM
-# THIS TUPLE.**
+# AND `D0-repro-diff.txt` WAS forgotten here, AND the consequence was that the corpus'S
+# CENTRAL instrument could not complete. `cmd_repro` WRITES it when the two runs differ, AND
+# IT LIVES IN `D/` -- SO IT IS IN `present` BUT NOT IN `declared()`, WHICH IS
+# `UNEXPECTED` (`present - declared()`). MEASURED 2026-10-25: ONE failed repro left the
+# FILE behind, AND from then on every `clean_run` ATTEMPT saw it -- SO `artefacts_ok()`
+# FAILED, `clean_run` RETRIED up to 9 TIMES at ~278 s A run, AND the repro took ~84 MINUTES
+# INSTEAD of ~9 AND still failed. THE poison is self-PERPETUATING because the residue of
+# A past failure lingers. => AND the fix is one token, BECAUSE `declared()` IS derived from
+# THIS TUPLE.
 REPRO_LITERALS = ("D0-repro", "D0-repro-diff")
 # THE `diff` REPORTS, by the prefix a glob in the frozen oracle spells. Named here rather than
 # inline at the one call site because `oracle-repro.sh:114` uses the identical five, so this is
@@ -1172,22 +1172,22 @@ def byte_diff(a, b, n):
 
 
 # ---------------------------------------------------------------------------
-# THE CANONICAL FORM, because `byte-identical` COMPARED A COLUMN THE PROJECT CALLS
+# THE canonical form, because `byte-identical` COMPARED a column the project calls
 # REPORTING-ONLY.
 #
 # `.agents/slop/graphcmp.py:1999-2001` numbers the CPython side by TOPOSORT POSITION
 # (`ix = {id(n): i + 1 for i, n in enumerate(lst)}`) while `tinybendygrad/uop/ops.bend:1322`
 # says the port's arena "starts with the bottom at index 0", i.e. its `i` is a HASH-CONS
 # INDEX. Two different quantities, one spelling -- and `graphcmp.py:1986` says so in this
-# file's own tree: "THE IDS ARE REPORTING ONLY AND THE DIFFER NEVER KEYS ON THEM". MEASURED 2026-10-18T18:04Z with `gates/emitverdict-gate.py --why`:
+# file's own tree: "THE ids are reporting only and the differ never keys on them". MEASURED 2026-10-18T18:04Z with `gates/emitverdict-gate.py --why`:
 # py's emitted id column is monotonic in 34 of 34 graphs and the PORT's in 23, and the 11
 # that are not are EXACTLY the 11 that byte-differ while carrying `VERDICT: AGREE`. So
 # `byte-identical=20` was counting ALLOCATION ORDER, and 14 of 34 graphs were being called
-# byte-different for being interned in a different order. **A FALSE DISAGREEMENT IS WORSE
-# THAN A MISSED ONE**: it inflates the defect count and so hides the real defects behind
+# byte-different for being interned in a different order. A FALSE DISAGREEMENT IS WORSE
+# THAN A MISSED ONE: it inflates the defect count and so hides the real defects behind
 # noise.
 #
-# **THIS IS A CANONICALISATION AND NOT A RENUMBERING, AND THAT IS THE WHOLE DIFFERENCE.**
+# THIS is a canonicalisation and not a renumbering, AND that is the whole difference.
 # A renumbering would give the py side the port's arena order: true for one tree, false the
 # moment the port's allocation order moves, i.e. it fits the symptom to today's tree. The
 # form below is derived from the GRAPH and from nothing else -- each node is labelled by its
@@ -1195,7 +1195,7 @@ def byte_diff(a, b, n):
 # `1..n` in THAT order. No step of it reads either side's allocation order, so a change to
 # the port's arena cannot move it, and a change to the port's CONTENT will.
 #
-# **AND IT IS A BIJECTION, WHICH IS A PROPERTY AND NOT A HOPE.** Three wrong canonical forms
+# AND it is a bijection, WHICH is a property and not a hope. Three wrong canonical forms
 # got here first and every one of them reported the same 14 graphs as different (they are in
 # `gates/emitverdict-gate.py`'s docstring, which took them): refining on the previous round's
 # LITERAL label never settles; re-ranking to FIRST-APPEARANCE order is not injective in the
@@ -1235,12 +1235,12 @@ def canon_key(i, parsed, at, keys, live):
     cannot decide must never reach a byte comparison, because a canonical form of an
     undecidable graph is a canonical form of nothing.
 
-    **⇒ AND THE `tag` COLUMN IS GONE FROM THE ROW, SO THIS UNPACKS SEVEN AND NOT EIGHT.**
+    **AND THE `tag` COLUMN IS GONE FROM THE ROW, SO THIS UNPACKS SEVEN AND NOT EIGHT.**
     `0021a7c33` DELETED THE `tag` COLUMN ON BOTH SIDES (`graphcmp.py`'s `FIELDS` LOST `"tag"`), AND
     `canon_rows` BELOW WAS CHANGED WITH IT -- BUT **THIS UNPACK WAS NOT**, SO IT STILL ASKED FOR
     EIGHT AND EVERY GRAPH FAILED WITH `not enough values to unpack (expected 8, got 7)`.
     **MEASURED: THE WHOLE CORPUS READ `not-comparable=38` AND `byte-identical=0`** -- a canonical
-    form of NOTHING, which is the failure `canon_bijection` exists to prevent. **⇒ AND A ROW
+    form of NOTHING, which is the failure `canon_bijection` exists to prevent. **AND A ROW
     FORMAT AND ITS READER MUST MOVE TOGETHER, AND A COMMIT THAT DELETED A COLUMN FOUNDED THE
     READER'S ARITY FROM A DIFFERENT PLACE.**
     """
@@ -1284,11 +1284,11 @@ def canon_rows(rows):
     out = []
     for rank, i in enumerate(order, 1):
         nid, *_f = parsed[i]
-        # **⇒ THE REFS ARE AT INDEX 6 AND THE PAYLOAD IS `[1:6]`, NOT `[1:7]` AND `[7]`.** The tuple
-        # IS SEVEN ELEMENTS (`(id, *f[1:6], refs)`), so `parsed[i][7]` IS AN INDEX PAST THE END AND
-        # `parsed[i][1:7]` IS FIVE ELEMENTS OF A SEVEN. `canon_key`'s UNPACK WAS FIXED ABOVE AND THESE
-        # TWO WERE NOT -- **⇒ AND THE FIX IS THE SAME LESSON: A ROW FORMAT AND ITS READER MOVE
-        # TOGETHER, AND `0021a7c33` FOUND THE READER'S ARITY IN A DIFFERENT PLACE.**
+        # - THE refs are at INDEX 6 AND the payload is `[1:6]`, NOT `[1:7]` AND `[7]`. The tuple
+        # IS seven elements (`(id, *f[1:6], refs)`), so `parsed[i][7]` IS an INDEX PAST the end and
+        # `parsed[i][1:7]` IS five elements of a seven. `canon_key`'s UNPACK was fixed above and these
+        # TWO were not -- - AND the fix is the same lesson: A row format and its reader MOVE
+        # TOGETHER, AND `0021a7c33` FOUND the reader'S arity in a different place.
         srcs = ",".join(f"i{new[k]}" for k in parsed[i][6])
         fields = (f"i{rank}", *parsed[i][1:6], f"n({srcs})")
         out.append(" ".join(f"{len(x)}:{x}" for x in fields))
@@ -1346,13 +1346,13 @@ def one_line(out):
 
 
 def cmd_run(a, wait=None):
-    # **THE BOUND IS THE CLI'S OWN `wait` WHEN THERE IS A NAMESPACE, AND A PARAMETER
-    # OTHERWISE, BECAUSE `one_run()` CALLS THIS IN-PROCESS WITH `None` (differ.py:2345).**
-    # READING `a.wait` DIRECTLY WOULD RAISE THERE, AND `one_run`'s `except Exception` WOULD
-    # TURN THAT INTO rc=1 AND *"run raised AttributeError"* -- **WHICH WOULD BREAK
-    # `cmd_repro` QUIETLY RATHER THAN LOUDLY.**
+    # THE bound is the cli'S own `wait` WHEN there is a namespace, AND a parameter
+    # OTHERWISE, BECAUSE `one_run()` CALLS this in-PROCESS with `None` (differ.py:2345).
+    # READING `a.wait` DIRECTLY would raise there, AND `one_run`'s `except Exception` WOULD
+    # TURN that into rc=1 AND *"run raised AttributeError"* -- WHICH would break
+    # `cmd_repro` QUIETLY RATHER THAN LOUDLY.
     bound = getattr(a, "wait", 9) if wait is None else wait
-    # **THE POPULATION MUST BE DECIDED BEFORE THE RUN, OR THE RUN CERTIFIES NOTHING.**
+    # THE population must be decided before the run, OR the run certifies nothing.
     # A graph that joins the corpus and is not re-decided leaves `POPULATION_PIN` stale, and a
     # run over it would be a measurement of a population nobody has an opinion about -- which is
     # the defect the exceptions table used to prevent by refusing to run. So this is a REFUSED
@@ -1360,7 +1360,7 @@ def cmd_run(a, wait=None):
     # The plant population is the same shape: a plant the corpus's instrument declares and the
     # corpus neither runs nor excuses is a gap nobody would notice.
     #
-    # **AND IT REFUSES BEFORE IT TOUCHES THE ARTEFACT DIRECTORY**, because a run that cannot
+    # AND it refuses before it touches the artefact directory, because a run that cannot
     # certify its population must not leave a half-written set behind for a reader to find.
     if bad := population_bad() + plants_bad():
         for line in bad:
@@ -1370,25 +1370,25 @@ def cmd_run(a, wait=None):
               file=sys.stderr)
         return gatekit().REFUSED
 
-    # **AND THE RUN MUST NOT BEGIN OVER A BEND LANE THAT IS NOT HEALTHY.** `cmd_repro` HAS
-    # ALWAYS GATED ON THIS -- `clean_run` (differ.py:2326) WAITS FOR A HEALTHY RUN AND
-    # REFUSES (3) IF NONE COMES -- **AND `cmd_run` DID NOT, WHICH IS A DIFFERENT HAZARD FROM
-    # TWO RUNS INTERLEAVING.** THE DIFFERENCE IS THE WHOLE CLAIM: THE CORPUS IS NOW A SINGLETON
-    # (AN `fcntl.flock` ON `runs/graphcmp/.corpus.lock`, AND A SECOND RUN EXITS 3 WITH THE
-    # HOLDER'S PID), SO TWO RUNS CANNOT INTERLEAVE -- **BUT A SINGLE RUN OVER A DEAD BEND LANE
-    # STILL OVERWRITES 243 FILES OF EVIDENCE WITH A DEAD LANE, AND THE ARTEFACT DIRECTORY
-    # THEN HOLDS A MIXTURE.** MEASURED 2026-10-23, REPEATEDLY, ON THIS TREE: A RUN WHOSE
-    # `substrate-start` AND `substrate-end` DIFFER SAYS EXACTLY THAT -- *"THE SUBSTRATE MOVED
-    # WHILE THE RUN WAS IN FLIGHT"* -- AND `unhealthy()` NAMES IT AS ITS ONE LINE.
-    # **⇒ SO THE GATE IS HERE, BEFORE `D.mkdir`, AND IT IS THE SAME SHAPE AS `cmd_repro`'s:**
-    # `ready()` IS A **PURE PROBE** (`settled()` RUNS THE DRIVER'S `--check-only` AND READS
-    # ITS FIRST LINE; IT WRITES NOTHING TO `D/`), SO WAITING ON IT CANNOT DAMAGE THE EVIDENCE
+    # AND the run must not begin over a BEND LANE that is not healthy. `cmd_repro` HAS
+    # ALWAYS gated on this -- `clean_run` (differ.py:2326) WAITS for a healthy run and
+    # REFUSES (3) IF NONE COMES -- AND `cmd_run` DID not, WHICH is a different hazard from
+    # TWO runs interleaving. THE difference is the whole claim: THE corpus is now a singleton
+    # (AN `fcntl.flock` ON `runs/graphcmp/.corpus.lock`, AND a second run exits 3 WITH the
+    # HOLDER'S pid), SO two runs cannot interleave -- BUT a single run over a dead BEND LANE
+    # STILL overwrites 243 FILES of evidence with a dead lane, AND the artefact directory
+    # THEN holds a mixture. MEASURED 2026-10-23, REPEATEDLY, ON this tree: A run whose
+    # `substrate-start` AND `substrate-end` DIFFER says exactly that -- *"THE substrate moved
+    # WHILE the run was in flight"* -- AND `unhealthy()` NAMES it as its one line.
+    # - SO the gate is here, BEFORE `D.mkdir`, AND it is the same shape as `cmd_repro`'s:
+    # `ready()` IS a pure probe (`settled()` RUNS the driver'S `--check-only` AND reads
+    # ITS first line; IT writes nothing to `D/`), SO waiting on it cannot damage the evidence
     # IT IS PROTECTING.
-    # **⇒ AND IT IS `REFUSED` (3) AND NOT `FAIL` (1), BECAUSE A PRECONDITION WAS ABSENT AND
-    # NOTHING WAS DETERMINED: NOT `SKIP` (THE RUN NEVER EXECUTED), NOT `DEAD` (IT EMITTED NO
-    # COMPLAINT), AND NOT 0 (A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO
-    # GATE).** AND `D/` IS LEFT EXACTLY AS IT WAS, SO A READER FINDS THE PREVIOUS RUN'S
-    # EVIDENCE AND NOT A HALF-WRITTEN SET.
+    # - AND it is `REFUSED` (3) AND not `FAIL` (1), BECAUSE a precondition was absent and
+    # NOTHING was determined: NOT `SKIP` (THE run never executed), NOT `DEAD` (IT emitted no
+    # COMPLAINT), AND not 0 (A gate that exits 0 HAVING measured nothing is worse than no
+    # GATE). AND `D/` IS left exactly as it was, SO a reader finds the previous run'S
+    # EVIDENCE and not a half-WRITTEN set.
     if not ready(bound):
         gk = gatekit()
         print(f"RUN: {gk.VERDICT[gk.REFUSED]} -- the bend lane did not settle in {bound} "
@@ -1409,29 +1409,29 @@ def cmd_run(a, wait=None):
 
     run("D0-selfcheck.txt", "selfcheck")
 
-    # ONE LINE OF SUBSTANCE PER GRAPH: `diff --graph NAME` prints exactly one `# VERDICT:`
+    # ONE line of substance per graph: `diff --graph NAME` prints exactly one `# VERDICT:`
     # line and its `# DENOMINATOR:` line, and NAME is the only argument. The verdict step
     # ASSERTS each graph rather than leaving a reader to check thirty-five files by eye.
     #
-    # **THE LOOP IS OVER `corpus()`, NOT OVER THE EXPECTATIONS.** This is the whole defect, and
+    # THE LOOP IS over `corpus()`, NOT over the expectations. This is the whole defect, and
     # the loop itself was the evidence: it used to read `for g in WANT:`, which meant
     # `graphcmp.GRAPHS` was never consulted by the run at all and every graph the corpus
     # declared but the table omitted was INVISIBLE -- not failed, not skipped, INVISIBLE,
     # while `graphs=` reported the table's own length as though it were the corpus.
     #
-    # **AND NOW EVERY GRAPH HAS AN EXPECTATION, BECAUSE THE DEFAULT IS "AGREE"**
+    # AND now every graph has an expectation, BECAUSE the default is "AGREE"
     # (`expectation()`). There is no UNSET state and no `graphs-unset` row: a graph that joins
     # the corpus is EXPECTED TO AGREE, and the corpus's growth is caught by the POPULATION PIN
     # instead -- a content pin over the graph list's own names and bytes, so a graph that joins
     # without a re-decision leaves a stale pin and the run REFUSES (see the top of this
-    # function). **THE DENOMINATOR THAT MATTERS IS THE NUMBER OF EXCEPTIONS**, and it is 0.
+    # function). THE denominator that matters is the number of exceptions, and it is 0.
     graphs = corpus()
     # ONE bend process for every graph. MEASURED 2026-10-30: the per-graph path
     # cost 71.2 s for these 36 and the batch cost 6.8 s, and every one of the 36
     # outputs is BYTE-IDENTICAL between the two.
     run_batch("D1-graph-{}.txt", graphs, "diff")
-    # **A GRAPH THAT REFUSED IS NOT A GRAPH WHOSE VERDICT MOVED, AND CONFLATING THEM WAS
-    # LOSING THE NAME.** MEASURED 2026-10-18T18:04Z: `loop` printed `loop: VERDICT=
+    # A graph that refused is not a graph whose verdict moved, AND conflating them was
+    # LOSING THE NAME. MEASURED 2026-10-18T18:04Z: `loop` printed `loop: VERDICT=
     # EXPECTED=AGREE` -- an empty verdict cell with nothing after it -- while its OWN
     # artifact was a one-line `rc=2` and its `.err` named the refusal in full. So the run
     # held the name in two artifacts and dropped it from the one a reader reads, and then
@@ -1443,7 +1443,7 @@ def cmd_run(a, wait=None):
     refused = [g for g in graphs if not verdict(f"D1-graph-{g}.txt")]
     moved = [f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED={expectation(g)}" for g in graphs
              if verdict(f"D1-graph-{g}.txt") and verdict(f"D1-graph-{g}.txt") != expectation(g)]
-    # **AND `na`/`bad` COUNT THE ANSWERS, NOT THE EXPECTATIONS.** They used to be
+    # AND `na`/`bad` COUNT the answers, NOT the expectations. They used to be
     # `sum(WANT[g] == "AGREE")` and `[g for g in WANT if WANT[g] == "DISAGREE"]`, which are two
     # censuses of the TABLE, and the sentence they appear in is about the RUN. MEASURED on the
     # first run of the canonical form (2026-10-18T18:18Z): the row read `33 of 34 graphs with
@@ -1457,8 +1457,8 @@ def cmd_run(a, wait=None):
     write("D1-verdicts.txt", "\n".join(moved + [
         # THE REFUSAL ROW. `first_line` is the artifact's own text -- `rc=2`, or a refusal
         # sentence -- and `.err`'s first line is beside it because that is where
-        # `graphcmp.py` writes the reason (it exits before printing a verdict). **THE NAME OF
-        # A REFUSAL HAS TO REACH THE ROW A READER READS**, or the run's own `.err` file is the
+        # `graphcmp.py` writes the reason (it exits before printing a verdict). THE NAME OF
+        # A refusal has to reach the row a reader reads, or the run's own `.err` file is the
         # only place it exists and a summary that drops it reports a clean corpus.
         f"{g}: REFUSED -- EXPECTED={expectation(g)}, and the artifact answered "
         f"{first_line(f'D1-graph-{g}.txt')!r}; "
@@ -1478,7 +1478,7 @@ def cmd_run(a, wait=None):
     # success. Hence the byte-count guard: a verdict line cannot tell an empty comparison
     # from a satisfied one.
     #
-    # THE CANONICAL FILES, and THE CANONICAL FORM OF THEM. Two artifacts per side, two
+    # THE canonical files, and THE canonical form of them. Two artifacts per side, two
     # questions, and they are NOT the same question:
     #
     #   `D2-canon-{side}-{g}.txt`     the rows as emitted, ids and all. It is the artifact
@@ -1548,7 +1548,7 @@ def cmd_run(a, wait=None):
     for p in bend_scratch.iterdir():
         p.unlink()
     bend_scratch.rmdir()
-    # PER-GRAPH FILE, THEN CONCATENATED ONCE, in glob order. Both wrong shapes were tried:
+    # PER-GRAPH file, THEN concatenated once, in glob order. Both wrong shapes were tried:
     # `>>` accumulates until the file reads like a coverage table when it is one line
     # repeated, and `>` inside the loop leaves only the LAST graph's line.
     write("D2-bytediff.txt",
@@ -1587,7 +1587,7 @@ def cmd_run(a, wait=None):
             report.append(f"{g}: 2 runs DIFFER\n" + byte_diff(D / a, D / b, 20))
     write("D9-stability.txt", "\n".join(report) + "\n")
 
-    # THE 0-ROW GUARD, FIRED ON PURPOSE, and the guard is that this is NOT retried:
+    # THE 0-ROW guard, FIRED on purpose, and the guard is that this is NOT retried:
     # `graphcmp-empty.bend` prints a `#` header and no rows, and `classify` (`graphcmp.py:1999`)
     # calls that an ANSWER -- `lines`, not `rows`, is the witness. MEASURED 2026-10-15:
     # `D10-zerorow-guard.txt.err` reads `bend attempt 1: 0 rows, ANSWER, rc=0, ...`, so an earlier
@@ -1595,10 +1595,10 @@ def cmd_run(a, wait=None):
     # the code it sits above. `CRASH_CONTROL`'s second row already names the opposite rule as a
     # defect: "a retry that fires on an answer".
     #
-    # HISTORY, CORRECTED 2026-10-18: this said **THAT PROBE NO LONGER EXISTS**, deleted in sweep
+    # HISTORY, CORRECTED 2026-10-18: this said THAT probe no longer exists, deleted in sweep
     # `371cc64c9`. Sweep `371cc64c9` (2026-10-05) DID delete it -- and both files were RESTORED
     # after that, `graphcmp-empty.bend` by `c51c5ffd2` (2026-10-15) and `graphcmp-dbg.bend` by
-    # `1a0ef5108` (2026-10-17). **BOTH ARE IN `HEAD` TODAY**, so the claim stopped being true and
+    # `1a0ef5108` (2026-10-17). BOTH ARE IN `HEAD` TODAY, so the claim stopped being true and
     # nothing updated it: a sweep that deletes a file makes a later restore invisible to every
     # sentence that remembers the delete. The belief outlived its cause because
     # `.agents/slop/graphcmp.py:2138` keeps a VERBATIM FROZEN COPY of the old stderr as a
@@ -1607,10 +1607,10 @@ def cmd_run(a, wait=None):
     # probe.is_file():` branch -- accurate when it fires, so it is deliberately NOT changed.)
     # HISTORY: it and `graphcmp-dbg.bend`
     # were deleted in sweep `371cc64c9`, so `D10-zerorow-guard.txt` has been reading `rc=1` off a
-    # **`no such file`**, which is the SAME exit code the guard raises when the probe WORKS. **A GUARD
-    # THAT CANNOT DISTINGUISH "MY FIXTURE IS MISSING" FROM "MY FIXTURE BEHAVED" IS CERTIFYING A MISSING
-    # FILE** -- and nothing read its rc, so it was `DEAD` (it ran, emitted a verdict, and nothing
-    # consulted it). THE FIX IS NOT TO RESTORE A FIXTURE, IT IS TO **SAY WHICH**: the probe is a
+    # `no such file`, which is the SAME exit code the guard raises when the probe WORKS. A GUARD
+    # THAT cannot distinguish "MY fixture is missing" FROM "MY fixture behaved" IS certifying a missing
+    # FILE -- and nothing read its rc, so it was `DEAD` (it ran, emitted a verdict, and nothing
+    # consulted it). THE fix is not to restore a fixture, IT is to say which: the probe is a
     # REQUIRED INPUT and its absence is `REFUSED, NOT A VERDICT` -- absent is not a pass
     # (`gates/gatekit.py:60` is the vocabulary). `midrun` names two other absent inputs on a different
     # path (`.agents/slop/diffpy/`, pinned by `ORACLE_PIN`): the same shape, and the same fix.
@@ -1626,7 +1626,7 @@ def cmd_run(a, wait=None):
     # never produces shows up as a per-side difference rather than an absorbed AGREE.
     capture("D0-coverage-census.txt", ".agents/slop/graphcmp-oracle.py", stamp_rc=True,
             env_extra={"GRAPHCMP_BEND_BATCH": "1"})  # DEV/PYTHONHASHSEED/NOOPT/LC_ALL are set by ENV above, not by this call
-    # WHETHER CPYTHON's OWN `DEBUG >= 1` SITE CAN BE REACHED HERE. It cannot, on 13 real
+    # WHETHER CPYTHON's OWN `DEBUG >= 1` SITE can be reached here. It cannot, on 13 real
     # graphs, which is why `dbg` is port-vs-port and says so in its own output.
     capture("D8b-cpython-dbg1-reachability.txt", ".agents/slop/graphcmp-dbg-oracle.py")
     # THE OPS PROBE: the raw CPython measurements every coverage claim rests on. It asks
@@ -1646,34 +1646,34 @@ def cmd_run(a, wait=None):
         stale.unlink()
 
     write("D0-run-summary.txt", "\n".join([
-        # `graphs` COUNTS WHAT WAS ASKED FOR -- `len(corpus())` -- AND NOT WHAT WAS ANSWERED.
+        # `graphs` COUNTS what was asked for -- `len(corpus())` -- AND not what was answered.
         # It used to be `len(list(D.glob('D1-graph-*.txt')))`, which counted the artifacts
         # `WANT` wrote and therefore reported the TABLE's length wearing the CORPUS's name:
         # 9 graphs were declared, never run, and the line said nothing. A denominator that
         # counts only the answered cases is a denominator that cannot shrink and so cannot be
         # wrong.
         #
-        # **`graphs` AND `graphs-answered` ARE TWO VIEWS OF ONE NUMBER NOW** -- there is no
+        # `graphs` AND `graphs-answered` ARE two views of one number now -- there is no
         # `u` to subtract, because every graph has an expectation (the default is AGREE). They
         # are kept as two spellings because a health gate that answers one number twice is
         # easier to notice rot in, and because `graphs-answered` is the one that moves when a
         # graph REFUSES to answer.
         f"graphs={len(graphs)}",
         f"graphs-answered={len(answered)}",
-        # **THE POPULATION'S IDENTITY, IN THE RUN'S OWN SUMMARY.** A row that says which
+        # THE population'S identity, IN the run'S own summary. A row that says which
         # population was measured, so the run is comparable to a corpus rather than to a
         # number. It is a CONTENT digest over the graph list's names and the bytes that define
         # each graph, and `PINS` holds the pinned one: a run over a population nobody has
         # re-decided leaves this row disagreeing with the pin, which is a RED in `unhealthy()`
         # and a REFUSED run in `cmd_run`.
         f"population={population_digest()}",
-        # **THE COUNT OF ROWS THAT ARE WRONG**, which nothing counted until now. Distinct from
+        # THE count of rows that are wrong, which nothing counted until now. Distinct from
         # every line above it: `graphs`/`graphs-answered` are about how many ROWS the corpus
         # has, `graphs-agree`/`graphs-disagree` are about how many ARTIFACTS carry a verdict,
         # and this one is about whether the rows that exist were RIGHT. All of them can be
         # self-consistent and wrong at once, which is the state this file ran in until now.
         f"expect-moved={len(moved)}",
-        # **THE FIFTH VERDICT, AND IT IS NOT `expect-moved` WITH A DIFFERENT SPELLING.** A
+        # THE fifth verdict, AND it is not `expect-moved` WITH a different spelling. A
         # graph whose artifact carries no `VERDICT:` line answered nothing: `graphcmp.py`
         # exited 2 on a precondition (the device sets, or an emission that BROKE) and wrote
         # the reason to its `.err`. Counting that as a moved verdict says the PORT is wrong
@@ -1685,7 +1685,7 @@ def cmd_run(a, wait=None):
         f"graphs-disagree={files_with('D1-graph-*.txt', 'VERDICT: DISAGREE')}",
         f"byte-identical={lines_with('D2-bytediff.txt', 'BYTE-IDENTICAL')}",
         f"not-comparable={lines_with('D2-bytediff.txt', 'NOT COMPARED')}",
-        # **THE DENOMINATORS ARE DERIVED, NOT TYPED.** `of 5` and `of 7` were literals in this
+        # THE denominators are derived, NOT typed. `of 5` and `of 7` were literals in this
         # writer, so a selection that grew made the row read `8 of 7` -- a number nobody can
         # check. They come from `STAB`, `PLANTS` and `CONTROLS` now, which are this file's own
         # declarations, so they cannot drift from what was run.
@@ -1703,7 +1703,7 @@ def cmd_run(a, wait=None):
         # coverage claim whose printer is broken is a coverage claim about the printer.
         f"oracle-selfcheck={grep_line('D0-coverage-census.txt', 'ORACLE SELFCHECK')}",
         f"census-rc={last_line('D0-coverage-census.txt')}",
-        # THE FOUR ROWS, AND WHY FOUR ROWS AND NOT A NEW FILE. This summary is already parsed as
+        # THE four rows, AND why four rows and not a new file. This summary is already parsed as
         # `key=value` by `gates/retention-check.py`'s CLAUSE IV, by `checks/corpus-figure.py:140`,
         # by `checks/disagree-gate.py:128` and by `checks/env-precond.py`'s METHOD B, so a row
         # here is read by four consumers and NO NEW PARSER EXISTS ANYWHERE. A separate file would
@@ -1717,7 +1717,7 @@ def cmd_run(a, wait=None):
         *substrate_rows(substrate_start, substrate_digest())
          + [f"substrate-head={substrate_head()}"]]) + "\n")
     print(f"wrote {relpath(D)}")
-    # **A RUN WHOSE ROWS ARE WRONG IS A SEPARATE REFUSAL, AND IT USED NOT TO BE RAISED.**
+    # A run whose rows are wrong is a separate refusal, AND it used not to be raised.
     # MEASURED: the exit was `if unset` and nothing else, so with every graph answered a run
     # in which a row was simply WRONG returned 0 and read HEALTHY -- and the one pin that could
     # have noticed, `graphs-agree`, NETS OUT over the corpus and so misses the case where one
@@ -1727,18 +1727,18 @@ def cmd_run(a, wait=None):
     # different questions: `expect-moved` says a row is wrong, a REFUSAL says the corpus was
     # not answered, and only the first is a claim the port made.
     #
-    # **AND IT DOES NOT CONSULT `PINS`, WHICH IS THE CORRECT SHAPE AND WAS MEASURED.** `run`
+    # AND it does not consult `PINS`, WHICH is the correct shape and was measured. `run`
     # honours ONE of the 17 (`expect-moved`) and returns 0 unconditionally otherwise. Making it
     # consult the other 16 would make `run` A GATE ON ITS OWN OUTPUT: a run that finds the port
     # changed a row would refuse to EXIT, so the change could never be recorded, and the pins
     # are hand-written literals that move when the port's next fix lands (the block above
-    # `PINS` says so itself). **A MEASUREMENT MUST NOT BE CITED AS A HEALTH GATE, AND THE JUDGE
-    # MUST NOT BE THE RUN.** `unhealthy()` and `checks/corpus-figure.py` are the judges; `run`
+    # `PINS` says so itself). A measurement must not be cited as a health gate, AND the judge
+    # MUST NOT BE THE RUN. `unhealthy()` and `checks/corpus-figure.py` are the judges; `run`
     # is the measurement.
     for line in ("RUN WRONG: expect-moved=N -- these rows' EXPECTED verdicts did not match what "
                  "the port emitted, and a run whose expectations are wrong is not a measurement "
                  "of them:\n  " + "\n  ".join(moved) if moved else None,
-                 # A REFUSAL IS NOT A WRONG ROW AND IS NOT A PASS. `cmd_run` refuses on it for
+                 # A refusal is not a wrong row and is not a pass. `cmd_run` refuses on it for
                  # the same reason it refuses on a moved row: the corpus was not answered, so
                  # nothing in this run may be read as a verdict about those graphs. MEASURED
                  # 2026-10-18T18:04Z, `loop` was refused here (device precondition, exit 2)
@@ -1753,31 +1753,31 @@ def cmd_run(a, wait=None):
     return 1 if moved or refused else 0
 
 
-# ---- THE PRECONDITIONS, AND THE CROSS-CHECK THAT KEEPS THE ROWS FROM BEING LABELS ---------
+# ---- THE preconditions, AND the cross-CHECK that keeps the rows from being labels ---------
 #
 # `differ.py` BUILDS the child environment (`ENV`, `:47`), so it can record what a run used
 # without asking a shell: a shell's environment is not a run's, and a harness's default is not a
 # run's value. `checks/env-precond.py` declares the same four and reads them out of this summary,
 # so every row has TWO INDEPENDENT readings -- a source line it scans, and this file.
 #
-# `dev` IS NOT READ OUT OF `ENV`, BECAUSE `ENV["DEV"]` IS DEAD. MEASURED: every consumer of `ENV`
+# `dev` IS not read out of `ENV`, BECAUSE `ENV["DEV"]` IS dead. MEASURED: every consumer of `ENV`
 # overwrites it before `tinygrad`'s `Device.DEFAULT` resolves -- `graphcmp.py:2853` from its own
 # `--dev`, and `graphcmp-oracle.py` and `graphcmp-p13-ops.py:28` by assignment -- so the device is
 # read off the artifacts, which are the only place it survives.
 #
-# WHY A PIN IS NOT REDUNDANT WITH A SORT. MEASURED over five seeds of one 6-member set: **5
-# distinct `set(...)` renderings, 1 sorted rendering.** A PIN IS A SEED and a SORT IS A LAW -- a pin
+# WHY a PIN IS not redundant with a sort. MEASURED over five seeds of one 6-member set: 5
+# distinct `set(...)` renderings, 1 sorted rendering. A PIN IS A SEED and a SORT IS A LAW -- a pin
 # fixes the order on THIS interpreter, a sort fixes it on EVERY interpreter, and the claim being
 # protected ("the port and CPython disagree") has to survive a Python upgrade. So recording the
 # seed is NECESSARY AND NOT SUFFICIENT, which is why both land; the sort is `graphcmp-oracle.py:233`,
 # which is not this file's.
 #
-# THE LEDGER IS EIGHT, NOT 147. MEASURED by AST-counting every `getenv`/`ContextVar` in `tinygrad/`
-# and sweeping each one in its own subprocess: **8 can move a verdict** -- `DEV` `IMAGE` `NOOPT`
+# THE ledger is eight, NOT 147. MEASURED by AST-counting every `getenv`/`ContextVar` in `tinygrad/`
+# and sweeping each one in its own subprocess: 8 can move a verdict -- `DEV` `IMAGE` `NOOPT`
 # `DEFAULT_FLOAT` `NO_COLOR` `DEBUG` `DEBUG_RANGEIFY` `MAX_BUFFER_SIZE` -- plus 5 that make the side
-# unbuildable, and **128 measured inert because the comparison never REALIZES a graph**, so every
+# unbuildable, and 128 measured inert because the comparison never REALIZES a graph, so every
 # runtime and compiler flag sits downstream of a boundary this harness does not cross. A LIST OF
-# VARIABLES A PROGRAM CAN READ IS NOT A LIST OF VARIABLES THAT MATTER.
+# VARIABLES a program can read is not a list of variables that matter.
 ROW_VALUES = {"lc_all": "C", "noopt": "0", "pythonhashseed": "0"}
 ROW_KEYS = ("dev",) + tuple(ROW_VALUES)
 
@@ -1851,9 +1851,9 @@ def preconditions_bad(got):
     return bad
 
 
-# ---- THE SUBSTRATE: WHICH BYTES PRODUCED THIS RUN, IN TWO ROWS --------------------------------
+# ---- THE substrate: WHICH bytes produced this run, IN two rows --------------------------------
 #
-# WHY TWO ROWS AND NOT ONE. One `substrate=H` says what the substrate WAS. That is a LABEL, and
+# WHY two rows and not one. One `substrate=H` says what the substrate WAS. That is a LABEL, and
 # a label cannot go red. Two rows say what the substrate was BEFORE the first `emit` and what it
 # was AFTER the last one, and the PAIR is a comparison: `start != end` means this run is a
 # MIXTURE of two substrates, so no artifact set in `D/` describes one thing. MEASURED by
@@ -1862,7 +1862,7 @@ def preconditions_bad(got):
 # `D/` that can, and they answer the case `pinindep` names as never tested: all eleven of its
 # perturbations edited a FINISHED artifact set.
 #
-# WHERE H0 COMES FROM, WHICH IS THE PART THAT LOOKS LIKE IT NEEDS A LEDGER AND DOES NOT. It is not
+# WHERE H0 comes from, WHICH is the part that looks like it needs a ledger and does not. It is not
 # pinned and must not be: a pin on a substrate digest would have to be re-pinned every time the
 # port moves, which is `pinindep`'s finding -- 17 pins on ONE file is one measurement wearing 17
 # hats -- made worse by a pin that is red by construction after any real edit. So H0 is
@@ -1874,20 +1874,20 @@ SUBSTRATE_ROWS = ("substrate-start", "substrate-end")
 #: The inputs, by DISCOVERY where the tree can be walked and by this file's OWN declarations
 #: where it cannot. The port is a DIRECTORY WALK. The eight named files are the ones `run`
 #: hands to a subprocess or reads itself, and each is anchored to the line that names it.
-#: CORRECTED 2026-10-17 -- ALL SIX NUMBERS BELOW WERE WRONG, EACH RESOLVED BY PRINTING IT:
+#: CORRECTED 2026-10-17 -- ALL six numbers below were wrong, EACH resolved by printing it:
 #:   :44 GCMP         .agents/slop/graphcmp.py      :1040 ./bin/bend
 #:   :1040 BEND_PROBE .agents/slop/graphcmp.bend    :840 devpin
 #:   :671,:674,:678   the three `capture()` oracle scripts
 #:   and `checks/differ.py` itself, which every artifact's driver is. A path here with no
 #:   anchor would be a bare hand-list entry. THE READER IS `checks/substrate-snapshot.py
-#:   --declare` -- BESIDE THE GATE AND IN GIT; `.agents/slop/quiesce/snapshot.py`, WHICH THIS
+#:   --declare` -- BESIDE THE GATE AND IN GIT; `.agents/slop/quiesce/snapshot.py`, WHICH this
 #:   COMMENT NAMED, IS ABSENT (7 paths in HEAD under that directory, none of them `snapshot.py`).
-#:   BUT `--declare` DOES NOT READ THESE NUMBERS: `checks/substrate-snapshot.py:201` IS
+#:   BUT `--declare` DOES not read these numbers: `checks/substrate-snapshot.py:201` IS
 #:   `ok = any(tok in ln for ln in src.splitlines())`, A WHOLE-FILE SEARCH, SO IT REPORTS `ok` ON
-#:   6 OF 8 ANCHORS THAT ARE AT THE WRONG LINE AND EXITS 0. IT ANSWERS "DOES THIS STRING APPEAR
-#:   ANYWHERE?" WHERE THE CALLER ASKED "DOES LINE N STILL NAME IT?", SO THIS TABLE IS A HUMAN
-#:   CONTRACT AND SAYS SO INSTEAD OF NAMING A CHECKER THAT CANNOT CHECK IT.
-# THE TWO DRIVERS `cmd_run` ACTUALLY EXECUTES, AND A GREP CENSUS MISSES BOTH. `.agents/slop/` is
+#:   6 OF 8 ANCHORS that are at the wrong line and exits 0. IT answers "DOES this string appear
+#:   ANYWHERE?" WHERE THE caller asked "DOES line n still name it?", SO this table is a human
+#:   CONTRACT and says so instead of naming a checker that cannot check it.
+# THE two drivers `cmd_run` ACTUALLY executes, AND a grep census misses both. `.agents/slop/` is
 # reached ONLY by explicit names here, and neither name appeared, so a substrate move in either file
 # was invisible to the digest that exists to catch one. `graphcmp-dbg.bend` is assembled at RUNTIME
 # (`SLOP / "graphcmp-dbg.bend"`) and handed to `subprocess.run` at `graphcmp.py:3064`, so searching
@@ -1925,15 +1925,15 @@ def substrate_digest() -> str:
     return h.hexdigest()
 
 
-# THE OTHER WALK. `tinygrad/` IS THE REFERENCE EVERY VERDICT IS RELATIVE TO, AND IT WAS NOT IN THE
-# POPULATION: MEASURED 2026-10-18, the digest covered **156** declared inputs and **0 of the 213**
+# THE other walk. `tinygrad/` IS the reference every verdict is relative to, AND it was not in the
+# POPULATION: MEASURED 2026-10-18, the digest covered 156 declared inputs and 0 of the 213
 # `tinygrad/*.py`. So if the CPython side moved mid-run -- the likeliest move of all, since an
 # upstream re-vendor rewrites it -- `substrate_digest()` could not notice, and the run's whole claim,
 # "ONE run measured ONE substrate", would have been blind to the input that decides every comparison.
 # The dependency is executed, not decorative: `graphcmp-oracle.py:244` does `import tinygrad` and
 # `graphcmp-p13-ops.py:33` does `from tinygrad import Tensor, dtypes`.
 #
-# **A DIGEST THAT OMITS THE SUBJECT OF THE COMPARISON IS A PIN ON THE SCALE, NOT THE SUBJECT.**
+# A digest that omits the subject of the comparison is a PIN ON the scale, NOT the subject.
 # This walk is what makes `tinygrad/` the SECOND subject, so a substrate move now names the member
 # that moved instead of hiding behind 213 unpinned files.
 SUBSTRATE_WALKS = ("tinybendygrad", "tinygrad")
@@ -1943,19 +1943,19 @@ def _is_scratch(name: str) -> bool:
     """IS **THIS **FILE **A **SCRATCH **COPY**?  **LOADED **BY **PATH** **FROM **THE **INSTRUMENT
     **THAT **OWNS **THE **RULE**, **NOT **RE-SPELLED **HERE.**
 
-    **⇒ AND **WHY **THE **DIGEST **MUST **NOT **HASH **A **SCRATCH **COPY** (MEASURED 2026-10-29):
+    **AND **WHY **THE **DIGEST **MUST **NOT **HASH **A **SCRATCH **COPY** (MEASURED 2026-10-29):
     **THE **WALK **`tinybendygrad/`** **CONTAINS **FIVE **GITIGNORED **SCRATCH **FILES**
     (`tinybendygrad/LAWS/spec-mut.bend`, `tinybendygrad/mixin/creation-mut.bend`,
     `tinybendygrad/renderer/amd/dsl-mut.bend`, `tinybendygrad/codegen/late/.linearizer-mut.bend`,
     `tinybendygrad/renderer/amd/dsl.bend.bak`), **AND **A **MUTATION **PROBE **REWRITES **THEM **AS **IT
     **RUNS** — **SO **THE **DIGEST **MOVED **WHILE **THE **PORT **DID **NOT** (`b4c1fadb…` ->
     `3ddd9993…` **WITH **A **CLEAN **PORT**), **AND **THE **CORPUS **WENT **STALE **FOR **A **REASON
-    **THAT **IS **NOT **THE **PORT.**  **⇒ AND **THIS **IS **THE **TREE's **OWN **RECORDED **HAZARD**:
+    **THAT **IS **NOT **THE **PORT.**  **AND **THIS **IS **THE **TREE's **OWN **RECORDED **HAZARD**:
     **"A **UNIT **THAT **DROPPED **A **MUTATION **PROBE **IN **THE **TREE **MOVED **THE **CORPUS's
     **FRESHNESS **PIN."**
 
-    **⇒ AND **A **DIGEST **THAT **HASHES **A **PROBE's **RESIDUE **IS **NOT **A **PIN **ON **THE **PORT**:
-    **IT **IS **A **PIN **ON **WHETHER **SOMEONE **RAN **A **PLANT.**  **⇒ AND **THE **RULE **IS **ONE
+    **AND **A **DIGEST **THAT **HASHES **A **PROBE's **RESIDUE **IS **NOT **A **PIN **ON **THE **PORT**:
+    **IT **IS **A **PIN **ON **WHETHER **SOMEONE **RAN **A **PLANT.**  **AND **THE **RULE **IS **ONE
     **RULE, **NOT **TWO** — **`gates/header-census-gate.py`'s **`is_scratch`** **IS **THE **INSTRUMENT
     **THAT **OWNS **IT**, **AND **`gates/bendcite-gate.py` **ALREADY **LOADS **IT **BY **PATH** **FOR **THE
     **SAME **REASON** ("A **SECOND **COPY **OF **A **RULE **IS **A **CONTRACT **WITH **NO **GENERATOR").**
@@ -1978,11 +1978,11 @@ _SCRATCH_RULE = None
 def substrate_entries() -> list[tuple[str, str]]:
     """`(relpath, sha256)` per input: the walks plus the named files, ABSENT where not on disk.
 
-    **⇒ AND **THE **SCRATCH **COPIES **ARE **EXCLUDED**, **AND **THAT **IS **THE **POINT**: **THE
+    **AND **THE **SCRATCH **COPIES **ARE **EXCLUDED**, **AND **THAT **IS **THE **POINT**: **THE
     **DIGEST **IS **A **PIN **ON **THE **PORT**, **AND **A **PIN **ON **THE **PORT **THAT **MOVES **WHEN
-    **A **PLANT **RUNS **IS **NOT **A **PIN **ON **THE **PORT.**  **⇒ AND **`__pycache__` **IS **EXCLUDED
+    **A **PLANT **RUNS **IS **NOT **A **PIN **ON **THE **PORT.**  **AND **`__pycache__` **IS **EXCLUDED
     **FOR **THE **SAME **REASON**, **AND **IT **WAS **EXCLUDED **BEFORE **THE **SCRATCH **COPIES
-    **WERE** — **⇒ SO **THE **RULE **WAS **HALF **APPLIED**, **AND **THE **HALF **THAT **MOVED **THE
+    **WERE** — **SO **THE **RULE **WAS **HALF **APPLIED**, **AND **THE **HALF **THAT **MOVED **THE
     **DIGEST **WAS **THE **ONE **THAT **WAS **MISSING.**
     """
     out = []
@@ -2087,13 +2087,13 @@ def snap(stream=sys.stdout):
                      and not any(part.startswith(".") for part in q.relative_to(D).parts)),
                     key=relpath):
         body = b"".join(ln + b"\n" for ln in p.read_bytes().split(b"\n")[:-1] if ln.strip())
-        # **AN OBSERVER ROW IS NOT PART OF THE SUBJECT, AND HASHING IT MAKES A PIN FLAKY.**
+        # AN observer row is not part of the subject, AND hashing it makes a PIN FLAKY.
         # MEASURED 2026-10-20: `substrate-head=` was added to the summary to make a run comparable to
         # a COMMIT -- and then two clean runs of the SAME TREE differed in EXACTLY ONE of 310 files,
         # because that row records WHICH COMMIT measured the run and a commit landed between them
         # (`77e6c2bec` at 03:53:51Z, `4e76b4cb` at 03:59:38Z). The corpus did not move; the OBSERVER
-        # did. **A ROW THAT MAKES A RUN COMPARABLE TO A TREE MAKES TWO RUNS OF THE SAME TREE
-        # INCOMPARABLE** -- both properties are wanted and they are NOT the same property, so the
+        # did. A row that makes a run comparable to a tree makes two runs of the same tree
+        # INCOMPARABLE -- both properties are wanted and they are NOT the same property, so the
         # comparison is over the SUBJECT and the observer is recorded but not hashed.
         if p.name == "D0-run-summary.txt":
             body = b"".join(ln + b"\n" for ln in body.split(b"\n")[:-1]
@@ -2155,16 +2155,16 @@ def unhealthy():
         return ["D0-run-summary.txt ABSENT -- there is no run to be healthy about, so every pin "
                 "below is unknown rather than matched"]
     got = dict(ln.split("=", 1) for ln in text("D0-run-summary.txt").splitlines() if "=" in ln)
-    # THE PRECONDITION ROWS ARE HEALTH, NOT BOOKKEEPING, so they ride here rather than in a gate
+    # THE precondition rows are health, NOT bookkeeping, so they ride here rather than in a gate
     # of their own: `gates/retention-check.py`'s CLAUSE IV calls THIS function by reference, so a
     # run whose summary records no device -- or records one the artifacts contradict -- makes the
     # retention rule fire with no new parser and no new clause.
     #
-    # **AND THE POPULATION AND THE PLANTS RIDE HERE TOO, BECAUSE THEY ARE HEALTH IN THE SAME
-    # SENSE.** A run over a population nobody has re-decided is not healthy, and a run whose
+    # AND the population and the plants ride here too, BECAUSE they are health in the same
+    # SENSE. A run over a population nobody has re-decided is not healthy, and a run whose
     # plant population has drifted from the corpus's instrument's is not healthy -- and both are
-    # facts about the TREE the run is on, which is what this function is about. **THE DERIVED
-    # COUNTS ARE COMPARED HERE AND NOWHERE ELSE**, so a derived expectation that is never
+    # facts about the TREE the run is on, which is what this function is about. THE DERIVED
+    # COUNTS are compared here and nowhere ELSE, so a derived expectation that is never
     # compared would be an expectation in name only: the run's own `graphs=` row is checked
     # against the DISCOVERED corpus, and a disagreement is a red.
     return [f"{k}={v} (expected {PINS[k]})" for k, v in got.items() if k in PINS and v != PINS[k]] \
@@ -2215,9 +2215,9 @@ def repro_bad() -> list[str]:
                 "denominator for `repro-rc` is 0 runs rather than 2. Run `checks/differ.py repro` "
                 "to take it. `PINS` above stays green on one run and says nothing about this."]
     got = dict(ln.split("=", 1) for ln in text(REPRO_ARTIFACT).splitlines() if "=" in ln)
-    # **AND THE REFUSAL'S REASON IS IN THE ARTIFACT, SO IT IS NAMED HERE RATHER THAN READ
-    # OUT OF THE FILE BY HAND.** A WITNESS THAT SAYS `repro-rc=rc=3` AND NOTHING ELSE MAKES A
-    # READER GUESS, AND A GUESS IS NOT A VERDICT.
+    # AND the refusal'S reason is in the artifact, SO it is named here rather than read
+    # OUT of the file by hand. A witness that says `repro-rc=rc=3` AND nothing ELSE MAKES a
+    # READER guess, AND a guess is not a verdict.
     if got.get("repro-refused"):
         got["repro-rc"] = f"{got['repro-rc']} ({got['repro-refused']})"
     bad = [f"{k}={v} (expected {REPRO_PINS[k]}, from {REPRO_ARTIFACT})" for k, v in got.items()
@@ -2269,11 +2269,11 @@ def artefacts_ok():
     ignored, which is worse than the guard not existing. It is NOT excused: `repro_bad()` reads it
     and reports it ABSENT, which is the honest complaint at the honest time.
     """
-    # `present` IS A DIRECTORY WALK, NOT THE `*.txt` GLOB THIS USED TO BE. It was the last arm of
+    # `present` IS a directory walk, NOT the `*.txt` GLOB this used to be. It was the last arm of
     # this function still answering with a suffix set, and that made `UNEXPECTED` and the
     # `EMPTY`/`ONE-LINE` arms weaker than the function's own docstring claims: a stale artifact
     # with ANY other extension was invisible to them, while `MISSING` -- the arm everyone reads --
-    # had already moved to `declared()`. **ONE POPULATION, ONE MECHANISM.** A glob is a set of names
+    # had already moved to `declared()`. ONE POPULATION, ONE MECHANISM. A glob is a set of names
     # this file chooses, so the day the extension moves the guard inspects nothing and reports
     # nothing, which is the same finding as `LIVE_UNITS` and `ORACLE_WORD`.
     #
@@ -2281,20 +2281,20 @@ def artefacts_ok():
     # `snap()` already reads the population as `declared()` PLUS the `.err` beside each artifact, so
     # an `.err` is derived from a declared name and is not an undeclared artifact. MEASURED
     # 2026-10-15 on the live run: 242 files, of which 176 are this population and 66 are `.err`;
-    # `D.glob("*.txt")` reads **the same 176**, and a walk-based `UNEXPECTED` returns **0** against
+    # `D.glob("*.txt")` reads the same 176, and a walk-based `UNEXPECTED` returns 0 against
     # the live tree -- so this is a correctness gain at ZERO current cost, not a re-baseline.
-    # **⇒ AND THE DOTFILE EXCLUSION, WHICH `snap()` ALREADY HAS AND THIS ARM DID NOT.**
-    # `snap()` (the sha256 over the artefacts) PRUNES ANY PATH WITH A DOT COMPONENT, AND ITS
+    # - AND the dotfile exclusion, WHICH `snap()` ALREADY has and this arm did not.
+    # `snap()` (the sha256 over the artefacts) PRUNES any path with a dot component, AND its
     # OWN COMMENT SAYS WHY: *"run() stages each output as `.tmp.<name>` inside this
     # directory, so a run killed mid-write leaves a temp whose presence in one snapshot and
     # absence in the other is a difference in the HARNESS's staging and not in the artifact."*
-    # **⇒ AND `cmd_run` CLEANS THOSE STAGING NAMES AT ITS START (`:1197`), SO THEY ARE NOT
-    # ARTEFACTS.** MEASURED 2026-10-27: A RUN KILLED BY THE SERVER RESTART LEFT
-    # `.tmp.D1-graph-flip.txt` BEHIND, AND `artefacts_ok()` CALLED IT `UNEXPECTED` -- **WHILE
-    # `snap()` DID NOT COUNT IT, SO THE TWO ARMS OF ONE INSTRUMENT DISAGREED ON WHAT A FILE
-    # IS.** **⇒ THIS IS THE THIRD INSTANCE OF THE CLASS IN ONE SESSION** (THE FIRST WAS THE
-    # UNDECLARED `D0-repro-diff.txt`; THE SECOND WAS THIS STAGING NAME), **⇒ AND THE GENERAL
-    # FIX IS ALREADY IN `snap()` AND WAS NOT IN HERE: ONE POPULATION, ONE MECHANISM.**
+    # - AND `cmd_run` CLEANS those staging names at its start (`:1197`), SO they are not
+    # ARTEFACTS. MEASURED 2026-10-27: A run killed by the server restart left
+    # `.tmp.D1-graph-flip.txt` BEHIND, AND `artefacts_ok()` CALLED IT `UNEXPECTED` -- WHILE
+    # `snap()` DID not count it, SO the two arms of one instrument disagreed on what a file
+    # IS. - THIS is the third instance of the class in one session (THE first was the
+    # UNDECLARED `D0-repro-diff.txt`; THE second was this staging name), - AND the general
+    # FIX is already in `snap()` AND was not in here: ONE population, ONE mechanism.
     present = {p.name for p in D.iterdir()
                if p.is_file() and not p.name.endswith(".err") and not p.name.startswith(".")}
     here = present & declared()
@@ -2307,24 +2307,24 @@ def artefacts_ok():
 
 
 # ---- the plants --------------------------------------------------------------------------
-# FOUR PLANTS, AND BOTH HALVES OF EACH. A check that only proves it can fire is half a check --
+# FOUR plants, AND both halves of each. A check that only proves it can fire is half a check --
 # two gates in this project failed the other half in OPPOSITE directions, one because it never
 # refused and one because it reported DID-NOT-REFUSE for a CORRECT refusal that exited before it
-# could print the value asserted. **EVERY VALUE IS PRINTED BEFORE THE EXIT**, for the second of
+# could print the value asserted. EVERY value is printed before the exit, for the second of
 # those two.
 #
-# PLANT 3 IS THE ONE NOBODY ASKED FOR AND IT IS THE POINT: **CHANGE A VALUE IN THE ARTIFACTS
-# WITHOUT CHANGING THE SUMMARY ROW, AND THE CHECK MUST GO RED.** If it does not, the row is a
+# PLANT 3 IS the one nobody asked for and it is the point: CHANGE a value in the artifacts
+# WITHOUT changing the summary row, AND the check must go red. If it does not, the row is a
 # label. This is the only plant that can distinguish "the row is right" from "the row is present".
 #
-# THE FIXTURE IS THE LIVE BYTES, COPIED, never a retyped row: a retyped fixture agrees with the
+# THE fixture is the live bytes, COPIED, never a retyped row: a retyped fixture agrees with the
 # reader by construction, and one prior instrument in this project shipped a `satisfied` plant that
 # passed on its first run because its field regex was `^`-anchored and read ZERO values. And no
 # plant writes into `runs/graphcmp/D` -- a plant that mutates the state under test measures the
 # other units, not itself.
-# THE PLANT NAMES ARE A DECLARATION AND NOT A REGEX OVER THE SENTENCES, so `plant --name N`
+# THE plant names are a declaration and not a regex over the sentences, so `plant --name N`
 # selects by the key each check carries rather than by a substring of prose that a reword
-# would silently break. **A NAME THAT IS NOT IN IT IS `REFUSED` (3) AND NEVER `PASS`**: a
+# would silently break. A name that is not in it is `REFUSED` (3) AND never `PASS`: a
 # plant that does not exist measured nothing, and the five-state vocabulary (`gates/
 # gatekit.py:60`) has a word for that and it is not `PASS`.
 PLANT_NAMES = ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
@@ -2342,7 +2342,7 @@ def report_plants(checks, only=None) -> int:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}\n          observed: {got}")
     bad = sum(1 for c in checks if not c[1])
     if not checks:
-        # IT RAN, IT SELECTED NOTHING, AND IT MEASURED NOTHING. `0 of 0` with a green word is
+        # IT ran, IT selected nothing, AND it measured nothing. `0 of 0` with a green word is
         # the "compared nothing reads as agreement" failure wearing a pin.
         print(f"PLANTS: plant {only!r} SELECTED NO CHECK -- NOT RUN")
         return gatekit().SKIP
@@ -2350,8 +2350,8 @@ def report_plants(checks, only=None) -> int:
     return 1 if bad else 0
 
 
-# THE ONE GRAPH A PLANT ADDS, AS A TEXT EDIT ON A COPY OF THE CORPUS'S OWN GENERATOR.
-# **IT IS NOT READ FROM `git show HEAD:`** -- an arm that reads HEAD plants nothing the moment
+# THE one graph a plant adds, AS a text edit on a COPY OF the corpus'S own generator.
+# IT IS NOT READ FROM `git show HEAD:` -- an arm that reads HEAD plants nothing the moment
 # HEAD carries the fix, which is how one unit's plant scored green under `--falsify` on
 # 2026-10-22. The edit is APPENDED, so it cannot collide with the generator's own text, and
 # the graph it adds is never CALLED -- only NAMED, which is what moves the population's
@@ -2383,13 +2383,13 @@ def population_plants() -> list[tuple[str, bool, str]]:
     DISCOVERED corpus, and a disagreement MUST FAIL.
     """
     checks = []
-    # PLANT 9 -- THE POPULATION PIN. THE COPY IS A TEXT EDIT, never a read of HEAD.
+    # PLANT 9 -- THE population PIN. THE COPY IS a text edit, never a read of HEAD.
     live = population_digest()
     with tempfile.TemporaryDirectory() as td:
         mutated = Path(td) / "graphcmp.py"
         mutated.write_bytes((ROOT / GCMP).read_bytes() + PLANTED_GRAPH_SRC)
         planted = population_digest(mutated)
-    # THE ARTEFACT IS SYNTHESISED FROM THE PIN TABLE AND THE PRECONDITION ROWS, so it is
+    # THE artefact is synthesised from the PIN TABLE and the precondition rows, so it is
     # COMPLETE and GREEN -- and then one row at a time is made to disagree with the tree.
     global D
     keep_dir = D
@@ -2412,8 +2412,8 @@ def population_plants() -> list[tuple[str, bool, str]]:
             red_pop = unhealthy()
     finally:
         D = keep_dir
-    # PLANT 9 -- ***a graph added to the corpus's list WITHOUT the population pin moving MUST
-    # GO RED***, AND THE PIN IS A CONTENT PIN OVER THE GRAPH LIST'S OWN NAMES AND BYTES.
+    # PLANT 9 -- *a graph added to the corpus's list WITHOUT the population pin moving MUST
+    # GO red*, AND the PIN IS a content PIN OVER the graph list'S own names and bytes.
     # THREE HALVES: the LIVE tree is green (or the plant proves nothing); the PLANTED
     # population's identity is not the pin, so the pin reds; and a RUN over the planted
     # population is red END TO END, through the health check every reader uses.
@@ -2424,8 +2424,8 @@ def population_plants() -> list[tuple[str, bool, str]]:
                    and bool(red_pop),
                    f"live={live[:12]} pin={POPULATION_PIN[:12]} planted={planted[:12]} -> "
                    f"{population_bad(planted) or '[]'}; a run over it -> {red_pop or '[]'}"))
-    # PLANT 10 -- ***the artefact's counts disagreeing with the DISCOVERED population MUST
-    # FAIL***. A derived expectation that is never compared is not an expectation.
+    # PLANT 10 -- *the artefact's counts disagreeing with the DISCOVERED population MUST
+    # FAIL*. A derived expectation that is never compared is not an expectation.
     checks.append(("10: ***the artefact's counts disagreeing with the DISCOVERED population "
                    "MUST FAIL*** -- a derived expectation that is never compared is not an "
                    "expectation",
@@ -2463,7 +2463,7 @@ def plant(only=None):
             checks.append(("2: a summary row that contradicts ENV is caught",
                            bool(preconditions_bad(kv | rows | {"noopt": "1"})),
                            f"noopt=1 -> {preconditions_bad(kv | rows | {'noopt': '1'})}"))
-            # PLANT 3 -- ***THE ARTIFACTS MOVE AND THE ROW DOES NOT.*** The device in one wire
+            # PLANT 3 -- *THE artifacts MOVE AND the row does not.* The device in one wire
             # file is rewritten; the summary is untouched.
             wire = D / "D2-canon-py-lin.txt"
             keep = wire.read_bytes()
@@ -2485,7 +2485,7 @@ def plant(only=None):
                            len(preconditions_bad(absent)) == len(ROW_KEYS),
                            f"{len(preconditions_bad(absent))} complaint(s) for {len(ROW_KEYS)} "
                            f"absent row(s)"))
-            # PLANT 5 -- ***THE WITNESS NOBODY RE-TOOK.*** `repro_bad()` is the only thing that
+            # PLANT 5 -- *THE WITNESS NOBODY RE-TOOK.* `repro_bad()` is the only thing that
             # can tell a fresh witness from a four-day-old one, and before `REPRO_SUBSTRATE`
             # existed it could not: MEASURED 2026-10-18, it returned `[]` over an Oct-17 file.
             # ALL THREE HALVES, because a comparator that says STALE for anything is as
@@ -2510,14 +2510,14 @@ def plant(only=None):
                            "stale digest reds, live digest is silent, absent row reds",
                            len(stale) == 1 and not fresh and len(norow) == 1,
                            f"stale={len(stale)} live={len(fresh)} row-absent={len(norow)}"))
-            # PLANTS 6 AND 7 -- CAUSE 3, AND THEY ARE OPPOSITE PLANTS ON THE SAME QUESTION.
+            # PLANTS 6 AND 7 -- CAUSE 3, AND they are opposite plants on the same question.
             # `byte-identical` used to compare a TOPOSORT POSITION against a HASH-CONS INDEX,
             # so 14 of 34 graphs were called byte-different for being interned in a different
             # order. The canonical form (`canon_rows`) answers that. A claim that a new form
             # removes a class of false difference needs BOTH halves: one plant that must MOVE
             # the verdict (a real content change is not swallowed) and one that must NOT (a
             # pure renumbering still compares equal, or the "removal" is a mask).
-            # THE SUBJECT IS DISCOVERED, NOT NAMED, and it is discovered BY CANONICALISING THE RAW
+            # THE subject is discovered, NOT named, and it is discovered BY canonicalising the raw
             # ARTIFACTS rather than by reading the canonical-form artifacts -- so this plant
             # tests the FUNCTION and not the presence of a file the run happens to have
             # written. The population is exactly the class the fix is for: raw-different and
@@ -2578,7 +2578,7 @@ def plant(only=None):
                                "reference resolving)", same_c and ok_num,
                                f"{name}: canonical BYTE-IDENTICAL -> BYTE-IDENTICAL = {same_c}; "
                                f"bijection = {ok_num} ({why_num})"))
-            # PLANT 8 -- CAUSE 1. A REFUSAL MUST CARRY ITS NAME INTO THE ROW A READER READS.
+            # PLANT 8 -- CAUSE 1. A refusal must carry its name into the row a reader reads.
             # MEASURED 2026-10-18T18:04Z: `D1-verdicts.txt` printed `loop: VERDICT=
             # EXPECTED=AGREE` while the artifact beside it was a one-line `rc=2` and its `.err`
             # named the cause. A refusal that only exists in a `.err` is invisible to every
@@ -2800,14 +2800,14 @@ def cmd_repro(a):
             with path.open("w") as f:
                 snap(f)
             shots[label] = path
-            # **THE SUBJECT THIS RUN MEASURED, READ FROM ITS OWN SUMMARY BEFORE THE NEXT RUN
-            # OVERWRITES IT.** THE SNAPSHOT ITSELF HOLDS SHA256s, NOT THE SUMMARY'S CONTENT,
-            # SO THE DIGEST HAS TO BE READ HERE, WHILE IT IS STILL THERE.
+            # THE subject this run measured, READ from its own summary before the next run
+            # OVERWRITES it. THE snapshot itself holds SHA256s, NOT the summary'S content,
+            # SO the digest has to be read here, WHILE it is still there.
             subjects[label] = run_subject()
             print(f"# run {label} done: {len(path.read_text().splitlines())} files snapshotted")
         n = len(shots["B"].read_text().splitlines())
         # `repro` IS the tree's only INDEPENDENT measurement. Every one of `PINS` reads
-        # `D0-run-summary.txt`, so `17/17 green` is ONE RUN'S 17 ROWS AND THE DENOMINATOR IS 1, NOT 17
+        # `D0-run-summary.txt`, so `17/17 green` is ONE run'S 17 ROWS and the denominator is 1, NOT 17
         # (`.agents/slop/pinindep/REPORT.md`: 17 of 17 pins read the same file; the true
         # independent-measurement count is 10). This two-run byte comparison is the cheapest way to make
         # the denominator 2 -- and it was COMPUTED AND THROWN AWAY: printed, never persisted. So write it,
@@ -2819,21 +2819,21 @@ def cmd_repro(a):
                                   f"d10-transcript={d10}\n" + base)
             print(f"REPRO: {n} of {n} files identical across two clean runs "
                   "(sha256 over non-blank lines)")
-            # **AND A PASSING REPRO CLEARS THE RESIDUE OF A PAST FAILURE.** THE DIFF FILE
-            # DESCRIBES A FAILURE THAT NO LONGER HOLDS, AND LEAVING IT IS THE STALE-RESIDUE
-            # CLASS. **=> THE FILE'S PRESENCE IS THEN EXACTLY "THE LAST REPRO FAILED".**
+            # AND a passing repro clears the residue of a past failure. THE diff file
+            # DESCRIBES a failure that no longer holds, AND leaving it is the stale-RESIDUE
+            # CLASS. => THE file'S presence is then exactly "THE last repro failed".
             stale = D / f"{REPRO_DIFF_ARTIFACT}"
             if stale.is_file():
                 stale.unlink()
                 print(f"  removed the stale {REPRO_DIFF_ARTIFACT} from a past failure")
             return 0
-        # **A MOVED TREE IS A REFUSAL AND NOT A FAIL, AND THE DISTINCTION IS THE WHOLE CLAIM.**
+        # A moved tree is a refusal and not a fail, AND the distinction is the whole claim.
         # MEASURED 2026-10-25: the two runs measured different subjects, so their snapshots
-        # differed, and the repro said `repro-rc=rc=1` -- **WHICH READS AS "THE PORT IS
-        # NON-DETERMINISTIC", A CLAIM ABOUT THE PORT THAT IS FALSE.** `FAIL` (1) IS "A
-        # COMPARISON CAME OUT WRONG"; `REFUSED` (3) IS "A PRECONDITION WAS ABSENT", AND A
-        # PRECONDITION WAS ABSENT: THE TWO RUNS DID NOT MEASURE THE SAME TREE, SO NO
-        # REPRODUCIBILITY CLAIM WAS EITHER MADE OR REFUTED.
+        # differed, and the repro said `repro-rc=rc=1` -- WHICH READS AS "THE PORT IS
+        # NON-DETERMINISTIC", A claim about the port that is FALSE. `FAIL` (1) IS "A
+        # COMPARISON came out wrong"; `REFUSED` (3) IS "A precondition was absent", AND a
+        # PRECONDITION was absent: THE two runs did not measure the same tree, SO no
+        # REPRODUCIBILITY claim was either made or refuted.
         reason = repro_subject_reason(subjects.get("A", ""), subjects.get("B", ""))
         if reason:
             gk = gatekit()
@@ -2852,13 +2852,13 @@ def cmd_repro(a):
         print(f"REPRO: NOT IDENTICAL -- {n} files:")
         sys.stdout.write(byte_diff(shots["A"], shots["B"], 40))
 
-        # **A REPRODUCIBILITY FAILURE THAT CANNOT BE DIAGNOSED AFTER THE FACT IS NOT A FINDING, IT IS
-        # A NOTIFICATION.** MEASURED 2026-10-20: two clean runs differed in EXACTLY ONE of 310 files,
+        # A reproducibility failure that cannot be diagnosed after the fact is not a finding, IT is
+        # A NOTIFICATION. MEASURED 2026-10-20: two clean runs differed in EXACTLY ONE of 310 files,
         # and the differing BYTES were a pair of sha256s IN THE SNAPSHOT -- so the output named the
         # ARTIFACT but not the ROW, and both snapshots lived in a `TemporaryDirectory` deleted on exit.
-        # **THE DIFFERENCE WAS THEREFORE UNRECOVERABLE**, and its cause turned out to be that
-        # `substrate-head` -- THE ROW ADDED TO MAKE A RUN COMPARABLE TO A TREE -- RECORDS WHICH COMMIT
-        # MEASURED IT, SO TWO RUNS OF THE SAME TREE ARE INCOMPARABLE WHILE HEAD MOVES. The artifact
+        # THE DIFFERENCE WAS THEREFORE UNRECOVERABLE, and its cause turned out to be that
+        # `substrate-head` -- THE row added to make a run comparable to a tree -- RECORDS which commit
+        # MEASURED it, SO two runs of the same tree are incomparable while HEAD MOVES. The artifact
         # below names the differing ROWS, so the next failure is a FINDING.
         for _line in byte_diff(shots["A"], shots["B"], 40).splitlines():
             if not (_line.startswith("<") and "  runs/" in _line):
@@ -2882,10 +2882,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     run_p = sub.add_parser("run", help="write every graphcmp artifact under runs/graphcmp/D")
-    # **AND THE RUN GETS THE SAME BOUND `repro` HAS.** `cmd_run` WAITS FOR THE BEND LANE TO
-    # SETTLE BEFORE IT WRITES ANYTHING, AND THE BOUND IS HOW MANY PROBES THAT WAIT MAY
-    # TAKE -- SO THE BOUND BELONGS IN THE PARSER, NEXT TO `repro`'s, NOT INSIDE THE
-    # FUNCTION. IT IS A POSITIONAL WITH A DEFAULT, SO EVERY EXISTING INVOCATION
+    # AND the run gets the same bound `repro` HAS. `cmd_run` WAITS for the BEND LANE to
+    # SETTLE before it writes anything, AND the bound is how many probes that wait may
+    # TAKE -- SO the bound belongs in the parser, NEXT to `repro`'s, NOT inside the
+    # FUNCTION. IT is a positional with a default, SO every existing invocation
     # (`differ.py run`) IS UNCHANGED.
     run_p.add_argument("wait", nargs="?", type=int, default=9,
                        help="substrate probes before the run writes anything (the same bound "

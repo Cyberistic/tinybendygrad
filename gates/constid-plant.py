@@ -26,7 +26,7 @@ interns the SAME payload twice as ONE key and two DIFFERENT payloads as TWO keys
 | IEEE (arm A) | **2 -- SPLITS what upstream merges** | 2 -- matches |
 | upstream's `__eq__` (arm B) | 1 -- matches | **1 -- MERGES, a collision upstream does not have** |
 
-**⇒ THE PORT's BITWISE COMPARATOR IS THE ONLY ONE OF THE THREE THAT MATCHES UPSTREAM's
+**THE PORT's BITWISE COMPARATOR IS THE ONLY ONE OF THE THREE THAT MATCHES UPSTREAM's
 HASH TABLE IN BOTH CELLS, AND NEITHER ALTERNATIVE IS A FIX.**  Arm A would re-mint an
 identical node; arm B would merge two constants upstream keeps apart.
 
@@ -54,7 +54,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PASS, FAIL, REFUSED = 0, 1, 3
 
-# THE MUTATIONS, AND THEY ARE THE COMPARATOR.  The text is the port's own, read out of
+# THE mutations, AND they are the comparator.  The text is the port's own, read out of
 # `tinybendygrad/uop/ops.bend`, and the plant REFUSES if it is not there -- a mutation that
 # does not apply is not reported as zero.
 OLD = "    case CFloat{g}: U32.is_eq(F32.bits(f), F32.bits(g))"
@@ -71,11 +71,11 @@ IEEE = "    case CFloat{g}: F32.is_eq(f, g)"
 NANAWARE = ("    case CFloat{+g}: Bool.or(Bool.and(H.f32_is_nan(f), H.f32_is_nan(g)), "
             "F32.is_eq(f, g))")
 
-# WHAT THE PLANT EXPECTS TO SEE, IN THE C LANE.  `bin/bend <file> -o <bin>` builds a native
+# WHAT the plant expects to see, IN the c lane.  `bin/bend <file> -o <bin>` builds a native
 # binary, which is the C lane -- the one that KEEPS a nan payload, and therefore the one in
 # which the comparator is the thing that decides the count.
 #
-# UPSTREAM'S HASH TABLE, WHICH IS WHAT THE PORT'S COMPARATOR HAS TO MATCH, IN BOTH NAN
+# UPSTREAM'S hash table, WHICH is what the port'S comparator has to match, IN both nan
 # CELLS: the same payload twice is ONE entry, and two different payloads are TWO entries
 # (`ConstFloat.__hash__` is `hash(self.bits)`).
 CONTROL = {"split_keys_distinct": "2", "split_keys_same": "1",

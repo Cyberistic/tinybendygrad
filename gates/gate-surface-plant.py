@@ -89,7 +89,7 @@ PATCH = (
      '            return None, None, None, f"RED_IS is {found[\'RED_IS\']!r}, not one of the three classes"\n'
      '        found["RED_IS"] = klass\n'
      '    return found["EXIT_SURFACE"], found.get("PLANTS"), found.get("RED_IS"), ""\n'),
-    # 4. THE FILE THE CENSUS CANNOT READ: a file in another language is not a malformed
+    # 4. THE file the census cannot read: a file in another language is not a malformed
     #    declaration, it is a file this census does not understand.
     ("    shell, noshebang, arms = [], [], {}\n",
      "    shell, noshebang, unread, arms = [], [], [], {}\n"),
@@ -121,9 +121,9 @@ PATCH = (
     # MEASURED 2026-10-30: this anchor read `2: "REFUSED"`, and the census's own constant has
     # always been `3: "REFUSED"` (its module docstring says `VERDICTS = {0: "GREEN", 1: "RED",
     # 3: "REFUSED"}` at `:22`, and `refuse()` exits 3 because the house vocabulary -- `gatekit`'s
-    # own unpack, `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5` -- has NO name for 2).  **SO
-    # THE ANCHOR **ROTTED **AND **THIS **PLANT **REFUSED** — **"the anchor has rotted, so the
-    # candidate is not the census"** — **WHICH **IS **THE **MECHANISM **WORKING.**  The census's
+    # own unpack, `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5` -- has NO name for 2).  SO
+    # THE anchor rotted and this plant refused — "the anchor has rotted, so the
+    # candidate is not the census" — WHICH IS THE MECHANISM WORKING.  The census's
     # constant was CORRECTED to 3, and this anchor moves with it: a fixture that pins a stale
     # spelling is a plant that must be edited when the fix lands, which is the property its own
     # header names.
@@ -132,7 +132,7 @@ PATCH = (
 )
 
 # ---- THE SYNTHETIC GATES.  They are COPIES of a shape, written to a temporary tree. ---------
-# EVERY ONE OF THEM DECLARES THE SURFACE UNDER BOTH NAMES, because the ALIAS form is what the
+# EVERY one of them declares the surface under both names, because the ALIAS form is what the
 # live census reads and what the candidate reads, and a fixture that only the patched reader can
 # see would prove the patch and not the seam.
 GATE = ("import sys\n"
@@ -177,13 +177,13 @@ def _code_only(src):
 
     MEASURED 2026-10-30: hunk 4's `new` text was ALREADY IN THE CENSUS -- the routing the hunk
     proposes had been applied -- but the census carries a **COMMENT BLOCK** between the lines the
-    hunk matches, so `new in out` was False and the plant REFUSED with "the anchor has rotted". **⇒ AND
+    hunk matches, so `new in out` was False and the plant REFUSED with "the anchor has rotted". **AND
     THE REFUSAL **WAS **WRONG**: **THE **HUNK **WAS **APPLIED, **AND **A **HUNK **THAT **IS **APPLIED
     **MUST **BE **SKIPPED, **NOT **REFUSED.**
 
-    ⇒ AND **A **COMMENT **IS **NOT **CODE**, **AND **THE **CENSUS's **OWN **`strip_comments()`** **IS **THE
+AND **A **COMMENT **IS **NOT **CODE**, **AND **THE **CENSUS's **OWN **`strip_comments()`** **IS **THE
     **PRECEDENT** — **SO **THE **MATCH **IS **MADE **ON **THE **CODE**, **WHICH **IS **WHAT **THE **HUNK
-    **IS **ABOUT.**  **⇒ AND **THE **REFUSAL **STANDS **FOR **THE **OTHER **HALF:** **IF **NEITHER **THE
+    **IS **ABOUT.**  **AND **THE **REFUSAL **STANDS **FOR **THE **OTHER **HALF:** **IF **NEITHER **THE
     **OLD **NOR **THE **NEW **IS **PRESENT **AS **CODE**, **THE **ANCHOR **REALLY **HAS **ROTTED.**
     """
     out = []
@@ -275,7 +275,7 @@ def main():
     cand = load_candidate(patched)
     entries = population()
 
-    # ---- 1. THE SEAM, AGAINST THE LIVE CENSUS.  This wave's own change, and the one that can
+    # ---- 1. THE seam, AGAINST the live census.  This wave's own change, and the one that can
     #         silently cost the census a declaration.
     with tempfile.TemporaryDirectory() as td:
         v, _p, red, note = live.declaration(synth(td, "g.py", CLEAN))
@@ -342,7 +342,7 @@ def main():
           f"charged a malformed declaration -- the marker moved, and they did not",
           not still, f"still_charged={still}")
 
-    # ---- 3. THE FILE THE CENSUS CANNOT READ.  A COPY of the tree's own JavaScript census, in a
+    # ---- 3. THE file the census cannot read.  A COPY of the tree's own JavaScript census, in a
     #         synthetic tree, so the claim is about a real file and not about a fixture.
     js_rel = "checks/nan_census.mjs"
     with tempfile.TemporaryDirectory() as td:

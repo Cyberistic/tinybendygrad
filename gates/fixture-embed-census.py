@@ -62,13 +62,13 @@ SITES **in the cell's own file**, and the port does not put them there: `TlAcc` 
 declared in `tinybendygrad/viz/serve.bend` and constructed in `tinybendygrad/renderer/tc.bend`,
 `Red` in `tinybendygrad/codegen/decomp/transcendental*.bend` and read in
 `tinybendygrad/renderer/tc_ptx.bend`, `Run` in `tinybendygrad/sz.bend` and read in
-`tinybendygrad/runtime/ops_dsp.bend`.  **⇒ THE DECLARATION AND THE CONSTRUCTION ARE
+`tinybendygrad/runtime/ops_dsp.bend`.  **THE DECLARATION AND THE CONSTRUCTION ARE
 NOW RESOLVED ACROSS THE WHOLE PORT.**
 
 **AND A NAME IS NOT A TYPE.**  MEASURED: the port declares TWO different `Red` records
 -- `Red{r: F32, q: U32}` in `transcendental_f32.bend` and `Red{ar: O.Arena, r: U32,
 q: U32}` in `transcendental.bend` -- so a map keyed by the NAME ALONE reads `Red.b`'s
-value out of the WRONG record.  **⇒ THE DECLARATION IS RESOLVED IN THE FILE THAT
+value out of the WRONG record.  **THE DECLARATION IS RESOLVED IN THE FILE THAT
 CONSTRUCTS IT**, with the file that DEFINES THE ACCESSOR as the fallback.
 
 **AND THE FOUR CLASSES, NONE OF WHICH IS A SILENCE.**  `FROZEN` (the rot) ·
@@ -86,7 +86,7 @@ a WRONG VALUE** (`f13_param`'s PARAM is `%dat_u64_0` at the pin and the frozen c
 `%dat_f32_0`), and **85 name a row that has MOVED** -- the 2026-10-16 re-vendor moved a
 BUFFER's size out of the `ParamArg` and into a size CONST SRC, so CPython's own graphs
 gained a node and every BUFFER-bearing fixture's `.r[i]` indices moved by one.
-**⇒ 87 of the 268 are not what CPython says today, and 181 are.**
+**87 of the 268 are not what CPython says today, and 181 are.**
 
 HOW THE CENSUS MUST BE TAUGHT, AND IT IS TWO CLAUSES
 -----------------------------------------------------
@@ -135,15 +135,15 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PORT = ROOT / "tinybendygrad"
 
-#: THE CENSUS'S OWN MODULE, LOADED BY PATH.  Its file name has no dash, so it could be
+#: THE census'S own module, LOADED by path.  Its file name has no dash, so it could be
 #: imported by name, but it lives beside the gate and the house rule is to load a
 #: sibling by path -- and the lexer, the row-builder discovery and the provenance
 #: resolver are SHARED LOGIC, not something to copy.
 CENSUS = HERE / "pycell-census.py"
 
-#: THE PORT'S OWN DECLARATION OF ITS GENERATED FIXTURES.  The markers are in the
-#: SOURCE, and the region between them is what a generator wrote.  **THESE ARE NOT A
-#: HAND LIST OF FILES AND NOT A HAND LIST OF REGIONS**: the markers are the port's own
+#: THE port'S own declaration of its generated fixtures.  The markers are in the
+#: SOURCE, and the region between them is what a generator wrote.  THESE ARE NOT A
+#: HAND list of files and not a hand list of regions: the markers are the port's own
 #: words, and a file that does not say them contributes nothing.
 BEGIN = re.compile(r"^#\s*=+\s*BEGIN GENERATED FIXTURES\s*=*\s*$", re.M)
 END = re.compile(r"^#\s*=+\s*END GENERATED FIXTURES\s*=*\s*$", re.M)
@@ -157,7 +157,7 @@ ACCESSOR = re.compile(
     r"\s*case\s+(\w+)\{([^}]*)\}\s*:\s*(\w+)\s*$", re.M)
 
 #: A RECORD TYPE: `type T is Data:` and the next line's `T{field: Type, ...}`.
-#: **AND THE ONE-LINE SPELLING**, because the pin's `sz.bend:1479` writes
+#: AND THE ONE-LINE SPELLING, because the pin's `sz.bend:1479` writes
 #: `type Run is Data: Run{text: String, ...}` on ONE line and the first version of this
 #: regex missed it.  MEASURED: the two shapes are both in the tree, so a regex that
 #: admits one of them is a census that cannot see half the port's record types.
@@ -350,7 +350,7 @@ def live_comparison(frozen):
                 out[(cur, w.group(0))] = w.group(0)
         return out
 
-    # THE PORT's OWN FROZEN REGION, read BY PATH from the file that DECLARES it.
+    # THE port's OWN frozen region, read BY path from the file that DECLARES it.
     port = PORT / "renderer" / "ptx.bend"
     if not port.is_file():
         return ""
@@ -374,7 +374,7 @@ def live_comparison(frozen):
     live_recs = records(r.stdout, r"^def (f\d+_\w+)_wants\(\)")
 
     def key_of(rec):
-        # THE KEY IS THE FIXTURE AND THE `Wt`'s FIRST FIELD -- the row the record names.
+        # THE key is the fixture and the `Wt`'s FIRST field -- the row the record names.
         m = re.match(r'Wt\{"((?:[^"\\]|\\.)*)"', rec)
         return m.group(1) if m else rec
 
@@ -440,7 +440,7 @@ def upstream_ops_ever():
     AT ALL, it is a PLACEHOLDER in a driver's own docstring, and a census that reports it as
     a missing op is a census of NAMES.
 
-    ⇒ THE THREE CLASSES, AND NONE OF THEM IS A SILENCE:
+THE THREE CLASSES, AND NONE OF THEM IS A SILENCE:
       DECLARED          the port's own `Op` enum has the member.
       REMOVED-UPSTREAM  the port does not have it and upstream's OWN HISTORY shows it EXISTED
                         -- so the site is a FIXTURE AGAINST AN UPSTREAM THAT NO LONGER
@@ -634,7 +634,7 @@ def main():
     regions = {path: generated_regions(raw) for path, (raw, _code) in ctxs.items()}
     declared = {p for p, rs in regions.items() if rs}
 
-    # ---- THE RECORD TYPES, PER FILE.  **A NAME IS NOT A TYPE**, and MEASURED: the port
+    # ---- THE record types, PER file.  A name is not a TYPE, and MEASURED: the port
     # declares TWO different `Red` records -- `Red{r: F32, q: U32}` in
     # `tinybendygrad/codegen/decomp/transcendental_f32.bend` and
     # `Red{ar: O.Arena, r: U32, q: U32}` in `tinybendygrad/codegen/decomp/transcendental.bend`
@@ -647,7 +647,7 @@ def main():
         if got:
             types_in[path] = got
 
-    # ---- THE CONSTRUCTION SITES, ACROSS THE WHOLE PORT, for the types the accessors
+    # ---- THE construction sites, ACROSS the whole port, for the types the accessors
     # actually name.  The population is the ACCESSORS' OWN types, so the walk is bounded
     # by the number of accessor-fed types and not by the number of record types.
     want_types = {t for (t, _f, _p) in accessors.values()}
@@ -663,25 +663,25 @@ def main():
     # RECORD ACCESSOR, where the accessor's type is CONSTRUCTED with a LITERAL inside
     # a GENERATED region.
     #
-    # **THE RECORD TYPE'S DECLARATION AND ITS CONSTRUCTION SITES ARE RESOLVED ACROSS THE
-    # WHOLE PORT, NOT IN THE CELL'S OWN FILE.**  MEASURED, and it was the census's own
+    # THE record TYPE'S declaration and its construction sites are resolved across the
+    # WHOLE port, NOT in the cell'S own file.  MEASURED, and it was the census's own
     # understatement: `TlAcc` is DECLARED in `tinybendygrad/viz/serve.bend` and CONSTRUCTED
     # in `tinybendygrad/renderer/tc.bend`; `Red` is declared in
     # `tinybendygrad/codegen/decomp/transcendental*.bend` and read in
     # `tinybendygrad/renderer/tc_ptx.bend`; `Run` is declared in `tinybendygrad/sz.bend` and
     # read in `tinybendygrad/runtime/ops_dsp.bend`.  A census that looked for the
-    # declaration in the cell's own file found **3** accessor-fed cells where the port has
-    # **28** -- "A PARSER THAT COUNTS FOUR FEWER IS A PARSER THAT UNDERSTATES, AND A CENSUS
-    # THAT UNDERSTATES IS THE DEFECT THIS FILE EXISTS TO CATCH", said about a DIFFERENT
+    # declaration in the cell's own file found 3 accessor-fed cells where the port has
+    # 28 -- "A parser that counts four fewer is a parser that understates, AND a census
+    # THAT understates is the defect this file exists to catch", said about a DIFFERENT
     # parser and about the SAME defect.
     #
-    # THE FOUR CLASSES, AND NONE OF THEM IS A SILENCE:
+    # THE four classes, AND NONE OF them is a silence:
     #   FROZEN      accessor-fed, the record's type is declared, a construction of it sits
     #               inside a region the port DECLARES as generated, the field's value there
-    #               is a LITERAL, and **THE REGION's GENERATOR IS GONE**.  THIS IS THE ROT.
+    #               is a LITERAL, and THE region's GENERATOR is gone.  THIS is the rot.
     #   DRIFTED     the same, and the region's generator IS THERE and RUNS and the region
     #               does NOT match what it emits.  A region that no longer says what its
-    #               generator says.  **THIS IS THE ROW THAT CAN GO RED.**
+    #               generator says.  THIS is the row that can go red.
     #   GENERATED   the same, and the region's generator IS THERE and RUNS and the region
     #               MATCHES.  The literal is a BUILD PRODUCT, and it is not rot.
     #   PORT-STATE  accessor-fed, the record's type is declared, it IS constructed -- but
@@ -692,9 +692,9 @@ def main():
     #   UNDECLARED  accessor-fed, and the record's TYPE DECLARATION IS NOWHERE IN THE PORT.
     #               The census cannot see it, and it says so rather than counting it.
     #
-    # **THE CLASS IS THE GENERATOR's PRESENCE AND NOT THE PRESENCE OF A LITERAL.**  MEASURED:
+    # THE class is the generator's PRESENCE and not the presence of a literal.  MEASURED:
     # the old class counted EVERY literal in EVERY declared generated region, so it counted
-    # **268** frozen copies of the port's own 25 PTX fixtures -- and REGENERATING THE REGION
+    # 268 frozen copies of the port's own 25 PTX fixtures -- and REGENERATING THE REGION
     # DID NOT MOVE THE COUNT, because a generated region is frozen BY CONSTRUCTION whether
     # or not a generator exists.  A class that cannot go empty is a LABEL.  The class is now
     # read from `gates/fixture-region-gate.py`, which RUNS the generator the region names:
@@ -707,7 +707,7 @@ def main():
     port_state = []        # the same, minus the frozen ones
     placeholders = []      # accessor-fed, the value is not a literal
     undeclared = []        # accessor-fed, the record's type is not declared in the port
-    # THE REGION's CLASS, PER FILE, AND IT IS ASKED OF THE INSTRUMENT THAT KNOWS IT.
+    # THE region's CLASS, PER file, AND it is asked of the instrument that knows it.
     frg = load_fixture_region_gate()
     region_class = {}
     for path in declared:
@@ -740,7 +740,7 @@ def main():
                 placeholders.append((r["file"], r["builder"], r["site"], r["name"], typename,
                                      field, vals[idx]))
                 continue
-            # THE REGION's CLASS DECIDES THE CELL's CLASS, AND THE CLASS IS READ FROM THE
+            # THE region's CLASS decides the cell's CLASS, AND the class is read from the
             # INSTRUMENT THAT RUNS THE GENERATOR.
             cls = region_class.get(cpath, "UNDECLARED")
             if cls == "GENERATED":
@@ -752,7 +752,7 @@ def main():
             else:
                 frozen.append((r["file"], r["builder"], r["site"], r["name"], typename, field,
                                vals[idx]))
-        # THE CLASS OF A CELL THAT IS NOT FROZEN, AND EVERY ONE OF THEM IS NAMED:
+        # THE class of a cell that is not frozen, AND every one of them is named:
         #   in_region > 0 and no literal -> PLACEHOLDER (the value at the construction site
         #                                          is not a literal: a slot, not an answer)
         #   resolved == 0                -> the record is never CONSTRUCTED for that field:
@@ -808,9 +808,9 @@ def main():
               f"for this file -- so the DELTA is {len(by_file[f]) - c.get('TRANSCRIPTION', 0)}")
     if not frozen:
         print("  none")
-    # ---- THE THREE CLASSES THAT ARE NOT ROT, BY NAME.  A NEGATIVE RESULT IS A RESULT,
+    # ---- THE three classes that are not rot, BY name.  A negative result is a result,
     # and naming them is what stops a reader from assuming the census saw only what it
-    # reported -- and a FALSE POSITIVE IS A ROW THAT CANNOT GO RED, IN THE OTHER DIRECTION.
+    # reported -- and a FALSE POSITIVE is a row that cannot go red, IN the other direction.
     for label, group in (("ACCESSOR-FED CELLS THAT ARE NOT IN A GENERATED REGION (the "
                           "port's own state, so NOT frozen expectations)", port_state),
                          ("ACCESSOR-FED CELLS WHOSE VALUE IS A PLACEHOLDER (not a literal)",
@@ -833,7 +833,7 @@ def main():
     if live:
         print(live)
     print("")
-    # ---- THE OP SITES, AND THE PLACEHOLDER CASE.
+    # ---- THE op sites, AND the placeholder case.
     counts, sites = op_site_census()
     print(f"OP-CONSTRUCTION SITES OVER THE WHOLE TREE ({len(sites)} sites, "
           f"DECLARED {counts['DECLARED']} / REMOVED-UPSTREAM {counts['REMOVED-UPSTREAM']} "

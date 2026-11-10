@@ -1,7 +1,7 @@
 #!/bin/zsh
 # checks/.e2e-fixture/e2e_port/run-port-mm.sh -- e2e.sh STAGE 6, ADDED.
 #
-# THE SAME MATMUL, RUN THROUGH THE PORT.  Stages 1-4 of `e2e.sh` pass 64/64 u32 words
+# THE same matmul, RUN through the port.  Stages 1-4 of `e2e.sh` pass 64/64 u32 words
 # against CPython on a real `apple/metal-3` WebGPU adapter -- BY ASKING NODE FOR
 # `navigator.gpu`.  Nothing in the port's own runtime is in that path, and that has
 # been true since the artifact was written.  This stage runs the SAME matmul with NO
@@ -40,22 +40,22 @@ PORTEXEC="$ROOT/checks/.e2e-fixture/portexec"
 PLANT="$ROOT/checks/.e2e-fixture/e2e_port/plant.py"
 W=${1:-${TMPDIR}/e2e-port-mm}
 
-# THE WORK DIRECTORY IS AN ARGUMENT, AND AN ARGUMENT THAT LOOKS LIKE A FLAG IS NOT A
+# THE work directory is an argument, AND an argument that looks like a flag is not a
 # DIRECTORY.  MEASURED 2026-10-19: `run-f64.sh --help` put `$W` at `--help`, and
 # `mkdir -p "$W"` created a directory NAMED `--help` AT THE REPO ROOT, holding this
 # script's own `.log` files and two `.txt` dumps -- and `checks/no-txt.py` OWNS those
 # `.txt` files, so a stray directory became HARD debt the `.txt` gate charges.
-# **⇒ A DIRECTORY ARGUMENT IS **REFUSED **WHEN **IT **LOOKS **LIKE **A **FLAG**, **AND
-# **IT **IS **REFUSED **WHEN **IT **WOULD **LAND **INSIDE **THE **REPO** -- **BOTH
-# **BECAUSE **THE **WRITE **IS **THE **DAMAGE**, **AND **BECAUSE **A **DIRECTORY **AT
-# **THE **REPO **ROOT **IS **A **PATH **THE **TREE **OWNS.** **EXIT **3** **IS **THE
-# **HOUSE'S **REFUSED.**
+# - A directory argument is refused when it looks like a flag, AND
+# IT is refused when it would land inside the repo -- BOTH
+# BECAUSE the write is the damage, AND because a directory at
+# THE repo root is a path the tree owns. EXIT 3 IS the
+# HOUSE'S REFUSED.
 case "$W" in
   -*) print -r -- "$0: the work directory '$W' looks like a FLAG. This script's argument is a DIRECTORY; exit 3 (REFUSED)." >&2
       exit 3 ;;
 esac
-# THE ARGUMENT MAY BE RELATIVE, SO IT IS RESOLVED BEFORE THE COMPARISON.  A PATTERN
-# AGAINST THE ABSOLUTE `$ROOT` DOES NOT MATCH `.agents/slop/x`, AND A GUARD THAT
+# THE argument may be relative, SO it is resolved before the comparison.  A pattern
+# AGAINST the absolute `$ROOT` DOES not match `.agents/slop/x`, AND a guard that
 # MISSES A RELATIVE PATH IS NOT A GUARD.
 case "$W" in
   /*) WABS=$W ;;
@@ -101,7 +101,7 @@ if [ ! -f "$ORACLE" ]; then
 fi
 
 # ---- SUBSTRATE vs A VERDICT --------------------------------------------------
-# A ZERO IS A REQUEST FOR A FIXTURE, NOT A COVERAGE CLAIM.  `run-kernel.sh` once
+# A zero is a request for a fixture, NOT a coverage claim.  `run-kernel.sh` once
 # reported "port produced 0 rows in 8 attempts" when the cause was a CONCURRENT AGENT's
 # edit to `helpers.bend:2551`, which the port's own imports drag in.  So this is
 # checked on EVERY lane and EVERY control, the port's own stderr is printed, and the
@@ -110,19 +110,19 @@ fi
 substrate=0
 substrate_note() {  # substrate_note <workdir>
   local rows
-  # **⇒ AND THE ROW COUNT COMES FROM THE **COPY** THE LANE MADE, WHICH IS THE
-  # TRACKED `gates/cstyle-live.rows`** -- `portexec/run-kernel.sh` copies it into
-  # the work directory as `port-rows.txt`. **⇒ AND THE OLD SHAPE OF THIS CHECK
-  # READ `port-rows.txt` AS A CAPTURE OF `cstyle.bend`'s STDOUT**, which is what
+  # - AND the row count comes from the COPY THE lane made, WHICH is the
+  # TRACKED `gates/cstyle-live.rows` -- `portexec/run-kernel.sh` copies it into
+  # the work directory as `port-rows.txt`. - AND the old shape of this check
+  # READ `port-rows.txt` AS A CAPTURE OF `cstyle.bend`'s STDOUT, which is what
   # it USED to be; the copy is now the TRACKED ROWS FILE, and the count is the
   # same number for the same reason.
   #
-  # **⇒ AND THE `|| print -r -- 0` WAS A BUG OF ITS OWN**: `grep -c` on a
+  # - AND the `|| print -r -- 0` WAS a bug of its own: `grep -c` on a
   # MISSING file prints `0` AND EXITS 1, so the `||` branch ALSO ran and
   # `$(...)` collected `0\n0` -- two lines -- and `[ "$rows" -lt 220 ]` then
   # read `0\n0` as an ARITHMETIC EXPRESSION and answered
-  # `[:3: integer expression expected`. **⇒ AND THE FIX IS TO READ THE
-  # COUNT ONCE AND NOT FALL BACK ON TOP OF IT.**
+  # `[:3: integer expression expected`. - AND THE FIX IS TO READ THE
+  # COUNT once and not fall back on top of it.
   rows=$(grep -c '\]   py=\[' "$1/port-rows.txt" 2>/dev/null)
   rows=${rows:-0}
   if [ "$rows" -lt 220 ]; then
@@ -153,7 +153,7 @@ lane() {  # lane <mode> <label> <workdir> <logfile>
 }
 
 hr
-# THIS LANE'S BANNER IS INDENTED, AND ONLY ITS COLUMN MOVED. MEASURED 2026-10-20T00:18Z:
+# THIS lane'S banner is indented, AND only its column moved. MEASURED 2026-10-20T00:18Z:
 # `checks/.e2e-fixture/e2epy/artifacts/live.port.out` (13306 B, mtime 2026-10-07T23:25:58Z) carries this
 # line at transcript line 77, where `checks/.e2e-fixture/e2estage8/verdicts.py:63` `HEADER` matched it and
 # `reopens()` printed `RE-OPEN  stage 6 was ALREADY OPEN at transcript line 77`. `checks/e2e.py:640`
@@ -208,14 +208,14 @@ mkcopy() {
   cp -R "$ROOT/tinybendygrad" "$NC/tinybendygrad" || return 1
   cp -R "$PORTEXEC" "$NC/checks/.e2e-fixture/portexec" || return 1
   cp "$ORACLE" "$NC/checks/e2e-mm-oracle.json" || return 1
-  # **⇒ AND THE TRACKED ROWS FILE GOES IN TOO, AND THE REASON IS MEASURED.**
-  # `portexec/run-kernel.sh` READS THE PORT's OWN ROWS FROM
+  # - AND the tracked rows file goes in too, AND the reason is measured.
+  # `portexec/run-kernel.sh` READS the port's OWN rows from
   # `$ROOT/gates/cstyle-live.rows` -- commit `564733bed` moved them out of
-  # `cstyle.bend` and into that tracked file. **⇒ AND `plant.py` RE-POINTS THE
-  # COPY's `ROOT` AT THE COPY**, so `$ROOT/gates/...` IS THE COPY's `gates/`,
+  # `cstyle.bend` and into that tracked file. - AND `plant.py` RE-POINTS THE
+  # COPY's `ROOT` AT THE COPY, so `$ROOT/gates/...` IS THE COPY's `gates/`,
   # and the copy HAD NONE: the lane died with
   # `SUBSTRATE: the tracked .../copy/gates/cstyle-live.rows is absent`.
-  # **⇒ AND THE COPY IS A COPY OF THE PORT, SO THE ROWS BELONG IN IT.**
+  # - AND the COPY IS a COPY OF the port, SO the rows belong in it.
   cp "$ROOT/gates/cstyle-live.rows" "$NC/gates/cstyle-live.rows" || return 1
   ln -s "$ROOT/bin" "$NC/bin"; ln -s "$ROOT/references" "$NC/references"
   ln -s "$ROOT/tinygrad" "$NC/tinygrad"; ln -s "$ROOT/.venv" "$NC/.venv"
@@ -237,7 +237,7 @@ run_copy_lane() {  # run_copy_lane <portexec mode> <log tag>
   return $ctlrc
 }
 
-# A CONTROL THAT FALLS OVER IS NOT A CATCH.  `e2e_negctl.sh:168` refuses a gate that
+# A control that falls over is not a catch.  `e2e_negctl.sh:168` refuses a gate that
 # CRASHED rather than reporting a red row, and `nv_nvdev_gate.py` hid all 15
 # disagreements behind a traceback.  So a red control must be SEMANTIC: the lane ran,
 # produced numbers, and they were wrong.
@@ -337,18 +337,18 @@ ctl "C3 one bit of one expected word, and only that word" 'MISMATCH at 1/64 word
 # ---- C4: the same PORT plant on the ONE-INPUT row. ----------------------------
 say ""
 say "-- C4  THE PORT, on lane A's one-input row kern2 CLANG."
-say "        (THE PLANT MOVED, AND THE MOVE IS THE POINT.) **⇒ THE `kern2 CLANG`"
+say "        (THE PLANT MOVED, AND THE MOVE IS THE POINT.) **THE `kern2 CLANG`"
 say "        ROW IS READ FROM THE **TRACKED** `gates/cstyle-live.rows`, NOT FROM"
 say "        `cstyle.bend`'s STDOUT** -- commit 564733bed removed the rows from"
 say "        `cstyle.bend` (it is a LIBRARY now) and they were committed to that"
-say "        file beside the gate that reads them. **⇒ AND SO PLANTING"
+say "        file beside the gate that reads them. **AND SO PLANTING"
 say "        `cstyle.bend` CANNOT CHANGE THE KERNEL TEXT THE LANE COMPILES**, and"
 say "        the control was GREEN for exactly that reason: the lane DID NOT"
 say "        NOTICE, and it could not."
 say "        (THE OLD HEADER PREDICTED 'word 0 goes to 0' AND THAT WAS NOT WHAT"
 say "        HAPPENED, WHICH IS THE SAME SHAPE: A PLANT THAT CANNOT REACH THE"
 say "        SUBJECT IS NOT A CATCH.)"
-say "        **⇒ AND THE PLANT NOW HITS THE **TRACKED ROWS FILE** IN THE COPY,"
+say "        **AND THE PLANT NOW HITS THE **TRACKED ROWS FILE** IN THE COPY,"
 say "        WHICH IS THE FILE THE LANE READS.**"
 mkcopy && planted "$NC/gates/cstyle-live.rows" \
   'kern2 CLANG       = [\nvoid E_4(float* restrict data0_4, float* restrict data1_4) {' \

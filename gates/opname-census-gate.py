@@ -15,7 +15,7 @@ carried `O.OpsGROUP{}` -- a constructor for an op upstream DELETED in `4e0192eaf
 the tree said so. Seven days. The instrument that would have caught it did not exist, and the
 one that existed could not see it.
 
-⇒ **SO THE POPULATION IS THE TREE's DRIVERS: EVERY `.bend` THAT IS NOT IN THE PORT.**
+**SO THE POPULATION IS THE TREE's DRIVERS: EVERY `.bend` THAT IS NOT IN THE PORT.**
 
 THE POPULATION IS DISCOVERED, NOT LISTED.  It is `checks/compile-census.py`'s own `discover()`,
 LOADED BY PATH: an `os.walk(".")` over the repo, minus the subtree `checks/substrate.py`
@@ -49,7 +49,7 @@ A text census OVERSTATES, and the three cases it overstated are the three this f
              `expected : 'def', 'type' or 'law'` (bare statements at top level), NOT `OpsFLIP`.
   OpsX       a PLACEHOLDER IN A COMMENT -- the file COMPILES.
 
-⇒ **A CENSUS THAT NAMES A BROKEN DRIVER WITHOUT SAYING WHETHER IT IS BROKEN IS A CENSUS OF
+**A CENSUS THAT NAMES A BROKEN DRIVER WITHOUT SAYING WHETHER IT IS BROKEN IS A CENSUS OF
 NAMES.** So every candidate here is COMPILED, and the verdict is the compiler's.
 
 THE THREE CLASSES, AND THEY ARE THE COMPILER'S VERDICT AND NOT A LIST OF FILENAMES:
@@ -64,13 +64,13 @@ THE THREE CLASSES, AND THEY ARE THE COMPILER'S VERDICT AND NOT A LIST OF FILENAM
                         in a spot the compiler does not read. NOT A FINDING, and reported anyway
                         so the class is visible.
 
-⇒ THE PLACEHOLDER IS NOT A FINDING, and the tree says why in its own words: "A NAME IN A
+THE PLACEHOLDER IS NOT A FINDING, and the tree says why in its own words: "A NAME IN A
 COMMENT IS NOT A CONSTRUCTION". The instance is PRESENT in this tree and the census PROVES it
 on every run: it prints the RAW-TEXT mention count and the CODE mention count, and the
 difference between them IS the proof -- `gates/tn_binop_sweep.bend` mentions `O.OpsX{}` in a
 COMMENT today, and a text census counts it as a construction.
 
-⇒ AND THE CENSUS MUST NOT FIRE ON THE PORT's OWN STATE RECORDS. Its candidate shape is
+AND THE CENSUS MUST NOT FIRE ON THE PORT's OWN STATE RECORDS. Its candidate shape is
 `Ops`-PREFIXED AND A CONSTRUCTION, so an accessor-fed record cell -- `runtime/ops_dsp.bend`'s
 `Tr.refused(...)` cells, which are CALLS to a def in the same file and not constructions of an
 `Op` -- is not a candidate, and `Tr` is not a member of the `Op` enum either. MEASURED, in
@@ -92,7 +92,7 @@ a file this gate OWNS -- a subject another unit owns is a shared path, and `AGEN
 what happens to shared paths. The plant edits a COPY under a scratch name, the census
 discovers the copy by its own walk, and the copy is deleted when the run ends.
 
-⇒ **AND THIS CENSUS IS NOW A GATE THE EDGE RUNS, AND ITS BLIND SPOT IS DECLARED RATHER THAN
+**AND THIS CENSUS IS NOW A GATE THE EDGE RUNS, AND ITS BLIND SPOT IS DECLARED RATHER THAN
 CLOSED HERE.** Two things changed on 2026-10-22 and both are MEASURED:
 
   * **IT WAS UNREACHABLE.** MEASURED: `gates/opname-census-gate.py` was in neither
@@ -126,10 +126,10 @@ ROWS = HERE / "opname-census.rows"
 SUBJECT = HERE / "opname-census-plantcase.bend"
 MB, SECONDS = 2048, 300
 
-# THE EDGE'S HOOK, DECLARED HERE AND READ BY THE EDGE. This census holds no pin of its own -- it
+# THE edge'S hook, DECLARED here and read by the edge. This census holds no pin of its own -- it
 # compares a NAME against the port's own enum -- so the edge's selection rule ("a member that
 # holds a pin its own code reads") would not see it, and a census the edge never runs is a census
-# whose verdict nobody reads. **THAT IS THE SAME DEFECT `checks/compile-census.py` HAD**:
+# whose verdict nobody reads. THAT IS THE SAME DEFECT `checks/compile-census.py` HAD:
 # MEASURED 2026-10-22, its rows said `COLD ... gates/crp_graph_census.bend` for a day and a half
 # and NOBODY WAS TOLD, because nothing ran it and nothing read its artefact. The tree's own escape
 # is used by `gates/edge-oracle-pin-gate.py` and by `gates/compile-census-gate.py`, and it is read
@@ -154,7 +154,7 @@ sys.path.insert(0, str(HERE))
 from gatekit import FAIL, PASS, REFUSED  # noqa: E402
 from bendlock import bend_lock  # noqa: E402
 
-# THE THREE SHAPES A MENTION CAN HAVE, AND ONLY ONE OF THEM IS A CANDIDATE.
+# THE three shapes a mention can have, AND only one of them is a candidate.
 #   CONSTRUCTION  `OpsNAME{` -- a constructor application. THIS IS THE FINDING SHAPE.
 #   ACCESSOR      `OpsNAME(` -- a CALL to something named like an op. Not a construction, and
 #                 it is here so the census can SAY it saw one and did not count it.
@@ -166,7 +166,7 @@ CONSTRUCTION = re.compile(r"\bOps([A-Z0-9_]+)\s*\{")
 ACCESSOR = re.compile(r"\bOps([A-Z0-9_]+)\s*\(")
 BARE = re.compile(r"\bOps([A-Z0-9_]+)\b(?!\s*[({])")
 
-# THE COMPILER'S OWN VERDICT ABOUT WHICH CONSTRUCTOR IT REFUSED. Two shapes, MEASURED:
+# THE compiler'S own verdict about which constructor it refused. Two shapes, MEASURED:
 #   `- expected : a declared constructor (../tinybendygrad/uop/ops.Op declares ...)` with
 #     `- observed : O.OpsGROUP{}` -- the ARGUMENT form;
 #   `- message  : a declared constructor (unknown: ../tinybendygrad/uop/ops.OpsGROUP)` -- the
@@ -277,7 +277,7 @@ def comment_only_sites(raw: str, stripped: str) -> list[tuple[int, str]]:
     construction in the raw line and not in the stripped one is a mention in a COMMENT (or in
     a string), and it is NOT a construction.
 
-    ⇒ **THIS IS THE OVERSTATEMENT, SITE BY SITE.** A text census counts these; a code census
+**THIS IS THE OVERSTATEMENT, SITE BY SITE.** A text census counts these; a code census
     must not. The instance is PRESENT in this tree today and the census prints it on every
     run, so the claim is a measurement and not a story.
     """
@@ -404,14 +404,14 @@ def census(rows_path: Path | None = None) -> tuple[int, list[dict], list[tuple[s
     for rel, line, name in comment_only:
         print(f"COMMENT-ONLY {rel}:{line}  {name}  ::  a mention in a COMMENT is not a "
               "construction -- a TEXT census would report this as a stale op")
-    # THE COMPLEMENT, PRINTED WITH ITS DENOMINATOR, AND IT IS NOT A DEFECT TO BE FIXED HERE.
+    # THE complement, PRINTED with its denominator, AND it is not a defect to be fixed here.
     #
-    # **THIS CENSUS COMPILES ONLY THE FILES THAT NAME A STALE OP** (`if not unknown: continue`),
-    # so a driver that fails for a TYPE ERROR is never compiled by it. **THAT IS THIS
-    # INSTRUMENT'S POPULATION AND NOT A BLIND SPOT TO BE CLOSED HERE**: the class it does not
+    # THIS census compiles only the files that name a stale op (`if not unknown: continue`),
+    # so a driver that fails for a TYPE ERROR is never compiled by it. THAT IS THIS
+    # INSTRUMENT'S population and not a blind spot to be closed here: the class it does not
     # see is covered by `checks/compile-census.py`, which compiles EVERY `.bend` outside the port
-    # and whose verdict the edge now runs as `gates/compile-census-gate.py`. **THE COMPILE CENSUS
-    # SEES EVERYTHING; THIS ONE SEES THE CLASS.** Two instruments with different populations and
+    # and whose verdict the edge now runs as `gates/compile-census-gate.py`. THE COMPILE CENSUS
+    # SEES everything; THIS one sees the class. Two instruments with different populations and
     # different questions are RIGHT, and a SECOND COPY OF EITHER IS NOT -- so neither of them
     # grows the other's population here.
     print(f"COMPLEMENT  compiled={compiled}  not-compiled={len(pop) - compiled} of {len(pop)}  ::  "
@@ -483,7 +483,7 @@ def _rows_text(rows: list[dict], pop_n: int, tally: dict, raw: int, code: int) -
 
 
 # --------------------------------------------------------------------------- the plant
-# THE ANCHOR IS TWO LINES, AND THAT IS NOT FIDELITY FOR ITS OWN SAKE.  A ONE-LINE ANCHOR
+# THE anchor is two lines, AND that is not fidelity for its own sake.  A one-LINE anchor
 # (`  O.OpsADD{}`) matched the fixture's own PROSE -- the header line that shows the two-part
 # line in backticks -- and the plant replaced the MENTION IN THE COMMENT instead of the
 # construction in the code, so it planted nothing and the census stayed green.  MEASURED, on
@@ -491,7 +491,7 @@ def _rows_text(rows: list[dict], pop_n: int, tally: dict, raw: int, code: int) -
 # place it can match is the code.
 PLANT_ANCHOR = "def plant_op() -> O.Op:\n  O.OpsADD{}"
 PLANT_UNKNOWN = "def plant_op() -> O.Op:\n  O.OpsGROUP{}"
-# THE FRAGMENT'S SUBJECT, AND IT IS THE GATE's OWN: `gates/opname-census-fragment.bend` is bare
+# THE fragment'S subject, AND it is the gate's OWN: `gates/opname-census-fragment.bend` is bare
 # statements at top level, so the compiler refuses it at its first statement with `expected :
 # 'def', 'type' or 'law'` -- its OWN STANDING CONDITION -- and that refusal is exactly what
 # MASKS a stale name in it.  A REAL fragment with this shape is `oracles/lift-rows.bend`, and
@@ -587,7 +587,7 @@ def plant() -> int:
               "that carries a list opener and its first element on one line")
     else:
         idx, two_part = two
-        # THE EDIT IS BY LINE INDEX, NOT BY STRING.  The fixture's own PROSE shows this line
+        # THE edit is by line INDEX, NOT by string.  The fixture's own PROSE shows this line
         # inside backticks, so `str.replace` found the COMMENT first and the "wrong shape" was
         # applied to a comment -- where it deletes nothing.  MEASURED, on the first run.
         lines_a = original.split("\n")
