@@ -431,8 +431,24 @@ def main() -> int:
     for rel in args.apply:
         path = ROOT / rel
         impl, gate, moved, helpers = split(path)
+        # **⇒ AND THE DRIVER's NAME COMES FROM **THE PORT's PATH**, NOT FROM ITS BARE
+        # STEM** -- **BECAUSE `schedule/__init__.bend` HAS THE STEM `__init__`, **AND
+        # `gates/__init__-gate.bend` IS A NAME THAT SAYS NOTHING** -- **AND A GATE's NAME
+        # IS HOW A READER FINDS IT.**
+        # **⇒ AND THE PARENT DIRECTORY IS ADDED **ONLY WHEN THE BARE STEM SAYS NOTHING
+        # OR **COLLIDES**** -- **SO `schedule/__init__.bend` IS
+        # `gates/schedule-init-gate.bend`**, **AND `renderer/amd/elf.bend` IS STILL
+        # `gates/elf-gate.bend`**, **AND NOBODY'S EXISTING DRIVER IS RENAMED.**
         stem = path.stem
-        driver = ROOT / "gates" / f"{stem}-gate.bend"
+        parent = path.parent.relative_to(ROOT / "tinybendygrad")
+        # **⇒ AND THE LEADING UNDERSCORES OF A `__init__` ARE DROPPED** -- **BECAUSE
+        # `schedule-__init__-gate.bend` STILL SAYS `__init__` AND THE NAME IS HOW A
+        # READER FINDS THE GATE.**
+        clean = stem.strip("_") or stem
+        ambiguous = stem.startswith("_")
+        prefix = "-".join(parent.parts) if ambiguous and parent.parts else ""
+        name = f"{prefix}-{clean}-gate.bend" if prefix else f"{clean}-gate.bend"
+        driver = ROOT / "gates" / name
         print(f"  {rel}: {len(impl)} impl lines, {len(gate)} gate lines, {len(moved)} helper lines")
         # **THE DRIVER'S HEADER, IN THE TREE's OWN STYLE.**
         # **AND THE PORT's **IMPORTS** MOVE WITH THE ROWS** -- **MEASURED 2026-11-10:
