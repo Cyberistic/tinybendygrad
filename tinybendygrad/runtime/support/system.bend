@@ -1435,7 +1435,3 @@ def cfgs.go(xs: List<&2, Cfg>, +acc: List<&2, String>) -> String:
     case Nil{}: String.join(acc, " ")
     case c <> t: cfgs.go(t, cfgs.pick(c, acc))
 
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    IO.print("sy-done=1")
