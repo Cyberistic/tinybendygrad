@@ -85,18 +85,18 @@ turn-cost       [###.......] 3/7      **THE SHIPPED DAEMON TURN**, AGAINST `Clan
                                         CLOCKS **INSIDE** THE DAEMON** (`PARITY.md` §136):
                                         wall **3.97 ms** = read 0.73 (MOSTLY THE CALLER's WAIT)
                                         + **decode 0.99** + **render 2.26** + ~0.99 (THE CALLER's
-                                        ROUND TRIP), ⇒⇒⇒ **THE PORT's OWN SHARE IS 82%**.
-                                        **⇒⇒⇒ §137 CUT THE **RENDER** BY 13%** (THE OP EQUALITY:
+                                        ROUND TRIP), **THE PORT's OWN SHARE IS 82%**.
+                                        **§137 CUT THE **RENDER** BY 13%** (THE OP EQUALITY:
                                         A 75-ARM CHAIN BECAME ONE COMPARISON PER LITERAL), AND
                                         THE **WHOLE TURN** IS **0.9432**. `same C: True`.
-                                        **⇒⇒⇒ THE NEXT PORT-SIDE TERM IS THE **DECODE** (0.99 ms),
+                                        **THE NEXT PORT-SIDE TERM IS THE **DECODE** (0.99 ms),
                                         AND THEN THE RENDER's REMAINING LEAVES (`ku_text` 1.157,
                                         `_render_decl` 0.523, `rd_base_*` 0.223).
-                                        **⇒⇒⇒ THE INSTRUMENTS ARE IN `.agents/slop/cpuseam/builds/`
+                                        **THE INSTRUMENTS ARE IN `.agents/slop/cpuseam/builds/`
                                         (`drive.py`, `instrument.py`, `abrender.py`, `cpuab2.py`),
                                         AND A BUILD IS **A SECOND SOURCE OF TRUTH** (§136), SO
                                         THE MEASUREMENT **BUILDS INSIDE** IT.
-                                        **⇒⇒⇒ AND THE CORPUS CERTIFICATE IS **GREEN** ON
+                                        **AND THE CORPUS CERTIFICATE IS **GREEN** ON
                                         `64bc53f29` (`substrate-start == substrate-end`,
                                         38 graphs / 31 agree / 7 RECORDED exceptions,
                                         repro 339 of 339, `corpuswitness-gate` PASS).
@@ -303,6 +303,28 @@ dup-rows        [#########.] 8/10   10 = census, usb, ops_nv-oracle, ops_nv-port
                                        unmoved). **ops_nv ORACLE FIXED 27 -> 0** (see
                                        NVDUP below), so the tree now reads 21 and RECONCILES
                                        103 = 82 cont + 0 `=` + 21 dup.
+ nv-backends     [##########] 10/10  `runtime/ops_nv.bend` + `runtime/ops_nvme.bend`, and
+                                       THEIR GATES. **THE BRIEF SAID `ops_nv.bend` WAS "0 LINES" AND IT
+                                       WAS A 94-LINE TOMBSTONE** -- a comment header describing a body
+                                       that commit `564733bed` deleted BY ACCIDENT (a 1378-file
+                                       pin-tree snapshot). THE BODY IS BACK (`90de86caa`).
+                                       `gates/ops-nv-gate.py`: **569 rows compared, 0
+                                       disagreements**, 65 port-only (GENERATED, not typed),
+                                       **twelve plants** (10 RED, 1 GREEN control, 1 GREEN that
+                                       IS THE FINDING). `gates/ops-nvme-gate.py`: **206 rows
+                                       compared, 0 disagreements**, **twelve plants** (11 RED,
+                                       1 GREEN control). **THE MOCK PATH IS SOFTWARE** --
+                                       `test/mockgpu/nv/nvdriver.py` INTERCEPTS `open()` AND
+                                       `ioctl()` -- SO 22 MOCK ROWS ARE COMPARED AGAINST THE
+                                       DRIVER's OWN ANSWERS. **THE NVMe BACKEND IS
+                                       (B)-SHAPED**: THERE IS **NO UPSTREAM NVMe MOCK**
+                                       (MEASURED: `test/mockgpu/` HAS `nv/`, `cuda/`, `am/`,
+                                       `amd/` AND **NO `nvme/`**), SO EVERY PURE RULE IS
+                                       PORTED AND GATED AND NINE HARDWARE RULES ARE NAMED IN
+                                       THE FILE's OWN FOOTER WITH THE SEAM THAT BLOCKS EACH.
+                                       **AND NO ROW IN EITHER FILE IS A HARDWARE RESULT AND
+                                       NONE IS CLAIMED TO BE.** Report:
+                                       `.agents/slop/nvport/REPORT.md`.
  nvdup           [#########.] 9/11   `.agents/slop/NVDUP.md` + `nvdup/stage{1,2,3,4}-*.md`.
                                        FIXED `.agents/slop/nv-oracle.py`: 27 duplicate names
                                        and 4 DEAD `try:` ARMS; 20 lines deleted, 3 replaced,
@@ -1476,7 +1498,7 @@ nn-rows-vacuous      [####] 4/4  **THE NN LAYERS NOW HAVE A COMPARER, AND **EVER
                                        AND 19 OF THE 31 COULD NOT PASS EVEN UNDER EXACT COMPARISON"*: 12 COULD PASS
                                        **AND 1 OF THOSE 12 FAILED** (`fold_smk` READ EMPTY WHERE `2,1,3` WAS
                                        EXPECTED); **5 READ NOTHING AT ALL** (THE `conv_*` ROWS); **5 HAD AN EMPTY
-                                       `want`** (THE `_sig` ROWS); **8 DIFFERED ONLY IN SPELLING**. **⇒ AS OF
+                                       `want`** (THE `_sig` ROWS); **8 DIFFERED ONLY IN SPELLING**. **AS OF
                                        2026-10-23 ALL FOUR CLASSES ARE CLOSED.** `gates/nn-rows-gate.py` EXISTS AND
                                        **READS `PASS -- 31 OF 31 ROWS MATCH THEIR EXPECTATIONS`**, rc=0, WITH
                                        `rows_not_passing_exact_comparison=0 of 31` (IT WAS **13 OF 31**). THE FIVE
@@ -1485,17 +1507,17 @@ nn-rows-vacuous      [####] 4/4  **THE NN LAYERS NOW HAVE A COMPARER, AND **EVER
                                        SPELLING WITH **CPYTHON'S VALUE** (`f32` IS CPython's OWN `DType.name`,
                                        `tinygrad/dtype.py:136` -- `float32` IS THE *ALIAS*, `:140`); AND `fold_smk`
                                        READS `got=2,4,1 want=2,4,1` (ITS OLD `2,1,3` WAS WRONG: IT IS CPython's ANSWER
-                                       FOR AXIS `[1]`). **⇒ AND THE BONUS CLAIM, MEASURED BY
+                                       FOR AXIS `[1]`). **AND THE BONUS CLAIM, MEASURED BY
                                        `.agents/slop/nnrowsfix/vsig.py`: `dbg_x_sig` IDENTICAL (6 TOKENS),
                                        `dbg_dot_sig` IDENTICAL (20), `dbg_conv_sig` IDENTICAL (57), `fold_xw_sig`
                                        IDENTICAL (18), `fold_cc_sig` IDENTICAL (20) -- **ALL 5 NODE LISTS ARE
-                                       IDENTICAL, NODE FOR NODE, CONST PAYLOADS INCLUDED.** **⇒ AND THE CONTROLS ARE
+                                       IDENTICAL, NODE FOR NODE, CONST PAYLOADS INCLUDED.** **AND THE CONTROLS ARE
                                        TWO CLASSES: C1/C2 FIRE **WRONGNESS** (A WRONG-BUT-NON-EMPTY `want` GOES RED,
                                        THE OTHER 30 STAY GREEN) AND C3 FIRES **VACUITY** (AN EMPTIED `want` GOES
-                                       `UNCHECKABLE`), SO THE GATE IS NOT MERELY CATCHING EMPTINESS. **⇒ AND
+                                       `UNCHECKABLE`), SO THE GATE IS NOT MERELY CATCHING EMPTINESS. **AND
                                        `dbg_dot_sig` AND `fold_cc_sig` SHARE A `want`, AND THAT IS SAID RATHER THAN
                                        HIDDEN: UPSTREAM'S `dot` **IS** RESHAPE-TRANSPOSE-MUL-SUM-CAST, SO A GRAPH
-                                       SIGNATURE CANNOT SEPARATE THEM.** **⇒ SEE `nn-rows-complete` FOR THE ROW THAT
+                                       SIGNATURE CANNOT SEPARATE THEM.** **SEE `nn-rows-complete` FOR THE ROW THAT
                                        RECORDS THIS, AND `nn-rows-gate` FOR THE ONE NAMED REMAINDER: A FROZEN BASELINE
                                        LEDGER BESIDE THE GATE, BECAUSE **DELETING A ROW *NAME* IS INVISIBLE TO THE
                                        GATE** (A SELF-DECLARED POPULATION SHRINKS ON BOTH SIDES AT ONCE).
@@ -1532,7 +1554,7 @@ corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OW
                                        The cache was refreshed 2026-10-21T20:52:55Z with `{"ver":"2.0.38"}` and the
                                        LOCAL compiler is 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13), so
                                        upstream's 2.0.38 release is what turned the notice on and NOTHING IN THIS
-                                       REPOSITORY DID. **⇒ THE PIN IS A PIN ON A NETWORK ANSWER**: the next
+                                       REPOSITORY DID. **THE PIN IS A PIN ON A NETWORK ANSWER**: the next
                                        upstream release moves it again with NO repo change, and
                                        `BEND_NO_TELEMETRY=1` (`main.ts:186-188`) suppresses the check and puts the
                                        transcript BACK on `9bfb8517...`. THE FOUR PORT CHANGES -- the population
@@ -1571,11 +1593,11 @@ corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OW
                                        `graphcmp.py`'s `clean_env()` (which is the oracle's own child env, so
                                        the oracle is hermetic when it runs on its own too). `settled()` --
                                        the corpus's "is the compiler ready" gate -- was the ONLY child that
-                                       did not use `ENV`, and it now does; **⇒ AND IT WAS NOT A HAZARD**:
+                                       did not use `ENV`, and it now does; **AND IT WAS NOT A HAZARD**:
                                        it merges stderr into stdout and reads LINE 1, and the notice lands
                                        AFTER `ALL PROOFS CHECK`, so MEASURED, line 1 is `ALL PROOFS CHECK`
                                        with and without the flag. **A NEGATIVE RESULT IS A RESULT.**
-                                       **⇒ AND THE PIN IS BACK ON `9bfb8517...`**, the value it held BEFORE
+                                       **AND THE PIN IS BACK ON `9bfb8517...`**, the value it held BEFORE
                                        upstream's 2.0.38 release turned the notice on. **MEASURED, FIVE
                                        CASES, THE ORACLE's OWN `emit_bend`, EACH WITH ITS OWN `HOME` SO THE
                                        USER's CACHE WAS NEVER TOUCHED**: cache ver=2.0.38 -> the notice's
@@ -1583,18 +1605,18 @@ corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OW
                                        next release WOULD have redded the pin with no repo change, no port
                                        change and no commit to explain it); `BEND_NO_TELEMETRY=1` -> **THE
                                        SAME TRANSCRIPT WITH AND WITHOUT A CACHE AND WITH AND WITHOUT A
-                                       NETWORK.** **⇒ SO THE CORPUS's "319 of 319 identical" IS NOW A CLAIM
+                                       NETWORK.** **SO THE CORPUS's "319 of 319 identical" IS NOW A CLAIM
                                        ABOUT THE REPOSITORY AND NOT ABOUT THE DEVELOPER's HOME DIRECTORY.**
-                                       **⇒ AND THE SECOND NAMED, UNAPPLIED PATCH IN THE SAME FILE IS
+                                       **AND THE SECOND NAMED, UNAPPLIED PATCH IN THE SAME FILE IS
                                        APPLIED TOO**: `%d attempt(s)` -> `%d of %d attempt(s)` with
                                        `(len(notes), tries)` in both tuples, in `graphcmp.py` and in
-                                       `checks/differ.py`'s own note about it. **⇒ AND `POPULATION_PIN` DID
+                                       `checks/differ.py`'s own note about it. **AND `POPULATION_PIN` DID
                                        NOT MOVE** (`4a44f98e...` before and after): the edit touched no graph.
 
 imagenet-distance    [###] 3/3  **THE MEASURED DISTANCE TO *"RUN IMAGENET USING BEND"*, RE-TAKEN 2026-10-26. THE CHAIN
                                        HAS SHORTENED TWICE IN TWO DAYS, AND THE TWO PIECES THAT WERE MISSING -- **AN
                                        EXECUTOR THAT ACTUALLY EXECUTES** AND **A CONVOLUTION THAT RUNS ON IT** -- ARE
-                                       NOW MEASURED.** **⇒ WHAT IS REAL, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE
+                                       NOW MEASURED.** **WHAT IS REAL, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE
                                        SHAPE -- **DONE**: ALL FIVE `conv_*` ROWS READ UPSTREAM's ANSWERS; `argmax` --
                                        **DONE AT THE GRAPH LEVEL**: `tinybendygrad/nn/argmax.bend` BUILDS UPSTREAM's
                                        FOUR NODES WITH **20 ROWS, ALL GREEN**; `item` -- **DONE AS FAR AS THE PORT CAN
@@ -1603,21 +1625,21 @@ imagenet-distance    [###] 3/3  **THE MEASURED DISTANCE TO *"RUN IMAGENET USING 
                                        SAYS *"NO LIVE `Buffer`"*) -- **SO THAT IS AN EXECUTOR GAP, NOT AN `item`
                                        GAP**; **THE LOADER** -- **DONE**: `tinybendygrad/extra/datasets/imagenet.bend`
                                        IS **520 LINES** AND **8 OF 8 ROWS AGREE WITH CPython's OWN `glob`/`json` BYTE-
-                                       IDENTICALLY**; **⇒ AND THE EXECUTOR -- **REAL, AND IT RUNS REAL COMPILED
+                                       IDENTICALLY**; **AND THE EXECUTOR -- **REAL, AND IT RUNS REAL COMPILED
                                        KERNELS**: `gates/ops_bend_exec-e2e.py` COMPILES
                                        `tinybendygrad/runtime/ops_python.bend` WITH `bin/bend -o` AND RUNS IT AS A
                                        SUBPROCESS ON REAL PACKETS, AND **ALL SEVEN CASES MATCH** -- `add4`, `sum4`,
-                                       `addi32`, `addu32`, `cast`, `cmp` AND A 4×4 MATMUL; **⇒ AND A CONVOLUTION RUNS
+                                       `addi32`, `addu32`, `cast`, `cmp` AND A 4×4 MATMUL; **AND A CONVOLUTION RUNS
                                        ON IT**: THE PORT's OWN conv SHAPE -- `x(1,3,32,32) conv2d w(8,3,3,3)
                                        padding=1` -> `(1,8,32,32)`, **THE SHAPE `tinybendygrad/nn/layers.bend`'s FIVE
                                        `conv_*` ROWS USE** -- **AGREES WITH CPython's PYTHON DEVICE ON ALL 8192
                                        VALUES**, AND THE SAME PACKET THROUGH UPSTREAM's OWN `PythonProgram.__call__`
-                                       GIVES **BYTE-IDENTICAL** BUFFERS. **⇒ AND WHAT IS STILL MISSING, NAMED: (1)
+                                       GIVES **BYTE-IDENTICAL** BUFFERS. **AND WHAT IS STILL MISSING, NAMED: (1)
                                        **THE VECTOR-STORE LANE** -- 29 PINNED DIVERGENCES REMAIN, ONE FAMILY (THE
                                        PACKET's STORE COVERS LANES 0-3 AND CPython LEAVES LANES 4-7 UNTOUCHED, WHILE
                                        THE PORT WRITES THE LANES IT SHOULD HAVE COMPUTED); (2) `item`'s DEVICE READ,
                                        WHICH NEEDS A LIVE `Buffer`; (3) **A REAL MODEL** (`extra/models/resnet.bend`
-                                       REFUSES); (4) THE 150 GB OF DATA -- **THE HOST's**, NOT THE PORT's. **⇒ AND THE
+                                       REFUSES); (4) THE 150 GB OF DATA -- **THE HOST's**, NOT THE PORT's. **AND THE
                                        NEXT WALL IS **PERFORMANCE, NOT CORRECTNESS**: THE PORT's OWN CONV TAKES **9
                                        MINUTES 18 SECONDS** ON THE BEND DEVICE (373 s USER) FOR ONE 32×32 IMAGE.**
 
@@ -1732,23 +1754,23 @@ nn-rows-gate         [####] 4/4  **THE NN LAYERS HAVE A COMPARER, AND **THE HOLE
                                        EXPECTATION.** MEASURED 2026-10-27: `PASS -- 31 OF 31 ROWS MATCH THEIR
                                        EXPECTATIONS`, `MATCH=31/31  MISMATCH=0/31 UNCHECKABLE=0/31  DEAD-ROW=0/31
                                        SHRUNK=0/31  EXTRA=0/31  DUPLICATE=0/31`, `baseline_rows=31  baseline_dropped=0
-                                       baseline_added=0`, rc=0. **⇒ AND THE HOLE: **A SELF-DECLARED POPULATION SHRINKS
+                                       baseline_added=0`, rc=0. **AND THE HOLE: **A SELF-DECLARED POPULATION SHRINKS
                                        ON BOTH SIDES AT ONCE**, SO DELETING A ROW *NAME* REMOVED THE DECLARATION *AND*
-                                       THE OUTPUT AND NOTHING FIRED -- **⇒ AND THE FIX IS A FROZEN BASELINE BESIDE THE
+                                       THE OUTPUT AND NOTHING FIRED -- **AND THE FIX IS A FROZEN BASELINE BESIDE THE
                                        GATE IN GIT, `gates/nn-rows-baseline.rows`, 31 NAMES, **GENERATED BY THE GATE's
                                        OWN `--freeze` ARM** (WHICH EXISTS AND IS WIRED), **AND THE GATE FAILS IF THE
                                        BASELINE IS ABSENT** -- *"THE GATE WOULD BE BLIND TO A DELETED ROW NAME"*, rc=3
-                                       -- **⇒ AN ABSENT WITNESS IS NOT A GREEN ONE.** **⇒ AND THE CONTROLS: `f` (A ROW
+                                       -- **AN ABSENT WITNESS IS NOT A GREEN ONE.** **AND THE CONTROLS: `f` (A ROW
                                        NAME REMOVED) READS `real class_fired=DROPPED  green class_fired=DROPPED
                                        DROPPED relu  OK: the class fired and the gate went 0 -> 1`; `g` (A ROW
                                        *ADDED*) READS `the ADDED class fired, nothing else did, and the gate stayed
-                                       green` -- **⇒ BECAUSE A BASELINE THAT WENT RED FOR A LEGITIMATE ADDITION WOULD
-                                       FORCE A RE-FREEZE ON EVERY NEW ROW, SO `ADDED` IS REPORTED AND NOT FIRED.** **⇒
+                                       green` -- **BECAUSE A BASELINE THAT WENT RED FOR A LEGITIMATE ADDITION WOULD
+                                       FORCE A RE-FREEZE ON EVERY NEW ROW, SO `ADDED` IS REPORTED AND NOT FIRED.** **
                                        AND NINE PLANTS, WHICH DRIVE THE **SHIPPED** DECISION (`classify`, NOT A
                                        HELPER): THE THREE NEW ONES ARE `DROPPED` (rc=1), `ADDED` (rc=0) AND `BASELINE-
-                                       AGREES` (rc=0). **⇒ AND THE PORT's OWN COMPILED UOp GRAPH **IS** CPython's
+                                       AGREES` (rc=0). **AND THE PORT's OWN COMPILED UOp GRAPH **IS** CPython's
                                        GRAPH, NODE FOR NODE, CONST PAYLOADS INCLUDED, ON ALL FIVE GRAPH ROWS**
-                                       (`dbg_x_sig`, `dbg_dot_sig`, `dbg_conv_sig`, `fold_xw_sig`, `fold_cc_sig`). **⇒
+                                       (`dbg_x_sig`, `dbg_dot_sig`, `dbg_conv_sig`, `fold_xw_sig`, `fold_cc_sig`). **
                                        AND THE WALL THAT WAS FALLEN IS NOW NAMED AS FALLEN: SEE `nn-rows-vacuous`.**
 
 
@@ -1843,43 +1865,43 @@ mixin-op-red         [###] 3/3  **A TRACKED GATE WAS RED AT HEAD ON 11 ROWS, AND
                                        MEAN/VAR/STD FAMILY (`mean0`, `mean0kd`, `meanN`, `mean0_2d`, `var0`, `var0c0`,
                                        `std0`, `varmean0_v`, `varmean0_m`, `stdmean0_s`, `stdmean0_m`), AND THE PORT'S
                                        GRAPH HAD ONE MORE NODE THAN CPython's: **A `CAST/1` BETWEEN THE `RECIPROCAL`
-                                       AND THE `MUL`.** **⇒ AND AS OF 2026-10-23 `gates/mixin-op-gate.py` READS **`38
+                                       AND THE `MUL`.** **AND AS OF 2026-10-23 `gates/mixin-op-gate.py` READS **`38
                                        shared rows, 3 lanes identical`** -- **ALL THIRTY-EIGHT AGREE, AND THE ELEVEN
-                                       ARE GONE.** **⇒ AND THE MECHANISM IS WORTH NAMING BECAUSE IT IS THE ROW-KIND
+                                       ARE GONE.** **AND THE MECHANISM IS WORTH NAMING BECAUSE IT IS THE ROW-KIND
                                        POINT AGAIN: A SIGNATURE ROW PRINTS `CONST/0` AND SO COULD NEVER SEE THE
                                        DENOMINATOR'S VALUE, **AND THE VALUE ROWS (`val_*`) SEE IT** -- `val_mean0`
                                        READS `CONST/0=f4.000000` AND THE DENOMINATOR'S VALUE WAS **RIGHT ON BOTH
-                                       SIDES**. **⇒ SO CLOSING THIS TOOK A NEW ROW KIND (`mo_cval`), NOT A NEW FIX.**
-                                       **⇒ SEE `mixin-op-closed` AND `nn-rows-complete` FOR THE LEDGER ROWS THAT
+                                       SIDES**. **SO CLOSING THIS TOOK A NEW ROW KIND (`mo_cval`), NOT A NEW FIX.**
+                                       **SEE `mixin-op-closed` AND `nn-rows-complete` FOR THE LEDGER ROWS THAT
                                        RECORD IT, AND `state_census` FOR THE CLASS CENSUS THAT NOW CATCHES AN EXPIRED
                                        NEGATIVE FIXTURE.**
 
 oracle-two-copies    [###] 3/3  **THE GATE'S CPython ORACLE WAS A COPY UNDER `.agents/slop/` AND A SECOND COPY SAT
                                        BESIDE THE GATE, AND THE TWO HAD TO BE EDITED IN LOCKSTEP -- NOW THERE IS ONE
                                        PATH AND IT IS BESIDE THE GATE, IN GIT.** MEASURED 2026-10-22, AND THE REPOINT
-                                       LANDED 2026-10-25. **⇒ THE DEFECT: `gates/mixin-op-gate.py`'s `oracle=` WAS
+                                       LANDED 2026-10-25. **THE DEFECT: `gates/mixin-op-gate.py`'s `oracle=` WAS
                                        `.agents/slop/mixin-op-gate.py`, AND THE FROZEN SHELL ORACLE
                                        (`gates/oracles/mixin-op-oracle.sh`, sha256-PINNED VIA `ORACLE_PIN`) RAN THAT
                                        SAME PATH TOO -- WHILE `gates/mixin-op-oracle.py` WAS A **BYTE-IDENTICAL** COPY
                                        THAT **NOTHING RAN**. MEASURED: BOTH AT sha256 `061c5029355e197e`, **9,747
-                                       BYTES EACH.** **⇒ `AGENTS.md` NAMES THIS EXACT ANTI-PATTERN: *"A GATE'S
+                                       BYTES EACH.** **`AGENTS.md` NAMES THIS EXACT ANTI-PATTERN: *"A GATE'S
                                        REQUIRED INPUT BELONGS BESIDE THE GATE **IN GIT** -- AND NOT IN
-                                       `.agents/slop/`, WHICH THIS LINE USED TO RECOMMEND"*.** **⇒ SO THE FIX, AND IT
+                                       `.agents/slop/`, WHICH THIS LINE USED TO RECOMMEND"*.** **SO THE FIX, AND IT
                                        IS NOT FREE: THE FROZEN SHELL's BYTES CHANGE, SO **ITS `ORACLE_PIN` MUST MOVE
                                        IN THE SAME COMMIT** -- AND **BOTH EXTANT COPIES OF THE SHELL (`gates/oracles/`
                                        AND `oracles/gateport/oracles/`) ARE BYTE-IDENTICAL BY DESIGN AND MUST STAY
-                                       SO.** **⇒ WHAT LANDED: THE GATE's `oracle=` AND THE SHELL's py LANE BOTH NOW
+                                       SO.** **WHAT LANDED: THE GATE's `oracle=` AND THE SHELL's py LANE BOTH NOW
                                        NAME `gates/mixin-op-oracle.py`; THE PIN MOVED FROM `e8792d0ff1ad` TO
                                        `90eb25aed53ca517` **IN THE SAME COMMIT** (AND THE PIN's OWN DRIFT CHECK, WHICH
                                        IS CHECKED IN CODE ON EVERY RUN, READS **0 ROWS** AFTER THE EDIT); BOTH SHELL
                                        COPIES ARE BYTE-IDENTICAL AT `90eb25aed53ca517`; AND THE `.agents/slop/` COPY
-                                       IS DELETED.** **⇒ AND THE CONSEQUENCE WAS MEASURED, AND IT IS THE POINT:
+                                       IS DELETED.** **AND THE CONSEQUENCE WAS MEASURED, AND IT IS THE POINT:
                                        `gates/oracleblind.rows` WAS MEASURING **ONE ORACLE FILE TWICE** -- ROW 8
                                        `.agents/slop/mixin-op-gate.py` CLASS `GATE-DECLARED` AND ROW 46 `gates/mixin-
                                        op-oracle.py` CLASS `WALK-ONLY`, **AND THE TWO ROWS ARE IDENTICAL FROM COLUMN 3
                                        ON: `SENSITIVE 2 32 587288325f33 27 2`** -- SAME VERDICT, SAME FLOOR, SAME ROW
-                                       COUNT, SAME BASE SHA, SAME SITE COUNT, SAME UNREACHABLE COUNT. **⇒ A POPULATION
-                                       WITH A DUPLICATE IS A POPULATION THAT COUNTS ONE SUBJECT TWICE.** **⇒ AND THE
+                                       COUNT, SAME BASE SHA, SAME SITE COUNT, SAME UNREACHABLE COUNT. **A POPULATION
+                                       WITH A DUPLICATE IS A POPULATION THAT COUNTS ONE SUBJECT TWICE.** **AND THE
                                        NAMED NEXT MOVE: RE-TAKE `gates/oracleblind.rows` -- ITS POPULATION SHRINKS BY
                                        ONE AND ROW 46's CLASS MOVES FROM `WALK-ONLY` TO `GATE-DECLARED` -- AND A
                                        CENSUS RE-TAKE NEEDS A **BEND-FREE WINDOW**, BECAUSE THE CENSUS's OWN
@@ -1976,18 +1998,18 @@ corpus-stale-fix     [###] 3/3  **THE `mo_at` FIX MOVED THE SUBSTRATE, THE WITNE
                                        witness describes a tree that NO LONGER EXISTS"* -- **WHICH IS THE INSTRUMENT
                                        WORKING**: THE `REPRO_SUBSTRATE` ARM COMPARES THE WITNESS'S RECORDED DIGEST
                                        AGAINST THE LIVE ONE, AND `mixin/op.bend` IS A SUBSTRATE FILE, SO THE FIX MOVED
-                                       IT. **⇒ AND A COMMENT-ONLY EDIT TO A `.bend` FILE ALSO MOVES IT, WHICH IS WHY
+                                       IT. **AND A COMMENT-ONLY EDIT TO A `.bend` FILE ALSO MOVES IT, WHICH IS WHY
                                        TWO MORE RE-TAKES FOLLOWED (`nn/item.bend` AND `runtime/support/autogen.bend`
                                        FOR THE BEND-UPGRADE'S CITATIONS, AND `checks/differ.py` ITSELF FOR THE
-                                       READINESS GATE).** **⇒ AND AS OF 2026-10-25 THE WITNESS IS CURRENT:
+                                       READINESS GATE).** **AND AS OF 2026-10-25 THE WITNESS IS CURRENT:
                                        `unhealthy=0  artefacts_ok=0  repro_bad=0`, `substrate-start == substrate-end
                                        == live`, `graphs=35  graphs-agree=35  graphs-disagree=0  byte-identical=35`,
-                                       AND `REPRO: 319 OF 319 FILES IDENTICAL ACROSS TWO CLEAN RUNS`.** **⇒ AND THE
+                                       AND `REPRO: 319 OF 319 FILES IDENTICAL ACROSS TWO CLEAN RUNS`.** **AND THE
                                        STALENESS IS NOW THE TREE'S OWN INSTRUMENT'S JOB RATHER THAN A READER'S:
                                        `gates/corpusverdict-gate.py` READS **`PASS -- THE RECORDED VERDICT DESCRIBES
                                        THIS TREE`** ON ITS `substrate` ROW, **AND IT IS ALSO THE THING THAT SAYS A RUN
                                        THAT DOES NOT WAIT FOR THE SUBSTRATE TO SETTLE IS A SEPARATE HAZARD -- WHICH IS
-                                       WHY `cmd_run` NOW WAITS (`run.readiness state=OK`).** **⇒ AND THE TREES THAT
+                                       WHY `cmd_run` NOW WAITS (`run.readiness state=OK`).** **AND THE TREES THAT
                                        MOVED WHILE A RUN WAS IN FLIGHT ARE NOW IMPOSSIBLE TO MISS: A RUN OVER A MIXED
                                        TREE SAYS *"THE SUBSTRATE MOVED WHILE THE RUN WAS IN FLIGHT"* AND `unhealthy()`
                                        NAMES IT AS ITS ONE LINE.**
@@ -2022,7 +2044,7 @@ verdict-outside-repo [##] 3/3  **THE VERDICT IS DECIDED BY A BINARY OUTSIDE THE 
                                        sha256(LEAN_VERSION + "\0" + bendtt.lean)[:16]`; `const dir =
                                        ~/.bend/bendtt/<hash>`; `const bin = dir/bendtt`; **`if (fs.existsSync(bin)) {
                                        return bin; }` -- USED AS-IS, NEVER REBUILT AND NEVER CHECKED AGAINST
-                                       `bendtt.lean`.** **⇒ THE CACHE KEY IS HONEST (IT IS COMPUTABLE FROM THE PUBLIC
+                                       `bendtt.lean`.** **THE CACHE KEY IS HONEST (IT IS COMPUTABLE FROM THE PUBLIC
                                        REPOSITORY -- MEASURED HERE: `b9f3e0253abffb11`, WHICH IS EXACTLY THE DIRECTORY
                                        ON THIS MACHINE, AND ITS CACHED BINARY IS BYTE-IDENTICAL TO THE ONE BUILT FROM
                                        THE REPO'S SOURCE) **BUT THE BINARY IS NOT VERIFIED**, AND IT IS THE BINARY
@@ -2030,15 +2052,15 @@ verdict-outside-repo [##] 3/3  **THE VERDICT IS DECIDED BY A BINARY OUTSIDE THE 
                                        AT THAT PATH, **THE VERDICT FLIPPED BOTH WAYS** -- CONTROL rc=0 `ALL PROOFS
                                        CHECK`; TREATED rc=1 `SOME PROOFS FAIL`; TREATED rc=0 `ALL PROOFS CHECK` --
                                        **WITH NOTHING CHANGED IN THE REPOSITORY**, AND THE FORGED KERNEL'S LOG SHOWS
-                                       IT WAS CONSULTED.** **⇒ SO THE TREE'S RULE *"A PIN MUST BE A FUNCTION OF THE
+                                       IT WAS CONSULTED.** **SO THE TREE'S RULE *"A PIN MUST BE A FUNCTION OF THE
                                        REPOSITORY"* HAS A SHARP NEW INSTANCE: **THE VERDICT MUST BE A FUNCTION OF THE
                                        REPOSITORY TOO, AND TODAY IT IS NOT** -- AND NO TREE GATE RUNS `--verdict` YET
-                                       (ONLY PROSE MENTIONS IT), SO **THE EXPOSURE IS LATENT, NOT LIVE.** **⇒ AND THE
+                                       (ONLY PROSE MENTIONS IT), SO **THE EXPOSURE IS LATENT, NOT LIVE.** **AND THE
                                        ONE-LINE FIX IS NAMED, AND IT IS AN OVERRIDE THE COMPILER ALREADY HONOURS:
                                        `safe.ts:1484` READS `process.env.BENDTT` FIRST AND RETURNS IT UNCONDITIONALLY.
                                        **SO A `--verdict` LANE OVER THIS PORT SHOULD SET `BENDTT=` TO A KERNEL IT
                                        BUILT FROM THE REPO'S `bendtt.lean` AND PIN THAT BINARY'S SHA256** -- RATHER
-                                       THAN TRUSTING `~/.bend/`. **⇒ AND `HOME` RELOCATES THE KERNEL, THE LEAN
+                                       THAN TRUSTING `~/.bend/`. **AND `HOME` RELOCATES THE KERNEL, THE LEAN
                                        TOOLCHAIN (`~/.elan`) AND THE CACHE, AND THE SHARED TEMP DIR WAS WIPED MID-
                                        SESSION AND TOOK BOTH HUNTS' BUILT KERNELS WITH IT: *"A TOOL THAT LIVES ONLY IN
                                        A SHARED TEMP DIR IS A TOOL THAT CAN VANISH."***
@@ -2053,14 +2075,14 @@ mixin-op-closed      [##] 3/3  **THE WALL THAT `mo-squeeze-row` NAMED HAS FALLEN
                                        `mo_cval_of`, WHICH PRINTS A CONST's **VALUE** AND NOT JUST ITS OP AND SOURCE
                                        COUNT -- AND THE THREE `val_*` ROWS AGREE ON BOTH SIDES: `val_mean0` READS
                                        `CONST/0=f4.000000`, `val_mean0_2d` READS `CONST/0=f2.000000`, AND `val_var0`
-                                       READS THE WHOLE CHAIN.** **⇒ SO `mo_reduced` -- THE MEAN'S DENOMINATOR, WHICH
+                                       READS THE WHOLE CHAIN.** **SO `mo_reduced` -- THE MEAN'S DENOMINATOR, WHICH
                                        `mo-squeeze-row` NAMED AS THE ONE NO ROW COULD SEE -- IS NOW SEEN, AND ITS
-                                       VALUE IS RIGHT ON BOTH SIDES.** **⇒ AND THE ROW KIND IS THE POINT: A SIGNATURE
+                                       VALUE IS RIGHT ON BOTH SIDES.** **AND THE ROW KIND IS THE POINT: A SIGNATURE
                                        ROW PRINTS `CONST/0`, SO IT COULD NEVER SEE THE DENOMINATOR, AND **CLOSING THAT
                                        GAP NEEDED A NEW ROW KIND, NOT A NEW FIX** -- THE SAME LESSON AS THE NN ROWS,
-                                       WHERE THE FIX WAS A COMPARER.** **⇒ AND A PLANT CAME WITH IT: `gates/mixin-op-
+                                       WHERE THE FIX WAS A COMPARER.** **AND A PLANT CAME WITH IT: `gates/mixin-op-
                                        plant.py` (240 LINES), THE INSTRUMENT THAT PROVES THE NEW ROWS CAN GO RED.**
-                                       **⇒ AND A WALL THAT FELL IS STILL NAMED AS A WALL IS THE CLASS THIS TREE KEEPS
+                                       **AND A WALL THAT FELL IS STILL NAMED AS A WALL IS THE CLASS THIS TREE KEEPS
                                        FIXING, SO THIS ROW EXISTS TO SAY THAT TWO OF `mo-squeeze-row`'s CLAIMS ARE NOW
                                        HISTORY: **`mo_reduced` IS COVERED, AND THE ELEVEN ARE CLOSED.** THE ELEVEN
                                        WERE, MEASURED AT 2026-10-22T20:2xZ, `agree=24  agree_many=0  differ=11` WITH
@@ -2080,19 +2102,19 @@ corpus-green-again   [##] 3/3  **THE CORPUS IS GREEN, REPRODUCIBLE **AND** CURRE
                                        `substrate-start == substrate-end == live ==
                                        c910ded1f2689d709f58768ddc6270f50cf704427b37735fa22e952d8cda9675`; AND `REPRO:
                                        319 of 319 files identical across two clean runs` WITH `repro-files=319  repro-
-                                       identical=319  repro-rc=rc=0`.** **⇒ ALL THREE HELD AT ONCE, AND THE
+                                       identical=319  repro-rc=rc=0`.** **ALL THREE HELD AT ONCE, AND THE
                                        `substrate-head` MOVED (`6ce0514b0` -> `6c972bf768a8`, THE CONCURRENT SESSION'S
                                        COMMIT) DURING THE RUN **WITHOUT** THE DIGEST MOVING -- WHICH IS EXACTLY THE
                                        SHAPE `AGENTS.md` DESCRIBES: A COMMIT THAT FOLLOWS THE RUN AND TOUCHES NOTHING
                                        IN THE SUBSTRATE DOES NOT MAKE THE RUN STALE, AND THE DIGEST IS WHAT SAYS SO.**
-                                       **⇒ AND NOW THE ROW THAT MATTERS MOST: **THE CORPUS'S GREENNESS IS **NOT**
+                                       **AND NOW THE ROW THAT MATTERS MOST: **THE CORPUS'S GREENNESS IS **NOT**
                                        EVIDENCE FOR THE `mo_at` FIX, AND IT COULD NOT BE.** THE CORPUS'S FIXTURES ARE
                                        ONE-DIMENSIONAL OR SQUARE -- **AND THOSE ARE EXACTLY THE SHAPES WHERE THE
                                        FORWARD INDEX AND THE BACKWARD ONE AGREE** -- SO `graphs-disagree=0` IS THE
                                        EXPECTED OUTCOME AND NOT A CONFIRMATION. **THE FIX'S EVIDENCE IS THE THREE NEW
                                        ROWS THAT GO `void` UNDER THE ORIGINAL FORMULA** (`sh_sum0kd_23`, `sh_sq0_123`,
                                        AND THE PRE-EXISTING `sh_sum0kd`'S BLINDNESS), **PLUS THE `mixin-op` GATE'S 38
-                                       OF 38.** **⇒ A GREEN CORPUS IS A STATEMENT ABOUT THE CORPUS'S COVERAGE, AND A
+                                       OF 38.** **A GREEN CORPUS IS A STATEMENT ABOUT THE CORPUS'S COVERAGE, AND A
                                        CORPUS THAT CANNOT SEE A DEFECT IS A CORPUS THAT CANNOT CONFIRM A FIX EITHER.**
 
 
@@ -2107,7 +2129,7 @@ bend-upgrade-38      [##] 3/3  **THE PROJECT WAS ON BEND `v2.0.38` (SUPERSEDED B
                                        OWN DISTINCTION (*"A PIN THAT CANNOT BE VIOLATED IS NOT A PIN"*).** **THE
                                        COMPIILER `bin/bend` NOW REPORTS *"Bend 2.0.38: check, run, build and publish
                                        Bend programs."*, AND THE CLONE IS AT `v2.0.38` /
-                                       `0a57ca0d21de94a3724d8be21afb0eb89f88b4d8` (2026-10-20).** **⇒ AND THE PINS
+                                       `0a57ca0d21de94a3724d8be21afb0eb89f88b4d8` (2026-10-20).** **AND THE PINS
                                        THAT MOVED WERE FOUND BY A DIRECTORY WALK, NOT A HAND LIST: `tools/get-
                                        bend.sh:6` (THE GENERATOR); `checks/bend-health.rows` -- **REGENERATED BY
                                        `checks/bend-health.py`, THE INSTRUMENT THAT OWNS IT**, WHICH NOW READS
@@ -2117,13 +2139,13 @@ bend-upgrade-38      [##] 3/3  **THE PROJECT WAS ON BEND `v2.0.38` (SUPERSEDED B
                                        ROWS -- AND **THE SECOND ONE NAMED `0187512`, THE v2.0.34-ERA TIP, SO IT HAD
                                        BEEN WRONG FOR LONGER THAN THE OTHER ONE**); AND THE PROSE IN
                                        `checks/differ.py`, `checks/gate_norm.py` AND `checks/bend-health.py` THAT
-                                       ASSERTED A CURRENT FACT. **⇒ AND THE STALE-PROSE CLASS WAS WORSE THAN THE PINS:
+                                       ASSERTED A CURRENT FACT. **AND THE STALE-PROSE CLASS WAS WORSE THAN THE PINS:
                                        `checks/gate_norm.py`'S OWN COMMENT IS THE TREE'S EXAMPLE OF *"A WALL THAT FELL
-                                       IS STILL NAMED AS A WALL"*, AND IT NAMED 2.0.37 AS *"THE LINE IS RIGHT"*.** **⇒
+                                       IS STILL NAMED AS A WALL"*, AND IT NAMED 2.0.37 AS *"THE LINE IS RIGHT"*.** **
                                        AND TWO SUBSTRATE `.bend` FILES CARRIED CITATIONS TO THE OLD REVISION
                                        (`nn/item.bend`, `runtime/support/autogen.bend`) -- **AND A COMMENT-ONLY EDIT
                                        TO A `.bend` FILE STILL MOVES THE SUBSTRATE DIGEST, SO THE WITNESS WAS RE-TAKEN
-                                       AFTER THEM.** **⇒ AND TWO THINGS ARE MEASURED ABOUT THE NEW COMPILER: THE PORT
+                                       AFTER THEM.** **AND TWO THINGS ARE MEASURED ABOUT THE NEW COMPILER: THE PORT
                                        COMPILES UNDER IT** (FIVE REPRESENTATIVE FILES, INCLUDING `mixin/op.bend` AND
                                        `nn/layers.bend`, ALL `ALL PROOFS CHECK` UNDER BOTH REVISIONS) **AND THE
                                        CORPUS'S 35 BYTE-COMPARED GRAPHS STILL AGREE** (`graphs=35  graphs-agree=35
@@ -2131,7 +2153,7 @@ bend-upgrade-38      [##] 3/3  **THE PROJECT WAS ON BEND `v2.0.38` (SUPERSEDED B
                                        PRESERVING FOR THE PORT. AND `match` STILL MAY NOT SCRUTINISE A COMPUTED VALUE
                                        IN 2.0.38** (RE-MEASURED, NOT ASSUMED), **SO BEND'S RULE 1 IS UNCHANGED.**
 bend-upgrade-39      [##] 3/3  **THE PROJECT IS ON BEND `v2.0.39`, AND EVERY PIN THAT NAMES THE COMPILER MOVED WITH
-                                       IT — **⇒ AND THE UPGRADE BROKE A SUBSTRATE FILE THAT NOBODY MEASURED FOR TEN
+                                       IT — **AND THE UPGRADE BROKE A SUBSTRATE FILE THAT NOBODY MEASURED FOR TEN
                                        DAYS.** MEASURED 2026-10-30. **THE UPGRADE WENT THROUGH THE TREE'S OWN TOOL, NOT
                                        A HAND EDIT: `tools/get-bend.sh:6` DECLARES `REF=${BEND_REF:-v2.0.39}` AND THAT
                                        LINE IS THE **GENERATOR** OF THE PIN, SO IT IS WHAT MOVED; THEN THE TOOL's OWN FIX
@@ -2142,7 +2164,7 @@ bend-upgrade-39      [##] 3/3  **THE PROJECT IS ON BEND `v2.0.39`, AND EVERY PIN
                                        (*"A PIN THAT CANNOT BE VIOLATED IS NOT A PIN"*). THE COMPILER `bin/bend` NOW
                                        REPORTS **`bend 2.0.39`**, AND THE CLONE IS AT `v2.0.39` /
                                        `a3efe8a3801f423827424227172eed9802c5e6cb` (0 dirty files).**
-                                       **⇒ AND THE PINS THAT MOVED WERE FOUND BY A DIRECTORY WALK, NOT A HAND LIST:**
+                                       **AND THE PINS THAT MOVED WERE FOUND BY A DIRECTORY WALK, NOT A HAND LIST:**
                                        `tools/get-bend.sh:6` (THE GENERATOR); `checks/bend-health.rows` —
                                        **REGENERATED BY `checks/bend-health.py`, THE INSTRUMENT THAT OWNS IT**, WHICH NOW
                                        READS `pin.declared=v2.0.39  pin.checkout_tag=v2.0.39
@@ -2150,19 +2172,19 @@ bend-upgrade-39      [##] 3/3  **THE PROJECT IS ON BEND `v2.0.39`, AND EVERY PIN
                                        pin.checkout_dirty_files=0` AND PASSES **CLAUSES I-V**; `.agents/TOOLS.md` (TWO
                                        ROWS); AND THE PROSE IN `checks/differ.py`, `checks/gate_norm.py` AND
                                        `checks/bend-health.py` THAT ASSERTED A CURRENT FACT.
-                                       **⇒ AND THE NOTICE IS QUIET FOR A NEW REASON, MEASURED: `~/.bend/check.json`
+                                       **AND THE NOTICE IS QUIET FOR A NEW REASON, MEASURED: `~/.bend/check.json`
                                        READS `"ver":"2.0.39","notice":""`.** THE PIN ON THE TRANSCRIPT WAS ON THE
                                        COMPILER's "A NEWER BEND IS AVAILABLE" NOTICE — **A NETWORK ANSWER, AND A PIN OVER
                                        BYTES A THIRD PARTY CAN MOVE IS NOT A PIN, IT IS A BET** — AND
                                        `BEND_NO_TELEMETRY=1` SUPPRESSES IT AT BOTH BOUNDARIES, SO THE PIN IS ON THE
                                        EMPTY-STDERR TRANSCRIPT, WHICH IS THE VALUE A FRESH CLONE PRODUCES.
-                                       **⇒ AND THE UPGRADE's CASUALTY: `List.find.put` WAS RENAMED TO `List.find.if` IN
+                                       **AND THE UPGRADE's CASUALTY: `List.find.put` WAS RENAMED TO `List.find.if` IN
                                        BEND 2.0.38, SO `tinybendygrad/runtime/support/autogen.bend` **HAD NOT COMPILED SINCE
-                                       2026-10-20** — **⇒ AND IT FAILS IDENTICALLY UNDER 2.0.38, SO THE 2.0.38 UPGRADE IS
-                                       WHAT BROKE IT, AND NOTHING MEASURED IT FOR TEN DAYS** — **⇒ AND THE COMPILE
+                                       2026-10-20** — **AND IT FAILS IDENTICALLY UNDER 2.0.38, SO THE 2.0.38 UPGRADE IS
+                                       WHAT BROKE IT, AND NOTHING MEASURED IT FOR TEN DAYS** — **AND THE COMPILE
                                        CENSUS HAD RECORDED IT AS ITS ONE `FINDING` (`checks/port-compile.rows`), AND THE
                                        FIX IS TWO CALL SITES.**
-                                       **⇒ AND TWO SUBSTRATE CITATIONS NAME A COMPILER REVISION, SO THEY WERE RE-MEASURED
+                                       **AND TWO SUBSTRATE CITATIONS NAME A COMPILER REVISION, SO THEY WERE RE-MEASURED
                                        RATHER THAN RE-SPELLED**, WITH `.agents/slop/bendup39/match-rule.sh` (THREE
                                        `bin/bend --check-only` PROCESSES, ~2 s): THE `match` RULES (A COMPUTED VALUE, A
                                        LOCAL BINDER) ARE **UNCHANGED** UNDER 2.0.39 AND THE QUOTED TEXT IS STILL
@@ -2188,17 +2210,17 @@ argmax-graph         [####] 4/4  **THE GRAPH-LEVEL `argmax` IS BUILT AND GREEN, 
                                        `_broadcast_to` KEEPS THE DIMS (`movement.py:142`), AND TARGETED `[r]` WHERE
                                        UPSTREAM TARGETS `[r, i]`; AND `op_pool1.sh` USED `k*(i*f+1)` FOR BOTH OF
                                        UPSTREAM'S TWO DISTINCT NUMBERS (`movement.py:626` VS `:627`), WHICH DIFFER BY
-                                       A FACTOR OF `k`. **⇒ AFTER THE FIX THE ARANGE ROOT READS `SHAPE[4]` AND
-                                       `fold_np` FLIPPED `False` -> `True`.** **⇒ AND `tinybendygrad/nn/argmax.bend`
+                                       A FACTOR OF `k`. **AFTER THE FIX THE ARANGE ROOT READS `SHAPE[4]` AND
+                                       `fold_np` FLIPPED `False` -> `True`.** **AND `tinybendygrad/nn/argmax.bend`
                                        NOW BUILDS UPSTREAM'S FOUR NODES WITH **20 ROWS, ALL GREEN**, EVERY `want`
                                        TAKEN FROM CPYTHON ITSELF (`oracle_argmax.py`), AND THE CONTROL (`g_ar_shape`
-                                       PERTURBED TO `(5,)` PRINTS `got=(4,) want=(5,)`).** **⇒ AND TWO THINGS ARE
+                                       PERTURBED TO `(5,)` PRINTS `got=(4,) want=(5,)`).** **AND TWO THINGS ARE
                                        **NAMED AS NOT DONE**: THE ARANGE IS STILL **24 NODES AGAINST CPYTHON'S 31** --
                                        THE `_pad_constant`'s PAD IS ABSENT (`op_padc` PASSES `[i]` WHERE UPSTREAM
                                        PASSES `[2i-1]`) -- **SO THE PORT'S ARANGE **VALUES** ARE NOT UPSTREAM'S**
                                        (UNOBSERVABLE, THERE IS NO EXECUTOR; THE LIST FORM IS WHAT CHECKS VALUES); AND
                                        IT IS **1-D F32 ONLY**, BECAUSE THE AXIS WIDENING NEEDS BOTH THE MULTI-AXIS
-                                       REDUCE CORRECTED **AND** THE INDEX VECTOR'S RESHAPE BUILT. **⇒ AND A GATE WILL
+                                       REDUCE CORRECTED **AND** THE INDEX VECTOR'S RESHAPE BUILT. **AND A GATE WILL
                                        GO RED BECAUSE THE FIX WORKED: `gates/rand_census-gate.py:328-333` CLAIMS *"THE
                                        FOLD CANNOT ANSWER THIS"* ABOUT `fold_np`/`fold5_np`, AND **THAT CLAIM HAS
                                        EXPIRED** -- SEE `rand-census-expired`.
@@ -2212,29 +2234,29 @@ imagenet-loader      [####] 4/4  **THE IMAGENET LOADER IS NO LONGER A STUB: ALL 
                                        U32>`, UPSTREAM'S DICT. **THE ANSWER TYPE IS `Load` WITH
                                        `Has{value}`/`Lacks{why: D.Refused}` -- THE REFUSAL IS **NEVER** AN EMPTY
                                        LIST** (`__init__.bend:28-34`'s RULE) -- AND IT USES THE PORT'S `D.refuse`
-                                       VOCABULARY. **⇒ AND THE PRIMITIVES WERE **READ, NOT ASSUMED** (THIS SESSION HAS
+                                       VOCABULARY. **AND THE PRIMITIVES WERE **READ, NOT ASSUMED** (THIS SESSION HAS
                                        ALREADY CAUGHT ONE AGENT ASSERTING A PRIMITIVE'S SEMANTICS WITHOUT READING ITS
                                        BODY): `Sz.read_dir` (`sz.bend:124`, `@unsafe`, NAMES EXCEPT `.`/`..`, READDIR
                                        ORDER, **A DIRECTORY IT CANNOT OPEN IS NO NAMES**); `Sz.is_dir` (`sz.bend:132`,
                                        `@unsafe`, AN **`lstat`**); `File.open`/`File.read`/`File.close`
                                        (`base.bend:288/293/323`, THE FAIL ARM IS THE MISSING FILE); **NO GLOB EXISTS**
                                        (MEASURED BY GREP) AND IT WAS EXPANDED HERE; AND **NO JSON PARSER EXISTS**
-                                       (`viz/serve.bend:804`: *"`json.loads` IS NOT PORTED"*).** **⇒ THE CLASS INDEX
+                                       (`viz/serve.bend:804`: *"`json.loads` IS NOT PORTED"*).** **THE CLASS INDEX
                                        IS READ BY A **CHARACTER-AT-A-TIME DECODER** (SZ.BEND'S OWN LEXER IDIOM),
                                        **BECAUSE A RECURSIVE-DESCENT JSON PARSER CANNOT BE WRITTEN IN BEND** -- THE
                                        AGENT MEASURED THAT A COMPUTED SUFFIX IS NOT A SYNTACTICALLY SMALLER ARGUMENT.
                                        **A GENERAL JSON PARSER IS SPECIFIED, NOT BUILT**: IT NEEDS MUTUAL RECURSION
                                        (ONE DEF WITH A MODE), A STACK, AND IT BELONGS IN A **NEW
                                        `tinybendygrad/json.bend`**, NOT `LAWS/spec.bend` (THAT FILE IS A PURE FOLD
-                                       OVER AN EFFECTLESS IR).** **⇒ VERIFICATION: 8 OF 8 ROWS AGREE, AND CPYTHON'S
+                                       OVER AN EFFECTLESS IR).** **VERIFICATION: 8 OF 8 ROWS AGREE, AND CPYTHON'S
                                        OWN `glob`/`json` ANSWER IS **BYTE-IDENTICAL** ON EVERY ROW WHERE THE ORACLE
                                        HAS ONE; THE EXPECTATIONS LIVE IN A SEPARATE HAND-WRITTEN LITERAL, NOT COPIED
                                        FROM THE OUTPUT; AND THE CONTROL (PERTURBING ONE PATH) MADE EXACTLY ONE ROW RED
                                        AND LEFT THE OTHER SEVEN GREEN. THE PROBE FOUND **THREE REAL DEFECTS** BEFORE
                                        IT WENT GREEN (A HIDDEN-DIRECTORY LEAK AT DEPTH ONE, AND TWO PLACES WHERE A
-                                       STATE CONSUMED A CHARACTER IT SHOULD NOT).** **⇒ ONE DIVERGENCE, MEASURED: A
+                                       STATE CONSUMED A CHARACTER IT SHOULD NOT).** **ONE DIVERGENCE, MEASURED: A
                                        SYMLINKED CLASS DIRECTORY IS **FOLLOWED** BY CPYTHON'S GLOB AND **SKIPPED** BY
-                                       THE PORT (`lstat` VS `stat`).** **⇒ AND THE SAFETY VERDICT IS THE FIRST IN THIS
+                                       THE PORT (`lstat` VS `stat`).** **AND THE SAFETY VERDICT IS THE FIRST IN THIS
                                        TREE TO USE 2.0.38's NEW LANE: `imagenet.bend --verdict` ANSWERS *"Error: 15
                                        defs rely on unsafe or foreign code"*, NAMING `Sz.read_dir` AND `Sz.is_dir` --
                                        THE PORT'S ONLY TWO DIRECTORY PRIMITIVES -- AND **THE READER ALONE, ISOLATED IN
@@ -2249,29 +2271,29 @@ verdict-lane         [####] 4/4  **THE FIRST INSTRUMENT THAT CHECKS THIS PORT'S 
                                        -c bendtt.c bendtt.lean` -> `leanc -O3 -DNDEBUG bendtt.c -o bendtt`, **IN A
                                        DIRECTORY THE GATE OWNS**. **THE COST IS MEASURED, FOUR READINGS: `lean -c` IS
                                        13-17 s AND ~1.0 GB (996-1009 MiB); `leanc` IS 4.7-5.9 s AND 221-250 MiB** (the
-                                       instrument is `/usr/bin/time -o FILE -l`). **⇒ AND IT READS **7 FILES, 2
+                                       instrument is `/usr/bin/time -o FILE -l`). **AND IT READS **7 FILES, 2
                                        DISCOVERED ROOTS, 0 DISAGREEMENTS**, AND ITS VERDICT IS *"PASS -- 7 file(s)
                                        judged, no disagreement, and 3 of them reached the kernel"*: `LAWS/PROOF-
                                        ALL.bend`, `LAWS/alu.bend`, `LAWS/spec.bend` -> `AGREE-VERIFIED`; `LAWS.bend`,
                                        `PROOF.bend`, `PROOF2.bend` -> `AGREE-INCOMPLETE` (34/18/16 TODOs);
                                        `libclang.bend` -> `AGREE-FOREIGN` (336). **THE POPULATION IS **DISCOVERED**,
                                        NOT LISTED: PROOF ROOTS = FILES NOTHING IMPORTS WHOSE IMPORT CLOSURE DECLARES A
-                                       LAW.** **⇒ AND THE PLANT HAS **7 CASES**, ALL AS EXPECTED: A *TARGETED* TREATED
+                                       LAW.** **AND THE PLANT HAS **7 CASES**, ALL AS EXPECTED: A *TARGETED* TREATED
                                        KERNEL (FAILS IFF THE ELABORATION MENTIONS `powf`) MAKES EXACTLY `{alu.bend,
                                        PROOF-ALL.bend}` DISAGREE AND LEAVES `spec.bend` ALONE -- **THE SET, NOT JUST
                                        THE VERDICT**; AND PIN MISMATCH -> `REFUSED`, SILENT COMPILER -> `DEAD`,
                                        POISONED `~/.bend/` -> ROWS BYTE-IDENTICAL, COMMENT-ONLY COPY -> JUDGED
-                                       IDENTICALLY.** **⇒ AND ITS INDEPENDENCE IS MEASURED**: `~/.bend/bendtt/` --
+                                       IDENTICALLY.** **AND ITS INDEPENDENCE IS MEASURED**: `~/.bend/bendtt/` --
                                        WITH THE POISON AT THE COMPILER'S OWN CACHE KEY, `BENDTT` UNSET FLIPS THE
                                        VERDICT TO `SOME PROOFS FAIL`/MISMATCH/rc 1, AND `BENDTT` SET TO THE PINNED
                                        KERNEL GIVES `ALL PROOFS CHECK`/rc 0; `~/.bend/check.json` -- BYTES AND MTIME
                                        UNCHANGED AFTER A FULL RUN; `~/.elan` -- PINNED OUT: IT CAN ONLY REACH THE
-                                       VERDICT THROUGH A BINARY THAT FAILS THE PIN.** **⇒ AND THE PIN IS THE ARGUMENT
+                                       VERDICT THROUGH A BINARY THAT FAILS THE PIN.** **AND THE PIN IS THE ARGUMENT
                                        FOR THE WHOLE THING: THE REFERENCE CLONE MOVED UNDER THE AGENT (2.0.37 ->
                                        2.0.38 AT 00:10 UTC), AND **A GATE THAT MERELY *BUILT* THE KERNEL WOULD HAVE
                                        SILENTLY CHANGED ITS VERDICT WITH NO REPOSITORY CHANGE TO POINT AT** -- SO THE
                                        DELIVERED GATE PINS THE CURRENT REVISION, AND IF THE CLONE MOVES AGAIN IT
-                                       **REFUSES (3) WITH BOTH SHAS**. **⇒ AND IT FOUND A DEFECT OF ITS OWN BY RUNNING
+                                       **REFUSES (3) WITH BOTH SHAS**. **AND IT FOUND A DEFECT OF ITS OWN BY RUNNING
                                        IT: THE GATE'S ARTIFACT-CLEAR (INHERITED FROM `gatekit._clear()`) DELETED THE
                                        REPORT SITTING BESIDE THE ROWS, BECAUSE `--artifacts` MAY POINT AT A DIRECTORY
                                        THE GATE DOES NOT OWN -- FIXED TO CLEAR ONLY THE THREE FILES THE GATE WRITES,
@@ -2283,10 +2305,10 @@ rand-census-expired  [###] 3/3  **A GATE'S CLAIM EXPIRED BECAUSE A FIX WORKED, T
                                        `gates/rand_census-gate.py:328-333` CLAIMED THE FOLD **CANNOT** ANSWER
                                        `fold_np`/`fold5_np`; **AFTER THE `mixin/rand.bend` FIX (THE ARANGE'S 0-DIM
                                        RESHAPE AND THE `k*(i*f+1)` POOL ARITHMETIC) `fold_np` FLIPPED `False` ->
-                                       `True`**, SO THE GATE'S CLAIM EXPIRED. **⇒ AND A GATE THAT GOES RED BECAUSE THE
+                                       `True`**, SO THE GATE'S CLAIM EXPIRED. **AND A GATE THAT GOES RED BECAUSE THE
                                        TREE GOT BETTER IS NOT A GATE TO BE SUPPRESSED -- IT IS A GATE TO BE
                                        **UPDATED**, AND THE UPDATE MUST RECORD *WHAT THE FIX WAS* SO THE RED IS READ
-                                       AS PROGRESS AND NOT AS REGRESSION.** **⇒ AND IT IS UPDATED (2026-10-25): THE
+                                       AS PROGRESS AND NOT AS REGRESSION.** **AND IT IS UPDATED (2026-10-25): THE
                                        FOUR `st_*` PORT-SIDE PINS WERE **RE-DERIVED FROM THE LANE** -- THE DRIVER IS
                                        THE PORT FILE ITSELF (`DRIVER = "tinybendygrad/mixin/rand.bend"`, `main` IS 55
                                        ROWS), SO THE LANE IS `bin/bend tinybendygrad/mixin/rand.bend` -- **NEVER
@@ -2305,7 +2327,7 @@ rand-census-expired  [###] 3/3  **A GATE'S CLAIM EXPIRED BECAUSE A FIX WORKED, T
                                        STILL NAMED AS A WALL, AND IT IS EXACTLY WHAT MAKES THE NEXT PERSON ADD A SPACE
                                        AND BREAK THE GATE.** THE GATE IS GREEN (`rc=0`, 55 PORT ROWS, 32 COMPARED
                                        AGAINST CPYTHON AND ALL 32 AGREE BYTE-FOR-BYTE, 4 `st_*` DIVERGENCES PINNED)
-                                       AND ITS PLANT IS GREEN (*"ALL SEVEN STATES OK"*). **⇒ AND THE HOLE THE UPDATE
+                                       AND ITS PLANT IS GREEN (*"ALL SEVEN STATES OK"*). **AND THE HOLE THE UPDATE
                                        EXPOSED IS NOW CLOSED IN `gates/state_census.py`: `classify()` POPULATES
                                        `C-NEG` **BY NAME**, SO IT COULD NOT CHECK THAT A DECLARED NEGATIVE FIXTURE'S
                                        VALUE STILL SAYS *THE ABSENT CASE IS ABSENT* -- **A ROW THAT HAD LEFT THE CLASS
@@ -2314,12 +2336,12 @@ rand-census-expired  [###] 3/3  **A GATE'S CLAIM EXPIRED BECAUSE A FIX WORKED, T
                                        IS THE ONE THAT SAYS THE ABSENT CASE IS **PRESENT** -- AND THE OTHER SPELLINGS
                                        ARE PER-GATE: `rand_census-gate.py`'s NEGATIVE FIXTURES PRINT `False`,
                                        `state_census-gate.py`'s PRINT `-`, AND `onnx_census-gate.py`'s PRINT `-` OR AN
-                                       EMPTY STRING. **⇒ AND MY FIRST DRAFT DEMANDED THE VALUE BE `False`, WHICH IS
+                                       EMPTY STRING. **AND MY FIRST DRAFT DEMANDED THE VALUE BE `False`, WHICH IS
                                        **NOT** UNIVERSAL, AND IT TURNED TWO GATES RED ON PERFECTLY GOOD FIXTURES --
                                        WHICH IS HOW A CORRECTION FOUNDS OUT WHAT IT GOT WRONG.** THE FIX IS THE ONE
                                        SPELLING, AND ALL SEVEN GATES THAT USE `state_census` ARE GREEN (THE FOUR THAT
                                        DECLARE A NEG LIST PLUS THREE THAT DO NOT, AND FOR THE LATTER THE CHECK IS A
-                                       NO-OP BY CONSTRUCTION). **⇒ AND THE CONTROL: A DECLARED NEG ROW WHOSE VALUE IS
+                                       NO-OP BY CONSTRUCTION). **AND THE CONTROL: A DECLARED NEG ROW WHOSE VALUE IS
                                        `True` MAKES `class_census` REFUSE, WHILE `False`, `-` AND A ROW THE LANE NEVER
                                        EMITTED ALL ACCEPT.**
 
@@ -2330,21 +2352,21 @@ keepdim-dedup        [##] 3/3  **THE PORT HAD *TWO* IMPLEMENTATIONS OF THE KEEPD
                                        s for i,s in enumerate(self.shape)` (reduce.py:18) LOCALLY, IN
                                        `nn_reduce.keepd`, **BECAUSE `mixin/op.bend`'s `mo_keep_ds` WAS WRONG**: ITS
                                        INDEX CAME FROM `mo_at`, WHICH ANSWERED `len(t)` -- **THE INDEX COUNTED FROM
-                                       THE END** -- WHILE EVERY NEIGHBOUR IS FORWARD. **⇒ SO THE NN LAYER USED A
+                                       THE END** -- WHILE EVERY NEIGHBOUR IS FORWARD. **SO THE NN LAYER USED A
                                        CORRECT LOCAL COPY AND THE OP LAYER USED THE WRONG SHARED ONE, AND THE ROW THAT
                                        CAUGHT IT, `fold_smk`, EXPECTED `2,1,3` -- WHICH IS **CPython's ANSWER FOR AXIS
                                        `[1]`** AND **ALSO WHAT THE PORT'S `mo_keep_ds` ANSWERED FOR *EVERY* AXIS**.
                                        **A WRONG ANSWER THAT COINCIDES WITH A RIGHT ONE IS THE DEEPEST FORM OF *"A ROW
-                                       THAT CANNOT GO RED IS A LABEL"*.** **⇒ AND NOW THAT `mo_at` IS FIXED, THE LOCAL
+                                       THAT CANNOT GO RED IS A LABEL"*.** **AND NOW THAT `mo_at` IS FIXED, THE LOCAL
                                        COPY IS DEAD WEIGHT AND IS GONE: `nn_reduce.keep` READS `M.mo_reduce.keep`,
-                                       WHICH READS `mo_keep_ds`.** **⇒ AND THE SWAP CHANGES THE INDEX AND NOTHING
+                                       WHICH READS `mo_keep_ds`.** **AND THE SWAP CHANGES THE INDEX AND NOTHING
                                        ELSE, BECAUSE THE TWO READ THE SAME SHAPE: `nn_shape` IS
                                        `nn_u32(M.mo_dims(...))` AND `mo_keep_ds` IS `mo_dims(...)` -- THE FOLD'S
-                                       SHAPE, BOTH OF THEM.** **⇒ AND IT IS BEHAVIOUR-PRESERVING, MEASURED BY THE
+                                       SHAPE, BOTH OF THEM.** **AND IT IS BEHAVIOUR-PRESERVING, MEASURED BY THE
                                        TREE'S OWN GATE: `gates/nn-rows-gate.py` READS **IDENTICALLY** BEFORE AND AFTER
                                        -- `rows_declared=31  rows_printed=31  MATCH=18/31  MISMATCH=8/31
                                        UNCHECKABLE=5/31  DEAD-ROW=0/31  SHRUNK=0/31  EXTRA=0/31  DUPLICATE=0/31` --
-                                       AND `fold_smk` READS `got=2,4,1 want=2,4,1`.** **⇒ AND THE POINT IS THE TREE'S
+                                       AND `fold_smk` READS `got=2,4,1 want=2,4,1`.** **AND THE POINT IS THE TREE'S
                                        OWN RULE, *"SHAREABLE LOGIC SHOULD BE REUSED. AVOID COPY-PASTING CODE"*: **TWO
                                        SPELLINGS OF ONE RULE IS HOW A BUG HIDES, BECAUSE EACH SPELLING IS RIGHT ABOUT
                                        SOMETHING.**
@@ -2356,13 +2378,13 @@ nn-rows-complete     [####] 4/4  **THE NN LAYERS' VERIFICATION IS COMPLETE: **31
                                        ROWS.** MEASURED 2026-10-23. `gates/nn-rows-gate.py` READS **`PASS -- 31 OF 31
                                        ROWS MATCH THEIR EXPECTATIONS`**, rc=0, AND
                                        **`rows_not_passing_exact_comparison=0 of 31`** (IT WAS **13 OF 31**, AND THE
-                                       ELEVEN THAT WERE RED AT HEAD). **⇒ AND THE BONUS CLAIM, MEASURED BY
+                                       ELEVEN THAT WERE RED AT HEAD). **AND THE BONUS CLAIM, MEASURED BY
                                        `.agents/slop/nnrowsfix/vsig.py`: `dbg_x_sig` IDENTICAL (6 TOKENS),
                                        `dbg_dot_sig` IDENTICAL (20), `dbg_conv_sig` IDENTICAL (57), `fold_xw_sig`
                                        IDENTICAL (18), `fold_cc_sig` IDENTICAL (20) -- **ALL 5 NODE LISTS ARE
-                                       IDENTICAL, NODE FOR NODE, CONST PAYLOADS INCLUDED.** **⇒ THAT IS A 1:1 CLAIM ON
+                                       IDENTICAL, NODE FOR NODE, CONST PAYLOADS INCLUDED.** **THAT IS A 1:1 CLAIM ON
                                        THE **COMPILED GRAPH**, NOT MERELY ON THE RESULT, AND IT IS THE STRONGEST
-                                       STATEMENT THE PORT HAS MADE ABOUT ITS GRAPH CONSTRUCTION.** **⇒ AND THE TWO
+                                       STATEMENT THE PORT HAS MADE ABOUT ITS GRAPH CONSTRUCTION.** **AND THE TWO
                                        CLASSES WERE CLOSED DIFFERENTLY: THE 3 DTYPE ROWS' `want` IS **`f32`**, WHICH
                                        IS BOTH THE PORT'S OWN SPELLING (`E.ew_dtnm`, `mixin/elementwise.bend:1033`, IS
                                        THE `nm` FIELD OF `S.Dt`; `S.single()` (`LAWS/spec.bend:741`) IS
@@ -2373,7 +2395,7 @@ nn-rows-complete     [####] 4/4  **THE NN LAYERS' VERIFICATION IS COMPLETE: **31
                                        SPELLING**, WITH THE FIXTURE DECIDING THE DEVICE (`tinygrad/tensor.py:93`
                                        COPIES THE NUMPY BUFFER ON THE DEFAULT DEVICE) AND **THE MEASURED DIFFERENCE
                                        BEING EXACTLY THE NUMBER OF BUFFERS (7->6, 22->20, 20->18, 59->57)** -- **THE
-                                       PORT'S FIXTURE HAS NO COPY.** **⇒ AND THE SPEC IR **CANNOT** RENDER THESE ROWS,
+                                       PORT'S FIXTURE HAS NO COPY.** **AND THE SPEC IR **CANNOT** RENDER THESE ROWS,
                                        AND THE REPORT SAYS SO PRECISELY WITH THREE MEASURED REASONS: `Sp`
                                        (`spec.bend:422`) IS A *TREE* OF OP SPECS WITH DERIVED SHAPE/DTYPE AND HAS NO
                                        OP-NAME, NO ARITY AND NO NODE COUNT -- AND CANNOT HAVE THE LAST ONE, BECAUSE
@@ -2381,12 +2403,12 @@ nn-rows-complete     [####] 4/4  **THE NN LAYERS' VERIFICATION IS COMPLETE: **31
                                        (`uop/fold.bend:4435`), `SpReshape` CARRIES DIMS AS A `List<Sdim>` WHERE THE
                                        ARENA CARRIES A STACK **NODE** (6 ARENA NODES VS 2 `Sp` NODES FOR THE SAME
                                        COMPUTATION), AND `spec.bend`'s OWN HEADER DECLARES THE COMPILATION IR OUT OF
-                                       REACH. **⇒ SO THE WITNESS IS CPYTHON'S GRAPH, AND WHAT WOULD HAVE TO BE ADDED
-                                       TO `spec.bend` IS SPECIFIED.** **⇒ AND `dbg_dot_sig` AND `fold_cc_sig` SHARE A
+                                       REACH. **SO THE WITNESS IS CPYTHON'S GRAPH, AND WHAT WOULD HAVE TO BE ADDED
+                                       TO `spec.bend` IS SPECIFIED.** **AND `dbg_dot_sig` AND `fold_cc_sig` SHARE A
                                        `want`, **AND THAT IS SAID RATHER THAN HIDDEN**: UPSTREAM'S `dot` **IS**
                                        RESHAPE-TRANSPOSE-MUL-SUM-CAST, SO THEY ARE THE SAME COMPUTATION AND A GRAPH
                                        SIGNATURE CANNOT SEPARATE THEM; THEY DIFFER IN THE PORT CODE PATH THEY
-                                       EXERCISE. **⇒ AND THE CONTROLS ARE TWO CLASSES, NOT ONE: C1 AND C2 FIRE
+                                       EXERCISE. **AND THE CONTROLS ARE TWO CLASSES, NOT ONE: C1 AND C2 FIRE
                                        **WRONGNESS** (A WRONG BUT NON-EMPTY `want` GOES RED, AND THE OTHER 30 ROWS
                                        STAY GREEN) AND C3 FIRES **VACUITY** (AN EMPTIED `want` GOES `UNCHECKABLE`), SO
                                        THE GATE IS NOT MERELY CATCHING EMPTINESS.** AND `mkrows.py` CHECKS **ALL 31**
@@ -2395,19 +2417,19 @@ nn-rows-complete     [####] 4/4  **THE NN LAYERS' VERIFICATION IS COMPLETE: **31
 
 backward-pass        [####] 4/4  **THE BACKWARD PASS HAS FIVE OF ITS PIECES, AND THE FIVETH -- `gr_21` -- IS GATED
                                        AGAINST UPSTREAM's OWN `compute_gradient` ON A FIXTURE BOTH SIDES BUILD.**
-                                       MEASURED 2026-10-23 AND 2026-10-25. **⇒ THE PARTS THAT ARE DONE: THE WALK
+                                       MEASURED 2026-10-23 AND 2026-10-25. **THE PARTS THAT ARE DONE: THE WALK
                                        (`_deepwalk`), `compute_gradient`, `grad_set` (gradient.bend:2514), THE `bw`
                                        GRAPH** (`:2597`-`:2746`, READ OUT OF THE HASH-CONSED ARENA WITH AN INDEX-FREE
                                        SIGNATURE: ONE TOKEN PER NODE CARRYING THE CLASS (`OP/nsrc`), AN **IDENT** (A
                                        CONST's f32 BITS, A BUFFER's PARAM SLOT) AND THE SORTED SRC TOKENS) **AND
-                                       `gr_21` (PERMUTE)**, WHICH IS THE FIRST MOVEMENT RULE THE PORT HAS LANDED. **⇒
+                                       `gr_21` (PERMUTE)**, WHICH IS THE FIRST MOVEMENT RULE THE PORT HAS LANDED. **
                                        THE `gr_21` ROWS: **36 OF 36 PASS** AGAINST UPSTREAM's OWN `compute_gradient`,
                                        THE TWO `bw_sig` STRINGS ARE **BYTE-IDENTICAL** (8 NODES, TOKEN FOR TOKEN), **0
                                        OF 102 PRE-EXISTING ROWS MOVED**, **73 CONTROL CHECKS 0 FAILURES** (BOTH
                                        CLASSES: WRONG-BUT-NON-EMPTY -> `MISMATCH`, EMPTIED -> `UNCHECKABLE`), **12
                                        MUTATIONS COVERING 36 OF 36 ROWS** (NO ROW IS A LABEL), AND **THE CONTROL ON
                                        THE CONTROL: PERTURBING THE ORACLE MOVED THE EXPECTATION WHILE THE PORT's
-                                       OUTPUT STAYED BYTE-IDENTICAL.** **⇒ AND TWO CORRECTIONS BY MEASUREMENT RATHER
+                                       OUTPUT STAYED BYTE-IDENTICAL.** **AND TWO CORRECTIONS BY MEASUREMENT RATHER
                                        THAN BY ARGUMENT, BOTH OF THEM THE KIND OF ERROR THAT SILENTLY HALVES A GATE:
                                        (a) **A 2-ELEMENT PERMUTATION IS AN INVOLUTION, SO ITS ARGSORT IS ITSELF** -- A
                                        2-D FIXTURE's ORDER ROW **COULD NOT DISTINGUISH ARGSORT FROM COPY**, SO THE
@@ -2415,18 +2437,18 @@ backward-pass        [####] 4/4  **THE BACKWARD PASS HAS FIVE OF ITS PIECES, AND
                                        COVERED). (b) **`argsort_u32` SORTS CORRECTLY** -- THE SUSPICION THAT IT SORTS
                                        BY INDEX RATHER THAN BY VALUE WAS WRONG, MEASURED ON BOTH SIDES OVER SIX
                                        INPUTS, AND THE `argsortbyindex` PLANT SHOWS ALL SIX ROWS WOULD GO RED IF IT
-                                       DID.** **⇒ AND THE PRIOR ROWS' HISTORY: **16 OF 16** FOR THE WALK AND **14 OF
+                                       DID.** **AND THE PRIOR ROWS' HISTORY: **16 OF 16** FOR THE WALK AND **14 OF
                                        14** FOR `gs_*`/`bw_*`, ALL AGAINST CPython's BYTES, WITH THE EXPECTATIONS
                                        TRANSCRIBED **BY SCRIPT** AND NONE TYPED; **83 OF 88** PRE-EXISTING ROWS BYTE-
                                        IDENTICAL AND **5 CHANGED** (EXACTLY THE ROWS THE LEAF FIX MOVED) PLUS 14
                                        ADDITIONS; **8 PLANTS MOVE AND 2 DISARMS DO NOT**; AND **33 CONTROL CHECKS, 0
-                                       FAILURES**. **⇒ AND THE CPYTHON SIDE WAS RESTORED, NOT MERELY ADDED:
+                                       FAILURES**. **AND THE CPYTHON SIDE WAS RESTORED, NOT MERELY ADDED:
                                        `.agents/slop/backward/oracle-cg.py` HAD STOPPED RUNNING BECAUSE
                                        `tinygrad/uop/ops.py:359` READS `self.src[0].as_shape` FOR A BUFFER's `_shape`
                                        AND BOTH SIDES HAD **SRC-LESS** LEAVES -- THE ORACLE's AND THE PORT's
                                        (`gradient.bend:1521`) -- SO THE 15 `walk_*` ROWS' CPYTHON SIDE WAS A *RECORD*,
                                        NOT A MEASUREMENT. THE FIX IS A BUFFER WHOSE SRC IS AN EMPTY `STACK`, **AND IT
-                                       CHANGES THE GRAPH, SO THE EXPECTATIONS MOVED WITH IT ON BOTH SIDES.** **⇒ AND
+                                       CHANGES THE GRAPH, SO THE EXPECTATIONS MOVED WITH IT ON BOTH SIDES.** **AND
                                        `.agents/slop/backward2/` WAS UNTRACKED IN GIT AND HELD `rows.rows`, THE
                                        EXPECTATION FILE THE GATE READS -- A FRESH CLONE WULD HAVE LOST IT. IT IS IN
                                        GIT NOW.**
@@ -2444,7 +2466,7 @@ backward-holes       [###] 3/3  **BOTH NAMED HOLES BELOW THE BACKWARD PASS ARE N
                                        STACK OF 1-D NODES IS 2-D AND A STACK OF A 2-D NODE AND A 1-D NODE IS 3-D. AND
                                        `_resolve_dim` (`movement.py:81-84`) IS PURE INTEGER ARITHMETIC AND **NEVER
                                        CALLS `resolve`** -- **SO THE `resolve` WALL NAMED FOR `gr_21` WAS IN THE WRONG
-                                       PLACE.** **⇒ AND THE SAME IS TRUE OF `gr_17` AND `gr_14`: AN INSTRUMENT THAT
+                                       PLACE.** **AND THE SAME IS TRUE OF `gr_17` AND `gr_14`: AN INSTRUMENT THAT
                                        PATCHS UPSTREAM's `resolve` AND CLASSIFIES EACH ARGUMENT SHOWS `resolve` CALLED
                                        **ONCE, ON A `bool`**, FOR RESHAPE AND **ZERO TIMES** FOR REDUCE -- AND THE
                                        PORT ALREADY HAS *EVERY* SUBSYSTEM THEY NEED** (`O.UOp.shape`, `F.eq_sints`,
@@ -2454,14 +2476,14 @@ backward-holes       [###] 3/3  **BOTH NAMED HOLES BELOW THE BACKWARD PASS ARE N
                                        IS **RECOVERED FROM GIT** -- BLOB `809f8fbdf0c7`, 3,081 B, RECOVERED BY `git
                                        rev-list --all --objects | grep grad_oracle` -- AND **IT RUNS TODAY, rc=0**, ON
                                        TODAY's `tinygrad/`, FROM ANY CWD** (ITS HARD-CODED ABSOLUTE PATH IS NOW
-                                       DERIVED). **⇒ BUT IT IS THE ORACLE FOR AN *EARLIER* FIXTURE** -- IT PRINTS `===
+                                       DERIVED). **BUT IT IS THE ORACLE FOR AN *EARLIER* FIXTURE** -- IT PRINTS `===
                                        add  root=ADD nsrc=2 ngrads=3` AND `grad[CAST dtypes.f32] = 1.0` -- **AND NOT
                                        FOR THE 72 `fix` ROWS**, WHOSE ROWS ARE `claims=32`, `const_cast=2`,
-                                       `size_const=2`, `size_mul=5`, `one_n=2`, `seven_n=3`, ... **⇒ SO THOSE 72 ROWS
+                                       `size_const=2`, `size_mul=5`, `one_n=2`, `seven_n=3`, ... **SO THOSE 72 ROWS
                                        ARE **STILL CHANGE-DETECTORS AND NOT CPYTHON-GATED**, AND THE NAMED MECHANISM
                                        IS **UPSTREAM's OWN `pm_gradient.rewrite` OVER THE PORT's OWN `fix` FIXTURE**
                                        -- WHICH IS THE SAME `oracle-pm.py` MECHANISM AS `gr_21`'s, JUST OVER MORE
-                                       NODES. **⇒ A ROW WHOSE WITNESS IS MISSING IS A ROW THAT CANNOT FAIL, AND THE
+                                       NODES. **A ROW WHOSE WITNESS IS MISSING IS A ROW THAT CANNOT FAIL, AND THE
                                        LEDGER MUST SAY SO RATHER THAN LET A READER BELIEVE THEY ARE CPYTHON-GATED.**
 
 
@@ -2473,21 +2495,21 @@ repro-diff-poison    [###] 3/3  **A NAME `cmd_repro` WRITES WAS NOT DECLARED, AN
                                        `D0-repro-diff.txt` WHEN THE TWO RUNS DIFFER, AND IT LIVES IN `D/`.**
                                        `declared()` IS DERIVED FROM `(*LITERALS, *REPRO_LITERALS)`, SO THE NAME WAS IN
                                        `present` BUT NOT IN `declared()`, **AND `UNEXPECTED` IS EXACTLY `present -
-                                       declared()`.** **⇒ AND THE POISON IS SELF-PERPETUATING: ONE FAILED REPRO LEFT
+                                       declared()`.** **AND THE POISON IS SELF-PERPETUATING: ONE FAILED REPRO LEFT
                                        THE FILE BEHIND, AND FROM THEN ON **EVERY** `clean_run` ATTEMPT SAW IT AS
                                        `UNEXPECTED` -- **SO `artefacts_ok()` FAILED, `clean_run` RETRIED UP TO 9 TIMES
                                        AT ~278 s A RUN, AND THE REPRO TOOK ~84 MINUTES INSTEAD OF ~9 AND STILL
                                        FAILED.** MEASURED: ONE CORPUS RUN IS **278 s** AND `settled()` IS **1.46 s**,
                                        SO THE FLOOR IS TWO RUNS PLUS THE PROBES; **THE OBSERVED REPRO TIME WENT FROM
                                        449 s TO OVER 1800 s BECAUSE OF THE RETRIES, NOT BECAUSE THE RUNS GOT SLOWER.**
-                                       **⇒ AND THE FIX IS ONE TOKEN, BECAUSE `declared()` IS DERIVED FROM THAT TUPLE:
-                                       `REPRO_LITERALS = ("D0-repro", "D0-repro-diff")`.** **⇒ AND A PASSING REPRO NOW
+                                       **AND THE FIX IS ONE TOKEN, BECAUSE `declared()` IS DERIVED FROM THAT TUPLE:
+                                       `REPRO_LITERALS = ("D0-repro", "D0-repro-diff")`.** **AND A PASSING REPRO NOW
                                        ALSO CLEARS THE RESIDUE OF A PAST FAILURE, SO **THE FILE'S PRESENCE IS EXACTLY
-                                       *"THE LAST REPRO FAILED"* RATHER THAN A LINGERING ARTEFACT.** **⇒ AND THE
+                                       *"THE LAST REPRO FAILED"* RATHER THAN A LINGERING ARTEFACT.** **AND THE
                                        CONTROL IS HERMETIC AND IMMEDIATE, BECAUSE THE STALE FILE WAS ON DISK: BEFORE,
                                        `artefacts_ok()` RETURNED **1** ROW (*`UNEXPECTED D0-repro-diff.txt`*); AFTER,
                                        IT RETURNS **0** WITH THE FILE STILL THERE, AND `declared()` CONTAINS THE
-                                       NAME.** **⇒ AND THE REPRO NOW COMPLETES: **320 OF 320 FILES IDENTICAL ACROSS
+                                       NAME.** **AND THE REPRO NOW COMPLETES: **320 OF 320 FILES IDENTICAL ACROSS
                                        TWO CLEAN RUNS**, rc=0, IN **449 s**.
 
 repro-subject-verdict [###] 3/3  **TWO RUNS THAT MEASURED DIFFERENT SUBJECTS WERE REPORTED AS *FAIL*, WHICH READS AS
@@ -2496,15 +2518,15 @@ repro-subject-verdict [###] 3/3  **TWO RUNS THAT MEASURED DIFFERENT SUBJECTS WER
                                        DIFFERED, AND THE REPRO WROTE `repro-rc=rc=1` -- **WHICH IS THE TREE'S WORD FOR
                                        *"A COMPARISON CAME OUT WRONG"*, AND NO COMPARISON CAME OUT WRONG: THE TWO RUNS
                                        SIMPLY MEASURED DIFFERENT TREES.** `REFUSED` (3) IS *"A PRECONDITION WAS
-                                       ABSENT"*, **AND A PRECONDITION WAS ABSENT.** **⇒ SO THE REPRO NOW READS THE
+                                       ABSENT"*, **AND A PRECONDITION WAS ABSENT.** **SO THE REPRO NOW READS THE
                                        SUBJECT EACH RUN MEASURED -- `substrate-start=` OUT OF THAT RUN'S OWN SUMMARY,
                                        CAPTURED BEFORE THE NEXT RUN OVERWRITES IT, BECAUSE THE SNAPSHOT ITSELF HOLDS
                                        SHA256s AND NOT THE SUMMARY'S CONTENT** -- AND REFUSES (3) WITH BOTH DIGESTS
-                                       NAMED, INSTEAD OF FAILING (1).** **⇒ AND THE DECISION IS A PURE FUNCTION,
+                                       NAMED, INSTEAD OF FAILING (1).** **AND THE DECISION IS A PURE FUNCTION,
                                        `repro_subject_reason(subject_a, subject_b)`, SO THE CONTROL NEEDS NO MOVING
                                        TREE: THE SAME SUBJECT GIVES *""* (THE TWO RUNS ARE COMPARABLE), A DIFFERENT
                                        SUBJECT GIVES THE REASON, **AND AN ABSENT SUBJECT GIVES *""*, BECAUSE A MISSING
-                                       ROW IS THE WITNESS's OWN PROBLEM AND NOT EVIDENCE THAT THE TREE MOVED.** **⇒
+                                       ROW IS THE WITNESS's OWN PROBLEM AND NOT EVIDENCE THAT THE TREE MOVED.** **
                                        AND `repro_bad()` NOW NAMES THE REFUSAL's REASON, BECAUSE A WITNESS THAT SAYS
                                        `repro-rc=rc=3` AND NOTHING ELSE MAKES A READER GUESS, AND A GUESS IS NOT A
                                        VERDICT.**
@@ -2512,7 +2534,7 @@ repro-subject-verdict [###] 3/3  **TWO RUNS THAT MEASURED DIFFERENT SUBJECTS WER
 
 exec-broadcast-max   [###] 3/3  **THE BROADCAST LANE AND THE `max` LANE ARE FIXED, AND NEITHER WAS WHAT IT LOOKED
                                        LIKE: **THE CAUSE WAS A NESTED RANGE WHOSE COUNTER WAS NEVER RESET, AND THE
-                                       INTEGER `max` WAS A `min`.** MEASURED 2026-10-25. **⇒ (1) A RANGE's COUNTER IS
+                                       INTEGER `max` WAS A `min`.** MEASURED 2026-10-25. **(1) A RANGE's COUNTER IS
                                        NEVER RESET WHEN THE LOOP EXITS**
                                        (`tinybendygrad/runtime/ops_python.bend:1712`). UPSTREAM'S OWN ARM
                                        (`tinygrad/runtime/ops_python.py:126-134`) DOES `del values[u]` ON THE EXIT
@@ -2523,27 +2545,27 @@ exec-broadcast-max   [###] 3/3  **THE BROADCAST LANE AND THE `max` LANE ARE FIXE
                                        trip + 1`), `nxt == trip` WAS FALSE, AND THE INNER BODY NEVER RAN -- SO THE
                                        STORE NEVER RAN AND THE OUTPUT KEPT ONLY THE FIRST OUTER SLAB.** THE FIX IS
                                        `Prog.rng.del`: **ZERO THE COUNTER AND CLEAR THE FLAG, WHICH IS EXACTLY THE
-                                       STATE THE ARENA IS IN BEFORE THE FIRST VISIT.** **⇒ (2) THE INTEGER LANE's
+                                       STATE THE ARENA IS IN BEFORE THE FIRST VISIT.** **(2) THE INTEGER LANE's
                                        `max` WAS A `min`** (`tinybendygrad/uop/symbolic.bend:644`): `i32_max` READ
                                        `Bool.pick(U32, i32_lt(uns, y, x), y, x)` -- *"y IF y < x ELSE x"* -- **WHICH
                                        IS `min(x, y)`**; THE FLOAT LANE HAS ITS OPERANDS THE OTHER WAY ROUND AND IS
                                        RIGHT. MEASURED: `i32_max(3,7)` AND `i32_max(7,3)` BOTH ANSWERED 3, AND
                                        `max(axis=0)` OVER A 4×4 int32 TENSOR ANSWERED THE FIRST ROW. **UPSTREAM'S OWN
                                        TABLE IS `python_alu[Ops.MAX] = max`, SO THE ORACLE SAYS `max` AND THE PORT WAS
-                                       WRONG.** **⇒ AND THE `max` DEFECT WAS THE **INTEGER LANE ONLY** -- THE FLOAT
+                                       WRONG.** **AND THE `max` DEFECT WAS THE **INTEGER LANE ONLY** -- THE FLOAT
                                        LANE'S `max` WAS RIGHT AND THE TWO PACKETS ARE BYTE-IDENTICAL APART FROM THE
-                                       DTYPE, WHICH IS HOW THE FAULT WAS LOCALISED TO ONE FUNCTION.** **⇒ THE
+                                       DTYPE, WHICH IS HOW THE FAULT WAS LOCALISED TO ONE FUNCTION.** **THE
                                        MEASUREMENTS: `gates/ops_bend_exec-e2e.py` READS **`7 match, 0 mismatch-or-
                                        refused`, rc=0** -- **THE MATMUL MATCHES THE FULL MATRIX**; `max(axis=0)`,
                                        `max(axis=1)`, `min(axis=0)`, `sum(axis=0)`, `argmax(axis=0)` AND
                                        `argmax(axis=1)` ON A 4×4 ALL MATCH CPython's PYTHON DEVICE; AND
                                        `gates/ops_python_exec-gate.py` READS **`PASS -- 153 fixtures, 365 rows x 2
-                                       lanes, 314 unpinned identical, 52 pinned`** -- **⇒ NO UNPINNED ROW MOVED.**
+                                       lanes, 314 unpinned identical, 52 pinned`** -- **NO UNPINNED ROW MOVED.**
 
 
 
 exec-e2e-instrument  [###] 3/3  **THE INSTRUMENT THAT MEASURES THE EXECUTOR WAS DEAD, AND WRONG IN THREE WAYS AT ONCE,
-                                       AND ALL THREE COMPOUNDED.** MEASURED 2026-10-25. **⇒ (1) THE DEVICE NAME DID
+                                       AND ALL THREE COMPOUNDED.** MEASURED 2026-10-25. **(1) THE DEVICE NAME DID
                                        NOT RESOLVE: THE GATE DIED WITH `ModuleNotFoundError: No module named
                                        'tinygrad.runtime.ops_bend'`, BECAUSE TINYGRAD's LOADER
                                        (`tinygrad/device.py:39`) DOES
@@ -2551,56 +2573,56 @@ exec-e2e-instrument  [###] 3/3  **THE INSTRUMENT THAT MEASURES THE EXECUTOR WAS 
                                        USED TO LIVE AT `tinygrad/runtime/ops_bend.py`, UNTIL `c2a66ea41` MOVED IT TO
                                        THE REPO ROOT** SO THAT `tinygrad/` WOULD HOLD NO FILE OF OURS AND STAY
                                        PRISTINE AS THE ORACLE. **THE MOVE WAS RIGHT AND IT BROKE THE DEVICE NAME, AND
-                                       NOTHING RE-CHECKED IT.** **⇒ THE FIX PUTS NO FILE BACK INTO `tinygrad/`:
+                                       NOTHING RE-CHECKED IT.** **THE FIX PUTS NO FILE BACK INTO `tinygrad/`:
                                        `importlib.import_module` CHECKS `sys.modules` FIRST, SO REGISTERING THE MODULE
-                                       UNDER THE NAME TINYGRAD LOOKS FOR MAKES THE DEVICE RESOLVE.** **⇒ (2) THE `dot`
+                                       UNDER THE NAME TINYGRAD LOOKS FOR MAKES THE DEVICE RESOLVE.** **(2) THE `dot`
                                        CASE'S INPUTS WERE CONSTANT-FOLDED: `T.arange(16, dtype=f32) + 1` IS A
                                        **CONSTANT** TENSOR -- UPSTREAM's `Tensor.arange` CALLS `r.const()` UNLESS IT
                                        NEEDS REALIZATION -- SO `xs @ ys` WAS CONSTANT-FOLDED **IN PYTHON** AND
                                        LAUNCHED NO KERNEL ON ANY DEVICE. IT RENDERED NO PACKET (`CAP entries=0`), AND
-                                       THE INSTRUMENT PRINTED `MATCH` FOR IT. **⇒ A CASE THAT PRODUCES NO PACKET IS A
-                                       CASE THAT DID NOT RUN, AND THAT IS NOW A **REFUSAL** RATHER THAN A MATCH.** **⇒
+                                       THE INSTRUMENT PRINTED `MATCH` FOR IT. **A CASE THAT PRODUCES NO PACKET IS A
+                                       CASE THAT DID NOT RUN, AND THAT IS NOW A **REFUSAL** RATHER THAN A MATCH.** **
                                        (3) THE ORACLE WAS NOT INDEPENDENT: THE INPUTS WERE BUILT ONCE UNDER
                                        `Context(DEV='BEND')` AND THE REFERENCE RE-USED THEM, SO `ref(thunk)` RE-
                                        COMPUTED THE SAME THING **ON THE SAME BEND BUFFERS** AND THE INSTRUMENT
-                                       COMPARED THE WRONG ANSWER WITH ITSELF. **⇒ SO EACH CASE IS NOW A *MAKER*: IT
+                                       COMPARED THE WRONG ANSWER WITH ITSELF. **SO EACH CASE IS NOW A *MAKER*: IT
                                        BUILDS ITS OWN INPUTS **ON THE CURRENT DEVICE**, AND THE ORACLE BUILDS ITS
-                                       OWN.** **⇒ AND `Device.DEFAULT` IS `METAL` ON THIS MACHINE, SO A CASE COULD RUN
+                                       OWN.** **AND `Device.DEFAULT` IS `METAL` ON THIS MACHINE, SO A CASE COULD RUN
                                        ON THE GPU AND STILL BE REPORTED -- EVERY CASE NOW RUNS INSIDE
-                                       `Context(DEV='BEND')`.** **⇒ THE RESULT: THE INSTRUMENT READS **`6 match, 1
+                                       `Context(DEV='BEND')`.** **THE RESULT: THE INSTRUMENT READS **`6 match, 1
                                        mismatch-or-refused`, rc=1** -- **AND IT IS CORRECT TO BE RED**, BECAUSE THE
                                        SEVENTH CASE IS A MATMUL AND THE MATMUL IS WRONG (SEE `exec-broadcast-max`).
-                                       **⇒ AND THE INSTRUMENT IS THE CONTROL: IT IS RED NOW AND IT MUST GO GREEN, AND
+                                       **AND THE INSTRUMENT IS THE CONTROL: IT IS RED NOW AND IT MUST GO GREEN, AND
                                        FOR THE RIGHT REASON.**
 
 
 pins-exempt-rows     [###] 3/3  **A PIN THAT EXEMPTS A ROW FROM THE COMPARISON IS NOT A PIN, IT IS AN EXEMPTION -- AND
                                        THE DECLARATION WAS NEVER CHECKED AGAINST THE RUN IT DESCRIBES.** MEASURED
-                                       2026-10-25 AND 2026-10-26. **⇒ `gates/ops_python_exec-pins.rows` READS AS
+                                       2026-10-25 AND 2026-10-26. **`gates/ops_python_exec-pins.rows` READS AS
                                        `{l.split()[0] ...}` -- A SET OF NAMES, WITH NO VALUES -- AND
                                        `gates/ops_python_exec-gate.py:326` COMPUTES `unpinned = (set(dpy) | set(dbd))
-                                       - pinned`, **⇒ SO THE PINNED ROWS ARE NEVER COMPARED AT ALL, AND A ROW THAT NO
-                                       LONGER DIVERGES STAYS EXEMPTED.** **⇒ AND THE FILE's OWN HEADER SAYS WHY ON
+                                       - pinned`, **SO THE PINNED ROWS ARE NEVER COMPARED AT ALL, AND A ROW THAT NO
+                                       LONGER DIVERGES STAYS EXEMPTED.** **AND THE FILE's OWN HEADER SAYS WHY ON
                                        PURPOSE -- *"THE VALUES LIVE IN THE GATE's ARTIFACTS AND ARE RE-DERIVED EVERY
-                                       RUN; PINNING THEM HERE WOULD PIN A NUMBER THIS GATE DOES NOT OWN"* -- **⇒ THAT
+                                       RUN; PINNING THEM HERE WOULD PIN A NUMBER THIS GATE DOES NOT OWN"* -- **THAT
                                        REASON IS SOUND, AND IT IS NOT THE GAP. THE GAP IS THAT THE DECLARATION WAS
-                                       NEVER CHECKED.** **⇒ MEASURED: THE EXECUTOR's FIX LEFT **23 STALE NAMES** IN
-                                       THE FILE -- ROWS THAT NO LONGER DIVERGE -- **⇒ SO 23 ROWS WERE EXEMPTED WHEN
+                                       NEVER CHECKED.** **MEASURED: THE EXECUTOR's FIX LEFT **23 STALE NAMES** IN
+                                       THE FILE -- ROWS THAT NO LONGER DIVERGE -- **SO 23 ROWS WERE EXEMPTED WHEN
                                        THEY SHOULD HAVE BEEN COMPARED, AND NOTHING SAID SO. AND A STALE PIN IS NOT
                                        COSMETIC: A ROW THAT DIVERGES AGAIN WOULD BE EXEMPTED AND THE GATE WOULD STAY
-                                       GREEN.** **⇒ WHAT LANDED: (1) **EVERY PINNED ROW MUST STILL DIVERGE** -- A
+                                       GREEN.** **WHAT LANDED: (1) **EVERY PINNED ROW MUST STILL DIVERGE** -- A
                                        STALE PIN IS `FAIL` (1) AND SAYS WHICH; (2) **`--refresh` NOW EXISTS AND
                                        IMPLEMENTS WHAT THE DOCSTRING HAS ALWAYS PROMISED** -- IT WAS DECLARED AS AN
                                        ARGUMENT AND **NEVER READ**, AND THE FILE IT WRITES SAYS *"GENERATED BY HAND"*,
-                                       **⇒ A FILE THAT SAYS "GENERATED" AND IS HAND-MADE IS A CONTRACT WITH NO
+                                       **A FILE THAT SAYS "GENERATED" AND IS HAND-MADE IS A CONTRACT WITH NO
                                        GENERATOR.** `--refresh` KEEPS THE COMMENTS AND THE FILE's OWN ROW ORDER (SO
                                        THE FAMILY BLOCKS AND THEIR DIAGNOSIS SURVIVE), DROPS THE ROWS THAT NO LONGER
-                                       DIVERGE, AND RECORDS THE DROPPED NAMES IN THE FILE. **⇒ MEASURED: BEFORE, `314
+                                       DIVERGE, AND RECORDS THE DROPPED NAMES IN THE FILE. **MEASURED: BEFORE, `314
                                        unpinned identical, 52 pinned`; AFTER, `336 unpinned identical, 29 pinned,
                                        every pin still a divergence` -- **22 MORE ROWS ARE NOW COMPARED**, BECAUSE
-                                       THOSE 22 WERE EXEMPTIONS.** **⇒ AND THE CONTROL IS THE SEQUENCE ITSELF: THE
+                                       THOSE 22 WERE EXEMPTIONS.** **AND THE CONTROL IS THE SEQUENCE ITSELF: THE
                                        CHECK FIRED `22 pins are stale`, rc=1, ON THE FILE AS IT WAS; `--refresh`
-                                       RETIRED THEM; AND THE GATE READS `PASS`, rc=0.** **⇒ AND THE NAMED NEXT MOVE,
+                                       RETIRED THEM; AND THE GATE READS `PASS`, rc=0.** **AND THE NAMED NEXT MOVE,
                                        WHICH IS NOT THE ONE I FIRST WROTE: **THE VALUE COLUMN IS STILL ABSENT**, SO
                                        **A PINNED ROW's VALUE CAN STILL MOVE WITHOUT ANYTHING GOING RED** -- MEASURED,
                                        THE NESTED-RANGE FIX MOVED EXACTLY THREE PINNED ROWS (`f32.argmax.0.b0`,
@@ -2616,36 +2638,36 @@ pins-exempt-rows     [###] 3/3  **A PIN THAT EXEMPTS A ROW FROM THE COMPARISON I
 
 exec-conv-lane       [####] 4/4  **THE BEND EXECUTOR IS NOW 1:1 WITH UPSTREAM's OWN INTERPRETER ON THE WHOLE EXECUTOR
                                        CENSUS: **365 ROWS x 2 LANES, 365 UNPINNED IDENTICAL, 0 PINNED** -- AND THE
-                                       CONV RUNS.** MEASURED 2026-10-26/27. **⇒ THE EXECUTOR IS
+                                       CONV RUNS.** MEASURED 2026-10-26/27. **THE EXECUTOR IS
                                        `tinybendygrad/runtime/ops_python.bend` (~2,900 LINES), THE PORT OF UPSTREAM's
                                        `tinygrad/runtime/ops_python.py`, WHICH IS THE ORACLE. THE WIRE IS v1.1, ONE
                                        LAUNCH PER PACKET. IT IS BUILT WITH `bin/bend -o` AND RUN AS A SUBPROCESS, SO
-                                       **THE PORT COMPILES AND RUNS ITS OWN KERNELS.** **⇒ AND THE FOUR CAUSES THAT
+                                       **THE PORT COMPILES AND RUNS ITS OWN KERNELS.** **AND THE FOUR CAUSES THAT
                                        TOOK IT FROM 53 DIVERGENCES TO ZERO, AND NONE OF THEM WAS WHAT THE LEDGER
                                        SAID:** **(1) `symbolic.bend`'s `f32_where` HAD ITS ARMS SWAPPED** --
                                        `Bool.pick(T, cond, then, else)` PICKS `then` WHEN `cond` HOLDS, SO *"y IF x
-                                       ELSE z"* IS `pick(cond, y, z)`, AND THE LINE SAID `pick(cond, c, b)`. **⇒ AND
+                                       ELSE z"* IS `pick(cond, y, z)`, AND THE LINE SAID `pick(cond, c, b)`. **AND
                                        `abs` IS `WHERE(x<0,-x,x)` AND IS THE FIRST HALF OF EVERY
                                        `sqrt`/`log2`/`exp2`/`recip`/`shl`/`shr`/`cmod` OF A FLOAT TENSOR, SO THE
                                        SWAPPED ARMS MADE EVERY ONE OF THEM READ A ZERO.** **(2) `symbolic.bend`'s
                                        `exec_alu_i32.cmp` IMPLEMENTED `CMPNE` AS `==`** (`U32.is_eq` INSTEAD OF
-                                       `U32.is_ne`) -- **⇒ AND `x != y` IS THE `abs` LOWERING's SECOND HALF, SO THE
+                                       `U32.is_ne`) -- **AND `x != y` IS THE `abs` LOWERING's SECOND HALF, SO THE
                                        WRONG COMPARISON MADE **EVERY** `abs` IN AN INTEGER KERNEL WRONG.** **(3)
                                        `ops_python.bend`'s `Prog.cast.dt` KEPT THE **FLOAT's** BIT PATTERN FOR A
                                        FLOAT-TO-INT CAST.** **(4) `ops_python.bend`'s STORE WROTE THE VALUE's OWN BITS
-                                       WHERE UPSTREAM WRITES THE VALUE **CONVERTED TO THE BUFFER**.** **⇒ AND THE
+                                       WHERE UPSTREAM WRITES THE VALUE **CONVERTED TO THE BUFFER**.** **AND THE
                                        CONTROL IS THE ONE THAT PROVES THE FIX IS THE CAUSE: **REVERTING THE FOUR FIXES
-                                       REPRODUCES THE 29 PRE-FIX ROWS BYTE FOR BYTE -- 29 OF 29.** **⇒ AND
+                                       REPRODUCES THE 29 PRE-FIX ROWS BYTE FOR BYTE -- 29 OF 29.** **AND
                                        `gates/ops_bend_exec-e2e.py` IS STILL **7 MATCH, 0 MISMATCH-OR-REFUSED**, rc=0:
-                                       `add4`, `sum4`, `addi32`, `addu32`, `cast`, `cmp` AND A 4×4 MATMUL -- **⇒ THE
+                                       `add4`, `sum4`, `addi32`, `addu32`, `cast`, `cmp` AND A 4×4 MATMUL -- **THE
                                        MATMUL IS CORRECT AFTER THE NESTED-RANGE FIX, AND A CONVOLUTION IS CORRECT
                                        AFTER THE CONV FIX: THE PORT's OWN conv SHAPE `x(1,3,32,32) conv2d w(8,3,3,3)
                                        padding=1` -> `(1,8,32,32)` **AGREES WITH CPython's PYTHON DEVICE ON ALL 8192
                                        VALUES**, AND THE SAME PACKET THROUGH UPSTREAM's OWN `PythonProgram.__call__`
-                                       GIVES **BYTE-IDENTICAL** BUFFERS.** **⇒ AND THE PINS FILE IS NOW **EMPTY OF
+                                       GIVES **BYTE-IDENTICAL** BUFFERS.** **AND THE PINS FILE IS NOW **EMPTY OF
                                        ROWS**: `gates/ops_python_exec-gate.py --refresh` (WHICH WAS DECLARED AS AN
                                        ARGUMENT AND **NEVER READ**) NOW EXISTS, GENERATES THE FILE, AND **THE GATE
-                                       FAILS IF ANY PINNED ROW NO LONGER DIVERGES** -- **⇒ SO ALL 29 PINS WERE RETIRED
+                                       FAILS IF ANY PINNED ROW NO LONGER DIVERGES** -- **SO ALL 29 PINS WERE RETIRED
                                        BY THE INSTRUMENT, AND THE 22 STALE ONES FROM THE PREVIOUS FIX WERE THE FIRST
                                        TO GO.**
 
@@ -2653,7 +2675,7 @@ exec-conv-lane       [####] 4/4  **THE BEND EXECUTOR IS NOW 1:1 WITH UPSTREAM's 
 
 
 comment-is-a-hypothesis [###] 3/3  **A CAUSE NAMED IN A COMMENT IS A HYPOTHESIS, AND THIS TREE HAS NOW MEASURED THAT
-                                       **THREE TIMES** ON THE SAME FAMILY.** MEASURED 2026-10-26/27. **⇒ (1) THE PINS
+                                       **THREE TIMES** ON THE SAME FAMILY.** MEASURED 2026-10-26/27. **(1) THE PINS
                                        FILE's OWN DIAGNOSIS OF THE VECTOR-STORE FAMILY (*"A NESTED END JUMPS TO THE
                                        INNER HEAD"*) WAS **A DIFFERENT STORY** -- THE CAUSE WAS **TWO INVERTED
                                        COMPARISONS** (`f32_where`'s ARMS SWAPPED AND `exec_alu_i32.cmp` IMPLEMENTING
@@ -2666,80 +2688,80 @@ comment-is-a-hypothesis [###] 3/3  **A CAUSE NAMED IN A COMMENT IS A HYPOTHESIS,
                                        `0001000100010001` IN THE PORT.** (3) **AND THE THIRD: **MY OWN BRIEF'S PREMISE
                                        WAS MEASURED FALSE** -- I NAMED THE CAUSE AS UPSTREAM's `exec_alu` TUPLE BRANCH
                                        (`tinygrad/uop/ops.py:1423`) NOT RECURSING PER LANE, ON THE STRENGTH OF A
-                                       COMMENT IN THE PORT's OWN HEADER. **⇒ AND THE MEASUREMENT: WRAPPING UPSTREAM's
+                                       COMMENT IN THE PORT's OWN HEADER. **AND THE MEASUREMENT: WRAPPING UPSTREAM's
                                        OWN `exec_alu` AND RUNNING EVERY FIXTURE COUNTS **192,899 CALLS** AND **0** OF
-                                       THEM HAD A TUPLE OPERAND** -- **⇒ UPSTREAM's ALU IS SCALAR HERE TOO, THE TUPLE
+                                       THEM HAD A TUPLE OPERAND** -- **UPSTREAM's ALU IS SCALAR HERE TOO, THE TUPLE
                                        BRANCH NEVER FIRES ON THIS POPULATION, AND THE PORT's SCALAR ALU WAS NEVER THE
-                                       PROBLEM.** **⇒ ⇒ THE CLASS IS NOT *"A COMMENT IS WRONG"* -- IT IS **"A CAUSE
+                                       PROBLEM.** **THE CLASS IS NOT *"A COMMENT IS WRONG"* -- IT IS **"A CAUSE
                                        NAMED IN A COMMENT IS A HYPOTHESIS, AND IT MUST BE MEASURED AGAINST THE
                                        POPULATION BEFORE IT IS BELIEVED"**, AND THE THREE INSTANCES WERE ALL IN ONE
-                                       FAMILY.** **⇒ AND THE INSTRUMENT THAT SAVES YOU IS THE ONE THAT COUNTS: THE
+                                       FAMILY.** **AND THE INSTRUMENT THAT SAVES YOU IS THE ONE THAT COUNTS: THE
                                        PORT's OWN HEADER SAID *"symbolic.bend PORTS ONLY THE SCALAR SPINE"*, WHICH IS
-                                       **TRUE** -- **⇒ A TRUE STATEMENT IN A COMMENT IS NOT A CAUSE.**
+                                       **TRUE** -- **A TRUE STATEMENT IN A COMMENT IS NOT A CAUSE.**
 
 
 mnist-e2e            [###] 3/4  **AN END-TO-END MNIST RUNS ON THE BEND DEVICE AND AGREES WITH CPython -- AND IT COSTS
                                        7 MINUTES 17 SECONDS PER IMAGE, WHICH IS 303.9 DAYS PER EPOCH.** MEASURED
-                                       2026-10-27, IN `.agents/slop/mnist/REPORT.md`. **⇒ THE MODEL:
+                                       2026-10-27, IN `.agents/slop/mnist/REPORT.md`. **THE MODEL:
                                        `tinybendygrad/nn/mnist_cnn.bend` (278 LINES) IS **GENERATED** BY
                                        `.agents/slop/mnist/gen_mnist_cnn.py` FROM THE CPython MODEL's CONSTANTS -- SO
                                        NO `want=` IN IT IS TYPED BY HAND, **AND THE PORT's COPY OF THE MODEL AND THE
-                                       RUNNING MODEL CANNOT DRIFT APART SILENTLY.** **⇒ THE GATE:
+                                       RUNNING MODEL CANNOT DRIFT APART SILENTLY.** **THE GATE:
                                        `.agents/slop/mnist/oracle_shapes.py` READS **15 ROWS, 15 MATCH, 0 MISMATCH**
                                        -- NINE SHAPE ROWS COMPARED AGAINST CPython's OWN `nn.Conv2d(...)(x).shape`,
                                        `Tensor.max_pool2d(...)`, `Tensor.flatten(1)` AND `nn.Linear(...)(x).shape`,
                                        THREE GRAPH ROWS COMPARED AGAINST A FIXTURE-MATCHED CPython CONSTRUCTION, AND
-                                       TWO POOL ROWS COMPARED AGAINST THE GENERATED `want=`. **⇒ THE DATA PATH: MNIST
+                                       TWO POOL ROWS COMPARED AGAINST THE GENERATED `want=`. **THE DATA PATH: MNIST
                                        PREPARED AS `.npy` AND READ WITH **THE PORT's OWN `ops_npy` DEVICE** -- **NO
-                                       HTTP, NO GZIP, NO TAR, NO JPEG, NO PIL.** **⇒ THE TRAINING: ON CPython's `CPU`
+                                       HTTP, NO GZIP, NO TAR, NO JPEG, NO PIL.** **THE TRAINING: ON CPython's `CPU`
                                        DEVICE (UPSTREAM's OWN C RENDERER), 8 EPOCHS, 20,000 IMAGES, BATCH 64, ADAM AT
                                        lr 0.002, LOSS **0.7271 -> 0.0728**, 4266 PARAMETERS**, WITH THE WEIGHTS IN
-                                       `weights.npz` AND A DIGEST PER PARAMETER TENSOR IN `weights.rows`. **⇒ AND THE
+                                       `weights.npz` AND A DIGEST PER PARAMETER TENSOR IN `weights.rows`. **AND THE
                                        PORT's FORWARD PASS ON THE BEND DEVICE **AGREES WITH CPython**: `pred=7
                                        label=7`, AND CPython's OWN `pred=7` ON THE SAME IMAGE WITH THE SAME WEIGHTS.**
-                                       **⇒ AND THE COST: **ONE MNIST FORWARD PASS ON BEND = 437.688 s = 7 MIN 17.7 s,
+                                       **AND THE COST: **ONE MNIST FORWARD PASS ON BEND = 437.688 s = 7 MIN 17.7 s,
                                        IN 12 LAUNCHES** (55.39, 9.72, 123.92, 8.62, 12.85, 7.63, 9.32, 42.43, 9.41,
-                                       **141.55**, 5.35, 10.74 s) -- **⇒ THE PER-MAC COST IS ~2.5 TO 4.4 ms, AND THE
+                                       **141.55**, 5.35, 10.74 s) -- **THE PER-MAC COST IS ~2.5 TO 4.4 ms, AND THE
                                        12 LAUNCHES ARE 12 PROCESSES, SO ~39 s IS PER-LAUNCH OVERHEAD AND ~398 s IS
-                                       ARITHMETIC.** **⇒ ONE EPOCH (60,000 IMAGES, FORWARD ONLY) = **303.9 DAYS**;
-                                       WITH A BACKWARD PASS AT THE USUAL ~2x, **~608 DAYS**. **⇒ AND THE BEND DEVICE
+                                       ARITHMETIC.** **ONE EPOCH (60,000 IMAGES, FORWARD ONLY) = **303.9 DAYS**;
+                                       WITH A BACKWARD PASS AT THE USUAL ~2x, **~608 DAYS**. **AND THE BEND DEVICE
                                        IS THE *EVALUATION* DEVICE, NOT THE *TRAINING* DEVICE, AND THAT IS A
-                                       MEASUREMENT AND NOT A PREFERENCE.** **⇒ AND THE WALL THAT IS STILL UP:
+                                       MEASUREMENT AND NOT A PREFERENCE.** **AND THE WALL THAT IS STILL UP:
                                        `max_pool2d`'s `repeat`/`shrink_to`/`reshape`/`permute` CHAIN
                                        (`tinygrad/mixin/movement.py:608-616`) IS NOT BUILT BY THE SUBSTRATE -- **SO
                                        THE POOL IS A SHAPE HERE AND NOT A GRAPH**, AND THE PORT SAYS SO INSTEAD OF
-                                       FAKING THE POOL. **⇒ AND THE WALL THAT HAS FALLEN IS STILL NAMED AS A WALL:
+                                       FAKING THE POOL. **AND THE WALL THAT HAS FALLEN IS STILL NAMED AS A WALL:
                                        `examples/train_resnet.bend`'s HEADER SAYS *"THIS FILE IS BLOCKED ON A BACKWARD
                                        PASS THAT NOBODY HAS EVER EXECUTED"*, AND THE BACKWARD PASS IS NOW GATED AT
-                                       **36 OF 36 ROWS AGAINST UPSTREAM's OWN `compute_gradient`** -- **⇒ SO THAT
+                                       **36 OF 36 ROWS AGAINST UPSTREAM's OWN `compute_gradient`** -- **SO THAT
                                        HEADER IS NOW FALSE.**
 
 exec-seams-trace-only [###] 3/3  **THE PORT's FAST DEVICES EXIST AS PORTS AND THEIR SEAMS ARE *TRACE-ONLY* -- **THAT
                                        IS WHY ONE MNIST IMAGE TAKES 7 MINUTES 17 SECONDS, AND IT IS THE ANSWER TO
-                                       *"WHY IS IT TAKING SO LONG"*.** MEASURED 2026-10-27. **⇒ THE PORT's "BEND
+                                       *"WHY IS IT TAKING SO LONG"*.** MEASURED 2026-10-27. **THE PORT's "BEND
                                        DEVICE" IS **UPSTREAM's `ops_python.py`** -- THE **INTERPRETER** DEBUG DEVICE
                                        -- PORTED TO BEND. **TINYGRAD's *"RESNET IN SECONDS"* IS THE **COMPILED**
                                        PATH**: `ops_cpu.py` (C RENDERER -> `cc` -> MACHINE CODE) OR `ops_metal.py`
-                                       (METAL SOURCE -> THE GPU). **⇒ ⇒ THE PORT IS RUNNING THE WRONG LANE FOR A
+                                       (METAL SOURCE -> THE GPU). **THE PORT IS RUNNING THE WRONG LANE FOR A
                                        BENCHMARK, AND THE RIGHT LANES ARE RIGHT THERE:** `runtime/ops_cpu.bend` (1,524
                                        LINES), `runtime/ops_metal.bend` (3,817), `renderer/cstyle.bend` (1,366, EMITS
                                        C), `renderer/nir.bend` (1,739, EMITS METAL SOURCE), AND THE LOWERER `codegen/`
                                        (23,475 LINES: LINEARIZER 1,954, REGALLOC 1,493, POSTRANGE 1,057, DECOMP
-                                       3,292). **⇒ BUT THE SEAMS ARE NOT MADE. `runtime/ops_cpu.bend`'s OWN HEADER
+                                       3,292). **BUT THE SEAMS ARE NOT MADE. `runtime/ops_cpu.bend`'s OWN HEADER
                                        SAYS: *"EVERY SEAM IS A TRACE TAG AND NOTHING ELSE, SO THE ORDER AND IDENTITY
-                                       OF THE SEAM CALLS ARE GATEABLE EVEN THOUGH **NONE OF THEM IS MADE**."** **⇒ ⇒
+                                       OF THE SEAM CALLS ARE GATEABLE EVEN THOUGH **NONE OF THEM IS MADE**."** **
                                        SO *"FIX IT AND RUN IT ON CPU AND METAL"* IS **ONE WORK ITEM, NOT TWO**: **THE
                                        PORT's `Program` MUST TAKE THE IR THROUGH THE LOWERER -> THE RENDERER -> C OR
-                                       METAL SOURCE -> COMPILE -> RUN.** **⇒ AND THE ARITHMETIC SAYS WHY IT IS WORTH
+                                       METAL SOURCE -> COMPILE -> RUN.** **AND THE ARITHMETIC SAYS WHY IT IS WORTH
                                        IT: THE INTERPRETER'S ~2.5-4.4 ms PER MAC IS ~300 MACs/s, AND A COMPILED KERNEL
                                        IS ~10^9 MACs/s -- **SO THE GAP IS 10^6, NOT 10^2, AND NO AMOUNT OF TUNING THE
-                                       INTERPRETER CLOSES IT.** **⇒ AND THE JAVASCRIPT PRIORITY IS THE **SAME
+                                       INTERPRETER CLOSES IT.** **AND THE JAVASCRIPT PRIORITY IS THE **SAME
                                        INVESTMENT IN A DIFFERENT RUNTIME**: THE WIRE IS RUNTIME-AGNOSTIC
-                                       (`runtime/ops_python.bend` IS THE BEND EXECUTOR OVER THE v1 PACKET), **⇒ SO A
+                                       (`runtime/ops_python.bend` IS THE BEND EXECUTOR OVER THE v1 PACKET), **SO A
                                        JS EXECUTOR IS THE SAME PACKET UNDER node's JIT**, AND `runtime/dtype.js` (236
-                                       LINES) AND `runtime/sz.c` ARE ALREADY THE JS AND C ABI LANES. **⇒ ⇒ AND ONE
+                                       LINES) AND `runtime/sz.c` ARE ALREADY THE JS AND C ABI LANES. **AND ONE
                                        MORE THING THE MEASUREMENT SAYS: **THE 12 LAUNCHES ARE 12 PROCESSES, ~600 MB
-                                       EACH, ~39 s OF OVERHEAD PER RUN** -- **⇒ SO EVEN THE INTERPRETER IS PAYING A
+                                       EACH, ~39 s OF OVERHEAD PER RUN** -- **SO EVEN THE INTERPRETER IS PAYING A
                                        PROCESS PER KERNEL, AND THE FIRST CHEAP WIN IS ONE PROCESS FOR THE WHOLE
                                        PROGRAM.**
 
@@ -2913,10 +2935,10 @@ exec-linrender       [###] 3/3  **THE PORT's OWN ARENA REACHES THE PORT's OWN RE
 
 
 exec-devmap          [####] 4/4  **THE PORT's OWN `Device` LANE: STAGES **4-9** ARE MEASURED AND GREEN, AND STAGES
-                                       **1-3** ARE **NAMED** — **⇒ AND THE `Device` LANE'S COMPLETE MAP IS IN
+                                       **1-3** ARE **NAMED** — **AND THE `Device` LANE'S COMPLETE MAP IS IN
                                        `.agents/slop/devlane/MAP.md`.** MEASURED 2026-10-28. **=> THE PIPELINE IS ONE
                                        LINE UPSTREAM (`tinygrad/schedule/__init__.py:132`):
-                                       `create_schedule(get_kernel_graph(prepare_rangeify(function)))`, **⇒ AND EVERY
+                                       `create_schedule(get_kernel_graph(prepare_rangeify(function)))`, **AND EVERY
                                        STAGE'S STANDING IS NOW MEASURED RATHER THAN GUESSED:** **STAGE 4**
                                        `create_schedule` = `schedule/__init__.bend:1139` (**MEASURED: `checks/sb-
                                        gate.sh` READS **81 of 81****); **STAGE 5** `linearize` =
@@ -2930,7 +2952,7 @@ exec-devmap          [####] 4/4  **THE PORT's OWN `Device` LANE: STAGES **4-9** 
                                        CPython's OWN CPU DEVICE, `max_abs=0`**). **=> STAGE **1** IS THE EAGER GRAPH
                                        WITH **NO REALIZE-TO-SINK PATH**; **STAGE **2** HAS ITS TABLES AND **NO
                                        DRIVER**; **STAGE **3** IS BUILT (472 LINES), **UNWIRED** (`grep -c 'eng_|Eng'
-                                       schedule/__init__.bend` ANSWERS **0**) AND **UNMEASURED**. **=> ⇒ ⇒ AND STAGES
+                                       schedule/__init__.bend` ANSWERS **0**) AND **UNMEASURED**. **=> AND STAGES
                                        1 AND 2 ARE **ONE** PIECE OF WORK, NOT TWO: UPSTREAM'S STAGE 1 IS NOT A
                                        "REALIZE" EITHER -- IT IS `prepare_rangeify(function)`, FOUR `graph_rewrite`
                                        CALLS OVER **THE FUNCTION'S SINK OF AFTERs**, **AND THE SINK OF AFTERs IS
@@ -2938,26 +2960,26 @@ exec-devmap          [####] 4/4  **THE PORT's OWN `Device` LANE: STAGES **4-9** 
                                        +sink)` ALREADY TAKES A `sink`!** **=> AND **THE PORT'S OWN SCHEDULER HAS
                                        **NEVER BEEN DRIVEN** ON A GRAPH **THE PORT BUILT ITSELF** -- EVERY SCHEDULER
                                        FIXTURE IS HAND-BUILT** (`fx1()`/`fx2()`/`fx3()` AT
-                                       `schedule/__init__.bend:1846/:1862/:1879`). **=> ⇒ ⇒ SO **AND THE PORT'S OWN
+                                       `schedule/__init__.bend:1846/:1862/:1879`). **=> SO **AND THE PORT'S OWN
                                        REALIZE-TO-SINK DRIVER NOW EXISTS**: `tinybendygrad/schedule/realize.bend` (547
                                        LINES) **TAKES **A PROGRAM THE PORT BUILT** AND ANSWERS **THE SINK OF AFTERs**
-                                       THAT UPSTREAM's `prepare_rangeify` ANSWERS FOR THE SAME PROGRAM -- **⇒ AND THE
+                                       THAT UPSTREAM's `prepare_rangeify` ANSWERS FOR THE SAME PROGRAM -- **AND THE
                                        MEASUREMENT IS AGAINST **UPSTREAM's OWN CALL**: `.agents/slop/realize/cmp.py`
                                        READS **23 NODES AGREE** (denominator 23), **7 CONSTS AGREE**, **3 PARAMS
                                        AGREE**, **WITH TWO CONTROLS THAT BOTH DIVERGE** (the adjacent-RESHAPE merge
                                        OFF => the node multiset DIVERGES; the PARAM slots shifted by one => the
-                                       `(slot,size)` multiset DIVERGES WHILE THE NODE MULTISET IS UNCHANGED). **=> ⇒ ⇒
+                                       `(slot,size)` multiset DIVERGES WHILE THE NODE MULTISET IS UNCHANGED). **=> 
                                        AND THE PORT's OWN `run_rangeify` DRIVER NOW EXISTS TOO**:
-                                       `tinybendygrad/schedule/rangify.bend` (298 LINES) **⇒ AND ITS REALIZE MAP
+                                       `tinybendygrad/schedule/rangify.bend` (298 LINES) **AND ITS REALIZE MAP
                                        **AGREES** WITH CPython's EXACTLY**
-                                       (`rr_realize=STORE:none:RESHAPE,REDUCE:none` == CPython's `rr_py_realize`) **⇒
-                                       AND ITS INPUT GRAPH **AGREES** 23/23 NODES**, **⇒ AND THE PLANT IS **A ROW, NOT
+                                       (`rr_realize=STORE:none:RESHAPE,REDUCE:none` == CPython's `rr_py_realize`) **
+                                       AND ITS INPUT GRAPH **AGREES** 23/23 NODES**, **AND THE PLANT IS **A ROW, NOT
                                        A BUILD** (the port has NO env reader), so the port's own driver is never
-                                       shipped broken. **=> ⇒ ⇒ AND **THE **LAST** LINK IS NOW **MEASURED TO THE
+                                       shipped broken. **=> AND **THE **LAST** LINK IS NOW **MEASURED TO THE
                                        NODE** (`.agents/slop/chain/GAP.md`): **THE PORT's ENGINE'S OUTPUT HAS **114
                                        NODES** AND UPSTREAM's HAS **27**, AND THE CENSUS SAYS WHY -- **THE PORT'S
                                        OUTPUT STILL HAS `PERMUTE` (WHICH THE RANGEIFY **REPLACES** WITH A `RANGE`) AND
-                                       **NO `RANGE`, NO `INDEX`, NO `ADD`, NO `END` AND NO `CALL`**, **⇒ ⇒ ⇒ SO **THE
+                                       **NO `RANGE`, NO `INDEX`, NO `ADD`, NO `END` AND NO `CALL`**, **SO **THE
                                        GAP IS **NOT** "THE ENGINE IS WRONG" AND **NOT** "THE SCHEDULER IS WRONG"**: IT
                                        IS **THAT STAGE 1 -- **THE RANGEIFY ITSELF** -- IS NOT PORTED AS A DRIVER**,
                                        WHICH IS EXACTLY WHAT THE PORT's OWN `rangeify.bend:2810` SAYS (`Stg{0, Nil{}},
@@ -2970,79 +2992,79 @@ exec-devmap          [####] 4/4  **THE PORT's OWN `Device` LANE: STAGES **4-9** 
 
 
 exec-apply           [###.] 3/4  **THE APPLY REWRITE: **THE **GRAPH'S SHAPE** NOW MATCHES CPYTHON's.**
-                                       MEASURED 2026-10-29, IN `.agents/slop/rangify/APPLY.md`. **⇒ THE PORT's OWN
+                                       MEASURED 2026-10-29, IN `.agents/slop/rangify/APPLY.md`. **THE PORT's OWN
                                        `tinybendygrad/schedule/rangify.bend` NOW APPLIES UPSTREAM's
                                        `pm_apply_rangeify` **AS A **FIXED POINT** (UPSTREAM's
-                                       `unified_rewrite` LOOP, `ops.py`), **⇒ AND THE **FIVE RULES** IN
+                                       `unified_rewrite` LOOP, `ops.py`), **AND THE **FIVE RULES** IN
                                        UPSTREAM's ORDER (`.agents/slop/rangify/rr-rules.py` **ASKS UPSTREAM's OWN
-                                       MATCHER ABOUT EVERY NODE**), **⇒ AND THE MAP IS **THE (OLD, FINAL) PAIRS**
+                                       MATCHER ABOUT EVERY NODE**), **AND THE MAP IS **THE (OLD, FINAL) PAIRS**
                                        WITH **THE FRESH NODES** (`INDEX`, `END`, `STAGE`) FINALISED TOO.
-                                       **⇒ ⇒ ⇒ THE PORT's `rr_out` IS **22** NODES AND CPython's IS **27**,
-                                       **8** AGREE, **⇒ AND THE **OP CENSUS MATCHES** EXCEPT FOR `ADD` — **⇒ AND
-                                       `ADD` IS **THE AFFINE EXPRESSION** (`_apply_reshape`), **⇒ AND THAT IS
-                                       **THE `symbolic` REWRITER** WALL (W-A). **⇒ AND THE COMPARISON IS
+                                       **THE PORT's `rr_out` IS **22** NODES AND CPython's IS **27**,
+                                       **8** AGREE, **AND THE **OP CENSUS MATCHES** EXCEPT FOR `ADD` — **AND
+                                       `ADD` IS **THE AFFINE EXPRESSION** (`_apply_reshape`), **AND THAT IS
+                                       **THE `symbolic` REWRITER** WALL (W-A). **AND THE COMPARISON IS
                                        `.agents/slop/rangify/cmp-out.py`, **NODE FOR NODE**.**
-                                       **⇒ ⇒ ⇒ **WHAT IS STILL OPEN:** **THE `symbolic` REWRITER** (W-A) **AND THE
-                                       SIX `get_kernel_graph` PASSES THAT FOLLOW** (`rangeify.py:347-360`) — **⇒ AND
+                                       ****WHAT IS STILL OPEN:** **THE `symbolic` REWRITER** (W-A) **AND THE
+                                       SIX `get_kernel_graph` PASSES THAT FOLLOW** (`rangeify.py:347-360`) — **AND
                                        EVERY ONE OF THOSE IS **A `symbolic` REWRITER** TOO.**
 
 
 exec-wa             [##] 2/5  **W-A -- THE AFFINE EXPRESSION: **ONE MISSING RULE**, NOT A MISSING MODULE.**
-                                       MEASURED 2026-10-30, IN `.agents/slop/rangify/WA.md`. **⇒ AND THE TREE's PROSE
+                                       MEASURED 2026-10-30, IN `.agents/slop/rangify/WA.md`. **AND THE TREE's PROSE
                                        SAID THE PORT HAS *"NO `symbolic` REWRITER"*, AND **THE PORT HAS **FOUR OF THE
-                                       FIVE RULES** W-A NEEDS, ALREADY PORTED** -- **⇒ AND THE PROSE WAS WRONG IN THE
+                                       FIVE RULES** W-A NEEDS, ALREADY PORTED** -- **AND THE PROSE WAS WRONG IN THE
                                        DIRECTION THAT MAKES THE WORK LOOK BIGGER THAN IT IS.**
-                                       **⇒ AND THE WORK LIST WAS MEASURED BY ASKING UPSTREAM's OWN CODE, NOT BY
+                                       **AND THE WORK LIST WAS MEASURED BY ASKING UPSTREAM's OWN CODE, NOT BY
                                        REASONING ABOUT IT**: `.agents/slop/rangify/rr-reshape.py` BUILDS THE
                                        **UNSIMPLIFIED** EXPRESSION WITH UPSTREAM's OWN `UOp` API AND PRINTS BOTH
                                        SIDES, AND `.agents/slop/rangify/rr-reshape-rules.py` WRAPS THE MATCHER AND
-                                       READS `UPat.location`, **WHICH IS `get_location()`**. **⇒ 27 REWRITE STEPS,
+                                       READS `UPat.location`, **WHICH IS `get_location()`**. **27 REWRITE STEPS,
                                        FIVE DISTINCT RULES, EACH WITH UPSTREAM's OWN FILE AND LINE:** `symbolic.py:120`
                                        (`x+0 -> x`, **HAVE**), `symbolic.py:122` (`x*1 -> x`, **HAVE**), `symbolic.py:161`
                                        (`fold_const_alu`, **HAVE**), `symbolic.py:230` (**THE COMMUTATIVE FLIP**,
                                        **MISSING** -- `symbolic.bend`'s OWN INVENTORY NAMES ITS WALL: **`UOp.tuplize`**),
                                        AND `divandmod.py:108` (**THE `div_and_mod_symbolic` MATCHER**, **HAVE** --
                                        `uop/divandmod.bend` PORTS IT IN FULL).
-                                       **⇒ ⇒ ⇒ AND THE MISSING RULE's WALL IS SMALLER THAN IT LOOKS:
+                                       **AND THE MISSING RULE's WALL IS SMALLER THAN IT LOOKS:
                                        `ops.bend:5163` SAYS `tuplize` IS *"THE MECHANISM IS REPLACED, NOT MISSING"* --
-                                       IT EXISTS **TO KEY CPython's `ucache`** -- **⇒ AND THE FLIP NEEDS THE
+                                       IT EXISTS **TO KEY CPython's `ucache`** -- **AND THE FLIP NEEDS THE
                                        **ORDER**, NOT THE CACHE KEY.**
-                                       **⇒ ⇒ ⇒ ⇒ ⇒ AND THE REST OF W-A IS: **THE ARITHMETIC** (`O.UOp.alu` EXISTS),
+                                       **AND THE REST OF W-A IS: **THE ARITHMETIC** (`O.UOp.alu` EXISTS),
                                        **THE PLACEHOLDER AXIS TRICK** (`indexing.py:174-176`), AND **THE REWRITER
                                        RUN** (DRIVE THE PORT's OWN `sym_rewrite`, `symbolic.bend:2779`).**
-                                       **⇒ AND EVERY ONE OF THE SIX `get_kernel_graph` PASSES AFTER `run_rangeify`
-                                       IS **A `symbolic` REWRITER** TOO, **⇒ SO THE SAME REWRITER RUN UNBLOCKS
+                                       **AND EVERY ONE OF THE SIX `get_kernel_graph` PASSES AFTER `run_rangeify`
+                                       IS **A `symbolic` REWRITER** TOO, **SO THE SAME REWRITER RUN UNBLOCKS
                                        BOTH.**
 
 
 exec-rmap            [####] 4/4  **THE RANGE MAP: **5 OF 11** ENTRIES AGREE, **0 MISSING**, AND **ALL SIX
-                                       DIFFERENCES ARE ONE WALL — **⇒ AND THE PREVIOUS "1 OF 14, TEN DIFFER, THREE
+                                       DIFFERENCES ARE ONE WALL — **AND THE PREVIOUS "1 OF 14, TEN DIFFER, THREE
                                        MISSING" READING WAS THE INSTRUMENT's TRUTH**, AND THE PREVIOUS "5 OF 11, ALL SIX
-                                       ARE ONE" CLAIM WAS **NEVER** THE INSTRUMENT's OUTPUT **⇒ AND IT IS TRUE NOW, FOR
+                                       ARE ONE" CLAIM WAS **NEVER** THE INSTRUMENT's OUTPUT **AND IT IS TRUE NOW, FOR
                                        A REASON THE CLAIM NEVER NAMED.** MEASURED 2026-10-30, IN
-                                       `.agents/slop/rmap/RANGE.md`. **⇒ AND TWO WALLS CLOSED:** **W-D** — `rr_p4.reduce`
+                                       `.agents/slop/rmap/RANGE.md`. **AND TWO WALLS CLOSED:** **W-D** — `rr_p4.reduce`
                                        COMPUTED THE REDUCE-AXIS RANGE WITH `rr_new.all` (WHICH APPENDS IT TO THE TABLE
                                        AND TAKES ITS INDEX FROM THE TABLE's LENGTH) AND THEN BUILT THE STATE WITH
-                                       `RrMap.put`, **WHICH KEEPS THE TABLE AS IT WAS** — **⇒ SO THE RANGE's INDEX
+                                       `RrMap.put`, **WHICH KEEPS THE TABLE AS IT WAS** — **SO THE RANGE's INDEX
                                        POINTED AT A TABLE THAT NEVER RECEIVED IT**, AND THE PORT's TABLE HELD NO RANGE
-                                       WITH EXTENT 3 (`0:1:0 0:0:4 1:0:5` → `0:1:0 0:0:4 1:0:5 2:0:3`); **⇒ AND W-E** —
+                                       WITH EXTENT 3 (`0:1:0 0:0:4 1:0:5` → `0:1:0 0:0:4 1:0:5 2:0:3`); **AND W-E** —
                                        `rr_dsrcs` READ `ix_ds_zero` ("THIS OP HAS ZERO DATA SRCS") AS "TAKE ONE", SO **A
                                        `PARAM` CONTRIBUTED ITS FIRST SRC AS A DATA SRC** AND EVERY `CONST` THAT FEEDS A
-                                       `PARAM` GOT A RANGE-MAP ENTRY UPSTREAM DOES NOT HAVE — **⇒ AND THE LIST FORM NOW
+                                       `PARAM` GOT A RANGE-MAP ENTRY UPSTREAM DOES NOT HAVE — **AND THE LIST FORM NOW
                                        LIVES BESIDE THE LENGTH FORM, IN `indexing.bend` ITSELF (`ix_ds_list`), SO THE
-                                       DECISION IS MADE ONCE** — **⇒ AND A DOCUMENT RESTATING A DOCUMENT IS ONE WITNESS,
-                                       NOT TWO, AND THE TWO DISAGREEED.** **⇒ AND THE **ONLY** WALL LEFT IS **W-A**:
+                                       DECISION IS MADE ONCE** — **AND A DOCUMENT RESTATING A DOCUMENT IS ONE WITNESS,
+                                       NOT TWO, AND THE TWO DISAGREEED.** **AND THE **ONLY** WALL LEFT IS **W-A**:
                                        UPSTREAM BUILDS THE RESHAPE's INPUT RANGES WITH `usum`, `%`, `//` AND A
-                                       `symbolic` REWRITER (`_apply_reshape`, `indexing.py:149-161`), **⇒ AND EVERY ONE
+                                       `symbolic` REWRITER (`_apply_reshape`, `indexing.py:149-161`), **AND EVERY ONE
                                        OF THE SIX `get_kernel_graph` PASSES AFTER `run_rangeify` IS A `symbolic`
-                                       REWRITER TOO** — **⇒ ⇒ ⇒ SO **THE MISSING `symbolic` REWRITER IS **THE**
+                                       REWRITER TOO** — **SO **THE MISSING `symbolic` REWRITER IS **THE**
                                        MISSING PIECE OF STAGE 1, AND IT IS THE HIGHEST-LEVERAGE SINGLE MOVE LEFT.**
-                                       **⇒ AND THE PORT's OWN `run_rangeify` (`tinybendygrad/schedule/rangify.bend`) AND
+                                       **AND THE PORT's OWN `run_rangeify` (`tinybendygrad/schedule/rangify.bend`) AND
                                        `schedule/indexing.bend` CARRY **THE RANGE MAP** — UPSTREAM's `ctx.range_map` —
-                                       **⇒ AND THE MEASUREMENT IS AGAINST **UPSTREAM's OWN CALL** (THE ORACLE SPIES ON
-                                       UPSTREAM's OWN `run_rangeify` AND ON THE `IndexingContext` IT MUTATES), **⇒ SO
-                                       NOTHING IS TRANSCRIBED**, **⇒ AND THE COMPARISON IS `.agents/slop/rmap/cmp.py`,
-                                       ENTRY BY ENTRY ON THE NODE ID** — **⇒ AND THE PORT's OWN DUMP SPELLING IS THE
+                                       **AND THE MEASUREMENT IS AGAINST **UPSTREAM's OWN CALL** (THE ORACLE SPIES ON
+                                       UPSTREAM's OWN `run_rangeify` AND ON THE `IndexingContext` IT MUTATES), **SO
+                                       NOTHING IS TRANSCRIBED**, **AND THE COMPARISON IS `.agents/slop/rmap/cmp.py`,
+                                       ENTRY BY ENTRY ON THE NODE ID** — **AND THE PORT's OWN DUMP SPELLING IS THE
                                        ORACLE's, SO THERE IS NO TRANSLATOR.**
 
 
@@ -3477,7 +3499,7 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         `AMBIGUOUS` **19 -> 19**,
                                         `OUT-OF-CORPUS` **10 -> 10**, `UNCLAIMED` **67 -> 66**
                                         (and that ONE is `schedule/rangify.bend`'s, not mine).
-                                        **⇒ AND NO FILE I DID NOT TOUCH GOT WORSE**: the 52
+                                        **AND NO FILE I DID NOT TOUCH GOT WORSE**: the 52
                                         tree-wide rows were all pointers into `uop/fold.bend`
                                         or `uop/ops.bend`, 13 were mine and **39 were another
                                         unit's**, in the twelve files the brief forbids me to
@@ -3489,7 +3511,7 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         only in PROSE (3: `nn/item.bend`'s `const_ds`,
                                         `uop/fold.bend`'s `derived.put`, and
                                         `schedule/realize.bend`'s `UOp.reduce.arg`).
-                                        **⇒ AND THE THIRD KIND IS THE ONE THAT WAS NEVER
+                                        **AND THE THIRD KIND IS THE ONE THAT WAS NEVER
                                         WRONG AT ALL**: `schedule/realize.bend:108` cites
                                         `uop/ops.bend:7435` and says *"cannot spell
                                         `AReduce{op, 1}`"* -- and **`:7435` IS**
@@ -3500,10 +3522,10 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         declared at `uop/ops.bend:1229`, so the gate looked for
                                         the variant 6206 lines away. **THE FIX NAMES THE
                                         CONSTRUCT THE SENTENCE IS ABOUT**, and the gate then
-                                        holds on `decl == lo`. **⇒ AND NO CLAIM WAS DELETED OR
+                                        holds on `decl == lo`. **AND NO CLAIM WAS DELETED OR
                                         WEAKENED** -- every construct the comments named still
                                         exists in the port, so NO row needed "the port no
-                                        longer carries this". **⇒ AND NO PORT `symbol=` SITS
+                                        longer carries this". **AND NO PORT `symbol=` SITS
                                         NEXT TO AN UPSTREAM `.py` CITATION**: all 13 lines
                                         carry a `.bend` subject only, and
                                         `gates/todo-cite-gate.py`'s `symbol_field_records`
@@ -3525,10 +3547,10 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         14 other units' rows and **removes none**.
                                         **`gates/todo-cite-gate.py` PASSES** with **0
                                         WRONG-LINE / 0 WRONG-SYMBOL / 0 UNRESOLVABLE**.
-                                        **⇒ AND THE SUBSTRATE DIGEST MOVED**
+                                        **AND THE SUBSTRATE DIGEST MOVED**
                                         (`bbb9671c...` -> `420a8b4c...`), because A COMMENT IS
                                         SUBSTRATE, so **THE CORPUS MUST BE RE-RUN.**
-                                        **⇒ AND THE TREE IS NOT SETTLED**: the live reading at
+                                        **AND THE TREE IS NOT SETTLED**: the live reading at
                                         the end is 14 `WRONG-LINE`, ALL in
                                         `schedule/rangify.bend` and `uop/ops.bend`, **0 in my
                                         13 files**. See `.agents/slop/rot2/REPORT.md`.
@@ -3820,7 +3842,7 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
 
 upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE FILE AT A TIME,
                                         AND TWO FILES ARE DONE.**
-                                        **⇒ THE ARCHITECTURE, AND IT IS THE TREE's OWN:**
+                                        **THE ARCHITECTURE, AND IT IS THE TREE's OWN:**
                                         UPSTREAM's `.py` TESTS CANNOT RUN AGAINST THE PORT
                                         (`import tinygrad` RESOLVES TO THE VENDORED UPSTREAM
                                         PYTHON, AND THE PORT IS `.bend`), SO EACH PORTED FILE
@@ -3829,12 +3851,12 @@ upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE F
                                         THE SAME GRAPH IN CPython's OWN `tinygrad` AND PRINTS
                                         THE SAME ROWS + A GATE THAT DIFFS THEM
                                         POSITIONALLY** (`gates/gatekit.py`).
-                                        **⇒ AND NO EXPECTED VALUE IS EVER TRANSCRIBED FROM
+                                        **AND NO EXPECTED VALUE IS EVER TRANSCRIBED FROM
                                         UPSTREAM's TEST INTO A `.bend` LITERAL.** THE UPSTREAM
                                         EXPECTED VALUES ARE THE ORACLE's JOB; A ROW THAT
                                         COMPARES THE PORT AGAINST A TYPED NUMBER TESTS THE
                                         TRANSCRIPTION.
-                                        **⇒ AND EVERY ROW MUST GO RED ON A PLANT** (A TEXT
+                                        **AND EVERY ROW MUST GO RED ON A PLANT** (A TEXT
                                         EDIT), OR IT IS WORSE THAN NO ROW.
                                         **THE ORDER IS ASCENDING BY UPSTREAM FILE SIZE.**
 - [x] **`test/null/test_invalid_tensor.py` (16 LOC) -- PORTED, GREEN.** `gates/invalid-tensor.bend`
@@ -3845,10 +3867,10 @@ upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE F
       `out_src2_is_invalid=1` · `out_src0_is_cond=1` · `out_src1_is_idx=1`.
       **THE PROPERTY IS THE UPSTREAM TEST's OWN NAME: `test_uop_where_keeps_invalid_bare` --
       THE WHERE DOES NOT FOLD THE INVALID AWAY AND DOES NOT RE-SPELL IT.**
-      **⇒ AND THE ROWS SPELL THE OP **NAME** AND NOT A BOOLEAN ABOUT IT**, BECAUSE A BOOLEAN
+      **AND THE ROWS SPELL THE OP **NAME** AND NOT A BOOLEAN ABOUT IT**, BECAUSE A BOOLEAN
       ROW CANNOT TELL `CMPLT` FROM `CMPEQ` FROM `CMPNE` -- THREE WRONG ANSWERS THAT ALL PASS
       A `=1`.
-      **⇒ AND IT IS NOT `gates/ops-core`'s `valid_*` ROWS**: THOSE ASK
+      **AND IT IS NOT `gates/ops-core`'s `valid_*` ROWS**: THOSE ASK
       `cond.where(self, self.const_like(Invalid))` -- A CONST `self` -- AND ANSWER THE **ARG**
       CLASS OF EACH SRC (`sg_ctor`); THIS ONE ASKS ABOUT `out.src[2].op` AND
       `out.src[2].is_invalid`, WHICH NO `sg_ctor` ROW CAN SEE, BECAUSE `sg_ctor` READS THE
@@ -3860,7 +3882,7 @@ upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE F
       `n=2 of 19: out_src2_op=CONST/CAST, out_src2_is_invalid=1/0`;
       (D) **THE INVALID DROPPED** => `n=2 of 19: out_src2_op=CONST/STACK, out_src2_is_invalid=1/0`.
       **MEASURED: 297 MB PEAK RSS ON THE DRIVER UNDER THE 3072 MB WATCHDOG (`WITHIN-LIMITS`).**
-      **⇒ AND THE ARENA DISCIPLINE IS LOAD-BEARING AND WAS MEASURED, NOT ASSUMED**: THE FIRST
+      **AND THE ARENA DISCIPLINE IS LOAD-BEARING AND WAS MEASURED, NOT ASSUMED**: THE FIRST
       VERSION GAVE `cond`, `idx` AND `out` THEIR OWN ARENAS AND THE PORT PRINTED
       `out_src0_op=CONST` WHERE CPython PRINTS `CMPLT` -- `O.Arena.src(ar, i, 0)` READS SLOT 0
       **OF THE ARENA YOU PASS**, AND `cond`'s INDEX BELONGED TO A DIFFERENT ARENA. ONE ARENA,
@@ -3868,7 +3890,7 @@ upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE F
 - [x] **`test/null/test_tensor_io.py` (24 LOC) -- PORTED, GREEN, AND IT FILLS A REAL GAP.**
       `gates/tensor-io.bend` + `gates/tensor-io-oracle.py` + `gates/tensor-io-gate.py`.
       **22 ROWS, 3 LANES, rc=0.**
-      **⇒ AND THE GAP IS MEASURED, NOT GUESSED**: `gates/state_census.bend`'s `val_seek_*` ROWS
+      **AND THE GAP IS MEASURED, NOT GUESSED**: `gates/state_census.bend`'s `val_seek_*` ROWS
       ARE **ISOLATED** CALLS -- EVERY ONE PASSES `pos = 0` -- AND `.agents/slop/state-gate.py`'s
       `sd_seek` ROW CREATES A **FRESH** `TensorIO` FOR EACH CALL. **AND THE `whence=1` CASE IS
       EXACTLY THE CASE THAT NEEDS A NON-ZERO `pos`**: `pos+off` IS THE **SECOND** CANDIDATE, AND
@@ -3878,11 +3900,11 @@ upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE F
       `pos=10` ANSWERS 11 WHERE A FRESH ONE ANSWERS 1; `seek(10,1)` AT `pos=11` ANSWERS 12
       WHERE A FRESH ONE ANSWERS 10), AND THE OTHER FOUR ARE `pos`-INDEPENDENT
       **STRUCTURALLY** (`whence=0` PICKS `off`, `whence=2` PICKS `len+off`).
-      **⇒ AND THE `test_create` HALF IS **WEAKER THAN IT LOOKS**: upstream's GUARD IS
+      **AND THE `test_create` HALF IS **WEAKER THAN IT LOOKS**: upstream's GUARD IS
       `if t.ndim != 1 or t.dtype != dtypes.uint8`, AND **BOTH** FIXTURES ARE **2-D**, SO BOTH
       REFUSE ON THE **`ndim != 1`** CLAUSE AND **NEITHER** REACHES THE DTYPE CLAUSE. THE ROWS
       ARE THEREFORE SPLIT INTO THE TWO CLAUSES, AND `refuse_dtype_1x11=False` PINS THE FACT.
-      **⇒ AND THE PORT HAS NO `TensorIO` OBJECT AND THAT IS FINE FOR BOTH HALVES**:
+      **AND THE PORT HAS NO `TensorIO` OBJECT AND THAT IS FINE FOR BOTH HALVES**:
       `tinybendygrad/nn/state.bend:498` RECORDS `TODO(p3) state.py:8 TensorIO`, AND
       **NEITHER HALF OF THE UPSTREAM TEST IS ABOUT `readinto`** -- THE REFUSAL PREDICATE IS A
       PREDICATE ON THE TENSOR's SHAPE AND DTYPE, AND THE SEEK IS **PURE INTEGER ARITHMETIC**
@@ -3891,7 +3913,7 @@ upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE F
       **THE PLANTS, AND **FOUR OF THE FIVE** GO RED -- AND THE FIFTH IS THE INSTRUCTIVE ONE:**
       (A) THE CHAIN BROKEN AT THE `whence=1` ROW => `n=1 of 22: seek_1_w1=11/1`;
       (A') **THE SAME PLANT AT THE `whence=2` ROW DID **NOT** GO RED**, BECAUSE `whence=2`
-      PICKS THE THIRD CANDIDATE `len+off` WHICH DOES NOT MENTION `pos` -- **⇒ AND THAT IS WHY
+      PICKS THE THIRD CANDIDATE `len+off` WHICH DOES NOT MENTION `pos` -- **AND THAT IS WHY
       THE `whence=1` ROWS CARRY THE CHAIN**, AND IT WAS MEASURED RATHER THAN ASSUMED;
       (B) THE CHAIN's POSITION READ FROM A **DIFFERENT CALL** => `n=1 of 22:
       pos_before_seek_10_w1=11/1`;
@@ -3899,47 +3921,47 @@ upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE F
       refuse_ndim_1x0=True/False`;
       (C') **THE FIRST VERSION OF THIS PLANT WAS **BACKWARDS** AND DID NOT GO RED** -- IT
       COMPARED AGAINST `99`, WHICH MAKES `ndim != 99` **TRUE** FOR A 2-D TENSOR, SO THE ROW
-      CORRECTLY STAYED `True`. **⇒ A PLANT THAT DOES NOT GO RED IS NOT A PLANT; IT IS A
+      CORRECTLY STAYED `True`. **A PLANT THAT DOES NOT GO RED IS NOT A PLANT; IT IS A
       RESTATEMENT OF THE RULE, AND THE RULE IT RESTATED WAS BACKWARDS.**;
       (D) THE FIXTURE IS 12 ELEMENTS INSTEAD OF 11 => `n=3 of 22: shape_1x11=(1,11)/ABSENT,
       dtype_1x11=u8/ABSENT`;
       (E) `whence` READ AS A 0/1 FLAG -- THE DEFECT `state.bend` NAMES => `n=3 of 22:
       seek_neg2_w2=10/4294967295, seek_neg10_w0=0/4294967286`.
-      **⇒ AND ONE ROW WAS **WRONG** AND WAS FIXED BEFORE IT WAS COMMITTED**: THE POSITION READ
+      **AND ONE ROW WAS **WRONG** AND WAS FIXED BEFORE IT WAS COMMITTED**: THE POSITION READ
       WITH `seek_dec(12, pos, 0, 0)` -- THE OBVIOUS WAY TO ASK -- ANSWERS **0**, BECAUSE
       `whence=0` PICKS THE `off` CANDIDATE, SO **EVERY ONE OF THE FIVE POSITION ROWS PRINTED
-      `0`**. **⇒ AND A ROW THAT PRINTS A CONSTANT CANNOT GO RED**, SO THE POSITION IS NOW READ
+      `0`**. **AND A ROW THAT PRINTS A CONSTANT CANNOT GO RED**, SO THE POSITION IS NOW READ
       AS **THE PREVIOUS CALL's ANSWER**.
       **MEASURED: 670 MB PEAK RSS ON THE DRIVER UNDER THE 3072 MB WATCHDOG (`WITHIN-LIMITS`).**
-      **⇒ AND `bend`'s OWN SHAPES, MEASURED**: A `match` CANNOT SCRUTINISE **A CALL** NOR **A
+      **AND `bend`'s OWN SHAPES, MEASURED**: A `match` CANNOT SCRUTINISE **A CALL** NOR **A
       LOCAL BINDER** ("a parameter or field scrutinee"), SO EVERY READER MATCHES A `Maybe`
       PARAMETER DIRECTLY AND THE UNWRAPPED VALUE GOES TO A SECOND DEF -- WHICH IS
-      `uop/fold.bend`'s OWN `dt_is.pick` / `shape_is.of` SHAPE. **⇒ AND `dt_str` AND `dims_str`
+      `uop/fold.bend`'s OWN `dt_is.pick` / `shape_is.of` SHAPE. **AND `dt_str` AND `dims_str`
       ARE **ALREADY** IN `uop/fold.bend`, SO A TOP-LEVEL `dt_str` IN A DRIVER **COLLIDES WITH
       THE FOLD's** AND THE ERROR IS "expected : a term / observed : ']'" AT THE SIGNATURE.**
 - [ ] **`test/null/test_symbolic_ops.py` (13 LOC) AND `test/null/test_tensor_variable.py`
       (13 LOC) -- NOT STARTED, AND THE REACHABILITY IS NOT YET MEASURED.** BOTH ASSERT THAT AN
       UPSTREAM OPERATION **RAISES** (`ValueError` FOR A SYMBOLIC RESHAPE, `AssertionError` FOR
-      A CHUNK ALONG A SYMBOLIC DIM). **⇒ AND THE PORT HAS NO WAY TO ASK "DID THIS RAISE?"**: A
+      A CHUNK ALONG A SYMBOLIC DIM). **AND THE PORT HAS NO WAY TO ASK "DID THIS RAISE?"**: A
       `.bend` ROW IS `name=value`, SO A RAISING OPERATION MUST BE SPELLED AS A **REFUSAL** --
       AND WHETHER THE PORT's `Variable`/`Variable.bind` EXISTS AT ALL IS THE FIRST QUESTION.
 - [ ] **`test/null/test_hashing.py` (18 LOC) -- MEASURED AND **BLOCKED**.** IT NEEDS
       `Tensor.keccak()`, AND **THE PORT HAS NO `keccak` AT ALL**: `tinybendygrad/mixin/op.bend`
       PUTS `keccak` ON **SIDE B**, WHICH IS THE **UN-PORTED** HALF OF `tinygrad/mixin/op.py`
-      (LINES 998-1980). **⇒ AND THE PRIMITIVES `keccak` NEEDS ARE ALSO UN-PORTED**: NO `pad`,
+      (LINES 998-1980). **AND THE PRIMITIVES `keccak` NEEDS ARE ALSO UN-PORTED**: NO `pad`,
       NO `pad_to` AS A TENSOR OP, NO `expand`, NO `roll`, NO `transpose`, NO `flatten`, NO
       `cat` AS A TENSOR OP, NO `unsqueeze`, NO `bitcast` -- AND `mixin/op.bend`'s OWN WALL LIST
       NAMES `cat` AS **W6** AND THE MOVEMENT OPS AS **W4** (WHICH NEEDS `resolve`, W3's WALL).
-      **⇒ AND UPSTREAM's `keccak` IS A FULL SHA-3** (`rot_offsets`, `reorder_indexes`,
+      **AND UPSTREAM's `keccak` IS A FULL SHA-3** (`rot_offsets`, `reorder_indexes`,
       `rnd_const_masks`, THE f1600 PERMUTATION) **AT `tinygrad/mixin/op.py:1931`**, SO PORTING
       THIS TEST MEANS PORTING THE HASH, WHICH IS **NOT** A TEST PORT.
 - [ ] **`test/null/test_arange.py` (22 LOC) -- MEASURED AND **BLOCKED**.** IT NEEDS
       `out.schedule_linear()` + `compile_linear` + `estimate_uop`, WHICH IS THE **SCHEDULE
-      PREPARATION** LAYER, AND `tinybendygrad/schedule/prepare.bend` IS A STUB. **⇒ AND THE
+      PREPARATION** LAYER, AND `tinybendygrad/schedule/prepare.bend` IS A STUB. **AND THE
       `triu` HALF NEEDS `resolve` (W3's WALL) ANYWAY.**
 - [ ] **`test/null/test_tensor_io.py` -- DONE** (see above). **THE NEXT CANDIDATES ARE THE
       13-LOC SYMBOLIC FILES**, AND **THEIR REACHABILITY IS NOT YET MEASURED**.
-      **⇒ AND `test/null/test_gguf.py` (13 LOC), `test/null/test_mnist_dataset.py` (15 LOC)
+      **AND `test/null/test_gguf.py` (13 LOC), `test/null/test_mnist_dataset.py` (15 LOC)
       AND `test/null/test_objc.py` (17 LOC) ARE UNREACHABLE**: THE FIRST TWO NEED A **DATASET
       DOWNLOAD** AND THE THIRD NEEDS A **macOS FRAMEWORK**.
       SEE `.agents/slop/upstream-suite/REPORT.md`.
@@ -4248,14 +4270,27 @@ only file edited. **Nothing committed.**
       `.agents/slop/nvdup/nv-oracle-PREFIX.py` **4 of 5 assertions go red, rc 1**. The `dup` and
       `longhand` cells are load-bearing: a duplicate is not a dead site, and a row emitted
       without `row()` escapes the SITE census, so **neither census substitutes for the other.**
-- [ ] **REPORTED, NOT FIXED — the port's 11, in a do-not-touch file.** `ops_nv.bend`
-      `sha256 24497e96ddebc56c802bc8ed9fd36c998c794d066e5ce7b3575cb0f42272062c`, unmodified.
-      `:1687`/`:3857` `nv_iface_count`, `:1688`/`:3858` `nv_encode_names` (a tail re-print),
-      `:3608-3612`/`:3648-3652` **two byte-identical 5-row blocks** (5 names),
-      `:3613`/`:3642` `nv_slmtot_1_48428`, `:3625` via `srow` / `:3643` via `i64row`
-      `nv_slmtot_1_48428_hi` (the only one emitted through two different row-builders),
-      `:3634`/`:3655` `nv_slm_cmd`, and `:3464`/`:3472` `nv_pc_id_after_hit` which is **two
-      different fixtures under one name**.
+- [x] **THE PORT's 11 ARE FIXED — and the file is no longer do-not-touch.** `ops_nv.bend`
+      was a **94-LINE TOMBSTONE** (a comment header describing a body that
+      commit `564733bed` deleted by accident) until `90de86caa` restored the body, and
+      `5ed9f4e37` closed the eleven names. **THE FIX WAS TO NAME THE CLAIM AND NOT TO
+      DELETE A ROW**: `nv_iface_count`/`nv_encode_names` are deleted from `t_names()`
+      (`t_iface()` already owns them); `nv_pc_id_after_hit` becomes
+      `nv_pc_id_after_miss_hit` + `nv_pc_id_after_hit` (two fixtures, two names);
+      `nv_slmtot_1_48428`/`_hi` gain `_i64` twins (two independent printer paths);
+      `nv_slm_cmd` gains `nv_slm_cmd_held` (the trace is HELD in a variable);
+      and the five byte-identical re-emissions are gone. **MEASURED: 610 lines / 599
+      distinct names -> 603 lines / 603 distinct names, 0 duplicates.** `gates/ops-nv-gate.py`
+      now compares **569 rows, 0 disagreements**, with **twelve plants measured**.
+- [ ] **REPORTED, NOT FIXED — `pc.find`'s BLIND SPOT (M13), NOW MEASURED.** The miss
+      sentinel is `len` and a hit is an index BELOW it, so `found < len` and
+      `found != len` are **THE SAME PREDICATE** over every possible answer. Plant P6
+      replaces the sentinel with `len + 1` -- a miss now answers a value that is NEITHER
+      an index NOR the length -- and **EVERY ROW STILL PASSES** (`nv-plants.py` P6,
+      GREEN). The six `nv_find_*` rows that assert `pc.find` are **PORT-ONLY**, because
+      upstream's `_nv_program_cache` is a bare dict and `pc.find` is the port's own model
+      of it. **CLOSING IT NEEDS A FIXTURE THAT CAN SEE A MISS'S ANSWER AS A DISTINCT
+      VALUE, AND NO SUCH FIXTURE EXISTS YET.**
 - [ ] **REPORTED — the residual `nv_reloc_bad_n` dispute.** `:720`'s `1` measures
       `reloc_fold`, a helper defined at `:704` of the oracle itself, which BREAKS and keeps the
       prefix; `:1162`'s `0` models upstream's `NVProgramData.__init__`, which raises and
@@ -7011,20 +7046,20 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       shows it as `new file`), so "re-vendor" is not on the table. Right now
       `import tinygrad.dtype` raises `ImportError` and the BEND device is dead.
       Two options in the report; neither taken here.
-      **⇒ THE DECISION WAS TAKEN AND THE FIX IS IN THE TREE, MEASURED 2026-11-10.**  **⇒ AND
+      **THE DECISION WAS TAKEN AND THE FIX IS IN THE TREE, MEASURED 2026-11-10.**  **AND
       THE FILE **MOVED**: IT IS NOW AT THE **REPO ROOT** (`ops_bend.py`), BECAUSE
       `a1a7d370a` ("PURGE: `tinygrad/` HELD EXACTLY **ONE** FILE OF OURS. IT IS NOW AT THE REPO
-      ROOT.") -- **⇒ SO THE ITEM's PATH `tinygrad/runtime/ops_bend.py` IS **OBSOLETE** AND THE
-      OWN DECISION IS ANSWERED AT THE NEW PATH.**  **⇒ MEASURED AT THE NEW PATH: `grep -n
+      ROOT.") -- **SO THE ITEM's PATH `tinygrad/runtime/ops_bend.py` IS **OBSOLETE** AND THE
+      OWN DECISION IS ANSWERED AT THE NEW PATH.**  **MEASURED AT THE NEW PATH: `grep -n
       'INVERSE_DTYPES_DICT' ops_bend.py` ANSWERS **ONE** HIT AND IT IS A **COMMENT** (`:107`),
       NOT AN IMPORT** -- THE COMMENT READS "This used to be `INVERSE_DTYPES_DICT[u.dtype.name]`,
       and that map is DELETED upstream as of 793abbb1 (\"modernize tinygrad's dtype to match
       rust\"), so `import tinygrad.dtype` raised ImportError and the whole BEND device was dead.
       `u.dtype.name` is now correct on its own: the rename made `DType.name` EQUAL the attribute
       -- uint32's name went from \"unsigned int\" (which needed the inverse map to become
-      \"uint\") to \"u32\", which `getattr(dtypes, \"u32\")` resolves directly."**  **⇒ AND
+      \"uint\") to \"u32\", which `getattr(dtypes, \"u32\")` resolves directly."**  **AND
       `git blame -L 107,113 -- ops_bend.py` NAMES THE COMMIT: `813bbec3e` (2026-10-07).**
-      **⇒ AND THE TWO MEASUREMENTS THAT SAY THE DEVICE IS ALIVE: (1) `.venv/bin/python -c
+      **AND THE TWO MEASUREMENTS THAT SAY THE DEVICE IS ALIVE: (1) `.venv/bin/python -c
       "import tinygrad.dtype"` READS **OK** (NO `ImportError`); (2) THE MILESTONE FIXTURE IS
       GREEN -- `checks/.e2e-fixture/opsbend-milestone/check.out` READS **ALL PROOFS CHECK** AND
       `checks/.e2e-fixture/opsbend-milestone/gate.err` READS **"# 0 failed of 46 rows read"**,
@@ -7088,25 +7123,25 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       `toint.miss` rows expect `KeyError` anyway. Proven with four probe rows:
       `Op.to_int("f16") = [KeyError]` where CPython answers `i16`. OWNER'S FILE —
       REPORTED, NOT EDITED.
-**⇒ PROVABLY OBSOLETE, MEASURED 2026-11-10: THE DEFECT WAS REPAIRED AND THE ITEM's
+**PROVABLY OBSOLETE, MEASURED 2026-11-10: THE DEFECT WAS REPAIRED AND THE ITEM's
       PROBE ROWS NO LONGER HOLD.**  **THE PORT'S `Op.to_int` IS NOW **DTYPE-KEYED** AND
       **MATCHES UPSTREAM AT THE PIN `f5ac54685074` EXACTLY**: `tinybendygrad/renderer/isa/
       x86.bend:787-792` IS `def Op.to_int(+d: S.Dt) -> String:` MATCHING ON
       `S.Dt{pri, bits, cls, nm}` AND THEN ON `cls`, AND ITS HELPER `Op.to_int.fp` (`:780-785`)
-      IS **KEYED ON `bits` AND `pri`, NOT ON A DTYPE NAME.**  **⇒ AND THE THREE ARMS ARE THE
+      IS **KEYED ON `bits` AND `pri`, NOT ON A DTYPE NAME.**  **AND THE THREE ARMS ARE THE
       PIN's THREE ARMS**: UPSTREAM'S `to_int` AT THE PIN IS
       `{dtypes.float16: dtypes.int16, dtypes.float32: dtypes.int32, dtypes.float64: dtypes.int64}[dt]`
-      (`tinygrad/renderer/x86.py:253`), **⇒ AND THE PORT'S `pri` VALUES ARE THE PIN's**:
+      (`tinygrad/renderer/x86.py:253`), **AND THE PORT'S `pri` VALUES ARE THE PIN's**:
       `tinybendygrad/LAWS/spec.bend`'s `half() = Dt{12, 16, CFloat{}, "f16"}`,
       `single() = Dt{14, 32, CFloat{}, "f32"}`, `double() = Dt{15, 64, CFloat{}, "f64"}` --
-      **⇒ SO `bits 16 & pri 12` -> `"i16"`, `bits 32 & pri 14` -> `"i32"`, `bits 64 & pri 15` ->
+      **SO `bits 16 & pri 12` -> `"i16"`, `bits 32 & pri 14` -> `"i32"`, `bits 64 & pri 15` ->
       `"i64"` ARE THE PIN's THREE ANSWERS, AND EVERY OTHER DTYPE IS `"KeyError"` -- WHICH IS
       EXACTLY WHAT UPSTREAM'S DICT RAISES.**
-      **⇒ SO THE ITEM's PROBE ROW (`Op.to_int("f16") = [KeyError]` WHERE CPYTHON ANSWERS `i16`)
+      **SO THE ITEM's PROBE ROW (`Op.to_int("f16") = [KeyError]` WHERE CPYTHON ANSWERS `i16`)
       CANNOT BE TRUE OF THIS TREE**, AND THE REASON IT WAS TRUE WAS THE NAME-BASED ARMING THE
-      ITEM NAMES -- **⇒ WHICH IS GONE.**
+      ITEM NAMES -- **WHICH IS GONE.**
 
-      **⇒ AND THE `x86` GATE OVER THIS FILE IS **ALSO** DEAD, FOR A DIFFERENT AND LARGER
+      **AND THE `x86` GATE OVER THIS FILE IS **ALSO** DEAD, FOR A DIFFERENT AND LARGER
       REASON, AND THAT IS A **NEW** FINDING (THE `X86ISA` SECTION BELOW) AND NOT THIS ITEM.
       — armed on `"float16"`/`"float32"`/`"float64"`; `S.Dt.nm` now spells those
       `f16`/`f32`/`f64`, so every arm falls to `KeyError`. It is 761-row GREEN
@@ -7122,28 +7157,28 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       `b`/`e`/`f`/`d`), `dt_supported` (`:740`) compares against the OLD
       `"__bf16"`, and `supported_12.at` (`:744`) returns OLD names where CPython
       gives `bool,i8,u8,i16,u16,i32,u32,i64,u64,f16,f32,f64`. OWNER'S FILE.
-      **⇒ PROVABLY OBSOLETE, MEASURED 2026-11-10: EVERY CLAIM ABOVE WAS ABOUT A VERSION OF
-      THIS FILE THAT NO LONGER EXISTS.**  **⇒ `dt_fmt` IS NOW **DTYPE-KEYED**:
+      **PROVABLY OBSOLETE, MEASURED 2026-11-10: EVERY CLAIM ABOVE WAS ABOUT A VERSION OF
+      THIS FILE THAT NO LONGER EXISTS.**  **`dt_fmt` IS NOW **DTYPE-KEYED**:
       `tinybendygrad/runtime/ops_dsp.bend:742` IS `def dt_fmt_dt(d: S.Dt) -> String:` MATCHING
       ON `S.Dt{pri, bits, cls, nm}`, AND ITS HELPERS ARE `dt_fmt.si` (`:719`, BY **BITS**),
-      `dt_fmt.su` (`:727`, BY BITS) AND `dt_fmt.sf` (`:735`, BY **BITS AND `pri`**) -- **⇒ AND
+      `dt_fmt.su` (`:727`, BY BITS) AND `dt_fmt.sf` (`:735`, BY **BITS AND `pri`**) -- **AND
       THE FILE's OWN HEADER (`:706-711`) RECORDS THE REPAIR**: "WAS keyed on names, and
-      793abbb renamed them: eleven `dt_fmt` rows printed the EMPTY string".**  **⇒ AND
+      793abbb renamed them: eleven `dt_fmt` rows printed the EMPTY string".**  **AND
       `dt_supported` (`:811`) IS `def dt_supported(base: Bool, +d: S.Dt) -> Bool:` -- A **DTYPE**,
       NOT THE OLD `"__bf16"` STRING -- AND `supported_12.at` (`:819`) IS
       `def supported_12.at(n: Nat) -> S.Dt:` -- IT **RETURNS A DTYPE**, NOT A NAME.**
-      **⇒ AND THE ROWS AGREE WITH CPython'S OWN LANE, MEASURED BOTH SIDES**:
+      **AND THE ROWS AGREE WITH CPython'S OWN LANE, MEASURED BOTH SIDES**:
       `dsp_sd_0 = [bool]`, `dsp_sd_7 = [i64]`, `dsp_sd_11 = [f64]`, `dsp_sd_n = [12]` --
       **THE PORT's LANE AND `gates/ops_dsp_render-oracle.py`'s LANE PRINT THE SAME STRINGS**,
-      **⇒ AND THOSE ARE THE **NEW** SPELLINGS THE ITEM SAID CPython GIVES.**
-      **⇒ AND `grep -c 'py=\['` IS NOW **4**, NOT ZERO -- AND ALL FOUR ARE IN THE **PRINTING
+      **AND THOSE ARE THE **NEW** SPELLINGS THE ITEM SAID CPython GIVES.**
+      **AND `grep -c 'py=\['` IS NOW **4**, NOT ZERO -- AND ALL FOUR ARE IN THE **PRINTING
       CODE** (`ops_dsp.bend:1983/1985/1987/1996`, THE ROW FORMAT IS `nm=value   py=[value]`),
-      NOT IN EXPECTATION COMMENTS.**  **⇒ AND THE `py=` HALF IS NOW **DERIVED**: THE FILE's OWN
+      NOT IN EXPECTATION COMMENTS.**  **AND THE `py=` HALF IS NOW **DERIVED**: THE FILE's OWN
       HEADER (`:1957-1981`) SAYS "Every `py=` half below is DERIVED -- the port's OWN value,
       re-read through the same code the port prints -- so a row cannot disagree with itself",
       AND "MEASURED 2026-10-22, thirty of these rows' `py=` halves were RIGHT while the `got=`
       half beside them was WRONG, so the file agreed with itself and was wrong on thirty rows".**
-      **⇒ AND THE GATE THAT MEASURES IT IS GREEN**:
+      **AND THE GATE THAT MEASURES IT IS GREEN**:
       `.venv/bin/python gates/ops_dsp_render-gate.py` READS **"ops_dsp_render: 497 rows, 0
       declared divergences, 497 compared, THREE LANES BYTE-IDENTICAL"** AND
       **"497 rows, 3 lanes byte-identical over 497 COMPARED rows, 0 DECLARED divergences"**,
@@ -7151,14 +7186,14 @@ rows are three named walls and one blind spot, all stated in the file's footer.
 - [x] `runtime/ops_dsp.bend`'s ~40 gate-row literals (its 4 functional tables
       are done; its rows print `dt_name`, so they move with the rename and its
       oracle must be re-run)
-      **⇒ PROVABLY OBSOLETE, MEASURED 2026-11-10: THE GATE READS **0 DECLARED DIVERGENCES**
-      OVER **497 COMPARED ROWS** (ABOVE), **⇒ AND THE ORACLE IS NOT RE-RUN-BUT-HOPED: IT WAS
+      **PROVABLY OBSOLETE, MEASURED 2026-11-10: THE GATE READS **0 DECLARED DIVERGENCES**
+      OVER **497 COMPARED ROWS** (ABOVE), **AND THE ORACLE IS NOT RE-RUN-BUT-HOPED: IT WAS
       RECOVERED FROM GIT HISTORY** -- `gates/ops_dsp_render-oracle.py`'s OWN HEADER NAMES THE
       BLOB (`291bbc8821dafb2ae0b8c464488d4b02300ced6b`, COMMIT `192142295` -- "the commit that
-      made this file's rows compared in the first place"), **⇒ AND IT SAYS WHY**: "Before the
+      made this file's rows compared in the first place"), **AND IT SAYS WHY**: "Before the
       recovery the oracle lived in `.agents/slop/`, which was pruned: **a gate with no oracle is
-      a gate that CANNOT FAIL, and this one could not.**"  **⇒ AND THE ROWS NOW PRINT `dt_nm`
-      OF A `S.Dt`, NOT A HAND-TRANSCRIBED NAME** (`ops_dsp.bend:2785/2793/2801`), **⇒ AND THE
+      a gate that CANNOT FAIL, and this one could not.**"  **AND THE ROWS NOW PRINT `dt_nm`
+      OF A `S.Dt`, NOT A HAND-TRANSCRIBED NAME** (`ops_dsp.bend:2785/2793/2801`), **AND THE
       PORT's LANE AND THE ORACLE's LANE ARE BYTE-IDENTICAL OVER ALL 497 ROWS.**
 
 ## X86ISA -- `gates/x86_isa-gate.py` IMPORTS A **PACKAGE** UPSTREAM **DELETED**, AND THEN A **KEYWORD** UPSTREAM **DELETED** (2026-11-10)
@@ -7169,41 +7204,41 @@ FOUND WHILE REPAIRING `decomp_graph_census` AND `rng_graph_census` (THE SAME RE-
       IMPORTED `from tinygrad.renderer.isa import rdef` AND `from tinygrad.renderer.isa.x86
       import (...)`. **MEASURED: `git ls-tree -r --name-only f5ac54685074 | grep 'renderer/'`
       LISTS **NO `renderer/isa/` AT ALL** -- UPSTREAM FLATTENED THE PACKAGE INTO
-      `tinygrad/renderer/x86.py`.** **⇒ AND ALL BUT ONE OF THE 31 NAMES THE ORACLE WANTED ARE
-      PRESENT IN THAT ONE MODULE** (MEASURED), **⇒ AND THE THIRTY-FIRST, `_xmm_sz_m`, **DOES NOT
+      `tinygrad/renderer/x86.py`.** **AND ALL BUT ONE OF THE 31 NAMES THE ORACLE WANTED ARE
+      PRESENT IN THAT ONE MODULE** (MEASURED), **AND THE THIRTY-FIRST, `_xmm_sz_m`, **DOES NOT
       EXIST AT THE PIN AT ALL**: UPSTREAM HAS `_xmm_sz` AND DERIVES THE `m` SPELLING INLINE
-      (`X86Ops[_xmm_sz(b).name+"m"]`, `tinygrad/renderer/x86.py:481`). **⇒ THE ORACLE ALREADY
+      (`X86Ops[_xmm_sz(b).name+"m"]`, `tinygrad/renderer/x86.py:481`). **THE ORACLE ALREADY
       HAD ITS OWN `_xmm_sz_m_name` HELPER** (`:286`), WHICH COMPUTES THE SAME THREE-ARM
-      THRESHOLD, **⇒ SO THE ROW IS NOW ANSWERED BY THE HELPER.**  **⇒ THE ORACLE'S IMPORT
+      THRESHOLD, **SO THE ROW IS NOW ANSWERED BY THE HELPER.**  **THE ORACLE'S IMPORT
       BLOCK IS REPOINTED AT `tinygrad.renderer.x86` AND `_xmm_sz_m` IS DROPPED.**
 - [ ] **THE ORACLE's NODE CONSTRUCTION IS ON THE PRE-PIN `tag=` SHAPE, AND THAT IS THE REAL
       WALL.** MEASURED: `gates/x86_isa-oracle.py`'s `nreg` (`:173`) IS `UOp(Ops.NOOP, tag=(r,))`,
       `ins` (`:176-177`) IS `UOp(Ops.INS, srcs, (op, dt), tag)`, AND `membase` (`:189`) IS
-      `UOp(Ops.INDEX, (al, const(0, dtypes.i32)), tag=(r,))` -- **⇒ AND AT THE PIN
+      `UOp(Ops.INDEX, (al, const(0, dtypes.i32)), tag=(r,))` -- **AND AT THE PIN
       `f5ac54685074` `UOp.__call__` HAS NO `tag` PARAMETER AT ALL**: UPSTREAM's `UOp.replace`
       (`tinygrad/uop/ops.py:239-243`) ASSERTS `len(kwargs) == 0` AFTER POPPING ONLY `op`,
-      `src` AND `arg`. **⇒ AND UPSTREAM's SPELLING AT THE PIN IS A DIFFERENT SHAPE**:
+      `src` AND `arg`. **AND UPSTREAM's SPELLING AT THE PIN IS A DIFFERENT SHAPE**:
       `tinygrad/renderer/x86.py:242` IS `def reg(dt:DType, r:Register) -> UOp: return
-      UOp(Ops.INS, arg=(X86Ops.REG, dt, r))` -- **⇒ AND THE PIN's `asm_str` READS `u.arg[0]`
+      UOp(Ops.INS, arg=(X86Ops.REG, dt, r))` -- **AND THE PIN's `asm_str` READS `u.arg[0]`
       (`:770-780`) AND PRINTS `f".L{uops.index(u)}:"` FOR A LABEL, NOT `str(u.tag)`.**
-      **⇒ SO THE ORACLE'S FIXTURES MUST BE REBUILT IN THE PIN's SHAPE, AND THAT IS THE
+      **SO THE ORACLE'S FIXTURES MUST BE REBUILT IN THE PIN's SHAPE, AND THAT IS THE
       `x86` LANE's WORK AND NOT A ONE-LINE CHANGE.**
-- [ ] **⇒ AND THE PORT's `renderer/isa/x86.bend` IS ON THE SAME PRE-PIN SHAPE, WHICH IS WHY THE
-      PORT's OWN HEADER CARRIES THE CORRESPONDING `TODO(p3)`s -- **⇒ AND ONE OF ITS CITATIONS IS
+- [ ] **AND THE PORT's `renderer/isa/x86.bend` IS ON THE SAME PRE-PIN SHAPE, WHICH IS WHY THE
+      PORT's OWN HEADER CARRIES THE CORRESPONDING `TODO(p3)`s -- **AND ONE OF ITS CITATIONS IS
       A **STALE UPSTREAM SPELLING**.** MEASURED: `x86.bend:122-123` SAYS upstream's
       `stack_pointer` IS NOW `UOp.placeholder((1,), dtypes.uint64, slot=-1,
-      addrspace=AddrSpace.REG).replace(tag=(RSP,))` "(py:192)" -- **⇒ AND `replace(tag=...)`
-      CANNOT BE MADE AT THE PIN** (`replace` ASSERTS `len(kwargs) == 0`), **⇒ AND THE PIN's
-      `stack_pointer` IS `reg(dtypes.uint64, RSP)` (`x86.py:243`).**  **⇒ AND `x86.bend:1373`
-      CITES `f"{str(u.tag)}:"`, x86.py:755` FOR A LABEL -- **⇒ AND THE PIN's `asm_str` READS
+      addrspace=AddrSpace.REG).replace(tag=(RSP,))` "(py:192)" -- **AND `replace(tag=...)`
+      CANNOT BE MADE AT THE PIN** (`replace` ASSERTS `len(kwargs) == 0`), **AND THE PIN's
+      `stack_pointer` IS `reg(dtypes.uint64, RSP)` (`x86.py:243`).**  **AND `x86.bend:1373`
+      CITES `f"{str(u.tag)}:"`, x86.py:755` FOR A LABEL -- **AND THE PIN's `asm_str` READS
       `u.arg[0] is X86Ops.LABEL` AND PRINTS `f".L{uops.index(u)}:"`** (`x86.py:775-777`).**
-      **⇒ SO THIS IS A **CITATION DEFECT IN A PORT FILE** AND IT IS A REAL ONE: TWO OF THE
+      **SO THIS IS A **CITATION DEFECT IN A PORT FILE** AND IT IS A REAL ONE: TWO OF THE
       PIN'S OWN SPELLINGS ARE QUOTED FROM BEFORE THE PIN.**
-- [ ] **⇒ AND THE LEDGER's OWN `MARKERFORM` SECTION NAMES THIS FILE AND ASKS WHETHER THE GATE
+- [ ] **AND THE LEDGER's OWN `MARKERFORM` SECTION NAMES THIS FILE AND ASKS WHETHER THE GATE
       OVER IT CAN RUN.** `WALLAUDIT` (2026-10-14) AUDITED THE `WALL(p3)` MARKERS IN
       `rangeify.bend`; `MARKERFORM` (2026-10-14) FOUND THE INSTRUMENT COULD NOT SEE THEM;
-      **⇒ AND NEITHER ASKED WHETHER THE GATE THAT MEASURES `x86`'s 761 ROWS CAN RUN AT ALL** --
-      **⇒ AND IT CANNOT, AND HAS NOT SINCE THE RE-VENDOR.** **⇒ A SECTION THAT AUDITS A FILE's
+      **AND NEITHER ASKED WHETHER THE GATE THAT MEASURES `x86`'s 761 ROWS CAN RUN AT ALL** --
+      **AND IT CANNOT, AND HAS NOT SINCE THE RE-VENDOR.** **A SECTION THAT AUDITS A FILE's
       MARKERS AND A SECTION THAT FIXES AN INSTRUMENT's BLINDNESS CAN BOTH BE TRUE WHILE THE GATE
       OVER THAT FILE IS DEAD**, AND THAT IS THE CLASS THIS SECTION IS.
 
@@ -16582,8 +16617,8 @@ hits for them are all comments). Nothing calls the twenty registrations.
       **PLANT + DISARM: 6 of 6 arms** (`e2estage8/plant.py`, no `bend`/`node`/`cc`): shipped
       vs an 8-stage transcript, prose-RETIRED-plus-code-emits, prose-LIVE-plus-code-retired,
       a whitespace-free rewording that must NOT move the verdict, the CONTROL (7 stages,
-      7 denominators, 3 readers agree ⇒ rc 0, without which the other five prove nothing),
-      and the ORACLE PIN planted by deleting the frozen oracle ⇒ **rc 3 before any stage
+      7 denominators, 3 readers agree => rc 0, without which the other five prove nothing),
+      and the ORACLE PIN planted by deleting the frozen oracle **rc 3 before any stage
       runs**. Porting rule: **8 of 8 plants agree, 0 disagree**, stdout byte-identical on
       7 of 8 (`plant-no-zsh`'s 97-byte difference is the shell's own `line N:` prefix,
       which `diff.py` normalises and documents). Artifacts and verdict diffs in
@@ -16727,7 +16762,7 @@ driver `.agents/slop/e2epy/diff.py`, report `.agents/slop/e2epy/report.md`. **No
       SKIP**: it presupposes the passing stage measured something, and a stage that measured
       NOTHING retracts even that. Three states came out of the exit status as two numbers, so a
       caller reading only `$?` was told 0 for a run where the f64 lane had measured nothing.
-      **OPTION 1 (SKIP ⇒ 1) REJECTED**: `1` is this script's FAIL, so it would print `FAIL -- N
+      **OPTION 1 (SKIP 1) REJECTED**: `1` is this script's FAIL, so it would print `FAIL -- N
       stage(s) ran and failed` for a run in which nothing failed and would lose the difference
       between *the port is broken* and *this machine cannot judge*. **OPTION 3 (MAKE NOTHING SKIP)
       REJECTED BY MEASUREMENT**: stage 7's refusal is `rc 2` from `repair-dupes.py:97-99`, whose
@@ -18293,76 +18328,76 @@ IS NARROWER THAN IT LOOKS, AND THE NARROWNESS IS A MARKER-FORM SPELLING.**
       `# WALL(p3)`.** MEASURED: `grep -c rangeify` over the audit's own output answers **0** --
       **THE FILE DOES NOT APPEAR IN THE TABLE AT ALL.** `TOTAL 564 / 40 / 0` therefore EXCLUDES ALL 30
       OF ITS MARKERS. **DELETING OR FALSIFYING THOSE 30 MOVES THAT INSTRUMENT BY ZERO.**
-      **⇒ IMPLEMENTED 2026-11-10, AND THE POPULATION IS **BIGGER** THAN THIS ITEM SAID.**
+      **IMPLEMENTED 2026-11-10, AND THE POPULATION IS **BIGGER** THAN THIS ITEM SAID.**
       `checks/marker-audit.py`'s `entries()` GATED ON `'TODO(p3)'` AND NOW ACCEPTS **THE MARKER
       CONCEPT, WHICH HAS TWO SPELLINGS** (`MARKER_FORMS = ('TODO(p3)', 'WALL(p3))'`), SO THE
-      POPULATION IS NO LONGER DECLARED BY ONE SPELLING.  **⇒ MEASURED: `tinybendygrad/` CARRIES
+      POPULATION IS NO LONGER DECLARED BY ONE SPELLING.  **MEASURED: `tinybendygrad/` CARRIES
       **149** `WALL(p3)` OCCURRENCES IN **17** FILES, OF WHICH **105** ARE MARKERS** (THE OTHER 44
-      ARE REFERENCES -- A LINE THAT NAMES A MARKER RATHER THAN BEING ONE); **⇒ AND
+      ARE REFERENCES -- A LINE THAT NAMES A MARKER RATHER THAN BEING ONE); **AND
       `schedule/rangeify.bend` ALONE HAS 30**, WHICH IS WHY THIS ITEM SAID "30" -- IT MEASURED
-      ONE FILE.  **⇒ AND THE INSTRUMENT NOW READS `TOTAL 660 walls / 36 shared / 2 BACKLOG`**
+      ONE FILE.  **AND THE INSTRUMENT NOW READS `TOTAL 660 walls / 36 shared / 2 BACKLOG`**
       (WAS `557 / 35 / 1`): **+103 WALLS AND +1 BACKLOG AND 0 LOST.**
 
-      **⇒ AND THE SECOND HALF OF THE DEFECT WAS WORSE AND WAS ALSO FIXED**: THE REASON PATTERN
-      HAS `\bwall\b` IN IT (THE WORD "wall" IS HOW A *REASON* READS), **⇒ SO A `WALL(p3)` MARKER
+      **AND THE SECOND HALF OF THE DEFECT WAS WORSE AND WAS ALSO FIXED**: THE REASON PATTERN
+      HAS `\bwall\b` IN IT (THE WORD "wall" IS HOW A *REASON* READS), **SO A `WALL(p3)` MARKER
       MATCHED THE REASON PATTERN *THROUGH ITS OWN SPELLING*, AND EVERY SUCH MARKER WAS A "wall"
-      WHETHER OR NOT IT STATED A REASON.**  **⇒ MEASURED BY PLANTING ONE** (`# WALL(p3)
+      WHETHER OR NOT IT STATED A REASON.**  **MEASURED BY PLANTING ONE** (`# WALL(p3)
       PLANTED-MARKER  rangeify.py:999  some_symbol  more text.` -- NO REASON AT ALL): BEFORE THE
       FIX IT WAS CLASSIFIED **wall**; AFTER, IT IS **BACKLOG**.  THE FIX IS `reason_text()`,
       WHICH REMOVES **THE MARKER's OWN TOKEN** AND NOT THE WORD "wall" IN GENERAL, BECAUSE A
       MARKER MAY SAY "wall" IN ITS REASON AND THAT IS A REAL REASON.
 
-      **⇒ AND THE PLANT WAS REVERTED AND THE INSTRUMENT IS GREEN AGAIN**, AND
+      **AND THE PLANT WAS REVERTED AND THE INSTRUMENT IS GREEN AGAIN**, AND
       `tinybendygrad/schedule/rangeify.bend` IS **BYTE-IDENTICAL** TO ITS PRE-PLANT STATE.
 - [x] **SO THE CORRECT SENTENCE IS "564 WALLS, PLUS 30 `WALL(p3)` MARKERS THE AUDIT DOES NOT SEE"** --
       and every report of the bare 564 this session has been UNDERSTATING BY UP TO 30.
-      **⇒ IMPLEMENTED 2026-11-10, AND THE SENTENCE IS NOW A DIFFERENT ONE BECAUSE THE INSTRUMENT
+      **IMPLEMENTED 2026-11-10, AND THE SENTENCE IS NOW A DIFFERENT ONE BECAUSE THE INSTRUMENT
       SEES THE MARKERS.**  THE OLD SENTENCE WAS "564 WALLS, PLUS 30 `WALL(p3)` MARKERS THE AUDIT
-      DOES NOT SEE"; **⇒ THE NEW SENTENCE IS "660 WALLS", AND THE "PLUS 30" IS GONE BECAUSE THE
-      AUDIT SEES THEM.**  **⇒ AND THE 30 WAS AN UNDERSTATEMENT**: THE TREE HAS **105** `WALL(p3)`
+      DOES NOT SEE"; **THE NEW SENTENCE IS "660 WALLS", AND THE "PLUS 30" IS GONE BECAUSE THE
+      AUDIT SEES THEM.**  **AND THE 30 WAS AN UNDERSTATEMENT**: THE TREE HAS **105** `WALL(p3)`
       MARKERS IN **17** FILES, NOT 30 IN ONE -- SO EVERY REPORT OF THE BARE NUMBER THIS SESSION
-      HAS BEEN UNDERSTATING BY UP TO **105**, NOT BY UP TO 30.  **⇒ AND THE BARE NUMBER ITSELF
+      HAS BEEN UNDERSTATING BY UP TO **105**, NOT BY UP TO 30.  **AND THE BARE NUMBER ITSELF
       MOVED**: `557` -> `660`, BECAUSE THE POPULATION GREW AND THE PORT'S OWN MARKERS MOVED TOO.
-      **⇒ A FIGURE QUOTED WITHOUT ITS DATE AND ITS POPULATION IS A FIGURE THAT WILL ROT**, AND
+      **A FIGURE QUOTED WITHOUT ITS DATE AND ITS POPULATION IS A FIGURE THAT WILL ROT**, AND
       BOTH OF THOSE ARE NOW IN THIS LINE.
 - [x] **TWO MARKER FORMS FOR ONE CONCEPT IS A DOCTRINE-1 FAILURE IN THE INSTRUMENT** (an instrument
       declaring its population by a SPELLING rather than by a rule). The fix is to accept BOTH forms,
       or to have the port use ONE form -- **and WHICH IS THE CALLER's, NOT THE AUDITOR's.**
-      **⇒ IMPLEMENTED 2026-11-10, AND THE RULING WAS THE CALLER's AND IT IS HONOURED.**  THE ITEM
+      **IMPLEMENTED 2026-11-10, AND THE RULING WAS THE CALLER's AND IT IS HONOURED.**  THE ITEM
       SAID "The fix is to accept BOTH forms, or to have the port use ONE form -- **and WHICH IS
-      THE CALLER's, NOT THE AUDITOR's**"; **⇒ THE PORT's FORM STAYS** (`rangeify.bend` USES
-      `WALL(p3)` ON PURPOSE -- A WALL IS A PYTHON FACT AND A TODO IS A DECISION) **⇒ AND THE
-      INSTRUMENT ACCEPTS BOTH.**  **⇒ AND THE POPULATION IS NOW DECLARED BY THE **CONCEPT** AND
+      THE CALLER's, NOT THE AUDITOR's**"; **THE PORT's FORM STAYS** (`rangeify.bend` USES
+      `WALL(p3)` ON PURPOSE -- A WALL IS A PYTHON FACT AND A TODO IS A DECISION) **AND THE
+      INSTRUMENT ACCEPTS BOTH.**  **AND THE POPULATION IS NOW DECLARED BY THE **CONCEPT** AND
       NOT BY A SPELLING**, WHICH IS WHAT DOCTRINE 1 ASKS FOR; THE SPELLINGS ARE A **SET** OF
-      TWO, NOT A LIST OF ONE.  **⇒ AND THE `TODO(p3)` FORM IS NOT WEAKENED**: A LINE THAT
+      TWO, NOT A LIST OF ONE.  **AND THE `TODO(p3)` FORM IS NOT WEAKENED**: A LINE THAT
       REFERENCES A MARKER RATHER THAN BEING ONE IS STILL EXCLUDED, AND THAT TEST
       (`MARKER.match` ON THE FIRST LINE) IS UNCHANGED.
 - [x] **`rangeify.bend:2639` CLAIMS EVERY WALL IS A `# TODO(p3)` LINE AND THE FILE CONTRADICTS
       ITSELF**: it has **3** `TODO(p3)` (all prose) and **30** `WALL(p3)`. **THE FILE MIS-NAMES ITS
       OWN MARKER FORM.** `uop/fold.bend:6625` is the same shape: a `TODO(p3)` marker whose own text
       says "PORTED, as `UOp.base` over the table" -- **A STALE WALL INSIDE THE 564.**
-      **⇒ THE `rangeify.bend` HALF IS IMPLEMENTED 2026-11-10; THE `fold.bend:6625` HALF IS STILL
+      **THE `rangeify.bend` HALF IS IMPLEMENTED 2026-11-10; THE `fold.bend:6625` HALF IS STILL
       REAL.**  **THE HEADER IS FIXED**: `tinybendygrad/schedule/rangeify.bend`'s THREE
-      MIS-NAMINGS (`:7`, `:45`, `:2674`) NOW SAY `# WALL(p3)` AND `rg 'WALL\(p3\)'`, **⇒ AND
+      MIS-NAMINGS (`:7`, `:45`, `:2674`) NOW SAY `# WALL(p3)` AND `rg 'WALL\(p3\)'`, **AND
       EACH CORRECTED SENTENCE CARRIES THE MEASUREMENT THAT CORRECTS IT** ("MEASURED 2026-11-10,
       `grep -c 'TODO(p3)'` IN THIS FILE ANSWERS **3** AND ALL THREE ARE PROSE IN THIS HEADER,
-      WHILE `grep -c 'WALL(p3)'` ANSWERS **30**").  **⇒ AND THE FILE STILL COMPILES**:
+      WHILE `grep -c 'WALL(p3)'` ANSWERS **30**").  **AND THE FILE STILL COMPILES**:
       `.venv/bin/python checks/bounded.py --mb 3072 -- ./bin/bend
       tinybendygrad/schedule/rangeify.bend --check-only` READS **ALL PROOFS CHECK**,
-      `WITHIN-LIMITS`, 492 MB, 2 s.  **⇒ AND `checks/marker-audit.py` IS UNAFFECTED BY THE
+      `WITHIN-LIMITS`, 492 MB, 2 s.  **AND `checks/marker-audit.py` IS UNAFFECTED BY THE
       EDIT**: `rangeify.bend` STILL READS **30 walls / 0 shared / 0 BACKLOG**, BECAUSE THE
       CORRECTED PROSE LINES DO NOT MATCH `MARKER.match` (THEY START `# **` OR `# MEASURED`).
 
-      **⇒ AND THE INSTRUMENT NOW FINDS A REAL STALE WALL OF THE SAME SHAPE, IN A DIFFERENT
+      **AND THE INSTRUMENT NOW FINDS A REAL STALE WALL OF THE SAME SHAPE, IN A DIFFERENT
       FILE**: `tinybendygrad/renderer/tc_ptx.bend:540` IS A `WALL(p3)` MARKER WHOSE OWN TEXT
-      SAYS **"PORTED"** (ONLY THE WIRING IN `pm_dispatch_m.go` IS MISSING) -- **⇒ SO THE
+      SAYS **"PORTED"** (ONLY THE WIRING IN `pm_dispatch_m.go` IS MISSING) -- **SO THE
       CLASS THE ITEM NAMES IS REAL, IT WAS JUST INVISIBLE WHILE THE INSTRUMENT COULD NOT SEE THE
       FORM.**  IT IS THE 2ND OF THE 2 BACKLOG ROWS THE INSTRUMENT NOW PRINTS.
 
-      **⇒ AND `uop/fold.bend:6625` IS **STILL REAL** -- A `TODO(p3)` MARKER WHOSE OWN TEXT SAYS
+      **AND `uop/fold.bend:6625` IS **STILL REAL** -- A `TODO(p3)` MARKER WHOSE OWN TEXT SAYS
       "PORTED, as `UOp.base` over the table" -- **AND IT IS **NOT** IN THE 2 BACKLOG ROWS**,
       BECAUSE ITS OWN TEXT CONTAINS THE WORD "PORTED" AND THE REASON PATTERN'S `port`-FAMILY
-      MATCHES IT.  **⇒ AND `uop/` IS NOT THIS UNIT's TO EDIT.**
+      MATCHES IT.  **AND `uop/` IS NOT THIS UNIT's TO EDIT.**
 
 ## RNGCMP -- `gates/rng_graph_census-gate.py` CALLS `UOp.rtag`, WHICH UPSTREAM **DELETED**, SO THE GATE IS `REFUSED` (2026-11-10)
 
@@ -18371,33 +18406,33 @@ FOUND WHILE REPAIRING `decomp_graph_census` (THE SAME RE-VENDOR CASUALTY, A DIFF
 - [ ] **`gates/rng_graph_census-oracle.py:153` CALLS `UOp.rtag(())` ON FIVE NODES AND UPSTREAM
       HAS NO `rtag` AT THE PIN `f5ac54685074`.** MEASURED: `git grep -n 'def rtag' f5ac54685074 --
       tinygrad/` ANSWERS **NOTHING** (THE ONLY `rtag` OCCURRENCES AT THE PIN ARE AN UNRELATED
-      LOCAL VARIABLE IN `tinygrad/runtime/support/usb.py:92-93`), **⇒ AND UPSTREAM'S `ops.py` AT
+      LOCAL VARIABLE IN `tinygrad/runtime/support/usb.py:92-93`), **AND UPSTREAM'S `ops.py` AT
       THE PIN HAS **NO `tag` FIELD AT ALL** (`git show f5ac54685074:tinygrad/uop/ops.py | grep -n
-      'tag'` ANSWERS ONLY `stage`/`tag` IN A LOCAL VARIABLE'S NAME, `:1785-1834`).** **⇒ THE
+      'tag'` ANSWERS ONLY `stage`/`tag` IN A LOCAL VARIABLE'S NAME, `:1785-1834`).** **THE
       PRE-PIN SPELLING WAS `def rtag(self, tag=True): return self.replace(tag=tag)` AT
-      `002630241:tinygrad/uop/ops.py:247`.** **⇒ SO THE GATE IS `REFUSED`, NOT RED:**
+      `002630241:tinygrad/uop/ops.py:247`.** **SO THE GATE IS `REFUSED`, NOT RED:**
       `.venv/bin/python gates/rng_graph_census-gate.py` READS **"rng_graph_census-gate: the
       oracle failed rc=1: ... AttributeError: 'UOp' object has no attribute 'rtag'"**, rc=3.
-      **⇒ AND THE FIVE CALL SITES ARE `r0.rtag(())`, `pg.rtag(())`, `pa.rtag(())` (`:153`) AND
+      **AND THE FIVE CALL SITES ARE `r0.rtag(())`, `pg.rtag(())`, `pa.rtag(())` (`:153`) AND
       `rgd.rtag(())` (`:175`), AND THEIR RESULTS `r0t` `pgt` `pat` `rgt` ARE FOUR OF THE 60
-      NODES THE ORACLE RETURNS (`:176-180`) -- ⇒ SO THE FIX IS NOT A ONE-LINE RENAME: IT IS
+      NODES THE ORACLE RETURNS (`:176-180`) -- SO THE FIX IS NOT A ONE-LINE RENAME: IT IS
       "WHAT DOES UPSTREAM's `rangeify` BUILD INSTEAD OF A TAGGED COPY", AND THE ANSWER IS A
       QUESTION ABOUT THE PORT's OWN `rangeify.bend`, NOT ABOUT THE ORACLE.**
-- [ ] **⇒ AND THE PORT's SIDE IS **NOT** THE BLOCKER AND THE QUESTION IS OPEN.** THE PORT's
+- [ ] **AND THE PORT's SIDE IS **NOT** THE BLOCKER AND THE QUESTION IS OPEN.** THE PORT's
       `tinybendygrad/schedule/rangeify.bend` COMPILES (`./bin/bend tinybendygrad/schedule/
-      rangeify.bend --check-only` READS **ALL PROOFS CHECK**, `WITHIN-LIMITS`, 492 MB, 2 s), **⇒
+      rangeify.bend --check-only` READS **ALL PROOFS CHECK**, `WITHIN-LIMITS`, 492 MB, 2 s), **
       BUT WHETHER THE PORT HAS A "TAGGED COPY" CONCEPT AT ALL IS NOT MEASURED** -- AND THE ANSWER
       IS THE SAME QUESTION THE `MARKERFORM` SECTION ABOVE RAISED IN A DIFFERENT FILE: **AN
       INSTRUMENT THAT CALLS A DELETED UPSTREAM SYMBOL IS A GATE THAT MEASURED NOTHING, AND THE
       LEDGER's `WALLAUDIT` SECTION ALREADY RECORDED THAT `rangeify`'s MARKERS NAME A WALL THAT
-      THE INSTRUMENT CANNOT SEE.** **⇒ SO THIS IS A REAL GAP AND IT IS NOT MINE TO CLOSE: IT IS
+      THE INSTRUMENT CANNOT SEE.** **SO THIS IS A REAL GAP AND IT IS NOT MINE TO CLOSE: IT IS
       THE `rangeify` LANE's, AND THE FIX NEEDS THE UPSTREAM `rangeify.py` AT THE PIN READ FOR
       WHAT IT DOES INSTEAD OF `rtag`.**
-- [ ] **⇒ AND THE LEDGER's `WALLAUDIT` AND `MARKERFORM` SECTIONS NAME `rangeify` IN **BOTH**
+- [ ] **AND THE LEDGER's `WALLAUDIT` AND `MARKERFORM` SECTIONS NAME `rangeify` IN **BOTH**
       DIRECTIONS, AND NEITHER MEASURED THE OTHER.** `WALLAUDIT` (2026-10-14) AUDITED THE 30
       `WALL(p3)` MARKERS; `MARKERFORM` (2026-10-14, ABOVE) FOUND THE INSTRUMENT COULD NOT SEE
-      THEM; **⇒ AND NEITHER ASKED WHETHER THE GATE THAT MEASURES `rangeify`'s GRAPHS CAN RUN AT
-      ALL** -- **⇒ WHICH IT CANNOT, AND HAS NOT SINCE THE RE-VENDOR.** **⇒ A SECTION THAT
+      THEM; **AND NEITHER ASKED WHETHER THE GATE THAT MEASURES `rangeify`'s GRAPHS CAN RUN AT
+      ALL** -- **WHICH IT CANNOT, AND HAS NOT SINCE THE RE-VENDOR.** **A SECTION THAT
       AUDITS A FILE's MARKERS AND A SECTION THAT FIXES AN INSTRUMENT's BLINDNESS CAN BOTH BE
       TRUE WHILE THE GATE OVER THAT FILE IS DEAD**, AND THAT IS THE CLASS THIS ITEM IS.
 
@@ -24982,7 +25017,7 @@ THE WHOLE POINT OF A BRIEF THAT NAMES A FILE INSTEAD OF A CONCLUSION.**
       measured three ways (the third component replaced by a constant -> FAIL; dropped -> FAIL; as it
       stands -> OK).  **THE PLANT DROPS THE LAST PARAM -> `VERDICT: DISAGREE`**, `ONLY-PY=1
       ONLY-BEND=1`, both rows printed in full.
-      **⇒ AND THE RE-RUN'S EXPECTATIONS ARE A SEPARATE MATTER, AND A STRUCTURAL ONE** -- the corpus's
+      **AND THE RE-RUN'S EXPECTATIONS ARE A SEPARATE MATTER, AND A STRUCTURAL ONE** -- the corpus's
       `WANT` and its count `PINS` are HAND-LISTS OF A DISCOVERABLE POPULATION, so adding a graph
       needs them edited by hand.  **THAT IS THE DISEASE; THE THREE EDITS ARE THE SYMPTOMS.**
 - [x] **THE REPRO's FIRST FAILING READING WAS **MY** CONCURRENCY, NOT A DEFECT.**  TWO
@@ -25040,7 +25075,7 @@ x86-derive     [#########] 9/9      774 LITERAL `py=` cells -> 0 in `renderer/is
 - [x] **THE `Op` **ENUM **IS **EXACTLY **UPSTREAM's **AT **THE **PIN** -- **75 = 75, 0 MISSING, 0 EXTRA** -- **AND
       **THE **TWO **UPSTREAM **DELETIONS **ARE **EXACTLY **WHAT **TOOK **IT **THERE**:** **77 -> 76** at
       `4e0192eaf remove Ops.GROUP (#18637)` and **76 -> 75** at `900880433 remove Ops.FLIP [pr]
-      (#18729)`.  **⇒ AND **A **TEXT **CENSUS **OVERSTATES**, **BECAUSE **A **COMMENT **AND **A
+      (#18729)`.  **AND **A **TEXT **CENSUS **OVERSTATES**, **BECAUSE **A **COMMENT **AND **A
       **FRAGMENT's **INCIDENTAL **MENTION **ARE **NOT **CODE** -- **AND **ONE **UNIT **CORRECTED **ME **ON
       **THAT**, **AND **I **HAD **WRITTEN **THE **RULE **INTO **ITS **BRIEF **AND **THEN **BROKE **IT
       **MYSELF.**
@@ -25064,7 +25099,7 @@ x86-derive     [#########] 9/9      774 LITERAL `py=` cells -> 0 in `renderer/is
       **`half` **KEPT **ON **A **NON-DARWIN **HOST**, **AND **`amd_fp8s` **WITH **ONE **ANSWER **WHERE
       **UPSTREAM **HAS **TWO** -- **AND **EVERY **ONE **WAS **RIGHT on 2026-10-01** (the port was
       written against a vendored upstream that had them) **AND **EVERY **ONE **WAS **WRONG on
-      2026-10-20** (the re-vendor brought in one that does not).  **⇒ A **PORT **THAT **MIRRORS **AN
+      2026-10-20** (the re-vendor brought in one that does not).  **A **PORT **THAT **MIRRORS **AN
       **UPSTREAM **REVISION **IS **RIGHT **UNTIL **UPSTREAM **MOVES.**
 - [x] **THE **GATE **THAT **SAYS **SO **NOW **SAYS **THE **ROW **COUNT **IS **READ **FROM **THE
       **POPULATION** **AND **THE **DIVERGENCE **COUNT **IS **THE **SUM **OF **THREE **DERIVED
@@ -25072,7 +25107,7 @@ x86-derive     [#########] 9/9      774 LITERAL `py=` cells -> 0 in `renderer/is
       **A **ROW **ADDED **OUTSIDE **THE **GROUP **BUILDERS **WOULD **NOW **FIRE **AN **ASSERT.**
 - [x] **THE **PTX **LANE's **ORACLE **ALSO **CARRIED **A **STALE **COPY** -- `gates/tc_ptx_render-oracle.py`'s
       `fmt_rows()` **TRANSCRIBED **UPSTREAM's `fmt` **INSTEAD **OF **APPLYING **IT**, **AND **CARRIED
-      **THE **SAME **DELETED **`$` **EARLY **RETURN** -- **⇒ **LEAVING **IT **WOULD **HAVE **TRADED
+      **THE **SAME **DELETED **`$` **EARLY **RETURN** -- ****LEAVING **IT **WOULD **HAVE **TRADED
       **ONE **STALE **COPY **FOR **ANOTHER **AND **TURNED **A **GREEN **GATE **RED **ON **THE **WRONG
       **SIDE.**
 
@@ -25085,20 +25120,20 @@ paramarg-spec [##] 2/3  **THE PORT's `ParamArg` IS MISSING **UPSTREAM's **13th *
                        declares **12**. **THE MISSING ONE IS `spec: BufferSpec|None = None`** -- *"the
                        memory the linker gives an ALLOC"* -- **AND upstream's `ParamArg.__repr__` INCLUDES
                        `spec` IN ITS `fields` TUPLE**, so the port's rendering cannot show the ALLOC's
-                       memory spec at all. **⇒ THE **PORT **IS **THE **ONE **THAT **IS **SHORT.**  **⇒ AND
+                       memory spec at all. **THE **PORT **IS **THE **ONE **THAT **IS **SHORT.**  **AND
                        `rg -c 'ParamArg\{' tinybendygrad/` COUNTS **106 **CONSTRUCTION **SITES** ACROSS
                        **31 **FILES**, **SO **THIS **IS **A **WORK **QUEUE, **NOT **A **DISPATCH.**
-                       **⇒ AND **THE **CORRECTED **MEASUREMENT, **WHICH **MAKES **IT **A **SMALL **ITEM
+                       **AND **THE **CORRECTED **MEASUREMENT, **WHICH **MAKES **IT **A **SMALL **ITEM
                        **AND **NOT **A **BEHAVIOUR **GAP:** **UPSTREAM's `arg.spec` **HAS
                        **EXACTLY **ONE **READER **IN **THE **WHOLE **UPSTREAM **TREE** --
                        **`tinygrad/runtime/support/hcq2.py:485`**: `dev, spec = Device[b.device],
-                       b.arg.spec or BufferSpec(cpu_access=True)`. **⇒ AND **THE **PORT **HAS **NO
-                       **HCQ2** -- **⇒ AND **THE **PORT's **OWN **DSP **ALLOCATOR **ALREADY **CARRIES
+                       b.arg.spec or BufferSpec(cpu_access=True)`. **AND **THE **PORT **HAS **NO
+                       **HCQ2** -- **AND **THE **PORT's **OWN **DSP **ALLOCATOR **ALREADY **CARRIES
                        **THE **SPEC **OUT-OF-BAND**: `tinybendygrad/runtime/ops_dsp.bend:1445`
-                       **`def dev.shell_spec() -> D.Bspec`** -- **⇒ **⇒ **SO **THE **FIELD **IS **NOT
+                       **`def dev.shell_spec() -> D.Bspec`** -- ******SO **THE **FIELD **IS **NOT
                        **NEEDED **FOR **ANYTHING **THE **PORT **DOES**; **IT **IS **NEEDED **ONLY **TO
                        **PORT **HCQ2** (WHICH **IS **AN **UNPORTED **FEATURE**, **NOT **A **BUG).**
-                       **⇒ ⇒ **⇒ **⇒ **⇒ AND **THE **STALE **AXIS **WAS **NOT **CAUSED **BY **THIS
+                       ********AND **THE **STALE **AXIS **WAS **NOT **CAUSED **BY **THIS
                        **AT **ALL** -- **IT **WAS **THE **2026-10-16 **RE-VENDOR's **SIZE **CONST
                        **SRC**, **AND **IT **IS **ALREADY **FIXED**: **THE **REGENERATOR **REBUILT **THE
                        **AXIS **FROM **THE **ORACLE's **`FIX`** (174 -> **194** **records**, **the **20
@@ -25106,62 +25141,62 @@ paramarg-spec [##] 2/3  **THE PORT's `ParamArg` IS MISSING **UPSTREAM's **13th *
                        **NOW **THE **GENERATOR's **PRESENCE** -- **GENERATED / DRIFTED / FROZEN /
                        **UNDECLARED** -- **AND **IT **READS **`268 of 268` **RIGHT** (was **182 right,
                        **1 wrong, **85 stale**).**
-                       **⇒ ⇒ **⇒ **⇒ **⇒ SO **THE **HONEST **SCOPE **OF **THIS **ITEM **IS:**
+                       ********SO **THE **HONEST **SCOPE **OF **THIS **ITEM **IS:**
                        **IF **THE **PORT **IS **EVER **TO **PORT **HCQ2**, **THE **FIELD **AND **THE
                        **106 **SITES **ARRIVE **WITH **IT**; **OTHERWISE **IT **IS **UPSTREAM's
                        **PLUMBING **FOR **A **PATH **THE **PORT **DOES **NOT **HAVE.**
-**⇒ AND **IT **IS **PROBABLY **WHY **THE **PORT's **PTX **FIXTURES **ARE **THE
+**AND **IT **IS **PROBABLY **WHY **THE **PORT's **PTX **FIXTURES **ARE **THE
                        **PRE-RE-VENDOR **GRAPHS**: **the **2026-10-16 **change **moved **a **BUFFER's
                        **SIZE **out **of **THE **`ParamArg` **and **into **A **SIZE **CONST **SRC**, **and
                        **the **port's **fixtures **hold **174 `Wk` **records **of **which **0 **of **THE
-                       **30 **CONSTS **CARRY **A **SIZE** -- **⇒ AND **85 **of **the **268 **frozen
+                       **30 **CONSTS **CARRY **A **SIZE** -- **AND **85 **of **the **268 **frozen
                        **`Wt` **ROW **SUFFIXES **NAME **A **ROW **THAT **HAS **MOVED.**
-                       **⇒ AND **THE **TYPE **IS **ALREADY **IN **THE **PORT**: `tinybendygrad/device.bend:537`
+                       **AND **THE **TYPE **IS **ALREADY **IN **THE **PORT**: `tinybendygrad/device.bend:537`
                        **DECLARES **`Bspec{uncached, cpu_access, host, nolru, ext_ptr}`** -- **UPSTREAM's
                        **`BufferSpec`** WITH **`external_ptr` **FLATTENED **TO **A **`Bool`** (THE **PORT's
                        **OWN **COMMENT **SAYS **WHY**: *"a `Data` record may not hold a `Maybe` field"*) --
                        **AND **`device.bend:540` **HAS **A **`spec()` **CONSTRUCTOR **FOR **THE **ALL-FALSE
-                       **ONE.** **⇒ AND **UPSTREAM's `UOp.alloc` **DOES **PASS **IT**: `tinygrad/uop/ops.py:1192`
-                       **READS **`spec=spec`** **INTO **THE **`ParamArg`** -- **⇒ ⇒ **⇒ SO **THE **PORT
+                       **ONE.** **AND **UPSTREAM's `UOp.alloc` **DOES **PASS **IT**: `tinygrad/uop/ops.py:1192`
+                       **READS **`spec=spec`** **INTO **THE **`ParamArg`** -- ****SO **THE **PORT
                        **CANNOT **CARRY **THE **ALLOC's **MEMORY **SPEC **AT **ALL, **AND **THE **PORT's
                        **RUNTIME **LANES **ALL **KNOW **ABOUT **`BufferSpec`** (`ops_metal.bend`,
                        **`ops_cuda.bend`, `ops_dsp.bend` **ALL **CITE **`BufferSpec(nolru=True)`**).**
-                       **⇒ AND **THE **COST **IS **MEASURED: **BEND's **`Data` **RECORDS **HAVE **NO **FIELD
+                       **AND **THE **COST **IS **MEASURED: **BEND's **`Data` **RECORDS **HAVE **NO **FIELD
                        **DEFAULTS** (THE **PORT's **`ParamArg` **HAS **NONE**; **UPSTREAM's **IS **A **CLASS
-                       **WHERE **EVERY **OPTIONAL **FIELD **HAS **ONE**), **⇒ SO **THE **106 **SITES **MUST
+                       **WHERE **EVERY **OPTIONAL **FIELD **HAS **ONE**), **SO **THE **106 **SITES **MUST
                        **ALL **CHANGE, **AND **THE **`case ParamArg{...}` **PATTERN **AT
                        **`ops.bend:1470`** **MUST **GAIN **A **FIELD **TOO.**
 
 fold-graph-arity [##] 2/3  **`gates/fold_graph_census.bend` **IS **BROKEN **AND **THE **FIX **CHANGES
                        **THE **FIXTURE, **THE **ROWS **AND **THE **GATE's **ORACLE.** MEASURED
                        2026-10-22 by the compile-census unit: the driver passes a **REAL** size, so
-                       **dropping **upstream's **`ParamArg.size` **FIELD **LOSES **IT** -- **⇒ THE **FIX
+                       **dropping **upstream's **`ParamArg.size` **FIELD **LOSES **IT** -- **THE **FIX
                        **IS **THE **PORT's **OWN **`O.UOp.new.param`** (**size **-> **ALLOC **`src[0]`**),
                        **WHICH **IS **THE **SAME **CHANGE **THE **PORT's **`ParamArg` **MADE **AND **THE
-                       **SAME **ONE **`paramarg-spec` **IS **NAMING.**  **⇒ **THE **ROW **IS **VISIBLE**:
+                       **SAME **ONE **`paramarg-spec` **IS **NAMING.**  ****THE **ROW **IS **VISIBLE**:
                        **`gates/compile-census-verdict.rows` **CARRIES **A **`FAIL` **ROW **WITH **THE
                        **EXACT **ERROR **FOR **EACH **OF **THE **7 **BREAKAGES.**
 
 wk-eval-oracle [##] 2/3  **`gates/wk-eval-oracle.py` **IS **THE **CPYTHON **HALF **OF **THE **SAME
                        **UPSTREAM **CHANGE, **AND **THE **GATE's **VERDICT **IS **UNCHANGED** -- **REFUSED
-                       **BEFORE, **REFUSED **AFTER** -- **⇒ THE **REASON **MOVED **FROM **THE **DRIVER
+                       **BEFORE, **REFUSED **AFTER** -- **THE **REASON **MOVED **FROM **THE **DRIVER
                        **TO **THE **ORACLE.** MEASURED: a PARAM with `src=()` MEANS **`src[0]`** RAISES
-                       **`IndexError`**. **⇒ **AND **FIXING **IT **WRONGLY **WOULD **TURN **A
+                       **`IndexError`**. ****AND **FIXING **IT **WRONGLY **WOULD **TURN **A
                        **`REFUSED` **INTO **A **`FAIL`**, **WHICH **IS **THE **DANGEROUS **DIRECTION.**
 
 untracked-oracle-fragments [##] 2/3  **`oracles/probe-su.bend` **AND **`oracles/probe-targetparse.bend`
-                       **ARE **UNTRACKED** -- **NEVER **IN **GIT** -- **⇒ AND **THE **DIALECT **GATE
+                       **ARE **UNTRACKED** -- **NEVER **IN **GIT** -- **AND **THE **DIALECT **GATE
                        **REPORTS **34 **"LOST" **CLAIMS **IN **THE **CONTEXT **FILES**, **AND **THE
                        **GATE's **OWN **TEXT **SAYS **SO**: *"judged by their own gate; their 'lost' is
                        **this **gate's **tag **rule **reading **probe **labels, **not **a **missing
-                       **row**"*. **⇒ **⇒ A **FIX **COULD **NOT **BE **COMMITTED **FOR **A **FILE **THE
+                       **row**"*. ****A **FIX **COULD **NOT **BE **COMMITTED **FOR **A **FILE **THE
                        **REPOSITORY **DOES **NOT **OWN.**
 
 e2e-fixture-render-kernel [##] 2/3  **`checks/.e2e-fixture/{f64/emit-f64,portexec/emit-mm}.bend`
                        **NAME **`C.render_kernel`, **AND **THE **PORT **NO **LONGER **HAS **IT.** MEASURED
-                       2026-10-22 by the compile-census unit. **⇒ **AND **`checks/e2e.py`'s **STAGE **3
+                       2026-10-22 by the compile-census unit. ****AND **`checks/e2e.py`'s **STAGE **3
                        **CANNOT **START **BECAUSE **OF **IT**, **WHICH **IS **WHY **THE **EDGE **TRACE's
-                       **ONLY **REMAINING **`DEAD` **ROW **IS **`checks/e2e.py`** -- **⇒ AND **A **GATE
+                       **ONLY **REMAINING **`DEAD` **ROW **IS **`checks/e2e.py`** -- **AND **A **GATE
                        **THAT **CANNOT **START **IS **NOT **"DEAD"**, **IT **IS **`REFUSED`**, **AND **THE
                        **EDGE **NOW **SAYS **SO.**
 
@@ -25173,33 +25208,33 @@ spec-pattern-vs-body [##] 2/3  **A **RULE **WHOSE **MATCH **TEST **IS **IN **THE
                        so the rule is **SKIPPED**), and the port had that src-op test in the **BODY** -- and
                        **a `False` STOPS THE FOLD, SO THE PORT ANSWERED `False` WHERE UPSTREAM ANSWERS
                        `None`, WHICH MADE UPSTREAM's RULE 20 UNREACHABLE, AND THE PORT STILL REJECTED
-                       `AFTER(ADD(1,2))`. **⇒ A **SILENT **WRONG **ANSWER.** **⇒ AND **THE **TREE's **OWN
+                       `AFTER(ADD(1,2))`. **A **SILENT **WRONG **ANSWER.** **AND **THE **TREE's **OWN
                        **DELTA **INSTRUMENT **COMPARES **THE **RULES' **OP **SETS**, **NOT **THEIR **SRC
                        **SETS**, **SO **THE **INSTANCE **WAS **INVISIBLE **TO **IT** -- **AND **THE **AUDIT
                        **OF **"UPSTREAM **PATTERN **CLAUSES **vs **THE **PORT's **BODY**" **IS **OPEN.**
-                       **⇒ AND **THE **DISTINCTION **IS **THE **AUDIT**: **A **TEST **ON **THE **MATCHED
+                       **AND **THE **DISTINCTION **IS **THE **AUDIT**: **A **TEST **ON **THE **MATCHED
                        **NODE **IS **LEGITIMATELY **A **BODY **TEST**; **A **TEST **OF **WHETHER **IT
-                       **MATCHES **IS **A **PATTERN **TEST** -- **⇒ SO **COUNT **BOTH.**
+                       **MATCHES **IS **A **PATTERN **TEST** -- **SO **COUNT **BOTH.**
 
 specfold-lane        [###] 3/3  **A **LANE **THAT **EXHIBITS `d4160980e`'s **DIVERGENCE **EXISTS, **AND **IT **GOES **RED **WHEN **THE
                        **COMMIT **IS **REVERSED.** MEASURED 2026-10-23 AT `db98a9bfd`. `gates/specfold.bend` (the **PORT**,
                        minting eight shapes from `uop/ops.bend`'s constructors) AND `gates/specfold-oracle.py` (CPython, minting
                        the **SAME **eight **from **upstream's **own `UOp` **AND **asking **upstream's **six **PatternMatcher`s **THE
-                       WAY **UPSTREAM's **OWN `type_verify` **DOES**) AND `gates/specfold-gate.py` (the **GATE**). **⇒ THE
+                       WAY **UPSTREAM's **OWN `type_verify` **DOES**) AND `gates/specfold-gate.py` (the **GATE**). **THE
                        **POPULATION **IS **TWELVE **CELLS **AND **THE **CRITERION **IS **MECHANICAL**: **A **CELL **IS **DECIDED
                        **BY **THE **COMMIT **WHEN **THE **COMMIT's **CHANGED **RULE **FOR **THAT **SHAPE's **OP **LIVES **IN
                        **THAT **TABLE **AND **IT **IS **THE **ONLY **RULE **OF **THE **TABLE **THAT **CAN **CLAIM **THE **SHAPE**,
                        **SO **BOTH **FOLDS **ANSWER `9`** -- **AND **THE **GATE **CHECKS **THE **SECOND **HALF **AT **RUN **TIME
-                       **FROM **THE **LANES' **OWN **ROWS**, **SO **A **STALE **POPULATION **IS **A **FAIL.** **⇒ AND **THE
+                       **FROM **THE **LANES' **OWN **ROWS**, **SO **A **STALE **POPULATION **IS **A **FAIL.** **AND **THE
                        **FALSIFICATION **WORKS**: **REVERSE-APPLIED, **THE **GATE **PRINTS **`FAIL: 24 problem(s)`** **AND **EXITS
                        **1**, **AND **ALL **TWELVE **DECLARED **CELLS **MOVE**; **RESTORED, **IT **PRINTS **`PASS`** **AND
                        **`tinybendygrad/uop/spec.bend` **IS **BYTE-IDENTICAL **TO **HEAD** (`0925493c1d72c0f417a2b0ffc42be1f298c3c7fa`).**
-                       **⇒ AND **THE **PLANT **IS **A **TEXT **EDIT **ON **A **COPY **OF **THE **DRIVER** -- **THE **RESHAPE's
+                       **AND **THE **PLANT **IS **A **TEXT **EDIT **ON **A **COPY **OF **THE **DRIVER** -- **THE **RESHAPE's
                        **SHAPE **GOES **FROM **f32 **TO **int32** -- **AND **THE **WHOLE **GATE **GOES **RED**, **WHILE **A
-                       **BYTE-IDENTICAL **COPY **LEAVES **IT **GREEN**; **IT **NEVER **READS `git show HEAD:`.** **⇒ AND **THREE
+                       **BYTE-IDENTICAL **COPY **LEAVES **IT **GREEN**; **IT **NEVER **READS `git show HEAD:`.** **AND **THREE
                        **MORE **CELLS **MOVE **UNDER **THE **REVERSE** (`reshape_f32_sf`, `range2_sf`, `backedge_int_sf`), **AND **THEY
                        **ARE **OUT **OF **THE **POPULATION **BECAUSE **AT **THE **COMMITTED **TREE **THEIR **VERDICT **BELONGS **TO
-                       **`spec_program`'s **FIRST **RULE**, **NOT **TO **THE **COMMIT's.** **⇒ AND **THE **FINDING **THAT
+                       **`spec_program`'s **FIRST **RULE**, **NOT **TO **THE **COMMIT's.** **AND **THE **FINDING **THAT
                        **MATTERS**: **THE **COMMIT **FIXED **EIGHT **OF **THE **TWELVE **RULES **OF **ITS **CLASS** -- **THE **PORT's
                        **`sh_16`**, **`sh_17`**, **`te_3`** **AND **`kg_4`** **STILL **CARRY **THE **OLD **UPSTREAM's **`src=()`** (ZERO
                        **SRCS**) **WHERE **THE **CURRENT **UPSTREAM **CARRIES **EXACTLY **ONE**, **SO **A **ZERO-SRC **BUFFER **IS
@@ -25208,30 +25243,30 @@ specfold-lane        [###] 3/3  **A **LANE **THAT **EXHIBITS `d4160980e`'s **DIV
 
   spec-rules-at-pin [##] 1/3  **THE **PORT's **`uop/spec.bend` **MIRRORS **THE **PRE-RE-VENDOR **UPSTREAM **IN **FOUR
                          **RULES, **AND **TWO **INDEPENDENT **INSTRUMENTS **NAME **THE **SAME **FOUR.**
-                         **⇒ MEASURED 2026-10-23: THE **RE-VENDOR **`86c4f1343` **("RE-VENDOR `tinygrad/`
+                         **MEASURED 2026-10-23: THE **RE-VENDOR **`86c4f1343` **("RE-VENDOR `tinygrad/`
                          **TO **UPSTREAM **`002630241`")** **CHANGED **UPSTREAM's **SPEC **RULES, **AND **THE
                          **PORT's **RULES **DID **NOT **MOVE **WITH **THEM.**
-                         **⇒ THE **ROOT **CAUSE **IS **NAMED**: **UPSTREAM's **`spec.py:92/93/160/263`
+                         **THE **ROOT **CAUSE **IS **NAMED**: **UPSTREAM's **`spec.py:92/93/160/263`
                          **CHANGED **`src=()` **(ZERO **SRCS**) **-> **`src=(p_size,)` / **`src=(UPat(Ops.STACK,
                          **src=()),)`** (EXACTLY **ONE **SRC), **AND **THE **PORT's **`sh_16`**, **`sh_17`**,
                          **`te_3`** **AND **`kg_4`** **STILL **SAY **`nsrc_is(fx, self, 0)`.**
-                         **⇒ THE **SECOND **DIVERGENCE **IS **IN **THE **BODY**: **UPSTREAM's **`spec.py:93`
+                         **THE **SECOND **DIVERGENCE **IS **IN **THE **BODY**: **UPSTREAM's **`spec.py:93`
                          **SAYS **`x.addrspace in (AddrSpace.REG, AddrSpace.LOCAL)` **AND **THE **PORT's
-                         **`sh_17.body` **TESTS **ONLY **`addr_eq(..., S.ALocal{})` -- **⇒ **THE **PORT
+                         **`sh_17.body` **TESTS **ONLY **`addr_eq(..., S.ALocal{})` -- ****THE **PORT
                          **REJECTS **A **REG-ADDRSPACE **BUFFER **THAT **UPSTREAM **ACCEPTS** -- **AND
                          **THE **PORT's **`is_reg_or_local` **HELPER **IS **DEFINED **THREE **LINES
                          **BELOW **AND **UNUSED **BY **THAT **RULE.**
-                         **⇒ TWO **INDEPENDENT **INSTRUMENTS **AGREE**: **THE **`gates/specfold*` **LANE**
+                         **TWO **INDEPENDENT **INSTRUMENTS **AGREE**: **THE **`gates/specfold*` **LANE**
                          (**WHOSE **REVERSE-APPLY **MOVES **FIVE **CELLS **THE **PORT **GETS **WRONG**)**
                          **AND **THE **UPSTREAM **RULE-LIST **DIFF** (`86c4f1343^` **vs **the **pin**,
-                         **31 **CHANGED **RULE **LINES**). **⇒ AND **THE **REMAINING **UPSTREAM **CHANGES**
+                         **31 **CHANGED **RULE **LINES**). **AND **THE **REMAINING **UPSTREAM **CHANGES**
                          **ARE **ALREADY **IN **THE **PORT**: **`pr_0` **ALREADY **HANDLES
                          **`GroupOp.All-GroupOp.Defines`** (it **reasons **about **`Defines = {PARAM,
                          **BUFFER, **ALLOC}`** **EXPLICITLY**), **AND **THE **ALU **RULE's **`all_mdw`/
                          **`sp_mdw` **ALREADY **IMPLEMENTS **THE **NEW **`weak_dtype` **SEMANTICS** -- **ONLY
                          **ITS **QUOTED **COMMENT **IS **STALE.**
-                         **⇒ THE **REST **OF **THE **CLASS: **THE **PORT **HAS **84 **`pm_when` **RULES
-                         **AND **UPSTREAM **HAS **84 **`UPat` **RULES -- **THE **COUNTS **MATCH.** **⇒ AND
+                         **THE **REST **OF **THE **CLASS: **THE **PORT **HAS **84 **`pm_when` **RULES
+                         **AND **UPSTREAM **HAS **84 **`UPat` **RULES -- **THE **COUNTS **MATCH.** **AND
                          **THE **OPEN **STEP: **MAKE **THE **FOUR **EDITS**, **EXTEND **THE **LANE's
                          **POPULATION **TO **COVER **THE **FIVE **CELLS **IT **CURRENTLY **GRADES **OUT
                          **BY **NAME** (**AND **THE **POPULATION **MUST **BE **DERIVED, **NOT **HANDED**),
@@ -25242,17 +25277,17 @@ specfold-lane        [###] 3/3  **A **LANE **THAT **EXHIBITS `d4160980e`'s **DIV
                          **ONCE **THE **TREE **IS **QUIET.** MEASURED 2026-10-23 03:45: A **`differ.py run`**
                          **(03:45:43) **AND **A **`differ.py repro`** **(03:37:12) **RAN **CONCURRENTLY **WITH
                          **EACH **OTHER, **OVER **A **MOVING **TREE** (**27 **DIRTY **PORT **FILES**), **AND
-                         **THE **`run` **OVERWROTE **THE **GREEN **`D0-run-summary.txt`**. **⇒ THE **RUN's
+                         **THE **`run` **OVERWROTE **THE **GREEN **`D0-run-summary.txt`**. **THE **RUN's
                          **VERDICT **WAS **GREEN** (**35/35 **agree**, **35/35 **byte-identical**, **8/8
                          **plants**, **5/5 **stable**) **AND **ITS **OWN **TWO **DIGESTS **DISAGREE**
-                         (**`substrate-start=0c950c47...` **!=** **`substrate-end=074e0233...`**) -- **⇒ ⇒
+                         (**`substrate-start=0c950c47...` **!=** **`substrate-end=074e0233...`**) -- **
                          **A **GREEN **RUN **OVER **A **MOVING **TREE **IS **NOT **A **CERTIFICATE**, **AND
-                         **THE **RUN's **OWN **TWO **DIGESTS **ARE **WHAT **SAY **SO.** **⇒ AND **THE
+                         **THE **RUN's **OWN **TWO **DIGESTS **ARE **WHAT **SAY **SO.** **AND **THE
                          **WITNESS **CAUGHT **IT**: **`verdict.current` FAIL**, **`witness.fresh` FAIL**
                          **(OUT-OF-ORDER)**, **`witness.substrate` FAIL**, **`claim` FAIL** -- **WHILE
-                         **`verdict.reported` **IS **STILL **OK** (**`rc=0`, **35/35**) -- **⇒ ⇒ A **SUMMARY
+                         **`verdict.reported` **IS **STILL **OK** (**`rc=0`, **35/35**) -- **A **SUMMARY
                          **SAYS **GREEN **AND **A **WITNESS **SAYS **THE **CLAIM **IS **NOT **ESTABLISHED.**
-                         **⇒ BOTH **CORPUS **PROCESSES **WERE **STOPPED**, **AND **THE **CORPUS **IS **A
+                         **BOTH **CORPUS **PROCESSES **WERE **STOPPED**, **AND **THE **CORPUS **IS **A
                          **SINGLETON**: **TWO **CONCURRENT **RUNS **CORRUPT **EACH **OTHER's **ARTEFACTS
                          **BY **CONSTRUCTION.**
 
@@ -25261,27 +25296,27 @@ specfold-lane        [###] 3/3  **A **LANE **THAT **EXHIBITS `d4160980e`'s **DIV
 ```
 pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS **THAT **HOLD
                                           **AT **NO **UPSTREAM **REVISION **AND **CALLED **29 **OF
-                                          **THEM **"DANGLING".** **⇒ MEASURED: **MOSTLY **THE
+                                          **THEM **"DANGLING".** **MEASURED: **MOSTLY **THE
                                           **GATE's **OWN **FALSE **POSITIVES**, **AND **THE **TWO
-                                          **CAUSES **ARE **REPAIRABLE.** **⇒ REPAIR 1 (**THE
+                                          **CAUSES **ARE **REPAIRABLE.** **REPAIR 1 (**THE
                                           **RANGE**):** **`holds()` **TESTED **THE **CLAIM **TOKENS
                                           **AGAINST **`lines[lo-1]` **-- **THE **FIRST **LINE **OF
                                           **THE **CITED **RANGE** -- **SO **A **CITATION **TO **A
                                           **FUNCTION **BODY **FAILED **EVEN **WHEN **THE **CLAIM
-                                          **WAS **RIGHT.** **⇒ REPAIR 2 (**THE **VOCABULARY**):** **A
+                                          **WAS **RIGHT.** **REPAIR 2 (**THE **VOCABULARY**):** **A
                                           **CITATION **WHOSE **CLAIM **TOKENS **ARE **THE **PORT's
                                           **OWN **NAMES **MAKES **NO **CLAIM **ABOUT **THE **CITED
                                           **FILE**, **SO **IT **IS **COUNTED **AND **NOT
-                                          **VERDICTED.** **⇒ MEASURED **ON **ONE **FROZEN **TREE:
+                                          **VERDICTED.** **MEASURED **ON **ONE **FROZEN **TREE:
                                           **at_pin **696 -> **760**, **dangling **29 -> **14**,
                                           **unverifiable **-- -> **240**, **and **THE **GATE **STILL
-                                          **FAILS.** **⇒ EVERY **SURVIVOR **NAMES **A **TOKEN
+                                          **FAILS.** **EVERY **SURVIVOR **NAMES **A **TOKEN
                                           **THAT **DOES **OCCUR **IN **THE **CITED **FILE**, **SO
                                           **REPAIR 2 **RESCUED **NONE **OF **THEM** -- **AND **THE
-                                          **PLANT's **`danger-arm`** **PROVES **IT.** **⇒ AND
+                                          **PLANT's **`danger-arm`** **PROVES **IT.** **AND
                                           **`--tree DIR`** **WAS **ADDED**, **BECAUSE **THE **PORT
                                           **TREE **IS **OWNED **BY **OTHER **UNITS **AND **MOVES.**
-                                          **⇒ SEE **`gates/pin-cite-gate.py`'s **HEADER **AND
+                                          **SEE **`gates/pin-cite-gate.py`'s **HEADER **AND
                                           **`.agents/slop/pincite/REPORT.md`.**
 ```
 
@@ -25319,18 +25354,18 @@ pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS 
       files rewritten by a killed run, `D0-coverage-census.txt` left 0 BYTES.**
       `differ.unhealthy()` read `substrate-start=81101a6a04be but substrate-end=cfeb41ea869f -- THE
       SUBSTRATE MOVED WHILE THE RUN WAS IN FLIGHT`, and `differ.artefacts_ok()` read
-      `EMPTY runs/graphcmp/D/D0-coverage-census.txt`. **⇒ A GREEN SUMMARY AND A DAMAGED ARTEFACT SET
+      `EMPTY runs/graphcmp/D/D0-coverage-census.txt`. **A GREEN SUMMARY AND A DAMAGED ARTEFACT SET
       CAN COEXIST, AND THE ARTEFACT SET IS WHAT THE WITNESS READS.**
 - [x] **THE CORPUS IS A SINGLETON NOW** (`8a2ecc335`, `42c5eca55`, `65b333037`). `checks/differ.py`'s
       `run`/`repro`/`plant`/`snap` take an **`fcntl.flock` on `runs/graphcmp/.corpus.lock`** BEFORE
       anything touches `D/`, and a second corpus run exits **3** with
-      `another corpus run holds the lock: ... is held by pid <N>`. **⇒ `fcntl.flock` and not
+      `another corpus run holds the lock: ... is held by pid <N>`. **`fcntl.flock` and not
       mkdir-and-a-PID: the kernel releases it when the holder dies, so there is no stale lock to
       reclaim and no read-then-remove window to steal through.**
-      **⇒ AND `gates/corpusverdict-gate.py`'s `run.gated` ROW NOW MEASURES THE PROPERTY BY RUNNING THE
+      **AND `gates/corpusverdict-gate.py`'s `run.gated` ROW NOW MEASURES THE PROPERTY BY RUNNING THE
       REAL COMMAND** (it holds the lock, runs `differ.py run` against a `GRAPHCMP_ARTIFACTS` scratch
       directory, and asserts the command REFUSED, NAMED THE HOLDER, and WROTE NOTHING).
-      **⇒ AND THE OLD SOURCE-LEVEL QUESTION WAS NOT DROPPED: IT IS THE `run.readiness` ROW, AND IT
+      **AND THE OLD SOURCE-LEVEL QUESTION WAS NOT DROPPED: IT IS THE `run.readiness` ROW, AND IT
       IS STILL RED.** A run that does not wait for the substrate to settle is a DIFFERENT hazard from
       two runs interleaving into one directory.
 - [x] **THE CORPUS IS GREEN, CURRENT AND REPRODUCIBLE, AND ALL THREE AT ONCE** (`1bb56edaa`).
@@ -25341,21 +25376,21 @@ pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS 
       **`unhealthy() -> []`** and **`artefacts_ok() -> []`** (THE READING IS **EMPTY**, NOT "0
       COMPLAINTS"). `repro`: **`319 of 319 files identical across two clean runs`**,
       `repro-files=319 repro-identical=319 repro-rc=rc=0`.
-      **⇒ AND `substrate-start == substrate-end == live == repro-substrate ==
+      **AND `substrate-start == substrate-end == live == repro-substrate ==
       eb6ef8608ec64647a195d5521a4712dd1a288cf9f1cefef9e08e83c003dc56bc`, AND `substrate-head=
       db20caf0618f1f79d4e0733fdd042cc6cf61eb7c` IS THE COMMIT THE RUN WAS TAKEN ON.**
       `gates/corpuswitness-gate.py` reads **`PASS -- the claim is ESTABLISHED`** and
       `checks/corpus-figure.py` reads **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS
-      agrees`**. **⇒ AND THE `d10-transcript` PIN READS `9bfb8517...` -- THE TELEMETRY-FREE VALUE, NOT
+      agrees`**. **AND THE `d10-transcript` PIN READS `9bfb8517...` -- THE TELEMETRY-FREE VALUE, NOT
       THE COMPILER's DAILY "A NEWER BEND IS AVAILABLE" NOTICE, WHICH IS NOT A FUNCTION OF THIS
       REPOSITORY.**
-      **⇒ AND `git diff --name-only db20caf0618f HEAD -- tinybendygrad/ tinygrad/` IS EMPTY AFTER THE
+      **AND `git diff --name-only db20caf0618f HEAD -- tinybendygrad/ tinygrad/` IS EMPTY AFTER THE
       COMMIT THAT MOVED HEAD: A COMMIT THAT TOUCHES NOTHING IN THE SUBSTRATE DOES NOT MAKE THE RUN
       STALE, AND THE DIGEST IS WHAT SAYS SO.**
 - [x] **THE 603 FALSE CITATIONS OUTSIDE THE `TODO(pN)` POPULATION ARE NEARLY GONE.** `runtime/**`:
       **225 -> 0** over 35 files (`056eeb1d5`, `e06e48249`). The rest: **331 -> 78** over 60 files
       (`5f2eeaf1a`, `52c9f5ce5`, `a3f4b20b2`). **`gates/todo-cite-gate.py` READS 1131 ROWS AND 0 FALSE.**
-      **⇒ AND THE CLASS THAT MADE IT POSSIBLE WAS A BASENAME: `helpers.py` IS SEVEN UPSTREAM FILES AND
+      **AND THE CLASS THAT MADE IT POSSIBLE WAS A BASENAME: `helpers.py` IS SEVEN UPSTREAM FILES AND
       `dtype.py` IS SEVEN, SO A CITATION NAMING ONLY A BASENAME RESOLVES TO NOTHING. EVERY RE-POINTED
       CITATION NOW NAMES ITS FILE BY THE FULL UPSTREAM PATH.**
 - [x] **THE LAST FALSE CITATION IN THE TREE WAS A SCRATCH COPY's MARKER** (`39724887d`).
@@ -25363,7 +25398,7 @@ pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS 
       `gates/pin-cite-gate.py` reads by path -- walked the FILESYSTEM, so it counted
       `tinybendygrad/codegen/late/.linearizer-mut.bend:402`'s marker as the port's citation, and that
       row was FALSE and **NOBODY COULD FIX IT, BECAUSE THE FILE IS NOT THE PORT's**.
-      **⇒ THE FIX IS A NAME RULE, AND DELIBERATELY NOT A GIT CALL: `git ls-files` READS THE INDEX, AND
+      **THE FIX IS A NAME RULE, AND DELIBERATELY NOT A GIT CALL: `git ls-files` READS THE INDEX, AND
       THIS TREE's INDEX IS ARMED.** `cite.total` 2618 -> 2545 (73 scratch rows gone),
       `cite.ambient_relocated` 4 -> 2.
 - [x] **A DOCSTRING THAT NAMES A ROW IS A CITATION, AND IT MUST MOVE WHEN THE ROW MOVES**
@@ -25382,14 +25417,14 @@ pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS 
       rows survive today: `tinybendygrad/runtime/ops_amd.bend:231` (the md5 slice) and
       `tinybendygrad/runtime/ops_cl.bend:159` (the old `OSX_TIMING_RATIO`). **THEY READ AS
       `at_no_revision_dangling`, WHICH IS A FALSE READING OF A TRUE CLAIM.**
-      **⇒ `gates/pin-cite-gate.py` NOW HAS THE CLASS `upstream_removed`, AND IT IS DEFINED BY
+      **`gates/pin-cite-gate.py` NOW HAS THE CLASS `upstream_removed`, AND IT IS DEFINED BY
       SIX NECESSARY CONDITIONS, NOT BY A PHRASE:** the row names a revision; that revision is an
       upstream commit at or before the pin; the construct is ABSENT at it; the construct was
       PRESENT before it; the removal is attributable to a commit; and the row ASSERTS the absence.
-      **⇒ THE MARKER ALONE QUALIFIES NOTHING: 44 citation lines carry an absence marker and the
-      EVIDENCE selects 2 of them.** **⇒ THE CLASS CAN GO RED: the plant has FOUR arms that differ
+      **THE MARKER ALONE QUALIFIES NOTHING: 44 citation lines carry an absence marker and the
+      EVIDENCE selects 2 of them.** **THE CLASS CAN GO RED: the plant has FOUR arms that differ
       only in the tail of one line, and the wrong-revision, no-revision and not-a-claim arms are
-      all STILL `dangling`.** **⇒ AND NO OTHER CLASS MOVED: elementwise over 2547 rows, 2 moved
+      all STILL `dangling`.** **AND NO OTHER CLASS MOVED: elementwise over 2547 rows, 2 moved
       (`dangling -> upstream_removed`) and 0 verdict fields moved.** See
       `.agents/slop/absence/REPORT.md`.
 - [ ] **`tinybendygrad/uop/fold.bend`'s COMMENTS DESCRIBE AN OP THAT DOES NOT EXIST AT THE PIN**
@@ -25408,7 +25443,7 @@ pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS 
       `gates/ledgerdue-gate.py` reads `OWNED 126 UNOWNED 5 DUE 131`, and the five are
       `gates/{.wgsl-mut-oracle.py,amd-mut-gate.py,amd-mut-oracle.py,cstyle-mut-oracle.py,
       realize-mut-oracle.py}` -- **MEASURED untracked AND NOT IGNORED** (four of them), so the ledger
-      sees them as gates that owe an owner. **⇒ THE FIX IS A NAME RULE, NOT A GIT CALL.**
+      sees them as gates that owe an owner. **THE FIX IS A NAME RULE, NOT A GIT CALL.**
 
 ## Session 2026-10-25 — `gates/pin-cite-gate.py`: a TRUE ABSENCE is not a false citation
 
@@ -25417,7 +25452,7 @@ absence-class     [#####] 5/5  **THE **CENSUS **HAD **NO **CLASS **FOR **A **CIT
                                          **CLAIM **IS **THE **ABSENCE**, **SO **A **TRUE **CLAIM
                                          **ABOUT **UPSTREAM **READ **AS
                                          **`at_no_revision_dangling`** -- **A **FALSE **READING
-                                         **OF **A **TRUE **CLAIM.** **⇒ THE **CLASS
+                                         **OF **A **TRUE **CLAIM.** **THE **CLASS
                                          **`upstream_removed`** **IS **DEFINED **BY **SIX
                                          **NECESSARY **CONDITIONS: **THE **ROW **NAMES **A
                                          **REVISION; **THAT **REVISION **IS **AN **UPSTREAM
@@ -25425,18 +25460,18 @@ absence-class     [#####] 5/5  **THE **CENSUS **HAD **NO **CLASS **FOR **A **CIT
                                          **CONSTRUCT **IS **ABSENT **AT **IT; **THE
                                          **CONSTRUCT **WAS **PRESENT **BEFORE **IT; **THE
                                          **REMOVAL **IS **ATTRIBUTABLE **TO **A **COMMIT; **AND
-                                         **THE **ROW **ASSERTS **THE **ABSENCE.** **⇒ THE
+                                         **THE **ROW **ASSERTS **THE **ABSENCE.** **THE
                                          **MARKER **ALONE **QUALIFIES **NOTHING: **44
                                          **CITATION **LINES **CARRY **AN **ABSENCE **MARKER **AND
-                                         **THE **EVIDENCE **SELECTS **2.** **⇒ THE **CLASS **CAN
+                                         **THE **EVIDENCE **SELECTS **2.** **THE **CLASS **CAN
                                          **GO **RED: **THE **PLANT **HAS **FOUR **ARMS **THAT
                                          **DIFFER **ONLY **IN **THE **TAIL **OF **ONE **LINE, **AND
                                          **THE **WRONG-REVISION, **NO-REVISION **AND
                                          **NOT-A-CLAIM **ARMS **ARE **ALL **STILL
-                                         **`dangling`.** **⇒ AND **NO **OTHER **CLASS **MOVED:
+                                         **`dangling`.** **AND **NO **OTHER **CLASS **MOVED:
                                          **ELEMENTWISE **OVER **2547 **ROWS, **2 **MOVED
                                          **(`dangling` **->** **`upstream_removed`**) **AND **0
-                                         **VERDICT **FIELDS **MOVED.** **⇒ SEE
+                                         **VERDICT **FIELDS **MOVED.** **SEE
                                          **`.agents/slop/absence/REPORT.md`.**
 ```
 
@@ -25468,7 +25503,7 @@ absence-class     [#####] 5/5  **THE **CENSUS **HAD **NO **CLASS **FOR **A **CIT
 ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **REPORTED **WERE
                                          **FIVE **MUTATION-HARNESS **STAGING **COPIES**, **AND
                                          **A **COPY **THE **LEDGER **ADMITTED **IS **A **ROW
-                                         **NO **COMMIT **CAN **OWE.** **⇒ THE **POPULATION
+                                         **NO **COMMIT **CAN **OWE.** **THE **POPULATION
                                          **NOW **EXCLUDES **THEM **BY **NAME**, **AND **THE
                                          **LEDGER **RETIRES **THE **FIVE **ROWS.**
 ```
@@ -25515,41 +25550,41 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **`cite.at_no_revision_dangling=0`** and exits **0**; `gates/todo-cite-gate.py` reads
       **`1139 citations in 97 .bend files`**, **`1106 RESOLVES`**, **`0 WRONG-LINE`**,
       **`0 WRONG-SYMBOL`**, **`0 UNRESOLVABLE`**, **`PASS`**.
-      **⇒ AND THE TWO REDS **THE **ATTRIBUTION **REPAIR **EXPOSED** WERE **BOTH **PROSE, **NOT
+      **AND THE TWO REDS **THE **ATTRIBUTION **REPAIR **EXPOSED** WERE **BOTH **PROSE, **NOT
       **CODE** (`7ac60c161`):** **`runtime/webgpu_call.bend:60`** **WAS **A **REAL **OFF-BY-ONE**
       (**`bg_entry` **IS **AT **`tinygrad/runtime/ops_webgpu.py:94`**, **NOT **`:95`**), **AND
       **`mixin/op.bend:242`** **WAS **THE **CLASS **THE **CENSUS **NAMED**: **THE **PORT's
       **COMMENT **CLAIMED **`bool` **AGAINST **`int`**, **AND **`int` **IS **NOT **AT **THE
       **CITED **UPSTREAM **LINE** — **IT **IS **THE **PORT's **OWN **DTYPE **VOCABULARY**.
-      **⇒ SO **THE **COMMENT **NOW **NAMES **UPSTREAM's **`isinf`** (WHICH **DOES **CARRY **A
+      **SO **THE **COMMENT **NOW **NAMES **UPSTREAM's **`isinf`** (WHICH **DOES **CARRY **A
       **`bool`**: **`detect_positive: bool = True`**) **AND **SAYS **THAT **`int` **IS **THE
-      **PORT's **OWN.**  **⇒ A **CITATION **MUST **NOT **CLAIM **A **TOKEN **UPSTREAM **DOES **NOT
+      **PORT's **OWN.**  **A **CITATION **MUST **NOT **CLAIM **A **TOKEN **UPSTREAM **DOES **NOT
       **HOLD**, **EVEN **WHEN **THE **CLAIM **IS **TRUE **OF **THE **PORT.**
 - [x] **THE LAST **FALSE **CITATION **IN **THE **TREE **IS **GONE** (`670ee9811`).**
       **`tinybendygrad/uop/fold.bend:132`** **CITED **`dtype.py:193`** — **AND **`dtype.py` **IS
-      **THREE **UPSTREAM **FILES**, **SO **THE **CITATION **NAMED **NO **FILE.**  **⇒ THE **LINE
+      **THREE **UPSTREAM **FILES**, **SO **THE **CITATION **NAMED **NO **FILE.**  **THE **LINE
       **WAS **RIGHT** (`tinygrad/dtype.py:193` **IS **`def least_upper_dtype(...)`**) **AND **THE
       **SPELLING **WAS **THE **DEFECT.**
 - [x] **THE **SPECFOLD **POPULATION **IS **NO **LONGER **TIED **TO **ONE **COMMIT** (`1523eb428`).**
-      **⇒ THE **OLD **POPULATION **WAS **TWELVE **CELLS **NAMED **BY **HAND**, **ON **THE
-      **CRITERION **"THE **COMMIT `d4160980e` **DECIDES **THESE"**.  **⇒ THE **NEW **POPULATION
+      **THE **OLD **POPULATION **WAS **TWELVE **CELLS **NAMED **BY **HAND**, **ON **THE
+      **CRITERION **"THE **COMMIT `d4160980e` **DECIDES **THESE"**.  **THE **NEW **POPULATION
       **IS **EVERY **CELL **THE **TWO **LANES **THEMSELVES **PRINT** — **48 **CELLS**, **DISCOVERED
       **FROM **THE **LANES' **ROWS**, **AND **THE **GATE **REFUSES **IF **EITHER **LANE **STOPS
       **PRINTING **ONE.**
-      **⇒ AND **THE **MEASUREMENT **THAT **PROVES **THE **OLD **POPULATION **COULD **NOT **SEE **A
+      **AND **THE **MEASUREMENT **THAT **PROVES **THE **OLD **POPULATION **COULD **NOT **SEE **A
       **DEFECT**: **IN **A **FROZEN **COPY** (**A `git archive` **OF **HEAD **WITH
       **`tinybendygrad/uop/spec.bend` **REVERSED **BY **A **TEXT **EDIT**), **THE **PORT's
       **`sh_17` **WAS **CHANGED **FROM **`nsrc_is(..., 1)` **TO **`nsrc_is(..., 0)`** — **A
       **DEFECT **CONFINED **TO **THE **`buffer0` **CELLS**, **WHICH **THE **OLD **GATE **GRADED
-      **OUT **BY **NAME.  **⇒ THE **OLD **GATE **READ **FIVE **DISAGREEING **CELLS**, **PRINTED
+      **OUT **BY **NAME.  **THE **OLD **GATE **READ **FIVE **DISAGREEING **CELLS**, **PRINTED
       **THEM **AS **"NOT-DECIDED-BY-THE-COMMIT"**, **AND **EXITED **`0`.**
-      **⇒ AND **THE **FALSIFICATION **IS **STRONGER**: **REVERSING **`d4160980e` **AND
+      **AND **THE **FALSIFICATION **IS **STRONGER**: **REVERSING **`d4160980e` **AND
       **`32e6633d0` **MAKES **20 **OF **THE **48 **CELLS **DISAGREE**; **THE **OLD **TWELVE
       **CAUGHT **12**, **AND **THE **EIGHT **IT **MISSED **WERE **ALL **OUTSIDE **ITS
       **POPULATION**, **FOUR **OF **THE **EIGHT **BEING **THE **`buffer0` **CELLS.**
-      **⇒ AND **"BOTH **FOLDS **SKIP" **IS **NOW **AN **ANNOTATION, **NOT **A **CRITERION**; **THE
+      **AND **"BOTH **FOLDS **SKIP" **IS **NOW **AN **ANNOTATION, **NOT **A **CRITERION**; **THE
       **COMMIT's **RULE **NAME **IS **KEPT **AS **PROVENANCE **AND **IS **NOT **CONSULTED **WHEN
-      **GRADING.**  **⇒ AND **AT **THE **COMMITTED **TREE: **`48 cell(s) graded; 48 agree`**, **`PASS`.**
+      **GRADING.**  **AND **AT **THE **COMMITTED **TREE: **`48 cell(s) graded; 48 agree`**, **`PASS`.**
 - [ ] **THE **208 **`unverifiable_no_claim_about_the_file` **ROWS** (DISPATCHED **AS **FOUR
       **DISJOINT **SLICES**). **THE **CLASS **IS **A **PROSE **DEFECT**: **THE **PORT's **COMMENT
       **NAMES **A **PORT **SYMBOL **THAT **UPSTREAM **DOES **NOT **CONTAIN **AT **ANY
@@ -25559,9 +25594,9 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **`runtime/ops_amd.bend`: **"NOT **IN **upstream **at **this **pin"**).
 - [ ] **THE **299 **STALE **INTERNAL **`.bend` **POINTERS** (DISPATCHED **WITH **THE **208**).
       **`gates/bendcite-gate.py` **MEASURES **1251 **`.bend`→**`.bend` **LINE **CITATIONS**, **AND
-      **NO **INSTRUMENT **READ **ONE **BEFORE.**  **⇒ THE **DURABLE **FIX **IS **`symbol=<name>`** —
+      **NO **INSTRUMENT **READ **ONE **BEFORE.**  **THE **DURABLE **FIX **IS **`symbol=<name>`** —
       **A **CITATION **THAT **NAMES **A **CONSTRUCT **DOES **NOT **ROT **WHEN **THE **LINES
-      **MOVE.**  **⇒ AND **THE **WORK **IS **MERGED **INTO **THE **SAME **FOUR **UNITS** **SO **NO
+      **MOVE.**  **AND **THE **WORK **IS **MERGED **INTO **THE **SAME **FOUR **UNITS** **SO **NO
       **FILE **IS **TOUCHED **BY **TWO **UNITS.**
 
 - [ ] **THE `symbol=` **FORM **IS **A **DURABLE **FORM **ONLY **WHEN **THE **SYMBOL **IS
@@ -25574,31 +25609,31 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **`symbol=verify_tensor`** **NEXT **TO **AN **UPSTREAM **CITATION** — **WRONG**, **THAT **IS
       **THE **PORT's **OWN **SYMBOL**; **`symbol=num_batches_tracked`** — **WRONG**, **IT **IS **AN
       **ATTRIBUTE **ASSIGNED **AT **`tinygrad/nn/__init__.py:38`**, **NOT **A **DECLARATION.**
-      **⇒ AND **THE **GATE **ATTRIBUTES **THE **NEAREST **`symbol=` **TO **A **CITATION**, **SO **A
+      **AND **THE **GATE **ATTRIBUTES **THE **NEAREST **`symbol=` **TO **A **CITATION**, **SO **A
       **PORT **SYMBOL **WRITTEN **AS **`symbol=` **NEXT **TO **AN **UPSTREAM **CITATION **IS
-      **ATTRIBUTED **TO **THE **UPSTREAM **ONE** **AND **FAILS.**  **⇒ AND **A **PORT **SYMBOL
+      **ATTRIBUTED **TO **THE **UPSTREAM **ONE** **AND **FAILS.**  **AND **A **PORT **SYMBOL
       **BELONGS **IN **PROSE** (**"the **port's **own **`verify_tensor` **is **at
       **`uop/spec.bend:2833`"**), **NOT **AS **`symbol=`.**
 - [ ] **`tinygrad/extra/` **DOES **NOT **EXIST **AT **THIS **PIN** (MEASURED).** `ls tinygrad/`
       **SHOWS **`codegen device.py dtype.py engine examples function.py helpers.py llm mixin nn
-      py.typed renderer runtime schedule tensor.py uop viz` **AND **NO **`extra`.**  **⇒ SO **A
+      py.typed renderer runtime schedule tensor.py uop viz` **AND **NO **`extra`.**  **SO **A
       **CITATION **TO **`extra/models/*.py` **OR **`extra/datasets/*.py` **NAMES **NO **UPSTREAM
-      **FILE**, **AND **THE **GATE **READS **IT **`UNRESOLVABLE`/`no-file`.**  **⇒ THE **PORT's
-      **OWN **`extra/…`** **FILES **ARE **NAMED **AS **THE **PORT's **OWN.**  **⇒ AND
+      **FILE**, **AND **THE **GATE **READS **IT **`UNRESOLVABLE`/`no-file`.**  **THE **PORT's
+      **OWN **`extra/…`** **FILES **ARE **NAMED **AS **THE **PORT's **OWN.**  **AND
       **`tinygrad/examples/` **DOES **EXIST**, **SO **THOSE **CITATIONS **ARE **FINE.**
 - [x] **TWO **PLANTS **THAT **MEASURED **NOTHING **READ **AS **CLEAN **ZEROS** (`e8b92ea30`).**
       **`checks/no-txt.py`'s **PLANT **CRASHED** — **`ROOT` **IS **A **`str`** (`:63`) **AND **THE
       **PLANT **WROTE **`ROOT / ".agents" / "slop"`**, **SO **IT **DIED **WITH **A **`TypeError`**
       **AT **`:260`**; **THE **FIX **IS **THE **FILE's **OWN **`os.path.join` **IDIOM**, **AND **NOW
       **THE **PLANT **WRITES **ITS **FILE**, **THE **GATE **COUNTS **IT** (**187** **VS **186**),
-      **AND **THE **FILE **IS **REMOVED **ON **EVERY **EXIT.**  **⇒ AND **`checks/rn-gate.py`'s
+      **AND **THE **FILE **IS **REMOVED **ON **EVERY **EXIT.**  **AND **`checks/rn-gate.py`'s
       **`literal` **LANE **PLANTED **A **STRING **THAT **IS **NOT **IN **THE **CAPTURE** — **THE
       **`4` **MOVED **OUT **OF **`ParamArg` **AND **INTO **`UOp.range(4, ...)`**, **SO **THE **PLANT
       **MATCHED **NO **LITERAL **AND **LEFT **`stale` **AT **0** — **A **PLANT **THAT **MEASURED
       **NOTHING **READ **AS **A **CLEAN **0**, **WHICH **IS **EXACTLY **THE **FAILURE **THE **LANE
-      **EXISTS **TO **RULE **OUT.**  **⇒ NOW: **THE **`literal` **LANE **READS **`stale=1/80`**,
+      **EXISTS **TO **RULE **OUT.**  **NOW: **THE **`literal` **LANE **READS **`stale=1/80`**,
       **THE **`control` **LANE **READS **`stale=0/80`**, **AND **THE **SELFTEST **IS **`SELFTEST
-      OK`** (rc=0).**  **⇒ AND **BOTH **GATES' **OWN **VERDICTS **ARE **UNCHANGED.**
+      OK`** (rc=0).**  **AND **BOTH **GATES' **OWN **VERDICTS **ARE **UNCHANGED.**
 
 ## Session 2026-10-28 — the `RED_IS` class, and FOUR declarations that are NOT decoration
 
@@ -25606,9 +25641,9 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       THE FIFTH DOES NOT.** `gates/gate-surface.py` classes a red `FINDING` when the gate declared
       `RED_IS="FINDING"` in its OWN source AND its own rc-0 plant reached 0; `FAILURE` is the
       default and the default is **the ABSENCE of a declaration** ("An undeclared red is CHARGED",
-      `gate-surface.py:66`). **⇒ THE CENSUS: `FINDING` 2 -> 7, `FAILURE` 9 -> 4, `UNTAKEN` 11 -> 11,
+      `gate-surface.py:66`). **THE CENSUS: `FINDING` 2 -> 7, `FAILURE` 9 -> 4, `UNTAKEN` 11 -> 11,
       `45/70` verdicts reached UNCHANGED** (a `RED_IS` changes a CLASS and never a VERDICT, and
-      every issue the census charged before is still charged after). **⇒ AND `checks/wallcheck.py`
+      every issue the census charged before is still charged after). **AND `checks/wallcheck.py`
       ALSO MOVED `FAILURE` -> `FINDING` AND IT IS NOT MINE** — another unit is editing it — so
       **4 of the 7 `FINDING` rows are mine.**
       | gate | decision | the red |
@@ -25617,7 +25652,7 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       | `checks/env-precond.py` | **FINDING** | a pin the tree's OWN source no longer carries, or a value the run RECORDED that differs from the declaration — a fact ABOUT THE TREE'S ENVIRONMENT PLUMBING |
       | `checks/norm_check.py` | **FINDING** | the SUBJECT's `norm` does not round-trip — the file's own title is "prove `norm` round-trips, **or does not**" |
       | `checks/render-gate-oracle-gate.py` | **FINDING** | the PIN moved, or the oracle's rows differ from `checks/rn-orc.rows` — "a pin that goes red is the only thing a pin is for" (`:38`) |
-      | `checks/residue.py` | **NOT A FINDING — LEFT ALONE** | its ONLY exit-1 is `plant()`'s `1 if bad else 0` (`:569`), where `bad` is the classifier disagreeing with the hand-written `expect` column — **the instrument disagreeing with its own oracle** — and its normal mode ALWAYS exits 0. **⇒ AND IT DECLARES `VERDICTS = {0, 3}` WITH NO EXIT 1 AT ALL**, so a `RED_IS` there would be decoration on a verdict that does not exist. |
+      | `checks/residue.py` | **NOT A FINDING — LEFT ALONE** | its ONLY exit-1 is `plant()`'s `1 if bad else 0` (`:569`), where `bad` is the classifier disagreeing with the hand-written `expect` column — **the instrument disagreeing with its own oracle** — and its normal mode ALWAYS exits 0. **AND IT DECLARES `VERDICTS = {0, 3}` WITH NO EXIT 1 AT ALL**, so a `RED_IS` there would be decoration on a verdict that does not exist. |
 - [x] **THE DECLARATIONS ARE FALSIFIABLE, MEASURED, NOT ASSERTED.** `gates/gate-surface.py`'s own
       plant 4b is "the same gate with one constant deleted", and it is now run against the REAL
       gates: `.agents/slop/redis-class/falsify.py` places each gate in a synthetic tree as a
@@ -25627,13 +25662,13 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **`checks/dup-gate.py`, `checks/env-precond.py`, `checks/norm_check.py` and
       `checks/render-gate-oracle-gate.py` are `FINDING` as-is and `FAILURE` with the line deleted;
       `checks/residue.py` is `FAILURE` BOTH WAYS.** `REDIS: OK -- 0 declared RED_IS that does NOT
-      move the class.` **⇒ AND EACH GATE GOES RED ON ITS OWN PLANT** (rc=1 measured on all three
+      move the class.` **AND EACH GATE GOES RED ON ITS OWN PLANT** (rc=1 measured on all three
       rc-1 plants). See `.agents/slop/redis-class/REPORT.md`.
 - [ ] **`checks/env-precond.py`'s EXIT-CODE VOCABULARY IS A SEPARATE DEFECT AND IS NOT FIXED BY A
       DECLARATION.** It spells exit 2 `REFUSED` where `gates/gatekit.py` spells 3 `REFUSED` (two
       meanings on one number) and spells exit 0 `OK` where `gatekit.py` spells it `PASS`; the
       census charges both as `UNOWNED` and `RENAMED`, and `checks/dup-gate.py` spells 2 `USAGE`
-      for the same reason its own comment explains at length. **⇒ AND `checks/dup-gate.py`'s exit 3
+      for the same reason its own comment explains at length. **AND `checks/dup-gate.py`'s exit 3
       remains `UNPLANTED` and `checks/env-precond.py`'s exit 1 remains `UNPLANTED` — NOTHING WAS
       WEAKENED TO HIDE EITHER.** Fixing the vocabulary means CHANGING THE EXIT CODES, which is a
       different change from a declaration, and `gates/gatekit.py` is not this unit's to edit.
@@ -25643,7 +25678,7 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **A DECLARED EXIT CODE WITH NO DECLARED PLANT IS RED, NAMED.**  MEASURED:
       **BEFORE 70 declared / 45 reached / 16 unplanted / 9 misplant → AFTER 70 declared / 64
       reached / 0 unplanted / 6 misplant**, and **19 `RED … UNPLANTED|MISPLANT` lines removed, 0
-      ADDED** (set difference).  **⇒ AND EVERY ONE OF MY SIX MOVED OUT OF `UNTAKEN`** — all six
+      ADDED** (set difference).  **AND EVERY ONE OF MY SIX MOVED OUT OF `UNTAKEN`** — all six
       now have a **DEMONSTRATED GREEN**, so their reds are chargeable.
       | gate | the plant argv | why it reaches it |
       |---|---|---|
@@ -25653,7 +25688,7 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       | `checks/hermetic-census.py` | `--check --only allred` / `--check --only allred --out checks/rows/absent` | `--check` byte-compares a fresh emission with the PUBLISHED set (rc 0, 1.9 s, ONE GRAPH ON PURPOSE — the corpus is 35 graphs × 2 processes) and answers 3 when the published directory does not hold it. THE PATH IS INSIDE THIS GATE'S OWN PUBLISHED DIRECTORY and never will exist: no temp dir, no other unit's fixture, no gitignored file |
       | `checks/nl-gate.py` | `--port-stdout`/`--oracle-stdout` over TRACKED lanes / `--selftest` | **HERMETIC ON PURPOSE**: this file's own header records that `uop/ops.bend` is in this port's import closure and is owned by another live unit (MEASURED: two captures printed 206 rows and then ZERO), so **A PLANT THAT READS THE LIVE PORT IS A PLANT THAT CAN ANSWER "NO ROWS" INSTEAD OF A VERDICT.** `gates/cstyle-live.rows` on both sides (rc 0, 227 rows compared) and against `oracles/tinybendygrad_renderer_cstyle.bend.rows` (rc 1, 9 DISAGREE rows NAMED — a REAL disagreement between two TRACKED lanes) |
       | `checks/nl-gate-noguard.py` | the same two argv / `--port-stdout checks/absent-lane.rows` | the same reader by construction; and the refusal each gate already owns is the plant now |
-      **⇒ AND THREE **BEHAVIOUR **FIXES **THAT **WERE **NOT **PLANTS **BUT **WERE **NEEDED **TO **MAKE
+      **AND THREE **BEHAVIOUR **FIXES **THAT **WERE **NOT **PLANTS **BUT **WERE **NEEDED **TO **MAKE
       **ONE **HONEST**: **(1)** `checks/dup-census.py --one` **NO LONGER PUBLISHES** the population
       artifact — MEASURED, the plant overwrote the tracked 797,251-byte `checks/dup-census.json`
       with a one-lane census (10 insertions / 62,250 deletions against HEAD), the same destruction
@@ -25670,13 +25705,13 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       over the LIVE dtype.js**, i.e. **the fp8 DECODE gate this tree has been REFUSING since
       `371cc64c9` NOW RUNS**, and `gates/js-lane-census.py:23` already recorded that this coverage
       exists nowhere else in the tree.
-      **⇒ AND NO DECLARATION WAS NARROWED**: every `VERDICTS` mapping is byte-identical to HEAD,
-      and **nothing was withdrawn to make a count go down**.  **⇒ AND
+      **AND NO DECLARATION WAS NARROWED**: every `VERDICTS` mapping is byte-identical to HEAD,
+      and **nothing was withdrawn to make a count go down**.  **AND
       `checks/env-precond.py`'s `2: "REFUSED"` IS LEFT EXACTLY AS IT IS, WITH THE DISAGREEMENT
       NAMED IN ITS OWN DECLARATION COMMENT** (the row ABOVE), because `PLANTS[2] = ["--plant",
       "nonsense"]` is the argv that REACHES the 2 the declaration names — so the declared code is
       reachable and planted, and the vocabulary disagreement is REPORTED, not silenced.
-      **⇒ AND `gates/gate-surface.py --plant green` READS `PLANTS: RED (12/14)` — UNCHANGED BY THIS
+      **AND `gates/gate-surface.py --plant green` READS `PLANTS: RED (12/14)` — UNCHANGED BY THIS
       WORK, AND PROVEN: it reads the SAME 12/14 with my six gates at their PRISTINE HEAD
       versions**, so **5c** (a STALE EXPECTATION inside the instrument — it expects exit 2 where
       `vocabulary()` exits 3, which the file's own comment records as the deliberate change) and
@@ -25687,7 +25722,7 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
 - [x] **THE **OTHER **FIVE **GATES **OF **THE **16 **UNPLANTED **VERDICTS **ARE **PLANTED **TOO
       (`f9f868741`, **2026-10-30**).**  `gates/gate-surface.py` classifies a declared verdict by
       **EXECUTING** the declared plant and requiring the observed rc to equal the declared one, so
-      **A DECLARED EXIT CODE WITH NO DECLARED PLANT IS RED, NAMED.**  **⇒ AND THE SIX GATES ABOVE
+      **A DECLARED EXIT CODE WITH NO DECLARED PLANT IS RED, NAMED.**  **AND THE SIX GATES ABOVE
       AND THESE FIVE ARE THE SAME DEFECT SPLIT IN TWO:** the six above are the six the earlier unit
       owned, and `.agents/slop/plantsurface/REPORT.md:27-32` NAMED these five as *"another unit was
       editing those five gates CONCURRENTLY"* — **that unit is THIS ONE.**  MEASURED:
@@ -25701,17 +25736,17 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       | `gates/upstream-pow-dtype-gate.py` | `--plant refused` | runs the shipped `gatekit.oracle_drift` reader over a pin that cannot hold, so the REFUSED exit is the gate's OWN refusal and not a copy of one |
       | `gates/upstream-promo-lattice-gate.py` | `--plant refused` | the same house reader, over the same gate's OWN `DRIFT_PIN` |
       | `checks/dup-gate.py` | `--plant-refused` | runs a COPY of the gate in a temporary tree which has the repository markers but NOT `.agents/slop/rebase-gate.py` / `.agents/slop/eq/eq-census2.py`, so the module-scope refusal fires for exactly the absent reader it names |
-      **⇒ AND TWO **BEHAVIOUR **FIXES **THAT **WERE **NOT **PLANTS**: **(1)** BOTH
+      **AND TWO **BEHAVIOUR **FIXES **THAT **WERE **NOT **PLANTS**: **(1)** BOTH
       `upstream-*` GATES **STOPPED EXITING THE LIVE VERDICT.**  A plant that exits the live tree's
       verdict measures the TREE, not the planted state: upstream currently compiles every pow row
       and currently carries the lattice defect, so `--plant red` must still exit 1 and `--plant
-      green` must still exit 0.  **⇒ AND THE LIVE VERDICT IS NOW PRINTED BESIDE THE PLANTED ONE**,
+      green` must still exit 0.  **AND THE LIVE VERDICT IS NOW PRINTED BESIDE THE PLANTED ONE**,
       so the two are VISIBLE rather than conflated.  MEASURED: pow green/red = 0/1, promo green/red
       = 0/1, BEFORE both were 0/1 AND 1/1.  **(2)** `checks/oracle_f64.py` GAINS `RED_IS =
       "FINDING"`: its red is the PORT rendering `float*` where the lane promises `double*`, which is
       a defect IN THE PORT and not a broken instrument, and the class is EARNED because `PLANTS[0]`
       reaches 0 in the census run.
-      **⇒ AND `gates/gate-surface.py --plant green` READS `PLANTS: RED (12/14)` — UNCHANGED BY THIS
+      **AND `gates/gate-surface.py --plant green` READS `PLANTS: RED (12/14)` — UNCHANGED BY THIS
       WORK** (MEASURED at 12/14 BEFORE the edits and 12/14 AFTER), so **5c** and **6a** are the
       INSTRUMENT's own pre-existing defects. `gates/gate-surface.py` WAS NOT EDITED.
 
@@ -25719,13 +25754,13 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **PER **SLICE** (MEASURED **2026-10-27**).**  **`gates/pin-cite-gate.py`'s
       **`unverifiable_no_claim_about_the_file`: **224 -> 36**, **AND **THE **TREE's **`WRONG-LINE`
       **AND **`DANGLING-LINE`**: **279 -> 61** **AND **22 -> 0.**
-      **⇒ AND **SLICE **1**: **`unverifiable` **63 -> 0** **AND **`WRONG-LINE` **95 -> 0** **OVER
+      **AND **SLICE **1**: **`unverifiable` **63 -> 0** **AND **`WRONG-LINE` **95 -> 0** **OVER
       **27 **FILES** (`860c86428`), **WITH **BOTH **PLANTS **FIRING** (**THE **UPSTREAM **NAME
       **MOVES **THE **ROW **`at_pin` -> `unverifiable`**, **AND **THE **POINTER **MOVES **THE **ROW
       **`RESOLVES` -> `WRONG-LINE`**) **AND **A **BYTE-IDENTICAL **CONTROL **GREEN.**
-      **⇒ AND **SLICE **2**: **53 `unverifiable` **AND **57 **STALE **POINTERS **TO **ZERO**
+      **AND **SLICE **2**: **53 `unverifiable` **AND **57 **STALE **POINTERS **TO **ZERO**
       **OVER **26 **FILES** (`c15e67b4d`).**
-      **⇒ AND **THE **KINDS **OF **FIX**: **THE **PROSE **DOMINATED** (**63 **ROWS **REWRITTEN**
+      **AND **THE **KINDS **OF **FIX**: **THE **PROSE **DOMINATED** (**63 **ROWS **REWRITTEN**
       **VERSUS **95 **MECHANICAL **RE-POINTS**) **BECAUSE **NO **RE-POINT **COULD **RESCUE **THE
       **PROSE **CLASS**; **PLUS **7 **BASENAMES **DISAMBIGUATED**, **8 **ABSENCES **STATED**
       (**`CUDAQueue`**, **`pm_bufferize`**, **`HIPProgram`**, **AND **THE **HIP **`check`**, **EACH
@@ -25733,7 +25768,7 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **STRINGS **WHOSE **STALE **`.bend:NN` **WAS **CORRECTED** — **THE **ONLY **NON-COMMENT **EDITS
       **IN **THE **SLICE**, **AND **THEY **ARE **PAYLOAD **NO **COMPUTATION **READS.**
 - [x] **THE `RED_IS` **CLASS **IS **RESOLVED **BY **JUDGEMENT, **NOT **BY **A **BLANKET**
-      (`f8826fbc5`, `b23d73b31`).**  **⇒ THE **CENSUS **`FINDING` **2 -> 7** **AND **`FAILURE` **9 ->
+      (`f8826fbc5`, `b23d73b31`).**  **THE **CENSUS **`FINDING` **2 -> 7** **AND **`FAILURE` **9 ->
       4**, **AND **THE **REMAINING **4 **ARE **THE **ONES **BOTH **UNITS **JUDGED **TO **BE **REAL
       **FAILURES**: **`checks/rn-gate.py`** (THE **PORT **DISAGREES **WITH **THE **ORACLE**),
       **`gates/oracle-census-gate.py`** (ITS **OWN **SOURCE **SAYS **"A **CENSUS **THAT **CANNOT
@@ -25741,72 +25776,72 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **ABOUT **THE **TREE"**), **`gates/valscall-gate.py`** (**LIVE **CODE **CALLING **A **REMOVED
       **API**), **AND **`checks/residue.py`** (WHOSE **ONLY **EXIT-1 **IS **THE **INSTRUMENT
       **DISAGREEING **WITH **ITS **OWN **ORACLE**).**
-      **⇒ AND **THE **DECLARATION **IS **EARNED**: **THE **PLANT **DELETES **THE **`RED_IS` **LINE
+      **AND **THE **DECLARATION **IS **EARNED**: **THE **PLANT **DELETES **THE **`RED_IS` **LINE
       **FROM **A **COPY** **AND **THE **CLASS **MOVES **BACK **TO **`FAILURE`** — **SO **THE
       **DECLARATION **IS **NOT **DECORATION.**
-      **⇒ AND **A **GATE **THAT **CAN **NEVER **REACH **0** (**`checks/nl-gate.py`**, **WHICH
+      **AND **A **GATE **THAT **CAN **NEVER **REACH **0** (**`checks/nl-gate.py`**, **WHICH
       **REFUSES **AT **MODULE **SCOPE**) **CANNOT **DECLARE **`RED_IS`** **HONESTLY** **AND **STAYS
       **`UNTAKEN`** — **AND **THE **CENSUS **NAMES **IT.**
 - [x] **THE **REMAINING **`unverifiable` **36** **AND **`WRONG-LINE` **61** **ROWS** (SLICE **3**,
       **19 **FILES**) — **LANDED, AND THE ROT THAT MOVED IT WAS ONE EVENT.**
-      **⇒ THE CAUSE IS MEASURED: ANOTHER UNIT LANDED THE RANGEIFY LANE IN
+      **THE CAUSE IS MEASURED: ANOTHER UNIT LANDED THE RANGEIFY LANE IN
       `tinybendygrad/uop/fold.bend` — A REAL PORT FIX ("THE FOLD's `rng_width`
       REFUSED EVERY AFTER-BOUND RANGE, SO EVERY `vmax` WAS ZERO", `60e36e23f`) —
       AND THE FIX INSERTED 68 LINES AT THE TOP OF THE FILE, SO EVERY DECLARATION
       AFTER IT MOVED DOWN: **THE DELTA IS **+63** FOR THE `sym_dim`/`dt_shape`
       FAMILY, **+48** FOR THE `Kahn` FAMILY AND **+98** FOR `main`.**
-      **⇒ AND THE REPAIR IS THE DURABLE FORM AND NOT A NEW LINE NUMBER: EVERY
+      **AND THE REPAIR IS THE DURABLE FORM AND NOT A NEW LINE NUMBER: EVERY
       ONE OF THE REPAIRED POINTERS CARRIES A `symbol=` THAT NAMES A SYMBOL THE
       TARGET FILE DECLARES, AND THE LINE IS NOW THAT SYMBOL's DECLARATION LINE.
-      **⇒ AND THE KINDS ARE **34 LINE RE-POINTS** AND **6 `symbol=` CONVERSIONS**
+      **AND THE KINDS ARE **34 LINE RE-POINTS** AND **6 `symbol=` CONVERSIONS**
       (WHICH ARE **7** NEW FIELDS IN **6** ROWS, BECAUSE `rangify.bend:37`
       CARRIES **TWO** CITATIONS AND BOTH GOT ONE), **0 ABSENCES** (EVERY
       CONSTRUCT STILL EXISTS, SO NO CLAIM WAS WEAKENED) AND **0 `D.refuse("…")`
       DIAGNOSTIC STRINGS** (NO CODE LINE WAS TOUCHED IN ANY OF THE TWELVE
       FILES).**
-      **⇒ AND `gates/bendcite-gate.py` READS **`WRONG-LINE` 0**, **`DANGLING-LINE`
+      **AND `gates/bendcite-gate.py` READS **`WRONG-LINE` 0**, **`DANGLING-LINE`
       0**, **`ABSENT-FILE` 0** TREE-WIDE, AND `gates/todo-cite-gate.py` READS
       **PASS** (`0 WRONG-LINE`, `0 WRONG-SYMBOL`, `0 UNRESOLVABLE`).**
-      **⇒ AND THE COMMENT-ONLY PROOF IS THE GATE's OWN STRIPPER: EVERY ONE OF
+      **AND THE COMMENT-ONLY PROOF IS THE GATE's OWN STRIPPER: EVERY ONE OF
       THE TWELVE FILES STRIPS TO THE SAME CODE HASH AS ITS BASE UNDER
       `checks/port-compile-gate.py`'s `strip_comments()`, AND ALL TWELVE COMPILE
       (`checks/bounded.py --mb 2048 -- ./bin/bend <file>` READS `WITHIN-LIMITS`
       FOR EACH, PEAK RSS **196 MB** TO **873 MB**).**
-      **⇒ AND THE PLANT IS A TEXT EDIT ON A COPY THAT INSERTS **CODE**, NOT A
+      **AND THE PLANT IS A TEXT EDIT ON A COPY THAT INSERTS **CODE**, NOT A
       COMMENT: 4 LINES AT THE TOP OF THE COPY's `fold.bend` TAKE `WRONG-LINE`
       FROM **0** TO **47** (33 OF THEM IN THESE FILES), AND THE BYTE-IDENTICAL
       TWIN REPRODUCES THE CONTROL EXACTLY.**
-      **⇒ AND THE ONE TRAP THE `symbol=` RULE CARRIES: `gates/todo-cite-gate.py`
+      **AND THE ONE TRAP THE `symbol=` RULE CARRIES: `gates/todo-cite-gate.py`
       BINDS THE NEAREST-PRECEDING `symbol=` TO A CITATION, AND A `symbol=` NEXT
       TO AN UPSTREAM `.py` CITATION LANDS ON THE `.py` ONE AND FAILS — SO A
       PORT's `symbol=` GOES ON ITS OWN LINE.** (MEASURED: `kuconv.bend`'s TWO
       TABLE ROWS CARRY `ops.py:896` AND `movement.py:35` BESIDE THE PORT's
       READER, AND PUTTING THE PORT's `symbol=` THERE MADE THE UPSTREAM CITATION
-      READ `WRONG-SYMBOL`.) **⇒ COMMITS `dde1f7645`, `6585d1fb8`, `a797bcd5e`.**
+      READ `WRONG-SYMBOL`.) **COMMITS `dde1f7645`, `6585d1fb8`, `a797bcd5e`.**
 - [ ] **THE **CORPUS **MUST **BE **RE-TAKEN** **ONCE **THE **PORT **STOPS **MOVING**: **THE
       **SUBSTRATE **DIGEST **IS **`ed6a074fe1aa0dfe54df4a768e226f3781df814999e9f7ccafcead1437163cb9`**
       **AND **`AGENTS.md`'s **CLAIM **SAYS **`eb6ef860…`**, **SO **THE **CLAIM **IS **STALE** **AND
       **IT **IS **NOW **MARKED **STALE** (`bfd6a6f97`) **RATHER **THAN **LEFT **FALSE.**
-      **⇒ AND THE CITATION WORK MOVED IT AGAIN: THE DIGEST AT THE BASE OF THE
+      **AND THE CITATION WORK MOVED IT AGAIN: THE DIGEST AT THE BASE OF THE
       ROT SLICE IS **`b29839418d8bd8247f71fbfa12aedbc3ab5c1649da1608a8498e68d1c4dd6bd6`**
       AND IT IS **`40c3e432754207c6a8d4657aeebfec12d2b4defa7b09be01474eefe80cf98268`**
-      NOW — **⇒ A COMMENT IS SUBSTRATE, SO A CITATION FIX IS A CORPUS-STALING
+      NOW — **A COMMENT IS SUBSTRATE, SO A CITATION FIX IS A CORPUS-STALING
       EDIT, AND THE RE-RUN IS OWED WHEN THE PORT STOPS MOVING.**
 
 - [x] **THE **INTERNAL **POINTERS **ARE **CLOSED**: **`gates/bendcite-gate.py` **IS **rc=0`**, **AND
       **ALL **FOUR **CITATION **GATES **ARE **GREEN** (`150705270`, `31c1e44cc`, `c15e67b4d`,
-      **`860c86428`**).**  **⇒ AND **THE **FOUR **SLICES **TOGETHER **CLOSED **282 **ROWS**:
+      **`860c86428`**).**  **AND **THE **FOUR **SLICES **TOGETHER **CLOSED **282 **ROWS**:
       **SLICE **1** (**27 **FILES**): **63 `unverifiable` + 95 `WRONG-LINE` -> 0**;
       **SLICE **2** (**26 **FILES**): **53 + 57 -> 0**; **SLICE **3** (**26 **FILES**): **52 + 72 ->
       0**; **SLICE **4** (**17 **FILES**): **58 `WRONG-LINE` -> 0**, **PLUS **79 **BARE **POINTERS
       **NAMED.**
 - [x] **THE **TREE **MOVED **TWICE **UNDER **A **SLICE**, **AND **THAT **IS **THE **BEST **ARGUMENT
-      **THE **TREE **HAS **FOR **`symbol=`** (MEASURED **2026-10-27**).**  **⇒ ANOTHER **UNIT
+      **THE **TREE **HAS **FOR **`symbol=`** (MEASURED **2026-10-27**).**  **ANOTHER **UNIT
       **ADDED **10 **LINES **TO **`nn/layers.bend`** (**`nn_linear` **:520 -> :530**) **AND **2 **TO
       **`mixin/elementwise.bend`** (**`ew_silu` **:1219 -> :1221**), **AND **EVERY **RE-AIMED
-      **POINTER **WENT **STALE **IN **THE **SAME **MINUTE.**  **⇒ THE **LINE **IS **A **ROT **AND
+      **POINTER **WENT **STALE **IN **THE **SAME **MINUTE.**  **THE **LINE **IS **A **ROT **AND
       **THE **NAME **IS **NOT**, **AND **THE **ROT **IS **NOT **SLOW.**
-      **⇒ AND **IT **ALSO **Drove **A **HARNESS **CORRECTION**: **THE **MEASUREMENT **COPY **MUST
+      **AND **IT **ALSO **Drove **A **HARNESS **CORRECTION**: **THE **MEASUREMENT **COPY **MUST
       **BE **OF **THE **LIVE **TREE, **NOT **`git archive` **OF **HEAD** (**THE **FILES **YOU **DON'T
       **OWN **MOVE**), **AND **IT **MUST **CARRY **`references/`** (**GITIGNORED**, **SO **AN
       **ARCHIVE **LACKS **THE **COMPILER's **3,191-LINE **`base.bend`** **AND **EVERY **`base.bend`
@@ -25818,22 +25853,22 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
 
 - [x] **THE **BARE **POINTERS **ARE **NAMED** (79 **ROWS**, **11 **FILES**): **`UNCLAIMED` **132 -> 52**
       **IN **THOSE **FILES**, **AND **ALL **79 **SLICE **ROWS **NOW **RESOLVE** — **79 **NAMED, **0
-      **COULD **NOT **BE **RECONSTRUCTED** (`7e9afd8b7`, `ecf786c6d`, `9b1e3aa53`).**  **⇒ AND **THE
+      **COULD **NOT **BE **RECONSTRUCTED** (`7e9afd8b7`, `ecf786c6d`, `9b1e3aa53`).**  **AND **THE
       **KIND **OF **FIX **HAS **FOUR **SHAPES**: **A **COMMENT **THAT **NAMES **A **CONSTRUCT**; **A
       **COMMENT **THAT **NAMES **NOTHING** (**THE **CLAIM **IS **AN **ABSENCE**, **SO **THE **POINTER
       **NAMES **THE **CONSTRUCT **THAT **CARRIES **THE **ABSENCE** — **`helpers.bend:2758
       symbol=lines`**, **`nn/__init__.bend:220 symbol=nn_glorot`**); **A **STALE **LINE** (**47 **OF
       **79**); **AND **A **CONSTRUCT **IN **ANOTHER **FILE**.
 - [x] **THREE **RULES **THE **BARE-POINTER **UNIT **MEASURED**:
-      **⇒ A **DOTTED **NAME **CAN **NEVER **BE **A **CLAIM **TOKEN** — **`pin-cite-gate.py`'s
+      **A **DOTTED **NAME **CAN **NEVER **BE **A **CLAIM **TOKEN** — **`pin-cite-gate.py`'s
       **`IDENT` **DOES **NOT **MATCH **A **DOT**, **SO **`PK.i` **READS **AS **`PK`** (**2 **CHARS**,
       **DROPPED**) **AND **`i`** (**1 **CHAR**).
-      **⇒ A **`symbol=` **NEXT **TO **A **`.py` **CITATION **IS **JUDGED **AGAINST **UPSTREAM**.
-      **⇒ A **LINE **WITH **A **`symbol=` **CARRIES **EXACTLY **ONE **`.bend` **CITATION** —
+      **A **`symbol=` **NEXT **TO **A **`.py` **CITATION **IS **JUDGED **AGAINST **UPSTREAM**.
+      **A **LINE **WITH **A **`symbol=` **CARRIES **EXACTLY **ONE **`.bend` **CITATION** —
       **`SYMBOL_FIELD.findall(line)` **BINDS **TO **EVERY **CITATION.**
 - [x] **A **PLANT **MUST **INSERT **CODE, **NOT **A **COMMENT** (MEASURED): **A **COMMENT **IS
       **ABSORBED **INTO **THE **CONSTRUCT's **DOC **RUN** **AND **THE **ROW **STILL **RESOLVES** —
-      **SO **A **COMMENT-ONLY **PLANT **IS **A **PLANT **THAT **CANNOT **FAIL.**  **⇒ AND **THE
+      **SO **A **COMMENT-ONLY **PLANT **IS **A **PLANT **THAT **CANNOT **FAIL.**  **AND **THE
       **PLANT **MUST **BE **ON **A **COPY** — **NEVER **`git show HEAD:`** — **AND **THE **CONTROL
       **MUST **BE **A **BYTE-IDENTICAL **TWIN.**
 
@@ -25843,20 +25878,20 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       9a10992e56be259a22ab040a0dc0f70aeb64c4e39b0b79ebe7255037bef33542`**, **AND
       **`substrate-head=bacd172293d86bc5acc89e6710c8e1fb1ba22bca`** **IS **THE **COMMIT **IT **WAS
       **TAKEN **ON** (**`git rev-parse --short HEAD` **WAS **`bacd1722`** **AT **THE **TIME**).**
-      **⇒ AND **THE **READING**: **`graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0
+      **AND **THE **READING**: **`graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0
       byte-identical=35 graphs-refused=0`**, **`plants-disagree=8 of 8`**, **`controls=5 of 5`**,
       **`conflations=4 of 4`**, **`stable-pairs=5 of 5 stable-failed=0 of 5 stable-differ=0 of 5`**,
       **`cross=1 of 1`**, **`expect-moved=0`**, **`selfcheck=# SELFCHECK: OK`**,
       **`oracle-selfcheck=# ORACLE SELFCHECK: OK`**, **`census-rc=rc=0`**.
-      **⇒ AND **THE **WITNESSES**: **`gates/corpuswitness-gate.py` **READS **`PASS -- the claim is
+      **AND **THE **WITNESSES**: **`gates/corpuswitness-gate.py` **READS **`PASS -- the claim is
       ESTABLISHED`** **WITH **ALL **SEVEN **READINGS **OK`**; **`checks/corpus-figure.py` **READS
       **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS agrees`** (**rc=0** **WITH
       **`DEV=CPU`**); **AND **`unhealthy() -> []`**, **`artefacts_ok() -> []`**, **`repro_bad() -> []`**
       -- **THE **READINGS **ARE **EMPTY**, **NOT **"0 **COMPLAINTS"**; **AND **`repro`: **`319 of 319
       files identical across two clean runs`**.**
-      **⇒ AND **THE **COSTS**: **`run` **170 **s **AT **947 **MB **PEAK**, **`repro` **475 **s **AT
+      **AND **THE **COSTS**: **`run` **170 **s **AT **947 **MB **PEAK**, **`repro` **475 **s **AT
       **1014 **MB **PEAK**, **BOTH **`WITHIN-LIMITS`** **UNDER **A **3072 **MB **CEILING.**
-      **⇒ AND **`AGENTS.md` **IS **UPDATED** (`74787a0ba`, `1149ef787`) **WITH **THE **NEW **DIGEST,
+      **AND **`AGENTS.md` **IS **UPDATED** (`74787a0ba`, `1149ef787`) **WITH **THE **NEW **DIGEST,
       **THE **NEW **`substrate-head`**, **AND **THE **CLOSED **CITATION **CLASSES.**
 - [x] **ALL **FOUR **CITATION **GATES **ARE **rc=0**:** **`gates/pin-cite-gate.py`**
       (**`cite.unverifiable_no_claim_about_the_file=0`**, **`cite.at_no_revision_dangling=0`**),
@@ -25867,44 +25902,44 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **`gates/bendcite-gate.py`'s **`Corpus._scan()`** **COMPUTED **`self.aliases`** **IN **THE
       **SAME **LOOP **THAT **FILLED **`self.bodies`**, **AND **`_import_target()` **ANSWERS **"DOES
       **THE **FILE **THIS **IMPORT **NAMES **EXIST?"** **BY **ASKING **`cand in self.bodies`.**
-      **⇒ MEASURED: **69 **OF **THE **170 **FILES **HAD **A **`None` **ALIAS** **AND **THERE **WERE
+      **MEASURED: **69 **OF **THE **170 **FILES **HAD **A **`None` **ALIAS** **AND **THERE **WERE
       **178 **`None` **ALIASES**, **AND **`mixin/op.bend`'s **`O` **ALIAS **WAS **`None`**.**
-      **⇒ THE **FIX **IS **TWO **PASSES** (THE **BODIES **FIRST, **THE **ALIASES **AFTER**): **AFTER,
+      **THE **FIX **IS **TWO **PASSES** (THE **BODIES **FIRST, **THE **ALIASES **AFTER**): **AFTER,
       **`0`**, **AND **`O.GroupOp.movement` **RESOLVES **AGAINST **`uop/ops.bend`.**
-      **⇒ AND **THE **ROW **MOVEMENT **IS **THE **HONEST **SIGN**: **`RESOLVES` **1031 -> 1029**
+      **AND **THE **ROW **MOVEMENT **IS **THE **HONEST **SIGN**: **`RESOLVES` **1031 -> 1029**
       **AND **`UNCLAIMED` **60 -> 61** -- **TWO **ROWS **LEFT **THE **LOOSEST **CLASS **FOR **A **MORE
       **PRECISE **ONE**, **BECAUSE **THE **GATE **CAN **NOW **JUDGE **MORE **OF **THEM.**
 
 - [x] **A **DIRECTORY **ARGUMENT **THAT **LOOKS **LIKE **A **FLAG **CREATED **A **DIRECTORY **NAMED
       **`--help`** **AT **THE **REPO **ROOT** (MEASURED **2026-10-19**, **FOUND **2026-10-28**).**
-      **⇒ AND **IT **WAS **NOT **A **TYPO**: **THREE **SCRIPTS **TAKE **THEIR **WORK **DIRECTORY **AS
+      **AND **IT **WAS **NOT **A **TYPO**: **THREE **SCRIPTS **TAKE **THEIR **WORK **DIRECTORY **AS
       **`$1`** — **`checks/run-f64.sh`**, **`checks/run-port-mm.sh`** **AND
-      **`.agents/slop/f64/run-f64.sh`** — **AND **NONE **OF **THEM **GUARDED **IT.**  **⇒ AND
+      **`.agents/slop/f64/run-f64.sh`** — **AND **NONE **OF **THEM **GUARDED **IT.**  **AND
       **`mkdir -p "$W"` **CREATED **THE **DIRECTORY**, **AND **`checks/no-txt.py` **OWNS **THE **`.txt`
       **FILES **IT **LEFT **THERE** — **MEASURED: **OF **462 **HARD **`.txt`, **2 **WERE **UNDER
       **`--help/`** — **SO **A **FAILED **RUN's **RESIDUE **BECAME **HARD **DEBT.**
-      **⇒ AND **THE **RESIDUE **IS **GONE** (**462 -> 460**) **AND **IT **WAS **NEVER **IN **HEAD**:
+      **AND **THE **RESIDUE **IS **GONE** (**462 -> 460**) **AND **IT **WAS **NEVER **IN **HEAD**:
       **THE **THREE **COMMITS **THAT **CAPTURED **IT **ARE **NOT **ANCESTORS **OF **HEAD`.**
 - [x] **THE **CLASS **IS **BIGGER **THAN **THE **FIRST **FIX** (MEASURED): **45 **TRACKED **SCRIPTS
       **WRITE **AT **A **PATH **BUILT **FROM **AN **ARGUMENT**, **AND **25 **OF **THEM **CAN **WRITE
-      **AT **THE **REPO **ROOT** (THE **OTHER **20 **`cd` **FIRST**).**  **⇒ AND **THE **FIX **REACHED
+      **AT **THE **REPO **ROOT** (THE **OTHER **20 **`cd` **FIRST**).**  **AND **THE **FIX **REACHED
       **THE **TREE's **OWN **FIXTURE**: **`checks/.e2e-fixture/` **HOLDS **TRACKED **COPIES **OF **THE
       **e2e **SCRIPTS**, **AND **ALL **THREE **HAD **THE **HOLE** — **BECAUSE **THE **FIRST **FIX
       **LANDED **ON **THE **`checks/` **COPIES **AND **NOT **ON **THE **`checks/.e2e-fixture/` **ONES.**
-      **⇒ AND **`portexec/run-kernel.sh` **IS **THE **SAME **HOLE **ONE **ARGUMENT **ALONG**: **ITS
+      **AND **`portexec/run-kernel.sh` **IS **THE **SAME **HOLE **ONE **ARGUMENT **ALONG**: **ITS
       **`$1` **IS **A **MODE **AND **IT **IS **ALREADY **VALIDATED**, **AND **ITS **`$2` **IS **THE
-      **WORK **DIRECTORY **AND **IT **WAS **NOT** — **⇒ THE **TREE **ALREADY **HAS **THE **PATTERN
+      **WORK **DIRECTORY **AND **IT **WAS **NOT** — **THE **TREE **ALREADY **HAS **THE **PATTERN
       **FOR **ARGUMENTS**, **IT **JUST **DID **NOT **HAVE **IT **FOR **PATHS.**
-      **⇒ AND **`checks/plant.sh`** **AND **`checks/run-all.sh`** **READ **`W` **FROM **THE
+      **AND **`checks/plant.sh`** **AND **`checks/run-all.sh`** **READ **`W` **FROM **THE
       **ENVIRONMENT**, **AND **A **FLAG-SHAPED **`W`** **IS **JUST **AS **DANGEROUS **AS **A
       **FLAG-SHAPED **`$1`** — **AND **`checks/lint_demo.sh` **IS **SAFE **BY **ITS **SHAPE**
       (**`"$WORK/$1.txt"` **WITH **`$WORK` **A **`mktemp -d` **UNDER **`$TMPDIR`**).**
-      **⇒ AND **THE **GUARD **NAMES **THE **SHAPE**: **"THIS **SCRIPT's **ARGUMENT **IS **A
+      **AND **THE **GUARD **NAMES **THE **SHAPE**: **"THIS **SCRIPT's **ARGUMENT **IS **A
       **DIRECTORY"** / **"IS **A **FILE"** — **BECAUSE **A **GUARD **THAT **SAYS **THE **SAME **THING
       **FOR **EVERY **SHAPE **OF **ARGUMENT **CAN **BE **WRONG **ABOUT **THE **SHAPE**, **AND **A
       **WRONG **GUARD **REFUSES **THE **WRONG **THING**, **WHICH **IS **A **REFUSAL **OF **A
       **LEGIMATE **CALL.**
-      **⇒ AND **THE **GUARDS **DO **NOT **BREAK **A **LEGITIMATE **CALL** — **MEASURED:
+      **AND **THE **GUARDS **DO **NOT **BREAK **A **LEGITIMATE **CALL** — **MEASURED:
       **`checks/plant.sh` **AND **`checks/run-all.sh` **RUN **NORMALLY **WITH **A **`$TMPDIR` **WORK
       **DIR**, **AND **`checks/run-f64.sh`'s **rc=3 **ON **A **LEGITIMATE **DIR** **IS **THE
       **SCRIPT's **OWN **REFUSAL** ("the **port's **own **rows **could **not **be **reproduced**"),
@@ -25912,33 +25947,33 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **THE **IDENTICAL **rc **AND **MESSAGE.**
 
 - [x] **THE **RANGEIFY **LANE's **NEW **FILES **CARRIED **THREE **PROSE **CLASSES** (MEASURED **2026-10-28**).**
-      **⇒ AND **THE **FIRST**: **A **BARE **`:1141`**/**`:917`**/**`:878`**/**`:1177`** **RESOLVED **AGAINST
+      **AND **THE **FIRST**: **A **BARE **`:1141`**/**`:917`**/**`:878`**/**`:1177`** **RESOLVED **AGAINST
       **THE **HEADER's **UPSTREAM **TARGET** — **AND **MEASURED, **UPSTREAM's
       **`tinygrad/schedule/indexing.py` **IS **321 **LINES**, **SO **`:1141` **NAMED **A **LINE **THAT
-      **DOES **NOT **EXIST.**  **⇒ ⇒ **THE **PORT's **OWN **`schedule/indexing.bend` **HAS
+      **DOES **NOT **EXIST.**  ****THE **PORT's **OWN **`schedule/indexing.bend` **HAS
       **`grm_table` **AT **`:1141`** **AND **`pfd_table` **AT **`:1177`** — **THE **PORT's **CITATIONS
       **WERE **RIGHT **AND **THE **SUBJECT **WAS **UNSPELLED.**
-      **⇒ AND **THE **SECOND**: **A **BACKTICK **SPAN **THAT **CROSSES **A **LINE **BREAK** **SWALLOWS
+      **AND **THE **SECOND**: **A **BACKTICK **SPAN **THAT **CROSSES **A **LINE **BREAK** **SWALLOWS
       **THE **PROSE **BETWEEN **THE **LINES** — **THE **GATE **READS **THE **CLAIM **TOKENS **FROM **THE
       **SPAN**, **SO **A **READER **WHO **PUTS **A **PROSE **WORD **IN **BACKTICKS **(`FOLLOWED`) **AND
       **A **CODE **SPAN **THAT **CROSSES **A **LINE** **PRODUCES **A **CLAIM **THE **GATE **CANNOT
       **READ.**
-      **⇒ AND **THE **THIRD**: **A **CITATION **OF **A **BLANK **LINE** — **`tinygrad/tensor.py:88`**
+      **AND **THE **THIRD**: **A **CITATION **OF **A **BLANK **LINE** — **`tinygrad/tensor.py:88`**
       **IS **EMPTY**, **AND **MEASURED, **UPSTREAM's **`Tensor.empty` **IS **AT
       **`tinygrad/tensor.py:420`.**
-- [x] **`fold.bend`'s **MOVE **ROTTED **58 **POINTERS **AT **ONCE** (MEASURED **2026-10-28**).**  **⇒ AND
+- [x] **`fold.bend`'s **MOVE **ROTTED **58 **POINTERS **AT **ONCE** (MEASURED **2026-10-28**).**  **AND
       **THE **RANGEIFY **LANE's **PORT **WORK **INCLUDES **A **GENUINE **BUG **FIX** — **"THE
       **FOLD's **`rng_width` **REFUSED **EVERY **AFTER-BOUND **RANGE, **SO **EVERY **`vmax` **WAS
-      **ZERO"** — **AND **THE **MOVE **ROTTED **EVERY **POINTER **INTO **IT.**  **⇒ ⇒ **THIS **IS **THE
+      **ZERO"** — **AND **THE **MOVE **ROTTED **EVERY **POINTER **INTO **IT.**  ****THIS **IS **THE
       **ARGUMENT **FOR **`symbol=`** **AND **THE **TREE's **OWN **SENTENCE**: **"THE **LINE **IS **A
-      **ROT **AND **THE **NAME **IS **NOT, **AND **THE **ROT **IS **NOT **SLOW."**  **⇒ AND **THE
+      **ROT **AND **THE **NAME **IS **NOT, **AND **THE **ROT **IS **NOT **SLOW."**  **AND **THE
       **CORPUS **WENT **STALE **TWICE**, **AND **THE **WITNESS **CAUGHT **BOTH **TIMES **ON **ITS
       **OWN** — **AND **THE **DIAGNOSIS **WAS **PRECISE**: **9 **FILES **THAT **ARE **IN **NO **COMMIT**
-      (**THE **MUTATION **PROBES**, **A **`.bak`**, **A **`_probe/`**) **PLUS **3 **CHANGED**.  **⇒ AND
+      (**THE **MUTATION **PROBES**, **A **`.bak`**, **A **`_probe/`**) **PLUS **3 **CHANGED**.  **AND
       **`__pycache__` **IS **EXCLUDED** (**MEASURED: **`substrate_entries()` **FILTERS
       **`"__pycache__" not in p.parts`**), **SO **THE **`.pyc` **FILES **ARE **NOT **THE **CAUSE** — **WHICH
       **WAS **WORTH **MEASURING **RATHER **THAN **ASSUMING.**
-- [ ] **THE **LAST **65 `UNCLAIMED` **ROWS** (DISPATCHED, **18 **FILES**).**  **⇒ AND **ONLY **3 **OF **THE
+- [ ] **THE **LAST **65 `UNCLAIMED` **ROWS** (DISPATCHED, **18 **FILES**).**  **AND **ONLY **3 **OF **THE
       **71 **WERE **BARE **POINTERS** (NO **CLAIM **AT **ALL**); **THE **OTHER **68 **NAMED **A **TOKEN
       **THE **TARGET **DOES **NOT **HOLD.**
 - [ ] **THE **CORPUS **MUST **BE **RE-TAKEN** **ONCE **THE **PORT **STOPS **MOVING**:** **THE
@@ -25952,28 +25987,28 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       e9400a49a2f645df5742f4cc50b8cb5a64e7ce2e9461e67017c11ec3eb340116`**, **AND
       **`substrate-head=079ae37e3c52a152c9c4d13718e96a889012352d`** **IS **THE **COMMIT **IT **WAS
       **TAKEN **ON** (**`git rev-parse --short HEAD` **WAS **`079ae37e`** **AT **THE **TIME**).**
-      **⇒ AND **THE **READING**: **35/35 **AGREE**, **35/35 **BYTE-IDENTICAL**, **8/8 **PLANTS**,
+      **AND **THE **READING**: **35/35 **AGREE**, **35/35 **BYTE-IDENTICAL**, **8/8 **PLANTS**,
       **5/5 **CONTROLS**, **4/4 **CONFLATIONS**, **5/5 **STABLE **PAIRS**, **1/1 **CROSS**,
       **`SELFCHECK: OK`**, **`ORACLE **SELFCHECK: OK`**, **`census-rc=rc=0`**.
-      **⇒ AND **`unhealthy() -> []`**, **`artefacts_ok() -> []`**, **`repro_bad() -> []`**; **AND
+      **AND **`unhealthy() -> []`**, **`artefacts_ok() -> []`**, **`repro_bad() -> []`**; **AND
       **`repro`: **`319 of 319 files identical across two clean runs`**; **PEAK **RSS **902 **MB
       (**`run`**, **178 **s**) **AND **914 **MB **(**`repro`**, **365 **s**), **BOTH **`WITHIN-LIMITS`.**
-      **⇒ AND **THE **WITNESS**: **`PASS -- the claim is ESTABLISHED`**, **ALL **SEVEN **READINGS **OK**.**
+      **AND **THE **WITNESS**: **`PASS -- the claim is ESTABLISHED`**, **ALL **SEVEN **READINGS **OK**.**
 - [x] **ALL **FOUR **CITATION **GATES **ARE **rc=0`**:** **`pin-cite-gate.py`**
       (**`unverifiable=0`**, **`dangling=0`**), **`todo-cite-gate.py`** (**`0/0/0`**),
       **`bendcite-gate.py`** (**`WRONG-LINE` **0**, **`DANGLING-LINE` **0**, **`UNCLAIMED` **3** — **THE
       **LAST **THREE **ARE **IN **THE **RANGEIFY **LANE's **FILES**), **AND **`specfold-gate.py`**
       (**48 **CELLS **GRADED, **48 **AGREE**).**
 - [x] **THE **`UNCLAIMED` **CLASS **IS **NEARLY **CLOSED** (MEASURED): **71 -> 3**, **65 **NAMED, **0
-      **NOT **RECONSTRUCTIBLE** (`a740a152a`).**  **⇒ AND **THE **KINDS**: **38 **POINTERS **MOVED **TO
+      **NOT **RECONSTRUCTIBLE** (`a740a152a`).**  **AND **THE **KINDS**: **38 **POINTERS **MOVED **TO
       **THE **DECLARATION **+ **`symbol=`**; **27 **NAMED **A **FILE **HEADER** (WHICH **IS **FREE
       **COMMENT **SPACE **WITH **NO **CONSTRUCT **TO **NAME**, **SO **THE **HONEST **FORM **NAMES **THE
       **REGION**); **AND **2 **CLAIMS **THAT **NAMED **SOMETHING **THE **TARGET **NEVER **HELD** —
       **`uop/weak.bend`'s **"SIX **arms" **IS **NOW **SEVEN**, **AND **`mixin/rand.bend`'s **"PERMUTE
-      **defers" **IS **FALSE** — **PERMUTE **IS **PORTED**.  **⇒ AND **NEITHER **WAS **DELETED **NOR
+      **defers" **IS **FALSE** — **PERMUTE **IS **PORTED**.  **AND **NEITHER **WAS **DELETED **NOR
       **WEAKENED** — **THEY **WERE **CORRECTED.**
 - [x] **THE **GATE's **OWN **PLANT **WAS **BLIND**, **AND **IT **TOOK **THREE **SEPARATE **CAUSES**
-      (`3a3dd33a0`).**  **⇒ AND **THE **THREE**: **(1) **THE **PLANT **INSERTED **A **COMMENT**, **AND
+      (`3a3dd33a0`).**  **AND **THE **THREE**: **(1) **THE **PLANT **INSERTED **A **COMMENT**, **AND
       **THE **GATE's **OWN **ARM-ONE **DOCSTRING **SAYS **A **COMMENT **RUN **IS **ABSORBED **INTO **THE
       **CONSTRUCT's **SPAN** — **SO **IT **INSERTS **CODE**, **AND **NOT **A **`def`** (A **CONSTRUCT's
       **SPAN **RUNS **TO **THE **NEXT **DECLARATION**); **(2) **`k` **IS **COMPUTED **FROM **THE
@@ -25981,28 +26016,28 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **DECLARATION **`:1529`**, **SO **`k` **IS **8**, **NOT **2`**); **(3) **THE **LOOKUP **KEY **IS
       **THE **RELATIVE **PATH** — **`corpus.declares` **KEYS **ON **THE **PATH **RELATIVE **TO **THE
       **ROOT`**, **AND **AN **ABSOLUTE **PATH **IS **NOT **A **KEY**, **SO **THE **SPAN **LOOKUP **WAS
-      **SILENTLY **MISSING**.**  **⇒ AND **THE **PLANT **IS **NOW **GREEN**: **ARM **ONE
+      **SILENTLY **MISSING**.**  **AND **THE **PLANT **IS **NOW **GREEN**: **ARM **ONE
       **`RESOLVES` -> `WRONG-LINE` -> **`RESOLVES`**; **ARM **TWO **`RESOLVES` -> `WRONG-LINE` ->
       **the **twin **reproduces **the **control`.**
 - [x] **A **`symbol=` **NAMES **THE **CONSTRUCT **AND **NOT **THE **LINE** — **AND **THE **LAST
-      **POINTER **PROVED **THE **DIFFERENCE** (`079ae37e3`).**  **⇒ AND **`ops.bend`'s **`g_nr`**
+      **POINTER **PROVED **THE **DIFFERENCE** (`079ae37e3`).**  **AND **`ops.bend`'s **`g_nr`**
       **CITATION **CARRIED **`symbol=g_nr`** **AND **STILL **ROTTED**, **BECAUSE **`schedule/indexing.bend`
-      **IS **STILL **GROWING** (`:1420` -> `:1428`)** — **⇒ THE **CLAIM **SURVIVES **THE **MOVE, **BUT
+      **IS **STILL **GROWING** (`:1420` -> `:1428`)** — **THE **CLAIM **SURVIVES **THE **MOVE, **BUT
       **THE **LINE **BESIDE **IT **DOES **NOT**, **AND **A **CITATION **CARRYING **BOTH **IS **STILL
       **ROT** **WHILE **THE **FILE **GROWS.**
 
 - [x] **THE **`dialect-fixture-gate`'s **472 **"LOST" **ROWS **ARE **NOT **A **PORT **DEFECT** (MEASURED
-      **2026-10-29**).**  **⇒ AND **THE **GATE's **RULE **IS **`TAG = re.compile(r'"([^"\n]*)"')`** —
+      **2026-10-29**).**  **AND **THE **GATE's **RULE **IS **`TAG = re.compile(r'"([^"\n]*)"')`** —
       **IT **MATCHES **EVERY **QUOTED **STRING** — **AND **THE **`oracles/pre-oracle-bend.bend`** **AND
       **`oracles/post-oracle-bend.bend`** **FRAGMENTS **ARE **PTX/LLVM **ORACLES** **CARRYING **THE
       **ASSEMBLY **ALONGSIDE **THE **ROW **TAGS**, **SO **THE **GATE **READS **ASSEMBLY **AS **CLAIMS.**
-      **⇒ AND **THE **FULL **BREAKDOWN**: **354 **PER **FILE **ARE **STRINGS **INSIDE **A **CALL's
+      **AND **THE **FULL **BREAKDOWN**: **354 **PER **FILE **ARE **STRINGS **INSIDE **A **CALL's
       **ARGUMENT **LIST** (**THE **VALUES** — **`r_lcs("lconst special +inf", True{}, False{},
       "0x7FF0000000000000")`**, **WHERE **THE **ROW **TAG **IS **THE **FIRST **ARGUMENT**);
       **26 **PER **FILE **ARE **OUTSIDE **A **CALL** **AND **ARE **PTX **TEXT**/**DIRECTIVES**/**LABELS**/
       **REGISTER **NAMES**/**NUMBERS**/**ONE **DTYPE **LIST**; **AND **THE **OTHER **FIVE **FRAGMENTS
       **HAVE **ZERO **LOST** — **THEY **ARE **THE **CONTROL.**
-      **⇒ AND **THE **ROW **TAGS **ARE **STRUCTURALLY **IDENTIFIABLE**: **A **ROW **TAG **IS **THE
+      **AND **THE **ROW **TAGS **ARE **STRUCTURALLY **IDENTIFIABLE**: **A **ROW **TAG **IS **THE
       **FIRST **ARGUMENT **OF **A **ROW-MAKER**, **AND **A **ROW-MAKER **IS **DISCOVERABLE **FROM **THE
       **PORT** — **MEASURED: **`def r_lt(+nm: String, +d: S.Dt) -> String:`** **AT
       **`tinybendygrad/renderer/llvmir.bend:481`**, **`def lf_row(nm: String, b: Bnd2) -> IO(Unit):`**
@@ -26010,79 +26045,79 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **`tinybendygrad/examples/train_resnet.bend:106,108`**, **AND **`def u1(nm: String, v: U32) ->
       String:`** **AT **`tinybendygrad/runtime/support/usb.bend:98`** — **EVERY **ONE'S **FIRST
       **PARAMETER **IS **THE **ROW **NAME.**
-      **⇒ ⇒ **THE **RULE **IS: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **IS **THE **FIRST
+      ****THE **RULE **IS: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **IS **THE **FIRST
       **ARGUMENT **OF **A **CALL **TO **A **FUNCTION **THE **PORT **DEFINES **WHOSE **FIRST **PARAMETER
       **IS **THE **ROW **NAME**, **AND **THE **CALL **NAME **MUST **BE **MATCHED **ON **ITS **LAST
       **COMPONENT **TOO** (**THE **PORT's **DEF **NAMES **ARE **DOTTED**: **`Enc.emit.head`**,
       **`Op.in_.go`**).**
 - [x] **THE **`dialect-fixture-gate`'s **TAG **RULE **IS **REPAIRED** (MEASURED **2026-10-29**,
-      **`c64d64bf5`**).**  **⇒ AND **THE **GATE **MUST **STILL **BE **ABLE **TO **GO **RED**, **MUST **PRINT
+      **`c64d64bf5`**).**  **AND **THE **GATE **MUST **STILL **BE **ABLE **TO **GO **RED**, **MUST **PRINT
       **HOW **MANY **QUOTED **STRINGS **IT **DID **NOT **COUNT **AS **ROW **TAGS**, **AND **MUST **KEEP
       **THE **FIVE **CONTROL **FRAGMENTS' **COUNTS **UNCHANGED** — **ALL **THREE **HOLD.**
-      **⇒ AND **THE **RULE **IS: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **LIES **INSIDE
+      **AND **THE **RULE **IS: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **LIES **INSIDE
       **THE **FIRST **ARGUMENT **OF **A **CALL **TO **A **ROW-MAKER**, **AND **A **ROW-MAKER **IS **A
       **FUNCTION **THE **PORT **DEFINES **WHOSE **FIRST **PARAMETER **IS **THE **ROW **NAME** — **285
       **DISTINCT **NAMES, **DISCOVERED **BY **WALKING **THE **PORT**, **AND **THE **GATE **PRINTS
       **EVERY **ONE **WITH **THE **FILE **AND **LINE **OF **ITS **DEFINITION.**
-      **⇒ AND **THE **VERDICT **IS **OVER **THE **ROW **TAGS**: **`rowtags=2085 carried=1928
+      **AND **THE **VERDICT **IS **OVER **THE **ROW **TAGS**: **`rowtags=2085 carried=1928
       carried_renamed=157 lost=0 not_a_rowtag=3195`**, **AND **THE **OLD **RULE's **NUMBERS **ARE
       **PRINTED **BESIDE **THEM** (**`old_carried=4651 old_carried_renamed=157 old_lost=472`**) **SO
       **THE **DELTA **IS **ON **THE **FACE **OF **THE **OUTPUT** — **AND **THE **GATE **MEASURES **THAT
       **472 **OF **THOSE **472 **OLD-LOST **STRINGS **ARE **NOT **ROW **TAGS**, **RATHER **THAN
       **ASSERTING **IT.**
-      **⇒ AND **THE **PLANT **IS **A **TEXT **EDIT **ON **A **COPY **OF **THE **TREE**, **IN **BOTH
+      **AND **THE **PLANT **IS **A **TEXT **EDIT **ON **A **COPY **OF **THE **TREE**, **IN **BOTH
       **DIRECTIONS** — **THE **CONTROL **(AN **UNEDITED **COPY) **IS **GREEN**; **A **COPY **WHOSE
       **FRAGMENT **CARRIES **A **ROW **TAG **THE **PORT **DOES **NOT **CARRY **IS **RED **AND **NAMES
       **THE **TAG**; **A **COPY **WHOSE **PORT **NO **LONGER **CARRIES **A **ROW **TAG **IS **RED **AND
-      **NAMES **THE **ROW **THE **PORT **LOST**; **AND **BOTH **RESTORES **ARE **GREEN.  **⇒ AND **THE
+      **NAMES **THE **ROW **THE **PORT **LOST**; **AND **BOTH **RESTORES **ARE **GREEN.  **AND **THE
       **DENOMINATOR **IS **PRINTED **BESIDE **THE **PLANT** (**`control=2085 planted=2085 :: UNCHANGED`**),
       **BECAUSE **A **GREEN **RUN **THAT **IS **GREEN **ONLY **BECAUSE **IT **COUNTS **FEWER **ROWS
       **PROVES **NOTHING.**
-      **⇒ AND **THE **GATE **IS **21 **s **FASTER** (**21 **s **-> **0.81 **s**): **THE **CARRIED
+      **AND **THE **GATE **IS **21 **s **FASTER** (**21 **s **-> **0.81 **s**): **THE **CARRIED
       **CHECK **IS **A **SUBSTRING **TEST **OVER **A **12 **MB **STRING **AND **MEASURED **AT **3.5 **ms
       **PER **MISS**, **SO **THE **GATE **NOW **BUILDS **THE **TEXT **BETWEEN **EVERY **PAIR **OF
       **CONSECUTIVE **QUOTES **IN **THE **PORT **ONCE** — **MEASURED **AGAINST **THE **SUBSTRING **TEST
       **ON **EVERY **STRING **IN **EVERY **FRAGMENT: **0 **DISAGREEMENTS.**
-      **⇒ AND **THE **REPORT **IS **`.agents/slop/dialectgate/REPORT.md`.**
-- [ ] **`gates/gates-pop.py --plant` **TIMES **OUT** (>15 **MINUTES**, **NEVER **FINISHED).**  **⇒ AND
+      **AND **THE **REPORT **IS **`.agents/slop/dialectgate/REPORT.md`.**
+- [ ] **`gates/gates-pop.py --plant` **TIMES **OUT** (>15 **MINUTES**, **NEVER **FINISHED).**  **AND
       **THE **GATE **IS **2543 **LINES **AND **ITS **PLANT **BUILDS **SYNTHETIC **GIT
       **REPOSITORIES**, **SO **THE **COST **IS **PROBABLY **THE **REPOSITORIES** — **A **MEASUREMENT,
       **NOT **AN **ASSUMPTION**, **IS **WANTED.**
 
 - [x] **THE **`dialect-fixture-gate`'s **TAG **RULE **IS **REPAIRED**, **AND **THE **GATE **IS **rc=0**
-      (`c64d64bf5`, **`5b19f87ff`**).**  **⇒ AND **THE **DEFECT **WAS **IN **THE **GATE**: **THE **RULE
+      (`c64d64bf5`, **`5b19f87ff`**).**  **AND **THE **DEFECT **WAS **IN **THE **GATE**: **THE **RULE
       **WAS **`re.compile(r'"([^"\n]*)"')`** — **EVERY **QUOTED **STRING** — **AND **THE
       **`pre`/`post` **ORACLE **FRAGMENTS **CARRY **THE **ORACLE's **ASSEMBLY **ALONGSIDE **THE **ROW
-      **TAGS**, **SO **THE **GATE **READ **ASSEMBLY **AS **CLAIMS.**  **⇒ AND **NOT **ONE **OF **THE
+      **TAGS**, **SO **THE **GATE **READ **ASSEMBLY **AS **CLAIMS.**  **AND **NOT **ONE **OF **THE
       **472 **WAS **A **ROW **TAG.**
-      **⇒ AND **THE **NEW **RULE**: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **IS **THE
+      **AND **THE **NEW **RULE**: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **IS **THE
       **FIRST **ARGUMENT **OF **A **CALL **TO **A **ROW-MAKER**, **AND **A **ROW-MAKER **IS **A
       **FUNCTION **THE **PORT **DEFINES **WHOSE **FIRST **PARAMETER **IS **THE **ROW **NAME** (`nm`)**.**
-      **⇒ AND **THE **ROW-MAKER **SET **IS **DISCOVERED **BY **WALKING **`tinybendygrad/`** — **285
+      **AND **THE **ROW-MAKER **SET **IS **DISCOVERED **BY **WALKING **`tinybendygrad/`** — **285
       **DISTINCT **NAMES** — **AND **THE **GATE **PRINTS **EVERY **ONE **WITH **THE **FILE **AND **LINE
       **OF **ITS **DEFINITION**, **SO **A **READER **CAN **RE-RUN **THE **GREP **AND **SEE **THAT **IT
-      **IS **NOT **A **TYPED **LIST.**  **⇒ AND **CALLS **ARE **MATCHED **ON **THEIR **LAST
+      **IS **NOT **A **TYPED **LIST.**  **AND **CALLS **ARE **MATCHED **ON **THEIR **LAST
       **COMPONENT** (**THE **PORT's **DEF **NAMES **ARE **DOTTED**), **AND **THE **FIRST **ARGUMENT **MAY
       **BE **A **COMPOSITION** (`u1(String.concat(["usb_split_empty", "_full"]), ...)`).**
-      **⇒ AND **THE **DENOMINATOR **IS **SHOWN **BOTH **WAYS, **ON **THE **FACE **OF **THE **OUTPUT**:
+      **AND **THE **DENOMINATOR **IS **SHOWN **BOTH **WAYS, **ON **THE **FACE **OF **THE **OUTPUT**:
       **`FRAGMENTS files=7 quoted=5280 rowtags=2085 carried=1928 carried_renamed=157 lost=0
       not_a_rowtag=3195`**, **AND **AN **`OLD-RULE`** **LINE **PRINTING **`old_carried=4651
       old_carried_renamed=157 old_lost=472`** **BESIDE **IT.**
-      **⇒ AND **THE **FIVE **CONTROL **FRAGMENTS** (WHOSE **`lost` **WAS **0 **UNDER **THE **OLD **RULE)
+      **AND **THE **FIVE **CONTROL **FRAGMENTS** (WHOSE **`lost` **WAS **0 **UNDER **THE **OLD **RULE)
       **ARE **STILL **0** **UNDER **THE **NEW **ONE**, **EVERY **ROW **TAG **CARRIED**, **AND **THEIR
       **`quoted` **COUNTS **ARE **UNCHANGED **AND **PRINTED.**
-      **⇒ AND **THE **PLANT **HAS **BOTH **ARMS** — **CHANGE **THE **FRAGMENT's **ROW **TAG** (**rc=1**,
+      **AND **THE **PLANT **HAS **BOTH **ARMS** — **CHANGE **THE **FRAGMENT's **ROW **TAG** (**rc=1**,
       **AND **IT **NAMES **THE **PLANTED **TAG**)** AND **CHANGE **THE **PORT's **ROW **TAG**
       (**rc=1**, **AND **IT **NAMES **THE **ROW **THE **PORT **LOST**)** — **EACH **WITH **A **RESTORE
       **TO **GREEN**, **AND **THE **DENOMINATOR **PRINTED **BESIDE **THE **PLANT** (**control=2085
       planted=2085**), **BECAUSE **A **GREEN **RUN **THAT **IS **GREEN **ONLY **BECAUSE **IT **COUNTS
       **FEWER **ROWS **PROVES **NOTHING.**
-      **⇒ AND **A **PERFORMANCE **FIX **THAT **KEPT **THE **NUMBERS**: **THE **CARRIED **CHECK **WAS **A
+      **AND **A **PERFORMANCE **FIX **THAT **KEPT **THE **NUMBERS**: **THE **CARRIED **CHECK **WAS **A
       **SUBSTRING **TEST **OVER **A **12 **MB **STRING **AT **3.5 **ms **PER **MISS** — **7,365 **OF
       **THEM **COST **21 **s**; **THE **GATE **NOW **BUILDS **THE **TEXT **BETWEEN **EVERY **PAIR **OF
       **CONSECUTIVE **QUOTES **IN **THE **PORT** **ONCE**, **AND **A **TAG **HOLDING **NO **`"`** **IS
-      **CARRIED **EXACTLY **WHEN **IT **IS **ONE **OF **THOSE **CHUNKS**.  **⇒ MEASURED **AGAINST **THE
-      **SUBSTRING **TEST **ON **EVERY **STRING **IN **EVERY **FRAGMENT**: **0 **DISAGREEMENTS**.  **⇒ 21 **s
+      **CARRIED **EXACTLY **WHEN **IT **IS **ONE **OF **THOSE **CHUNKS**.  **MEASURED **AGAINST **THE
+      **SUBSTRING **TEST **ON **EVERY **STRING **IN **EVERY **FRAGMENT**: **0 **DISAGREEMENTS**.  **21 **s
       **-> 0.81 **s**, **NUMBERS **UNCHANGED.**
 
 ## Session 2026-10-29 — the `ledgerdue` DEBT is ZERO: 127 rows, 49 of them MINE
@@ -26133,15 +26168,15 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **`gates/ledgerdue-gate.py` **READS **`OWNED 0 UNOWNED 0 DUE 0`** **AND **`VERDICT PASS`**, **AND
       **`gates/gates-pop.ledger.tsv` **IS **MONOTONIC** (262 **->** 389 **ROWS**, **0 **DROPPED**, **THE
       **5 **TOMBSTONES **INTACT **ACROSS **127 **INTERLEAVED **WRITES **BY **THREE **UNITS**).**
-      **⇒ AND **THE **CURE **IS **THE **TREE's **OWN**: **ONE **`--write-ledger --only <path>` **PER
+      **AND **THE **CURE **IS **THE **TREE's **OWN**: **ONE **`--write-ledger --only <path>` **PER
       **PATH** (41 + 49 + 37), **AND **A **BARE **`--write-ledger` **IS **REFUSED** — **THE **CENTRAL
       **SWEEP **IS **NOT **A **MODE.**
-      **⇒ AND **THE **ROW **DOES **NOT **CARRY **THE **OWNING **COMMIT**, **AND **THAT **IS **BY
+      **AND **THE **ROW **DOES **NOT **CARRY **THE **OWNING **COMMIT**, **AND **THAT **IS **BY
       **DESIGN, **NOT **A **DEFECT**: **THE **SCHEMA **IS **A **QUINTUPLE**, **`read_ledger` **ENFORCES
       **THE **ARITY** (**MEASURED: **A **SIX-FIELD **ROW **READS **AS **`UNREADABLE`**), **AND **THE
       **OWNER **IS **RE-DERIVED **FROM **`git log --diff-filter=AD` **ON **EVERY **READ** — **A **STORED
       **COMMIT **IS **A **CLAIM **THAT **CAN **ROT**; **A **RE-DERIVED **ONE **CANNOT.**
-      **⇒ AND **THREE **DEFECTS **REPORTED, **NOT **CHANGED** (THE **BRIEF **FORBIDS **EDITING **THE
+      **AND **THREE **DEFECTS **REPORTED, **NOT **CHANGED** (THE **BRIEF **FORBIDS **EDITING **THE
       **TOOLS**): **(1) **`gates/gates-pop.py` **HAS **NO **LOCK** **ON **THE **SHARED **LEDGER **IT
       **WRITES** — **WHILE **`checks/differ.py` **TAKES **AN **`fcntl.flock`** **FOR **EXACTLY **THIS;
       **(2) **WRITE **MODE **EXITS **1** **BY **DESIGN** (**A **PATHSPEC **WRITE **STAYS **RED **WHILE
@@ -26152,42 +26187,42 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **DEBT **IS **PAID** — **AND **BOTH **ARE **THE **SAME **LESSON**: **A **GATE **THAT **COUNTS
       **EVERY **QUOTED **STRING **AS **A **CLAIM**, **OR **A **LEDGER **THAT **OWNS **A **ROW **PER
       **GATE**, **IS **A **POPULATION **QUESTION **BEFORE **IT **IS **A **VERDICT **QUESTION.**
-      **⇒ AND **THE **DIALECT **GATE's **NEW **POPULATION **IS **DISCOVERED **FROM **THE **PORT**
+      **AND **THE **DIALECT **GATE's **NEW **POPULATION **IS **DISCOVERED **FROM **THE **PORT**
       (**285 **ROW-MAKER **NAMES**, **EACH **PRINTED **WITH **THE **FILE **AND **LINE **OF **ITS
       **DEFINITION**), **AND **THE **OLD **RULE's **NUMBERS **ARE **PRINTED **BESIDE **THE **NEW
       **ONES** — **SO **A **READER **CAN **SEE **WHAT **THE **NEW **RULE **STOPPED **COUNTING.**
 
 - [x] **THE **`gates-pop.py` **LEDGER **HAD **NO **LOCK**, **AND **A **PATHSPEC **WRITE **EXITED **1
       **EVEN **WHEN **IT **SUCCEEDED** (MEASURED **2026-10-29**, **BOTH **REPORTED **BY **THE **UNITS
-      **THAT **PAID **THE **DEBT**).**  **⇒ AND **THE **LOCK **IS **THE **KERNEL's**, **NOT **A **PID
+      **THAT **PAID **THE **DEBT**).**  **AND **THE **LOCK **IS **THE **KERNEL's**, **NOT **A **PID
       **FILE**: **`fcntl.flock`** **ON **AN **OPEN **FILE **DESCRIPTION** **RELEASES **WHEN **THE
       **HOLDER **DIES** (**NO **STALE **LOCK **TO **RECLAIM**) **AND **CANNOT **BE **STOLEN** (**THE
       **KERNEL **REFUSES**) — **AND **IT **IS **RE-ENTRANT **INSIDE **ONE **PROCESS**, **BECAUSE **A
       **PLANT **CALLS **`write_ledger`** **AND **THE **CLI **DOES **TOO** (**`checks/differ.py`'s
       **OWN **`:135-139`** **RECORDS **THAT **EXACT **BUG **FOR **THE **CORPUS**).**
-      **⇒ AND **THE **LOCK **MUST **BE **PER **LEDGER **FILE**, **NOT **ONE **FIXED **PATH** — **A
+      **AND **THE **LOCK **MUST **BE **PER **LEDGER **FILE**, **NOT **ONE **FIXED **PATH** — **A
       **PLANT **WRITES **A **SYNTHETIC **LEDGER **IN **A **TEMP **TREE**, **AND **A **LOCK **ON **A
       **DIFFERENT **FILE **PROTECTS **NOTHING.**
-      **⇒ AND **THE **READ **AND **THE **WRITE **ARE **BOTH **INSIDE **THE **LOCK**, **BECAUSE **THE
+      **AND **THE **READ **AND **THE **WRITE **ARE **BOTH **INSIDE **THE **LOCK**, **BECAUSE **THE
       **BUG **THE **LOCK **EXISTS **TO **PREVENT **IS **A **LOST **UPDATE** — **TWO **WRITERS **THAT
       **BOTH **READ **THE **SAME **OLD **LEDGER **WILL **BOTH **KEEP **THE **OTHER's **ROW**, **AND
-      **ONE **OF **THE **TWO **WRITES **LOSES **THE **OTHER's **ROW.**  **⇒ LOCKING **ONLY **THE
+      **ONE **OF **THE **TWO **WRITES **LOSES **THE **OTHER's **ROW.**  **LOCKING **ONLY **THE
       **WRITE **WOULD **BE **A **LOCK **THAT **LOCKS **NOTHING.**
-      **⇒ AND **A **LOCKED **LEDGER **IS **A **REFUSAL** (**rc=3**, **NAMING **THE **HOLDER's
+      **AND **A **LOCKED **LEDGER **IS **A **REFUSAL** (**rc=3**, **NAMING **THE **HOLDER's
       **PID**), **NOT **A **CRASH** — **AND **THE **REFUSED **WRITE **CHANGES **NOTHING.**
-      **⇒ AND **PLANT **15** **NOW **PROVES **IT**: **A **CHILD **PROCESS **HOLDS **THE **LOCK**, **AND
+      **AND **PLANT **15** **NOW **PROVES **IT**: **A **CHILD **PROCESS **HOLDS **THE **LOCK**, **AND
       **THE **PARENT's **`flock` **IS **REFUSED**, **AND **`write_ledger` **RAISES**, **AND **THE
       **LEDGER **IS **BYTE-IDENTICAL **AFTERWARDS**, **AND **THE **REFUSAL **NAMES **THE **HOLDER.**
-      **⇒ AND **THE **HOLDER's **SCRIPT **IS **A **FILE**, **NOT **AN **INLINE **`-c`** — **BECAUSE **A
+      **AND **THE **HOLDER's **SCRIPT **IS **A **FILE**, **NOT **AN **INLINE **`-c`** — **BECAUSE **A
       **STRING **WITH **AN **F-STRING **INSIDE **A **LIST **OF **STRINGS **IS **A **QUOTING **PROBLEM
       **WAITING **TO **HAPPEN**, **AND **A **PLANT **THAT **CANNOT **BE **READ **IS **A **PLANT
       **NOBODY **WILL **FIX.**
 - [x] **A **PATHSPEC **WRITE **THAT **SUCCEEDED **STILL **EXITED **1**, **AND **A **CALLER **READING
       **ONLY **THE **EXIT **STATUS **WOULD **REPORT **37 **FAILURES **FOR **37 **SUCCESSES** (MEASURED:
-      **ALL **127 **INVOCATIONS **EXITED **1**).**  **⇒ AND **THE **EXIT **CODE **IS **RIGHT** — **A
+      **ALL **127 **INVOCATIONS **EXITED **1**).**  **AND **THE **EXIT **CODE **IS **RIGHT** — **A
       **PATHSPEC **WRITE **THAT **LEAVES **A **MOVEMENT **UNNAMED **IS **NOT **GREEN** — **BUT **"RED"
       **ALONE **CANNOT **TELL **A **CALLER **WHICH **OF **THE **TWO **IT **IS **LOOKING **AT.**
-      **⇒ AND **THE **NEW **EXIT **CODE **IS **NOT **A **NEW **EXIT **CODE**: **`gates/gatekit.py`'s
+      **AND **THE **NEW **EXIT **CODE **IS **NOT **A **NEW **EXIT **CODE**: **`gates/gatekit.py`'s
       **VOCABULARY **IS **`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`** **AND **THERE **IS **NO
       **ROOM **FOR **A **SIXTH** — **SO **THE **FIX **IS **A **LINE **ON **STDOUT** **THAT **SAYS **THE
       **WRITE **SUCCEEDED **AND **THE **RUN **IS **STILL **RED**, **AND **WHY **THE **EXIT **CODE **IS
@@ -26217,51 +26252,51 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       .agents/slop/rangify/cmp.py`** **READS **`OK  C1 the realize map AGREE (denominator=1 node)`**,
       **`OK  C2 the input graph AGREE (denominator=23 nodes)`**, **AND **`OK  CONTROL (the realize scan
       skipped for one node): the realize map DIVERGES=True and the input graph is UNCHANGED=True`**, **AND
-      **`VERDICT PASS`**.  **⇒ AND **THE **CONTROL **IS **THE **HALF **THAT **MATTERS**: **A **COMPARISON
+      **`VERDICT PASS`**.  **AND **THE **CONTROL **IS **THE **HALF **THAT **MATTERS**: **A **COMPARISON
       **THAT **CANNOT **FAIL **IS **NOT **A **COMPARISON**, **AND **THIS **ONE **DIVERGES **WHEN **THE
       **SCAN **IS **SKIPPED** — **SO **THE **GREEN **IS **A **MEASUREMENT **AND **NOT **A **CONSTANT.**
 
 - [x] **THE **DIGEST **HASHED **MUTATION **PROBES**, **SO **A **PLANT **RUN **MADE **THE **CORPUS
-      **STALE** (MEASURED **2026-10-29**).**  **⇒ AND **THE **DEFECT **WAS **FOUND **BY **THE
+      **STALE** (MEASURED **2026-10-29**).**  **AND **THE **DEFECT **WAS **FOUND **BY **THE
       **SYMPTOM**, **NOT **BY **GUESSING**: **THE **CORPUS **WENT **STALE **WITH **A **CLEAN **PORT** —
       **THE **DIGEST **MOVED **`b4c1fadb…` -> `3ddd9993…`** **AND **NO **COMMIT **AND **NO
-      **WORKING-TREE **CHANGE **EXPLAINED **IT.**  **⇒ AND **THE **CAUSE**: **`checks/differ.py`'s
+      **WORKING-TREE **CHANGE **EXPLAINED **IT.**  **AND **THE **CAUSE**: **`checks/differ.py`'s
       **`substrate_entries()`** **HASHES **EVERY **FILE **UNDER **`tinybendygrad/`** **AND
       **`tinygrad/`**, **AND **THOSE **TREES **CONTAIN **FIVE **GITIGNORED **SCRATCH **COPIES**
       (**`*-mut.bend`** **AND **A **`.bak`**), **AND **A **PROBE **REWRITES **THEM **AS **IT **RUNS.**
-      **⇒ AND **THIS **IS **THE **TREE's **OWN **RECORDED **HAZARD**, **WORD **FOR **WORD**: **"A **UNIT
+      **AND **THIS **IS **THE **TREE's **OWN **RECORDED **HAZARD**, **WORD **FOR **WORD**: **"A **UNIT
       **THAT **DROPPED **A **MUTATION **PROBE **IN **THE **TREE **MOVED **THE **CORPUS's **FRESHNESS
       **PIN."**
-      **⇒ AND **THE **FIX: **A **DIGEST **THAT **HASHES **A **PROBE's **RESIDUE **IS **NOT **A **PIN **ON
-      **THE **PORT** — **IT **IS **A **PIN **ON **WHETHER **SOMEONE **RAN **A **PLANT.**  **⇒ AND
+      **AND **THE **FIX: **A **DIGEST **THAT **HASHES **A **PROBE's **RESIDUE **IS **NOT **A **PIN **ON
+      **THE **PORT** — **IT **IS **A **PIN **ON **WHETHER **SOMEONE **RAN **A **PLANT.**  **AND
       **`__pycache__` **WAS **ALREADY **EXCLUDED **FOR **THE **SAME **REASON**, **SO **THE **RULE **WAS
       **HALF **APPLIED** — **AND **THE **HALF **THAT **MOVED **THE **DIGEST **WAS **THE **ONE **THAT **WAS
       **MISSING.**
-      **⇒ AND **THE **RULE **IS **ONE **RULE, **NOT **TWO**: **`checks/differ.py` **NOW **LOADS
+      **AND **THE **RULE **IS **ONE **RULE, **NOT **TWO**: **`checks/differ.py` **NOW **LOADS
       **`gates/header-census-gate.py`'s **`is_scratch`** **BY **PATH** — **BECAUSE **"A **SECOND **COPY
       **OF **A **RULE **IS **A **CONTRACT **WITH **NO **GENERATOR"**, **AND **`gates/bendcite-gate.py`
       **ALREADY **LOADS **THE **SAME **RULE **THE **SAME **WAY.**
-      **⇒ AND **BOTH **DIRECTIONS **ARE **PROVEN**: **A **SCRATCH **PROBE **DOES **NOT **MOVE **THE
+      **AND **BOTH **DIRECTIONS **ARE **PROVEN**: **A **SCRATCH **PROBE **DOES **NOT **MOVE **THE
       **DIGEST** (`025ec12b5c03fd33…` **UNCHANGED**), **AND **A **REAL **PORT **FILE **DOES**
       (**`025ec12b5…` -> `6df1c8ef…`**).**
 - [x] **THE **LAST **GATE **THAT **COMPUTED **A **ROOT **OUTSIDE **THE **REPO** (MEASURED **2026-10-29**).**
-      **⇒ AND **IT **WAS **TWO **DEFECTS**: **`gates/gates-pop.py` **COUNTED
+      **AND **IT **WAS **TWO **DEFECTS**: **`gates/gates-pop.py` **COUNTED
       **`checks/cites-census.py`** AS **OFF-REPO **BECAUSE **IT **MATCHED **A **STRING **LITERAL **INSIDE
       **A **TEST **TUPLE** — **THE **NEEDLE **`"pathlib.Path(__file__).resolve().parents[3]"`**, **WHICH
       **IS **A **RECORD **OF **A **DEFECT** **AND **MUST **NOT **BE **DELETED**, **ONLY **NOT **READ **AS
       **CODE** — **AND **THE **INSTRUMENT **ALREADY **HAD **THE **MECHANISM** (**`FIXTURES` **IS
       **COLLECTED **FROM **NAMED **CONSTANTS**, **SO **A **BARE **LITERAL **IS **NOT **COLLECTED**);
-      **⇒ AND **WITH **THE **NEEDLE **BLANKED, **THE **COUNT **OF **GATES **THAT **"NAME **A **ROOT"**
+      **AND **WITH **THE **NEEDLE **BLANKED, **THE **COUNT **OF **GATES **THAT **"NAME **A **ROOT"**
       **FELL **230 -> 229**, **AND **THAT **IS **WHAT **FOUND **THE **SECOND **DEFECT**: **THE **FILE's
       **OWN **ROOT **WAS **SPELLED **`.parent.parent`**, **AND **NEITHER **`ROOT_CONST`** **NOR
       **`ROOT_INLINE`** **MATCHES **A **SPELLING **WITHOUT **`.parents[N]`** — **SO **THE **FILE's **REAL
       **ROOT **WAS **INVISIBLE **AND **IT **WAS **BEING **COUNTED **ONLY **BECAUSE **OF **THE **FIXTURE.**
-      **⇒ MEASURED: **NO **OTHER **GATE **USES **THAT **SPELLING** (**0 **OF **384**), **AND **THE **TWO
-      **SPELLINGS **ARE **THE **SAME **DIRECTORY.**  **⇒ AND **THE **FIX **IS **THE **SPELLING**
+      **MEASURED: **NO **OTHER **GATE **USES **THAT **SPELLING** (**0 **OF **384**), **AND **THE **TWO
+      **SPELLINGS **ARE **THE **SAME **DIRECTORY.**  **AND **THE **FIX **IS **THE **SPELLING**
       (**`parents[1]`**), **AND **THE **COUNT **GOES **BACK **TO **230** **AND **THE **FALSE **POSITIVES
       **GO **TO **0`: **`GATES-POP: RED -- 384 entry points, 230 name a root, 34 assert it, **0 resolve
       **outside **the **repo`.**
-      **⇒ AND **`checks/cites-census.py`'s **OWN **VERDICT **AND **EVERY **ONE **OF **ITS **NUMBERS **ARE
+      **AND **`checks/cites-census.py`'s **OWN **VERDICT **AND **EVERY **ONE **OF **ITS **NUMBERS **ARE
       **UNCHANGED** (**rc=1**).**
 - [x] **THE **LEDGER **ROWS **FOR **THE **TWO **GATES **WHOSE **ROOT **FACTS **CHANGED** **WERE **UPDATED
       (**`7ee5a7859`**)** — **ONE **`--write-ledger --only <path>`** **PER **PATH**, **AND **THE **LEDGER
@@ -26270,83 +26305,83 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       DUE 0`** **AND **`VERDICT PASS`.**
   - [x] **THE **ARENA **GENERATOR **NEVER **RAN, **AND **ITS **`SyntaxError` **HAD **BEEN **REFUSING **THE
         **PYVALS **GATE **FOR **THREE **DAYS** (MEASURED **2026-10-30**, **`9ade6cab6`**).**
-        **⇒ AND **`.agents/slop/devlane/gen_arena.py` **WAS **THE **ONLY **`.py` **IN **THE **TREE **THAT
+        **AND **`.agents/slop/devlane/gen_arena.py` **WAS **THE **ONLY **`.py` **IN **THE **TREE **THAT
         **DID **NOT **PARSE**, **AND **IT **LANDED **AT **`d340ed691`** (**2026-10-27**) **AND **NEVER
-        **ONCE **RAN.**  **⇒ AND **THE **DAMAGE **WAS **THREE **LAYERS**, **AND **ONLY **THE **FIRST **WAS **A
+        **ONCE **RAN.**  **AND **THE **DAMAGE **WAS **THREE **LAYERS**, **AND **ONLY **THE **FIRST **WAS **A
         **`SyntaxError`: **A **LITERAL **BRACE **INSIDE **AN **F-STRING** (TWICE), **AND **THE **`ParamArg`
         **EMIT **WAS **FIELD-SHIFTED** (**13 **FIELDS, **`name` **AT **6**, **`volatile` **AT **12**, **AND
         **THE **PORT's **`ParamArg` **HAS **TWELVE** — **`ops.bend:869`**, **WHOSE **`ParamArg.slot`
-        **DESTRUCTURES **ALL **TWELVE**).**  **⇒ AND **THE **FIX **IS **A **TEMPLATE, **NOT **A **DOUBLING**:
+        **DESTRUCTURES **ALL **TWELVE**).**  **AND **THE **FIX **IS **A **TEMPLATE, **NOT **A **DOUBLING**:
         **THE **BRACES **ARE **LITERAL **IN **THE **EMITTED **SOURCE**, **AND **A **LITERAL **BRACE **IN **AN
-        **F-STRING **IS **A **DOUBLING **BUG **WAITING **TO **HAPPEN.**  **⇒ AND **MEASURED: **THE **TREE **NOW
+        **F-STRING **IS **A **DOUBLING **BUG **WAITING **TO **HAPPEN.**  **AND **MEASURED: **THE **TREE **NOW
         **HAS **ZERO **`.py` **FILES **THAT **DO **NOT **PARSE**, **AND **`gates/pyvals-gate.py` **GOES **FROM
         **`REFUSED` **TO **`PASS`**.**
   - [x] **THE **CORPUS's **REPRO-DIFF **ARTIFACT **IS **WRITTEN **ONLY **ON **FAILURE, **AND **THE
         **DECLARATION **DID **NOT **SAY **SO** (MEASURED **2026-10-30**, **`93f33ea76`**).**
-        **⇒ AND **`gates/txt-carveout-gate.py` **WAS **RED **ON **EXACTLY **ONE **ABSENT **DECLARED **NAME**
+        **AND **`gates/txt-carveout-gate.py` **WAS **RED **ON **EXACTLY **ONE **ABSENT **DECLARED **NAME**
         (**`runs/graphcmp/D/D0-repro-diff.txt`**, **WRITTEN **ONLY **INSIDE **`cmd_repro`'s **FAILURE
         **BRANCH**, **AND **DELETED **BY **A **PASSING **REPRO**), **AND **THE **READER **WAS **RIGHT **AND
-        **THE **DECLARATION **WAS **INCOMPLETE.**  **⇒ AND **THE **MECHANISM **COULD **NOT **EXPRESS **IT**
+        **THE **DECLARATION **WAS **INCOMPLETE.**  **AND **THE **MECHANISM **COULD **NOT **EXPRESS **IT**
         (**`CONDITIONAL` **IS **A **PREFIX **SET**, **AND **A **PREFIX **IS **A **FAMILY, **NOT **A **NAME**),
         **SO **`checks/differ.py` **NOW **EXPORTS **`CONDITIONAL_ARTIFACTS`** **AND **`checks/no-txt.py`
         **READS **IT** — **A **SECOND **LIST **OF **NAMES **IN **`no-txt.py`** **IS **THE **CLASS
-        **DOCTRINE **1 **FORBIDS.**  **⇒ AND **THE **READER **WAS **NOT **WEAKENED**: **MOVING
+        **DOCTRINE **1 **FORBIDS.**  **AND **THE **READER **WAS **NOT **WEAKENED**: **MOVING
         **`runs/graphcmp/D/D0-run-summary.txt` **ASIDE **MAKES **THE **GATE **RED **AGAIN **AND **NAMES
         **IT**, **AND **RESTORING **THE **BYTE-IDENTICAL **FILE **MAKES **IT **GREEN **AGAIN.**
   - [x] **THE **`.txt` **GATE's **GREEN **VERDICT **HAD **NO **ARGV **THAT **REACHED **IT** (MEASURED
         **2026-10-30**, **`50e292c48`**).**
-        **⇒ AND **`PLANTS[0]` **WAS **`[]`**, **AND **THE **LIVE **TREE **OWNS **204 **HARD **`.txt`**, **SO
+        **AND **`PLANTS[0]` **WAS **`[]`**, **AND **THE **LIVE **TREE **OWNS **204 **HARD **`.txt`**, **SO
         **NO **ARGV **OVER **IT **CAN **REACH **`0`** — **AND **`gates/gate-surface.py` **CHARGED **IT
-        **MISPLANT **AND **THEN **UNTAKEN.**  **⇒ AND **`--plant-clean` **REBINDS **`ROOT`** **TO **A
+        **MISPLANT **AND **THEN **UNTAKEN.**  **AND **`--plant-clean` **REBINDS **`ROOT`** **TO **A
         **SANDBOX **TREE** (**THE **GENERATORS **SYMLINKED **IN**, **AND **`os.walk` **DOES **NOT **FOLLOW
         **SYMLINKED **DIRECTORIES**, **SO **THE **WALK **SEES **NO **`.txt`**), **AND **IT **IS **NOT
         **VACUOUS**: **A **`.txt` **IN **THE **SANDBOX **MAKES **IT **rc=1** **AND **NAMES **`planted.txt`.**
   - [x] **THE **SURFACE **CENSUS **WAS **RED **ON **ITSELF, **AND **IT **CHARGED **FOUR **FILES **FOR **NAMING
         **A **VARIABLE **AND **ONE **PYTHON **GATE **FOR **BEING **PYTHON** (MEASURED **2026-10-30**,
         **`73b709d2a`**).**
-        **⇒ AND **THE **MARKER **WAS **A **NAME, **NOT **A **SHAPE** (**FOUR **FILES **SHIP **A
+        **AND **THE **MARKER **WAS **A **NAME, **NOT **A **SHAPE** (**FOUR **FILES **SHIP **A
         **`VERDICTS` **THAT **IS **NOT **A **MAPPING**, **AND **NONE **SHIPS **A **`PLANTS`**); **AND **A **FILE
         **THIS **CENSUS **CANNOT **UNDERSTAND **IS **NOT **MALFORMED** (**THE **TREE's **OWN
         **`gates/gate-surface-plant.py` **HAD **ALREADY **PROPOSED **BOTH **RULES**); **AND **A **CODE **THE
         **TREE **HAS **NAMED** (**CODE **`2` **AS **ARGPARSE's **`USAGE`**) **IS **NOT **UNOWNED** (**IT **IS
         **`CONVENTION`**, **MEASURED **BY **`checks/exitcode-census.py`**); **AND **A **GATE **MAY **HAVE **ITS
         **OWN **WORDS** (**`gates/runner.py`'s **`spoken_disagrees()`** **READS **ONLY **THE **HOUSE **FIVE**).
-        **⇒ AND **`gates/gates-pop.py` **MISCLASSIFIED **`gates/bendfloat-gate.py`** **AS **`js-main`** — **IT
+        **AND **`gates/gates-pop.py` **MISCLASSIFIED **`gates/bendfloat-gate.py`** **AS **`js-main`** — **IT
         **IS **A **PYTHON **GATE**, **AND **`JS_MODULE`'s **ANCHOR **MATCHED **INSIDE **A **MULTI-LINE
-        **PYTHON **STRING** — **AND **THE **LEDGER **CARRIED **THE **WRONG **REASON.**  **⇒ AND **THE **PLANT
+        **PYTHON **STRING** — **AND **THE **LEDGER **CARRIED **THE **WRONG **REASON.**  **AND **THE **PLANT
         **SUITE **GREW **14 -> 17** **AND **IS **GREEN**, **AND **ONE **PLANT **WAS **REPAIRED **BECAUSE **IT
         **REQUIRED **THE **TREE **TO **BE **BROKEN** (**IT **NOW **PLANTS **ITS **OWN **DRIFT**).**
   - [x] **THE **CORPUS **WAS **RE-RUN **2026-10-30** **AND **IS **GREEN, **CURRENT, **AND **REPRODUCIBLE**
         (**`c6356fff0`**).**
-        **⇒ AND **`substrate-start == substrate-end == live == repro-substrate ==
+        **AND **`substrate-start == substrate-end == live == repro-substrate ==
         160d496f44658206b3bb26444748ea5dc95dbe06dda8f7f7b165242e883f39c4`**, **`substrate-head=d438e6464`**, **35/35
         **AGREE**, **35/35 **BYTE-IDENTICAL**, **`unhealthy() -> []`**, **`artefacts_ok() -> []`**,
         **`repro_bad() -> []`**, **AND **`319 of 319 files identical across two clean runs`** — **PEAK **960
         **MB / **242 **s** (**`run`**) **AND **896 **MB / **428 **s** (**`repro`**), **BOTH **`WITHIN-LIMITS`**.
-        **⇒ AND **THE **WITNESS **READS **`PASS -- the claim is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS
+        **AND **THE **WITNESS **READS **`PASS -- the claim is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS
         **OK**, **AND **`AGENTS.md` **CARRIES **THE **NEW **DIGEST **AND **THE **NEW **HEAD.**
 the SHAPE HALF'S LAWS ARE AUDITED, AND THE AUDIT FOUND ONE LAW THAT CANNOT FAIL
 
   - [x] **THE **SHAPE **HALF'S **SIXTEEN **LAWS **ARE **MUTATION-TESTED, **AND **ONE **OF **THEM **IS
         **VACUOUS **BY **CONSTRUCTION** (MEASURED **2026-10-30**, **`2a23626ad`**, **GATE
         **`gates/shape-law-census-gate.py`**).**
-        **⇒ AND **12 **CAUGHT** (THE **GATE **NAMES **THE **LAW), **3 **MASKED** (AN **EARLIER **LAW **IS
+        **AND **12 **CAUGHT** (THE **GATE **NAMES **THE **LAW), **3 **MASKED** (AN **EARLIER **LAW **IS
         **NAMED **FIRST** — **AND **CHANGING **EACH **MASKED **LAW's **CONCLUSION **TO **A **DIFFERENT
         **PROPOSITION **MAKES **THE **AGGREGATE **GO **RED **NAMING **IT**, **SO **A **MASKED **LAW **IS
         **NOT **A **LABEL**), **AND **1 **VACUOUS**: **`store_matches_its_buffer`**, **WHOSE **PREMISE
-        **AND **CONCLUSION **ARE **THE **IDENTICAL **TERM**, **SO **IT **IS **`P ⇒ P`** **AND **ITS **PROOF
+        **AND **CONCLUSION **ARE **THE **IDENTICAL **TERM**, **SO **IT **IS **`P P`** **AND **ITS **PROOF
         **IS **LITERALLY **`premise`**.**
-        **⇒ AND **THE **PORT **ALREADY **SAID **SO **IN **PROSE** — **`LAWS.bend:328`** **AND
+        **AND **THE **PORT **ALREADY **SAID **SO **IN **PROSE** — **`LAWS.bend:328`** **AND
         **`PROOF.bend:473`** **BOTH **CALL **IT **"VACUOUS **BY **CONSTRUCTION **… **it **pins **no
         **behaviour"** — **AND **THE **GATE's **VALUE **IS **THAT **THE **PROSE **CLAIM **IS **NOW
         **CHECKABLE**: **A **PROSE **FACT **BECOMES **A **ROW**, **AND **THE **GATE **FAILS **IF **THE
         **CENSUS **GETS **WORSE.**
-        **⇒ AND **⇒ AND **THE **BIGGER **FINDING **IS **THE **COVERAGE: **39 **OF **THE **50 **SHAPE-FOLD
+        **AND **AND **THE **BIGGER **FINDING **IS **THE **COVERAGE: **39 **OF **THE **50 **SHAPE-FOLD
         **ARMS **ARE **UNPINNED** — **AN **ARM **NO **LAW **READS **MAY **BE **WRONG **AND **THE **BOOK
-        **SAYS **NOTHING.**  **⇒ AND **THE **ALU **HALF's **SAME **FINDING **IS **13 **ARMS**, **AND **THE
+        **SAYS **NOTHING.**  **AND **THE **ALU **HALF's **SAME **FINDING **IS **13 **ARMS**, **AND **THE
         **TWO **GATES **TOGETHER **COVER **THE **WHOLE **LAW **SET: **34 **LAWS, **18 **AUDITED **BY **ONE,
         **16 **BY **THE **OTHER.**
-        **⇒ AND **THE **GATE **IS **GREEN **AT **REST **AND **CAN **GO **RED** (**AN **EMPTIED **BASELINE
+        **AND **THE **GATE **IS **GREEN **AT **REST **AND **CAN **GO **RED** (**AN **EMPTIED **BASELINE
         **ANSWERS **rc=1**, **AND **ITS **OWN **`--plant`** **RUNS **FOUR **CASES**), **AND **THE **FOUR
         **SUBJECT **FILES **ARE **BYTE-IDENTICAL **TO **HEAD** — **SO **THIS **IS **A **READER, **NOT **AN
         **EDIT.**
@@ -26355,7 +26390,7 @@ the SHAPE HALF'S LAWS ARE AUDITED, AND THE AUDIT FOUND ONE LAW THAT CANNOT FAIL
 
   - [x] **THE **PORT **AND **CPYTHON **DISAGREED **ON **PYTHON's **LIST **INDEX **INTO **A **STACK**, **AND
         **THE **PORT **NOW **AGREES** (2026-10-30).**
-        **⇒ AND **THE **INPUT: **`UOp(Ops.INDEX, src=(UOp(Ops.STACK, src=(UOp.const(3), UOp.const(5),
+        **AND **THE **INPUT: **`UOp(Ops.INDEX, src=(UOp(Ops.STACK, src=(UOp.const(3), UOp.const(5),
         UOp.const(7))), UOp.const(-1)))`** — **A **STACK **OF **THREE **CONSTS **AND **A **CONST **INDEX **OF
         **`-1`**.  **MEASURED **ON **BOTH **SIDES: **UPSTREAM's **`mop_cleanup.rewrite`** **ANSWERS
         **`UOp(Ops.CONST, arg=7)`** (**`a.src[-1]` **IS **THE **LAST **ELEMENT**) **AND **THE **PORT
@@ -26363,29 +26398,29 @@ the SHAPE HALF'S LAWS ARE AUDITED, AND THE AUDIT FOUND ONE LAW THAT CANNOT FAIL
         **`0`**, **`1`**, **`2`** AND **`3`** **ROWS **ARE **IN **THE **GATE**, **SO **THE **DEFECT **IS **NOT
         **A **SINGLE **CASE** **AND **THE **POSITIVE **CASES **ARE **IN **THE **SAME **TABLE** **AS **THE
         **NEGATIVE **ONES.**
-        **⇒ AND **THE **UPSTREAM **CODE **PATH: **`tinygrad/uop/movement.py:22`** (**`mop_cleanup` **RULE
+        **AND **THE **UPSTREAM **CODE **PATH: **`tinygrad/uop/movement.py:22`** (**`mop_cleanup` **RULE
         **6**) **AND **`tinygrad/uop/ops.py:561`** (**`UOp.index`**) **BOTH **SPELL **THE **INDEX **AS
         **`a.src[new_srcs[0].val]`**, **WHICH **IS **PYTHON's **LIST **INDEX** — **SO **A **NEGATIVE **`v`
-        **READS **FROM **THE **END**.  **⇒ AND **THE **PORT **CODE **PATH: **`tinybendygrad/uop/movement.bend`**
+        **READS **FROM **THE **END**.  **AND **THE **PORT **CODE **PATH: **`tinybendygrad/uop/movement.bend`**
         **READ **EVERY **INDEX **AS **A **`U32`** (**`i64_u32`**), **SO **A **NEGATIVE **`v` **BECAME **A **HUGE
-        **`U32`** **AND **THE **ANSWER **WAS **THE **FIRST **ELEMENT**.  **⇒ AND **THE **FIX: **`mp_py_index`**
+        **`U32`** **AND **THE **ANSWER **WAS **THE **FIRST **ELEMENT**.  **AND **THE **FIX: **`mp_py_index`**
         **IS **PYTHON's **RULE** (**`v >= 0` **IS **THE **POSITION**, **`v < 0` **IS **`n+v`**, **AND **BOTH
         **ARE **OUT **OF **RANGE **WHEN **THEY **DO **NOT **LAND **IN **`[0, n)`**), **AND **IT **IS **CALLED
         **FROM **BOTH **SITES** — **`mp_stack_val`** (**`UOp.index`**) **AND **`mp_stack_src`** (**`mop_cleanup`
-        **RULE **6**).  **⇒ AND **THE **OUT-OF-RANGE **ANSWER **IS **"NO **REWRITE"**, **BECAUSE **UPSTREAM
+        **RULE **6**).  **AND **THE **OUT-OF-RANGE **ANSWER **IS **"NO **REWRITE"**, **BECAUSE **UPSTREAM
         **RAISES **`IndexError`** **AND **THE **PORT **HAS **NO **EXCEPTION **FORM**.
-        **⇒ AND **THE **CORPUS **CANNOT **SEE **THIS**: **MEASURED **OVER **EVERY **`D2-canon-py-*.txt`**,
+        **AND **THE **CORPUS **CANNOT **SEE **THIS**: **MEASURED **OVER **EVERY **`D2-canon-py-*.txt`**,
         **NONE **OF **THE **35 **GRAPHS **HAS **AN **`INDEX` **WITH **A **`STACK` **SRC**, **SO **THE **35/35
         **GREEN **IS **NOT **EVIDENCE **ABOUT **THIS **RULE** — **WHICH **IS **WHY **THE **GAP **IS **OUTSIDE
         **THE **CORPUS.**
-        **⇒ AND **THE **WITNESS: **`gates/mop_idxneg-gate.py`** (**16 ROWS**, **2 LANES**, **rc=0**), **AND **IT
+        **AND **THE **WITNESS: **`gates/mop_idxneg-gate.py`** (**16 ROWS**, **2 LANES**, **rc=0**), **AND **IT
         **IS **A **REAL **GATE **AND **NOT **A **CHANGE-DETECTOR: **WITH **`tinybendygrad/uop/movement.bend`**
         **PUT **BACK **AT **`HEAD`** **IT **REPORTS **`DISAGREE (bd): n=6 of 16 rows`** **AND **THE **SIX **ARE
         **`mcl_neg1`**, **`mcl_neg2`**, **`mcl_neg4`**, **`uidx_neg1`**, **`uidx_neg2`** **AND **`uidx_neg4`**.
-        **⇒ AND **THE **ROW **IS **THE **VALUE **AND **NOT **THE **OP**, **BECAUSE **AN **OP **ROW **READS
+        **AND **THE **ROW **IS **THE **VALUE **AND **NOT **THE **OP**, **BECAUSE **AN **OP **ROW **READS
         **`CONST` **ON **BOTH **SIDES **FOR **THE **WRONG **INDEX **AND **DOES **NOT **MOVE** — **SO **IT
         **COULD **NOT **HAVE **SEEN **THIS **DEFECT **AT **ALL**.
-        **⇒ AND **THE **SUBSTRATE **DIGEST **MOVED** (**`160d496f44658206b3bb26444748ea5dc95dbe06dda8f7f7b165242e883f39c4`
+        **AND **THE **SUBSTRATE **DIGEST **MOVED** (**`160d496f44658206b3bb26444748ea5dc95dbe06dda8f7f7b165242e883f39c4`
         **-> **`29a81c44736566a4d8fce1760ae462199f38ecdf6a075c8cdb85e35f12712a77`**), **SO **THE **CORPUS
         **MUST **BE **RE-RUN** — **AND **THE **RE-RUN **IS **EXPECTED **TO **STAY **35/35**, **BECAUSE **NO
         **CORPUS **GRAPH **REACHES **THIS **RULE** (**MEASURED**, **ABOVE**).
@@ -26393,9 +26428,9 @@ the CORPUS's GREENNESS IS ABOUT THE OP SURFACE AND SAYS ALMOST NOTHING ABOUT THE
 
   - [x] **THE **CORPUS's **COVERAGE **WAS **MEASURED **FOR **THE **FIRST **TIME (2026-10-30,
         `113363263`, `.agents/slop/corpuscoverage/`).**
-        **⇒ AND **THE **HEADLINE: **THE **CORPUS's **OWN **CENSUS **REACHES **69 **OF **69 **PROGRAM **OPS**,
+        **AND **THE **HEADLINE: **THE **CORPUS's **OWN **CENSUS **REACHES **69 **OF **69 **PROGRAM **OPS**,
         **WHILE **THE **PORT's **DEFS **ARE **954 **OF **4724 **REACHED** (**3770 **UNREACHED**), **AND **160
-        **OF **THE **PORT's **175 **MODULES **ARE **NEVER **EVEN **IMPORTED.**  **⇒ AND **THE **MECHANISM **IS
+        **OF **THE **PORT's **175 **MODULES **ARE **NEVER **EVEN **IMPORTED.**  **AND **THE **MECHANISM **IS
         **STRUCTURAL**, **NOT **AN **OMISSION:** **EVERY **CORPUS **GRAPH **HAND-BUILDS **ITS **ARENA
         **NODE-FOR-NODE**, **SO **THE **CORPUS **TESTS **THE **PORT's **DATA **STRUCTURES** (`ops.bend`,
         `fold.bend`) **AND **NEVER **ITS **OPERATIONS** — **`mixin/gradient.bend` **0/494**,
@@ -26403,66 +26438,66 @@ the CORPUS's GREENNESS IS ABOUT THE OP SURFACE AND SAYS ALMOST NOTHING ABOUT THE
         **`tensor.bend` **4/347**: **1183 **DEFS, **100% **UNREACHED.**
   - [x] **THE **`api` **GRAPH **REACHES **THE **PORT's **OPERATION **LAYER, **AND **IT **FINDS **A **REAL
         **DEFECT (2026-10-30, `113363263`).**
-        **⇒ AND **`Tensor.empty(4,3) + Tensor(1)`** — **8 **nodes, **THE **FIRST **WHOSE **BEND **SIDE **IS
+        **AND **`Tensor.empty(4,3) + Tensor(1)`** — **8 **nodes, **THE **FIRST **WHOSE **BEND **SIDE **IS
         **BUILT **BY **THE **PORT's **OWN **TENSOR **API** (`CR.cr_empty` + `E.ew_add`), **AND **A **BINARY **OP
         **IS **REQUIRED** (**MEASURED**: **`mixin/elementwise.bend` **BUILDS **ONE **ARENA **PER **METHOD**, **SO
-        **ONLY **A **BINARY **OP **MERGES **INTO **ONE **ARENA**).  **⇒ AND **COVERAGE **BOUGHT: **`elementwise.bend`
+        **ONLY **A **BINARY **OP **MERGES **INTO **ONE **ARENA**).  **AND **COVERAGE **BOUGHT: **`elementwise.bend`
         **0→31**, **`weak.bend` **0→41**, **`tensor.bend` **4→32**, **`creation.bend` **9/105**; **TOTAL **REACHED
         **828 → 954.**
-        **⇒ AND **THE **DEFECT: **CPython's **ALLOC **slot **0**, **THE **PORT's **slot **1**, **BECAUSE
+        **AND **THE **DEFECT: **CPython's **ALLOC **slot **0**, **THE **PORT's **slot **1**, **BECAUSE
         **`tinybendygrad/mixin/creation.bend:377`** **MINTS **`O.Arena.next(ar)`** (**THE **ARENA's **LENGTH**)
-        **WHERE **UPSTREAM **MINTS **`next(UOp.unique_num)`** (**A **MONOTONE **COUNTER**).  **⇒ AND **THE
+        **WHERE **UPSTREAM **MINTS **`next(UOp.unique_num)`** (**A **MONOTONE **COUNTER**).  **AND **THE
         **CORPUS **COULD **NOT **SEE **IT, **AND **THE **REASON **IS **STRUCTURAL**: **EVERY **OTHER **GRAPH
         **SPELLS **THE **SLOT **ITSELF**, **SO **THE **PORT's **OWN **SLOT-MINTING **WAS **EXECUTED **BY
         **NOTHING **THE **CORPUS **COMPARES.**
-        **⇒ AND **⇒ AND **REPORTED, **NOT **FIXED, **AND **THE **CORPUS **IS **HONEST **ABOUT **IT**: **THE
+        **AND **AND **REPORTED, **NOT **FIXED, **AND **THE **CORPUS **IS **HONEST **ABOUT **IT**: **THE
         **GRAPH **IS **DECLARED **`"api": "DISAGREE"`** — **THE **TABLE's **FIRST **EXCEPTION** — **SO **THE
-        **CORPUS **IS **35/36** **AND **THE **DEFECT **IS **NAMED.**  **⇒ AND **A **GRAPH **THAT **DISAGREEs **IS
+        **CORPUS **IS **35/36** **AND **THE **DEFECT **IS **NAMED.**  **AND **A **GRAPH **THAT **DISAGREEs **IS
         **A **GRAPH **THE **CORPUS **DOES **NOT **CERTIFY**, **AND **THE **TRADE **IS **RECORDED**: **THE
         **OPERATION **LAYER, **WHICH **WAS **100% **UNREACHED**, **IS **NOW **REACHED.**
   - [x] **THE **`api` **GRAPH's **`ParamArg.slot` **DEFECT **IS **FIXED, **AND **THE **CORPUS **IS **36/36
         **(2026-10-30).**
-        **⇒ AND **THE **ROOT **CAUSE: **THE **COMMENT's **ARGUMENT **WAS **WRONG, **NOT **THE **IMPLEMENTATION.**
+        **AND **THE **ROOT **CAUSE: **THE **COMMENT's **ARGUMENT **WAS **WRONG, **NOT **THE **IMPLEMENTATION.**
         **`uop/ops.bend:1380`** **SAID **"THE **ARENA's **LENGTH **IS **THAT **COUNTER"**, **AND **AN **ARENA's
         **LENGTH **COUNTS **EVERY **NODE **WHILE **UPSTREAM's **`UOp.unique_num`** (**`ops.py:820`**,
         **`itertools.count(0)`**) **IS **SPENT **AT **EXACTLY **THREE **SITES** (**`ops.py:839`** **`new_buffer`**,
-        **`:1191`** **`alloc`**, **`:1199`** **`placeholder`**) **AND **COUNTS **ALLOCATIONS.**  **⇒ AND **THE
+        **`:1191`** **`alloc`**, **`:1199`** **`placeholder`**) **AND **COUNTS **ALLOCATIONS.**  **AND **THE
         **PORT's **`cr_alloc`** **NOW **COUNTS **THE **ALLOCATION **NODES **IN **ITS **ARENA** — **UPSTREAM's
         **COUNTER **SCOPED **TO **THE **ARENA.**
-        **⇒ AND **THE **`api` **GRAPH **NOW **AGREEs**: **MEASURED **ON **ALL **36 **GRAPHS, **`api` **IS **THE
+        **AND **THE **`api` **GRAPH **NOW **AGREEs**: **MEASURED **ON **ALL **36 **GRAPHS, **`api` **IS **THE
         **ONLY **ONE **THAT **MOVED** — **`DISAGREE` **→ **`AGREE`**, **AND **THE **OTHER **35 **ARE **UNCHANGED.**
-        **⇒ AND **`checks/differ.py`'s **`WANT`** **IS **EMPTY **AGAIN** — **THE **TABLE's **FIRST **EXCEPTION
+        **AND **`checks/differ.py`'s **`WANT`** **IS **EMPTY **AGAIN** — **THE **TABLE's **FIRST **EXCEPTION
         **IS **GONE** — **AND **`POPULATION_PIN` **DID **NOT **MOVE** (**MEASURED**: **THE **PIN **IS **A
         **CONTENT **HASH **OVER **THE **POPULATION's **FIXTURES**, **AND **NO **FIXTURE **CHANGED**).
-        **⇒ AND **THE **GATE **IS **NEW: **`gates/alloc_slot-gate.py`** (**6 **ROWS, **2 **LANES**) **IS **rc=0
+        **AND **THE **GATE **IS **NEW: **`gates/alloc_slot-gate.py`** (**6 **ROWS, **2 **LANES**) **IS **rc=0
         **WITH **THE **FIX **AND **`DISAGREE (bd): n=5 of 5 rows`** **WITHOUT **IT** — **MEASURED **BY
         **RESTORING **`creation.bend` **TO **ITS **PRE-FIX **BYTES**.  **THE **TWO **ROWS **IT **SHOWS **ARE
         **`alloc_one_empty`** (**CPython **`0`**, **PORT **`1`**) **AND **`alloc_two_same_scope`** (**CPython
         **`0,1`**, **PORT **`1,8`** — **THE **`8` **IS **THE **NODE **COUNT**, **WHICH **IS **THE **DEFECT**).
-        **⇒ AND **THE **WALL **IS **MEASURED **AND **DECLARED: **TWO **ALLOCATIONS **IN **TWO **SEPARATE
+        **AND **THE **WALL **IS **MEASURED **AND **DECLARED: **TWO **ALLOCATIONS **IN **TWO **SEPARATE
         **SCOPES **ARE **SLOTS **`0` **AND **`1`** **UPSTREAM **AND **`0` **AND **`0`** **IN **THE **PORT** — THE
         **ROW **`alloc_two_scopes`** **IS **PORT-ONLY**, **BECAUSE **THE **PORT **CANNOT **MINT **A
         **PROCESS-GLOBAL **COUNTER** (**ONE **ARENA **PER **METHOD**).**
-        **⇒ AND **THE **TWO **CREATION **GATES' **PORT **LANES **ARE **BYTE-IDENTICAL **BEFORE **AND **AFTER
+        **AND **THE **TWO **CREATION **GATES' **PORT **LANES **ARE **BYTE-IDENTICAL **BEFORE **AND **AFTER
         **THE **FIX** (**MEASURED**: **`gates/cr_graph_census.bend` **AND **`gates/crp_graph_census.bend`**).
-        **⇒ AND **`gates/cr_graph_census-gate.py` **IS **RED **AT **HEAD** **AND **WAS **NOT **REDDENED **BY
+        **AND **`gates/cr_graph_census-gate.py` **IS **RED **AT **HEAD** **AND **WAS **NOT **REDDENED **BY
         **THIS**: **ITS **`empty_v4`** **PIN **HAS **DRIFTED** **ON **THE **CPYTHON **SIDE** **AND **IT **IS **A
         **PRE-EXISTING **FAILURE** (**MEASURED **AT **`HEAD`**, **WITHOUT **THE **FIX**).
   - [x] **THE **`grad` **AND **`gral` **GRAPHS **REACH **THE **PORT's **AUTODIFF, **AND **`gral` **FINDS **A
         **REAL **PORT **DEFECT (2026-10-31).**
-        **⇒ AND **THE **RE-MEASURED **START: **`mixin/gradient.bend` **0/494**, **`elementwise.bend` **31/254**,
+        **AND **THE **RE-MEASURED **START: **`mixin/gradient.bend` **0/494**, **`elementwise.bend` **31/254**,
         **`weak.bend` **41/258**, **`tensor.bend` **32/347**, **TOTAL **REACHED **959 **OF **4739.**
-        **⇒ AND **THE **MECHANISM **IS **STRUCTURAL **AND **IT **IS **THE **BRIEF's **OWN **WORD: **A
+        **AND **THE **MECHANISM **IS **STRUCTURAL **AND **IT **IS **THE **BRIEF's **OWN **WORD: **A
         **BACKWARD **PASS **IS **NOT **A **BINARY **OP, **IT **IS **A **CHAIN — **AND **A **CHAIN **IS
         **EXACTLY **WHAT **A **WALK **PRODUCES, **SO **THE **BEND **SIDE **HAS **TO **CALL **THE **WALK.**
-        **⇒ AND **THE **TWO **NEW **GRAPHS: **`grad`** (**9 **nodes, **THE **PORT's **OWN
+        **AND **THE **TWO **NEW **GRAPHS: **`grad`** (**9 **nodes, **THE **PORT's **OWN
         **`mixin/gradient.bend`'s **`compute_gradient` **OVER **THE **PORT's **OWN **`dag()` **FIXTURE**),
         **AND **`gral`** (**52 **nodes, **THE **SAME **WALK **OVER **A **FIXTURE **CARRYING **EXP2, **SQRT,
-        **TRUNC, **POW **AND **MAX, **SO **FIVE **RULE **BODIES **FIRE**).  **⇒ AND **THE **COVERAGE
+        **TRUNC, **POW **AND **MAX, **SO **FIVE **RULE **BODIES **FIRE**).  **AND **THE **COVERAGE
         **BOUGHT: **`mixin/gradient.bend` **0 → 174/495**, **ALL **32 **RULES **`gr_0`..`gr_31` **REACHED**;
         **TOTAL **REACHED **959 → 1144**; **UPSTREAM's **`tinygrad/mixin/gradient.py` **AND
         **`tinygrad/uop/upat.py` **ARE **NOW **EXECUTED** (**1196 → 1203 **FUNCTIONS**).
-        **⇒ AND **THE **DEFECT `gral` **FOUND, **AND **IT **IS **A **REAL **PORT **DEFECT: **THE **PORT's
+        **AND **THE **DEFECT `gral` **FOUND, **AND **IT **IS **A **REAL **PORT **DEFECT: **THE **PORT's
         **MAX **RULE **(`gr_11`) **BUILT **FOUR **WHERE **NODES **WHERE **CPYTHON **BUILDS **THREE.**
         **THE **CAUSE: **upstream's **rule **body **BINDS **`x` **AND **`y` **ONCE **AND **WRITES
         **`(x.eq(y)).where(ctx * 0.5, 0)` **IN **BOTH **ARMS, **AND **`UOp` **IS **HASH-CONSED, **SO **THE
@@ -26470,35 +26505,35 @@ the CORPUS's GREENNESS IS ABOUT THE OP SURFACE AND SAYS ALMOST NOTHING ABOUT THE
         **SWAPPED **OPERANDS**, **WHICH **IS **A **DIFFERENT **NODE** (**CMPNE** **IS **NOT
         **COMMUTATIVE**).  **MEASURED **ON **CPYTHON's **OWN **TREE: **THE **TWO **SLOTS' **INNER
         **WHEREs **ARE **THE **SAME **`id()`.**
-        **⇒ AND **THE **PORT's **OWN **GATE **COULD **NOT **SEE **IT: **`max_n0`/`max_n1` **READ **21
+        **AND **THE **PORT's **OWN **GATE **COULD **NOT **SEE **IT: **`max_n0`/`max_n1` **READ **21
         **ON **BOTH **SIDES** — **`size1` **COUNTS **A **SHARED **SUBTREE **ONCE **PER **PATH**, **SO **A
-        **DUPLICATED **INNER **WHERE **COSTS **WHAT **A **SHARED **ONE **COSTS.**  **⇒ AND **THE **FIX **IS
+        **DUPLICATED **INNER **WHERE **COSTS **WHAT **A **SHARED **ONE **COSTS.**  **AND **THE **FIX **IS
         **IN **`tinybendygrad/mixin/gradient.bend`'s **`gr_11`**: **BUILD **THE **INNER **ONCE **AND **SWAP
-        **ONLY **THE **OUTER.**  **⇒ AND **THE **PORT's **OWN **138 **GATE **ROWS **ARE **BYTE-IDENTICAL
+        **ONLY **THE **OUTER.**  **AND **THE **PORT's **OWN **138 **GATE **ROWS **ARE **BYTE-IDENTICAL
         **BEFORE **AND **AFTER **THE **FIX** (**MEASURED**), **WHICH **IS **WHY **THE **CORPUS **WAS **THE
         **ONLY **INSTRUMENT **THAT **COULD **SEE **IT.**
-        **⇒ AND **THE **SECOND **DEFECT **THE **SAME **GRAPH **FOUND **IS **IN **THE **HARNESS**:
+        **AND **THE **SECOND **DEFECT **THE **SAME **GRAPH **FOUND **IS **IN **THE **HARNESS**:
         **`graphcmp.bend`'s **`konst`** **SPELLED **A **BOOL **CONST **`bTrue`** (**`Bool.show`**) **WHERE
         **THE **PY **SIDE **SPELLS **IT **`b1`** (**`bo`**) — **THE **FILE **ALREADY **HAD **THE **RIGHT
         **RENDERER** **AND **DID **NOT **USE **IT.**  **FIXED.**
-        **⇒ AND **`checks/differ.py`'s **`WANT`** **IS **EMPTY **AND **THE **CORPUS **IS **38/38**
+        **AND **`checks/differ.py`'s **`WANT`** **IS **EMPTY **AND **THE **CORPUS **IS **38/38**
         (**`graphs-agree=38 graphs-disagree=0 byte-identical=38 graphs-refused=0`**, **`rc=0`**) —
         **NO **EXCEPTION **WAS **ADDED **TO **MAKE **THE **NEW **GRAPHS **GREEN.**
   - [x] **THE **NEGATIVE-INDEX **PARITY **GAP **IS **FOUND **AND **FIXED (2026-10-30, `6c3d059e1`).**
-        **⇒ AND **`UOp(Ops.INDEX, src=(STACK(3,5,7), CONST(-1)))`: **UPSTREAM's **`mop_cleanup`** **REWRITES
+        **AND **`UOp(Ops.INDEX, src=(STACK(3,5,7), CONST(-1)))`: **UPSTREAM's **`mop_cleanup`** **REWRITES
         **IT **TO **`CONST 7`** (**PYTHON's **LIST **INDEX **READS **FROM **THE **END**), **AND **THE **PORT
-        **ANSWERED **`CONST 3`** — **THE **FIRST **ELEMENT.**  **⇒ AND **THE **CAUSE: **THE **PORT **READ **THE
-        **INDEX **THROUGH **`i64_u32`**, **WHICH **MAPS **A **NEGATIVE **`I64` **TO **0**.  **⇒ AND **BOTH
+        **ANSWERED **`CONST 3`** — **THE **FIRST **ELEMENT.**  **AND **THE **CAUSE: **THE **PORT **READ **THE
+        **INDEX **THROUGH **`i64_u32`**, **WHICH **MAPS **A **NEGATIVE **`I64` **TO **0**.  **AND **BOTH
         **CALL **SITES **NEEDED **IT** (**`mp_stack_val`** = **`UOp.index`**, **AND **`mp_stack_src`** =
         **`mop_cleanup`** **RULE **6**), **AND **ONE **FIX **COVERS **BOTH.**
-        **⇒ AND **THE **CORPUS **COULD **NOT **SEE **IT: **MEASURED **OVER **EVERY **`D2-canon-py-*.txt`**,
+        **AND **THE **CORPUS **COULD **NOT **SEE **IT: **MEASURED **OVER **EVERY **`D2-canon-py-*.txt`**,
         **NONE **OF **THE **GRAPHS **HAS **AN **`INDEX` **WITH **A **`STACK` **SRC`** — **SO **THE **GREEN
         **VERDICT **IS **NOT **EVIDENCE **ABOUT **THIS **RULE.**
-        **⇒ AND **THE **GATE **IS **REAL**: **`gates/mop_idxneg-gate.py`** (**16 **ROWS, **2 **LANES**) **IS
+        **AND **THE **GATE **IS **REAL**: **`gates/mop_idxneg-gate.py`** (**16 **ROWS, **2 **LANES**) **IS
         **rc=0** **WITH **THE **FIX **AND **`DISAGREE (bd): n=6 of 16 rows`** **WITHOUT **IT** (**MEASURED **BY
         **RESTORING **`movement.bend` **TO **ITS **PRE-FIX **BYTES**).
   - [x] **THE **CORPUS **WAS **RE-RUN **2026-10-30** **OVER **36 **GRAPHS** (**`4b11d3687`**).**
-        **⇒ AND **`substrate-start == substrate-end == live == repro-substrate ==
+        **AND **`substrate-start == substrate-end == live == repro-substrate ==
         0c1d41666df281eb2d350364e4ed54ce5bfb8ac4a7b1e3c089ba113ae94200f3`**, **`substrate-head=6c3d059e1`**,
         **`graphs=36 graphs-answered=36 graphs-agree=35 graphs-disagree=1 byte-identical=35`**,
         **`326 of 326 files identical across two clean runs`**, **PEAK **1111 **MB / **268 **s** **AND **1112
@@ -26507,36 +26542,36 @@ the CORPUS's GREENNESS IS ABOUT THE OP SURFACE AND SAYS ALMOST NOTHING ABOUT THE
         is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS **OK`.**
   - [x] **THE **THREE **MEASURED **WALLS **THE **COVERAGE **CENSUS **FOUND, **AND **NONE **IS **FIXABLE **BY
         **ADDING **A **GRAPH.**
-        **⇒ AND **`uop/render.bend`** (315 **defs, **2 **reached**) **PORTS **UPSTREAM's **`pyrender`**, **WHICH
+        **AND **`uop/render.bend`** (315 **defs, **2 **reached**) **PORTS **UPSTREAM's **`pyrender`**, **WHICH
         **UPSTREAM **DELETED**; **THE **TWO **STILL-LIVE **FUNCTIONS **THERE **ARE **`TODO(p3)` **IN **THE
         **PORT**, **AND **ITS **OWN **`py=` **COLUMN **IS **A **TRANSCRIPTION **OF **THE **PORT's **OWN
         **ANSWER.**
-        **⇒ AND **`mixin/dtype.bend`** (177 **defs**) — **ITS **ROUTE **IN **`uop/weak.bend`**
+        **AND **`mixin/dtype.bend`** (177 **defs**) — **ITS **ROUTE **IN **`uop/weak.bend`**
         (**`wk_eval_*`**/**`wk_is_virtual`**/**`wk_commit_dtype`**) **HAS **NO **CALLERS **ANYWHERE **IN **THE
         **PORT.**
-        **⇒ AND **160 **MODULES / 189308 **LOC** **ARE **OUTSIDE **THE **CLOSURE** **BECAUSE **THE **PORT
+        **AND **160 **MODULES / 189308 **LOC** **ARE **OUTSIDE **THE **CLOSURE** **BECAUSE **THE **PORT
         **CANNOT **BUILD **A **SCHEDULE **AT **ALL.**
 three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME from a MISSING FIELD
 
   - [x] **THE **PORT's **RECORD **SHAPES **WERE **CENSUSED **AGAINST **UPSTREAM's **DATACLASSES **FOR **THE
         **FIRST **TIME (2026-10-30, `d2b58999f`, `.agents/slop/portshape/shapecensus.py`).**
-        **⇒ AND **596 **PORT **`type X is Data` **RECORDS**, **21 **MATCHED **UPSTREAM **BY **NAME**, **16 **OF
+        **AND **596 **PORT **`type X is Data` **RECORDS**, **21 **MATCHED **UPSTREAM **BY **NAME**, **16 **OF
         **THOSE **DIFFER** — **AND **THE **ARITY **SEPARATES **THE **CLASSES**, **BECAUSE **A **FIELD-NAME
         **COMPARISON **CANNOT **TELL **A **RENAME **FROM **A **MISSING **FIELD.**
-        **⇒ AND **THREE **RECORDS **ARE **MISSING **UPSTREAM **FIELDS** — **`CallInfo`** (**missing **`aux`**,
+        **AND **THREE **RECORDS **ARE **MISSING **UPSTREAM **FIELDS** — **`CallInfo`** (**missing **`aux`**,
         **`grad_fxn`**), **`KernelInfo`** (**missing **`estimates`**, **`optimized`**), **`ParamArg`** (**missing
         **`spec`**) — **AND **`KernelInfo` **IS **VISIBLE**: **`checks/rn-gate.py` **IS **ALREADY **RED** **ON
         **5 **NAMED **ROWS** (`arg_repr AKern`/`AParam1`/`AParam2`/`AParam3`), **AND **THE **PORT **PRINTS
         **`KernelInfo(…, beam=0)` **WHERE **UPSTREAM **PRINTS **`KernelInfo(…, beam=0, optimized=False)`.**
-        **⇒ AND **THE **PIN **IS **EXACT: **UPSTREAM's **`optimized`** **CAME **WITH **THE **2026-10-17
+        **AND **THE **PIN **IS **EXACT: **UPSTREAM's **`optimized`** **CAME **WITH **THE **2026-10-17
         **RE-VENDOR** (**`86c4f1343`**) **AND **`estimates`** **CAME **EARLIER** (**`434dbafab`**).**
-        **⇒ AND **⇒ AND **THE **COVERAGE **CENSUS's **THIRD **WALL **WAS **WRONG **ABOUT **WHAT **IT **SAW**:
+        **AND **AND **THE **COVERAGE **CENSUS's **THIRD **WALL **WAS **WRONG **ABOUT **WHAT **IT **SAW**:
         **IT **REPORTED **THAT **`uop/render.bend`** **"PORTS **UPSTREAM's **`pyrender`**, **WHICH **UPSTREAM
         **DELETED"** — **AND **THE **PORT's **`pm_pyrender`** **PORTS **UPSTREAM's **LIVE **`renderer`
         **MATCHER** (**`render.py:88-123`**, **FIFTEEN **`UPat`s**), **WITH **THE **RULE **ORDER **AND **ITS
-        **FALL-THROUGH **REASONING **DOCUMENTED.**  **⇒ AND **SO **THE **PORT's **RENDERER **IS **CURRENT**, **AND
+        **FALL-THROUGH **REASONING **DOCUMENTED.**  **AND **SO **THE **PORT's **RENDERER **IS **CURRENT**, **AND
         **THE **DEFECT **IS **NOT **THE **RENDERER's **SHAPE **BUT **THE **RECORD **IT **RENDERS.**
-        **⇒ AND **⇒ AND **THE **CLASS **IS **"A **RE-VENDOR **MOVES **UPSTREAM's **RECORD **SHAPES **AND **THE
+        **AND **AND **THE **CLASS **IS **"A **RE-VENDOR **MOVES **UPSTREAM's **RECORD **SHAPES **AND **THE
         **PORT's **SHAPES **DO **NOT **FOLLOW **WITHOUT **A **REVIEW"** — **AND **THE **CENSUS **HAD **TO **BE
         **FIXED **TWICE **FIRST** (**A **LEXICAL **REGEX **STOPPED **AT **THE **FIRST **`}`**, **AND **A
         **COMMENT **BETWEEN **TWO **FIELDS **WAS **READ **AS **A **FIELD **NAME**), **AND **BOTH **WRONGS **WERE
@@ -26548,7 +26583,7 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       `name, applied_opts, opts_to_apply, estimates, beam, optimized` -- upstream's
       `tinygrad/uop/ops.py:1332-1338` (the vendored `5c2bf39d6`). `estimates` is
       `Maybe<&2, Estimates>` and `optimized` is `Bool`.
-      **⇒ AND `estimates` NEEDED A NEW FILE, BECAUSE BEND REFUSES AN IMPORT CYCLE.**
+      **AND `estimates` NEEDED A NEW FILE, BECAUSE BEND REFUSES AN IMPORT CYCLE.**
       MEASURED, `a.bend` importing `b.bend` while `b.bend` imports `a.bend` answers
       "an import cycle through .../a.bend". Upstream breaks the same cycle under
       `TYPE_CHECKING` (`tinygrad/uop/ops.py:26`), and Bend has no such thing, so the
@@ -26557,7 +26592,7 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       both import it, and `uop/render.bend` imports it too because it PRINTS the
       field. **`Estimates.str` is in the leaf so the ONE spelling is shared by the
       renderer's row and `KernelInfo`'s repr.**
-      **⇒ AND `eq_kernelinfo` NOW COMPARES ALL SIX.** MEASURED upstream,
+      **AND `eq_kernelinfo` NOW COMPARES ALL SIX.** MEASURED upstream,
       `KernelInfo() == KernelInfo(optimized=True)` is False and
       `KernelInfo() == KernelInfo(estimates=Estimates(1,2,3))` is False, and
       `eq_arg` IS THE UCACHE KEY.
@@ -26572,7 +26607,7 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       **BEFORE:** `gated 80 agree 75 disagree ['arg_repr AKern', 'arg_repr AParam1',
       'arg_repr AParam2', 'arg_repr AParam3', 'arg_repr AProgr']`.
       **AFTER:** `gated 80 agree 79 disagree ['arg_repr AKern']`.
-      **⇒ AND THE FIVE ROWS HAD *TWO* CAUSES, NOT ONE.** The brief said `optimized`
+      **AND THE FIVE ROWS HAD *TWO* CAUSES, NOT ONE.** The brief said `optimized`
       was the ONLY reason, and that is **MEASURED FALSE on 4 of the 5**: `AParam1`,
       `AParam2`, `AParam3` and `AProgr` do not mention `KernelInfo` at all. Their
       difference was ONE CHARACTER -- the `]` that `rn-gate.py`'s separator `]   py=[`
@@ -26580,26 +26615,26 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       THE HEAD, so a bracketed `py=[...]` column costs the value its closing bracket;
       the ORACLE prints those five with NO column
       (`checks/render-gate-oracle.py`'s `_SPLIT`), so ITS value is `[ans]` WITH the
-      bracket. **⇒ THE PORT's FIVE ROWS NOW CARRY NO `py=` COLUMN** (`py_nocol`), and
+      bracket. **THE PORT's FIVE ROWS NOW CARRY NO `py=` COLUMN** (`py_nocol`), and
       NOTHING IS LOST because `py_cell` printed the port's OWN answer as the column,
       so the column was a COPY of the answer. The `py=` LITERAL's denominator falls
       from 80 to 75 and the stale count stays 0 -- over 75 READ rows.
-      **⇒ AND THE PROJECT's CANONICAL READER SEES THE SAME THING.** MEASURED with
+      **AND THE PROJECT's CANONICAL READER SEES THE SAME THING.** MEASURED with
       `.agents/slop/rebase-gate.py`'s `row()` (which KEEPS the `]`, `value[:i+1]`),
       the four rows AGREE and only `AKern` disagrees.
-      **⇒ AND `AKern` CANNOT AGREE, AND THE REASON IS THE ORACLE's SUBJECT.** The
+      **AND `AKern` CANNOT AGREE, AND THE REASON IS THE ORACLE's SUBJECT.** The
       oracle's subject is DISCOVERED as the newest upstream revision whose
       `ParamArg` has NO `size` AND whose `UOp.toposort` still enters CALL bodies --
       `d5059900d7` (2026-10-07). MEASURED with the oracle's OWN detectors over all
       888 revisions that touch `tinygrad/uop/ops.py`: **8 have `optimized` in
       `KernelInfo` and ALL 8 FAIL the `toposort` property** (`enter_calls=False`,
       flipped 2026-10-09 by `efb4cc8cb`, six days BEFORE `optimized` landed on
-      2026-10-15). **⇒ NO UPSTREAM REVISION IS BOTH, so the oracle can never answer
+      2026-10-15). **NO UPSTREAM REVISION IS BOTH, so the oracle can never answer
       `optimized`.** MOVING THE SUBJECT WOULD COST FOUR ROWS: the four
       `pyr_call_*` rows NEED the CALL bodies walked.
-      **⇒ AND THE ORACLE's OWN HEADER SAYS SO**: "the pin's `KernelInfo` has an
+      **AND THE ORACLE's OWN HEADER SAYS SO**: "the pin's `KernelInfo` has an
       `optimized` field ... so the pin's `ops.py` answers `arg_repr AKern` and
-      `arg_repr AProgr` DIFFERENTLY FROM THE PORT". **⇒ THE FIX FOR THE OWNER OF
+      `arg_repr AProgr` DIFFERENTLY FROM THE PORT". **THE FIX FOR THE OWNER OF
       `checks/render-gate-oracle.py` IS ITS OWN SPLICE MECHANISM**: it already
       splices `consumer_map_from_toposort` into the materialised `ops.py`, and
       `optimized` can be spliced the same way.**
@@ -26608,17 +26643,17 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       **THE CAUSE:** `ops.bend` gained 42 lines, `render.bend` 23 and `realize.bend`
       2, and EVERY `.bend` -> `.bend` LINE citation into those files ROTED. MEASURED:
       987 of `ops.bend`'s declarations moved, by 1, 11, 12, 16, 20, 37, 38, 39 or 42
-      lines. **⇒ 130 pointers were RE-POINTED, in 40 files, and 39 of them are
+      lines. **130 pointers were RE-POINTED, in 40 files, and 39 of them are
       COMMENT-ONLY** (the fortieth is a citation inside a `def`'s STRING literal, and
       it moves with the code). The re-point is the tree's own established practice
       (`9b1e3aa53 bendcite: FOUR POINTERS RE-DERIVED, because ANOTHER UNIT MOVED
       mixin/rand.bend`), and 91 of the 130 already carried a `symbol=` field.
-      **⇒ AND A LINE-NEUTRAL EDIT WAS IMPOSSIBLE AND MEASURED SO**: the record must
+      **AND A LINE-NEUTRAL EDIT WAS IMPOSSIBLE AND MEASURED SO**: the record must
       GAIN two fields, the accessors must GAIN two, and `eq_estimates` must be
       ADDED, so `ops.bend` cannot be net-zero -- and EVERY line saved is a pointer
       that does not rot, so the comments were COMPRESSED anyway (`ops.bend` +70/-18
       became +60/-18).
-      **⇒ AND THE REMAINING 80 ARE ALL OTHER UNITS' FILES**: `references/bend/bend2/
+      **AND THE REMAINING 80 ARE ALL OTHER UNITS' FILES**: `references/bend/bend2/
       base.bend` (32, an UNTRACKED clone), `mixin/creation.bend` (27),
       `schedule/indexing.bend` (15), `uop/weak.bend` (3), `schedule/__init__.bend`
       (3). NONE is in `uop/ops.bend`, `uop/render.bend`, `engine/realize.bend`,
@@ -26630,13 +26665,13 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       answers `ALL PROOFS CHECK` -- the AGGREGATE, which is the only correct entry
       point; `PROOF.bend` and `PROOF2.bend` are HALF-BOOKS and each shows the
       other's laws as open.
-      **⇒ AND THE CORPUS MUST BE RE-RUN: `substrate_digest()` MOVED.**
+      **AND THE CORPUS MUST BE RE-RUN: `substrate_digest()` MOVED.**
       MEASURED, the live digest is `5ad5e430158195fbf0368ecc206101460f82588a28317374c0f17150590d0d5f`
       and the recorded run's `substrate-end` is `0c1d41666df281eb2d350364e4ed54ce5bfb8ac4a7b1e3c089ba113ae94200f3`.
       **`checks/differ.py`'s `POPULATION_PIN` DOES NOT MOVE** -- it is a content pin
       over `graphcmp.GRAPHS`' SOURCE, and no graph's source changed: MEASURED,
       `population_digest()` is still `ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe`
-      and `population_bad()` is `[]`. **⇒ AND `WANT` IS `{}`**, so the `api` graph
+      and `population_bad()` is `[]`. **AND `WANT` IS `{}`**, so the `api` graph
       is already expected to AGREE and no exception moves.
 
 ## Session 2026-10-31 — the ORACLE SPLICES `KernelInfo.optimized`, and the `AKern` row CAN agree
@@ -26646,14 +26681,14 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       `tinygrad/uop/ops.py`:** **8** have `optimized` in `KernelInfo` (all 2026-10-15 or
       later) and **ALL 8 FAIL the `toposort` property** (`enter_calls=False`, flipped
       2026-10-09 by `efb4cc8cb`, SIX DAYS BEFORE `optimized` landed at `753a62ae0`).
-      **⇒ ZERO revisions are both.**  **⇒ AND MOVING THE SUBJECT WOULD COST FOUR ROWS**:
+      **ZERO revisions are both.**  **AND MOVING THE SUBJECT WOULD COST FOUR ROWS**:
       the four `pyr_call_*` rows NEED the CALL bodies walked.
-      **⇒ AND THE HEADER's CLAIM WAS TRUE**, and it was VERIFIED rather than trusted.
+      **AND THE HEADER's CLAIM WAS TRUE**, and it was VERIFIED rather than trusted.
 
 - [x] **`checks/render-gate-oracle.py`: `resolve_field_splices()` — A FIELD SPLICE, DERIVED.**
       **A FIELD IS NOT A NAME, SO THE `consumer_map_from_toposort` SPLICE CANNOT SEE IT:**
       that one is a module-level name the RENDERER IMPORTS; `optimized` is a FIELD of a class
-      nobody imports, and the class's `repr` changes without any import changing.  **⇒ AND
+      nobody imports, and the class's `repr` changes without any import changing.  **AND
       THE DERIVATION IS OVER THE CLASSES, WITH THREE FILTERS, EACH EXCLUDING SOMETHING
       MEASURED:**
       **(1) DESCENDANTS OF THE OPS REVISION ONLY** — the whole population reaches back
@@ -26663,8 +26698,8 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       descendants.  **(2) A PURE ADDITION** — a RENAME is one field added and one removed,
       and the ONE rename in range is `ProgramInfo.vars` -> `params` (`a6addc2d4`,
       2026-10-14), which the filter EXCLUDES, because the PORT prints `vars=`.  **(3) THE
-      FIELD MUST SURVIVE AT UPSTREAM MASTER.**  **⇒ AND THE SURVIVING SET IS EXACTLY ONE
-      FIELD: `KernelInfo.optimized`, added by `753a62ae0` (2026-10-15).**  **⇒ AND THE
+      FIELD MUST SURVIVE AT UPSTREAM MASTER.**  **AND THE SURVIVING SET IS EXACTLY ONE
+      FIELD: `KernelInfo.optimized`, added by `753a62ae0` (2026-10-15).**  **AND THE
       DONOR IS THE REVISION THAT ADDED IT** — its PARENT lacks the field — and the field
       goes where the DONOR put it, which `verify_subject()` CHECKS against the donor's field
       ORDER, because a field in the wrong place prints a dataclass repr whose fields are in
@@ -26672,9 +26707,9 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
 
 - [x] **`checks/rn-gate.py`: 79/80 -> 80/80, AND THE OTHER 79 ROWS STILL AGREE (MEASURED).**
       **BEFORE:** `gated 80 agree 79 disagree ['arg_repr AKern']`.  **AFTER:** `gated 80
-      agree 80 disagree []`.  **⇒ AND THE SPLICE MOVED EXACTLY ONE LINE OF THE ORACLE's 124**
+      agree 80 disagree []`.  **AND THE SPLICE MOVED EXACTLY ONE LINE OF THE ORACLE's 124**
       — the `arg_repr AKern` row — and the other 123 are BYTE-IDENTICAL, so the splice
-      perturbed nothing else.  **⇒ AND THE PORT WAS NOT TOUCHED**: `optimized` was already
+      perturbed nothing else.  **AND THE PORT WAS NOT TOUCHED**: `optimized` was already
       upstream's sixth field there (`c2fbda4ca`), and the port's answer is byte-identical
       to `repr(KernelInfo())` at upstream master.
 
@@ -26682,7 +26717,7 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       `checks/rn-gate.py --plant "arg_repr AKern"` -> `gated 80 agree 79 disagree
       ['arg_repr AKern']`; `--oracle checks/__no_such_oracle__.py` -> `rc=3` REFUSED;
       `--selftest` -> `SELFTEST OK`, all seven lanes, and the base is now **0** disagree
-      (it was 5) so the plants are told apart by the counts they MOVE.  **⇒ AND
+      (it was 5) so the plants are told apart by the counts they MOVE.  **AND
       `checks/render-gate-oracle-gate.py`'s THREE REFUSAL ARMS STILL REFUSE**, including
       the SHADOWED-subject arm — so the oracle's `verify_origin()` is NOT LOOSENED.
 
@@ -26690,7 +26725,7 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       oracle gate read `the oracle's rows DIFFER from the tree's capture on 1 line(s):
       [99]` and exited 1 **BEFORE** the capture was regenerated — **A PIN THAT CANNOT GO
       RED IS A LABEL** — and the regenerated capture's md5 is `400e2008d9755766b3b5902c52461133`
-      (was `01aafcdbb5d41023a7f54a58c93733a2`).  **⇒ AND `checks/rn-gate.py`'s THREE md5
+      (was `01aafcdbb5d41023a7f54a58c93733a2`).  **AND `checks/rn-gate.py`'s THREE md5
       REFERENCES WERE STALE BEFORE THIS WORK** (`642f9770...`, the 2026-10-21 reading) and
       now name the live value.
 the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
@@ -26704,25 +26739,25 @@ the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
         **with `WRONG-LINE` AT 0 AND THE CLAIM COUNT UNCHANGED AT 1284** — so NO CITATION
         WAS DELETED AND NO GATE WAS WEAKENED (`git diff fb3702951 HEAD --
         gates/bendcite-gate.py` is EMPTY).
-        **⇒ AND EVERY ONE OF THE 53 WAS A STALE LINE AND NOT A STALE SUBJECT:** the
+        **AND EVERY ONE OF THE 53 WAS A STALE LINE AND NOT A STALE SUBJECT:** the
         cited construct STILL EXISTS and only its LINE moved — `realize_srcs` is at
         `schedule/indexing.bend:969` and not `:949`, `grm_table` at `:1274` and not
-        `:1254`. **⇒ AND THE `symbol=` FIELD IS THE KEY**, and it was there: **49 of the
+        `:1254`. **AND THE `symbol=` FIELD IS THE KEY**, and it was there: **49 of the
         53 CARRIED ONE** and the other 4 were resolved off the gate's own
         "the construct AT the cited line is X" reading.
-        **⇒ AND THE TWO `base.bend` FILES ARE NOT THE SAME FILE, AND THE POINTERS SPLIT
+        **AND THE TWO `base.bend` FILES ARE NOT THE SAME FILE, AND THE POINTERS SPLIT
         32/2:** **32 were into the COMPILER's `references/bend/bend2/base.bend`** (79 KB,
         holds the `U32`/`F32` primitives and laws) **and 2 into the PORT's own
         `tinybendygrad/base.bend`** (56 lines, holds `F32.from_bits`) — **each was
         resolved against the file its `symbol=` NAMES**, and the port's `base.bend:11`
         cites `base.bend:60` for the COMPILER's `type U32` and says so in prose.
-        **⇒ AND ONE CITATION WAS A RANGE AND NOT A LINE** — `runtime/support/
+        **AND ONE CITATION WAS A RANGE AND NOT A LINE** — `runtime/support/
         compiler_amd.bend:133` cited `base.bend:264-301` for "a working `File`", and
         the compiler's `File` OPS are `:304-347` (`File.open` .. `File.close`).
-        **⇒ AND EVERY ONE OF THE 50 EDITS IS A COMMENT LINE** (`git diff fb3702951 HEAD
+        **AND EVERY ONE OF THE 50 EDITS IS A COMMENT LINE** (`git diff fb3702951 HEAD
         -- tinybendygrad/` adds NOTHING that does not start with `#`), so NO CONSTRUCT
         MOVED AND NO COMPILE CHANGED.
-        **⇒ AND THE 4 EDITS IN THE TWO FILES ANOTHER UNIT WAS EDITING**
+        **AND THE 4 EDITS IN THE TWO FILES ANOTHER UNIT WAS EDITING**
         (`mixin/creation.bend:84,:228` and `uop/ops.bend:608,:8594`) **WERE COMMITTED FROM
         A PRIVATE INDEX** (`GIT_INDEX_FILE=…/agent-index-bendcite`, RE-SEEDED FROM THE
         CURRENT `HEAD` IMMEDIATELY BEFORE THE WRITE), so that unit's hunks in the same
@@ -26731,16 +26766,16 @@ the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
         reads `INDEX-ARM STALE (3): gates/edge-trace.rows, tinybendygrad/mixin/creation.bend,
         tinybendygrad/uop/ops.bend`, so a BARE `git commit` BY ANOTHER UNIT WOULD REVERT
         THESE 4 EDITS. **THE ORCHESTRATOR MUST KNOW.**
-        **⇒ AND THE CORPUS MUST BE RE-RUN: `substrate_digest()` MOVED.** MEASURED, the
+        **AND THE CORPUS MUST BE RE-RUN: `substrate_digest()` MOVED.** MEASURED, the
         live digest is now **`b5a83b4c4562879c8ac65a0db8d74913611c494c363a84349044d66b132b64fb`**
         and the recorded run's `substrate-end` was
         `0c1d41666df281eb2d350364e4ed54ce5bfb8ac4a7b1e3c089ba113ae94200f3`.
-        **⇒ AND THE OTHER TWO CITATION GATES STILL HOLD:** `gates/pin-cite-gate.py` rc=0
+        **AND THE OTHER TWO CITATION GATES STILL HOLD:** `gates/pin-cite-gate.py` rc=0
         and `gates/todo-cite-gate.py` rc=0.
 
   - [x] **THE **`weak.bend` **ROUTE **WAS **NOT **DEAD: **A **GATE **IS **A **CALLER** (2026-10-30,
         `2bc1f5793`, `4f5cecf75`).**
-        **⇒ AND **THE **COVERAGE **CENSUS's **WALL **WAS **WRONG **IN **THREE **SEPARATE **WAYS**: **THE **FIVE
+        **AND **THE **COVERAGE **CENSUS's **WALL **WAS **WRONG **IN **THREE **SEPARATE **WAYS**: **THE **FIVE
         **DEFS **ARE **IN **`uop/weak.bend`**, **NOT **`mixin/dtype.bend`** (**THE **REPORT **MISATTRIBUTED **THE
         **FILE**); **FOUR **OF **THE **FIVE **HAVE **CALLERS, **AND **THE **CALLERS **ARE **GATES**
         (**`wk_commit_dtype` **AT **`gates/wk-cd.bend:48`**; **`wk_eval_int`/`_float`/`_bool` **AT
@@ -26749,70 +26784,70 @@ the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
         **BUG**; **AND **THE **ONE **GENUINELY **UNGATED **DEF** (`wk_is_virtual`) **WAS **BLOCKED **ON **A
         **CLAIM **THAT **WAS **FALSE** — **`ops.bend:5345` **SAID **"NO **DEF **IN **THE **PORT **SETS
         **`ParamArg`'s **DEVICE **FIELD"**, **AND **`renderer/__init__.bend:450` **DOES**.)
-        **⇒ AND **⇒ AND **A **SECOND, **UNRELATED **FINDING: **`gates/wk-eval-gate.py` **WAS **REFUSING
+        **AND **AND **A **SECOND, **UNRELATED **FINDING: **`gates/wk-eval-gate.py` **WAS **REFUSING
         **(rc=3**, **MEASURING **NOTHING**) **AND **`gates/oracleblind.rows:108` **HAD **THE **CRASH **RECORDED
         **ALREADY** — **THE **ORACLE **HAND-BUILT **A **MALFORMED **`UOp(Ops.PARAM, src=(), …)`**, **AND
-        **UPSTREAM's **OWN **`UOp.param`** **IS **THE **FIX.**  **⇒ AND **IT **IS **rc=0** **NOW** (**22 **ROWS,
+        **UPSTREAM's **OWN **`UOp.param`** **IS **THE **FIX.**  **AND **IT **IS **rc=0** **NOW** (**22 **ROWS,
         **3 **LANES, **0 **DIVERGENCES**), **AND **THE **NEW **`gates/wk-isvirt-gate.py` **IS **rc=0** (**5
         **ROWS**) **AND **IS **FALSIFIABLE **BOTH **WAYS** — **MEASURED **BY **ME: **MUTATING **THE **PORT's
         **`Bool.or` **→ **`Bool.and`** **IN **`wk_is_virtual`** **MAKES **IT **`DISAGREE (bd): n=2 of 5
         rows`** **AND **rc=1**, **AND **RESTORING **IT **IS **rc=0**.)
   - [x] **THE **SCHEDULER's **CTX **DICT **IS **NOT **THE **WALL, **AND **THE **GATE **THAT **SAID **SO
         **FOUND **A **REAL **DEFECT (2026-10-30, `c259b176e`, `d99051451`).**
-        **⇒ AND **THE **PORT's **HEADER **DEFERRED **`tinygrad/schedule/__init__.py:82-301`** **FOR **ONE
+        **AND **THE **PORT's **HEADER **DEFERRED **`tinygrad/schedule/__init__.py:82-301`** **FOR **ONE
         **REASON** — **"EVERY **RULE **IN **IT **IS **A **`graph_rewrite` **OVER **THE **ARENA **WITH **A **PYTHON
         **`ctx` **DICT"** — **AND **MEASURED: **8 **OF **THE **12 **RULE **BODIES **WERE **ALREADY **PORTED**
         **(`is_store_after`, `collect_stores`, `canonicalize_alloc`, `lower_sink_to_linear`,
         `copy_kernel_to_store`, `simplify_copy_kernel`, `assert_all_same_devices`, `apply_binds`) **AND **ZERO
-        **OF **THEM **HAD **A **ROW **ANYWHERE.**  **⇒ AND **⇒ AND **A **RULE **BODY **THAT **NO **ROW **READS
+        **OF **THEM **HAD **A **ROW **ANYWHERE.**  **AND **AND **A **RULE **BODY **THAT **NO **ROW **READS
         **IS **A **BODY **THAT **NO **GATE **CAN **GO **RED **ON** — **THE **PORT **EMITS **111 **ROWS **AND **0
-        **ARE **`isa_*`/`cs_*`/`ca_*`.**  **⇒ AND **THE **CTX **DICT **IS **NOT **THE **WALL **EITHER:** **THE
+        **ARE **`isa_*`/`cs_*`/`ca_*`.**  **AND **THE **CTX **DICT **IS **NOT **THE **WALL **EITHER:** **THE
         **PORT's **`CallifyCtx`** **IS **ALREADY **A **`Data` **RECORD**, **AND **BOTH **CTX **BODIES **ARE
-        **PORTED **ON **TOP **OF **IT.**  **⇒ AND **THE **DEFECT **THE **NEW **GATE **FOUND:** **UPSTREAM's
+        **PORTED **ON **TOP **OF **IT.**  **AND **THE **DEFECT **THE **NEW **GATE **FOUND:** **UPSTREAM's
         **`canonicalize_alloc`** **ENDS **`return ctx.allocs.get(b)`** — **THE **STORED **NODE** — **AND **THE
         **PORT's **GUARD **ARM **ANSWERED **`None{}`** **AND **NEVER **READ **`ctx.allocs` **AT **ALL**
         (**upstream **`ca_slot3=-2`**, **the **port **`ca_slot3=none`**), **AND **THE **PORT's **OWN **HEADER
         **CLAIMED **THAT **ROW** — **THE **CLAIM **WAS **TRUE **OF **PYTHON **AND **FALSE **OF **THE **PORT**,
-        **AND **NO **ROW **READ **IT **BECAUSE **NO **ROW **EXISTED.**  **⇒ AND **THE **GATE **IS
+        **AND **NO **ROW **READ **IT **BECAUSE **NO **ROW **EXISTED.**  **AND **THE **GATE **IS
         **FALSIFIABLE **BOTH **WAYS** — **MEASURED **BY **ME: **REINTRODUCING **THE **DEFECT **(`ca_hit`
         **RETURNING **`None{}`** **INSTEAD **OF **THE **STORED **NODE**) **MAKES **IT **`DISAGREE (bd): n=1
         of 25 rows, ('ca_slot3=-2', 'ca_slot3=none')`** **AND **rc=1**, **AND **RESTORING **IT **IS **rc=0.**
   - [x] **THE **`api` **GRAPH's **ALLOC **SLOT **DEFECT **IS **FIXED, **AND **THE **CORPUS's **FIRST
         **EXCEPTION **IS **GONE (2026-10-30, `gates/alloc_slot-gate.py`).**
-        **⇒ AND **UPSTREAM **MINTS **THE **SLOT **FROM **`next(UOp.unique_num)`** — **A **MONOTONE **COUNTER
+        **AND **UPSTREAM **MINTS **THE **SLOT **FROM **`next(UOp.unique_num)`** — **A **MONOTONE **COUNTER
         **OF **ALLOCATIONS** — **AND **THE **PORT **MINTS **`O.Arena.next(ar)`**, **THE **ARENA's **LENGTH**,
-        **AND **THE **PORT's **OWN **COMMENT **ARGUED **THE **TWO **ARE **THE **SAME.**  **⇒ AND **MEASURED
+        **AND **THE **PORT's **OWN **COMMENT **ARGUED **THE **TWO **ARE **THE **SAME.**  **AND **MEASURED
         **ON **BOTH **SIDES**: **UPSTREAM **`0` / `0,1` / `0,1,2`**, **THE **PORT **NOW **`0` / `0,1` /
         `0,1,2`** — **AND **THE **GATE **IS **FALSIFIABLE: **REVERTING **THE **FIX **(`cr_slot(ar)` **→
         **`O.Arena.next(ar)`**) **MAKES **IT **`DISAGREE (bd): n=5 of 5 rows`** **AND **rc=1** — **MEASURED
         **BY **ME.**
-        **⇒ AND **⇒ AND **`checks/differ.py`'s **`WANT` **TABLE **IS **NOW **`{}`** — **THE **FIRST **EXCEPTION
+        **AND **AND **`checks/differ.py`'s **`WANT` **TABLE **IS **NOW **`{}`** — **THE **FIRST **EXCEPTION
         **THE **CORPUS **EVER **HELD **IS **GONE, **AND **THE **`api` **GRAPH **IS **EXPECTED **TO **AGREE.**
   - [x] **`KernelInfo` **IS **UPSTREAM's **SIX **FIELDS, **AND **THE **PORT **NOW **PRINTS **THE **PIN's
         **SHAPE (2026-10-30, `c2fbda4ca`, `7a10f4aa4`).**
-        **⇒ AND **`estimates` **NEEDED **A **NEW **FILE, **BECAUSE **BEND **REFUSES **AN **IMPORT **CYCLE**
+        **AND **`estimates` **NEEDED **A **NEW **FILE, **BECAUSE **BEND **REFUSES **AN **IMPORT **CYCLE**
         (**MEASURED: **"AN **IMPORT **CYCLE **THROUGH **…/a.bend"**) — **UPSTREAM **BREAKS **THE **SAME
         **CYCLE **UNDER **`TYPE_CHECKING`**, **AND **BEND **HAS **NO **SUCH **THING**, **SO **THE **RECORD
         **LIVES **IN **A **LEAF**: **`tinybendygrad/renderer/estimates.bend`**, **WHICH **IMPORTS **`Base`
-        **AND **NOTHING **ELSE.**  **⇒ AND **THE **VALUE **IS **`None`** **IN **EVERY **`KernelInfo` **THE
+        **AND **NOTHING **ELSE.**  **AND **THE **VALUE **IS **`None`** **IN **EVERY **`KernelInfo` **THE
         **PORT **BUILDS** (**UPSTREAM's **ONLY **WRITER**, **`do_estimates`**, **IS **A **WALL **IN
         **`codegen/kernel.bend`**), **AND **`optimized` **IS **`False`** **IN **EVERY **ONE** — **SO **A **FIELD
         **THAT **IS **ALWAYS **ABSENT **IS **NOT **A **LIE, **AND **A **MISSING **FIELD **IS.**
-        **⇒ AND **⇒ AND **THE **REMAINING **`arg_repr AKern` **DISAGREEMENT **IS **THE **ORACLE's **OWN
+        **AND **AND **THE **REMAINING **`arg_repr AKern` **DISAGREEMENT **IS **THE **ORACLE's **OWN
         **SUBJECT **CONSTRAINT**, **NOT **THE **PORT's:** **THE **ORACLE **MATERIALISES **A **HYBRID** (**THE
         **PYRENDER-ERA **`ops.py`** **OVERLAID **WITH **THE **PYRENDER-ERA **`render.py`**), **AND **THE
         **ORACLE's **OWN **HEADER **SAID **SO**: **"ITS **`KernelInfo` **HAS **AN **`optimized` **FIELD** …
         **SO **THE **PIN's **`ops.py` **ANSWERS **`arg_repr AKern` **… **DIFFERENTLY **FROM **THE **PORT**"** —
-        **AND **THE **PORT **WAS **PRINTING **THE **2026-10-05 **SHAPES.**  **⇒ AND **⇒ AND **⇒ AND **THE
+        **AND **THE **PORT **WAS **PRINTING **THE **2026-10-05 **SHAPES.**  **AND **AND **AND **THE
         **FOUR **OTHER **RED **ROWS **WERE **NOT **`KernelInfo` **AT **ALL**: **THEIR **DIFFERENCE **WAS **ONE
         **CHARACTER**, **THE **`]`** **THAT **`rn-gate.py`'s **SEPARATOR **`]   py=[`** **OPENS **WITH — **THE
         **PORT's **`py=` **COLUMN **PRINTED **THE **PORT's **OWN **ANSWER**, **AND **A **BRACKETED **COLUMN
-        **COSTS **THE **VALUE **ITS **CLOSING **BRACKET.**  **⇒ AND **THE **FIVE **RED **ROWS **ARE **NOW
+        **COSTS **THE **VALUE **ITS **CLOSING **BRACKET.**  **AND **THE **FIVE **RED **ROWS **ARE **NOW
         **ONE**, **AND **THE **PORT **IS **BYTE-IDENTICAL **TO **THE **MATERIALISED **UPSTREAM **HEAD's
         **`repr(KernelInfo())`.**
 [x] the CORPUS pays the SAME 2.3-SECOND TYPECHECK 59 TIMES, and the bend side is 15x the python side
 
-**⇒ AND **MEASURED 2026-10-30, **THE **COST **IS **NOT **THE **GRAPH **AND **NOT **THE **STARTUP** — **IT **IS
+**AND **MEASURED 2026-10-30, **THE **COST **IS **NOT **THE **GRAPH **AND **NOT **THE **STARTUP** — **IT **IS
 **THE **TYPECHECK **OF **THE **CLOSURE, **REPEATED **ONCE **PER **GRAPH.**
 
 | measurement | time |
@@ -26824,34 +26859,34 @@ the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
 | **THE **BEND **SIDE, **36 **GRAPHS** (`emit_bend` × 36) | **68.6 **s** |
 | **THE **PYTHON **SIDE, **36 **GRAPHS** (`gc("emit", …, "--side", "py")` × 36) | **4.5 **s** |
 
-**⇒ AND **⇒ AND **THE **BEND **SIDE **IS **15x **THE **PYTHON **SIDE**, **AND **THE **REASON **IS **THAT
+**AND **AND **THE **BEND **SIDE **IS **15x **THE **PYTHON **SIDE**, **AND **THE **REASON **IS **THAT
 **THE **BEND **SIDE **IS **A **SUBPROCESS **PER **GRAPH **AND **THE **PYTHON **SIDE **IS **NOT** — **THE
 **BEND **LANE's **`main()`** **TAKES **ONE **GRAPH **FROM **`IO.args()`** **AND **EXITS**, **SO **EACH **GRAPH
 **NEEDS **ITS **OWN **PROCESS, **AND **EACH **PROCESS **PAYS **THE **FULL **TYPECHECK.**
 
-**⇒ AND **⇒ AND **⇒ AND **THERE **IS **NO **TYPECHECK **CACHE:** **MEASURED **TWO **CONSECUTIVE **BENDS** —
+**AND **AND **AND **THERE **IS **NO **TYPECHECK **CACHE:** **MEASURED **TWO **CONSECUTIVE **BENDS** —
 **2.64 **s **AND **2.45 **s** — **AND **`references/bend/bend2/main.ts`'s **ONLY **CACHE **IS **THE **DAILY
-**VERSION **CHECK** (`~/.bend/check.json`, **NOTHING **TO **DO **WITH **TYPECHECKING**).  **⇒ AND **SO
+**VERSION **CHECK** (`~/.bend/check.json`, **NOTHING **TO **DO **WITH **TYPECHECKING**).  **AND **SO
 **THE **REPEATED **TYPECHECK **IS **~136 **s **OF **THE **~268 **s **RUN** — **THE **SAME **21,440 **LINES
 **(`ops.bend` **9,850 + `fold.bend` **7,492 + `helpers.bend` **3,229 + `LAWS/spec.bend` **869**) **TYPECHECKED
 **~59 **TIMES.**
 
-**⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **FIX **IS **ONE **PROCESS, **AND **IT **IS **ALREADY **POSSIBLE:**
+**AND **AND **AND **AND **THE **FIX **IS **ONE **PROCESS, **AND **IT **IS **ALREADY **POSSIBLE:**
 **`IO.args()` **RETURNS **THE **WHOLE **ARGUMENT **LIST**, **AND **THE **LANE **ALREADY **READS **IT**
 **(`as : List<String> <- IO.args()`**, **`.agents/slop/graphcmp.bend:2103`**) — **IT **JUST **TAKES **THE
-**FIRST **GRAPH **(`List.get(&1, String, as, 0n)`**, **`:2099`**).  **⇒ AND **SO **ONE **PROCESS **COULD **EMIT
+**FIRST **GRAPH **(`List.get(&1, String, as, 0n)`**, **`:2099`**).  **AND **SO **ONE **PROCESS **COULD **EMIT
 **EVERY **GRAPH**, **AND **THE **TYPECHECK **WOULD **BE **PAID **ONCE.**
 
-**⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **WHY **NOBODY **DID **IT: **THE **ORACLE **IS **SPAWNED **BY **THE
+**AND **AND **AND **AND **AND **WHY **NOBODY **DID **IT: **THE **ORACLE **IS **SPAWNED **BY **THE
 **CORPUS **DRIVER**, **ONE **PROCESS **PER **GRAPH`, **AND **`graphcmp.py` **IS **RE-LOADED **BY **EVERY
 **`gc()`** (**`checks/differ.py:1255`**), **SO **THE **DRIVER's **SHAPE **IS **WHAT **FORCES **THE
 **REPETITION** — **AND **THE **DRIVER **IS **THE **PORT's **HARNESS, **NOT **THE **PORT**, **SO **THIS **IS **A
-**HARNESS **COST, **NOT **A **PORT **DEFECT.**  **⇒ AND **A **HARNESS **THAT **COSTS **4.5 **MINUTES **OF
+**HARNESS **COST, **NOT **A **PORT **DEFECT.**  **AND **A **HARNESS **THAT **COSTS **4.5 **MINUTES **OF
 **REPEATED **TYPECHECKING **BEFORE **IT **MEASURES **ANYTHING **IS **WORTH **THE **FIX**, **AND **THE **FIX
 **IS **TO **MAKE **THE **BEND **LANE **EMIT **ALL **GRAPHS **FROM **ONE **PROCESS** — **WHICH **COSTS **ONE
 **NEW **ARGUMENT **IN **A **`.bend` **FILE **AND **ONE **CHANGE **IN **THE **DRIVER.**
 
-**⇒ AND **⇒ AND **⇒ AND **DONE, **2026-10-31, **COMMIT **`09945ab98`**: **THE **BEND **LANE **EMITS **EVERY
+**AND **AND **AND **DONE, **2026-10-31, **COMMIT **`09945ab98`**: **THE **BEND **LANE **EMITS **EVERY
 **GRAPH **FROM **ONE **PROCESS, **AND **THE **CORPUS **IS **UNCHANGED.**
 
 | measurement | before | after |
@@ -26861,38 +26896,38 @@ the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
 | **THE **36 **`diff --graph G`** **OUTPUTS** | **71.2 s** | **6.8 s** (**11x**) |
 | **THE **WHOLE **CORPUS **RUN** (`checks/differ.py run`) | **4:50** | **1:42** (**2.8x**) |
 
-**⇒ AND **THE **LANE's **`main()`** **NOW **READS **THE **WHOLE **`IO.args()`** **LIST**: **THE **TOKEN
+**AND **THE **LANE's **`main()`** **NOW **READS **THE **WHOLE **`IO.args()`** **LIST**: **THE **TOKEN
 **`ALLGRAPHS`** (**NOT **`--all`** — **THE **COMPILER **READS **A **DASHED **TOKEN **AS **AN **OPTION **AND
 **REFUSES **IT**) **IS **FOLLOWED **BY **THE **GRAPH **NAMES, **AND **THE **LANE **PRINTS **`# graph=NAME`**
-**BEFORE **EACH **GRAPH's **OWN **`# root=`** **HEADER **AND **ROWS.**  **⇒ AND **ONE **NAME **IS **THE **OLD
+**BEFORE **EACH **GRAPH's **OWN **`# root=`** **HEADER **AND **ROWS.**  **AND **ONE **NAME **IS **THE **OLD
 **LANE, **BYTE **FOR **BYTE**: **THE **MARKER **IS **PRINTED **ONLY **IN **THE **MANY-NAMES **MODE.**
 
-**⇒ AND **THE **ROW **FORMAT **DID **NOT **CHANGE**: **THE **MARKER **IS **A **COMMENT**, **`classify()`**
+**AND **THE **ROW **FORMAT **DID **NOT **CHANGE**: **THE **MARKER **IS **A **COMMENT**, **`classify()`**
 **READS **`#`** **LINES **AS **HEADERS **AND **NEVER **AS **ROWS**, **AND **THE **DRIVER **SPLITS **THE
-**STREAM **ON **THE **MARKER.**  **⇒ AND **MEASURED: **ALL **36 **`D2-canon-bend-*.txt`** **AND **ALL **36
+**STREAM **ON **THE **MARKER.**  **AND **MEASURED: **ALL **36 **`D2-canon-bend-*.txt`** **AND **ALL **36
 **`D2-canonform-bend-*.txt`** **AND **ALL **36 **`D1-graph-*.txt`** **ARE **BYTE-IDENTICAL **BEFORE **AND
 **AFTER**, **AND **`repro`** **REPORTS **`326 of 326 files identical across two clean runs`.**
 
-**⇒ AND **THE **PYTHON **SIDE **KEEPS **ONE **PROCESS **PER **GRAPH**, **AND **THAT **IS **A **MEASUREMENT
+**AND **THE **PYTHON **SIDE **KEEPS **ONE **PROCESS **PER **GRAPH**, **AND **THAT **IS **A **MEASUREMENT
 **AND **NOT **A **LEFTOVER:** `Tensor.empty` **MINTS **A **FRESH **`ParamArg.slot`** **FROM **A
 **PROCESS-GLOBAL **COUNTER**, **SO **A **PROCESS **THAT **BUILDS **`reduce`** **AND **THEN **`matmul`** **GIVES
 **`matmul`** **THE **SLOTS **1 **AND **2** **WHILE **THE **PER-GRAPH **PATH **GIVES **IT **0 **AND **1** —
-**AND **THE **COMPARISON **WOULD **REPORT **THE **HARNESS **AND **NOT **THE **PORT.**  **⇒ AND **THE **BEND
+**AND **THE **COMPARISON **WOULD **REPORT **THE **HARNESS **AND **NOT **THE **PORT.**  **AND **THE **BEND
 **SIDE **COSTS **63.4 s** **AND **THE **PYTHON **SIDE **COSTS **4.5 s**, **SO **THE **CHEAP **SIDE **KEEPS
 **ITS **PROCESSES **AND **THE **EXPENSIVE **SIDE **LOSES **35 **OF **ITS **36.**
 
-**⇒ AND **THE **BATCH **CACHE **IS **OPT-IN** (`GRAPHCMP_BEND_BATCH`) **BECAUSE **THE **PER-GRAPH **PATH
+**AND **THE **BATCH **CACHE **IS **OPT-IN** (`GRAPHCMP_BEND_BATCH`) **BECAUSE **THE **PER-GRAPH **PATH
 **IS **ONE **GRAPH **PER **PROCESS**, **AND **A **CACHE **THAT **FETCHED **THE **WHOLE **POPULATION **ON **THE
 **FIRST **REQUEST **WOULD **MAKE **EVERY **SINGLE-GRAPH **REQUEST **PAY **FOR **36 **GRAPHS.**
 
 the corpus went STALE because three units edited the substrate, and the instruments say so HONESTLY
 
-**⇒ AND **MEASURED 2026-10-31: **THE **CORPUS **IS **GREEN **AND **REPRODUCIBLE **AND **WAS **CURRENT **AN **HOUR
+**AND **MEASURED 2026-10-31: **THE **CORPUS **IS **GREEN **AND **REPRODUCIBLE **AND **WAS **CURRENT **AN **HOUR
 **AGO** — **AND **IT **IS **NO **LONGER **CURRENT**, **AND **THE **REASON **IS **THREE **UNITS **EDITING **THE
 **SUBSTRATE** (`tinybendygrad/extra/models/*.bend`**, **`schedule/rangeify.bend`**,
 **`schedule/realize.bend`** **AND **`uop/ops.bend`**).**
 
-**⇒ AND **⇒ AND **⇒ AND **THE **INSTRUMENTS **SAY **THE **SAME **THING **AND **NOT **A **THING **MORE**:
+**AND **AND **AND **THE **INSTRUMENTS **SAY **THE **SAME **THING **AND **NOT **A **THING **MORE**:
 - **`gates/corpuswitness-gate.py`** — **`verdict.current` **`FAIL`**/**`STALE`** (**`recorded=7c580bff…`,
   `live=b79c8d35…`**), **`witness.substrate` **`FAIL`**/**`NOT-CURRENT`**, **AND **`claim`**
   **`FAIL`**/**`NOT-ESTABLISHED`**.
@@ -26904,13 +26939,13 @@ the corpus went STALE because three units edited the substrate, and the instrume
   b79c8d35… -- this witness describes a tree that NO LONGER EXISTS, so the `repro-rc=rc=0` beside it is a true
   statement about bytes nobody is shipping`.**
 
-**⇒ AND **⇒ AND **⇒ AND **⇒ AND **THIS **IS **THE **TREE's **OWN **DOCTRINE **WORKING, **AND **THE **DIFFERENCE
+**AND **AND **AND **AND **THIS **IS **THE **TREE's **OWN **DOCTRINE **WORKING, **AND **THE **DIFFERENCE
 **BETWEEN **THE **TWO **KINDS **OF **RED **IS **THE **WHOLE **POINT:** **A **RED **FROM **A **MOVED **TREE **IS
-**NOT **A **RED **FROM **A **WRONG **ANSWER.**  **⇒ AND **THE **CORPUS **IS **RE-RUNNABLE **NOW **AND **CHEAP:**
+**NOT **A **RED **FROM **A **WRONG **ANSWER.**  **AND **THE **CORPUS **IS **RE-RUNNABLE **NOW **AND **CHEAP:**
 **THE **BEND **LANE **IS **BATCHED**, **SO **THE **RUN **TAKES **~1:42 **INSTEAD **OF **~4:50** — **AND **THE
 **RE-RUN **MUST **HAPPEN **AFTER **THE **THREE **UNITS **LAND**, **NOT **BEFORE.**
 
-**⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **FIGURE's **OWN **FRAMING **IS **THE **ONE **TO **KEEP:**
+**AND **AND **AND **AND **AND **THE **FIGURE's **OWN **FRAMING **IS **THE **ONE **TO **KEEP:**
 **"17 **of **17 **pins **green**" **IS **THE **MEASUREMENT**, **AND **"the **repro **describes **a **tree **that
 **no **longer **exists**" **IS **THE **FRESHNESS** — **AND **A **READER **WHO **CONFLATES **THEM **WILL
 **REPORT **A **BROKEN **CORPUS **WHEN **THE **CORPUS **IS **MERELY **OLD**, **OR **REPORT **A **SOUND
@@ -26980,7 +27015,7 @@ the corpus went STALE because three units edited the substrate, and the instrume
       training step -- forward, `sparse_categorical_crossentropy`, gradients, SGD
       update -- is **90 kernel launches**, and `node .agents/slop/browser/train-gate.mjs`
       reads **`PASS ... 47 of 47 TENSOR buffers BIT-EXACT against CPython, 180782
-      words compared`** on `apple/metal-3`. **⇒ AND ONE SCALAR IS NAMED AND NOT
+      words compared`** on `apple/metal-3`. **AND ONE SCALAR IS NAMED AND NOT
       FIXED**: the 1-word loss, whose first explanation the gate RETRACTS in its
       own output because measurement disproved it. It is not a weight.
 - [x] **MNIST INFERENCE STILL BIT-EXACT**: `examples/webgpu/mnist`, 17 launches,
@@ -26996,7 +27031,7 @@ the corpus went STALE because three units edited the substrate, and the instrume
       **genuinely lost** and the two readings agree. `.agents/slop/browser/d1arity.bend`
       shows `replace` is CORRECT: `STORE(INDEX,REDUCE) -> STORE(INDEX,PARAM)` but
       `CALL(STORE,PARAM) -> CALL(STORE,PARAM)`. Upstream asserts `k.op is Ops.CALL`
-      first; Bend has no `raise`, so the assert became nothing. **⇒ SO D2 IS D1's
+      first; Bend has no `raise`, so the assert became nothing. **SO D2 IS D1's
       CASCADE AND `split_kernels` FIXES BOTH.**
 - [x] **THE BROWSER TRACER WAS STALE AND NOTHING READ IT.** `xd2/trace_forward.py`
       raises `AttributeError: 'Buffer' object has no attribute 'size'`. Re-pointed
@@ -27009,7 +27044,7 @@ the corpus went STALE because three units edited the substrate, and the instrume
 - [x] **IMAGENET TRAINS IN THE BROWSER** (2026-10-31, late). `node
       .agents/slop/browser/inet-train-gate.mjs` -> **rc=0**: **13 154 launches**
       replayed on `apple/metal-3`, **1000 of 1000 logits BIT-IDENTICAL**
-      (`max |abs| 0.000e+0`), C1/C2/C3 all green. **⇒ ALL FOUR OUTCOMES ARE GREEN**
+      (`max |abs| 0.000e+0`), C1/C2/C3 all green. **ALL FOUR OUTCOMES ARE GREEN**
       (MNIST inference 10/10, MNIST training 47/47, ImageNet inference 2.384e-7,
       ImageNet training 1000/1000) and §9's `REFUSED` is RETRACTED.
       **THREE DEFECTS, AND ONLY ONE WAS THE ONE §9 GUESSED:** one bind group per
@@ -27019,15 +27054,15 @@ the corpus went STALE because three units edited the substrate, and the instrume
       FINISHED and could not say so** -- it was serialising ~800 f32 buffers into
       one `JSON.stringify`, so the readback is now scoped by `?only=` (a trace
       with no `only` still reads everything, so the MNIST gate is unchanged).
-      **⇒ THE TRACE IS 64x64 AND THAT IS STATED**: EfficientNet's head is
+      **THE TRACE IS 64x64 AND THAT IS STATED**: EfficientNet's head is
       `global_average_pool -> linear`, so the spatial size is free; 224x224 is a
       5.5 GB trace against 72 MB here after interning 20 848 payload references
       to 568 distinct ones -- a TRANSPORT figure, not a correctness one.
-      **⇒ AND THE FLAKE IS HANDLED IN THE OPEN**: 1 of the first 5 runs stalled
+      **AND THE FLAKE IS HANDLED IN THE OPEN**: 1 of the first 5 runs stalled
       BEFORE its first batch (progress counter never left 0); the gate now
       restarts the page ONCE and still requires a PASS, and 5 consecutive runs
       read rc=0 five times. The stall's cause is OPEN and named as open.
-      **⇒ AND THE DENOMINATORS DIFFER ON PURPOSE**: MNIST compares 47 of 47 TENSOR
+      **AND THE DENOMINATORS DIFFER ON PURPOSE**: MNIST compares 47 of 47 TENSOR
       buffers (the WEIGHT UPDATE, bit-exact); ImageNet compares the 1000 logits
       inside the training step (6.6 M parameters snapshotted twice would take the
       trace to gigabytes). Neither row is asked to be the other.
@@ -27040,25 +27075,25 @@ the corpus went STALE because three units edited the substrate, and the instrume
         MOVED**, and C1 (vs the PRE-STEP weights: 2 370 101 of 3 164 160 words
         differ), C2 (one bit of `b214[0]`, only that word) and C3 (`b214` vs
         `b213`'s update must not agree: 409 600 of 409 600) all green.
-      - **⇒ AND FINDING IT EXPOSED THE SAME DEFECT IN MNIST, WHERE IT WAS
+      - **AND FINDING IT EXPOSED THE SAME DEFECT IN MNIST, WHERE IT WAS
         INVISIBLE**: MEASURED `MNIST grad absmax: 0.0` with the old sequence --
         **BOTH "training steps" had ZERO gradients**, so the SGD update wrote every
         parameter back UNCHANGED and the old `47 of 47` was green only because
         CPython's side was the same no-op (plus BatchNorm's running stats moving).
       - **THE CAUSE, ONCE, FOR BOTH**: `realize()` DETACHES the parameters from the
         backward slice (`any(u is params[0].uop for u in lg.uop.toposort())` is
-        `False` after `realize()`), so `loss.gradient(...)` answers `0.0`. **⇒
+        `False` after `realize()`), so `loss.gradient(...)` answers `0.0`. **
         NOTHING IS REALIZED BEFORE `gradient`**, and the realize happens on the
         gradients.
-      - **⇒ AND THE FIX IS NOT COSMETIC**: MNIST's trace went **90 -> 431 launches**
+      - **AND THE FIX IS NOT COSMETIC**: MNIST's trace went **90 -> 431 launches**
         and **32 -> 67 buffers moving**, so this is the first REAL full-model MNIST
         backward in a browser trace. `train-gate` now reads **67 of 67 TENSOR
         buffers bit-exact, 324 520 words, 67 of 67 MOVED**.
-      - **⇒ AND ONE HARNESS ARTIFACT IS NAMED WITH ITS NUMBERS**: `b11` differed in
+      - **AND ONE HARNESS ARTIFACT IS NAMED WITH ITS NUMBERS**: `b11` differed in
         1 of 784 words and the value was the LABEL's `7` -- CPython's OWN trace has
         `in[b11] = 7` at launches 26/27 and `-0.5` at its first bind and at launch
         41, because the allocator RECYCLES that allocation
-        (`tinygrad/device.py:270`). **⇒ SO ONE NAME SPANS TWO TENSORS**; the
+        (`tinygrad/device.py:270`). **SO ONE NAME SPANS TWO TENSORS**; the
         comparison is now over buffers some launch WRITES and the 19 excluded
         input-only names are PRINTED every run.
       - **THE TWO DENOMINATORS DIFFER ON PURPOSE**: MNIST compares EVERY written
@@ -27069,7 +27104,7 @@ the corpus went STALE because three units edited the substrate, and the instrume
 
 the RENDER GATE compares 80 of its rows PERFECTLY and cannot PAIR 55 of them, and the number is now NAMED
 
-**⇒ AND **MEASURED 2026-10-31: **`checks/rn-gate.py` **REPORTS **`gated 80 agree 80 disagree []`** — **THE
+**AND **MEASURED 2026-10-31: **`checks/rn-gate.py` **REPORTS **`gated 80 agree 80 disagree []`** — **THE
 **COMPARISON **IS **PERFECT **WHERE **IT **HAPPENS** — **AND **IT **ALSO **REPORTS FOUR **READER-SIDE **DEFECTS
 **THAT **BETWEEN **THEM **ACCOUNT **FOR **55 **ROWS **THE **READER **CANNOT **PAIR:**
 
@@ -27080,47 +27115,47 @@ the RENDER GATE compares 80 of its rows PERFECTLY and cannot PAIR 55 of them, an
 | **`port: **11 **LOGICAL **row(s) **REFUSED **as **ambiguous`** | **11 **refused** |
 | **`oracle: **44/124 **PHYSICAL **LINE(S) **ARE **THE **TAIL …`** | **THE **SAME **ON **THE **ORACLE **SIDE** |
 
-**⇒ AND **⇒ AND **THE **CAUSE **IS **A **ROW **FORMAT **FACT **AND **NOT **A **COMPARISON **FACT:** **`pyrender`'s
+**AND **AND **THE **CAUSE **IS **A **ROW **FORMAT **FACT **AND **NOT **A **COMPARISON **FACT:** **`pyrender`'s
 **ANSWERS **CONTAIN **NEWLINES** (**`render.bend:2148`**, **FIVE **ROWS**), **AND **THE **READER **SPLITS **ON
-**PHYSICAL **LINES**, **SO **A **MULTI-LINE **VALUE **IS **READ **AS **A **ROW **PLUS **A **TAIL.**  **⇒ AND **THE
+**PHYSICAL **LINES**, **SO **A **MULTI-LINE **VALUE **IS **READ **AS **A **ROW **PLUS **A **TAIL.**  **AND **THE
 **READER **IS **HONEST **ABOUT **IT** — **IT **REFUSES **THE **AMBIGUOUS **ONES **RATHER **THAN **PAIRING **THEM
 **WRONG**, **WHICH **IS **THE **RIGHT **FAILURE** — **BUT **44 **ROWS **ARE **NOT **COMPARED**, **AND **A **ROW
 **THAT **IS **NOT **COMPARED **IS **A **ROW **THAT **CANNOT **GO **RED.**
 
-**⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **GATE **IS **STILL **A **BIG **IMPROVEMENT **ON **WHAT **IT **REPLACED:**
+**AND **AND **AND **AND **THE **GATE **IS **STILL **A **BIG **IMPROVEMENT **ON **WHAT **IT **REPLACED:**
 **BEFORE **THE **RENDER **AGENT's **WORK **(`e373380f9^`**) **IT **WAS **rc=3**, **REFUSED**, **MEASURING
 **NOTHING **AT **ALL** — **AND **IT **IS **NOW **rc=1** **ON **READER **DEFECTS **THAT **ARE **NAMED **AND
-**COUNTED**, **WITH **80/80 **AGREEING.**  **⇒ AND **A **REFUSAL **THAT **NAMES **ITS **DENOMINATOR **BEATS **A
+**COUNTED**, **WITH **80/80 **AGREEING.**  **AND **A **REFUSAL **THAT **NAMES **ITS **DENOMINATOR **BEATS **A
 **GREEN **THAT **MEASURED **NOTHING.**
 
-**⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **REMAINING **FIX **IS **THE **ROW **FORMAT**, **NOT **THE
+**AND **AND **AND **AND **AND **AND **THE **REMAINING **FIX **IS **THE **ROW **FORMAT**, **NOT **THE
 **COMPARISON:** **A **MULTI-LINE **VALUE **NEEDS **AN **ESCAPE **OR **A **LENGTH **PREFIX**, **AND **THE **FIVE
-**ROWS **THAT **CARRY **ONE **ARE **KNOWN.**  **⇒ AND **IT **IS **A **SEPARATE **CHANGE **WITH **ITS **OWN
+**ROWS **THAT **CARRY **ONE **ARE **KNOWN.**  **AND **IT **IS **A **SEPARATE **CHANGE **WITH **ITS **OWN
 **MEASUREMENT**, **BECAUSE **A **ROW **FORMAT **EDIT **THAT **MOVES **THE **CAPTURES **IS **A **CHANGE **TO **WHAT
 **THE **GATE **COMPARES **AND **NOT **A **CHANGE **TO **HOW **IT **READS.**
 
 the corpus is GREEN and STALE AGAIN, and the DOSE is 14 substrate files THREE OTHER UNITS have not committed
 
-**⇒ AND **MEASURED 2026-10-31, **AFTER **THE **RUN **AND **REPRO **WERE **BOTH **RE-TAKEN **AND **BOTH
+**AND **MEASURED 2026-10-31, **AFTER **THE **RUN **AND **REPRO **WERE **BOTH **RE-TAKEN **AND **BOTH
 **GREEN **(`38/38 **agree, **38 **byte-identical, **340 **of **340 **identical **across **two **clean **runs,
 **`PASS -- the claim is ESTABLISHED`, **`RUN HEALTH : OK`**): **THE **SUBSTRATE **MOVED **AGAIN** — **`f4188f94…`
 **-> **`818ca7b9…`** — **BECAUSE **FOURTEEN **FILES **ARE **DIRTY:**
 **`extra/models/{bert,clip,convnext,llama,mask_rcnn,rnnt,t5,transformer,unet,vit}.bend`**,
 **`runtime/ops_python.bend`**, **`schedule/rangeify.bend`**, **`schedule/realize.bend`** **AND **`uop/ops.bend`.**
 
-**⇒ AND **⇒ AND **THE **MEASUREMENT **IS **STILL **SOUND** — **`17 **of **17 **pins **green`** — **AND **THE
-**FRESHNESS **IS **LOST**, **AND **THOSE **ARE **TWO **DIFFERENT **CLAIMS**.  **⇒ AND **THE **DIGEST **IS
+**AND **AND **THE **MEASUREMENT **IS **STILL **SOUND** — **`17 **of **17 **pins **green`** — **AND **THE
+**FRESHNESS **IS **LOST**, **AND **THOSE **ARE **TWO **DIFFERENT **CLAIMS**.  **AND **THE **DIGEST **IS
 **STABLE **(`818ca7b9…` **READ **TWICE, **4 **s **APART**) **AND **`ops.bend`** **COMPILES **WITH **THEIR **EDITS
 **(`ALL **PROOFS **CHECK`, **212 **MB**), **SO **A **RE-RUN **WOULD **SUCCEED** — **AND **IT **WOULD **CERTIFY
 **WORK **THAT **IS **NOT **IN **ANY **COMMIT.**
 
-**⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **DOCTRINE **IS **THE **TREE's **OWN:** **A **GREEN **CORPUS **IS **NOT **A
+**AND **AND **AND **AND **THE **DOCTRINE **IS **THE **TREE's **OWN:** **A **GREEN **CORPUS **IS **NOT **A
 **CERTIFICATE **UNTIL **THE **TREE **STOPS **MOVING**, **AND **RUNNING **ON **A **MOVING **TREE **IS **A
 **TREADMILL** — **THE **RUN **TAKES **~1:42 **AND **THE **REPRO **~248 **s **NOW**, **SO **EACH **PASS **IS
 **CHEAP**, **AND **A **PASS **TAKEN **WHILE **THREE **UNITS **ARE **WRITING **CERTIFIES **A **TREE **THAT **WILL
 **NOT **EXIST **IN **AN **HOUR.**
 
-**⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **SO **THE **HONEST **STATE **IS **THIS:** **THE **CORPUS's
+**AND **AND **AND **AND **AND **SO **THE **HONEST **STATE **IS **THIS:** **THE **CORPUS's
 **MEASUREMENT **IS **GREEN**, **ITS **LAST **CERTIFICATE **DESCRIBED **`f4188f94…`**, **THE **LIVE **TREE **IS
 **`818ca7b9…`**, **AND **THE **RE-RUN **BELONGS **AFTER **THE **FOURTEEN **FILES **LAND** — **NOT **BEFORE,
 **AND **NOT **INSTEAD **OF** **SAYING **SO.**
@@ -27146,8 +27181,8 @@ the SCHEDULER's deferral is THREE WALLS, and the header had named a wall that wa
 
   - [x] **THE **SCHEDULER's **DEFERRAL **IS **NOW **MEASURED **AS **THREE **WALLS **IN **THREE **FILES**
         (2026-10-31, `b38501184`, `c53f4dd76`), **AND **THE **HEADER **HAD **BEEN **WRONG **TWICE.**
-        **⇒ AND **OF **THE **23 **NAMES **IN **`schedule/__init__.py:82-301`, **10 **ARE **PORTED **AND **13
-        **ARE **NOT.**  **⇒ AND **THE **THREE **WALLS:**
+        **AND **OF **THE **23 **NAMES **IN **`schedule/__init__.py:82-301`, **10 **ARE **PORTED **AND **13
+        **ARE **NOT.**  **AND **THE **THREE **WALLS:**
         **A. **STORAGE** — **NO **`type Buffer is Data` **ANYWHERE**, **SO **`new_buffer`**, **`max_numel`**,
         **`on_disk`**, **`contiguous_view`** **AND **`param_like`** **ARE **COMMENT-ONLY** (**MEASURED, **ALL
         **FIVE**), **WHICH **BLOCKS **`create_new_buffer`**, **`contiguous_mops_to_view`** **AND
@@ -27162,12 +27197,12 @@ the SCHEDULER's deferral is THREE WALLS, and the header had named a wall that wa
         **C. **`variables()`** — **NO **DEF** (**`is_variable` **TOO**; **`substitute` **DOES **EXIST**), **WHICH
         **BLOCKS **`resolve_linear_call`, **`transform_to_call` **AND **`create_linear_with_vars` — **THE
         **ENTRY **POINTS.**
-        **⇒ AND **⇒ AND **THE **ORDER **IS **THEREFORE **NOT **"SCHEDULER **NEXT":** **A **IS **UPSTREAM **OF
+        **AND **AND **THE **ORDER **IS **THEREFORE **NOT **"SCHEDULER **NEXT":** **A **IS **UPSTREAM **OF
         **C **IS **UPSTREAM **OF **THE **ENTRY **POINTS**, **AND **B **IS **ORTHOGONAL** — **THE **STORAGE
         **LAYER **IS **THE **NEXT **THING, **NOT **THIS **FILE.**
-        **⇒ AND **⇒ AND **AND **THE **CLASS **FROM **`B`: **THERE **IS **A **SECOND **`graph_rewrite` **THAT
+        **AND **AND **AND **THE **CLASS **FROM **`B`: **THERE **IS **A **SECOND **`graph_rewrite` **THAT
         ***DOES* **TAKE **`bottom_up`** (`codegen/decomp/dtype.bend:2078`) **AND **ITS **BODY **IS
-        **`graph_rewrite.wall(x)`**, **WHICH **ANSWERS **`None{}`.**  **⇒ AND **A **PARAMETER **A **DEF
+        **`graph_rewrite.wall(x)`**, **WHICH **ANSWERS **`None{}`.**  **AND **A **PARAMETER **A **DEF
         **ACCEPTS **AND **DISCARDS **IS **WORSE **THAN **ONE **IT **OMITS: **IT **READS **AS **THOUGH **THE
         **CAPABILITY **IS **THERE**, **AND **A **SEARCH **FOR **"WHO **TAKES **`bottom_up`"** **FINDS **IT
         **AND **STOPS.**  **MEASURED: **NO **NON-STUB **DEF **IN **THE **PORT **TAKES **IT.**
@@ -27179,16 +27214,16 @@ the SCHEDULER's deferral is THREE WALLS, and the header had named a wall that wa
         forcing the shape conjunct moves `iv_alu_img 0 -> 1` (1 row, FAIL); firing
         the RANGE arm on `AXIS_WEAK` moves **5 of 20** (`vs_device 2 -> 1`,
         `vs_weak 1 -> 2`, FAIL).
-        **⇒ AND **THE **GATE **FOUND **A **REAL **DEFECT **IN **MY **OWN **FIRST
+        **AND **THE **GATE **FOUND **A **REAL **DEFECT **IN **MY **OWN **FIRST
         **DRAFT, **WHICH **IS **THE **POINT **OF **HAVING **ONE: `variables` MINTS,
         `UOp.new` APPENDS, and the draft returned **BARE INDICES INTO AN ARENA THE
         CALLER NEVER RECEIVED**.  **MEASURED, VERBATIM: EVERY COUNT ROW WAS RIGHT
         AND `vs_dev_vmax=NA vs_dev_name=NA`** -- `Arena.arg` was reading the
-        pre-growth arena.  **⇒ A COUNT THAT IS RIGHT AND A NODE THAT IS
+        pre-growth arena.  **A COUNT THAT IS RIGHT AND A NODE THAT IS
         UNREACHABLE IS THE FAILURE A COUNT CANNOT SEE.**  The fix is a threaded
         accumulator (`VarR{ar, xs}`), and `unbound` now returns `O.Found`, because
         both mint.
-        **⇒ AND **THE **RANGE **ARM'S **`x.vmax` **IS **`end - 1` **READ **THROUGH
+        **AND **THE **RANGE **ARM'S **`x.vmax` **IS **`end - 1` **READ **THROUGH
         `rng_width.of`** -- which already unrolls CONST/AFTER/CAST and refuses
         anything else -- and **NOT** through `UOp.vmax`, which wants a min-max
         `BTable` and would make minting one device index cost a full sweep.  The
@@ -27196,7 +27231,7 @@ the SCHEDULER's deferral is THREE WALLS, and the header had named a wall that wa
 
 THE SCHEDULER's "11 MISSING" IS 8, AND ITS 3 FALSE NEGATIVES WERE A BY-NAME CENSUS
 
-**⇒ AND **MEASURED **2026-10-31: **THREE **NAMES **THE **DEFERRAL **LISTED **AS **MISSING
+**AND **MEASURED **2026-10-31: **THREE **NAMES **THE **DEFERRAL **LISTED **AS **MISSING
 ARE **IN **THE **PORT **UNDER **ITS **OWN **`sc_` **PREFIX, **AND **ALL **THREE **ARE **GATED:**
 
 | upstream (`__init__.py`) | the port (`schedule/__init__.bend`) | rows |
@@ -27212,7 +27247,7 @@ difference is a CENSUS DEFECT OF THE SAME CLASS THIS FILE ALREADY NAMES TWICE:
 it needs (`sc_is_state5`, `sc_is_multi`, `sc_is_kernel`) written *for* it and
 called 2, 3 and 2 times respectively.
 
-**⇒ AND THE EIGHT THAT REALLY REMAIN NOW HAVE A MEASURED CAUSE EACH, AND THERE
+**AND THE EIGHT THAT REALLY REMAIN NOW HAVE A MEASURED CAUSE EACH, AND THERE
 ARE ONLY TWO CAUSES:**
 
 **WALL A -- STORAGE (`3`, all `UOp.new_buffer`/`max_numel`/`param_like`):**
@@ -27231,7 +27266,7 @@ s.variables()}` HALF, which is now writable and was not before).
 **THE ENTRY POINTS (`3`), which are built ON the above and are not walls:**
 `transform_to_call`, `create_linear_with_vars`, `create_schedule`.
 
-**⇒ AND THE HEADER'S OLD CLAIM -- "wall C blocks the entry points" -- WAS TRUE
+**AND THE HEADER'S OLD CLAIM -- "wall C blocks the entry points" -- WAS TRUE
 AND INCOMPLETE: it blocks *one half of one arm of* the entry points, and the
 other half is wall B. THE TWO CAUSES ARE `A` AND `B` AND NOTHING ELSE.**
 - [x] THE LOOP'S TERMINATION WAS A Bool.pick, WHICH EVALUATES BOTH ARMS: every launch burned the
@@ -27244,7 +27279,7 @@ other half is wall B. THE TWO CAUSES ARE `A` AND `B` AND NOTHING ELSE.**
 
 the SCHEDULER's next two pieces are BLOCKED ON A STATE, not on a missing idea -- and the state is 14 dirty substrate files
 
-**⇒ AND **MEASURED **2026-10-31, **SO **THE **RECORD **SAYS **WHAT **MUST **LAND **BEFORE
+**AND **MEASURED **2026-10-31, **SO **THE **RECORD **SAYS **WHAT **MUST **LAND **BEFORE
 **THE **NEXT **STEP **RATHER **THAN **LEAVING **THE **NEXT **UNIT **TO **REDISCOVER **IT:**
 
 **THE **SUBSTRATE **IS **DIRTY: **14 **PATHS.**  `git status --porcelain -- tinybendygrad/`:
@@ -27254,7 +27289,7 @@ decode split, in flight).  **A **CORPUS **RUN **NOW **WOULD **CERTIFY **WORK **I
 **COMMIT** -- it would hash the working tree and report `CURRENT` against bytes
 nobody can check out.
 
-**⇒ AND **`uop/ops.bend`'s **DIFF **IS **ONE **COMMENT **LINE:** `mixin/creation.bend:408`
+**AND **`uop/ops.bend`'s **DIFF **IS **ONE **COMMENT **LINE:** `mixin/creation.bend:408`
 **-> **`:429`, **A **STALE **CITATION **FIX **FROM **2026-10-30 **22:34Z **THAT **NOBODY
 **COMMITTED.**  **THAT **MATTERS **BECAUSE **`UOp.param` **BELONGS **THERE **AND **IT **IS
 **THE **ONE **WALL-A **PIECE **THAT **IS **NOT **STORAGE:** `param_like`'s **arms **2
@@ -27264,7 +27299,7 @@ nobody can check out.
 **EDIT **IT: **A **PATH **ANOTHER **UNIT **HOLDS **IS **A **PATH **I **DO **NOT **TAKE,
 **EVEN **WHEN **ITS **DIFF **IS **A **COMMENT.**
 
-**⇒ AND **THE **OTHER **PIECE **IS **WALL **B, **AND **ITS **BLOCKER **IS **THE
+**AND **THE **OTHER **PIECE **IS **WALL **B, **AND **ITS **BLOCKER **IS **THE
 **SAME **STATE **IN **A **DIFFERENT **WAY: **`bottom_up` **IS **THE **DRIVER **EVERY
 **PASS **RUNS **ON, **SO **IT **CANNOT **BE **LANDED **ON **A **TREE **THAT **CANNOT **BE
 **RE-RUN.**  **THE **MECHANISM **IS **NOW **MEASURED **AND **NOT **A **GUESS**
@@ -27275,7 +27310,7 @@ else bpm, ctx, enter_calls)`** -- **`bottom_up=True` **IS **TABLE **SELECTION**,
 **`BottomUpGate` **that **STOPS **THE **DESCENT**, **and **stage **1 **applying **`pm`
 **once **the **srcs **are **in **`replace`.**
 
-**⇒ AND **SO **"WALL **C **IS **DOWN" **DOES **NOT **MEAN **"THE **SCHEDULER **IS **NEXT
+**AND **SO **"WALL **C **IS **DOWN" **DOES **NOT **MEAN **"THE **SCHEDULER **IS **NEXT
 **IN **ONE **STEP":** **IT **MEANS **THE **ONE **PIECE **THAT **NEEDED **NEITHER
 **WALL **IS **DONE, **AND **THE **REMAINING **EIGHT **NEED **`Buffer`** (1),
 **`UOp.param`** (1, **blocked **by **a **comment**), **or **the **`bottom_up`
@@ -27284,7 +27319,7 @@ else bpm, ctx, enter_calls)`** -- **`bottom_up=True` **IS **TABLE **SELECTION**,
 
 CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 blocked by `bottom_up`"; it is TWO, and the other six have four different causes
 
-**⇒ AND **`98382578a` **SAID **"`bottom_up` **driver **5, **blocked **by **the **dirty
+**AND **`98382578a` **SAID **"`bottom_up` **driver **5, **blocked **by **the **dirty
 **substrate"** **AND **THE **MEASUREMENT **SAYS **TWO.**  **MEASURED **2026-10-31 **by
 **counting **`bottom_up=True` **AT **EVERY **`graph_rewrite` **CALL **SITE **IN **EACH **OF
 **THE **EIGHT** (`grep`-by-eye **is **what **produced **the **wrong **number):**
@@ -27300,14 +27335,14 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
 | `create_linear_with_vars` | **3** | 0 | `pm_schedule` |
 | `create_schedule` | 0 | 0 | the finale, built on all of the above |
 
-**⇒ AND **`transform_to_call`'s **FOUR **and **`create_linear_with_vars`'s **THREE**
+**AND **`transform_to_call`'s **FOUR **and **`create_linear_with_vars`'s **THREE**
 **`graph_rewrite` **CALLS **ARE **ALL **THE **DEFAULT**, **so **neither **is **a
 **`bottom_up` **problem **AT **ALL** -- **and **the **entry **points **were **the **three
 **I **was **most **confident **about.**  **A **COUNT **OF **"WHICH **NAMES **ARE **MISSING"**
 **IS **NOT **A **CENSUS **OF **WHY, **AND **I **WROTE **ONE **AND **CALLED **IT **THE
 **OTHER.**
 
-**⇒ AND **THE **REAL **SHAPE **OF **WHAT **REMAINS **IS **WORSE **AND **BETTER **THAN **THE
+**AND **THE **REAL **SHAPE **OF **WHAT **REMAINS **IS **WORSE **AND **BETTER **THAN **THE
 **CLAIM:** **BETTER**, **because **wall **B **is **ONE **piece **plus **one **arm**
 **instead **of **five**, **and **`UOp.param` **IS **A **CONSTRUCTOR **AND **NOT **THE
 **STORAGE **LAYER**; **WORSE**, **because **`contiguous_view` **needs **FIVE **NAMES
@@ -27315,7 +27350,7 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
 **`symbolic`), **which **is **a **bigger **job **than **the **one **it **was
 **mistaken **for.**
 
-**⇒ AND **`UOp.param`'s **HOME **IS **NOT **BLOCKED: **`mixin/creation.bend` **IS **FREE**
+**AND **`UOp.param`'s **HOME **IS **NOT **BLOCKED: **`mixin/creation.bend` **IS **FREE**
 (1034 **lines, **`git status` **empty), **and **it **already **holds **the **`cr_*`
 **constructors.**  **`ops.bend` **still **holds **a **one-line **COMMENT** **fix, **so
 **`UOp.param` **goes **where **a **constructor **belongs **and **not **into **a **file
@@ -27364,22 +27399,22 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
         `resolve_linear_call`'s **`binds`** (`__init__.py:104-106`) is ported as
         `sc_linear_binds` / `sc_linear_binds_outer`, and **`is_variable`/`unbound`
         now have a caller** instead of being two gated defs nothing used.
-        **⇒ AND **FOUR **TEXT **PLANTS **EACH **MOVE **A **DIFFERENT **TERM**
+        **AND **FOUR **TEXT **PLANTS **EACH **MOVE **A **DIFFERENT **TERM**
         (`uopvars-gate` = **27 rows, 2 lanes, rc=0** at rest):
         **`unbound() if is_variable else x` -> `x`** moves **2** (`lb_k1_moved`,
         `lb_k1_unbound`); **dropping the ADDRSPACE test** moves **1** (`lb_gone`);
         **requiring a VARIABLE in the filter** moves **1** (`lb_k2_self`);
         **dropping the OUTER seed** moves **1** (`lb_outer_keep`).
-        **⇒ AND **A **FIFTH **PLANT **WAS **`REFUSED` (rc=3), **NOT **RED, **AND **THAT
+        **AND **A **FIFTH **PLANT **WAS **`REFUSED` (rc=3), **NOT **RED, **AND **THAT
         **IS **RECORDED **AS **A **DIFFERENT **CLASS:** testing `vmin_vmax(pa)` in
         the addrspace arm consumes `pa` twice, the DRIVER DOES NOT COMPILE, and a
         mutation that does not compile measures nothing.
-        **⇒ AND **THE **FILTER **AND **THE **VALUE **ARE **TWO **QUESTIONS:** the
+        **AND **THE **FILTER **AND **THE **VALUE **ARE **TWO **QUESTIONS:** the
         filter is `op is PARAM and addrspace is ALU` (`vmin_vmax` is NOT in it, so a
         RANGE-LESS ALU PARAM is a bind whose value is itself); the value strips only
         a VARIABLE.  And `{**outer, **inner}` is a SEED and not a union: inner
         overrides, an outer-only slot survives.
-        **⇒ AND **THE **FIXTURE **CARRIES **ITS **OWN **INDICES** (`LBFx{f,a0,a1,a2,a3}`)
+        **AND **THE **FIXTURE **CARRIES **ITS **OWN **INDICES** (`LBFx{f,a0,a1,a2,a3}`)
         because the first draft asserted `binds[0] == 1` and the arena gave **2** --
         a row about the ALLOCATOR, not about `binds`.
 
@@ -27394,7 +27429,7 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
         a path another unit holds is a path I do not take, even when its diff is a
         comment**, and the alternative -- a scheduler-local `sc_substitute` -- would
         duplicate a `UOp` method in the wrong layer for a wall it does not remove.
-        **⇒ AND **THE **PORT **ALREADY **HAS **THE **MACHINERY **TO **BUILD **IT:
+        **AND **THE **PORT **ALREADY **HAS **THE **MACHINERY **TO **BUILD **IT:
         `codegen/__init__.bend`'s `walk_rewrite`/`wr.rebuild`/`wr.go` rebuild a graph
         from a `repl` map, and `substitute` is "rebuild with a pre-seeded `repl`".
         **SO **THE **NEXT **UNIT **STARTS **WHEN **THAT **ONE **LINE **LANDS.**
@@ -27428,16 +27463,16 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
         `subs` (`__init__.py:109`) is ported as `sc_apply_subs`, so **all three
         Wall-C names are now LIVE** -- `is_variable`/`unbound` through `binds`,
         `variables` through `subs`.  `uopvars-gate` = **31 rows, 2 lanes, rc=0**.
-        **⇒ AND **THE **DISCRIMINATOR **IS **ONE **CHARACTER: `si.src` **IS **ALL **OF
+        **AND **THE **DISCRIMINATOR **IS **ONE **CHARACTER: `si.src` **IS **ALL **OF
         **`src` **AND **`binds` **WALKS **`src[1:]`** -- the CALL BODY is a src, so
         PLANT E (that slice) moves **exactly `subs_body`**.
-        **⇒ AND **A **PLANT **THAT **MOVED **ZERO **ROWS **FOUND **A **LABEL **OF
+        **AND **A **PLANT **THAT **MOVED **ZERO **ROWS **FOUND **A **LABEL **OF
         **MINE: dropping the `in binds` test moved **0 of 31**, because `sc_mapget`
         answers the NO-SLOT sentinel for a missing key, so ABSENT and
         PRESENT-BUT-SENTINEL were the SAME `U32`.  **The oracle row was already
         presence-based, so the two lanes AGREED AT REST AND COULD NEVER DISAGREE.**
         Fixed with `Map.has`; the same plant now moves **2** (`subs_miss`,
-        `subs_none`), rc=1.  **⇒ A GREEN GATE IS NOT EVIDENCE A ROW CAN GO RED.**
+        `subs_none`), rc=1.  **A GREEN GATE IS NOT EVIDENCE A ROW CAN GO RED.**
 
   - [x] **`llm/` **IS **AT **ITS **WALL** (2026-10-31, `8f43e466b`, `8a49f6baa`,
         `e4494d3f0`, `410290700`): `gguf.bend` (759) + `ggml.bend` (590) + a
@@ -27445,7 +27480,7 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
         **23 plants all RED**.  **24 of 29 `ggml_type` codes decode.**  The five
         unported are a VALUE-TYPE wall and not arithmetic: `int8/int16/int32/int64/
         f64` have no `f32` image, so the module would need a second answer type.
-        **⇒ AND **THE **ORACLE **FOUND **FIVE **REAL **DEFECTS **ACROSS **THE **FOUR
+        **AND **THE **ORACLE **FOUND **FIVE **REAL **DEFECTS **ACROSS **THE **FOUR
         **COMMITS** (`Q4_K` scale offset, `IQ4_XS` nibble interleave, `IQ2_XS`
         per-16 scale, `Q3_K` bit-major hmask AND its inverted sign, `Q5_K`'s
         byte-major fifth bit), **none of them visible in a count or an op name.**
@@ -27561,7 +27596,7 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
 
 CORRECTION: `substitute` was NOT "one held line away" -- its ctx is a DICT and the port's ctx is a LIST
 
-**⇒ AND **`b5ec289bc` **SAID "THE **NEXT **UNIT **STARTS **WHEN **THAT **ONE **LINE
+**AND **`b5ec289bc` **SAID "THE **NEXT **UNIT **STARTS **WHEN **THAT **ONE **LINE
 **LANDS"** **AND **THAT **IS **FALSE.  **MEASURED **2026-11-01:**
 
     tinybendygrad/uop/ops.bend:4426
@@ -27577,12 +27612,12 @@ header already names as a wall: *"This untyped `List<&2, U32>` is the wall-passi
 shape until the typed `CTX` record lands."*  **SO `substitute` HAS TWO BLOCKERS
 AND I HAD NAMED ONE.**
 
-**⇒ AND **THE **SECOND **BLOCKER **IS **IN **A **FILE **I **CAN **EDIT, **WHICH **MAKES
+**AND **THE **SECOND **BLOCKER **IS **IN **A **FILE **I **CAN **EDIT, **WHICH **MAKES
 **THIS **WORSE, **NOT **BETTER: `pm_rewrite_m` **LIVES **IN **`uop/ops.bend` -- THE
 **HELD **FILE -- SO **THE **CTX **CHANGE **IS **ALSO **BEHIND **THE **SAME **ONE-LINE
 **COMMENT.  **A **HELD **PATH **BLOCKS **MORE **THAN **THE **EDITS **THAT **NAME **IT.**
 
-**⇒ AND **A **BESPOKE **WALK **WAS **CONSIDERED **AND **REFUSED, **FOR **A **MEASURED
+**AND **A **BESPOKE **WALK **WAS **CONSIDERED **AND **REFUSED, **FOR **A **MEASURED
 **REASON: `unified_rewrite`'s **STAGE 0 **DESCENDS **INTO **THE **REPLACEMENT's
 **srcs** (`new_n.src` **AFTER **the **`bpm` **FIXPOINT, **not **`n.src`), **and
 **`cached_bpm_rewrite` **RUNS **IN **A **LOOP **UNTIL **IT **RETURNS **`None`, **SO **A
@@ -27592,7 +27627,7 @@ AND I HAD NAMED ONE.**
 **file **keeps **finding: **an **approximation **that **agrees **on **every **fixture
 **nobody **wrote.**
 
-**⇒ AND **SO **THE **CORRECT **NEXT **STEP **IS **THE **`CTX` **RECORD, **AND **IT **IS
+**AND **SO **THE **CORRECT **NEXT **STEP **IS **THE **`CTX` **RECORD, **AND **IT **IS
 **NOT **A **SCHEDULER **CHANGE:** `pm_rewrite_m`'s **ctx **is **the **codegen
 **pipeline's **argument, **and **changing **it **touches **every **rule **body **that
 **reads **`ctx[0]`** **OR **`ctx[1]`.**  **THE **ORDER **IS **CTX **FIRST, **THEN
@@ -27632,7 +27667,7 @@ AND I HAD NAMED ONE.**
 
 THE SUBSTRATE IS COMMITTED AND THE CORPUS IS GREEN AT A NEW DIGEST -- and the REPRO is REFUSED because a NEW unit started writing
 
-**⇒ AND **THE **FIRST **HALF **OF **WHAT **THE **OWNER **ASKED **FOR **IS **DONE:** the
+**AND **THE **FIRST **HALF **OF **WHAT **THE **OWNER **ASKED **FOR **IS **DONE:** the
 13 dirty substrate paths are committed (`41a772e0f`, `c25df28b5`), `tinybendygrad/`
 is **CLEAN**, and the corpus RUN that validates them is green:
 
@@ -27641,18 +27676,18 @@ is **CLEAN**, and the corpus RUN that validates them is green:
     selfcheck=# SELFCHECK: OK   oracle-selfcheck=# ORACLE SELFCHECK: OK   census-rc=rc=0
     substrate-start = substrate-end = 0f2654abc8712a38...
 
-**⇒ AND **THAT **RUN **IS **A **CERTIFICATE **FOR **ITS **DIGEST **AND **NOT **FOR **HEAD:**
+**AND **THAT **RUN **IS **A **CERTIFICATE **FOR **ITS **DIGEST **AND **NOT **FOR **HEAD:**
 `substrate-start == substrate-end` says the tree did not move DURING it, and the digest
 covers the bytes it saw.
 
-**⇒ AND **THE **REPRO **WAS **REFUSED, **AND **THE **REFUSAL **IS **THE **WITNESS
+**AND **THE **REPRO **WAS **REFUSED, **AND **THE **REFUSAL **IS **THE **WITNESS
 **WORKING:**
 
     run A: 0f2654abc8712a38      run B: 879d296c5a7842df
     REPRO: REFUSED -- the two runs measured DIFFERENT SUBJECTS ... so the snapshots
     differ because THE TREE MOVED BETWEEN THEM
 
-**⇒ AND **THE **CAUSE **IS **A **NEW **UNIT, **NOT **A **STALE **FILE:**
+**AND **THE **CAUSE **IS **A **NEW **UNIT, **NOT **A **STALE **FILE:**
 `M tinybendygrad/uop/render.bend` **AND **`?? tinybendygrad/uop/f32_repr.bend` --
 an UNTRACKED file that did not exist when the 13 were committed, which is the
 signature of work being WRITTEN NOW.  **SO I DID NOT TAKE IT:** the 13 I committed
@@ -27660,7 +27695,7 @@ were A DAY OLD with `git diff` sizes that made a complete change; these two are
 minutes old and one of them has no committed shape at all.  **A PATH A UNIT IS
 WRITING IS THE ONE CASE "COMMIT ALL" MUST NOT COVER.**
 
-**⇒ AND **THE **CORRECT **NEXT **ACTION **IS **A **REPRO **ONCE `render.bend` +
+**AND **THE **CORRECT **NEXT **ACTION **IS **A **REPRO **ONCE `render.bend` +
 `f32_repr.bend` **SETTLE** -- and the instrument already says so by name rather than
 producing a green that would have been about nothing.
 - [x] **STAGE 2 IS MET: 12 of 12 Metal kernels byte-identical.** The two cstyle defects are fixed,
@@ -27710,7 +27745,7 @@ producing a green that would have been about nothing.
 
 THE CORPUS IS GREEN, REPRODUCIBLE AND CURRENT AT `8b06ab6b`, AND THE GOVERNING DOCUMENT NOW CARRIES THAT DIGEST
 
-**⇒ AND **ALL **THREE **CLAIMS **HOLD **AT **ONCE, **MEASURED **2026-11-01:**
+**AND **ALL **THREE **CLAIMS **HOLD **AT **ONCE, **MEASURED **2026-11-01:**
 
     graphs=38  graphs-answered=38  graphs-agree=38  graphs-disagree=0
     byte-identical=38  graphs-refused=0  expect-moved=0
@@ -27719,26 +27754,26 @@ THE CORPUS IS GREEN, REPRODUCIBLE AND CURRENT AT `8b06ab6b`, AND THE GOVERNING D
     substrate-start == substrate-end == 8b06ab6b8cc62e592475767362933465f4d59020fa3fad5496fb1a544a5c0709
     D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
 
-**⇒ AND **`gates/corpuswitness-gate.py` -> **`PASS -- the claim is ESTABLISHED`**, **ALL
+**AND **`gates/corpuswitness-gate.py` -> **`PASS -- the claim is ESTABLISHED`**, **ALL
 SEVEN **READINGS **OK**: `control`, `verdict.current` (`recorded == live == 8b06ab6b`,
 `rows=2`), `witness.fresh` (`FRESH`, `delta_ms=+90.280`), `freshness.source`
 (`os.stat().st_mtime_ns`, `git_asked=NO`), `witness.substrate` (`CURRENT`, `rows=3 of 3`),
 `verdict.reported` (`reported=rc=0 derived=rc=0 verdict=AGREE`), and `claim`
 (`REPRODUCIBLE`).
 
-**⇒ AND **THIS **RUN **IS **ON **A **CLEAN **TREE, **AND **THAT **IS **THE **FIRST **TIME
+**AND **THIS **RUN **IS **ON **A **CLEAN **TREE, **AND **THAT **IS **THE **FIRST **TIME
 **IN **THIS **SESSION:** the 13 stale paths are committed (`41a772e0f`), the cstyle
 `BITCAST` arm is committed (`c25df28b5`), and the unit that was writing
 `uop/render.bend` + `uop/f32_repr.bend` **COMMITTED ITS OWN WORK** -- measured: both are
 tracked and `git status --porcelain -- tinybendygrad/` is EMPTY.
 
-**⇒ AND **`AGENTS.md` **CARRIED **THE **OLD **DIGEST **IN **TWO **PLACES **AND **THE
+**AND **`AGENTS.md` **CARRIED **THE **OLD **DIGEST **IN **TWO **PLACES **AND **THE
 **OLD **`substrate-head` **IN **ONE, **AND **THAT **IS **THE **FAILURE **THIS **FILE **NAMES
 **ON **ITSELF: "A GOVERNING DOCUMENT THAT CARRIES A FALSE CLAIM PROPAGATES INTO EVERY
 BRIEF THAT CITES IT."**  Both digests and the head now read
 `8b06ab6b...` / `a0cd707b...`, and `graphs=38` is UNCHANGED, so that line needed no edit.
 
-**⇒ AND **THE **REFUSED **REPRO **FROM **THE **LAST **COMMIT **IS **NOW **RESOLVED **AND
+**AND **THE **REFUSED **REPRO **FROM **THE **LAST **COMMIT **IS **NOW **RESOLVED **AND
 **NOT **WORKED **AROUND:** it said `run A: 0f2654ab, run B: 879d296c ... THE TREE MOVED
 BETWEEN THEM`, and I did not touch the path that moved. **THE **INSTRUMENT **WAS **RIGHT
 **BOTH **TIMES -- **once **to **refuse, **and **once **to **pass **after **the **tree
@@ -27754,7 +27789,7 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
   corpuswitness-gate -> PASS -- the claim is ESTABLISHED
   substrate-head=2af8ad4679646ccd4234c4c50c1605098618d067
 
-**⇒ AND **THIS **IS **THE **DOSE **OF **DISCIPLINE **THE **DIGEST **BUYS: `arm **3`
+**AND **THIS **IS **THE **DOSE **OF **DISCIPLINE **THE **DIGEST **BUYS: `arm **3`
 **CHANGED **A **SUBSTRATE **FILE, **SO **THE **PREVIOUS **CERTIFICATE **STOPPED
 **DESCRIBING **THE **TREE, **AND **THE **ONLY **HONEST **OPTION **WAS **TO **RE-TAKE
 **IT.**  Both **numbers **moved **and **both **were **re-measured **rather **than
@@ -27986,7 +28021,7 @@ the corpus is re-certified at `1e3744f5` -- and the refusal from last round reso
   D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
   corpuswitness-gate -> PASS -- the claim is ESTABLISHED
 
-**⇒ AND **THE **LAST **ROUND's **RUN **STRADDLED **(start `67dcba32`, end `51403d33`) **AND **I
+**AND **THE **LAST **ROUND's **RUN **STRADDLED **(start `67dcba32`, end `51403d33`) **AND **I
 **DID **NOT **BUILD **ON **IT:** `runtime/ops_python.bend` was 26 SECONDS OLD when I checked,
 which is a unit WRITING, and a run over a moving tree is the thing the two digests exist to
 catch. **THE **UNIT **COMMITTED **ITS **OWN **WORK** (`HEAD` is now `3e3571dc6`), the tree went
@@ -27994,18 +28029,18 @@ CLEAN, and **the very next run agreed with itself** -- start == end at `1e3744f5
 that is **fully committed**.  **NOBODY **HAD **TO **TOUCH **ANYTHING **TO **RESOLVE **IT, **AND
 **THAT **IS **THE **DESIGN **WORKING: **A **REFUSAL **IS **A **DELAY, **NOT **A **FAILURE.
 
-**⇒ AND **`resolve_linear_call` **IS **IN **THIS **CERTIFICATE** -- the digest covers the
+**AND **`resolve_linear_call` **IS **IN **THIS **CERTIFICATE** -- the digest covers the
 committed tree that holds it, plus `sc_apply_binds`'s three arms and the
 `v.arg.name is None` conjunct that both lanes had been missing.
 
-**⇒ AND **THE **DIGEST **MOVED **THREE **TIMES **TODAY (`f4188f94` -> `8b06ab6b` -> `1bce0f8f`
+**AND **THE **DIGEST **MOVED **THREE **TIMES **TODAY (`f4188f94` -> `8b06ab6b` -> `1bce0f8f`
 -> `1e3744f5`) **AND **EVERY **MOVE **WAS **RE-TAKEN **IN **FULL, **NOT **INFERRED.  A
 certificate whose digest did not move while the substrate did is the one thing this file
 cannot survive.
 
 A `run` WITHOUT A `repro` BREAKS THE WITNESS -- and `witness.fresh` caught it on a tree where every other reading was green
 
-**⇒ AND **MEASURED **2026-11-02, **AND **THE **CAUSE **WAS **NOT **MINE:** another unit re-ran
+**AND **MEASURED **2026-11-02, **AND **THE **CAUSE **WAS **NOT **MINE:** another unit re-ran
 `differ.py run` at **16:12:39** (digest `8e7ab117`, `substrate-head=78b204521`) while
 `D0-repro.txt` was still mine from **06:10:54** at `1e3744f5`.  **SO **THE **REPRO **WAS
 **OLDER **THAN **THE **VERDICT **IT **IS **SUPPOSED **TO **CERTIFY, **AND **THE
@@ -28016,17 +28051,17 @@ A `run` WITHOUT A `repro` BREAKS THE WITNESS -- and `witness.fresh` caught it on
     claim               NOT-ESTABLISHED   (3 of 7 readings red)
     verdict.current     OK                <- AND THE VERDICT ITSELF WAS FINE
 
-**⇒ AND **THAT **IS **THE **SHAPE **WORTH **KEEPING: **`verdict.current` **WAS **GREEN
+**AND **THAT **IS **THE **SHAPE **WORTH **KEEPING: **`verdict.current` **WAS **GREEN
 **AND **`claim` **WAS **RED.**  A green verdict and a certified claim are DIFFERENT
 STATEMENTS, and the only thing separating them here is **ORDER** -- `witness.fresh` is
 `mtime(W2) >= mtime(W1)`.  A run is a claim; a repro taken AFTER it is the check.
 
-**⇒ AND **THE **CURE **IS **ONE **COMMAND, **AND **IT **IS **NOT **A **RE-RUN **OF
+**AND **THE **CURE **IS **ONE **COMMAND, **AND **IT **IS **NOT **A **RE-RUN **OF
 **EVERYTHING:** `differ.py repro` at the CURRENT verdict.  `340 of 340 files identical`,
 rc=0, and all seven readings went green -- `witness.substrate` `CURRENT` because the
 repro now carries `8e7ab117` too, and `witness.fresh` `FRESH` because it is newer.
 
-**⇒ AND **SO **THE **OPERATIONAL **RULE **THIS **ADDS **TO **THE **FILE: **AFTER **ANY
+**AND **SO **THE **OPERATIONAL **RULE **THIS **ADDS **TO **THE **FILE: **AFTER **ANY
 `run`, **THE **REPRO **IS **STALE **UNTIL **IT **IS **RE-TAKEN** -- even if the substrate
 never moved, and even if the run agreed with itself.  **`substrate-start == substrate-end`
 SAYS **THE **TREE **DID **NOT **MOVE **DURING **THE **RUN; **IT **SAYS **NOTHING **ABOUT
@@ -28044,7 +28079,7 @@ SAYS **THE **TREE **DID **NOT **MOVE **DURING **THE **RUN; **IT **SAYS **NOTHING
   D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
   corpuswitness-gate -> PASS -- the claim is ESTABLISHED
 
-**⇒ AND **THE **NEGATIVE **RESULT **FIRST, **BECAUSE **IT **IS **THE **ONE **THAT
+**AND **THE **NEGATIVE **RESULT **FIRST, **BECAUSE **IT **IS **THE **ONE **THAT
 **COULD **MISLEAD: **THE **CORPUS **STAYED **GREEN **ACROSS **A **CHANGE **THAT
 **ALTERS **WHICH **NODES **EVERY **REWRITE **VISITS.**  **SO **THE **CORPUS **DOES
 **NOT **EXERCISE **THE **DEFAULT **WALK **OVER **A **CALL **BODY **IN **ANY **GRAPH
@@ -28055,12 +28090,12 @@ SAYS **THE **TREE **DID **NOT **MOVE **DURING **THE **RUN; **IT **SAYS **NOTHING
 **NOT **EVIDENCE **FOR **THAT **CHANGE -- **IT **IS **EVIDENCE **THAT **NOTHING **ELSE
 **BROKE, **WHICH **IS **A **DIFFERENT **AND **SMALLER **CLAIM.
 
-**⇒ AND **THE **CORPUS **IS **STILL **WORTH **TAKING, **AND **FOR **EXACTLY **THAT
+**AND **THE **CORPUS **IS **STILL **WORTH **TAKING, **AND **FOR **EXACTLY **THAT
 **SMALLER **CLAIM:** `codegen/__init__.bend` **IS **SUBSTRATE, **the **walk **is **what
 **every **pass **runs **on, **and **a **change **there **that **no **graph **exercises
 **could **still **have **moved **one.  **IT **DID **NOT.**
 
-**⇒ AND **THE **TWO **DEFECTS **ARE **BOTH **REAL **AND **BOTH **WERE **SILENT:** the
+**AND **THE **TWO **DEFECTS **ARE **BOTH **REAL **AND **BOTH **WERE **SILENT:** the
 port entered call bodies where upstream's table was written to run OUTSIDE them, and
 `wr.rebuild.go`'s stated guarantee was false the moment that changed -- `R.cu32`'s
 default `0` is a legal arena index, so an unvisited src became **NODE 0** rather than
@@ -28069,7 +28104,7 @@ itself.  **A **COMMENT **THAT **NAMES **A **GUARANTEE **THE **CODE **DOES **NOT
 
 CORRECTION: MUTUAL RECURSION IS IMPOSSIBLE, BUT THE WORKLIST SHAPE IS NOT -- and I wrote the stronger claim
 
-**⇒ AND **`f6921b283` **AND **`2af8ad467` **BOTH **SAY **"a **faithful **port **is **MUTUAL
+**AND **`f6921b283` **AND **`2af8ad467` **BOTH **SAY **"a **faithful **port **is **MUTUAL
 **RECURSION **between **two **defs -- **which **Bend **does **not **have"**, **AND **THAT
 **IS **TRUE **AND **IT **IS **NOT **THE **WHOLE **ANSWER.  MEASURED **2026-11-03, **four
 **minimal **files **in **a **scratch **directory:**
@@ -28079,10 +28114,10 @@ CORRECTION: MUTUAL RECURSION IS IMPOSSIBLE, BUT THE WORKLIST SHAPE IS NOT -- and
 
     Error: expected : a filled definition ... observed : g
 
-**⇒ AND **SO **THE **DEFINED-BEFORE-USE **RULE **IS **CONFIRMED **AND **MUTUAL
+**AND **SO **THE **DEFINED-BEFORE-USE **RULE **IS **CONFIRMED **AND **MUTUAL
 **RECURSION **IS **GENUINELY **UNAVAILABLE.
 
-**⇒ AND **BUT **THE **SHAPE **THE **WORKLIST **ACTUALLY **NEEDS **IS **ONE **SELF
+**AND **BUT **THE **SHAPE **THE **WORKLIST **ACTUALLY **NEEDS **IS **ONE **SELF
 **RECURSIVE **DEF, **AND **THAT **WORKS -- **INCLUDING **A **NON-TAIL **SELF-CALL
 **WHOSE **RESULT **FEEDS **ANOTHER **SELF-CALL:**
 
@@ -28106,7 +28141,7 @@ CORRECTION: MUTUAL RECURSION IS IMPOSSIBLE, BUT THE WORKLIST SHAPE IS NOT -- and
     `Nat` shrinking on EVERY self-call, so the list recursion must spend fuel too --
     which is why `h` takes `n` at all.
 
-**⇒ AND **SO **THE **HONEST **STATEMENT **IS: **`resolve_linear_call`'s **arm **1 **and
+**AND **SO **THE **HONEST **STATEMENT **IS: **`resolve_linear_call`'s **arm **1 **and
 `canonicalize_call_body`'s **recursive **`graph_rewrite` **are **NOT **BLOCKED **by **a
 **missing **language **feature.  THEY **ARE **BLOCKED **BY **A **REWRITE **I **HAVE **NOT
 **DONE: **merge `sc_apply_binds`/`sc_ab_srcs`/`sc_resolve` **into **ONE **self-recursive
@@ -28122,14 +28157,14 @@ re-certified at `7e1b51dd` after the `substitute` fix -- and the audit that foun
   D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
   corpuswitness-gate -> PASS -- the claim is ESTABLISHED
 
-**⇒ AND **THE **CORPUS **STILL **DOES **NOT **DISCRIMINATE **EITHER **`enter_calls` **FIX,**
+**AND **THE **CORPUS **STILL **DOES **NOT **DISCRIMINATE **EITHER **`enter_calls` **FIX,**
 **AND **THAT **IS **NOW **A **MEASURED **PROPERTY **OF **THE **CORPUS **AND **NOT **A
 **MISSING **RUN:** three runs across two `enter_calls` changes, all `38/38`, all
 `start == end`.  **SO **THE **CORPUS's **CLAIM **IS **"NOTHING **ELSE **BROKE"** **and
 **NEVER **"THIS **CHANGE **IS **RIGHT"; **the `ec_*`/`sub_nocalls` **rows **and **their
 **plants **are **the **only **thing **that **says **the **second.
 
-**⇒ AND **THE **PATTERN **IN **THIS **SESSION, **NAMED **SO **THE **NEXT **UNIT **DOES
+**AND **THE **PATTERN **IN **THIS **SESSION, **NAMED **SO **THE **NEXT **UNIT **DOES
 **NOT **REPEAT **IT:** every **defect **that **mattered **was **found **by **a **PLANT THAT
 **MOVED **NOTHING **OR **BY **AN **AUDIT **OF **A **SHAPE **I **HAD **ALREADY **FIXED
 **ONCE.  Three **rows **were **labels, **two **comments **asserted **guarantees **the
@@ -28140,7 +28175,7 @@ re-certified at `7e1b51dd` after the `substitute` fix -- and the audit that foun
 
 THE WORKLIST DESIGN IS MEASURED, PIECE BY PIECE -- and the blocker was never recursion, it was the SCRUTINEE RULE
 
-**⇒ AND **`9d2a651c9` **SAID **"THE **HONEST **STATEMENT **IS: ... **BLOCKED **BY **A
+**AND **`9d2a651c9` **SAID **"THE **HONEST **STATEMENT **IS: ... **BLOCKED **BY **A
 **REWRITE **I **HAVE **NOT **DONE"** **AND **THAT **WAS **STILL **TOO **VAGUE.  FOUR
 **MINIMAL **FILES, **EACH **ONE **A **RULING:**
 
@@ -28168,13 +28203,13 @@ THE WORKLIST DESIGN IS MEASURED, PIECE BY PIECE -- and the blocker was never rec
    failure.  This was already measured at `9d2a651c9`; it is repeated here because
    a state machine spends the fuel on BOTH the nested call and the continuation.
 
-**⇒ AND **A FIFTH CONSTRAINT **THAT **RULES **OUT **THE **OBVIOUS **SHAPE: a NESTED
+**AND **A FIFTH CONSTRAINT **THAT **RULES **OUT **THE **OBVIOUS **SHAPE: a NESTED
 field binder cannot be marked copyable -- `Some{+v}` answers *"expected : a bound
 variable"*.  **SO A VALUE USED TWICE MUST TRAVEL AS TWO FIELDS COMPUTED AT
 CONSTRUCTION AND NOT AS ONE DESTRUCTURED RECORD:** `RJoin{SBind.ar(b), SBind.i(b), ...}`
 and not `RJoin{b}` then `SBind.ar(b)` / `SBind.i(b)`.
 
-**⇒ AND **THE RESULTING SHAPE, WHICH IS WHAT THE NEXT UNIT SHOULD BUILD:**
+**AND **THE RESULTING SHAPE, WHICH IS WHAT THE NEXT UNIT SHOULD BUILD:**
 
     type RWk is Data:
       RCall{...}                                    -- a call to resolve
@@ -28194,14 +28229,14 @@ projections.  **NONE **OF **THIS **IS **WRITTEN **YET, **AND **I **AM **NOT
 **WITH **THE **TREE **GREEN -- **but **the **design **is **no **longer **a **guess,
 **and **the **refusal **in `sc_ab2.of` **now **has **a **reason **that **is **true.
 
-**⇒ AND **THE **VALUE **IS **ALSO **MEASURED **AND **IT **IS **LOW:** arm 1 fires only
+**AND **THE **VALUE **IS **ALSO **MEASURED **AND **IT **IS **LOW:** arm 1 fires only
 for a LINEAR call whose src is ANOTHER LINEAR call, and nothing in the port produces
 one yet because `create_linear_with_vars` is not ported.  **A **REFUSAL **ON **AN
 **UNREACHABLE **PATH **IS **CHEAPER **THAN **A **STATE **MACHINE **NOBODY **RUNS.
 
 THE STATE MACHINE WAS ATTEMPTED AND REVERTED: `Map` IS A `Kind`, NOT `Data`, SO IT CANNOT BE COPIED -- and every work item must carry it exactly once
 
-**⇒ AND **I **WROTE **THE **`RWk` **MACHINE **AND **IT **DOES **NOT **TYPE-CHECK, **AND
+**AND **I **WROTE **THE **`RWk` **MACHINE **AND **IT **DOES **NOT **TYPE-CHECK, **AND
 **THE **REASON **IS **ONE **LINE **OF **`base.bend`:**
 
     type Map<a, -V: Kind(a)> is Kind(a):
@@ -28215,19 +28250,19 @@ that must BOTH compute from a map and pass it on spends it twice:
 
     Error: expected : binds / observed : binds (consumed more than once)
 
-**⇒ AND **`+binds` **DOES **NOT **BUY **THE **SECOND **USE**, **AND **NOW **I **KNOW
+**AND **`+binds` **DOES **NOT **BUY **THE **SECOND **USE**, **AND **NOW **I **KNOW
 **WHY:** `+` means *copyable*, and a `Kind` has no copy.  The two other `+` failures in
 this session are the same class one level down -- `Some{+v}` on a **`U32`** answered
 *"expected : a bound variable"*, and `case +x <> t:` on a **list head** DID work
 because `U32` is `Data`.  **`+` **IS **ONLY **MEANINGFUL **FOR **`Data`.**
 
-**⇒ AND **THE **SPLITS **I **TRIED **ALL **FAIL **FOR **THE **SAME **REASON**, **AND **THE
+**AND **THE **SPLITS **I **TRIED **ALL **FAIL **FOR **THE **SAME **REASON**, **AND **THE
 **MEASUREMENTS **ARE **RECORDED **SO **THE **NEXT **ATTEMPT **DOES **NOT **REPEAT **THEM:**
 `RStep` without `binds` -> arm 3 cannot substitute; `RStep` with `binds` -> the
 construction spends it; `RDo` computing `a3` -> the item must then also carry `binds`
 to continue; a local alias `+bg = binds` -> the alias is still a `Kind`.
 
-**⇒ AND **THE **RESOLUTION **IS **A **REPRESENTATION **CHANGE **AND **NOT **A **LAYOUT
+**AND **THE **RESOLUTION **IS **A **REPRESENTATION **CHANGE **AND **NOT **A **LAYOUT
 **TWEAK: carry `binds` as a COPYABLE `Data` -- a `List<&2, BPair>` of
 `BPair{k: String, v: U32}` with a linear-scan `bget` -- so a work item can hold it and
 compute from it in the same step.  That is a refactor of `sc_linear_binds_outer`,
@@ -28235,7 +28270,7 @@ compute from it in the same step.  That is a refactor of `sc_linear_binds_outer`
 **CURRENCY **OF **THE **WHOLE **CHAIN: `substitute` **takes **one, `sc_apply_subs`
 **returns **one, and `binds` **IS **one.**
 
-**⇒ AND **THE **TREE **IS **REVERTED **AND **GREEN:** `schedule/__init__.bend`
+**AND **THE **TREE **IS **REVERTED **AND **GREEN:** `schedule/__init__.bend`
 `--check-only` -> `ALL PROOFS CHECK`, `uopvars-gate` rc=0, `git status --porcelain --
 tinybendygrad/` EMPTY.  **THE **REFUSAL **ON **ARM 1 **STANDS **AND **ITS **STATED
 **REASON **IS **NOW **EXACT:** not "Bend has no mutual recursion", not "the scrutinee
@@ -28249,21 +28284,21 @@ re-certified at `743bdb0c` WITH arm 1 RESOLVING -- and the repro was refused TWI
   D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
   corpuswitness-gate -> PASS -- the claim is ESTABLISHED
 
-**⇒ AND **THE **FIRST **REFUSAL **WAS **THE **LOCK:** *"another corpus run holds the
+**AND **THE **FIRST **REFUSAL **WAS **THE **LOCK:** *"another corpus run holds the
 lock: runs/graphcmp/.corpus.lock is held by pid 90712 (held for 89s)"*.  **A **SECOND
 **CORPUS **RUN **REFUSES **RATHER **THAN **INTERLEAVING** -- the singleton the tree
 added after the 2026-10-23 collision, doing exactly what it was built for.
 
-**⇒ AND **THE **SECOND **WAS **THE **TREE **MOVING:** run A `699c0d5d`, run B
+**AND **THE **SECOND **WAS **THE **TREE **MOVING:** run A `699c0d5d`, run B
 `743bdb0c`, *"the snapshots differ because THE TREE MOVED BETWEEN THEM"*.  Another
 unit committed `a6ada8938` between the two halves.  **I **DID **NOT **TOUCH **IT
 **AND **DID **NOT **REPORT **A **GREEN **FROM **IT.**
 
-**⇒ AND **THE **THIRD **ATTEMPT **PASSED **BECAUSE **NOTHING **WAS **WORKED
+**AND **THE **THIRD **ATTEMPT **PASSED **BECAUSE **NOTHING **WAS **WORKED
 **AROUND:** the unit stopped writing, `743bdb0c == live`, and the repro is newer than
 the verdict it certifies.
 
-**⇒ AND **SO **THE **SESSION's **CLAIM **NOW **INCLUDES **ARM 1:** `resolve_linear_call`
+**AND **SO **THE **SESSION's **CLAIM **NOW **INCLUDES **ARM 1:** `resolve_linear_call`
 RESOLVES NESTED LINEAR CALLS, `ab_arm1` and `ab_arm3` are asked of CPython and AGREE
 (they were `port_only` divergences an hour ago), and `ab_nest` is the one row that
 exercises the continuation.
@@ -28278,20 +28313,20 @@ THE `CTX` INCREMENT'S ACCEPTANCE EVIDENCE IS TAKEN: run and repro in ONE window,
   claim               OK   REPRODUCIBLE
   corpuswitness-gate: PASS -- the claim is ESTABLISHED
 
-**⇒ AND **THE **FOUR **REFUSALS **BEFORE **IT **WERE **CONTENTION **AND **THEY **WERE **NOT
+**AND **THE **FOUR **REFUSALS **BEFORE **IT **WERE **CONTENTION **AND **THEY **WERE **NOT
 **WORKED **AROUND:** three were `runs/graphcmp/.corpus.lock` held by another pid and one was
 the tree moving `70925b14` -> `53cda1fd` mid-run.  **THE **WINDOW **WAS **FOUND **BY
 **RETRYING **THE **PAIR** -- and only on `rc=3`, the lock refusal, so a real failure would
 have stopped the loop rather than being buried by it.  Attempt 5 succeeded.
 
-**⇒ AND **THE **RUN **AND **THE **REPRO **WERE **BACK **TO **BACK **IN **ONE **SCRIPT,**
+**AND **THE **RUN **AND **THE **REPRO **WERE **BACK **TO **BACK **IN **ONE **SCRIPT,**
 because the gap between them is exactly where another unit takes the lock.
 
-**⇒ AND **`081cf904...` **INCLUDES **THE **WHOLE `CTX` **INCREMENT** -- `type CTX` with
+**AND **`081cf904...` **INCLUDES **THE **WHOLE `CTX` **INCREMENT** -- `type CTX` with
 `CArgs`/`CNodes`, the 46 rewritten signatures, and the corrected sentinel header -- so the
 certificate covers the port and not just a tree that happens to be green.
 
-**⇒ AND **NEXT, AND **UNFINISHED: `bottom_up` **AND `canonicalize_call_body`.  `enter_calls`
+**AND **NEXT, AND **UNFINISHED: `bottom_up` **AND `canonicalize_call_body`.  `enter_calls`
 **IS **ALREADY **IN **(`walk_rewrite_ec`/`unified_rewrite_ec`/`graph_rewrite_ec`, gated by
 `ec_default`/`ec_enter`), so what remains is the `bottom_up` half: upstream selects
 `pm=None, bpm=pm` and applies `bpm` to a FIXPOINT per node before descending.  THE
@@ -28301,20 +28336,20 @@ per-node fixpoint plus a rebuild of the replacement is expressible.
 
 `bottom_up` IS TWO JOBS, NOT ONE -- and the second is a LAYERING MOVE with a measured reason
 
-**⇒ AND **THE **DRIVER **HALF **IS **SMALL **AND **THE **PATTERN **ALREADY **EXISTS:
+**AND **THE **DRIVER **HALF **IS **SMALL **AND **THE **PATTERN **ALREADY **EXISTS:
 upstream's `bottom_up=True` is `RewriteContext(pm=None, bpm=pm, ...)` and applies `bpm` to
 a FIXPOINT per node before descending.  `UOp.substitute` **IS **THAT **SHAPE** already --
 `sub_fix` is the per-node fixpoint and `sub_one` rebuilds the REPLACEMENT from its own
 srcs -- so `graph_rewrite_bu` is `walk_rewrite` with a `wr.step_bu`, about twenty lines,
 and the `1n++`/fuel-first/one-computation-per-step discipline is measured and in use.
 
-**⇒ AND **`enter_calls` **IS **ALREADY **IN **AND **GATED:** `walk_rewrite_ec`,
+**AND **`enter_calls` **IS **ALREADY **IN **AND **GATED:** `walk_rewrite_ec`,
 `unified_rewrite_ec`, `graph_rewrite_ec`, with `ec_default`/`ec_enter` and three plants.
 **THE **OBJECTIVE'S **PHRASE **"`bottom_up`/`enter_calls`"** **IS **HALF **DONE **AND **I
 **SHOULD **HAVE **SAID **SO **EARLIER.**  **WHAT **IS **MISSING **IS **ONLY **THE **`bottom_up`
 **HALF.
 
-**⇒ AND **THE **SECOND **JOB **IS **WHY **`canonicalize_call_body` **CANNOT **FOLLOW
+**AND **THE **SECOND **JOB **IS **WHY **`canonicalize_call_body` **CANNOT **FOLLOW
 **IMMEDIATELY, **AND **IT **IS **A **CYCLE **AND **NOT **AN **OMISSION:**
 
     tinybendygrad/uop/ops.bend imports: Base, helpers, LAWS/spec, renderer/estimates
@@ -28328,25 +28363,25 @@ the `CTX` this session just typed -- **AND **THE **VALUE **THAT **BODY **NEEDS *
       CallifyCtx{replacements: List<&2, U32>, allocs: List<&2, Aa>, views: List<&2, U32>, stores: List<&2, U32>}
 
 **A **SCHEDULE **TYPE, **WITH **48 **REFERENCES **AND **A **FIELD **WHOSE **ELEMENT **TYPE
-(`Aa`) **IS **ALSO **A **SCHEDULE **TYPE.**  **⇒ **SO **`CTX` **GAINS **NO **`CCallify`
+(`Aa`) **IS **ALSO **A **SCHEDULE **TYPE.**  ****SO **`CTX` **GAINS **NO **`CCallify`
 **VARIANT **UNTIL **`Aa` **AND **`CallifyCtx` **MOVE **INTO **`uop/ops.bend`, **WHICH **IS
 **A **RENAME **ACROSS **48 **SITES **AND **IS **NOT **A **RENAME **I **WILL **START
 **WITHOUT **SAYING **SO -- **`schedule/__init__.bend` **IS **THE **FILE **THIS **SESSION
 **HAS **EDITED **MOST.**
 
-**⇒ AND **THE **ORDER **IS **THEREFORE: (1) `graph_rewrite_bu` **with **a **gate **that
+**AND **THE **ORDER **IS **THEREFORE: (1) `graph_rewrite_bu` **with **a **gate **that
 **shows **it **DIFFERS **from `walk_rewrite`; (2) **move **`Aa`/`CallifyCtx` **into
 **`uop/ops.bend`; (3) **add **`CTX.CCallify`; (4) **`canonicalize_call_body`.  **EACH
 **IS **A **SEPARATE **CERTIFY **CYCLE **AND **NOTHING **ABOUT **THEM **IS **A **GUESS
 **ANY MORE.
 
-**⇒ AND **THE **CERTIFICATE **IS **TAKEN **AND **PUSHED **REGARDLESS:** `081cf904`, seven
+**AND **THE **CERTIFICATE **IS **TAKEN **AND **PUSHED **REGARDLESS:** `081cf904`, seven
 of seven readings OK, `PASS -- the claim is ESTABLISHED`, and it covers the whole `CTX`
 increment.
 
 `bottom_up` IS NOT ONE BEHAVIOUR, AND FOR THE DRIVER `canonicalize_call_body` USES IT IS INDISTINGUISHABLE FROM THE DEFAULT
 
-**⇒ AND **THE **PRESCRIPTION **IN **THE **BRIEF -- "`graph_rewrite_bu` ... per-node `pm_rewrite_m`
+**AND **THE **PRESCRIPTION **IN **THE **BRIEF -- "`graph_rewrite_bu` ... per-node `pm_rewrite_m`
 **fixpoint copying `sub_fix` ... a gate row pair that proves it differs from
 `walk_rewrite` (pre-order vs post-order on a table whose rule reads a child)" -- I **TRIED
 **TO **SATISFY **AND **THE **MEASUREMENTS **SAY **IT **CANNOT **BE **SATISFIED **AS
@@ -28358,7 +28393,7 @@ increment.
 | `AFTER(CONST) -> src0` | `AFTER(...)` | `AFTER(...)` -- SAME |
 | `AFTER -> its src0`, but **`walk=True`** | `x` | **`a1`** -- DIFFERENT |
 
-**⇒ AND **THE **THIRD **ROW **IS **THE **ONLY **DIVERGENCE **AND **IT **IS **NOT **THE
+**AND **THE **THIRD **ROW **IS **THE **ONLY **DIVERGENCE **AND **IT **IS **NOT **THE
 **DRIVER **`canonicalize_call_body` **USES.**  `canonicalize_call_body` calls
 `graph_rewrite(..., bottom_up=True)` with `walk` DEFAULTED TO `False`, i.e.
 `unified_rewrite`.  **AND **`unified bottom_up` AGREED **WITH **`unified default` **ON
@@ -28367,7 +28402,7 @@ increment.
 **TODAY, **AND **A **ROW **THAT **CANNOT **GO **RED **IS **THE **LABEL **THIS **SESSION
 **HAS **DELETED **THREE **TIMES.
 
-**⇒ AND **THE **SOURCE **SAYS **WHY **THE **THIRD **ROW **DIVERGES:** `walk_rewrite`
+**AND **THE **SOURCE **SAYS **WHY **THE **THIRD **ROW **DIVERGES:** `walk_rewrite`
 (:1788) **IS **A **DIFFERENT **ALGORITHM -- ON **A **FIRST **VISIT **IT **APPLIES `bpm`
 **ONCE **AND **THEN **`continue`s WITHOUT **DESCENDING** (`:1796-1798`: *"try bpm on
 original node first, if it rewrites, use result as-is (no traversal into replacement)"*),
@@ -28375,7 +28410,7 @@ while `unified_rewrite`'s stage 0 runs `cached_bpm_rewrite` **IN **A **LOOP **WI
 **WAITLIST.**  **TWO **DRIVERS, **TWO **`bottom_up` **SEMANTICS, **AND **I **HAD **BEEN
 **DESCRIBING **THE **`unified` **ONE **AS **IF **IT **WERE **THE **ONLY **ONE.
 
-**⇒ AND **SO **THE **HONEST **NEXT **STEP **IS **NOT **A **DRIVER, **IT **IS **A
+**AND **SO **THE **HONEST **NEXT **STEP **IS **NOT **A **DRIVER, **IT **IS **A
 **QUESTION **THE **TREE **CAN **ANSWER: **port `canonicalize_call_body` ON **THE
 **EXISTING `unified` **DRIVER **WITHOUT `bottom_up` **AND **COMPARE **IT **WITH **CPYTHON.
 **IF **IT **AGREES,** `bottom_up` **IS **NOT **A **WALL **FOR **THIS **CALLER **AT **ALL
@@ -28384,7 +28419,7 @@ while `unified_rewrite`'s stage 0 runs `cached_bpm_rewrite` **IN **A **LOOP **WI
 **in `c4d8a3ae0`: `Aa`/`CallifyCtx` **must **move **into `uop/ops.bend` **before
 `CTX` **can **carry **it, **because `ops.bend` **cannot **import `schedule`.
 
-**⇒ AND **THE **TREE **IS **GREEN **AND **UNCHANGED **BY **THIS **FINDING:** nothing was
+**AND **THE **TREE **IS **GREEN **AND **UNCHANGED **BY **THIS **FINDING:** nothing was
 written, `uopvars-gate` rc=0, and the certificate at `081cf904` still stands.
 
 re-certified at `$(true)` after the `Aa`/`CallifyCtx` move -- and the wall `bottom_up` was supposed to be is measured absent
@@ -28394,17 +28429,17 @@ re-certified at `$(true)` after the `Aa`/`CallifyCtx` move -- and the wall `bott
   uopvars rc=0   realize_kernel_args rc=0   schedstore 50 rows rc=0
   port-compile census: population=201 compiled=195 cold-by-design=6 findings=0
 
-**⇒ AND **THE **MOVE **IS **WHAT **UNBLOCKED **THE **THIRD **`CTX` **VARIANT:** `CArgs`
+**AND **THE **MOVE **IS **WHAT **UNBLOCKED **THE **THIRD **`CTX` **VARIANT:** `CArgs`
 (positional), `CNodes` (by node) and now `CCallify{c: CallifyCtx}`, because
 `pm_dispatch_m` lives in `uop/ops.bend` and could not name a `schedule` type.
 
-**⇒ AND **THE **MEASUREMENT **THAT **SAVES **A **DRIVER:** on the REAL
+**AND **THE **MEASUREMENT **THAT **SAVES **A **DRIVER:** on the REAL
 `pm_canonicalize_alloc` with a SINK holding two ALLOCs, `bottom_up=False` and
 `bottom_up=True` both answer `alloc_slots=[-1,-2]`.  **SO `canonicalize_call_body`
 DOES **NOT **NEED `bottom_up`, **and **the **`graph_rewrite_bu` **the **brief **asked
 **for **would **be **a **function **with **no **row **that **can **turn **it **red.
 
-**⇒ AND **THE **ONE **REMAINING **BLOCKER **IS **A **CYCLE, **NOT **A **FEATURE:** the CALL
+**AND **THE **ONE **REMAINING **BLOCKER **IS **A **CYCLE, **NOT **A **FEATURE:** the CALL
 rule must recurse into `canonicalize_call_body`, its body would live in `pm_dispatch_m`
 (`ops.bend`), and `graph_rewrite` lives in `codegen/__init__.bend`.  **`RWk` IS THE
 **PROVEN **ANSWER **AND **IT **IS **ALREADY **IN **`schedule/__init__.bend`, **gated **by
@@ -28412,14 +28447,14 @@ rule must recurse into `canonicalize_call_body`, its body would live in `pm_disp
 
 `canonicalize_call_body` WAS WRITTEN, IT COMPILED, AND I REVERTED IT -- because its gate row could not be made to say anything
 
-**⇒ AND **THE **PORT **IS **A **FAITHFUL **TRANSCRIPTION **AND **IT **COMPILED **FIRST **TRY
+**AND **THE **PORT **IS **A **FAITHFUL **TRANSCRIPTION **AND **IT **COMPILED **FIRST **TRY
 **AFTER **THE **USUAL **FIVE **LINEARITY/ORDERING **ROUNDS:** a `CWk` work item with
 `CGo`/`CFold`/`CRec`/`CAlloc`, fuel first, every scrutinee a field, `CRec` as the
 continuation for the CALL recursion, a FRESH `CallifyCtx` per call body, and
 `canonicalize_alloc` driving the ALLOC arm.  `schedule/__init__.bend` answered
 `ALL PROOFS CHECK`.
 
-**⇒ AND **THE **GATE **ROW **DID **NOT, **AND **I **DID **NOT **SHIP **IT.  **THE **TRACE,
+**AND **THE **GATE **ROW **DID **NOT, **AND **I **DID **NOT **SHIP **IT.  **THE **TRACE,
 VERBATIM, **ON **A **CALL(SINK(ALLOC{slot=3})):**
 
     ccb_dbg=r=CALL nsrc0=1 src0=SINK nsrc_of_src0=1 x=SINK slot=0
@@ -28430,14 +28465,14 @@ index, and **THE **TRACE **DOES **NOT **SEPARATE **THOSE **TWO.  **A **ROW **THA
 **SAY **WHICH **IS **WRONG **IS **NOT **A **GATE, **AND **I **HAVE **DELETED **THREE
 **SUCH **ROWS **THIS **SESSION **ALREADY.
 
-**⇒ AND **SO **THE **CODE **IS **REVERTED **AND **THE **TREE **IS **THE **CERTIFIED **ONE:**
+**AND **SO **THE **CODE **IS **REVERTED **AND **THE **TREE **IS **THE **CERTIFIED **ONE:**
 `git status --porcelain -- tinybendygrad/schedule/__init__.bend gates/uopvars.bend` is
 EMPTY, `uopvars` rc=0, `schedstore` rc=0, `realize_kernel_args` rc=0, and HEAD is
 `5ca0044cb` -- the commit that carries the `Aa`/`CallifyCtx` MOVE, `CTX.CCallify`, the
 whole-port census (`population=201 compiled=195 cold-by-design=6 findings=0`) and the
 corpus certificate at `01f74e5c`.
 
-**⇒ AND **WHAT **IS **LEFT **IS **NOW **ONE **DEBUGGING **QUESTION **WITH **A **NAMED
+**AND **WHAT **IS **LEFT **IS **NOW **ONE **DEBUGGING **QUESTION **WITH **A **NAMED
 **NEXT **PROBE:** print `nsrc`/op for EVERY node the `CFold` accumulates, on a
 `CALL(SINK(ALLOC))` with NO rewrite at all, so the fixture and the assemble are
 separated BEFORE `canonicalize_alloc` is in the picture.  **THAT **IS **A **FIXTURE
@@ -28530,14 +28565,14 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       REPRESENTATION".** **AND UPSTREAM's COUNTER's KEYS ARE NODES** (`ops.py:219-220`:
       `__hash__ = tuple.__hash__` AND `__eq__` IS `self is other`), **SO THE KEY IS THE ARENA's
       `U32` INDEX, WHICH IS THE NODE's IDENTITY IN THIS PORT.**
-      **⇒ THE COUNTER IS IN `tinybendygrad/uop/ops.bend` AS A LIST OF `(U32, U32)` PAIRS, AND
+      **THE COUNTER IS IN `tinybendygrad/uop/ops.bend` AS A LIST OF `(U32, U32)` PAIRS, AND
       ITS THREE CLAIMS ARE CPYTHON-CONFIRMED AGAINST CPYTHON's OWN `collections.Counter`**
       (`t_ctr_bump` AND `t_ctr_find` AND `t_ctr_inter` ALL READ **True**).
-      **⇒ AND THE FOUR BEND SPELLING RULES ARE NOW IN THE FILE**: A **PLAIN** PARAMETER MAY BE
+      **AND THE FOUR BEND SPELLING RULES ARE NOW IN THE FILE**: A **PLAIN** PARAMETER MAY BE
       CONSUMED **ONCE** AND A **`+`**-BINDER **TWICE**; A HELPER COMES BEFORE ITS USER; A
       `match` MAY NOT BE A CALL's ARGUMENT AND MAY NOT SCRUTINIZE A COMPUTED VALUE; AND
       ARGUMENTS ARE READ LEFT TO RIGHT, SO A LIST's TAIL MAY NOT BE PASSED TO TWO CALLS.
-      **⇒ SO `UOp.gcd` AND `UOp.divide_exact` NEED THE COUNTER (DONE) AND `UOp.simplify` (STILL
+      **SO `UOp.gcd` AND `UOp.divide_exact` NEED THE COUNTER (DONE) AND `UOp.simplify` (STILL
       ABSENT) AND NOT A CONTAINER.**
 - [ ] `divandmod.py:103` (`fold_divmod_general`) — then needs `UOp.usum` reachable from
       `divandmod.bend` (the `symbolic -> divandmod` import direction forbids it today).
@@ -28550,10 +28585,10 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       FUNCTION IS `tinygrad.uop.divandmod.fold_divmod_general`.** **SO THE PORT DECLINES A
       REWRITE UPSTREAM PERFORMS, ON A GRAPH AS ORDINARY AS `(x*y)/y`.** **AND THE SWEEP READS
       `24 CASES 23 AGREE 1 DIVERGE` AND THE ONE DIVERGENCE IS THIS ROW.**
-      **⇒ THE SWEEP SETTLES THE `deadrules.py` LIST OF 23 BEHAVIOURALLY: FOURTEEN ARE KEPT
+      **THE SWEEP SETTLES THE `deadrules.py` LIST OF 23 BEHAVIOURALLY: FOURTEEN ARE KEPT
       UPSTREAM RULES THAT WERE REWORDED (AND THE PORT MATCHES THEM), AND THE REST ARE DELETED
       UPSTREAM RULES THE PORT ALSO DECLINES — EXCEPT THIS ONE.**
-      **⇒ AND THE SWEEP USES THE SAME 2,397-LINE DRIVER WITH ITS CASES PATH OVERRIDED BY
+      **AND THE SWEEP USES THE SAME 2,397-LINE DRIVER WITH ITS CASES PATH OVERRIDED BY
       `IO.args()`** (INDEX 1, THE TREE's CONVENTION), **SO THERE IS NO SECOND COPY OF THE
       DRIVER.**
 - [x] **THE `divandmod` LANE'S CPYTHON ORACLE WAS SWEPT AND THE BLOB WAS STILL IN THE OBJECT
@@ -28570,7 +28605,7 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       `ParamArg` AT ALL** (MEASURED, UPSTREAM's `ops.py` AT THE PIN MENTIONS IT **ZERO TIMES**),
       **SO THE FOUR `multiple_of` CASES ARE DROPPED RATHER THAN REWRITTEN INTO SOMETHING ELSE,
       BECAUSE A CASE THAT MEANS SOMETHING ELSE IS NOT A CASE.**
-      **⇒ AND `.agents/slop/dm-compare.py` (NEW) READS `19 AGREE AND 0 DIVERGE` FOR THE LANE'S
+      **AND `.agents/slop/dm-compare.py` (NEW) READS `19 AGREE AND 0 DIVERGE` FOR THE LANE'S
       OWN 19 COMPARABLE ROOTS, AND ITS PLANT PROVES THE ROW CAN GO RED** (`dm_1`'s `cm`/`cq`
       SWAPPED READS **5 DIVERGE**).
 
@@ -28603,7 +28638,7 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       IS ALIVE AGAIN"): `tinybendygrad/uop/ops.bend` HAS `UOp.gcd` AT `:8857` (WITH ITS
       `UOp.gcd.counter` / `.terms` / `.factors` / `.cfactors` / `.gcd` / `.prod` / `.const` /
       `.answer` / `.mk` HELPERS AT `:8360-8857`) AND `UOp.divide_exact` AT `:8815` (WITH ITS
-      `Dq`/`Dv` FOLD AT `:8580-8815`). **⇒ AND THE GATE MEASURES THEM AGAINST CPYTHON's OWN
+      `Dq`/`Dv` FOLD AT `:8580-8815`). **AND THE GATE MEASURES THEM AGAINST CPYTHON's OWN
       `UOp.gcd` / `UOp.divide_exact`: `.venv/bin/python gates/ops-core-gate.py` READS
       **"ops-core-gate: 44 rows, 3 lanes"** (rc=0, 16 s, 1928 MB) **AND THE GATE NAMES THE SIX
       ROWS ITSELF** (`gates/ops-core-gate.py:76-90`: `ctr_bump` `ctr_find` `ctr_inter` `gcd_const`
@@ -28658,12 +28693,12 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       MISSING TWO-STAGE ALU FOLDING** (`:171`-`:173`, SIX ROWS: MUL MAX XOR OR AND ADD -- `r295`
       `r296`), **ONE IS THE MISSING `:89` STACK BROADCAST** (`r82`), AND **FOUR ARE THE POW
       HANDLING** (`p193a` `x451a` `x451b` `x451c`).
-**⇒ MEASURED 2026-11-10, THE BODY-VERIFICATION INSTRUMENT READS **232 CASES, 232 AGREE,
+**MEASURED 2026-11-10, THE BODY-VERIFICATION INSTRUMENT READS **232 CASES, 232 AGREE,
 0 DIVERGE** (`./bin/bend gates/symrules-driver.bend` UNDER `checks/bounded.py --mb 3072` ->
 `WITHIN-LIMITS`, 5 s, 2439 MB; THEN `.venv/bin/python gates/symrules-oracle.py --compare <out>` ->
 rc=0), **AND EVERY ROW THIS ITEM NAMES IS A CASE IN THE POPULATION** (`r82` `r295` `r296` `r189`
 `r84` `r243` `r256` ARE 2 ROWS EACH IN `gates/symrules-cases.rows`; `p193a` `x451a` `x451b` `x451c`
-ARE 1 EACH), **⇒ SO THE ELEVEN DIVERGENCES ARE **ZERO** AND THE FOUR CLASSES THIS ITEM NAMED ARE
+ARE 1 EACH), **SO THE ELEVEN DIVERGENCES ARE **ZERO** AND THE FOUR CLASSES THIS ITEM NAMED ARE
 THE HISTORY OF THE FIX, NOT THE STATE OF THE TREE.** THE FIXES LANDED IN THE 2026-11-06 SESSION
 (THE NE/EQ SWAP, `r82`'s EXPAND, `r295`/`r296`'s TWO-STAGE ALU FOLD, AND THE `pow` HANDLING).
       **FOUR ARE THE `ne`/`eq` PRIMITIVE SWAP** (`r189` `r84` `r243` `r256`), **TWO ARE THE
@@ -28673,10 +28708,10 @@ THE HISTORY OF THE FIX, NOT THE STATE OF THE TREE.** THE FIXES LANDED IN THE 202
 - [x] **THE PORT LACKS UPSTREAM's TWO-STAGE ALU FOLDING** (`:171`-`:173`, SIX CENSUS ROWS: MUL
       MAX XOR OR AND ADD) -- WHICH IS WHY `r295` AND `r296` DIVERGE. `exec_alu` AND `fits` ARE
       BOTH PRESENT, SO THE RULE IS WRITABLE WITH WHAT THE PORT HAS.
-**⇒ MEASURED 2026-11-10: **PROVABLY ALREADY DONE**, AND THE ITEM's CLAIM IS FALSE TODAY. THE
+**MEASURED 2026-11-10: **PROVABLY ALREADY DONE**, AND THE ITEM's CLAIM IS FALSE TODAY. THE
 TWO-STAGE ALU FOLDING **IS PORTED**: `tinybendygrad/uop/symbolic.bend:6040-6087` IS `sym_295.inner` /
 `sym_295.outer` / `sym_295.pat` / `sym_295.opok` / `sym_295.hit` / `sym_295.mk`, AND `sym_296` IS ITS
-SIBLING. **⇒ AND THE BODY-VERIFICATION INSTRUMENT MEASURES IT: `gates/symrules-cases.rows` CARRIES
+SIBLING. **AND THE BODY-VERIFICATION INSTRUMENT MEASURES IT: `gates/symrules-cases.rows` CARRIES
 `r295` AND `r296` AS 2 ROWS EACH, AND `.venv/bin/python gates/symrules-oracle.py --compare
 <driver.out>` READS **232 CASES, 232 AGREE, 0 DIVERGE** (rc=0) -- SO `r295` AND `r296` **DO NOT
 DIVERGE**.** UPSTREAM'S RULE IS AT THE PIN `f5ac54685074`, `tinygrad/uop/symbolic.py`'s
@@ -28690,11 +28725,11 @@ fits(x, exec_alu(f.op, dtypes.weakint, [c1.vmin, c2.vmin])) else None`), **AND `
 - [x] **THE PORT LACKS UPSTREAM's `:89` STACK BROADCAST** (`invalid_pat.broadcast` ->
       `i.expand(s.shape)`), WHICH IS WHY `r82` DIVERGES: UPSTREAM ANSWERS `(expand bad 2)` AND
       THE PORT ANSWERS `bad`.
-**⇒ MEASURED 2026-11-10: **PROVABLY ALREADY DONE**. `tinybendygrad/uop/symbolic.bend`'S
+**MEASURED 2026-11-10: **PROVABLY ALREADY DONE**. `tinybendygrad/uop/symbolic.bend`'S
 `sym_82.put` (`:1890-1893`) **NOW BUILDS `O.OpsEXPAND{}`**:
 `O.UOp.new(O.Found.ar(sh), O.OpsEXPAND{}, [O.Found.i(inv), O.Found.i(sh)], O.ANone{}, O.TNone{})`,
 WITH `sym_82.shape` (`:1887-1888`) MINTING THE **PLAIN INT CONST** (`O.CInt{H.i64_of_i32(n)}`) THAT
-UPSTREAM'S EXPAND NODE CARRIES. **⇒ AND `r82` IS 2 ROWS IN `gates/symrules-cases.rows` AND THE
+UPSTREAM'S EXPAND NODE CARRIES. **AND `r82` IS 2 ROWS IN `gates/symrules-cases.rows` AND THE
 BODY-VERIFICATION INSTRUMENT READS **232 CASES, 232 AGREE, 0 DIVERGE**
 (`gates/symrules-oracle.py --compare`, rc=0) -- SO `r82` **DOES NOT DIVERGE**, AND THE PORT
 ANSWERS THE EXPAND.** UPSTREAM'S RULE IS `symbolic.py:89`'s `invalid_pat.broadcast(name="s")` ->
@@ -28703,10 +28738,10 @@ ANSWERS THE EXPAND.** UPSTREAM'S RULE IS `symbolic.py:89`'s `invalid_pat.broadca
       THE PORT ANSWERS `bad`.
 - [x] **THE FOUR `pow` DIVERGENCES** (`p193a` `x451a` `x451b` `x451c`) ARE THE PORT's POW
       HANDLING AGAINST UPSTREAM's `xpow`, AND UPSTREAM'S ANSWER FOR `p193a` IS `(exp2 (mul xf 0.0))`.
-**⇒ MEASURED 2026-11-10: **PROVABLY ALREADY DONE**. THE PORT's `pow` HANDLING IS
+**MEASURED 2026-11-10: **PROVABLY ALREADY DONE**. THE PORT's `pow` HANDLING IS
 `tinybendygrad/uop/symbolic.bend`'s `xpow_int` (`:5634`) AND ITS `xpow` CALL SITE (`:5665`, WHICH
 THREADS THE **NODE's DTYPE** -- `sy_dt1(x, sy_src1(x, u))` -- THE DEFECT THIS ITEM's FOUR CASES
-EXPOSED), AND THE FILE's OWN HEADER (`:5646-5657`) NAMES BOTH DEFECTS AND THE FIX. **⇒ AND ALL
+EXPOSED), AND THE FILE's OWN HEADER (`:5646-5657`) NAMES BOTH DEFECTS AND THE FIX. **AND ALL
 FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW EACH IN
 `gates/symrules-cases.rows`) **AND THE BODY-VERIFICATION INSTRUMENT READS **232 CASES, 232 AGREE,
 0 DIVERGE** (`gates/symrules-oracle.py --compare`, rc=0).** UPSTREAM'S ANSWER FOR `p193a` IS
@@ -28776,7 +28811,7 @@ FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW
       **AND ONE SPELLING WAS WRONG TWICE OVER**: THE SHAPE CONST IS A PLAIN INT CONST AND NOT
       `STACK(CONST(N))` -- **WHICH IS `prepare.bend`'s `pr_shp1` SPELLING FOR A *SHAPE* ARG.**
       **AND THE PLANT FIRES** (`231 AGREE AND 1 DIVERGE` WITH THE OLD ANSWER BACK).
-      **⇒ THE INSTRUMENT READS `232 AGREE AND 0 DIVERGE`.**
+      **THE INSTRUMENT READS `232 AGREE AND 0 DIVERGE`.**
 - [x] **§48e SAID `r82` WAS "A MOVEMENT-LAYER RULE AND THIS LANE CANNOT CLOSE IT", AND THAT WAS
       WRONG BECAUSE IT WAS AN INFERENCE AND NOT A MEASUREMENT.** THE PORT HAS `OpsEXPAND` (OP
       **71**) AND `tinybendygrad/schedule/prepare.bend` HAS `pr_expand` WHICH BUILDS EXACTLY
@@ -28804,7 +28839,7 @@ FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW
 - [x] `divandmod.py:103` (`fold_divmod_general`) — **THE ONE MISSING ROW IS CLOSED** (2026-11-09,
       `a1a474081`). **AND THE ROW IS UPSTREAM's **SLOW** RULE AND THE ARM IS `divide_by_gcd`
       (`divandmod.py:73-77`), AND THE PORT's OWN TODO BLOCK ALREADY SAID SO
-      (`divandmod.bend:983`).** **⇒ THE CENSUS READS `PORT ENTRIES 135 MAPPED 135 BROKEN 0
+      (`divandmod.bend:983`).** **THE CENSUS READS `PORT ENTRIES 135 MAPPED 135 BROKEN 0
       UNRESOLVED 0` AND IS **GREEN**, AND THE ROW READS `118  divandmod.py:103  DIV,MOD
       sym_table  117  PORTED`.**
 - [ ] **THE `MOD` HALF OF `divide_by_gcd` IS **NOT** PORTED** — UPSTREAM'S `return ret*gcd if
@@ -28896,7 +28931,7 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       STRINGS, AND A `match` ON A STRING IN Bend IS A CHARACTER TRIE -- THE GENERATED CODE IS
       `slice(0, char_len(s))` FOR THE CHARACTER AND `slice(char_len(s))` FOR THE LENGTH TEST, **TWO
       SLICES AND TWO `char_len` PER CALL**, AND THE PORT'S STRING MATCH WAS 0.0992 ms AGAINST THE
-      NUMERIC MATCH'S 0.0281 ms OVER THE WIRE'S 1,926 CODES. **⇒ SO THE THREE CODES RIDE IN THE WIRE's
+      NUMERIC MATCH'S 0.0281 ms OVER THE WIRE'S 1,926 CODES. **SO THE THREE CODES RIDE IN THE WIRE's
       NUMBERS, WHERE `charCodeAt` IS FREE IN JS** (`wire.js`'s `wire_numbers` PREPENDS `dtCode`,
       `addrCode`, `kindC0` AND `kindC1`, AND THE STRINGS ROW IS JUST THE PAYLOAD), **AND THE KIND IS TWO
       NUMBERS BECAUSE ELEVEN OF THE NINETEEN KINDS ARE TWO CHARACTERS** ("RW", "M1"). MEASURED: THE
@@ -28904,7 +28939,7 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       ARM KEY IS REFUSED ("expected : a pattern"), SO THE NUMERIC KEYS ARE A SECOND SOURCE OF TRUTH AND
       `.agents/slop/parity/code-table-probe.py` HOLDS IT: **37 OF 37 CODES, 0 MISMATCHES**, AND IT GOES
       RED WHEN THE TABLE IS BROKEN (MEASURED: PLANTING `case 101: S.double()` FOR `case 100:` MAKES IT
-      PRINT `DT MISMATCH "d" -> void want f64` AND EXIT 1). **⇒ THE MEASUREMENT: CPU 0.9851 (89/100
+      PRINT `DT MISMATCH "d" -> void want f64` AND EXIT 1). **THE MEASUREMENT: CPU 0.9851 (89/100
       FASTER), WALL 0.9897 (160/300). AND ITS HONEST SIZE: 5,122 `char_len` CALLS COST 0.0137 ms, 0.39%
       OF A 3.6 ms TURN -- SO IT REMOVES REAL WORK AND IS NOT A BIG WIN.**
 - [x] **THE PROFILE SAYS THE TURN IS 96% WAITING FOR THE FIFO, AND THE READS WERE THE WAIT.**
@@ -28913,25 +28948,25 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       `.agents/slop/parity/prof_top.py` READS THE `.cpuprofile` AND THE PROFILER RUNS IN A CHILD.
       **MEASURED ON THE 782-UOP WIRE: `io_run` 99.74%, `io_wait` 78.92%, `file_read_with` 71.25%,
       `readvSync` 49.07%, `fstatSync` 38.04%, AND THE PORT's OWN WORK IS `cstyle_render` 3.49% AND
-      `decode` 0.96%.** **⇒ AND THE RUNTIME's READ IS "READ EXACTLY N" AND CARRIES A `fstatSync` PER
+      `decode` 0.96%.** **AND THE RUNTIME's READ IS "READ EXACTLY N" AND CARRIES A `fstatSync` PER
       READ, AND THE PORT's READ PATTERN MADE 20 READS A WIRE (17 LENGTH BYTES + 3 PAYLOADS).**
 - [x] **THE FRAME's LENGTH IS A FIXED-WIDTH FIELD: 20 READS A WIRE BECOME 8.** MEASURED: `[8, 8474, 8,
-      8893, 8, 932, 8, 0]`. **⇒ AND A VARIABLE-WIDTH LENGTH LINE CANNOT BE READ IN ONE READ** (THE PORT
-      DOES NOT KNOW HOW MANY BYTES THE LINE IS BEFORE IT READS IT) **⇒ SO IT IS EIGHT ZERO-PADDED DIGITS
+      8893, 8, 932, 8, 0]`. **AND A VARIABLE-WIDTH LENGTH LINE CANNOT BE READ IN ONE READ** (THE PORT
+      DOES NOT KNOW HOW MANY BYTES THE LINE IS BEFORE IT READS IT) **SO IT IS EIGHT ZERO-PADDED DIGITS
       AND NO NEWLINE, AND THE ZERO-LENGTH CHUNK IS EIGHT ZEROS.** AND TWO OFF-BY-ONES, BOTH THE SAME
       CLASS -- **A READ THAT EATS THE FIRST BYTE OF A FIXED-WIDTH FIELD**: THE FIRST READ AND THE
       POST-RENDER READ BOTH ASKED FOR ONE BYTE, AND THE SYMPTOM WAS EXACT (THE STATE LOGGED `need=84745`
-      WHERE THE LENGTH IS **8474**). **⇒ AND A 32-BYTE READ HANGS THE DAEMON OUTRIGHT, WHICH IS THE
+      WHERE THE LENGTH IS **8474**). **AND A 32-BYTE READ HANGS THE DAEMON OUTRIGHT, WHICH IS THE
       ANSWER TO §83's UNDIAGNOSED STALL.** MEASURED: **WALL 0.9796 (135/250 FASTER), CPU 0.9740
-      (37/40)**. **⇒ AND THE PROTOCOL IS THE HARNESS's, NOT THE PORT's** (`serve.bend` AND `portc.py` ARE
-      AGENT SCRATCH), **⇒ SO IT IS A HARNESS WIN -- AND IT IS WHAT MAKES THE PORT's 0.4% MEASURABLE AT
+      (37/40)**. **AND THE PROTOCOL IS THE HARNESS's, NOT THE PORT's** (`serve.bend` AND `portc.py` ARE
+      AGENT SCRATCH), **SO IT IS A HARNESS WIN -- AND IT IS WHAT MAKES THE PORT's 0.4% MEASURABLE AT
       ALL**, BECAUSE TWENTY READS' WORTH OF SYSCALLS WAS UNDER IT.
 - [ ] **THE C-NAME MATCH IS THE NEXT TERM AND IT IS A MEMO, NOT A KEY.** `rd_base_plain` (3,188) AND
       `rd_base_clang` (1,934) ARE 5,122 `char_len` CALLS A RENDER, AND THE PORT CALLS `rd_base_name`
-      **557 TIMES A RENDER FOR SIX DISTINCT DTYPES**. **⇒ AND A NUMERIC KEY IS NOT AVAILABLE:** THE
+      **557 TIMES A RENDER FOR SIX DISTINCT DTYPES**. **AND A NUMERIC KEY IS NOT AVAILABLE:** THE
       C-NAME CODES ARE UP TO ELEVEN CHARACTERS (`fp8e4m3fnuz`), AND `pri` ALONE IS AMBIGUOUS FOR THE TWO
       fp8 PAIRS -- **AND THE DISTINCTION MATTERS ON CUDA** (MEASURED: CUDA GIVES `fp8e4m3` ->
-      `__nv_fp8_e4m3` BUT `fp8e4m3fnuz` -> ITSELF, WHILE HIP GIVES BOTH -> `hip_fp8`). **⇒ SO THE FIX IS
+      `__nv_fp8_e4m3` BUT `fp8e4m3fnuz` -> ITSELF, WHILE HIP GIVES BOTH -> `hip_fp8`). **SO THE FIX IS
       A MEMO, AND THE RENDERER IS A PER-UOP WALK WHOSE STATE TYPE `St` CARRIES NEITHER THE DEVICE NOR
       THE DTYPE -- SO A MEMO IS A STRUCTURAL CHANGE TO `cstyle.bend`, AND IT IS NOT TURN-SIZED.**
 - [x] **THE COMPILER IS ON BEND `v2.0.40`, AND EVERY PIN THAT NAMES IT MOVED WITH IT.**
@@ -28961,7 +28996,7 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       MAKES `UOp.const(x)` PER AXIS AND A `STACK` OF THEM) AND HAS TWO SRCS AND `arg=None`; THE PORT
       SPELLS THEM IN THE ARG (`mixin/movement.bend:1001`) AND HAS THREE SRCS AND NO STACK. MEASURED ON
       THE FORMS: `py PERMUTE: [...,'i0','N','n(i16,i19)']` AGAINST
-      `bend PERMUTE: [...,'i0','n(i0,i2,i1)','n(i16)']`. **⇒ THE FIX IS THE PORT's PERMUTE
+      `bend PERMUTE: [...,'i0','n(i0,i2,i1)','n(i16)']`. **THE FIX IS THE PORT's PERMUTE
       REPRESENTATION (`ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the renderer's
       `ku_render_index`, `schedule/rangeify.bend`) -- A PORT CHANGE, NOT A CERTIFICATE CHANGE, AND
       BIGGER THAN A TURN. RECORDED IN `WANT` AS THE SEVEN EXCEPTIONS, WITH THE MEASURED CAUSE.**
@@ -28971,7 +29006,7 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       TRIED AND REVERTED**: READING EACH FILE's OWN FIRST LINE (`# <name> -- GENERATED by `<path>`, its
       ONLY writer.`) FIXED THE TWO CORPUS GATES (19 -> 17 DIRS) **BUT NOT THE OTHER SEVENTEEN**,
       BECAUSE THEIR FILES CARRY NO DECLARATION AT ALL (`names_count=32`, `pyr_empty_device=`,
-      `type_map float=f32` -- RAW DATA ROWS WITH NO HEADER). **⇒ A PARTIAL FIX THAT HIDES TWO OF THE
+      `type_map float=f32` -- RAW DATA ROWS WITH NO HEADER). **A PARTIAL FIX THAT HIDES TWO OF THE
       TWENTY WITHOUT CLOSING THE CLASS IS WORSE THAN NO FIX**, SO IT WAS REVERTED AND THE FINDING IS
-      RECORDED INSTEAD. **⇒ THE COMPLETE FIX IS TEN GATES' DECLARATIONS, WHICH IS NOT A TURN-SIZED
+      RECORDED INSTEAD. **THE COMPLETE FIX IS TEN GATES' DECLARATIONS, WHICH IS NOT A TURN-SIZED
       WORK ITEM.**
