@@ -41,3 +41,4 @@ f495c88cbaa662851982f41cb06f74448a7742e1	indexread	diff-mentions	.agents/slop/sw
 edfb599b5ebab534f2a354562defa154e4d98100	pins-shape	diff-mentions	gates/symcases.rows	the diff is a gates/*.rows file; the subject names gates/pins-shape-gate.py, which asks every rows file to declare its writer
 cbea2eb4bfdf7d533a5db4914f4c0fbbf795db8d	gendirs	diff-mentions	.agents/slop/clauseVfix/REPORT.md	the diff is the report; the subject names gates/gendirs.py, which supplies every number it prints
 94d52d1623d05cfefd479f322300da8f8403f6dd	amd_dsl_census	diff-mentions	.agents/slop/cr-shrink/REPORT.md	the diff is the report; the subject names gates/amd_dsl_census-gate.py, whose rows the report records
+842e66825a5dffdea2445fadb665ffb6c5c0c76c	amd_dsl_census	diff-mentions	.agents/slop/cr-shrink/REPORT.md	the diff is the report; the subject names gates/amd_dsl_census-gate.py, whose rows the report records
