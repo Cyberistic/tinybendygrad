@@ -22201,11 +22201,47 @@ DOCSTRING**: VERIFIED BY AST, **STRIPPING ALL DOCSTRINGS LEAVES THE EXECUTABLE C
       LABEL, 90 TWO-LABEL COMBOS) -> `want` EMPTY IN ***NONE***, **SO `max()`'s PRECONDITION IS NEVER MET**;
       (b) `G1` **GREEN END-TO-END** UNDER `checks/bounded.py --mb 2048`: rc 0, 139 s, PEAK **1 478 MB**,
       `UNMUTATED rc=0 bd=1178 py=1178 31 divergence(s)`, `1 of 1 guard mutations went red`.
-- [ ] **AND A **FIFTH** LIVE INSTANCE, OUT OF GRANT, **WHICH HAS ALREADY DIRTIED THE TREE**:
+- [x] **AND A **FIFTH** LIVE INSTANCE, OUT OF GRANT, **WHICH HAS ALREADY DIRTIED THE TREE**:
       `checks/run-f64.sh:49`'s `W=${1:-...}` TOOK `--help` AS ITS **SCRATCH DIRECTORY** AND LEFT `./--help/`
       **UNTRACKED AND UN-GITIGNORED**, HOLDING **ANOTHER UNIT's LIVE WORK** (`a.log`, `b.log`, `c-C1.log`,
       `c-C2.log`, `port-words.txt`, ...). **IT DID NOT DELETE IT.** *(THE CALLER SAW `./--help/` IN `git status`
       EARLIER IN THE SESSION AND CALLED IT **LITTER** -- **IT WAS NEVER LITTER.**)*
+      **⇒ PROVABLY DONE (2026-11-10), AND THE RESIDUE IS **ONE FILE**, NOT THE FIVE THE ITEM
+      NAMES.** MEASURED: `a.log` **ABSENT**, `b.log` **ABSENT**, `c-C1.log` **ABSENT**,
+      `c-C2.log` **ABSENT**, `port-words.txt` **ABSENT**, AND `--help/` HOLDS **ONE** FILE:
+      `nan.json` (299 B). **⇒ AND `nan.json` IS **ANOTHER UNIT's LIVE WORK**, COMMITTED TODAY
+      INTO `refs/jj/keep/*` (`3e080d119` 2026-11-10 02:56, `f21908545` 03:56, `394eae369` 08:02)
+      **⇒ AND NONE OF THOSE IS AN ANCESTOR OF HEAD** (MEASURED:
+      `git merge-base --is-ancestor <sha> HEAD` ANSWERS NO FOR ALL THREE). **⇒ SO IT IS **NOT
+      MINE TO DELETE**, AND THE ITEM's OWN LINE "**IT DID NOT DELETE IT**" IS THE RIGHT
+      BEHAVIOUR.**
+      **⇒ AND THE CAUSE IS **FIXED**, MEASURED: `19eb01580` ("a DIRECTORY argument that looks
+      like a FLAG created a directory NAMED `--help` AT THE REPO ROOT") REFUSES A FLAG-SHAPED
+      ARGUMENT AND A PATH INSIDE THE REPO, **BOTH AT rc 3**. MEASURED TODAY:
+      `zsh checks/run-f64.sh --help` READS "the work directory '--help' looks like a FLAG. This
+      script's argument is a DIRECTORY; exit 3 (REFUSED)", AND `zsh checks/run-f64.sh
+      .agents/slop/x` READS "RESOLVES TO '.../tinybendygrad/.agents/slop/x', INSIDE the repo ...
+      exit 3 (REFUSED)". **⇒ THE CREATION PATH IS CLOSED; ONLY THE RESIDUE REMAINS.**
+      **⇒ ⇒ AND THE FINDING IS BIGGER THAN THE RESIDUE: **NO INSTRUMENT IN THIS TREE LOOKS AT
+      THE REPOSITORY ROOT's DIRECTORY SET AT ALL.** `checks/no-strays.py` CLAIMS "every **FILE**
+      at the repository root" AND ITS `root_files()` IS `sorted(p for p in ROOT.iterdir() if
+      p.is_file() and p.name not in ROOT_ENTRIES)` -- **⇒ A STRAY ROOT **DIRECTORY** IS
+      INVISIBLE TO IT, **AND THAT IS NOT A DEFECT IN IT, BECAUSE THE CLAIM IS ABOUT FILES.** A
+      SEARCH OVER EVERY `checks/*.py` AND `gates/*.py` FINDS **NO** INSTRUMENT THAT LOOKS AT THE
+      ROOT's DIRECTORIES; THE ONE CANDIDATE, `gates/retention-check.py:150`, WALKS A DIRECTORY's
+      SUBDIRECTORIES FOR THE `gates/artifacts/` RETENTION QUESTION, NOT THE ROOT's OWN.
+      **⇒ ⇒ AND THE INSTRUMENT IS `.agents/slop/todo-sweep2/rootdirs.py`, WHICH CLAIMS THE SET
+      AND **CAN GO RED**: THE OWNED SET IS **DISCOVERED** -- THE COMMIT TREE's ROOT DIRECTORIES
+      BY `git ls-tree -d HEAD`, PLUS THE DIRECTORY MEMBERS OF `checks/no-strays.py`'s OWN
+      `ROOT_ENTRIES` LOADED **BY PATH** -- AND THE PLANT, A DIRECTORY NAME THAT IS **DEFINITELY**
+      NOT OWNED, MUST PRODUCE **FAIL** OR THE INSTRUMENT IS BROKEN AND ITS PASS IS NOT A
+      VERDICT. MEASURED: **17** ROOT DIRECTORIES, **16** OWNED, **1** STRAY (`--help`), VERDICT
+      **FAIL**, PLANT **FAIL**.**
+      **⇒ ⇒ AND `.gitignore` IS **NOT** THE FIX, AND `AGENTS.md` SAYS WHY: "`.gitignore` ...
+      **IS NOT A POPULATION**" -- **⇒ IGNORING `--help/` WOULD HIDE IT FROM `git status` WHILE
+      THE INSTRUMENT STILL SEES IT, WHICH IS THE `gates/artifacts/` SHAPE THE LEDGER ALREADY
+      NAMES.** **⇒ AND THE RESIDUE IS NOT DELETED BECAUSE IT IS **ANOTHER UNIT's WORK**, AND A
+      UNIT THAT DELETED IT WOULD BE THE `c7ad2ac4d` ACCIDENT.**
 - [ ] **AND **`checks/coverage.py` IS A NEAR-DUPLICATE WHOSE TWIN IS **THE ONE CALLERS USE****: IT DIFFERS FROM
       `.agents/slop/e2e_port/coverage.py` BY **ONE LINE** (`:39`, THE `sys.path` DEPTH), AND
       `checks/run-port-mm.sh:153` CALLS THE **slop** COPY. ***THE COPY THAT WAS FIXED HAS ***NO CALLER*** -- IT IS
