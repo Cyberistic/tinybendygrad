@@ -20,8 +20,11 @@ function ComparePage() {
   const navigate = Route.useNavigate()
   const files = compareData.files
   const entries = useMemo(() => {
-    const paired = files.map((f) => ({ path: (f.py ?? f.bend) as string, badge: f.py ? "↔" : "b" }))
-    const only = compareData.pythonOnlyFiles.map((p) => ({ path: p, badge: "py" }))
+    // A pair is one entry on the Python side; the badge says what the other
+    // side has. B = bend only, P = python only, so a missing counterpart is a
+    // letter, not an absence the eye has to notice.
+    const paired = files.map((f) => ({ path: (f.py ?? f.bend) as string, badge: f.py ? "↔" : "B" }))
+    const only = compareData.pythonOnlyFiles.map((p) => ({ path: p, badge: "P" }))
     return [...paired, ...only].sort((a, b) => a.path.localeCompare(b.path))
   }, [files])
 
@@ -229,7 +232,8 @@ function buildTree(entries: { path: string; badge: string }[]): FileNode[] {
       let child = node.children?.find((c) => c.path === full)
       if (!child) {
         child = isFile
-          ? { name: part, path: full, type: "file", badge }
+          ? // the extension is the same on every row, so it is noise in a tree
+            { name: part.replace(/\.(py|bend)$/, ""), path: full, type: "file", badge }
           : { name: part, path: full, type: "folder", children: [] }
         node.children?.push(child)
       }

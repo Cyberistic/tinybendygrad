@@ -139,7 +139,7 @@ function TreeNode({
     >
       <FileIcon className="size-3 shrink-0 opacity-50" />
       <span className="truncate">{node.name}</span>
-      {node.badge ? <span className="ml-auto pr-1 text-[9px] text-faint">{node.badge}</span> : null}
+      {node.badge ? <span className="ml-auto pr-1 text-[9px] font-semibold tracking-wide text-faint">{node.badge}</span> : null}
     </Button>
   )
 }
