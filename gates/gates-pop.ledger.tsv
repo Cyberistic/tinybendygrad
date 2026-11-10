@@ -339,6 +339,8 @@ gates/tc_ptx_render_census-gate.py	py-main	__file__.parent	0	1
 gates/tc_ptx_render_census-plant.py	py-main	__file__.parent	0	1
 gates/tc_ptx_types-gate.py	py-main	-	0	1
 gates/tc_ptx_types-mutate.py	py-main	__file__.parent	0	1
+gates/tensor-io-gate.py	py-main	-	0	1
+gates/tensor-io-oracle.py	py-main	-	0	1
 gates/tn_add_sub-gate.py	py-main	-	0	1
 gates/tn_and_or_xor-gate.py	py-main	-	0	1
 gates/tn_binop2_cmp-gate.py	py-main	-	0	1
