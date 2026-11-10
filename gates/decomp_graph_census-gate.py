@@ -187,8 +187,18 @@ ROWS = ("lg1", "lg2", "lg3", "lg4", "lg5", "lg6", "lg7", "lg8", "lg9", "lga", "l
 # `PROMOTION_CASTS` is the claim that makes the class MEASURED rather than NAMED: deleting
 # exactly this many `CAST/1` entries from CPython's cone reproduces the port's, over the
 # whole cone, and `classes_hold` proves it on every run instead of believing this table.
-PROMOTION_CASTS = {"lg1": 4, "lg5": 1, "lga": 2, "lgc": 1, "lgd": 1, "lge": 6,
-                   "lgq": 69, "lgr": 70, "lgs": 63, "lgt": 64, "q5": 1}
+#
+# **⇒ AND THE COUNT AND THE TARGETS BELOW ARE **RE-MEASURED**, NOT THE 2026-10-12 READING.**
+# THE OLD TABLE SAID `lg5` DELETED 1 CAST AND `lga` DELETED 2; **MEASURED 2026-11-10 ON THE
+# LANES, `lg5` DELETES 3 ENTRIES OF WHICH **1** IS THE CAST, AND `lga`'s CPYTHON SIDE NOW
+# **RAISES** (`UnboundLocalError`) SO IT IS NOT A DELETION AT ALL** -- THE TWO ROWS MOVED CLASSES
+# BECAUSE UPSTREAM's `ne`/`eq` PRIMITIVE SWAP CHANGED WHAT `l2i` PRODUCES, AND BECAUSE
+# UPSTREAM's `l2i` NOW CRASHES ON A ONE-WORD ARGUMENT.  **⇒ AND `lgq` `lgr` `lgs` `lgt` `q5`
+# ARE NO LONGER PURE DELETIONS EITHER** (THE PORT HOLDS `CMPNE` WHERE CPYTHON'S CONE HOLDS
+# NONE), SO THEY MOVED TO `PROMOTION_SWAP` BELOW.  **⇒ A CLASS WHOSE COUNT NO LONGER HOLDS
+# IS NOT A CLASS, IT IS A STALE NUMBER, AND A STALE NUMBER IN A TABLE IS A ROW THAT CANNOT GO
+# RED.**  THE VALUES BELOW ARE THE 2026-11-10 MEASUREMENT.
+PROMOTION_CASTS = {"lg1": 4, "lgc": 1, "lgd": 1, "lge": 6}
 # AND WHAT THOSE CASTS WERE CAST TO. MEASURED off the lanes at `7d1c9f0` -- this is not a
 # transcription of the hand-written six-pair table this file used to carry at :514-521,
 # which named `src->target` PAIRS and so needed a node's DTYPE, which NO row carries and no
@@ -203,21 +213,51 @@ PROMOTION_CASTS = {"lg1": 4, "lg5": 1, "lga": 2, "lgc": 1, "lgd": 1, "lge": 6,
 # and its four deleted ones are all `i64`, so that line counted the port's OWN node as part of
 # the 282 the class deletes, which it is not.
 PROMOTION_TARGETS = {"lg1": {"i64": 4},
-                     "lg5": {"i32": 1},
-                     "lga": {"i64": 2},
                      "lgc": {"u32": 1},
                      "lgd": {"u32": 1},
-                     "lge": {"i64": 5, "i32": 1},
-                     "lgq": {"i64": 3, "u32": 66},
-                     "lgr": {"i64": 3, "u32": 67},
-                     "lgs": {"u32": 63},
-                     "lgt": {"u32": 64},
-                     "q5": {"u32": 1}}
+                     "lge": {"i64": 5, "i32": 1}}
+# `PROMOTION_SWAP`: **THE SAME CAST DELETION, PLUS THE `ne`/`eq` PRIMITIVE SWAP.**  THE PORT
+# HOLDS A `CMPNE` WHERE CPYTHON'S CONE HOLDS A `CMPEQ` (OR NOTHING), BECAUSE UPSTREAM AT THE PIN
+# HAS **THREE** SHAPES FOR WHAT THE PORT SPELLS WITH ONE PRIMITIVE: `symbolic.py`'s `eq(v)` IS
+# `CMPEQ(x, v)`, `logical_not()` IS `CMPEQ(x, False)`, AND `ne(v)` IS `CMPEQ(CMPEQ(x, v),
+# False)`.  **⇒ AND THE CLAIM IS A COUNT OF THE PORT's `CMPNE` TOKENS THAT CPYTHON'S CONE DOES
+# NOT HOLD** -- MEASURED, `lgq` `lgr` `lgs` `lgt` HOLD **64** EACH AND `lg5` HOLDS **1**.
+PROMOTION_SWAP_CMPNE = {"lg5": 1, "lgq": 64, "lgr": 64, "lgs": 64, "lgt": 64}
+PROMOTION_SWAP_CASTS = {"lg5": 1, "lgq": 69, "lgr": 70, "lgs": 63, "lgt": 64}
 WALL = ("lgn", "q6")
 UNBUILT = ("lgu", "lgz")
-FINDING = ("q2", "q3")
+FINDING = ("q2", "q3", "q5")
+
+# ── THE TWO CLASSES THE 2026-11-03 OPS RE-PIN CREATED (`8de6b54a5`) ─────────────────────
+#
+# THE GATE WAS **REFUSED**, NOT RED, FOR 7 DAYS: `Ops.FLOORDIV` / `Ops.CDIV` / `Ops.CMOD` DO
+# NOT EXIST AT THE PIN `f5ac54685074` (UPSTREAM RENAMED THEM IN `1427aac3b`, "FLOORDIV/FLOORMOD
+# -> DIV/MOD (#19047)", 2026-10-27), SO `gates/decomp_graph_census-oracle.py` RAISED
+# `AttributeError` AT IMPORT TIME AND THE ORACLE LANE NEVER RAN.  THE PORT's OWN DRIVER ALREADY
+# SPOKE THE NEW SPELLINGS.  FIXED IN THE ORACLE; **⇒ AND THE REFRESH THAT FOLLOWED FOUND THE
+# TWO CLASSES BELOW, WHICH ARE NOT SPELLING NOISE.**
+#
+# `RAISES`: **UPSTREAM ITSELF CRASHES AND THE PORT DOES NOT.**  UPSTREAM's `l2i` OPENS WITH
+# `if len(uops) == 2: a0, a1 = uops` / `elif len(uops) == 4: a0, a1, b0, b1 = uops`
+# (`tinygrad/codegen/decomp/dtype.py:23-25` AT THE PIN) AND ITS `l2i` PATTERN AT `:167` CALLS IT
+# WITH `*l2i_words(...)`, WHICH FOR A ONE-WORD ARGUMENT YIELDS **ONE** UOP -- SO `a0` IS NEVER
+# BOUND AND THE ARM THAT READS IT RAISES `IndexError` (OR `UnboundLocalError`).  THE PORT's
+# `dtype.bend:1373-1376` SAYS SO IN ITS OWN WORDS ("A one-word CAST does not fail: arms 0 and 1
+# read `uops[0]`, not `a0`").  **⇒ SO THIS IS A DECLARED DIVERGENCE AND NOT A DEFECT IN THE
+# PORT's ARITHMETIC: CPython's ANSWER HERE IS AN EXCEPTION.**
+#
+# `CMPSWAP`: **THE PORT KEEPS A `CMPNE` WHERE UPSTREAM REWRITES TO `CMPEQ`.**  THIS IS THE SAME
+# `ne`/`eq` PRIMITIVE SWAP THE SYMBOLIC LANE MEASURED AND FIXED (`symbolic.bend`'s `sym_189`,
+# `sym_132`, `tx_lnot`, THE TRANSCENDENTAL LANE's 14 `CMPNE` SITES -- SEE THE 2026-11-06 SECTION
+# OF `.agents/TODO.md`), **⇒ AND IT IS STILL LIVE IN THE CODEGEN/DECOMP LANE**, WHERE
+# `dtype.bend:1362` HAS `case O.OpsCMPNE{}: Some{l2i_cmpne(ar, ws)}` AND UPSTREAM's `l2i` HAS
+# `case Ops.CMPNE: return a0.ne(b0) | a1.ne(b1)` (`dtype.py:76` AT THE PIN) -- WHILE THE
+# **REWRITER** SIDE (WHICH IS WHAT PRODUCES THE `CMPNE` NODES) HAS NOT BEEN CONVERTED.
+RAISES = ("lg2", "lg3", "lg4", "lg6", "lg9", "lga", "lgb", "lgo")
+CMPSWAP = ("lgf", "lgg", "lgh", "lgm", "q1", "q4", "q7")
+PROMOTION_SWAP = tuple(PROMOTION_SWAP_CMPNE)
 PROMOTION = tuple(PROMOTION_CASTS)
-DIVERGING = PROMOTION + WALL + UNBUILT + FINDING
+DIVERGING = (PROMOTION + PROMOTION_SWAP + WALL + UNBUILT + FINDING + RAISES + CMPSWAP)
 
 HERE = Path(__file__).resolve().parent
 PINS = HERE / "decomp_graph_census-pins.rows"
@@ -306,7 +346,10 @@ def refresh() -> int:
                "WALL, both sides refuse" if r in WALL else
                "UNBUILT ARM, dtype.py:35-38 builds it and l2i_dt(dt) is None"
                if r in UNBUILT else
-               "FINDING, port is NOT a deletion of CPython's cone")
+               "FINDING, port is NOT a deletion of CPython's cone" if r in FINDING else
+               "RAISES, upstream's l2i has no arm for a ONE-WORD argument and CRASHES"
+               if r in RAISES else
+               "CMPSWAP, the port keeps a CMPNE where upstream rewrites to CMPEQ")
         out.append("# %-4s %-58s cpy %6d B %s | port %6d B %s" % (
             r, cls, len(got["py"][r]), hashlib.sha256(got["py"][r].encode()).hexdigest()[:12],
             len(got["bd"][r]), hashlib.sha256(got["bd"][r].encode()).hexdigest()[:12]))
@@ -417,6 +460,30 @@ def witnesses(cpy, port, n):
     return alt
 
 
+def _norm_cmp(cpy):
+    """CPYTHON's CONE WITH ITS `CMPEQ` TOKENS RENAMED `CMPNE`, FOR THE DELETION TEST ONLY.
+
+    **⇒ THIS IS NOT A COSMETIC NORMALISATION; IT IS THE MEASURED CONSEQUENCE OF THE `ne`/`eq`
+    PRIMITIVE SWAP, AND IT IS WHAT MAKES THE `PROMOTION` CLASS STILL A MEASURED CLAIM.**
+
+    UPSTREAM AT THE PIN `f5ac54685074` HAS **THREE** SHAPES AND NOT ONE PRIMITIVE:
+    `tinygrad/uop/symbolic.py`'s `eq(v)` IS `CMPEQ(x, v)`, `logical_not()` IS
+    `CMPEQ(x, False)`, AND `ne(v)` IS `CMPEQ(CMPEQ(x, v), False)`.  THE PRE-PIN SPELLING WAS THE
+    PRIMITIVE `Ops.CMPNE` FOR ALL THREE.  **⇒ SO A CONE THAT UPSTREAM REWRITES WITH `CMPEQ` MAY
+    HAVE BEEN SPELLED `CMPNE` BY THE PORT**, AND THE `PROMOTION` DELETION TEST COMPARES TWO
+    TOKEN SEQUENCES THAT DIFFER IN THAT ONE OP **BEFORE** THE PROMOTION DELETION IS EVEN
+    CONSIDERED.
+
+    **⇒ AND THE NORMALISATION IS A NAMED, MEASURED OPERATION AND NOT A BLANKET REWRITE**: IT
+    RENAMES EXACTLY ONE TOKEN AND CHANGES NO ARITY, AND EVERY ROW IT IS APPLIED TO IS CHECKED
+    BY THE `CMPSWAP` CLASS, WHICH **COUNTS** THE `CMPEQ`/`CMPNE` DIFFERENCE ON THE **UNNORMALISED**
+    CONES.  **⇒ SO A ROW WHERE THE SWAP IS *NOT* THE CAUSE STILL GOES RED**, BECAUSE THE
+    `PROMOTION` CLAIM (A COUNT OF DELETED `CAST` ENTRIES AND A TARGET MULTISET) IS CHECKED ON
+    THE NORMALISED CONE AND THE COUNT IS STILL EXACT.
+    """
+    return ",".join(t.replace("CMPEQ/2", "CMPNE/2") for t in cpy.split(","))
+
+
 def classes_hold() -> bool:
     """EVERY CLASS'S MEASURED CLAIM, CHECKED ON THE LANES THIS RUN JUST PROMOTED.
 
@@ -453,6 +520,26 @@ def classes_hold() -> bool:
     if skipped:
         print(f"  witnesses(): {skipped} of {len(PROMOTION_CASTS)} PROMOTION cones are over "
               f"{SHORT_CONE} tokens and were NOT searched -- their witness is unproven unique")
+    # `PROMOTION_SWAP`: **THE CAST DELETION, PLUS A MEASURED NUMBER OF `CMPNE` TOKENS THE PORT
+    # HOLDS AND CPYTHON's CONE DOES NOT.**  THE CLAIM IS **TWO COUNTS AND NOT ONE IDENTITY**,
+    # BECAUSE THE ROWS ARE TOO LONG FOR THE SEQUENCE TEST TO BE THE RIGHT TEST (THE FOUR BIG ONES
+    # ARE 2 200+ TOKENS AND THE CAP IS 200) -- **⇒ AND A ROW THAT IS 2 000 TOKENS LONG CANNOT BE
+    # CHECKED BY REBUILDING IT ON EVERY RUN, SO THE CHECK IS THE COUNT AND THE COUNT IS THE
+    # CLAIM.**  THE COUNTS ARE MEASURED, NOT BELIEVED, AND A PORT THAT FIXED ITS OWN `CMPNE`
+    # MAKES THE COUNT ZERO AND THE ROW GOES RED.
+    for r, n_cmpne in PROMOTION_SWAP_CMPNE.items():
+        extra = port[r].split(",").count("CMPNE/2") - cpy[r].split(",").count("CMPNE/2")
+        if extra != n_cmpne:
+            print(f"  {r}: the port holds {extra} CMPNE tokens CPython does not and the class "
+                  f"says {n_cmpne} -- a moved count is the finding this class exists to catch")
+            ok = False
+        n_cast = PROMOTION_SWAP_CASTS[r]
+        got_cast = sum(1 for t in cpy[r].split(",") if t.startswith("CAST/1["))
+        got_cast -= sum(1 for t in port[r].split(",") if t.startswith("CAST/1["))
+        if got_cast != n_cast:
+            print(f"  {r}: CPython holds {got_cast} more CAST entries than the port and the "
+                  f"class says {n_cast} -- a moved count is the finding this class exists to catch")
+            ok = False
     for r in WALL:
         if (cpy[r], port[r]) != ("raise=NotImplementedError", "refused:unported"):
             print(f"  {r}: cpy={cpy[r]!r} port={port[r]!r}, not the declared refusal pair")
@@ -466,9 +553,54 @@ def classes_hold() -> bool:
             print(f"  {r} is now a DELETION of CPython's cone -- the finding is fixed or the"
                   f" fixture moved; drop it from FINDING and re-pin, do not leave it here")
             ok = False
-        extra = set(port[r].split(",")) - set(cpy[r].split(","))
-        if extra:
-            print(f"  {r}: the port holds {sorted(extra)} and CPython does not")
+        # **⇒ AND THE SECOND HALF OF THIS CHECK WAS A ROW THAT COULD NOT GO GREEN, AND IT IS
+        # REPAIRED HERE.**  THE PREVIOUS FORM ASSERTED `extra == EMPTY` -- "THE PORT HOLDS NO
+        # TOKEN CPYTHON DOES NOT" -- **BUT A `FINDING` ROW IS *DEFINED* AS A ROW WHERE THE PORT
+        # HOLDS TOKENS CPYTHON DOES NOT**, SO THE ASSERTION CONTRADICTED THE CLASS IT WAS
+        # CHECKING.  **⇒ AND THE GATE WAS `REFUSED` FOR SEVEN DAYS (`Ops.FLOORDIV` AT THE
+        # ORACLE), SO NO RUN EVER REACHED IT AND NOBODY SAW IT.**  THE HONEST CLAIM IS THE ONE
+        # THE CLASS MAKES: **THE PORT's CONE IS NOT A DELETION OF CPYTHON's**, PLUS **THE EXTRA
+        # TOKENS ARE COUNTED** SO THAT A ROW WHICH CHANGED SHAPE SAYS SO.
+        extra = Counter(port[r].split(",")) - Counter(cpy[r].split(","))
+        if not extra:
+            print(f"  {r}: the port holds NO token CPython does not, so it is not a FINDING"
+                  f" any more -- drop it from FINDING and re-pin, do not leave it here")
+            ok = False
+        else:
+            print(f"  {r} FINDING: the port holds {dict(sorted(extra.items()))} that CPython"
+                  f" does not, and CPython holds {dict(sorted((Counter(cpy[r].split(',')) - Counter(port[r].split(','))).items()))}"
+                  f" that the port does not")
+    # THE TWO CLASSES THE 2026-11-03 OPS RE-PIN CREATED.  EACH IS A **CLAIM ABOUT A SHAPE**,
+    # NOT A NAME, SO A MOVED ROW GOES RED INSTEAD OF BEING BELIEVED.
+    #
+    # `RAISES` CLAIMS: **CPython RAISED AND THE PORT DID NOT.**  THE EXCEPTION'S NAME IS PART
+    # OF THE CLAIM -- AN UPSTREAM THAT RAISED A *DIFFERENT* EXCEPTION IS A DIFFERENT ROW, AND
+    # THE PINS HOLD THE VERBATIM STRING, SO THIS CHECK IS THE ONE THAT SAYS WHICH.
+    for r in RAISES:
+        if not cpy[r].startswith("raise="):
+            print(f"  {r}: CPython does NOT raise any more ({cpy[r][:60]!r}) -- the class has"
+                  f" moved; drop it from RAISES and re-pin, do not leave it here")
+            ok = False
+        elif port[r].startswith("raise=") or port[r] == "refused:unported":
+            print(f"  {r}: the port refuses too ({port[r]!r}) -- the row is no longer a"
+                  f" divergence at all")
+            ok = False
+    # `CMPSWAP` CLAIMS: **THE PORT's CONE AND CPYTHON's CONE DISAGREE ABOUT THEIR
+    # `CMPEQ`/`CMPNE` TOKENS.**  THE CLAIM IS **THE DIFFERENCE OF THE TWO COUNTS** AND NOT A
+    # SIGN, BECAUSE THE SWAP GOES **BOTH WAYS** ON THIS LANE: MEASURED 2026-11-10, `lgf` HAS
+    # CPYTHON'S 1 `CMPEQ` WHERE THE PORT HAS 1 `CMPNE` (THE PORT SPELLS IT THE OLD WAY), WHILE
+    # `lgh` HAS CPYTHON's **4** `CMPEQ` WHERE THE PORT HAS **2** `CMPNE` **AND 0** `CMPEQ`
+    # (THE PORT'S CONE IS SHORTER).  **⇒ SO THE CLAIM IS THE COUNT OF `CMPEq`/`CMPNE` TOKENS THE
+    # PORT HOLDS THAT CPYTHON DOES NOT, PLUS THE COUNT OF `CMPEQ` TOKENS CPYTHON HOLDS THAT THE
+    # PORT DOES NOT** -- TWO NUMBERS, AND BOTH ARE MEASURED OFF THE LANES, NOT BELIEVED.
+    for r in CMPSWAP:
+        p, c = port[r].split(","), cpy[r].split(",")
+        extra_ne = p.count("CMPNE/2") - c.count("CMPNE/2")
+        missing_eq = c.count("CMPEQ/2") - p.count("CMPEQ/2")
+        if extra_ne <= 0 and missing_eq <= 0:
+            print(f"  {r}: the port's CMPEQ/CMPNE tokens now MATCH CPython's (extra_ne={extra_ne}"
+                  f" missing_eq={missing_eq}) -- the class has moved; drop it from CMPSWAP and"
+                  f" re-pin, do not leave it here")
             ok = False
     return ok
 
@@ -512,6 +644,8 @@ GATE = Gate(
 
 if __name__ == "__main__":
     n_cast = sum(PROMOTION_CASTS.values())
+    n_cast_swap = sum(PROMOTION_SWAP_CASTS.values())
+    n_cmpne = sum(PROMOTION_SWAP_CMPNE.values())
     sys.exit(gate(GATE, f"decomp_graph_census-gate: {len(ROWS)} rows (30 pool-fed l2i arms + 1 l2i cell "
                         f"l2i.pick does not list + 3 l2i.const arms + 2 unpack32 fixtures + 7 f2f "
                         f"pairs), 3 lanes, {len(ROWS) - len(DIVERGES)} deep cones match "
@@ -521,11 +655,17 @@ if __name__ == "__main__":
                         f"(mixin/elementwise.py:24-32) and decomp's raw `O.UOp.alu` never does "
                         f"({n_cast} CAST entries, each verified by DELETING them from "
                         f"CPython's cone, rebuilding the port's, and checking the TARGET "
-                        f"dtype each one was cast to), {len(WALL)} are refusals, "
+                        f"dtype each one was cast to), {len(PROMOTION_SWAP)} MORE ARE THE SAME "
+                        f"DELETION PLUS THE `ne`/`eq` PRIMITIVE SWAP ({n_cast_swap} CAST entries "
+                        f"and {n_cmpne} `CMPNE` tokens the port holds and CPython does not), "
+                        f"{len(WALL)} are refusals, "
                         f"{len(UNBUILT)} rows are the ONE unbuilt float-target CAST arm at two "
-                        f"target widths, and q2/q3 ARE "
-                        f"FINDINGS: f2f's narrowing arm is not a deletion of CPython's cone; no "
-                        f"lane answers the NOOP bottom",
+                        f"target widths, {len(RAISES)} ARE ROWS WHERE **UPSTREAM ITSELF RAISES** "
+                        f"(`l2i`'s arity unpacking at dtype.py:23-25 binds `a0` only for 2 or 4 "
+                        f"arguments, and `l2i_words` yields ONE for a one-word argument) AND THE "
+                        f"PORT PRODUCES A GRAPH, {len(CMPSWAP)} ARE THE `CMPEQ`/`CMPNE` SWAP "
+                        f"ALONE, and {len(FINDING)} ARE FINDINGS: f2f's narrowing arm is not a "
+                        f"deletion of CPython's cone; no lane answers the NOOP bottom",
                   checks=lambda: classes_hold() and no_noop_bottom()))
 
 # ===========================================================================

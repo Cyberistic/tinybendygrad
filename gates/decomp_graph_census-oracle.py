@@ -151,12 +151,21 @@ L2I = [
     ("lgk",  Ops.AND, dtypes.int32, dtypes.uint32, 9, 4),
     ("lgl",  Ops.WHERE, dtypes.int32, dtypes.uint32, 9, 5),
     ("lgm",  Ops.MAX, dtypes.int32, dtypes.uint32, 9, 4),
-    ("lgn",  Ops.FLOORDIV, dtypes.int32, dtypes.uint32, 9, 4),
+    # THE OP SPELLINGS ARE UPSTREAM's **CURRENT** ONES.  UPSTREAM RENAMED THEM IN
+    # `1427aac3b` ("FLOORDIV/FLOORMOD -> DIV/MOD (#19047)", 2026-10-27), WHICH IS AN ANCESTOR
+    # OF THE PIN `f5ac54685074`: `Ops.FLOORDIV` -> `Ops.DIV`, `Ops.FLOORMOD` -> `Ops.MOD`,
+    # `Ops.CDIV` -> `Ops.TRUNCDIV`, `Ops.CMOD` -> `Ops.TRUNCMOD`.  **THIS ORACLE STILL SPOKE THE
+    # PRE-RENAME SPELLINGS**, SO `Ops.FLOORDIV` RAISED `AttributeError` AT IMPORT TIME AND THE
+    # WHOLE GATE **REFUSED** (rc=3, "the oracle failed rc=1") -- A RE-VENDOR CASUALTY, NOT A RED.
+    # THE PORT's OWN DRIVER ALREADY SPOKE THE NEW SPELLINGS (`gates/decomp_graph_census.bend:156-161`:
+    # `lgn` -> `O.OpsDIV{}`, `lgq`/`lgs` -> `O.OpsTRUNCDIV{}`, `lgr`/`lgt` -> `O.OpsTRUNCMOD{}`), WHICH
+    # IS WHY THE MAP BELOW IS NOT A GUESS: IT IS THE PORT's OWN ARM FOR ARM.
+    ("lgn",  Ops.DIV, dtypes.int32, dtypes.uint32, 9, 4),
     ("lgo",  Ops.CAST, dtypes.int64, dtypes.uint32, 9, 1),
-    ("lgq",  Ops.CDIV, dtypes.int32, dtypes.uint32, 9, 4),
-    ("lgr",  Ops.CMOD, dtypes.int32, dtypes.uint32, 9, 4),
-    ("lgs",  Ops.CDIV, dtypes.uint32, dtypes.uint32, 9, 4),
-    ("lgt",  Ops.CMOD, dtypes.uint32, dtypes.uint32, 9, 4),
+    ("lgq",  Ops.TRUNCDIV, dtypes.int32, dtypes.uint32, 9, 4),
+    ("lgr",  Ops.TRUNCMOD, dtypes.int32, dtypes.uint32, 9, 4),
+    ("lgs",  Ops.TRUNCDIV, dtypes.uint32, dtypes.uint32, 9, 4),
+    ("lgt",  Ops.TRUNCMOD, dtypes.uint32, dtypes.uint32, 9, 4),
     ("lgu",  Ops.CAST, dtypes.float32, dtypes.float32, 19, 2),
     # `lgz` IS `lgu`'S OWN CELL WITH THE TARGET'S WIDTH CHANGED, and it is NOT `l2i.pick`'s
     # arm 33 -- `l2i.pick` (dtype.bend:2780-2834) does not list it, and a target axis that is
