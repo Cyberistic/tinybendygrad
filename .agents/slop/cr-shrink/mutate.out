@@ -1,0 +1,105 @@
+amd pins shape ASSERTED: 3 fields (row<TAB>oracle<TAB>port), columns 2 and 3 are rendered values, 4 of them declared EMPTY (CPython does not refuse on those rows); 31 pin(s)
+
+UNMUTATED  rc=0  bd=1178 lines  py=1178 lines  1164 distinct port row names  31 divergence(s)
+
+  G1 groups_hold: the driver axis is ten groups, not eleven                             [GUARD]  rc=1  RED  the guard speaks
+      groups_hold: g_* defs are ['bf', 'const', 'enc', 'fmt', 'get', 'inst', 'lit', 'mod', 'ops', 'tables', 'vs'], this gate expects ['bf', 'const', 'enc', 'fmt', 'get', 'inst'
+      groups_hold: main() calls ('tables', 'const', 'get', 'fmt', 'mod', 'bf', 'enc', 'lit', 'inst', 'ops', 'vs'), this gate's order is ('tables', 'const', 'get', 'fmt', 'mod',
+  G2 names_hold: the port's completion marker is `dsl-done=2`                           [GUARD]  rc=1  RED  the guard speaks
+      names_hold: row 1177: port 'dsl-done=2', oracle 'dsl-done=1'
+  G3 dup_rows_hold: thirteen duplicated names, not fourteen                             [GUARD]  rc=1  RED  the guard speaks
+      dup_rows_hold: 14 duplicated names, expected 14: ['canon_S0', 'fmt_105_1', 'fmtm_105_1', 'fmtp_105_1', 'modmerge_0_0_0', 'modmerge_0_0_1', 'names_rev_-0.5', 'names_rev_-1
+  G4 axes_hold: only offset 125 is uncovered, not 125 and 127                           [GUARD]  rc=1  RED  the guard speaks
+      axes_hold: the uncovered _NAMES offsets are [125, 127], expected [125, 127] -- the fmt axis grew
+  G5 pin_drift_hold: the pinned FILE is one that does not exist                         [GUARD]  rc=1  RED  the guard speaks
+      pin_drift_hold: tinygrad/renderer/amd/dsl-ABSENT.py: MISSING -- the frozen oracle is gone
+  G6 fixtures_hold: one fixture value is ADMITTED as a difference                       [GUARD]  rc=1  RED  the guard speaks
+      fixtures_hold: F64_VALS.lit is ADMITTED as a fixture-value difference and the two sides now agree -- the admission is stale and belongs in the comment, not in the list
+  G7 divergences_hold: thirty pinned divergences, not thirty-one                        [GUARD]  rc=1  RED  the guard speaks
+      divergences_hold: 31 pinned divergences by NAME, expected 31
+  G8 classes_hold: SRC_WIDTH's pattern matches nothing, so the class has no rows        [GUARD]  rc=1  RED  the guard speaks
+      classes_hold: no class for 'sf_widthmsg_8_0'
+      classes_hold: no class for 'sf_widthmsg_17_9'
+      classes_hold: no class for 'sf_widthmsg_25_17'
+  G8b classes_hold: a pin matches TWO classes                                           [GUARD]  rc=1  RED  the guard speaks
+      classes_hold: 'afenc_sr_127' matches ['MSG_TEXT', 'WORD_64']
+  G9 pin_drift_hold: the recorded blob it demands is one the pins file does not record  [GUARD]  rc=1  RED  the guard speaks
+      pin_drift_hold: the pins file does not record tinygrad/renderer/amd/dsl.py's blob 65267000 -- the bytes the rows were taken against
+  G9b pin_drift_hold: the recording assertion is REMOVED (a WEAKENING, expected GREEN)  [GUARD]  rc=0  GREEN  <-- THE CHECK DID NOT FIRE
+  G9c pin_drift_hold: the pinned sha256 is another file's sha256                        [GUARD]  rc=1  RED  the guard speaks
+      pin_drift_hold: tinygrad/renderer/amd/dsl.py: dd45cbdf0d635707 != pinned 96fd869a40884dec
+  G9d pin_drift_hold: a pinned file the pins file does not record                       [GUARD]  rc=1  RED  the guard speaks
+      pin_drift_hold: tinygrad/runtime/ops_python.py: 656fc517175b0dbf != pinned 62decc9aa674b47a
+      pin_drift_hold: the pins file does not record tinygrad/runtime/ops_python.py's pinned sha256 62decc9aa674b47a
+  A1 wplaced drops the shift -- the AMDWORD32 word                                      [VALUE]  rc=1 RED  38 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('bfset_7_4_0_1=0x00000010', 'bfset_7_4_0_1=0x00000001'), ('bfset_7_4_0_7=0x00000070', 'bfset_7_4_0_7=0x00000007')]
+      38 rows differ BY POSITION out of 1178
+  A2 bf_in_word never refuses -- the WORD_64 guard is dropped                           [VALUE]  rc=1 RED  1 rows moved
+      amd_dsl_census-gate: FAIL
+      bd.out: "bfset_word64=REFUSE:field 'lit': bits 95..64 do not fit a 63-bit instruction word" appears 0 times, the pins say 1 -- a pin moved, or a duplicated row name was l
+      1 rows differ BY POSITION out of 1178
+  A3 al_shift_of's two arms are swapped                                                 [VALUE]  rc=1 RED  44 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('afenc_ab_2=1', 'afenc_ab_2=0'), ('afenc_ab_4=2', 'afenc_ab_4=1')]
+      44 rows differ BY POSITION out of 1178
+  A4 src_bit.vdst tests "vdsty" against itself -- the tautology again                   [VALUE]  rc=1 RED  1 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('srcbit_vdst=8', 'srcbit_vdst=0')]
+      1 rows differ BY POSITION out of 1178
+  A5 mod_hit loses the NEG arm                                                          [VALUE]  rc=1 RED  1 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('modmask_neg_neg=1', 'modmask_neg_neg=0')]
+      1 rows differ BY POSITION out of 1178
+  A6 mod_hit loses the ABS arm                                                          [VALUE]  rc=0 GREEN  <-- THE MUTATION WAS NOT FOUND  0 rows moved
+  A7 mod_hit loses the OPSEL arm                                                        [VALUE]  rc=0 GREEN  <-- THE MUTATION WAS NOT FOUND  0 rows moved
+  A8 bf_set.placed puts the field at bit 0                                              [VALUE]  rc=1 RED  36 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('bfset_7_4_0_1=0x00000010', 'bfset_7_4_0_1=0x00000001'), ('bfset_7_4_0_7=0x00000070', 'bfset_7_4_0_7=0x00000007')]
+      36 rows differ BY POSITION out of 1178
+  A9 bf_in_word refuses at 32 rather than at 64                                         [VALUE]  rc=1 RED  18 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('bfset_word63=0x8000000000000000', "bfset_word63=REFUSE:field 'lit': bits 63..32 do not fit a 63-bit instruction word"), ('raw_vop2_all=|0x4814060a00
+      18 rows differ BY POSITION out of 1178
+  P1 main() no longer calls g_lit()                                                     [POPULATION]  rc=5 RED  18 rows moved, 18 vanished
+      amd_dsl_census-gate: DEAD
+      VANISHED needs_lit_int_0, needs_lit_int_1, needs_lit_int_100, needs_lit_int_4294967279, needs_lit_int_4294967280, needs_lit_int_4294967295
+  P2 main() calls g_lit() where g_inst() was                                            [POPULATION]  rc=1 RED  129 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('needs_lit_reg_0=False', 'vop2_fields=op:7:0,vdst:15:8,src0:25:17,src1:33:26,op_sel:35:34,sdst:41:36,'), ('needs_lit_reg_1=False', 'vop2_base_size=6'
+      129 rows differ BY POSITION out of 1178
+  P3 the ORACLE drops its completion marker                                             [POPULATION]  rc=3 RED  1 rows moved, 1 vanished
+      amd_dsl_census-gate: REFUSED
+      VANISHED dsl-done
+  P4 one bfset row is RENAMED (same count, new name)                                    [POPULATION]  rc=1 RED  1 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('bfset_word63=0x8000000000000000', 'bfset_wordXX=0x8000000000000000')]
+      1 rows differ BY POSITION out of 1178
+  P5 one bfset row is DUPLICATED (FINDING A's 14 grows to 15)                           [POPULATION]  rc=5 RED  1 rows moved, 1 appeared
+      amd_dsl_census-gate: DEAD
+      APPEARED bfset_word63
+  X1 F64_VALS' lit is 0x1234 -- the pre-widening fixture value                          [AXIS]  rc=1 RED  2 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('raw_f64i=|0x1234567800000005', 'raw_f64i=|0x123400000005'), ('to_bytes_f64i=0500000078563412', 'to_bytes_f64i=0500000034120000')]
+      2 rows differ BY POSITION out of 1178
+  X2 VOP2_ALL's src0 is a different register -- a fixture AXIS, not a value             [AXIS]  rc=1 RED  1 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('raw_vop2_hi=|0x00068a00', 'raw_vop2_hi=|0x00088a00')]
+      1 rows differ BY POSITION out of 1178
+  X3 VOP2_NEG's `src0` has neg set, so the neg family asks about a different register   [AXIS]  rc=1 RED  1 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('modmask_neg_neg=1', 'modmask_neg_neg=0')]
+      1 rows differ BY POSITION out of 1178
+  X4 the ORACLE's `lit` fixture drifts, port untouched                                  [AXIS]  rc=1 RED  2 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('raw_f64i=|0x123400000005', 'raw_f64i=|0x1234567800000005'), ('to_bytes_f64i=0500000034120000', 'to_bytes_f64i=0500000078563412')]
+      2 rows differ BY POSITION out of 1178
+  X5 the fmt axis loses the 105 width, so a `Reg.fmt` arm boundary is uncovered         [AXIS]  rc=1 RED  3 rows moved
+      amd_dsl_census-gate: FAIL
+      DISAGREE (bd.out): [('fmt_105_1=s105', 'fmt_115_1=ttmp7'), ('fmtp_105_1=s[105]', 'fmtp_115_1=ttmp[7]')]
+      3 rows differ BY POSITION out of 1178
+
+amd_dsl_census-mutate: {'GUARD': 13, 'VALUE': 9, 'POPULATION': 5, 'AXIS': 5} by kind; 17 of 19 input mutations moved rows; 2 moved NOTHING at rc=0; 0 moved nothing but still went RED (caught by a check that does not read a row); 0 did not compile (a dead def or a load-bearing type); 0 refused on a non-unique pattern; 12 of 13 guard mutations went red
+  MOVED NOTHING AT rc=0: A6 mod_hit loses the ABS arm
+  MOVED NOTHING AT rc=0: A7 mod_hit loses the OPSEL arm
+DONE rc=0

@@ -176,6 +176,12 @@ the `src0` field of `VOP2_FCONST` and `VOP2_FNOLIT` was not matched AT ALL and t
 reported the fixture as spelling five fields where the oracle spells six. THE DOTTED NAME
 IS NOW ACCEPTED.
 
+MEASURED, the whole table after the repair: 19 input mutations, 13 guard mutations. 17 of 19
+input mutations move rows; 12 of 13 guard mutations go red. The two that move nothing are
+**A6 and A7**, and they are the KNOWN finding, not a regression: the census's own header
+records that "no fixture here sets `Reg.abs_`, and the opsel family asks about `src2`,
+which `VOP2_FIELDS` has NO FIELD FOR."
+
 ### 2. `gates/amd_dsl_census-mutate.py` -- the harness that ran the wrong lane
 
 - The lane ran the PORT, which prints ZERO rows.
@@ -192,11 +198,24 @@ re-derives `_U32_DEFS` from BOTH mutated files; the four patterns carry the driv
 spelling; and a "port" mutation RESOLVES TO WHICHEVER FILE HOLDS THE PATTERN, with a
 pattern in NEITHER or in BOTH a REFUSED entry and not a green one.
 
-MEASURED, the whole table after the repair: 19 input mutations, 13 guard mutations. 13 of 19
-input mutations move rows; 12 of 13 guard mutations go red. The two that move nothing are
-**A6 and A7**, and they are the KNOWN finding, not a regression: the census's own header
-records that "no fixture here sets `Reg.abs_`, and the opsel family asks about `src2`,
-which `VOP2_FIELDS` has NO FIELD FOR."
+MEASURED, the whole table after the repair (`.agents/slop/cr-shrink/mutate.out`):
+
+```
+amd_dsl_census-mutate: {'GUARD': 13, 'VALUE': 9, 'POPULATION': 5, 'AXIS': 5} by kind;
+  17 of 19 input mutations moved rows;
+  2 moved NOTHING at rc=0;
+  0 moved nothing but still went RED;
+  0 did not compile;
+  0 refused on a non-unique pattern;
+  12 of 13 guard mutations went red
+```
+
+BEFORE the repair the same table read `bd=0 lines` on the unmutated lane and EVERY mutation
+"MOVED NOTHING at rc=0" -- and **4 REFUSED on a non-unique pattern**, which is the
+pre-repair count of zero. The two that move nothing are **A6 and A7**, and they are the
+KNOWN finding, not a regression: the census's own header records that "no fixture here
+sets `Reg.abs_`, and the opsel family asks about `src2`, which `VOP2_FIELDS` has NO FIELD
+FOR."
 
 ## THE CITATION
 
