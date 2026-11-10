@@ -123,7 +123,7 @@ export function FileTreeFile({
         <FileIcon />
         <FileTreeName>{name}</FileTreeName>
       </Button>
-      {actions ? <div className="pr-2 text-[9px] font-semibold tracking-wide">{actions}</div> : null}
+      {actions ? <div className="pr-2 text-[9px] font-semibold tracking-wide text-faint">{actions}</div> : null}
     </div>
   )
 }

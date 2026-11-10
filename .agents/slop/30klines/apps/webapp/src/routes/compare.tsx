@@ -23,7 +23,7 @@ function ComparePage() {
   // it is a pair, a Bend-only file or a Python-only one. The two roots are a
   // fact about the repo, not something the reader should have to scroll past.
   const entries = useMemo(() => {
-    const rows = files.map((f) => ({ path: relPath((f.py ?? f.bend) as string), badge: f.py ? "↔" : "B" }))
+    const rows = files.map((f) => ({ path: relPath((f.py ?? f.bend) as string), badge: f.py ? "" : "B" }))
     const only = compareData.pythonOnlyFiles.map((p) => ({ path: relPath(p), badge: "P" }))
     return [...rows, ...only].sort((a, b) => a.path.localeCompare(b.path))
   }, [files])
@@ -226,7 +226,7 @@ function Pane(props: {
               data-line={line}
               onClick={() => target !== undefined && onJump(side, line)}
               className={
-                "grid grid-cols-[46px_1fr] pr-3 " +
+                "grid grid-cols-[46px_minmax(0,1fr)] pr-3 " +
                 (target !== undefined ? "cursor-pointer hover:bg-wash/60 " : "") +
                 (focus === line ? "bg-wash " : "")
               }
@@ -234,7 +234,7 @@ function Pane(props: {
             >
               <span className="select-none pr-3 text-right text-[10px] text-faint">{line}</span>
               <span
-                className="whitespace-pre-wrap break-words text-ink2"
+                className="min-w-0 whitespace-pre-wrap break-words text-ink2"
                 dangerouslySetInnerHTML={{ __html: html || " " }}
               />
             </div>
