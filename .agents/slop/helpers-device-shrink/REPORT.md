@@ -17,12 +17,12 @@ number the goal is measured by.
 
 | | BEFORE | AFTER | delta |
 |---|---|---|---|
-| the port | 297806 | 282779 | **-15027** |
+| the port | 297806 | 282778 | **-15028** |
 | THE RATIO | **4.70x** | **4.46x** | **-0.24x** |
 | CODE | 127902 | 124688 | -3214 |
 | THE CODE-ONLY RATIO | **2.27x** | **2.21x** | **-0.06x** |
 | GATE ROWS | 6658 | 1181 | -5477 |
-| COMMENTS | 124925 | 114500 | -10425 |
+| COMMENTS | 124925 | 114499 | -10426 |
 | BLANK | 38321 | 42410 | +4089 |
 
 **AND THE TREE MOVED UNDERNEATH THIS UNIT WHILE IT WORKED** -- OTHER AGENTS
