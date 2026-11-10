@@ -20,7 +20,7 @@ export function AppSidebar() {
   const params = useParams({ strict: false }) as { id?: string }
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-rule">
+    <Sidebar collapsible="offcanvas" className="border-r border-rule">
       <SidebarHeader className="border-b border-rule px-3 py-3">
         <div className="text-[12px] font-semibold tracking-tight">30klinesofcode</div>
         <div className="text-[10px] text-faint">

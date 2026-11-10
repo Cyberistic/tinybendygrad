@@ -5,5 +5,8 @@ apps/*/node_modules/
 apps/*/.tanstack/
 apps/*/dist/
 apps/*/src/routeTree.gen.ts
+apps/*/.env
+apps/*/.env.*
+!apps/*/.env.example
 packages/*/node_modules/
 packages/*/dist/
