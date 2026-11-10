@@ -18164,19 +18164,117 @@ refutation of its SENTENCES, not its counts.
 Found while auditing `rangeify`'s markers (`WALLAUDIT` above). **THE HEADLINE FIGURE THIS TREE QUOTES
 IS NARROWER THAN IT LOOKS, AND THE NARROWNESS IS A MARKER-FORM SPELLING.**
 
-- [ ] **`marker-audit.py:49` GATES ON `if 'TODO(p3)' not in l`, AND `schedule/rangeify.bend` USES
+- [x] **`marker-audit.py:49` GATES ON `if 'TODO(p3)' not in l`, AND `schedule/rangeify.bend` USES
       `# WALL(p3)`.** MEASURED: `grep -c rangeify` over the audit's own output answers **0** --
       **THE FILE DOES NOT APPEAR IN THE TABLE AT ALL.** `TOTAL 564 / 40 / 0` therefore EXCLUDES ALL 30
       OF ITS MARKERS. **DELETING OR FALSIFYING THOSE 30 MOVES THAT INSTRUMENT BY ZERO.**
-- [ ] **SO THE CORRECT SENTENCE IS "564 WALLS, PLUS 30 `WALL(p3)` MARKERS THE AUDIT DOES NOT SEE"** --
+      **⇒ IMPLEMENTED 2026-11-10, AND THE POPULATION IS **BIGGER** THAN THIS ITEM SAID.**
+      `checks/marker-audit.py`'s `entries()` GATED ON `'TODO(p3)'` AND NOW ACCEPTS **THE MARKER
+      CONCEPT, WHICH HAS TWO SPELLINGS** (`MARKER_FORMS = ('TODO(p3)', 'WALL(p3))'`), SO THE
+      POPULATION IS NO LONGER DECLARED BY ONE SPELLING.  **⇒ MEASURED: `tinybendygrad/` CARRIES
+      **149** `WALL(p3)` OCCURRENCES IN **17** FILES, OF WHICH **105** ARE MARKERS** (THE OTHER 44
+      ARE REFERENCES -- A LINE THAT NAMES A MARKER RATHER THAN BEING ONE); **⇒ AND
+      `schedule/rangeify.bend` ALONE HAS 30**, WHICH IS WHY THIS ITEM SAID "30" -- IT MEASURED
+      ONE FILE.  **⇒ AND THE INSTRUMENT NOW READS `TOTAL 660 walls / 36 shared / 2 BACKLOG`**
+      (WAS `557 / 35 / 1`): **+103 WALLS AND +1 BACKLOG AND 0 LOST.**
+
+      **⇒ AND THE SECOND HALF OF THE DEFECT WAS WORSE AND WAS ALSO FIXED**: THE REASON PATTERN
+      HAS `\bwall\b` IN IT (THE WORD "wall" IS HOW A *REASON* READS), **⇒ SO A `WALL(p3)` MARKER
+      MATCHED THE REASON PATTERN *THROUGH ITS OWN SPELLING*, AND EVERY SUCH MARKER WAS A "wall"
+      WHETHER OR NOT IT STATED A REASON.**  **⇒ MEASURED BY PLANTING ONE** (`# WALL(p3)
+      PLANTED-MARKER  rangeify.py:999  some_symbol  more text.` -- NO REASON AT ALL): BEFORE THE
+      FIX IT WAS CLASSIFIED **wall**; AFTER, IT IS **BACKLOG**.  THE FIX IS `reason_text()`,
+      WHICH REMOVES **THE MARKER's OWN TOKEN** AND NOT THE WORD "wall" IN GENERAL, BECAUSE A
+      MARKER MAY SAY "wall" IN ITS REASON AND THAT IS A REAL REASON.
+
+      **⇒ AND THE PLANT WAS REVERTED AND THE INSTRUMENT IS GREEN AGAIN**, AND
+      `tinybendygrad/schedule/rangeify.bend` IS **BYTE-IDENTICAL** TO ITS PRE-PLANT STATE.
+- [x] **SO THE CORRECT SENTENCE IS "564 WALLS, PLUS 30 `WALL(p3)` MARKERS THE AUDIT DOES NOT SEE"** --
       and every report of the bare 564 this session has been UNDERSTATING BY UP TO 30.
-- [ ] **TWO MARKER FORMS FOR ONE CONCEPT IS A DOCTRINE-1 FAILURE IN THE INSTRUMENT** (an instrument
+      **⇒ IMPLEMENTED 2026-11-10, AND THE SENTENCE IS NOW A DIFFERENT ONE BECAUSE THE INSTRUMENT
+      SEES THE MARKERS.**  THE OLD SENTENCE WAS "564 WALLS, PLUS 30 `WALL(p3)` MARKERS THE AUDIT
+      DOES NOT SEE"; **⇒ THE NEW SENTENCE IS "660 WALLS", AND THE "PLUS 30" IS GONE BECAUSE THE
+      AUDIT SEES THEM.**  **⇒ AND THE 30 WAS AN UNDERSTATEMENT**: THE TREE HAS **105** `WALL(p3)`
+      MARKERS IN **17** FILES, NOT 30 IN ONE -- SO EVERY REPORT OF THE BARE NUMBER THIS SESSION
+      HAS BEEN UNDERSTATING BY UP TO **105**, NOT BY UP TO 30.  **⇒ AND THE BARE NUMBER ITSELF
+      MOVED**: `557` -> `660`, BECAUSE THE POPULATION GREW AND THE PORT'S OWN MARKERS MOVED TOO.
+      **⇒ A FIGURE QUOTED WITHOUT ITS DATE AND ITS POPULATION IS A FIGURE THAT WILL ROT**, AND
+      BOTH OF THOSE ARE NOW IN THIS LINE.
+- [x] **TWO MARKER FORMS FOR ONE CONCEPT IS A DOCTRINE-1 FAILURE IN THE INSTRUMENT** (an instrument
       declaring its population by a SPELLING rather than by a rule). The fix is to accept BOTH forms,
-      or to have the port use ONE form -- **and WHICH IS THE CALLER'S, NOT THE AUDITOR'S.**
-- [ ] **`rangeify.bend:2639` CLAIMS EVERY WALL IS A `# TODO(p3)` LINE AND THE FILE CONTRADICTS
+      or to have the port use ONE form -- **and WHICH IS THE CALLER's, NOT THE AUDITOR's.**
+      **⇒ IMPLEMENTED 2026-11-10, AND THE RULING WAS THE CALLER's AND IT IS HONOURED.**  THE ITEM
+      SAID "The fix is to accept BOTH forms, or to have the port use ONE form -- **and WHICH IS
+      THE CALLER's, NOT THE AUDITOR's**"; **⇒ THE PORT's FORM STAYS** (`rangeify.bend` USES
+      `WALL(p3)` ON PURPOSE -- A WALL IS A PYTHON FACT AND A TODO IS A DECISION) **⇒ AND THE
+      INSTRUMENT ACCEPTS BOTH.**  **⇒ AND THE POPULATION IS NOW DECLARED BY THE **CONCEPT** AND
+      NOT BY A SPELLING**, WHICH IS WHAT DOCTRINE 1 ASKS FOR; THE SPELLINGS ARE A **SET** OF
+      TWO, NOT A LIST OF ONE.  **⇒ AND THE `TODO(p3)` FORM IS NOT WEAKENED**: A LINE THAT
+      REFERENCES A MARKER RATHER THAN BEING ONE IS STILL EXCLUDED, AND THAT TEST
+      (`MARKER.match` ON THE FIRST LINE) IS UNCHANGED.
+- [x] **`rangeify.bend:2639` CLAIMS EVERY WALL IS A `# TODO(p3)` LINE AND THE FILE CONTRADICTS
       ITSELF**: it has **3** `TODO(p3)` (all prose) and **30** `WALL(p3)`. **THE FILE MIS-NAMES ITS
       OWN MARKER FORM.** `uop/fold.bend:6625` is the same shape: a `TODO(p3)` marker whose own text
       says "PORTED, as `UOp.base` over the table" -- **A STALE WALL INSIDE THE 564.**
+      **⇒ THE `rangeify.bend` HALF IS IMPLEMENTED 2026-11-10; THE `fold.bend:6625` HALF IS STILL
+      REAL.**  **THE HEADER IS FIXED**: `tinybendygrad/schedule/rangeify.bend`'s THREE
+      MIS-NAMINGS (`:7`, `:45`, `:2674`) NOW SAY `# WALL(p3)` AND `rg 'WALL\(p3\)'`, **⇒ AND
+      EACH CORRECTED SENTENCE CARRIES THE MEASUREMENT THAT CORRECTS IT** ("MEASURED 2026-11-10,
+      `grep -c 'TODO(p3)'` IN THIS FILE ANSWERS **3** AND ALL THREE ARE PROSE IN THIS HEADER,
+      WHILE `grep -c 'WALL(p3)'` ANSWERS **30**").  **⇒ AND THE FILE STILL COMPILES**:
+      `.venv/bin/python checks/bounded.py --mb 3072 -- ./bin/bend
+      tinybendygrad/schedule/rangeify.bend --check-only` READS **ALL PROOFS CHECK**,
+      `WITHIN-LIMITS`, 492 MB, 2 s.  **⇒ AND `checks/marker-audit.py` IS UNAFFECTED BY THE
+      EDIT**: `rangeify.bend` STILL READS **30 walls / 0 shared / 0 BACKLOG**, BECAUSE THE
+      CORRECTED PROSE LINES DO NOT MATCH `MARKER.match` (THEY START `# **` OR `# MEASURED`).
+
+      **⇒ AND THE INSTRUMENT NOW FINDS A REAL STALE WALL OF THE SAME SHAPE, IN A DIFFERENT
+      FILE**: `tinybendygrad/renderer/tc_ptx.bend:540` IS A `WALL(p3)` MARKER WHOSE OWN TEXT
+      SAYS **"PORTED"** (ONLY THE WIRING IN `pm_dispatch_m.go` IS MISSING) -- **⇒ SO THE
+      CLASS THE ITEM NAMES IS REAL, IT WAS JUST INVISIBLE WHILE THE INSTRUMENT COULD NOT SEE THE
+      FORM.**  IT IS THE 2ND OF THE 2 BACKLOG ROWS THE INSTRUMENT NOW PRINTS.
+
+      **⇒ AND `uop/fold.bend:6625` IS **STILL REAL** -- A `TODO(p3)` MARKER WHOSE OWN TEXT SAYS
+      "PORTED, as `UOp.base` over the table" -- **AND IT IS **NOT** IN THE 2 BACKLOG ROWS**,
+      BECAUSE ITS OWN TEXT CONTAINS THE WORD "PORTED" AND THE REASON PATTERN'S `port`-FAMILY
+      MATCHES IT.  **⇒ AND `uop/` IS NOT THIS UNIT's TO EDIT.**
+
+## RNGCMP -- `gates/rng_graph_census-gate.py` CALLS `UOp.rtag`, WHICH UPSTREAM **DELETED**, SO THE GATE IS `REFUSED` (2026-11-10)
+
+FOUND WHILE REPAIRING `decomp_graph_census` (THE SAME RE-VENDOR CASUALTY, A DIFFERENT GATE).
+
+- [ ] **`gates/rng_graph_census-oracle.py:153` CALLS `UOp.rtag(())` ON FIVE NODES AND UPSTREAM
+      HAS NO `rtag` AT THE PIN `f5ac54685074`.** MEASURED: `git grep -n 'def rtag' f5ac54685074 --
+      tinygrad/` ANSWERS **NOTHING** (THE ONLY `rtag` OCCURRENCES AT THE PIN ARE AN UNRELATED
+      LOCAL VARIABLE IN `tinygrad/runtime/support/usb.py:92-93`), **⇒ AND UPSTREAM'S `ops.py` AT
+      THE PIN HAS **NO `tag` FIELD AT ALL** (`git show f5ac54685074:tinygrad/uop/ops.py | grep -n
+      'tag'` ANSWERS ONLY `stage`/`tag` IN A LOCAL VARIABLE'S NAME, `:1785-1834`).** **⇒ THE
+      PRE-PIN SPELLING WAS `def rtag(self, tag=True): return self.replace(tag=tag)` AT
+      `002630241:tinygrad/uop/ops.py:247`.** **⇒ SO THE GATE IS `REFUSED`, NOT RED:**
+      `.venv/bin/python gates/rng_graph_census-gate.py` READS **"rng_graph_census-gate: the
+      oracle failed rc=1: ... AttributeError: 'UOp' object has no attribute 'rtag'"**, rc=3.
+      **⇒ AND THE FIVE CALL SITES ARE `r0.rtag(())`, `pg.rtag(())`, `pa.rtag(())` (`:153`) AND
+      `rgd.rtag(())` (`:175`), AND THEIR RESULTS `r0t` `pgt` `pat` `rgt` ARE FOUR OF THE 60
+      NODES THE ORACLE RETURNS (`:176-180`) -- ⇒ SO THE FIX IS NOT A ONE-LINE RENAME: IT IS
+      "WHAT DOES UPSTREAM's `rangeify` BUILD INSTEAD OF A TAGGED COPY", AND THE ANSWER IS A
+      QUESTION ABOUT THE PORT's OWN `rangeify.bend`, NOT ABOUT THE ORACLE.**
+- [ ] **⇒ AND THE PORT's SIDE IS **NOT** THE BLOCKER AND THE QUESTION IS OPEN.** THE PORT's
+      `tinybendygrad/schedule/rangeify.bend` COMPILES (`./bin/bend tinybendygrad/schedule/
+      rangeify.bend --check-only` READS **ALL PROOFS CHECK**, `WITHIN-LIMITS`, 492 MB, 2 s), **⇒
+      BUT WHETHER THE PORT HAS A "TAGGED COPY" CONCEPT AT ALL IS NOT MEASURED** -- AND THE ANSWER
+      IS THE SAME QUESTION THE `MARKERFORM` SECTION ABOVE RAISED IN A DIFFERENT FILE: **AN
+      INSTRUMENT THAT CALLS A DELETED UPSTREAM SYMBOL IS A GATE THAT MEASURED NOTHING, AND THE
+      LEDGER's `WALLAUDIT` SECTION ALREADY RECORDED THAT `rangeify`'s MARKERS NAME A WALL THAT
+      THE INSTRUMENT CANNOT SEE.** **⇒ SO THIS IS A REAL GAP AND IT IS NOT MINE TO CLOSE: IT IS
+      THE `rangeify` LANE's, AND THE FIX NEEDS THE UPSTREAM `rangeify.py` AT THE PIN READ FOR
+      WHAT IT DOES INSTEAD OF `rtag`.**
+- [ ] **⇒ AND THE LEDGER's `WALLAUDIT` AND `MARKERFORM` SECTIONS NAME `rangeify` IN **BOTH**
+      DIRECTIONS, AND NEITHER MEASURED THE OTHER.** `WALLAUDIT` (2026-10-14) AUDITED THE 30
+      `WALL(p3)` MARKERS; `MARKERFORM` (2026-10-14, ABOVE) FOUND THE INSTRUMENT COULD NOT SEE
+      THEM; **⇒ AND NEITHER ASKED WHETHER THE GATE THAT MEASURES `rangeify`'s GRAPHS CAN RUN AT
+      ALL** -- **⇒ WHICH IT CANNOT, AND HAS NOT SINCE THE RE-VENDOR.** **⇒ A SECTION THAT
+      AUDITS A FILE's MARKERS AND A SECTION THAT FIXES AN INSTRUMENT's BLINDNESS CAN BOTH BE
+      TRUE WHILE THE GATE OVER THAT FILE IS DEAD**, AND THAT IS THE CLASS THIS ITEM IS.
 
 ## DECOMP-PROMO -- the 11 PROMOTION rows have a FALSE cause, and fixing them needs a NUMERIC oracle (2026-10-14)
 
@@ -23427,7 +23525,8 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 187 of 222 sect
 • LATE-GAPS -- codegen/late is now censused (119 rows) and its gaps a... — ░░░░░░░░░░ 0/6   0%
 • REALIZE-NEG -- two of realize's 65 and TWO OF ITS THREE "DEPENDENCIES... — █████░░░░░ 3/6  50%
 • WALLAUDIT -- 30 # WALL(p3) markers in schedule/rangeify.bend, aud... — ████████░░ 8/10  80%
-• MARKERFORM -- checks/marker-audit.py CANNOT SEE THE 30 WALL(p3) M... — ░░░░░░░░░░ 0/4   0%
+• MARKERFORM -- checks/marker-audit.py CANNOT SEE THE 30 WALL(p3) M... — ██████████ 4/4 100%
+• RNGCMP -- gates/rng_graph_census-gate.py CALLS UOp.rtag, WHICH UPSTRE... — ░░░░░░░░░░ 0/3   0%
 • DECOMP-PROMO -- the 11 PROMOTION rows have a FALSE cause, and fixing ... — ██░░░░░░░░ 2/9  22%
 • DEFECTROW-DV -- THE ORACLE'S OWN BUG, CAUGHT BY ITS OWN CLOSED FORM (... — ██████████ 3/3 100%
 • DEFECTROW -- A ROW NAMED AFTER A DEFECT STOPS PROVING IT THE MOMENT T... — ░░░░░░░░░░ 0/4   0%

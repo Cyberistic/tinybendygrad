@@ -4,8 +4,16 @@
 #
 # STATUS: the port is COMPLETE and `--check-only` passes. `main` 125 rows are derived
 # from Python by `.agents/slop/rf-rows.py` and `rf-ct-oracle.py`, never restated from
-# this file. A rule body that is not ported is one `# TODO(p3)` line at the foot naming
-# the Python line it stands in for, so `rg 'TODO\(p3\)'` is the whole outstanding list.
+# this file. A rule body that is not ported is one `# WALL(p3)` line at the foot naming
+# the Python line it stands in for, so `rg 'WALL\(p3\)'` is the whole outstanding list.
+# **⇒ AND THIS HEADER USED TO SAY `# TODO(p3)` AND `rg 'TODO\(p3\)'`, WHICH IS **FALSE**:
+# MEASURED 2026-11-10, `grep -c 'TODO(p3)'` IN THIS FILE ANSWERS **3** AND ALL THREE ARE
+# **THIS PARAGRAPH AND ITS TWO SIBLINGS**, WHILE `grep -c 'WALL(p3)'` ANSWERS **30** AND THOSE
+# ARE THE MARKERS.  **⇒ SO THE HEADER NAMED A SPELLING THE FILE DOES NOT USE, AND A READER
+# WHO BELIEVED IT WAS READING A LIST OF THREE PROSE LINES AS IF IT WERE THE OUTSTANDING
+# WORK.**  THE MARKER FORM HERE IS `# WALL(p3)` AND IT IS DISTINCT FROM `# TODO(p3)` ON
+# PURPOSE: A WALL IS A PYTHON FACT AND A TODO IS A DECISION, AND `checks/marker-audit.py`
+# READS BOTH (SEE `.agents/TOOLS.md`'s ENTRY).
 # The long form of this header -- the staged-delivery record, the 41-mutation table and
 # its five proofs -- is appended to `.agents/slop/notes/bend2-constraints.md`.
 #
@@ -42,7 +50,7 @@
 # from "the rule rebuilt" -- a rule that does not fire interns nothing and does not grow
 # it.
 #
-# THE THREE WALLS, each a `# TODO(p3)` at the foot. (a) `UOp.ranges` is a memoised
+# THE THREE WALLS, each a `# WALL(p3)` at the foot. (a) `UOp.ranges` is a memoised
 # recursive_property Bend refuses; `rf_ranges_miss` names it in one constant and
 # `rg rf_ranges_miss` lists every dependent. (b) the rules MUTATE a Python `ctx` -- an
 # `itertools.count` and two dataclass caches -- and Bend has no mutable state, so a
@@ -2671,8 +2679,11 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # renumbers and `ct_len` is one of only six rows it can move.
 # ===========================================================================
 # THE WALLS. Every one is a Python fact rather than a choice, and every one is a
-# `# TODO(p3)` line, so `rg 'TODO\(p3\)'` is the whole outstanding list. `rg 'NOT PORTED'`
-# finds the site for each. The first group is ONE LINE PER UNPORTED BODY, the second is
+# `# WALL(p3)` line, so `rg 'WALL\(p3\)'` is the whole outstanding list. `rg 'NOT PORTED'`
+# finds the site for each. **⇒ AND THIS SENTENCE USED TO NAME `# TODO(p3)` AND
+# `rg 'TODO\(p3\)'`, WHICH IS **FALSE** OF THIS FILE -- MEASURED 2026-11-10, `TODO(p3)`
+# ANSWERS **3** HERE AND ALL THREE ARE PROSE IN THIS HEADER, WHILE `WALL(p3)` ANSWERS **30**
+# AND THOSE ARE THE MARKERS.**  The first group is ONE LINE PER UNPORTED BODY, the second is
 # the three whose Python answer is reached anyway (wall and all), and the third is the
 # walls read by more than one rule, so they have no single site. The recurring shapes:
 # a STAGE's `x.arg` is a `BufferizeOpts` that `ops.bend`'s `Arg` cannot construct, so

@@ -32,7 +32,51 @@ WALL = re.compile(
 
 REASON = re.compile(r'--\s*\S')
 
-MARKER = re.compile(r'^\s*#\s*TODO\(p3\)')
+MARKER = re.compile(r'^\s*#\s*(?:TODO\(p3\)|WALL\(p3\))')
+# THE SECOND MARKER FORM IS `WALL(p3)`, AND IT IS **A SPELLING OF THE SAME CONCEPT**.
+#
+# MEASURED 2026-11-10: `tinybendygrad/` CARRIES **149** `WALL(p3)` OCCURRENCES IN **17** FILES,
+# OF WHICH **105** ARE MARKERS (THE OTHER 44 ARE REFERENCES -- A LINE THAT NAMES A MARKER RATHER
+# THAN BEING ONE).  **⇒ AND `schedule/rangeify.bend` ALONE HAS 30**, WHICH IS WHY THE LEDGER'S
+# `MARKERFORM` ITEM SAID "30" AND MEASURED IT IN ONE FILE.  **⇒ AND EVERY ONE OF THE 105 STATES
+# A REASON** (MEASURED WITH THIS FILE's OWN `WALL` PATTERN), **⇒ SO ACCEPTING THE FORM ADDS 105
+# WALLS AND **0** BACKLOG** -- AND A POPULATION THAT MOVES BY 105 WALLS AND 0 WORK IS A POPULATION
+# THAT WAS BLIND, NOT A POPULATION THAT WAS WRONG.
+#
+# **⇒ AND THIS IS A DOCTRINE-1 REPAIR, NOT A DOCTRINE-1 VIOLATION.**  THE OLD RULE DECLARED ITS
+# POPULATION BY **A SPELLING** (`if 'TODO(p3)' not in l`), WHICH IS EXACTLY WHAT DOCTRINE 1
+# FORBIDS; THE NEW RULE DECLARES IT BY **THE MARKER CONCEPT**, WHICH HAS TWO SPELLINGS, AND THE
+# SPELLINGS ARE A **SET** AND NOT A LIST OF ONE.  **⇒ AND WHICH SPELLING THE PORT USES IS THE
+# CALLER's, NOT THE AUDITOR's** -- AND THE CALLER (THE LEDGER's `MARKERFORM` ITEM) HAS RULED:
+# THE PORT's FORM IS TO STAY, SO THE INSTRUMENT ACCEPTS BOTH.
+#
+# **⇒ AND THE `TODO(p3)` FORM IS NOT WEAKENED**: A LINE THAT REFERENCES A MARKER RATHER THAN
+# BEING ONE IS STILL EXCLUDED, AND THAT TEST (`MARKER.match` ON THE FIRST LINE) IS UNCHANGED.
+MARKER_FORMS = ('TODO(p3)', 'WALL(p3)')
+# **⇒ AND THE `WALL(p3)` SPELLING COLLIDES WITH THE `WALL` REASON PATTERN, AND THAT IS THE
+# SECOND HALF OF THE SAME DEFECT.**  `WALL`'s PATTERN HAS `\bwall\b` IN IT (THE WORD "wall" IS
+# HOW A *REASON* READS: "this is a WALL"), **⇒ SO A `WALL(p3)` MARKER MATCHES `WALL` **THROUGH
+# ITS OWN SPELLING** AND EVERY SUCH MARKER IS A "WALL" WHETHER OR NOT IT STATES A REASON.**
+# MEASURED 2026-11-10 BY PLANTING ONE: A `# WALL(p3) PLANTED-MARKER  rangeify.py:999
+# some_symbol  more text.` LINE -- WITH NO REASON AT ALL -- WAS CLASSIFIED **wall**, NOT
+# **BACKLOG**, **⇒ SO THE CLASSIFIER COULD NOT SEE A REASON-FREE MARKER OF THE NEW FORM, AND A
+# CLASSIFIER THAT CANNOT SAY "no" IS A CLASSIFIER THAT SAYS "yes" TO EVERYTHING.**
+#
+# **⇒ AND `TODO(p3)` NEVER HAD THIS PROBLEM** (`TODO` IS NOT IN THE `WALL` PATTERN), **⇒ SO THE
+# FIX IS TO REMOVE THE MARKER's OWN TOKEN BEFORE THE REASON IS LOOKED FOR** -- AND TO REMOVE IT
+# IN **BOTH** FORMS, SO THE TWO SPELLINGS ARE CLASSIFIED BY THE SAME RULE.  **⇒ AND THE TOKEN
+# REMOVED IS EXACTLY THE MARKER TOKEN, NOT THE WORD "wall" IN GENERAL**, BECAUSE A MARKER MAY
+# SAY "WALL" IN ITS REASON AND THAT IS A REAL REASON.
+MARKER_TOKEN = re.compile(r'\b(?:TODO|WALL)\(p3\)')
+
+
+def reason_text(t):
+  """THE MARKER's TEXT WITH **THE MARKER's OWN TOKEN** REMOVED, so the reason is READ.
+
+  **⇒ AND THIS IS THE WHOLE FIX FOR THE COLLISION**: THE REASON PATTERN IS THEN ASKED ABOUT
+  WHAT THE MARKER *SAYS* AND NOT ABOUT HOW THE MARKER IS *SPELLED*.
+  """
+  return MARKER_TOKEN.sub('', t)
 
 
 def entries(path):
@@ -46,7 +90,9 @@ def entries(path):
   lines = path.read_text().split('\n')
   out = []
   for i, l in enumerate(lines):
-    if 'TODO(p3)' not in l:
+    # THE POPULATION IS **THE MARKER CONCEPT**, AND IT HAS TWO SPELLINGS.  THE OLD RULE WAS
+    # `if 'TODO(p3)' not in l`, WHICH IS A **SPELLING** AND THEREFORE BLIND TO THE OTHER ONE.
+    if not any(f in l for f in MARKER_FORMS):
       continue
     body = [l]
     for nxt in lines[i + 1:]:
@@ -72,7 +118,8 @@ def shared_reason(path, name):
     return None
   for l in path.read_text().split('\n'):
     s = l.strip()
-    if not s.startswith('#') or 'TODO(p3)' in s:
+    # A MARKER IS NOT A REASON FOR ITSELF, IN EITHER SPELLING.
+    if not s.startswith('#') or any(f in s for f in MARKER_FORMS):
       continue
     if re.search(r'`\b' + re.escape(base) + r'\b', s):
       return s.lstrip('# ').strip()[:70]
@@ -90,10 +137,10 @@ def main():
     real = [(n, t) for n, t in entries(p) if MARKER.match(t.split('\n')[0])]
     if not real:
       continue
-    walls = [t for _, t in real if WALL.search(t)]
+    walls = [t for _, t in real if WALL.search(reason_text(t))]
     shared, backlog = [], []
     for n, t in real:
-      if WALL.search(t):
+      if WALL.search(reason_text(t)):
         continue
       m = re.search(r'\bdef\s+([\w.]+)', t.split('\n')[0])
       nm = m.group(1) if m else ''
