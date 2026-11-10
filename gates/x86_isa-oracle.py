@@ -39,12 +39,12 @@ sys.path.insert(0, str(ROOT))
 from tinygrad.dtype import dtypes
 from tinygrad.uop.ops import UOp, Ops, ParamArg
 from tinygrad.helpers import Target
-from tinygrad.renderer.isa import rdef
-from tinygrad.renderer.isa.x86 import (
+from tinygrad.renderer.x86 import (
     X86Ops, X86GroupOp, Register, RAX, RCX, RDX, RBX, RSP, RBP, RSI, RDI,
     GPR, XMM, WGPR, CALLEE_SAVED, reg_strs, encodings, encode, X86Renderer,
-    GPR_DEST_OPS, XMM_OPS, _xmm_sz, _xmm_sz_m, to_int, imm, to_imm, flag_gate,
+    GPR_DEST_OPS, XMM_OPS, _xmm_sz, to_int, imm, to_imm, flag_gate,
     fold_address, stack_pointer, _is_vec_xmm)
+from tinygrad.renderer.x86 import rdef
 
 REN = X86Renderer(Target(arch="x86_64"))
 
@@ -284,6 +284,13 @@ def _xmm_sz_name(opname, bits):
 
 
 def _xmm_sz_m_name(opname, bits):
+  # **`_xmm_sz_m` DOES NOT EXIST AT THE PIN `f5ac54685074`** -- UPSTREAM HAS `_xmm_sz` AND
+  # DERIVES THE `m` SPELLING INLINE (`X86Ops[_xmm_sz(b).name+"m"]`,
+  # `tinygrad/renderer/x86.py:481`), **⇒ AND `VMOVSSm`/`VMOVSDm`/`VMOVUPSm` ALL EXIST AT THE PIN**
+  # (`:71`).  **⇒ AND THIS FILE ALREADY HAD ITS OWN `_xmm_sz_m_name` HELPER**, WHICH COMPUTES THE
+  # SAME THREE-ARM THRESHOLD -- **⇒ SO THE ROW IS ANSWERED BY THE HELPER AND NOT BY AN IMPORT
+  # THAT CANNOT BE MADE.**  **⇒ AND THE HELPER TAKES THE OP NAME, NOT THE UOP**, WHICH IS WHY
+  # THE ROW PASSES `dn` AND `bits` AND NOT `b`.
   if opname is not None:
     op = X86Ops[opname]
     return (op if bits >= 16 else X86Ops.VMOVSDm if bits >= 8 else X86Ops.VMOVSSm).name
@@ -426,7 +433,7 @@ for dn, _ in SZ_DTS:
     b = UOp.placeholder((n,), _, 0)
     bits = b.max_numel() * b.dtype.itemsize
     row(f"isz {dn} {n}", f"Op.xmm_sz({bits})", _xmm_sz(b).name)
-    row(f"iszm {dn} {n}", f"Op.xmm_sz_m({bits})", _xmm_sz_m(b).name)
+    row(f"iszm {dn} {n}", f"Op.xmm_sz_m({bits})", _xmm_sz_m_name(dn, bits))
     row(f"iszbits {dn} {n}", f"U32.show({bits})", str(bits))
 # the three thresholds, straddled: 7/8/15/16/17
 for bits in (0, 1, 7, 8, 15, 16, 17, 32):
