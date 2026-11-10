@@ -7005,12 +7005,30 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       pre-existing deviation** (`dtypes.uint64.max` has no image in a signed-pair
       I64). Not one ANSWER moved; only the name column, in lockstep.
 
-- [ ] **OWNER DECISION — `tinygrad/runtime/ops_bend.py` imports the deleted
+- [x] **OWNER DECISION — `tinygrad/runtime/ops_bend.py` imports the deleted
       `INVERSE_DTYPES_DICT`** (`tinygrad/runtime/ops_bend.py:76`, used at :95).
       The file is OURS (240 lines, no upstream counterpart — `git diff 6c3d401cf324`
       shows it as `new file`), so "re-vendor" is not on the table. Right now
       `import tinygrad.dtype` raises `ImportError` and the BEND device is dead.
       Two options in the report; neither taken here.
+      **⇒ THE DECISION WAS TAKEN AND THE FIX IS IN THE TREE, MEASURED 2026-11-10.**  **⇒ AND
+      THE FILE **MOVED**: IT IS NOW AT THE **REPO ROOT** (`ops_bend.py`), BECAUSE
+      `a1a7d370a` ("PURGE: `tinygrad/` HELD EXACTLY **ONE** FILE OF OURS. IT IS NOW AT THE REPO
+      ROOT.") -- **⇒ SO THE ITEM's PATH `tinygrad/runtime/ops_bend.py` IS **OBSOLETE** AND THE
+      OWN DECISION IS ANSWERED AT THE NEW PATH.**  **⇒ MEASURED AT THE NEW PATH: `grep -n
+      'INVERSE_DTYPES_DICT' ops_bend.py` ANSWERS **ONE** HIT AND IT IS A **COMMENT** (`:107`),
+      NOT AN IMPORT** -- THE COMMENT READS "This used to be `INVERSE_DTYPES_DICT[u.dtype.name]`,
+      and that map is DELETED upstream as of 793abbb1 (\"modernize tinygrad's dtype to match
+      rust\"), so `import tinygrad.dtype` raised ImportError and the whole BEND device was dead.
+      `u.dtype.name` is now correct on its own: the rename made `DType.name` EQUAL the attribute
+      -- uint32's name went from \"unsigned int\" (which needed the inverse map to become
+      \"uint\") to \"u32\", which `getattr(dtypes, \"u32\")` resolves directly."**  **⇒ AND
+      `git blame -L 107,113 -- ops_bend.py` NAMES THE COMMIT: `813bbec3e` (2026-10-07).**
+      **⇒ AND THE TWO MEASUREMENTS THAT SAY THE DEVICE IS ALIVE: (1) `.venv/bin/python -c
+      "import tinygrad.dtype"` READS **OK** (NO `ImportError`); (2) THE MILESTONE FIXTURE IS
+      GREEN -- `checks/.e2e-fixture/opsbend-milestone/check.out` READS **ALL PROOFS CHECK** AND
+      `checks/.e2e-fixture/opsbend-milestone/gate.err` READS **"# 0 failed of 46 rows read"**,
+      WITH NAMED ROWS (`bend_alloc_bump2=8` `bend_hexbyte_ef=ef` `ms_b1_base=4` ...).**
 - [x] `renderer/isa/x86.bend` — `tinygrad/renderer/isa/x86.py`. **The root cause of the
       80-row red blind spot is FIXED and the acceptance test is a `diff`, not the gate.**
       760 rows, `diff .agents/slop/x86/{i,py1}.txt` **empty**, interpreted and native
@@ -7063,14 +7081,40 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       re-measured at 44 entries with M40/M40b reproducing the regression on
       demand. `x86.bend` (2) and the three `fold*_work` files (20) are STILL
       OPEN and belong to their owners — see the audit note below.
-- [ ] `renderer/isa/x86.bend` `Op.to_int` (`:750-754`) is STILL RED IN DISGUISE
+- [x] `renderer/isa/x86.bend` `Op.to_int` (`:750-754`) is STILL RED IN DISGUISE
       — armed on `"float16"`/`"float32"`/`"float64"`; `S.Dt.nm` now spells those
       `f16`/`f32`/`f64`, so every arm falls to `KeyError`. It is 761-row GREEN
       because the three `toint` rows feed the ladder ITS OWN ARM KEY and the four
       `toint.miss` rows expect `KeyError` anyway. Proven with four probe rows:
       `Op.to_int("f16") = [KeyError]` where CPython answers `i16`. OWNER'S FILE —
       REPORTED, NOT EDITED.
-- [ ] `runtime/ops_dsp.bend`: `grep -c 'py=\[' ` is **ZERO** — all 512 printed
+**⇒ PROVABLY OBSOLETE, MEASURED 2026-11-10: THE DEFECT WAS REPAIRED AND THE ITEM's
+      PROBE ROWS NO LONGER HOLD.**  **THE PORT'S `Op.to_int` IS NOW **DTYPE-KEYED** AND
+      **MATCHES UPSTREAM AT THE PIN `f5ac54685074` EXACTLY**: `tinybendygrad/renderer/isa/
+      x86.bend:787-792` IS `def Op.to_int(+d: S.Dt) -> String:` MATCHING ON
+      `S.Dt{pri, bits, cls, nm}` AND THEN ON `cls`, AND ITS HELPER `Op.to_int.fp` (`:780-785`)
+      IS **KEYED ON `bits` AND `pri`, NOT ON A DTYPE NAME.**  **⇒ AND THE THREE ARMS ARE THE
+      PIN's THREE ARMS**: UPSTREAM'S `to_int` AT THE PIN IS
+      `{dtypes.float16: dtypes.int16, dtypes.float32: dtypes.int32, dtypes.float64: dtypes.int64}[dt]`
+      (`tinygrad/renderer/x86.py:253`), **⇒ AND THE PORT'S `pri` VALUES ARE THE PIN's**:
+      `tinybendygrad/LAWS/spec.bend`'s `half() = Dt{12, 16, CFloat{}, "f16"}`,
+      `single() = Dt{14, 32, CFloat{}, "f32"}`, `double() = Dt{15, 64, CFloat{}, "f64"}` --
+      **⇒ SO `bits 16 & pri 12` -> `"i16"`, `bits 32 & pri 14` -> `"i32"`, `bits 64 & pri 15` ->
+      `"i64"` ARE THE PIN's THREE ANSWERS, AND EVERY OTHER DTYPE IS `"KeyError"` -- WHICH IS
+      EXACTLY WHAT UPSTREAM'S DICT RAISES.**
+      **⇒ SO THE ITEM's PROBE ROW (`Op.to_int("f16") = [KeyError]` WHERE CPYTHON ANSWERS `i16`)
+      CANNOT BE TRUE OF THIS TREE**, AND THE REASON IT WAS TRUE WAS THE NAME-BASED ARMING THE
+      ITEM NAMES -- **⇒ WHICH IS GONE.**
+
+      **⇒ AND THE `x86` GATE OVER THIS FILE IS **ALSO** DEAD, FOR A DIFFERENT AND LARGER
+      REASON, AND THAT IS A **NEW** FINDING (THE `X86ISA` SECTION BELOW) AND NOT THIS ITEM.
+      — armed on `"float16"`/`"float32"`/`"float64"`; `S.Dt.nm` now spells those
+      `f16`/`f32`/`f64`, so every arm falls to `KeyError`. It is 761-row GREEN
+      because the three `toint` rows feed the ladder ITS OWN ARM KEY and the four
+      `toint.miss` rows expect `KeyError` anyway. Proven with four probe rows:
+      `Op.to_int("f16") = [KeyError]` where CPython answers `i16`. OWNER'S FILE —
+      REPORTED, NOT EDITED.
+- [x] `runtime/ops_dsp.bend`: `grep -c 'py=\[' ` is **ZERO** — all 512 printed
       rows carry their expected value in a `#` COMMENT, so the file compares
       nothing and `ALL PROOFS CHECK` on it is worth nothing. On top of that
       `dt_fmt` (`:652`) is armed on the NEW spellings while its rows (`:1876+`)
@@ -7078,9 +7122,90 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       `b`/`e`/`f`/`d`), `dt_supported` (`:740`) compares against the OLD
       `"__bf16"`, and `supported_12.at` (`:744`) returns OLD names where CPython
       gives `bool,i8,u8,i16,u16,i32,u32,i64,u64,f16,f32,f64`. OWNER'S FILE.
-- [ ] `runtime/ops_dsp.bend`'s ~40 gate-row literals (its 4 functional tables
+      **⇒ PROVABLY OBSOLETE, MEASURED 2026-11-10: EVERY CLAIM ABOVE WAS ABOUT A VERSION OF
+      THIS FILE THAT NO LONGER EXISTS.**  **⇒ `dt_fmt` IS NOW **DTYPE-KEYED**:
+      `tinybendygrad/runtime/ops_dsp.bend:742` IS `def dt_fmt_dt(d: S.Dt) -> String:` MATCHING
+      ON `S.Dt{pri, bits, cls, nm}`, AND ITS HELPERS ARE `dt_fmt.si` (`:719`, BY **BITS**),
+      `dt_fmt.su` (`:727`, BY BITS) AND `dt_fmt.sf` (`:735`, BY **BITS AND `pri`**) -- **⇒ AND
+      THE FILE's OWN HEADER (`:706-711`) RECORDS THE REPAIR**: "WAS keyed on names, and
+      793abbb renamed them: eleven `dt_fmt` rows printed the EMPTY string".**  **⇒ AND
+      `dt_supported` (`:811`) IS `def dt_supported(base: Bool, +d: S.Dt) -> Bool:` -- A **DTYPE**,
+      NOT THE OLD `"__bf16"` STRING -- AND `supported_12.at` (`:819`) IS
+      `def supported_12.at(n: Nat) -> S.Dt:` -- IT **RETURNS A DTYPE**, NOT A NAME.**
+      **⇒ AND THE ROWS AGREE WITH CPython'S OWN LANE, MEASURED BOTH SIDES**:
+      `dsp_sd_0 = [bool]`, `dsp_sd_7 = [i64]`, `dsp_sd_11 = [f64]`, `dsp_sd_n = [12]` --
+      **THE PORT's LANE AND `gates/ops_dsp_render-oracle.py`'s LANE PRINT THE SAME STRINGS**,
+      **⇒ AND THOSE ARE THE **NEW** SPELLINGS THE ITEM SAID CPython GIVES.**
+      **⇒ AND `grep -c 'py=\['` IS NOW **4**, NOT ZERO -- AND ALL FOUR ARE IN THE **PRINTING
+      CODE** (`ops_dsp.bend:1983/1985/1987/1996`, THE ROW FORMAT IS `nm=value   py=[value]`),
+      NOT IN EXPECTATION COMMENTS.**  **⇒ AND THE `py=` HALF IS NOW **DERIVED**: THE FILE's OWN
+      HEADER (`:1957-1981`) SAYS "Every `py=` half below is DERIVED -- the port's OWN value,
+      re-read through the same code the port prints -- so a row cannot disagree with itself",
+      AND "MEASURED 2026-10-22, thirty of these rows' `py=` halves were RIGHT while the `got=`
+      half beside them was WRONG, so the file agreed with itself and was wrong on thirty rows".**
+      **⇒ AND THE GATE THAT MEASURES IT IS GREEN**:
+      `.venv/bin/python gates/ops_dsp_render-gate.py` READS **"ops_dsp_render: 497 rows, 0
+      declared divergences, 497 compared, THREE LANES BYTE-IDENTICAL"** AND
+      **"497 rows, 3 lanes byte-identical over 497 COMPARED rows, 0 DECLARED divergences"**,
+      rc=0, 8 s, 906 MB (`WITHIN-LIMITS`).
+- [x] `runtime/ops_dsp.bend`'s ~40 gate-row literals (its 4 functional tables
       are done; its rows print `dt_name`, so they move with the rename and its
       oracle must be re-run)
+      **⇒ PROVABLY OBSOLETE, MEASURED 2026-11-10: THE GATE READS **0 DECLARED DIVERGENCES**
+      OVER **497 COMPARED ROWS** (ABOVE), **⇒ AND THE ORACLE IS NOT RE-RUN-BUT-HOPED: IT WAS
+      RECOVERED FROM GIT HISTORY** -- `gates/ops_dsp_render-oracle.py`'s OWN HEADER NAMES THE
+      BLOB (`291bbc8821dafb2ae0b8c464488d4b02300ced6b`, COMMIT `192142295` -- "the commit that
+      made this file's rows compared in the first place"), **⇒ AND IT SAYS WHY**: "Before the
+      recovery the oracle lived in `.agents/slop/`, which was pruned: **a gate with no oracle is
+      a gate that CANNOT FAIL, and this one could not.**"  **⇒ AND THE ROWS NOW PRINT `dt_nm`
+      OF A `S.Dt`, NOT A HAND-TRANSCRIBED NAME** (`ops_dsp.bend:2785/2793/2801`), **⇒ AND THE
+      PORT's LANE AND THE ORACLE's LANE ARE BYTE-IDENTICAL OVER ALL 497 ROWS.**
+
+## X86ISA -- `gates/x86_isa-gate.py` IMPORTS A **PACKAGE** UPSTREAM **DELETED**, AND THEN A **KEYWORD** UPSTREAM **DELETED** (2026-11-10)
+
+FOUND WHILE REPAIRING `decomp_graph_census` AND `rng_graph_census` (THE SAME RE-VENDOR CASUALTY, A THIRD GATE).
+
+- [x] **THE ORACLE's IMPORT PATH IS STALE AND IT IS REPOINTED.** `gates/x86_isa-oracle.py`
+      IMPORTED `from tinygrad.renderer.isa import rdef` AND `from tinygrad.renderer.isa.x86
+      import (...)`. **MEASURED: `git ls-tree -r --name-only f5ac54685074 | grep 'renderer/'`
+      LISTS **NO `renderer/isa/` AT ALL** -- UPSTREAM FLATTENED THE PACKAGE INTO
+      `tinygrad/renderer/x86.py`.** **⇒ AND ALL BUT ONE OF THE 31 NAMES THE ORACLE WANTED ARE
+      PRESENT IN THAT ONE MODULE** (MEASURED), **⇒ AND THE THIRTY-FIRST, `_xmm_sz_m`, **DOES NOT
+      EXIST AT THE PIN AT ALL**: UPSTREAM HAS `_xmm_sz` AND DERIVES THE `m` SPELLING INLINE
+      (`X86Ops[_xmm_sz(b).name+"m"]`, `tinygrad/renderer/x86.py:481`). **⇒ THE ORACLE ALREADY
+      HAD ITS OWN `_xmm_sz_m_name` HELPER** (`:286`), WHICH COMPUTES THE SAME THREE-ARM
+      THRESHOLD, **⇒ SO THE ROW IS NOW ANSWERED BY THE HELPER.**  **⇒ THE ORACLE'S IMPORT
+      BLOCK IS REPOINTED AT `tinygrad.renderer.x86` AND `_xmm_sz_m` IS DROPPED.**
+- [ ] **THE ORACLE's NODE CONSTRUCTION IS ON THE PRE-PIN `tag=` SHAPE, AND THAT IS THE REAL
+      WALL.** MEASURED: `gates/x86_isa-oracle.py`'s `nreg` (`:173`) IS `UOp(Ops.NOOP, tag=(r,))`,
+      `ins` (`:176-177`) IS `UOp(Ops.INS, srcs, (op, dt), tag)`, AND `membase` (`:189`) IS
+      `UOp(Ops.INDEX, (al, const(0, dtypes.i32)), tag=(r,))` -- **⇒ AND AT THE PIN
+      `f5ac54685074` `UOp.__call__` HAS NO `tag` PARAMETER AT ALL**: UPSTREAM's `UOp.replace`
+      (`tinygrad/uop/ops.py:239-243`) ASSERTS `len(kwargs) == 0` AFTER POPPING ONLY `op`,
+      `src` AND `arg`. **⇒ AND UPSTREAM's SPELLING AT THE PIN IS A DIFFERENT SHAPE**:
+      `tinygrad/renderer/x86.py:242` IS `def reg(dt:DType, r:Register) -> UOp: return
+      UOp(Ops.INS, arg=(X86Ops.REG, dt, r))` -- **⇒ AND THE PIN's `asm_str` READS `u.arg[0]`
+      (`:770-780`) AND PRINTS `f".L{uops.index(u)}:"` FOR A LABEL, NOT `str(u.tag)`.**
+      **⇒ SO THE ORACLE'S FIXTURES MUST BE REBUILT IN THE PIN's SHAPE, AND THAT IS THE
+      `x86` LANE's WORK AND NOT A ONE-LINE CHANGE.**
+- [ ] **⇒ AND THE PORT's `renderer/isa/x86.bend` IS ON THE SAME PRE-PIN SHAPE, WHICH IS WHY THE
+      PORT's OWN HEADER CARRIES THE CORRESPONDING `TODO(p3)`s -- **⇒ AND ONE OF ITS CITATIONS IS
+      A **STALE UPSTREAM SPELLING**.** MEASURED: `x86.bend:122-123` SAYS upstream's
+      `stack_pointer` IS NOW `UOp.placeholder((1,), dtypes.uint64, slot=-1,
+      addrspace=AddrSpace.REG).replace(tag=(RSP,))` "(py:192)" -- **⇒ AND `replace(tag=...)`
+      CANNOT BE MADE AT THE PIN** (`replace` ASSERTS `len(kwargs) == 0`), **⇒ AND THE PIN's
+      `stack_pointer` IS `reg(dtypes.uint64, RSP)` (`x86.py:243`).**  **⇒ AND `x86.bend:1373`
+      CITES `f"{str(u.tag)}:"`, x86.py:755` FOR A LABEL -- **⇒ AND THE PIN's `asm_str` READS
+      `u.arg[0] is X86Ops.LABEL` AND PRINTS `f".L{uops.index(u)}:"`** (`x86.py:775-777`).**
+      **⇒ SO THIS IS A **CITATION DEFECT IN A PORT FILE** AND IT IS A REAL ONE: TWO OF THE
+      PIN'S OWN SPELLINGS ARE QUOTED FROM BEFORE THE PIN.**
+- [ ] **⇒ AND THE LEDGER's OWN `MARKERFORM` SECTION NAMES THIS FILE AND ASKS WHETHER THE GATE
+      OVER IT CAN RUN.** `WALLAUDIT` (2026-10-14) AUDITED THE `WALL(p3)` MARKERS IN
+      `rangeify.bend`; `MARKERFORM` (2026-10-14) FOUND THE INSTRUMENT COULD NOT SEE THEM;
+      **⇒ AND NEITHER ASKED WHETHER THE GATE THAT MEASURES `x86`'s 761 ROWS CAN RUN AT ALL** --
+      **⇒ AND IT CANNOT, AND HAS NOT SINCE THE RE-VENDOR.** **⇒ A SECTION THAT AUDITS A FILE's
+      MARKERS AND A SECTION THAT FIXES AN INSTRUMENT's BLINDNESS CAN BOTH BE TRUE WHILE THE GATE
+      OVER THAT FILE IS DEAD**, AND THAT IS THE CLASS THIS SECTION IS.
 
 ## Session 2026-10-02 — `runtime/support/memory.bend`: the allocator PORT, and the gate that was
 ## green on 570 of 995 rows
@@ -23526,6 +23651,7 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 187 of 222 sect
 • REALIZE-NEG -- two of realize's 65 and TWO OF ITS THREE "DEPENDENCIES... — █████░░░░░ 3/6  50%
 • WALLAUDIT -- 30 # WALL(p3) markers in schedule/rangeify.bend, aud... — ████████░░ 8/10  80%
 • MARKERFORM -- checks/marker-audit.py CANNOT SEE THE 30 WALL(p3) M... — ██████████ 4/4 100%
+• X86ISA -- gates/x86_isa-gate.py IMPORTS A PACKAGE UPSTREAM DELETED, AND... — █░░░░░░░░ 1/4  25%
 • RNGCMP -- gates/rng_graph_census-gate.py CALLS UOp.rtag, WHICH UPSTRE... — ░░░░░░░░░░ 0/3   0%
 • DECOMP-PROMO -- the 11 PROMOTION rows have a FALSE cause, and fixing ... — ██░░░░░░░░ 2/9  22%
 • DEFECTROW-DV -- THE ORACLE'S OWN BUG, CAUGHT BY ITS OWN CLOSED FORM (... — ██████████ 3/3 100%
