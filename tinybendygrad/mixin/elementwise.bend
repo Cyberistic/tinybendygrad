@@ -432,11 +432,23 @@ def ew_binop(op: O.Op, +t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
   +p = ew_broadcasted(t, e, rev)
   ew_alu2(op, ew_br_l(p), ew_br_r(p))
 
-# `logical_not` -- elementwise.py:57 -- is `self.cast(dtypes.bool).ne(True)`, so it
-# is a CAST and a CMPNE and NOT an `Ops.NEG`. `ew_op_eq_s0` reads its inner node's
-# op and `ew_lnot_i` reads its arity.
+# `logical_not` -- elementwise.py:57 AT `f5ac54685074` -- is
+# `self.cast(dtypes.bool).eq(False)`, so it is a CAST and a CMPEQ against the CONST
+# `False` and NOT an `Ops.NEG`. `ew_op_eq_s0` reads its inner node's op and
+# `ew_lnot_i` reads its arity.
+#
+# THE NAME DID NOT CHANGE AND THE NODE DID. The pre-pin spelling was
+# `self.cast(dtypes.bool).ne(True)`, which builds `CMPNE(x, CONST(True))`; at the pin it
+# is `.eq(False)`, which builds `CMPEQ(x, CONST(False))`. MEASURED 2026-11-10 ON
+# CPYTHON AT THE PIN: `a.logical_not()` emits `CMPEQ(CAST(a), CONST(False))`.
+#
+# AND THIS IS NOT A STYLISTIC CHOICE: UPSTREAM's OWN `symbolic.py:349` KEYS ON IT --
+# `neg = v.op is Ops.CMPEQ and v.src[1].op is Ops.CONST and v.src[1].val == 0` -- so a
+# graph that says `CMPNE` is NOT upstream's graph. AND THE PORT's OWN
+# `uop/symbolic.bend`'s `mint_not` ALREADY BUILDS THE `CMPEQ` SPELLING -- so the
+# emission side was the only half on the pre-pin spelling.
 def ew_logical_not(+t: T.Tensor) -> T.Tensor:
-  ew_binop(O.OpsCMPNE{}, ew_cast(t, S.boolean()), ECon{O.CBool{True{}}}, False{})
+  ew_binop(O.OpsCMPEQ{}, ew_cast(t, S.boolean()), ECon{O.CBool{False{}}}, False{})
 
 # `neg` -- elementwise.py:82 -- is `self.logical_not() if self.dtype == bool else
 # self * (-1)`. The `-1` is the two's complement pair, because `H.i64_of_i32`
@@ -456,9 +468,22 @@ def ew_neg(+t: T.Tensor) -> T.Tensor:
 def ew_ge(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
   ew_logical_not(ew_binop(O.OpsCMPLT{}, t, e, rev))
 
-# `eq` -- elementwise.py:337 -- is `self.ne(x).logical_not()`.
+# `eq` -- elementwise.py:335 AT `f5ac54685074` -- is
+# `self._binop(Ops.CMPEQ, x, False)`, so it is ONE `CMPEQ` node and NOT a negation of a
+# `CMPNE`.
+#
+# THE NAME DID NOT CHANGE AND THE NODE DID. The pre-pin spelling was
+# `self.ne(x).logical_not()`, which builds `CMPNE(CMPNE(x, y), CONST(True))`; at the pin
+# it is `_binop(Ops.CMPEQ, x, False)`, which builds `CMPEQ(x, y)`. MEASURED 2026-11-10
+# ON CPYTHON AT THE PIN: `a.eq(b)` emits `CMPEQ(a, b)`.
+#
+# AND UPSTREAM's OWN `symbolic.py:349` KEYS ITS NEGATION TEST ON `CMPEQ` WITH A `CONST
+# 0` -- so a graph that says `CMPNE` is NOT upstream's graph. AND THE PORT's OWN
+# `uop/symbolic.bend`'s `mint_ne` ALREADY USES THE PIN's SPELLING
+# (`CMPEQ(CMPEQ(x, y), False)`, MEASURED 2026-11-07) -- so the emission side was the
+# only half on the pre-pin spelling.
 def ew_eq(+t: T.Tensor, +e: Ew) -> T.Tensor:
-  ew_logical_not(ew_binop(O.OpsCMPNE{}, t, e, False{}))
+  ew_binop(O.OpsCMPEQ{}, t, e, False{})
 
 # `bitwise_not` -- elementwise.py:157 -- is `self ^ self.dtype.max` when UNSIGNED
 # and `self ^ -1` otherwise, and `logical_not` for a bool. `S.Dt.is_unsigned` is
@@ -513,7 +538,24 @@ def ew_rshift(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: ew_binop(O.OpsSHR{},
 def ew_maximum(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: ew_binop(O.OpsMAX{}, t, e, rev)
 def ew_pow(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: ew_binop(O.OpsPOW{}, t, e, rev)
 def ew_lt(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: ew_binop(O.OpsCMPLT{}, t, e, rev)
-def ew_ne(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: ew_binop(O.OpsCMPNE{}, t, e, rev)
+# `ne` -- elementwise.py:332 AT `f5ac54685074` -- is `self.eq(x).logical_not()`, and
+# `eq` is `_binop(Ops.CMPEQ, x, False)` and `logical_not` is `cast(bool).eq(False)`.
+# SO `ne` IS TWO NODES DEEP: `CMPEQ(CMPEQ(x, y), CONST(False))`.
+#
+# MEASURED 2026-11-10 ON CPYTHON AT THE PIN, IN BOTH DIRECTIONS:
+#   `a != b`  ->  `CMPEQ(CMPEQ(a, b), CONST(False))`
+#   `3 != a`  ->  `CMPEQ(CMPEQ(3, a), CONST(False))`
+#
+# AND THE PORT's OWN `uop/symbolic.bend`'s `mint_ne` ALREADY BUILDS EXACTLY THIS
+# (`CMPEQ(CMPEQ(x, y), False)`, MEASURED 2026-11-07) -- so the emission side was the
+# only half on the pre-pin `CMPNE(x, y)` spelling.
+#
+# AND `rev` IS THE PORT's OWN GENERALIZATION -- UPSTREAM's `eq`/`ne` ALWAYS PASS
+# `reverse=False` TO `_binop`, BUT `_broadcasted`'s SWAP IS UPSTREAM's TOO
+# (`elementwise.py:26`, `x, y = (self, y) if not reverse else (y, self)`), AND THE PORT's
+# `ew_broadcasted` MATCHES IT (`elementwise.bend:423`, `ew_pair(rev, tf, uf)`).
+def ew_ne(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
+  ew_logical_not(ew_binop(O.OpsCMPEQ{}, t, e, rev))
 
 # `__gt__` -- elementwise.py:324 -- is `self._binop(Ops.CMPLT, x, True)`: the SAME op
 # with `reverse` set. It is a one-liner here for the same reason, and `ew_src0_rev`
@@ -1123,7 +1165,18 @@ def t_shl() -> IO(Unit): ew_sig("ew_shl", g_bin1(O.OpsSHL{}, 3))
 def t_shr() -> IO(Unit): ew_sig("ew_shr", g_bin1(O.OpsSHR{}, 3))
 def t_max() -> IO(Unit): ew_sig("ew_max", g_bin1(O.OpsMAX{}, 3))
 def t_pow() -> IO(Unit): ew_sig("ew_pow", g_bin1(O.OpsPOW{}, 2))
-def t_ne() -> IO(Unit): ew_sig("ew_ne", g_bin1(O.OpsCMPNE{}, 3))
+# `ne` is NOT A SINGLE-OP BINOP. UPSTREAM's `ne` IS `eq(x).logical_not()`, SO IT IS TWO
+# NODES DEEP (`CMPEQ(CMPEQ(x, y), CONST(False))`, MEASURED 2026-11-10 ON CPYTHON AT THE
+# PIN). AND THE ROW MUST CALL `ew_ne` AND NOT `g_bin1` -- BECAUSE `g_bin1` BUILDS THE RAW
+# OP AND NEVER CALLS THE RULE, AND A ROW THAT DOES NOT CALL THE RULE CANNOT GO RED WHEN
+# THE RULE CHANGES. MEASURED 2026-11-10: THE OLD FIXTURE PRINTED `CMPNE/2` AFTER
+# `ew_ne` WAS CORRECTED TO THE PIN's SPELLING.
+def g_ne() -> T.Tensor:
+  +b = ew_i32(O.Arena.empty())
+  +c = ew_ci(O.Found.ar(b), 3)
+  ew_ne(ew_ct(b), ETen{ew_ct(c)}, False{})
+
+def t_ne() -> IO(Unit): ew_sig("ew_ne", g_ne())
 def t_lt() -> IO(Unit): ew_sig("ew_lt", g_bin1(O.OpsCMPLT{}, 3))
 
 # `reverse` IS AN OPERAND SWAP, so the row that pins it has to put the BUFFER and the
