@@ -16251,6 +16251,66 @@ Progress: [=============================-------] 7/7
       bare `sqrt(X)`, a body naming identifiers its signature lacks, and an op whose
       dtype tag cannot meet it.
 
+## CSTYLECENSUS -- `gates/cstyle_render_census-gate.py` WAS `REFUSED` (DEAD) ON **TWO** COUNTS, AND IS GREEN AGAIN (2026-11-10)
+
+FOUND WHILE REPAIRING `decomp_graph_census`, `rng_graph_census` AND `x86_isa` (THE SAME RE-VENDOR CASUALTY, A FOURTH GATE).
+
+- [x] **THE DRIVER DID NOT COMPILE, AND THE TYPE ERROR WAS THE SHAPE.** MEASURED: `./bin/bend
+      gates/cstyle_render_census.bend` READ `expected : List<&2, String>` AT `:357` -- **⇒ AND
+      THE PORT's OWN SIGNATURE SAYS WHY**: `tinybendygrad/renderer/cstyle.bend:1354` IS
+      `def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt) ->
+      List<&2, String>` -- **⇒ SO `xs` IS **A LIST OF PIECE-LISTS** (OPERAND 0's PIECES,
+      OPERAND 1's PIECES), NOT A LIST OF STRINGS, AND THE DRIVER PASSED `["a", "b", "c"]`.**
+      **⇒ AND ITS FIRST TWO READERS PROVE IT**: `cfo_xs1(xs)` AND `cfo_xs2(xs)` (`:1211-1213`)
+      ARE `xs_at(xs, 0n)` AND `xs_at(xs, 1n)`.  **⇒ AND THE PORT's OWN CALLER PASSES EXACTLY
+      THAT**: `ku_alu_srcs` IS `-> List<&2, List<&2, String>>` (`:2214`) AND `ku_text_alu`
+      (`:2247-2248`) HANDS IT STRAIGHT TO `code_for_op.of`.  **⇒ AND THE JOIN IS
+      `String.join(l, "")` -- AN **EMPTY** SEPARATOR**: MEASURED OFF THE PORT's OWN EMIT SITE,
+      `cstyle.bend:2936` IS `... " ", nm, " = ", String.join(l, ""), ...`.**  **⇒ SO THE FIX IS
+      `String.join(C.code_for_op.of(dev, op_of(i), [["a"], ["b"], ["c"]], dt_of(dti)), "")` --
+      AND IT IS **TWO** CHANGES, NOT ONE.**
+- [x] **THE ORACLE SPOKE **THREE** PRE-RENAME OP NAMES AND DID NOT EXIST AT THE PIN.**
+      MEASURED: `gates/cstyle_render_census-oracle.py`'s `OPS` NAMED `Ops.RECIPROCAL`,
+      `Ops.CMOD` AND `Ops.CDIV`, **⇒ AND NONE OF THE THREE EXISTS AT THE PIN `f5ac54685074`**
+      (THE PIN's OWN `tinygrad/uop/__init__.py:57` READS `SQRT = auto(); RECIP = auto(); NEG =
+      auto(); TRUNC = auto()`), **⇒ SO THE ORACLE RAISED `AttributeError` AT IMPORT TIME AND THE
+      GATE WAS **`REFUSED`, NOT RED** (rc=3, "the oracle failed rc=1").**  UPSTREAM RENAMED THEM
+      IN `1427aac3b` ("FLOORDIV/FLOORMOD -> DIV/MOD (#19047)", 2026-10-27): `Ops.RECIPROCAL` ->
+      `Ops.RECIP`, `Ops.CMOD` -> `Ops.TRUNCMOD`, `Ops.CDIV` -> `Ops.TRUNCDIV`.  **⇒ AND THE
+      PORT's OWN `Op` ENUM SPELLS THEM THE SAME NEW WAY** (`OpsRECIP`, `OpsTRUNCMOD`,
+      `OpsTRUNCDIV`), **⇒ SO THE ROWS ARE UNCHANGED BY THE REPOINT.**
+- [x] **⇒ AND THE GATE's OWN `DIVERGES` PIN SAID `UNHANDLED(Ops.RECIPROCAL)`, WHICH IS THE
+      **PRE-RENAME** SPELLING, **⇒ SO THE GATE WENT RED WITH A PRECISE MESSAGE** ("bd's
+      cfo_1_reciprocal is not 'cfo_1_reciprocal=UNHANDLED(Ops.RECIPROCAL)'").  **⇒ AND THE
+      DIVERGENCE ITSELF IS UNCHANGED: THE PORT STILL REFUSES THIS ROW (`UNHANDLED(Ops.RECIP)`),
+      SO THE PIN IS **REPOINTED AND NOT WEAKENED**, AND THE ROW STILL DIVERGES.**
+- [x] **⇒ MEASURED AFTER THE THREE FIXES: `.venv/bin/python gates/cstyle_render_census-gate.py`
+      READS **"361 rows, 3 lanes byte-identical over the wide surface, 15 DECLARED divergences"**,
+      rc=0, 19 s, 3387 MB peak RSS.**  **⇒ BEFORE: `rc=3`, `REFUSED` -- THE GATE COULD NOT RUN
+      AT ALL.**  **⇒ AND THE GATE's OWN FOOTER NAMES WHAT IT NOW MEASURES**: "6 unmapped-dtype
+      refusals from the tinygrad drift where THE PORT IS RIGHT, and 9 refusals Bend cannot raise
+      (5 dropped ALU ops, 4 empty workitem dicts) which the port now spells UNHANDLED(...) instead
+      of the empty string; base float4 None AGREES and its pin is dropped; the ONE DEFECT it
+      found (render_index's non-ALU branch stripping parens on an AReduce where CPython strips
+      only on a literal-op arg) IS FIXED".**
+- [x] **⇒ AND THE ROW IS FALSIFIABLE, MEASURED BY PLANTING IT**: CHANGING THE JOIN SEPARATOR
+      FROM `""` TO `","` (ONE CHARACTER, IN THE DRIVER) MAKES THE GATE GO **RED (rc=1)** WITH
+      **"DISAGREE (bd): n=49 of 346 rows, 2 shown: [('cfo_0_sqrt=sqrt(a)',
+      'cfo_0_sqrt=sqrt,(,a,)'), ...]"**.  **⇒ AND THE PLANT WAS REVERTED AND THE GATE IS GREEN
+      AGAIN.**  **⇒ AND THE 46 ALU ROWS NOW RENDER** (`cfo_0_sqrt=sqrt(a)` `cfo_0_add=(a+b)`
+      `cfo_0_reciprocal=(1/a)` ...), **⇒ WHICH THEY DID NOT BEFORE, BECAUSE THE DRIVER DID NOT
+      COMPILE.**
+- [ ] **⇒ AND THE GATE NEEDS **3.3–3.8 GB** OF PEAK RSS, WHICH IS **OVER** THE TREE's 3072 MB
+      WATCHDOG CEILING -- **⇒ SO IT MUST BE RUN AT A HIGHER CEILING** (`checks/bounded.py --mb
+      6144`) AND **⇒ AND THE `WITHIN-LIMITS` TOKEN IS READ, NOT THE EXIT CODE.**  MEASURED: AT
+      `--mb 3072` IT READS **`KILLED-ON-MEMORY`** (rc=-9, 3227 MB) **⇒ AND AT `--mb 6144` IT
+      READS **`WITHIN-LIMITS`** (3764 MB), rc=1 (THE GATE's OWN VERDICT BEFORE THE PIN
+      REPOINT) **⇒ AND rc=0 AFTER IT.**  **⇒ SO A GATE THAT NEEDS 3.3 GB IS A GATE THAT
+      `checks/bounded.py --mb 3072` **CANNOT RUN**, AND THE CEILING IS A MEASUREMENT AND NOT A
+      POLICY.**  **⇒ AND THE `KILLED-ON-MEMORY` TOKEN IS **NOT** A VERDICT ABOUT THE GATE** --
+      IT IS A VERDICT ABOUT THE CEILING, AND A READER WHO CONFUSED THE TWO WOULD REPORT THE GATE
+      AS RED WHEN IT IS GREEN.**
+
 ## Session 2026-10-05 — `opspy`: `runtime/ops_python.bend` bitcast dedup + its coldness
 - [x] **The dedup.** `w32`/`f32_of` (`ops_python.bend:274-278`) deleted; `import
   ../base.bend as F` added at `:258`; the two call sites now `F.F32.from_bits`
@@ -23687,6 +23747,7 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 187 of 222 sect
 • WALLAUDIT -- 30 # WALL(p3) markers in schedule/rangeify.bend, aud... — ████████░░ 8/10  80%
 • MARKERFORM -- checks/marker-audit.py CANNOT SEE THE 30 WALL(p3) M... — ██████████ 4/4 100%
 • X86ISA -- gates/x86_isa-gate.py IMPORTS A PACKAGE UPSTREAM DELETED, AND... — █░░░░░░░░ 1/4  25%
+• CSTYLECENSUS -- gates/cstyle_render_census-gate.py WAS REFUSED (DEAD) ON TWO COUN... — ████████░░ 5/6  83%
 • RNGCMP -- gates/rng_graph_census-gate.py CALLS UOp.rtag, WHICH UPSTRE... — ░░░░░░░░░░ 0/3   0%
 • DECOMP-PROMO -- the 11 PROMOTION rows have a FALSE cause, and fixing ... — ██░░░░░░░░ 2/9  22%
 • DEFECTROW-DV -- THE ORACLE'S OWN BUG, CAUGHT BY ITS OWN CLOSED FORM (... — ██████████ 3/3 100%
