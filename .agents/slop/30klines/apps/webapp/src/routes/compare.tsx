@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { highlightLines } from "@viz/highlight"
 import compareData from "virtual:compare-data"
 import { readSource } from "@/server/source"
-import { FileTree, type FileNode } from "@/components/ai-elements/file-tree"
+import { FileTree, FileTreeFile, FileTreeFolder, FileTreeActions } from "@/components/ai-elements/file-tree"
 
 export const Route = createFileRoute("/compare")({
   validateSearch: (s: Record<string, unknown>) => ({ file: typeof s.file === "string" ? s.file : undefined }),
@@ -30,7 +30,11 @@ function ComparePage() {
 
   const tree = useMemo(() => buildTree(entries), [entries])
 
-  const pick = file ?? entries[0]?.path
+  // Open on the pair with the most symbol links: the page argues that the port
+  // tracks the original, so the first screen should be the evidence, not
+  // __init__.py.
+  const richest = files.reduce((a, b) => ((b.links?.length ?? 0) > (a.links?.length ?? 0) ? b : a))
+  const pick = file ?? relPath((richest.py ?? richest.bend) as string)
   const entry: (typeof files)[number] =
     files.find((f) => relPath((f.py ?? f.bend) as string) === pick) ??
     ({ py: compareData.pythonOnlyFiles.find((p) => relPath(p) === pick) ?? null, bend: null } as never)
@@ -128,10 +132,11 @@ function ComparePage() {
         <div className="w-[270px] shrink-0 overflow-auto border-r border-rule py-2">
           <FileTree
             className="text-[11px]"
-            nodes={tree}
             selected={pick}
             onSelect={(path) => navigate({ search: { file: path } })}
-          />
+          >
+            {renderTree(tree)}
+          </FileTree>
         </div>
 
         <div className="relative flex min-w-0 flex-1">
@@ -231,8 +236,24 @@ function Pane(props: {
 }
 
 /** Group paths into folders; a pair is one entry on the Python side. */
-function buildTree(entries: { path: string; badge: string }[]): FileNode[] {
-  const root: FileNode = { name: "", path: "", type: "folder", children: [] }
+type TreeNode =
+  | { type: "file"; name: string; path: string; badge: string }
+  | { type: "folder"; name: string; path: string; children: TreeNode[] }
+
+function renderTree(nodes: TreeNode[]): React.ReactNode {
+  return nodes.map((n) =>
+    n.type === "folder" ? (
+      <FileTreeFolder key={n.path} path={n.path} name={n.name}>
+        {renderTree(n.children)}
+      </FileTreeFolder>
+    ) : (
+      <FileTreeFile key={n.path} path={n.path} name={n.name} actions={<FileTreeActions>{n.badge}</FileTreeActions>} />
+    ),
+  )
+}
+
+function buildTree(entries: { path: string; badge: string }[]): TreeNode[] {
+  const root: TreeNode = { name: "", path: "", type: "folder", children: [] }
   for (const { path, badge } of entries) {
     const parts = path.split("/")
     let node = root
@@ -250,7 +271,7 @@ function buildTree(entries: { path: string; badge: string }[]): FileNode[] {
       node = child
     })
   }
-  const sort = (n: FileNode) => {
+  const sort = (n: TreeNode) => {
     n.children?.sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === "folder" ? -1 : 1))
     n.children?.forEach(sort)
   }

@@ -35,6 +35,7 @@ export type CompareData = {
 }
 
 const PY_HEADER = /tinygrad\/[A-Za-z0-9_/]+\.py/
+const BARE_PY = /\b([A-Za-z0-9_/]+)\.py\b/
 const BEND_DEF = /^def\s+([A-Za-z_][\w.]*)\s*\(/gm
 const SKIP = ["runtime/autogen", "viz/assets"]
 
@@ -81,6 +82,10 @@ function bendSymbols(src: string): { qual: string; line: number }[] {
 export async function buildCompareData(): Promise<CompareData> {
   const root = await repoRootPromise()
   const pyFiles = new Map<string, string>()
+  // root-level .py too: sz.py lives beside tinygrad/, and sz.bend ports it
+  for (const name of readdirSync(root).filter((f) => f.endsWith(".py"))) {
+    pyFiles.set(name, path.join(root, name))
+  }
   for (const p of walk(path.join(root, "tinygrad"), ".py")) {
     const rel = path.relative(root, p).split(path.sep).join("/")
     if (SKIP.some((s) => rel.includes(s))) continue
@@ -94,8 +99,21 @@ export async function buildCompareData(): Promise<CompareData> {
   for (const bp of bendPaths) {
     const relBend = path.relative(root, bp).split(path.sep).join("/")
     const src = readFileSync(bp, "utf8")
-    const header = PY_HEADER.exec(src.split("\n").slice(0, 80).join("\n"))?.[0]
+    const head = src.split("\n").slice(0, 80).join("\n")
+    const header = PY_HEADER.exec(head)?.[0]
     let target = header && pyFiles.has(header) ? header : null
+    if (!target) {
+      // the port does not always write `tinygrad/` — sz.bend says "# sz.py in Bend:"
+      const bare = BARE_PY.exec(head)?.[1]
+      if (bare) {
+        for (const candidate of [`${bare}.py`, `tinygrad/${bare}.py`]) {
+          if (pyFiles.has(candidate)) {
+            target = candidate
+            break
+          }
+        }
+      }
+    }
 
     if (!target) {
       const guess = `tinygrad/${relBend.replace(/^tinybendygrad\//, "").replace(/\.bend$/, ".py")}`
