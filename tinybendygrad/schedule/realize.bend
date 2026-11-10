@@ -52,13 +52,13 @@
 # `UOp.const(20).arg` is the int `20`), so it is NOT the three-tuple the rule
 # looks for and the key is `cother` for EVERY CONST.
 # - and that is a divergence from the port's own `eng_constkey`
-# (`schedule/rangeify.bend:3008`), which spells a CONST `c:hi:lo`. The two
+# (`schedule/rangeify.bend:2605` symbol=eng_constkey), which spells a CONST `c:hi:lo`. The two
 # CANNOT both be right about the same graph, and the report names it.
 # - and the CONST values are not lost: `rz_consts` and `rz_params` below carry
 # them, and the comparator checks them as MULTISETS.
 #
 # why the comparison is order-free. measured, the port's `eng_dump`
-# (`schedule/rangeify.bend:3055`) is a BFS -- `List.concat(&2, U32, [t, srcs])`
+# (`schedule/rangeify.bend:2664` symbol=eng_dump) is a BFS -- `List.concat(&2, U32, [t, srcs])`
 # puts the srcs at the END of the worklist -- and the oracle's `dump`
 # (`eng-oracle.py:79`) is a DFS -- `todo = list(u.src) + todo` puts them at the
 # FRONT. The two orders CANNOT agree, so the comparison is over MULTISETS.
@@ -370,7 +370,7 @@ def rz_node_str(+ar: O.Arena, +n: U32) -> String:
 
 # THE DUMP. A DFS from the result root, each node ONCE -- the oracle's `dump`
 # (`eng-oracle.py:79`) is a DFS and the port's `eng_dump`
-# (`schedule/rangeify.bend:3055`) is a BFS, so the COMPARISON is over
+# (`schedule/rangeify.bend:2664` symbol=eng_dump) is a BFS, so the COMPARISON is over
 # MULTISETS and this dump's ORDER is not the comparison's subject.
 def rz_dump.go(fuel: Nat, todo: List<&2, U32>, +ar: O.Arena, +seen: List<&2, U32>, +n: U32,
                +acc: List<&2, String>) -> List<&2, String>:
@@ -460,9 +460,6 @@ def rz_params.go(fuel: Nat, todo: List<&2, U32>, +ar: O.Arena, +seen: List<&2, U
 
 # 4. THE ROWS.
 
-def rz_row.line(nm: String, got: String) -> IO(Unit):
-  IO.print(String.concat([nm, "=", got]))
-
 def rz_nodes(+p: RZProg) -> U32:
   U32.from_nat(List.length(&2, U32, O.UOp.toposort(O.Arena.budget(RZProg.ar(p)),
                                                    RZProg.ar(p), RZProg.sink(p))))
@@ -478,68 +475,9 @@ def rz_plant() -> RZProg:
 def rz_plant2() -> RZProg:
   rz_rebuild(rz_program(), False{}, True{})
 
-def rz_row_dump() -> String:
-  +q = rz_built()
-  rz_dump(RZProg.ar(q), RZProg.sink(q))
-
-def rz_row_consts() -> String:
-  +q = rz_built()
-  String.join(rz_consts.go(O.Arena.budget(RZProg.ar(q)), [RZProg.sink(q)], RZProg.ar(q),
-                           Nil{}, RZProg.sink(q), Nil{}), ",")
-
-def rz_row_params() -> String:
-  +q = rz_built()
-  String.join(rz_params.go(O.Arena.budget(RZProg.ar(q)), [RZProg.sink(q)], RZProg.ar(q),
-                           Nil{}, RZProg.sink(q), Nil{}), ",")
-
-def rz_row_plant() -> String:
-  +q = rz_plant()
-  rz_dump(RZProg.ar(q), RZProg.sink(q))
-
-def rz_row_plant_params() -> String:
-  +q = rz_plant2()
-  String.join(rz_params.go(O.Arena.budget(RZProg.ar(q)), [RZProg.sink(q)], RZProg.ar(q),
-                           Nil{}, RZProg.sink(q), Nil{}), ",")
-
-def rz_row_nodes() -> String:
-  +q = rz_built()
-  U32.show(rz_nodes(q))
-
-# the port's own scheduler, on the port's own sink. `SCH.schedule` is
-# `create_schedule` (`schedule/__init__.bend:1143 symbol=schedule`), and it wants a SINK OF
-# AFTERs WHOSE SECOND SRC IS A KERNEL -- a CALL or an END -- because
-# `_split_after` (`schedule/__init__.bend:467 symbol=sc_split`) partitions the AFTER's srcs
-# into kernels and dependencies.
-def rz_row_lin() -> String:
-  +q = rz_built()
-  +l = SCH.schedule(RZProg.ar(q), RZProg.sink(q))
-  U32.show(U32.from_nat(List.length(&2, U32, SCH.Lin.out(l))))
-
-# the port's own engine, on the port's own sink. - and this row moved to
-# `rangify.bend` ON 2026-10-30, AND THE MOVE IS THE POINT:
-# `realize.bend` IMPORTS `rangeify.bend` (THE ENGINE) AND `rangify.bend` IMPORTS
-# `realize.bend` (THE FIXTURE), - SO `rangeify.bend` COULD NOT IMPORT
-# `rangify.bend` -- WHICH IS WHERE `run_rangeify` LIVES -- AND THE ENGINE's
-# stage 1 was an empty table. - and the MOVE makes the edge one-way:
-# `rangify.bend` -> `rangeify.bend`, AND `rangeify.bend` -> NOTHING BACK.
-
-def rz_row_dump0() -> String:
-  +p0 = rz_program()
-  rz_dump(RZProg.ar(p0), RZProg.sink(p0))
-
 def rz_pre_ops.go(+ar: O.Arena, ns: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match ns:
     case Nil{}: acc
     case u <> t:
       rz_pre_ops.go(ar, t, List.append(&2, String, acc, [rz_op_name(O.Arena.op(ar, u))]))
 
-def main() -> IO(Unit):
-  do IO<Unit>:
-    rz_row.line("rz_dump", rz_row_dump())
-    rz_row.line("rz_consts", rz_row_consts())
-    rz_row.line("rz_params", rz_row_params())
-    rz_row.line("rz_nodes", rz_row_nodes())
-    rz_row.line("rz_dump0", rz_row_dump0())
-    rz_row.line("rz_lin_n", rz_row_lin())
-    rz_row.line("rz_plant_dump", rz_row_plant())
-    rz_row.line("rz_plant_params", rz_row_plant_params())

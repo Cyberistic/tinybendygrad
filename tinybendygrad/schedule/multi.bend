@@ -1,6 +1,5 @@
 # multi.bend -- tinygrad/schedule/multi.py. Multi-device scheduling: the UNSHARD-splitting
 # rules, the device-group COPY rules, and the MSELECT/MSTACK rewrites.
-#
 # WHAT THIS FILE IS. `multi.py` is 311 lines and THIRTY defs, and almost none of it is
 # arithmetic. Two thirds of the defs are GRAPH BUILDERS (`.unshard`, `.alu`, `.mselect`,
 # `.copy_to_device`, `._shard`, `.cat`, `.store`, `.replace`, `UOp(Ops.STACK, ...)`) and not
@@ -10,7 +9,6 @@
 # boundary lands, which axis a PERMUTE sends a shard to and which it FLIPs, whether a
 # shrink resolves its own UNSHARD, whether an INDEX is contiguously or strided owned, and
 # the three-way per-source decision in `shard_srcs` that the resharding fallbacks all call.
-#
 # the one wall that cuts across every line: `UOp._min_max` (ops.py:1094), which
 # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
 # `copy_multi`. `uop/fold.bend:5140 symbol=ranged` names it at 1104 in its own PROSE and carries it as
@@ -21,34 +19,6 @@
 # what `UOp.range(len(devices[0]), -1, AxisType.DEVICE)` builds. A RANGE over a SYMBOLIC
 # end answers `mu_sym_count()`, the named wall, and every caller that must not silently get
 # it says so.
-#
-# TODO(p3) ops.py:1094  symbol=_min_max  -- `UOp._min_max` is DECLARED here and
-# `fold.bend` carries its WALK.
-#
-# DEPENDENCY ON SIBLINGS, both named because both are call sites this file does not make.
-# `schedule/allreduce.bend` owns the BODY of `replace_allreduce`'s `_early_allreduce` arm
-# (multi.py:106 symbol=reduce_multi) and of `reduce_multi`'s ALLREDUCE_CAST arm (multi.py:116-118); this file's
-# `mu_ea_0` dispatches to it and says so. `schedule/__init__.bend` runs `multi_pm` and owns
-# the `MULTI` flag that selects it.
-#
-# THE FLAGS ARE PARAMETERS, the one convention shared with `allreduce.bend`:
-# `LATE_ALLREDUCE` (multi.py:50) and `ALLREDUCE_CAST` (multi.py:115) are `ContextVar`s and
-# Bend has no `Config` and no process environment, so they are fields of a `Cfg` record.
-# `MULTI` is not read anywhere in this checkout's `multi.py` -- it is `__init__.py`'s -- so
-# it is named at the foot and not a field here.
-#
-# THE THREE TABLES, and there are three because Python has three objects.
-# `PatternMatcher.__add__` (ops.py:1598 symbol=__add__) is `self.patterns+more.patterns`, so `multi_pm` is
-# NINETEEN own rules with `replace_allreduce`'s SIX APPENDED, and `replace_allreduce` is
-# `_early_allreduce`'s ONE prepended when `LATE_ALLREDUCE` is off. That composition moves
-# every tag after the prefix, so `mu_table` CONCATENATES rather than counts, and `mt_own_n`,
-# `mt_ra_n`, `mt_ea_n`, `mt_pm_n` and `mt_late_n` pin the result. There is no generic
-# dispatch here and this file does not try to build one -- the same duplication
-# `uop/spec.bend` writes six times and `schedule/rangeify.bend` eleven times.
-#
-# `PMEntry.rej` is `early_reject` and it is a NECESSARY CONDITION despite the name
-# (ops.py:1701 is `if not early_reject.issubset(ler): continue`): the rule FIRES when its op
-# set IS a subset of the node's src ops, and the empty set is a subset of everything.
 
 import Base
 import ./../helpers.bend as H
@@ -58,7 +28,6 @@ import ./../uop/fold.bend as F
 
 
 # THE RECORDS.
-#
 # `Cfg` is the two flags, as parameters (see the header). `late` is a `Bool`
 # because Python reads it as `not getenv(...)`, and the composition at :50 is
 # the only thing that consults it.
@@ -164,9 +133,7 @@ def mu_count(+ar: O.Arena, +rng: U32) -> U32:
 
 
 # THE SHARDING -- `UOp.sharding` (ops.py:707), which is two lines:
-#
 #     return tuple(zip(self.arg, self.src[1:])) if self.op is Ops.UNSHARD else ()
-#
 # The axes are `arg`, an `ATuple` of them (ops.py:748, `tuple[int, ...]`), and
 # the ranges are `src[1:]`, so the pairing is a zip of a node's own arg against
 # a node's own srcs. `mu_shard.zip` is that zip with the range turned into its
@@ -221,13 +188,11 @@ def mu_head32(m: Maybe<&2, U32>) -> U32:
   Maybe.default(&2, U32, m, 0)
 
 # `UOp.axis` (ops.py:717-726) on the two ops multi.py reads it on:
-#
 #     if self.op is Ops.COPY: return None
 #     if self.op is Ops.UNSHARD:
 #       if len(self.arg) != 1: raise RuntimeError(...)
 #       return self.arg[0]
 #     if self.op is Ops.PARAM: return None
-#
 # So a UNSHARD has an axis ONLY when it is sharded on exactly one, and the
 # two-axis case RAISES. `mu_axis` answers "no axis" there rather than picking
 # one: `shard_srcs` asks `mlb.axis == src_axis` (multi.py:69) and a port that
@@ -590,7 +555,6 @@ def mu_local_extent(shard_sz: U32) -> Bd:
 # (`rf_ranges_miss`); `_ranges` is `union(s.ranges for s in self.src)` minus every range an
 # `ended_ranges` carries and it is memoised on the node in Python, which Bend has neither
 # mutable state nor a memo for. So the substitution cannot be built here.
-#
 # WHAT IS PORTED is the SHAPE of the predicate, because it is a decision the caller makes per
 # src and it is the reason `mstack_early_shrink` treats some srcs differently from others:
 # `mu_src_has_dev` is "`x.ranges` carries a DEVICE range" answered from a PARAMETER, so the
@@ -634,15 +598,12 @@ def mu_src_has_dev(+ar: O.Arena, ranges: List<&2, U32>) -> Bool:
 
 # `mstack_early_shrink` (multi.py:14-22) -- the per-src decision, which is the
 # part that is not a builder:
-#
 #     if x.op is Ops.COPY:  src = _apply_shrink(shrink.marg, x.src[0], i)
 #                           ret = src.contiguous() if src.device == x.device else src.copy_to_device(...)
 #     else:                 ret = _apply_shrink(shrink.marg, x, i).contiguous()
-#
 # So there are THREE outcomes per src and the choice is `(is_copy, same_device)`.
 # `mstack_early_shrink`'s `_apply_shrink` itself is the wall above; what is here
 # is `mu_mstack_branch`, and `ms_*` in the gate are its rows.
-#
 # 0 is COPY-and-same-device (`.contiguous()`), 1 is COPY-and-different-device
 # (`.copy_to_device`), 2 is not-COPY (`.contiguous()`). The NUMBERING IS
 # Python's: the `if x.op is Ops.COPY` test comes FIRST, so COPY is the outer arm
@@ -667,7 +628,6 @@ def mu_mstack_branch(is_copy: Bool, same_dev: Bool) -> U32:
 # `shard_srcs` (multi.py:54-76). THE CENTRAL DECISION, and the function three resharding
 # fallbacks call (`alu_multi` :104, `stack_multi` :200). It is the most arithmetically dense
 # body in multi.py and none of it is a builder, so all of it is here:
-#
 #     devices = [x.device for x in msrcs if x.device is not None]
 #     assert all_same(devices)
 #     if len(devices): sharding_rng = UOp.range(len(devices[0]), -1, DEVICE)
@@ -680,7 +640,6 @@ def mu_mstack_branch(is_copy: Bool, same_dev: Bool) -> U32:
 #         full = mlb if mlb.axis is None else copy_multi(mlb, mlb.device)
 #         srcs.append(full if axis in broadcast_axes(mlb.shape, out_shape)
 #                     else full._shard(src_axis, sharding_rng))
-#
 # FOUR decisions, and they are four defs because they are four answers: `mu_ss_rng` WHICH
 # sharding range (a fresh DEVICE range over the devices, or the UNSHARD's own `src[1]`, a
 # LOCAL thread range per the comment at multi.py:58-59), `mu_ss_out` the broadcast shape,
@@ -698,7 +657,6 @@ def mu_bs_none(m: Maybe<&2, List<&2, O.Sint>>) -> Bool:
 # NOT have a `Derived` list (that is the fold's own bookkeeping), so the two
 # shapes go in one at a time through `F.shapes_of.put` and the `None` answer is
 # `F.bcast_shape`'s.
-#
 # `F.bcast_shape` is REUSED, not re-derived: it is ops.py:80 verbatim and it
 # refuses a mismatch with `None`, which is ops.py:85's IndexError.
 def mu_sh_put(sh: Maybe<&2, F.Shapes>, x: List<&2, O.Sint>) -> Maybe<&2, F.Shapes>:
@@ -780,7 +738,6 @@ def mu_ss_same(devs: List<&2, U32>) -> Bool:
 # `full = mlb if mlb.axis is None else copy_multi(mlb, mlb.device)` and then
 # `srcs.append(full if axis in broadcast_axes(mlb.shape, out_shape) else
 # full._shard(src_axis, sharding_rng))`.
-#
 # Four outcomes, and the ORDER of the tests is load-bearing because the arms are not
 # disjoint in an obvious way:
 #   0 COPY THROUGH -- `mlb.axis == src_axis`
@@ -865,7 +822,6 @@ def ml_needs_copy(mlb_ax: Maybe<&2, U32>) -> Bool:
 # `mu_shape_eq` on two shapes and it is a real gate: multi.py:81's message names both shapes,
 # and a rewrite that sub-viewed a differently-shaped dest would corrupt a STORE rather than
 # raise. `ss_eq_*` in the gate is its two sides.
-#
 # The EXPAND arm is the interesting one and upstream explains it: "an EXPAND of a scalar over
 # the full shape is the same broadcast on every shard: re-expand over the shard shape". The
 # test has TWO conjuncts and both are gateable, and the second -- `full.src[0].shape == ()`
@@ -888,12 +844,10 @@ def sv_axes(sh: List<&2, Sh>) -> List<&2, U32>:
   List.foldl(~&2, ~Sh, ~List<&2, U32>, (acc: List<&2, U32>) => (s: Sh) => List.append(&2, U32, acc, [Sh.ax(s)]), sh, Nil{})
 
 # `_shard` (ops.py:751-756):
-#
 #     dcount = int(rng.vmax)+1
 #     if self.shape[axis] % dcount != 0: raise RuntimeError("multi axis uneven")
 #     sz = self.shape[axis] // dcount
 #     return self.shrink(tuple((0,s) if i != axis else (rng*sz, rng*sz+sz) for i,s in enumerate(self.shape)))
-#
 # THE ARITHMETIC, and it is two of the three lines: the DIVISIBILITY test, which
 # is a raise in Python and a Bool here, and `sz`, the per-shard extent.
 # `sv_div_*` and `sv_sz_*` are the rows, and `sv_div` is 0 for a shard count of
@@ -927,7 +881,6 @@ def sv_sz(+dim: U32, +n: U32) -> U32:
 # comparing both the axes AND the counts, and a comparison that looked only at the axes would
 # accept two sharding ranges with DIFFERENT device counts. `al_eq_*` is the row that says the
 # count is compared.
-#
 # THE TWO-CONS ARM FIRST, for the same reason `mu_shape_eq` does: a catch-all in second
 # position swallows it. `al_eq` and `al_eq_two` were 0 until it moved. And the PAIR
 # comparison is a leaf rather than inline because `mu_and3` would read the second `Sh` three
@@ -990,7 +943,6 @@ def al_none(n: Nat) -> Bool:
 # a sharding of length n gives `len(reduced) + len(remaining) == n` ALWAYS; `rd_*_n` and
 # `rd_sum_n` are that row, and it is the one that would catch a partition that dropped or
 # duplicated an axis.
-#
 # `op` and `num_axes` are `root.arg`, which is `AReduce{rop, num_axes}` (ops.py:752) and
 # already split in `ops.bend`, so both are direct reads. The `remaining` AXES ARE REBASED by
 # `num_axes` (multi.py:121) and that is the arithmetic `off` carries -- it is why a REDUCE
@@ -1070,11 +1022,9 @@ def rd_fires(+r: Rd) -> Bool:
   Bool.and(rd_any(Rd.red(r)), Bool.not(rd_any(Rd.rem(r))))
 
 # the ALLREDUCE_CAST arm (multi.py:116-118), and it is THREE conjuncts:
-#
 #     if ALLREDUCE_CAST and multi.src[0].op is Ops.CAST and multi.src[0].src[0].dtype in (dtypes.bf16, dtypes.f16):
 #       orig_dtype = multi.src[0].src[0].dtype
 #       return local.cast(orig_dtype).allreduce(op, multi.device).cast(local.dtype)
-#
 # The flag is the `Cfg.cast` PARAMETER (the header's convention). The dtype test
 # is `in (bfloat16, half)` -- TWO dtypes and not one, and `S.Dt` is a `Data`
 # record so the comparison is `S.bfloat16()` / `S.half()` by value. The graph is
@@ -1099,7 +1049,6 @@ def rd_cast(cfg: Cfg, src0_op: O.Op, inner_dt: S.Dt) -> Bool:
 # `Rs` carries all three as ONE `ok`, because Python raises on the FIRST and the three are
 # alternatives, so a port that answered all three independently would have to invent an
 # order it does not have. `rs_*_ok` are the rows.
-#
 # `new_ax = len(arg_acc) - arg_acc[::-1].index(target) - 1` is the LAST index whose running
 # product is `target`, and the REVERSE is load-bearing: two entries of `arg_acc` can be equal
 # (when a dim of `new_shape` is 1) and `.index` on the REVERSED list takes the LAST one,
@@ -1149,7 +1098,6 @@ def rs_has(+acc: List<&2, U32>, target: U32) -> Bool:
 # FIRST of the reversed list, i.e. the LAST of the forward one. So the fold is a
 # FORWARD walk that keeps the most recent hit, and `rs_tie_*` in the gate is the
 # row that says "most recent" and not "first".
-#
 # The accumulator is `last` and the hit test is a separate leaf, because a
 # `match` may not scrutinise a call (brief-port.md, rule 2). `no` is the
 # not-found marker and is `n`, one past the last index, so it is distinguishable
@@ -1236,7 +1184,6 @@ def rs_axis(+acc: List<&2, U32>, +target: U32, count: U32, new_n: List<&2, U32>)
 # walk together -- `new_shape`, the new shard AXES, and their counts -- because
 # `rs_local` reads all three per axis and a `Data` record is how three lists
 # travel as one value.
-#
 # The sharding AXES here are the `new_ax`s of the loop above, not the original
 # `arg`, and that is the load-bearing part: a reshape from (4,6) sharded on 0 to
 # (24,) re-shards on axis 0 again, but from (4,6) to (2,12) has `target` 4 absent
@@ -1308,7 +1255,6 @@ def rs_local.one(+n: Ns, +ax: U32, +d: U32) -> U32:
 # THE FOLD: `s // count if a in axes else s`, walking `new_shape` with the axis
 # INDEX beside it. `List.append` puts each dim at the tail, so the order is
 # `new_shape`'s.
-#
 # the dim list is the first parameter, for the same reason `ns_count.go` is: the
 # self-call must be decreasing and read left to right, so the shrinking list is
 # first and the `Ns` and the counter ride at the end.
@@ -1336,11 +1282,9 @@ def rs_prods(+shape: List<&2, U32>, +new_n: List<&2, U32>) -> Bool:
 
 # `expand_multi` (multi.py:142-145) -- the shortest fully-portable body in the
 # file:
-#
 #     shift = len(root.marg)
 #     return multi.src[0]._mop(Ops.EXPAND, arg=root.marg).unshard(
 #                tuple(ax+shift for ax,_ in multi.sharding), tuple(r for _,r in multi.sharding))
-#
 # An EXPAND ADDS `len(marg)` axes at the FRONT (ops.py:816's `as_shape` on
 # `src[1]`), so every sharded axis moves UP by `shift` and the count is unchanged.
 # That is the whole decision: one addition per axis. "all permutes supported!",
@@ -1368,10 +1312,8 @@ def ex_rngs(sh: List<&2, Sh>) -> List<&2, U32>:
 
 
 # `permute_multi` (multi.py:154-157) -- also short, and also pure:
-#
 #     return multi.src[0].permute(root.marg).unshard(
 #                tuple(root.marg.index(ax) for ax,_ in multi.sharding), ...)
-#
 # `tuple.index(ax)` is the index OF the axis IN the permutation, and it is a
 # SEARCH and not an identity: `permute((1,0))` sends axis 0 to 1. `pm_*` in the
 # gate is exactly `tuple.index`, so `pm_sw` (axis 0 under `(1,0)`) is 1 and
@@ -1450,11 +1392,9 @@ def pm_of(+sh: List<&2, Sh>, marg: List<&2, U32>) -> List<&2, U32>:
 
 
 # `flip_multi` (multi.py:183-186) -- a CHECK and a list:
-#
 #     for ax, _ in multi.sharding:
 #       if root.marg[ax]: raise RuntimeError(f"flipping not supported on sharded axis {ax}")
 #     return multi.src[0].flip([i for i,x in enumerate(root.marg) if x]).unshard(...)
-#
 # So there is one RAISE per sharded axis -- flipping MOVES data across the shard
 # boundary and cannot be made per-shard -- and one list of the NON-ZERO marg
 # indices. A FLIP's marg is a per-axis BOOL (ops.py:812's `if self.op is Ops.FLIP:
@@ -1496,7 +1436,6 @@ def fl_of(+marg: List<&2, U32>) -> List<&2, U32>:
 # compute is not the shard's extent. The port keeps the test and `pd_*_bad` is the row that
 # says it fires. The local pad is then the same divide-or-keep shape as `reshape_multi`'s
 # `rs_local`.
-#
 # `marg[ax]` is read twice -- once for `s` and once for `l` -- so `mu_bd_at` is the shared
 # read and the two projections ride out of one call. Python's
 # `root.marg[ax] == (0, multi.shape[ax])` is a tuple comparison and this is its two
@@ -1539,7 +1478,6 @@ def pd_bad(sh: List<&2, Sh>, marg: List<&2, Bd>, shape: List<&2, U32>) -> Bool:
 # `mu_in` over a list. That list is a PARAMETER rather than a re-walk: `pd_bad` already
 # walked the same sharding and Python rebuilds the set only because it is written as a
 # comprehension.
-#
 # the HEAD pair is a parameter and not a re-read of the list, and that is the whole of
 # `pd_one.step`. MEASURED both ways: the version that reached back into the full marg
 # (`pd_one(marg, ax, axs)`) came back with the DEFAULT `Bd{0, 0}` for every entry after the
@@ -1569,7 +1507,6 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 # `shrink_multi` (multi.py:159-181) -- THE LONGEST BODY IN THE FILE and the one
 # with the most DECISION in it. Written out first, because the port needs all of
 # it and the three outcomes are not a single expression:
-#
 #     local_marg, remaining = list(root.marg), list(multi.sharding)
 #     for ax, rng in multi.sharding:
 #       shard_sz = multi.src[0].shape[ax]
@@ -1585,7 +1522,6 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 #         return multi.src[0].copy_to_device(multi.device, arg=part_bounds.index((s, l)))._mop(Ops.SHRINK, non_shard_shrink)
 #     val = multi.src[0]._mop(Ops.SHRINK, tuple(local_marg))
 #     return val if not remaining else val.unshard(...)
-#
 # FOUR per-axis outcomes, and the ORDER is the whole function:
 #   0 OWN      -- the shrink IS this range's own shard, so the UNSHARD RESOLVES and
 #                 the axis leaves `remaining`. "a fragment indexed by its LOCAL
@@ -1597,12 +1533,10 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 #                 the legacy device path, selecting a single partition (which is
 #                 copied to all the devices and optimized out later)").
 #   3 RAISE    -- `shrinking not supported`.
-#
 # The OWN test has TWO conjuncts and both are load-bearing: the LENGTH must equal
 # the shard size (so the shrink covers this shard exactly) and the START must be
 # `rng * shard_sz` (so it starts where this shard starts). A port that tested only
 # the length would resolve an UNSHARD for a shrink of the WRONG half.
-#
 # `part_bounds` is `((i*shard_sz, shard_sz) for i in range(count))` -- the
 # PARTITION boundaries, and it is pure arithmetic over two integers, so it is
 # fully ported and gated: `pb_*` in the gate is CPython's own.
@@ -1694,7 +1628,6 @@ def sk_in(pb: List<&2, Bd>, b: Bd) -> Bool:
 # START is where this shard starts. `sint_to_uop` and `ssimplify` (ops.py:520) are not
 # ported, and for a CONCRETE marg both are the identity, so the port reads the concrete
 # `U32` directly.
-#
 # `rng` is a RANGE, so `rng*shard_sz` is SYMBOLIC in general and the second conjunct is NOT
 # decidable in general. What is decidable and is what the port answers: the LENGTH half, and
 # the start being exactly the partition start `i*shard_sz` -- which is `part_bounds`, the same
@@ -1723,7 +1656,6 @@ def sk_whole_eq(+marg: List<&2, Bd>, +full: List<&2, U32>, +ax: Nat) -> Bool:
 #                a single partition (which is copied to all the devices and optimized out
 #                later)".
 #   RAISE     -- `shrinking not supported`, from the conjunctive test at :176.
-#
 # IT IS ONE `mu_pick` CHAIN, not a ladder of `match`es, because a `match` may not
 # scrutinise a call and every rung here tests a CONJUNCTION. `sk_raise2` is split out because
 # its three conjuncts are a fact about the WHOLE shrink and `sk_raise` exists for the same
@@ -1807,7 +1739,6 @@ def pd_nonshard.go2(marg: List<&2, Bd>, +sh: Sh, +ax: Nat, acc: List<&2, Bd>) ->
 
 # `stack_multi` (multi.py:188-200). STACK ADDS A LEADING AXIS, so the srcs are
 # sharded one axis BELOW the output and every sharded axis moves UP by one:
-#
 #     multis = [m for m in root.src if m.op is Ops.UNSHARD]
 #     if not multis: return None
 #     if all(m.sharding == sharding for m in multis):
@@ -1815,7 +1746,6 @@ def pd_nonshard.go2(marg: List<&2, Bd>, +sh: Sh, +ax: Nat, acc: List<&2, Bd>) ->
 #       return UOp(Ops.STACK, src=srcs).unshard(new_axes, new_rngs)
 #     axis = root.axis ; assert axis is not None
 #     return UOp(Ops.STACK, src=tuple(shard_srcs(root.src, axis-1))).unshard(axis, ...)
-#
 # So `stack_multi` is `expand_multi`'s shift with a constant of 1 and a
 # resharding fallback. The shift is `ax + 1`, and the fallback's axis is
 # `root.axis - 1` -- the SAME -1 that `shard_srcs` gets, because the STACK's
@@ -1844,7 +1774,6 @@ def st_none(n: Nat) -> Bool:
 
 # `index_multi` (multi.py:202-222). THE TWO OWNERSHIP PATTERNS, and the only place in
 # multi.py where `_min_max` is not just a shard COUNT:
-#
 #     idxs = list(root.src[1:])
 #     for ax, rng in multi.sharding:
 #       shard_sz = multi.src[0].shape[ax]
@@ -1855,14 +1784,11 @@ def st_none(n: Nat) -> Bool:
 #         local = (diff // shard_sz).simplify()
 #         if local.vmin >= 0 and local.vmax < shard_sz: idxs[ax] = local; continue
 #       raise RuntimeError("index_multi: cannot shard index ...")
-#
 #   contiguous: idx = rng*shard_sz + local   (thread rng owns [rng*sz, ...))
 #   strided:    idx = rng + ir*shard_sz      (thread rng owns {rng, rng+sz, ...})
-#
 # So the same `vmin`/`vmax` window `[0, shard_sz)` is tested TWICE, once per pattern, and the
 # two differ in what is subtracted and in what is divided. That is the whole decision and it
 # is two windows and a modulus. `ix_*` in the gate is CPython's own arithmetic for both.
-#
 # `vmin`/`vmax` are `UOp._min_max` (ops.py:1100-1104) and that is the wall; with a CONCRETE
 # index the window is `0 <= x < shard_sz` and the port answers that. `x` is a `U32` so the
 # `vmin >= 0` half is TRUE BY CONSTRUCTION and only the upper bound survives. THAT is the one
@@ -1915,10 +1841,8 @@ def ix_kind(contig: Bool, strid_mod: Bool, strid_win: Bool) -> U32:
 
 
 # `_shard_idx` (multi.py:224-226):
-#
 #     drngs = [r for r in rng.ranges if r.axis_type is AxisType.DEVICE]
 #     return 0 if not drngs else int(rng.substitute({drngs[0]: drngs[0].const_like(dev_idx)}).ssimplify())
-#
 # So it is 0 unless the range carries a DEVICE range, and then it is the DEVICE
 # INDEX itself for a plain DEVICE range -- which is `copy_multi`'s
 # `idxs = tuple(_shard_idx(r, i) for _, r in sharding)` when the sharding ranges
@@ -2045,7 +1969,6 @@ def rw_none() -> Bool: rw_miss()
 # `Data` value because there are no closures, so this file has its own `mu_claimed`, its own
 # dispatch and its own scan. There is NO generic dispatch and this file does not try to build
 # one.
-#
 # THE VERDICT IS A TAG, NOT A NODE, and that is the one departure from `movement.bend`'s
 # `Hop`. Not one of multi.py's thirty bodies can intern a node (every builder is a `TODO(p3)`
 # in `ops.bend`), so a rule here cannot answer a node index and there is nothing for
@@ -2073,7 +1996,6 @@ def mu_claimed(+ar: O.Arena, +self: U32, ops: List<&2, O.Op>, rej: List<&2, O.Op
 # tests its srcs. Every tag whose pattern has NO src test answers `True{}` and the
 # name says so; the twenty-five entries are read off CPython's own patterns by
 # `.agents/slop/multi-rows.py` and are in the gate as `mtA_*`.
-#
 # The five shapes are: src[0] is UNSHARD, src[0] is MSTACK, src[0] is a Movement,
 # src[0] is an ALU, src[1] is UNSHARD, and "anything".
 def mu_src_un.go(has: Bool, +ar: O.Arena, +self: U32, n: U32) -> Bool:
@@ -2207,11 +2129,7 @@ def mu_first(ts: List<&2, O.PMEntry>, ar: O.Arena, self: U32) -> U32:
 # the reshape `arg_acc`, `part_bounds`, `tuple.index`, the flip list, the expand
 # shift and `LATE_ALLREDUCE`'s tag shift -- and prints them. Nothing here is
 # restated from this file.
-#
 # `1` is True, `0` is False, and a COUNT row prints the count.
-
-def row(nm: String, v: U32) -> IO(Unit):
-  IO.print(String.concat([nm, "=", U32.show(v)]))
 
 def yes(b: Bool) -> U32:
   match b:
@@ -2343,18 +2261,6 @@ def g() -> G:
 # THE TABLE ROWS. `LATE_ALLREDUCE=1` is the default, so `mu_c_early` is the
 # 25-entry table and `mu_c_late` the 26-entry one.
 
-def t_own_n() -> U32: mt_n(mu_own())
-def t_ra_n() -> U32: mt_n(mu_ra_base())
-def t_ea_n() -> U32: mt_n([mu_ea0()])
-def t_pm_n() -> U32: mt_n(mu_table(mu_c_early()))
-def t_late_n() -> U32: mt_n(mu_table(mu_c_late()))
-
-# THE TAG SHIFT. With `LATE_ALLREDUCE` off, `_early_allreduce`'s ALLREDUCE rule is
-# tag 19 and `replace_allreduce`'s first COPY rule moves to 20 -- so `t_t19` is
-# `ALLREDUCE` with the flag on AND with it off, while `t_t20` is `COPY` on and
-# `MSELECT` off. The tag is the op VALUE (`Ops.value`, ops.bend:382), so these are
-# numbers and not names, and `t_t20` off is 74+... which is why the row prints the
-# tag of the ENTRY rather than comparing two op values here.
 def ALLREDUCE() -> U32: O.Ops.value(O.OpsALLREDUCE{})
 def COPY() -> U32: O.Ops.value(O.OpsCOPY{})
 def MSELECT() -> U32: O.Ops.value(O.OpsMSELECT{})
@@ -2379,67 +2285,7 @@ def mt_entry(ts: List<&2, O.PMEntry>, i: Nat) -> O.PMEntry:
 def mt_op(ts: List<&2, O.PMEntry>, i: Nat) -> U32:
   mt_op.of(O.PMEntry.ops(mt_entry(ts, i)))
 
-def t_t19_on() -> U32: eq(mt_op(mu_table(mu_c_early()), 19n), COPY())
-def t_t20_on() -> U32: eq(mt_op(mu_table(mu_c_early()), 20n), MSELECT())
-def t_t19_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 19n), COPY())
-def t_t24_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 24n), MSELECT())
-def t_t25_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 24n), MSELECT())
-def t_t20_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 20n), COPY())
 def SHRINKV() -> U32: O.Ops.value(O.OpsSHRINK{})
-def t_t23_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 23n), MSELECT())
-def t_tag19() -> U32: eq(mt_tag(mu_table(mu_c_early()), 19n), 19)
-def t_tag25() -> U32: eq(mt_tag(mu_table(mu_c_late()), 24n), 24)
-
-# THE INVENTORY COUNTS.
-def t_rej_n() -> U32: eq(mt_rej_n(mu_table(mu_c_early())), 20)
-def t_rej_late() -> U32: eq(mt_rej_n(mu_table(mu_c_late())), 20)
-def t_ops_n() -> U32: eq(mt_ops_n(mu_table(mu_c_early())), 56)
-def t_alu_n() -> U32: eq(mt_ops_n([O.PMEntry{0, mu_alu_ops(), mu_rej_nil()}]), 28)
-def t_pass_n() -> U32: eq(mt_ops_n([O.PMEntry{16, mu_pass_ops(), mu_rej_nil()}]), 5)
-def t_mov_n() -> U32: eq(mt_ops_n([O.PMEntry{23, mu_move_ops(), mu_rej_nil()}]), 5)
-
-
-# THE CLAIM ROWS -- the brief's two-rules-one-node fixture. `CP` is a COPY, and
-# three of the twenty-five patterns have COPY as their pdict key: tag 11 (COPY of
-# a sharded value), tag 19 (`lower_broadcast_copy`) and tag 20 (`copy_to_one`).
-# Two of them have an EMPTY reject set and no src test at all, so the OP-SET
-# CLAIM count is 3.
-# `ST` is a STORE whose `src[1]` is the UNSHARD: tags 17 and 18 both key on STORE,
-# tag 17 wants `src[1]` UNSHARD and tag 18 wants `src[0]` UNSHARD, and only tag 17
-# fires the FULL claim. `SU` is a STORE whose `src[0]` IS the UNSHARD, and both
-# fire. That is the discriminating pair and it is why both are rows.
-
-def t_claim_cp() -> U32: eq(mu_claim_n(mu_table(mu_c_early()), G.ar(g()), g_cp(g())), 3)
-# a COPY of a WHOLE buffer is claimed by TWO, not three: tag 11's reject set is
-# {UNSHARD} and the node's `ler` is {BUFFER}, so its NECESSARY CONDITION FAILS. That
-# is `early_reject` doing its job and `t_claim_cp` (3) against `t_claim_cq` (2) is
-# the pair that says so.
-def t_claim_cq() -> U32: eq(mu_claim_n(mu_table(mu_c_early()), G.ar(g()), g_cq(g())), 2)
-def t_claim_st() -> U32: eq(mu_claim_n(mu_table(mu_c_early()), G.ar(g()), g_st(g())), 2)
-def t_claim_su() -> U32: eq(mu_claim_n(mu_table(mu_c_early()), G.ar(g()), g_su(g())), 2)
-def t_claim_ad() -> U32: eq(mu_claim_n(mu_table(mu_c_early()), G.ar(g()), g_ad(g())), 1)
-def t_claim_ms() -> U32: eq(mu_claim_n(mu_table(mu_c_early()), G.ar(g()), g_ms(g())), 3)
-
-# THE FULL CLAIM: the op set AND that tag's src test. Two rules claim one node and
-# they DISAGREE, which is what a first-wins -> conjunction mutation would move.
-def t_full_st() -> U32: eq(mu_claim_full(mu_table(mu_c_early()), G.ar(g()), g_st(g())), 1)
-def t_full_su() -> U32: eq(mu_claim_full(mu_table(mu_c_early()), G.ar(g()), g_su(g())), 2)
-def t_full_cp() -> U32: eq(mu_claim_full(mu_table(mu_c_early()), G.ar(g()), g_cp(g())), 3)
-def t_full_ad() -> U32: eq(mu_claim_full(mu_table(mu_c_early()), G.ar(g()), g_ad(g())), 1)
-
-# THE FIRST CLAIMING TAG. `0` means "no rule claimed it" and a non-zero tag is the
-# rule a rewrite WOULD take. `AD` (an ADD whose srcs are both UNSHARD) is claimed
-# by tag 0 -- the ALU rule -- and by nothing else, because no other pattern keys
-# on an ALU op.
-# `AD` is an ADD over two UNSHARDs, so tag 0 (`alu_multi`) claims it and nothing
-# else does: no other pattern keys on an ALU op. The tag is 0, which is WHY
-# `mu_first` needed a sentinel -- 0 is both "tag 0" and "nothing", and with a `0`
-# seed this row could not tell them apart.
-def t_first_ad() -> U32: eq(mu_first(mu_table(mu_c_early()), G.ar(g()), g_ad(g())), 0)
-def t_first_st() -> U32: eq(mu_first(mu_table(mu_c_early()), G.ar(g()), g_st(g())), 16)
-def t_first_su() -> U32: eq(mu_first(mu_table(mu_c_early()), G.ar(g()), g_su(g())), 16)
-def t_first_m0() -> U32: mu_first(mu_table(mu_c_early()), G.ar(g()), g_m0(g()))
-
 def mu_head_sh(sh: List<&2, Sh>) -> Sh:
   Maybe.default(&2, Sh, List.head(&2, Sh, sh), Sh{0, 0})
 
@@ -2451,33 +2297,6 @@ def mu_at_sh(sh: List<&2, Sh>, i: Nat) -> Sh:
 # off REAL nodes, and `mu_count` is the `_min_max` RANGE arm on a real DEVICE
 # range. `sh_ma_ax` is the row that says a TWO-axis UNSHARD has NO axis, because
 # `mu_axis` returns `None` there and Python RAISES.
-
-def t_sh0_n() -> U32: eq(U32.from_nat(mu_nshard(mu_shard.zip(G.ar(g()), g_m0(g())))), 1)
-def t_sh1_n() -> U32: eq(U32.from_nat(mu_nshard(mu_shard.zip(G.ar(g()), g_m1(g())))), 1)
-def t_sha_n() -> U32: eq(U32.from_nat(mu_nshard(mu_shard.zip(G.ar(g()), g_ma(g())))), 2)
-def t_shbuf_n() -> U32: eq(U32.from_nat(mu_nshard(mu_shard.zip(G.ar(g()), g_b8(g())))), 0)
-def t_sh0_ax() -> U32: eq(Sh.ax(mu_head_sh(mu_shard.zip(G.ar(g()), g_m0(g())))), 0)
-def t_sh1_ax() -> U32: eq(Sh.ax(mu_head_sh(mu_shard.zip(G.ar(g()), g_m1(g())))), 1)
-def t_sh0_c() -> U32: eq(Sh.n(mu_head_sh(mu_shard.zip(G.ar(g()), g_m0(g())))), 4)
-def t_sha1_ax() -> U32: eq(Sh.ax(mu_at_sh(mu_shard.zip(G.ar(g()), g_ma(g())), 1n)), 1)
-def t_sha1_n() -> U32: eq(Sh.n(mu_at_sh(mu_shard.zip(G.ar(g()), g_ma(g())), 1n)), 8)
-
-# `int(rng.vmax)+1` on a real DEVICE RANGE over four devices is 4.
-def t_cnt_rd() -> U32: eq(mu_count(G.ar(g()), g_rd(g())), 4)
-# and it is 0 -- the wall -- for a node that is not a RANGE.
-def t_cnt_b8() -> U32: eq(mu_count(G.ar(g()), g_b8(g())), 0)
-# `UOp.axis`: Some(0) for a one-axis UNSHARD, None for a two-axis one (Python
-# raises) and None for a non-UNSHARD.
-def t_ax_m0() -> U32: eq(mu_head32(mu_axis(G.ar(g()), g_m0(g()))), 0)
-def t_ax_ma() -> U32: eq(yes(mu_has_axis(mu_axis(G.ar(g()), g_ma(g())))), 0)
-def t_ax_b8() -> U32: eq(yes(mu_has_axis(mu_axis(G.ar(g()), g_b8(g())))), 0)
-def t_ax_m1() -> U32: eq(mu_head32(mu_axis(G.ar(g()), g_m1(g()))), 1)
-
-
-# `shard_srcs` ROWS. CPython's own `_broadcast_shape`, `broadcast_axes`,
-# `src_axis = axis - (len(out_shape) - len(mlb.shape))` and the three-way branch.
-# `ss_bcast_bad` and `ss_bcast_23` are the IndexError CASES (ops.py:85) and they
-# print the ABSENCE -- 1 means "refused", which is the direction Python raises.
 
 def s1(n: U32) -> List<&2, U32>: [n]
 def s2(a: U32, b: U32) -> List<&2, U32>: [a, b]
@@ -2523,199 +2342,24 @@ def bsn2(m: Maybe<&2, List<&2, U32>>) -> U32:
 def refu(m: Maybe<&2, List<&2, U32>>) -> U32:
   yes(Maybe.is_none(&2, List<&2, U32>, m))
 
-# `src_axis = axis - (len(out_shape) - len(mlb.shape))` -- the RIGHT-ALIGNMENT.
-def t_ss_ax00() -> U32: eq(mu_ss_axis(0, 1n, 1n), 0)
-def t_ss_ax11() -> U32: eq(mu_ss_axis(1, 2n, 2n), 1)
-# a rank-1 src against a rank-2 out SHIFTS the axis by one: Python ss_ax_1_0 = 0
-def t_ss_ax10() -> U32: eq(mu_ss_axis(1, 2n, 1n), 0)
-def t_ss_ax22() -> U32: eq(mu_ss_axis(2, 3n, 3n), 2)
-def t_ss_ax02() -> U32: eq(mu_ss_axis(0, 3n, 3n), 0)
-# and it WRAPS for a src LONGER than the out shape, which Python's `len(out) -
-# len(src)` never does -- `broadcast_axes` refuses it and this row says so.
-# `Nat.sub` SATURATES at 0 where Python's `len(out) - len(src)` would be negative and
-# `broadcast_axes` would raise -- MEASURED, the port answers 0 rather than wrapping.
-# `t_bx_bad` is the row that says the CALL refuses it.
-def t_ss_axneg() -> U32: eq(mu_ss_axis(0, 1n, 3n), 0)
-
-# `sharding_rng`: devices present -> a DEVICE range over `len(devices[0])`; no
-# devices -> the UNSHARD's own `src[1]`.
-def t_ss_rng_dev() -> U32: eq(Ss.n(mu_ss_rng(4, 9)), 4)
-def t_ss_rng_unsh() -> U32: eq(Ss.n(mu_ss_rng(0, 9)), 9)
-def t_ss_rng_src() -> U32: eq(yes(Ss.from_unshard(mu_ss_rng(0, 9))), 1)
-def t_ss_rng_src2() -> U32: eq(yes(Ss.from_unshard(mu_ss_rng(4, 9))), 0)
-# the assert: no devices AND no UNSHARD.
-def t_ss_none() -> U32: eq(yes(mu_ss_none(mu_ss_rng(0, 0))), 1)
-def t_ss_not_none() -> U32: eq(yes(mu_ss_none(mu_ss_rng(4, 0))), 0)
-def t_ss_same() -> U32: eq(yes(mu_ss_same(s2(1, 1))), 1)
-def t_ss_same_bad() -> U32: eq(yes(mu_ss_same(s2(1, 2))), 0)
-
-# `broadcast_axes` -- ten of Python's own. `bx_*` prints the COUNT of the returned
-# axes, and `bx_*_a0` prints its FIRST element, because the count alone cannot tell
-# `range(nleft)` from `range(nleft) + (0,)`.
-# `broadcast_axes` rows. The COUNT is printed and the FIRST element is printed
-# separately, because the count alone cannot tell `range(nleft)` from
-# `range(nleft) + (0,)` -- and `bx_pad` (a leading axis ADDED) and `bx_exp` (a 1
-# EXPANDED) both have count 1, so only the element separates them.
 def bx_n(m: Maybe<&2, List<&2, U32>>) -> U32:
   bsn2(m)
 
 def bx_a0(m: Maybe<&2, List<&2, U32>>) -> U32:
   mu_at(defu(m), 0n)
 
-def t_bx_none() -> U32: eq(bx_n(mu_baxes(s2(2, 3), s2(2, 3))), 0)
-def t_bx_pad() -> U32: eq(bx_a0(mu_baxes(s1(3), s2(2, 3))), 0)
-def t_bx_exp() -> U32: eq(bx_a0(mu_baxes(s2(1, 3), s2(2, 3))), 0)
-def t_bx_exp_n() -> U32: eq(bx_n(mu_baxes(s2(1, 3), s2(2, 3))), 1)
-def t_bx_both() -> U32: eq(bx_n(mu_baxes(s1(1), s2(2, 3))), 2)
-def t_bx_noop() -> U32: eq(bx_n(mu_baxes(s1(2), s2(2, 3))), 1)
-def t_bx_scalar() -> U32: eq(bx_n(mu_baxes(nil32(), s2(2, 3))), 2)
-def t_bx_1out() -> U32: eq(bx_n(mu_baxes(s1(2), s2(1, 2))), 1)
-def t_bx_11() -> U32: eq(bx_n(mu_baxes(s1(1), s1(1))), 0)
-def t_bx_1_2() -> U32: eq(bx_a0(mu_baxes(s1(1), s1(2))), 0)
-def t_bx_1_2n() -> U32: eq(bx_n(mu_baxes(s1(1), s1(2))), 1)
-def t_bx_rank1() -> U32: eq(bx_n(mu_baxes(s1(3), s1(3))), 0)
-# `nleft < 0` is Python's RuntimeError and the port's `None{}`.
-def t_bx_bad() -> U32: eq(refu(mu_baxes(s2(2, 2), s1(2))), 1)
-
-# THE BRANCH (multi.py:68-75). `ml_kind` is the four-way decision and `ml_*` is
-# one row per outcome: COPY THROUGH (0), WHOLE (1), BROADCAST (2), SHARDED (3).
-# `ml_src0` is the src with NO axis, which is what makes `ml_whole` fire.
 def ml_none() -> Maybe<&2, U32>: None{}
 def ml_some(n: U32) -> Maybe<&2, U32>: Some{n}
-
-def t_ml_thru() -> U32: eq(Sk.kind(ml_kind(ml_some(1), 1, s2(2, 3), s2(2, 3), 1)), 0)
-def t_ml_whole() -> U32: eq(Sk.kind(ml_kind(ml_none(), 1, nil32(), s2(2, 3), 1)), 1)
-def t_ml_bcast() -> U32: eq(Sk.kind(ml_kind(ml_some(2), 1, s1(1), s2(2, 3), 0)), 2)
-def t_ml_shard() -> U32: eq(Sk.kind(ml_kind(ml_some(2), 1, s2(2, 3), s2(2, 3), 0)), 3)
-# and the src_axis rides out of the same record.
-def t_ml_sa() -> U32: eq(Sk.sa(ml_kind(ml_some(2), 0, s2(2, 3), s2(2, 3), 0)), 0)
-# `mlb.axis == src_axis` is False for a src with no axis, so a SCALAR never copies
-# through -- the row that says `mu_axis_is` on `None` is False.
-def t_ml_none_thru() -> U32: eq(yes(ml_through(ml_none(), 0)), 0)
-def t_ml_copy() -> U32: eq(yes(ml_needs_copy(ml_some(1))), 1)
-def t_ml_nocopy() -> U32: eq(yes(ml_needs_copy(ml_none())), 0)
-
-
-# `shard_subview` ROWS -- the shape assert, the EXPAND-of-a-scalar arm and `_shard`'s
-# two arithmetic lines (ops.py:751-756).
-
-def t_sv_eq() -> U32: eq(yes(mu_shape_eq(s2(2, 3), s2(2, 3))), 1)
-def t_sv_ne() -> U32: eq(yes(mu_shape_eq(s2(2, 3), s2(2, 4))), 0)
-def t_sv_rank() -> U32: eq(yes(mu_shape_eq(s2(2, 3), s1(3))), 0)
-def t_sv_sc() -> U32: eq(yes(mu_scalar(nil32())), 1)
-def t_sv_nsc() -> U32: eq(yes(mu_scalar(s1(1))), 0)
-# the EXPAND arm has TWO conjuncts and both are gateable: an EXPAND of a NON-scalar
-# is not this arm, and a non-EXPAND is not this arm.
-def t_sv_exp() -> U32: eq(yes(sv_expand(O.OpsEXPAND{}, True{})), 1)
-def t_sv_exp_nosc() -> U32: eq(yes(sv_expand(O.OpsEXPAND{}, False{})), 0)
-def t_sv_exp_no() -> U32: eq(yes(sv_expand(O.OpsADD{}, True{})), 0)
-# `_shard`: the divisibility test and the per-shard extent.
-def t_sv_div4() -> U32: eq(yes(sv_div(8, 2)), 1)
-def t_sv_div5() -> U32: eq(yes(sv_div(5, 2)), 0)
-def t_sv_div0() -> U32: eq(yes(sv_div(8, 0)), 0)
-def t_sv_sz8() -> U32: eq(sv_sz(8, 2), 4)
-def t_sv_sz6() -> U32: eq(sv_sz(6, 2), 3)
-# an UNEVEN dim is Python's "multi axis uneven" raise and the port answers the wall
-# marker rather than a truncated extent.
-def t_sv_sz5() -> U32: eq(sv_sz(5, 2), 0)
-def t_sv_nsh() -> U32: eq(U32.from_nat(sv_nshard(mu_shard.zip(G.ar(g()), g_ma(g())))), 2)
-def t_sv_ax0() -> U32: eq(mu_at(sv_axes(mu_shard.zip(G.ar(g()), g_ma(g()))), 0n), 0)
-def t_sv_ax1() -> U32: eq(mu_at(sv_axes(mu_shard.zip(G.ar(g()), g_ma(g()))), 1n), 1)
-def t_sv_ax_n() -> U32: eq(U32.from_nat(mu_len(sv_axes(mu_shard.zip(G.ar(g()), g_ma(g()))))), 2)
-
-
-# `alu_multi` ROWS -- `can_handle` and the resharding precondition.
 
 def one_sh(ax: U32, n: U32) -> List<&2, Sh>: [Sh{ax, n}]
 def two_sh(ax: U32, n: U32, bx: U32, m: U32) -> List<&2, Sh>: [Sh{ax, n}, Sh{bx, m}]
 
-# the sharding EQUALITY compares BOTH the axis and the COUNT, and `al_eq_n` is
-# the row for the count: two shardings on the same axis with different device
-# counts are NOT the same sharding, and a comparison that looked only at the axis
-# would accept them and produce a per-shard ALU over shards of the wrong size.
-def t_al_eq() -> U32: eq(yes(al_sh_eq(one_sh(0, 4), one_sh(0, 4))), 1)
-def t_al_eq_n() -> U32: eq(yes(al_sh_eq(one_sh(0, 4), one_sh(0, 2))), 0)
-def t_al_eq_ax() -> U32: eq(yes(al_sh_eq(one_sh(0, 4), one_sh(1, 4))), 0)
-def t_al_eq_len() -> U32: eq(yes(al_sh_eq(one_sh(0, 4), two_sh(0, 4, 1, 4))), 0)
-def t_al_eq_two() -> U32: eq(yes(al_sh_eq(two_sh(0, 4, 1, 2), two_sh(0, 4, 1, 2))), 1)
-
-# `can_handle`: a SHARDED src is judged only by its sharding (the guard), a scalar
-# and a full-shape value are the other two.
-def t_al_sh_ok() -> U32: eq(yes(al_handle(True{}, True{}, False{}, s2(2, 3), s2(2, 3))), 1)
-def t_al_sh_no() -> U32: eq(yes(al_handle(True{}, False{}, False{}, s2(2, 3), s2(2, 3))), 0)
-# a sharded src whose sharding DIFFERS is refused even though it is neither a
-# scalar nor of the target shape.
-def t_al_sh_guard() -> U32: eq(yes(al_handle(True{}, False{}, False{}, s1(4), s2(2, 3))), 0)
-def t_al_sc() -> U32: eq(yes(al_handle(False{}, True{}, True{}, nil32(), s2(2, 3))), 1)
-def t_al_full() -> U32: eq(yes(al_handle(False{}, True{}, False{}, s2(2, 3), s2(2, 3))), 1)
-def t_al_neither() -> U32: eq(yes(al_handle(False{}, True{}, False{}, s2(4, 6), s2(2, 3))), 0)
-# `if not multis: return None`
-def t_al_none0() -> U32: eq(yes(al_none(0n)), 1)
-def t_al_none1() -> U32: eq(yes(al_none(1n)), 0)
-def t_al_nmultis() -> U32: eq(U32.from_nat(al_nmultis(two_sh(0, 4, 1, 4))), 2)
-
-
-# `reduce_multi` ROWS -- the split of the sharding by `num_axes`, the two asserts
-# and the `num_axes` REBASE of the remaining axes. `rd_sum_n` is the partition
-# row: `len(reduced) + len(remaining) == len(sharding)` ALWAYS, because `<` and
-# `>=` are complementary.
-
 def shrd(sh: List<&2, Sh>, na: U32) -> Rd:
   rd_split(sh, na)
 
-def t_rd_any_empty() -> U32: eq(yes(rd_any(Nil{})), 0)
-def t_rd_all_red() -> U32: eq(U32.from_nat(mu_len(Rd.red(shrd(two_sh(0, 4, 1, 4), 1)))), 1)
-def t_rd_all_rem() -> U32: eq(U32.from_nat(mu_len(Rd.rem(shrd(two_sh(0, 4, 1, 4), 1)))), 1)
-def t_rd_some_red() -> U32: eq(U32.from_nat(mu_len(Rd.red(shrd(two_sh(1, 4, 2, 4), 1)))), 0)
-def t_rd_some_rem() -> U32: eq(U32.from_nat(mu_len(Rd.rem(shrd(two_sh(1, 4, 2, 4), 1)))), 2)
-def t_rd_none_red() -> U32: eq(U32.from_nat(mu_len(Rd.red(shrd(two_sh(2, 4, 3, 4), 1)))), 0)
-def t_rd_two_red() -> U32: eq(U32.from_nat(mu_len(Rd.red(shrd(two_sh(0, 4, 1, 4), 2)))), 2)
-def t_rd_zero_red() -> U32: eq(U32.from_nat(mu_len(Rd.red(shrd(two_sh(0, 4, 1, 4), 0)))), 0)
-# THE PARTITION: `len(red) + len(rem) == len(sharding)` for every `num_axes`.
-def t_rd_sum0() -> U32: eq(U32.add(U32.from_nat(mu_len(Rd.red(shrd(two_sh(0, 4, 1, 4), 0)))),
-                                  U32.from_nat(mu_len(Rd.rem(shrd(two_sh(0, 4, 1, 4), 0))))), 2)
-def t_rd_sum1() -> U32: eq(U32.add(U32.from_nat(mu_len(Rd.red(shrd(two_sh(0, 4, 1, 4), 1)))),
-                                  U32.from_nat(mu_len(Rd.rem(shrd(two_sh(0, 4, 1, 4), 1))))), 2)
-def t_rd_sum2() -> U32: eq(U32.add(U32.from_nat(mu_len(Rd.red(shrd(two_sh(0, 4, 1, 4), 2)))),
-                                  U32.from_nat(mu_len(Rd.rem(shrd(two_sh(0, 4, 1, 4), 2))))), 2)
-# THE REBASE: `new_axes = tuple(ax - num_axes for ax,_ in remaining)`. Printed as
-# `ax0.ax1` -- the ELEMENTS and not the list -- because `eq` compares `U32` and a
-# list comparison would be a second equality function for the same question.
 def rdo0(r: Rd) -> U32: mu_at(Rd.off(r), 0n)
 def rdo1(r: Rd) -> U32: mu_at(Rd.off(r), 1n)
 def rdo_n(r: Rd) -> U32: U32.from_nat(mu_len(Rd.off(r)))
-
-def t_rd_off0() -> U32: eq(rdo0(shrd(two_sh(0, 4, 1, 4), 0)), 0)
-def t_rd_off0b() -> U32: eq(rdo1(shrd(two_sh(0, 4, 1, 4), 0)), 1)
-def t_rd_off1() -> U32: eq(rdo0(shrd(two_sh(1, 4, 2, 4), 1)), 0)
-def t_rd_off2() -> U32: eq(rdo0(shrd(two_sh(2, 4, 3, 4), 1)), 1)
-def t_rd_off2b() -> U32: eq(rdo1(shrd(two_sh(2, 4, 3, 4), 1)), 2)
-def t_rd_off3() -> U32: eq(rdo0(shrd(two_sh(1, 4, 4, 4), 3)), 1)
-def t_rd_off_n() -> U32: eq(rdo_n(shrd(two_sh(1, 4, 4, 4), 3)), 1)
-def t_rd_off_none() -> U32: eq(rdo_n(shrd(two_sh(0, 4, 1, 4), 2)), 0)
-# THE TWO ASSERTS. `rd_bad` is the partial-allreduce raise and it needs BOTH a
-# reduced axis and a remaining one; `rd_fires` is the full-allreduce arm.
-def t_rd_bad() -> U32: eq(yes(rd_bad(shrd(two_sh(0, 4, 1, 4), 1))), 1)
-def t_rd_bad_none() -> U32: eq(yes(rd_bad(shrd(two_sh(1, 4, 2, 4), 1))), 0)
-def t_rd_bad_all() -> U32: eq(yes(rd_bad(shrd(two_sh(0, 4, 1, 4), 2))), 0)
-# a sharding that STRADDLES num_axes is Python's partial-allreduce RAISE, so
-# `rd_fires` is 0 and `rd_bad` is 1 -- the pair is the whole of multi.py:113-114.
-def t_rd_fires() -> U32: eq(yes(rd_fires(shrd(two_sh(0, 4, 1, 4), 1))), 0)
-def t_rd_fires_none() -> U32: eq(yes(rd_fires(shrd(two_sh(1, 4, 2, 4), 1))), 0)
-def t_rd_piece() -> U32: eq(yes(rd_any(Rd.red(shrd(two_sh(1, 4, 2, 4), 1)))), 0)
-
-# THE ALLREDUCE_CAST ARM -- three conjuncts and each one is a row, because
-# dropping the flag or the dtype test would silently change WHICH dtype is cast.
-def t_rd_cast() -> U32: eq(yes(rd_cast(mu_c_early(), O.OpsCAST{}, S.bfloat16())), 1)
-def t_rd_cast_half() -> U32: eq(yes(rd_cast(mu_c_early(), O.OpsCAST{}, S.half())), 1)
-def t_rd_cast_f32() -> U32: eq(yes(rd_cast(mu_c_early(), O.OpsCAST{}, S.single())), 0)
-def t_rd_cast_noop() -> U32: eq(yes(rd_cast(mu_c_early(), O.OpsADD{}, S.bfloat16())), 0)
-def t_rd_cast_off() -> U32: eq(yes(rd_cast(mu_c_nocast(), O.OpsCAST{}, S.bfloat16())), 0)
-
-
-# `reshape_multi` ROWS -- `arg_acc`, the REVERSED `.index`, and the two raises.
-# `rs_*_acc` is the running product and `rs_*_ax` is the new axis;
-# `rs_*_ok = 0` is a raise.
 
 def rsa(xs: List<&2, U32>) -> List<&2, U32>: rs_acc(xs)
 def rsa1(xs: List<&2, U32>) -> U32: mu_at(rs_acc(xs), 1n)
@@ -2723,127 +2367,15 @@ def rsa2(xs: List<&2, U32>) -> U32: mu_at(rs_acc(xs), 2n)
 def rsa3(xs: List<&2, U32>) -> U32: mu_at(rs_acc(xs), 3n)
 def rsa_n(xs: List<&2, U32>) -> U32: U32.from_nat(mu_len(rs_acc(xs)))
 
-def t_rs_acc_n4() -> U32: eq(rsa_n(s2(4, 6)), 3)
-def t_rs_acc_n1() -> U32: eq(rsa_n(s1(24)), 2)
-def t_rs_acc_n0() -> U32: eq(rsa_n(nil32()), 1)
-def t_rs_acc1_4() -> U32: eq(rsa1(s2(4, 6)), 4)
-def t_rs_acc2_4() -> U32: eq(rsa2(s2(4, 6)), 24)
-# (4,6) -> (2,3,4): the running product passes THROUGH 4 at index 2.
-def t_rs_acc3_1() -> U32: eq(rsa1(s3(2, 3, 4)), 2)
-def t_rs_acc3_2() -> U32: eq(rsa2(s3(2, 3, 4)), 6)
-def t_rs_acc3_3() -> U32: eq(rsa3(s3(2, 3, 4)), 24)
-
-# `target = prod(shape[:ax])` and `target in arg_acc`.
-def t_rs_tgt0() -> U32: eq(mu_prod_upto(s2(4, 6), 0n), 1)
-def t_rs_tgt1() -> U32: eq(mu_prod_upto(s2(4, 6), 1n), 4)
-def t_rs_tgt2() -> U32: eq(mu_prod_upto(s2(4, 6), 2n), 24)
-def t_rs_tgt3() -> U32: eq(mu_prod_upto(s3(2, 3, 4), 3n), 24)
-
-# THE RAISES. `rs_same` is (4,6)->(4,6) sharded on 0: target 1, arg_acc
-# [1,4,24], reversed index 2, new_ax = 3-2-1 = 0, and 4 % 2 == 0 so it FIRES.
-def t_rs_same() -> U32: eq(Rs.ax(rs_axis(rs_acc(s2(4, 6)), 1, 2, s2(4, 6))), 0)
-def t_rs_same_ok() -> U32: eq(yes(Rs.ok(rs_axis(rs_acc(s2(4, 6)), 1, 2, s2(4, 6)))), 1)
-# `rs_mid` is (4,6)->(2,12): target 4 is NOT in [1,2,24], so Python RAISES.
-def t_rs_mid_ok() -> U32: eq(yes(Rs.ok(rs_axis(rs_acc(s2(2, 12)), 4, 2, s2(2, 12)))), 0)
-# `rs_head` is (4,6)->(24,) sharded on 0: target 1, acc [1,24], new_ax 0.
-def t_rs_head() -> U32: eq(Rs.ax(rs_axis(rs_acc(s1(24)), 1, 2, s1(24))), 0)
-# `rs_thr0` is (2,3,4)->(2,3,4) sharded on 2: target 6, acc [1,2,6,24],
-# reversed index 1, new_ax = 4-1-1 = 2.
-def t_rs_thr0() -> U32: eq(Rs.ax(rs_axis(rs_acc(s3(2, 3, 4)), 6, 2, s3(2, 3, 4))), 2)
-def t_rs_thr0_ok() -> U32: eq(yes(Rs.ok(rs_axis(rs_acc(s3(2, 3, 4)), 6, 2, s3(2, 3, 4)))), 1)
-# THE SECOND RAISE: the boundary dim 3 is not divisible by count 2.
-def t_rs_thr1_ok() -> U32: eq(yes(Rs.ok(rs_axis(rs_acc(s3(2, 3, 4)), 2, 2, s3(2, 3, 4)))), 0)
-# `rs_thr1` new_ax is 1 and the boundary dim is 3, so the SAME target with the same
-# count is refused -- the row that says the divisibility test is on
-# `new_shape[new_ax]` and not on the target.
-def t_rs_thr1_ax() -> U32: eq(Rs.ax(rs_axis(rs_acc(s3(2, 3, 4)), 2, 2, s3(2, 3, 4))), 1)
-# the first raise: `prod(multi.shape) != prod(new_shape)`.
-def t_rs_prod() -> U32: eq(yes(rs_prods(s2(4, 6), s2(4, 6))), 1)
-def t_rs_prod_bad() -> U32: eq(yes(rs_prods(s2(4, 6), s2(5, 5))), 0)
-
-# THE REVERSED `.index` -- the "most recent hit" row. `rs_hit_tie` uses
-# arg_acc = [1, 2, 2, 6] (a `new_shape` with a dim of 1) so 2 appears twice and the
-# REVERSED index takes the LAST one: 2, not 1.
-# THE TIE. `arg_acc` for `new_shape = (2, 1, 2)` is `[1, 2, 2, 6]`, so the target 2
-# appears TWICE and `.index` on the REVERSED list takes the LAST one: the reversed
-# index is 2, not 1. `rs_tie_ax` is the consequence -- the new axis is 4-2-1 = 1 and
-# not 2 -- and it is the row that says the search counts from the END.
-def t_rs_tie_hit() -> U32: eq(U32.from_nat(mu_head_nat(rs_rev(rs_acc(s3(2, 1, 2)), 2))), 1)
-def t_rs_tie_hit_f() -> U32: eq(U32.from_nat(mu_head_nat(rs_rev(rs_acc(s3(2, 1, 2)), 6))), 0)
-def t_rs_tie_axb() -> U32: eq(Rs.ax(rs_new_ax(rs_acc(s3(2, 1, 2)), 2)), 2)
-def t_rs_tie_ax() -> U32: eq(Rs.ax(rs_new_ax(rs_acc(s3(2, 1, 2)), 2)), 2)
-def t_rs_tie_ax0() -> U32: eq(Rs.ax(rs_new_ax(rs_acc(s3(2, 1, 2)), 1)), 0)
 def mu_bs_none2(m: Maybe<&2, Nat>) -> Bool:
   Maybe.is_none(&2, Nat, m)
 
-def t_rs_none() -> U32: eq(yes(mu_bs_none2(rs_rev(rs_acc(s2(4, 6)), 7))), 1)
-
-# THE LOCAL SHAPE -- `s // count if a in new_axs else s` (multi.py:139). `Ns`
-# carries the three parallel lists and `rs_local` divides a sharded axis and keeps
-# an unsharded one.
 def ns2(dims: List<&2, U32>, axes: List<&2, U32>, cs: List<&2, U32>) -> Ns:
   Ns{dims, axes, cs}
 
-def t_rs_loc0() -> U32: eq(mu_at(rs_local(ns2(s2(4, 6), s1(0), s1(2))), 0n), 2)
-def t_rs_loc1() -> U32: eq(mu_at(rs_local(ns2(s2(4, 6), s1(0), s1(2))), 1n), 6)
-def t_rs_loc_both() -> U32: eq(mu_at(rs_local(ns2(s2(4, 6), s2(0, 1), s2(2, 3))), 1n), 2)
-def t_rs_loc_n() -> U32: eq(U32.from_nat(mu_len(rs_local(ns2(s2(4, 6), s1(0), s1(2))))), 2)
-def t_rs_loc_none() -> U32: eq(mu_at(rs_local(ns2(s2(4, 6), nil32(), nil32())), 0n), 4)
-# an UNEVEN sharded dim is the wall marker and NOT a truncated extent.
-def t_rs_loc_bad() -> U32: eq(mu_at(rs_local(ns2(s2(4, 5), s1(1), s1(2))), 1n), 0)
-
-
-# `expand_multi`, `permute_multi`, `flip_multi`, `pad_multi` ROWS.
-
-# `shift = len(root.marg)` -- an EXPAND ADDS axes, it does not reshard.
-def t_ex0() -> U32: eq(ex_shift(0n), 0)
-def t_ex1() -> U32: eq(ex_shift(1n), 1)
-def t_ex2() -> U32: eq(ex_shift(2n), 2)
-def t_ex3() -> U32: eq(ex_shift(3n), 3)
-def t_ex_ax0() -> U32: eq(mu_at(ex_axes(one_sh(0, 4), 1), 0n), 1)
-def t_ex_ax2() -> U32: eq(mu_at(ex_axes(one_sh(2, 4), 3), 0n), 5)
-def t_ex_axn() -> U32: eq(U32.from_nat(mu_len(ex_axes(two_sh(0, 4, 1, 4), 2))), 2)
-def t_ex_rng() -> U32: eq(mu_at(ex_rngs(one_sh(3, 4), ), 0n), 4)
-
-# `tuple(root.marg.index(ax))` -- a SEARCH, so `permute((1,0))` sends axis 0 to 1.
-def t_pm_id() -> U32: eq(U32.from_nat(mu_head_nat(pm_index(s2(0, 1), 0))), 0)
-def t_pm_id1() -> U32: eq(U32.from_nat(mu_head_nat(pm_index(s2(0, 1), 1))), 1)
-def t_pm_sw() -> U32: eq(U32.from_nat(mu_head_nat(pm_index(s2(1, 0), 0))), 1)
-def t_pm_sw1() -> U32: eq(U32.from_nat(mu_head_nat(pm_index(s2(1, 0), 1))), 0)
-def t_pm_cyc() -> U32: eq(U32.from_nat(mu_head_nat(pm_index(s3(2, 0, 1), 1))), 2)
-def t_pm_cyc0() -> U32: eq(U32.from_nat(mu_head_nat(pm_index(s3(2, 0, 1), 0))), 1)
-def t_pm_rev() -> U32: eq(U32.from_nat(mu_head_nat(pm_index(s3(2, 1, 0), 2))), 0)
-def t_pm_mid() -> U32: eq(U32.from_nat(mu_head_nat(pm_index(s3(0, 2, 1), 2))), 1)
-# an axis not IN the permutation is Python's ValueError.
-def t_pm_missing() -> U32: eq(yes(mu_bs_none2(pm_index(s2(0, 1), 2))), 1)
-def t_pm_of() -> U32: eq(mu_at(pm_of(one_sh(1, 4), s2(1, 0)), 0n), 0)
-
-# `[i for i,x in enumerate(root.marg) if x]` -- the FLIP axis list.
-def t_fl_none() -> U32: eq(U32.from_nat(mu_len(fl_of(s2(0, 0)))), 0)
-def t_fl_one() -> U32: eq(U32.from_nat(mu_len(fl_of(s2(0, 4)))), 1)
-def t_fl_one0() -> U32: eq(mu_at(fl_of(s2(0, 4)), 0n), 1)
-def t_fl_two() -> U32: eq(U32.from_nat(mu_len(fl_of(s2(3, 4)))), 2)
-def t_fl_two1() -> U32: eq(mu_at(fl_of(s2(3, 4)), 1n), 1)
-def t_fl_first() -> U32: eq(mu_at(fl_of(s2(2, 0)), 0n), 0)
-def t_fl_all() -> U32: eq(U32.from_nat(mu_len(fl_of(s2(1, 1)))), 2)
-def t_fl_mid() -> U32: eq(mu_at(fl_of(s3(0, 1, 0)), 0n), 1)
-def t_fl_mid_n() -> U32: eq(U32.from_nat(mu_len(fl_of(s3(0, 1, 0)))), 1)
-# THE RAISE -- flipping a SHARDED axis moves data across the shard boundary.
-def t_fl_bad() -> U32: eq(yes(fl_bad(two_sh(0, 4, 1, 4), s2(0, 4))), 1)
-def t_fl_bad2() -> U32: eq(yes(fl_bad(two_sh(0, 4, 1, 4), s2(1, 4))), 1)
-def t_fl_bad_none() -> U32: eq(yes(fl_bad(one_sh(0, 4), s2(0, 4))), 0)
-
-# `pad_multi`'s ASSERT -- `root.marg[ax] == (0, multi.shape[ax])` over the
-# sharded axes.
 def marg1(s: U32, l: U32) -> List<&2, Bd>: [Bd{s, l}]
 def marg2(s: U32, l: U32, t: U32, m: U32) -> List<&2, Bd>: [Bd{s, l}, Bd{t, m}]
 
-def t_pd_ok() -> U32: eq(yes(pd_bad(one_sh(0, 4), marg1(0, 8), s1(8))), 0)
-def t_pd_bad_s() -> U32: eq(yes(pd_bad(one_sh(0, 4), marg1(1, 8), s1(8))), 1)
-def t_pd_bad_l() -> U32: eq(yes(pd_bad(one_sh(0, 4), marg1(0, 4), s1(8))), 1)
-def t_pd_ok2() -> U32: eq(yes(pd_bad(two_sh(0, 4, 1, 4), marg2(0, 8, 0, 24), s2(8, 24))), 0)
-def t_pd_bad2() -> U32: eq(yes(pd_bad(two_sh(0, 4, 1, 4), marg2(0, 8, 0, 8), s2(8, 24))), 1)
-# the LOCAL PAD -- `(0, local.shape[a])` on a sharded axis, `s` verbatim elsewhere.
 def pd_head(ms: List<&2, Bd>) -> Bd:
   Maybe.default(&2, Bd, List.head(&2, Bd, ms), Bd{0, 0})
 
@@ -2853,604 +2385,43 @@ def pd_at(ms: List<&2, Bd>, i: Nat) -> Bd:
 def pd_l0(ms: List<&2, Bd>) -> U32: Bd.l(pd_head(ms))
 def pd_s0(ms: List<&2, Bd>) -> U32: Bd.s(pd_head(ms))
 def pd_l1(ms: List<&2, Bd>) -> U32: Bd.l(pd_at(ms, 1n))
-# axis 0 IS sharded, so the pair becomes `(0, 8)` -- the shard's own extent -- and
-# axis 1 is NOT, so it keeps its marg entry verbatim.
-def t_pd_one0() -> U32: eq(pd_s0(pd_of(marg2(0, 8, 0, 3), s1(0))), 0)
-def t_pd_one1() -> U32: eq(pd_l0(pd_of(marg2(0, 8, 0, 3), s1(0))), 8)
-def t_pd_kp1() -> U32: eq(pd_l1(pd_of(marg2(0, 8, 1, 3), Nil{})), 3)
-def t_pd_kp0() -> U32: eq(pd_s0(pd_of(marg2(1, 8, 0, 3), nil32())), 1)
-def t_pd_kp0b() -> U32: eq(pd_l0(pd_of(marg2(1, 8, 0, 3), nil32())), 8)
 def blen(xs: List<&2, Bd>) -> U32:
   U32.from_nat(List.length(&2, Bd, xs))
-
-def t_pd_n() -> U32: eq(blen(pd_of(marg2(0, 8, 0, 3), s1(0))), 2)
-
-
-# `shrink_multi` ROWS -- `part_bounds`, the OWN test's length half, the WHOLE test
-# and the four-way outcome.
 
 def pb0(pb: List<&2, Bd>) -> U32: Bd.s(pd_head(pb))
 def pbl0(pb: List<&2, Bd>) -> U32: Bd.l(pd_head(pb))
 def pbat(pb: List<&2, Bd>, i: Nat) -> U32: Bd.s(mu_bd_at(pb, i))
 def pbn(pb: List<&2, Bd>) -> U32: U32.from_nat(List.length(&2, Bd, pb))
 
-# `part_bounds = tuple((i*shard_sz, shard_sz) for i in range(count))` for
-# shard_sz 4 over 2, 3, 4 and 1 devices -- all of CPython's own.
-def t_pb42_n() -> U32: eq(pbn(sk_pb(4, 2)), 2)
-def t_pb42_s0() -> U32: eq(pb0(sk_pb(4, 2)), 0)
-def t_pb42_l0() -> U32: eq(pbl0(sk_pb(4, 2)), 4)
-def t_pb42_s1() -> U32: eq(pbat(sk_pb(4, 2), 1n), 4)
-def t_pb43_n() -> U32: eq(pbn(sk_pb(4, 3)), 3)
-def t_pb43_s1() -> U32: eq(pbat(sk_pb(4, 3), 1n), 4)
-def t_pb43_s2() -> U32: eq(pbat(sk_pb(4, 3), 2n), 8)
-def t_pb62_n() -> U32: eq(pbn(sk_pb(6, 2)), 2)
-def t_pb62_l0() -> U32: eq(pbl0(sk_pb(6, 2)), 6)
-def t_pb84_n() -> U32: eq(pbn(sk_pb(8, 4)), 4)
-def t_pb84_sm() -> U32: eq(pbat(sk_pb(8, 4), 2n), 16)
-def t_pb84_sl() -> U32: eq(pbat(sk_pb(8, 4), 3n), 24)
-def t_pb41_n() -> U32: eq(pbn(sk_pb(4, 1)), 1)
-
-# `.index((s, l))` -- WHICH PARTITION, and a miss is the wall marker.
-def t_sk_at0() -> U32: eq(sk_at(sk_pb(4, 4), Bd{0, 4}), 0)
-def t_sk_at2() -> U32: eq(sk_at(sk_pb(4, 4), Bd{8, 4}), 2)
-def t_sk_at3() -> U32: eq(sk_at(sk_pb(4, 4), Bd{12, 4}), 3)
-# a MISS is the SENTINEL, not 0: index 0 is a real partition. MEASURED, the walk
-# returned 0 for a miss while `sk_at0` also returned 0, so the two were
-# indistinguishable.
-def t_sk_at_miss() -> U32: eq(sk_at(sk_pb(4, 4), Bd{13, 4}), 4294967295)
-def t_sk_in() -> U32: eq(yes(sk_in(sk_pb(4, 4), Bd{8, 4})), 1)
-def t_sk_in_no() -> U32: eq(yes(sk_in(sk_pb(4, 4), Bd{13, 4})), 0)
-
-# THE OWN TEST's length half -- `l == shard_sz`.
-def t_sk_len_ok() -> U32: eq(yes(sk_len_eq(marg1(0, 4), 4, 0n)), 1)
-def t_sk_len_no() -> U32: eq(yes(sk_len_eq(marg1(0, 8), 4, 0n)), 0)
-# THE WHOLE test -- `(s,l) == (0, multi.shape[ax])`.
-def t_sk_w_ok() -> U32: eq(yes(sk_whole_eq(marg1(0, 8), s1(8), 0n)), 1)
-def t_sk_w_no() -> U32: eq(yes(sk_whole_eq(marg1(0, 4), s1(8), 0n)), 0)
-def t_sk_w_s() -> U32: eq(yes(sk_whole_eq(marg1(1, 8), s1(8), 0n)), 0)
-
-# the four-way outcome: 0 own, 1 whole, 2 partition, 3 raise.
-def t_sk_own() -> U32: eq(sk_kind(True{}, True{}, False{}, True{}, True{}), 0)
-def t_sk_whole() -> U32: eq(sk_kind(False{}, True{}, False{}, True{}, True{}), 1)
-def t_sk_part() -> U32: eq(sk_kind(False{}, False{}, False{}, True{}, True{}), 2)
-def t_sk_raise() -> U32: eq(sk_kind(False{}, False{}, False{}, True{}, False{}), 3)
-# THE THREE CONJUNCTS of the raise, one row each -- they are `or`-ed, so each one
-# alone is enough to raise and that is what the rows show.
-# `len(sharding) != 1` ALONE is the raise, and `t_sk_r_pb` and `t_sk_r_dev` are the
-# other two conjuncts. MEASURED, the original `sk_raise2` read the two device/pb
-# terms as POSITIVE (`bad_n or (one_dev and in_pb)`) and answered PARTITION for all
-# three; every one of these rows was 0 until it was `not`.
-def t_sk_r_n() -> U32: eq(sk_kind(False{}, False{}, True{}, True{}, True{}), 3)
-def t_sk_r_dev() -> U32: eq(sk_kind(False{}, False{}, False{}, False{}, True{}), 3)
-def t_sk_r_pb() -> U32: eq(sk_kind(False{}, False{}, False{}, True{}, False{}), 3)
-# the OWN arm SKIPS the raise entirely: a two-axis sharding resolves its own shard
-# even though `len(sharding) != 1`.
-def t_sk_own2() -> U32: eq(sk_kind(True{}, True{}, True{}, False{}, False{}), 0)
-# `remaining.remove((ax, rng))` -- the pair equality, and it compares the COUNT.
-def t_sk_keep() -> U32: eq(U32.from_nat(mu_nshard(sk_keep(two_sh(0, 4, 1, 4), one_sh(0, 4)))), 1)
-def t_sk_keep0() -> U32: eq(mu_at(sv_axes(sk_keep(two_sh(0, 4, 1, 4), one_sh(0, 4))), 0n), 1)
-def t_sk_keep_all() -> U32: eq(U32.from_nat(mu_nshard(sk_keep(two_sh(0, 4, 1, 4), Nil{}))), 2)
-def t_sk_keep_n() -> U32: eq(U32.from_nat(mu_nshard(sk_keep(two_sh(0, 4, 1, 4), one_sh(0, 2)))), 2)
-
-
-# `stack_multi` ROWS -- the `ax+1` shift and the `axis-1` fallback.
-
-def t_st_ax0() -> U32: eq(mu_at(st_shift(one_sh(0, 4)), 0n), 1)
-def t_st_ax2() -> U32: eq(mu_at(st_shift(one_sh(2, 4)), 0n), 3)
-def t_st_n() -> U32: eq(U32.from_nat(mu_len(st_shift(two_sh(0, 4, 1, 4)))), 2)
-def t_st_off0() -> U32: eq(st_off(1), 0)
-def t_st_off1() -> U32: eq(st_off(2), 1)
-# `axis - 1` at axis 0 would WRAP in `U32`, and Python's `root.axis` is 0 there, so
-# the guard is `axis > 0` and 0 is the wall.
-def t_st_off_nil() -> U32: eq(st_off(0), 0)
-def t_st_none() -> U32: eq(yes(st_none(0n)), 1)
-def t_st_not_none() -> U32: eq(yes(st_none(2n)), 0)
-
-
-
-# `index_multi` ROWS -- both ownership patterns, and the window is tested TWICE.
-# shard_sz 4: contiguous locals are 0..3 and the strided diff must be a multiple.
-
-def t_ix_c0() -> U32: eq(ix_contig(0, 0, 4), 0)
-def t_ix_c1() -> U32: eq(ix_contig(3, 0, 4), 3)
-def t_ix_c2() -> U32: eq(ix_contig(4, 1, 4), 0)
-def t_ix_c3() -> U32: eq(ix_contig(7, 1, 4), 3)
-def t_ix_c_oob() -> U32: eq(yes(ix_in(ix_contig(8, 1, 4), 4)), 0)
-def t_ix_c_in() -> U32: eq(yes(ix_in(ix_contig(3, 0, 4), 4)), 1)
-def t_ix_c_win0() -> U32: eq(yes(ix_in(0, 4)), 1)
-def t_ix_c_win4() -> U32: eq(yes(ix_in(4, 4)), 0)
-def t_ix_s0() -> U32: eq(ix_strid(0, 0), 0)
-def t_ix_s1() -> U32: eq(ix_strid(1, 0), 1)
-def t_ix_s4() -> U32: eq(ix_strid(4, 0), 4)
-def t_ix_mod0() -> U32: eq(ix_mod(ix_strid(4, 0), 4), 0)
-def t_ix_mod1() -> U32: eq(ix_mod(ix_strid(5, 0), 4), 1)
-def t_ix_mod0b() -> U32: eq(ix_mod(ix_strid(12, 0), 4), 0)
-def t_ix_ok() -> U32: eq(yes(ix_strid_ok(ix_strid(12, 0), 4)), 1)
-def t_ix_bad() -> U32: eq(yes(ix_strid_ok(ix_strid(5, 0), 4)), 0)
-def t_ix_div() -> U32: eq(ix_div(ix_strid(12, 0), 4), 3)
-def t_ix_div0() -> U32: eq(ix_div(ix_strid(4, 0), 4), 1)
-def t_ix_kind_c() -> U32: eq(ix_kind(True{}, False{}, False{}), 0)
-def t_ix_kind_s() -> U32: eq(ix_kind(False{}, True{}, True{}), 1)
-def t_ix_kind_r() -> U32: eq(ix_kind(False{}, False{}, False{}), 2)
-def t_ix_kind_r2() -> U32: eq(ix_kind(False{}, True{}, False{}), 2)
-def t_ix_kind0() -> U32: eq(ix_mod(4, 0), 4)
-def t_ix_kind00() -> U32: eq(ix_div(4, 0), 0)
-
-
-# `copy_multi` / `_shard_idx` ROWS -- the GROUP KEY `idxs[:j] + idxs[j+1:]`, which
-# DELETES the j-th index. Deleting is not zeroing, and on a repeated index (which
-# is every multi-axis shard) the two differ.
-
 def cxn(k: List<&2, U32>) -> U32: U32.from_nat(mu_len(k))
 
-def t_cx_j0() -> U32: eq(cxn(cx_key(s2(0, 1), 0n)), 1)
-def t_cx_j1() -> U32: eq(cxn(cx_key(s2(0, 1), 1n)), 1)
-def t_cx_j2() -> U32: eq(cxn(cx_key(s3(0, 1, 2), 2n)), 2)
-def t_cx_j3() -> U32: eq(cxn(cx_key(s3(0, 1, 2), 0n)), 2)
-def t_cx_j0b() -> U32: eq(mu_at(cx_key(s2(0, 1), 0n), 0n), 1)
-def t_cx_j1b() -> U32: eq(mu_at(cx_key(s2(0, 1), 1n), 0n), 0)
-def t_cx_same() -> U32: eq(mu_at(cx_key(s2(3, 3), 0n), 0n), 3)
-def t_cx_rep() -> U32: eq(mu_at(cx_key(s2(3, 3), 1n), 0n), 3)
-def t_cx_j0n() -> U32: eq(U32.from_nat(cx_key_n(cx_key(s2(0, 1), 0n))), 1)
-def t_sx0() -> U32: eq(sx_idx(False{}, 3), 0)
-def t_sx1() -> U32: eq(sx_idx(True{}, 3), 3)
-def t_sx2() -> U32: eq(sx_idx(True{}, 0), 0)
 
-
-# `replace_allreduce`'s rule bodies and the STORE family.
-
-def t_lb_fires() -> U32: eq(yes(lb_fires(True{}, True{})), 1)
-def t_lb_no() -> U32: eq(yes(lb_fires(False{}, True{})), 0)
-def t_lb_no2() -> U32: eq(yes(lb_fires(True{}, False{})), 0)
-def t_lb_reps() -> U32: eq(lb_reps(4), 4)
-def t_lb_none() -> U32: eq(yes(lb_none(True{})), 1)
-def t_lb_not_none() -> U32: eq(yes(lb_none(False{})), 0)
-def t_co_fires() -> U32: eq(yes(co_fires(True{}, True{})), 1)
-def t_co_no() -> U32: eq(yes(co_fires(False{}, True{})), 0)
-def t_co_same() -> U32: eq(yes(co_same(True{})), 1)
-def t_co_copy() -> U32: eq(yes(co_same(False{})), 0)
-# `mstack.src[ms.arg]` -- the INDEX and its bounds test.
-def t_ms_arg() -> U32: eq(ms_arg(1, 4), 1)
-def t_ms_arg_bad() -> U32: eq(ms_arg(4, 4), 0)
-def t_ms_ok() -> U32: eq(yes(ms_arg_ok(3, 4)), 1)
-# the MSELECT arms: movement is UNCONDITIONAL, ALU is device-gated.
-# the MOVEMENT arm is UNCONDITIONAL (`v.replace(src=(s.mselect(ms.arg),)+...)`) and
-# the ALU arm is device-gated, so `mv_pick` is the ALU arm's test and the movement
-# arm's is `mv_all`. 1 is "the MSELECT moved inside".
-def t_mv() -> U32: eq(yes(mv_all(True{})), 1)
-def t_mv_alu() -> U32: eq(mv_pick(True{}), 1)
-def t_mv_alu_no() -> U32: eq(mv_pick(False{}), 0)
-# the STORE family -- 0 PEEL, 1 SUB-VIEW, 2 WHOLE.
-def t_stp_peel() -> U32: eq(st_pick(True{}, True{}), 0)
-def t_stp_view() -> U32: eq(st_pick(False{}, True{}), 1)
-def t_stp_whole() -> U32: eq(st_pick(False{}, False{}), 2)
-# `rewrite_into_function` is the recursion wall.
-def t_rw() -> U32: eq(yes(rw_none()), 1)
-
-
-
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    _ : Unit <- row("t_own_n", t_own_n())
-    _ : Unit <- row("t_ra_n", t_ra_n())
-    _ : Unit <- row("t_ea_n", t_ea_n())
-    _ : Unit <- row("t_pm_n", t_pm_n())
-    _ : Unit <- row("t_late_n", t_late_n())
-    _ : Unit <- row("t_t19_on", t_t19_on())
-    _ : Unit <- row("t_t20_on", t_t20_on())
-    _ : Unit <- row("t_t19_off", t_t19_off())
-    _ : Unit <- row("t_t24_off", t_t24_off())
-    _ : Unit <- row("t_t25_off", t_t25_off())
-    _ : Unit <- row("t_t20_off", t_t20_off())
-    _ : Unit <- row("t_t23_off", t_t23_off())
-    _ : Unit <- row("t_tag19", t_tag19())
-    _ : Unit <- row("t_tag25", t_tag25())
-    _ : Unit <- row("t_rej_n", t_rej_n())
-    _ : Unit <- row("t_rej_late", t_rej_late())
-    _ : Unit <- row("t_ops_n", t_ops_n())
-    _ : Unit <- row("t_alu_n", t_alu_n())
-    _ : Unit <- row("t_pass_n", t_pass_n())
-    _ : Unit <- row("t_mov_n", t_mov_n())
-    _ : Unit <- row("t_claim_cp", t_claim_cp())
-    _ : Unit <- row("t_claim_cq", t_claim_cq())
-    _ : Unit <- row("t_claim_st", t_claim_st())
-    _ : Unit <- row("t_claim_su", t_claim_su())
-    _ : Unit <- row("t_claim_ad", t_claim_ad())
-    _ : Unit <- row("t_claim_ms", t_claim_ms())
-    _ : Unit <- row("t_full_st", t_full_st())
-    _ : Unit <- row("t_full_su", t_full_su())
-    _ : Unit <- row("t_full_cp", t_full_cp())
-    _ : Unit <- row("t_full_ad", t_full_ad())
-    _ : Unit <- row("t_first_ad", t_first_ad())
-    _ : Unit <- row("t_first_st", t_first_st())
-    _ : Unit <- row("t_first_su", t_first_su())
-    _ : Unit <- row("t_first_m0", t_first_m0())
-    _ : Unit <- row("t_sh0_n", t_sh0_n())
-    _ : Unit <- row("t_sh1_n", t_sh1_n())
-    _ : Unit <- row("t_sha_n", t_sha_n())
-    _ : Unit <- row("t_shbuf_n", t_shbuf_n())
-    _ : Unit <- row("t_sh0_ax", t_sh0_ax())
-    _ : Unit <- row("t_sh1_ax", t_sh1_ax())
-    _ : Unit <- row("t_sh0_c", t_sh0_c())
-    _ : Unit <- row("t_sha1_ax", t_sha1_ax())
-    _ : Unit <- row("t_sha1_n", t_sha1_n())
-    _ : Unit <- row("t_cnt_rd", t_cnt_rd())
-    _ : Unit <- row("t_cnt_b8", t_cnt_b8())
-    _ : Unit <- row("t_ax_m0", t_ax_m0())
-    _ : Unit <- row("t_ax_ma", t_ax_ma())
-    _ : Unit <- row("t_ax_b8", t_ax_b8())
-    _ : Unit <- row("t_ax_m1", t_ax_m1())
-    _ : Unit <- row("t_ss_ax00", t_ss_ax00())
-    _ : Unit <- row("t_ss_ax11", t_ss_ax11())
-    _ : Unit <- row("t_ss_ax10", t_ss_ax10())
-    _ : Unit <- row("t_ss_ax22", t_ss_ax22())
-    _ : Unit <- row("t_ss_ax02", t_ss_ax02())
-    _ : Unit <- row("t_ss_axneg", t_ss_axneg())
-    _ : Unit <- row("t_ss_rng_dev", t_ss_rng_dev())
-    _ : Unit <- row("t_ss_rng_unsh", t_ss_rng_unsh())
-    _ : Unit <- row("t_ss_rng_src", t_ss_rng_src())
-    _ : Unit <- row("t_ss_rng_src2", t_ss_rng_src2())
-    _ : Unit <- row("t_ss_none", t_ss_none())
-    _ : Unit <- row("t_ss_not_none", t_ss_not_none())
-    _ : Unit <- row("t_ss_same", t_ss_same())
-    _ : Unit <- row("t_ss_same_bad", t_ss_same_bad())
-    _ : Unit <- row("t_bx_none", t_bx_none())
-    _ : Unit <- row("t_bx_pad", t_bx_pad())
-    _ : Unit <- row("t_bx_exp", t_bx_exp())
-    _ : Unit <- row("t_bx_exp_n", t_bx_exp_n())
-    _ : Unit <- row("t_bx_both", t_bx_both())
-    _ : Unit <- row("t_bx_noop", t_bx_noop())
-    _ : Unit <- row("t_bx_scalar", t_bx_scalar())
-    _ : Unit <- row("t_bx_1out", t_bx_1out())
-    _ : Unit <- row("t_bx_11", t_bx_11())
-    _ : Unit <- row("t_bx_1_2", t_bx_1_2())
-    _ : Unit <- row("t_bx_1_2n", t_bx_1_2n())
-    _ : Unit <- row("t_bx_rank1", t_bx_rank1())
-    _ : Unit <- row("t_bx_bad", t_bx_bad())
-    _ : Unit <- row("t_ml_thru", t_ml_thru())
-    _ : Unit <- row("t_ml_whole", t_ml_whole())
-    _ : Unit <- row("t_ml_bcast", t_ml_bcast())
-    _ : Unit <- row("t_ml_shard", t_ml_shard())
-    _ : Unit <- row("t_ml_sa", t_ml_sa())
-    _ : Unit <- row("t_ml_none_thru", t_ml_none_thru())
-    _ : Unit <- row("t_ml_copy", t_ml_copy())
-    _ : Unit <- row("t_ml_nocopy", t_ml_nocopy())
-    _ : Unit <- row("t_sv_eq", t_sv_eq())
-    _ : Unit <- row("t_sv_ne", t_sv_ne())
-    _ : Unit <- row("t_sv_rank", t_sv_rank())
-    _ : Unit <- row("t_sv_sc", t_sv_sc())
-    _ : Unit <- row("t_sv_nsc", t_sv_nsc())
-    _ : Unit <- row("t_sv_exp", t_sv_exp())
-    _ : Unit <- row("t_sv_exp_nosc", t_sv_exp_nosc())
-    _ : Unit <- row("t_sv_exp_no", t_sv_exp_no())
-    _ : Unit <- row("t_sv_div4", t_sv_div4())
-    _ : Unit <- row("t_sv_div5", t_sv_div5())
-    _ : Unit <- row("t_sv_div0", t_sv_div0())
-    _ : Unit <- row("t_sv_sz8", t_sv_sz8())
-    _ : Unit <- row("t_sv_sz6", t_sv_sz6())
-    _ : Unit <- row("t_sv_sz5", t_sv_sz5())
-    _ : Unit <- row("t_sv_nsh", t_sv_nsh())
-    _ : Unit <- row("t_sv_ax0", t_sv_ax0())
-    _ : Unit <- row("t_sv_ax1", t_sv_ax1())
-    _ : Unit <- row("t_sv_ax_n", t_sv_ax_n())
-    _ : Unit <- row("t_al_eq", t_al_eq())
-    _ : Unit <- row("t_al_eq_n", t_al_eq_n())
-    _ : Unit <- row("t_al_eq_ax", t_al_eq_ax())
-    _ : Unit <- row("t_al_eq_len", t_al_eq_len())
-    _ : Unit <- row("t_al_eq_two", t_al_eq_two())
-    _ : Unit <- row("t_al_sh_ok", t_al_sh_ok())
-    _ : Unit <- row("t_al_sh_no", t_al_sh_no())
-    _ : Unit <- row("t_al_sh_guard", t_al_sh_guard())
-    _ : Unit <- row("t_al_sc", t_al_sc())
-    _ : Unit <- row("t_al_full", t_al_full())
-    _ : Unit <- row("t_al_neither", t_al_neither())
-    _ : Unit <- row("t_al_none0", t_al_none0())
-    _ : Unit <- row("t_al_none1", t_al_none1())
-    _ : Unit <- row("t_al_nmultis", t_al_nmultis())
-    _ : Unit <- row("t_rd_any_empty", t_rd_any_empty())
-    _ : Unit <- row("t_rd_all_red", t_rd_all_red())
-    _ : Unit <- row("t_rd_all_rem", t_rd_all_rem())
-    _ : Unit <- row("t_rd_some_red", t_rd_some_red())
-    _ : Unit <- row("t_rd_some_rem", t_rd_some_rem())
-    _ : Unit <- row("t_rd_none_red", t_rd_none_red())
-    _ : Unit <- row("t_rd_two_red", t_rd_two_red())
-    _ : Unit <- row("t_rd_zero_red", t_rd_zero_red())
-    _ : Unit <- row("t_rd_sum0", t_rd_sum0())
-    _ : Unit <- row("t_rd_sum1", t_rd_sum1())
-    _ : Unit <- row("t_rd_sum2", t_rd_sum2())
-    _ : Unit <- row("t_rd_off0", t_rd_off0())
-    _ : Unit <- row("t_rd_off0b", t_rd_off0b())
-    _ : Unit <- row("t_rd_off1", t_rd_off1())
-    _ : Unit <- row("t_rd_off2", t_rd_off2())
-    _ : Unit <- row("t_rd_off2b", t_rd_off2b())
-    _ : Unit <- row("t_rd_off3", t_rd_off3())
-    _ : Unit <- row("t_rd_off_n", t_rd_off_n())
-    _ : Unit <- row("t_rd_off_none", t_rd_off_none())
-    _ : Unit <- row("t_rd_bad", t_rd_bad())
-    _ : Unit <- row("t_rd_bad_none", t_rd_bad_none())
-    _ : Unit <- row("t_rd_bad_all", t_rd_bad_all())
-    _ : Unit <- row("t_rd_fires", t_rd_fires())
-    _ : Unit <- row("t_rd_fires_none", t_rd_fires_none())
-    _ : Unit <- row("t_rd_piece", t_rd_piece())
-    _ : Unit <- row("t_rd_cast", t_rd_cast())
-    _ : Unit <- row("t_rd_cast_half", t_rd_cast_half())
-    _ : Unit <- row("t_rd_cast_f32", t_rd_cast_f32())
-    _ : Unit <- row("t_rd_cast_noop", t_rd_cast_noop())
-    _ : Unit <- row("t_rd_cast_off", t_rd_cast_off())
-    _ : Unit <- row("t_rs_acc_n4", t_rs_acc_n4())
-    _ : Unit <- row("t_rs_acc_n1", t_rs_acc_n1())
-    _ : Unit <- row("t_rs_acc_n0", t_rs_acc_n0())
-    _ : Unit <- row("t_rs_acc1_4", t_rs_acc1_4())
-    _ : Unit <- row("t_rs_acc2_4", t_rs_acc2_4())
-    _ : Unit <- row("t_rs_acc3_1", t_rs_acc3_1())
-    _ : Unit <- row("t_rs_acc3_2", t_rs_acc3_2())
-    _ : Unit <- row("t_rs_acc3_3", t_rs_acc3_3())
-    _ : Unit <- row("t_rs_tgt0", t_rs_tgt0())
-    _ : Unit <- row("t_rs_tgt1", t_rs_tgt1())
-    _ : Unit <- row("t_rs_tgt2", t_rs_tgt2())
-    _ : Unit <- row("t_rs_tgt3", t_rs_tgt3())
-    _ : Unit <- row("t_rs_same", t_rs_same())
-    _ : Unit <- row("t_rs_same_ok", t_rs_same_ok())
-    _ : Unit <- row("t_rs_mid_ok", t_rs_mid_ok())
-    _ : Unit <- row("t_rs_head", t_rs_head())
-    _ : Unit <- row("t_rs_thr0", t_rs_thr0())
-    _ : Unit <- row("t_rs_thr0_ok", t_rs_thr0_ok())
-    _ : Unit <- row("t_rs_thr1_ok", t_rs_thr1_ok())
-    _ : Unit <- row("t_rs_thr1_ax", t_rs_thr1_ax())
-    _ : Unit <- row("t_rs_prod", t_rs_prod())
-    _ : Unit <- row("t_rs_prod_bad", t_rs_prod_bad())
-    _ : Unit <- row("t_rs_tie_hit", t_rs_tie_hit())
-    _ : Unit <- row("t_rs_tie_hit_f", t_rs_tie_hit_f())
-    _ : Unit <- row("t_rs_tie_axb", t_rs_tie_axb())
-    _ : Unit <- row("t_rs_tie_ax", t_rs_tie_ax())
-    _ : Unit <- row("t_rs_tie_ax0", t_rs_tie_ax0())
-    _ : Unit <- row("t_rs_none", t_rs_none())
-    _ : Unit <- row("t_rs_loc0", t_rs_loc0())
-    _ : Unit <- row("t_rs_loc1", t_rs_loc1())
-    _ : Unit <- row("t_rs_loc_both", t_rs_loc_both())
-    _ : Unit <- row("t_rs_loc_n", t_rs_loc_n())
-    _ : Unit <- row("t_rs_loc_none", t_rs_loc_none())
-    _ : Unit <- row("t_rs_loc_bad", t_rs_loc_bad())
-    _ : Unit <- row("t_ex0", t_ex0())
-    _ : Unit <- row("t_ex1", t_ex1())
-    _ : Unit <- row("t_ex2", t_ex2())
-    _ : Unit <- row("t_ex3", t_ex3())
-    _ : Unit <- row("t_ex_ax0", t_ex_ax0())
-    _ : Unit <- row("t_ex_ax2", t_ex_ax2())
-    _ : Unit <- row("t_ex_axn", t_ex_axn())
-    _ : Unit <- row("t_ex_rng", t_ex_rng())
-    _ : Unit <- row("t_pm_id", t_pm_id())
-    _ : Unit <- row("t_pm_id1", t_pm_id1())
-    _ : Unit <- row("t_pm_sw", t_pm_sw())
-    _ : Unit <- row("t_pm_sw1", t_pm_sw1())
-    _ : Unit <- row("t_pm_cyc", t_pm_cyc())
-    _ : Unit <- row("t_pm_cyc0", t_pm_cyc0())
-    _ : Unit <- row("t_pm_rev", t_pm_rev())
-    _ : Unit <- row("t_pm_mid", t_pm_mid())
-    _ : Unit <- row("t_pm_missing", t_pm_missing())
-    _ : Unit <- row("t_pm_of", t_pm_of())
-    _ : Unit <- row("t_fl_none", t_fl_none())
-    _ : Unit <- row("t_fl_one", t_fl_one())
-    _ : Unit <- row("t_fl_one0", t_fl_one0())
-    _ : Unit <- row("t_fl_two", t_fl_two())
-    _ : Unit <- row("t_fl_two1", t_fl_two1())
-    _ : Unit <- row("t_fl_first", t_fl_first())
-    _ : Unit <- row("t_fl_all", t_fl_all())
-    _ : Unit <- row("t_fl_mid", t_fl_mid())
-    _ : Unit <- row("t_fl_mid_n", t_fl_mid_n())
-    _ : Unit <- row("t_fl_bad", t_fl_bad())
-    _ : Unit <- row("t_fl_bad2", t_fl_bad2())
-    _ : Unit <- row("t_fl_bad_none", t_fl_bad_none())
-    _ : Unit <- row("t_pd_ok", t_pd_ok())
-    _ : Unit <- row("t_pd_bad_s", t_pd_bad_s())
-    _ : Unit <- row("t_pd_bad_l", t_pd_bad_l())
-    _ : Unit <- row("t_pd_ok2", t_pd_ok2())
-    _ : Unit <- row("t_pd_bad2", t_pd_bad2())
-    _ : Unit <- row("t_pd_one0", t_pd_one0())
-    _ : Unit <- row("t_pd_one1", t_pd_one1())
-    _ : Unit <- row("t_pd_kp1", t_pd_kp1())
-    _ : Unit <- row("t_pd_kp0", t_pd_kp0())
-    _ : Unit <- row("t_pd_kp0b", t_pd_kp0b())
-    _ : Unit <- row("t_pd_n", t_pd_n())
-    _ : Unit <- row("t_pb42_n", t_pb42_n())
-    _ : Unit <- row("t_pb42_s0", t_pb42_s0())
-    _ : Unit <- row("t_pb42_l0", t_pb42_l0())
-    _ : Unit <- row("t_pb42_s1", t_pb42_s1())
-    _ : Unit <- row("t_pb43_n", t_pb43_n())
-    _ : Unit <- row("t_pb43_s1", t_pb43_s1())
-    _ : Unit <- row("t_pb43_s2", t_pb43_s2())
-    _ : Unit <- row("t_pb62_n", t_pb62_n())
-    _ : Unit <- row("t_pb62_l0", t_pb62_l0())
-    _ : Unit <- row("t_pb84_n", t_pb84_n())
-    _ : Unit <- row("t_pb84_sm", t_pb84_sm())
-    _ : Unit <- row("t_pb84_sl", t_pb84_sl())
-    _ : Unit <- row("t_pb41_n", t_pb41_n())
-    _ : Unit <- row("t_sk_at0", t_sk_at0())
-    _ : Unit <- row("t_sk_at2", t_sk_at2())
-    _ : Unit <- row("t_sk_at3", t_sk_at3())
-    _ : Unit <- row("t_sk_at_miss", t_sk_at_miss())
-    _ : Unit <- row("t_sk_in", t_sk_in())
-    _ : Unit <- row("t_sk_in_no", t_sk_in_no())
-    _ : Unit <- row("t_sk_len_ok", t_sk_len_ok())
-    _ : Unit <- row("t_sk_len_no", t_sk_len_no())
-    _ : Unit <- row("t_sk_w_ok", t_sk_w_ok())
-    _ : Unit <- row("t_sk_w_no", t_sk_w_no())
-    _ : Unit <- row("t_sk_w_s", t_sk_w_s())
-    _ : Unit <- row("t_sk_own", t_sk_own())
-    _ : Unit <- row("t_sk_whole", t_sk_whole())
-    _ : Unit <- row("t_sk_part", t_sk_part())
-    _ : Unit <- row("t_sk_raise", t_sk_raise())
-    _ : Unit <- row("t_sk_r_n", t_sk_r_n())
-    _ : Unit <- row("t_sk_r_dev", t_sk_r_dev())
-    _ : Unit <- row("t_sk_r_pb", t_sk_r_pb())
-    _ : Unit <- row("t_sk_own2", t_sk_own2())
-    _ : Unit <- row("t_sk_keep", t_sk_keep())
-    _ : Unit <- row("t_sk_keep0", t_sk_keep0())
-    _ : Unit <- row("t_sk_keep_all", t_sk_keep_all())
-    _ : Unit <- row("t_sk_keep_n", t_sk_keep_n())
-    _ : Unit <- row("t_st_ax0", t_st_ax0())
-    _ : Unit <- row("t_st_ax2", t_st_ax2())
-    _ : Unit <- row("t_st_n", t_st_n())
-    _ : Unit <- row("t_st_off0", t_st_off0())
-    _ : Unit <- row("t_st_off1", t_st_off1())
-    _ : Unit <- row("t_st_off_nil", t_st_off_nil())
-    _ : Unit <- row("t_st_none", t_st_none())
-    _ : Unit <- row("t_st_not_none", t_st_not_none())
-    _ : Unit <- row("t_ix_c0", t_ix_c0())
-    _ : Unit <- row("t_ix_c1", t_ix_c1())
-    _ : Unit <- row("t_ix_c2", t_ix_c2())
-    _ : Unit <- row("t_ix_c3", t_ix_c3())
-    _ : Unit <- row("t_ix_c_oob", t_ix_c_oob())
-    _ : Unit <- row("t_ix_c_in", t_ix_c_in())
-    _ : Unit <- row("t_ix_c_win0", t_ix_c_win0())
-    _ : Unit <- row("t_ix_c_win4", t_ix_c_win4())
-    _ : Unit <- row("t_ix_s0", t_ix_s0())
-    _ : Unit <- row("t_ix_s1", t_ix_s1())
-    _ : Unit <- row("t_ix_s4", t_ix_s4())
-    _ : Unit <- row("t_ix_mod0", t_ix_mod0())
-    _ : Unit <- row("t_ix_mod1", t_ix_mod1())
-    _ : Unit <- row("t_ix_mod0b", t_ix_mod0b())
-    _ : Unit <- row("t_ix_ok", t_ix_ok())
-    _ : Unit <- row("t_ix_bad", t_ix_bad())
-    _ : Unit <- row("t_ix_div", t_ix_div())
-    _ : Unit <- row("t_ix_div0", t_ix_div0())
-    _ : Unit <- row("t_ix_kind_c", t_ix_kind_c())
-    _ : Unit <- row("t_ix_kind_s", t_ix_kind_s())
-    _ : Unit <- row("t_ix_kind_r", t_ix_kind_r())
-    _ : Unit <- row("t_ix_kind_r2", t_ix_kind_r2())
-    _ : Unit <- row("t_ix_kind0", t_ix_kind0())
-    _ : Unit <- row("t_ix_kind00", t_ix_kind00())
-    _ : Unit <- row("t_cx_j0", t_cx_j0())
-    _ : Unit <- row("t_cx_j1", t_cx_j1())
-    _ : Unit <- row("t_cx_j2", t_cx_j2())
-    _ : Unit <- row("t_cx_j3", t_cx_j3())
-    _ : Unit <- row("t_cx_j0b", t_cx_j0b())
-    _ : Unit <- row("t_cx_j1b", t_cx_j1b())
-    _ : Unit <- row("t_cx_same", t_cx_same())
-    _ : Unit <- row("t_cx_rep", t_cx_rep())
-    _ : Unit <- row("t_cx_j0n", t_cx_j0n())
-    _ : Unit <- row("t_sx0", t_sx0())
-    _ : Unit <- row("t_sx1", t_sx1())
-    _ : Unit <- row("t_sx2", t_sx2())
-    _ : Unit <- row("t_lb_fires", t_lb_fires())
-    _ : Unit <- row("t_lb_no", t_lb_no())
-    _ : Unit <- row("t_lb_no2", t_lb_no2())
-    _ : Unit <- row("t_lb_reps", t_lb_reps())
-    _ : Unit <- row("t_lb_none", t_lb_none())
-    _ : Unit <- row("t_lb_not_none", t_lb_not_none())
-    _ : Unit <- row("t_co_fires", t_co_fires())
-    _ : Unit <- row("t_co_no", t_co_no())
-    _ : Unit <- row("t_co_same", t_co_same())
-    _ : Unit <- row("t_co_copy", t_co_copy())
-    _ : Unit <- row("t_ms_arg", t_ms_arg())
-    _ : Unit <- row("t_ms_arg_bad", t_ms_arg_bad())
-    _ : Unit <- row("t_ms_ok", t_ms_ok())
-    _ : Unit <- row("t_mv", t_mv())
-    _ : Unit <- row("t_mv_alu", t_mv_alu())
-    _ : Unit <- row("t_mv_alu_no", t_mv_alu_no())
-    _ : Unit <- row("t_stp_peel", t_stp_peel())
-    _ : Unit <- row("t_stp_view", t_stp_view())
-    _ : Unit <- row("t_stp_whole", t_stp_whole())
-    _ : Unit <- row("t_rw", t_rw())
-    IO.print("")
-    IO.print("")
-
-
-# THE MUTATION TABLE.
+# TODO(p3) ops.py:1094  symbol=_min_max  -- `UOp._min_max` is DECLARED here and
+# `fold.bend` carries its WALK.
 #
-# WHY IT IS HERE. 321 rows that all read 1 prove the rows are non-degenerate;
-# they do not prove they WATCH anything. Each row below is a change to ONE
-# decision this file makes, run through the whole gate, and the count is how
-# many rows answered differently. Two properties are wanted and both are
-# measured: no mutation may leave the file uncompilable (a mutation that fails
-# to build says nothing about the gate, so every one of these changes a DECISION
-# and not a type), and no mutation may be invisible (a row-shape hole).
+# DEPENDENCY ON SIBLINGS, both named because both are call sites this file does not make.
+# `schedule/allreduce.bend` owns the BODY of `replace_allreduce`'s `_early_allreduce` arm
+# (multi.py:106 symbol=reduce_multi) and of `reduce_multi`'s ALLREDUCE_CAST arm (multi.py:116-118); this file's
+# `mu_ea_0` dispatches to it and says so. `schedule/__init__.bend` runs `multi_pm` and owns
+# the `MULTI` flag that selects it.
 #
-# Driven by `.agents/slop/multi-mutate.py`, which reverts the file after every
-# one. Baseline is the interpreted lane; the native lane was diffed clean against
-# it, so every count below holds in both.
+# THE FLAGS ARE PARAMETERS, the one convention shared with `allreduce.bend`:
+# `LATE_ALLREDUCE` (multi.py:50) and `ALLREDUCE_CAST` (multi.py:115) are `ContextVar`s and
+# Bend has no `Config` and no process environment, so they are fields of a `Cfg` record.
+# `MULTI` is not read anywhere in this checkout's `multi.py` -- it is `__init__.py`'s -- so
+# it is named at the foot and not a field here.
 #
-#   id    def               mutation                                  rows
-
-#   M01   rs_local.one.of   drop the sharding test: divide EVERY axis     2
-#   M02   pi_step           tuple.index first-wins -> last-wins           2
-#   M03   mu_ss_axis        drop the RIGHT-ALIGNMENT shift               1
-#   M04   ml_kind.rest      WHOLE answers BCAST: never copy_multi         1
-#   M05   ix_div            strided pattern divides by the residue       3
-#   M06   mu_claimed        drop the necessary condition                 1
-#   M07   rd_low_dt         drop `half` from the (bfloat16, half) pair    1
-#   M08   st_off.of         drop the axis > 0 guard: U32.sub WRAPS       1
-#   M09   mu_baxes          len(out) >= len(src) -> >                     2
-#   M10   mu_ra_cfg.go      swap the LATE_ALLREDUCE tag shift 19 <-> 20   3
-#   M11   mu_exp_keep       drop the out[nleft+i] != 1 conjunct          1
-#   M12   fl_of.put         the non-zero filter keeps the ZERO indices     8
+# THE THREE TABLES, and there are three because Python has three objects.
+# `PatternMatcher.__add__` (ops.py:1598 symbol=__add__) is `self.patterns+more.patterns`, so `multi_pm` is
+# NINETEEN own rules with `replace_allreduce`'s SIX APPENDED, and `replace_allreduce` is
+# `_early_allreduce`'s ONE prepended when `LATE_ALLREDUCE` is off. That composition moves
+# every tag after the prefix, so `mu_table` CONCATENATES rather than counts, and `mt_own_n`,
+# `mt_ra_n`, `mt_ea_n`, `mt_pm_n` and `mt_late_n` pin the result. There is no generic
+# dispatch here and this file does not try to build one -- the same duplication
+# `uop/spec.bend` writes six times and `schedule/rangeify.bend` eleven times.
 #
-# THE ROWS EACH ONE MOVED, which is the part that names the coverage:
-#
-#   M01  t_rs_loc1 t_rs_loc_none
-#   M02  t_pm_cyc0 t_pm_mid
-#   M03  t_ss_ax10
-#   M04  t_ml_whole
-#   M05  t_ix_div t_ix_div0 t_ix_kind00
-#   M06  t_claim_cq
-#   M07  t_rd_cast_half
-#   M08  t_st_off_nil
-#   M09  t_bx_1_2n t_bx_exp_n
-#   M10  t_full_cp t_tag19 t_tag25
-#   M11  t_bx_11
-#   M12  t_fl_all t_fl_first t_fl_mid t_fl_mid_n t_fl_none t_fl_one0
-#        t_fl_two t_fl_two1
-#
-# TWELVE OF TWELVE CAUGHT, 25 DISTINCT ROWS. Three of these carry more than the
-# arithmetic and are worth naming:
-#
-# * M06 is the ONLY witness for the conjunctive claim. `t_claim_cq` (2 against
-#   `t_claim_cp`'s 3) is the sole row that says `early_reject` is a NECESSARY
-#   CONDITION rather than a FILTER, and M06 is what proves it is watched. It is
-#   also the mutation `t_full_st`/`t_full_su`/`t_full_cp` were written for --
-#   those two rules claim one node and disagree -- but the op-set count catches
-#   it first, so the honest statement is that `t_claim_cq` is the witness and the
-#   `t_full_*` rows are the second one.
-# * M10 moves `t_tag19` and `t_tag25`, the two rows that pin the table's COMPOSITION
-#   rather than a decision inside one rule. It is the cheapest way to break the
-#   `PatternMatcher.__add__` arithmetic and the rows catch it immediately.
-# * M12 moves eight rows and is the widest blast radius in the table: `fl_of`
-#   feeds `pd_ok` and the whole `Bd` inventory, so one inverted filter there is
-#   the closest thing this gate has to a keystone.
-#
-# WHAT THIS DOES NOT SAY. Twelve mutations is not a coverage argument. The
-# builders -- every `TODO` in the foot below -- are not in this table because
-# they are not in the file, so nothing here tests whether a rule reaches for the
-# RIGHT builder.
-
-
-
-# NOT PORTED. Every line is a `TODO(p3)` whose OWNING FILE is named, and the
-# marker's ENTRY must carry the reason -- a reason in a PRECEDING header is invisible
-# to `checks/marker-audit.py`, which reads a marker's line plus the lines that FOLLOW
-# it, so a block written this way reads as BACKLOG however well it is explained.
-#
-# "cannot reach" is the right WORD and "not ported" is not, measured: of the builders
-# these lines name, `G.permute`, `G.flip`, `UOp.copy_to_device`, `UOp.after`,
-# `UOp.allreduce`, `UOp.mselect`, `ssimplify` and `_min_max`/`vmin` are ALL PRESENT --
-# in `mixin/movement.bend`, `uop/weak.bend` and `uop/ops.bend`. What multi.bend does not
-# do is IMPORT the files that hold them. MEASURED: `tensor.bend`'s transitive closure is
-# six files and contains nothing under `schedule/`, so adding
-# `import ./../tensor.bend` here is CYCLE-FREE and Bend accepts it. So the largest part
-# of this block is REACHABILITY and unported RULE BODIES, not missing primitives, and a
-# reader who trusts "not ported" will under-scope the work.
-#
-# the `unshard` family is the exception and it is the one that is really blocked:
-# fourteen markers end in `.unshard(...)`, and `unshard` is a WALL in `ops.bend` whose
-# own text names `_shard`, absent as a definition. Those carry the reason on their own
-# line now.
-# Nothing below is a decision that multi.py makes and this file declined: the
-# decision is present and gateable in every case, and what is missing is the
-# node it would have produced.
-#
-# THE GRAPH BUILDERS, one line per call site.
-#
-#   `_mop` (ops.py:799) -- every `.arg`-carrying rewrite is a `_mop`.
+# `PMEntry.rej` is `early_reject` and it is a NECESSARY CONDITION despite the name
+# (ops.py:1701 is `if not early_reject.issubset(ler): continue`): the rule FIRES when its op
+# set IS a subset of the node's src ops, and the empty set is a subset of everything.
 #   TODO(p3) schedule/multi.py:9  symbol=_apply_shrink  -- `_apply_shrink`, SHRINK  -- BLOCKED. needs `UOp._mop` (ops.py:799)
 #   -- which is ported as `tn_mop` in `tensor.bend:1704 symbol=tn_mop` -- but `multi.bend` does not import `tensor.bend`. measured at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is cycle-free (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an import edge, not an absent def.

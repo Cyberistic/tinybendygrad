@@ -4,7 +4,7 @@
 # `run_rangeify`, and it is the ONE stage of `get_kernel_graph`
 # (`tinygrad/schedule/rangeify.py:341-376`) that the port's own engine spells
 # `Stg{0, Nil{}}` -- "run_rangeify -- NOT PORTED"
-# (`tinybendygrad/schedule/rangeify.bend:2810`).
+# (`tinybendygrad/schedule/rangeify.bend:2368` symbol=Stg).
 #
 #   upstream: tinygrad/schedule/rangeify.py:344
 #     tsink = run_rangeify(tsink, bool(DEBUG_RANGEIFY))     # "convert movement ops to ranges"
@@ -23,7 +23,7 @@
 # so the driver is four things and the port had NONE of them:
 #
 #   1. THE DISPATCH for `pm_generate_realize_map` -- `indexing.bend`'s
-#      `grm_table()` (schedule/indexing.bend:1274 symbol=grm_table) is the TABLE and the four rule BODIES are in
+#      `grm_table()` (schedule/indexing.bend:1241 symbol=grm_table) is the TABLE and the four rule BODIES are in
 #      the same file (`realize` schedule/indexing.bend:935 symbol=realize, `realize_srcs` schedule/indexing.bend:969 symbol=realize_srcs,
 #      `ix_realize_custom` schedule/indexing.bend:1025 symbol=ix_realize_custom, `ix_war_hit` schedule/indexing.bend:986 symbol=ix_war_hit), but there is NO
 #      `_dispatch`/`_try`/`_scan` for it -- MEASURED, `grep -n "grm_dispatch"
@@ -34,7 +34,7 @@
 #      `new_range` counter (`:811`), `broadcast_rngs` (`:1048`) and
 #      `broadcast_axes` (`:427`), and nothing drives them.
 #   4. THE APPLY -- `pm_apply_rangeify`'s five rules (`par_table`,
-#      schedule/indexing.bend:1303 symbol=par_table) and `pm_fix_deviceless` (`pfd_table`, schedule/indexing.bend:1310 symbol=pfd_table).
+#      schedule/indexing.bend:1270 symbol=par_table) and `pm_fix_deviceless` (`pfd_table`, schedule/indexing.bend:1310 symbol=pfd_table).
 #
 # THE ORACLE. `.agents/slop/rangify/rr-oracle.py` spies on upstream's OWN
 # `tinygrad.schedule.indexing.run_rangeify` on the SAME program the port's own
@@ -102,7 +102,7 @@ import ./rangeify.bend as RG
 
 # 1. THE DUMP -- the ORACLE's spelling, `op:argkey:srcops`.
 #
-# `eng_op_name` (`schedule/rangeify.bend:2987`) names TEN ops and answers
+# `eng_op_name` (`schedule/rangeify.bend:2577`) names TEN ops and answers
 # "OTHER" for the rest, and the graph this file produces is made of INDEX,
 # RANGE, END, ADD and MUL -- so this file needs its own. `RZ.rz_argkey` IS
 # reused: it is the oracle's `arg_key` (`cother` for a CONST, `none` for a node
@@ -184,7 +184,7 @@ def rr_dump(+ar: O.Arena, +root: U32) -> String:
 # EVERY rule that MATCHES. That is why rule 1 AND rule 3 both fire on a STORE:
 # the STORE is realized AND its src is tested for the WAR hazard.
 #
-# THE PORT's `grm_table()` (`indexing.bend:1274` symbol=grm_table) carries the op sets and the
+# THE PORT's `grm_table()` (`indexing.bend:1241` symbol=grm_table) carries the op sets and the
 # TAG, and the tag IS the rule index -- the same convention `rangeify.bend`'s
 # `aprt_table`/`aprt_dispatch` uses. - so the dispatch is: the tag picks the
 # body, and the op set picks the match.
@@ -824,7 +824,7 @@ def rr_range_map(+ar: O.Arena, +tb: F.Table, sink: U32) -> RrMap:
   +topo = O.UOp.toposort(O.Arena.budget(ar), ar, sk)
   +rev = rr_rev(topo)
   # => and the context is built by the port's own constructor
-  # (`indexing.bend:213` `ix_ctx_realize(rm)`), => BECAUSE A LITERAL WITH A CALL IN IT
+  # (`indexing.bend:197` `ix_ctx_realize(rm)`), => BECAUSE A LITERAL WITH A CALL IN IT
   # CANNOT BE INFERRED -- THE ERROR IS *"expected : an annotated term (cannot infer)"*.
   # => and the constructor is named for exactly this job: *"a context with a realize map
   # and nothing ELSE ... upstream fills the realize map before the RANGE-map LOOP
@@ -834,9 +834,6 @@ def rr_range_map(+ar: O.Arena, +tb: F.Table, sink: U32) -> RrMap:
 
 
 # 3. THE ROWS.
-
-def rr_row.line(nm: String, got: String) -> IO(Unit):
-  IO.print(String.concat([nm, "=", got]))
 
 def rr_real_axes.go(+xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
@@ -854,29 +851,6 @@ def rr_real_row.go(+es: List<&2, IX.IxReal>, +ar: O.Arena, +acc: List<&2, String
       rr_real_row.go(t, ar,
         List.append(&2, String, acc,
           [String.concat([rr_node_str(ar, IX.IxReal.n(e)), ":", rr_real_axes(e)])]))
-
-def rr_row_realize() -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +m = rr_realize(ar, RZ.RZProg.sink(q))
-  String.join(rr_real_row.go(IX.IxMap.es(m), ar, Nil{}), ";")
-
-# the planted row. - it is a row, not a build.
-def rr_row_realize_plant() -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +m = rr_realize_plant(ar, RZ.RZProg.sink(q))
-  String.join(rr_real_row.go(IX.IxMap.es(m), ar, Nil{}), ";")
-
-def rr_row_in() -> String:
-  +q = RZ.rz_built()
-  rr_dump(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
-
-
-
-# 5. the RANGE map's row. the oracle's spelling: `#N <node>:[<in>]->[<out>]`,
-# and a RANGE is `R` and its axis ID while the CONST 0 is `<CONST:cother:>`
-# (`rr-oracle.py`'s `render_range`).
 
 def rr_rng_str.c0() -> String: "<CONST:cother:>"
 def rr_rng_str.rg(i: U32) -> String: String.concat(["R", U32.show(i)])
@@ -916,49 +890,6 @@ def rr_range_row.go(+ns: List<&2, U32>, +k: Nat, +ctx: IX.IxCtx, +tbl: List<&2, 
       rr_range_row.go(t, Nat.add(k, 1n), ctx, tbl, ar,
         List.append(&2, String, acc, rr_range_one.of(e, k, ctx, tbl, ar, n)))
 
-def rr_row_range() -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +sink = RZ.RZProg.sink(q)
-  +tb = F.Folded.t(F.folded(ar))
-  +m = rr_range_map(ar, tb, sink)
-  String.join(rr_range_row.go(O.UOp.toposort(O.Arena.budget(ar), ar, sink), 0n,
-                              RrMap.ctx(m), RrMap.tbl(m), ar, Nil{}), ";")
-
-
-# the apply rewrite -- the second half of `run_rangeify`.
-#
-# UPSTREAM'S `pm_apply_rangeify` (`tinygrad/schedule/indexing.py:130-140`) IS FIVE
-# RULES, AND THE BULK IS RULE 4, `create_bufferize_and_index_based_on_ranges`
-# (`:97-98`), WHICH CALLS `create_bufferize_and_index_srcs` (`:73-95`) -- 23 LINES AND
-# THE WHOLE OF THE TRANSFORMATION.
-#
-# => and the port has the RANGE map already (it is `rr_range_map`), => so the
-# ranges exist and the only thing missing is the rewrite that uses them.
-#
-# => AND THE FIVE RULES ARE (`indexing.py:130-140`):
-#   1. `convert_reduce_to_reduce_with_ranges`  (`:106-112`)
-#   2. `convert_pad_to_where_to_keep_behavior_local` (`:100-104`)
-#   3. `convert_stack_to_where` (`:120-125`)
-#   4. `create_bufferize_and_index_based_on_ranges` (`:97-98`) -- EVERY OTHER NODE
-#      gets its srcs rebuilt: its PARAM/BUFFER/alloc/mstack/mselect/after srcs are
-#      indexed by the ranges, and its realized srcs become a `STAGE` (or an `END`
-#      FOR A STORE).
-#   5. `remove_movement_op_after_rangeify` (`:127-128`) -- A MOVEMENT OP IS REPLACED BY
-#      ITS `src[0]` WHEN IT IS IN THE RANGE MAP.
-#
-# => and the rewrite is `bottom_up=True` (`indexing.py:308`), => so the port walks
-# the arena in reverse INDEX order (which is children first, because the arena's
-# INDEX ORDER IS TOPOLOGICAL -- `uop/ops.bend:1314 symbol=Arena`).
-#
-# => and the RANGE map's entries are the input ranges of a node (`IxRngs.inp`)
-# and the output ranges (`IxRngs.outp`), and the apply uses both: the input
-# ranges INDEX the srcs (`broadcast_rngs`) and the output ranges become the `STAGE`'s
-# CLOSED RANGES.
-
-
-# the op tests the five rules need. => a `match` may not scrutinize a computed value, so
-# EACH TEST IS ITS OWN DEF.
 def rr_ap_reduce(+ar: O.Arena, x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsREDUCE{})
 def rr_ap_pad(+ar: O.Arena, x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsPAD{})
 def rr_ap_stack(+ar: O.Arena, x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsSTACK{})
@@ -1618,69 +1549,6 @@ def rr_wall_count.go(+ns: List<&2, U32>, +ar: O.Arena, +ctx: IX.IxCtx, acc: U32)
     case x <> t:
       rr_wall_count.go(t, ar, ctx, U32.add(acc, Bool.to_u32(rr_ap_wall_hit(ar, ctx, x))))
 
-def rr_row_wall() -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +sink = RZ.RZProg.sink(q)
-  +tb = F.Folded.t(F.folded(ar))
-  +m = rr_range_map(ar, tb, sink)
-  +ctx = RrMap.ctx(m)
-  +ns = rr_rev(O.UOp.toposort(O.Arena.budget(ar), ar, sink))
-  U32.show(rr_wall_count.go(ns, ar, ctx, 0))
-
-def rr_row_walk() -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +sink = RZ.RZProg.sink(q)
-  +tb = F.Folded.t(F.folded(ar))
-  +m = rr_range_map(ar, tb, sink)
-  +ns = rr_rev(O.UOp.toposort(O.Arena.budget(ar), ar, sink))
-  String.concat(["walk_n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
-                 " first=", U32.show(Maybe.default(&2, U32, List.head(&2, U32, ns), 0)),
-                 " last=", U32.show(rr_list_last(ns, 0)),
-                 " sink=", U32.show(sink),
-                 " arena_next=", U32.show(O.Arena.next(ar))])
-
-def rr_row_map() -> List<&2, String>:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +sink = RZ.RZProg.sink(q)
-  +tb = F.Folded.t(F.folded(ar))
-  +m = rr_range_map(ar, tb, sink)
-  +ctx = RrMap.ctx(m)
-  +tbl = RrMap.tbl(m)
-  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
-  +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
-  rr_map_str(ApFin.fin(rep), Nil{})
-
-def rr_row_out(plant: Bool) -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +sink = RZ.RZProg.sink(q)
-  +tb = F.Folded.t(F.folded(ar))
-  +m = rr_range_map(ar, tb, sink)
-  +ctx = RrMap.ctx(m)
-  +tbl = RrMap.tbl(m)
-  # => and the apply walks the toposort (`bottom_up=True`, `indexing.py:308`),
-  # => which is children first: upstream's `toposort` is a post-order
-  # (`ops.py:289-301`, the node is added when it is popped the second time), => and
-  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
-  +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
-  +root = rr_ap_root(ApFin.fin(rep), sink)
-  rr_dump(ApFin.ar(rep), root)
-
-# the port's `run_rangeify` -- `indexing.py:183`. the RANGE map and the apply
-# rewrite, in that order, and the rebuilt root. - and it is the stage 1 of
-# `get_kernel_graph`, which the engine's `eng_stages()` spells as an empty table
-# BECAUSE `run_rangeify` IS AN ALGORITHM, NOT A RULE TABLE.
-# - and the answer is the port's own `O.Found{ar, i}` -- the arena and a
-# NODE -- - SO NO NEW TYPE IS INVENTED.
-# - and `sink` is read three times (the RANGE map, the toposort, the root
-# lookup), - so it is bound once to a `+` local -- which is BEND's spelling for
-# "readable many times" -- - and that is the same rule `rr_range_map` already
-# follows at its own HEAD (`+sk = sink`, with the comment *"and `sink` is read
-# twice, so it is bound once to a `+` local"*). - and the compiler says so by
-# NAME: `expected : sink` / `observed : sink (consumed more than once)`.
 def rr_run_rangeify(+ar: O.Arena, sink: U32) -> O.Found:
   +sk = sink
   +tb = F.Folded.t(F.folded(ar))
@@ -1699,18 +1567,6 @@ def rr_kernel_graph(+ar: O.Arena, sink: U32) -> O.Found:
   +r = rr_run_rangeify(ar, sink)
   RG.eng_after_rangeify(O.Found.ar(r), O.Found.i(r))
 
-# the row: the kernel graph, in the engine's own spelling (`eng_dump`, the
-# bfs), - so the oracle's `eng_py_out` and this row are comparable with no
-# translator. - and the count is a row too, because "how many nodes" is the
-# first question and a dump alone does not answer it.
-def rr_row_kg() -> String:
-  +q = RZ.rz_built()
-  +k = rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
-  RG.eng_dump(O.Found.ar(k), O.Found.i(k))
-
-
-# the rebuilt srcs of one node: the old srcs, => and each is the rebuilt
-# CHILD IF IT IS IN THE MAP.
 def rr_ap_rebuilt.go(+ar: O.Arena, +ss: List<&2, U32>, +es: List<&2, ApRep>,
                      +acc: List<&2, U32>) -> List<&2, U32>:
   match ss:
@@ -1737,23 +1593,6 @@ def rr_rep_str.go(+es: List<&2, ApRep>, +ar: O.Arena, +acc: List<&2, String>) ->
         [String.concat([U32.show(ApRep.old(e)), "->", U32.show(ApRep.new(e)), ":",
                         rr_node_str(ar, ApRep.old(e)), "/", rr_node_str(ar, ApRep.new(e))])]))
 
-def rr_row_arena() -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +sink = RZ.RZProg.sink(q)
-  +tb = F.Folded.t(F.folded(ar))
-  +m = rr_range_map(ar, tb, sink)
-  +ctx = RrMap.ctx(m)
-  +tbl = RrMap.tbl(m)
-  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
-  +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
-  String.join(rr_rep_str.go(ApFin.fin(rep), ApFin.ar(rep), Nil{}), " ")
-
-# every node's shape, in the toposort order. => and upstream's `toposort` is the
-# same order (a post-order dfs over the same graph), => and the oracle
-# prints upstream's own shapes (`rr_py_shapes`), => - - so the two are
-# comparable position for position -- => and the position is the key, not
-# the spelling (many nodes spell the same).
 def rr_dims_str.go(+ds: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match ds:
     case Nil{}: acc
@@ -1783,19 +1622,6 @@ def rr_dims_row.go(+ns: List<&2, U32>, +ar: O.Arena, +tb: F.Table,
         [String.concat([rr_node_str(ar, x), "=", rr_dims_str(rr_dims(ar, tb, x)),
                         rr_reduce_reading(ar, tb, x)])]))
 
-def rr_row_dims() -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +sink = RZ.RZProg.sink(q)
-  +tb = F.Folded.t(F.folded(ar))
-  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
-  String.join(rr_dims_row.go(ns, ar, tb, Nil{}), " ")
-
-# the RANGE table, dumped: every entry as `idx:kind:ext`, => and kind 0 is
-# A `RANGE` AND KIND 1 IS THE `CONST 0` (`indexing.bend:153` `ix_rg_r` /
-# `:149` `ix_rg_c0`). => and this is the row that says whether the port's
-# `new_range` MADE A `RANGE` WHERE UPSTREAM MADE ONE -- => AND IT IS
-# THE INSTRUMENT FOR W-D (THE `R2` AXIS).
 def rr_tbl_str.go(+tbl: List<&2, IX.IxRange>, +acc: List<&2, String>) -> List<&2, String>:
   match tbl:
     case Nil{}: acc
@@ -1803,41 +1629,3 @@ def rr_tbl_str.go(+tbl: List<&2, IX.IxRange>, +acc: List<&2, String>) -> List<&2
       [String.concat([U32.show(IX.IxRange.idx(e)), ":", U32.show(IX.IxRange.kind(e)),
                       ":", U32.show(IX.IxRange.ext(e))])]))
 
-def rr_row_tbl() -> String:
-  +q = RZ.rz_built()
-  +ar = RZ.RZProg.ar(q)
-  +sink = RZ.RZProg.sink(q)
-  +tb = F.Folded.t(F.folded(ar))
-  +m = rr_range_map(ar, tb, sink)
-  String.join(rr_tbl_str.go(RrMap.tbl(m), Nil{}), " ")
-
-# THE COMPLETE ENGINE, INCLUDING `run_rangeify` -- the row `realize.bend` could not
-# hold, and it was REMOVED there without being added here, which is why this def
-# exists. `realize.bend` imports `rangeify.bend` (the engine) and THIS file imports
-# `realize.bend` (the fixture), so `rangeify.bend` could not import `rangify.bend`
-# and its stage 1 was an empty table. the row lives here and the edge stays one-way:
-# `rangify.bend` -> `rangeify.bend`, and nothing back.
-#
-# THE NAME IS `rz_eng` AND NOT `rr_eng` ON PURPOSE: `.agents/slop/rangify/rz_before.rows:7`
-# records that row's value from BEFORE the move, so the comparison is against a
-# MEASUREMENT rather than against a name invented to match.
-def rr_row_eng() -> String:
-  +q = RZ.rz_built()
-  String.join(RG.eng_drive(RG.eng_stages(), RG.eng_fresh(RG.Eng{RZ.RZProg.ar(q), Nil{}}),
-                            RZ.RZProg.sink(q), 0, "rz", Nil{}), "\n")
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    rr_row.line("rr_realize", rr_row_realize())
-    rr_row.line("rr_realize_plant", rr_row_realize_plant())
-    rr_row.line("rr_in", rr_row_in())
-    rr_row.line("rr_range", rr_row_range())
-    rr_row.line("rr_out", rr_row_out(False{}))
-    rr_row.line("rr_map", String.join(rr_row_map(), ","))
-    rr_row.line("rr_walk", rr_row_walk())
-    rr_row.line("rr_wall", rr_row_wall())
-    rr_row.line("rr_dims", rr_row_dims())
-    rr_row.line("rr_tbl", rr_row_tbl())
-    rr_row.line("rr_arena", rr_row_arena())
-    rr_row.line("rr_kg", rr_row_kg())
-    rr_row.line("rz_eng", rr_row_eng())
