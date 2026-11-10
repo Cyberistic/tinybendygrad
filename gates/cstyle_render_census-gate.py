@@ -108,10 +108,19 @@ ROWS = 361
 # (CPython's line, the port's line), pinned on BOTH sides. An excluded-and-unpinned row is how a
 # divergence stops being a claim; a `want` that is not the exact line fails the gate.
 #
-# `opt_float4_0` WAS HERE AND IS NOT ANY MORE. CPython's base `float4` is `None` -- an ABSENT
+# `opt_float4_0` WAS here and is not any more. CPython's base `float4` is `None` -- an ABSENT
 # VALUE, not a refusal -- and the port answered `""`, which `dsl.bend:2066-2069` already ruled
 # out for exactly this case ("an empty string is NOT the same answer, so the port prints
 # `None`"). `float4.of` answers `"None"` and the row AGREES.
+#
+# **AND `cfo_1_reciprocal`'s PORT-SIDE PIN SAID `UNHANDLED(Ops.RECIPROCAL)`, WHICH IS THE
+# **PRE-RENAME** SPELLING AND DID NOT EXIST AT THE PIN `f5ac54685074`** -- UPSTREAM RENAMED IT IN
+# `1427aac3b` ("FLOORDIV/FLOORMOD -> DIV/MOD (#19047)", 2026-10-27) (`Ops.RECIPROCAL` ->
+# `Ops.RECIP`), **AND THE PORT's OWN `Op` ENUM SPELLS IT `OpsRECIP`.**  **SO THE PIN WAS
+# **STALE** AND THE GATE WENT RED WITH A PRECISE MESSAGE** ("bd's cfo_1_reciprocal is not
+# 'cfo_1_reciprocal=UNHANDLED(Ops.RECIPROCAL)'") -- **AND THE DIVERGENCE ITSELF IS
+# UNCHANGED: THE PORT STILL REFUSES THIS ROW (`UNHANDLED(Ops.RECIP)`), SO THE PIN IS REPOINTED
+# AND NOT WEAKENED, AND THE ROW STILL DIVERGES.**
 DIVERGES = {
     "rdx_0_14": ("rdx_0_14=REFUSE:KeyError", "rdx_0_14=fp8e4m3"),
     "rdx_0_15": ("rdx_0_15=REFUSE:KeyError", "rdx_0_15=fp8e5m2"),
@@ -124,7 +133,7 @@ DIVERGES = {
     "cfo_1_sin": ("cfo_1_sin=REFUSE:KeyError", "cfo_1_sin=UNHANDLED(Ops.SIN)"),
     "cfo_1_log2": ("cfo_1_log2=REFUSE:KeyError", "cfo_1_log2=UNHANDLED(Ops.LOG2)"),
     "cfo_1_reciprocal": ("cfo_1_reciprocal=REFUSE:KeyError",
-                         "cfo_1_reciprocal=UNHANDLED(Ops.RECIPROCAL)"),
+                         "cfo_1_reciprocal=UNHANDLED(Ops.RECIP)"),
     "cfw_0_g": ("cfw_0_g=REFUSE:KeyError", "cfw_0_g=UNHANDLED(code_for_workitem[g])"),
     "cfw_0_l": ("cfw_0_l=REFUSE:KeyError", "cfw_0_l=UNHANDLED(code_for_workitem[l])"),
     "cfw_1_g": ("cfw_1_g=REFUSE:KeyError", "cfw_1_g=UNHANDLED(code_for_workitem[g])"),

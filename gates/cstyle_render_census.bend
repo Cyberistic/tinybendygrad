@@ -3,7 +3,7 @@
 #
 #   .venv/bin/python gates/cstyle_render_census-gate.py
 #
-# THE POPULATION IS DISCOVERED, NOT LISTED. A name is a ROW iff
+# THE population is discovered, NOT listed. A name is a ROW iff
 # `tinygrad/renderer/cstyle.py` defines a method or function of that name (leading underscores
 # stripped) AND the port's def emits a String (or a value) from a UOp:
 #
@@ -21,7 +21,7 @@
 # `__init__`/`asm`/`is_cdna*`/`wmma_args`/`fp8_index`/`_ocml`/`create_non_native_float_pats`/
 # `cast_float_to_bf16`, none of which has a port def.
 #
-# THE DISPATCH AND OPTION TABLES ARE NOT NAMES. `code_for_op`, `code_for_workitem` and the
+# THE dispatch and option tables are not names. `code_for_op`, `code_for_workitem` and the
 # option attributes (`kernel_typedef`, `type_map`, `barrier`, ...) are CPython CLASS ATTRIBUTES,
 # not methods, so they are not in the population -- but a renderer IS mostly a dispatch table,
 # so the census reaches them THROUGH the eight functions and, for the ones no ported function
@@ -29,7 +29,7 @@
 # The arms of one dispatch table are not separate rows: `cfo_<dev>_<op>` IS the arm, driven
 # through the one `code_for_op.of` the port has.
 #
-# WHAT THE FIXTURE VARIES, AND WHY ALL FOUR. `_render_dtype` reads the DEVICE (six type_maps,
+# WHAT the fixture varies, AND why all four. `_render_dtype` reads the DEVICE (six type_maps,
 # six prefix sets), the DTYPE (eighteen names, four UNMAPPED on some devices), the
 # ADDRSPACE/SIZE (the `*`, the local/global prefix, the `sz>1` suffix) and the OP/ARG (the ALU
 # dispatch and the index arms). A one-CONST fixture exercises almost none of it.
@@ -39,13 +39,13 @@
 # and hands out their indices, so no row can hand `render_index` a sibling arena. `Arena` is an
 # IMMUTABLE `Data` value, so `Found.ar` snapshots and each row binds `+ar` before use.
 #
-# THE ARENA, AND THE MERGE RULE THIS LAYER DOES NOT HAVE. `render_index` reads ONE arena and
+# THE arena, AND the merge rule this layer does not have. `render_index` reads ONE arena and
 # `cstyle.bend` contains NO `Arena.merge` (`grep -c Arena.merge` is 0) -- unlike `ew_*`, whose
 # `ew_join` merged two operand arenas BY LENGTH until it moved to `O.Arena.merge`. So the
 # `gates/ew_graph_census.bend` trap cannot fire here and there is no rule to pick: `ri_world()`
 # is the `world()` shape, one `Arena.empty()` chain handing out every index a row needs.
 #
-# THE FIFTEEN DECLARED DIVERGENCES, measured. Six are the vendored drift where THE PORT IS
+# THE fifteen declared divergences, measured. Six are the vendored drift where THE port is
 # RIGHT, nine are refusals Bend cannot raise, and the one real defect this census found is fixed:
 #   * `rdx_*` -- HEAD `_render_dtype` uses `self.type_map[dtype]` and RAISES KeyError for an
 #     unmapped dtype; the port prints the dtype's own name (`tm_get`'s default), which is the
@@ -323,7 +323,7 @@ def ri_plain(+dev: U32) -> IO(Unit):
   +ar = ri_world()
   go(String.concat(["ri_plain_", U32.show(dev)]), C.render_index(ar, dev, 1, S.AGlobal{}, "buf1", "alu3", 4, True{}))
 
-# THE ROW THE `ri_add_*` FIXTURE COULD NOT SEE. `ri_add` drives `arg=(Ops.ADD, 0)`, and on
+# THE row the `ri_add_*` FIXTURE could not see. `ri_add` drives `arg=(Ops.ADD, 0)`, and on
 # that node CPython's `idx.arg == Ops.ADD` is FALSE and the port's `idx_arg_is_add` is ALSO
 # false -- `(Ops.ADD, 0) == Ops.ADD` compares a tuple to an enum, and `AReduce{ADD,0}` is
 # not `AOpLit`. So BOTH lanes took the "do not strip" arm, the two lanes agreed, and the
@@ -352,9 +352,24 @@ def for_ri(+devs: List<&2, U32>) -> IO(Unit):
         for_ri(dt)
 
 # ---- the ALU dispatch rows -------------------------------------------------
+# **AND THE `xs` SHAPE IS **A LIST OF PIECE-LISTS**, NOT A LIST OF STRINGS.**  THE PORT's
+# `code_for_op.of` IS
+# `def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt) ->
+# List<&2, String>` (`tinybendygrad/renderer/cstyle.bend:1354`), **AND ITS FIRST TWO READERS
+# ARE `cfo_xs1(xs)` AND `cfo_xs2(xs)` (`:1211-1213`), WHICH ARE `xs_at(xs, 0n)` AND
+# `xs_at(xs, 1n)` -- I.E. **OPERAND 0's PIECES AND OPERAND 1's PIECES**, NOT OPERAND 0 AND
+# OPERAND 1.**  **AND THE PORT's OWN CALLER PASSES EXACTLY THAT**: `ku_alu_srcs` IS
+# `-> List<&2, List<&2, String>>` (`:2214`) AND `ku_text_alu` (`:2247-2248`) HANDS IT STRAIGHT
+# TO `code_for_op.of`.  **SO `["a", "b", "c"]` WAS WRONG TWICE OVER -- IT WAS A LIST OF
+# STRINGS WHERE A LIST OF LISTS IS WANTED, AND THE JOIN IS NOT A NO-OP.**
+#
+# **AND THE JOIN IS `String.join(l, "")` -- AN EMPTY SEPARATOR.**  MEASURED OFF THE PORT's OWN
+# EMIT SITE: `tinybendygrad/renderer/cstyle.bend:2936` IS `... " ", nm, " = ",
+# String.join(l, ""), ...`, **AND THAT IS THE STATEMENT LIST, WHICH IS WHAT
+# `code_for_op.of` RETURNS.**
 def cfo_row(+pre: String, +dev: U32, +i: U32, +dti: U32) -> IO(Unit):
   go(String.concat([pre, U32.show(dev), "_", op_name(i)]),
-     C.code_for_op.of(dev, op_of(i), ["a", "b", "c"], dt_of(dti)))
+     String.join(C.code_for_op.of(dev, op_of(i), [["a"], ["b"], ["c"]], dt_of(dti)), ""))
 
 def cfw_row(+dev: U32, +k: String) -> IO(Unit):
   go(String.concat(["cfw_", U32.show(dev), "_", k]), C.code_for_workitem.g(dev, k, 1))
@@ -477,7 +492,7 @@ def main() -> IO(Unit):
 # CPython emits `(buf1+(a+b))`.
 #
 # ===========================================================================
-# AND THEN: THE FIX LEFT THIS CENSUS WITH NO ROW ON THE BRANCH IT WAS BUILT FOR.
+# AND then: THE fix left this census with no row on the branch it was built for.
 #
 # `idx_arg_is_add` now matches `AOpLit{OpsADD{}}` -- the arena's closed `Arg` spelling of "the
 # arg IS an op" -- so the defect is gone. But the ONLY fixture that exercised this branch was
