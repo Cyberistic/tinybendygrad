@@ -279,7 +279,7 @@ denominator     [#####-----] 5/10   5 reachable of 30 candidates, 1 REALLY broke
                                        on 1 gate + 1 helper; `corpus-figure.py:275` NEXT.
                                        `.agents/slop/denominator/REPORT.md`
 row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
-lane-liveness   [###########] 11/11  census: the 39 wired lanes tabulated
+lane-liveness   [###########] 13/15  census: the 39 wired lanes tabulated
                                        LIVE/RECORDED/TAUTOLOGICAL; repair pass:
                                        **38 of 39 now run both sides; 31 of those 38
                                        compare values that CAN differ; 7 print
@@ -343,7 +343,7 @@ dup-rows        [#########.] 8/10   10 = census, usb, ops_nv-oracle, ops_nv-port
                                        1-vs-0 semantic dispute, and 2 STALE `dup/**`
                                        line-number citations. 2 rules appended at
                                        bend2-constraints.md end as DUP-2, DUP-3.
-arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2 rows),
+arena-aliasing   [##########] 8/8   1100 read sites audited, 1 DEFECT fixed (+2 rows),
                                        8 suspects adjudicated, 4 detectors w/ controls
 ops-python-exec  [#########] 9/9     the EXECUTOR census, 153 fixtures x 2 lanes, rc=0.
                                        Finding D of `ops_python_census-gate.py` is CLOSED and
@@ -18558,7 +18558,7 @@ IS NARROWER THAN IT LOOKS, AND THE NARROWNESS IS A MARKER-FORM SPELLING.**
 
 FOUND WHILE REPAIRING `decomp_graph_census` (THE SAME RE-VENDOR CASUALTY, A DIFFERENT GATE).
 
-- [x] **`gates/rng_graph_census-oracle.py:153` CALLS `UOp.rtag(())` ON FIVE NODES AND UPSTREAM
+- [ ] **`gates/rng_graph_census-oracle.py:153` CALLS `UOp.rtag(())` ON FIVE NODES AND UPSTREAM
       HAS NO `rtag` AT THE PIN `f5ac54685074`.** MEASURED: `git grep -n 'def rtag' f5ac54685074 --
       tinygrad/` ANSWERS **NOTHING** (THE ONLY `rtag` OCCURRENCES AT THE PIN ARE AN UNRELATED
       LOCAL VARIABLE IN `tinygrad/runtime/support/usb.py:92-93`), **AND UPSTREAM'S `ops.py` AT

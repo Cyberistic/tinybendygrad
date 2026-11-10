@@ -208,8 +208,7 @@ RNGCMP = [
     (
         "- [ ] **`gates/rng_graph_census-oracle.py:153` CALLS `UOp.rtag(())` ON FIVE NODES",
         RNG_ITEM1,
-    ),
-    (
+    ),    (
         "- [ ] **AND THE PORT's SIDE IS **NOT** THE BLOCKER AND THE QUESTION IS OPEN.**",
         RNG_ITEM2,
     ),
@@ -231,14 +230,29 @@ BARS = [
      "• RNGCMP -- gates/rng_graph_census-gate.py CALLS UOp.rtag, WHICH UPSTRE... — ██░░░░░░░░ 2/3   67%"),
 ]
 
-# THE ONE ITEM THAT STAYS OPEN, AND WHY: ITS OWN TEXT SAYS SO.
-KEEP_OPEN = "THE DEFAULT INDEX'S GAP WIDENS WITH EVERY OUT-OF-BAND COMMIT"
+# THE TWO ITEMS THAT STAY OPEN, AND WHY EACH DOES.
+#   THE INDEX ONE: ITS OWN TEXT SAYS SO ("NOT REPAIRED ON PURPOSE"), AND THE INDEX IS A
+#     SHARED WRITABLE PATH FIVE OTHER AGENTS HOLD.
+#   THE `rtag` ONE: **THE EVIDENCE THIS SWEEP APPENDED TO IT SAYS "STILL REAL"** -- AND
+#     **⇒ TICKING AN ITEM WHOSE OWN EVIDENCE SAYS IT IS STILL REAL IS THE FORBIDDEN MOVE.**
+#     ⇒ IT WAS TICKED BY MISTAKE IN `eeb4e7de9` AND UN-TICKED HERE, AND THE UN-TICK IS
+#     PART OF THE PATCH SO A RE-RUN CANNOT RE-TICK IT.
+KEEP_OPEN = (
+    "THE DEFAULT INDEX'S GAP WIDENS WITH EVERY OUT-OF-BAND COMMIT",
+    "gates/rng_graph_census-oracle.py:153` CALLS `UOp.rtag(())`",
+)
 
 
 def patch_items(lines):
     applied = []
     for first_line, evidence in ALL_ITEMS:
-        hits = [i for i, l in enumerate(lines) if l.startswith(first_line)]
+        # **⇒ THE MARKER MAY ALREADY BE `[x]`, BECAUSE A PREVIOUS COMMIT TICKED IT.** THE
+        # `rtag` ITEM IS ONE: `eeb4e7de9` TICKED IT BY MISTAKE AND THIS PATCH MUST **UN-TICK**
+        # IT, SO THE SEARCH IS OVER **BOTH** MARKERS AND THE ITEM'S OWN TEXT IS WHAT
+        # IDENTIFIES IT, NOT ITS MARKER.
+        stem = first_line[len("- [ ] "):]
+        hits = [i for i, l in enumerate(lines)
+                if l.startswith("- [ ] " + stem) or l.startswith("- [x] " + stem)]
         if len(hits) != 1:
             print(f"SKIP (found {len(hits)}): {first_line[:64]}")
             continue
@@ -247,15 +261,30 @@ def patch_items(lines):
         while j < len(lines) and not (lines[j].startswith("- [ ] ") or lines[j].startswith("- [x] ")
                                        or lines[j].startswith("## ")):
             j += 1
-        if KEEP_OPEN in first_line:
-            # LEAVE IT OPEN: APPEND ONLY.
-            pass
+        if any(k in first_line for k in KEEP_OPEN):
+            # **⇒ LEAVE IT OPEN, AND UN-TICK IT IF A PREVIOUS COMMIT TICKED IT.** THE
+            # APPENDMENT IS THE POINT: THE ITEM's OWN TEXT MAY SAY "STILL REAL" AND THE
+            # MARKER MUST AGREE WITH IT.
+            if lines[i].startswith("- [x] "):
+                lines[i] = "- [ ] " + lines[i][len("- [x] "):]
         else:
-            assert lines[i].startswith("- [ ] "), lines[i][:40]
-            lines[i] = "- [x] " + lines[i][len("- [ ] "):]
+            if lines[i].startswith("- [x] "):
+                # ALREADY TICKED: THE EVIDENCE IS APPENDED AND THE MARKER IS LEFT ALONE.
+                pass
+            else:
+                assert lines[i].startswith("- [ ] "), lines[i][:40]
+                lines[i] = "- [x] " + lines[i][len("- [ ] "):]
+        # **⇒ THE PATCH MUST BE IDEMPOTENT.** A RE-RUN OVER A FILE THAT ALREADY CARRIES THE
+        # EVIDENCE MUST NOT APPEND IT AGAIN -- **⇒ AND THE FIRST VERSION DID, SO THE
+        # EVIDENCE WAS DUPLICATED IN THE COMMITTED FILE.** THE TEST IS THE EVIDENCE's OWN
+        # FIRST LINE, WHICH IS LONG AND UNIQUE.
+        first_ev = evidence.strip("\n").split("\n")[0].strip()
+        if first_ev and any(first_ev in l for l in lines[i:j]):
+            applied.append("SKIP dup " + first_line[:58])
+            continue
         body = ["      " + line.strip() if line.strip() else "" for line in evidence.strip("\n").split("\n")]
         lines[j:j] = body
-        applied.append(("OPEN" if KEEP_OPEN in first_line else "TICK") + " " + first_line[:58])
+        applied.append(("OPEN " if any(k in first_line for k in KEEP_OPEN) else "TICK ") + first_line[:58])
     return lines, applied
 
 
