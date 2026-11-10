@@ -178,6 +178,149 @@ at the `UOp` level. The defect stays where it was.
 
 ---
 
+## FILE 2 — `test/null/test_tensor_io.py` (24 LOC) — **PORTED, GREEN, AND IT FILLED A REAL GAP**
+
+### THE UPSTREAM TEST
+
+```python
+class TestTensorIO(unittest.TestCase):
+  def test_create(self):
+    with self.assertRaises(ValueError):
+      TensorIO(Tensor(b"Hello World").reshape(1, -1))
+    with self.assertRaises(ValueError):
+      TensorIO(Tensor([], dtype=dtypes.int64).reshape(1, -1))
+
+  def test_seek(self):
+    t = Tensor(b"Hello World!")
+    fobj = TensorIO(t)
+    self.assertEqual(fobj.tell(), 0)
+    self.assertEqual(fobj.seek(1), 1)
+    self.assertEqual(fobj.seek(-2, 2), len(t) - 2)
+    self.assertEqual(fobj.seek(1, 1), len(t) - 1)
+    self.assertEqual(fobj.seek(10, 1), len(t))
+    self.assertEqual(fobj.seek(10, 2), len(t))
+    self.assertEqual(fobj.seek(-10, 0), 0)
+```
+
+### THE UPSTREAM CITATIONS, AT THE PIN `f5ac54685074`
+
+| what | where at the pin |
+|---|---|
+| the refusal predicate | `tinygrad/nn/state.py` — `TensorIO.__init__`: `if t.ndim != 1 or t.dtype != dtypes.uint8: raise ValueError("Tensor must be 1d and of dtype uint8!")` |
+| the seek | `tinygrad/nn/state.py` — `TensorIO.seek`: `self._position = min(len(self._tensor), max(0, [offset, self._position+offset, len(self._tensor)+offset][whence]))` |
+| the position field | the same line's `self._position`, and `tell()` reads it |
+
+### ⇒ AND THE GAP WAS **MEASURED**, NOT GUESSED
+
+`gates/state_census.bend`'s `val_seek_*` ROWS ARE **ISOLATED** CALLS — EVERY ONE OF THEM PASSES
+`pos = 0` — AND `.agents/slop/state-gate.py`'s `sd_seek` ROW CREATES A **FRESH** `TensorIO` FOR
+EACH CALL.
+
+**⇒ AND THE `whence=1` CASE IS EXACTLY THE CASE THAT NEEDS A NON-ZERO `pos`.** `pos+off` IS THE
+**SECOND** CANDIDATE, AND AT `pos == 0` THE SECOND CANDIDATE IS `off` AND THE THIRD IS `len+off`,
+SO **THE SECOND IS NEVER CHOSEN** AND AN ISOLATED GATE **CANNOT SEE THE CASE AT ALL**.
+
+**MEASURED ON CPYTHON — EXACTLY TWO OF UPSTREAM's SIX CALLS ARE `pos`-DEPENDENT:**
+
+| call | position reached | answer | answer from a FRESH `TensorIO` | |
+|---|---|---|---|---|
+| `seek(1)` | 0 | 1 | 1 | pos-INDEPENDENT (`whence=0` picks `off`) |
+| `seek(-2, 2)` | 1 | 10 | 10 | pos-INDEPENDENT (`whence=2` picks `len+off`) |
+| `seek(1, 1)` | **10** | **11** | **1** | **POS-DEPENDENT** (`whence=1` picks `pos+off`) |
+| `seek(10, 1)` | **11** | **12** | **10** | **POS-DEPENDENT** |
+| `seek(10, 2)` | 12 | 12 | 12 | pos-INDEPENDENT |
+| `seek(-10, 0)` | 12 | 0 | 0 | pos-INDEPENDENT |
+
+**⇒ AND THE OTHER FOUR ARE `pos`-INDEPENDENT **STRUCTURALLY** — `whence=0` PICKS `off` AND
+`whence=2` PICKS `len+off`, AND NEITHER MENTIONS `pos`.** So the **two** `whence=1` rows carry
+the chain, and that is a measurement and not an assumption.
+
+### ⇒ AND THE `test_create` HALF IS **WEAKER THAN IT LOOKS**
+
+**BOTH** of upstream's fixtures are **2-D**, so **both refuse on the `ndim != 1` clause and
+neither reaches the dtype clause**. MEASURED: `Tensor(b"Hello World").reshape(1,-1)` IS
+`(1, 11)` AND `Tensor([], dtype=int64).reshape(1,-1)` IS `(1, 0)` — BOTH `ndim == 2`. **⇒ AND
+THAT IS WHY THE ROWS ARE SPLIT INTO THE TWO CLAUSES**, and `refuse_dtype_1x11=False` is the row
+that pins the fact. **A PORT THAT GATED ONLY "THE DTYPE IS NOT uint8" WOULD PASS THE FIRST
+FIXTURE FOR THE WRONG REASON.**
+
+### ⇒ AND THE PORT HAS NO `TensorIO` OBJECT, AND THAT IS FINE FOR BOTH HALVES
+
+`tinybendygrad/nn/state.bend:498` records `TODO(p3) state.py:8 TensorIO -- io.RawIOBase;
+readinto (:17) needs .data() (REALIZATION, tensor.bend WALL 4) and buffer[:n] = data mutates a
+Python bytearray, which no Data record can express.`
+
+**⇒ AND NEITHER HALF OF THE UPSTREAM TEST IS ABOUT `readinto`.** The refusal predicate is a
+predicate on the tensor's shape and dtype; the seek is **pure integer arithmetic** on a length
+and a position. **⇒ AND THE PORT ALREADY HAS THE SEEK's WHOLE RULE** — `St.sd_seek` IS
+`state.py:25`'s LINE, VERBATIM, WITH THE SIGNED CLAMP — so **what is new here is the chain**.
+
+### THE THREE FILES
+
+- **`gates/tensor-io.bend`** — the port side.
+- **`gates/tensor-io-oracle.py`** — the CPython side. A **real** `TensorIO` and **real** calls.
+- **`gates/tensor-io-gate.py`** — the positional diff.
+
+### THE ROWS — 22, THREE LANES, AND **rc=0**
+
+```
+shape_1x11=(1,11)  dtype_1x11=u8   refuse_ndim_1x11=True   refuse_dtype_1x11=False
+shape_1x0=(1,0)    dtype_1x0=i64   refuse_ndim_1x0=True    refuse_dtype_1x0=True
+shape_12=(12)      dtype_12=u8
+tell=0  seek1=1  seek_neg2_w2=10  seek_1_w1=11  seek_10_w1=12  seek_10_w2=12  seek_neg10_w0=0
+pos_before_seek1=0  pos_before_seek_neg2_w2=1  pos_before_seek_1_w1=10
+pos_before_seek_10_w1=11  pos_before_seek_10_w2=12
+```
+
+**THE GATE'S OWN OUTPUT LINE:**
+
+```
+tensor-io-gate: 22 rows, 3 lanes -- the refusal predicate splits into its two clauses, and the seek is a CHAIN: each answer is the next position, which the isolated rows never reached
+```
+
+### THE PLANTS — FIVE, FOUR OF THEM RED, AND THE FIFTH IS THE INSTRUCTIVE ONE
+
+| # | the text edit | the red output |
+|---|---|---|
+| **A** | the chain broken at the `whence=1` row (`pos = 0` instead of 10) | `DISAGREE (bd): n=1 of 22 rows, 1 shown: [('seek_1_w1=11', 'seek_1_w1=1')]` |
+| **A′** | **the same plant at the `whence=2` row** (`pos = 0` instead of 1) | **DID NOT GO RED** — `whence=2` picks the third candidate `len+off`, which does not mention `pos`. **⇒ AND THAT IS WHY THE `whence=1` ROWS CARRY THE CHAIN**, and it was measured rather than assumed. |
+| **B** | the chain's position read from a **different call** | `DISAGREE (bd): n=1 of 22 rows, 1 shown: [('pos_before_seek_10_w1=11', 'pos_before_seek_10_w1=1')]` |
+| **C** | the `ndim` clause never fires (the **count** replaced by the constant `1`) | `DISAGREE (bd): n=2 of 22 rows, 2 shown: [('refuse_ndim_1x11=True', 'refuse_ndim_1x11=False'), ('refuse_ndim_1x0=True', 'refuse_ndim_1x0=False')]` |
+| **C′** | **the first version of plant C** (compared against `99`) | **DID NOT GO RED** — `ndim != 99` is **TRUE** for a 2-D tensor, so the row correctly stayed `True`. **⇒ A PLANT THAT DOES NOT GO RED IS NOT A PLANT; IT IS A RESTATEMENT OF THE RULE, AND THE RULE IT RESTATED WAS BACKWARDS.** |
+| **D** | the fixture is 12 elements instead of 11 | `DISAGREE (bd): n=3 of 22 rows, 2 shown: [('shape_1x11=(1,11)', 'shape_1x11=ABSENT'), ('dtype_1x11=u8', 'dtype_1x11=ABSENT')]` |
+| **E** | `whence` read as a 0/1 flag — the defect `state.bend` itself names | `DISAGREE (bd): n=3 of 22 rows, 2 shown: [('seek_neg2_w2=10', 'seek_neg2_w2=4294967295'), ('seek_neg10_w0=0', 'seek_neg10_w0=4294967286')]` |
+
+### ⇒ AND TWO ROWS WERE **WRONG** AND WERE FIXED BEFORE THE COMMIT
+
+**THE POSITION READ WITH `seek_dec(12, pos, 0, 0)` — THE OBVIOUS WAY TO ASK "WHAT IS THE
+POSITION?" — ANSWERS `0`**, BECAUSE `whence=0` PICKS THE `off` CANDIDATE. **⇒ AND EVERY ONE OF
+THE FIVE POSITION ROWS PRINTED `0`.** **⇒ AND A ROW THAT PRINTS A CONSTANT CANNOT GO RED**, SO
+THE POSITION IS NOW READ AS **THE PREVIOUS CALL's ANSWER**, WHICH IS WHAT THE CHAIN MEANS.
+
+### MEASURED, NOT ASSUMED
+
+- **A `match` CANNOT SCRUTINISE A CALL NOR A LOCAL BINDER** — "a parameter or field scrutinee (a
+  match cannot scrutinize a computed value: give it its own def)". **⇒ AND EVERY READER MATCHES
+  A `Maybe` PARAMETER DIRECTLY** AND hands the unwrapped value to a second def, which is
+  `tinybendygrad/uop/fold.bend`'s OWN `dt_is.pick` / `shape_is.of` SHAPE.
+- **`dt_str` AND `dims_str` ARE **ALREADY** IN `uop/fold.bend`**, so a top-level `dt_str` in a
+  driver **collides with the fold's**, and the error is *"expected : a term / observed : ']'"* at
+  the signature — a confusing place to look.
+- **THE FIXTURE'S ELEMENT COUNT IS PART OF THE CLAIM**: `Tensor(b"Hello World")` is **ELEVEN**
+  elements and not twelve, and a fixture with the wrong count **does not resolve at all** — the
+  reshape's product check fails and the port answers `ABSENT`.
+- **A SHAPE'S SPELLING IS THE PORT's**: `F.dims_str` PRINTS `(1,11)` AND PYTHON's OWN
+  `str(tuple)` PRINTS `(1, 11)`, **⇒ AND THE ROW IS A DIFF OF STRINGS**, SO THE ORACLE SPELLS IT
+  THE PORT's WAY — WHICH IS WHAT `gates/fold_graph_census-oracle.py`'s `shape_of` ALREADY DOES.
+- **A BOOLEAN ROW's SPELLING IS THE GATE's**: `gates/state_census.bend`'s `pb` PRINTS
+  `Bool.show(b)` = `True`/`False` AND `.agents/slop/state-gate.py`'s `row` PRINTS PYTHON's
+  `bool` = `True`/`False`, **⇒ AND `gates/ops-core`'s ORACLE IS THE OTHER CONVENTION (`1`/`0`),
+  SO THE TREE HAS TWO AND THE TWO LANES OF A GATE MUST AGREE.** This gate follows the
+  `state_census` one, because this gate is about `nn/state.bend`.
+- **670 MB PEAK RSS** on the driver under the 3072 MB watchdog ceiling (`WITHIN-LIMITS`).
+
+---
+
 ## THE FILES NOT ATTEMPTED, AND WHY
 
 | upstream file | LOC | verdict | the reason |
@@ -187,9 +330,8 @@ at the `UOp` level. The defect stays where it was.
 | `test/null/test_objc.py` | 17 | **SKIPPED — UNREACHABLE** | needs a **macOS framework** (Objective-C runtime). |
 | `test/null/test_symbolic_ops.py` | 13 | **NOT STARTED — REACHABILITY NOT MEASURED** | asserts that `a.reshape((3, vi))` **RAISES `ValueError`** where `vi` is a **symbolic** `Variable`. Two questions, in order: **does the port have `Variable`/`Variable.bind` at all**, and **does the port have a way to express "this raised"** as a `name=value` row? A `.bend` row is not an exception. |
 | `test/null/test_tensor_variable.py` | 13 | **NOT STARTED — REACHABILITY NOT MEASURED** | asserts that `t.chunk(2, dim=0)` along a **symbolic** dim **RAISES `AssertionError`**. Same two questions, plus `chunk` itself. |
-| `test/null/test_hashing.py` | 18 | **NOT STARTED** | the next candidate; not yet measured. |
-| `test/null/test_arange.py` | 22 | **NOT STARTED** | needs the port's **device layer**, whose state is not measured. |
-| `test/null/test_tensor_io.py` | 24 | **NOT STARTED** | needs the port's **device layer**. |
+| `test/null/test_hashing.py` | 18 | **BLOCKED — MEASURED** | needs `Tensor.keccak()`, and **the port has NO `keccak` AT ALL**: `tinybendygrad/mixin/op.bend` puts `keccak` on **SIDE B**, the **un-ported** half of `tinygrad/mixin/op.py` (lines 998-1980). **⇒ AND THE PRIMITIVES ARE ALSO UN-PORTED**: no `pad`, no `pad_to` as a tensor op, no `expand`, no `roll`, no `transpose`, no `flatten`, no `cat` as a tensor op, no `unsqueeze`, no `bitcast` — and `mixin/op.bend`'s OWN WALL LIST names `cat` as **W6** and the movement ops as **W4** (which needs `resolve`, W3's wall). **⇒ AND UPSTREAM's `keccak` IS A FULL SHA-3** (`rot_offsets`, `reorder_indexes`, `rnd_const_masks`, the f1600 permutation) at `tinygrad/mixin/op.py:1931`, so porting this test means porting the hash, which is **not** a test port. |
+| `test/null/test_arange.py` | 22 | **BLOCKED — MEASURED** | needs `out.schedule_linear()` + `compile_linear` + `estimate_uop`, which is the **schedule preparation** layer, and `tinybendygrad/schedule/prepare.bend` is a stub. **⇒ AND THE `triu` half needs `resolve` (W3's wall) anyway.** |
 
 **⇒ AND THE ORDER IS ASCENDING BY UPSTREAM FILE SIZE**, and the file this pass ported
 (`test_invalid_tensor.py`, 16 LOC) is the **smallest REACHABLE** one: the two 13-LOC files
@@ -208,6 +350,8 @@ BEFORE PROMISING EITHER.**
 |---|---|
 | `55daf7665` | the three files: `gates/invalid-tensor.bend`, `gates/invalid-tensor-oracle.py`, `gates/invalid-tensor-gate.py` (3 files, +363) |
 | `7ba76920a` | `gates/gates-pop.ledger.tsv`: the two new gate files recorded (+2) |
+| `1d762fd3c` | the three files: `gates/tensor-io.bend`, `gates/tensor-io-oracle.py`, `gates/tensor-io-gate.py` (3 files, +555) |
+| `4929e17e8` | `gates/gates-pop.ledger.tsv`: the second pair recorded (+2) |
 
 **⇒ AND `git show --stat HEAD` AND `git fsck --no-progress` WERE RUN IN THE SAME COMMAND AS
 EACH COMMIT**, and `fsck` reports **THE SAME TWO PRE-EXISTING MALFORMED TREES** (`3a60f33f`
@@ -219,10 +363,15 @@ ONE**. `git show --stat` reads **exactly the named paths** on both commits.
 ## WHAT IS PORTED, WHAT IS SKIPPED, WHAT IS BLOCKED
 
 - **PORTED AND GREEN:** `test/null/test_invalid_tensor.py` — 19 rows, 3 lanes, rc=0, four
-  plants all measured red.
+  plants all measured red — **AND** `test/null/test_tensor_io.py` — 22 rows, 3 lanes, rc=0,
+  five plants of which **four** measured red and the fifth (**C′**) is recorded as a
+  **backwards plant that correctly did not go red**.
 - **SKIPPED AS UNREACHABLE:** `test_gguf.py` (dataset), `test_mnist_dataset.py` (dataset),
   `test_objc.py` (macOS framework).
 - **NOT BLOCKED BY A DEFECT.** **NO PORT DEFECT WAS FOUND IN THIS PASS**, and the known
   pre-existing `ew_eq`/`ew_logical_not` inversion was **not** hit.
+- **BLOCKED, WITH THE WALL NAMED:** `test_hashing.py` (no `keccak` in the port; the primitives
+  are un-ported and `cat` is W6) and `test_arange.py` (the schedule-preparation stub, plus
+  `resolve` for `triu`).
 - **STILL OPEN, WITH THE QUESTION NAMED:** the two 13-LOC symbolic files need the port's
   `Variable` support **and** a way for a `.bend` row to say "this raised".
