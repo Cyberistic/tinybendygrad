@@ -19,13 +19,13 @@
 # `pm_inline_calls` (184-187), `pm_disk_copy` (189-197), `earliest_rewrites`
 # (199-269) and `prepare_rangeify` (271-278).
 #
-# ---------------------------------------------------------------------------
+
 # THE SPLIT. Every rule body here is a DECISION: it answers "which arm, and
 # with what arithmetic", and the node it would build is named at the call site.
 # That is `agent-core.md`'s split with the trace side unused -- nothing in this
 # file declares a foreign effect, and both lanes run it.
 #
-# ---------------------------------------------------------------------------
+
 # THE WALLS. Six, each with the Python line that hits it. Nothing here is
 # approximated and nothing here is faked: a row that cannot be computed prints
 # the wall's name, so a diff can tell a wall from a value.
@@ -82,10 +82,10 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-# ===========================================================================
+
 # THE ROW PRINTER. One line per claim, `name=value`, so the differ reads whole
 # lines and never compares row NAMES.
-# ===========================================================================
+
 def row(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
 def rowb(nm: String, b: Bool) -> IO(Unit): row(nm, Bool.show(b))
@@ -199,11 +199,11 @@ def topo_str(+fx: F.Folded, +self: U32) -> String:
   +ns = O.UOp.toposort(O.Arena.budget(ar), ar, self)
   ops_str(topo_ops(ar, tb, ns))
 
-# ===========================================================================
+
 # THE FIXTURE BUILDERS. `O.Found` is `ops.bend`'s `(arena, node)` pair, and a
 # node is an arena INDEX, so every fixture is built once and the arena is what
 # every reader sees.
-# ===========================================================================
+
 
 def pr_c(v: U32) -> O.Found: O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(v)})
 
@@ -274,7 +274,7 @@ def pr_expand(ar: O.Arena, +x: O.Found, +s: O.Found) -> O.Found:
 def pr_perm(ar: O.Arena, +x: O.Found, +a: U32, b: U32) -> O.Found:
   O.UOp.new(ar, O.OpsPERMUTE{}, [O.Found.i(x)], O.ATuple{[a, b]}, O.TNone{})
 
-# ---------------------------------------------------------------------------
+
 # REPORTED, NOT USED: `ops.bend`'s `UOp.after` (uop/ops.bend:2897 symbol=UOp.after) and `UOp.end`
 # (uop/ops.bend:2944 symbol=UOp.end) build `List.append(srcs, [self])`, which is `srcs ++ [self]`.
 # `ops.py:621` is `src=(self,)+src` and `ops.py:619` is `src=(self,)+src`, so the
@@ -299,12 +299,12 @@ def pr_store(ar: O.Arena, +d: O.Found, +v: O.Found) -> O.Found:
 
 def pr_sink(+a: O.Found) -> O.Found: O.UOp.sink(O.Found.ar(a), [O.Found.i(a)])
 
-# ===========================================================================
+
 # THE SIX TABLES, emitted by `.agents/slop/prep-gen-tables.py` from tinygrad's
 # OWN `PatternMatcher` objects: `pat.op` IS `pdict`'s key (ops.py:1598) and
 # `pat.early_reject` is ops.py:1477.  The comment on each entry is the rule's
 # `strict_length` / `required_len` / `is_any` / `nalts` / `name`.
-# ===========================================================================
+
 
 def pr_fma_table() -> O.PMEntrys:
   O.PMEntrys{[
@@ -383,7 +383,7 @@ def pr_mcl_table() -> O.PMEntrys:
     O.PMEntry{8, [O.OpsINDEX{}], [O.OpsINDEX{}]},  # 8 INDEX rej=INDEX slen=0 rlen=1 any=0 nalts=1 name=idx2
   ]}
 
-# ===========================================================================
+
 # THE TABLE ROWS.  `<t>_n` is the rule COUNT; `<t>_keys` is how many ops CLAIM a
 # rule (`pdict`'s key set, ops.py:1592); `<t>_pd_<OP>` is the ORDERED list of
 # rule indices that op claims, which is where FIRST-WINS lives (ops.py:1606 walks
@@ -394,7 +394,7 @@ def pr_mcl_table() -> O.PMEntrys:
 # renders `{}`, while `pat.op` is a TUPLE in the UPat's DECLARED order (ops.py:1454)
 # and renders as a bare comma list.  The table literal therefore keeps `ops` in
 # declared order and sorts `rej`, and this is where the two are rendered.
-# ===========================================================================
+
 
 def len_pme(es: List<&2, O.PMEntry>) -> U32: U32.from_nat(List.length(&2, O.PMEntry, es))
 
@@ -430,12 +430,12 @@ def pr_t_of(+name: String, +ts: O.PMEntrys) -> IO(Unit):
     pr_t_go(name, O.PMEntrys.es(ts), 0n)
 
 
-# ===========================================================================
+
 # THE `pdict` KEY SETS, emitted by `.agents/slop/prep-gen-tables.py` from
 # `PatternMatcher.pdict` (ops.py:1592), in the alphabetical order the oracle
 # prints.  `pr_<t>_keys` is the LENGTH and `pr_<t>_pd_<OP>` is the ordered rule
 # list for one key.
-# ===========================================================================
+
 def pr_fma_keys() -> List<&2, O.Op>: [O.OpsADD{}, O.OpsAFTER{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{}, O.OpsRECIP{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSTAGE{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}]
 def pr_mop_keys() -> List<&2, O.Op>: [O.OpsAFTER{}, O.OpsEND{}, O.OpsINDEX{}]
 def pr_inl_keys() -> List<&2, O.Op>: [O.OpsAFTER{}, O.OpsCALL{}]
@@ -509,15 +509,15 @@ def g_t6() -> IO(Unit):
     pr_t_of("mcl", pr_mcl_table())
     pr_keys_row("mcl", pr_mcl_keys(), pr_mcl_table())
 
-# ===========================================================================
-# ===========================================================================
+
+
 # THE `pdict` KEY SETS, emitted by `.agents/slop/prep-gen-tables.py` from
 # `PatternMatcher.pdict` (ops.py:1592), in the alphabetical order the oracle
 # prints.  `pr_<t>_keys` is the LENGTH and `pr_<t>_pd_<OP>` is the ordered rule
 # list for one key.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # 1. `walk_mop` -- prepare.py:40-43.
 #      if u.op in GroupOp.Movement or u.op in {INDEX, UNSHARD, BITCAST}:
 #        return walk_mop(u.src[0])
@@ -531,7 +531,7 @@ def g_t6() -> IO(Unit):
 # node and its un-moved alias have the same op, the same nsrc, the same src op
 # sequence and the same shape.  `GroupOp.movement` is `uop/ops.bend:505` symbol=GroupOp.movement and owns the
 # predicate; the three extra ops are written out because they are three.
-# ---------------------------------------------------------------------------
+
 # The SHAPE is `fold.bend`'s: ONE self-recursive def with the decreasing fuel
 # first, and a `Data` RECORD for the rest of the state, because a `match` on a
 # record's field binder is legal where a `match` on a computed value is not.  That
@@ -856,7 +856,7 @@ def g_wm() -> IO(Unit):
   +w = wm_fix()
   wm_go(WMF.fx(w), WMF.items(w))
 
-# ===========================================================================
+
 # THE MUTATION TABLE.  One edit per ported rule, re-run in the INTERPRETED lane
 # (the two lanes are byte-identical at baseline, so the native lane adds nothing
 # here and costs minutes), and the rows each edit moves are reported BY NAME.
@@ -973,7 +973,7 @@ def g_wm() -> IO(Unit):
 #   * `<t>_<k>_{dt,src}` (2 per rule) -- `UPat.match_dtype` and the src permutation
 #     tuple (upat.py:47).  `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE
 #     (uop/ops.bend:4043 symbol=PMEntry), so `UPat` does not survive into the compiled IR.
-# ===========================================================================
+
 def main() -> IO(Unit):
   do IO<Unit>:
     g_t1()

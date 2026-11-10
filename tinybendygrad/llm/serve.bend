@@ -19,15 +19,14 @@
 #
 # TWO SIGNATURES, MEASURED rather than guessed (`bin/bend --check-only`): `String.take`/`String.drop`
 # take a `Nat`, and `String.length` RETURNS one; `String.starts_with(a, b)` takes two `String`s. The first
-# probe of these was wrong because `IO.print` demands a `String` and reported the mismatch as if it were
 # the argument's -- a trap worth recording, since `IO.print` is the only output in this tree.
 
 import Base
 
-# ===========================================================================
+
 # serve.py:44-47 -- the router's four modes. Upstream carries them as `str`; the value is that they are
 # COMPARED and never parsed, so a `U32` constant per mode is the same contract with less to compare.
-# ===========================================================================
+
 def Router.undecided() -> U32: 0    # no output yet; a leading `<think>` decides
 def Router.reasoning() -> U32: 1
 def Router.content() -> U32: 2
@@ -54,10 +53,10 @@ def Router.mode(r: Router) -> U32:
   match r:
     case Router{buf, mode}: mode
 
-# ===========================================================================
+
 # `serve.py:48-55` -- `split(tag, final) -> (before, matched)`, with `self.buf` rebound. A SUBSTRING search,
 # because `String.split` takes a single `Char` and every tag here is longer than one.
-# ===========================================================================
+
 def Router.at(+fuel: Nat, +tag: String, +buf: String, +i: Nat) -> Maybe<&1, Nat>:
   match fuel:
     case 0n: None{}
@@ -103,12 +102,12 @@ def Router.split.by(m: Maybe<&1, Nat>, +tag: String, +buf: String, +final: Bool)
 def Router.split(+tag: String, +buf: String, +final: Bool) -> Split:
   Router.split.by(Router.find(tag, buf), tag, buf, final)
 
-# ===========================================================================
+
 # `serve.py:56-70` -- `route`. The yields become a LIST because the function is pure, and the DEFS ARE
 # ordered so that no two call each other: Bend refuses mutual recursion (the same wall `run` in
 # `ops_python.bend` hit), so the pipeline is written bottom-up -- content, then reason, then decide, then
 # the dispatch. Upstream gets away with one method because Python evaluates in sequence.
-# ===========================================================================
+
 def Router.route.emit(+field: U32, +s: String, +acc: List<&2, Delta>) -> List<&2, Delta>:
   Bool.pick(List<&2, Delta>, String.is_empty(s), acc, Delta{field, s} <> acc)
 

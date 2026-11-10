@@ -43,7 +43,7 @@
 #     decimals and are NOT independently verified" -- they are now `cd_*` rows
 #     carrying CPython's own `repr`, plus `cx_*` rows carrying the 0x spelling.
 #
-# ---------------------------------------------------------------------------
+
 # NO DIGIT IN THE GENERATED HALF IS MINE.  `sp.*` and `fx.*` are produced by
 # `.agents/slop/tc-gen.py bend` and `.agents/slop/tc-rows.py {fixtures,pairs}`,
 # which read `.agents/slop/tc-audit.txt` -- CPython's own output, 146 constants
@@ -63,14 +63,13 @@
 # as hex is not two independent readings on a transposed digit PAIR, so a gate
 # that only reads one of them is half-blind exactly where it matters.
 #
-# ---------------------------------------------------------------------------
+
 # two defects this file found, both in other people's code, both left loud.
 #
 # 1. the reverse lookup was answering "not found" for everything, and it was one
 #    bug worth 45 rows, not 45.  `tc.vi`/`tc.uvi` search a table for a bit
 #    pattern and every `xv_*` row answered 4294967295 while every `xf_*` row for
 #    the same table agreed -- which is what made it look like a coefficient bug.
-#    It was not: `sp.*_raw()` renders a table with `" | "` between the elements so
 #    a human can read it, and the reverse lookup re-splits THAT string, so every
 #    element but the LAST arrived with a leading and a trailing space --
 #    MEASURED, `F32.read("0.0001535920892 ")` is `None` -- and only the last
@@ -97,7 +96,7 @@
 #    edited to make a row pass.  It turns GREEN by itself the moment the compiler
 #    is fixed, which is the shape a real regression row should have.
 #
-# ---------------------------------------------------------------------------
+
 # WHY A VALUE LAYER IS POSSIBLE AT ALL.  Two measurements:
 #
 #   1. `base.bend`'s F32 arithmetic is BIT-EXACT with CPython/numpy.  Probe:
@@ -114,7 +113,7 @@
 # `F32.show` is lossy (seven digits) and appears in no gate; `F32.bits` is the
 # gate.
 #
-# ---------------------------------------------------------------------------
+
 # NO float64 EVALUATION, and the float64 coefficients are still verified.  Bend
 # has no `F64` (MEASURED: `grep -n F64 references/bend/bend2/base.bend` is
 # empty).  A float64 coefficient cannot be a VALUE here, so it is a STRING
@@ -122,7 +121,7 @@
 # round-trips, gated by `cd_*` with `float.hex()` on the record in
 # `tc-audit.txt` col 3.
 #
-# ---------------------------------------------------------------------------
+
 # THE TWO WALLS, both named, neither worked around in silence.
 #
 # W1. NO UINT64 ARITHMETIC, so `payne_hanek_reduction`'s product is NOT
@@ -161,7 +160,7 @@
 # the gate compares against the bitcast tinygrad performs.  `xf_pow2if_*`,
 # `xf_frexp_*` and `xf_ldexp3k_*` are those claims.
 #
-# ---------------------------------------------------------------------------
+
 # THE INVENTORY, in upstream's order.  PORTED = the float32 lane is evaluated and
 # gated.  GATES = only the predicate is gated.  W1/W2 as above.
 #
@@ -207,7 +206,7 @@
 # (+ `tc-rows-coef.txt`), `tc-rows.py`, `tc-diff.py`, `tc-build.py`,
 # `tc-mutate.py`.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE, AS IT STANDS: 834 oracle rows, 878 printed, 801 AGREE, 24 disagree,
 # 9 MISSING, 53 extra.  The 24 are not 24 findings; they are THREE, and the
 # expectations are CPython's in every case and are NOT edited.
@@ -238,7 +237,7 @@
 # `xpow` calls the NATIVE `Ops.LOG2`/`Ops.EXP2`.  Substituting this file's own
 # `xexp2` would be claiming a different function than the one `xpow` calls.
 #
-# ---------------------------------------------------------------------------
+
 # THE MUTATION TABLE, RUN: 35 entries, 35 move rows, ZERO zeros.
 #
 # It is worth what it cost, because the zeros were the point and all five of the
@@ -270,12 +269,12 @@
 
 import Base
 
-# ===========================================================================
+
 # THE GENERATED HALF.  Every literal below came out of CPython:
 #   sp.*  the coefficient tables, from `tc-audit.py` via `tc-gen.py`
 #   fx.*  the FIXTURE strings, taken from the ORACLE'S OWN ROW NAMES
 # Neither is mine.  See `.agents/slop/tc-audit.py`, `tc-gen.py`, `tc-rows.py`.
-# ===========================================================================
+
 def sp.sin32() -> List<&2, String>:
   String.split("2.6083159809786594e-06|-0.00019810690719168633|0.00833307858556509|-0.16666659712791443|1.0", '|')
 def sp.sin32_raw() -> String: "2.6083159809786594e-06 | -0.00019810690719168633 | 0.00833307858556509 | -0.16666659712791443 | 1.0"
@@ -433,17 +432,17 @@ def fx.xpowp() -> List<&2, String>:
 def fx.lazy() -> List<&2, String>:
   String.split("-0.0|-0.5|-1.0|-inf|0.0|0.5|1.0|inf|nan", '|')
 # THE ROW PRINTERS.
-# ===========================================================================
+
 def urow(+nm: String, +v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
 def srow(+nm: String, +v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))
 
-# ===========================================================================
+
 # THE ACCESSORS.  A `Maybe` is unwrapped EXPLICITLY and a miss answers a
 # sentinel the gate SHOWS, never a default that would hide it.
-# ===========================================================================
+
 
 def tc.rdf(+m: Maybe<&2, F32>) -> F32:
   match m:
@@ -497,14 +496,14 @@ def tc.dq0(+s: String) -> String:
 def tc.dq1(+s: String) -> String:
   tc.rds(List.get(&2, String, String.split(s, '_'), 1n))
 
-# ---------------------------------------------------------------------------
+
 # INDEX -> VALUE and VALUE -> INDEX, and they are independent on purpose.  The
 # fixture of the second is the BIT PATTERN, not the position: a mutated
 # coefficient leaves the old pattern unfindable and the row answers 4294967295.
 # Without that, one row wearing two hats would move for a single edit and read
 # like two checks.  The third row is the element as TEXT, which is the only
 # handle on a float64 coefficient -- there is no F64 to hold one.
-# ---------------------------------------------------------------------------
+
 def tc.fv(+xs: List<&2, String>, +i: U32) -> U32: tc.b(tc.nth(xs, i))
 
 def tc.vi(+xs: List<&2, String>, +b: U32, +i: U32) -> U32:
@@ -541,7 +540,7 @@ def tc.uvi(+xs: List<&2, String>, +b: U32, +i: U32) -> U32:
     case x <> t:
       Bool.pick(U32, U32.is_eq(tc.u(x), b), i, tc.uvi(t, b, U32.inc(i)))
 
-# ===========================================================================
+
 # THE INTEGER RULES.  MEASURED by a spy on `shr`/`shl` in the audit oracle
 # (`.agents/slop/tc-audit.txt` rows `shr[0].y` .. `shr[16].y`): ALL SEVENTEEN
 # shift amounts tinygrad asks for in this file are PYTHON INTS, and every one of
@@ -552,7 +551,7 @@ def tc.uvi(+xs: List<&2, String>, +b: U32, +i: U32) -> U32:
 # A self-call passes its arguments UNCHANGED up to the first one that shrinks,
 # so every recursion here takes a `Nat` fuel LAST (the shape of
 # `U32.log2.go` in base.bend).
-# ===========================================================================
+
 
 # `U32.shl` is a ONE-BIT shift and `U32.shln(a, n)` is the n-bit one, so a shift
 # AMOUNT has to be a `Nat` built from a runtime value.
@@ -560,9 +559,9 @@ def tc.shl(+x: U32, +y: U32) -> U32: U32.mul(x, tc.pow2u(y))
 
 def tc.iadd(+a: U32, +b: U32) -> U32: U32.add(a, b)
 
-# ===========================================================================
+
 # THE FLOAT RULES.
-# ===========================================================================
+
 def tc.pick(+c: Bool, +a: F32, +b: F32) -> F32: Bool.pick(F32, c, a, b)
 
 def tc.zero() -> F32: F32.mul(2.0, 0.0)
@@ -614,9 +613,9 @@ def tc.i2f(+b: U32) -> F32:
 # `pow2if` answer 0, and the same mask was in `tc.i2f` and `tc.ldexp3k`.
 def tc.pow2f(+n: U32) -> F32: F32.pow(2.0, tc.i2f(n))
 
-# ===========================================================================
+
 # THE POLYNOMIALS.
-# ===========================================================================
+
 
 # `polyN(x, p) = reduce(lambda acc, c: acc*x + c, p, 0.0)` -- helpers.py:153.
 # The SEED is the Python float `0.0`, so the first step really is `0.0*x + p[0]`
@@ -647,9 +646,9 @@ def tc.spl(+d: F32, +q: U32) -> F32:
   F32.mul(tc.sin_poly(tc.pick(tc.ifand(q, 1), F32.add(d, tc.f(sp.pi_over_2())), d)),
           tc.sign(tc.ifand(q, 2)))
 
-# ===========================================================================
+
 # THE RANGE REDUCTION, :52-63 and :115-147.
-# ===========================================================================
+
 
 # :59 `shr(bits, mantissa_bits) & exponent_mask`
 def tc.fe(+v: F32) -> U32: U32.and(tc.shr_u(F32.bits(v), sp.mb_32()), sp.em_32())
@@ -777,9 +776,9 @@ def tc.lazy(+x: F32, +inf: F32, +_inf: F32, +nan: F32, +ratio: F32) -> F32:
             Bool.pick(F32, Bool.not(F32.is_eq(x, x)), nan,
                       Bool.pick(F32, tc.beq(x, tc.ninf()), _inf, ratio)))
 
-# ===========================================================================
+
 # THE EXPANSIONS, float32 lane.
-# ===========================================================================
+
 
 # :178 mask +-inf/nan to 0.0 -- the SAME `_lazy_map_numbers` call as :200 and
 # :191, with three zero replacements.
@@ -790,12 +789,12 @@ def tc.cody_waite(+x: F32) -> Red:
   +q = tc.cw_quadrant(x)
   Red{tc.cw_reduce(x, q), q}
 
-# ===========================================================================
+
 # THE SPECIAL CASES.  Each guard is its own row, and each BOUNDARY appears in
 # TWO rows -- the value and the value next to it -- because one fixture cannot
 # see both: `128.0`/`127.99999`, `-150.0`/`-149.99999`, `FLT_MIN` and
 # `FLT_MIN*(1-1e-5)`, `30.0`/`29.999998`.
-# ===========================================================================
+
 
 # :9-11 `x.ne(inf).where(x.ne(x).where(nan, x.ne(-inf).where(ratio, _inf)), inf)`
 # NOTE the middle arm: `x.ne(x)` is FALSE for every non-NaN, so `where` picks
@@ -891,11 +890,11 @@ def tc.xlog2_neg(+d: F32) -> Bool: F32.is_lt(d, tc.zero())
 def tc.xlog2_nan(+d: F32) -> Bool: Bool.not(F32.is_eq(d, d))
 def tc.xlog2_recip(+d: F32) -> Bool: F32.is_eq(F32.div(1.0, d), tc.ninf())
 
-# ===========================================================================
+
 # `xpow` (:257-265).  W2: the `.log2()`/`.exp2()` in the middle are NATIVE ops,
 # so only the pure half is claimed -- `non_int` (:261), `is_odd` (:262), the
 # `exponent.eq(0)` short circuit (:265) and the `-base` at :259.
-# ===========================================================================
+
 
 # :261 `exponent != exponent.cast(int32).cast(exponent.dtype)`
 # :255 `d.reciprocal().ne(-math.inf).where(r, r.const_like(-math.inf))` is
@@ -942,11 +941,11 @@ def tc.xpow_special(+b: F32, +e: F32) -> F32:
                       Bool.pick(F32, F32.is_lt(e, tc.zero()), tc.pinf(), tc.zero()),
                       tc.qnan()))
 
-# ===========================================================================
+
 # `payne_hanek_reduction` (:66-113).  W1: the uint64 product at :103/:105 is
 # NOT evaluated.  What IS here is every CONSTANT it reads and the u32 window
 # arithmetic of `_take` (:88-92), a pure function of (i, e).
-# ===========================================================================
+
 
 # :84-86 `i = shr(e.cast(uint64), 5)`, `e = e & 31`, `offset = 32 - e`
 def tc.ph_i(+e0: U32) -> U32: tc.shr_u(e0, 5)
@@ -964,11 +963,11 @@ def tc.take_pick(+i: U32, +len: U32, +k: U32) -> U32:
   Bool.pick(U32, U32.is_ge(len, U32.inc(k)), k,
             Bool.pick(U32, U32.is_eq(i, k), k, 4294967295))
 
-# ===========================================================================
+
 # THE GATE.  One tag-dispatch over the rule being evaluated, then ONE list
 # walker per row family, so no family is a copy of another with one line
 # changed.
-# ===========================================================================
+
 
 # `tag` picks the rule; the fixture `s` is whatever that family's row names
 # carry, so the walker needs no knowledge of the rule.

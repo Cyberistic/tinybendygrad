@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/clip.py (480 loc). not yet ported.
 #
 # clip is both halves at once, and that is why it is the one file in this slice
@@ -86,7 +86,7 @@ import ./../datasets/__init__.bend as D
 # FIRST MISSING SYMBOL: `Embedding(vocab_size, width)` at clip.py:319.
 # REACHED BEFORE IT, AND PORTED: `Tensor.empty(ctx_length, width)` at :320
 # (mixin/creation.bend:429 symbol=cr_empty) and `Tensor.empty(width, width)` at :323.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -95,10 +95,10 @@ def cl_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :11 and :14-17. `gelu = Tensor.gelu` is a module-level ALIAS that mlperf
 # monkeypatches, and it points at a body mixin/elementwise.bend does not have.
-# ---------------------------------------------------------------------------
+
 
 # :11 gelu = Tensor.gelu
 def cl_gelu_alias() -> D.Refused:
@@ -108,19 +108,19 @@ def cl_gelu_alias() -> D.Refused:
 def cl_default_bpe() -> D.Refused:
   D.refuse("extra/models/clip.py:14 default_bpe -- FIRST MISSING SYMBOL fetch (:16); helpers.bend:2758 symbol=lines is that file's ONLY I/O construct, so the HTTP seam is NOT ported")
 
-# ---------------------------------------------------------------------------
+
 # :19-138 Tokenizer / Tokenizer.ClipTokenizer. NOT PORTED: gzip, re, and a
 # Python `dict` of 49408 entries. One def is named so the class is not invisible.
-# ---------------------------------------------------------------------------
+
 
 # :56 def __init__(self, version=None)  [Tokenizer.ClipTokenizer]
 def cl_tokenizer_init(version: Maybe<&2, String>) -> D.Refused:
   D.refuse("extra/models/clip.py:56 Tokenizer.ClipTokenizer.__init__ -- FIRST MISSING SYMBOL gzip.open(default_bpe()) (:64); :88 re.compile and :78 the 49408-entry vocab dict follow")
 
-# ---------------------------------------------------------------------------
+
 # :140-234 Closed -- the OpenAI CLIP. FOUR Linear pairs, FOUR LayerNorms, and
 # the fused attention.
-# ---------------------------------------------------------------------------
+
 
 # :152 class Closed.ClipMlp / :153 def __init__(self)
 def cl_mlp_init() -> D.Refused:
@@ -165,7 +165,7 @@ def cl_closed_embedder_call() -> D.Refused:
 # :249 Open. not ported. not ported. not ported: the "leaky" softmax of open-clip
 # at :277 is `(x * 100.0).softmax(dim=-1).to(x.dtype)` and it is the ONLY
 # `softmax` any file in this slice calls DIRECTLY on the open side.
-# ---------------------------------------------------------------------------
+
 
 # :250 class Open / :251 def __init__(self, embed_dim, num_heads, layers, mlp_ratio=4.0)
 def cl_open_init(embed_dim: U32, num_heads: U32, layers: U32) -> D.Refused:
@@ -235,9 +235,9 @@ def cl_openclip_encode_tokens(+tokens: T.Tensor) -> D.Refused:
 def cl_get_clip_score(+tokens: T.Tensor, +image: T.Tensor) -> D.Refused:
   D.refuse("extra/models/clip.py:473 get_clip_score -- FIRST MISSING SYMBOL self.visual (:474); the Frobenius norm at :475,:478 is FULLY PORTED (ew_square, mo_sum, ew_sqrt)")
 
-# ---------------------------------------------------------------------------
+
 # There is no `if __name__ == "__main__":` in clip.py. `main` prints TWO rows.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, cl_text_transformer_init(768, 12, 12, 49408, 77))

@@ -66,7 +66,7 @@
 # inert. Reported, not fixed: `helpers.py` is READ-ONLY here.
 import Base
 
-# ===========================================================================
+
 # SECTION 0 -- PRIMITIVES. `+` on a `Data` is a refcount (rule 1.1), a `U32` is
 # affine, and `Maybe<&2, T>` demands a `+` payload -- so a decision about a `Maybe` is
 # always a `Bool` handed to a def, never a field in a `match` scrutinee
@@ -99,7 +99,7 @@ def eq_mstr.go(l: Maybe<&2, String>, r: Maybe<&2, String>) -> Bool:
 def eq_mstr(l: Maybe<&2, String>, r: Maybe<&2, String>) -> Bool:
   eq_mstr.go(l, r)
 
-# ===========================================================================
+
 # section 1 -- what a worker is: a `Data` record of a tag plus arguments. See the
 # header for why the callable is a tag and not a function value.
 type Arg is Data:
@@ -206,7 +206,7 @@ def maxtasks_default() -> U32:
 def pool_init_name() -> String:
   "_init_worker"
 
-# ===========================================================================
+
 # section 2 -- the ported functions, in python order.
 #
 # worker.py:8-10 -- `_init_worker`: `Context(ALLOW_DEVICE_USAGE=0, VIZ=0,
@@ -422,7 +422,7 @@ def terminated(pool: Maybe<&2, Pool>) -> Bool:
 # `terminated`, which is the first of Python's two statements and is where it belongs.
 def terminate_worker_pool(pool: Maybe<&2, Pool>) -> Maybe<&2, Pool>:
   None{}
-# ===========================================================================
+
 # SECTION 3 -- THE GATE. Both lanes print these rows and they must be
 # byte-identical. The CPython oracle is `gates/worker-oracle.py worker` -- the
 # recovered `.agents/slop/probe/jit_oracle.py`, blob 0c8fcbe6, now beside the gate
@@ -602,7 +602,7 @@ def main() -> IO(Unit):
     wrow_b("eq_mstr_one", eq_mstr(Some{"a"}, None{}))
     wrow_b("eq_mstr_neither", eq_mstr(None{}, None{}))
 
-# ===========================================================================
+
 # THE MEASURED MUTATION TABLE. Reproduce with
 #     .venv/bin/python gates/worker-mutate.py worker
 # RESTORED 2026-10-16 from `.agents/slop/probe/mutate.py`, blob 977591e5, 12832 B, byte for
@@ -617,15 +617,13 @@ def main() -> IO(Unit):
 #   W4  terminated: the pool-existed test inverted              3  terminate_once terminate_twice terminate_none
 #   W5  mod_cleared: only `__file__` is cleared                 2  cleared_spec cleared_spec_is_none
 #   W6  mod_restore: the `now` arm replaced by `saved`          --  DOES NOT CHECK (see below)
-#   W7  init_worker: VIZ is no longer switched off               1  init_viz
-#   W8  init_worker: SIGINT is no longer ignored                1  init_sigint_ignored
 #   W9  spawnv_returncode: the forced 0 dropped                 1  spawnv_returncode
 #   W10 maxtasks_default: 16 becomes 8                          3  maxtasks_default pool_procs pool_memo_procs
 #   W11 pool_new: `initializer=_init_worker` dropped            2  pool_procs pool_memo_procs
 #   W12 sch_puts: the schedule REVERSED                         1  sched
 #   W13 eq_mstr: `None` equals a `Some`                         1  eq_mstr_one
 #
-# ---------------------------------------------------------------------------
+
 # W6 DOES NOT CHECK, and the compiler's REASON is the finding. The mutation replaces the
 # `setattr` arm with `saved`, which removes the LAST USE of the parameter `now`, and
 # Bend refuses that (`rule 13`: "removing the last use of a parameter can be a compile
@@ -636,14 +634,13 @@ def main() -> IO(Unit):
 # `m_both` fixture, and BOTH are CPython-measured rather than invented.
 #
 # W3 is the one that needed a FIXTURE rather than a comment, and the fixture it needed
-# was not another row but a FIELD. `worker_pool`'s memo returns THE SAME OBJECT, and
 # the only observable of a memo is identity; with a `Pool` record that has no `id`, a
 # REBUILT pool is field-for-field identical to the old one, so `pool_memo` and
 # `pool_memo_procs` both passed with the memo removed. `Pool.id` and `pool_memo_id` are
 # what see it. This is `mixin/creation.bend` rule 23 turned around: two structures EQUAL
 # BY CONSTRUCTION are the same blindness as two structures equal in COUNT.
 #
-# ---------------------------------------------------------------------------
+
 # THE CPYTHON LANE. `gates/worker-oracle.py worker` prints 15 rows, 9 of them shared
 # with this gate, all 9 GREEN (`SHARED=9 GREEN=9 RED=0`). The 47 BEND-ONLY rows are the
 # schedule, the `Pool` fields, the `Arg` readers, the pool-state machine's fixtures and

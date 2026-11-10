@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/compiler_amd.bend -- port of tinygrad/runtime/support/compiler_amd.py
 #
-# ===========================================================================
+
 # what a BEND file can reach, measured, because it decides what this file is.
 #
 # The scope note for this unit asserted "bend 2.0.34 has no exec and no
@@ -41,7 +41,7 @@
 # one thing `system()` has and `Process.run` does not is the MERGED stream
 # (`stderr=subprocess.STDOUT`); nothing in these four files needs it.
 #
-# ===========================================================================
+
 # THE SPLIT, stated once and obeyed. A def here EITHER builds the argument of
 # ONE comgr/hipcc call (pure, and the gate diffs it) OR records that call in
 # the trace (and the gate checks the ORDER and the IDENTITY). There is no
@@ -50,7 +50,7 @@
 # tag, so this file declares NO foreign effect and is `ALL PROOFS CHECK` on
 # both lanes -- the `ops_webgpu.bend` lane, not the `dtype.bend` one.
 #
-# ===========================================================================
+
 # the measurement that deleted a family of bugs, and it belongs at the top
 # because it changed what got written rather than only how.
 #
@@ -75,7 +75,7 @@
 # thirteen-element option list below splits into NINETEEN fields for exactly
 # this reason, and `h.opt_n` is the row that pins it.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :4-10  the comgr3 switch      PORTED  `Ad.version` `Ad.hip_lang` `Ad.hyp3`
@@ -108,7 +108,7 @@
 #   :103-104 argv 1               PORTED  `C.argv1`  (element COUNT pinned)
 #   :105-106 argv 2               PORTED  `C.argv2`  (element COUNT pinned)
 #
-# ===========================================================================
+
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- comgr. Twenty-eight calls into a shared library bend cannot dlopen.
@@ -144,11 +144,11 @@
 #   TODO(p3) compiler_amd.py:108 -- `read_bytes()`.
 import Base
 
-# ===========================================================================
+
 # THE TRACE. Which toolchain call the Python makes, in what order, with which
 # argument. `Tr.put` appends, so a REFUSAL is a trace that stops early -- which
 # is how `c.msg` is enforced: there is no `raise` in bend and no step guard.
-# ===========================================================================
+
 # `Tr` carries the recorded calls. The field is `items` and not `t`, because a
 # reader is spelled `Tr.items(tr)` and a field named `t` would collide with the
 # parameter of every def that reads it.
@@ -183,7 +183,7 @@ def A.act_codegen() -> U32: 6
 def A.act_link() -> U32: 9
 def A.act_compile() -> U32: 15
 
-# ===========================================================================
+
 # :4-10  the comgr version switch and its assert.
 #
 #     if major.value >= 3:
@@ -194,7 +194,7 @@ def A.act_compile() -> U32: 15
 # the assert pins ONE enum in the selected module. `Ad.hip_lang` is the second
 # and `Ad.version` is the first. A port that treated the switch as a rename
 # would answer 3 for both versions and could never notice.
-# ===========================================================================
+
 def Ad.version(major: U32) -> U32: Bool.to_u32(Bool.and(U32.is_gt(major, 2), True{}))
 
 def Ad.hip_lang(major: U32) -> U32:
@@ -203,41 +203,41 @@ def Ad.hip_lang(major: U32) -> U32:
 # the assert fires ONLY on the comgr-3 path, so on comgr-2 it never runs
 def Ad.hyp3(major: U32) -> Bool: U32.is_eq(Ad.hip_lang(major), 3)
 
-# ===========================================================================
+
 # :15-18  check().  `c.msg` answers the message for a NON-zero status and the
 # empty string for zero, so the one caller tests emptiness instead of branching
 # twice, and the trace is truncated at that point.
-# ===========================================================================
+
 def c.msg(+status: U32, msg: String) -> String:
   Bool.pick(String, U32.is_eq(status, 0), "",
     String.concat(["comgr fail ", U32.show(status), ", ", msg]))
 
-# ===========================================================================
+
 # :28-32  set_options(). `sp.n` is the number of arguments comgr is handed.
 # See the measurement that deleted a family of bugs: `String.split` already
 # keeps the empty fields, so this is the length and nothing else.
-# ===========================================================================
+
 def sp.n(options: String) -> U32: U32.from_nat(List.length(&2, String, String.split(options, ' ')))
 
-# ===========================================================================
+
 # :35-38  the ISA NAME.  `b"amdgcn-amd-amdhsa--" + arch.encode()`.
-# ===========================================================================
+
 def h.isa(arch: String) -> String: String.append("amdgcn-amd-amdhsa--", arch)
 
-# ===========================================================================
+
 # :39  the LOGGING FLAG, and :38's language: both autogen constants.
-# ===========================================================================
+
 def h.logging(on: Bool) -> U32: Bool.to_u32(on)
 
-# ===========================================================================
+
 # :49-55 / :56-57  THE `asm` BRANCH. The data NAME is the only difference
 # besides the action, and it is a suffix on a fixed prefix:
 #     asm:  amd_comgr_set_data_name(data_src, b"<null>.s")
 #     else: amd_comgr_set_data_name(data_src, b"<null>")
-# ===========================================================================
+
 def h.dataname(asm: Bool) -> String: Bool.pick(String, asm, "<null>.s", "<null>")
 
-# ===========================================================================
+
 # :60-63  THE THIRTEEN OPTIONS, and :64's `' '.join`.
 #
 # Written as an explicit LITERAL LIST rather than a fold, because a fold over a
@@ -257,7 +257,7 @@ def h.dataname(asm: Bool) -> String: Bool.pick(String, asm, "<null>.s", "<null>"
 # been through `set_options`, NINETEEN comgr arguments. Measured: `optn0=19`.
 # The six elements that contain a space (`-I/opt/rocm/include` has none; the
 # `-Xclang` triples have two each) are the difference, and `h.opt_n` is the row.
-# ===========================================================================
+
 def h.options(arch: String) -> String:
   String.join(["-O3", "-mcumode", "--hip-version=6.0.32830", "-DHIP_VERSION_MAJOR=6",
     "-DHIP_VERSION_MINOR=0", "-DHIP_VERSION_PATCH=32830", "-D__HIPCC_RTC__",
@@ -271,11 +271,11 @@ def h.opt_string(arch: String) -> String: h.options(arch)
 
 def h.opt_n(arch: String) -> U32: sp.n(h.opt_string(arch))
 
-# ===========================================================================
+
 # :52 / :65 / :70 / :72  THE FOUR ACTIONS, in order, and the two constant
 # option strings. The order is the thing a trace exists for: the same three
 # `do_action` calls run in both branches and only the FIRST differs.
-# ===========================================================================
+
 def h.act_assemble_name() -> U32: A.act_assemble()
 def h.act_compile_name() -> U32: A.act_compile()
 def h.act_codegen_name() -> U32: A.act_codegen()
@@ -292,11 +292,11 @@ def h.opt_empty_n() -> U32: sp.n(h.opt_empty())
 def c.asm_fail() -> String: "assemble failed"
 def c.compile_fail() -> String: "compile failed"
 
-# ===========================================================================
+
 # :20-25  _get_comgr_data. Four calls, and the SIZE is read TWICE -- once to
 # ask how big the buffer is and once inside the buffer that was allocated at
 # that size. The order is what `gd.*` records.
-# ===========================================================================
+
 def gd.pick_kind(exec_kind: Bool) -> U32:
   Bool.pick(U32, exec_kind, A.exec_kind(), A.log_kind())
 
@@ -307,12 +307,12 @@ def gd.calls() -> U32: 4
 def gd.calls_name() -> String:
   "amd_comgr_action_data_get_data amd_comgr_get_data amd_comgr_get_data amd_comgr_release_data"
 
-# ===========================================================================
+
 # :81-84  HIPCompiler's CACHE KEY.  `f"compile_hip_{self.arch}"`.
-# ===========================================================================
+
 def C.hip_key(arch: String) -> String: String.concat(["compile_hip_", arch])
 
-# ===========================================================================
+
 # :85-87  HIPCompiler.compile's ASM PREDICATE, and it is subtler than it
 # looks:
 #
@@ -332,7 +332,7 @@ def C.hip_key(arch: String) -> String: String.concat(["compile_hip_", arch])
 #
 # `C.is_asm` is three defs because a `match` may not follow a `<-` bind and a
 # `Maybe` is read once; the caller builds the first line, then trims it.
-# ===========================================================================
+
 def C.first_line.of(xs: List<&2, String>) -> String:
   match xs:
     case Nil{}: ""
@@ -347,13 +347,13 @@ def C.compile_error(m: String) -> String: m
 
 def C.compile_error_kind(m: String) -> String: "CompileError"
 
-# ===========================================================================
+
 # :88  `amdgpu_disassemble(lib)`. The trace entry is the call; its argument is
 # the artifact, which is a WALL.
-# ===========================================================================
+
 def C.dis_row(arch: String) -> String: String.concat(["amdgpu_disassemble(", arch, ")"])
 
-# ===========================================================================
+
 # :91-94  HIPCCCompiler's CACHE KEY.
 #
 #     f"compile_hipcc_{arch}_{sha256(' '.join(extra)).hexdigest()[:8]}" +
@@ -368,7 +368,7 @@ def C.dis_row(arch: String) -> String: String.concat(["amdgpu_disassemble(", arc
 # per process. That is why the oracle needs a FRESH interpreter to observe
 # `no_hipcc` true, and why `amd.cc_nohip.ncalls=0` holds even with the variable
 # set after startup. `C.short_circuit` is the observable consequence.
-# ===========================================================================
+
 def C.join_extra(extra: List<&2, String>) -> String: String.join(extra, " ")
 
 def C.hipcc_key(arch: String, hex8: String, nohipcc: Bool) -> String:
@@ -377,11 +377,11 @@ def C.hipcc_key(arch: String, hex8: String, nohipcc: Bool) -> String:
 # :96 `if self.no_hipcc: return b""` -- no spawn, no temp file, no artifact
 def C.short_circuit(nohipcc: Bool) -> U32: Bool.to_u32(nohipcc)
 
-# ===========================================================================
+
 # :97-98  THE THREE TEMP SUFFIXES. The names are random (WALL 3); the suffixes
 # are the part the port constructs, and `amd.cc_*.argvn*` counts depend on them
 # being the right three files in the right order.
-# ===========================================================================
+
 def C.suffixes() -> List<&2, String>: [".cpp", ".bc", ".hsaco"]
 
 def C.suffix_of(+i: U32) -> String:
@@ -390,7 +390,7 @@ def C.suffix_of(+i: U32) -> String:
   # routes 3 to the 2 arm and there is no error.
   Bool.pick(String, U32.is_eq(i, 0), ".cpp", Bool.pick(String, U32.is_eq(i, 1), ".bc", ".hsaco"))
 
-# ===========================================================================
+
 # :102-106  the two argv lists. the headline of this file.
 #
 #   subprocess.run(["hipcc", "-c", "-emit-llvm", "--cuda-device-only", "-O3", "-mcumode",
@@ -408,7 +408,7 @@ def C.suffix_of(+i: U32) -> String:
 # `rocm_path` is `getenv("ROCM_PATH", "/opt/rocm")`; `getenv` is
 # `type(default)(os.getenv(key, default))`, so the default is a STRING and the
 # value is used verbatim.
-# ===========================================================================
+
 def C.rocm_default() -> String: "/opt/rocm"
 
 def C.rocm_include(rocm: String) -> String: String.concat(["-I", rocm, "/include/hip"])
@@ -427,10 +427,10 @@ def C.prog() -> String: "hipcc"
 def C.argv_n(n: U32, extra: List<&2, String>) -> U32:
   U32.add(n, U32.from_nat(List.length(&2, String, extra)))
 
-# ===========================================================================
+
 # THE GATE. Every `py=` expectation below is a row of `.agents/slop/cs_oracle.py`
 # reproduced BY CALLING the real Python. Nothing here is transcribed.
-# ===========================================================================
+
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
 def t_ad() -> IO(Unit):

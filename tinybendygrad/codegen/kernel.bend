@@ -1,6 +1,6 @@
 # kernel.bend -- tinygrad/codegen/__init__.py: the LOWERER'S PASS STRUCTURE.
 #
-# ---------------------------------------------------------------------------
+
 # the unit was named `kernel.py` + `rewriter.py`. neither file exists in this
 # tinygrad; `codegen/` is a package and `find tinygrad -name kernel.py` finds only
 # `extra/thunder/tiny/tk/kernel.py`, a Thunder TK harness. The lowerer is here:
@@ -23,7 +23,7 @@
 # `renderer/{cstyle,wgsl}.bend` are the siblings and they consume THIS file's
 # `to_program` output shape, named at the foot.
 #
-# ---------------------------------------------------------------------------
+
 # WHAT THIS FILE IS: `full_rewrite_to_sink` (:275-394) is a fixed SEQUENCE of
 # ~20 `graph_rewrite` calls, and the sequence IS the lowerer. Everything else in
 # `__init__.py` is a rule a stage owns. So the split is: the PASS LIST and the
@@ -34,7 +34,7 @@
 # UOps, which is `kn_passes` below and which `renderer/cstyle.bend` and
 # `renderer/wgsl.bend` both need in order to know how deep the pipeline is.
 #
-# ---------------------------------------------------------------------------
+
 # THE INVENTORY, def by def, against __init__.py's 519 lines.
 #
 #   #  PY         KIND    STATE
@@ -88,7 +88,7 @@
 # line reads `walls in ...` (8, 15, 21, 32) are listed as ported in shape, which is
 # the weaker claim and is the one the list means.
 #
-# ---------------------------------------------------------------------------
+
 # THE WALL THAT DOMINATES, and it is ONE wall: `itertools.product` over a shape
 # and `UOp.permute`/`reshape`/`reduce`/`unflatten`. Items 4, 5, 6, 9, 10, 13
 # and 19 are all the same wall from seven directions: the vectorizer
@@ -121,10 +121,10 @@ import ./../uop/fold.bend as F
 # answered nothing for them. It is gone, which is what makes this file's 38 rows a
 # gate over THIS file's code alone instead of a gate over a merged neighbour's.
 
-# ===========================================================================
+
 # THE ANSWER. A rule RETURNS THE ARENA, `movement.bend`'s shape, called `Ker` so
 # both files can be live in one tree. `at == 0` is Python's `None`.
-# ===========================================================================
+
 type Ker is Data:
   Ker{ar: O.Arena, at: U32}
 
@@ -203,7 +203,7 @@ def kn_nsrc_is(+ar: O.Arena, i: U32, n: U32) -> Bool:
 def kn_nsrc_ge(+ar: O.Arena, i: U32, n: U32) -> Bool:
   U32.is_ge(kn_nsrc(ar, i), n)
 
-# ===========================================================================
+
 # `pm_cast_float_alu` -- __init__.py:244-247. the op set and the table are
 # PORTED; THE DTYPE GUARD IS A WALL.
 #
@@ -242,7 +242,7 @@ def cfa_table() -> List<&2, O.PMEntry>:
 def kn_replace(op: O.Op, arg: O.Arg, +ar: O.Arena, +self: U32, src: List<&2, U32>) -> Ker:
   ker_hit(O.UOp.new(ar, op, src, arg, kn_tag(ar, self)))
 
-# ===========================================================================
+
 # PASS 1 -- `do_number_param`, __init__.py:33-36. PORTED IN FULL.
 #
 #     def do_number_param(ctx, x):
@@ -260,7 +260,7 @@ def kn_replace(op: O.Op, arg: O.Arg, +ar: O.Arena, +self: U32, src: List<&2, U32
 #
 # `x.arg` for a PARAM is `ParamArg`, whose `slot` field `ops.bend` split out, so
 # the read is `kn_slot` and not a tuple index.
-# ===========================================================================
+
 def kn_slot.of(a: O.Arg, none: U32) -> U32:
   match a:
     case O.AParam{pa}: O.ParamArg.slot(pa)
@@ -363,7 +363,7 @@ def pm_number_params.of(ok: Bool, +np: NP, +ar: O.Arena, +self: U32) -> NP:
 def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
   pm_number_params.of(O.pm_claimed([O.OpsPARAM{}], ar, self), kn_np(ar, self, n), ar, self)
 
-# ===========================================================================
+
 # `build_range_map` -- __init__.py:40-45. ported, and the port is now wrong.
 #
 #     def build_range_map(sink):
@@ -407,14 +407,13 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
 # and `kn_unroll` is the row for the membership test. `ops.bend`'s `UOp.axis_id`
 # and `UOp.axis_type` are both PORTED (`fold.bend:3091` symbol=UOp.axis_id and
 # `fold.bend:3099` symbol=UOp.axis_type), which is why this half is cheap.
-# ===========================================================================
+
 # `kn_unroll.ax` IS THE PIN'S PREDICATE. The UNROLL arm has no upstream
 # counterpart -- `AxisType.UNROLL` was deleted from the enum -- so this arm is
-# what makes `rm` and `rm_unroll` green against a tree CPython no longer has.
 # MEASURED both ends, in the block above. Delete the arm, drop `R_U` from
 # `kn_fixture`, and `rm`/`rm_unroll` go to 0 together; that is B1's RE-PORT and it
 # wants a row audit, so it is NOT done in a comment-fix pass.
-# ===========================================================================
+
 def kn_unroll.ax(t: O.AxisType) -> Bool:
   match t:
     case O.AXIS_UNROLL{}: True{}
@@ -459,7 +458,7 @@ def kn_rm_len.go(fuel: Nat, +tb: F.Table, +ar: O.Arena, +last: U32, acc: U32) ->
 def kn_range_map_n(+tb: F.Table, +ar: O.Arena) -> U32:
   kn_rm_len.go(U32.to_nat(O.Arena.next(ar)), tb, ar, U32.sub(O.Arena.next(ar), 1), 0)
 
-# ===========================================================================
+
 # `is_shape_changing_bitcast` and `maybe_load` -- __init__.py:226-227. BOTH
 # PORTED, and `maybe_load` is the one that decides whether `pm_add_loads` fires at
 # all, so its `AddrSpace` test is the load-bearing half.
@@ -574,7 +573,7 @@ def al_scan(rs: List<&2, O.PMEntry>, +tb: F.Table, +ar: O.Arena, +self: U32, +h:
 def pm_add_loads(+fx: F.Folded, self: U32) -> Ker:
   al_scan(al_table(), F.Folded.t(fx), F.Folded.ar(fx), self, Ker{F.Folded.ar(fx), 0})
 
-# ===========================================================================
+
 # `_is_local_store` -- __init__.py:247. PORTED. `x.op is Ops.STORE and
 # x.addrspace is AddrSpace.LOCAL`, and the `is` on an enum is an identity test, so
 # the second conjunct is `ALocal{}` and nothing else. `LocalStore` uses `is`, so
@@ -585,7 +584,7 @@ def ib_local.addr(m: Maybe<&2, Maybe<&2, S.Addr>>, bad: Bool) -> Bool:
 def ib_local(+tb: F.Table, +ar: O.Arena, +i: U32) -> Bool:
   Bool.and(kn_is(ar, i, O.OpsSTORE{}), ib_local.addr(F.fold.addr(ar, tb, i), False{}))
 
-# ===========================================================================
+
 # `pm_implicit_barriers` -- __init__.py:266-269. TWO rules, and BOTH are WALLS, but
 # for the SAME wall and it is the wall this whole lowerer keeps hitting:
 #
@@ -606,7 +605,7 @@ def ib_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsAFTER{}], Nil{}},      # :271  AFTER add_raw_barrier
    O.PMEntry{1, [O.OpsEND{}, O.OpsBACKEDGE{}], Nil{}}]   # :272  END|BACKEDGE add_war_barrier
 
-# ===========================================================================
+
 # `pm_alloc_to_buf` -- __init__.py:406. ONE rule, and it is the WHOLE of the
 # function: `((buf:=x.replace(op=Ops.BUFFER)), [buf])`. It changes the OP and
 # keeps everything else, so `UOp.new` with the BUFFER op and `self`'s own src, arg
@@ -633,7 +632,7 @@ def ab_try.go(ok: Bool, +ar: O.Arena, +self: U32) -> Ker:
 def pm_alloc_to_buf(+ar: O.Arena, +self: U32) -> Ker:
   ab_try.go(O.pm_claimed([O.OpsALLOC{}], ar, self), ar, self)
 
-# ===========================================================================
+
 # `line_rewrite` -- __init__.py:408-416. PORTED IN FULL, and it is the SECOND
 # engine in this file: a fixpoint over a LIST rather than over the arena.
 #
@@ -657,7 +656,7 @@ def pm_alloc_to_buf(+ar: O.Arena, +self: U32) -> Ker:
 # walk is in toposort order and each key is written once: `lw_subst` finds the
 # FIRST match and `lw_subst_go` installs the LAST write, which is the same dict.
 # `lw_three` is the row that exercises it.
-# ===========================================================================
+
 # The substitution pair.
 type Sub is Data:
   Sub{was: U32, now: U32}
@@ -783,7 +782,7 @@ def lw_go(lst: List<&2, U32>, +subs: List<&2, Sub>, +acc: List<&2, U32>, +ar: O.
 def line_rewrite(+lst: List<&2, U32>, +ar: O.Arena, fired: Maybe<&2, Ker>) -> Line:
   lw_go(lst, Nil{}, Nil{}, ar, fired)
 
-# ===========================================================================
+
 # `to_program_config` -- __init__.py:509-510. ELEVEN ENV FLAGS, and this is the
 # CACHE KEY and not a behaviour list: `to_program_key` (:512-513) is
 # `(ast.key, type(renderer), renderer.target, *[x.value for x in to_program_config])`
@@ -812,7 +811,7 @@ def cfg_len() -> U32:
 def cfg_ctx_len() -> U32:
   14
 
-# ===========================================================================
+
 # `pm_to_program` -- __init__.py:466-472. FIVE rules, ONE PER STAGE, and this is
 # the second engine in this file and it is the one the SIBLINGS consume: a PROGRAM
 # gains a LINEAR, then a SOURCE, then a BINARY, one `graph_rewrite` at a time, and
@@ -919,14 +918,14 @@ def tp_stage(+ar: O.Arena, +self: U32) -> U32:
               Nat.is_eq(U32.to_nat(kn_nsrc(ar, self)), 3n))
 
 
-# ===========================================================================
+
 # THE MEASURED MUTATION TABLE, by `.agents/slop/notes/codegen-mut.py`. TWELVE
 # textual edits, one at a time, each re-checked and re-run against the clean 38-row
 # gate. Ten are REVERTS of one of this file's own fixes, so the set a mutation moves
 # is the set of rows that fix was load-bearing for.
 #
 #   mutation                                    rows moved
-#   --------------------------------------------------------------------------
+
 #   M1  `kn_np` writes `n - 1` for the slot       np_slot
 #   M2  `kn_np.next` drops the increment          np_next
 #   M3  `kn_alu_is` loses the RECIP arm      alu_recip
@@ -951,9 +950,9 @@ def tp_stage(+ar: O.Arena, +self: U32) -> U32:
 # 2's LINEAR arm is unconstrained and shadows rule 3 entirely. `stage_pr2` is the
 # row that moves; `stage_pr3` was the row that exposed it, and it is now a row
 # that agrees with Python rather than one that disagreed.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE GATE. Every row is DERIVED FROM PYTHON by
 # `.agents/slop/notes/kn-truth.py`, which prints its rows in THIS ORDER and with
 # THIS SPELLING, so
@@ -977,7 +976,7 @@ def tp_stage(+ar: O.Arena, +self: U32) -> U32:
 # and every position after it named the node one slot behind its comment. That read
 # as two rule bugs (`ins` answering 0, `al_store` answering NOOP) and was neither.
 # A fixture whose rows cannot see the fixture is worse than no fixture.
-# ===========================================================================
+
 type K is Data:
   K{fx: F.Folded, ix: List<&2, U32>}
 
@@ -1058,14 +1057,14 @@ def k_stage(+kx: K, n: Nat) -> U32:
 def k_op(nm: String, +kx: K, n: Nat) -> String:
   O.Ops.name.of(kn_op(F.Folded.ar(K.fx(kx)), K.at(kx, n)))
 
-# ---------------------------------------------------------------------------
+
 # THE ROWS. Grouped by the def they test, in that order.
 #
 # `k_np_len` / `k_cfa_len` / `k_al_len` / `k_ib_len` / `k_ab_len` / `k_tp_len` --
 # the table LENGTHS. Each is `len(<table>.patterns)` and each is a COUNT, because
 # a rule dropped from a table and a rule whose body is a wall both leave every
 # boolean row here alone.
-# ---------------------------------------------------------------------------
+
 def k_np_len() -> U32:
   n_of(np_table())
 
@@ -1172,7 +1171,6 @@ def k_al_store_nsrc() -> U32:
 
 # `k_al_store_src1` -- the LOADED src is `src[1]`, so the answer's second src is a
 # LOAD and its first is `src[0]` UNCHANGED. Two rows for one line: `k_al_store`
-# says a LOAD was built and `k_al_store_src0` says the other src was not loaded.
 def k_al_sqrt() -> U32:
   k2u(O.UOp.is_none(Ker.at(k_al(kn_fixture(), 10n))))
 
@@ -1273,7 +1271,7 @@ def srow(nm: String, v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))
 
 
-# ---------------------------------------------------------------------------
+
 # THE FIXTURE IS INTERNED, NOT COUNTED, so a dedup cannot shift a row silently. The
 # first version of these rows anchored each one at a literal list position, and one
 # `UOp.new` deduplicated the fixture down by one -- so `k_ins` read a LINEAR's SINK
@@ -1285,7 +1283,7 @@ def srow(nm: String, v: String) -> IO(Unit):
 # than inferred. `k_pos` is the list length and `k_pos_same` that it equals
 # `Arena.next` -- both counts, precisely so a dedup shows up as a disagreement
 # rather than as a plausible-looking number.
-# ---------------------------------------------------------------------------
+
 # `case 0n:` is a PREFIX match (constraint 9) so the walk ends on it, and the
 # termination is the LIST not a fuel: `n` is the remaining length of `K.ix`.
 # THE WALK IS OVER THE LIST, so the list IS the fuel -- no `Nat` and no `U32`/`Nat`

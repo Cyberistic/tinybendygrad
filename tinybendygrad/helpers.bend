@@ -25,7 +25,7 @@
 
 import Base
 
-# ===========================================================================
+
 # Flags -- the pure port of ContextVar / Context
 #
 # helpers.py's ContextVar is a mutable cell keyed by string, and Context is a
@@ -46,7 +46,6 @@ import Base
 # and 85 more read through a bare `getenv("KEY", ...)`, and `Flags` implements THREE
 # of the 61 ContextVars -- NO_COLOR, DEFAULT_FLOAT, DEFAULT_INT -- plus SUM_DTYPE,
 # which is a bare getenv (dtype.py:223) and not a ContextVar at all. An earlier
-# version of this comment said "~40 ContextVars" and was wrong by 21; the count is
 # `.agents/slop/env-coercion-table.txt` PART 1, which is 56 int-default and 8
 # str-default getenv calls measured by spying on os.getenv before the import.
 # So P6 is not a garbage-collection job. Every one of the other 57 ContextVars is
@@ -62,7 +61,7 @@ import Base
 # one that reads as "any non-empty string is true"; the `int` case, which NO_COLOR
 # is, reads an int-zero string as False, and that is the bug the old comment below
 # was written on.
-# ===========================================================================
+
 
 type Flags is Data:
   Flags{no_color: Bool, default_float: String, default_int: String, sum_dtype: String}
@@ -152,7 +151,7 @@ def getenv_str(k: String, d: String) -> IO(String):
     v : Result<&1, &1, U32 & String, String> <- IO.get_env(k)
     return getenv_str.go(v, d)
 
-# ===========================================================================
+
 # `getenv_int` -- the other arm of the same `getenv`. This is not a second
 # environment mechanism: `IO.get_env` (references/bend/bend2/base.bend:185
 # symbol=IO.get_env) is the only reader and both
@@ -192,7 +191,7 @@ def getenv_str(k: String, d: String) -> IO(String):
 # of that equivalence down. A `U32` cannot hold `-1` and the alternative -- an
 # `I64` here and a comparison type change at each of the seven sites -- would buy a
 # distinction no site can observe.
-# ===========================================================================
+
 # PRE 0, MID 1, PEND 2, DEAD 3, and `v` is the digits so far.
 type Gi is Data:
   Gi{st: U32, v: U32}
@@ -354,7 +353,7 @@ def Flags.from_env() -> IO(Flags):
     sd : String <- getenv_str("SUM_DTYPE", "float32")
     return Flags.of(nc, df, di, sd)
 
-# ===========================================================================
+
 # Context -- `class Context(contextlib.ContextDecorator)`, helpers.py:170
 #
 # THE WHOLE MECHANIC IS THREE LINES of upstream and none of them is `with`:
@@ -396,7 +395,7 @@ def Flags.from_env() -> IO(Flags):
 # returned as a value instead of being written into the manager, so the hazard has
 # no representation -- two nested uses of the same kwargs are two `Ctx` values and
 # neither can reach the other.
-# ===========================================================================
+
 
 type CV is Data:
   CV{k: String, nc: Bool, v: String}
@@ -477,11 +476,11 @@ def Context.old(c: Ctx) -> List<&2, CV>:
 def Context.__exit__(c: Ctx, f: Flags) -> Flags:
   Flags.put(f, Context.old(c))
 
-# ===========================================================================
+
 # prod -- functools.reduce(operator.mul, x, 1). NOTE the Python comment: it
 # returns int 1 if x is empty regardless of the type of x. `List.foldl` wants a
 # closure, so this is its own recursive def.
-# ===========================================================================
+
 
 def prod_u32(xs: List<&2, U32>) -> U32:
   match xs:
@@ -497,10 +496,10 @@ def prod_nat(xs: List<&2, Nat>) -> Nat:
     case h <> t:
       Nat.mul(h, prod_nat(t))
 
-# ===========================================================================
+
 # dedup -- list(dict.fromkeys(x)): first occurrence wins, retains list order.
 # Bend's Map is string-keyed only, so the set is a linear scan.
-# ===========================================================================
+
 
 def dedup_u32.put(seen: Bool, h: U32, r: List<&2, U32>) -> List<&2, U32>:
   match seen:
@@ -528,7 +527,7 @@ def dedup_str(xs: List<&2, String>) -> List<&2, String>:
     case Nil{}: Nil{}
     case h <> t: dedup_str.go(h, dedup_str(t))
 
-# ===========================================================================
+
 # argfix -- `def argfix(*x)`. Bend has no variadics and no tuple type, so the
 # Python shapes become three defs:
 #   argfix([a,b])         -> argfix_seq([a,b])   (x[0] is a tuple or list)
@@ -538,7 +537,7 @@ def dedup_str(xs: List<&2, String>) -> List<&2, String>:
 # `argfix_bad` is that ValueError, answered as a Maybe so a caller can branch.
 # The two-argument `argfix` that tinygrad actually calls everywhere is
 # argfix2/argfix_seq, so no third arm is missing in practice.
-# ===========================================================================
+
 
 def argfix_bad(sequence_with_others: Bool) -> Maybe<&1, U32>:
   match sequence_with_others:
@@ -554,13 +553,13 @@ def argfix2(a: U32, b: U32) -> List<&2, U32>:
 def argfix_seq(xs: List<&2, U32>) -> List<&2, U32>:
   xs
 
-# ===========================================================================
+
 # argsort -- `type(x)(sorted(range(len(x)), key=x.__getitem__))`.
 # https://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python
 # Python's sort is stable, so the index breaks ties by position: compare
 # (value, index). `List.sort` wants a closure, so the comparison is a top-level
 # def over an (index, value) pair.
-# ===========================================================================
+
 
 type Ix is Data:
   Ix{i: U32, v: U32}
@@ -603,10 +602,10 @@ def ix_map(l: List<&2, Ix>) -> List<&2, U32>:
 def argsort_u32(xs: List<&2, U32>) -> List<&2, U32>:
   ix_map(List.sort(Ix, ix_le, ix_of(xs)))
 
-# ===========================================================================
+
 # all_same -- `all(x == items[0] for x in items)`, which works for empty input.
 # The head is peeled once and every other element is compared against it.
-# ===========================================================================
+
 
 def all_same_u32.go(xs: List<&2, U32>, +head: U32) -> Bool:
   match xs:
@@ -628,7 +627,7 @@ def all_same_str(xs: List<&2, String>) -> Bool:
     case Nil{}: True{}
     case h <> t: all_same_str.go(t, h)
 
-# ===========================================================================
+
 # get_shape -- `def get_shape(x) -> tuple[int, ...]`
 #
 # DEVIATION, stated: Python walks any object with `__len__` and `__getitem__`,
@@ -642,7 +641,7 @@ def all_same_str(xs: List<&2, String>) -> Bool:
 # outcomes, so they are three constructors and none of them is a silent None. A
 # sequence of scalars is NOT (): get_shape([1,2]) is (2,) and get_shape([]) is
 # (0,).
-# ===========================================================================
+
 
 type ShapeRes is Data:
   SNoShape{}                      # Python: ()
@@ -896,7 +895,7 @@ def fully_flatten_nest(n: Nest) -> List<&2, Nest>:
 def flatten_u32(l: List<&2, List<&2, U32>>) -> List<&2, U32>:
   List.concat(&2, U32, l)
 
-# ===========================================================================
+
 # F32 text
 #
 # `F32.show` is a law with no body -- it is an axiom -- and so is every other F32
@@ -904,7 +903,7 @@ def flatten_u32(l: List<&2, List<&2, U32>>) -> List<&2, U32>:
 # size_to_str, colorize_float) has no base equivalent either. `f32_fixed` walks
 # the decimal expansion of the f32 two digits at a time, which is printf's
 # `%.2f` on a value that came out of an f32.
-# ===========================================================================
+
 
 # 0x7F800000 is the f32 exponent field; all ones means inf or nan, and the
 # mantissa being non-zero distinguishes nan from inf
@@ -1048,14 +1047,14 @@ def pad_left(+s: String, w: U32) -> String:
 def pad_right(+s: String, w: U32) -> String:
   String.append(s, pad_left.blank(s, w))
 
-# ===========================================================================
+
 # colored -- `f"\u001b[{10*background+60*(color.upper()==color)+30+index}m{st}
 # \u001b[0m"`, which replaces the termcolor library. The colour is a U32 index
 # into ['black','red','green','yellow','blue','magenta','cyan','white']; Python
 # raises ValueError on a name outside it, so `colored` takes `Maybe<&1, U32>` and
 # None is Python's `color is None`, which returns the plain string. NO_COLOR is a
 # ContextVar, so it arrives inside the `Flags` record.
-# ===========================================================================
+
 
 def color_code(ci: U32, background: Bool) -> U32:
   (U32.add(U32.add(U32.mul(Bool.to_u32(background), 10), 30), ci) : U32)
@@ -1107,11 +1106,11 @@ def colorize_float(f: Flags, +x: F32) -> String:
   colored(f, String.append(pad_left(f32_fixed(x, 2n), 7), "x"),
     colorize_float.pick(F32.is_lt(x, 0.75), F32.is_gt(x, 1.15)), False{})
 
-# ===========================================================================
+
 # time_to_str -- `next((f"{t*d:{w}.2f}{pr}" for d,pr in [(1,"s "),(1e3,"ms")]
 # if t > 10/d), f"{t*1e6:{w}.2f}us")`: seconds above 10, milliseconds above
 # 0.01, microseconds below. The generator is the fold a match replaces.
-# ===========================================================================
+
 
 def time_to_str.ms(t: F32, w: U32) -> String:
   String.append(pad_left(f32_fixed(F32.mul(t, 1000.0), 2n), w), "ms")
@@ -1152,7 +1151,7 @@ def size_to_str.pick(gb: Bool, mb: Bool, kb: Bool, s: U32) -> String:
 def size_to_str(+s: U32) -> String:
   size_to_str.pick(U32.is_ge(s, 1073741824), U32.is_ge(s, 1048576), U32.is_ge(s, 1024), s)
 
-# ===========================================================================
+
 # ansistrip -- `re.sub('\x1b\[(K|.*?m)', '', s)` (helpers.py:48).
 #
 # the regex matches a run of arbitrary length, so nothing may decide before the
@@ -1224,7 +1223,7 @@ def size_to_str(+s: U32) -> String:
 # the row rather than hiding it. Closing it needs a nested three-state tracker for
 # `ESC` `[` `K` inside a body, which is 13 more table arms; that is a scoping
 # decision, not a proof that Bend cannot do it.
-# ===========================================================================
+
 
 # prepending emits LAST, so this puts the pending ESC immediately before whatever
 # follows it, and `List.drop` on the FRONT of `acc` removes the run's most recent
@@ -1296,10 +1295,10 @@ def ansilen(s: String) -> Nat:
 def ansipad(+s: String, w: U32) -> String:
   String.append(s, String.repeat(" ", U32.to_nat(pad.n(w, U32.from_nat(ansilen(s))))))
 
-# ===========================================================================
+
 # make_tuple -- `(x,)*cnt` when x is an int, else `tuple(x)`. Two arms, two
 # defs: the int arm repeats, the sequence arm is the identity.
-# ===========================================================================
+
 
 def make_tuple_rep.go(n: Nat, +x: U32) -> List<&2, U32>:
   match n:
@@ -1320,7 +1319,7 @@ def to_tuple_u32(x: U32) -> List<&2, U32>:
 def to_tuple_seq(xs: List<&2, U32>) -> List<&2, U32>:
   xs
 
-# ===========================================================================
+
 # flat_to_grouped
 # `(padding_left, padding_right, padding_top, padding_bottom, ...)` ->
 # `(..., (padding_top, padding_bottom), (padding_left, padding_right))`, i.e.
@@ -1328,7 +1327,7 @@ def to_tuple_seq(xs: List<&2, U32>) -> List<&2, U32>:
 # so [a,b,c,d] -> [(c,d),(a,b)] and [a,b,c] -> [(b,c)] and [a,b] -> [(a,b)] and
 # [a] -> []. The pairs, read FORWARD, are the consecutive pairs starting at index
 # (n mod 2), and the answer is that list reversed.
-# ===========================================================================
+
 
 def fg_pairs(p: List<&2, U32>) -> List<&2, List<&2, U32>>:
   match p:
@@ -1349,11 +1348,11 @@ def fg_skip(n: Nat, xs: List<&2, U32>) -> List<&2, U32>:
 def flat_to_grouped(+padding: List<&2, U32>) -> List<&2, List<&2, U32>>:
   List.reverse(&2, List<&2, U32>, fg_pairs(fg_skip(Nat.mod(List.length(&2, U32, padding), 2n), padding)))
 
-# ===========================================================================
+
 # resolve_pool_pads -- int -> [p] * 2*dims; a sequence of 2*dims -> as is; a
 # sequence of dims -> `[p for p in padding for _ in range(2)][::-1]`. Python
 # raises ValueError on any other length, and that is the Maybe.
-# ===========================================================================
+
 
 def resolve_pool_pads_int.go(n: Nat, +p: U32) -> List<&2, U32>:
   match n:
@@ -1390,12 +1389,12 @@ def resolve_pool_pads(+p: List<&2, U32>, +dims: U32) -> Maybe<&1, List<&2, U32>>
   resolve_pool_pads.n(U32.is_eq(U32.from_nat(List.length(&2, U32, p)), U32.mul(2, dims)),
     U32.is_eq(U32.from_nat(List.length(&2, U32, p)), dims), p, dims)
 
-# ===========================================================================
+
 # _is_balanced / strip_parens
 # `_is_balanced(s)` is "no prefix closes more than it opens, and the depths end
 # at zero". The depth is a U32, so underflow is the wrap past 2^31. `s[1:-1]` and
 # `fst[:1]` / `fst[-1:]` are String.drop and String.take.
-# ===========================================================================
+
 
 def bal.next.step(c: U32, d: U32) -> U32:
   match c:
@@ -1464,12 +1463,12 @@ def strip_parens.go(wrapped: Bool, +fst: String) -> String:
 def strip_parens(+fst: String) -> String:
   strip_parens.go(is_wrapped(fst), fst)
 
-# ===========================================================================
+
 # Signed 32-bit arithmetic on a U32 bit pattern
 #
 # Bend has no signed integers, so a signed value is its two's complement bit
 # pattern and every comparison is a sign test.
-# ===========================================================================
+
 
 def i32_is_neg(x: U32) -> Bool:
   U32.is_ge(x, 2147483648)
@@ -1532,7 +1531,7 @@ def floordiv_i32(+x: U32, +y: U32) -> U32:
     floordiv_i32.exact(i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y)),
     i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y))
 
-# ===========================================================================
+
 # which of the two pairs is which. `cdiv_i32_go`/`cmod_i32` truncate toward zero
 # (helpers.py:73-74, C semantics, `-7 // 4` is `-1`) and
 # `floordiv_i32`/`floormod_i32` FLOOR (helpers.py:76-77, Python's `//` and `%`,
@@ -1541,7 +1540,7 @@ def floordiv_i32(+x: U32, +y: U32) -> U32:
 # `(num+amt-1)//amt*amt`, and BOTH are floors, so neither can be spelled with a
 # truncating division. Picking the wrong pair is a wrong answer, not a slower
 # right one.
-# ===========================================================================
+
 
 # cstyle div and mod: `abs(x)//abs(y)*(1,-1)[x*y<0] if y != 0 else 0`
 def cdiv_i32.put(neg: Bool, q: U32) -> U32:
@@ -1579,7 +1578,7 @@ def cdiv_u32(x: U32, y: U32) -> U32:
 def cmod_u32(+x: U32, +y: U32) -> U32:
   U32.sub(x, U32.mul(cdiv_u32(x, y), y))
 
-# ===========================================================================
+
 # ceildiv / round_up / round_down / next_power2
 #
 # ceildiv -- `if hasattr(num,'vmin') and num.vmin >= 0 and amt > 0: (num+amt-1)//
@@ -1590,7 +1589,7 @@ def cmod_u32(+x: U32, +y: U32) -> U32:
 # dividend is not. SYMBOLIC CASE, LATER PHASE (P3, uop/symbolic.bend): it needs
 # `vmin`, the bound a Variable carries in the arena, and comes back as
 # `ceildiv_uop(num: UOp, amt: UOp)`.
-# ===========================================================================
+
 
 def ceildiv_i32(num: U32, amt: U32) -> U32:
   i32_neg(floordiv_i32(num, i32_neg(amt)))
@@ -1636,14 +1635,14 @@ def next_power2.go(k: Nat, lt: Bool, +x: U32, +p: U32) -> U32:
 def next_power2(+x: U32) -> U32:
   next_power2.go(33n, U32.is_lt(1, x), x, 1)
 
-# ===========================================================================
+
 # 64-bit words
 #
 # helpers.py's lo32 / hi32 / data64 / data64_le all say "Any is sint", so the
 # value they take is a signed 64-bit int. Bend has no 64-bit word, so it is the
 # pair of halves in two's complement. Build one with i64_of_i32 (sign-extends)
 # or i64_of_hi_lo.
-# ===========================================================================
+
 
 type I64 is Data:
   I64{hi: U32, lo: U32}
@@ -1719,7 +1718,6 @@ def i64_text(+x: I64) -> String:
 # the borrow and the carry are not optional. Computing the low word with U32s wrap
 # and then subtracting the high words is arithmetically WRONG for every borrow:
 # `5 - 7` answered hi=0 lo=4294967294, where Python answers hi=4294967295 lo=4294967294
-# (that is -2). The low word was right and the high word was wrong, which is the worst
 # shape for a bug: `i64_cmp` and `i64_le` were already correct, so any comparison built
 # on the sum or difference read a value that disagreed with itself. Found by the onnx
 # units i64 halving (nn/onnx.bend, which carries a local repair with these lines named).
@@ -1736,7 +1734,7 @@ def i64_sub(+a: I64, +b: I64) -> I64:
   +borrow = Bool.pick(U32, U32.is_lt(lo32(a), lo32(b)), 1, 0)
   i64_of_hi_lo(U32.sub(U32.sub(hi32(a), hi32(b)), borrow), lo)
 
-# ===========================================================================
+
 # The rest of the 64-bit ALU: bitwise, the shift, the division, the gcd.
 #
 # All four are two's complement pair operations, so the sign is a property of the
@@ -1748,7 +1746,7 @@ def i64_sub(+a: I64, +b: I64) -> I64:
 # kept in step. `mixin/dtype.bend` records the same wall from the other side: its
 # `Dt.i64_floor_div` / `Dt.i64_cdiv` are `IO(..)` EFFECT SEAMS, so `_min_max`
 # cannot call them, and a pure pair operation is the only shape a fold has.
-# ===========================================================================
+
 
 # `a | b` and `a & b`, WORD-WISE, and that is exact rather than approximate: the
 # infinite-precision and the 64-bit two's complement readings of `&` and `|` agree
@@ -1903,7 +1901,7 @@ def i64_shr.put(+neg: Bool, +hi: U32, +lo: U32, +k: Nat) -> I64:
 def i64_shr(+x: I64, +k: Nat) -> I64:
   i64_shr.put(i64_is_neg(x), hi32(x), lo32(x), k)
 
-# ===========================================================================
+
 # THE 64-STEP UNSIGNED RESTORING DIVIDER
 #
 # step `k` reads dividend bit `k` and writes quotient bit `k` -- the same index on
@@ -1916,7 +1914,7 @@ def i64_shr(+x: I64, +k: Nat) -> I64:
 # with both operands below 2**32 reads the same whether it is carried or not, so
 # `div_2p63_2p62` -- `2**63-1` over `2**62-1` -- is the row that makes this block a
 # test rather than a shape check, and `div_1_neg` is its signed twin.
-# ===========================================================================
+
 
 type DivSt is Data:
   DivSt{q: I64, r: I64, up: Bool, sub: Bool}
@@ -2008,9 +2006,9 @@ def div_loop(+k: Nat, +n: I64, +d: I64, s: DivSt) -> DivMod:
         case DivSt{q, r, up, sub}: DivMod{q, r}
     case 1n+p: div_loop(p, n, d, div_step(p, s, n, d))
 
-# ===========================================================================
+
 # `floordiv` / `floormod` ON THE PAIR (helpers.py:76-78) and `math.gcd`
-# ===========================================================================
+
 
 type DivMod is Data:
   DivMod{q: I64, r: I64}
@@ -2072,7 +2070,7 @@ def i64_divmod(+a: I64, +b: I64) -> DivMod:
 def i64_div(a: I64, b: I64) -> I64:
   divmod_q(i64_divmod(a, b))
 
-# ===========================================================================
+
 # the magnitude division, and why it is a second entry point
 #
 # A MAGNITUDE OF 2**63 HAS NO POSITIVE I64 IMAGE, and that is the whole seam.
@@ -2100,7 +2098,7 @@ def i64_div(a: I64, b: I64) -> I64:
 # down for the identical reason. Measured on the same 2106 rows: 236 cdiv, 204
 # cmod, 97 gcd disagreements before, 0 after, every one of them a row where
 # int64.min is an operand.
-# ===========================================================================
+
 
 # The zero divisor answers the DIVIDEND for the remainder, by the same
 # helpers.py:78 argument as `i64_divmod.of` above: the quotient is 0 and the
@@ -2299,7 +2297,7 @@ def gcd.go(k: Nat, +a: I64, +b: I64) -> I64:
 def gcd(a: I64, b: I64) -> I64:
   gcd.go(128n, i64_abs(a), i64_abs(b))
 
-# ===========================================================================
+
 # THE MULTIPLY
 #
 # the split is 16-bit limbs and not 32-bit, and that is the whole of it. a 32x32
@@ -2321,7 +2319,7 @@ def gcd(a: I64, b: I64) -> I64:
 #
 # `p11 + carry + carry_out(t)` is at most 0xFFFFFFFE, so THE HIGH-WORD SUM NEVER
 # WRAPS. That bound is what the scheme rests on and it is checked, not trusted.
-# ===========================================================================
+
 
 type PP is Data:
   PP{p00: U32, p01: U32, p10: U32, p11: U32, cross: U32, carry: U32, t: U32, hi: U32}
@@ -2374,7 +2372,7 @@ def u64_mul(+a: I64, +b: I64) -> I64:
 def i64_mul(+a: I64, +b: I64) -> I64:
   i64_neg(Bool.xor(i64_is_neg(a), i64_is_neg(b)), u64_mul(i64_abs(a), i64_abs(b)))
 
-# ===========================================================================
+
 # `cdiv` / `cmod` ON THE PAIR, UPSTREAM'S SPELLING (helpers.py:74-75)
 #
 # `cmod` is `x-cdiv(x,y)*y` and THAT IS WHY `i64_mul` EXISTS: without a multiply the
@@ -2396,7 +2394,7 @@ def i64_mul(+a: I64, +b: I64) -> I64:
 # pair's bit 63 as a sign and floored a dividend that was already unsigned.
 # Measured over 2106 rows: `cdiv_i64` 236 disagreements before and 0 after,
 # `cmod_i64` 204 before and 0 after, `i64_div` 0 before and 0 after.
-# ===========================================================================
+
 
 def cdiv_i64.of(zero: Bool, neg: Bool, q: I64) -> I64:
   match zero:
@@ -2460,7 +2458,7 @@ def i2u(neg: Bool, bits: Nat, value: U32) -> U32:
     case True{}: U32.add(U32.shln(1, bits), value)
     case False{}: value
 
-# ===========================================================================
+
 # merge_dicts
 #
 # `{k:v for d in ds for k,v in d.items()}` after checking that no key carries two
@@ -2468,7 +2466,7 @@ def i2u(neg: Bool, bits: Nat, value: U32) -> U32:
 # pairs is the honest representation: it is what `d.items()` yields, it keeps
 # insertion order, and the conflict scan is a fold. `None` is Python's RuntimeError
 # "contains different values for the same key".
-# ===========================================================================
+
 
 type KV is Data:
   KV{k: String, v: U32}
@@ -2549,14 +2547,14 @@ def merge_dicts(ds: List<&2, List<&2, KV>>) -> Maybe<&1, List<&2, KV>>:
     case Nil{}: Some{Nil{}}
     case d0 <> r: merge_dicts.pick(merge_dicts.go(List.concat(&2, KV, r), merged_of(False{}, d0)))
 
-# ===========================================================================
+
 # partition -- `for s in itr: (ret[0] if fxn(s) else ret[1]).append(s)`.
 # `fxn` is a Python callback and a Bend closure cannot be stored, so the predicate
 # is a `Sel` tag and each tag is a top-level def. part_test's tags:
 # 0 = x > 0, 1 = x < 0, 2 = x == 0, 3 = x is even, anything else = keep all.
 # The accumulator is a record so the recursion never needs a `+` on a list;
 # `partition` still answers Python's (kept, dropped) pair.
-# ===========================================================================
+
 
 type Parted is Data:
   Parted{yes: List<&2, U32>, no: List<&2, U32>}
@@ -2597,14 +2595,14 @@ def part_no(r: List<&2, U32> & List<&2, U32>) -> List<&2, U32>:
 def partition(sel: U32, itr: List<&2, U32>) -> List<&2, U32> & List<&2, U32>:
   part_out(part_go(itr, sel, Parted{Nil{}, Nil{}}))
 
-# ===========================================================================
+
 # unwrap / get_single_element
 #
 # Both Python functions are `assert`s, and an assertion is not a value, so a
 # total def cannot say "the caller promised". The faithful total form therefore
 # takes the fallback the caller would have died for. `get_single(xs)` answers
 # None when the length is not 1, the only case Python's assert rejects.
-# ===========================================================================
+
 
 def unwrap_or(m: Maybe<&1, U32>, d: U32) -> U32:
   match m:
@@ -2619,7 +2617,7 @@ def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
         case Nil{}: Some{h}
         case _: None{}
 
-# ===========================================================================
+
 # GlobalCounters -- `class GlobalCounters`, helpers.py:302
 #
 # SIX ClassVars (helpers.py:303-308) and one `@staticmethod reset` (:309-310). The
@@ -2656,7 +2654,7 @@ def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
 # never written here; `.agents/slop/helpers-oracle.py` measures what CPython does with
 # it and prints those rows to STDERR so they are recorded without being diffed.
 # TODO(p4) helpers.py:306  `time_sum_s` needs the engine's clock, which is a C effect.
-# ===========================================================================
+
 
 type Counters is Data:
   Counters{global_ops: U32, global_mem: U32, time_sum_s: F32, kernel_count: U32,
@@ -2747,14 +2745,14 @@ def GlobalCounters.mem_used_add(c: Counters, +dev: U32, +d: U32) -> Counters:
       Counters{ops, mem, t, k, used,
         GlobalCounters.mupd_put(dev, U32.add(GlobalCounters.mupd_get(dev, devs), d), devs)}
 
-# ===========================================================================
+
 # Timing
 #
 # `class Timing(contextlib.ContextDecorator)`: __enter__ stamps
 # time.perf_counter_ns(), __exit__ prints f"{prefix}{et*1e-6:6.2f} ms". A `with`
 # is not a term, so the shape becomes a stamp and a report and the caller keeps
 # the two calls adjacent.
-# ===========================================================================
+
 
 def Timing.now() -> IO(Nat):
   IO.now()
@@ -2771,7 +2769,7 @@ def Timing.report.go(enabled: Bool, s: String) -> IO(Unit):
 def Timing.report(enabled: Bool, prefix: String, st: Nat, en: Nat) -> IO(Unit):
   Timing.report.go(enabled, Timing.report.text(prefix, st, en))
 
-# ===========================================================================
+
 # trange -- `def trange(n:int, kwargs) -> tqdm[int]`, helpers.py:619
 #
 # The entire body is `return tqdm(range(n), total=n, kwargs)`, so a `trange` IS its
@@ -2801,7 +2799,7 @@ def Timing.report(enabled: Bool, prefix: String, st: Nat, en: Nat) -> IO(Unit):
 # (:585), so the `sys.stderr.isatty()` arm is never taken by `trange` and the bar IS
 # drawn into a pipe. That is why `.agents/slop/helpers-tc-gate.sh` compares stdout
 # only, and why the oracle's `disable` / `desc` / `unit` / `rate` rows go to stderr.
-# ===========================================================================
+
 
 type Tqdm is Data:
   Tqdm{t: U32, seq: List<&2, Nat>}
@@ -2809,14 +2807,14 @@ type Tqdm is Data:
 def trange(+n: U32) -> Tqdm:
   Tqdm{n, List.range(U32.to_nat(n))}
 
-# ===========================================================================
+
 # lines / printable
 #
 # `lines(fn)` opens a file and readlines()s it, answering [] on FileNotFound or
 # OSError; Bend's File.read answers a Result and [] is the Fail arm.
 # `printable(loc)` is lines(loc[0])[loc[1]-1].strip() with IndexError ->
 # "<missing>".
-# ===========================================================================
+
 
 def lines.done(f: File, value: String) -> IO(List<&2, String>):
   IO.bind(Unit, List<&2, String>, File.close(f),
@@ -2856,7 +2854,7 @@ def printable.pick(line: U32, ls: IO(List<&2, String>)) -> IO(String):
 def printable(path: String, line: U32) -> IO(String):
   printable.pick(line, lines(path))
 
-# ===========================================================================
+
 # `Target` -- tinygrad/helpers.py:197-220. the dev target, and upstream puts
 # IT HERE.
 #
@@ -2897,7 +2895,7 @@ def printable(path: String, line: U32) -> IO(String):
 # pattern (`eq_target`, `uop/ops.bend`) compares the wrong pairs, and nothing
 # complains. The order is therefore stated once, HERE, and every construction
 # and every pattern in the port uses this one.
-# ===========================================================================
+
 type Target is Data:
   Target{device: String, renderer: String, arch: String, iface: String, indices: String}
 
@@ -2921,7 +2919,7 @@ def Target.indices(+t: Target) -> String:
   match t:
     case Target{device, renderer, arch, iface, indices}: indices
 
-# ===========================================================================
+
 # `Target.parse` -- tinygrad/helpers.py:206-214. THE DEV STRING PARSER.
 #
 # `Target` is upstream's record (helpers.py:198-203) and this is the one
@@ -3073,7 +3071,7 @@ def Target.indices(+t: Target) -> String:
 # "CPU" while `Target.parse("CPU:0")` is the device "CPU" and the RENDERER
 # "0". One keeps a device name a STRING and the other splits a device name
 # into FIELDS.
-# ===========================================================================
+
 
 # The three characters the parser cuts on. `'+'` is 43, `':'` is 58, `';'` is 59.
 def Target.PLUS() -> Char: Char.from_u32(43)
@@ -3231,7 +3229,7 @@ def Target.replacedefault(+t: Target, dev: String, ren: String, arch: String, if
     Bool.pick(String, String.is_empty(Target.arch(t)), arch, Target.arch(t)),
     Bool.pick(String, String.is_empty(Target.iface(t)), iface, Target.iface(t)),
     Bool.pick(String, String.is_empty(Target.indices(t)), idx, Target.indices(t))}
-# ===========================================================================
+
 # NOT PORTED -- tinygrad/helpers.py, and why
 #
 # The 64-bit signed div/mod (ceildiv64, cdiv64, cmod64, floordiv64, floormod64)
@@ -3240,7 +3238,6 @@ def Target.replacedefault(+t: Target, dev: String, ren: String, arch: String, if
 # ./dtype.bend next to the runtime/dtype.c that implements them.
 #
 # The ContextVar variable LIST is 3 of 61 (the count is measured at the top of this
-# file, and the "~40" this line used to carry was wrong by 21). The rest (DEBUG, BEAM,
 # NOOPT, DEV, CACHELEVEL, ...) is phase P6: they need FIELDS on the record, and the
 # save/restore MECHANIC they need is already ported above -- `Context.__enter__`
 # snapshots named keys and `Context.__exit__` writes them back, so P6 is a wider

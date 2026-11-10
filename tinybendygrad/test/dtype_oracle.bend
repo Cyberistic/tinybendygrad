@@ -13,10 +13,10 @@ import ../dtype.bend as D
 import ../helpers.bend as H
 import ../LAWS/spec.bend as S
 
-# ===========================================================================
+
 # The twenty dtypes: name, priority, bits, itemsize, the three predicates dtype.py
 # asks about, the integer range, and the finite float max.
-# ===========================================================================
+
 
 def range_text(m: Maybe<&1, H.I64>) -> String:
   match m:
@@ -41,7 +41,7 @@ def rows(ds: List<&2, S.Dt>, acc: String) -> String:
     case Nil{}: acc
     case h <> t: rows(t, String.append(acc, row(h)))
 
-# ===========================================================================
+
 # least_upper over every ordered pair of dtypes.all() -- 17 x 17 = 289 rows.
 #
 # TWO FOLDS, NOT A Maybe. The first draft carried the outer dtype as a
@@ -60,7 +60,7 @@ def rows(ds: List<&2, S.Dt>, acc: String) -> String:
 #   * a self-call's arguments are read LEFT TO RIGHT, each passed unchanged until
 #     one shrinks -- so a value reused in a later argument has to be bound first
 #     with `+r = ...`, and a value used by two arms needs `case +h <> +t`.
-# ===========================================================================
+
 
 def lut_row(+a: S.Dt, +b: S.Dt) -> String:
   String.concat([D.dt_name(a), "\t", D.dt_name(b), "\t",
@@ -87,9 +87,9 @@ def lut_rows.all(+all: List<&2, S.Dt>, ds: List<&2, S.Dt>, acc: String) -> Strin
 def lut_rows(+ds: List<&2, S.Dt>) -> String:
   lut_rows.all(ds, ds, "")
 
-# ===========================================================================
+
 # can_lossless_cast over every pair, same shape.
-# ===========================================================================
+
 
 def clc_row(+a: S.Dt, +b: S.Dt) -> String:
   String.concat([D.dt_name(a), "\t", D.dt_name(b), "\t",
@@ -112,9 +112,9 @@ def clc_rows.all(+all: List<&2, S.Dt>, ds: List<&2, S.Dt>, acc: String) -> Strin
 def clc_rows(+ds: List<&2, S.Dt>) -> String:
   clc_rows.all(ds, ds, "")
 
-# ===========================================================================
+
 # sum_acc_dtype under each SUM_DTYPE tinygrad accepts.
-# ===========================================================================
+
 
 def sum_row(+d: S.Dt, +sum: S.Dt) -> String:
   String.concat([D.dt_name(d), "\t", D.dt_name(sum), "\t",
@@ -125,9 +125,9 @@ def sum_rows(+sum: S.Dt, ds: List<&2, S.Dt>, acc: String) -> String:
     case Nil{}: acc
     case h <> t: sum_rows(sum, t, String.append(acc, sum_row(h, sum)))
 
-# ===========================================================================
+
 # finfo over the floats, and "-" for the one dtype dtype.py raises on.
-# ===========================================================================
+
 
 def finfo_text(m: Maybe<&1, D.Finfo>) -> String:
   match m:
@@ -144,11 +144,11 @@ def finfo_rows(ds: List<&2, S.Dt>, acc: String) -> String:
     case Nil{}: acc
     case h <> t: finfo_rows(t, String.append(acc, finfo_row(h)))
 
-# ===========================================================================
+
 # commit_int, over every value that lands on a rung boundary and one either side
 # of it. The bound values come from the dtypes themselves, so the two sides
 # cannot drift: if dt_max moves, the case moves with it.
-# ===========================================================================
+
 
 type Bounds is Data:
   Bounds{lo: H.I64, hi: H.I64, di: S.Dt}

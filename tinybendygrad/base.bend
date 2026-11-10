@@ -7,7 +7,7 @@
 # of, because `runtime/ops_python.bend` IMPORTS `dtype.bend` and the dependency
 # only runs one way.
 #
-# ---------------------------------------------------------------------------
+
 # THE OBSERVATION. `base.bend:60` declares
 #
 #     type U32 is Data:
@@ -30,7 +30,7 @@
 # INVERSE: `F32.bits` (`base.bend:1826` symbol=F32.bits, also a `law`). `F32.bits` IS
 # the inverse -- there is deliberately no second name for it here.
 #
-# ---------------------------------------------------------------------------
+
 # the lane split, measured, and it is the interesting part. The round trip
 # `F32.bits(F32.from_bits(p)) == p` holds for EVERY one of the 2^32 patterns in
 # the C lane and for all but the NaNs in the JS lane:
@@ -47,7 +47,7 @@
 # and the JS lane's fp8/bf16/fp16 paths cannot tell two NaNs apart. That is a
 # property of the JS backend's float representation, not of `from_bits`, and no
 # definition of `from_bits` can repair it.
-# ---------------------------------------------------------------------------
+
 
 import Base
 

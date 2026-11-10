@@ -11,7 +11,7 @@ import ./../../mixin/movement.bend as MX
 import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/convnext.py (63 loc). not yet ported.
 #
 # what changed since `resnet.bend` was written, and this file is the evidence:
@@ -76,7 +76,7 @@ import ./../datasets/__init__.bend as D
 # from a layer whose weights happen to be zero. `refuse` and the `Refused` type
 # are DECLARED ONCE at `extra/datasets/__init__.bend:40-46` and imported as `D`.
 # Each message names the upstream `path:line` of the FIRST MISSING SYMBOL.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -88,10 +88,10 @@ def cn_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :5-17 Block. The FOUR sublayers (:7,:8,:9,:10) are all named here so the
 # distance is four symbols and not "the block".
-# ---------------------------------------------------------------------------
+
 
 # :6  def __init__(self, dim)
 def cn_block_init(dim: U32) -> D.Refused:
@@ -130,9 +130,9 @@ def cn_permute_0221(+x: T.Tensor) -> D.Refused:
 def cn_permute_0312(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/convnext.py:16 Block.__call__ -- Tensor.gelu is MISSING; only ew_quick_gelu exists, using the 1.702 constant, and plain gelu needs erf -- and the FLOAT-CONST FAMILY wall that erf is in is that file's third wall block. THE LANDED ARM IS mixin/elementwise.bend:1229 symbol=ew_quick_gelu")
 
-# ---------------------------------------------------------------------------
+
 # :19-32 ConvNeXt.
-# ---------------------------------------------------------------------------
+
 
 # :20 def __init__(self, in_chans=3, num_classes=1000, depths=[3, 3, 9, 3],
 #                   dims=[96, 192, 384, 768])
@@ -163,11 +163,11 @@ def cn_convnext_call(+x: T.Tensor) -> D.Refused:
 def cn_mean_axes() -> D.Refused:
   D.refuse("extra/models/convnext.py:32 ConvNeXt.__call__ mean([-2,-1]) -- mo_mean (mixin/op.bend:953 symbol=mo_mean) EXISTS with U32 axes; Python's -2/-1 have no U32 image (nn/layers.bend:382 symbol=nn_dot.order is the construct that measures it -- IT NEEDS NO NEGATIVE INDEX ANYWHERE)")
 
-# ---------------------------------------------------------------------------
+
 # :36-42 `versions` -- FIVE dicts of two lists each, and this is the one part of
 # the file that is PURE DATA. The whole table is restated here so a reader does
 # not have to open Python to learn that "xlarge" is 2048 wide.
-# ---------------------------------------------------------------------------
+
 def cn_versions_name(n: U32) -> String:
   match n:
     case 0: "tiny"
@@ -208,9 +208,9 @@ def cn_versions_dim2(n: U32) -> U32:
     case 3: 384
     case _: 512
 
-# ---------------------------------------------------------------------------
+
 # :44-52 get_model.
-# ---------------------------------------------------------------------------
+
 
 # :44 def get_model(version, load_weights=False)
 def cn_get_model(version: U32, load_weights: Bool) -> D.Refused:
@@ -224,12 +224,12 @@ def cn_get_model_fetch() -> D.Refused:
 def cn_get_model_assign() -> D.Refused:
   D.refuse("extra/models/convnext.py:51 get_model -- MISSING Tensor.assign and Tensor.realize; nn/pool.bend:416 symbol=pool_bn_running_stats and tensor.bend:2717 symbol=tn_param.of both name the immutability divergence")
 
-# ---------------------------------------------------------------------------
+
 # :54-63 `if __name__ == "__main__":`. `main` below IS this block and nothing
 # else. There is deliberately no invented census printed here: a 1:1 mirror that
 # emits rows upstream does not emit is not a mirror, and the census belongs in
 # the report where a reader looks for it.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, cn_block_init(96))

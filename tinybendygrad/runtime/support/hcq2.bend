@@ -5,14 +5,14 @@
 # in its own header comments and PROOF rows, so those citations point at nothing
 # until this file exists. See the "CITATIONS" section once the port lands.
 #
-# ---------------------------------------------------------------------------
+
 # THE SPLIT, stated once and then obeyed: a def here EITHER builds the argument
 # of one device call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER). There is no third kind. Every seam is
 # a trace tag and nothing else, so ORDER and IDENTITY are gateable even though
 # none of them is made here.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF. `hcq2.py` is 646 lines and most of it is a
 # `graph_rewrite` over the UOp ARENA, which `uop/ops.bend` owns and this file
 # must not re-derive. What survives as PURE ARITHMETIC is the queue model, and
@@ -79,7 +79,7 @@
 #   hcq2.py:535 `hcq_compile`            PORTED  `compile_seq` -- THE INIT ORDER symbol=hcq_compile
 #   hcq2.py:552 `hcq_link`               PORTED  `link_seq` symbol=hcq_link
 #
-# ===========================================================================
+
 # THE WALLS, named once each with the `hcq2.py` line that owns them.
 #
 # 1. THE uop arena -- THE reason that stood here was FALSE. MEASURED 2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:298`;
@@ -157,7 +157,6 @@
 #    `to_name` (:61) is `String.split` + `String.join` + `String.to_lower`, and
 #    `String.replace` DOES NOT EXIST. The fold is ported; the CHARACTER-level
 #    lower-casing inside `String.to_lower` is base.bend's, not this file's.
-#    The PORT's own `ops_nv.bend` NO LONGER CARRIES that copy -- it is a
 #    HEADER-ONLY file now, and its header's `to_name` stage names upstream's
 #    `to_name` (tinygrad/helpers.py:21 symbol=to_name), whose `.replace(":", "_")`
 #    IS the character-level copy this sentence is about -- while `hq2_toname_*`
@@ -189,9 +188,9 @@
 #    defer, so there is no wall here to state. `nbytes` itself is ported and is
 #    gated from `device.bend`'s `Bn`, not from here.
 #
-# ===========================================================================
+
 # CITATIONS -- what the NV path already assumes about this file.
-# ===========================================================================
+
 # THE port's OWN `ops_nv.bend` IS a header-ONLY file now: it has ZERO `def`
 # DECLARATIONS, so a pointer into its BODY names a line that does not exist.
 # What it DOES carry is its own STAGE header, and the STAGE header names the
@@ -208,7 +207,6 @@
 #     layout_args(6 mixed, 0)        -> 0, 4, 8, 16, 24, 28
 #     layout_args(3x uint64, 512)    -> 512, 520, 528
 #     layout_args(6 mixed, 512)      -> 512, 516, 520, 528, 536, 540
-#   The PORT's own `ops_nv.bend` NO LONGER CARRIES the rows that printed
 #   `0, 4, 8, 16, 24, 28` for the mixed list: the file is header-only, so the
 #   claim lives here, against `hcq2.layout_args` itself. The `512` base is
 #   upstream's `qmd_sz` (tinygrad/runtime/ops_nv.py:135), and the five entries
@@ -234,12 +232,11 @@
 # upstream's `ops_nv.py` notes that the NV path goes through these queues. That
 #   is the claim `q` and `Tr` SUBMIT below carry -- `hwq` is named here but is
 #   NOT a def in this file (2 occurrences in this header, 0 defs), and
-#   `encode_submit` no longer exists upstream at all: `bdddaad21` folded it into
 #   the `HWQueue.encode` METHOD. What `Tr` SUBMIT carries is that one submission
 #   ends in exactly one `submit` call, which is the part of `encode` that is not
 #   the queue's own body.
 #
-# ===========================================================================
+
 # AGREEMENT WITH `runtime/support/nv/ip.bend`, answered from the PYTHON.
 #
 # That file asked three things to be agreed or contradicted (its own header,
@@ -276,7 +273,7 @@
 # DIFFERENT halves of one submission, and the gate rows for this file's half are
 # `hq2_b*_full`.
 #
-# ===========================================================================
+
 # STATUS: ALL three stages landed and checked.
 #
 #   PORTED: see the table above. NOT: the UOp-arena rewrites (wall 1), the
@@ -310,10 +307,10 @@ import ../../helpers.bend as H
 import ../../device.bend as D
 import ../../LAWS/spec.bend as S
 
-# ===========================================================================
+
 # THE CONSTANTS, and each one is gated BOTH WAYS. A value that does not name
 # its own value is a wrong submission waiting for a driver.
-# ===========================================================================
+
 
 def HCQ_DEV_NV() -> U32: 1
 def HCQ_DEV_QCOM() -> U32: 2
@@ -421,7 +418,7 @@ def Fld.sz(x: Fld) -> U32:
   match x:
     case Fld{ix, name, at, sz}: sz
 
-# ===========================================================================
+
 # THE TRACE. `Tr.emit` is the seam: every device call in this file goes through
 # it, so the trace is the ordered list of queue commands the driver will see.
 #
@@ -432,7 +429,7 @@ def Fld.sz(x: Fld) -> U32:
 # entry its own `refused` is still False. Every step goes through
 # `Tr.emit.go`, so two steps cannot disagree about the guard; that is the bug
 # ops_webgpu.bend's gate found in ITSELF and the reason the function is one.
-# ===========================================================================
+
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 0, False{}}
 
@@ -504,14 +501,14 @@ def Call.c(x: Call) -> U32:
   match x:
     case Call{k, a, b, c}: c
 
-# ===========================================================================
+
 # READING THE TRACE. `Tr.seq` is the `a` of every call with tag `k`, IN ORDER
 # -- for a queue that is the sequence of slot indices and for the batch that is
 # the sequence of step kinds. `Tr.count` is how many. `Tr.has` is "contains this
 # (k, a, b, c) sequence, in order", and it is a real SUBSEQUENCE test: the fuel
 # is the TRACE length and the answer is `at == patlen` (the bug ops_webgpu.bend
 # measured, where a fuel set to the PATTERN length made a reversed pattern match).
-# ===========================================================================
+
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, +got: U32) -> U32:
   match n:
@@ -574,7 +571,7 @@ def Call.same(a: Call, b: Call) -> Call: a
 
 def nats_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool: H.u32_list_eq(a, b)
 
-# ===========================================================================
+
 # hcq2.py:63 `to_name(*parts) = "_".join(parts).replace(":", "_").lower()`.
 #
 # THE ORDER IS THE CLAIM: the replace is on the ORIGINAL case and the lower is
@@ -586,7 +583,7 @@ def nats_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool: H.u32_list_eq(a, b)
 # bug and got `ring_compute0` where CPython prints `ring_compute_0`.
 #
 # `dev.bend`'s `rest_of` is the same fix with `:` where this needs `_`.
-# ===========================================================================
+
 
 def to_name.norm(+s: String) -> String:
   String.to_lower(String.join(String.split(s, ':'), "_"))
@@ -829,7 +826,7 @@ def brow(nm: String, +xs: List<&2, U32>) -> IO(Unit):
   IO.print(String.concat([nm, "=", bstr(xs)]))
 
 
-# ===========================================================================
+
 # THE batch: hcq2.py:209-311. THE fence and completion model, and almost all of
 # it is ORDER, so almost all of it is a trace.
 #
@@ -842,7 +839,7 @@ def brow(nm: String, +xs: List<&2, U32>) -> IO(Unit):
 # `Device.canonicalize` -- which is what :227 puts in `ctx.peers` and what makes
 # a SECOND device with no calls appear in the output. QUEUE IDS: 1 is
 # `COMPUTE:0`, 2 is `COPY:0`, 3 is `COPY:1`. BUFFER IDS 1..6 are `a`..`f`.
-# ===========================================================================
+
 
 def DEV_N0() -> U32: 1
 def DEV_N() -> U32: 2
@@ -1100,7 +1097,7 @@ def qfirst.go(n: Nat, qs: List<&2, U32>, +got: U32) -> U32:
 def qfirst(+qs: List<&2, U32>) -> U32: qfirst.go(List.length(&2, U32, qs), qs, 0)
 
 
-# ===========================================================================
+
 # `signal_tags` (:230) -- THE LAST-WINS RULE, and it is the rule most likely to
 # be got wrong, because `self.last` holds ONE tag per queue:
 #   {tag for (dev, q), tag in self.last.items() if q != epilogue(dev) or (dev, q) in peers}
@@ -1115,7 +1112,7 @@ def qfirst(+qs: List<&2, U32>) -> U32: qfirst.go(List.length(&2, U32, qs), qs, 0
 # False needs a device with no peers, and no NULL batch has one. So the gate
 # cannot separate `q != epi` from `or (dev, q) in peers`, and `hq2_b*_sig_*` are
 # rows about the LAST-WINS half alone. That is a reported blind spot.
-# ===========================================================================
+
 def epi(+bs: List<&2, E>, +dev: U32) -> U32:
   Bool.pick(U32, U32.is_eq(nq(bs, dev), 1), qfirst(qlist(bs, dev)), Q_COMPUTE())
 
@@ -1160,7 +1157,7 @@ def member.go(n: Nat, xs: List<&2, U32>, +x: U32, hit: Bool) -> Bool:
 def member(+xs: List<&2, U32>, x: U32) -> Bool: member.go(List.length(&2, U32, xs), xs, x, False{})
 
 
-# ===========================================================================
+
 # `DepsTracker.access_resources` (:182-207) reduced to WHO OVERLAPS WHOM, and
 # `_wait_ins` (:242-252) which turns that into the WAIT list.
 #
@@ -1169,7 +1166,7 @@ def member(+xs: List<&2, U32>, x: U32) -> Bool: member.go(List.length(&2, U32, x
 # overlaps it -- a write must follow a prior read of the same buffer. With two
 # whole buffers per call and no suballocation:
 #   overlap(i, t) = (r(i) == w(t)) or (w(i) == w(t)) or (w(i) == r(t))
-# ===========================================================================
+
 def overlaps(+bs: List<&2, E>, +i: U32, +t: U32) -> Bool:
   Bool.or(Bool.or(U32.is_eq(E.r(elem(bs, i)), E.w(elem(bs, t))),
                   U32.is_eq(E.w(elem(bs, i)), E.w(elem(bs, t)))),
@@ -1232,7 +1229,7 @@ def waits.go(n: Nat, +ls: List<&2, U32>, +bs: List<&2, E>, +i: U32, +acc: List<&
 
 def waits(+bs: List<&2, E>, +i: U32) -> List<&2, Ins>: waits.go(List.length(&2, U32, latest(bs, i)), latest(bs, i), bs, i, Nil{})
 
-# ===========================================================================
+
 # `_start_ins` (:254-256) -- `INS(("barrier", void), ())` and then ONE WAIT ON
 # THE DEVICE TIMELINE per device in `[dev, *sorted(peers[(dev, queue)])]`. So
 # it is a BARRIER, then `1 + npeers` TIMELINE waits, and the peer's wait is what
@@ -1241,7 +1238,7 @@ def waits(+bs: List<&2, E>, +i: U32) -> List<&2, Ins>: waits.go(List.length(&2, 
 # queue, so `start_n` is 3 for `NULL:0` and 2 for the canonicalized `NULL` --
 # whose peers key is ABSENT, and that is why its epilogue queue starts with
 # only ONE timeline wait.
-# ===========================================================================
+
 def start_n(dev: U32) -> U32: Bool.pick(U32, U32.is_eq(dev, DEV_N0()), 3, 2)
 
 # ONE SELF-CALL PER ARM. `Bool.pick(..., start.go(...), start.go(...))` is two
@@ -1260,7 +1257,7 @@ def start.go(n: Nat, +acc: List<&2, Ins>, +dev: U32, +k: U32, first: Bool) -> Li
 def start_ins(+dev: U32) -> List<&2, Ins>:
   start.go(U32.to_nat(start_n(dev)), Nil{}, dev, 0, True{})
 
-# ===========================================================================
+
 # `_build_queues` (:258-283) -- THE ORDER, and it is the load-bearing part of the
 # whole file:
 #
@@ -1277,8 +1274,8 @@ def start_ins(+dev: U32) -> List<&2, Ins>:
 # So every queue's stream is
 #   [BARRIER, TIMELINE waits...] ++ dependency waits ++ [pre-TIMESTAMP] ++ CALL
 #   ++ [post-TIMESTAMP] ++ [SIGNAL if this tag is the queue's LAST] ++ epilogue.
-# ===========================================================================
-# ===========================================================================
+
+
 # `_build_queues` (:258-283) -- THE ORDER, and it is the load-bearing part of the
 # whole file:
 #
@@ -1296,7 +1293,7 @@ def start_ins(+dev: U32) -> List<&2, Ins>:
 #   dependency waits ++ [pre-TIMESTAMP] ++ CALL ++ [post-TIMESTAMP] ++ [SIGNAL]
 # and one QUEUE's stream is its `_start_ins` ++ the blocks of every call on it
 # ++ the epilogue tail IF it is the device's epilogue queue.
-# ===========================================================================
+
 def cat2(+a: List<&2, Ins>, +b: List<&2, Ins>) -> List<&2, Ins>: List.concat(&2, Ins, [a, b])
 
 def pre_ts(+bs: List<&2, E>, tag: U32, +profile: Bool, +acc: List<&2, Ins>) -> List<&2, Ins>:
@@ -1348,7 +1345,7 @@ def blocks_of.go(n: Nat, +ts: List<&2, U32>, +bs: List<&2, E>, +profile: Bool,
 def blocks_of(+ts: List<&2, U32>, +bs: List<&2, E>, profile: Bool) -> List<&2, Ins>:
   blocks_of.go(List.length(&2, U32, ts), ts, bs, profile, Nil{})
 
-# ===========================================================================
+
 # THE EPILOGUE TAIL (:273-282), appended to the device's epilogue queue.
 # `epi_waits(dev)` is
 #   (every OTHER queue of dev) + (every (dev, queue) key of peers that `dev` is a
@@ -1357,7 +1354,7 @@ def blocks_of(+ts: List<&2, U32>, +bs: List<&2, E>, profile: Bool) -> List<&2, I
 #   the second is every queue that ran a call. That asymmetry is the whole of
 # `hq2_bthree_q_NULL_COMPUTE0` and it is a string comparison in Python and an id
 # comparison here.
-# ===========================================================================
+
 def epi_waits_n(+bs: List<&2, E>, +dev: U32) -> U32:
   Bool.pick(U32, U32.is_eq(dev, DEV_N0()), U32.sub(nq(bs, dev), 1), npairs(bs))
 
@@ -1381,12 +1378,12 @@ def bump(dev: U32) -> Ins: Ins{I_BUMP(), TIMELINE_MARK(), dev, 1}
 def epi_tail(+bs: List<&2, E>, +dev: U32) -> List<&2, Ins>:
   List.concat(&2, Ins, [times(epi_waits_n(bs, dev), dev), [bump(dev)]])
 
-# ===========================================================================
+
 # THE WHOLE QUEUE STREAM, in the ORDER `_build_queues` returns it: every distinct
 # (device, queue) pair in first-use order, and then -- LAST -- the canonicalized
 # PEER device's epilogue queue, which exists only because
 # `canonicalize('NULL:0')` is `'NULL'` and which holds no calls of its own (:281).
-# ===========================================================================
+
 def is_epi_pair(+bs: List<&2, E>, +p: E) -> Bool:
   Bool.and(U32.is_eq(E.dev(p), DEV_N0()), U32.is_eq(E.q(p), epi(bs, DEV_N0())))
 

@@ -1,8 +1,8 @@
-# ===========================================================================
+
 # tinybendygrad/runtime/support/nv/nvdev.bend
 #   port of tinygrad/runtime/support/nv/nvdev.py (163 lines)
 #
-# ===========================================================================
+
 # a disagreement with the task brief, reported not reconciled.
 #
 # The brief said this file is "an ioctl layer: `fcntl.ioctl` on /dev/nvidiactl
@@ -54,7 +54,7 @@
 # bounds. The precedent for reporting rather than reconciling is `ip.bend`'s own
 # header, which recorded the same class of disagreement about `ip.py`.
 #
-# ===========================================================================
+
 # the ffi seam, measured, and the answer is "NONE, and NONE is needed".
 #
 # The brief warned that "`we have an FFI seam` is not a safe assumption" and
@@ -90,7 +90,7 @@
 # imports no `dtype.bend`: it prints `ALL PROOFS CHECK`, not `SOME PROOFS FAIL`.
 # The 14 unfilled dtype laws are not inherited here.
 #
-# ===========================================================================
+
 # the trace is the seam, reused not copied. `Cx`, `Tr`, `Tr.emit`, `Tr.fail_at`
 # and `tr.show` are IMPORTED from the committed `ip.bend` (`import ./ip.bend as
 # IP`), which is the nv package's other file and already owns ids 0..10
@@ -103,7 +103,7 @@
 # IDENTITY). There is no third kind. The raise is in the trace, so a refusal is a
 # TRUNCATED trace and no step needs a guard of its own.
 #
-# ===========================================================================
+
 # NO `struct.calcsize` ROWS, STATED RATHER THAN HIDDEN.
 #
 # The brief asked for "every constant and struct offset ported, with row counts
@@ -130,10 +130,10 @@
 # `mask("chip_id")` are the SAME NUMBER (1072693248, measured) and differ only in
 # the names. Two different `update()` calls with different names write the same
 # bits. A gate on masks alone cannot tell them apart; a gate on names can.
-# ===========================================================================
 
 
-# ===========================================================================
+
+
 # THE WALLS. Four, each one named with the thing that does not fit and the row
 # that measures it. A wall that is not written down is a bug waiting for a reader.
 #
@@ -184,13 +184,13 @@
 # `NVPageTableEntry`, which uses them only for `.encode`/`.decode`/`.mask`. So
 # `nv_addr_v2_pte` .. `nv_addr_v3_dpd` are all ZERO and that is the port being
 # correct, not the port being unable to find an address.
-# ===========================================================================
+
 
 import ./ip.bend as IP
 
-# ---------------------------------------------------------------------------
+
 # THE SEAM CALL IDS. 11.., continuing ip.bend's 0..10.
-# ---------------------------------------------------------------------------
+
 
 def C_NV_RREG() -> U32: 11
 
@@ -215,10 +215,10 @@ type Fld is Data:
 
 def nv.word(addr: U32) -> U32: U32.shrn(addr, 2n)
 
-# ---------------------------------------------------------------------------
+
 # THE BIT CODEC, which is `NVReg.mask` (:27), `encode` (:30) and `decode` (:31)
 # plus tinygrad's `getbits`. All pure.
-# ---------------------------------------------------------------------------
+
 # (end - start) + 1 -- the WIDTH, :27's `(1 << (end - start + 1)) - 1`.
 
 def nv.wid(+s: U32, e: U32) -> U32: U32.add(U32.sub(e, s), 1)
@@ -396,13 +396,13 @@ def nv.cfgclear(c: U32) -> U32: U32.and(c, U32.not(nv.pci_master()))
 
 def nv.cfgset(c: U32) -> U32: U32.or(c, nv.pci_master())
 
-# ---------------------------------------------------------------------------
+
 # THE MMU TABLES, :143 and memory.py's :186-188. `bits, shifts = (56, [12, 21, 29,
 # 38, 47, 56]) if mmu_ver == 3 else (48, [12, 21, 29, 38, 47])`.
 # THE ORDER IS LOAD-BEARING: memory.py REVERSES it into `pte_covers`, so
 # `va_shifts[0]` is the SMALLEST and `pte_covers[0]` is the LARGEST. A port that
 # reverses once too many reads a 2 GiB page where the driver wrote a 4 KiB one.
-# ---------------------------------------------------------------------------
+
 
 def nv.va_bits(+v: U32) -> U32: Bool.pick(U32, U32.is_eq(v, 3), 56, 48)
 
@@ -499,12 +499,12 @@ def nv.sm_true() -> U32: 1
 
 def nv.sm_false() -> U32: 2
 
-# ---------------------------------------------------------------------------
+
 # NVPageTableEntry's DECISIONS, :36,:58,:59,:63,:66 and the field NAME each one
 # selects. These are pure functions of (mmu_ver, lv) and they are where a
 # transposed level bound lands on a different STRUCT -- a silently wrong page
 # table entry, not a fault -- so all 14 (ver, lv) pairs are gated.
-# ---------------------------------------------------------------------------
+
 # :36 `self.lv == self.nvdev.mm.level_cnt - 2` -- the dual-PDE level.
 
 def nv.pte_dual(+v: U32, lv: U32) -> Bool: U32.is_eq(lv, U32.sub(nv.level_cnt(v), 2))
@@ -797,7 +797,7 @@ def nv.covers_str(+v: U32) -> String: String.join(nv.cstr.go(nv.shifts_nat(v), n
 
 def nv.ones(w: U32) -> U32: U32.sub(nv.pw_of(w), 1)
 
-# ---------------------------------------------------------------------------
+
 # THE REGISTER TABLES. GENERATED -- see .agents/slop/nv_nvdev_gen.py, which
 # reads the CPython oracle's output and refuses to run if a row is missing.
 #
@@ -813,7 +813,7 @@ def nv.ones(w: U32) -> U32: U32.sub(nv.pw_of(w), 1)
 # NO register address, because nvdev.py never reads them -- :128 hands them to
 # NVPageTableEntry, which uses them only for `.encode`/`.decode`/`.mask`. So
 # "has no address" is a PROPERTY of the port, not a gap in it.
-# ---------------------------------------------------------------------------
+
 # GENERATED by .agents/slop/nv_nvdev_gen.py from the CPython oracle. DO NOT HAND-EDIT.
 
 def nv.getb(v: U32, +s: U32, e: U32) -> U32: U32.and(U32.shrn(v, U32.to_nat(s)), nv.ones(nv.wid(s, e)))
@@ -1038,7 +1038,7 @@ def nv.boot_fill(+size: U32, t: IP.Tr) -> IP.Tr:
 
 def nv.wait_reset(t: IP.Tr) -> IP.Tr: IP.Tr.emit(C_NV_WAIT_RESET(), 0, 0, 0, t)
 
-# ===========================================================================
+
 # THE GATE. Every `py=` value below is a row the CPython oracle emitted by
 # CALLING the real `NVReg` / `NVPageTableEntry` classes over the real
 # `tinygrad/runtime/autogen/nv_regs/` tables. Nothing here is transcribed.
@@ -1063,7 +1063,7 @@ def nv.wait_reset(t: IP.Tr) -> IP.Tr: IP.Tr.emit(C_NV_WAIT_RESET(), 0, 0, 0, t)
 # fixture in this file, because an all-equal fixture cannot detect order -- that
 # was proven by mutation elsewhere in this project (six rows printing `1,1`, and a
 # list reversal moving none of them).
-# ===========================================================================
+
 
 # --- ONE def per register, so a row NAMES its register and a mutation that
 # --- touches one register cannot move another's row.
@@ -1360,7 +1360,7 @@ def nv.names(+r: Rgv) -> String: String.join(nv.nms.go(Rgv.nat(r), Rgv.fs(r), Ni
 def nv.ranges(+r: Rgv) -> String:
   String.join(nv.rng.go(Rgv.nat(r), Rgv.fs(r), Nil{}), ";")
 
-# ---------------------------------------------------------------------------
+
 # THE CHIP TABLES, :114-116. `chip_details` is `NV_PMC_BOOT_42.read_bitfields()`
 # -- so the `architecture` here is BOOT_42's field, bits (24,29), SIX bits wide.
 # NV_PMC_BOOT_0 has a field also called architecture-ish, `architecture_0` at
@@ -1368,7 +1368,7 @@ def nv.ranges(+r: Rgv) -> String:
 # (BOOT_0 is 0x0, BOOT_42 is 0xA00). The first draft of the oracle read BOOT_0's
 # and every `>= 0x1a` verdict above 0x1f moved. That is why the row is `nv_arch_*`
 # OFF BOOT_42 and the offset is a separate row, `nv_reg_boot42_off`.
-# ---------------------------------------------------------------------------
+
 
 def nv.chipid_addr() -> U32: U32.add(Rgv.base(nv.reg_boot0()), Rgv.off(nv.reg_boot0()))
 
@@ -1423,7 +1423,7 @@ def nv.vram_read(t: IP.Tr) -> IP.Tr:
 
 def nv.sysaddr_hi(+paddr: U32, +i: U32) -> U32: nv.bar1_hi()
 
-# ---------------------------------------------------------------------------
+
 # THE TRACE. Every def below EITHER builds the argument of ONE call (above) OR
 # records that call (here). There is no third kind, and the raise lives in the
 # trace, so a refusal is a TRUNCATED trace and no step needs a guard of its own.
@@ -1449,7 +1449,7 @@ def t_sa(+paddr: U32, +np: Nat) -> IO(Unit):
 # `IP.Tr.emit` is pure, so a chain written as nested picks would work but a chain
 # written as nested `match`es cannot -- a `match` may not scrutinise a computed
 # value, and `Tr.emit(...)` is one. The fold states the ORDER in the literal.
-# ---------------------------------------------------------------------------
+
 
 def nv.wide_names(+r: Rgv) -> String:
   String.join(nv.wn.go(Rgv.nat(r), Rgv.fs(r), Nil{}), ",")
@@ -1585,11 +1585,11 @@ def nv.trace.go(+xs: List<&2, IP.Cx>, +first: Bool) -> String:
 
 def nv.trace(+t: IP.Tr) -> String: nv.trace.go(IP.Tr.calls(t), False{})
 
-# ---------------------------------------------------------------------------
+
 # `NVReg` (:12-31) as two records. `Fld` is one `(name, start, end)`; `Rgv` is a
 # register's `(base, off, fields)`. `fs` is the ORDERED field list and its order
 # IS the contract -- see the header.
-# ---------------------------------------------------------------------------
+
 
 def t_tr_refuse() -> IO(Unit):
   do IO<Unit>:
@@ -1651,7 +1651,6 @@ def nv.mask(+r: Rgv) -> U32: nv.mask.go(Rgv.nat(r), Rgv.fs(r), 0)
 # is over THE NAMES GIVEN. `nv.mask_named` used to answer `nv.mask(r)`, which masks
 # EVERY field, and `~` of that clears every OTHER bit: with a four-bit
 # `implementation` update on a word of all ones the ini came out 0xC00000FF, which
-# wipes `major_revision` and `architecture` as well. the port was wrong and the
 # ORACLE WAS RIGHT, and the row that caught it is `nv_upd_u1_ini`.
 
 def nv.mask_named(+r: Rgv, ks: List<&2, Kv>) -> U32: nv.mask_of(r, ks)

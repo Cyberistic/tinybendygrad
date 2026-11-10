@@ -1,6 +1,5 @@
 # validate.bend -- tinygrad/uop/validate.py.
 #
-# WHAT THIS FILE IS, because the unit brief said otherwise and was wrong.
 # The brief called `validate.py` "the SPEC gate: it is what turns 'the graph is
 # well-formed' into a decidable predicate, and it is the only place a malformed
 # UOp is caught before it reaches codegen". THAT IS `uop/spec.py`
@@ -10,7 +9,7 @@
 # `validate_index`, and it is the only file in tinygrad that calls a solver.
 # The port below is a bounds checker front end, and the report says so.
 #
-# ---------------------------------------------------------------------------
+
 # VIOLATIONS AS A LIST, NOT A Bool. The brief asked which to choose and why. The
 # answer is a LIST, and it is not a preference -- it is three MEASURED facts
 # about what CPython does with its own `-> bool`:
@@ -40,7 +39,7 @@
 # deliberate strengthening, it is in the header of `vz_go`, and `n_unsup_two`
 # is the count row that pins it.
 #
-# ---------------------------------------------------------------------------
+
 # THE SOLVER IS NOT PORTED, and this is the wall rather than a TODO with a plan.
 # `solver.check((z3_idx<0)|(sz<=z3_idx))` decides satisfiability over UNBOUNDED
 # integer arithmetic, and `z3_bv` adds bit-blasting at a width chosen per node.
@@ -52,7 +51,7 @@
 # ported. So the boundary is exactly: this file renders the problem and prints
 # it, and answering it is `solver.check`. See `vd_go`'s RErr arm.
 #
-# ---------------------------------------------------------------------------
+
 # WHAT `ctx` CARRIES HERE, which is the one structural deviation. Python's is
 # `ctx = (solver, z3map)`. This file's `Sol` is `{cs, es, ms}`: the assertion
 # list, the `z3map`, and a MIN/MAX TABLE. The third component is not in Python
@@ -63,7 +62,7 @@
 # absent gets a VIOLATION rather than a guessed bound. `vz_mm` answers CONST
 # from its own arg, so only non-CONST bounds wait on `_min_max`.
 #
-# ---------------------------------------------------------------------------
+
 # `_min_max` BLOCKS MORE THAN ITSELF. `spec.py:22` reads `idx.vmin` and
 # `idx.vmax` for the fast path, and `z3_bv`/`z3_shift` need per-operand bounds
 # for the BV width and the shift amount, so this file cannot render a gate with
@@ -71,7 +70,7 @@
 # the row that shows the width (`1 + max bit length of the operands' bounds`)
 # being read out of the table, and `n_dv_width_8` is the count that pins it.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE IS z3's OWN `str()`, STRING-DIFFED. Not a boolean about a string:
 # every row prints the constraint list verbatim, e.g.
 # `[And(i >= 0, i <= 15), True]` and `[And(r0 >= 0, r0 <= 100 - 1), True]`,
@@ -87,7 +86,7 @@
 # A dropped literal is invisible in a `Bool` and visible in a byte diff, which
 # is the reason the gate is text.
 #
-# ---------------------------------------------------------------------------
+
 # KNOWN DIVERGENCES, each measured, none of them fitted away:
 #   * `z3.FreshInt("invalid_shift", ctx)` prints as `invalid_shift!0`, `!1`, ...
 #     -- z3 appends a GLOBAL counter. Bend has no such counter and
@@ -127,7 +126,7 @@ import ./ops.bend as O
 import ./fold.bend as F
 import ./../LAWS/spec.bend as S
 
-# ===========================================================================
+
 # `Z` -- A z3 TERM. Not a value: nothing in this file is ever evaluated, and
 # that is the point. `ZLit.v` is TWO'S COMPLEMENT (`-4` is 4294967292) because
 # `z3.IntVal` takes a Python int and `u.arg` carries negatives:
@@ -135,8 +134,8 @@ import ./../LAWS/spec.bend as S
 # `is_b` is the z3 SORT, which is what `isinstance(a, z3.BoolRef)` asks in
 # `z3_and`/`z3_or`/`z3_xor`; it is a field rather than a `Z.is_b` recursion
 # because every constructor here knows its own sort except `ZIf`.
-# ===========================================================================
-# ===========================================================================
+
+
 # the gate has an oracle, and it is green on 80 of 90 shared rows.
 #
 # There was none until now, and that is the whole reason three rows were able to move in an
@@ -155,7 +154,6 @@ import ./../LAWS/spec.bend as S
 # `validate_import` in the oracle exist so a reader can check that in one command instead of
 # taking it on trust. The rows were never un-adjudicable; they were un-oracled.
 #
-# WHAT WAS FIXED, each with the CPython measurement that pinned it. Every one is a value, not a
 # reading, and every one is a mutation in `.agents/slop/validate-mutate.py` that moves rows AWAY
 # from CPython when reverted:
 #
@@ -226,7 +224,6 @@ import ./../LAWS/spec.bend as S
 #   dv_bad_dtype_bitcast    raise. `_msg` rows carry the message TEXT, which both sides share.
 #
 # THE `dv_bad_dtype_bitcast` FIXTURE IS NOW ADJUDICABLE, and the stated requirement was FALSE.
-# It used to be `Ops.BITCAST` with `arg=ANone{}`, and CPython's `dtype_from_uop` ASSERTS on that
 # -- so the row could never be adjudicated as written. The constructible spelling is
 # `O.ADt{S.boolean()}`, and `ADt` is ALREADY an exported `Arg` -- `ops.bend`'s own `s5.arena`
 # builds `Ops.BITCAST` with `ADt{S.single()}` at slot 8 -- so NO `ops.bend` CHANGE IS NEEDED
@@ -244,7 +241,7 @@ import ./../LAWS/spec.bend as S
 #   * `dv_rank_shr1`'s header used to claim CPython raises `IndexError: tuple index out of range`.
 #     It does not: `z3_alu[Ops.SHL]` is called as `(x, *srcs)` with ONE src, so it raises
 #     `TypeError: z3_shift() missing 1 required positional argument: 'b'`.
-# ===========================================================================
+
 
 # the gate is red. this is the measured defect list and it is not fitted away.
 #
@@ -295,9 +292,9 @@ import ./../LAWS/spec.bend as S
 # D4 (find the `Bool.pick` that both reads and writes `Sol`), D6 (`pow2` on a
 # literal held two's complement), D7 (the gate on `Ops.GROUP` and the BITCAST
 # shape test).
-# ===========================================================================
 
-# ===========================================================================
+
+
 
 type Z is Data:
   ZSym{nm: String, is_b: Bool}      # z3.Int(name) / z3.Bool(name)
@@ -463,7 +460,7 @@ def ZBv.str(k: U32, w: U32, a: String, b: String) -> String:
   +core = String.concat(["BV2Int(", base, ")"])
   String.concat(["If(", base, " < 0, ", core, " - ", U32.show(U32.shln(1, U32.to_nat(w))), ", ", core, ")"])
 
-# ---------------------------------------------------------------------------
+
 # THE COMPARISON PRINTER. There are THREE orientation facts and they are all in the
 # AST, never in the printer -- `str()` is the identity on a comparison's sexpr, which is
 # what the 120-pair table below confirms pair by pair.
@@ -484,7 +481,7 @@ def ZBv.str(k: U32, w: U32, a: String, b: String) -> String:
 #
 # `cmpZ_*` (z3 numeral operands), `cmpP_*` (Python int operand) and `refl_*` are rows in
 # `.agents/slop/validate-oracle.py`, and `str()` is the identity on all 120 of them.
-# ---------------------------------------------------------------------------
+
 
 # `Z.ch` is the one place a child gets parentheses, and the rule is precedence, not
 # associativity. 60 measured cases, all accounted for (`cmp_*` and the `#paren_*` rows of
@@ -1872,7 +1869,7 @@ def vs_str(vs: List<&2, String>) -> String:
 def n_vs(vs: List<&2, String>) -> U32:
   U32.from_nat(List.length(&2, String, vs))
 
-# ---------------------------------------------------------------------------
+
 # the row shape, and it is `name=value` because that is what the gate reads.
 #
 # `.agents/slop/rebase-gate.py`'s `rows()` splits on the FIRST `=`, so `dv_and21 | ... | ...`
@@ -1901,7 +1898,7 @@ def n_vs(vs: List<&2, String>) -> U32:
 # difference on `dv_shr2` would be one token and would read like a defect; with it
 # `dv_shr2_term_nb` is green and the divergence is confined to `dv_shr2_term`, which is what
 # "name what is proven and what is not, separately" means in a row name.
-# ---------------------------------------------------------------------------
+
 # `str(solver)` | `str(z3map[idx])` | violations | violation COUNT
 def row(+r: Rep) -> String:
   String.concat([Rep.cs(r), " | ", Rep.term(r), " | ", vs_str(Rep.vs(r)), " | ",
@@ -2063,7 +2060,6 @@ def uops_to_z3.of(+ar: O.Arena, ms: List<&2, MRng>, snk: O.Found) -> Vz:
 # against -- `vz_add_mask` reads `vz_s(acc)` for the term, and the term only exists there.
 # `gate` IS BOUND TO A `let` BECAUSE IT IS READ TWICE, and a `let` is shared where a
 # parameter is not: `[idx, gate]` CONSUMES the name. MEASURED -- with the name passed
-# straight through, `vz_add_mask` looked up a gate index that was no longer the gate's and
 # printed `dv_mask_missing` on all 16 rows, while `.agents/slop/mask-probe.bend` read `Some`
 # for the same node out of the same walk by hand. `+gate` is NOT the fix: `+` says the callee
 # may REBIND the name (agent-core's `arena-affine-probe.bend` measured two mints from one
@@ -2207,7 +2203,6 @@ def dv_rank_shr1.of(+ar: O.Arena, nm: String) -> String:
   +g = fx_const_bool(O.Found.ar(t), True{})
   dv2(nm, t, g, Nil{})
 
-# ⚠ the fixture is constructible and was not, and the fix was not an `ops.bend` change.
 # `arg` was `ANone{}`, and CPython's `dtype_from_uop` ASSERTS `CAST/BITCAST arg must be DType,
 # got None` -- so this row had no CPython answer for two unit-generations and was adjudicated by
 # nobody. `O.ADt` is ALREADY an exported `Arg` (`ops.bend`'s own `s5.arena` builds
@@ -2297,7 +2292,6 @@ def dv_unsup_stack() -> String:
 # is untouched by that: both `Ops.STACK is not supported by z3` messages are still
 # there, against `dv_unsup_stack`'s ONE. `oracles/validate-oracle-run1.rows` still
 # carries the GROUP-era rows (`dv_unsup_two_dt=dtypes.void`) and CANNOT be
-# regenerated, because the op it was recorded against no longer exists upstream.
 def dv_unsup_two() -> String:
   dv_unsup_two.of(O.Arena.empty(), "dv_unsup_two")
 
@@ -2359,7 +2353,6 @@ def dv_and.of(+ar: O.Arena, nm: String, k: U32) -> String:
 # as `k = 0` -- which is neither 2 (DIV) nor 1 (TRUNCMOD) -- so it silently took the LAST arm
 # and `r0 & 21`-shaped MAX rendered as `a - floordiv(a,b)*b`, i.e. MOD. Reachable from
 # `uops_to_z3`, invisible to every existing row, and invisible to `n_z3_alu` because the key
-# set was right and only the TRANSLATION was wrong. A membership count cannot see this; a
 # value row can.
 def dv_max.of(+ar: O.Arena, nm: String) -> String:
   +t = dv_bin(ar, O.OpsMAX{}, 100, 21)
@@ -2493,7 +2486,7 @@ def bv_w.of15() -> U32:
 def bv_w.ofneg() -> U32:
   dv_w(O.OpsAND{}, O.Arena.empty(), 100, 4294967292)
 
-# ===========================================================================
+
 # `c2d` -- `copy_to_device`'s REFUSALS, ops.py:759/761/763, AS GATE ROWS.
 #
 # WHY A `validate.py` LANE CARRIES THEM. The refusals belong to `ops.bend`, which has an owner
@@ -2516,14 +2509,14 @@ def bv_w.ofneg() -> U32:
 # and misses the fourth entirely. `vw-boundaries.py` exhausts all four and this lane turns the
 # result into rows; `c2d-refusal-rows.py` is the CPython side and every value there is CALLED.
 #
-# ----------------------------------------------------------------------------
+
 # what is green and what is red, with the denominator. 12 identity rows and 19 outcome rows
 # are shared with the oracle. Of the 19, CPython REFUSES SEVEN (`c2d_shared_refused_n`), so
 # SEVEN ROWS ARE RED ON PURPOSE: `ops.bend:7044-7012` implements none of the four refusals, so
 # every one of them answers `BUILT <sig>`. Seven reds out of nineteen shared outcome rows, and
 # the other twelve are green -- which is the number that says a fix that refuses everything
 # will be caught, because thirteen green outcomes must keep building.
-# ----------------------------------------------------------------------------
+
 # ⚠ a green row here is a claim about a node CPython builds. The defect this lane exists to
 # close was `s5_copy_sel` = `Ops.COPY/Ops.MSELECT Ops.RANGE`, green on both lanes, where the
 # port's fixture was `s5.ga.arena()`'s node 4 and the oracle's was `ops-501-oracle.py:164`'s
@@ -2543,7 +2536,7 @@ def bv_w.ofneg() -> U32:
 #   * `arg=0` REFUSES on a scalar device, so ops.py:761 tests `is None` and not truth. The
 #     port's `k` is `Maybe<&2, U32>`, and a guard written as "no shard index means no shard"
 #     passes `c2d_761 argzero`. That row is here for that reason alone.
-# ----------------------------------------------------------------------------
+
 # ⚠ `S.Dev` is a tag, not a name, and that bounds this lane. `device.bend:381`'s `tag_of`
 # gives DISK the tag 6, so `c2d_759 disk` is `S.D1{6}` and `c2d_759 disktuple` is
 # `S.Dn{[6, 0]}`. The port cannot spell `'disk'`, `'DISK:0'`, `'NODISK'` or `'DISKX'`, because
@@ -2551,7 +2544,7 @@ def bv_w.ofneg() -> U32:
 # (`c2d_oracle_only_n = 5` counts them with `c2d_892 deviceread`). A second tag space exists
 # and disagrees: `schedule/memory.bend:1012` symbol=disk says `disk() = S.D1{1}`. Until one is chosen the
 # DISK guard is not decidable in `ops.bend`, and that is REPORTED rather than gated.
-# ===========================================================================
+
 
 # `ParamArg.of(slot, dtype)` -- ops.bend:6165 -- is `s5.pa`, so the fixtures reuse the port's
 # OWN constructor and cannot drift from `s5.ga.arena()` on any default.

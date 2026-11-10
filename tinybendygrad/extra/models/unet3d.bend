@@ -11,7 +11,7 @@ import ./../../mixin/op.bend as MO
 import ./../../mixin/movement.bend as MX
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/unet3d.py (59 loc). not yet ported.
 #
 # the shortest file in the directory and the only one that is 3-d, and those
@@ -67,7 +67,7 @@ import ./../datasets/__init__.bend as D
 # weights happen to be zero. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`. Each message names
 # the upstream `path:line` of the FIRST MISSING SYMBOL.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -77,10 +77,10 @@ def u3_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :7-13 DownsampleBlock. The TWO lists (:9 and :10) are the same three things,
 # so they are two defs and not one, exactly as upstream has them.
-# ---------------------------------------------------------------------------
+
 
 # :8  def __init__(self, c0, c1, stride=2)
 def u3_down_init(c0: U32, c1: U32, stride: U32) -> D.Refused:
@@ -99,9 +99,9 @@ def u3_down_conv2(c1: U32) -> D.Refused:
 def u3_down_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/unet3d.py:12 DownsampleBlock.__call__ -- FIRST MISSING SYMBOL x.sequential at :13")
 
-# ---------------------------------------------------------------------------
+
 # :15-24 UpsampleBlock. THE TRANSPOSE AND THE CAT.
-# ---------------------------------------------------------------------------
+
 
 # :16 def __init__(self, c0, c1)
 def u3_up_init(c0: U32, c1: U32) -> D.Refused:
@@ -120,9 +120,9 @@ def u3_up_cat(+x: T.Tensor, +skip: T.Tensor) -> D.Refused:
 def u3_up_call(+x: T.Tensor, +skip: T.Tensor) -> D.Refused:
   D.refuse("extra/models/unet3d.py:21 UpsampleBlock.__call__ -- FIRST MISSING SYMBOL nn.ConvTranspose2d at :17")
 
-# ---------------------------------------------------------------------------
+
 # :26-46 UNet3D.
-# ---------------------------------------------------------------------------
+
 
 # :27 def __init__(self, in_channels=1, n_class=3)
 def u3_unet3d_init(in_channels: U32, n_class: U32) -> D.Refused:
@@ -156,9 +156,9 @@ def u3_unet3d_output(n_class: U32) -> D.Refused:
 def u3_unet3d_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/unet3d.py:36 UNet3D.__call__ -- FIRST MISSING SYMBOL x.sequential at :13 via DownsampleBlock.__call__")
 
-# ---------------------------------------------------------------------------
+
 # :48-55 load_from_pretrained. THE PYTORCHECKPOINT SEAM.
-# ---------------------------------------------------------------------------
+
 
 # :48 def load_from_pretrained(self)
 def u3_load_pretrained() -> D.Refused:
@@ -172,11 +172,11 @@ def u3_load_torch() -> D.Refused:
 def u3_load_assign(+obj: T.Tensor, +v: T.Tensor) -> D.Refused:
   D.refuse("extra/models/unet3d.py:55 UNet3D.load_from_pretrained -- MISSING Tensor.assign; pool.bend:416 symbol=pool_bn_running_stats and tensor.bend:2535 symbol=t_alu3 both name the immutability divergence")
 
-# ---------------------------------------------------------------------------
+
 # :57-59 `if __name__ == "__main__":`. `main` below IS this block and nothing
 # else. No invented census: a 1:1 mirror that emits rows upstream does not emit
 # is not a mirror.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, u3_down_init(1, 32, 1))

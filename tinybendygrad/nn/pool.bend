@@ -9,7 +9,7 @@ import ./../mixin/creation.bend as CR
 import ./../mixin/elementwise.bend as E
 import ./../extra/datasets/__init__.bend as D
 
-# ===========================================================================
+
 # `nn/pool.bend` -- SLIDING-WINDOW AND CHANNEL VOCABULARY, and the ops it needs.
 #
 # THE HEADLINE MEASUREMENT, and it is the reason this file is mostly movement
@@ -47,7 +47,7 @@ import ./../extra/datasets/__init__.bend as D
 # all four are defs here. The part of `nn.BatchNorm` that is NOT a decomposition
 # is the running-statistics update, and it is REFUSED with the two symbols
 # named (`pool_bn_running_stats`).
-# ===========================================================================
+
 
 # --- the two list joins this file needs ------------------------------------
 def pool_sh(a: List<&2, U32>, b: List<&2, U32>) -> List<&2, U32>: List.concat(&2, U32, [a, b])
@@ -55,7 +55,7 @@ def pool_sh(a: List<&2, U32>, b: List<&2, U32>) -> List<&2, U32>: List.concat(&2
 def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
   List.foldl(~&2, ~U32, ~U32, (a: U32) => (d: U32) => U32.mul(a, d), ds, acc)
 
-# ===========================================================================
+
 # `W4` -- `_pool`'s window over two spatial axes of a four-dimensional nchw
 # tensor: `b0 b1` are the batch and channel extents, which `_pool` carries
 # through every reshape as its `noop` (movement.py:618), and `i k s d` are the
@@ -73,7 +73,7 @@ def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
 # every pooling call in a ResNet makes, and the `noop` axes pass through
 # untouched, so the generalisation is "read `noop` from the tensor instead of
 # from the record", which is stated as the wall it is (`WALL(nn_pool_4d)`).
-# ===========================================================================
+
 type W4 is Data:
   W4{b0: U32, b1: U32, i0: U32, i1: U32, k0: U32, k1: U32, s0: U32, s1: U32, d0: U32, d1: U32}
 
@@ -180,12 +180,12 @@ def W4.ko(+q: W4) -> List<&2, U32>: [W4.k0(q), W4.o0(q), W4.k1(q), W4.o1(q)]
 def W4.perm(+q: W4) -> List<&2, U32>: [0, 1, 3, 5, 2, 4]
 
 
-# ===========================================================================
+
 # `_pool` (movement.py:614-632), TWO SPATIAL AXES, in upstream's own order.
 # ONE DEF PER LINE of the upstream expression, because `O.Arena` is affine --
 # `mixin/rand.bend:429 symbol=op_arange` carries R1's whole-file `+ar: O.Arena`
 # thread, so a def that BUILDS grows a copy and the chain must THREAD `+t`.
-# ===========================================================================
+
 
 # movement.py:624  x = self.repeat(noop ++ [ceildiv(k*(i*f+d), i)])
 def pool_rep.rp(+t: T.Tensor, +q: W4) -> T.Tensor:
@@ -227,7 +227,7 @@ def pool_nd.mid(+t: T.Tensor, +q: W4) -> T.Tensor:
 def pool_nd(+t: T.Tensor, +q: W4) -> T.Tensor:
   pool_perm(pool_resh2(pool_kd(pool_nd.mid(t, q), q), q), q)
 
-# ===========================================================================
+
 # `max_pool2d` (mixin/op.py:1333-1376), THE UNPADDED ARM.
 #
 # op.py:1366-1370 is `pads = resolve_pool_pads(padding, len(k_))` then
@@ -247,23 +247,23 @@ def pool_nd(+t: T.Tensor, +q: W4) -> T.Tensor:
 # identity_element (ops.py:61)`. `identity_element` is not a def in this tree.
 # A `max_pool2d` padded with ZERO would be wrong for any negative input, so the
 # padded arm is REFUSED rather than built wrong -- see `pool_maxpool_padded`.
-# ===========================================================================
+
 def pool_maxpool(+t: T.Tensor, +q: W4) -> T.Tensor: MO.mo_max(False{}, pool_nd(t, q), [4, 5])
 
 def pool_maxpool_padded() -> D.Refused:
   D.refuse("mixin/op.py:1370  max_pool2d's _pad_constant(..., dtype.min) -- BLOCKED: mixin/op.py:290 the value!=0 arm, needs identity_element (uop/ops.py:61), not a def")
 
-# ===========================================================================
+
 # `avg_pool2d` (mixin/op.py:1285-1331), THE `not count_include_pad and not
 # ceil_mode` ARM, which op.py:1329 spells as `return pool(self, pads).mean(axis)`.
 # the padded arm is refused for the same reason as max pool's.
-# ===========================================================================
+
 def pool_avgpool(+t: T.Tensor, +q: W4) -> T.Tensor: MO.mo_mean(False{}, pool_nd(t, q), [4, 5])
 
 def pool_avgpool_padded() -> D.Refused:
   D.refuse("mixin/op.py:1329  avg_pool2d's _pad_constant arm -- BLOCKED: mixin/op.py:290 the value!=0 arm, needs identity_element (uop/ops.py:61), not a def")
 
-# ===========================================================================
+
 # `AdaptiveAvgPool2d` -- THERE IS NO SUCH CLASS UPSTREAM (measured above:
 # `grep -rn "class AdaptiveAvgPool\|class MaxPool2d\|class Sequential" tinygrad/`
 # = 0 HITS), so this is the SEMANTIC every framework agrees on rather than a
@@ -281,7 +281,7 @@ def pool_avgpool_padded() -> D.Refused:
 # cannot express because its `kk`/`sz` arithmetic (movement.py:623-627) is
 # per-axis and uniform, so the port would have to invent a different
 # decomposition than upstream's and would then be measuring itself.
-# ===========================================================================
+
 type AP is Data:
   AP{b0: U32, b1: U32, i0: U32, i1: U32, o0: U32, o1: U32}
 
@@ -316,14 +316,14 @@ def pool_adaptive_avg(+t: T.Tensor, +q: AP) -> T.Tensor:
 def pool_adaptive_avg_odd() -> D.Refused:
   D.refuse("nn AdaptiveAvgPool2d for i%o != 0 -- BLOCKED: movement.py:623-627 _pool's kk/sz arithmetic is per-axis and uniform, so unequal windows have no upstream decomposition to port")
 
-# ===========================================================================
+
 # `flatten` -- the LAYER of that name, i.e. the `[batch, prod(rest)]` reshape a
 # ResNet classifier applies. NOT `tinygrad/helpers.py:53`'s list comprehension,
 # which is `[item for sublist in l for item in sublist]` and is not a tensor op.
 # `pool_prod` is the tail product; `-1` is NOT spelled because no def here
 # infers an axis (that is `Tensor.reshape`'s `get_shape`, and the port writes
 # its targets out).
-# ===========================================================================
+
 def pool_flatten(+t: T.Tensor, +b0: U32, +rest: U32) -> T.Tensor:
   MX.mxw_reshape(t, [b0, rest])
 
@@ -339,7 +339,7 @@ def pool_head.of(m: Maybe<&2, U32>) -> U32:
     case _: 0
 def pool_head(+ds: List<&2, U32>) -> U32: pool_head.of(List.get(&2, U32, ds, 0n))
 
-# ===========================================================================
+
 # `Tensor.batchnorm` (mixin/op.py:1678-1698) -- op.py:1693-1698 IS:
 #
 #   axis_ = argfix(axis)                                     op.py:1693
@@ -353,7 +353,7 @@ def pool_head(+ds: List<&2, U32>) -> U32: pool_head.of(List.get(&2, U32, ds, 0n)
 # NCHW input and that is `BN.sh`. Every one of the five operations is a def
 # here: `mo_sub` (`mixin/op.bend:620`), `mo_mul` (`:581`), `mo_add` (`:580`),
 # `mo_reshape` (`:664`).
-# ===========================================================================
+
 type BN is Data:
   BN{c: U32, h: U32, w: U32}
 
@@ -446,13 +446,13 @@ def pool_wall_1d() -> D.Refused:
 def pool_wall_r1() -> D.Refused:
   D.refuse("R1 THE ARENA -- BLOCKED: O.Arena is affine so a REDUCE-rooted result cannot be read back with mxw_dims_of; max_pool/avg_pool/adaptive_avg_pool/batchnorm rows are U32 arithmetic, not node reads. R1 IS WRITTEN IN mixin/rand.bend:429 symbol=op_arange, WHICH IS THE DEF THAT CARRIES THE WHOLE-FILE `+ar: O.Arena` THREAD R1 ASKS FOR")
 
-# ===========================================================================
+
 # THE ROWS. `main` PRINTS AND MEASURES; there are no expectations in this file
 # because a row that compares against a number this file wrote is the
 # change-detector AGENTS.md forbids. The rows are SHAPES, and a shape is what a
 # caller consumes (`mixin/op.bend:1400-1401`), so they are the same measurement
 # `mo_shape` takes.
-# ===========================================================================
+
 # the rows, and what they are not.
 #
 # `main` PRINTS AND MEASURES. There are no expectations in this file because a
@@ -478,7 +478,7 @@ def pool_wall_r1() -> D.Refused:
 # `_pool` arithmetic the UOp path uses and does not touch an arena. THAT IS A
 # weaker row than a node count and it is called a weaker row here rather than
 # DISGUISED: `WALL(nn_pool_r1)` below is the blocker to closing it.
-# ===========================================================================
+
 def pool_sh_str.go(ds: List<&2, U32>, acc: String) -> String:
   List.foldl(~&2, ~U32, ~String, (a: String) => (d: U32) => String.concat([a, "(", U32.show(d), ")"]), ds, acc)
 def pool_shape(nm: String, +t: T.Tensor) -> IO(Unit):

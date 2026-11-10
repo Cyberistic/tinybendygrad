@@ -13,7 +13,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/efficientnet.py (164 loc). not yet
 # PORTED.
 #
@@ -74,7 +74,7 @@ import ./../datasets/__init__.bend as D
 # every weight IS a bare Tensor and a zeroed Tensor is exactly what a failed
 # initialiser looks like. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -84,9 +84,9 @@ def ef_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :7-52 MBConvBlock.
-# ---------------------------------------------------------------------------
+
 
 # :8  def __init__(self, kernel_size, strides, expand_ratio, input_filters,
 #                   output_filters, se_ratio, has_se, track_running_stats=True)
@@ -137,11 +137,11 @@ def ef_se_avgpool(+x: T.Tensor) -> D.Refused:
 def ef_skip_equal(+a: T.Tensor, +b: T.Tensor) -> D.Refused:
   D.refuse("extra/models/efficientnet.py:50 MBConvBlock.__call__ -- tn_add (tensor.bend:680 symbol=tn_add.go) EXISTS and the fold answers the broadcast (uop/fold.bend:1002 symbol=where_ds); blocked only by upstream:49's BatchNorm2d, i.e. by nn/pool.bend:416 symbol=pool_bn_running_stats")
 
-# ---------------------------------------------------------------------------
+
 # :54-132 EfficientNet. the `global_params` table is pure data and is restated,
 # because a reader of this stub should not have to open Python to learn that
 # `b7` is 2.0 x 3.1 and `l2` is 4.3 x 5.3.
-# ---------------------------------------------------------------------------
+
 
 # :57-69 global_params[max(number,0)] -- TEN (width, depth) pairs.
 def ef_global_width(n: U32) -> F32:
@@ -217,10 +217,10 @@ def ef_head_avgpool(+x: T.Tensor) -> D.Refused:
 def ef_forward_linear(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/efficientnet.py:132 EfficientNet.forward -- nn_linear (nn/layers.bend:530 symbol=nn_linear) EXISTS and takes bias as a Maybe<&2, T.Tensor>, which IS this line's `if ... is not None`; blocked by Tensor.sequential at :128")
 
-# ---------------------------------------------------------------------------
+
 # :134-163 load_from_pretrained. EIGHT URLs, restated as a def so the table is
 # not a list of strings in a comment that nothing reads.
-# ---------------------------------------------------------------------------
+
 
 # :135-144 model_urls[number]
 def ef_url(n: U32) -> String:
@@ -249,11 +249,11 @@ def ef_skip_num_batches(k: String) -> Bool: False{}
 def ef_load_replace(+mv: T.Tensor, +v: T.Tensor) -> D.Refused:
   D.refuse("extra/models/efficientnet.py:161 EfficientNet.load_from_pretrained -- MISSING Tensor.replace and Tensor.to; and note this branch is UNREACHABLE above, because mv.shape == vnp.shape at :160 is a shape equality on x.shape (a Maybe<&2, List<&2, U32>>) and :163 prints the mismatch")
 
-# ---------------------------------------------------------------------------
+
 # THERE IS NO `if __name__ == \"__main__\":` IN THIS FILE -- upstream ends at
 # :163. `main` below IS the port's own entry and it invents no census, because a
 # 1:1 mirror that emits rows upstream does not emit is not a mirror.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, ef_mbconv_init(3, 1, 1, 6, 32, 32, 0.25, True{}, True{}))

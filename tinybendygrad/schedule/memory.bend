@@ -38,7 +38,7 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-# ===========================================================================
+
 # THE RECORDS. Python's dicts keyed by a UOp, a lane key and a buffer, and Bend's
 # `Map` is string-keyed only, so each dict is a LIST OF RECORDS with a linear
 # scan. The lists are tiny -- one entry per live buffer, one per lane -- so the
@@ -49,7 +49,7 @@ import ./../uop/fold.bend as F
 # be a single fold with one accumulator instead of two, and it is the reason a
 # buffer appears at most once here where `si_bufs` may repeat it (an MSTACK of
 # two MSELECTs of one buffer collects it twice).
-# ===========================================================================
+
 type Bf is Data:
   Bf{b: U32, f: U32, l: U32}
 
@@ -124,7 +124,7 @@ def Scan.cp(s: Scan) -> List<&2, U32>:
   match s:
     case Scan{tc, bs, cp}: cp
 
-# ===========================================================================
+
 # `_collect_bufs` -- memory.py:7-10. BUFFER is itself, MSELECT/MSTACK recurse
 # over every src, and everything else contributes nothing.
 #
@@ -138,7 +138,7 @@ def Scan.cp(s: Scan) -> List<&2, U32>:
 # pure function of them: pop the head, and either keep it (a BUFFER) or push its
 # srcs back (an MSELECT/MSTACK). The fuel is `Arena.budget(ar)` -- the same bound
 # `UOp.toposort` takes, one visit per edge into a node.
-# ===========================================================================
+
 def mem_collect.is_buf(op: O.Op) -> Bool:
   match op:
     case O.OpsBUFFER{}: True{}
@@ -182,7 +182,7 @@ def mem_collect(fuel: Nat, +ar: O.Arena, +todo: List<&2, U32>, acc: List<&2, U32
 def mem_collect_of(fuel: Nat, ar: O.Arena, u: U32) -> List<&2, U32>:
   mem_collect(fuel, ar, [u], Nil{})
 
-# ===========================================================================
+
 # `_can_plan` -- memory.py:12-16. Two tests: not held, and no device that starts
 # with DISK, CL or WEBGPU (see the note on `contiguous_view_offset`).
 #
@@ -206,7 +206,7 @@ def mem_collect_of(fuel: Nat, ar: O.Arena, u: U32) -> List<&2, U32>:
 # `devs = (b.device,) if isinstance(b.device, str) else b.device` -- `D1` is the
 # one-name case and `Dn` the tuple case, and `fold.device` already answers in
 # exactly those two shapes, so the `isinstance` test is the `match` itself.
-# ===========================================================================
+
 def mem_ok_tag(unpl: List<&2, U32>, t: U32) -> Bool:
   Bool.not(List.contains(U32, U32.is_eq, unpl, t))
 
@@ -243,7 +243,7 @@ def mem_can_plan(+fx: F.Folded, +self: U32, held: List<&2, U32>, unpl: List<&2, 
   Bool.and(Bool.not(List.contains(U32, U32.is_eq, held, self)),
            mem_ok_dev(unpl, mem_dev(fx, self)))
 
-# ===========================================================================
+
 # `mem_numel` / `mem_itemsize` / `mem_raw` -- `b.max_numel() * b.dtype.itemsize`.
 #
 # `max_numel` is `prod(to_max_shape(shape))` and `to_max_shape` (tinygrad/uop/ops.py:1894) is
@@ -254,7 +254,7 @@ def mem_can_plan(+fx: F.Folded, +self: U32, held: List<&2, U32>, unpl: List<&2, 
 # therefore reads the size, and a buffer with no size is not plannable here --
 # which is also what Python does, since `prod(())` is 1 and the buffer would be a
 # scalar and would not have been collected.
-# ===========================================================================
+
 def mem_size_of(m: Maybe<&2, U32>) -> U32:
   match m:
     case Some{n}: n
@@ -294,12 +294,12 @@ def mem_block_size() -> U32: 256
 def mem_nbytes(+fx: F.Folded, +self: U32) -> U32:
   H.round_up_u32(mem_raw(fx, self), mem_block_size())
 
-# ===========================================================================
+
 # `_key` -- memory.py:37. `return (b.device, 1 if b in copy_bufs else 0)`.
 # The comment above it is load-bearing and kept: "separate copy and compute
 # buffers into different lanes to avoid introducing dependencies
 # (copy->compute->copy)".
-# ===========================================================================
+
 def mem_key.cp.of(copy: Bool) -> U32:
   match copy:
     case True{}: 1
@@ -339,11 +339,11 @@ def mem_eq_ln(+a: Lane, +b: Lane) -> Bool:
 
 
 
-# ===========================================================================
+
 # `buf_hold` -- memory.py:38. `{b: last_appearance[b] - first_appearance[b] + 1
 # for b in first_appearance if b in copy_bufs}`, so a COPY buffer stays allocated
 # for one extra span past its last use.
-# ===========================================================================
+
 def mem_hold_of(copy: Bool, d: U32) -> U32:
   match copy:
     case True{}: U32.add(d, 1)
@@ -363,7 +363,7 @@ def Bf.b(x: Bf) -> U32:
   match x:
     case Bf{b, f, l}: b
 
-# ===========================================================================
+
 # THE LIFETIME SCAN -- memory.py:28-33.
 #
 #     for i, si in enumerate(linear.src):
@@ -381,7 +381,7 @@ def Bf.b(x: Bf) -> U32:
 # collects it twice -- so `mem_bf_touch` is an UPSERT, not an append: `f` is set
 # once and `l` on every visit, which is exactly what the Python does with
 # `if b not in first_appearance` and the unconditional `last_appearance[b] = i`.
-# ===========================================================================
+
 # what the scan needs from the caller: the fold, the held set and the unplannable
 # device tags. One record because three of them ride through every step and the
 # step already has a fuel, a node index and a kernel index.
@@ -515,7 +515,7 @@ def mem_args.of(+pl: Plan, si: U32) -> List<&2, U32>:
 def mem_i_next(i: U32) -> U32:
   U32.add(i, 1)
 
-# ===========================================================================
+
 # THE KERNEL SCAN. One kernel per step, and the step is the whole loop body of
 # memory.py:28-33: collect this kernel's plannable buffers, upsert their
 # lifetimes at index `i`, and if the kernel BODY is a STORE then every one of
@@ -524,7 +524,7 @@ def mem_i_next(i: U32) -> U32:
 # `si.src[1:]` is the load-bearing slice: a kernel SINK's src[0] is its BODY, so
 # the STORE destination is never collected -- only the kernel ARGUMENTS are. That
 # is why the fixture's store destinations never reach `first_appearance`.
-# ===========================================================================
+
 # one touch per buffer in this kernel's arg list: record it, and add the buffer to
 # the distinct list the first time it is seen.
 # the touch list is PREPENDED, so it is built newest-first; `mem_scan_done` reverses
@@ -582,7 +582,7 @@ def mem_scan.of(+ar: O.Arena, +pl: Plan, +linear: U32) -> Scan:
   mem_scan((List.length(&2, U32, O.Arena.srcs(ar, linear))), 0, ar, pl,
            O.Arena.srcs(ar, linear), Scan{Nil{}, Nil{}, Nil{}})
 
-# ===========================================================================
+
 # THE EVENTS -- memory.py:43-44.
 #
 #     events = sorted([(first_appearance[b], True, b) for b in first_appearance] +
@@ -642,7 +642,6 @@ def mem_head_bf(xs: List<&2, Bf>) -> Bf:
 #     the LAST match and `l` the FIRST -- the two folds differ only in whether
 #     they overwrite.
 #   * it stays that way. A `List.reverse` at the end of the scan LOOKED right and
-#     was not: on bend 2.0.34 `List.reverse` reverses a list built directly
 #     (`.agents/slop/notes/probe-list2.bend`) and does NOT reverse one threaded
 #     through a fuel fold's accumulator (`probe-put.bend`), where a three-entry
 #     table comes back `4,3,5` instead of `3,4,5`. Rather than depend on which,
@@ -740,7 +739,7 @@ def mem_sum_nb(fuel: Nat, +rest: List<&2, U32>, +fx: F.Folded, acc: U32) -> U32:
 def mem_total_memory(+fx: F.Folded, +bs: List<&2, U32>) -> U32:
   U32.mul(mem_sum_nb((List.length(&2, U32, bs) : Nat), bs, fx, 0), 2)
 
-# ===========================================================================
+
 # THE ALLOCATOR SEAM. `offsets`, `peaks` and `arena_sizes` are ONE loop over the
 # events with a `TLSFAllocator` per lane (memory.py:48-53), and that allocator is
 # `tinygrad/runtime/support/memory.py:23` -- a MUTABLE Python object, a dict of
@@ -753,7 +752,7 @@ def mem_total_memory(+fx: F.Folded, +bs: List<&2, U32>) -> U32:
 # lane of every event, the high-water mark, the block rounding, the lane COUNT.
 # `mem_total_memory` above is the other half of the seam: the budget this file
 # asks the allocator for. The gate feeds it CPython's own `TLSFAllocator`.
-# ===========================================================================
+
 def Off.b(d: Off) -> U32:
   match d:
     case Off{b, o}: b
@@ -844,7 +843,6 @@ def mem_top(+fx: F.Folded, +offs: List<&2, Off>, +e: Ev) -> U32:
 def mem_ev_lane(+pl: Plan, cp: List<&2, U32>, +e: Ev) -> Lane:
   mem_key(Plan.fx(pl), Ev.b(e), cp)
 
-# `mem_peaks` used to be ONE fold doing the upsert. It is now the two folds above
 # plus `mem_peak`, and the fuel lives in `mem_lanes` and `mem_peak` alone.
 def mem_ev_head(evs: List<&2, Ev>) -> Ev:
   Maybe.default(&2, Ev, List.head(&2, Ev, evs), Ev{99, 9, 99})
@@ -889,11 +887,11 @@ def mem_peaks.of(+ls: List<&2, Lane>, +pl: Plan, +cp: List<&2, U32>, +offs: List
 def mem_peaks(+pl: Plan, +cp: List<&2, U32>, +offs: List<&2, Off>, +evs: List<&2, Ev>) -> List<&2, Peak>:
   mem_peaks.of(mem_lanes(pl, cp, evs), pl, cp, offs, evs)
 
-# ===========================================================================
+
 # `arena_sizes` (memory.py:53) and `arenas` (memory.py:56): ONE ARENA PER LANE, so
 # the length of this list is the second number of memory.py:60's row and the first
 # is `len(first_appearance)` -- the naive plan, one buffer to itself.
-# ===========================================================================
+
 def mem_ps_head(ps: List<&2, Peak>) -> Peak:
   Maybe.default(&2, Peak, List.head(&2, Peak, ps), Peak{Lane{S.D1{0}, 0}, 0})
 
@@ -911,14 +909,14 @@ def mem_asz(fuel: Nat, +ps: List<&2, Peak>, acc: List<&2, Asz>) -> List<&2, Asz>
 def mem_arenas(+ps: List<&2, Peak>) -> List<&2, Asz>:
   mem_asz((List.length(&2, Peak, ps) : Nat), ps, Nil{})
 
-# ===========================================================================
+
 # WHAT `memory_plan_rewrite` COMPUTES. `linear.substitute(replace_map, ...)`
 # (memory.py:62) is the WALL -- it needs `UOp.substitute` (ops.py:532) and
 # `UOp.new_buffer` (ops.py:853, a P6 device call) -- so what comes back is the
 # WHOLE plan a caller needs to carry it out: the lifetimes, the sorted event
 # stream and the budget handed to the allocator, and one arena size per lane.
 # `bs` empty IS memory.py:34's `if not first_appearance: return linear`.
-# ===========================================================================
+
 type Planned is Data:
   Planned{tc: List<&2, Bf>, bs: List<&2, U32>, evs: List<&2, Ev>, tot: U32, azs: List<&2, Asz>}
 
@@ -928,7 +926,7 @@ def memory_plan_rewrite(+pl: Plan, +linear: U32, +offs: List<&2, Off>) -> Planne
   Planned{Scan.tc(s), Scan.bs(s), evs, mem_total_memory(Plan.fx(pl), Scan.bs(s)),
           mem_arenas(mem_peaks(pl, Scan.cp(s), offs, evs))}
 
-# ===========================================================================
+
 # THE GATE. Two fixtures, and every number below is CPython's: it is what
 # sched-mem-truth.py printed for the SAME graph, and the fixture is rebuilt here
 # node for node from that output.
@@ -968,7 +966,7 @@ def memory_plan_rewrite(+pl: Plan, +linear: U32, +offs: List<&2, Off>) -> Planne
 #   offsets  B2=0 C2=8192 D2=0 E2=1024 F2=1024   (CPython's TLSFAllocator)
 #   peaks / arena_sizes  (CPU,0)=1536   (CPU,1)=10240     2 arenas
 #   rewrite: 5 BITCASTs, 2 arenas
-# ===========================================================================
+
 type Walk is Data:
   Walk{fx: F.Folded, a: U32, msel: U32, mstack: U32, st: U32, k: U32, md: U32, mc: U32}
 
@@ -1075,11 +1073,11 @@ def proj_of() -> Proj:
   Proj{F.folded(O.Found.ar(n17)), O.Found.i(n17), O.Found.i(n2), O.Found.i(n3), O.Found.i(n4),
        O.Found.i(n5), O.Found.i(n6), O.Found.i(n7), O.Found.i(n8)}
 
-# ---------------------------------------------------------------------------
+
 # THE ROWS. `main` prints one per line; `1` is True and `0` is False, and a COUNT
 # row prints the count itself. Every value is CPython's, and the reason each row
 # exists is on the row.
-# ---------------------------------------------------------------------------
+
 def mem_len(+xs: List<&2, U32>) -> U32:
   U32.from_nat(List.length(&2, U32, xs))
 
@@ -1168,7 +1166,7 @@ def Planned.tc(r: Planned) -> List<&2, Bf>:
   match r:
     case Planned{tc, bs, evs, tot, azs}: tc
 
-# ===========================================================================
+
 # `DEBUG >= 1` -- memory.py:59-60. This is the ONE site of the seven at level 1 and
 # the only one with a CONDITION beside the gate:
 #
@@ -1180,7 +1178,7 @@ def Planned.tc(r: Planned) -> List<&2, Bf>:
 # `first_appearance` (:39), `bs` is `nbytes` (:42), `azs` is `arena_sizes` (:53), and
 # `len(arenas)` IS `len(azs)` because `arenas = {key: UOp.new_buffer(...) for key, sz
 # in arena_sizes.items()}` (:56) builds ONE ARENA PER LANE.
-# ===========================================================================
+
 def mem_azs_head(xs: List<&2, Asz>) -> Asz:
   Maybe.default(&2, Asz, List.head(&2, Asz, xs), Asz{Lane{S.D1{999}, 9}, 999})
 
@@ -1565,7 +1563,7 @@ def u_nlanes() -> U32: mem_npk(mem_peaks(plan_plan(Proj.fx(unaligned_of())), Sca
 # the branch.
 def e_nbufs() -> U32: mem_len(mem_scan_bs(empty_of()))
 
-# ===========================================================================
+
 # THE GATE DOCUMENT. `1` is True, `0` is False, and a COUNT row prints the count.
 # Every value is CPython's: `.agents/slop/notes/sched-mem-truth.py` printed them
 # for the SAME two graphs and this file's fixtures are rebuilt from that output.
@@ -1623,7 +1621,7 @@ def e_nbufs() -> U32: mem_len(mem_scan_bs(empty_of()))
 #   e_nbufs=0
 #     `if not first_appearance: return linear` (memory.py:34). Every other fixture
 #     is all-True and says nothing about this branch.
-# ===========================================================================
+
 #
 # MUTATIONS, all re-run against this file. This is not one row per bug: several
 # rows are load-bearing TOGETHER, and one row is LOCALISED.
@@ -1670,7 +1668,7 @@ def e_nbufs() -> U32: mem_len(mem_scan_bs(empty_of()))
 # `w_mstack` and nothing else moves, because `w_mstack` is the only fixture with
 # an MSTACK. That is the honest cost of one fixture per shape, and it is why the
 # collect rows are a family and not a single row.
-# ===========================================================================
+
 # NOT PORTED, one line each, and the WALL each one is behind.
 #
 # `TLSFAllocator` -- `tinygrad/runtime/support/memory.py:23`, imported at
@@ -1701,7 +1699,7 @@ def e_nbufs() -> U32: mem_len(mem_scan_bs(empty_of()))
 # `LaneKey = tuple[str, int]` -- memory.py:18. PORTED as `Lane{dev: S.Dev, cp:
 #   U32}`, which is the same pair with the device as the `U32` tag the runtime
 #   interns; `mem_eq_ln` is the `==` and `mem_lanes` is the `set`.
-# ===========================================================================
+
 # WHAT `schedule/__init__.py` NEEDS FROM THIS FILE. It is the only caller, and
 # nothing here imports it -- the two files meet at the CALL SITE and nowhere else.
 #
@@ -1726,7 +1724,7 @@ def e_nbufs() -> U32: mem_len(mem_scan_bs(empty_of()))
 #   unchanged and do not allocate.
 #   NOTHING ELSE IS PUBLIC. `mem_ok_dev` (the DISK/CL/WEBGPU test) is useful to the
 #   other two files in this directory and is worth calling directly.
-# ===========================================================================
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- mem_row("w_buf", w_buf())

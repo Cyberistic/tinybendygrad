@@ -43,7 +43,7 @@ import ./spec.bend as S
 # literally `Sp.shape(t)`. Those were mutation-tested: breaking each arm in turn
 # fails the law it belongs to. See spec/shape-laws.md.
 
-# ===========================================================================
+
 # Section VIII -- the shape algebra's own laws, and the Maybe-level lemmas the
 # section II and VI laws are built from.
 #
@@ -53,7 +53,7 @@ import ./spec.bend as S
 # proof is then one application. All three are stated as equations with an
 # explicit `-> {a == b : T}` rather than as `def name(...)` law proofs, because
 # a def with no return type is an attempt to fill a law of that name.
-# ===========================================================================
+
 
 # Base proves `Nat.max_ge_l` and `Nat.max_ge_r` but NOT `Nat.max(v, v) == v`, and
 # `Shape.max_dim`'s SN arm is exactly `SN{Nat.max(v, v)}`, so the leaf fact has to
@@ -357,9 +357,9 @@ def stack_numel_go(k: Nat, m: Maybe<&2, S.Shape>) -> {S.dims_prod(S.Sp.shape.sta
         case S.Sh{+ds}:
           {==}
 
-# ===========================================================================
+
 # The law proofs.
-# ===========================================================================
+
 
 # tinyspec: "Reorder axes." The shape column is src[0].shape, and the arm is
 # `Sp.shape(t)`, so both sides are the same term.
@@ -478,7 +478,7 @@ def L.max_is_elementwise(a, b, premise):
 def L.store_matches_its_buffer(buf, val, gate, premise):
   premise
 
-# ===========================================================================
+
 # Both laws are closed. The measurements that justified the rulings:
 #
 # reduce, after `drop_n` became `List.drop` and the multiplier became
@@ -491,4 +491,4 @@ def L.store_matches_its_buffer(buf, val, gate, premise):
 # (5,0)+(3,) is 3==0; shapeless+(3,3) is 9==0. tinygrad (2,0)+(1,1) is a
 # valid broadcast of shape (2, 0), so the count inequality is false there
 # too. The axis rule on equal-length concrete shapes is what both do.
-# ===========================================================================
+

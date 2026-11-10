@@ -103,7 +103,7 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./realize.bend as RZ
 
-# ===========================================================================
+
 # section 0 -- the node handle and the two primitives the file uses everywhere.
 #
 # `U32` is affine and `+` is refused on it, so every `(arena, index)` pair read
@@ -230,7 +230,7 @@ def srt_go(xs: List<&2, String>, acc: List<&2, String>) -> List<&2, String>:
 def ssort(xs: List<&2, String>) -> List<&2, String>:
   srt_go(xs, Nil{})
 
-# ===========================================================================
+
 # SECTION 1 -- THE MESSAGES. One def per Python f-string, in line order. This is
 # the section that makes the file worth having: every one of these is diffed byte
 # for byte against CPython by the gate.
@@ -304,7 +304,7 @@ def m_execs(n: U32) -> String:
 def m_group(+n: U32) -> String:
   String.concat(["JIT ", U32.show(n), " ", Bool.pick(String, U32.is_eq(n, 1), "call", "calls")])
 
-# ===========================================================================
+
 # SECTION 2 -- `names` (jit.py:85). Python's `enumerate(args) + sorted(
 # kwargs.items())` yields `int | str`, and `str` is not a `U32`, so the list is
 # HETEROGENEOUS: that is why this is a `Data` sum type and not a `List<U32>` with
@@ -363,7 +363,7 @@ def JName.reprs.go(xs: List<&2, JName>, acc: List<&2, String>) -> List<&2, Strin
 def JName.reprs(xs: List<&2, JName>) -> String:
   String.concat(["[", String.join(JName.reprs.go(xs, Nil{}), ", "), "]"])
 
-# ===========================================================================
+
 # SECTION 3 -- `expected_input_info` (jit.py:55, built at :98 and :101). The
 # dataclass is `(view: UOp, variables: tuple[Variable, ...], dtype: DType,
 # device: str)` per input, and jit.py:98 is

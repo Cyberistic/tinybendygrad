@@ -25,7 +25,7 @@
 #     siblings, each a three-part compare or a `[:2]` pair compare.
 #   * every REFUSAL, as a TRUNCATION of the trace (:588 is the only `raise`).
 #
-# ---------------------------------------------------------------------------
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one device call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER and the IDENTITY). There is no third
@@ -34,7 +34,7 @@
 # lane and the reason this file is `ALL PROOFS CHECK` with no foreign effect:
 # the seam is `Tr.emit`, not a `def ... -> IO(R)` over two `import "./x.c"`.
 #
-# ---------------------------------------------------------------------------
+
 # every constant and every struct field below was read out of CPYTHON, never
 # typed. The oracle is `.agents/slop/ip_oracle.py`; it prints the SAME rows by
 # importing `tinygrad/runtime/support/am/ip.py` (which imports with NO device
@@ -44,7 +44,7 @@
 # A `py=` expectation that is a def of the thing under test is not an
 # expectation, so there are none.
 #
-# ===========================================================================
+
 # status: stage 4, final. the gate prints 447 rows; the interpreted and the
 #   native lane are identical, and the CPYTHON oracle disagrees on 0 of 444 row
 #   NAMES. Drivers: `.agents/slop/ip_check.sh` (three lanes),
@@ -90,9 +90,9 @@
 import Base
 import ../../../helpers.bend as H
 
-# ===========================================================================
+
 # THE TYPES.
-# ===========================================================================
+
 
 # ONE device call and the number that identifies it. `arg` is the ordinal of the
 # REGISTER whose bitfield list is being written, or the message id, or the packet
@@ -135,11 +135,11 @@ def Row.fs(r: Row) -> List<&2, String>:
 
 def Row.of(ln: U32, reg: String, fs: List<&2, String>) -> Row: Row{ln, reg, fs}
 
-# ===========================================================================
+
 # THE TRACE. `Tr.emit` is the seam: every register write, every ioctl and every
 # ring store in this file goes through it, so the trace is the ordered list the
 # seam will perform.
-# ===========================================================================
+
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, False{}, 0, 0}
 
@@ -203,11 +203,11 @@ def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
 
-# ===========================================================================
+
 # READING THE TRACE. `Tr.args` is the args of every entry with tag `k`, in
 # order; `Tr.count` is how many there are; `Tr.seen` is how many calls there are
 # at all, which is the TRUNCATION length a refusal shows up as.
-# ===========================================================================
+
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
@@ -275,9 +275,9 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
 def Tr.seq(t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
-# ===========================================================================
+
 # THE CONSTANTS. Every value and its Python line.
-# ===========================================================================
+
 
 # am.py `AMDGPU_PTE_*` / `AMDGPU_PDE_*`, read out of the autogen enums.
 def PTE_VALID() -> U32: 1
@@ -400,14 +400,14 @@ def KIQ_FENCE_OFF() -> U32: 4112
 # :517/:121, the TLB-invalidate wait reads `& 0x1` and `& (1 << vmid)`.
 # :101, `clear_protection_fault_status_addr=0`.
 
-# ===========================================================================
+
 # `V` -- THE THREE-PART VERSION, which is `ip_ver[am.<X>_HWIP]` and the
 # arithmetic behind all forty-odd comparisons in the file. `V.cmp` is a lexical
 # three-part compare and `V.eq2` / `V.ne2` are the `[:2]` pair form at
 # :30/:300/:313/:591/:604. ALL THREE ARMS matter and the gate has a row on each
 # boundary of each, because a version ladder that is off by one is a register
 # write to the wrong IP.
-# ===========================================================================
+
 
 def V.cmp.maj(c: Cmp, am: U32, bm: U32) -> Cmp:
   match c:
@@ -451,7 +451,7 @@ def V.eq2(+am: U32, +an: U32, +bm: U32, +bn: U32) -> Bool:
 def V.ne2(+am: U32, +an: U32, +bm: U32, +bn: U32) -> Bool:
   Bool.not(V.eq2(am, an, bm, bn))
 
-# ===========================================================================
+
 # the per-arch smu message table, `import_module("smu", ip_ver[MP1_HWIP])`.
 #
 # `_ip_module("smu", am.MP1_HWIP)` at :199 does NOT give a fixed set of numbers:
@@ -468,7 +468,7 @@ def V.ne2(+am: U32, +an: U32, +bm: U32, +bn: U32) -> Bool:
 # `PPSMC_MSG_*` in any of the four modules is 0 (the minimum is 1). `smu.has_mca`
 # is the `hasattr` at :260 turned into a named predicate, and it decides whether
 # `_aca_read_banks` returns `[]` or a list of banks.
-# ===========================================================================
+
 
 def SMU_COL_DRAM_HI() -> U32: 0
 def SMU_COL_GFX_RESET() -> U32: 3
@@ -527,7 +527,7 @@ def smu.has_mca(arch: U32) -> Bool: smu.has(arch, SMU_COL_MCA_CNT())
 def smu.name_of(col: U32) -> String:
   Maybe.default(&2, String, List.get(&2, String, smu.names(), U32.to_nat(col)), "?")
 
-# ===========================================================================
+
 # the smu message protocol, :264-273. the three-register triple.
 #
 # `_smu_cmn_send_msg` writes THREE registers in this order and they are three
@@ -541,7 +541,7 @@ def smu.name_of(col: U32) -> String:
 # rows: `amp_smu_order_*` is the trace and `amp_smu_regs_*` is the (resp, param,
 # msg) triple read by name. :271's wait reads the SAME resp register and :273
 # returns the param register, so the arm at :273 is the param register too.
-# ===========================================================================
+
 
 # the six C2PMSG register names, in protocol order for each arm.
 def amp_smu_regs(debug: U32) -> List<&2, String>:
@@ -641,7 +641,7 @@ def amp_smu_mode1(+mp0_0: U32, +mp0_1: U32, +mp0_2: U32) -> U32:
       smu.get(smu.arch(mp0_0, mp0_1, mp0_2), SMU_COL_GFX_RESET()),
       smu.get(smu.arch(mp0_0, mp0_1, mp0_2), SMU_COL_MODE1())))
 
-# ===========================================================================
+
 # the pte flag tables, :177-195. four generations of the same five-term or.
 #
 #   :179  extra |= SYSTEM*system | SNOOPED*snooped | VALID*valid | FRAG(frag)
@@ -657,7 +657,7 @@ def amp_smu_mode1(+mp0_0: U32, +mp0_1: U32, +mp0_2: U32) -> U32:
 # 2**54, so a `U32` port silently drops the whole flag. `pte.of` answers an
 # `H.I64` and the gate prints hi AND lo on every fixture, which is what stops a
 # future edit from deciding one U32 is enough.
-# ===========================================================================
+
 
 # `1 << n` on the high/low halves. `helpers.bend` has `i64_add` and `i64_sub`
 # but no shift, and neither CARRIES nor BORROWS (a measured repair, reported in
@@ -841,7 +841,7 @@ def SDMA_ENTRY_AID_STRIDE() -> U32: 4
 def SDMA_ENTRY_BASE() -> U32: 1
 
 
-# ===========================================================================
+
 # THE DOORBELL ARITHMETIC, :354 / :366 / :373 / :570-571 / :592 / :601.
 #
 # There are THREE doorbell numberings in the file and they are not the same:
@@ -855,7 +855,7 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # because the register holds a DWORD index and the doorbell is in 32-byte units.
 # `amp_db_*` is one row per stride and `amp_db_off_*` is the row that separates
 # the doorbell from its register form.
-# ===========================================================================
+
 
 
 # :373, `eop_size=(eop_size//4).bit_length()-2` -- the SAME encoding as
@@ -875,16 +875,16 @@ def SDMA_ENTRY_BASE() -> U32: 1
 
 # --- the fixtures the gate sections call -------------------------------------
 
-# ===========================================================================
+
 # `V` -- THE THREE-PART VERSION, which is `ip_ver[am.<X>_HWIP]` and the
 # arithmetic behind all forty-odd comparisons in the file. `V.cmp` is a lexical
 # three-part compare and `V.eq2` / `V.ne2` are the `[:2]` pair form at
 # :30/:300/:313/:591/:604. ALL THREE ARMS matter and the gate has a row on each
 # boundary of each, because a version ladder that is off by one is a register
 # write to the wrong IP.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the per-arch smu message table, `import_module("smu", ip_ver[MP1_HWIP])`.
 #
 # `_ip_module("smu", am.MP1_HWIP)` at :199 does NOT give a fixed set of numbers:
@@ -901,9 +901,9 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # `PPSMC_MSG_*` in any of the four modules is 0 (the minimum is 1). `smu.has_mca`
 # is the `hasattr` at :260 turned into a named predicate, and it decides whether
 # `_aca_read_banks` returns `[]` or a list of banks.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the smu message protocol, :264-273. the three-register triple.
 #
 # `_smu_cmn_send_msg` writes THREE registers in this order and they are three
@@ -917,9 +917,9 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # rows: `amp_smu_order_*` is the trace and `amp_smu_regs_*` is the (resp, param,
 # msg) triple read by name. :271's wait reads the SAME resp register and :273
 # returns the param register, so the arm at :273 is the param register too.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the pte flag tables, :177-195. four generations of the same five-term or.
 #
 #   :179  extra |= SYSTEM*system | SNOOPED*snooped | VALID*valid | FRAG(frag)
@@ -935,9 +935,9 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # 2**54, so a `U32` port silently drops the whole flag. `pte.of` answers an
 # `H.I64` and the gate prints hi AND lo on every fixture, which is what stops a
 # future edit from deciding one U32 is enough.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE DOORBELL ARITHMETIC, :354 / :366 / :373 / :570-571 / :592 / :601.
 #
 # There are THREE doorbell numberings in the file and they are not the same:
@@ -951,7 +951,7 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # because the register holds a DWORD index and the doorbell is in 32-byte units.
 # `amp_db_*` is one row per stride and `amp_db_off_*` is the row that separates
 # the doorbell from its register form.
-# ===========================================================================
+
 
 
 # :373, `eop_size=(eop_size//4).bit_length()-2` -- the SAME encoding as
@@ -980,7 +980,7 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # the four columns, read out of the flat table by `dev_inst` and a COLUMN STRIDE
 
 
-# ===========================================================================
+
 # THE DOORBELL ARITHMETIC, :354 / :366 / :373 / :570-571 / :592 / :601.
 #
 # There are THREE doorbell numberings in the file and they are not the same:
@@ -994,7 +994,7 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # because the register holds a DWORD index and the doorbell is in 32-byte units.
 # `amp_db_*` is one row per stride and `amp_db_off_*` is the row that separates
 # the doorbell from its register form.
-# ===========================================================================
+
 
 
 # :139/:552, `if inst:` treats zero as ABSENT, so the `xcc != 0` test at :369 and
@@ -1107,16 +1107,16 @@ def mqd.eop_control(eop_size: U32) -> U32: mqd.esize(eop_size)
 
 # --- the fixtures the gate sections call -------------------------------------
 
-# ===========================================================================
+
 # `V` -- THE THREE-PART VERSION, which is `ip_ver[am.<X>_HWIP]` and the
 # arithmetic behind all forty-odd comparisons in the file. `V.cmp` is a lexical
 # three-part compare and `V.eq2` / `V.ne2` are the `[:2]` pair form at
 # :30/:300/:313/:591/:604. ALL THREE ARMS matter and the gate has a row on each
 # boundary of each, because a version ladder that is off by one is a register
 # write to the wrong IP.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the per-arch smu message table, `import_module("smu", ip_ver[MP1_HWIP])`.
 #
 # `_ip_module("smu", am.MP1_HWIP)` at :199 does NOT give a fixed set of numbers:
@@ -1133,9 +1133,9 @@ def mqd.eop_control(eop_size: U32) -> U32: mqd.esize(eop_size)
 # `PPSMC_MSG_*` in any of the four modules is 0 (the minimum is 1). `smu.has_mca`
 # is the `hasattr` at :260 turned into a named predicate, and it decides whether
 # `_aca_read_banks` returns `[]` or a list of banks.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the smu message protocol, :264-273. the three-register triple.
 #
 # `_smu_cmn_send_msg` writes THREE registers in this order and they are three
@@ -1149,9 +1149,9 @@ def mqd.eop_control(eop_size: U32) -> U32: mqd.esize(eop_size)
 # rows: `amp_smu_order_*` is the trace and `amp_smu_regs_*` is the (resp, param,
 # msg) triple read by name. :271's wait reads the SAME resp register and :273
 # returns the param register, so the arm at :273 is the param register too.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the pte flag tables, :177-195. four generations of the same five-term or.
 #
 #   :179  extra |= SYSTEM*system | SNOOPED*snooped | VALID*valid | FRAG(frag)
@@ -1167,9 +1167,9 @@ def mqd.eop_control(eop_size: U32) -> U32: mqd.esize(eop_size)
 # 2**54, so a `U32` port silently drops the whole flag. `pte.of` answers an
 # `H.I64` and the gate prints hi AND lo on every fixture, which is what stops a
 # future edit from deciding one U32 is enough.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE DOORBELL ARITHMETIC, :354 / :366 / :373 / :570-571 / :592 / :601.
 #
 # There are THREE doorbell numberings in the file and they are not the same:
@@ -1183,7 +1183,7 @@ def mqd.eop_control(eop_size: U32) -> U32: mqd.esize(eop_size)
 # because the register holds a DWORD index and the doorbell is in 32-byte units.
 # `amp_db_*` is one row per stride and `amp_db_off_*` is the row that separates
 # the doorbell from its register form.
-# ===========================================================================
+
 
 
 # :373, `eop_size=(eop_size//4).bit_length()-2` -- the SAME encoding as
@@ -1253,7 +1253,7 @@ def amp_sdma_db_row(+dev_inst: U32) -> List<&2, U32>:
 # --- :352-382, `setup_ring`'s constants -------------------------------------
 
 
-# ===========================================================================
+
 
 # the kiq `flush_tlb` packet, :99-112. seventeen words, built in order.
 #
@@ -1272,7 +1272,7 @@ def amp_sdma_db_row(+dev_inst: U32) -> List<&2, U32>:
 # `WR_CONFIRM` is `1 << 20` and `WRITE_DATA_DST_SEL(x)` is `x << 8`; MEASURED, their
 # OR at `n = 5` is 0x100500. The port computes it from the two halves so the row
 # is a claim and not a restatement of the constant.
-# ===========================================================================
+
 
 def PM4_SEL_MASK() -> U32: 255
 def PM4_COUNT_MASK() -> U32: 16383
@@ -1346,7 +1346,7 @@ def kiq.pkt(+req_addr: U32, +ack_addr: U32, +vmid: U32, +req: U32,
     U32.shln(1, U32.to_nat(vmid)), 32, pm4.write_data(3), pm4.write_confirm_sel(5),
     kiq.pkt.wr(kiq_va, base), kiq.pkt.wr_hi(kiq_va, base), U32.add(wptr, 1)))
 
-# ===========================================================================
+
 # the ih entry decode, :502-513. eleven extractors and their bit positions.
 #
 # `:502` reads EIGHT dwords out of the ring and `:505-506` calls
@@ -1362,7 +1362,7 @@ def kiq.pkt(+req_addr: U32, +ack_addr: U32, +vmid: U32, +req: U32,
 #
 # the four context IDs are not contiguous: 28..31 are unused, which is why the
 # positions are a table and not `128 + 32*i`. `amp_ih_pos` prints the table.
-# ===========================================================================
+
 
 # MEASURED by probing, and the third element of each triple is the INCLUSIVE HIGH
 # BIT -- 7, not 8. An exclusive bound is the natural mistake and it widens every
@@ -1471,7 +1471,7 @@ def IH_ACA_MCATYPE_HI() -> Nat: 31n
 def ih.aca_hwname(hi: U32) -> U32: H.getbits(hi, IH_ACA_HWNAME_LO(), IH_ACA_HWNAME_HI())
 def ih.aca_mcatype(hi: U32) -> U32: H.getbits(hi, IH_ACA_MCATYPE_LO(), IH_ACA_MCATYPE_HI())
 
-# ===========================================================================
+
 # THE REGISTER FIELD LISTS. One `Row` per `.write(...)` / `.update(...)` /
 # `.read()` in `ip.py`, with the bitfield NAMES IN SOURCE ORDER.
 #
@@ -1649,7 +1649,7 @@ def amp_reg_484b() -> Row: Row.of(484, "regIH_RB_CNTL{suf}", ["rb_enable"])
 def amp_reg_604b() -> Row:
   Row.of(604, "{reg}_RB_CNTL", ["rb_vmid", "rptr_writeback_enable", "rptr_writeback_timer", "rb_enable", "rb_priv", "rb_size", "inst"])
 
-# ===========================================================================
+
 # the psp ring frame and the four commands, :707-751.
 #
 # `struct_psp_gfx_rb_frame` is 64 bytes and `struct_psp_gfx_cmd_resp` is 1024,
@@ -1660,7 +1660,7 @@ def amp_reg_604b() -> Row:
 # adjacent u32s is a silently wrong ring frame. `ops_cl`'s unit found `Sig`'s
 # field names INVERTED and a count gate passed it, which is why every
 # `amp_psp_*_fields` row is a name LIST and never a count.
-# ===========================================================================
+
 
 # MEASURED sizes out of `ctypes.sizeof` on the autogen classes.
 def PSP_FRAME_BYTES() -> U32: 64
@@ -1791,7 +1791,7 @@ def GFX_FW_TYPE_REG_LIST() -> U32: 67
 def psp.rlc_cmd(+gc0: U32, +gc1: U32, +gc2: U32) -> U32:
   Bool.pick(U32, V.ge(gc0, gc1, gc2, 11, 0, 0), GFX_CMD_ID_AUTOLOAD_RLC(), GFX_FW_TYPE_REG_LIST())
 
-# ===========================================================================
+
 # THE WALLS. Nothing below is in the port; each is a `raise`, an `ioctl`, a
 # register ACCESS, or a Python reflection that Bend has no spelling for.
 #
@@ -1842,11 +1842,11 @@ def psp.rlc_cmd(+gc0: U32, +gc1: U32, +gc2: U32) -> U32:
 # | WALL(p3) runtime/support/am/ip.py:278  mm.palloc(0x1000 * xccs, 2 + is_vf). -- BLOCKED: needs `mm.palloc(0x1000 * xccs, 2 + is_vf)`: an FFI seam -- device MMIO / an `mmap` -- which cannot be anything in Bend but a foreign call (`ip.bend:3-8` says what survives the crossing is DATA: the register field lists).
 # | wall(p3) runtime/support/am/ip.py:331  mm.map_range(..., AddrSpace.sys, snooped, uncached). -- blocked: needs `mm.map_range(..., AddrSpace.SYS, snooped, ...)`: an ffi seam -- device mmio / an `mmap` -- which cannot be anything in Bend but a foreign call (`ip.bend:3-8` says what survives the crossing is data: the register field lists).
 #
-# ===========================================================================
-# ===========================================================================
+
+
 # THE GATE. One row per claim; the ORACLE is `.agents/slop/ip_oracle.py` and
 # every `py=` expectation in it was produced by CALLING CPython, never typed.
-# ===========================================================================
+
 
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
@@ -1900,11 +1900,11 @@ def amp_smu_roles() -> List<&2, String>: ["resp", "param", "msg"]
 
 def amp_smu_order(debug: U32) -> List<&2, String>: amp_smu_roles()
 
-# ===========================================================================
+
 # THE GATE FIXTURES. Every number here is MEASURED out of CPython or derived from
 # a measured constant, and each one exists because it can separate two readings
 # that a weaker fixture would let agree.
-# ===========================================================================
+
 
 # `pm4.PACKET3(op, n)` over a fixture grid that crosses the `0xff` op mask and the
 # `0x3fff` count mask, so a mask or a swap of the two fields moves a row.
@@ -1981,9 +1981,9 @@ def PSP_TMR(+mp0_0: U32, +mp0_1: U32, +mp0_2: U32) -> List<&2, U32>:
    Bool.to_u32(psp.tmr_load(psp.boot_time_tmr(mp0_0, mp0_1, mp0_2),
      psp.autoload_tmr(mp0_0, mp0_1, mp0_2)))]
 
-# ===========================================================================
+
 # gate 1: the register field lists, by name and in order.
-# ===========================================================================
+
 def t_regs() -> IO(Unit):
   do IO<Unit>:
     frow("amp_reg_34", amp_reg_34())
@@ -2190,9 +2190,9 @@ def MQD_ESIZE() -> List<&2, U32>: [mqd.esize(4096), mqd.esize(8192)]
 def MQD_RBSIZE() -> List<&2, U32>:
   [sdma.rbsize(256), sdma.rbsize(1024), sdma.rbsize(65536)]
 
-# ===========================================================================
+
 # gate 2: the psp struct field lists, by name and in order.
-# ===========================================================================
+
 def t_structs() -> IO(Unit):
   do IO<Unit>:
     srow2("amp_psp_frame_fields", psp.frame_fields())
@@ -2218,9 +2218,9 @@ def t_structs() -> IO(Unit):
     lrow("amp_psp_i64le", PSP_I64_LE())
     lrow("amp_psp_i64be", PSP_I64_BE())
 
-# ===========================================================================
+
 # GATE 3: THE SMU MESSAGE PROTOCOL, :264-273 and the per-arch table.
-# ===========================================================================
+
 def t_smu() -> IO(Unit):
   do IO<Unit>:
     srow2("amp_smu_regs_norm", amp_smu_regs(0))
@@ -2288,13 +2288,13 @@ def t_smu() -> IO(Unit):
     urow("amp_smu_mode1_14_0_2", amp_smu_mode1(14, 0, 2))
     urow("amp_smu_clocks_unlimited", SMU_CLOCK_UNLIMITED())
 
-# ===========================================================================
+
 # gate 4: the pte flag tables, :177-195. four generations, both halves.
 #
 # Every row prints hi AND lo, because the whole point of the section is that the
 # flags do not fit in 32 bits: `amp_pte_pde_hi` is 2147483648 for gfx12 and 0
 # for gfx10, and a port that truncated would print the gfx10 answer twice.
-# ===========================================================================
+
 def t_pte() -> IO(Unit):
   do IO<Unit>:
     urow("amp_pte_frag_0", H.lo32(pte.frag(0)))
@@ -2359,9 +2359,9 @@ def t_pte() -> IO(Unit):
     i64row("amp_pte_huge_12_ptb_q", pte.huge(3, i64_lit(1, 1), 12, 0, 0))
     i64row("amp_pte_huge_10_ptb_q", pte.huge(3, i64_lit(1, 1), 10, 3, 0))
 
-# ===========================================================================
+
 # gate 5: the doorbell arithmetic and the mqd SIZE encodings.
-# ===========================================================================
+
 def t_db() -> IO(Unit):
   do IO<Unit>:
     urow("amp_db_kiq_0", gfx.db.of(0))
@@ -2428,9 +2428,9 @@ def t_db() -> IO(Unit):
     urow("amp_mqd_eop_control_1", mqd.eop_control(1))
 
 
-# ===========================================================================
+
 # gate 6: the kiq PM4 packet, :108-112. eighteen words, in order.
-# ===========================================================================
+
 def t_kiq() -> IO(Unit):
   do IO<Unit>:
     urow("amp_pm4_type3", PM4_TYPE3())
@@ -2455,9 +2455,9 @@ def t_kiq() -> IO(Unit):
     urow("amp_kiq_ptr_off", KIQ_PTR_OFF())
     urow("amp_kiq_fence_off", KIQ_FENCE_OFF())
 
-# ===========================================================================
+
 # GATE 7: THE IH ENTRY DECODE, :502-513 and :515-527.
-# ===========================================================================
+
 def t_ih() -> IO(Unit):
   do IO<Unit>:
     urow("amp_ih_ring_size", IH_RING_SIZE())
@@ -2509,9 +2509,9 @@ def t_ih() -> IO(Unit):
 #     same. They share the modulus and the two rows say so.
     lrow("amp_ih_drain", IH_DRAIN())
 
-# ===========================================================================
+
 # gate 8: the psp predicates and the command ids, :611-755.
-# ===========================================================================
+
 def t_psp() -> IO(Unit):
   do IO<Unit>:
     urow("amp_psp_ring_size", PSP_RING_SIZE())
@@ -2553,14 +2553,14 @@ def t_psp() -> IO(Unit):
     urow("amp_psp_ring_mask", PSP_RING_CREATED_MASK())
     urow("amp_psp_msg1_shift", PSP_MSG1_ADDR_SHIFT())
 
-# ===========================================================================
+
 # gate 9: the one refusal, :588, and `Tr`'s own invariants.
 #
 # `if self.adev.ip_ver[am.SDMA0_HWIP] >= (5,0,0) and idx > 0: raise RuntimeError(f"am
 # {self.adev.devfmt}: sdma queue {idx} is not available")` is the ONLY `raise` in
 # the file and it is TWO conjuncts, so the refusal is reachable on four fixtures
 # and the two conjuncts are separate claims.
-# ===========================================================================
+
 # `sdma.setup.fail_at` IS :588: the refusal fires at ordinal 1 on both conjuncts and
 # at ordinal 0 otherwise. It is the ONE `raise` in the file, and the two conjuncts
 # are separate claims: `amp_refuse_fail_44_0_1` is 0 (below SDMA 5) and
@@ -2676,9 +2676,9 @@ def t_refuse() -> IO(Unit):
     brow("amp_has_wrongarg", Tr.has(Tr.calls(sdma.setup.tr(5, 0, 0, 0)),
       [Call{CALL_MINOR(), 1}, Call{CALL_DBOFF(), 512}, Call{CALL_ENABLE(), 256}]))
 
-# ===========================================================================
+
 # `main` -- the gate, in the order the sections are written.
-# ===========================================================================
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- t_regs()
@@ -2692,7 +2692,7 @@ def main() -> IO(Unit):
     i : Unit <- t_refuse()
     IO.print("ip-done=1")
 
-# ===========================================================================
+
 # the mutation table. measured, not asserted.
 #
 # `rows MOVED` is the load-bearing column. A mutation that moves NOTHING is not a

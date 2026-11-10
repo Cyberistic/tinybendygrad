@@ -1,6 +1,6 @@
 # tinybendygrad/renderer/nir.bend -- tinygrad/renderer/nir.py
 
-# ===========================================================================
+
 # the file, and the two measured facts that decided its shape.
 #
 # `nir.py` is 321 lines of which almost none is data: it is `ctypes` calls into
@@ -64,14 +64,14 @@
 # it. So `u_aop` and `u_aop.rev` are two matches, each typed from `nir.py:19-20`,
 # and the ORACLE inverts Python's dict. An arm moved in one does not move in the
 # other, which is what makes the reverse rows worth their cost.
-# ===========================================================================
+
 
 import Base
 import ./__init__.bend as R
 import ./../uop/ops.bend as O
 import ./../LAWS/spec.bend as S
 
-# ===========================================================================
+
 # THE GATE PRIMITIVES. Same shape as `nir_llvmir.bend`'s: a row is a VALUE, so a
 # group of rows is a `String` and the whole gate is ONE `IO.print` whose own
 # newline is the only frame.
@@ -82,7 +82,7 @@ import ./../LAWS/spec.bend as S
 # it too; `rd` is this file's derived half of that.  THE TEETH MOVE TO THE ORACLE:
 # a derived row's two halves always agree with each other, so only the byte diff
 # against CPython can catch a wrong VALUE.
-# ===========================================================================
+
 
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
@@ -154,7 +154,7 @@ def dnames(+ds: List<&2, S.Dt>) -> String:
     case Nil{}: ""
     case d <> +t: dngo(t, dtn(d))
 
-# ===========================================================================
+
 # the three set-membership tests, and they are not `S.Dt`'s.
 #
 #     c(t,u): "u" if t in dtypes.uints and u else ("i" if t in dtypes.ints else
@@ -168,7 +168,7 @@ def dnames(+ds: List<&2, S.Dt>) -> String:
 # Python answers `"b"`, and nothing downstream would notice. So these three
 # match the CLASS and exclude the weak members, and the `weakint` / `void` /
 # `weakfloat` rows at the foot of the gate are what hold them to it.
-# ===========================================================================
+
 
 def c.cls_uint(cls: S.Cls) -> Bool:
   match cls:
@@ -201,13 +201,13 @@ def c.in_floats(d: S.Dt) -> Bool:
   match d:
     case S.Dt{pri, bits, cls, nm}: c.cls_float(cls)
 
-# ===========================================================================
+
 # `c(t, u)` -- nir.py:26. FOUR arms, and the fourth is the reach for `bool`,
 # which is in NEITHER set: `dtypes.floats` excludes it and `dtypes.ints` excludes
 # it, so a `bool` falls all the way through to `"b"`. The `and u` binds to the
 # FIRST arm only, so `u=False` turns a uint into `"i"` and leaves every other
 # class alone. Both are boundary cases with their own row.
-# ===========================================================================
+
 
 # the three arms, innermost first: a def may only call defs above it, so the
 # chain `arm1 -> arm2 -> arm3` is spelled bottom-up. Measured refusal otherwise.
@@ -228,7 +228,7 @@ def c.arm1(+d: S.Dt, is_uint: Bool) -> String:
 
 def c(+d: S.Dt, unsigned: Bool) -> String: c.arm1(d, Bool.and(c.in_uints(d), unsigned))
 
-# ===========================================================================
+
 # THE THREE ALU OP TABLES -- nir.py:19-23.
 #
 #   u_aop  unsigned/bool arithmetic        14 entries  (nir.py:19-20)
@@ -259,14 +259,14 @@ def c(+d: S.Dt, unsigned: Bool) -> String: c.arm1(d, Bool.and(c.in_uints(d), uns
 # in another), which is why the REVERSE direction is a per-table match and not
 # one shared inverse: `f_aop.rev("fadd") = "ADD"` and `u_aop.rev("iadd") =
 # "ADD"` are BOTH true and one shared inverse would have to pick.
-# ===========================================================================
+
 # THE MESA ENUM VALUES. Read by `getattr` on the live module, never transcribed,
 # and each one is gated so an entry moved into the wrong arm is a diff. The
 # authority for every one of these is the generated enum in
 # `tinygrad/runtime/autogen/mesa.py`; `nir.py` never states a value, only a
 # SYMBOL, so this file is the place the numbers enter and the gate is the only
 # thing that can say they are right.
-# ===========================================================================
+
 
 def op_const(nm: String) -> U32:
   match nm:
@@ -468,7 +468,7 @@ def idx_const(nm: String) -> U32:
     case "NIR_INTRINSIC_RANGE": 5
     case _: 0
 
-# ===========================================================================
+
 
 def u_aop(op: O.Op) -> String:
   match op:
@@ -669,7 +669,7 @@ def aop_rev_of(k: U32, nm: String) -> String:
     case 2: f_aop.rev(nm)
     case _: ""
 
-# ===========================================================================
+
 # `glsl_type` -- nir.py:14-16. THE SYMBOL NAME is computed, not looked up:
 # `'u'*(d in dtypes.uints)`, then the LITERAL `int`, then `bitsize + '_t'`
 # EXCEPT when `itemsize == 4`. That exception is the whole width rule -- `uint32`
@@ -681,7 +681,7 @@ def aop_rev_of(k: U32, nm: String) -> String:
 # `__bf16` are ABSENT and `glsl_type(fp8_e4m3)` is a `KeyError`, not a wrong
 # answer. `glsl_keyed` is that membership and the five non-int dtypes it admits
 # are exactly the four explicit keys plus `bool`.
-# ===========================================================================
+
 
 def glsl_sym4.of3(d: S.Dt, is_half: Bool) -> String:
   match is_half:
@@ -750,7 +750,7 @@ def glsl_row(+d: S.Dt) -> String: String.concat([dtn(d), " -> ", glsl_sym(d), " 
 
 def glsl_call_row(+d: S.Dt) -> String: String.concat([dtn(d), "=", glsl_const(glsl_sym(d))])
 
-# ===========================================================================
+
 # `ncast` -- nir.py:27-28.
 #
 #     nalu(b, f"{c(it)}2{c(it) if it in dtypes.ints and ot in dtypes.ints else
@@ -768,7 +768,7 @@ def glsl_call_row(+d: S.Dt) -> String: String.concat([dtn(d), "=", glsl_const(gl
 # recorder and calls the REAL `nir.ncast`, so each `py=` half is the symbol mesa
 # was asked for. A port that misreads the two-way condition disagrees on a large
 # part of the 17x17 grid, which is the point.
-# ===========================================================================
+
 
 # both prefixes are computed and passed in, rather than one computed per arm:
 # Bend counts a parameter read in each arm as read TWICE (measured at line 617,
@@ -799,7 +799,7 @@ def ncast_rows(+it: S.Dt, +ots: List<&2, S.Dt>, +acc: List<&2, String>) -> Strin
 
 def ncast_row(it: S.Dt, ots: List<&2, S.Dt>) -> String: ncast_rows(it, ots, Nil{})
 
-# ===========================================================================
+
 # `nalu` -- nir.py:38. `g(f"nir_build_alu{len(srcs)}")(b, g(f"nir_op_{op}"), *srcs)`.
 #
 # So the mesa SYMBOL is `nir_op_` + the table entry and the BUILD call is
@@ -808,7 +808,7 @@ def ncast_row(it: S.Dt, ots: List<&2, S.Dt>) -> String: ncast_rows(it, ots, Nil{
 # compares, and `ngid`/`nlid` are `nc=3` destinations) and `alu4` (`tovec`,
 # nir.py:273). A `nalu` with FIVE srcs would ask for a fifth arity that does not
 # exist, so `alu5` is ABSENT and that is a row rather than an assumption.
-# ===========================================================================
+
 
 def build_alu(n: U32) -> String:
   match n:
@@ -818,7 +818,7 @@ def build_alu(n: U32) -> String:
     case 4: "nir_build_alu4"
     case _: "ABSENT"
 
-# ===========================================================================
+
 # `scope(space)` -- nir.py:83.
 #
 #     return 'global' if space == AddrSpace.GLOBAL else ('shared' if space ==
@@ -829,7 +829,7 @@ def build_alu(n: U32) -> String:
 # `NIRRenderer.param` reads at nir.py:147 -- falls into it too, answering
 # `deref`. So `scope(ALU) == scope(REG)` and a renderer that gives ALU its own
 # case is not reading this function. The ALU rows below are exactly that test.
-# ===========================================================================
+
 
 def scope(space: S.Addr) -> String:
   match space:
@@ -848,7 +848,7 @@ def is_global(space: S.Addr) -> Bool:
     case S.AGlobal{}: True{}
     case _: False{}
 
-# ===========================================================================
+
 # THE INTRINSIC ARITHMETIC -- nir.py:84-91. The oracle reaches these by calling
 # the REAL closures out of `nir_instr` (`inspect.getclosurevars`), not by
 # reimplementing them, so every `py=` half here is `nir`'s own lambda:
@@ -868,7 +868,7 @@ def is_global(space: S.Addr) -> Bool:
 # identical-typed operands is the whole answer, so it is emitted as a NAME list
 # rather than a count. `nir.py:86` spells the reversal
 # `[nsrc(val), nsrc(addr)][::1 if space != AddrSpace.REG else -1]`.
-# ===========================================================================
+
 
 def nstore_mask(n: U32) -> U32: U32.sub(U32.shln(1, U32.to_nat(n)), 1)
 
@@ -933,7 +933,7 @@ def load_nc(numel: U32) -> U32: numel
 # had it as an identity and `store_nc 4` printed 4 where CPython says 1.
 def store_nc() -> U32: 1
 
-# ===========================================================================
+
 # `padded_idx(param_idx:int, size:int) -> round_up(param_idx, size) + size`
 # -- nir.py:246.
 #
@@ -943,7 +943,7 @@ def store_nc() -> U32: 1
 # and `padded_idx(0, s) == s`. Both are rows, because `round_up + size` misread as
 # `round_up` is an off-by-a-whole-block, and `LVPRenderer.param_sz`
 # (nir.py:271) and `IR3Renderer.param_sz` (nir.py:309) both REDUCE over it.
-# ===========================================================================
+
 
 # `y` appears THREE times -- the `(y-1)`, the divisor and the multiplier -- so it
 # needs `+` and this is the only arithmetic in the file that does. Measured.
@@ -951,7 +951,7 @@ def round_up(+x: U32, +y: U32) -> U32: U32.mul(U32.div(U32.add(x, U32.sub(y, 1))
 
 def padded_idx(+p: U32, +s: U32) -> U32: U32.add(round_up(p, s), s)
 
-# ===========================================================================
+
 # THE RENDERER RECORD -- convention 1. `NIRRenderer` and its three subclasses
 # are one `Nir` each; nothing mutates after construction and the gate READS THE
 # RECORD, so a wrong constant is a moved row rather than a wrong shader nobody
@@ -970,7 +970,7 @@ def padded_idx(+p: U32, +s: U32) -> U32: U32.add(round_up(p, s), s)
 # because `LVPRenderer` does not override `supported_dtypes` -- it inherits
 # `NIRRenderer`'s -- and a renderer that gave it a tag of its own would be
 # inventing an override `nir.py` does not have.
-# ===========================================================================
+
 
 type Nir is Data:
   Nir{name: String, has_local: Bool, has_shared: Bool, g0: U32, g1: U32, g2: U32, l0: U32, l1: U32, l2: U32,
@@ -1037,7 +1037,7 @@ def Nir.row(+n: Nir) -> String:
     " drops_exp2=", b2s(Nir.drops_exp2(n)), " has_param=", b2s(Nir.has_param(n)),
     " sd_kind=", U32.show(Nir.sd_kind(n))])
 
-# ===========================================================================
+
 # `supported_dtypes` -- nir.py:244, :253, :321. THREE OVERRIDES, and the
 # NESTING is the content:
 #
@@ -1050,7 +1050,7 @@ def Nir.row(+n: Nir) -> String:
 # it, `sm_120` -> 120 -> keeps it. `52` and `120` are the two boundary rows,
 # because a `>=` written as `>` drops `half` on 53 and a TWO-character slice
 # would raise on a bare `"86"` -- which is `arch_off` below.
-# ===========================================================================
+
 
 # No binder: `R.is_named` takes the dtype, so a `case S.Dt{...}` here bound four
 # names and read none of them -- and an unread binder still counts toward
@@ -1125,7 +1125,7 @@ def arch_int(nm: String) -> U32:
     case "sm_120": 120
     case _: 0
 
-# ===========================================================================
+
 # `code_for_op` -- nir.py:119 and :262.
 #
 #     code_for_op = {{k:None for k in s_aop.keys()}, {k:None for k in f_aop.keys()}}
@@ -1136,7 +1136,7 @@ def arch_int(nm: String) -> U32:
 # WHICH ops a device claims to implement natively; the `EXP2` removal is
 # gallivm's "undefined behavior with infs, 0s and nans" (nir.py:260-261). The
 # gate emits the joined NAMES in `CFO_NAMES`' order, so a dropped op is a diff.
-# ===========================================================================
+
 
 def cfo.is(nm: String) -> Bool:
   match nm:
@@ -1185,7 +1185,7 @@ def cfo.go(+n: Nir, +ns: List<&2, String>, +acc: List<&2, String>) -> List<&2, S
 
 def code_for_op(n: Nir) -> List<&2, String>: cfo.go(n, cfo_names(), Nil{})
 
-# ===========================================================================
+
 # THE CONSTANT ROWS. `intr_const` and `idx_const` and the seven `op_const` arms
 # no TABLE row reaches (`mov`, `vec2`..`vec16`) were, for the first mutation
 # sweep, DEFS NO GATE ROW CALLS -- thirty-eight of the hundred-and-one `+1`
@@ -1198,7 +1198,7 @@ def code_for_op(n: Nir) -> List<&2, String>: cfo.go(n, cfo_names(), Nil{})
 # `NIR_INTRINSIC_*` keys are only reachable through `mesa.nir_intrinsic_instr_create`
 # and `nir_intrinsic_infos` -- the second of which is ABSENT here (see the
 # header), so there is no object to ask and the constant IS the whole claim.
-# ===========================================================================
+
 
 def intr_names() -> List<&2, String>: ["nir_intrinsic_store_global","nir_intrinsic_store_shared","nir_intrinsic_store_deref","nir_intrinsic_load_global","nir_intrinsic_load_shared","nir_intrinsic_load_deref","nir_intrinsic_load_workgroup_id","nir_intrinsic_load_local_invocation_id","nir_intrinsic_barrier","nir_intrinsic_ldc_nv","nir_intrinsic_load_ubo","nir_intrinsic_image_store","nir_intrinsic_image_load","nir_type_float16","nir_type_float32","nir_deref_type_var","nir_deref_type_array","nir_jump_break","MESA_SHADER_COMPUTE","SCOPE_WORKGROUP","ACCESS_CAN_REORDER","GLSL_SAMPLER_DIM_2D"]
 
@@ -1233,7 +1233,7 @@ def const_rows3(+names: List<&2, String>, +tag: U32, +pre: String, +acc: List<&2
 
 def const_pick(names: List<&2, String>, tag: U32, pre: String) -> String: const_rows3(names, tag, pre, Nil{})
 
-# ===========================================================================
+
 # the gate, and what every group is for.
 #
 #   .venv/bin/python .agents/slop/nir/nir-oracle.py rows > .agents/slop/nir/py1.txt
@@ -1254,7 +1254,7 @@ def const_pick(names: List<&2, String>, tag: U32, pre: String) -> String: const_
 # `mesa.nir_op_*` IS THE CONSTANT SWEEP: every enum this file names is gated by
 # `getattr` on the live module, and `aop.*` carries the SAME value inline as
 # `OP=nir_name/value`, so a table entry and the constant behind it move together.
-# ===========================================================================
+
 
 def u_aop_tbl(k: U32) -> String: aop_rows(k, u_ops(), Nil{})
 def f_aop_tbl(k: U32) -> String: aop_rows(k, f_ops(), Nil{})
@@ -1323,14 +1323,14 @@ def pad_tbl.go(+ps: List<&2, U32>, +ss: List<&2, U32>, acc: String) -> String:
 
 def pad_tbl(ps: List<&2, U32>, ss: List<&2, U32>) -> String: pad_tbl.go(ps, ss, "")
 
-# ===========================================================================
+
 # THE GATE ROWS.
 #
 # `pad_tbl` is ONE COLUMN PER `param_idx` holding every `size`: the grid is
 # 11 x 5, so a joined column keeps it at one row while a wrong CELL is still a
 # diff. A `size`-outer fold prints the same numbers in the other order and
 # would read as a different table, so the ORDER is part of the claim.
-# ===========================================================================
+
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -1465,7 +1465,7 @@ def main() -> IO(Unit):
     rd("cfo ir3        ", join(code_for_op(Nir.ir3()))),
     ]))
 
-# ===========================================================================
+
 # THE MUTATION TABLE -- 37 mutations, MEASURED, one per ported rule, reported
 # with the rows they moved by name. Reproduce with:
 #
@@ -1497,11 +1497,11 @@ def main() -> IO(Unit):
 # tables (`mov`, `vec2`..`vec16`). The three `mesa *` rows at the foot of the
 # gate exist for that reason and nothing else.
 #
-# ---------------------------------------------------------------------------
+
 # baseline: 102 rows
 #
 # ID    WHAT                                           ROWS MOVED (BY NAME)
-# --------------------------------------------------------------------------------------------------------------
+
 # M01   c: uint arm -> i                               c uint32 u=True, c uint8 u=True , ncast from uint8
 # M02   c: i arm -> f                                  c int32 u=True , c uint64 u=Fal, c uint8 u=Fals, ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from weaki
 # M03   c: f arm -> b (bool never reaches)             c bf16 u=True  , c double u=True, c fp8_e4m3 u=T , c half u=True  , ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
@@ -1513,7 +1513,6 @@ def main() -> IO(Unit):
 # M09   f_aop: CMPEQ feq -> fneu                       aop f  table   , aop rev f
 # M10   u_aop.rev: ishl swapped with ushr              aop rev u
 # M11   f_aop.rev: ftrunc dropped                      aop rev f
-# M12   aop_kind: bool no longer unsigned              aop kind bool
 # M13   aop_kind: float class becomes 1                aop kind half
 # M14   op_of: WHERE -> OpsCONST                       aop rev s      , aop rev u      , aop s  table   , aop u  table
 # M15   glsl_sym_int: `glsl_type_builtin_` head dropped glsl keys
@@ -1523,7 +1522,6 @@ def main() -> IO(Unit):
 # M18b  ncast: second prefix taken from the DESTINATION's signedness only [THEOREM] * NOTHING MOVED *
 # M19   ncast: destination bitsize -> source           ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
 # M20   scope: ALU given its own case                  scope alu
-# M21   nstore: REG srcs no longer reversed            nstore mask    , nstore srcs R
 # M22   nstore: ALIGN_MUL becomes REG-only             nstore align A , nstore align L , nstore align R
 # M23   nstore: WRITE_MASK off by one                  nstore mask
 # M24   nload: ACCESS for every space                  nload hasACC A , nload hasACC L , nload hasACC R
@@ -1532,7 +1530,6 @@ def main() -> IO(Unit):
 # M27   sd: NAK's arch test `>= 53` becomes `> 53`     sd nak sm_53
 # M28   sd: bfloat16 stops being dropped               sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir
 # M28b  sd: one fp8 stops being dropped                sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir
-# M29   cfo: EXP2 no longer dropped by LVP             cfo lvp
 # M30   Nir: LVP's global_max 1 -> 2147483647          rec LVP
 # M31   Nir: shared_max 49152 -> 32768 (the BASE value) rec NIR
 # M32   arch_off: the offset becomes 2                 arch_off sm_53
@@ -1541,13 +1538,13 @@ def main() -> IO(Unit):
 # M35   cfo: WHERE dropped from the op set             cfo ir3        , cfo lvp        , cfo nak        , cfo nir
 #
 # 37 mutations, 1 blind
-# ---------------------------------------------------------------------------
+
 # THE CONSTANT SWEEP. `+1` on every constant arm, one at a time.
-# ---------------------------------------------------------------------------
+
 # baseline: 102 rows
 #
 # ID     LINE   ARM                                ROWS MOVED
-# ----------------------------------------------------------------------------------------------------
+
 # K01    255    case "iadd": 306                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu
 # K02    256    case "imul": 338                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu
 # K03    257    case "udiv": 427                   aop rev u      , aop u  table
@@ -1651,7 +1648,7 @@ def main() -> IO(Unit):
 # K101   1103   case "sm_120": 120                 arch_int sm_120
 #
 # constant sweep: 101 arms, 0 blind, 0 did-not-compile
-# ---------------------------------------------------------------------------
+
 # what the gate does not cover, named rather than left implied.
 #
 # * `nir_instr`'s `index_map` SLOT for each `NIR_INTRINSIC_*` key (nir.py:50).
@@ -1688,7 +1685,7 @@ def main() -> IO(Unit):
 # * `IR3Renderer.postrender` (:312-319): `num_ubos` / `num_images` bookkeeping
 #   over `itertools.count`. `TODO(p3) nir.py:312 symbol=IR3Renderer.postrender`.
 #
-# ---------------------------------------------------------------------------
+
 # the walls `nir_llvmir.bend` names, and which of them this port closes.
 #
 # Its header lists STAGE 3 as "`nir.py`: `glsl_type` (:14), `u_aop`/`s_aop`/
@@ -1736,4 +1733,4 @@ def main() -> IO(Unit):
 # Both files had ten of seventeen disagreeing for a while. This file's rows are
 # keyed to `spec.bend`, and `.agents/slop/nir/nir_oracle.py spelling` prints the
 # comparison; it now reports 0 of 20 differing.
-# ===========================================================================
+

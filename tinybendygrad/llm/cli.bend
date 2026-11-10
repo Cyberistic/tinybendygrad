@@ -25,12 +25,12 @@
 import Base
 import ./gguf.bend as G
 
-# ===========================================================================
+
 # cli.py:13-16 -- the preset is a behaviour class, not a name. Upstream normalises `qwen35`/`qwen35moe`
 # to `qwen2` before using it, and `llama-v3`/`llama-bpe`/`gpt-4o` fall through `role`/`end_turn`'s
 # default branch. So the code below identifies WHICH BRANCH a preset takes, which is all this file reads.
 # `Maybe` is the honest type for `Preset.of`: upstream raises `ValueError` on an unknown preset.
-# ===========================================================================
+
 def Preset.llama() -> U32: 0        # llama3, llama-v3, llama-bpe, gpt-4o -- the default branch
 def Preset.olmo() -> U32: 1
 def Preset.kimi_k2() -> U32: 2
@@ -53,10 +53,10 @@ def Preset.of(+s: String) -> Maybe<&1, U32>:
     case "tekken": Some{5}
     case _: None{}
 
-# ===========================================================================
+
 # cli.py:109-117 -- `role`. `Maybe` for the same reason: tekken RAISES for a role it does not have
 # (`ValueError`), and returning `""` there would be a silent wrong answer instead.
-# ===========================================================================
+
 def Template.role(+preset: U32, +role: String) -> Maybe<&1, String>:
   match preset:
     case 1: Some{String.concat(["<|", role, "|>\n"])}                                  # olmo
@@ -67,10 +67,10 @@ def Template.role(+preset: U32, +role: String) -> Maybe<&1, String>:
              Bool.pick(Maybe<&1, String>, String.eq(role, "assistant"), Some{""}, None{}))   # tekken
     case _: Some{String.concat(["<|start_header_id|>", role, "<|end_header_id|>\n\n"])}  # default
 
-# ===========================================================================
+
 # cli.py:119-125 -- `end_turn`. `+eos` is the tokenizer's end-of-sequence token DECODED, which is the
 # caller's job because the tokenizer is not ported (see the header).
-# ===========================================================================
+
 def Template.end_turn(+preset: U32, +eos: String) -> String:
   match preset:
     case 1: "\n"                                                     # olmo
@@ -80,7 +80,7 @@ def Template.end_turn(+preset: U32, +eos: String) -> String:
     case 5: "[/INST]"                                                # tekken
     case _: eos                                                      # default
 
-# ===========================================================================
+
 # cli.py:77,82 -- `decode` AND `is_end`, THE CHEAP HALF OF `SimpleTokenizer`.
 #
 # `decode` is the utf-8 decode of the tokens' bytes, and the port already has that decoder.
@@ -91,7 +91,7 @@ def Template.end_turn(+preset: U32, +eos: String) -> String:
 #
 # A MISSING TOKEN ID IS `None`, because upstream RAISES `KeyError` and a `String` return would have to
 # invent one. That is the same choice `Template.role` makes for `tekken`'s `ValueError`.
-# ===========================================================================
+
 type Tok is Data:
   Tok{tid: U32, bytes: List<&2, U32>}
 
@@ -145,7 +145,7 @@ def Tokenizer.is_end(+ends: List<&2, U32>, +tid: U32) -> Bool:
     case Nil{}: False{}
     case h <> t: Bool.or(U32.is_eq(h, tid), Tokenizer.is_end(t, tid))
 
-# ===========================================================================
+
 # cli.py:126-141 -- `render`. the map-then-FOLD shape, because the direct shape is not expressible.
 #
 # Upstream threads a `Maybe` (`role()` raises for tekken) through a `for` over messages. Here a loop whose
@@ -156,7 +156,7 @@ def Tokenizer.is_end(+ends: List<&2, U32>, +tid: U32) -> Bool:
 # the content variants are upstream's four cases, including the two that raise: a non-text part and a
 # content that is neither a string, a list nor None. Upstream raises `RuntimeError`; the port answers
 # `None`, which is the same choice `Template.role` makes for tekken's `ValueError`.
-# ===========================================================================
+
 type Content is Data:
   CText{text: String}          # isinstance(content, str)
   CParts{text: String}         # list of {type: text} parts, already joined

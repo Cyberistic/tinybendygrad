@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/c.bend -- tinygrad/runtime/support/c.py
 #
-# ===========================================================================
+
 # c.py is a ctypes film. what is in here, and why it is not nothing.
 #
 # `c.py` is 142 lines and eleven of them are `import ctypes, functools, os,
@@ -16,7 +16,7 @@
 # Each of those is a `getenv`, a `pathlib.Path.is_file` or a `ctypes` call in
 # Python, and a pure integer or string function here.
 #
-# ---------------------------------------------------------------------------
+
 # the six things measured that nobody would guess
 #
 # 1. THE NO-STRUCT ARM THROWS AWAY `__idir`. `_do_ioctl` is
@@ -60,7 +60,7 @@
 #    (`runtime/autogen/io_uring.py:66`) and the `Literal[0]` form is exactly
 #    the zero-length array `Field._resolve` builds by hand.
 #
-# ---------------------------------------------------------------------------
+
 # the boundaries of the arithmetic, measured not assumed
 #
 # * `mask = (1 << bit_width) - 1` is exact in a `U32` for `bit_width <= 32`,
@@ -93,11 +93,11 @@
 #   answered False in the oracle before the cache was cleared between them.
 #   A Bend port has no module-level mutable state to be wrong about, so this is
 #   a fact about the ORACLE, and it is why the oracle clears it on every call.
-# ===========================================================================
+
 
 import Base
 
-# ---------------------------------------------------------------------------
+
 # `ceildiv` -- helpers.py:66, and it is helpers' own, so the import below is the
 # design. IT IS NOT THERE RIGHT NOW.
 #
@@ -112,12 +112,12 @@ import Base
 # `import ./../../helpers.bend as H` + `H.ceildiv_u32(...)` when helpers
 # compiles again; the body is `helpers.bend:1204` verbatim so the swap changes
 # no behaviour and the `Field.bf_size` gate rows do not move.
-# ---------------------------------------------------------------------------
+
 def H_ceildiv_u32(+num: U32, +amt: U32) -> U32:
   Bool.pick(U32, U32.is_zero(amt), 0,
             U32.add(U32.div(num, amt), Bool.to_u32(U32.is_ne(U32.mod(num, amt), 0))))
 
-# ===========================================================================
+
 # c.py:6-18  `_do_ioctl`, `_IO`, `_IOW`, `_IOR`, `_IOWR`
 #
 #     def _do_ioctl(__idir, __base, __nr, __struct, __fd, *args, __payload=None, kwargs):
@@ -137,7 +137,7 @@ def H_ceildiv_u32(+num: U32, +amt: U32) -> U32:
 # lines at the top, one `if` at the bottom. What is left is the REQUEST NUMBER,
 # which is the entire input to ioctl(2) and the only part of this function
 # where a wrong answer silently corrupts a kernel call.
-# ===========================================================================
+
 
 def _do_ioctl(idir: U32, base: U32, nr: U32, size: U32, has_struct: Bool) -> U32:
   match has_struct:
@@ -161,7 +161,7 @@ def _IOWR(base: U32, nr: U32, size: U32) -> U32: _do_ioctl(3, base, nr, size, Tr
 def _do_ioctl.rc_msg(neg: Bool, mag: U32) -> String:
   String.concat(["ioctl returned ", Bool.pick(String, neg, "-", ""), U32.show(mag)])
 
-# ===========================================================================
+
 # c.py:20-38  `T`/`U`/`P`, `POINTER`, `pointer`, `CFUNCTYPE`, `Array`
 #
 #     class Array(Generic[T, U], ctypes.Array):
@@ -177,7 +177,7 @@ def _do_ioctl.rc_msg(neg: Bool, mag: U32) -> String:
 # THE WALL is the `ctypes.Array` subclass: `key[0] * n` builds a ctypes array
 # TYPE, and `key[0]` is a ctypes type object rather than a width.
 # `TODO(p3) c.py:34  symbol=Array`.
-# ===========================================================================
+
 
 # `_type_, _length_ = ctypes.c_byte, 0`. The `_length_ = 0` is load-bearing
 # twice over: it is the `[str(i), ctypes.c_byte*0]` padding in `dummy*_lens`,
@@ -194,7 +194,7 @@ def Array_.getitem(typ: U32, n: U32, has_args: Bool) -> U32:
     case True{}: U32.mul(typ, n)
     case False{}: 0
 
-# ===========================================================================
+
 # c.py:40-82  `Struct`, `record`, `Field`
 #
 #     class Struct(ctypes.Structure):
@@ -224,7 +224,7 @@ def Array_.getitem(typ: U32, n: U32, has_args: Bool) -> U32:
 # as `if self.bit_width` -- Python's truthiness test. `bit_width=0` is not None
 # and is still falsy, so `sname_bw0_entry_width=3` is a THREE-wide entry from a
 # field that was handed a bit width. `Field.entry` takes both answers.
-# ===========================================================================
+
 
 # A `Data` TYPE declares its CONSTRUCTORS, one per line, with the field names
 # and types inline -- there is no separate field list (convention 6: a record
@@ -310,7 +310,7 @@ def Field.set_name.idx(has_real: Bool, n: U32) -> U32:
 # `__set_name__` in its body forgets them and its indices restart.
 def register_fields.idx(i: U32) -> U32: i
 
-# ---------------------------------------------------------------------------
+
 # M2 is a theorem, and it is measured rather than argued. These three defs and
 # their three rows exist only to say so.
 #
@@ -326,7 +326,7 @@ def register_fields.idx(i: U32) -> U32: i
 #
 # The inherited case is in the list: `Sub(Three)` sees `hasattr` True with three
 # entries, because `hasattr` walks the MRO and `_real_fields_` was set on `Three`.
-# ---------------------------------------------------------------------------
+
 def set_name.arm_of(n: U32) -> Bool: Bool.not(U32.is_zero(n))
 def set_name.theorem(+n: U32) -> Bool: U32.is_eq(Field.set_name.idx(set_name.arm_of(n), n), n)
 def sname_pair(nm: String, has_real: Bool, n: U32) -> String:
@@ -337,7 +337,7 @@ def sname_pairs() -> String:
   String.join([sname_pair("one", False{}, 0), sname_pair("two", True{}, 1),
                sname_pair("three", True{}, 2), sname_pair("four", True{}, 3)], ";")
 
-# ===========================================================================
+
 # THE BYTE PLUMBING. `Field._resolve`, c.py:66-72
 #
 #     sl, set_mask = slice(self.off, self.off+(sz:=ceildiv(self.bit_width+self.bit_off, 8))), \
@@ -348,7 +348,7 @@ def sname_pairs() -> String:
 #
 # `le` is `sys.byteorder == "little"` and it is a PARAMETER -- see the header
 # on `bf_order_big`.
-# ===========================================================================
+
 
 def Field.bf_size(+f: Field) -> U32: H_ceildiv_u32(U32.add(Field.bit_width(f), Field.bit_off(f)), 8)
 def Field.mask(+f: Field) -> U32: U32.sub(U32.shln(1, U32.to_nat(Field.bit_width(f))), 1)
@@ -409,7 +409,6 @@ def Field.bset_overflows(+f: Field, v: U32) -> Bool:
 # file: `U32.shrn(x, 0n)` is `x`, not `x & 0xFF`, so byte 0 of every bitfield
 # store came out as the WHOLE merged word and `bf_set_b_abc` printed `ffab...`
 # where CPython prints `cfab...` -- `bf_set_a_15` was right and `bf_set_b_abc`
-# was not, because the first store's slice was one byte wide and `to_bytes(1)`
 # truncated for it. `U32.shrn` is a logical shift with no width argument, so
 # EVERY byte extraction in this file masks, and that is now stated once here and
 # once at `u32_hex` rather than being rediscovered.
@@ -463,7 +462,7 @@ def Field.wide(+f: Field) -> Field:
 def Field.store(mem: List<&2, U32>, +f: Field, v: U32) -> List<&2, U32>:
   Field.bset(mem, Field.wide(f), v, True{})
 
-# ===========================================================================
+
 # `_resolve`'s THROWAWAY ctypes CLASS. c.py:81-72
 #
 #     else: cf = type(self.name, (ctypes.Structure,), {"_layout_": "ms", "_pack_": 1,
@@ -480,7 +479,7 @@ def Field.store(mem: List<&2, U32>, +f: Field, v: U32) -> List<&2, U32>:
 # CONSTRUCTION, which the oracle captures out of c.py by shimming the module
 # global `type` -- a module global shadows the builtin, so `c.types.type` does
 # NOT work and `c.__dict__["type"]` does.
-# ===========================================================================
+
 
 def Field.dummy_layout() -> String: "ms"
 def Field.dummy_pack() -> U32: 1
@@ -508,7 +507,7 @@ def Field.dummy_lens_row(idx: U32, off: U32) -> String:
 def Field.dummy_names_row(idx: U32) -> String:
   String.join(List.append(&2, String, List.append(&2, String, Field.dummy_names(idx), ["_"]), ["v"]), ",")
 
-# ===========================================================================
+
 # `Struct`, `record`, `Struct.__init__`. c.py:40-54
 #
 #     def record(cls) -> type[Struct]:
@@ -518,7 +517,7 @@ def Field.dummy_names_row(idx: U32) -> String:
 # `_fields_` is ONE entry, so `Struct.mem_name` and `Struct.mem_len` have no
 # index and no search: `_mem_` at `SIZE` bytes. `sizeof` is that length and
 # `SIZE` is the class attribute, which `init_c_struct_t` never sets.
-# ===========================================================================
+
 
 # `record(cls)`: `setattr(cls, "_fields_", [('_mem_', ctypes.c_byte * cls.SIZE)])`
 # -- the length comes FROM `SIZE`, so the two agree here and only here.
@@ -579,9 +578,9 @@ def Struct.init(+s: Struct, +mem: List<&2, U32>, +args: List<&2, U32>, kwn: Stri
                              List.take(&2, U32, args, U32.to_nat(Struct.nset(s, U32.from_nat(List.length(&2, U32, args))))),
                              mem))
 
-# ===========================================================================
+
 # HEX. `memoryview(obj).cast("B").hex()` and Python's `bytes.hex()`
-# ===========================================================================
+
 
 def HEX() -> List<&2, String>: ["0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"]
 def mem_hex.zeros(n: U32) -> List<&2, U32>: List.replicate(U32, U32.to_nat(n), 0)
@@ -593,7 +592,7 @@ def mem_hex.go(ms: List<&2, U32>, acc: String) -> String:
     case Nil{}: acc
     case b <> bt: mem_hex.go(bt, String.concat([acc, byte_hex(b)]))
 
-# ===========================================================================
+
 # c.py:84-87  `init_c_struct_t`, `init_c_var`
 #
 #     @functools.cache
@@ -606,7 +605,7 @@ def mem_hex.go(ms: List<&2, U32>, acc: String) -> String:
 # 5. `functools.cache` is process-wide memoisation: a WALL, since it is the
 # shape of `ics_cache_same_obj=1` / `ics_cache_diff_obj=0` and there is no
 # module-level mutable state to hold it. `TODO(p3) c.py:83  symbol=init_c_struct_t`.
-# ===========================================================================
+
 
 # `type("CStruct", (Struct,), {'_fields_': [('_mem_', ctypes.c_byte * sz)]})`
 # -- `SIZE` IS NOT IN THAT DICT, so `SIZE` stays the inherited `0` and only
@@ -621,9 +620,9 @@ def init_c_struct_t(+mem_len: U32, fields: List<&2, Field>) -> Struct:
 # `var_ctor_default=0`.
 def init_c_var.val(ty_zero: U32, cb_ret: U32) -> U32: ty_zero
 
-# ===========================================================================
+
 # c.py:89-142  `DLL`
-# ===========================================================================
+
 
 # `nm.replace('-','_')`, then `.upper()`, then `+"_PATH"`. `'-'` is codepoint 45
 # and `'_'` is 95, so the fold needs no Char literal.
@@ -787,7 +786,7 @@ def findlib.no_path_key(has_path: Bool) -> String:
     case True{}: ""
     case False{}: "KeyError:'PATH'"
 
-# ===========================================================================
+
 # the name correspondence, which is a correspondence and not a score.
 #
 # `python3 .agents/slop/slop_1to1.py --names` says: `upstream=18 bend=55
@@ -847,9 +846,9 @@ def findlib.no_path_key(has_path: Bool) -> String:
 #   became a constructor (`record` -> `Struct.of`), and 6 are `typing`/`ctypes`
 #   declarations whose runtime value is an ADDRESS or a TYPE OBJECT and which are
 #   WALLS. Every one of the 6 has a `TODO(p3)` naming its `c.py` line.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE GATE. 129 rows, one `name=value` line each, and the ORACLE IS
 # `.agents/slop/c-oracle.py`, which is `.agents/slop/c-gate.sh`.
 #
@@ -865,7 +864,7 @@ def findlib.no_path_key(has_path: Bool) -> String:
 # `b2s` is the row formatter and `u32_hex` is the width-8 hex, because
 # `ioctl_none_ord_A_11=00004111` is a number in hex and every other `so_*` and
 # `bf_set_*` row is a byte string in hex. A count row is never emitted.
-# ===========================================================================
+
 
 def b2s(x: Bool) -> String: Bool.pick(String, x, "1", "0")
 
@@ -1234,7 +1233,7 @@ def main() -> IO(Unit):
 # name-comparing harness reported 0 for all 30 mutations in one unit of this project.
 #
 #   id     moved   the rule it breaks / the rows it moved
-#   -----  ------  ---------------------------------------------------------
+
 #   M1     1       the no-struct arm IGNORES `__idir` -- fold the direction in
 #                 MOVED ioctl_none_idir3_same
 #   M2     ZERO    `__set_name__`'s SECOND arm: `idx` is 0 when the owner had no entries
@@ -1311,4 +1310,4 @@ def main() -> IO(Unit):
 # message. In both cases the row COUNT is unchanged at 129 and only a byte diff sees it,
 # which is exactly how `renderer/tc_ptx.bend` shipped `"mov.b32 %r0, %r1;"` corrupted to
 # `"%T.r1"` with 620 green rows. A row count is not a proof.
-# ===========================================================================
+

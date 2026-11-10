@@ -4,7 +4,7 @@
 # `.agents/slop/elf_prologue.bend` and rebuild, or the fixture bytes and the hand
 # half can drift apart.
 #
-# ===========================================================================
+
 # why this file is on the critical path, and what is broken under it.
 #
 # `runtime/ops_cpu.py:19/21` builds `link_libs=[self.libm, self.rt_lib]` and
@@ -22,7 +22,7 @@
 # reported not fixed -- is checkable the moment it lands.
 # `.agents/slop/elf/REPORT.md` has the full report.
 #
-# ===========================================================================
+
 # this is a BYTE-packing domain, which is the good case.
 #
 # There is no Python behaviour to interpret: the authority is the ELF
@@ -35,7 +35,7 @@
 # it. An off-by-one in the section walk, a wrong stride, or a transposed field
 # lands on a DIFFERENT number per fixture instead of agreeing by accident.
 #
-# ===========================================================================
+
 # field order is gated as a string, never as a count.
 #
 # `struct_libusb_transfer` shipped with transposed fields and a count-based gate
@@ -58,7 +58,7 @@
 # declares all three as `Quant` and then
 #   Error: - expected : Quant / - observed : String
 #
-# ===========================================================================
+
 # the two upstream defects. `tinygrad/` is read-only to this unit; both are
 # REPRODUCED against real files (`.agents/slop/elf/REPORT.md`) and the PORT
 # MATCHES THE CODE AS WRITTEN, because a 1:1 port that silently fixed them
@@ -75,7 +75,7 @@
 #    linker emits as a section. `r64.so` is that case, and the row
 #    `elf_refuse_r64so_trgt_dyn` names the target the derivation produces.
 #
-# ===========================================================================
+
 # THE WALLS.
 #
 #   1. 64-BIT VALUES. bend 2.0.34 has no 64-bit integer. `r_offset`, `st_value`,
@@ -107,7 +107,7 @@
 #      either. The section table is BUILT prepended and REVERSED ONCE, because its
 #      order is the answer; the row helpers are BUILT appended and never reversed.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF. `libc` is `tinygrad/runtime/autogen/libc.py`,
 # generated and NOT in this unit's scope; its STRUCT LAYOUTS and its constants
 # are named here as the port's own tables and are gated against the oracle
@@ -162,11 +162,11 @@
 import Base
 import ./../../helpers.bend as H
 
-# ===========================================================================
+
 # THE BYTE LAYER. A blob is a hex String (WALL 4) and these are its readers.
 # The little-endian order is load-bearing: reading an ELF header big-endian
 # yields a plausible wrong number, not an error.
-# ===========================================================================
+
 def Hex.d(c: Char) -> U32: Char.to_u32(c)
 def Hex.isdig(c: Char) -> Bool: Char.is_digit(c)
 def Hex.isupp(c: Char) -> Bool: Char.is_upper(c)
@@ -272,12 +272,12 @@ def Strs.go(xs: List<&2, String>, acc: List<&2, String>) -> List<&2, String>:
     case +h <> t: Strs.go(t, List.append(&2, String, acc, [h]))
 def jstr(+xs: List<&2, String>) -> String: String.join(Strs.go(xs, Nil{}), ",")
 
-# ===========================================================================
+
 # W64 -- a 64-bit little-endian word as its two halves. Named W64 rather than
 # Pair because `Pair` is a Bend builtin (measured: "duplicate declaration:
 # Pair"). Both halves are printed in the rows, `hi:lo`, so a port that swapped
 # them disagrees rather than producing a plausible address.
-# ===========================================================================
+
 type W64 is Data:
   W64{wlo: U32, whi: U32}
 
@@ -295,7 +295,6 @@ def W64.text(+w: W64) -> String: String.concat([U32.show(W64.hi(w)), ":", U32.sh
 # which is the honest total form: every address a real object file has is under
 # 2^32, and `elf_w64_is_addr` pins that against the oracle.
 def W64.as_idx(+w: W64) -> U32: W64.lo(w)
-# the WORD read, and the bug it fixes. a 64-bit little-endian WORD at byte `k` is
 # `le32(k)` and `le32(k+4)`. Writing the pair as `(k, k+8)` -- the start of the
 # NEXT field -- reads FOUR BYTES PAST the field and returns the next section
 # header's bytes as this field's high half. `sh_entsize` is at 56, so its high
@@ -321,10 +320,10 @@ def Blob.magic_hex(+h: String) -> String:
   String.concat([Hex.u8(Blob.u8(h, 0)), Hex.u8(Blob.u8(h, 1)),
                  Hex.u8(Blob.u8(h, 2)), Hex.u8(Blob.u8(h, 3)), ""])
 
-# ===========================================================================
+
 # THE ELF CONSTANTS. Every value is MEASURED off `tinygrad/runtime/autogen/
 # libc.py` by the oracle, never transcribed. The rows `elf_c_*` carry them.
-# ===========================================================================
+
 # `libc.ELFMAG` IS A PYTHON STRING, `"\177ELF"`, and `blob[:4] == ELFMAG.encode()`
 # compares FOUR BYTES. As a U32 the bytes spell 0x7F454C46 = 2135247942, and
 # `Blob.le32(h, 0)` gives 0x464C457F = 1179403647 -- the SAME FOUR BYTES IN
@@ -350,10 +349,10 @@ def SHF_EXECINSTR() -> U32: 4
 
 # `blob[:4] == ELFMAG.encode()`, elf.py:16. Four bytes, and the answer is a Bool.
 def magic_ok(+h: String) -> Bool: U32.is_eq(Blob.le32(h, 0), ELFMAG_LE())
-# ===========================================================================
+
 # THE FIELD-NAME STRINGS. These are the GATE, not documentation: they are the
 # `register_fields` name lists from autogen/libc.py, compared as strings.
-# ===========================================================================
+
 def F_EHDR() -> String:
   String.concat(["e_ident,e_type,e_machine,e_version,e_entry,e_phoff,e_shoff,e_flags,",
                  "e_ehsize,e_phentsize,e_phnum,e_shentsize,e_shnum,e_shstrndx"])
@@ -367,9 +366,9 @@ def F_SYM32() -> String: "st_name,st_value,st_size,st_info,st_other,st_shndx"
 def F_RELA() -> String: "r_offset,r_info,r_addend"
 def F_REL() -> String: "r_offset,r_info"
 
-# ===========================================================================
+
 # THE RECORDS. EVERY FIELD IS TYPED (measured: an untyped field is `Quant`).
-# ===========================================================================
+
 # `Elf64_Ehdr` / `Elf32_Ehdr`, libc.py:251/:233. The `e_ident` array is NOT a
 # field: it is the four magic bytes plus the class byte, and `magic_ok` and
 # `is64` read it directly -- a record field would be a 16-byte array, which Bend
@@ -446,7 +445,7 @@ def Reloc.r_addend(+r: Reloc) -> W64:
   match r:
     case Reloc{r_at, r_tgt, r_type, r_addend}: r_addend
 
-# ===========================================================================
+
 # THE READERS. Each takes the blob and a BYTE OFFSET and reads ONE field at its
 # SPEC offset. The offsets ARE the table; each gets its own def so a changed
 # offset is a changed def rather than a constant buried in an expression.
@@ -457,7 +456,7 @@ def Reloc.r_addend(+r: Reloc) -> W64:
 # Elf32_Ehdr registers: 16 18 20 24 28 32 36 40 42 44 46 48 50
 #   -- the SAME offsets up to e_entry and then 4 lower for every 64-bit field,
 #   which is the whole difference between the two layouts.
-# ===========================================================================
+
 def Ehdr.v_phoff(+h: String, +x: Bool) -> W64:
   Bool.pick(W64, x, W64.of(Blob.le32(h, 32), 0), W64.of(Blob.le32(h, 28), 0))
 def Ehdr.v_shoff(+h: String, +x: Bool) -> W64:
@@ -607,7 +606,7 @@ def Ehdr.text(+e: Ehdr) -> String:
      String.concat(["e_shnum@60:", U32.show(Ehdr.e_shnum(e))]),
      String.concat(["e_shstrndx@62:", U32.show(Ehdr.e_shstrndx(e))])], ",")
 
-# ===========================================================================
+
 # the field-OFFSET table for Shdr, one entry per field, each spelling both
 # LAYOUTS.
 # Elf64_Shdr: sh_name@0 u32 sh_type@4 u32 sh_flags@8 u64 sh_addr@16 u64
@@ -770,13 +769,13 @@ def Shdr.at_text32(+s: Shdr) -> String:
 def Shdr.at_text(+s: Shdr, +x: Bool) -> String:
   Bool.pick(String, x, Shdr.at_text64(s), Shdr.at_text32(s))
 
-# ===========================================================================
+
 # THE Sym READERS, BOTH LAYOUTS.
 # Elf64: st_name@0 st_info@4 st_other@5 st_shndx@6 st_value@8 st_size@16
 # Elf32: st_name@0 st_value@4 st_size@8 st_info@12 st_other@13 st_shndx@14
 # The ORDER is the same six names and the OFFSETS are not, so the field-order
 # STRING is two rows and the offset strings are two more.
-# ===========================================================================
+
 def Sym.size(x: Bool) -> U32: Bool.pick(U32, x, 24, 16)
 def Sym.o_info(x: Bool, +off: U32) -> U32: Bool.pick(U32, x, U32.add(off, 4), U32.add(off, 12))
 def Sym.o_other(x: Bool, +off: U32) -> U32: Bool.pick(U32, x, U32.add(off, 5), U32.add(off, 13))
@@ -842,7 +841,7 @@ def Sym.at_text32(+s: Sym) -> String:
 def Sym.at_text(+s: Sym, +x: Bool) -> String:
   Bool.pick(String, x, Sym.at_text64(s), Sym.at_text32(s))
 
-# ===========================================================================
+
 # `_strtab`, elf.py:19 -- `blob[idx:blob.find(b'\x00', idx)].decode('utf-8')`.
 # THE ONLY `find` IN EITHER FILE. Bend has no `find` and no regex, so it is a
 # fold to the first NUL.
@@ -877,7 +876,7 @@ def Str.tab(+h: String, +tbl_off: U32, +byte_at: U32) -> String:
   Str.at(Blob.fuel(h), byte_at, Blob.slice(h, tbl_off, Blob.nbytes(h)))
 def Str.drop_n(+s: String, +n: U32) -> String: String.drop(s, U32.to_nat(n))
 
-# ===========================================================================
+
 # THE SECTION LIST. elf.py:22-24.
 #
 # four things measured here, all of them about the same list-walk shape:
@@ -899,7 +898,7 @@ def Str.drop_n(+s: String, +n: U32) -> String: String.drop(s, U32.to_nat(n))
 # `Walk{w_off, w_i}` is `shoff` and the section index TOGETHER. As two parameters
 # that is four `+`s and one double-use error per line; as a `Data` record it is
 # one parameter threaded once. That is the entire reason `Walk` exists.
-# ===========================================================================
+
 type Walk is Data:
   Walk{w_off: U32, w_i: U32}
 def Walk.of(off: U32, i: U32) -> Walk: Walk{off, i}
@@ -980,7 +979,7 @@ def Sections.go2(fuel: List<&2, Shdr>, +h: String, +sstr: String,
 def Sections.build(+h: String, +e: Ehdr, +x: Bool) -> List<&2, ElfSection>:
   List.reverse(&2, ElfSection,
     Sections.go2(Sections.of(h, e, x), h, shstrtab(h, e, x), Nil{}))
-# ===========================================================================
+
 # link_sym, elf.py:9-13. THE LIVE BUG.
 #
 # `for lib in libs: try: return unwrap(ctypes.cast(getattr(lib, sym),
@@ -1002,7 +1001,7 @@ def Sections.build(+h: String, +e: Ehdr, +x: Bool) -> List<&2, ElfSection>:
 # 0 means "nobody exported it" -- which is the refusal. It is a position and not
 # an address because bend cannot ask a dynamic linker for an address, and the
 # position names the library the address would have come from.
-# ===========================================================================
+
 type Link is Data:
   Link{l_name: String, l_syms: List<&2, String>}
 def Link.of(nm: String, syms: List<&2, String>) -> Link: Link{nm, syms}
@@ -1037,13 +1036,13 @@ def Link.at(libs: List<&2, Link>, k: U32) -> Link:
 def link_sym_msg(sym: String) -> String:
   String.concat(["Attempting to relocate against an undefined symbol ", sym])
 
-# ===========================================================================
+
 # THE RELOCATION LAYER. elf.py:26-30 and :42-48.
 #
 # elf.py:26's `_to_carray(sh, ctype)`: `(ctype * (sh_size // sh_entsize))`. The
 # DIVISION IS THE COUNT OF ENTRIES and the entsize is the STRIDE, and they differ
 # between classes (16/24 for Elf64 Rel/Rela, 8/12 for Elf32) -- so both are rows.
-# ===========================================================================
+
 def Rel.ent64(+rela: Bool) -> U32: Bool.pick(U32, rela, 24, 16)
 def Rel.ent32(+rela: Bool) -> U32: Bool.pick(U32, rela, 12, 8)
 def Rel.entsize(+x: Bool, +rela: Bool) -> U32: Bool.pick(U32, x, Rel.ent64(rela), Rel.ent32(rela))
@@ -1203,7 +1202,7 @@ def Img.grow(+i: Img, +c: String) -> Img: Img.append(i, c)
 def Sec.align_of(+s: ElfSection, +force: U32) -> U32:
   Img.maxalign(W64.as_idx(Shdr.addralign(ElfSection.header(s))), force)
 
-# ===========================================================================
+
 # relocate, elf.py:56-81. THE TEN ARMS OF THE `match r_type`.
 #
 # `relocate` is a CLOSURE over `image` and is therefore unreachable from outside,
@@ -1220,7 +1219,7 @@ def Sec.align_of(+s: ElfSection, +force: U32) -> U32:
 #     tgt)` -- the `LDR x17, 8 ; BR x17` trampoline, 16 bytes.
 # Both LENGTHS are load-bearing (`len(image)-14` and `len(image)-16`) so
 # `elf_tr_*_len` is a row beside the bytes.
-# ===========================================================================
+
 def R_X86_64_PC32() -> U32: 2
 def R_X86_64_PLT32() -> U32: 4
 def R_AARCH64_ADR_PREL_PG_HI21() -> U32: 275
@@ -1247,7 +1246,7 @@ def Tramp.x86_ret(len_image: U32, addend: U32, ploc: U32) -> U32:
 def Tramp.arm_ret(len_image: U32, ploc: U32) -> U32:
   U32.sub(U32.sub(len_image, Tramp.arm_len()), ploc)
 
-# ===========================================================================
+
 # THE BYTE DIGEST. Every IMAGE row in the oracle is a hash of the image, and
 # sha256 is not writable in bend, so the hash is FNV-1a 32 over the hex string.
 # it is not a cryptographic hash and is not asked to be: its only job is to be a
@@ -1255,7 +1254,7 @@ def Tramp.arm_ret(len_image: U32, ploc: U32) -> U32:
 # 7248 hex digits. `U32.mul` and `U32.xor` wrap mod 2**32 exactly as Python's
 # `& 0xffffffff` does -- MEASURED, both agree that 0xffffffff*0xffffffff == 1 --
 # so the oracle's Python and the port's bend compute the same word.
-# ===========================================================================
+
 def Fnv.at() -> U32: 2166136261
 def Fnv.pr() -> U32: 16777619
 def Fnv.step(+h: String, +i: U32, +acc: U32) -> U32:
@@ -1266,7 +1265,7 @@ def Fnv.go(fuel: Nat, +h: String, +i: U32, +acc: U32) -> U32:
     case Succ{q}: Fnv.go(q, h, U32.add(i, 1), Fnv.step(h, i, acc))
 def Fnv.of(+h: String) -> U32: Fnv.go(Blob.fuel(h), h, 0, Fnv.at())
 
-# ===========================================================================
+
 # elf.py:34-38, THE IMAGE LOOP. `Built` exists because elf.py:38 writes back
 # into `sh.header.sh_addr`, so the fold returns BOTH the image and the section
 # list with those addresses filled in -- and the gate reads the ADDRESSES back
@@ -1275,7 +1274,7 @@ def Fnv.of(+h: String) -> U32: Fnv.go(Blob.fuel(h), h, 0, Fnv.at())
 # `image[sh_addr : sh_addr + sh_size] = sh.content` is a PLACED WRITE: a splice
 # at a hex offset, not an append. Two helpers because `at` is needed twice with
 # two different meanings -- where the write starts, and where it ends.
-# ===========================================================================
+
 def Img.head(+i: Img, at: U32) -> String:
   String.take(Img.body(i), U32.to_nat(U32.mul(at, 2)))
 def Img.rest(+i: Img, at: U32) -> String:
@@ -1360,7 +1359,7 @@ def Built.of_secs(+xs: List<&2, ElfSection>, force: U32) -> Built:
 def Built.of_blob(+h: String, +e: Ehdr, +x: Bool, force: U32) -> Built:
   Built.of_secs(Sections.build(h, e, x), force)
 
-# ===========================================================================
+
 # THE SYMTAB. elf.py:29.
 #
 # `next((_to_carray(sh, Sym) for sh in sections if sh_type == SHT_SYMTAB), None)`
@@ -1370,7 +1369,7 @@ def Built.of_blob(+h: String, +e: Ehdr, +x: Bool, force: U32) -> Built:
 # turns the sentinel into the zero ElfSection, whose type is SHT_NULL and whose
 # entsize is 0, so `Rel.count`'s zero-entsize arm answers 0 and no division by
 # zero happens. The row `*_symtab_idx` is the sentinel on such a file.
-# ===========================================================================
+
 def Sec.is_symtab(+s: ElfSection) -> Bool: U32.is_eq(Sec.typ(s), SHT_SYMTAB())
 def Symtab.NONE() -> U32: 4294967295
 def Symtab.step(i: U32, +s: ElfSection, +acc: U32) -> U32:
@@ -1401,7 +1400,7 @@ def Symtab.at(+h: String, +xs: List<&2, ElfSection>, +i: U32, +x: Bool) -> Sym:
 def Symtab.last(+xs: List<&2, ElfSection>, +h: String, +x: Bool) -> Sym:
   Symtab.at(h, xs, U32.sub(Symtab.n(xs), 1), x)
 
-# ===========================================================================
+
 # elf.py:44, THE TARGET LOOKUP. `next(tsh for tsh in sections if tsh.name ==
 # trgt_sh_name)` -- `next()` ON AN EXHAUSTED GENERATOR IS UPSTREAM DEFECT 2 and
 # raises a bare `StopIteration` (REPORT.md). The port has no exceptions, so the
@@ -1411,7 +1410,7 @@ def Symtab.last(+xs: List<&2, ElfSection>, +h: String, +x: Bool) -> Sym:
 # carries a sentinel and a second match is discarded: that is the difference
 # between `next(...)` and a fold, and section names are unique in a real file so
 # nothing distinguishes them until it does not.
-# ===========================================================================
+
 def Trg.NONE() -> U32: 4294967295
 def Trg.hit(+nm: String, +s: ElfSection) -> Bool: String.eq(ElfSection.name(s), nm)
 def Trg.step(+nm: String, +s: ElfSection, +acc: U32) -> U32:
@@ -1425,7 +1424,7 @@ def Trg.off.go(xs: List<&2, ElfSection>, +nm: String, +acc: U32) -> U32:
 def Trg.off(+xs: List<&2, ElfSection>, +nm: String) -> U32: Trg.off.go(xs, nm, Trg.NONE())
 def Trg.found(v: U32) -> Bool: Bool.not(U32.is_eq(v, Trg.NONE()))
 
-# ===========================================================================
+
 # THE RELOCATION LIST. elf.py:40-48.
 #
 # ONE reloc is `(target_image_off + roff, tgt, rtype, raddend)`: where in the IMAGE
@@ -1444,7 +1443,7 @@ def Trg.found(v: U32) -> Bool: Bool.not(U32.is_eq(v, Trg.NONE()))
 # own `sh_link`. For a relocatable object the two tables are the same section and
 # the bug is invisible; for a LINKED image they differ and 8 of 15 symbols
 # misresolve (REPORT.md). `Rc.str` is `sh_strtab`, as written.
-# ===========================================================================
+
 type Rctx is Data:
   Rctx{rx_secs: List<&2, ElfSection>, rx_str: String, rx_libs: List<&2, Link>}
 def Rctx.of(s: List<&2, ElfSection>, str: String, libs: List<&2, Link>) -> Rctx:
@@ -1548,14 +1547,14 @@ def Rc.walk(+c: Rctx, +h: String, +x: Bool, +xs: List<&2, ElfSection>) -> List<&
   List.append(&2, Reloc, Rc.walk.rela(c, h, x, xs),
               Rc.walk.go(c, h, x, xs, False{}, Nil{}))
 
-# ===========================================================================
+
 # elf_loader, elf.py:15-50. THE RETURN VALUE.
 #
 # the order is LOAD-bearing and it is the point of `Built`: the image is built
 # BEFORE the relocs, because elf.py:44's `sh_addr` is read off the section list
 # that elf.py:38 JUST REWROTE. Reading the addresses before the image loop gives
 # the PRE-ALLOC addresses and every reloc lands in the wrong place.
-# ===========================================================================
+
 def elf_loader_img(+h: String, +e: Ehdr, +x: Bool, force: U32) -> Built:
   Built.of_blob(h, e, x, force)
 def elf_loader_ctx(+h: String, +b: Built, +e: Ehdr, +x: Bool,
@@ -1638,7 +1637,7 @@ def Reloc.call26_getbits(v: U32) -> U32: H.getbits(v, 2n, 27n)
 def Reloc.lo12(+tgt: U32, start: Nat, end: Nat) -> U32:
   U32.shln(H.getbits(tgt, start, end), 10n)
 
-# ===========================================================================
+
 # relocate, elf.py:56-81. THE TEN ARMS.
 #
 # `relocate` is a CLOSURE over `image`, so it cannot return both the 32-bit word
@@ -1650,7 +1649,7 @@ def Reloc.lo12(+tgt: U32, start: Nat, end: Nat) -> U32:
 # and `.agents/slop/elf_reloc_probe.py` reaches all ten through the real
 # `jit_loader` by patching `r_type` in a real object file, so `elf_reloc_*` is one
 # DISTINCT word per arm rather than one shared zero.
-# ===========================================================================
+
 type Rloc is Data:
   Rloc{rl_word: U32, rl_pad: String}
 def Rloc.of(w: U32, p: String) -> Rloc: Rloc{w, p}
@@ -1711,7 +1710,7 @@ def Reloc.a_call26(instr: U32, +base: U32, +ploc: U32, +tgt: U32) -> Rloc:
 # the bytes.
 def Reloc.a_call26_tramp(tgt: U32) -> String: Tramp.arm(tgt)
 
-# ===========================================================================
+
 # jit_loader, elf.py:52-86. THE RELOCATION FOLD.
 #
 # elf.py:84-85, ONE reloc at a time:
@@ -1723,7 +1722,7 @@ def Reloc.a_call26_tramp(tgt: U32) -> String: Tramp.arm(tgt)
 # (`Img.write_at`) and the word is packed little-endian (`Hex.pair`), which is
 # little-endian order -- `Hex.of` is big-endian and swapping them writes the
 # instruction BACKWARDS, which is a plausible-looking word and a wrong one.
-# ===========================================================================
+
 def Jit.ploc(+r: Reloc) -> U32: W64.as_idx(Reloc.r_at(r))
 def Jit.tgt(+r: Reloc) -> U32: U32.add(W64.as_idx(Reloc.r_tgt(r)), W64.as_idx(Reloc.r_addend(r)))
 def Jit.addend(+r: Reloc) -> U32: W64.as_idx(Reloc.r_addend(r))
@@ -1810,7 +1809,7 @@ def jit_loader_img(+e: ElfImage) -> Img: Img.of(elf_image_len(e), elf_image_body
 def jit_loader(+e: ElfImage, +base: U32) -> Img:
   Jit.go(elf_image_relocs(e), jit_loader_img(e), base)
 
-# ===========================================================================
+
 # THE GATE.
 #
 # Every `py=` in the table below is a value CALLed out of tinygrad's own
@@ -1837,7 +1836,7 @@ def jit_loader(+e: ElfImage, +base: U32) -> Img:
 #   * A REFUSAL is a STRING naming the refusal, not a Bool.
 #   * The LINK table is a per-symbol PER-LIBRARY string, so a missing libobjc and
 #     a present libSystem are different answers and neither is a count.
-# ===========================================================================
+
 def row(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def urow(nm: String, v: U32) -> IO(Unit): row(nm, U32.show(v))
 # `brow` PRINTS 1/0, NOT `True`/`False`. Every other row in this file is numeric,
@@ -1969,14 +1968,14 @@ def Str.nm.go(xs: List<&2, Shdr>, +sstr: String, +acc: List<&2, String>) -> List
 def Str.names(+xs: List<&2, Shdr>, +sstr: String) -> String:
   String.join(Str.nm.go(xs, sstr, Nil{}), ",")
 
-# ===========================================================================
+
 # the list renderers the gate reads. Every one of them builds the string while
 # the walk runs rather than collecting and joining afterwards, because there is
 # no `let` to name a collected list and no map-then-join without two walks.
 #
 # `W64.text` is the `hi:lo` shape and it is the ONLY place the order of the halves
 # is written down, so every 64-bit column goes through it.
-# ===========================================================================
+
 def W64s.go(xs: List<&2, W64>, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: acc

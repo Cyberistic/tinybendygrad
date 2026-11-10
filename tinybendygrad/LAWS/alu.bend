@@ -20,11 +20,11 @@
 import Base
 import ./spec.bend as S
 
-# ---------------------------------------------------------------------------
+
 # The scalar the decompositions need. `SpConst` in spec.bend carries the value
 # in its `v` field; a real value type lands with dtype.bend, and these two are
 # the placeholder the structural laws quantify over.
-# ---------------------------------------------------------------------------
+
 
 def one() -> S.Sp:
   S.SpConst{S.SpInvalid{}, S.index()}
@@ -37,26 +37,26 @@ def k(m: S.Sp) -> S.Sp:
   # materialised as a const of the same dtype as the comparison.
   S.SpConst{m, S.boolean()}
 
-# ---------------------------------------------------------------------------
+
 # tinyspec: Neg(A) = Mul(A, -1)
-# ---------------------------------------------------------------------------
+
 
 def neg(a: S.Sp) -> S.Sp:
   S.SpMul{a, one()}
 
-# ---------------------------------------------------------------------------
+
 # tinyspec: Sub(a,b) = Add(a, Neg(b))
 #
 # Note this is Mul-then-negate rather than a fused Sub, because a single dtype
 # promotion has to happen once, in Add.
-# ---------------------------------------------------------------------------
+
 
 def sub(a: S.Sp, b: S.Sp) -> S.Sp:
   S.SpAdd{a, neg(b)}
 
-# ---------------------------------------------------------------------------
+
 # tinyspec: Div(a,b) = Mul(a, Recip(b))
-# ---------------------------------------------------------------------------
+
 
 def recip(a: S.Sp) -> S.Sp:
   S.SpRecip{a}
@@ -64,7 +64,7 @@ def recip(a: S.Sp) -> S.Sp:
 def div(a: S.Sp, b: S.Sp) -> S.Sp:
   S.SpMul{a, recip(b)}
 
-# ---------------------------------------------------------------------------
+
 # tinyspec: CmpGt(a,b) = CmpLt(b, a)      -- the operands swap
 #           CmpGe(a,b) = CmpNe(CmpLt(a, b), 1)
 #           CmpLe(a,b) = CmpNe(CmpLt(b, a), 1)
@@ -74,7 +74,7 @@ def div(a: S.Sp, b: S.Sp) -> S.Sp:
 # Every comparison is CmpLt or CmpNe followed by a NOT against 1: the hardware
 # has one less-than and one not-equal, and >= is < negated. That is the whole
 # reason the spec has a Not at all.
-# ---------------------------------------------------------------------------
+
 
 def cmp_gt(a: S.Sp, b: S.Sp) -> S.Sp:
   S.SpCmpLt{b, a}
@@ -94,14 +94,14 @@ def cmp_eq(a: S.Sp, b: S.Sp) -> S.Sp:
 def logical_not(a: S.Sp) -> S.Sp:
   S.SpCmpNe{a, one()}
 
-# ---------------------------------------------------------------------------
+
 # tinyspec: Sqrt(A) = Exp2(0.5 * Log2(A))
 #           Pow(A,B) = Exp2(Log2(A) * B)
 #           Mulacc(A,B,C) = Add(Mul(A, B), C)
 #
 # Both sqrt and pow go through log2/exp2 because those are the two primitives
 # the hardware actually has; sqrt is pow at the exponent one half.
-# ---------------------------------------------------------------------------
+
 
 def half_of(x: S.Sp) -> S.Sp:
   S.SpMul{x, one()}

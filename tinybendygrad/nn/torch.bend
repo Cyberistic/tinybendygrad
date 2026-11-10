@@ -42,7 +42,7 @@
 #                                                 `from e` chain, and the fact that
 #                                                 NOTHING AFTER IT HAPPENS
 #
-# ===========================================================================
+
 # THE THREE WALLS, and they are all `pathlib` / `sys` / the import machinery.
 #
 # 1. PATHLIB (device.py has the same wall, ops_*.py files take it for granted).
@@ -69,7 +69,7 @@
 #    TODO(p3) nn/torch.py:4  the import -- `import extra.torch_backend.backend` binds
 #      names in `sys.modules`, and the module search is the wall.
 #
-# ===========================================================================
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER derives the argument
 # of one of the three calls (pure, and the gate checks it) OR records that call
 # in the trace (and the gate checks the ORDER). There is no third kind.
@@ -82,14 +82,14 @@
 # measured by the COUNT and by the absence of a third entry, not by a later
 # call being suppressed. that is the honest limit of the claim; see
 # `torch_refuse_n`.
-# ===========================================================================
+
 import Base
 import ../helpers.bend as H
 
-# ===========================================================================
+
 # THE CONSTANTS. Every literal in the file, and the four measured values that
 # come out of importing it in CPython.
-# ===========================================================================
+
 def PARENT_DEPTH() -> U32: 2
 def MSG_NEWLINE_AT() -> U32: 29
 def MSG_LINES() -> U32: 2
@@ -120,9 +120,9 @@ def MSG() -> String: String.concat([MSG_HEAD(), NL(), MSG_TAIL()])
 
 def MSG_LINES_GOT() -> U32: U32.from_nat(List.length(&2, String, String.split(MSG(), LFU())))
 
-# ===========================================================================
+
 # THE TYPES.
-# ===========================================================================
+
 type Call is Data:
   Call{k: U32, arg: U32}
 
@@ -139,9 +139,9 @@ type Tr is Data:
 type Imp is Data:
   Imp{path: List<&2, String>, t: Tr}
 
-# ===========================================================================
+
 # THE TRACE.
-# ===========================================================================
+
 def Tr.of() -> Tr: Tr{Nil{}, False{}}
 
 def Tr.calls(t: Tr) -> List<&2, Call>:
@@ -185,11 +185,11 @@ def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
 
-# ===========================================================================
+
 # READING THE TRACE. Same three readers as ops_webgpu, and the same fuel bug they
 # were written around: the fuel is the TRACE's length and the answer is
 # `at == patlen`, so a reversed pattern does NOT match.
-# ===========================================================================
+
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
     case 0n: got
@@ -248,7 +248,7 @@ def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
 
-# ===========================================================================
+
 # nn/torch.py:3 -- `.parent.parent`, and it is TWO components, not one. The port
 # deletes the last two components and the two separators in front of them, which
 # is what makes the answer `/abs/tinygrad` and not `abs/tinygrad`: the leading
@@ -303,7 +303,7 @@ def drop2(+s: String) -> String:
   drop2.at(List.length(&2, String, String.split(s, SLASH_C())), String.starts_with(s, SLASH()),
            tail2.at2(s), s)
 
-# ===========================================================================
+
 # nn/torch.py:3 `-- `PurePath.as_posix()`. A char fold and not a `String.replace`,
 # because base.bend exports no `replace`. It is a no-op on POSIX and a rewrite
 # on Windows, and the fixture set pins BOTH, because a fold that mapped every
@@ -323,9 +323,9 @@ def posix.go(n: Nat, cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
 def as_posix(+s: String) -> String:
   String.from_list(posix.go(List.length(&2, Char, String.to_list(s)), String.to_list(s), Nil{}))
 
-# ===========================================================================
+
 # nn/torch.py:2-5, the whole of it, as three steps.
-# ===========================================================================
+
 def Imp.of() -> Imp: Imp{Nil{}, Tr.of()}
 
 def Imp.path(x: Imp) -> List<&2, String>:
@@ -355,11 +355,11 @@ def shim.import(ok: Bool, imp: Imp) -> Imp:
 
 def shim.run(f: String, ok: Bool) -> Imp: shim.import(ok, shim.append(f, Imp.of()))
 
-# ===========================================================================
+
 # THE GATE. Every row is a claim about nn/torch.py's TEXT or about a value
 # MEASURED by importing `tinygrad.nn.torch` in CPython. `1`/`0` are booleans,
 # other values are counts, indices and strings.
-# ===========================================================================
+
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
@@ -467,7 +467,7 @@ def main() -> IO(Unit):
     e : Unit <- t_path()
     f : Unit <- t_msg()
     IO.print("torch-done=1")
-# ===========================================================================
+
 # THE MUTATION TABLE. Every number below is `.agents/slop/mutate.py`'s output,
 # not an estimate. The harness applies one edit to a scratch copy, runs the
 # INTERPRETED lane, and diffs the row NAMES; the useful column is "rows MOVED",
@@ -484,7 +484,6 @@ def main() -> IO(Unit):
 # | M7 | the path append happens AFTER the import | 4 | :3 before :4. `torch_has_rejects_reverse` moves too, because the mutation makes the reversed pair actually present -- that row was written to pin `Tr.has` and turned out to double as an order row, exactly as in `ops_webgpu.bend`. |
 # | M8 | the raise is NOT recorded in the trace | 4 | that `raise` is an EVENT and not merely a flag. `torch_raise_arg` and `torch_raise_n_bad` move because the entry is what they read. |
 # | M9 | the raise does NOT set `refused` | 1 | `torch_refused_bad` only. The count and the order rows are unaffected, because a raise with no entry still leaves the trace at two calls -- which is why the flag and the entry are SEPARATE rows. |
-# | M10 | `ok` is ignored -- the raise always fires | 4 | the guard at :4/:5. It moves `torch_n_ok` and `torch_raise_n_ok` (the good fixture now refuses) AND `torch_has_rejects_absent` (the refusal is now in the trace where it was not). |
 # | M11 | a comment-only edit | 0 -- THE CONTROL | a table with no row that CANNOT move is a table of coincidences. |
 #
 # what this gate still does not see, and it is a short list:
@@ -502,4 +501,4 @@ def main() -> IO(Unit):
 #   4. THE PREFIX-TEXT WALL is not the same as the SEMANTIC one: the port reads
 #     `__file__` as a normalised POSIX path, so a Windows-style `__file__` is
 #     handled by `as_posix` alone and a drive letter (`C:\...`) is not.
-# ===========================================================================
+

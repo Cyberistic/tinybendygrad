@@ -15,7 +15,7 @@
 # `schedule/multi.py`. Nothing here imports either, and the gate fixtures are built
 # standalone, so the three files in this directory meet only at the call site.
 #
-# ---------------------------------------------------------------------------
+
 # the flags are parameters, and that is the one convention in this file.
 #
 # `RING`, `ALL2ALL`, `ALLREDUCE_CAST`, `ALLREDUCE_NODE_NDEVS` and
@@ -25,7 +25,7 @@
 # one. The gate builds several `Cfg` values and the row set below is what says the
 # three modes are actually distinguishable -- an all-True selection row would be
 # worthless, since `NAIVE` is the answer for every small case.
-# ---------------------------------------------------------------------------
+
 
 import Base
 import ./../helpers.bend as H
@@ -33,11 +33,11 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-# ===========================================================================
+
 # THE RECORDS. `Chk` is one `(start, end)` chunk bound and `Ch` is the chunking's
 # three derived numbers, which is all `allreduce.py:36-38` computes before it starts
 # building anything.
-# ===========================================================================
+
 type Cfg is Data:
   Cfg{ring: U32, all2all: U32, thr: U32, hdev: U32, cast: Bool}
 
@@ -98,7 +98,7 @@ def Chk.e(x: Chk) -> U32:
   match x:
     case Chk{s, e}: e
 
-# ===========================================================================
+
 # THE MODE, as a number, because `main` prints numbers. 0 is NAIVE, 1 is RING,
 # 2 is ALL2ALL -- and the ORDER IS PYTHON'S: `allreduce.py:16` prints
 # `'ALL2ALL' if use_all2all else 'RING' if use_ring else 'NAIVE'`, so ALL2ALL is
@@ -106,7 +106,7 @@ def Chk.e(x: Chk) -> U32:
 # ALL2ALL. `use_ring`'s own expression already excludes `use_all2all`
 # (`and not use_all2all`), so the tie cannot arise -- and the gate row `sel_both`
 # is what says so rather than leaving it to the reader.
-# ===========================================================================
+
 def red_mode.ring(ring: Bool) -> U32:
   match ring:
     case True{}: 1
@@ -120,11 +120,11 @@ def red_mode.of(a2: Bool, ring: Bool) -> U32:
 def red_mode(+s: Sel) -> U32:
   red_mode.of(Sel.a2(s), Sel.ring(s))
 
-# ===========================================================================
+
 # `concrete = all_int(shape)` -- allreduce.py:13. Every dim of `buf.shape` must be a
 # plain int; a symbolic dim makes the whole reduction NAIVE, because the chunk
 # arithmetic below is integer division and would be meaningless otherwise.
-# ===========================================================================
+
 def red_is_int(s: O.Sint) -> Bool:
   O.SInt.is_int(s)
 
@@ -163,7 +163,7 @@ def red_numel.go(+sh: List<&2, O.Sint>, acc: U32) -> U32:
 def red_numel(+sh: List<&2, O.Sint>) -> U32:
   red_numel.go(sh, 1)
 
-# ===========================================================================
+
 # THE SELECTION -- allreduce.py:13-15, verbatim with the flags as parameters.
 #
 #     concrete = all_int(shape)
@@ -176,7 +176,7 @@ def red_numel(+sh: List<&2, O.Sint>) -> U32:
 # naive allreduce to save on kernel dispatch, chunking and reassembling chunks." So
 # `ndev > 2` and `numel > thr` are BOTH required, `RING >= 2` and `ALL2ALL >= 2` are
 # the "force it" overrides, and `>= 1` is "on, subject to the empirical test".
-# ===========================================================================
+
 def red_ge2(v: U32) -> Bool:
   U32.is_ge(v, 2)
 
@@ -223,7 +223,7 @@ def red_sel(+sh: List<&2, O.Sint>, +ndev: U32, +cfg: Cfg) -> Sel:
   red_sel.of(red_all_int(sh), red_numel(sh), ndev, cfg)
 
 
-# ===========================================================================
+
 # THE CHUNKING -- allreduce.py:36-38.
 #
 #     factor = next((f for f in [32, 16, 8, 4, 2] if numel % f == 0), 1)
@@ -239,9 +239,8 @@ def red_sel(+sh: List<&2, O.Sint>, +ndev: U32, +cfg: Cfg) -> Sel:
 # transcription of `accumulate(..., initial=0)` and needs no reversal at all.
 # `List.append(a, A, xs, ys)` is `xs ++ ys` -- ys lands at the TAIL -- so the
 # accumulator is already in order. (It reads like a prepend and it is not: this file
-# was wrong about that for a while and `.agents/slop/notes/probe-list.bend` is the
 # one-line reproducer. See bend2-constraints.md section H.)
-# ===========================================================================
+
 def red_divides(numel: U32, +f: U32) -> Bool:
   Bool.and(Bool.not(U32.is_zero(f)), U32.is_zero(U32.mod(numel, f)))
 
@@ -340,13 +339,13 @@ def red_bounds(fuel: Nat, +ws: List<&2, U32>, +st: U32, acc: List<&2, Chk>) -> L
 def red_bounds_of(+numel: U32, +ndev: U32) -> List<&2, Chk>:
   red_bounds(U32.to_nat(ndev), red_chunk_sizes(numel, ndev), 0, Nil{})
 
-# ===========================================================================
+
 # THE NODE-LOCAL BRANCH -- allreduce.py:22-28. It fires before the naive/ring choice
 # and is a different algorithm: instead of one ring over `ndev` devices it splits the
 # devices into `ndev/hdev` boxes of `hdev` each, reduces within a box, all-reduces
 # across boxes, and gathers. Its ARITHMETIC is `ndev % hdev == 0` and the box cut
 # points; its graph is `mselect`/`copy_to_device`/`mstack`/`usum`/`pad`/`reshape`.
-# ===========================================================================
+
 def red_hdev_fires.of(on: Bool, divides: Bool) -> Bool:
   Bool.and(on, divides)
 
@@ -370,7 +369,7 @@ def red_cs(fuel: Nat, +k: U32, +numel: U32, +hdev: U32, acc: List<&2, Chk>) -> L
 
 def red_cs_of(+numel: U32, +hdev: U32) -> List<&2, Chk>:
   red_cs(U32.to_nat(hdev), 0, numel, hdev, Nil{})
-# ===========================================================================
+
 # THE GATE. Every number is CPython's: `.agents/slop/notes/sched-allreduce-truth.py`
 # ran `allreduce.py:13-15` and `:36-38` verbatim and printed them, and the table at
 # the foot of this file says which line fixes which row.
@@ -379,7 +378,7 @@ def red_cs_of(+numel: U32, +hdev: U32) -> List<&2, Chk>:
 # boolean for "did it pick ring" would be satisfied by a `use_ring` that was always
 # True and a `use_all2all` that was always False, which is exactly the shape of the
 # bug this fixture exists to catch.
-# ===========================================================================
+
 def red_sh(n: U32) -> O.Sint: O.SI{H.i64_of_i32(n)}
 def red_sym() -> O.Sint: O.SU{0}
 
@@ -406,7 +405,7 @@ def red_eq(a: U32, b: U32) -> U32:
 def red_at(xs: List<&2, Chk>, n: U32) -> Chk:
   Maybe.default(&2, Chk, List.get(&2, Chk, xs, U32.to_nat(n)), Chk{9999, 9999})
 
-# ===========================================================================
+
 # `DEBUG >= 2` -- allreduce.py:16. The THRESHOLD IS 2 AND NOT 1, and that is read out
 # of the source rather than assumed: `.agents/slop/debug_oracle.py` LANE B pulls
 # `re.search(r"DEBUG\s*>=\s*(\d+)", linecache.getline(path, 16))` out of the file
@@ -426,7 +425,7 @@ def red_at(xs: List<&2, Chk>, n: U32) -> Chk:
 # changed it from the ALIAS to the NAME ("dtypes.float" -> "dtypes.f32") -- see
 # `LAWS/spec.bend`'s header on that commit. So the port reads the `nm` FIELD of `Dt`
 # and prefixes it, and does not go through `dtype.bend`'s aliases at all.
-# ===========================================================================
+
 def red_mode_name(m: U32) -> String:
   match m:
     case 2: "ALL2ALL"
@@ -598,7 +597,7 @@ def hv_cs_e0() -> U32: red_eq(Chk.e(red_at(red_cs_of(1000, 4), 0)), 250)
 def hv_cs_e3() -> U32: red_eq(Chk.e(red_at(red_cs_of(1000, 4), 3)), 1000)
 def hv_cs2_n() -> U32: U32.from_nat(List.length(&2, Chk, red_cs_of(1000, 2)))
 
-# ===========================================================================
+
 # THE GATE DOCUMENT. `1` is True, `0` is False, and a COUNT row prints the count.
 # Every value is CPython's: `.agents/slop/notes/sched-allreduce-truth.py` ran
 # `allreduce.py:13-15`, `:22-28` and `:36-38` verbatim and printed them.
@@ -642,7 +641,7 @@ def hv_cs2_n() -> U32: U32.from_nat(List.length(&2, Chk, red_cs_of(1000, 2)))
 #   hv_boxes4=1 hv_boxes2=1  `len(boxes) == ndev // hdev`.
 #   hv_cs_* hv_cs2_n
 #     `cs = [(numel*k // hdev, numel*(k+1) // hdev) for k in range(hdev)]`.
-# ===========================================================================
+
 #
 # MUTATIONS, all re-run against this file. Reproduce with
 # `.agents/slop/tools/mutate-allreduce.py`. Not one row per bug: several rows are
@@ -679,7 +678,7 @@ def hv_cs2_n() -> U32: U32.from_nat(List.length(&2, Chk, red_cs_of(1000, 2)))
 # An all-True gate says which cases you covered and nothing about the rest; three of
 # the sixteen mutations here were invisible to the fixture set as first written, and
 # none of them was a false alarm.
-# ===========================================================================
+
 # NOT PORTED, one line each, and the WALL each one is behind.
 #
 # THE THREE REDUCTION GRAPHS -- every one of `allreduce.py:18-66`. `buf.pad_to`,
@@ -704,7 +703,7 @@ def hv_cs2_n() -> U32: U32.from_nat(List.length(&2, Chk, red_cs_of(1000, 2)))
 #   chunking is only reached when `concrete` is True, which is `red_sel`'s first
 #   term.
 # `assert not remaining` in `multi.py:114` is `multi.py`'s, not this file's.
-# ===========================================================================
+
 # what the other files need from here.
 #   * `schedule/multi.py`'s `replace_allreduce` / `_early_allreduce` call
 #     `handle_allreduce`, and `_early_allreduce` is exactly
@@ -718,7 +717,7 @@ def hv_cs2_n() -> U32: U32.from_nat(List.length(&2, Chk, red_cs_of(1000, 2)))
 #   * NOTHING ELSE IS PUBLIC. `red_head` is duplicated in `schedule/memory.bend` as
 #     `mem_head`; hoisting it into `helpers.bend` is the right home and is not this
 #     unit's file.
-# ===========================================================================
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- red_row("sel_two", sel_two())

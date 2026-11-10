@@ -16,7 +16,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/mask_rcnn.py (1214 loc). not yet ported.
 #
 # mask r-cnn is the biggest file in this slice and it has one symbol the other
@@ -92,7 +92,7 @@ import ./../datasets/__init__.bend as D
 # THE INDEPENDENT FIRST MISSING SYMBOL -- the one that survives fixing resnet.bend
 # -- IS `Tensor.cat`, at mask_rcnn.py:175 in `BoxList._split_into_xyxy`, which is
 # the EIGHTEEN-HIT symbol with no `def` under `tinybendygrad/`.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -101,11 +101,11 @@ def mr_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :16-98 THE MODULE-LEVEL HELPERS. Six of them, and three are the file's real
 # subject. `nearest_interpolate` (:20) and `topk` (:29) are named first because
 # `Tensor.round` and `argsort` are the two walls between here and the FPN.
-# ---------------------------------------------------------------------------
+
 
 # :16 def rint(tensor)
 def mr_rint(+tensor: T.Tensor) -> D.Refused:
@@ -147,11 +147,11 @@ def mr_tensor_gather(+tensor: T.Tensor, +indices: T.Tensor) -> D.Refused:
 def mr_permute_and_flatten(+layer: T.Tensor, n: U32, a: U32, c: U32, h: U32, w: U32) -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:109 permute_and_flatten -- mxw_permute EXISTS and mxw_reshape EXISTS; FIRST MISSING SYMBOL Tensor.flatten (:112)")
 
-# ---------------------------------------------------------------------------
+
 # :116-302 BoxList. A dict-backed Python object with 24 methods, and it is the
 # reason `Tensor.cat` is this file's subject: `:175`, `:179`, `:218`, `:244`,
 # `:260`, `:289` and `:296` are all cats.
-# ---------------------------------------------------------------------------
+
 
 # :117 def __init__(self, bbox, image_size, mode="xyxy")
 def mr_boxlist_init(+bbox: T.Tensor, image_size: List<&2, U32>) -> D.Refused:
@@ -197,9 +197,9 @@ def mr_boxlist_getitem() -> D.Refused:
 def mr_cat_boxlist() -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:282 cat_boxlist -- FIRST MISSING SYMBOL Tensor.cat (:289,:296)")
 
-# ---------------------------------------------------------------------------
+
 # :305-348 the two FPN/BACKBONE classes.
-# ---------------------------------------------------------------------------
+
 
 # :306 def __init__(self, in_channels_list, out_channels)
 def mr_fpn_init(in_channels_list: List<&2, U32>, out_channels: U32) -> D.Refused:
@@ -217,9 +217,9 @@ def mr_resnetfpn_init(out_channels: U32) -> D.Refused:
 def mr_resnetfpn_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:346 ResNetFPN.__call__ -- FIRST MISSING SYMBOL self.body.bn1/conv1, i.e. the sibling stub")
 
-# ---------------------------------------------------------------------------
+
 # :351-485 the ANCHOR GENERATOR. numpy throughout.
-# ---------------------------------------------------------------------------
+
 
 # :352 def __init__(self, sizes=((32,64,...),), aspect_ratios=((0.5,1.0,2.0),), stride=None)
 def mr_anchor_gen_init() -> D.Refused:
@@ -257,9 +257,9 @@ def mr_ratio_enum() -> D.Refused:
 def mr_scale_enum() -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:483 _scale_enum -- FIRST MISSING SYMBOL torch.cat, same wall as :464")
 
-# ---------------------------------------------------------------------------
+
 # :491-654 RPNHead / RPNPostProcessor / RPN.
-# ---------------------------------------------------------------------------
+
 
 # :492 def __init__(self, in_channels, num_anchors)
 def mr_rpn_head_init(in_channels: U32, num_anchors: U32) -> D.Refused:
@@ -293,9 +293,9 @@ def mr_rpn_init(in_channels: U32, num_anchors: U32) -> D.Refused:
 def mr_rpn_call() -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:643 RPN.__call__ -- FIRST MISSING SYMBOL self.rpn_head (:649) -> Conv2d")
 
-# ---------------------------------------------------------------------------
+
 # :657-880 the EXTRACTORS AND ROIAlign.
-# ---------------------------------------------------------------------------
+
 
 # :657 def make_conv3x3(in_channels, out_channels, stride=1)
 def mr_make_conv3x3() -> D.Refused:
@@ -329,9 +329,9 @@ def mr_roi_align_init() -> D.Refused:
 def mr_roi_align_call(+input: T.Tensor, +rois: T.Tensor) -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:877 ROIAlign.__call__ -- FIRST MISSING SYMBOL _bilinear_interpolate (:880), which is :743")
 
-# ---------------------------------------------------------------------------
+
 # :882-1130 the POOLER, HEADS AND MASK.
-# ---------------------------------------------------------------------------
+
 
 # :883 class LevelMapper / :884 def __init__(self, k_min, k_max)
 def mr_level_mapper_init(k_min: F32, k_max: F32) -> D.Refused:
@@ -385,9 +385,9 @@ def mr_roi_heads_init() -> D.Refused:
 def mr_roi_heads_forward() -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:1130 RoIHeads.forward -- FIRST MISSING SYMBOL Tensor.cat (:1135)")
 
-# ---------------------------------------------------------------------------
+
 # :1131-1174 the IMAGE LIST. `to_image_list` (:1141) is numpy padding.
-# ---------------------------------------------------------------------------
+
 
 # :1132 class ImageList / :1133 def __init__(self, tensors, image_sizes)
 def mr_image_list_init() -> D.Refused:
@@ -397,9 +397,9 @@ def mr_image_list_init() -> D.Refused:
 def mr_to_image_list() -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:1141 to_image_list -- FIRST MISSING SYMBOL np.array/np.floor/np.ceil (:1152-1158); mxw_pad.go EXISTS at mixin/movement.bend:1520 symbol=mxw_pad.go and the max padding size is a numpy reduction over the batch")
 
-# ---------------------------------------------------------------------------
+
 # :1176-1209 MaskRCNN.
-# ---------------------------------------------------------------------------
+
 
 # :1177 def __init__(self, num_classes, image_mean, image_std, ...)
 def mr_maskrcnn_init(num_classes: U32) -> D.Refused:
@@ -409,11 +409,11 @@ def mr_maskrcnn_init(num_classes: U32) -> D.Refused:
 def mr_maskrcnn_call(+images: T.Tensor) -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:1194 MaskRCNN.__call__ -- FIRST MISSING SYMBOL to_image_list (:1205), i.e. np.array; the three model calls at :1206-1208 are all the sibling stub")
 
-# ---------------------------------------------------------------------------
+
 # :1211-1214 the `if __name__ == "__main__":` block -- ResNet(50,
 # num_classes=None, stride_in_1x1=True), then MaskRCNN(backbone=resnet), then
 # load_from_pretrained(). `main` below IS this block and NOTHING ELSE.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, mr_maskrcnn_init(81))

@@ -1,7 +1,7 @@
 # simplify.bend -- tinygrad/codegen/simplify.py: RANGE simplification, the
 # pattern tables the lowerer runs over a SINK's ranges.
 #
-# ---------------------------------------------------------------------------
+
 # ONE OF THREE. `codegen/rewriter.bend` was ONE file for `simplify.py` +
 # `late/coalesce.py` + `gpudims.py`; the 1:1 ruling -- one `.bend` per upstream
 # `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory
@@ -20,7 +20,7 @@
 # A def is in the substrate iff at least TWO of the three files used it; every
 # def only this file used came here.
 #
-# ---------------------------------------------------------------------------
+
 # THE INVENTORY, def by def, against simplify.py's 156 lines. Every `PY` range is
 # re-derived from the file as it stands.
 #
@@ -59,7 +59,7 @@
 # the row that pins the wall: it is the ONLY fixture node for which the answer is
 # not `None`, and it is the one whose srcs are all RANGEs.
 #
-# ---------------------------------------------------------------------------
+
 # four things that are easy to invert, all measured against the real tables.
 #
 # 1. `range_start` IS NOT ZERO FOR REDUCE OR END. ops.py:55 is
@@ -78,7 +78,7 @@
 # 4. `red.arg[0]` is `AReduce{rop, num_axes}`, so the `in {ADD, MAX, MUL}` guard
 #    reads `rop` and NOT `num_axes`. `ru_rop` is the row.
 #
-# ---------------------------------------------------------------------------
+
 # THE NAME CORRESPONDENCE, because the tables are the whole of this file and they
 # now carry UPSTREAM names: `pm_flatten_range` (simplify.py:14), `flatten_range`
 # (simplify.py:58), `pm_simplify_ranges` (:58), `pm_split_ranges` (:71),
@@ -96,7 +96,7 @@
 # `ru_parts`, `Parts`, `ru_ret`, `ru_scale`, `ru_last`, `ru_go`, `ru_rule` are
 # `reduce_unparented`'s. Upstream each of those is ONE function.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE. Every row is DERIVED FROM PYTHON. `python3 .agents/slop/notes/
 # rw-truth.py` prints these rows in THIS ORDER and with THIS SPELLING, so
 # `diff <(python3 rw-truth.py | grep '=') <(cat simplify late/coalesce gpudims)`
@@ -127,7 +127,6 @@ import ./rewriter.bend as RW
 # table's ranges were up to TWENTY-ONE lines high, it named two symbols that do
 # not exist in `gpudims.py` at all (`add_gpudims`, `pm_add_gpudims`), it omitted
 # six top-level defs, and its summary counted 22 defs over a 32-row table. The
-# STATE column is the port's verdict and was not touched; the `#` column is new.
 #
 #   #  PY            KIND    STATE
 
@@ -179,14 +178,14 @@ import ./rewriter.bend as RW
 #    reads `rop` and NOT `num_axes`. `ru_rop` is the row.
 #
 
-# ===========================================================================
+
 # `range_start` -- ops.py:58. `{STAGE: 1, REDUCE: 1, END: 1, CALL: 1, LINEAR: 0}`
 # and ops NOT in the dict have no offset, which `ops.py:474` never asks for: the
 # `if self.op in range_start` guard means an absent op is the `()` arm.
 # five ops answer 0 -- linear plus every op outside the dict -- and four answer 1.
 # An early version matched on "is LINEAR" to answer 0, which answers 1 for LINEAR
 # because LINEAR IS in the dict, and `fr_off_linear` is the row that caught it.
-# ===========================================================================
+
 def fr_off.of(e: Bool, s: Bool, l: Bool, call: Bool) -> U32:
   RW.b2u.of(Bool.or(Bool.or(e, s), Bool.or(l, call)), 1)
 
@@ -328,7 +327,7 @@ def fr_scan(rs: List<&2, O.PMEntry>, +ar: O.Arena, +self: U32, +h: RW.Rew) -> RW
 def flatten_range(+ar: O.Arena, self: U32) -> RW.Rew:
   fr_scan(pm_flatten_range(), ar, self, RW.Rew{ar, 0})
 
-# ===========================================================================
+
 # THE BIG PORT: `reduce_unparented` -- simplify.py:87-101.
 #
 #     def reduce_unparented(red):
@@ -347,7 +346,7 @@ def flatten_range(+ar: O.Arena, self: U32) -> RW.Rew:
 # `assert`, which is a `raise` and not a value. EVERY OTHER CONJUNCT is here and
 # is reachable, including the three-way guard ladder on `rop`, the EMPTY-parented
 # case (`ret` is `src[0]`, not a REDUCE), and the two different op sequences.
-# ===========================================================================
+
 def ru_rop.of(a: O.Arg) -> O.Op:
   match a:
     case O.AReduce{rop, num_axes}: rop
@@ -524,7 +523,7 @@ def symbolic_len() -> U32:
 #  16 RD3=REDUCE(MX1, R0, R1, R2)   17 RD4=REDUCE(C1, R0)
 #  18 CALL(SPECIAL)                  19 LINEAR(RD4)
 #  20 EN2 = END(SPECIAL, R0, R0) -- the DUPLICATED RANGE, so `dedup` collapses it
-# ===========================================================================
+
 
 def psize(n: Maybe<&2, U32>) -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
@@ -753,7 +752,7 @@ def ru_answer_src0(+gx: RW.G) -> U32:
 def ru_answer_is_c0(+gx: RW.G) -> U32:
   RW.b2u_nat(U32.is_eq(ru_answer_src0(gx), RW.G.at(gx, 1n)))
 
-# ===========================================================================
+
 # THE MEASURED MUTATION TABLE, by `.agents/slop/notes/codegen-mut.py`. EIGHT
 # textual edits, one at a time, each re-checked and re-run against the clean 32-row
 # gate. Every entry but M2 is a REVERT of one of this file's own fixes, so the set a
@@ -763,7 +762,7 @@ def ru_answer_is_c0(+gx: RW.G) -> U32:
 # property they test rather than by the def that computes them.
 #
 #   mutation                                    rows moved
-#   --------------------------------------------------------------------------
+
 #   M1  `ru_ret.of`'s two arms swapped          ru_answer_c0
 #   M2  `ret * r.src[0]` read as `src[1:]`      (NONE -- see below)
 #   M3  LINEAR's `range_start` 0 -> 1           fr_off_linear

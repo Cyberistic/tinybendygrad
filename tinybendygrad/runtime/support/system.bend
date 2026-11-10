@@ -14,7 +14,7 @@
 # kind, and the file declares NO foreign effect: the trace IS the seam, exactly
 # as in `ops_webgpu.bend`, `am/ip.bend` and `nv/ip.bend`.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF. "FFI" means there is nothing to check: the call
 # itself is the port's job and the Python line is the whole of it.
 #
@@ -58,7 +58,7 @@
 #                                               parser, the socket-option table
 #   :454   the MOCK swap          FFI     DEV.interface, a module rebind
 #
-# ===========================================================================
+
 # THE FOUR WALLS, each with its Python line.
 #
 # 1. THE u64 WALL, and it is three Python lines and one struct format.
@@ -140,7 +140,7 @@
 import Base
 import ../../helpers.bend as H
 
-# ===========================================================================
+
 # THE constants. EVERY one of these was READ out of a live CPYTHON by
 # `.agents/slop/oracle-system.py`; none is transcribed. Where a value is
 # PLATFORM-DEPENDENT it is a def OF the platform flag, not a constant, and
@@ -150,7 +150,7 @@ import ../../helpers.bend as H
 # BEND HAS NO HEX LITERALS (bend2-constraints.md, position 6835), so every
 # constant below is decimal. The comment gives the hex so a reader can check it
 # against the source without a converter.
-# ===========================================================================
+
 
 # --- the mmap family, :50-51 -------------------------------------------------
 # `MAP_FIXED, MAP_FIXED_NOREPLACE = 0x10, 0x100000` -- spelled as LITERALS in
@@ -247,9 +247,9 @@ def FOUR_KB() -> U32: 4096                         # 4 << 10  -- the ladder's fl
 def PAGE_4K() -> U32: 4096                         # 0x1000 -- the page-align refusals :339
 def IOMEM_SLOT() -> U32: 4096                      # 0x1000 -- the `(paddr, 0x1000)` pair
 
-# ===========================================================================
+
 # THE TYPES.
-# ===========================================================================
+
 
 # ONE OS call. `k` is the syscall, `arg` is the ONE argument this file's gate
 # reads for it, and `s` is the STRING the call was handed -- a path, a `sudo`
@@ -336,7 +336,7 @@ def CfgSp.at32(s: CfgSp, dword: U32) -> U32:
 
 def CfgSp.of(ws: List<&2, U32>) -> CfgSp: CfgSp{ws}
 
-# ===========================================================================
+
 # THE TRACE. `Tr.emit` is the seam: every OS call goes through it, so the trace is
 # the ordered list of syscalls the C runtime will make.
 #
@@ -355,7 +355,7 @@ def CfgSp.of(ws: List<&2, U32>) -> CfgSp: CfgSp{ws}
 # contiguous cap, :120's "no pcie", :135's IndexError, :198's flock, :212's
 # PermissionError, :216's bound driver, :268's resize -- and it is why no step
 # below needs a guard of its own. A refusal shows up as a TRUNCATION.
-# ===========================================================================
+
 
 def Tr.have_atomic(t: Tr) -> Bool:
   match t:
@@ -409,12 +409,12 @@ def Tr.emit(k: U32, arg: U32, s: String, t: Tr) -> Tr:
 def Tr.emit.stop(k: U32, arg: U32, s: String, t: Tr) -> Tr:
   Tr.fail(Tr.emit(k, arg, s, t))
 
-# ===========================================================================
+
 # THE CALL TABLE. One row per kind of OS call this file makes, and the names are
 # the ones a reader of the trace needs. `sys.call_name` is the REVERSE direction
 # and `sys.call_of` the forward one, so a wrong `k` in a def is visible as a
 # name that is not in the table.
-# ===========================================================================
+
 
 def CALL_OPEN() -> U32: 0
 def CALL_CLOSE() -> U32: 1
@@ -575,11 +575,11 @@ def str_list_eq(+a: List<&2, String>, +b: List<&2, String>) -> Bool:
   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, String, a)),
                      U32.from_nat(List.length(&2, String, b))), str_eq.go(a, b, False{}))
 
-# ===========================================================================
+
 # THE ROW PRIMITIVES. `row` prints `name=value` and the mutation harness diffs
 # WHOLE LINES, never row names -- a name-diff harness measures only additions and
 # removals, and every mutation in this file changes a VALUE.
-# ===========================================================================
+
 
 def ush.go(xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
@@ -629,7 +629,7 @@ def hx.q.pick(+s: String, n: U32) -> String: String.drop(s, U32.to_nat(n))
 
 def hx.q(+v: U32) -> String: hx.q.pick(hx.d4(v), U32.sub(4, hx.width(v)))
 
-# ===========================================================================
+
 # :53 -- `ipv4_to_gid`, `bytes(10) + b'\xff\xff' + socket.inet_aton(ip)`.
 #
 # SIXTEEN BYTES, and the first twelve are the file's own and the last four are
@@ -643,7 +643,7 @@ def hx.q(+v: U32) -> String: hx.q.pick(hx.d4(v), U32.sub(4, hx.width(v)))
 # not concat a tail it built itself -- a port that appended them in the wrong order
 # would still print 24 hex characters.
 # TODO(p3) runtime/support/system.py:52 -- `socket.inet_aton(ip)`.
-# ===========================================================================
+
 
 def gid.PREFIX_HEX() -> String: "00000000000000000000ffff"
 def gid.of.p2(+hi: U32, +lo: U32) -> String:
@@ -764,7 +764,7 @@ def face.all_in(xs: List<&2, U32>, ndev: U32) -> Bool: face.all_in.go(xs, ndev, 
 # later would pick this wrong for EVERY ranged device.
 def vis.is_range(dash_at: U32) -> Bool: U32.is_ne(dash_at, 0)
 
-# ===========================================================================
+
 # :61-65 and :89 -- THE CTYPES LIBRARY GATE, which is WALL 3 and the whole
 # branching story in this file.
 #
@@ -784,7 +784,7 @@ def vis.is_range(dash_at: U32) -> Bool: U32.is_ne(dash_at, 0)
 # the four fixtures is the negative case -- a None library emits NO FENCE AT ALL,
 # which is the `else None` at the end of :89 and the reason a fence is not a
 # guaranteed syscall.
-# ===========================================================================
+
 
 def LIB_NONE() -> U32: 0
 def LIB_ATOMIC() -> U32: 1
@@ -833,12 +833,12 @@ def sysfs.apply(+path: String, +value: String, expected: String, ok1: Bool, ok2:
                 t: Tr) -> Tr:
   sysfs.again(path, value, expected, Bool.not(ok1), sysfs.read(path, t))
 
-# ===========================================================================
+
 # :67-70 `pagemap`, :84-87 `reserve_va`, :91-92 `lock_memory`. Three
 # `functools.cached_property` / `functools.cache` rules and one refusal, and the
 # ONE thing worth porting in all of them is the CACHING, because each of them runs
 # exactly once and a port that ran it twice would write to a device twice.
-# ===========================================================================
+
 
 def PAGEMAP_SYSFS() -> String: "/proc/sys/vm/compact_unevictable_allowed"
 def PAGEMAP_VALUE() -> String: "0"
@@ -935,7 +935,7 @@ def scan.cap_next(hdr: U32) -> U32: U32.and(hdr, 255)
 
 def pci.read_prop(lo: U32, hi: U32) -> U32: lo
 
-# ===========================================================================
+
 # :138-186 -- `pci_setup_usb_bars`. THE HEADLINE, and the one place in this file
 # where a wrong answer is a SILENTLY WRONG REGISTER WRITE with no other symptom.
 #
@@ -975,7 +975,7 @@ def pci.read_prop(lo: U32, hi: U32) -> U32: lo
 # The `Cfg` record's field order is `CustomASM24Controller.pcie_cfg_req`'s own
 # signature, MEASURED out of `usb.py:137`:
 #   (self, byte_addr, bus=1, dev=0, fn=0, value=None, size=4)
-# ===========================================================================
+
 
 def BAR_LOOP_BOUND() -> U32: 24
 def BAR_OFF_STEP32() -> U32: 4

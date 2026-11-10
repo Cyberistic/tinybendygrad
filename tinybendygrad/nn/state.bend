@@ -5,7 +5,7 @@ import ./../LAWS/spec.bend as S
 import ./../dtype.bend as DT
 import ./../uop/ops.bend as O
 
-# ===========================================================================
+
 # nn/state.bend -- tinygrad/nn/state.py (299 lines).
 #
 # what is ported here is the pure part, and it is the part that is worth
@@ -131,23 +131,22 @@ import ./../uop/ops.bend as O
 # Nothing here builds a UOp for its own sake, so none of the arena rules apply:
 # the fixtures are CONSTs in a fresh arena and the only node read is `sd_cval`,
 # which exists so that `sd_dup` can see WHICH value survived the collapse.
-# ===========================================================================
 
-# ---------------------------------------------------------------------------
+
+
 # THE DOT. `Char.from_u32(46)` and nothing else; the strip needs the character
 # and there is no `Char.dot`.
-# ---------------------------------------------------------------------------
+
 
 def sd_dot() -> Char: Char.from_u32(46)
 
-# ---------------------------------------------------------------------------
+
 # strip('.') -- the HEAD walk. `String.split` cannot be used: it splits on a Char
 # but base's `split.fin` PUSHES the separator back onto the front of every
 # non-final piece, so `"a.b"` splits to three pieces and the empty ones are the
 # caller's problem. Walking the char list is the honest spelling.
-# ---------------------------------------------------------------------------
 
-# `drop_lead` -- the head walk. the first version of this was wrong and the gate
+
 # caught it: a bare `case '.':` arm drops EVERY dot, so `a..b..` came back `ab`
 # where Python's `str.strip` keeps the interior run (`a..b`). Stripping a RUN at
 # the HEAD needs to know whether a non-dot has been seen yet, and that flag is
@@ -199,11 +198,11 @@ def sd_rev(cs: List<&2, Char>) -> List<&2, Char>:
 def sd_strip(s: String) -> String:
   String.from_list(sd_rev(sd_lstrip(sd_rev(sd_lstrip(String.to_list(s))))))
 
-# ---------------------------------------------------------------------------
+
 # THE OBJECT TREE. Three data cases plus the fall-through, and `OV` is the
 # one-field-value wrapper a list of children needs: `Kv` holds a String and an
 # `Obj`, and a `List` of those is the mapping.
-# ---------------------------------------------------------------------------
+
 
 type Kv is Data:
   Kv{k: String, o: Obj}
@@ -253,7 +252,7 @@ def sd_cval.node(n: O.Node) -> U32:
 def sd_cval(+t: T.Tensor) -> U32:
   sd_cval.node(O.Arena.node(T.Tensor.ar(t), T.Tensor.u(t)))
 
-# ---------------------------------------------------------------------------
+
 # THE WALK. One self-call, fuel FIRST, and the arms differ only in what they
 # push onto the work list -- which is how the four mapping rungs of the Python
 # ladder become one without a `match` on a projection and without a closure.
@@ -268,7 +267,7 @@ def sd_cval(+t: T.Tensor) -> U32:
 # document order, which is `dict` insertion order, which is the order
 # `get_parameters` hands to an optimizer and the order `load_state_dict` writes.
 # Order is not cosmetic here and the gate prints it.
-# ---------------------------------------------------------------------------
+
 
 # `It` is the work item: a prefix and the object still to be walked under it.
 type It is Data:
@@ -321,7 +320,7 @@ def get_state_dict(o: Obj) -> List<&2, Ent>:
 def get_state_dict.pf(o: Obj, pf: String) -> List<&2, Ent>:
   gsd.go(sd_fuel(), [It{pf, o}], Nil{})
 
-# ---------------------------------------------------------------------------
+
 # `state_dict.update` -- state.py:109/111. A `dict` collapses a repeated key to
 # the LAST value at the FIRST position, and this is that. Python gets it from
 # `dict.__setitem__`; a `List` has to be told, so it is told here and `sd_dup` is
@@ -330,7 +329,7 @@ def get_state_dict.pf(o: Obj, pf: String) -> List<&2, Ent>:
 # It is a REWRITE-IN-PLACE, not a filter: `put` walks the accumulator and
 # replaces the tensor of the matching key, so a later value lands at the earlier
 # position, which is what `dict.__setitem__` does and what a filter would not.
-# ---------------------------------------------------------------------------
+
 
 # ONE def, and the self-call is an ARGUMENT of `Bool.pick` (tensor.bend's rule
 # 3): `pick` is a call, not a `match`, so the choice may scrutinise a computed
@@ -375,7 +374,7 @@ def sd_values.step(acc: List<&2, T.Tensor>, e: Ent) -> List<&2, T.Tensor>:
 def get_parameters(o: Obj) -> List<&2, T.Tensor>:
   List.reverse(&2, T.Tensor, List.foldl(~&2, ~Ent, ~List<&2, T.Tensor>, sd_values.step, sd_collapsed(o), Nil{}))
 
-# ---------------------------------------------------------------------------
+
 # safe_dtypes -- state.py:33-35, in the source's order, and `inverse_safe_dtypes`
 # -- state.py:36, which is `{v:k for k,v in safe_dtypes.items()}` and so has the
 # SAME order.
@@ -384,7 +383,7 @@ def get_parameters(o: Obj) -> List<&2, T.Tensor>:
 # `str(dtype)[7:]`: `I8` is `signed char` and `BF16` is `__bf16`. The pair is
 # the table, and the row prints the spelling, so the mismatch between the two
 # vocabularies is visible rather than smoothed over.
-# ---------------------------------------------------------------------------
+
 
 type Sd is Data:
   Sd{k: String, d: S.Dt}
@@ -435,7 +434,7 @@ def sd_name(dt: S.Dt) -> Maybe<&1, String>:
 def sd_is_weak(+dt: S.Dt) -> Bool:
   Bool.or(O.eq_dt(dt, S.weakint()), O.eq_dt(dt, S.weakfloat()))
 
-# ---------------------------------------------------------------------------
+
 # `TensorIO.seek` -- state.py:25.
 # `self._position = min(len(self._tensor), max(0, [offset, self._position+offset,
 # len(self._tensor)+offset][whence]))`
@@ -456,7 +455,7 @@ def sd_is_weak(+dt: S.Dt) -> Bool:
 # case a file reader hits on every backwards seek. The `whence=2` case is the
 # other one: `len+offset` is the THIRD candidate, so an implementation that read
 # `whence` as a 0/1 flag answers `0` where the answer is `1`.
-# ---------------------------------------------------------------------------
+
 
 def sd_i64(n: U32) -> H.I64: H.i64_of_i32(n)
 
@@ -491,9 +490,9 @@ def sd_seek(+len_: U32, pos: U32, off: U32, whence: U32) -> H.I64:
 def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
   H.i64_text(sd_seek(len_, pos, off, whence))
 
-# ---------------------------------------------------------------------------
+
 # THE WALLS. One TODO per Python line, and no prose pretending otherwise.
-# ---------------------------------------------------------------------------
+
 
 # TODO(p3) state.py:8   TensorIO        -- `io.RawIOBase`; `readinto` (:17, symbol=readinto) needs
 #   `.data()` (REALIZATION, tensor.bend WALL 4) and `buffer[:n] = data` mutates a
@@ -525,11 +524,11 @@ def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
 #   `find_class` and `persistent_load`, plus `zipfile.is_zipfile`,
 #   `tarfile.is_tarfile`, `struct.unpack` and `argsort`. A pickle VM.
 
-# ===========================================================================
-# THE GATE
-# ===========================================================================
 
-# ===========================================================================
+# THE GATE
+
+
+
 # `DEBUG >= 2` -- state.py:260, inside `TorchPickle.find_class`. `torch_load` itself
 # is a `TODO(p3)` above (state.py:207, "A pickle VM"), so what is ported here is the
 # ONE LINE this site gates and the two lines above it that decide whether it runs --
@@ -551,7 +550,7 @@ def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
 # `LANE_A_ST`): the line is `WARNING: returning Dummy for posixpath join`, and a port
 # that tested `os.path` and printed `os.path` would be internally consistent and
 # WRONG. The gate asks for both -- the root that DECIDES and the module that PRINTS.
-# ===========================================================================
+
 def sd_fc_whitelist() -> List<&2, String>:
   ["torch", "collections", "numpy", "_codecs"]
 
@@ -561,7 +560,6 @@ def sd_fc_whitelist() -> List<&2, String>:
 # the EMPTY root when there was none -- so `collections` and `numpy` read as NOT
 # whitelisted and `st_ok1` printed `WARNING: returning Dummy for collections
 # OrderedDict`. That is the whitelist test INVERTED on every module without a dot, and
-# a row whose expected value had been copied out of the port would have agreed with
 # it. MEASURED, four probes on `String.split(s, '.')` then head:
 #     "collections" -> "collections"   "os.path" -> "os"
 #     "torch.storage" -> "torch"       "" -> ""
@@ -852,7 +850,7 @@ def main() -> IO(Unit):
     m : Unit <- t_seek()
     t_param()
 
-# ===========================================================================
+
 # the gate, as a command, and every row is green. Both lanes and the oracle:
 #
 #     .venv/bin/python .agents/slop/state-gate.py  > /tmp/py.txt
@@ -864,7 +862,7 @@ def main() -> IO(Unit):
 # `--check-only` reports "14 defs rely on unsafe or foreign code", all fourteen in
 # `dtype.bend` and all `@extern` F32 conversions that were there before this unit.
 # `optim.bend` reports the identical fourteen. It is not a property of this file.
-# ===========================================================================
+
 #
 # THE MUTATION TABLE, MEASURED, by `.agents/slop/state-mutate.py` (which mutates
 # the file in place, restores it, and reports the rows that MOVE).
@@ -879,7 +877,6 @@ def main() -> IO(Unit):
 # | M3 | `sd_put` appends instead of overwriting | `sd_dup` | `dict.__setitem__` semantics: FIRST position, LAST value. The count assertion in `sd_dup` passes under this mutation; only the value assertion fails, which is why `sd_dup` asserts both. |
 # | M4 | `sd_drop.head`'s dot arm is removed, so EVERY dot is dropped | `sd_map` `sd_seq` `sd_nest` `sd_strip` `sd_attr` `sd_ord` `sd_dup` `sd_param` (8 of 14) | the head RUN only. `layers.0.weight` loses its interior dots. This mutation is the first version of this file's own bug -- the shipped code had a bare `case '.':` arm with no `St`, which drops interior dots too; the gate caught it as `sd_strip=False` and `sd_nest=False` and the `St` sum type is the fix. |
 # | M5 | `sd_strip` drops the `rstrip` half | `sd_map` `sd_seq` `sd_nest` `sd_strip` `sd_attr` `sd_ord` `sd_dup` | the TAIL run. Seven rows because every key in the gate ends in a dot, so the tail half is load-bearing for the whole file. |
-# | M6 | `sd_seek.above` returns `x` unconditionally | `sd_seek` | the SIGNED `max(0, x)`. The two negative offsets in the row are the fixture; a `U32` clamp answers `4294967295:4294967295` for `seek(-1)`. This is the second bug the gate caught in this file: the first `sd_seek` was `U32` throughout and was wrong for exactly the backwards-seek case a file reader hits. |
 # | M7 | the `whence == 2` candidate is `pos+off` instead of `len+off` | `sd_seek` | the THIRD element of `[offset, pos+offset, len+offset][whence]`. M6 and M7 are two rules over one row, so neither is localised: one row, two independent claims, and both are named in the row's comment. |
 # | M8 | the `OOther` rung emits a key | `sd_nest` `sd_param` | Python's `state_dict` staying `{}` at state.py:107. Only the two rows with a non-mapping child move, which is the fixture's whole job: a `Tensor.relu` between two convolutions must not shift every key after it. |
 # | M9 | the walk's final `List.reverse` is removed | `sd_seq` `sd_nest` `sd_attr` `sd_ord` `sd_dup` | DOCUMENT ORDER. The accumulator is built by consing, so without the reversal every multi-key row is reversed. `sd_tens`/`sd_map` are single-entry and cannot see it. |
@@ -887,7 +884,6 @@ def main() -> IO(Unit):
 # | M11 | the leaf does not `sd_strip` its prefix | `sd_map` `sd_seq` `sd_nest` `sd_attr` `sd_ord` `sd_dup` | `prefix.strip('.')` AT THE LEAF (state.py:103), as opposed to at the point of insertion. Six rows because the strip applies to every key. |
 # | M12 | a no-op edit | NOTHING | the control. A mutation table with no row that CANNOT move is a table of coincidences, and M12 is what makes M1-M11 mean something. |
 #
-# two mutations that were attempted and are not in the table, because they are
 # not expressible as a one-token edit and pretending otherwise would be a lie:
 #   * swapping the `OMap` and `OSeq` ARMS. The arms are selected by the `Obj`
 #     sum type, so a value has exactly one constructor and there is no order to

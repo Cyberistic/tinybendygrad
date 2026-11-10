@@ -1,6 +1,6 @@
 # tinybendygrad/viz/cli.bend -- port of tinygrad/viz/cli.py
 #
-# ===========================================================================
+
 # WHAT cli.py IS: a TERMINAL FORMATTER over what `serve.py` already decoded.
 # `main` re-reads a `profile.pkl`, calls `viz.get_profile` for BYTES, calls ITS
 # OWN `decode_profile` to turn them back into dicts, and formats.
@@ -52,7 +52,7 @@
 import Base
 import ./../helpers.bend as H
 
-# ===========================================================================
+
 # `marker_st` -- cli.py:58. `next(e["ts"] for e in markers if e["name"] == name)`
 # with the `StopIteration` turned into `raise RuntimeError(...)`. The port's
 # answer is a `Maybe`, so the raise is the `None`.
@@ -62,7 +62,7 @@ import ./../helpers.bend as H
 # That is a request for a fixture, not a theorem: `markers_st.first` finds the
 # first by construction and no single-name fixture can separate it from a
 # last-match implementation.
-# ===========================================================================
+
 
 type Marker is Data:
   Marker{name: String, ts: H.I64}
@@ -79,7 +79,7 @@ def Marker.ts(+m: Marker) -> H.I64:
 
 
 
-# ===========================================================================
+
 # `get(data, key)` -- cli.py:75-80. `for k, v in data.items(): if ansistrip(k) ==
 # key: return v` -- and on a miss it runs `difflib.get_close_matches(key,
 # [ansistrip(k) for k in data], n=1, cutoff=0.6)` and raises with the suggestion in
@@ -92,7 +92,7 @@ def Marker.ts(+m: Marker) -> H.I64:
 # the header says so. A hint that is never checked is worse than no hint, and a
 # hint that is checked against a hand-written ratio would be a gate that asserts
 # its own arithmetic.
-# ===========================================================================
+
 
 type Item is Data:
   Item{k: String, v: String}
@@ -111,7 +111,7 @@ def Item.val(+i: Item) -> String:
 # that is not ported, and `get.miss` is the refusal both lanes answer.
 
 
-# ===========================================================================
+
 # `fmt_top` / `fmt_all` -- cli.py:83-91. Both are PADDED COLUMNS and the pads are
 # where the information is:
 #
@@ -129,7 +129,7 @@ def Item.val(+i: Item) -> String:
 # computation and the column join; the `time_to_str` and `colored` cells come
 # from `helpers.bend` (`H.time_to_str`, `H.colored`) which are ported and gated
 # there, and the `%.2f` cells are the `F32` wall named in the header.
-# ===========================================================================
+
 
 
 

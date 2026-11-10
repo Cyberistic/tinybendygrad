@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/compiler_llvm.bend -- port of tinygrad/runtime/support/compiler_llvm.py
 #
-# ===========================================================================
+
 # eighty-eight lines, and the headline is a `KeyError` that is not a typo.
 #
 # :17  triple = {'arm64': b'aarch64-none-unknown-elf', 'x86_64': b'x86_64-none-unknown-elf',
@@ -21,7 +21,7 @@
 #   `ll.arch_arm32.prefix=AMDGPU` / `ll.arch_arm32.triple=KeyError: 'arm32'`
 #   are the same arch's two answers side by side.
 #
-# ===========================================================================
+
 # the second headline: `getenv("LLVMOPT", 1)` is a process-boot constant.
 # tinygrad/helpers.py:161 symbol=getenv carries `@functools.cache` on upstream's `getenv`, so `LLVMOPT` is read ONCE per
 # interpreter. `LLVMCompiler.__init__` therefore answers `default<O2>` and sets
@@ -34,7 +34,7 @@
 #   while `cache.os_after` is `mutated`.
 #   TODO(p3) compiler_llvm.py:24 -- `getenv("LLVMOPT", 1)`.
 #
-# ===========================================================================
+
 # THE THIRD: `compile` CLEARS the diagnostic list before it does anything, so
 # the `if self.diag_msgs: raise RuntimeError("llvm diagnostic: " + "\n".join(...))`
 # at :62 is reachable ONLY when the handler fired DURING the compile. The
@@ -46,7 +46,7 @@
 # not a single message.
 #   TODO(p3) compiler_llvm.py:36-42  symbol=__init__ -- the ctypes callback.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :6   cerr()                PORTED `cerr_depth` -- the pointer-to-pointer shape -- upstream builds the error pointer in `cerr`
@@ -70,7 +70,7 @@
 #   tinygrad/runtime/support/compiler_llvm.py:76-88 `disassemble` PORTED `CPULLVMCompiler.dis_row` symbol=disassemble
 #                                       `AMDLLVMCompiler.dis_row`
 #
-# ===========================================================================
+
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- `tinygrad.runtime.autogen.llvm`: `ctypes.CDLL`, ~70 entry points, a
@@ -106,16 +106,16 @@
 #   TODO(p3) compiler_llvm.py:51 -- `self.diag_msgs.clear()`.
 import Base
 
-# ===========================================================================
+
 # :6  `cerr()` is `ctypes.pointer(ctypes.pointer(ctypes.c_char()))`. The only
 # part of it that can be wrong in a way a reader can see is the DEPTH, so that
 # is what the port carries.
-# ===========================================================================
+
 def cerr_depth() -> U32: 2
 
 def cerr_inner() -> String: "c_char"
 
-# ===========================================================================
+
 # :8-10  `expect(x, err, ret=None)`: `if x: raise RuntimeError(...)`, then
 # `return ret`. Two facts and they are separate:
 #   1. the TRUTHINESS test on `x` -- a C pointer is falsy only when NULL, so a
@@ -126,7 +126,7 @@ def cerr_inner() -> String: "c_char"
 #      non-zero `x` with a pointer raises with the pointed-to text.
 # MEASURED: `expect(0, "boom", "RET")` -> `"RET"`; `expect(1, "boom")` ->
 # `RuntimeError: boom`; `expect(0, "ok")` -> `None`; `expect(0, "ok", 7)` -> `7`.
-# ===========================================================================
+
 def expect.fails(+x: Bool) -> Bool: x
 
 def expect.ret_str(+ret: String) -> String: ret
@@ -137,11 +137,11 @@ def expect.msg(+err: String) -> String: err
 # and `expect.ret_none` is the row that says which one the caller meant
 def expect.ret_none() -> String: "None"
 
-# ===========================================================================
+
 # :14-15  the FIRST map: `{'arm64': 'AArch64', 'x86_64': 'X86',
 # 'riscv64': 'riscv64'}.get(arch, "AMDGPU")`. `.get` means an unknown arch is
 # NOT an error -- it is `AMDGPU`. MEASURED for `arm32` and `""`.
-# ===========================================================================
+
 def LLVMCompiler.prefix(+arch: String) -> String:
   Bool.pick(String, String.eq(arch, "arm64"), "AArch64",
     Bool.pick(String, String.eq(arch, "x86_64"), "X86",
@@ -165,12 +165,12 @@ def LLVMCompiler.init_names(+arch: String) -> List<&2, String>: inames.go(arch, 
 
 def LLVMCompiler.inits_n() -> U32: 5
 
-# ===========================================================================
+
 # :17  the SECOND map, a SUBSCRIPT: three keys, `arm64`, `x86_64` and the
 # LITERAL `AMDGPU`. So `riscv64` -- which the first map accepts and for which
 # five `LLVMInitializeriscv64*` calls are issued -- raises `KeyError` here.
 # MEASURED: `ll.arch_riscv64.kind=KeyError: 'riscv64'`.
-# ===========================================================================
+
 def LLVMCompiler.triple_ok(+arch: String) -> Bool:
   Bool.or(String.eq(arch, "arm64"), Bool.or(String.eq(arch, "x86_64"), String.eq(arch, "AMDGPU")))
 
@@ -183,12 +183,12 @@ def LLVMCompiler.triple_err(+arch: String) -> String: String.concat(["KeyError: 
 
 def LLVMCompiler.triple_n() -> U32: 3
 
-# ===========================================================================
+
 # :20-21  the target machine. `processor.encode()` and `feats.encode()` are the
 # two arguments that carry the fixture, so they are what the rows pin -- the
 # enum arguments (`LLVMCodeGenLevelDefault`, `LLVMRelocPIC`,
 # `LLVMCodeModelDefault`) are library constants and are declared.
-# ===========================================================================
+
 def LLVMCompiler.const_ds_error() -> U32: 0
 
 def LLVMCompiler.const_return_status() -> U32: 2
@@ -207,12 +207,12 @@ def LLVMCompiler.tm_feats(+feats: String) -> String: feats
 
 def LLVMCompiler.tm_args_n() -> U32: 6
 
-# ===========================================================================
+
 # :23-31  the pass pipeline. `getenv("LLVMOPT", 1)` is the boot constant (see
 # the header): truthy sets `default<O2>` and FOUR options, falsy sets
 # `default<O0>` and sets NONE. So the option COUNT is the row that shows the
 # branch was taken, and it is 4 against 0 -- not 1 against 0.
-# ===========================================================================
+
 def LLVMCompiler.passes(+opt: Bool) -> String: Bool.pick(String, opt, "default<O2>", "default<O0>")
 
 def LLVMCompiler.pbosets() -> List<&2, String>:
@@ -223,12 +223,12 @@ def LLVMCompiler.pbosets_n(+opt: Bool) -> U32: Bool.to_u32(opt)
 
 def LLVMCompiler.pbo_flag() -> Bool: True{}
 
-# ===========================================================================
+
 # :34-35, :36-43  the per-instance context and the diagnostic list. The list is
 # CLEARED at the top of every `compile` and APPENDED only on `LLVMDSError`, so
 # the raise at :62 needs a collect-then-compile sequence and nothing else.
 # `append_diag` is the port of the whole `if severity == LLVMDSError` arm.
-# ===========================================================================
+
 def LLVMCompiler.diags() -> List<&2, String>: []
 
 def LLVMCompiler.append_diag(+sev: U32, +msg: String) -> List<&2, String>:
@@ -244,22 +244,22 @@ def LLVMCompiler.diag_msg(+xs: List<&2, String>) -> String:
 
 def LLVMCompiler.diag_raise_kind() -> String: "RuntimeError"
 
-# ===========================================================================
+
 # :44  the cache key: `cache_key or f"compile_llvm_{processor}_{feats}{'_opt' if opt else ''}"`.
 # Two facts: the `or` means an EMPTY cache_key takes the f-string branch too,
 # and the `_opt` suffix is there only when the flag is set.
-# ===========================================================================
+
 def LLVMCompiler.key(+cache_key: String, +processor: String, +feats: String, +opt: Bool) -> String:
   Bool.pick(String, String.is_empty(cache_key),
     String.concat(["compile_llvm_", processor, "_", feats, Bool.pick(String, opt, "_opt", "")]),
     cache_key)
 
-# ===========================================================================
+
 # :46-48  `__del__`: `if hasattr(self, 'pbo')` then dispose pbo, then
 # `if hasattr(self, 'context')` then dispose context. TWO disposes, in THAT
 # order, and each is guarded -- so a constructor that raised before :23 leaves
 # neither and `__del__` disposes nothing.
-# ===========================================================================
+
 def LLVMCompiler.del_calls(+has_pbo: Bool, +has_context: Bool) -> U32:
   U32.add(Bool.to_u32(has_pbo), Bool.to_u32(has_context))
 
@@ -268,13 +268,13 @@ def LLVMCompiler.del_order(+has_pbo: Bool, +has_context: Bool) -> String:
     Bool.pick(String, Bool.not(has_context), "LLVMPassBuilderOptionsDispose",
       "LLVMPassBuilderOptionsDispose LLVMContextDispose"))
 
-# ===========================================================================
+
 # :50-63  `compile`. NINE calls, in order, and the ORDER is the whole content
 # of a trace: memory buffer, parse, verify, run passes, emit, dispose module,
 # buffer start, buffer size, dispose buffer. The three `expect`s are at parse,
 # verify and emit -- NOT at run-passes, which passes a Python str ('failed to
 # run passes'), so it takes the `isinstance(err, str)` arm.
-# ===========================================================================
+
 def LLVMCompiler.compile_calls() -> U32: 9
 
 def LLVMCompiler.compile_order() -> String:
@@ -289,7 +289,7 @@ def LLVMCompiler.runpasses_err() -> String: "failed to run passes"
 
 def LLVMCompiler.compile_clears() -> Bool: True{}
 
-# ===========================================================================
+
 # :66-74  CPULLVMCompiler. Four separate facts and they compose:
 #   `featstr = ','.join(f if f.startswith('-') else '+'+f for f in feats)`
 #     MEASURED: a feature that ALREADY starts with `-` is left ALONE, so
@@ -301,7 +301,7 @@ def LLVMCompiler.compile_clears() -> Bool: True{}
 #     OWN TRAILING COMMA, so arm64's feats string always starts `+reserve-x18,`.
 #   `super().__init__(self.arch, cpu, ...)` -- and `self.arch` for `riscv64`
 #     raises the `KeyError` from the header.
-# ===========================================================================
+
 def CPULLVMCompiler.ge2(+n: U32) -> Bool: U32.is_ge(n, 2)
 
 def CPULLVMCompiler.featstr.go(+xs: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
@@ -338,14 +338,14 @@ def CPULLVMCompiler.cpu_final(+cpu: String) -> String:
 
 def CPULLVMCompiler.dis_row() -> String: "cpu_objdump(lib)"
 
-# ===========================================================================
+
 # :78-88  AMDLLVMCompiler. `__reduce__` returns `(AMDLLVMCompiler, (self.arch,))`
 # -- a CLASS and a ONE-TUPLE, which is what pickle needs, so the ported facts
 # are the arity and the payload and not the class object.
 # `compile` remaps a RuntimeError whose text contains `undefined value
 # '@llvm.amdgcn.` into a CompileError with the LLVM >= 18 hint appended; every
 # OTHER RuntimeError becomes a CompileError with the text UNCHANGED.
-# ===========================================================================
+
 def AMDLLVMCompiler.arch() -> String: "gfx1100"
 
 def AMDLLVMCompiler.feats() -> String: "+cumode"
@@ -393,12 +393,12 @@ def TAIL3() -> List<&2, String>: []
 def TAIL4() -> List<&2, String>: ["-sve", "+crypto"]
 def TAIL5() -> List<&2, String>: ["-sse", "+avx2", "fma", "-f16c"]
 
-# ===========================================================================
+
 # THE GATE. Every `ll_` row is a row of `.agents/slop/ext_oracle.py` section
 # `ll`, which calls the real `LLVMCompiler.__init__`, `compile` and `__del__`
 # with the `llvm` autogen module replaced by a RECORDER -- including the real
 # diagnostic handler, found as the recorded callback and called directly.
-# ===========================================================================
+
 def t_const() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- srow("ll.const_LLVMDSError", U32.show(LLVMCompiler.const_ds_error()))

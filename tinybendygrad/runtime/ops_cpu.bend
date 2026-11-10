@@ -130,7 +130,7 @@ import ../device.bend as D
 import ../LAWS/spec.bend as S
 import ./support/compiler_cpu.bend as CC
 
-# ===========================================================================
+
 # A DEFECT FOUND IN device.bend, REPORTED AND NOT FIXED (device.bend is
 # read-only to this unit). `device.bend:988 symbol=TinyELF.iter_sig` ports `TinyELF.iter_sig`
 # (device.py:365-368) as
@@ -164,7 +164,7 @@ import ./support/compiler_cpu.bend as CC
 # ops_cpu.py:70's val slots and hcq2's kernargs layout both need the answer for a
 # list that need not be aligned. REPORTED, not fixed; the one-line fix and the
 # measurement are above so a reviewer can check it in a minute.
-# ===========================================================================
+
 type Cn is Data:
   Cn{at: U32, next: U32}
 
@@ -202,10 +202,10 @@ def cn_walk(n: Nat, ks: List<&2, U32>, +off: U32, acc: List<&2, U32>) -> List<&2
 def pk.offsets(+ks: List<&2, U32>) -> List<&2, U32>:
   cn_walk(List.length(&2, U32, ks), ks, 0, Nil{})
 
-# ===========================================================================
-# ===========================================================================
+
+
 # THE CPU CONSTANTS. Every one MEASURED out of CPython, not transcribed.
-# ===========================================================================
+
 
 # ops_cpu.py:16, `MAP_JIT = 0x0800`, with the NOTE that Python 3.13 adds it to
 # the mmap module. The value is the same either way.
@@ -230,7 +230,7 @@ def cpu.mem_release() -> U32: 32768
 # `/usr/lib/libm.dylib`, so the name in this row DOES reach a library.
 def cpu.lib_m() -> String: "m"
 
-# ===========================================================================
+
 # THE OBJC LIBRARY -- A PORT-LEVEL FIX THAT UPSTREAM DOES NOT HAVE, and the only
 # place in this file where the port is deliberately NOT a transcription.
 #
@@ -271,10 +271,10 @@ def cpu.lib_m() -> String: "m"
 # `/System/Library/Frameworks/System.framework/System` and `ctypes.CDLL` of it
 # succeeds. So the shared-cache `is_file()` miss does not stop libSystem, and
 # nothing here depends on it.
-# ===========================================================================
+
 def cpu.lib_objc() -> String: "/usr/lib/libobjc.dylib"
 
-# ===========================================================================
+
 # ops_cpu.py:19, `'System' if OSX else 'kernel' if WIN else 'gcc_s'`. The two
 # nested ternaries are TWO PICKS and not a three-arm `match`: the second and
 # third cells of that match would both be `cpu.rt_lib_name.os(win)`, so writing
@@ -379,12 +379,12 @@ def cpu.renderers() -> List<&2, Cr>:
 def cpu.has_copy_queue() -> U32: 0
 
 
-# ===========================================================================
+
 # THE CPU CALL TAGS. One per seam call in ops_cpu.py, in the order the source
 # first mentions them. `arg` is the ONE argument the port can carry for that
 # call (a size, a flag, an address mask); everything else about the call is the
 # seam's, and the header says so rather than inventing fields for it.
-# ===========================================================================
+
 
 # :21 the two `_load` arms, :26 LOAD_PROG, :30-36 the win32 chain.
 def CALL_LOAD_RAW() -> U32: 1
@@ -413,7 +413,7 @@ def CALL_PING() -> U32: 23
 # its own and it is the one entry a gate can make vanish.
 def CALL_ASSERT_EMULATE() -> U32: 24
 
-# ===========================================================================
+
 # THE TRACE. `Tr.emit` is the seam: every device call in this file goes
 # through it, so the trace is the ordered list of C calls the eventual seam
 # makes. THE RAISE: once `refused` is set nothing else is recorded, which is
@@ -421,7 +421,7 @@ def CALL_ASSERT_EMULATE() -> U32: 24
 # failing assert IS still recorded, because it sets `refused` in the same breath
 # and so on entry its own `refused` is still False. That is why a refusal shows
 # up as a truncated trace needing no guard of its own.
-# ===========================================================================
+
 
 type Call is Data:
   Call{k: U32, arg: U32}
@@ -469,11 +469,11 @@ def Tr.reset(t: Tr) -> Tr:
   match t:
     case Tr{calls, refused}: Tr{Nil{}, refused}
 
-# ===========================================================================
+
 # READING THE TRACE. `Tr.args` is the args of every entry with tag `k`, in
 # order; `Tr.count` is how many there are; `Tr.has` is "contains this
 # (tag, arg) sequence, in order".
-# ===========================================================================
+
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
@@ -568,7 +568,7 @@ def nr.submit_graph() -> List<&2, Sub>:
   [Sub{1, "PARAM"}, Sub{2, "CONST"}, Sub{3, "INDEX"}, Sub{4, "PARAM"},
    Sub{5, "INDEX"}, Sub{6, "LOAD"}, Sub{7, "STORE"}]
 
-# ===========================================================================
+
 # THE CPU PROGRAM STATE. `ops_cpu.py:24` writes four attributes in one
 # statement -- `self.dev, self.name, self.signature, self.profile_key` -- and
 # `:25-26` add `lvp` and `fxn`. `signature` is a tuple of
@@ -579,7 +579,7 @@ def nr.submit_graph() -> List<&2, Sub>:
 # and they are the ONLY two facts that choose between the init branches.
 # `elf` is the WALL 2 answer (`lib[:4] == ELFMAG`) and `liblen` is
 # `len(obj.lib)`.
-# ===========================================================================
+
 
 type Prog is Data:
   Prog{name: String, sig: List<&2, U32>, lvp: Bool, elf: Bool, osx: Bool,
@@ -747,10 +747,10 @@ def prog.win.at(lvp: Bool, +p: Prog) -> Prog:
   +p4: Prog = prog.at(p3, Prog.addr(p3), CALL_FLUSH_ICACHE(), Prog.liblen(p3))
   prog.fxn.at(lvp, p4)
 
-# ===========================================================================
+
 # ops_cpu.py:23-56 -- `__init__` as the step list it is. The order IS the
 # source, and the two conditionals are the only branching.
-# ===========================================================================
+
 
 # THE POSIX HALF, as its own def, because `__init__` is an if/elif/else and
 # only ONE of the three arms runs. Writing the chain here and letting
@@ -770,8 +770,8 @@ def prog.posix(+p: Prog, +lvp: Bool, +elf: Bool, +osx: Bool, +rt: Bool) -> Prog:
 def prog.posix.at(local: Bool, +p: Prog, +lvp: Bool, +elf: Bool, +osx: Bool, +rt: Bool) -> Prog:
   Bool.pick(Prog, local, prog.posix(p, lvp, elf, osx, rt), p)
 
-# ===========================================================================
-# ===========================================================================
+
+
 # ops_cpu.py:67-71 -- the LVP argument buffer, which is the one piece of
 # `__call__` that is PURE INTEGER ARITHMETIC and therefore the one piece worth
 # porting exactly.
@@ -788,7 +788,7 @@ def prog.posix.at(local: Bool, +p: Prog, +lvp: Bool, +elf: Bool, +osx: Bool, +rt
 # `data64_le` (helpers.py:81), then `(nbufs+nvals)*2` -- and the vals land at
 # 12 + the offset `iter_sig` computes from `len(bufs)*8`. Four facts and each is
 # its own row.
-# ===========================================================================
+
 
 # `args = [*bufs, *cast(tuple[int, ...], vals)]` is ONE list (:60), so every
 # count in `__call__` is `nbufs + nvals` and the two branches cannot disagree
@@ -798,7 +798,7 @@ def prog.nargs(nbufs: U32, nvals: U32) -> U32: U32.add(nbufs, nvals)
 # :67, the bytearray length. 12 bytes of header plus 8 bytes per argument.
 def lvp.size(nbufs: U32, nvals: U32) -> U32: U32.add(12, U32.mul(prog.nargs(nbufs, nvals), 8))
 
-# ===========================================================================
+
 # ops_cpu.py:58-73 -- `__call__` as the step list it is.
 #
 # `args = [*bufs, *cast(tuple[int, ...], vals)]` is ONE list, so the two
@@ -808,7 +808,7 @@ def lvp.size(nbufs: U32, nvals: U32) -> U32: U32.add(12, U32.mul(prog.nargs(nbuf
 # the row that says wait decides synchrony. `float(unwrap(prof.en) - prof.st) *
 # 1e-6 if wait else None` is the other: without `wait` the answer is None, and
 # that is a decision with no arithmetic in it.
-# ===========================================================================
+
 
 
 # :63, `(remote._rpc if wait else remote._post)(...)`.
@@ -860,21 +860,21 @@ def prog.call.at(+p: Prog, nbufs: U32, nvals: U32, wait: Bool, remote: Bool) -> 
     case True{}: prog.call.remote(p, nbufs, nvals, wait)
     case False{}: prog.call.local(p, nbufs, nvals)
 
-# ===========================================================================
+
 # ops_cpu.py:75-78 -- `__del__`, the ONLY teardown either backend has, and it
 # is a CONJUNCTION: `if self.dev.remote is None and sys.platform == 'win32'`.
 # A remote device's pages belong to the remote and a posix device's belong to
 # its mmap, so VirtualFree fires on exactly one platform and only when there is
 # no remote -- `prog_del_win_free` is the two-cell matrix and all four cells
 # are rows.
-# ===========================================================================
+
 
 def prog.del.at(remote: Bool, win: Bool, +p: Prog) -> Prog:
   match remote win:
     case False{} True{} : prog.at(p, 0, CALL_VIRTUAL_FREE(), cpu.mem_release())
     case _ _            : p
 
-# ===========================================================================
+
 # ops_cpu.py:80-96 -- `CPUDevice`, and it is the SMALLEST device in tinygrad:
 # eight attributes, one `if`, one `super().__init__` and one `if` again.
 #
@@ -883,7 +883,7 @@ def prog.del.at(remote: Bool, win: Bool, +p: Prog) -> Prog:
 # `pm_bufferize` rules and `synchronize`. What is here is what ops_cpu.py
 # itself writes, and that is one arch string, one renderer list, one bool, one
 # int and the peer-group choice.
-# ===========================================================================
+
 
 type Cpu is Data:
   Cpu{dev: String, arch: String, remote: Bool, peer: String,
@@ -949,13 +949,13 @@ def cpu.synchronize.at(remote: Bool, +c: Cpu) -> Cpu:
           Cpu.dev_id(c), Tr.emit(CALL_PING(), 0, Cpu.t(c))}
     case False{}: c
 
-# ===========================================================================
+
 # THE TRACE VOCABULARY. A tag's NUMBER is this file's; its NAME is Python's,
 # and the gate prints NAMES so the CPython oracle -- which knows Python and not
 # this file -- can be compared byte for byte. `call_name` is one descending
 # ladder over the whole vocabulary, so a tag this file invented with no Python
 # counterpart answers `"?"` and the diff says so instead of agreeing silently.
-# ===========================================================================
+
 def CALL_NAME_UNKNOWN() -> String: "?"
 
 def call_name.go(k: U32) -> String:
@@ -1041,7 +1041,7 @@ def rnames(+cs: List<&2, Cr>) -> String:
 # STEP 2 IS THE PORT's OWN `jit_loader`, SO IT IS NOT AN EFFECT: THE BEND SIDE
 # RELOCATES. STEPS 1 AND 3-7 ARE THE EFFECT (`runtime/ops_cpu.c`), AND THEY ARE
 # TWO EFFECTS BECAUSE UPSTREAM's ORDER HAS THE RELOCATION BETWEEN THEM.
-# ===========================================================================
+
 
 # THE ARGV. UPSTREAM'S `ClangCompiler.compile_argv` (support/compiler_cpu.py:21-22)
 # IS `[cc, '-c', '-x', 'c', '-O2', '-fPIC', '-ffreestanding', '-fno-math-errno',
@@ -1116,39 +1116,39 @@ def subnames(+xs: List<&2, Sub>) -> List<&2, String>:
 
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 
-# ===========================================================================
+
 # THE PORT's OWN ENTRY POINT, AND WHY IT IS HERE AND WHY IT DOES NOTHING.
 #
-# **⇒ IT IS HERE BECAUSE THE COMPILER SAYS SO, NOT BECAUSE A TASTE SAYS SO.**
+# **IT IS HERE BECAUSE THE COMPILER SAYS SO, NOT BECAUSE A TASTE SAYS SO.**
 # `references/bend/bend2/main.ts:1099` (`book_run`) TAKES ONE OF TWO PATHS: **A
 # FILE WITH A `main` IS RUN** (`Comp.io_run`), **AND A FILE WITHOUT ONE IS A
 # "BOOK" AND IS JUDGED BY `cli_verdict`** -- WHICH REFUSES A FILE WHOSE DEFS
 # REACH A **FOREIGN EFFECT**. **THIS FILE OWNS TWO** (`Cpu.compile` AND
-# `Cpu.exec`, `import "./ops_cpu.c"` AND `import "./ops_cpu.js"`), **⇒ SO A PORT
+# `Cpu.exec`, `import "./ops_cpu.c"` AND `import "./ops_cpu.js"`), **SO A PORT
 # FILE WITH NO `main` IS REFUSED** WITH
 # `Error: 2 defs rely on unsafe or foreign code: Cpu.compile, Cpu.exec`.
 #
-# **⇒ AND IT DOES NOTHING, AND THAT IS THE HONEST SHAPE.** **UPSTREAM's
+# **AND IT DOES NOTHING, AND THAT IS THE HONEST SHAPE.** **UPSTREAM's
 # `tinygrad/runtime/ops_cpu.py` IS A MODULE** -- IT HAS NO `main` AND NO
-# PROGRAM, **⇒ AND THE PORT IS THE SAME SHAPE.** **⇒ AND THE PORT's PROGRAM, IF
+# PROGRAM, **AND THE PORT IS THE SAME SHAPE.** **AND THE PORT's PROGRAM, IF
 # IT IS EVER WRITTEN, IS `runtime/device.bend`'s** -- WHOSE OWN HEADER SAYS
 # *"THE port's `Device` LANE is a set of STAGES WITH NO LANE"* AND *"whoever
-# produces it is the next UNIT"* -- **⇒ SO WRITING ONE HERE WOULD BE INVENTING
+# produces it is the next UNIT"* -- **SO WRITING ONE HERE WOULD BE INVENTING
 # THE NEXT UNIT's WORK.**
 #
-# **⇒ AND IT MUST NOT **CALL** THE FOREIGN EFFECTS.** `book_promises`
+# **AND IT MUST NOT **CALL** THE FOREIGN EFFECTS.** `book_promises`
 # (`main.ts:961`) MARKS EVERY DEF THAT REFERENCES A FOREIGN ONE, **AND
 # `runtime/device.bend` IMPORTS THIS FILE AS `CPU`** AND CALLS
-# `CPU.Cpu.compile(...)` AND `CPU.Cpu.exec(...)`, **⇒ SO A `main` THAT CALLED
+# `CPU.Cpu.compile(...)` AND `CPU.Cpu.exec(...)`, **SO A `main` THAT CALLED
 # THEM WOULD PUT THREE MORE NAMES INTO `device.bend`'s OWN VERDICT** --
-# **MEASURED: `device.bend`'s FAILURE GOES FROM **4** DEFS TO **7**.** **⇒ AND
+# **MEASURED: `device.bend`'s FAILURE GOES FROM **4** DEFS TO **7**.** **AND
 # THAT FAILURE IS **PRE-EXISTING** (`device.bend` ALREADY FAILS WITH THOSE **4**
-# ON THE UNMOVED TREE), **⇒ AND THIS MOVE MUST NOT MAKE IT WORSE.**
+# ON THE UNMOVED TREE), **AND THIS MOVE MUST NOT MAKE IT WORSE.**
 #
-# **⇒ AND IT PRINTS **NOTHING**, BECAUSE **EVERY ROW IS PART OF THE CLAIM THE
+# **AND IT PRINTS **NOTHING**, BECAUSE **EVERY ROW IS PART OF THE CLAIM THE
 # DIFFER MAKES**: **A ROW THE PORT PRINTS THAT IT DID NOT PRINT BEFORE IS A ROW
 # THE DIFF NEVER SAW.** THE PORT's ROWS ARE THE DRIVER's ROWS NOW.
-# ===========================================================================
+
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.pure(Unit, Unit{})

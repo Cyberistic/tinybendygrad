@@ -5,7 +5,7 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../dtype.bend as DT
 
-# ===========================================================================
+
 # nn/optim.bend -- tinygrad/nn/optim.py (179 lines), all of it.
 #
 # WHY THIS FILE IS MOSTLY PORTABLE, and it is worth saying plainly because it is
@@ -69,9 +69,9 @@ import ./../dtype.bend as DT
 # method that builds it has landed, and every row below is a graph SHAPE over the
 # ops I CAN build. `detach` in particular IS an `alu` with no srcs (elementwise.py:43
 # is `return self.alu(Ops.DETACH)`), so it is a real node here and not a name.
-# ===========================================================================
 
-# ---------------------------------------------------------------------------
+
+
 # GATE FIXTURES. `Tensor([1.0, 2.0], device='PYTHON')` is `UOp.new_buffer`
 # (ops.py:853), which is tensor.bend's WALL 2: it builds a BUFFER node plus an
 # opaque allocation and only the node is a graph fact. So the node is built here
@@ -83,7 +83,7 @@ import ./../dtype.bend as DT
 # built its lhs and its rhs from separate empties would intern the same node
 # twice under one index. It typechecks and it prints plausible numbers, which is
 # exactly the failure tensor.bend's mutation table M13 records.
-# ---------------------------------------------------------------------------
+
 
 def barg(slot: U32, dt: S.Dt) -> O.ParamArg:
   # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile,
@@ -94,7 +94,7 @@ def barg(slot: U32, dt: S.Dt) -> O.ParamArg:
 def pbuf(+ar: O.Arena, slot: U32, size: U32, dt: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{size}, O.AParam{barg(slot, dt)}, O.TNone{})
 
-# ===========================================================================
+
 # `numel` -- mixin/movement.py:38, `prod(self.shape)`.
 #
 # It is HERE and not taken from a movement module because (a) movement.py is a
@@ -112,7 +112,7 @@ def pbuf(+ar: O.Arena, slot: U32, size: U32, dt: S.Dt) -> O.Found:
 #
 # The `Maybe` is tensor.bend's WALL 5 (the fold cannot answer a movement op's
 # shape). The default 0 is the honest "no fused offset either".
-# ===========================================================================
+
 
 def i64_lo(x: H.I64) -> U32:
   match x:
@@ -139,7 +139,7 @@ def numel.of(m: Maybe<&2, List<&2, O.Sint>>) -> U32:
 def op_numel(+t: T.Tensor) -> U32:
   numel.of(T.tn_dims(t))
 
-# ===========================================================================
+
 # THE OPTIMIZER RECORD. Python's `Optimizer` is a plain object with attributes
 # assigned across `__init__`, `_new_optim_param` and the two subclasses'
 # `__init__`; a `Data` record is the immutable spelling of exactly that, and it is
@@ -163,7 +163,7 @@ def op_numel(+t: T.Tensor) -> U32:
 # same `None`-by-empty convention every other absent optimizer field uses here.
 # The `F32` scalars are `F32` and not `Maybe<F32>` because Python's defaults are
 # real numbers (`momentum=0.9`), not `None`.
-# ===========================================================================
+
 
 type Optim is Data:
   Optim{ar: O.Arena,
@@ -184,7 +184,7 @@ type Optim is Data:
     nesterov: Bool, classic: Bool, pre_wd: Bool, tcoef: F32
   }
 
-# ===========================================================================
+
 # THE TWO COMPREHENSIONS. optim.py:13 is
 # `dedup([x for x in params if x.is_param])` and optim.py:15 is
 # `dedup([x for x in params if not x.is_param])`. Each is a filter and then a
@@ -198,7 +198,7 @@ type Optim is Data:
 # tensor.bend's `tn_hash` header those are NOT the same identity as an arena index.
 # So this file dedups by uop and the header says so rather than letting the gate
 # claim a fidelity it does not have.
-# ===========================================================================
+
 
 def op_filter.t(x: T.Tensor, +acc: List<&2, U32>) -> List<&2, U32>:
   match x:
@@ -226,7 +226,7 @@ def op_filter.go(want: Bool, +xs: List<&2, T.Tensor>) -> List<&2, U32>:
 def op_filter.of(want: Bool, xs: List<&2, T.Tensor>) -> List<&2, U32>:
   H.dedup_u32(op_filter.go(want, xs))
 
-# ===========================================================================
+
 # `itertools.accumulate(self.params, lambda x,y: x+y.numel(), initial=0)`
 # (optim.py:22) -- the exclusive prefix sum of the parameter SIZES with the
 # `initial=0` at the HEAD, so sizes `[2, 3]` give `[0, 2, 5]` and the oracle
@@ -238,7 +238,7 @@ def op_filter.of(want: Bool, xs: List<&2, T.Tensor>) -> List<&2, U32>:
 # values are then read ONCE (`x` for its numel, `acc` for its tail), which is what
 # lets the plain cons compile with no `+` on `x`. The alternative -- threading
 # `tot` as a parameter -- reads `x` twice, and that is mutual recursion.
-# ===========================================================================
+
 
 def op_last.idx(xs: List<&2, U32>) -> Nat:
   Nat.sub(List.length(&2, U32, xs), 1n)
@@ -266,29 +266,29 @@ def op_pos.of(fused: Bool, params: List<&2, T.Tensor>) -> List<&2, U32>:
     case True{}: op_acc(params)
     case False{}: Nil{}
 
-# ===========================================================================
+
 # `if lr < 0: raise ValueError(f"Invalid learning rate: {lr}")` (optim.py:12).
 #
 # A pure Bend def cannot raise and there is no exception form to defer to, so the
 # check is a `Bool` PARAMETER and `op_new` returns a `Maybe` whose `None` IS the
 # ValueError. That is the shape tensor.bend gives `__len__`'s TypeError (`tn_len`
 # returns a `Maybe`) and the caller is what refuses.
-# ===========================================================================
+
 
 def op_lr_ok(lr: F32) -> Bool:
   Bool.not(F32.is_lt(lr, 0.0))
 
-# ===========================================================================
+
 # `self.param_dtype = to_dtype(getenv("OPTIM_DTYPE", "float32"))` (optim.py:17).
 # `getenv` is helpers.bend's `getenv_str` and it is an IO READ, so the NAME is a
 # parameter here rather than a call: optim.py's default is the string "float32"
 # and helpers.bend's `Flags` record is the phase-P6 shape for the rest.
-# ===========================================================================
+
 
 def op_param_dtype(nm: String) -> Maybe<&1, S.Dt>:
   DT.to_dtype(nm)
 
-# ===========================================================================
+
 # `self.lr = Tensor(lr if getenv("CONST_LR") else [lr], device=self.device,
 #    dtype=least_upper_dtype(dtypes.default_float, dtypes.f32))` (optim.py:20).
 #
@@ -301,12 +301,12 @@ def op_param_dtype(nm: String) -> Maybe<&1, S.Dt>:
 # claim worth gating, so `op_lr_dtype` computes the same fold Python computes and
 # the row pins its answer. A DEFAULT_FLOAT of float16 would give a different
 # answer, and that is what makes the row worth having.
-# ===========================================================================
+
 
 def op_lr_dtype(default_float: S.Dt) -> S.Dt:
   DT.least_upper_dtypes([default_float, S.single()])
 
-# ===========================================================================
+
 # `_new_optim_param` -- optim.py:24-27. THREE arms, and the arm selector is a
 # tagged `Data` value rather than three Bools, because Python's selector is a
 # three-way thing (`if self.fused`, then `if isinstance(self.device, tuple)`) and
@@ -320,7 +320,7 @@ def op_lr_dtype(default_float: S.Dt) -> S.Dt:
 # arms; the `zeros_like` arm differs in reading `t.shape` for its size and the
 # other two in reading `pos_params[-1]`, and THAT is the distinction the three
 # constructors carry.
-# ===========================================================================
+
 
 type NewOpt is Data:
   Nz{n: U32}                                  # Tensor.zeros(self.pos_params[-1], ...)
@@ -354,7 +354,6 @@ def op_nop.arm(fused: Bool, dev: S.Dev, szs: List<&2, U32>, pp: List<&2, U32>) -
 # That is why the row builds the size list itself instead of trusting `o.ar`: a record
 # whose `ar` is an `Arena.empty()` reads every numel as the fold's bottom, and
 # MEASURED, `op_nop` printed `Nzs:0,Nzs:0` against a CORRECT filter and a CORRECT
-# accumulate. Two of the four rows were right and this one was wrong, which is the
 # shape of a gate that does not know which of its rows can see a given bug.
 def op_numel_u(ar: O.Arena, u: U32) -> U32:
   op_numel(T.tn_wrap_uop(ar, u))
@@ -369,7 +368,7 @@ def op_nop(o: Optim) -> List<&2, NewOpt>:
     case Optim{ar, params, buffers, device, param_dtype, fused, lr, pos_params, b, b1, b2, eps, wd, adam, b1_t, b2_t, m, v, momentum, ns_steps, ns_coeffs, nesterov, classic, pre_wd, tcoef}:
       op_nop.arm(fused, device, op_nop.sizes(ar, params), pos_params)
 
-# ===========================================================================
+
 # `zero_grad` -- optim.py:29-33. `for param in self.params: param.grad = None`.
 # `None` is the arena's reserved index 0, so this is `Tensor.grad_set(t, 0)` on
 # every param, and because a `Data` record is immutable it RETURNS the new
@@ -380,7 +379,7 @@ def op_nop(o: Optim) -> List<&2, NewOpt>:
 # The walk builds a NEW params list whose tensors have `grad = 0`. It does not
 # read the old one, so it does not need it `+`; and `grad_set` returns a new
 # record rather than mutating, so `grad` is read once per element.
-# ===========================================================================
+
 
 def op_zg.put(xs: List<&2, T.Tensor>, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
@@ -401,7 +400,7 @@ def op_zg_params(params: List<&2, T.Tensor>) -> List<&2, U32>:
   op_zg.put(params, Nil{})
 
 
-# ===========================================================================
+
 # `_apply_update` -- optim.py:60, `return t.detach() - up.to(t.device)`.
 #
 # `t.detach()` IS `tn_alu(t, OpsDETACH, [])`: elementwise.py:43 is
@@ -409,7 +408,7 @@ def op_zg_params(params: List<&2, T.Tensor>) -> List<&2, U32>:
 # DETACH is a real node here and not a name, and the row pins its arity (0) as
 # well as the SUB's (1). `up.to(t.device)` is tensor.py:353 and is a COPY: a
 # device wall, so it is dropped and the header says so.
-# ===========================================================================
+
 
 def op_detach(ar: O.Arena, t: U32) -> T.Tensor:
   T.tn_alu.of(ar, t, O.OpsDETACH{}, Nil{})
@@ -424,12 +423,12 @@ def op_ar(+t: T.Tensor) -> O.Arena:
 # `SUB` here; CPython's `sub` (elementwise.py:103) is `a.alu(Ops.ADD, -b)` and `Ops.SUB` is
 # never built by a Tensor method.
 
-# ===========================================================================
+
 # `Optimizer.__init__` -- optim.py:11-22, the constructor.
 #
 # The eleven `self.x = ...` assignments in Python's order, and the record is built
 # in that order so the fields line up with the file.
-# ===========================================================================
+
 
 def op_new.of(lrok: Bool, +o: Optim) -> Maybe<&2, Optim>:
   match lrok:
@@ -455,7 +454,7 @@ def op_new(+params: List<&2, T.Tensor>, dev: Maybe<&2, S.Dev>, pdt: Maybe<&1, S.
 type Upd is Data:
   Upd{updates: List<&2, U32>, extra: List<&2, U32>}
 
-# ===========================================================================
+
 # `OptimizerGroup` -- optim.py:62-71. It does NOT call `super().__init__` (the
 # pylint disable at :66 says so) and it only sets `optimizers`, then derives
 # `params`/`buffers` by flattening every member's lists. So its record is an
@@ -465,7 +464,7 @@ type Upd is Data:
 # `flatten([o.params for o in self.optimizers])` (optim.py:68) is a flatten over a
 # LIST OF LISTS, and `H.flatten_u32` is helpers.bend's own. The map from optimizers
 # to their params is the walk, and the flatten is the helper.
-# ===========================================================================
+
 
 def op_group.cat(xs: List<&2, U32>, ys: List<&2, U32>) -> List<&2, U32>:
   H.flatten_u32([xs, ys])
@@ -489,7 +488,7 @@ def op_group.gather(xs: List<&2, Optim>, +acc: List<&2, U32>) -> List<&2, U32>:
 def op_group(xs: List<&2, Optim>) -> List<&2, U32>:
   op_group.gather(xs, Nil{})
 
-# ===========================================================================
+
 # `zero_grad` on the GROUP -- optim.py:70, `[o.zero_grad() for o in
 # self.optimizers]`. A list COMPREHENSION used as a statement, which in Python is a
 # pure loop whose only effect is the calls. Here the effect is that each member's
@@ -497,7 +496,7 @@ def op_group(xs: List<&2, Optim>) -> List<&2, U32>:
 # walk is over its OWN flattened params and needs no per-member dispatch. That is
 # the honest reading of `[o.zero_grad() for o in ...]`: every parameter of every
 # member, exactly once, in member order.
-# ===========================================================================
+
 
 # `Tensor.grad_set` only touches two of the record's four fields, and it rebuilds
 # the record around them, so the uop-index form needs no arena at all -- `Optim.ar`
@@ -513,7 +512,7 @@ def op_zg_u(xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
 def op_group.zero_grad(xs: List<&2, Optim>) -> List<&2, U32>:
   op_zg_u(op_group(xs), Nil{})
 
-# ===========================================================================
+
 # `schedule_step` -- optim.py:41-57, the fused arm's SLICE BOUNDS and the return.
 #
 # `if not TRAINING: raise RuntimeError(...)` (optim.py:45) is the `Maybe`'s `None`,
@@ -525,7 +524,7 @@ def op_group.zero_grad(xs: List<&2, Optim>) -> List<&2, U32>:
 #
 # `return extra+self.params+self.buffers` (optim.py:57) is a THREE-way concat and
 # `H.flatten_u32` is helpers.bend's own two-level flatten, which is exactly it.
-# ===========================================================================
+
 
 # `extra + self.params + self.buffers` (optim.py:57) is a THREE-way concat, so it
 # is two `op_group.cat`s and the middle one needs `params` twice -- hence `+o` on
@@ -549,7 +548,7 @@ def op_slice.lo(pp: List<&2, U32>, i: Nat) -> U32:
 def op_slice.hi(pp: List<&2, U32>, i: Nat) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, pp, Nat.add(i, 1n)), 0)
 
-# ===========================================================================
+
 # `LARS._step` -- optim.py:109-129, the whole body. EIGHT `if`s in Python and
 # they are eight `Bool` PARAMETERS here, because every one of them guards a
 # `let`-shaped rebinding of `g` (Python's `g = ...` at :115, :117, :119, :122,
@@ -580,7 +579,7 @@ def op_slice.hi(pp: List<&2, U32>, i: Nat) -> U32:
 #
 # `zip(params, grads)` (optim.py:111) is the two-list walk and `enumerate` (:111)
 # is the index it threads, because `self.b[i]` indexes the momentum buffer.
-# ===========================================================================
+
 
 def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
   T.tn_const(ar, O.CFloat{v})
@@ -598,7 +597,7 @@ def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
 # change -- `1 NOOP/0`, because index 0 is the BOTTOM sentinel -- and no `+` on `ar`
 # can fix it, because the grown arena is simply not in a `U32`. A `Tensor` is exactly
 # the pair (`Arena & U32`) that ops.bend's `Found` exists to spell.
-# ===========================================================================
+
 # the arena rule, in one place, and it is the whole of this file's hardest part.
 #
 # A node belongs in the arena as it stood AFTER the last node built before it, and in
@@ -614,7 +613,7 @@ def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
 # All three typecheck, all three print a plausible-looking number, and all three are
 # the SAME mistake. tensor.bend's rule 5 names it: the arena a build returns is not the
 # arena that went in.
-# ===========================================================================
+
 
 # `lhs + rhs` -- elementwise.py:267 `__add__`. both operands are `Tensor`s and the build
 # MERGES THEIR ARENAS. `Arena` is an immutable `Data` value, so `b`'s index is meaningful
@@ -715,13 +714,13 @@ def op_cast.id(m: Maybe<&2, T.Tensor>, d: T.Tensor) -> T.Tensor:
 def op_cast(+t: T.Tensor, dt: S.Dt) -> T.Tensor:
   op_cast.id(T.tn_cast.of(op_ar(t), Some{T.Tensor.u(t)}, Some{dt}), t)
 
-# ===========================================================================
+
 # `LARS._step` -- optim.py:109-129, in SOURCE ORDER. Eight `if`s in Python and each
 # one is a `Bool` here, because each guards a rebinding of `g` and a `let` is affine.
 # the order of the calls is the port: :117 before :119 before :121 before :122 before
 # :125 before :127. A port that hoisted the `classic` multiply would build the same
 # nodes in a different graph and every signature row would see it.
-# ===========================================================================
+
 
 # THE SUM HAS NO AXIS (reduce.py:20), so the axis list is EVERY axis, derived from the
 # ndim the fold reports. `op_sum` is the only `tn_rop` caller in this file and it is
@@ -844,7 +843,6 @@ def op_mom.mix(+ar: O.Arena, +b: U32, g: U32, momentum: F32) -> T.Tensor:
   op_add(op_mulf(ar, momentum, T.tn_wrap_uop(ar, b)), T.tn_wrap_uop(ar, g))
 
 # the assign spine is built on the mix's arena (`T.Tensor.ar(m)`): the ADD grew it, so the
-# old `ar` did not contain the mix's index and the STORE's src[1] was wrong.
 def op_mom(+ar: O.Arena, +b: U32, g: U32, momentum: F32) -> T.Tensor:
   +m = op_mom.mix(ar, b, g, momentum)
   T.tn_alu.put(T.tn_assign_store(T.Tensor.ar(m), b, T.Tensor.u(m)))
@@ -871,7 +869,7 @@ def op_postwd(+ar: O.Arena, g: U32, t: U32, lr: U32, wd: F32) -> T.Tensor:
   op_add(T.tn_wrap_uop(ar, g),
     op_mul_l(op_mulf(ar, wd, T.tn_wrap_uop(ar, lr)), op_detach(ar, t)))
 
-# ===========================================================================
+
 # `LAMB._step` -- optim.py:161-179. The structure is LARS's with a different numerator,
 # so the SAME helpers serve both, and that is not a refactor: optim.py itself writes the
 # same `where` nest at :175 as at :115 and the same `r1/r2` norms at :173 as at :113.
@@ -885,7 +883,7 @@ def op_postwd(+ar: O.Arena, g: U32, t: U32, lr: U32, wd: F32) -> T.Tensor:
 #   :171 `up = (m_hat / (v_hat.sqrt() + self.eps)).shard_like(t) + self.wd * t.detach()`
 #        -- `shard_like` is tensor.py:401 and is a MULTI-DEVICE wall; the ADD half is not.
 #   :178 `ret.append((self.lr * r * up).cast(t.dtype))` -- TWO left-associated MULs.
-# ===========================================================================
+
 
 # `(1.0 - self.b1)` IS NOT A NODE. `op_1mb` is the trace-time fold, and the row that
 # would see a spurious SUB is `op_lamb`.
@@ -923,7 +921,7 @@ def op_mhat(+ar: O.Arena, m: U32, b1_t: U32) -> T.Tensor:
 def op_vhat(+ar: O.Arena, v: U32, b2_t: U32) -> T.Tensor:
   op_div_t(T.tn_wrap_uop(ar, v), op_hat.num(ar, b2_t))
 
-# ===========================================================================
+
 # THE GATE.
 #
 # Nothing is EXECUTED. Every row is either a STRING or the SIGNATURE of a lazily
@@ -946,7 +944,7 @@ def op_vhat(+ar: O.Arena, v: U32, b2_t: U32) -> T.Tensor:
 # print the same signature whichever way round they are swapped. The rows that pin
 # ORDER specifically are `op_lars0` (two CONSTs, so order-free by construction) and
 # `op_prewd`/`op_trust`, which have a BUFFER and a CONST in the same multiply.
-# ===========================================================================
+
 
 # --- the printers, and they are ABOVE every row that uses them ----------------
 
@@ -1401,7 +1399,7 @@ def t_lamb.of(+s: St) -> IO(Unit):
 def t_lamb() -> IO(Unit):
   t_lamb.of(g_step())
 
-# ===========================================================================
+
 # the file's own `main`, and its honest state. six value rows and seven graph rows.
 #
 # THE ARENA PLUMBING IS FINISHED. `gates/op_graph_census-gate.py` drives each builder directly
@@ -1423,12 +1421,11 @@ def t_lamb() -> IO(Unit):
 # produced it. So the pin is honest for the general case and a literal-defaults caller could
 # drop it; the gate declares it either way.
 #
-# THE MECHANISM THAT WAS WRONG, for the record: a helper interned a CONST into an arena that
 # GREW it and then built the consuming node in the PRE-GROWTH arena, at the index the const
 # took -- the const was orphaned and the consumer's `src[0]` was its own index, a self-loop
 # that made `toposort` answer `0`. The fix is one spelling: every two-operand node merges its
 # operands' arenas (`tn_binop`) and every three-operand node is `tn_where`.
-# ===========================================================================
+
 
 # the seven rows above, printed under names that say what they are.
 def t_unverified() -> IO(Unit):
@@ -1457,7 +1454,7 @@ def main() -> IO(Unit):
     d : Unit <- t_unverified()
     e : Unit <- t_unverified3()
     t_unverified2()
-# ===========================================================================
+
 # THE MUTATION TABLE, MEASURED, and it is SHORT because only the rows below are claims.
 #
 # THE TABLE IS ALSO A HARNESS NOW. The prose here was typed by hand, which is a claim, so every

@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/compiler_mesa.bend -- port of tinygrad/runtime/support/compiler_mesa.py
 #
-# ===========================================================================
+
 # the scope NOTE for this unit said `compiler_mesa.py` "invokes external cc for
 # Mesa/software". that is not what the file does, and the difference matters,
 # so it is stated first and MEASURED rather than argued.
@@ -20,7 +20,7 @@
 # that seam) -- and `helpers.system` is `subprocess.check_output(cmd.split(),
 # stderr=STDOUT)`, i.e. an ARGV list and not a shell, so the port is 1:1.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :9-12  rzalloc                 PARTIAL `ra.*` -- `sizeof` is autogen and the
@@ -61,7 +61,7 @@
 #                                         `count * 4`
 #   tinygrad/runtime/support/compiler_mesa.py:133 `disassemble` PORTED  `ir3.dis_row` symbol=disassemble
 #
-# ===========================================================================
+
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- Mesa's ctypes surface. `mesa.*`, `llvm.*` and `libc.*` are a
@@ -108,10 +108,10 @@
 #   TODO(p3) helpers.py:526 -- `subprocess.check_output(cmd.split(), stderr=STDOUT)`.
 import Base
 
-# ===========================================================================
+
 # THE TRACE. Which Mesa/LLVM call the Python makes, in what order. Declared,
 # not executed: see WALL 1. A refusal truncates it.
-# ===========================================================================
+
 type Tr is Data:
   Tr{items: List<&2, String>}
 
@@ -134,7 +134,7 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # digest is WALL 2 so it arrives as this fixture rather than being computed.
 def NAKD() -> String: "1ac1ef01e96caf1be0d329331a4fc2a8"
 
-# ===========================================================================
+
 # THE FORMATTERS. `f"{n:04} [{fst:08x}_{snd:08x}] "` (:89) is the only place this
 # file builds a human-facing string from numbers, and both halves are load
 # bearing: a `fst` that lost its leading zeros runs the instruction columns
@@ -143,7 +143,7 @@ def NAKD() -> String: "1ac1ef01e96caf1be0d329331a4fc2a8"
 # Written with `Char.from_u32` rather than an alphabet lookup because a `U32`
 # literal arm ladder is a prefix match (bend2-constraints.md position 1885) and
 # sixteen arms of it would be sixteen ways to be silently wrong.
-# ===========================================================================
+
 def hx.digit(+d: U32) -> Char:
   # '0' is 48 and 'a' is 97, so the offset for d >= 10 is 97 - 48 - 10 = 39
   Char.from_u32(U32.add(U32.add(48, Bool.pick(U32, U32.is_gt(d, 9), 39, 0)), d))
@@ -179,14 +179,14 @@ def dc.fixed.of(+len: Nat, +w: U32, +s: String) -> String:
 
 def dc.fixed(w: U32, +n: U32) -> String: dc.fixed.of(String.length(U32.show(n)), w, U32.show(n))
 
-# ===========================================================================
+
 # :80  helpers.data64 -- `(data >> 32, data & 0xFFFFFFFF)`, helpers.py:81.
 #
 # 64-bit, so it arrives as the two words `hi`/`lo` it would have produced, and
 # that is not a dodge: bend has no 64-bit type (see the header), and the rest
 # of this file only ever needs the two halves. MEASURED against the real
 # `helpers.data64` on the eight values in the oracle.
-# ===========================================================================
+
 def da.data64(hi: U32, lo: U32) -> List<&2, U32>: [hi, lo]
 
 # A two-element pair needs a `List`, because `Pair` is a Base CONSTRUCTOR
@@ -217,7 +217,7 @@ def da.data64_str(+hi: U32, +lo: U32) -> String:
 def da.line(+n: U32, instr_hi: U32, instr_lo: U32) -> String:
   String.concat([dc.fixed(4, n), " [", hx.u32_8(instr_hi), "_", hx.u32_8(instr_lo), "] "])
 
-# ===========================================================================
+
 # :86-91  disas_adreno's decode options, and the ORDER of its five fields.
 #
 #   mesa.ir3_isa_disasm(lib, len(lib), mesa_fp,
@@ -226,7 +226,7 @@ def da.line(+n: U32, instr_hi: U32, instr_lo: U32) -> String:
 # The field order is the write and the values are not symmetric: `True, 0, True`.
 # `da.opts` keeps the five in the order the Python passes them, so a reordering
 # is a diff of the joined string rather than a count that stays the same.
-# ===========================================================================
+
 def da.opts(gpu_id: U32) -> List<&2, U32>: [gpu_id, 1, 0, 1]
 
 def da.opt_count() -> U32: 4
@@ -240,7 +240,7 @@ def da.opts_sp(+gpu_id: U32) -> List<&2, String>: da.opts_str2(da.opts(gpu_id), 
 
 def da.opts_str(gpu_id: U32) -> String: String.join(da.opts_sp(gpu_id), ",")
 
-# ===========================================================================
+
 # :56  warps_per_sm. THE TABLE, and the shape of the test is the content.
 #
 #   return 48 if arch in ("sm_86", "sm_87", "sm_89", "sm_120") else 64
@@ -255,7 +255,7 @@ def da.opts_str(gpu_id: U32) -> String: String.join(da.opts_sp(gpu_id), ",")
 #
 # `w.warps` is written as four equality tests rather than a range or a prefix,
 # and `w.is48` is the set itself so the two cannot drift apart.
-# ===========================================================================
+
 def w.is48(+arch: String) -> Bool:
   Bool.or(Bool.or(String.eq(arch, "sm_86"), String.eq(arch, "sm_87")),
     Bool.or(String.eq(arch, "sm_89"), String.eq(arch, "sm_120")))
@@ -268,12 +268,12 @@ def w.warps_raw(+arch: String) -> U32: Bool.pick(U32, w.is48(arch), 48, 64)
 
 def w.set() -> List<&2, String>: ["sm_86", "sm_87", "sm_89", "sm_120"]
 
-# ===========================================================================
+
 # :58  `int(arch[3:])`. The arch is `sm_` followed by DECIMAL DIGITS, and
 # `arch[3:]` is taken on faith by Python -- `int("")` would raise, and
 # `int("sm")` never happens because the slice is empty. So the digits are the
 # part, and `a3.n` is the decimal parse of them.
-# ===========================================================================
+
 def a3.drop3(+arch: String) -> String:
   # `arch[3:]` -- drop exactly three characters, no more and no fewer. Python's
   # slice is well defined on a short string (it is the empty string) and so is
@@ -339,9 +339,9 @@ def a3.read(s: String) -> Nat: a3.read.of(String.to_list(s))
 
 def a3.n(+arch: String) -> U32: U32.from_nat(a3.read(a3.drop3(arch)))
 
-# ===========================================================================
+
 # :59  `struct_nv_device_info(sm=int(arch[3:]), max_warps_per_mp=warps_per_sm(arch))`
-# ===========================================================================
+
 # `struct_nv_device_info(sm=..., max_warps_per_mp=...)` -- two named fields, so
 # two defs. There is no `U32.get` in base.bend (MEASURED), so a two-element
 # `U32` list could not be taken apart again and the fields are separate.
@@ -353,7 +353,7 @@ def nak.key(+arch: String) -> String: String.concat(["compile_nak_", arch])
 def nak.dev_str(+arch: String) -> String:
   String.concat([dc.unpadded(nak.sm(arch)), ",", dc.unpadded(nak.warps(arch))])
 
-# ===========================================================================
+
 # :75-80  NAKCompiler.disassemble's ONE external command.
 #
 #   fn = (Path(tempfile.gettempdir()) / f"tinynak_{md5(lib).hexdigest()}").as_posix()
@@ -362,7 +362,7 @@ def nak.dev_str(+arch: String) -> String:
 # The digest is WALL 2 and arrives as `digest`; what is left is the PATH and
 # the COMMAND, and both are rows. `as_posix()` is a no-op on macOS and Linux
 # and is not ported, because on both it cannot change the string.
-# ===========================================================================
+
 def nv.dir(tmp: String) -> String: tmp
 
 def nv.path(tmp: String, +digest: String) -> String:
@@ -378,10 +378,10 @@ def nv.cmd_str(tmp: String, digest: String, +arch: String) -> String:
 def nv.fail(+e: String) -> String:
   String.concat(["Failed to generate SASS ", e, " Make sure your PATH contains nvdisasm binary of compatible version."])
 
-# ===========================================================================
+
 # :51  cpu_objdump's command. helpers.py:533 writes `kernel.o` into a
 # `TemporaryDirectory` and runs `objdump -d <path>`.
-# ===========================================================================
+
 def dso.tool() -> String: "objdump"
 
 def dso.file() -> String: "kernel.o"
@@ -390,11 +390,11 @@ def dso.cmd(+tmp: String) -> List<&2, String>: [dso.tool(), "-d", String.concat(
 
 def dso.cmd_str(+tmp: String) -> String: String.join(dso.cmd(tmp), " ")
 
-# ===========================================================================
+
 # :98-104  IR3Compiler. The assert, the device id, the option flag and the key.
 # `0x6030001` is 100859905 and it fits a `U32` exactly; the hex is in the comment
 # because bend has no hex literal literals.
-# ===========================================================================
+
 def ir3.head.of(xs: List<&2, String>) -> String:
   match xs:
     case Nil{}: ""
@@ -444,7 +444,7 @@ def ir3.ret_parts_str.of(xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, S
 def ir3.ret_parts_str(+variant: U32, +const_state: U32, +count: U32, +info_size: U32) -> String:
   String.join(ir3.ret_parts_str.of(ir3.ret_parts(variant, const_state, count, info_size), []), ",")
 
-# ===========================================================================
+
 # :127-131  unpack_lib. the headline pure logic of this file.
 #
 #     shifted = lib[ctypes.sizeof(v:=struct_ir3_shader_variant.from_buffer_copy(lib)):]
@@ -460,7 +460,7 @@ def ir3.ret_parts_str(+variant: U32, +const_state: U32, +count: U32, +info_size:
 # `ul.head` and `ul.imm` take the LENGTHS (the sizes and the count are WALL 1
 # and WALL 1 respectively), and `ul.tail` the total, so the two-stage slicing is
 # a subtraction chain rather than a re-derivation of an index.
-# ===========================================================================
+
 def ul.head(variant: U32, const_state: U32) -> U32: U32.add(variant, const_state)
 
 def ul.imm(variant: U32, const_state: U32, +count: U32) -> U32: U32.mul(count, 4)
@@ -474,11 +474,11 @@ def ul.asm_len(+variant: U32, +const_state: U32, +count: U32, +info_size: U32) -
 def ul.split_point(+variant: U32, +const_state: U32, +count: U32) -> U32:
   U32.add(ul.head(variant, const_state), U32.mul(count, 4))
 
-# ===========================================================================
+
 # :20  LVPCompiler.__init__'s `arch.split(",")`. base's `String.split` KEEPS the
 # empty fields (MEASURED, and that is the same measurement compiler_amd.bend
 # records), so `""` answers ONE empty arch and not zero.
-# ===========================================================================
+
 def lvp.archs(+arch: String) -> List<&2, String>: String.split(arch, ',')
 
 def lvp.arch_n(+arch: String) -> U32: U32.from_nat(List.length(&2, String, lvp.archs(arch)))
@@ -495,10 +495,10 @@ def lpt.str() -> String: "1,1,32,4"
 
 
 
-# ===========================================================================
+
 # THE GATE. Every expectation is a row of `.agents/slop/cs_oracle.py`, produced
 # by calling the REAL Python with only the FFI replaced.
-# ===========================================================================
+
 def t_fmt() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- srow("hx.pair_0", hx.pair(0))

@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/ops_qcom.bend -- port of tinygrad/runtime/ops_qcom.py
 #
-# ===========================================================================
+
 # WHAT this file is. `ops_qcom.py` is the ADRENO/KGSL gpu backend, 396 lines.
 # (The unit brief called it a Hexagon/QNN DSP backend with `qnn`/`htp` tables.
 # It is not. `qnn`, `htp` and `cdsp` appear nowhere in this repo; the DSP
@@ -27,7 +27,7 @@
 # a NON-TRIVIAL precedence (`|` binds looser than `&` and `<<`) and a
 # non-trivial `parity` (:45-47).
 #
-# ===========================================================================
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of ONE device call (pure, and the gate checks it) OR records that call in
 # the trace -- and stage 1 records nothing, so every def here is a builder and
@@ -35,7 +35,7 @@
 # `raise` in the trace once stage 3 adds it, so a refusal appears as a
 # TRUNCATED trace needing no guard of its own.
 #
-# ===========================================================================
+
 # WHAT is ported so far, AND what is not.
 #
 #   :19  `BUFTYPE_BUF`             PORTED  the port's own buftype_names, both directions
@@ -63,14 +63,14 @@
 # (`Device["CPU"].renderer`, `prg.to_elf()`, `IR3Compiler.unpack_lib`),
 # and Hexagon-RPC (which this file does not use -- see the note above).
 #
-# ===========================================================================
+
 # NO qgpu IN THIS ENV. There is no Adreno here, so NOTHING below was measured
 # against a live device. Every constant and every table entry was read out of
 # `tinygrad/runtime/autogen/mesa.py` and `.../kgsl.py` BY CALLING THEM, and
 # every expectation in the gate is printed by `.agents/slop/qc_oracle.py`.
 # Nothing in this file is a number somebody typed.
 #
-# ===========================================================================
+
 # ONE thing the oracle got wrong first, recorded because it is the kind of
 # thing that ships: the first version keyed the qreg call sites by LINE
 # NUMBER, and lines :111, :189, :225, :257 and :258 each carry TWO or THREE
@@ -79,7 +79,7 @@
 # and NFIELDS=55 where the AST walk says 34 and 62. The tables below are the
 # SECOND run's, and `qc_nregs`/`qc_nfields` are the rows that would have
 # caught it.
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF. The PORTED lines are what this file decides; the
 # SEAM lines are what it names and does not do; the WALL lines are what Bend
 # cannot express at all.
@@ -149,7 +149,7 @@
 #  4. SYSCALLS AND THE DRIVER. `FileIOInterface`, `IOCTL_KGSL_*`, `mmap`,
 #     `munmap`, `ctypes.memset`, `System.write_sysfs`. Named once, here.
 #
-# ===========================================================================
+
 # NO qgpu IN THIS ENV. There is no Adreno here, so NOTHING below was measured
 # against a live device. Every constant was read out of
 # `tinygrad/runtime/autogen/mesa.py` and `.../kgsl.py` BY CALLING THEM, and
@@ -163,7 +163,6 @@
 #                                     `tinygrad/runtime/ops_qcom.py:130` allocates the stack with `name="stack"`; upstream's `self.dev.tag` is GONE
 #                                     at this pin (9ff6db7b0), so the stub's own `AttributeError: 'D' object has no
 #                                     attribute 'tag'` is about the PORT's stub, not about upstream. It measured a
-#                                     thing upstream no longer has; the FIXTURE is one method behind it. Reported, not fabricated.
 #   .agents/slop/qc_check.py         diffs the gate's output against all four
 #
 # THE FIRST THREE WERE RESTORED 2026-10-16 from `.agents/slop/{qc,qc_stage3,qc_cache}_oracle.py`
@@ -178,14 +177,14 @@
 import Base
 import ../helpers.bend as H
 
-# ===========================================================================
+
 # THE CONSTANTS. Every one is `getattr(mesa|kgsl, NAME)` MEASURED by the
 # oracle's `refs`, which walks the AST of ops_qcom.py and reports the value of
 # every `mesa.X` / `kgsl.X` attribute the file actually reads. Sixty-two of
 # them, and they are named WITHOUT a module prefix because the two C
 # namespaces do not collide -- the oracle asserts that, so a future collision
 # is an oracle failure rather than a silent shadow.
-# ===========================================================================
+
 
 # --- the packet-type tags, :49 and :51 -------------------------------------
 def CP_TYPE7_PKT() -> U32: 1879048192
@@ -305,7 +304,7 @@ def qreg_name_at(ix: U32) -> String: qreg_name_of(List.get(&2, String, qregs(), 
 
 def qreg_mesa_at(ix: U32) -> String: mesa_of(qreg_name_at(ix))
 
-# ===========================================================================
+
 # THE FIELD TABLE. `_qreg_exec`'s second half, and this is where the whole
 # subtlety lives:
 #
@@ -324,7 +323,7 @@ def qreg_mesa_at(ix: U32) -> String: mesa_of(qreg_name_at(ix))
 # the row so the gate can diff it against CPython, because a wrong `nm` with a
 # right `v` still produces a right-looking u32 in the port and a wrong one on
 # the device.
-# ===========================================================================
+
 
 type Qf is Data:
   Qf{r: String, f: String, nm: String, v: U32, isb: Bool}
@@ -512,7 +511,7 @@ def parity.bit(+v: U32) -> U32: U32.and(U32.shrn(PARITY_XOR(), U32.to_nat(U32.an
 
 def parity(+v: U32) -> U32: parity.bit(parity.folded(v))
 
-# ===========================================================================
+
 # ops_qcom.py:49 and :51 -- THE PACKET HEADERS.
 #
 #     pkt7_hdr(opcode, cnt) = CP_TYPE7_PKT | cnt & 0x3FFF | parity(cnt) << 15
@@ -527,7 +526,7 @@ def parity(+v: U32) -> U32: parity.bit(parity.folded(v))
 # (0x40000000) are already in the HIGH bit, and `parity << 23` / `<< 27` sit
 # above them -- so these are genuinely u32 and not i32, which is why the port
 # can hold them at all. `qc_pkt7_*` and `qc_pkt4_*` are diffed against CPython.
-# ===========================================================================
+
 
 def PKT7_CNT_MASK() -> U32: 16383
 def PKT7_OP_MASK() -> U32: 127
@@ -546,7 +545,7 @@ def pkt4_hdr(+reg: U32, +cnt: U32) -> U32:
          U32.shln(U32.and(reg, PKT4_REG_MASK()), 8n)),
          U32.shln(parity(reg), 27n))
 
-# ===========================================================================
+
 # ops_qcom.py:57 and :59 -- THE COUNT OF A `cmd`/`reg`.
 #
 #     self.q(pkt7_hdr(opcode, sum(x.dtype.itemsize // 4 if isinstance(x, UOp)
@@ -556,7 +555,7 @@ def pkt4_hdr(+reg: U32, +cnt: U32) -> U32:
 # and the header's count is the sum. `qwords` is that sum over the two kinds,
 # and it is the second half of what makes a cmd header correct -- `qc_qwords_*`
 # is the row that says a `dtypes.u32` buffer is ONE word and not zero.
-# ===========================================================================
+
 
 def ITEMSIZE_TO_WORDS() -> U32: 4
 
@@ -651,7 +650,7 @@ def kgsl_name_of(m: Maybe<&2, Kf>) -> String:
 
 def FLAG_PREEMPT() -> String: "KGSL_CONTEXT_PREEMPT_STYLE"
 def FLAG_CACHEMODE() -> String: "KGSL_CACHEMODE"
-# ===========================================================================
+
 # STAGE 2 -- `QCOMProgramData` (:206-283) and `qcom_build_program` (:285-292).
 #
 # WHY this half gates. `_parse_lib` is a BINARY walk over the shader blob, and
@@ -670,7 +669,7 @@ def FLAG_CACHEMODE() -> String: "KGSL_CACHEMODE"
 # term counts `ibo_cnt` while the NIR branch's counts `tex_cnt`. The
 # `samp_off` agrees by reordering. `qc_off_swapped` is the row that says so: it
 # is the only way to notice a port that reads the two branches as one rule.
-# ===========================================================================
+
 
 # --- the fixed offsets ops_qcom.py reads out of the blob, with Python lines ---
 def OFF_REG_DESC() -> U32: 52       # 0x34, :282
@@ -843,7 +842,7 @@ def desc.count(n: Nat, +want: U32, bs: List<&2, Bi>, +acc: U32) -> U32:
 def desc.count.of(want: U32, +bs: List<&2, Bi>) -> U32:
   desc.count(List.length(&2, Bi, bs), want, bs, 0)
 
-# ===========================================================================
+
 # THE CONSTANT WALK, :274-279. A DIFFERENT bound: `cdoff + 40 <= image_offset`,
 # where `image_offset` is a field of the blob and NOT `len(lib)`. A port that
 # reaches for the list length here walks off the end, and one that uses the
@@ -856,7 +855,7 @@ def desc.count.of(want: U32, +bs: List<&2, Bi>) -> U32:
 # `is32` is a FLAG and `sz_bytes := 2 << is32` is 2 or 4 -- so a constant is
 # either a u16 pair or a u32, and the offset is in BYTES. `qc_const_stride` and
 # `qc_const_sz` are the two rows.
-# ===========================================================================
+
 
 # `bound` is the U32 the constant walk is bounded BY -- `image_offset`, not
 # `len(lib)`. It is a FIELD because :276 reads it out of the blob and the walk
@@ -998,7 +997,7 @@ def pd.parse_full(+bs: List<&2, U32>, +name_len: U32) -> Pd:
               Wb{desc.bdoff(read_lib(bs, OFF_IMAGE_DESC()), name_len,
                             read_lib(bs, U32.add(read_lib(bs, OFF_IMAGE_DESC()), DESC_OFF_SAMPCNT()))),
                  0, True{}, Nil{}})), pd.const_walk(bs, pd.parse(bs, name_len)))
-# ===========================================================================
+
 # STAGE 2b -- `qcom_build_program` (:285-292) AND THE PROGRAM CACHE.
 #
 #     _qcom_program_cache: dict[tuple[bytes, tuple[str, ...]], tuple[QCOMProgramData, UOp]] = {}
@@ -1028,7 +1027,7 @@ def pd.parse_full(+bs: List<&2, U32>, +name_len: U32) -> Pd:
 # if the build is RECORDED. `Tr` exists so that "did this parse the blob again"
 # is a question with an answer, and `qc_ck_nobuild_after_hit` reads the trace
 # rather than the cache's own flag.
-# ===========================================================================
+
 
 def CALL_PARSE() -> U32: 0     # QCOMProgramData(dev, prg.to_elf())   :288
 def CALL_PATCH() -> U32: 1      # patch(buf, [], image)                :291
@@ -1080,12 +1079,12 @@ def Tr.args.go(n: Nat, +k: U32, cs: List<&2, Call>, +acc: List<&2, U32>) -> List
         case Nil{}: acc
         case Call{kk, aa} <> t: Tr.args.go(m, k, t, Tr.args.put(Call{kk, aa}, k, acc))
 
-# ===========================================================================
+
 # THE CACHE KEY. `Ck` is the tuple `(prg.src[3].arg, devs)` and the equality is
 # PAIRWISE, because that is what a tuple's `==` is and because `devs` is a LIST
 # -- so two keys with the same hash element and a different device set are
 # different keys, and a string-joined key would quietly merge them.
-# ===========================================================================
+
 
 type Ck is Data:
   Ck{hash: U32, ndevs: U32, devs: List<&2, U32>}
@@ -1144,12 +1143,12 @@ def ce.find.go(n: Nat, +at: Nat, +want: Ck, es: List<&2, Ce>, +acc: U32) -> U32:
 def ce.find(want: Ck, +es: List<&2, Ce>) -> U32:
   ce.find.go(List.length(&2, Ce, es), 0n, want, es, NO_ENTRY())
 
-# ===========================================================================
+
 # `qcom_build_program`. THE three calls on the miss path, IN python'S order,
 # and NONE of them on the hit path. `qc_ck_order` is the row that reads the
 # trace; `qc_ck_nbuild` counts PARSE and `qc_ck_npatch` counts PATCH, and the
 # pair is what says the miss path ran exactly once.
-# ===========================================================================
+
 
 # :289 `image = bytes(data.image).ljust(round_up(len(data.image), 4), b"\x00")`.
 # The image is padded to a multiple of FOUR with ZEROES, and the buffer's length
@@ -1246,7 +1245,7 @@ def CALL_READTS() -> U32: 13     # IOCTL_..._READTIMESTAMP_CTXTID    :383
 def CALL_WAITTS() -> U32: 14     # IOCTL_..._WAITTIMESTAMP_CTXTID    :385
 def CALL_SYSFS() -> U32: 15      # System.write_sysfs                :335
 
-# ===========================================================================
+
 # THE cache flush, :61-70. FOUR independent conditionals and one def, because
 # `memory_barrier` (:70) is `self._cache_flush(True, True, True, True)` and
 # `exec` (:192) is `self._cache_flush(True, False, False, False)`. So the two
@@ -1261,7 +1260,7 @@ def CALL_SYSFS() -> U32: 15      # System.write_sysfs                :335
 # THE order is not the parameter order: Python tests write_back, invalidate,
 # sync, memsync and issues memsync BEFORE sync. `flush.go` is a fold over the
 # four flags in ISSUE order and `qc_flush_order_*` reads the result.
-# ===========================================================================
+
 
 def FLUSH_WRITE_BACK() -> U32: 0
 def FLUSH_INVALIDATE() -> U32: 1
@@ -1317,11 +1316,11 @@ def ISSUE_AT() -> List<&2, U32>: [0, 1, 2, 3]
 def flush.of(+flags: List<&2, Bool>, +t: Tr) -> Tr:
   flush.go(List.length(&2, Bool, flags), flags, ISSUE_AT(), t)
 
-# ===========================================================================
+
 # `cmd` AND `reg`. ONE def each, because they differ in the HEADER and nothing
 # else: `cmd` builds `pkt7_hdr(opcode, cnt)` and `reg` builds
 # `pkt4_hdr(reg, cnt)`, and both append the header to the same `q`.
-# ===========================================================================
+
 
 # The COUNT is not in the trace -- it is in the HEADER, and `q.hdr7` builds it.
 # Keeping it out of the record is deliberate: one trace entry per CALL, and the
@@ -1378,12 +1377,12 @@ def Tr.refuse(kind: U32, t: Tr) -> Tr:
   match t:
     case Tr{+calls, +refused}: Tr{calls, Bool.or(refused, True{})}
 
-# ===========================================================================
+
 # `exec` (:115-192). THE REGISTER SEQUENCE, in Python's order, and the two
 # FORKS: the three `if data.samp_cnt / tex_cnt / ibo_cnt > 0` blocks and the
 # `if data.NIR:` at :184. `qc_exec_order_*` is the subsequence test over the
 # trace; `qc_exec_forks_*` says which of the four arms fired.
-# ===========================================================================
+
 def exec.pre1.at(which: Nat, t: Tr) -> Tr:
   match which:
     case 0n: q.cmd(CP_SET_MARKER(), t)
@@ -1547,13 +1546,13 @@ def ls2(+xs: List<&2, U32>) -> U32: at3(xs, 2n)
 def FLUSH_WRITE_BACK_ONLY() -> List<&2, Bool>: [True{}, False{}, False{}, False{}]
 def FLUSH_INVALIDATE_ONLY() -> List<&2, Bool>: [False{}, True{}, False{}, False{}]
 
-# ===========================================================================
+
 # READING AN EXEC TRACE. `seen` is the LENGTH -- a count row, because a gate
 # whose only claims are booleans cannot see a dropped call -- and `seq` is the
 # SUBSEQUENCE test, whose fuel is the TRACE length and whose answer is
 # `at == patlen`. Getting either half wrong makes it answer True to everything,
 # and a subsequence test that always says True is the row that cannot fail.
-# ===========================================================================
+
 
 def seq.has.put(+c: Call, +want: Call, +at: Nat) -> Nat:
   Bool.pick(Nat, Bool.and(U32.is_eq(Call.k(c), Call.k(want)),

@@ -17,7 +17,7 @@
 # trace (the gate checks ORDER and IDENTITY). There is no third kind. This file
 # is ENTIRELY the first kind: no trace, no foreign effect, no `@extern`.
 #
-# ===========================================================================
+
 # what is ported, and what each thing is for.
 #
 #   T  PACKET_TYPES_RDNA3 / _RDNA4 / _CDNA -- opcode -> class name, BOTH
@@ -35,7 +35,7 @@
 #   D  the DECODE INFO: nib_count, delta_lo, delta_mask, delta_mul, special.
 #   P  `cu`, `is_marker`, `is_config`, `wave_interest`, `terminate_all`.
 #
-# ===========================================================================
+
 # THE DEFERRED BOUNDARY, MEASURED. `sqtt.py` imports nothing from
 # `tinygrad/runtime/autogen/`, so THIS FILE has no autogen seam at all -- its 756
 # lines are the whole of it. The sibling `dsl.py` does, and the measurement is in
@@ -50,7 +50,7 @@ import Base
 import ../../helpers.bend as H
 import ./dsl.bend as D
 
-# ===========================================================================
+
 # NOT PORTED, WITH PYTHON LINES. Named, not half-written.
 #
 #   sqtt.py:566-638  `decode(data)` -- the NIBBLE READER, 73 lines. It keeps a
@@ -95,10 +95,10 @@ import ./dsl.bend as D
 # `OTHER_` member names and the `other_*` source annotations -- all of which are
 # either derived from rows already gated or are annotations.
 
-# ===========================================================================
+
 # THE TYPES. `Nm` and `Fld` come from `dsl.bend`, so a `Nm` here and a `Nm` there
 # are the SAME type and a lookup is one function.
-# ===========================================================================
+
 
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def u32_text(v: U32) -> String: U32.show(v)

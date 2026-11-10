@@ -71,7 +71,7 @@
 # every row is CPython's printed answer -- and two of the eight were BROKEN when
 # their first row read them.
 #
-# ---------------------------------------------------------------------------
+
 # WHAT the engine pass looks like here, since this file is its first consumer.
 #
 # `create_schedule` is NOT a rewrite. It is a WORKLIST over the arena's own
@@ -100,7 +100,7 @@
 #     is in that nocalls toposort" are the SAME predicate. That is why `sc_in_bs`
 #     below reads a toposort rather than a slice.
 #
-# ---------------------------------------------------------------------------
+
 # FOUR things that are easy to get wrong, all measured against the Python.
 #
 # 1. `_split_after` KEEPS a kernel list and a dep list, and the second partition
@@ -125,7 +125,7 @@
 #    run after the kernel that reads the state Ka supersedes. A gate that only
 #    checked "the right kernels are present" would not see it.
 #
-# ---------------------------------------------------------------------------
+
 # THREE properties this file needs from ops.py AND does not get for free.
 #
 # * `gate_kernel_sink` (ops.py:1915 symbol=gate_kernel_sink) is three lines and its `arg is KernelInfo`
@@ -187,7 +187,7 @@
 #   `z_pick` and `lk.put` say which end each operation is on, because getting
 #   either wrong still typechecks and still terminates.
 #
-# ---------------------------------------------------------------------------
+
 # FOUR NEW BEND RULES, all measured here and written up in
 # `.agents/slop/notes/bend2-constraints.md`. Every one of them is a refusal.
 #
@@ -212,7 +212,7 @@
 #    declaration order makes one of them a forward reference; the parameter shape
 #    has no such cycle.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE. 109 rows, and EVERY expectation is CPython's printed output: the
 # oracle is `.agents/slop/schedport/oracle.py`, which builds the SAME fixtures
 # here and runs the PIN's `tinygrad.schedule.create_schedule` on them.  It
@@ -238,7 +238,7 @@
 # (__init__.py:59-65) makes Ka run after the kernel that reads the state Ka
 # supersedes. A gate that only counted kernels would not see it.
 #
-# ---------------------------------------------------------------------------
+
 # THE MUTATION TABLE. Fifteen mutations, run one at a time against this file, and
 # the rows each one moves. The driver is `.agents/slop/notes/`'s pattern list; the
 # rows are all of them.
@@ -282,10 +282,10 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../codegen/__init__.bend as CG
 
-# ===========================================================================
+
 # THE READERS. `ops.bend`'s own, wrapped, because every def here reads the arena
 # and a rule that forgets to thread it is the bug this file exists to prevent.
-# ===========================================================================
+
 def sc_op(ar: O.Arena, i: U32) -> O.Op:
   O.Arena.op(ar, i)
 
@@ -342,10 +342,9 @@ def sc_is_buf_uop(+ar: O.Arena, +i: U32) -> Bool:
 def sc_fuel(+ar: O.Arena) -> Nat:
   Nat.mul(O.Arena.budget(ar), O.Arena.budget(ar))
 
-# ---------------------------------------------------------------------------
+
 # TWO LOCAL READERS, `ops.py:562 UOp.body` and `ops.py:622 UOp.store`, and the
 # reason they are HERE is the same one `sc_topo` has: the reader this file needs
-# was not reachable from `ops.bend`, and `ops.bend` cannot call a def in this
 # file. MEASURED, not assumed: `uop/ops.bend` was 8313 lines with 1896-era
 # `UOp.body` and `UOp.store` present when this block was written (17:47), and a
 # concurrent unit took it to 6306 lines with BOTH defs GONE (`grep -cE '^def
@@ -362,7 +361,7 @@ def sc_fuel(+ar: O.Arena) -> Nat:
 # already builds a STORE by hand, so this is that literal made a def.
 #   TODO(p3) ops.py:543  `UOp.body`  -- LOCAL COPY; ops.bend has no def.
 #   TODO(p3) ops.py:594  `UOp.store` -- LOCAL COPY; ops.bend has no def.
-# ---------------------------------------------------------------------------
+
 def sc_body.of(op: O.Op, src0: U32) -> Maybe<&2, U32>:
   match op:
     case O.OpsCALL{}: Some{src0}
@@ -379,7 +378,7 @@ def sc_store.of(gate: Maybe<&2, U32>, +self: U32, +val: U32) -> List<&2, U32>:
 def sc_store(ar: O.Arena, +self: U32, +val: U32, gate: Maybe<&2, U32>) -> O.Found:
   O.UOp.new(ar, O.OpsSTORE{}, sc_store.of(gate, self, val), O.ANone{}, O.TNone{})
 
-# ===========================================================================
+
 # `_unwrap_src` -- __init__.py:14-16. The one loop in the first 30 lines:
 #
 #     while len(s.src) and s.op not in {AFTER, BUFFER, ALLOC, PARAM, MSELECT,
@@ -388,7 +387,7 @@ def sc_store(ar: O.Arena, +self: U32, +val: U32, gate: Maybe<&2, U32>) -> O.Foun
 # A `while` is a fuel fold here, and the fuel is the FIRST parameter because the
 # self-call must be decreasing left to right. `sc_unwrap` passes
 # `Arena.budget`, which is EXACT for a walk that cannot revisit a node.
-# ===========================================================================
+
 def sc_go(+ar: O.Arena, +s: U32) -> Bool:
   Bool.and(Bool.not(U32.is_zero(sc_nsrc(ar, s))),
     Bool.not(Bool.or(sc_is_state5(ar, s), sc_is_multi(ar, s))))
@@ -404,10 +403,10 @@ def unwrap.go(fuel: Nat, go: Bool, +ar: O.Arena, +s: U32) -> U32:
 def sc_unwrap(+ar: O.Arena, +s: U32) -> U32:
   unwrap.go(O.Arena.budget(ar), sc_go(ar, s), ar, s)
 
-# ===========================================================================
+
 # `buf_uop`'s while loop -- ops.py:931. `unwrap.go`'s shape with a WIDER stop
 # set, and the header says why that is exact for four of the five arms.
-# ===========================================================================
+
 def sc_buf_go(+ar: O.Arena, +i: U32) -> Bool:
   Bool.and(Bool.not(U32.is_zero(sc_nsrc(ar, i))), Bool.not(sc_is_buf_uop(ar, i)))
 
@@ -422,7 +421,7 @@ def buf.go(fuel: Nat, go: Bool, +ar: O.Arena, +s: U32) -> U32:
 def sc_buf_uop(+ar: O.Arena, +s: U32) -> U32:
   buf.go(O.Arena.budget(ar), sc_buf_go(ar, s), ar, s)
 
-# ===========================================================================
+
 # `_states` -- __init__.py:19-23:
 #
 #     s = _unwrap_src(s)
@@ -435,7 +434,7 @@ def sc_buf_uop(+ar: O.Arena, +s: U32) -> U32:
 # match ARMS of one fold and not three defs. `todo` is a STACK, so the push is
 # `srcs ++ todo` and NOT reversed -- `ops.bend`'s `Arena.push_srcs` un-reverses
 # its own input the same way, and `st_push` is that def's twin.
-# ===========================================================================
+
 # THREE classes, TWO-SCRUTINEE, and NO NESTED MATCH. Both refusals measured in
 # bend 2.0.34 forced this shape: a `match` inside a `case h <> t:` LIST arm is
 # refused (for a Bool, a U32 and a List scrutinee alike), so the POP cannot live
@@ -480,12 +479,12 @@ def st.go(fuel: Nat, cls: U32, +ar: O.Arena, +u: U32, +t: List<&2, U32>, acc: Li
 def sc_states(fuel: Nat, +ar: O.Arena, +s: U32) -> List<&2, U32>:
   st.go(fuel, st_cl(ar, sc_unwrap(ar, s)), ar, sc_unwrap(ar, s), Nil{}, Nil{})
 
-# ===========================================================================
+
 # `_split_after` -- __init__.py:25-30. TWO `partition` calls become ONE walk,
 # which is exact because the second only sees what the first kept: a src is a
 # kernel, an AFTER, or one of the DROPPED, and the dropped are precisely the
 # STOREs and Python's `invalid`.
-# ===========================================================================
+
 type Split is Data:
   Split{ks: List<&2, U32>, ds: List<&2, U32>}
 
@@ -525,7 +524,7 @@ def sp_go(+ar: O.Arena, ss: List<&2, U32>, +sp: Split) -> Split:
 def sc_split(+ar: O.Arena, +after: U32) -> Split:
   sp_go(ar, sc_src_from(ar, after, 1), Split{Nil{}, Nil{}})
 
-# ===========================================================================
+
 # `gate_kernel_sink` -- ops.py:1909 -- and the second copy of `Topo.step`.
 #
 #     if node in cache: continue                      <- sc_topo.seen
@@ -535,7 +534,7 @@ def sc_split(+ar: O.Arena, +after: U32) -> Split:
 # `sc_topo` reuses ops.bend's `Topo` RECORD and `Arena.push_srcs`, so the only
 # thing it copies is the loop.
 #
-# ---------------------------------------------------------------------------
+
 # TWO upstream rules this COPY DROPPED, BOTH measured against CPython's
 # `tinygrad.schedule.create_schedule` -- the oracle is
 # `.agents/slop/schedport/oracle.py`, built on the pin's `tinygrad/`.
@@ -565,7 +564,7 @@ def sc_split(+ar: O.Arena, +after: U32) -> Split:
 #     inside a CALL's body (CPython schedules ONE kernel, the port scheduled
 #     TWO), and `fx2_topo_marks` is the toposort's own ORDER -- the REORDER
 #     ARM, as a row.
-# ===========================================================================
+
 def sc_gate.ker(arg: O.Arg) -> Bool:
   match arg:
     case O.AKernel{ki}: True{}
@@ -640,13 +639,13 @@ def sc_topo.go(fuel: Nat, +ar: O.Arena, t: O.Topo) -> List<&2, U32>:
 def sc_topo_of(fuel: Nat, +ar: O.Arena, +self: U32) -> List<&2, U32>:
   sc_topo.go(fuel, ar, sc_topo(ar, O.Topo{Nil{}, List.append(&2, O.Frame, Nil{}, [O.Frame{self, False{}}]), False{}}))
 
-# ===========================================================================
+
 # `UOp.is_bound_var` -- ops.py:1023 -- which is `is_variable` (ops.py:1020) plus
 # `self.arg.val is not None`. `is_variable`'s conjuncts are the op test, an
 # `AParam` test, `vmin_vmax is not None`, `addrspace is ALU` and `_shape == ()`,
 # and the last is ops.py:368, which for a PARAM is `image`/`size` off the arg and
 # nothing else. So it is `fold.bend`'s `param_shape` and NOT the fold table.
-# ===========================================================================
+
 def sc_val.some(arg: O.Arg) -> Bool:
   match arg:
     case O.AParam{pa}: Maybe.is_some(&2, O.Const, O.ParamArg.val(pa))
@@ -666,7 +665,7 @@ def sc_var.of(op: O.Op, arg: O.Arg, shape: List<&2, O.Sint>) -> Bool:
 def sc_is_bound_var(+ar: O.Arena, +i: U32) -> Bool:
   Bool.and(sc_var.of(sc_op(ar, i), sc_arg(ar, i), F.param_shape(ar, i, sc_arg(ar, i))), sc_val.some(sc_arg(ar, i)))
 
-# ===========================================================================
+
 # `binds` -- __init__.py:104-106, THE HALF OF `resolve_linear_call` THAT WALL C
 # UNBLOCKED:
 #
@@ -738,7 +737,7 @@ def sc_linear_binds_outer(+outer: Map<&2, U32>, +ar: O.Arena, +call: U32) -> Lin
 def sc_linear_binds(+ar: O.Arena, +call: U32) -> LinBinds:
   sc_linear_binds_outer(Map.new(&2, U32), ar, call)
 
-# ===========================================================================
+
 # `subs` -- __init__.py:109, and it is `variables()`'s ONLY CALLER, so it is what
 # stops `variables` being a gated def that nothing uses:
 #
@@ -819,7 +818,7 @@ def sc_apply_subs(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, Lin
   +fx = F.folded(ar)
   sc_subs_srcs(sc_srcs(ar, si), F.Folded.t(fx), binds, Some{LinBinds{ar, Map.new(&2, U32)}})
 
-# ===========================================================================
+
 # `apply_binds` ARM 3'S BODY -- __init__.py:110-111, the last piece:
 #
 #   subs = {v: binds[v.arg.slot] for s in si.src for v in s.variables() if v.arg.slot in binds}
@@ -895,7 +894,7 @@ def sc_apply_binds3(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, S
 def sc_in_bs(+ar: O.Arena, +k: U32, +t: U32) -> Bool:
   List.contains(U32, U32.is_eq, O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, k), t)
 
-# ===========================================================================
+
 # THE FOUR DICTS. Python's `dict[UOp, X]` is a `List<&2, X>` of one-key records,
 # the lookup is a linear scan and the write is a rebuild -- the same bill
 # `Kahn.get` in fold.bend pays for its `List` table.
@@ -904,7 +903,7 @@ def sc_in_bs(+ar: O.Arena, +k: U32, +t: U32) -> Bool:
 #   in_degree: dict[UOp, int]                              -> List<Dep>
 #   writes: dict[UOp, list[tuple[UOp, tuple[UOp, ...]]]]   -> List<Wrn>
 #   reads: list[tuple[UOp, UOp, UOp]]                      -> List<Rd>
-# ===========================================================================
+
 type Kid is Data:
   Kid{k: U32, vs: List<&2, U32>}
 
@@ -1101,11 +1100,11 @@ def so_go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, List<&2, U32>>) -> List
 def sc_states_of(+ar: O.Arena, ss: List<&2, U32>) -> List<&2, U32>:
   H.flatten_u32(so_go(ar, ss, Nil{}))
 
-# ===========================================================================
+
 # PASS ONE, `__init__.py:39-56`. Five defs, one per Python scope, in Python's
 # order: the per-`t` RAW fold, the per-kernel body, the per-kernels fold, the
 # per-AFTER body and the toposort walk.
-# ===========================================================================
+
 # `for st in read_states + [st for s in after_deps for st in _states(s)]:
 #    if st.op is AFTER: for t in _split_after(st)[0]: ...` -- the `t` list.
 def ts_step.of(aft: Bool, +ar: O.Arena, +s: U32, acc: List<&2, U32>) -> List<&2, U32>:
@@ -1215,9 +1214,9 @@ def sa(fuel: Nat, +ar: O.Arena, us: List<&2, U32>, +c: Ctx) -> Ctx:
 def pass1(+ar: O.Arena, +sink: U32) -> Ctx:
   sa(O.Arena.budget(ar), ar, sc_topo_of(O.Arena.budget(ar), ar, sink), Ctx.of(Nil{}, Nil{}, Nil{}, Nil{}))
 
-# ===========================================================================
+
 # PASS TWO, the WAR loop, `__init__.py:59-65`. Three defs for three scopes.
-# ===========================================================================
+
 def wt_keep(+ar: O.Arena, +k: U32, +t: U32) -> Bool:
   Bool.and(Bool.not(U32.is_eq(t, k)), Bool.not(sc_in_bs(ar, k, t)))
 
@@ -1264,14 +1263,14 @@ def war(fuel: Nat, +ar: O.Arena, rds: List<&2, Rd>, +c: Ctx) -> Ctx:
 def pass2(+ar: O.Arena, +c: Ctx) -> Ctx:
   war(sc_fuel(ar), ar, Ctx.rds(c), c)
 
-# ===========================================================================
+
 # PASS THREE, `__init__.py:67-80`. TWO records, because the queue is the one
 # piece of loop state whose SHAPE changes every turn and a fold that must return
 # both its accumulator and a queue needs a record -- `Sized` in fold.bend and
 # `Kahn` here are the same bill. The queue is a `List` in Python's DEQUE ORDER
 # (`popleft` is a head pop, `append` is a tail-append) and `Lin.out` is appended
 # too, so both are already in the order Python has them and nothing reverses.
-# ===========================================================================
+
 type Lin is Data:
   Lin{ar: O.Arena, c: Ctx, out: List<&2, U32>}
 
@@ -1414,10 +1413,10 @@ def lin(+ar: O.Arena, +c: Ctx) -> Lin:
   ln_go(sc_fuel(ar), zero(c), Lin{ar, c, Nil{}})
 
 
-# ===========================================================================
+
 # `create_schedule` -- __init__.py:32-80, and `linear` is the `return UOp(Ops.
 # LINEAR, src=tuple(linearized))`.
-# ===========================================================================
+
 def linear(+x: Lin) -> O.Found:
   O.UOp.new(Lin.ar(x), O.OpsLINEAR{}, Lin.out(x), O.ANone{}, O.TNone{})
 
@@ -1440,7 +1439,7 @@ def cy_go(+ds: List<&2, Dep>, acc: List<&2, U32>) -> List<&2, U32>:
 def cycles(c: Ctx) -> Nat:
   List.length(&2, U32, cy_go(Ctx.degs(c), Nil{}))
 
-# ===========================================================================
+
 # `used_vars` AND `var_vals` -- __init__.py:279-291, THE TAIL OF
 # `create_linear_with_vars` AND the one piece of it nothing above it blocks.
 #
@@ -1598,7 +1597,7 @@ def sv_binds(xs: List<&2, U32>, +r: SVar) -> SVar:
     case Nil{}  : r
     case x <> t : sv_binds(t, sv_bind(x, r))
 
-# ===========================================================================
+
 # THE TWELVE -- __init__.py:82-301. THE RULE BODIES, in the order they unblock.
 #
 # The header deferred this region on THREE clauses, and the measurement in
@@ -1650,9 +1649,9 @@ def sv_binds(xs: List<&2, U32>, +r: SVar) -> SVar:
 #   * `assert_all_same_devices` DEDUPED the nodes and not the devices, so two
 #     PARAMS on ONE device counted as TWO and the `>= 2` threshold RAISED on a
 #     single-device kernel. The `ads_same_*` rows see it (2 of 50 move).
-# ===========================================================================
 
-# ---------------------------------------------------------------------------
+
+
 # 1. `is_store_after` -- __init__.py:217-218. NO ctx, NO table, NO fold, and it
 # is the FIRST of the twelve with NO WALL AT ALL:
 #
@@ -1666,13 +1665,13 @@ def sv_binds(xs: List<&2, U32>, +r: SVar) -> SVar:
 # IndexError, and `isa_SA_E` is the row that pins the rescue onto `src[1]` and
 # NOT onto `nsrc`: SA_E is an AFTER with TWO srcs and its second is an END, so
 # it answers False.
-# ---------------------------------------------------------------------------
+
 def is_store_after(+ar: O.Arena, +u: U32) -> Bool:
   Bool.and(sc_is_after(ar, u),
     Bool.or(Bool.not(sc_is(ar, O.UOp.unsharded_base(O.Arena.budget(ar), ar, sc_src0(ar, u)), O.OpsALLOC{})),
       sc_is(ar, sc_src(ar, u, 1), O.OpsSTORE{})))
 
-# ---------------------------------------------------------------------------
+
 # 2. `CallifyCtx` -- __init__.py:192-197. THE C2 CLAUSE, and this is the whole
 # of it: a dataclass of a list, a dict, a set and another list.
 #
@@ -1696,7 +1695,7 @@ def is_store_after(+ar: O.Arena, +u: U32) -> Bool:
 # `views` is a Python `set` and `set.add` DEDUPLICATES while `list.append` does
 # NOT. `cs_dup2` is the identity row for `stores`; no row covers `views` because
 # no body ported here writes it.
-# ---------------------------------------------------------------------------
+
 type Cw is Data:
   Cw{c: O.CallifyCtx, a: Maybe<&2, U32>}
 
@@ -1728,7 +1727,7 @@ def cs_run.go(+us: List<&2, U32>, +ar: O.Arena, c: O.CallifyCtx) -> O.CallifyCtx
 def cs_run(c: O.CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> O.CallifyCtx:
   cs_run.go(us, ar, c)
 
-# ---------------------------------------------------------------------------
+
 # 4. `lower_sink_to_linear` -- __init__.py:124-126. NO ctx. THE GUARD is ported
 # and the guard is what decides whether the schedule cache is consulted at all:
 #
@@ -1762,7 +1761,7 @@ def cs_run(c: O.CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> O.CallifyCtx:
 #   TODO(p3) __init__.py:132      `get_kernel_graph(prepare_rangeify(function))`
 #     -- `schedule/rangeify.py` and `schedule/prepare.py`, out of scope.
 #   TODO(p3) __init__.py:139-148  the `inspect.stack()` DEBUG block.
-# ---------------------------------------------------------------------------
+
 def lsl_pre(arg: O.Arg) -> Bool:
   match arg:
     case O.ACall{ci}: O.CallInfo.precompile(ci)
@@ -1799,7 +1798,7 @@ def lower_sink_to_linear.p_ok(+ar: O.Arena, +call: U32) -> Bool:
     Bool.not(lower_sink_to_linear.p_ki(ar, call))),
     lower_sink_to_linear.p_pre(ar, call))
 
-# ---------------------------------------------------------------------------
+
 # 5. `copy_kernel_to_store` -- __init__.py:161-163, and
 # 6. `simplify_copy_kernel` -- __init__.py:165-172. BOTH NO ctx, and BOTH open
 # with THE SAME LINE, which is why they share `cks_fire` and why `sck_*` is two
@@ -1851,7 +1850,7 @@ def lower_sink_to_linear.p_ok(+ar: O.Arena, +call: U32) -> Bool:
 # `dst.store(src)` is `UOp.store` and IS in ops.bend, and `call.replace(src=
 # (stored,)+call.src[1:])` is `cks_rep` -- the local `replace` at :971 is
 # hard-wired to the linearizer's own shape, so this is its own def.
-# ---------------------------------------------------------------------------
+
 def cks_dev(arg: O.Arg) -> Maybe<&2, S.Dev>:
   match arg:
     case O.AParam{pa}: O.ParamArg.device(pa)
@@ -1936,7 +1935,7 @@ def copy_kernel_to_store(disk: List<&2, U32>, +ar: O.Arena, +call: U32, +dst: U3
 def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: U32) -> Bool:
   cks_fire(disk, ar, dst, src)
 
-# ---------------------------------------------------------------------------
+
 # 7. `assert_all_same_devices` -- __init__.py:157-159. NO ctx, NO table:
 #
 #     devices = dedup([x.device for x in ast.toposort()
@@ -1966,7 +1965,7 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 #   (__init__.py:159 is `return call.replace(src=(dst.store(src),) +
 #   call.src[1:])`, the LAST LINE of `copy_kernel_to_store`; the RuntimeError
 #   is at __init__.py:155, inside `assert_all_same_devices` at :153-155.)
-# ---------------------------------------------------------------------------
+
 type Ads is Data:
   Ads{ds: List<&2, S.Dev>}
 
@@ -2035,7 +2034,7 @@ def assert_all_same_devices(+ar: O.Arena, +ast: U32) -> Ads:
 def assert_all_same_devices.raises(x: Ads) -> Bool:
   Bool.not(U32.is_lt(U32.from_nat(List.length(&2, S.Dev, Ads.ds(x))), 2))
 
-# ---------------------------------------------------------------------------
+
 # 8. `apply_binds` -- __init__.py:107-111. NO ctx. THE THREE-ARM DISPATCH is
 # ported and ARM 3's BODY IS NOT, so the def is `apply_binds` and the answer is
 # an ARM NUMBER (1, 2, 3) and not a node:
@@ -2065,7 +2064,7 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 #   TODO(p3) __init__.py:110  `s.variables()` -- no reader in the tree.
 #   TODO(p3) __init__.py:111  symbol=resolve_linear_call  -- `s.substitute`   -- no reader in the tree.
 #   TODO(p3) __init__.py:104-106  `binds`, a `dict[int,UOp]` -- arm 1.
-# ---------------------------------------------------------------------------
+
 def apply_binds.arm(iscall: Bool, linear: Bool, program: Bool) -> U32:
   match iscall linear program:
     case True{}  True{}  _       : 1
@@ -2079,7 +2078,7 @@ def apply_binds(+ar: O.Arena, +si: U32) -> U32:
   apply_binds.of(sc_is(ar, si, O.OpsCALL{}),
     sc_op(ar, Maybe.default(&2, U32, sc_body(ar, si), 0)))
 
-# ===========================================================================
+
 # `apply_binds`'s THREE ARMS, AND `resolve_linear_call` ITSELF -- __init__.py:95-111.
 #
 #   linear = graph_rewrite(linear_call.body, pm_post_sched_cache,
@@ -2098,8 +2097,7 @@ def apply_binds(+ar: O.Arena, +si: U32) -> U32:
 # `Kahn.gather` threads an `ok` flag "because an early return from the middle of a
 # self-call would need mutual recursion").  A `Some{}` here would be a WRONG ANSWER
 # shaped like a success; `None{}` is a refusal the caller can see.
-# ===========================================================================
-# ARM 1 IS NO LONGER REFUSED.  Upstream's `apply_binds` arm 1 returns
+
 # `resolve_linear_call(si, binds)` -- THE RECURSION -- and the port answered
 # `None{}` because upstream's shape is mutual recursion and Bend has none.
 #
@@ -2171,7 +2169,7 @@ def sc_apply_binds(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SB
 def sc_resolve_linear_call(+ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
   sc_resolve(O.Arena.budget(ar), RCall{ar, call, outer, sc_body(ar, call), O.CArgs{sc_src_from(ar, call, 1)}})
 
-# ---------------------------------------------------------------------------
+
 # 9. `canonicalize_alloc` -- __init__.py:235-237. NEEDS ctx, and it is the
 # SECOND and LAST of the two bodies that do:
 #
@@ -2209,7 +2207,7 @@ def sc_resolve_linear_call(+ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Ma
 # `ca_arg.of` answers `None{}` for a non-`AParam`, and that `None{}` is Python's
 # AttributeError -- `ca_noarg` is that row, and it is the one place the port is
 # total where Python raises.
-# ---------------------------------------------------------------------------
+
 def ca_slot.of(x: O.ParamArg, n: U32) -> O.ParamArg:
   match x:
     case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device,
@@ -2420,14 +2418,14 @@ def canonicalize_call_body(+ar: O.Arena, +c: U32) -> O.Found:
 #     TODO(p3) __init__.py:280  symbol=create_linear_with_vars  -- `used_vars` -- `UOp.variables`.
 #     TODO(p3) schedule/memory.py:19  symbol=memory_plan_rewrite  -- `memory_plan_rewrite` -- `schedule/memory.py`.
 
-# ===========================================================================
+
 # THE GATE.
 
-# ===========================================================================
+
 # THE GATE'S READERS. `gate.code` is `sched-truth.py`'s `code()` verbatim, plus
 # LINEAR=10 and MSTACK=11, which that script never needed. `gate.enc` is its
 # `enc()`, so a row like `fx1_marks=12` is the same string Python printed.
-# ===========================================================================
+
 def gate.code(op: O.Op) -> U32:
   match op:
     case O.OpsBUFFER{}: 1

@@ -4,7 +4,7 @@ import ./../dtype.bend as DT
 import ./../helpers.bend as H
 import ./gguf.bend as G
 
-# ===========================================================================
+
 # llm/ggml.bend -- `ggml_data_to_tensor`'s DECODE (gguf.py:29-185), as VALUES.
 #
 # why this is a second file and not more of `gguf.bend`. It is the same upstream file,
@@ -36,7 +36,7 @@ import ./gguf.bend as G
 # sub-block scales. The GRID family is the `IQ*` ones (:93-170), and `IQ4_NL` (:131-133)
 # is the cheapest member: its whole grid is the sixteen-entry `kvalues_iq4nl`, which is
 # why it is the one ported here.
-# ===========================================================================
+
 
 # one `ggml_type`'s element rule, as a tag. `ggml_data_to_tensor` dispatches on the int;
 # a `Data` tag keeps the dispatch out of a `U32` arm ladder inside the loop body.
@@ -168,14 +168,14 @@ def gw(+e: U32, +wpe: U32, +g: List<&2, U32>, +c: U32) -> U32:
   +b = U32.mul(e, wpe)
   iq.gbyte(byte(g, b), byte(g, U32.add(b, U32.sub(wpe, 1))), c)
 
-# ---------------------------------------------------------------------------
+
 # the remaining families' shared reads
 #
 # `bit.at` is `q_to_uint8(x, 1)`: `transpose(-1,-2)` makes the output order
 # BYTE-MAJOR THEN BIT, so element `e` is bit `e % 8` of byte `base + e // 8`. That is the
 # order Q5_0/Q5_1, Q3_K, Q1_0 and every sign bitmap use, and it is why none of them needs
 # the reshape the Python writes.
-# ---------------------------------------------------------------------------
+
 def bit.at(+bs: List<&2, U32>, +base: U32, +e: U32) -> U32:
   U32.and(U32.shrn(byte(bs, U32.add(base, U32.div(e, 8))), U32.to_nat(U32.mod(e, 8))), 1)
 
@@ -280,10 +280,10 @@ def q3k.hm(+bs: List<&2, U32>, +e: U32) -> U32:
 def sx.grid(+v: U32) -> U32:
   Bool.pick(U32, U32.is_ge(v, 128), U32.sub(v, 256), v)
 
-# ---------------------------------------------------------------------------
+
 # IQ4_XS (:148-156), 256 elements per 136-byte block. Its LUT is `kvalues_iq4nl`, so it is
 # the grid-family member with no grid.
-# ---------------------------------------------------------------------------
+
 # `(scales_l | (scales_h << 4)).bitcast(int8) - 32`: the byte is REINTERPRETED as int8
 # before the 32 is subtracted, so 0x80 is -160 and not 96.
 # `stack([sl & 0xF, sl >> 4], dim=2)` over `sl = blocks[:,4:8]`: the LOW nibbles and the
@@ -303,10 +303,10 @@ def q4xs.q(+bs: List<&2, U32>, +i: U32) -> U32:
   +b = U32.add(8, U32.add(U32.mul(U32.div(i, 32), 16), U32.mod(k, 16)))
   Bool.pick(U32, U32.is_lt(k, 16), U32.and(byte(bs, b), 15), U32.shrn(byte(bs, b), 4n))
 
-# ---------------------------------------------------------------------------
+
 # IQ1_S (:121-130), 256 elements per 50-byte block. One grid, no signs; the grid bytes are
 # INT8 and `(grid > 127).where(grid - 256, grid)` is the reinterpretation.
-# ---------------------------------------------------------------------------
+
 def q1s.qh(+bs: List<&2, U32>, +s: U32) -> U32:
   le2(bs, U32.add(34, U32.mul(s, 2)))
 
@@ -332,10 +332,10 @@ def q1s.gv(+bs: List<&2, U32>, +g: List<&2, U32>, +i: U32) -> U32:
   +b = gw(q1s.qi(bs, U32.add(U32.mul(sub, 4), c)), 2, g, U32.mod(i, 8))
   Bool.pick(U32, U32.is_ge(b, 128), U32.sub(b, 256), b)
 
-# ---------------------------------------------------------------------------
+
 # IQ2_XXS (:101-110), 256 elements per 66-byte block: eight groups of 32, and each group
 # is FOUR grid rows (one byte each) times EIGHT sign bits.
-# ---------------------------------------------------------------------------
+
 def q2x.w(+bs: List<&2, U32>, +sub: U32) -> U32:
   le4.at(bs, U32.add(6, U32.mul(sub, 8)))
 
@@ -359,10 +359,10 @@ def q2x.sg(+gs: Gs, +bs: List<&2, U32>, +i: U32) -> F32:
 def q2x.row(+bs: List<&2, U32>, +i: U32) -> U32:
   byte(bs, U32.add(2, U32.add(U32.mul(U32.div(i, 32), 8), U32.div(U32.mod(i, 32), 8))))
 
-# ---------------------------------------------------------------------------
+
 # IQ3_XXS (:93-100), 256 elements per 98-byte block: 64 payload bytes are 64 grid rows of
 # FOUR, so the grid index is `e // 4` and the byte within a row is `e % 4`.
-# ---------------------------------------------------------------------------
+
 def q3x.w(+bs: List<&2, U32>, +sub: U32) -> U32:
   le4.at(bs, U32.add(66, U32.mul(sub, 4)))
 
@@ -376,10 +376,10 @@ def q3x.sg(+gs: Gs, +bs: List<&2, U32>, +i: U32) -> F32:
   sign.bit(Gs.sgn(gs), U32.and(U32.shrn(q3x.w(bs, sub), U32.to_nat(U32.mul(j, 7))), 127),
     U32.mod(i, 8))
 
-# ---------------------------------------------------------------------------
+
 # IQ2_XS (:111-119), 256 elements per 74-byte block: 32 uint16s, and each uint16 is BOTH
 # a grid index (its low NINE bits into 512 rows) and a sign-byte selector (its top seven).
-# ---------------------------------------------------------------------------
+
 def q2xs.q(+bs: List<&2, U32>, +gi: U32) -> U32:
   le2(bs, U32.add(2, U32.mul(gi, 2)))
 
@@ -556,10 +556,10 @@ def ggml.dec(typ: U32, n: U32, +bs: List<&2, U32>,
              +gs: Gs) -> Maybe<&1, List<&2, F32>>:
   ggml.vgo(typ.of(typ), n, bs, gs)
 
-# ---------------------------------------------------------------------------
+
 # `_ggml_iq_signs` (:16-17): 128 bytes, and byte `i` has its top bit set when `i` has an
 # ODD number of set bits. This is a COMPUTATION in CPython and it is one here.
-# ---------------------------------------------------------------------------
+
 def pc.go(k: Nat, +v: U32, acc: U32) -> U32:
   match k:
     case 0n: acc

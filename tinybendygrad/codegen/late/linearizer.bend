@@ -71,7 +71,7 @@
 #   gater.py:9-29         pm_move_gates_       gt_tbl, gt_ops           gt_tbl_len,
 #                         from_index                                     gt_ops0..5
 #
-# ---------------------------------------------------------------------------
+
 # why this unit is the tail of the lowerer, and what that buys it. `linearizer`
 # folds the axis structure, `regalloc` assigns registers and `gater` decides
 # which branches survive. All three are pure functions of the kernel's uop list,
@@ -79,7 +79,7 @@
 # for row -- there is no device, no driver and no codegen cache in the way.
 # `regalloc`'s two renderer hooks are the exception and are named below.
 #
-# ---------------------------------------------------------------------------
+
 # THE INTERFACE, CONSUMED NOT INVENTED. `codegen/kernel.bend` already owns
 # `pm_to_program`, whose table carries a PROGRAM gaining a LINEAR, a SOURCE and a
 # BINARY one `graph_rewrite` at a time (codegen/kernel.bend:816 symbol=pm_to_program), and whose stage
@@ -94,7 +94,7 @@
 # field below is read by a HAND-WRITTEN reader def (constraint 27), because there
 # is no `value.field` and no generated projection.
 #
-# ---------------------------------------------------------------------------
+
 # THE FOUR WALLS, each at the file and line that owns it. W1 and W3 are the SAME
 # lowerer wall the coordinator named -- `itertools.product` over a shape plus
 # `permute`/`reshape`/`reduce`, which `uop/fold.bend` cannot answer for
@@ -143,7 +143,7 @@
 #     `Bool` PARAMETER, which is the shape the notes prescribe, and the predicate
 #     itself is W4.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE. Every row is DERIVED FROM PYTHON by the oracle named at the foot; the
 # interpreted lane, the native lane and CPython must print the same rows in the
 # same order, so
@@ -169,7 +169,7 @@ import ./../../uop/ops.bend as O
 import ./../../uop/fold.bend as F
 import ./../kernel.bend as KER
 
-# ===========================================================================
+
 # one assoc list for every table in the file. `v` is a scalar answer and `vs` a
 # list answer, and a FLAT PAIR LIST for the two `dict[int, dict[Register,
 # Register]]` tables (regalloc.py:34-35) where `[v,r,v,r,...]` is the inner dict.
@@ -178,7 +178,7 @@ import ./../kernel.bend as KER
 # are all "key is a U32", and Bend's `Map` is string-keyed only (constraints,
 # section 3) so a `List` of records is the substrate's own answer. A `Data`
 # wrapper is the recurring Bend shape for a table a walk reads while walking.
-# ===========================================================================
+
 type RaTb is Data:
   RaTb{es: List<&2, RaEn>}
 
@@ -336,7 +336,6 @@ def tb_new() -> RaTb:
 # `u32_none()` IS Python's `None` for this port, and it is the same convention
 # kernel.bend uses: `UOp.is_none` is index 0 and every "unset" here is 0xFFFFFFFF,
 # which is a value no table in this file ever stores as a KEY. Same value as
-# kernel.bend's `u32_none` and as `O.ParamArg.no_slot()`; this def used to be an
 # INDEPENDENT second copy of kernel.bend's, which is the shape of bug where two
 # files agree until one of them is edited.
 def u32_none() -> U32:
@@ -360,12 +359,12 @@ def u32s(t: Nat) -> List<&2, U32>:
   range_tuple.go(t, 0, Nil{})
 
 
-# ===========================================================================
+
 # `lt_rc` -- `run_count = prod([int(r.vmax)+1 for r in u.ranges])`, linearizer.py:20.
 # PORTED as a fold over the vmax LIST. W1 is the CALLER.
 # `rc_max` = 65536 is the row that pins the composite key's 26-bit range, since
 # `lt_key` is `run_count * 64 + priority_offset` and the offset is 0..25.
-# ===========================================================================
+
 def lt_rc.go(vmaxs: List<&2, U32>, +acc: U32) -> U32:
   match vmaxs:
     case Nil{}    : acc
@@ -374,7 +373,7 @@ def lt_rc.go(vmaxs: List<&2, U32>, +acc: U32) -> U32:
 def lt_rc(vmaxs: List<&2, U32>) -> U32:
   lt_rc.go(vmaxs, 1)
 
-# ===========================================================================
+
 # THE PRIORITY LADDER, linearizer.py:24-32. PORTED IN FULL, all eight arms.
 #
 #     match u.op:
@@ -404,7 +403,7 @@ def lt_rc(vmaxs: List<&2, U32>) -> U32:
 #
 # W4: the BUFFER/ALLOC arm's `u.addrspace == AddrSpace.LOCAL` is a PARAMETER. The
 # arm is `lt_po.w1(local, is_bufalloc)`; `lt_po_glob`/`lt_po_loc` are the two rows.
-# ===========================================================================
+
 # THE OP PREDICATES, LEAF FIRST. Seven arms of the ladder would be seven
 # two-armed `match`es if each were written out, and each gets ITS OWN row (`po_*`)
 # so that a mutation dropping one arm moves exactly that row -- the `k_alu_recip`
@@ -521,7 +520,7 @@ def lt_extra(+a: O.Arena, +i: U32) -> U32:
 def lt_key(rc: U32, po: U32) -> U32:
   U32.add(U32.mul(rc, 64), po)
 
-# ===========================================================================
+
 # `out_degree` -- linearizer.py:11, :16-17. A COUNT OF OCCURRENCES, not a set
 # membership: Python's `out_degree[s] += 1` runs once per (consumer, src) PAIR,
 # and a node an operator names twice has two edges into it.
@@ -529,7 +528,7 @@ def lt_key(rc: U32, po: U32) -> U32:
 #
 # `reversed(lst)` is `List.reverse` -- the counts are order-independent, but
 # transcribing `reversed` is one call and keeps the diff against :17 readable.
-# ===========================================================================
+
 # `List.foldl` IS THE SRC LOOP. The inner `for s in u.src_without_body` is a
 # 2-ary fold with a top-level step, so it is ONE call and there is no mutual
 # recursion -- which is why the outer walk is one def and the inner is a builtin.
@@ -604,7 +603,7 @@ def LtKey.rc(x: LtKey) -> U32:
   match x:
     case LtKey{k, i, rc, ex}: rc
 
-# ===========================================================================
+
 # THE IDEAL ORDER -- `nkey = {u: i for i, u in enumerate(sorted(lst, key=...))}`,
 # linearizer.py:36. So `nkey` IS the POSITION in the sorted list and the whole
 # table is the sorted list: `lt_nkey` searches it.
@@ -619,7 +618,7 @@ def LtKey.rc(x: LtKey) -> U32:
 # the FIRST run's head, whenever `le(x, y)`), and Python's `sorted` is stable
 # too, so TIES fall back to the toposort order in both. That is the whole of the
 # `TUPLE_ORDER=0` lane and W2 is the rest.
-# ===========================================================================
+
 def lt_kle(x: LtKey, y: LtKey) -> Bool:
   U32.is_le(LtKey.k(x), LtKey.k(y))
 
@@ -689,7 +688,7 @@ def lt_keys(+ar: O.Arena, lst: List<&2, U32>, vms: List<&2, U32>) -> List<&2, Lt
   lt_keys.go(ar, lst, vms, Nil{})
 
 
-# ===========================================================================
+
 # THE HEAP LOOP, linearizer.py:39-46. PORTED, and `heapq` is a SORTED LIST.
 #
 #     heap = [(-nkey[sink], sink)];  newlst = []
@@ -836,7 +835,7 @@ def lt_emit(+ar: O.Arena, lst: List<&2, U32>, +srt: List<&2, LtKey>, +sink: U32)
 def linearize(+ar: O.Arena, +lst: List<&2, U32>, vms: List<&2, U32>, +sink: U32) -> List<&2, U32>:
   lt_emit(ar, lst, lt_sorted(lt_keys(ar, lst, vms)), sink)
 
-# ===========================================================================
+
 # THE GATE FIXTURE. Twenty-two arena indices built in the interning order the
 # oracle uses, so `ix` can be diffed row by row and a row that reads the wrong
 # index is a DIFFERENT NUMBER rather than a plausible one.
@@ -863,7 +862,7 @@ def linearize(+ar: O.Arena, +lst: List<&2, U32>, vms: List<&2, U32>, +sink: U32)
 # `zipped` is `zip(order, order[1:])` and `order` then has length one -- measured
 # on a real `(a*b+3).relu().sum()` kernel, which is the fixture the first
 # version of this file lacked.
-# ===========================================================================
+
 def lt_pa(slot: U32, dt: S.Dt, ad: S.Addr) -> O.ParamArg:
   O.ParamArg{slot, dt, None{}, None{}, None{}, ad, None{}, False{}, None{},
              None{}, False{}, None{}}
@@ -937,7 +936,7 @@ def lt_vm_lst() -> List<&2, U32>:
 def lt_vm_call() -> List<&2, U32>:
   [0, 0, 0, 0, 0, 0]
 
-# ===========================================================================
+
 # the gate, part one: the linearizer. Every row is derived from python by
 # /tmp/opencode/late-oracle.py, which drives tinygrad/codegen/late/linearizer.py
 # over this exact fixture and prints its rows in THIS ORDER and with THIS
@@ -960,7 +959,7 @@ def lt_vm_call() -> List<&2, U32>:
 # shared printer is a shared FORMAT CONTRACT (the notes' rule 22) -- a mutation in
 # one invalidates a quarter of the suite, which is the right trade, and it is why
 # `lt_u32s` is written once and not three times.
-# ===========================================================================
+
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
@@ -1019,7 +1018,7 @@ def lt_srcs.go(+ar: O.Arena, ix: List<&2, U32>, +acc: List<&2, String>) -> List<
 def lt_srcs(+ar: O.Arena, ix: List<&2, U32>) -> String:
   String.join(lt_srcs.go(ar, ix, Nil{}), " ")
 
-# ===========================================================================
+
 # `lin_edg` -- the edge list, in the declared toposort's own positions. this is
 # THE ROW `lin_srcs` COULD NOT BE.
 #
@@ -1031,7 +1030,6 @@ def lt_srcs(+ar: O.Arena, ix: List<&2, U32>) -> String:
 # any src list in `lt_fix()` -- an SINK's, an END's, a RANGE's, either ADD's --
 # moves NOTHING, while CPython's answer over the same seven graphs moves in 2, 0,
 # 20, 6, 9, 3 and 10 rows (`.agents/slop/order-lin-sweep.sh`). The gate was green
-# over an arena that was not the graph its own table describes.
 #
 # THE ALPHABET IS A POSITION, NOT AN ARENA INDEX, and that is the whole design.
 # CPython derives positions from its OWN `toposort`; the port derives them from
@@ -1039,7 +1037,7 @@ def lt_srcs(+ar: O.Arena, ix: List<&2, U32>) -> String:
 # and CPython's three-node CONST/CAST interning divergence (`lin_fixture`'s
 # comment: `UOp.const(1, i32)` is one node here and two in `ops.bend`) stops
 # mattering, because a position is a position either way.
-# ===========================================================================
+
 # A src the declared toposort does not NAME answers `4294967295`, which is what
 # `LtKey.ex`'s "no extra" sentinel already is. A disagreement between the arena
 # and `lt_lst` therefore prints a sentinel rather than a plausible number.
@@ -1103,9 +1101,9 @@ def lt_srt_call.of(k: KER.K) -> List<&2, LtKey>:
 def lt_srt_call() -> List<&2, LtKey>:
   lt_srt_call.of(lt_fix())
 
-# ===========================================================================
+
 # THE ROWS. Grouped by the def they test, in that order.
-# ===========================================================================
+
 # `ix_len` and `ix` -- THE FIXTURE'S OWN SIZE AND INDEX LIST. The notes' rule
 # (mixin/creation, item 4) again: a fixture off by one is a fixture whose rows
 # cannot be READ, and four rows of an earlier revision of this file answered 0
@@ -1346,7 +1344,7 @@ def lt_srt_idx() -> List<&2, U32>:
 def lt_srt_call_idx() -> List<&2, U32>:
   lt_srt_idx.go(lt_srt_call(), Nil{})
 
-# ===========================================================================
+
 # `CFGContext` -- linearizer.py:53-81, and `pm_add_control_flow` :83-85.
 #
 # the three tables are one record. `deps` is a U32 -> set of U32 map, `nesting`
@@ -1363,7 +1361,7 @@ def lt_srt_call_idx() -> List<&2, U32>:
 # the row away. `|=` keeps an existing key's position and appends a new one, so
 # the union is `a ++ [x for x in b if x not in a]` and NOT a fold that rebuilds
 # the left side from the right.
-# ===========================================================================
+
 type Cfg is Data:
   Cfg{dp: RaTb, ns: RaTb}
 
@@ -1583,11 +1581,11 @@ def cfg_edges(rest: List<&2, RaEn>, +ar: O.Arena, +deps: RaTb, +ed: RaTb) -> RaT
 def cfg_ed(ar: O.Arena, +c: Cfg) -> RaTb:
   cfg_edges(RaTb.es(cfg_sib(Cfg.ns(c))), ar, Cfg.dp(c), tb_new())
 
-# ===========================================================================
+
 # `pm_add_control_flow` -- linearizer.py:83-85. ONE rule, ONE op, and the whole
 # rewrite is `x.src + (edges[x],)`, so the table is two rows and the answer is
 # either the new node's src list or `-`.
-# ===========================================================================
+
 def cfg_tbl() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsRANGE{}], Nil{}}]
 
@@ -1625,10 +1623,10 @@ def cfg_rewrite.pick(hit: Bool, +ar: O.Arena, +ed: RaTb, +x: U32) -> Cg:
 def cfg_rewrite(+ar: O.Arena, +ed: RaTb, +x: U32) -> Cg:
   cfg_rewrite.pick(tb_has(ed, x), ar, ed, x)
 
-# ---------------------------------------------------------------------------
+
 # THE `cfg_*` ROWS. `cfg_edges` prints `key/axis->value.op` in `edges` insertion
 # order, which is why the assoc list's key order had to be Python's.
-# ---------------------------------------------------------------------------
+
 def lt_slash.axis(a: O.Arg) -> U32:
   match a:
     case O.ARange{ids, at}: lt_lab.ids(ids)
@@ -1702,7 +1700,7 @@ def cfg_tbl_len() -> U32:
 def cfg_tbl_ops() -> String:
   lt_ops_name(O.PMEntry.ops(cfg_entry(cfg_tbl(), 0n)))
 
-# ===========================================================================
+
 # `do_split_ends` and `pm_split_ends` -- linearizer.py:87-96.
 #
 # W1: `((s,) if s.op is Ops.RANGE else s.ranges)` -- :89. The `else` half is a
@@ -1712,7 +1710,7 @@ def cfg_tbl_ops() -> String:
 # closed one. `se_rngs` is the row that would move if the arm were filled in for
 # a fixture that had a non-RANGE src, and `se_len` counts the END nodes actually
 # BUILT, so a stub that built one END instead of three would be caught.
-# ===========================================================================
+
 def se_dup1(+acc: List<&2, U32>, +s: U32) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, List.contains(U32, U32.is_eq, acc, s),
             acc, List.append(&2, U32, acc, [s]))

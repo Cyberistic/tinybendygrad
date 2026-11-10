@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/compileserver.bend -- port of tinygrad/runtime/support/compileserver.py
 #
-# ===========================================================================
+
 # thirteen lines, and the port is mostly the protocol.
 #
 #   if __name__ == "__main__":
@@ -50,7 +50,7 @@
 #   a spec "S:"        -> ModuleNotFoundError, exit 1
 #   argc 0, 1 or 2     -> the usage assert, exit 1
 #
-# ===========================================================================
+
 # THE WALL, and it is the only one, and it is not the framing.
 #
 # The server is a LONG-LIVED process holding a duplex pipe. `Process.run`
@@ -91,7 +91,7 @@ def Tr.n(tr: Tr) -> U32: U32.from_nat(List.length(&2, String, Tr.items(tr)))
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
-# ===========================================================================
+
 # the four bytes, as a lowercase hex string. bend has no `U32.get`, so the
 # index is a two-arm ladder over a FOUR element list, which is a literal.
 # the nth byte of a FOUR element list. `n: Nat` decrements as the walk descends,
@@ -100,7 +100,7 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # `cs.pack` builds the four bytes IN ADDRESS ORDER -- which is the whole point:
 # if the byte order were a convention rather than a decision, `cs.unpack` would
 # answer the same number for both orders and the gate could not see the swap.
-# ===========================================================================
+
 # the nth byte of a FOUR element list. When the REMAINING index is zero the
 # HEAD is the answer; the first version had the two arms the other way round and
 # `cs.unpack_be_1` answered `00000100` for `00000001`, which is how the gate
@@ -165,7 +165,7 @@ def cs.unpack_be_str(+bs: List<&2, U32>) -> String: hx2.str(cs.pack(cs.unpack_be
 # THE RESPONSE, and the ERROR POLICY. `lib = b""` on an exception, then the
 # frame is written anyway -- so the frame count is INDEPENDENT of whether any
 # request failed. `cs.respond_n` is the row that says so.
-# ===========================================================================
+
 def cs.ok(+lib: U32) -> U32: lib
 
 def cs.on_error(+lib: U32) -> U32: 0
@@ -180,24 +180,24 @@ def add2(acc: U32, h: U32) -> U32: U32.add(acc, h)
 
 def cs.frame_total(+lens: List<&2, U32>) -> U32: List.foldl(&2, U32, U32, add2, lens, 0)
 
-# ===========================================================================
+
 # THE REQUEST LOOP HEAD. `while (amt := sys.stdin.buffer.read(4))` ends on an
 # EMPTY read, not on a zero length: a zero length is a frame whose payload is
 # the empty string and `compile("")` still runs. `cs.more` is that test and it
 # is the difference between one request and a hang.
-# ===========================================================================
+
 def cs.more(+available: U32) -> Bool: U32.is_gt(available, 0)
 
 def cs.n_needed() -> U32: 4
 
-# ===========================================================================
+
 # argv. The assert is `len(sys.argv) >= 3` -- script, spec, arch -- and the
 # spec is `module:attr`, split on ':'. `cs.spec_n` is the field count and
 # `cs.spec_ok` is the two-field test; a spec with NO colon is a one-field
 # `fromimport` call, which Python answers with a TypeError, and a spec with
 # THREE is a three-argument `fromimport`, also a TypeError. Those two are the
 # rows, because "split on ':'" without the arity is not the same function.
-# ===========================================================================
+
 def cs.spec_n(+spec: String) -> U32: U32.from_nat(List.length(&2, String, String.split(spec, ':')))
 
 def cs.spec_ok(+spec: String) -> Bool: U32.is_eq(cs.spec_n(spec), 2)
@@ -211,10 +211,10 @@ def cs.usage(+argv0: String) -> String:
 
 def cs.extra_n(+argc: U32) -> U32: U32.sub(argc, 3)
 
-# ===========================================================================
+
 # THE GATE. Every expectation is a row of `.agents/slop/cs_oracle.py` section
 # `cs`, which runs the REAL `compileserver.py` in a subprocess.
-# ===========================================================================
+
 def t_frame() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- srow("cs.pack_0", cs.pack_str(0))

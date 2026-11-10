@@ -21,7 +21,7 @@
 
 import Base
 
-# ===========================================================================
+
 # `Estimates` -- __init__.py:15-61.
 #
 #     ops:sint = 0   # number of FLOPS used in the Kernel
@@ -48,7 +48,7 @@ import Base
 # That is a real disagreement on a real kernel and it is stated rather than
 # hidden. Splitting it needs a two-word key, which is a P3 change to the
 # substrate's `Map`, not to this file.
-# ===========================================================================
+
 
 type Estimates is Data:
   Estimates{ops: U32, lds: U32, mem: U32}

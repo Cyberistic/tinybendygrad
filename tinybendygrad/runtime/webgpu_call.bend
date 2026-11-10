@@ -13,7 +13,7 @@
 #   "NOTHING checks that pass.pipeline's entryPoint is the entry point Pass.of
 #    was given: the only reader would be the ffi seam"
 #
-# ===========================================================================
+
 # THE BOUNDARY, and why it is THIS one. Measured, not chosen by taste.
 #
 # `bend FILE -o FILE.mjs` emits an ES module of every NON-IO def, with
@@ -43,7 +43,7 @@
 #     Widening `Call` changes ~40 gate rows, and the trace was never the thing
 #     that was missing.
 #
-# ===========================================================================
+
 # WHAT IS AND IS NOT DUPLICATED. No argument is re-derived here: `bgl.of`,
 # `slots`, `dev.uniform_bytes`, `alloc.size`, `copy.write_len`, `alloc.usage`,
 # `dev.uniform_usage`, `copy.readable_usage`, `prog.wants_wait`, `backend_of` and
@@ -79,7 +79,7 @@ import Base
 import ./ops_webgpu.bend as W
 import ../helpers.bend as H
 
-# ===========================================================================
+
 # THE CONSTANTS ADDED HERE. All six are new to the port. Every one was READ out
 # of `tinygrad/runtime/autogen/webgpu.py` by importing that module; the
 # `file:line` is where the symbol is bound. The oracle is
@@ -96,7 +96,7 @@ import ../helpers.bend as H
 # `CALLBACK_MODE_WAIT_ANY_ONLY` is the flag that lets `synchronous` (:37) block;
 # all six wrapped calls pass it, and NO `Op` mentions it, because there is
 # nothing on the JavaScript side to pass it to.
-# ===========================================================================
+
 def SHADER_STAGE_COMPUTE() -> U32: 4
 def QUERY_TYPE_TIMESTAMP() -> U32: 2
 def MAP_MODE_READ() -> U32: 1
@@ -104,7 +104,7 @@ def POWER_PREF_HIGH_PERF() -> U32: 2
 def STYPE_SHADER_SOURCE_WGSL() -> U32: 2
 def CALLBACK_MODE_WAIT_ANY_ONLY() -> U32: 1
 
-# ===========================================================================
+
 # THE LITERALS ops_webgpu.py writes into descriptors. Not enums, so the citation
 # is the `ops_webgpu.py` line the literal is written on and `wgc_lit_*` checks
 # each against that number. `QUERY_COUNT` is deliberately NOT reused from
@@ -123,7 +123,7 @@ def CALLBACK_MODE_WAIT_ANY_ONLY() -> U32: 1
 # (:18) and the buffer-to-buffer copy's two `0`s (:215) -- are literal `0` at
 # their use sites, each naming its Python line, because a named `ZERO()` would be
 # a constant no citation could check.
-# ===========================================================================
+
 def QUERY_BUF_BYTES() -> U32: 16
 def QUERY_COUNT() -> U32: 2
 def BEGIN_PASS() -> U32: 0
@@ -131,13 +131,13 @@ def END_PASS() -> U32: 1
 def SUBMIT_COUNT() -> U32: 1
 def RESOLVE_COUNT() -> U32: 2
 
-# ===========================================================================
+
 # THE OPS. One constructor per real `navigator.gpu` method, named for it. `slot`
 # is the handle the driver files the RESULT under, so every later reference to a
 # created object is a `U32` the driver resolves. The object KIND is not a field:
 # the trace already carries it as `Call.arg`, so `Step.arg` and `Op` together say
 # it once and `wgc_kind_from_arg` checks the pairing.
-# ===========================================================================
+
 
 # ONE bind group entry (:96) -- `(binding, buffer, offset=0, size)`. `buf` is the
 # uniform THIS call creates for a `vals` slot and the caller's own for a `bufs`
@@ -465,12 +465,12 @@ def Cs.count_of_wait(+c: Cs, which: U32) -> U32:
 def Cs.count(k: U32, +c: Cs) -> U32:
   Cs.count.go(List.length(&2, Step, Cs.ops(c)), k, Cs.ops(c), 0)
 
-# ===========================================================================
+
 # DEVICE INIT, ops_webgpu.py:11 then :166-190, in `dev.init`'s order. `dev.init`
 # pins that order on the TRACE side (`wg_init_order`); `wgc_init_trace` pins that
 # the ops here agree with it, so these eight steps and those eight trace entries
 # cannot come apart.
-# ===========================================================================
+
 def Cs.instance() -> Cs: Cs.at(Cs.of(), W.CALL_CREATE, W.OBJ_INSTANCE,
                                Instance{CALLBACK_MODE_WAIT_ANY_ONLY()})
 
@@ -511,7 +511,7 @@ def Cs.init(backend_name: String, +feats: List<&2, U32>) -> Cs:
   +d = Cs.device(Cs.limits(Cs.features_free(Cs.features(a))), feats)
   Cs.adapter_release(Cs.queue(d), Cs.next(d))
 
-# ===========================================================================
+
 # ONE PROGRAM CALL, ops_webgpu.py:53-64 then :69-147. Every step names its Python
 # line, and `wgc_call_trace` checks the WHOLE order against the trace
 # `W.prog.call` produces from the same inputs -- two independent walks of the
@@ -522,7 +522,7 @@ def Cs.init(backend_name: String, +feats: List<&2, U32>) -> Cs:
 # VAL COUNT AND NOTHING ELSE" -- and that is true of the STRUCTURE. The seam needs
 # the bytes, so `vals` is an argument here and `wgc_vals_count` is the row that
 # pins the two against each other.
-# ===========================================================================
+
 def Cs.push(+c: Cs) -> Cs:
   Cs.at(c, W.CALL_PUSH, W.FILTER_VALIDATION, PushScope{W.FILTER_VALIDATION()})
 
@@ -620,9 +620,9 @@ def Cs.bind.go(n: Nat, +i: U32, +ss: List<&2, W.Slot>, +bs: List<&2, W.Buf>,
                      Cs.entry(c, i, is_buf, size, Cs.caller(i, is_buf, bs),
                               Cs.or0(List.get(&2, U32, vs, 0n))))
 
-# ===========================================================================
+
 # THE REST OF ONE PROGRAM CALL, :99-147.
-# ===========================================================================
+
 # :99-102 -- CreateBindGroup(device_res, WGPUBindGroupDescriptor(layout=
 # bind_layout, entryCount=len(bindings), entries=bindings)), same push/create/pop.
 # `Cs.bg` is the fold's answer and this is the only reader of it, which is what
@@ -870,10 +870,10 @@ def Cs.timing.at(wait: Bool, +c: Cs, +qs: U32, +qbuf: U32) -> Cs:
 
 def Cs.timing(+c: Cs, +qs: U32, +qbuf: U32) -> Cs: Cs.timing.at(Cs.wait(c), c, qs, qbuf)
 
-# ===========================================================================
+
 # THE WHOLE CALL, :69-147 in `prog.call.at`'s order. The only place the order is
 # spelled out, so `wgc_call_trace` has exactly one walk to blame.
-# ===========================================================================
+
 def Cs.call(+bs: List<&2, W.Buf>, +nvals: Nat, +vals: List<&2, U32>, gx: U32, gy: U32,
             gz: U32, want: Bool, +feats: List<&2, U32>, +entry: String,
             +code: String) -> Cs:

@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/compiler_qcom.bend -- port of tinygrad/runtime/support/compiler_qcom.py
 #
-# ===========================================================================
+
 # the pure logic of this file is one line, and it is the sharpest one in the
 # unit:
 #
@@ -20,7 +20,7 @@
 # and the row that pins the order is `q.read_le_*` against CPython's
 # `struct.pack("I", ...)`.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :8   _read_lib               PORTED  `q.read` `q.read_le` `q.read_be`
@@ -55,7 +55,7 @@
 #                                         PORTED  `q.slice_off` `q.slice_end` -- THE
 #                                         HEADLINE
 #
-# ===========================================================================
+
 # THE THREE WALLS, each with its Python line.
 #
 # WALL 1 -- `tinygrad.runtime.autogen.llvm_qcom` and the fetched rootfs.
@@ -110,7 +110,7 @@ def Tr.n(tr: Tr) -> U32: U32.from_nat(List.length(&2, String, Tr.items(tr)))
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
-# ===========================================================================
+
 # :8  _read_lib. `struct.unpack("I", lib[off:off+4])[0]` is LITTLE ENDIAN:
 # byte 0 is the LOW byte. `q.read` takes the four bytes in ADDRESS order, which
 # is what makes the endianness a decision rather than a convention.
@@ -119,7 +119,7 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # slice is shorter than four bytes, so `_read_lib(lib, 0x100)` on a 0x100-byte
 # library raises rather than returning a truncated read. `q.read_ok` is that
 # test, and `q.read` is only reached when it holds.
-# ===========================================================================
+
 def q.read_ok(+len: U32, +off: U32) -> Bool: U32.is_ge(U32.sub(len, off), 4)
 
 def q.read(+b0: U32, +b1: U32, +b2: U32, +b3: U32) -> U32:
@@ -143,12 +143,12 @@ def q.read_at(+bs: List<&2, U32>, +off: U32) -> U32:
 def q.off_pos() -> U32: 192         # 0xc0
 def q.len_pos() -> U32: 256         # 0x100
 
-# ===========================================================================
+
 # :46  THE SLICE. `lib[ofs : ofs + _read_lib(lib, 0x100)]`, where `ofs` is read
 # at 0xc0. Both ends are data, and the two reads are at DIFFERENT positions, so
 # a port that used 0xc0 for both would produce a slice of the right length in
 # the wrong place whenever the library disagrees with itself.
-# ===========================================================================
+
 def q.slice_off(+n: U32, +bs: List<&2, U32>) -> U32: q.read_at(bs, q.off_pos())
 
 def q.slice_end(+n: U32, +bs: List<&2, U32>) -> U32:
@@ -159,9 +159,9 @@ def q.slice_len(+n: U32, +bs: List<&2, U32>) -> U32: q.read_at(bs, q.len_pos())
 def q.slice_str(+n: U32, +bs: List<&2, U32>) -> String:
   String.concat([U32.show(q.read_at(bs, q.off_pos())), ":", U32.show(q.slice_end(n, bs))])
 
-# ===========================================================================
+
 # :12  the arch assert and :13/:16 the chip id and the cache key.
-# ===========================================================================
+
 def q.head.of(xs: List<&2, String>) -> String:
   match xs:
     case Nil{}: ""
@@ -189,16 +189,16 @@ def q.key(+arch: String) -> String: String.concat(["compile_qcomcl_", arch])
 
 def q.is_aarch64(+machine: String) -> Bool: String.eq(machine, "aarch64")
 
-# ===========================================================================
+
 # :17  the rootfs and the repo root. `rootlib.Path(__file__).parents[3]` is the
 # repository root, which is where `compileserver.py` and `tinygrad` live, and it
 # is passed to docker twice: once as a `-v` mount and once as `PYTHONPATH`.
-# ===========================================================================
+
 def q.root() -> String: "/ROOT"
 
 def q.fs_url() -> String: "https://git.tinygrad.win/tinygrad/images/releases/download/v2/qcomcl.tar.gz"
 
-# ===========================================================================
+
 # :18  THE QEMU COMMAND, and it is one string that a shell will word-split, so
 # the SPACES are load bearing:
 #
@@ -207,18 +207,18 @@ def q.fs_url() -> String: "https://git.tinygrad.win/tinygrad/images/releases/dow
 # `qemu` is `shutil.which("qemu-aarch64-static")` or None, and the whole branch
 # is chosen by its presence -- not by the platform. So there are THREE states,
 # not two: aarch64 (no process at all), qemu (a local emulator) and docker.
-# ===========================================================================
+
 def q.cmd_qemu(+qemu: String, +fs: String) -> String:
   String.join([qemu, "-cpu", "max,pauth=off", "-L", fs, String.concat([fs, "/usr/bin/python3"])], " ")
 
 def q.qemu_n(+qemu: String, +fs: String) -> U32: 6
 
-# ===========================================================================
+
 # :19-20  THE DOCKER COMMAND. Four pieces of information, and all four are
 # observable: the `--platform`, BOTH `-v` mounts, `PYTHONPATH` and `QEMU_CPU`.
 # Dropping the second mount mounts nothing and `-e PYTHONPATH` then names a
 # directory that is not in the image.
-# ===========================================================================
+
 def q.cmd_docker(+fs: String, +root: String) -> String:
   String.join(["docker", "run", "--rm", "-i", "--platform", "linux/aarch64",
     "-v", String.concat([fs, "/usr:/usr"]),
@@ -235,7 +235,7 @@ def q.docker_flags(+fs: String, +root: String) -> List<&2, String>:
    "-e", String.concat(["PYTHONPATH=", root]),
    "-e", "QEMU_CPU=max,pauth=off", "gcr.io/distroless/static", "python3"]
 
-# ===========================================================================
+
 # :27-32  checked(). Two facts, and the second is not a reformat of the first:
 #
 #   if not handle or (data := (hc.executable if hc.type == CL_HANDLE_LINKED
@@ -248,7 +248,7 @@ def q.docker_flags(+fs: String, +root: String) -> List<&2, String>:
 # gets the message AND the build log, and in BOTH cases the instance is
 # recreated first. `q.picks_exe` is the handle-TYPE test and it is a different
 # question from the error code.
-# ===========================================================================
+
 def q.handle_linked() -> U32: 2          # CL_HANDLE_LINKED
 
 def q.picks_exe(+htype: U32) -> Bool: U32.is_eq(htype, q.handle_linked())
@@ -264,11 +264,11 @@ def q.resets(+fails: Bool) -> U32: Bool.to_u32(fails)
 
 def q.is_compile(handle: Bool, log: String) -> String: q.msg(handle, log)
 
-# ===========================================================================
+
 # :36  `cl_compiler_compile_source(inst, chip_id, CL_MODE_64BIT, b"", 0, 0, 0,
 #      src.encode(), 0, CL_SRC_STR, None)` -- ELEVEN arguments, and the two
 # consecutive ZEROS at positions 5 and 6 are separate arguments, not one.
-# ===========================================================================
+
 def q.compile_args(+chip_id: U32, +src: String) -> List<&2, U32>:
   [chip_id, 64, 0, 0, 0, 0, q.src_str(), 0]
 
@@ -284,9 +284,9 @@ def q.link_arg_n() -> U32: 6
 # :40 `cl_compiler_handle_create_binary(lh, byref(ptr), byref(sz))`
 def q.binary_args() -> U32: 3
 
-# ===========================================================================
+
 # THE GATE.
-# ===========================================================================
+
 # a 0x110-byte library with a chosen u32 at 0xc0 and another at 0x100, built as
 # a LIST of byte values in ADDRESS order -- which is what makes `q.read`'s
 # endianness a decision the gate can see.

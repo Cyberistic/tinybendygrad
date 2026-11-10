@@ -48,7 +48,6 @@
 #   :53  WGSLRenderer   every attribute and every method below
 #   :67  string_rewrite all seventeen rules' strings and their seventeen `UPat`s,
 #                       in Python's order. This was the largest wall in the file
-#                       and it was not a big one: `ctx[x]` is `self.r[x]`, a dict
 #                       the naming pass has already filled, so `ctx[x]` is the
 #                       CHILD'S TEXT and a parameter here. The PATTERNS were the
 #                       second wall and they were SMALLER: a `UPat` reads an op, a
@@ -117,27 +116,27 @@ import ./../uop/fold.bend as F
 import ./../LAWS/spec.bend as S
 import ./../helpers.bend as H
 
-# ===========================================================================
+
 # :7  sign_extend -- `(val << (32-width)).bitcast(dtypes.i32) >> (32-width)`.
 #
 # The GRAPH is the wall above. The SHIFT is not, and it reaches the text: the
 # packed-char load renders as `bitcast<i32>((((val4>>alu7)&255u)<<24u))>>24u)`
 # and 24 is exactly this number for width 8. So the one integer is ported and
 # pinned, and the three UOp calls around it are named.
-# ===========================================================================
+
 def se_shift(width: U32) -> U32: U32.sub(32, width)
 
-# ===========================================================================
+
 # :10  packed_field -- `elems, width = 4//dt.itemsize, 8*dt.itemsize` and the
 # caller's `(1 << width)-1`. Three ints, all three in the output.
-# ===========================================================================
+
 def pf_elems(+dt: S.Dt) -> U32: U32.div(4, S.Dt.itemsize(dt))
 
 def pf_width(+dt: S.Dt) -> U32: U32.mul(8, S.Dt.itemsize(dt))
 
 def pf_mask(+dt: S.Dt) -> U32: U32.sub(U32.shln(1, U32.to_nat(pf_width(dt))), 1)
 
-# ===========================================================================
+
 # :15  packed_store -- `wmask = ((mask << shift_am) ^ 0xFFFFFFFF)`.
 #
 # `shift_am` is a UOp in Python, so this is a graph expression there and the
@@ -145,10 +144,10 @@ def pf_mask(+dt: S.Dt) -> U32: U32.sub(U32.shln(1, U32.to_nat(pf_width(dt))), 1)
 # make of it. With a CONSTANT shift it collapses to an integer, and those are
 # the values a folded kernel stores (`atomicAnd(&data0_4[0],4294967040u)` for
 # shift 0). So the int is ported; the UOp form is the wall above.
-# ===========================================================================
+
 def ps_wmask(mask: U32, shift: U32) -> U32: U32.xor(U32.shln(mask, U32.to_nat(shift)), 4294967295)
 
-# ===========================================================================
+
 # :30  is_packed -- `dt.itemsize < 4 and dt != dtypes.f16 and
 # x.buf_uop.addrspace != AddrSpace.REG`.
 #
@@ -156,7 +155,7 @@ def ps_wmask(mask: U32, shift: U32) -> U32: U32.xor(U32.shln(mask, U32.to_nat(sh
 # UOp reader is `is_packed_of` below and the PREDICATE takes the two things the
 # UOp is read for. That is the whole reduction: Python's one `x` is a UOp, this
 # port's is the pair (dtype, addrspace), and nothing else about the node is read.
-# ===========================================================================
+
 def addr_is_reg(a: S.Addr) -> Bool:
   match a:
     case S.AReg{}: True{}
@@ -200,12 +199,12 @@ def bu_go(fuel: Nat, go: Bool, +ar: O.Arena, +s: U32) -> U32:
 
 def w_buf_uop(+ar: O.Arena, +s: U32) -> U32: bu_go(O.Arena.budget(ar), bu_go2(ar, s), ar, s)
 
-# ===========================================================================
+
 # :33  _packed_size -- `ceildiv(u.max_numel(), 4//u.dtype.itemsize) if
 # is_packed(u) else u.max_numel()`. `max_numel` is a PARAMETER here for the
 # reason `is_packed`'s is: it is read off the UOp, and `Buf` is the projection
 # of a UOp this file needs. `w_numel` below is the reader.
-# ===========================================================================
+
 def packed_size(+n: U32, +dt: S.Dt, addr: S.Addr) -> U32:
   Bool.pick(U32, is_packed(dt, addr), H.ceildiv_u32(n, pf_elems(dt)), n)
 
@@ -262,7 +261,7 @@ def w_packed_dt(+ar: O.Arena, +tb: F.Table, +u: U32) -> S.Dt:
 def is_packed_of(+ar: O.Arena, +tb: F.Table, +u: U32) -> Bool:
   is_packed(w_packed_dt(ar, tb, u), w_addr(ar, tb, w_buf_uop(ar, u)))
 
-# ===========================================================================
+
 # :34  is_nan -- `(a.bitcast(uint{bs}) & ((1 << (bs - 1)) - 1)) >
 # (((1 << exp) - 1) << mant)`. The bitcast and the compare are the wall; the
 # FIVE INTEGERS are not, and they are the whole rule: the mask is the sign bit
@@ -276,7 +275,7 @@ def is_packed_of(+ar: O.Arena, +tb: F.Table, +u: U32) -> Bool:
 # cheaper than one port of a module boundary. `Dt.pri` is the discriminant and it
 # is unique per dtype, so one `match` on the binder reads the whole table.
 # The None arm is dtype.py's raise for a non-float.
-# ===========================================================================
+
 type Fi is Data:
   Fi{e: U32, m: U32}
 
@@ -313,7 +312,6 @@ def nan_bs(+dt: S.Dt) -> U32: S.Dt.bits(dt)
 
 # `(1 << (bs - 1)) - 1`. THE MASK IS 64 BITS WIDE AND IT IS COMPUTED AT 64 BITS.
 #
-# it was not, and the prose that defended it was the defect as much as the arithmetic
 # WAS.  The old body was `U32.sub(U32.shln(1, Nat.sub(U32.to_nat(nan_bs(dt)), 1n)), 1)`
 # -- a U32 -- and `U32.shln` SATURATES past 31 (`helpers.bend:1802`), so for a double
 # `U32.shln(1, 63n)` is 0 and `U32.sub(0, 1)` is 4294967295.  CPython's mask is
@@ -353,7 +351,7 @@ def nan_uint.of(b: U32) -> S.Dt:
 
 def nan_uint(+dt: S.Dt) -> S.Dt: nan_uint.of(nan_bs(dt))
 
-# ===========================================================================
+
 # :39  packed_rmw -- the read-modify-write a packed_store emits:
 # `UPat(Ops.LOAD, src=(UPat(Ops.CAST, dtype=uint32, src=(UPat.var("b"),)),),
 # allow_any_len=True) & UPat.var("wmask")`.
@@ -364,7 +362,7 @@ def nan_uint(+dt: S.Dt) -> S.Dt: nan_uint.of(nan_bs(dt))
 # BIND, not a guard, so it is not part of the predicate -- and that is
 # load-bearing in the other direction too: `string_rewrite`'s store rule takes
 # the mask as a SECOND binder, so the same LOAD matches with or without it.
-# ===========================================================================
+
 def prw_is(ar: O.Arena, u: U32) -> Bool: O.eq_op(O.Arena.op(ar, u), O.OpsLOAD{})
 
 # the inner UPat, and `allow_any_len` is ABSENT here, so the CAST's src count is
@@ -377,9 +375,9 @@ def prw_cast(+ar: O.Arena, +tb: F.Table, +c: U32) -> Bool:
 def prw_of(+ar: O.Arena, +tb: F.Table, +u: U32) -> Bool:
   Bool.and(prw_is(ar, u), prw_cast(ar, tb, O.Arena.src0(ar, u)))
 
-# ===========================================================================
+
 # :53  WGSLRenderer. Every attribute, in Python's order.
-# ===========================================================================
+
 
 # `global_max = (65535, 65535, 65535)` and `local_max = (256, 256, 64)`. A
 # Python tuple of three ints is a `List<&2, U32>`: the ORDER is the whole
@@ -418,7 +416,6 @@ def wi_axis.of(x: U32) -> Maybe<&1, String>:
 # a name: `i32(lindex.)` would be plausible wrong WGSL.
 #
 # the `None` arm lives in `code_for_workitem.ret` and not in a `wi_axis` of its
-# OWN. It used to be `wi_axis.of2`, and `wi_axis` -- the one the header named as
 # the totalizer -- called nothing: `code_for_workitem` went to `wi_axis.of`
 # directly and `code_for_workitem.ret`'s `None` arm is what actually answers "".
 # A def that describes a decision no def makes, next to the def that makes it,
@@ -436,7 +433,6 @@ def code_for_workitem(isg: Bool, x: U32) -> String: code_for_workitem.ret(isg, w
 # silently emit a name the shader cannot parse.
 #
 # AND IT FAILS LOUDLY, IN `code_for_op`'s SPELLING. This arm answered `""` until
-# FINDING 2 was fixed, and `""` is a SPELLING no WGSL parser knows -- so the
 # file held two spellings of one KeyError, `UNHANDLED(Ops.X)` here's sibling
 # `code_for_op` and `""` here, and the silent one was the dangerous one. Bend is
 # total and cannot raise, so the refusal is an operand that CANNOT COMPILE and
@@ -563,7 +559,7 @@ def buf_map(+n: U32, +dt: S.Dt, addr: S.Addr) -> String:
 def render_load(+x: String, +n: U32, +dt: S.Dt, addr: S.Addr) -> String:
   Bool.pick(String, is_packed(dt, addr), String.concat(["atomicLoad(&", x, ")"]), x)
 
-# ===========================================================================
+
 # :106 render_kernel -- the whole WGSL MODULE. This is the def the browser
 # target exists for, and it is PORTED IN FULL.
 #
@@ -573,7 +569,7 @@ def render_load(+x: String, +n: U32, +dt: S.Dt, addr: S.Addr) -> String:
 # dropped because `render_kernel` never reads it, exactly as Python's own
 # `for name,(u,_) in bufs` discards it. So `Buf` is the honest record and the
 # discarded field is named here rather than silently dropped.
-# ===========================================================================
+
 type Buf is Data:
   Buf{name: String, dt: S.Dt, addr: S.Addr, numel: U32}
 
@@ -825,7 +821,7 @@ def rk_body(+fn: String, +part: Part, bufs: List<&2, Buf>, +sc: Scan) -> String:
 def render_kernel(+fn: String, +kernel: List<&2, String>, +bufs: List<&2, Buf>, +sc: Scan) -> String:
   rk_body(fn, rk_partition(kernel), bufs, sc)
 
-# ===========================================================================
+
 # :121 supported_dtypes -- `{bool, char, uchar, short, ushort, int32, uint32,
 # float, *((half,) if "shader-f16" in self.target.arch else ())}`.
 #
@@ -834,7 +830,7 @@ def render_kernel(+fn: String, +kernel: List<&2, String>, +bufs: List<&2, Buf>, 
 # what `Target` contributes to this method. The set is a list -- Python's set
 # has no order and neither does this, so the gate compares it SORTED and the
 # sort is a gate detail, not a claim.
-# ===========================================================================
+
 def sd_go(a: Bool, +ds: List<&2, S.Dt>) -> List<&2, S.Dt>:
   Bool.pick(List<&2, S.Dt>, a, List.append(&2, S.Dt, ds, [S.half()]), ds)
 
@@ -861,9 +857,8 @@ def dt_sort(xs: List<&2, String>) -> List<&2, String>:
 
 def sorted_names(go: List<&2, S.Dt>) -> String: String.join(dt_sort(dt_show(go, Nil{})), ",")
 
-# ===========================================================================
+
 # :65 `string_rewrite` -- THE SEVENTEEN RULES, in Python's order. This block
-# used to be the renderer's largest WALL, and it was the largest because
 # `ctx[x]` looked like a graph call: `CStyleLanguage.__getitem__` is
 # `self.r[key]`, a dict the NAMING pass fills in before it calls
 # `string_rewrite.rewrite` (cstyle.py:245-250). So `ctx[x]` is not a fold and not
@@ -887,9 +882,9 @@ def sorted_names(go: List<&2, S.Dt>) -> String: String.join(dt_sort(dt_show(go, 
 # not a value. Both sides name it once so that a rule which stops firing and a
 # rule which starts rendering the empty string cannot print the same row, and
 # the empty string is the shape `type_map`'s arm used to have (FINDING 2).
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE SEVENTEEN `UPat`s, PORTED AS PREDICATES. wgsl.py:65-93's rule BODIES were
 # here first and their PATTERNS were not, and the consequence was measurable: a
 # rule body fired on every node it was handed, including the seventeen the
@@ -911,7 +906,7 @@ def sorted_names(go: List<&2, S.Dt>) -> String: String.join(dt_sort(dt_show(go, 
 # a SINGLE dtype is spelled at the use site, so there is exactly one `uint32` test
 # per rule and no table to drift. MEASURED: `tinygrad/dtype.py:157` is
 # `uints = (uint8, uint16, uint32, uint64)`.
-# ===========================================================================
+
 def p_uints(+dt: S.Dt) -> Bool:
   Bool.or(Bool.or(O.eq_dt(dt, S.uint8()), O.eq_dt(dt, S.uint16())),
     Bool.or(O.eq_dt(dt, S.uint32()), O.eq_dt(dt, S.uint64())))
@@ -928,7 +923,7 @@ def p_cuint(+dt: S.Dt) -> Bool:
 def p_bsrc(+dt: S.Dt) -> Bool:
   Bool.or(Bool.or(O.eq_dt(dt, S.int16()), O.eq_dt(dt, S.uint16())), O.eq_dt(dt, S.uint32()))
 
-# ===========================================================================
+
 # THE ORDER. `PatternMatcher.rewrite` walks `patterns` TOP TO BOTTOM and takes
 # the first hit, so the order is the semantics in EXACTLY TWO places in
 # wgsl.py:65-93, and `sr_pick_*` is the port of that walk for those two. The
@@ -963,7 +958,7 @@ def p_bsrc(+dt: S.Dt) -> Bool:
 # src[0]'s op, so first-match and any-match agree on them. MEASURED on CPython's
 # OWN matcher by the gate's `sr_dispatch_hold()`, which re-asks it for all 35
 # positive fixtures and finds exactly one that falls through.
-# ===========================================================================
+
 def sr_none() -> U32: 17
 
 # Rules 7..10 and the catch-all. `"f16"` is ABSENT from this table ON PURPOSE:
@@ -1156,7 +1151,7 @@ def sr_index(+op: O.Op, isadd: Bool, +b: String, +i: String) -> String:
   Bool.pick(String, O.eq_op(op, O.OpsINDEX{}),
     String.concat([b, "[", Bool.pick(String, isadd, H.strip_parens(i), i), "]"]), "NOMATCH")
 
-# ===========================================================================
+
 # THE render_kernel FIXTURES AND ROWS.
 #
 # `render_kernel` is a String -> String function and this is the row that says so
@@ -1172,7 +1167,7 @@ def sr_index(+op: O.Op, isadd: Bool, +b: String, +i: String) -> String:
 # `var<uniform>` arm, TWO local axes so the `,` join is not a one-element list,
 # and a half uop so `enable f16;` is emitted. `empty` is the two short-circuits:
 # the empty join and `range(0)`.
-# ===========================================================================
+
 
 def bs(x: Bool) -> String: Bool.pick(String, x, "True", "False")
 
@@ -1378,7 +1373,7 @@ def r_rk_mixed(+f: Fx) -> String:
 def r_rk_empty() -> String:
   rk_row("rk empty", one_line(render_kernel("K_empty", Nil{}, Nil{}, Scan{[1], False{}})))
 
-# ===========================================================================
+
 # THE GATE. Every row is a STRING and every row carries CPython's value, so the
 # two lanes print the SAME LINE and the diff of the two lanes is empty iff every
 # claim holds. The rows are built as one string by a fold rather than printed
@@ -1388,7 +1383,7 @@ def r_rk_empty() -> String:
 #
 # `r` is render.bend's `py_row` with the IO dropped: a row is a value here, not
 # an effect, so a group of them is a `String` and the whole gate is one print.
-# ===========================================================================
+
 # `global_max` and `local_max` are three ints each and Python's `repr` of the
 # tuple is the gate's whole content, so the row needs them as decimal text. THE
 # CONSTRUCTOR MATTERS: this list is WALKED by `case h <> t` on the way to
@@ -1406,7 +1401,6 @@ def r_tms() -> String:
 
 # THE KeyError ARM, and it is LOUD: the port answers `UNHANDLED(dtypes.f64)` --
 # a call to a dtype WGSL has no name for, which cannot compile. It answered `""`
-# until FINDING 2 was fixed, and `""` is a SPELLING no WGSL parser knows. The
 # name is `dt_name`'s, which is `DType.name`.
 #
 # and the `py=` half carries the port's own refusal token, not CPython's exception
@@ -1470,7 +1464,6 @@ def r_nan5(+nm: String, +d: S.Dt, b: String, e: String, m: String, k: String, t:
     r("nan_thr " ++ nm, H.i64_dec(nan_thr(d)), t)])
 
 # `nan_mask` and `nan_thr` are 64-bit answers and they print in decimal, so the two
-# lanes of each row now AGREE with CPython's own integers.  They used to be U32s and
 # they used to differ: `nan_mask double` was 4294967295 where CPython says
 # 9223372036854775807, and `nan_thr double` was 0 where CPython says
 # 9218868437227405312.  BOTH WERE THE SAME TRUNCATION -- a U32 holding a 64-bit
@@ -1534,7 +1527,7 @@ def r_rds() -> String:
   String.concat([r("render_dtype float", render_dtype(S.single(), True{}), "var"),
     r("_render_dtype uchar global", _render_dtype(S.uint8(), 1, S.AGlobal{}, True{}, True{}, Nil{}), "var")])
 
-# ===========================================================================
+
 # THE `string_rewrite` ROWS -- 33 of them, one per rule ARM.
 #
 # `r_sr` is `r` with the `sr ` prefix, and the RENDERED SOURCE TEXT is spelled
@@ -1542,7 +1535,7 @@ def r_rds() -> String:
 # `self.r[key]` dict (cstyle.py:207), and the oracle puts THE SAME LITERAL in
 # that dict, so `bitcast<u32>(S&0xFF)` is what CPython said and not what this
 # file believes CPython said.
-# ===========================================================================
+
 def r_sr(+nm: String, got: String, py: String) -> String: r("sr " ++ nm, got, py)
 
 def r_srneg(i: U32, +nm: String, got: String, py: String) -> String:
@@ -1710,7 +1703,7 @@ def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(rows())
 
-# ===========================================================================
+
 # THE MUTATION TABLE. Measured 2026-10-02 with
 # `.agents/slop/wgsl-mutate.py`, one textual edit at a time, each row diffed
 # against the unmutated 168. "moved" is the number of rows that changed; the
@@ -1826,7 +1819,7 @@ def main() -> IO(Unit):
 # negative arm, so a weakint CONST of -1 is masked to `4294967295u` and the mask
 # is observable on it too.
 #
-# ===========================================================================
+
 # the PIN, and the three blind spots it opened.
 #
 # `tinygrad/renderer/wgsl.py` MOVED under this port, and TWO of its changes
@@ -1865,7 +1858,7 @@ def main() -> IO(Unit):
 # A PLANT THAT MOVES NOTHING IS A HOLE, so A and B are the two claims that the
 # pin's two changes are load-bearing, and they are the two the gate's lane diff
 # would otherwise have caught silently.
-# ===========================================================================
+
 #
 # WHAT THE TABLE SAYS, and the three things it caught that the rows did not.
 #
@@ -1937,4 +1930,4 @@ def main() -> IO(Unit):
 #    the node and compare it to `S.uint32()` in this file. Both sides refusing is
 #    checked; both sides refusing about the SAME node is not.
 #
-# ===========================================================================
+

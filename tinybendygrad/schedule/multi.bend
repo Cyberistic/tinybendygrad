@@ -56,13 +56,13 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-# ===========================================================================
+
 # THE RECORDS.
 #
 # `Cfg` is the two flags, as parameters (see the header). `late` is a `Bool`
 # because Python reads it as `not getenv(...)`, and the composition at :50 is
 # the only thing that consults it.
-# ===========================================================================
+
 type Cfg is Data:
   Cfg{late: Bool, cast: Bool}
 
@@ -162,7 +162,7 @@ def mu_count(+ar: O.Arena, +rng: U32) -> U32:
   mu_count.is(Bool.and(O.op_is(ar, rng, O.OpsRANGE{}), Bool.not(U32.is_zero(O.Arena.nsrc(ar, rng)))),
               mu_const_int(ar, O.Arena.src0(ar, rng)))
 
-# ===========================================================================
+
 # THE SHARDING -- `UOp.sharding` (ops.py:707), which is two lines:
 #
 #     return tuple(zip(self.arg, self.src[1:])) if self.op is Ops.UNSHARD else ()
@@ -252,14 +252,14 @@ def mu_has_axis(a: Maybe<&2, U32>) -> Bool:
     case Some{v}: True{}
     case _: False{}
 
-# ===========================================================================
+
 # THE TABLES. `PatternMatcher.__add__` (ops.py:1603) is
 # `self.patterns+more.patterns`, so the composition is a LIST CONCATENATION and
 # the tag of a rule is its INDEX. That is why `mu_own` and `mu_ra` are separate
 # tables concatenated rather than one table with holes, and why
 # `mu_ra.of` renumbers: prepending `_early_allreduce` shifts all six
 # `replace_allreduce` tags by one.
-# ===========================================================================
+
 # `GroupOp.ALU` -- ops.py's twenty-eight members, in ops.bend's DECLARATION order
 # (which is `Ops.value` order, which is what the Python print above sorts to).
 # This is `alu_multi`'s pdict key and it is the largest op set in the file, and
@@ -293,10 +293,10 @@ def mu_rej_ms() -> List<&2, O.Op>: [O.OpsMSTACK{}]
 def mu_rej_su() -> List<&2, O.Op>: [O.OpsSTORE{}, O.OpsUNSHARD{}]
 def mu_rej_nil() -> List<&2, O.Op>: Nil{}
 
-# ---------------------------------------------------------------------------
+
 # `multi_pm` (multi.py:281-311), NINETEEN own rules, tags 0..18. The line comment
 # on each is Python's own.
-# ---------------------------------------------------------------------------
+
 def mu_own() -> List<&2, O.PMEntry>:
   [O.PMEntry{0,  mu_alu_ops(),                       mu_rej_uns()},  # 282  ALU -> alu_multi
    O.PMEntry{1,  [O.OpsREDUCE{}],                     mu_rej_uns()},  # 283  REDUCE(UNSHARD)
@@ -317,10 +317,10 @@ def mu_own() -> List<&2, O.PMEntry>:
    O.PMEntry{16, [O.OpsSTORE{}],                      mu_rej_uns()},  # 308  STORE into a WHOLE dest
    O.PMEntry{17, [O.OpsSTORE{}],                      mu_rej_uns()}]  # 310  STORE into a SHARDED dest
 
-# ---------------------------------------------------------------------------
+
 # `replace_allreduce` (multi.py:29-45), SIX rules. Its tags in `multi_pm` are
 # 19..24, and 19..25 when `LATE_ALLREDUCE` is off.
-# ---------------------------------------------------------------------------
+
 def mu_ra0() -> O.PMEntry: O.PMEntry{0, [O.OpsCOPY{}],    mu_rej_nil()}   # 31  BROADCAST copy -> MSTACK
 def mu_ra1() -> O.PMEntry: O.PMEntry{1, [O.OpsCOPY{}],    mu_rej_nil()}   # 33  multidev -> one: MSELECT 0
 def mu_ra2() -> O.PMEntry: O.PMEntry{2, [O.OpsMSELECT{}], mu_rej_ms()}    # 37  MSELECT(MSTACK) -> the piece
@@ -363,7 +363,7 @@ def mu_ra_cfg.of(cfg: Cfg, acc: List<&2, O.PMEntry>) -> List<&2, O.PMEntry>:
 def mu_table(cfg: Cfg) -> List<&2, O.PMEntry>:
   mu_ra_cfg.of(cfg, mu_own())
 
-# ===========================================================================
+
 # THE SHAPES. Every decision in multi.py that reads a shape reads it as an
 # INTEGER -- `prod(shape[:ax])`, `shape[ax] % count`, `len(out_shape)`,
 # `len(mlb.shape)` -- so a shape here is `List<&2, U32>` and the dims are
@@ -372,7 +372,7 @@ def mu_table(cfg: Cfg) -> List<&2, O.PMEntry>:
 # `mu_sym_dim()` is the marker and it is 0, the same convention
 # `LAWS/spec.bend`'s `dim_of` uses for an `SS{..}` and `allreduce.bend`'s
 # `red_dim` uses for the same case.
-# ===========================================================================
+
 def mu_sym_dim() -> U32: 0
 
 # `and`/`or`/`not` as LEAVES, and they are here for a measured reason: a `match`
@@ -1290,7 +1290,6 @@ def ns_count(+n: Ns, ax: U32) -> U32:
 # `s // count if a in new_axs else s` are kept in `rs_local.one.ok` so `n` is read
 # twice and not four times, and the ORDER is Python's: membership first, then
 # divisibility.
-# THREE-WAY, and the middle case was wrong: `not sharded` must KEEP `d` and only an
 # UNEVEN sharded axis is the wall marker. MEASURED, returning the marker for the
 # unsharded arm made `rs_loc1` and `rs_loc_none` 0 -- the whole local shape was the
 # right length and full of zeros.
@@ -1334,7 +1333,7 @@ def rs_prods(+shape: List<&2, U32>, +new_n: List<&2, U32>) -> Bool:
 # `rs_local`'s answer. `rs_reshape` is the def that would carry it; the graph is
 # the wall named in the header.
 
-# ===========================================================================
+
 # `expand_multi` (multi.py:142-145) -- the shortest fully-portable body in the
 # file:
 #
@@ -1348,7 +1347,7 @@ def rs_prods(+shape: List<&2, U32>, +new_n: List<&2, U32>) -> Bool:
 # upstream's comment at :155, is the same claim one operation later.
 # `ex_*` in the gate are the shifted axes and the UNCHANGED count, and
 # `ex_count_*` is what says an EXPAND does not reshard.
-# ===========================================================================
+
 def ex_shift(marg_n: Nat) -> U32:
   U32.from_nat(marg_n)
 
@@ -1367,7 +1366,7 @@ def ex_rngs.go(sh: List<&2, Sh>, acc: List<&2, U32>) -> List<&2, U32>:
 def ex_rngs(sh: List<&2, Sh>) -> List<&2, U32>:
   ex_rngs.go(sh, Nil{})
 
-# ===========================================================================
+
 # `permute_multi` (multi.py:154-157) -- also short, and also pure:
 #
 #     return multi.src[0].permute(root.marg).unshard(
@@ -1378,7 +1377,7 @@ def ex_rngs(sh: List<&2, Sh>) -> List<&2, U32>:
 # gate is exactly `tuple.index`, so `pm_sw` (axis 0 under `(1,0)`) is 1 and
 # `pm_id` is 0. An axis not in the permutation is Python's ValueError and is
 # `None` here.
-# ===========================================================================
+
 # `tuple.index` as a FOLD over a RECORD, not a `Maybe` that the walk carries. The
 # reason is MEASURED and it is a bend2 rule and not a style choice: a step that
 # calls back into the walk (`.step` -> `.go`) is MUTUAL RECURSION and is refused,
@@ -1449,7 +1448,7 @@ def pm_of.go(sh: List<&2, Sh>, +marg: List<&2, U32>, acc: List<&2, U32>) -> List
 def pm_of(+sh: List<&2, Sh>, marg: List<&2, U32>) -> List<&2, U32>:
   pm_of.go(sh, marg, Nil{})
 
-# ===========================================================================
+
 # `flip_multi` (multi.py:183-186) -- a CHECK and a list:
 #
 #     for ax, _ in multi.sharding:
@@ -1462,7 +1461,7 @@ def pm_of(+sh: List<&2, Sh>, marg: List<&2, U32>) -> List<&2, U32>:
 # return src[1:]`), so the dim is a `U32` 0/1 here and the LIST IS THE ANSWER:
 # `fl_none` is empty, `fl_all` is every axis, `fl_mid` skips the zeros. `flip_*`
 # in the gate are both the raise test and the list length.
-# ===========================================================================
+
 def fl_any(marg: List<&2, U32>, ax: Nat) -> Bool:
   Bool.not(U32.is_zero(mu_at(marg, ax)))
 
@@ -1566,7 +1565,7 @@ def pd_of.go(marg: List<&2, Bd>, +axs: List<&2, U32>, +ax: Nat, acc: List<&2, Bd
 def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
   pd_of.go(marg, axs, 0n, Nil{})
 
-# ===========================================================================
+
 # `shrink_multi` (multi.py:159-181) -- THE LONGEST BODY IN THE FILE and the one
 # with the most DECISION in it. Written out first, because the port needs all of
 # it and the three outcomes are not a single expression:
@@ -1607,7 +1606,7 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 # `part_bounds` is `((i*shard_sz, shard_sz) for i in range(count))` -- the
 # PARTITION boundaries, and it is pure arithmetic over two integers, so it is
 # fully ported and gated: `pb_*` in the gate is CPython's own.
-# ===========================================================================
+
 
 # `shard_sz = multi.src[0].shape[ax]` (multi.py:165) -- the LOCAL shape, i.e.
 # `multi.src[0]`, NOT `multi.shape`. That distinction is the whole of the OWN test:
@@ -1805,7 +1804,7 @@ def pd_nonshard.go2(marg: List<&2, Bd>, +sh: Sh, +ax: Nat, acc: List<&2, Bd>) ->
 
 # `shard_sz = multi.src[0].shape[ax]` for the ONE sharded axis, as a parameter of
 # this fold: it is `Sk` data and reading it per axis would be a walk per axis.
-# ===========================================================================
+
 # `stack_multi` (multi.py:188-200). STACK ADDS A LEADING AXIS, so the srcs are
 # sharded one axis BELOW the output and every sharded axis moves UP by one:
 #
@@ -1823,7 +1822,7 @@ def pd_nonshard.go2(marg: List<&2, Bd>, +sh: Sh, +ax: Nat, acc: List<&2, Bd>) ->
 # output has one more axis than its srcs. `st_*` in the gate are the shifted axes
 # and `st_off_*` is the fallback axis, and `st_off` reuses `ex_shift` on a `0n`
 # because the shift is the only arithmetic in both.
-# ===========================================================================
+
 def st_shift.go(sh: List<&2, Sh>, acc: List<&2, U32>) -> List<&2, U32>:
   List.foldl(~&2, ~Sh, ~List<&2, U32>, (a: List<&2, U32>) => (s: Sh) => List.append(&2, U32, a, [U32.add(Sh.ax(s), 1)]), sh, acc)
 
@@ -1914,7 +1913,7 @@ def ix_w(win: Bool) -> U32:
 def ix_kind(contig: Bool, strid_mod: Bool, strid_win: Bool) -> U32:
   mu_pick(contig, 0, mu_pick(strid_mod, ix_w(strid_win), 2))
 
-# ===========================================================================
+
 # `_shard_idx` (multi.py:224-226):
 #
 #     drngs = [r for r in rng.ranges if r.axis_type is AxisType.DEVICE]
@@ -1924,7 +1923,7 @@ def ix_kind(contig: Bool, strid_mod: Bool, strid_win: Bool) -> U32:
 # INDEX itself for a plain DEVICE range -- which is `copy_multi`'s
 # `idxs = tuple(_shard_idx(r, i) for _, r in sharding)` when the sharding ranges
 # ARE device ranges, i.e. every real multi tensor.
-# ===========================================================================
+
 def sx_idx(has_dev: Bool, dev_idx: U32) -> U32:
   mu_pick(has_dev, dev_idx, 0)
 
@@ -1940,7 +1939,6 @@ def cx_put(acc: List<&2, U32>, xs: List<&2, U32>) -> List<&2, U32>:
   cx_put.go(xs, acc)
 
 # `idxs[:j] + idxs[j+1:]` DELETES the j-th element and KEEPS every other one. The
-# `0n` arm is the one that was wrong at first: it returned the accumulator EMPTY and
 # so dropped the whole tail, which made `cx_key` a TRUNCATION rather than a
 # deletion -- MEASURED, `cx_j0` and `cx_j0b` were 0 until it appended `xs`.
 def cx_del(xs: List<&2, U32>, +j: Nat, acc: List<&2, U32>) -> List<&2, U32>:
@@ -2202,7 +2200,7 @@ def mu_first.go(rs: List<&2, O.PMEntry>, +ar: O.Arena, +self: U32, +held: U32) -
 def mu_first(ts: List<&2, O.PMEntry>, ar: O.Arena, self: U32) -> U32:
   mu_first.go(ts, ar, self, 4294967295)
 
-# ===========================================================================
+
 # THE GATE. Every number is CPython's: `.agents/slop/multi-rows.py` runs
 # `multi.py`'s own expressions -- the tables' pdict keys and reject sets from
 # `UPat.early_reject`, `broadcast_axes`, `_broadcast_shape`, the reduce split,
@@ -2211,7 +2209,7 @@ def mu_first(ts: List<&2, O.PMEntry>, ar: O.Arena, self: U32) -> U32:
 # restated from this file.
 #
 # `1` is True, `0` is False, and a COUNT row prints the count.
-# ===========================================================================
+
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
@@ -2341,10 +2339,10 @@ def g() -> G:
      O.Found.i(ma), O.Found.i(ad), O.Found.i(cp), O.Found.i(cq), O.Found.i(ms),
      O.Found.i(ms2), O.Found.i(mt), O.Found.i(st), O.Found.i(su)]}
 
-# ---------------------------------------------------------------------------
+
 # THE TABLE ROWS. `LATE_ALLREDUCE=1` is the default, so `mu_c_early` is the
 # 25-entry table and `mu_c_late` the 26-entry one.
-# ---------------------------------------------------------------------------
+
 def t_own_n() -> U32: mt_n(mu_own())
 def t_ra_n() -> U32: mt_n(mu_ra_base())
 def t_ea_n() -> U32: mt_n([mu_ea0()])
@@ -2400,7 +2398,7 @@ def t_alu_n() -> U32: eq(mt_ops_n([O.PMEntry{0, mu_alu_ops(), mu_rej_nil()}]), 2
 def t_pass_n() -> U32: eq(mt_ops_n([O.PMEntry{16, mu_pass_ops(), mu_rej_nil()}]), 5)
 def t_mov_n() -> U32: eq(mt_ops_n([O.PMEntry{23, mu_move_ops(), mu_rej_nil()}]), 5)
 
-# ---------------------------------------------------------------------------
+
 # THE CLAIM ROWS -- the brief's two-rules-one-node fixture. `CP` is a COPY, and
 # three of the twenty-five patterns have COPY as their pdict key: tag 11 (COPY of
 # a sharded value), tag 19 (`lower_broadcast_copy`) and tag 20 (`copy_to_one`).
@@ -2410,7 +2408,7 @@ def t_mov_n() -> U32: eq(mt_ops_n([O.PMEntry{23, mu_move_ops(), mu_rej_nil()}]),
 # tag 17 wants `src[1]` UNSHARD and tag 18 wants `src[0]` UNSHARD, and only tag 17
 # fires the FULL claim. `SU` is a STORE whose `src[0]` IS the UNSHARD, and both
 # fire. That is the discriminating pair and it is why both are rows.
-# ---------------------------------------------------------------------------
+
 def t_claim_cp() -> U32: eq(mu_claim_n(mu_table(mu_c_early()), G.ar(g()), g_cp(g())), 3)
 # a COPY of a WHOLE buffer is claimed by TWO, not three: tag 11's reject set is
 # {UNSHARD} and the node's `ler` is {BUFFER}, so its NECESSARY CONDITION FAILS. That
@@ -2448,12 +2446,12 @@ def mu_head_sh(sh: List<&2, Sh>) -> Sh:
 def mu_at_sh(sh: List<&2, Sh>, i: Nat) -> Sh:
   Maybe.default(&2, Sh, List.get(&2, Sh, sh, i), Sh{0, 0})
 
-# ---------------------------------------------------------------------------
+
 # THE SHARDING ROWS -- `UOp.sharding` (ops.py:707) and `UOp.axis` (:717-726) read
 # off REAL nodes, and `mu_count` is the `_min_max` RANGE arm on a real DEVICE
 # range. `sh_ma_ax` is the row that says a TWO-axis UNSHARD has NO axis, because
 # `mu_axis` returns `None` there and Python RAISES.
-# ---------------------------------------------------------------------------
+
 def t_sh0_n() -> U32: eq(U32.from_nat(mu_nshard(mu_shard.zip(G.ar(g()), g_m0(g())))), 1)
 def t_sh1_n() -> U32: eq(U32.from_nat(mu_nshard(mu_shard.zip(G.ar(g()), g_m1(g())))), 1)
 def t_sha_n() -> U32: eq(U32.from_nat(mu_nshard(mu_shard.zip(G.ar(g()), g_ma(g())))), 2)
@@ -2475,12 +2473,12 @@ def t_ax_ma() -> U32: eq(yes(mu_has_axis(mu_axis(G.ar(g()), g_ma(g())))), 0)
 def t_ax_b8() -> U32: eq(yes(mu_has_axis(mu_axis(G.ar(g()), g_b8(g())))), 0)
 def t_ax_m1() -> U32: eq(mu_head32(mu_axis(G.ar(g()), g_m1(g()))), 1)
 
-# ---------------------------------------------------------------------------
+
 # `shard_srcs` ROWS. CPython's own `_broadcast_shape`, `broadcast_axes`,
 # `src_axis = axis - (len(out_shape) - len(mlb.shape))` and the three-way branch.
 # `ss_bcast_bad` and `ss_bcast_23` are the IndexError CASES (ops.py:85) and they
 # print the ABSENCE -- 1 means "refused", which is the direction Python raises.
-# ---------------------------------------------------------------------------
+
 def s1(n: U32) -> List<&2, U32>: [n]
 def s2(a: U32, b: U32) -> List<&2, U32>: [a, b]
 def s3(a: U32, b: U32, c: U32) -> List<&2, U32>: [a, b, c]
@@ -2597,10 +2595,10 @@ def t_ml_none_thru() -> U32: eq(yes(ml_through(ml_none(), 0)), 0)
 def t_ml_copy() -> U32: eq(yes(ml_needs_copy(ml_some(1))), 1)
 def t_ml_nocopy() -> U32: eq(yes(ml_needs_copy(ml_none())), 0)
 
-# ---------------------------------------------------------------------------
+
 # `shard_subview` ROWS -- the shape assert, the EXPAND-of-a-scalar arm and `_shard`'s
 # two arithmetic lines (ops.py:751-756).
-# ---------------------------------------------------------------------------
+
 def t_sv_eq() -> U32: eq(yes(mu_shape_eq(s2(2, 3), s2(2, 3))), 1)
 def t_sv_ne() -> U32: eq(yes(mu_shape_eq(s2(2, 3), s2(2, 4))), 0)
 def t_sv_rank() -> U32: eq(yes(mu_shape_eq(s2(2, 3), s1(3))), 0)
@@ -2625,9 +2623,9 @@ def t_sv_ax0() -> U32: eq(mu_at(sv_axes(mu_shard.zip(G.ar(g()), g_ma(g()))), 0n)
 def t_sv_ax1() -> U32: eq(mu_at(sv_axes(mu_shard.zip(G.ar(g()), g_ma(g()))), 1n), 1)
 def t_sv_ax_n() -> U32: eq(U32.from_nat(mu_len(sv_axes(mu_shard.zip(G.ar(g()), g_ma(g()))))), 2)
 
-# ---------------------------------------------------------------------------
+
 # `alu_multi` ROWS -- `can_handle` and the resharding precondition.
-# ---------------------------------------------------------------------------
+
 def one_sh(ax: U32, n: U32) -> List<&2, Sh>: [Sh{ax, n}]
 def two_sh(ax: U32, n: U32, bx: U32, m: U32) -> List<&2, Sh>: [Sh{ax, n}, Sh{bx, m}]
 
@@ -2656,12 +2654,12 @@ def t_al_none0() -> U32: eq(yes(al_none(0n)), 1)
 def t_al_none1() -> U32: eq(yes(al_none(1n)), 0)
 def t_al_nmultis() -> U32: eq(U32.from_nat(al_nmultis(two_sh(0, 4, 1, 4))), 2)
 
-# ---------------------------------------------------------------------------
+
 # `reduce_multi` ROWS -- the split of the sharding by `num_axes`, the two asserts
 # and the `num_axes` REBASE of the remaining axes. `rd_sum_n` is the partition
 # row: `len(reduced) + len(remaining) == len(sharding)` ALWAYS, because `<` and
 # `>=` are complementary.
-# ---------------------------------------------------------------------------
+
 def shrd(sh: List<&2, Sh>, na: U32) -> Rd:
   rd_split(sh, na)
 
@@ -2714,11 +2712,11 @@ def t_rd_cast_f32() -> U32: eq(yes(rd_cast(mu_c_early(), O.OpsCAST{}, S.single()
 def t_rd_cast_noop() -> U32: eq(yes(rd_cast(mu_c_early(), O.OpsADD{}, S.bfloat16())), 0)
 def t_rd_cast_off() -> U32: eq(yes(rd_cast(mu_c_nocast(), O.OpsCAST{}, S.bfloat16())), 0)
 
-# ---------------------------------------------------------------------------
+
 # `reshape_multi` ROWS -- `arg_acc`, the REVERSED `.index`, and the two raises.
 # `rs_*_acc` is the running product and `rs_*_ax` is the new axis;
 # `rs_*_ok = 0` is a raise.
-# ---------------------------------------------------------------------------
+
 def rsa(xs: List<&2, U32>) -> List<&2, U32>: rs_acc(xs)
 def rsa1(xs: List<&2, U32>) -> U32: mu_at(rs_acc(xs), 1n)
 def rsa2(xs: List<&2, U32>) -> U32: mu_at(rs_acc(xs), 2n)
@@ -2794,9 +2792,9 @@ def t_rs_loc_none() -> U32: eq(mu_at(rs_local(ns2(s2(4, 6), nil32(), nil32())), 
 # an UNEVEN sharded dim is the wall marker and NOT a truncated extent.
 def t_rs_loc_bad() -> U32: eq(mu_at(rs_local(ns2(s2(4, 5), s1(1), s1(2))), 1n), 0)
 
-# ---------------------------------------------------------------------------
+
 # `expand_multi`, `permute_multi`, `flip_multi`, `pad_multi` ROWS.
-# ---------------------------------------------------------------------------
+
 # `shift = len(root.marg)` -- an EXPAND ADDS axes, it does not reshard.
 def t_ex0() -> U32: eq(ex_shift(0n), 0)
 def t_ex1() -> U32: eq(ex_shift(1n), 1)
@@ -2867,10 +2865,10 @@ def blen(xs: List<&2, Bd>) -> U32:
 
 def t_pd_n() -> U32: eq(blen(pd_of(marg2(0, 8, 0, 3), s1(0))), 2)
 
-# ---------------------------------------------------------------------------
+
 # `shrink_multi` ROWS -- `part_bounds`, the OWN test's length half, the WHOLE test
 # and the four-way outcome.
-# ---------------------------------------------------------------------------
+
 def pb0(pb: List<&2, Bd>) -> U32: Bd.s(pd_head(pb))
 def pbl0(pb: List<&2, Bd>) -> U32: Bd.l(pd_head(pb))
 def pbat(pb: List<&2, Bd>, i: Nat) -> U32: Bd.s(mu_bd_at(pb, i))
@@ -2934,9 +2932,9 @@ def t_sk_keep0() -> U32: eq(mu_at(sv_axes(sk_keep(two_sh(0, 4, 1, 4), one_sh(0, 
 def t_sk_keep_all() -> U32: eq(U32.from_nat(mu_nshard(sk_keep(two_sh(0, 4, 1, 4), Nil{}))), 2)
 def t_sk_keep_n() -> U32: eq(U32.from_nat(mu_nshard(sk_keep(two_sh(0, 4, 1, 4), one_sh(0, 2)))), 2)
 
-# ---------------------------------------------------------------------------
+
 # `stack_multi` ROWS -- the `ax+1` shift and the `axis-1` fallback.
-# ---------------------------------------------------------------------------
+
 def t_st_ax0() -> U32: eq(mu_at(st_shift(one_sh(0, 4)), 0n), 1)
 def t_st_ax2() -> U32: eq(mu_at(st_shift(one_sh(2, 4)), 0n), 3)
 def t_st_n() -> U32: eq(U32.from_nat(mu_len(st_shift(two_sh(0, 4, 1, 4)))), 2)
@@ -2949,10 +2947,10 @@ def t_st_none() -> U32: eq(yes(st_none(0n)), 1)
 def t_st_not_none() -> U32: eq(yes(st_none(2n)), 0)
 
 
-# ---------------------------------------------------------------------------
+
 # `index_multi` ROWS -- both ownership patterns, and the window is tested TWICE.
 # shard_sz 4: contiguous locals are 0..3 and the strided diff must be a multiple.
-# ---------------------------------------------------------------------------
+
 def t_ix_c0() -> U32: eq(ix_contig(0, 0, 4), 0)
 def t_ix_c1() -> U32: eq(ix_contig(3, 0, 4), 3)
 def t_ix_c2() -> U32: eq(ix_contig(4, 1, 4), 0)
@@ -2978,11 +2976,11 @@ def t_ix_kind_r2() -> U32: eq(ix_kind(False{}, True{}, False{}), 2)
 def t_ix_kind0() -> U32: eq(ix_mod(4, 0), 4)
 def t_ix_kind00() -> U32: eq(ix_div(4, 0), 0)
 
-# ---------------------------------------------------------------------------
+
 # `copy_multi` / `_shard_idx` ROWS -- the GROUP KEY `idxs[:j] + idxs[j+1:]`, which
 # DELETES the j-th index. Deleting is not zeroing, and on a repeated index (which
 # is every multi-axis shard) the two differ.
-# ---------------------------------------------------------------------------
+
 def cxn(k: List<&2, U32>) -> U32: U32.from_nat(mu_len(k))
 
 def t_cx_j0() -> U32: eq(cxn(cx_key(s2(0, 1), 0n)), 1)
@@ -2998,9 +2996,9 @@ def t_sx0() -> U32: eq(sx_idx(False{}, 3), 0)
 def t_sx1() -> U32: eq(sx_idx(True{}, 3), 3)
 def t_sx2() -> U32: eq(sx_idx(True{}, 0), 0)
 
-# ---------------------------------------------------------------------------
+
 # `replace_allreduce`'s rule bodies and the STORE family.
-# ---------------------------------------------------------------------------
+
 def t_lb_fires() -> U32: eq(yes(lb_fires(True{}, True{})), 1)
 def t_lb_no() -> U32: eq(yes(lb_fires(False{}, True{})), 0)
 def t_lb_no2() -> U32: eq(yes(lb_fires(True{}, False{})), 0)
@@ -3358,7 +3356,7 @@ def main() -> IO(Unit):
     IO.print("")
     IO.print("")
 
-# ===========================================================================
+
 # THE MUTATION TABLE.
 #
 # WHY IT IS HERE. 321 rows that all read 1 prove the rows are non-degenerate;
@@ -3374,7 +3372,7 @@ def main() -> IO(Unit):
 # it, so every count below holds in both.
 #
 #   id    def               mutation                                  rows
-#   ----  ----------------  -----------------------------------------  ----
+
 #   M01   rs_local.one.of   drop the sharding test: divide EVERY axis     2
 #   M02   pi_step           tuple.index first-wins -> last-wins           2
 #   M03   mu_ss_axis        drop the RIGHT-ALIGNMENT shift               1
@@ -3425,9 +3423,9 @@ def main() -> IO(Unit):
 # builders -- every `TODO` in the foot below -- are not in this table because
 # they are not in the file, so nothing here tests whether a rule reaches for the
 # RIGHT builder.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # NOT PORTED. Every line is a `TODO(p3)` whose OWNING FILE is named, and the
 # marker's ENTRY must carry the reason -- a reason in a PRECEDING header is invisible
 # to `checks/marker-audit.py`, which reads a marker's line plus the lines that FOLLOW

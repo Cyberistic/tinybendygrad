@@ -23,7 +23,6 @@
 # (fold.bend does not answer a movement op's shape), and a float CONST where an int is
 # wanted. `ret is not uop` is in `hop_self` and is unreachable from these nine rules.
 #
-# python's list INDEX is no longer deferred, and it was a parity gap. `a.src[v]` reads
 # from the END when `v` is negative, and the port read every index as a `U32`, so a
 # negative `v` became a huge `U32` and the answer was the FIRST element. MEASURED
 # 2026-10-30 against CPython at the pin, on `UOp(Ops.INDEX, src=(STACK(CONST 3, CONST 5,
@@ -767,7 +766,7 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
   mp_try.go(Bool.and(O.pm_claimed(O.PMEntry.ops(e), ar, self), mp_early(ar, self, O.PMEntry.rej(e))),
            O.PMEntry.tag(e), tb, ar, self)
 
-# ===========================================================================
+
 # THE MEASURED MUTATION TABLE. Fifteen textual edits, one at a time, each re-checked
 # and re-run against the clean 26-row gate, by `.agents/slop/mop-mut.py`. This is the
 # only evidence in the file that a row can FAIL: a row that cannot fail is a restatement,
@@ -779,7 +778,7 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
 # they test rather than by the def that computes them.
 #
 #   mutation                                                        rows moved
-#   -------------------------------------------------------------- -------------------------------------------------------------
+
 #   M1  `hop_self.of`'s two arms swapped (the reported inversion)     14  ret_new, and every row that reads a
 #                                                                       FIRED rule's answer: shrink1_ns
 #                                                                       shrink1_marg reshape_pick permute_merge
@@ -855,7 +854,7 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
 # differently: `mop_len` and `idx_shaped` are the only rows in the 26 that can move. Delete
 # the COUNT rows and this mutation is invisible. (M13 is the same table with a wrong op set,
 # which is a different job and is a separate row.)
-# ===========================================================================
+
 # THE ONE RECURSIVE DEF. The fuel is the first parameter and every self-call passes a
 # list tail, so the decrease check reads left to right and stops at the first argument that
 # shrinks. `h` is read twice -- once for its arena, which the next rule builds in, and once
@@ -885,7 +884,7 @@ def mop_table() -> List<&2, O.PMEntry>:
 def mop_cleanup(+fx: F.Folded, +self: U32) -> Hop:
   mp_scan(mop_table(), F.Folded.t(fx), O.pm_ler(F.Folded.ar(fx), self), self, Hop{F.Folded.ar(fx), 0})
 
-# ===========================================================================
+
 # THE GATE. Every row is DERIVED FROM PYTHON, via
 # `.agents/slop/notes/mop-truth3.py`, which prints its rows in THIS ORDER and with THIS
 # SPELLING, so `diff <(python3 mop-truth3.py | grep '=') <(./bin/bend movement.bend)` is the
@@ -910,7 +909,7 @@ def mop_cleanup(+fx: F.Folded, +self: U32) -> Hop:
 #  32 J1=INDEX(b4,C0)  33 J2=INDEX(J1,C1)  34 J3=INDEX(IX2)
 #  35 K1=INDEX(B24,o1)  36 K2=INDEX(K1,o2)  37 K3=INDEX(INDEX(B24,STK),o2)
 #  38 ADD(C0,C1)
-# ===========================================================================
+
 type G is Data:
   G{fx: F.Folded, ix: List<&2, U32>}
 

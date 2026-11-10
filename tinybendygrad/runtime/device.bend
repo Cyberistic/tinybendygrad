@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/device.bend -- THE PORT's OWN `Device` LANE.
 #
-# ---------------------------------------------------------------------------
+
 # what this file is, and why it exists.
 #
 # The port has EVERY STAGE of the device lane and NOTHING drives them:
@@ -26,7 +26,7 @@
 # `.agents/slop/cpuseam/launch.bend:113-131` IS that lane, and it is IN A
 # SCRATCH DIRECTORY. This file is the lane, IN THE PORT.
 #
-# ---------------------------------------------------------------------------
+
 # the four entries, and what each one is upstream's.
 #
 #   `program`  THE PROGRAM. Upstream's `Compiled.runtime(obj)` takes a
@@ -58,7 +58,7 @@
 # (`tinygrad/runtime/ops_cpu.py:34`) and it is the port's own
 # `runtime/support/elf.bend:1816`.
 #
-# ---------------------------------------------------------------------------
+
 # what is still missing, and it is named here rather than hided.
 #
 # `program` takes a `List<KU>` and the port has no DEF that builds one from the
@@ -86,11 +86,11 @@ import ./../schedule/__init__.bend as SCH
 import ./ops_cpu.bend as CPU
 import ./support/elf.bend as E
 
-# ===========================================================================
+
 # THE PROGRAM. Upstream's `Compiled.runtime(obj)` (`tinygrad/device.py:402`)
 # takes the compiled OBJECT; the port's `Program` is the C SOURCE, because the
 # port's `compile` is the step that turns the C into the object.
-# ===========================================================================
+
 type Prog is Data:
   Prog{name: String, src: String}
 
@@ -113,7 +113,7 @@ def Prog.src(p: Prog) -> String:
 def program(name: String, kus: List<&2, C.KU>) -> Prog:
   Prog{name, C.render(C.dev_clang(), True{}, kus)}
 
-# ===========================================================================
+
 # THE SCHEDULER. Upstream's `create_schedule(sched_sink)`
 # (`tinygrad/schedule/__init__.py:32-80`) IS THE PORT's `schedule()`
 # (`schedule/__init__.bend:1139` symbol=schedule), and `linear`
@@ -130,7 +130,7 @@ def program(name: String, kus: List<&2, C.KU>) -> Prog:
 def schedule(ar: O.Arena, sink: U32) -> O.Found:
   SCH.linear(SCH.schedule(ar, sink))
 
-# ===========================================================================
+
 # THE COMPILE. Upstream's `CPUProgram.__init__` step 1 (`ops_cpu.py:29-34`) is
 # `cc` on the C source with upstream's OWN argv
 # (`runtime/support/compiler_cpu.py:21-22`), and the ELF OBJECT comes back.
@@ -151,7 +151,7 @@ def compile(src: String, argv: String) -> IO(String):
     +elf : String <- IO.try(String, CPU.Cpu.compile(src, argv))
     IO.pure(String, elf)
 
-# ===========================================================================
+
 # THE RELOCATION. Upstream's step 2 (`ops_cpu.py:34`) is
 # `jit_loader(lib, base=mv_address(self.mem))` and it is the port's own
 # `runtime/support/elf.bend:1816`.
@@ -165,7 +165,7 @@ def relocate(+elf: String) -> String:
   +img : E.Img = E.jit_loader(E.elf_loader(elf, ehdr, True{}, 1, Nil{}), 0)
   E.Img.body(img)
 
-# ===========================================================================
+
 # THE EXECUTION. Upstream's steps 3-7 (`ops_cpu.py:29-46`) and `__call__`
 # (`:51, :61`).
 #

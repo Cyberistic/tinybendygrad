@@ -35,7 +35,7 @@ import ./LAWS/spec.bend as S
 import ./helpers.bend as H
 import ./base.bend as F
 
-# ===========================================================================
+
 # The twenty dtypes, under tinygrad's ATTRIBUTE names.
 #
 # spec.bend already holds all twenty; these are the names dtype.py code writes
@@ -61,7 +61,7 @@ import ./base.bend as F
 # dtypes, and upstream spells them as tuples. They are counted apart from the
 # twenty because a grouping is a LIST and not a dtype.
 #
-# ---------------------------------------------------------------------------
+
 # THE OMISSION DECLARATION. The port does not spell every name upstream's
 # `dtypes` spells, and the names it leaves out are a CLAIM, so they are declared
 # here -- next to the reason -- and read BY PATH by `gates/dtypeeven-gate.py`.
@@ -89,10 +89,9 @@ import ./base.bend as F
 #                 below, which are the ones `dtypes.all` is built from, and
 #                 leaves out the ones it does not need.
 #
-# a class upstream no longer has, or a class the gate does not know, is red: a
 # rule that stops matching upstream is a lie the gate is asked to believe.
-# ---------------------------------------------------------------------------
-# ===========================================================================
+
+
 
 def dtypes.void() -> S.Dt: S.void()
 def dtypes.weakint() -> S.Dt: S.weakint()
@@ -136,7 +135,7 @@ def dtypes.all() -> List<&2, S.Dt>:
   List.append(&2, S.Dt, List.append(&2, S.Dt, dtypes.floats(), dtypes.ints()),
     [S.boolean()])
 
-# ===========================================================================
+
 # The promotion lattice.
 #
 # The rank order is dtype.py's own `__lt__`, which sorts on
@@ -154,7 +153,7 @@ def dtypes.all() -> List<&2, S.Dt>:
 #
 # The masks are `_get_recursive_parents` in rank order; see the header for why
 # that is the whole lattice.
-# ===========================================================================
+
 
 def promo_mask.void(nm: String) -> U32:
   match nm:
@@ -268,9 +267,9 @@ def least_upper_float.cls(cls: S.Cls, dt: S.Dt, dflt: S.Dt) -> Maybe<&1, S.Dt>:
 def least_upper_float(+dt: S.Dt, dflt: S.Dt) -> Maybe<&1, S.Dt>:
   least_upper_float.cls(S.Dt.cls(dt), dt, dflt)
 
-# ===========================================================================
+
 # strong_dtype / weak_dtype
-# ===========================================================================
+
 
 def strong_dtype.cls(cls: S.Cls, di: S.Dt, df: S.Dt, d: S.Dt) -> S.Dt:
   match cls:
@@ -290,7 +289,7 @@ def weak_dtype.cls(cls: S.Cls, dt: S.Dt) -> S.Dt:
 def weak_dtype(+d: S.Dt) -> S.Dt:
   weak_dtype.cls(S.Dt.cls(d), d)
 
-# ===========================================================================
+
 # can_lossless_cast -- "does dt1 preserve every value of dt0".
 #
 # Its own table, NOT the lattice: a mask of the recursive parents is wrong here.
@@ -298,7 +297,7 @@ def weak_dtype(+d: S.Dt) -> S.Dt:
 # is lossy and int32 -> float64 is not, because float32 has 24 bits of mantissa
 # and int32 needs 31. So the row is `dt0` and the mask is over the ranks that
 # accept it, taken from dtype.py's `match dt1` arms one case at a time.
-# ===========================================================================
+
 
 def can_lossless_cast.row(nm: String) -> U32:
   match nm:
@@ -357,13 +356,13 @@ def can_lossless_cast(d0: S.Dt, d1: S.Dt) -> Bool:
   can_lossless_cast.pair(can_lossless_cast.row(dt_name(d0)), rank_of(dt_name(d1)))
 
 
-# ===========================================================================
+
 # sum_acc_dtype -- the dtype a reduction accumulates in.
 #
 # dtype.py reads SUM_DTYPE out of the environment. Bend has no process-wide
 # store, so it is a parameter here and the caller threads it, which is what
 # helpers.bend's `Flags` record exists for.
-# ===========================================================================
+
 
 def sum_acc_dtype.cls(cls: S.Cls, dt: S.Dt, sum: S.Dt) -> S.Dt:
   match cls:
@@ -376,10 +375,10 @@ def sum_acc_dtype.cls(cls: S.Cls, dt: S.Dt, sum: S.Dt) -> S.Dt:
 def sum_acc_dtype(+dt: S.Dt, sum: S.Dt) -> S.Dt:
   sum_acc_dtype.cls(S.Dt.cls(dt), dt, sum)
 
-# ===========================================================================
+
 # finfo -- (exponent, mantissa) bit widths. dtype.py's is a dict lookup that
 # raises for a non-float; None is that raise.
-# ===========================================================================
+
 
 # A `Maybe` holds one field, so the answer is a record rather than a pair.
 type Finfo is Data:
@@ -406,7 +405,7 @@ def finfo(+d: S.Dt) -> Maybe<&1, Finfo>:
   finfo.cls(S.Dt.cls(d), dt_name(d))
 
 
-# ===========================================================================
+
 # The integer range, as an I64.
 #
 # spec.bend's Dt.min / Dt.max answer this for the widths a U32 holds and None
@@ -414,7 +413,7 @@ def finfo(+d: S.Dt) -> Maybe<&1, Finfo>:
 # width, which is why the pair is the honest encoding and a U32 is not. The four
 # widths are tinygrad's, and 2^64-1 is the only one of the four limits with no
 # U32 image, so it is written as the two words it is.
-# ===========================================================================
+
 
 def i64_max_u(bits: U32) -> H.I64:
   match bits:
@@ -470,14 +469,14 @@ def dt_max(d: S.Dt) -> Maybe<&1, H.I64>:
   match d:
     case S.Dt{pri, bits, cls, nm}: dt_range.cls(S.Cls.sgn(cls), False{}, bits)
 
-# ===========================================================================
+
 # The float range.
 #
 # dtype.py's DType.max for a float is +inf, except that e4m3 and the fnuz fp8s
 # have no inf and end at their largest normal. `None` is the float case of the
 # spec.bend range: Bend cannot name an infinity in a U32, and here the fp8
 # answer is an ordinary F32, so it is spelled out.
-# ===========================================================================
+
 
 def fmax.of(nm: String) -> Maybe<&1, F32>:
   match nm:
@@ -494,7 +493,7 @@ def fmax.cls(cls: S.Cls, nm: String) -> Maybe<&1, F32>:
 def fmax(+d: S.Dt) -> Maybe<&1, F32>:
   fmax.cls(S.Dt.cls(d), dt_name(d))
 
-# ===========================================================================
+
 # to_dtype -- dtype.py's `getattr(dtypes, name.lower())`, so the keys are the
 # ATTRIBUTE names, not the `name` field. `void`, `weakint` and `weakfloat` are
 # reachable here too, even though DTYPES_DICT skips them.
@@ -504,7 +503,7 @@ def fmax(+d: S.Dt) -> Maybe<&1, F32>:
 # block it labels `# legacy dtype aliases`, so `to_dtype("half")` still answers
 # and this table must not drop it -- but the canonical arm comes first because
 # that is the spelling everything else in the port now uses.
-# ===========================================================================
+
 
 def to_dtype_of(nm: String) -> Maybe<&1, S.Dt>:
   match nm:
@@ -557,7 +556,7 @@ def to_dtype_of(nm: String) -> Maybe<&1, S.Dt>:
 def to_dtype(nm: String) -> Maybe<&1, S.Dt>:
   to_dtype_of(nm)
 
-# ===========================================================================
+
 # commit_int -- the smallest dtype on the ladder that holds [lo, hi].
 #
 # The bounds are I64 because dtype.py takes Python ints and the ladder's top rung
@@ -604,7 +603,7 @@ def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
   commit_int.pick(commit_int.bounds(dt_min(di), dt_max(di), lo, hi), di,
     commit_int.i32fit(lo, hi))
 
-# ===========================================================================
+
 # The conversion seam. `runtime/dtype.c` wrote all seven of these as effects and
 # said why in its own header: "Bend's only float is F32, and it can read an F32's
 # bits (F32.bits) but cannot build an F32 from a bit pattern."
@@ -624,7 +623,7 @@ def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
 #
 # The `kind` argument is the fp8 id the C and the JS share, so the two lanes
 # cannot drift on which format is which.
-# ===========================================================================
+
 
 # dtype.py's float_to_bf16, in bits: round the f32 pattern to bf16 with
 # round-half-to-even. bf16 IS the top half of an f32 pattern, so there is no
@@ -828,7 +827,7 @@ def fp8_mant_max(kind: U32) -> U32:
 def fp8_is_fnuz(kind: U32) -> Bool:
   U32.is_ge(kind, 2)
 
-# ---------------------------------------------------------------------------
+
 # dtype.py's fp8_to_float, as the f32 PATTERN (`dtype.c:90-111`), which is what
 # `Dt.fp8_to` is declared to answer.
 #
@@ -849,7 +848,7 @@ def fp8_is_fnuz(kind: U32) -> Bool:
 #                 mant=1 and mant=7 of e4m3 differ by three in the leading bit --
 #                 so this one DOES need `U32.log2`, exactly as `fp16_f32.norm`
 #                 does, and its exponent field is 129 - bias - sig + log2(mant).
-# ---------------------------------------------------------------------------
+
 
 # The subnormal arm's `1.f` -> f32 pattern, shared with nothing: `bias` and
 # `sig` are read once each so the exponent reads as one expression.
@@ -965,7 +964,7 @@ def fp8_decode(+x: U32, +kind: U32) -> U32:
 def Dt.fp8_to(bits: U32, +kind: U32) -> F32:
   F.F32.from_bits(fp8_decode(U32.and(bits, 255), kind))
 
-# ===========================================================================
+
 # THE FP8 ENCODER, AND WHY IT IS PURE
 #
 # `Dt.fp8_from` and `float_to_fp8` were the last two seams in this file and they
@@ -981,7 +980,7 @@ def Dt.fp8_to(bits: U32, +kind: U32) -> F32:
 # This is runtime/dtype.c:44-87 `fp8_encode`, arm for arm. Ported by DTYPEB into
 # `.agents/slop/dtypeb/tail-fp8-pure.bend.txt` and gated there over 384 rows against
 # CPython; those rows are re-run here.
-# ===========================================================================
+
 
 type Fp8 is Data:
   Fp8{bias: U32, sig: U32, mant: U32, denorm: U32, ovf: U32, max_norm: U32, min_norm: U32}
@@ -1180,7 +1179,7 @@ def float_to_fp8(x: F32, dtype: S.Dt) -> U32:
 def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
   Dt.fp8_to(x, fp8_kind(dt_name(dtype)))
 
-# ===========================================================================
+
 # `truncate` -- dtype.py:296. THE FLOAT ARM, and the reason a float CONST can hold a
 # value AT ITS DTYPE.
 #
@@ -1205,7 +1204,7 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # (`uop/ops.bend:803`, `CFloat{f: F32}`) is where that would have to be fixed, and
 # that file is another unit's.
 #
-# ---------------------------------------------------------------------------
+
 # the wall is wider than the value, and the wider part is the identity.  measured, and the
 # instrument is `gates/constid-gate.py` (three lanes, and a PLANT in `gates/constid-plant.py`):
 #
@@ -1226,7 +1225,7 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # so this is not a near miss on the value alone: it is a merge of two upstream constants
 # into one, and a merge is a hash collision in the port's constant identity.
 #
-# ---------------------------------------------------------------------------
+
 # what the compiler actually offers, from its source, because "there is no F64" is a
 # claim about a file and the file is right here:
 #
@@ -1262,7 +1261,7 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # the INT arm is dtype.py:296's other half and is not ported: it needs the value to be
 # an `H.I64` and the width to be a mask, and the port's `CInt` holds a full `H.I64`.
 # `mixin/creation.bend` names what is left of that.
-# ===========================================================================
+
 
 def truncate_float.of(nm: String, f: F32) -> F32:
   match nm:

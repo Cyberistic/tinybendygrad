@@ -18,7 +18,7 @@
 # `GroupOp.Broadcastable`, which `ops.bend` already has as
 # `O.GroupOp.broadcastable`.
 #
-# ---------------------------------------------------------------------------
+
 # THE THREE WALLS, stated where they bite. Two of the three were named for me:
 # `mixin/creation.bend` and `mixin/rand.bend` name `resolve` and `UOp._min_max`
 # at their own heads, and this file hits BOTH.
@@ -94,7 +94,6 @@
 # with the two arms of `ix_mv_permute` swapped. Every `*_ids` row therefore
 # prints the full id sequence, and every `*_at` row prints the AxisType column
 # beside it -- which is also where a `?` appears, and a `?` IS a claim (it says
-# the range came back through `.valid()` and is no longer a RANGE).
 
 import Base
 
@@ -102,7 +101,7 @@ import ./../helpers.bend as H
 
 import ./../uop/ops.bend as O
 
-# ===========================================================================
+
 # THE RECORDS. Bend has no dict, so `realize_map`, `non_removable` and
 # `range_map` are association lists of `Data` records with a linear scan, which
 # is `schedule/memory.bend`'s `Bf`/`Lane` shape.
@@ -265,7 +264,7 @@ def IxCtx.rngm(x: IxCtx) -> IxRMap:
   match x:
     case IxCtx{rmap, nrem, rngm, ridx}: rngm
 
-# ===========================================================================
+
 # THE ASSOCIATION LISTS. Four folds, one per dict, each a two-scrutinee match
 # with the KEY and the rest, because a `Maybe` cannot be threaded through a
 # recursion (bend2-constraints.md rule 2 of the general set) and an early return
@@ -298,7 +297,7 @@ def ixr_find.go(+es: List<&2, IxReal>, +k: Nat, +acc: Maybe<&2, IxReal>) -> Mayb
     case Nil{}: acc
     case e <> t: ixr_find.go(t, k, ixr_step(e, acc, k))
 
-# ===========================================================================
+
 # `ALWAYS_CONTIGUOUS` -- indexing.py:24-26. NINE ops:
 #   AFTER BUFFER ALLOC CONST MSELECT MSTACK PARAM LOAD CALL
 # and it is read at `realize_srcs` (:32), `realize_custom_kernel_srcs` (:41) and
@@ -320,7 +319,6 @@ def ix_hd(+xs: List<&2, O.Op>) -> O.Op: ix_hd.of(List.head(&2, O.Op, xs))
 # the scan, and the HEAD is tested on the way past it. Peeling the head in the
 # driver and never comparing it was the first version, and it answered False for
 # every set member except the FIRST: `ac_after=True` beside `ac_alloc=False` in a
-# nine-element list. Eight of nine rows FALSE and the gate was not red, because
 # FALSE is a legal answer for a NEGATIVE row -- the recorded "ALL-TRUE tells you
 # the cases you covered and nothing about the rest" in its most embarrassing
 # form. Only the diff against the oracle saw it.
@@ -347,7 +345,7 @@ def ix_ac_len() -> U32: U32.from_nat(List.length(&2, O.Op, ix_ac_ops()))
 
 def ix_ac(w: O.Op) -> Bool: ix_mem1(w, ix_ac_ops())
 
-# ===========================================================================
+
 # W1, SUPPLIED: `resolve`'s FIRST arm, extended to the int case of the second.
 #
 # `resolve(x, default=True)` is identity on a Python `bool` and is `_min_max`
@@ -405,7 +403,7 @@ def ix_ndim_neg(ns: U32, no: U32) -> Bool: U32.is_lt(no, ns)
 def ix_bax_neg(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> Bool:
   ix_ndim_neg(ix_len(srcs), ix_len(outs))
 
-# ===========================================================================
+
 # `broadcast_axes` -- ops.py:89-92, which indexing.py:64 CALLS. Full text:
 #
 #   def broadcast_axes(src_shape, out_shape):
@@ -486,7 +484,7 @@ def ix_bax_pick.of(bad: Bool, +srcs: List<&2, U32>, +outs: List<&2, U32>) -> Lis
 def ix_bax(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> List<&2, U32>:
   ix_bax_pick.of(ix_bax_neg(srcs, outs), srcs, outs)
 
-# ===========================================================================
+
 # `data_srcs` -- indexing.py:68-71. FULLY PORTED, and it is the smallest
 # complete thing in the file:
 #
@@ -565,7 +563,7 @@ def ix_ds_list.of(zero: Bool, one: Bool, +ss: List<&2, U32>) -> List<&2, U32>:
 def ix_ds_list(+op: O.Op, +ss: List<&2, U32>) -> List<&2, U32>:
   ix_ds_list.of(ix_ds_zero(op), ix_ds_one(op), ss)
 
-# ===========================================================================
+
 # `argsort` -- helpers.py, read at indexing.py:174 (`Ops.PERMUTE`). FULLY
 # PORTED: a selection sort over a tuple of permutation indices.
 #
@@ -650,7 +648,7 @@ def ix_asort.go(k: Nat, +ys: List<&2, U32>, +placed: List<&2, U32>, acc: List<&2
 def ix_asort(+ys: List<&2, U32>) -> List<&2, U32>:
   ix_asort.go(U32.to_nat(ix_len(ys)), ys, ix_asc_pad(ix_len(ys)), Nil{})
 
-# ===========================================================================
+
 # `apply_movement_op` -- indexing.py:170-187. THE ARITHMETIC, AND THE GATE.
 #
 #   SHRINK:  tuple(a if off == 0 else a+off for a,(off,_) in zip(rngs, arg))
@@ -744,7 +742,6 @@ def ix_ops_n(ops: List<&2, O.Op>) -> U32: U32.from_nat(List.length(&2, O.Op, ops
 def ix_pme_n(es: List<&2, O.PMEntry>) -> U32: U32.from_nat(List.length(&2, O.PMEntry, es))
 
 # `new_range(1)` returns `UOp.const(0)` and `nr_1_val` is that CONST's payload. The
-# reader is LOCAL: it used to be `M.mxm_const_val` from `mixin/movement.bend`, and
 # one borrowed reader is not worth an import of a file that does not check.
 
 def ix_const_arg.of(a: O.Arg) -> U32:
@@ -845,7 +842,7 @@ def ix_ar_acc(acc: U32, s: U32) -> U32: U32.mul(acc, s)
 
 def ix_ar_acc0() -> U32: 1
 
-# ===========================================================================
+
 # `IndexingContext.new_range` -- indexing.py:18-21. FULLY PORTED on the
 # CONCRETE arm, and the counter is the parameter that `IxCtx.ridx` is.
 #
@@ -921,7 +918,7 @@ def ix_rg_c0_idx() -> U32: 0
 def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
   ix_nr_pick(ix_rg_is_c0(r), at, ar, IxRange.ext(r), IxRange.idx(r))
 
-# ===========================================================================
+
 # the realize-map rule bodies -- indexing.py:28-43. All four mutate the Python
 # context, and all four are therefore DECISIONS here: each answers the LIST of
 # keys it would insert, and `ix_m*` is the def a caller folds into `IxCtx.rmap`.
@@ -1007,7 +1004,7 @@ def ix_rcs_base(+ar: O.Arena, s: U32) -> U32: ix_rcs_at(O.Arena.budget(ar), ar, 
 def ix_rcs_one(+s: U32, +ar: O.Arena, +acc: List<&2, IxReal>) -> List<&2, IxReal>:
   Bool.pick(List<&2, IxReal>, ix_ac(O.Arena.op(ar, s)), acc, List.append(&2, IxReal, acc, [realize(s)]))
 
-# ===========================================================================
+
 # `BufferizeOpts` -- indexing.py:56-61, a FROZEN dataclass read at :91-92.
 # `ops.bend`'s `Arg` has no constructor for a STAGE's arg at all, so this is a
 # local `Data` record with THREE hand-written readers (bend2-constraints.md
@@ -1051,7 +1048,7 @@ def ix_nrem_has.go(+xs: List<&2, U32>, +k: U32, +sofar: Bool) -> Bool:
     case Nil{}: sofar
     case x <> t: ix_nrem_has.go(t, k, Bool.or(sofar, U32.is_eq(x, k)))
 
-# ===========================================================================
+
 # `broadcast_rngs` -- indexing.py:62-65. FULLY PORTED, and it is the one place
 # `broadcast_axes` is called:
 #
@@ -1107,7 +1104,7 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
     case True{}: rngs
     case False{}: ix_br_go(rngs, 0n, ix_bax_nleft(src, x), ix_bax(src, x), Nil{})
 
-# ===========================================================================
+
 # `_stack_select` -- indexing.py:115-122. THE RECURSION, and the `<= 8`
 # cutoff is the whole of it:
 #
@@ -1218,7 +1215,7 @@ def ix_rmap_get.go(+es: List<&2, IxReal>, +k: U32, acc: Maybe<&2, IxReal>) -> Ma
 def ix_rmap_get(+rm: IxMap, k: U32) -> Maybe<&2, IxReal>:
   ix_rmap_get.go(IxMap.es(rm), k, None{})
 
-# ===========================================================================
+
 # THE THREE TABLES. Each needs its own table/dispatch/try/scan -- see the
 # header. `ix_early_*` is `early_reject`, a NECESSARY CONDITION.
 
@@ -1309,7 +1306,7 @@ def par_table() -> O.PMEntrys:
 
 def pfd_table() -> O.PMEntrys: O.PMEntrys{[O.PMEntry{0, [O.OpsSTAGE{}], Nil{}}]}
 
-# ===========================================================================
+
 # THE GATE PRINTERS. `k=` + str(v) with NO TRAILING SPACE, because the oracle
 # prints the same way and a `diff` between the two is the acceptance test
 # (bend2-constraints.md, `mixin/creation.bend` rule 22).
@@ -1435,7 +1432,7 @@ def ix_rngs.go(n: Nat, +ar: O.Arena, +base: U32, +k: Nat, acc: List<&2, U32>) ->
 def ix_rngs(n: U32, base: U32) -> IxFixture:
   ix_rngs.go(U32.to_nat(n), O.Arena.empty(), base, 0n, Nil{})
 
-# ===========================================================================
+
 # 1. `ALWAYS_CONTIGUOUS` -- indexing.py:24-26.  THREE POSITIVES would be a weak
 #    gate, so there are nine positives and SIX NEGATIVES; a set that gained one
 #    member moves a negative row.
@@ -1498,7 +1495,7 @@ def g_ac() -> IO(Unit):
     rowb("ac_reshape", ix_ac(O.OpsRESHAPE{}))
     IO.print("")
 
-# ===========================================================================
+
 # 2. `data_srcs` -- indexing.py:68-71.  One fixture of THREE srcs, so the
 #    `()` / `src[:1]` / `src` arms read 0 / 1 / 3 and are all distinguishable.
 #    `has0` and `has2` ask whether src[0] and src[2] SURVIVE, which separates
@@ -1547,7 +1544,7 @@ def g_ds() -> IO(Unit):
     g_ds_row(O.OpsSTORE{}, "store", ix_g3(O.OpsSTORE{}))
     IO.print("")
 
-# ===========================================================================
+
 # 3. `broadcast_axes` -- ops.py:87-92.  The ORDER is load-bearing: the leading
 #    `range(nleft)` comes first and the `resolve(s == 1)` filter second, so
 #    `bax6=0,2` is not `2,0`.  `bax_neg` is the `raise` arm and it is a row.
@@ -1576,7 +1573,7 @@ def g_bax() -> IO(Unit):
     row("bax_neg", ix_bax_neg_str(ix_bax_neg([4, 3], [4])))
     IO.print("")
 
-# ===========================================================================
+
 # 4. `apply_movement_op`. THE GATE, and the reason every row prints the FULL id
 #    sequence and the AxisType column beside it.
 #
@@ -1586,7 +1583,6 @@ def g_bax() -> IO(Unit):
 #    ladder swapped -- and a gate printing only the shape is worse.  That is why
 #    `ix_mv_perm_row` prints three fields: the ids, the length, AND the axis
 #    types, and why the axis-type column reads `?` for a range that came back
-#    through `.valid()` -- the `?` is the claim that the node is no longer a
 #    RANGE, which is `mv_pad1_at=?|10` and not a formatting artefact.
 
 def ix_ids.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
@@ -1601,7 +1597,7 @@ def ix_ids(+ar: O.Arena, i: U32) -> List<&2, U32>:
 
 
 
-# ===========================================================================
+
 # 4b. `apply_movement_op`'s SIX ARMS. THE UNIFORM WALK, and it is one walker
 #     because SHRINK, FLIP and PAD are all `keep the range, or build a new node`
 #     per dim. Only the flags differ -- shrink hands `off`, flip hands `f`, pad
@@ -1868,7 +1864,7 @@ def g_perm() -> IO(Unit):
     ix_mv_perm_row("5", r2, [2, 1, 0])
     IO.print("")
 
-# ===========================================================================
+
 # 5. `_stack_select` -- indexing.py:115-122.  The `<= 8` cutoff is the whole
 #    claim, so `ss{n}_h` counts the SPLIT nodes and `ss{n}_n` the leaves: a
 #    recursion that forgot the cutoff terminates with the right leaf count and a
@@ -1988,7 +1984,7 @@ def g_ss() -> IO(Unit):
     ix_ss_top_row(16)
     IO.print("")
 
-# ===========================================================================
+
 # 6. `new_range` -- indexing.py:18-21.  The COUNTER is the claim: `nr_1`
 #    does not advance it and `nr_4` does, and `nr_passthru` does not either.
 
@@ -2064,7 +2060,7 @@ def main() -> IO(Unit):
     g_tbl()
     IO.print("done")
 
-# ===========================================================================
+
 # THE MUTATION TABLE. One mutation per ported rule; a mutation that moves NO
 # row is a BLIND SPOT and is reported as one. Three were found and all three
 # were real:

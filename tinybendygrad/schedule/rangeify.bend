@@ -66,7 +66,7 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../uop/movement.bend as M
 
-# ===========================================================================
+
 # THE READERS. `movement.bend`'s `mp_*` are reused, not copied: they are the
 # same six reads of the same arena and a second copy would be pure weight. What
 # is added here is what rangeify.py needs and `movement.bend` does not have --
@@ -76,7 +76,7 @@ import ./../uop/movement.bend as M
 # A `Data` record parameter still needs `+` for two reads in ONE body
 # (bend2-constraints.md §1 of the spec.py notes), which is why `rf_fx` is
 # `+`-consumed by every reader that touches both halves.
-# ===========================================================================
+
 def rf_fx(ar: O.Arena) -> F.Folded: F.folded(ar)
 
 def rf_tb(fx: F.Folded) -> F.Table: F.Folded.t(fx)
@@ -539,7 +539,7 @@ def rf_rtag(+ar: O.Arena, +self: U32, t: O.Tag) -> M.Hop:
 # answers, and a `Hop`'s index is not enough to build a node on; the two are one
 # line apart and the fixture is the only caller that needs the second.
 
-# ===========================================================================
+
 # `pm_add_param_range_tags` -- rangeify.py:330-333. FULLY PORTED.
 #
 #     # Scalar parameters keep their identity across the call boundary.
@@ -557,7 +557,7 @@ def rf_rtag(+ar: O.Arena, +self: U32, t: O.Tag) -> M.Hop:
 # is why the rule is idempotent and why `aprt_empty` prints 0 rather than the
 # index it would have to invent. The row asks for the ABSENCE of an answer,
 # which is the shape the constraints file recommends for a negative side.
-# ===========================================================================
+
 def rf_param_rtag.of(alu: Bool, +ar: O.Arena, self: U32) -> M.Hop:
   match alu:
     case True{} : M.Hop{ar, 0}
@@ -2357,7 +2357,6 @@ def t_rej_ab8() -> U32: U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(ab_entr
 #       this node is the one that can.
 #   ab8_stc0_none -- `arg == Invalid`, not `op is CONST`. `sti` is the Invalid store
 #       and `sts`/`std` are stores with a BUFFER as src[1], so no two-src STORE in
-#       the fixture had a CONST src[1] that was not Invalid. `stc0` is that store.
 #   nv_rsaf_ans -- `rf_is_bufid5`'s SIX-op set. `rs` and `rsi` are RESHAPEs over a
 #       BUFFER, so a set reduced to {BUFFER} is indistinguishable from the real
 #       one. `rsaf` is a RESHAPE over an AFTER, which is a different member.
@@ -2428,7 +2427,6 @@ def t_srcops_eq(got: String, want: String) -> U32: b2u(String.eq(got, want))
 def ar_of(i: U32) -> O.Arena: g_ar(g())
 
 # THE CT ROWS, and the answer to "which of `ct_4`, `ct_5`, `ct_8` are live". ALL THREE ARE
-# LIVE. The previously recorded Python-side result -- "for
 # `UPat(Ops.MSTACK).f(Ops.INDEX, name='idx')` the replace is an IDENTITY on the INDEX and
 # `pm_const_buffer_folding.rewrite(mst) is None`" -- is TRUE of `MSTACK(c4, c1)` and FALSE
 # of `INDEX(MSTACK(c4, c1))`. `MSTACK(c4, c1)` is the MIRROR: it is the CHILD, so
@@ -2677,7 +2675,7 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #      gate as it now stands. NOT closed with a row that encodes either behaviour.
 # M20 is the row the count rows exist for: it deletes the last `PMEntry`, so no tag
 # renumbers and `ct_len` is one of only six rows it can move.
-# ===========================================================================
+
 # THE WALLS. Every one is a Python fact rather than a choice, and every one is a
 # `# WALL(p3)` line, so `rg 'WALL\(p3\)'` is the whole outstanding list. `rg 'NOT PORTED'`
 # finds the site for each. - and this sentence used to name `# TODO(p3)` and
@@ -2747,7 +2745,7 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #  a wall in `codegen/kernel.bend`. so every value the port builds carries
 #  `estimates=None` and `optimized=False`, which is upstream's default and not
 #  A LIE.
-# ===========================================================================
+
 # `movement.bend`'s `hop_self` was inverted, and is not any more. It is kept here
 # because the note above `M.hop_self`'s use is only worth reading if the thing it
 # records is real. `hop_self.of` used to answer `r` on `True` (the answer IS self, or
@@ -2758,8 +2756,8 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
 # fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
 # a second copy -- see the note at the top of the `*_try` block.
-# ===========================================================================
-# ===========================================================================
+
+
 # THE ENGINE. `graph_rewrite` -- ops.py:1886 -- over the port's ARENA.
 #
 # WHAT UPSTREAM DOES, and the four lines that matter:
@@ -2795,7 +2793,7 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # drives the tables it owns. Stage 1 is `Stg{0, Nil{}}` -- an EMPTY table --
 # because `run_rangeify` is not ported, and an empty table is the honest
 # spelling of "this stage does nothing here".
-# ===========================================================================
+
 
 # THE MAP. An original node index -> the index it BECAME. It is APPENDED and
 # the scan keeps the LAST match, so the newest entry wins. EVERY visited node
@@ -3037,7 +3035,7 @@ def eng_changed.go(rs: List<&2, Rep>, acc: U32) -> U32:
 
 def eng_changed(rs: List<&2, Rep>) -> U32: eng_changed.go(rs, 0)
 
-# ===========================================================================
+
 # THE OP NAME. CPython's `uop.op.name` is the SPELLING both sides use, and the
 # port has no general op-to-string function, so this is the ten ops the
 # fixtures use and "OTHER" for everything else -- which is a MISMATCH, not a
@@ -3132,7 +3130,7 @@ def eng_dump.go(fuel: Nat, todo: List<&2, U32>, +ar: O.Arena, +seen: List<&2, U3
 def eng_dump(+ar: O.Arena, +root: U32) -> String:
   String.join(eng_dump.go(eng_fuel(ar), [root], ar, Nil{}, root, Nil{}), ";")
 
-# ===========================================================================
+
 # THE FIXTURES. TWO graphs, every arg either `ANone` or a CONST, so the dump
 # has four arg keys and the CPython side can rebuild the graph from it.
 #
@@ -3145,7 +3143,7 @@ def eng_dump(+ar: O.Arena, +root: U32) -> String:
 #   cli  CALL(ixc, rs)             -> nic_0, ab_7
 #   sti  STORE(a0, Invalid)        -> ab_8
 #   afn  AFTER(a0, e0)             -> ab_9
-# ===========================================================================
+
 def efx_a() -> G:
   +c0 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(0)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(1)})

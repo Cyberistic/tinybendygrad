@@ -26,7 +26,6 @@
 #     low      = counter[0:1] - (num & 0xffffffff)                     tensor.py:469
 #     high     = counter[1:2] - (num >> 32) - (counter[0] < (num & 0xffffffff))
 #     return seed, low.cat(high)                                       tensor.py:471
-# what this used to say, and why it was wrong: that `counter.assign(...)` "is nine nodes that
 # exist only to write a counter back to a device, so `rd_next` returns the same `low.cat(high)`
 # and drops the store", and that the port's `st_*` rows read an INJECTED counter "so the two
 # agree only because the injected counter IS the stored one". BOTH HALVES WERE FALSE.
@@ -180,7 +179,7 @@ import ./elementwise.bend as E
 import ./movement.bend as MX
 import ./creation.bend as CR
 
-# ===========================================================================
+
 # THE BORROWED BLOCK -- `mixin/op.py:166 arange` and `mixin/op.py:731 cat`, plus the
 # two specialisations of `movement.py:128` and `op.py:74` they need. NONE OF THESE IS
 # MINE. Every def is `op_`-prefixed, every def's comment names the file and line it belongs
@@ -189,7 +188,7 @@ import ./creation.bend as CR
 # file with no buildable callee has no gate, and the gate is the only evidence this port
 # has. IT IS GATED (`arange3`, `arange5`), so it is a MEASURED implementation and not a
 # restatement of the code that calls it.
-# ===========================================================================
+
 
 # `self.shape[-len(k_):]`, which is the WHOLE shape for the 1-D `k_ = (k,)` that
 # `_cumalu` passes, and `mxw_dims_of` is `movement.bend`'s own merge point (the arg for a
@@ -516,7 +515,7 @@ def rd_take(+t: T.Tensor, n: U32) -> T.Tensor:
 
 def rd_take.scalar(+t: T.Tensor, n: U32) -> T.Tensor: MX.mxw_reshape(rd_take.of(t, U1{n}, [0]), [])
 
-# ===========================================================================
+
 # rand.py:12 `_threefry_random_bits`. THE WHOLE OF THE RANDOMNESS, and it is seven
 # elementwise nodes and a `cat`.
 #   x = (counts1.cast(uint64) << 32) | counts0.cast(uint64)           rand.py:13
@@ -532,7 +531,7 @@ def rd_take.scalar(+t: T.Tensor, n: U32) -> T.Tensor: MX.mxw_reshape(rd_take.of(
 # `(counts1.cast(...) << 32) | counts0.cast(...)`: the SHIFTED term is `src[0]`. Getting
 # that backwards is graph-isomorphic on two CONSTs and invisible to every count row, which
 # is why `tfb3` prints the toposort and not a set of op names.
-# ===========================================================================
+
 def rd_c64(+t: T.Tensor) -> T.Tensor: MO.mo_cast_t(t, S.uint64())
 def rd_c32(+t: T.Tensor) -> T.Tensor: MO.mo_cast_t(t, S.uint32())
 def rd_shl32(+t: T.Tensor) -> T.Tensor: MO.mo_bin_c(t, O.OpsSHL{}, MO.mo_ki(32))
@@ -553,7 +552,7 @@ def rd_tfb.cat(+x: T.Tensor) -> T.Tensor:
 def rd_tfb(+ar: O.Arena, +key: T.Tensor, +c0: T.Tensor, +c1: T.Tensor) -> T.Tensor:
   rd_tfb.cat(rd_tfb.three(rd_tfb.x(c0, c1), key))
 
-# ===========================================================================
+
 # rand.py:18 `random_bits`. The loop is `for i in range(0, num, dtypes.u32.max)`
 # (rand.py:21) and `dtypes.u32.max` is 4294967295, so for any `num` a real shape produces --
 # `num = ceildiv(prod(shape) * itemsize, 4)`, so 17 GiB of random bits to reach the second
@@ -584,7 +583,7 @@ def rd_tfb(+ar: O.Arena, +key: T.Tensor, +c0: T.Tensor, +c1: T.Tensor) -> T.Tens
 #  updated. What is left is real and is NOT a wall: `H.i64_of_i32` sign-EXTENDS, so a
 #  counter past 2^31 must be built with `H.i64_of_hi_lo` and the chunking done by hand.
 #  17 GiB of random bits to reach it.
-# ===========================================================================
+
 def rd_bits_num(+ds: List<&2, U32>, +dt: S.Dt) -> U32: H.ceildiv_u32(U32.mul(H.prod_u32(ds), S.Dt.itemsize(dt)), 4)
 def rd_bits_half(n: U32) -> U32: H.ceildiv_u32(n, 2)
 def rd_bits.half(n: U32) -> U32: rd_bits_half(n)
@@ -609,7 +608,7 @@ def rd_bits.cat(+b: T.Tensor) -> T.Tensor:
 def rd_bits(+ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, n: U32, +dev: S.Dev) -> T.Tensor:
   rd_bits.cat(rd_bits.tfb(ar, key, ctr, U1{n}, dev))
 
-# ===========================================================================
+
 # rand.py:32 `_bits_to_rand`. `dtypes.finfo(dtype)` (dtype.py:113) is
 # `(exponent, mantissa)` and only the mantissa is read, so `rd_nmant` is HALF of a table
 # that is P3 in `mixin/dtype.bend`. `dtype.itemsize` selects the unsigned partner from
@@ -638,7 +637,7 @@ def rd_bits(+ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, n: U32, +dev: S.Dev) -
 #  half and refuses the rest.
 # TODO(p3) tinygrad/dtype.py:302  `bitcast(1.0, in_dtype, out_dtype)` for float64 /
 #  bfloat16 / the fp8 family: a 64-bit CONST is not expressible in this port.
-# ===========================================================================
+
 def rd_nmant(bits: U32) -> U32:
   match bits:
     case 16: 10
@@ -739,7 +738,7 @@ def rd_rand.of(contig: Bool, +out: T.Tensor, +ds: List<&2, U32>, +dt: S.Dt, +dev
 def rd_rand(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +ds: List<&2, U32>, +dt: S.Dt, +dev: S.Dev) -> T.Tensor:
   rd_rand.of(contig, rd_btr(False{}, ar, rd_bits(ar, key, ctr, rd_bits_num(ds, dt), dev), ds, dt), ds, dt, dev)
 
-# ===========================================================================
+
 # rand.py:46 `_next_counter` -- ported over an INJECTED counter tensor, WITH THE WRITE.
 # `U32` cannot be read twice in one expression, so the five lines are six defs and
 # `rd_next.nlo` is read twice (once for the compare, once for nothing -- Python's `new_high`
@@ -750,7 +749,6 @@ def rd_rand(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +ds: Lis
 # `rd_next.cat` is `low.cat(high)`, which is `op_cat1` and therefore a STACK over
 # `low.cat(high)`'s two operands in `high`'s arena.
 #
-# the write is ported, and it was not a device detail. `counter.assign(new_low.cat
 # (new_high))` (tensor.py:468) REBINDS `counter.uop` to the `AFTER` node it builds
 # (tensor.py:237 for a weak dtype, :250-252 for the rest), so `counter[0:1]` at :469 and
 # `counter[0]`/`counter[1:2]` at :470 READ THE WRITTEN VALUE. The header used to claim the
@@ -766,7 +764,7 @@ def rd_rand(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +ds: Lis
 #   other eight arms want a `Buffer`, `has_buffer_identity`, `is_realized` and `UOp.clone`;
 #   `mixin/tensor.bend` records it as its own `TODO(p3)`. WHAT IS LEFT IS EXACTLY THE STORE:
 #   the REBINDING is above, and it is the half that changes the answer.
-# ===========================================================================
+
 def rd_mask(n: U32) -> U32: n
 def rd_hi32(n: U32) -> U32: U32.shrn(n, 32n)
 def rd_next.nlo(+q: U1, +ctr: T.Tensor) -> T.Tensor:
@@ -821,7 +819,7 @@ def rd_next.v(lo: U32, hi: U32, n: U32) -> H.I64:
   +bl = rd_next.v.put(U32.is_lt(nl, m))
   H.i64_of_hi_lo(U32.sub(U32.sub(nh, rd_hi32(U1.v(q))), bl), U32.sub(nl, m))
 
-# ===========================================================================
+
 # rand.py:50 `rand`. `dt = to_dtype(dtype or dtypes.default_float)` (rand.py:62) and the
 # `all_int(shape)` / `all(s >= 0)` / `device is a str` guards (rand.py:64-65) are the
 # three refusals, and `canonicalize_device` (rand.py:66) is `tinygrad/device.py`, a
@@ -833,7 +831,7 @@ def rd_next.v(lo: U32, hi: U32, n: U32) -> H.I64:
 # `rand(2,3)` asks for SIX words, and `rand(2,2,3)` -- `randn_like`'s `stack(self)` -- for
 # TWELVE, so `randn23`'s counter step is `rd_next(ar, 12, ctr)` and not 6. `st_six` and
 # `rand23` are the two halves of that arithmetic and they must agree.
-# ===========================================================================
+
 def rd_rand_cls(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +ds: List<&2, U32>, +dt: S.Dt, +dev: S.Dev) -> T.Tensor:
   rd_rand(contig, ar, key, ctr, ds, dt, dev)
 
@@ -1014,7 +1012,7 @@ def rd_drop.pick(arm: U32, +t: T.Tensor) -> T.Tensor: rd_drop.pick.of(U1{arm}, t
 # WALL(p3) mixin/rand.py:327  the `attn_mask` arm. -- BLOCKED: needs the `attn_mask` arm.
 def rd_sdpa_dt(+q: S.Dt, +k: S.Dt) -> S.Dt: F.least_upper.of(F.least_upper.of(q, k), S.single())
 
-# ===========================================================================
+
 # THE GATE PRINTERS. `CR.cr_row` / `CR.cr_rowt` / `CR.cr_g.of` are creation.bend's and
 # are CALLED: the four-facts string, the `srcops` walk, the toposort walk and the `_d`
 # shape/dtype reader are four defs this file does not own and re-spelling them would be a
@@ -1026,7 +1024,7 @@ def rd_sdpa_dt(+q: S.Dt, +k: S.Dt) -> S.Dt: F.least_upper.of(F.least_upper.of(q,
 # that `arange` builds DEFERS, and a graph containing `arange` is UNANSWERABLE: asking for its shape
 # `_g`-only row below is a graph that contains a PERMUTE, and saying so in the ROW NAME is
 # the fix the notes prescribe for a `U32.show` that needs mental arithmetic.
-# ===========================================================================
+
 def rd_row.of(+nm: String, +ar: O.Arena, +c: CR.CU, +xs: List<&2, U32>) -> IO(Unit):
   CR.cr_g.of(nm, ar, c, xs)
 def rd_row(nm: String, +t: T.Tensor) -> IO(Unit):
@@ -1044,7 +1042,7 @@ def rd_np(nm: String, +t: T.Tensor) -> IO(Unit):
 def rd_bl(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def rd_nm(nm: String, s: String) -> IO(Unit): IO.print(String.concat([nm, "=", s]))
 
-# ===========================================================================
+
 # THE FIXTURES. The generator state is INJECTED, which is the header's decision, and both
 # halves of it are the 1-D TWO-ELEMENT `uint32` tensors Python's own
 # `Tensor._device_seeds[device]` (tensor.py:463) and `Tensor._device_rng_counters[device]`
@@ -1053,7 +1051,7 @@ def rd_nm(nm: String, s: String) -> IO(Unit): IO.print(String.concat([nm, "=", s
 # oracle can use it and the diff is a diff rather than a comparison of two fixtures.
 # `rd_fx2d` is op.bend's `mo_fx2d` and is a RECEIVER ONLY: `rand_like` reads its shape
 # and dtype and nothing else, so no row over it contains it.
-# ===========================================================================
+
 def rd_state(+ar: O.Arena) -> T.Tensor: CR.cr_empty(ar, Some{S.uint32()}, [2], S.D1{0})
 def rd_key(+ar: O.Arena) -> T.Tensor: rd_state(ar)
 def rd_ctr(+ar: O.Arena) -> T.Tensor: rd_state(ar)
@@ -1211,7 +1209,7 @@ def t_drop0() -> IO(Unit): CR.cr_row("drop_arm0", rd_drop.pick(rd_drop.arm(False
 def t_drop1() -> IO(Unit): CR.cr_row("drop_arm1", rd_drop.pick(rd_drop.arm(True{}, 1.0), rd_fx2d()))
 def t_drop2() -> IO(Unit): CR.cr_row("drop_arm2", rd_drop.pick(rd_drop.arm(True{}, 0.5), rd_fx2d()))
 
-# ===========================================================================
+
 # THE GENERATOR-STATE ROWS. Four of them, over tensor.py:466-471 with the counter
 # INJECTED, and the oracle is CPython's own five lines. `_g` ONLY and `_np` in the name,
 # because the counter's own graph contains no EXPAND but its consumer `rand23` does.
@@ -1243,7 +1241,7 @@ def t_drop2() -> IO(Unit): CR.cr_row("drop_arm2", rd_drop.pick(rd_drop.arm(True{
 # `st_after` was the borrow's fixture and it is NOT: the counter is an ALLOC, so no counter
 # VALUE reaches it and the borrow was never exercised there -- it is exercised by
 # `st_wrap_v`, where the counter is a CONSTANT and `0 + 6` does wrap.
-# ===========================================================================
+
 def t_st_zero() -> IO(Unit):
   +ar = O.Arena.empty()
   +k = rd_key(ar)
@@ -1273,11 +1271,11 @@ def t_st_val() -> IO(Unit):
     rd_nm("st_max_v", H.i64_text(rd_next.v(0, 0, 4294967295)))
 
 
-# ===========================================================================
+
 # THE REFUSAL ROWS. CPython's OWN PREDICATES, asked as predicates, so all of them are
 # shared rows rather than BEND-ONLY ones -- except the four that name a Python `raise`
 # this port cannot express, which is what `ref_*` is FOR.
-# ===========================================================================
+
 def t_ref() -> IO(Unit):
   do IO<Unit>:
     rd_bl("ref_rand_weak_f32", rd_ok_float(S.single()))
@@ -1337,7 +1335,7 @@ def main() -> IO(Unit):
     m : Unit <- t_rand_like23()
     t_ctrl()
 
-# ===========================================================================
+
 # the measured mutation table. eight one-token edits through the interpreted lane,
 # each diffed row-by-row against the unmutated output and reverted from a byte snapshot.
 # Baseline: 55 printed rows, 32 shared with CPython and GREEN. Driver: this file is its own
@@ -1393,7 +1391,6 @@ def main() -> IO(Unit):
 #    `fold_np=False`), so a dropped fold in the last line of a constructor is invisible to
 #    every refusal row, every dtype row and every count row in the file. The four that move
 #    are the four that print a TOPOSORT.
-#    AND `fold_np=False` IS NO LONGER TRUE: THE FIX OF 2026-10-23 (THE `op_expand_lead`
 #    and `op_pool1.sh` corrections below) makes the FOLD answer the arange-rooted graph,
 #    so `fold_np` reads `True`. that is the third half of M3'S lesson and it is the
 #    point: a row that claims "the FOLD cannot answer" is a row that goes green the moment
@@ -1416,4 +1413,4 @@ def main() -> IO(Unit):
 #  * no mutation of this table moves a `ref_*` row that it should not, and no mutation moves
 #    A `_d` ROW AT ALL -- the eight `_d` rows are all red already, so they are a PLACEHOLDER
 #    for the shape/dtype half rather than evidence, and the header's GATE STATUS says so.
-# ===========================================================================
+

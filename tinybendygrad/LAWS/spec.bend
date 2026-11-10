@@ -47,7 +47,7 @@
 
 import Base
 
-# ===========================================================================
+
 # DType -- tinygrad/dtype.py
 #
 # tinygrad's DType is (priority, bitsize, name, fmt). Here it is
@@ -62,7 +62,7 @@ import Base
 # to be spelled wrong. tinygrad asks the same three questions
 # (is_int/is_float/is_unsigned) and each has a different answer per class, so the
 # tag names the seven answers instead of the two that fit U32.
-# ===========================================================================
+
 
 type Cls is Data:
   CVoid{}
@@ -223,10 +223,10 @@ def Dt.max(d: Dt) -> Maybe<&2, U32>:
     case Dt{pri, +bits, cls, nm}:
       Dt.range(Cls.sgn(cls), True{}, U32.is_gt(bits, 32), bits)
 
-# ===========================================================================
+
 # Shape -- tinyspec's shape is a tuple of ints; a dimension may be symbolic,
 # so a dim is either a literal or an Sp that evaluates to one.
-# ===========================================================================
+
 
 type Sdim is Data:
   SN{v: Nat}
@@ -274,13 +274,13 @@ def Shape.drop(s: Shape, n: Nat) -> Shape:
   match s:
     case Sh{ds}: Shape.of(drop_n(ds, n))
 
-# ===========================================================================
+
 # Broadcast -- tinyspec: "right-align shapes, element-wise max; each axis must
 # be equal or 1". `zip_max` zips from the HEAD. That coincides with tinygrad's
 # right-align only at equal length: (3,) with (2,3) is (3,3) here and (2,3)
 # in tinygrad. The shorter list's remainder is kept, which is why (2,) with
 # (2,2) is (2,2) either way.
-# ===========================================================================
+
 
 # tinygrad `_broadcast_shape`: a 1 broadcasts to the other size, including 0.
 # `Nat.max(0n, 1n)` is 1, which is not that rule. Measured:
@@ -397,27 +397,27 @@ def dims_append(a: Maybe<&2, Shape>, b: Maybe<&2, Shape>) -> Maybe<&2, Shape>:
         case None{}: None{}
     case None{}: None{}
 
-# ===========================================================================
+
 # The Maybe combinators.
 #
 # A `match` may not scrutinise a computed value, so a Maybe that comes back
 # from a call has to reach a helper that takes it as a PARAMETER. `k` is a
 # closure used exactly once, which affine Bend allows.
-# ===========================================================================
+
 
 def on_shape(m: Maybe<&2, Shape>, k: Shape -> Maybe<&2, Shape>) -> Maybe<&2, Shape>:
   match m:
     case None{}: None{}
     case Some{s}: k(s)
 
-# ===========================================================================
+
 # The op catalogue -- one constructor per op in tinyspec.tex. The 20 Codegen
 # Ops are not here: tinyspec says of them "these ops are not part of the core
 # specification and are subject to change".
 #
 # `src` is a list, so an op's arity is the length of that list and is checked
 # by the pattern match rather than stored twice.
-# ===========================================================================
+
 
 type Sp is Data:
   # -- source ops (leaves) -------------------------------------------------
@@ -532,7 +532,7 @@ def Sp.shape.stack(head: Maybe<&2, Shape>, k: Nat) -> Maybe<&2, Shape>:
 def Sp.shape.reduce(m: Maybe<&2, Shape>, k: Nat) -> Maybe<&2, Shape>:
   on_shape(m, sh => Some{Shape.drop(sh, k)})
 
-# ===========================================================================
+
 # Derived property: shape -- tinyspec's shape column, op by arm.
 #
 # ONE recursive def, no @unsafe, no fuel. Every arm binds each operand's shape
@@ -541,7 +541,7 @@ def Sp.shape.reduce(m: Maybe<&2, Shape>, k: Nat) -> Maybe<&2, Shape>:
 # caller to get wrong. The broadcast arms are three lines each because their
 # shared helper would have to self-call this def, which is mutual recursion; see
 # header fact 1.
-# ===========================================================================
+
 
 def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
   match s:
@@ -696,7 +696,7 @@ def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
 
     case SpInvalid{}: Some{Shape.empty()}
 
-# ===========================================================================
+
 # The named dtypes -- every one of tinygrad's twenty, in dtype.py's own order.
 #
 # tinygrad's `priority` column: a larger number upcasts later, so priority is a
@@ -714,7 +714,7 @@ def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
 # ("dtypes.f32"), and INVERSE_DTYPES_DICT is gone. Only the `name` FIELD moved:
 # priority, bitsize and the char code are untouched, so every table keyed on
 # those is still right and only the name keys below are new.
-# ===========================================================================
+
 
 def void() -> Dt: Dt{0, 0, CVoid{}, "void"}
 def weakint() -> Dt: Dt{0, 800, CWeakInt{}, "weakint"}
@@ -741,11 +741,11 @@ def bfloat16() -> Dt: Dt{13, 16, CFloat{}, "bf16"}
 def single() -> Dt: Dt{14, 32, CFloat{}, "f32"}
 def double() -> Dt: Dt{15, 64, CFloat{}, "f64"}
 
-# ===========================================================================
+
 # Derived property: dtype -- tinyspec's dtype column, op by arm. Same
 # discipline as the shape fold: one def, no @unsafe, no fuel, every descent a
 # field of `s`. A dtype arm reads at most one operand, so no arm needs a local.
-# ===========================================================================
+
 
 def Sp.dtype(s: Sp) -> Maybe<&2, Dt>:
   match s:

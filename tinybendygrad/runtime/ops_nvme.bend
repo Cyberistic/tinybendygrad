@@ -3,7 +3,7 @@ import ../helpers.bend as H
 
 # tinybendygrad/runtime/ops_nvme.bend -- port of tinygrad/runtime/ops_nvme.py
 #
-# ===========================================================================
+
 # what this file is, and what it is not.
 #
 # UPSTREAM'S `ops_nvme.py` IS 167 LINES WITH SIX CLASSES: `NVMEQueue`,
@@ -38,9 +38,9 @@ import ../helpers.bend as H
 # the upstream source is at the PIN `f5ac54685074`, and the citations below
 # are file + rule identity, not line numbers, because a line number rots and
 # A RULE IDENTITY DOES NOT.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the constants. every one measured out of `tinygrad/runtime/autogen/nvme.py`
 # -- they are not seams and they are not typed.
 #
@@ -51,7 +51,7 @@ import ../helpers.bend as H
 # completion queue entry is 16 bytes, and the queue's entry count is
 # `0x1000 // SQE` -- 64 ENTRIES, ONE PAGE, "so it's contiguous even
 # without an iommu" (`ops_nvme.py:23`).
-# ===========================================================================
+
 
 def NVME_NVM_IOSQES() -> U32: 6
 def NVME_NVM_IOCQES() -> U32: 4
@@ -126,7 +126,7 @@ def PCI_COMMAND() -> U32: 4
 def PCI_COMMAND_MEMORY() -> U32: 2
 def PCI_COMMAND_MASTER() -> U32: 4
 
-# ===========================================================================
+
 # `NVMEQueue.__init__`, `ops_nvme.py:22-25`. THE QUEUE'S GEOMETRY.
 #
 #   self.dev, self.qid, self.tail, self.phase, self.entries =
@@ -146,7 +146,7 @@ def PCI_COMMAND_MASTER() -> U32: 4
 # fresh one: a completion is valid when its phase bit equals the queue's
 # current phase. a port that started the phase at zero would accept the
 # first completion and then reject every one after it.
-# ===========================================================================
+
 
 type Q is Data:
   Q{qid: U32, tail: U32, phase: U32, entries: U32, sq_addr: U32, cq_addr: U32,
@@ -214,7 +214,7 @@ def cap_db_stride(+hi: U32) -> U32:
 def cap_timeout_ms(+lo: U32) -> U32:
   U32.mul(U32.and(U32.shrn(lo, 24n), 255), 500)
 
-# ===========================================================================
+
 # `NVMEQueue.submit`, `ops_nvme.py:27-35`. THE COMMAND WORD AND THE PHASE.
 #
 #   slot, self.tail = self.tail, (self.tail + 1) % self.entries
@@ -237,7 +237,7 @@ def cap_timeout_ms(+lo: U32) -> U32:
 #      that checked the old tail would flip the phase one submit early,
 #      and every completion after the wrap would be accepted or rejected on
 #      THE WRONG BIT.
-# ===========================================================================
+
 
 def q.next_tail(+tail: U32, +entries: U32) -> U32:
   U32.mod(U32.add(tail, 1), entries)
@@ -292,7 +292,7 @@ def sqe_words(opcode: U32, slot: U32, nsid: U32, prp1_hi: U32, prp1_lo: U32,
 # the sqe's SIZE in words, and the check that it is sixteen.
 def SQE_WORDS() -> U32: 16
 
-# ===========================================================================
+
 # `prp_table`, `ops_nvme.py:54-63`. THE PAGE TABLE.
 #
 #   lists, list_addrs = dev.pci_dev.alloc_sysmem(ceildiv(len(pages) + 1, 256) * 0x1000)
@@ -326,7 +326,7 @@ def SQE_WORDS() -> U32: 16
 # `ceildiv(len(pages) + 1, 256) * 0x1000` AND THE TABLE IS
 # `round_up(16 * len(pages), 0x1000)`. THE `+ 1` IN THE LIST COUNT IS
 # why a single page still gets a list page.
-# ===========================================================================
+
 
 # the prp list's capacity: 256 entries per list page.
 def PRP_LIST_ENTRIES() -> U32: 256
@@ -379,7 +379,7 @@ def prp_entries.go(pages: List<&2, U32>, +list_addr: U32, +p: U32, acc: List<&2,
 def prp_entries(pages: List<&2, U32>, list_addr: U32) -> List<&2, U32>:
   prp_entries.go(pages, list_addr, 0, Nil{})
 
-# ===========================================================================
+
 # `NVMEDev.__init__`, `ops_nvme.py:34-56`. THE DEVICE'S IDENTIFY.
 #
 #   self.max_xfer = 0x1000 << min(ident[77] or 8, 8)
@@ -401,7 +401,7 @@ def prp_entries(pages: List<&2, U32>, list_addr: U32) -> List<&2, U32>:
 #      `ident[128 + 4 * n]` reads the high BYTE and gets the wrong shift.
 #   3. `size` is the low eight bytes of the identify, shifted left by the
 #      lba shift. the number of logical blocks times the block SIZE.
-# ===========================================================================
+
 
 def MPSZ_DEFAULT() -> U32: 8
 def MPSZ_MAX() -> U32: 8
@@ -451,7 +451,7 @@ def lba_shift(+ident: List<&2, U32>) -> U32:
 def dev_size(+nsb: U32, +nsb_hi: U32, +lba: U32) -> U32:
   U32.shln(nsb, U32.to_nat(lba))
 
-# ===========================================================================
+
 # `NVMEDev.new_queue`, `ops_nvme.py:58-62`. THE QUEUE CREATION.
 #
 #   self.queues.append(q := NVMEQueue(self, len(self.queues) + 1))
@@ -474,7 +474,7 @@ def dev_size(+nsb: U32, +nsb_hi: U32, +lba: U32) -> U32:
 #      CDW11 is `1`. the square bracket is the physical queue number and
 #      the `1` is the "enable" flag. so the two creates differ in their
 #      CDW11 and the difference is the queue's own identity.
-# ===========================================================================
+
 
 def new_qid(+nqueues: U32) -> U32:
   U32.add(nqueues, 1)
@@ -488,7 +488,7 @@ def create_cq_cdw11() -> U32: 1
 def create_sq_cdw11(+qid: U32) -> U32:
   U32.or(U32.shln(qid, 16n), 1)
 
-# ===========================================================================
+
 # `nvme_copies`, `ops_nvme.py:110-152`. THE COMMAND STREAM. THE LARGEST
 # and most important function in the file.
 #
@@ -537,7 +537,7 @@ def create_sq_cdw11(+qid: U32) -> U32:
 #      `((n + k * (q.entries - 1) + size) % q.entries)` -- THE SLOT AFTER
 #      the wave's last, because the doorbell is "the next slot to fill" and
 #      not "the last slot filled". a port that rings the last slot hangs.
-# ===========================================================================
+
 
 # the command count for a read of `nbytes` bytes.
 def cmds_for(nbytes: U32, +max_xfer: U32) -> U32:
@@ -647,7 +647,7 @@ def wave_count(+full: U32, +entries: U32) -> U32:
 def last_wave_size(+full: U32, +rem: U32, +entries: U32) -> U32:
   U32.add(U32.mod(full, wave_stride(entries)), Bool.to_u32(Bool.not(U32.is_zero(rem))))
 
-# ===========================================================================
+
 # `loop`, `ops_nvme.py:105`. THE LOOP IN THE COMMAND BUFFER.
 #
 #   def loop(n:int, body:Callable[[UOp], list[UOp]]) -> list[UOp]:
@@ -659,12 +659,12 @@ def last_wave_size(+full: U32, +rem: U32, +entries: U32) -> U32:
 # AND THE COMMENT SAYS WHY: "loops in the cmdbuf, so the host program doesn't
 # grow with the read size". a port that emits a zero-iteration LOOP emits a
 # LOOP object and the host program grows with the read SIZE anyway.
-# ===========================================================================
+
 
 def loop_n(+n: U32) -> U32:
   Bool.pick(U32, U32.is_zero(n), 0, 1)
 
-# ===========================================================================
+
 # `nvme_copies`'s ASSERTION, `ops_nvme.py:126-127`. THE THREE PRECONDITIONS
 # ON A READ.
 #
@@ -682,7 +682,7 @@ def loop_n(+n: U32) -> U32:
 #      and the SIZE is zero modulo the block SIZE only IF both are. a port
 #      that uses `+` accepts a source that straddles a block boundary.
 #   3. THE READ MUST FIT. `soff + src.nbytes() <= dev.size`.
-# ===========================================================================
+
 
 def aligned_page(+doff: U32) -> Bool:
   U32.is_eq(U32.mod(doff, PAGE_SIZE()), 0)
@@ -693,7 +693,7 @@ def aligned_block(+soff: U32, +nbytes: U32, +lba_shift: U32) -> Bool:
 def fits_device(+soff: U32, +nbytes: U32, size: U32) -> Bool:
   U32.is_le(U32.add(soff, nbytes), size)
 
-# ===========================================================================
+
 # `NVMEAllocator`, `ops_nvme.py:73-82`. THE ALLOCATOR.
 #
 #   lru = False
@@ -724,7 +724,7 @@ def fits_device(+soff: U32, +nbytes: U32, size: U32) -> Bool:
 # their sizes: each physical page becomes as many page numbers as its SIZE
 # divides by 4096. a port that passes the physical addresses straight
 # through builds a prp table with the wrong number of entries.
-# ===========================================================================
+
 
 def ALLOCATOR_LRU() -> Bool: False{}
 
@@ -768,7 +768,7 @@ def page_list.go(paddrs: List<&2, U32>, +sizes: List<&2, U32>, acc: List<&2, U32
 def page_list.expand(paddrs: List<&2, U32>, sizes: List<&2, U32>) -> List<&2, U32>:
   page_list.go(paddrs, sizes, Nil{})
 
-# ===========================================================================
+
 # `NVMEIface`, `ops_nvme.py:66-71`. THE INTERFACE.
 #
 #   pcibus = filter_visible_devices(System.list_devices(*NVME_IDS), "NVME")[index][1]
@@ -780,7 +780,7 @@ def page_list.expand(paddrs: List<&2, U32>, sizes: List<&2, U32>) -> List<&2, U3
 # has mounted, or that lvm/md has taken, must not be used. the port carries
 # the rule and names the two reads that decide it, and the reads are the
 # SEAM.
-# ===========================================================================
+
 
 def IFACE_NVME() -> U32: 1
 def dev.iface_names() -> List<&2, String>: ["NVMEIface"]
@@ -795,7 +795,7 @@ def dev.ifaces() -> List<&2, U32>: [IFACE_NVME()]
 def in_use(mounted: Bool, has_holders: Bool) -> Bool:
   Bool.or(mounted, has_holders)
 
-# ===========================================================================
+
 # `NVMEDevice`, `ops_nvme.py:85-90`. THE DEVICE.
 #
 #   ifaces = [NVMEIface]
@@ -810,12 +810,12 @@ def in_use(mounted: Bool, has_holders: Bool) -> Bool:
 # device the gpu reads from. and `synchronize` is `pass` -- an NVMe device
 # has nothing to synchronize, because the completion wait is inside the
 # COMMAND STREAM.
-# ===========================================================================
+
 
 def dev.renderers() -> U32: 0
 def dev.synchronize_is_noop() -> Bool: True{}
 
-# ===========================================================================
+
 # `nvme_submit`, `ops_nvme.py:154-163`. THE DISPATCH.
 #
 #   lin, queue = s.without_after.body, s.without_after.src[1]
@@ -836,7 +836,7 @@ def dev.synchronize_is_noop() -> Bool: True{}
 # it is a transform that may not apply, not a transform that always applies.
 # the port carries both halves, and the second half is the one that matters:
 # a transform that always applies would rewrite every non-NVMe call.
-# ===========================================================================
+
 
 def is_nvme_device(name: String) -> Bool:
   String.starts_with(name, "NVME")
@@ -854,7 +854,7 @@ def submit_applies(+n_nvme: U32) -> Bool:
 def group_count(+n_calls: U32, +n_drives: U32) -> U32:
   U32.min(n_calls, n_drives)
 
-# ===========================================================================
+
 # THE GATE.
 #
 # every row below is a claim about upstream's arithmetic, and every
@@ -865,7 +865,7 @@ def group_count(+n_calls: U32, +n_drives: U32) -> U32:
 #
 # and the rows are the pure rules. every rule that needs a drive is not
 # a row and is named in the footer with the seam that blocks it.
-# ===========================================================================
+
 
 def row(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 def brow(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -1284,7 +1284,7 @@ def main() -> IO(Unit):
     h : Unit <- t_alloc()
     IO.print("nvme-done=1")
 
-# ===========================================================================
+
 # not ported, and the wall for each. this file is (b)-shaped and says so.
 #
 # THERE IS NO UPSTREAM NVMe MOCK. MEASURED: `test/mockgpu/` HAS `nv/`,

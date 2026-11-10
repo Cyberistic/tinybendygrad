@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/nv/ip.bend -- port of tinygrad/runtime/support/nv/ip.py
 #
-# ===========================================================================
+
 # WHAT THIS FILE ACTUALLY IS, because the name misleads.
 #
 # `nv/ip.py` is NOT the NVOS ioctl attribute file. There is no `nv_ioctl`, no
@@ -25,7 +25,7 @@
 # transcription; `.agents/slop/nv_ip_gen.py` produced it out of CPython with no
 # device present, and produced the gate rows from the same run.
 #
-# ---------------------------------------------------------------------------
+
 # A disagreement with the task brief, REPORTED not reconciled.
 #
 # The brief said `ops_nv.bend` (3960 lines at this commit, committed, green) cites
@@ -46,13 +46,12 @@
 # finding; it is not the same as agreement, and no row here is offered as
 # corroboration of anything in ops_nv.bend.
 #
-# ---------------------------------------------------------------------------
+
 # THE shared contract with hcq2, AND why it is not settled yet.
 #
 # `hcq2.py` overlaps this file on exactly one thing: the GSP command queue this
 # file drives (`cmd_q`/`stat_q`, :387/:511) and the doorbell
 # `NV_PGSP_QUEUE_HEAD[0].write(0x0)` at :55. RETIRED WALL, and this is what
-# retired it: `tinybendygrad/runtime/support/hcq2.bend` is no longer a 29-line
 # stub. It is 2272 lines with 284 defs and prints 360 gate rows, so there IS a
 # second table and it CAN be contradicted. MEASURED against it: hcq2 prints no
 # row for the ring's usable length, the wrap threshold or the msgqTxHeader
@@ -70,7 +69,6 @@
 #      the ring at `entryOff` but tinygrad/runtime/support/nv/ip.py:48 measures the wrap against `queue_mv`,
 #      `len(self.queue_mv)`, which is `msgSize*msgCount`. `Q.ring_len` is the
 #      second number and `Q.rx_hdr_off` is the first; a port that confuses them
-#      wraps one message early. (This header previously named three q.*
 #      readers that were never written; the contract above is carried by
 #      `q.of` plus the `Q` record's own field order.)
 #   3. The doorbell is a write of 0x0, once per RPC record, AFTER the write
@@ -78,7 +76,7 @@
 #      (the whole `send/qwrite/qwp/barrier/doorbell/wait` sequence as one
 #      string) and `ip_door_*` (the value and the two architecture bits).
 #
-# ---------------------------------------------------------------------------
+
 # THE SPLIT, stated once and then obeyed: a def here EITHER builds the argument
 # of ONE call (pure, and the gate checks it) OR records that call in the trace
 # (and the gate checks the ORDER). There is no third kind. Every seam is a trace
@@ -91,8 +89,8 @@
 # what the seam refused -- so the rule is the same one ops_webgpu.bend uses for
 # its four pop sites, and the row that pins it is named `ip_refuse_*`.
 #
-# ---------------------------------------------------------------------------
-# ===========================================================================
+
+
 # THE SEAMS, named with their Python lines. These are FFI, not logic.
 #
 #   * every `ctypes` struct construction, and `bytes(x)`: the field VALUES are
@@ -155,7 +153,7 @@
 #       # TODO(p3) support/nv/ip.py:111  symbol=prep_ucode  the PCI expansion ROM walk
 #       # TODO(p3) support/nv/ip.py:123  assert bit_header.Signature == 0x00544942
 #
-# ---------------------------------------------------------------------------
+
 # THE WALLS. Three, and each is named with the line that owns it.
 #
 # 1. THE 64-BIT WALL, in three separate places, and they are not the same place.
@@ -220,8 +218,8 @@
 # the array is a `List`. `memoryview(...).cast('I'/'Q')` (tinygrad/runtime/support/nv/ip.py:306) is the
 # same statement about width.
 #
-# ---------------------------------------------------------------------------
-# ===========================================================================
+
+
 # STATUS
 #   PORTED:      see WHAT IS PORTED, DEF BY DEF, below.
 #   NOT PORTED:  the seams and the three walls above, each with a Python line.
@@ -290,7 +288,7 @@
 #   the one 64-BIT CONSTANT that does not fit a U32
 #   `init_sw` and `init_hw` themselves, which are no-ops plus an include list --
 #     the include ORDER is ported as data and the includes are not
-# ---------------------------------------------------------------------------
+
 # THE MUTATION TABLE, in prose, because the file itself is the thing under test.
 #
 # `python3 .agents/slop/nv_ip_mutate.py` applies ONE textual edit per rule to this
@@ -344,7 +342,7 @@
 # First-wins is not a policy in `const_name.go` -- it is a consequence of where
 # the self-call sits, and last-wins needs the recursion to move into the CALLER.
 # That is the substrate fact the whole file is built on.
-# ---------------------------------------------------------------------------
+
 # THE FOUR GATE SECTIONS, and what each one can be wrong about.
 #   t_tables   the 54 layouts, the 64 constants both directions, the two
 #              dispatch tables. A transposed field, a wrong offset, a wrong
@@ -369,18 +367,18 @@
 # the struct, and a table of expected values cannot be wrong in the same way
 # twice. The CPython runs are `nv_ip_gen.py`, `nv_ip_oracle.py`,
 # `nv_ip_oracle3.py` and `nv_ip_oracle4.py`, all in the tree.
-# ===========================================================================
+
 
 import Base
 import ../../../helpers.bend as H
 import ../../../device.bend as D
 
-# ==========================================================================
+
 # GENERATED by .agents/slop/nv_ip_gen.py. DO NOT HAND-EDIT -- if a row and this
 # table disagree, one of the two is a transcription error and the differ says which.
 # Every value below was read out of tinygrad/runtime/autogen/{nv,nv_570,pci}.py
 # by that script, with NO DEVICE PRESENT.
-# ==========================================================================
+
 
 # The 64 integer constants ip.py names that FIT a U32. A 1-th does not and is
 # the 64-BIT WALL -- see THE WALLS in the file header. `Cn` IS the table, so the
@@ -1359,7 +1357,7 @@ def radix_off3(+n: U32) -> U32: U32.add(radix_off2(n), U32.mul(radix_l2(n), 4096
 def radix_alloc(+n: U32) -> U32: U32.add(radix_off3(n), n)
 
 
-# ---------------------------------------------------------------------------
+
 # :434-455 init_wpr_meta. `Wm` is the EIGHT offsets the legacy branch computes
 # plus the sizes both branches set, and `nf` is how many fields the branch sets --
 # because the `fmc_boot` branch sets a DIFFERENT six and NONE of them is an
@@ -1377,7 +1375,7 @@ def radix_alloc(+n: U32) -> U32: U32.add(radix_off3(n), n)
 # is the seam. `ip_wpr_vram_max` is the ceiling and
 # `ip_wpr_vram_max` says the wall out loud.
 #   # TODO(p3) support/nv/ip.py:448  init_wpr_meta's offsets for a real card
-# ---------------------------------------------------------------------------
+
 type Wm is Data:
   Wm{nf: U32, vga_ws: U32, vga_off: U32, frts_sz: U32, frts_off: U32,
      boot_off: U32, gsp_off: U32, heap_sz: U32, heap_off: U32, wpr_st: U32,
@@ -1473,7 +1471,7 @@ def wpr.fmc() -> Wm:
   Wm{16, 131072, 0, 1048576, 0, 0, 0, 141557760, 0, 0, 2228224, 0, 0, 0, 0}
 
 
-# ---------------------------------------------------------------------------
+
 # :602 `def bdf_as_int(s): return 0x000 if s.startswith("usb") or
 # s.startswith("remote") else (int(s[5:7],16)<<8) | (int(s[8:10],16)<<3) |
 # int(s[-1],16)`
@@ -1486,7 +1484,7 @@ def wpr.fmc() -> Wm:
 #   * the guard is `usb` OR `remote`, not `usb` alone. The first version of this
 #     had only `usb` and `as_int("remote")` printed 96158: `r`=114, `e`=101,
 #     `m`=109, `o`=110 read as hex. `ip_bdf_remote` is that row.
-# ---------------------------------------------------------------------------
+
 def chr_g(+c: U32) -> U32:
   Bool.pick(U32, U32.is_lt(c, 58), U32.sub(c, 48),
     Bool.pick(U32, U32.is_lt(c, 90), U32.sub(c, 55), U32.sub(c, 87)))
@@ -1518,7 +1516,7 @@ def bdf.as_int(+s: String) -> U32:
     U32.or(U32.or(U32.shln(bdf.lo(s), 8n), U32.shln(bdf.mid(s), 3n)), bdf.fn(s)))
 
 
-# ---------------------------------------------------------------------------
+
 # :389-399 init_libos_args. FIVE log buffers of 0x10000 at 0x10000 strides from
 # ONE 2 MiB log allocation, then a sixth region for the RM args -- and the sixth
 # has a different size (0x1000) and a different base. So the region table is
@@ -1532,7 +1530,7 @@ def bdf.as_int(+s: String) -> U32:
 # bytes, the first is 'L' for all six, and the sixth name is `RMARGS` and not
 # `LOG*` -- so `ip_libos_id8_bytes` is the row and `id8` is the seam.
 #   # TODO(p3) support/nv/ip.py:395  symbol=init_libos_args  id8=int.from_bytes(...)
-# ---------------------------------------------------------------------------
+
 def libos_n() -> U32: 6
 
 
@@ -1585,7 +1583,7 @@ def libos_pa(+i: U32, rm_sysmem: U32) -> U32:
 def libos_lead(+i: U32) -> U32: Bool.pick(U32, U32.is_lt(i, 5), 76, 82)
 
 
-# ---------------------------------------------------------------------------
+
 # :616-627 rpc_set_registry_table. `nameOffset = hdr_size + entries_size +
 # len(data_bytes)` is a RUNNING SUM: the two entries are at 40 and 61, not at
 # 40 and 40+21-by-stride-with-a-constant. `sizeof(PACKED_REGISTRY_ENTRY)` is 16
@@ -1593,7 +1591,7 @@ def libos_lead(+i: U32) -> U32: Bool.pick(U32, U32.is_lt(i, 5), 76, 82)
 # 8 + 32 + 42 = 82, which is the length of the whole record the GSP parses.
 # `ip_reg_off0` / `ip_reg_off1` / `ip_reg_size` are the three rows and they are
 # the reason the dict-at-:617 is a `List` here: two entries, two offsets.
-# ---------------------------------------------------------------------------
+
 def reg_hdr_size() -> U32: 8
 
 def reg_entry_size() -> U32: 16
@@ -1622,12 +1620,12 @@ def reg_type() -> U32: Cn.v(const_of("REGISTRY_TABLE_ENTRY_TYPE_DWORD"))
 def reg_val() -> U32: 1
 
 
-# ---------------------------------------------------------------------------
+
 # :577-580 the PMA flags. THREE constants that are ALL the value 1 -- so the
 # table a gate needs is (value, SHIFT) per flag, not value per flag. That is the
 # one place in this file where a value-only constant table is not enough, and
 # `ip_pma_all_three_are_1` is the row that says so.
-# ---------------------------------------------------------------------------
+
 def pma.phys() -> U32: U32.shln(Cn.v(const_of("NVOS02_FLAGS_PHYSICALITY_NONCONTIGUOUS")), 4n)
 
 def pma.nomap() -> U32: U32.shln(Cn.v(const_of("NVOS02_FLAGS_MAPPING_NO_MAP")), 30n)
@@ -1655,7 +1653,7 @@ def cls.vd2(+chip: String, ada: U32, gb: U32) -> U32:
             Bool.pick(U32, String.starts_with(chip, "GB"), gb, ada), 0)
 
 
-# ---------------------------------------------------------------------------
+
 # :629-661 run_cpu_seq's OPCODE TABLE, and :661 is the refusal. Nine opcodes,
 # contiguous 0x0..0x8, with a WIDTH each -- and the width is what makes the walk
 # a walk: `iter(memoryview(seq_buf[hdr_sz:]).cast('I')[:hdr.cmdIndex])` and then
@@ -1663,7 +1661,7 @@ def cls.vd2(+chip: String, ada: U32, gb: U32) -> U32:
 # the four falcon ops consume none. `ip_seq_words` is the row, and it is
 # `2,3,5,1,2,0,0,0,0` -- a table that said 1 for everything would consume a
 # quarter of the program.
-# ---------------------------------------------------------------------------
+
 def seq_n() -> U32: 9
 
 # THE WIDTH TABLE, and it is a TABLE. The obvious formula
@@ -1720,7 +1718,7 @@ def seq_prog() -> List<&2, U32>:
   List.concat(&2, U32, [[0, 4096, 57005], [0, 8192, 48879], [3, 1000], [4, 12288, 1], [6]])
 
 
-# ---------------------------------------------------------------------------
+
 # :328-344 kfsp_send_msg's framing. EIGHT bytes of header: `0xC0000000` then
 # `0x7e | (0x10de << 8) | (nvmd << 24)`. The first word is BOTH bit 31 and bit
 # 30 and is the same for every message; the second carries the function in its
@@ -1728,7 +1726,7 @@ def seq_prog() -> List<&2, U32>:
 # (len(buf) % 4)) * b'\x00'` -- pad to a multiple of FOUR, computed on the
 # PAYLOAD length, not the total, so a 4-byte payload adds nothing and a 5-byte
 # payload adds three.
-# ---------------------------------------------------------------------------
+
 def fsp_w0() -> U32: U32.or(U32.shln(1, 31n), U32.shln(1, 30n))
 
 def fsp_w1(+nvmd: U32) -> U32: U32.or(U32.or(126, U32.shln(4318, 8n)), U32.shln(nvmd, 24n))
@@ -1747,13 +1745,13 @@ def fsp_max() -> U32: 1024
 def fsp_ok(+tot: U32) -> Bool: U32.is_lt(tot, 1024)
 
 
-# ---------------------------------------------------------------------------
+
 # :530-531 rpc_alloc_memory's scalars, and :533's pte descriptor.
 # `pte=(paddr >> 12)` is a PAGE NUMBER, and the packed payload is
 # `8 * pageCount` bytes of pte descriptors after the 56-byte rpc header -- so
 # `pageCount` and the payload length are two readings of the same list and
 # `ip_am_payload` is the row that ties them.
-# ---------------------------------------------------------------------------
+
 def pte_shift(+paddr: U32) -> U32: U32.shrn(paddr, 12n)
 
 def pte_mask(+n: U32) -> U32: U32.and(n, 65535)
@@ -1778,7 +1776,7 @@ def am_page(+sz: U32) -> Bool: U32.is_eq(sz, 4096)
 def am_pages_ok(+sz0: U32, +sz1: U32) -> Bool: Bool.and(am_page(sz0), am_page(sz1))
 
 
-# ---------------------------------------------------------------------------
+
 # `radix.npages` and `radix.offs` join a four-element U32 list, so the row is
 # `l0,l1,l2,l3` and a wrong ORDER inside the join is a value change the differ
 # sees. `radix.npages` is NOT the same four numbers as `radix.offs` -- one is
@@ -2168,7 +2166,7 @@ def Tr.fail_at(+t: Tr, n: U32) -> Tr:
       Tr{calls, wp, seq, handle, n, refused}
 
 
-# ---------------------------------------------------------------------------
+
 # :38-55 `_send_rpc_record`, AND NOTHING ELSE. The five facts the trace carries
 # are the five the Python computes, in the order Python computes them:
 #
@@ -2180,7 +2178,7 @@ def Tr.fail_at(+t: Tr, n: U32) -> Tr:
 #
 # and then `seq += 1` (:54) and `NV_PGSP_QUEUE_HEAD[0].write(0x0)` (:55), with a
 # memory barrier between the pointer store and the doorbell (:52,:78).
-# ---------------------------------------------------------------------------
+
 type Rq is Data:
   Rq{func: U32, plen: U32, elem: U32, total: U32, off: U32, first: U32,
      wraps: Bool, wp: U32, seq: U32, cksum: U32, t: Tr}
@@ -2278,7 +2276,7 @@ def rp.wraps(+total: U32, +wp: U32) -> Bool: U32.is_lt(rp.first(total, wp), tota
 def rp.wp_after(+wp: U32, +elem: U32) -> U32: U32.mod(U32.add(wp, elem), rp.msg_count())
 
 
-# ---------------------------------------------------------------------------
+
 # THE CHECKSUM, and this is the part of Stage D that is worth the file.
 #
 # :32-36 folds a 64-bit XOR over the u64 words of `bytes(phdr) + msg` and returns
@@ -2305,7 +2303,7 @@ def rp.wp_after(+wp: U32, +elem: U32) -> U32: U32.mod(U32.add(wp, elem), rp.msg_
 # `bytes(phdr)` while `phdr.checkSum` is still zero, so the fold runs over a zero
 # there and the value lands afterwards.  `rp.cksum.xor` reproduces that, and the
 # `ip_rp_<i>_cksum` rows are the slot.
-# ---------------------------------------------------------------------------
+
 def rp.w_seq() -> U32: 9
 
 def rp.w_elem() -> U32: 10
@@ -2395,10 +2393,10 @@ def rp.cont_func() -> U32: Cn.v(const_of("NV_VGPU_MSG_FUNCTION_CONTINUATION_RECO
 def rpc.func_alloc() -> U32: Cn.v(const_of("NV_VGPU_MSG_FUNCTION_ALLOC_MEMORY"))
 
 
-# ---------------------------------------------------------------------------
+
 # :526-536 `rpc_alloc_memory`. The :527 assert is the refusal: EVERY page must be
 # 4 KiB, and a single 8 KiB page refuses the whole call.
-# ---------------------------------------------------------------------------
+
 def am.page_ok(+sz: U32) -> Bool: U32.is_eq(sz, 4096)
 
 def am.pages_ok2(+sz0: U32, +sz1: U32) -> Bool: Bool.and(am.page_ok(sz0), am.page_ok(sz1))
@@ -2438,7 +2436,7 @@ def rpc.minted(+t: Tr) -> Tr:
       Tr{calls, wp, seq, hgen.next(handle), fail_at, refused}
 
 
-# ---------------------------------------------------------------------------
+
 # THE DOORBELL RULE, :590-591, and it lives here because it is a TRACE question
 # and not a register question:
 #   `st.workSubmitToken |= (self.chan_runlists[hObject] << 16) |
@@ -2447,7 +2445,7 @@ def rpc.minted(+t: Tr) -> Tr:
 # doorbell-enable bit are added by the driver. So the OR is NOT symmetric between
 # the two chip families and a port that always added bit 30 would ring a doorbell
 # that does not exist on a GA10 part.
-# ---------------------------------------------------------------------------
+
 def door.rl_shift(+rl: U32) -> U32: U32.shln(rl, 16n)
 
 def door.gb2_bit(+chip: String) -> U32: Bool.pick(U32, String.starts_with(chip, "GB2"), 1073741824, 0)
@@ -2456,12 +2454,12 @@ def door.token(+tok: U32, +rl: U32, +chip: String) -> U32:
   U32.or(tok, U32.or(door.rl_shift(rl), door.gb2_bit(chip)))
 
 
-# ---------------------------------------------------------------------------
+
 # THE ROW HELPERS for the trace: a trace rendered as ONE comma-joined string, so
 # an ORDER row is a VALUE the differ can compare and not merely a count. Each
 # entry is `tag(a,b,c)`, and the tag NAME is spelled out rather than numbered so a
 # row can be read without the source.
-# ---------------------------------------------------------------------------
+
 def tr.tagname(+k: U32) -> String:
   Bool.pick(String, U32.is_eq(k, C_RPC_SEND()), "send",
     Bool.pick(String, U32.is_eq(k, C_QUEUE_WRITE()), "qwrite",
@@ -2490,13 +2488,13 @@ def tr.put_seq(+t: Tr, want: U32) -> Tr:
       Tr{calls, wp, want, handle, fail_at, refused}
 
 
-# ---------------------------------------------------------------------------
+
 # :77 `self.rx_view[0] = (self.rx_view[0] + round_up(hdr.length, msgSize) //
 # msgSize) % msgCount` -- the RESPONSE pointer advances by the ROUNDED length, so
 # a header of 0x1001 consumes TWO elements and not one, and the modulo is by
 # `msgCount` and not by the ring length. `ip_rp_rx_*` walks six (rx, length)
 # pairs so the boundary, the modulo and the rounding each have a row.
-# ---------------------------------------------------------------------------
+
 def rx_up(+hlen: U32) -> U32: ru(hlen, rp.msg_size())
 
 def rx_elems(+hlen: U32) -> U32: U32.div(rx_up(hlen), rp.msg_size())
@@ -2567,12 +2565,12 @@ def rpc.ra_plen(+params: U32) -> U32: U32.add(32, params)
 def rpc.rc_plen(+params: U32) -> U32: U32.add(24, params)
 
 
-# ---------------------------------------------------------------------------
+
 # :186-283 the falcon side. The register NAMES and their ORDER are ported and
 # checked; the ADDRESSES come from `nvdev.include("dev_falcon_v4", "ga102")` at
 # :100 and are the seam -- `autogen/nv_570.py` does not contain them, which is
 # why they are not in the generated table either.
-# ---------------------------------------------------------------------------
+
 def fl.order() -> String:
   String.join(["reset", "dmatr_fb", "dmatr_fb1", "dmatr_offs", "falcon_offs",
                "brom_paraaddr", "brom_engidmask", "brom_ucode_id", "mod_sel",
@@ -2815,13 +2813,13 @@ def pma.all_ones() -> Bool:
                     pma.is_one("NVOS02_FLAGS_ALLOC_USER_READ_ONLY_YES")))
 
 
-# ---------------------------------------------------------------------------
+
 # :357-362 the channel class table. The DEFAULT is Ampere's triple; `AD`
 # overrides ONLY `compute_class`; `GB` overrides all three AND sets a different
 # nvdec class. `chip_name[:2]` is a two-character PREFIX match, so `GA102` and
 # `AD102` land on the default and `GB202` on the Blackwell row -- and a port that
 # matched the whole name would miss all three.
-# ---------------------------------------------------------------------------
+
 def cls.gpfifo(+chip: String) -> U32:
   cls.gp2(chip, Cn.v(const_of("AMPERE_CHANNEL_GPFIFO_A")), Cn.v(const_of("BLACKWELL_CHANNEL_GPFIFO_A")))
 
@@ -3089,7 +3087,7 @@ def rp.fail_of(+t: Tr) -> U32: tr.fail(t)
 # `rp.cont_n` answers 1 either way -- the mutation table records that as an
 # equivalent mutant, not as coverage. What the row really pins is that the
 # subtraction happens AFTER the guard, which is the wrap below.
-# ---------------------------------------------------------------------------
+
 # `U32.sub` WRAPS, so `plen - max_payload` is 4294901840 for a payload of zero and
 # `ip_rp_cont_0_n` printed 65617 records for an empty message. The subtraction is
 # therefore inside the guard: `plen > max_payload` FIRST, and only then subtract.
@@ -3336,14 +3334,14 @@ def fsp.put(+t: Tr, +w: U32) -> Tr: Tr.emit(C_FSP_EMEMD(), w, 0, 0, t)
 def fsp.do_head(+t: Tr) -> Tr: Tr.emit(C_FSP_HEAD(), 0, 0, 0, t)
 
 
-# ---------------------------------------------------------------------------
+
 # :557 `self.chan_runlists[obj] = self.runlists.get((e := params.engineType) +
 # 10 * (e >= nv_gpu.NV2080_ENGINE_TYPE_NVDEC0), 0)` -- the NVDEC0 ADDEND. The
 # runlist is looked up under the engine type NORMALISED by ten for NVDEC0, so a
 # port that forgot the addend would read runlist 19 where the driver wrote 29,
 # and the error is a silently wrong runlist rather than a fault. `ip_rp_runlist_key_*`
 # walks the boundary at 18/19/20.
-# ---------------------------------------------------------------------------
+
 def rpc.runlist_key(+e: U32) -> U32: U32.add(e, rpc.nvdec_add(e))
 
 # :87-91 `wait_resp` -- and :91 is the refusal. `C_WAIT_RESP` is the call and
@@ -3663,13 +3661,13 @@ def rp.wp2(+elem: U32, +t: Tr) -> Tr:
                                            rp.msg_count(), t))
 
 
-# ---------------------------------------------------------------------------
+
 # :328-344 `kfsp_send_msg`, in trace order: EMEMC, one EMEMD per word, TAIL,
 # HEAD. `QUEUE_TAIL` is `len(buf) - 4` -- the padded total MINUS the last header
 # word -- and `QUEUE_HEAD` is 0. The EMEMD count is the padded word count, which
 # is what `ip_fsp_tr_*_nwords` pins; a port that wrote one EMEMD per PAYLOAD
 # byte would write four times as many.
-# ---------------------------------------------------------------------------
+
 def fsp.trace(+nvmd: U32, +blen: U32) -> Tr: fsp.tr2(nvmd, blen, Tr.of())
 
 
@@ -3805,9 +3803,9 @@ def rp.rec2(+elem: U32, +total: U32, +func: U32, +plen: U32, +pay: U32, +t: Tr) 
   rp.rec3(rp.cksum.xor(func, plen, Tr.seq(t)), elem, total, func, plen, pay, t)
 
 
-# ---------------------------------------------------------------------------
+
 # THE RECORD, :38-55, and it appends FIVE calls in Python's order.
-# ---------------------------------------------------------------------------
+
 def rp.record(+func: U32, +plen: U32, +pay: U32, t: Tr) -> Rq:
   rp.rec2(rp.elem(plen), rp.total(plen), func, plen, pay, t)
 

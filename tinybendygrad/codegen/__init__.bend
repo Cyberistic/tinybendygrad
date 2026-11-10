@@ -1,6 +1,6 @@
 # tinybendygrad/codegen/__init__.bend -- port of tinygrad/codegen/__init__.py
 #
-# ============================================================================
+
 # STATUS. `walk_rewrite` (the MLIR-style single-pass driver) runs over an
 # arena and returns the rebuilt sink ADDRESSED IN THAT ARENA. `unified_rewrite`
 # is a REAL FIXPOINT: it re-runs the fold until the sink index stops moving and
@@ -50,7 +50,7 @@
 # a sub-namespace def (`name.subname`) must be declared BEFORE the parent
 # `def name` that calls it. The order below obeys this rule (leaves first,
 # parents last).
-# ============================================================================
+
 
 import Base
 import ./../uop/ops.bend as O
@@ -58,7 +58,7 @@ import ./../uop/render.bend as R
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 
-# ============================================================================
+
 # THE HELPER NAMESPACE `wr.*`. Bottom-up (R-3): every sub-def before its
 # caller.
 #
@@ -68,17 +68,15 @@ import ./../LAWS/spec.bend as S
 #   wr.rebuild.found -- `O.Found` -> `(ar, repl)`, out of `O.UOp.new`
 #   wr.step.rebuild  -- `(ar, repl)` -> `(ar, rebuilt, repl)`
 #   wr.step.of       -- that triple -> `(ar, repl)` with the rule applied
-# ============================================================================
+
 
 # Fold over a node's srcs, looking each up in `repl`. If absent, the
 # original `s` is its own replacement.
 #
-# THE PARENTHETICAL THAT USED TO BE HERE -- "the toposort guarantees `s` was
 # visited first" -- IS FALSE UNDER `enter_calls=False`, AND IT WAS LOAD-BEARING.
 # `R.cu32` answers DEFAULT `0` for an absent key, and `0` is a LEGAL arena index.
 # MEASURED 2026-11-03, the first run after the default became `toposort_nocalls`:
 # a CALL's body is not visited, so `repl[body]` is absent and the CALL was rebuilt
-# pointing at node 0. The row said `ec_default=0` and the cause was not the
 # walk at all. `Map.has` is the presence test the assumption needed.
 def wr.has.of(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
   match r:
@@ -149,9 +147,9 @@ def wr.go(lst: List<&2, U32>, +pm: O.PMEntrys, +ctx: O.CTX, acc: (O.Arena & Map<
     case Nil{}: acc
     case +u <> t: wr.go(t, pm, ctx, wr.step(pm, u, ctx, acc))
 
-# ============================================================================
+
 # THE PUBLIC ENTRIES.
-# ============================================================================
+
 
 def walk_rewrite.of(sink: U32, u: U32) -> Maybe<&2, U32>:
   match u:
@@ -227,7 +225,6 @@ def Rewritten.index(w: Rewritten, fallback: U32) -> U32: Maybe.default(&2, U32, 
 # constant. MEASURED, not read: with the parameter named `passes`,
 # `unified_rewrite.go(0n, 5, 0, ...)` answered `passes=1`, and with it named `n`
 # the same call answers `passes=5`. The gate could not see it either -- `capped`
-# was correct and `passes` was not -- which is why a counter that a shadow
 # swallowed still looked green.
 def Rewritten.hit(w: Rewritten, n: U32) -> Rewritten: match w: case Rewritten{ar, sink, repl, passes, capped}: Rewritten{ar, sink, repl, n, False{}}
 def Rewritten.cap(w: Rewritten, n: U32) -> Rewritten: match w: case Rewritten{ar, sink, repl, passes, capped}: Rewritten{ar, sink, repl, n, True{}}
@@ -251,7 +248,7 @@ def walk_rewrite_ec.counted(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.C
 def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -> Rewritten:
   walk_rewrite.lift(walk_rewrite(Rewritten.ar(w), sink, pm, ctx))
 
-# ---------------------------------------------------------------------------
+
 # THE FIXPOINT, ops.py:1777-1885.
 #
 # Upstream's `unified_rewrite` is a THREE-STAGE WORKLIST: stage 0 pushes a node
@@ -261,7 +258,6 @@ def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -
 # `waitlist` for a src that is not ready and an `on_stack` set.
 #
 # The port's is THE SAME FOLD RE-RUN, which is what makes it a FIXPOINT rather
-# than the single pass `unified_rewrite` used to be. What is NOT ported is named
 # here rather than left implied:
 #
 #   * `bottom_up` / `bpm`. Upstream puts `pm` in `self.bpm` and `None` in
@@ -278,7 +274,7 @@ def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -
 #   * The per-node `seen` set and `BottomUpGate`, which bound the BOTTOM-UP loop
 #     the port does not have.
 #
-# ---------------------------------------------------------------------------
+
 # the stop is "the sink index did not move", and it is sound because the arena
 # INTERNS. `uop/ops.bend:2531 UOp.make` calls `intern.find` and a HIT returns the
 # arena UNTOUCHED, so two passes handing back the same sink INDEX handed back the
@@ -346,7 +342,7 @@ def graph_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, walk: 
 def graph_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, walk: Bool) -> Rewritten:
   Bool.pick(Rewritten, walk, walk_rewrite_ec.counted(ar, sink, pm, ctx), unified_rewrite_ec(ar, sink, pm, ctx))
 
-# ============================================================================
+
 # `UOp.substitute` -- ops.py:514. Upstream spells it
 #
 #   graph_rewrite(self, _substitute, dvars, bottom_up=True, ...)
@@ -414,12 +410,12 @@ def wr.go_sub(lst: List<&2, U32>, +dvars: Map<&2, U32>, acc: (O.Arena & Map<&2, 
 def UOp.substitute(+ar: O.Arena, +sink: U32, +dvars: Map<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
   walk_rewrite.put(sink, wr.go_sub(O.UOp.toposort_nocalls(U32.to_nat(O.Arena.next(ar)), ar, sink), dvars, (ar, Map.new(&2, U32))))
 
-# ============================================================================
+
 # THE GATE: build the smallest `pm_post_sched_cache` fixture, run
 # `walk_rewrite` over it, and print the repl map (old_index ->
 # new_index). The CPython oracle at `.agents/slop/codegen-init-oracle.py`
 # prints the same shape for the same fixture; the diff is the gate.
-# ============================================================================
+
 
 # The rule table. TWO entries, and TWO upstream: `pm_post_sched_cache` at
 # `tinygrad/schedule/__init__.py:96-101` is a `PatternMatcher` of exactly two
@@ -517,7 +513,7 @@ def gr_show.repl.go(ar: O.Arena, +m: Map<&2, U32>, topo: List<&2, U32>) -> Strin
 def gr_show.repl(ar: O.Arena, m: Map<&2, U32>, topo: List<&2, U32>) -> String:
   gr_show.repl.go(ar, m, topo)
 
-# ---------------------------------------------------------------------------
+
 # THE FIXPOINT GATE. Every row below calls `graph_rewrite` ITSELF, never a
 # caller of it and never a driver directly -- a row that gates `walk_rewrite`
 # cannot see the dispatcher's ternary, and a mutation there would move nothing.
@@ -534,7 +530,7 @@ def gr_show.repl(ar: O.Arena, m: Map<&2, U32>, topo: List<&2, U32>) -> String:
 # original's: read over the original toposort it answers `NOOP` for every key,
 # which is `O.Arena.node` being TOTAL on a stale index (this file's header names
 # that hazard, and `.agents/slop/` has four measurements of it).
-# ---------------------------------------------------------------------------
+
 def grw_row.go(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
 # One row name from a fixture prefix, an arm and a field: `grw_f2_fix_repl`.

@@ -71,9 +71,9 @@ import ./../tensor.bend as T
 import ./../mixin/movement.bend as MX
 import ./__init__.bend as SCH
 
-# ===========================================================================
+
 # 1. THE PROGRAM -- the port's own `Tensor` graph.
-# ===========================================================================
+
 
 # `Tensor.empty(shape)` -- upstream `tinygrad/tensor.py:88`: a BUFFER of
 # `prod(shape)` RESHAPED to the shape. The port's `mxw_buf` is the BUFFER and
@@ -160,7 +160,7 @@ def rz_program() -> RZProg:
   +snk = rz_sink(O.Found.ar(aft), O.Found.i(aft))
   RZProg{O.Found.ar(snk), O.Found.i(snk)}
 
-# ===========================================================================
+
 # 2. THE REBUILD -- the port's own `tensor_map` loop.
 #
 # Upstream `tinygrad/tensor.py:182-198` rebuilds the graph in toposort order
@@ -180,7 +180,7 @@ def rz_program() -> RZProg:
 # `pm_replace_buf` visits the BUFFERs in upstream's POST-ORDER and the two
 # orders pick the SAME buffer first (MEASURED: the destination is slot 0 in
 # CPython -- `ParamArg(0, ...)` on the 20-element buffer).
-# ===========================================================================
+
 type RZPair is Data:
   RZPair{b: U32, v: U32}
 
@@ -318,9 +318,9 @@ def rz_rebuild(+p: RZProg, no_merge: Bool, slot_off: Bool) -> RZProg:
   +st = rz_go(ar, pre, no_merge, slot_off, RZSt.of(ar, Nil{}, RZProg.sink(p), 0))
   RZProg{RZSt.ar(st), RZSt.idx(st)}
 
-# ===========================================================================
+
 # 3. THE DUMP -- the ORACLE's spelling, `op:argkey:srcops`.
-# ===========================================================================
+
 def rz_op_name(op: O.Op) -> String:
   match op:
     case O.OpsCONST{}  : "CONST"
@@ -457,9 +457,9 @@ def rz_params.go(fuel: Nat, todo: List<&2, U32>, +ar: O.Arena, +seen: List<&2, U
                              [String.concat([U32.show(rz_num(v)), ":", U32.show(rz_num(sz))])]),
                            acc)))
 
-# ===========================================================================
+
 # 4. THE ROWS.
-# ===========================================================================
+
 def rz_row.line(nm: String, got: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", got]))
 

@@ -5,7 +5,7 @@ import ./../helpers.bend as H
 import ./../tensor.bend as T
 import ./../uop/ops.bend as O
 
-# ===========================================================================
+
 # nn/onnx.bend -- tinygrad/nn/onnx.py (1230 lines).
 #
 # stage 1 -- what is ported, what is not, and which python lines the rest
@@ -138,13 +138,13 @@ import ./../uop/ops.bend as O
 # reports the IMPORT CLOSURE, so a file that never names a seam still goes red.
 # `nn/__init__.bend`, `nn/optim.bend` and `nn/state.bend` report the identical
 # fourteen. The two lanes printing identically is this project's gate.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # STAGE 1. THE TABLES. Enums first, because everything else is keyed by them.
-# ===========================================================================
 
-# ---------------------------------------------------------------------------
+
+
 # `WireType(enum.IntEnum)` -- onnx.py:13-18. Six members, contiguous 0..5.
 # `skip_field` (:112-119) is the only consumer and it is a WALL with
 # `PBBufferedReader`; the table itself is the ported part.
@@ -154,7 +154,7 @@ import ./../uop/ops.bend as O
 # `mixin/rand` rule 2), so `case 5:` claims 5,6,7,... and any `case 6:` written
 # after it is DEAD CODE that still checks. Listed high-to-low, no arm claims a
 # value a later arm wants.
-# ---------------------------------------------------------------------------
+
 def onx_wt(c: U32) -> Maybe<&1, String>:
   match c:
     case 5: Some{"FIXED32"}
@@ -192,7 +192,7 @@ def onx_wt_rev.of(m: Maybe<&1, U32>) -> U32:
 
 def onx_wt_code(nm: String) -> U32: onx_wt_rev.of(onx_wt_rev(nm))
 
-# ---------------------------------------------------------------------------
+
 # `AttributeType(enum.IntEnum)` -- onnx.py:20-27, and `to_field_name` (:27),
 # `{1:"f", 2:"i", 3:"s", 4:"t", 5:"g", 6:"floats", 7:"ints", 8:"strings"}`.
 # `_parse_NodeProto` (:191) reads `AttributeType(attr_dict["type"]).to_field_name()`
@@ -200,7 +200,7 @@ def onx_wt_code(nm: String) -> U32: onx_wt_rev.of(onx_wt_rev(nm))
 # THE ATTRIBUTE NAME SPELLING and a wrong entry reads the wrong field of a
 # parsed protobuf. It is the eight-letter answer the brief asked for, and it is
 # a dictionary literal in Python, which is a `match` ladder here.
-# ---------------------------------------------------------------------------
+
 def onx_at_field(t: U32) -> Maybe<&1, String>:
   match t:
     case 8: Some{"strings"}
@@ -288,7 +288,7 @@ def onx_at_name_rev.of(m: Maybe<&1, U32>) -> U32:
     case Some{t}: t
     case None{}: 0
 
-# ---------------------------------------------------------------------------
+
 # `OnnxDataType(enum.IntEnum)` -- onnx.py:29-37. Thirteen members with FOUR
 # holes: 0 (UNDEFINED), 8 (STRING), 14 (COMPLEX64) and 15 (COMPLEX128) are not
 # members, so the codes 0..16 are not a dense range and `onx_odt_key(8)` is
@@ -303,7 +303,7 @@ def onx_at_name_rev.of(m: Maybe<&1, U32>) -> U32:
 # `DT.to_dtype_of` (dtype.bend:509 symbol=to_dtype_of) IS that table, already ported, so it is
 # CALLED and not re-spelled -- which is what makes `onx_odt_dt` a real lookup
 # through the production path rather than a restatement of it.
-# ---------------------------------------------------------------------------
+
 def onx_odt_key(c: U32) -> Maybe<&1, String>:
   match c:
     case 16: Some{"bfloat16"}
@@ -462,7 +462,7 @@ def onx_odt_of_dt.go(cs: List<&2, U32>, +d: S.Dt, +acc: U32) -> U32:
 # negative fixture, so the predicate is not true for everything.
 def onx_odt_of_dt(cs: List<&2, U32>, d: S.Dt) -> U32: onx_odt_of_dt.go(cs, d, 0)
 
-# ---------------------------------------------------------------------------
+
 # `Domain(enum.Enum)` -- onnx.py:40-51. A `Data` SUM TYPE, not a `U32` tag plus
 # two tables, because the enum's whole content is the nine (name, value) pairs
 # and `_init_from_graph` (:379) asks a MEMBERSHIP question over two of them --
@@ -475,7 +475,7 @@ def onx_odt_of_dt(cs: List<&2, U32>, d: S.Dt) -> U32: onx_odt_of_dt.go(cs, d, 0)
 # and an UNRECOGNISED string is Python's `ValueError`, which this port spells as
 # `None` (bend2-constraints reviewer rule 5: a Python raise is a refusal and a
 # `None` is a `Maybe`, neither is optional).
-# ---------------------------------------------------------------------------
+
 type Dom is Data:
   DomOnnx{}
   DomOnnxMl{}
@@ -541,7 +541,7 @@ def onx_dom_is_training(d: Dom) -> Bool:
     case DomPrevTrain{}: True{}
     case _: False{}
 
-# ---------------------------------------------------------------------------
+
 # `required_input_python_consts` -- onnx.py:352-359. Thirty-eight keys, and
 # thirteen of them are built by two dict COMPREHENSIONS rather than by a
 # literal: `{"Reduce"+r: (1,) for r in (...ten names...)}` and
@@ -553,7 +553,7 @@ def onx_dom_is_training(d: Dom) -> Bool:
 # The lookup is `_get_python_const`'s `required_input_python_consts.get(op, ())`
 # -- :435 -- and `()` is the EMPTY LIST, so `onx_pc_ixs` answering `Nil{}` for an
 # absent op is exactly right and not a convenience.
-# ---------------------------------------------------------------------------
+
 type Pc is Data:
   Pc{nm: String, ix: List<&2, U32>}
 
@@ -603,7 +603,7 @@ def onx_pc_has.go(ps: List<&2, Pc>, +nm: String, +idx: U32, hit: Bool) -> Bool:
 
 def onx_pc_has(ps: List<&2, Pc>, +nm: String, idx: U32) -> Bool: onx_pc_has.go(ps, nm, idx, False{})
 
-# ===========================================================================
+
 # STAGE 1 (cont). THE FROZEN RECORDS. `OpSetId` (:53), `OnnxValue` (:57),
 # `OnnxNode` (:64), and the attribute-VALUE sum type `OnnxNode.opts` needs.
 #
@@ -613,7 +613,7 @@ def onx_pc_has(ps: List<&2, Pc>, +nm: String, idx: U32) -> Bool: onx_pc_has.go(p
 # value 0, which is the parse-don't-validate rule: an ONNX shape genuinely can
 # be `[0]` and `[dim_param: "N"]` in the same list, and a `U32` would have to
 # invent a third state for it.
-# ===========================================================================
+
 
 type Dim is Data:
   DimI{v: U32}
@@ -761,7 +761,7 @@ def OnnxNode.opts(n: OnnxNode) -> List<&2, Att>:
   match n:
     case OnnxNode{op, opset, ins, outs, opts}: opts
 
-# ===========================================================================
+
 # THE GATE
 #
 # NO FUNCTION-PARAMETER FOLDS, and that is a MEASURED wall: a fold that takes
@@ -772,7 +772,7 @@ def OnnxNode.opts(n: OnnxNode) -> List<&2, Att>:
 # named defs directly. The cost is that the code appears twice -- once in
 # `onx_odt_codes` and once in the row's literal -- and the mutation table has a
 # mutation for exactly that.
-# ===========================================================================
+
 
 def onx_row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -1076,7 +1076,7 @@ def onx_pc_has_abs() -> Bool: Bool.not(onx_pc_has(required_input_python_consts()
 def onx_pc_has_neg() -> Bool: onx_pc_has(required_input_python_consts(), "Slice", 3)
 
 
-# ===========================================================================
+
 # stage 2. the op table and the padding arithmetic.
 #
 # `get_onnx_ops` (:475-1319) is 845 lines and two different things. ONE HUNDRED
@@ -1091,9 +1091,9 @@ def onx_pc_has_neg() -> Bool: onx_pc_has(required_input_python_consts(), "Slice"
 # version ROUTER that decides which of `Softmax`'s two bodies a model gets, and
 # its two failure modes (`op not supported`, `not supported for domain D and
 # version V`) are what a real load hits when a model is newer than this tree.
-# ===========================================================================
 
-# ---------------------------------------------------------------------------
+
+
 # THE OP NAME TABLE -- `onnx_ops` (:1308-1317), 171 keys.
 #
 # Python builds it in three pieces and the ORDER is a `dict` insertion order:
@@ -1115,7 +1115,7 @@ def onx_pc_has_neg() -> Bool: onx_pc_has(required_input_python_consts(), "Slice"
 # arm and moves `onnx_odt_rt`, `onnx_odt_all` and `onnx_odt_tbl` while
 # `onnx_odt_n` stays `True`. A COUNT row pins the number of entries in the
 # fixture, not the number of arms in every table the fixture drives.
-# ---------------------------------------------------------------------------
+
 def onnx_ops() -> List<&2, String>:
   List.sort(~String, String.is_lt, [
     "Abs", "Acos", "Acosh", "Adagrad", "Adam", "Add", "AffineGrid", "And", "ArgMax", "ArgMin",
@@ -1153,7 +1153,7 @@ def onx_op_in.go(xs: List<&2, String>, +nm: String, acc: Bool) -> Bool:
 
 def onx_op_in(nm: String) -> Bool: onx_op_in.go(onnx_ops(), nm, False{})
 
-# ---------------------------------------------------------------------------
+
 # THE IMPLEMENTATION IDENTITY, which is a THREE-WAY table and not one. Measured
 # in CPython: `onnx_ops['Conv'].__name__` is `'Conv'`,
 # `onnx_ops['Neg'].__name__` is `'neg'` (it is `getattr(Tensor, 'neg')`, :1310),
@@ -1161,7 +1161,7 @@ def onx_op_in(nm: String) -> Bool: onx_op_in.go(onnx_ops(), nm, False{})
 # decorator's inner function, :534). A port that answered every name with itself
 # would be right for 128 of 171 and would make the version router name a body
 # that does not exist for the other 43.
-# ---------------------------------------------------------------------------
+
 def onx_tensor_op(nm: String) -> Maybe<&1, String>:
   match nm:
     case "Neg": Some{"neg"}
@@ -1211,7 +1211,7 @@ def onx_training_op(nm: String) -> Maybe<&1, String>:
     case "Momentum": Some{"___wrapper"}
     case _: None{}
 
-# ---------------------------------------------------------------------------
+
 # the four VERSIONED ops, as a flat `Data` list rather than a nested dict. The
 # (domain, version) pairs are CPython's `OpSetId` keys and they are the INPUT to
 # the router below, so they are data and they are gated.
@@ -1354,7 +1354,7 @@ def onx_sel(+nm: String, +dom: Dom, +ver: U32) -> Maybe<&1, String>:
 # `eligible_ops[max(eligible_ops.keys())]`. A tie is impossible: Python's dict
 # keys are the `OpSetId`s and are unique per domain, so two rows cannot share a
 # version inside one domain.
-# ---------------------------------------------------------------------------
+
 # THE PADDING ARITHMETIC. `_resolve_pool_pads` (:495-500) and the two helpers
 # it calls are the only pure-integer functions in `get_onnx_ops`, and they are
 # the ones that decide what `Conv`, `ConvTranspose`, `MaxPool`, `AveragePool`
@@ -1372,7 +1372,7 @@ def onx_sel(+nm: String, +dom: Dom, +ver: U32) -> Maybe<&1, String>:
 # so the pad is `3 - 8 = -5`. Python's `//` FLOORS, and the floor of a negative
 # is not `U32.div`. That is why `_auto_pad` runs on `H.I64` and why the file
 # carries its own `onx_halve`.
-# ---------------------------------------------------------------------------
+
 
 # `AUTO_PAD_OPTIONS = Literal["NOTSET", "SAME_UPPER", "SAME_LOWER", "VALID"]`
 # -- :489. A `Data` sum rather than a string, because every arm of both helpers
@@ -1420,7 +1420,6 @@ def Ap.isupper(a: Ap) -> Bool:
 #     hi' = (hi >>> 1) | (sign ? 1<<31 : 0)    # the only SIGN extension
 # THREE bugs got this file, all caught by the gate, and the third is the one
 # worth writing down:
-#   1. the fill was not conditional on the sign, so `floor(3/2)` answered
 #      `-2147483647` (`onnx_ap_su33`, where CPython says `[1,1,2,2]`).
 #   2. the low WORD's fill was taken from the low WORD's own bit 0 instead of
 #      from `hi & 1`, so `floor(-2/2)` answered `0x7FFFFFFF:0xFFFFFFFF`.
@@ -1539,7 +1538,7 @@ def onx_half.n(+n: U32, +xs: List<&2, H.I64>) -> Hal:
 def onx_half(+n: U32, +xs: List<&2, H.I64>) -> Hal:
   Bool.pick(Hal, U32.is_zero(n), Hal{Nil{}, xs}, onx_half.n(n, xs))
 
-# ---------------------------------------------------------------------------
+
 # `_onnx_pads_to_tiny_pads` -- :481-484.
 #   n = len(pads) // 2
 #   return tuple(x for i in range(n-1, -1, -1) for x in (pads[i], pads[i+n]))
@@ -1555,7 +1554,7 @@ def onx_half(+n: U32, +xs: List<&2, H.I64>) -> Hal:
 # second is a CONSTANT input, where the rearrangement is INVISIBLE, so a fixture
 # built from a constant pads tuple would pass with the halves in the wrong order.
 # `p2t((1,)) == ()` is the `n == 0` arm and it is a real answer.
-# ---------------------------------------------------------------------------
+
 # BOTH HALVES ARE REVERSED, and getting that wrong was a real bug this gate
 # caught: reversing only the first half gives `(0,0,0,0,0,5)` where CPython gives
 # `(0,5,0,0,0,0)` for the input `(0,0,0,0,0,5)`. The reading is
@@ -1567,7 +1566,7 @@ def onx_p2t.of(+hs: Hal) -> List<&2, H.I64>:
 def onx_p2t(+pads: List<&2, H.I64>) -> List<&2, H.I64>:
   onx_p2t.of(onx_half(U32.div(U32.from_nat(List.length(&2, H.I64, pads)), 2), pads))
 
-# ---------------------------------------------------------------------------
+
 # `_auto_pad` -- :491-493.
 #   first = [p//2 for p in pads] if auto_pad == "SAME_UPPER" else [p - p//2 for p in pads]
 #   return first + [p - f for p, f in zip(pads, first)]
@@ -1579,7 +1578,7 @@ def onx_p2t(+pads: List<&2, H.I64>) -> List<&2, H.I64>:
 #
 # MEASURED: `((3,3), SAME_UPPER) -> [1,1,2,2]` and `((3,3), SAME_LOWER) ->
 # [2,2,1,1]`. SAME_LOWER is the `[p - p//2]` arm, so `first` is the LARGER half.
-# ---------------------------------------------------------------------------
+
 def onx_auto_pad.first.go(+pads: List<&2, H.I64>, +up: Bool, acc: List<&2, H.I64>) -> List<&2, H.I64>:
   match pads:
     case Nil{}: acc
@@ -1601,7 +1600,7 @@ def onx_auto_pad.cat(+pads: List<&2, H.I64>, +up: Bool, +first: List<&2, H.I64>)
 def onx_auto_pad(+pads: List<&2, H.I64>, +up: Bool) -> List<&2, H.I64>:
   onx_auto_pad.cat(pads, up, onx_auto_pad.first.go(pads, up, Nil{}))
 
-# ---------------------------------------------------------------------------
+
 # `_resolve_pool_pads` -- :495-500.
 #   if auto_pad == "VALID": return [0]*(len(k_)*2)
 #   i_ = x.shape[-len(k_):]
@@ -1619,7 +1618,7 @@ def onx_auto_pad(+pads: List<&2, H.I64>, +up: Bool) -> List<&2, H.I64>:
 #      tinygrad, and the port does not carry it.
 #   3. `p_ * 2` is Python tuple REPETITION, i.e. concatenation, not a numeric
 #      doubling. It is the `NOTSET` arm's way of reading a HALF-length pads list.
-# ---------------------------------------------------------------------------
+
 def onx_pool_valid(+k_: List<&2, U32>) -> List<&2, H.I64>:
   List.replicate(H.I64, U32.to_nat(U32.mul(U32.from_nat(List.length(&2, U32, k_)), 2)), H.i64_of_i32(0))
 
@@ -1668,14 +1667,14 @@ def onx_pool_pads(valid: Bool, notset: Bool, +is_: List<&2, U32>, +p_: List<&2, 
 def onx_pool_pads_of(+is_: List<&2, U32>, +p_: List<&2, U32>, +k_: List<&2, U32>, +s_: List<&2, U32>, +a: Ap) -> List<&2, H.I64>:
   onx_pool_pads(Ap.isvalid(a), Ap.isnotset(a), is_, p_, k_, s_, a)
 
-# ---------------------------------------------------------------------------
+
 # `_axes` -- :479. `axes or ([] if noop_with_empty_axes else None)`, so it has
 # THREE answers and the port needs a `Bool` beside the list, because a `Data`
 # record cannot hold a `Maybe` (bend2-constraints rule 15) and `None` and `[]`
 # mean DIFFERENT things to `data.max(axis=...)`.
 # MEASURED: `axes(None,0) is None`, `axes(None,1) == []`, `axes([],0) is None`,
 # `axes([1],0) == [1]`. So the falsy test is on the LIST, not on the argument.
-# ---------------------------------------------------------------------------
+
 type Axes is Data:
   Axes{none: Bool, xs: List<&2, U32>}
 
@@ -1690,12 +1689,12 @@ def Axes.x(a: Axes) -> List<&2, U32>:
 def onx_axes(+xs: List<&2, U32>, noop: Bool) -> Axes:
   Bool.pick(Axes, List.is_empty(&2, U32, xs), Axes{Bool.not(noop), Nil{}}, Axes{False{}, xs})
 
-# ===========================================================================
+
 # STAGE 2 GATE. Every row here is diffed against CPython's own
 # `_onnx_pads_to_tiny_pads` / `_auto_pad` / `_resolve_pool_pads` / `_axes`,
 # reached by `exec`-ing `get_onnx_ops`'s body with its final `return {...}`
 # replaced -- so the oracle is tinygrad's CODE and not a second transcription.
-# ===========================================================================
+
 
 def onx_i64s_str.go(xs: List<&2, H.I64>, acc: List<&2, String>) -> List<&2, String>:
   List.foldl(~&2, ~H.I64, ~List<&2, String>, (a: List<&2, String>) => (x: H.I64) => List.append(&2, String, a, [H.i64_text(x)]), xs, acc)
@@ -1900,11 +1899,11 @@ def main() -> IO(Unit):
     _ : Unit <- onx_axes_rows()
     onx_row("onnx_stage2", True{})
 
-# ===========================================================================
+
 # the walls, one `TODO(p3)` per python line group. No prose pretending to be
 # code: `nn/__init__.bend` says the same thing about its own `__call__`s and the
 # reason is the same -- a def with no body is a paragraph pretending to be a def.
-# ===========================================================================
+
 # TODO(p3) onnx.py:73   PBBufferedReader -- `io.BufferedReader(TensorIO(tensor))`,
 #   `decode_varint`'s 64-bit accumulate, `read_delimited`, `read_string`,
 #   `read_bytes`, `read_float`, `read_packed_floats`, `read_int64`,
@@ -1966,7 +1965,7 @@ def main() -> IO(Unit):
 #   (`___wrapper` for all three) is PORTED and GATED.
 # TODO(p3) onnx.py:1216 Gradient -- `intermediate_tensors[y].gradient(*inputs)`.
 
-# ===========================================================================
+
 # THE MUTATION TABLE, MEASURED by `.agents/slop/onnx-mutate.py`, which mutates
 # the file in place, re-runs the INTERPRETED lane, reports the rows that MOVE and
 # restores the file (it asserts the restore is byte identical). MEASURED
@@ -1981,7 +1980,6 @@ def main() -> IO(Unit):
 # | M4 | the `bfloat16` reverse-table entry gets an `X` | `onnx_odt_rt2` `onnx_odt_dt_rt` `onnx_odt_inv` `onnx_odt_inv_tbl` `onnx_odt_ktbl` `onnx_odt_dtbl` | SIX rows, the widest blast radius in the table: the reverse table is the one every forward row inverts through, so a single cell there is shared by the whole dtype family. `onnx_odt_inv` moving is the point -- the reverse is a real bijection and breaking one end breaks both. |
 # | M5 | `to_field_name`'s `7` becomes `"int"` | `onnx_at2` `onnx_at_tbl` | the ATTRIBUTE SPELLING (:27). `"int"` is not a key `_parse_AttributeProto` writes (:253-267), so a wrong singular is a silent read of an absent key. |
 # | M6 | `to_field_name`'s `5` becomes `"graph"` | `onnx_at2` `onnx_at_tbl` | the GRAPH arm, the one whose value is an `OnnxRunner` and therefore has no payload in `AVal`. |
-# | M7 | `AI_ONNX_PREVIEW_TRAINING`'s value loses `training` (:46) | `onnx_dom_tbl` `onnx_dom_rt` | the longest of the nine domain strings, and the round trip is the row that notices a value that no longer round-trips through `from_onnx`. |
 # | M8 | the TRAINING membership (:379) drops its SECOND member | `onnx_dom_training` | ONE row. `_init_from_graph`'s `any(...)` is the only consumer, and the nine-cell row is the only row that can see half a predicate -- which is the `device.bend` gate lesson (`is_param` dropped from three rules moved nothing until negative fixtures were added). |
 # | M9 | `ReduceL2`'s index becomes `0` instead of `1` (:357) | `onnx_pc_tbl` | ONE row. The comprehension-built rungs are thirteen of the thirty-eight and the table string is the only row that prints an INDEX; the count cannot see a changed index at all. |
 # | M10 | `Resize`'s index list loses its `3` (:355) | `onnx_pc_tbl` | the same, on a LITERAL rung rather than a comprehension-built one. M9 and M10 are one claim about index lists and they move the same single row. |

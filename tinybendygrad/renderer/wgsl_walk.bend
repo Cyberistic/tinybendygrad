@@ -19,7 +19,7 @@ import ./cstyle.bend as CS
 import ../uop/ops.bend as O
 import ../LAWS/spec.bend as S
 
-# ===========================================================================
+
 # THE UOP -> BODY WALK -- the `_render` equivalent (cstyle.py:208-266), which this
 # file did not have: `render_kernel` takes the body as STRINGS and `kern_alu()` /
 # `kern_mixed()` above are LITERALS, so the census's whole-kernel rows are rows
@@ -38,7 +38,7 @@ import ../LAWS/spec.bend as S
 # `{code_for_workitem}; /* {src} */`; and everything else takes `prefix{n}` from
 # the six-counter table, is INLINED when upstream's rule says so, and is otherwise
 # declared as `var {name} = {text};` (`_render_dtype` answers `var` here, :103).
-# ===========================================================================
+
 type R is Data:
   R{op: O.Op, dt: S.Dt, addr: S.Addr, numel: U32, str: String, idx: U32, slot: U32,
     shape: List<&2, U32>, srcs: List<&2, U32>, f: F32}

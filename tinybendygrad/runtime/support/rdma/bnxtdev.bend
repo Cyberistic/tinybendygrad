@@ -39,7 +39,7 @@
 #      source order, and `f_CQE_TOGGLE_FIELD` / `f_CQE_STATUS_FIELD` name the
 #      two offsets bnxtdev.py reads BY HAND.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF. Line numbers are bnxtdev.py.
 #
 #   :8-12 the five constant lines   PORTED  every value, both directions
@@ -127,7 +127,7 @@
 #   :232 the SQ doorbell           PORTED  in the same trace
 #   :234 `post_recv`               PORTED  `qp.post_recv`
 #
-# ===========================================================================
+
 # THE FFI SEAMS. Every one of these is NAMED with its Python line and is a
 # `CALL_*` tag in the trace; none of them is made here, and there is no
 # `import "./x.c"`. The trace IS the record of the call, which is why this file
@@ -153,7 +153,7 @@
 #   tinygrad/runtime/support/rdma/bnxtdev.py:77,131 the `getattr(bnxt, ...)` struct
 #         construction and `from_buffer_copy` WALL 1 -- see below
 #
-# ===========================================================================
+
 # THE WALLS.
 #
 #   1. the hwrm/rcfw struct construction and parsing (:77-89, :131-134).
@@ -203,7 +203,7 @@
 #      why the `bs_*` rows are `bs_count_of(typ, mne, sum_splits)` and not a
 #      closed table. TODO(p3) bnxtdev.py:95  symbol=setup_backing_store tuple(getattr(caps, ...) for j ...).
 #
-# ===========================================================================
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of ONE device call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER and the IDENTITY). There is no third
@@ -216,15 +216,15 @@
 #   :224  `assert raw[25] == 0`              -> "BNXT CQE status"
 # `Tr.emit` records NOTHING once `refused` is set, so a refusal appears as a
 # TRUNCATED trace and no step below needs a guard of its own.
-# ===========================================================================
+
 import Base
 
-# ===========================================================================
+
 # THE CONSTANTS. Every one MEASURED, and every one in
 # `.agents/slop/bnxt_constmap.py`, which reads each authority with `getattr`
 # and cross-checks the hex-sourced ones a SECOND way (hex literal -> int),
 # because a transposed digit pair is invisible to a decimal eyeball.
-# ===========================================================================
+
 
 # bnxtdev.py:8-12 -- the module's own five lines.
 
@@ -341,7 +341,7 @@ def RESP_BYTES() -> U32: 4096
 def DEV_PCI_COMMAND() -> U32: 4
 def DEV_FID() -> U32: 65535
 
-# ===========================================================================
+
 # the struct field lists, by name and in order.
 #
 # `c.record` structs are OPAQUE: `bnxt.struct_cq_base._fields_` is
@@ -360,7 +360,7 @@ def DEV_FID() -> U32: 65535
 #   :224 `raw[25] == 0` -- byte 25 is `status`, the FIFTH field, and the
 #        completion error. `cqe_of` / `cqe_status` are pinned BY NAME against
 #        `_real_fields_` by `f_CQE_TOGGLE_FIELD` and `f_CQE_STATUS_FIELD`.
-# ===========================================================================
+
 def struct_cq_base_names() -> List<&2, String>:
   ["reserved64_1", "reserved64_2", "reserved64_3", "cqe_type_toggle", "status", "reserved16", "opaque"]
 
@@ -391,7 +391,7 @@ def cqe_status_field(nm: String) -> Bool: String.eq(nm, "status")
 # `CQE_SIZE` -- one number, two files, and it is the cross-check.
 def CQ_STRIDE() -> U32: SIZEOF_CQ_BASE()
 
-# ===========================================================================
+
 # THE 64-BIT DOORBELL WORD, :13-15.
 #
 #   def db_value(xid, typ, index, epoch):
@@ -405,7 +405,7 @@ def CQ_STRIDE() -> U32: SIZEOF_CQ_BASE()
 #   LOW:  WHERE in it -- the index and the EPOCH.
 # `db.of` also takes the whole word as (hi, lo) so a gate row can hold both,
 # and `db.hi`/`db.lo` are the two the trace writes.
-# ===========================================================================
+
 def db.hi(+xid: U32, typ: U32) -> U32:
   U32.or(U32.or(U32.and(xid, DBC_DBC_XID_MASK()), U32.or(DBC_DBC_PATH_ROCE(), typ)),
          BNXT_QPLIB_DBR_VALID())
@@ -420,7 +420,7 @@ def db.lo(+index: U32, +epoch: U32) -> U32:
 # row that says what that costs, and it is the same measurement `ops_rdma.bend`
 # calls `rdma_db_hi_dropped` -- one file's gate and the other's, agreeing on
 # the same number from the same source line.
-# ===========================================================================
+
 # send_wqe / recv_wqe, :18-19.
 #
 #   send_wqe: struct.pack("<BBB5xI20xQII", 0, SQ_SEND_FLAGS_SIGNAL_COMP, 3,
@@ -446,7 +446,7 @@ def db.lo(+index: U32, +epoch: U32) -> U32:
 # `hdr0_SEND_COMMENT_IS_RIGHT` and `hdr0_RECV_COMMENT_IS_RIGHT` are oracle
 # rows, both `0`, and they say so in a committed artefact rather than in an
 # argument. VERIFIED BY GREP, not asserted -- see the report.
-# ===========================================================================
+
 def WQE_KIND() -> U32: 3
 def RECV_KIND() -> U32: 128
 def HDR_WORDS() -> U32: 8
@@ -485,7 +485,7 @@ def wqe.hdr2(+recv: Bool, size: U32) -> U32: Bool.pick(U32, recv, 0, size)
 def wqe.words(+recv: Bool, +size: U32, va_lo: U32, va_hi: U32, key: U32) -> List<&2, U32>:
   [wqe.hdr0(recv), 0, wqe.hdr2(recv, size), 0, 0, 0, 0, 0, va_lo, va_hi, key, size]
 
-# ===========================================================================
+
 # msn_entry, :20-24. The 64-bit word is THREE 24-BIT FIELDS:
 #
 #   (wqe_idx % RING_ENTRIES) << SQ_MSN_SEARCH_START_IDX_SFT |   <- bit 48
@@ -498,7 +498,7 @@ def wqe.words(+recv: Bool, +size: U32, va_lo: U32, va_hi: U32, key: U32) -> List
 # no bit is invented and no bit is dropped -- and `msn_shifts_from_autogen`
 # says the two shift amounts are 48 and 24 out of `SQ_MSN_SEARCH_*` rather
 # than literals in the def.
-# ===========================================================================
+
 def ceildiv(+a: U32, +b: U32) -> U32: U32.div(U32.add(U32.add(a, U32.sub(b, 1)), 0), b)
 
 def msn.pkts(size: U32) -> U32:
@@ -526,7 +526,7 @@ def msn.hi(slot: U32, nxt: U32) -> U32:
 def msn.lo(nxt: U32, psn: U32) -> U32:
   U32.or(U32.shln(nxt, U32.to_nat(MSN_NEXT_AT())), psn)
 
-# ===========================================================================
+
 # cqe_ready, :25. `(cqe[24] & CQ_BASE_TOGGLE) != (cons // CQ_ENTRIES & 1)`.
 #
 # BYTE 24 is `cqe_type_toggle` -- the FOURTH field of `struct_cq_base`, after
@@ -534,7 +534,7 @@ def msn.lo(nxt: U32, psn: U32) -> U32:
 # which is always zero, so a port that polled byte 0 would wait for a toggle
 # that can never be set and would hang. `cqe_of` / `cqe_status` are pinned by
 # NAME against `_real_fields_` and not by counting from the front.
-# ===========================================================================
+
 def CQE_TOGGLE_AT() -> U32: 24
 
 def cqe.ready(toggle: U32, cons: U32) -> Bool:
@@ -544,7 +544,7 @@ def cqe.ready(toggle: U32, cons: U32) -> Bool:
 # test and is what `poll`'s doorbell reproduces one step later.
 def cqe.epoch(cons: U32) -> U32: U32.and(U32.div(cons, CQ_ENTRIES()), 1)
 
-# ===========================================================================
+
 # the page tables. `build_pbl`, :27-37, and it is the table most likely to
 # CARRY A WRONG CONSTANT, because a wrong PTU_PTE_* flag is a page table the
 # NIC walks off the end of and there is no Python exception to catch it.
@@ -577,7 +577,7 @@ def cqe.epoch(cons: U32) -> U32: U32.and(U32.div(cons, CQ_ENTRIES()), 1)
 #   4. `queue` adds two flags to two different entries, and the second-to-last
 #      is the one that gets NEXT_TO_LAST -- the two are not the same entry and
 #      `pbl_queue_two_entries` is the row that separates them.
-# ===========================================================================
+
 def PBL_PAGES_PER_TABLE() -> U32: 512
 def PBL_MAX_PAGES() -> U32: 512
 def PBL_TOP_BYTES() -> U32: 4096
@@ -635,7 +635,7 @@ def pbl.entry_lo_at(+paddr_lo: U32, queue: Bool, +i: U32, +n: U32) -> U32:
 # a gate row can ask "would this refuse" without building a trace.
 def pbl.refuses(n: U32) -> Bool: U32.is_gt(pbl.table_pages(n), PBL_MAX_PAGES())
 
-# ===========================================================================
+
 # BNXTQueue, :39-45, and `alloc_queue`, :47-50.
 #
 #   read(i):  ring[(off := i % (size // stride) * stride) : off + stride]
@@ -654,7 +654,7 @@ def pbl.refuses(n: U32) -> Bool: U32.is_gt(pbl.table_pages(n), PBL_MAX_PAGES())
 # after the ring is the msn TABLE, one 64-bit entry per slot. So the send
 # queue's `+ entries * 8` at :49 is the same 8 as `post_send`'s aux write at
 # :230, and `aux_base_is_past_ring` is the row.
-# ===========================================================================
+
 def q.slots(size: U32, +stride: U32) -> U32: U32.div(size, stride)
 
 def q.read_off(i: U32, size: U32, +stride: U32) -> U32:
@@ -697,13 +697,13 @@ def q.alloc_of(+stride: U32, aux: Bool, +entries: U32) -> U32:
 # the rows that see this, and they sit one fixture apart.
 def q.pbl_pages_of(alloc_bytes: U32) -> U32: ceildiv(alloc_bytes, PAGE())
 
-# ===========================================================================
+
 # THE ROW PRINTERS. One `name=value` line per claim; the gate is that the
 # interpreted lane, the native lane and `.agents/slop/bnxt_oracle.txt` all
 # print the same lines. A row is never a restatement of the def under test:
 # every expectation in the oracle is produced by CALLING CPYTHON, and where
 # Python can run the function the oracle calls it rather than transcribing it.
-# ===========================================================================
+
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 def brow(nm: String, v: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(v)]))
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
@@ -743,7 +743,7 @@ def join_str(+xs: List<&2, String>) -> String:
 
 def nrow(nm: String, xs: List<&2, String>) -> IO(Unit): IO.print(String.concat([nm, "=", join_str(xs)]))
 
-# ===========================================================================
+
 # THE LOGGING TABLE. `BNXT_BACKING_STORE`, :11, and what drives it,
 # `setup_backing_store`, :91-108.
 #
@@ -762,7 +762,7 @@ def nrow(nm: String, xs: List<&2, String>) -> IO(Unit): IO.print(String.concat([
 # `func_backing_store_qcaps_v2` returns, transcribed per type from
 # `.agents/slop/bnxt_oracle.py`'s `FIX`, and every field the port reads is
 # printed beside its use so a wrong field cannot hide behind a right sum.
-# ===========================================================================
+
 def BS_TYP() -> List<&2, U32>: [0, 1, 2, 3, 4, 5, 6, 14, 15]
 def BS_EXTRA() -> List<&2, U32>: [64, 0, 128, 0, 2, 0, 0, 1024, 0]
 def BS_LEN() -> U32: 9
@@ -869,7 +869,7 @@ def bs.init_npos(+mem_bytes: U32, +off: U32, entry_size: U32) -> U32:
 
 def bs.init_len(npos: U32) -> U32: npos
 
-# ===========================================================================
+
 # THE TRACE. One `CALL_*` per device call, carrying up to TWO U32 arguments:
 # `a` is the address or the index and `b` is the value or the length. Two
 # arguments is the smallest that covers `self.bar0[i] = w`, `self.db[off] =
@@ -885,7 +885,7 @@ def bs.init_len(npos: U32) -> U32: npos
 # `Tr.refuse` is IDEMPOTENT after the first, so one fixture numbering reaches
 # EVERY refusal site in turn and a refusal appears as a TRUNCATED TRACE. That
 # is why no step below carries a guard of its own.
-# ===========================================================================
+
 type Call is Data:
   Call{k: U32, a: U32, b: U32}
 
@@ -968,13 +968,13 @@ def Tr.refuse(t: Tr) -> Tr:
   match t:
     case Tr{calls, next, refused, nth, at}: Tr.refuse.go(refused, nth, at)
 
-# ===========================================================================
+
 # READING THE TRACE. `Tr.count` is how many calls carry a tag -- which is the
 # TRUNCATION LENGTH a refusal shows up as. `Tr.seq` is an ordered SUBSEQUENCE
 # test, so a trace that contains the right calls in the WRONG ORDER fails.
 # `Tr.arg_at` is the argument a call carried, which is what pins "the right
 # VALUE reached the right call".
-# ===========================================================================
+
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, +got: U32) -> U32:
   match n:
     case 0n: got
@@ -1052,7 +1052,7 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 
 def Tr.seq(t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
 
-# ===========================================================================
+
 # THE HWRM AND RCFW WORD ARITHMETIC. :55-89 and :130-158.
 #
 # `hwrm` (:76-89) is a wall for its struct construction (WALL 1) and a seam for
@@ -1069,7 +1069,7 @@ def Tr.seq(t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
 #        three conjuncts: a zero `resp_len` means "not yet", so the gate is not
 #        just the sequence match.
 #   :87  `ctypes.sizeof(out)` bounded by the 0x1000-byte response buffer
-# ===========================================================================
+
 def SEQ_MASK() -> U32: 65535
 def CREQ_CONS_MASK() -> U32: 255
 
@@ -1137,10 +1137,10 @@ def rcfw.skip(ret_type: U32, ret_event: U32) -> Bool:
   Bool.and(rcfw.is_event(ret_type),
            U32.is_lt(ret_event, CREQ_QP_EVENT_EVENT_QP_ERROR_NOTIFICATION()))
 
-# ===========================================================================
+
 # THE DEVICE INDEX ARITHMETIC. `BNXTDev.__init__`, :53-72, `register_mem`,
 # :183-189, `_open_l2`, :167-180, and `BNXTQP`, :191-217.
-# ===========================================================================
+
 
 # :66 -- `self.db_off = hwrm("func_qcfg", fid=0xffff).legacy_l2_db_size_kb *
 # 1024`. A BYTE offset, and :164 then divides it by 8 because the doorbell
@@ -1248,7 +1248,7 @@ def l2_filter_enables() -> U32:
 def cmdq_lvl() -> U32: U32.shln(CMDQ_LVL(), U32.to_nat(CMDQ_INIT_CMDQ_SIZE_SFT()))
 def cmdq_lvl_lo16() -> U32: U32.and(cmdq_lvl(), 65535)
 
-# ===========================================================================
+
 # THE OPERATIONS. Each one EITHER builds the argument of one device call (and
 # returns it) OR records the call and hands back the trace. There is no third
 # kind, and `Tr.refuse` inside one of them is the port of the Python `assert`
@@ -1390,7 +1390,7 @@ def pbl.build_top(t: Tr) -> Tr: Tr.emit(CALL_ALLOC(), PBL_TOP_BYTES(), PBL_MAX_P
 def pbl.build_check(n: U32, +t: Tr) -> Tr:
   Bool.pick(Tr, pbl.refuses(n), t, Tr.refuse(t))
 
-# ===========================================================================
+
 # THE GATE, PART ONE: the constants, the struct field lists, the 64-bit words
 # and the two pack formats.
 #
@@ -1412,7 +1412,7 @@ def pbl.build_check(n: U32, +t: Tr) -> Tr:
 # file with the right constants and the wrong formula fails the second row; a
 # file with the right formula and the wrong constant fails the first. Neither
 # row alone can be satisfied by the other's mistake.
-# ===========================================================================
+
 # the POPCOUNT and the eight nibbles. Both are folds over a 32-bit word, and
 # both are the check that a transposed digit pair cannot survive: the decimal
 # `c_BNXT_RTR_MASK=68490669` and the eight nibbles are read off the SAME def,
@@ -1537,7 +1537,7 @@ def t_const() -> IO(Unit):
     urow("c_SIZEOF_CMDQ_DEREGISTER_MR", SIZEOF_CMDQ_DEREGISTER_MR())
     urow("c_SLOTS_CMDQ_DEREGISTER_MR", rcfw.slots_of(SIZEOF_CMDQ_DEREGISTER_MR()))
 
-# ---------------------------------------------------------------------------
+
 # the struct field lists, by name and in order.
 #
 # every field is named at its own call site. That is deliberate and it is the
@@ -1549,7 +1549,7 @@ def t_const() -> IO(Unit):
 # The lists themselves came out of `_real_fields_` -- `ctypes._fields_` on these
 # `c.record` structs is the opaque `('_mem_',)`, so plain ctypes cannot see the
 # names at all. `.agents/slop/bnxt_structs.py` reads them off the RUNTIME class.
-# ---------------------------------------------------------------------------
+
 def nth_at(+xs: List<&2, U32>, i: Nat) -> U32: Maybe.default(&2, U32, List.get(&2, U32, xs, i), 0)
 
 def name_at(+xs: List<&2, String>, i: Nat) -> String:
@@ -1603,12 +1603,12 @@ def t_offset_names() -> IO(Unit):
 
 def WQE_KIND_AT() -> U32: 16
 
-# ---------------------------------------------------------------------------
+
 # WORD 0, AND THE COMMENT `ops_rdma.bend` GETS WRONG. See the header: the code
 # at `ops_rdma.bend:1490-1492` is right and the comment at :224-225 is
 # INVERTED. These rows print the three bytes out of their places so the claim
 # is `kind at 16, flags at 8, type at 0` and not a restatement of `wqe.hdr0`.
-# ---------------------------------------------------------------------------
+
 # WHAT `ops_rdma.bend:238 symbol=WQE_KIND` CLAIMS: `type << 16 | flags << 8 | kind`. Both
 # the claim and its refutation are rows, so the disagreement is a NUMBER in a
 # committed artefact rather than an argument in a commit message.
@@ -1635,13 +1635,13 @@ def t_hdr0() -> IO(Unit):
     urow("hdr0_RECV_COMMENT_SAYS", hdr0_comment_says(True{}))
     brow("hdr0_RECV_COMMENT_IS_RIGHT", U32.is_eq(hdr0_comment_says(True{}), wqe.hdr0(True{})))
 
-# ---------------------------------------------------------------------------
+
 # THE 64-BIT WORDS, in HALVES. `db_value` (:13-15) and `msn_entry` (:20-24),
 # eight cases each, and every one is the REAL function called by the oracle.
 # The fixtures are chosen so a mask that is vacuous at one scale shows: the
 # msn cases straddle 2^24 (`msn_3` at `psn == 0xffffff`), which is what makes
 # `& 0xffffff` visible at all.
-# ---------------------------------------------------------------------------
+
 def db_row(+i: U32, xid: U32, typ: U32, ix: U32, ep: U32) -> IO(Unit):
   do IO<Unit>:
     urow(String.concat(["db_", U32.show(i), "_HI"]), db.hi(xid, typ))
@@ -1664,12 +1664,12 @@ def msn_row(+i: U32, wqe_idx: U32, +psn: U32, +size: U32) -> IO(Unit):
     urow(String.concat(["msn_", U32.show(i), "_LO"]), msn.lo(msn.next_of(msn.mask(psn), size), msn.mask(psn)))
     urow(String.concat(["msn_", U32.show(i), "_NEXT"]), msn.next_of(msn.mask(psn), size))
 
-# ---------------------------------------------------------------------------
+
 # THE TWO PACKS. Eight words of the send header and seven of the receive, plus
 # the lengths and the scatter-gather element. `wqe_1` is the ZERO case and
 # `wqe_2` the LARGE one; between them they see `size` in word 2 on the send
 # and NO size at all on the receive.
-# ---------------------------------------------------------------------------
+
 def t_msn() -> IO(Unit):
   do IO<Unit>:
     msn_row(0, 0, 0, 100)
@@ -1703,7 +1703,7 @@ def t_wqe() -> IO(Unit):
     wqe_row(2, 3735928559, 4294967295, 4096)
 
 
-# ===========================================================================
+
 # THE GATE, PART TWO: the page table, the queue, the completion status, the
 # logging table, the gid/mac unpacking and the device index arithmetic.
 #
@@ -1715,7 +1715,7 @@ def t_wqe() -> IO(Unit):
 # `pbl.entry_lo_at` turns that address plus the right flags into the entry
 # `build_pbl` actually wrote, and that `pbl.entry_hi` leaves the high half
 # alone. `pbl_hi_untouched` is the row for the second half of that claim.
-# ===========================================================================
+
 def PBL_FIX_HI() -> U32: 31232
 def pbl_fix_lo(i: U32) -> U32: U32.mul(i, PAGE())
 
@@ -1817,7 +1817,7 @@ def aq_off(+nm: String, +j: U32, +i: U32, ns: U32, +sz: U32, +stride: U32, aux: 
     urow(String.concat([nm, "_WL", U32.show(j)]), q.write_len(sz, stride, False{}, stride))
     urow(String.concat([nm, "_WA", U32.show(j)]), q.write_off(i, sz, stride, True{}))
 
-# ===========================================================================
+
 # THE QUEUE. `alloc_queue` (:47-50) and `BNXTQueue.read`/`write` (:42-45), and
 # the oracle for these rows calls the REAL `alloc_queue` against a fake PCI and
 # reads the slice bounds back out of its MMIO stand-in -- so `aq_*_W*` is the
@@ -1828,7 +1828,7 @@ def aq_off(+nm: String, +j: U32, +i: U32, ns: U32, +sz: U32, +stride: U32, aux: 
 # the queue is still 4096), a 128-byte queue with aux, a 128-byte queue with
 # aux FALSE (so `size` is 4096 and the aux base moves with it), a 4096-entry
 # 32-byte queue, and a THREE-entry queue where the page default does not apply.
-# ===========================================================================
+
 def aq_row(i: U32, +stride: U32, +aux: Bool, +entries: U32) -> IO(Unit):
   do IO<Unit>:
     +nm : String = String.concat(["aq_", U32.show(i)])
@@ -1861,11 +1861,11 @@ def t_aq() -> IO(Unit):
     urow("qwrap_READ", 16)
     brow("qwrap_READ_EQ0", U32.is_eq(q.read_off(256, 4096, 16), q.read_off(0, 4096, 16)))
 
-# ===========================================================================
+
 # THE COMPLETION AND ERROR STATUS. `cqe_ready` (:25) over real 32-byte
 # entries, `struct_cq_base` byte 24 BY NAME, the CQE status byte at 25, and
 # the CREQ valid bit at byte 8 against `read_idx // 256`.
-# ===========================================================================
+
 def cqe_row(i: U32, toggle: U32, cons: U32) -> IO(Unit):
   do IO<Unit>:
     brow(String.concat(["cqe_", U32.show(i), "_READY"]), cqe.ready(toggle, cons))
@@ -1915,12 +1915,12 @@ def bs_typs(+i: U32) -> IO(Unit):
 
 def bs_typs_all() -> List<&2, U32>: BS_TYP()
 
-# ===========================================================================
+
 # THE LOGGING TABLE, both directions. Nine (type, extra) pairs forward, the
 # `counts` derivation that type 15 shares with type 0, the instance bitmap
 # walk including two ZERO bitmaps, the `ctx_init` sweep, the alloc rounding and
 # the ALL_DONE flag.
-# ===========================================================================
+
 def bs_type_rows() -> IO(Unit):
   do IO<Unit>:
     +a : Unit <- bs_typs(0)
@@ -2049,11 +2049,11 @@ def t_bs() -> IO(Unit):
     urow("bs_ALLOC_4", bs.alloc_bytes(4096, 64))
     urow("bs_ALLOC_5", bs.alloc_bytes(17, 64))
 
-# ===========================================================================
+
 # THE GID AND THE MAC, :71-72 and :208. Real `struct.unpack` calls on the
 # oracle side. `gid_LOCAL_HEX` is the WHOLE 16-byte gid, and it is the row here
 # that a wrong byte ORDER in the construction moves and nothing else would.
-# ===========================================================================
+
 # the fixture MAC is `0x001122334455`, split at 32 bits because a 48-bit value
 # does not fit in a `U32` (see `MAC_HI16`). `MAC_FIX_LO24` is its low THREE
 # bytes, which is what `mac.to_bytes(6, 'big')[3:]` slices out at :71.
@@ -2101,12 +2101,12 @@ def t_gid() -> IO(Unit):
     lrow("l2_ADDR", l2_addr(MAC_HI16(), MAC_LO32()))
     lrow("l2_MASK", l2_mask())
 
-# ===========================================================================
+
 # THE DEVICE AND QP INDEX ARITHMETIC. Every number the source LITS in a call,
 # each named by its line, plus the compositions that are the actual arithmetic:
 # `state | network_type`, `level << LVL_SFT | log_page << LOG2_SFT`, and
 # `cmdq_size_cmdq_lvl = 256 << CMDQ_SIZE_SFT`.
-# ===========================================================================
+
 def t_dev() -> IO(Unit):
   do IO<Unit>:
     urow("dev_CMD_PCI_COMMAND", DEV_PCI_COMMAND())
@@ -2263,7 +2263,7 @@ def refuse_twice() -> Bool:
   # site does not refuse twice -- and `nth` does not move either.
   Bool.not(Tr.refused(Tr.refuse(Tr.refuse(Tr.of()))))
 
-# ===========================================================================
+
 # THE FOUR REFUSALS, as TRUNCATED TRACES. `Tr.emit` records nothing once a
 # refusal has fired, so the LENGTH of the trace is the claim and no step below
 # needs a guard of its own. `fail_at` numbers the sites and one fixture reaches
@@ -2273,7 +2273,7 @@ def refuse_twice() -> Bool:
 #   :88   `assert ret.error_code == 0`         the HWRM, up to its wait
 #   :155  `assert ret.status == 0`             the RCFW, up to its CREQ read
 #   :224  `assert raw[25] == 0`                the poll, up to its ring read
-# ===========================================================================
+
 def t_refuse() -> IO(Unit):
   do IO<Unit>:
     +a : Unit <- refuse_rows(0)
@@ -2315,7 +2315,7 @@ def pack_rows(+pfx: String, +ats: List<&2, U32>, +ws: List<&2, U32>, vi: Nat, ki
 # is a JOIN and not a projection.
 def show_str(xs: List<&2, U32>) -> String: join_u32(xs)
 
-# ---------------------------------------------------------------------------
+
 # the two pack formats, by name and in order. `ops_rdma.py:140` calls the real
 # `send_wqe`/`recv_wqe` and unpacks the first 32 bytes as `<8I`, so word 0 and
 # word 2 are facts about this file, and the nine field NAMES and the seven
@@ -2328,7 +2328,7 @@ def show_str(xs: List<&2, U32>) -> String: join_u32(xs)
 # `schedule/indexing.bend` lesson: a def nothing calls is invisible to every
 # other check, and M16 of the mutation table is a blind spot for the same
 # reason.
-# ---------------------------------------------------------------------------
+
 def t_packs() -> IO(Unit):
   do IO<Unit>:
     nrow("send_0_NAMES", send_pack_names())
@@ -2353,12 +2353,11 @@ def t_packs() -> IO(Unit):
     urow("cqe_toggle_at", CQE_TOGGLE_AT())
     urow("slot64", SLOT64())
 
-# ---------------------------------------------------------------------------
+
 # the operations that had no gate row at all. Twelve trace-emitting defs were
 # dead, so M23 (`rcfw.prod_write`) was a BLIND SPOT: the mutation moved nothing
 # because nothing called the def. These rows call each one, so the SEQUENCE is
-# checked and the defs are no longer invisible.
-# ---------------------------------------------------------------------------
+
 def t_ops() -> IO(Unit):
   do IO<Unit>:
     urow("op_rcfw_write_seen", Tr.seen(rcfw.write(7, Tr.of())))
@@ -2453,7 +2452,7 @@ def main() -> IO(Unit):
     o : Unit <- t_refuse()
     IO.print("bnxtdev-done=1")
 
-# ===========================================================================
+
 # THE MUTATION TABLE. Every number is `.agents/slop/bnxt_mutate.py`'s output and
 # not an estimate. The harness applies ONE edit to a scratch copy IN THIS
 # DIRECTORY (a `$TMPDIR` copy cannot resolve the relative imports and produced 22
@@ -2503,7 +2502,7 @@ def main() -> IO(Unit):
 # | 34 | :72 -- the `>3H` halves are unmasked, so the low one is the whole low word | 3 | `gid_SRCMAC`, `gid_SRCMAC_REV` and `gid_DMAC`, the last because `connect`'s `<3H` is the SAME three halves byte-swapped and `swap16` composes from the same reader. |
 # | 35 | :178 -- the `PATH_RX` flag word becomes `ENABLES_L2_ADDR` | 0 | a theorem and not a gap. `CFA_L2_FILTER_ALLOC_REQ_FLAGS_PATH_RX == CFA_L2_FILTER_ALLOC_REQ_ENABLES_L2_ADDR == 1` in autogen/bnxt.py, so the substitution is a no-op over every possible input and no fixture can separate them. It is closed with a claim about the constants (`c_CFA_L2_*_FLAGS_PATH_RX` and `c_CFA_L2_FILTER_ALLOC_REQ_ENABLES_L2_ADDR` are both rows) and not with a row that asserts the swapped word is wrong. |
 # | 36 | :27 -- THE CONTROL: a comment-only edit | 0 | a table with no row that CANNOT move is a table of coincidences. |
-# ===========================================================================
+
 # THE CONSTANT SWEEP. `.agents/slop/bnxt_sweep.py` puts `+1` on every one of the
 # 136 `def NAME() -> U32: V` constant defs, ONE AT A TIME, and diffs the whole
 # lines. 134 of 136 move a row. The two that do not are `BNXT_HWRM_NO_CMPL_RING`
@@ -2523,4 +2522,4 @@ def main() -> IO(Unit):
 # `QUEUE_PAGE` and `BS_TYPE0` were also blind and both are now read: the first by
 # `queue_page` (and its `+1` is a degenerate edit -- `4097 // 16 == 256`), the
 # second by `bs_type0`.
-# ===========================================================================
+

@@ -11,7 +11,7 @@ import ./../../mixin/op.bend as MO
 import ./../../mixin/movement.bend as MX
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/inception.py (344 loc). not yet
 # PORTED.
 #
@@ -97,7 +97,7 @@ import ./../datasets/__init__.bend as D
 # weights happen to be zero. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`. Each message names
 # the upstream `path:line` of the FIRST MISSING SYMBOL.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -107,10 +107,10 @@ def ic_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :12-18 BasicConv2d -- the only class in the first half of the file, and every
 # OTHER CLASS IS BUILT OUT OF IT.
-# ---------------------------------------------------------------------------
+
 
 # :13 def __init__(self, in_ch:int, out_ch:int, kwargs)
 def ic_basic_init(in_ch: U32, out_ch: U32) -> D.Refused:
@@ -124,9 +124,9 @@ def ic_basic_bn(out_ch: U32) -> D.Refused:
 def ic_basic_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:17 BasicConv2d.__call__ -- FIRST MISSING SYMBOL x.sequential at :18")
 
-# ---------------------------------------------------------------------------
+
 # :20-40 InceptionA. FOUR BRANCHES AND A CAT.
-# ---------------------------------------------------------------------------
+
 
 # :21 def __init__(self, in_ch:int, pool_feat:int)
 def ic_incepa_init(in_ch: U32, pool_feat: U32) -> D.Refused:
@@ -143,10 +143,10 @@ def ic_incepa_cat() -> D.Refused:
 def ic_incepa_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:33 InceptionA.__call__ -- FIRST MISSING SYMBOL the padded avg_pool2d at :38 (nn/pool.bend:263 symbol=pool_avgpool_padded)")
 
-# ---------------------------------------------------------------------------
+
 # :42-56 InceptionB. the first class with a `max_pool2d`, and so the first one
 # WHOSE BODY CANNOT BE SPELLED AT ALL.
-# ---------------------------------------------------------------------------
+
 
 # :43 def __init__(self, in_ch:int)
 def ic_incepb_init(in_ch: U32) -> D.Refused:
@@ -156,10 +156,10 @@ def ic_incepb_init(in_ch: U32) -> D.Refused:
 def ic_incepb_pool(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:54 InceptionB.__call__ -- REFUSED PADDED MAX POOL: pool_maxpool (nn/pool.bend:251 symbol=pool_maxpool) is the UNPADDED arm only; pool_maxpool_padded (nn/pool.bend:253 symbol=pool_maxpool_padded) names the blocker, and pool.bend:248-249 symbol=pool_maxpool says why it is not built wrong instead: a max_pool2d padded with ZERO would be wrong for any negative input")
 
-# ---------------------------------------------------------------------------
+
 # :58-81 InceptionC, :83-99 InceptionD, :101-125 InceptionE. THREE CLASSES, ONE
 # SHAPE: a `BasicConv2d` chain, a pool, and a `Tensor.cat`.
-# ---------------------------------------------------------------------------
+
 
 # :59 def __init__(self, in_ch, ch_7x7)
 def ic_incepc_init(in_ch: U32, ch_7x7: U32) -> D.Refused:
@@ -185,10 +185,10 @@ def ic_incepe_init(in_ch: U32) -> D.Refused:
 def ic_incepe_cat() -> D.Refused:
   D.refuse("extra/models/inception.py:121 InceptionE.__call__ -- MISSING Tensor.cat; and these two branches are nested cats, so one missing symbol costs THREE calls in this def")
 
-# ---------------------------------------------------------------------------
+
 # :127-136 InceptionAux. the one class whose pools are `padding=1` with a
 # KERNEL THAT IS NOT 3.
-# ---------------------------------------------------------------------------
+
 
 # :128 def __init__(self, in_ch:int, num_classes:int)
 def ic_aux_init(in_ch: U32, num_classes: U32) -> D.Refused:
@@ -202,11 +202,11 @@ def ic_aux_pool5(+x: T.Tensor) -> D.Refused:
 def ic_aux_flatten(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:135 InceptionAux.__call__ -- pool_flatten (nn/pool.bend:327 symbol=pool_flatten) EXISTS and takes b0/rest AS VALUES; the missing part is reading `rest` out of x.shape instead of being handed it, which is the -1 INFERENCE nn/pool.bend:323-325 symbol=pool_flatten says no def here has")
 
-# ---------------------------------------------------------------------------
+
 # :138-192 Inception3. twenty-eight named sublayers, restated as a count and a
 # SPAN RATHER THAN A LIST, because a list of twenty-eight names in a comment is
 # the census that rots.
-# ---------------------------------------------------------------------------
+
 
 # :139 def __init__(self, num_classes:int=1008, cls_map:Optional[Dict]=None)
 def ic_incep3_init(num_classes: U32) -> D.Refused:
@@ -237,10 +237,10 @@ def ic_incep3_fc(num_classes: U32) -> D.Refused:
 def ic_incep3_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:165 Inception3.__call__ -- FIRST MISSING SYMBOL the padded max_pool2d at :147 via :170 (nn/pool.bend:253 symbol=pool_maxpool_padded)")
 
-# ---------------------------------------------------------------------------
+
 # :195-239 the fid variants. four classes that override one method each, and
 # each override changes exactly one thing: `count_include_pad`.
-# ---------------------------------------------------------------------------
+
 
 # :197-205 FidInceptionA  :203 ... avg_pool2d(..., count_include_pad=False)
 def ic_fida_pool(+x: T.Tensor) -> D.Refused:
@@ -258,9 +258,9 @@ def ic_fide1_pool(+x: T.Tensor) -> D.Refused:
 def ic_fide2_pool(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:237 FidInceptionE2.__call__ -- REFUSED PADDED MAX POOL (nn/pool.bend:253 symbol=pool_maxpool_padded); note this is the ONE Fid override that swaps avg for max rather than changing count_include_pad")
 
-# ---------------------------------------------------------------------------
+
 # :241-321 FidInceptionV3.
-# ---------------------------------------------------------------------------
+
 
 # :242-243 m1: Optional[np.ndarray] = None / s1: ... -- CLASS ATTRIBUTES, and
 # `compute_score` (:313-315) READS THEM and WRITES them. That is mutable state
@@ -288,9 +288,9 @@ def ic_fidv3_call(+x: T.Tensor) -> D.Refused:
 def ic_fidv3_compute_score(embed: U32, path: String) -> D.Refused:
   D.refuse("extra/models/inception.py:312 FidInceptionV3.compute_score -- FIRST MISSING SYMBOL np.load at :314; mo_mean (mixin/op.bend:953 symbol=mo_mean) IS built and :318's `.mean(axis=0)` is expressible, but .numpy() at :318 and np.cov at :319 are not")
 
-# ---------------------------------------------------------------------------
+
 # :323-344 calculate_frechet_distance. THE FOREIGN MATHEMATICS.
-# ---------------------------------------------------------------------------
+
 
 # :323 def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6) -> float
 def ic_frechet_distance(eps: F32) -> D.Refused:
@@ -304,11 +304,11 @@ def ic_frechet_shape(eps: F32) -> D.Refused:
 def ic_frechet_trace(eps: F32) -> D.Refused:
   D.refuse("extra/models/inception.py:342 calculate_frechet_distance -- MISSING np.trace; mo_sum (mixin/op.bend:854 symbol=mo_sum) IS built and a trace is a sum over the diagonal, so this ONE line is a port waiting on a shape rather than on scipy")
 
-# ---------------------------------------------------------------------------
+
 # THERE IS NO `if __name__ == \"__main__\":` IN THIS FILE -- upstream ends at
 # :344. `main` below IS the port's own entry and it invents no census, because a
 # 1:1 mirror that emits rows upstream does not emit is not a mirror.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, ic_basic_init(3, 32))

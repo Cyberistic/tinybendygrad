@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/compiler_cuda.bend -- port of tinygrad/runtime/support/compiler_cuda.py
 #
-# ===========================================================================
+
 # ninety-nine lines, and the headline is that the six regexes are a wall.
 #
 # `pretty_ptx(s)` is six `re.sub(pattern, lambda m: m[1] + colored(m[2], c) + m[3], s,
@@ -47,7 +47,7 @@
 #         `st.global.f32` gives `global`; the FIRST dot-match wins.
 #   pat5  `(\.)(version|target|address_size|visible|entry)`.
 #
-# ===========================================================================
+
 # `colored` (helpers.py:39-44) is the other half of `pretty_ptx`, and it is
 # fully ported:
 #
@@ -63,7 +63,7 @@
 #   TODO(p3) compiler_cuda.py:29 -- `colored(...)` in each of the six lambdas.
 #   TODO(p3) helpers.py:39  symbol=colored -- `if NO_COLOR: return st`.
 #
-# ===========================================================================
+
 # `CUDA_PATH = getenv("CUDA_PATH", "")` IS A PROCESS-BOOT CONSTANT, and it is
 # read at IMPORT: `tinygrad/helpers.py:161 symbol=getenv` carries `@functools.cache` on upstream's `getenv`, so the module
 # constant is fixed before any caller can change the environment. Measured, in
@@ -74,7 +74,7 @@
 # (`CUDA_PATH=/my/cuda`) is the only way to observe the non-empty arm.
 #   TODO(p3) compiler_cuda.py:7 -- `CUDA_PATH = getenv("CUDA_PATH", "")`.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :7   CUDA_PATH              PORTED `CUDA_PATH.default` (the parameter)
@@ -98,7 +98,7 @@
 #   :86-99 NVPTXCompiler        PORTED `NVPTXCompiler.key` `.calls` `.calls_n`
 #                                       `.arch_opt` `.input_kind`
 #
-# ===========================================================================
+
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- `tinygrad.runtime.autogen.nvrtc` and `.nvjitlink`: two `ctypes.CDLL`
@@ -143,14 +143,14 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # hangs and the file stops printing at the row before it), and the separator is
 # a fixture choice, not a ported decision: `str.replace` never looks at it.
 
-# ===========================================================================
+
 # `helpers.colored`. `colors.index(color.lower())` is the position in
 # `['black','red','green','yellow','blue','magenta','cyan','white']`, and
 # `60*(color.upper() == color)` adds 60 for an UPPER-case name -- so
 # `colored("X","BLUE")` is `94` and `colored("X","blue")` is `34`. MEASURED.
 # `NO_COLOR` makes the whole thing the identity, which is why `colored` takes it
 # as a parameter rather than reading the environment.
-# ===========================================================================
+
 def colored.colors() -> List<&2, String>:
   ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
 
@@ -181,11 +181,11 @@ def colored(+st: String, +color: String, +bg: Bool, +nocolor: Bool) -> String:
 
 def colored.none() -> String: ""
 
-# ===========================================================================
+
 # `pretty_ptx`'s six patterns, VERBATIM from upstream. They are transcribed
 # here as literals and the gate compares them against `ast`-extracted text from
 # `tinygrad/runtime/support/compiler_cuda.py`, so a typo here moves a row.
-# ===========================================================================
+
 def pretty_ptx.pat0() -> String:
   "([!@<\\[\\s,\\+\\-;\\n])((?:[_%$][\\w%\\$_]+(?:\\.[xyz])?\\:?)|(?:buf\\d+))([<>\\]\\s,\\+\\-;\\n\\)])"
 def pretty_ptx.pat1() -> String: "(.)((?:b|s|u|f)(?:8|16|32|64)|pred)([\\.\\s])"
@@ -197,11 +197,11 @@ def pretty_ptx.pat5() -> String: "(\\.)(version|target|address_size|visible|entr
 
 def pretty_ptx.pat_n() -> U32: 6
 
-# ===========================================================================
+
 # :8-9  `root = pathlib.Path(__file__).parents[3]` and the docker command. The
 # root is passed to docker TWICE -- once as the `-v` mount and once as
 # `PYTHONPATH` -- so the row is the whole string and a dropped field moves it.
-# ===========================================================================
+
 def root() -> String: "/ROOT"
 
 def osx_docker_cmd() -> String:
@@ -211,13 +211,13 @@ def osx_docker_cmd() -> String:
 
 def osx_docker_cmd_n() -> U32: 11
 
-# ===========================================================================
+
 # :11-14  `_get_bytes(arg, get_str, get_sz, check)`: the SIZE is read FIRST to
 # size a buffer, then the buffer is filled -- so there are exactly TWO calls, in
 # that order, and `check` wraps each return. `.pick` is the only ported choice:
 # `self.ptx` decides whether the getters are the PTX pair or the CUBIN pair, and
 # it is the SAME boolean for both.
-# ===========================================================================
+
 def _get_bytes.calls() -> U32: 2
 
 def _get_bytes.calls_name(+ptx: Bool) -> String:
@@ -227,7 +227,7 @@ def _get_bytes.pick(+ptx: Bool) -> U32: Bool.to_u32(ptx)
 
 def _get_bytes.zero() -> U32: 0
 
-# ===========================================================================
+
 # :16-24  the two `check`s. They differ in the SECOND half of the message:
 # `nvrtcCheck` reads a C string out of the library (`ctypes.string_at(...).decode()`)
 # and `jitlinkCheck` looks a NAME up in a dict with `.get`, which answers `None`
@@ -235,7 +235,7 @@ def _get_bytes.zero() -> U32: 0
 # table does not carry, and that is a DIFFERENT answer from a name and not an
 # absence of a message. MEASURED: status 15 is absent from `nvJitLinkResult`,
 # so `jitlink Error 15, None`.
-# ===========================================================================
+
 def nvrtc_check.msg(+status: U32, +es: String) -> String:
   String.concat(["Nvrtc Error ", U32.show(status), ", ", es, "\\n"])
 
@@ -259,11 +259,11 @@ def jitlink_check.kind() -> String: "CompileError"
 
 def jitlink_check.result_n() -> U32: 7
 
-# ===========================================================================
+
 # :38-44  `cuda_disassemble`. The digest is WALL 3, so it is a PARAMETER; what
 # is ported is the `tinycuda_` PREFIX, the two command strings, the `try`
 # message, and the `rstrip` TRAILING-zero test of WALL 4.
-# ===========================================================================
+
 def cuda_disassemble.fname_prefix() -> String: "tinycuda_"
 
 def cuda_disassemble.fname_prefix_n() -> U32: 8
@@ -314,7 +314,7 @@ def rst.bs(+bs: List<&2, U32>) -> List<&2, U32>: rst.go(bs, [])
 # twice and every fixture moved.
 def zr.n(+bs: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, rst.bs(bs)))
 
-# ===========================================================================
+
 # :46-54  `NVRTCCompiler.__init__`. `--gpu-architecture=<arch>` first, then
 # EITHER one include (when `CUDA_PATH` is set) OR three fixed ones, and then
 # `--minimal` when `(nvrtcMajor, nvrtcMinor) >= (12, 4)`. So the option COUNT is
@@ -322,7 +322,7 @@ def zr.n(+bs: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, rst.bs(bs
 # 4 without it. MEASURED for 12.4, 12.3, 11.8, 13.0 and 9.2.
 # The comparison is a TUPLE comparison, so `(12, 4) >= (12, 4)` is TRUE and
 # `(13, 0) >= (12, 4)` is decided by the major alone.
-# ===========================================================================
+
 def CUDA_PATH.default() -> String: ""
 
 # the value the `@2` process observes, and the port's parameter default for the
@@ -398,7 +398,7 @@ def to_char_p_p_n(+n: U32) -> U32: n
 
 def NVRTCCompiler.name() -> String: "<null>"
 
-# ===========================================================================
+
 # :65-76  `NVCCCompiler`. `mode, suffix = ("-ptx", ".ptx") if ptx else
 # ("-cubin", ".cubin")` is ONE ternary feeding TWO values, and the cache key has
 # a ternary INSIDE the f-string: `f"compile_nvcc_{cache_key+'ptx' if ptx else
@@ -406,7 +406,7 @@ def NVRTCCompiler.name() -> String: "<null>"
 # `' '.join(extra_options)` is the thing the digest is computed OVER, so it is
 # gated on its own -- a join that dropped a trailing empty option would still
 # hash to eight characters and be invisible in the key.
-# ===========================================================================
+
 def NVCCCompiler.mode(+ptx: Bool) -> String: Bool.pick(String, ptx, "-ptx", "-cubin")
 
 def NVCCCompiler.suffix(+ptx: Bool) -> String: Bool.pick(String, ptx, ".ptx", ".cubin")
@@ -434,14 +434,14 @@ def NVCCCompiler.dis_row(+arch: String, +ptx: Bool) -> String:
     String.concat(["cuda_disassemble(", arch, ", ptx=True)"]),
     String.concat(["cuda_disassemble(", arch, ", ptx=False)"]))
 
-# ===========================================================================
+
 # :78-84  `PTXCompiler`. `src.replace("TARGET", self.arch).replace("VERSION",
 # ...)` is TWO replaces IN ORDER, and the version is
 # `"8.7" if (ver := int(self.arch[3:])) >= 120 else ("7.8" if ver >= 89 else
 # "7.5")` -- so it reads `self.arch[3:]`, which for `sm_86` is `86` and for
 # `compute_86` is `pute_86`, which is a ValueError. `str.replace` replaces
 # EVERY occurrence, so `PTXCompiler.replace` is a scan and not a single splice.
-# ===========================================================================
+
 def PTXCompiler.key(+cache_key: String, +arch: String) -> String:
   String.concat(["compile_", cache_key, "_", arch])
 
@@ -497,13 +497,13 @@ def PTXCompiler.compile(+src: String, +arch: String) -> String:
 def PTXCompiler.dis_row(+arch: String) -> String:
   String.concat(["cuda_disassemble(", arch, ", ptx=True)"])
 
-# ===========================================================================
+
 # :86-99  `NVPTXCompiler`. `cache_key="nv_ptx"`, so the key is
 # `compile_nv_ptx_<arch>`, and `compile` makes SIX jitlink calls whose third
 # argument is `NVJITLINK_INPUT_PTX` and whose fourth is the PTX the parent class
 # already substituted -- so the parent's `compile` is part of this file's answer
 # and not a detail.
-# ===========================================================================
+
 def NVPTXCompiler.cachekey() -> String: "nv_ptx"
 
 def NVPTXCompiler.key(+arch: String) -> String: PTXCompiler.key(NVPTXCompiler.cachekey(), arch)
@@ -560,12 +560,12 @@ def P_BYTES4() -> List<&2, U32>: []
 # replace-one instead of a replace-all shows
 def P_SRC() -> String: String.join([".version TARGET", ".version VERSION", ".target TARGET"], ";")
 
-# ===========================================================================
+
 # THE GATE. Every `cu_` row is a row of `.agents/slop/ext_oracle.py` section
 # `cu`, which calls the real module with only `nvrtc`/`nvjitlink` replaced by
 # RECORDERS -- including `sys.platform`-independent `m.OSX = False` to reach the
 # non-OSX arm that macOS cannot.
-# ===========================================================================
+
 def t_colored() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- srow("cu.esc_black", U32.show(colored.esc("black")))

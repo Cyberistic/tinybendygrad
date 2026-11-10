@@ -103,7 +103,6 @@ def wk_sealed(d: S.Dt) -> Bool:
     case S.Dt{11, 8, S.CFloat{}, _}: True{}     # fp8 e5m2, e5m2fnuz
     case _: False{}
 
-# `wk_eq_dt` / `wk_eq_cls` -- A LOCAL COPY, BECAUSE ops.bend's WAS WRONG FOR weakfloat.
 # `ops.bend:1895 symbol=eq_cls.sel` HAD SIX arms and was missing `CWeakFloat`, so
 # `eq_cls(CWeakFloat{}, CWeakFloat{})` was False (measured), which also made two
 # structurally identical `CAST(..., weakfloat)` nodes fail to hash-cons. ops.bend is
@@ -151,7 +150,6 @@ def wk_dt(+fx: F.Folded, i: U32) -> S.Dt:
 # `commit_dtype` (dtype.py:16) -- `commit_int(self._uop.vmin, self._uop.vmax, default_int)
 # if self.dtype is weakint else self.dtype` -- AS A NODE-LEVEL READER.
 #
-# THE arithmetic and the bounds were both already here and the READER was not, which is
 # what nine of this file's markers said and what none of them got right about WHY:
 #   * `D.commit_dtype` is ported (`mixin/dtype.bend`), and takes the node's dtype and its
 #     two bounds ALREADY RESOLVED -- CPython's own signature wants them separately, so the
@@ -647,7 +645,7 @@ def wk_ccast.of(isconst: Bool, +fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   wk_ccast.of(O.eq_op(O.Arena.op(F.Folded.ar(fx), self), O.OpsCONST{}), fx, self, dt)
 
-# ===========================================================================
+
 # `remint` -- elementwise.py:12.
 #     return u.ccast(dt) if u.op is Ops.CONST else u.replace(src=(remint(u.src[0], dt),)+u.src[1:])
 #
@@ -679,7 +677,7 @@ def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 # `ew_src0_rev`/`ew_src0_fwd` names in `mixin/elementwise.bend` are ROW LABELS of an unrelated
 # `ew_opname_src` probe, `gates/ew_graph_census.bend` names `ew_remint` only in prose, and
 # `gates/ew-explog-gate.py:37`'s `ew_const_bare` is prose.
-# ===========================================================================
+
 
 # ops.py:637 says it: ".cast folds away at exactly the dtypes a CONST derives
 # (bool/weakint/weakfloat): bare there, the pair everywhere else". So a CONST rebuilt at a
@@ -863,7 +861,7 @@ def commit_srcs_at.ans(+dts: Dts, +fx: F.Folded, +self: U32, +ss: List<&2, U32>,
 def commit_srcs_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> Maybe<&2, O.Found>:
   commit_srcs_at.ans(derived_dtypes(fx, self, wk_srcs(fx, self)), fx, self, wk_srcs(fx, self), dt)
 
-# ---------------------------------------------------------------------------
+
 # commit_weak_srcs -- weak.py:22-24.
 #
 #   if not any(s.dtype in dtypes.weaks for s in u.src) or
@@ -872,7 +870,7 @@ def commit_srcs_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> Maybe<&2, O.Found>:
 #
 # The meet is `promo_dtype(src)` verbatim (ops.py:120 is `least_upper_dtype` over the
 # operand dtypes), so `wk_meet` is dtype.py:193 through `fold.bend`.
-# ---------------------------------------------------------------------------
+
 
 def commit_weak_srcs.bad(+fx: F.Folded, +ss: List<&2, U32>) -> Bool:
   Bool.or(Bool.not(wk_any_weak(fx, ss)), dt_weak(wk_meet(fx, ss)))
@@ -885,7 +883,7 @@ def commit_weak_srcs.ans(bad: Bool, +fx: F.Folded, +self: U32, +ss: List<&2, U32
 def commit_weak_srcs(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
   commit_weak_srcs.ans(commit_weak_srcs.bad(fx, wk_srcs(fx, self)), fx, self, wk_srcs(fx, self))
 
-# ---------------------------------------------------------------------------
+
 # uncast_const -- weak.py:80-87.
 #
 # drop the CAST off a committed const where the consumer re-derives it anyway, so
@@ -1002,7 +1000,7 @@ def commit_weak_consts.walked(some: Bool, dt: ODt, +fx: F.Folded, +self: U32, +s
     case True{}: replace_walk(commit_weak_consts.go(ss, walk_seed(F.Folded.ar(fx)), fx, ODt.dt(dt)), fx, self)
     case False{}: O.Found{F.Folded.ar(fx), self}
 
-# ---------------------------------------------------------------------------
+
 # THE pm_commit_weak RULE 1 LAMBDA -- weak.py:37-38, the one rule here with no def of its
 # own in the file (Python spells it as a lambda over a UPat):
 #

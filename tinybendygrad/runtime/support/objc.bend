@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/objc.bend -- port of tinygrad/runtime/support/objc.py
 #
-# ===========================================================================
+
 # WHAT THIS FILE IS. 77 lines of Python, and 5 of them are the interesting
 # ones. `objc.py` binds five symbols out of two shared libraries and then does
 # STRING LOGIC with them: the selector-name mangling that turns an Objective-C
@@ -10,13 +10,13 @@
 # `own` ownership lattice that decides who calls `release`. The ctypes loads are
 # the seam. This file ports the logic and leaves the loads to the trace.
 #
-# ===========================================================================
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one objc call (pure, and the gate checks it) OR records that call in the
 # trace (the gate checks ORDER and IDENTITY). There is no third kind. No
 # `@extern`, so `--check-only` says ALL PROOFS CHECK.
 #
-# ===========================================================================
+
 # THE ORACLE. Every `py=` expectation below is a row of
 # `.agents/slop/objc/objc_oracle.txt`, produced by CALLING the real `objc.py`
 # with exactly one thing stubbed: the four `ctypes.CDLL` loads at :25-32.
@@ -31,7 +31,7 @@
 # slot and hide the design. The oracle measures both directions
 # (`fresh_msgsend_per_msg` 13, `cached_msgsend_attrs` 0).
 #
-# ===========================================================================
+
 # THE HEADLINE MEASUREMENT, which is not about this file at all.
 #
 # `ops_metal.py:86` binds BOTH `objc_msgSend` AND `sel_registerName` on
@@ -55,7 +55,7 @@
 # `tinygrad/runtime/ops_cpu.py:18-19 symbol=CPUProgram` (upstream's `rt_lib` -- libobjc is missing from `CPUProgram.link_libs`), NOT in
 # `objc.py` and NOT in `tinygrad/runtime/ops_metal.py:86` (upstream's `objc_msgSend` binding). Reported, not fixed.
 #
-# ===========================================================================
+
 # WALLS, and they are four narrow ones.
 #
 # W1  THE LIBRARY LOADS, :25-32. Four `ctypes.CDLL`s and a
@@ -99,7 +99,7 @@
 #     function is named `f`, NOT the selector, because `returns_retained(f)`
 #     wraps the INNER `f` from tinygrad/runtime/support/objc.py:37 -- upstream's `sender` -- and not `msg`'s return.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF.
 #
 #   :6-21  the ownership lattice      PORTED  Idr.{retained,own,release,finalize}
@@ -124,7 +124,7 @@
 #   :73    the clsmeth arm            PORTED  Meth.clsmeth
 #   :75-77 class Spec                 WALL 3
 #
-# ===========================================================================
+
 # THE ARGUMENT MANGLING, and it is TWO steps with an ORDER between them that
 # a one-step reading gets wrong. `nm = m[0].strip(':').replace(':', '_')`.
 #
@@ -146,13 +146,13 @@
 # does -- which is the theorem, not the point. The point is `mangle_3`.
 import Base
 
-# ===========================================================================
+
 # THE CTYPE KINDS. `msg`'s argtypes are lists of ctypes CLASSES, and a class is
 # not a value. So each is a tag, and the tags are what the gate compares
 # against the oracle's `kinds()` spelling. `CT_ID` is `id_`; `CT_INST` is the
 # string `'instancetype'`, which :71-72 replaces with the CLASS -- a value this
 # port cannot hold, hence WALL 3 rather than a fifth kind.
-# ===========================================================================
+
 def CT_VOID() -> U32: 0
 def CT_ID() -> U32: 1
 def CT_I32() -> U32: 2
@@ -170,9 +170,9 @@ def SYM_SELNAME() -> String: "sel_registerName"
 def SYM_GETCLASS() -> String: "objc_getClass"
 def SYM_DDCREATE() -> String: "dispatch_data_create"
 
-# ===========================================================================
+
 # THE SELECTOR-NAME MANGLING. :70. See the header for why it is two steps.
-# ===========================================================================
+
 def is_colon(c: Char) -> Bool: Char.is_eq(c, ':')
 
 # step 1: drop every leading and trailing colon.
@@ -216,7 +216,7 @@ def mangle(s: String) -> String:
 def mangle.reversed(s: String) -> String:
   String.from_list(mangle.rtrim(mangle.ltrim(mangle.colons(String.to_list(s)))))
 
-# ===========================================================================
+
 # THE SELECTOR REGISTRY, :27. `getsel = functools.cache(lib.sel_registerName)`
 # is a MEMO, so it is a TYPE here rather than a function, and the type carries
 # the two counters `functools.cache` exposes: one MISS per DISTINCT name, ever,
@@ -228,7 +228,7 @@ def mangle.reversed(s: String) -> String:
 # no pointer and an address is not stable across runs. So the numbers are
 # PORT TAGS, and what the gate checks is the STRUCTURE -- the miss count, the
 # hit count, the hit/miss ratio, the repeat identity and the distinct count.
-# ===========================================================================
+
 type SelRow is Data:
   SelRow{name: String, ix: U32}
 
@@ -303,10 +303,10 @@ def names.go(n: Nat, +xs: List<&2, SelRow>, acc: List<&2, String>) -> List<&2, S
 def Sels.names(+t: Sels) -> List<&2, String>:
   names.go(List.length(&2, SelRow, Sels.ix(t)), Sels.ix(t), Nil{})
 
-# ===========================================================================
+
 # THE MESSAGE SPEC, :34. Five parameters: the selector, the return type, the
 # declared argument types, `retain`, and `clsmeth`.
-# ===========================================================================
+
 # `args` is the DECLARED argument list -- `m[2]`, after `subst_list` -- and
 # `Msg.argtypes` is what `:36` assigns to `sender`, which is NOT the same list:
 # `msg_argc` counts the DECLARED args and adds two for the receiver and the
@@ -334,7 +334,7 @@ def Msg.clsmeth(m: Msg) -> Bool:
     case Msg{sel, ret, args, retain, clsmeth}: clsmeth
 
 
-# ===========================================================================
+
 # the argument list, :36. the headline rule of this file:
 #
 #   sender.restype, sender.argtypes = restype, [id_, id_]+list(argtypes) if argtypes else []
@@ -358,7 +358,7 @@ def Msg.clsmeth(m: Msg) -> Bool:
 # So `msg_argtypes` is not "prepend two". It is "prepend two IF anything was
 # declared, otherwise nothing", and `msg_argtypes_none` is the row that can
 # tell the two apart from a wrong implementation.
-# ===========================================================================
+
 def msg_argtypes(declared: List<&2, U32>) -> List<&2, U32>:
   match declared:
     case Nil{}: Nil{}
@@ -374,7 +374,7 @@ def msg_argc(declared: List<&2, U32>) -> U32:
     # n+2. Caught by `msg_argc_one` (2, wanted 3).
     case d <> r: U32.add(2, U32.from_nat(List.length(&2, U32, declared)))
 
-# ===========================================================================
+
 # THE CALL SHAPE, :37.
 #
 #   f(ptr, *args) = sender(ptr._objc_class_ if clsmeth else ptr,
@@ -399,7 +399,7 @@ def msg_argc(declared: List<&2, U32>) -> U32:
 # that is why `hcq2.py:84` produces a `custom_function` for BOTH symbols and
 # `cstyle.py:268` emits an `extern` for each. A device program that sent
 # `objc_msgSend` but not `sel_registerName` would not even build.
-# ===========================================================================
+
 def msg_recv.is_cls(m: Msg) -> Bool: Msg.clsmeth(m)
 
 # the RECEIVER is the CLASS when `clsmeth` and the INSTANCE otherwise (:37), so
@@ -412,12 +412,12 @@ def msg_args(recv: U32, sel: U32, args: List<&2, U32>) -> List<&2, U32>:
 
 def msg_argv_len(args: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, args))
 
-# ===========================================================================
+
 # THE TRACE, the seam. :37's two calls go through here, and so does `own`'s.
 # `a0`/`a1`/`a2` are the three C argument slots; a selector that is not a
 # pointer is carried as its registry INDEX, because Bend has no pointer and an
 # address would not be stable anyway.
-# ===========================================================================
+
 type Call is Data:
   Call{sym: String, a0: U32, a1: U32, a2: U32}
 
@@ -455,7 +455,7 @@ def s_two_calls(t: Tr) -> U32: U32.from_nat(List.length(&2, Call, Tr.calls(t)))
 
 
 
-# ===========================================================================
+
 # THE OWNERSHIP LATTICE, :6-23. THREE things that read alike and are not the
 # same, and conflating any two of them is the classic bug in this layer:
 #
@@ -474,7 +474,7 @@ def s_two_calls(t: Tr) -> U32: U32.from_nat(List.length(&2, Call, Tr.calls(t)))
 # release on a never-owned object, and nothing anywhere sets it back to False.
 # There is no `unown()` in this file, which is itself the ownership story:
 # a retained id_ is released exactly once, by `__del__`.
-# ===========================================================================
+
 type Idr is Data:
   Idr{ptr: U32, retain: Bool}
 
@@ -519,7 +519,7 @@ def Idr.finalize(+r: Idr, is_finalizing: Bool, +t: Tr) -> Tr:
 # :23 `returns_retained(f)` -- flag the RESULT. `Msg.retain` (:38) selects it.
 def Owned.of(tr: Tr, +r: Idr, m: Msg) -> Owned: Owned{tr, Bool.pick(Idr, Msg.retain(m), Idr.retained(r), r)}
 
-# ===========================================================================
+
 # THE METHOD TABLE, :69-73. `MetaSpec._addmeth` turns one autogen tuple
 # `(selector, restype, [argtypes], *kwargs)` into a bound `msg`. The tuple is
 # the port's `Meth`; the kwargs beyond the first three become `retain` and
@@ -532,7 +532,7 @@ def Owned.of(tr: Tr, +r: Idr, m: Msg) -> Owned: Owned{tr, Bool.pick(Idr, Msg.ret
 # class is a live Python CLASS here, which is WALL 3; the port substitutes
 # `CT_CLASS` for it, which is a TAG, so `msg_argtypes_none` cannot tell a
 # faithful `CT_CLASS` from a wrong one. Said here rather than hidden.
-# ===========================================================================
+
 type Meth is Data:
   Meth{sel: String, ret: U32, args: List<&2, U32>, retain: Bool, clsmeth: Bool}
 
@@ -571,7 +571,7 @@ def Meth.msg(+m: Meth) -> Msg:
   Msg{Meth.sel(m), subst(Meth.ret(m)), subst_list(Meth.args(m)),
        Meth.retain(m), Meth.clsmeth(m)}
 
-# ===========================================================================
+
 # THE INHERITANCE ORDER, :53-61 and :63-67. `MetaSpec` re-runs `_addmeth` in
 # three situations, and the ORDER of :65-67 is what `inh.go` walks:
 #
@@ -585,7 +585,7 @@ def Meth.msg(+m: Meth) -> Msg:
 # bases would produce a DIFFERENT method set for a diamond, and there is no
 # fixture here that could tell the two apart -- `inh_diamond` records that as
 # a blind spot instead of pretending to close it.
-# ===========================================================================
+
 # "has this method already been added?", keyed on the MANGLED NAME -- which is
 # the attribute name, so two selectors that mangle alike are ONE attribute and
 # the second `setattr` wins. That collision is real (`::` and `:` both mangle
@@ -608,13 +608,13 @@ def inh.go(n: Nat, +ms: List<&2, Meth>, +out: List<&2, Meth>) -> List<&2, Meth>:
                                  out, List.append(&2, Meth, out, [Meth{sel, ret, args, retain, clsmeth}])))
 
 
-# ===========================================================================
+
 # READING THE TRACE. Three readers and a subsequence-free index, which is all
 # the two-call order needs. `Tr.at` answers `Maybe`, and a `Maybe` index cannot
 # be a `U32` row, so every order row goes through `Tr.at_u` which folds the miss
 # to a SENTINEL -- and the sentinel is checked by its own row rather than
 # assumed, because a sentinel that no row reads is a row that cannot fail.
-# ===========================================================================
+
 def Call.sym(c: Call) -> String:
   match c:
     case Call{sym, a0, a1, a2}: sym
@@ -661,7 +661,7 @@ def syms.go(n: Nat, +cs: List<&2, Call>, acc: List<&2, String>) -> List<&2, Stri
 
 def Tr.syms(+t: Tr) -> List<&2, String>: syms.go(U32.to_nat(Tr.next(t)), Tr.calls(t), Nil{})
 
-# ===========================================================================
+
 # THE GATE. `r` prints `nm = [got]   py=[want]`, so the differ reads BOTH sides
 # off one line and a hand-typed want is visible as a mismatch rather than as an
 # absence.
@@ -672,11 +672,10 @@ def Tr.syms(+t: Tr) -> List<&2, String>: syms.go(U32.to_nat(Tr.next(t)), Tr.call
 # which is the shape `renderer/tc.bend` and `renderer/llvmir.bend` use.
 #
 # the teeth MOVE, and WHERE they MOVE is the point.  a derived row's two halves
-# always agree with each other, so the row can no longer disagree with ITSELF --
 # and THAT is the point: the frozen `want` literal was rot waiting to happen, and
 # it is gone.  What catches a wrong VALUE now is the byte diff against CPython's
 # own rows, and that diff is the gate.
-# ===========================================================================
+
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
@@ -1088,7 +1087,7 @@ def main() -> IO(Unit):
     g : Unit <- t_own()
     h : Unit <- t_symbols()
     IO.print("objc-done=1")
-# ===========================================================================
+
 # THE MUTATION TABLE. Every number is the harness's output, not an estimate:
 # `.venv/bin/python .agents/slop/objc/objc_mutate.py`, whose output is
 # `.agents/slop/objc/objc_mutations.txt`. The harness applies ONE exact
@@ -1125,7 +1124,7 @@ def main() -> IO(Unit):
 #     one row, M5's miss arm is read by one row, M9's first conjunct is read by
 #     one row, and M11 is the only row that reads `returns_retained`. A one-row
 #     move is not a thin gate; it is a precise one, and the row names say which.
-# ===========================================================================
+
 # WHAT A FIXTURE SET HERE HAD TO BE, since two of the eighteen started at zero:
 #   * The MANGLING fixtures disagree on colon COUNT, on leading and trailing
 #     colons, and on a name that is nothing but colons. An all-`commit` set
@@ -1139,4 +1138,4 @@ def main() -> IO(Unit):
 #   * The SUBSTITUTION fixture declares THREE arguments with `instancetype` in
 #     the FIRST and the LAST, because `:72` is per-argument and a one-argument
 #     fixture cannot see a truncation.
-# ===========================================================================
+

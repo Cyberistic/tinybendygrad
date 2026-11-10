@@ -1,6 +1,6 @@
 # f32_repr.bend -- `repr(float)` FOR AN F32, COMPUTED EXACTLY.
 #
-# ===========================================================================
+
 # WHY THIS FILE EXISTS.
 #
 # `F32.show` is the shortest decimal that reads back as the same F32, and CPython's `repr` of the
@@ -12,7 +12,6 @@
 #   repr(float(f32(log2e)))  1.4426950216293335
 #
 # render.bend:214 recorded that gap and called it a WALL ("no def can print the 17-significant-
-# digit decimal an f64 round-trips through"). THE WALL WAS NOT REAL: the value an F32 widens to
 # is a NAMED number (significand times a power of two), so its decimal expansion is finite and
 # computable with exact integer arithmetic. This file does that, in three steps:
 #
@@ -42,24 +41,24 @@
 # bignums are built in. That prototype reproduces `repr(float(f32))` on 128 457 values -- 120 000
 # random bit patterns plus every power of two, its negation, the denormals and the edges -- with
 # 0 mismatches, and `.agents/slop/perf/f32_repr.rows` re-checks THIS file on the same population.
-# ===========================================================================
+
 
 import Base
 import ./../helpers.bend as H
 
-# ---------------------------------------------------------------------------
+
 # 64-bit exponents. Base has U32, Nat and F32; an exponent needs a sign, and helpers.bend
 # already carries the two-word I64 with add, sub, compare, negate and abs.
-# ---------------------------------------------------------------------------
+
 def i64u(+x: U32) -> H.I64: H.i64_of_i32(x)
 def i64n(+n: U32) -> H.I64: H.i64_neg(True{}, H.i64_of_i32(n))
 
 # the magnitude of a known-non-negative I64, which is the only way this file reads one
 def nat_of64(+x: H.I64) -> Nat: U32.to_nat(H.lo32(x))
 
-# ---------------------------------------------------------------------------
+
 # decimal digits, MOST significant first, each 0..9
-# ---------------------------------------------------------------------------
+
 def ds_of.go(s: String, +acc: List<&2, U32>) -> List<&2, U32>:
   match s:
     case SNil{}: acc
@@ -75,14 +74,14 @@ def ds_str.go(ds: List<&2, U32>, +acc: List<&2, Char>) -> List<&2, Char>:
 def ds_str(+ds: List<&2, U32>) -> String:
   String.from_list(List.reverse(&2, Char, ds_str.go(ds, Nil{})))
 
-# ---------------------------------------------------------------------------
+
 # the bignum: multiply by a small constant, add or subtract one, and count bits.
 #
 # the carry of a multiplication travels toward the most significant end, so the digits are
 # visited least-significant first: the input is reversed, each result digit is PREPENDED (which
 # un-reverses it), and whatever carry is left becomes the new leading digit. That is one pass,
 # not one pass per digit, and it is why `big_mul` does not use `List.append`.
-# ---------------------------------------------------------------------------
+
 def big_mul.put(z: Bool, +c: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match z:
     case True{}: acc
@@ -147,11 +146,11 @@ def blen(+x: U32) -> U32: blen.go(32n, x, 0)
 def is_pow2(+m: U32) -> Bool:
   U32.is_eq(m, U32.shln(1, Nat.sub(U32.to_nat(blen(m)), 1n)))
 
-# ---------------------------------------------------------------------------
+
 # EXACT EXPANSION. `scale` is the one primitive: digits times a power of two, answered as digits
 # and the power of ten they are cut by. A NEGATIVE power is the only one that needs 5s, because
 # 2^-k = 5^k / 10^k.
-# ---------------------------------------------------------------------------
+
 type Scaled is Data:
   Scaled{+dg: List<&2, U32>, +ex: H.I64}
 
@@ -167,10 +166,10 @@ def scale(+ds: List<&2, U32>, +t: H.I64) -> Scaled:
 def dec2(+m: U32, +e: H.I64) -> Scaled:
   scale(ds_of(U32.show(m)), e)
 
-# ---------------------------------------------------------------------------
+
 # THE ROUNDING BOUNDS. x + s*half_ulp = (m * 2^(step-b) + s) * 2^(e+b-step); `plus` says whether
 # s is +1, and `step` is 55 instead of 54 on the low side of a power of two.
-# ---------------------------------------------------------------------------
+
 def bound.num(+plus: Bool, +num: List<&2, U32>) -> List<&2, U32>:
   match plus:
     case True{}: big_add1(num)
@@ -191,10 +190,10 @@ def bound(+m: U32, +e: H.I64, +plus: Bool, +step: U32) -> Scaled:
   +num = big_n(2, U32.to_nat(U32.sub(step, b)), ds_of(U32.show(m)))
   bound.scale(plus, bound.num(plus, num), H.i64_sub(H.i64_add(e, i64u(b)), i64u(step)))
 
-# ---------------------------------------------------------------------------
+
 # an unsigned decimal with the point moved: value = digits * 10^exp, digits most significant
 # first. Two of them compare by where their most significant digit lands and then digit by digit.
-# ---------------------------------------------------------------------------
+
 def shead(+s: String) -> Char:
   match s:
     case SNil{}: '0'
@@ -260,10 +259,10 @@ def dec_cmp.ord(h: Cmp, +a: String, +b: String) -> Cmp:
 def dec_cmp(+a: String, +ae: H.I64, +b: String, +be: H.I64) -> Cmp:
   dec_cmp.ord(H.i64_cmp(dec_pos(a, ae), dec_pos(b, be)), a, b)
 
-# ---------------------------------------------------------------------------
+
 # FORMATTING. `dp` is the position of the decimal point: value = 0.<digits> * 10^dp, so
 # `len(digits) + exp`. Python uses fixed notation for -4 < dp <= 16 and scientific otherwise.
-# ---------------------------------------------------------------------------
+
 def dp_of(+d: String, +e: H.I64) -> H.I64:
   H.i64_add(e, i64u(U32.from_nat(String.length(d))))
 
@@ -313,9 +312,9 @@ def fmt(+d: String, +e: H.I64) -> String:
   +dp = dp_of(d, e)
   fmt.go(fmt.fixed(dp), d, dp)
 
-# ---------------------------------------------------------------------------
+
 # the candidate search
-# ---------------------------------------------------------------------------
+
 type Ctx is Data:
   Ctx{+d: String, +e: H.I64, +lo: String, +le: H.I64, +hi: String, +he: H.I64, +neg: Bool}
 
@@ -443,9 +442,9 @@ def search(+f: Nat, +m: Maybe<&2, String>, +c: Ctx) -> String:
     case 0n None{}: String.concat([sign_of(c), fmt(Ctx.d(c), Ctx.e(c))])
     case 1n+g None{}: search(g, step(Nat.sub(18n, f), c), c)
 
-# ---------------------------------------------------------------------------
+
 # THE ENTRY POINT
-# ---------------------------------------------------------------------------
+
 def sign_of2(neg: Bool) -> String:
   match neg:
     case True{}: "-"

@@ -1,6 +1,6 @@
 # tinybendygrad/renderer/__init__.bend -- tinygrad/renderer/__init__.py.
 #
-# ===========================================================================
+
 # THE CONVENTIONS. `wgsl.bend` reads this header and nothing else. It is here
 # rather than in a notes file because `__init__.py` is where the shared base
 # lives, and a renderer that skips these re-learns every one of them by failing.
@@ -76,7 +76,7 @@
 #
 # 12. a gate row is only worth its cost IF a mutation moves it. The mutation
 #     table at the foot of `cstyle.bend` is the evidence that the rows bite.
-# ===========================================================================
+
 
 import Base
 import ./estimates.bend as E
@@ -84,7 +84,7 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../LAWS/spec.bend as S
 
-# ===========================================================================
+
 # `with_storage` -- __init__.py:11-13
 #
 #     def with_storage(x:UOp, dt:DType) -> UOp:
@@ -106,7 +106,7 @@ import ./../LAWS/spec.bend as S
 # `leaf` IS A PARAMETER and not a computed `match` scrutinee, for convention 9:
 # the two arms and the recursion have to be in ONE def, so the Bool that picks
 # the arm is a parameter and the `match` may scrutinise it.
-# ===========================================================================
+
 
 def with_storage.fuel(f: O.Found) -> Nat: O.Arena.budget(O.Found.ar(f))
 
@@ -120,7 +120,6 @@ def with_storage.is_store(op: O.Op) -> Bool:
 # `replace(x.arg, dtype=dt)`. Twelve accessors, because there is no projection
 # syntax -- convention 6. AND THE SIZE IS NOT AMONG THEM, which is the one thing
 # `72f98ffe0` made SIMPLER here: a `replace` that re-lists the fields has to carry
-# `size` across, and the move deleted the field, so a dtype replacement can no longer
 # drop the storage size. It is `src[0]` now, and `with_storage` never rewrites `src`.
 def with_storage.arg(+pa: O.ParamArg, dt: S.Dt) -> O.ParamArg:
   O.ParamArg{O.ParamArg.slot(pa), dt, O.ParamArg.vmin_vmax(pa), O.ParamArg.multiple_of(pa),
@@ -162,14 +161,14 @@ def with_storage(fuel: Nat, +ar: O.Arena, +dt: S.Dt, +i: U32, store: Bool) -> O.
 def with_storage.at(+f: O.Found, dt: S.Dt) -> O.Found:
   with_storage(with_storage.fuel(f), O.Found.ar(f), dt, O.Found.i(f), with_storage.is_store(O.Arena.op(O.Found.ar(f), O.Found.i(f))))
 
-# ===========================================================================
+
 # `Estimates` -- __init__.py:15-61. THE RECORD IS IN `./estimates.bend`, WHICH
 # IS A LEAF, because `tinygrad/uop/ops.py` CARRIES IT AS A FIELD and Bend
 # REFUSES AN IMPORT CYCLE. Upstream breaks that cycle under `TYPE_CHECKING`
 # (`tinygrad/uop/ops.py:26`); this port breaks it with a third file. What is
 # HERE is `Estimates.from_uops`, which reads `Ops` and so belongs beside its
 # consumers. THE RECORD, ITS ACCESSORS, `__add__` and `simplify` are THERE.
-# ===========================================================================
+
 
 # `Estimates.from_uops` -- __init__.py:26-61, over the LINEARIZED list.
 #
@@ -227,7 +226,7 @@ def is_mem(op: O.Op) -> Bool:
     case O.OpsSTORE{}: True{}
     case _: False{}
 
-# ===========================================================================
+
 # `Renderer` -- __init__.py:63-87.
 #
 # The class carries FIFTEEN attributes, and the three that are TABLES Python
@@ -253,7 +252,7 @@ def is_mem(op: O.Op) -> Bool:
 # answer is `dtypes.all` VERBATIM. That is a row the gate pins, and it is why
 # the emulated set is a PARAMETER rather than an assumption -- with `long` in it
 # the base drops `double`, and the fixture that says so is one argument away.
-# ===========================================================================
+
 
 def is_named(d: S.Dt, nm: String) -> Bool:
   match d:
@@ -328,7 +327,7 @@ def supported_dtypes.go(+emu: List<&2, S.Dt>, ds: List<&2, S.Dt>, +acc: List<&2,
 # comparing two unordered sets, and why a dropped dtype is a diff.
 def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go(emu, dtypes_all(), Nil{})
 
-# ===========================================================================
+
 # WHAT IS NOT PORTED, in upstream order, and why. None of these is a Bend wall;
 # four are DEVICE FFI, one is the fold's deferred SHRINK and one is a substrate
 # gap this file cannot close alone.
@@ -373,7 +372,7 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 # WALL(p3) __init__.py:83  render           (NotImplementedError -> a has-render flag) -- BLOCKED: needs the `NotImplementedError` DEFAULT arm, which the port spells as a `Bool` has-render flag; the header says exactly this at :405.
 # TODO(p3) __init__.py:84  asm              (NotImplementedError -> a has-asm flag)
 #
-# ===========================================================================
+
 # THE GATE. Every row is diffed against CPython on this `tinygrad/` tree with
 # `.venv/bin/python -c "..."`, and the `py=` text IS the oracle -- printed next
 # to the answer, never compared as a boolean, because the two things this file
@@ -394,7 +393,7 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 # is the row convention 8 exists for: it is the ONLY row whose src0 is a
 # REBUILT node, so it is the only row that sees a rebuild built on the wrong
 # arena.
-# ===========================================================================
+
 
 def pa_g(slot: U32, dt: S.Dt) -> O.ParamArg:
   O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},

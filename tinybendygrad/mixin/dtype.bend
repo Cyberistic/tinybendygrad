@@ -83,13 +83,13 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-# ===========================================================================
+
 # THE READERS. `dtype` is `DTypeMixin.dtype` (tinygrad/dtype.py:10), a property every carrier
 # answers with the node's own dtype, and Bend refuses the mutual recursion Python breaks
 # with a property, so it is a read of the FOLD -- the same reason `uop/weak.bend`'s
 # `wk_dt` is one. `void` is the dead default and it is a LATTICE BOTTOM, so it poisons
 # a promotion rather than reading as some other dtype.
-# ===========================================================================
+
 
 def md_dt(+fx: F.Folded, i: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), i), S.void())
@@ -171,7 +171,7 @@ def dt_is_float(d: S.Dt) -> Bool: dt_is_float.cls(S.Dt.cls(d))
 # resolves to inside `commit_int` (tinygrad/dtype.py:173).
 def md_default_int() -> S.Dt: S.int32()
 
-# ===========================================================================
+
 # THE INTEGER LIMITS, and `commit_int` / `strong_dtype` with them. See the header:
 # these three defs are hoisted out of `tinybendygrad/dtype.bend` under the notice
 # that names them, because that file's fp16/bf16/fp8/i64 conversions are C effects
@@ -187,7 +187,7 @@ def md_default_int() -> S.Dt: S.int32()
 #     the answers agree -- dtype.bend:490-493 records this and it is unchanged.
 #   * the ladder starts at default_int, which may already be int32, so the int32 test
 #     runs twice in that case. That is dtype.py's behaviour, kept.
-# ===========================================================================
+
 def md_i64_max_u(bits: U32) -> H.I64:
   match bits:
     case 8: H.i64_of_hi_lo(0, 255)
@@ -290,7 +290,7 @@ def strong_dtype.cls(cls: S.Cls, di: S.Dt, df: S.Dt, d: S.Dt) -> S.Dt:
 def strong_dtype(+d: S.Dt, di: S.Dt, df: S.Dt) -> S.Dt:
   strong_dtype.cls(S.Dt.cls(d), di, df, d)
 
-# ===========================================================================
+
 # commit_dtype -- tinygrad/dtype.py:16-17.
 #
 #   return commit_int(self._uop.vmin, self._uop.vmax, default_int) \
@@ -305,7 +305,7 @@ def strong_dtype(+d: S.Dt, di: S.Dt, df: S.Dt) -> S.Dt:
 # whole wall and it is ONE def: `UOp._min_max` (ops.py:1104-1163). The refusal is a
 # `Maybe` rather than a sentinel dtype because a wrong dtype here is not a crash, it is
 # a silently wrong `commit_int` answer three rules downstream in weak.py.
-# ===========================================================================
+
 # A PARAM WITH NO `vmin_vmax` -- the `cd_none` row of `gates/wk-cd-gate.py`. The bound
 # reads as `Bnd{NInf}` / `Bnd{PInf}` (a saturation, since `weakint`'s bits == 800 has no
 # 64-bit magnitude), and `wk_bnd_i64` cannot convert infinity to an I64, so `m`/`m2` are
@@ -329,7 +329,7 @@ def commit_dtype.of(weakint: Bool, +dt: S.Dt, m: Maybe<&1, H.I64>, m2: Maybe<&1,
 def commit_dtype(+dt: S.Dt, m: Maybe<&1, H.I64>, m2: Maybe<&1, H.I64>, di: S.Dt) -> Maybe<&1, S.Dt>:
   commit_dtype.of(md_weakint(dt), dt, m, m2, di)
 
-# ===========================================================================
+
 # cast -- tinygrad/dtype.py:36.
 #
 #   return self if self.dtype == (dt:=to_dtype(dtype)) else self._uop.alu(Ops.CAST, arg=dt)
@@ -341,7 +341,7 @@ def commit_dtype(+dt: S.Dt, m: Maybe<&1, H.I64>, m2: Maybe<&1, H.I64>, di: S.Dt)
 # The equality is `DType.__eq__`, which is the dataclass tuple, so it is `O.eq_dt` and
 # NOT a name compare: `weakint` and `weakfloat` have different names but the same
 # `CLS_IS` question, and a name compare would be a different function.
-# ===========================================================================
+
 def cast_at.of(same: Bool, +fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   match same:
     case True{}: O.Found{md_ar(fx), self}
@@ -350,7 +350,7 @@ def cast_at.of(same: Bool, +fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 def cast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   cast_at.of(md_dt_eq(md_dt(fx, self), dt), fx, self, dt)
 
-# ===========================================================================
+
 # bitcast -- tinygrad/dtype.py:51-53.
 #
 #   dt = to_dtype(dtype)
@@ -367,7 +367,7 @@ def cast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 # `cast_vs_bitcast_xor`: over one fixture and ten target dtypes the two disagree on ten
 # of them. A gate with no such row cannot see a first-wins-vs-conjunction bug, and the
 # two rules here are exactly that shape -- same node, two answers.
-# ===========================================================================
+
 def bitcast_at.blocked(src: S.Dt, dt: S.Dt) -> Bool:
   Bool.or(md_weak(src), md_weak(dt))
 
@@ -382,14 +382,14 @@ def bitcast_at.of(blocked: Bool, same: Bool, +fx: F.Folded, +self: U32, +dt: S.D
 def bitcast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> Maybe<&2, O.Found>:
   bitcast_at.of(bitcast_at.blocked(md_dt(fx, self), dt), md_dt_eq(md_dt(fx, self), dt), fx, self, dt)
 
-# ===========================================================================
+
 # THE EIGHT NAMED CASTS -- tinygrad/dtype.py:79-142. Python spells each as `return self.cast(dtypes.X)`
 # and a docstring, so each is one line here and there is no rule table: a table plus a
 # dispatch would be 40 lines to say what eight one-liners say, and there is no `UPat` in
 # `mixin/dtype.py` to be a tag for. The eight targets are `S.single`, `S.half`,
 # `S.int32`, `S.boolean`, `S.bfloat16`, `S.double`, `S.int64`, `S.int16` -- dtype.py's
 # order is float32, float16, int32, bool, then bfloat16, double, long, short.
-# ===========================================================================
+
 def cast_float(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.single())
 def cast_half(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.half())
 def cast_int(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.int32())
@@ -399,12 +399,12 @@ def cast_double(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.doubl
 def cast_long(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.int64())
 def cast_short(+fx: F.Folded, +self: U32) -> O.Found: cast_at(fx, self, S.int16())
 
-# ===========================================================================
+
 # THE FIXTURE. One weakint node (ADD of two int CONSTs), one weakfloat node (a bare
 # half CONST), and one int32 node, so the three dtype classes `dtypes.weaks` and the
 # two concrete classes all appear and every row below reads a real fold rather than a
 # literal.
-# ===========================================================================
+
 type Fix is Data:
   Fix{fx: F.Folded, wi: U32, ch: U32, wf: U32, i32: U32, ub: U32}
 
@@ -416,7 +416,7 @@ def f_i32(f: Fix) -> U32:
   match f:
     case Fix{fx, wi, ch, wf, i32, ub}: i32
 
-# ===========================================================================
+
 # `commit_dtype`'s answer, unwrapped. `void` is the dead default and it is a LATTICE
 # BOTTOM, so a caller that unwraps a refusal gets something that poisons a promotion
 # rather than something that reads as a real dtype.

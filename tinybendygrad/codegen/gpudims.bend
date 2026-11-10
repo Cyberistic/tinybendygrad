@@ -2,7 +2,7 @@
 # axis lowered to `_device_num`, one SINK-wide grouping pass, and HEAD's NEW
 # `pm_range_to_special`.
 #
-# ---------------------------------------------------------------------------
+
 # ONE OF THREE. `codegen/rewriter.bend` was ONE file for `simplify.py` +
 # `late/coalesce.py` + `gpudims.py`; the 1:1 ruling -- one `.bend` per upstream
 # `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory
@@ -20,7 +20,7 @@
 # substrate iff at least TWO of the three files used it; every def only this file
 # used came here.
 #
-# ---------------------------------------------------------------------------
+
 # THE INVENTORY, def by def, against gpudims.py's 106 lines. Every `PY` range is
 # re-derived from the file as it stands.
 #
@@ -51,7 +51,7 @@
 # `rs_rule`/`rs_new`/`rs_at`/`rs_ids`/`rs_claimed`/`rs_name`/`rs_idlast`: upstream
 # it is ONE lambda, so those are port-local and the naming rule does not apply.
 #
-# ---------------------------------------------------------------------------
+
 # `t_se_len` IS LINEARIZER'S, and it is here anyway, because the ONLY rows that
 # read it are this file's: `pm_range_to_special` is `PatternMatcher([RANGE rule]) +
 # pm_split_ends`, and `pm_split_ends` is `late/linearizer.py`'s ONE `Ops.END` rule
@@ -61,12 +61,12 @@
 # therefore both know the number 1 and neither owns it -- REPORTED HERE so the
 # duplication is visible rather than silent.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE. Every row is DERIVED FROM PYTHON by `.agents/slop/notes/rw-truth.py`,
 # which prints these rows in THIS ORDER and with THIS SPELLING. The other 30 rows
 # of the old merged file are `simplify.bend`'s and `late/coalesce.bend`'s.
 #
-# ---------------------------------------------------------------------------
+
 # THREE REDS BELONG TO ANOTHER UNIT. `rs_claim_warp`, `rs_claim_loop`,
 # `rs_rewrite_warp` and `rs_rewrite_loop` were introduced by the rebase batch of
 # 2026-10-03 and are KNOWN RED against HEAD: `AxisType.UNROLL` and
@@ -95,7 +95,7 @@ import ./rewriter.bend as RW
 #  36  101-102 table pm_group_gpudims          1 of 1 (1 + pm_device_to_var)
 #  37  103-106 table pm_range_to_special       1 of 1 (+ pm_split_ends)
 
-# ===========================================================================
+
 # THE GPUDIMS TABLES, RE-DERIVED AT HEAD. `78d482262` RENAMED `add_gpudims` to
 # `group_gpudims`, renamed `pm_add_gpudims` to `pm_group_gpudims`, and ADDED a
 # second table `pm_range_to_special`. Two of the three are a RENAME and one is an
@@ -125,12 +125,11 @@ import ./rewriter.bend as RW
 # dicts + ssimplify + ctx), so the port's obligation is to RECORD it and not to
 # pretend the rename was the whole change.
 #
-# the addition is portable and was not ported. `pm_range_to_special` is one rule
 # plus `pm_split_ends`'s one, and the rule is pure: a RANGE whose `axis_type` is
 # GLOBAL or LOCAL is REPLACED by a SPECIAL named `gidx{id}` / `lidx{id}`. Nothing
 # in it needs `ssimplify`, a dict, or `ctx`, so the WALL that stops
 # `group_gpudims` does not reach it.
-# ===========================================================================
+
 def pm_device_to_var() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsRANGE{}], Nil{}},                 # gpudims.py:93 RANGE axis DEVICE -> variable
    O.PMEntry{1, [O.OpsEND{}], [O.OpsPARAM{}]}]          # gpudims.py:96 END closes _device_num
@@ -149,7 +148,7 @@ def pm_range_to_special() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsRANGE{}], Nil{}},                 # gpudims.py:105 RANGE GLOBAL/LOCAL -> SPECIAL
    O.PMEntry{1, [O.OpsEND{}], Nil{}}]                    # linearizer.py:95 do_split_ends (pm_split_ends)
 
-# ===========================================================================
+
 # `pm_range_to_special`'s ONE RULE, PORTED. gpudims.py:104-106:
 #
 #   (UPat(Ops.RANGE, name="r"), lambda r: r.replace(op=Ops.SPECIAL,
@@ -173,7 +172,7 @@ def pm_range_to_special() -> List<&2, O.PMEntry>:
 # at `ops.bend:2986 symbol=UOp.replace`, gate `gates/replace-gate.py` rc=0 8/8 rows). The TAG rides
 # along: CPython's `replace` preserves it and `rw_tag(ar, r)` is what the caller
 # passes.
-# ===========================================================================
+
 def rs_at.of(a: O.Arg) -> O.AxisType:
   match a:
     case O.ARange{ids, at}: at
@@ -227,7 +226,7 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 # edits against the clean 54-row lane, each diffed by WHOLE `name=value` LINES.
 #
 #   mutation                                   rows moved (BY NAME)
-#   ------------------------------------------------------------------------
+
 #   N-a  `rs_claimed` claims GLOBAL only              rs_arg_local, rs_claim_local,
 #                                                      rs_rewrite_local
 #   N-b  `rs_claimed` claims GLOBAL+LOCAL+WARP       rs_claim_warp, rs_op_warp,
@@ -255,7 +254,7 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 # the op test stays -- it is what would catch that change -- and the zero is
 # reported with the argument rather than dressed up.
 
-# ===========================================================================
+
 # THE `pm_range_to_special` FIXTURE. The main fixture `g()` builds EVERY range with
 # `AXIS_LOOP`, which is a member the rule REFUSES -- so `rs_rule` would answer
 # "no rewrite" for all twenty-three of its nodes and every row would be `1`, which
@@ -269,7 +268,7 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 # careless `in (GLOBAL, LOCAL, WARP)` would claim; `LOOP` is the member the main
 # fixture uses, and it is the negative control that says the rule is a CLAIM and
 # not "every RANGE".
-# ===========================================================================
+
 def rsg_at(+c: O.Found, id: U32, at: O.AxisType) -> O.Found:
   O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [id], at)
 

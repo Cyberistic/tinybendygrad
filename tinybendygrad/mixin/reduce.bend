@@ -75,7 +75,7 @@ import ./dtype.bend as D
 import ./elementwise.bend as E
 import ./op.bend as M
 
-# ===========================================================================
+
 # `rc_axs` -- reduce.py:15, the `Sequence[int]` arm.
 #
 #   axis = tuple(self._resolve_dim(x) for x in (range(self.ndim) if axis is None
@@ -89,7 +89,7 @@ import ./op.bend as M
 # A DIM IS SIGNED and a `U32` cannot be, so it travels as a pair. That is
 # `movement.bend`'s `Marg` shape and `device.bend`'s rule 3, and it is the only
 # reason this is a fold and not `List.map`.
-# ===========================================================================
+
 type Ax is Data:
   Ax{neg: Bool, dim: U32}
 
@@ -118,7 +118,7 @@ def rc_axs.go(+td: U32, xs: List<&2, Ax>, +acc: List<&2, U32>) -> List<&2, U32>:
 def rc_axs(+t: T.Tensor, xs: List<&2, Ax>) -> List<&2, U32>:
   rc_axs.go(U32.from_nat(M.mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))), xs, Nil{})
 
-# ===========================================================================
+
 # `rc_sum_dt` -- reduce.py:44-45 with `dtype` GIVEN.
 #
 #   ret = self.cast(sum_acc_dtype(self.commit_dtype()) if dtype is None else dtype)
@@ -129,7 +129,7 @@ def rc_axs(+t: T.Tensor, xs: List<&2, Ax>) -> List<&2, U32>:
 # cast back -- and that is the whole difference from `M.mo_sum`, which is why
 # this is a def and not an alias. `sum_dt_i32` is the row: 3 nodes with a CAST,
 # against CPython's 3.
-# ===========================================================================
+
 def rc_sum_dt(+t: T.Tensor, dt: S.Dt, kd: Bool, +axis: List<&2, U32>) -> T.Tensor:
   M.mo_reduce(kd, M.mo_cast_t(t, dt), O.OpsADD{}, axis)
 
@@ -139,7 +139,7 @@ def rc_sum_dt(+t: T.Tensor, dt: S.Dt, kd: Bool, +axis: List<&2, U32>) -> T.Tenso
 def rc_prod_dt(+t: T.Tensor, dt: S.Dt, kd: Bool, +axis: List<&2, U32>) -> T.Tensor:
   M.mo_reduce(kd, M.mo_cast_t(t, dt), O.OpsMUL{}, axis)
 
-# ===========================================================================
+
 # `rc_any` -- reduce.py:116. `return self.bool().max(axis, keepdim)`.
 #
 # `self.bool()` is `tinygrad/dtype.py:124`, `return self.cast(dtypes.bool)`, one line, and
@@ -151,7 +151,7 @@ def rc_prod_dt(+t: T.Tensor, dt: S.Dt, kd: Bool, +axis: List<&2, U32>) -> T.Tens
 # source, where the cast is the identity) would print `2 BUFFER/0 CAST/1
 # REDUCE/1` against CPython's `2 BUFFER/0 REDUCE/1` and the elision would be
 # gone -- and the row that sees it is `any_b`, not `any0`.
-# ===========================================================================
+
 def rc_any(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
   M.mo_max(kd, M.mo_cast_t(t, S.boolean()), axis)
 
@@ -169,9 +169,9 @@ def rc_all(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 def rc_rop(+ar: O.Arena, self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
   T.tn_rop(ar, self, op, axis)
 
-# ===========================================================================
+
 # THE GATE. The printers first, because a def may only call defs above it.
-# ===========================================================================
+
 
 # The REDUCE's own identity, out of the arena. `AReduce{rop, num_axes}` is a
 # TWO-field record so the pattern names both, and every other `Arg` constructor

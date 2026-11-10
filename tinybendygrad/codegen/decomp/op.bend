@@ -7,7 +7,7 @@
 # unit. `decomp/op.py` is 126 lines and has no transcendental in it. The
 # inventory below is what is actually here.)
 #
-# ---------------------------------------------------------------------------
+
 # THE INVENTORY, def by def, against op.py's 126 lines.
 #
 #   #  PY       KIND    STATE
@@ -27,7 +27,7 @@
 # measurement is in the `fast_idiv` block below and it is the whole of the wall:
 # it is not a missing `mulhi64`, it is `_min_max` and a 65-bit `//`.
 #
-# ---------------------------------------------------------------------------
+
 # two things that are easy to invert, both measured against the real tables.
 #
 # 1. `powers_of_two.get(c, 0)` IS NOT A FUNCTION OF `c in powers_of_two`.
@@ -44,7 +44,7 @@
 #    matcher that reads src0 and src1 in one fixed order drops `l25` and `l26`
 #    and typechecks.
 #
-# ---------------------------------------------------------------------------
+
 # FOUR DIVERGENCES, stated rather than hidden.
 #
 # A. NO PROMOTION CASTS. `mixin/elementwise.py`'s `_broadcasted` inserts
@@ -65,7 +65,7 @@
 #    that is, and it is a real fixture.
 # D. `_min_max` IS READ FOR A CONST AND A PARAM ONLY. See `dc_vmin`.
 #
-# ---------------------------------------------------------------------------
+
 # THE PRINT-SHAPE. Two levels deep with CONST values printed, which is the whole
 # tree for every rule here, so it is not a shortcut. A bool CONST prints as
 # `C(1)` (the port has one integer Const type) and a float CONST through
@@ -77,11 +77,11 @@ import ./../../LAWS/spec.bend as S
 import ./../../uop/ops.bend as O
 import ./../../uop/fold.bend as F
 
-# ===========================================================================
+
 # THE RESULT. A rule RETURNS THE ARENA, not a pair -- the shape `divandmod.bend`
 # settled, for the same reason. The flag is a `U32` because a `Data` record
 # cannot hold a `Maybe`, and the index is meaningless when the flag is 0.
-# ===========================================================================
+
 type Hit is Data:
   Hit{ar: O.Arena, i: U32, on: U32, tg: U32}
 
@@ -135,12 +135,12 @@ def dc_is_one.arg(+arg: O.Arg) -> Bool:
 def dc_is_one(+ar: O.Arena,+u: U32) -> Bool:
   dc_is_one.arg(O.Arena.arg(ar, u))
 
-# ===========================================================================
+
 # `powers_of_two` -- op.py:64, and the two READS of it, which differ.
 # `U32.log2` is a floor log, so the power-of-two test is the classic
 # `c & (c - 1) == 0` and the exponent is that log. Capped at 2**31 by
 # divergence C.
-# ===========================================================================
+
 def dc_pow2.bit(+c: U32) -> U32:
   U32.and(c, U32.sub(c, 1))
 
@@ -183,11 +183,11 @@ def dc_dt.flt(+c: S.Cls) -> Bool:
     case S.CFloat{}: True{}
     case _: False{}
 
-# ===========================================================================
+
 # THE COMMUTATIVE SIDES. 0 = src0, 1 = src1, 2 = both or neither. A two-armed
 # MATCH on the two `Bool`s, because a `match` may not scrutinise a computed
 # value and the two tests are computed.
-# ===========================================================================
+
 def dc_side.go(+s0: Bool,+s1: Bool) -> U32:
   match s0 s1:
     case True{} False{}: 0
@@ -244,10 +244,10 @@ def dc_cplus(+ar: O.Arena,+c: U32) -> O.Found:
   +c1 = dc_cint(ar, 1)
   dc_alu2(O.Found.ar(c1), O.OpsADD{}, c, O.Found.i(c1))
 
-# ===========================================================================
+
 # `(a < 0).ne(b < 0)` -- the tail of op.py:56 and the middle of op.py:62. `ne`
 # on two bools is `CMPNE` and `<` against a PyConst 0 is `CMPLT(x, C(0))`.
-# ===========================================================================
+
 def dc_sgn(+a: O.Found,+b: U32) -> O.Found:
   +z = dc_cint(O.Found.ar(a), 0)
   +la = dc_alu2(O.Found.ar(z), O.OpsCMPLT{}, O.Found.i(a), O.Found.i(z))
@@ -341,7 +341,7 @@ def tf_split_str.go(m: Maybe<&1, U32 & U32>) -> String:
 def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
   U32.is_eq(O.Arena.nsrc(ar, u), 2)
 
-# ===========================================================================
+
 # THE LATE TABLE -- op.py:81-126. EIGHTEEN rules, and `disable_fast_idiv`
 # REMOVES TWO of them (op.py:97's `if not disable_fast_idiv:` covers op.py:99
 # and op.py:102) and renumbers the rest. So there are two tag spaces and both
@@ -374,7 +374,7 @@ def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
 # rule 3 answers, `l8` is the same on a non-negative numerator and STILL rule 3
 # answers, and `l9` is `// 3` where rule 3 SKIPS on the power-of-two test and
 # rule 4 answers. A last-wins scan moves `l7` and `l8` to rule 4's answer.
-# ===========================================================================
+
 def dc_l_tab(+fast: Bool) -> O.PMEntrys:
   match fast:
     case True{}: O.PMEntrys{[O.PMEntry{0,  [O.OpsAND{}],        [O.OpsCMPNE{}]},                  # 85
@@ -509,7 +509,7 @@ def dc_fdside(+ar: O.Arena,+u: U32) -> U32:
   dc_side.go(O.op_is(ar, O.Arena.src0(ar, u), O.OpsFDIV{}),
              O.op_is(ar, O.Arena.src(ar, u, 1), O.OpsFDIV{}))
 
-# ===========================================================================
+
 # THE DISPATCH AND THE SCAN -- `spec.bend`'s shape, twice. `ops.bend` cannot
 # call into this file, so each of the TWO tables gets its own dispatch and its
 # own scan. This is NOT the six-fold duplication of `spec.bend`: each of its six
@@ -517,7 +517,7 @@ def dc_fdside(+ar: O.Arena,+u: U32) -> U32:
 # here have the SAME rules and differ only in which entries exist, so the scan
 # takes the table as a parameter and is written once per Python function. A
 # generic dispatch would need a closure, and a closure cannot be a `Data` field.
-# ===========================================================================
+
 def dc_s_fold.new(+ar: O.Arena, m: Maybe<&2, O.Found>,+tag: U32) -> Hit:
   match m:
     case Some{+f}: Hit{O.Found.ar(f), O.Found.i(f), 1, tag}
@@ -594,10 +594,10 @@ def Hit.tg(+x: Hit) -> U32:
   match x:
     case Hit{ar, i, on, tg}: tg
 
-# ===========================================================================
+
 # `mixin/elementwise.py` IS NOT PORTED, so every operator below is the RAW
 # `alu`. `dc_sub` is `__sub__`'s shape and NOT a SUB node -- divergence B.
-# ===========================================================================
+
 def dc_alu1(+ar: O.Arena,+op: O.Op,+x: U32) -> O.Found:
   O.UOp.alu(ar, op, [x])
 
@@ -846,12 +846,12 @@ def dc_l17.go2(+ar: O.Arena,+self: U32,+one: Bool) -> Maybe<&2, O.Found>:
 def dc_l17(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
   dc_l17.go2(F.Folded.ar(fx), self, dc_l17.pat2(F.Folded.ar(fx), self))
 
-# ===========================================================================
+
 # THE DTYPE CONJUNCTS. `dtypes.ints` is the four SIGNED widths and it is NOT
 # weakint, so `Cls.is_int` is the wrong test here -- it admits `CWeakInt`. One
 # reader and a NAME, so a rule spells `dc_dt(fx, x, 0)`.
 #   0 ints  1 uints  2 bool  3 floats
-# ===========================================================================
+
 # A nested `match c:` in every arm of `match want:` makes `c` a binder matched
 # more than once, which Bend reads as a consumed binder. One def per class and
 # one `match want` over those is the same four lines and it compiles.
@@ -875,7 +875,7 @@ def dc_dt.of(m: Maybe<&2, S.Dt>,+want: U32) -> Bool:
 def dc_dt(+fx: F.Folded,+u: U32,+want: U32) -> Bool:
   dc_dt.of(F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), u), want)
 
-# ===========================================================================
+
 # `_min_max` -- ops.py:1104. op.py's ONLY range read is
 # `floordiv_to_idiv`'s and `floormod_to_mod`'s guard, and it is `a.vmin >= 0`,
 # `b.vmin >= 0`, `a.vmax <= 0`, `b.vmax <= 0`.
@@ -891,7 +891,7 @@ def dc_dt(+fx: F.Folded,+u: U32,+want: U32) -> Bool:
 #     the rule down the GENERAL path. That is Python's answer whenever the guard is
 #     false, so the divergence is SOUND. It is DIVERGENCE D and the alternative --
 #     answering `True` -- would be a wrong answer, not a conservative one.
-# ===========================================================================
+
 def dc_end.go(+le: Bool,+neg: Bool,+v: U32) -> Bool:
   match le:
     case True{}: Bool.or(neg, U32.is_zero(v))
@@ -939,12 +939,12 @@ def dc_both_nonneg(+ar: O.Arena,+a: U32,+b: U32) -> Bool:
   Bool.or(Bool.and(dc_vmin(ar, a), dc_vmin(ar, b)),
           Bool.and(dc_vmax(ar, a), dc_vmax(ar, b)))
 
-# ===========================================================================
+
 # `floordiv_to_idiv` -- op.py:54-56. The short arm is the WHOLE of `a.alu(TRUNCDIV,
 # b)` and `out_s7` is its row; the general arm is
 # `a.alu(TRUNCDIV,b) - (a.alu(TRUNCMOD,b).ne(0) & (a<0).ne(b<0))`, and because `&` on
 # bools is `AND` and `-` is `dc_sub` the tree is `ADD(TRUNCDIV, MUL(AND, C(-1)))`.
-# ===========================================================================
+
 def dc_fd.gen(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
   +q = dc_alu2(ar, O.OpsTRUNCDIV{}, a, b)
   +nz = dc_cmod_ne(O.Found.ar(q), a, b)
@@ -969,14 +969,14 @@ def dc_s1.put(+ar: O.Arena,+self: U32) -> Maybe<&2, O.Found>:
 def dc_s1(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
   dc_s1.put(F.Folded.ar(fx), self)
 
-# ===========================================================================
+
 # `floormod_to_mod` -- op.py:58-62. The comment at :61 is load-bearing and is
 # KEPT: `where` and not `mul`, so the result cannot be fused into MULACC.
 #   # use where instead of mul to avoid being fused into MULACC (which int64
 #   #   long-decomp doesn't handle)
 # The general arm is `r + (r.ne(0) & (a<0).ne(b<0)).where(b, b.const_like(0))`,
 # and `b.const_like(0)` is `C(0)` -- a CONST and not a node.
-# ===========================================================================
+
 def dc_fm.gen(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
   +r = dc_alu2(ar, O.OpsTRUNCMOD{}, a, b)
   +nz = dc_cmod_ne(O.Found.ar(r), a, b)
@@ -1001,7 +1001,7 @@ def dc_s3.put(+ar: O.Arena,+self: U32) -> Maybe<&2, O.Found>:
 def dc_s3(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
   dc_s3.put(F.Folded.ar(fx), self)
 
-# ===========================================================================
+
 # `magicgu` -- op.py:9-18. Hacker's Delight chapter 10: the smallest `s` with
 # `2s > nc*(d-1-(2s-1)%d)`, and then `m = (2s + d-1-(2s-1)%d)//d`.
 #
@@ -1037,14 +1037,14 @@ def dc_s3(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 #   `i64_mod`/`i64_shl` to `helpers.bend`; nothing in `decomp.py` changes when
 #   they land, because this block is already the only caller.
 
-# ===========================================================================
+
 # `fast_idiv` -- op.py:20-34. THREE of the five guards are exact here and are
 # PORTED, because the two they need are both available: `d.val` is a `U32` and
 # `x.vmin`/`x.vmax` are readable for a CONST and a PARAM (see `dc_vmin`). The
 # FOURTH line is the wall, and `dc_idiv`'s `None` there is the same reading
 # `divandmod.bend` gives Python's `raise`: the condition is REPORTED and the
 # ladder treats it as a skip, which is the only total answer a pure def has.
-# ===========================================================================
+
 # `d <= 0` for a CONST `d`, which is `d.val` and a SIGNED compare. `x.vmin < 0`
 # is `not dc_vmin`.
 def dc_idiv.bad(+ar: O.Arena,+x: U32,+d: U32) -> Bool:
@@ -1058,7 +1058,7 @@ def dc_idiv.bad(+ar: O.Arena,+x: U32,+d: U32) -> Bool:
 def dc_idiv(+ar: O.Arena,+x: U32,+d: U32,+small: Bool) -> Maybe<&2, O.Found>:
   dc_idiv.go(ar, x, d, dc_idiv.bad(ar, x, d), small)
 
-# ===========================================================================
+
 # `threefry2x32` -- op.py:38-50. FIVE groups of FOUR rounds, all 32-bit, and
 # the only 64-bit step is the final `(xr[1] << 32) | xr[0]`, which is
 # `H.i64_of_hi_lo` and NOT arithmetic. PORTED IN FULL, and it is the largest
@@ -1075,7 +1075,7 @@ def dc_idiv(+ar: O.Arena,+x: U32,+d: U32,+small: Bool) -> Maybe<&2, O.Found>:
 # so `xr[1]` on the right is the OLD one and `x0` is the NEW `xr[0]`. Getting
 # that wrong is the one silent bug in the port, and `out_s9` cannot see it --
 # which is why `grown_s9` and `tf_split` are here as well.
-# ===========================================================================
+
 type TFP is Data:
   TFP{f: O.Found, a: U32, b: U32}
 
@@ -1236,7 +1236,7 @@ def tf_split(+ar: O.Arena,+x: U32) -> Maybe<&1, U32 & U32>:
 def tf_split_str(+ar: O.Arena,+x: U32) -> String:
   tf_split_str.go(tf_split(ar, x))
 
-# ===========================================================================
+
 # THE SIMPLIFYING TABLE -- op.py:66-78. FOUR rules, and the `ops` argument
 # decides whether the first and the third exist at all, so the table is a
 # FUNCTION of a Bool and the two variants are two `Data` values built by one
@@ -1250,7 +1250,7 @@ def tf_split_str(+ar: O.Arena,+x: U32) -> String:
 # `4` THREEFRY(x, key)   -> threefry2x32            op.py:77
 #
 # The reject sets are MEASURED, not guessed: `rejs0..rejs3` in the gate.
-# ===========================================================================
+
 def dc_s_tab(+shifts: Bool,+threefry: Bool) -> O.PMEntrys:
   match threefry:
     case True{}: O.PMEntrys{[O.PMEntry{0, [O.OpsDIV{}],  [O.OpsCONST{}]},              # 70
@@ -1281,7 +1281,7 @@ def t_nrules_s3f() -> U32:
 def dc_side_of(+ar: O.Arena,+u: U32,+x0: Bool,+x1: Bool) -> U32:
   dc_side.go(x0, x1)
 
-# ===========================================================================
+
 # THE GATE, and what each row is FOR. Every row is a claim PYTHON FIXES, taken
 # from `.agents/slop/dc-oracle.py`, which is the real `decomp.op` driven over the
 # real `PatternMatcher`. Nothing here restates this file's own code.
@@ -1311,7 +1311,7 @@ def dc_side_of(+ar: O.Arena,+u: U32,+x0: Bool,+x1: Bool) -> U32:
 #   nroots     how many roots the fixture arena holds. THE COUNT ROW: a fixture
 #                  added or dropped moves it, and every `*_<f>` row is addressed
 #                  THROUGH it, so a stale index cannot hide.
-# ===========================================================================
+
 type Gate is Data:
   Gate{ar: O.Arena, rs: List<&2, U32>, tf: U32}
 
@@ -1581,14 +1581,14 @@ def t_tf_out.put(+on: U32, +h: Hit) -> String:
     case 0: "none"
     case _: dc_sh2(Hit.ar(h), Hit.i(h))
 
-# ===========================================================================
+
 # CONST READS. A PyConst is a Python int/float/bool/Invalid and the port's
 # `Const` is `CInt{I64}` or `CFloat{F32}`, so a float CONST is unreadable as an
 # integer and that is DIVERGENCE D's other half: op.py's `c.val` on a float
 # CONST does not exist either, because `UPat.cvar` without a dtype matches a
 # CONST of any dtype and then `c.val` raises. `dc_val` answering `None` is the
 # same skip, reported.
-# ===========================================================================
+
 def dc_val(+ar: O.Arena, +u: U32) -> Maybe<&2, U32>:
   dc_val.arg(O.Arena.arg(ar, u))
 
@@ -2089,9 +2089,9 @@ def dc_s_scan(+todo: List<&2, O.PMEntry>, +fx: F.Folded, +self: U32,+acc: Hit) -
 def simplifying_rewrite_patterns(+threefry: Bool, +fx: F.Folded,+self: U32) -> Hit:
   dc_s_scan(O.PMEntrys.es(dc_s_tab(False{}, threefry)), fx, self, miss(F.Folded.ar(fx)))
 
-# ===========================================================================
+
 # THE ROWS. A `None` is `none`; otherwise the tree TWO levels deep.
-# ===========================================================================
+
 def rw_s(+g: Gate,+n: U32) -> Hit:
   simplifying_rewrite_patterns(False{}, F.folded(Gate.ar(g)), root(g, n))
 
@@ -2325,7 +2325,7 @@ def gate() -> IO(Unit):
 def main() -> IO(Unit):
   gate()
 
-# ===========================================================================
+
 # the mutation table and what is not done. Both are measured, and the second
 # one is the honest half of the gate.
 #
@@ -2380,7 +2380,7 @@ def main() -> IO(Unit):
 #    NOT a promotion. The oracle's erasure rule is too coarse; the port's tree
 #    is Python's tree. FIXING IT IS AN ORACLE FIX, not a port fix.
 #
-# ---------------------------------------------------------------------------
+
 # the three rules that did not fire, now diagnosed. Nine rows, three readers,
 # and ONE shape of mistake: a reader that steps one hop further than the tree is
 # deep, or a predicate that reads a FIXED side where the op is commutative. Both

@@ -2,7 +2,7 @@ import Base
 import ./../base.bend as F
 import ./../helpers.bend as H
 
-# ===========================================================================
+
 # llm/gguf.bend -- tinygrad/llm/gguf.py (272 lines): THE GGUF FILE FORMAT READER.
 #
 # PORTED, and gated against CPython over a real `.gguf` file: `_GGML_NATIVE`
@@ -43,7 +43,7 @@ import ./../helpers.bend as H
 #   * `(a, b) = f(x)` is REFUSED -- a destructuring let is a match, and a match
 #     may not scrutinise a call. So every read answers a record and its fields
 #     are projected by a def of their own (`Wd.v`, `Wd.rs`, ...).
-# ===========================================================================
+
 
 # one GGUF metadata value.
 #
@@ -311,12 +311,12 @@ def magic() -> U32: 1179993927
 def blk.bad(t: U32, +prev: U32) -> U32:
   Bool.pick(U32, U32.is_eq(prev, nobad()), t, prev)
 
-# ---------------------------------------------------------------------------
+
 # bytes: the four fixed widths, and a length-prefixed run.
 #
 # A truncated file answers short here; CPython raises `struct.error`. The
 # alignment the parser computes is exact on any file that would have parsed.
-# ---------------------------------------------------------------------------
+
 # `struct.unpack("<I")` and `"<Q"` are little-endian, so the LOW word of an
 # eight-byte field is bytes 0..3 and its HIGH word is bytes 4..7.
 def le4(a: U32, b: U32, c: U32, d: U32) -> U32:
@@ -349,14 +349,14 @@ def by.n(k: Nat, bs: List<&2, U32>, acc: List<&2, U32>) -> Nx:
     case 1n+p Nil{}: Nx{List.reverse(&2, U32, acc), Nil{}}
     case 1n+p h <> t: by.n(p, t, h <> acc)
 
-# ---------------------------------------------------------------------------
+
 # `read_str` (:188): a u64 length, then that many bytes, decoded as UTF-8.
 #
 # THE FUEL IS THE BYTE COUNT, and it is not decoration: a multi-byte sequence
 # consumes a PREFIX of the tail, and a prefix taken by a length-prefixed read is
 # not a subterm of the list it came from -- the one shape Bend's termination
 # check refuses outright.
-# ---------------------------------------------------------------------------
+
 def u32get(xs: List<&2, U32>, n: Nat) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, xs, n), 0)
 
@@ -403,11 +403,11 @@ def cr.str(+c: Cur) -> CS:
   n = cr.next(c, U32.add(8, H.lo32(W8.v(k))), Nx.rs(x))
   CS{n, s}
 
-# ---------------------------------------------------------------------------
+
 # `readers` (:193-195) as thirteen constructors. :193 spells 8 -> `read_str` and
 # 9 -> `read_arr`; the other eleven are `functools.partial(_read_unpack, "<"+f,
 # nb)` for f in {c,b,H,h,I,i,f,?,Q,q,d} (:194-195), so the format IS the table.
-# ---------------------------------------------------------------------------
+
 type Fmt is Data:
   FChr{}
   FI8{}
@@ -533,11 +533,11 @@ def rd.vgo(f: Maybe<&1, Fmt>, typ: U32, c: Cur) -> VOut:
 def rd.val(+typ: U32, c: Cur) -> VOut:
   rd.vgo(rd.fmt(typ), typ, c)
 
-# ---------------------------------------------------------------------------
+
 # `_GGML_NATIVE` (:20-21) as an ITEMSIZE, and `_GGML_QUANT` (:24-27) as a block.
 # :226-227 reads the first as `(block, size) = (1, itemsize)` and the second as
 # `(block, size) = _GGML_QUANT[typ]`.
-# ---------------------------------------------------------------------------
+
 def blk.native(t: U32) -> Maybe<&1, U32>:
   match t:
     case 30: Some{2}
@@ -593,9 +593,9 @@ def blk.ofb(m: Maybe<&1, Blk>, t: U32) -> U32:
     case Some{_}: nobad()
     case None{}: t
 
-# ---------------------------------------------------------------------------
+
 # the `kv` table (:211-214), one pair per step
-# ---------------------------------------------------------------------------
+
 def kv.put(ok: Bool, x: KV, acc: List<&2, KV>) -> List<&2, KV>:
   match ok:
     case True{}: x <> acc
@@ -613,11 +613,11 @@ def kv_loop(n: Nat, c: Cur, acc: List<&2, KV>, bad: U32) -> KOut:
       kv_loop(p, VOut.cur(o), kv.put(U32.is_eq(VOut.bad(o), nobad()), KV{k, v}, acc),
         blk.bad(VOut.bad(o), bad))
 
-# ---------------------------------------------------------------------------
+
 # the tensor_info table (:223), one entry per step. `shape` is REVERSED here
 # (:230 `tuple(reversed(dims))`) because `ti.dims` prepends, so `TIE.shape` is
 # the tuple CPython hands to `state_dict` and needs no second reversal.
-# ---------------------------------------------------------------------------
+
 def ti.dims(k: Nat, +c: Cur, acc: List<&2, H.I64>) -> DI:
   match k:
     case 0n: DI{c, acc}
@@ -649,10 +649,10 @@ def ti_loop(n: Nat, c: Cur, acc: List<&2, TIE>, bad: U32) -> TOut:
         ti.put2(U32.is_eq(z, nobad()), TIE{nm, sh, ty, of}, acc),
         blk.bad(z, bad))
 
-# ---------------------------------------------------------------------------
+
 # `kv.get("general.alignment", 32)` (:224) and the second pass that turns an
 # offset into `(start, nbytes)` (:229-230).
-# ---------------------------------------------------------------------------
+
 def kv.align.gv(v: GVal, acc: U32) -> U32:
   match v:
     case GVInt{x}: x
@@ -698,10 +698,10 @@ def ti.sz(es: List<&2, TIE>, +ds: U32, acc: List<&2, TI>) -> List<&2, TI>:
     case Nil{}: List.reverse(&2, TI, acc)
     case e <> t: ti.sz(t, ds, ti.put(ti.sz0(e, ds), acc))
 
-# ---------------------------------------------------------------------------
+
 # `gguf_parse` (:198-231), one step per def. `n_tensors` is read BEFORE `n_kv`
 # (:208) and that order is the one `tell()` observes.
-# ---------------------------------------------------------------------------
+
 def gguf.fail(c: Cur, bad: Bad) -> Parsed:
   match c:
     case Cur{_, at}: Parsed{Nil{}, Nil{}, at, Some{bad}}

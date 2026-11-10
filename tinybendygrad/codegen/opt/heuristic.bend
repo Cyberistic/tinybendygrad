@@ -11,7 +11,7 @@
 # wall wearing thirteen coats, and the honest thing is to say which coat is which
 # rather than to write a stub ladder that computes nothing.
 #
-# ---------------------------------------------------------------------------
+
 # THE INVENTORY, def by def, against heuristic.py's 193 lines. `WALL #1` is
 # `UOp.ranges` + `backward_slice`; `WALL #2` is `apply_opt`'s AST substitution
 # (postrange.bend); `WALL #3` is `image_valid_dims` from `codegen/late/coalesce.py`,
@@ -92,7 +92,7 @@
 # need the set algebra, because each step only adds a predicate the previous one
 # already has.
 #
-# ---------------------------------------------------------------------------
+
 # THE ORDER PROBLEM, STATED ONCE. `heuristic.py:6` does
 # `from tinygrad.codegen.opt.postrange import Scheduler`, so this file imports
 # `postrange.bend`. It could call `PR.Sched.group_for_reduces` today and be
@@ -103,8 +103,8 @@
 # Ops.CONST`, which is the arena and therefore `postrange.bend`'s `Sched` too --
 # so the import is not the blocker, `UOp.ranges` and `backward_slice` are.
 #
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+
+
 # what is ported here, exactly, and what the rows below PIN.
 #
 # Two of the thirteen blocks are pure over `Sched` with nothing left over, and

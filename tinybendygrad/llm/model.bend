@@ -25,29 +25,29 @@
 
 import Base
 
-# ===========================================================================
+
 # model.py:11-16 -- `class ExpertGating(enum.IntEnum)`. THE VALUE IS THE CONTRACT: it is written
 # into a GGUF-derived config and compared, so it travels as a `U32` and not as a constructor tag.
-# ===========================================================================
+
 def ExpertGating.SOFTMAX() -> U32: 1
 def ExpertGating.SIGMOID() -> U32: 2
 def ExpertGating.SOFTMAX_WEIGHT() -> U32: 3   # softmax over the top-k selected logits
 def ExpertGating.SQRT_SOFTPLUS() -> U32: 4
 
-# ===========================================================================
+
 # model.py:18-23 -- `YaRNConfig`. Four scalars, no defaults upstream.
-# ===========================================================================
+
 type YaRNConfig is Data:
   YaRNConfig{factor: F32, orig_ctx_len: U32, beta_fast: F32, beta_slow: F32}
 
 def YaRNConfig.of(+factor: F32, +orig_ctx_len: U32, +beta_fast: F32, +beta_slow: F32) -> YaRNConfig:
   YaRNConfig{factor, orig_ctx_len, beta_fast, beta_slow}
 
-# ===========================================================================
+
 # model.py:68-77 -- `SSMConfig`. `kda` defaults False; `gate_lower_bound` is `float|None` and is
 # `Maybe<&1, F32>`, because "kda: bounded decay gate" is an ABSENT bound for every non-kda model and a
 # `0.0` sentinel would be a real value.
-# ===========================================================================
+
 # - and `float|None` cannot travel as a `Maybe` here, which is a language fact and not a simplification.
 # MEASURED with `bin/bend --check-only`: a record field typed `Maybe<&1, F32>` is REFUSED -- "expected :
 # Data, observed : Type" -- because `F32` is a `Type`, so a `Maybe` over it is not storable in a
@@ -67,20 +67,20 @@ def SSMConfig.kda(s: SSMConfig, +kda: Bool, +has_bound: Bool, +bound: F32) -> SS
     case SSMConfig{conv_kernel, state_size, group_count, time_step_rank, inner_size, _k, _hb, _b}:
       SSMConfig{conv_kernel, state_size, group_count, time_step_rank, inner_size, kda, has_bound, bound}
 
-# ===========================================================================
+
 # model.py:78-83 -- `HCConfig`: manifold-constrained hyper-connections, `count` residual streams mixed
 # by a doubly stochastic matrix in `sinkhorn_iters` steps at `eps`.
-# ===========================================================================
+
 type HCConfig is Data:
   HCConfig{count: U32, sinkhorn_iters: U32, eps: F32}
 
 def HCConfig.of(+count: U32, +sinkhorn_iters: U32, +eps: F32) -> HCConfig:
   HCConfig{count, sinkhorn_iters, eps}
 
-# ===========================================================================
+
 # model.py:84-91 -- `IndexerConfig`: a query attends to the `top_k` keys picked by an indexer scoring
 # pools of `kpool` keys.
-# ===========================================================================
+
 type IndexerConfig is Data:
   IndexerConfig{n_heads: U32, head_dim: U32, top_k: U32, kpool: U32, norm_eps: F32}
 

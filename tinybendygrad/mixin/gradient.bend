@@ -44,11 +44,11 @@ import ./../helpers.bend as H
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-# ===========================================================================
+
 # THE ANSWER TYPE. `GFired` carries the per-src gradient list and the grown arena;
 # `GSkip` is the tri-state's "no opinion" arm. Both are `Data`, so the scan can hold
 # an accumulator and keep it.
-# ===========================================================================
+
 type GRes is Data:
   GSkip{}
   GFired{gs: List<&2, U32>, ar: O.Arena}
@@ -110,8 +110,8 @@ def gs_solid(r: GRes) -> U32:
     case GSkip{}: 0
     case GFired{gs, ar}: gs_solid.go(gs, 0)
 
-# ===========================================================================
-# ---------------------------------------------------------------------------
+
+
 # `math.pi/2` -- gradient.py:69 `(math.pi/2 - ret.src[0]).sin() * ctx`.
 def k_pi_2() -> O.Const: O.CFloat{1.5707963267948966}
 # `math.log(2)` -- gradient.py:70, :71, :77.
@@ -148,13 +148,13 @@ def k_ftwo() -> O.Const: O.CFloat{2.0}
 def k_fmone() -> O.Const: O.CFloat{F32.neg(1.0)}
 def k_izero() -> O.Const: O.CInt{H.i64_of_i32(0)}
 def k_ione() -> O.Const: O.CInt{H.i64_of_i32(1)}
-# ===========================================================================
+
 # THE NODE BUILDERS. Every one is a `UOp(...)` call in Python's rule bodies, and every
 # one GROWS the arena, so each takes `+ar` and returns a `Found`. `UOp.alu` exists in
 # ops.bend and is the same call with the arena unprefixed; `gnew` is the spelling that
 # makes the arena threading explicit, because a rule that builds two nodes has to hand
 # `Found.ar` forward by hand either way.
-# ===========================================================================
+
 def gnew(+ar: O.Arena, +op: O.Op, +srcs: List<&2, U32>, +arg: O.Arg) -> O.Found:
   O.UOp.new(ar, op, srcs, arg, O.TNone{})
 
@@ -314,7 +314,7 @@ def gdiv(+ar: O.Arena, x: U32, y: U32) -> O.Found:
 # form puts every pattern conjunct in the `if`, and `_get_clause` (upat.py:158) emits
 # `(_ret:=_fxn(...)) is not None` last. So `nsrc` tests and op tests are PATTERN tests,
 # and a `const_like` or a shape computation is BODY work that happens after a match.
-# ===========================================================================
+
 
 # --- 0. CAST -- gradient.py:67. `(ctx.cast(ret.src[0].dtype),)`
 #
@@ -935,7 +935,7 @@ def gr_30(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0, ctx], ar)
 def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 
 
-# ===========================================================================
+
 # THE DRIVER -- `reduce_gradient` (gradient.py:8-18) and `call_gradient` (:20-50) are
 # STILL WALLS, and `_deepwalk` / `compute_gradient` are NOT (they landed above this
 # block). The three notes are kept separate because the reasons are different, and the
@@ -1013,9 +1013,9 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 #   3. `uop/weak.bend`'s `_min_max` unblocks tag 25 (`UNSHARD`), tag 15
 #      (`has_buffer_identity`) and `mixin/dtype.bend`'s `commit_dtype`.
 #   4. `call_gradient` needs the five subsystems above and is the largest single item.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE TABLE. 33 entries, `pm_gradient.pdict` order, and the `ops`/`rej` columns are
 # Python's OWN -- dumped from `upat_compile` and the `pdict` reject sets, not inferred.
 # The interesting column is `rej`, and it is non-empty at exactly FOUR tags: 27 rejects
@@ -1029,7 +1029,7 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 # that it decides nothing: tags 28 and 29 have the SAME op set (`AFTER`) and the SAME
 # reject set (`STORE`), so `rej` cannot separate them and the IDENTITY CHECK is the only
 # thing that can. `t_rej27` and `t_rej29` are the rows for the spelling.
-# ===========================================================================
+
 def gr_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0,  [O.OpsCAST{}],                Nil{}},                        # 67
@@ -1065,13 +1065,13 @@ def gr_table() -> O.PMEntrys:
     O.PMEntry{30, [O.OpsSTORE{}],                Nil{}},                        # 104
     O.PMEntry{31, [O.OpsBITCAST{}],              Nil{}}]}                       # 106
 
-# ===========================================================================
+
 # THE DISPATCH, duplicated rather than abstracted. `ops.bend` cannot call a def in this
 # file, so this scan exists here for the same reason it exists six times in `spec.bend`,
 # and its header says why: a rule is a def rather than a value, so there is nothing to
 # store in a table to call. THE TABLE IS `Data`, so `+ts` is fine and the scan is free
 # to read it twice.
-# ===========================================================================
+
 def gr_dispatch.go(tag: U32, +ar: O.Arena, +ctx: U32, self: U32) -> GRes:
   match tag:
     case 0: gr_0(ar, ctx, self)
@@ -1166,7 +1166,7 @@ def gr_scan(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32,
 def gr_rewrite(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
   gr_scan(ts, ar, ctx, self, O.PMEntrys.es(ts), GSkip{})
 
-# ===========================================================================
+
 # THE WALK -- `compute_gradient` (gradient.py:116-145) and `_deepwalk` (:109-114).
 #
 # what landed and what did not, and the split is the one upstream's own source
@@ -1203,7 +1203,7 @@ def gr_rewrite(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 # `call_gradient` (:20-50) stays a wall under `grad_30`'s block and is NOT called here:
 # a CALL in the walk is the one node shape whose gradient this port cannot produce, and
 # `cg_run` states that rather than pretending.
-# ===========================================================================
+
 
 # `in_target_path: dict[UOp, bool]` (gradient.py:111), as a `Data` pair of PARALLEL
 # LISTS. Notes T-6: `List<&2, (U32, Bool)>` is refused outright (a tuple is a `Sigma`,
@@ -1278,7 +1278,6 @@ def dw_push(+p: Itp, +x: U32, +f: Bool) -> Itp:
   Itp{List.append(&2, U32, Itp.nodes_of(p), [x]), List.append(&2, Bool, Itp.flags_of(p), [f])}
 
 # the flag pass. one forward pass over the toposort, and the flag is computed on the
-# TABLE AS IT STANDS BEFORE THE PUSH -- the argument `dw_push(p, x, dw_any(...))` is
 # evaluated before `dw_push` branches, which is notes rule 5 ("BEND IS STRICT: AN
 # argument is evaluated before the callee branches") and is what makes the one-line arm
 # legal.
@@ -1337,13 +1336,13 @@ def _deepwalk.vis(+ar: O.Arena, targets: List<&2, U32>, root: U32) -> Itp:
 def _deepwalk(root: U32, targets: List<&2, U32>, +ar: O.Arena) -> Deep:
   Deep.fill(O.Arena.empty(), _deepwalk.vis(ar, targets, root))
 
-# ---------------------------------------------------------------------------
+
 # `grads: dict[UOp, UOp]` (gradient.py:118) -- TWO PARALLEL LISTS and an IN-PLACE
 # update. The in-place update is the whole reason this is dict-shaped and not a bag:
 # `grads[k] = grads[k] + v` (gradient.py:138) OVERWRITES and keeps `k`'s INSERTION
 # POSITION, and `oracle_dag_keys` is an insertion-order row, so an append-only table
 # that always lost would print the right COUNT and the wrong ORDER.
-# ---------------------------------------------------------------------------
+
 type Grads is Data:
   Grads{ks: List<&2, U32>, vs: List<&2, U32>}
 
@@ -1398,13 +1397,13 @@ def gput.at(+g: Grads, at: Nat, +v: U32) -> Grads: Grads{Grads.ks_of(g), gput.at
 def gput.new(+g: Grads, +k: U32, +v: U32) -> Grads:
   Grads{List.append(&2, U32, Grads.ks_of(g), [k]), List.append(&2, U32, Grads.vs_of(g), [v])}
 
-# ---------------------------------------------------------------------------
+
 # THE WALK STATE. `skip` and `hole` are the two counters `oracle_*_skip_n` and
 # `oracle_*_hole_n` read, and they are CARRIED rather than recomputed so they cannot be
 # a second transcription of upstream's loop. There is NO `rest` FIELD: the unconsumed
 # walk is a PARAMETER of the loop, because a field nothing reads is a dead field and the
 # final state must not carry the walk's own position.
-# ---------------------------------------------------------------------------
+
 type CState is Data:
   CState{ar: O.Arena, g: Grads, skip: U32, hole: U32}
 
@@ -1582,7 +1581,7 @@ def compute_gradient(+root: U32, +root_grad: U32, targets: List<&2, U32>, +ar: O
   cg_step(List.reverse(&2, U32, Deep.walk_of(_deepwalk(root, targets, ar))),
           CState{ar, gput.new(Grads{Nil{}, Nil{}}, root, root_grad), 0, 0})
 
-# ===========================================================================
+
 # THE GATE. Rows print `name=1|0` and Bend has no assertion form, so the gate is that
 # both lanes print the SAME rows. Expectations come from
 # `python3 -m tinygrad.mixin.gradient` drivers under `.agents/slop/notes/`, run against
@@ -1597,7 +1596,7 @@ def compute_gradient(+root: U32, +root_grad: U32, targets: List<&2, U32>, +ar: O
 #     would move. A one-row family could not tell the rule from its own absence.
 #   * `norebind_mut` is the MUTATION, not a claim: it is the count of rows that move when
 #     `gr_29_same` is replaced by `True{}`, recorded in the table at the foot.
-# ===========================================================================
+
 
 # ---- the fixture arena ------------------------------------------------------
 #
@@ -2246,8 +2245,6 @@ def t_rej_len27() -> U32:
 # drives CPython's own `compute_gradient` into `RuntimeError: cannot broadcast ... into
 # ()` at gradient.py:133 -- the SHAPED-EDGE REDUCE, because `build2`'s EXPAND's shape src
 # is an ADD whose `as_shape` is a ONE-tuple (ops.py:788) while a leaf's is `()`.
-# - the oracle no longer dies silently: `main()` catches that raise and prints it as a
-# ROW (`oracle_hole_error=...`), and the seven rows that used to be unreachable
 # (`oracle_pmul`, `oracle_pmul0/1`, `oracle_seed`, `oracle_fwdwalk_n`,
 # `oracle_fwdwalk_skipped`, `oracle_fwdwalk_a`) are now emitted, because they are built
 # from the FIRST fixture alone.
@@ -2449,7 +2446,6 @@ def dag_keys() -> String:
 # every one of those fixtures is a TREE, and they part company the moment the walk's
 # ACCUMULATE makes `grads[a] = seed + (b*seed)` -- whose two operands share `seed`. This
 # row read `7` where CPython reads `5`, with the correct `root=ADD/2` either way, so the
-# count was wrong by exactly the shared prefix. The rows below therefore count
 # `O.UOp.toposort`, and `size1` is NOT used for anything that claims to be CPython's `n`.
 def dag_nnodes(+ar: O.Arena, k: U32) -> U32:
   U32.from_nat(List.length(&2, U32, O.UOp.toposort(O.Arena.budget(ar), ar, k)))
@@ -2490,7 +2486,7 @@ def dag_grad_r(+d: Dag) -> String: dag_grad_root.put(d, Dag.r_of(d))
 # key indices and the same arena's value indices (see `dag_grad_root.put`).
 def walk_dag() -> Dag: dag()
 
-# ===========================================================================
+
 # the gradient set -- mixin/op.py:471 -- and the `bw` graph.
 #
 # WHAT UPSTREAM SAYS.  `tinygrad/mixin/op.py:470-471`:
@@ -2513,7 +2509,7 @@ def walk_dag() -> Dag: dag()
 # the node sets of the gradient values, READ OUT OF THE ARENA.  The arena is
 # HASH-CONSED (`ops.bend`'s `UOp.make.intern`), so a node IS its own key -- the graph
 # is READ, never rebuilt as a list of records.
-# ===========================================================================
+
 
 # THE FIXTURE.  `Gs` is the `Dag` fixture's shape plus an EXPAND (so a HOLE fires for
 # real) plus a DETACHED target (so the `const_like(0)` substitute fires for real).
@@ -2561,13 +2557,13 @@ def gs() -> Gs:
 # comprehension iterates `target_uops` in the order the caller passed them.
 def gs_targets.of(a: U32, b: U32, z: U32) -> List<&2, U32>: [a, b, z]
 
-# ---------------------------------------------------------------------------
+
 # the run.  one record, one fixture, one arena: the walk's arena (the fixture's) and
 # the walk's own grown arena (the CState's) are DIFFERENT arenas, and every row below
 # reads indices out of exactly one of them.  The notes' T-4 shape -- reading a key
 # index out of one arena and a value index out of another -- is what this record
 # exists to make impossible.
-# ---------------------------------------------------------------------------
+
 type GRun is Data:
   GRun{ar: O.Arena, cs: CState, ts: List<&2, U32>, r: U32}
 
@@ -2581,10 +2577,10 @@ def gs_run(+g: Gs) -> GRun:
       +ts = gs_targets.of(a, b, z)
       GRun{ar, compute_gradient(r, seed, ts, ar), ts, r}
 
-# ---------------------------------------------------------------------------
+
 # THE GRADIENT SET.  `GSet` is the answer: the slots, the per-slot IS-SUBSTITUTE flags,
 # the arena the substitute was interned into, and the substitute COUNT.
-# ---------------------------------------------------------------------------
+
 type GSet is Data:
   GSet{slots: List<&2, U32>, zs: List<&2, Bool>, ar: O.Arena, zeros: U32}
 
@@ -2651,7 +2647,7 @@ def grad_set.go(+s: CState, targets: List<&2, U32>, +acc: GSet) -> GSet:
 def grad_set(+s: CState, targets: List<&2, U32>) -> GSet:
   grad_set.go(s, targets, GSet{Nil{}, Nil{}, CState.ar_of(s), 0})
 
-# ---------------------------------------------------------------------------
+
 # THE `bw` GRAPH -- the backward UOp graph, read out of the arena.
 #
 # THE SIGNATURE IS INDEX-FREE ON PURPOSE.  The port's arena indices and CPython's
@@ -2668,7 +2664,7 @@ def grad_set(+s: CState, targets: List<&2, U32>) -> GSet:
 # (the `bw_distinct` row MEASURES that, it does not assert it), so here the signature
 # IS the graph.  What it catches: a wrong op, a wrong arity, a wrong src class, a
 # missing node, a wrong CONST value and a swapped pair of same-class leaves.
-# ---------------------------------------------------------------------------
+
 
 # THE IDENT: what tells two nodes of the SAME CLASS apart.  A CONST's VALUE and a
 # BUFFER's PARAM SLOT.  WITHOUT IT `a` and `b` are both `BUFFER/1` and the signature
@@ -2753,9 +2749,9 @@ def bw_sig.go(xs: List<&2, U32>, +ar: O.Arena, acc: List<&2, String>) -> List<&2
     case Nil{}: acc
     case n <> t: bw_sig.go(t, ar, List.append(&2, String, acc, [bw_tok.go(ar, n)]))
 
-# ---------------------------------------------------------------------------
+
 # THE ROWS.
-# ---------------------------------------------------------------------------
+
 
 # THE WALK on the `gs` fixture -- `oracle_gs_walk`.
 def gs_walk.of(+run: GRun) -> String:
@@ -2882,7 +2878,7 @@ def bw_distinct.of(+run: GRun) -> U32:
 
 def bw_distinct() -> U32: bw_distinct.of(gs_run(gs()))
 
-# ===========================================================================
+
 # THE PERMUTE LANE -- `gr_21`'s own fixture, and the FIRST fixture in this file whose
 # BACKWARD GRAPH IS ONE RULE DEEP.
 #
@@ -2913,7 +2909,7 @@ def bw_distinct() -> U32: bw_distinct.of(gs_run(gs()))
 #
 # - THE BACKWARD GRAPH IS EXACTLY: `PERMUTE(ctx, ATuple{[2, 0, 1]})`, and the `bw` graph
 # over it is TWELVE nodes.  CPython's own answer, from `oracle-pm.py`, is the same twelve.
-# ===========================================================================
+
 
 # A CONST AT AN INT VALUE -- the shape src's value.  A BARE CONST, because upstream's
 # `UOp(Ops.CONST, arg=2)` is ONE node with `dtype=dtypes.weakint` (MEASURED in

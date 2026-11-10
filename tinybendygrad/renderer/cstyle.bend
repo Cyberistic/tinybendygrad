@@ -8,7 +8,7 @@
 # wrong rather than broken. So the gate at the foot of this file is a STRING DIFF
 # against live CPython and never a boolean about a string.
 #
-# ===========================================================================
+
 # THE DEVICE IS A `U32` TAG, NOT A RECORD. `cstyle.py`'s six renderer classes
 # differ ONLY in class attributes -- `kernel_typedef`, `type_map`, `barrier`,
 # the address-space prefixes, `code_for_op`, `code_for_workitem`, the max tuples
@@ -42,7 +42,7 @@
 #     even though both are `PatternMatcher`s in Python. A string rule returns a
 #     `String`; a matcher rule returns a UOp. Two concerns, two shapes.
 #
-# ===========================================================================
+
 # the four walls under this file. Three are the substrate's and one is device
 # FFI; each is a `TODO(p3)` with its line.
 #
@@ -73,7 +73,7 @@
 #       `is_cdna4(arch)` (cstyle.py:502-526), and those are two `Bool`s derived
 #       from `self.target.arch`, so `is_cdna` and `is_cdna4` are ported as string
 #       predicates and the rewrite selection they drive is named below.
-# ===========================================================================
+
 
 import Base
 import ./__init__.bend as R
@@ -83,7 +83,7 @@ import ./../LAWS/spec.bend as S
 import ./../helpers.bend as H
 import ./../uop/render.bend as U
 
-# ===========================================================================
+
 # THE DEVICE TAGS. Six renderers plus the abstract `CStyleLanguage`, whose own
 # rows are what every subclass overrides and which the gate needs: cstyle.py's
 # base class is a real, instantiable renderer (`CStyleLanguage(Target())` works,
@@ -93,9 +93,9 @@ import ./../uop/render.bend as U
 # tag is a closed enum and what the differential requires is only that a renderer
 # and its rows agree on it. `render.bend` makes the same argument for the device
 # NAME table and lands in the same place.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE DEVICE TAGS. Six renderers plus the abstract `CStyleLanguage`, whose own
 # rows are what every subclass overrides and which the gate needs: cstyle.py's
 # base class is a real, instantiable renderer (`CStyleLanguage(Target())` works,
@@ -110,7 +110,7 @@ import ./../uop/render.bend as U
 # reads its device names out of the same closed set and the two files must not be
 # able to disagree about which U32 is which, so `devname` is a gated row and not
 # a comment.
-# ===========================================================================
+
 
 type Uses is Data:
   Uses{half: Bool, bf16: Bool, fp8: Bool, nonfinite: Bool, special: Bool, half_any: Bool}
@@ -235,14 +235,14 @@ def dev_name(+dev: U32) -> String:
     case 5: "HIP"
     case _: "?"
 
-# ===========================================================================
+
 # the two derived-fact records. `render_kernel` reads facts out of a UOp list
 # (`uops`) and Python gets them by walking; there is no uop list here because
 # there is no fold (wall (a)), so they arrive as records the CALLER fills. That
 # is not a loosening of the port -- it is the same move `_render_dtype(dtype, sz,
 # addrspace, mutable, override_ptr, shape)` already makes, one level up -- and it
 # is what keeps the six `render_kernel` OVERRIDES inside the gate.
-# ===========================================================================
+
 
 # `bufs` is `list[tuple[str, tuple[UOp, bool]]]`: a name, a uop and a mutability.
 # The uop contributes exactly six things to the emitted string, so those six are
@@ -349,7 +349,7 @@ def uses_off() -> Uses: Uses{False{}, False{}, False{}, False{}, False{}, False{
 
 def emit_min() -> Emit_: emit_of(uses_off(), Nil{}, Nil{}, Nil{}, Nil{}, False{})
 
-# ===========================================================================
+
 # THE OPTION TABLES. One `match` per option, six arms plus the base. They sit
 # here rather than at first use because `render_kernel` reads nine of them in one
 # expression, and a reader reaching past three other defs for `buffer_suffix`
@@ -360,7 +360,7 @@ def emit_min() -> Emit_: emit_of(uses_off(), Nil{}, Nil{}, Nil{}, Nil{}, False{}
 # and `ClangRenderer.abi` is `""` on darwin and `"__attribute__((ms_abi)) "` on
 # win32 (cstyle.py:300-299, a `sys.platform` branch); the port does not take the
 # win32 branch and that is the `TODO(p3)` at the foot.
-# ===========================================================================
+
 
 # `kernel_typedef` -- tinygrad/renderer/cstyle.py:122, :285, :324, :363, :425, :530 -- IS A
 # HEAD/tail pair around the bound, not one string with a field in it.
@@ -399,7 +399,6 @@ def kernel_typedef_tail(+dev: U32) -> String:
 # `void1` and `__kernel void4`. MEASURED BY THE GATE on all four no-field rows.
 # `str.format` on a template with no field is the IDENTITY, and this `Bool` is
 # what says which of the two cases each typedef is in -- so it is a third thing
-# rather than a comment, and the head/tail pair alone was not enough.
 def has_bounds(+dev: U32) -> Bool:
   match dev:
     case 4: True{}
@@ -514,7 +513,7 @@ def gep_arr_threshold.of(+dev: U32) -> U32:
     case 4: 8
     case _: 4
 
-# ===========================================================================
+
 # `type_map: dict[DType, str]` -- tinygrad/renderer/cstyle.py:136, :287, :331, :373, :439, :539.
 # The KEY is the dtype's NAME, because two `DType`s with one name are the same
 # `dtypes` singleton in Python, so the name IS the identity -- the same argument
@@ -538,7 +537,7 @@ def gep_arr_threshold.of(+dev: U32) -> U32:
 # a C identifier and not a type -- and that is exactly what CPython emits. A
 # reader that answered "" for an unmapped dtype would be more "correct" and
 # would differ from the oracle on five of the sixteen dtype rows.
-# ===========================================================================
+
 
 def dt_name(+d: S.Dt) -> String:
   match d:
@@ -667,7 +666,7 @@ def type_map.of(+dev: U32) -> Map<&2, String>:
     case 5: type_map.hip()
     case _: type_map.base()
 
-# ===========================================================================
+
 # `.replace(" ", "_")` -- cstyle.py:189, and it is on the `sz > 1` branch ONLY.
 # A scalar `signed char` prints WITH the space and a vector `signed_char4` does
 # not; both are gate rows, because a reader that underscored unconditionally
@@ -695,7 +694,7 @@ def type_map.of(+dev: U32) -> Map<&2, String>:
 # above says so. So the split is a `match` on five literals, and the `_` arm is `nm` UNCHANGED --
 # which is exact, because no other name in the set contains a space.
 #
-# ===========================================================================
+
 
 # the five, and the underscored form is a literal. `cstyle.py:189` is
 # `name.replace(" ", "_") if sz > 1 else name` -- the replace is UNCONDITIONAL on the `sz > 1` branch,
@@ -756,7 +755,7 @@ def under_general(nm: String) -> String: under_tail.go(under_split(nm), False{})
 
 def under(nm: String) -> String: under_general(nm)
 
-# ===========================================================================
+
 # `_render_dtype` -- cstyle.py:180-190. THE most-read def in the file: it
 # decides the type of every kernel argument, every local, every cast and every
 # pointer, so a dropped character here is a kernel that does not compile and a
@@ -792,7 +791,7 @@ def under(nm: String) -> String: under_general(nm)
 #   * `is_image_shape` BEATS EVERYTHING, INCLUDING the address space -- an image
 #     in GLOBAL space is `read_only image2d_t` and not `__global read_only
 #     image2d_t`. So the image arm is FIRST and returns whole.
-# ===========================================================================
+
 
 def is_global(+a: S.Addr) -> Bool:
   match a:
@@ -843,7 +842,6 @@ def rd_suffix(+a: S.Addr, override_ptr: Bool) -> String:
 #
 # The six maps are the transcription of upstream's six dicts, each an OVERLAY on the base, and the lookup's
 # default is THE NAME ITSELF (`cstyle.py`'s `type_map.get(dtype, dtype.name)`). That is exactly a `match`
-# with a `_` arm, so the transcription survives -- it is just no longer a data structure that has to be
 # built before it can be read. the six arms below are the six dicts, entry for entry; the comments that
 # pin each one (the fp8 group ABSENT on OpenCL, `bf16` NOT remapped on HIP, the FNUZ pair on CUDA) live on
 # `type_map.*` above, which is kept as the transcription of record.
@@ -1117,7 +1115,7 @@ def render_index.alu2(ok: Bool, +ar: O.Arena, +dev: U32, +bname: String, +iname:
 def render_index(+ar: O.Arena, +dev: U32, idx: U32, baddr: S.Addr, bname: String, iname: String, bnumel: U32, lane: Bool) -> String:
   render_index.alu2(is_alu_addr(baddr), ar, dev, bname, iname, idx, bnumel, lane)
 
-# ===========================================================================
+
 # `render_buffer` -- cstyle.py:175-178, the `Ops.BUFFER` arm of `base_rewrite`.
 #
 #     prefix = f"{self.smem_align}{self.smem_prefix}" if x.addrspace == AddrSpace.LOCAL else ""
@@ -1137,7 +1135,7 @@ def render_index(+ar: O.Arena, +dev: U32, idx: U32, baddr: S.Addr, bname: String
 #     concrete int, so wall (b) does not apply here.
 #   * the trailing `;` lives in `render_buffer` and NOT in the `Ops.BUFFER` rule,
 #     because the rule's string is also the DECLARATION `_render` emits.
-# ===========================================================================
+
 
 def rb_prefix.of(+dev: U32, +a: S.Addr) -> String:
   match a:
@@ -1149,7 +1147,7 @@ def rb_prefix(+dev: U32, +a: S.Addr) -> String: rb_prefix.of(dev, a)
 def render_buffer(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, name: String) -> String:
   String.concat([rb_prefix(dev, a), rd_base_name(dev, d), " ", name, "[", U32.show(numel), "];"])
 
-# ===========================================================================
+
 # `code_for_op` -- cstyle.py:142-150, and the per-device overrides at :288-291,
 # :376, :432-438 and :532-533. `dict[Ops, Callable]`, so the ARM is a match on the
 # op and the DEVICE is the tag -- there is no closure to store.
@@ -1170,7 +1168,7 @@ def render_buffer(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, name: String) -> 
 # :288) and adds `FDIV`; CUDA and HIP keep all twenty-one and override six; Metal
 # overrides one (`SIN` -> `precise::sin`); OpenCL and QCOM change nothing. A
 # dropped op is a `KeyError` in Python, so the dropped arm is a gate row.
-# ===========================================================================
+
 
 def cfo_unary(nm: String, +x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [[nm, "("], x, [")"]])
 
@@ -1249,12 +1247,12 @@ def code_for_base.of(op: O.Op, +xs: List<&2, List<&2, String>>) -> List<&2, Stri
     case O.OpsCMPEQ{}: cfo_bin(cfo_xs1(xs), "==", cfo_xs2(xs))
     case _: cfo_unhandled(op)
 
-# ===========================================================================
+
 # the per-device alu overrides. Six ops on CUDA, five on hip, one on Metal, two
 # on Clang, and the FIVE THAT ARE DROPPED. `is_half` is the `dtype in (half,
 # bfloat16)` test, and it is a `Bool` PARAMETER rather than a dtype so the
 # override tables do not each re-derive it.
-# ===========================================================================
+
 
 def is_half(+d: S.Dt) -> Bool:
   Bool.or(O.eq_dt(d, S.half()), O.eq_dt(d, S.bfloat16()))
@@ -1359,7 +1357,7 @@ def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt
     case 5: code_for_hip.of(op, xs, d)
     case _: code_for_base.of(op, xs)
 
-# ===========================================================================
+
 # `code_for_workitem` -- tinygrad/renderer/cstyle.py:131, :330, :370, :431, :531. Five devices
 # spell the workitem id and the BASE and Clang have an EMPTY dict, so a SPECIAL on
 # either is a `KeyError` in Python -- MEASURED, `CStyleLanguage.code_for_workitem` and
@@ -1380,7 +1378,7 @@ def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt
 # literally that. The port keeps the `U32` and formats it, which is the same
 # answer for 0..2 and is stated because `int("07")` in Python is 7 and
 # `U32.show(7)` is `"7"`.
-# ===========================================================================
+
 
 def witem_xyz(n: U32) -> String: String.from_list([Char.from_u32(U32.add(120, n))])
 
@@ -1394,7 +1392,7 @@ def code_for_workitem.g(+dev: U32, +k: String, n: U32) -> String:
     case 5: String.concat([Bool.pick(String, String.eq(k, "g"), "__ockl_get_group_id(", "__ockl_get_local_id("), U32.show(n), ")"])
     case _: witem_miss(k)
 
-# ===========================================================================
+
 # `_wmma_name` -- cstyle.py:113-117, and the one place a NAME is built from a
 # dtype and sanitised.
 #
@@ -1411,7 +1409,7 @@ def code_for_workitem.g(+dev: U32, +k: String, n: U32) -> String:
 # `u.dtype` is the OUTPUT dtype and `u.arg[1].name` the INPUT, and they are
 # spelled from different places, so a reader that used one for both would be right
 # on the three fixtures where they coincide and wrong on the rest.
-# ===========================================================================
+
 
 def wmma_dims_go(ds: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match ds:
@@ -1586,7 +1584,7 @@ def KUArg.special_nm(a: KUArg) -> String:
     case KASpecial{axis, n, nm}: nm
     case _: "lidx0"
 
-# ===========================================================================
+
 # THE PREFIX TABLE. Upstream's `cstyle.py:242-244`:
 #
 #     prefix = {Ops.WMMA: "wmma", Ops.BUFFER: "buf", Ops.CAST: "cast", Ops.BITCAST: "cast",
@@ -1598,7 +1596,7 @@ def KUArg.special_nm(a: KUArg) -> String:
 # a number. `c[prefix]` is the counter and it is only incremented when the
 # UOP BECAME A STATEMENT (`cstyle.py:261`: `if prefix: c[prefix] += 1`), which
 # is why an INLINED uop does NOT BURN A NUMBER.
-# ===========================================================================
+
 def ku_pfx_ix(op: O.Op) -> U32:
   match op:
     case O.OpsWMMA{}: 5
@@ -1950,11 +1948,11 @@ def ku_render_index.global(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: R
   List.concat(&2, String, [["("], rtp(r, KU.src0(k)), ["+"],
     ku_src_pieces(KUArg.index_is_add(KU.arg(k)), ps), [")"]])
 
-# ===========================================================================
+
 # the text of one uop -- the port of `base_rewrite` (cstyle.py:11-77), for the
 # ops the CPU lane needs. the order is upstream's order, and the order is the
 # RULE: the CONST arms come BEFORE the generic CAST arm.
-# ===========================================================================
+
 def ku_text_if(dev: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   String.concat(["if (", rt(r, KU.src0(k)), ") {"])
 
@@ -1984,13 +1982,13 @@ def ku_strips(+op: O.Op) -> Bool:
   Bool.or(Bool.or(is_add(op), is_mul(op)),
     Bool.or(is_xor(op), Bool.or(is_or(op), is_and(op))))
 
-# ===========================================================================
+
 # the walk -- the port of `cstyle.py:208-266`'s body. the state is six things
 # and they are six things because BEND has no mutable map: `r` (the name/text
 # map, INDEXED BY THE UOP'S POSITION), `kernel` (the emitted lines), `bufs` (the
 # kernel's arguments), `c` (the six prefix counters), `depth` (the indent) and
 # `name` (the kernel's name, from the SINK).
-# ===========================================================================
+
 def St.r(s: St) -> Rows:
   match s:
     case St{r, kernel, bufs, c, depth, name}: r
@@ -2120,9 +2118,9 @@ def ku_src_is_reg(+kus: List<&2, List<&2, KU>>, k: KU) -> Bool:
 def ku_is_alu_ex_where(+op: O.Op) -> Bool:
   Bool.and(R.is_alu(op), Bool.not(is_where(op)))
 
-# ===========================================================================
+
 # THE WALK, ONE UOP AT A TIME. cstyle.py:221-262.
-# ===========================================================================
+
 def ku_param_base.go(m: Maybe<&2, String>, arg: KUArg) -> String:
   match m:
     case Some{nm}: String.join(String.split(nm, ':'), "_")
@@ -2189,7 +2187,7 @@ def axis_letter(a: O.AxisType) -> String:
 def ku_range_name(+arg: KUArg) -> String:
   String.concat([axis_letter(KUArg.range_axis(arg)), "idx", range_str(KUArg.range_ids(arg))])
 
-# ===========================================================================
+
 # the text of one uop -- the port of `base_rewrite` (cstyle.py:11-77), for the
 # ops the CPU lane needs. the order is upstream's order, and the order is the
 # RULE: the CONST arms come BEFORE the generic CAST arm, and that is what
@@ -2197,7 +2195,7 @@ def ku_range_name(+arg: KUArg) -> String:
 #
 # `r` is the name/text map and it is indexed by the uop's position, because the
 # uop list is POST-ORDER. `rt` READS IT.
-# ===========================================================================
+
 # one `rt` and one `strip_parens`, not two of each. The old spelling was
 # `Bool.pick(String, cond, strip_parens(rt(r, h)), rt(r, h))`: STRICT, so `rt` ran twice -- and `rt` is a
 # `List.get` by src-to-current distance -- and `strip_parens` scanned the source even when its result was
@@ -2302,7 +2300,7 @@ def barrier.of(+dev: U32) -> String:
 # `AttributeError` and `""` would emit a bare `float4{...}` with no constructor.
 # THE ANSWER IS THE STRING `"None"`, and that is `dsl.bend`'s standing rule for an
 # ABSENT value rather than a refusal -- `_variant_suffix` answers a suffix or `None`,
-# and `dsl.bend:2066-2069` records that "an empty string is NOT the same answer, so the
+# and `dsl.bend:1577-1579` records that "an empty string is NOT the same answer, so the
 # port prints `None`". CPython prints `None` too (`str(None)`), so this row now AGREES
 # instead of being a declared divergence.
 #
@@ -2325,7 +2323,7 @@ def render_dtype(+dev: U32, +d: S.Dt, sz: U32, +a: S.Addr, mutable: Bool, overri
 def render_dtype_legacy(+dev: U32, +d: S.Dt) -> String:
   render_dtype(dev, d, 1, S.AReg{}, True{}, False{}, False{})
 
-# ===========================================================================
+
 # `render_type` / `render_ptr` / `render_access` / `render_cast` -- cstyle.py:
 # 192-200. Four defs, and together they are the pointer/cast vocabulary every
 # load and store is written in.
@@ -2350,7 +2348,7 @@ def render_dtype_legacy(+dev: U32, +d: S.Dt) -> String:
 # watch: a REG-space INDEX is a VECTOR REGISTER and renders as a pointer, so
 # `render_type` of a REG INDEX is `float4*` and not `float4`. That is measured
 # and it is a gate row on its own.
-# ===========================================================================
+
 
 def render_type(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, op: O.Op, img: Bool) -> String:
   render_dtype(dev, d, numel, a, True{}, Bool.and(is_index(op), is_reg(a)), img)
@@ -2374,7 +2372,7 @@ def render_cast(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, op: O.Op, img: Bool
 def render_cast_p(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, op: O.Op, img: Bool, +val: List<&2, String>) -> List<&2, String>:
   List.concat(&2, String, [[String.concat(["(", render_type(dev, d, numel, a, op, img), ")("])], val, [")"]])
 
-# ===========================================================================
+
 # `render_index` -- cstyle.py:168-173. SIX branches in Python and they reduce to
 # TWO, and the reduction is the interesting part of this def:
 #
@@ -2397,12 +2395,12 @@ def render_cast_p(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, op: O.Op, img: Bo
 # 8 or more is an `IndexError` in Python; the port's `String.get` is total with a
 # default, and the default is the FIRST letter. Stated because it is a
 # difference, not because it is reachable -- tinygrad never swizzles past `d`.
-# ===========================================================================
+
 
 def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
   wmma_name_of(wmma_dims.of(a), wmma_in.of(a), dt_name(dout))
 
-# ===========================================================================
+
 # `uops_to_dtypes` -- cstyle.py:112-113.
 #
 #     return dedup((u.dtype, u.max_numel()) for u in uops if u.addrspace in (AddrSpace.ALU, None) and u.dtype != dtypes.void and u._shape is not None)
@@ -2418,7 +2416,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # `dedup` RETAINS LIST ORDER (helpers.py:23, `list(dict.fromkeys(x))`) and the
 # order is the gate, because the RESULT FEEDS `ClangRenderer._render_defines`
 # and the `typedef`s come out in it.
-# ===========================================================================
+
 
 # `uops_to_dtypes` ITSELF IS NOT HERE, and the two filters it applies are not
 # separate defs either: both are already one Bool each in the `Uses` record
@@ -2427,7 +2425,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 #   TODO(p3) cstyle.py:110-113  `uops_to_dtypes`. Needs the fold (wall (a)); its
 #   result ORDER feeds `ClangRenderer._render_defines`, so it is not a set.
 
-# ===========================================================================
+
 # `render_kernel` -- cstyle.py:154-166. THE function that assembles a whole
 # kernel, and the only place in this file that reads nine options at once.
 #
@@ -2464,7 +2462,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 #     `format` in base.bend, so the `{launch_bounds}` FIELD is substituted by a
 #     split on the literal and a join -- `render.bend`'s shape for a Python
 #     f-string the port cannot evaluate.
-# ===========================================================================
+
 
 # `local_dims = [u.src[0] for u in uops if u.op is Ops.SPECIAL and u.arg[0]=="l"]`
 # and then `prod([d.vmax ...])`: `launch_bounds` is a `U32` PARAMETER above, and
@@ -2476,11 +2474,11 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # gate's `kern lb 1` rows are the no-local case it has to agree with.
 #   TODO(p3) cstyle.py:162 symbol=render_kernel, :163 -- BLOCKED. needs `local_dims` (py:162) and `launch_bounds` (py:163) -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.bend` (comments excluded). They are the last two `TODO` markers left in this file's wall list.
 #
-# ===========================================================================
+
 # landed 2026-10-27. `_render` and `render_kernel` are here. what follows is
 # the port, and the two paragraphs that say what it is.
 #
-# ===========================================================================
+
 # WHAT `_render` DOES UPSTREAM -- `tinygrad/renderer/cstyle.py:208-266`.
 #
 #     def _render(self, uops:list[UOp]) -> tuple[str, list[str], list[tuple[str,tuple[UOp,bool]]]]:
@@ -2515,7 +2513,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # srcs sit at a lower index) -- which is the same property
 # `.agents/slop/cpuseam/`'s oracle relies on.
 #
-# ===========================================================================
+
 # WHAT `render_kernel` DOES UPSTREAM -- `tinygrad/renderer/cstyle.py:155-167`.
 #
 #     def render_kernel(self, function_name:str, kernel:list[str], bufs:list[tuple[str,tuple[UOp,bool]]], uops:list[UOp], prefix=None) -> str:
@@ -2539,7 +2537,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # (`dedup` is `list(dict.fromkeys(x))`, helpers.py:23) and the ORDER IS THE
 # GATE, because the typedefs come out in it.
 #
-# ===========================================================================
+
 # what they must do here. the same two functions, over the port's own uop
 # representation. and the derived facts travel with the uop, which is what
 # `BArg` ALREADY DOES FOR THE BUFFER ARGUMENTS (this file's :131-146: "they
@@ -2556,7 +2554,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # `var_suffix.of` (:396), `smem_prefix.of` (:364), `smem_align.of` (:375),
 # `float4.of` (:445), `gep_arr_threshold.of` (:470), `infinity.of` (:405),
 # `nan.of` (:410), `barrier.of` (:418), `H.strip_parens`.
-# ===========================================================================
+
 def ku_const_val(+kus: List<&2, List<&2, KU>>, i: U32) -> U32: ku_const_val.go(ku_const_int_at(kus, i))  # =========================================================================== # THE CONST-OF-A-CONST CAST -- cstyle.py:25-37. THE ARMS, IN ORDER:
 #   1. a FLOAT dtype and a NON-FINITE value -> `(INFINITY)` / `(NAN)` / `(-INFINITY)`
 #   2. f32 -> `{val}f`
@@ -2666,7 +2664,7 @@ def ku_cast_generic(dev: U32, +k: KU, +r: Rows) -> List<&2, String>:
   List.concat(&2, String, [["("], render_cast_p(dev, KU.dtype(k), KU.numel(k), KU.addr(k), O.OpsCAST{},
     False{}, rtp(r, KU.src0(k))), [")"]])
 
-# ===========================================================================
+
 # `render_index` -- cstyle.py:169-174. THE `KU`-WORLD TWIN OF THIS FILE'S
 # `render_index` (:982), AND THE DIFFERENCE IS THE INPUT: the arena-bound one
 # reads the INDEX's arg and its CONST index OUT OF AN `O.Arena`, and the `KU`
@@ -2685,7 +2683,7 @@ def ku_cast_generic(dev: U32, +k: KU, +r: Rows) -> List<&2, String>:
 #   * the ALU arm with any OTHER index is `(buf)[idx]`;
 #   * the GLOBAL arm is `(buf+idx)`, and the index's parens are stripped ONLY
 #     when the index's OWN arg is `Ops.ADD`.
-# ===========================================================================
+
 def ku_const_cast_flt.go(m: Maybe<&1, F32>, dev: U32, +k: KU, +r: Rows) -> List<&2, String>:
   match m:
     case Some{f}: [ku_const_cast_f32(KU.dtype(k), dev, k, f)]
@@ -2758,7 +2756,7 @@ def ku_text_range(dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: R
 def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_const_cast(dev, k, kus, r)
 
-# ===========================================================================
+
 # `BITCAST` -- cstyle.py:41-43 (the BASE's two rules), :338 (OpenCL `as_<dt>`), :386
 # (Metal `as_type<dt>`) and :445 (HIP `tg_bitcast<dt>`). FOUR SPELLINGS OF ONE OP, and the
 # three device ones are `string_rewrite` arms, which is why they win over `base_rewrite`; each
@@ -3037,13 +3035,13 @@ def _render_defines.go(+xs: List<&2, DtN>, +dev: U32, +cpu: Bool, +acc: List<&2,
           [render_vector_prefix(dev, cpu, DtN.dt(h), DtN.n(h))])),
         _render_defines.go(t, dev, cpu, acc))
 
-# ===========================================================================
+
 # `render_kernel` -- cstyle.py:155-167 (THE BODY) AND cstyle.py:312-314 (THE
 # clang override). two functions, because upstream has two.
 #
 # THE BODY: the buffer TYPES, the function SIGNATURE, and the braces.
 # the clang override: the vector typedefs before it and the entry after it.
-# ===========================================================================
+
 def _render_defines(dev: U32, cpu: Bool, +kus: List<&2, KU>) -> List<&2, String>:
   _render_defines.go(uops_to_dtypes(kus), dev, cpu, Nil{})
 
@@ -3068,7 +3066,7 @@ def render_kernel_body(+dev: U32, +fn: String, +kernel: List<&2, String>,
   String.concat([kernel_typedef(dev, lb), " ", fn, "(", String.join(args, ", "), ") {\n",
     String.join(kernel, "\n"), "\n}"])
 
-# ===========================================================================
+
 # METAL'S KERNEL SIGNATURE -- cstyle.py:366-372 AND :390-403. Metal is the one
 # device whose buffers do NOT become parameters: `MetalRenderer.render_kernel`
 # prepends the stdlib preamble, appends one `__WMMA_<name>` helper per WMMA op,
@@ -3084,7 +3082,7 @@ def render_kernel_body(+dev: U32, +fn: String, +kernel: List<&2, String>,
 # - and nothing downstream of the signature can match until this does, which is
 # why it is ported before the WMMA helper: every line after it is indented text
 # that differs only by what the signature put there.
-# ===========================================================================
+
 def metal_extra_args() -> List<&2, String>:
   ["constant args_t& args [[buffer(0)]]", "uint3 gid [[threadgroup_position_in_grid]]",
    "uint3 lid [[thread_position_in_threadgroup]]"]

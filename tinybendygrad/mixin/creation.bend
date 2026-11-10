@@ -2,7 +2,7 @@
 # which is ALSO `UOp.empty` / `UOp.empty_like` / `UOp.const_like` (ops.py:581 symbol=const_like, :603,
 # MEASURED: `UOp.empty.__qualname__ == "CreationMixin.empty"`).
 #
-# ---------------------------------------------------------------------------
+
 # the scope is smaller than my unit brief's inventory, and that is a finding, not a
 # shortfall. The brief lists `eye`, `arange`, `linspace`, `tril`/`triu`, `rand`,
 # `randn`, `uniform`, `normal`. None of them is in this file. MEASURED:
@@ -17,7 +17,7 @@
 # beautiful_mnist.bend`'s W3 wall is built FROM: `full` is the ONLY `expand` in
 # `creation.py` (creation.py:112 symbol=zeros) and `zeros`/`ones`/`*_like` are all `full`.
 #
-# ---------------------------------------------------------------------------
+
 # the walls. W1 and W2 are mine; W3 and W4 are other files' and named twice because
 # THIS FILE REACHES BOTH.
 #
@@ -64,7 +64,7 @@
 #        0-dim. Note `const_like` is NOT one of them: it reads `self._shape`
 #        (`const_like`, tinygrad/uop/ops.py:581-583) directly and never goes through `_broadcast_to`.
 #
-# ---------------------------------------------------------------------------
+
 # FIVE BEND FACTS THIS FILE LEARNS, each of which cost a cycle or a wrong answer.
 #
 #   1. the arena is the port's `UOpMetaClass.ucache`, and the interning gate is the
@@ -125,7 +125,7 @@
 #      this port and the "one or many args" split is gone; the reject has no Bend form
 #      and is a caller's problem, which is stated rather than faked.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE. `main` prints one row per claim and NOTHING IS EXECUTED: every row is the
 # signature of the lazy graph, which needs no device. ONE COMMAND, THREE LANES, and it
 # runs `--check-only` first because that is the fastest way to find a proof failure:
@@ -183,7 +183,7 @@
 #
 # THE MUTATION TABLE is at the FOOT of this file, with the five things it says that
 # "67 green rows" does not.
-# ===========================================================================
+
 
 import Base
 import ./../helpers.bend as H
@@ -196,9 +196,9 @@ import ./dtype.bend as D
 import ./op.bend as MO
 import ./movement.bend as MX
 
-# ===========================================================================
+
 # THE CONST HELPERS -- `dtypes.from_py` (dtype.py:100) and `UOp.const` (ops.py:632).
-# ===========================================================================
+
 
 # `dtypes.from_py(x)` for the four py CONST values this file builds: `InvalidType` and
 # `bool` are bool, `float` is weakfloat, `int` is weakint -- "order matters: bool is an
@@ -269,7 +269,7 @@ def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 # the port would hold the f32 of 0.1 in BOTH, which is a DIFFERENT NUMBER IN THE GRAPH.
 # `f32` AND `weakfloat` ARE THE IDENTITY, so the rows that were already right do not move.
 #
-# ---------------------------------------------------------------------------
+
 # the `weakfloat` arm is the identity on the port's F32, which is not upstream's identity on
 # a double, and the difference is reachable -- it is a merge of two upstream constants into
 # one, and a merge is a hash collision in the port's constant identity.  MEASURED, and the
@@ -292,7 +292,7 @@ def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 # 64 bits of a double ARE holdable -- `H.I64` is `I64{hi: U32, lo: U32}`) and what the
 # port cannot do with them (write one, or compute one).  THE FIX IS `uop/ops.bend`'s
 # `Const`, and that file is another unit's.
-# ---------------------------------------------------------------------------
+
 def cr_const_of.trunc(dt: S.Dt, v: O.Const) -> O.Const:
   match v:
     case O.CFloat{f}: O.CFloat{DT.truncate_float(dt, f)}
@@ -352,10 +352,10 @@ def cr_after(+r: T.Tensor, +v: T.Tensor) -> T.Tensor:
   +s = O.UOp.new(T.Tensor.ar(r), O.OpsSTORE{}, [T.Tensor.u(r), T.Tensor.u(v)], O.ANone{}, O.TNone{})
   T.tn_alu.put(O.UOp.new(O.Found.ar(s), O.OpsAFTER{}, [T.Tensor.u(r), O.Found.i(s)], O.ANone{}, O.TNone{}))
 
-# ===========================================================================
+
 # creation.py:12 `const` is a `raise NotImplementedError` and is NOT a def here; see
 # the TODO in the header. creation.py:23 `empty` is the first body.
-# ===========================================================================
+
 
 # `ParamArg(next(UOp.unique_num), dt, prod(max_shape), device=dev,
 # bind_on_realize=True)` -- creation.py:41. The thirteen fields are `ops.bend`'s
@@ -430,9 +430,9 @@ def cr_empty(+ar: O.Arena, dt: Maybe<&1, S.Dt>, +ds: List<&2, U32>, dev: S.Dev) 
   +a = cr_alloc(ar, Maybe.default(&1, S.Dt, dt, S.void()), H.prod_u32(ds), dev)
   cr_resh(cr_resh.same(ds, H.prod_u32(ds)), a, ds)
 
-# ===========================================================================
+
 # creation.py:14 `const_like`.
-# ===========================================================================
+
 
 # `self._wrap_uop(self._uop.const_like(b, dtype))` -- creation.py:14 -- which is
 # ops.py:603-605:
@@ -457,9 +457,9 @@ def cr_const_like.of(nz: Bool, +c: T.Tensor, ds: List<&2, U32>) -> T.Tensor:
 def cr_const_like(nz: Bool, +ar: O.Arena, +v: O.Const, +dt: S.Dt, +ds: List<&2, U32>) -> T.Tensor:
   cr_const_like.of(nz, cr_const_of(ar, v, dt), ds)
 
-# ===========================================================================
+
 # creation.py:45 `empty_like`.
-# ===========================================================================
+
 
 # `self.commit_dtype() if dtype is None else dtype` -- ops.py:867 -- as a
 # `Maybe<&1, S.Dt>`, because that is Python's `None` and `commit_dtype` (dtype.py:16)
@@ -482,13 +482,13 @@ def cr_committed(given: Bool, +dt: S.Dt, +self_dt: S.Dt, m: Maybe<&1, H.I64>, m2
 def cr_empty_like(+ar: O.Arena, given: Bool, +dt: S.Dt, +self_dt: S.Dt, m: Maybe<&1, H.I64>, m2: Maybe<&1, H.I64>, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
   cr_empty(ar, cr_committed.of(given, dt, self_dt, m, m2), ds, dev)
 
-# ===========================================================================
+
 # creation.py:64 `full`. IT IS BEFORE `invalids` IN PYTHON AND AFTER IT HERE, and
 # that is the ONLY reordering in this file: a def may only call a def declared ABOVE it
 # (`bend2-constraints` 1.1) and `invalids` IS `full` (creation.py:61). `cr_invalids`
 # therefore sits one def below its own caller, which is the same reorder op.bend makes
 # for `_mop` and `_reduce`.
-# ===========================================================================
+
 
 def cr_full.of(buf: Bool, +val: T.Tensor, +e: T.Tensor) -> T.Tensor:
   match buf:
@@ -520,13 +520,13 @@ def cr_full(buf: Bool, +ar: O.Arena, +v: O.Const, +dt: S.Dt, +ds: List<&2, U32>,
 def cr_invalids(+ar: O.Arena, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
   cr_full(True{}, ar, O.CInvalid{}, S.boolean(), ds, dev)
 
-# ===========================================================================
+
 # creation.py:89 `full_like`, creation.py:108 `zeros`, :124 `zeros_like`, :138 `ones`,
 # :154 `ones_like`. FOUR DEFS AND NO NEW LOGIC: `full_like` is `full` on `self.shape`
 # with `dtype or self.dtype` (creation.py:105) and `zeros`/`ones` are `full` with a
 # literal (creation.py:122/152), and both `*_like` are `full_like` with a literal
 # (creation.py:135/165).
-# ===========================================================================
+
 
 # `type(self).full(self.shape, fill_value, dtype=dtype or self.dtype, device=..., buffer=
 # buffer)` -- creation.py:105. The device-tuple arm is W2 and is a `TODO(p3)` in the
@@ -586,9 +586,9 @@ def cr_ones_like(+ar: O.Arena, +self_dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -
   +if_ = S.Dt.is_float(self_dt)
   cr_full_like(ar, cr_cval1(ib, if_), self_dt, True{}, ds, dev)
 
-# ===========================================================================
+
 # THE GATE PRINTERS.
-# ===========================================================================
+
 
 # a node INDEX that is read more than once goes in a `Data` record. `cr_g.of` reads its
 # index four times and a `U32` is affine and cannot take a `+` as a parameter
@@ -729,11 +729,11 @@ def cr_rowt(nm: String, +t: T.Tensor) -> IO(Unit):
   cr_rowt.of(nm, T.Tensor.ar(t), CU{T.Tensor.u(t)},
     O.UOp.toposort(O.Arena.budget(T.Tensor.ar(t)), T.Tensor.ar(t), T.Tensor.u(t)))
 
-# ===========================================================================
+
 # THE INTERNING ROWS. `u is v` in CPython is `U32.is_eq(u, v)` here, because a UOp IS
 # an arena index and uop/ops.bend:941 symbol=SPL says the index is the identity. `cr_in` is the walk
 # `any(u is v for v in a)`, and `CU` is the record the header's `cr_srcops.go` needed.
-# ===========================================================================
+
 def cr_in.go(+ar: O.Arena, +c: CU, xs: List<&2, U32>) -> Bool:
   match xs:
     case Nil{}:  False{}
@@ -759,7 +759,7 @@ def cr_new(+ar: O.Arena, +b: T.Tensor, +a: T.Tensor) -> U32:
 # count.
 def cr_store_val.of(+ar: O.Arena, c: CU) -> U32: O.Arena.src(ar, O.Arena.src(ar, CU.u(c), 1), 1)
 
-# ===========================================================================
+
 # THE FIXTURES. Every one is CPython's OWN call, listed beside it.
 #
 #   `cr_fx2d` is `Tensor([[1.,2.],[3.,4.]])`, which in CPython is
@@ -768,7 +768,7 @@ def cr_store_val.of(+ar: O.Arena, c: CU) -> U32: O.Arena.src(ar, O.Arena.src(ar,
 #   The DEVICE is `S.D1{0}` throughout, which is W1's parameter; CPython's default
 #   device name is not printed by any row because `canonicalize_device` cannot change a
 #   signature (it only reaches `ParamArg.device` and `device_range_src`).
-# ===========================================================================
+
 def cr_fx2d() -> T.Tensor: MO.mo_fx2d()
 
 # --- empty (creation.py:23) and empty_like (:45)
@@ -826,10 +826,10 @@ def t_ones_like2d() -> IO(Unit):
   +f = cr_fx2d()
   cr_row("ones_like2d", cr_ones_like(T.Tensor.ar(f), S.single(), [2, 2], S.D1{0}))
 
-# ===========================================================================
+
 # the interning and refusal rows. All in one arena each, which is the point: Python's
 # ucache is process-wide, so `Tensor.full` twice in a row shares nodes.
-# ===========================================================================
+
 def t_intern_full() -> IO(Unit):
   +ar = O.Arena.empty()
   +a = cr_full(True{}, ar, MO.mo_ki(42), S.weakint(), [2, 3], S.D1{0})
@@ -852,7 +852,7 @@ def t_intern_diff() -> IO(Unit):
   +b = cr_ones(T.Tensor.ar(a), O.CFloat{1.0}, S.weakfloat(), [2, 3], S.D1{0})
   IO.print(String.concat(["int_ones_new=", U32.show(cr_new(T.Tensor.ar(b), b, a))]))
 
-# ===========================================================================
+
 # the `ALLOC` field rows. they exist because mutation M5 moved nothing.
 #
 # `cr_g`'s row prints op and nsrc and `cr_d`'s prints shape and dtype, and between them
@@ -957,7 +957,7 @@ def main() -> IO(Unit):
     ah : Unit <- t_ref_commit_i32()
     ai : Unit <- t_alloc23()
     t_ctrl_empty23()
-# ===========================================================================
+
 # THE MEASURED MUTATION TABLE. Twenty-three one-token edits, each applied, each run
 # through the interpreted lane AND `--check-only`, each diffed against the unmutated
 # output, each reverted from a byte snapshot:
@@ -971,7 +971,7 @@ def main() -> IO(Unit):
 # than dropped.
 #
 #  #   mutation                                            rows moved   what moved
-#  --  -------------------------------------------------  -----------  -------------------------
+
 #  M1  `cr_after`'s STORE srcs reversed                     1           `int_full_expand`
 #  M2  `cr_after`'s AFTER srcs reversed                    32           almost everything
 #  M3  `cr_const_of`'s cast fold guard dropped             12           the 10-node rows and more
@@ -1006,7 +1006,6 @@ def main() -> IO(Unit):
 #     node count and nothing else is blind to it entirely. `int_full_expand` exists
 #     because this measurement produced it, and it is the only row in the file that is
 #     about an INDEX rather than a shape or a count.
-#   * M5 moved nothing the first time it was run, and the reason was not subtle: the
 #     suite reads a ParamArg's `dtype` and `size` and NOTHING ELSE, so a whole
 #     thirteen-field record had a field nobody looked at. `alloc_bind` and `alloc_addr`
 #     were added, their expectations are CPython's own (`ParamArg(...,
@@ -1031,4 +1030,4 @@ def main() -> IO(Unit):
 #     ONE predicate rather than to each other. Had `cr_new` been the shared predicate for
 #     all three and wrong, one mutation would have moved three rows that are supposed to
 #     be independent measurements.
-# ===========================================================================
+

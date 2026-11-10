@@ -47,7 +47,7 @@
 # <nbuffers> counts the PARAMs of addrspace g or l -- one buffer line each, in
 # uop order, because ops_python pops pbufs in exactly that order.
 #
-# ===========================================================================
+
 # WHAT is ported, DEF BY DEF. THE port'S own defs are in `ops_bend.py` (REPO root; UPSTREAM has no `ops_bend.py` AT any revision) AND fork upstream's `tinygrad/runtime/ops_python.py`, SO every row below names the upstream construct it forks:
 #
 #   tinygrad/runtime/ops_python.py:186 `supported_dtypes`  LANES  PORTED  `lanes`, `lanes_sorted`
@@ -68,7 +68,7 @@
 #   tinygrad/runtime/ops_python.py:166 `PythonRenderer`  BendRenderer  PORTED  `render`, `has_local`
 #   tinygrad/runtime/ops_python.py:189 `__init__`  BendDevice.__init__  SEAM   HostAllocator + Compiled wiring
 #
-# ===========================================================================
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of ONE launch (pure, and the gate checks it) OR records that step in the trace
 # (and the gate checks the ORDER). There is no third kind. That is what puts the
@@ -81,7 +81,7 @@
 # whole packet. Those rows are TEXT; the diff against CPython's packet is the
 # check, and it is line for line.
 #
-# ===========================================================================
+
 # THE THREE WALLS.
 #
 # 1. THE Op NUMBER is not ported, AND that is the point. Python writes
@@ -123,19 +123,19 @@
 # it is a VIEW over bytes the caller already owns. The port keeps the extent,
 # which is what `in_bufs` is, and drops the pointer.
 #
-# ===========================================================================
+
 # `has_local = False` (tinygrad/renderer/__init__.py:68 symbol=has_local) is a CONSTANT the scheduler consults
 # (opt/heuristic.py:163), so it is a `def` and not a field: a def nothing calls
 # is invisible to every other check, and `bend_has_local` is its only reader.
 #
-# ===========================================================================
+
 import ../helpers.bend as H
 
-# ===========================================================================
+
 # THE LANE TABLE. `LANES: frozenset = {int, uint, float, bool}` -- four lanes,
 # plus the three names ops_bend.py passes through untouched because the
 # executor parses them (`to_dtype` is `getattr(dtypes, name.lower())`).
-# ===========================================================================
+
 
 def is_lane(+dt: String) -> Bool:
   Bool.or(String.eq(dt, "i32"), String.eq(dt, "u32"))
@@ -165,7 +165,7 @@ def wire_dtype(+dt: String, op: String) -> Res:
       "BEND v1 has no lane for dtypes.", dt, " (on ", op, "); it has ",
       LANES_SORTED()])})
 
-# ===========================================================================
+
 # THE NODE. ONE UOp, reduced to the six things ops_bend.py's encoder reads off
 # it and nothing else -- which is `UOpLine` (:169) plus the three fields `parse`
 # throws away. Positions in `srcs` are 1-based and index THIS list, so `src0`
@@ -185,7 +185,7 @@ def wire_dtype(+dt: String, op: String) -> Res:
 #   shape  s._shape rendered, ONLY because `is_image_shape` (:126) reads it.
 #          It is `""` for a shape that is not an image shape, so the reader is
 #          `N.is_image` and the string is not otherwise consulted.
-# ===========================================================================
+
 
 type N is Data:
   N{op: String, dt: String, sz: U32, numel: U32, addr: String, arg: String,
@@ -245,9 +245,9 @@ def wire_width(n: N) -> U32: N.numel(n)
 # reads, and its op name is `-` which no arm of wire_arg matches.
 def N.bottom() -> N: N{"-", "-", 0, 1, "-", "", False{}, Nil{}, 0, 0, ""}
 
-# ===========================================================================
+
 # THE NODE LIST. `self.uops` -- the renderer's own list, already in post-order.
-# ===========================================================================
+
 
 # `i` is a WIRE POSITION -- 1-based, the number `encode` writes -- while a Bend
 # list is 0-based, so the two differ by one. MEASURED: with `U32.to_nat(i)` the
@@ -265,19 +265,19 @@ def Ns.src0(+us: List<&2, N>, i: U32) -> U32: Ns.src(us, i, 0)
 def Ns.n(+us: List<&2, N>) -> U32:
   U32.from_nat(List.length(&2, N, us))
 
-# ===========================================================================
+
 # `is_image_shape(shape)` :126 -- `shape is not None and len(shape)==3 and
 # shape[-1]==4`. The two facts it reads are `ndim` and `last`, and the port
 # computes the predicate itself: it is the DECISION, and a decision handed over
 # by the seam is a decision the gate cannot check. What the seam supplies is
 # `shape`, the repr, because the refusal message at :126 interpolates
 # `s._shape` verbatim and Python's repr is `(2, 3, 4)`.
-# ===========================================================================
+
 
 def is_image_shape(ndim: U32, last: U32) -> Bool:
   Bool.and(U32.is_eq(ndim, 3), U32.is_eq(last, 4))
 
-# ===========================================================================
+
 # `wire_arg(u) -> str` :110-131, and the NotImplementedError at :126, as one
 # `Res`. Every arm of :114-131 is ported; the float CONST's eight hex digits
 # are WALL 2 and arrive in `N.arg`.
@@ -288,7 +288,7 @@ def is_image_shape(ndim: U32, last: U32) -> Bool:
 # reaches :127, and an ALU-valued src[0] answers `k:idx:0` whatever its shape.
 # `bend_arg_bitcast_image` and `bend_arg_alu_first` are the rows that separate
 # the three.
-# ===========================================================================
+
 
 # Which arm owns an op. 0 is "no payload", and every op Python never names
 # answers "-". INDEX and SHRINK share 5, LOAD and STORE share 6, because Python
@@ -376,7 +376,7 @@ def wire_arg(+us: List<&2, N>, +i: U32) -> Res:
             Bool.pick(Res, U32.is_eq(kind.of(N.op(Ns.at(us, i))), 6),
               Res{True{}, vec_arg(wire_width(Ns.at(us, i)))}, Res{True{}, "-"}))))))
 
-# ===========================================================================
+
 # `is_buf(arg)` :177 -- `arg.startswith("k:param:") and
 # arg.rsplit(":", 1)[1] in ("g", "l")`. THE `l` NEVER MATCHES, for the reason
 # above: no PARAM can carry it. The test is ported as Python writes it and the
@@ -386,7 +386,7 @@ def wire_arg(+us: List<&2, N>, +i: U32) -> Res:
 # `k:param:<nbytes>:<letter>`, which is the byte count. The 0 is the IndexError
 # Python raises on a field list shorter than three, which `is_buf` has already
 # excluded.
-# ===========================================================================
+
 
 def is_buf(+arg: String) -> Bool:
   Bool.and(String.starts_with(arg, "k:param:"),
@@ -397,7 +397,7 @@ def field2(+arg: String) -> String:
 
 def buf_extent(arg: String) -> U32: Maybe.default(&2, U32, U32.read(field2(arg)), 0)
 
-# ===========================================================================
+
 # `encode(uops) -> str` :133-145.
 #
 # THE two asserts are ported as refusals, which is the only way a refusal can
@@ -414,7 +414,7 @@ def buf_extent(arg: String) -> U32: Maybe.default(&2, U32, U32.read(field2(arg))
 #
 # `.rstrip()` at :144 is `rstrip1`: the only space it can ever remove is the one
 # between <arg> and an EMPTY src list, because every other field is non-empty.
-# ===========================================================================
+
 
 # `is_buf(wire_arg(u))` -- the test is on the ARG, not on the addrspace, because
 # :140 counts what ops_python's `pbufs.pop(0)` would pop and :200 filters the
@@ -539,7 +539,7 @@ def encode(+us: List<&2, N>) -> Res:
 # counts instead, so a malformed header is a WRONG ANSWER and not a refusal. That
 # is stated because it is the one place `parse` is weaker than the Python, and
 # `bend_parse_short_header` is the row that records it.
-# ===========================================================================
+
 
 type Line is Data:
   Line{op: String, dt: String, arg: String, srcs: List<&2, U32>}
@@ -757,7 +757,6 @@ def header_only(s: String) -> List<&2, String>: String.split(String.join(take1(s
 # so the srcs start at field 3" -- but `12:` is ONE field, there being no space
 # after the colon. So the old `drop3` left the `-` (the arg) in the srcs.
 #
-# AND THE WALK IS ORDER-PRESERVING, which the old one was not. `drop3`/`drop4`
 # destructured four cells and then appended `[h]` from the WRONG cell, so
 # MEASURED: `drop4([9,9,9,9,10,11])` answered `11 10 9` -- the tail, reversed. That
 # is why `ls_src0` read 0 and every :208 walk started from the wrong place.
@@ -859,7 +858,7 @@ def parse_ok(+src: String) -> Pkt:
 def parse(+src: String) -> Pkt:
   Bool.pick(Pkt, String.starts_with(first_line(src), "bendexec1 "),
     parse_ok(src), parse_bad(src))
-# ===========================================================================
+
 # `BendProgram.__init__` :195-209. `self.src = obj.lib.decode()` is the ELF,
 # which `BendCompiler.compile` :232 makes IDENTICAL to `encode`'s output
 # ("pass-through: the source IS the packet"), so `prog.of` is
@@ -875,7 +874,7 @@ def parse(+src: String) -> Pkt:
 # uops[:b])` -- a count of buffer PARAMs before the one found, not the uop
 # index. That is the load-bearing line of this def and it is why a position and
 # an index cannot be confused here.
-# ===========================================================================
+
 
 type Prog is Data:
   Prog{ok: Bool, msg: String, nbufs: U32, in_bufs: List<&2, U32>,
@@ -1188,7 +1187,7 @@ def prog.of.pkt(+us: List<&2, N>, +pk: Pkt) -> Prog:
 
 def prog.of(+us: List<&2, N>) -> Prog:
   prog.of.pkt(us, parse(Res.s(encode(us))))
-# ===========================================================================
+
 # `BendProgram.__call__` :211-229, AS A TRUNCATED TRACE.
 #
 # Nine steps and three refusals, in Python's order:
@@ -1213,7 +1212,7 @@ def prog.of(+us: List<&2, N>) -> Prog:
 # knows `len(out)`, so a launch that failed at :224 never evaluates :226. Here
 # every step's guard is a pure function of the launch facts, so they are all
 # EVALUATED and only the first refusal takes effect. The trace is identical.
-# ===========================================================================
+
 
 # The launch facts :211-213. `gx/gy/gz` are the global_size and are read only by
 # the seam, so they are not fields; `local_size` and `returncode` are the two
@@ -1334,14 +1333,14 @@ def prog.steps(+p: Prog, +l: Launch) -> List<&2, Step>:
       ++ " buffers, the packet had " ++ U32.show(Prog.nbufs(p)), nbufs_bad(p, l))],
     backs(Prog.out_bufs(p)))
 
-# ===========================================================================
+
 # `BendCompiler.compile` :232 -- `return src.encode()`, "pass-through: the source
 # IS the packet". It is a def and not a field because it is the ONLY thing
 # `Compiled` hands the program as `obj.lib`, and `Prog.src` is that same string.
 # `bend_compiler_passthrough` is the row, and it is a tautology unless the two
 # sides are different strings, which is why it compares `compiler.of` against
 # `encode` rather than against a literal.
-# ===========================================================================
+
 
 # `BendDevice.__init__` :244 -- `super().__init__(device, HostAllocator(self),
 # [BendRenderer], BendProgram)`. The renderer list and the Program CLASS are the
@@ -1351,7 +1350,7 @@ def prog.steps(+p: Prog, +l: Launch) -> List<&2, Step>:
 type Dev is Data:
   Dev{name: String, has_local: Bool}
 
-# ===========================================================================
+
 # THE allocator, AND milestone 1: A BUFFER, A kernel, THE expected bytes.
 #
 # Everything above this line is the port of ops_bend.py's ENCODER. What follows
@@ -1360,9 +1359,9 @@ type Dev is Data:
 # and `raw_free` appear nowhere in this file, and `prog.call`'s six SEAM steps
 # were steps in a trace with nothing behind them.
 #
-# ---------------------------------------------------------------------------
+
 # WHAT "BEND'S OWN MEMORY" IS HERE, and why the allocator is this shape
-# ---------------------------------------------------------------------------
+
 # Bend has no `malloc` and no pointer. Its mutable memory is `Array`, and an
 # `Array` is AFFINE -- the rule `ops_python.bend` is built around: "A `Data`
 # record cannot hold a `List` or an `Array`; both are `Type`", so a store cannot
@@ -1379,9 +1378,9 @@ type Dev is Data:
 # different processes -- `executor()` is a `subprocess.run` at ops_bend.py:222 --
 # and they agree only through the packet's hex.
 #
-# ---------------------------------------------------------------------------
+
 # THE ALLOCATOR'S HONEST LIMITS, named before the rows rather than after
-# ---------------------------------------------------------------------------
+
 # `raw_alloc` BUMPS and `raw_free` is a NO-OP. That is not a shortcut, it is what
 # `HostAllocator._free` (device.py:307) IS: it touches storage only under
 # `if (remote:=getattr(self.dev, "remote", None)) is not None`, and BEND has no
@@ -1391,7 +1390,7 @@ type Dev is Data:
 # The one thing this CANNOT be is a real allocator with a free list, and that is
 # a property of the substrate rather than of the port: Bend's `Array` is affine,
 # so there is no second owner to hand a freed range to. Named, not hidden.
-# ===========================================================================
+
 
 # THE STORE. One flat byte list, one bump pointer, travelling together in one
 # record -- the shape `ops_python.bend`'s `Prog` uses for the same reason ("`Data`
@@ -1529,7 +1528,6 @@ def hexdig.chr(+v: U32) -> U32:
 # are already in order and the reverse turned "efbeadde" into the STORE
 # [0xde, 0xad, 0xbe, 0xef] -- which re-emitted as "deadbeef", i.e. the bytes
 # BACKWARDS. MEASURED on the first real launch: `ms_got` read "4 deadbeef" for the
-# input "4 efbeadde". Every byte was right and the ORDER was wrong, which is a
 # fourth distinct failure mode from the three above and the reason the comparison
 # is over emitted TEXT rather than over a number.
 def hex.fin(acc: List<&2, U32>) -> List<&2, U32>: acc
@@ -1701,4 +1699,4 @@ def paint_mem(p: (Mem & Store), +s: Store, +hex: String) -> (Mem & Store):
 def buffer_from(nbytes: U32, hex: String, +s: Store) -> (Mem & Store):
   paint_mem(raw_alloc(nbytes, s), s, hex)
 
-# ==========================================================================
+

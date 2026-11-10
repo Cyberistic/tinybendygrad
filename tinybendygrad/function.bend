@@ -2,7 +2,7 @@
 # implicit-input capture that turns a traced graph into a CALL, and the two
 # refusals that guard it.
 #
-# ---------------------------------------------------------------------------
+
 # THE BRIEF DESCRIBES A DIFFERENT FILE, and that is the first thing to say.
 #
 # The unit was specified as `tinygrad/function.py:113` -- and the file at that
@@ -26,7 +26,7 @@
 # SEQUENCE in one string, because a gate with a count and a root op is
 # measurably blind to swapped operands (see `pctx_swapped` and mutation M7).
 #
-# ---------------------------------------------------------------------------
+
 # what is ported, and that is the whole list:
 #
 #   function.py:9-13    `add_to_ctx`               the capture, and its refusal
@@ -44,7 +44,7 @@
 #   `get_state_dict((args, kwargs))`     `Context(...)`    `time.perf_counter`
 #   `self.fxn(*args, kwargs)`          `__get__`         `functools.partial`
 #
-# ---------------------------------------------------------------------------
+
 # THE LAZY BEHAVIOUR, STATED HONESTLY, because the brief asked for it and the
 # two answers are not the same.
 #
@@ -103,7 +103,7 @@ import ./uop/fold.bend as F
 import ./tensor.bend as T
 import ./mixin/movement.bend as MX
 
-# ===========================================================================
+
 # SECTION 0 -- THE NODE HANDLE. Every def below that needs a node more than once
 # in ONE EXPRESSION takes an `O.Found` rather than `(arena, index)`, and this is
 # the whole reason.
@@ -136,7 +136,7 @@ def fn_nsrc(+f: O.Found) -> U32:
 def fn_src(+f: O.Found, n: U32) -> U32:
   O.Arena.src(O.Found.ar(f), O.Found.i(f), n)
 
-# ===========================================================================
+
 # SECTION A -- `is_implicit_storage` (function.py:15-17) and the readers it
 # needs. This is the file's only PURE predicate and it is ported in full.
 #
@@ -246,7 +246,7 @@ def fn_implicit(+f: O.Found, start: U32) -> Bool:
   Bool.or(fn_implicit.var(f),
           Bool.or(O.eq_op(fn_op(f), O.OpsBUFFER{}), fn_implicit.alloc(f, start)))
 
-# ===========================================================================
+
 # SECTION B -- `UOp.buf_uop` (ops.py:911). `ops.bend` carries it as
 # `# TODO(p3) ops.py:911  def buf_uop`, and it is not optional here: it is the
 # identity `add_to_ctx` refuses on and the value `invalid_outputs` collects. It
@@ -304,7 +304,7 @@ def fn_buf.node(+op: O.Op, +src: List<&2, U32>, +g: O.Found) -> U32:
 def fn_buf(+f: O.Found) -> U32:
   fn_buf.node(fn_op(f), fn_srcs(f), f)
 
-# ===========================================================================
+
 # SECTION C -- `add_to_ctx` (function.py:9-13).
 #
 #     def add_to_ctx(ctx, x:UOp):
@@ -414,7 +414,7 @@ def fn_add(+ar: O.Arena, +c: FnCtx, x: U32) -> FnCtx:
   match c:
     case FnCtx{us, inv, start, added, slot}: fn_add.of2(ar, us, inv, start, x)
 
-# ===========================================================================
+
 # SECTION D -- `UOp.is_realized` (ops.py:1008), read through `buf_uop`.
 #
 #     return self.base.realized is not None
@@ -441,7 +441,7 @@ def fn_realized.of(arg: O.Arg) -> Bool:
     case O.AParam{pa}: fn_realized.pa(pa)
     case _: False{}
 
-# ===========================================================================
+
 # SECTION E -- `invalid_outputs` (function.py:27-31) and
 # `renumber_invalid_outputs` (function.py:33-36).
 #
@@ -621,7 +621,7 @@ def fn_renum.go2(+f: O.Found, inv: List<&2, U32>) -> List<&2, U32>:
 def fn_renum(+f: O.Found, inv: List<&2, U32>) -> List<&2, U32>:
   fn_renum.go2(f, inv)
 
-# ===========================================================================
+
 # SECTION F -- `pm_ctx` (function.py:19-25), as a `Data` rule table and THIS
 # file's own dispatch. `ops.bend` cannot call into here, so the scan and the tag
 # dispatch are duplicated -- `spec.bend` does it six times and says so in its
@@ -767,7 +767,7 @@ def fn_pm_ctx(+f: O.Found, +c: FnCtx) -> FnCtx:
   fn_scan(List.reverse(&2, U32, O.UOp.toposort(O.Arena.budget(O.Found.ar(f)), O.Found.ar(f), O.Found.i(f))),
           O.Found.ar(f), c, pm_ctx())
 
-# ===========================================================================
+
 # SECTION G -- `_function` (function.py:39-98) and `function` (101-113).
 #
 # `_function` is a CLASS with five instance fields and one CLASS field:
@@ -851,7 +851,7 @@ def fn_ret_msg(r: FnRet) -> String:
 
 
 
-# ===========================================================================
+
 # SECTION H -- `__call__` (function.py:50-98), the PORTED branches, in order.
 #
 #   51     st = time.perf_counter()                        SEAM  (effect)
@@ -924,7 +924,6 @@ def fn_call_uops(us: List<&2, U32>) -> List<&2, U32>:
 # `num_explicit` against the NODE INDEX -- a count against a position -- and
 # `imp_tail` read `1/1` where CPython's slice reads `1/0`. `List.drop` is the
 # slice, so it is used directly and the hand-written filter is gone: two fewer
-# defs, one of which was wrong.
 def fn_imp_hit.of(+g: O.Found, +ar: O.Arena) -> Bool:
   Bool.or(O.eq_op(fn_op(g), O.OpsBUFFER{}), O.eq_op(fn_op(g), O.OpsALLOC{}))
 
@@ -1065,7 +1064,7 @@ def fn_trace.of(depth: U32, key8: String, ms: String, name: String) -> String:
 
 def fn_name(has: Bool, nm: String, dflt: String) -> String:
   Bool.pick(String, has, nm, dflt)
-# ===========================================================================
+
 # SECTION I -- THE OMISSIONS. One line each: what, where, and the phase that owns
 # it. Nothing here is silently dropped, and every one names a wall rather than an
 # effort.
@@ -1082,7 +1081,6 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 #   It is the PROGRAM/CallInfo construction and it needs `grad_fxn`, which is a
 #   Python callable; a function value in a record forces `Type`, not `Data`.
 # DONE(p3) ops.py:245   `UOp.replace` -- PORTED at `ops.bend:2986` (gate `gates/replace-gate.py` rc=0 8/8 rows) and
-#   the four `.go` helpers. The thirteen-field `ParamArg` is no longer a lie:
 #   `replace(arg=ParamArg{...})` is a single-arg call to a def that takes the new
 #   arg as `Maybe<&2, Arg>`, and the identity case (no kwargs) is the row that
 #   `gates/replace-gate.py`'s `identity_returns_self` pins (8 rows, 3 lanes, gate
@@ -1122,7 +1120,7 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # 'itertools.count'` on the first ALLOC with `bind_on_realize=True`. The port
 # spells it as `Arena.next(ar) -> U32`, which cannot be got wrong, and the
 # fixture builders below say so.
-# ===========================================================================
+
 # SECTION J0 -- THE SEAM `examples/beautiful_mnist.ts` SHOULD CALL.
 #
 # That file's `@function_` decorator currently increments a global counter and
@@ -1151,8 +1149,8 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # `self.cnt` -- none of which is in `function.py` and none of which this port
 # touches. `@function_` is the seam; `@TinyJit` belongs to whatever unit owns
 # `engine/jit.py`.
-# ===========================================================================
-# ===========================================================================
+
+
 # SECTION J -- THE GATE.
 #
 # EVERY ROW IS DERIVED FROM CPython. The oracle is
@@ -1179,7 +1177,7 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 #   fac_*   both decorator spellings.
 #   callu_* `dedup` keeping the FIRST occurrence.
 #   trace_* the DEBUG print's indent and name.
-# ===========================================================================
+
 
 def fn_trace(depth: U32, key8: U32, ms: U32, name: String) -> String:
   fn_trace.of(depth, U32.show(key8), U32.show(ms), name)
@@ -1315,11 +1313,11 @@ def pctx_row(c0: FnCtx, +bot: FnCtx, +top: FnCtx, +ar: O.Arena) -> String:
 def pctx_of(+c0: FnCtx, +f: O.Found) -> String:
   pctx_row(c0, fn_pm_ctx(f, c0), fn_pm_ctx_top(f, c0), O.Found.ar(f))
 
-# ===========================================================================
+
 # SECTION K -- THE ROWS. One `String.concat` per row, one `IO.print` per row,
 # and every expected value is a CPython answer measured by the oracle beside this
 # file. The ROW CLASS is in the name, so a mutation table can name what moved.
-# ===========================================================================
+
 
 def fx_aft(+ar: O.Arena, d: U32, g: U32) -> O.Found:
   fx_node(ar, O.OpsAFTER{}, [d, g], O.ANone{})
@@ -1526,7 +1524,6 @@ def renum_one() -> String:
   +g = fx_inv1(b, v)
   String.concat(["renum_one=", fn_slots_row(g)])
 
-# TWO, adjacent in the toposort. CPython: `0|1` -- and the buggy "count the whole
 # toposort" counter ALSO answers `0|1` here, so this row does NOT pin the filter.
 def renum_two() -> String:
   +b = fx_alloc(1, True{})
@@ -1928,7 +1925,7 @@ def main() -> IO(Unit):
     IO.print(fn_name_row())
     IO.print(ctx_row())
 
-# ===========================================================================
+
 # SECTION L -- THE MEASURED MUTATION TABLE.
 #
 # Run: `python3 <oracle-dir>/fn/mutate.py`, which writes each edit to

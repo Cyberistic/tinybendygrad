@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/t5.py (285 loc). not yet ported.
 #
 # T5 is the cheapest of the attention files and the reason is worth naming:
@@ -86,7 +86,7 @@ import ./../datasets/__init__.bend as D
 # FIRST MISSING SYMBOL: `nn.Embedding(self.relative_attention_num_buckets,
 # self.n_heads)` at t5.py:118, reached from `T5LayerSelfAttention` (:226) from
 # `T5Block` (:234) from `T5Stack.__init__` (:249).
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -95,12 +95,12 @@ def t5_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :29-40 T5Config -- a `@dataclass`. It is TEN INTEGERS AND A FLOAT and is
 # therefore the one dataclass in this file whose whole body is portable. The
 # defs below are the ten, spelled out, because a `Refused` here would be a lie
 # about data that needs no work.
-# ---------------------------------------------------------------------------
+
 def t5_cfg_d_ff() -> U32: 10240
 def t5_cfg_d_kv() -> U32: 64
 def t5_cfg_d_model() -> U32: 4096
@@ -112,19 +112,19 @@ def t5_cfg_relative_attention_num_buckets() -> U32: 32
 def t5_cfg_relative_attention_max_distance() -> U32: 128
 def t5_cfg_vocab_size() -> U32: 32128
 
-# ---------------------------------------------------------------------------
+
 # :42-49 T5Tokenizer. NOT PORTED: `SentencePieceProcessor` (t5.py:26).
-# ---------------------------------------------------------------------------
+
 def t5_tokenizer_init(spiece_path: String) -> D.Refused:
   D.refuse("extra/models/t5.py:42 T5Tokenizer.__init__ -- FIRST MISSING SYMBOL SentencePieceProcessor (:44); t5.py:1 is the pip install")
 
 def t5_tokenizer_encode(spiece_path: String, text: String, max_length: U32) -> D.Refused:
   D.refuse("extra/models/t5.py:46 T5Tokenizer.encode -- FIRST MISSING SYMBOL self.spp.Encode (:47)")
 
-# ---------------------------------------------------------------------------
+
 # :51-72 T5LayerNorm. This is the one layer in this file that is RMS-NORM WITH NO
 # MEAN AND NO BIAS, and it is why `pool_rsqrt` is named above.
-# ---------------------------------------------------------------------------
+
 
 # :52 def __init__(self, hidden_size:int, eps:float=1e-6)
 def t5_layernorm_init(hidden_size: U32, eps: F32) -> D.Refused:
@@ -134,9 +134,9 @@ def t5_layernorm_init(hidden_size: U32, eps: F32) -> D.Refused:
 def t5_layernorm_call(+hidden_states: T.Tensor) -> D.Refused:
   D.refuse("extra/models/t5.py:59 T5LayerNorm.__call__ -- reached :65 mean (mixin/op.bend:907 symbol=mo_div EXISTS); BLOCKED AT :66 Tensor.rsqrt, which has no `def mo_rsqrt`")
 
-# ---------------------------------------------------------------------------
+
 # :75-98 the two FFN defs.
-# ---------------------------------------------------------------------------
+
 
 # :76 def __init__(self, config:T5Config)
 def t5_gated_init(d_model: U32, d_ff: U32) -> D.Refused:
@@ -154,9 +154,9 @@ def t5_ff_init(d_model: U32, d_ff: U32) -> D.Refused:
 def t5_ff_call(+hidden_states: T.Tensor) -> D.Refused:
   D.refuse("extra/models/t5.py:94 T5LayerFF.__call__ -- FIRST MISSING SYMBOL T5DenseGatedActDense.__call__ (:96) -> Tensor.gelu")
 
-# ---------------------------------------------------------------------------
+
 # :101-221 T5Attention. the class the whole file is about.
-# ---------------------------------------------------------------------------
+
 
 # :102 def __init__(self, config:T5Config, has_relative_attention_bias:bool=False)
 def t5_attn_init(d_model: U32, d_kv: U32, num_heads: U32, has_relative_attention_bias: Bool) -> D.Refused:
@@ -174,9 +174,9 @@ def t5_attn_compute_bias(query_length: U32, key_length: U32) -> D.Refused:
 def t5_attn_call(+hidden_states: T.Tensor) -> D.Refused:
   D.refuse("extra/models/t5.py:181 T5Attention.__call__ -- FIRST MISSING SYMBOL Tensor.matmul (:210); the q/k/v projections (:203-207) are nn_linear + mxw_reshape + mxw_permute, ALL PORTED")
 
-# ---------------------------------------------------------------------------
+
 # :224-247 T5LayerSelfAttention and T5Block.
-# ---------------------------------------------------------------------------
+
 
 # :225 def __init__(self, config:T5Config, has_relative_attention_bias:bool=False)
 def t5_self_attn_init(has_relative_attention_bias: Bool) -> D.Refused:
@@ -194,9 +194,9 @@ def t5_block_init(has_relative_attention_bias: Bool) -> D.Refused:
 def t5_block_call(+hidden_states: T.Tensor) -> D.Refused:
   D.refuse("extra/models/t5.py:240 T5Block.__call__ -- FIRST MISSING SYMBOL T5LayerSelfAttention.__call__ (:241) -> Tensor.matmul (:210)")
 
-# ---------------------------------------------------------------------------
+
 # :250-265 T5Stack.
-# ---------------------------------------------------------------------------
+
 
 # :251 def __init__(self, config:T5Config, embed_tokens:nn.Embedding)
 def t5_stack_init(num_layers: U32, has_relative_attention_bias: Bool) -> D.Refused:
@@ -206,9 +206,9 @@ def t5_stack_init(num_layers: U32, has_relative_attention_bias: Bool) -> D.Refus
 def t5_stack_call(+input_ids: T.Tensor) -> D.Refused:
   D.refuse("extra/models/t5.py:257 T5Stack.__call__ -- reached :260 self.embed_tokens (the missing Embedding) and :258 view (mxw_reshape EXISTS); the loop at :262 is Python control flow, not a graph")
 
-# ---------------------------------------------------------------------------
+
 # :268-286 the two entry points.
-# ---------------------------------------------------------------------------
+
 
 # :269 def __init__(self, config:T5Config)
 def t5_encoder_init(vocab_size: U32, d_model: U32) -> D.Refused:
@@ -226,9 +226,9 @@ def t5_embedder_init(max_length: U32, spiece_path: String) -> D.Refused:
 def t5_embedder_call() -> D.Refused:
   D.refuse("extra/models/t5.py:283 T5Embedder.__call__ -- FIRST MISSING SYMBOL Tensor.cat (:285); the tokenizer it concatenates is ALSO missing")
 
-# ---------------------------------------------------------------------------
+
 # There is no `if __name__ == "__main__":` in t5.py. `main` prints TWO rows.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, t5_attn_init(4096, 64, 64, True{}))

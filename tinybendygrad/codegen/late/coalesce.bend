@@ -1,7 +1,7 @@
 # coalesce.bend -- tinygrad/codegen/late/coalesce.py: memory coalescing and the
 # image-load VALID simplification, as the two pattern tables the lowerer runs.
 #
-# ---------------------------------------------------------------------------
+
 # ONE OF THREE. `codegen/rewriter.bend` was ONE file for `simplify.py` +
 # `late/coalesce.py` + `gpudims.py`; the 1:1 ruling -- one `.bend` per upstream
 # `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory
@@ -16,7 +16,7 @@
 # all one wall. So this file is two `O.PMEntry` lists, two length rows, and the
 # inventory that says which wall each of the other seven hits.
 #
-# ---------------------------------------------------------------------------
+
 # THE INVENTORY, def by def, against coalesce.py's 168 lines.
 #
 #   #  PY            KIND    STATE
@@ -42,7 +42,7 @@
 # it, so neither is a missing TABLE -- they are the WALL, marked above against
 # their own lines.
 #
-# ---------------------------------------------------------------------------
+
 # THE NAME CORRESPONDENCE: `indexing_simplify` (coalesce.py:58) and
 # `pm_simplify_add_image` (coalesce.py:104) -- both upstream names, both in the
 # file's own inventory above. The merged file called them `is_table` and
@@ -52,7 +52,7 @@
 # tables and not as functions, so there is nothing in this file to name after
 # them.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE. Two rows, both DERIVED FROM PYTHON by `.agents/slop/notes/rw-truth.py`,
 # which prints them in THIS ORDER and with THIS SPELLING. The other 52 rows of the
 # old merged file are `simplify.bend`'s and `gpudims.bend`'s.

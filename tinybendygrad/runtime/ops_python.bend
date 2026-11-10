@@ -16,7 +16,6 @@
 # measured, with the plants as the control: upstream's `exec_alu` tuple branch
 # (`ops.py:1423`) NEVER FIRES ON THIS POPULATION -- 192899 `exec_alu`
 # calls over 153 fixtures and 0 of them had a tuple operand -- so
-# upstream's alu is scalar here too, and the port's was not the problem. the
 # four causes were: `symbolic.bend`'s `f32_where` (the arms swapped),
 # `symbolic.bend`'s `exec_alu_i32.cmp` (CMPNE WAS `==`), THIS FILE's
 # `Prog.cast.dt` (A FLOAT-TO-INT CAST KEPT THE FLOAT's BIT PATTERN), AND
@@ -81,7 +80,7 @@
 #   :150 WMMA           WALL  ops_python.py:150, as briefed
 #   :151 GroupOp.ALU    PORTED, by REUSING symbolic.bend's two lanes
 #
-# ===========================================================================
+
 # MEASURED FACTS. Every claim below was read out of a real render, not inferred
 # from the source. The harness is .agents/slop/exec_probe*.py: it hooks
 # `PythonRenderer.render`, dumps the uop list ops_python's `__call__` receives,
@@ -102,7 +101,7 @@
 # 4. `local_size` IS NEVER (1,1,1) FOR EVERY KERNEL -- measured (2,1,1), (4,1,1),
 #    (8,1,1), (16,1,1) -- SO THE CLI MUST FIX IT. See LOCAL SIZE below.
 #
-# ===========================================================================
+
 # THE FOUR WALLS, measured against the substrate rather than guessed.
 #
 # 1. WIDE DTYPES. `_load`/`_store`'s second arm -- a bitcast reading WIDER than
@@ -152,7 +151,7 @@
 #    nan. Taking IEEE over a Python-shaped branch nobody can compute is
 #    symbolic.bend's call and this file does not relitigate it.
 #
-# ===========================================================================
+
 # THE WIRE FORMAT, v1.1
 #
 # The v1 shape from the brief is kept:
@@ -207,7 +206,7 @@
 # ...), which `to_dtype` already parses. `CONST` is `c:<decimal>` for an integer
 # lane and `f:<8 hex digits>` for a float lane.
 #
-# ===========================================================================
+
 # local SIZE is a v1.1 amendment to the command line, not the packet.
 #
 # MEASURED FACT 4 says the engine asks for (2,1,1) ... (16,1,1), and the v1
@@ -225,7 +224,7 @@
 # scalar, `max_numel` for a vector LOAD, `len(srcs)` for a STACK) and `exec_masks`
 # is a `List<Bool>` rather than a list of lists.
 #
-# ===========================================================================
+
 # BEND SUBSTRATE NOTES -- six rules every def below is written against, each
 # measured against bend 2.0.34 with ./bin/bend rather than read off a doc.
 #
@@ -253,7 +252,7 @@
 #    prefix, so every `<arg>` is split by hand. A `Nat` literal is `3n`, a `U32`
 #    index is `3`.
 #
-# ===========================================================================
+
 # THE SHAPE OF THE MACHINE, and the two parts that were not obvious.
 #
 # `run` carries the mutable state ops_python.py:52-157 (`__call__`) keeps in four locals: the
@@ -288,14 +287,13 @@ import ../dtype.bend as D
 import ../uop/ops.bend as O
 import ../uop/symbolic.bend as SY
 
-# ===========================================================================
+
 # F32 AND U32 SHARE A WORD, so the bitcast has a NAME and this file does not
 # carry one: `F.F32.from_bits` (`../base.bend:54`). It is one destructuring and
 # one constructor -- both payloads are the same type `Word(32n)`, so the
 # constructor `F32{..}` WAS already the bitcast -- and its inverse is
 # `F32.bits` (the `law` at `base.bend:1826`), which is where `bits_of` and
 # `Prog.cast.dt` below read. ONE name per direction: importing both is what
-# stops this file disagreeing with `base.bend` about either. This used to be a
 # local `w32`/`f32_of` pair and is now a duplicate retired; the measurement
 # that decided it is in .agents/slop/OPSPY.md.
 #
@@ -304,9 +302,9 @@ import ../uop/symbolic.bend as SY
 # dtype.c calls the pair of the real names "the conversion seam"; the seam
 # exists only because the dtype.c helpers go through half and fp8, and v1 has
 # neither.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE VALUE DOMAIN. `values[u]` in Python is a list over `warp_size` whose
 # elements are an int, a float, a memoryview or a `(memoryview, offset)` tuple,
 # and for a vector LOAD or a STACK a list of such lists. At warp 1 (see LOCAL
@@ -315,7 +313,7 @@ import ../uop/symbolic.bend as SY
 # `S.Dt` travels with a scalar because Python's int/float distinction is what
 # picks `exec_alu`'s lane AND what makes CAST sign-aware: ops_python.py:154 reads
 # the SOURCE dtype, and a uint32 and an int32 hold the same 32 bits.
-# ===========================================================================
+
 
 type Elem is Data:
   # A scalar. `b` is the storage bit pattern, `d` the dtype it is read at.
@@ -361,13 +359,13 @@ def Elem.off_none(+e: Elem) -> Bool:
     case Rf{b, o, n}: n
     case _: False{}
 
-# ===========================================================================
+
 # PACKET TEXT. `<nbytes> <hex-bytes>`, either case, two digits per byte, and the
 # uop line's `<idx>:` field with its colon.
 #
 # `U32.read` answers `Maybe` and reads "42" but refuses "-42" (rule 6), so
 # `num` treats "-" as 0 and every `<arg>` is split by hand.
-# ===========================================================================
+
 
 def is_hspace(+c: U32) -> Bool:
   Bool.or(U32.is_eq(c, 32), Bool.or(U32.is_eq(c, 9), U32.is_eq(c, 13)))
@@ -498,11 +496,11 @@ def list_of(r: (Bool & List<U32>)) -> List<U32>:
   (ok, bs) = r
   bs
 
-# ===========================================================================
+
 # THE OP TABLE. A wire name to an `O.Op`, and nothing for a name this file does
 # not port -- which is how every wall above reaches a refusal rather than a
 # guess.
-# ===========================================================================
+
 
 def op_of(nm: String) -> Maybe<&1, O.Op>:
   match nm:
@@ -554,7 +552,7 @@ def op_of(nm: String) -> Maybe<&1, O.Op>:
     case "WHERE": Some{O.OpsWHERE{}}
     case _: None{}
 
-# ===========================================================================
+
 # THE ALU LANE. `exec_alu` -- ops.py:1427 -- with the tuple branch (WALL 4) and
 # the Invalid poison left out, and the two numeric lanes REUSED from
 # symbolic.bend.
@@ -566,7 +564,7 @@ def op_of(nm: String) -> Maybe<&1, O.Op>:
 #
 # `Elem <-> O.Const` is three constructors and nothing else, so the reuse is
 # lossless: `Sc` IS `O.Const`'s payload with a dtype attached.
-# ===========================================================================
+
 
 # A zero-extended 64-bit reading for a uint32, a sign-extended one for an int32:
 # `from_storage_scalar` (ops_python.py:18) leaves exactly this difference between
@@ -729,7 +727,7 @@ def alu3(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, +c: Elem) -> Elem:
 
 
 
-# ===========================================================================
+
 # THE PROGRAM TABLE. `self.uops` and `values` from ops_python, kept apart
 # because they behave differently. The uop list is READ-ONLY for a whole launch
 # -- a `List<&2, Uop>` is Data, so every lookup is free and copies nothing --
@@ -750,7 +748,7 @@ def alu3(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, +c: Elem) -> Elem:
 # `load_sz` and each consumer below reads it flat. The one shape that breaks
 # that flattening is a LOAD whose pointer src is itself a run of several (a
 # gather): measured none in 117 LOADs, longest pointer run 1. That is WALL 5.
-# ===========================================================================
+
 
 # `<arg>` decoded into a KIND and two numbers. The letters of A1 become kinds
 # rather than a field, so the walk reads one number: 2/3 are a PARAM of addrspace
@@ -910,13 +908,13 @@ def Uop.run_of(+u: Uop) -> U32: Uop.run_of.op(Uop.op(u), u)
 
 def Uop.run1(+u: Uop) -> Uop: Uop.run2(u, Uop.run_of(u))
 
-# ===========================================================================
+
 # THE BUFFERS. The store is ONE flat byte list holding every buffer back to
 # back, so a buffer is a base offset into it. `w` is the storage word in bytes
 # -- `storage_fmt_for_dtype` (ops_python.py:96), 1 for bool and 4 for the other
 # three -- and `e` the element count, so `_step` and the bounds check are the
 # arithmetic ops_python does on `m.nbytes // len(m)`.
-# ===========================================================================
+
 
 # the BUFFER carries its dtype, and that is the fourth field and it is not
 # COSMETIC. ops_python.py:29-33's `_store` writes
@@ -954,11 +952,11 @@ def Buf.at(fs: List<&2, Buf>, +b: U32) -> Buf:
 def Buf.make(+dt: S.Dt, +n: U32) -> Buf:
   Buf{0, S.Dt.itemsize(dt), U32.div(n, S.Dt.itemsize(dt)), dt}
 
-# ===========================================================================
+
 # THE VALUES ARENA AND THE STORE. `Val` is ops_python's `values[u]`, total and
 # defaulting to a zero: the one slot that is legitimately unwritten is a RANGE
 # counter, which ops_python initialises to 0 on its first visit.
-# ===========================================================================
+
 
 def Elem.zero() -> Elem: Sc{0, S.int32()}
 
@@ -1090,13 +1088,13 @@ def Mem.st(+ms: List<&2, List<&2, U32>>, +at: U32, +w: U32, +v: U32) -> List<&2,
 
 def Mem.put(ms: List<&2, List<&2, U32>>, +at: U32, +v: U32) -> List<&2, List<&2, U32>>: Mem.st(ms, at, 1, v)
 
-# ===========================================================================
+
 # THE STORE IS LITTLE-ENDIAN. `memoryview(bytearray).cast('I')` is NATIVE order
 # and every platform this runs on is little-endian, so a word's four bytes are
 # assembled low byte first; a 1-byte word (bool) is the byte itself.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the accessors Arg's remaining fields need; see the note above the
 # Arg block.
 type Arg is Data:
@@ -1114,7 +1112,7 @@ def Arg.y(+g: Arg) -> U32:
   match g:
     case Arg{kind, x, y}: y
 
-# ===========================================================================
+
 # THE PARSE. One fold over `String.lines`, because that is the only order the
 # wire has: the header, then the uops, then the buffers. The fold carries a
 # `Build` -- the uops reversed, the packet bytes reversed, the two buffer tables
@@ -1123,7 +1121,7 @@ def Arg.y(+g: Arg) -> U32:
 # `ok` rather than a refusal at each step, because a fold cannot carry a
 # `Maybe` and a malformed packet IS a boolean (the same reason `bytes_of` answers
 # a pair). The IO layer turns it into the die, naming the count that disagreed.
-# ===========================================================================
+
 
 type Build is Data:
   Build{us: List<&2, Uop>, sp: List<&2, Buf>, ss: List<&2, Buf>, bp: List<&2, U32>,
@@ -1326,13 +1324,13 @@ def Prog.hdr.put(+b: Build, +named: Bool, +some: Bool, +nu: U32, +nb: U32) -> Bu
   Build{Build.us(b), Build.sp(b), Build.ss(b), Build.bp(b), nu, nb, Build.nbp(b), Build.sbn(b), Build.pn(b), Build.slot(b),
         Bool.and(Build.ok(b), Bool.and(named, some))}
 
-# ===========================================================================
+
 # ONE UOP LINE, IN ONE PASS over its words: 1 the op, 2 the dtype, 3 the arg,
 # 4.. the srcs. The `<idx>:` field is not read, because ops_bend.encode walks the
 # renderer's own list in order and asserts post-order -- a line's POSITION is the
 # index its srcs name. A fifth src is refused: measured max 4, and only a STACK
 # gets near it.
-# ===========================================================================
+
 
 def Prog.hdr.of(+ws: List<&2, String>, +b: Build) -> Build:
   Prog.hdr.put(b, String.eq(w(ws, 0n), "bendexec1"), U32.is_gt(num_of(num(w(ws, 1n))), 0),
@@ -1416,12 +1414,12 @@ def Prog.one.of(m: Maybe<&2, Uop>, +b: Build) -> Build:
     case Some{+u}: Prog.one.two(u, b)
     case None{}: Prog.one.no(b)
 
-# ===========================================================================
+
 # THE LOADED PACKET: the bases, the store, the arena, and the counts that have to
 # agree with the header.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # BYTE k IS CHARACTERS 2k AND 2k+1, high nibble first. Any other order is wrong
 # in a way the round trip hides: `Prog.line` writes nibbles back the same way it
 # read them, so a PURE COPY of a buffer looks perfect while the arena holds
@@ -1441,7 +1439,7 @@ def Prog.one.of(m: Maybe<&2, Uop>, +b: Build) -> Build:
 # starts, so it has no notion of the byte boundary. `Prog.chars1` and `Prog.bytes`
 # reverse around it and those two reversals cancel, which is why `bytes_of` is
 # still right for its own callers and wrong here.
-# ===========================================================================
+
 
 # Two chars fold into one byte with `high` tracking the nibble: the even-indexed
 # char is the HIGH nibble, so a completed byte is `hi*16 + nib`. A trailing odd
@@ -1726,19 +1724,19 @@ def Prog.parse.go(ls: List<&2, String>, +k: U32, +b: Build) -> Build:
 def Prog.parse(s: String) -> Maybe<&2, Load>:
   Prog.load(Prog.parse.go(String.lines(s), 0, Build.blank()))
 
-# ===========================================================================
+
 # A BUFFER LINE, `<nbytes> <hex-bytes>`. Its bytes are consed onto `bp` in
 # packet order and the whole run is reversed once at the end -- `List.set` per
 # byte would be quadratic on a 2 KiB buffer.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # the split that makes a step cheap. `Prog` is rebuilt once per instruction and carried 21 fields,
 # TWELVE of which never change during a work item: the program, the pristine arena, the buffers,
 # `vals`, the uop count and the grid dimensions. Those move into `St`; the work-item counters into
 # `Gd`. A per-step rebuild then constructs 11 fields instead of 21, and a Bend record is a chain of
 # two-child nodes, so that is ~10 malloc-and-refcount pairs per step off the hot path.
-# ===========================================================================
+
 type St is Data:
   St{us: List<&2, Uop>, fs: List<&2, Buf>, vals: List<&2, U32>,
      n: U32, cx: U32, cy: U32, cz: U32}
@@ -1903,7 +1901,7 @@ def Prog.at(+p: Prog, +pc: U32) -> Prog:
       +lus = St.us(st)
       Prog{st, gd, ms, mk, pc, bad, dead, List.drop(&2, Uop, lus, U32.to_nat(pc))}
 
-# ===========================================================================
+
 # THE HOT CHUNK. `Val.put` rebuilds the 16-cell chunk AND the chunk spine -- ~24 heap cells per
 # value store -- and `Val.at` walks the spine to find the chunk. BOTH COSTS ARE THE SPINE, and the
 # walk is sequential, so the chunk being written is almost always the one just written.
@@ -1919,13 +1917,12 @@ def Prog.at(+p: Prog, +pc: U32) -> Prog:
 #
 # EVERY OTHER WRITER INVALIDATES: `Prog.vs1` replaces the spine and cold-starts the cache, so a
 # stale chunk can never be read back through a hit.
-# ===========================================================================
+
 # fold the held chunk back into the spine; nothing to do when the cache is cold
 def Prog.slot.f(+u: Uop, +k: Nat) -> U32: Uop.nth(Uop.sslot(u), k)
 
 def Prog.vat(a: Array<Elem>, +i: U32) -> Array<Elem> & Elem: Val.at(a, i)
 
-# the STORE and the step in one rebuild: `Prog.put` used to be
 # `Prog.next(Prog.vs1(p, Val.put(...)))`, which built the record twice per value written.
 # ONE `Array.set` PER VALUE WRITTEN. The chunk cache, the spine fold, the flush and the hit test
 # all existed to make a persistent-list write affordable; `Array.set` overwrites in place, so all of it
@@ -2002,11 +1999,11 @@ def Prog.backedge.at(+p: Prog, +u: Uop, +c: Bool) -> Prog:
     case True{}: Prog.at(p, Uop.src1(u))
     case False{}: Prog.next(p)
 
-# ===========================================================================
+
 # :51 `loop_ends` -- `{u.src[1]: i for i, u in enumerate(uops) if u.op in {END,
 # BACKEDGE}}`, so the LAST end of a RANGE wins. Measured: exactly one end per
 # RANGE in all 25 packets, which is why first == last and why a scan is enough.
-# ===========================================================================
+
 
 def Prog.backedge.r(+p: Prog, +u: Uop, av: Array<Elem> & Bool) -> Prog & Array<Elem>:
   match av:
@@ -2020,7 +2017,7 @@ def Prog.loop.hit(+at: U32, +hit: U32, +yes: Bool) -> U32:
     case True{}: at
     case False{}: hit
 
-# ===========================================================================
+
 # :123-131 RANGE. The counter is the uop's OWN slot (:126-127 increments it in
 # place), it starts at 0, and reaching src[0] jumps PAST the loop's end (:130).
 # `del values[u]` is skipped and is not observable: nothing jumps back to a RANGE
@@ -2028,7 +2025,7 @@ def Prog.loop.hit(+at: U32, +hit: U32, +yes: Bool) -> U32:
 #
 # A RANGE of dtype void is the no-op of :81 and the wire spells its dtype, so the
 # void case is a Bool on the way in. `Dt.itemsize` is 0 exactly for void.
-# ===========================================================================
+
 
 def Prog.loop.end(+u: Uop) -> Bool: O.op_in([O.OpsEND{}, O.OpsBACKEDGE{}], Uop.op(u))
 
@@ -2052,10 +2049,10 @@ def Prog.put(+p: Prog, a: Array<Elem>, +u: Uop, +e: Elem) -> Prog & Array<Elem>:
 # exactly this shape in REPORT 39.20 (416.70 -> 412.35 ms); ALU is the hottest family in the packet
 # (163 MULACC + 4 MUL of 510 uops) and was still paying it. The field-taking form goes straight to
 # `Prog.vput.go`.
-# ===========================================================================
+
 # :67-68 BACKEDGE -- `i = uop_to_index[u.src[1]] if values[u.src[2]][0] else
 # i+1`. The condition is src 2 and the loop head is src 1.
-# ===========================================================================
+
 
 def Prog.cur(a: Array<Elem>, +u: Uop) -> Array<Elem> & U32: Val.bits(Val.at(a, Uop.slot(u)))
 
@@ -2098,21 +2095,21 @@ def Prog.rng.del(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   (p, Val.put(Val.put(a, Uop.slot(u), elem_of(0, Uop.dt(u))),
     U32.add(Uop.slot(u), 1), elem_of(0, Uop.dt(u))))
 
-# ===========================================================================
+
 # :73-78 IF/ENDIF. `exec_masks` is a stack of "one Bool per work item" (the warp
 # is 1 here), so an IF pushes the conjunction of the top and the condition and an
 # ENDIF pops. ops_python skips VOID srcs when it builds `src_values`, and
 # MEASURED the only op with a void src is an AFTER, whose first src is never void
 # -- so the filter has no other place to show up and is not spelled.
-# ===========================================================================
+
 
 def Prog.trip(a: Array<Elem>, +u: Uop) -> Array<Elem> & U32: Val.bits(Val.at(a, Uop.nth(Uop.sslot(u), 0n)))
 
-# ===========================================================================
+
 # THE RANGE VISIT, IN CONTINUATION FORM. `ops_python` keeps the counter in the arena at the uop's own
 # slot and the visited flag one past it; the trip count is the first src's value. Three reads, each of
 # which hands the array back, so each is consumed by a def whose PARAMETER is the pair.
-# ===========================================================================
+
 def Prog.rng.over.x(+at: U32, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
   match av:
     case (p2, a2): (Prog.at(p2, at), a2)
@@ -2158,12 +2155,12 @@ def Prog.rng(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
 def Prog.open(+p: Prog) -> Bool:
   Maybe.default(&2, Bool, List.get(&2, Bool, Prog.mk(p), 0n), True{})
 
-# ===========================================================================
+
 # :94, :99-105 PARAM and BUFFER. A PARAM of addrspace a reads a `vals` entry
 # (:94); every other PARAM and a BUFFER bind buffer id `b`, which A1 resolved at
 # parse time. Both are re-bound on every visit, which is what a re-executed uop
 # must do.
-# ===========================================================================
+
 
 def Prog.ifs.r(+p: Prog, +u: Uop, av: Array<Elem> & Bool) -> Prog & Array<Elem>:
   match av:
@@ -2175,10 +2172,10 @@ def Prog.ifs(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
 def Prog.val(+p: Prog) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, Prog.vals(p), U32.to_nat(Prog.pv(p))), 0)
 
-# ===========================================================================
+
 # :107-109 SPECIAL. `'g'` reads `idxs[2-int(u.arg[-1])]` and `'l'` reads the warp,
 # which is `[(0,0,0)]` here, so a lidx is the constant 0 (see LOCAL SIZE).
-# ===========================================================================
+
 
 # one bind, and the counter order written out. `pv1(p)` incremented `Gd.pv` in one record rebuild
 # while `Prog.val(p)` read `St.vals` with the PRE-increment counter off the ORIGINAL record -- three
@@ -2205,13 +2202,13 @@ def Prog.idx(+gx: U32, +gy: U32, +gz: U32, +a: U32) -> U32:
   Bool.pick(U32, U32.is_eq(a, 0), gx, Bool.pick(U32, U32.is_eq(a, 1), gy,
     Bool.pick(U32, U32.is_eq(a, 2), gz, 0)))
 
-# ===========================================================================
+
 # :111-122 INDEX and SHRINK. `k:idx:0` is ops_python's ALU arm -- src[0] is an ALU
 # value, so `src_values[0][i][t]` picks element i of a vector LOAD, and t is 0 at
 # warp 1. Otherwise src[0] is a buffer reference and the wire's scale is the
 # BITCAST ratio of :120, already computed; the third src (55 of 317 measured) is
 # the shrink's limit, which ops_python never reads, so neither does this.
-# ===========================================================================
+
 
 def Prog.special(+p: Prog, arr: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   Prog.put(p, arr, u, elem_of(Prog.idx(Prog.gx(p), Prog.gy(p), Prog.gz(p), Uop.a(u)), Uop.dt(u)))
@@ -2235,11 +2232,11 @@ def Prog.index.alu(a: Array<Elem>, +u: Uop) -> Array<Elem> & Elem:
 def Prog.index.rf(+b: U32, +o: U32, +n: Bool, +i: U32, +scale: U32) -> Elem:
   Rf{b, U32.add(o, U32.mul(i, scale)), n}
 
-# ===========================================================================
+
 # :132 STACK -- `values[u] = src_values`, so a run of the srcs' first elements.
 # Measured max 4 srcs and never a vector LOAD among them, which is what keeps the
 # flattening (see THE PROGRAM TABLE).
-# ===========================================================================
+
 
 # `(m[0], m[1] + o*scale) if isinstance(m, tuple) else (m, o*scale)` -- ONE
 # spelling, because `Elem.off` of a bare Bf is 0 and `Elem.off_none` of a Bf is
@@ -2321,7 +2318,7 @@ def Prog.stack.copy(es: List<&2, Elem>, a: Array<Elem>, +slot: U32, +k: Nat) -> 
     case e <> t: Prog.stack.copy(t, Val.put(a, U32.add(slot, U32.from_nat(k)), e),
       slot, Nat.add(k, 1n))
 
-# ===========================================================================
+
 # :93 AFTER, :133 BITCAST, :134 CAST.
 #
 # An AFTER is a pass-through of its first non-void src. A BITCAST is the same
@@ -2330,7 +2327,7 @@ def Prog.stack.copy(es: List<&2, Elem>, a: Array<Elem>, +slot: U32, +k: Nat) -> 
 # the CAST arm with no conversion. The one thing this cannot say is a BITCAST of
 # addrspace GLOBAL or LOCAL, which ops_python passes through WITHOUT changing the
 # dtype (:93) and which the wire does not spell: see AMENDMENT A6.
-# ===========================================================================
+
 
 # ONE SELF-RECURSIVE DEF. The read inside the loop cannot be a continuation helper, because a
 # helper would call back into this def and Bend refuses mutual recursion. So the pair is a PARAMETER
@@ -2382,7 +2379,7 @@ def Prog.stack.by(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
 def Prog.stack(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   Prog.stack.by(p, a, u)
 
-# ===========================================================================
+
 # :134 CAST -- `values[u] = [truncate.get(u.dtype, lambda dt: dt)(u.dtype.const(x))
 # for x in src_values[0]]` (ops_python.py:137-138). `DType.const` (dtype.py:84) IS
 # the value conversion: `float(val)` for a FLOAT, `bool(val)` for a BOOL, and
@@ -2397,7 +2394,7 @@ def Prog.stack(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
 # `0000803f0000004000004040000080...` (the floats' own bit patterns). the same
 # arm is what `x.abs().cast(dtypes.int32)` goes through, so it also broke
 # `f32.shl.0`, `f32.shr.0` AND `f32.cmod.0` -- FOUR of the 29 pinned rows.
-# ===========================================================================
+
 
 # `int(x)` AS THE TWO's-COMPLEMENT BITS OF A 32-BIT INT. `F32.to_u32`
 # truncates toward zero, which is half of what is wanted, but it clamps a
@@ -2413,13 +2410,13 @@ def Prog.cast.dt(+dst: S.Dt, src: S.Dt, +e: Elem) -> Elem:
       Bool.pick(Elem, S.Dt.is_float(src), elem_of(f32_int_bits(f_of(e)), dst),
         elem_of(Elem.bits(e), dst))))
 
-# ===========================================================================
+
 # :136-142 LOAD. `k:vec:n` is the flat run of n lanes (A2), and lane j reads the
 # pointer of src[0] at `+ j*_step`. A THREE-src LOAD is ops_python.py:24's gated
 # form: the lane is `alt` where src[2] is false. Measured 116 one-src and one
 # three-src LOAD; ops_python reads only src[0] of a two-src LOAD, so a two-src
 # LOAD walks the same lane path as a one-src one.
-# ===========================================================================
+
 
 def Prog.cast.at.r(+p: Prog, +u: Uop, dst: S.Dt, src: S.Dt, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
   match av:
@@ -2441,14 +2438,14 @@ def Prog.lane.of(+f: Buf, +dt: S.Dt) -> U32:
   Bool.pick(U32, U32.is_lt(S.Dt.itemsize(dt), Buf.w(f)), 1,
     U32.div(S.Dt.itemsize(dt), Buf.w(f)))
 
-# ===========================================================================
+
 # :85-91 STORE. `u.max_numel() > 1` walks the value run, and `zip` pairs it with
 # the ONE pointer of src[0] and with the gate, so lane j writes element j of the
 # value run at `o + j*_step`. A value run LONGER than the pointer run (measured:
 # a vec 4 LOAD feeding a vec 1 STORE, four of them) stores its FIRST element
 # only -- which is what zip's truncation gives, and why the flat run is read the
 # same way here.
-# ===========================================================================
+
 
 # THE BUFFER A MEMORY OP TOUCHES: src[0] is a buffer reference in every measured
 # LOAD and STORE (an INDEX/SHRINK of a PARAM, or a pass-through of one).
@@ -2460,14 +2457,14 @@ def Prog.buf(a: Array<Elem>, +fs: List<&2, Buf>, +u: Uop) -> Array<Elem> & Buf:
 # (IF, ENDIF, STACK, LOAD, STORE) build the new state without going through
 # `Prog.put`, which is where the step lives. Without the explicit `Prog.next`
 # the walk revisits the same uop forever and the launch dies of fuel.
-# ===========================================================================
+
 # :151-154 GroupOp.ALU. The two asserts of :152-153 are dropped: they are
 # invariants the scheduler upholds, and breaking one is a wrong packet rather
 # than a wrong device. The arity is the src count, exactly as `zip(*src_values)`
 # gives it. `Bool.pick` computes both arms, so all three arities are evaluated and
 # one is kept -- the alternative is a match on the op, which would read the arity
 # off a table instead of off the packet.
-# ===========================================================================
+
 
 # `_step(m, dtype)` -- ops_python.py:25, storage elements per lane. It is 1 for
 # every v1 lane, and it is spelled out rather than assumed so that a buffer whose
@@ -2496,12 +2493,12 @@ def Prog.word.ok(+word: U32, +inb: Bool, dt: S.Dt) -> U32:
 
 # `_load(m, i, dtype)` -- ops_python.py:15-19, first arm. The index is in
 # STORAGE elements, so the byte address is `base + i*w`.
-# ===========================================================================
+
 # the LOAD's per-lane invariants, looked up once -- the same defect the store had.
 # Per lane the old path did `Prog.src` for the pointer, `Prog.src` for the closed-gate alternative,
 # `Prog.src` inside `Prog.ld.open`, `Prog.lane` (two more arena reads) and `Buf.at(Prog.fs(p), ...)`
 # -- about a dozen arena reads and list walks for four lanes, all of them the same answer.
-# ===========================================================================
+
 type Lb is Data:
   Lb{f: Buf, off: U32, step: U32, dt: S.Dt, alt: Elem, three: Bool, open: Bool, slot: U32}
 
@@ -2583,7 +2580,7 @@ def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +nrun: U32, a: Array<Elem>
     Lb.three(l), Lb.alt(l), Lb.open(l), Lb.slot(l), ms, 0, a)
 
 
-# ===========================================================================
+
 # the LOAD and STORE paths in field-taking form.
 #
 # `Prog.ld1` reached the 11-field record about FIFTEEN times per LOAD -- `Prog.step.vs`, then
@@ -2591,7 +2588,7 @@ def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +nrun: U32, a: Array<Elem>
 # `Prog.ld.happens` + `Prog.oob` (each of which re-took `Prog.buf`, i.e. `Prog.fs` + `Prog.src`).
 # Every one is a full `match` over the record. ONE bind now feeds all of it, and each piece has a
 # field-taking form that does no record match at all.
-# ===========================================================================
+
 def Prog.dt.f(+us: List<&2, Uop>, +u: Uop, +k: Nat) -> S.Dt:
   Uop.dt(Uop.at(us, Uop.nth(Uop.srcs(u), k)))
 
@@ -2678,7 +2675,7 @@ def Prog.store.elem(a: Array<Elem>, +p: Prog, +u: Uop, +j: U32) -> Array<Elem> &
 # (dtype.py:84) and the memoryview are the same conversion for the four v1
 # lanes. so `Prog.cast.dt` is reused here, and it is the identity when the two
 # DTYPES ARE THE SAME.
-# ===========================================================================
+
 # the STORE's per-lane invariants, looked up once.
 #
 # The old lane loop called `Prog.buf(p, u)` eight times per lane -- twice inside `store.bits`,
@@ -2686,7 +2683,7 @@ def Prog.store.elem(a: Array<Elem>, +p: Prog, +u: Uop, +j: U32) -> Array<Elem> &
 # is `Prog.src`: an arena read with its `Maybe`. A four-lane store made ~32 arena reads to write 4
 # elements, and `Prog_store_lane_at` is in the executor's own profile. Everything except the VALUE
 # is the same for every lane, so it is bound once in `Sb`.
-# ===========================================================================
+
 type Sb is Data:
   Sb{w: U32, dt: S.Dt, e: U32, base: U32, off: U32, step: U32, slot: U32, open: Bool}
 
@@ -2901,7 +2898,7 @@ def Prog.alu.at(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +sslot: List<&2,
   +n: U32) -> Prog & Array<Elem>:
   Prog.alu.at.k(Prog.alu.kind(U32.is_eq(n, 1), U32.is_eq(n, 2)), op, dt, sslot, slot, p, a)
 
-# ===========================================================================
+
 # THE INTERPRETER LOOP. One recursion per instruction: Bend has no loop and no
 # `continue`, so `run` IS the `while i < len(self.uops)` of ops_python.py:131.
 #
@@ -2911,7 +2908,7 @@ def Prog.alu.at(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +sslot: List<&2,
 # 17953 steps (a 16x16 matmul), and a 1e6-deep recursion compiles and runs in
 # 30 ms (.agents/slop/x-deep.bend), so the fuel below is two orders of magnitude
 # above the measured need and three below the depth that was timed.
-# ===========================================================================
+
 
 # `Uop.nsrc` is a `List.length` walk, and this called it twice per alu step. measured by sampler:
 # `Uop_nsrc` and `List_length` both appear in the top twenty of the shipped build, and the 32x32 packet
@@ -3073,17 +3070,17 @@ def grid(+n: Nat, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
       match av:
         case (+pr, a): grid(k, Prog.tick.av(run(FUEL(), (pr, a))))
 
-# ===========================================================================
+
 # THE COMMAND LINE. `IO.args()` is affine, so it is read ONCE, in order, and the
 # whole answer is one record: argv[0] is the program (skipped), argv[1] the
 # packet, argv[2..4] the grid, and everything after is `vals`. `pv` starts at 3
 # because the first three numbers are the grid.
-# ===========================================================================
 
-# ===========================================================================
+
+
 # THE ENTRY POINT: `bend-executor PACKET gx gy gz vals...`, which reads PACKET,
 # runs every work item, and writes PACKET.out beside it.
-# ===========================================================================
+
 
 def SLASH() -> Char: Char.from_u32(47)
 
@@ -3257,7 +3254,7 @@ def Prog.launch() -> IO(Unit):
     as : List<String> <- IO.args()
     Prog.launch.at(Args.of(as))
 
-# ===========================================================================
+
 # THE RENDERER / COMPILER / DEVICE HALF -- ops_python.py:33-44 and :159-186
 #
 # ops_python.py has TWO halves. Everything ABOVE is `PythonProgram.__call__`:
@@ -3282,7 +3279,7 @@ def Prog.launch() -> IO(Unit):
 # information a different, total, byte-exact spelling:
 #
 #   CPython                    this port
-#   ------------------------   --------------------------------------------
+
 #   list[UOp]                  List<&2, Uop>, one `Uop` record per uop
 #   UOp.op   (Ops enum)        Uop.op -> O.Op, ops.bend's tagged union
 #   UOp.dtype (DType)          Uop.dt -> S.Dt, spec.bend's dtype
@@ -3313,7 +3310,7 @@ def Prog.launch() -> IO(Unit):
 #     sys.version_info >= (3, 12)` -- is ported and gated; the set is a seam.
 #   * `render`'s pickle. See above. The v1 wire is the port's counterpart and is
 #     gated by `.agents/slop/bend_packets.py`, not here.
-# ===========================================================================
+
 
 # ---- PythonCompiler.compile, :160. base64.b64decode(src) ------------------
 #
@@ -3330,7 +3327,6 @@ def Prog.launch() -> IO(Unit):
 #     EVEN THOUGH the chosen arm was fine. (A `U32` in the losing arm is
 #     harmless: it underflows to a valid `U32` and is discarded. The trap is
 #     specific to a CHECKED type.) The nibble/byte printers below dodge it.
-#   * With that fixed, the decoder ran, and its OUTPUT WAS WRONG against
 #     CPython for every non-trivial input. Port vs CPython, measured:
 #         "AA=="      port 04          CPython 00
 #         "AP8="      port 04          CPython 00ff
@@ -3357,7 +3353,6 @@ def Prog.launch() -> IO(Unit):
 # fixtures and compares the BYTES, which is an empirical identity where this row
 # is a declared one. That is the one row in this census where the port's answer
 # is the weaker fact, and the gate says so rather than letting a green run read
-# as "the transform was verified here". It was not; the fold is WALL 5, above.
 # TODO(p3) runtime/ops_python.py:164  symbol=compile -- the base64 quartet fold.
 def compile.transform() -> String: "base64.b64decode"
 def b64.transform() -> String: "base64.b64decode"
@@ -3515,7 +3510,6 @@ def Core.d2(+c: Core) -> U32:
 # `tc.metal[0]`, ONCE. `dims` is (8,8,8) and `threads` is 32 -- MEASURED against
 # tc.py -- and the whole fixture lane below reads them from HERE rather than
 # carrying its own copy, so `pywma_metal_dims0` and `pywma_metal_threads` cannot
-# disagree with the fragment `core_find` is actually handed. They used to be two
 # bare literals in the row list while the SAME numbers sat, unreferenced, in the
 # `Core{...}` the lookup rows were built from: a tc.py that widened the metal
 # fragment would have moved one and left the other. `din` is the axis
@@ -3565,12 +3559,12 @@ def wma.warp_msg(threads: U32) -> String:
 # `Uop.of.sr`, which is where `u.src[1]` becomes the arena index the dispatch
 # arms read.
 
-# ===========================================================================
+
 # THE FIXTURE LANE. `main` runs the executor when a PACKET is on the command
 # line and the gate when there is not, and it branches on `Args.of` -- the SAME
 # Maybe `Prog.launch.at` already branched on. So the E2E artefact and the gate
 # are one program with one entry point, and no lane is a separate build.
-# ===========================================================================
+
 
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))

@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/rnnt.py (202 loc). not yet ported.
 #
 # rnn-t is the only file in this slice that asks for a kind of layer the port
@@ -99,7 +99,7 @@ import ./../datasets/__init__.bend as D
 # call order even though `Embedding` is the first missing symbol of the file's
 # FIRST def. The honest statement is that RNN-T has ELEVEN missing symbols and the
 # recurrence is only one of them.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -108,9 +108,9 @@ def rt_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :9-94 RNNT.
-# ---------------------------------------------------------------------------
+
 
 # :10 def __init__(self, input_features=240, vocab_size=29, enc_hidden_size=1024, pred_hidden_size=320, joint_hidden_size=512, pre_enc_layers=2, post_enc_layers=3, pred_layers=2, stack_time_factor=2, dropout=0.32)
 def rt_rnnt_init(input_features: U32, vocab_size: U32, enc_hidden_size: U32, pred_hidden_size: U32,
@@ -138,9 +138,9 @@ def rt_pred_joint(+logit: T.Tensor, +label: T.Tensor, +hc: T.Tensor, +mask: T.Te
 def rt_rnnt_load_from_pretrained() -> D.Refused:
   D.refuse("extra/models/rnnt.py:62 RNNT.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:64); THE PORT's `helpers.bend` HEADER records the HTTP seam as unported. The 33 `.assign` lines at :72-94 are torch-checkpoint loads, not arithmetic")
 
-# ---------------------------------------------------------------------------
+
 # :97-115 LSTMCell. THE RECURRENCE WALL, SPELLED OUT.
-# ---------------------------------------------------------------------------
+
 
 # :98 def __init__(self, input_size, hidden_size, dropout)
 def rt_cell_init(input_size: U32, hidden_size: U32, dropout: F32) -> D.Refused:
@@ -150,9 +150,9 @@ def rt_cell_init(input_size: U32, hidden_size: U32, dropout: F32) -> D.Refused:
 def rt_cell_call(+x: T.Tensor, +hc: T.Tensor) -> D.Refused:
   D.refuse("extra/models/rnnt.py:106 LSTMCell.__call__ -- FIRST MISSING SYMBOL Tensor.chunk (:109); x.linear (:107) EXISTS, sigmoid/tanh (:110) EXIST at mixin/elementwise.bend:1195 symbol=g_unary/:1232, and Tensor.cat (:115) is MISSING")
 
-# ---------------------------------------------------------------------------
+
 # :118-148 LSTM.
-# ---------------------------------------------------------------------------
+
 
 # :119 def __init__(self, input_size, hidden_size, layers, dropout)
 def rt_lstm_init(input_size: U32, hidden_size: U32, layers: U32, dropout: F32) -> D.Refused:
@@ -166,9 +166,9 @@ def rt_lstm_call(+x: T.Tensor, +hc: Maybe<&2, T.Tensor>) -> D.Refused:
 def rt_lstm_do_step(+x: T.Tensor, +hc: T.Tensor) -> D.Refused:
   D.refuse("extra/models/rnnt.py:144 LSTM.do_step -- FIRST MISSING SYMBOL LSTMCell.__call__ (:147) -> Tensor.chunk; Tensor.stack (:148) EXISTS at mixin/movement.bend:1267 symbol=mxw_stk.done")
 
-# ---------------------------------------------------------------------------
+
 # :151-158 StackTime.
-# ---------------------------------------------------------------------------
+
 
 # :152 def __init__(self, factor)
 def rt_stacktime_init(factor: U32) -> U32: factor
@@ -177,9 +177,9 @@ def rt_stacktime_init(factor: U32) -> U32: factor
 def rt_stacktime_call(+x: T.Tensor, x_lens: Maybe<&2, T.Tensor>) -> D.Refused:
   D.refuse("extra/models/rnnt.py:155 StackTime.__call__ -- mxw_pad EXISTS (:156) and mxw_reshape EXISTS (:157); BLOCKED BY the two-tuple return (:158), which carries an Option")
 
-# ---------------------------------------------------------------------------
+
 # :161-171 Encoder.
-# ---------------------------------------------------------------------------
+
 
 # :162 def __init__(self, input_size, hidden_size, pre_layers, post_layers, stack_time_factor, dropout)
 def rt_encoder_init(input_size: U32, hidden_size: U32, pre_layers: U32, post_layers: U32, stack_time_factor: U32) -> D.Refused:
@@ -189,9 +189,9 @@ def rt_encoder_init(input_size: U32, hidden_size: U32, pre_layers: U32, post_lay
 def rt_encoder_call(+x: T.Tensor, x_lens: Maybe<&2, T.Tensor>) -> D.Refused:
   D.refuse("extra/models/rnnt.py:167 Encoder.__call__ -- FIRST MISSING SYMBOL self.pre_rnn (:168) -> LSTM -> LSTMCell")
 
-# ---------------------------------------------------------------------------
+
 # :174-184 Prediction.
-# ---------------------------------------------------------------------------
+
 
 # :175 def __init__(self, vocab_size, hidden_size, layers, dropout)
 def rt_prediction_init(vocab_size: U32, hidden_size: U32, layers: U32) -> D.Refused:
@@ -201,9 +201,9 @@ def rt_prediction_init(vocab_size: U32, hidden_size: U32, layers: U32) -> D.Refu
 def rt_prediction_call(+x: T.Tensor, +hc: T.Tensor, +m: T.Tensor) -> D.Refused:
   D.refuse("extra/models/rnnt.py:181 Prediction.__call__ -- FIRST MISSING SYMBOL self.emb (:182), the same missing Embedding")
 
-# ---------------------------------------------------------------------------
+
 # :187-202 Joint. the two defs that are almost portable.
-# ---------------------------------------------------------------------------
+
 
 # :188 def __init__(self, vocab_size, pred_hidden_size, enc_hidden_size, joint_hidden_size, dropout)
 def rt_joint_init(vocab_size: U32, pred_hidden_size: U32, enc_hidden_size: U32, joint_hidden_size: U32) -> D.Refused:
@@ -213,9 +213,9 @@ def rt_joint_init(vocab_size: U32, pred_hidden_size: U32, enc_hidden_size: U32, 
 def rt_joint_call(+f: T.Tensor, +g: T.Tensor) -> D.Refused:
   D.refuse("extra/models/rnnt.py:194 Joint.__call__ -- nn_expand EXISTS (:196,:197), nn_relu EXISTS (:200), nn_linear EXISTS (:200,:202); FIRST MISSING SYMBOL Tensor.cat (:199)")
 
-# ---------------------------------------------------------------------------
+
 # There is no `if __name__ == "__main__":` in rnnt.py. `main` prints TWO rows.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, rt_lstm_init(240, 1024, 2, 0.32))

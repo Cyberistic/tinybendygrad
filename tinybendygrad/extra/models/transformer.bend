@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/transformer.py (61 loc). not yet ported.
 #
 # the headline, and it is the answer to "do these models need anything the vision
@@ -74,7 +74,7 @@ import ./../datasets/__init__.bend as D
 # ON `adam`: NOT USED BY THIS FILE. `extra/models/transformer.py` never constructs an
 # optimizer. The one that DOES is llama.py's sampling caller, and `nn/optim.bend`
 # already carries `op_mstep` :898 and `op_vstep` :903 -- see llama.bend's header.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -83,13 +83,13 @@ def tf_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :3-39 TransformerBlock. `num_heads` (:7), `head_size = embed_dim // num_heads`
 # (:8) and `prenorm`/`act`/`dropout` (:9-10) are the constructor's body, and
 # `NN.nn_len`/`U32.div` cover the integer half. The SEVEN weight tuples (:12-22)
 # are the first thing this file cannot build, and `rd_scaled_uniform` is why they
 # are NOT the first thing.
-# ---------------------------------------------------------------------------
+
 
 # :4  def __init__(self, embed_dim, num_heads, ff_dim, prenorm=False,
 #                  act=lambda x: x.relu(), dropout=0.1)
@@ -112,10 +112,10 @@ def tf_block_attn(+x: T.Tensor) -> D.Refused:
 def tf_block_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/transformer.py:30 TransformerBlock.__call__ -- FIRST MISSING SYMBOL Tensor.scaled_dot_product_attention via attn (:35), then x.layernorm (:36)")
 
-# ---------------------------------------------------------------------------
+
 # :41-61 Transformer. `self.embed` (:44) is `Tensor.scaled_uniform(...).is_param_(False)`
 # and `self.freqs`-equivalent does not exist here -- that is llama.py's.
-# ---------------------------------------------------------------------------
+
 
 # :42 def __init__(self, syms, maxlen, layers, embed_dim, num_heads, ff_dim)
 def tf_transformer_init(syms: U32, maxlen: U32, layers: U32, embed_dim: U32, num_heads: U32, ff_dim: U32) -> D.Refused:
@@ -125,11 +125,11 @@ def tf_transformer_init(syms: U32, maxlen: U32, layers: U32, embed_dim: U32, num
 def tf_transformer_forward(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/transformer.py:48 Transformer.forward -- FIRST MISSING SYMBOL Tensor.eye (:51)")
 
-# ---------------------------------------------------------------------------
+
 # There is no `if __name__ == "__main__":` in transformer.py. `main` below is
 # this file and nothing else, and it prints the TWO rows that are answers rather
 # than the census -- the census belongs in the report.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, tf_block_init(512, 8, 2048, False{}, 0.1))

@@ -6,7 +6,7 @@
 # adds the three things that are its own -- the candidate table, the DEDUP guard
 # that table feeds, and the loop.
 #
-# ---------------------------------------------------------------------------
+
 # a checking file, not a complete one, and the brief asks for that. Four of the
 # nine defs are one-line device calls and a wall; the two that carry the search's
 # DECISION PROCEDURE are ported and gated; the third (`get_kernel_actions`) is
@@ -14,7 +14,7 @@
 # `postrange.bend`'s `opt_ok`, which is ported there. What is NOT here is named,
 # with its line, so nothing is silently missing.
 #
-# ---------------------------------------------------------------------------
+
 # THE INVENTORY, def by def, against search.py's 173 lines.
 #
 #   #  PY           KIND    STATE
@@ -39,7 +39,7 @@
 #                                         `while`, with the device's answers
 #                                         taken as a `SCORE` table
 #
-# ---------------------------------------------------------------------------
+
 # the one thing in `get_kernel_actions` that is its own, and it is LOAD-bearing.
 #
 #   search.py:89-90
@@ -98,7 +98,7 @@
 # is a top=True one, on both shapes. That is the measured form of `zero_variant`'s
 # `case True{}: False{}` arm -- not an inference from the amt list, an observation.
 #
-# ---------------------------------------------------------------------------
+
 # THE BEAM GATE. The loop BODY and the counting are PORTED; the two device calls
 # are WALL #2, and the port takes their ANSWERS as a `SCORE` table. That is the
 # split this project makes everywhere a device call does not port, and it is what
@@ -180,7 +180,7 @@ import Base
 import ./postrange.bend as PR
 import ./../../uop/ops.bend as O
 
-# ===========================================================================
+
 # THE ENV VARS ARE PARAMETERS. Bend has no `getenv` and no `Config`, and in
 # Python most of these are read at MODULE IMPORT TIME -- `TC` and `TC_OPT` while
 # the `actions` list is being BUILT, `BEAM_UPCAST_MAX` on every
@@ -190,7 +190,7 @@ import ./../../uop/ops.bend as O
 # `BEAM_ESTIMATE` IS NOT HERE. Python's `beam_search` never reads it: it arrives
 # as `allow_test_size` from `apply_opts` (`tinygrad/codegen/opt/postrange.py:239`), and that is the
 # name this port keeps.
-# ===========================================================================
+
 
 type CFG is Data:
   CFG{padto: Bool, tc: U32, tc_opt: U32, upcast_max: U32, local_max: U32,
@@ -250,7 +250,7 @@ def CFG.min_progress(c: CFG) -> U32:
 def CFG.padto_on(c: CFG) -> Bool:
   PARTS.padto(parts(c))
 
-# ===========================================================================
+
 # `actions` -- search.py:15-23, AT HEAD. The eight comprehensions, with the count
 # each contributes. THE UNROLL GROUP IS GONE: search.py:15 used to enumerate
 # `AxisType.UNROLL` in the same comprehension as `AxisType.UPCAST`, and HEAD HAS
@@ -276,7 +276,7 @@ def CFG.padto_on(c: CFG) -> Bool:
 # the wrong SET prints, so the gate prints `tgt_kinds`, the `tgt_*` per-target
 # totals and the `zero_n_*` amt-0 census as well. "A COUNT IS NOT A CENSUS" below
 # names, for each of those, the wrong set it catches and the count cannot.
-# ===========================================================================
+
 
 # the group sizes, one DEF each, so `main` can print them by name and a wrong
 # group is localised instead of surfacing only as a moved total. They are still
@@ -312,7 +312,6 @@ def acts_n(c: CFG) -> U32:
   acts_n.of(CFG.padto_on(c), grp.up(), grp.lcl(), grp.lcl_top(), grp.split32(), grp.tc0(), grp.tc(), grp.swap())
 
 # the amt-0 census, one number per target, and it is also the ladder's bound. These
-# used to be written TWICE -- as `U32.add(U32.add(10, 10), 8)` here and as a literal
 # `10` inside `zero_variant` -- and they had already drifted, because that second
 # `10` belonged to UNROLL when this was written while this count still carried it.
 # `zero_variant` READS these now, so the count and the predicate cannot disagree and
@@ -335,7 +334,7 @@ def zero_top_n() -> U32: 0
 def acts_zero() -> U32:
   U32.add(zero_n.up(), zero_n.lcl())
 
-# ===========================================================================
+
 # a count is not a census, and this is the census. Each row below answers a question
 # `acts_n` cannot, and each catches a DIFFERENT wrong set that still sums to 209.
 #
@@ -360,7 +359,7 @@ def acts_zero() -> U32:
 #              `zero_n_lcl = 8` ARE the two identities: no arrangement of `amt = 0`
 #              over a different target leaves both at 10 and 8 while the group
 #              sizes hold.
-# ===========================================================================
+
 def tgt_kinds() -> U32: 2
 
 def tgt_up() -> U32: grp.up()
@@ -431,11 +430,11 @@ def zero_variant(t: O.AxisType, top: Bool, ax: U32) -> Bool:
     case True{}: False{}
     case False{}: zero_variant.flat(t, ax)
 
-# ===========================================================================
+
 # the beam score and the beam state. These are the record shapes of what
 # `_try_compile` and `_time_program` answer, and of the `while`'s loop-carried
 # state. They are declared and NOT YET CONSUMED by a loop -- see the header.
-# ===========================================================================
+
 
 type SCORE is Data:
   SCORE{i: U32, ok: Bool, lib: U32, ops: U32, t: U32}
@@ -508,12 +507,11 @@ def b2u(b: Bool) -> U32:
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
-# ===========================================================================
+
 # THE GATE. Every row is DERIVED FROM CPython, so a row can be wrong. The
 # reference values are in the header.
 #
 # `zero_un9` AND `zero_red0` ARE GONE, and their DELETION is the point. Both asked
-# `zero_variant` about `O.AXIS_UNROLL` / `O.AXIS_REDUCE`, members upstream no longer
 # has, so they asserted facts about BEND-ONLY CONSTRUCTS and could never disagree
 # with CPython -- the worst kind of row. `tgt_kinds`, `tgt_*`, `byop_*` and
 # `zero_n_*` replace them: those are read off CPython's REAL table and they fail if
@@ -529,7 +527,7 @@ def row(nm: String, v: U32) -> IO(Unit):
 # table has none for, a WIDENING and therefore a silent one -- moved NOTHING before
 # this row existed. `zero_lcl8` is the one-axis-from-its-opposite pair the brief asks
 # for, and `zero_up9`/`zero_up10` already had that pair for UPCAST.
-# ===========================================================================
+
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -571,13 +569,13 @@ def main() -> IO(Unit):
     j1 : Unit <- row("keep_ok", b2u(drop(True{}, False{})))
     k1 : Unit <- row("least_lo", least_of(True{}, 5, 9))
     row("least_hi", least_of(False{}, 5, 9))
-# ===========================================================================
+
 # THE MEASURED MUTATION TABLE. 21 mutations, 20 localised, 1 blind spot with a reason.
 # Re-measured 2026-10-03 by `.agents/slop/mutate.py`, which diffs whole `name=value`
 # lines and treats a zero-row run as a failed run rather than a verdict.
 #
 #   mutation                                   rows that moved
-#   ---------------------------------------  -------------------------------------
+
 #   `grp.up`      60 -> 61                     grp_up tgt_up tgt_split byop_split acts_n acts_n_padto
 #   `grp.lcl`     64 -> 63                     grp_lcl tgt_lcl tgt_split byop_split acts_n acts_n_padto
 #   `grp.lcl_top` 64 -> 63                     grp_lcl_top tgt_lcl tgt_split byop_split acts_n acts_n_padto

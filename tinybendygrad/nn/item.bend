@@ -5,7 +5,7 @@
 # `examples/test_pkl_imagenet.bend:179 symbol=pkl_predict` names it as the wall in front of the
 # ImageNet milestone ("`p.to('cpu').argmax().item()`").
 #
-# ===========================================================================
+
 # UPSTREAM, QUOTED. `tinygrad/mixin/op.py:22-33`:
 #
 #     def item(self) -> PyConst:
@@ -40,7 +40,7 @@
 #   3. THE INDEX. `[(0,) * len(self.shape)]` -- the FIRST element, in a
 #      one-element tensor, which is the only element there is.
 #
-# ===========================================================================
+
 # what the port has, and what it does not.
 #
 # IT HAS THE DTYPE HALF. `S.Dt.itemsize` (`LAWS/spec.bend:176-181`) is
@@ -79,7 +79,7 @@
 #   * a multi-element tensor -- REFUSED, with upstream's own message.
 #   * anything else -- REFUSED, with the wall named.
 #
-# ===========================================================================
+
 # the orchestrator's three primitives, and what each one actually is. They
 # were briefed as "a buffer element read", "the dtype's byte width" and "a
 # tensor index", and TWO OF THE THREE ARE SOMETHING ELSE. The measurements:
@@ -104,7 +104,7 @@
 #     `i` -- NOT an index into a tensor. Its three call sites
 #     (`mixin/op.bend:696,779,874`) all pass a SHAPE list.
 #
-# ===========================================================================
+
 # THE RESULT IS A SUM TYPE, NOT A `Maybe`, because the three outcomes are
 # THREE different things and a `None` would flatten a refusal into a value.
 # `Itm` is the name (not `Item`: `viz/cli.bend:97` already owns that
@@ -129,9 +129,9 @@ import ./../mixin/op.bend as M
 import ./../mixin/movement.bend as MX
 import ./../mixin/dtype.bend as MD
 
-# ===========================================================================
+
 # THE RESULT.
-# ===========================================================================
+
 
 type Itm is Data:
   ItmVal{dt: S.Dt, v: O.Const}
@@ -145,7 +145,7 @@ def nn_item_wall() -> String:
     "NO-READ: no live Buffer in the port (uop/ops.bend:175 symbol=OpsBUFFER is the ONLY Buffer-named construct and it is the OP, not an allocated object); realize.py:145",
     " exec_copy -- the device-to-host _copyout -- is a foreign effect (engine/realize.bend:966 symbol=rz_est_is_copy RECOGNISES the copy and BUILDS NO Estimates, so there is no copyout)"])
 
-# ===========================================================================
+
 # 1. THE PRECONDITION. `prod(self.shape)` -- upstream's `numel()`
 # (`tinygrad/mixin/movement.py:38-46`).
 #
@@ -164,7 +164,7 @@ def nn_item_wall() -> String:
 # became 1 would be a WRONG shape rather than a missing one". A symbolic
 # shape therefore reads as numel 0 here, which is the same refusal upstream
 # makes (`tensor.py:297`, "no data if shape is symbolic").
-# ===========================================================================
+
 
 def nn_item_dims.go(+ds: List<&2, O.Sint>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ds:
@@ -176,7 +176,7 @@ def nn_item_dims(+ds: List<&2, O.Sint>) -> List<&2, U32>: nn_item_dims.go(ds, Ni
 def nn_item_numel(+t: T.Tensor) -> U32:
   H.prod_u32(nn_item_dims(M.mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))))
 
-# ===========================================================================
+
 # 2. THE VALUE. A CONST node's arg is `APy{v}` (`uop/ops.bend:1234`) and `v`
 # is an `O.Const` (`uop/ops.bend:799-803`).
 #
@@ -189,7 +189,7 @@ def nn_item_numel(+t: T.Tensor) -> U32:
 # AND THE RULE IS UNCHANGED), so the OP and the ARG are read first and handed
 # to a def that
 # matches on its own PARAMETERS.
-# ===========================================================================
+
 
 def nn_item_py(a: O.Arg) -> Maybe<&2, O.Const>:
   match a:
@@ -205,7 +205,7 @@ def nn_item_const(+t: T.Tensor) -> Maybe<&2, O.Const>:
   nn_item_const.of(O.Arena.op(T.Tensor.ar(t), T.Tensor.u(t)),
     O.Arena.arg(T.Tensor.ar(t), T.Tensor.u(t)))
 
-# ===========================================================================
+
 # 3. THE DTYPE. `data()`'s weak branch:
 #
 #     if self.dtype in dtypes.weaks: return self.cast(self.commit_dtype()).data()
@@ -228,7 +228,7 @@ def nn_item_const(+t: T.Tensor) -> Maybe<&2, O.Const>:
 # too) and `MD.commit_dtype` takes `Maybe<&1, H.I64>`. A `&2` payload USED
 # ONCE is inside a `&1` budget, so the hop is one `match` and NOT a second
 # copy of the value.
-# ===========================================================================
+
 
 def nn_item_bounds.of(m: Maybe<&2, H.I64>) -> Maybe<&1, H.I64>:
   match m:
@@ -248,12 +248,12 @@ def nn_item_dt.p(weak: Bool, +dt: S.Dt, +v: O.Const) -> S.Dt:
 
 def nn_item_dt(+dt: S.Dt, +v: O.Const) -> S.Dt: nn_item_dt.p(MD.md_weak(dt), dt, v)
 
-# ===========================================================================
+
 # 4. THE ANSWER. The order is UPSTREAM'S ORDER: the precondition is checked
 # FIRST, so a multi-element tensor is an AssertionError and NOT a read
 # refusal -- which is what upstream does, because the `assert` is the first
 # line of `item` and `data()` is never reached.
-# ===========================================================================
+
 
 def nn_item_read.dt(d: Maybe<&2, S.Dt>, +v: O.Const) -> Itm:
   match d:
@@ -276,7 +276,7 @@ def nn_item.of(+n: U32, +t: T.Tensor) -> Itm: nn_item.of.p(U32.is_eq(n, 1), n, t
 
 def nn_item(+t: T.Tensor) -> Itm: nn_item.of(nn_item_numel(t), t)
 
-# ===========================================================================
+
 # THE PRINTING.
 #
 # `nn_item_show` is upstream's own text WHERE upstream has text: the
@@ -299,7 +299,7 @@ def nn_item(+t: T.Tensor) -> Itm: nn_item.of(nn_item_numel(t), t)
 #     the value (`3.500000`) and one spells its EXACT float32 BIT PATTERN
 #     (`1080033280`), which is what CPython's `struct.pack('<f', 3.5)` says
 #     and which no rounding can move.
-# ===========================================================================
+
 
 def nn_item_show.v(v: O.Const) -> String:
   match v:
@@ -339,7 +339,7 @@ def nn_item_size(it: Itm) -> String:
     case ItmVal{dt, v}: U32.show(S.Dt.itemsize(dt))
     case _: "NONE"
 
-# ===========================================================================
+
 # THE ROWS.
 #
 # every `want` below is an answer measured in CPython in this repo's `.venv`
@@ -364,7 +364,7 @@ def nn_item_size(it: Itm) -> String:
 # RIGHT NOW, and a file that imports a file being rewritten is a file that
 # breaks when the other unit lands. The line is one line and it is reprinted
 # here rather than depended upon.
-# ===========================================================================
+
 
 def nn_item_line(nm: String, got: String, want: String) -> IO(Unit):
   IO.print(String.concat([nm, " got=", got, " want=", want]))

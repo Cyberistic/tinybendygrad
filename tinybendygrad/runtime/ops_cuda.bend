@@ -350,12 +350,12 @@ def cu.init(+device: String, +maj: U32, +min: U32, +t: CL.Tr) -> CuDev:
 # `pm_bufferize` recognises by TAG, plus cu:114's `name="b"` rule which is keyed on
 # the NAME and a `b.tag[0] == "function"` test. Three rows and a three-way
 # dispatch, which is two Bool.picks and not a `U32` ladder.
-# ===========================================================================
+
 # `CUDAQueue` -- the COMMAND ENCODER, cu:28-66. `self.h` is the handle the last
 # `ccall` returned and every method stores it, so the trace records the CALL and
 # the queue's `h` is the id the trace minted -- `Tr.here` of the trace in front of
 # the call.
-# ===========================================================================
+
 
 # cu:36-37 `return self.rt_vars.after(self.h).index(2 if
 # self.queue.startswith("COPY") else 1).load()` -- the stream slot, and the
@@ -454,11 +454,11 @@ def cu.submit(+t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_SIGNAL(), U32.show(CU_IDX_ST
 def cu.exec(nbufs: U32, nvals: U32, +t: CL.Tr) -> CL.Tr:
   cu.launch(0, t)
 
-# ===========================================================================
+
 # `CUDAAllocator`, cu:71-95. `_alloc` has THREE branches and the third is the
 # only one that is not an early return: `external_ptr`, then `host or
 # cpu_access`, then device. Two of the three are `Bool.pick`s over one `Spec`.
-# ===========================================================================
+
 
 # cu:74 `if options.external_ptr: return BufferStorage(options.external_ptr)` --
 # NO CALL AT ALL, and that is the row: the external branch traces nothing.
@@ -610,9 +610,9 @@ def t_err() -> IO(Unit):
     CL.urow("cu_host_registered", CUDA_HOST_REGISTERED())
     CL.urow("cu_success", CUDA_SUCCESS())
 
-# ===========================================================================
+
 # PART 4 -- CUDA. cu:17-129.
-# ===========================================================================
+
 
 def CUDEV0() -> String: ""
 def CUDEV1() -> String: "CUDA:1"
@@ -720,7 +720,6 @@ def t_cualloc() -> IO(Unit):
     CL.brow("cu_map_ok_reg", cu.map_ok(True{}))
     CL.srow("cu_unmap_ours", vend.trace(CL.Tr.calls(cu.unmap.at(True{}, 7, CL.Tr.of()))))
     CL.srow("cu_unmap_theirs", vend.trace(CL.Tr.calls(cu.unmap.at(False{}, 7, CL.Tr.of()))))
-    # THE LITERAL IS THE POINT. This row used to be `urow("cu_page_size",
     # PAGE_SIZE())`, and that asserted nothing: the expected value was a def of
     # the thing it was checking, so no edit to the constant could move the row --
     # the shape `device.bend` shipped as `sig=0 4 5`. 4096 is a JUDGEMENT and not
@@ -751,7 +750,7 @@ def main() -> IO(Unit):
     # the same).
     t_cualloc()
 
-# ===========================================================================
+
 # THE SPLIT, MEASURED. 120 of the pre-split file's 445 rows are here, and every
 # one is byte-identical to the pre-split snapshot. The 22 `x_*` cross-vendor
 # rows are NOT: they are in `ops_hip.bend`, for the DAG reason in this file's
@@ -783,4 +782,4 @@ def main() -> IO(Unit):
 #                consequence is a LOC observation, not a bug: upstream cu:75 is
 #                ONE test (`options.host or options.cpu_access`), so `Spec`'s
 #                two `Bool` fields could be one.
-# ===========================================================================
+

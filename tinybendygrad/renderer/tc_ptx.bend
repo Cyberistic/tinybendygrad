@@ -19,7 +19,7 @@
 # `renderer/ptx.bend`
 # imports this file as `P` and is unaffected.
 #
-# ---------------------------------------------------------------------------
+
 # THE GATE, AND IT IS CODE.  `gates/tc_ptx_render_census-gate.py` runs BOTH lanes
 # and diffs them BYTE FOR BYTE:
 #   .venv/bin/python gates/tc_ptx_render_census-gate.py
@@ -70,7 +70,7 @@
 # `lambda d,a,dt,name: f"rcp.approx.{name} {d}, {a};"` -- the DTYPE IS NOT READ.
 # MEASURED: three rows (`asm RECIP bool`, `u32`, `i32`).
 #
-# ===========================================================================
+
 # ptx.py. `PTXRenderer`'s class attributes are the OPTS of a device, so they are
 # a `Data` record and `ptx_of(ver)` is the inheritance (convention 1). Python
 # MUTATES `self.extra_matcher` in `__init__` when `int(arch[3:]) < 80`
@@ -80,14 +80,14 @@
 # `self.compiler` (ptx.py:145) is `runtime/support/compiler_cuda.py` and is a C
 # effect in the port's own boundary table, so `ptx_of` does not carry it:
 #   TODO(p3) ptx.py:145 symbol=PTXRenderer.__init__  self.compiler -- NVPTXCompiler / PTXCompiler
-# ===========================================================================
+
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./tc.bend as T
 
-# ===========================================================================
+
 # ptx.py. `PTXRenderer`'s class attributes are the OPTS of a device, so they are
 # a `Data` record and `ptx_of(ver)` is the inheritance (convention 1). Python
 # MUTATES `self.extra_matcher` in `__init__` when `int(arch[3:]) < 80`
@@ -97,7 +97,7 @@ import ./tc.bend as T
 # `self.compiler` (ptx.py:145) is `runtime/support/compiler_cuda.py` and is a C
 # effect in the port's own boundary table, so `ptx_of` does not carry it:
 #   TODO(p3) ptx.py:145 symbol=PTXRenderer.__init__  self.compiler -- NVPTXCompiler / PTXCompiler
-# ===========================================================================
+
 type Px is Data:
   Px{suffix: String, prefix: String, barrier: String, gmax: List<&2, U32>, lmax: List<&2, U32>, smax: U32, ver: U32}
 
@@ -165,7 +165,7 @@ def px_suffix() -> String: "PTX"
 # only per-arch thing `__init__` uses besides `tc.get_cuda`.
 def ptx_of(+ver: U32) -> Px: Px{px_suffix(), px_prefix(), px_barrier(), px_gmax(), px_lmax(), px_smax(), ver}
 
-# ===========================================================================
+
 # `types` / `mem_types` / `cast_types` -- ptx.py:156-161.
 #
 #   types:       int8 s16, int16 s16, int32 s32, int64 s64, uint8 u16,
@@ -273,17 +273,17 @@ def cast_types_of(+dt: S.Dt) -> String:
         case S.CVoid{}:      ""
         case _:              cast_types_pri(pri)
 
-# ===========================================================================
+
 # `mem_type(x)` -- ptx.py:59: `'shared' if x.addrspace == AddrSpace.LOCAL else
 # 'global'`. Two addresses are LOCAL or not, and the `else` is the answer for
 # every other AddrSpace, so this is a two-arm match on the addrspace.
-# ===========================================================================
+
 def mem_type(addr: S.Addr) -> String:
   match addr:
     case S.ALocal{}: "shared"
     case _:          "global"
 
-# ===========================================================================
+
 # :11 `render_val(x, dtype)` --
 #
 #   if dtypes.is_float(dtype):
@@ -313,7 +313,7 @@ def mem_type(addr: S.Addr) -> String:
 #
 # `bits` is the float's BIT PATTERN in the float arms and the integer's VALUE in
 # the integer arm -- see the note on the two numeric parameters below.
-# ===========================================================================
+
 def hexdig() -> String: "0123456789ABCDEF"
 
 def hex1(+x: U32) -> String:
@@ -402,7 +402,7 @@ def Dtf.is_float(d: Dtf) -> Bool:
 
 def Dtf.of(+dt: S.Dt) -> Dtf: Dtf{S.Dt.is_bool(dt), S.Dt.is_int(dt), S.Dt.is_float(dt)}
 
-# ===========================================================================
+
 # `asm_for_op` -- ptx.py:18-36. TWENTY-ONE lambdas keyed by op, so ONE def with a
 # `match` on the op (convention 1: no closures in a record, and the brief's rule
 # 31 says a table of closures would be unprintable).
@@ -416,7 +416,7 @@ def Dtf.of(+dt: S.Dt) -> Dtf: Dtf{S.Dt.is_bool(dt), S.Dt.is_int(dt), S.Dt.is_flo
 # `String.drop(name, 1n)`: the `.b32` / `.b16` / `.b64` suffix every bitwise arm
 # spells. `SHL` is `shl.b{name[1:]}` and the other bitwise arms are
 # `{and,or,xor}.b{name[1:]}`.
-# ===========================================================================
+
 def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: String, +f: Dtf) -> List<&2, String>:
   match op:
     case O.OpsRECIP{}: [String.concat(["rcp.approx.", name, " ", d, ", ", a, ";"])]
@@ -454,7 +454,7 @@ def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: Stri
 # `void`/`weakint` arms above refused to make, and it was refused there because `pri` put
 # three dtypes on one entry; here the twenty-one put none.
 
-# ===========================================================================
+
 # :38-39 `supports_half` / `doesnt_support_half`. The first is a SEVEN-TUPLE
 # LITERAL, so its order is the LITERAL's -- EXP2,ADD,MUL,MAX,CMPLT,WHERE,TRUNC --
 # and NOT `asm_for_op`'s key order, which would put TRUNC second. The second is
@@ -463,7 +463,7 @@ def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: Stri
 # seven names therefore live in exactly ONE place, `supports_half`, and the
 # membership test reads it -- so a wrong name moves BOTH rows, and a right name
 # in the wrong position moves the first.
-# ===========================================================================
+
 def supports_half() -> List<&2, O.Op>:
   [O.OpsEXP2{}, O.OpsADD{}, O.OpsMUL{}, O.OpsMAX{}, O.OpsCMPLT{}, O.OpsWHERE{}, O.OpsTRUNC{}]
 
@@ -491,17 +491,17 @@ def dsh.go(+ops: List<&2, O.Op>, +acc: List<&2, O.Op>) -> List<&2, O.Op>:
 
 def doesnt_support_half() -> List<&2, O.Op>: dsh.go(asm_keys(), Nil{})
 
-# ===========================================================================
+
 # :78 `modifier(a, b)` -- `'.rzi' if is_int(a) and is_float(b) else '.rn' if
 # is_float(a) and (a.itemsize < b.itemsize or is_int(b) or b == bool) else ''`.
 # Three clauses, ANDed in two pairs; the gate runs all 9x6 dtype pairs because
 # the third clause alone distinguishes float->float from half->float.
-# ===========================================================================
+
 def modifier(+fa: Dtf, +fb: Dtf, +a: S.Dt, +b: S.Dt) -> String:
   Bool.pick(String, Bool.and(Dtf.is_int(fa), Dtf.is_float(fb)), ".rzi",
     Bool.pick(String, Bool.and(Dtf.is_float(fa), Bool.or(U32.is_lt(S.Dt.itemsize(a), S.Dt.itemsize(b)),
       Bool.or(Dtf.is_int(fb), O.eq_dt(b, S.boolean())))), ".rn", ""))
-# ===========================================================================
+
 # THE STAGE 2 GATE -- ptx.py's emitters. Every row is a STRING beside CPython's.
 #
 #   * `render_val` over half / float / unsigned -- the three PORTED arms. The
@@ -516,7 +516,7 @@ def modifier(+fa: Dtf, +fb: Dtf, +a: S.Dt, +b: S.Dt) -> String:
 #   * the three dtype tables, the two maxima, the suffix, the barrier (TAB
 #     escaped) and the kernel prefix split one row per line plus a COUNT.
 #   * `supported_dtypes` and `tensor_cores` for three arches.
-# ===========================================================================
+
 def pm_n_rules() -> U32: 8
 
 
@@ -807,19 +807,19 @@ def r_ptx_tcs() -> String:
 # tuples, `modifier`, `render_val`, the three tables, the constants, then
 # `supported_dtypes` and `tensor_cores`.
 
-# ===========================================================================
+
 # THE ESCAPE, because `PTXRenderer.barrier` contains a real TAB
 # ("bar.sync\t0;") and `render_kernel` contains real NEWLINES, and neither is
 # visible in a one-line row. CPython's `repr` escapes them and the oracle escapes
 # them, so the Bend side escapes them the same way -- which also means a DROPPED
 # tab is a diff rather than a shorter line.
-# ===========================================================================
 
 
 
 
 
-# ===========================================================================
+
+
 # `fmt` -- ptx.py:164, AT THE PIN.
 #
 #     def fmt(line): return "\t" + line.replace(" ", "\t" if len(line.split(" ")[0]) > 7 else "\t\t", 1)
@@ -837,7 +837,7 @@ def r_ptx_tcs() -> String:
 # kept it, and the two agreed until the 2026-10-16 re-vendor moved the tree
 # past that commit. a comment that argues for a behaviour upstream deleted is
 # A WRONG BEHAVIOUR WITH A DEFENCE, so this file's own `$` prose went with it.
-# ===========================================================================
+
 
 # `line.split(" ")[0]` -- the mnemonic, i.e. everything before the first space.
 def fmt_head(+cs: List<&2, Char>, +acc: List<&2, Char>) -> List<&2, Char>:
@@ -865,7 +865,7 @@ def fmt_rep_of(+line: String) -> String: Bool.pick(String, fmt_wide(line), tab()
 def fmt(+line: String) -> String:
   String.concat([tab(), String.from_list(fmt_rep(String.to_list(line), fmt_rep_of(line), Nil{}))])
 
-# ===========================================================================
+
 # `render_wmma(ctx, wmma)` -- ptx.py:61-76. THE `mma.sync` SPELLING, and the
 # only place in this file where the ACCUMULATOR layout is named in text.
 #
@@ -881,7 +881,7 @@ def fmt(+line: String) -> String:
 # line uses `epr(dtype_out)` and the C unpack line uses it too -- getting that
 # wrong changes the number of registers, not the text, which is why the gate
 # runs FOUR fixtures: half/float, half/half, float/float and a one-element pack.
-# ===========================================================================
+
 def dtmap_in(dt: S.Dt) -> String: Bool.pick(String, O.eq_dt(dt, S.single()), "tf32", "f16")
 
 def dtmap_out(dt: S.Dt) -> String: Bool.pick(String, O.eq_dt(dt, S.single()), "f32", "f16")
@@ -974,7 +974,7 @@ def render_wmma(n: U32, m: U32, k: U32, +di: S.Dt, +dou: S.Dt, +w: Wmr) -> List<
   List.concat(&2, String, [pack_all(Wmr.ra(w), Wmr.wa(w), o1, Nil{}), pack_all(Wmr.rb(w), Wmr.wb(w), o1, Nil{}),
     pack_all(Wmr.rc(w), Wmr.wc(w), o2, Nil{}), [mma_line(n, m, k, di, dou, w)], unpack_all(Wmr.ro(w), Wmr.wc(w), o2, Nil{})])
 
-# ===========================================================================
+
 # `render_kernel` -- ptx.py:163-169. THE HEADER, one row per emitted line.
 #
 #     kernel = '\n'.join(map(fmt, [f".reg .{reg.split('_')[-2]} %{reg}<{cnt}>;" for reg,cnt in regs] + kernel + ["ret;"]))
@@ -991,7 +991,7 @@ def render_wmma(n: U32, m: U32, k: U32, +di: S.Dt, +dou: S.Dt, +w: Wmr) -> List<
 # `launch_bounds = prod([d.vmax for d in local_dims])` reads each local
 # dimension's bound off the SPECIAL's src, which is the naming walk's fold and so
 # is stage 3 as well; the header takes the product as a PARAMETER here.
-# ===========================================================================
+
 # `.param .{'u64' if u.addrspace is GLOBAL else types[u.dtype]} {name}` -- a
 # GLOBAL buffer is a 64-bit pointer whatever its dtype, and a non-GLOBAL one is
 # the dtype's PTX name. `is_glob` is the Bool, because `S.Addr` would drag the
@@ -1185,9 +1185,8 @@ def main() -> IO(Unit):
 #
 # the table is the 2026-10-06 reading, and the `py=` column was removed.  The
 # numbers here are ROWS THAT MOVE, and they were measured with the transcribed
-# `py=` halves this file no longer has; the moved-row counts are the same (a
 # `py=` half that is derived cannot move a row that the `got=` half did not),
 # but the CONTENT column of the original table is gone with it.  M51 is the one
 # row measured AFTER, on 2026-10-22, and it is the only number here this
 # commit's own plant produced.
-# ===========================================================================
+

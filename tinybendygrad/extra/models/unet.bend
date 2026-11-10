@@ -12,7 +12,7 @@ import ./../../mixin/creation.bend as CR
 import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/unet.py (262 loc). not yet ported.
 #
 # the largest file in this directory after inception.py, and the only one that
@@ -72,7 +72,7 @@ import ./../datasets/__init__.bend as D
 # weights happen to be zero. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`. Each message names
 # the upstream `path:line` of the FIRST MISSING SYMBOL.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -82,11 +82,11 @@ def un_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :6-7 THE MODULE-LEVEL ALIAS BLOCK. "allow for monkeypatching" upstream. It is
 # restated as three refusals because all three NAMES are absent and a reader
 # deserves to see which.
-# ---------------------------------------------------------------------------
+
 
 # :6 Linear, Conv2d, GroupNorm, LayerNorm = nn.Linear, nn.Conv2d, nn.GroupNorm, nn.LayerNorm
 def un_alias_nn() -> D.Refused:
@@ -105,9 +105,9 @@ def un_alias_gelu() -> D.Refused:
 # "`spec.bend`'s own heads (`half`, `bfloat16`, `single`, `double`) are tinyspec's".
 def un_alias_dtype() -> S.Dt: S.half()
 
-# ---------------------------------------------------------------------------
+
 # :10-15 timestep_embedding.
-# ---------------------------------------------------------------------------
+
 
 # :10 def timestep_embedding(timesteps:Tensor, dim:int, max_period=10000)
 def un_timestep_embedding(+timesteps: T.Tensor, dim: U32, max_period: F32) -> D.Refused:
@@ -129,9 +129,9 @@ def un_emb_cat(+a: T.Tensor, +b: T.Tensor) -> D.Refused:
 def un_supported_dtypes() -> D.Refused:
   D.refuse("extra/models/unet.py:15 timestep_embedding -- MISSING Device[Device.DEFAULT].renderer.supported_dtypes(); it is a RUNTIME CAPABILITY QUERY and runtime/ has no def that answers it")
 
-# ---------------------------------------------------------------------------
+
 # :17-41 ResBlock.
-# ---------------------------------------------------------------------------
+
 
 # :18 def __init__(self, channels, emb_channels, out_channels, num_groups=32)
 def un_resblock_init(channels: U32, emb_channels: U32, out_channels: U32,
@@ -162,9 +162,9 @@ def un_resblock_call(+x: T.Tensor, +emb: T.Tensor) -> D.Refused:
 def un_resblock_add(+h: T.Tensor, +emb_out: T.Tensor) -> D.Refused:
   D.refuse("extra/models/unet.py:39 ResBlock.__call__ -- tn_add (tensor.bend:680 symbol=tn_add.go) and mxw_reshape (mixin/movement.bend:1434 symbol=mxw_reshape) are BOTH built and the fold answers the broadcast (uop/fold.bend:684 symbol=bcast_shape); blocked only by x.sequential at :37")
 
-# ---------------------------------------------------------------------------
+
 # :43-59 CrossAttention.
-# ---------------------------------------------------------------------------
+
 
 # :44 def __init__(self, query_dim, ctx_dim, n_heads, d_head)
 def un_xattn_init(query_dim: U32, ctx_dim: U32, n_heads: U32, d_head: U32) -> D.Refused:
@@ -182,9 +182,9 @@ def un_xattn_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
 def un_xattn_head_split() -> D.Refused:
   D.refuse("extra/models/unet.py:56 CrossAttention.__call__ -- MISSING -1 INFERENCE; mxw_reshape (mixin/movement.bend:1434 symbol=mxw_reshape) takes an explicit List<&2, U32> and does not infer an axis (nn/pool.bend:327 symbol=pool_flatten states the same boundary)")
 
-# ---------------------------------------------------------------------------
+
 # :61-80 GEGLU and FeedForward.
-# ---------------------------------------------------------------------------
+
 
 # :62 def __init__(self, dim_in, dim_out)
 def un_geglu_init(dim_in: U32, dim_out: U32) -> D.Refused:
@@ -205,9 +205,9 @@ def un_ff_init(dim: U32, mult: U32) -> D.Refused:
 def un_ff_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/unet.py:79 FeedForward.__call__ -- FIRST MISSING SYMBOL x.sequential at :80")
 
-# ---------------------------------------------------------------------------
+
 # :82-95 BasicTransformerBlock. THREE LayerNorms AND TWO ATTENTIONS.
-# ---------------------------------------------------------------------------
+
 
 # :83 def __init__(self, dim, ctx_dim, n_heads, d_head)
 def un_btb_init(dim: U32, ctx_dim: U32, n_heads: U32, d_head: U32) -> D.Refused:
@@ -221,9 +221,9 @@ def un_btb_norms(dim: U32) -> D.Refused:
 def un_btb_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
   D.refuse("extra/models/unet.py:91 BasicTransformerBlock.__call__ -- FIRST MISSING SYMBOL Tensor.layernorm at :92, and Tensor.scaled_dot_product_attention behind it")
 
-# ---------------------------------------------------------------------------
+
 # :98-122 SpatialTransformer.
-# ---------------------------------------------------------------------------
+
 
 # :99-100 def __init__(self, channels, n_heads, d_head, ctx_dim, use_linear,
 #                       depth=1, norm_eps=1e-5)
@@ -235,10 +235,10 @@ def un_sp_init(channels: U32, n_heads: U32, d_head: U32, use_linear: Bool, depth
 def un_sp_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
   D.refuse("extra/models/unet.py:112 SpatialTransformer.__call__ -- FIRST MISSING SYMBOL Tensor.permute at :116 (mxw_permute, mixin/movement.bend:1449 symbol=mxw_permute.go, EXISTS) reached only after nn.GroupNorm at :115, which is MISSING")
 
-# ---------------------------------------------------------------------------
+
 # :124-138 Downsample and Upsample. the two shortest classes in the file, and
 # the only ones whose body is one built op.
-# ---------------------------------------------------------------------------
+
 
 # :125 def __init__(self, channels)
 def un_downsample_init(channels: U32) -> D.Refused:
@@ -256,9 +256,9 @@ def un_upsample_expand(bs: U32, c: U32, py: U32, px: U32) -> D.Refused:
 def un_upsample_call(+z: T.Tensor) -> D.Refused:
   D.refuse("extra/models/unet.py:138 Upsample.__call__ -- nn_conv2d EXISTS; blocked by the layer STORE")
 
-# ---------------------------------------------------------------------------
+
 # :141-262 UNetModel.
-# ---------------------------------------------------------------------------
+
 
 # :142-144 def __init__(self, adm_in_ch, in_ch, out_ch, model_ch,
 #                       attention_resolutions, num_res_blocks, channel_mult,
@@ -306,11 +306,11 @@ def un_unet_cat(+x: T.Tensor, +skip: T.Tensor) -> D.Refused:
 def un_unet_out(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/unet.py:262 UNetModel.__call__ -- FIRST MISSING SYMBOL x.sequential")
 
-# ---------------------------------------------------------------------------
+
 # THERE IS NO `if __name__ == \"__main__\":` IN THIS FILE -- upstream ends at
 # :262. `main` below IS the port's own entry and it invents no census, because a
 # 1:1 mirror that emits rows upstream does not emit is not a mirror.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, un_unet_init(None{}, 4, 4, 320, 2, False{}, None{}, None{}, 32, 1.0e-5))

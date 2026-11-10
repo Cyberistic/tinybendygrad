@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/support/amd.bend -- port of tinygrad/runtime/support/amd.py
 #
-# ===========================================================================
+
 # forty-seven lines, and the whole file is pure. No ffi, no process spawn, no
 # environment read -- which makes it the cleanest instrument in this unit:
 # everything below is arithmetic and set membership, and every row is a number
@@ -41,7 +41,7 @@
 #      `amd_ip_*.key` is the row set, and a padded or uppercase formatter moves
 #      every one of them.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers. Def names are
 # UPSTREAM names: `AMDReg.encode`, `import_module.override`, `import_pmc.key`.
 #
@@ -62,7 +62,7 @@
 #   :41-44 import_pmc         PORTED `import_pmc.key` `import_pmc.hex2`
 #   :46-47 import_asic_regs   PORTED `import_asic_regs.n` `import_asic_regs.first`
 #
-# ===========================================================================
+
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- the autogen tables. `import_module` reads `mod.__all__`, and for
@@ -99,7 +99,7 @@
 #   TODO(p3) amd.py:37 -- `raise ImportError(...)`.
 import Base
 
-# ===========================================================================
+
 # `helpers.getbits(value, start, end)` is
 # `(value >> start) & ((1 << (end - start + 1)) - 1)`.
 #
@@ -108,7 +108,7 @@ import Base
 # to 4294967295 -- the right answer by ACCIDENT. An accidental right answer is
 # an answer no mutation can move, so `getbits.mask` takes the width-32 case
 # explicitly rather than relying on the wrap.
-# ===========================================================================
+
 def getbits.width(end: U32, start: U32) -> U32: U32.add(U32.sub(end, start), 1)
 
 def getbits.mask(+width: U32) -> U32:
@@ -130,13 +130,13 @@ def hd(+xs: List<&2, U32>) -> U32: Maybe.default(&2, U32, List.head(&2, U32, xs)
 
 def tl(+xs: List<&2, U32>) -> List<&2, U32>: List.tail(&2, U32, xs)
 
-# ===========================================================================
+
 # `AMDReg.encode(kwargs)`: `functools.reduce(int.__or__, (value <<
 # fields[name][0] for name, value in kwargs.items()), 0)`. The fold is over the
 # KWARGUMENT ORDER, which Python preserves, so two OVERLAPPING fields would
 # depend on it. `amd_enc_rev` is the row for the reordering and
 # `amd_enc_same` for the disjoint-fields case where the order cannot show.
-# ===========================================================================
+
 def enc.go(+vals: List<&2, U32>, +starts: List<&2, U32>, +acc: U32) -> U32:
   match vals:
     case Nil{}: acc
@@ -147,11 +147,11 @@ def enc.go(+vals: List<&2, U32>, +starts: List<&2, U32>, +acc: U32) -> U32:
 
 def AMDReg.encode(+vals: List<&2, U32>, +starts: List<&2, U32>) -> U32: enc.go(vals, starts, 0)
 
-# ===========================================================================
+
 # `AMDReg.decode(val)`: `{name: getbits(val, start, end) for ...}`, joined in
 # FIELD ORDER. Four parallel lists rather than a record: the table is data, and
 # a record would need `+` for the reads the walk does.
-# ===========================================================================
+
 def dec.go(+names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32>,
            +val: U32, +acc: List<&2, String>) -> List<&2, String>:
   match names:
@@ -168,11 +168,11 @@ def dec.go(+names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32
 def AMDReg.decode(+val: U32, +names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32>) -> String:
   String.join(dec.go(names, starts, ends, val, []), ",")
 
-# ===========================================================================
+
 # `AMDReg.fields_mask(*names)`: `reduce(int.__or__, ((((1 << (hi - lo + 1)) - 1)
 # << lo) for nm in names), 0)`. The NAME selection is `self.fields[nm]`, a dict
 # lookup, so what is gated here is the mask ARITHMETIC over the chosen ranges.
-# ===========================================================================
+
 def AMDReg.width(+start: U32, +end: U32) -> U32: getbits.mask(getbits.width(end, start))
 
 def msk.go(+starts: List<&2, U32>, +ends: List<&2, U32>, +acc: U32) -> U32:
@@ -202,13 +202,13 @@ def fld.go(+names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32
 def AMDReg.fields(+names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32>) -> String:
   String.join(fld.go(names, starts, ends, []), ",")
 
-# ===========================================================================
+
 # `__post_init__`. `AMDReg.addr` is `instance_tuple[segment] + offset` -- the
 # comprehension's loop variable shadowing the field -- so it takes the instance
 # TUPLES, not the field. `jget` answers 0 out of range, which is why
 # `AMDReg.addr_ok` exists: the Python raises IndexError there, and a port that
 # answered a number instead would look fine and be wrong.
-# ===========================================================================
+
 def jget(+xs: List<&2, U32>, +j: U32) -> U32:
   match xs:
     case Nil{}: 0
@@ -294,13 +294,13 @@ def hx2.oflist(+xs: List<&2, U32>) -> String: hx2.oflist.go(xs, "")
 # (`match` and `where`), so it cannot head a def and is not the reason for the
 # rename -- the rename is because there is nothing to match.
 #
-# ===========================================================================
+
 # `AMDIP.__getattr__`: `name.replace('reg', 'mm')` replaces EVERY occurrence,
 # not the first -- so `regregMM_A` becomes `mmmmMM_A` and is NOT found, which
 # is why `amd_ga_*_rewrite_regregMM_A` sits BESIDE `amd_ga_*_regregMM_A`. The
 # arm position is load bearing: `rep.at` is checked at the HEAD of the remaining
 # string, and a scan that checked at the TAIL would replace differently.
-# ===========================================================================
+
 def hc(+cs: List<&2, Char>) -> Char: Maybe.default(&2, Char, List.head(&2, Char, cs), ' ')
 
 def rep.at(+cs: List<&2, Char>, +needle: List<&2, Char>) -> Bool:
@@ -340,12 +340,12 @@ def AMDIP.ga(+found_direct: Bool, +found_rewrite: Bool) -> U32:
 def AMDIP.ga_err(+ipname: String, +query: String) -> String:
   String.concat(["AttributeError: ", String.to_upper(ipname), " has no register ", query])
 
-# ===========================================================================
+
 # `import_module`. Three conjuncts, and the second is a TUPLE comparison against
 # a variable-length tuple -- so `gc_9` (v=(9,)) is `<=` (9,4,3) while `gc_10` is
 # not. `import_module.vle` is that comparison and `import_module.vers` is
 # `tuple(map(int, c.split('_')[1:]))`.
-# ===========================================================================
+
 def t3.eq3(a: U32, b: U32, c: U32, x: U32, y: U32, z: U32) -> Bool:
   Bool.and(U32.is_eq(a, x), Bool.and(U32.is_eq(b, y), U32.is_eq(c, z)))
 
@@ -481,10 +481,10 @@ def SRT.greatest(+xs: List<&2, String>) -> String: SRT.go(xs, "")
 def FAKE_ALL() -> List<&2, String>:
   ["gc_9_4_3", "gc_9_0_0", "gc_11_0_0", "gc_9_4_2", "gc_9_4_3_1", "gfx_9_4_3"]
 
-# ===========================================================================
+
 # THE GATE. Every `amd_` row is a row of `.agents/slop/ext_oracle.py` section
 # `am`, which calls the real `amd.py` against the real autogen package.
-# ===========================================================================
+
 def t_getbits() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- srow("amd.getbits_0_0_31", U32.show(getbits(0, 0, 31)))

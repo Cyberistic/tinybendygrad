@@ -8,7 +8,7 @@
 # `MTLComputePipelineState`, an indirect command buffer, and a committed
 # command buffer.
 #
-# ---------------------------------------------------------------------------
+
 # DOES it compose with cstyle.bend? YES, AND the seam is one binding.
 #
 # `cstyle.py:398-403` gives a Metal kernel EXACTLY ONE buffer argument --
@@ -59,7 +59,7 @@
 # block descriptor nor name its sixteenth byte. Hand the seam an already-compiled
 # MTLB and the submission path is complete; hand it a block and `compile` runs.
 #
-# ---------------------------------------------------------------------------
+
 # THERE IS NO dtype-to-MTLPixelFormat TABLE IN ops_metal.py, and the brief asked
 # for one. `grep -n PixelFormat tinygrad/runtime/ops_metal.py` is empty and
 # `MTLPixelFormat` reaches this file only through `autogen/metal.py`, where it
@@ -72,12 +72,12 @@
 # slice are the two directions, gated by `mt_fam_*` and `mt_arch_*` with a
 # last-wins mutation (M30) because `reversed()` is what makes it last-wins.
 #
-# ---------------------------------------------------------------------------
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one objc call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER). There is no third kind.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF.
 #
 #   :15  REQUEST_TYPE_COMPILE       PORTED  a constant
@@ -140,11 +140,10 @@
 #   :284-285 the autorelease pool   PORTED  pop-then-push, in that order
 #   :267 the ICB weak-dict         PORTED  `icb_keep`, and it WAS not called -- upstream stores the ICB entry in `self.icbs`
 #   tinygrad/runtime/ops_metal.py:276-281 the profile scan PORTED  `dev.sync_scan` -- upstream's `profile_slots` scan -- and it WAS NOT CALLED symbol=synchronize
-#   :23   to_ns_str                PORTED  `cns_string`, and it WAS NOT WIRED -- upstream builds the NSString in `to_ns_str`
 #   :42-71 compile                 CLOSED  all of it but the block pointer
 #   --    THE CONSTANTS            PORTED  65 with a CPython authority, all gated
 #
-# ---------------------------------------------------------------------------
+
 # THREE defs were written and nothing reached them, and that is the finding this
 # session started from. `icb_keep` -- upstream's `icbs` (tinygrad/runtime/ops_metal.py:267 symbol=new_icb) --, `dev.sync_scan`'s list (`sync_starts`,
 # :276-281) and `cns_string` (:23, `to_ns_str`) each carried a comment saying a row checked it,
@@ -156,11 +155,10 @@
 # NAME in place rather than dropping the whole line, because most defs here are ONE
 # LINE and dropping the line hides every constant they read. It found 17 dead defs
 # on top of `main`. Fifteen are now live (four rows) and TWO are gone: the `Fq`
-# record and its `fq()` constructor, a vestige of a shape the family fold no longer
 # has -- `check_family` takes `f` as a PARAMETER, so a record bought nothing a
 # string does not already do.
 #
-# ===========================================================================
+
 # THE FIVE WALLS.
 #
 # 1. A DYNAMIC LIBRARY LOAD (:18, :35). `DLL("CoreGraphics", "CoreGraphics")`
@@ -179,7 +177,6 @@
 #    `stringWithUTF8String:` -> `newFunctionWithName` -> `setComputeFunction:` --
 #    the order Python's argument evaluation produces, and NOT the order a name that
 #    "is a literal" would produce. That was a dead def until this session and
-#    `mt_pipe_order` is the row that had been lying.
 #    TODO(p3) runtime/ops_metal.py:23  -- `stringWithUTF8String:` -> NSString.
 #
 # 3. PICKLE (:41). `__reduce__` exists only so a forked multiprocessing worker
@@ -196,7 +193,6 @@
 #    their bodies are UOp graphs, and building one needs `./uop/ops.bend` and the
 #    HCQ2 lowering this file does not own, so the port carries neither.
 #    `pm_bufferize` WAS a third one and it is GONE from upstream at the pin, so
-#    the port carries it no longer -- see the section that used to hold it.
 #    The `pm_encode` and `pm_lower` rules are tinygrad/runtime/ops_metal.py:185-188.
 #    TODO(p3) runtime/ops_metal.py:186  symbol=MetalQueue  -- `MetalQueue(s).encode()`.
 #    TODO(p3) runtime/ops_metal.py:192  symbol=mtl_msg  -- the `pm_lower` fence poll.
@@ -207,7 +203,7 @@
 # the trace is the argument of the seam: what survives is the ORDER, the
 # SELECTOR, and the ARITHMETIC, which is all the structure there is.
 #
-# ===========================================================================
+
 # THE two numbers that are not in the port at all, and why.
 #
 #  * `int(cb.GPUStartTime() * 1e9)` at :281. `base.bend` has no F64, so the
@@ -220,7 +216,7 @@
 #    spelling for (a `bytes` repr). The gate diffs the PREFIX of each, beside
 #    CPython's own output, and says so in the row name.
 #
-# ===========================================================================
+
 # WHAT device.bend OWES this file, and it OWES it four things, all consumed:
 #
 #  1. `D.Bar` / `D.Bn` / `D.bnew` are the Buffer. `_alloc` (:179) and `new_icb`
@@ -240,7 +236,7 @@
 #     recycled, which is a decision this file does not have to make and gets
 #     from `D.Bspec` by naming it. `mt_nolru` is the row.
 #
-# ===========================================================================
+
 # NO PROOFS FAIL HERE, and the brief expected some. The Metal FFI calls are
 # `@extern` seams in `dtype.bend`'s sense -- a `def ... -> IO(R)` whose body is
 # two `import "./x.c"` lines -- and every one of them is expected to make its
@@ -256,14 +252,14 @@ import ../helpers.bend as H
 import ../device.bend as D
 import ../LAWS/spec.bend as S
 
-# ===========================================================================
+
 # THE CONSTANTS. Every one of these is READ OUT OF tinygrad or out of
 # `autogen/metal.py`, and the gate's expectation is generated by calling
 # CPython -- see `.agents/slop/mt_oracle.py`, which `ast`-walks this same file
 # for the selector order and opens a real `MetalDevice` for the arch, AND
 # `.agents/slop/mt_audit2.py`, which is the HAND MAP.
 #
-# ---------------------------------------------------------------------------
+
 # WHY THE HAND MAP EXISTS, since `ops_nv.bend` shipped 606 green rows with 33 of
 # 219 constants WRONG. The gate tests GRAPHS; a constant answers to a generated
 # header, so no number of rows finds a wrong one. `const-audit.py` was written to
@@ -273,7 +269,7 @@ import ../LAWS/spec.bend as S
 # same name (`ADDR_SIZE` is `Ops.GETADDR`'s dtype, not a header field). Its
 # `0 likely-WRONG` is NOT a verdict and is never quoted as one.
 #
-# ---------------------------------------------------------------------------
+
 # TODO(p1): NOT a phase claim -- a severity (.agents/TODO.md:11110). THIS file is a port of a superseded `ops_metal.py`, and its whole
 # selector/message layer has no referent in the tree any more. It was written
 # against `7b6766c2f`; the tree is `ad117c928`, which DELETED `SELECTORS`,
@@ -286,7 +282,6 @@ import ../LAWS/spec.bend as S
 # and that oracle now emits 0 rows and exits 1. What is NOT fixed is the drift:
 #
 #   * `sels_len` 18 is `d.sels.size`; the tree's buffer is `handles` and is 5.
-#   * `HDR_CMD`/`HDR_PIPE` model a `header` word array that no longer exists.
 #   * `SEL_*` index `(HANDLES + SELECTORS).index(name)`, and `SELECTORS` is gone.
 #   * `RET_VOIDP` names entry 2 of a dict; entry 2 of the tree's LIST is
 #     `sel_registerName`, which is a different thing entirely.
@@ -304,7 +299,7 @@ import ../LAWS/spec.bend as S
 # they are a port-internal tag space, and what can be wrong is the NAME -> meaning
 # map, so the audit checks that map -- every tag against the `ops_metal.py` line
 # that carries the selector the port claims, and the tag set for density.
-# ===========================================================================
+
 
 # ops_metal.py:15. "there aren't any docs or symbols" -- the port says so too.
 def REQUEST_TYPE_COMPILE() -> U32: 13
@@ -371,7 +366,7 @@ def HDR_PIPE() -> U32: 1
 # global contributes eight bytes whatever its dtype. :111.
 def ADDR_SIZE() -> U32: 8
 
-# ===========================================================================
+
 # THE SELECTOR TABLE. `mtl_sel` (:91) is `(HANDLES + SELECTORS).index(name)`,
 # and the trace needs the SAME index space for the objc messages ops_metal.py
 # sends outside `mtl_msg` -- `newBufferWithLength_options` is just as much an
@@ -383,7 +378,7 @@ def ADDR_SIZE() -> U32: 8
 # `D.AEnt` is `{ix: U32, nm: String}` and is reused rather than retyped: a
 # table row with its own index is the shape that survives Bend's matcher (see
 # device.bend's header, constraint B).
-# ===========================================================================
+
 def sel_table() -> List<&2, D.AEnt>:
   # HANDLES, :85. Five, and index 3 and 4 are the two the sels table REWRITES
   # at :237 -- `self.sels.host.view(fmt='Q')[3:5] = [addressof(self.table),
@@ -503,7 +498,7 @@ def RET_VOIDP() -> U32: 2
 # information and the port keeps it: the two placeholders differ by TAG.
 def PLACEHOLDER_IX() -> U32: 0
 
-# ===========================================================================
+
 # THE call kinds. `k` is the FFI entry point, and for a `mtl_msg` the identity
 # of the call is `sel` rather than `k` -- which is why `commit` can be both the
 # command buffer's (SEL_COMMIT, CALL_MSGSEND) and the residency set's
@@ -534,7 +529,7 @@ def PLACEHOLDER_IX() -> U32: 0
 # withRange: the range LENGTH, the dispatch pair the `zero` word index, the
 # set/dispatch pair the word index, encodeSignalEvent:value: the signalled
 # value, commit 0, setComputePipelineState: the word index of the pipeline.
-# ===========================================================================
+
 def CALL_CGS_CREATE() -> U32: 0
 def CALL_CGS_BUILD() -> U32: 1
 def CALL_SYSDEVICE() -> U32: 2
@@ -573,9 +568,9 @@ def CALL_AUTORELPUSH() -> U32: 34
 def CALL_MSGSEND() -> U32: 35
 def CALL_STORE() -> U32: 36
 
-# ===========================================================================
+
 # THE TYPES.
-# ===========================================================================
+
 
 # ONE call and the one argument the gate reads. Three fields, and each is
 # load-bearing: `k` for the direct calls (where the selector alone would not
@@ -656,14 +651,14 @@ def Tr.refuse(t: Tr, ok: Bool) -> Tr:
   match t:
     case Tr{calls, next, refused}: Tr{calls, next, Tr.refuse.at(refused, ok)}
 
-# ===========================================================================
+
 # READING THE TRACE. Same three helpers the WebGPU template has, and the same
 # one fix it needed: `Tr.has.go`'s FUEL IS THE TRACE LENGTH and the answer is
 # `at == patlen`. With the fuel set to the PATTERN length it returns True after
 # `patlen` entries without ever comparing `at`, and a REVERSED pattern matches
 # -- which is why `mt_has_rejects` is the first row in the gate and why every
 # order row below it is worth printing.
-# ===========================================================================
+
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
     case 0n: got
@@ -763,13 +758,13 @@ def str_eq.go(a: List<&2, String>, b: List<&2, String>, bad: Bool) -> Bool:
         case Nil{}: False{}
         case y <> u: str_eq.go(t, u, Bool.or(bad, Bool.not(String.eq(x, y))))
 
-# ===========================================================================
+
 # THE REFUSAL MESSAGES. Every one of these is USER-VISIBLE -- they land in a
 # Python traceback -- so each is a String built by `String.concat` and diffed
 # against CPython's own `f`/`RuntimeError` output. `String.concat` DROPS A
 # LITERAL SILENTLY, which is why the gate prints the string beside the boolean
 # and never gates on a boolean about a string.
-# ===========================================================================
+
 
 # :201, `raise RuntimeError("Cannot allocate a new command queue")`. The whole
 # message is a literal, so it must be a String and not a row about a Bool.
@@ -796,11 +791,11 @@ def msg_noicb() -> String:
 # the seam's own text.
 # TODO(p3) runtime/ops_metal.py:52  -- the callback's `errorMessage`.
 
-# ===========================================================================
+
 # ops_metal.py:29-71 -- MetalCompiler. The part of the Metal chain that produces
 # an MTLB, and the part that is NOT a ctypes call: the three tables below are
 # the whole of the request, and a C seam only has to hand over the bytes.
-# ===========================================================================
+
 
 # ops_metal.py:56,
 #   `metal_version = "metal4.0" if macos_major >= 26 else "metal3.1" if
@@ -935,11 +930,11 @@ def cns_string(t: Tr) -> Tr:
 # the same class allocation three times, and the same selector each time.
 def cnew(t: Tr) -> Tr: Tr.emit(CALL_MSGSEND, sel_ix("new"), 0, t)
 
-# ===========================================================================
+
 # ops_metal.py:103-168 -- MetalQueue. Five accumulators at :107, the argument
 # layout at :111-113, the symbolic arm at :117-120, the ICB at :129-132, the
 # sizes loop at :135-136, `run` at :138-163 and the submit tail at :166-168.
-# ===========================================================================
+
 
 # ONE word of the argument block: its byte offset and its itemsize. :131's
 # `patch(buf, self.rows + ...)` is a list of `(offset, uop)` pairs and the
@@ -1020,7 +1015,7 @@ def Q.ncmds(q: Q) -> U32: U32.from_nat(List.length(&2, Cmd, Q.cmds(q)))
 # `mt_signal_keeps_nbytes` is the row that says the queue did not grow.
 def q.signal(q: Q, v: U32) -> Q: q
 
-# ===========================================================================
+
 # THE ARGUMENT LAYOUT, :110-121, which is the part of this file that is pure
 # logic and therefore the part worth checking.
 #
@@ -1035,7 +1030,7 @@ def q.signal(q: Q, v: U32) -> Q: q
 # the rounding belongs to device.bend -- a second transcription of
 # device.py:364 could disagree with the first silently, and there would be no
 # row in either file to see it.
-# ===========================================================================
+
 def q.items.bufs(n: Nat, acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: acc
@@ -1097,10 +1092,10 @@ def q.flat(rs: List<&2, Row>, acc: List<&2, U32>) -> List<&2, U32>:
     case Nil{}: acc
     case Row{off, k} <> t: q.flat(t, List.append(&2, U32, List.append(&2, U32, acc, [off]), [k]))
 
-# ===========================================================================
+
 # THE THREE STEPS OF `exec`, :112-121, each its own def because each is one
 # numbered line range of the Python and each is a different KIND of update.
-# ===========================================================================
+
 
 # :112, `off := round_up(self.nbytes, 256)`. The 256 is the argument block's
 # alignment and it is the ONLY alignment in `exec`; the one at :118 is 8 and
@@ -1209,7 +1204,7 @@ def q.exec.cmd.on(q: Q, s: Seen, lib: U32, nm: String, ds: List<&2, U32>,
 def q.exec.cmd(+q: Q, +lib: U32, +nm: String, ds: List<&2, U32>, off: U32, mask: U32) -> Q:
   q.exec.cmd.on(q, q.pipe_of(lib, nm, Q.cmds(q)), lib, nm, ds, off, mask)
 
-# ===========================================================================
+
 # ops_metal.py:112-120 -- everything that happens BEFORE the command is
 # appended. Its own def because :118's `len(self.cmds)` is read AFTER the rows
 # are laid out and one `Q` cannot be named twice in a body.
@@ -1217,7 +1212,7 @@ def q.exec.pre(+q: Q, nbufs: Nat, vars: List<&2, U32>, +mask: U32) -> Q:
   q.exec.sizes.at(q.any_sym(mask), Q.ncmds(q),
                   q.exec.rows(q, q.exec.off(Q.nbytes(q)), q.items(nbufs, vars)))
 
-# ===========================================================================
+
 # ops_metal.py:213-215 -- `check_family` and the arch string. THE TABLE IS THE
 # POINT: `enum_MTLGPUFamily` has NINETEEN members and :213 reads it in REVERSE,
 #
@@ -1237,7 +1232,7 @@ def q.exec.pre(+q: Q, nbufs: Nat, vars: List<&2, U32>, +mask: U32) -> Q:
 # `Mac1` and `Mac2`, so `check_family("Mac")` asks about FOUR families and
 # `check_family("Apple")` about TEN. MEASURED on this host:
 # `check_family("Apple") == 1008` and `check_family("Mac") == 2002`.
-# ===========================================================================
+
 def families() -> List<&2, D.AEnt>:
   [D.AEnt{1001, "MTLGPUFamilyApple1"}, D.AEnt{1002, "MTLGPUFamilyApple2"},
    D.AEnt{1003, "MTLGPUFamilyApple3"}, D.AEnt{1004, "MTLGPUFamilyApple4"},
@@ -1310,7 +1305,7 @@ def arch_of(fam: U32) -> String: String.drop(fam_nm(fam), FAM_PREFIX())
 def dev.arch.apple(mac: U32, +apple: U32) -> U32:
   Bool.pick(U32, U32.is_eq(apple, 0), mac, apple)
 
-# ===========================================================================
+
 # ops_metal.py:187-220 -- MetalDevice, the twelve statements of `__init__` in
 # their source order and the four fields the submission path reads.
 #
@@ -1319,7 +1314,7 @@ def dev.arch.apple(mac: U32, +apple: U32) -> U32:
 # `:206`'s `self.residency.value is not None` and `:142`'s
 # `self.dev.residency.value is None` two OPPOSITE reads of the same number.
 # `mt_resid_flip` is the pair and it is the row that sees a `not` moved.
-# ===========================================================================
+
 type Dev is Data:
   Dev{sysdev: U32, queue: U32, resid: U32, event: U32, fence: U32,
       res: List<&2, U32>, nres: U32, arch: String, fam: U32, nics: U32,
@@ -1483,7 +1478,7 @@ def CALL_SELREG() -> U32: 37
 # wearing a number's clothes. `mt_constmap.py` prints the tag set's density instead
 # (`0..37 n=38 DENSE=True`), which is the same claim and IS checkable.
 
-# ===========================================================================
+
 # :222-237 -- `sels` and `mark_resident`, the two halves of the selector
 # table's lifetime. THE FLAG IS THE MEMO: `@functools.cached_property` means the
 # table is built the first time anything READS it, and :237's `if "sels" in
@@ -1563,7 +1558,7 @@ def selreg(t: Tr) -> Tr:
   selreg.go(List.length(&2, String, selectors()), selectors(),
            U32.add(SELS_CNT(), 1), t)
 
-# ===========================================================================
+
 # :228-237, `mark_resident`. TWO PATHS and they are MUTUALLY EXCLUSIVE, which
 # is the load-bearing fact and not an optimisation:
 #
@@ -1660,7 +1655,7 @@ def SLOTS_MIN() -> U32: 4
 def mtl_poll(d: Dev) -> Tr:
   Tr.emit(CALL_MSGSEND, SEL_SIGNALEDVALUE(), 0, Dev.tr(d))
 
-# ===========================================================================
+
 # :146, THE APPLE9 GUARD, and it is a DISJUNCTION whose two conjuncts are true
 # on DIFFERENT devices. That is the fixture family the brief's "two rules claim
 # one node" trap asks for, in the only form this file has:
@@ -1680,7 +1675,7 @@ def mtl_poll(d: Dev) -> Tr:
 # `mt_apple9_mac2` / `mt_apple9_metal4` rows are the ONLY pair an `or` read as
 # an `and` can move -- so those two exist and the Apple rows exist to pin the
 # other direction.
-# ===========================================================================
+
 def APPLE9() -> U32: 9
 def APPLE_OFF() -> Nat: 5n
 
@@ -1701,11 +1696,11 @@ def dev.apple9(+arch: String) -> Bool:
   Bool.or(Bool.not(String.starts_with(arch, "Apple")),
           U32.is_lt(dev.apple_num(arch), APPLE9()))
 
-# ===========================================================================
+
 # `MTLSize`, the one struct the argument marshalling builds by name, and
 # `prod(dims[3:])` -- the local size's product, which is what :262 compares
 # against `maxTotalThreadsPerThreadgroup`.
-# ===========================================================================
+
 type MtlSize is Data:
   MtlSize{w: U32, h: U32, d: U32}
 
@@ -1740,7 +1735,7 @@ def mtl_size.at(+i: U32, +ds: List<&2, U32>) -> MtlSize:
           Maybe.default(&2, U32, List.get(&2, U32, ds, Nat.add(U32.to_nat(i), 1n)), 0),
           Maybe.default(&2, U32, List.get(&2, U32, ds, Nat.add(Nat.add(U32.to_nat(i), 1n), 1n)), 0)}
 
-# ===========================================================================
+
 # ops_metal.py:127-168 -- `submit` and `run`. THE ORDER IS THE PORT and the
 # thirteen calls of `run` are the whole of the submission.
 #
@@ -1748,7 +1743,7 @@ def mtl_size.at(+i: U32, +ds: List<&2, U32>) -> MtlSize:
 # apple9 pair, the stamps pair and `last` -- and the first row of the gate
 # pins the thirteen-STATEMENT shape the source has, arms tagged, because an
 # order claim with no fixture for each arm is decorative.
-# ===========================================================================
+
 def SLOT_PENDING() -> U32: 7
 def SLOT_CBUF() -> U32: 5
 def SLOT_STRIDE4() -> U32: 4
@@ -1978,10 +1973,10 @@ def run.at(+d: Dev, +r: Run, nores: Bool, +a9: Bool, stamps: Bool) -> Tr:
   b2 = run.signal.at(Run.last(r), d, b1)
   Run.t(run.commit(d, b2))
 
-# ===========================================================================
+
 # :127-136 and :166-168 -- `submit`. THE ICB GEOMETRY FIRST, and the two
 # buffer sizes have to AGREE.
-# ===========================================================================
+
 
 # :129, `buf = UOp.placeholder((zero + 24 + 8 * (1 + n + len(pipes)),), dtypes.uint8,
 # device=self.devs, volatile=True, tag=("mtl_icb", tuple(self.cmds), zero + 24))`
@@ -2068,14 +2063,14 @@ def q.submit.at(nostamps: Bool, many: Bool, +d: Dev, +n: U32, +np: U32, +zero: U
             Bool.pick(Tr, many, q.submit.runs2(d, n, np, zero, val, nores, a9, t),
                       q.submit.runs1(d, n, np, zero, val, nores, a9, t)))
 
-# ===========================================================================
+
 # :243-249 -- `pipeline`, `@functools.cache`d on `(lib, name)`. FOUR calls and
 # TWO `checked` refusals, and the order inside :247 is the claim: Python
 # evaluates `setComputeFunction`'s ARGUMENT first, so
 # `newFunctionWithName(to_ns_str(name))` happens BEFORE
 # `setComputeFunction(library.newFunctionWithName(...))`, not after it.
 # `mt_pipe_order` is the row.
-# ===========================================================================
+
 # `checked`'s SECOND refusal, and the arm of `checked` that :249 is. The
 # compiler's `ccompile` magic check is a DIFFERENT function and reusing it here
 # was the first version's bug: it compares a library's head and tail against
@@ -2117,7 +2112,7 @@ def dev.pipeline(+lib_ok: Bool, pipe_ok: Bool, t: Tr) -> Tr:
   dev.pipeline.f(pipe_ok,
                  dev.pipeline.icb(dev.pipeline.fun(dev.pipeline.desc(dev.pipeline.lib(lib_ok, t)))))
 
-# ===========================================================================
+
 # :251-268 -- `new_icb`, the indirect command buffer. It is the LONGEST step
 # list in the file and the one that decides whether a kernel can run at all, so
 # the numbers are the composability claim:
@@ -2127,7 +2122,7 @@ def dev.pipeline(+lib_ok: Bool, pipe_ok: Bool, t: Tr) -> Tr:
 #   six global/local numbers                :264 MTLSize(*dims[:3]), MTLSize(*dims[3:])
 #   the entry point NAME                    :247 newFunctionWithName(to_ns_str(name))
 #
-# ===========================================================================
+
 
 # :256, `desc.setMaxKernelBufferBindCount(1)`. ONE. And :263,
 # `cmd.setKernelBuffer_offset_atIndex(buf.get_storage().meta, off, 0)`, puts it
@@ -2260,11 +2255,11 @@ def icb_setup.go(nat: Nat, cs: List<&2, Cmd>, +lib_ok: Bool, +pipe_ok: Bool,
 def icb_setup(+q: Q, lib_ok: Bool, pipe_ok: Bool, lo: Bool, t: Tr) -> Tr:
   icb_setup.go(List.length(&2, Cmd, Q.cmds(q)), Q.cmds(q), lib_ok, pipe_ok, lo, t)
 
-# ===========================================================================
+
 # :174-185 -- MetalAllocator. FOUR methods and three of them are the interesting
 # ones, and they are all thin over `device.bend`: `_alloc` makes a Buffer in the
 # arena, `_offset` IS `D.host_offset`, and `_free` is a trace.
-# ===========================================================================
+
 
 # :175-176,
 #   `mtl = metal.MTLBuffer(options.external_ptr) if options.external_ptr else
@@ -2311,9 +2306,9 @@ def alloc.free(t: Tr) -> Tr: Tr.emit(CALL_RELEASE, sel_ix("release"), 0, t)
 # :181's `self.dev.synchronize()`, the FIRST of the three.
 def dev.sync(+t: Tr) -> Tr: t
 
-# ===========================================================================
+
 # :270-285 -- `_wait_signal` and `synchronize`.
-# ===========================================================================
+
 
 # :276-278, the profile scan,
 #   `for start in range(5, buf.size, 4)`
@@ -2403,7 +2398,7 @@ def dev.sync.go(nat: Nat, xs: List<&2, U32>, +filled: Bool, +t: Tr) -> Tr:
 def pool_pop(+t: Tr) -> Tr: Tr.emit(CALL_AUTORELPOP, PLACEHOLDER_IX(), 0, t)
 def pool_push(+t: Tr) -> Tr: Tr.emit(CALL_AUTORELPUSH, PLACEHOLDER_IX(), 0, t)
 
-# ===========================================================================
+
 # `pm_bufferize` IS GONE FROM UPSTREAM AT THE PIN, and this file's port of it
 # is gone with it.
 #

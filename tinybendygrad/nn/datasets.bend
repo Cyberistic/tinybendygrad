@@ -8,7 +8,7 @@
 # the tar, and the Tensors themselves -- is a WALL, and each is one
 # `# TODO(p3)`.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF.
 #   :4  mnist(device, fashion)      PORTED  `mn_base_url` -- upstream's `base_url`
 #                                             is the LOCAL it reads at :5
@@ -61,7 +61,7 @@
 # `from_url` would see, and a change to the upstream mirror would move every
 # `dst_*_rows` row at once.
 #
-# ===========================================================================
+
 # THE ONE FINDING, and it is about what is NOT here.
 #
 # tinygrad does not parse the IDX header. :7 slices at a hardcoded 0x10 -- upstream's
@@ -79,7 +79,7 @@
 # function contains, so it is what the gate checks -- against byte counts
 # CONSTRUCTED here from the published file sizes, never against a download.
 #
-# ===========================================================================
+
 # THE THREE WALLS.
 #
 # 1. THE DOWNLOAD. `Tensor.from_url(url, gunzip=True)` at :6 and :11: a socket,
@@ -111,14 +111,14 @@
 # `.to(device)`; there is no `reshape` on either, so `per` is 1 for them and the
 # row count IS the payload count. That asymmetry between the two halves of one
 # tuple is easy to lose and `dst_mnist` prints it.
-# ===========================================================================
+
 import Base
 import ./../helpers.bend as H
 
-# ===========================================================================
+
 # :5 -- `base_url`. A Bool in, a String out, and this is the only branch in the
 # file. The two spellings are verbatim: HTTP for fashion, HTTPS for mnist.
-# ===========================================================================
+
 def mn_base_url(fashion: Bool) -> String:
   match fashion:
     case True{}:  "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
@@ -129,9 +129,9 @@ def mn_base_url(fashion: Bool) -> String:
 def mn_url(fashion: Bool, file: String) -> String:
   String.concat([mn_base_url(fashion), file])
 
-# ===========================================================================
+
 # THE FOUR MEMBERS, in the order :7 hands them to the returned tuple.
-# ===========================================================================
+
 def IMAGES_TRAIN() -> String: "train-images-idx3-ubyte.gz"
 def LABELS_TRAIN() -> String: "train-labels-idx1-ubyte.gz"
 def IMAGES_T10K()  -> String: "t10k-images-idx3-ubyte.gz"
@@ -162,7 +162,7 @@ def shape_bytes(s: Shape) -> U32: H.prod_u32(Shape.rest(s))
 
 def MN_IMG() -> Shape: Shape{True{}, [1, 28, 28]}
 
-# ===========================================================================
+
 # ONE DOWNLOAD, as the five facts the header arithmetic needs: which member it
 # is, which file, how many bytes the skip takes off it, how many bytes it is in
 # total, and how many bytes one ROW is. `rows` and `divides` are the claim.
@@ -177,7 +177,7 @@ def MN_IMG() -> Shape: Shape{True{}, [1, 28, 28]}
 # Each member is its OWN def so a gate row can name it and the mutation table can
 # say which one broke. Interning a list literal and reading it back by index is
 # the recorded `device.bend` trap and it buys nothing here.
-# ===========================================================================
+
 type Ds is Data:
   Ds{nm: String, file: String, skip: U32, nbytes: U32, per: U32}
 
@@ -256,11 +256,11 @@ def dst_mn_n() -> U32: U32.from_nat(List.length(&2, Ds, mn_entries()))
 def E_SKIP8() -> Ds:
   Ds{"train_images", IMAGES_TRAIN(), SKIP_IDX1(), 47040016, 784}
 
-# ===========================================================================
+
 # THE PRINTING, which is the gate's own machinery. `ush` APPENDS and
 # `String.join` is HEAD-FIRST, so the numbers come out in walk order with no
 # trailing separator -- the recorded rule, and the shape `ustate`/`ucreate` use.
-# ===========================================================================
+
 def ush(xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: acc
@@ -278,9 +278,9 @@ def shape_str(+s: Shape) -> String:
   Bool.pick(String, Shape.infer(s), String.concat(["-1,", ujoin(Shape.rest(s))]),
             ujoin(Shape.rest(s)))
 
-# ===========================================================================
+
 # CIFAR, :11-14.
-# ===========================================================================
+
 def CIFAR_URL() -> String:
   "https://data.brainchip.com/dataset-mirror/cifar10/cifar-10-binary.tar.gz"
 
@@ -321,11 +321,11 @@ def cifar_test_bytes() -> U32: U32.mul(CIFAR_TEST_ROWS(), CIFAR_ROW())
 def dst_cifar_rows() -> U32: U32.div(cifar_train_bytes(), CIFAR_ROW())
 def dst_cifar_test_rows() -> U32: U32.div(cifar_test_bytes(), CIFAR_ROW())
 
-# ===========================================================================
+
 # THE GATE. Every expectation comes from `datasets.py`'s own text or from the
 # published file sizes, and the numeric rows PRINT their value, so a wrong one is
 # diagnosable from the output alone.
-# ===========================================================================
+
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit):
@@ -422,7 +422,7 @@ def t_cifar() -> IO(Unit):
     row("dst_cifar_image_named", U32.is_eq(shape_bytes(CF_IMG()),
                                            CIFAR_IMAGE_BYTES()))
 
-# ===========================================================================
+
 # the `.npy` path -- mnist without the socket.
 #
 # WHAT THIS IS. A SECOND ROUTE to the same four tensors, one that does not go
@@ -469,7 +469,7 @@ def t_cifar() -> IO(Unit):
 # two routes read different bytes -- the IDX files carry a 16- or 8-byte header
 # and the `.npy` files carry a 118-byte one -- and the SAME payload after it,
 # which is why the two payloads agree and the two file sizes do not.
-# ===========================================================================
+
 
 # the `.npy` header's three fixed parts and the one field that is not fixed.
 def NPY_MAGIC() -> U32: 6
@@ -623,7 +623,7 @@ def main() -> IO(Unit):
     d : Unit <- t_npy()
     IO.print("dst-done=1")
 
-# ===========================================================================
+
 # THE MUTATION TABLE. MEASURED by `.venv/bin/python gates/datasets-mutate.py`, which
 # applies each edit in place, runs the interpreted lane and diffs the baseline.
 # (RESTORED 2026-10-16 from `.agents/slop/dk-mutate.py`, blob e853efc4b, 20941 B, byte for

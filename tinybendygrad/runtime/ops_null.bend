@@ -51,7 +51,7 @@ import ../LAWS/spec.bend as S
 import ./ops_cpu.bend as C
 
 def nr.has_copy_queue() -> U32: 1
-# ===========================================================================
+
 # ops_null.py -- THE DEGENERATE BACKEND.
 #
 # Everything below is either an INTEGER the queue lays down or a DECISION about
@@ -64,7 +64,7 @@ def nr.has_copy_queue() -> U32: 1
 # the words become bytes and it is a seam. What survives the crossing is the
 # SHAPE: how many words per command, what each position means, and which of the
 # five ops pads.
-# ===========================================================================
+
 
 # ops_null.py:22, `EXEC, COPY, WAIT, STORE, TIMESTAMP = range(5)`. Five tags,
 # zero-based, and the tag is word 0 of every command.
@@ -74,7 +74,7 @@ def NWAIT() -> U32: 2
 def NSTORE() -> U32: 3
 def NTIMESTAMP() -> U32: 4
 
-# ===========================================================================
+
 # ops_null.py:25, `def cmd(self, op, *args): self.q(*[... for a in (op, *args,
 # 0, 0, 0)][:4])`. three facts and all three are the file:
 #
@@ -88,7 +88,7 @@ def NTIMESTAMP() -> U32: 4
 # (1) is `nr.pads` and (2) is `nr.words`, and they are separate because they are
 # separate facts: a port that padded correctly and emitted five words would pass
 # `nr_pads_*` and fail `nr_words`.
-# ===========================================================================
+
 
 # the arity of each `cmd` call site, as a `U32` literal ladder in descending
 # order (bend2-constraints.md, tc_ptx rule 4: an ascending ladder makes every
@@ -141,7 +141,7 @@ def nr.copy_name(+src_dev: String, +dst_dev: String) -> String:
   String.concat([src_dev, " -> ", dst_dev])
 
 
-# ===========================================================================
+
 # ops_null.py:48 and :26 -- `null_events` and `event`. A process-global dict
 # keyed by `(device, name, key)` and `setdefault`'d with `len(null_events)`, so
 # AN EVENT'S ID IS ITS FIRST-APPEARANCE INDEX and two events with the same key
@@ -151,7 +151,7 @@ def nr.copy_name(+src_dev: String, +dst_dev: String) -> String:
 # First-wins over the table, and the ANSWER and the LIST both come back, so the
 # accumulator is a record: `Ev.lookup` needs the id and `Ev.put` needs the
 # grown list, and both read the same walk.
-# ===========================================================================
+
 
 type Nk is Data:
   Nk{dev: String, nm: String, C.key: U32}
@@ -225,7 +225,7 @@ def Ev.put(+k: Nk, +evs: List<&2, Nk>) -> List<&2, Nk>:
   Bool.pick(List<&2, Nk>, EvA.hit(Ev.walk(k, evs)), evs,
     List.append(&2, Nk, evs, [k]))
 
-# ===========================================================================
+
 # hcq2.py:78-83, `pack_args`, which is what ops_null.py:29 builds the kernargs
 # LINEAR from. It is the only REAL ARITHMETIC in the NULL backend and the only
 # place its queue has a layout:
@@ -251,7 +251,7 @@ def Ev.put(+k: Nk, +evs: List<&2, Nk>) -> List<&2, Nk>:
 # is `size - end`. The interior count is zero for five of the seven MEASURED
 # layouts and ONE for `[4,8,4]`, because a 1-byte argument between two 4-byte
 # ones makes `layout_args` place the third at slot 8 rather than slot 5.
-# ===========================================================================
+
 
 # :29, `8 * max(len(args), 1)`. The `max` matters for the EMPTY call and only
 # for it -- a zero-argument kernel is the one case where `size` is not 0.
@@ -289,7 +289,7 @@ def pk.pads.go(n: Nat, ks: List<&2, U32>, +off: U32, end: U32, acc: U32) -> U32:
 
 def pk.pads(+ks: List<&2, U32>) -> U32: pk.pads.go(List.length(&2, U32, ks), ks, 0, 0, 0)
 
-# ===========================================================================
+
 # ops_null.py:38-46 -- `NullProgram`, the emulated executor. It is FORTY-EIGHT
 # lines of Python and every one of them is a fold over the command words:
 #
@@ -311,7 +311,7 @@ def pk.pads(+ks: List<&2, U32>) -> U32: pk.pads.go(List.length(&2, U32, ks), ks,
 # is `st + done` where `done` is the running count of EXEC-or-COPY commands, and
 # the profile lane of an entry is its device's OWN ordinal. `st` is INJECTED --
 # `perf_counter_us` is a seam and a gate may not read a clock.
-# ===========================================================================
+
 
 # :38 -- one SIGNATURE ENTRY, and only the three fields the comprehension reads:
 # the index `i`, the name `n` and the shape product `prod(s)`. `prod(())` is 1,
@@ -511,7 +511,7 @@ def nprog.sig7() -> List<&2, Sg>:
    Sg{3, "cmdbuf_copy_0_3", 160}, Sg{4, "inputs_4", 3},
    Sg{5, "cmdbuf_compute_0_5", 224}, Sg{6, "kernargs_compute_0_6", 16}]
 
-# ===========================================================================
+
 # ops_null.py:48-52 -- `NullAllocator`. FOUR lines of source and the only 64-BIT
 # arithmetic in either file.
 #
@@ -525,7 +525,7 @@ def nprog.sig7() -> List<&2, Sg>:
 # class and every `_alloc` in the process draws from the SAME sequence. That is
 # why the addresses are monotone and not per-call, and MEASURED over three real
 # allocations: 1099511627776, 1103806595072, 1108101562368.
-# ===========================================================================
+
 
 # `1 << 40` AND `1 << 32` ARE NOT `Nat` LITERALS -- a `Nat` literal is capped at
 # 4294967295n (MEASURED) -- so each is a product of two halves that are under
@@ -560,7 +560,7 @@ def nalloc.copyin_nops() -> U32: 0
 # themselves -- `nr_map_*` walks four spellings.
 def nalloc.map_is_null(dev: String) -> Bool: String.starts_with(dev, "NULL")
 
-# ===========================================================================
+
 # ops_null.py:11-19 -- `NullRenderer`. Four attributes and TWO code_for_op
 # overrides, and the overrides are the file's only STRING-BUILDING code.
 #
@@ -573,7 +573,7 @@ def nalloc.map_is_null(dev: String) -> Bool: String.starts_with(dev, "NULL")
 # 23, and the two it adds are EXACTLY MAX and THREEFRY -- every shared entry is
 # the SAME lambda object (`cfop_changed == 0`). So the merge is ADDITIVE, and
 # `nr_cfop_overrides` being 2 rather than 23 is the row that says so.
-# ===========================================================================
+
 
 def nr.has_local() -> U32: 0
 def nr.float4() -> String: "float4"
@@ -598,7 +598,7 @@ def nr.cfop_max(+a: String, +b: String) -> String: String.concat(["max(", a, ","
 def nr.asm_ok(arch: String) -> Bool: String.starts_with(arch, "gfx")
 def nr.asm_msg() -> String: "only amd supports assembly"
 
-# ===========================================================================
+
 # ops_null.py:55-68 -- `NullDevice`, and the device-side buffer identity rules
 # the brief names.
 #
@@ -617,7 +617,7 @@ def nr.asm_msg() -> String: "only amd supports assembly"
 # REPLACES the table with one, so `ndev_bufferize_n` is 1 where
 # `device.bend`'s `pmb_len` is 3 -- and the two rows together are the
 # cross-file fact.
-# ===========================================================================
+
 
 # :55-56 -- the two `to_name("submit", devs[0], queue)` results. MEASURED:
 # `to_name('submit','NULL','compute')` == 'submit_null_compute'.
@@ -689,7 +689,7 @@ def ndev.renderers() -> List<&2, C.Cr>:
    C.Cr{16, "PTXRenderer"}, C.Cr{17, "LLVMRenderer"}, C.Cr{18, "CPULLVMRenderer"},
    C.Cr{19, "AMDLLVMRenderer"}, C.Cr{20, "WGSLRenderer"}]
 
-# ===========================================================================
+
 # THE ZERO TABLE, which is WALL 4's content and the reason this backend exists.
 #
 # A NULL kernel is NEVER RUN, so every value a kernel would have produced is
@@ -710,7 +710,7 @@ def ndev.renderers() -> List<&2, C.Cr>:
 # ONE TABLE, THIRTEEN ROWS, and the table is the content. A count row over it
 # would be a second transcription of the same thirteen facts and would prove
 # nothing, so there is no count row; `nr_zero_*` reads the table BY NAME.
-# ===========================================================================
+
 
 type Zz is Data:
   Zz{ix: U32, nm: String, z: U32}
@@ -765,7 +765,7 @@ def nr.zero_of.go(n: Nat, +nm: String, rs: List<&2, Zz>, +got: U32) -> U32:
 def nr.zero_of(+nm: String) -> U32:
   nr.zero_of.go(List.length(&2, Zz, nr.zero_table()), nm, nr.zero_table(), 0)
 
-# ===========================================================================
+
 # ops_null.py:60-66 -- `NullDevice.__init__` and the assert.
 #
 #   assert (emu:=getenv("EMULATE", "")) == "", \
@@ -779,7 +779,7 @@ def nr.zero_of(+nm: String) -> U32:
 # records NOTHING else, because `Tr.emit` is a no-op once refused. The failing
 # assert IS still recorded, which is not a special case: it sets `refused` in the
 # same breath and so on entry its own `refused` is still False.
-# ===========================================================================
+
 
 type Nul is Data:
   Nul{dev: String, renders: List<&2, C.Cr>, enc: List<&2, String>, bufz: U32,
@@ -1208,7 +1208,6 @@ def main() -> IO(Unit):
 #   M30     1  Nk.same: the `key` field ignored (device+name only)
 #   M31     1  nr.copy_name: the arrow becomes a comma
 #   M32     1  nr.cfop_threefry: a space after the comma
-#   M33     1  nr.renderers: the deduped list sorted (order no longer the policy)
 #   M34     2  nalloc.va: the 1<<32 step becomes 1<<31
 #   M35     2  nalloc.map_is_null: `startswith` -> equality
 #   M36     1  nalloc.copyout_ok: the flag IGNORED (always refuse)

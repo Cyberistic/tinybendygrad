@@ -37,7 +37,7 @@
 # CONSTANTS). The `struct.pack`/`struct.unpack` calls are pure arithmetic and are
 # PORTED, in halves where a value is 64 bits.
 #
-# ===========================================================================
+
 # WHAT IS PORTED, DEF BY DEF. Line numbers are ops_rdma.py.
 #
 #   :16  RDMA_CHUNK                  PORTED  `RDMA_CHUNK()`
@@ -129,7 +129,7 @@
 #   tinygrad/runtime/ops_rdma.py:164 the zip                 PORTED  `psns_at` + `ops.n_of` symbol=rdma_submit
 #   tinygrad/runtime/ops_rdma.py:157 `rdma_submit`          PORTED  `encode_len` -- upstream's `pm_rdma_encode` is GONE (9ff6db7b0)
 #
-# ===========================================================================
+
 # THE FIVE WALLS.
 #
 # 1. MEMOISATION (:56, :77). `functools.cache` on `rdma_nic_for` and `rdma_qp`,
@@ -169,7 +169,7 @@
 #        24 bits wide and `slot` in the TOP 16. So `msn.hi(slot, next)` and
 #        `msn.lo(next, psn)` are exact halves and no shift is missing.
 #
-# ===========================================================================
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of ONE device call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER). There is no third kind, and there is no
@@ -187,18 +187,18 @@
 # which no guard in the Python writes down. `Tr.emit` records NOTHING once
 # `refused` is set, so every refusal shows up as a TRUNCATED trace and no step
 # below needs a guard of its own.
-# ===========================================================================
+
 import Base
 import ../helpers.bend as H
 import ../device.bend as D
 import ../LAWS/spec.bend as S
 
-# ===========================================================================
+
 # THE CONSTANTS. Every one MEASURED, by reading
 # `tinygrad/runtime/support/rdma/bnxtdev.py:12` and the enums out of
 # `tinygrad/runtime/autogen/bnxt.py`; `.agents/slop/oracle_rdma.py` re-derives
 # every gate expectation from them.
-# ===========================================================================
+
 def RDMA_CHUNK() -> U32: 1073741824
 def PAGE() -> U32: 4096
 def WQE_SIZE() -> U32: 128
@@ -274,7 +274,7 @@ def ASPACE_SYS() -> U32: 1
 # PAGE the doorbell lives in, then write at the low twelve bits INSIDE it.
 def PAGE_MASK() -> U32: 4095
 
-# ===========================================================================
+
 # THE TRACE VOCABULARY. Sixteen device calls.
 #
 # The FFI half: the NIC and its driver.
@@ -294,7 +294,7 @@ def PAGE_MASK() -> U32: 4095
 #   INS_WRITE    :141  the work queue element
 #   INS_WAIT     :151  `wait_eq` on the completion entry
 #   INS_BARRIER  :155  the receive-side cache invalidate
-# ===========================================================================
+
 def CALL_OPEN() -> U32: 0
 def CALL_DEVICE() -> U32: 1
 def CALL_MAP_BAR() -> U32: 2
@@ -316,9 +316,9 @@ def CALL_REFUSE() -> U32: 15
 # other twelve record a number instead. 0 is the FFI handle the seam returns.
 def OBJ_NONE() -> U32: 0
 
-# ===========================================================================
+
 # THE TYPES.
-# ===========================================================================
+
 
 # ONE device call and the ONE number it is given: a bar, an offset, a size, a
 # page count, or the ADDRESS of an instruction. There is deliberately no field
@@ -375,10 +375,10 @@ def Wqe.size(w: Wqe) -> U32:
   match w:
     case Wqe{n, p, off, size}: size
 
-# ===========================================================================
+
 # THE TRACE. Every device call in this file goes through `Tr.emit`, so the trace
 # is the ordered list of things the NIC would be asked to do.
-# ===========================================================================
+
 def Tr.of() -> Tr: Tr{Nil{}, 0, False{}}
 
 def Tr.calls(t: Tr) -> List<&2, Call>:
@@ -444,11 +444,11 @@ def REFUSE_NO_KEY() -> U32: 3
 def REFUSE_MAP_MSG() -> String: "RDMA requires memory on its node"
 def REFUSE_RING_CAP_MSG() -> String: "a batch posts at most a ring of wqes per pair"
 
-# ===========================================================================
+
 # READING THE TRACE. Same three readers as ops_webgpu.bend, and the same fuel bug
 # they were written around: the fuel is the TRACE's length and the answer is
 # `at == patlen`, so a reversed pattern does NOT match.
-# ===========================================================================
+
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
     case 0n: got
@@ -514,7 +514,7 @@ def ush(xs: List<&2, U32>, +sep: String, +acc: List<&2, String>) -> List<&2, Str
 
 def ustr(xs: List<&2, U32>) -> String: String.join(ush(xs, ",", Nil{}), ",")
 
-# ===========================================================================
+
 # THE TRANSLATION TABLE, and both directions.
 #
 # :140 `unwrap_view(buf)[0].getaddr(nic.device)` asks the DEVICE what address the
@@ -525,7 +525,7 @@ def ustr(xs: List<&2, U32>) -> String: String.join(ush(xs, ",", Nil{}), ",")
 # translation from two independent tables. Both are first-wins, because
 # `register_mem` is called once per mapping and a second registration of the
 # same address is a bug the seam reports.
-# ===========================================================================
+
 def Pdt.of() -> Pdt: Pdt{Nil{}}
 
 def Pdt.put(+t: Pdt, e: PEnt) -> Pdt:
@@ -579,7 +579,7 @@ def key_of(+t: Pdt, +va: U32) -> U32:
 def va_of(+t: Pdt, +key: U32) -> U32:
   va_of.go(List.length(&2, PEnt, Pdt.es(t)), Pdt.es(t), key, 0)
 
-# ===========================================================================
+
 # ops_rdma.py:47-48 -- THE PAGE-SIZE DERIVATION, and it is the pure heart of
 # this file.
 #
@@ -596,7 +596,7 @@ def va_of(+t: Pdt, +key: U32) -> U32:
 #   * an address with a low bit set matches NOTHING, and `max()` of an empty
 #     generator is a `ValueError`. `NO_LOG_PAGE` is that, and `map.run` REFUSES
 #     rather than registering with a page size of zero.
-# ===========================================================================
+
 # one region `(paddr, size)` folded into the running alignment.
 def align_or.put(pa: U32, sz: U32, acc: U32) -> U32:
   U32.or(acc, U32.or(pa, sz))
@@ -659,13 +659,13 @@ def npages.go(n: Nat, ss: List<&2, U32>, +lp: U32, acc: U32) -> U32:
 def npages(+ss: List<&2, U32>, +lp: U32) -> U32:
   npages.go(List.length(&2, U32, ss), ss, lp, 0)
 
-# ===========================================================================
+
 # ops_rdma.py:89-96 -- the six placeholder constructors. Their SIZES are the
 # whole content and they are not interchangeable: the SEND ring is
 # `RING_ENTRIES * (WQE_SIZE + 8)` because a send also writes an 8-byte msn entry
 # past the end of the ring (:144), so the send ring is BIGGER than the receive
 # ring and a port that drops the `+ 8` under-allocates every send queue.
-# ===========================================================================
+
 def ring_elems.at(recv: Bool) -> U32:
   Bool.pick(U32, recv, WQE_SIZE(), U32.add(WQE_SIZE(), 8))
 
@@ -703,7 +703,7 @@ def qp_is_counter(+k: U32) -> Bool: Bool.and(U32.is_ge(k, 5), U32.is_le(k, 7))
 def qp_itemsize(+k: U32) -> U32:
   Bool.pick(U32, qp_is_counter(k), S.Dt.itemsize(S.uint64()), S.Dt.itemsize(S.uint8()))
 
-# ===========================================================================
+
 # `to_name` (tinygrad/helpers.py:24) -- `"_".join(parts).replace(":", "_").lower()`.
 # It is the TAG every `rdma_mem` placeholder carries and the key every
 # `pm_bufferize` rule matches on (:84), so a `to_name` that did not lower-case
@@ -713,7 +713,7 @@ def qp_itemsize(+k: U32) -> U32:
 # separators -- which is unobservable here because `_` is already lower, and
 # WHICH is why the port does not depend on it: the port lower-cases each part
 # before joining and the two agree for every device name in the tree.
-# ===========================================================================
+
 def COLON_C() -> Char: Char.from_u32(58)
 def UNDER_C() -> Char: Char.from_u32(95)
 
@@ -733,7 +733,7 @@ def tname.go(n: Nat, cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
 def tname(+s: String) -> String:
   String.to_lower(String.from_list(tname.go(List.length(&2, Char, String.to_list(s)), String.to_list(s), Nil{})))
 
-# ===========================================================================
+
 # ops_rdma.py:20-24 -- `BNXTIface`, the ONE interface `RDMADevice.ifaces` names.
 #
 # :21-23 `super().__init__(dev, index, *BNXT_IDS[:2], vram_bar=2,
@@ -745,7 +745,7 @@ def tname(+s: String) -> String:
 # `index` arrives from `_select_iface` (device.py:494), which sets
 # `self.device_id` from the device string BEFORE the assert, and that ordering is
 # the one thing about it that is visible here.
-# ===========================================================================
+
 def Iface.of(dev: String, +index: U32, db_off: U32) -> Iface:
   Iface{dev, index, VRAM_BAR(), BNXT_BASE_CLASS(), db_off, True{}, Tr.emit(CALL_OPEN(), BNXT_VENDOR(), Tr.of())}
 
@@ -793,7 +793,7 @@ def Iface.at(i: Iface, t: Tr) -> Iface:
     case Iface{dev, ix, bar, base_class, db_off, snooped, _}:
       Iface{dev, ix, bar, base_class, db_off, snooped, t}
 
-# ===========================================================================
+
 # ops_rdma.py:66-71 -- `RDMADevice`, and the ORDER of its two statements.
 #
 #     self.iface = self._select_iface(device)          # :70
@@ -806,7 +806,7 @@ def Iface.at(i: Iface, t: Tr) -> Iface:
 # `peer_group` (device.py:398) is `Rdma.peer` here and NOT the device
 # head, because `self.iface` EXISTS. That is the difference from NPY and it is
 # load-bearing: `_map`'s guard at :44 compares two peer groups.
-# ===========================================================================
+
 def ALLOC_BNXT() -> U32: 1
 def RENDERERS_PASSED() -> U32: 0
 def RENDERERS_EFFECTIVE() -> U32: 1
@@ -869,7 +869,7 @@ def Rdma.at(r: Rdma, t: Tr) -> Rdma:
     case Rdma{dev, ifaces, alloc, runtime, nrender, did, peer, _}:
       Rdma{dev, ifaces, alloc, runtime, nrender, did, peer, t}
 
-# ===========================================================================
+
 # ops_rdma.py:26-31 -- `BNXTIface.storage` and `BNXTIface.buffer`, and THE
 # DIVERGENCE between them.
 #
@@ -889,7 +889,7 @@ def Rdma.at(r: Rdma, t: Tr) -> Rdma:
 # `AddrSpace.SYS` and `uncached=True` are CONSTANTS at every call site, and
 # `snooped` defaults to True -- everywhere except the doorbell, which says
 # `snooped=False`. `rdma_snooped_doorbell` is that one difference.
-# ===========================================================================
+
 def VA_ALIGN() -> U32: 4096
 def STORAGE_ARGS() -> U32: 3
 
@@ -912,7 +912,7 @@ def alloc.sysmem_size(+size: U32) -> U32: H.round_up_u32(size, VA_ALIGN())
 def alloc.sysmem(+size: U32, t: Tr) -> Tr:
   Tr.emit(CALL_ALLOC_SYSMEM(), alloc.sysmem_size(size), t)
 
-# ===========================================================================
+
 # ops_rdma.py:33-36 -- the DOORBELL, and the one flag that is False here and True
 # everywhere else.
 #
@@ -926,12 +926,12 @@ def alloc.sysmem(+size: U32, t: Tr) -> Tr:
 # and :129 uses the OTHER half of it: `rdma_db(page).getaddr(devs) + (db_off &
 # 0xfff)`, the low twelve bits, because the placeholder is a WHOLE PAGE. Three
 # spellings of one address and the gate checks all three.
-# ===========================================================================
+
 def db.off_down(+db_off: U32) -> U32: U32.and(db_off, U32.not(PAGE_MASK()))
 
 def db.off_up(+db_off: U32) -> U32: U32.and(db_off, PAGE_MASK())
 
-# ===========================================================================
+
 # ops_rdma.py:42-53 -- `BNXTAllocator._map`, and it is the whole buffer-registration
 # contract in five lines. This is the section the brief is about.
 #
@@ -968,7 +968,7 @@ def db.off_up(+db_off: U32) -> U32: U32.and(db_off, PAGE_MASK())
 #      claim as a COUNT, because a BufferStorage that kept the GPU address
 #      in `.buf` would still unregister correctly and would be silently wrong for
 #      every transfer.
-# ===========================================================================
+
 def map.peer_ok(+has_iface: Bool, src_peer: U32, dev_peer: U32) -> Bool:
   Bool.and(has_iface, U32.is_eq(src_peer, dev_peer))
 
@@ -1000,7 +1000,7 @@ def map.page_guard(ok: Bool, +t: Tr) -> Tr:
 # `_unmap` would have nothing to hand back.
 def MAP_ST_ARGS() -> U32: 2
 
-# ===========================================================================
+
 # ops_rdma.py:76-87 -- `rdma_qp`, and it is FOUR claims.
 #
 #   :79  `nics = [unwrap(rdma_nic_for(Device[d], Device[min(pair)])) for d in pair]`
@@ -1016,7 +1016,7 @@ def MAP_ST_ARGS() -> U32: 2
 #   :86  `for a, b in (nics, nics[::-1]): qps[a.device].connect(...)`
 #        -- connect in BOTH directions, and `nics[::-1]` is the second one, so
 #        the order is a-then-b and b-then-a.
-# ===========================================================================
+
 def ANCHOR_MIN() -> U32: 1
 
 # :85 -- the RDMA rules come FIRST. `qpm` is the total rule count AFTER the
@@ -1030,7 +1030,7 @@ def qp.connect(+recv: Bool, t: Tr) -> Tr: Tr.emit(CALL_QP_CONNECT(), Bool.to_u32
 
 def qp.new(t: Tr) -> Tr: Tr.emit(CALL_QP_NEW(), OBJ_NONE(), t)
 
-# ===========================================================================
+
 # ops_rdma.py:98-106 -- `rdma_wire`, `is_rdma` and `queue_of`. The wire is the
 # UOp on an RDMA device that `rdma_copies` replaces; finding it is what decides
 # whether a call is rewritten at all.
@@ -1053,7 +1053,7 @@ def qp.new(t: Tr) -> Tr: Tr.emit(CALL_QP_NEW(), OBJ_NONE(), t)
 # hardware here -- so this port keeps the SORT as the source writes it and says
 # so. `wire_tag_sorted` is the row that pins the sort with the tag spelled as a
 # string, which is the case the source unambiguously supports.
-# ===========================================================================
+
 def wire.is_call(+is_call: Bool) -> Bool: is_call
 
 def wire.is_store(+is_store: Bool) -> Bool: is_store
@@ -1061,7 +1061,7 @@ def wire.is_store(+is_store: Bool) -> Bool: is_store
 def wire.of(+is_call: Bool, +is_store: Bool, n_rdma_args: U32) -> U32:
   Bool.pick(U32, Bool.and(is_call, is_store), n_rdma_args, NO_KEY())
 
-# ===========================================================================
+
 # ops_rdma.py:117-118 -- THE CHUNKING, and it is the only place a size becomes a
 # COUNT OF WORK.
 #
@@ -1079,7 +1079,7 @@ def wire.of(+is_call: Bool, +is_store: Bool, n_rdma_args: U32) -> U32:
 #     of it, so `wqes` grows with the buffer and `rdma_chunks_big` is the row.
 #   * `packets` is the SUM and it is not `wqes`: a 12289-byte buffer is ONE work
 #     queue element carrying THREE packets. `rdma_packets_not_wqes` is that.
-# ===========================================================================
+
 def chunk_size(+nbytes: U32, +off: U32) -> U32:
   U32.min(RDMA_CHUNK(), U32.sub(nbytes, off))
 
@@ -1156,7 +1156,7 @@ def psns_at(+ps: List<&2, U32>, i: U32) -> U32:
 def db_value.lo(+index: U32, +epoch: U32) -> U32:
   U32.or(U32.and(index, DB_INDEX_MASK()), U32.shln(epoch, 24n))
 
-# ===========================================================================
+
 # :148,:152 -- THE DOORBELL RULE, and it is four arithmetic facts:
 #
 #   ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << SHIFT) | ring_db
@@ -1171,14 +1171,14 @@ def db_value.lo(+index: U32, +epoch: U32) -> U32:
 #   * the CQ doorbell is the SAME rule with `CQ_ENTRIES` -- and since
 #     `RING_ENTRIES == CQ_ENTRIES == 4096` the two agree, which is a fact about
 #     these numbers and not about the code. `rdma_eq_ring_cq` says so.
-# ===========================================================================
+
 def db_slot(+n: U32) -> U32: U32.mod(U32.add(n, 1), RING_ENTRIES())
 
 def db_epoch(+n: U32) -> U32: U32.and(U32.div(U32.add(n, 1), RING_ENTRIES()), 1)
 
 def RING_EQ_CQ() -> Bool: U32.is_eq(RING_ENTRIES(), CQ_ENTRIES())
 
-# ===========================================================================
+
 # :151 -- `wait_eq`, and THE INVERTED EPOCH.
 #
 #   ins("wait_eq", cq_addr + (n % CQ_ENTRIES) * 32 + 24,
@@ -1210,7 +1210,7 @@ def cq_wait_addr(+cq_addr: U32, n: U32) -> U32:
 def CQE_STATUS_AT() -> U32: 24
 def CQE_SIZE() -> U32: 32
 
-# ===========================================================================
+
 # :144-145 -- THE MSN ENTRY, and the 64-bit word is three 24-bit fields.
 #
 #   ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRIES) * 8,
@@ -1230,7 +1230,7 @@ def CQE_SIZE() -> U32: 32
 #     and `msn.lo` is the low eight bits of the next psn at bit 24 plus this psn.
 # `rdma_msn_hi1`/`rdma_msn_lo1` are the halves of the fixture's second element and
 # `rdma_msn_whole` is the two of them side by side.
-# ===========================================================================
+
 def msn_base(+ring_addr: U32) -> U32: U32.add(ring_addr, U32.mul(RING_ENTRIES(), WQE_SIZE()))
 
 def msn_addr(+ring_addr: U32, n: U32) -> U32:
@@ -1248,7 +1248,7 @@ def msn.hi(+slot: U32, +next_psn: U32) -> U32:
 def msn.lo(+next_psn: U32, +p: U32) -> U32:
   U32.or(U32.shln(U32.and(next_psn, PSN_MASK()), MSN_PSN_AT_NAT()), U32.and(p, PSN_MASK()))
 
-# ===========================================================================
+
 # :140-141 -- THE work queue element, and the ADDRESS translation appears here.
 #
 #   hdr, key = struct.unpack("<8I", (recv_wqe if is_recv else send_wqe)(0, 0, size)[:32]), \
@@ -1271,7 +1271,7 @@ def msn.lo(+next_psn: U32, +p: U32) -> U32:
 # the receive header's word 2 is ZERO however big the transfer is. And the size
 # appears TWICE in a send element, once in the header and once as the last word.
 # `rdma_hdr_send` and `rdma_hdr_recv` are the two eight-word lists.
-# ===========================================================================
+
 def ring_slot(+n: U32) -> U32: U32.mul(U32.mod(n, RING_ENTRIES()), WQE_SIZE())
 
 def ring_addr_of(+ring: U32, n: U32) -> U32: U32.add(ring, ring_slot(n))
@@ -1326,7 +1326,7 @@ def ops.wqe_at(recv: Bool, +ring: U32, cq: U32, +db: U32, +n: U32, t: Tr) -> Tr:
 # goes in the header and what the psn advance is measured against.
 def ops.chunk_size(+nbytes: U32, +off: U32) -> U32: chunk_size(nbytes, off)
 
-# ===========================================================================
+
 # :120 -- THE RING-CAP ASSERT, and it is the refusal the brief asked for.
 #
 #   assert wqes <= min(RING_ENTRIES, CQ_ENTRIES),
@@ -1340,7 +1340,7 @@ def ops.chunk_size(+nbytes: U32, +off: U32) -> U32: chunk_size(nbytes, off)
 # `min(RING_ENTRIES, CQ_ENTRIES)` is 4096 and BOTH are, so the cap is the ring
 # size -- `rdma_eq_ring_cq` says so rather than letting a reader assume which of
 # the two bounds it.
-# ===========================================================================
+
 def RING_CAP() -> U32: U32.min(RING_ENTRIES(), CQ_ENTRIES())
 
 def copies.guard.at(ok: Bool, +t: Tr) -> Tr:
@@ -1351,4 +1351,4 @@ def REFUSE_CAP_MSG() -> String: REFUSE_RING_CAP_MSG()
 # :164 -- every src starts as a one-element list holding ITSELF.
 def submit.src_replaced(+n_srcs: U32, n_queues: U32) -> U32: n_queues
 
-# ===========================================================================
+

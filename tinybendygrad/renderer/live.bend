@@ -213,7 +213,6 @@ def op_of(+nm: U32) -> O.Op: op_by_idx(nm)
 # no `List.reverse` here, and that is measured, not style. `List.append(&2, A, acc, [h])` appends, so
 # building with it already preserves order and a closing `List.reverse` INVERTS the list. MEASURED on this
 # exact function: `nums("0~1~2")` answered `2,1,0` -- which rendered every binary op with its operands
-# swapped and shifted every `srcs` index by one, i.e. a plausible-looking kernel that was wrong.
 def nums_go(+xs: List<&2, String>, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{}: acc
@@ -364,7 +363,6 @@ def ku_of(l: String) -> C.KU: ku_ws(String.split(l, ' '))
 # thing in the arm. MEASURED on this parser: with one frame per uop, 900 lines decoded and 1500 did not,
 # while the LITERAL path rendered 1500 KUs fine -- the ceiling was this walk, not the renderer.
 # the wire is one flat space-separated token stream and nine tokens are one uop, because a second
-# split pass costs a second scan of every BYTE. The wire used to be lines of fields, so decoding split it
 # once on '\n' (8 700 characters) and again per line on ' ' (8 526) -- MEASURED in `PARITY.md` §78, that first
 # pass alone is 0.89 ms of a 2.17 ms decode. Nine tokens per row is the same shape, one separator, one
 # pass. `take9` peels them with a counter and a CONS (O(1) each) rather than `fld`'s `List.get` per field.

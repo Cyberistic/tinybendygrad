@@ -31,7 +31,7 @@
 #   * `struct.calcsize` as a table, BOTH directions: `MMIOInterface.__len__`
 #     (:8) divides by it, so it decides how many REGISTERS a window is.
 #   * `AddrSpace` (:119) as `[PHYS, SYS, PEER]`, BOTH directions.
-# ---------------------------------------------------------------------------
+
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one device call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER and the IDENTITY). There is no third
@@ -172,7 +172,7 @@ def Tr.has.go(n: Nat, +patlen: Nat, cs: List<&2, Call>, +pat: List<&2, Call>, +a
 def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 def Tr.seq(t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
-# ===========================================================================
+
 # THE TRACE VOCABULARY. Every tag is an FFI call of `support/memory.py`, named
 # by its Python line in the header above. The tag is a `U32` because the trace
 # record is `(k, arg)`; `mem_tag_name` renders it so a gate row and a CPython
@@ -214,7 +214,7 @@ def MM_DEBUG_PRINT() -> U32: 14
 # :224, :236 -- `self.on_range_mapped()`, a `pass` in this file and an
 # override in every device that has one.
 def ON_RANGE_MAPPED() -> U32: 15
-# ===========================================================================
+
 # THE CONSTANTS. Every value here came out of CPython. Nothing is typed.
 # memory.py:253, :249, :284 -- `round_up(size, 0x1000)`, the physical page.
 # `palloc` rounds to it, and `valloc` rounds `size` to it BEFORE `alloc_vaddr`.
@@ -246,7 +246,7 @@ def VA_ALLOC_SIZE() -> H.I64: H.i64_of_hi_lo(4096, 0)
 def VA_ALLOC_BASE() -> H.I64: H.i64_of_hi_lo(8192, 0)
 # memory.py:193, :138 -- the page-table allocation size, `palloc(0x1000, ...)`.
 def PT_ALLOC_SIZE() -> U32: 4096
-# ===========================================================================
+
 # `MMIOInterface` -- memory.py:6-12. A REGISTER WINDOW over a device address,
 # and `__len__` (:8) is `nbytes // struct.calcsize(fmt)`, so the FMT decides
 # how many registers the window is. The field list is the FOUR-TUPLE of :7 in
@@ -426,7 +426,7 @@ def mmio_def_fmt() -> U32: fmt_ix_name("B")
 # `fmt_absent` through `sz_ix`, which is a `0` size -- and `0` is not a size
 # `struct.calcsize` can return, so the miss is detectable.
 def calcsize_i(i: U32) -> U32: sz_ix(List.get(&2, U32, calcsizes_sizes(), U32.to_nat(i)))
-# ===========================================================================
+
 # `BumpAllocator` -- memory.py:14-21. THE MONOTONE BUMP, and it is the whole
 # allocator for the boot region, so its two refusals and its one wrap are load-
 # bearing.
@@ -533,7 +533,7 @@ def bump_try(+b: Bump, +size: U32, +align: U32) -> BumpR:
 # -- so every `U32` argument is `+`.
 def bump_ptr_of(+r: BumpR) -> U32: Bump.ptr(BumpR.b(r))
 def bump_ptr_end(got: U32, want: U32) -> Bool: U32.is_eq(got, want)
-# ===========================================================================
+
 # `AddrSpace` -- memory.py:119. `PHYS = enum.auto(); SYS = enum.auto(); PEER =
 # enum.auto()` on ONE line, so the ORDERS are the declarations and the VALUES
 # are 1, 2, 3. The table is here BOTH DIRECTIONS, which is the requirement, and
@@ -578,7 +578,7 @@ def aspace_at_ix(ix: U32) -> Maybe<&2, Space>: List.get(&2, Space, aspaces(), U3
 def aspace_val_is_ix_plus1.go(+phys: Space) -> Bool:
   Bool.and(U32.is_eq(Space.val(phys), ASPACE_PHYS_VAL()),
            U32.is_eq(Space.ix(phys), ASPACE_PHYS_IX()))
-# ===========================================================================
+
 # `VirtMapping` -- memory.py:121-122. THE field list, BY name, IN order, AND
 # THE order is not the prose order in every reader.
 # `VirtMapping(va_addr:int; size:int; paddrs:list[tuple[int,int]]; aspace:AddrSpace;
@@ -656,7 +656,7 @@ def pcol.go(+ps: List<&2, Pa>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ps:
     case Nil{}: acc
     case p <> t: pcol.go(t, List.append(&2, U32, acc, [Pa.paddr(p)]))
-# ===========================================================================
+
 # THE page-TABLE layout -- memory.py:186-188. THE two reversals.
 # `self.pte_covers, self.pte_cnt = [1 << x for x in va_shifts][::-1],
 #   [1 << (lvl_msb[i+1] - lvl_msb[i]) for i in range(len(lvl_msb) - 1)][::-1]`
@@ -781,7 +781,7 @@ def pte_ladder.go(+cov: List<&2, U32>, +cnt: List<&2, U32>, +lv: U32) -> Bool:
   ladder_hit(lad_of(List.get(&2, U32, cov, U32.to_nat(lv)),
                     List.get(&2, U32, cnt, U32.to_nat(lv)),
                     List.get(&2, U32, cov, U32.to_nat(U32.sub(lv, 1)))))
-# ===========================================================================
+
 # `_frag_size` -- memory.py:195-202. THE TLB FRAGMENT SIZE, and it is the single
 # densest piece of arithmetic in the file: a lowbit, a `bit_length`, a `min`,
 # and a `- 12`, and a flag that swaps WHICH minimum is taken.

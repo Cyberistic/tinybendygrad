@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# ===========================================================================
+
 # stub -- 1:1 path mirror of extra/models/bert.py (300 loc). not yet ported.
 #
 # the first missing thing is `nn.Embedding`, and it is one of the four the
@@ -85,7 +85,7 @@ import ./../datasets/__init__.bend as D
 # `gelu` (:235-236) and `gather` (:161-164) are module-level functions and both are
 # NOT PORTED: `gather` (:164) is `onehot @ prediction_logits` and `one_hot` is MISSING,
 # and the one-hot itself is built from `Tensor.arange` + `expand` + `==`.
-# ===========================================================================
+
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -94,11 +94,11 @@ def br_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-# ---------------------------------------------------------------------------
+
 # :9-11 the three monkeypatch aliases. They are part of the file's contract even
 # though upstream never rebinds them here, and each refusal names the port file
 # that would have to own the layer.
-# ---------------------------------------------------------------------------
+
 def br_embedding_alias() -> D.Refused:
   D.refuse("extra/models/bert.py:9 Embedding = nn.Embedding -- MISSING; no `def Embedding`, no `def mo_i`, no `def mo_fx` under tinybendygrad/")
 
@@ -108,9 +108,9 @@ def br_linear_alias() -> D.Refused:
 def br_layernorm_alias() -> D.Refused:
   D.refuse("extra/models/bert.py:11 LayerNorm = nn.LayerNorm -- MISSING; `grep -rnwE \"def .*layernorm\" --include='*.bend' tinybendygrad/` = 0")
 
-# ---------------------------------------------------------------------------
+
 # :13-40 BertForQuestionAnswering.
-# ---------------------------------------------------------------------------
+
 
 # :14 def __init__(self, hidden_size=1024, ..., vocab_size=30522, ...)
 def br_qa_init(hidden_size: U32, intermediate_size: U32, max_position_embeddings: U32,
@@ -126,11 +126,11 @@ def br_qa_load_from_pretrained() -> D.Refused:
 def br_qa_call(+input_ids: T.Tensor, +attention_mask: T.Tensor, +token_type_ids: T.Tensor) -> D.Refused:
   D.refuse("extra/models/bert.py:33 BertForQuestionAnswering.__call__ -- FIRST MISSING SYMBOL Tensor.scaled_dot_product_attention via BertSelfAttention (:279)")
 
-# ---------------------------------------------------------------------------
+
 # :42-124 BertForPretraining. Its `loss` (:59) and `accuracy` (:64) are the only
 # defs in this file that name an OPTIMIZER SLOT (`adam_v`, `adam_m`) and they do
 # so by FILTERING it out, so they name Adam without calling it.
-# ---------------------------------------------------------------------------
+
 
 # :43 def __init__(self, hidden_size=1024, ...)
 def br_pre_init(hidden_size: U32, intermediate_size: U32, max_position_embeddings: U32,
@@ -154,10 +154,10 @@ def br_pre_accuracy() -> D.Refused:
 def br_pre_load_from_pretrained() -> D.Refused:
   D.refuse("extra/models/bert.py:78 BertForPretraining.load_from_pretrained -- FIRST MISSING SYMBOL import tensorflow (:81); also `adam_v`/`adam_m`/`beta1_power`/`beta2_power` at :90 are the TF optimizer slots, NOT nn/optim.bend's adam")
 
-# ---------------------------------------------------------------------------
+
 # :126-159 the three heads. All three refuse on `Linear`, which EXISTS -- the
 # point of naming it is that the FIRST missing symbol is one layer down.
-# ---------------------------------------------------------------------------
+
 
 # :127 def __init__(self, hidden_size, vocab_size, embeddings_weight)
 def br_pre_heads_init(hidden_size: U32, vocab_size: U32) -> D.Refused:
@@ -191,15 +191,15 @@ def br_pooler_init(hidden_size: U32) -> D.Refused:
 def br_pooler_call(+hidden_states: T.Tensor) -> D.Refused:
   D.refuse("extra/models/bert.py:158 BertPooler.__call__ -- FIRST MISSING SYMBOL Tensor.slice on hidden_states[:, 0] (:159)")
 
-# ---------------------------------------------------------------------------
+
 # :161-164 `gather`. NOT PORTED, and named here rather than in the header alone.
-# ---------------------------------------------------------------------------
+
 def br_gather(+prediction_logits: T.Tensor, +masked_lm_positions: T.Tensor) -> D.Refused:
   D.refuse("extra/models/bert.py:161 gather -- FIRST MISSING SYMBOL Tensor.one_hot, built here as arange (:162) == masked_lm_positions.unsqueeze(2) (:163)")
 
-# ---------------------------------------------------------------------------
+
 # :166-300 the six that carry the wall.
-# ---------------------------------------------------------------------------
+
 
 # :167 def __init__(self, hidden_size, ..., hidden_dropout_prob)
 def br_bert_init(hidden_size: U32, intermediate_size: U32, max_position_embeddings: U32,
@@ -283,10 +283,10 @@ def br_self_out_init(hidden_size: U32) -> D.Refused:
 def br_self_out_call(+hidden_states: T.Tensor, +input_tensor: T.Tensor) -> D.Refused:
   D.refuse("extra/models/bert.py:296 BertSelfOutput.__call__ -- FIRST MISSING SYMBOL Tensor.dropout (:298)")
 
-# ---------------------------------------------------------------------------
+
 # There is no `if __name__ == "__main__":` in bert.py. `main` prints TWO rows:
 # the refusal address and the answer to the four-question census.
-# ---------------------------------------------------------------------------
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : D.Refused <- IO.pure(D.Refused, br_embeddings_init(1024, 512, 2, 30522))
