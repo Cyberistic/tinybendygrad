@@ -1,13 +1,13 @@
 # tinybendygrad/runtime/ops_cl.bend -- port of tinygrad/runtime/ops_cl.py.
 #
-# ONE `.bend` PER UPSTREAM `.py`, AT THE SAME PATH. This file used to hold THREE
+# ONE `.bend` PER upstream `.py`, AT the same path. This file used to hold THREE
 # ports -- ops_cl.py, ops_cuda.py and ops_hip.py -- and the 1:1 ruling made it
 # three files. `ops_cuda.bend` and `ops_hip.bend` import this one; this one
 # imports neither, because bend has NO IMPORT CYCLE (MEASURED: "an import
 # cycle through .../a.bend"), and an acyclic graph of three files has exactly
 # one leaf.
 #
-# SO THE CROSS-CUTTING RATIONALE STAYS HERE AND THE THREE VENDOR TABLES DO NOT.
+# SO the cross-CUTTING rationale stays here and the three vendor tables do not.
 # The header below is about all three files and is part of the reason this file
 # is the leaf; the tables are DATA about one file each, and a `vend.cu` in
 # `ops_cl.bend` is exactly the violation the ruling exists to stop. The
@@ -15,7 +15,7 @@
 # became `vend.name(+op)` in each file, because a reader of all three tables
 # cannot live in any one of the three files.
 #
-# ONE DEVICE, THREE VENDOR SPELLINGS. `ops_cl.py` is the BASE CLASS for CUDA and
+# ONE device, THREE vendor spellings. `ops_cl.py` is the BASE class for CUDA and
 # HIP: `CUDADevice` and `HIPDevice` are both `Compiled`, and `Program.__call__`
 # (device.py:372) is the one entry point all three share. So the three files are
 # not three backends to be compared -- they are ONE backend whose every operation
@@ -38,7 +38,7 @@
 # `ops_hip.bend`.
 #
 #
-# ONE DEVICE, THREE VENDOR SPELLINGS. `ops_cl.py` is the BASE CLASS for CUDA and
+# ONE device, THREE vendor spellings. `ops_cl.py` is the BASE class for CUDA and
 # HIP: `CUDADevice` and `HIPDevice` are both `Compiled`, and `Program.__call__`
 # (device.py:372) is the one entry point all three share. So the three files are
 # not three backends to be compared -- they are ONE backend whose every operation
@@ -191,7 +191,7 @@
 #    STRING it returns is data the port cannot produce, because calling it needs
 #    a live HIP runtime. `hp_err_of` therefore answers the PREFIX
 #    `HIP Error <status>, ` and the tail is the seam's.
-#    THIS WALL USED TO BE BIGGER AND WAS WRONG ABOUT IT. It claimed that
+#    THIS wall used to be bigger and was wrong about it. It claimed that
 #    `import tinygrad.runtime.autogen.hip` raises "failed to load library hip"
 #    on this machine, and therefore that there was no oracle for the 1277 `hip*`
 #    symbols. MEASURED, arm64 darwin: the import SUCCEEDS, all 1277 symbols
@@ -265,7 +265,7 @@
 #      the OpenCL extension list (+ `IMAGE_PITCH_ALIGNMENT=`), `sm_{maj}{min}`,
 #      and `gcnArchName`. `vend.arch_*` is that comparison.
 #   5. `Program.__call__` is called from engine/realize.py with `bufs` resolved
-#      and `vals` = `ProgramInfo.vals`. THIS FILE NEEDS THE BUFFER LIST AND THE
+#      and `vals` = `ProgramInfo.vals`. THIS file needs the BUFFER LIST and the
 #      VAL COUNT AND NOTHING ELSE.
 #
 # cstyle.bend owes, and this is the interesting half:
@@ -506,18 +506,6 @@ def cl_unchecked() -> List<&2, U32>: Nil{}
 
 def is_unchecked(+xs: List<&2, U32>, +op: U32) -> Bool: List.contains(~U32, ~U32.is_eq, xs, op)
 
-# cl:98 `err = cl.clGetDeviceIDs(platform_ids[0], device_type, 0, None, num_devices)`
-# -- the PROBE, whose status is compared to 0 and then forgotten. The real call
-# at cl:102 IS checked.
-def cl_probe_checked() -> Bool: False{}
-
-# cl:105, :107, :114 -- `(cl.clGetDeviceInfo(...), buf.value.decode())[1]`.
-# Three sites, one shape: the status is dropped on the floor.
-def cl_info_checked() -> Bool: False{}
-
-# cl:29-30 -- the build log is read twice, unchecked, and the raise at :32 is a
-# `CompileError`, not a `RuntimeError` from `check`.
-def cl_build_log_checked() -> Bool: False{}
 def vend.checked(+op: U32) -> Bool: Bool.not(is_unchecked(cl_unchecked(), op))
 
 # how many of the 39 ops each vendor CHECKS. CL checks all 39 at the op level,
@@ -630,8 +618,6 @@ def cl_err_n() -> U32: 63
 # names are aliases it throws away. MEASURED by counting both sides in CPython.
 def cl_err_names_n() -> U32: 74
 
-def cl_err_aliases() -> U32: U32.sub(cl_err_names_n(), cl_err_n())
-
 # code -> name, i.e. `cl_errors.get(status)`. Walks the code and the name in
 # lockstep and keeps the FIRST hit, which is what a dict lookup is and is NOT
 # what `List.find` is. The accumulator starts at the DEFAULT so an absent code
@@ -656,18 +642,6 @@ def CL_UNKNOWN() -> String: "Unknown error"
 
 def cl_err_of(+status: U32) -> String:
   cl_err_step(U32.to_nat(cl_err_n()), status, cl_err_code(), cl_err_name(), False{}, CL_UNKNOWN())
-
-# cl:18 f"OpenCL Error {status}: {cl_errors.get(status, 'Unknown error')}". The
-# f-string has a DEFAULT, so there is NO `.get(...) is not None` test to port: the
-# lookup's own default IS the message's tail and the two arms of such a pick would
-# be equal. MEASURED: adding the `is not None` pick back moves ZERO gate rows --
-# `cl_err_p999` prints `Unknown error` either way -- so the pick was dead code and
-# `cl_err_hit` is gone with it. `u32s` puts the SIGN BACK, because the table stores
-# two's complement and CPython's f-string spells `-1`. That is why the row that
-# pins this says so in its NAME (`cl_err_m1` prints `-1`) and the oracle prints the
-# same `str()`.
-def cl_err_msg(+status: U32) -> String:
-  String.concat(["OpenCL Error ", u32s(status), ": ", cl_err_of(status)])
 
 # ===========================================================================
 # THE TYPES.
@@ -847,7 +821,7 @@ def Tr.n(+t: Tr) -> U32: U32.from_nat(List.length(&2, Call, Tr.calls(t)))
 # conjunct back moves ZERO gate rows.
 def Tr.hit(+bad_at: U32, hits: U32) -> Bool: U32.is_eq(U32.add(hits, 1), bad_at)
 
-# THE CALL COUNT COMES FROM THE DESTRUCTURED LIST and not from `Tr.n(t)`, and
+# THE call count comes from the destructured list and not from `Tr.n(t)`, and
 # that is not a style choice: `match t:` KILLS the name `t`, so the first version
 # read a consumed scrutinee for the ordinal and `bad_at` never fired.
 def Tr.emit.go(+refused: Bool, op: U32, arg: String, +calls: List<&2, Call>,
@@ -1079,12 +1053,6 @@ def cl.probe_init(+p: Prb, +t: Tr) -> Prb:
   +p2 = cl.probe.go(cl_types(), Prb.nd(p), 0, Prb{NO_IDX(), 0, Prb.nd(p), t2})
   Prb{Prb.idx(p2), Prb.n(p2), Prb.nd(p), cl.device_ids(p2, Prb.t(p2))}
 
-# cl:97-99 -- the WINNING device type, and `one_u` answers 0 for a `None` index,
-# which is NEITHER candidate: an exhausted probe leaves `Prb.idx` at NO_IDX, so
-# `cl_probe_type_none` is the row that says the port answers 0 where Python would
-# raise IndexError.
-def cl.dev_type(+p: Prb) -> U32: one_u(List.get(&2, U32, cl_types(), U32.to_nat(Prb.idx(p))))
-
 # ===========================================================================
 # cl:120-123 -- THE ARCH STRING, which is the `Compiled.__init__` argument and
 # the only derivation in `__init__` that is not a call.
@@ -1194,8 +1162,6 @@ def cl_colon_at(+cs: List<&2, Char>, +hit: Bool) -> Bool:
     case Nil{}: hit
     case c <> t: cl_colon_at(t, Bool.or(hit, Char.is_eq(c, CL_COLON())))
 
-def cl_has_colon(+cs: List<&2, Char>) -> Bool: cl_colon_at(cs, False{})
-
 # cl:112 `self.pending_copyin: list[memoryview] = []` -- no call, and it is the
 # only state on the device that the trace does not own.
 def cl.pending_init() -> U32: 0
@@ -1297,25 +1263,6 @@ def comp.prg_info(param: U32, +t: Tr) -> Tr: Tr.emit(OP_PRG_INFO(), U32.show(par
 
 # cl:36 `check(cl.clReleaseProgram(program))` -- the only release in the compiler.
 def comp.release(+t: Tr) -> Tr: Tr.emit(OP_RELEASE_PRG(), "0", t)
-
-# the FIVE success-path calls, in order.
-def comp.compile(+t: Tr) -> Tr:
-  +t1 = comp.from_src(t)
-  +t2 = comp.build(t1)
-  +t3 = comp.prg_info(CL_PROGRAM_BINARY_SIZES(), t2)
-  +t4 = comp.prg_info(CL_PROGRAM_BINARIES(), t3)
-  comp.release(t4)
-
-# cl:28-32 -- `if build_status != 0:` then the TWO log reads and the raise. The
-# raise is a `CompileError`, NOT a `check`, and this is the ONE refusal in the
-# three files that the trace's `raise` does not model. Faithfulness here means the
-# trace STOPS after the log reads, because after :32 nothing else in `compile`
-# happens -- which is the same observable shape as a `check` refusal and is the
-# reason the model covers it without a flag.
-def comp.compile.bad(+t: Tr) -> Tr:
-  +t1 = comp.from_src(t)
-  +t2 = comp.build(t1)
-  comp.build_log(0, comp.build_log(0, t2))
 
 # the CompileError message is `f"OpenCL Compile Error\n\n{mstr.value.decode()}"`
 # and the log is WALL 3, so only the PREFIX is portable.
@@ -1436,14 +1383,6 @@ def prog.kernel(name: String, +t: Tr) -> Tr: Tr.checked(OP_KERNEL(), name, t)
 # :40-47, in order: from-bin, the binary-status check, build, kernel.
 def PROG_INIT_N() -> U32: 4
 
-def prog.init(+d: Dev, +entry: String, libn: U32, +t: Tr, +sig: List<&2, Sig>) -> Prog:
-  +t1 = prog.from_bin(libn, t)
-  +t2 = prog.binary_check(t1)
-  +t3 = prog.build(t2)
-  +t4 = prog.kernel(entry, t3)
-  Prog{V_CL(), Dev.didx(d), Dev.ctx(d), Tr.here(t1), Tr.here(t4), entry,
-       sig, Nil{}, 1, 1, 1, 1, 1, 1, False{}, t4}
-
 # cl:49-53 -- `__del__`, and the TRY/EXCEPT is the whole content of it:
 #
 #   try: check(cl.clReleaseKernel(self.kernel))
@@ -1464,9 +1403,6 @@ def prog.del.go(have_k: Bool, have_p: Bool, +t: Tr) -> Tr:
     case True{}: prog.del.prg(have_p, Tr.emit(OP_RELEASE_KERNEL(), "0", t))
     case False{}: prog.del.prg(have_p, t)
 
-def prog.del(+p: Prog) -> Tr:
-  prog.del.go(Bool.not(U32.is_zero(Prog.kernel(p))), Bool.not(U32.is_zero(Prog.prg(p))), Prog.t(p))
-
 # ===========================================================================
 # cl:55-76 -- ONE PROGRAM CALL, as the step list it is. Every step is one line
 # range of the Python and takes the `Prog` it is handed, so the order IS the
@@ -1477,14 +1413,6 @@ def prog.del(+p: Prog) -> Tr:
 # a refusal lands nothing further records and a refusal shows up as a TRUNCATED
 # trace. `cl_refuse_*` reads that.
 # ===========================================================================
-
-# cl:58 `getattr(ctypes, f"c_int{dt.bitsize}")(vals[slot - len(bufs)])` -- the
-# ctypes TYPE NAME. Portable, and the one part of WALL 6 compared
-# string-for-string against CPython. Note it is `c_int` for UNSIGNED dtypes too:
-# the f-string has no `u` in it. It is the f-string, so the suffix is the DECIMAL
-# PRINTER and not a four-way table -- 7 is `c_int7`, not `c_int32`, and the gate
-# pins that off-grid row because a table keyed on {8,16,32,64} gets it wrong.
-def ct.typename(bits: U32) -> String: String.concat(["c_int", u32_dec(bits)])
 
 # `Arg.kind`: 0 is a `cl_mem`, 1 is a `clCreateImage` result, 2 is the boxed
 # `c_int{bitsize}` scalar. The three are not decoration -- they select three
@@ -1511,8 +1439,6 @@ def arg.size(kind: U32, isz: U32) -> U32:
 # The decision is `slot < len(bufs)` and the SCALAR's index is `slot - len(bufs)`,
 # so the two are one subtraction apart.
 def arg.is_buf(slot: U32, +nbufs: U32) -> Bool: U32.is_lt(slot, nbufs)
-
-def arg.val_index(slot: U32, +nbufs: U32) -> U32: U32.sub(slot, nbufs)
 
 def arg.kind.at(isimg: Bool, +s: Sig, +nbufs: U32) -> U32:
   match isimg:
@@ -1584,17 +1510,6 @@ def cl.pitch.at(osx: Bool, +w: U32, isz: U32) -> U32:
   U32.mul(U32.mul(Bool.pick(U32, osx, H.round_up_u32(w, cl.PITCH_ALIGN()), w),
                   IMAGE_CHANNELS()), isz)
 
-def cl.pitch(osx: Bool, +s: Sig) -> U32: cl.pitch.at(osx, Sig.w(s), Sig.isz(s))
-
-# cl:62 `desc = cl.cl_image_desc(cl.CL_MEM_OBJECT_IMAGE2D, shape[1], shape[0],
-# image_row_pitch=pitch, buffer=b)` -- WIDTH is shape[1] and HEIGHT is shape[0],
-# i.e. the OpenCL descriptor's two extents are the Python shape's LAST TWO in the
-# opposite order, because a CL image is row-pitched and a numpy shape is
-# row-major. Two separate defs so the swap is gateable on its own.
-def img.desc_kind() -> U32: CL_MEM_OBJECT_IMAGE2D()
-def img.desc_w(+s: Sig) -> U32: Sig.w(s)
-def img.desc_h(+s: Sig) -> U32: Sig.h(s)
-
 # cl:66 `global_size = cast(tuple[int,int,int], tuple(int(g*l) for g,l in
 # zip(global_size, local_size)))` -- the dispatch geometry is the PRODUCT per
 # axis, and it OVERWRITES the parameter: the LOCAL size is still what cl:69 hands
@@ -1635,12 +1550,6 @@ def prog.time.at(+want: Bool, +p: Prog) -> Prog:
 def prog.launch(+want: Bool, +p: Prog) -> Prog:
   prog.time.at(want, prog.with_t(p, cl.launch(3, Prog.t(p))))
 
-# cl:55-76 -- the step order IS the order of the Python.
-def prog.call.at(+sigs: List<&2, Sig>, nbufs: U32, gx: U32, gy: U32, gz: U32,
-                lx: U32, ly: U32, lz: U32, +want: Bool, +p0: Prog) -> Prog:
-  +p1 = prog.args.go(sigs, 0, nbufs, p0)
-  prog.launch(want, prog.geometry(p1, sigs, gx, gy, gz, lx, ly, lz, want))
-
 # ===========================================================================
 # cl:78-89 -- `CLAllocator`. Four methods, and the ASYMMETRY between them is the
 # content: `_copyout` calls `self.dev.synchronize()` and `_copyin` does not, and
@@ -1665,13 +1574,6 @@ def alloc.free(+m: Made) -> Tr: Tr.emit(OP_FREE(), U32.show(Buf.id(Made.buf(m)))
 # `arg` is `len(src)*src.itemsize`.
 def copy.copyin(nbytes: U32, +t: Tr) -> Tr: Tr.emit(OP_COPY_IN(), U32.show(nbytes), t)
 
-# cl:89 `self.dev.synchronize()` -- the append that `_copyin` made is released
-# here, so the COUNT of pending copies is what `synchronize` clears.
-def copy.pending_clear(d: Dev) -> Dev:
-  match d:
-    case Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, pending, t}:
-      Dev{didx, ctx, q0, qflags, name, drv, exts, ipa, has_ipa, ckey, arch, 0, t}
-
 # cl:128-130 -- `synchronize` is `check(cl.clFinish(self.queue))` followed by
 # `self.pending_copyin.clear()`. TWO things, and the second is the only reason the
 # first can drop the host memory.
@@ -1683,11 +1585,6 @@ def cl.sync(+t: Tr) -> Tr: Tr.emit(OP_FINISH(), "0", t)
 # the ONLY transfer that synchronises.
 def copy.copyout(nbytes: U32, +t: Tr) -> Tr: cl.sync(Tr.emit(OP_COPY_OUT(), U32.show(nbytes), t))
 
-# cl:126 `def count(self) -> int: return len(unwrap(self.device_ids))` -- no call
-# at all, and that is the row: `cl_count_gpu` is the probe's `n` and the trace has
-# nothing to do with it.
-def cl.count(p: Prb) -> U32: Prb.n(p)
-
 # ===========================================================================
 # helpers.py:38 -- `is_image_shape(shape)` is `shape is not None and len(shape) ==
 # 3 and shape[-1] == 4`. The LAST dim is 4 and not the first, so `(4, 8, 8)` is a
@@ -1695,17 +1592,9 @@ def cl.count(p: Prb) -> U32: Prb.n(p)
 # the whole of `img.is_image`.
 # ===========================================================================
 
-def img.is_image(ndim: U32, last: U32) -> Bool:
-  Bool.and(U32.is_eq(ndim, 3), U32.is_eq(last, 4))
-
 # cl:14 `OSX_TIMING_RATIO = (125/3) if OSX else 1.0` -- "it's in like GPU clocks or
 # something". An F32, and the only F32 in the three files besides hp:57's.
 def timing.ratio(osx: Bool) -> F32: Bool.pick(F32, osx, 41.666666666666664, 1.0)
-
-# cl:75 `float(end.value - start.value) * OSX_TIMING_RATIO * 1e-9` -- the ns->s
-# divisor and the ratio are portable and the u64 subtraction is WALL 2.
-def timing.scale(osx: Bool) -> F32: F32.mul(timing.ratio(osx), 0.000000001)
-
 
 # ONE `Arg` as a string: `i:slot:kind:size:off`, joined with one space. A gate with
 # five Bool columns and no structural row cannot see a swapped pair, and
@@ -1723,32 +1612,15 @@ def arg.strs.go(xs: List<&2, Arg>, +acc: List<&2, String>) -> List<&2, String>:
     case Nil{}: acc
     case a <> t: arg.strs.go(t, arg.strs.put(a, acc))
 
-def arg.strs(+xs: List<&2, Arg>) -> String: String.join(arg.strs.go(xs, Nil{}), " ")
+def DEV17() -> String: "OPENCL:17"
 
-# THE GATE. Every row is a claim about the TEXT of the three Python files, about
-# a constant read out of `tinygrad/runtime/autogen/*.py`, or about a table those
-# two things define. The row name says which Python line it is about, and where a
-# row's value is a NAME it is printed as a STRING -- never as a Bool about a
-# string, because `String.concat` drops a literal silently and a Bool cannot see
-# that it did.
-#
-# THE FIXTURES.
-#   `fx_gpu`    the OpenCL device with two extensions and pitch alignment 0.
-#   `fx_def`    the same, with the device-type loop falling through to DEFAULT.
-#   `fx_none`   the same, with the loop EXHAUSTED (every candidate zero devices).
-#   `fx_img`    the same with `cl_khr_image2d_from_buffer` and alignment 128.
-#   `sig3`      three GLOBAL buffers and ONE val -- the shape of a 2-input
-#               1-output float kernel, which is what cstyle's OpenCL text names
-#               `data0_4, data1_4`.
-#   `sig_img`   the same with ONE of the buffers an image (16x8, half).
-#   `sig_skew`  the same with the SLOTS not the positions, which is what separates
-#               cl:57's `enumerate` index from cl:58's `slot`.
-# ===========================================================================
-
+def DEV2() -> String: "OPENCL:2"
 def brow(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
-def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
-def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
-
+def DEV0() -> String: ""
+def DRV() -> String: "4.0"
+def EXTS_B() -> List<&2, String>: ["cl_khr_image2d_from_buffer", "cl_khr_fp16"]
+def NAME() -> String: "Apple M2"
+def fx_img() -> Dev: cl.init(Prb.seed([2, 1]), DEV0(), NAME(), DRV(), EXTS_B(), 128, Tr.of())
 def ush(xs: List<&2, U32>, +sep: String, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: List.reverse(&2, String, acc)
@@ -1757,6 +1629,8 @@ def ush(xs: List<&2, U32>, +sep: String, +acc: List<&2, String>) -> List<&2, Str
 def lrow(nm: String, xs: List<&2, U32>) -> IO(Unit):
   IO.print(String.concat([nm, "=", String.join(ush(xs, ",", Nil{}), ",")]))
 
+def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
+
 def ssh(xs: List<&2, String>, +sep: String, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: List.reverse(&2, String, acc)
@@ -1764,367 +1638,4 @@ def ssh(xs: List<&2, String>, +sep: String, +acc: List<&2, String>) -> List<&2, 
 
 def srowlist(nm: String, xs: List<&2, String>) -> IO(Unit):
   IO.print(String.concat([nm, "=", String.join(ssh(xs, ",", Nil{}), ",")]))
-# --- 1: the vendor table, the CL column ---------------------------------
-def t_vend() -> IO(Unit):
-  do IO<Unit>:
-    urow("vend_count_cl", vend.count())
-    srowlist("vend_names_cl", vend.cl())
-    urow("vend_len_cl", U32.from_nat(List.length(&2, String, vend.cl())))
-    srow("vend_alloc_cl", vend.name(OP_ALLOC()))
-    srow("vend_setarg_cl", vend.name(OP_SET_ARG()))
-    srow("vend_relkernel_cl", vend.name(OP_RELEASE_KERNEL()))
-    srow("vend_relprg_cl", vend.name(OP_RELEASE_PRG()))
-    srow("vend_initext_cl", vend.name(OP_INIT()))
-    srow("vend_none_cl", vend.name(OP_NONE()))
-    srow("vend_oob", vend.name(39))
-    # the two ARGUMENT-COLUMN rows and the table width are not per vendor:
-    # `vend.argname` is the trace's one `arg` column and `OP_N` is the width
-    # all three tables are asserted against, so they live with the first file.
-    srowlist("vend_argnames", vend.argname())
-    urow("vend_len_argnames", U32.from_nat(List.length(&2, String, vend.argname())))
-    urow("vend_op_n", OP_N())
-
-# --- 2: the check table, cl:98/105/114 ----------------------------------
-def t_check() -> IO(Unit):
-  do IO<Unit>:
-    urow("vend_nchecked_cl", chk_count())
-    urow("cl_unchecked_n", U32.from_nat(List.length(&2, U32, cl_unchecked())))
-    brow("chk_cl_alloc", vend.checked(OP_ALLOC()))
-    brow("cl_probe_checked", cl_probe_checked())
-    brow("cl_info_checked", cl_info_checked())
-    brow("cl_build_log_checked", cl_build_log_checked())
-
-# --- 3: the error table, cl:16 ------------------------------------------
-def t_err() -> IO(Unit):
-  do IO<Unit>:
-    urow("cl_err_n", cl_err_n())
-    urow("cl_err_aliases", cl_err_aliases())
-    srow("cl_err_0", cl_err_msg(0))
-    srow("cl_err_m1", cl_err_msg(4294967295))
-    srow("cl_err_m2", cl_err_msg(4294967294))
-    srow("cl_err_m3", cl_err_msg(4294967293))
-    srow("cl_err_m19", cl_err_msg(4294967277))
-    srow("cl_err_m30", cl_err_msg(4294967266))
-    srow("cl_err_m72", cl_err_msg(4294967224))
-    srow("cl_err_p999", cl_err_msg(999))
-    # the four ALIASED codes -- 0, -1, -2 and -3 carry 9, 2, 2 and 2 names -- and
-    # the comprehension keeps the LAST one, so these four rows are what pins WHICH
-    # name survives. Without them `cl_err_step`'s "first hit wins" guard is
-    # invisible: MEASURED, dropping it moved nothing until these four rows existed.
-    srow("cl_err_alias_m3", cl_err_of(4294967293))
-    srow("cl_err_alias_m2", cl_err_of(4294967294))
-    srow("cl_err_alias_m1", cl_err_of(4294967295))
-    srow("cl_err_alias_0", cl_err_of(0))
-
-# --- 4: the integer printer, which is the only sign repair in the file -----
-def t_print() -> IO(Unit):
-  do IO<Unit>:
-    srow("u32s_0", u32s(0))
-    srow("u32s_7", u32s(7))
-    srow("u32s_63", u32s(63))
-    srow("u32s_100", u32s(100))
-    srow("u32s_999", u32s(999))
-    srow("u32s_712", u32s(712))
-    srow("u32s_neg1", u32s(4294967295))
-    srow("u32s_neg19", u32s(4294967277))
-    urow("dec_len_0", dec_len(0))
-    urow("dec_len_9", dec_len(9))
-    urow("dec_len_10", dec_len(10))
-    urow("dec_len_63", dec_len(63))
-    urow("dec_len_64", dec_len(64))
-    urow("dec_len_99", dec_len(99))
-    urow("dec_len_100", dec_len(100))
-    urow("dec_len_999", dec_len(999))
-    urow("dec_len_1000", dec_len(1000))
-    urow("dec_len_4294967295", dec_len(4294967295))
-    srow("dgt_0", dgt(0))
-    srow("dgt_9", dgt(9))
-    # F32 constants are gated by their BIT PATTERN and not by `F32.show`: the two
-    # lanes agree on `F32.bits` and on `struct.pack('<f')`, and `F32.show` prints
-    # seven significant digits, which no CPython format reproduces. MEASURED on
-    # both lanes against `struct.unpack('<I', struct.pack('<f', v))[0]`.
-    urow("timing_ratio_off_bits", F32.bits(timing.ratio(False{})))
-    urow("timing_ratio_on_bits", F32.bits(timing.ratio(True{})))
-    urow("timing_ns_scale_bits", F32.bits(timing.scale(False{})))
-    urow("timing_ns_scale_on_bits", F32.bits(timing.scale(True{})))
-
-# --- 5: the OpenCL INIT SEQUENCE, cl:93-124 --------------------------------
-def EXTS_A() -> List<&2, String>: ["cl_khr_fp16", "cl_khr_int64_base_atomics"]
-def EXTS_B() -> List<&2, String>: ["cl_khr_image2d_from_buffer", "cl_khr_fp16"]
-def EXTS_C() -> List<&2, String>: ["cl_khr_fp16"]
-def NAME() -> String: "Apple M2"
-def DRV() -> String: "4.0"
-def DEV0() -> String: ""
-def DEV2() -> String: "OPENCL:2"
-def DEV17() -> String: "OPENCL:17"
-
-def fx_gpu() -> Dev: cl.init(Prb.seed([2, 1]), DEV0(), NAME(), DRV(), EXTS_C(), 0, Tr.of())
-def fx_def() -> Dev: cl.init(Prb.seed([0, 3]), DEV0(), NAME(), DRV(), EXTS_C(), 0, Tr.of())
-def fx_img() -> Dev: cl.init(Prb.seed([2, 1]), DEV0(), NAME(), DRV(), EXTS_B(), 128, Tr.of())
-def fx_none() -> Dev: cl.init(Prb.seed([0, 0]), DEV0(), NAME(), DRV(), EXTS_C(), 0, Tr.of())
-
-def t_clinit() -> IO(Unit):
-  do IO<Unit>:
-    srow("cl_init_trace", vend.trace(Tr.calls(Dev.t(fx_gpu()))))
-    srow("cl_init_trace_def", vend.trace(Tr.calls(Dev.t(fx_def()))))
-    srow("cl_init_trace_img", vend.trace(Tr.calls(Dev.t(fx_img()))))
-    urow("cl_init_calls", Tr.n(Dev.t(fx_gpu())))
-    urow("cl_init_calls_def", Tr.n(Dev.t(fx_def())))
-    urow("cl_init_calls_img", Tr.n(Dev.t(fx_img())))
-    urow("cl_init_platforms", Tr.count(OP_PLATFORMS(), Tr.calls(Dev.t(fx_gpu()))))
-    urow("cl_init_getdevices", Tr.count(OP_GET_DEVICES(), Tr.calls(Dev.t(fx_gpu()))))
-    urow("cl_init_getdevices_none", Tr.count(OP_GET_DEVICES(), Tr.calls(Dev.t(fx_none()))))
-    urow("cl_init_ctx", Tr.count(OP_CTX_CREATE(), Tr.calls(Dev.t(fx_gpu()))))
-    urow("cl_init_queue", Tr.count(OP_QUEUE_CREATE(), Tr.calls(Dev.t(fx_gpu()))))
-    urow("cl_init_info", Tr.count(OP_GET_DEVICE_INFO(), Tr.calls(Dev.t(fx_gpu()))))
-    urow("cl_init_info_img", Tr.count(OP_GET_DEVICE_INFO(), Tr.calls(Dev.t(fx_img()))))
-    srowlist("cl_init_info_params", Tr.args(OP_GET_DEVICE_INFO(), Tr.calls(Dev.t(fx_img()))))
-    urow("cl_probe_idx_gpu", Prb.idx(cl.probe_init(Prb.seed([2, 1]), Tr.of())))
-    urow("cl_probe_idx_def", Prb.idx(cl.probe_init(Prb.seed([0, 3]), Tr.of())))
-    urow("cl_probe_idx_none", Prb.idx(cl.probe_init(Prb.seed([0, 0]), Tr.of())))
-    urow("cl_probe_n_gpu", Prb.n(cl.probe_init(Prb.seed([2, 1]), Tr.of())))
-    urow("cl_probe_n_def", Prb.n(cl.probe_init(Prb.seed([0, 3]), Tr.of())))
-    urow("cl_probe_n_none", Prb.n(cl.probe_init(Prb.seed([0, 0]), Tr.of())))
-    urow("cl_probe_type_gpu", cl.dev_type(cl.probe_init(Prb.seed([2, 1]), Tr.of())))
-    urow("cl_probe_type_def", cl.dev_type(cl.probe_init(Prb.seed([0, 3]), Tr.of())))
-    urow("cl_probe_type_none", cl.dev_type(cl.probe_init(Prb.seed([0, 0]), Tr.of())))
-    lrow("cl_types", cl_types())
-    urow("cl_count_gpu", cl.count(cl.probe_init(Prb.seed([2, 1]), Tr.of())))
-    urow("cl_count_none", cl.count(cl.probe_init(Prb.seed([0, 0]), Tr.of())))
-    urow("cl_didx_empty", cl_dev_index(DEV0()))
-    urow("cl_didx_0", cl_dev_index("OPENCL:0"))
-    urow("cl_didx_2", cl_dev_index(DEV2()))
-    urow("cl_didx_17", cl_dev_index(DEV17()))
-    brow("cl_didx_colon", cl_has_colon(String.to_list(DEV2())))
-    brow("cl_didx_nocolon", cl_has_colon(String.to_list(DEV0())))
-    srow("cl_arch_none", Dev.arch(fx_gpu()))
-    srow("cl_arch_img", Dev.arch(fx_img()))
-    srow("cl_key", Dev.ckey(fx_gpu()))
-    urow("cl_ctx_id", Dev.ctx(fx_gpu()))
-    urow("cl_queue_id", Dev.q0(fx_gpu()))
-    urow("cl_qflags", Dev.qflags(fx_gpu()))
-    urow("cl_pending", Dev.pending(fx_gpu()))
-    urow("cl_pending_after", Dev.pending(copy.pending_clear(fx_gpu())))
-
-# --- 6: the arch string and the image tables, cl:120-123 and :60-62 --------
-def t_climg() -> IO(Unit):
-  do IO<Unit>:
-    brow("cl_img_ext_a", cl.has_img_ext(EXTS_A()))
-    brow("cl_img_ext_b", cl.has_img_ext(EXTS_B()))
-    brow("cl_img_ext_c", cl.has_img_ext(EXTS_C()))
-    srow("cl_arch_suffix_none", cl.arch_suffix(False{}, 128))
-    srow("cl_arch_suffix_128", cl.arch_suffix(True{}, 128))
-    srow("cl_ext_join_a", cl.ext_join(EXTS_A()))
-    srow("cl_ext_join_b", cl.ext_join(EXTS_B()))
-    urow("cl_pitch_align", cl.PITCH_ALIGN())
-    urow("cl_channels", IMAGE_CHANNELS())
-    urow("cl_pitch_noosx_8_8", cl.pitch(False{}, Sig.of(0, 32, 4, True{}, 8, 8)))
-    urow("cl_pitch_osx_8_8", cl.pitch(True{}, Sig.of(0, 32, 4, True{}, 8, 8)))
-    urow("cl_pitch_osx_1_1", cl.pitch(True{}, Sig.of(0, 16, 2, True{}, 1, 1)))
-    urow("cl_pitch_osx_257_4", cl.pitch(True{}, Sig.of(0, 16, 2, True{}, 257, 4)))
-    urow("cl_pitch_osx_4_257", cl.pitch(True{}, Sig.of(0, 16, 2, True{}, 4, 257)))
-    urow("img_fmt_1", img.fmt_of(1))
-    urow("img_fmt_2", img.fmt_of(2))
-    urow("img_fmt_4", img.fmt_of(4))
-    urow("img_fmt_8", img.fmt_of(8))
-    urow("img_desc_kind", img.desc_kind())
-    urow("img_desc_w_16_8", img.desc_w(Sig.of(0, 32, 4, True{}, 16, 8)))
-    urow("img_desc_h_16_8", img.desc_h(Sig.of(0, 32, 4, True{}, 16, 8)))
-    urow("img_desc_w_4_257", img.desc_w(Sig.of(0, 16, 2, True{}, 4, 257)))
-    urow("img_desc_h_4_257", img.desc_h(Sig.of(0, 16, 2, True{}, 4, 257)))
-    brow("img_is_image_3_4", img.is_image(3, 4))
-    brow("img_is_image_3_1", img.is_image(3, 1))
-    brow("img_is_image_2_4", img.is_image(2, 4))
-    brow("img_is_image_4_4", img.is_image(4, 4))
-    srow("ct_int8", ct.typename(8))
-    srow("ct_int16", ct.typename(16))
-    srow("ct_int32", ct.typename(32))
-    srow("ct_int64", ct.typename(64))
-    srow("ct_int7", ct.typename(7))
-    urow("cl_ptr_sz", PTR_SZ())
-    urow("arg_size_mem", arg.size(KIND_MEM(), 4))
-    urow("arg_size_image", arg.size(KIND_IMAGE(), 4))
-    urow("arg_size_scalar32", arg.size(KIND_SCALAR(), 4))
-    urow("arg_size_scalar16", arg.size(KIND_SCALAR(), 2))
-    urow("arg_kind_mem", arg.kind(Sig.of(0, 32, 4, False{}, 0, 0), 3))
-    urow("arg_kind_scalar", arg.kind(Sig.of(3, 32, 4, False{}, 0, 0), 3))
-    urow("arg_kind_image", arg.kind(Sig.of(1, 16, 2, True{}, 16, 8), 3))
-    brow("arg_is_buf_0_3", arg.is_buf(0, 3))
-    brow("arg_is_buf_3_3", arg.is_buf(3, 3))
-    urow("arg_val_index_3_3", arg.val_index(3, 3))
-    urow("arg_val_index_4_3", arg.val_index(4, 3))
-
-def sig3() -> List<&2, Sig>:
-  [Sig.of(0, 32, 4, False{}, 0, 0), Sig.of(1, 32, 4, False{}, 0, 0),
-   Sig.of(2, 32, 4, False{}, 0, 0), Sig.of(3, 32, 4, False{}, 0, 0)]
-
-def sig_img() -> List<&2, Sig>:
-  [Sig.of(0, 32, 4, False{}, 0, 0), Sig.of(1, 16, 2, True{}, 16, 8),
-   Sig.of(2, 32, 4, False{}, 0, 0), Sig.of(3, 32, 4, False{}, 0, 0)]
-
-# the signature where the SLOTS are not the positions: TinyELF's slots are
-# assignable (ops.py:1378 dedups them) so `slot` can skip, and that is the fixture
-# that separates cl:57's `enumerate` index from cl:58's `slot`.
-def sig_skew() -> List<&2, Sig>:
-  [Sig.of(0, 32, 4, False{}, 0, 0), Sig.of(3, 32, 4, False{}, 0, 0),
-   Sig.of(1, 32, 4, False{}, 0, 0), Sig.of(4, 32, 4, False{}, 0, 0)]
-
-# --- 7: the compile and program-init sequences, cl:25-47 ------------------
-def t_clprog() -> IO(Unit):
-  do IO<Unit>:
-    srow("cl_compile_trace", vend.trace(Tr.calls(comp.compile(Tr.of()))))
-    srow("cl_compile_bad_trace", vend.trace(Tr.calls(comp.compile.bad(Tr.of()))))
-    urow("cl_compile_calls", Tr.n(comp.compile(Tr.of())))
-    urow("cl_compile_bad_calls", Tr.n(comp.compile.bad(Tr.of())))
-    srowlist("cl_compile_prginfo", Tr.args(OP_PRG_INFO(), Tr.calls(comp.compile(Tr.of()))))
-    srowlist("cl_compile_badlog", Tr.args(OP_BUILD_LOG(), Tr.calls(comp.compile.bad(Tr.of()))))
-    srow("cl_compile_err", CL_COMPILE_ERR())
-    +p : Prog <- IO.pure(Prog, prog.init(fx_gpu(), "k", 128, Tr.of(), sig3()))
-    srow("cl_prog_init_trace", vend.trace(Tr.calls(Prog.t(p))))
-    urow("cl_prog_init_calls", Tr.n(Prog.t(p)))
-    urow("cl_prog_prg_id", Prog.prg(p))
-    urow("cl_prog_kernel_id", Prog.kernel(p))
-    urow("cl_prog_unit", Prog.unit(p))
-    urow("cl_prog_ctx", Prog.ctx(p))
-    srow("cl_prog_kernel_name", Prog.entry(p))
-    srow("cl_prog_del_trace", vend.trace(Tr.calls(prog.del(p))))
-    srow("cl_prog_del_nokernel", vend.trace(Tr.calls(prog.del(Prog.of(V_CL(), "k", Nil{})))))
-    urow("cl_prog_del_full", Tr.n(prog.del(p)))
-    urow("cl_prog_del_bare", Tr.n(prog.del(Prog.of(V_CL(), "k", Nil{}))))
-
-# --- 8: ONE PROGRAM CALL, cl:55-76 -----------------------------------------
-def fx_call3(want: Bool) -> Prog:
-  prog.call.at(sig3(), 3, 8, 2, 1, 4, 1, 1, want, prog.init(fx_gpu(), "k", 128, Tr.reset(Tr.of()), sig3()))
-
-def fx_callimg(want: Bool) -> Prog:
-  prog.call.at(sig_img(), 3, 8, 2, 1, 4, 1, 1, want, prog.init(fx_gpu(), "k", 128, Tr.reset(Tr.of()), sig_img()))
-
-def fx_callskew(want: Bool) -> Prog:
-  prog.call.at(sig_skew(), 2, 8, 2, 1, 4, 1, 1, want, prog.init(fx_gpu(), "k", 128, Tr.reset(Tr.of()), sig_skew()))
-
-def t_clcall() -> IO(Unit):
-  do IO<Unit>:
-    +p : Prog <- IO.pure(Prog, fx_call3(False{}))
-    +t : Tr <- IO.pure(Tr, Prog.t(p))
-    srow("cl_call_trace", vend.trace(Tr.calls(t)))
-    srow("cl_call_args", arg.strs(Prog.args(p)))
-    srow("cl_call_trace_wait", vend.trace(Tr.calls(Prog.t(fx_call3(True{})))))
-    srow("cl_call_args_img", arg.strs(Prog.args(fx_callimg(False{}))))
-    srow("cl_call_args_skew", arg.strs(Prog.args(fx_callskew(False{}))))
-    srow("cl_call_trace_img", vend.trace(Tr.calls(Prog.t(fx_callimg(False{})))))
-    srow("cl_call_trace_skew", vend.trace(Tr.calls(Prog.t(fx_callskew(False{})))))
-    urow("cl_call_calls", Tr.n(t))
-    urow("cl_call_calls_wait", Tr.n(Prog.t(fx_call3(True{}))))
-    urow("cl_call_setargs", Tr.count(OP_SET_ARG(), Tr.calls(t)))
-    urow("cl_call_setargs_img", Tr.count(OP_SET_ARG(), Tr.calls(Prog.t(fx_callimg(False{})))))
-    urow("cl_call_images", Tr.count(OP_IMAGE(), Tr.calls(Prog.t(fx_callimg(False{})))))
-    urow("cl_call_images_3", Tr.count(OP_IMAGE(), Tr.calls(t)))
-    urow("cl_call_gx", Prog.gsx(p))
-    urow("cl_call_gy", Prog.gsy(p))
-    urow("cl_call_gz", Prog.gsz(p))
-    urow("cl_call_lsx", Prog.lsx(p))
-    urow("cl_call_lsy", Prog.lsy(p))
-    urow("cl_call_lsz", Prog.lsz(p))
-    urow("cl_call_launch", Tr.count(OP_LAUNCH(), Tr.calls(t)))
-    urow("cl_call_waitev", Tr.count(OP_WAIT_EVENT(), Tr.calls(t)))
-    urow("cl_call_waitev_wait", Tr.count(OP_WAIT_EVENT(), Tr.calls(Prog.t(fx_call3(True{})))))
-    urow("cl_call_time", Tr.count(OP_TIME_END(), Tr.calls(t)))
-    urow("cl_call_time_wait", Tr.count(OP_TIME_END(), Tr.calls(Prog.t(fx_call3(True{})))))
-    srowlist("cl_call_time_params", Tr.args(OP_TIME_END(), Tr.calls(Prog.t(fx_call3(True{})))))
-    srowlist("cl_call_launch_arg", Tr.args(OP_LAUNCH(), Tr.calls(t)))
-    srowlist("cl_call_setarg_args", Tr.args(OP_SET_ARG(), Tr.calls(t)))
-    urow("cl_geom_8_4", cl.geom(8, 4))
-    urow("cl_geom_1_1", cl.geom(1, 1))
-    urow("cl_geom_0_5", cl.geom(0, 5))
-    urow("cl_geom_1000_1000", cl.geom(1000, 1000))
-
-# --- 9: the allocator, cl:78-89 and :126-130 -------------------------------
-def t_clalloc() -> IO(Unit):
-  do IO<Unit>:
-    +a : Made <- IO.pure(Made, alloc.of(64, Tr.of()))
-    srow("cl_alloc_trace", vend.trace(Tr.calls(Made.tr(a))))
-    urow("cl_alloc_size", Buf.size(Made.buf(a)))
-    urow("cl_alloc_id", Buf.id(Made.buf(a)))
-    +f : Tr <- IO.pure(Tr, alloc.free(a))
-    srow("cl_free_trace", vend.trace(Tr.calls(f)))
-    srowlist("cl_free_args", Tr.args(OP_FREE(), Tr.calls(f)))
-    +i : Tr <- IO.pure(Tr, copy.copyin(64, Tr.of()))
-    srow("cl_copyin_trace", vend.trace(Tr.calls(i)))
-    srowlist("cl_copyin_args", Tr.args(OP_COPY_IN(), Tr.calls(i)))
-    +o : Tr <- IO.pure(Tr, copy.copyout(64, Tr.of()))
-    srow("cl_copyout_trace", vend.trace(Tr.calls(o)))
-    srowlist("cl_copyout_args", Tr.args(OP_COPY_OUT(), Tr.calls(o)))
-    urow("cl_copyout_finishes", Tr.count(OP_FINISH(), Tr.calls(o)))
-    urow("cl_copyin_finishes", Tr.count(OP_FINISH(), Tr.calls(i)))
-    +sy : Tr <- IO.pure(Tr, cl.sync(Tr.of()))
-    srow("cl_sync_trace", vend.trace(Tr.calls(sy)))
-
-# --- 10: the REFUSAL paths, every CL `check` (cl:17-19) ----------------------
-# PORT-LOCAL CORRECTION: the pre-split heading read "every `check` in the three
-# files", and ALL 29 of its rows are `cl_refuse_*`. It was CL-only before the
-# split too. `t_cross`'s `x_free_*` rows are the three-file part.
-# `bad_at` names the CALL ORDINAL at which `check` reports, and the trace is
-# TRUNCATED from there -- which is the whole refusal model. `bad_at` is read AT
-# EMIT TIME, so it must be armed BEFORE the calls happen: the first version armed
-# a finished trace, all four rows printed the full nine calls and every flag was
-# False. `bad_at` numbers the PROGRAM's own trace (which `Tr.reset` starts at
-# zero), so 1 is `clCreateProgramWithBinary` and 5 is the first `clSetKernelArg`.
-def fx_refuse.prog(bad_at: U32) -> Prog:
-  prog.init(fx_gpu(), "k", 128, Tr.fail_at(Tr.reset(Tr.of()), bad_at), sig3())
-
-def fx_refuse(bad_at: U32) -> Prog:
-  prog.call.at(sig3(), 3, 8, 2, 1, 4, 1, 1, False{}, fx_refuse.prog(bad_at))
-
-def t_refuse() -> IO(Unit):
-  do IO<Unit>:
-    +a : Prog <- IO.pure(Prog, fx_refuse(1))
-    +b : Prog <- IO.pure(Prog, fx_refuse(2))
-    +c : Prog <- IO.pure(Prog, fx_refuse(4))
-    +d : Prog <- IO.pure(Prog, fx_refuse(5))
-    +e : Prog <- IO.pure(Prog, fx_refuse(6))
-    srow("cl_refuse_1_trace", vend.trace(Tr.calls(Prog.t(a))))
-    srow("cl_refuse_2_trace", vend.trace(Tr.calls(Prog.t(b))))
-    srow("cl_refuse_4_trace", vend.trace(Tr.calls(Prog.t(c))))
-    srow("cl_refuse_5_trace", vend.trace(Tr.calls(Prog.t(d))))
-    srow("cl_refuse_6_trace", vend.trace(Tr.calls(Prog.t(e))))
-    urow("cl_refuse_1_calls", Tr.n(Prog.t(a)))
-    urow("cl_refuse_2_calls", Tr.n(Prog.t(b)))
-    urow("cl_refuse_4_calls", Tr.n(Prog.t(c)))
-    urow("cl_refuse_5_calls", Tr.n(Prog.t(d)))
-    urow("cl_refuse_6_calls", Tr.n(Prog.t(e)))
-    urow("cl_refuse_5_setargs", Tr.count(OP_SET_ARG(), Tr.calls(Prog.t(d))))
-    urow("cl_refuse_6_setargs", Tr.count(OP_SET_ARG(), Tr.calls(Prog.t(e))))
-    urow("cl_refuse_5_launch", Tr.count(OP_LAUNCH(), Tr.calls(Prog.t(d))))
-    urow("cl_refuse_6_launch", Tr.count(OP_LAUNCH(), Tr.calls(Prog.t(e))))
-    urow("cl_refuse_5_args", U32.from_nat(List.length(&2, Arg, Prog.args(d))))
-    urow("cl_refuse_6_args", U32.from_nat(List.length(&2, Arg, Prog.args(e))))
-    urow("cl_refuse_5_calls_after_init", U32.sub(Tr.n(Prog.t(d)), PROG_INIT_N()))
-    urow("cl_refuse_6_calls_after_init", U32.sub(Tr.n(Prog.t(e)), PROG_INIT_N()))
-    brow("cl_refuse_1_flag", Tr.refused(Prog.t(a)))
-    brow("cl_refuse_5_flag", Tr.refused(Prog.t(d)))
-    brow("cl_refuse_0_flag", Tr.refused(Prog.t(fx_call3(False{}))))
-    # the MATCHER pins itself first: a reversed pair must NOT match, an absent entry
-    # must NOT match, and a real pair must. Five order rows are decorative
-    # without these three.
-    +t : Tr <- IO.pure(Tr, Prog.t(fx_call3(False{})))
-    brow("cl_has_rejects_reverse", Bool.not(Tr.has(Tr.calls(t),
-      [Call{OP_LAUNCH(), "3"}, Call{OP_WAIT_EVENT(), "1"}])))
-    brow("cl_has_rejects_absent", Bool.not(Tr.has(Tr.calls(t), [Call{OP_LAUNCH(), "999"}])))
-    brow("cl_has_rejects_arg", Bool.not(Tr.has(Tr.calls(t), [Call{OP_LAUNCH(), "4"}])))
-    brow("cl_has_pair", Tr.has(Tr.calls(t), [Call{OP_SET_ARG(), "1"}, Call{OP_LAUNCH(), "3"}]))
-    brow("cl_has_prefix", Tr.has(Tr.calls(t), [Call{OP_SET_ARG(), "0"}, Call{OP_SET_ARG(), "1"}]))
-
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    a : Unit <- t_vend()
-    b : Unit <- t_check()
-    c : Unit <- t_err()
-    d : Unit <- t_print()
-    e : Unit <- t_clinit()
-    f : Unit <- t_climg()
-    g : Unit <- t_clprog()
-    h : Unit <- t_clcall()
-    i : Unit <- t_clalloc()
-    j : Unit <- t_refuse()
-    IO.print("cl-done=1")
+def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
