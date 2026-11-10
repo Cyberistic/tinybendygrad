@@ -1,18 +1,19 @@
 # gates/elf-gate.bend -- THE GATE DRIVER for `tinybendygrad/renderer/amd/elf.bend`.
 #
-# THE ROWS MOVED HERE FROM THE PORT FILE. **⇒ THE PORT FILE CARRIES THE PORT AND
-# THIS FILE CARRIES THE INSTRUMENT**, AND THE TREE's OWN CONVENTION SAYS SO:
+# THE ROWS MOVED HERE FROM THE PORT FILE. The port file carries the port and
+# this file carries the instrument, and the tree's own convention says so:
 # `gates/README.md:173` -- "a gate's `.bend` driver and its CPython oracle sit in
 # `gates/`, named by the gate that needs them."
 #
-# **⇒ AND THE ROWS ARE PURE CONSUMERS: THEY CALL THE PORT's DEFS AND DEFINE
-# NOTHING THAT THE PORT NEEDS.**
+# And the rows are pure consumers: they call the port's defs and define
+# nothing that the port needs.
 
 import Base
 import ./../tinybendygrad/renderer/amd/elf.bend as P
 import ./../tinybendygrad/helpers.bend as H
 import ./../tinybendygrad/renderer/amd/dsl.bend as D
 
+def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def srow(nm: String, got: String, want: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(String.eq(got, want))]))
 def urow(nm: String, got: U32, want: U32) -> IO(Unit):
@@ -70,6 +71,10 @@ def fx_512() -> List<&2, P.Ins>: [P.ins_of(Nil{}, [P.ureg("vdst", 512, 1)], 0)]
 def none_l() -> List<&2, P.Lds>: Nil{}
 def none_p() -> List<&2, P.Slot>: Nil{}
 def none_g() -> List<&2, String>: Nil{}
+def pack(arch: String, insts: List<&2, P.Ins>, code_len: U32, locs: List<&2, P.Lds>,
+    params: List<&2, P.Slot>, gids: List<&2, String>) -> String:
+  P.assemble_linear(arch, insts, code_len, locs, params, gids)
+
 # Expected strings are the words a real assemble_linear ELF held, parsed back
 # out of the blob the oracle called. entry's hi:lo is struct.pack('<q', -text).
 def want_nop(r1: String, prop: String) -> String:
@@ -177,62 +182,62 @@ def g_sink() -> IO(Unit):
     urow("lds.one", P.lds_sum([P.Lds{8, 4}]), 32)
     urow("lds.two", P.lds_sum([P.Lds{8, 4}, P.Lds{15, 2}]), 62)
     urow("lds.none", P.lds_sum(none_l()), 0)
-    P.row("gid.x", P.Gids.x(P.gids_of(["gidx0"])))
-    P.row("gid.y", P.Gids.y(P.gids_of(["gidx1"])))
-    P.row("gid.z", P.Gids.z(P.gids_of(["gidx2"])))
-    P.row("gid.ten_is_x", P.Gids.x(P.gids_of(["gidx10"])))
-    P.row("gid.ten_not_y", Bool.not(P.Gids.y(P.gids_of(["gidx10"]))))
-    P.row("gid.local_skip", Bool.not(P.Gids.x(P.gids_of(["lidx0"]))))
-    P.row("gid.nine_no_bit", Bool.not(Bool.or(P.Gids.x(P.gids_of(["gidx9"])), Bool.or(P.Gids.y(P.gids_of(["gidx9"])), P.Gids.z(P.gids_of(["gidx9"]))))))
-    P.row("gid.bad", P.Gids.bad(P.gids_of(["gidx"])))
-    P.row("gid.ok", Bool.not(P.Gids.bad(P.gids_of(["gidx0"]))))
+    row("gid.x", P.Gids.x(P.gids_of(["gidx0"])))
+    row("gid.y", P.Gids.y(P.gids_of(["gidx1"])))
+    row("gid.z", P.Gids.z(P.gids_of(["gidx2"])))
+    row("gid.ten_is_x", P.Gids.x(P.gids_of(["gidx10"])))
+    row("gid.ten_not_y", Bool.not(P.Gids.y(P.gids_of(["gidx10"]))))
+    row("gid.local_skip", Bool.not(P.Gids.x(P.gids_of(["lidx0"]))))
+    row("gid.nine_no_bit", Bool.not(Bool.or(P.Gids.x(P.gids_of(["gidx9"])), Bool.or(P.Gids.y(P.gids_of(["gidx9"])), P.Gids.z(P.gids_of(["gidx9"]))))))
+    row("gid.bad", P.Gids.bad(P.gids_of(["gidx"])))
+    row("gid.ok", Bool.not(P.Gids.bad(P.gids_of(["gidx0"]))))
 
 def g_pack() -> IO(Unit):
   do IO<Unit>:
-    srow("elf.rdna3", P.pack("gfx1100", fx_empty(), 4, none_l(), none_p(), none_g()),
+    srow("elf.rdna3", pack("gfx1100", fx_empty(), 4, none_l(), none_p(), none_g()),
       want_nop("1085014016", "1032"))
-    srow("elf.rdna4", P.pack("gfx1200", fx_empty(), 4, none_l(), none_p(), none_g()),
+    srow("elf.rdna4", pack("gfx1200", fx_empty(), 4, none_l(), none_p(), none_g()),
       want_nop("1074528256", "1032"))
-    srow("elf.cdna", P.pack("gfx900", fx_empty(), 4, none_l(), none_p(), none_g()),
+    srow("elf.cdna", pack("gfx900", fx_empty(), 4, none_l(), none_p(), none_g()),
       want_nop("11272192", "8"))
-    srow("elf.v16", P.pack("gfx1100", [vmov(16, 20)], 4, none_l(), none_p(), none_g()),
+    srow("elf.v16", pack("gfx1100", [vmov(16, 20)], 4, none_l(), none_p(), none_g()),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=1085014018 r2=4 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.cdna_v16", P.pack("gfx908", [vmov(16, 20)], 4, none_l(), none_p(), none_g()),
+    srow("elf.cdna_v16", pack("gfx908", [vmov(16, 20)], 4, none_l(), none_p(), none_g()),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=11272386 r2=4 r3=0 prop=8 text=1012 roff=1280")
-    srow("elf.acc0", P.pack("gfx90a", [accmov(0, 0)], 4, none_l(), none_p(), none_g()),
+    srow("elf.acc0", pack("gfx90a", [accmov(0, 0)], 4, none_l(), none_p(), none_g()),
       want_nop("11272192", "8"))
-    srow("elf.acc_v8", P.pack("gfx90a", [vmov(8, 0), accmov(0, 0)], 8, none_l(), none_p(), none_g()),
+    srow("elf.acc_v8", pack("gfx90a", [vmov(8, 0), accmov(0, 0)], 8, none_l(), none_p(), none_g()),
       "lds=0 kern=0 entry=4294967295:4294966296 r1=11272257 r2=4 r3=2 prop=8 text=1000 roff=1280")
-    srow("elf.v8", P.pack("gfx90a", [vmov(8, 0)], 4, none_l(), none_p(), none_g()),
+    srow("elf.v8", pack("gfx90a", [vmov(8, 0)], 4, none_l(), none_p(), none_g()),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=11272257 r2=4 r3=0 prop=8 text=1012 roff=1280")
-    srow("elf.acc_v4", P.pack("gfx90a", [vmov(4, 0), accmov(7, 0)], 8, none_l(), none_p(), none_g()),
+    srow("elf.acc_v4", pack("gfx90a", [vmov(4, 0), accmov(7, 0)], 8, none_l(), none_p(), none_g()),
       "lds=0 kern=0 entry=4294967295:4294966296 r1=11272257 r2=4 r3=1 prop=8 text=1000 roff=1280")
-    srow("elf.v4", P.pack("gfx90a", [vmov(4, 0)], 4, none_l(), none_p(), none_g()),
+    srow("elf.v4", pack("gfx90a", [vmov(4, 0)], 4, none_l(), none_p(), none_g()),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=11272256 r2=4 r3=0 prop=8 text=1012 roff=1280")
-    srow("elf.lds", P.pack("gfx1100", fx_empty(), 4, [P.Lds{8, 4}], none_p(), none_g()),
+    srow("elf.lds", pack("gfx1100", fx_empty(), 4, [P.Lds{8, 4}], none_p(), none_g()),
       "lds=32 kern=0 entry=4294967295:4294966284 r1=1085014016 r2=4 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.lds2", P.pack("gfx1100", fx_empty(), 4, [P.Lds{8, 4}, P.Lds{15, 2}], none_p(), none_g()),
+    srow("elf.lds2", pack("gfx1100", fx_empty(), 4, [P.Lds{8, 4}, P.Lds{15, 2}], none_p(), none_g()),
       "lds=62 kern=0 entry=4294967295:4294966284 r1=1085014016 r2=4 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.kern", P.pack("gfx1100", fx_empty(), 4, none_l(), [P.Slot{2, 8}, P.Slot{0, 4}, P.Slot{1, 1}], none_g()),
+    srow("elf.kern", pack("gfx1100", fx_empty(), 4, none_l(), [P.Slot{2, 8}, P.Slot{0, 4}, P.Slot{1, 1}], none_g()),
       "lds=0 kern=16 entry=4294967295:4294966284 r1=1085014016 r2=4 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.gidx", P.pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx0"]),
+    srow("elf.gidx", pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx0"]),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=1085014016 r2=132 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.gidy", P.pack("gfx1200", fx_empty(), 4, none_l(), none_p(), ["gidx1"]),
+    srow("elf.gidy", pack("gfx1200", fx_empty(), 4, none_l(), none_p(), ["gidx1"]),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=1074528256 r2=260 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.gidz", P.pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx2"]),
+    srow("elf.gidz", pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx2"]),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=1085014016 r2=516 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.gidxz", P.pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx0", "gidx2"]),
+    srow("elf.gidxz", pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx0", "gidx2"]),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=1085014016 r2=644 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.gidx10", P.pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx10"]),
+    srow("elf.gidx10", pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx10"]),
       "lds=0 kern=0 entry=4294967295:4294966284 r1=1085014016 r2=132 r3=0 prop=1032 text=1012 roff=1280")
-    srow("elf.lidx", P.pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["lidx0"]),
+    srow("elf.lidx", pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["lidx0"]),
       want_nop("1085014016", "1032"))
-    srow("elf.gidx9", P.pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx9"]),
+    srow("elf.gidx9", pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx9"]),
       want_nop("1085014016", "1032"))
-    srow("elf.three", P.pack("gfx1100", fx_empty(), 12, none_l(), none_p(), none_g()),
+    srow("elf.three", pack("gfx1100", fx_empty(), 12, none_l(), none_p(), none_g()),
       "lds=0 kern=0 entry=4294967295:4294966308 r1=1085014016 r2=4 r3=0 prop=1032 text=988 roff=1280")
-    srow("elf.miss", P.pack("gfx8", fx_empty(), 4, none_l(), none_p(), none_g()), "REFUSAL:StopIteration")
-    srow("elf.badgid", P.pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx"]), "REFUSAL:ValueError")
+    srow("elf.miss", pack("gfx8", fx_empty(), 4, none_l(), none_p(), none_g()), "REFUSAL:StopIteration")
+    srow("elf.badgid", pack("gfx1100", fx_empty(), 4, none_l(), none_p(), ["gidx"]), "REFUSAL:ValueError")
 
 def main() -> IO(Unit):
   do IO<Unit>:

@@ -9,7 +9,7 @@
 # `D.Rg` and `D.K_FIXED` from `dsl.bend` -- reused, not reimplemented.
 #
 # ===========================================================================
-# WHAT IS NOT PORTED, AND THE SPECIFIC BLOCKER FOR EACH.
+# WHAT is not ported, AND the specific blocker for each.
 #
 #   elf.py:16   `insts = [u.arg[0] for u in lin.src]`
 #               BLOCKER: `lin` is a UOp whose `arg[0]` is an autogen `Inst`
@@ -64,7 +64,6 @@ import Base
 import ../../helpers.bend as H
 import ./dsl.bend as D
 
-def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 # ===========================================================================
 # CONSTANTS. Every literal below was printed by
 # `.venv/bin/python .agents/slop/elf_amd_oracle.py`, which calls getattr /
@@ -531,8 +530,4 @@ def ureg(nm: String, off: U32, sz: U32) -> Use: Use{nm, D.K_PLAIN(), True{}, rg(
 def ufix(nm: String, off: U32, sz: U32) -> Use: Use{nm, D.K_FIXED(), True{}, rg(off, sz)}
 def uimm(nm: String) -> Use: Use{nm, D.K_PLAIN(), False{}, rg(0, 1)}
 def ins_of(oprs: List<&2, Opr>, fields: List<&2, Use>, cd: U32) -> Ins: Ins{oprs, fields, cd}
-
-def pack(arch: String, insts: List<&2, Ins>, code_len: U32, locs: List<&2, Lds>,
-    params: List<&2, Slot>, gids: List<&2, String>) -> String:
-  assemble_linear(arch, insts, code_len, locs, params, gids)
 
