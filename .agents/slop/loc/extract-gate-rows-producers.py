@@ -245,7 +245,14 @@ def analyse(path: Path) -> dict:
     impl_text = "\n".join("\n".join(code[a:e]) for n, a, e in blocks if n in impl_names)
     impl_call_count: dict[str, int] = {}
     for n in calls:
-        impl_call_count[n] = len(re.findall(r"(?<![\w.])" + re.escape(n) + r"\s*\(", impl_text))
+        # **=> AND THE COUNT IS **OVER **EVERY USE**, **AND NOT ONLY
+        # OVER THE CALLS** -- **MEASURED 2026-11-10 ON `ops_dsp.bend`:
+        # `CALL_ION_FREE` IS USED **AS A VALUE** (`Call{CALL_ION_FREE,
+        # handle}`), **AND THE CALL-ONLY COUNT SAW **NO** USE**, **AND THE
+        # CONSTANT MOVED**, **AND THE PORT SAID "expected : a defined name
+        # / observed : CALL_ION_FREE"**.  **=> AND THE DEF's OWN
+        # DECLARATION **IS** ONE USE**, **SO THE THRESHOLD IS **2**.
+        impl_call_count[n] = len(re.findall(r"(?<![\w.])" + re.escape(n) + r"\b", impl_text))
     moved = set(section)
     changed = True
     while changed:
@@ -578,6 +585,25 @@ def _apply(text: str, spans: list[tuple[int, int]], fn) -> str:
 def _qualify_spans(text: str, port_defs: set[str], port_types: set[str], moved_names: set[str]) -> str:
     """ THE QUALIFICATION, **AND IT **NEVER** TOUCHES A STRING OR A COMMENT**."""
     def once(chunk: str) -> str:
+        # **=> AND **A `def` LINE'S OWN NAME** IS **NOT** A REFERENCE -- **AND
+        # QUALIFYING IT GAVE `def P.dev.shell_spec.nolru(...)`** -- **MEASURED
+        # 2026-11-10 ON `ops_dsp.bend`: BEND SAID "expected : a fresh name (P is
+        # an import's alias) / observed : 'P.dev.shell_spec.nolru'"** -- **=> AND
+        # **ONLY THE NAME** IS PROTECTED, **NOT **THE WHOLE LINE**, **BECAUSE A
+        # **ONE-LINE DEF** CARRIES ITS BODY **ON THE DEF LINE** -- **=> SO THE
+        # NAME IS **MASKED**, **QUALIFIED, **AND THEN **UNMASKED**.**
+        masked: list[str] = []
+
+        def mask(m: re.Match) -> str:
+            # **=> AND THE CAPTURED NAME IS **GROUP 2** -- **AND THE FIRST
+            # VERSION TOOK **GROUP 1**, **WHICH IS **THE `def` KEYWORD** --
+            # **AND THE DRIVER READ `def def +p: P.Param) -> U32:`** --
+            # **MEASURED 2026-11-10 ON `ops_dsp.bend`.**
+            masked.append(m.group(2))
+            return f"\x00{len(masked) - 1}\x00"
+
+        chunk = re.sub(r"(?m)^(\s*def\s+)([A-Za-z_][A-Za-z0-9_.]*\()",
+                       lambda m: m.group(1) + mask(m), chunk)
         for d in sorted(port_defs, key=len, reverse=True):
             chunk = re.sub(rf"(?<![\w.]){re.escape(d)}\(", f"P.{d}(", chunk)
         for t in sorted(port_types, key=len, reverse=True):
@@ -600,7 +626,16 @@ def _qualify_spans(text: str, port_defs: set[str], port_types: set[str], moved_n
         for d in sorted(port_defs, key=len, reverse=True):
             if d in moved_names:
                 continue
-            chunk = re.sub(rf"(?<![\w.]){re.escape(d)}\b(?!\s*\()", f"P.{d}", chunk)
+            # **=> AND THE BARE-NAME RULE MUST NOT MATCH **A PREFIX OF A
+            # LONGER DOTTED NAME** -- **MEASURED 2026-11-10 ON `ops_dsp.bend`:
+            # `dev.shell_spec` IS A PORT DEF AND `dev.shell_spec.nolru` IS **A
+            # MOVED DEF**, **AND THE RULE MATCHED THE PREFIX**, **AND THE
+            # CALL BECAME `P.dev.shell_spec.nolru(...)`** -- **AND THE DRIVER
+            # SAID "expected : a defined name / observed : P.dev.shell_spec.nolru"**
+            # -- **=> AND THE `(?![.\w])` LOOKAHEAD SAYS "**NOT** A DOT AND
+            # **NOT** A WORD CHARACTER FOLLOWS", **SO THE PREFIX DOES NOT
+            # MATCH**.**
+            chunk = re.sub(rf"(?<![\w.]){re.escape(d)}\b(?!\s*\()(?![.\w])", f"P.{d}", chunk)
         for h in moved_names:
             # **=> AND THE UN-QUALIFICATION MUST NOT **EAT THE PREFIX OF A
             # LONGER NAME** -- **MEASURED 2026-11-10: `P.Tr.has.go(` BECAME
@@ -609,6 +644,10 @@ def _qualify_spans(text: str, port_defs: set[str], port_types: set[str], moved_n
             # Tr.has.go"** -- **AND `Tr.has.go` **STAYS IN THE PORT**, **SO THE
             # DRIVER MUST CALL `P.Tr.has.go(`.**
             chunk = re.sub(rf"P\.{re.escape(h)}\b(?!\s*\()(?!\.)", h, chunk)
+        # **=> AND THE **DEF NAMES** COME BACK**, **BARE** -- **AND THEY ARE
+        # **THE MOVED DEFS' OWN NAMES**, **WHICH ARE NOT QUALIFIED ANYWAY**.
+        for i, name in enumerate(masked):
+            chunk = chunk.replace(f"\x00{i}\x00", name)
         return chunk
 
     return _apply(text, _code_spans(text), once)
@@ -635,11 +674,19 @@ def compile_of(path: Path) -> tuple[str, str]:
         if token in both:
             mem = token
             break
-    if "ALL PROOFS CHECK" in both:
+    # **=> AND THE VERDICT IS READ FROM **STDERR**, **NOT FROM THE COMBINED
+    # STREAM** -- **MEASURED 2026-11-10 ON `ops_dsp.bend`: A ROW's VALUE IS
+    # `[RuntimeError: Cannot open lib: bad elf]`**, **AND THE COMBINED STREAM
+    # CONTAINS "Error:"**, **AND THE VERDICT SAID "ERROR"** **WHILE THE DRIVER
+    # HAD EXITED **0** AND PRINTED **EVERY** ROW** -- **=> AND A ROW's VALUE
+    # **IS NOT** A COMPILE ERROR**, **AND THE COMPILE ERROR IS **ON STDERR**,
+    # **AND `rc=0` IS **THE** VERDICT WHEN STDERR IS EMPTY**.
+    err = r.stderr
+    if "ALL PROOFS CHECK" in err:
         bend = "ALL PROOFS CHECK"
-    elif "SOME PROOFS FAIL" in both:
+    elif "SOME PROOFS FAIL" in err:
         bend = "SOME PROOFS FAIL"
-    elif "Error:" in both:
+    elif "Error:" in err:
         bend = "ERROR"
     elif r.returncode == 0:
         # **⇒ AND **A FILE THAT PRINTS ITS ROWS AND **EXITS 0** IS **A PASS**
