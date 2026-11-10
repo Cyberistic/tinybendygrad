@@ -19,21 +19,21 @@ function ComparePage() {
   const { file } = Route.useSearch()
   const navigate = Route.useNavigate()
   const files = compareData.files
+  // One tree, keyed by the path inside the tree — `uop/ops` is one row whether
+  // it is a pair, a Bend-only file or a Python-only one. The two roots are a
+  // fact about the repo, not something the reader should have to scroll past.
   const entries = useMemo(() => {
-    // A pair is one entry on the Python side; the badge says what the other
-    // side has. B = bend only, P = python only, so a missing counterpart is a
-    // letter, not an absence the eye has to notice.
-    const paired = files.map((f) => ({ path: (f.py ?? f.bend) as string, badge: f.py ? "↔" : "B" }))
-    const only = compareData.pythonOnlyFiles.map((p) => ({ path: p, badge: "P" }))
-    return [...paired, ...only].sort((a, b) => a.path.localeCompare(b.path))
+    const rows = files.map((f) => ({ path: relPath((f.py ?? f.bend) as string), badge: f.py ? "↔" : "B" }))
+    const only = compareData.pythonOnlyFiles.map((p) => ({ path: relPath(p), badge: "P" }))
+    return [...rows, ...only].sort((a, b) => a.path.localeCompare(b.path))
   }, [files])
 
   const tree = useMemo(() => buildTree(entries), [entries])
 
   const pick = file ?? entries[0]?.path
   const entry: (typeof files)[number] =
-    files.find((f) => f.py === pick || f.bend === pick) ??
-    ({ py: compareData.pythonOnlyFiles.includes(pick ?? "") ? pick : null, bend: pick ?? "" } as never)
+    files.find((f) => relPath((f.py ?? f.bend) as string) === pick) ??
+    ({ py: compareData.pythonOnlyFiles.find((p) => relPath(p) === pick) ?? null, bend: null } as never)
 
   const [sources, setSources] = useState<{ py?: string; bend?: string }>({})
   const [leftPct, setLeftPct] = useState(50)
@@ -127,6 +127,7 @@ function ComparePage() {
       <div className="flex min-h-0 flex-1">
         <div className="w-[270px] shrink-0 overflow-auto border-r border-rule py-2">
           <FileTree
+            className="text-[11px]"
             nodes={tree}
             selected={pick}
             onSelect={(path) => navigate({ search: { file: path } })}
@@ -136,6 +137,7 @@ function ComparePage() {
         <div className="relative flex min-w-0 flex-1">
           <Pane
             side="py"
+            label={pick ?? ""}
             path={entry.py}
             lines={pyLines}
             width={leftPct}
@@ -151,6 +153,7 @@ function ComparePage() {
           />
           <Pane
             side="bend"
+            label={pick ?? ""}
             path={entry.bend}
             lines={bendLines}
             width={100 - leftPct}
@@ -168,6 +171,7 @@ function ComparePage() {
 
 function Pane(props: {
   side: Side
+  label: string
   path: string | null
   lines: string[]
   width: number
@@ -177,11 +181,17 @@ function Pane(props: {
   focus: number | null
   lang: "py" | "bend"
 }) {
-  const { side, path, lines, width, paneRef, linked, onJump, focus } = props
+  const { side, label, path, lines, width, paneRef, linked, onJump, focus } = props
   if (!path) {
+    const other = side === "py" ? "Python" : "Bend"
     return (
-      <div className="flex items-center justify-center border-rule p-6 text-[11px] text-faint" style={{ width: `${width}%` }}>
-        no counterpart on this side
+      <div className="flex min-w-0 items-center justify-center p-6" style={{ width: `${width}%` }}>
+        <p className="max-w-[32ch] text-center text-[11px] leading-relaxed text-faint">
+          No equivalent {other} file for{" "}
+          <span className="text-muted">
+            {label}.{side === "py" ? "bend" : "py"}
+          </span>
+        </p>
       </div>
     )
   }
@@ -246,4 +256,9 @@ function buildTree(entries: { path: string; badge: string }[]): FileNode[] {
   }
   sort(root)
   return root.children ?? []
+}
+
+/** `tinygrad/uop/ops.py` → `uop/ops`, so both trees share one namespace. */
+function relPath(p: string): string {
+  return p.replace(/^(tinygrad|tinybendygrad)\//, "").replace(/\.(py|bend)$/, "")
 }

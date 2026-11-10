@@ -14,6 +14,7 @@
   --color-rule2: var(--rule2);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-foreground: var(--accent-foreground);
   --color-wash: var(--wash);
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
@@ -30,6 +31,7 @@
   --rule2: #bdb7a9;
   --accent: #3da639;
   --accent-ink: #1f6b22;
+  --accent-foreground: #ffffff;
   --wash: #e4efd9;
   --code: #2a2a30;
   --kwd: #1f6b22;
@@ -48,6 +50,7 @@
   --rule2: #33373e;
   --accent: #4cb53f;
   --accent-ink: #7fd874;
+  --accent-foreground: #0b0c0e;
   --wash: #16240f;
   --code: #d7d4cd;
   --kwd: #7fd874;

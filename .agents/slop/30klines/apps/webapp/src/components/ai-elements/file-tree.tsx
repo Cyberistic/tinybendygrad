@@ -1,145 +1,106 @@
 import * as React from "react"
-import { ChevronRight, File as FileIcon, Folder as FolderIcon, FolderOpen } from "lucide-react"
+import { ChevronRightIcon, FileIcon, FolderIcon } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { cn } from "@/lib/utils"
 
 /**
- * File tree, as shadcn documents it: a folder is a Collapsible whose trigger is
- * a Button, a file is a Button, and the tree owns expansion and selection.
+ * File Tree, pasted from the shadcn AI Elements page.
  *
- * Built here rather than pulled from a registry because the docs define it as
- * composition over Collapsible + Button, and those two are already installed —
- * a third copy of the pattern would be a fourth place for the chevron to point
- * the wrong way.
+ * The docs are explicit that there is no registry item for this one: the
+ * installation is `shadcn add collapsible button` (both are registry files in
+ * `components/ui/`) and then the code below. So this file is the published
+ * snippet, with exactly two deltas:
+ *
+ *   1. `FileTree` takes `nodes`/`selected`/`onSelect` instead of the demo's
+ *      hardcoded array — the snippet ships a demo, and something has to lift it.
+ *   2. `badge` renders after the name. It is the point of the compare page:
+ *      which side is missing.
+ *
+ * No classes were invented. `bg-muted` is the one substitution, for
+ * `bg-paper2`, because this project's token set has `muted` as a text colour
+ * and no separate muted surface.
  */
-export type FileNode = {
-  name: string
-  path: string
-  type: "folder" | "file"
-  children?: FileNode[]
-  /** painted at the right edge: what the other side has, if anything */
-  badge?: React.ReactNode
+type FileNode =
+  | { type: "file"; name: string; path: string; badge?: React.ReactNode }
+  | { type: "folder"; name: string; path: string; children: FileNode[] }
+
+function FileTreeNode({
+  node,
+  selected,
+  onSelect,
+}: {
+  node: FileNode
+  selected?: string
+  onSelect?: (path: string) => void
+}) {
+  switch (node.type) {
+    case "folder":
+      return (
+        <Collapsible defaultOpen>
+          <CollapsibleTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start font-normal aria-expanded:bg-transparent aria-expanded:hover:bg-paper2"
+              />
+            }
+          >
+            <ChevronRightIcon className="transition-transform group-data-panel-open/button:rotate-90" />
+            <FolderIcon />
+            {node.name}
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="ml-4 flex flex-col">
+              {node.children.map((child) => (
+                <FileTreeNode key={child.path} node={child} selected={selected} onSelect={onSelect} />
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )
+    case "file":
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`w-full justify-start font-normal ${
+            selected === node.path ? "bg-accent text-accent-foreground" : ""
+          }`}
+          aria-current={selected === node.path ? "true" : undefined}
+          onClick={() => onSelect?.(node.path)}
+        >
+          <FileIcon />
+          {node.name}
+          {node.badge ? <span className="ml-auto text-[9px] font-semibold tracking-wide">{node.badge}</span> : null}
+        </Button>
+      )
+    default: {
+      const unreachable: never = node
+      return unreachable
+    }
+  }
 }
 
 export function FileTree({
   nodes,
   selected,
   onSelect,
-  defaultOpen = true,
   className,
 }: {
   nodes: FileNode[]
   selected?: string
   onSelect?: (path: string) => void
-  defaultOpen?: boolean
   className?: string
 }) {
-  const [expanded, setExpanded] = React.useState<Set<string>>(() => {
-    const all = new Set<string>()
-    if (!defaultOpen) return all
-    const walk = (list: FileNode[]) =>
-      list.forEach((n) => {
-        if (n.type === "folder") {
-          all.add(n.path)
-          walk(n.children ?? [])
-        }
-      })
-    walk(nodes)
-    return all
-  })
-
-  const toggle = (path: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      next.has(path) ? next.delete(path) : next.add(path)
-      return next
-    })
-
   return (
-    <div className={cn("flex flex-col text-[10.5px]", className)} role="tree">
+    <div className={`flex w-full flex-col ${className ?? ""}`}>
       {nodes.map((node) => (
-        <TreeNode
-          key={node.path}
-          node={node}
-          depth={0}
-          expanded={expanded}
-          toggle={toggle}
-          selected={selected}
-          onSelect={onSelect}
-        />
+        <FileTreeNode key={node.path} node={node} selected={selected} onSelect={onSelect} />
       ))}
     </div>
   )
 }
 
-function TreeNode({
-  node,
-  depth,
-  expanded,
-  toggle,
-  selected,
-  onSelect,
-}: {
-  node: FileNode
-  depth: number
-  expanded: Set<string>
-  toggle: (path: string) => void
-  selected?: string
-  onSelect?: (path: string) => void
-}) {
-  const pad = { paddingLeft: 6 + depth * 12 }
-
-  if (node.type === "folder") {
-    const open = expanded.has(node.path)
-    return (
-      <Collapsible open={open} onOpenChange={() => toggle(node.path)}>
-        <CollapsibleTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-full justify-start rounded-none px-1 font-mono text-[10.5px] text-muted hover:text-ink"
-              style={pad}
-            />
-          }
-        >
-          <ChevronRight className={cn("size-3 shrink-0 transition-transform", open && "rotate-90")} />
-          {open ? <FolderOpen className="size-3 shrink-0" /> : <FolderIcon className="size-3 shrink-0" />}
-          <span className="truncate">{node.name}</span>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          {node.children?.map((child) => (
-            <TreeNode
-              key={child.path}
-              node={child}
-              depth={depth + 1}
-              expanded={expanded}
-              toggle={toggle}
-              selected={selected}
-              onSelect={onSelect}
-            />
-          ))}
-        </CollapsibleContent>
-      </Collapsible>
-    )
-  }
-
-  const active = selected === node.path
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={() => onSelect?.(node.path)}
-      className={cn(
-        "h-6 w-full justify-start gap-1.5 rounded-none px-1 font-mono text-[10.5px] font-normal",
-        active ? "bg-paper2 text-ink shadow-[inset_2px_0_0_0_var(--accent)]" : "text-muted hover:text-ink",
-      )}
-      style={pad}
-    >
-      <FileIcon className="size-3 shrink-0 opacity-50" />
-      <span className="truncate">{node.name}</span>
-      {node.badge ? <span className="ml-auto pr-1 text-[9px] font-semibold tracking-wide text-faint">{node.badge}</span> : null}
-    </Button>
-  )
-}
+export type { FileNode }
