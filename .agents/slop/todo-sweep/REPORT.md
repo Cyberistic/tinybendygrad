@@ -345,7 +345,38 @@ SPELLING.**
 
 ---
 
-## 9. THE COMMITS (all `--only`, all bounded by an explicit pathspec)
+## 9. A **TRANSIENT** BREAKAGE OBSERVED AT THE END, AND IT IS **NOT** MINE
+
+**⇒ MEASURED 2026-11-10 08:42Z: `gates/decomp_graph_census-gate.py` READ `rc=3`,
+"bend said: SOME PROOFS FAIL | Error: - expected : a def whose body is implemented before the def
+is used (defs are checked in file order, and an unfilled law has none) ... observed :
+`UOp.pop_const_node`" AT `tinybendygrad/uop/ops.bend:6992`.**
+
+**⇒ AND IT IS **A CONCURRENT UNIT's IN-FLIGHT REFACTOR** AND NOT MY WORK: `git diff --stat --
+tinybendygrad/uop/ops.bend` IS **5726 LINES** (`1049 insertions, 4677 deletions`) AND THE FILE
+WAS MODIFIED **ONE MINUTE** BEFORE THE MEASUREMENT.  **⇒ AND **HEAD IS CORRECTLY ORDERED**:
+`git show HEAD:./tinybendygrad/uop/ops.bend` HAS `def UOp.pop_const_node(+ar: Arena, +i: U32,
++op: Op) -> U32:` AT **`:8342`** AND THE USE AT **`:8396`** -- **⇒ DEF BEFORE USE, WHICH IS WHAT
+BEND REQUIRES.**  **⇒ THE WORKING TREE HAS THE USE AT `:6992` AND THE DEF AT `:8319`, WHICH IS THE
+REVERSE.**
+
+**⇒ SO THE GATE WAS GREEN WHEN I MEASURED IT** (`rc=0`, 43 rows, 31 declared divergences, 28 s,
+1101 MB) **⇒ AND IT IS RED NOW ONLY BECAUSE A PORT FILE SOMEONE ELSE IS EDITING DOES NOT
+COMPILE.**
+
+**⇒ AND THIS IS THE CLASS THE LEDGER ALREADY NAMES AND IT IS WORTH REPEATING: **A GATE THAT
+CANNOT RUN **IS** A GATE THAT IS RED**, AND THE DISTINCTION IS THE WHOLE DIFFICULTY.  **⇒ AND A
+GATE THAT WAS GREEN AN HOUR AGO AND IS RED NOW IS NOT EVIDENCE THAT THE GATE CHANGED -- IT IS
+EVIDENCE THAT SOMETHING UNDER IT CHANGED, AND THE `git show --stat` OF THE PORT FILES IS THE
+CHEAPEST INSTRUMENT THAT SAYS WHICH.**
+
+**⇒ AND I DID NOT "FIX" IT, BECAUSE IT IS NOT MY FILE AND THE REFACTOR IS IN FLIGHT: EDITING A
+PORT FILE UNDER ANOTHER UNIT's ACTIVE 5726-LINE REFACTOR IS THE EXACT HAZARD THIS LEDGER's
+`GITINDEX` SECTION NAMES, AND A SECOND EDIT WOULD HAVE PRODUCED A SILENT REVERSION.**
+
+---
+
+## 10. THE COMMITS (all `--only`, all bounded by an explicit pathspec)
 
 | commit | what |
 |---|---|
