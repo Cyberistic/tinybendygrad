@@ -730,12 +730,12 @@ def compile_of(path: Path) -> tuple[str, str]:
     elif "Error:" in err:
         bend = "ERROR"
     elif r.returncode == 0:
-        # **⇒ AND **A FILE THAT PRINTS ITS ROWS AND **EXITS 0** IS **A PASS**
+        # **AND **A FILE THAT PRINTS ITS ROWS AND **EXITS 0** IS **A PASS**
         # -- **AND `bin/bend` DOES NOT PRINT `ALL PROOFS CHECK` FOR A FILE
         # WHOSE `main` PRINTS ROWS** -- **MEASURED 2026-11-10 ON
         # `system.bend`: THE DRIVER PRINTED **439** ROWS, **EXITED 0**, **AND
         # ITS STDERR WAS **0 BYTES**, **AND THE VERDICT WAS `NO-VERDICT`
-        # UNTIL THIS BRANCH** -- **⇒ AND `NO-VERDICT` IS **NOT** A PASS,
+        # UNTIL THIS BRANCH** -- **AND `NO-VERDICT` IS **NOT** A PASS,
         # **SO THE BRANCH IS **rc==0 AND NO ERROR TEXT**.**
         bend = "OK (rc=0, no error)"
     else:
