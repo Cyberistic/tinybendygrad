@@ -7196,6 +7196,47 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       OF A `S.Dt`, NOT A HAND-TRANSCRIBED NAME** (`ops_dsp.bend:2785/2793/2801`), **AND THE
       PORT's LANE AND THE ORACLE's LANE ARE BYTE-IDENTICAL OVER ALL 497 ROWS.**
 
+## FILEORDER -- **A REFACTOR THAT MOVES A DEF IS NOT A TEXT EDIT, IT IS A REORDERING** (2026-11-10)
+
+FOUND WHILE VERIFYING THE `decomp_graph_census` AND `cstyle_render_census` REPAIRS.
+
+- [ ] **BEND CHECKS DEFS **IN FILE ORDER**, AND A REFACTOR THAT MOVES A DEF **UP** THE FILE
+      BREAKS EVERY USE THAT IS **BELOW** ITS NEW PLACE AND **ABOVE** ITS OLD ONE.** MEASURED
+      **TWO INSTANCES, IN TWO DIFFERENT GATES, FROM ONE CONCURRENT REFACTOR OF
+      `tinybendygrad/uop/ops.bend`** (a 5726-line working-tree edit: `1049 insertions, 4677
+      deletions`):
+      * **`decomp_graph_census`**: `./bin/bend gates/decomp_graph_census.bend` READ **"expected : a
+        def whose body is implemented before the def is used (defs are checked in file order, and
+        an unfilled law has none) ... observed : `UOp.pop_const_node`"** AT
+        `tinybendygrad/uop/ops.bend:6992` (`UOp.gcd.terms.go`).  **⇒ AND IT IS A PURE
+        **REORDERING**: AT `HEAD` THE DEF IS AT `:8342` AND THE USE AT `:8396` -- **DEF BEFORE
+        USE, WHICH IS WHAT BEND REQUIRES** -- AND IN THE WORKING TREE THE USE IS AT `:6992` AND
+        THE DEF AT `:7333`.**
+      * **`cstyle_render_census`**: `./bin/bend gates/cstyle_render_census.bend` READ **"expected
+        : a defined name ... observed : `P.UOp.expr`"** AT `tinybendygrad/uop/fold.bend:1067`.
+        **⇒ AND `UOp.expr` IS DEFINED IN `ops.bend` -- AT `:9441` IN HEAD AND AT `:8310` IN THE
+        WORKING TREE** -- **⇒ SO THE REFACTOR MOVED IT UP AND A USE IN `fold.bend` NOW PRECEDES
+        THE DEFINITION.**
+      **⇒ AND THE `decomp_graph_census` GATE **RECOVERED BY ITSELF** (rc=0, 43 rows, 31 declared
+      divergences) WHEN THE CONCURRENT UNIT FIXED THE ORDERING, **⇒ WHICH IS THE PROOF THAT THE
+      BREAKAGE WAS THEIRS AND NOT A DEFECT IN THE GATE** -- **⇒ A GATE THAT COMES BACK BY ITSELF
+      IS A GATE THAT WAS BROKEN BY SOMETHING UNDER IT.**
+- [ ] **⇒ AND NO INSTRUMENT IN THIS TREE MEASURES **FILE-ORDER VALIDITY** ACROSS A REFACTOR.**
+      **⇒ THE PORT's OWN COMPILE GATE MEASURES IT** -- `checks/port-compile-gate.py` COMPILES EVERY
+      FILE AND READS THE VERDICT TOKEN -- **⇒ AND IT IS THE WHOLE-SUITE COMMAND THIS SESSION WAS
+      FORBIDDEN TO RUN** (15+ MINUTES, MANY CHILDREN).  **⇒ SO THE CHECK THAT WOULD HAVE CAUGHT
+      THIS IN ONE RUN IS THE ONE COMMAND THE MACHINE CANNOT AFFORD RIGHT NOW, AND **⇒ THE CHEAP
+      INSTRUMENT IS THE SAME ONE THE GATES ALREADY USE**: A SINGLE `bend` ON THE FILE THAT USES THE
+      MOVED DEF.  **⇒ AND THE CLASS IS ONE MEASUREMENT AWAY FROM AN INSTRUMENT: "COMPILE EVERY
+      FILE THAT NAMES A DEF, AND THE ONE THAT FAILS FIRST NAMES THE REORDER."**
+- [ ] **⇒ AND THE LEDGER's OWN `GITINDEX` SECTION NAMES THE HAZARD OF EDITING A PORT FILE UNDER
+      ANOTHER UNIT's ACTIVE REFACTOR, AND I DID NOT EDIT ONE** -- **⇒ BOTH BREAKAGES ARE **NOT
+      MINE** AND ARE **NOT** LANDED (THE REFACTOR IS UNCOMMITTED), AND FIXING THEM WOULD HAVE
+      BEEN A SECOND EDIT UNDER A 5726-LINE IN-FLIGHT CHANGE, WHICH IS EXACTLY HOW A SILENT
+      REVERSION HAPPENS.**  **⇒ AND THIS IS THE THIRD TIME IN THIS SESSION THAT THE CORRECT MOVE
+      WAS TO **RECORD AND NOT TO EDIT** -- AND THE CLASS IS: **A GATE THAT CANNOT RUN **IS** A
+      GATE THAT IS RED, AND THE DISTINCTION IS THE WHOLE DIFFICULTY.**
+
 ## X86ISA -- `gates/x86_isa-gate.py` IMPORTS A **PACKAGE** UPSTREAM **DELETED**, AND THEN A **KEYWORD** UPSTREAM **DELETED** (2026-11-10)
 
 FOUND WHILE REPAIRING `decomp_graph_census` AND `rng_graph_census` (THE SAME RE-VENDOR CASUALTY, A THIRD GATE).
@@ -23756,6 +23797,7 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 187 of 222 sect
 • WALLAUDIT -- 30 # WALL(p3) markers in schedule/rangeify.bend, aud... — ████████░░ 8/10  80%
 • MARKERFORM -- checks/marker-audit.py CANNOT SEE THE 30 WALL(p3) M... — ██████████ 4/4 100%
 • X86ISA -- gates/x86_isa-gate.py IMPORTS A PACKAGE UPSTREAM DELETED, AND... — █░░░░░░░░ 1/4  25%
+• FILEORDER -- A REFACTOR THAT MOVES A DEF IS NOT A TEXT EDIT, IT IS A R... — ░░░░░░░░░░ 0/3   0%
 • CSTYLECENSUS -- gates/cstyle_render_census-gate.py WAS REFUSED (DEAD) ON TWO COUN... — ████████░░ 5/6  83%
 • RNGCMP -- gates/rng_graph_census-gate.py CALLS UOp.rtag, WHICH UPSTRE... — ░░░░░░░░░░ 0/3   0%
 • DECOMP-PROMO -- the 11 PROMOTION rows have a FALSE cause, and fixing ... — ██░░░░░░░░ 2/9  22%
