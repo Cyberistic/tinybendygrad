@@ -12,7 +12,7 @@ ON A FIXTURE BOTH SIDES BUILD, AND EVERY ONE OF ITS 36 ROWS HAS A PLANT THAT MOV
 nothing for `backward{,2,3}/`, `graphcmp.py` and `graphcmp.bend`; and
 `git diff --stat HEAD -- tinybendygrad/` names **exactly one file**:
 `tinybendygrad/mixin/gradient.bend | 404 ++++---` (398 insertions, 6 deletions).
-**⇒ AND A GIT-INDEPENDENT WITNESS, BECAUSE `.agents/slop/backward2/` IS **UNTRACKED** IN
+**AND A GIT-INDEPENDENT WITNESS, BECAUSE `.agents/slop/backward2/` IS **UNTRACKED** IN
 GIT (a prior unit's work that was never committed) AND `git status` THEREFORE CANNOT
 WITNESS IT: EVERY FILE IN `backward/`, `backward2/` AND `backward3/` HAS AN MTIME
 BETWEEN 17:54 AND 18:45, AND THIS UNIT STARTED AT 21:00.**
@@ -41,7 +41,7 @@ MULTI-DIMENSIONAL `ctx` needs a RESHAPE.** It does not: upstream's `_shape` for 
 `STACK(x, y)` has `shape=(2, 2)` and `ndim=2` (`.agents/slop/backward4/probe.py`).
 And `_resolve_dim` (`movement.py:81-84`) is pure integer arithmetic over `self.ndim` and
 **never calls `resolve`** — so the `resolve` wall the prior art named for `gr_21` is NOT
-AT `gr_21`. **⇒ `gr_21` IS LANDABLE, AND IT IS LANDED, AND IT IS GATED AGAINST
+AT `gr_21`. **`gr_21` IS LANDABLE, AND IT IS LANDED, AND IT IS GATED AGAINST
 UPSTREAM'S OWN `compute_gradient` ON A FIXTURE BOTH SIDES BUILD.**
 
 ## 1. THE CAUSE, MEASURED
@@ -59,7 +59,7 @@ ctx = STACK(p, q)      op=STACK     nsrc=2 arg=None shape=(2, 2) dtype=dtypes.f3
       ctx.permute((1,0))     op=PERMUTE   nsrc=1 arg=(1, 0) shape=(2, 2)
 ```
 
-**⇒ THE PRIOR ART's IndexError IS UPSTREAM'S CORRECT ANSWER FOR A 1-D ctx.** A 1-D ctx
+**THE PRIOR ART's IndexError IS UPSTREAM'S CORRECT ANSWER FOR A 1-D ctx.** A 1-D ctx
 admits no non-identity permutation, so a raise is the right answer. **The wall was the
 FIXTURE, not the RULE.**
 
@@ -86,7 +86,7 @@ oracle_pm_bw_sig=BUFFER/1@s3 [STACK/1] BUFFER/1@s4 [STACK/1] BUFFER/1@s5 [STACK/
 oracle_pm_bw_distinct=8
 ```
 
-**⇒ THE WALK IS EXACTLY ONE NODE DEEP, AND THE BACKWARD GRAPH IS EIGHT NODES.**
+**THE WALK IS EXACTLY ONE NODE DEEP, AND THE BACKWARD GRAPH IS EIGHT NODES.**
 
 ### 1.3 THE PORT'S `compute_gradient` ON THE SAME FIXTURE — THE SAME EIGHT NODES
 
@@ -95,7 +95,7 @@ $ BEND_NO_TELEMETRY=1 ./bin/bend tinybendygrad/mixin/gradient.bend > port.rows
 pm_bw_sig=BUFFER/1@s3 [STACK/1] BUFFER/1@s4 [STACK/1] BUFFER/1@s5 [STACK/1] CONST/0@i0:2 [] PERMUTE/1 [STACK/2] STACK/1 [CONST/0@i0:2] STACK/2 [BUFFER/1@s3 BUFFER/1@s4] STACK/2 [BUFFER/1@s5 STACK/2]
 ```
 
-**⇒ THE TWO SIDES' `bw_sig` ARE BYTE-IDENTICAL** — the whole eight-node graph, token for
+**THE TWO SIDES' `bw_sig` ARE BYTE-IDENTICAL** — the whole eight-node graph, token for
 token.
 
 ### 1.4 THE ARGSORT — THE BRIEF'S SUSPICION WAS WRONG, AND HERE IS THE PROOF
@@ -115,9 +115,9 @@ IT SORTS BY THE INDEX, NOT BY THE VALUE THE INDEX POINTS AT."*
 | `(2,0,1)` | `1,2,0` | `1,2,0` |
 | `(1,0)` | `1,0` | `1,0` |
 
-**⇒ THE BRIEF'S SUSPICION IS FALSE.** `argsort_u32` pairs each value with its index
+**THE BRIEF'S SUSPICION IS FALSE.** `argsort_u32` pairs each value with its index
 (`Ix{i, v}`), sorts by `(value, index)` — Python's `sorted` is stable, so the index breaks
-the ties — and projects the INDEX back out (`helpers.bend:582-602`). **⇒ IT IS UPSTREAM'S
+the ties — and projects the INDEX back out (`helpers.bend:582-602`). **IT IS UPSTREAM'S
 `argsort`, AND IT IS THE RIGHT FUNCTION FOR AN `ATuple`.** The suspicion came from reading
 `argsort_u32`'s NAME and not its BODY. **AND THE `argsortbyindex` PLANT (§4.4) PLANTS THE
 SUSPICION IN BOTH DIRECTIONS: if the port sorted by the index, all six rows would go RED.**
@@ -126,12 +126,12 @@ SUSPICION IN BOTH DIRECTIONS: if the port sorted by the index, all six rows woul
 
 The port's `bw_ident.const` spells an int CONST as `@i` + `H.i64_text(i)` =
 **`@i0:2`** (`helpers.bend:1709-1712`: an I64 prints as its TWO WORDS, `hi:lo`), while the
-prior art's oracle spelled it `@i%d` = **`@i2`**. **⇒ THE PORT IS RIGHT AND THE ORACLE
+prior art's oracle spelled it `@i%d` = **`@i2`**. **THE PORT IS RIGHT AND THE ORACLE
 WAS WRONG**, and the corpus says so in its own source: `.agents/slop/graphcmp.py:388`
 `i64(x)` is `f"{x >> 32}:{x & 0xFFFFFFFF}"` — "exactly `H.i64_text`" — and
 `graphcmp.py:459` `konst()` NORMALISES CPython's int to it: *"CPython's int is normalised
 to the port's I64 form so `UOp.const(4)` is `l0:4` on BOTH sides rather than `i4` here
-and `l0:4` there"*. **⇒ MY ORACLE PRINTS THE CORPUS'S SPELLING, AND THE PRIOR ART'S
+and `l0:4` there"*. **MY ORACLE PRINTS THE CORPUS'S SPELLING, AND THE PRIOR ART'S
 `@i%d` WAS NEVER EXERCISED BECAUSE ITS FIXTURE HAD NO INT CONST.**
 
 ---
@@ -142,7 +142,7 @@ and `l0:4` there"*. **⇒ MY ORACLE PRINTS THE CORPUS'S SPELLING, AND THE PRIOR 
 COPY IT AND I DO NOT EDIT IT.** `backward3/gate.py` is generic (it takes
 `<port.rows> <expect.rows>` and reports `PASS`/`MISMATCH`/`UNCHECKABLE`/`MISSING` with
 FOUR verdicts, and `MISMATCH` and `UNCHECKABLE` are BOTH red), and
-`backward3/ctl-rows.py` is the two-class control harness. **⇒ MY `run.sh` CALLS BOTH BY
+`backward3/ctl-rows.py` is the two-class control harness. **MY `run.sh` CALLS BOTH BY
 PATH** (`sys.path.insert`), so there is ONE gate implementation in the tree and no second
 copy to rot. **WHAT I ADDED, because `backward3` did not have it:** (a) the
 `oracleplant` arm — the CONTROL ON THE CONTROL, which `backward3/run.sh` has and which
@@ -174,7 +174,7 @@ P3 (the 3-D PERMUTE, the PRIMARY)          P1 (the 1-D IDENTITY PERMUTE, the CON
   ctx = STACK(n01, m2) shape (2, 2, 2)  <- THE ROOT GRAD
 ```
 
-**⇒ FOUR DESIGN CLAUSES, AND EVERY ONE IS A MEASUREMENT:**
+**FOUR DESIGN CLAUSES, AND EVERY ONE IS A MEASUREMENT:**
 
 1. **A MULTI-DIMENSIONAL NODE WITH NO RESHAPE.** upstream's `_shape` for a BUFFER reads
    `self.src[0].as_shape` (`ops.py:359`) and ASSERTS `len(self.src[0].as_shape) <= 1`, so
@@ -186,7 +186,7 @@ P3 (the 3-D PERMUTE, the PRIMARY)          P1 (the 1-D IDENTITY PERMUTE, the CON
    (`gradient.py:112`), so a node is in the WALK only if one of its SRCS reaches a target
    — **A TARGET IS NEVER ITSELF IN THE WALK**, so the target's own rule is never needed.
    The target here is a STACK, whose rule (`ctx[i]`, `gradient.py:91`) this port cannot do
-   (`gr_22` is `GSkip`). **⇒ MAKING THE 3-D NODE THE TARGET IS WHAT KEEPS THE FIXTURE
+   (`gr_22` is `GSkip`). **MAKING THE 3-D NODE THE TARGET IS WHAT KEEPS THE FIXTURE
    INSIDE `gr_21` ALONE.**
 3. **THE ROOT GRAD IS A STACK TOO**, because `ctx` must have `ndim == 3` or upstream's
    `_resolve_dim` (`movement.py:81-84`) rejects a 3-element order, and a BUFFER is at most
@@ -195,7 +195,7 @@ P3 (the 3-D PERMUTE, the PRIMARY)          P1 (the 1-D IDENTITY PERMUTE, the CON
    shape must EQUAL it or the shaped-edge reduce at `gradient.py:131` fires and upstream
    raises (it needs `broadcast_axes`, which is symbolic).
 
-**⇒ AND THE FIXTURE IS 3-D RATHER THAN 2-D FOR A REASON ABOUT TEETH, NOT ABOUT SHAPE:
+**AND THE FIXTURE IS 3-D RATHER THAN 2-D FOR A REASON ABOUT TEETH, NOT ABOUT SHAPE:
 A 2-ELEMENT PERMUTATION IS AN INVOLUTION, SO ITS ARGSORT IS ITSELF** (`argsort((1,0))`
 is `(1,0)`, MEASURED), **so on a 2-D fixture the rule's ORDER row would read the same
 whether the rule ARGSORTED or merely copied the order — A ROW THAT CANNOT GO RED IS A
@@ -229,7 +229,7 @@ def pm() -> Pm:
 
 **THE `bw_sig` IS A NODE-FOR-NODE SIGNATURE AND BOTH SIDES PRINT IT IN THE SAME SPELLING**
 (the port's `bw_tok.go`/`bw_ident.of`, `gradient.bend:2622-2660`; the oracle's
-`local_token`/`ident`, `oracle-pm.py`). **⇒ THE TWO STRINGS ARE BYTE-IDENTICAL, AND
+`local_token`/`ident`, `oracle-pm.py`). **THE TWO STRINGS ARE BYTE-IDENTICAL, AND
 EVERY TOKEN IS ONE NODE:**
 
 ```
@@ -245,9 +245,9 @@ STACK/2 [BUFFER/1@s5 STACK/2]
 | the leaves | `UOp(Ops.BUFFER, src=(STACK(CONST 2),), arg=ParamArg(3, f32))` | `gnew(ar, O.OpsBUFFER{}, [sh], O.AParam{fx_pa(3)})` with `sh` = `STACK(CONST 2)` |
 | the shape CONST | `UOp(Ops.CONST, arg=2)` — a BARE CONST, `dtype=weakint` | `O.UOp.const(ar, O.CInt{2})` — a BARE CONST (`ops.bend:3012`) |
 
-**⇒ EIGHT NODES, EIGHT IDENTICAL TOKENS, ZERO DIFFERENCES — AND THE COUNT ALONE WOULD NOT
+**EIGHT NODES, EIGHT IDENTICAL TOKENS, ZERO DIFFERENCES — AND THE COUNT ALONE WOULD NOT
 HAVE PROVED IT** (the prior art's own finding: *"BOTH READINGS ARE 32 NODES WITH 11
-DISTINCT OPS, SO A COUNT-BASED GATE READS THEM AS THE SAME GRAPH"*). **⇒ THE GATE
+DISTINCT OPS, SO A COUNT-BASED GATE READS THEM AS THE SAME GRAPH"*). **THE GATE
 COMPARES THE SIGNATURE, WHICH IS THE WHOLE GRAPH.** **AND THE `bw_distinct` ROW MEASURES
 THAT THE SIGNATURE IS LOSSLESS HERE: 8 of 8.**
 
@@ -263,7 +263,7 @@ pm_bw_sig   = BUFFER/1@s3 [STACK/1] BUFFER/1@s4 [STACK/1] BUFFER/1@s5 [STACK/1] 
 oracle_pm_bw_sig = (the same string, byte for byte)
 ```
 
-**⇒ THE ORCHESTRATOR'S NEXT MOVE IS NAMED: REPLACE THE CORPUS's HAND-BUILT `bw` GRAPH
+**THE ORCHESTRATOR'S NEXT MOVE IS NAMED: REPLACE THE CORPUS's HAND-BUILT `bw` GRAPH
 WITH A FIXTURE BUILT BY `compute_gradient` ON BOTH SIDES, AND COMPARE THE SIGNATURES
 INSTEAD OF THE NODE COUNTS.** `.agents/slop/graphcmp.py`'s `g_bw` and
 `.agents/slop/graphcmp.bend`'s `g_bw` are the two places, and **NEITHER IS MINE TO EDIT**.
@@ -289,7 +289,7 @@ $ sh .agents/slop/backward4/run.sh check
 === VERDICT: pm-rows rc=0   walk-rows rc=0   gs/bw-rows rc=0
 ```
 
-**⇒ 36 of 36 NEW ROWS PASS AGAINST CPYTHON'S OWN BYTES, AND THE 30 PRE-EXISTING GATED
+**36 of 36 NEW ROWS PASS AGAINST CPYTHON'S OWN BYTES, AND THE 30 PRE-EXISTING GATED
 ROWS ARE STILL PASS.**
 
 ### 4.2 NO PRE-EXISTING ROW MOVED — 0 of 102
@@ -306,7 +306,7 @@ $ sh .agents/slop/backward4/run.sh head
 VERDICT: PASS -- no pre-existing row moved
 ```
 
-**⇒ OF HEAD's 102 ROWS: 0 CHANGED VALUE, 0 LOST, AND THE 36 GAINED ARE EXACTLY THIS
+**OF HEAD's 102 ROWS: 0 CHANGED VALUE, 0 LOST, AND THE 36 GAINED ARE EXACTLY THIS
 UNIT'S 36.** The prior art's measurement was *"83 OF 88 BYTE-IDENTICAL, 5 CHANGED"*;
 this unit's is **0 of 102 changed**, because this unit only ADDED rules and rows.
 
@@ -323,17 +323,17 @@ $ sh .agents/slop/backward4/run.sh ctl
 CONTROLS: 36 rows x 2 perturbations + the clean run = 73 checks, failures: 0
 ```
 
-**⇒ 73 CHECKS, 0 FAILURES.** For EVERY one of the 36 rows: (a) a WRONG BUT NON-EMPTY
+**73 CHECKS, 0 FAILURES.** For EVERY one of the 36 rows: (a) a WRONG BUT NON-EMPTY
 expectation → `MISMATCH`, and EXACTLY THAT ROW is named (every other row stays `PASS`),
-and (b) an EMPTY expectation → `UNCHECKABLE`, and EXACTLY THAT ROW is named. **⇒ TWO
+and (b) an EMPTY expectation → `UNCHECKABLE`, and EXACTLY THAT ROW is named. **TWO
 CLASSES, AND THE ASSERTION IS ON THE CLASS, NOT MERELY ON "NOT PASS".**
 
-**⇒ AND ONE ROW HAD TO BE CHANGED FOR THIS TO BE MEANINGFUL: `pm1_rule_arg`.** The P1
+**AND ONE ROW HAD TO BE CHANGED FOR THIS TO BE MEANINGFUL: `pm1_rule_arg`.** The P1
 answer IS the ctx, whose arg is a PARAM and not a tuple, so there IS no order — and the
 first version of that row printed the EMPTY STRING, which the gate called `UNCHECKABLE`
-(RED). **⇒ "THERE IS NO ORDER HERE" IS A REAL, MEASURED VALUE AND IT NEEDS A SENTINEL,
+(RED). **"THERE IS NO ORDER HERE" IS A REAL, MEASURED VALUE AND IT NEEDS A SENTINEL,
 OR THE GATE CANNOT TELL "THE ANSWER IS NOTHING" FROM "THE INSTRUMENT MEASURED NOTHING".
-⇒ BOTH SIDES NOW PRINT THE WORD `none`.**
+BOTH SIDES NOW PRINT THE WORD `none`.**
 
 ### 4.4 THE PLANTS — 36 of 36 ROWS ARE MOVED BY SOME MUTATION
 
@@ -356,23 +356,23 @@ THE COVERAGE: 36 of 36 new row(s) are moved by some plant
 PLANTS: 12 mutations, 0 VACUOUS/FAILED, 0 UNCOVERED row(s)
 ```
 
-**⇒ 12 MUTATIONS, 0 VACUOUS, AND EVERY ONE OF THE 36 NEW ROWS IS MOVED BY AT LEAST ONE
+**12 MUTATIONS, 0 VACUOUS, AND EVERY ONE OF THE 36 NEW ROWS IS MOVED BY AT LEAST ONE
 PLANT.** Every mutation is applied to a COPY of the tree and is ASSERTED BY RE-READING
 THE FILE; a mutation that did not land would be reported as VACUOUS, not as a verdict.
 
-**⇒ THE TWO PLANTS THAT ANSWER THE BRIEF'S QUESTIONS DIRECTLY:**
+**THE TWO PLANTS THAT ANSWER THE BRIEF'S QUESTIONS DIRECTLY:**
 * **`argsortbyindex`** — `helpers.bend`'s `argsort_u32` changed to sort by the INDEX
   instead of the VALUE — moves **all six `pm_argsort_*` rows** and four more.
-  **⇒ THE BRIEF'S SUSPICION, PLANTED: IF THE PORT SORTED BY THE INDEX, EVERY ARGSORT ROW
+  **THE BRIEF'S SUSPICION, PLANTED: IF THE PORT SORTED BY THE INDEX, EVERY ARGSORT ROW
   WOULD GO RED.**
 * **`noargsort`** — `gr_21` copies the order instead of ARGSORTING it — moves
-  `pm_rule_arg` (`2,0,1` → `1,2,0`). **⇒ THE RULE'S ORDER ROW HAS TEETH.**
+  `pm_rule_arg` (`2,0,1` → `1,2,0`). **THE RULE'S ORDER ROW HAS TEETH.**
 
-**⇒ AND THE SWEEP FOUND A REAL DEFECT IN MY OWN FIRST VERSION:** the first six argsort
+**AND THE SWEEP FOUND A REAL DEFECT IN MY OWN FIRST VERSION:** the first six argsort
 inputs were `(0,2,1) (1,2,0) (2,1,0) (0,1) (0,) (1,0)`, and the sweep reported
 **34 of 36 covered, with `pm_argsort_0` and `pm_argsort_0_1` UNCOVERED** — because an
 ALREADY-SORTED input has the same answer under a value-sort and under an index-sort.
-**⇒ THE INPUTS WERE CHANGED TO SIX UNSORTED PERMUTATIONS, AND THE SWEEP NOW COVERS 36
+**THE INPUTS WERE CHANGED TO SIX UNSORTED PERMUTATIONS, AND THE SWEEP NOW COVERS 36
 of 36.** (And the counter in `plants.py` was split, because "1 VACUOUS/FAILED" was
 really the coverage gap and the message was lying.)
 
@@ -390,7 +390,7 @@ $ sh .agents/slop/backward4/run.sh oracleplant
     the port's output is byte-identical to the base -- NOTHING MOVED
 ```
 
-**⇒ PERTURBING THE ORACLE MOVED THE EXPECTATION AND THE PORT'S OUTPUT IS BYTE-IDENTICAL
+**PERTURBING THE ORACLE MOVED THE EXPECTATION AND THE PORT'S OUTPUT IS BYTE-IDENTICAL
 TO THE BASE. A FILE THAT WERE A TRANSCRIPT OF THE PORT'S OUTPUT COULD NOT MOVE.**
 
 ### 4.6 THE DEPENDENTS STILL COMPILE
@@ -403,7 +403,7 @@ $ for f in tinybendygrad/mixin/op.bend tinybendygrad/tensor.bend tinybendygrad/s
 ALL PROOFS CHECK   (x7)
 ```
 
-**⇒ ALL SEVEN FILES THAT IMPORT `mixin/gradient.bend` COMPILE** (the list is from
+**ALL SEVEN FILES THAT IMPORT `mixin/gradient.bend` COMPILE** (the list is from
 `grep -rl "mixin/gradient" tinybendygrad/`, so it is the whole population and not a
 hand list).
 
@@ -443,16 +443,16 @@ def gr_21.pick(is_id: Bool, +ar: O.Arena, +ctx: U32, inv: List<&2, U32>) -> GRes
 | the PERMUTE NODE: `self._mop(Ops.PERMUTE, arg=order_arg)` → `UOp(op, src=(self,), arg=arg)` (`ops.py:799-815`) | `gnew(ar, O.OpsPERMUTE{}, [ctx], O.ATuple{inv})` | `pm_rule_tok=PERMUTE/1 [STACK/2]`, `pm_rule_arg=2,0,1` |
 | the VALIDITY RAISE: `if sorted(order_arg) != list(range(self.ndim)): raise RuntimeError(...)` | **NOT REPRODUCED** — see below | — |
 
-**⇒ THE ONE NAMED DIVERGENCE, AND IT IS BOUNDED BY A MEASUREMENT AND NOT BY AN
+**THE ONE NAMED DIVERGENCE, AND IT IS BOUNDED BY A MEASUREMENT AND NOT BY AN
 ARGUMENT.** upstream's check reads `ctx.ndim`, and **the port has no `ndim`**: `ops.bend`
 has no `as_shape` and no `shape`, so a node's dimension count is not available. The port
 uses `len(ret.marg)` — the length of the ATuple — which IS `ret.ndim` by upstream's own
 construction (`permute()` validates `sorted(order_arg) == list(range(self.ndim))`, so the
 arg's length IS the ndim), and `ctx.ndim == ret.ndim` by upstream's own shaped-edge reduce
-(`gradient.py:131-133` reshapes the gradient into the node's shape). **⇒ UPSTREAM'S
+(`gradient.py:131-133` reshapes the gradient into the node's shape). **UPSTREAM'S
 `compute_gradient` GUARANTEES `ctx.ndim == len(ret.marg)`, SO THE RAISE IS UNREACHABLE
 FROM `compute_gradient` — AND THE PORT'S NUMBER IS THE ONE IT CAN READ.**
-**⇒ THE RAISE IS REACHABLE OUTSIDE `compute_gradient` (by calling `permute()` directly
+**THE RAISE IS REACHABLE OUTSIDE `compute_gradient` (by calling `permute()` directly
 with a bad order), AND THE PORT DOES NOT REPRODUCE THAT PATH. THAT IS THE DIVERGENCE, AND
 IT IS NAMED HERE RATHER THAN HIDDEN.**
 
@@ -570,7 +570,7 @@ LANDING `gr_21` FIRST.**
 **THE CORPUS's `bw` GRAPH IS HAND-BUILT ON BOTH SIDES** —
 `.agents/slop/graphcmp.bend:1471`'s `g_bw()` builds 32 nodes by hand in the port's
 spelling and `.agents/slop/graphcmp.py`'s `g_bw` builds the same 32 by hand in CPython's
-spelling — **⇒ MAKING IT DERIVED MEANS TOUCHING BOTH, AND NEITHER IS MINE.** **⇒ THE
+spelling — **MAKING IT DERIVED MEANS TOUCHING BOTH, AND NEITHER IS MINE.** **THE
 DERIVATION IS A NAMED NEXT MOVE FOR THE ORCHESTRATOR, NOT FOR THIS UNIT**, and §3.4 hands
 over the derived lane it would plug in: a graph BUILT BY `compute_gradient` on both sides
 and compared NODE FOR NODE.
@@ -580,11 +580,11 @@ and compared NODE FOR NODE.
 **THE PORT's 102 ROWS INCLUDE 72 `fix`-FIXTURE ROWS WHOSE ORACLE
 (`.agents/slop/notes/grad_oracle.py`) IS GONE, SO THOSE 72 ROWS ARE CHANGE-DETECTORS AND
 NOT CPYTHON-GATED.** **THIS UNIT DID NOT FIX THAT AND DID NOT MAKE IT WORSE** (0 of 102
-moved). **⇒ A WAY TO FIX IT, WHICH THIS UNIT DID NOT TAKE:** the oracle for the `fix`
+moved). **A WAY TO FIX IT, WHICH THIS UNIT DID NOT TAKE:** the oracle for the `fix`
 rows is upstream's OWN `pm_gradient.rewrite` on the port's OWN `fix` fixture, and the
 port's `fix()` fixture is a LIST OF NODES WITH ONE-HOP ANSWERS — so an oracle that
 rebuilds the same nodes upstream-side and prints `pm_gradient.rewrite(node, ctx=…)`'s
-answer would gate all 72. **⇒ THAT IS A NAMED NEXT MOVE AND IT IS THE SAME
+answer would gate all 72. **THAT IS A NAMED NEXT MOVE AND IT IS THE SAME
 `oracle-pm.py` MECHANISM, JUST OVER MORE NODES.**
 
 ---
@@ -594,17 +594,17 @@ answer would gate all 72. **⇒ THAT IS A NAMED NEXT MOVE AND IT IS THE SAME
 1. **`gr_17` (RESHAPE) — FOUR DEFS AND A FIXTURE.** The delta is §6.1's four defs: a
    `List<&2, O.Sint>` -> `List<&2, U32>` projection, the source's shape read through
    `O.UOp.shape`, the identity test (`F.eq_sints`), and the two-slot answer
-   `fired([node, 0], ar)`. **⇒ THE FIXTURE IS THE OBVIOUS ONE AND IT IS UPSTREAM'S OWN
+   `fired([node, 0], ar)`. **THE FIXTURE IS THE OBVIOUS ONE AND IT IS UPSTREAM'S OWN
    `reshape`: `buf = BUFFER(STACK(CONST 6))`, `r = buf.reshape((2,3))` (TWO srcs), the
    root grad `g = gbuf.reshape((2,3))`, and the TARGET `buf` — so the walk is `[r]` and
    the answer is `RESHAPE(g, (6,))`. THE ORACLE IS `probe-gr17.py`'s fixture, which
    ALREADY ANSWERS IT.**
 2. **`gr_14`'s ADD ARM — ONE COMPARISON.** `ctx._broadcast_to(ret.src[0].shape)` is
    `ctx` ITSELF when the two shapes agree, so the arm is the identity on a static
-   fixture whose shapes agree. **⇒ THE FIXTURE IS THE SAME SHAPE OF THING: a REDUCE over
+   fixture whose shapes agree. **THE FIXTURE IS THE SAME SHAPE OF THING: a REDUCE over
    a 1-D leaf with a 1-D root grad.**
 3. **`gr_14`'s MAX AND MUL ARMS — THEY NEED `gr_21`'s OWN PERMUTE.** `ops.py:638-642`
-   builds `self.permute(perm)` around the REDUCE, **⇒ SO `gr_21` IS A PREREQUISITE OF
+   builds `self.permute(perm)` around the REDUCE, **SO `gr_21` IS A PREREQUISITE OF
    `gr_14`'s MAX/MUL ARMS, WHICH IS A SECOND ARGUMENT FOR HAVING LANDED `gr_21` FIRST.**
 4. **THE CORPUS's DERIVED `bw` LANE.** §3.4 hands over the derived lane; the two files
    to change are `.agents/slop/graphcmp.py` and `.agents/slop/graphcmp.bend`, and NEITHER
@@ -624,5 +624,5 @@ answer would gate all 72. **⇒ THAT IS A NAMED NEXT MOVE AND IT IS THE SAME
 | `.agents/slop/backward4/plants.py` | **THE MUTATION SWEEP** and the COVERAGE assertion. |
 | `.agents/slop/backward4/transcript-*.out` | the transcripts of §4. |
 
-**⇒ NOTHING COMMITTED. NO MUTATING GIT COMMAND. ONE BEND PROCESS AT A TIME (the plant
+**NOTHING COMMITTED. NO MUTATING GIT COMMAND. ONE BEND PROCESS AT A TIME (the plant
 sweep runs them SEQUENTIALLY, one child per mutation, and never in the background).**

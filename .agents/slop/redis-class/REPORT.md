@@ -103,7 +103,7 @@ code would be decoration on a verdict that does not exist. Its census class is `
 "undeclared and green was demonstrated: a red is charged" -- and that is CORRECT: the red it can
 emit is the plant failing, and a plant failing is not information about the tree.
 
-**⇒ SO IT STAYS `FAILURE`, AND `gates/gate-surface.py` NAMES IT AS THE ONE THAT IS.**
+**SO IT STAYS `FAILURE`, AND `gates/gate-surface.py` NAMES IT AS THE ONE THAT IS.**
 
 ## THE FALSIFICATION: THE DECLARATIONS ARE NOT DECORATION
 

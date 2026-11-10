@@ -128,7 +128,7 @@ CITED FILE**. `gates/todo-cite-gate.py` reads a `symbol=` as a claim about a
 construct the file declares, so a `symbol=` naming a PORT symbol beside an UPSTREAM
 citation is a NEW WAY TO BE WRONG.
 
-**⇒ TWO `symbol=`s THIS SLICE WROTE WERE FALSE AND WERE PULLED:**
+**TWO `symbol=`s THIS SLICE WROTE WERE FALSE AND WERE PULLED:**
 `tinygrad/nn/__init__.py:38 symbol=num_batches_tracked` (an ATTRIBUTE assignment, not
 a declaration) and `extra/models/llama.py:93 symbol=cache_kv` (upstream's `extra/` is
 outside the gate's `tinygrad/` corpus, so the subject does not resolve at all).
@@ -239,7 +239,7 @@ run):
 | the tree at this slice's commit `31c1e44cc` | `6d2a68f71e7af58702920887c5887c2bfd4a7ed90002d7b31c99c0da94ddce45` |
 
 The digest MOVES because this slice's edits are `.bend` edits, and it is the digest
-that says so. **⇒ A `.bend` EDIT MOVES THE CORPUS'S FRESHNESS PIN, AND THE PIN IS
+that says so. **A `.bend` EDIT MOVES THE CORPUS'S FRESHNESS PIN, AND THE PIN IS
 WHAT SAYS SO — so the corpus must be re-run once the port stops moving, and the
 digests above are the receipts, not a standing fact.**
 
@@ -254,15 +254,15 @@ digests above are the receipts, not a standing fact.**
   `ew_silu` went from `:1219` to `:1221`. The re-aimed pointer went stale the same
   way.
 
-**⇒ A LINE NUMBER IS A ROT AND A NAME IS NOT, AND THE ROT IS NOT SLOW.** The two
+**A LINE NUMBER IS A ROT AND A NAME IS NOT, AND THE ROT IS NOT SLOW.** The two
 instrument readings that bracket the second move are `work-t16` (0 wrong-line) and
 `work-final` (3 wrong-line, all three in `llama.bend`, all three naming the same
 `ew_silu`). The fix is the same fix the durable form exists for: re-aim at the NAME.
 
-**⇒ AND THE HARNESS THAT CAUGHT IT IS WORTH NAMING.** A frozen `git archive` of HEAD
+**AND THE HARNESS THAT CAUGHT IT IS WORTH NAMING.** A frozen `git archive` of HEAD
 would have reported `ew_silu` at :1219 and this slice's pointer as CORRECT, because
 HEAD is a tree that no longer exists. The frozen copy of the LIVE tree reported the
-move as three `WRONG-LINE` rows, which is the truth. **⇒ THE COPY MUST BE OF THE LIVE
+move as three `WRONG-LINE` rows, which is the truth. **THE COPY MUST BE OF THE LIVE
 TREE, NOT OF HEAD, AND IT MUST CARRY `references/`** — and both of those are
 instrument requirements, not preferences.
 

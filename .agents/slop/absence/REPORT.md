@@ -48,10 +48,10 @@ the port's headers name 91 distinct hex runs:
   a commit of THIS repo, not of upstream   3     (80d329a33, c2a66ea41, e853efc4b)
 ```
 
-**⇒ THE CONDITION IS NOT VACUOUS.** Three of the shas the port's headers name are commits
+**THE CONDITION IS NOT VACUOUS.** Three of the shas the port's headers name are commits
 of *this* project, and a row naming one of them can never be a claim about upstream.
 
-**⇒ AND THE MARKER IS NECESSARY WHILE THE EVIDENCE IS SUFFICIENT.** A claim that upstream
+**AND THE MARKER IS NECESSARY WHILE THE EVIDENCE IS SUFFICIENT.** A claim that upstream
 DELETED a construct and a claim that upstream HAS one are the **same shape** to every
 instrument that reads a citation — a name, a file, a line — and no amount of upstream
 history tells them apart. Only the row says which one it is making.
@@ -68,7 +68,7 @@ The 42 the evidence refuses are the port talking about **itself** (`base.bend` h
 `File.list`), about a construct upstream **never had** (`cfield` was never in
 `tinygrad/runtime/support/c.py`), or naming **no revision at all**.
 
-**⇒ THE MARKER ALONE QUALIFIES NOTHING, AND THE EVIDENCE ALONE IS NOT ENOUGH.**
+**THE MARKER ALONE QUALIFIES NOTHING, AND THE EVIDENCE ALONE IS NOT ENOUGH.**
 
 ---
 
@@ -115,7 +115,7 @@ rows before 2547, after 2547
   non-class field moves: 0
 ```
 
-**⇒ NOT ONE ROW OF ANOTHER CLASS MOVED, AND NOT ONE VERDICT FIELD MOVED** (`at_pin`,
+**NOT ONE ROW OF ANOTHER CLASS MOVED, AND NOT ONE VERDICT FIELD MOVED** (`at_pin`,
 `newest_rev`, `claim`, `present_in_file`, `explicit`). The new class sits **below**
 `at_pin`, `only_older_revision`, `ambient_relocated` and `unverifiable` in the precedence,
 so it can only ever take a row **out of** `dangling` or `at_no_revision`: it can never
@@ -163,7 +163,7 @@ the safe direction: the gate cries and a human looks. The opposite error — the
 too LOOSE — is what the evidence conditions exist to prevent, and the elementwise
 measurement above is the proof that no other class was touched.
 
-**⇒ AND THE DIRECTION CANNOT BE READ FROM THE CONTENT.** This is not a limitation of the
+**AND THE DIRECTION CANNOT BE READ FROM THE CONTENT.** This is not a limitation of the
 implementation, it is a fact about the instrument: a citation to `ops_cl.py:139` whose
 token is nowhere in that file is a dangling claim if the port says "upstream's
 `OSX_TIMING_RATIO` is at :139" and a true absence if it says "`OSX_TIMING_RATIO` is GONE at

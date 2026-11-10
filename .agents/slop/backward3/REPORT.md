@@ -4,7 +4,7 @@
 **HEAD at start**: `git rev-parse HEAD` = **`59c0140ee86124c2fe6318369cc5bb9104424667`**.
 **HEAD at the last measurement**: **`9a8b172918c5994a259ba4e635883513b7da1d8e`** (2026-10-25T15:44Z —
 every arm of §4 re-run at that HEAD).
-**⇒ THE TREE MOVED UNDER THIS UNIT** (two different HEADs, named above). Every measurement
+**THE TREE MOVED UNDER THIS UNIT** (two different HEADs, named above). Every measurement
 below names the command that produced it, and the ones that depend on the tree's state
 carry the HEAD they were taken at.
 
@@ -31,11 +31,11 @@ five rows**. **The port's fixture has the SAME shape for the same reason**:
 `tinybendygrad/mixin/gradient.bend:1521` was
 `gnew(ar, O.OpsBUFFER{}, Nil{}, O.AParam{fx_pa(slot)})` — a `BUFFER` with `Nil{}` srcs —
 and it built EVERY leaf in the file (`fx_buf` is the only leaf builder, and `dag()` and
-`fix()` both go through it). **⇒ AND THE FIX MUST CHANGE THE EXPECTATIONS, because giving
+`fix()` both go through it). **AND THE FIX MUST CHANGE THE EXPECTATIONS, because giving
 a leaf a src CHANGES THE GRAPH**: an empty STACK is a node, so the leaf's node set grows
 by one, the toposort grows from 6 to 7, the `in_target_path` flags grow from six to seven,
 the `BUFFER` tokens change from `BUFFER/0` to `BUFFER/1`, and the two gradient node counts
-grow (`5`→`6` and `4`→`5`) because a gradient's operands ARE the leaves. **⇒ So the fix is
+grow (`5`→`6` and `4`→`5`) because a gradient's operands ARE the leaves. **So the fix is
 two-sided: give BOTH sides' leaves the empty-STACK src, AND re-transcribe the expectations
 BY SCRIPT** — the expectations are CPython's bytes, never typed.
 
@@ -59,7 +59,7 @@ IndexError: tuple index out of range
 rc=1
 ```
 
-**⇒ FIVE ROWS EMITTED, THEN DEATH.** The 15 `walk_*` rows' CPython side was a RECORD
+**FIVE ROWS EMITTED, THEN DEATH.** The 15 `walk_*` rows' CPython side was a RECORD
 (`BACKWARD-WALK.md`'s table, and the port's own rows) and not a measurement.
 
 **THE FIXTURE'S LEAVES, ON BOTH SIDES, BEFORE AND AFTER:**
@@ -141,7 +141,7 @@ first fixture, **7 rows that were previously UNREACHABLE** (`oracle_pmul`, `orac
 is computable even though its GRADIENTS are not), and **2 diagnostic rows**
 (`oracle_hole_error=...`, `oracle_hole_computed=no`).
 
-**⇒ THE SECOND FIXTURE NO LONGER DIES SILENTLY.** It still cannot be computed — the
+**THE SECOND FIXTURE NO LONGER DIES SILENTLY.** It still cannot be computed — the
 shaped-edge reduce at `gradient.py:131` raises `RuntimeError: cannot broadcast ... into ()`,
 because its EXPAND's shape src is an ADD whose `as_shape` is a ONE-tuple (`ops.py:788`)
 while a leaf's is `()` — **but the instrument now says so in a ROW instead of dying**, which
@@ -161,7 +161,7 @@ $ sh .agents/slop/backward3/run.sh check
 === VERDICT: walk-rows rc=0   gs/bw-rows rc=0
 ```
 
-**⇒ 16 of 16 `walk_*` rows PASS against CPython's own bytes, and the previous unit's 14
+**16 of 16 `walk_*` rows PASS against CPython's own bytes, and the previous unit's 14
 `gs_*`/`bw_*` rows are still PASS.**
 
 **THE EXPECTATIONS, AND WHERE EACH BYTE CAME FROM** (`.agents/slop/backward3/walk.rows`):
@@ -226,13 +226,13 @@ $ sh .agents/slop/backward3/run.sh head
     rows byte-identical: 83 of 88
 ```
 
-**⇒ OF HEAD's 88 ROWS: 83 ARE BYTE-IDENTICAL AND 5 CHANGED — AND THE 5 ARE EXACTLY THE
+**OF HEAD's 88 ROWS: 83 ARE BYTE-IDENTICAL AND 5 CHANGED — AND THE 5 ARE EXACTLY THE
 ROWS THE LEAF FIX WAS SUPPOSED TO MOVE**, and their new values are CPython's (§4.2).
-**⇒ NOTHING IS MISSING** (the "rows HEAD has that LIVE does NOT" list is exactly those
+**NOTHING IS MISSING** (the "rows HEAD has that LIVE does NOT" list is exactly those
 five, because a changed VALUE is a changed LINE; the value diff above is the precise one).
-**⇒ LIVE's 14 ADDITIONS ARE EXACTLY THE PREVIOUS UNIT'S `gs_*`/`bw_*` ROWS.**
+**LIVE's 14 ADDITIONS ARE EXACTLY THE PREVIOUS UNIT'S `gs_*`/`bw_*` ROWS.**
 
-**⇒ AND THE 72 ROWS THAT ARE NEITHER `walk_*` NOR `gs_*` NOR `bw_*` (the `fix` fixture's
+**AND THE 72 ROWS THAT ARE NEITHER `walk_*` NOR `gs_*` NOR `bw_*` (the `fix` fixture's
 rule-table rows — `claims=32`, `keep_pair=12`, `rej_gate=11`, …) ARE ALL BYTE-IDENTICAL.**
 **MEASURED, NOT ASSUMED**: `fx_buf` is shared by `fix()` and `dag()`, so the leaf change
 touched BOTH fixtures, and the diff above shows that not one of `fix`'s 72 rows moved.
@@ -252,7 +252,7 @@ would move):
 
 **THE DISARMS ARE NOT VACUOUS**: the harness prints the working copy's sha256 and the
 output's sha256 separately, and in both disarms the FILE's sha256 changed while the
-OUTPUT's did not (`5028744e…` both times). **⇒ "Nothing moved" and "nothing moved because
+OUTPUT's did not (`5028744e…` both times). **"Nothing moved" and "nothing moved because
 nothing was done" are different, and the sha256s are what says which.**
 
 **THE PREVIOUS UNIT'S HARNESS** (`sh .agents/slop/backward2/run.sh <arm>`, run by
@@ -267,16 +267,16 @@ nothing was done" are different, and the sha256s are what says which.**
 | `plant_nohole` | **3** | `plant_noguard` | **7** |
 | `plant_skipseed` | **19** | | |
 
-**⇒ EVERY ONE OF THE PREVIOUS UNIT'S EIGHT PLANTS STILL MOVES, AND BOTH DISARMS STILL
+**EVERY ONE OF THE PREVIOUS UNIT'S EIGHT PLANTS STILL MOVES, AND BOTH DISARMS STILL
 MOVE NOTHING.**
 
-**⇒ TWO COUNTS MOVED, AND BOTH FOR A STRUCTURAL REASON, NOT A NEW BUG:**
+**TWO COUNTS MOVED, AND BOTH FOR A STRUCTURAL REASON, NOT A NEW BUG:**
 `plant_flags` moved **9** rows (the previous unit measured 4) and `plant_noguard` moved
 **7** (measured 6). **THE REASON IS THE STACK**: `plant_flags` makes the `in_target_path`
 FLAG always true, and `dw_any.go` over an EMPTY src list is `False` — so before the fix a
 leaf (which had NO srcs) kept its flag `False` and the walk was unchanged; after the fix a
 leaf's only src is the STACK, the flag becomes `True`, and the walk grows to six nodes
-(`BUFFER/1 BUFFER/1 MUL/2 BUFFER/1 ADD/2 ADD/2`). **⇒ THE FIX MADE THE WALK ROWS MORE
+(`BUFFER/1 BUFFER/1 MUL/2 BUFFER/1 ADD/2 ADD/2`). **THE FIX MADE THE WALK ROWS MORE
 SENSITIVE, which is what a fix should do, and the transcript names every row that moved.**
 
 ### 4.5 THE DEPENDENTS STILL COMPILE
@@ -309,13 +309,13 @@ $ sh .agents/slop/backward3/run.sh ctl
 CONTROLS: 16 rows x 2 perturbations + the clean run = 33 checks, failures: 0
 ```
 
-**⇒ 33 CHECKS, 0 FAILURES.** For EVERY one of the 16 rows:
+**33 CHECKS, 0 FAILURES.** For EVERY one of the 16 rows:
 
 * **(a) a WRONG BUT NON-EMPTY expectation → `MISMATCH`, and EXACTLY THAT ROW is named**
   (every other row stays `PASS`), and
 * **(b) an EMPTY expectation → `UNCHECKABLE`, and EXACTLY THAT ROW is named**.
 
-**⇒ TWO CLASSES, AND THE ASSERTION IS ON THE CLASS, NOT MERELY ON "NOT PASS"**: a gate
+**TWO CLASSES, AND THE ASSERTION IS ON THE CLASS, NOT MERELY ON "NOT PASS"**: a gate
 that only caught emptiness would be catching **vacuity** and not **wrongness**, and the
 wrong-but-non-empty case is the one that proves it. The gate reports `PASS` / `MISMATCH` /
 `UNCHECKABLE` / `MISSING` separately, and **an `UNCHECKABLE` row is a RED verdict** — an
@@ -351,20 +351,20 @@ transcribed 15 oracle rows -> 16 port rows in .../walk-planted.rows
     the port's output is byte-identical to the base -- NOTHING MOVED
 ```
 
-**⇒ FIVE EXPECTATION ROWS MOVED WHILE THE PORT'S OUTPUT IS BYTE-IDENTICAL.** A file that
-were a transcript of the port's output could not move when only the oracle moved. **⇒ THE
+**FIVE EXPECTATION ROWS MOVED WHILE THE PORT'S OUTPUT IS BYTE-IDENTICAL.** A file that
+were a transcript of the port's output could not move when only the oracle moved. **THE
 DIRECTION OF THE DEPENDENCE IS ORACLE → FILE, AND THE PORT IS NOT IN IT.**
 
 ### 6.2 THE PORT MOVES AND THE EXPECTATIONS DO NOT
 
 **The converse is the plant arm, and it is §4.4's table**: `plant_reverse` moves 16 of the
-port's rows and `walk.rows` does not change by one byte. **⇒ THE EXPECTATIONS ARE A
+port's rows and `walk.rows` does not change by one byte. **THE EXPECTATIONS ARE A
 FUNCTION OF THE ORACLE IN BOTH DIRECTIONS OF PERTURBATION.**
 
 ### 6.3 AND THE EXPECTATIONS ARE NOT WHAT THE PORT PRINTED
 
 **`walk.rows` disagrees with HEAD's port output on FIVE of the sixteen rows** (§4.3) — the
-expectations carry values the port did **not** print before the leaf fix. **⇒ THE
+expectations carry values the port did **not** print before the leaf fix. **THE
 EXPECTATION FILE IS NOT A TRANSCRIPT OF THE PORT'S OUTPUT, AT HEAD OR NOW.**
 
 ### 6.4 AND THE TRANSCRIPTION'S BYTES ARE THE ORACLE'S BYTES
@@ -388,7 +388,7 @@ comment saying "the whole rule is: read the ATuple, argsort it, build the PERMUT
 with `O.ATuple{ys: List<&2, U32>}` (`ops.bend:1237`) and `H.argsort_u32`
 (`helpers.bend:602`) already present.
 
-**⇒ I DID NOT LAND `gr_21`, AND HERE IS WHY, MEASURED.**
+**I DID NOT LAND `gr_21`, AND HERE IS WHY, MEASURED.**
 
 **(1) THE FILE'S OWN COMMENT DESCRIBES HALF THE RULE.** upstream's rule is
 `tinygrad/mixin/gradient.py:88`:
@@ -402,7 +402,7 @@ if sorted(order_arg) != list(range(self.ndim)):
 return self._mop(Ops.PERMUTE, arg=order_arg) if order_arg != tuple(range(self.ndim)) else self
 ```
 
-**⇒ THE RULE ALSO READS `ctx.ndim` (= `len(ctx.shape)`, `movement.py:36`), RAISES TWICE,
+**THE RULE ALSO READS `ctx.ndim` (= `len(ctx.shape)`, `movement.py:36`), RAISES TWICE,
 AND RETURNS `ctx` ITSELF FOR THE IDENTITY.** The comment describes the `_mop` half.
 
 **(2) MEASURED, ON THIS TREE'S OWN `tinygrad/`** (`env -u PYTHONPATH LC_ALL=C DEV=NULL
@@ -416,36 +416,36 @@ AND RETURNS `ctx` ITSELF FOR THE IDENTITY.** The comment describes the `_mop` ha
 | `RESHAPE(BUFFER(6), STACK(2,3))` (ndim 2) | `(1, 0)` | **`PERMUTE(RESHAPE(...), arg=(1,0))`** — 11 nodes |
 | `RESHAPE(BUFFER(6), STACK(2,3))` (ndim 2) | `(0, 1)` | **`ctx` ITSELF** — the identity |
 
-**(3) ⇒ EVERY FIXTURE IN `gradient.bend` IS SCALAR** (all `_shape` are `()`, §4.2's
+**(3) EVERY FIXTURE IN `gradient.bend` IS SCALAR** (all `_shape` are `()`, §4.2's
 `walk_inpath` and the `CAST/1` roots), **and upstream RAISES on a scalar ctx for every
-non-empty `marg`.** **⇒ THERE IS NO CPYTHON ANSWER TO GATE `gr_21` AGAINST ON ANY FIXTURE
+non-empty `marg`.** **THERE IS NO CPYTHON ANSWER TO GATE `gr_21` AGAINST ON ANY FIXTURE
 IN THIS FILE.** The first non-degenerate answer needs a **SHAPED** fixture, and a shaped
 fixture is where this port's walls are: `gr_17`'s own TODO (`gradient.bend:638`) and
 `gr_14`'s (`gradient.bend:605`) are both `resolve` on a `Sint` — **`uop/symbolic.py` is
 not ported, and Phase P3 owns it** — and the shaped-edge reduce at `gradient.py:131-133`
 needs `broadcast_axes` and `sum_acc_dtype`, which are not ported either.
 
-**(4) ⇒ LANDING `gr_21` ALONE WOULD NOT PUT THE `bw` GRAPH IN THE CORPUS'S POPULATION.**
+**(4) LANDING `gr_21` ALONE WOULD NOT PUT THE `bw` GRAPH IN THE CORPUS'S POPULATION.**
 The corpus's `bw` graph is `g_bw()` at `.agents/slop/graphcmp.bend:1471`, 32 nodes, op
 census `ALLOC 2 CAST 1 CONST 4 EXPAND 2 GROUP 1 MUL 2 PERMUTE 4 REDUCE 2 RESHAPE 8 STACK 6`
 (`.agents/slop/backward-graph/REPORT.md` §1; `graphcmp.py:1493`, `graphcmp.bend:1443`).
-**⇒ IT NEEDS ALL THREE MOVEMENT RULES**: `gr_21` (PERMUTE), `gr_17` (RESHAPE, `GSkip{}` at
-`gradient.bend:639`) and `gr_14` (REDUCE, `GSkip{}` at `gradient.bend:606`). **⇒ TWO OF THE
+**IT NEEDS ALL THREE MOVEMENT RULES**: `gr_21` (PERMUTE), `gr_17` (RESHAPE, `GSkip{}` at
+`gradient.bend:639`) and `gr_14` (REDUCE, `GSkip{}` at `gradient.bend:606`). **TWO OF THE
 THREE ARE HARD WALLS ON `resolve`.**
 
-**(5) ⇒ AND THE CORPUS'S `bw` GRAPH IS A HAND-BUILT FIXTURE, NOT A `compute_gradient`
+**(5) AND THE CORPUS'S `bw` GRAPH IS A HAND-BUILT FIXTURE, NOT A `compute_gradient`
 OUTPUT.** `g_bw()` builds it node for node (`graphcmp.bend:1471-1526`), in both languages.
-**⇒ THE PORT'S `bw` GRAPH (what `compute_gradient` builds) AND THE CORPUS'S `bw` GRAPH ARE
+**THE PORT'S `bw` GRAPH (what `compute_gradient` builds) AND THE CORPUS'S `bw` GRAPH ARE
 DIFFERENT GRAPHS, and putting the port's into the corpus's population needs a NEW corpus
 graph — in `.agents/slop/graphcmp.bend`, which is NOT this unit's file.**
 
-**⇒ SO: `gr_21` IS LANDABLE IN PRINCIPLE** (the pieces exist: `O.Arena.arg` reads the
+**SO: `gr_21` IS LANDABLE IN PRINCIPLE** (the pieces exist: `O.Arena.arg` reads the
 node's arg, `O.ATuple{ys}` carries the margin, `H.argsort_u32` argsorts it, and
 `gnew(ar, O.OpsPERMUTE{}, [ctx], O.ATuple{...})` builds the node — `movement.bend:1001`
 builds the same node today), **but it would be an UNGATED RULE**: no CPython answer exists
 on a scalar fixture, and the shaped fixture that would give one needs the `resolve` wall.
-**⇒ A RULE WITH NO GATE IS A CLAIM OF UNKNOWN VALUE, and this file's own `gbool` note says
-so. ⇒ I DID NOT LAND IT, AND I DID NOT LAND A HALF OF IT.**
+**A RULE WITH NO GATE IS A CLAIM OF UNKNOWN VALUE, and this file's own `gbool` note says
+so. I DID NOT LAND IT, AND I DID NOT LAND A HALF OF IT.**
 
 ### 7.2 THE 72 `fix` ROWS ARE **NOT** GATED AGAINST CPYTHON
 
@@ -453,9 +453,9 @@ so. ⇒ I DID NOT LAND IT, AND I DID NOT LAND A HALF OF IT.**
 `.agents/slop/notes/grad_oracle.py` as the source of its numbers (`recip 12 sin 10 log2 8
 …`) — **and that file is NOT in the tree** (`ls .agents/slop/notes/` shows
 `bend2-constraints.md`, `c2d-refusal-gate.md`, `compare`, `kn-truth.py`,
-`sz-odin-precedent.md`, `upstream-bugs.md`). **⇒ THOSE 72 ROWS ARE BYTE-IDENTICAL
+`sz-odin-precedent.md`, `upstream-bugs.md`). **THOSE 72 ROWS ARE BYTE-IDENTICAL
 CHANGE-DETECTORS, NOT CPYTHON-GATED** — and that is a pre-existing condition, not one this
-unit created. **⇒ THE LEAF FIX TOUCHED THE `fix` FIXTURE TOO** (`fx_buf` is shared) **and
+unit created. **THE LEAF FIX TOUCHED THE `fix` FIXTURE TOO** (`fx_buf` is shared) **and
 MEASURED THAT NOT ONE OF ITS 72 ROWS MOVED** (§4.3) — so the change is invisible to every
 row that exists, and it makes the port's `BUFFER` upstream-faithful (upstream's BUFFER
 ALWAYS carries a shape src).
@@ -463,7 +463,7 @@ ALWAYS carries a shape src).
 ### 7.3 THE PRIOR ART'S RECORDED ORACLE OUTPUT IS GONE
 
 `BACKWARD-WALK.md:10` cites `.agents/slop/backward/oracle-cg.{py,txt}`; the `.txt` was
-taken by the no-`.txt` sweep. **⇒ THE 15 ROWS' PRIOR VALUES COULD NOT BE RE-READ; THEY HAD
+taken by the no-`.txt` sweep. **THE 15 ROWS' PRIOR VALUES COULD NOT BE RE-READ; THEY HAD
 TO BE RE-MEASURED**, and the values this unit re-measured for the eleven rows the leaf
 does not touch are the prior art's (`walk_sig=MUL/2 ADD/2 ADD/2`, `walk_walk_n=3`,
 `walk_n_inpath=3`, `walk_grads_n=6`, `walk_skip_n=0`, `walk_hole_n=0`,

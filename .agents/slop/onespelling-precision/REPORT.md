@@ -213,7 +213,7 @@ artifact** stated as such in that unit's inventory; or the collisions are **shad
   dedicated `suffix` lane; `:125` calls it. `uop/ops.bend` resolves to `tinybendygrad/uop/ops.bend`.
   `probe_base` charges any `single-base-resolver` without ever asking whether the site has a fallback
   — **while `probe_table`, in the same file, has exactly that discharge** (a same-file companion that
-  shares a name ⇒ NEGATIVE, `:196-200`). The test exists; it was not applied to this probe.
+  shares a name NEGATIVE, `:196-200`). The test exists; it was not applied to this probe.
 
 **AND ALL THREE ROWS CARRY BYTE-IDENTICAL EVIDENCE** (`lost` is computed from the CORPUS, not from
 the SITE). A count of 3 whose evidence is one string is a count of sites whose individual behaviour

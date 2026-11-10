@@ -1,11 +1,11 @@
 # gates/sqtt-gate.bend -- THE GATE DRIVER for `tinybendygrad/renderer/amd/sqtt.bend`.
 #
-# THE ROWS MOVED HERE FROM THE PORT FILE. **⇒ THE PORT FILE CARRIES THE PORT AND
+# THE ROWS MOVED HERE FROM THE PORT FILE. **THE PORT FILE CARRIES THE PORT AND
 # THIS FILE CARRIES THE INSTRUMENT**, AND THE TREE's OWN CONVENTION SAYS SO:
 # `gates/README.md:173` -- "a gate's `.bend` driver and its CPython oracle sit in
 # `gates/`, named by the gate that needs them."
 #
-# **⇒ AND THE ROWS ARE PURE CONSUMERS: THEY CALL THE PORT's DEFS AND DEFINE
+# **AND THE ROWS ARE PURE CONSUMERS: THEY CALL THE PORT's DEFS AND DEFINE
 # NOTHING THAT THE PORT NEEDS.**
 
 import Base

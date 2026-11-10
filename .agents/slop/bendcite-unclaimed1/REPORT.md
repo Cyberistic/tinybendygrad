@@ -22,7 +22,7 @@ construct for the pointer to point at`.
    CONSTRUCT'S DECLARATION LINE.** MEASURED: a `symbol=` whose cited line is merely
    INSIDE the construct's span RESOLVES, but the span INCLUDES the doc-comment run
    above the `def` -- so a pointer at a doc comment is a pointer at the PREVIOUS
-   construct. **⇒ THE LINE MUST BE THE `def` LINE.** MEASURED, this bit me: my first
+   construct. **THE LINE MUST BE THE `def` LINE.** MEASURED, this bit me: my first
    pass derived the line from the SPAN and `mixin/op.bend:853` (which is `mo_sum`'s
    doc comment) was 1 line off from `mo_sum`'s declaration at `:854`, and it showed up
    as 13 `WRONG-LINE` rows.
@@ -33,12 +33,12 @@ construct for the pointer to point at`.
    (MEASURED: `schedule/indexing.bend` -> `{'H': ..., 'O': None}`), and `strip_alias`
    returns the token UNCHANGED for a `None` alias -- so `O.GroupOp.movement` never
    resolves against `uop/ops.bend`, which declares `GroupOp.movement`.
-   **⇒ WRITE `symbol=GroupOp.movement`, NOT `symbol=O.GroupOp.movement`.**
-   **⇒ THE GATE IS NOT EDITED. THE DEFECT IS REPORTED HERE.**
+   **WRITE `symbol=GroupOp.movement`, NOT `symbol=O.GroupOp.movement`.**
+   **THE GATE IS NOT EDITED. THE DEFECT IS REPORTED HERE.**
 3. **A LINE THAT CARRIES MORE THAN ONE CITATION GIVES EVERY `symbol=` ON IT TO EVERY
    CITATION ON IT.** MEASURED on a two-citation line:
    `a.bend:713 symbol=cr_in a.bend:100 symbol=nope` -> the `:100` row is judged with
-   the token set `{cr_in, nope}` and goes `WRONG-LINE`. **⇒ ONE CITATION PER LINE.**
+   the token set `{cr_in, nope}` and goes `WRONG-LINE`. **ONE CITATION PER LINE.**
 
 **AND A `symbol=` MUST NOT SHARE A LINE WITH A `.py` CITATION** -- `gates/todo-cite-gate.py`
 binds the NEAREST-PRECEDING `symbol=` to a citation and requires the symbol to be
@@ -97,7 +97,7 @@ MOVED mixin/rand.bend") re-aimed them, and this slice's own re-derive put the
    FROM THE PORT, so the citation became the upstream `tinygrad/uop/ops.py:1236`.
 4. **THE `D.refuse(...)` PAYLOADS** (9 files): the payload's `.bend:NN` was STALE or had
    no claim token, so it got the `symbol=` field and the stale line was re-pointed.
-   **⇒ THESE 9 FILES ARE NOT COMMENT-ONLY.**
+   **THESE 9 FILES ARE NOT COMMENT-ONLY.**
 5. **THE `ARange` AND `AXIS_UNROLL` SITE LISTS** (`uop/ops.bend:607-610` and
    `:3120-3125`): the bare `,NNN` continuations are INVISIBLE to the gate, so each site
    was split onto its own line with its own `symbol=`. MEASURED, the lists were ROTTED:

@@ -134,7 +134,7 @@ BYTE-IDENTICAL to `HEAD` in both (`.agents/slop/unclaimed3/purecode.py`:
 `PURE CODE IDENTICAL`, 162 and 122 code lines). **THE DIFFERENCE IS INSIDE THE
 `D.refuse("...")` STRING LITERALS, WHICH NO COMPUTATION READS.**
 
-**⇒ THE FILES THAT CARRY A CORRECTED `D.refuse(...)` PAYLOAD** (these are NOT
+**THE FILES THAT CARRY A CORRECTED `D.refuse(...)` PAYLOAD** (these are NOT
 comment-only, and they are listed here so nobody reads the proof as covering them):
 `tinybendygrad/nn/pool.bend`, `tinybendygrad/extra/models/mask_rcnn.bend`,
 `tinybendygrad/extra/models/unet.bend`.
@@ -173,7 +173,7 @@ PLANT OK: a moved line makes the pointer stale, a byte-identical copy does not
 **BEFORE `40c3e432754207c6a8d4657aeebfec12d2b4defa7b09be01474eefe80cf98268`**
 **AFTER  `e9400a49a2f645df5742f4cc50b8cb5a64e7ce2e9461e67017c11ec3eb340116`**
 
-**⇒ A COMMENT IS SUBSTRATE, SO THE CORPUS'S DIGEST MOVED, AND THE CORPUS HAS TO BE
+**A COMMENT IS SUBSTRATE, SO THE CORPUS'S DIGEST MOVED, AND THE CORPUS HAS TO BE
 RE-RUN AFTERWARDS.**
 
 (The digest is read at the END, so the AFTER reading is of the tree the COMMIT made

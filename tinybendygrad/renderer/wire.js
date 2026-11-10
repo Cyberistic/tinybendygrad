@@ -52,10 +52,10 @@ io_eff(CID(Wire.split), wire_split);
 // GENERATED CODE SLICES THE FIRST CHARACTER (`slice(0, char_len(s))`) AND SLICES THE REST
 // (`slice(char_len(s))`) TO TEST THE LENGTH -- **TWO SLICES AND TWO `char_len` PER CALL** -- and the
 // three cost **1,284 + 898 + 691 = 2,873 `char_len` CALLS A RENDER**.
-// **⇒ AND `charCodeAt` IS FREE IN JS, AND THE PORT'S `match` ON A `U32` IS AN INTEGER COMPARE** (one
+// **AND `charCodeAt` IS FREE IN JS, AND THE PORT'S `match` ON A `U32` IS AN INTEGER COMPARE** (one
 // per arm, no slice, no `char_len`), so the codes ride in the NUMBERS as char codes.
 //
-// **⇒ AND THE KIND IS TWO NUMBERS, BECAUSE ELEVEN OF THE NINETEEN KINDS ARE TWO CHARACTERS** ("RW",
+// **AND THE KIND IS TWO NUMBERS, BECAUSE ELEVEN OF THE NINETEEN KINDS ARE TWO CHARACTERS** ("RW",
 // "M1"): the first separates the seven one-character kinds from the eleven two-character ones, and
 // the second picks inside that arm. The second is 0 for a one-character kind.
 function wire_strings(s) {
@@ -80,7 +80,7 @@ io_eff(CID(Wire.strings), wire_strings);
 // the compiler compiled into a CHARACTER TRIE (MEASURED: 84 `slice`s and 2,560 `char_len` calls a
 // render). Here it is `Number(parts[i])` -- free -- and the port's `match` on it is an INTEGER COMPARE.
 //
-// **⇒ AND THE THREE CODES COME NEXT, FOR THE SAME REASON** (see `wire_strings`'s comment): the port
+// **AND THE THREE CODES COME NEXT, FOR THE SAME REASON** (see `wire_strings`'s comment): the port
 // matched them as STRINGS and paid two slices and two `char_len` per call. Here they are `charCodeAt`,
 // which is free in JS, and the port's arms are INTEGER COMPARES.
 //

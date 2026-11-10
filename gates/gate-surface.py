@@ -137,12 +137,12 @@ TIMEOUT = 180
 # MEASURED 2026-10-30: the REFUSED CODE WAS **2** HERE, AND **THIS **FILE'S **OWN **MODULE **DOCSTRING**
 # SAYS **3** (**`VERDICTS = {0: "GREEN", 1: "RED", 3: "REFUSED"}`**, **`:22`**), **AND **`refuse()`**
 # **EXITED **3** — **SO **THE **DOCSTRING **AND **THE **CODE **AGREED **AND **ONLY **THE **CONSTANT
-# DISAGREED.**  **⇒ AND **3 **IS **THE **RIGHT **NUMBER**: **`refuse()`'s **OWN **COMMENT **SAYS **WHY**
+# DISAGREED.**  **AND **3 **IS **THE **RIGHT **NUMBER**: **`refuse()`'s **OWN **COMMENT **SAYS **WHY**
 # (**`:221-225`**) — **THE **HOUSE **VOCABULARY **IS **`gates/gatekit.py`'s **OWN **UNPACK**
 # (**`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`**), **SO **2 **IS **UNNAMED**, **AND **THIS
 # **FILE's **OWN **RULE **IS **THAT **"A **NUMBER **WITH **NO **AGREED **MEANING **MUST **BE **NAMED
-# **RATHER **THAN **RESOLVED"**.  **⇒ AND **PLANT **5c **EXPECTED **2**, **WHICH **IS **WHY **THE
-# **PLANT **SUITE **WAS **RED **ON **A **GATE **THAT **REFUSES **CORRECTLY.**  **⇒ AND **THE **PLANT
+# **RATHER **THAN **RESOLVED"**.  **AND **PLANT **5c **EXPECTED **2**, **WHICH **IS **WHY **THE
+# **PLANT **SUITE **WAS **RED **ON **A **GATE **THAT **REFUSES **CORRECTLY.**  **AND **THE **PLANT
 # **ROW **HERE **IS **`["--root", "/dev/null"]`**, **AND **THAT **ARGV **REACHES **3** — **SO **THE
 # **DECLARATION **AND **THE **PLANT **AGREE **FOR **THE **FIRST **TIME.**
 VERDICTS = {0: "OK", 1: "RED", 3: "REFUSED"}
@@ -393,7 +393,7 @@ def declaration(p):
         # A **PYTHON** **FILE **THAT **DOES **NOT **PARSE **IS **MALFORMED**: **A **CALLER **CANNOT **READ
         # **ITS **DECLARATION, **AND **THE **GATE **IS **UNREADABLE.**
         #
-        # ⇒ AND **A **FILE **IN **ANOTHER **LANGUAGE **NEVER **REACHES **THIS **LINE:** **THE **CALLER
+        # AND **A **FILE **IN **ANOTHER **LANGUAGE **NEVER **REACHES **THIS **LINE:** **THE **CALLER
         # **ROUTES **IT **INTO **THE **`unread` **BUCKET **BEFORE **CALLING **THIS**, **AND **IT **IS
         # **COUNTED **AND **NAMED **THERE** — **THE **SAME **RULE **THE **SHELL **HALF **AND **THE
         # **NO-SHEBANG **HALF **FOLLOW.**  **MEASURED 2026-10-30: `checks/drive.mjs` and
@@ -401,7 +401,7 @@ def declaration(p):
         # (`gates/gates-pop.py`'s `entry_reason()` reads both as `js-main`), so `ast.parse` failing on
         # them was a finding about **THIS READER**.
         #
-        # ⇒ AND **THE **CHARGE **IS **KEPT **WHERE **IT **IS **TRUE** — **A **PYTHON **FILE **THAT **DOES
+        # AND **THE **CHARGE **IS **KEPT **WHERE **IT **IS **TRUE** — **A **PYTHON **FILE **THAT **DOES
         # **NOT **PARSE **IS **AN **OPAQUE **FILE, **NOT **AN **ENTRY** (`gates-pop.py` **CANNOT **READ
         # **A **`__main__` **GUARD **IN **A **FILE **THAT **DOES **NOT **PARSE**), **SO **THIS **ARM **IS
         # **REACHABLE **ONLY **FOR **A **GATE **THE **POPULATION **CARRIES **AND **THIS **READER **CANNOT
@@ -429,15 +429,15 @@ def declaration(p):
     # (a TUPLE) and `gates/verdictcopy-gate.py` (a SET of words) -- and **NOT **ONE **OF **THE **FOUR
     # **SHIPS **A **`PLANTS` **DICT**, **SO **NOT **ONE **OF **THEM **DECLARED **A **SURFACE.**
     #
-    # ⇒ AND **A **NAME **TEST **IS **THE **CLASS **DOCTRINE **1 **FORBIDS**: **A **BASENAME **SHAPE, **A
+    # AND **A **NAME **TEST **IS **THE **CLASS **DOCTRINE **1 **FORBIDS**: **A **BASENAME **SHAPE, **A
     # **SUFFIX **SET, **AND **A **HAND **LIST **ARE **NOT **POPULATIONS**, **AND **NEITHER **IS **"A
     # **VARIABLE **CALLED **`VERDICTS`**".**  **THE **SHAPE **IS **WHAT **DECLARES:** **A **MAPPING **FROM
     # **EXIT **CODES **TO **WORDS **IS **A **DECLARED **SURFACE**, **AND **A **TUPLE, **A **PATH, **OR **A
     # **SET **IS **NOT.**
     #
-    # ⇒ AND **THE **COST **OF **THE **NAME **TEST **WAS **FOUR **FALSE **CHARGES**, **AND **THE **COST **OF
+    # AND **THE **COST **OF **THE **NAME **TEST **WAS **FOUR **FALSE **CHARGES**, **AND **THE **COST **OF
     # **THE **SHAPE **TEST **IS **THAT **A **GATE **DECLARING **A **SURFACE **WITH **A **BROKEN **SHAPE
-    # **IS **NO **LONGER **CHARGED.**  **⇒ AND **THAT **IS **WHY **THE **SHAPE **TEST **KEEPS **THE
+    # **IS **NO **LONGER **CHARGED.**  **AND **THAT **IS **WHY **THE **SHAPE **TEST **KEEPS **THE
     # **`PLANTS` **HALF:** **A **FILE **THAT **SHIPS **A **`PLANTS` **MAPPING **HAS **DECLARED **A
     # **SURFACE, **AND **IF **ITS **`VERDICTS` **IS **NOT **A **MAPPING **THEN **THE **DECLARATION **IS
     # **MALFORMED **AND **THAT **IS **A **FINDING **ABOUT **THE **GATE.**
@@ -579,12 +579,12 @@ def report(root, charge=True):
         # for "UNPARSEABLE", and they are JAVASCRIPT (`gates/gates-pop.py`'s `entry_reason()` reads
         # both as `js-main`), so `ast.parse` failing on them is a finding about **THIS READER**.
         #
-        # ⇒ AND **THE **ROUTING **IS **NOT **SILENT**, **AND **THAT **IS **THE **POINT:** **A **FILE
+        # AND **THE **ROUTING **IS **NOT **SILENT**, **AND **THAT **IS **THE **POINT:** **A **FILE
         # **THIS **CENSUS **CANNOT **READ **IS **COUNTED **AND **NAMED**, **NOT **EXCLUDED** — **THE
         # **SAME **RULE **THE **SHELL **HALF **AND **THE **NO-SHEBANG **HALF **FOLLOW.**  **AN
         # **INSTRUMENT **THAT **CANNOT **SEE **A **POPULATION **CANNOT **BE **ANYTHING.**
         #
-        # ⇒ AND **THE **LANGUAGE **IS **THE **OWNER's **TO **SAY, **NOT **THIS **READER's:** **
+        # AND **THE **LANGUAGE **IS **THE **OWNER's **TO **SAY, **NOT **THIS **READER's:** **
         # `gates/gates-pop.py`'s **`entry_reason()`** **IS **THE **INSTRUMENT **THAT **CLASSIFIES **WHAT
         # **A **FILE **IS **WRITTEN **IN**, **AND **IT **READS **JAVASCRIPT **BEFORE **PYTHON** (**"the
         # **order **is **measured **rather **than **preferred**"**).
@@ -659,7 +659,7 @@ def report(root, charge=True):
                 # UNOWNED counted the codes nobody claimed and was blind to the one code two owners
                 # claimed in two words. The NAME is compared here, by the owner's own word.
                 #
-                # ⇒ AND **A **GATE **MAY **HAVE **ITS **OWN **WORDS, **AND **THE **TREE's **OWN **RUNNER
+                # AND **A **GATE **MAY **HAVE **ITS **OWN **WORDS, **AND **THE **TREE's **OWN **RUNNER
                 # **SAYS **SO.**  MEASURED 2026-10-30: `gates/runner.py`'s `spoken_disagrees()` reads
                 # ONLY `gatekit`'s five NAMES out of a gate's output -- "a word this tree has not bound
                 # to a code is not a claim about a code; it is prose" -- and it NAMES `gates/gate-surface.py`
@@ -667,7 +667,7 @@ def report(root, charge=True):
                 # declares `0: "CLEAN"` and PRINTS `CLEAN` is not lying to the runner: the runner
                 # reports `PASS` for it and there is no TOKEN-MISMATCH.
                 #
-                # ⇒ AND **SO **THIS **CHARGE **WAS **STRICTER **THAN **THE **TREE's **OWN **RUNNER**, **AND
+                # AND **SO **THIS **CHARGE **WAS **STRICTER **THAN **THE **TREE's **OWN **RUNNER**, **AND
                 # **IT **CHARGED **A **GATE **FOR **BEING **CONSISTENT **WITH **ITSELF.**  **THE **FIX **IS
                 # **THE **RUNNER's **RULE, **READ **FROM **THE **RUNNER** -- **NOT **RE-DERIVED:** **A **WORD
                 # **THAT **IS **NOT **ONE **OF **THE **HOUSE **FIVE **IS **PROSE**, **SO **A **GATE **THAT
@@ -1017,7 +1017,7 @@ def plants(red=False):
     # `gates/verdictcopy-gate.py` a SET) and were charged MALFORMED for it -- and NOT ONE OF THE FOUR
     # SHIPS A `PLANTS` MAPPING, so NOT ONE OF THEM DECLARED A SURFACE. The rule is now the SHAPE.
     #
-    # ⇒ AND **THE **PLANT **IS **BOTH **DIRECTIONS:** **A **FILE **NAMING **`VERDICTS` **WITH **NO
+    # AND **THE **PLANT **IS **BOTH **DIRECTIONS:** **A **FILE **NAMING **`VERDICTS` **WITH **NO
     # **`PLANTS`** **IS **NOT **CHARGED**, **AND **A **FILE **SHIPPING **A **`PLANTS` **MAPPING **WITH
     # **A **BROKEN **`VERDICTS`** **IS** — **BECAUSE **THE **SECOND **IS **A **GATE **THAT **DECLARED **A
     # **SURFACE **AND **DECLARED **IT **BADLY**, **AND **THE **FIRST **IS **NOT **A **GATE **AT **ALL.**
@@ -1051,10 +1051,10 @@ def plants(red=False):
     # MALFORMED for "UNPARSEABLE", and they are JAVASCRIPT (`gates/gates-pop.py`'s `entry_reason()`
     # reads both as `js-main`), so `ast.parse` failing on them is a finding about THIS READER.
     #
-    # ⇒ AND **THE **OTHER **HALF **IS **NOT **A **PLANT, **AND **THAT **IS **A **MEASUREMENT:** **A
+    # AND **THE **OTHER **HALF **IS **NOT **A **PLANT, **AND **THAT **IS **A **MEASUREMENT:** **A
     # **PYTHON **FILE **THAT **DOES **NOT **PARSE **IS **NEVER **AN **ENTRY** — **`gates-pop.py`'s
     # **`entry_reason()`** **CANNOT **READ **A **`__main__` **GUARD **IN **A **FILE **THAT **DOES **NOT
-    # **PARSE**, **SO **IT **RETURNS **`None`** **AND **THE **FILE **IS **OPAQUE.**  **⇒ AND **SO **THE
+    # **PARSE**, **SO **IT **RETURNS **`None`** **AND **THE **FILE **IS **OPAQUE.**  **AND **SO **THE
     # **CENSUS's **`UNPARSEABLE` **ARM **IS **REACHABLE **ONLY **FOR **A **NON-PYTHON **ENTRY**, **AND
     # **THAT **IS **EXACTLY **THE **CASE **THIS **PLANT **IS.**
     with tempfile.TemporaryDirectory() as td:

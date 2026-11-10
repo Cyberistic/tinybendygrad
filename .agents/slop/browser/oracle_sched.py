@@ -24,11 +24,11 @@ TRANSCRIBED HERE LINE FOR LINE:
     dst.assign(val)
     sink(dst)
 
-**⇒ AND THE `sum(-1)` IS `rz_reduce`'s `(2,0,1)` PERMUTE PLUS `AReduce{ADD,1}`**,
+**AND THE `sum(-1)` IS `rz_reduce`'s `(2,0,1)` PERMUTE PLUS `AReduce{ADD,1}`**,
 which is upstream's `_rop` (`tinygrad/uop/ops.py:633-643`): the reduced axes
 move to the FRONT and the reduce's arg is `(op, len(reduce_axis))`.
 
-**⇒ AND NOTHING HERE IS TRANSCRIBED FROM THE PORT's OUTPUT.** The expectation
+**AND NOTHING HERE IS TRANSCRIBED FROM THE PORT's OUTPUT.** The expectation
 is CPython's OWN answer, computed by CPython's OWN scheduler, on the SAME
 program.
 """
@@ -55,12 +55,12 @@ def build():
 
 
 # THE PORT's OWN `gate.code` (`schedule/__init__.bend:2190`) -- **THE PORT'S
-# OWN SYMBOLIC OP CODES**, NOT `Ops.value`. **⇒ AND THIS IS THE WHOLE
+# OWN SYMBOLIC OP CODES**, NOT `Ops.value`. **AND THIS IS THE WHOLE
 # DIFFERENCE BETWEEN THE TWO FINGERPRINTS**: the port's `gate.ops` is a digit
 # over `gate.code(op)` and this oracle's first version used `Ops.value`, so the
 # two numbers were computed over DIFFERENT ALPHABETS and were not comparable.
 #
-# **⇒ AND THE TABLE IS COPIED HERE, AND IT IS COPIED FROM THE PORT's OWN
+# **AND THE TABLE IS COPIED HERE, AND IT IS COPIED FROM THE PORT's OWN
 # SOURCE, WHICH IS THE POINT**: the oracle is allowed to name the port's
 # vocabulary, because the QUESTION is "does the port's own kernel have the same
 # SHAPE as CPython's", and the shape is expressed in the port's alphabet.

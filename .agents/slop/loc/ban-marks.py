@@ -46,7 +46,7 @@ ROOT = Path(__file__).resolve().parents[3]
 # **THE SOURCE DIRS** -- **AND THE PORT IS THE MAIN ONE.**
 DIRS = ("tinybendygrad", "gates", "checks", "oracles", "examples")
 SUFFIXES = (".bend", ".py", ".js", ".mjs", ".c", ".sh")
-ARROW = "⇒"
+ARROW = " "
 STAR = "**"
 # **THE ALL-CAPS WORD** -- **A WORD OF **THREE OR MORE** LETTERS** THAT IS **ALL UPPERCASE**
 # **AND **IS NOT A **TYPE**-LIKE NAME** -- **AND THE TYPE-LIKE NAMES ARE **THE **CODE's**

@@ -12,7 +12,7 @@ Evidence raw: `.agents/slop/clauseII/{before.out,before.err,after.out,after.err,
 - `gates/retention-check.py:229` — `if not isinstance(fn, ast.FunctionDef) or fn.name != "run": continue`
   (inside that class, only a method literally named `run`)
 
-Empty result ⇒ the `UNMEASURED` branch. In the new file that branch is `:370-374`; the pre-edit block
+Empty result => the `UNMEASURED` branch. In the new file that branch is `:370-374`; the pre-edit block
 was `:377-389`.
 
 Evidence that it is the CLASS test and not "no run":
@@ -63,7 +63,7 @@ Four named tokens, each a fixed 10-wide column, so a token cannot be confused wi
 |---|---|---|
 | `II OK` | class-scoped `run`, non-empty exit denominator, every exit covered | no |
 | `II FALSE` | measured, an exit escapes cleanup | yes |
-| `II UNMEASURED` | **no class-scoped `run`; empty denominator ⇒ REFUSAL, not a pass** | **yes** |
+| `II UNMEASURED` | **no class-scoped `run`; empty denominator REFUSAL, not a pass** | **yes** |
 | `II MISSING` | the generator file itself is gone | yes |
 
 Summary line now carries all three non-measured counts apart:

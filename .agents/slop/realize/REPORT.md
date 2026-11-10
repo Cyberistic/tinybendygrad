@@ -9,7 +9,7 @@ BACKGROUND. NEVER A SWEEP. NEVER A GATE SWEEP. NEVER A CORPUS RUN. NEVER A
 PARALLEL FIXTURE LOOP.** Every command's wall-clock cost is reported below. **NO
 COMMIT WAS MADE.** No gate was run; no corpus was run; nothing was parallelised.
 
-**⇒ WHAT LANDED**
+**WHAT LANDED**
 
 | file | what | lines |
 |---|---|---|
@@ -53,9 +53,9 @@ OK   CONTROL B (PARAM slots shifted by one): the (slot,size) multiset DIVERGES=T
 VERDICT PASS
 ```
 
-**⇒ THE DENOMINATOR, NAMED: 23 NODES over 10 OP KINDS** (12 distinct node
+**THE DENOMINATOR, NAMED: 23 NODES over 10 OP KINDS** (12 distinct node
 STRINGS — the 10 op kinds and the two CONST spellings the node string carries).
-**⇒ THE ORACLE's PUBLISHED DUMP AND `cmp.py`'s OWN COMPUTATION OF IT ARE
+**THE ORACLE's PUBLISHED DUMP AND `cmp.py`'s OWN COMPUTATION OF IT ARE
 BYTE-IDENTICAL** — that is the line that makes `cmp.py` the ORACLE and not a
 second opinion, and it is asserted, not assumed.
 
@@ -75,7 +75,7 @@ strings, in a different ORDER — because **the port's `eng_dump` is a BFS and t
 oracle's `dump` is a DFS** (see §5). The comparison is over MULTISETS, which is
 why the ORDER is not the subject.
 
-**⇒ THE SECOND AND THIRD COMPARISONS CARRY WHAT THE FIRST THROWS AWAY.** The
+**THE SECOND AND THIRD COMPARISONS CARRY WHAT THE FIRST THROWS AWAY.** The
 oracle's own CONST key is `cother` for every CONST, so the node dump says
 nothing about the CONST's VALUE; `rz_consts` carries it
 (`20,4,5,12,1,3,15` — CPython's own values, in CPython's own order) and
@@ -107,7 +107,7 @@ nothing about the CONST's VALUE; `rz_consts` carries it
 | C | merge adjacent RESHAPEs (`x.replace(src=(x2.src[0], x.src[1]))`, UNCONDITIONAL) | `tinygrad/uop/movement.py:8` (`mop_cleanup`) | `rz_rule.reshape` |
 | D | the AFTER's `src[0]` BECOMES THE BASE — the NET of `pm_mops`' `r.after(a)` and `earliest_rewrites`' "remove movement ops from SINK/AFTER" | `tinygrad/schedule/prepare.py:85-86` + `tinygrad/schedule/prepare.py:273-274` | `rz_rule.after` |
 
-**⇒ RULE D IS THE NET OF TWO UPSTREAM RULES AND IT WAS MEASURED, NOT GUESSED.**
+**RULE D IS THE NET OF TWO UPSTREAM RULES AND IT WAS MEASURED, NOT GUESSED.**
 `.agents/slop/realize/probe3.py` prints upstream's OWN graph at each stage:
 
 ```
@@ -119,7 +119,7 @@ nothing about the CONST's VALUE; `rz_consts` carries it
     SINK<-AFTER ; AFTER<-BUFFER,STORE ; BUFFER<-CONST ; CONST(20) ; ...
 ```
 
-⇒ **THE PORT's PRE-REBUILD SINK IS THE SAME 27-NODE GRAPH AS UPSTREAM's** (the
+**THE PORT's PRE-REBUILD SINK IS THE SAME 27-NODE GRAPH AS UPSTREAM's** (the
 port's `rz_dump0` row), and **THE PORT's POST-REBUILD SINK IS THE SAME
 23-NODE GRAPH** (`rz_dump`, compared above).
 
@@ -133,7 +133,7 @@ port's `rz_dump0` row), and **THE PORT's POST-REBUILD SINK IS THE SAME
 * **C3** the PARAM `(slot, size)` multiset;
 * **C0** the node COUNT.
 
-⇒ **ALL THREE ARE MULTISET COMPARISONS AND HERE IS WHY** (§5): the two dumps'
+**ALL THREE ARE MULTISET COMPARISONS AND HERE IS WHY** (§5): the two dumps'
 ORDERS cannot agree.
 
 ---
@@ -149,13 +149,13 @@ instead of 23 and the node multiset DIVERGES. `cmp.py`:
 `rz_params=0:20,1:12,2:15` becomes `rz_plant_params=1:20,2:12,3:15`.
 `cmp.py`: `CONTROL B ... DIVERGES=True and the NODE multiset is UNCHANGED=True`.
 
-**⇒ PLANT B IS THE ONE THAT MATTERS.** It says the node dump ALONE would not
+**PLANT B IS THE ONE THAT MATTERS.** It says the node dump ALONE would not
 have caught a wrong slot assignment, and that C3 is load-bearing rather than
 decoration. Both plants live INSIDE the one driver file as two flags
 (`rz_rebuild(p, no_merge, slot_off)`), so there is no second copy of the driver
 to drift.
 
-⇒ **⇒ AND A ROW IN THE PORT IS NOT A TEST.** The port prints rows with
+**AND A ROW IN THE PORT IS NOT A TEST.** The port prints rows with
 `IO.print`, and `IO.print` is OUTSIDE the law system by design: reverting a
 one-line fix in a copy leaves `bend --check-only` GREEN. **The test here is the
 comparison against CPython's own dump, and the plants are what make it a test.**
@@ -172,7 +172,7 @@ kernels**, and the reason is exact: `_split_after`
 **STORE** there, so there is no kernel to linearize. **Upstream's
 `create_schedule` is fed `get_kernel_graph`'s OUTPUT, not `prepare_rangeify`'s.**
 
-**⇒ AND THE PORT's OWN ENGINE WAS RUN ON THE 23-NODE SINK** (`rz_eng` row,
+**AND THE PORT's OWN ENGINE WAS RUN ON THE 23-NODE SINK** (`rz_eng` row,
 `schedule/rangeify.bend`'s `eng_stages`/`eng_drive`, upstream's
 `get_kernel_graph`'s seven rewrites, `tinygrad/schedule/rangeify.py:341-367`):
 
@@ -180,11 +180,11 @@ kernels**, and the reason is exact: `_split_after`
 eng_rz_s0=0;84;...   eng_rz_s3=27;84;...   eng_rz_s4=0;114;...   eng_rz_s6=59;114;...
 ```
 
-⇒ The seven stages MOVE 27 nodes at stage 3 and 59 at stage 6, and the FINAL
+The seven stages MOVE 27 nodes at stage 3 and 59 at stage 6, and the FINAL
 graph is STILL `SINK(AFTER(..., STORE(...)))` — **NOT** upstream's 9-node kernel
 graph `SINK(AFTER(PARAM, CALL))`.
 
-**⇒ ⇒ ⇒ THE NAMED SEAM, AND IT IS ONE LINE: `run_rangeify` IS NOT PORTED.**
+**THE NAMED SEAM, AND IT IS ONE LINE: `run_rangeify` IS NOT PORTED.**
 Upstream's `get_kernel_graph` opens with
 
 ```python
@@ -194,7 +194,7 @@ tsink = run_rangeify(tsink, bool(DEBUG_RANGEIFY))   # "convert movement ops to r
 
 and the port's engine's stage 1 is `Stg{0, Nil{}}` — an EMPTY table — with the
 comment **`# 1 run_rangeify -- rangeify.py:344 -- NOT PORTED`**
-(`schedule/rangeify.bend:2810`). **⇒ THAT IS THE LAST STRUCTURAL LINK, AND IT IS
+(`schedule/rangeify.bend:2810`). **THAT IS THE LAST STRUCTURAL LINK, AND IT IS
 NOT IN THIS TREE.** Everything upstream of it is now in the port and MEASURED
 equal.
 
@@ -207,23 +207,23 @@ THE ORACLE'S IS THE ONE THAT CANNOT SEE A VALUE.** MEASURED:
 `UOp.const(20).arg` is the bare `int` `20` (NOT the three-tuple
 `(dtype, "CONST", val)` that `eng-oracle.py:52`'s `const_key` looks for), so the
 oracle's key is `cother` for EVERY CONST; the port's `eng_constkey`
-(`schedule/rangeify.bend:3008`) spells the same node `c:0:20`. **⇒ THE TWO
+(`schedule/rangeify.bend:3008`) spells the same node `c:0:20`. **THE TWO
 CANNOT BOTH BE RIGHT ABOUT THE SAME GRAPH.** The driver uses the ORACLE's rule
 (so the two dumps are literally comparable) and adds `rz_consts`/`rz_params`
-so the VALUE is not lost. **⇒ AND `schedule/rangeify.bend` IS NOT MINE, SO IT IS
+so the VALUE is not lost. **AND `schedule/rangeify.bend` IS NOT MINE, SO IT IS
 NOT FIXED HERE.**
 
 **F2 — THE PORT's `UOp.reduce` CANNOT SPELL `AReduce{op, 1}`.** MEASURED:
 `uop/ops.bend:7435`'s `UOp.reduce.arg` builds `AReduce{r, 0}` — `num_axes`
 HARDCODED to zero — while upstream's arg is `(op, len(reduce_axis))`
 (`tinygrad/uop/ops.py:641`). The driver builds the node with `O.UOp.new` and the
-right `num_axes`. **⇒ A NAMED PORT DIVERGENCE, NOT A DRIVER HACK.**
+right `num_axes`. **A NAMED PORT DIVERGENCE, NOT A DRIVER HACK.**
 
 **F3 — THE PORT's `UOp.toposort` IS A POST-ORDER WALK AND THAT IS WHY THE
 REBUILD WORKS.** MEASURED: the port's `rz_preops` row reads
-`CONST,BUFFER,CONST,...,AFTER,SINK` — children first, the SINK LAST. **⇒ AND
+`CONST,BUFFER,CONST,...,AFTER,SINK` — children first, the SINK LAST. **AND
 `schedule/rangeify.bend:3055`'s `eng_dump` IS A BFS WHILE `eng-oracle.py:79`'s
-`dump` IS A DFS** — MEASURED from the two sources — **⇒ THE TWO ORDERS CANNOT
+`dump` IS A DFS** — MEASURED from the two sources — **THE TWO ORDERS CANNOT
 AGREE AND THE COMPARISON MUST BE ORDER-FREE.** This is why `cmp.py` compares
 MULTISETS.
 
@@ -234,7 +234,7 @@ SIBLING arena, where it named whatever node sat there — a BUFFER — and the d
 answered `SINK:none:BUFFER` over a THREE-node graph; (b) interning the SINK in
 the REDUCE's arena read the AFTER's index OUT OF RANGE and answered the arena's
 bottom (`OTHER`); (c) interning each rebuilt node into the ORIGINAL arena put
-consecutive nodes in DIFFERENT arenas and the map's indices named nothing. **⇒
+consecutive nodes in DIFFERENT arenas and the map's indices named nothing. **
 THE FIX IS ONE RULE — every node is interned in the arena that holds its srcs'
 indices, and the parent in the child's arena — and it is `tensor.bend`'s own
 "THE ARENA A BUILD RETURNS IS NOT THE ARENA THAT WENT IN" (tensor.bend:136).**
@@ -261,20 +261,20 @@ run_linear                 defs=0 todo_walls=0
 capturing                  defs=0 todo_walls=0
 ```
 
-**⇒ THE BRIEF's TABLE SAID "PRESENT" FOR `contiguous_mops_to_view`,
+**THE BRIEF's TABLE SAID "PRESENT" FOR `contiguous_mops_to_view`,
 `UOp.new_buffer` AND `needs_storage`. NONE OF THEM HAS A DEF.** Their grep
-"hits" ARE the TODO WALLS. **⇒ THIS IS THE TREE's OWN DOCTRINE 1 FAILURE, IN
+"hits" ARE the TODO WALLS. **THIS IS THE TREE's OWN DOCTRINE 1 FAILURE, IN
 THE BRIEF ITSELF: "A CENSUS THAT NAMES A BROKEN DRIVER WITHOUT SAYING WHETHER
 IT IS BROKEN IS A CENSUS OF NAMES."**
-**⇒ AND IT CHANGES THE DELIVERABLE's SCOPE IN ONE PLACE:** upstream's
+**AND IT CHANGES THE DELIVERABLE's SCOPE IN ONE PLACE:** upstream's
 `linear_with_vars` has a THIRD branch -- `elif contiguous and (view :=
 contiguous_mops_to_view(None, u, src)) is not None: u = view`
 (`tinygrad/tensor.py:193`) -- and `contiguous_mops_to_view` IS A WALL IN THE
-PORT. **⇒ THAT BRANCH CANNOT BE PORTED, AND THIS DRIVER DOES NOT NEED IT:
+PORT. **THAT BRANCH CANNOT BE PORTED, AND THIS DRIVER DOES NOT NEED IT:
 THE PROGRAM IT DRIVES HAS NO `STAGE`, SO THE BRANCH IS NOT REACHED.** The
 driver's rule set is therefore complete FOR THE PROGRAM IT DRIVES and
 incomplete for a STAGE-bearing one -- and that is named, not hidden.
-**⇒ AND `needs_storage` BEING A WALL IS WHY `tensor.bend`'s `realize` IS
+**AND `needs_storage` BEING A WALL IS WHY `tensor.bend`'s `realize` IS
 WALLED (`tensor.bend:2153-2155`): upstream's `realize` FILTERS ON IT
 (`tinygrad/tensor.py:220`).**
 
@@ -284,18 +284,18 @@ WALLED (`tensor.bend:2153-2155`): upstream's `realize` FILTERS ON IT
 
 1. **`run_rangeify` (upstream `tinygrad/schedule/rangeify.py:344`, "convert
    movement ops to ranges") IS NOT PORTED.** The port's engine's stage 1 is an
-   empty table (`schedule/rangeify.bend:2810`). **⇒ THE PORT's `schedule()`
+   empty table (`schedule/rangeify.bend:2810`). **THE PORT's `schedule()`
    ANSWERS 0 KERNELS ON A REAL PROGRAM AND THAT IS WHY.** Everything upstream of
    `run_rangeify` is landed and MEASURED equal (§1, §2).
 2. **`tinybendygrad/tensor.bend` WAS NOT EDITED.** Its handoff note
    (`tensor.bend:36-40`, `:50-58`) asks for `create_linear_with_vars`,
    `contiguous_mops_to_view`, `is_store_after`, `run_linear` and `capturing`.
-   **⇒ MEASURED (F6): `is_store_after` HAS A DEF
+   **MEASURED (F6): `is_store_after` HAS A DEF
    (`schedule/__init__.bend:1206`) AND `pm_drop_after` HAS ONE UNDER ANOTHER
    NAME (`pm_drop_after_table`, `uop/ops.bend:4496`); `contiguous_mops_to_view`,
    `UOp.new_buffer` AND `needs_storage` HAVE **NO DEF** AND ARE `TODO(p3)`
    WALLS; `create_linear_with_vars`, `run_linear` AND `capturing` ARE ABSENT
-   ENTIRELY.** **⇒
+   ENTIRELY.** **
    THIS UNIT LANDS THE GRAPH-SIDE OF THAT (`create_linear_with_vars`' INPUT,
    the SINK OF AFTERs) AND NOT `run_linear` (it needs the engine) NOR
    `capturing` (it needs the JIT).** The note's wall list is therefore one
@@ -304,7 +304,7 @@ WALLED (`tensor.bend:2153-2155`): upstream's `realize` FILTERS ON IT
    builds the model in the port's own language, but the model is
    `BUFFER`-based, and the port's `nn_conv2d`/`nn_linear` build movement graphs
    the port's fold cannot answer — so the MNIST sink would be a shape without a
-   comparable CPython graph (the oracle's dump is for a MATMUL). **⇒ THE
+   comparable CPython graph (the oracle's dump is for a MATMUL). **THE
    NODE-FOR-NODE MEASUREMENT IS AGAINST THE ORACLE's OWN PROGRAM, and the
    MNIST end-to-end is left open and NAMED.**
 4. **`O.UOp.new_buffer` IS STILL A `TODO(p3)`** (`uop/ops.bend:5332`). The
@@ -321,9 +321,9 @@ WALLED (`tensor.bend:2153-2155`): upstream's `realize` FILTERS ON IT
 
 * **`tinybendygrad`'s `.bend` FILE COUNT: 172 -> 173** (MEASURED,
   `find tinybendygrad -name '*.bend' | wc -l` = 173 after this unit's file).
-  **⇒ EVERY GATE THAT COUNTS `.bend` FILES HAS ITS DENOMINATOR MOVED BY ONE,
+  **EVERY GATE THAT COUNTS `.bend` FILES HAS ITS DENOMINATOR MOVED BY ONE,
   AND `checks/port-compile-gate.py` (169 files at the time of writing) WILL
-  SEE 170.** **⇒ THE NEW FILE COMPILES: `./bin/bend
+  SEE 170.** **THE NEW FILE COMPILES: `./bin/bend
   tinybendygrad/schedule/realize.bend --check-only` READS `ALL PROOFS CHECK`
   (1.7 s).**
 * **NOTHING ELSE.** `tinybendygrad/tensor.bend` is byte-identical to HEAD.
@@ -335,10 +335,10 @@ WALLED (`tensor.bend:2153-2155`): upstream's `realize` FILTERS ON IT
 
 * **`.agents/TODO.md` WAS NOT TICKED.** The brief's own DO-NOT-EDIT list names
   it, so the brief's later instruction to tick tasks off there contradicts its
-  own list. **⇒ THE LIST WON, because a unit that edits a file another unit
+  own list. **THE LIST WON, because a unit that edits a file another unit
   owns is the shared-state failure this tree measures.**
 * **`.agents/TOOLS.md` WAS NOT UPDATED.** Same reason: it is in the
-  DO-NOT-EDIT list. **⇒ NO NEW TOOL AND NO NEW DEPENDENCY WAS INTRODUCED** --
+  DO-NOT-EDIT list. **NO NEW TOOL AND NO NEW DEPENDENCY WAS INTRODUCED** --
   the driver uses only `bin/bend` and the port's own `.bend` files, and the
   comparator uses only `.venv/bin/python` and the vendored `tinygrad/` as the
   ORACLE. Nothing to ledger.
@@ -363,14 +363,14 @@ env -u PYTHONPATH .venv/bin/python .agents/slop/engine/eng-oracle.py \
 env -u PYTHONPATH .venv/bin/python .agents/slop/realize/cmp.py
 ```
 
-**⇒ THE DRIVER'S ROWS** (`port.rows`): `rz_dump` (the 23-node sink),
+**THE DRIVER'S ROWS** (`port.rows`): `rz_dump` (the 23-node sink),
 `rz_consts` (the CONST values), `rz_params` (the PARAM slots), `rz_nodes` (23),
 `rz_dump0` (the 27-node pre-rebuild sink), `rz_lin_n` (0 — the seam), `rz_eng`
 (the port's engine's seven stages on the sink), `rz_plant_dump` and
 `rz_plant_params` (the two controls).
 
-**⇒ AND THE PROBES**: `probe.py` (the oracle's 23 nodes with args and shapes),
+**AND THE PROBES**: `probe.py` (the oracle's 23 nodes with args and shapes),
 `probe2.py` (upstream's graph at each stage of `transform_to_call`),
 `probe3.py` (upstream's OWN sink and the two rules that make the AFTER's
-`src[0]` the base). **⇒ ALL THREE ARE THROWAWAY INSTRUMENTS AND ALL THREE ARE
+`src[0]` the base). **ALL THREE ARE THROWAWAY INSTRUMENTS AND ALL THREE ARE
 KEPT, because a claim with no instrument behind it is a label.**

@@ -30,7 +30,7 @@ W=${W:?set W to a $TMPDIR workdir}
 # MEASURED 2026-10-19, IN THE SISTER SCRIPT: `run-f64.sh --help` put a work DIRECTORY at
 # `--help` and `mkdir -p` created it AT THE REPO ROOT, and `checks/no-txt.py` then OWNED the
 # `.txt` files it left there -- so a failed run became HARD debt the `.txt` gate charges.
-# **⇒ `W` **IS **READ **FROM **THE **ENVIRONMENT **HERE**, **AND **A **FLAG-SHAPED **`W`** **IS **JUST
+# **`W` **IS **READ **FROM **THE **ENVIRONMENT **HERE**, **AND **A **FLAG-SHAPED **`W`** **IS **JUST
 # **AS **DANGEROUS **AS **A **FLAG-SHAPED **`$1`** — **SO **THE **GUARD **IS **THE **SAME.**
 case "$W" in
   -*) echo "$0: the work directory '$W' looks like a FLAG. W is a DIRECTORY; exit 3 (REFUSED)." >&2

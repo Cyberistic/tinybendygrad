@@ -19,7 +19,7 @@ construct for the pointer to point at`.
 TARGET FILE DECLARES `<name>` and the cited line IS the declaration or is INSIDE
 its span (the span includes the doc-comment run above the `def`).
 
-**⇒ SO THE CITED LINE MUST BE THE CONSTRUCT'S DECLARATION LINE.** A citation into
+**SO THE CITED LINE MUST BE THE CONSTRUCT'S DECLARATION LINE.** A citation into
 free comment space (between two `def`s, or inside a `TODO(pN)`/`WALL(p3)` block)
 has NO construct to name, and `symbol=` there is a FAIL.
 
@@ -34,11 +34,11 @@ alias** (MEASURED: `schedule/indexing.bend` -> `{'H': ..., 'O': None}`).
 written `O.GroupOp.movement` never resolves against `uop/ops.bend`, which declares
 `GroupOp.movement`.
 
-**⇒ THE WORKAROUND: WRITE THE `symbol=` WITH THE UNALIASED DOTTED NAME.**
+**THE WORKAROUND: WRITE THE `symbol=` WITH THE UNALIASED DOTTED NAME.**
 `symbol=GroupOp.movement`, NOT `symbol=O.GroupOp.movement`.
 MEASURED: `uop/ops.bend:504 symbol=GroupOp.movement` -> `RESOLVES`.
 
-**⇒ THE GATE IS NOT EDITED.** The defect is reported, not fixed here.
+**THE GATE IS NOT EDITED.** The defect is reported, not fixed here.
 
 ## THE NEAREST-PRECEDING BINDING
 
@@ -47,13 +47,13 @@ citation on that line. MEASURED on a two-citation line:
 `a.bend:713 symbol=cr_in a.bend:100 symbol=nope` -> the `:100` row is judged with
 the token set `{cr_in, nope}` and goes `WRONG-LINE`.
 
-**⇒ SO A LINE THAT CARRIES MORE THAN ONE CITATION MUST CARRY MORE THAN ONE
+**SO A LINE THAT CARRIES MORE THAN ONE CITATION MUST CARRY MORE THAN ONE
 `symbol=`, AND EVERY `symbol=` ON IT IS A CANDIDATE FOR EVERY CITATION ON IT.**
 The safe form is one citation per line.
 
 `gates/todo-cite-gate.py` binds the nearest-preceding `symbol=` to a citation and
 requires the symbol to be DECLARED by the target at the pin
-(`WRONG-SYMBOL` otherwise). **⇒ A PORT `symbol=` MUST NOT SHARE A LINE WITH A
+(`WRONG-SYMBOL` otherwise). **A PORT `symbol=` MUST NOT SHARE A LINE WITH A
 `.py` CITATION** -- it would bind to the `.py` one and fail.
 
 ## THE COUNTS, MEASURED ON THE LIVE TREE

@@ -305,7 +305,7 @@ def op_table_cover(enum_src: str, exec_src: str, live_src: str) -> tuple[list[st
   # **THE ARM KEY MAY BE A NUMBER OR A STRING, AND BOTH ARE READ.** `live.bend`'s op table was keyed by
   # the enum index as a DECIMAL STRING, and `PARITY.md` §133 changed it to a `U32` because a `match` on a
   # String in Bend COMPILES TO A CHARACTER TRIE (84 `slice`s and 2,560 `char_len` calls a render) while a
-  # `match` on a `U32` IS AN INTEGER COMPARE. **⇒ THIS CHECK'S SUBJECT IS THE COVERAGE, NOT THE
+  # `match` on a `U32` IS AN INTEGER COMPARE. **THIS CHECK'S SUBJECT IS THE COVERAGE, NOT THE
   # SPELLING** -- so it reads both, and a table that spelled one key would still be checked.
   have = set(int(m) for m in _re.findall(r'case "(\d+)": O\.Ops', tbl)) | \
          set(int(m) for m in _re.findall(r'case (\d+): O\.Ops', tbl))
@@ -539,16 +539,16 @@ class Worker:
     # splits -- one `String.split` over 28 KB overflows this runtime's stack, and §84.3 measured a 1,215-uop
     # kernel killing the worker and downgrading the rest of the session to the one-shot path.
     parts = _chunks(text)
-    # **⇒ AND THE LENGTH IS A FIXED-WIDTH FIELD, BECAUSE THE RUNTIME's READ IS "READ EXACTLY N".**
+    # **AND THE LENGTH IS A FIXED-WIDTH FIELD, BECAUSE THE RUNTIME's READ IS "READ EXACTLY N".**
     # MEASURED (`PARITY.md` §134.6/§134.7): `references/bend/bend2/effs/file_read.js:57`'s LOOP IS
     # `while (got < len)`, SO A READ OF N BYTES WAITS FOR N BYTES -- WHICH IS WHY A 32-BYTE READ OF THE
-    # LENGTH LINE HANGS (THE LINE IS 5 BYTES AND THE PAYLOAD MAY NOT ALL BE THERE YET). **⇒ AND A
+    # LENGTH LINE HANGS (THE LINE IS 5 BYTES AND THE PAYLOAD MAY NOT ALL BE THERE YET). **AND A
     # VARIABLE-WIDTH LENGTH CANNOT BE READ IN ONE READ, BECAUSE THE PORT DOES NOT KNOW HOW MANY BYTES
     # THE LINE IS BEFORE IT READS IT** -- SO THE OLD MACHINE READ THE LENGTH **ONE BYTE AT A TIME**
     # (`sz_of` ASKED FOR 1 IN MODE 0), AND MEASURED: **20 READS FOR THE 782-UOP WIRE's 3 CHUNKS**
     # (17 LENGTH BYTES + 3 PAYLOADS), **EVERY READ CARRYING A `fstatSync` IN THE RUNTIME**
     # (`file_read_room`).
-    # **⇒ SO THE LENGTH IS EIGHT ZERO-PADDED DIGITS, AND THE DAEMON READS EIGHT BYTES IN ONE READ.**
+    # **SO THE LENGTH IS EIGHT ZERO-PADDED DIGITS, AND THE DAEMON READS EIGHT BYTES IN ONE READ.**
     self.w.write("".join(f"{len(c):08d}{c}" for c in parts).encode() + b"00000000")
     import queue
     deadline = time.time() + TIMEOUT

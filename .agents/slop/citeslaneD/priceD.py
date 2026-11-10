@@ -131,7 +131,7 @@ def k_wcl_causal(c, line):
 # `OUTPUT` is `->|\brc\s*=|\bexit\s*=`, all ASCII.  A report that writes the arrow as a
 # unicode character states the SAME claim and the branch cannot see it: MEASURED below, that
 # one character class is the whole difference between `output` firing on 1 row and on 2.
-ARROW = re.compile("→|⇒|↦|⟶")
+ARROW = re.compile("→| |↦|⟶")
 FATARROW = re.compile("=>|-->|==>")
 
 

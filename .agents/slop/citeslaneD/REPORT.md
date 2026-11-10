@@ -106,7 +106,7 @@ N = FAIL rows retired. M = PASS rows silenced. **M_real** = labelled-REAL findin
 | `fragment(quoted)` — the number sits in a quote/backtick span | YES — `fragment`, widened | 5 | 0 | **1** | fails the ~zero bar |
 | `cell-label` — the claiming line is a table row | YES — `cell-label` | 9 | **5** | **4** | **REFUTED** |
 | `wc -l` **bare** (`==claim+1`, no newline test) | NO | 5 | 0 | **1** | fails the ~zero bar |
-| `output` + unicode arrows (`→ ⇒ ↦ ⟶`) | YES — same kind, wider alphabet | 9 | 0 | **3** | fails the ~zero bar |
+| `output` + unicode arrows (`→ ↦ ⟶`) | YES — same kind, wider alphabet | 9 | 0 | **3** | fails the ~zero bar |
 | **UNION of all seven** | — | **22** | **5** | **6** | **REFUTED** |
 
 Four things this table says that the prior report did not:

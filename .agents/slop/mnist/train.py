@@ -5,7 +5,7 @@
 
 WHY CPYTHON AND NOT THE BEND DEVICE. The Bend device is an INTERPRETER: the
 measured cost of one forward pass is minutes. A training epoch is 60000/BS
-forward passes plus two backward passes each. ⇒ **THE BEND DEVICE IS THE
+forward passes plus two backward passes each. **THE BEND DEVICE IS THE
 EVALUATION DEVICE, NOT THE TRAINING DEVICE**, and the weights it is evaluated
 with are produced here, by upstream tinygrad's own `nn.optim.Adam`, on
 upstream's own `CPU` renderer. The brief's rule 1 holds: the port's numbers

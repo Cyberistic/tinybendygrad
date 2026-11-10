@@ -24,7 +24,7 @@ one of them is in the BEFORE run too, and NONE is one of my six gates.** MEASURE
 difference of the two runs' `RED … UNPLANTED|MISPLANT` lines: **19 lines removed, 0 lines added.**
 No row went from `RESOLVES` to `UNPLANTED`/`MISPLANT`.
 
-**⇒ AND 9 OF THE 19 REMOVED LINES BELONG TO GATES THAT ARE NOT MINE.** `checks/dup-gate.py`,
+**AND 9 OF THE 19 REMOVED LINES BELONG TO GATES THAT ARE NOT MINE.** `checks/dup-gate.py`,
 `checks/norm_check.py`, `checks/oracle_f64.py`, `gates/upstream-pow-dtype-gate.py` and
 `gates/upstream-promo-lattice-gate.py` had plants in the working tree at the AFTER run that they
 did not have at the BEFORE run — MEASURED: `git diff --stat HEAD -- <file>` shows +25/−4,
@@ -43,7 +43,7 @@ CONCURRENTLY**. Those five improvements are **THEIRS** and I did not commit thei
 | `checks/nl-gate-noguard.py` | 0/1/3 | **(none)** | **0/1/3** | 3 | **0** | UNTAKEN | FAILURE |
 | `checks/nl-gate.py` | 0/1/3 | **(none)** | **0/1/3** | 3 | **0** | UNTAKEN | FAILURE |
 
-**⇒ AND EVERY GATE MOVED OUT OF `UNTAKEN`.** `UNTAKEN` is *"the gate has never been seen agree, so
+**AND EVERY GATE MOVED OUT OF `UNTAKEN`.** `UNTAKEN` is *"the gate has never been seen agree, so
 its red cannot be a failure of the tree"*. All six now have a **demonstrated green** — the census
 itself says `undeclared and green was demonstrated` — so their reds are chargeable, which is the
 whole point of planting them.
@@ -89,7 +89,7 @@ a declaration of `noopt=0`). MEASURED: that plant exits **1**. **BUT `plant("mov
 EXITS 0** — it is a REPORT on five plants, and every one of them behaved — so `--plant moved` does
 NOT reach 1 and the verdict had no argv.
 
-**⇒ SO A THIRD KIND WAS ADDED, AND IT WEAKENS NOTHING.** `moved-only` runs the **SAME five
+**SO A THIRD KIND WAS ADDED, AND IT WEAKENS NOTHING.** `moved-only` runs the **SAME five
 plants with the SAME fixed expectations and the SAME `bad` list**, and then exits with **the
 moved-summary plant's own measured exit** (1) instead of 0. The only thing that differs is
 **which number the process exits with**, and that number is one this file **MEASURED** on a
@@ -119,7 +119,7 @@ the copy from the live bytes; `--plant broken` builds it with **ONE anchored val
 negative zero of every format. MEASURED: **rc 1**, `MISMATCH 2` (`D[e4m3][c80]`, `D[e5m2][c80]`),
 and the LIVE tree answers MISMATCH 0 → **rc 0**.
 
-**⇒ AND THE ANCHOR IS WHAT MAKES THE PLANT HONEST:** if the anchor line is ever removed from
+**AND THE ANCHOR IS WHAT MAKES THE PLANT HONEST:** if the anchor line is ever removed from
 `dtype.js`, the plant **REFUSES (3)** rather than exiting 0 on an uncorrupted copy and calling it
 a PASS. **THE PLANT WRITES NOTHING ON THE TREE** — the corrupted copy lives in a TEMPORARY
 DIRECTORY and the live file is only read.
@@ -169,7 +169,7 @@ MODULE SCOPE, above every `argparse` … so no argument of any shape gets past i
 WRITTEN, FALSE NOW**: `.agents/slop/rebase-gate.py` AND `.agents/slop/nl/nl-oracle.py` are both
 PRESENT, so argv reaches `main()`.
 
-**⇒ AND THE PLANTS ARE HERMETIC ON PURPOSE.** This file's own header records that
+**AND THE PLANTS ARE HERMETIC ON PURPOSE.** This file's own header records that
 `tinybendygrad/uop/ops.bend` is in this port's 6-file import closure and is owned by another live
 unit: MEASURED, two consecutive captures printed 206 rows and then ZERO, naming `vd_text` and then
 `vd_dbg.of`. **A PLANT THAT READS THE LIVE PORT IS A PLANT THAT CAN ANSWER "NO ROWS" INSTEAD OF A
@@ -208,14 +208,14 @@ below is the SAME comparison over two lanes that differ.** **`PLANTS[1]` → rc 
 agree 172   disagree ['tmap BASE', 'tmap CLANG', 'tmap CUDA', 'tmap METAL', 'tmap OPENCL', 'wmma
 16_16_128 fp8', 'wmma 16_16_16 half', 'wmma 16_16_16 i8']`, `BROKEN`.
 
-**⇒ AND `PLANTS[3]` REQUIRED A REAL FIX TO THE GATE, NOT JUST A NEW ARGV.** The gate's only
+**AND `PLANTS[3]` REQUIRED A REAL FIX TO THE GATE, NOT JUST A NEW ARGV.** The gate's only
 refusals were the module-scope ones, which are **filesystem-conditioned** and cannot be reached
 by argv. MEASURED: `--port-stdout /nonexistent/file.rows` answered a **`FileNotFoundError`
 traceback and exit 1** — **THE SAME EXIT AS A DISAGREEMENT**, so "the capture I was told to read
 is not there" and "the port and the oracle DISAGREE" were one number to a reader of `$?`. **THIS
 FILE'S OWN `refuse()` SAYS WHY THAT IS WRONG**: *"a gate that crashes where it should refuse
 cannot distinguish 'the input is absent' from 'I am broken'"*, and `checks/abi_gate.py`'s rule is
-that a missing input is REFUSED (3) and not a verdict at all. **⇒ SO THE READ IS CHECKED BEFORE IT
+that a missing input is REFUSED (3) and not a verdict at all. **SO THE READ IS CHECKED BEFORE IT
 IS TAKEN**, at the read site (the module-scope refusal above it is about the tree; this one is
 about the two NAMED INPUTS). MEASURED: **rc 3**,
 `== REFUSED, NOT A VERDICT: input absent: checks/absent-lane.rows (named by --port-stdout)`.
@@ -224,14 +224,14 @@ about the two NAMED INPUTS). MEASURED: **rc 3**,
 
 ## 2. WHAT I DID **NOT** DO, AND WHY
 
-**⇒ I DID NOT NARROW A SINGLE DECLARATION.** Every `VERDICTS` mapping is **byte-identical** to
+**I DID NOT NARROW A SINGLE DECLARATION.** Every `VERDICTS` mapping is **byte-identical** to
 HEAD. Nothing was withdrawn to make a count go down. MEASURED: the `VERDICTS` literals are
 unchanged in all six files.
 
-**⇒ I DID NOT EDIT `gates/gate-surface.py`.** It is the instrument and I am one of the rows it
+**I DID NOT EDIT `gates/gate-surface.py`.** It is the instrument and I am one of the rows it
 reads.
 
-**⇒ I DID NOT ADD A NEW PLANT MODE WHERE THE GATE HAD NO MECHANISM, EXCEPT IN TWO PLACES, AND
+**I DID NOT ADD A NEW PLANT MODE WHERE THE GATE HAD NO MECHANISM, EXCEPT IN TWO PLACES, AND
 BOTH ARE REPORTED BELOW.**
 
 ### 2a. `checks/env-precond.py` — a NEW `--plant` KIND (`moved-only`)
@@ -250,7 +250,7 @@ argv word. **It was NECESSARY**: no argv over a tracked file reaches rc 1 (§1).
 
 ### 2c. `checks/gate.py` — `checks/drive.mjs` RESTORED (a NEW TRACKED FILE)
 
-**⇒ THIS IS THE ONE CHANGE OUTSIDE MY SIX GATES, AND IT IS THE GATE'S OWN INPUT.**
+**THIS IS THE ONE CHANGE OUTSIDE MY SIX GATES, AND IT IS THE GATE'S OWN INPUT.**
 
 `checks/gate.py` refused at module scope with *"input absent: …/checks/drive.mjs (this gate's
 driver; its last home was `.agents/slop/jsfp8/drive.mjs`, moved by 3f0e70ff1 and swept by
@@ -260,28 +260,28 @@ GATE'S OWN REFUSAL TEXT NAMES THE RECOVERY REF**, and the blob is there:
 file is **byte-identical** (`git hash-object checks/drive.mjs` =
 `4b99887189ec87de85d8096c7f4cbabdcc1e288f` = `git rev-parse '371cc64c9^:.agents/slop/jsfp8/drive.mjs'`).
 
-**⇒ AND THE TREE'S OWN RULE SAYS WHERE A GATE'S INPUTS LIVE.** `gates/gatekit.py`: *"A GATE'S
+**AND THE TREE'S OWN RULE SAYS WHERE A GATE'S INPUTS LIVE.** `gates/gatekit.py`: *"A GATE'S
 INPUTS LIVE BESIDE THE GATE. `.agents/slop/` is being pruned, and a prune took seven of nine driver
 and oracle files out from under these gates — every one of them went red on 'no such file' rather
 than on a value. **A gate whose inputs live somewhere the tree is clearing is a gate with a shelf
 life.**"* `checks/drive.mjs` IS the gate's driver, and `checks/gate.py:202` runs it.
 
-**⇒ AND IT IS NOT IN THE CORPUS'S `SUBSTRATE_INPUTS`** (`checks/differ.py:1673`:
+**AND IT IS NOT IN THE CORPUS'S `SUBSTRATE_INPUTS`** (`checks/differ.py:1673`:
 `"checks/differ.py", "checks/devpin.py", "bin/bend", ".agents/slop/graphcmp.py", …`), so restoring
 it **does not move `substrate_digest()`** and **does not invalidate the corpus run**.
 
-**⇒ AND IT IS ALSO A FIX IN ITS OWN RIGHT**, independent of the plants: with the driver restored,
+**AND IT IS ALSO A FIX IN ITS OWN RIGHT**, independent of the plants: with the driver restored,
 `checks/gate.py --quick` answers **rc 0** with `FIXED  present 5121/5121  MISMATCH 0` over the
 LIVE `tinybendygrad/runtime/dtype.js` — i.e. **the fp8 DECODE gate this tree has been REFUSING
 since `371cc64c9` now RUNS, and the port AGREES with CPython on all 5 121 rows.** MEASURED.
 
-**⇒ AND THE TREE ALREADY AGREES IT IS MISSING.** `gates/js-lane-census.py:23` says *"`checks/gate.py`
+**AND THE TREE ALREADY AGREES IT IS MISSING.** `gates/js-lane-census.py:23` says *"`checks/gate.py`
 was the fp8 DECODE gate for this file and it REFUSES today (exit 3: its driver `checks/drive.mjs`
 was swept by 371cc64c9), so this coverage exists nowhere else in the tree."* — i.e. the gate that
 covers the dtype seam is DEAD because of a missing file, and `oracles/` has no other fp8 decode
 oracle.
 
-**⇒ AND `checks/drive.mjs` IS NOT NAMED BY ANY OTHER GATE**, so nothing else changes shape.
+**AND `checks/drive.mjs` IS NOT NAMED BY ANY OTHER GATE**, so nothing else changes shape.
 
 ### 2d. TWO BEHAVIOUR FIXES THAT ARE NOT PLANTS BUT WERE NEEDED TO MAKE ONE HONEST
 
@@ -300,25 +300,25 @@ gates' own `refuse()` docstrings say why that is wrong.
 
 `.venv/bin/python gates/gate-surface.py --plant green` → **`PLANTS: RED (12/14)`**, rc 1.
 
-**⇒ THIS IS UNCHANGED BY MY WORK, AND IT IS PROVEN, NOT ASSERTED.** MEASURED by running the
+**THIS IS UNCHANGED BY MY WORK, AND IT IS PROVEN, NOT ASSERTED.** MEASURED by running the
 instrument's plant against the **pristine HEAD versions** of all six of my gates (`git show
 HEAD:<file>` into a scratch tree, with `checks/drive.mjs` absent): **`PLANTS: RED (12/14)` — the
-SAME TWO FAILURES.** **⇒ AND THE TWO FAILURES ARE THE INSTRUMENT'S OWN, NOT ANY GATE'S:**
+SAME TWO FAILURES.** **AND THE TWO FAILURES ARE THE INSTRUMENT'S OWN, NOT ANY GATE'S:**
 
 - **5c** — *"ZERO or TWO module-level unpacks in the vocabulary's owner is exit **2** REFUSED"* —
   observed `rc=3/3`. **The instrument's OWN `vocabulary()` EXITS 3, NOT 2** — `gates/gate-surface.py:221`
   says so in as many words: *"**EXIT 3, NOT 2: `2` IS NOT IN THIS FILE'S OWN VOCABULARY.** … So the
-  tree carried TWO numbers for ONE meaning."* **⇒ THE PLANT'S EXPECTATION WAS NEVER UPDATED WHEN
+  tree carried TWO numbers for ONE meaning."* **THE PLANT'S EXPECTATION WAS NEVER UPDATED WHEN
   THE EXIT CHANGED. A STALE EXPECTATION IN THE INSTRUMENT.**
 - **6a** — observed `counted=False`: the synthetic `#!/bin/sh` gate is not in the census's SHELL
   HALF, because `gates-pop.discover()` admits a file only when the **COMMIT TREE** carries it, and
   a synthetic tree has no commit.
 
-**⇒ NEITHER IS IN MY SCOPE** (I was told not to edit `gates/gate-surface.py`), and **NEITHER IS
+**NEITHER IS IN MY SCOPE** (I was told not to edit `gates/gate-surface.py`), and **NEITHER IS
 CAUSED BY ANY GATE I TOUCHED** — 5c and 6a are synthetic-tree assertions that never read a
 declared gate's source.
 
-**⇒ AND 12 OF THE 14 ASSERTIONS PASS**, including the ones that matter for this change: **1** (an
+**AND 12 OF THE 14 ASSERTIONS PASS**, including the ones that matter for this change: **1** (an
 UNPLANTED verdict is RED and NAMED), **2** (every verdict planted is GREEN), **3a** (a gate that
 declares NO GREEN is RED), **3b** (THE BLIND SPOT, asserted), **3c** (ZERO declaring gates is RED),
 **4a/4b/4c** (the three classes), **5a/5b** (the exit-code vocabulary).
@@ -341,8 +341,8 @@ declares NO GREEN is RED), **3b** (THE BLIND SPOT, asserted), **3c** (ZERO decla
 | my six gates' class | 5× UNTAKEN + 1× FINDING | 5× FAILURE + 1× FINDING | `IV` class rows |
 | `gates/gate-surface.py --plant green` | RED (12/14) | **RED (12/14)** | measured at pristine HEAD too |
 
-**⇒ AND 9 OF THE 19 REMOVED LINES BELONG TO A CONCURRENT UNIT.** §0. **MY SIX ACCOUNT FOR 12.**
-**⇒ AND THE COUNT MUST NOT RISE** — it did not, on either reading (16 → 0 tree-wide; 12 → 0 for my
+**AND 9 OF THE 19 REMOVED LINES BELONG TO A CONCURRENT UNIT.** §0. **MY SIX ACCOUNT FOR 12.**
+**AND THE COUNT MUST NOT RISE** — it did not, on either reading (16 → 0 tree-wide; 12 → 0 for my
 six), and **no row went from `RESOLVES` to `UNPLANTED`/`MISPLANT`** — the added-lines set is
 **EMPTY**.
 
@@ -352,49 +352,49 @@ six), and **no row went from `RESOLVES` to `UNPLANTED`/`MISPLANT`** — the adde
 
 The instrument **EXECUTES** each plant and requires the observed rc to equal the declared one, so
 "declared" and "reached" are the same column: the census prints `reached 0/1/2`, `reached 0/1/3`,
-`reached 0/3` — **not** the declared lists. **⇒ THE CENSUS SHOWS THE PLANTS REACHED.**
+`reached 0/3` — **not** the declared lists. **THE CENSUS SHOWS THE PLANTS REACHED.**
 MEASURED: `checks/dup-census.py  declared 0/3  reached 0/3`, `checks/env-precond.py  declared 0/1/2
 reached 0/1/2`, `checks/gate.py  declared 0/1/3  reached 0/1/3`, `checks/hermetic-census.py
 declared 0/3  reached 0/3`, `checks/nl-gate-noguard.py  declared 0/1/3  reached 0/1/3`,
 `checks/nl-gate.py  declared 0/1/3  reached 0/1/3`.
 
-**⇒ AND I ALSO RAN ALL 17 PLANTS STANDALONE**, one process each, and every one produced the
+**AND I ALSO RAN ALL 17 PLANTS STANDALONE**, one process each, and every one produced the
 declared rc (table in §1). **THE TWO ARE INDEPENDENT MEASUREMENTS AND THEY AGREE.**
 
 ---
 
 ## 6. A DECLARED SURFACE THAT LOOKED WRONG
 
-**⇒ `checks/env-precond.py` DECLARES `2: "REFUSED"`, AND `gates/gatekit.py` CALLS 3 `REFUSED`.**
+**`checks/env-precond.py` DECLARES `2: "REFUSED"`, AND `gates/gatekit.py` CALLS 3 `REFUSED`.**
 `gatekit.py:83` is `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`. This file's own docstring
 says *"EXIT: 0 declared-and-recorded · 1 a declared value MOVED (FAIL) · **2 usage** · 3 REFUSED —
 a required input is ABSENT"*, and its `refuse()` returns **3** while its `plant()` returns **2** for
-an unknown kind. **⇒ THE DECLARED `2: "REFUSED"` NAMES THE USAGE CODE AS A REFUSAL.**
+an unknown kind. **THE DECLARED `2: "REFUSED"` NAMES THE USAGE CODE AS A REFUSAL.**
 `gates/gate-surface.py`'s clause V reads this as an **UNOWNED** exit code (2 is not in
 `gatekit.py`'s five) — and it is one of the tree's **4 UNOWNED** rows today.
 
-**⇒ WHAT I DID: I LEFT IT EXACTLY AS IT IS AND NAMED IT.** The declaration is **not** narrowed to
+**WHAT I DID: I LEFT IT EXACTLY AS IT IS AND NAMED IT.** The declaration is **not** narrowed to
 make a count go down; `PLANTS[2] = ["--plant", "nonsense"]` is the argv that reaches the **2** the
 declaration names, and it is the file's own usage exit — **so the declared code is REACHABLE and
 PLANTED, and the disagreement with `gatekit.py` is named in the file's own declaration comment.**
-**⇒ THIS IS A REAL FINDING AND IT IS NOT MINE TO SILENCE.** Two owners own the meaning of `2`
+**THIS IS A REAL FINDING AND IT IS NOT MINE TO SILENCE.** Two owners own the meaning of `2`
 (`checks/dup-gate.py` and `checks/wallcheck.py` spell it `USAGE`; `checks/env-precond.py` and
 `gates/gate-surface.py` spell it `REFUSED`).
 
-**⇒ AND THE OTHER CLAUSE-V ROWS ON MY SIX GATES ARE THE SAME SUBJECT**, not UNPLANTED/MISPLANT:
+**AND THE OTHER CLAUSE-V ROWS ON MY SIX GATES ARE THE SAME SUBJECT**, not UNPLANTED/MISPLANT:
 `RENAMED 0 'OK'` (gatekit says `PASS`), `RENAMED 0 'AGREE'`, `RENAMED 1 'BROKEN'` (gatekit says
-`FAIL`). **⇒ I DID NOT TOUCH ANY OF THEM.** They are the tree's own vocabulary question and
+`FAIL`). **I DID NOT TOUCH ANY OF THEM.** They are the tree's own vocabulary question and
 `gates/gatekit.py` owns the vocabulary.
 
-**⇒ AND TWO MORE, IN THE SAME FAMILY, ON GATES I DID NOT TOUCH:**
+**AND TWO MORE, IN THE SAME FAMILY, ON GATES I DID NOT TOUCH:**
 `checks/dup-gate.py` (2 `USAGE`), `checks/wallcheck.py` (2 `USAGE`), `gates/gate-surface.py`
 (2 `REFUSED`). **LEFT ALONE.**
 
-**⇒ ONE MORE THING THAT LOOKED WRONG AND WAS NOT MINE:** `checks/env-precond.py --check` (the
+**ONE MORE THING THAT LOOKED WRONG AND WAS NOT MINE:** `checks/env-precond.py --check` (the
 DEFAULT mode, no plant) answers **rc 1** today, because the pin anchor
 `'e.update(LC_ALL="C", DEV=dev)'` no longer matches the live
 `.agents/slop/graphcmp.py:2264`, which reads `e.update(LC_ALL="C", DEV=dev, BEND_NO_TELEMETRY="1")`.
-**⇒ THAT IS A REAL, TRACKED FINDING ABOUT A STALE PIN — AND IT IS NOT A PLANT**, so I did **not**
+**THAT IS A REAL, TRACKED FINDING ABOUT A STALE PIN — AND IT IS NOT A PLANT**, so I did **not**
 use it as one and did **not** touch `checks/differ.py` or `.agents/slop/graphcmp.py` (both are the
 corpus's `SUBSTRATE_INPUTS`, and the latter is another unit's file). **REPORTED HERE INSTEAD.**
 
@@ -403,21 +403,21 @@ corpus's `SUBSTRATE_INPUTS`, and the latter is another unit's file). **REPORTED 
 ## 7. THE CONCURRENCY, AND WHY THE COUNTS ARE STATED THE WAY THEY ARE
 
 **HEAD MOVED DURING THE MEASUREMENT: `b90b15999` → `ac4c8888a`** (one commit by another unit,
-`the cites-census counted SCRATCH files' claims…`). **⇒ AND FIVE GATES THAT ARE NOT MINE WERE BEING
+`the cites-census counted SCRATCH files' claims…`). **AND FIVE GATES THAT ARE NOT MINE WERE BEING
 EDITED IN THE WORKING TREE AT THE SAME TIME** (`checks/dup-gate.py` +25/−4, `checks/norm_check.py`
 +23/−6, `checks/oracle_f64.py` +57/−8, `gates/upstream-pow-dtype-gate.py` +41/−17,
 `gates/upstream-promo-lattice-gate.py` +17/−3 — MEASURED by `git diff --stat HEAD -- <file>`).
 
-**⇒ THAT IS WHY THE TREE-WIDE "16 → 0" IS NOT ALL MINE**, and why §0 attributes the rows
-per-gate. **⇒ AND IT IS ALSO WHY A SINGLE BEFORE/AFTER PAIR CANNOT CREDIBLELY CLAIM A TREE-WIDE
+**THAT IS WHY THE TREE-WIDE "16 → 0" IS NOT ALL MINE**, and why §0 attributes the rows
+per-gate. **AND IT IS ALSO WHY A SINGLE BEFORE/AFTER PAIR CANNOT CREDIBLELY CLAIM A TREE-WIDE
 MOVEMENT ON THIS TREE.** **MY SIX GATES' NUMBERS ARE THE CREDIBLE ONES**, because they are the six
 files I changed and no other unit touched them.
 
-**⇒ AND A SELF-CORRECTION WORTH RECORDING:** mid-measurement I copied the **pristine HEAD
+**AND A SELF-CORRECTION WORTH RECORDING:** mid-measurement I copied the **pristine HEAD
 versions** of my six gates over my edited ones to establish the instrument's baseline (§3) and
 **OVERWROTE MY OWN EDITS**. They were re-applied from scratch and **re-verified by execution**
 (all 17 plants, declared rc == observed rc) and by a fresh census (`64/70 reached, 0 unplanted`).
-**⇒ THE LESSON IS THE TREE's OWN**: a file another unit may read is a shared path, and **A
+**THE LESSON IS THE TREE's OWN**: a file another unit may read is a shared path, and **A
 SCRATCH TREE IS NOT A `git checkout`** — the two look identical and one destroys work.
 
 ---
@@ -427,18 +427,18 @@ SCRATCH TREE IS NOT A `git checkout`** — the two look identical and one destro
 **NOTHING IN MY SIX.** Every declared verdict of every one of the six is now reached by a declared
 plant, and the census says so.
 
-**⇒ BUT TWO THINGS IN THE TREE REMAIN, AND NEITHER IS MINE:**
+**BUT TWO THINGS IN THE TREE REMAIN, AND NEITHER IS MINE:**
 
 1. **The instrument's own two plants (5c, 6a)** — §3. **5c** is a **stale expectation inside
    `gates/gate-surface.py`** (it expects exit 2; `vocabulary()` exits 3, and the file's own
    comment says the 3 was the deliberate change). **6a** is a synthetic-tree limitation in
-   `gates-pop.discover()` (a synthetic tree has no commit tree, so no file is "carried"). **⇒ I WAS
-   TOLD NOT TO EDIT `gates/gate-surface.py`, AND I DID NOT.** **⇒ 5c IS A ONE-WORD FIX IN THE
+   `gates-pop.discover()` (a synthetic tree has no commit tree, so no file is "carried"). **I WAS
+   TOLD NOT TO EDIT `gates/gate-surface.py`, AND I DID NOT.** **5c IS A ONE-WORD FIX IN THE
    INSTRUMENT** (`2` → `3` in the plant's expectation), and it is the instrument's own row to fix.
 
 2. **The other unit's five gates** — §7. Their plants landed in the working tree during my
    measurement; **I did not commit their files.**
 
-**⇒ AND I DID NOT PLANT `--plant red` FOR ANY OF MY SIX GATES**, because none of the six declares
+**AND I DID NOT PLANT `--plant red` FOR ANY OF MY SIX GATES**, because none of the six declares
 a red that is a FINDING except `checks/env-precond.py` (which already has `RED_IS = "FINDING"` and
 whose red is `1: "FAIL"`, now planted by `--plant moved-only`).

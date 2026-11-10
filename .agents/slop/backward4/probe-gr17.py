@@ -11,7 +11,7 @@ PORT'S COMMENT GIVES:
 
   * `gr_17` (RESHAPE) -- upstream's rule is `(ctx.reshape(ret.src[0].shape), None)`
     (`tinygrad/mixin/gradient.py:85`) and `ctx.reshape` is `tinygrad/mixin/movement.py:164`.
-    **⇒ `reshape` NEVER CALLS `resolve`.**  Its needs are `self.shape`, `prod`, and a
+    **`reshape` NEVER CALLS `resolve`.**  Its needs are `self.shape`, `prod`, and a
     shape equality -- and `prod` of a STATIC shape is INTEGER MULTIPLICATION.
   * `gr_14` (REDUCE) -- upstream's rule is `reduce_gradient(ctx, ret, ret.arg[0])`
     (`tinygrad/mixin/gradient.py:8-18`), whose three arms call `_rop` (ops.py:633-642)
@@ -19,7 +19,7 @@ PORT'S COMMENT GIVES:
     SHAPE THE ARGUMENT OF `resolve` IS A PYTHON BOOL, NOT A UOP**, so no symbolic
     solving happens even there.
 
-⇒ THE INSTRUMENT.  **`resolve` IS PATCHED AND COUNTED**, and every call records whether
+THE INSTRUMENT.  **`resolve` IS PATCHED AND COUNTED**, and every call records whether
 its argument is a `UOp` (a SYMBOLIC question) or a `bool` (a STATIC question).  That is
 the difference between "needs a symbolic solver" and "needs the identity on a bool",
 and it is the difference the port's comments are about.

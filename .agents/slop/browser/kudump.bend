@@ -1,12 +1,12 @@
 # .agents/slop/browser/kudump.bend -- THE `KU` LIST, NODE BY NODE.
 #
-# **⇒ AND THIS IS THE INSTRUMENT FOR D2 AND D3.** `fullchain.bend` renders
+# **AND THIS IS THE INSTRUMENT FOR D2 AND D3.** `fullchain.bend` renders
 # `Lidx0 < ;` and `weakint`, and those are TWO FIELDS OF ONE `KU` RECORD: the
 # RANGE's `srcs` (which name its trip count's CONST) and its `dtype`. A C text
-# that is wrong names neither. **⇒ SO THE KU LIST IS DUMPED AND EACH FIELD IS
+# that is wrong names neither. **SO THE KU LIST IS DUMPED AND EACH FIELD IS
 # READ.**
 #
-# **⇒ AND THE ORDER OF DEFS HERE IS DEPENDENCY ORDER, WHICH BEND REQUIRES**:
+# **AND THE ORDER OF DEFS HERE IS DEPENDENCY ORDER, WHICH BEND REQUIRES**:
 # "a def may call only a def declared ABOVE it"
 # (`.agents/slop/imagenet2/REPORT.md`, measured).
 import Base
@@ -22,7 +22,7 @@ import ./../../../tinybendygrad/LAWS/spec.bend as S
 import ./../../../tinybendygrad/helpers.bend as H
 
 # THE CLASS NAMES ARE THE PORT's OWN SEVEN ARMS (`spec.bend:67`):
-# `CVoid CBool CUint CSint CFloat CWeakFloat CWeakInt`. **⇒ AND `CWeakInt` IS THE
+# `CVoid CBool CUint CSint CFloat CWeakFloat CWeakInt`. **AND `CWeakInt` IS THE
 # ONE D3 IS ABOUT**: a `weakint` and an `i32` are BOTH 32 BITS and differ ONLY
 # in this field, which is why a row that dumped the bits alone cannot see it.
 def kd_cls(+c: S.Cls) -> String:
@@ -35,7 +35,7 @@ def kd_cls(+c: S.Cls) -> String:
     case S.CBool{}: "B"
     case S.CVoid{}: "V"
 
-# **⇒ AND THE CLASS IS READ THROUGH ITS OWN DEF, BECAUSE A `match` CANNOT
+# **AND THE CLASS IS READ THROUGH ITS OWN DEF, BECAUSE A `match` CANNOT
 # SCRUTINIZE A COMPUTED VALUE** -- "give it its own def", which is one of the
 # four Bend facts `.agents/slop/imagenet2/REPORT.md` measured.
 def kd_dt_cls(d: S.Dt) -> String: kd_cls(S.Dt.cls(d))
@@ -47,7 +47,7 @@ def kd_addr(+a: S.Addr) -> String:
     case S.AReg{}: "R"
     case _: "A"
 
-# **⇒ AND A CONST IS DUG BY ARM, NOT PRINTED BY A `show`** -- `Const`
+# **AND A CONST IS DUG BY ARM, NOT PRINTED BY A `show`** -- `Const`
 # (`ops.bend:800`) has FOUR arms and no `show` def in the port.
 def kd_const(+v: O.Const) -> String:
   match v:
@@ -65,9 +65,9 @@ def kd_arg(+a: C.KUArg) -> String:
     case C.KAIndex{off, is_add}: String.concat(["x", U32.show(off)])
     case C.KASink{name}: String.concat(["s", name])
 
-# THE OP's OWN NAME. **⇒ AND `gate.code` IS NOT ENOUGH**: it has NO ARM for
+# THE OP's OWN NAME. **AND `gate.code` IS NOT ENOUGH**: it has NO ARM for
 # `LOAD`, `INDEX`, `SHRINK`, `REDUCE` or `RANGE`, so five different ops all
-# print `0` and a dump that used it alone could not tell them apart. **⇒ AND
+# print `0` and a dump that used it alone could not tell them apart. **AND
 # THE NAME IS `render/__init__.bend`'s own op list, read by INDEX.**
 def kd_op(+op: O.Op) -> String:
   O.Ops.name.of(op)
@@ -107,7 +107,7 @@ def kd_lst_ops.go(+xs: List<&2, U32>, +ar: O.Arena, +acc: List<&2, String>) -> L
     case Nil{}: acc
     case x <> t: kd_lst_ops.go(t, ar, List.append(&2, String, acc, [kd_op(SCH.sc_op(ar, x))]))
 
-# THE KERNEL's `srcs` LIST, AS OPS. **⇒ AND THIS LOCALISES A MISSING SUBTREE**:
+# THE KERNEL's `srcs` LIST, AS OPS. **AND THIS LOCALISES A MISSING SUBTREE**:
 # if `k` is a STORE and its `srcs` are INDEX and REDUCE, then a toposort that
 # does not contain a REDUCE has dropped it, and that is `toposort`'s defect and
 # not `kuconv`'s.

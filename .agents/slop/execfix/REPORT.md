@@ -24,7 +24,7 @@ through the real `BEND` device) and prints the answer. It is the instrument here
 | `bcast_mul` | `T(range(1,17)).reshape(4,1,4) * T(2..32 step 2).reshape(1,4,4)` | first 4×4 slab only, rest zeros | full 4×4×4 |
 | `sum0` | `T(range(16)).reshape(4,4).sum(axis=0)` | `[24, 28, 32, 36]` | MATCH |
 
-**⇒ THE `max` DEFECT IS THE INTEGER LANE.** `max0` and `max0f` differ ONLY in the dtype
+**THE `max` DEFECT IS THE INTEGER LANE.** `max0` and `max0f` differ ONLY in the dtype
 (`T(range(16))` is int32; the float case is float32) and **THE TWO PACKETS ARE BYTE-IDENTICAL
 APART FROM THE DTYPE**:
 
@@ -35,7 +35,7 @@ APART FROM THE DTYPE**:
 25: MAX i32 - 24 13              25: MAX f32 - 24 13
 ```
 
-**⇒ SO THE DIFFERENCE IS THE ALU LANE, NOT THE PACKET, NOT THE LOOP AND NOT THE STORE.**
+**SO THE DIFFERENCE IS THE ALU LANE, NOT THE PACKET, NOT THE LOOP AND NOT THE STORE.**
 
 ## 2. CAUSE #1 — THE INTEGER LANE'S `max` IS A `min` (`tinybendygrad/uop/symbolic.bend:634`)
 
@@ -67,10 +67,10 @@ i32_max(7,3) = 3                <- WRONG, min
 cmp_lt(3,7) = 1                 <- right
 ```
 
-**⇒ THE COMPARISON IS RIGHT AND THE `max` IS WRONG, SO THE FAULT IS THE ARGUMENT ORDER
+**THE COMPARISON IS RIGHT AND THE `max` IS WRONG, SO THE FAULT IS THE ARGUMENT ORDER
 OF `i32_lt` INSIDE `i32_max`, AND NOTHING ELSE.** `i32_max` answers `min(x, y)`.
 
-**⇒ AND THAT EXPLAINS THE OBSERVED `max` ANSWER EXACTLY.** The packet's chain is
+**AND THAT EXPLAINS THE OBSERVED `max` ANSWER EXACTLY.** The packet's chain is
 
 ```
 23: MAX i32 - 21 16     21 = buf1[range]      16 = buf1[range+4]
@@ -130,7 +130,7 @@ CLEARS THAT FLAG WHEN THE LOOP EXITS**, AND UPSTREAM'S `del values[u]` DOES EXAC
 THAT: it removes the counter, so the NEXT visit is a FIRST visit (`values[u] = [0]`)
 and the body reads `0` again.
 
-**⇒ THE CONSEQUENCE IS PRECISE AND IT IS THE OBSERVED SYMPTOM:** after the inner RANGE
+**THE CONSEQUENCE IS PRECISE AND IT IS THE OBSERVED SYMPTOM:** after the inner RANGE
 of a nested pair has run to its trip count, its flag is still set and its counter still
 holds the last value. So on the outer loop's SECOND iteration the inner RANGE is
 "already visited", its counter is incremented once more (`nxt = trip + 1`),
@@ -173,7 +173,7 @@ offset is `MULACC i32 - 19 16 28` = `outer*4 + inner`, so outer=0 writes the fir
 `[180, 200, 220, 240]` and outer=1,2,3 write nothing — **the measured
 `[[180.0, 200.0, 220.0, 240.0], [0,0,0,0], [0,0,0,0], [0,0,0,0]]`.**
 
-**⇒ SO THE BROADCAST DEFECT AND THE `dot` DEFECT ARE ONE DEFECT, AND IT IS NOT THE
+**SO THE BROADCAST DEFECT AND THE `dot` DEFECT ARE ONE DEFECT, AND IT IS NOT THE
 BROADCAST: IT IS THE NESTED RANGE.** A SINGLE (non-nested) RANGE is unaffected,
 WHICH IS WHY `sum0`, `sum4`, `max0` AND EVERY OTHER SINGLE-LOOP CASE MATCH.
 
@@ -182,7 +182,7 @@ WHICH IS WHY `sum0`, `sum4`, `max0` AND EVERY OTHER SINGLE-LOOP CASE MATCH.
 ## 7. WHAT IS COMMITTED, AND HOW TO REBUILD WHAT IS NOT
 
 **THE COMPILED EXECUTORS ARE NOT COMMITTED.** `executor` AND `executor-old` ARE 550 KB BUILD
-OUTPUTS, AND A BUILD OUTPUT IN GIT IS A SECOND COPY OF SOMETHING THAT A GENERATOR MAKES. **⇒ THE
+OUTPUTS, AND A BUILD OUTPUT IN GIT IS A SECOND COPY OF SOMETHING THAT A GENERATOR MAKES. **THE
 OLD EXECUTOR IS REBUILT FROM `ops_python.old.bend`, WHICH IS THE PRE-FIX SOURCE AND IS COMMITTED** --
 IT IS `git show HEAD:tinybendygrad/runtime/ops_python.bend` AT THE COMMIT BEFORE THE FIX, **SO THE
 WITNESS IS ONE FILE INSTEAD OF A 191-FILE COPY OF THE PORT.**
@@ -193,16 +193,16 @@ WITNESS IS ONE FILE INSTEAD OF A 191-FILE COPY OF THE PORT.**
     .venv/bin/python .agents/slop/execfix/census.py /tmp/exec-new /tmp/census-new.rows
     diff /tmp/census-old.rows /tmp/census-new.rows
 
-**⇒ AND THE THREE ROWS THAT MOVE ARE `f32.argmax.0.b0`, `i32.maxpair.0.b0` AND
+**AND THE THREE ROWS THAT MOVE ARE `f32.argmax.0.b0`, `i32.maxpair.0.b0` AND
 `u32.maxpair.0.b0` -- `moved-names.rows` AND `census-diff.rows` ARE THE RECORD, AND THEY ARE
 SMALL.**
 
-**⇒ AND THE PIN IS A NAME SET, SO A PINNED ROW's VALUE IS NEVER CHECKED.**
+**AND THE PIN IS A NAME SET, SO A PINNED ROW's VALUE IS NEVER CHECKED.**
 `gates/ops_python_exec-pins.rows` READS AS `{l.split()[0] ...}` -- **A SET OF NAMES, WITH NO
 VALUES** -- AND `gates/ops_python_exec-gate.py:326` COMPUTES
-`unpinned = (set(dpy) | set(dbd)) - pinned` **⇒ SO A PINNED ROW IS EXEMPT FROM THE COMPARISON
+`unpinned = (set(dpy) | set(dbd)) - pinned` **SO A PINNED ROW IS EXEMPT FROM THE COMPARISON
 ENTIRELY.** MEASURED 2026-10-25: ALL THREE MOVED ROWS ARE **STILL** DIVERGENCES AFTER THE FIX --
 CPython's OWN ANSWERS ARE `f32.argmax.0.b0=03000000`, `i32.maxpair.0.b0=10000000`,
-`u32.maxpair.0.b0=10000000`, AGAINST THE FIXED PORT's `40000000`, `00080000`, `00080000` -- **⇒ SO
+`u32.maxpair.0.b0=10000000`, AGAINST THE FIXED PORT's `40000000`, `00080000`, `00080000` -- **SO
 THE PINS STAY AND THE GATE IS HONEST, AND THE FINDING IS THE GAP: A FIX CAN MOVE A PINNED ROW's
 VALUE WITHOUT ANYTHING GOING RED, BECAUSE THE PIN EXEMPTS THE ROW RATHER THAN PINNING IT.**

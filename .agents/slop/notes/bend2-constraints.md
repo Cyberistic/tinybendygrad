@@ -18209,7 +18209,7 @@ the row's own text as evidence before classifying anything.
 
 `dd-mut-proof.py` renames the DEF and shows the output byte-identical; that proves no live
 caller. It says nothing about an ARM, and for an arm the honest test is a pair: delete the arm
-(byte-identical ⇒ dead) and delete its INTERCEPTOR (big diff ⇒ it becomes live). `l2i_cast.got`'s
+(byte-identical => dead) and delete its INTERCEPTOR (big diff => it becomes live). `l2i_cast.got`'s
 `case 3` measured `THEOREM` and 137 of 184 lines when `l2i_cast.ldt`'s `case 3` was removed. One
 direction without the other is half a proof, and the half you skip is the half that says whether
 the zero would stay a zero.
@@ -24530,7 +24530,7 @@ block do not (`WIDE = 247` in `comp.ts:141`). Interleaving — bind one, consume
 bind the next — compiles. **A census over N laws must not accumulate N binders.**
 
 **S-4. A NULLARY `type X is Data: X{}` IS A SINGLETON AND CANNOT CARRY A VALUE.**
-One constructor, no fields ⇒ exactly one inhabitant, so no pointer can live in it.
+One constructor, no fields => exactly one inhabitant, so no pointer can live in it.
 `tinybendygrad/runtime/autogen/libclang.bend` declares **all 60** of its ABI types
 that way. It is a type-level fact, not a measurement: a foreign law therefore
 cannot reuse them as parameter types and must flatten to `Nat`/`String`/`Unit`.

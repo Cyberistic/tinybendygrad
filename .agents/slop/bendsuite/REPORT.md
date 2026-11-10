@@ -97,7 +97,7 @@ on the saved packets:
 | 256 | 3.07 s |
 | 4096 | 12.33 s |
 
-Fit: **≈ 2.8 s fixed startup + ≈ 2.4 ms/element ⇒ ≈ 420 elements/second.** `Tensor.ones(256,256)`
+Fit: **≈ 2.8 s fixed startup + ≈ 2.4 ms/element ≈ 420 elements/second.** `Tensor.ones(256,256)`
 (65,536 elements) is therefore **> 2.5 minutes of CPU for one kernel**, and `test_arange.py`'s
 `test_tri_complexity` — a 256×256 `triu` — died against the 180 s watchdog exactly there.
 

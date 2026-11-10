@@ -27,7 +27,7 @@ THE FIXTURES.  TWO of them, and the second is the CONTROL for the first:
     is the 2-D node `a` ITSELF, so the walk is EXACTLY `[per]` (upstream's
     `_deepwalk` puts a node in the path only if one of its SRCS is on the path or is a
     TARGET -- gradient.py:112 -- so the target itself is NOT in the walk, and the
-    target's own rule is never needed).  **⇒ THE WHOLE BACKWARD GRAPH IS ONE RULE
+    target's own rule is never needed).  **THE WHOLE BACKWARD GRAPH IS ONE RULE
     DEEP, AND IT IS `gr_21` ALONE.**
   * `P1` -- the 1-D PERMUTE, order `(0,)`, the IDENTITY permutation.  This is the arm
     where upstream's `permute()` returns `ctx` ITSELF (movement.py:231's
@@ -68,7 +68,7 @@ def ident(u) -> str:
   (helpers.bend:1709-1712) -- and `graphcmp.py:459` `konst()` NORMALISES CPython's int
   to it, saying so: "CPython's int is normalised to the port's I64 form so
   `UOp.const(4)` is `l0:4` on BOTH sides rather than `i4` here and `l0:4` there".
-  **⇒ THE IDENT COLUMN IS A SPELLING LAYER, AND THE CORPUS ALREADY SPELLS IT THIS
+  **THE IDENT COLUMN IS A SPELLING LAYER, AND THE CORPUS ALREADY SPELLS IT THIS
   WAY.  THE PRIOR ART'S `ident()` (`.agents/slop/backward2/oracle-gs.py`) PRINTED
   `@i%d` -- A RAW PYTHON DECIMAL -- AND ITS FIXTURE HAD NO INT CONST, SO THE
   DIFFERENCE WAS NEVER VISIBLE.  IT IS VISIBLE NOW, AND IT IS NOT ABOUT `gr_21`.**
@@ -152,7 +152,7 @@ def fixture_p2():
   (gradient.py:112), so a node is in the walk only if one of its SRCS reaches a
   target.  A TARGET IS NEVER ITSELF IN THE WALK, so the target's own rule is never
   needed -- and `a` is a STACK, whose rule (`ctx[i]`, gradient.py:91) the port cannot
-  do (gr_22 is `GSkip`).  **⇒ MAKING `a` THE TARGET IS WHAT KEEPS THE FIXTURE INSIDE
+  do (gr_22 is `GSkip`).  **MAKING `a` THE TARGET IS WHAT KEEPS THE FIXTURE INSIDE
   `gr_21` ALONE.**
 
   WHY `ctx` IS A STACK AND NOT A BUFFER: `ctx` must have `ndim == 3` for upstream's
@@ -176,7 +176,7 @@ def fixture_p1():
       leaf = BUFFER(0) shape (6,)   per = PERMUTE(leaf, (0,))   g = BUFFER(1) shape (6,)
 
   `(0,)` IS THE IDENTITY, so upstream's `permute()` (movement.py:231) returns `ctx`
-  ITSELF -- no PERMUTE node is built.  **⇒ THE GRADIENT OF `per` IS `g` VERBATIM, AND
+  ITSELF -- no PERMUTE node is built.  **THE GRADIENT OF `per` IS `g` VERBATIM, AND
   THE `bw` GRAPH IS `g`'s NODE SET AND NOTHING ELSE.**
   """
   leaf0 = leaf(0, 6)

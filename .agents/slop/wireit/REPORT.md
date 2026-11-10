@@ -165,7 +165,7 @@ own module, loaded by path** — the shape the rules ask for.
 | present, older than `MAX_AGE_S` | **3** | `ARTIFACTS-STALE` |
 | present, fresh | **0** | `ARTIFACTS-FRESH` |
 
-Absent ⇒ `REFUSED` is the brief's own instruction and the tree's: `checks/substrate-id.py:65`
+Absent `REFUSED` is the brief's own instruction and the tree's: `checks/substrate-id.py:65`
 — *"A gate whose DEAD is reached by the wrong cause is still a gate that cannot say why"* —
 and `:70`, of a gate that had it right by accident. `DEAD` is spent on **present-but-empty**,
 the one case where the gate ran, reached its reader, and got nothing back. `SKIP` is deliberately

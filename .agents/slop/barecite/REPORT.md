@@ -62,7 +62,7 @@ is the same class of defect, so it was fixed.
 | `OUT-OF-CORPUS` | 10 | 10 |
 | total rows | 1293 | 1297 |
 
-**⇒ THE FILES I DID NOT TOUCH DID NOT GET WORSE.** Per-file counts for every file
+**THE FILES I DID NOT TOUCH DID NOT GET WORSE.** Per-file counts for every file
 outside the eleven: `UNCLAIMED` 359 -> 356, `WRONG-LINE` 61 -> 3,
 `WRONG-LINE-BY-BLOCK` 101 -> 100, `AMBIGUOUS` 19 -> 19, `OUT-OF-CORPUS` 10 -> 10.
 The `RESOLVES` rise in the untouched files (463 -> 528) is **other units' work on
@@ -72,7 +72,7 @@ the same class**, not this slice's: `base.bend`, `codegen/kernel.bend`,
 `renderer/{kuconv,wgsl}.bend`, `runtime/support/nv/nvdev.bend`,
 `schedule/prepare.bend`, `uop/validate.bend`.
 
-**⇒ THE 3 REMAINING `WRONG-LINE` ARE NOT MINE, AND ALL THREE ARE THE SAME SHIFT:**
+**THE 3 REMAINING `WRONG-LINE` ARE NOT MINE, AND ALL THREE ARE THE SAME SHIFT:**
 
 ```
 extra/models/efficientnet.bend:31 -> mixin/rand.bend:945  `rd_glorot_uniform` is declared at :950
@@ -82,12 +82,12 @@ extra/models/vit.bend:23         -> mixin/rand.bend:921  `rd_uniform` is declare
 
 All three are the SAME `mixin/rand.bend` move that this slice's commit `9b1e3aa53`
 re-derived for ITS OWN four pointers -- and all three are in files this slice does
-not own (`⇒ DO NOT TOUCH`). **⇒ THE OWNING UNITS SHOULD RE-DERIVE THEM; THE FIX IS
+not own (` DO NOT TOUCH`). **THE OWNING UNITS SHOULD RE-DERIVE THEM; THE FIX IS
 THE SAME SHAPE.**
 
-**⇒ ONE RISE IN AN UNTOUCHED FILE, AND IT IS NOT A REGRESSION:**
+**ONE RISE IN AN UNTOUCHED FILE, AND IT IS NOT A REGRESSION:**
 `extra/models/efficientnet.bend` `WRONG-LINE` 0 -> 1. That file is another
-unit's (`⇒ DO NOT TOUCH` list), and it moved between the two measurements.
+unit's (` DO NOT TOUCH` list), and it moved between the two measurements.
 
 ---
 
@@ -110,7 +110,7 @@ gates/bendcite-gate.py:160
 SYMBOL_FIELD = re.compile(r"\bsymbol\s*=\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)")
 ```
 
-**⇒ THE `symbol=` MUST NAME A SYMBOL THE TARGET FILE DECLARES.** Every one of the
+**THE `symbol=` MUST NAME A SYMBOL THE TARGET FILE DECLARES.** Every one of the
 79 does. The gate checks it: `declares(path, name)` returns nothing and the row is
 `UNCLAIMED` again.
 
@@ -130,7 +130,7 @@ WRONG-LINE  tinybendygrad/uop/weak.bend:337  ops.py:120  symbol=promo_dtype
 # todo-cite-gate: FAIL -- 1 of 1161 marker citations are false
 ```
 
-`:112` is UPSTREAM's `promo_dtype`, not the port's. **⇒ THE `symbol=` GOES ON A
+`:112` is UPSTREAM's `promo_dtype`, not the port's. **THE `symbol=` GOES ON A
 LINE WITH NO `.py` CITATION.** The `D.refuse(...)` payloads are safe:
 `todo-cite-gate.py` reads only lines that start with `#`
 (`gates/todo-cite-gate.py:518`), and a `D.refuse` payload is CODE.
@@ -142,7 +142,7 @@ LINE WITH NO `.py` CITATION.** The `D.refuse(...)` payloads are safe:
 on one line made the `:234` row `WRONG-LINE` (`the pointer says :234 and
 `nn_glorot` is declared at :220`). The second pointer was replaced by prose.
 
-**⇒ THIS BIT ONCE, IN THE OTHER DIRECTION:** `helpers.bend:3193` and
+**THIS BIT ONCE, IN THE OTHER DIRECTION:** `helpers.bend:3193` and
 `helpers.bend:3190` on ONE line with ONE `symbol=` would have bound the symbol to
 both. They are on different lines in different files.
 
@@ -216,24 +216,24 @@ payload was). **Every file strips to the SAME code hash as HEAD.**
 | `schedule/rangeify.bend` | `bbf9053381f9d166` -> `bbf9053381f9d166` | 1542 | **SAME** |
 | `uop/weak.bend` | `842d58c3e814d312` -> `842d58c3e814d312` | 835 | **SAME** |
 
-### ⇒ THE FILES THAT ARE **NOT** COMMENT-ONLY
+### THE FILES THAT ARE **NOT** COMMENT-ONLY
 
 **TEN of the eleven.** `schedule/rangeify.bend` and `uop/weak.bend` are pure
 comment edits. The other nine carry a corrected `D.refuse("...")` DIAGNOSTIC
 STRING, which the brief allows ("a `D.refuse("…")` diagnostic string that names a
 stale `.bend:NN`, may be corrected -- it is a payload no computation reads").
 
-**⇒ THE EXACT LIST:** `examples/test_pkl_imagenet.bend`,
+**THE EXACT LIST:** `examples/test_pkl_imagenet.bend`,
 `extra/datasets/imagenet_download.bend`, `extra/models/clip.bend`,
 `extra/models/convnext.bend`, `extra/models/mask_rcnn.bend`,
 `extra/models/transformer.bend`, `extra/models/unet.bend`, `nn/item.bend`,
 `nn/pool.bend`.
 
-**⇒ THE PAYLOADS ARE A DIAGNOSTIC, NOT A COMPUTATION.** Every changed payload is
+**THE PAYLOADS ARE A DIAGNOSTIC, NOT A COMPUTATION.** Every changed payload is
 the text of a `D.refuse(...)` refusal, and no code reads it. `proof.py` prints
 them side by side.
 
-**⇒ NO CODE CHANGED ANYWHERE.** No `def`, no `type`, no expression.
+**NO CODE CHANGED ANYWHERE.** No `def`, no `type`, no expression.
 
 ---
 
@@ -256,7 +256,7 @@ the verdict TOKEN read (never the exit code).
 | `schedule/rangeify.bend` | `WITHIN-LIMITS` | 848 MB |
 | `uop/weak.bend` | `WITHIN-LIMITS` | 418 MB |
 
-**⇒ ALL ELEVEN COMPILE.**
+**ALL ELEVEN COMPILE.**
 
 ---
 
@@ -292,7 +292,7 @@ PLANT arm-one moved   : {'RESOLVES': 699, 'UNCLAIMED': 409, 'WRONG-LINE-BY-BLOCK
 PLANT OK: a moved line makes the `symbol=` pointer stale, a byte-identical copy does not, and the copy's control is the control's verdict exactly
 ```
 
-**⇒ THE PLANT MUST INSERT CODE, NOT A COMMENT, AND IT MUST GO ABOVE THE
+**THE PLANT MUST INSERT CODE, NOT A COMMENT, AND IT MUST GO ABOVE THE
 CONSTRUCT'S SPAN START.** A construct's SPAN INCLUDES THE COMMENT RUN THAT
 DOCUMENTS IT, and `bend_constructs` walks UP from the declaration over any
 comment lines -- so a planted COMMENT is ABSORBED INTO THE CONSTRUCT'S DOC RUN,
@@ -302,7 +302,7 @@ STILL RESOLVES. **MEASURED, this plant's first form:**
 gate's own plant says the same thing: "The plant inserts CODE, which is what a
 unit editing the port actually does."
 
-**⇒ THE SUBJECT IS A COPY ON DISK, EDITED AS TEXT.** NEVER `git show HEAD:`.
+**THE SUBJECT IS A COPY ON DISK, EDITED AS TEXT.** NEVER `git show HEAD:`.
 
 ---
 
@@ -318,7 +318,7 @@ gates/todo-cite-gate.py
 # todo-cite-gate: PASS
 ```
 
-**⇒ THE 79 SLICE ROWS' LINE NUMBERS MOVED** because this slice's edits changed
+**THE 79 SLICE ROWS' LINE NUMBERS MOVED** because this slice's edits changed
 the files the citations sit in. The slice's own key
 (`rel`, `at`, `subject`, `lo`, `hi`) is what the row is matched on, and the
 `claim` column -- the `symbol=` -- is what carries the identity.
@@ -352,7 +352,7 @@ the files the citations sit in. The slice's own key
 
 5. **THE `helpers.bend:3193` HTTP-SEAM CLASS, TREE-WIDE.** **10 rows still cite
    it, 9 of them UNCLAIMED.** Four of those ten were in this slice's eleven
-   files and are fixed; the rest are in files this slice does not own. **⇒ A
+   files and are fixed; the rest are in files this slice does not own. **A
    FOLLOW-UP SLICE SHOULD DO THE REMAINING SIX**, and the fix is the same shape:
    `helpers.bend:2758 symbol=lines`. (The number MOVED: the slice was handed a
    census in which 22 files named `helpers.bend:3193`, and by the end of this
@@ -378,7 +378,7 @@ each was checked with `git show --stat` AND `git fsck --no-progress` IN THE SAME
 COMMAND. `git fsck` names the SAME THREE PRE-EXISTING malformed trees every time
 (`d57bc484`, `d83cf685`, `3a60f33f`) and no others.
 
-**⇒ NO AMEND. NO REBASE. NO `git add -A`. NO `git add` OF A DIRECTORY.**
+**NO AMEND. NO REBASE. NO `git add -A`. NO `git add` OF A DIRECTORY.**
 
 ---
 
@@ -397,7 +397,7 @@ All under `.agents/slop/barecite/`:
 | `plant.py` | the plant for the `symbol=` form, on a COPY of the port |
 | `before.rows` / `after.rows` / `final.rows` | the three censuses |
 
-**⇒ NONE OF THEM IS A GATE AND NONE OF THEM IS A LIST.** `where.py` and `at.py`
+**NONE OF THEM IS A GATE AND NONE OF THEM IS A LIST.** `where.py` and `at.py`
 walk the port with `os.walk`; `sum.py` reads the rows the gate itself wrote.
 
 ---

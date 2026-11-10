@@ -87,19 +87,19 @@ def main() -> None:
         l.split("(")[0] for l in lines if l.startswith("def ")).items() if d[1] > 1]
     print(f"  duplicate `def` names remaining: {dupes if dupes else 'none'}")
     r = subprocess.run(["./bin/bend", str(dst)], capture_output=True, text=True)
-    # **⇒ AND THE VERDICT IS **THE COMPILE TOKEN**, NOT A ROW COUNT, AND THAT IS A
+    # **AND THE VERDICT IS **THE COMPILE TOKEN**, NOT A ROW COUNT, AND THAT IS A
     # CORRECTION WITH A MEASURED CAUSE.** The check used to be "`./bin/bend` exits
     # 0 AND prints 220+ rows matching `]   py=[`", because `cstyle.bend` used to
-    # PRINT its 227 gate rows. **⇒ AND IT DOES NOT ANY MORE**: commit
+    # PRINT its 227 gate rows. **AND IT DOES NOT ANY MORE**: commit
     # `564733bed` made `cstyle.bend` a LIBRARY with no `main()`, and the rows
     # live in the tracked `gates/cstyle-live.rows` (227 rows), which is the
-    # GOOD file this script already reads. **⇒ SO THE ROW COUNT WAS A COUNT OF
+    # GOOD file this script already reads. **SO THE ROW COUNT WAS A COUNT OF
     # A SUBJECT THAT NO LONGER EXISTS**, and it made a COMPILING COPY read as
     # "REPAIRED BUT STILL RED".
     #
-    # **⇒ AND THE TOKEN IS `ALL PROOFS CHECK`**, WHICH IS WHAT THE FILE PRINTS
+    # **AND THE TOKEN IS `ALL PROOFS CHECK`**, WHICH IS WHAT THE FILE PRINTS
     # ON SUCCESS -- and `AGENTS.md` records the whole rule: read the verdict
-    # TOKEN, never the exit code. **⇒ AND THE EXIT CODE IS NOT THE VERDICT
+    # TOKEN, never the exit code. **AND THE EXIT CODE IS NOT THE VERDICT
     # EITHER**: `bend --check-only` exits 1 on a CLEAN file (there are
     # permanently unfilled laws), so `rc != 0` would refuse a healthy copy.
     checked = "ALL PROOFS CHECK" in r.stdout
@@ -115,7 +115,7 @@ def main() -> None:
         # 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary, so a reader of `$?` could not tell this from a usage error.
         sys.exit(3)
     # THE ROWS ARE **NOT** COMPARED BYTE-FOR-BYTE ANY MORE, AND THE REASON IS
-    # THE SAME ONE: the port's stdout is no longer the rows file. **⇒ AND WHAT
+    # THE SAME ONE: the port's stdout is no longer the rows file. **AND WHAT
     # IS COMPARED IS THE **COMPILE VERDICT**, WHICH IS ALREADY CHECKED ABOVE**,
     # and the copy's own sha256 against the LIVE file's -- because THE REPAIR
     # DELETES LINES, AND THE QUESTION IS WHETHER IT DELETED ANY.

@@ -33,7 +33,7 @@ WORK=${2:-${WORK:-$TMPDIR/portexec}}
 # THE WORK DIRECTORY IS **NOT **A **FLAG**, AND IT IS **NOT **INSIDE **THE **REPO**.  MEASURED
 # 2026-10-19, IN THE SISTER SCRIPT: `run-f64.sh --help` put a work DIRECTORY at `--help` and
 # `mkdir -p` created it AT THE REPO ROOT, and `checks/no-txt.py` then OWNED the `.txt` files
-# it left there -- so a failed run became HARD debt the `.txt` gate charges.  **⇒ `$MODE`
+# it left there -- so a failed run became HARD debt the `.txt` gate charges.  **`$MODE`
 # **IS **ALREADY **VALIDATED **BY **THE **`case` **ABOVE**, **AND **A **PATH **IS **NOT.**
 case "$WORK" in
   -*) print -r -- "$0: the work directory '$WORK' looks like a FLAG. This script's second argument is a DIRECTORY; exit 3 (REFUSED)." >&2

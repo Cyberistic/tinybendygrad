@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """PATCH THE COMPILED DAEMON SO IT TIMES ITS OWN PHASES, AND DUMP THEM A TURN.
 
-⇒ ⇒ ⇒ **THE PATCH SITES ARE READ FROM THE COMPILED FORM AND NOT GUESSED**, AND THE PATCH IS
+**THE PATCH SITES ARE READ FROM THE COMPILED FORM AND NOT GUESSED**, AND THE PATCH IS
 **VERIFIED BY A BISECTION** (EVERY SITE ALONE, THEN ALL TOGETHER) BECAUSE THE FIRST ATTEMPT AT
 THIS MEASURED A PROGRAM THAT HUNG: `$IO_bind`'s CONTINUATION MUST **RETURN AN EFFECT**, NOT A
 VALUE (`run_tail(_f_0(_x_0), _k_0)` RUNS THE CONTINUATION's RESULT), AND A CONTINUATION THAT
 RETURNS A VALUE MAKES THE RUNTIME SAY "r.f is not a function".
 
-⇒ ⇒ ⇒ AND THE EFFECT MUST STAY IN THE **EFFECT SLOT**: `$IO_bind(effect, continuation, k)` -- SO
+AND THE EFFECT MUST STAY IN THE **EFFECT SLOT**: `$IO_bind(effect, continuation, k)` -- SO
 THE CLOCK IS TAKEN IN A **THIRD** POSITION (A CONTINUATION THAT WRAPS THE NEXT EFFECT) AND NOT BY
 REPLACING THE EFFECT, WHICH DELETES IT AND LEAVES "bend: no effect registers undefined".
 """
@@ -62,7 +62,7 @@ function $serve(_fuel_0, _m_0, _s_0) {"""),
 function $_________tinybendygrad_renderer_cstyle_render_kernel_go_inner(_m_0, _dev_0, _cpu_0, _fn_0, _kernel_0, _bufs_0, _kus_0, _lb_0) {
   if (_m_0) {"""),
 
-  # THE `@@END` DUMP. ⇒⇒⇒ THE DAEMON NEVER EXITS (IT LOOPS ON THE FIFO FOREVER), SO A
+  # THE `@@END` DUMP. THE DAEMON NEVER EXITS (IT LOOPS ON THE FIFO FOREVER), SO A
   # `process.on("exit")` HOOK WOULD NEVER FIRE AND THE NUMBERS WOULD COME BACK NEVER.
   ("""    return $IO_bind((_x_14) => $IO_print($$ended(), _x_14), run_clo($serve_c11(_f_0,_k_0)), _x_13);""",
    """    globalThis.__T.nturn++;

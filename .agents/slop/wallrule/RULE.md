@@ -11,7 +11,7 @@ this file supersedes it and the differences are the instrument's, listed at the 
 
 Three fields, and the wall is checked or it is not:
 
-| field | meaning | absent ⇒ |
+| field | meaning | absent |
 |---|---|---|
 | **(a) anchor** | the symbol a grep can settle it — `file` + pattern, or the command that re-runs it | the wall is a **story** |
 | **(b) reopen** | the exact check whose result would clear the wall | the wall is a **permanent veto** nobody can retire |

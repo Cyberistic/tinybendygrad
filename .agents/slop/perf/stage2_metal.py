@@ -14,7 +14,7 @@ WHAT IT DOES, and why each step is a measurement rather than an inference:
  3. WRITES `.agents/slop/perf/stage2-metal.rows`: one row per kernel, with the two hashes,
     whether they are identical, the bytes, and the ms of the program that compiled it.
 
-⇒ AND THE COMPARISON IS READ CORRECTLY: if the two texts are byte-identical then the timing
+AND THE COMPARISON IS READ CORRECTLY: if the two texts are byte-identical then the timing
 IS the port's timing, because the bytes that were timed are the bytes the port emits. If a
 kernel's texts DIFFER, its `identical` field says `no` and the timing belongs to upstream's
 text only -- it is not a comparison of two programs' speeds, and this file does not pretend

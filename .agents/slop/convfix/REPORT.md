@@ -77,7 +77,7 @@ MEASURED (`.agents/slop/convfix/probe-run2.out`):
 #     oracle: ran, 3 buffers
 ```
 
-**⇒ UPSTREAM RUNS IT. THE PORT REFUSES IT. THE PORT IS WRONG AND UPSTREAM IS
+**UPSTREAM RUNS IT. THE PORT REFUSES IT. THE PORT IS WRONG AND UPSTREAM IS
 RIGHT** (rule 1 of the brief).
 
 **AND THE `local_size` IS CARRIED, NOT GUESSED.** `BendRenderer.has_local = False`
@@ -119,7 +119,7 @@ def load(inp, j, dtype: DType):
               if g: _store(m, o+j*_step(m, src_dtypes[1]), v, src_dtypes[1])
 ```
 
-**⇒ UPSTREAM ONLY TOUCHES THE MEMORY WHERE THE GATE IS OPEN.** A gated-off LOAD
+**UPSTREAM ONLY TOUCHES THE MEMORY WHERE THE GATE IS OPEN.** A gated-off LOAD
 takes `alt` (`:26`); a masked-off STORE writes nothing (`:93`). `_load`'s
 IndexError (`:19`) and `_store`'s (`:30`) are therefore only reachable through an
 access that HAPPENS. **The port's check stands in for that IndexError, so IT
@@ -161,7 +161,7 @@ constant per tap:
 `base - 28` and `base - 1` are **NEGATIVE** at the borders — and the port's
 arithmetic is UNSIGNED, so `base - 33` wraps to 4294967263.
 
-**⇒ THE PORT CHECKS THE ACCESSES THAT THE GATE EXCLUDES.** The diagnostic build
+**THE PORT CHECKS THE ACCESSES THAT THE GATE EXCLUDES.** The diagnostic build
 (the tree's file, patched to report the offending pc/offset/buffer, built, run,
 then **restored** — `shasum -a 256` matched before and after) names the one that
 fired first:
@@ -192,7 +192,7 @@ re-runs the launch:
 #   upstream accessed it 0 time(s)
 ```
 
-**⇒ UPSTREAM MAKES 154,968 MEMORY ACCESSES, NONE OF THEM OUT OF RANGE, AND IT
+**UPSTREAM MAKES 154,968 MEMORY ACCESSES, NONE OF THEM OUT OF RANGE, AND IT
 NEVER TOUCHES THE OFFSET THE PORT REFUSED. THE PORT'S REFUSAL IS THE PORT'S
 OWN, AND IT IS WRONG.**
 
@@ -213,7 +213,7 @@ with `Prog.ld1` passing `Prog.ld.happens(p, u)` and `Prog.store` passing
 
 ## 3. DEFECT 2 — THE SCRATCH BUFFER'S BYTE REGION IS IN THE WRONG PLACE
 
-**⇒ THIS ONE WAS ALREADY IN THE TREE'S OWN CENSUS, AND THE PIN FILE MISDIAGNOSED
+**THIS ONE WAS ALREADY IN THE TREE'S OWN CENSUS, AND THE PIN FILE MISDIAGNOSED
 IT.** Ten of the 153 fixtures carry a scratch `BUFFER` op, and **23 of the 53
 divergences from upstream belong to exactly those ten fixtures.**
 
@@ -241,7 +241,7 @@ def Prog.bytes(+b: Build, fs: List<&2, Buf>) -> List<&2, U32>:
             buf = memoryview(bytearray(size)) if u.op is not Ops.PARAM else to_mv(pargs.pop(0), size)
 ```
 
-**⇒ UPSTREAM'S SCRATCH IS A `bytearray` OF `max_numel()*itemsize` BYTES — so it
+**UPSTREAM'S SCRATCH IS A `bytearray` OF `max_numel()*itemsize` BYTES — so it
 is `w*e` BYTES long, and it is a SEPARATE object from the packet's buffers, not
 a region inside them.**
 
@@ -255,7 +255,7 @@ a region inside them.**
    FOLLOWED BY** the scratch's region. The old code **prepended** the zeros, so
    the packet's own bytes sat at offset `len(zeros)` while their base is 0.
 
-**⇒ THE SHIFT IS `e` BYTES**, and it is visible in the tree's own census:
+**THE SHIFT IS `e` BYTES**, and it is visible in the tree's own census:
 
 | fixture | scratch | `w` | `e` | upstream | port (before) |
 |---|---|---|---|---|---|
@@ -263,7 +263,7 @@ a region inside them.**
 | `i32.maxpair.0.b1` | `k:buffer:4` | 4 | 1 | `0100000002000000…` | `0001000000020000…` |
 | the port's conv packet | `k:buffer:64` | 4 | 16 | — | shifted **16 bytes = 4 floats** |
 
-**⇒ AND THE PORT'S OWN CONV PACKET IS THE 16-BYTE ONE.** Measured on the
+**AND THE PORT'S OWN CONV PACKET IS THE 16-BYTE ONE.** Measured on the
 post-defect-1 port's `PACKET.out` against upstream's buffers on the SAME packet:
 the port's b1 (the input) read `[0,0,0,0, -4.5, -0.5, …]` where upstream reads
 `[-4.5, -0.5, 3.5, …]` — **exactly four floats of shift** — and the port's b2
@@ -271,14 +271,14 @@ the port's b1 (the input) read `[0,0,0,0, -4.5, -0.5, …]` where upstream reads
 `[-0.75, 0.25, 1.25, …]`; `2.5` is `xv[3068]`, the input's element 3068, which
 is what b2's shifted window shows.
 
-**⇒ AND THE PIN FILE'S DIAGNOSIS OF THE LOCAL-REDUCTION FAMILY IS WRONG.**
+**AND THE PIN FILE'S DIAGNOSIS OF THE LOCAL-REDUCTION FAMILY IS WRONG.**
 `gates/ops_python_exec-pins.rows` says:
 
 > the loop-carried LOCAL reduction family: `Prog.loop` walks `loop_ends` and a
 > nested END jumps to the inner head (ops_python.bend's own header, WHAT DOES
 > NOT). The port's `f32.localsum.0.b0` is 717.0 where CPython's is 10.0.
 
-**⇒ `f32.localsum.0.b0` was 33980.0 (0x000084fc) where CPython's is 10.0
+**`f32.localsum.0.b0` was 33980.0 (0x000084fc) where CPython's is 10.0
 (0x00002041) — and after this fix the port answers 10.0.** The nested-END
 diagnosis was a story: the nested RANGE's counter reset was fixed by an earlier
 unit (commit 38c6465b5), and what was left was **a byte offset**.
@@ -299,12 +299,12 @@ def Prog.bytes(+b: Build, fs: List<&2, Buf>) -> List<&2, U32>:
 is `wire_order ++ zeros`: the packet's bytes in wire order, then the scratch's
 region, which is where `Prog.bases` says it is.
 
-**⇒ AND THE FIRST DRAFT OF THIS FIX WAS WRONG, AND THE CENSUS CAUGHT IT.** The
+**AND THE FIRST DRAFT OF THIS FIX WAS WRONG, AND THE CENSUS CAUGHT IT.** The
 first draft reversed `Build.bp` and then reversed the whole list, which
 **reversed the packet's bytes a second time**: `census-diff.rows` shows **every
 row in the fixture file changing** (43 lines of diff, e.g.
 `f32.add.0.b1=0000803f0000004000004040…` → `f32.add.0.b1=4100000040e00000…`).
-**⇒ A FIX THAT MOVES 364 ROWS IS NOT A FIX, AND THE CENSUS IS THE INSTRUMENT
+**A FIX THAT MOVES 364 ROWS IS NOT A FIX, AND THE CENSUS IS THE INSTRUMENT
 THAT SAYS SO.** The corrected draft moves 23 rows and all 23 AGREE with
 upstream.
 
@@ -344,12 +344,12 @@ f32.maxpair.0.b2   i32.maxpair.0.b0  i32.maxpair.0.b1 i32.maxpair.0.b2
 u32.maxpair.0.b0   u32.maxpair.0.b1  u32.maxpair.0.b2
 ```
 
-**⇒ ALL 23 MOVED ROWS ARE PINNED, AND 0 UNPINNED ROW MOVED.** So the gate's
+**ALL 23 MOVED ROWS ARE PINNED, AND 0 UNPINNED ROW MOVED.** So the gate's
 verdict is unchanged — and that is exactly the trap the brief names: **a pinned
 row's VALUE is never compared, so a fix can move one without anything going
 red.** The rows are compared here, against upstream's own answers.
 
-**⇒ AND 23 PINS ARE NOW STALE.** `gates/ops_python_exec-pins.rows` is **not
+**AND 23 PINS ARE NOW STALE.** `gates/ops_python_exec-pins.rows` is **not
 mine and I did not edit it**, but those 23 names now describe rows that AGREE
 with upstream, so the file over-declares divergences. **THE ORCHESTRATOR SHOULD
 RE-DERIVE IT**: the generator's own py lane is the oracle
@@ -370,7 +370,7 @@ and the `i32.`/`u32.`/`bool.`/`alu.CMPNE.f` twins).
 # 7 match, 0 mismatch-or-refused
 ```
 
-**⇒ THE EXECUTOR STILL MATCHES ON EVERYTHING IT MATCHED BEFORE.**
+**THE EXECUTOR STILL MATCHES ON EVERYTHING IT MATCHED BEFORE.**
 
 ### 5.3 THE CONV PROBE — the headline measurement
 
@@ -389,7 +389,7 @@ and the `i32.`/`u32.`/`bool.`/`alu.CMPNE.f` twins).
 # 4 match, 0 mismatch-or-refused
 ```
 
-**⇒ THE CONV MATCHES ON ALL 8192 VALUES, AND THE SAME PACKET GIVES BYTE-IDENTICAL
+**THE CONV MATCHES ON ALL 8192 VALUES, AND THE SAME PACKET GIVES BYTE-IDENTICAL
 BUFFERS THROUGH UPSTREAM'S OWN INTERPRETER.**
 
 ## 6. THE NEW FIXTURE — AND THE POPULATION FILE IS NOT MINE
@@ -425,12 +425,12 @@ scratch is where the byte-shift defect lived:
 (1,3,32,32)x(8,3,3,3) p1: 580 uops, 1 scratch BUFFER  <-- the port's own
 ```
 
-**⇒ THE TWO CONVS WITHOUT A SCRATCH MATCHED BEFORE THE FIX AND PIN NOTHING.**
+**THE TWO CONVS WITHOUT A SCRATCH MATCHED BEFORE THE FIX AND PIN NOTHING.**
 `(1,3,8,8)×(4,3,3,3)` padding=1 is the smallest conv whose kernel has one:
 **140 uops and 2,224 bytes of buffers**, against the port's own 580 uops and
 45,920 bytes.
 
-**⇒ THE FIXTURE MEASURES SOMETHING** (`.agents/slop/convfix/verify_fixture.py`):
+**THE FIXTURE MEASURES SOMETHING** (`.agents/slop/convfix/verify_fixture.py`):
 
 ```
 BEFORE: rc=1 executor: refused the packet -- a line it does not port, or a load
@@ -438,7 +438,7 @@ BEFORE: rc=1 executor: refused the packet -- a line it does not port, or a load
 AFTER:  rc=0  vs upstream: b0:SAME b1:SAME b2:SAME
 ```
 
-**⇒ WIRING IT INTAKES TWO EDITS, BOTH IN ANOTHER INSTRUMENT'S FILES, AND I MADE
+**WIRING IT INTAKES TWO EDITS, BOTH IN ANOTHER INSTRUMENT'S FILES, AND I MADE
 NEITHER:**
 1. a seed in `gates/ops_python_exec-gen.py`'s `SEEDS` — the generator is the
    only writer of the fixture file, and the gate's `population_hold` compares
@@ -466,7 +466,7 @@ EDITED BY THIS UNIT.** The record is here, ready to append.
 3. **THE EXECUTOR IS SLOW.** MEASURED, one process, `time`:
    the conv fixture (140 uops, 2,224 bytes) takes **16.6 s**; **the port's own
    conv shape (580 uops, 45,920 bytes) takes 9 min 18 s** (373 s user, 39 s
-   system). **⇒ ON THE BEND DEVICE THE PORT'S OWN CONV IS NINE MINUTES OF
+   system). **ON THE BEND DEVICE THE PORT'S OWN CONV IS NINE MINUTES OF
    INTERPRETER.** For the "run ImageNet using Bend" chain this is the next
    wall, and it is a performance wall, not a correctness one. `Prog.src` reads
    a list by index and `Prog.loop` scans the whole uop list, so the walk is
@@ -476,7 +476,7 @@ EDITED BY THIS UNIT.** The record is here, ready to append.
    RENDER's shape — that `Ops.REDUCE` is never emitted, that `FDIV`/`THREEFRY`
    are not in `python_alu`, that there are no `DEFINE_*` ops, that
    `local_size` is never (1,1,1) for the PYTHON renderer — and **none of those
-   four is touched by this change**. **⇒ THEY ARE LEFT AS THEY WERE, NOT
+   four is touched by this change**. **THEY ARE LEFT AS THEY WERE, NOT
    RE-MEASURED.** The block this unit DID rewrite is the "STATE OF THIS FILE"
    header (`:5-35`), which is where the e2e and census readings live.
 5. **`Prog.src` DOES NOT FILTER VOID SRCS, AND A VOID AFTER IS NOT SKIPPED.**
@@ -488,7 +488,7 @@ EDITED BY THIS UNIT.** The record is here, ready to append.
    filter, and `Prog.dispatch`'s AFTER arm computes a void AFTER from its
    src0. The conv packet has two such uops (`525: AFTER void - [9, …]` and
    `576: AFTER void - [9, …]`, where uop 9 is a void STACK), so the port reads
-   uop 9 where upstream reads nothing at all. **⇒ THIS IS A REAL DIVERGENCE,
+   uop 9 where upstream reads nothing at all. **THIS IS A REAL DIVERGENCE,
    IT IS PRE-EXISTING, IT IS NOT THE CAUSE OF ANYTHING MEASURED HERE (the
    AFTER's value is read by nobody on either side), AND I DID NOT FIX IT.**
 6. **`Prog.oob` CHECKS ONLY LANE 0.** `Prog.oob` recurses with `j` FIXED at 0
@@ -534,13 +534,13 @@ UNPINNED DIVERGENCES: 0
 => the gate's verdict on this change: PASS
 ```
 
-**⇒ THE GATE STAYS GREEN, AND IT IS GREEN FOR A REAL REASON: 314 unpinned rows
+**THE GATE STAYS GREEN, AND IT IS GREEN FOR A REAL REASON: 314 unpinned rows
 and not one of them moved.** (All 23 moved rows are pinned, which is exactly the
 trap the brief names: **a pinned row's value is never compared, so a fix can
 move one with nothing going red** — which is why the rows were compared here,
 against upstream's own answers, and not left to the gate.)
 
-**⇒ AND THE GATE'S OTHER TWO CHECKS ARE UNAFFECTED, MEASURED:**
+**AND THE GATE'S OTHER TWO CHECKS ARE UNAFFECTED, MEASURED:**
 `gates/ops_python_exec-gen.py --coverage` reads `op_of: 46 declared, 2
 unreached` and `dispatch: 20 declared, 2 unreached` — exactly the two counts
 `coverage_hold` pins — because this change adds two defs (`Prog.ld.open`,
@@ -549,7 +549,7 @@ reads (`ops_python_exec-gate.py:255`). And `population_hold` compares the
 fixture FILE's names against the generator's re-harvest, and **this unit did
 not touch the fixture file**.
 
-**⇒ NOTHING WAS COMMITTED.** No mutating git command was run; every git read
+**NOTHING WAS COMMITTED.** No mutating git command was run; every git read
 used `env -u GIT_INDEX_FILE`. The two files this unit changed are
 `tinybendygrad/runtime/ops_python.bend` and this directory
 (`env -u GIT_INDEX_FILE git status --porcelain -- tinybendygrad/` reads

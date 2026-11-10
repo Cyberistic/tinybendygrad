@@ -4,7 +4,7 @@
     .venv/bin/python .agents/slop/loc/the-1to1.py
     .venv/bin/python .agents/slop/loc/the-1to1.py --json
 
-**⇒ WHAT IT MEASURES, AND **WHY **EVERY **TERM **IS **CORRECTED**:
+**WHAT IT MEASURES, AND **WHY **EVERY **TERM **IS **CORRECTED**:
 
   * **THE PORT's POPULATION IS **THE **TRACKED** FILES** -- `git ls-tree -r HEAD`, **AND NOT
     `git ls-files`**, BECAUSE **THE TREE's INDEX IS ARMED** (`checks/index-arm-gate.py`) **AND
@@ -12,17 +12,17 @@
     `584` UNDER AN ARMED INDEX **AND `541` UNDER A DISARMED ONE, **SAME TREE**).**
   * **THE MAPPING IS **THE PORT FILE's OWN HEADER** -- **EACH FILE NAMES ITS UPSTREAM
     COUNTERPART** (`tinygrad/uop/ops.py`), **AND THE HEADER IS **WHERE **THE CENSUS
-    READS IT.** **⇒ AND **A FILE WITH **NO** UPSTREAM NAME **IS **THE **TREE's OWN** (AND IT
+    READS IT.** **AND **A FILE WITH **NO** UPSTREAM NAME **IS **THE **TREE's OWN** (AND IT
     IS **COUNTED **AND **LISTED **SEPARATELY**, **NOT **SILENTLY **DROPPED**).**
   * **THE UPSTREAM's POPULATION IS **THE PIN `f5ac54685074`**, **NOT `HEAD`** -- **BECAUSE
     THE PORT WAS WRITTEN AGAINST **THAT** REVISION, **AND **A COMPARISON AGAINST `HEAD` IS **A
     COMPARISON AGAINST **A DIFFERENT **SPECIFICATION**.**
   * **THE `*-mut.bend` FILES ARE EXCLUDED** -- **MEASURED: `.gitignore` HAS `*mut.bend`
     ("in-place mutation scratch") AND `checks/differ.py:1936` CALLS THEM "FIVE GITIGNORED
-    SCRATCH FILES" THAT A MUTATION PROBE **REWRITES AS IT RUNS**.** **⇒ THEY ARE **NOT **THE
+    SCRATCH FILES" THAT A MUTATION PROBE **REWRITES AS IT RUNS**.** **THEY ARE **NOT **THE
     PORT** **AND **THEY ARE **NOT **EVEN **IN **THE **TRACKED **SET** ANYWAY.**
 
-**⇒ AND THE FOUR NUMBERS IT PRINTS ARE **THE **FOUR **CLASSES **THAT **MATTER**:**
+**AND THE FOUR NUMBERS IT PRINTS ARE **THE **FOUR **CLASSES **THAT **MATTER**:**
 
 | class | what it is |
 |---|---|
@@ -31,7 +31,7 @@
 | **BLANK** | NOTHING |
 | **CODE** | **THE ONLY LINES THAT ARE **THE PORT** |
 
-**⇒ AND THE HEADLINE IS **THE CODE-ONLY RATIO**, **BECAUSE **A COMMENT IS **NOT **A LINE OF
+**AND THE HEADLINE IS **THE CODE-ONLY RATIO**, **BECAUSE **A COMMENT IS **NOT **A LINE OF
 PORT** **AND **A GATE ROW IS **NOT **EITHER** -- **AND **THE WHOLE POINT OF THE EXERCISE IS
 **THE PORT's CODE** GETTING CLOSE TO **UPSTREAM's CODE**.**
 """
@@ -50,14 +50,14 @@ SUFFIX = ".bend"
 
 
 def tracked() -> list[str]:
-    """**⇒ `git ls-tree -r HEAD`, **NOT `git ls-files`** -- **THE INDEX IS ARMED**."""
+    """**`git ls-tree -r HEAD`, **NOT `git ls-files`** -- **THE INDEX IS ARMED**."""
     out = subprocess.run(["git", "ls-tree", "-r", "--name-only", "HEAD"],
                          cwd=ROOT, capture_output=True, text=True).stdout.split()
     return [p for p in out if p.startswith("tinybendygrad/") and p.endswith(SUFFIX)]
 
 
 def upstream_lines(path: str) -> tuple[int, int]:
-    """**⇒ (TOTAL LINES, CODE LINES) **OF **THE **PIN's** FILE** -- **AND **A MISSING FILE IS
+    """**(TOTAL LINES, CODE LINES) **OF **THE **PIN's** FILE** -- **AND **A MISSING FILE IS
     **A **ZERO**, **NOT **A **CRASH**."""
     r = subprocess.run(["git", "show", f"{PIN}:{path}"], cwd=ROOT,
                        capture_output=True, text=True)

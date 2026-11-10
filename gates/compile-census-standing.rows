@@ -52,7 +52,7 @@
 #   UNKNOWN-CTOR  `message : a declared constructor (unknown: X)` -- a constructor the file's own
 #                 imports do not bring in. The same FRAGMENT case, with the same rule.
 #
-# **⇒ AND A ROW WHOSE SHAPE IS NOT ONE OF THE CLASSES ABOVE IS A BREAKAGE.** `MISSING-DEF` in a
+# **AND A ROW WHOSE SHAPE IS NOT ONE OF THE CLASSES ABOVE IS A BREAKAGE.** `MISSING-DEF` in a
 # file that DOES import Base is a broken driver, and so is an `ARITY` error and a `TYPE-MISMATCH`
 # and a `DUPLICATE` and an `UNKNOWN-CTOR` in a file that does. The shape is a CLASS and not a
 # verdict; the DECLARATION is what says a file is allowed to be cold, and it says so by NAME.

@@ -14,7 +14,7 @@ spelling `gates/ops_python_exec-fixtures.rows` uses:
 **THE POPULATION FILE IS NOT MINE AND I DID NOT EDIT IT.** `gates/ops_python_exec-
 fixtures.rows` belongs to `gates/ops_python_exec-gen.py`, and the gate's
 `population_hold` compares the file's NAMES against the generator's re-harvest,
-so a record in the file that the generator does not produce is a RED run. **⇒
+so a record in the file that the generator does not produce is a RED run. **
 WIRING THIS FIXTURE INTAKES TWO EDITS, BOTH IN THE OTHER INSTRUMENT'S FILES:**
 the seed in `gates/ops_python_exec-gen.py`'s `SEEDS` and the record in
 `gates/ops_python_exec-fixtures.rows`. **THIS UNIT DID NOT MAKE EITHER.**

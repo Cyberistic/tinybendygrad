@@ -7,7 +7,7 @@
      `train-net.json`, which `trace_train.py` captured out of
      `tinygrad/engine/realize.py`'s `exec_kernel`.
 
-     ⇒ AND THE VERDICT IS NOT PRINTED HERE. The page reports numbers; the NODE
+AND THE VERDICT IS NOT PRINTED HERE. The page reports numbers; the NODE
      harness (`train-gate.mjs`) diffs them against `train-oracle.json`. A page
      that grades its own homework is a page whose grader can be wrong in the same
      direction as its answer. -->
@@ -34,33 +34,33 @@ const b64ToBytes = (b64) => {
 
 const out = { ok: false };
 
-// **⇒ AND THE WHOLE REPLAY IS INSIDE A FUNCTION STARTED AFTER `load`. A
+// **AND THE WHOLE REPLAY IS INSIDE A FUNCTION STARTED AFTER `load`. A
 // `type=module` SCRIPT's TOP-LEVEL AWAIT DELAYS `load`, AND `load` IS WHAT
 // `readyState === "complete"` MEANS -- so a 13 154-launch replay at top
 // level made the PAGE UNATTACHABLE (`timeout Runtime.evaluate`) for as long
-// as it ran. **⇒ MEASURED, AND THE FIX IS TO RETURN FROM THE MODULE FIRST.**
+// as it ran. **MEASURED, AND THE FIX IS TO RETURN FROM THE MODULE FIRST.**
 async function run() {
-  // **⇒ AND THE REPLAY WAITS FOR A GO-SIGNAL, BECAUSE THE HARNESS MUST ATTACH
+  // **AND THE REPLAY WAITS FOR A GO-SIGNAL, BECAUSE THE HARNESS MUST ATTACH
   // FIRST.** MEASURED: with `setTimeout(run, 0)` the replay started before
   // `Session.openPage` finished, so `Page.enable` and the `readyState` probe both
-  // timed out and the run read as a dead page. **⇒ SO THE PAGE ASKS TO BE STARTED**
+  // timed out and the run read as a dead page. **SO THE PAGE ASKS TO BE STARTED**
   // -- `train-gate.mjs` and `inet-gate.mjs` set `window.__GO = true` after they
   // have attached, and a page opened by hand gets it from a click.
   if (!window.__NO_WAIT) {
     while (!window.__GO) await new Promise((r) => setTimeout(r, 50));
   }
 try {
-  // **⇒ AND THE FILE NAMES ARE PARAMETERS, SO ONE PAGE REPLAYS EVERY TRACE.**
+  // **AND THE FILE NAMES ARE PARAMETERS, SO ONE PAGE REPLAYS EVERY TRACE.**
   // A second page would be a second copy of the WebGPU plumbing -- and the
   // aliasing, the layout derivation and the error scope would then have to be
   // fixed twice, which is how the two would drift.
   const q = new URLSearchParams(location.search);
   const NET = q.get("net") ?? "train-net.json";
-  // **⇒ AND THE READBACK IS SCOPED BY `?only=`, WHICH IS THE DIFFERENCE BETWEEN A
+  // **AND THE READBACK IS SCOPED BY `?only=`, WHICH IS THE DIFFERENCE BETWEEN A
   // RESULT AND A HANG.** MEASURED: without it, the EfficientNet training page
   // FINISHED its 13 154 dispatches and then spent longer than a four-minute probe
   // budget in `JSON.stringify` of ~800 f32 buffers -- so the work was DONE and the
-  // harness could not read it. **⇒ A TRACE WITH NO `only` STILL READS EVERYTHING**
+  // harness could not read it. **A TRACE WITH NO `only` STILL READS EVERYTHING**
   // (the MNIST gate compares all 47 tensor buffers), and an empty string means
   // none.
   const ONLY = q.get("only");
@@ -70,7 +70,7 @@ try {
     fetch("./" + NET).then((r) => r.json()),
     fetch("./" + ORACLE).then((r) => r.json()),
   ]);
-  // **⇒ AND A PAYLOAD MAY BE AN INDEX INTO `net.payloads`, WHICH IS HOW A 13 154
+  // **AND A PAYLOAD MAY BE AN INDEX INTO `net.payloads`, WHICH IS HOW A 13 154
   // LAUNCH TRACE FITS: MEASURED, 20 848 references are 568 DISTINCT payloads, so
   // interning took EfficientNet-0's training trace from 610 MB to 72 MB. The
   // page resolves on both shapes so one page reads every trace.**
@@ -93,7 +93,7 @@ try {
   for (const [n, b0] of Object.entries(net.buffers)) {
     const b = { ...b0, b64: b0.b64 === undefined ? undefined : pay(b0.b64) };
     const gb = device.createBuffer({ size: Math.max(4, b.size), usage: USAGE });
-    // **⇒ AND NO PAYLOAD MEANS NO UPLOAD, WHICH IS EXACT**: `GPUBuffer` is
+    // **AND NO PAYLOAD MEANS NO UPLOAD, WHICH IS EXACT**: `GPUBuffer` is
     // zero-initialised by the spec, so a buffer whose first-bind snapshot was
     // all zeros is ALREADY correct and writing zeroes would only cost bandwidth.
     if (b.b64) device.queue.writeBuffer(gb, 0, b64ToBytes(b.b64));
@@ -107,7 +107,7 @@ try {
   // ONE PIPELINE PER DISTINCT WGSL TEXT, never per entry name: tinygrad's entry
   // names are NOT unique (`E_8_4` names both the running_mean and running_var
   // fills), so a cache keyed by name dispatches the first kernel for the second.
-  // **⇒ AND A NON-OUTPUT BINDING IS DECLARED `read`, WHICH IS A CORRECTION AND
+  // **AND A NON-OUTPUT BINDING IS DECLARED `read`, WHICH IS A CORRECTION AND
   // NOT A STYLE.** tinygrad's WGSL declares EVERY buffer
   // `var<storage,read_write>`, and **MEASURED, WebGPU REJECTS THAT**:
   //
@@ -115,16 +115,16 @@ try {
   //   between ... binding index 1, and ... binding index 2, with overlapping
   //   ranges (offset: 0, size: 73728) ...
   //
-  // **⇒ AND THE SMALLEST TRAINING-STEPhas SEVERAL KERNELS THAT BIND ONE BUFFER
+  // **AND THE SMALLEST TRAINING-STEPhas SEVERAL KERNELS THAT BIND ONE BUFFER
   // TWICE**, so this is not an edge case: `var<storage,read>` may alias and
-  // `read_write` may not. **⇒ AND THE TRACE KNOWS WHICH BINDINGS ARE OUTPUTS**
+  // `read_write` may not. **AND THE TRACE KNOWS WHICH BINDINGS ARE OUTPUTS**
   // (`k.outs`, positions in `k.bufs`), so the rewrite is DERIVED and not guessed.
-  // **⇒ AND WRITABILITY IS DERIVED PER BUFFER NAME, NOT PER POSITION, AND THE
+  // **AND WRITABILITY IS DERIVED PER BUFFER NAME, NOT PER POSITION, AND THE
   // DIFFERENCE IS A MEASURED REFUSAL.** A buffer bound at two positions is ONE
   // buffer, so it has ONE type: MEASURED, marking its two occurrences `storage`
   // and `read-only-storage` refuses the dispatch with
   // `usage (Storage(read-write)|Storage(read-only)) includes writable usage and
-  // another usage in the same synchronization scope`. **⇒ SO A BUFFER IS
+  // another usage in the same synchronization scope`. **SO A BUFFER IS
   // WRITABLE IF IT IS AN OUTPUT AT **ANY** POSITION.**
   const writableSet = (k) => new Set((k.outs || []).map((p) => k.bufs[p]));
   const readonly = (k) => {
@@ -146,20 +146,20 @@ try {
     return w;
   };
 
-  // **⇒ AND AN ALIASED WRITABLE BUFFER IS COLLAPSED TO **ONE BINDING**, WHICH IS
+  // **AND AN ALIASED WRITABLE BUFFER IS COLLAPSED TO **ONE BINDING**, WHICH IS
   // THE ONLY SPELLING WEBGPU ACCEPTS AND THE ONLY ONE THAT IS CORRECT.**
   //
   // The trace BINDS ONE BUFFER AT SEVERAL POSITIONS whenever the kernel is
-  // in-place (`b23` at [0,2], `b10` at [0,1,2], ...). **⇒ AND WEBGPU REFUSES TWO
+  // in-place (`b23` at [0,2], `b10` at [0,1,2], ...). **AND WEBGPU REFUSES TWO
   // BINDINGS TO ONE BUFFER IF EITHER IS WRITABLE** ("Writable storage buffer
   // binding aliasing found"), so the first version of this page bound a COPY of
   // the read side -- **AND AN IN-PLACE ACCUMULATION CANNOT SEE ITS OWN WRITES
   // THROUGH A COPY**, which is why the loss came back `3.9493408203125` where
   // CPython had `2.7735066413879395`.
   //
-  // **⇒ SO THE DUPLICATE BINDINGS ARE REMOVED FROM THE SHADER AND THE BODY IS
+  // **SO THE DUPLICATE BINDINGS ARE REMOVED FROM THE SHADER AND THE BODY IS
   // REWRITTEN TO NAME THE SURVIVING ONE.** One binding, one buffer, reads see
-  // writes, and there is no aliasing left to be refused. **⇒ AND THE SURVIVOR IS
+  // writes, and there is no aliasing left to be refused. **AND THE SURVIVOR IS
   // THE **OUTPUT** POSITION when there is one, so the write still lands in the
   // buffer the trace says it does.**
   const aliasPlan = (k) => {
@@ -187,18 +187,18 @@ try {
     return { rename, drop, keepSet: new Set(occ.keys()) };
   };
 
-  // **⇒ AND A TRAILING UNCLOSED BLOCK IS CLOSED, WHICH IS A NAMED REPAIR OF A
+  // **AND A TRAILING UNCLOSED BLOCK IS CLOSED, WHICH IS A NAMED REPAIR OF A
   // NAMED tinygrad DEFECT AND NOT A GUESS.** MEASURED on
   // `r_8_112_28_4_4_3_3_3` (a depthwise conv): the shader has **5 `for (` loops
   // and only 4 `}` inside the body**, so the depth never returns to zero and
   // WebGPU refuses it with `line 371:2 expected '}' for function body`.
   //
-  // **⇒ AND THE REPAIR IS EXACT BECAUSE **EVERY CLOSING BRACE IS TRAILING**:
+  // **AND THE REPAIR IS EXACT BECAUSE **EVERY CLOSING BRACE IS TRAILING**:
   // lines 143 and 368-371 are the only `}`, in descending depth order, at the
   // end of the file. So appending one `}` per unclosed level re-creates the
   // nesting the renderer intended and cannot re-associate a block.
   //
-  // **⇒ AND IT IS VALIDATED BY THE RESULT AND NOT BY THIS ARGUMENT**: the gate
+  // **AND IT IS VALIDATED BY THE RESULT AND NOT BY THIS ARGUMENT**: the gate
   // compares 1000 logits bit for bit, so a wrongly-placed brace would show as a
   // `BAD` row rather than as a shader that happens to compile.
   const closed = new Map();
@@ -231,7 +231,7 @@ try {
     // 1. drop the duplicate declarations
     for (const i of plan.drop) {
       const b = i + 1;
-      // **⇒ AND THE WHOLE DECLARATION GOES, `@group(0)` INCLUDED.** Dropping
+      // **AND THE WHOLE DECLARATION GOES, `@group(0)` INCLUDED.** Dropping
       // only from `@binding(N)` leaves `@group(0) ` stranded, and the next
       // declaration inherits it: MEASURED, `WGSL rejected ... line 6:2 duplicate
       // group attribute`.
@@ -251,7 +251,7 @@ try {
     return balanceBraces(w, k.entry);
   };
 
-  // **⇒ AND THE PLAN CACHE IS KEYED BY THE **OUTS** TOO, WHICH IS A MEASURED BUG
+  // **AND THE PLAN CACHE IS KEYED BY THE **OUTS** TOO, WHICH IS A MEASURED BUG
   // AND NOT A PRECAUTION.** The alias plan (`drop`) is derived from `k.outs`, and
   // two launches can share one WGSL string with DIFFERENT outputs. **MEASURED:
   // keeping the cache keyed on `wgsl` alone took the MNIST training step from
@@ -265,18 +265,18 @@ try {
     return plans.get(key);
   };
 
-  // **⇒ AND THE MODULE CACHE IS KEYED BY **THE TRANSFORMED TEXT**, NOT THE RAW
+  // **AND THE MODULE CACHE IS KEYED BY **THE TRANSFORMED TEXT**, NOT THE RAW
   // `wgsl`.** The transform depends on `outs`, and two launches can share one
   // WGSL string while disagreeing about which binding is an output -- so a cache
   // keyed on the raw text would hand one of them the other's shader.
   const pipelines = new Map();
   const codeOf = (k) => shaderOf(k, planOf(k));
-  // **⇒ AND SHADERS ARE COMPILED **ON FIRST USE**, NOT ALL UP FRONT.** MEASURED:
+  // **AND SHADERS ARE COMPILED **ON FIRST USE**, NOT ALL UP FRONT.** MEASURED:
   // doing all 568 `createShaderModule` + `getCompilationInfo` calls before the
   // first dispatch is a long synchronous stretch, and on the 13 154-launch
   // EfficientNet trace that stretch ALONE outlasted the harness's probe budget --
   // a page that was still compiling read as a page that had hung.
-  // **⇒ AND IT CHANGES NOTHING ABOUT WHAT IS CHECKED**: every shader still goes
+  // **AND IT CHANGES NOTHING ABOUT WHAT IS CHECKED**: every shader still goes
   // through `getCompilationInfo` before its first dispatch, so a rejected shader
   // still throws and still NAMES its kernel and line.
   const modulesByCode = new Map();
@@ -292,18 +292,18 @@ try {
     return mod;
   };
 
-  // **⇒ AND BIND GROUPS ARE CACHED BY (PIPELINE, THE BOUND BUFFER NAMES), WHICH
+  // **AND BIND GROUPS ARE CACHED BY (PIPELINE, THE BOUND BUFFER NAMES), WHICH
   // IS THE WHOLE COST OF A 13 154-LAUNCH REPLAY.** MEASURED: one
   // `createBindGroup` PER LAUNCH is 13 154 bind groups over 824 buffers, and it
   // is pure garbage -- the same kernel bound to the same buffers at 300 different
-  // launches wants ONE bind group. **⇒ AND THE KEY IS THE NAMES AND NOT THE
+  // launches wants ONE bind group. **AND THE KEY IS THE NAMES AND NOT THE
   // `GPUBuffer`s, because a name resolves to exactly one buffer for the life of
   // the run** (`bufs[n].gb` is created once).
   const bgCache = new Map();
   const T0 = performance.now();
   out.ms_parse = T0 - TPARSE;
 
-  // **⇒ AND THE LAYOUT MIRRORS THE SHADER, BINDING BY BINDING.** A `read`
+  // **AND THE LAYOUT MIRRORS THE SHADER, BINDING BY BINDING.** A `read`
   // declaration is `read-only-storage` in the layout and `storage` is
   // `read_write`; MEASURED, a mismatch refuses the whole dispatch with
   // `The buffer type in the shader (BufferBindingType::ReadOnlyStorage) is not
@@ -321,21 +321,21 @@ try {
     return device.createBindGroupLayout({ entries });
   };
 
-  // **⇒ AND THE ERROR SCOPE IS NOT OPTIONAL.** `examples/webgpu/mnist/mnist-webgpu.js`
+  // **AND THE ERROR SCOPE IS NOT OPTIONAL.** `examples/webgpu/mnist/mnist-webgpu.js`
   // pushes one and POPS it, because WebGPU reports a bad bind group as a
   // validation error and then SILENTLY SKIPS THE DISPATCH -- the buffer keeps its
   // previous contents and the page reports a number that never changed.
-  // **⇒ AND THIS PAGE'S FIRST VERSION HAD NO SCOPE**, which is why a wrong answer
+  // **AND THIS PAGE'S FIRST VERSION HAD NO SCOPE**, which is why a wrong answer
   // read as a number rather than as an error.
   device.pushErrorScope("validation");
-  // **⇒ AND THE CLOCK START IS PLACED WHERE THE MEASUREMENT BEGINS, NOT WHERE THE
+  // **AND THE CLOCK START IS PLACED WHERE THE MEASUREMENT BEGINS, NOT WHERE THE
   // PROGRAM DOES.** The window between `__GO` and this line is `fetch` + `JSON.parse`
   // of the trace plus every `createBuffer`, and a number that included it would be a
-  // number about the TRANSPORT. **⇒ SO THREE NUMBERS ARE REPORTED: `ms_parse`, `ms_gpu`
+  // number about the TRANSPORT. **SO THREE NUMBERS ARE REPORTED: `ms_parse`, `ms_gpu`
   // and `ms_read`, and only `ms_gpu` is the replay.**
   let launches = 0, uploads = 0, enc = null, pass = null;
   const batchWritten = new Set();
-  // **⇒ AND THE BATCH SIZE IS A MEASURED TRADEOFF, NOT A TUNING KNOB.** Batching
+  // **AND THE BATCH SIZE IS A MEASURED TRADEOFF, NOT A TUNING KNOB.** Batching
   // 64-to-a-submit is what makes a 13 154-launch replay START at all, and
   // **MEASURED: IT ALSO TOOK THE MNIST TRAINING STEP FROM `47 of 47` BIT-EXACT
   // BUFFERS TO `39 of 47`** -- so the two lanes disagree about it and the default
@@ -346,19 +346,19 @@ try {
     // input, so its pre-state comes from CPython. A buffer an earlier launch
     // wrote is already correct on the GPU, and re-uploading it would turn the
     // replay into a memory dump instead of a computation.
-    // **⇒ AND THIS WRITE IS UNCONDITIONAL**, which is what
+    // **AND THIS WRITE IS UNCONDITIONAL**, which is what
     // `examples/webgpu/mnist/mnist-webgpu.js` does and what the trace MEANS:
     // `k.in` is the pre-state of every buffer this launch reads that no earlier
     // launch wrote, sampled at this launch -- so writing it is always correct.
-    // **⇒ AND AN EARLIER VERSION OF THIS PAGE SKIPPED IT WHEN `written` HELD THE
+    // **AND AN EARLIER VERSION OF THIS PAGE SKIPPED IT WHEN `written` HELD THE
     // NAME, WHICH IS NOT THE SAME TEST**: `in` is per-launch, and skipping a
     // legitimate pre-state write is a silent wrong answer, not an optimisation.
-    // **⇒ AND A BATCH MUST FLUSH BEFORE AN UPLOAD THAT ITS OWN WORK INVALIDATES.**
+    // **AND A BATCH MUST FLUSH BEFORE AN UPLOAD THAT ITS OWN WORK INVALIDATES.**
     // `queue.writeBuffer` is ordered against SUBMITS, not against the command
     // buffers being recorded -- so an upload for launch 70 lands BEFORE the batch
     // holding launch 60 runs, and it OVERWRITES what launch 60 computed.
     // **MEASURED: that is exactly the regression -- `batch=64` gave `39 of 47`
-    // bit-exact buffers where `batch=1` gave `47 of 47`.** **⇒ SO A LAUNCH WHOSE
+    // bit-exact buffers where `batch=1` gave `47 of 47`.** **SO A LAUNCH WHOSE
     // `in` TOUCHES A BUFFER WRITTEN SINCE THE LAST SUBMIT FORCES A SUBMIT.**
     if (enc && Object.keys(k.in || {}).some((n) => batchWritten.has(n))) {
       pass.end();
@@ -381,21 +381,21 @@ try {
     }
     const pipe = pipelines.get(key);
     const bindings = [{ binding: 0, resource: { buffer: infinity } }];
-    // **⇒ AND A WRITABLE BUFFER BOUND TWICE GETS A **COPY** AT ITS NON-OUTPUT
+    // **AND A WRITABLE BUFFER BOUND TWICE GETS A **COPY** AT ITS NON-OUTPUT
     // POSITIONS.** WebGPU refuses writable aliasing (MEASURED:
     // `Writable storage buffer binding aliasing found between binding index 1
     // and binding index 2 ... size: 73728`), and this kernel genuinely reads and
-    // writes ONE buffer. **⇒ AND A COPY IS EXACT FOR IT BECAUSE THE TRACE SAYS
+    // writes ONE buffer. **AND A COPY IS EXACT FOR IT BECAUSE THE TRACE SAYS
     // THE SAME BUFFER IS BOTH SOURCE AND DESTINATION, WHICH IS AN IN-PLACE
     // ELEMENTWISE OP** -- every element is independent, so a snapshot of the
-    // pre-state is what the read side must see. **⇒ AND IT IS NOT A GUESS ABOUT
+    // pre-state is what the read side must see. **AND IT IS NOT A GUESS ABOUT
     // WHICH IS WHICH: the OUTPUT positions are `k.outs`, and those keep the real
     // buffer.**
-    // **⇒ AND THERE IS NO COPY ANY MORE.** The duplicate bindings were removed
+    // **AND THERE IS NO COPY ANY MORE.** The duplicate bindings were removed
     // from the shader (`plan.drop`), so a buffer appears at most ONCE here and
     // the in-place kernel reads what it just wrote.
     if (!enc) { enc = device.createCommandEncoder(); pass = enc.beginComputePass(); }
-    // **⇒ AND ONE COMPUTE PASS HOLDS MANY DISPATCHES, WHICH IS VALID WEBGPU AND
+    // **AND ONE COMPUTE PASS HOLDS MANY DISPATCHES, WHICH IS VALID WEBGPU AND
     // 13 154 PASSES FEWER.** A pass may contain any number of
     // `setPipeline`/`setBindGroup`/`dispatch` triples and they run IN ENCODE ORDER,
     // which is exactly the order the trace needs.
@@ -412,19 +412,19 @@ try {
     pass.setPipeline(pipe);
     pass.setBindGroup(0, bg);
     pass.dispatchWorkgroups(k.global[0], k.global[1], k.global[2]);
-    // **⇒ AND `writeBuffer` IS ORDERED ON THE QUEUE, SO A BATCH BOUNDARY IS A
+    // **AND `writeBuffer` IS ORDERED ON THE QUEUE, SO A BATCH BOUNDARY IS A
     // SUBMIT -- WHICH IS ALSO WHERE THE PER-LAUNCH UPLOADS OF THE NEXT BATCH LAND
     // AFTER THE RIGHT WORK AND NOT BEFORE IT.**
     for (const i of (k.outs || [])) { written.add(k.bufs[i]); batchWritten.add(k.bufs[i]); }
     launches++;
-    // **⇒ AND THE PAGE YIELDS, BECAUSE A 13 154-LAUNCH REPLAY IS ONE SYNCHRONOUS
+    // **AND THE PAGE YIELDS, BECAUSE A 13 154-LAUNCH REPLAY IS ONE SYNCHRONOUS
     // LOOP AND THE MAIN THREAD IS THE ONE THE DEBUGGER NEEDS.** MEASURED: without
     // this, `Runtime.evaluate` timed out at 30 s and the harness read a page that
-    // was still working as a page that never answered. **⇒ AND IT ALSO LETS THE
+    // was still working as a page that never answered. **AND IT ALSO LETS THE
     // GPU DRAIN**, so a long replay does not queue 13 000 submissions at once.
-    // **⇒ AND THE YIELD DOES **NOT** WAIT FOR THE GPU, WHICH IS A MEASURED COST
+    // **AND THE YIELD DOES **NOT** WAIT FOR THE GPU, WHICH IS A MEASURED COST
     // DECISION.** A `onSubmittedWorkDone()` every 64 launches is 205 round trips
-    // and put a 13 154-launch replay past a FOUR MINUTE probe timeout. **⇒ SO THE
+    // and put a 13 154-launch replay past a FOUR MINUTE probe timeout. **SO THE
     // YIELD IS ONLY THE EVENT LOOP** -- enough for the debugger to answer -- and
     // the single GPU sync stays where it was, after the loop.
     if (launches % BATCH === 0) {
@@ -470,7 +470,7 @@ try {
   out.ms_read = performance.now() - T1;
   out.f32_buffers = allF32.length;
   out.read_back = names.length;
-  // **⇒ AND THE REPAIR IS REPORTED, NEVER SILENT**: a page that quietly fixes a
+  // **AND THE REPAIR IS REPORTED, NEVER SILENT**: a page that quietly fixes a
   // compiler's output and then says PASS is hiding the compiler's defect.
   out.brace_repaired = [...closed.entries()].map(([e, n]) => `${e}:+${n}}`);
   out.ok = true;
@@ -478,7 +478,7 @@ try {
   out.ok = false;
   out.error = String(e && e.stack ? e.stack : e).slice(0, 3000);
 }
-// **⇒ AND THE RESULT IS PUBLISHED **HERE**, AT THE END OF THE WORK, NOT AT MODULE
+// **AND THE RESULT IS PUBLISHED **HERE**, AT THE END OF THE WORK, NOT AT MODULE
 // SCOPE.** MEASURED: with these three lines outside `run()`, `__TRAIN_RESULT` was
 // published EMPTY before the replay began, and the harness read `ok:false` with no
 // error -- a page that had not started looked like a page that had failed.

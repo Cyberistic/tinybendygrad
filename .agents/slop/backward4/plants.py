@@ -12,14 +12,14 @@ once shipped a vacuous plant.
 
 THE MUTATIONS, AND WHAT EACH ONE IS FOR:
 
-  noargsort       `gr_21` copies the order instead of ARGSORTING it.  **⇒ THIS IS THE
+  noargsort       `gr_21` copies the order instead of ARGSORTING it.  **THIS IS THE
                   PLANT FOR THE BRIEF'S SUSPICION** -- and because the fixture's order
                   is `(1, 2, 0)` and its argsort is `(2, 0, 1)`, the rule's ORDER row
                   tells the two apart.  (A 2-element permutation is an INVOLUTION, so a
                   2-D fixture could NOT have told them apart -- which is why the
                   fixture is 3-D.)
   argsortbyindex  `helpers.bend`'s `argsort_u32` sorts by the INDEX instead of the
-                  VALUE.  **⇒ THE BRIEF'S SUSPICION, PLANTED IN THE OTHER DIRECTION:
+                  VALUE.  **THE BRIEF'S SUSPICION, PLANTED IN THE OTHER DIRECTION:
                   IF THE PORT SORTED BY THE INDEX, EVERY ARGSORT ROW WOULD GO RED.**
   flagfalse       the IDENTITY test is forced false, so the identity early-return never
                   fires.

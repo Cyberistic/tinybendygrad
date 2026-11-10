@@ -33,7 +33,7 @@ Established by searching for **what reads it**, not for its own name.
 
 The on-disk diff is **exactly one line, 144**, and is byte-for-byte `M3`. `MUT` in
 `bend_mutate.py:15-39` runs `M1…M20` **in order**, so a completed run would leave
-**M20**'s text (`wire_dtype`). It leaves `M3` ⇒ **the run was interrupted after
+**M20**'s text (`wire_dtype`). It leaves `M3` **the run was interrupted after
 `M3.write_text`, i.e. this is residue of a killed harness, not a deliberate plant.**
 
 **No gate asserts the file exists.** Nothing reads it expecting a verdict. Deleting it
@@ -160,7 +160,7 @@ like a 6-file disagreement with a ledger that was not wrong.
 | `runtime/zzsplit.bend` | 1,008 | probe |
 | `runtime/_p6.bend` | 204 | prints F32 bits of 3 literals; `.gitignore:44-52` records it as the file that proved the pattern set has holes |
 | `uop/probe-mmcore.bend` | 23,478 | self-declared standalone probe |
-| `test/_probe/v5.bend` | 742 | **not-in-index** ⇒ trips the alarm; `.gitignore:97-101` already declares the dir scratch |
+| `test/_probe/v5.bend` | 742 | **not-in-index** => trips the alarm; `.gitignore:97-101` already declares the dir scratch |
 
 ### C. SEAM / LANE HALVES — 6, tracked, keep
 `runtime/dtype.{c,js}`, `runtime/sz.{c,js}`, `runtime/webgpu_call.{js,mjs}`.

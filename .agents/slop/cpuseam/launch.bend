@@ -90,7 +90,7 @@ def kus_of(nm: String) -> List<&2, C.KU>:
 # THE `cc` TO USE. IT IS THE SECOND ARGUMENT, BECAUSE UPSTREAM's OWN
 # `CPUProgram` COMPILES WITH `getenv("CC", 'clang')` (support/compiler_cpu.py:21)
 # AND THE SEAM TAKES THE COMPILER AS AN ARGUMENT RATHER THAN READING THE
-# ENVIRONMENT. ⇒ THE PLANT IS A WRAPPER `cc`: THE SEAM's OWN PARAMETER.
+# ENVIRONMENT. THE PLANT IS A WRAPPER `cc`: THE SEAM's OWN PARAMETER.
 def cc_of.go(m: Maybe<&1, String>) -> String:
   match m:
     case Some{s}: s

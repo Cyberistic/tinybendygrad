@@ -17,13 +17,13 @@
 **EfficientNet-0's WHOLE FORWARD PASS TRACES, AND EVERY ONE OF ITS 328 KERNELS
 RENDERS TO WGSL.** `to_program(ast.src[0], BrowserWGSL)` succeeds on all 328 --
 squeeze-excite, swish/`silu`, the global-average-pool, the 1000-way linear head,
-and the depthwise convs. **⇒ SO tinygrad's WGSLRenderer CAN EXPRESS THIS MODEL,
+and the depthwise convs. **SO tinygrad's WGSLRenderer CAN EXPRESS THIS MODEL,
 and the only thing between the trace and a browser is §2.**
 
 The weights are `deterministic()`, NOT pretrained, and that is stated rather than
 implied: `load_from_pretrained()` fetches ~20 MB from the hub, and the claim this
 exercise makes is **"the browser computes EfficientNet's forward pass bit for
-bit"**, which pretrained weights do not change. **⇒ SO THE LABELS WOULD BE
+bit"**, which pretrained weights do not change. **SO THE LABELS WOULD BE
 MEANINGLESS AND THE ARITHMETIC WOULD NOT.**
 
 ## 2. THE WALL, AND IT IS tinygrad's
@@ -34,7 +34,7 @@ MEANINGLESS AND THE ARITHMETIC WOULD NOT.**
     launch  entry                open  close  verdict
     ...     12 rows                          UNBALANCED
 
-**⇒ AND THE UNBALANCE IS IN THE WGSL tinygrad EMITTED, NOT IN THE PAGE's
+**AND THE UNBALANCE IS IN THE WGSL tinygrad EMITTED, NOT IN THE PAGE's
 TRANSFORM, MEASURED BY COUNTING THE BRACES ON THE SHADER AS TRACED:**
 
     $ .venv/bin/python -c '...count { and } over the trace's own wgsl...'
@@ -44,14 +44,14 @@ TRANSFORM, MEASURED BY COUNTING THE BRACES ON THE SHADER AS TRACED:**
      ('r_144_28_7_4_5_5', 1), ('r_240_28_7_4_5_5', 1), ('r_80_14_14_3_3_3', 1),
      ('r_160_14_14_3_5_5', 1)]
 
-**⇒ AND EVERY ONE OF THE TWELVE IS A DEPTHWISE OR GROUPED CONV** -- the entry
-names carry the `_3_3_3` / `_3_3` / `_5_5` group shape. **⇒ SO THIS IS THE THIRD
+**AND EVERY ONE OF THE TWELVE IS A DEPTHWISE OR GROUPED CONV** -- the entry
+names carry the `_3_3_3` / `_3_3` / `_5_5` group shape. **SO THIS IS THE THIRD
 MEASURED GAP IN `tinygrad/renderer/wgsl.py`, AFTER THE TWO
 `examples/webgpu/mnist/README.md` ALREADY NAMES** (`code_for_op` has no
 `Ops.FDIV`; `supports_float4 = False` reaches `string_rewrite`).
 
-**⇒ AND IT IS REPORTED AND NOT PATCHED, DELIBERATELY.** `tinygrad/` is the
-reference tree; a fix there is a re-vendor and not a line in this lane. **⇒ AND
+**AND IT IS REPORTED AND NOT PATCHED, DELIBERATELY.** `tinygrad/` is the
+reference tree; a fix there is a re-vendor and not a line in this lane. **AND
 THE WORKAROUND IS REJECTED ON PURPOSE: APPENDING A `}` WOULD MAKE THE SHADER
 COMPILE AND WOULD BE A GUESS ABOUT WHICH BLOCK WAS LEFT OPEN**, which is the
 `* = ;` failure from the port's own `fullchain` measurement, one language over.
@@ -63,7 +63,7 @@ COMPILE AND WOULD BE A GUESS ABOUT WHICH BLOCK WAS LEFT OPEN**, which is the
    is the smallest reproduction.
 2. **THE 103 MB TRACE.** EfficientNet-0's weights as JSON is 103 MB even after
    dropping every all-zero snapshot (`GPUBuffer` is zero-initialised, so those
-   are free). **⇒ AND THAT IS A PACKAGING PROBLEM AND NOT A CORRECTNESS ONE**:
+   are free). **AND THAT IS A PACKAGING PROBLEM AND NOT A CORRECTNESS ONE**:
    the same data as a binary blob beside a small JSON is ~21 MB, which is what a
    clone can carry.
 3. **THE PRETRAINED WEIGHTS**, only once 1 and 2 are closed -- because only then

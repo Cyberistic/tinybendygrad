@@ -187,7 +187,7 @@ def main():
         inputs = [(k, words[k]) for k in ("A", "B", "C")]
     else:
         key = row if row != "kern2 CLANG      " else "stage1_in_words"
-        # **⇒ AND THE ROWS COME FROM THE **TRACKED** `gates/cstyle-live.rows`,
+        # **AND THE ROWS COME FROM THE **TRACKED** `gates/cstyle-live.rows`,
         # NOT FROM `cstyle.bend`'s CAPTURED STDOUT.** `cstyle.bend` used to
         # PRINT its `]   py=[` gate rows; commit `564733bed` removed them and
         # made the file a LIBRARY with no `main()`, and the rows were committed

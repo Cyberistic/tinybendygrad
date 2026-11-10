@@ -151,7 +151,7 @@ ONE key and two DIFFERENT payloads as TWO keys.
 | IEEE (arm A) | **2 -- SPLITS what upstream merges** | 2 -- matches |
 | upstream's `__eq__` (arm B) | 1 -- matches | **1 -- MERGES, a collision upstream does not have** |
 
-**⇒ THE BITWISE COMPARATOR IS THE ONLY ONE OF THE THREE THAT MATCHES UPSTREAM's HASH TABLE
+**THE BITWISE COMPARATOR IS THE ONLY ONE OF THE THREE THAT MATCHES UPSTREAM's HASH TABLE
 IN BOTH CELLS, AND NEITHER ALTERNATIVE IS A FIX.**
 
 ---
@@ -210,16 +210,16 @@ type I64 is Data:
 
 with `i64_add`, `i64_sub`, `i64_and`, `i64_or`, `i64_shl`, `i64_cmp` beside it.
 
-**⇒ SO A BEND VALUE CAN CARRY THE 64 BITS OF A DOUBLE.  THE WALL IS NOT THE STORAGE.**
+**SO A BEND VALUE CAN CARRY THE 64 BITS OF A DOUBLE.  THE WALL IS NOT THE STORAGE.**
 
-**⇒ THE WALL IS: BEND CANNOT *PRODUCE* THOSE 64 BITS.**
+**THE WALL IS: BEND CANNOT *PRODUCE* THOSE 64 BITS.**
 * it cannot WRITE a double (a float literal is `Lit("F32", ...)`), so the port's SOURCE
   cannot spell upstream's `0.1` as upstream's `0.1`;
 * it cannot COMPUTE a double (no f64 arithmetic), so it cannot compute the f32 truncation
   of a double from that double's bits -- and upstream's `truncate[float32]` IS exactly
   `ctypes.c_float(x).value`.
 
-**⇒ THE THIRD WAY, AND IT IS AVAILABLE IN THE PORT's OWN ARITHMETIC: an f64->f32 rounding
+**THE THIRD WAY, AND IT IS AVAILABLE IN THE PORT's OWN ARITHMETIC: an f64->f32 rounding
 is pure INTEGER work on the 64 bits** (extract sign/exponent/mantissa, round to nearest
 even, handle subnormals and overflow), and `H.I64` has add/sub/and/or/not/shl/cmp.  So
 `CFloat{f: F32, d: H.I64}` is BUILDABLE: the f32 is computed from the double's bits by a
@@ -359,7 +359,7 @@ digest_live             = 03ef1127461a7ab82033de334204d845552879ca1f9066394efb28
 digest_without_my_edits = 6f43584feda020e05088c2f5af1dbb9f364cefb97d49422792dd2e405c97f14d
 ```
 
-**⇒ THE ATTRIBUTED DELTA IS `6f43584f…` → `03ef1127…` WITH MY EDITS OFF AND BACK WITH
+**THE ATTRIBUTED DELTA IS `6f43584f…` → `03ef1127…` WITH MY EDITS OFF AND BACK WITH
 THEM ON.**  The instrument is `.agents/slop/constid/digest.py --attr F1 F2 --base 853bed545^`.
 **THESE TWO HEX STRINGS ARE A SNAPSHOT OF ONE INSTANT, NOT A CONSTANT** -- the digest moved
 four times while this unit worked, every time because another unit was editing

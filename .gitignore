@@ -292,10 +292,10 @@ checks/*.err
 # THEY ARE **OUTPUTS**, NOT REQUIREMENTS. `checks/.e2e-fixture/opsbend-milestone.sh`
 # builds `bend-executor` there and writes `PACKET.out`, `build.out`, `check.out`,
 # `gate.err` and `milestone.sh`; `e2e_mm_run.mjs` writes the SERVED BUNDLE
-# (`checks/.e2e-fixture/e2e/`) and a fresh `webgpu_call.fresh.mjs`. **⇒ A COMMITTED
+# (`checks/.e2e-fixture/e2e/`) and a fresh `webgpu_call.fresh.mjs`. **A COMMITTED
 # OUTPUT IS A RUN NOBODY RE-TOOK**, and `AGENTS.md` records the same rule for
 # `checks/*.out`.
-# **⇒ AND THE INPUTS STAY TRACKED**: `PACKET.in` IS THE FIXTURE (it is already in
+# **AND THE INPUTS STAY TRACKED**: `PACKET.in` IS THE FIXTURE (it is already in
 # git), `xd2/` and `e2e-index.html` ARE THE GATE's REQUIREMENTS, and
 # `portexec/exec_harness.py` IS THE READER OF THE ROWS -- all three were MISSING
 # from the fixture when the gate's inputs moved out of the pruned tree, and their
@@ -312,7 +312,7 @@ checks/.e2e-fixture/opsbend-milestone/PACKET.out
 # THE BROWSER TRAINING TRACE IS A GENERATED ARTIFACT, NOT A REQUIREMENT.
 # `trace_train.py` writes it (4.2 MB) and it is over this tree's `jj` new-file
 # limit, so it stays out of git while its GENERATOR and its ORACLE are in it.
-# **⇒ AND THE GATE SAYS SO**: `train-gate.mjs` exits 3 REFUSED, naming the
+# **AND THE GATE SAYS SO**: `train-gate.mjs` exits 3 REFUSED, naming the
 # command that regenerates it, rather than passing over a trace it never read.
 .agents/slop/browser/train/train-net.json
 .agents/slop/browser/web/train-net.json

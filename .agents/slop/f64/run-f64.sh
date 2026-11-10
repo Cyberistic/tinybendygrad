@@ -72,7 +72,7 @@ W=${1:-${TMPDIR}opencode/f64-lane}
 # `mkdir -p "$W"` created a directory NAMED `--help` AT THE REPO ROOT, holding this
 # script's own `.log` files and two `.txt` dumps -- and `checks/no-txt.py` OWNS those
 # `.txt` files, so a stray directory became HARD debt the `.txt` gate charges.
-# **⇒ A DIRECTORY ARGUMENT IS **REFUSED **WHEN **IT **LOOKS **LIKE **A **FLAG**, **AND
+# **A DIRECTORY ARGUMENT IS **REFUSED **WHEN **IT **LOOKS **LIKE **A **FLAG**, **AND
 # **IT **IS **REFUSED **WHEN **IT **WOULD **LAND **INSIDE **THE **REPO** -- **BOTH
 # **BECAUSE **THE **WRITE **IS **THE **DAMAGE**, **AND **BECAUSE **A **DIRECTORY **AT
 # **THE **REPO **ROOT **IS **A **PATH **THE **TREE **OWNS.** **EXIT **3** **IS **THE

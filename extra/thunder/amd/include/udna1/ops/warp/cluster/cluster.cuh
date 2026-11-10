@@ -35,7 +35,7 @@ namespace cluster {
 /**
  * @brief Build the `M0` mask for a cluster multicast load.
  *
- * @param wg_bits        16-bit mask, bit `i` set ⇒ deliver result to WG `i` of the cluster.
+ * @param wg_bits        16-bit mask, bit `i` set => deliver result to WG `i` of the cluster.
  * @param early_timeout  If true, set bit 16 -- the load returns to whichever waves
  *                       have already joined as soon as the L2 returns; late joiners
  *                       issue a follow-up transaction. Useful when a few stragglers

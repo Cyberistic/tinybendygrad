@@ -16,7 +16,7 @@
   port's Metal renderer SPELLINGS are all ported (9 of 9) and its kernel
   ASSEMBLER is not (`0` `render_kernel` in `cstyle.bend`), there is **0** Metal
   compiler binding of 6, and the device's library step consumes a `.metallib`
-  that nothing in the port produces. **⇒ EIGHT WALLS, IN ORDER.**
+  that nothing in the port produces. **EIGHT WALLS, IN ORDER.**
 - `T+3` — **the PLANT is measured.** `compare.py` is a gate: it is GREEN on the
   port's bytes and RED on bytes one tap short, and the red is quantified.
 
@@ -53,13 +53,13 @@
 | 26 | the five censuses of entry 6 | 0.30 s total | `grep` over `tinybendygrad/` |
 | 27 | `grep -c "def render_kernel" tinybendygrad/renderer/cstyle.bend` and `grep -n "case 3:" tinybendygrad/renderer/cstyle.bend` | 0.30 s | **the census that CORRECTED entry 6.0's word-census**: 0 assemblers, 9 Metal spellings |
 
-**⇒ ONE `bend` PROCESS AT A TIME THROUGHOUT. NO `cc` WAS RUN BY ME: the native
+**ONE `bend` PROCESS AT A TIME THROUGHOUT. NO `cc` WAS RUN BY ME: the native
 lane's `cc` IS Bend's own compile of the emitted C, and it is inside command 9
-and command 17.** **⇒ THE MACHINE IS SHARED** (`uptime` read `load averages:
+and command 17.** **THE MACHINE IS SHARED** (`uptime` read `load averages:
 61.98 22.00 18.44` during command 19), so every timing above is a MINIMUM over
 repeats and the per-stage numbers carry the load they were taken under.
 
-**⇒ AND ONE THING THE BRIEF FORBIDS, SO IT IS NOT DONE: `.agents/TODO.md` WAS
+**AND ONE THING THE BRIEF FORBIDS, SO IT IS NOT DONE: `.agents/TODO.md` WAS
 NOT TICKED OFF.** The brief for this unit says "Never edit ... `.agents/TODO.md`",
 and `AGENTS.md` says every finished task is ticked there. The two cannot both
 be obeyed; the brief wins, and the gap is named here instead of being closed
@@ -72,7 +72,7 @@ mine, in `.agents/slop/seams/`; it imports `.agents/slop/mnist/model.py`'s `Mode
 and `load_weights` and reads the same four `.npy` files the mnist unit prepared).
 `DEV=CPU` is upstream tinygrad's own `ClangRenderer` -> `cc` -> mmap lane;
 `DEV=METAL` is upstream's own `MetalRenderer` -> Metal -> the GPU lane.
-**⇒ THESE ARE THE ORACLE, NOT A HAND-TYPED EXPECTATION.**
+**THESE ARE THE ORACLE, NOT A HAND-TYPED EXPECTATION.**
 
 | device | image 0 (cold: includes the compile) | images 1..3 (steady state) | logits vs CPU |
 |---|---|---|---|
@@ -83,17 +83,17 @@ and `load_weights` and reads the same four `.npy` files the mnist unit prepared)
 both — which is the same `logit0` the port's BEND device produced
 (`.agents/slop/mnist/bend_rows_1.rows`: `0 7 7 437.688 12 ... -5.667755 14.836814`).
 
-**⇒ THE GAP, WITH ITS DENOMINATOR.** The port's interpreter lane is
+**THE GAP, WITH ITS DENOMINATOR.** The port's interpreter lane is
 **437.688 s**; CPython's compiled CPU lane is **0.0130 s** steady state.
 **437.688 / 0.0130 = 33,668x.** With the compile included on both sides
-(437.688 / 0.5959 = 734x). **⇒ THE 10^6 IN THE BRIEF IS THE PER-MAC FIGURE; THE
+(437.688 / 0.5959 = 734x). **THE 10^6 IN THE BRIEF IS THE PER-MAC FIGURE; THE
 PER-IMAGE FIGURE ON THIS MODEL IS 3.4 x 10^4, BECAUSE THIS MODEL IS
 LAUNCH-BOUND, NOT COMPUTE-BOUND (12 kernels, 13 ms).** Both numbers are stated;
 neither is a label.
 
-**⇒ AND CPython's METAL LANE IS NOT FASTER THAN ITS CPU LANE ON THIS MODEL**
+**AND CPython's METAL LANE IS NOT FASTER THAN ITS CPU LANE ON THIS MODEL**
 (13.2 ms vs 13.0 ms steady state), because the model is 12 tiny kernels and the
-cost is dispatch, not arithmetic. **⇒ ANY CLAIM THAT "THE PORT's METAL LANE
+cost is dispatch, not arithmetic. **ANY CLAIM THAT "THE PORT's METAL LANE
 WILL BE FASTER THAN ITS CPU LANE" IS FALSE ON THIS MODEL, AND THE PORT's METAL
 LANE CANNOT BE MEASURED FASTER THAN CPython's 13 ms/IMAGE. THE CEILING IS SET
 BY CPython ITSELF.**
@@ -109,7 +109,7 @@ stage order `conv1 relu1 pool1 conv2 relu2 pool2 flat logits`).
 **WHAT IT IS NOT, AND THE DISTINCTION IS LOAD-BEARING.** It is **NOT** the
 port's `Device`/`UOp`/`renderer`/`Program` lane. It computes the model directly,
 so it BYPASSES the port's allocator, its renderer, its ELF emitter and its
-loader -- the four places where the port's device lane is walled. **⇒ IT IS A
+loader -- the four places where the port's device lane is walled. **IT IS A
 PROOF THAT THE PORT's LANGUAGE AND TOOLCHAIN CAN RUN THIS MODEL ON A CPU, NOT A
 CLAIM THAT THE PORT's DEVICE LANE CAN.** Entry 6 names the device lane's own
 walls, and this file changes none of them.
@@ -133,13 +133,13 @@ append recursed **43,904 deep** and the JS lane died with **`bend: memory
 fault (machine stack overflow?)`** (cost log 8). Eight append-mode writes
 (`File.open(path, "a")`, which both `effs/file_open.c` and `effs/file_open.js`
 support) cost **+0.02 s** over the no-write variant (cost log 13: 0.22 s ->
-0.24 s) and removed the failure. **⇒ THE FIX IS
+0.24 s) and removed the failure. **THE FIX IS
 ALSO THE SHORTER PROGRAM**: no `cat`, no `eight`.
 
 **(c) THE TAP COUNT IS THE COUNT, NOT THE LAST INDEX.** `conv1.tap(k, ki, ..)`
 runs its body while `k` is not zero and STOPS at `k == 0`, so a call with
 `k = 8n` performs **eight** taps with `ki = 0..7` and never reaches `ki = 8`:
-the bottom-right tap is missing. **⇒ THIS WAS THE BUG, AND IT WAS FOUND BY
+the bottom-right tap is missing. **THIS WAS THE BUG, AND IT WAS FOUND BY
 MEASUREMENT AND NOT BY READING.** The first run of the kernel was bit-identical
 to an **eight**-tap convolution on **3136 of 3136** conv1 outputs, and the ninth
 tap's weight was never read (cost logs 10 and 11). The same class of off-by-one
@@ -165,7 +165,7 @@ one is a rule the rest of the file obeys:
    head -- so `acc` must be an `F32` -- and the compiler said so: *"expected :
    F32 / observed : List<&2, F32>"*. The cons that prepends `x` to the list
    `acc` is `x <> acc`, and a LIST LITERAL is a list, so `[x] <> acc` is wrong
-   for the same reason. **⇒ THE OPERATOR IS `Con{head, tail}`, NOT A LIST
+   for the same reason. **THE OPERATOR IS `Con{head, tail}`, NOT A LIST
    APPEND.**
 2. **A `do`-BLOCK BIND'S ANNOTATION IS THE RESULT TYPE, NOT THE EFFECT'S TYPE.**
    `IO.bind(-A, -B, m: IO(A), f: A -> IO(B))`, so `u : IO(Unit) <- wb1("x")`
@@ -176,7 +176,7 @@ one is a rule the rest of the file obeys:
    -- the output index -- without taking it as a parameter. The fix was to add
    `+j: Nat` to its signature and to its recursive call.
 
-**⇒ AND TWO MORE RULES OF BEND, WHICH ARE WHY THE CODE LOOKS THE WAY IT DOES:
+**AND TWO MORE RULES OF BEND, WHICH ARE WHY THE CODE LOOKS THE WAY IT DOES:
 A `match` SCRUTINEE MUST BE A PARAMETER (a `let`-bound value cannot be
 scrutinized: *"a match cannot scrutinize a local binder"*), AND A `def` MUST BE
 DEFINED BEFORE USE.**
@@ -210,7 +210,7 @@ tol_rel 1e-05; worst_rel=1.37408e-07.**
 
 ### 3.1 WHY A TOLERANCE AND NOT BIT-IDENTITY, AND THE PROOF THAT THE PORT IS EXACT
 
-**⇒ THE 421 conv1 ELEMENTS THAT DIFFER FROM CPython ARE NOT THE PORT'S ERROR,
+**THE 421 conv1 ELEMENTS THAT DIFFER FROM CPython ARE NOT THE PORT'S ERROR,
 AND THIS IS MEASURED RATHER THAN ASSERTED.** A NumPy float32 convolution that
 accumulates in the SOURCE ORDER (`c`, then `ky`, then `kx`) is:
 
@@ -218,7 +218,7 @@ accumulates in the SOURCE ORDER (`c`, then `ky`, then `kx`) is:
 - **bit-identical to CPython's conv1 on 2715 of 3136 elements** -- the SAME
   2715, because the port and the simulation are the same bits.
 
-**⇒ THE PORT's ARITHMETIC IS EXACTLY THE STRAIGHTFORWARD FLOAT32 CONVOLUTION,
+**THE PORT's ARITHMETIC IS EXACTLY THE STRAIGHTFORWARD FLOAT32 CONVOLUTION,
 AND THE DIFFERENCE IS CPython's ACCUMULATION ORDER** (its CPU backend runs an
 im2col GEMM, and float32 addition is not associative). A bit-identity gate
 would be a gate on the ORACLE's accumulation order, not on the port's
@@ -243,18 +243,18 @@ bytes it wrote against CPython's.
 | **argmax** | 7 | **7 -- THE SAME** |
 | `compare.py` exit status | **0 (GREEN)** | **1 (RED)** |
 
-**⇒ THE PLANT'S ARTIFACT IS KEPT AND ITS PROGRAM IS NOT.**
+**THE PLANT'S ARTIFACT IS KEPT AND ITS PROGRAM IS NOT.**
 `.agents/slop/seams/port_stages_plant.f32` (43,944 bytes) is in the tree, so
 `compare.py port_stages_plant.f32` reproduces the RED without running
 anything; `plant_tapcount.bend` is NOT in the tree, because it is a 421-line
-copy of the kernel and `plant.py` writes it in 0.1 s. **⇒ A GENERATED COPY OF A
+copy of the kernel and `plant.py` writes it in 0.1 s. **A GENERATED COPY OF A
 FILE IS NOT A SECOND WITNESS, IT IS A COPY.**
 
-**⇒ TWO THINGS, AND THE SECOND IS THE IMPORTANT ONE.** First, the gate goes
+**TWO THINGS, AND THE SECOND IS THE IMPORTANT ONE.** First, the gate goes
 red on a defect that is ONE TOKEN long, and the red is quantified. Second:
 **the argmax DOES NOT MOVE.** A one-tap-short convolution still classifies this
 image as a 7, so a gate whose only condition were "the argmax agrees" would
-have been GREEN on a wrong answer. **⇒ THE TOLERANCE IS THE LOAD-BEARING
+have been GREEN on a wrong answer. **THE TOLERANCE IS THE LOAD-BEARING
 CONDITION, AND THE ARGMAX IS A SECOND, WEAKER ONE.**
 
 ## ENTRY 5 — THE TIMINGS, IN BOTH LANES, WITH THE DENOMINATORS
@@ -266,7 +266,7 @@ CONDITION, AND THE ARGMAX IS A SECOND, WEAKER ONE.**
 | `CPU` | 0.487424 s | 0.012180 s | 0.011727 s | 0.011666 s |
 | `METAL` | 0.797743 s | 0.013541 s | 0.012370 s | 0.012398 s |
 
-**⇒ THE LOGITS ARE BIT-IDENTICAL BETWEEN THE TWO DEVICES ON ALL 4 IMAGES**
+**THE LOGITS ARE BIT-IDENTICAL BETWEEN THE TWO DEVICES ON ALL 4 IMAGES**
 (10 logits x 4 images = 40 values), and `pred=7 label=7` on image 0 in both.
 
 ### 5.2 The port's own kernel (cost logs 16, 17, 18, 19)
@@ -290,7 +290,7 @@ The port's OWN per-stage clock, in milliseconds:
 | fc (392 x 10 = 3,920 MACs) | 24 | 70-105 |
 | write (43,944 bytes) | 21 | 1-26 |
 
-**⇒ THE LANES, SIDE BY SIDE, FOR ONE IMAGE, WITH THE DENOMINATOR "one MNIST
+**THE LANES, SIDE BY SIDE, FOR ONE IMAGE, WITH THE DENOMINATOR "one MNIST
 forward pass":**
 
 | lane | seconds per image | x CPython's CPU (0.0117 s) | what it is |
@@ -301,13 +301,13 @@ forward pass":**
 | port, standalone Bend kernel, JS lane | **0.17** | **15x** | the same program, interpreted |
 | port, the BEND device (`.agents/slop/mnist/REPORT.md` entry 2) | **437.688** | **37,400x** | the port's own executor, 12 launches |
 
-**⇒ AND THE REASON THE PORT's DEVICE LANE IS 1000x SLOWER THAN THE SAME
+**AND THE REASON THE PORT's DEVICE LANE IS 1000x SLOWER THAN THE SAME
 ARITHMETIC IN THE PORT's OWN LANGUAGE IS MEASURED, NOT GUESSED: the BEND
 device's conv2 launch costs 141.55 s for 56,448 MACs = 2.5 ms PER MAC, while
 this kernel's conv2 costs 226 ms for the same 56,448 MACs = 4.0 us PER MAC --
 **620x.** The device lane's cost is the EXECUTOR's per-operation overhead (a
 subprocess, a hex round trip of every buffer, an interpreter over the UOp
-list), not the arithmetic. **⇒ THE PORT's ARITHMETIC IS NOT THE PROBLEM; THE
+list), not the arithmetic. **THE PORT's ARITHMETIC IS NOT THE PROBLEM; THE
 PORT's EXECUTOR IS.**
 
 ## ENTRY 6 — THE PORT's MISSING SEAMS, NAMED AND COUNTED
@@ -322,7 +322,7 @@ PORT's EXECUTOR IS.**
 | the port's Metal RENDERER SPELLINGS | `grep -n "case 3:" tinybendygrad/renderer/cstyle.bend` | **9**, and all nine are ported: `kernel_typedef_head(3) = "kernel void"`, `buffer_prefix(3) = "device "`, `smem_prefix(3)`, `barrier(3)`, `float4(3)`, `type_map.metal()`, `code_for_metal.of`, ... |
 | **the port's KERNEL ASSEMBLER** | `grep -c "def render_kernel" tinybendygrad/renderer/cstyle.bend` | **0** -- and `wgsl.bend` has **1** |
 
-**⇒ THE METAL LANE'S EXACT REFUSAL, IN ONE SENTENCE: the port's Metal device
+**THE METAL LANE'S EXACT REFUSAL, IN ONE SENTENCE: the port's Metal device
 can CONSUME a compiled `.metallib`, and NOTHING IN THE PORT PRODUCES ONE --
 because the Metal RENDERER'S SPELLINGS ARE ALL PORTED AND THE PART THAT
 ASSEMBLES A KERNEL FROM A UOP LIST IS NOT.** `ops_metal.bend:2249-2250` is the
@@ -336,12 +336,12 @@ form that would take the source text) occurs **0** times in the file.
 **MY FIRST CENSUS OF THIS ENTRY WAS WRONG, AND IT WAS WRONG IN THE EXACT WAY
 THE REPO's DOCTRINE NAMES.** I ran
 `grep -rn "msl\|MSL" --include="*.bend" tinybendygrad/ | wc -l` and it answered
-**0**, and I was about to write "the port has 0 Metal renderers". **⇒ THE PORT
+**0**, and I was about to write "the port has 0 Metal renderers". **THE PORT
 NEVER WRITES THE WORD "MSL": IT WRITES "metal".** The census counted a WORD,
 and the port's Metal renderer is `cstyle.bend` with Metal's spellings --
 `kernel_typedef_head(3) = "kernel void"`, `type_map.metal()`,
 `code_for_metal.of`, `buffer_prefix(3) = "device "`, `smem_prefix(3)`,
-`barrier(3)`, `float4(3)` -- **all NINE of them ported.** **⇒ A CENSUS THAT
+`barrier(3)`, `float4(3)` -- **all NINE of them ported.** **A CENSUS THAT
 COUNTS A WORD IS A CENSUS OF NAMES, AND THE CENSUS THAT ANSWERS THE QUESTION
 IS THE ONE ABOUT THE DEF: `grep -c "def render_kernel" cstyle.bend` IS 0.**
 Upstream's `MetalRenderer` IS `CStyleLanguage` with different class attributes
@@ -395,11 +395,11 @@ THE FIRST THING THAT MUST LAND:**
 8. **THE OBJC LOADS AND THE NSSTRING.** `ops_metal.bend:166-172` (the
    `ctypes.CDLL` loads) and `:174-183` (`stringWithUTF8String:` -> NSString).
 
-**⇒ SO: THE CPU LANE'S REFUSAL IS FOUR WALLS DEEP AND THE METAL LANE'S IS EIGHT,
+**SO: THE CPU LANE'S REFUSAL IS FOUR WALLS DEEP AND THE METAL LANE'S IS EIGHT,
 AND THE ORDER IS FIXED.** On Metal: (5) the kernel assembler, THEN (6) the
 fold's dtype, THEN (3) the compiler FFI, THEN (7) the UOp matcher, THEN (1)
 the device registry and the ELF, THEN (2) the allocator, THEN (8) the ObjC
-loads. On CPU the list is (5)+(6)+(3)+(1)+(2)+(4). **⇒ THE PORT's METAL LANE
+loads. On CPU the list is (5)+(6)+(3)+(1)+(2)+(4). **THE PORT's METAL LANE
 CANNOT BE MEASURED, AND NO AMOUNT OF TIMING WILL CHANGE THAT.**
 
 ## ENTRY 7 — UPSTREAM's DEVICE BEHAVIOUR, MEASURED WITH ONE INSTRUMENT
@@ -421,22 +421,22 @@ and counts the programs in that file.
 | the schedule, image 0 | **CACHE MISS, 99.10 ms** | **CACHE MISS, 83.44 ms** |
 | the schedule, image 1 | cache hit, 1.22 ms | cache hit, 1.14 ms |
 
-**⇒ THE SCHEDULE IS THE SAME 7 KERNELS ON BOTH DEVICES; THE RENDERER PICKS
+**THE SCHEDULE IS THE SAME 7 KERNELS ON BOTH DEVICES; THE RENDERER PICKS
 DIFFERENT SPLITS, AND THEREFORE THE KERNEL NAMES DIFFER.** CPU renders
 `r_4_28_7_4_3_3` (conv1), `r_2_14_14_4_4_3_3` (conv2), `r_56_14_2_2` (pool1),
 `r_56_7_2_2` (pool2), `r_10_98_4` (the 392x10 dot), `r_10` (the argmax, twice);
 Metal renders `r_7_7_4_4_4_3_3`, `r_7_7_2_2_2_4_4_3_3`, `r_7_7_8_2_2_2`,
 `r_7_7_8_2_2`, `r_5_2_98_4`, `r_10`.
 
-**⇒ AND THE PER-KERNEL GPU TIMES, MEASURED** (the `*** METAL <n> <name> ... tm`
+**AND THE PER-KERNEL GPU TIMES, MEASURED** (the `*** METAL <n> <name> ... tm`
 rows, from the same run): conv1 **18-27 us**, pool1 **21-25 us**, conv2
 **16-31 us**, pool2 **13-23 us**, the 392x10 dot **59 us**, the argmax **22 us**.
-**⇒ SUM: AT MOST 187 us OF GPU WORK (27 + 25 + 31 + 23 + 59 + 22) FOR A FORWARD
+**SUM: AT MOST 187 us OF GPU WORK (27 + 25 + 31 + 23 + 59 + 22) FOR A FORWARD
 PASS THAT COSTS 12.4 ms, SO 98.5% OF THE METAL LANE'S TIME IS NOT THE GPU.**
 That is the same fact entry 1 states from the other end: the model is
 LAUNCH-BOUND.
 
-**⇒ AND THE METAL HOST SIDE IS NOT UPSTREAM'S OWN CODE: IT IS LLVM-IR THAT
+**AND THE METAL HOST SIDE IS NOT UPSTREAM'S OWN CODE: IT IS LLVM-IR THAT
 CALLS INTO OBJC.** The dump contains `mtl_send_1`..`mtl_send_5`, `mtl_run_6`,
 `mtl_run_7` and `fence_metal_2`, each of which is
 `call i64 @sel_registerName(i8* %data1)` followed by
@@ -444,7 +444,7 @@ CALLS INTO OBJC.** The dump contains `mtl_send_1`..`mtl_send_5`, `mtl_run_6`,
 constants: `commandBuffer`, `computeCommandEncoder`, `waitForFence:`,
 `dispatchThreadgroups:threadsPerThreadgroup:`, `executeCommandsInBuffer:withRange:`,
 `updateFence:`, `endEncoding`, `commit`, `signaledValue`, `newFunctionWithName:`,
-`setComputeFunction:`. **⇒ THIS IS EXACTLY WHAT THE PORT'S `ops_metal.bend`
+`setComputeFunction:`. **THIS IS EXACTLY WHAT THE PORT'S `ops_metal.bend`
 TRACE-ONLY PORT RECORDS, AND IT IS WHY THE PORT'S FILE IS NOT A SMALLER
 VERSION OF UPSTREAM'S: THE PORT CARRIES THE CALL SEQUENCE AND NONE OF THE
 OBJECTS.**
@@ -455,7 +455,7 @@ OBJECTS.**
    the walls. The CPU lane needs a kernel assembler, a fold dtype, a compiler
    FFI, an ELF emitter, an allocator, a device registry and 64-bit addresses;
    the Metal lane needs all of those plus a Metal compiler, the UOp matcher
-   and the ObjC loads. **⇒ NOTHING IN THIS REPORT CHANGES THAT, AND THE
+   and the ObjC loads. **NOTHING IN THIS REPORT CHANGES THAT, AND THE
    STANDALONE KERNEL IS NOT A SUBSTITUTE FOR IT.**
 2. **THE PORT's METAL LANE WAS NOT MEASURED, AND CANNOT BE.** Entry 6.
 3. **THE PORT's own executor lane (437.688 s/image, 12 launches) WAS NOT
@@ -464,11 +464,11 @@ OBJECTS.**
    measurement of mine.
 4. **THE KERNEL RUNS ONE IMAGE.** The weights and the image are read from disk
    and the model is a function of them, so more images cost more runs; the
-   per-stage clock says what each would cost. **⇒ NO MULTI-IMAGE NUMBER IS
+   per-stage clock says what each would cost. **NO MULTI-IMAGE NUMBER IS
    CLAIMED.**
 5. **THE KERNEL IS A LIST-BASED PROGRAM, AND THE LIST READS ARE O(n).** An
    `Array`-based kernel would be faster, and the measured reason it is not
-   used is entry 2.1(a). **⇒ THE 0.17 s AND 0.46 s ARE THE PRICE OF THE LIST
+   used is entry 2.1(a). **THE 0.17 s AND 0.46 s ARE THE PRICE OF THE LIST
    REPRESENTATION, NOT OF THE ARITHMETIC.**
 6. **`.agents/TODO.md` WAS NOT TICKED**, because the brief forbids editing it.
    See the cost log's last paragraph.

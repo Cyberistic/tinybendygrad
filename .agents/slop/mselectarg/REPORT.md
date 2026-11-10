@@ -196,7 +196,7 @@ Ambiguous-typed `Arg` variants, by the task's two shapes, over the 21 variants n
 
 * **`int` OR `bytes`: `1` — `ABlob` (before this fix). It held `MSELECT`'s int *and* `BINARY`'s
   bytes.** Rendered by ONE non-branching helper, `blobstr` (`.agents/slop/graphcmp.bend:392`), which
-  always emits `y n(…)`. **N = 1 ⇒ the fix is THIS variant, not a shared-helper retune.** After the
+  always emits `y n(…)`. **N = 1 => the fix is THIS variant, not a shared-helper retune.** After the
   fix `ABlob` is pure `bytes` and `AInt` is pure `int`: N = 0 for int|bytes.
 * **`str` OR `tuple`: `3` sites — `ADev.dev`, `AAllred.dev`, `ParamArg.device`.** All rendered through
   the tagged union `S.Dev = D1|Dn` (branching in `dev`/`devs`), per `adevfix`. They are NOT a single

@@ -46,7 +46,7 @@ now reads `?=0` and prints `# SELFCHECK: FAIL`.
   `g_late` builds (`graphcmp.py:1465` `(a / b).uop`).
 - `D2-canon-py-late.txt` = 12 lines, ops `{ALLOC, CMPEQ, CONST, FDIV, GROUP, NEG, PERMUTE…, RESHAPE, STACK, SUB}`; `OPS REACHED: py=9 bend=7` in `D1-graph-late.txt` — the same graph, same op set the census's sorted list implies.
 - The differ lane's two rung-crossrefs name the same unmatched nodes (`RESHAPE py#7 vs bend#12`, `ALLOC py#6 vs bend#9`) — a SUBSTITUTED-fixture harness artefact, consistent with `SUBSTITUTED=("allred","cdiv","late","matmul")`.
-- `checks/disagree-gate.py` rc=0 ⇒ belts agree: **`late` row=6, fields=(dtype, shape, arg)** — unchanged by the fresh run. The RECIPROCAL/FDIV split the brief measured was an artefact of the stale directory; on fresh artifacts census and canon name the same graph, so **the `PIN` row did not move and no repin is needed**.
+- `checks/disagree-gate.py` rc=0 => belts agree: **`late` row=6, fields=(dtype, shape, arg)** — unchanged by the fresh run. The RECIPROCAL/FDIV split the brief measured was an artefact of the stale directory; on fresh artifacts census and canon name the same graph, so **the `PIN` row did not move and no repin is needed**.
 
 ## Other asked-for facts (fresh run)
 

@@ -49,7 +49,7 @@ NOTHING READS, OR A KEY THAT IS NOT THE KEY.**
    node in **a phantom arena** and made the reads below it read **the old
    arena's** entry.
 
-**⇒ AND TWO MORE, FOUND BY THE ROW THAT DUMPS BOTH SPELLINGS:**
+**AND TWO MORE, FOUND BY THE ROW THAT DUMPS BOTH SPELLINGS:**
 
 5. **THE PORT's RANGE MAP IS **A TABLE**,** so a range is a **table index**
    until `indexing.bend:901`'s `ix_rg_node` materialises it. The apply used
@@ -83,12 +83,12 @@ cpython: ['ADD',  'AFTER', 'CONST', 'END', 'INDEX', 'MUL', 'PARAM', 'RANGE', 'RE
 | -- | `MUL:none:RANGE,CONST` x3 | the affine expression's own nodes |
 | `CONST:cother:` | -- | **THE PORT's OWN EXTRA CONST** -- the range map's three extra `CONST` entries (W-E) |
 
-**⇒ AND `REDUCE:other:MUL,RANGE` IS NOW AN **AGREEMENT**, NOT A DIFFERENCE.** IT WAS
+**AND `REDUCE:other:MUL,RANGE` IS NOW AN **AGREEMENT**, NOT A DIFFERENCE.** IT WAS
 THE ROW THIS FILE NAMED AS *"THE RANGE MAP's OWN DIFFERENCE"* (the port's table held a
 `CONST 0` where upstream holds a `RANGE`), AND **THE FIX THAT CLOSED IT WAS NOT IN THE
 APPLY AT ALL** -- IT WAS IN THE RANGE MAP's TABLE (W-D, BELOW).
 
-**⇒ THE GRAPH'S SHAPE IS NOW CPython's SHAPE**: `SINK(AFTER(PARAM, END))`,
+**THE GRAPH'S SHAPE IS NOW CPython's SHAPE**: `SINK(AFTER(PARAM, END))`,
 `END(STORE, RANGE, RANGE)`, `STORE(INDEX, REDUCE)`, `MUL(INDEX, INDEX)`,
 `REDUCE(MUL, RANGE)`.
 
@@ -99,7 +99,7 @@ APPLY AT ALL** -- IT WAS IN THE RANGE MAP's TABLE (W-D, BELOW).
   `UOp.const(0).usum(axes_in)` with `%` and `//`, and simplifies them with a
   **`symbolic` rewriter**. The port has **no `where`, no `usum`, no `%`, no
   `//` and no `symbolic` rewriter**, so the port's RESHAPE keeps its **plain
-  ranges** where upstream has **one affine expression**. **⇒ AND THE PORT's
+  ranges** where upstream has **one affine expression**. **AND THE PORT's
   OWN `apply_movement_op` IS THE IDENTITY FOR `RESHAPE`** (`rangify.bend`'s
   header says so, and it is the same wall).
 * **W-B -- `PAD` AND `STACK`.** Upstream's rules 2 and 3 need `where` and
@@ -110,29 +110,29 @@ APPLY AT ALL** -- IT WAS IN THE RANGE MAP's TABLE (W-D, BELOW).
   REDUCE-AXIS RANGE with `rr_new.all` -- WHICH APPENDS IT TO THE TABLE AND TAKES
   ITS INDEX FROM THE TABLE's LENGTH (`rr_new.one`) -- AND THEN BUILT THE NEW
   STATE WITH `RrMap.put`, **WHICH KEEPS `RrMap.tbl(m)`: THE TABLE AS IT WAS.**
-  **⇒ SO THE RANGE's INDEX POINTED AT A TABLE THAT NEVER RECEIVED IT**, AND THE
+  **SO THE RANGE's INDEX POINTED AT A TABLE THAT NEVER RECEIVED IT**, AND THE
   PORT's TABLE HELD **NO RANGE WITH EXTENT 3** (`0:1:0 0:0:4 1:0:5`; IT NOW
-  READS `0:1:0 0:0:4 1:0:5 2:0:3`). **⇒ MEASURED, THE PORT AND THE FIX ON THE
+  READS `0:1:0 0:0:4 1:0:5 2:0:3`). **MEASURED, THE PORT AND THE FIX ON THE
   SAME COMPILER, IN A PRIVATE COPY OF THE TREE: BEFORE `port_nodes=20 AGREE=8
   ONLY-CPYTHON=11`, AFTER `port_nodes=22 AGREE=9 ONLY-CPYTHON=9`, AND THE ONE
   AGREEMENT THE FIX ADDED IS `REDUCE:other:MUL,RANGE`.**
 * **W-E -- THE THREE EXTRA `CONST` ENTRIES -- CLOSED 2026-10-30.** The port's
   range map had **14** entries and upstream's **11**; the three extra were the
-  `CONST` nodes at toposort positions 0, 6 and 12. **⇒ THE CAUSE WAS **ONE
+  `CONST` nodes at toposort positions 0, 6 and 12. **THE CAUSE WAS **ONE
   LINE**: `rangify.bend`'s `rr_dsrcs` READ `ix_ds_zero` -- WHICH MEANS "THIS OP
   HAS ZERO DATA SRCS", AND IS HOW `indexing.bend`'s OWN `ix_ds_n.of` READS IT --
   AS "TAKE ONE", SO **A `PARAM` CONTRIBUTED ITS FIRST SRC AS A DATA SRC**
   (`data_srcs` RETURNS **NO** SRCS FOR A `PARAM`, `indexing.py:69`) AND EVERY
-  `CONST` THAT FEEDS A `PARAM` LOOKED CONSUMED. **⇒ THE LIST FORM NOW LIVES
-  BESIDE THE LENGTH FORM, IN `indexing.bend` ITSELF (`ix_ds_list`).** **⇒ AND
+  `CONST` THAT FEEDS A `PARAM` LOOKED CONSUMED. **THE LIST FORM NOW LIVES
+  BESIDE THE LENGTH FORM, IN `indexing.bend` ITSELF (`ix_ds_list`).** **AND
   `.agents/slop/rmap/cmp.py` NOW READS **5 of 11 AGREE (denominator=11), 6
-  DIFFER, 0 MISSING**, AND ALL SIX DIFFERENCES ARE **W-A** -- **⇒ AND THE
+  DIFFER, 0 MISSING**, AND ALL SIX DIFFERENCES ARE **W-A** -- **AND THE
   PREVIOUS "5 of 11, all six are one wall" CLAIM WAS **NEVER** WHAT THE
   INSTRUMENT SAID** (IT READ `1 of 14`) **AND IS NOW TRUE FOR A REASON THE
   CLAIM NEVER NAMED** -- see `.agents/slop/rmap/RANGE.md`.
 * **W-C -- THE REALIZE MAP's DELETION.** Upstream does `del
   ctx.realize_map[s]` when a `STORE` becomes an `END` (`indexing.py:88`), and
-  the port's context is an immutable value and cannot delete. **⇒ AND THE
+  the port's context is an immutable value and cannot delete. **AND THE
   PORT'S FRESH-NODE FINALISATION IS THEREFORE **A REMAP AND NOTHING ELSE**,
   WHICH IS EQUIVALENT** (a `STAGE` and an `INDEX` match no rule, and an
   `END`'s rule-4 result is unchanged precisely because upstream deleted the
@@ -152,7 +152,7 @@ APPLY AT ALL** -- IT WAS IN THE RANGE MAP's TABLE (W-D, BELOW).
   `rangeify.py:347-360` then runs `symbolic+pm_reduce_simplify+
   pm_const_buffer_folding+pm_remove_bufferize`, `pm_limit_bufs`,
   `pm_add_buffers`, `pm_no_indexing_calls`, `split_kernels` and `pm_no_views`.
-  **⇒ AND EVERY ONE OF THOSE IS **A `symbolic` REWRITER** TOO.**
-* **⇒ AND SO THE PORT's `schedule()` STILL ANSWERS **ZERO** KERNELS FOR THE
+  **AND EVERY ONE OF THOSE IS **A `symbolic` REWRITER** TOO.**
+* **AND SO THE PORT's `schedule()` STILL ANSWERS **ZERO** KERNELS FOR THE
   PORT's OWN PROGRAM**, **=> BECAUSE `get_kernel_graph` IS NOT DONE**, **=> AND
   NOT BECAUSE OF ANYTHING IN THIS FILE.**

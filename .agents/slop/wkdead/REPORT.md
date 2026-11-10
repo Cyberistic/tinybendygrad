@@ -110,7 +110,7 @@ MEASURED, the same fixture built the way upstream builds it:
 UOp.param(0, dtypes.int32, vmin_vmax=(5,5))  ->  src=(UOp(Ops.STACK,...),)   int(u) = 5
 ```
 
-**⇒ THE FIX IS ONE LINE IN THE ORACLE, AND THE GATE'S 22 ROWS ARE THE PORT'S OWN.**
+**THE FIX IS ONE LINE IN THE ORACLE, AND THE GATE'S 22 ROWS ARE THE PORT'S OWN.**
 
 ---
 
@@ -142,7 +142,7 @@ def device_of.param(arg: O.Arg) -> Maybe<&2, S.Dev>:
     case O.AParam{pa}: O.ParamArg.device(pa)
 ```
 
-**⇒ A NODE THAT CARRIES A `Dev` WAS REACHABLE ALL ALONG, AND THE CLAIM WAS NEVER TRUE.**
+**A NODE THAT CARRIES A `Dev` WAS REACHABLE ALL ALONG, AND THE CLAIM WAS NEVER TRUE.**
 
 ### 3.2 THE GATE, AND IT IS A CROSS OF TWO INDEPENDENT QUESTIONS
 
@@ -187,7 +187,7 @@ the gate was re-run, and the port was restored (byte-identical to `HEAD`).
 | A | the ORACLE's malformed src-less PARAM is put back | **rc=3 REFUSED** | the gate measures NOTHING |
 | B | the PORT's `wk_same` answers `True{}` always | **rc=1 FAIL** | `int_on_range_val` (`none` -> `0:1`) |
 
-**⇒ BOTH DIRECTIONS ARE FALSIFIABLE: A BROKEN ORACLE STOPS THE GATE, AND A BROKEN PORT
+**BOTH DIRECTIONS ARE FALSIFIABLE: A BROKEN ORACLE STOPS THE GATE, AND A BROKEN PORT
 STOPS IT TOO.**
 
 ---

@@ -381,7 +381,7 @@ def main() -> None:
     # NOT `fold_divmod_general`** (MEASURED 2026-11-09: `(x%2)//4` IS **NOT** REWRITTEN BY
     # `nested_div` **AND THE OTHER TWO ANSWER IT VIA THE **RANGE** ARM**).
     #
-    # **⇒ AND THE ROWS ARE **RIGHT AFTER** THE `gcd_*` ROWS IN **BOTH** LANES**, **BECAUSE THE
+    # **AND THE ROWS ARE **RIGHT AFTER** THE `gcd_*` ROWS IN **BOTH** LANES**, **BECAUSE THE
     # GATE COMPARES THEM **POSITIONALLY** (`gates/gatekit.py`: `zip(base, other)`)**.
     rows.extend((("nd_rewrite", _nd_rewrite()), ("nd_neg", _nd_neg()), ("nd_nodiv", _nd_nodiv())))
     # `UOp.divide_exact` -- ops.py:1038-1047. **AND CPYTHON's OWN `UOp.divide_exact` IS THE

@@ -8,14 +8,14 @@ between two lanes is only a comparison if the ARITHMETIC is the same. So every
 lane here runs THE SAME `Ops` graph: a square matmul chain `(A @ B) @ C` of f32
 matrices, built once from `Tensor` calls, and each lane realises it.
 
-**⇒ AND THE PROGRAM IS `(A @ B) @ C` BECAUSE BOTH LANES REPOSITORY-WIDE ALREADY
+**AND THE PROGRAM IS `(A @ B) @ C` BECAUSE BOTH LANES REPOSITORY-WIDE ALREADY
 AGREE ON IT**: it is `checks/.e2e-fixture/e2e_mm.py`'s own arithmetic, so the
 number here can be read beside the browser lane's.
 
 WHY THE SIZE IS SMALL AND THE ITERATIONS ARE FEW: the BEND device is an
 INTERPRETER THAT SPAWNS A SUBPROCESS PER LAUNCH (its own header says so), so a
 64x64 matmul is tens of seconds. `--size` and `--iters` are therefore parameters
-and the DEFAULT is the smallest size that still does real work. **⇒ AND THE
+and the DEFAULT is the smallest size that still does real work. **AND THE
 RESULT PRINTS PER-LAUNCH AND PER-ITERATION COSTS SO A SMALL RUN IS STILL
 INTERPRETABLE.**
 

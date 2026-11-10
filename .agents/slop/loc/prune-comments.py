@@ -7,34 +7,34 @@
 WHAT IT REMOVES, AND WHY EACH CLASS IS REMOVABLE **BY MEASUREMENT, NOT BY TASTE**:
 
   (1) THE SHELL TRANSCRIPT. A comment line that is a COMMAND (`# diff /tmp/a /tmp/b`,
-      `# .venv/bin/python ...`). **⇒ THE COMMIT MESSAGE AND THE REPORT HOLD THE COMMAND;
+      `# .venv/bin/python ...`). **THE COMMIT MESSAGE AND THE REPORT HOLD THE COMMAND;
       A READER OF THE SOURCE DOES NOT RUN IT FROM A COMMENT.**
 
-  (2) THE `# TODO(port):` COMMENT. **⇒ AGENTS.md SAYS "Add TODO comments in the code for any
+  (2) THE `# TODO(port):` COMMENT. **AGENTS.md SAYS "Add TODO comments in the code for any
       tasks that are not yet completed" — AND THE LEDGER IS `.agents/TODO.md`, WHICH IS THE
-      TREE's OWN LEDGER AND IS TICKED. **⇒ BUT THIS TOOL **DOES NOT** REMOVE THEM: AGENTS.md
+      TREE's OWN LEDGER AND IS TICKED. **BUT THIS TOOL **DOES NOT** REMOVE THEM: AGENTS.md
       ASKS FOR THEM, AND THE GOAL IS "COMMENTS A READER MIGHT NOT CARE ABOUT", AND A TODO IS
-      EXACTLY WHAT A READER CARES ABOUT. **⇒ SO (2) IS **OFF** BY DEFAULT AND MEASURED, NOT
+      EXACTLY WHAT A READER CARES ABOUT. **SO (2) IS **OFF** BY DEFAULT AND MEASURED, NOT
       ASSUMED.**
 
   (3) THE FIXED-BUG NARRATIVE. A line that says what the code **WAS**: "AND THIS USED TO BE",
       "AND THIS WAS FIXED", "FOUND AND FIXED FIVE TIMES", "AND THE BUG WAS", "THE
-      REGRESSION WAS". **⇒ THE GIT LOG IS THE HISTORY, AND `git log -S` FINDS THE COMMIT
-      THAT CHANGED IT. **⇒ A COMMENT THAT RECORDS THE PAST IS A COMMENT THAT WILL BE WRONG
+      REGRESSION WAS". **THE GIT LOG IS THE HISTORY, AND `git log -S` FINDS THE COMMIT
+      THAT CHANGED IT. **A COMMENT THAT RECORDS THE PAST IS A COMMENT THAT WILL BE WRONG
       THE SECOND TIME THE CODE CHANGES.**
 
   (4) THE RULE SEPARATOR. A comment line that is ONLY punctuation (`# ============`,
-      `# ------`). **⇒ IT CARRIES NO INFORMATION AND A READER SCROLLS PAST IT.**
+      `# ------`). **IT CARRIES NO INFORMATION AND A READER SCROLLS PAST IT.**
 
 WHAT IT **NEVER** REMOVES, **AND THIS IS THE POINT**:
 
   - **A CITATION** -- a line naming an upstream position (`elementwise.py:57`,
-    `tinygrad/uop/ops.py`). **⇒ IT IS LOAD-BEARING: IT IS WHAT THE PIN IS RE-POINTED BY.**
+    `tinygrad/uop/ops.py`). **IT IS LOAD-BEARING: IT IS WHAT THE PIN IS RE-POINTED BY.**
   - **A MEASUREMENT** -- a line carrying a measured fact (`MEASURED`, `rc=`, a row count).
-    **⇒ IT IS THE TREE's EVIDENCE AND IT IS WHAT MAKES A CLAIM A CLAIM.**
+    **IT IS THE TREE's EVIDENCE AND IT IS WHAT MAKES A CLAIM A CLAIM.**
   - **PROSE THAT EXPLAINS A SHAPE** -- the code cannot say why the code is shaped that way.
 
-⇒ AND IT PRINTS **EXACTLY WHAT IT WOULD REMOVE**, WITH THE LINE NUMBERS, **BEFORE IT
+AND IT PRINTS **EXACTLY WHAT IT WOULD REMOVE**, WITH THE LINE NUMBERS, **BEFORE IT
 REMOVES ANYTHING** -- **AND IT REFUSES TO WRITE A FILE IT CANNOT PARSE BACK.**
 """
 
@@ -85,7 +85,7 @@ def classify(body: str) -> str | None:
         return "shell"
     if TODO.match(body):
         return "todo"
-    # **⇒ A CITATION OR A MEASUREMENT IS **NEVER** REMOVED.**
+    # **A CITATION OR A MEASUREMENT IS **NEVER** REMOVED.**
     if CITATION.search(body) or MEASUREMENT.search(body):
         return None
     if HISTORY.search(body):

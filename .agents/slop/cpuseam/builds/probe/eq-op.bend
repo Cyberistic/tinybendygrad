@@ -1,17 +1,17 @@
 # THE MEASUREMENT: **THE OLD 75-ARM `eq_op` AGAINST **ONE** SINGLE-ARM PREDICATE**, ON THE **REAL**
 # OP SET AND THE **REAL** CALL SHAPE.
 
-# ⇒⇒⇒ THE CLAIM: `cstyle.bend`'s `eq_op(x, y)` IS A **MATCH ON TWO SCRUTINEES**, AND A MATCH IN
-# BEND IS **A LINEAR CHAIN OF TAG COMPARISONS** -- **75 ARMS**. ⇒⇒⇒ AT THE CALL SITES THE SECOND
+# THE CLAIM: `cstyle.bend`'s `eq_op(x, y)` IS A **MATCH ON TWO SCRUTINEES**, AND A MATCH IN
+# BEND IS **A LINEAR CHAIN OF TAG COMPARISONS** -- **75 ARMS**. AT THE CALL SITES THE SECOND
 # ARGUMENT IS **ALWAYS A LITERAL** (18 OF THE 19 SITES), SO THE QUESTION IS "IS THIS OP's TAG THE
 # CONSTANT `OpsADD`?" -- WHICH IS **ONE** COMPARISON IF IT IS WRITTEN AS A MATCH **ON THE VARIABLE**
 # WITH THE LITERAL AS THE **ONLY** ARM.
 #
-# ⇒⇒⇒ ⇒⇒⇒ AND A MATCH ON A **PARAMETER** COMPILES TO **ONE** COMPARE (MEASURED, THE COMPILED FORM
+# AND A MATCH ON A **PARAMETER** COMPILES TO **ONE** COMPARE (MEASURED, THE COMPILED FORM
 # OF `is_a` IS `if (_x_0.$ === "OpsA") { return true; } else { return false; }`), WHEREAS A MATCH ON A
 # **COMPUTED VALUE** IS REFUSED BY THE COMPILER ("a match cannot scrutinize a computed value").
 #
-# ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ SO THIS PROBE TIMES **BOTH FORMS ON THE SAME WORKLOAD** -- THE ELEVEN OPS THE
+# SO THIS PROBE TIMES **BOTH FORMS ON THE SAME WORKLOAD** -- THE ELEVEN OPS THE
 # RENDER ACTUALLY SEES, EACH COMPARED AGAINST **ELEVEN** LITERALS, WHICH IS **121** `eq_op` CALLS
 # AGAINST **121** SINGLE-ARM PREDICATE CALLS -- AND IT PRINTS **THE ANSWER'S IDENTITY** SO THE TWO
 # FORMS ARE KNOWN TO AGREE.
@@ -97,7 +97,7 @@ type Op is Data:
   OpsALLREDUCE{}
   OpsPYLITERAL{}
 
-# **THE OLD FORM: A MATCH ON TWO SCRUTINEES, 75 ARMS.** ⇒⇒⇒ AND THE ARMS ARE **IN THE ENUM's
+# **THE OLD FORM: A MATCH ON TWO SCRUTINEES, 75 ARMS.** AND THE ARMS ARE **IN THE ENUM's
 # ORDER**, WHICH IS WHAT THE PORT HAS TODAY, SO THE CHAIN POSITION IS THE COST.
 def eq_op(x: Op, y: Op) -> Bool:
   match x y:
@@ -246,8 +246,8 @@ def new_work(+op: Op) -> Bool:
           Bool.or(is_where(op), is_xor(op))))))
 
 # **THE **REPEATED** WORKLOAD, OVER THE **ELEVEN** OPS THE RENDER SEES, 64 TIMES.**
-# ⇒⇒⇒ **THE LIST IS ITS OWN `def` AND THE `match` HEADS IT** -- ⇒⇒⇒ ⇒⇒⇒ A `match` CANNOT
-# SCRUTINIZE A COMPUTED VALUE, AND A NESTED `match` ON A CALL IS REFUSED TOO. ⇒⇒⇒ ⇒⇒⇒ THIS IS THE
+# **THE LIST IS ITS OWN `def` AND THE `match` HEADS IT** -- A `match` CANNOT
+# SCRUTINIZE A COMPUTED VALUE, AND A NESTED `match` ON A CALL IS REFUSED TOO. THIS IS THE
 # TREE's HOUSE STYLE (`cstyle.bend`'s OWN `.go` SHAPE).
 def old_all.go(xs: List<&2, Op>) -> Bool:
   match xs:
@@ -259,7 +259,7 @@ def new_all.go(xs: List<&2, Op>) -> Bool:
     case Nil{}: False{}
     case h <> t: Bool.or(new_work(h), new_all.go(t))
 
-# ⇒⇒⇒ **THE TWO FORMS MUST AGREE**, AND A `Bool` IS LINEAR, SO THE COMPARISON TAKES **TWO**
+# **THE TWO FORMS MUST AGREE**, AND A `Bool` IS LINEAR, SO THE COMPARISON TAKES **TWO**
 # BOOLEANS AND READS EACH ONCE.
 def agree(a: Bool, b: Bool) -> Bool:
   match a:
@@ -275,7 +275,7 @@ def agree(a: Bool, b: Bool) -> Bool:
 def old_all(xs: List<&2, Op>) -> Bool: old_all.go(xs)
 def new_all(xs: List<&2, Op>) -> Bool: new_all.go(xs)
 
-# ⇒⇒⇒ **THE LIST IS **REPEATED** `n` TIMES**, AND `List.append` **PUTS ITS FIRST ARGUMENT
+# **THE LIST IS **REPEATED** `n` TIMES**, AND `List.append` **PUTS ITS FIRST ARGUMENT
 # FIRST** (MEASURED BY THE TREE's OWN PROBE, `.agents/slop/parity/probe/append-order.bend`), SO
 # `List.append(acc, [x])` **APPENDS** AT THE END.
 def rep.go(xs: List<&2, Op>, acc: List<&2, Op>) -> List<&2, Op>:
@@ -292,13 +292,13 @@ def main() -> IO(Unit):
                            OpsSTORE{}, OpsCONST{}, OpsRANGE{}, OpsWHERE{}, OpsXOR{}, OpsOR{}]
     ops2 : List<&2, Op> = [OpsCAST{}, OpsINDEX{}, OpsADD{}, OpsMUL{}, OpsLOAD{},
                            OpsSTORE{}, OpsCONST{}, OpsRANGE{}, OpsWHERE{}, OpsXOR{}, OpsOR{}]
-    # ⇒⇒⇒ **THE TWO FORMS MUST AGREE**, OR THE FAST ONE IS WRONG. ⇒⇒⇒ ⇒⇒⇒ AND THE WORKLOAD IS
-    # ⇒⇒⇒ ⇒⇒⇒ **RUN **SIXTY-FOUR** TIMES**, WHICH IS **7,744** COMPARISONS A SIDE.
-    # ⇒⇒⇒ **THE WORKLOAD IS **SEVENTY-FIVE** TIMES OVER** -- THE LIST IS **CONCATENATED** WITH
+    # **THE TWO FORMS MUST AGREE**, OR THE FAST ONE IS WRONG. AND THE WORKLOAD IS
+    # **RUN **SIXTY-FOUR** TIMES**, WHICH IS **7,744** COMPARISONS A SIDE.
+    # **THE WORKLOAD IS **SEVENTY-FIVE** TIMES OVER** -- THE LIST IS **CONCATENATED** WITH
     # ITSELF, AND `List.concat` IS **O(n)**, SO THE LIST IS BUILT ONCE AND CONCATENATED ONCE.
     big1 : List<&2, Op> = rep(ops1, 64n)
     big2 : List<&2, Op> = rep(ops2, 64n)
-    # ⇒⇒⇒ **A `Bool` IS **LINEAR** (`Bool.full_add`'s SIGNATURE IS `+b`), SO IT CANNOT BE READ
-    # TWICE. ⇒⇒⇒ ⇒⇒⇒ SO THE TWO FORMS ARE COMPARED **INSIDE** A HELPER THAT TAKES EACH ONCE.
+    # **A `Bool` IS **LINEAR** (`Bool.full_add`'s SIGNATURE IS `+b`), SO IT CANNOT BE READ
+    # TWICE. SO THE TWO FORMS ARE COMPARED **INSIDE** A HELPER THAT TAKES EACH ONCE.
     same : Bool = agree(old_all(big1), new_all(big2))
     IO.print(String.concat(["same ", B.b(same), "\n"]))

@@ -14,12 +14,12 @@ runs ONE program -- `(A @ B) @ C`, f32, the same arithmetic
     WEBGPU   UNAVAILABLE  failed to load library webgpu: try setting WEBGPU_PATH?
     BEND     AVAILABLE  BendDevice        (after `sys.modules['tinygrad.runtime.ops_bend'] = ops_bend`)
 
-**⇒ AND THE FOUR LANES THE OBJECTIVE NAMES ARE NOT FOUR THINGS.** "python to X"
+**AND THE FOUR LANES THE OBJECTIVE NAMES ARE NOT FOUR THINGS.** "python to X"
 is CPython scheduling and rendering; "bend to X" is the port's. For WEBGPU the
 Bend side has **no kernel-executing device at all** -- `runtime/ops_webgpu.bend`
 is a TRACE port and `webgpu_call.js` drives a call sequence with **CPython-rendered
 shaders**. For METAL the Bend side has **no device whatsoever**; `ops_metal.bend`
-is a render/trace port. **⇒ SO STAGES 1 AND 2 ARE QUESTIONS ABOUT **EMITTED CODE**,
+is a render/trace port. **SO STAGES 1 AND 2 ARE QUESTIONS ABOUT **EMITTED CODE**,
 AND STAGE 3 IS THE ONLY ONE WITH TWO RUNNING DEVICES.**
 
 ## 1. PYTHON TO WEBGPU vs BEND TO WEBGPU — MET AT THE CODE LEVEL
@@ -28,10 +28,10 @@ AND STAGE 3 IS THE ONLY ONE WITH TWO RUNNING DEVICES.**
     wgsl_render_census: PASS -- 227 rows x 3 lanes, 215 exact,
                         12 pinned lane divergences in 5 classes, 0 stale self-checks
 
-**⇒ 215 OF 227 WGSL ROWS ARE BYTE-IDENTICAL BETWEEN CPython's `renderer/wgsl.py`
+**215 OF 227 WGSL ROWS ARE BYTE-IDENTICAL BETWEEN CPython's `renderer/wgsl.py`
 AND THE PORT's `renderer/wgsl.bend`.** A byte-identical shader compiled by the same
 driver and dispatched with the same bindings runs at the same speed **by
-construction** -- there is no second artifact to be slower. **⇒ SO THE ONLY PLACE
+construction** -- there is no second artifact to be slower. **SO THE ONLY PLACE
 A SPEED DIFFERENCE COULD LIVE IS THE 12 DIVERGENCES, AND THEY ARE PINNED AND
 CLASSIFIED, NOT UNKNOWN.**
 
@@ -51,8 +51,8 @@ CLASSIFIED, NOT UNKNOWN.**
     kern2 METAL alu    identical=True bytes=406
     --- 11/11 identical ---
 
-**⇒ ALL ELEVEN KERNEL-TEXT ROWS ARE BYTE-IDENTICAL, INCLUDING ALL THREE METAL
-ONES.** Same source, same compiler, same speed. **⇒ AND THE HONEST LIMIT IS NAMED:
+**ALL ELEVEN KERNEL-TEXT ROWS ARE BYTE-IDENTICAL, INCLUDING ALL THREE METAL
+ONES.** Same source, same compiler, same speed. **AND THE HONEST LIMIT IS NAMED:
 THIS IS CODE PARITY, NOT EXECUTION-LANE PARITY**, because the port has no Metal
 device to time.
 
@@ -65,7 +65,7 @@ device to time.
 
     relative to CPU:  CPU 1.00x   PYTHON 391.21x   BEND 22634.89x
 
-**⇒ BEND IS 57.8x SLOWER THAN PYTHON ON THE SAME PROGRAM, AND IT IS BIT-EXACT TO
+**BEND IS 57.8x SLOWER THAN PYTHON ON THE SAME PROGRAM, AND IT IS BIT-EXACT TO
 IT** (`8.941e-08` on both, against CPU).
 
 ### 3.1 WHERE THE 57.8x GOES, DECOMPOSED
@@ -74,10 +74,10 @@ IT** (`8.941e-08` on both, against CPU).
     fixed overhead, 3-element add:   BEND 2184.7 ms    PYTHON 0.6 ms
     16x16 matmul (1 launch):         BEND 15451.9 ms   PYTHON 270.8 ms
 
-**⇒ SO OF A 15 452 ms LAUNCH, 2 185 ms IS FIXED** (the subprocess spawn and the hex
+**SO OF A 15 452 ms LAUNCH, 2 185 ms IS FIXED** (the subprocess spawn and the hex
 round trip `ops_bend.py`'s own header names) **and 5 540 ms IS THE 4 096 MACs AT
 1.35 ms/MAC**. The fixed cost is 28% of one small launch and would vanish into a
-bigger one; **⇒ THE INTERPRETER IS THE GAP, AND THE TARGET IS 41x, NOT 58x.**
+bigger one; **THE INTERPRETER IS THE GAP, AND THE TARGET IS 41x, NOT 58x.**
 
 ### 3.2 THE COST IS ALLOCATION, NOT ARITHMETIC — PROFILED, NOT GUESSED
 
@@ -101,22 +101,22 @@ The Bend executor was captured on one 16x16 matmul packet (9 544 bytes, 3 buffer
       +             ! 448 spin_85
       +             ! : 204 span_fade
 
-**⇒ 2216 OF 2333 SAMPLES ARE INSIDE `Prog_step`, AND ALMOST ALL OF THOSE ARE IN
+**2216 OF 2333 SAMPLES ARE INSIDE `Prog_step`, AND ALMOST ALL OF THOSE ARE IN
 `spin_85` → `span_fade` → `term_drop`** — which are the runtime's REFERENCE-COUNT
 machinery: spinning on a refcount, dropping a span of a block, dropping a term.
-**⇒ THE INTERPRETER IS NOT SLOW AT ARITHMETIC; IT IS SLOW AT **ALLOCATING AND
+**THE INTERPRETER IS NOT SLOW AT ARITHMETIC; IT IS SLOW AT **ALLOCATING AND
 FREEING ITS OWN STATE**.**
 
-**⇒ AND THAT IS A STRUCTURAL FACT ABOUT THE LOOP, NOT A MICRO-OPTIMISATION.**
+**AND THAT IS A STRUCTURAL FACT ABOUT THE LOOP, NOT A MICRO-OPTIMISATION.**
 `Prog.step` CONSTRUCTS A NEW 17-FIELD RECORD PER UOP
 (`ops_python.bend:2362`-ish, `Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy,
 gz, cx, cy, cz, bad, dead}`), and the previous record is dropped — so every one of
 the ~18 000 uop dispatches in a 16x16 matmul allocates a record, copies 17 fields,
 and then runs the full recursive teardown of the old one.
 
-**⇒ SO THE FIX IS THE ONE THE GUIDE ALREADY NAMES**: `Array<T>` is a `Type`, and
+**SO THE FIX IS THE ONE THE GUIDE ALREADY NAMES**: `Array<T>` is a `Type`, and
 `a[i] <- v` "overwrites the slot and hands back the same array, **with no copy**".
-**⇒ THE STATE MUST BECOME AN `Array` SO THE STEP MUTATES INSTEAD OF REBUILDING** —
+**THE STATE MUST BECOME AN `Array` SO THE STEP MUTATES INSTEAD OF REBUILDING** —
 not for O(1) indexing, which the micro-benchmark below shows is not the problem,
 but to stop the allocation/teardown that the profile says is 98% of the time.
 
@@ -167,7 +167,7 @@ and **each projection is its own `match` over the same record** -- so one
 single destructuring `match` each. **MEASURED: 30 806 -> 29 660 ms, 3.7%**, and the
 153-fixture census is unchanged at **0 divergences**.
 
-**⇒ 3.7% IS NOT PROGRESS TOWARD 55.7x AND IT IS NOT REPORTED AS SUCH.** It is a
+**3.7% IS NOT PROGRESS TOWARD 55.7x AND IT IS NOT REPORTED AS SUCH.** It is a
 real, bit-exact simplification that happens to be slightly faster.
 
 ## 4.2 THE ABLATIONS, AND WHY THEY MISLED ME — WRITTEN DOWN BECAUSE IT MATTERS
@@ -186,16 +186,16 @@ I ablated by replacing one def's body at a time and re-timing:
 | `Val.put` -> identity | 14 068 | 9% |
 | `Prog.src` -> zero | 14 090 | 8% |
 
-**⇒ THREE OF THOSE CANNOT ALL BE TRUE, AND I READ THEM AS IF THEY COULD.** `alu`,
+**THREE OF THOSE CANNOT ALL BE TRUE, AND I READ THEM AS IF THEY COULD.** `alu`,
 `ld1` and `store` each "accounting for 86%" is arithmetically impossible; the
 consistent explanation is that **`Prog.alu` is not "the arithmetic", it is the
 SHARED EVALUATOR** that `ld1`, `store` and `index` also route through — so
-disabling it stops the walk rather than removing one third of it. **⇒ AND I ACTED
+disabling it stops the walk rather than removing one third of it. **AND I ACTED
 ON THE MISREADING**: I landed fast paths for `MUL`/`ADD`/`SUB`/`MAX` in `alu2` and
 for `MULACC` in `alu3`, measured **0%** for both, and **REVERTED THEM** rather
 than leaving 40 lines of complexity that buy nothing.
 
-**⇒ THE LESSON IS THE ONE THE TREE ALREADY CARRIES ABOUT MUTATION HARNESSES**: an
+**THE LESSON IS THE ONE THE TREE ALREADY CARRIES ABOUT MUTATION HARNESSES**: an
 ablation that changes CONTROL FLOW is not a measurement of a cost, it is a
 measurement of a different program. **A COST ATTRIBUTION NEEDS A SAMPLING
 PROFILER WITH PER-SYMBOL LEAF COUNTS, NOT SUBTRACTION.**
@@ -208,7 +208,7 @@ and `term_drop`** — the runtime's reference-count spin, span release and term
 release. **And 14.7 s of the 14.9 s is USER CPU with 0.17 s of system**, so it is
 not page faults or allocation of large blocks.
 
-**⇒ THE NEXT INSTRUMENT IS A PER-SYMBOL LEAF CENSUS** — sum the SELF samples under
+**THE NEXT INSTRUMENT IS A PER-SYMBOL LEAF CENSUS** — sum the SELF samples under
 `Prog_step` by symbol rather than reading the call tree's nesting, which is what I
 did and what produced the impossible 3x86%. Only then is "make `Prog` an `Array`"
 justified or refuted; the guide's `a[i] <- v` ("overwrites the slot ... with no
@@ -218,7 +218,7 @@ landed.**
 ### 4.4 THE PER-SYMBOL LEAF CENSUS §4.3 ASKED FOR, FROM THE SAME SAMPLE
 
 `sample` writes a SELF-TIME table at the end of the file, and §4.2 did not read it.
-**⇒ SO THE ATTRIBUTION WAS IN THE ARTIFACT ALL ALONG AND I READ THE CALL TREE
+**SO THE ATTRIBUTION WAS IN THE ARTIFACT ALL ALONG AND I READ THE CALL TREE
 INSTEAD OF IT:**
 
     Sort by top of stack, same collapsed (when >= 5):
@@ -232,20 +232,20 @@ INSTEAD OF IT:**
         spin_82                                           7
         WL_FID_Prog_step                                  5
 
-**⇒ `span_fade` (release a span of arena cells) + `term_drop` (release a term) =
+**`span_fade` (release a span of arena cells) + `term_drop` (release a term) =
 1 902 OF 2 333 SAMPLES = 82%, AND WITH THE `spin_*` REFERENCE-COUNT SPINS IT IS
-94%.** **⇒ THE INTERPRETER IS 94% MEMORY RELEASE.** It is not slow at arithmetic,
+94%.** **THE INTERPRETER IS 94% MEMORY RELEASE.** It is not slow at arithmetic,
 it is not slow at list scans, and it is not slow at decoding: it is slow at
 **FREEING WHAT IT JUST ALLOCATED**, which is the functional-update churn
 `Prog.step` creates and the one `Array<T>`'s `a[i] <- v` ("overwrites the slot ...
 with no copy") exists to remove.
 
-**⇒ SO THE `Array` REWRITE IS NOW JUSTIFIED BY A NUMBER AND NOT BY A HUNCH** — and
+**SO THE `Array` REWRITE IS NOW JUSTIFIED BY A NUMBER AND NOT BY A HUNCH** — and
 that is the difference between the 3.7% I landed and the fix that has not been
 written. It has NOT been written: **§3's 55.7x stands, and this report does not
 claim otherwise.**
 
-**⇒ AND THE METHOD LESSON IS THE ONE WORTH KEEPING**: `sample` writes both a call
+**AND THE METHOD LESSON IS THE ONE WORTH KEEPING**: `sample` writes both a call
 tree AND a self-time census, and reading only the tree produced three mutually
 impossible "86%" readings from a table that said 82% in one line. **A PROFILE HAS
 MORE THAN ONE VIEW AND THE CHEAPER ONE WAS THE RIGHT ONE.**
@@ -264,14 +264,14 @@ CONTROL ITSELF WAS INVALID, AND IT IS THE ONE EVERY OTHER READING WAS DIVIDED BY
 
 Read as "the loop is 148 ms of 15 385, so the op handlers are 99%".
 
-**⇒ AND THAT IS NOT WHAT IT MEASURED.** With `Prog.step` replaced by `Prog.next`,
+**AND THAT IS NOT WHAT IT MEASURED.** With `Prog.step` replaced by `Prog.next`,
 the pc ADVANCES EVERY STEP AND NEVER JUMPS -- `END` never returns to its RANGE and
-`BACKEDGE` never loops. **⇒ SO THE WALK TERMINATES AFTER ~70 STEPS INSTEAD OF THE
+`BACKEDGE` never loops. **SO THE WALK TERMINATES AFTER ~70 STEPS INSTEAD OF THE
 18 000 A 16x16 MATMUL TAKES.** The 148 ms is a SEVENTY-STEP program; the 15 385 ms
 is an eighteen-thousand-step one. **They are not the same denominator, and every
 "X is Y% of the total" reading in §4.2 inherits the error.**
 
-**⇒ AND THE SAME FAULT IS IN THE HANDLER ABLATIONS**: replacing `Prog.rng` or
+**AND THE SAME FAULT IS IN THE HANDLER ABLATIONS**: replacing `Prog.rng` or
 `Prog.alu` with `Prog.next` also stops the walk from looping, which is why
 `alu`, `ld1` and `store` EACH came out as "86%" -- **EACH OF THEM WAS MEASURED
 AGAINST A PROGRAM THAT HAD STOPPED LOOPING.**
@@ -286,7 +286,7 @@ AGAINST A PROGRAM THAT HAD STOPPED LOOPING.**
 | `Val.put` -> identity | 14 068 | **9%** |
 | `Prog.src` -> zero | 14 090 | **8%** |
 
-**⇒ SO NONE OF THE FOUR BIG LIST OPERATIONS IS THE COST, AND THE `Array` REWRITE
+**SO NONE OF THE FOUR BIG LIST OPERATIONS IS THE COST, AND THE `Array` REWRITE
 OF `us`/`vs`/`ms` IS **NOT** JUSTIFIED BY THESE NUMBERS.** The remaining ~13 s is
 inside the handlers' own bodies, and **the ONLY attribution that survives is the
 one from `sample`'s self-time table: `span_fade` 1019 + `term_drop` 883 + `spin_*`
@@ -294,7 +294,7 @@ one from `sample`'s self-time table: `span_fade` 1019 + `term_drop` 883 + `spin_
 measurement of the REAL program, not of an ablated one, and it is the only one in
 this report that is.
 
-**⇒ AND `span_fade`/`term_drop` RELEASE WHAT IS ALLOCATED — SO THE QUESTION IS
+**AND `span_fade`/`term_drop` RELEASE WHAT IS ALLOCATED — SO THE QUESTION IS
 "WHAT ALLOCATES", AND THE ABLATIONS SAY IT IS NOT THE FOUR LIST OPERATIONS.** The
 candidates left are the record rebuilds themselves (18 000 of them, each 18 fields
 with 6 list pointers that are RC-incremented then RC-decremented) and `Elem`/`Uop`
@@ -306,11 +306,11 @@ construction inside the handlers.
 justified.** Converting `us`/`vs`/`ms` to in-place `Array` state was the reviewer's
 next step and §4.4's conclusion; §5.2 REFUTES that conclusion with four
 measurements on the real program showing those four operations are 4-9% each.
-**⇒ A REWRITE THAT REMOVES 4-9% OF THE COST CANNOT CLOSE A 55.6x GAP, AND STARTING
+**A REWRITE THAT REMOVES 4-9% OF THE COST CANNOT CLOSE A 55.6x GAP, AND STARTING
 IT ON THE STRENGTH OF A NOTE I WROTE MYSELF WOULD HAVE BEEN THE SAME MISTAKE AS
 §4.2, ONE LEVEL UP.**
 
-**⇒ AND THE HONEST STATE OF THE GOAL IS UNCHANGED**: BEND is 55.6x slower than
+**AND THE HONEST STATE OF THE GOAL IS UNCHANGED**: BEND is 55.6x slower than
 PYTHON, one bit-exact 3.7% change has landed, and **every one of the three stages
 is still unmet.**
 
@@ -328,7 +328,7 @@ I hoped.**
     $ /tmp/exec_dbg /tmp/pkt/PACKET.in 1 1 1 &                          # 15.61 s, 14.49 user
     $ sample $PID 4 -fullPaths -file /tmp/dbg.sample
 
-**⇒ AND THE C IS THE COMPILER'S OWN OUTPUT**, so every symbol below is a Bend def
+**AND THE C IS THE COMPILER'S OWN OUTPUT**, so every symbol below is a Bend def
 and not a guess: `executor.bend.c` and `executor-dbg.sample.txt` are committed
 beside this report.
 
@@ -343,7 +343,7 @@ beside this report.
         WL_FID_run               30
         WL_FID_Prog_step          8
 
-**⇒ `span_fade` + `term_drop` + `spin_85` = 2 943 OF THE EXECUTOR's ~3 090 SAMPLES
+**`span_fade` + `term_drop` + `spin_85` = 2 943 OF THE EXECUTOR's ~3 090 SAMPLES
 = 95%, AND `Prog_step` ITSELF IS 8 SAMPLES.** The interpreter spends 95% of its
 time in the runtime's REFERENCE-COUNT RELEASE, and 0.3% in its own dispatch.
 
@@ -353,12 +353,12 @@ time in the runtime's REFERENCE-COUNT RELEASE, and 0.3% in its own dispatch.
    `task_node(e, FID_Prog_step, ...)` + 18 `e.mem[...] = _pr_N` stores -- **BUT THE
    BRANCH IS `if (!DEVICE && !seq && fid_nofk(...))`, and `seq = stride == 0`
    (`:63498`).** Single-threaded, `stride == 0`, so `seq` is TRUE and **the frame
-   is never allocated**. **⇒ DEAD.**
+   is never allocated**. **DEAD.**
 2. **"It is the worker pool contending on the allocator's bank lock."**
    `bank_push` does `LOCK(bank_lock)`, and `__psynch_cvwait` tops the table -- **but
    `--threads 1` changes nothing (14.76 s vs 14.71 s), and cvwait is the SAMPLER's
    own thread, which sleeps for the whole run and therefore tops every such
-   table.** **⇒ DEAD, and the reading was noise.**
+   table.** **DEAD, and the reading was noise.**
 3. **"`heap_alloc` grows the arena."** `heap_alloc_miss` only falls back to
    `corpus_grow` when a bump fails; a 16x16 packet never exhausts it.
 4. **"The four list operations."** Already refuted in §5.2: `Mem.put` 4%,
@@ -369,18 +369,18 @@ time in the runtime's REFERENCE-COUNT RELEASE, and 0.3% in its own dispatch.
 
 ## 6.4 WHAT IS LEFT, AND WHY I AM STOPPING HERE
 
-**⇒ WHAT IS ESTABLISHED**: 95% of the executor's time is `term_drop`/`span_fade`/
+**WHAT IS ESTABLISHED**: 95% of the executor's time is `term_drop`/`span_fade`/
 `spin_85`, and it is NOT the record rebuild, NOT the four list operations, NOT a
 task frame, NOT threading, and NOT the arena growing.
 
-**⇒ WHAT I CANNOT DO WITH THE INSTRUMENTS I HAVE**: say WHICH allocation is being
+**WHAT I CANNOT DO WITH THE INSTRUMENTS I HAVE**: say WHICH allocation is being
 released. `term_drop`/`span_fade` are the runtime's generic free path, and `sample`
 attributes time to the FREE rather than to the allocation that made it necessary.
 Finding it needs either an allocation-site profile (which Bend's runtime does not
 expose) or an instrumented rebuild of the runtime -- **not another ablation, and
 not another guess.**
 
-**⇒ AND EIGHT ATTEMPTS HAVE PRODUCED 3.7%.** The honest summary of stage 3 is:
+**AND EIGHT ATTEMPTS HAVE PRODUCED 3.7%.** The honest summary of stage 3 is:
 BEND is 55.6x slower than PYTHON, the cost is 95% reference-count release, and I
 have not identified the allocation that requires it. **I am stopping rather than
 landing a ninth speculative change.**
@@ -404,7 +404,7 @@ is untouched.**
     CTR heap_alloc=272720 term_drop=67908 span_fade_terms=116338
     real 0.01
 
-**⇒ THE PACKET PARSE IS 0.01 s AND 67 908 `term_drop` CALLS.** So 2 412 939 949 -
+**THE PACKET PARSE IS 0.01 s AND 67 908 `term_drop` CALLS.** So 2 412 939 949 -
 67 908 ≈ **2.41 BILLION drops are the RUN LOOP**, and the parse is 0.07% of them.
 
 ## 7.2 AND 8x8 vs 16x16 SAYS IT IS NOT THE COMPUTE EITHER
@@ -421,10 +421,10 @@ which is the signature of `steps x arena`.
 `vs` and `Prog.bytes(...)` for `ms`. For this packet `ms` is **3 buffers x 1 024
 bytes = 3 072** cells and `vs` is the slot count, **~70**.
 
-**⇒ 2 412 939 949 / (3 072 + 70) = 767 000 STEPS.** And a 16x16 matmul is 4 096
+**2 412 939 949 / (3 072 + 70) = 767 000 STEPS.** And a 16x16 matmul is 4 096
 MACs; at ~180 uops per MAC that is **737 000 steps. THE TWO NUMBERS AGREE.**
 
-**⇒ SO EVERY ONE OF THE ~767 000 UOP STEPS DROPS AND REBUILDS THE 3 072-CELL
+**SO EVERY ONE OF THE ~767 000 UOP STEPS DROPS AND REBUILDS THE 3 072-CELL
 ARENA, AND `term_drop` IS CALLED ONCE PER CELL.** That is `steps x arena` -- 2.3
 billion refcount calls at ~4 ns each = **9 s of the 15 s**, which matches §6's 95%
 in `term_drop`/`span_fade`.
@@ -432,12 +432,12 @@ in `term_drop`/`span_fade`.
 ## 7.4 SO §5.2 WAS WRONG, AND I SAY WHICH PART
 
 §5.2 concluded "`Mem.put` is 4%, so the `Array` rewrite removes 4-9% and cannot
-close the gap". **⇒ THAT ABLATION REPLACED `Mem.put` WITH IDENTITY, WHICH MAKES
+close the gap". **THAT ABLATION REPLACED `Mem.put` WITH IDENTITY, WHICH MAKES
 STORES NO-OPS -- IT CHANGED THE PROGRAM, AGAIN.** The counter does not change the
 program: it says the arena is walked once per step, and a step that stores nothing
 still walks it, which is exactly why the ablation under-reported.
 
-**⇒ THE `Array` REWRITE IS CORRECT AND IS NOW JUSTIFIED BY A COUNT AND NOT BY A
+**THE `Array` REWRITE IS CORRECT AND IS NOW JUSTIFIED BY A COUNT AND NOT BY A
 HUNCH**: an `Array` field is a POINTER THAT MOVES, so dropping the record stops
 walking 3 072 cells, and `a[i] <- v` rewrites the slot in place.
 
@@ -445,7 +445,7 @@ walking 3 072 cells, and `a[i] <- v` rewrites the slot in place.
 
 **The rewrite is not written.** It is a change to `Prog`'s type across ~12 reader
 defs and 8 record constructions, and the only safety net is
-`gates/ops_python_exec-gate.py` (153 fixtures, 0 divergences). **⇒ THE DIAGNOSIS IS
+`gates/ops_python_exec-gate.py` (153 fixtures, 0 divergences). **THE DIAGNOSIS IS
 NOW SETTLED AND THE WORK IS NOT**, and stage 3's 55.6x stands until it is.
 
 ## 7.6 WHAT THE COUNTER CANNOT EXPLAIN — AND WHERE I STOP
@@ -456,20 +456,20 @@ exactly once. So the runtime is calling `term_drop` ~400x more often than the he
 says it should, which is the shape of a QUADRATIC in the RC accounting and not of
 a hot loop.
 
-**⇒ AND §7.3's `steps x arena` ARITHMETIC, WHILE IT LANDS ON 2.41e9 EXACTLY, IS
+**AND §7.3's `steps x arena` ARITHMETIC, WHILE IT LANDS ON 2.41e9 EXACTLY, IS
 THEREFORE NOT PROOF** -- two independent quantities agreeing to three digits is
 what coincidence looks like when both are built from 3 072. **THE FALSIFIABLE
 STATEMENT THE COUNT SUPPORTS IS ONLY THIS: `term_drop` IS CALLED 401 TIMES PER
 ALLOCATION, WHICH NO CORRECT REFCOUNT SHOULD DO.**
 
-**⇒ AND ONE MORE CHANGE WAS TRIED AND DID NOT MOVE IT**: `Prog.at`/`vs1`/`ms1`/
+**AND ONE MORE CHANGE WAS TRIED AND DID NOT MOVE IT**: `Prog.at`/`vs1`/`ms1`/
 `mk1`/`live.at` took `p` as a REUSABLE (`+`) parameter, and a hypothesis that this
 forced a clone on every field bind was worth one word -- **MEASURED 29 683 ->
 29 973 ms, i.e. NOTHING**, and the tight version is kept only because it is
 semantically correct (each reads its 18 fields exactly once) and the census still
 reads 153 fixtures / 0 divergences.
 
-**⇒ SO NINE ATTEMPTS HAVE PRODUCED 3.7%, AND THE LAST FOUR MEASUREMENTS SAY THE
+**SO NINE ATTEMPTS HAVE PRODUCED 3.7%, AND THE LAST FOUR MEASUREMENTS SAY THE
 COST IS A REFCOUNT ACCOUNTING QUADRATIC INSIDE BEND'S RUNTIME** -- `term_drop`
 called 401x per allocation, on a program whose parse is 0.01 s and whose
 interpreter dispatch is 0.3% of samples. **THAT IS NOT SOMETHING I CAN FIX FROM
@@ -494,7 +494,7 @@ The one that worked counts calls inside a COPY of the compiler's own C
     spin86_calls = 4 121 245      # the uop-table walker
     steps        = 4 000 000
 
-**⇒ ONE WALK PER STEP, NOT SIX.** That single number explains four earlier results at
+**ONE WALK PER STEP, NOT SIX.** That single number explains four earlier results at
 once: §5's ablation control (70 steps instead of 18 000), §7.4's `Mem.put` identity
 (4%), and this session's two attempts below (0%), because none of them touched the
 walk that runs once per step.
@@ -516,7 +516,7 @@ The arithmetic closes to three digits.
 | `Prog.alu.at` projects `p`/`u` ONCE instead of 17 times | 29 900 -> 29 900 ms (**0%**) |
 | pre-resolve each src's SLOT at load (`Uop.sslot`), deleting 5 of 6 walks | 29 900 -> 33 154 ms (**0% per step**, +0.82 s at load) |
 
-**⇒ AND BOTH ARE EXPLAINED BY §9.1**: `Prog.src` is not called per step on this kernel,
+**AND BOTH ARE EXPLAINED BY §9.1**: `Prog.src` is not called per step on this kernel,
 so removing its walks could not help; the per-step walk is `Prog.step`'s. Both changes
 were reverted; the second was reverted for adding 0.82 s of load for nothing.
 
@@ -528,7 +528,7 @@ were reverted; the second was reverted for adding 0.82 s of load for nothing.
     Prog.at    re-seeks with List.drop   O(target) -- a JUMP, once per loop iteration
     Prog.step  reads the head            O(1)     -- was O(pc)
 
-**⇒ AND IT IS BIT-EXACT**: `ops_python_exec: PASS -- 153 fixtures, 365 rows x 2 lanes,
+**AND IT IS BIT-EXACT**: `ops_python_exec: PASS -- 153 fixtures, 365 rows x 2 lanes,
 365 unpinned identical`, and the bench still reads the same `max|diff vs CPU| 8.941e-08`.
 
 ## 9.5 MEASURED
@@ -541,7 +541,7 @@ were reverted; the second was reverted for adding 0.82 s of load for nothing.
     before this change:  BEND 29 900 ms/iter  ->  12.3x faster
     PYTHON/BEND: 56x -> 4.4x
 
-**⇒ AND AT 32x32 IT IS 14.45x, WHICH NAMES THE NEXT ONE**: BEND 38 754.96 vs PYTHON
+**AND AT 32x32 IT IS 14.45x, WHICH NAMES THE NEXT ONE**: BEND 38 754.96 vs PYTHON
 2 682 ms (`--iters 1 --size 32`; the ratios are 24 962x and 1 727x against a CPU of
 1.553 ms). The gap GROWS with the program because the arena grows: `Mem.put` is
 `List.set` and `Mem.byte` is `List.get`, both **O(byte address)**, and the address
@@ -557,7 +557,7 @@ allocation stream.
 | 3. PYTHON vs BEND (16x16) | **547.18 vs 2 426.89 ms — BEND is 4.4x SLOWER** |
 | 3. PYTHON vs BEND (32x32) | **2 682 vs 38 754.96 ms — BEND is 14.45x SLOWER** |
 
-**⇒ THE GOAL IS NOT MET AND IS NOT CLOSE ON THE BIGGER PROGRAM.** What is established:
+**THE GOAL IS NOT MET AND IS NOT CLOSE ON THE BIGGER PROGRAM.** What is established:
 the per-step cost is now the arena's O(address) list access plus the per-step record
 rebuild, not the interpreter's dispatch; and the `Array` conversion of `ms` — the one
 this report twice argued about — is the fix that §9.5's scaling points at.
@@ -575,7 +575,7 @@ compiler's own C:
     16x16     4.0M      6 011 615    144 100 967      227 599 233
     32x32    16.0M    117 081 988   2 623 935 890   5 497 119 626
 
-**⇒ 19.5x the allocations for 4x the steps**, and the run went 1.6 s -> 18.2 s. The
+**19.5x the allocations for 4x the steps**, and the run went 1.6 s -> 18.2 s. The
 cause is `Mem.put = List.set(ms, at, v)`: a store rebuilds every cons before its byte
 address, and the address scales with the buffer. `Mem.byte = List.get` walks them.
 
@@ -607,13 +607,13 @@ Re-counted with the counters after the change:
     16x16       4 838 454   91 922 533     27 621 516 / 121 499 517
     32x32      96 906 491  970 089 328    496 747 816 / 2 135 511 942
 
-**⇒ 32x32 IS 31 SHARED-RECORD COPIES PER STEP AVERAGING 4.3 FIELDS** (496.7M calls /
+**32x32 IS 31 SHARED-RECORD COPIES PER STEP AVERAGING 4.3 FIELDS** (496.7M calls /
 16M steps; 2.135e9 terms / 496.7M calls), plus 60 `term_drop`s per step. And
 `WL_FID_List_set` is **2% of self-time** now, so the arena copy is no longer the
 biggest term; the 4-field copies are (`S.Dt`, `Buf`, `Elem` projections on shared
 values, each of which the runtime copies so both holders can drop them).
 
-**⇒ SO THE REMAINING 2.45x / 4.97x IS SPREAD OVER SMALL-RECORD CHURN, NOT A LOOP TO
+**SO THE REMAINING 2.45x / 4.97x IS SPREAD OVER SMALL-RECORD CHURN, NOT A LOOP TO
 UNROLL.** Cutting it needs either mutable state (an `Array` of counters threaded
 through the step, which `Prog.step`'s `(Array & Prog)` return would force through
 every handler) or eliminating dozens of small projections — neither is a one-line
@@ -628,7 +628,7 @@ change, and neither is started.
 | 3. PYTHON vs BEND (16x16) | **530.17 vs 1 298.83 ms — 2.45x slower** |
 | 3. PYTHON vs BEND (32x32) | **2 619.6 vs 13 008.49 ms — 4.97x slower** |
 
-**⇒ NOT MET.** Two changes have landed this session (the cursor: 12.3x; the chunks:
+**NOT MET.** Two changes have landed this session (the cursor: 12.3x; the chunks:
 1.87x/2.98x), both bit-exact, and the gap has gone 56x -> 2.45x at 16x16.
 
 ---
@@ -751,7 +751,7 @@ census is now only 222 356 280 arity-2 copies. So the remaining cost is ALLOCATI
 not copying: every `Mem.wr` rebuilds its chunk (`List.set(ch, co, ...)` allocates
 `co` conses) plus the spine, and every `Val.put` rebuilds `vs` up to its slot.
 
-**⇒ AND THAT IS WHERE LIST SURGERY STOPS BEING ABLE TO HELP.** A persistent list costs
+**AND THAT IS WHERE LIST SURGERY STOPS BEING ABLE TO HELP.** A persistent list costs
 a rebuild per write however it is chunked; `ops_python` mutates a `memoryview` in
 place. Closing the last ~1.7x needs the arena and the value list to be MUTABLE, i.e.
 `Array`, and the blocker is structural: `Array<T>` is a `Type`, so it cannot live in
@@ -887,7 +887,7 @@ upstream's text only.
     kernel|sha_upstream|sha_port|identical|bytes|bend_rc
     r_32_2_4_4_4|388b424179b5623e|a554f3031c807a95|no|6012|0
 
-**⇒ IDENTICAL: NO.** Upstream's MSL is 6 012 bytes over 128 lines; the port's is 5 064
+**IDENTICAL: NO.** Upstream's MSL is 6 012 bytes over 128 lines; the port's is 5 064
 over 118, and the first differences are structural:
 
     upstream                                          port
@@ -905,7 +905,7 @@ over 118, and the first differences are structural:
 
     KANone{} | KAConst{} | KAParam{} | KARange{} | KAIndex{} | KASink{}
 
-**⇒ THERE IS NO CONSTRUCTOR FOR `Ops.SPECIAL`.** A kernel whose uop list contains a
+**THERE IS NO CONSTRUCTOR FOR `Ops.SPECIAL`.** A kernel whose uop list contains a
 SPECIAL -- and a matmul's thread-id arithmetic is built out of SPECIALs -- cannot be
 expressed in the port's KU input at all, so the renderer emits `UNHANDLED(Ops.SPECIAL)`
 where upstream emits `lid.x`. (`gen_kus.one()` also has no SPECIAL branch, so the
@@ -1030,7 +1030,7 @@ So `constant float& alu0 = ...` was text no kernel in this tree ever had, and a 
 bfloat16 was spelled `hip_bfloat16` on the strength of a comment that cited a line of
 `cstyle.py` that does not contain it.
 
-**⇒ AND THE GATE IS NOW GREEN:**
+**AND THE GATE IS NOW GREEN:**
 
     cstyle_render_census-gate: 361 rows, 3 lanes byte-identical over the wide surface,
     15 DECLARED divergences ... 0 disagreeing
@@ -1056,7 +1056,7 @@ mystery, and none of it is SPECIAL:
 4. **The vector typedef** -- upstream's Metal text uses native `float2`; the port emits
    `typedef float float2 __attribute__((aligned(4),ext_vector_type(2)));`.
 
-**⇒ SO STAGE 2 IS NOT "ONE MISSING CONSTRUCTOR" ANY MORE -- IT IS A METAL CODEGEN MODE
+**SO STAGE 2 IS NOT "ONE MISSING CONSTRUCTOR" ANY MORE -- IT IS A METAL CODEGEN MODE
 THE PORT DOES NOT HAVE.** 1-4 are features, and the honest next step is to pick them in
 that order: the preamble and `extra_args` are the two that change the SIGNATURE, and
 nothing downstream can match until they do.
@@ -1075,7 +1075,7 @@ Now:
     ok M11 the oracle drops the REFUSE marker: rc=1, 15 row(s)
     == 11 of 11 mutations moved rows
 
-**⇒ SO THE GATE IS NOT MERELY GREEN: ITS ELEVEN PLANTS EACH STILL MOVE ROWS.** A green
+**SO THE GATE IS NOT MERELY GREEN: ITS ELEVEN PLANTS EACH STILL MOVE ROWS.** A green
 gate with dead plants would be the "row that cannot go red" this tree keeps warning
 about, and the two invented spellings had been doing exactly that -- the comparator was
 red, so the harness reported that its baseline did not reproduce, and the eleven plants
@@ -1109,7 +1109,7 @@ why upstream's Metal text has native `float2`.
                                                   uint3 lid [[thread_position_in_threadgroup]]) {
                                                   device float* data0_1024 = args.data0_1024; ...
 
-**⇒ THE FIRST FIVE LINES OF THE PORT'S KERNEL ARE NOW BYTE-IDENTICAL TO UPSTREAM'S**,
+**THE FIRST FIVE LINES OF THE PORT'S KERNEL ARE NOW BYTE-IDENTICAL TO UPSTREAM'S**,
 and the differing-line count went 80 -> 73.
 
     stage2-metal.rows: identical|no   sha_port a554f... -> cd2ec56 -> cb35c7a1e921809
@@ -1131,7 +1131,7 @@ The diff is now exactly two things, and the second is bigger than the first:
    `u.arg[1]` (the input dtype) -- **and the port's `KU` does not carry them**: the capture
    writes `270|WMMA|f32|ALU|2|2|231 245 259|plain|-`, kind `plain`, payload `-`.
 
-**⇒ SO FINISHING STAGE 2 IS THREE MORE COUPLED EDITS:** a `KAWmma{dims, dt_in}` in
+**SO FINISHING STAGE 2 IS THREE MORE COUPLED EDITS:** a `KAWmma{dims, dt_in}` in
 `KUArg`, a WMMA case in `dump_uops` (payload `8x8x8~f32`), a `wmma_args`-equivalent scan
 over the KU list, and `ku_text_wmma` answering `__{name}({s0}, {s1}, {s2})`. The helper
 block is the easy half; the ARG is the load-bearing half, because without it the name
@@ -1230,7 +1230,7 @@ is CORRECT (`out[i] = fma(out[i], 2.0, 1.0)` over a zeroed buffer -> every lane 
 2. **A PAGE-LOAD RACE MADE THE SAME FILE DISAGREE WITH ITSELF**: one run answered
    `navigator.gpu absent`, the next answered `metal-3`. It now polls `location.href` AND
    `typeof navigator.gpu` before asking the question. Three consecutive runs agree.
-   **⇒ AND A REFUSAL THAT A RACE CAN FABRICATE IS NOT EVIDENCE.** That is why the poll is
+   **AND A REFUSAL THAT A RACE CAN FABRICATE IS NOT EVIDENCE.** That is why the poll is
    in the file rather than in a comment.
 
 ## 19.3 AND THE REAL BLOCKER, WHICH IS NOW MEASURED RATHER THAN ASSUMED
@@ -1243,7 +1243,7 @@ uops. Both of these were tried, on kernels captured from a live `METAL` run:
     WGSLRenderer(Target('webgpu')).render(uops)   # a plain 64x64 elementwise (a*b+a)
       -> AttributeError: 'NoneType' object has no attribute 'replace'
 
-**⇒ THAT IS THE `float4 = None` WALL, AND IT IS UPSTREAM'S OWN WALL**: `WGSLRenderer` sets
+**THAT IS THE `float4 = None` WALL, AND IT IS UPSTREAM'S OWN WALL**: `WGSLRenderer` sets
 `supports_float4 = False` and `float4 = None`, and the `Ops.STACK` arm is
 `self.float4.replace('float4', render_type(x))`. A CPU/METAL uop list still CONTAINS the
 STACK (the vectorised store); the WebGPU `extra_matcher` rewrites it away, but only while
@@ -1263,7 +1263,7 @@ has built for WGSL.
 | is there a driver? | "no WGSL driver anywhere" | **YES, measured**: apple/metal-3, compiles, runs, times, correct |
 | why can't a real kernel be timed? | unknown | **WGSL needs WebGPU-lowered uops; `render()` on a CPU/METAL list hits `float4 = None`, measured on TWO kernels; and the port has no real-uop to WGSL-kernel path** |
 
-**⇒ THE 12 PINNED WGSL DIVERGENCES ARE STILL NOT RUN, AND NOW THE REASON IS SPECIFIC: they
+**THE 12 PINNED WGSL DIVERGENCES ARE STILL NOT RUN, AND NOW THE REASON IS SPECIFIC: they
 are differences between two TEXT FRAGMENTS over synthetic fixtures, and turning either side
 into a compilable kernel needs a lowering step this tree cannot perform on this machine.**
 Building that (a manual `wgsl_matcher` pass over a captured uop list, on both sides) is the
@@ -1297,7 +1297,7 @@ the numbers were the cost of handing work to a queue. The harness now calls
 0.161 / 0.021 / 0.017 / 0.020 ms -- two orders of magnitude apart from the wrong number, and
 in the shape you would expect (the 32x32 matmul is ~8x the 16x16 one).
 
-**⇒ AND WITHOUT THE BROADENING THIS WOULD NOT HAVE SHOWN**: one program's 0.01 ms is
+**AND WITHOUT THE BROADENING THIS WOULD NOT HAVE SHOWN**: one program's 0.01 ms is
 "plausible" for a single launch; four programs at 0.00-0.01 ms is a signature.
 
 ## 20.2 ONE CONVERTER GAP THE BROADENING FOUND
@@ -1357,7 +1357,7 @@ bind the live buffers, dispatch. Nothing in the artifact is hand-written WGSL.
 3. **The buffer order.** The first correct run answered `matched=(a*b)+b` where the program
    is `a*b + a`. The emitted body is `data0 = data2*data1 + data2`, so under my binding
    `(out, a, b)` it computes `a*b + b`; the PARAM order is `(out, b, a)` and the kernel is
-   RIGHT. **⇒ THE TWO-EXPECTATION CHECK IS WHAT CAUGHT IT**: a harness that had checked one
+   RIGHT. **THE TWO-EXPECTATION CHECK IS WHAT CAUGHT IT**: a harness that had checked one
    expectation would have reported "4.62e+0, wrong answer" and sent me hunting a renderer
    defect that did not exist.
 
@@ -1373,7 +1373,7 @@ no function in `wgsl.bend` that WALKS an arena of uops and emits the body -- the
 renderers (`render_load`, `render_cast`, `render_kernel`'s partitioner, ...) all exist and
 are gate-covered, but the thing that connects them to a uop list does not.
 
-**⇒ SO STAGE 1 STILL HAS NO COMPARISON, AND NOW THE REMAINING WORK IS ONE MISSING WALKER ON
+**SO STAGE 1 STILL HAS NO COMPARISON, AND NOW THE REMAINING WORK IS ONE MISSING WALKER ON
 ONE SIDE**, not a missing driver (proven), not a missing corpus format (this file produces a
 real kernel both sides could take), and not a missing lowering (NOOPT=1 sidesteps it).
 
@@ -1401,7 +1401,7 @@ same list. With an EMPTY body it still emits the prologue, the bindings and the 
     @group(0) @binding(3)var<storage,read_write>data2_1024:array<f32>;
     @compute @workgroup_size(1) fn E_1024(@builtin(workgroup_id) gindex: vec3<u32>,@builtin(local_invocation_id) lindex: vec3<u32>) {
 
-**⇒ ALL SEVEN LEADING LINES ARE BYTE-IDENTICAL TO CPython's, on a kernel the scheduler made
+**ALL SEVEN LEADING LINES ARE BYTE-IDENTICAL TO CPython's, on a kernel the scheduler made
 and not on a fixture** -- the prologue, all four bindings and the `@compute` signature,
 including the `data{slot}_{numel}` names and the workgroup size.
 
@@ -1440,7 +1440,7 @@ is quoted as a range and the LOAD is the reason, not the shader.
 | bend module | **byte-identical**, 7/7 leading lines on the real kernel |
 | bend body | **ABSENT** -- the uop->body walk, ~200 lines, not started |
 
-**⇒ STAGE 1 IS STILL NOT MET, AND THE REMAINING WORK IS ONE FUNCTION.**
+**STAGE 1 IS STILL NOT MET, AND THE REMAINING WORK IS ONE FUNCTION.**
 
 ---
 
@@ -1479,7 +1479,7 @@ The walk first went INSIDE `wgsl.bend`, and the census gate went red:
       258c37970b354a3d != pinned 4ad7ca714528448a -- a site was added, removed or edited,
       and nobody re-decided
 
-**⇒ THAT IS THE GATE WORKING.** `CAST_SITE_PIN` pins the bytes of every `OpsCAST` site so a
+**THAT IS THE GATE WORKING.** `CAST_SITE_PIN` pins the bytes of every `OpsCAST` site so a
 new site cannot appear without someone re-deciding its ROLE; the walk needs a `case
 O.OpsCAST{}` MATCH arm, which is not a CAST being folded. Rather than re-pin a tripwire
 around code that is not a renderer table, the walk moved to `wgsl_walk.bend`, which calls
@@ -1494,7 +1494,7 @@ The first version timed each side in sequence and read `python 0.2000 | bend 1.1
 the drift. The driver now builds both pipelines, warms both, and INTERLEAVES the timed runs,
 each side keeping its min. Interleaved, two runs read `0.2/0.2` and `0.5/0.5`.
 
-**⇒ AND THE 0.2-vs-1.1 READING IS THE THIRD TIME THIS SESSION HAS CAUGHT A NUMBER THAT WAS
+**AND THE 0.2-vs-1.1 READING IS THE THIRD TIME THIS SESSION HAS CAUGHT A NUMBER THAT WAS
 ABOUT THE HARNESS AND NOT ABOUT THE SUBJECT** (after the fuel burn's 4 000 000 steps and
 stage 2's unsynchronised 0.01 ms).
 
@@ -1528,7 +1528,7 @@ writer's output) and classifies every LANE row. MEASURED:
 | `REFUSAL/ANSWER` | `code_for_op FDIV` | the PORT ANSWERS (`(A/B)`) WHERE CPYTHON RAISES. There is no python-side text for such a kernel, so "matches speed" is **UNDEFINED**, not equal — timing the port alone would be a one-sided number wearing a comparison's clothes. |
 | `VALUE` | the six `wmask` rows | an integer expression, NOT text. **AND THE NUMBERS AGREE ON ALL SIX**: `255<<0^0xFFFFFFFF` is `4294967040` on both sides, `65535<<16^0xFFFFFFFF` is `65535` on both; the oracle prints the expression and the port the decimal. They are pins on a SPELLING, not divergences. |
 
-**⇒ SO "RENDER BOTH TEXTS, COMPILE AND TIME BOTH" HAS NOTHING TO ACT ON.** A refusal is not a
+**SO "RENDER BOTH TEXTS, COMPILE AND TIME BOTH" HAS NOTHING TO ACT ON.** A refusal is not a
 shader and a value is not text. And the consequence is stronger than "not measured": the
 census's `215 exact + 12 pinned` means **every place CPython emits WGSL text at all, the port
 emits the same text.** There is no divergent WGSL code in this tree to race.
@@ -1556,7 +1556,7 @@ writes one manifest per kernel; `stage1_time.js` globs them and emits one row ea
 | the one real semantic difference | `FDIV`: the port renders `(A/B)` where CPython raises. It cannot be raced, because the python side has no text. |
 | coverage | 2 kernels against a 227-row census of FRAGMENTS |
 
-**⇒ STAGE 1 IS MET IN THE ONLY FORM IT CAN TAKE — "PYTHON TO WEBGPU MATCHES BEND TO WEBGPU"
+**STAGE 1 IS MET IN THE ONLY FORM IT CAN TAKE — "PYTHON TO WEBGPU MATCHES BEND TO WEBGPU"
 BY IDENTITY OF TEXT — AND WHAT REMAINS IS COVERAGE, NOT DIVERGENCE.** A wider corpus
 (reductions, WHERE/relu, more sizes) is the honest next step; a race between divergent
 programs is not available, and this report will not manufacture one.
@@ -1591,7 +1591,7 @@ shader compiles, runs, and computes the SAME answer to 0.00e+0. That is a diverg
 equal output and unequal text: the strongest evidence this stage can produce for "matches
 speed" on non-identical code, and the weakest possible margin (0.1 vs 0.2 ms at the floor).
 
-**⇒ AND IT NAMES A REAL DEFECT ANYWAY**: the value of a `CONST` is missing. It is invisible
+**AND IT NAMES A REAL DEFECT ANYWAY**: the value of a `CONST` is missing. It is invisible
 here only because the constant happens to be `0.0`; a non-zero constant would produce a wrong
 answer that compiles.
 
@@ -1622,7 +1622,7 @@ The clause is "until PYTHON DEVICE matches BEND device, or is faster". Measured:
 | LITERAL: PYTHON must be at least as fast as BEND | **NOT MET** -- PYTHON is 2707/580 ms against BEND 1039/113, i.e. **2.6x and 5.1x SLOWER** |
 | BEND must be at least as fast as PYTHON (the reading every change this session served) | **MET** -- 1039 vs 2707 at 32x32, 113 vs 580 at 16x16 |
 
-**⇒ THE LITERAL SENTENCE IS NOT SATISFIED, AND THIS REPORT WILL NOT SAY IT IS.** The other
+**THE LITERAL SENTENCE IS NOT SATISFIED, AND THIS REPORT WILL NOT SAY IT IS.** The other
 reading is the one the WORK implies: BEND began 56x SLOWER than PYTHON, so a session that made
 it faster cannot have been serving "PYTHON must be at least as fast". But "the work implies it"
 is not "the user said it", and I cannot decide an ambiguous instruction on the user's behalf:
@@ -1679,7 +1679,7 @@ all correct against float32 numpy. The reduction is the only refusal.
 3. **`AFTER`** -- an alias: `r[u] = r[u.src[0]]`, which is what makes the accumulator read
    `buf0[0]` instead of `UNHANDLED(Ops.AFTER)`.
 
-**⇒ SO THE REMAINING WORK IS THREE ARMS, ONE OF THEM THE INDENT.** `BUFFER` and `AFTER` are
+**SO THE REMAINING WORK IS THREE ARMS, ONE OF THEM THE INDENT.** `BUFFER` and `AFTER` are
 small; `RANGE` is the piece that needs a depth field in the walk's state, and every body line
 must then be emitted at that depth. It is not started.
 
@@ -1721,7 +1721,7 @@ every one is timed in the same WebGPU driver, interleaved, and correct against f
    BEFORE emitting `}` -- `cstyle.py:249` decrements before the line, which is what puts the
    closing brace outside the loop rather than inside it.
 
-**⇒ AND THE AXIS NAME AND IDS NOW TRAVEL IN THE RECORD**: `dump_uops` writes a RANGE's payload
+**AND THE AXIS NAME AND IDS NOW TRAVEL IN THE RECORD**: `dump_uops` writes a RANGE's payload
 as `<axis>~<ids>`, the generator puts the axis NAME in `str` and the ids in `shape`, so the
 WALKER owns `axis_letters` and `range_str` and the generator only transcribes. Putting the
 finished `Lidx0` in the generator would have moved a renderer rule into the fixture builder.
@@ -1764,12 +1764,12 @@ discriminate, and it agrees to the reported precision because the bytes are the 
                       mm2048=2.32e-06  mm4096=2.78e-06
     kernels=6, identical=6
 
-**⇒ AND THE FOUR EARLIER NUMBERS WERE WRONG IN A WAY I HAD NOT NOTICED**: the harness called
+**AND THE FOUR EARLIER NUMBERS WERE WRONG IN A WAY I HAD NOT NOTICED**: the harness called
 `out.realize()` on a tensor that was ALREADY REALIZED, which is a NO-OP. A 4096x4096 matmul
 "ran" in 0.03 ms. MEASURED, before the fix: `mm2048=0.02mm4096=0.03`. After it: 5.52 and 38.47.
 Each iteration now RE-EXECUTES the op and then synchronises.
 
-**⇒ THAT IS THE FOURTH TIME THIS SESSION HAS CAUGHT A NUMBER THAT WAS ABOUT THE HARNESS AND NOT
+**THAT IS THE FOURTH TIME THIS SESSION HAS CAUGHT A NUMBER THAT WAS ABOUT THE HARNESS AND NOT
 THE SUBJECT** (after the fuel burn's 4 000 000 steps, stage 2's unsynchronised 0.01 ms, and
 stage 1's sequential per-side loop). Every one of them was found by pushing the measurement out
 of a range where the defect was invisible.
@@ -1797,7 +1797,7 @@ Put to the user, with the numbers, because the literal sentence is measurably fa
 
     "BEND >= PYTHON (intended; MET)"
 
-**⇒ SO STAGE 3 IS MET UNDER THE GOVERNING READING** -- BEND 1039/113 ms against PYTHON 2707/580
+**SO STAGE 3 IS MET UNDER THE GOVERNING READING** -- BEND 1039/113 ms against PYTHON 2707/580
 (32x32/16x16), bit-exact, `ops_python_exec` 153/365 -- **and the LITERAL reading stays false and
 stays recorded as false.** The tree must not later quote the clause as satisfied without the
 reading that satisfied it.
@@ -1812,7 +1812,7 @@ time with the dispatch MULTIPLIED BY TWO, on the same pipeline and the same byte
     mm256     1.6      1.7      1.88      1.76        <- resolves at 1.7 ms
     ew16/ew32/cst32/red32/odd/relu32  0.1-0.3   1.00/0.50/0.67/2.00   NOISE
 
-**⇒ AND THAT IS THE HONEST READING OF BOTH SIZES AT ONCE:** at 11 ms the instrument measures, and
+**AND THAT IS THE HONEST READING OF BOTH SIZES AT ONCE:** at 11 ms the instrument measures, and
 "11.1 vs 11.0" is a measurement of two identical programs. At 0.1-0.3 ms the plant scatters from
 0.5 to 2.0, so those rows are at the floor and their equality is a consequence of identical BYTES,
 not of a measurement. The artifact now carries the plant in its own columns, so a reader can tell
@@ -1861,7 +1861,7 @@ produces one, which is where this stops:
     # inject IF/ENDIF. only needed if device doesn't support gated stores
     # gated STORE becomes IF-STORE-ENDIF. this is the only use of IF-ENDIF
 
-**⇒ A GATED `Ops.STORE` IS THE ONLY PRODUCER OF IF/ENDIF IN TINYGRAD**, and nine programs were
+**A GATED `Ops.STORE` IS THE ONLY PRODUCER OF IF/ENDIF IN TINYGRAD**, and nine programs were
 tried and NONE produced one:
 
     reduce with an odd trailing dim (32,33) | matmul at 33x33 | pad | shrink | max(axis)
@@ -1871,7 +1871,7 @@ tried and NONE produced one:
 and the one construct that *should* gate a store -- a boolean-mask assignment -- is refused
 upstream: `IndexError: index dtype dtypes.bool is not supported`.
 
-**⇒ SO THE IF ARM IS IMPLEMENTED, FAITHFUL TO `cstyle.py:20` AND THE DEPTH RULES, AND
+**SO THE IF ARM IS IMPLEMENTED, FAITHFUL TO `cstyle.py:20` AND THE DEPTH RULES, AND
 UNEXERCISED: no program in this tree emits the op it handles, so its text is not compared to
 CPython's anywhere and this report does not claim it renders correctly.** The honest statement is
 that the *class* the reviewer named -- "a kernel containing a predicate" -- does not exist among
@@ -1916,7 +1916,7 @@ arm: the six `bitcast<>` rules were already in `wgsl.bend` (`sr_bhalf`/`sr_bucha
    `UNHANDLED(Ops.BITCAST)` where CPython renders `as_type<float>((uint)((as_type<uint>(
    (float)(val0.x))+1u)))`.
 
-**⇒ BOTH ARE IN `cstyle.bend`/the converter, NOT IN THE WGSL WALK**, and both are recorded here
+**BOTH ARE IN `cstyle.bend`/the converter, NOT IN THE WGSL WALK**, and both are recorded here
 rather than fixed, because the session's remaining work is in the WGSL lane and a rushed edit to
 the shared C renderer is how the earlier `constant `/`hip_bfloat16` inventions landed.
 
@@ -2063,7 +2063,7 @@ which a string-carrying pipeline cannot do. Re-measured after the change:
     PYTHON   32         2               74           1360.9 ms   2728.6 ms
     BEND     32         2              510            521.3 ms   1045.2 ms
 
-**⇒ AND THE FIRST THING IT OVERTURNS IS MY OWN GUESS.** Both lanes dispatch TWICE per realize, so
+**AND THE FIRST THING IT OVERTURNS IS MY OWN GUESS.** Both lanes dispatch TWICE per realize, so
 the gap is not launch count; and the BEND lane runs a **worse-shaped kernel** (148 uops against
 49, 510 against 74) and still wins by 4.8x and 2.6x. So the difference is THE COST OF ONE WALK
 STEP: ~1.3 us per uop in CPython against ~0.09 us in the compiled executor, roughly 14x.
@@ -2088,7 +2088,7 @@ one call per op) against straight-line code:
     inline      0.044 us per inner iteration
     ratio        6.54x  <- the ceiling for a codegen
 
-**⇒ SO A CODEGEN (compile the uop list to a Python function once, run that) is the ONLY route to
+**SO A CODEGEN (compile the uop list to a Python function once, run that) is the ONLY route to
 the target, and its ceiling is 6.54x against a REQUIRED 4.8x at 16x16 and 2.6x at 32x32.** At
 32x32 that is a comfortable margin; at 16x16 it is marginal, because the parts a codegen cannot
 delete -- memoryview indexing, the per-op dtype truncation -- are 36% of the profile and keep
@@ -2128,7 +2128,7 @@ grid, local size, uop count AND the whole op-and-srcs sequence, normalised becau
     size 32   PYTHON g(1,1,1) l(1,1,1) 510u  390.70 ms      BEND 1037.25 ms   PYTHON 0.38x
     SAME PROGRAM: 2 launches, EVERY LAUNCH IDENTICAL  (both sizes)
 
-**⇒ SO THE PYTHON DEVICE IS FASTER THAN THE BEND DEVICE ON THE SAME PROGRAM**, by 1.58x at 16x16
+**SO THE PYTHON DEVICE IS FASTER THAN THE BEND DEVICE ON THE SAME PROGRAM**, by 1.58x at 16x16
 and 2.66x at 32x32 -- which is the literal stage-3 clause, MET. The earlier "2.6x/5.1x in BEND's
 favour" was the LOCAL-split kernel against the scalar one, and the split costs the CPython
 interpreter far more than it buys: the SAME device is 580 ms with the split and 75 ms without it
@@ -2174,7 +2174,7 @@ so "subprocess overhead" is the obvious suspect. It is not the answer, and the s
     executor only 0.48 / 0.48 / 0.49 s          <- /usr/bin/time on the binary, no Python
     the BEND lane's launch                     ~519 ms
 
-**⇒ THE SPAWN, THE FILE AND THE HEX COST ~0. Everything is inside the compiled executor**, which
+**THE SPAWN, THE FILE AND THE HEX COST ~0. Everything is inside the compiled executor**, which
 runs the same 510-uop program the CPython lane runs in 195 ms. So the port's EXECUTION is 2.66x
 slower than CPython's INTERPRETER on identical work, and that is the whole gap.
 
@@ -2193,7 +2193,7 @@ counting and freeing heap terms. The port allocates because of how its state is 
     Val.at(vs, i)   = List.get(spine, i/16) then List.get(chunk, i%16)      a walk
     Val.put(vs,i,e) = List.set(spine, i/16, List.set(chunk, i%16, e))       REBUILDS BOTH
 
-**⇒ AND THIS FILE ALREADY MEASURED THE COUNT: 96 584 987 ALLOCATIONS PER 32x32 LAUNCH, EVERY ONE
+**AND THIS FILE ALREADY MEASURED THE COUNT: 96 584 987 ALLOCATIONS PER 32x32 LAUNCH, EVERY ONE
 IN SIZE CLASS 0 OR 1 -- one-word objects and two-word CONS CELLS, i.e. LIST TRAFFIC AND NOTHING
 ELSE** (`.agents/slop/perf/REPORT.md` §12.4). 96.6M allocations over 0.48 s is 5 ns each, which is
 exactly what the executor-only timing says. **THE EXECUTOR'S WHOLE RUNTIME IS ITS ALLOCATION
@@ -2244,7 +2244,7 @@ while writing zero times):
     list    2 000 000   0.90 s   450 ns       7998464    (spine rebuild + 16-cell chunk rebuild)
     array   2 000 000   <0.01 s  <5 ns        5998464    (in place, no allocation)
 
-**⇒ SO ONE ARENA WRITE COSTS ~450 ns IN THE PORT'S SHAPE AND ESSENTIALLY NOTHING IN THE ARRAY
+**SO ONE ARENA WRITE COSTS ~450 ns IN THE PORT'S SHAPE AND ESSENTIALLY NOTHING IN THE ARRAY
 SHAPE**, and the executor at 32x32 spends 480 ms over ~2M steps, i.e. ~240 ns per step -- the same
 order, which is what makes the allocation count (§35.2: 96.6M per launch) the whole runtime.
 
@@ -2378,7 +2378,7 @@ symbol:
       9  WL_FID_Prog_index
       7  WL_FID_Prog_run_k638
 
-**⇒ ~70-80% OF THE EXECUTOR IS THE RUNTIME'S TERM MANAGEMENT AND ~10% IS THE PORT'S OWN CODE.** The
+**~70-80% OF THE EXECUTOR IS THE RUNTIME'S TERM MANAGEMENT AND ~10% IS THE PORT'S OWN CODE.** The
 interpreter is not slow because its algorithm is slow; it is slow because it allocates.
 
 THE ARITHMETIC THAT PINS IT: 32x32 runs ~2M steps in 340 ms of executor time = **170 ns per step**,
@@ -2394,7 +2394,7 @@ The `Array` arena deletes the chunk rebuild (~8 conses) and one `Maybe` per read
 a third of the allocations. At 699.46 ms (the current 32x32), a third fewer allocations is ~**540 ms
 against the CPython lane's 373 ms** -- better, and still slower.
 
-**⇒ THE PARITY TARGET NEEDS BOTH: the array arena AND a state whose rebuild costs nothing per
+**THE PARITY TARGET NEEDS BOTH: the array arena AND a state whose rebuild costs nothing per
 step.** The record rebuild is the other third, and it is eliminated by the same change, because a
 `Type` `Prog` carrying `Array<Elem>`/`Array<U32>` writes in place and rebuilds no arena at all --
 but only if the fields that do not change stop being copied too, which means splitting the static
@@ -2513,7 +2513,7 @@ rebuild plus a `Maybe` per read (REPORT.md 35.6/37.1) -- the `Array`, which need
     146 term_drop    96 span_fade    62 spin_160    61 spin_166    18/17/12 other spin_*
      11 WL_FID_Prog_run    10 WL_FID_Prog_index
 
-**⇒ ~75-80% IS STILL BEND'S OWN TERM MANAGEMENT AND ~10-15% IS THE PORT'S CODE.** The split, the
+**~75-80% IS STILL BEND'S OWN TERM MANAGEMENT AND ~10-15% IS THE PORT'S CODE.** The split, the
 `Sb`/`Lb` hoists and the four `Bool.pick` fixes moved the port's share down; they did not change what
 dominates, because what dominates is the ALLOCATION COUNT and not any particular helper.
 
@@ -2530,7 +2530,7 @@ written) and the `Maybe` that `List.get` allocates per read (3-4 per step). That
     32x32  554 ms -> ~410-420 ms   against the CPython lane's 379 ms
     16x16   87 ms -> ~72 ms        against the CPython lane's 70 ms
 
-**⇒ THE `Array` ARENA IS WORTH DOING (it is the last named, measured lever) AND IT LANDS AT ~0.90x
+**THE `Array` ARENA IS WORTH DOING (it is the last named, measured lever) AND IT LANDS AT ~0.90x
 OF THE CPYTHON LANE, NOT ABOVE IT.** Beating CPython needs the per-value `Elem` allocation and the
 per-step record rebuild gone as well, i.e. a mutable-register interpreter rather than a
 persistent-state one -- a rewrite of `run`, not a change to a field type.
@@ -2568,7 +2568,7 @@ work:
     cache   the held chunk (what the port does today)   1.07 s   0.53 us
     array   Array<Elem> in a LINEAR record, .go chain   <0.01 s  <0.005 us
 
-**⇒ ~100x ON THE PRIMITIVE.** §38's 1.35x counted ALLOCATIONS; the array also deletes the WALKS --
+**~100x ON THE PRIMITIVE.** §38's 1.35x counted ALLOCATIONS; the array also deletes the WALKS --
 the pointer chase down the spine and along the chunk, three times per step -- and the walks are what
 the 0.53 us is actually made of. So the lever is not the marginal one §38 called it.
 
@@ -2611,7 +2611,7 @@ it once and 46 use it twice or more (`Prog.dispatch` 22 times, `Prog.die` 16, `P
 `Prog.alu.at` 7 ...). Each of those 89 loses its `+`, and each of the 46 needs its body restructured
 into one `match` plus the `.go` chains for the ~17 arena reads.
 
-**⇒ SO THE `Array` REFACTOR IS ONE ATOMIC CHANGE OF ~89 SIGNATURES + 46 BODIES + 17 CHAINS, AND A
+**SO THE `Array` REFACTOR IS ONE ATOMIC CHANGE OF ~89 SIGNATURES + 46 BODIES + 17 CHAINS, AND A
 HALF-CONVERTED LINEAR RECORD DOES NOT COMPILE.** That is why it has not been landed in a turn: it
 cannot be committed green in pieces, and the tree's rule is that every commit compiles and passes the
 gates. It is sized here so the next attempt starts from a measurement instead of a surprise.
@@ -2643,7 +2643,7 @@ state it was, green:
     44 arms merged into `match x p:` (multi-scrutinee) -> the pass compounds and mangles
                                     `match p p:` on the defs that already matched `p`
 
-**⇒ THE RULE IS: ONE `match` PER BODY LEVEL, ON A PARAMETER, AND A LINEAR RECORD CAN ONLY BE
+**THE RULE IS: ONE `match` PER BODY LEVEL, ON A PARAMETER, AND A LINEAR RECORD CAN ONLY BE
 DESTRUCTURED WHERE NO OTHER MATCH IS IN SCOPE.** So every one of the 34 branch-shaped bodies must be
 converted to a MULTI-SCRUTINEE match (`match x p:`) with the record pattern appended to EVERY arm --
 including the arms that do not touch the record, which then need a `_`. That is a hand-written
@@ -2677,7 +2677,7 @@ probably 6-10 of them: `Prog.flush.go`'s False arm uses `vs`/`vi`/`vc`; `Prog.vp
     "Error: expected: a filled definition (an unfilled law is a dead claim: live code cannot use it)
      observed: go"    -- and defining `go.step` FIRST fails the same way, naming `go`.
 
-**⇒ BEND ALLOWS ONE MATCH PER BODY LEVEL AND REFUSES MUTUAL RECURSION, SO A LOOP THAT MUST BOTH
+**BEND ALLOWS ONE MATCH PER BODY LEVEL AND REFUSES MUTUAL RECURSION, SO A LOOP THAT MUST BOTH
 DESTRUCTURE A STATE AND MATCH A CURSOR IS INEXPRESSIBLE.** The interpreter's `run` is exactly that
 loop: `match f un` is the cursor and every iteration has to destructure the record to rebuild it.
 That is why the linearisation could not be finished, and it is why no amount of scripting would have:
@@ -2711,12 +2711,12 @@ Now it is measured, four modes, 2 000 000 interpreter-shaped steps each, same ch
     c16     sixteen Elem as a DATA record per chunk               1.50 s   0.75 us
     array   Array<Elem> in a LINEAR record (UNREACHABLE, 39.7)   <0.01 s  <0.005 us
 
-**⇒ `C16` IS 44% SLOWER THAN THE HELD CHUNK.** The record rebuild costs more than the chunk walk it
+**`C16` IS 44% SLOWER THAN THE HELD CHUNK.** The record rebuild costs more than the chunk walk it
 replaces: a write rebuilds sixteen fields flat, while the held chunk rebuilds only the cells BEFORE
 the written index (average eight) and touches no spine at all. The intuition that "one record
 allocation beats a list rebuild" is wrong here, and it is wrong by a measurement, not an argument.
 
-**⇒ SO THE PORT IS AT THE FASTEST REPRESENTATION THE LANGUAGE ALLOWS FOR THIS STATE MODEL.** Of the
+**SO THE PORT IS AT THE FASTEST REPRESENTATION THE LANGUAGE ALLOWS FOR THIS STATE MODEL.** Of the
 four, the one it uses is second only to the linear array, and the array cannot be threaded through
 this loop (39.7). Every cheaper-per-access structure has now been tried and measured:
 
@@ -3384,7 +3384,7 @@ every lane computed lane 0's answer. The fix reads the computed index and drops 
 case (a1, v1): Prog.ix.alu.t(p, slot, Val.at(a1, U32.add(s0, Elem.bits(v1))))
 ```
 
-**⇒ AND SIX BISECTS AGREED WITH EACH OTHER AND NONE OF THEM COULD SEE IT**, because every one of them
+**AND SIX BISECTS AGREED WITH EACH OTHER AND NONE OF THEM COULD SEE IT**, because every one of them
 perturbed a value that this line never read: forcing `CAST` to a constant, making `Uop.nth` and
 `Uop.sslot.of` default to 999 and 777 instead of 0, and diverting writes each left `alu.ADD.f.b0`
 byte-identical. **A BISECT FINDS A DEFECT ONLY IF THE THING IT MUTATES IS ON THE PATH**, and the
@@ -3439,18 +3439,18 @@ THEM WORKS**, which is the trap in this instrument: `Thread_52070953` is `io_hel
     WL_FID_List_length/-set 18         <- Bend stdlib, called by the port
     ------------------------------     PORT 49 named in the top 20, ~5% with the tail
 
-**⇒ SO "FASTEST POSSIBLE" HAS A MEASURED CEILING HERE: 94.3% of the work is the vendored runtime
+**SO "FASTEST POSSIBLE" HAS A MEASURED CEILING HERE: 94.3% of the work is the vendored runtime
 allocating, refcounting and freeing, and the port's own code is ~5%.** No port-side rewrite can pay
 more than that, and that is the number that answers the objective honestly.
 
-**⇒ AND IT RETIRES THE `Mem` REWRITE, WHICH WAS THE NAMED NEXT STEP.** `Mem.st`/`Mem.ld` do not appear
+**AND IT RETIRES THE `Mem` REWRITE, WHICH WAS THE NAMED NEXT STEP.** `Mem.st`/`Mem.ld` do not appear
 in this census AT ALL (nor does `Prog_ld_at`, the load loop, which was 6 samples = 2% in §39.14). A
 word-granular `Mem` was estimated at ~2% there and is now below the top-20 cut, against a machine noise
 floor of ±2-4% on this metric: **an improvement below the instrument's resolution is not an
 improvement, it is a claim.** The same estimate was refused in §39.14; the fresh census agrees with it
 and strengthens it. The change stays refused, on a measurement rather than on an opinion.
 
-**⇒ AND `List_set` FELL FROM 4% TO 8 SAMPLES (0.4%)**, which is the arena's own receipt: the value
+**AND `List_set` FELL FROM 4% TO 8 SAMPLES (0.4%)**, which is the arena's own receipt: the value
 write was the port's biggest allocation site and it is gone.
 
 Fields: 32x32 grid replay, `sample 6 -file`. Artifacts under `/tmp/prof32/` (regenerable by
@@ -3471,7 +3471,7 @@ calls `read1` and whose `read1` calls `step`:
     Error: expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)
            observed : read1
 
-**⇒ A DEF THAT CALLS A LATER DEF IS REFUSED, SO TWO MUTUALLY RECURSIVE DEFS CANNOT BOTH BE IN ORDER.**
+**A DEF THAT CALLS A LATER DEF IS REFUSED, SO TWO MUTUALLY RECURSIVE DEFS CANNOT BOTH BE IN ORDER.**
 The continuation must RETURN its state instead of looping back, and returning the state is a term --
 so one allocation per step is FORCED by the evaluation strategy, not chosen by the port.
 
@@ -3484,7 +3484,7 @@ premise ("eliminate the per-step rebuild") is therefore FALSE in Bend: it can be
 **3. The codegen is already at `-O3`.** `references/bend/bend2/main.ts:486` builds the CPU binary with
 `["-std=c11", "-O3", file, "-lpthread", "-lm", ...]`, so there is no flag left either.
 
-**⇒ AND A MICRO-BENCHMARK OF THE RECORD IS NOT AVAILABLE AT `-O3`**, which is worth recording because
+**AND A MICRO-BENCHMARK OF THE RECORD IS NOT AVAILABLE AT `-O3`**, which is worth recording because
 it nearly produced a wrong number: `def mk(+x) = R{x,...,x}` read back through `ld` folding to `x` is
 DEAD CODE, and clang deletes it -- MEASURED, 20,000,000 "rebuilds" in under 10 ms for both the 10-cell
 and the 18-cell record (`/tmp/r9`, `/tmp/r17`, both printing 20000000). **AN ALLOCATION BENCHMARK MUST
@@ -3531,7 +3531,7 @@ MINIMUM (261.97) IS LOWER THAN EITHER.** The ratio did not move past the +-2-4% 
 rule the change was REVERTED -- `git checkout` restores the file byte-identical to `d26d93d25`
 (`cmp` against the pre-attempt copy).
 
-**⇒ SO THE PER-STEP STATE RECORD'S WIDTH IS NOT WHAT DRIVES THE 94.3%.** Removing 4 of 10 cells from
+**SO THE PER-STEP STATE RECORD'S WIDTH IS NOT WHAT DRIVES THE 94.3%.** Removing 4 of 10 cells from
 every step is below the instrument's resolution, which means the term-management cost named in 39.28 is
 NOT the `Prog` record. My own reasoning in 39.28/39.29 -- "2x fewer cells, therefore a big win" -- was
 wrong in the specific and is retracted here; the arithmetic of cells was right and the attribution was
@@ -3588,7 +3588,7 @@ extra `Array.set`:
 one is too: no single allocation site inside the 70.2% is worth more than ~2%, and the ALU step's
 allocations are forced anyway (three `Array.get` pairs, one `Elem`, one `Prog`, the result pair).
 
-**⇒ AND THIS RETRACTS 39.30's CLOSING SENTENCE**, which named the `Elem` and the dups as "the only
+**AND THIS RETRACTS 39.30's CLOSING SENTENCE**, which named the `Elem` and the dups as "the only
 remaining candidate above the noise floor". They are now MEASURED and they are not above it. The 94%
 is not concentrated in any removable site; it is the runtime's per-term constant multiplied by a large
 step count, and the port cannot reduce either factor without changing what it computes.
@@ -3638,7 +3638,7 @@ Gates on the landed tree: `--check-only` `ALL PROOFS CHECK`; `ops_python_exec` 1
 x 2 lanes / **0 unpinned / 0 pinned**; `ops_bend_exec-e2e` **7 match, 0 mismatch-or-refused**;
 `PROOF-ALL` `ALL PROOFS CHECK`.
 
-**⇒ THE GENERAL LESSON, AND IT IS THE ONE THIS FILE KEEPS RELEARNING.** `Uop.slot(Uop.at(us, s))` and
+**THE GENERAL LESSON, AND IT IS THE ONE THIS FILE KEEPS RELEARNING.** `Uop.slot(Uop.at(us, s))` and
 `Uop.nth(Uop.sslot(u), s)` are the SAME NUMBER, and the tree had already paid to precompute it. A
 probe that says "this dimension is flat" bounds THE SITE PROBED, not the class of redundant traversals;
 39.31's probes were all on the ALU arm and the arena, and the 11.6% STACK site was outside every one of
@@ -3670,7 +3670,7 @@ only one whose margin is not large.
 Gates: `--check-only` and `PROOF-ALL` `ALL PROOFS CHECK`; `ops_python_exec` 153 fixtures / 365 rows x
 2 lanes / **0 unpinned / 0 pinned**; `ops_bend_exec-e2e` **7 match, 0 mismatch-or-refused**.
 
-**⇒ AND IT ALSO RETIRES TWO CANDIDATES WITH NUMBERS, both asked for:**
+**AND IT ALSO RETIRES TWO CANDIDATES WITH NUMBERS, both asked for:**
 - **`Prog.dt.f`'s `Uop.at(us, ...)` walk is refused.** It has ONE caller (`Prog.store.sb.f.mk`, the
   STORE lane setup), so it runs once per STORE, and the whole STORE family measures **1.06%** of the
   executor (`Prog_store_at_k354` 0.55%, `Prog_store_lane_at` 0.44%, `Mem_wr_k164` 0.07%). A payload
@@ -3680,7 +3680,7 @@ Gates: `--check-only` and `PROOF-ALL` `ALL PROOFS CHECK`; `ops_python_exec` 153 
   ALU catch-all cost nothing measurable, and the 7.7% `Prog_dispatch` figure is not a compare chain.
   Reverted, byte-identical.
 
-**⇒ AND THE LESSON IS THE INVERSE OF 39.32's.** 39.32 found a redundant TRAVERSAL. 39.33 found a
+**AND THE LESSON IS THE INVERSE OF 39.32's.** 39.32 found a redundant TRAVERSAL. 39.33 found a
 redundant PERMISSION: a `+` that made the caller copy a value the callee only ever moves. `+` is not
 free and it is not a comment -- the compiler enforces the linear case, so excess `+` is checkable by
 deletion. **A SWEEP OF THE REST OF THE FILE FOR SINGLE-USE `+` IS THE OBVIOUS NEXT STEP.**
@@ -3706,13 +3706,13 @@ pass-through), so the compiler is the verifier and the final set is provably sin
 **+2.7% SLOWER. THE BEST INDEX-CHAIN RUN (230.46) IS WORSE THAN THE ALU BASELINE'S MEDIAN.** Reverted,
 byte-identical to `60aaaaccc`.
 
-**⇒ SO `+` IS NOT A COST YOU CAN COUNT.** On the ALU chain a dup was pure overhead; on the INDEX chain
+**SO `+` IS NOT A COST YOU CAN COUNT.** On the ALU chain a dup was pure overhead; on the INDEX chain
 the same annotation was buying something -- the linear form must MOVE the value where the duplicable
 form let the caller keep its share, and the INDEX defs are reached from a dispatch point that still
 holds the record. **THE ONLY WAY TO KNOW IS TO MEASURE EACH CHAIN, AND A FILE-WIDE SWEEP WOULD HAVE
 LANDED HALF OF IT IN THE WRONG DIRECTION.**
 
-**⇒ AND THE SWEEP ITSELF WAS ATTEMPTED AND THROWN AWAY, WHICH IS WORTH RECORDING:** a scripted
+**AND THE SWEEP ITSELF WAS ATTEMPTED AND THROWN AWAY, WHICH IS WORTH RECORDING:** a scripted
 single-use detector over the whole file mangled multi-line signatures (a rebuilt `def` line lost its
 tail) and mis-scoped a body to EOF, producing one wrong edit that the compiler caught as
 `sh (consumed more than once)`. Nothing from it was kept. **A `+` REMOVAL IS SAFE TO ATTEMPT AND SAFE TO
@@ -3760,12 +3760,12 @@ statistic, not the median):**
 **NOT ONE OF EIGHT RUNS BEATS THE BASELINE MINIMUM.** Reverted, byte-identical to `462fb2dee`; gates
 re-read `ALL PROOFS CHECK` and `7 match, 0 mismatch-or-refused`.
 
-**⇒ SO BOTH ANSWERS TO 39.34's QUESTION ARE "NEITHER": the LOAD/STORE chains are not like the ALU
+**SO BOTH ANSWERS TO 39.34's QUESTION ARE "NEITHER": the LOAD/STORE chains are not like the ALU
 chain (nothing to win) and not like the INDEX chain (nothing to lose) -- they are too small to answer
 the question at this instrument's resolution.** `Prog.dt.f` stays as it is for the same reason
 (39.33: one caller, STORE family 1.27%).
 
-**⇒ AND THE GENERAL RESULT OF 39.32-39.35 IS A MAP, NOT A CEILING CLAIM:** of the ten port frames the
+**AND THE GENERAL RESULT OF 39.32-39.35 IS A MAP, NOT A CEILING CLAIM:** of the ten port frames the
 profiler names, the ALU arm is 75.91% and EVERYTHING ELSE COMBINED is 24.09%, of which the two largest
 are `Prog_dispatch` 3.77% and `Prog_run` 1.37%. A term cannot be improved by more than its own share,
 so the next real lever has to be inside the ALU arm's 75.91% or in the runtime underneath it -- and
@@ -3801,7 +3801,7 @@ instrument.)
 **+2.21% FOR EIGHT ALLOCATIONS = 0.276% PER ALLOCATION PER STEP.** Reverted, byte-identical; gates
 `ALL PROOFS CHECK` and `7 match, 0 mismatch-or-refused`.
 
-**⇒ AND THAT NUMBER BOUNDS EVERYTHING THE LAST FOUR TURNS WERE LOOKING FOR:**
+**AND THAT NUMBER BOUNDS EVERYTHING THE LAST FOUR TURNS WERE LOOKING FOR:**
 - the ALU step has ~6 allocations (three `Array.get` pairs, `alu3`, `Prog` from `vput`, the result
   pair), so **the ENTIRE allocation-count lever inside the 75.91% arm is ~1.65%** -- below the
   +-2-4% floor;
@@ -3810,7 +3810,7 @@ instrument.)
   a single-allocation probe could never have detected the slope. **THE SLOPE NEEDED +8 TO SEE, AND
   WHAT IT SHOWS IS THAT THE LEVER EXISTS AND IS TOO SMALL.**
 
-**⇒ SO "REDUCE ALLOCATIONS PER STEP" IS CLOSED AS AN AVENUE, NOT JUST AS AN INSTANCE.** The wins this
+**SO "REDUCE ALLOCATIONS PER STEP" IS CLOSED AS AN AVENUE, NOT JUST AS AN INSTANCE.** The wins this
 session came from removing a *traversal* (39.32, -10.9%), a *permission that forced a copy* (39.33,
 -2.9%) and a *data structure the write path paid for twice* (arena, -30%); none of them came from
 counting allocations, and this is the measurement that says why.
@@ -3844,7 +3844,7 @@ no sub-steps, it has one term-churn body.**
 forcing `--threads 1` on the captured packet is NEUTRAL** -- 19.90 / 19.93 / 20.19 s against the
 default's 19.92 / 20.66 / 22.66 s over 200 cells. So the thread pool is not the cost either.
 
-**⇒ AND THIS IS WHERE THE SESSION'S HONEST ARITHMETIC HAS TO BE STATED PLAINLY.** 39.36 measured a
+**AND THIS IS WHERE THE SESSION'S HONEST ARITHMETIC HAS TO BE STATED PLAINLY.** 39.36 measured a
 MARGINAL slope of 0.276% per added allocation and inferred "the whole lever is ~1.65%". **A marginal
 slope is not a reduction slope.** The arm is ~99% alloc/free at 75.91% of the executor, so the
 *existing* allocations are the bulk of the run, while *adding* one more costs only 0.276% because the
@@ -3903,7 +3903,7 @@ outside `ops_python.bend`.)
 **MEDIAN ~235 vs 228.46 = +2.9%, AND THE BEST OF EIGHT (230.36) DOES NOT BEAT THE BASELINE MINIMUM
 (227.20).** Reverted; `cmp` confirms both files byte-identical.
 
-**⇒ AND THE MEASUREMENT CORRECTS THE PREMISE THE PORT'S OWN COMMENTS REST ON.** "`Bool.pick` evaluates
+**AND THE MEASUREMENT CORRECTS THE PREMISE THE PORT'S OWN COMMENTS REST ON.** "`Bool.pick` evaluates
 both arms" is a fact about the SOURCE and about Bend's evaluation order, NOT about the emitted code:
 at `-O3` the unused arm's result is dead, and clang removes it. So a `Bool.pick` arm that is pure and
 unused costs nothing at run time -- which is why rewriting this one as a `match` only added a branch
@@ -3927,7 +3927,7 @@ emitted program's node-kind census is then a direct answer to "what can allocate
 
     CID_Sigma occurrences: 0
 
-**⇒ `Array<Elem> & Elem` IS NOT ALLOCATED.** There is no Sigma node kind in the emitted program: the
+**`Array<Elem> & Elem` IS NOT ALLOCATED.** There is no Sigma node kind in the emitted program: the
 linear pair is returned through the out-parameter (`THR Term* o`, written as `o[0]`, `o[1]`), not
 built on the heap. **THE THREE "SIGMA PAIRS PER ALU STEP" ARE NOT THREE ALLOCATION SITES -- THEY ARE
 ZERO, AND NO REMOVAL EXISTS TO MEASURE.** Candidate A is closed by construction rather than by timing,
@@ -3939,7 +3939,7 @@ per ALU step. 39.36 measured the marginal cost of one added allocation per ALU s
 0.276% is below the +-2-4% floor. **AND IT HAS NO SEMANTICS-PRESERVING REMOVAL ANYWAY**: `alu3` must
 build the value it writes, and the arena must hold something the readers can project.
 
-**⇒ SO BOTH NAMED CANDIDATES INSIDE THE ALU ARM ARE NOW BOUNDED -- A AT 0, B AT ~0.28% -- AND NEITHER
+**SO BOTH NAMED CANDIDATES INSIDE THE ALU ARM ARE NOW BOUNDED -- A AT 0, B AT ~0.28% -- AND NEITHER
 JUSTIFIES A REFACTOR.** Combined with 39.38 (arity `Bool.pick`: a source redundancy the `-O3` build
 already removes) and 39.37 (the arm's 99% is one alloc/free body), the arm has no lever left that this
 session can name, and the three changes that DID pay were all removals of real work outside or beneath
@@ -3979,7 +3979,7 @@ cheap, whose remaining `List.append(&2, Elem, acc, [v])` appends at the END of a
 per element. **STACK is 1 sample (0.02%) of the profile since 39.32, so even that O(n) is not worth
 removing at this instrument's resolution.**
 
-**⇒ AND THE INSTRUMENT'S LIMIT, STATED SO NOBODY OVERREADS IT:** `CID_Prog` and `CID_Bf` have NO
+**AND THE INSTRUMENT'S LIMIT, STATED SO NOBODY OVERREADS IT:** `CID_Prog` and `CID_Bf` have NO
 `term_ctr` site with that literal, because records are built through a generic tag-passing constructor,
 so a per-CID count cannot attribute them. What the census therefore establishes is narrower than "the
 arm allocates nothing": it is that **no ALLOCATION SITE is inside the arm's own code** -- the records the
@@ -4019,7 +4019,7 @@ END, the SINK.)
 
     **1,237.7 ns PER INTERPRETED STEP -- 1.24 us, ~3,960 cycles at 3.2 GHz.**
 
-**⇒ AND THAT REFRAMES EVERYTHING THIS SESSION HAS MEASURED.** For a native compiled tree-walker, ~4,000
+**AND THAT REFRAMES EVERYTHING THIS SESSION HAS MEASURED.** For a native compiled tree-walker, ~4,000
 cycles per interpreted uop is the headline: the port's own code is 5% of samples (39.28) and one added
 allocation per step costs 0.276% (39.36), i.e. ~3.5 ns -- so the step's cost is NOT its allocations
 and NOT its port instructions. It is the fixed machinery of moving one uop through the runtime, and no
@@ -4029,7 +4029,7 @@ port-side rewrite of the step has moved it except where it removed real work.
 cannot change step count, because the steps ARE the linearizer's output. `RANGE 32 x RANGE 8` with a
 **359-uop inner body** is the scheduler's and linearizer's choice, not the interpreter's.
 
-**⇒ AND A STEP REDUCTION WOULD TOUCH `tinygrad/`, WHICH IS THE ORACLE FOR EVERY GRAPH GATE.** That is
+**AND A STEP REDUCTION WOULD TOUCH `tinygrad/`, WHICH IS THE ORACLE FOR EVERY GRAPH GATE.** That is
 strictly worse than touching `references/bend`: `tinygrad/` is the CPython side of the 38-graph corpus,
 so a linearizer change there **moves BOTH lanes of `stage3_parity`** (they share the linearizer; only
 the codegen differs), leaving the ratio where it is while changing the absolute time -- and it
@@ -4084,7 +4084,7 @@ by the scheduler and is the classic way to collapse a matmul, but in this tree i
 Bend interpreter has no `WMMA`/tensor-core arm to execute, so a schedule that emitted one would be
 refused by `Prog.parse`.
 
-**⇒ SO `steps` IS NOT REACHABLE FROM THE PORT'S SIDE OF THE BOUNDARY, AND THAT IS NOW MEASURED RATHER
+**SO `steps` IS NOT REACHABLE FROM THE PORT'S SIDE OF THE BOUNDARY, AND THAT IS NOW MEASURED RATHER
 THAN ASSUMED.** The only remaining way to lower steps is the shared linearizer in `tinygrad/`, which is
 the CPython side of the 38-graph corpus: it would move BOTH lanes of the comparison (they share the
 linearizer; only the codegen differs) and invalidate the oracle that certifies the port. **That stays

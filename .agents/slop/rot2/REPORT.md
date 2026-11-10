@@ -48,11 +48,11 @@ for the variant at `:7435` and found it 6206 lines away. **THE FIX NAMES THE CON
 SENTENCE IS ABOUT** — `symbol=UOp.reduce.arg` — and the gate then holds on
 `decl == lo`.
 
-**⇒ AND NO CLAIM WAS DELETED OR WEAKENED.** Every construct the comments named still exists in
-the port, so no row needed *"the port no longer carries this"*. **⇒ AND TWO ROWS GAINED A
+**AND NO CLAIM WAS DELETED OR WEAKENED.** Every construct the comments named still exists in
+the port, so no row needed *"the port no longer carries this"*. **AND TWO ROWS GAINED A
 `symbol=` THEY DID NOT HAVE** (rows 4 and 11) **AND ONE GAINED ONE IT SHOULD HAVE HAD** (row 10).
 
-**⇒ AND NO PORT `symbol=` SITS NEXT TO AN UPSTREAM `.py` CITATION.** Every one of the 13 lines
+**AND NO PORT `symbol=` SITS NEXT TO AN UPSTREAM `.py` CITATION.** Every one of the 13 lines
 carries a `.bend` subject only, so `gates/todo-cite-gate.py`'s `symbol_field_records` — which
 admits **only `.py` subjects** — never binds a port symbol to a `.py` citation. MEASURED: the
 gate's `symbol-field` population did not move (see §3).
@@ -100,7 +100,7 @@ gate's `symbol-field` population did not move (see §3).
 | `AMBIGUOUS` | 19 | 19 | **+0** |
 | `OUT-OF-CORPUS` | 10 | 10 | **+0** |
 
-**⇒ AND NO FILE I DID NOT TOUCH GOT WORSE.** The 52 tree-wide `WRONG-LINE` rows were ALL
+**AND NO FILE I DID NOT TOUCH GOT WORSE.** The 52 tree-wide `WRONG-LINE` rows were ALL
 pointers into `uop/fold.bend` or `uop/ops.bend`; 13 were mine and **39 were another unit's**,
 in `codegen/decomp/op.bend`, `codegen/kernel.bend`, `codegen/opt/heuristic.bend`,
 `mixin/creation.bend`, `mixin/movement.bend`, `mixin/op.bend`, `renderer/kuconv.bend`,
@@ -108,10 +108,10 @@ in `codegen/decomp/op.bend`, `codegen/kernel.bend`, `codegen/opt/heuristic.bend`
 `uop/ops.bend` — **THE FILES THE BRIEF FORBIDS ME TOUCHING.** Those units landed their own
 re-points concurrently and their counts went to 0 in the same window.
 
-**⇒ AND THE ONE `UNCLAIMED` THAT DISAPPEARED IS NOT MINE:** it was
+**AND THE ONE `UNCLAIMED` THAT DISAPPEARED IS NOT MINE:** it was
 `schedule/rangify.bend:37 -> schedule/indexing.bend:1170`, in another unit's file.
 
-**⇒ AND THE TREE IS MOVING UNDER ME, SO THE FINAL LIVE READING IS 14, NOT 0 — AND NONE OF THE
+**AND THE TREE IS MOVING UNDER ME, SO THE FINAL LIVE READING IS 14, NOT 0 — AND NONE OF THE
 14 ARE MINE.** MEASURED on the live tree at the end of the slice: 14 `WRONG-LINE` rows, ALL in
 `schedule/rangify.bend` and `uop/ops.bend`, **0 in my 13 files**. They are other units'
 `schedule/indexing.bend` work, in flight.
@@ -129,7 +129,7 @@ re-points concurrently and their counts went to 0 in the same window.
       0  UNRESOLVABLE
 ```
 
-**⇒ AND THE `symbol-field` POPULATION DID NOT MOVE**, because
+**AND THE `symbol-field` POPULATION DID NOT MOVE**, because
 `gates/todo-cite-gate.py`'s `symbol_field_records` admits **only `.py` subjects**
 (*"A `symbol=` NAMES AN UPSTREAM CONSTRUCT, so only a `.py` subject is admitted"*), and all 13 of
 my lines carry a `.bend` subject. So the three `symbol=` fields I added are read by
@@ -163,7 +163,7 @@ sha256 over the stripped code:
 **ALL 13 ARE COMMENT-ONLY.** A second, independent check: `difflib` over HEAD vs live, and
 **every changed line starts with `#`** — no output, so no code line moved.
 
-**⇒ AND NO `D.refuse("…")` FILE IS IN THIS SLICE.** All 13 are comment-only, with no exception
+**AND NO `D.refuse("…")` FILE IS IN THIS SLICE.** All 13 are comment-only, with no exception
 taken. (The brief allows a stale `.bend:NN` inside a `D.refuse("…")` payload to be corrected;
 none of my 13 rows was such a row.)
 
@@ -210,7 +210,7 @@ def plant_shift.probe(+ar: O.Arena) -> U32:
   U32.add(1n, 2n)
 ```
 
-**⇒ AND THE COMMENT-ONLY-PLANT TRAP WAS AVOIDED BY CONSTRUCTION**: the brief records that *"A
+**AND THE COMMENT-ONLY-PLANT TRAP WAS AVOIDED BY CONSTRUCTION**: the brief records that *"A
 COMMENT IS ABSORBED INTO THE CONSTRUCT's DOC RUN AND THE ROW STILL RESOLVES, SO A COMMENT-ONLY
 PLANT IS A PLANT THAT CANNOT FAIL."* This plant inserts **two code lines**, so the cited
 declaration moves.
@@ -271,13 +271,13 @@ ROW THAT CAN GO RED, AND IT GOES RED ON THE POINTERS THIS SLICE RE-POINTED.**
       420a8b4ce6952b03a867105107dcc31846f0be5fcf89cca5cc4221153094fe09
 ```
 
-**THE DIGEST MOVED, BECAUSE A COMMENT IS SUBSTRATE. ⇒ THE CORPUS MUST BE RE-RUN.**
+**THE DIGEST MOVED, BECAUSE A COMMENT IS SUBSTRATE. THE CORPUS MUST BE RE-RUN.**
 
 (The live tree's own reading was `7644007a06e2aac9…` at the moment of measurement and kept
 moving, because other units are landing `.bend` work concurrently. **A GREEN CORPUS IS NOT A
 CERTIFICATE UNTIL THE TREE STOPS MOVING.**)
 
-**⇒ AND THE PLANT MOVES IT TOO**, which is the direct proof that the digest is keyed on the
+**AND THE PLANT MOVES IT TOO**, which is the direct proof that the digest is keyed on the
 port's bytes and not on a commit:
 
 ```
@@ -289,17 +289,17 @@ port's bytes and not on a commit:
 
 ## 8. WHAT I DID NOT FIX, AND WHY
 
-**⇒ NOTHING IN MY 13 FILES.** `WRONG-LINE` in my 13 files is **0**, and every other class is
+**NOTHING IN MY 13 FILES.** `WRONG-LINE` in my 13 files is **0**, and every other class is
 unchanged (`WRONG-LINE-BY-BLOCK` 25, `UNCLAIMED` 9, `OUT-OF-CORPUS` 1).
 
-**⇒ AND `WRONG-LINE-BY-BLOCK` IS A DIFFERENT CLASS AND I DID NOT TOUCH IT.** It is the row whose
+**AND `WRONG-LINE-BY-BLOCK` IS A DIFFERENT CLASS AND I DID NOT TOUCH IT.** It is the row whose
 claim is read off the **enclosing comment block** rather than the citation's own line, and it is
 COUNTED AND REPORTED, not failed. 25 of them are in my 13 files and **all 25 were there before
 my slice and are there after**. MEASURED, and left alone on purpose: the tree's own rule is
 that *"A FALSE FAILURE IS WORSE THAN A MISSED ROW"*, and the block's claim is a claim about the
 PARAGRAPH, not about the pointer.
 
-**⇒ AND THE FILES THE BRIEF FORBIDS ME TOUCHING.** `mixin/op.bend`, `mixin/movement.bend`,
+**AND THE FILES THE BRIEF FORBIDS ME TOUCHING.** `mixin/op.bend`, `mixin/movement.bend`,
 `renderer/kuconv.bend`, `schedule/prepare.bend`, `uop/divandmod.bend`, `uop/ops.bend`,
 `codegen/kernel.bend`, `mixin/creation.bend`, `schedule/rangify.bend`, `tensor.bend`,
 `codegen/decomp/op.bend`, `codegen/opt/heuristic.bend` — each carried `WRONG-LINE` rows that
@@ -307,16 +307,16 @@ PARAGRAPH, not about the pointer.
 their own re-points concurrently and their rows went to 0 in the same window; the live tree's
 remaining 14 are `schedule/rangify.bend` and `uop/ops.bend`, still in flight.
 
-**⇒ AND `uop/ops.bend` IS A CITED FILE FOR MY ROW 10, BUT IT IS NOT A CITING FILE FOR ME**, so
+**AND `uop/ops.bend` IS A CITED FILE FOR MY ROW 10, BUT IT IS NOT A CITING FILE FOR ME**, so
 its own pointers into `fold.bend` are not mine to re-point.
 
-**⇒ AND NO CODE CHANGES.** Every one of the 13 was a COMMENT. `strip_comments()` proves it and
+**AND NO CODE CHANGES.** Every one of the 13 was a COMMENT. `strip_comments()` proves it and
 `difflib` proves it independently. **NO CLAIM WAS DELETED OR WEAKENED** — every construct the
 comments named still exists in the port, so no row needed *"the port no longer carries this"*.
 
-**⇒ AND NO GATE WAS EDITED.** `gates/bendcite-gate.py`, `gates/todo-cite-gate.py`,
+**AND NO GATE WAS EDITED.** `gates/bendcite-gate.py`, `gates/todo-cite-gate.py`,
 `checks/differ.py` and `checks/devpin.py` are untouched.
 
-**⇒ AND THE TREE IS NOT SETTLED.** The corpus was NOT re-run: `checks/differ.py` was never
+**AND THE TREE IS NOT SETTLED.** The corpus was NOT re-run: `checks/differ.py` was never
 invoked, by rule, and the substrate digest moves under me (§7). **THE CORPUS MUST BE RE-RUN
 AFTER THIS SLICE.**

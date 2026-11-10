@@ -113,7 +113,7 @@ CANNOT CARRY A COMMIT, AND THAT IS BY DESIGN, NOT BY DEFECT.**
 * **THE SCHEMA CHANGE IS FORBIDDEN ANYWAY.** `gates/gates-pop.py` is the tool the brief
   forbids editing, and `LEDGER_FIELDS` is the format contract `read_ledger` enforces.
 
-**⇒ AND THE REQUIREMENT AS THE TOOL CAN MEET IT IS MET:** every row I wrote is owed by
+**AND THE REQUIREMENT AS THE TOOL CAN MEET IT IS MET:** every row I wrote is owed by
 exactly the commit `events()` names, and **0 of 49 rows was paid on behalf of a commit
 that does not own it.** I did not force anything.
 

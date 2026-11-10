@@ -55,7 +55,7 @@ no address literal in it at all:
 
 * **SAME_OBJ** — `clang_createIndex` is called **once**. The shim prints the
   handle C got to **stderr**, then returns it as a `Term`; Bend prints what it
-  received. Equal ⇒ one object, read twice, in one process. run1: both
+  received. Equal => one object, read twice, in one process. run1: both
   `4315083488`. run2: both `4350899280`.
 * **TWO_RUNS** — the two runs' addresses **differ** (`4315083488` vs
   `4350899280`). If they ever matched, ASLR would be off for this process and
@@ -107,10 +107,10 @@ six lanes green:
 | control | disarmed would look like |
 |---|---|
 | SAME_OBJ | `C_SAW HANDLE` missing, or the two lines differing by a factor |
-| TWO_RUNS | the same address on two runs ⇒ ASLR off ⇒ SAME_OBJ is vacuous |
-| TWO_LIVE | `TWO_LIVE_DIFFER 0` ⇒ a constant satisfies "they agree" |
-| PLANT | every `v` answering the same thing ⇒ `getGlobalOptions` ignored `set` |
-| DISARM | two `trip(5n)` calls disagreeing ⇒ the harness, not libclang |
+| TWO_RUNS | the same address on two runs ASLR off SAME_OBJ is vacuous |
+| TWO_LIVE | `TWO_LIVE_DIFFER 0` => a constant satisfies "they agree" |
+| PLANT | every `v` answering the same thing `getGlobalOptions` ignored `set` |
+| DISARM | two `trip(5n)` calls disagreeing => the harness, not libclang |
 
 All five are green, and the DISARM is the one that says the PLANT is about
 libclang.

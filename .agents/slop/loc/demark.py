@@ -160,7 +160,7 @@ def unshout(body: str, first_line: bool = True) -> str:
         # WITH IT** -- **AND A COMMENT THAT **STARTS** WITH A TICKED SPAN HAS **NO**
         # PROTECTED WORD** (THE TICKED SPAN IS THE FIRST THING).**
         prefix = re.sub(r"\x00[A-Z]*[0-9]*\x00|\x01PATH[0-9]*\x01|\x02TICK[0-9]*\x02", "", body2[: m.start()])
-        # **⇒ THE COMMENT'S FIRST WORD IS **NOT** PROTECTED** -- **MEASURED 2026-11-10:
+        # **THE COMMENT'S FIRST WORD IS **NOT** PROTECTED** -- **MEASURED 2026-11-10:
         # "WHAT IS PORTED" BECAME "what is ported", **AND A SHOUTED HEADER BLOCK HAS NO
         # SENTENCE-STARTING FIRST WORD** -- **THE WHOLE BLOCK IS ONE SHOUT.**
         first_of_comment = False
@@ -173,7 +173,7 @@ def unshout(body: str, first_line: bool = True) -> str:
                                      and not any(c.isdigit() for c in w)) else w)
         return " ".join(out)
 
-    # **⇒ AND A **POSSESSIVE** `X'S` IS **ONE WORD** -- **MEASURED 2026-11-10:
+    # **AND A **POSSESSIVE** `X'S` IS **ONE WORD** -- **MEASURED 2026-11-10:
     # "A KERNEL'S BUFFER LIST" BECAME "a kernel'S BUFFER LIST"** -- **SO THE RUN MUST
     # **INCLUDE** THE `'s`, AND THE WORD MUST BE LOWERCASED **WHOLE**.**
     body2 = re.sub(r"\b(?:[A-Z][A-Z0-9_]*(?:'S)?)(?:[ \t]+(?:AND|OR|[A-Z][A-Z0-9_]*(?:'S)?))*\b",
@@ -203,10 +203,10 @@ def clean(line: str, first_line: bool = True) -> str:
     # **SO THE `**` IS STRIPPED **ONLY** WHERE IT IS **PAIRED** AND **NOT** BETWEEN TWO
     # DIGITS.**
     b = strip_emphasis(b)
-    # **⇒ THE `⇒` -> `-` SUBSTITUTION** -- **AND IT RUNS **AFTER** THE SHOUT, **BECAUSE THE
-    # SHOUT'S RUN PATTERN **IS ASCII** AND **THE `⇒` IS NOT**, **SO THE ORDER DOES NOT
+    # **THE ` ` -> `-` SUBSTITUTION** -- **AND IT RUNS **AFTER** THE SHOUT, **BECAUSE THE
+    # SHOUT'S RUN PATTERN **IS ASCII** AND **THE ` ` IS NOT**, **SO THE ORDER DOES NOT
     # MATTER** -- **AND IT IS HERE FOR CLARITY.**
-    b = b.replace("⇒", "-")
+    b = b.replace(" ", "-")
     # **AND THE SHOUT IS **LEFT ALONE** UNLESS **THE LINE CROSSES **THE THRESHOLD**.**
     if len(caps_words(b)) > MAX_CAPS:
         b = unshout(b, first_line)

@@ -16,8 +16,8 @@
 | 4 | **THE PORT's OWN PORTABLE PIPELINE** (schedule→render→run) | **COMPOSES END TO END, with four named defects** | `.agents/slop/browser/fullchain.bend` |
 | 5 | **THE PORT's EXECUTION IS BYTE-EXACT** | **PROVEN on 5 real MNIST kernels + a 4-buffer matmul + an f64 kernel** | `checks/e2e.py` — **7/7 stages PASS** |
 
-**⇒ THE BROWSER IS NOT THE BLOCKER.** The WebGPU lane works and is
-bit-exact. **⇒ THE BLOCKERS ARE (a) the port cannot yet turn a model into
+**THE BROWSER IS NOT THE BLOCKER.** The WebGPU lane works and is
+bit-exact. **THE BLOCKERS ARE (a) the port cannot yet turn a model into
 kernels, and (b) there is no backward pass.** Both are named below with the
 line they rest on.
 
@@ -52,14 +52,14 @@ launch 16      r_10_144_4                exact (Linear)
 bit-exact 10/10
 ```
 
-**⇒ THE HONEST CLAIM IS NOT "THE GPU EQUALS THE CPU ELEMENTWISE".** It is: the
+**THE HONEST CLAIM IS NOT "THE GPU EQUALS THE CPU ELEMENTWISE".** It is: the
 **logits are bit-identical**, both max-pools and the final `Linear` are
 bit-identical, and the four convolutions differ by at most **3.6e-7
 absolute**. The conv difference is f32 accumulation order: the CPU is compiled
 `-O2` with no `-ffp-contract=off` (`compiler_cpu.py:21`), so clang fuses a
 multiply-add that WGSL does not.
 
-**⇒ AND WHAT THE PAGE IS NOT: it is a REPLAY OF A CAPTURED CPYTHON TRACE.**
+**AND WHAT THE PAGE IS NOT: it is a REPLAY OF A CAPTURED CPYTHON TRACE.**
 `net.json` carries the 17 kernels' WGSL as `tinygrad/renderer/wgsl.py` emitted
 them, plus the binding order and the dispatch geometry. `mnist-webgpu.js`
 contains no arithmetic — it decides only what CPython decided. **So the browser
@@ -99,7 +99,7 @@ bridge_lin_ranged=1
 bridge_dump_ranged=SINK:none:AFTER;AFTER:none:PARAM,END;END:none:STORE,RANGE,RANGE;...
 ```
 
-**⇒ AND CPYTHON AGREES, ON THE SAME PROGRAM:**
+**AND CPYTHON AGREES, ON THE SAME PROGRAM:**
 
 ```
 $ .venv/bin/python .agents/slop/browser/oracle_sched.py
@@ -109,7 +109,7 @@ py_ops=7111
 py_kernel[0]=Ops.CALL
 ```
 
-**⇒ 0 → 1 ON BOTH SIDES. THIS IS THE FIRST TIME THE PORT'S SCHEDULER HAS
+**0 → 1 ON BOTH SIDES. THIS IS THE FIRST TIME THE PORT'S SCHEDULER HAS
 PRODUCED A KERNEL ON THE PORT'S OWN PROGRAM.** The rangeify work (`rangify.bend`,
 fixed this session — the driver did not compile) is what closed it.
 
@@ -131,7 +131,7 @@ void test(float* restrict data0_20, float* restrict data1_12) {
 }
 ```
 
-**⇒ AND THIS IS `void test() { * = ; }` NO LONGER** — the first attempt passed
+**AND THIS IS `void test() { * = ; }` NO LONGER** — the first attempt passed
 the kernel's two DIRECT srcs to `linearize`, and upstream's `linearize`
 toposorts INTERNALLY (`linearizer.py:7`: `lst = list(sink.toposort())`), so the
 port's caller owes the toposort. **The 198-byte kernel is a real kernel.**
@@ -184,7 +184,7 @@ def sk_0(+ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 ```
 
 Upstream (`rangeify.py:326-335`) builds
-`ret.sink(arg=KernelInfo()).call(*lctx.map.values())`. **⇒ AND THE PORT HAS
+`ret.sink(arg=KernelInfo()).call(*lctx.map.values())`. **AND THE PORT HAS
 `KernelInfo` ALREADY** (`c2fbda4ca` made it upstream's six fields), so this is
 a missing CALL and not a missing type. **This is the single most load-bearing
 gap: a `CALL` is what carries the `KernelInfo` that `to_program` asserts on.**
@@ -219,13 +219,13 @@ ku=STORE:0:V:G:1:2:-
 
 The field order is `op:bits:class:addrspace:numel:nsrc:arg`.
 
-**⇒ D3, CONFIRMED AND EXACT: SEVEN OF THE TEN NODES CARRY `WI`
+**D3, CONFIRMED AND EXACT: SEVEN OF THE TEN NODES CARRY `WI`
 (`S.CWeakInt`) — every `CONST` and both `RANGE`s.** CPython renders those as
 `int`. A `weakint` and an `i32` are BOTH 32 BITS and differ ONLY in this
 field, which is why a row that dumped the bits alone could never see it —
 and `kudump.bend` dumps the class for exactly that reason.
 
-**⇒ AND `linearize` IS NOT DROPPING ANYTHING: `topo_n=10`, `linear_n=10`.**
+**AND `linearize` IS NOT DROPPING ANYTHING: `topo_n=10`, `linear_n=10`.**
 So the missing arithmetic is NOT a `linearize` defect.
 
 ### 3.2 THE TWO READINGS THAT DISAGREE, AND IT IS NAMED RATHER THAN GUESSED
@@ -236,23 +236,23 @@ So the missing arithmetic is NOT a `linearize` defect.
 **But `rr_dump` on the rangeified graph says `STORE:none:INDEX,REDUCE`** —
 the same op with a `REDUCE` as its second src.
 
-**⇒ THE TWO OF THE TREE's OWN READINGS DISAGREE ABOUT ONE NODE, AND I DID NOT
+**THE TWO OF THE TREE's OWN READINGS DISAGREE ABOUT ONE NODE, AND I DID NOT
 PICK A WINNER.** The candidates, each checkable:
 
 1. **the scheduler's rewrite is the difference**: `SCH.schedule` CONSUMES the
    arena and returns `Lin{ar, …}` with a GROWN one, and `create_schedule`
    legitimately rewrites (`pm_replace_buf` swaps BUFFER for PARAM). So `k` is
-   in the NEW arena and `rr_dump` read the OLD one. **⇒ IF SO THIS IS NOT A
+   in the NEW arena and `rr_dump` read the OLD one. **IF SO THIS IS NOT A
    DEFECT AND THE COMPARISON IS BETWEEN TWO DIFFERENT GRAPHS** — which would
    make my `fullchain` measurement compare the wrong pair.
 2. **the scheduler rewrote the REDUCE away**, which would be a real defect.
 
-**⇒ AND THE INSTRUMENT THAT SETTLES IT IS ONE ROW: dump `rr_dump` of the graph
+**AND THE INSTRUMENT THAT SETTLES IT IS ONE ROW: dump `rr_dump` of the graph
 IN THE SCHEDULER's ARENA, which is what `k` lives in.** That row does not exist
 yet, and it is the next thing to write. **A FINGERPRINT COMPARISON ACROSS TWO
 ARENAS IS NOT A COMPARISON, AND I AM NOT REPORTING IT AS ONE.**
 
-**⇒ AND ONE FACT IS INDEPENDENT OF THAT QUESTION: THE KU LIST HOLDS TWO
+**AND ONE FACT IS INDEPENDENT OF THAT QUESTION: THE KU LIST HOLDS TWO
 `PARAM`s WHERE CPYTHON HOLDS THREE.** `data2_15` — the rhs matrix — is absent
 from the port's kernel under either reading.
 
@@ -265,7 +265,7 @@ $ grep -rn "tn_backward" --include='*.bend' tinybendygrad/ | grep -v tensor.bend
   (all hits are PROSE in stub files)
 ```
 
-**⇒ `compute_gradient` (`mixin/gradient.bend:1581`) EXISTS, 69 `gr_*` rules
+**`compute_gradient` (`mixin/gradient.bend:1581`) EXISTS, 69 `gr_*` rules
 EXIST, `tn_backward` (`tensor.bend:2015`) EXISTS, AND NOTHING CALLS IT.** The
 oracle `oracles/bwd-oracle.rows` holds exactly two rows:
 
@@ -278,13 +278,13 @@ So the backward pass is written and **unexercised**. `.agents/slop/BACKWARD-WALK
 records **15/15 rows AGREE with CPython** on the `_deepwalk` half, with two
 plants that move rows and two disarms that correctly do not.
 
-**⇒ AND `.agents/TODO.md` RECORDS THE FIX THAT ALREADY LANDED THIS SESSION:**
+**AND `.agents/TODO.md` RECORDS THE FIX THAT ALREADY LANDED THIS SESSION:**
 `mixin/gradient.bend` went **0/494 → 174/495** and all 32 rules `gr_0..gr_31`
 are reached, because two new corpus graphs (`grad`, `gral`) call it —
 **and `gral` disagreed on its first run and found a REAL port defect** (the max
 gradient rule built four `WHERE` nodes where CPython builds three).
 
-**⇒ SO TRAINING IS CLOSER THAN THE `tn_backward` GREP SUGGESTS**, and the
+**SO TRAINING IS CLOSER THAN THE `tn_backward` GREP SUGGESTS**, and the
 remaining work is measurable: the optimizer (`nn/optim.bend`, 1 TODO), the loss
 (`47` TODOs across `nn/`), and wiring `backward` into a training loop.
 
@@ -302,14 +302,14 @@ $ head -18 tinybendygrad/extra/models/resnet.bend
 All 15 model files (`resnet`, `efficientnet`, `convnext`, `vit`, `inception`,
 …) are in this state. **But the LAYERS landed**: `nn_conv2d`
 (`nn/layers.bend:937`), `nn_linear` (`:530`), `pool_bn` (`nn/pool.bend:382`),
-`pool_maxpool` (`:251`). **⇒ `nn/__init__.bend` STILL HOLDS ZERO `nn` LAYER
+`pool_maxpool` (`:251`). **`nn/__init__.bend` STILL HOLDS ZERO `nn` LAYER
 CLASSES** — it is 429 lines of shape arithmetic.
 
 ### 5.2 THE IMAGENET LOADER IS DONE
 
 `extra/datasets/imagenet.bend` (520 lines) ports `get_train_files`,
 `get_val_files`, `get_imagenet_categories` with a real `json.loads`
-replacement. **⇒ NOT THE BLOCKER.**
+replacement. **NOT THE BLOCKER.**
 
 ### 5.3 THE BROWSER PAGE IS UPSTREAM's, NOT THE PORT's
 
@@ -322,7 +322,7 @@ ls: examples/net.js: No such file or directory
 ```
 
 So the ImageNet page is a *pointer at a build artifact* that a separate
-`compile_efficientnet.py` run produces. **⇒ AND THAT PATH IS UPSTREAM's WHOLE
+`compile_efficientnet.py` run produces. **AND THAT PATH IS UPSTREAM's WHOLE
 PIPELINE**, not the port's.
 
 ---
@@ -365,7 +365,7 @@ PIPELINE**, not the port's.
    the difference between "C that compiles" and "C that is a kernel". A
    RANGE-with-no-trip-count is a one-field read.
 2. **D1 (`split_kernels`).** It is a `CALL` construction, and `KernelInfo`
-   exists. **⇒ AND IT IS WHAT MAKES THE PORT's OUTPUT COMPARABLE TO CPython's
+   exists. **AND IT IS WHAT MAKES THE PORT's OUTPUT COMPARABLE TO CPython's
    BY ROOT OP**, which every later gate wants.
 3. **A `schedule → render → compile → run` E2E on ONE real MNIST kernel**,
    replacing the `gen_kus.py` generated fixture with the port's own
@@ -375,9 +375,9 @@ PIPELINE**, not the port's.
    what is missing is a caller and a loss.
 5. **ImageNet last**, because it is 15 model files and needs 1–4 to be real.
 
-**⇒ AND THE BROWSER NEEDS NONE OF THAT.** A page that runs the port's own
+**AND THE BROWSER NEEDS NONE OF THAT.** A page that runs the port's own
 `kuconv`+`render` output on WebGPU needs links 3–5 only, and links 3–5 are
-measured. **⇒ SO THE SHORTEST PATH TO "A MODEL IN THE BROWSER, THROUGH THE
+measured. **SO THE SHORTEST PATH TO "A MODEL IN THE BROWSER, THROUGH THE
 PORT" IS: fix D2/D3, then render ONE MNIST kernel through the port and dispatch
 it, and compare its output word against the replayed trace's.**
 
@@ -413,13 +413,13 @@ hedged and §9.2 now settles. Three things moved.**
 
 One training step -- forward, `sparse_categorical_crossentropy`, the gradients,
 the SGD update -- is **90 kernel launches**, and the browser replays all of them
-on a real adapter (`apple/metal-3`). **⇒ AND THE STRENGTH OF THE ROW IS ITS
+on a real adapter (`apple/metal-3`). **AND THE STRENGTH OF THE ROW IS ITS
 DENOMINATOR: 47 TENSOR buffers and 180 782 words, not one loss scalar.** A GPU
 that computed nothing and kept its uploads would fail C1, which is a control in
 the gate.
 
-**⇒ AND ONE THING IS NAMED AND NOT FIXED**: a single 1-word scalar, the loss,
-differs (`3.9493408203125` where CPython has `2.7735066413879395`). **⇒ AND THE
+**AND ONE THING IS NAMED AND NOT FIXED**: a single 1-word scalar, the loss,
+differs (`3.9493408203125` where CPython has `2.7735066413879395`). **AND THE
 GATE'S FIRST EXPLANATION FOR IT IS RETRACTED IN THE GATE'S OWN OUTPUT**, because
 measurement disproved it: the read-side copy was removed, the alias collapsed to
 one binding, and the value did not move. It is not a weight; the next instrument
@@ -434,7 +434,7 @@ in, which is what §3.2 said was needed:
     B_sched_n=10    STORE:none:INDEX,PARAM      <- it is GONE
     C_sched_dump    STORE:none:INDEX,PARAM      <- the SAME reading, same arena
 
-**⇒ SO THE TWO READINGS ARE CONSISTENT AND THE ARITHMETIC IS GENUINELY LOST**,
+**SO THE TWO READINGS ARE CONSISTENT AND THE ARITHMETIC IS GENUINELY LOST**,
 and `.agents/slop/browser/d1arity.bend` says why in two rows:
 
     D1_a_store_before=STORE(INDEX,REDUCE)  store_after_replace=STORE(INDEX,PARAM)
@@ -445,8 +445,8 @@ was wrong. Upstream asserts `k.op is Ops.CALL` before it
 (`schedule/__init__.py:69`); Bend has no `raise`, so the assert became nothing
 and a CALL-shadows rewrite ran on a STORE, replacing its value with a buffer-uop.
 
-**⇒ ⇒ ⇒ SO D2 IS NOT A `kuconv` FIELD BUG AND FIXING `split_kernels` FIXES BOTH.**
-**⇒ AND THE WEAK DTYPES (D3, seven of ten KU nodes `CWeakInt`) ARE STILL A REAL
+**SO D2 IS NOT A `kuconv` FIELD BUG AND FIXING `split_kernels` FIXES BOTH.**
+**AND THE WEAK DTYPES (D3, seven of ten KU nodes `CWeakInt`) ARE STILL A REAL
 SEPARATE DEFECT**, measured in `.agents/slop/browser/kudump.bend`.
 
 ## 9.3 IMAGENET TRACES COMPLETELY, AND WEBGPU REFUSES 12 SHADERS
@@ -460,7 +460,7 @@ account is `.agents/slop/browser/IMAGENET.md` and the census is
 ## 9.4 THE TRACER WAS STALE AND DEAD, WHICH IS WHY NONE OF THIS RAN
 
 `xd2/trace_forward.py` now raises `AttributeError: 'Buffer' object has no
-attribute 'size'`. **⇒ NOTHING READ IT, SO NOTHING NOTICED** -- the tree's own
+attribute 'size'`. **NOTHING READ IT, SO NOTHING NOTICED** -- the tree's own
 class. The re-point is `.agents/slop/browser/trace_common.py` (322 lines, a NEW
 path, because a script others execute is shared state), and it carries FOUR
 measured migrations, ONE measured bug and ONE measured wall:
@@ -476,10 +476,10 @@ measured migrations, ONE measured bug and ONE measured wall:
 | **`DMC=1`** | one of 90 training launches cannot coalesce (`gated loads/stores`); `DMC=0` renders 89, `DMC=1` renders 90 |
 | **`f32` -> `w32` snapshots** | the LABEL is an i32 buffer; an `f32` filter meant it was never uploaded and the loss came back `0` |
 
-**⇒ AND WEBGPU REFUSES TWO SHAPES TINYGRAD EMITS, BOTH MEASURED REFUSALS, NEITHER
+**AND WEBGPU REFUSES TWO SHAPES TINYGRAD EMITS, BOTH MEASURED REFUSALS, NEITHER
 A NAMED WALL IN ANY DOC BEFORE TODAY**: a buffer declared `read_write` at several
 bindings (writable aliasing), and a shader/layout pair that must agree about
-which binding is an output. **⇒ AND THE FIRST VERSION OF THE PAGE HAD NO ERROR
+which binding is an output. **AND THE FIRST VERSION OF THE PAGE HAD NO ERROR
 SCOPE**, so a refused dispatch read as a number that never changed -- which is
 the `SKIP IS NOT PASS` failure with a GPU in it.
 
@@ -499,7 +499,7 @@ the `SKIP IS NOT PASS` failure with a GPU in it.
 | 3 | **ImageNet inference** | `inet-gate` rc=0, 328 launches, 1000 logits to **2.384e-7 absolute** (189 bit-identical) |
 | 4 | **ImageNet training** | `inet-train-gate` rc=0, **13 154 launches**, 1000 logits **bit-identical** (max abs **0.000e+0**) |
 
-**⇒ AND §9's REFUSAL IS RETRACTED, WHICH IS WHY IT IS STILL HERE.** ImageNet
+**AND §9's REFUSAL IS RETRACTED, WHICH IS WHY IT IS STILL HERE.** ImageNet
 training was `REFUSED[3]` at §9 and is `PASS` now; the difference was THREE
 defects and only one of them was the one §9 guessed.
 
@@ -513,30 +513,30 @@ THE HALF IT MISSED WAS THE INTERESTING ONE.** Two of the three were packaging:
    passes became ~200, and shaders compile on first use instead of all 568 up
    front;
 
-**⇒ AND THE THIRD WAS NOT PACKAGING AT ALL: THE PAGE HAD ALREADY FINISHED AND
+**AND THE THIRD WAS NOT PACKAGING AT ALL: THE PAGE HAD ALREADY FINISHED AND
 COULD NOT SAY SO.** With the first two fixed the page reached launch 11 840 of
 13 154 inside the poll, and then the harness read NOTHING -- because the page was
 serialising **~800 f32 buffers into one `JSON.stringify`** and that alone outlasted
-a four-minute probe. **⇒ SO THE READBACK IS SCOPED BY `?only=`, and a trace with no
+a four-minute probe. **SO THE READBACK IS SCOPED BY `?only=`, and a trace with no
 `only` still reads everything** (the MNIST gate compares all 47 and is unchanged).
-**⇒ A PAGE THAT DID THE WORK AND COULD NOT REPORT IT READS EXACTLY LIKE A PAGE THAT
+**A PAGE THAT DID THE WORK AND COULD NOT REPORT IT READS EXACTLY LIKE A PAGE THAT
 HUNG**, which is the same class as `SKIP IS NOT PASS` with a serialiser in it.
 
-**⇒ AND THE IMAGENET-TRAINING TRACE IS 64x64, NOT 224x224, AND THAT IS STATED.**
+**AND THE IMAGENET-TRAINING TRACE IS 64x64, NOT 224x224, AND THAT IS STATED.**
 EfficientNet's head is `global_average_pool -> linear`, so **the spatial size is
 free** -- the same kernels run, with fewer positions each. At 224x224 the trace is
 **5.5 GB**; at 64x64 it is **72 MB** after interning 20 848 payload references
-into 568 distinct ones. **⇒ 64x64 IS A TRANSPORT FIGURE AND NOT A CORRECTNESS ONE**,
+into 568 distinct ones. **64x64 IS A TRANSPORT FIGURE AND NOT A CORRECTNESS ONE**,
 and the 1000 logits are compared against CPython's logits from the SAME 64x64 step.
 
-**⇒ AND THE FLAKE IS HANDLED IN THE OPEN**: one of the first five runs did not
+**AND THE FLAKE IS HANDLED IN THE OPEN**: one of the first five runs did not
 publish a result, with its progress counter never leaving ZERO -- a stall BEFORE
 the first batch, not a wrong answer. The gate now restarts the page ONCE and still
 requires a `PASS`; both attempts stalling is `REFUSED[3]` with `attempts=2`.
 **MEASURED AFTER THAT: five consecutive runs, rc=0 five times.** The stall's cause
 is still OPEN and is named as open.
 
-**⇒ AND THE ONE THING THAT IS STILL NOT A WEIGHT COMPARISON IS NAMED TOO.** The
+**AND THE ONE THING THAT IS STILL NOT A WEIGHT COMPARISON IS NAMED TOO.** The
 MNIST gate compares **47 of 47 tensor buffers**, so the WEIGHT UPDATE mechanism is
 bit-exact there. The ImageNet gate compares the **1000 logits inside the training
 step** -- because snapshotting 6.6 M parameters twice would take the trace from
@@ -550,7 +550,7 @@ models, two different denominators, and neither row is asked to be the other.
 
 **Every number below is `ms_gpu` from `web/train.html`'s own clock**, which starts
 after the trace is parsed and every buffer created and stops after
-`queue.onSubmittedWorkDone()`. **⇒ THE TRANSPORT IS EXCLUDED ON PURPOSE**
+`queue.onSubmittedWorkDone()`. **THE TRANSPORT IS EXCLUDED ON PURPOSE**
 (`ms_parse` and `ms_read` are reported separately) because a number that included
 `JSON.parse` of the trace would be a number about the file.
 
@@ -568,7 +568,7 @@ after the trace is parsed and every buffer created and stops after
 | MNIST training step | **5 166 ms** | **779.8 ms** | **6.6× slower** |
 | EfficientNet-0 forward (224×224) | **14 365 ms** | **541 ms** | **26× slower** |
 
-**⇒ AND THE BROWSER IS SLOWER THAN ONE CPU CORE ON EVERY ROW**, which for a GPU
+**AND THE BROWSER IS SLOWER THAN ONE CPU CORE ON EVERY ROW**, which for a GPU
 replay of the same arithmetic is the only number that matters.
 
 ## 11.2 THE CAUSE, AND IT IS ONE MEASUREMENT
@@ -578,19 +578,19 @@ replay of the same arithmetic is the only number that matters.
     EfficientNet fwd     kernels=   328  global==(1,1,1): 328 (100.0%)
     EfficientNet train   kernels=  2667  global==(1,1,1): 2667 (100.0%)
 
-**⇒ EVERY KERNEL DISPATCHES `(1,1,1)` INTO A `workgroup_size(1)` SHADER, WHICH IS
+**EVERY KERNEL DISPATCHES `(1,1,1)` INTO A `workgroup_size(1)` SHADER, WHICH IS
 ONE GPU THREAD PER LAUNCH.** The whole loop nest runs inside a single invocation.
 The GPU is being used as a single-threaded interpreter.
 
-**⇒ AND THAT IS NOT A DEFECT IN THE PAGE, IT IS A PROPERTY OF THE TRACE.** The
+**AND THAT IS NOT A DEFECT IN THE PAGE, IT IS A PROPERTY OF THE TRACE.** The
 trace comes from CPython's `CPU` device, whose `ProgramInfo.launch_dims` are
-`(1,1,1)` because the CPU renderer does not split work across threads. **⇒ THE
+`(1,1,1)` because the CPU renderer does not split work across threads. **THE
 REPLAY IS FAST AT WHAT IT IS FOR -- proving the kernels and the dataflow are right,
 bit for bit -- AND SLOW AT WHAT IT IS NOT: being a runtime.**
 
-**⇒ AND THE SAME FACT EXPLAINS THE BIT-EXACTNESS.** A single workgroup runs the loop
+**AND THE SAME FACT EXPLAINS THE BIT-EXACTNESS.** A single workgroup runs the loop
 nest in exactly the order CPython's C did, so accumulation order cannot differ.
-**⇒ THE EXACTNESS AND THE SLOWNESS ARE ONE PROPERTY**, and a backend that
+**THE EXACTNESS AND THE SLOWNESS ARE ONE PROPERTY**, and a backend that
 parallelised would have to give up bit-identity with the CPU until it also matched
 the CPU's arithmetic ordering — which is why `inet-gate`'s 2.384e-7 tolerance
 exists and `inet-train-gate`'s 0.000e+0 does not.
@@ -600,11 +600,11 @@ exists and `inet-train-gate`'s 0.000e+0 does not.
 1. **A REAL `launch_dims`.** `ops_webgpu.py`'s own dispatch uses
    `ProgramInfo.launch_dims`, and a WebGPU-shaped schedule would choose a
    workgroup size from the kernel's `local_size` instead of inheriting the CPU's
-   `(1,1,1)`. **⇒ THAT IS THE PORT'S `runtime/ops_webgpu.bend`, NOT THIS PAGE**, and
+   `(1,1,1)`. **THAT IS THE PORT'S `runtime/ops_webgpu.bend`, NOT THIS PAGE**, and
    the page exists to make the browser lane real while that lands.
 2. **`DMC=1` IS IN THE TRACE AND COSTS PARALLELISM TOO** — it was required to render
    the backward's gated loads at all, and it also disables the coalescing pass that
    would vectorise LOAD/STORE.
 3. **AND NEITHER CHANGES THE CLAIM.** The four gates answer "is the browser
-   computing CPython's program correctly", and they do. **⇒ THEY DO NOT ANSWER "IS
+   computing CPython's program correctly", and they do. **THEY DO NOT ANSWER "IS
    IT FAST", AND UNTIL THIS SECTION NOBODY HAD ASKED THEM TO.**

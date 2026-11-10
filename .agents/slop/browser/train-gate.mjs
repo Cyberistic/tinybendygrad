@@ -8,11 +8,11 @@
 //
 // THE TWO SIDES ARE INDEPENDENT. The page reports the GPU's words; this file
 // diffs them against `train/train-oracle.json`, which CPython wrote BEFORE any
-// browser ran. **⇒ AND THE PAGE NEVER SEES THE ORACLE**, so it cannot grade its
+// browser ran. **AND THE PAGE NEVER SEES THE ORACLE**, so it cannot grade its
 // own homework.
 //
 // THE DENOMINATOR IS STATED AND IS NOT ONE. A forward pass returns one tensor;
-// a training step changes 34 of 52 buffers. **⇒ SO THE COMPARISON IS OVER EVERY
+// a training step changes 34 of 52 buffers. **SO THE COMPARISON IS OVER EVERY
 // f32 BUFFER**, and a row that only checked the loss scalar would be satisfied by
 // a GPU that computed nothing and kept the uploaded input.
 //
@@ -54,7 +54,7 @@ async function replay() {
     const s = await Session.openPage(h.port, { url: srv.url + `/train.html?batch=${process.env.BATCH ?? 1}` });
     await s.eval("window.__GO = true;");
     // 90 launches plus 52 readbacks; the page sets __TRAIN_RESULT and title=done.
-    // **⇒ AND A TIMED-OUT PROBE IS NOT A VERDICT, SO THE POLL RETRIES.**
+    // **AND A TIMED-OUT PROBE IS NOT A VERDICT, SO THE POLL RETRIES.**
     for (let i = 0; i < 1200; i++) {
       try {
         const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:'running'};");
@@ -97,9 +97,9 @@ const b64ToU32 = (b64) => {
 };
 
 async function main() {
-  // **⇒ A MISSING TRACE IS `REFUSED` (3), NOT A PASS AND NOT A FAIL.** The trace
+  // **A MISSING TRACE IS `REFUSED` (3), NOT A PASS AND NOT A FAIL.** The trace
   // is 4.2 MB -- over this tree's `jj` new-file limit -- so it is GENERATED and
-  // not committed, and the generator is. **⇒ AND A GATE THAT RAN NOTHING MUST
+  // not committed, and the generator is. **AND A GATE THAT RAN NOTHING MUST
   // NOT EXIT 0**, which is this tree's own rule for `SKIP`/`REFUSED`.
   if (!existsSync(path.join(OUT, "train-net.json"))) {
     P(`REFUSED[3]: ${path.join(OUT, "train-net.json")} is absent.`);
@@ -117,7 +117,7 @@ async function main() {
   // `train-oracle.json` names the WEIGHTS, and the page names the buffers, so
   // the bridge is the trace's own LAST `after` snapshot -- which is what CPython
   // left in each buffer, per launch, from the SAME trace.
-  // **⇒ THE FINAL STATE COMES FROM `net.final`, NOT FROM THE LAST KERNEL's
+  // **THE FINAL STATE COMES FROM `net.final`, NOT FROM THE LAST KERNEL's
   // `after`.** A launch's `after` only holds the buffers THAT launch bound, so
   // merging per-launch snapshots is right only when every launch keeps its
   // snapshot -- and the compact trace does not. `final` is the same information
@@ -146,15 +146,15 @@ async function main() {
   const want = {};
   for (const [n, b64] of Object.entries(lastAfter)) want[n] = b64ToU32(b64);
   const rows = diffWords(res.words, want);
-  // **⇒ AND ONLY BUFFERS SOME LAUNCH **WRITES** ARE COMPARED, WHICH IS A
+  // **AND ONLY BUFFERS SOME LAUNCH **WRITES** ARE COMPARED, WHICH IS A
   // CORRECTION WITH A MEASURED CAUSE.** MEASURED: `b11` differed in 1 of 784 words
   // and the value was the LABEL's `7` where CPython's was `-0.5` -- and
   // **CPython's OWN trace has `in[b11] = 7` at launches 26 and 27 and `-0.5` at its
   // first bind and at launch 41**, because the tinygrad allocator RECYCLES that
   // allocation (`tinygrad/device.py:270`, which `trace_common.py` already
-  // records). **⇒ SO ONE NAME SPANS TWO DIFFERENT TENSORS** and the row compared
+  // records). **SO ONE NAME SPANS TWO DIFFERENT TENSORS** and the row compared
   // snapshots of different logical buffers.
-  // **⇒ AND AN INPUT-ONLY BUFFER IS COVERED ANYWAY**: it is uploaded from CPython's
+  // **AND AN INPUT-ONLY BUFFER IS COVERED ANYWAY**: it is uploaded from CPython's
   // own bytes and every buffer DERIVED from it is in the comparison, so excluding
   // it removes an artifact and not a check. The count is printed.
   const writtenNames = new Set();
@@ -163,9 +163,9 @@ async function main() {
   const inputOnly = allRows.filter((r) => !writtenNames.has(r.n));
   P(`input-only buffers excluded (never written by any launch, and the allocator` +
     ` recycles their storage): ${inputOnly.length} -> ${inputOnly.slice(0, 6).map((r) => r.n).join(",")}`);
-  // **⇒ AND THE CLAIM IS ABOUT **TENSORS**, WHICH IS WHAT "TRAIN IT" MEANS: the
+  // **AND THE CLAIM IS ABOUT **TENSORS**, WHICH IS WHAT "TRAIN IT" MEANS: the
   // 34 buffers whose contents moved are the weights, the moment buffers and the
-  // gradients. **⇒ AND ONE-WORD f32 BUFFERS ARE **SCALAR READOUTS** -- the loss is
+  // gradients. **AND ONE-WORD f32 BUFFERS ARE **SCALAR READOUTS** -- the loss is
   // one of them -- and they are reported as their own row rather than folded into
   // the tensor row**, because a 1-word buffer is not a weight and calling the
   // step "bit-exact" over it would be a claim about the wrong thing.
@@ -195,16 +195,16 @@ async function main() {
     P(`      CAUSE: OPEN, AND THE FIRST HYPOTHESIS WAS DISPROVEN BY MEASUREMENT.`);
     P(`      This page's first version bound a COPY of the read side of an aliased`);
     P(`      buffer (WebGPU refuses writable aliasing: "Writable storage buffer`);
-    P(`      binding aliasing found"), and the loss differed. ⇒ SO THE ALIAS WAS`);
+    P(`      binding aliasing found"), and the loss differed. SO THE ALIAS WAS`);
     P(`      COLLAPSED TO ONE BINDING INSTEAD -- and MEASURED, THE VALUE DID NOT`);
     P(`      MOVE (1081917952 before and after), so the copy was NOT the cause and`);
     P(`      that explanation is RETRACTED here rather than left standing.`);
     P(`      The loss reads b20[7] (identical both sides) and b23 twice, and the`);
     P(`      kernel needs b23 = 1.5072439 where the replayed step had 2.0951609 --`);
     P(`      so b23's value AT LAUNCH 25 is the open question, and b23's FINAL`);
-    P(`      contents agree. ⇒ THE NEXT INSTRUMENT IS A PER-LAUNCH LADDER ON b23,`);
+    P(`      contents agree. THE NEXT INSTRUMENT IS A PER-LAUNCH LADDER ON b23,`);
     P(`      which is what the forward page's own \`snapshot\` mode exists for.`);
-    P(`      ⇒ AND THIS IS NOT A WEIGHT: the 47 TENSOR buffers above are bit-exact.`);
+    P(` AND THIS IS NOT A WEIGHT: the 47 TENSOR buffers above are bit-exact.`);
   }
 
   // ---- AND THE ROW THAT SAYS THE STEP COMPUTED SOMETHING -------------------

@@ -8,7 +8,7 @@
 #   `E.Ehdr.at` -> `E.elf_loader` -> `E.jit_loader`
 # AND PRINTS THE RELOCATED IMAGE AS HEX.
 #
-# ⇒ THE ORACLE IS `elf/<name>.img`: UPSTREAM's OWN `jit_loader`
+# THE ORACLE IS `elf/<name>.img`: UPSTREAM's OWN `jit_loader`
 # (tinygrad/runtime/support/elf.py:52-86) ON THE SAME INPUT, AND THE COMPARER
 # IS A BYTE DIFF.
 import Base

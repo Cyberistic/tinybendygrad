@@ -170,7 +170,7 @@ read-only, disarmed) reports **693 intent-to-add paths, 0 deletions, 1 stale
 | `gates/falseclaim.rows` | `7a941f76…` | `cf2670c9…` |
 | `gates/oracleblind.rows` | `0cc47cbe…` | **`614ea700…`** ← the sha `tnvalue-census.py:8` pins |
 
-**⇒ Which version should be committed is not a question I can answer from the repo.
+**Which version should be committed is not a question I can answer from the repo.
 REFUSED to guess.** It is the owner's call, and it is the whole content of the decision.
 
 **How this happened, from the commits themselves:** `02329daf` (`REPAIR: 178 phantom

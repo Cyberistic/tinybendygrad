@@ -31,7 +31,7 @@ const MNIST = "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/examples/web
 const INET = path.join(HERE, "imagenet");
 const OUT_NAME = "b312"; // the last launch's output slot; read out of the trace, not guessed
 
-// **⇒ THE TOLERANCE, AND WHY IT IS NOT A CONVENIENCE.** EfficientNet-0 has ~50
+// **THE TOLERANCE, AND WHY IT IS NOT A CONVENIENCE.** EfficientNet-0 has ~50
 // convolution layers across 328 kernels, so f32 ACCUMULATION ORDER compounds
 // where MNIST's four convs did not. **MEASURED: max |absolute| 2.384e-7 over 1000
 // logits, 189 of them BIT-IDENTICAL** -- and that is the SAME class and the SAME
@@ -39,7 +39,7 @@ const OUT_NAME = "b312"; // the last launch's output slot; read out of the trace
 // (3.6e-7), because the CPU is compiled `-O2` with no `-ffp-contract=off`
 // (`support/compiler_cpu.py:21`) so clang fuses multiply-adds WGSL does not.
 //
-// **⇒ AND A TOLERANCE THAT CANNOT FAIL IS A LABEL**, so the plant below adds
+// **AND A TOLERANCE THAT CANNOT FAIL IS A LABEL**, so the plant below adds
 // exactly 1.0 to one logit's expectation and the SAME comparison must reject it.
 const TOL = 1e-6;
 
@@ -67,17 +67,17 @@ async function replay() {
     const url = srv.url + `/train.html?net=inet-net.json&oracle=inet-oracle.json&batch=${process.env.BATCH ?? 1}`;
     h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], url);
     const s = await Session.openPage(h.port, { url });
-    // **⇒ AND THE PAGE IS STARTED HERE, AFTER THE ATTACH**, because the replay
+    // **AND THE PAGE IS STARTED HERE, AFTER THE ATTACH**, because the replay
     // blocks the main thread the debugger needs. The page waits on this flag.
     await s.eval("window.__GO = true;");
     // 328 launches and a ~100 MB trace: the deadline is generous ON PURPOSE,
     // because a page that is still parsing is not a page that failed.
     for (let i = 0; i < 2400; i++) {
       try {
-      // **⇒ AND A TIMED-OUT PROBE IS NOT A VERDICT.** MEASURED: a 13 154-launch
+      // **AND A TIMED-OUT PROBE IS NOT A VERDICT.** MEASURED: a 13 154-launch
       // replay holds the main thread in stretches longer than the evaluate
       // timeout, so the probe threw and the harness reported a page that
-      // "never finished" -- while the page was WORKING. **⇒ SO THE POLL RETRIES.**
+      // "never finished" -- while the page was WORKING. **SO THE POLL RETRIES.**
       // RETRY
       const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:document.title};");
       if (r && r.t === "done") break;
@@ -127,10 +127,10 @@ async function main() {
   const got = res.words[OUT_NAME];
   if (!got) { P(`${BAD}the readback has no ${OUT_NAME}`); return 1; }
   const d = diff(got, want);
-  // **⇒ AND A COUNT OF DIFFERING WORDS IS NOT A MAGNITUDE**, and the two mean
+  // **AND A COUNT OF DIFFERING WORDS IS NOT A MAGNITUDE**, and the two mean
   // different things: an f32 accumulation-order difference is a few ULP in the
   // last place (the MNIST page documents 3.6e-7 absolute on its convolutions),
-  // while a structural error is a whole different number. **⇒ SO THE ROW PRINTS
+  // while a structural error is a whole different number. **SO THE ROW PRINTS
   // THE MAXIMUM ABSOLUTE DEVIATION AND ITS ULP**, and a reader can tell which.
   const f32v = (w) => { const b = Buffer.alloc(4); b.writeUInt32LE(w >>> 0); return b.readFloatLE(0); };
   const i32v = (w) => { const b = Buffer.alloc(4); b.writeInt32LE(w | 0); return b.readInt32LE(0); };
@@ -168,7 +168,7 @@ async function main() {
   if (!(farMax > TOL)) fails++;
 
   // ---- C1: NOTHING RAN -----------------------------------------------------
-  // **⇒ AND THE UPLOAD **IS** ALREADY KNOWN WHEN THE FIRST BIND WAS ELIDED AS ALL
+  // **AND THE UPLOAD **IS** ALREADY KNOWN WHEN THE FIRST BIND WAS ELIDED AS ALL
   // ZEROES** -- `GPUBuffer` is zero-initialised, so the "no upload" state of this
   // buffer is a zero array and the control is still askable. The first version
   // REFUSED here, which was wrong: an absent PAYLOAD is not an absent FACT.
@@ -181,11 +181,11 @@ async function main() {
   if (!(c1.n > 0)) fails++;
 
   // ---- C2: ONE BIT OF ONE LOGIT -------------------------------------------
-  // **⇒ AND THE BIT IS FLIPPED IN A WORD THAT CURRENTLY **AGREES**, WHICH IS THE
+  // **AND THE BIT IS FLIPPED IN A WORD THAT CURRENTLY **AGREES**, WHICH IS THE
   // ONLY WAY THIS CONTROL CAN MEAN ANYTHING.** The first version flipped
   // `want[0]`, and `got[0]` already differed from `want[0]` -- so flipping the
   // oracle's bit left the comparison's verdict unchanged and the control could
-  // never fire. **⇒ A MUTATION IN A WORD THAT IS ALREADY WRONG MEASURES NOTHING.**
+  // never fire. **A MUTATION IN A WORD THAT IS ALREADY WRONG MEASURES NOTHING.**
   let k = 0;
   while (k < got.length && got[k] !== want[k]) k++;
   const mutated = Uint32Array.from(want);

@@ -138,7 +138,7 @@ __device__ inline void mask_kv_tile(RT &dst, int q_abs, int k_abs, uint32_t neg_
         const int row_base = (i * 32) + ((lane >> 5) << 2); // multiplesof 4
 
         // Relative index of the FIRST element in this row-chunk w.r.t. q_pos
-        // (smaller rel ⇒ more "future" keys that must be -inf)
+        // (smaller rel => more "future" keys that must be -inf)
         const int rel0 = q_pos - (k_base + row_base);
         const uint32_t rel = static_cast<uint32_t>(rel0);
         // rel-WINDOW keeps THR within the inline-constant range

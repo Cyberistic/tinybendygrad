@@ -9,18 +9,18 @@ WHAT IT WRITES, to `.agents/slop/browser/imagenet/`:
                       WGSL, binding order, geometry, buffer contents
     inet-oracle.json  CPython's 1000 logits, as u32 bit patterns
 
-**⇒ AND THE WEIGHTS ARE `deterministic()`, NOT PRETRAINED, AND THAT IS
+**AND THE WEIGHTS ARE `deterministic()`, NOT PRETRAINED, AND THAT IS
 DELIBERATE AND STATED.** `load_from_pretrained()` FETCHES ~20 MB from the hub,
 and the claim this file exists to make is **"the browser computes EfficientNet's
 forward pass bit-exactly"**, which pretrained weights do not change and a
-download would only make flaky. **⇒ SO THE LABELS ARE MEANINGLESS AND THE
+download would only make flaky. **SO THE LABELS ARE MEANINGLESS AND THE
 ARITHMETIC IS NOT**, and the oracle is CPython's own logits on the SAME
 deterministic weights.
 
-**⇒ AND THE HONEST SCOPE: THIS IS THE LARGEST NETWORK THE BROWSER LANE HAS BEEN
+**AND THE HONEST SCOPE: THIS IS THE LARGEST NETWORK THE BROWSER LANE HAS BEEN
 ASKED TO REPLAY**, so the question it answers first is whether the WGSL
 renderer can express EfficientNet's kernels AT ALL -- squeeze-excite, swish,
-the depthwise convs, the global-pool-then-linear head. **⇒ SO EVERY LAUNCH IT
+the depthwise convs, the global-pool-then-linear head. **SO EVERY LAUNCH IT
 CANNOT RENDER IS NAMED, AND THE EXIT STATUS IS THE COUNT.**
 """
 import json
@@ -80,19 +80,19 @@ def main() -> int:
         if i != len(frames) - 1:
             fr.pop("after", None)
 
-    # **⇒ AN ALL-ZERO SNAPSHOT IS DROPPED, AND THAT IS A FACT ABOUT WEBGPU AND NOT
+    # **AN ALL-ZERO SNAPSHOT IS DROPPED, AND THAT IS A FACT ABOUT WEBGPU AND NOT
     # A LOSSY SHORTCUT: `GPUBuffer` IS ZERO-INITIALISED BY THE SPEC**, so a page
     # that creates a buffer and never writes it holds exactly these bytes.
-    # **⇒ AND IT IS THE WHOLE SIZE PROBLEM**: EfficientNet-0's first pass is
+    # **AND IT IS THE WHOLE SIZE PROBLEM**: EfficientNet-0's first pass is
     # 106 MB of JSON, and 31 MB of `buffers` plus 29 MB of `final` are
     # intermediate SCRATCH whose first and last contents are zeros.
     def all_zero(b64: str) -> bool:
         return not _nz(b64)
 
-    # **⇒ AND AN ALL-ZERO BUFFER KEEPS ITS **ENTRY** AND LOSES ONLY ITS PAYLOAD.**
+    # **AND AN ALL-ZERO BUFFER KEEPS ITS **ENTRY** AND LOSES ONLY ITS PAYLOAD.**
     # Dropping the entry too left the page unable to ALLOCATE the buffer, and it
     # died with `Cannot read properties of undefined (reading 'gb')` -- the size
-    # lives in the entry. **⇒ SO THE PAGE STILL KNOWS HOW BIG IT IS, AND STILL
+    # lives in the entry. **SO THE PAGE STILL KNOWS HOW BIG IT IS, AND STILL
     # UPLOADS NOTHING.**
     zbytes = 0
     for n, b in list(TC.buffers.items()):

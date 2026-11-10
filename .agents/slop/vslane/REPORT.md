@@ -60,7 +60,7 @@ tree's own fixture population:
 # OPS THAT SAW A TUPLE: []
 ```
 
-**⇒ THE DENOMINATOR IS 192899 CALLS OVER 153 FIXTURES AND 26 DISTINCT ALU OPS, AND THE
+**THE DENOMINATOR IS 192899 CALLS OVER 153 FIXTURES AND 26 DISTINCT ALU OPS, AND THE
 TUPLE BRANCH FIRED **0** TIMES.** Reading: `.agents/slop/vslane/tuple-census.rows`.
 
 **AND ON THE ONE FIXTURE THE TASK NAMED, `f32.sqrt.0`, THE CALLS ARE VISIBLE** —
@@ -78,7 +78,7 @@ exec_alu(SQRT,  f32,  operands=(1.0,))            -> 1.0
 exec_alu(SQRT,  f32,  operands=(4.0,))            -> 2.0
 ```
 
-**⇒ EVERY OPERAND IS A SCALAR. `any(isinstance(x, tuple) for x in operands)` IS FALSE FOR
+**EVERY OPERAND IS A SCALAR. `any(isinstance(x, tuple) for x in operands)` IS FALSE FOR
 EVERY CALL. UPSTREAM's ALU IS SCALAR IN THIS PACKET, AND SO IS THE PORT's. THE PORT WAS NOT
 "SCALAR WHERE UPSTREAM IS VECTORISED".**
 
@@ -97,21 +97,21 @@ values[INDEX]  = [1.0]                        # ops_python.py:117 -- A SCALAR
 
 and every ALU op's value is `[<scalar>]`.
 
-**⇒ THE LANES LIVE IN THE **LOAD** (`values[u] = [load(...) for j in range(load_sz)]`,
+**THE LANES LIVE IN THE **LOAD** (`values[u] = [load(...) for j in range(load_sz)]`,
 ops_python.py:142) AND IN THE **STACK** (`values[u] = src_values`, ops_python.py:135). THE
 INDEX's ALU ARM (`ops_python.py:117`, `ret = [src_values[0][i][t] for t,i in
 enumerate(src_values[1])]`) PICKS ONE ELEMENT OF THE LOAD'S RUN, AND THE ALU CONSUMES THAT
 SCALAR.**
 
-**⇒ THE PORT's SHAPE IS ALREADY UPSTREAM's**, and the port says so itself:
+**THE PORT's SHAPE IS ALREADY UPSTREAM's**, and the port says so itself:
 `tinybendygrad/runtime/ops_python.bend:697-702` ("A vector LOAD's value in Python is
 `[[v]]*load_sz` … the FLAT run is `load_sz`"), `Prog.ld.at` writes `vs[slot(LOAD)+j]`
 (`:2043`), `Prog.stack.copy` writes the STACK's srcs at `vs[slot(STACK)+k]` (`:1867`), and
 `Prog.store.v` reads `vs[slot(STACK)+j]` (`:2107`).
 
-**⇒ AND THE DECISIVE CROSS-CHECK: `f32.neg.0` HAS THE **SAME PACKET SHAPE** -- A VECTOR
+**AND THE DECISIVE CROSS-CHECK: `f32.neg.0` HAS THE **SAME PACKET SHAPE** -- A VECTOR
 LOAD, FOUR INDEXes, FOUR ALUs, A STACK, A VECTOR STORE -- AND IT **ALREADY AGREED** WITH
-UPSTREAM BEFORE THIS UNIT TOUCHED ANYTHING. IT IS NOT ONE OF THE 29. ⇒ THE LOAD/INDEX/
+UPSTREAM BEFORE THIS UNIT TOUCHED ANYTHING. IT IS NOT ONE OF THE 29. THE LOAD/INDEX/
 STACK/STORE LANE WAS NOT THE BUG; THE BUG WAS IN THE **VALUES** THE LANE CARRIED.**
 
 ### 1.3 THE PIN FILE'S OWN DIAGNOSIS IS A HYPOTHESIS, AND IT IS WRONG
@@ -122,12 +122,12 @@ STACK/STORE LANE WAS NOT THE BUG; THE BUG WAS IN THE **VALUES** THE LANE CARRIED
 > lanes 4-7 untouched … So the port zeroes the lanes it should have computed. Same shape on
 > sqrt, log2, exp2, recip, shl, shr, **maxpair**, cmod, ne, CMPNE, bitcast.
 
-**⇒ "the port zeroes the lanes it should have computed" IS TRUE AS A SYMPTOM AND FALSE AS A
+**"the port zeroes the lanes it should have computed" IS TRUE AS A SYMPTOM AND FALSE AS A
 CAUSE.** The port does not zero the lanes; it COMPUTES them, and the computation's input is
 already zero. **THIS IS THE THIRD TIME IN THIS TREE THAT A PIN FILE'S NAMED CAUSE WAS
 WRONG** (the first two: `.agents/slop/execfix/REPORT.md`, `.agents/slop/convfix/REPORT.md`).
 
-**⇒ AND THE PIN FILE's FAMILY LIST IS WRONG IN ITS DETAIL: `maxpair` IS **NOT** IN THE 29.**
+**AND THE PIN FILE's FAMILY LIST IS WRONG IN ITS DETAIL: `maxpair` IS **NOT** IN THE 29.**
 The maxpair family was fixed earlier (the `--refresh` line at `pins.rows:36` DROPPED all 9
 maxpair names). The 29 are:
 
@@ -163,7 +163,7 @@ then the packet verbatim).
 DIVERGENCES: 29
 ```
 
-**⇒ 29 DIVERGENCES, AND THEY ARE EXACTLY THE 29 NAMES IN `gates/ops_python_exec-pins.rows`
+**29 DIVERGENCES, AND THEY ARE EXACTLY THE 29 NAMES IN `gates/ops_python_exec-pins.rows`
 (lines 38-66). NO ROW DIVERGED OUTSIDE THE PINNED SET AND NO PINNED ROW WAS ALREADY
 AGREEING.** Reading: `.agents/slop/vslane/census-base.rows`.
 
@@ -228,7 +228,7 @@ AFTER : f32 WHERE(0.0,-1.0,1.0) = CFloat(bits=1065353216)   #  1.0
 | 31 | `1.0` | `0.0` | `1.0` |
 | 32 | `1.0` | `0.0` | `1.0` |
 
-**⇒ THE PORT's `SQRT` READ A ZERO BECAUSE ITS `WHERE` READ THE WRONG ARM, NOT BECAUSE
+**THE PORT's `SQRT` READ A ZERO BECAUSE ITS `WHERE` READ THE WRONG ARM, NOT BECAUSE
 ITS `SQRT` WAS WRONG. AND `abs` IS `WHERE(x < 0, -x, x)`, SO EVERY `sqrt`/`log2`/`exp2`/
 `recip`/`shl`/`shr`/`cmod` OF A FLOAT TENSOR WAS AFFECTED — AND `x.abs()` IS THE SEED OF
 EVERY ONE OF THEM IN `gates/ops_python_exec-gen.py`'s `SEEDS`.**
@@ -239,7 +239,7 @@ EVERY ONE OF THEM IN `gates/ops_python_exec-gen.py`'s `SEEDS`.**
 
 **THE INTEGER LANE'S `WHERE` WAS RIGHT** — `exec_alu_i32.where` PICKS `c` WHEN
 `U32.is_zero(a)`, WHICH IS "z IF x IS FALSY ELSE y", THE SAME SENTENCE WITH THE CONDITION
-INVERTED. **⇒ ONLY THE FLOAT LANE WAS WRONG, AND ONLY THE FLOAT LANE'S ROWS.**
+INVERTED. **ONLY THE FLOAT LANE WAS WRONG, AND ONLY THE FLOAT LANE'S ROWS.**
 
 ### CAUSE #2 — `symbolic.bend`'s `exec_alu_i32.cmp` IMPLEMENTED `CMPNE` AS `==` — **20 ROWS**
 
@@ -262,7 +262,7 @@ AFTER : i32 CMPNE(0,1) = CBool(1)
 
 **WHY IT MATTERS — AND WHY IT IS 20 ROWS AND NOT 6.** `x != y` IS THE **SECOND HALF OF
 `abs`**: TINYGRAD SPELLS `abs` AS `WHERE(x < 0, -x, x)` AND THAT WHERE'S CONDITION IS A
-CMPNE. **⇒ THE WRONG COMPARISON MADE **EVERY** `abs` IN AN **INTEGER** KERNEL WRONG**, AND
+CMPNE. **THE WRONG COMPARISON MADE **EVERY** `abs` IN AN **INTEGER** KERNEL WRONG**, AND
 WITH IT EVERY `sqrt`/`log2`/`exp2`/`recip`/`shl`/`shr`/`cmod` OF AN INTEGER TENSOR, AND EVERY
 `!=` OF EVERY DTYPE.**
 
@@ -305,7 +305,7 @@ values[u] = [truncate.get(u.dtype, lambda dt: dt)(u.dtype.const(x)) for x in src
 **PYTHON'S TRUNCATION TOWARD ZERO**. `truncate.get` (dtype.py:289) IS THEN THE RANGE
 (`ctypes.c_int32(...)`/`ctypes.c_uint32(...)`).
 
-**⇒ THE PORT's ARM READ `F32.bits(F32.trunc(f_of(e)))`, WHICH IS THE BIT PATTERN OF THE
+**THE PORT's ARM READ `F32.bits(F32.trunc(f_of(e)))`, WHICH IS THE BIT PATTERN OF THE
 **FLOAT** 1.0 (0x3F800000) AND NOT THE **INTEGER** 1 (0x00000001) THAT `int(1.0)` IS.**
 
 **THE MEASUREMENT** — `f32.bitcast.0`'s OUTPUT BUFFER 0:
@@ -315,13 +315,13 @@ values[u] = [truncate.get(u.dtype, lambda dt: dt)(u.dtype.const(x)) for x in src
 | upstream | `01000000020000000300000004000000…` | `[1, 2, 3, 4, …]` |
 | the port (before) | `0000803f0000004000004040000080…` | `[0x3f800000, 0x40000000, …]` — THE FLOATS' OWN BIT PATTERNS |
 
-**⇒ AND THE SAME ARM IS WHAT `x.abs().cast(dtypes.int32)` GOES THROUGH**, so it ALSO broke
+**AND THE SAME ARM IS WHAT `x.abs().cast(dtypes.int32)` GOES THROUGH**, so it ALSO broke
 `f32.shl.0`, `f32.shr.0` AND `f32.cmod.0` — the seed `x.abs().cast(dtypes.int32) << 2`
 reads `SHL(0x3f800000, 2)` IN THE PORT AND `SHL(1, 2)` UPSTREAM.
 
 **THE 4 ROWS:** `f32.bitcast.0.b0`, `f32.shl.0.b0`, `f32.shr.0.b0`, `f32.cmod.0.b0`.
 
-**⇒ AND THE TASK'S WARNING IS ANSWERED HERE: `bitcast` IS **NOT** AN ALU OP, IT IS A CAST,
+**AND THE TASK'S WARNING IS ANSWERED HERE: `bitcast` IS **NOT** AN ALU OP, IT IS A CAST,
 AND IT IS **NOT** FIXED BY ANY `exec_alu` CHANGE. IT IS FIXED BY CAUSE #3, AND IT IS
 CLOSED** (`f32.bitcast.0.b0` NOW AGREES).
 
@@ -338,7 +338,7 @@ def _store(m, i, v, dtype: DType):
 ```
 
 **`m` IS THE BUFFER'S OWN MEMORYVIEW, AND ITS ELEMENT TYPE IS THE BUFFER'S OWN**
-(`storage_fmt_for_dtype(u.dtype)`, ops_python.py:99). **⇒ THE WRITE IS `m[i] = v` INTO A
+(`storage_fmt_for_dtype(u.dtype)`, ops_python.py:99). **THE WRITE IS `m[i] = v` INTO A
 MEMORYVIEW OF THE BUFFER's TYPE, SO THE VALUE IS **CONVERTED TO THE BUFFER** AND IS NOT
 WRITTEN AS ITS OWN BITS.**
 
@@ -349,14 +349,14 @@ WRITTEN AS ITS OWN BITS.**
 | upstream | `0000803f00000000` | `[1.0, 0.0]` — `m[0] = True` INTO A `'f'` MEMORYVIEW IS **1.0f** |
 | the port (before) | `0100000000000000` | the **INTEGER** 1 |
 
-**⇒ THE PORT STORED THE BOOL'S BIT PATTERN AND UPSTREAM STORED THE FLOAT 1.0.**
+**THE PORT STORED THE BOOL'S BIT PATTERN AND UPSTREAM STORED THE FLOAT 1.0.**
 
 **THE 1 ROW:** `alu.CMPNE.f.b0`.
 
-**⇒ AND THE CONVERSION IS **NOT** A SECOND CONVERSION: upstream's CAST IS
+**AND THE CONVERSION IS **NOT** A SECOND CONVERSION: upstream's CAST IS
 `truncate.get(u.dtype)(u.dtype.const(x))` AND upstream's STORE IS `m[i] = value` INTO A
 MEMORYVIEW OF THE BUFFER's TYPE, AND FOR THE FOUR v1 LANES `DType.const` AND THE MEMORYVIEW
-ARE THE SAME CONVERSION. ⇒ THE STORE **REUSES `Prog.cast.dt`** WITH THE BUFFER's DTYPE AS
+ARE THE SAME CONVERSION. THE STORE **REUSES `Prog.cast.dt`** WITH THE BUFFER's DTYPE AS
 THE TARGET, WHICH IS WHY `Buf` NOW CARRIES ITS DTYPE AS A FOURTH FIELD.**
 
 ---
@@ -373,7 +373,7 @@ THE TARGET, WHICH IS WHY `Buf` NOW CARRIES ITS DTYPE AS A FOURTH FIELD.**
 **`f32_int_bits` AND WHY IT IS NOT `F32.to_u32`:** `F32.to_u32` TRUNCATES TOWARD ZERO —
 WHICH IS HALF OF WHAT IS WANTED — BUT IT **CLAMPS A NEGATIVE TO ZERO**. MEASURED
 (`.agents/slop/vslane/f32int.bend`): `F32.to_u32(-1.0)` IS `0` AND NOT `4294967295`, AND
-`F32.to_u32(2.9)` IS `2` (SO IT TRUNCATES). ⇒ THE HELPER TAKES THE MAGNITUDE AND PUTS THE
+`F32.to_u32(2.9)` IS `2` (SO IT TRUNCATES). THE HELPER TAKES THE MAGNITUDE AND PUTS THE
 SIGN BACK BY THE SUBTRACTION, WHICH IS THE TWO's COMPLEMENT OF THE MAGNITUDE.
 
 **`Prog.store.bits` AND WHY IT IS THE IDENTITY IN THE COMMON CASE:**
@@ -384,7 +384,7 @@ def Prog.store.bits(+p: Prog, +u: Uop, +j: U32) -> U32:
     Prog.store.elem(p, u, j)))
 ```
 
-**⇒ WHEN THE VALUE's DTYPE IS THE BUFFER's, `Prog.cast.dt` IS THE IDENTITY** (a float into
+**WHEN THE VALUE's DTYPE IS THE BUFFER's, `Prog.cast.dt` IS THE IDENTITY** (a float into
 an f32 buffer is `F32.bits(F32.from_bits(b))`; an int into an int buffer is
 `elem_of(Elem.bits(e), dst)`; a bool into a bool buffer is `Bool.to_u32(is_true)`), **SO THE
 124 ROWS THAT ALREADY AGREED ARE BIT-IDENTICAL AFTER THE FIX — MEASURED, SECTION 5.**
@@ -409,7 +409,7 @@ PINNED ROWS THAT NOW AGREE: 29 of 29
 key sets equal (oracle-minus-py-done vs after): True
 ```
 
-**⇒ 0 DIVERGENCES OF 365 ROWS. NOTHING REGRESSED. EVERY ROW THE ORACLE AND THE PORT BOTH
+**0 DIVERGENCES OF 365 ROWS. NOTHING REGRESSED. EVERY ROW THE ORACLE AND THE PORT BOTH
 PRODUCE IS BYTE-IDENTICAL.**
 
 ### 5.2 THE 29 PINNED ROWS THAT NOW AGREE, BY NAME
@@ -435,7 +435,7 @@ PRODUCE IS BYTE-IDENTICAL.**
 # 7 match, 0 mismatch-or-refused
 ```
 
-**⇒ STILL 7 MATCH. UNCHANGED.**
+**STILL 7 MATCH. UNCHANGED.**
 
 ### 5.4 THE COMPILATION GATE
 
@@ -465,11 +465,11 @@ WHOLE `tinybendygrad/` TREE BECAUSE `ops_python.bend`'s IMPORTS ARE RELATIVE.
 | `store` | `Prog.store.bits` → `Elem.bits(Prog.store.elem(...))` | **1**: `alu.CMPNE.f.b0` |
 | **`all`** | **ALL FOUR AT ONCE** | **29 of 29**, AND **ALL 29 ARE BYTE-IDENTICAL TO THE PRE-FIX BASELINE** |
 
-**⇒ THE JOINT PLANT IS THE STRONGEST FORM: REVERTING THE FOUR FIXES REPRODUCES THE
+**THE JOINT PLANT IS THE STRONGEST FORM: REVERTING THE FOUR FIXES REPRODUCES THE
 PRE-FIX BEHAVIOUR **BYTE FOR BYTE** (29 of 29 rows identical to
 `.agents/slop/vslane/census-base.rows`). THE FIX IS THE CAUSE.**
 
-**⇒ AND EVERY PLANTED ROW'S BYTES ARE THE BASELINE's BYTES** for every row whose cause is
+**AND EVERY PLANTED ROW'S BYTES ARE THE BASELINE's BYTES** for every row whose cause is
 the only one that touches it (the `where`, `cmpne` and `store` plants). The `cast` plant's
 `f32.cmod.0`, `f32.shl.0` AND `f32.shr.0` DIFFER from the baseline **BECAUSE THE `where`
 FIX IS STILL APPLIED IN THAT PLANT's TREE** AND THE TWO BUGS INTERACT THROUGH THE `abs`
@@ -491,17 +491,17 @@ if stale:
     sys.exit(FAIL)
 ```
 
-**⇒ WITH 0 DIVERGENCES, EVERY ONE OF THE 29 PINNED NAMES IS IN `stale`, SO THE GATE
+**WITH 0 DIVERGENCES, EVERY ONE OF THE 29 PINNED NAMES IS IN `stale`, SO THE GATE
 PRINTS `29 pins are stale` AND **EXITS 1**. THAT IS THE GATE WORKING, AND IT IS THE
 POINT.** **THE PINS FILE NEEDS `--refresh`, WHICH IS **NOT MINE TO RUN OR EDIT.**
 
-**⇒ I DID NOT RUN `gates/ops_python_exec-gate.py`, AND THE REASON IS NAMED: ITS DEFAULT
+**I DID NOT RUN `gates/ops_python_exec-gate.py`, AND THE REASON IS NAMED: ITS DEFAULT
 IS `--jobs 6` (`gates/ops_python_exec-gate.py:291`) AND `lane_bd` RUNS **SIX** EXECUTOR
 PROCESSES CONCURRENTLY (`:216`), WHICH THE BRIEF FORBIDS ("ONE bend process at a time").
 THE CLAIM ABOVE IS DERIVED FROM THE GATE's OWN CODE AND FROM MY OWN MEASUREMENT OF BOTH
 LANES' ROWS, NOT FROM A GATE RUN.**
 
-**⇒ THE OTHER THREE GATE CHECKS ARE UNAFFECTED BY NAME:** `fixtures_hold` (the fixture file
+**THE OTHER THREE GATE CHECKS ARE UNAFFECTED BY NAME:** `fixtures_hold` (the fixture file
 is untouched), `population_hold` (the fixture names and the oracle's names are the same
 153), and `coverage_hold` (the port's `Prog.dispatch` ARM TABLE IS UNCHANGED — I ADDED NO
 ARM AND REMOVED NONE).
@@ -520,7 +520,7 @@ ARM AND REMOVED NONE).
 2. **`symbolic.bend`'s OWN FOLD IS STILL DEAD FOR THE INTEGER LANE, AND THAT IS NOT MY
    SCOPE.** `ops_python.bend:630-642` NAMES IT: `symbolic.bend`'s `ci_fits` IS WIRED TO
    `i64_big`, WHICH ASKS "DOES **NOT** FIT", AND `exec_alu.of2` READS IT AS "FITS", SO
-   `SY.exec_alu2(Ops.MUL, int32, [CInt(6), CInt(7)])` ANSWERS `None{}`. **⇒ THE DEVICE
+   `SY.exec_alu2(Ops.MUL, int32, [CInt(6), CInt(7)])` ANSWERS `None{}`. **THE DEVICE
    CALLS THE TWO LANES DIRECTLY AND IS RIGHT; THE **FOLD** IS STILL DEAD, AND A FOLD
    THAT NEVER FIRES IS A SAFE FOLD.** I DID NOT FIX IT BECAUSE IT IS A DIFFERENT SUBJECT
    (THE REWRITER, NOT THE EXECUTOR) AND IT IS ANOTHER UNIT'S.
@@ -542,14 +542,14 @@ ARM AND REMOVED NONE).
    DIFFERENT, WIDER CLAIM.)
 6. **`f32_shl`'s REFUSAL IS A ZERO IN THE DEVICE.** `got` (`ops_python.bend:584`) TURNS A
    `None{}` INTO `elem_of(0, dt)`, SO A LANE THAT DECLINES TO ANSWER **ANSWERS 0** INSTEAD
-   OF REFUSING. **⇒ A `None{}` IN THE ALU IS A WRONG ANSWER, NOT A REFUSAL, AND THE DEVICE
+   OF REFUSING. **A `None{}` IN THE ALU IS A WRONG ANSWER, NOT A REFUSAL, AND THE DEVICE
    HAS NO WAY TO SAY "I DO NOT KNOW".** THIS IS THE SHAPE THAT MADE THE `f32_where` AND THE
    `CMPNE` BUGS INVISIBLE: THE SYMPTOM WAS A PLAUSIBLE ZERO.
 7. **`ops_bend.executor()`'s CACHE KEY DOES NOT COVER THE IMPORTS.** MEASURED: THE KEY IS
    `sha256(f'{ops_python.bend.mtime_ns}:{ops_python.bend.size}')` (`ops_bend.py:167`), AND A
    CHANGE TO `tinybendygrad/uop/symbolic.bend` **ALONE** LEAVES A **STALE EXECUTOR** — I
    HAD TO `touch tinybendygrad/runtime/ops_python.bend` TO FORCE THE REBUILD AFTER FIXES #1
-   AND #2. **⇒ ANY UNIT THAT FIXES AN IMPORTED `.bend` MUST TOUCH THE ENTRY POINT OR IT
+   AND #2. **ANY UNIT THAT FIXES AN IMPORTED `.bend` MUST TOUCH THE ENTRY POINT OR IT
    WILL MEASURE THE OLD BINARY.** (I DID NOT EDIT `ops_bend.py` — IT IS NOT MINE.)
 8. **THE CONVOLUTION FAMILY IS NOT RE-MEASURED BY THIS UNIT.** `.agents/slop/convfix/REPORT.md`
    MEASURED IT, AND THE FULL 153-FIXTURE CENSUS (WHICH INCLUDES `f32.matmul.0`,

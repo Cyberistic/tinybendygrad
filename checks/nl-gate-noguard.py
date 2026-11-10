@@ -124,7 +124,7 @@ def main():
 # refusal does NOT fire and argv reaches `main()`.  MEASURED 2026-10-29: bare argv exits **0**
 # (AGREE over 205 gated rows) and `--port-stdout <a tracked lane>` exits **1** (BROKEN).
 #
-# ⇒ AND **BOTH PLANTS ARE HERMETIC**, AND THAT IS THE POINT.  `nl-gate.py`'s own header records
+# AND **BOTH PLANTS ARE HERMETIC**, AND THAT IS THE POINT.  `nl-gate.py`'s own header records
 # that `tinybendygrad/uop/ops.bend` is in this port's 6-file import closure and is owned by
 # another live unit: MEASURED, two consecutive captures printed 206 rows and then ZERO.  **A
 # PLANT THAT READS THE LIVE PORT IS A PLANT THAT CAN ANSWER "NO ROWS" INSTEAD OF A VERDICT**,

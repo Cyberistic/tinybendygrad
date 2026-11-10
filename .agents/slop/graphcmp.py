@@ -3578,15 +3578,15 @@ def selfcheck(dev: str = "CPU") -> int:
         f = unchunks(ln)
       except ValueError:
         continue
-      # **⇒ SEVEN FIELDS, NOT EIGHT, AND THAT IS THE SAME ROW-FORMAT CHANGE.** The `tag` column was
+      # **SEVEN FIELDS, NOT EIGHT, AND THAT IS THE SAME ROW-FORMAT CHANGE.** The `tag` column was
       # DELETED from the row by `0021a7c33` ("PARITY 119: the corpus measures again"), and `WIRE` above
       # IS THE SEVEN-FIELD LIST (`("id", "op", "dtype", "shape", "depth", "arg", "src")`) AND `row_of`
-      # EMITS SEVEN. **⇒ AND THIS READER STILL ASKED FOR EIGHT**, so `prog_args` FOUND NO `PROGRAM`
+      # EMITS SEVEN. **AND THIS READER STILL ASKED FOR EIGHT**, so `prog_args` FOUND NO `PROGRAM`
       # ROW AT ALL, and the selfcheck reported "the py side's `--graph prog` emits 0 `pI(` rows, not 1
       # -- the `pI(` form is DEAD on the py side" **WHILE THE FORM WAS RIGHT THERE IN THE OUTPUT**:
       # MEASURED, `runs/graphcmp/D/D2-canon-py-prog.txt` CARRIES
       # `3:i51 7:PROGRAM 4:void 1:R 2:i0 201:pI(...) 6:n(i50)` -- SEVEN FIELDS, WITH THE `pI(` PAYLOAD.
-      # **⇒ A FORM NO GRAPH REACHES IS A LABEL, AND A READER THAT CANNOT SEE A FORM SAYS IT IS DEAD.**
+      # **A FORM NO GRAPH REACHES IS A LABEL, AND A READER THAT CANNOT SEE A FORM SAYS IT IS DEAD.**
       if len(f) == 7 and f[1] == "PROGRAM":
         out.append(f[ARG])
     return out

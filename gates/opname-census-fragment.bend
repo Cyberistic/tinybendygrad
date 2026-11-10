@@ -11,7 +11,7 @@
 # fragment in this tree with this shape; this one is the gate's OWN, so the plant does not read
 # a file another unit may be editing.
 #
-# ⇒ AND THE SHAPE IS WHY THE CLASS EXISTS.  A FRAGMENT CANNOT BE COMPILED, so the compiler
+# AND THE SHAPE IS WHY THE CLASS EXISTS.  A FRAGMENT CANNOT BE COMPILED, so the compiler
 # never reaches the row that names a deleted op -- and a stale name in a fragment is therefore
 # INVISIBLE to every compile check in this tree.  It is LATENT: it is one fix of the fragment's
 # own standing condition away from being the thing that breaks it.  A census that reported the

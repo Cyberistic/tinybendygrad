@@ -11,7 +11,7 @@ Adopted 2026-10-05. Prefix `WALL/`. Applies to every `WALL:` entry in
 
 Every wall carries three fields:
 
-| field | meaning | absent ⇒ |
+| field | meaning | absent |
 |---|---|---|
 | **(a) anchor** | `file:line` (or symbol name for generated files) where the blocking prerequisite would live | the wall is a **story**, not a claim |
 | **(b) reopen** | the exact check whose result would clear the wall | the wall is **open-ended**; nobody can ever retire it |

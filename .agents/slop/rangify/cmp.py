@@ -8,14 +8,14 @@ WHAT IT COMPARES
 **THE PORT's OWN `run_rangeify` (`tinybendygrad/schedule/rangify.bend`) AGAINST **UPSTREAM's
 OWN `run_rangeify` (`tinygrad/schedule/indexing.py:183`)**, ON THE SAME PROGRAM.
 
-**⇒ THE ORACLE IS `rr-oracle.py` (IN THIS DIRECTORY), WHICH **SPIES ON UPSTREAM's OWN
-CALL** TO `run_rangeify` — **⇒ SO NOTHING HERE IS TRANSCRIBED.**
+**THE ORACLE IS `rr-oracle.py` (IN THIS DIRECTORY), WHICH **SPIES ON UPSTREAM's OWN
+CALL** TO `run_rangeify` — **SO NOTHING HERE IS TRANSCRIBED.**
 
 THE THREE COMPARISONS, EACH WITH ITS OWN DENOMINATOR
 ----------------------------------------------------
 1. **THE REALIZE MAP.** `rr_py_realize` (UPSTREAM's `IndexingContext`'s OWN `realize_map`
    AFTER `pm_generate_realize_map`) AGAINST THE PORT's OWN `rr_realize` (`rangify.bend`'s
-   `rr_realize`). **⇒ THIS IS THE MAP `pm_generate_realize_map` FILLS, AND IT IS **THE
+   `rr_realize`). **THIS IS THE MAP `pm_generate_realize_map` FILLS, AND IT IS **THE
    FIRST** OF UPSTREAM's THREE STEPS.**
 2. **THE INPUT GRAPH.** `rr_py_in` AGAINST THE PORT's OWN `rr_in`, **NODE FOR NODE**,
    ORDER-FREE (THE PORT's OWN `eng_dump` SAYS: *"The oracle rebuilds the graph from this
@@ -25,12 +25,12 @@ THE THREE COMPARISONS, EACH WITH ITS OWN DENOMINATOR
 
 THE CONTROL
 -----------
-**⇒ THE CONTROL IS A PLANT IN THE PORT's OWN DRIVER: `rangify.bend`'s REALIZE SCAN IS
-**SKIPPED FOR ONE NODE**, AND **⇒ THE REALIZE MAP MUST DIVERGE WHILE THE INPUT GRAPH DOES
-NOT** — **⇒ WHICH IS EXACTLY WHAT A PLANT THAT ONLY CHANGES THE MAP SHOULD DO, AND IT IS
+**THE CONTROL IS A PLANT IN THE PORT's OWN DRIVER: `rangify.bend`'s REALIZE SCAN IS
+**SKIPPED FOR ONE NODE**, AND **THE REALIZE MAP MUST DIVERGE WHILE THE INPUT GRAPH DOES
+NOT** — **WHICH IS EXACTLY WHAT A PLANT THAT ONLY CHANGES THE MAP SHOULD DO, AND IT IS
 WHAT MAKES THE MEASUREMENT ABOUT THE **RULE** AND NOT ABOUT THE GRAPH.**
 
-**⇒ AND THE PLANT IS **NOT** A SOURCE EDIT: IT IS A FLAG THE DRIVER READS, SO THE PORT's
+**AND THE PLANT IS **NOT** A SOURCE EDIT: IT IS A FLAG THE DRIVER READS, SO THE PORT's
 OWN `rangify.bend` IS NEVER SHIPPED BROKEN.**
 """
 import os
@@ -60,7 +60,7 @@ def read_oracle():
 def run_port(plant=None):
     """THE PORT's OWN ROWS. `plant` IS A FLAG THE DRIVER READS, IF IT READS ONE."""
     # THE ENVIRONMENT IS **INHERITED**, EXCEPT FOR THE PLANT FLAG: `bin/bend` IS A SHIM
-    # THAT EXECS `bun`, **⇒ SO A NARROWED `PATH` MAKES THE DRIVER FAIL WITH
+    # THAT EXECS `bun`, **SO A NARROWED `PATH` MAKES THE DRIVER FAIL WITH
     # "bun: not found"** -- WHICH IS WHAT A FIRST ATTEMPT AT THIS COMPARISON DID.
     env = dict(os.environ)
     r = subprocess.run([str(BEND), str(DRIVER)], capture_output=True, text=True, env=env)
@@ -105,7 +105,7 @@ def main() -> int:
         print("      only in CPython: %s" % only_want[:6])
         print("      only in the port: %s" % only_got[:6])
 
-    # 3. THE CONTROL: A PLANT IN THE REALIZE SCAN. **⇒ IT IS A **ROW** IN THE DRIVER,
+    # 3. THE CONTROL: A PLANT IN THE REALIZE SCAN. **IT IS A **ROW** IN THE DRIVER,
     # NOT A BUILD: THE MEASURED ROW ABOVE IS ALWAYS THE UNPLANTED ONE.**
     planted, perr = run_port()
     p_real = planted.get("rr_realize_plant", "")

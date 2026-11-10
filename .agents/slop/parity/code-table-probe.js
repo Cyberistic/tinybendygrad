@@ -81,17 +81,17 @@ while (frontier.length) {
   // `$$_________tinybendygrad_helpers_i64_of_hi_lo(` -- SO A CALL SITE'S `$$` IS ONE `$`.
   for (const m of body.matchAll(/(\$+[A-Za-z0-9_]+)\(/g)) {
     frontier.push(m[1]);
-    // **⇒ AND THE ALIAS IS ITS OWN NAME, SO IT IS IN THE CLOSURE UNDER THE `$$` SPELLING** -- WHICH
+    // **AND THE ALIAS IS ITS OWN NAME, SO IT IS IN THE CLOSURE UNDER THE `$$` SPELLING** -- WHICH
     // IS WHAT THE SCAN SEES AT A CALL SITE.
     // **=> AND A CALL SITE'S `$$` IS THE ESCAPED FORM OF A `$`-PREFIXED NAME, AND THE FILE DEFINES
     // THE ALIAS UNDER THE DOUBLED SPELLING.** MEASURED: THE DEFINITION IS
     // `function $_________tinybendygrad_helpers_i64_of_hi_lo(` AND THE ALIAS IS
     // `const $$_________tinybendygrad_helpers_i64_of_hi_lo = ...`, AND THE CALL SITE USES THE ALIAS.
-    // **⇒ SO BOTH SPELLINGS ARE IN THE CLOSURE.**
+    // **SO BOTH SPELLINGS ARE IN THE CLOSURE.**
     if (m[1].startsWith("$$")) frontier.push("$" + m[1].slice(2));
     else frontier.push("$" + m[1]);
   }
-  // **⇒ AND THE RUNTIME HELPERS ARE PLAIN JS NAMES** (`char_len`, `char_code`, `u32_to_word`,
+  // **AND THE RUNTIME HELPERS ARE PLAIN JS NAMES** (`char_len`, `char_code`, `u32_to_word`,
   // `word_to_u32`), NOT `$`-PREFIXED, SO THE SCAN TAKES THEM TOO.
   for (const m of body.matchAll(/\b([a-z][A-Za-z0-9_]*)\(/g)) {
     frontier.push(m[1]);
@@ -106,7 +106,7 @@ let piece = "";
 let defined = 0;
 // **=> AND THE NAME IS TAKEN AS IT APPEARS, `$$` AND ALL.** THE COMPILER'S ALIASES ARE NAMED WITH A
 // DOUBLED `$`, AND A REGEX THAT CAPTURES `[A-Za-z0-9_$]+` GETS THE WHOLE NAME -- SO THE ONLY THING
-// THAT MATTERS IS THAT THE CLOSURE'S NAMES ARE THE FILE'S NAMES. **⇒ AND THE FIRST DEFINITION HAS NO
+// THAT MATTERS IS THAT THE CLOSURE'S NAMES ARE THE FILE'S NAMES. **AND THE FIRST DEFINITION HAS NO
 // LEADING NEWLINE** (MEASURED: THE COMPILED FILE BEGINS `function word_to_u32(w) {`), SO THE PATTERN
 // IS `(?:^|\n)`.
 for (const m of src.matchAll(/(?:^|\n)(?:function|const) ([A-Za-z0-9_$]*)[ (=]/g)) {

@@ -1,13 +1,13 @@
 # .agents/slop/browser/arenas.bend -- WHICH ARENA IS `Lin.out` IN?
 #
-# **⇒ THE QUESTION, AND IT IS ONE ROW.** `kudump.bend` read the scheduler's
+# **THE QUESTION, AND IT IS ONE ROW.** `kudump.bend` read the scheduler's
 # kernel as `STORE(INDEX, PARAM)` -- a COPY, no arithmetic -- while `rr_dump` on
-# the RANGEIFIED graph read `STORE:none:INDEX,REDUCE`. **⇒ AND `SCH.schedule`
+# the RANGEIFIED graph read `STORE:none:INDEX,REDUCE`. **AND `SCH.schedule`
 # CONSUMES THE ARENA AND RETURNS A GROWN ONE** (`Lin{ar, ...}`), so the two
-# readings may be of TWO DIFFERENT GRAPHS. **⇒ AND IF THEY ARE, MY OWN
+# readings may be of TWO DIFFERENT GRAPHS. **AND IF THEY ARE, MY OWN
 # `fullchain` MEASUREMENT COMPARED THE WRONG PAIR.**
 #
-# **⇒ SO THIS FILE DUMP THE GRAPH **IN THE SCHEDULER's ARENA**, ROOTED AT THE
+# **SO THIS FILE DUMP THE GRAPH **IN THE SCHEDULER's ARENA**, ROOTED AT THE
 # KERNEL THE SCHEDULER SELECTED.** One dump, one arena, no translation.
 #
 # THREE ROWS, AND THE THIRD IS THE ONE THAT SETTLES IT:
@@ -15,7 +15,7 @@
 #   B  the scheduler's kernel OP and its SRC OPS                     (a fingerprint)
 #   C  `rr_dump` of the scheduler's kernel, IN THE SCHEDULER's arena  (the NEW one)
 #
-# **⇒ AND B AND C ARE THE SAME QUESTION ASKED TWO WAYS, WHICH IS WHAT MAKES
+# **AND B AND C ARE THE SAME QUESTION ASKED TWO WAYS, WHICH IS WHAT MAKES
 # BOTH CHECKABLE**: if B says `STORE(INDEX,PARAM)` and C says the same, the
 # reading is CONSISTENT and there is no cross-arena error. If they differ, the
 # fingerprint was read out of the wrong arena and my earlier claim is retracted.
@@ -60,7 +60,7 @@ def ab_fp() -> String:
                  String.join(ab_fp.go(SCH.sc_srcs(ar, k), ar, Nil{}), ","), "]"])
 
 # (C) THE SAME GRAPH, DUMPED WITH THE PORT's OWN `rr_dump`, IN THE NEW ARENA.
-# **⇒ AND `rr_dump` IS `rangify.bend`'s OWN DEF, CALLED UNMODIFIED** -- so this
+# **AND `rr_dump` IS `rangify.bend`'s OWN DEF, CALLED UNMODIFIED** -- so this
 # is not a second spelling of the dump.
 def ab_dump_sched() -> String:
   +f = ab_sched()
@@ -68,7 +68,7 @@ def ab_dump_sched() -> String:
 
 # (D) AND THE COUNT: how many nodes each reading holds. A copy-store and a
 # reduce-store are the same NODE COUNT, so a count alone cannot settle it --
-# **⇒ AND IT IS PRINTED ANYWAY, BECAUSE A DIFFERENT COUNT WOULD SETTLE IT
+# **AND IT IS PRINTED ANYWAY, BECAUSE A DIFFERENT COUNT WOULD SETTLE IT
 # IMMEDIATELY.**
 def ab_n_ranged() -> String:
   +q = RZ.rz_built()

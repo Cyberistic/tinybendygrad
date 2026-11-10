@@ -93,7 +93,7 @@ export function safe_check(book: Book): boolean {
   `bendtt.lean:1-13` says the kernel "trusts none of it" — the elaborator's fidelity is
   an *assumption*, never a checked obligation.
 
-⇒ **The hole class is `safe.ts`: every place it can drop a hypothesis, weaken a type,
+**The hole class is `safe.ts`: every place it can drop a hypothesis, weaken a type,
 erase a proof, or map a type to a strictly stronger one.** #1182 lives there.
 
 ---
@@ -105,7 +105,7 @@ erase a proof, or map a type to a strictly stronger one.** #1182 lives there.
 (`t.u === true`) or **foreign** (`t.i !== undefined && t.b !== true`), then floods the
 failure back along "who names whom" edges (`term_refs`, `main.ts:864`).
 
-⇒ **A file using `unsafe` or FFI is REFUSED (exit 1), not silently accepted.** The
+**A file using `unsafe` or FFI is REFUSED (exit 1), not silently accepted.** The
 "lane prints a verdict it did not measure" hole does **not** exist for `unsafe`/FFI.
 
 **But Q4's second half is open**: `safe.ts`'s *own* carve-out is different. `safe.ts:44-45`:
@@ -132,7 +132,7 @@ $ grep -n -E '\b(sorry|admit|native_decide|unsafe|partial def|implemented_by|axi
   `@[implemented_by]`.** The 16 hits are all `partial def` **in the .bendtt text
   parser** (`Parse.gap/at/span`, `Term.parse*`, `Book.parse_defs`, lines 594-845) plus
   the word "opaque" in prose about opaque defs.
-* ⇒ **Q1's answer so far: the Lean file has no admitted axiom and no
+* **Q1's answer so far: the Lean file has no admitted axiom and no
   `native_decide`. The trust base is: the Lean 4.34.0 compiler + the C compiler behind
   `leanc -O3`. The `partial def`s are confined to the *parser* of the .bendtt text
   (see §7 for why that is still inside the trust base).**
@@ -208,7 +208,7 @@ So **in the kernel a Bend `Empty` is a `Σ` whose domain is the empty enum `<>`,
 * `Claim.consistent` forbids a def whose type **converts to `<>`**. A Bend def of type
   `Empty` has kernel type `Σx0 : <> -> (Empty.arms x0)` — a `Sig`, which does **not**
   convert to `<>` (`Term.conv`'s `Term.parts` has no `Sig`/`Enu` case, so `conv` is
-  false). ⇒ **the kernel's main claim does not, literally, cover a Bend `Empty`.**
+  false). **the kernel's main claim does not, literally, cover a Bend `Empty`.**
 * No closed value of type `<>` (hence none of type `Empty`) exists: the tag of an
   `Empty` value must have type `<>`, and the only source of `<>` is
   `D.efq : D -> <>`, which needs a `D`. **Confirmed by hand-written BendTT (§5).**
@@ -226,7 +226,7 @@ So **in the kernel a Bend `Empty` is a `Σ` whose domain is the empty enum `<>`,
 | `k3_efq_shape.bendtt` | `Empty.arms`/`Empty` + `bad : ∀x0 : Empty -> <> = λ{(,): λ{}}` | **ALL PROOFS CHECK** |
 | `k4_empty_sig.bendtt` | `bad : Empty = λ{(,): λ{}}` | SOME PROOFS FAIL — "expected: a function type" |
 
-⇒ the kernel accepts `Prj(Efq) : ∀x0 : Empty -> P` for **any** `P`, but a body at the
+=> the kernel accepts `Prj(Efq) : ∀x0 : Empty -> P` for **any** `P`, but a body at the
 `Sig` type `Empty` must be a `Tup` whose tag has type `<>` — so a closed `Empty` value
 is impossible. This is consistent with `Claim.consistent` + `Claim.empty`.
 
@@ -294,13 +294,13 @@ and accepts the book.
   `s.empty` is the list of "live variables of an empty type" (`safe.ts:104-105`),
   populated at `safe.ts:682-684` (a λ whose domain `no_ctr`) and `safe.ts:780-781`
   (a default arm whose scrutinee type `no_ctr`).
-* ⇒ **The two sides disagree about what "the scrutinee's type is empty" means.**
+* **The two sides disagree about what "the scrutinee's type is empty" means.**
   bend2 uses `ctx_dead` = *any live binder in the context has an emptied-ADT type*;
   `safe.ts` uses `no_ctr` = *the scrutinee's own type has no constructors left*
   (`safe.ts:867-872`, which filters by the ADT's `r` list — the same list `bend.ts`'s
   `book_adt` filters by, `bend.ts:882-892`, so the two agree on that predicate) **and**
   requires `s.empty` to be non-empty.
-* ⇒ **The consequence:** bend2 accepts an empty match on a *non-empty* scrutinee
+* **The consequence:** bend2 accepts an empty match on a *non-empty* scrutinee
   (`d2 : D`) because the *context* is dead (`e : Empty`), and `safe.ts` — which has no
   notion of `ctx_dead` — answers that match with the `s.empty` branch, i.e. with a
   **live value of an arbitrary type `P`**, here `P = Empty`.
@@ -317,16 +317,16 @@ direction from #1182: here the kernel is the permissive side.**
 
 The `s.empty` branch needs a *live* empty-typed variable in scope, and every such
 variable is uninhabited, so the region is always dead:
-* `safe.ts:682` — the source is a **λ binder** ⇒ the def has a parameter ⇒ the def's
+* `safe.ts:682` — the source is a **λ binder** => the def has a parameter => the def's
   type is a function type.
 * `safe.ts:780` — the source is a **default arm**; but that entry is only added when
   `no_ctr(all.A)` is true, i.e. the match is already exhausted, in which case
   `safe.ts:766-767` (`dead`) replaces the continuation by `Efq` and the default arm is
-  never emitted. ⇒ unreachable.
-* `bend.ts:842` `ctx_dead` ⇒ the region is unreachable ⇒ bend2 would never have
+  never emitted. => unreachable.
+* `bend.ts:842` `ctx_dead` => the region is unreachable => bend2 would never have
   accepted the empty match without it.
 
-⇒ **No closed `Empty` value can be produced through this route.**
+**No closed `Empty` value can be produced through this route.**
 
 ---
 
@@ -344,8 +344,8 @@ variable is uninhabited, so the region is always dead:
 | `specialized_dependent_param_probe.bend` | rc=0 ALL PROOFS CHECK | rc=0 ALL PROOFS CHECK |
 | `runtime_kind_empty_probe.bend` | rc=1 (bend2 rejects: "a live scrutinee") | rc=1 (same) |
 
-⇒ **#1182 is NOT fixed at `v2.0.37`.** The divergence is unchanged: bend2 accepts,
-BendTT rejects ⇒ **a safety win, not the bounty.** The prior art's conclusion stands:
+**#1182 is NOT fixed at `v2.0.37`.** The divergence is unchanged: bend2 accepts,
+BendTT rejects **a safety win, not the bounty.** The prior art's conclusion stands:
 "BendTT rejects it."
 
 ### Root cause, named
@@ -378,7 +378,7 @@ eliminator.** The kernel's `Efq` rule (`bendtt.lean:1207-1213`) accepts it **onl
   | T => Ctx.fail c "a function type" T
 ```
 
-⇒ **A `~` parameter whose Bend type is not a function over the empty enum cannot be
+**A `~` parameter whose Bend type is not a function over the empty enum cannot be
 represented**, and the kernel rejects the book while bend2 accepted it. `#1182`'s
 dependent-equality result is such a type (`{a == b : N}` is an `Eql`, not an `All`).
 
@@ -390,14 +390,14 @@ permissive one:
 * **`~F : ∀q s:<> -> P`** — the kernel accepts `Efq` there, and `Efq`'s value is
   "an `P`". In **Bend** no type maps to `∀q s:<> -> P`: a Bend *empty datatype* maps to
   the **`Sig`** `Σx0 : <> -> (D.arms x0)`, not to the enum `<>`. So `check (Efq) F.A`
-  fails with "an empty enum" ⇒ mismatch ⇒ kernel stricter. **No permissive sibling
+  fails with "an empty enum" => mismatch => kernel stricter. **No permissive sibling
   here.**
-* **`~F : {a == b : N}`** (an `Eql`) — the kernel cannot use `Efq` at all ⇒ mismatch.
+* **`~F : {a == b : N}`** (an `Eql`) — the kernel cannot use `Efq` at all => mismatch.
 * The *translator's* permissive sibling is exactly **Finding 1** (§6): the `s.empty`
   branch, where the translator invents a **live** value of an arbitrary type in a
   region bend2 calls dead. **Found.**
 
-⇒ **No sibling was found in which the kernel accepts something bend2 rejects.**
+**No sibling was found in which the kernel accepts something bend2 rejects.**
 
 ---
 
@@ -429,7 +429,7 @@ permissive one:
    uses. The upgrade is guarded by `kind(e, s, all.A) === 1` (i.e. the domain is
    Type-kinded, not Data) with a `rebuild` fallback; when `kind` returns **null**
    (unknown kind) the upgrade happens anyway. The kernel then re-checks the domain
-   against `T2` (Data) and would reject a non-Data domain ⇒ kernel stricter. **Not
+   against `T2` (Data) and would reject a non-Data domain => kernel stricter. **Not
    yet tested with a null-kind domain.**
 
 ---

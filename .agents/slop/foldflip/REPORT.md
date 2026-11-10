@@ -199,12 +199,12 @@ any `.bend` edit moves it):
       digest with fold.bend at LIVE  123ad85e6722fc5145d04bc4c51c7dfc7498ff5c749aee6d9cd64faf6d996937
       digest WITHOUT fold.bend       0b4293e4fc5ea1b1ca944ad039802e527cd44989bc249d1bd561889e3237d53e
 
-    ⇒ MY EDIT IS EXACTLY THE DIFFERENCE BETWEEN THE FIRST TWO. The
+MY EDIT IS EXACTLY THE DIFFERENCE BETWEEN THE FIRST TWO. The
       `a48f7744 -> 123ad85e` move ALSO contains **34 OTHER UNITS' IN-FLIGHT EDITS**
       under `tinybendygrad/` (measured with `git status --porcelain -- tinybendygrad/`),
       which is why the controlled attribution is stated and the raw move is not
       attributed to this change alone.
-    ⇒ **AFTER THE COMMIT, `fold.bend`'s LIVE BLOB EQUALS HEAD's** (measured), so the
+**AFTER THE COMMIT, `fold.bend`'s LIVE BLOB EQUALS HEAD's** (measured), so the
       digest with fold.bend at HEAD and the digest with fold.bend at LIVE are the SAME
       NUMBER, `820ff6e0...`, and the move from `123ad85e` to `820ff6e0` is other
       units' work and not this change's. **A COMMITTED `.bend` EDIT STOPS MOVING THE

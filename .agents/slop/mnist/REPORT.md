@@ -45,16 +45,16 @@ registered by `sys.modules['tinygrad.runtime.ops_bend'] = OB`, the same line
 | `conv28` | `(1,1,28,28) conv2d (1,1,3,3) p0` | 1 | **16.69 s** | 91 | 13.44 s for 6084 MACs |
 | `conv28x4` | `(1,1,28,28) conv2d (4,1,3,3) p0` | 1 | **36.07 s** | 185 | 32.82 s for 24336 MACs |
 
-**⇒ THE BRIEF'S 9 min 18 s IS NOT THE COST OF A 28x28 MNIST FORWARD PASS, AND
+**THE BRIEF'S 9 min 18 s IS NOT THE COST OF A 28x28 MNIST FORWARD PASS, AND
 THE DIFFERENCE IS NOT A SMALL ONE.** The brief's figure is the port's own
 `(1,3,32,32) conv2d (8,3,3,3) p1` — a 3-input-channel, 8-output-channel conv,
 221184 MACs over 8192 output positions. `conv28x4` is a FOUR-OUTPUT-CHANNEL
 conv on the SAME 28x28 spatial size and costs **36.07 s**, not 9 minutes.
-⇒ **THE PER-LAUNCH OVERHEAD IS 3.25 s** (a subprocess, a hex round trip of every
+**THE PER-LAUNCH OVERHEAD IS 3.25 s** (a subprocess, a hex round trip of every
 buffer, and the interpreter's own start), and the per-MAC cost is **1.35 to
 3.4 ms**.
 
-**⇒ AND THE CONSEQUENCE FOR THE PRIORITY ORDER IS THE OPPOSITE OF WHAT THE BRIEF
+**AND THE CONSEQUENCE FOR THE PRIORITY ORDER IS THE OPPOSITE OF WHAT THE BRIEF
 FEARED:** the interpreter is slow but not catastrophically so, so a full MNIST
 evaluation IS feasible on the Bend device. It is the *training* loop that is
 not, and even that is bounded rather than hopeless.
@@ -73,13 +73,13 @@ Command: `.venv/bin/python .agents/slop/mnist/run.py bend 1` (the model is
          [55.394, 9.722, 123.924, 8.619, 12.851, 7.628, 9.318, 42.427, 9.412, 141.547, 5.347, 10.744]
 ```
 
-**⇒ ONE MNIST FORWARD PASS ON THE BEND DEVICE = 437.688 s = 7 min 17.7 s.**
+**ONE MNIST FORWARD PASS ON THE BEND DEVICE = 437.688 s = 7 min 17.7 s.**
 (Wall clock of the whole process: 7 min 18.23 s, 299.96 s USER, 7.59 s system.)
 
-**⇒ AND THE PREDICTION IS RIGHT ON THE FIRST IMAGE: `pred=7 label=7`, AND IT
+**AND THE PREDICTION IS RIGHT ON THE FIRST IMAGE: `pred=7 label=7`, AND IT
 AGREES WITH CPython's `pred=7` ON THE SAME IMAGE WITH THE SAME WEIGHTS.**
 
-**⇒ TWELVE LAUNCHES**, and the cost is NOT spread evenly:
+**TWELVE LAUNCHES**, and the cost is NOT spread evenly:
 
 | launch | seconds | what it must be |
 |---|---|---|
@@ -96,14 +96,14 @@ AGREES WITH CPython's `pred=7` ON THE SAME IMAGE WITH THE SAME WEIGHTS.**
 | 10 | 5.35 | pool2 (1568 -> 392) |
 | 11 | 10.74 | the flatten + the 392x10 dot + the argmax |
 
-**⇒ THE PER-MAC COST IS ~2.5 to 4.4 ms**, which is the number that sizes
-everything else. **⇒ AND THE 12 LAUNCHES ARE 12 PROCESSES**, each paying the
+**THE PER-MAC COST IS ~2.5 to 4.4 ms**, which is the number that sizes
+everything else. **AND THE 12 LAUNCHES ARE 12 PROCESSES**, each paying the
 3.25 s fixed cost, so ~39 s of the 437 s is per-launch overhead and ~398 s is
 arithmetic.
 
-**⇒ THE COST OF ONE MNIST EPOCH (60000 images, forward only, no backward), FROM
+**THE COST OF ONE MNIST EPOCH (60000 images, forward only, no backward), FROM
 THIS MEASUREMENT: 60000 x 437.688 s = 26,261,280 s = 303.9 DAYS.** With a
-backward pass at the usual ~2x, a training epoch is ~608 days. **⇒ THAT IS THE
+backward pass at the usual ~2x, a training epoch is ~608 days. **THAT IS THE
 NUMBER THE PRIORITY ORDER TURNS ON**, and it is in the report's last section.
 
 ### 2026-10-27, entry 3 — THE DATA PATH, PREPARED AND GATED
@@ -173,18 +173,18 @@ weight and no bias, so CPython's side is `x.conv2d(w)` and not
 are the pool's UNREDUCED `noop ++ o_ ++ k_` shape, compared against the
 generated `want=`.
 
-**⇒ THE PORT CAN BUILD THIS MODEL'S GRAPH APART FROM THE POOLING NODE, AND IT
+**THE PORT CAN BUILD THIS MODEL'S GRAPH APART FROM THE POOLING NODE, AND IT
 SAYS SO INSTEAD OF FAKING THE POOL.** `max_pool2d`'s
 `repeat`/`shrink_to`/`reshape`/`permute` chain (`tinygrad/mixin/movement.py:
 608-616`) is not built by the substrate -- the same wall
 `examples/beautiful_mnist.bend` names -- so the pool is a SHAPE here and not a
 GRAPH.
 
-**⇒ AND THE WALL THAT HAS FALLEN IS STILL NAMED AS A WALL.** The brief is right
+**AND THE WALL THAT HAS FALLEN IS STILL NAMED AS A WALL.** The brief is right
 about `tinybendygrad/examples/train_resnet.bend`'s header: it says *"THIS FILE
 IS BLOCKED ON A BACKWARD PASS THAT NOBODY HAS EVER EXECUTED"*, and the brief's
 own measurement says `tinybendygrad/mixin/gradient.bend`'s `compute_gradient`
-is gated against UPSTREAM's own `compute_gradient` at **36 of 36 rows**. **⇒
+is gated against UPSTREAM's own `compute_gradient` at **36 of 36 rows**. **
 THAT HEADER IS NOW FALSE, AND A WALL THAT HAS FALLEN IS STILL NAMED AS A WALL.**
 The backward pass section of this report measures it AGAIN, end to end, on the
 device, and with the numbers.
@@ -197,6 +197,6 @@ tinygrad's own C renderer). Loss 0.7271 -> 0.0728. 4266 parameters.
 The weights are in `.agents/slop/mnist/weights.npz` with a digest per
 parameter tensor in `.agents/slop/mnist/weights.rows`.
 
-**⇒ THE BEND DEVICE IS THE EVALUATION DEVICE, NOT THE TRAINING DEVICE**, and
+**THE BEND DEVICE IS THE EVALUATION DEVICE, NOT THE TRAINING DEVICE**, and
 the reason is the measurement in entry 2: one forward pass is 437.688 s, so one
 epoch is 303.9 days.

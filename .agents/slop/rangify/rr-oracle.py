@@ -10,7 +10,7 @@ ONE stage of `get_kernel_graph` (`tinygrad/schedule/rangeify.py:341-376`) that
 the port's own engine marks `Stg{0, Nil{}}` -- "run_rangeify -- NOT PORTED"
 (`tinybendygrad/schedule/rangeify.bend:2810`).
 
-⇒ SO THIS FILE SPIES ON UPSTREAM's OWN CALL to `run_rangeify`, ON THE SAME REAL
+SO THIS FILE SPIES ON UPSTREAM's OWN CALL to `run_rangeify`, ON THE SAME REAL
 PROGRAM the port's own `realize.bend` builds (`(4,5) = (4,3) @ (3,5)`), AND
 PRINTS:
 

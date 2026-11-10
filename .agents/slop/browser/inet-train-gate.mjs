@@ -10,7 +10,7 @@
 // THE PREVIOUS VERSION OF THIS GATE COMPARED THE 1000 LOGITS, AND THE REVIEW THAT
 // KILLED IT WAS RIGHT: **THE LOGITS ARE PRODUCED BY THE FORWARD, BEFORE `backward`
 // AND THE SGD STEP RUN**, so a step whose gradients were ALL ZERO and whose weights
-// never moved would have printed PASS. **⇒ AND THAT IS NOT HYPOTHETICAL -- IT IS
+// never moved would have printed PASS. **AND THAT IS NOT HYPOTHETICAL -- IT IS
 // WHAT THIS TRACE DID** (`0 of them MOVED`) until the detach below was found.
 //
 // THE DENOMINATOR IS THE SAMPLED PARAMETERS, NAMED: the eight heaviest of

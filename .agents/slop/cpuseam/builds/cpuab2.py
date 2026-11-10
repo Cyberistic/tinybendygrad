@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """PATCH **BOTH** BUILDS SO EACH REPORTS **ITS OWN** CPU TIME, AND A/B THEM.
 
-⇒ ⇒ ⇒ **WHY THE CHILD's OWN CPU CLOCK AND NOT `RUSAGE_CHILDREN`:** MEASURED, `RUSAGE_CHILDREN` IS
+**WHY THE CHILD's OWN CPU CLOCK AND NOT `RUSAGE_CHILDREN`:** MEASURED, `RUSAGE_CHILDREN` IS
 **STALE UNTIL THE CHILD IS REAPED** — IT READ `(0.0, 0.0)` WHILE THE DAEMON WAS RUNNING, AND THE
-NUMBERS ONLY APPEARED AFTER `p.kill(); p.wait()`. ⇒ ⇒ ⇒ ⇒⇒⇒ SO THE **INSTRUMENT HAS TO LIVE INSIDE
+NUMBERS ONLY APPEARED AFTER `p.kill(); p.wait()`. SO THE **INSTRUMENT HAS TO LIVE INSIDE
 THE DAEMON**, AND IT IS **`process.cpuUsage()`**, WHICH IS THE **DAEMON's OWN** CPU TIME.
 
-⇒ ⇒ ⇒ **⇒ AND THE CLOCK IS READ **AT THE `@@END`**, SO IT IS THE CPU OF **THE TURN**, NOT OF THE
-WHOLE SESSION — ⇒ ⇒ ⇒ ⇒⇒⇒ AND THE **FIRST** TURN IS **WARMED** AND DROPPED, BECAUSE IT PAYS THE
+**AND THE CLOCK IS READ **AT THE `@@END`**, SO IT IS THE CPU OF **THE TURN**, NOT OF THE
+WHOLE SESSION — AND THE **FIRST** TURN IS **WARMED** AND DROPPED, BECAUSE IT PAYS THE
 JIT.
 
-⇒ ⇒ ⇒ **⇒ AND THE TWO SIDES ARE **ALTERNATED** IN **ROUNDS**, SO A LOAD SPIKE HITS BOTH EQUALLY,
+**AND THE TWO SIDES ARE **ALTERNATED** IN **ROUNDS**, SO A LOAD SPIKE HITS BOTH EQUALLY,
 AND THE **MEDIAN** OF THE **PER-ROUND RATIOS** IS THE VERDICT.
 """
 
@@ -101,7 +101,7 @@ class Daemon:
     rows = json.loads(self.cpu_file.read_text())
     if not rows:
       return None
-    return (rows[-1]["u"] + rows[-1]["s"]) / 1000.0  # ⇒⇒⇒ MS.
+    return (rows[-1]["u"] + rows[-1]["s"]) / 1000.0  # MS.
 
   def stop(self):
     if self.w:
@@ -121,7 +121,7 @@ def measure(js: pathlib.Path, tag: str, turns: int):
     d.cpu_file.unlink()
   d.start()
   time.sleep(0.8)
-  d.turn()  # ⇒⇒⇒ THE FIRST TURN PAYS THE JIT.
+  d.turn()  # THE FIRST TURN PAYS THE JIT.
   c0 = d.cpu()
   for _ in range(turns):
     d.turn()

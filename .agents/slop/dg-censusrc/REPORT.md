@@ -118,7 +118,7 @@ Evidence:
 
 1. **One artifact, two rows.** `:978` and `:979` both read `D0-coverage-census.txt`.
 2. **One cause, one `bad` entry.** Exactly one line after `SELFCHECK: FAIL`.
-3. **Mechanically identical.** `bad` non-empty ⇒ `:534` returns 1 ⇒ `:461` stamps `rc=1` ⇒
+3. **Mechanically identical.** `bad` non-empty `:534` returns 1 `:461` stamps `rc=1` 
    `:979` reads it. `oracle-selfcheck` reads the *same* `bad` list at `:531`.
 4. **Corroborated independently** by `D1-graph-loop.txt` (`rc=2`, same device sets).
 5. **Named by the fix's own commit subject**: *"failed on both pins"*.

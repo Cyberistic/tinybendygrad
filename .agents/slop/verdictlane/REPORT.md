@@ -49,7 +49,7 @@ const bin  = dir/bendtt;
 if (fs.existsSync(bin)) { return bin; }     // USED AS-IS, NEVER REBUILT, NEVER CHECKED
 ```
 
-⇒ **the verdict is decided by a binary outside the repository**, and both
+**the verdict is decided by a binary outside the repository**, and both
 `references/` and `bin/bend` are `.gitignore`d (`.gitignore:2` and `.gitignore:5`),
 so the kernel's *source* is outside it too.  The tree's own measurement
 (`.agents/slop/verdict-hunt2/REPORT.md` §3 M11, 2026-10-22): with `HOME` pointed
@@ -112,7 +112,7 @@ Readings 3 and 4 are the gate's own receipt (`kernel.json`, `build_seconds` and
 `build_peak_rss_bytes`); readings 1 and 2 were taken by hand with the same
 instrument.  The revision column is §8's table: the clone moved at 00:10 UTC.
 
-**⇒ `lean -c` IS THE HEAVY STEP: 13–17 s and about 1.0 GB of peak RSS** (996 MiB
+**`lean -c` IS THE HEAVY STEP: 13–17 s and about 1.0 GB of peak RSS** (996 MiB
 – 1009 MiB), and that is the number the tree's "60 % of `hw.memsize`" sum-rule
 has to be spent on.  `leanc` is 4.7–5.9 s and 221–250 MiB.  The whole build is
 18–22 s and it is done **once**, because the gate keys its build directory by the
@@ -147,7 +147,7 @@ The files that declare a law are **three**: `LAWS.bend` (34), `PROOF.bend` (19
 proof-typed defs) and `runtime/autogen/libclang.bend` (335) -- the receipt names
 all three under `law_files`.
 
-**⇒ THE POPULATION IS SEVEN FILES: the six the brief names, plus `libclang.bend`.**
+**THE POPULATION IS SEVEN FILES: the six the brief names, plus `libclang.bend`.**
 The seventh is in the population because the RULE puts it there, and it is a
 useful row: it is the port's FOREIGN class, and it exercises the lane's
 handling of a refusal that is not about TODOs.
@@ -181,7 +181,7 @@ tinybendygrad/runtime/autogen/libclang.bend  check=FOREIGN      verdict=FOREIGN 
 | `MISMATCH` | the compiler itself said "this is a mismatch between the TypeScript implementation" -- the kernel rejected what the checker accepted | **0** |
 | `NO-MEASUREMENT` | the lane ran and emitted nothing | **0** |
 
-**⇒ ZERO FILES DISAGREE, on this revision, under the pinned kernel.**
+**ZERO FILES DISAGREE, on this revision, under the pinned kernel.**
 The files that refuse do so under BOTH lanes and for the SAME reason, which is
 the port's incompleteness and not a disagreement.
 
@@ -213,7 +213,7 @@ move).  The rows are `plant.rows`; the transcript is `plant.out`.
 | `PLANT-HOME-POISON` | a treated kernel in the compiler's OWN cache dir + a poisoned `~/.bend/check.json`, under a private HOME | `PASS` | `PASS` | **the rows are byte-identical to the control** |
 | `PLANT-COMMENT-CONTROL` | a comment-only copy of the proof family | `VERIFIED` | `VERIFIED` | judged exactly as the original is |
 
-**⇒ THE GATE CAN GO RED, ON THE RIGHT THING.**  The targeted kernel is the
+**THE GATE CAN GO RED, ON THE RIGHT THING.**  The targeted kernel is the
 strongest of the seven: the marker `powf` lives in `LAWS/alu.bend` and in
 nothing else, and the aggregate `LAWS/PROOF-ALL.bend` imports `alu.bend`, so
 **exactly two files must disagree and `LAWS/spec.bend` must not** -- and the
@@ -315,7 +315,7 @@ ALL PROOFS CHECK
 rc=0
 ```
 
-**⇒ THE VERDICT IS DECIDED BY THE BINARY THE COMPILER IS POINTED AT, AND
+**THE VERDICT IS DECIDED BY THE BINARY THE COMPILER IS POINTED AT, AND
 `BENDTT` IS WHAT POINTS IT.**  Nothing in the repository changed between the two
 runs: the difference is one environment variable, and it is the variable the
 compiler reads FIRST.
@@ -338,7 +338,7 @@ before: 47 B  sha256 83a420d4a67e7103f5c9da00452f83a3c0d0a04d3e124cca85d8ba3b565
 after:  47 B  sha256 83a420d4a67e7103f5c9da00452f83a3c0d0a04d3e124cca85d8ba3b565a7d20  mtime 1792691577 (Oct 22 20:52:57)
 ```
 
-**⇒ UNCHANGED IN BYTES AND IN MTIME.**  The lane did not phone home, and it did
+**UNCHANGED IN BYTES AND IN MTIME.**  The lane did not phone home, and it did
 not even read the cache.  (`PLANT-HOME-POISON` also plants a poisoned
 `check.json` -- `{"ver": "99.99.99", "notice": "POISONED"}` -- under the private
 HOME, and the rows are still identical.)
@@ -357,7 +357,7 @@ pinned.  So:
   check, before anything is executed;
 * a **different size** is REFUSED (3) as well.
 
-**⇒ THE TOOLCHAIN CANNOT SILENTLY CHANGE THE VERDICT.**  It can only produce a
+**THE TOOLCHAIN CANNOT SILENTLY CHANGE THE VERDICT.**  It can only produce a
 binary that fails the pin.  The version is recorded in the receipt
 (`lean_version: 4.34.0`) and in the build directory's own `build.json`, so a run
 that built nothing still says which toolchain the pinned binary came from.
@@ -375,7 +375,7 @@ download one).
 **THE REFERENCE CLONE IS NOT IN THE REPOSITORY, AND NEITHER IS THE COMPILER.**
 `git ls-tree -r HEAD --name-only | grep -c '^references/'` = **0**, and the same
 for `^bin/` = **0**.  `.gitignore:2` ignores `references/` and `.gitignore:5`
-ignores `/bin/bend`.  ⇒ **THE PINS ARE THE ONLY THING THAT TIES THE VERDICT TO
+ignores `/bin/bend`. **THE PINS ARE THE ONLY THING THAT TIES THE VERDICT TO
 A FIXED BODY OF TEXT.**  That is the whole reason this gate pins the binary
 rather than merely building it.
 
@@ -400,7 +400,7 @@ At 00:07–00:08 UTC, before the clone moved, this session measured:
 * and **`cmp` against `~/.bend/bendtt/b9f3e0253abffb11/bendtt` produced NO OUTPUT
   and rc 0** -- byte-identical ✔
 
-**⇒ EVERY NUMBER THE BRIEF NAMED WAS CORRECT AT THE TIME IT NAMED THEM.**  And
+**EVERY NUMBER THE BRIEF NAMED WAS CORRECT AT THE TIME IT NAMED THEM.**  And
 **THREE MINUTES LATER THE PINNED SOURCE NO LONGER EXISTED**, because the
 reference clone is a GITIGNORED working tree that another unit re-fetched.  The
 gate's answer to that is the pin: the delivered gate pins the CURRENT revision,
@@ -410,7 +410,7 @@ and if the clone moves again the gate **REFUSES (3)** with
 > lives in a GITIGNORED clone (references/, .gitignore:2), so a pin is the only
 > thing that names it. Re-take the pins with --write-pins in the SAME commit.`
 
-**⇒ THIS IS THE FINDING, TURNED INTO A MECHANISM.**  A gate that merely BUILT
+**THIS IS THE FINDING, TURNED INTO A MECHANISM.**  A gate that merely BUILT
 the kernel would have silently produced a different verdict three minutes later,
 with no repository change to point at.  A gate that PINS the kernel says so.
 

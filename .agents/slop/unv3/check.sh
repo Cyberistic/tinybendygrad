@@ -7,14 +7,14 @@
 # measure, so a copy of the LIVE tree measures THEIR work too and a before/after
 # reading taken at two different moments compares two different trees.
 #
-# ⇒ SO THE COPY IS TAKEN ONCE, AT THE START OF THE MEASUREMENT, AND THEN FROZEN.
-# ⇒ AND THE COPY IS THE LIVE TREE, NOT THE BASE: the files I DO NOT OWN have
+# SO THE COPY IS TAKEN ONCE, AT THE START OF THE MEASUREMENT, AND THEN FROZEN.
+# AND THE COPY IS THE LIVE TREE, NOT THE BASE: the files I DO NOT OWN have
 #   MOVED (another unit added lines to `nn/layers.bend` while I worked), and a
 #   pointer into a file I do not own must name the line that file has NOW. A
 #   frozen BASE would measure a tree that no longer exists, and the gate would
 #   report a stale pointer that is NOT stale in the tree the port actually ships.
 #
-# ⇒ THE BASE IS KEPT FOR THE "BEFORE" READING ONLY, and it is read ONCE, at the
+# THE BASE IS KEPT FOR THE "BEFORE" READING ONLY, and it is read ONCE, at the
 #   start, so the two readings are of two trees and each is named.
 set -u
 cd "$(dirname "$0")/../../.." || exit 3

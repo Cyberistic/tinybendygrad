@@ -195,7 +195,7 @@ is pinned **387 / 1351 = 28.6 %**.
 | (a) **the reference** | `tinygrad/` | **FIXED.** 213/213 `.py`. The largest correctness gap is closed. |
 | (b) **the compiler** | `references/bend/bend2` + `bun` | **OUT OF REACH** — gitignored, outside `SUBSTRATE_WALKS`, and cross-clone unstable. Closable by one walk root (§5), but only honestly. |
 | (c) **the drivers** | `.agents/slop/*.py` | **MEASURABLE NOW.** 2 git-tracked `.bend` fixtures, uncovered. Closed by two strings (§5). |
-| (d) **something else** | **the interpreter tier**, and **two ways the digest is not a function of the commit** | Not previously on anyone's list. `.venv` (868 `.py`) and `bun` are the same class as (b) and are counted by nobody. Then §0 (**working-copy keyed**: same HEAD, two digests) and §3 (**clone-unstable**: `bin/bend` untracked ⇒ `ABSENT` on a fresh clone). Both are *separate* from coverage — the pin can be complete and still not reproducible. |
+| (d) **something else** | **the interpreter tier**, and **two ways the digest is not a function of the commit** | Not previously on anyone's list. `.venv` (868 `.py`) and `bun` are the same class as (b) and are counted by nobody. Then §0 (**working-copy keyed**: same HEAD, two digests) and §3 (**clone-unstable**: `bin/bend` untracked `ABSENT` on a fresh clone). Both are *separate* from coverage — the pin can be complete and still not reproducible. |
 
 **The honest headline: correctness inputs are 99.5 % pinned; the run is ~29 % pinned by file count,
 and the missing 71 % is entirely the toolchain that decides what the port's `.bend` files MEAN.**

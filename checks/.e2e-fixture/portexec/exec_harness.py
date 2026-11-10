@@ -35,21 +35,21 @@ SEP = "]   py=["
 def port_rows(path):
   """`NAME -> the port's OWN column`, unescaped (`\\n` -> newline).
 
-  **⇒ AND THE SOURCE OF THE ROWS MOVED, AND THE MOVE IS THE WHOLE REASON THIS
+  **AND THE SOURCE OF THE ROWS MOVED, AND THE MOVE IS THE WHOLE REASON THIS
   FUNCTION EXISTS IN THIS FORM.** The rows used to be printed by
   `tinybendygrad/renderer/cstyle.bend` itself, and `path` was that file's
-  captured stdout (`port-rows.txt`). **⇒ AND COMMIT `564733bed` REMOVED THE
+  captured stdout (`port-rows.txt`). **AND COMMIT `564733bed` REMOVED THE
   `]   py=[` ROWS FROM `cstyle.bend`**, which is now a LIBRARY with no `main()`;
   the rows live in the TRACKED `gates/cstyle-live.rows` (228 rows), which is
   where `e2efix` recovered stage 7's fixture to.
 
-  **⇒ AND THE ROWS ARE STILL THE PORT's OWN OUTPUT**: `gates/cstyle-live.rows` is
+  **AND THE ROWS ARE STILL THE PORT's OWN OUTPUT**: `gates/cstyle-live.rows` is
   the port's stdout, captured once and committed beside the gate that reads it,
   and the `py=[...]` half is CPython's transcription -- which is exactly why the
   reader takes the `NAME = [...]` half and NEVER the `py=[...]` half, because
   taking CPython's column would make this lane circular.
 
-  **⇒ AND THE CALLER PASSES THE TRACKED FILE, NOT A CAPTURE.**
+  **AND THE CALLER PASSES THE TRACKED FILE, NOT A CAPTURE.**
   """
   out = {}
   for line in pathlib.Path(path).read_text().splitlines():

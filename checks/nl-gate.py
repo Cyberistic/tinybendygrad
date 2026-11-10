@@ -542,7 +542,7 @@ def main():
 # module-scope refusal does NOT fire and argv reaches `main()`.  MEASURED 2026-10-29: bare argv
 # exits **0** (AGREE) and `--port-stdout <a tracked lane>` exits **1** (BROKEN).
 #
-# ⇒ AND **BOTH PLANTS ARE HERMETIC**, AND THAT IS THE POINT.  This file's own header records that
+# AND **BOTH PLANTS ARE HERMETIC**, AND THAT IS THE POINT.  This file's own header records that
 # `tinybendygrad/uop/ops.bend` is in this port's 6-file import closure and is owned by another
 # live unit: MEASURED, two consecutive captures printed 206 rows and then ZERO, naming `vd_text`
 # and then `vd_dbg.of`.  **A PLANT THAT READS THE LIVE PORT IS A PLANT THAT CAN ANSWER "NO ROWS"

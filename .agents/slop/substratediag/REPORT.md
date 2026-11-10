@@ -40,7 +40,7 @@ CONFIRMED. (It is 140, not the docstring's 144; and 134 `.bend`, not `AGENTS.md`
 At the kill it had completed **126 instruments** (122 `.bend`, 3 `.js`, 1 `.mjs`) — last file
 `tinybendygrad/uop/fold.bend` — plus **2 `.c` files judged `NO INSTRUMENT`**, leaving **12 `.bend`
 unvisited** (`uop/{movement,ops,probe-mmcore,render,spec,symbolic,upat,validate,weak}.bend`,
-`viz/{__init__,cli,serve}.bend`). 126 instruments in 120 s ⇒ **~0.95 s/file**, so a full pass is
+`viz/{__init__,cli,serve}.bend`). 126 instruments in 120 s **~0.95 s/file**, so a full pass is
 **~133 s + the heavier uop tail**; the tree's own `bounded.py` adds a floor of `POLL=0.25 s` per file
 (`checks/bounded.py:120,236`) — 126 × 0.25 ≈ **31 s of pure polling overhead**.
 

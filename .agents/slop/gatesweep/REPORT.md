@@ -57,7 +57,7 @@ Measured 2026-10-15 ~12:12: **64** gate dirs, **63** hold promoted lanes, **1** 
 a mutator dir). Those files are **`py.rows`/`bd.out`/`bn.out`/`*.cmp`/`gate.bin` — LANE files, never a
 gate's stdout**, so the directory is *not* an input a token parser can read. It IS a real captured
 outcome: `gatekit.Gate` promotes its lanes on PASS and leaves the dir empty otherwise
-(`_clear` at construction, `_settle(False)` unlinks), so populated ⇒ the gate reached the diff. Also
+(`_clear` at construction, `_settle(False)` unlinks), so populated => the gate reached the diff. Also
 found: `uop_cast-gate/` holds `.tmp.py.rows`/`.tmp.bd.out`/`.tmp.gate.bin` — a run **killed between
 staging and promotion**, exactly the residue of the kill path `classify()` handles. `--prove` prints
 this census.

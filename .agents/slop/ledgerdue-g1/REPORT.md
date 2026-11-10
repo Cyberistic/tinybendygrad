@@ -100,7 +100,7 @@ lines; `mine-after.rows` holds **ZERO** lines naming any of the 37.
 | verdict | `GATES-POP: RED` (rc=1) | `GATES-POP: RED` (rc=1) |
 | `generated directories discovered` | 708 | 710 |
 
-**⇒ AND THE REMAINING `RED` IS NOT THE LEDGER, AND IT IS PRE-EXISTING AND IDENTICAL BEFORE AND
+**AND THE REMAINING `RED` IS NOT THE LEDGER, AND IT IS PRE-EXISTING AND IDENTICAL BEFORE AND
 AFTER.** `gates/gates-pop.py` sets `red = 1` in exactly five places (`:1517`, `:1538`, `:1613`,
 `:1626`, `:1685`). **THE FINAL RUN'S LEDGER DIFF IS `0 new, 0 UNRECORDED departure(s), 0 changed,
 0 returned`, SO `:1613` AND `:1626` CANNOT BE THE CAUSE.** The cause is `:1517` — `offroot`:
@@ -115,7 +115,7 @@ namely `checks/cites-census.py` (`Path(__file__).resolve().parents[3]`) and
 RUN READ `2 resolve outside the repo` TOO, AND THE `AFTER` RUN READS `2 resolve outside the repo`
 — THE SAME TWO FILES, AND A COUNT THIS SLICE DID NOT MOVE.**
 
-**⇒ AND SO THE LEDGER IS NOW CLEAN AND THE INSTRUMENT IS STILL RED, AND THOSE ARE TWO DIFFERENT
+**AND SO THE LEDGER IS NOW CLEAN AND THE INSTRUMENT IS STILL RED, AND THOSE ARE TWO DIFFERENT
 FACTS.** Before this slice the run had TWO causes of RED (127 unpaid NEW rows, and `offroot=2`);
 after it has ONE (`offroot=2`). **A VERDICT IS A VERDICT AND A WITNESS IS A CHECK** — and the
 witness here is `III LEDGER DIFF: 0 new, 0 UNRECORDED departure(s), 0 changed, 0 returned`, which
@@ -130,7 +130,7 @@ PAIR IS NOT MINE AND NOT IN `g1.txt`, SO IT WAS NOT PAID.**
 | after this slice | **389** |
 | `cd450ea61` (the gate's own recorded baseline) | 224 |
 
-**⇒ AND THE FINAL `--ledger check` READS `III LEDGER DIFF: 0 new, 0 UNRECORDED departure(s),
+**AND THE FINAL `--ledger check` READS `III LEDGER DIFF: 0 new, 0 UNRECORDED departure(s),
 0 changed, 0 returned, 5 retired (384 live of 389 row(s))` — THE LEDGER DIFF IS COMPLETELY CLEAN,
 AND `ledgerdue` READS `DIFF new=0 gone=0 changed=0 returned=0 ledger=389 live=384`.**
 
@@ -194,17 +194,17 @@ unreadable, not silently mis-parsed), so a sixth column could not be added by a 
 (`"introduced by ..."`). It is never written into the ledger. `gates/ledgerdue-gate.py:274` calls
 the same `events()` and the `OWES` column is its return value.
 
-**⇒ AND THAT IS WHY THE `OWES` COLUMN IS TRUSTWORTHY: IT IS A FUNCTION OF THE REPOSITORY'S
+**AND THAT IS WHY THE `OWES` COLUMN IS TRUSTWORTHY: IT IS A FUNCTION OF THE REPOSITORY'S
 HISTORY, NOT OF A STRING SOMEONE TYPED.** A stored commit is a claim that can rot; a re-derived
 one cannot. **THE BRIEF'S WORRY — "IF THE TOOL RECORDS THE WRONG COMMIT, SAY SO" — DOES NOT
 ARISE, BECAUSE THE TOOL RECORDS NO COMMIT TO BE WRONG.** And the re-derivation was verified: all
 37 attributions agree with `git log --diff-filter=A -1 -- <path>`.
 
-**⇒ AND THE `reason` COLUMN IS NOT A COMMIT SLOT EITHER.** It is a classification
+**AND THE `reason` COLUMN IS NOT A COMMIT SLOT EITHER.** It is a classification
 (`py-main`, `js-main`, `sh-dispatch`, `sh-selfref`, `gone`) — the 37 rows carry `py-main` except
 `gates/bendfloat-gate.py`, which is `js-main`.
 
-**⇒ AND ADDING A COMMIT COLUMN WOULD BE THE WRONG CURE.** `DECIDED` (`:1187`) compares
+**AND ADDING A COMMIT COLUMN WOULD BE THE WRONG CURE.** `DECIDED` (`:1187`) compares
 `(reason, asserts_root, on_root)`; a sixth column would be excluded from the comparison by
 construction, so it would be a column nothing reads — a second copy of a fact `git log` already
 answers, which is the hand-list shape this tree's own doctrine rejects.
@@ -216,7 +216,7 @@ ANSWER.**
 
 ## 7. TWO DEFECTS FOUND IN THE TOOLS (REPORTED, NOT CHANGED)
 
-**⇒ AND THE BRIEF FORBIDS EDITING `gates/gates-pop.py` AND `gates/ledgerdue-gate.py`, SO NEITHER
+**AND THE BRIEF FORBIDS EDITING `gates/gates-pop.py` AND `gates/ledgerdue-gate.py`, SO NEITHER
 IS TOUCHED.**
 
 ### 7a. `gates/gates-pop.py` HAS NO LOCK ON THE SHARED LEDGER IT WRITES
@@ -232,7 +232,7 @@ at `:1527`. So the read-modify-write window is the ~milliseconds between two adj
 not the three minutes the run takes. **AND IT WAS NOT HIT: 37 OF MY WRITES AND 86 OF ANOTHER
 UNIT'S LANDED IN THE SAME FILE WITH 0 LOST ROWS** (the monotonicity check above found 0 dropped).
 
-**⇒ AND THE 3-MINUTE COST IS THE TRAILING `gendirs()` SCAN, WHICH IS AFTER THE WRITE.**
+**AND THE 3-MINUTE COST IS THE TRAILING `gendirs()` SCAN, WHICH IS AFTER THE WRITE.**
 `gendirs()` is called at `:1672`, the write at `:1648`, and `gates/gendirs.py`'s `coverage()` /
 `table()` `os.walk` **55 657 FILES** (the tree including `references/`, 231 MB). **ONE WRITE COSTS
 ~3 MIN 09 s AND THE WRITE ITSELF IS INSTANT.** 37 invocations is ~115 minutes of wall clock for
@@ -276,12 +276,12 @@ AGAINST THE COMMITTED BLOB** (not the working copy), and **every one is a LIVE r
 `gone`**. The working copy's ledger is byte-identical to `HEAD`'s
 (`git hash-object` == `git rev-parse HEAD:gates/gates-pop.ledger.tsv` == `50003651cfc130e42e83bf9f3d102b098e661e01`).
 
-**⇒ AND A SHARED FILE CANNOT BE PARTITIONED AT COMMIT TIME.** `--only` bounds the WRITE, not the
+**AND A SHARED FILE CANNOT BE PARTITIONED AT COMMIT TIME.** `--only` bounds the WRITE, not the
 COMMIT: the commit takes the whole blob. Committing "only my 37" would have meant committing a
 ledger MISSING the other 86 rows, which would have DESTROYED 86 records — the one thing this
 ledger is forbidden to do. **THE CORRECT OUTCOME IS THE ONE THAT HAPPENED: THE MERGE IS ADDITIVE.**
 
-**⇒ AND NO NEW COMMIT WAS NEEDED FOR THE LEDGER, SO THIS SLICE'S COMMIT IS ITS REPORT ONLY.**
+**AND NO NEW COMMIT WAS NEEDED FOR THE LEDGER, SO THIS SLICE'S COMMIT IS ITS REPORT ONLY.**
 The protocol's `git commit --only -F <msgfile> -- <paths>` and `git show --stat` /
 `git fsck --no-progress` are the form; the paths committed are this report and its artifacts.
 
@@ -289,17 +289,17 @@ The protocol's `git commit --only -F <msgfile> -- <paths>` and `git show --stat`
 
 **NOTHING IN THIS SLICE WAS LEFT UNPAID.** All 37 paths have live ledger rows and no `DUE` row.
 
-**⇒ AND THE 4 ROWS THAT WERE STILL DUE WHEN THIS SLICE'S LAST `ledgerdue` RUN NAMED THEM**
+**AND THE 4 ROWS THAT WERE STILL DUE WHEN THIS SLICE'S LAST `ledgerdue` RUN NAMED THEM**
 (`gates/verdict-lane-gate.py`; `gates/x86_isa-{gate,oracle,plant}.py`) **BELONGED TO OTHER
 COMMITS** (`57a3ed3b3`, `21be2dfa5`) and are **NOT in `g1.txt`**, so they were **NOT MINE TO PAY**
 under the brief's own rule ("the commit that introduced the gate owes a ledger row, and only that
 commit's owner may pay it"). A sibling unit paid them, and the final tree-wide reading is
 `DUE 0`.
 
-**⇒ AND `gates/gates-pop.py` AND `gates/ledgerdue-gate.py` WERE NOT EDITED** (the brief forbids it
-unless a defect is found — §7 reports three, and §6 reports the schema finding). **⇒ AND
-`tinybendygrad/` WAS NOT TOUCHED. ⇒ AND `checks/differ.py` AND `checks/devpin.py` WERE NOT
-TOUCHED. ⇒ AND `checks/differ.py` WAS NEVER RUN** — the substrate digest was computed by
+**AND `gates/gates-pop.py` AND `gates/ledgerdue-gate.py` WERE NOT EDITED** (the brief forbids it
+unless a defect is found — §7 reports three, and §6 reports the schema finding). **AND
+`tinybendygrad/` WAS NOT TOUCHED. AND `checks/differ.py` AND `checks/devpin.py` WERE NOT
+TOUCHED. AND `checks/differ.py` WAS NEVER RUN** — the substrate digest was computed by
 importing it, as the protocol requires.**
 
 ## 10. THE ARTIFACTS

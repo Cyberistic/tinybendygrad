@@ -97,20 +97,20 @@ the target file and the pointer re-pointed at the declaration the comment is abo
    only a `.py` subject is admitted there. MEASURED: the first attempt put
    `symbol=contiguous` next to `elementwise.py:72` and `symbol=clamp` next to
    `elementwise.py:832`, and the gate said **WRONG-LINE** on both; a third
-   (`renderer/kuconv.bend:34`, `symbol=fold.dt`) said **WRONG-SYMBOL**. **⇒ THE PORT
+   (`renderer/kuconv.bend:34`, `symbol=fold.dt`) said **WRONG-SYMBOL**. **THE PORT
    `symbol=` GOES ON A LINE WHOSE ONLY CITATIONS ARE `.bend`.** A line with no `.py`
    citation has no slot in that gate at all (`if not slots: continue`), so it is
    invisible to it and free for the port's own name.
 2. **AN INLINE `TODO(pN)` IS A MARKER.** `gates/todo-cite-gate.py`'s `MARKER` regex
    matches `TODO(pN)` ANYWHERE on a line, including inside backticks, so writing
    "`TODO(p3) elementwise.py:59`" in prose CREATES a work item and it fails
-   `UNRESOLVABLE` because it names no symbol. **⇒ THE UPSTREAM REFERENCE IS PROSE**
+   `UNRESOLVABLE` because it names no symbol. **THE UPSTREAM REFERENCE IS PROSE**
    ("upstream's `elementwise.py:59` is the record"), not a marker.
 3. **AN EDIT MUST NOT CHANGE A FILE'S LINE COUNT.** A `.bend` file's lines are pointed
    at by OTHER files' citations, so adding a line moves every pointer into it.
    MEASURED: the first patch grew 7 files and turned three correct pointers into
    `WRONG-LINE` (`runtime/device.bend:18` → `runtime/support/elf.bend:1816`, and two
-   more). **⇒ EVERY EDIT HERE REPLACES N LINES WITH N LINES**, and
+   more). **EVERY EDIT HERE REPLACES N LINES WITH N LINES**, and
    `.agents/slop/bendcite2/patch.py` CHECKS THAT AND PRINTS THE DELTA PER FILE.
 
 ## THE COMMENT-ONLY PROOF
@@ -159,7 +159,7 @@ pointer falls out of the construct.
 
 1. **THE THREE DOUBLE-LISTED FILES.** The brief's "YOUR FILES (33, and ONLY these)"
    names `uop/fold.bend`, `uop/validate.bend` and `runtime/device.bend`; the brief's
-   "⇒ DO NOT TOUCH" list says "**every file under `tinybendygrad/uop/`**" and
+   " DO NOT TOUCH" list says "**every file under `tinybendygrad/uop/`**" and
    "`tinybendygrad/runtime/{ops_bend,device}.bend`". **THE TWO LISTS CONTRADICT ON
    EXACTLY THESE THREE.** I treated them as MINE, because the slice assigns them rows
    to this unit and the exclusion's glob and brace-expansion read as catch-alls for the
@@ -174,29 +174,29 @@ pointer falls out of the construct.
    `uop/fold.bend`** (MEASURED: `grep -rn "arithmetic, not the fold" tinybendygrad/`
    answers only the citing line). The honest fix is to re-derive what that file says
    about the `_min_max` wall, which is a claim about the port's own state and not a
-   pointer fix. **⇒ REPORTED, NOT FIXED.**
+   pointer fix. **REPORTED, NOT FIXED.**
 3. **`codegen/decomp/op.bend`'s `_min_max` CLAIM.** The comment says the recursive
    `_min_max` "is P3 and recorded at `fold.bend:2176`"; `uop/fold.bend:7040` now reads
    "`DONE(p3) ops.py:1094 def _min_max`" and `:7153` still says "`UOp._min_max` (P3)".
    The pointer was moved to the construct that IS the reader
    (`uop/fold.bend:5175 symbol=UOp.min_max`) and the "is P3" wording was KEPT, because
    deciding whether the wall is still open is a claim about the port and not a pointer
-   fix. **⇒ REPORTED, NOT FIXED.**
+   fix. **REPORTED, NOT FIXED.**
 4. **`renderer/amd/elf.bend`'s STALE PREMISE.** Its comment said `u.addrspace` is "still
    `TODO(p3)` in `uop/ops.bend:3773`". MEASURED: `uop/fold.bend:4755` declares
    `UOp.addrspace` and `uop/fold.bend:7018` records "`DONE(p3) ops.py:896 def
-   addrspace`". **⇒ THE CLAIM WAS CORRECTED** (this one IS a pointer fix: the
+   addrspace`". **THE CLAIM WAS CORRECTED** (this one IS a pointer fix: the
    pointer named a line that never held the thing), and the corrected text names the
    construct.
 5. **THE OTHER UNITS' `mixin/op.bend` POINTERS.** `nn/layers.bend:18` and `:276` still
    cite `mixin/op.bend:853 symbol=mo_sum` while `mo_sum` is at :854 — because another
    unit is editing `mixin/op.bend` and moved it. `nn/layers.bend` is another unit's
-   file. **⇒ REPORTED, NOT FIXED.**
+   file. **REPORTED, NOT FIXED.**
 6. **THE `symbol=` FORM DOES NOT MAKE A POINTER IMMUNE.** It makes the CLAIM
    CHECKABLE and names the construct, but the LINE still has to land at or inside the
    construct's span. MEASURED: `symbol=mo_sum` at `mixin/op.bend:853` went
    `WRONG-LINE` the moment another unit inserted a line above `mo_sum`, because :853
-   is now one line BEFORE the declaration. **⇒ A `symbol=` POINTER MUST SIT AT THE
+   is now one line BEFORE the declaration. **A `symbol=` POINTER MUST SIT AT THE
    DECLARATION LINE, AND THE GATE'S `delta` COLUMN IS WHAT SAYS WHEN IT DRIFTED.**
 
 ## THE INSTRUMENTS THIS UNIT LEFT BEHIND

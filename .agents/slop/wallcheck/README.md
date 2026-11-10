@@ -31,9 +31,9 @@ The first five are the ones the deleted instrument documented about itself. Each
 |---|---|---|
 | 1 | whole-tree patterns: `PRESENT` 11/11, hit rate 100%, information 0 | `scope` is **one file**; `tree_copy()` prunes tree copies by shape |
 | 2 | working copy only: called two walls `STANDS` for capabilities at HEAD | grade `work` **and** `pin`, answer `SPLIT` when they disagree |
-| 3 | `runtime/dtype.c emit` is not a path; a silent `[[ -r ]]` failure read as `GONE` | readable in **neither** tree ⇒ `REFUSED/NO-SCOPE`, never a verdict |
+| 3 | `runtime/dtype.c emit` is not a path; a silent `[[ -r ]]` failure read as `GONE` | readable in **neither** tree `REFUSED/NO-SCOPE`, never a verdict |
 | 4 | `[[:space:]]` compiles as a nested set and matches `:` — the row grades 0 **forever** | translate POSIX classes, then assert **every** anchor compiles before any row is graded |
-| 5 | a 4-way anchor read `work=4`; dropping one moved it to 3 and the verdict held | re-ask per alternative; all drops agreeing ⇒ `COARSE`, and the ledger row is split |
+| 5 | a 4-way anchor read `work=4`; dropping one moved it to 3 and the verdict held | re-ask per alternative; all drops agreeing `COARSE`, and the ledger row is split |
 | 6 | **`^` without `re.M` matches offset 0 only, so every line-anchored anchor reads 0** — the mirror of 1: not "matches too much" but "matches nothing" | `compile_posix` passes `re.M`, because a POSIX grep is line-based |
 
 **6 was not in the list and it invalidated every `^`-anchored row in the ledger** — `W1a`, `W1b`,

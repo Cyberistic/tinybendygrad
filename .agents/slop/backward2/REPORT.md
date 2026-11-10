@@ -115,7 +115,7 @@ $ sh .agents/slop/backward2/run.sh head
     rows whose VALUE changed: 0
 ```
 
-**⇒ 88 pre-existing rows, 0 changed value, 0 missing, 14 additions.** (The prior art
+**88 pre-existing rows, 0 changed value, 0 missing, 14 additions.** (The prior art
 said "72 pre-existing rows"; HEAD's file carries **88** — the count moved since, and
 the number quoted here is the one the diff prints.)
 
@@ -137,7 +137,7 @@ then each arm. **The differ diffs whole `name=value` lines, not row names.**
 | `disarm_comment` | a comment's text | **0** | — |
 | `disarm_name` | a local parameter name (signature + body) | **0** | — |
 
-**⇒ EVERY ONE OF THE 14 NEW ROWS IS MOVED BY AT LEAST ONE PLANT**, and the two
+**EVERY ONE OF THE 14 NEW ROWS IS MOVED BY AT LEAST ONE PLANT**, and the two
 disarms move nothing.
 
 ### 2.4 THE CONTROL ON THE CONTROL — a WRONG BUT NON-EMPTY expectation
@@ -152,7 +152,7 @@ $ .venv/bin/python .agents/slop/backward2/ctl-rows.py \
 CONTROLS: 14 rows x 2 perturbations + the clean run -> failures: 0
 ```
 
-**⇒ 29 controls, 0 failures.** For every row, (a) a wrong but **non-empty** value
+**29 controls, 0 failures.** For every row, (a) a wrong but **non-empty** value
 fails and **exactly that row** is named, and (b) an **empty** value fails and names
 the same row. **A gate that only caught empties would be catching vacuity, not
 wrongness; this one catches both, and the "wrong but non-empty" case is the one that
@@ -188,7 +188,7 @@ transcribed from — DIES on the tree's own `tinygrad/`.** The reason is upstrea
 prior art's fixture builds `UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.float32))` — a
 BUFFER with **no src**. It ran on 2026-10-07; it does not run today.
 
-**⇒ THE 15 `walk_*` ROWS' CPYTHON SIDE IS STALE AND CANNOT BE RE-VERIFIED TODAY.**
+**THE 15 `walk_*` ROWS' CPYTHON SIDE IS STALE AND CANNOT BE RE-VERIFIED TODAY.**
 The port's rows are unchanged (2.3 measures that) and the values still agree with the
 oracle's **recorded** output, but the recording is not reproducible against the
 current upstream.
@@ -199,7 +199,7 @@ current upstream.
 fixtures): `L1` = `BUFFER(STACK())` computes; a src-less BUFFER raises `IndexError`;
 a CONST leaf computes but has `weakfloat` dtype, which changes the zero substitute.
 
-⇒ **The new fixture's leaf is `BUFFER(STACK())`** and the oracle builds the same.
+**The new fixture's leaf is `BUFFER(STACK())`** and the oracle builds the same.
 
 ---
 
@@ -252,7 +252,7 @@ MUL rule's operands being SWAPPED, which is upstream's `gradient.py:80`
 So the token carries an **IDENT**: a CONST's **f32 bits** (`@f1065353216`) and a
 BUFFER's **PARAM slot** (`@s0`, `@s1`, `@s9`).
 
-**⇒ `plant_gswap` IS THE MEASUREMENT OF THAT CLAIM**: the swap moves `bw_sig`,
+**`plant_gswap` IS THE MEASUREMENT OF THAT CLAIM**: the swap moves `bw_sig`,
 `bw_nodes` and `bw_distinct` and **NOTHING ELSE** — `gs_set_sig` does not move
 (the slot's root op and node count are unchanged), and no count row moves at all.
 
@@ -270,13 +270,13 @@ says whether that is true here.
 
 | what | where | why |
 |---|---|---|
-| **THE CORPUS's `bw` GRAPH IS NOT REPRODUCIBLE BY THE PORT's `compute_gradient`** | `.agents/slop/graphcmp.bend:1471` (`g_bw`) vs `mixin/gradient.bend:606`, `:639`, `:675` | the corpus's `bw` op census is `ALLOC 2 CAST 1 CONST 4 EXPAND 2 GROUP 1 MUL 2 PERMUTE 4 REDUCE 2 RESHAPE 8 STACK 6` (`.agents/slop/backward-graph/REPORT.md` §1), and the port's rules for **PERMUTE (`gr_21`), RESHAPE (`gr_17`) and REDUCE (`gr_14`) are `GSkip{}`** — so the port's walk STOPS at the first of them (the named divergence at `mixin/gradient.bend:1430`). **⇒ The port's `bw` graph and the corpus's `bw` graph are DIFFERENT GRAPHS.** The corpus's is hand-built in both languages; the port's is what the gradient machinery BUILDS. |
-| `gr_21` PERMUTE — **the one the file's own comment says is buildable** | `mixin/gradient.bend:675` | `ctx.permute(argsort(ret.marg))`; `ret.marg` for a PERMUTE is `self.arg`, an `O.ATuple{ys: List<&2, U32>}` (`ops.bend:1237`), and **`helpers.bend`'s `argsort_u32` ALREADY EXISTS** (`helpers.bend:602`) and `helpers.bend` IS imported as `H`. **The rule is `GSkip{}` anyway** — the comment says "the whole rule is: read the ATuple, argsort it, build the PERMUTE". **⇒ THIS IS THE NEXT STEP, and it is a HALF-HOUR OF WORK, not a research problem.** |
+| **THE CORPUS's `bw` GRAPH IS NOT REPRODUCIBLE BY THE PORT's `compute_gradient`** | `.agents/slop/graphcmp.bend:1471` (`g_bw`) vs `mixin/gradient.bend:606`, `:639`, `:675` | the corpus's `bw` op census is `ALLOC 2 CAST 1 CONST 4 EXPAND 2 GROUP 1 MUL 2 PERMUTE 4 REDUCE 2 RESHAPE 8 STACK 6` (`.agents/slop/backward-graph/REPORT.md` §1), and the port's rules for **PERMUTE (`gr_21`), RESHAPE (`gr_17`) and REDUCE (`gr_14`) are `GSkip{}`** — so the port's walk STOPS at the first of them (the named divergence at `mixin/gradient.bend:1430`). **The port's `bw` graph and the corpus's `bw` graph are DIFFERENT GRAPHS.** The corpus's is hand-built in both languages; the port's is what the gradient machinery BUILDS. |
+| `gr_21` PERMUTE — **the one the file's own comment says is buildable** | `mixin/gradient.bend:675` | `ctx.permute(argsort(ret.marg))`; `ret.marg` for a PERMUTE is `self.arg`, an `O.ATuple{ys: List<&2, U32>}` (`ops.bend:1237`), and **`helpers.bend`'s `argsort_u32` ALREADY EXISTS** (`helpers.bend:602`) and `helpers.bend` IS imported as `H`. **The rule is `GSkip{}` anyway** — the comment says "the whole rule is: read the ATuple, argsort it, build the PERMUTE". **THIS IS THE NEXT STEP, and it is a HALF-HOUR OF WORK, not a research problem.** |
 | `gr_17` RESHAPE | `mixin/gradient.bend:639` | `ctx.reshape(ret.src[0].shape)` — a FOLD read of the shape plus `prod` for the `-1` arm. The port's fold carries shapes; the `prod`/`-1` arm is the open part. |
-| `gr_14` REDUCE (`reduce_gradient`) | `mixin/gradient.bend:606` | `_rop`'s `resolve(self.shape[x] != 1)` and `_broadcast_to`'s `broadcast_axes` are both `resolve` on a `Sint`, and **`uop/symbolic.py`'s `resolve` is NOT ported** (Phase P3 owns `symbolic`). **⇒ A HARD WALL, and it is also a place CPython ITSELF raises** on a shaped seed. |
+| `gr_14` REDUCE (`reduce_gradient`) | `mixin/gradient.bend:606` | `_rop`'s `resolve(self.shape[x] != 1)` and `_broadcast_to`'s `broadcast_axes` are both `resolve` on a `Sint`, and **`uop/symbolic.py`'s `resolve` is NOT ported** (Phase P3 owns `symbolic`). **A HARD WALL, and it is also a place CPython ITSELF raises** on a shaped seed. |
 | `const_like`'s EXPAND arm | `mixin/gradient.bend:2483` | `x._mop(Ops.EXPAND, arg=self._shape)` when `self._shape` is truthy. **Unreachable here** — a target's `_shape` is `None` or `()` and `()` is FALSY. **NAMED OMISSION.** |
 | the shaped-edge reduce | `gradient.py:131` | `broadcast_axes` + `sum_acc_dtype`. **Not reached by this fixture** (every shape is `()`), and **CPython raises on the shaped fixtures** — so there is no CPython answer to gate against. |
-| the `tensor.bend` DIVERGENCE | `tensor.bend:1960` (`tn_bwd_slot`) | the port's `tensor.bend` answers the substitute with the arena's reserved index 0 because it cannot intern a float literal. `mixin/gradient.bend` CAN (`gconst`), and `plant_nozero` shows the difference is visible: `Z 2 root=CAST/1` vs `Z 1 root=NOOP/0`. **⇒ The VALUE is now built here; `tensor.bend` still selects it.** Wiring `tensor.bend` to this def is **NOT DONE** — `tensor.bend` is not this unit's file. |
+| the `tensor.bend` DIVERGENCE | `tensor.bend:1960` (`tn_bwd_slot`) | the port's `tensor.bend` answers the substitute with the arena's reserved index 0 because it cannot intern a float literal. `mixin/gradient.bend` CAN (`gconst`), and `plant_nozero` shows the difference is visible: `Z 2 root=CAST/1` vs `Z 1 root=NOOP/0`. **The VALUE is now built here; `tensor.bend` still selects it.** Wiring `tensor.bend` to this def is **NOT DONE** — `tensor.bend` is not this unit's file. |
 | `bw_ops` | — | the oracle prints a per-op count as a DIAGNOSTIC; **it is not gated**, because `bw_sig` already names every node and every op in the backward graph and a per-op COUNT is a second reading of the same row. |
 | `oracle_gs_set_order` | — | CPython's own diagnostic; **not gated**, because the target order is visible in `gs_set_sig` (the three slots have three different signatures). |
 
@@ -306,7 +306,7 @@ says whether that is true here.
 5. **A MATCH CANNOT SCRUTINISE A COMPUTED VALUE NOR A LOCAL BINDER.** Three separate
    compile errors, each naming the rule: `match O.Arena.srcs(ar, n)` (computed),
    `match List.contains(...)` (computed), and `match g:` after `+ts = gs_targets(g)`
-   (a local statement precedes it). **⇒ the shape that works is a def whose PARAMETER
+   (a local statement precedes it). **=> the shape that works is a def whose PARAMETER
    is the thing being matched.**
 6. **`+` ON A BINDER MEANS "USED MORE THAN ONCE".** `case +t <> ts:` is what lets
    `grad_set.go` use the target twice; without it: "t (consumed more than once)".

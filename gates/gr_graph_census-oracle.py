@@ -87,11 +87,11 @@ one("gr_31", t_store, c1)
 # `a`, `b`, `c` are three distinct BUFFERs, `p = MUL(a,b)`, `q = ADD(a,c)`, `r = ADD(p,q)`;
 # `a` has TWO parents so `grads[a]` is written twice (the ACCUMULATE, gradient.py:134-138).
 #
-# **⇒ AND **THE **LEAF **MUST **BE **`BUFFER(STACK())`** **AND **NOT **A **SRC-LESS **`BUFFER`**, **AND
+# **AND **THE **LEAF **MUST **BE **`BUFFER(STACK())`** **AND **NOT **A **SRC-LESS **`BUFFER`**, **AND
 # **THAT **IS **MEASURED:** **upstream's **`_shape`** **reads **`self.src[0].as_shape`** (**ops.py:359**)
 # **AND **`compute_gradient`** **READS **`k._shape`** (**gradient.py:130**), **SO **A **SRC-LESS **LEAF **MAKES
 # **CPYTHON **RAISE **`IndexError: tuple index out of range`** **INSIDE **ITS **OWN **`compute_gradient`**.
-# **⇒ AND **THE **PORT **SAYS **THE **SAME:** **`tinybendygrad/mixin/gradient.bend:1196`** — **"THE **LEAVES
+# **AND **THE **PORT **SAYS **THE **SAME:** **`tinybendygrad/mixin/gradient.bend:1196`** — **"THE **LEAVES
 # **ARE **`BUFFER(STACK())`**, **WHOSE **`_shape` **IS **`()`** (**ops.py:359**, **:789**) — **SO **THE **GUARD
 # **`k._shape **is **not **None **and **v._shape **is **not **None **and **k._shape **!= **v._shape`** **IS
 # **FALSE**"** — **AND **A **`BUFFER(STACK())`** **IS **MEASURED **TO **HAVE **`_shape == ()`**.

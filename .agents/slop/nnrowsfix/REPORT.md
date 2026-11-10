@@ -99,7 +99,7 @@ tinybendygrad/nn/layers.bend` showed `relu`, `dot_2d`, `dot_1d`, `linear` and
 take those on trust**: the witness cross-check in §3 checks **ALL 31** `want`s
 against CPython, the five included.
 
-⇒ **MY WORK WAS THE EIGHT THAT REMAINED**: three DTYPE rows and five GRAPH rows.
+**MY WORK WAS THE EIGHT THAT REMAINED**: three DTYPE rows and five GRAPH rows.
 
 ---
 
@@ -214,7 +214,7 @@ VALUE, and it says the same thing this section says -- *"the witness is the
 ORACLE's row, and the question is 'does CPython's answer for this row equal the
 port's answer for this row'"*.
 
-⇒ **THE RIGHT WITNESS IS CPython's OWN GRAPH, RENDERED IN THE PORT'S SPELLING.**
+**THE RIGHT WITNESS IS CPython's OWN GRAPH, RENDERED IN THE PORT'S SPELLING.**
 That is what `nn-oracle.py` does:
 
     def sig(t):
@@ -295,7 +295,7 @@ are mechanically addable to `spec.bend` and one is not:
       function of `Sp` bridges that gap.
    c. **IT IS OUT OF REACH BY THAT FILE'S OWN DESIGN** (the header quoted above).
 
-⇒ **THE PRECISE SPECIFICATION OF WHAT WOULD HAVE TO BE ADDED TO `spec.bend`**, if
+**THE PRECISE SPECIFICATION OF WHAT WOULD HAVE TO BE ADDED TO `spec.bend`**, if
 one wanted a spec-IR witness for these rows: (i) `Sp.opname`, (ii) `Sp.srcs`, and
 (iii) **a node count of the COMPILED graph** -- which requires modelling the
 hash-consed arena (the compilation IR), i.e. exactly the thing spec.bend's header
@@ -304,7 +304,7 @@ declares it cannot reach. Without (iii) a spec-IR `want` could only be a
 could not use it: the `got` and the `want` would be two different strings and the
 gate compares exactly.
 
-⇒ **THIS UNIT IS NOT BLOCKED**, because the requirement is *"a source independent of
+**THIS UNIT IS NOT BLOCKED**, because the requirement is *"a source independent of
 the fold being checked"*, and **CPython's own graph is one**: it is upstream
 tinygrad's own graph construction, computed in this repo's `.venv`, and it never
 reads the port. The five `want`s are that witness rendered in the port's spelling.
@@ -321,7 +321,7 @@ reshape-transpose-multiply-sum-cast** (`tinygrad/mixin/op.py:367-392`: `x.reshap
 header says the same thing about `dot` in its own words: *"dot (op.py:367) is RESHAPE
 + RESHAPE + PERMUTE + MUL + REDUCE + CAST"*.
 
-**⇒ THE TWO ROWS DIFFER IN THE CODE PATH THEY EXERCISE (the port's `nn_dot` against
+**THE TWO ROWS DIFFER IN THE CODE PATH THEY EXERCISE (the port's `nn_dot` against
 the port's `nn_sum`+`tn_mul`+`mo_cast_t`) AND NOT IN THE GRAPH THEY PRODUCE, AND A
 GRAPH SIGNATURE CANNOT TELL THEM APART.** A row whose `want` cannot distinguish its
 sibling is a row that cannot say *which* path broke -- but it still says *that*
@@ -329,7 +329,7 @@ something broke, and the two rows together still cover both code paths. The othe
 three are distinct: `fold_xw_sig` is `n=18 ... Ops.MUL`, `dbg_x_sig` is
 `n=6 ... Ops.BUFFER|Ops.STACK`, `dbg_conv_sig` is `n=57`.
 
-**⇒ WHAT WOULD MAKE THEM DISTINGUISHABLE**, if that is wanted: the SIGNATURE is a
+**WHAT WOULD MAKE THEM DISTINGUISHABLE**, if that is wanted: the SIGNATURE is a
 four-tuple summary and the whole NODE LIST is available on both sides -- see §4.
 
 ### 3.5 THE EDIT, IN FULL
@@ -368,17 +368,17 @@ THE COPY, `bin/bend` runs against the copy, `tempfile` removes it --
     vsig: fold_cc_sig: IDENTICAL (20 tokens)
     vsig: all 5 node lists are IDENTICAL, node for node, CONST payloads included
 
-**⇒ THE PORT'S COMPILED FOLD REPRODUCES CPYTHON'S GRAPH NODE FOR NODE ON ALL FIVE
+**THE PORT'S COMPILED FOLD REPRODUCES CPYTHON'S GRAPH NODE FOR NODE ON ALL FIVE
 FIXTURES, CONST PAYLOADS INCLUDED** -- e.g. `fold_cc_sig` is, on both sides,
 `20 CONST/0=i6 BUFFER/1 CONST/0=i2 CONST/0=i3 STACK/2 RESHAPE/2 CONST/0=i1 STACK/3
 RESHAPE/2 CONST/0=i12 BUFFER/1 CONST/0=i4 STACK/2 RESHAPE/2 STACK/3 RESHAPE/2
 PERMUTE/1 MUL/2 PERMUTE/1 REDUCE/1 `.
 
-**⇒ THIS IS WHAT MAKES THE FOUR-TUPE `want` NON-VACUOUS**: the four-tuple agrees
+**THIS IS WHAT MAKES THE FOUR-TUPE `want` NON-VACUOUS**: the four-tuple agrees
 because the WHOLE graphs agree, and the whole graphs agree because they were
 computed by two different implementations.
 
-**⇒ AND IT ANSWERS §3.4's OPEN QUESTION**: the node list DOES distinguish the two
+**AND IT ANSWERS §3.4's OPEN QUESTION**: the node list DOES distinguish the two
 rows that the four-tuple cannot -- but not by name: `dbg_dot_sig` and `fold_cc_sig`
 have the SAME node list too, because they are the same computation. The other three
 are distinct.
@@ -486,18 +486,18 @@ class from C2's WRONGNESS):**
     control: C3 rows_still_green=30 of 31
     control: C3 UNCHECKABLE fold_xw_sig want is empty, so the row cannot fail (got='n=18 op=Ops.MUL nsrc=2 srcops=Ops.RESHAPE|Ops.PERMUTE')
 
-**⇒ EACH CONTROL: EXACTLY ONE ROW WENT RED, IT IS THE ROW THE CONTROL NAMES, THE
+**EACH CONTROL: EXACTLY ONE ROW WENT RED, IT IS THE ROW THE CONTROL NAMES, THE
 CLASS THAT FIRED IS THE CLASS THE CONTROL CLAIMS, THE OTHER 30 ROWS STAYED GREEN,
 AND THE GATE WENT 0 -> 1.**
 
-**⇒ THE CONTROL ON THE CONTROL, STATED PLAINLY: C1 AND C2 FIRED `MISMATCH` -- THE
+**THE CONTROL ON THE CONTROL, STATED PLAINLY: C1 AND C2 FIRED `MISMATCH` -- THE
 WRONGNESS CLASS -- ON A **WRONG BUT NON-EMPTY** `want`, AND C3 FIRED `UNCHECKABLE`
 -- THE VACUITY CLASS -- ON AN EMPTY ONE. THE TWO ARE DIFFERENT CLASSES WITH
 DIFFERENT NAMES, SO THE GATE IS CATCHING WRONGNESS AND NOT MERELY EMPTINESS.**
 **The thirteen closed rows would be worthless if the gate only caught emptiness,
 and the two classes are what say it does not.**
 
-**⇒ AND THE `want`s ARE NOT COPIED FROM THE `got`s**: `mkrows.py` (§2.2) checks all
+**AND THE `want`s ARE NOT COPIED FROM THE `got`s**: `mkrows.py` (§2.2) checks all
 31 `want`s byte-equal against a witness that never reads the port, and §4 shows the
 underlying whole graphs agree node for node.
 

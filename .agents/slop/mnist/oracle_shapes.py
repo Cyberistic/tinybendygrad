@@ -6,7 +6,7 @@
 WHY A COMPARER AND NOT A `row(...)` PRINT. `examples/beautiful_mnist.bend`'s
 own header records the measurement: reverting a one-line fix in a copy leaves
 `bend --check-only` GREEN, because the port's compilation IR is outside the law
-system by design. **⇒ A PRINTED ROW IS A LABEL.** This file is what makes the
+system by design. **A PRINTED ROW IS A LABEL.** This file is what makes the
 rows go red.
 
 WHAT IT COMPARES, AND AGAINST WHAT.

@@ -10,7 +10,7 @@
 //   2 `requestAdapter()` returns a device?
 //   3 compile the SAME trivial WGSL twice, run both on the same buffers, and time each.
 //
-// ⇒ AND THE ANSWER IS RECORDED EITHER WAY. If there is no adapter, THAT is the evidence
+// AND THE ANSWER IS RECORDED EITHER WAY. If there is no adapter, THAT is the evidence
 // for stage 1 -- a refusal, not an inference. There is no path in this file from "no
 // driver" to "therefore parity".
 import { spawn } from "node:child_process";

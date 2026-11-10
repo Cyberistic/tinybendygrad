@@ -13,7 +13,7 @@
 ONE bend process at a time. NEVER background, NEVER a sweep, NEVER a gate sweep,
 NEVER a corpus run, NEVER a parallel fixture loop. Run one thing, measure it, move on.
 
-**⇒ AND REPORT THE WALL-CLOCK COST OF EVERY COMMAND.**
+**AND REPORT THE WALL-CLOCK COST OF EVERY COMMAND.**
 
 ---
 

@@ -43,7 +43,7 @@ cache here is faithful and every comparison is like-for-like.
 **A NOTE ON THE TEMP DIRECTORY:** the shared
 `/private/var/folders/…/T/opencode/` was **wiped under me mid-session** (the
 prior hunt's `kernel/` and mine both vanished). The kernel now lives in my own
-artifact dir, which is stable. **⇒ A TOOL THAT LIVES ONLY IN A SHARED TEMP DIR
+artifact dir, which is stable. **A TOOL THAT LIVES ONLY IN A SHARED TEMP DIR
 IS A TOOL THAT CAN VANISH.**
 
 ---
@@ -82,13 +82,13 @@ empty enum `<>` (`Empty : *(.Q2) = Σx0 : <> -> (Empty.arms x0)`), so a
 | `f03_unreachable.bend` | the prior hunt's `c10_ctxdead` | rc=0 | rc=0 | `TERM-OF-EMPTY` (a near miss, not a win) |
 | `f04_no_proof.bend` | no `Empty` at all | rc=0 | rc=0 | **`VERDICT-OK`** |
 
-**⇒ THE VALIDATOR GOES RED ON ALL FOUR. IT IS NOT A LABEL.**
+**THE VALIDATOR GOES RED ON ALL FOUR. IT IS NOT A LABEL.**
 `f02` needs care: Base's `Empty` cannot be redeclared (bend2 refuses with
 "a fresh name (duplicate declaration: Empty)"), so the fake declares its own
 `Empty` **without** importing Base, and the validator sees `empty_datatypes=[]`
 and refuses to call it a proof.
 
-**⇒ `--check-only` ACCEPTING IS NOT EVIDENCE.** All four fakes pass
+**`--check-only` ACCEPTING IS NOT EVIDENCE.** All four fakes pass
 `--check-only`; only `--verdict` was ever treated as acceptance, and the
 validator's `CLOSED-INHABITANT` grade is the only thing that would have
 counted as a win.
@@ -96,7 +96,7 @@ counted as a win.
 ### M1.1 — the validator was itself caught crashing, and fixed
 
 The first version crashed on `e06`'s book, because the tokenizer splits `==`
-into two `=` tokens and `braced()` looked for a single `==`. **⇒ A VALIDATOR
+into two `=` tokens and `braced()` looked for a single `==`. **A VALIDATOR
 THAT CRASHES IS NOT A VALIDATOR; the fix is in the file and every grade above
 was re-taken after it.**
 
@@ -121,7 +121,7 @@ h05_tmpl_empty           check=0 verdict=0  VERDICT-OK (defs=0 — the template 
 h06_c10                  check=0 verdict=0  TERM-OF-EMPTY
 ```
 
-**⇒ NOT ONE CANDIDATE REACHED `DEF-OF-EMPTY`, LET ALONE `CLOSED-INHABITANT`.**
+**NOT ONE CANDIDATE REACHED `DEF-OF-EMPTY`, LET ALONE `CLOSED-INHABITANT`.**
 
 ---
 
@@ -147,7 +147,7 @@ bad : ∀x0 : Empty -> ∀x1 : D -> ∀x2 : D -> Empty =
               λ{.C1: λ{(): λ{(,): λx1 => λx2 => (λ{(,): λ{}} x0)}; λ{}}; λ{}}}}
 ```
 
-**⇒ CONFIRMED: a LIVE kernel term of type `Empty` — `(λ{(,): λ{}} x0)` =
+**CONFIRMED: a LIVE kernel term of type `Empty` — `(λ{(,): λ{}} x0)` =
 `App(Prj(Efq), x0)` — in a def whose type is a FUNCTION type.**
 
 ### M3 — the simplest expression of the same hole (`h06`)
@@ -168,13 +168,13 @@ bad : ∀x0 : Empty -> Empty =
   λ{(,): λ{}}
 ```
 
-**⇒ `Prj(Efq)` IS THE BODY, AT TYPE `∀x0 : Empty -> Empty`.** The `Prj` rule
+**`Prj(Efq)` IS THE BODY, AT TYPE `∀x0 : Empty -> Empty`.** The `Prj` rule
 gives `Prj(Efq) : ∀q (s : Empty) -> P` for **any** `P`; here `P = Empty`.
 
 ### M4 — the kernel's rules for `Empty`, read from the source
 
 * **How Bend's `Empty` is encoded** (`safe.ts:380-399` `adt_emit`):
-  `Empty : *(.Q2) = Σx0 : <> -> (Empty.arms x0)`. **⇒ In the kernel a Bend
+  `Empty : *(.Q2) = Σx0 : <> -> (Empty.arms x0)`. **In the kernel a Bend
   `Empty` is a `Σ` whose domain is the EMPTY ENUM `<>`, and the def `Empty`
   itself has the KIND `*2` as its declared type.** A value of type `Empty` must
   be a `Tup` whose tag has type `<>` (`bendtt.lean:1175-1181`).
@@ -183,10 +183,10 @@ gives `Prj(Efq) : ∀q (s : Empty) -> P` for **any** `P`; here `P = Empty`.
 * **`Prj`'s rule** (`bendtt.lean:1186-1195`): `Prj h : ∀q (s : Σr x:A -> B) -> P`
   requires `h` to check at `∀(fld r q) x:A -> ∀q y:B -> P`. The special `Efq`
   (`bendtt.lean:1207-1213`) checks at `∀q (s:<>) -> P` for **any** `P` — it
-  constrains only the DOMAIN. **⇒ `Prj(Efq) : ∀q (s : Empty) -> P` for any `P`.**
+  constrains only the DOMAIN. **`Prj(Efq) : ∀q (s : Empty) -> P` for any `P`.**
 * **`App`'s special case** (`bendtt.lean:1227-1234`): for `App q f (Var i)` where
   `f` takes the variable, `f` is checked at `∀q A P` with `P = Ren.pick i T` —
-  **the expected result type `T` is pushed into `f`'s check. ⇒
+  **the expected result type `T` is pushed into `f`'s check. 
   `App(Prj(Efq), x0)` can be checked at ANY `T`.**
 * **The catch-all** (`bendtt.lean:1235-1237`): every other term is *inferred* and
   then **FITTED**: `Ctx.fit ck c U T`, i.e. `Term.fits` (`bendtt.lean:1018-1029`).
@@ -204,7 +204,7 @@ gives `Prj(Efq) : ∀q (s : Empty) -> P` for **any** `P`; here `P = Empty`.
 781:        { $: "App", q: 1, f: { $: "Efq" }, x: { $: "Var", l: lt } } as O] } : s2;
 ```
 
-**⇒ TWO writes: line 683 (a λ whose domain `no_ctr`) and line 780 (a default
+**TWO writes: line 683 (a λ whose domain `no_ctr`) and line 780 (a default
 arm whose scrutinee type `no_ctr`). THERE IS NO THIRD WRITE.** The task's
 question — "is there a third?" — is answered: **no.**
 
@@ -213,14 +213,14 @@ question — "is there a third?" — is answered: **no.**
 * **Line 780** is reached only in `swi`'s `default` arm and only when
   `no_ctr(e, all.A)`. But `swi`'s `Mat` case (`safe.ts:766`) already sets `dead`
   when `mT?.$ === "All" && no_ctr(e, mT.A) && x.m.$ !== "Mat"`, and then
-  `safe.ts:767` replaces the continuation by `B.Efq()`. **⇒ the default arm is
+  `safe.ts:767` replaces the continuation by `B.Efq()`. **=> the default arm is
   never emitted in that case. Unreachable.**
-* **Line 683** is a **λ binder**. **⇒ the def has a parameter ⇒ the def's type
+* **Line 683** is a **λ binder**. **=> the def has a parameter => the def's type
   is a FUNCTION type.**
 
-**⇒ ⇒⇒ THE PRIZE, SHARPENED: a win needs a def whose declared type is `Empty`
+**THE PRIZE, SHARPENED: a win needs a def whose declared type is `Empty`
 and whose body is a closed `Tup`. The `s.empty` route cannot produce one,
-because `s.empty`'s only live source is a λ binder. ⇒ THE HOLE MUST BE FOUND
+because `s.empty`'s only live source is a λ binder. THE HOLE MUST BE FOUND
 ELSEWHERE.**
 
 ### M7 — the two emptiness predicates AGREE (the task's "sharpest lead", checked)
@@ -230,20 +230,20 @@ ELSEWHERE.**
   the type's refuted-constructor list.
 * `safe.ts:867-872` `no_ctr`: `tld.c.every((c) => x.r.includes(c.k))`.
 
-**⇒ BOTH PREDICATES ARE "every constructor of the ADT is in the type's `r`
-list". THEY AGREE. ⇒ THE SHARPEST LEAD THE TASK NAMED — "FIND THE ADT WHERE THE
+**BOTH PREDICATES ARE "every constructor of the ADT is in the type's `r`
+list". THEY AGREE. THE SHARPEST LEAD THE TASK NAMED — "FIND THE ADT WHERE THE
 PREDICATES DISAGREE" — HAS NO ANSWER: THERE IS NO SUCH ADT.** The disagreement
 is not in the predicates but in **what the two sides DO with them**: bend2 uses
 "any live binder in the context is empty" (`ctx_dead`), `safe.ts` uses "the
 scrutinee's own type is empty" (`no_ctr`) — which is the prior hunt's finding,
 and it is a difference of *scope*, not of *predicate*.
 
-**⇒ AND A SECOND DIVERGENCE, THE REFINEMENT:** bend2's `LE` on ADTs is
+**AND A SECOND DIVERGENCE, THE REFINEMENT:** bend2's `LE` on ADTs is
 `b.r ⊆ a.r` (`bend.ts:3167-3176`, `mode === "LE"` skips the length check) — a
 MORE-REFINED type fits a LESS-REFINED one. **The kernel has no `r` list at
 all**: `adt_emit` always emits the FULL constructor list as the tag enum
 (`safe.ts:394`), so the kernel's `D` is always `<C0, C1, …>` and the refinement
-is invisible to it. **⇒ the two sides' notions of "the same datatype, less
+is invisible to it. **=> the two sides' notions of "the same datatype, less
 refuted" are simply incomparable.** Measured at the kernel (§4, C2).
 
 ### M8 — why a closed term of type `Empty` is unreachable (measured, not argued)
@@ -258,11 +258,11 @@ infer `Enu []`:
 * `infer (Ref k) = d.T` — needs a def of type `Enu []`. `D.efq : ∀x0 : D -> <>`
   has `Enu []` as a **codomain**, not as a type; there is no def of type `Enu []`.
 * `infer (App f x) = inst B (arg x A)` — needs `f : ∀q A -> Enu []`. `D.efq` is
-  the only such def and its domain is `D`, an **empty** datatype ⇒ circular.
-* `infer (Var i)` — needs a binder of type `Enu []` ⇒ the term is not closed.
-* `infer (Ann x T) = T` — needs `check x (Enu [])` ⇒ circular.
+  the only such def and its domain is `D`, an **empty** datatype => circular.
+* `infer (Var i)` — needs a binder of type `Enu []` => the term is not closed.
+* `infer (Ann x T) = T` — needs `check x (Enu [])` => circular.
 
-**⇒ A CLOSED INHABITANT OF `Enu []` (hence of `Empty`) IS NOT REACHABLE BY ANY
+**A CLOSED INHABITANT OF `Enu []` (hence of `Empty`) IS NOT REACHABLE BY ANY
 OF THESE. THE KERNEL'S `Claim.empty` HOLDS FOR EVERY CONSTRUCT I COULD FIND.**
 The remaining hope is a *divergence* between the elaborator and the kernel
 (§4), not a direct construction.
@@ -287,7 +287,7 @@ bigger one. Both are below; the bigger one is stated with its limits.**
 | (d) is `BEND_NO_TELEMETRY=1` the only guard, and does it also suppress the READ? | **It is the only guard, and it suppresses the read too**: the guard is at `main.ts:186-188`, the `readFileSync` at `:191` | measured: with the flag, **no request arrived** and **the cached notice was not printed** |
 | (e) can a crafted `check.json` change what `--verdict` accepts? | **NO. MEASURED.** | M10 |
 
-**⇒ THE ANSWER TO (e) IS NO, AND THE REASON IS STRUCTURAL: `check()`'s ENTIRE
+**THE ANSWER TO (e) IS NO, AND THE REASON IS STRUCTURAL: `check()`'s ENTIRE
 OUTPUT IS STDERR, AND THE VERDICT LANE READS STDOUT.** `cli_verdict`
 (`main.ts:808-821`) prints `PASS` to **fd 1** and everything else to **fd 2**.
 
@@ -310,23 +310,23 @@ D: --verdict with the local server
 E: crafted check.json with t=0             requests: ['/check?v=2.0.37&os=darwin&arch=arm64']
 ```
 
-**⇒ M10.1: A REMOTE SERVER CONTROLS THE COMPILER'S STDERR.** The answer's `ver`
+**M10.1: A REMOTE SERVER CONTROLS THE COMPILER'S STDERR.** The answer's `ver`
 and `notice` are printed verbatim (the `notice` minus control chars). With the
 default `https://bend-lang.com` that is a trusted server; with `BEND_ORIGIN` set
 to an `http://` URL it is a cleartext one.
 
-**⇒ M10.2: A FILE OUTSIDE THE REPOSITORY RE-ARMS THE NETWORK INPUT.** A crafted
+**M10.2: A FILE OUTSIDE THE REPOSITORY RE-ARMS THE NETWORK INPUT.** A crafted
 `~/.bend/check.json` with `"t": 0` makes `Date.now() - last.t > DAY` true on
 **every** run (case E), so the compiler phones home every time instead of once
 a day. The file is in the developer's home, so a repository clone does not
 carry the behaviour: **the behaviour is a function of the machine, not of the
 code.**
 
-**⇒ M10.3 (an unplanned finding): `HOME` RELOCATES THE PROOF TOOLCHAIN.** Case
+**M10.3 (an unplanned finding): `HOME` RELOCATES THE PROOF TOOLCHAIN.** Case
 D: with `HOME` pointed at a temp dir, `--verdict` **REFUSED** with "BendTT
 infrastructure: the kernel did not build". `safe.ts:1489` looks for the Lean
 4.34.0 toolchain at `path.join(os.homedir(), ".elan", "toolchains", …)`.
-**⇒ `--verdict`'s outcome is a function of `$HOME` in at least three ways: which
+**`--verdict`'s outcome is a function of `$HOME` in at least three ways: which
 kernel binary, which Lean, and which telemetry cache.**
 
 ### M11 — **FINDING B: THE VERDICT IS DECIDED BY A BINARY OUTSIDE THE REPOSITORY**
@@ -347,7 +347,7 @@ function kernel_bin(): string {
 }
 ```
 
-**⇒ THE VERIFYING KERNEL IS READ FROM `~/.bend/bendtt/<hash>/bendtt` AND, IF IT
+**THE VERIFYING KERNEL IS READ FROM `~/.bend/bendtt/<hash>/bendtt` AND, IF IT
 EXISTS, IS EXECUTED WITHOUT BEING REBUILT OR CHECKED AGAINST `bendtt.lean`.**
 The `<hash>` is `sha256("4.34.0" + "\0" + bendtt.lean)[:16]` — computable from
 the public repository. Measured on this revision: `b9f3e0253abffb11`.
@@ -365,10 +365,10 @@ TREATMENT 2: HOME=<temp>, forged kernel says "ALL PROOFS CHECK"
 ```
 
 The forged kernel is a two-line shell script that ignores the `.bendtt` it is
-given. **⇒ THE VERDICT FLIPPED BOTH WAYS WITH NOTHING CHANGED IN THE
+given. **THE VERDICT FLIPPED BOTH WAYS WITH NOTHING CHANGED IN THE
 REPOSITORY.**
 
-**⇒ AND A CONTROL ON THE FORGERY ITSELF, WHICH CORRECTS ONE READING OF THE PRIOR
+**AND A CONTROL ON THE FORGERY ITSELF, WHICH CORRECTS ONE READING OF THE PRIOR
 REPORT:** for the three prior-art probes that the REAL kernel rejects
 (`higher_evidence_base`, `dependent_empty_result_probe`,
 `law_higher_evidence_probe`), the forged kernel was **never consulted** (0 log
@@ -385,29 +385,29 @@ law_higher_evidence_probe     - use: no model for use~F
 specialized_dependent_param_probe   (no oos lines — it is in scope)
 ```
 
-**⇒ THE PRIOR HUNT'S "MISMATCH" FOR THOSE THREE IS THE ELABORATOR REFUSING, NOT
+**THE PRIOR HUNT'S "MISMATCH" FOR THOSE THREE IS THE ELABORATOR REFUSING, NOT
 THE KERNEL REJECTING — AND THE REFUSAL IS `model_at` FAILING TO MODEL THE `~F`
 TEMPLATE PARAMETER (`safe.ts:374`, `oos("no model for …")`). THE KERNEL WAS
 NEVER CONSULTED.** The prior report (§7) attributes it to the kernel; that
 attribution is wrong, and the distinction matters: a "kernel stricter" claim
-needs the kernel to have been consulted. **⇒ AND THE FAILURE IS IN
+needs the kernel to have been consulted. **AND THE FAILURE IS IN
 `model_at` — WHICH IS TARGET C3, AND IT IS THE ONE PLACE THE PRIOR HUNT'S OWN
 ROOT CAUSE (#1182, THE `~` PARAMETER) ACTUALLY LIVES.**
 
-**⇒ WHAT THIS IS, AND WHAT IT IS NOT.**
+**WHAT THIS IS, AND WHAT IT IS NOT.**
 * **It is NOT a `⊥` zero day in the author's sense**: it is not a type-theoretic
   unsoundness, and it uses no `unsafe` and no FFI. **It is a trust-base
   observation.**
 * Its practical significance is bounded and I say so: an attacker who can write
   `$HOME/.bend/bendtt/<hash>/bendtt` can equally replace `bin/bend` itself.
-  **⇒ it is not a privilege escalation.**
+  **=> it is not a privilege escalation.**
 * **Where it DOES bite:** a CI machine, a container image, or a laptop that
   **caches `~/.bend`** inherits a *verdict* from the cache, not from the
   repository. And this tree already met the consequence from the other end: the
   `d10-transcript` pin in `checks/differ.py` is the sha256 of a stderr stream
   that contains this notice, so upstream's next release redded a repository pin
   with no repository change.
-* **⇒ THE FIX IS ONE LINE:** `kernel_bin()` should compare the cached binary
+* **THE FIX IS ONE LINE:** `kernel_bin()` should compare the cached binary
   against the one it would build, or rebuild it; and a verdict should not depend
   on a path in `$HOME`.
 
@@ -428,12 +428,12 @@ mis-parse is outside every claim.
 |---|---|---|
 | `p_ctrl_ok` | the control: `bad : ∀x0 : Empty -> Empty = λ{(,): λ{}}` | **ACCEPT** |
 | `p_parse_comment` | a `#` comment **inside a term** | REJECT — *"expected: a function type"*, i.e. the comment was skipped and the term parsed as intended |
-| `p_parse_eof_hash` | a `#` at EOF with **no newline** | REJECT — same message ⇒ the comment was skipped |
-| `p_parse_crlf` | CR and TAB whitespace | REJECT — same message ⇒ whitespace handled |
+| `p_parse_eof_hash` | a `#` at EOF with **no newline** | REJECT — same message => the comment was skipped |
+| `p_parse_crlf` | CR and TAB whitespace | REJECT — same message => whitespace handled |
 | `p_parse_uni` | a **multi-byte character in a name** (`bäd`) | REJECT — *"parse error: expected ':'"* |
 | `p_parse_shadow` / `p_parse_shadow2` | a def whose **name equals a bound variable's name** (`x0`) | REJECT — *"In x0: expected: \*2 observed: \*1"* |
 
-**⇒ THE FIRST ROW OF THAT TABLE WAS NOT A CLEAN CONTROL** (the body carried an
+**THE FIRST ROW OF THAT TABLE WAS NOT A CLEAN CONTROL** (the body carried an
 extra `λ`, so the failure was the `Lam` shape, not the comment), **SO IT WAS
 RE-TAKEN with the control's exact body** — seven variants, all **ACCEPT**:
 
@@ -447,15 +447,15 @@ p2_eof_hash      rc=0  ALL PROOFS CHECK   (a '#' at EOF, no newline)
 p2_eof_hash_nl   rc=0  ALL PROOFS CHECK   (a '#' at EOF, with a newline)
 ```
 
-**⇒ FINDINGS.**
+**FINDINGS.**
 1. **The comment and whitespace handling is CORRECT** — `Parse.gap`'s `where
    eol` clause (a `partial def` with a `where` block, the least-proved code in
    the file) skips `#`-to-EOL correctly, in every position tried, **and the
-   whole book still checks**. **⇒ THE `partial def`s DID NOT YIELD A HOLE.**
+   whole book still checks**. **THE `partial def`s DID NOT YIELD A HOLE.**
 2. **`Parse.span` STOPS AT THE FIRST NON-ASCII BYTE.** A name with a multi-byte
-   character cannot be parsed at all. **⇒ NOT EXPLOITABLE FROM A BEND FILE**,
+   character cannot be parsed at all. **NOT EXPLOITABLE FROM A BEND FILE**,
    because `safe.ts:555-557` `name_tt` encodes every non-`[A-Za-z0-9_.]`
-   character as `_hex_`. **⇒ BUT IT IS A REAL LIMITATION OF THE TEXT FORMAT
+   character as `_hex_`. **BUT IT IS A REAL LIMITATION OF THE TEXT FORMAT
    AND IT IS UNPROVED.**
 3. **THE `Ref`/`Var` AMBIGUITY IS REAL AND IT IS WHAT MAKES `safe.ts`'s
    `book_show` NAMING CONVENTION LOAD-BEARING.** `Term.parse_name`
@@ -464,10 +464,10 @@ p2_eof_hash_nl   rc=0  ALL PROOFS CHECK   (a '#' at EOF, with a newline)
    from inside a λ that binds `x0`**; the reference is silently read as the
    VARIABLE. `safe.ts:1435-1438` (`book_show`) picks the variable prefix `p` so
    that `^p[0-9]+$` matches **no def name**, which is exactly what prevents
-   the mis-parse. **⇒ THE AMBIGUITY IS CLOSED BY CONSTRUCTION, AND THE
+   the mis-parse. **THE AMBIGUITY IS CLOSED BY CONSTRUCTION, AND THE
    CONSTRUCTION IS UNPROVED AND UNDOCUMENTED AS A SAFETY PROPERTY.**
 
-**⇒ C1's VERDICT: THE PARSER'S `partial def`s DID NOT YIELD A HOLE, BUT THEY
+**C1's VERDICT: THE PARSER'S `partial def`s DID NOT YIELD A HOLE, BUT THEY
 YIELD ONE DOCUMENTED LATENT AMBIGUITY (the `Ref`/`Var` rule) AND ONE REAL
 FORMAT LIMITATION (non-ASCII names).**
 
@@ -503,30 +503,30 @@ Data.
 | `p_tup_empty` | a `Tup` at the `Empty` `Σ` whose tag has type `<C0>` | **REJECT** — *"a label of <>"* |
 | `p_tup_empty2` | a `Tup` at the `Empty` `Σ` whose tag has type `<>` | **REJECT** — *"expected: <> / observed: \*2"* |
 
-**⇒ FINDINGS.**
+**FINDINGS.**
 1. **THE SUBSUMPTION DOES NOT REACH `Empty`.** `p_tup_empty` is the direct
    test: a `Tup` at the `Empty` `Σ` whose tag is a label of `<C0>` is REJECTED
    with "a label of <>". `p_tup_empty2` shows the other half: **`<>` used as a
    TERM has type `*2` (a kind), not `<>`** — so it cannot be a tag either.
-   **⇒ THE TAG OF AN `Empty` VALUE MUST BE A TERM OF TYPE `Enu []` THAT IS NEITHER
+   **THE TAG OF AN `Empty` VALUE MUST BE A TERM OF TYPE `Enu []` THAT IS NEITHER
    A `Lab` NOR THE ENUM ITSELF.**
 2. **THE `All` CASE'S REVERSED DOMAIN IS REAL AND IT IS PERMISSIVE IN ONE
    DIRECTION:** `∀x0 : <> -> <C0>` is ACCEPTED (a function from the EMPTY enum
-   to a NON-empty one) while `∀x0 : <C0> -> <>` is REJECTED. **⇒ `Efq`'s
+   to a NON-empty one) while `∀x0 : <C0> -> <>` is REJECTED. **`Efq`'s
    CODOMAIN IS UNCONSTRAINED — MEASURED.** This is the `Efq` rule
    (`bendtt.lean:1207-1213`) constraining only the domain.
-3. **⇒ AND HERE IS THE SHARP POINT FOR THE PRIZE: `∀x0 : <> -> P` IS A FUNCTION
+3. **AND HERE IS THE SHARP POINT FOR THE PRIZE: `∀x0 : <> -> P` IS A FUNCTION
    FROM THE **EMPTY ENUM** TO `P` — AND THE `Empty` DATATYPE'S `Σ` HAS THAT VERY
    EMPTY ENUM AS ITS DOMAIN.** So `Prj(Efq) : ∀q (s : Empty) -> P` is the
-   `Σ`-analogue of the accepted `Efq`. **⇒ BUT THE PRIZE NEEDS A VALUE, NOT A
+   `Σ`-analogue of the accepted `Efq`. **BUT THE PRIZE NEEDS A VALUE, NOT A
    FUNCTION, AND `p_tup_empty` SHOWS THE VALUE'S TAG CANNOT BE BUILT.**
-4. **⇒ THE REFINEMENT DIVERGENCE (M7) IS CONFIRMED AT THE KERNEL:** the kernel
+4. **THE REFINEMENT DIVERGENCE (M7) IS CONFIRMED AT THE KERNEL:** the kernel
    has no `r` list, so bend2's "a more-refined type fits a less-refined one" has
-   no kernel counterpart. **⇒ THE TWO SIDES' NOTIONS OF "THE SAME DATATYPE, LESS
+   no kernel counterpart. **THE TWO SIDES' NOTIONS OF "THE SAME DATATYPE, LESS
    REFUTED" ARE INCOMPARABLE. THIS IS A REAL DIVERGENCE, AND IT IS THE
    PERMISSIVE DIRECTION ON bend2's SIDE.**
 
-**⇒ C2's VERDICT: A DIVERGENCE EXISTS AND IT IS BENCHMARKED — THE REFINEMENT
+**C2's VERDICT: A DIVERGENCE EXISTS AND IT IS BENCHMARKED — THE REFINEMENT
 ONE — BUT IT DOES NOT REACH `Empty`, BECAUSE THE KERNEL'S `Empty` IS A `Σ` OVER
 THE EMPTY ENUM AND EVERY WAY TO FILL THAT ENUM IS CLOSED.**
 
@@ -542,45 +542,45 @@ model, or **transparent** when the def had a body.
   model is substituted for `x`. Safe.
 * **`Eql`** (`:531-533`): `term_compare("EQ", F.a, F.b, d) ? Ann(Rfl(), F) : null`.
   **The kernel's `Rfl` rule (`bendtt.lean:1214-1217`) requires `Term.conv a b`.**
-  **⇒ IF bend2's "EQ" IS LOOSER THAN THE KERNEL'S `conv`, THE KERNEL REJECTS
-  (kernel stricter ⇒ safe). IF bend2's "EQ" IS TIGHTER, `model_at` RETURNS
-  `null` ⇒ THE DEF GOES OUT OF SCOPE ⇒ `--verdict` FAILS (a refusal ⇒ safe).
-  ⇒ `model_at`'s `Eql` CASE IS SAFE IN BOTH DIRECTIONS. PROVEN BY READING.**
+  **IF bend2's "EQ" IS LOOSER THAN THE KERNEL'S `conv`, THE KERNEL REJECTS
+  (kernel stricter => safe). IF bend2's "EQ" IS TIGHTER, `model_at` RETURNS
+  `null` THE DEF GOES OUT OF SCOPE `--verdict` FAILS (a refusal => safe).
+`model_at`'s `Eql` CASE IS SAFE IN BOTH DIRECTIONS. PROVEN BY READING.**
 * **`ADT`** (`:509-530`): builds `Ann(Ctr(c.k, xs), F)` with `xs` the models of
   the constructor's fields. **A WRONG FIELD MODEL MAKES THE `Ann` ASSERT THE
   WRONG TYPE, AND THE KERNEL CHECKS THE `Tup`'s COMPONENTS AGAINST THE `Σ`
-  CHAIN ⇒ THE KERNEL CATCHES IT (kernel stricter ⇒ safe).** A field model that
-  is `null` makes the whole model `null` ⇒ out of scope ⇒ refusal.
-* **`default` ⇒ `hyp()`** (`:496`): `hs.find(([, A]) => term_compare("EQ", A, F, d))?.[0] ?? null`.
-  **A hypothesis is returned only when its type is EQ to the target ⇒ the
-  hypothesis's TYPE IS RIGHT ⇒ the model is well-typed.** The same
+  CHAIN THE KERNEL CATCHES IT (kernel stricter => safe).** A field model that
+  is `null` makes the whole model `null` => out of scope => refusal.
+* **`default` `hyp()`** (`:496`): `hs.find(([, A]) => term_compare("EQ", A, F, d))?.[0] ?? null`.
+  **A hypothesis is returned only when its type is EQ to the target => the
+  hypothesis's TYPE IS RIGHT => the model is well-typed.** The same
   looser/tighter argument as the `Eql` case applies: if the kernel's `conv`
   disagrees with bend2's "EQ", the kernel is the stricter side (it checks the
-  body at the declared type, `bendtt.lean:1402-1407`) ⇒ **safe**.
+  body at the declared type, `bendtt.lean:1402-1407`) **safe**.
 
-**⇒ C3's VERDICT: `model_at` IS SAFE IN EVERY BRANCH, BY THE SAME ARGUMENT
+**C3's VERDICT: `model_at` IS SAFE IN EVERY BRANCH, BY THE SAME ARGUMENT
 EACH TIME — the kernel checks the manufactured body at the DECLARED type, so a
 model of the wrong type is rejected by the kernel and a model that cannot be
 found is refused by the elaborator. THE ONE PART OF THE BOOK THE KERNEL CANNOT
 CROSS-CHECK AGAINST bend2 IS ALSO THE ONE PART WHERE THE KERNEL'S OWN CHECK
 DOES THE WORK.**
 
-**⇒ AND THE ONE `model_at` BEHAVIOUR WORTH NAMING, MEASURED (`e01`–`e05`):** a
+**AND THE ONE `model_at` BEHAVIOUR WORTH NAMING, MEASURED (`e01`–`e05`):** a
 law whose claim is `Empty` has **no model** (`model_at` on an empty ADT returns
-`hyp()`, and there is no hypothesis ⇒ `null` ⇒ the def goes out of scope), and
+`hyp()`, and there is no hypothesis `null` => the def goes out of scope), and
 a law whose claim is `∀x : Empty -> Empty` has the model `λx => x` — a
 **hypothesis of the empty type returned as a value**. That model is correct
 (the identity on `Empty` is a function, not an inhabitant), and the resulting
 book passes the kernel — but it is the same `s.empty` shape as `c10`, and it is
 **not** a proof of `Empty`.
 
-**⇒ AND THE ONE `model_at` FAILURE THAT IS ACTUALLY REACHED IN PRACTICE,
+**AND THE ONE `model_at` FAILURE THAT IS ACTUALLY REACHED IN PRACTICE,
 MEASURED:** the three prior-art probes all die with **"no model for use~F"**,
 i.e. `model_at` cannot model a **`~` template parameter** whose type is a
-dependent equality. **⇒ `model_at` IS NOT JUST A CORNER: IT IS WHERE
+dependent equality. **`model_at` IS NOT JUST A CORNER: IT IS WHERE
 `--verdict` ACTUALLY REFUSES.** And note the shape of the refusal: **the
 kernel is never consulted at all**, so this is a *refusal*, not a divergence.
-**⇒ A DIVERGENCE NEEDS A BOOK THAT IS IN SCOPE AND THAT THE KERNEL STILL
+**A DIVERGENCE NEEDS A BOOK THAT IS IN SCOPE AND THAT THE KERNEL STILL
 REJECTS — AND NONE OF THE 17 CANDIDATES, NOR THE PRIOR HUNT'S 12, IS ONE.**
 
 ---
@@ -591,7 +591,7 @@ REJECTS — AND NONE OF THE 17 CANDIDATES, NOR THE PRIOR HUNT'S 12, IS ONE.**
   three ways the kernel can be given a term of type `Empty` are all closed:
   the `Tup`'s tag cannot be a `Lab` (`p_fits_empty_lab`), cannot be the enum
   itself (`p_tup_empty2`), and cannot be an application without an `Empty` to
-  apply it to (`Empty.efq`'s domain is an empty datatype ⇒ circular).
+  apply it to (`Empty.efq`'s domain is an empty datatype => circular).
 * **No `s.empty` source outside a λ binder** (`safe.ts:683`, `safe.ts:780` are
   the only two writes).
 * **No divergence between `safe.ts`'s `no_ctr` and `bend.ts`'s emptiness test**
@@ -620,7 +620,7 @@ REJECTS — AND NONE OF THE 17 CANDIDATES, NOR THE PRIOR HUNT'S 12, IS ONE.**
 
 - 2026-10-22T18:51Z — report created (minute five). Prior hunt's report read in full.
 - 2026-10-22T18:55Z — kernel re-derived: `bendtt.lean` sha256 `83cdd36e…`, built with
-  Lean 4.34.0 ⇒ `bendtt` sha256 `989d9cf2…`, byte-identical to the prior hunt's and to
+  Lean 4.34.0 `bendtt` sha256 `989d9cf2…`, byte-identical to the prior hunt's and to
   the machine's `~/.bend/bendtt/b9f3e0253abffb11/bendtt`.
 - 2026-10-22T19:05Z — M1: the validator and its four fakes.
 - 2026-10-22T19:30Z — M2-M4: c10 re-measured; h06 found (the minimal shape); the

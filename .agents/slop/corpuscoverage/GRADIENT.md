@@ -18,7 +18,7 @@ builds **THREE**, and **the port's own gate could not see it** because `size1` c
 shared subtree once per PATH.  The defect is FIXED, **no exception was added to `WANT`**,
 and the corpus is **38 of 38**.
 
-**⇒ AND THE WALL WAS NOT WHERE THE BRIEF EXPECTED IT.**  The brief's own hypothesis was
+**AND THE WALL WAS NOT WHERE THE BRIEF EXPECTED IT.**  The brief's own hypothesis was
 right in its reasoning and wrong in its conclusion: a backward pass is indeed not a
 binary op, it is a chain -- **AND A CHAIN IS EXACTLY WHAT A WALK PRODUCES, SO THE BEND
 SIDE CAN CALL THE WALK.**  The corpus's bend lane was never structurally unable to reach
@@ -45,7 +45,7 @@ graph:
 corpus's own op census read `69 of 69 program ops` at the same time, which is the
 sentence `0/494` was hiding.
 
-**⇒ AND THE PY SIDE: 1196 upstream functions executed, across 55 of 214 upstream files,
+**AND THE PY SIDE: 1196 upstream functions executed, across 55 of 214 upstream files,
 and `tinygrad/mixin/gradient.py` and `tinygrad/uop/upat.py` were NOT AMONG THEM.**
 
 ---
@@ -77,11 +77,11 @@ two-answer backward graph.
 `gates/gr_graph_census-oracle.py` builds the SAME graph on the CPython side, so the
 fixture is not a second transcription of the port's.
 
-**⇒ AND THE LEAF MUST BE `BUFFER(STACK())` AND NOT `BUFFER()`, AND THAT IS MEASURED.**
+**AND THE LEAF MUST BE `BUFFER(STACK())` AND NOT `BUFFER()`, AND THAT IS MEASURED.**
 upstream's `_shape` reads `self.src[0].as_shape` (`ops.py:359`), so a src-less BUFFER
 has no `_shape`, and `compute_gradient` reads `k._shape` at `gradient.py:130` -- so
 CPython **RAISES `IndexError: tuple index out of range`**.  MEASURED on this line, before
-the fixture was written.  **⇒ AND THIS IS NOT A HYPOTHETICAL: `gates/gr_graph_census-oracle.py`
+the fixture was written.  **AND THIS IS NOT A HYPOTHETICAL: `gates/gr_graph_census-oracle.py`
 is RED for exactly this reason** -- its fixture at `:89-91` is
 `UOp(Ops.BUFFER, arg=ParamArg(...))` with no src, and the oracle dies inside CPython's
 own `compute_gradient`.  **THAT **FAILURE **IS **PRE-EXISTING **AND **UNRELATED **TO **THIS
@@ -118,23 +118,23 @@ The same instrument, before and after:
 | `tinybendygrad/helpers.bend` | 58 / 380 | **63 / 380** |
 | **total reached** | **959** | **1144** |
 
-**⇒ AND ALL 32 RULES `gr_0`..`gr_31` ARE REACHED** (MEASURED, by listing the reached
+**AND ALL 32 RULES `gr_0`..`gr_31` ARE REACHED** (MEASURED, by listing the reached
 names), which is the table the whole file exists for.
 
-**⇒ AND THE 321 UNREACHED `gradient.bend` DEFS ARE THE FILE's OWN GATE READERS** --
+**AND THE 321 UNREACHED `gradient.bend` DEFS ARE THE FILE's OWN GATE READERS** --
 `dag_*`, `gs_*`, `bw_*`, `t_*`, `Fix`, `Dag` -- MEASURED by classifying them: **292 of
 the 321 are gate readers**, and the 29 that are not are the rule bodies for ops this
 fixture does not have (`gexp2`, `gsqrt`, `gtrunc`), the file's own fixture builders
-(`dag`, `gs`, `fx_buf`), and `main`/`row`/`srow`.  **⇒ SO 174/495 IS NOT "35% OF THE
+(`dag`, `gs`, `fx_buf`), and `main`/`row`/`srow`.  **SO 174/495 IS NOT "35% OF THE
 AUTODIFF": IT IS THE AUTODIFF PLUS THE FIXTURES AND THE READERS.**
 
-**⇒ AND ON THE PY SIDE: 1196 → 1203 upstream functions executed, and
+**AND ON THE PY SIDE: 1196 → 1203 upstream functions executed, and
 `tinygrad/mixin/gradient.py` AND `tinygrad/uop/upat.py` ARE NOW AMONG THEM** -- the
 corpus now runs upstream's own `compute_gradient`, `_deepwalk`, `pm_gradient.rewrite`,
 `upat_compile` and `upat_interpret`.  MEASURED by `sys.setprofile` over the `grad`
 builder alone.
 
-**⇒ AND THE OP CENSUS DID NOT MOVE: `69 of 69` before and after.**  The gradient's ops
+**AND THE OP CENSUS DID NOT MOVE: `69 of 69` before and after.**  The gradient's ops
 (ADD, MUL, BUFFER, CAST, CONST, STACK, AFTER, EXP2, SQRT, TRUNC, POW, MAX, WHERE, CMPLT,
 CMPNE, LOG2, RECIPROCAL) were all already reached by the forward graphs.  **THE HONEST
 COUNT OF WHAT `grad` AND `gral` ADD TO THE OP SURFACE IS ZERO, AND WHAT THEY ADD TO THE
@@ -158,7 +158,7 @@ The MAX rule alone, both sides, in the corpus's own normal form:
 | `CMPNE` | **2** | **3** |
 | `CMPLT` | 2 | 2 |
 
-**⇒ AND THE PORT'S OWN ROWS READ `max_n0=21 max_n1=21` ON BOTH SIDES, AND `max_eq_op=1`,
+**AND THE PORT'S OWN ROWS READ `max_n0=21 max_n1=21` ON BOTH SIDES, AND `max_eq_op=1`,
 AND THE GATE IS GREEN.**  The port's own gate could not see it, and the reason is a
 property of the instrument: **`size1` counts `n` plus everything under it, and a SHARED
 subtree is counted ONCE PER PATH** -- so a duplicated inner `WHERE` costs exactly what a
@@ -180,11 +180,11 @@ upstream's rule body (`tinygrad/mixin/gradient.py:78-79`):
 INNER `(x.eq(y)).where(ctx * 0.5, 0)` IS ONE NODE.**  MEASURED on CPython's own tree, the
 two slots' inner `WHERE`s are the **same `id()`**.
 
-**⇒ AND `(x>y)` IS `CMPLT(y, x)`** -- `_binop(Ops.CMPLT, y, reverse=True)`
+**AND `(x>y)` IS `CMPLT(y, x)`** -- `_binop(Ops.CMPLT, y, reverse=True)`
 (`elementwise.py:323`) puts `y` on the LEFT -- **AND `(x<y)` IS `CMPLT(x, y)`.**  So ONLY
 THE OUTER COMPARISON IS SWAPPED BETWEEN THE TWO SLOTS.
 
-**⇒ AND THE PORT SWAPPED BOTH.**  `gr_11.go` called `gr_11.one(ar, ctx, x, y)` and then
+**AND THE PORT SWAPPED BOTH.**  `gr_11.go` called `gr_11.one(ar, ctx, x, y)` and then
 `gr_11.one(ar, ctx, y, x)`, so slot 1's inner was computed from `(y.eq(x))` -- a
 DIFFERENT node, because `CMPNE` is not commutative -- and the port built a SECOND inner
 `WHERE`.
@@ -196,7 +196,7 @@ DIFFERENT node, because `CMPNE` is not commutative -- and the port built a SECON
 | the port's outer `CMPLT` | `CMPLT(B0, B1)` | `CMPLT(B1, B0)` |
 | the port's inner `CMPNE` | `CMPNE(B0, B1)` | `CMPNE(B1, B0)` -- **DIFFERENT** |
 
-**⇒ AND THE OUTER SWAP IS INVISIBLE TO THE CANONICAL FORM** (the two `CMPLT`s are the
+**AND THE OUTER SWAP IS INVISIBLE TO THE CANONICAL FORM** (the two `CMPLT`s are the
 same two nodes in the other order, so the subtree SET is the same), **WHICH IS WHY THE
 ONLY VISIBLE DIFFERENCE WAS THE DUPLICATED INNER.**  The port's outer was ALSO wrong; the
 corpus could see the duplication but not the swap.
@@ -208,9 +208,9 @@ outer.**  `gr_11.inner` builds `(x.eq(y)).where(ctx * 0.5, 0)`; `gr_11.outer` bu
 outer `WHERE`; `gr_11.go` builds `CMPLT(y, x)` for slot 0 and `CMPLT(x, y)` for slot 1 and
 hands BOTH the same inner.
 
-**⇒ AND THE PORT's OWN 138 GATE ROWS ARE BYTE-IDENTICAL BEFORE AND AFTER THE FIX**
+**AND THE PORT's OWN 138 GATE ROWS ARE BYTE-IDENTICAL BEFORE AND AFTER THE FIX**
 (MEASURED, by running `tinybendygrad/mixin/gradient.bend` at `HEAD` and at the fix and
-diffing the 138 `name=value` rows).  **⇒ THAT IS THE POINT: THE CORPUS WAS THE ONLY
+diffing the 138 `name=value` rows).  **THAT IS THE POINT: THE CORPUS WAS THE ONLY
 INSTRUMENT THAT COULD SEE THIS DEFECT.**
 
 ### THE SECOND DEFECT, IN THE HARNESS
@@ -234,12 +234,12 @@ FIXED.
     selfcheck=# SELFCHECK: OK   oracle-selfcheck=# ORACLE SELFCHECK: OK
     substrate-start == substrate-end
 
-**⇒ AND `checks/differ.py`'s `WANT` IS EMPTY.**  It was empty before this unit and it is
+**AND `checks/differ.py`'s `WANT` IS EMPTY.**  It was empty before this unit and it is
 empty after it, and the two new graphs -- 61 nodes between them -- AGREE.  **NO EXCEPTION
 WAS ADDED TO MAKE THEM GREEN, AND NONE WAS NEEDED, BECAUSE THE DEFECT WAS FIXED RATHER
 THAN CARVED OUT.**
 
-**⇒ AND `POPULATION_PIN` MOVED IN THE SAME COMMIT**, from
+**AND `POPULATION_PIN` MOVED IN THE SAME COMMIT**, from
 `ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe` (36 graphs) through
 `f8dd8dc77a7ad90c8c0bd5e8898c4481d204c1914f1f31f7606762b6966b77f1` (37) to
 **`d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31` (38)** -- a CONTENT
@@ -273,11 +273,11 @@ SCHEDULE AT ALL** -- `schedule/__init__.bend` ports only `__init__.py:14-80` and
 `:82-301` -- so no corpus graph can reach `schedule/` from the port's own code.  **A
 COVERAGE GAP WHOSE CAUSE IS A PORT GAP IS NOT A CORPUS GAP.**
 
-**⇒ AND ONE MORE WALL, NAMED BY THIS UNIT'S OWN WORK: A RULE BODY IS ONLY REACHED BY A
+**AND ONE MORE WALL, NAMED BY THIS UNIT'S OWN WORK: A RULE BODY IS ONLY REACHED BY A
 GRAPH WHOSE FIXTURE CONTAINS THE OP THAT CLAIMS IT.**  `gral` fires five rule bodies and
 `grad` fires two, and the other twenty-five are reachable only by a fixture that carries
 their op.  **THE PORT's `gs` FIXTURE (the `EXPAND` + `DETACH` one) IS THE SHAPE THAT
 WOULD REACH THE REMAINING BODIES**, and it is not a corpus graph because its EXPECTED
-ANSWER IS A TABLE OF PER-RULE ROWS rather than ONE GRAPH.  **⇒ SO THE NEXT GRAPH, IF
+ANSWER IS A TABLE OF PER-RULE ROWS rather than ONE GRAPH.  **SO THE NEXT GRAPH, IF
 THERE IS ONE, IS A FIXTURE THAT CARRIES ONE OF EVERY UNARY AND BINARY OP THE PORT'S TABLE
 CLAIMS -- AND THE PORT's OWN `gs`/`dag` FIXTURES ARE THE TEMPLATE.**

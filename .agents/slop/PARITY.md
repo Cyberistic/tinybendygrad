@@ -146,7 +146,7 @@ silent behaviour change. **NOT landed, each with a `TODO(parity)` in the file:**
 fields — it belongs with the first block that CONSUMES it, not with a file nothing reads yet), the four
 `Tensor` op helpers, and the blocks and `Transformer` itself (`model.py:134-650`).
 
-**⇒ AND ONE LANGUAGE FACT THE PORT MUST CARRY, MEASURED:** an upstream `float|None` cannot travel as a
+**AND ONE LANGUAGE FACT THE PORT MUST CARRY, MEASURED:** an upstream `float|None` cannot travel as a
 `Maybe` in a record field — `Maybe<&1, F32>` is REFUSED there ("expected : Data, observed : Type")
 because `F32` is a `Type`. It IS legal as a return type (`cstyle.bend` uses it three times). So
 `SSMConfig.gate_lower_bound` travels as `has_bound: Bool` beside `bound: F32`, and a `0.0` sentinel was
@@ -331,7 +331,7 @@ upstream prints as `-0.0f`.
 (the largest at 15323 B), `sqrt`, `reciprocal`, `trunc`, `relu`, `maximum` -- and the battery is **31
 match / 0 failed**.
 
-**⇒ AND A CACHE NEARLY HID ALL OF IT.** `portc`'s key was the sha256 of the uop rows alone, so after
+**AND A CACHE NEARLY HID ALL OF IT.** `portc`'s key was the sha256 of the uop rows alone, so after
 `cstyle.bend` was fixed for non-finite constants it returned the **PRE-FIX** C and the fix looked
 inert; the same happened again after the `-0.0` fix. The key now covers the renderer sources AND the two
 generators. **A CACHE THAT HIDES A FIX IS THE SAME DEFECT CLASS AS A GATE THAT CANNOT GO RED**, and it
@@ -569,7 +569,7 @@ is inside the noise.**
 **1.0483**, spread 0.9845-1.1658, "BEND slower in 4 of 5". Same binary, same workload, ~90 minutes apart.
 **A SHORT WINDOW AT HIGH LOAD INVENTS A 5% GAP; THE LONGER INTERLEAVED RUN DOES NOT SEE ONE.**
 
-**⇒ AND THERE IS NOTHING LEFT TO ATTRIBUTE, because the two lanes are the same machinery running the same
+**AND THERE IS NOTHING LEFT TO ATTRIBUTE, because the two lanes are the same machinery running the same
 bytes.** MEASURED in `ops_bend.py`: the compiled branch calls
 
     super().__init__(device, HostAllocator(self), renderers, CPUProgram, arch=... ",native")
@@ -580,7 +580,7 @@ passes (`ops_cpu.py:74`). The ONLY difference is the renderer list (`[PortRender
 byte-identical to `ClangRenderer`'s on 37 of 37 kernels (PARITY 12/`ksweep`). So the Program/compile path
 is not a candidate: it IS the same path.
 
-**⇒ SO "THE FASTEST POSSIBLE" NOW HAS A NUMBER INSTEAD OF AN UNCLAIMED OPTIMUM, AND THE NUMBER IS A
+**SO "THE FASTEST POSSIBLE" NOW HAS A NUMBER INSTEAD OF AN UNCLAIMED OPTIMUM, AND THE NUMBER IS A
 RESOLUTION: BEND/CPU = 0.99 +/- 0.03 at 32x32 and 16x16 on this machine.** Below that band this
 instrument cannot rank the two lanes, and no port-side change can be credited inside it. Anything
 faster than the CPU device would have to come from tinygrad's own emit and schedule (shared by both
@@ -611,11 +611,11 @@ five rounds is not enough to resolve a few percent and will invent one. Every "B
 that used 5 rounds is therefore suspect, and the pattern is consistent: 5-round runs produced spurious
 3.7-4.8% effects, 7- and 9-round runs read ~1.0 every time.
 
-**⇒ SO THE CONSOLIDATED ANSWER IS STRONGER AND SIMPLER THAN THE TABLE SUGGESTS: with enough rounds,
+**SO THE CONSOLIDATED ANSWER IS STRONGER AND SIMPLER THAN THE TABLE SUGGESTS: with enough rounds,
 BEND/CPU = 1.00 with the IQR straddling 1.0 AT EVERY SIZE MEASURED -- 16, 32, 256, 512 matmul and a
 128 conv2d. The lanes are indistinguishable, and the port is never measurably slower.**
 
-**⇒ AND THE ONE CLEAR RESULT FROM THE 5-ROUND RUN IS ATTRIBUTED AS FAR AS IT CAN BE, AND NOT FURTHER.** At 256x256 the ratio is
+**AND THE ONE CLEAR RESULT FROM THE 5-ROUND RUN IS ATTRIBUTED AS FAR AS IT CAN BE, AND NOT FURTHER.** At 256x256 the ratio is
 0.9633 with a TIGHT IQR (0.949-0.967), so it is not load. The obvious hypothesis -- that the CPU device
 picks a DIFFERENT renderer for that kernel and emits slower C -- is **RULED OUT BY MEASUREMENT**: patching
 all four of the CPU device's renderers shows `size 32: ['ClangRenderer']` and `size 256: ['
@@ -624,7 +624,7 @@ kernels. The compile path is also not a candidate: the compiled branch passes th
 `HostAllocator` and `arch` as `CPUDevice`. **So the 3.7% is a sub-4% effect in the device wrapper with no
 component this instrument can point at, and it is recorded as UNATTRIBUTED rather than explained.**
 
-**⇒ AND THE LOAD FLOOR IS REAL AND NAMED:** at 512x512 a FIVE-round run read ratio 1.0379 with a spread of
+**AND THE LOAD FLOOR IS REAL AND NAMED:** at 512x512 a FIVE-round run read ratio 1.0379 with a spread of
 0.566-1.076 (one CPU round took 45 ms against 23) and the NINE-round run read 0.9982. **At this machine's
 load, five rounds cannot resolve 512; nine can.** That is the resolution statement, and it is why every
 row above quotes its round count.
@@ -714,11 +714,11 @@ more than two orders of magnitude and adds a heavier conv (3 in-channels, 8 filt
 
 9 rounds each, `--iters 3`, warm-first, interleaved with the order alternating.
 
-**⇒ AND THE 1024 ROW IS THE ONE THAT SETTLES IT.** At 170 ms per realize the launch floor (~1.24 ms) is
+**AND THE 1024 ROW IS THE ONE THAT SETTLES IT.** At 170 ms per realize the launch floor (~1.24 ms) is
 **1.4% of the work**, so it cannot hide anything: the lanes agree to **within 2%** and 1.0 sits inside the
 interquartile range. A 0.3% median in BEND's favour is not a claim either -- it is inside the band.
 
-**⇒ SO THE MEASURED ANSWER TO "FASTEST POSSIBLE" IS A RESOLUTION-BOUNDED OPTIMUM, AND IT IS NOW TIGHT:**
+**SO THE MEASURED ANSWER TO "FASTEST POSSIBLE" IS A RESOLUTION-BOUNDED OPTIMUM, AND IT IS NOW TIGHT:**
 at 16, 32, 256, 512 and **1024** matmul, and a 128 and a 256 conv2d, **BEND/tinygrad-CPU = 1.00 with the
 IQR straddling 1.0 every time**; the band shrinks from +-4% at the small sizes to +-2% at 1024 because the
 work finally dominates. **NO WORKLOAD SHOWS THE PORT MEASURABLY SLOWER**, and none shows it faster by
@@ -745,7 +745,7 @@ that the time is the kernel rather than the wrapper.
 it faster.** The bands are WIDER than the 1024 matmul's +-2% because these kernels are 6-14 ms, not 170 ms,
 so the machine's load variance fills more of the ratio -- that is a property of the size, not of the family.
 
-**⇒ AND THE PROFILE SETTLES THE REMAINING QUESTION: THE TIME IS THE KERNEL.** `sample` on the compiled lane
+**AND THE PROFILE SETTLES THE REMAINING QUESTION: THE TIME IS THE KERNEL.** `sample` on the compiled lane
 running 60 realizes at 1024x1024, with the render and the compile already warm:
 
 ```
@@ -758,7 +758,7 @@ so the absence of wrapper frames is not a symbol-resolution artefact: **98.5% of
 the generated kernel and ~1.2% is Python.** `ops_bend`, `portc`, `BendProgram` and `exec_kernel` appear in
 NO frame.
 
-**⇒ SO THE ANSWER NOW COVERS A MEASURED POPULATION OF OP FAMILIES:** matmul (16, 32, 256, 512, 1024),
+**SO THE ANSWER NOW COVERS A MEASURED POPULATION OF OP FAMILIES:** matmul (16, 32, 256, 512, 1024),
 conv2d (128, 256 at 3->8 channels), a full-axis reduce, threefry, and a transpose-strided chain -- **BEND/
 tinygrad-CPU = 1.00 with the IQR straddling 1.0 in every one**, the band narrowing to +-2% where the work
 dominates and widening where the kernel is only a few milliseconds. **AND THE PROFILE SAYS WHY: both lanes
@@ -1219,7 +1219,7 @@ than never starting it. With the flag off the shipped path is exactly the one-sh
 counted in `worker_stats()` rather than swallowed. `BEND_SERVE=1 ksweep.py` is **37 of 37 identical on both
 decoders**, so the opt-in path is correct for the turns it serves.
 
-**⇒ AND THE HONEST SUMMARY OF §29 IS THAT THE 46 ms IS STILL THERE.** The mechanism is built, its cost is
+**AND THE HONEST SUMMARY OF §29 IS THAT THE 46 ms IS STILL THERE.** The mechanism is built, its cost is
 measured at 8.3 ms per turn, and it does not survive more than three requests in this tree today.
 
 ## 30. THE STALL WAS IN THE HARNESS: THE DAEMON IS NOW THE DEFAULT, AND THE PORT IS FASTER THAN CPU END TO END
@@ -1367,7 +1367,7 @@ only about half of the wall; and the profile after the change shows `helpers_div
 ten while **`u32_to_word` -- the runtime's own `U32.show` -- takes 15.7%**, with `$List_set` 7.0% and
 `cstyle_St_bufs` 4.3% behind it.
 
-**⇒ SO THE REMAINING DECIMAL COST IS NO LONGER THE PORT'S.** `u32_to_word` is `langs/js`'s printer, called
+**SO THE REMAINING DECIMAL COST IS NO LONGER THE PORT'S.** `u32_to_word` is `langs/js`'s printer, called
 once per number the emitter writes (indices, sizes, counts); the port does not own it, and the emitter's
 call count is the only lever left on that site.
 
@@ -1564,7 +1564,7 @@ decoded (a compact fixed-arity encoding rather than space-separated decimal text
 CHANGES TO A 2 500-LINE RENDERER WHOSE ONLY ORACLE IS BYTE-IDENTITY ON 37 KERNELS AND 38 GRAPHS**, and each
 one costs a corpus run per iteration.
 
-**⇒ AND THE HONEST SUMMARY OF THE OBJECTIVE IS THIS**: steady state is at parity and cannot move without
+**AND THE HONEST SUMMARY OF THE OBJECTIVE IS THIS**: steady state is at parity and cannot move without
 changing tinygrad's shared emit; the cold path is at or below the CPU lane in 7 of 7 whole-program readings;
 and the remaining port-side cost is 26% of a first run, diffuse, with no defect left to remove. That is where
 this record stops claiming progress and says what it would cost to go further.
@@ -1861,7 +1861,7 @@ doubled conditional, and a whole statement assembled for every inlined uop). The
 too, and removing them changes nothing measurable -- because at ~0.05 ms/uop the render is no longer dominated
 by wasted work; it is dominated by the calls it legitimately makes.
 
-**⇒ AND THAT IS THE END OF THIS CLASS, STATED WITH THREE MEASUREMENTS RATHER THAN A JUDGEMENT.** The next
+**AND THAT IS THE END OF THIS CLASS, STATED WITH THREE MEASUREMENTS RATHER THAN A JUDGEMENT.** The next
 change would have to reduce the number of calls a rendered line makes, not the number of arms it evaluates,
 and no site in the file does both any more.
 
@@ -1904,7 +1904,7 @@ is the call graph itself -- ~30 Bend-level calls per emitted line, each allocati
 **cutting that means emitting FEWER PIECES, not cheaper ones**, which is a different program rather than a
 different line of it.
 
-**⇒ AND THE HONEST STATEMENT OF THE OBJECTIVE IS UNCHANGED AND NOW BETTER SUPPORTED**: steady state is at
+**AND THE HONEST STATEMENT OF THE OBJECTIVE IS UNCHANGED AND NOW BETTER SUPPORTED**: steady state is at
 parity, the cold path is at or below the CPU lane in 7 of 7 readings, the render is ~45-48 ms for 405 uops
 with every structural lever this record could name now measured, four of them removed and four rejected.
 
@@ -1927,7 +1927,7 @@ them -- `git merge-base --is-ancestor ba715c03b HEAD` is true and
 `git diff --stat ba715c03b HEAD -- tinybendygrad/renderer/cstyle.bend` is EMPTY, so the renderer at HEAD is
 byte-for-byte what I committed.
 
-**⇒ AND THE HONEST CONCLUSION ABOUT CERTIFICATION IS THAT IT IS NO LONGER MINE TO TAKE ON THIS TREE**: a
+**AND THE HONEST CONCLUSION ABOUT CERTIFICATION IS THAT IT IS NO LONGER MINE TO TAKE ON THIS TREE**: a
 certificate needs the substrate to hold still for ~5 minutes, and another unit is landing `.bend` commits
 every few minutes. `AGENTS.md` shows `92562afb` certified at `a629a87bd` by that unit's own run, so the tree
 is certified -- just not by a reading I can produce while it moves. **THE DIGEST CHECK IS DOING EXACTLY ITS
@@ -1962,7 +1962,7 @@ Of a ~47 ms command, **~22 ms is start-up** and **~4 ms is the decode** (§37), 
   that §37-§42 kept trying to shave.
 * **the statement machinery around it adds at most 1.1 ms on top** -- 19.8% minus 14.7%.
 
-**⇒ SO THE ~21 ms IS NOT IN ANY ONE COMPONENT.** It is spread across the per-uop loop itself: the 14-arm
+**SO THE ~21 ms IS NOT IN ANY ONE COMPONENT.** It is spread across the per-uop loop itself: the 14-arm
 dispatch, `st_put`/`st_c`/`push`/`pop`, `ku_is_decl`, `ku_inline` (itself `cc_at`, `ku_src_is_reg`,
 `ku_is_const_at` and friends), and the constant `st` record copying that a `Data`-threaded renderer does on
 every step. **That is a shape, not a site** -- which is why four fixes aimed at sites measured neutral and why
@@ -1996,7 +1996,7 @@ would be a cons list whose every write copies the prefix**, which is strictly WO
 `St` is threaded and its line buffer is PREPENDED (`List.append(&2, String, [line], acc)` is the O(1) shape,
 the same one §26 established for `ku_all`), and the single `join` at the end is what turns it into text.
 
-**⇒ SO THE REQUESTED CHANGE IS NOT A REFACTOR, IT IS A LANGUAGE FEATURE.** An indexed mutable buffer would
+**SO THE REQUESTED CHANGE IS NOT A REFACTOR, IT IS A LANGUAGE FEATURE.** An indexed mutable buffer would
 need either a Bend primitive that does not exist or a C FFI, and the second is exactly what this port does not
 have -- "no external dependencies" is the rule the whole tree is built on.
 
@@ -2035,7 +2035,7 @@ lines -- on an otherwise unchanged tree:
 **37 OF 37 KERNELS DIVERGE**, not on a corner case but on the first loop of the first kernel. Reverted, and
 `ksweep` returns to `37 of 37 byte-identical` on both decoders.
 
-**⇒ SO THE LAST MULTIPLIER IS CLOSED BY THE SAME RULE THAT MAKES THE PORT A PORT**: fewer lines would be a
+**SO THE LAST MULTIPLIER IS CLOSED BY THE SAME RULE THAT MAKES THE PORT A PORT**: fewer lines would be a
 FASTER renderer and a WRONG one. The line count is not a tuning knob, it is the specification.
 
 ### 45.1 The complete list of axes, and how each was closed
@@ -2187,7 +2187,7 @@ of the wire, so ~1.7 ms of the 4.6**, i.e. **~3.5% of a 47 ms command**, and it 
 (75 ops, 16 dtypes, 4 address spaces, 17 arg kinds) whose only guard is `portc.op_table_cover`'s coverage
 check and `ksweep`'s 37 kernels.
 
-**⇒ SO THE DECODER'S CEILING IS 4.6 ms AND THE BEST AVAILABLE CHANGE IS 1.7 OF IT.** That is above ab33's
+**SO THE DECODER'S CEILING IS 4.6 ms AND THE BEST AVAILABLE CHANGE IS 1.7 OF IT.** That is above ab33's
 noise floor (§38 resolved 1.1%), so it is a real target rather than a rounding -- but it is also the whole of
 what this axis contains, and it is a coded wire with four tables to get right, not a one-line change.
 
@@ -2326,7 +2326,7 @@ against names like `range_PLACEHOLDER`, and `op_of` was up to 75 of them per lin
 REMOVED A SPLIT AND A SPACE.** Same bytes, different work: the decoder's cost was never the characters, it
 was the NAME MATCHING, and 0.15 us/char (measured in §48 by padding) was the *scan*, which is the cheap half.
 
-**⇒ SO THE WIRE LEVER IS DONE**, and it is done for a reason that is now measured rather than assumed: every
+**SO THE WIRE LEVER IS DONE**, and it is done for a reason that is now measured rather than assumed: every
 remaining field is a number or a `-`, and removing them changes nothing. What is left in the decode is digit
 parsing, and §37 bounds the whole decode at 4.2 ms before §49/§50 took most of it.
 
@@ -2500,7 +2500,7 @@ WHAT A SHRINKING BUDGET DOES TO A PERCENTAGE, AND IT IS WHY THE LAST FOUR SECTIO
 across ~15 `ku_text_*` functions. `child_count` is one def with one known defect: it builds the per-uop child
 counts with `List.set` per source, and `List.set` rebuilds the whole prefix -- O(n^2) cons cells for n uops.
 
-**⇒ SO THE NEXT CHANGE IS THE ONE §40 TRIED AND MEASURED SLOW** (fusing `get`+`set` into `cc_inc` was 1.0231
+**SO THE NEXT CHANGE IS THE ONE §40 TRIED AND MEASURED SLOW** (fusing `get`+`set` into `cc_inc` was 1.0231
 and reverted): the same computation needs a pass that does not rebuild a prefix at all -- merge-sort the ~2n
 source indices and run-length encode them -- because the constant-factor version of an O(n^2) is still
 O(n^2). That is a real piece of work with a measured 17% at stake, and it is where this record stops today.
@@ -2537,7 +2537,7 @@ The three escape routes are all closed, each measured earlier in this record:
 | `Bool.pick(take_a, mrg(ta, b), mrg(a, tb))` | `Bool.pick` is STRICT (§33/§34/§38/§39 all exploit this) -- it would evaluate BOTH recursive calls, i.e. 2^n |
 | pass a computed half/list as the argument | "expected : a decreasing self-call (arguments are read left to right: each passed unchanged until one shrinks)" -- a merged or split list is not a subterm |
 
-**⇒ AND WITH SORTING OUT, SO IS EVERY LINEAR FORMULATION**: a counting pass needs either a mutable cell (§44 --
+**AND WITH SORTING OUT, SO IS EVERY LINEAR FORMULATION**: a counting pass needs either a mutable cell (§44 --
 `langs/core.bend` has no `Array` and no `Ref`) or a sort (this section). **`child_count`'s O(n^2) is therefore
 NOT A DEFECT THAT CAN BE FIXED IN THIS LANGUAGE; IT IS THE PRICE OF THE ONLY HISTOGRAM THE LANGUAGE OFFERS.**
 
@@ -2580,7 +2580,7 @@ Same method as §56: each arm set to a constant, the SERVE artifact rebuilt, the
 `ku_text.go` and the arms too small to plant. Cutting even half of the largest would be ~3% of the turn,
 which is the size §37, §40, §41 and §42 all measured as NEUTRAL when they tried it.
 
-**⇒ SO `ku_text` HAS THE SAME SHAPE AS THE RENDERER IT SITS IN**: it is 31% of the turn because it is fifteen
+**SO `ku_text` HAS THE SAME SHAPE AS THE RENDERER IT SITS IN**: it is 31% of the turn because it is fifteen
 functions that each render something the oracle requires, not because one of them is slow. The two levers that
 paid in this stretch (§49, §50) removed *lookups*, and there are no lookups left in this path -- `ku_text_load`
 does two `rt` calls, a `ku_access` and a `concat`, and every one of them emits text the C needs.
@@ -2606,7 +2606,7 @@ measures the different output. §56's plants were valid because `ku_text`'s prod
 `child_count`'s product only feeds an inline test; the loop's decisions ARE the structure of the C, so
 removing one changes the program.
 
-**⇒ SO THE 40% IS NOT AN UNATTRIBUTED MYSTERY -- IT IS THE DISPATCH AND THE `St` THREADING, WHICH IS WHAT
+**SO THE 40% IS NOT AN UNATTRIBUTED MYSTERY -- IT IS THE DISPATCH AND THE `St` THREADING, WHICH IS WHAT
 RENDERING IS.** Its components are already known from the profile rather than from plants: `_render.one_go`
 34% total with `List_set` 2.9% and `List_get` 1.9% under it (§52), and every one of those calls exists to
 produce a line the oracle compares byte for byte.
@@ -2662,7 +2662,7 @@ and casts. `ku_is_decl`, `st_c` and `push`/`pop` fire only 0.2 times per uop, i.
   time. 1 497 walks per render at an average index near 200 is ~300 000 cons steps.
 * `cc_at` -- **2.5 calls per uop** -- is the same shape on the child-count table: ~200 000 cons steps.
 
-**⇒ SO THE ~4 ms "LOOP" IS ~6 PER-UOP LOOKUPS THAT EACH WALK A LINKED LIST TO AN INDEX.** That is the same
+**SO THE ~4 ms "LOOP" IS ~6 PER-UOP LOOKUPS THAT EACH WALK A LINKED LIST TO AN INDEX.** That is the same
 wall as §44 and §57: a table indexed by position needs a mutable array or O(1) indexing, and `langs/core.bend`
 has neither -- `$List$get` is a `for(;;)` walk down the cells, which is precisely the cost being paid.
 
@@ -2708,7 +2708,7 @@ WHETHER THE WORK REMOVED IS MORE EXPENSIVE THAN THE CALL ADDED.** All four that 
 tens of microseconds per uop (a decimal fold, a whole cast render, a whole statement); this one removes a
 200-step walk, which is microseconds.
 
-**⇒ AND THAT IS THE LAST DUPLICATE §60's COUNTS EXPOSE.** `st_put`, `_render.one_go` and `emit` are already at
+**AND THAT IS THE LAST DUPLICATE §60's COUNTS EXPOSE.** `st_put`, `_render.one_go` and `emit` are already at
 1.0 per uop; `cc_at`'s 2.5 and `rt`'s 3.7 are calls the render makes for different indices, not repeats.
 
 ## 62. THE DAEMON PAYS START-UP TOO, AND PACKAGING IT IS WORTH 23%
@@ -2762,7 +2762,7 @@ the first answer decomposes as:
 figure (§34.4: 10.0-13.5 ms) sits just above the steady turn and why the packaging work of §53/§54/§62 moved
 the per-kernel number less than it moved the first-answer number.
 
-**⇒ AND NONE OF THE THREE IS A DEFECT**: one is the runtime's own init, one is the cost of the first compile,
+**AND NONE OF THE THREE IS A DEFECT**: one is the runtime's own init, one is the cost of the first compile,
 and one is attributed (§56-§61) to five terms each at its floor. **THE WARM-UP IS THE ONLY TERM IN THIS
 RECORD THAT HAS NEVER BEEN ATTACKED AND IS NOT BLOCKED BY THE LANGUAGE** -- it is a property of shipping 433 KB
 of generated JS to a JIT, and the only lever on it would be emitting less JS, which is the renderer emitting
@@ -2817,7 +2817,7 @@ are identical in every row, so this is the same arithmetic through the same comp
 path to it: tinygrad's CPU lane renders and compiles each kernel in its own Python orchestration, while the
 port renders through a packed daemon whose output is content-cached.
 
-**⇒ AND THAT IS THE HONEST STATEMENT OF THE OBJECTIVE**: the port's STEADY STATE is parity, because both lanes
+**AND THAT IS THE HONEST STATEMENT OF THE OBJECTIVE**: the port's STEADY STATE is parity, because both lanes
 execute byte-identical C (that is what the 38-graph corpus and 37-kernel sweep exist to guarantee); its COLD
 PATH is now measurably faster, by 22% on this shape, for a reason that is not the arithmetic.
 
@@ -2864,7 +2864,7 @@ only a few milliseconds, so there is nothing to hide them behind. **The overlap 
 small to matter on these programs**: the prewarm adds a synthetic render and a thread and a lock to save at
 most a few milliseconds of a 337 ms run, and the measurement says the overhead is larger than the saving.
 
-**⇒ AND THAT CLOSES THE LAST NAMED TERM.** Every component of the port's cost is now either measured-and-cut
+**AND THAT CLOSES THE LAST NAMED TERM.** Every component of the port's cost is now either measured-and-cut
 (§27, §31, §33, §34, §38, §39, §49, §50, §53, §54, §62), measured-and-inexpressible (§44, §57), measured-and-diffuse
 (§58, §60), or measured-and-not-paying (this section, §37, §40, §41, §61).
 
@@ -2896,7 +2896,7 @@ would be the leading site. It is not in the top four: `List_set` (2.8 + 1.6) is 
 statement counters, and `St.of` does not appear at all -- a six-field object literal is one allocation in a
 run that makes 682 252 calls, and V8/Bun's young generation makes it near-free.
 
-**⇒ SO THE ANSWER TO "WHAT IS THE 40%?" IS THE SAME FROM THREE INSTRUMENTS**: the profile (11.6% across four
+**SO THE ANSWER TO "WHAT IS THE 40%?" IS THE SAME FROM THREE INSTRUMENTS**: the profile (11.6% across four
 sites), the call counts (everything at 1.0-6 per uop), and the plants (text 31% spread over 15 arms). **IT IS
 THE COST OF INTERPRETING A 405-UOP LIST IN A LANGUAGE WITH NO MUTABLE CONTAINER, AND THAT IS THE PORT.**
 
@@ -2932,7 +2932,7 @@ Every parse the language offers walks characters:
 already gone: **1.0044, neutral** -- 3 096 characters at 0.15 us/char is 0.46 ms, about 2% of the work, which
 is below what this instrument resolves.
 
-**⇒ AND THAT IS THE BOUND: another 50% of the wire would be ~1.5 ms, ~8% of a one-shot render, and the wire is
+**AND THAT IS THE BOUND: another 50% of the wire would be ~1.5 ms, ~8% of a one-shot render, and the wire is
 already 34% shorter than when this stretch began.** A positional parser cannot reach even that, because it
 would still walk every character once.
 
@@ -2966,7 +2966,7 @@ renderer, 405-uop wire              32.1 ms
 is the embedded Bun runtime initialising, and it is the same whether the program prints one character or
 renders a kernel.
 
-**⇒ SO A CPU-ONLY ARTIFACT WOULD SAVE AT MOST 0.1 ms, AND THE PORT WOULD LOSE ITS DEVICE CENSUS FOR IT.**
+**SO A CPU-ONLY ARTIFACT WOULD SAVE AT MOST 0.1 ms, AND THE PORT WOULD LOSE ITS DEVICE CENSUS FOR IT.**
 The idea is dead on measurement, not on judgement.
 
 ### 68.1 What the ~10 ms warm-up actually is, and why it cannot be prewarmed away
@@ -2980,7 +2980,7 @@ none of it, a 405-uop wire pays ~10 ms extra). That is proportional to code EXEC
 * emitting fewer *executed* functions would mean emitting fewer C lines, which the oracle forbids (§45: forcing
   inlining gave 0 of 37 byte-identical).
 
-**⇒ THAT CLOSES THE LAST OPEN TERM IN THIS RECORD, AND IT CLOSES IT THE SAME WAY AS THE OTHERS**: the cost is
+**THAT CLOSES THE LAST OPEN TERM IN THIS RECORD, AND IT CLOSES IT THE SAME WAY AS THE OTHERS**: the cost is
 accounted for, the lever is named, and the lever is either forbidden by the oracle or worth 0.1 ms.
 
 ## 69. THE PER-REALIZE FLOOR: 0.5 ms IN BOTH LANES, AND STRUCTURALLY THE SAME CODE
@@ -3007,7 +3007,7 @@ PORT'S RENDER HAPPENS AT COMPILE TIME AND IS CONTENT-CACHED (§26-§62); IT IS N
 ALL.** The only way to make the floor smaller would be to replace tinygrad's launch path, which is the thing
 being ported.
 
-**⇒ SO THIS AXIS IS CLOSED BY CONSTRUCTION, NOT BY EXHAUSTION**: the port cannot beat a floor it shares with the
+**SO THIS AXIS IS CLOSED BY CONSTRUCTION, NOT BY EXHAUSTION**: the port cannot beat a floor it shares with the
 oracle, and any change that did beat it would be a change to the semantics the corpus exists to pin.
 
 **AND THAT MAKES THE STEADY-STATE PICTURE COMPLETE**: parity at ratio ~1.00 is not a shortfall of this port --
@@ -3098,7 +3098,7 @@ ratio 1MiB/1GiB  min 0.8934  p25 0.9512  median 1.0086  max 1.0958   6 of 12 fas
 A suspicion that reads well and measures as nothing, which is the fourth time this record has caught one
 (§37, §40, §41, this).
 
-**⇒ AND THE RANKING SAYS WHAT THE LAST SIX SECTIONS SAID**: with the read-idle excluded (14.2%) the port's
+**AND THE RANKING SAYS WHAT THE LAST SIX SECTIONS SAID**: with the read-idle excluded (14.2%) the port's
 own sites are `char_len` 2.3, `i64_of_hi_lo` 1.9, `List_get` 1.6, `String_split` 1.3, `List_set` 0.1 -- and
 `char_len` + `String_split` + `List_get` are the decoder and the name walks that §58 and §60 already
 attributed. **`i64_of_hi_lo` AT 1.9% IS THE ONE ITEM THIS RANKING ADDS**, and it is the CONST payload's I64
@@ -3135,7 +3135,7 @@ ratio min 0.9655  p25 0.9838  median 0.9976  max 1.0480   8 of 14 faster
 per render is about half a percent, which is under this instrument's floor -- the same arithmetic that made
 §38's `0.9888` keeper line and this one below it.
 
-**⇒ AND THAT IS THE I64 PATH EXPLAINED**: `i64_of_hi_lo`'s 28.5 per uop is the decimal fold's division loop
+**AND THAT IS THE I64 PATH EXPLAINED**: `i64_of_hi_lo`'s 28.5 per uop is the decimal fold's division loop
 (1 224 steps x a shift and an or each), not a repeated construction that a hoist could remove. The real defect
 in it (both shift arms) was worth half a percent.
 
@@ -3177,7 +3177,7 @@ strict, so both run by the language's rule rather than by a mistake -- §33/§34
 strictness, and rewriting `or` to short-circuit is not expressible (that is §57's blocker in its `Bool.pick`
 form).
 
-**⇒ SO THE I64 AUDIT IS CLOSED WITH A NEGATIVE**: one reachable defect, found in §72, worth 0.5% and below the
+**SO THE I64 AUDIT IS CLOSED WITH A NEGATIVE**: one reachable defect, found in §72, worth 0.5% and below the
 instrument's floor; two unreachable lookalikes; and one apparent pair that is the language's strictness rather
 than a defect.
 
@@ -3214,7 +3214,7 @@ maximum. Two bounds were tried against it, both byte-identical, both interleaved
 **NEUTRAL AND THEN WORSE.** The runtime grows the buffer to the data, so the 14.1% is the 522 KB actually
 copied and decoded across sixty turns -- about 0.9 ms per turn of real I/O, not an over-allocation.
 
-**⇒ AND THE REST OF THE RANKING IS §67's SPLIT, MEASURED FROM THE OTHER SIDE**: `char_len` 5.6% + `String_split`
+**AND THE REST OF THE RANKING IS §67's SPLIT, MEASURED FROM THE OTHER SIDE**: `char_len` 5.6% + `String_split`
 1.7% is the decoder's per-character scan, `List_get` 2.8% is the name walks of §60, and there is nothing
 between them. **THE 60-TURN PROFILE AGREES WITH THE 20-TURN ONE, THE ONE-SHOT ONE (§52), THE CALL COUNTS (§60)
 AND THE PLANTS (§56/§58) -- FIVE INSTRUMENTS, ONE SHAPE.**
@@ -3335,7 +3335,7 @@ proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec e2e 7/7 · emit-mm and emit-f64 byte-identical to the §75 render
 ```
 
-**⇒ AND THE ONE MISTAKE WORTH RECORDING IS THE CHUNK ORDER**: `chunk_close` APPENDS each finished block, so
+**AND THE ONE MISTAKE WORTH RECORDING IS THE CHUNK ORDER**: `chunk_close` APPENDS each finished block, so
 the outer list is already in forward order and the `List.reverse` I wrote first inverted it -- MEASURED
 `0 of 37` on both decoders, every kernel differing, which is exactly the failure the corpus exists to catch.
 
@@ -3387,7 +3387,7 @@ proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec e2e 7/7 · emit-mm and emit-f64 byte-identical
 ```
 
-**⇒ AND ONE NEAR-MISS WORTH RECORDING**: the first pass rewrote `r: List<&2, String>` with a regex that had
+**AND ONE NEAR-MISS WORTH RECORDING**: the first pass rewrote `r: List<&2, String>` with a regex that had
 no left word boundary and matched **`caller:`** inside `Emit_`, changing a field of a different record. The
 compiler caught it (`expected: List<&2, String>, observed: R` at `Emit_.caller`), which is the only reason it
 is a blemish in this paragraph and not a defect in the port.
@@ -3451,7 +3451,7 @@ proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec e2e 7/7 · emit-mm and emit-f64 byte-identical
 ```
 
-**⇒ AND THE HARNESS NOW ASKS THE RENDERER FOR THE DECODE**: `serve.bend`'s private `kus` COPY of
+**AND THE HARNESS NOW ASKS THE RENDERER FOR THE DECODE**: `serve.bend`'s private `kus` COPY of
 `String.split(text, nlch())` + `L.ku_all(...)` was a second declaration of the wire format, and it had to be
 edited in the same commit or the daemon and the one-shot path would have disagreed. It now calls `L.kus`.
 
@@ -3507,7 +3507,7 @@ reader would be new code threading a linear `File` through a byte-at-a-time leng
 is a stall that disables the daemon for the session. **So the pipe is not taken: its bound is 14.7%, its
 reachable share is the syscall overhead alone, and its risk is the daemon's.**
 
-**⇒ THE WIRE'S SIZE IS THE LEVER UNDER BOTH TERMS**: it is 9,516 bytes, the decode is charged per byte
+**THE WIRE'S SIZE IS THE LEVER UNDER BOTH TERMS**: it is 9,516 bytes, the decode is charged per byte
 (§78.1) and so is the I/O. Shrinking the row is the next slice that would pay twice; it is not in this
 commit.
 
@@ -3552,7 +3552,7 @@ if nothing else about it changed, and here two things did.
 | -12.8% bytes, -33% tokens, same digits | **-1%** (0.9900) |
 
 The decode's cost is in the WORK PER FIELD -- `fld`'s index walk, `U32.read`'s digit loop, and one
-`String` allocation per token -- none of which a shorter wire removes. **⇒ AND THE ROUTE TO A REAL DECODE
+`String` allocation per token -- none of which a shorter wire removes. **AND THE ROUTE TO A REAL DECODE
 WIN IS NOT A SMALLER WIRE, IT IS FEWER FIELDS AND FEWER `String`s**, which is a different rewrite with a
 different proof, and it is not in this commit.
 
@@ -3583,7 +3583,7 @@ run 2: before 5.88 ms  after 5.85 ms   median 1.0075   10/24   p25 0.9524   p75 
 materialise, and §80's lesson is the explanation: `List.get` on a NINE-ELEMENT list is cheap -- the 36 steps
 were never the cost, and removing them removes 0.2 ms of a 6 ms turn at most.
 
-**⇒ AND THE CEILING IS NOW MEASURED FROM BOTH SIDES**: the whole of the field work is 0.75 ms, so *any*
+**AND THE CEILING IS NOW MEASURED FROM BOTH SIDES**: the whole of the field work is 0.75 ms, so *any*
 rewrite of field extraction -- nine parameters, a character scanner, anything -- can take at most 12% of the
 turn, and the part of it that is `fld` is under the instrument's floor.
 
@@ -3620,7 +3620,7 @@ the payload `String`s it must still materialise (one per row, for `arg_of`). **A
 cannot buy more than ~0.2 ms here, and every attempt to remove a PART of the decode has measured neutral --
 three in a row** (§79.1 0.9934, §80 0.9900, §81 0.9751/1.0075).
 
-**⇒ AND THAT IS WHY IT IS NOT WRITTEN.** The measured decomposition of the decode is 0.78 read + 0.69 split
+**AND THAT IS WHY IT IS NOT WRITTEN.** The measured decomposition of the decode is 0.78 read + 0.69 split
 + 0.75 fields, and the two terms a scanner attacks are the two whose parts have all measured free: `fld`'s
 list walks (§81) and the token grouping (§80). What it could win is one construction replacing another of
 the same order.
@@ -3670,7 +3670,7 @@ apart **without a print-debug loop whose every iteration is a Bend build plus a 
 scratch instrumentation that would answer it broke the type checker (`expected : @-R:Type -> ...`) before it
 could print once.
 
-**⇒ SO IT IS NOT SHIPPED, AND THAT IS THE MEASUREMENT.** A protocol that cannot be seen to render is not a
+**SO IT IS NOT SHIPPED, AND THAT IS THE MEASUREMENT.** A protocol that cannot be seen to render is not a
 protocol; the shipped one renders, and its 0.96 ms stays spent. The scratch file is deleted rather than left
 in the tree, because a harness that does not work is a harness that rots.
 
@@ -3749,7 +3749,7 @@ byte-identical. Shipping that would have been a broken daemon in exchange for a 
 *visible* today: `render_live` catches the dead worker and falls back, so the large-kernel case is slow, not
 wrong.
 
-**⇒ SO THE DEFECT STAYS OPEN AND MEASURED**: a kernel above ~810 uops kills the daemon and downgrades the
+**SO THE DEFECT STAYS OPEN AND MEASURED**: a kernel above ~810 uops kills the daemon and downgrades the
 session to the one-shot path. It is the next slice, and it needs the third mode, not a re-run of this one.
 
 ## 85. §84.3 CLOSED: THE DAEMON RENDERS EVERY SIZE AGAIN, FOR 1.4% ON THE COMMON CASE
@@ -3830,7 +3830,7 @@ replace it with**: the whole string surface is `String.append`, `concat`, `conta
 `eq`, `from_list`, `get`, `is_empty`, `is_lt`, `join`, `length`, `lines`, `map`, `order`. `from_list` goes
 through a `List<Char>`, which is one cons per character -- strictly worse.
 
-**⇒ SO THE LARGEST REMAINING TERM IS THE PRODUCT ITSELF.** 2.16 ms to build 4,426 bytes of C, through an
+**SO THE LARGEST REMAINING TERM IS THE PRODUCT ITSELF.** 2.16 ms to build 4,426 bytes of C, through an
 API that copies rather than appends in place, with no builder anywhere in the language. The other ~1.3 ms
 is dispatch, state and records, and four attempts on its identifiable sites have measured neutral (§72
 0.9976, §79.1 0.9934, §80 0.9900, §81 0.9751/1.0075).
@@ -3887,7 +3887,7 @@ measurable fraction.
 | §81 nine named fields | 14,580 `List.get` steps | 0.9751/1.0075 |
 | §87 concat loops collapsed | 1,223 of 3,700 concat calls | 1.0005 |
 
-**⇒ AND THE ONE CHANGE THAT PAID, §78, REMOVED A WHOLE PASS OVER EVERY BYTE.** Every attempt since has
+**AND THE ONE CHANGE THAT PAID, §78, REMOVED A WHOLE PASS OVER EVERY BYTE.** Every attempt since has
 removed a FRACTION of a pass, and the renderer is now a sum of ~3,700 sub-microsecond allocations with no
 single site above 1.3% of its own profile.
 
@@ -3993,7 +3993,7 @@ proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec 7/7 · emit-mm and emit-f64 byte-identical
 ```
 
-**⇒ AND CAST'S 0.69 ms IS STILL THERE AND IS NOT §88's FIX.** §88 tried the strict pick on `ku_const_cast`
+**AND CAST'S 0.69 ms IS STILL THERE AND IS NOT §88's FIX.** §88 tried the strict pick on `ku_const_cast`
 and measured neutral, because the DISCARDED arm is cheap. The 0.69 ms is the arm that RUNS: the cast
 expression plus its source lookup, 50 times. That is the next slice, and the ablation is what says so.
 
@@ -4041,7 +4041,7 @@ fold is one expensive decimal formatter for another, which is why §86's ablatio
 priced the entire class at **0.26 ms**: there is no cheap decimal anywhere in this runtime, and the port
 calls one of them ~1,500 times a render.
 
-**⇒ AND THAT CLOSES THE RENDER'S LAST NAMED CLASSES.** After CAST (0.69) and ALU (0.55, §89's win) the
+**AND THAT CLOSES THE RENDER'S LAST NAMED CLASSES.** After CAST (0.69) and ALU (0.55, §89's win) the
 ablations fall to INDEX and LOAD -- both noise -- and inside CAST the three pieces are 0.24, 0.17 and 0.28.
 There is no fourth place to look.
 
@@ -4085,7 +4085,7 @@ be carried as a Bool plus a defaulted `Char` to dodge the second match, but the 
 `length(s)` times past the end and needs trailing-separator handling -- for a ceiling of 0.2 ms on a 4.9 ms
 turn, that is not a trade this record should make.
 
-**⇒ SO THE DECODE'S 1.63 ms IS 0.9 OF ONE PASS OVER EVERY BYTE (§78's split), 0.43 OF `nums`, AND 0.3 OF
+**SO THE DECODE'S 1.63 ms IS 0.9 OF ONE PASS OVER EVERY BYTE (§78's split), 0.43 OF `nums`, AND 0.3 OF
 RECORD BUILDING** -- and both of the first two are the runtime charging per character and per allocated
 string, the same wall §82 hit with `String.to_list`.
 
@@ -4122,7 +4122,7 @@ CHARACTER and discards it whenever the character is not a separator. A two-eleme
 substring allocations for four cons cells -- one per character scanned -- to save a `String.split` that
 §92.1 just showed is linear and cheap per character.
 
-**⇒ AND THAT CLOSES THE DECODE.** 0.9 ms of one linear pass, 0.43 ms of `nums` whose only cheaper form is a
+**AND THAT CLOSES THE DECODE.** 0.9 ms of one linear pass, 0.43 ms of `nums` whose only cheaper form is a
 pass with MORE allocations, and 0.3 ms of record building.
 
 ## 93. THE TEXT CLASS IS 17.5x COPY AMPLIFICATION, AND THE ARITHMETIC CLOSES IT
@@ -4161,7 +4161,7 @@ family, `render_cast`/`render_type`/`render_dtype`, `_render.plain`/`decl`, `st_
 definitions changing one type. Its measured expectation is ~2 ms of a 4.9 ms turn, **the largest single
 prize left on this side**, and a byte-identical gate set that will catch any mistake in it.
 
-**⇒ IT IS NOT STARTED HERE, AND THAT IS A BUDGET DECISION, NOT A MEASUREMENT ONE.** A sixty-definition
+**IT IS NOT STARTED HERE, AND THAT IS A BUDGET DECISION, NOT A MEASUREMENT ONE.** A sixty-definition
 type change cannot be finished and verified inside this turn, and a half-converted text path is a broken
 renderer. The measurement is the deliverable: **17.5x, 2.33 ms of copying, and the exact shape that removes
 it.**
@@ -4292,7 +4292,7 @@ because it does not count `String.join`, which is where the copying moved. **`St
 `join_go(tail, head, sep)`, a TAIL-RECURSIVE ACCUMULATOR, not the right-nested `h + join(t)` that
 `String.concat` is**, so the same characters cost less in that shape than in the nested one.
 
-**⇒ SO §94's ARITHMETIC WAS RIGHT ABOUT THE SIZE AND WRONG ABOUT THE MECHANISM**: the 2.16 ms was 17.5x
+**SO §94's ARITHMETIC WAS RIGHT ABOUT THE SIZE AND WRONG ABOUT THE MECHANISM**: the 2.16 ms was 17.5x
 AND a right-nested concat; the fix removes the NESTING (which the ablation measured) while leaving a copy
 per character at the join (which the counter measures). The counter alone would have called this neutral;
 the A/B is the arbiter, and it says 0.905.
@@ -4337,7 +4337,7 @@ proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec 7/7 · emit-mm and emit-f64 byte-identical
 ```
 
-**⇒ AND THE DECOMPOSITION ON THE §96 BUILD WAS `stub 0.38 / decode 1.64 / render 2.85`**, so the render is
+**AND THE DECOMPOSITION ON THE §96 BUILD WAS `stub 0.38 / decode 1.64 / render 2.85`**, so the render is
 now 58% of the turn, decode 34%, protocol 8%. LOAD, STORE and INDEX remain un-converted; §89 measured LOAD
 and INDEX at noise, so CAST was the only one of the four with a price.
 
@@ -4445,7 +4445,7 @@ proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec 7/7 · emit-mm and emit-f64 byte-identical
 ```
 
-**⇒ AND `U32.show` IS STILL CALLED ~1,500 TIMES A RENDER** (§86 priced the whole decimal class at 0.26 ms
+**AND `U32.show` IS STILL CALLED ~1,500 TIMES A RENDER** (§86 priced the whole decimal class at 0.26 ms
 then, before the NUMBERS grew cheaper elsewhere). Replacing those call sites with `u32_dec` is the next
 slice, and it is now known to be worth something rather than guessed.
 
@@ -4495,7 +4495,7 @@ proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec 7/7 · emit-mm and emit-f64 byte-identical
 ```
 
-**⇒ AND THE PIECE HELPERS HAD TO BE HOISTED**: `strip_pieces`/`ku_src_pieces` lived beside the ALU path at
+**AND THE PIECE HELPERS HAD TO BE HOISTED**: `strip_pieces`/`ku_src_pieces` lived beside the ALU path at
 ~1830 and `ku_render_index.global` sits at ~1627, so the file needed them above their first user -- the
 same forward-reference rule that has shaped every change since §83.
 
@@ -4520,7 +4520,7 @@ it removes: CAST's 0.41 ms loses roughly 50 casts x 10 characters = 500 of 4,426
 0.38 loses 279 (6%). **The ranking survives -- CAST is still the largest -- but the magnitudes are upper
 bounds, and a class at 5-6% is at the line, not above it.**
 
-**⇒ AND IT EXPLAINS A PATTERN THAT WAS PUZZLING: the arm-level and part-level ablations kept disagreeing**
+**AND IT EXPLAINS A PATTERN THAT WAS PUZZLING: the arm-level and part-level ablations kept disagreeing**
 (§98's `cast_all` 0.18 against `i64_dec` 0.65 in the SAME run), because each subtracts a different amount
 of output and each run's baseline drifted under load.
 
@@ -4571,7 +4571,7 @@ else changes:
 output-size-confounded: CAST's 500 characters cost 2.5 us of its 0.41 ms, and `i64_dec`'s 279 cost 1.4 us of
 its 0.38. **§101 IS RETRACTED.**
 
-**⇒ AND THAT LEAVES A DIFFERENT DIAGNOSIS: the per-arm deltas (0.1-0.4 ms) are the same size as the drift in
+**AND THAT LEAVES A DIFFERENT DIAGNOSIS: the per-arm deltas (0.1-0.4 ms) are the same size as the drift in
 their own baselines (0.2-0.3 ms across the runs of one batch). The instrument is not biased, it is NOISY,
 and the end-to-end A/B is the only one that can carry a decision.**
 
@@ -4634,7 +4634,7 @@ rather than debugged at the end of a session:
 ksweep after revert: 37 of 37 byte-identical, both decoders
 ```
 
-**⇒ SO THE NEXT UNIT IS THAT DECODER, AND IT IS SMALL**: `src_nums`/`b64at` against `portc.B64`, with the
+**SO THE NEXT UNIT IS THAT DECODER, AND IT IS SMALL**: `src_nums`/`b64at` against `portc.B64`, with the
 `count` character read by `b64u` and two characters per index. The pieces are written down in this section
 and the gate that catches it (`ksweep`'s live lane) is already the thing that failed it.
 
@@ -4675,7 +4675,7 @@ The wire is 9,234 bytes in the base-64 form against 9,516 decimal -- **3% smalle
 because two characters an index is LONGER than a one-digit decimal for the common small indices. So even the
 byte saving was overestimated: `srcs` is mostly 0-9, which is one character either way plus a separator.
 
-**⇒ THE DECODE'S 1.61 ms IS: one linear pass over every byte (~0.9), `nums`' splits (~0.43), and record
+**THE DECODE'S 1.61 ms IS: one linear pass over every byte (~0.9), `nums`' splits (~0.43), and record
 building (~0.3). Every cheaper form of the second term has now been measured and lost to the original.**
 
 ## 105. THE LAST ARMS CONVERTED IN A BATCH, AND THE MEASUREMENT CANNOT SEE THEM
@@ -4710,7 +4710,7 @@ text. The remaining arms are 1-4 uops of RANGE/STACK/BUFFER and **zero** of the 
 So the render's 2.01 ms is the piece path plus dispatch, records and the statement join -- the converted
 arms account for 300 of the 405 uops and the other 105 are a tail.
 
-**⇒ A KERNEL WITH LOOPS WOULD EXERCISE IF/BACKEDGE/RANGE AND THE CONVERSION WOULD BE MEASURABLE THERE.** It is
+**A KERNEL WITH LOOPS WOULD EXERCISE IF/BACKEDGE/RANGE AND THE CONVERSION WOULD BE MEASURABLE THERE.** It is
 not in this corpus, so the change is written down here as unmeasured rather than landed.
 
 ## 106. THE FOUR ARMS ARE ABSENT FROM THE CORPUS, AND THAT IS WHY §105 WAS NEUTRAL
@@ -4742,7 +4742,7 @@ floor -- the same arithmetic that made §105 measure 0.9980. So the conversion i
 landed**: it would add six definitions and a type change to a path the corpus never enters, and the record
 refuses changes it cannot measure.
 
-**⇒ AND IT CLOSES THE LAST RENDER ITEM THE ABLATIONS NAMED.** Every op this corpus contains above 1% is
+**AND IT CLOSES THE LAST RENDER ITEM THE ABLATIONS NAMED.** Every op this corpus contains above 1% is
 either already a piece path (`ADD`, `MUL`, `WHERE` through the ALU capture; `CAST` §97; `INDEX` §100;
 `LOAD` §102) or emits no text (`CONST`, `PARAM`). The remaining 2% is `RANGE`/`STACK`/`BUFFER`/`BUFFER`,
 and the four arms the reviewer named are 0.00%.
@@ -4789,7 +4789,7 @@ boxing (§72's both-arms fix measured 0.9976, §99 replaced the decimal), `Strin
 path took the text class from 2.16 to 1.18), and `List_get` (§75-§81 took the index-addressed lists from
 805,127 steps to 292,446 to ~189,000).
 
-**⇒ SO THE NEXT PROFILE SHOULD NOT BE THIS ONE.** A sampling interval that makes a useful profile here needs
+**SO THE NEXT PROFILE SHOULD NOT BE THIS ONE.** A sampling interval that makes a useful profile here needs
 the samples to cost less than the work they attribute, and at 10 us a sample against sub-microsecond
 functions that is not true. The honest next instrument is an end-to-end A/B on a named change, which is what
 has produced every landed win since §89.
@@ -4840,7 +4840,7 @@ proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec 7/7 · emit-mm and emit-f64 byte-identical
 ```
 
-**⇒ AND THE LESSON IS THE ONE §107 GOT WRONG**: a SAMPLING PROFILE REPORTS SAMPLES, AND DIVIDING ITS COUNTS BY
+**AND THE LESSON IS THE ONE §107 GOT WRONG**: a SAMPLING PROFILE REPORTS SAMPLES, AND DIVIDING ITS COUNTS BY
 THE TURN COUNT PRODUCES A CALL COUNT THAT IS OFF BY TWO ORDERS OF MAGNITUDE. The site that the profile's
 *mechanism* named (string equality as ordering) was real and worth 9.4%; the number the profile gave for it
 was not.
@@ -4861,7 +4861,7 @@ rounds and a ~2% effect is what the arithmetic predicted from 91 compares a rend
 evidence to land a change -- the same standard that reverted §72, §79.1, §80, §81, §87, §90, §92, §94 and
 §104.
 
-**⇒ SO THE `eq_dt` FIX WAS THE WHOLE OF THAT MECHANISM**: 3,253 compares a render to 91 was worth 9.4%;
+**SO THE `eq_dt` FIX WAS THE WHOLE OF THAT MECHANISM**: 3,253 compares a render to 91 was worth 9.4%;
 the last 91 are worth ~2% and cannot be separated from the instrument.
 
 ## 109. THE SPLIT AFTER §108, AND WHERE THE "EXPENSIVE PRIMITIVE" LENS STOPS
@@ -4888,7 +4888,7 @@ moved since §78.
 | helpers' `String.eq` | `dedup_str`, `all_same_str`, `kv_find`, `Target.device` | counted in §108's remaining **91 calls a render**, and §108.3 measured two of the hot ones at 0.9729/0.9813 -- **at the keeper line, not kept** |
 | `List.get` lookups | §75-§81 left ~189,000 steps | every one is a `List.get` by index, and §75/§76/§77/§81 respectively blocked the list, added the distance form and deleted the index walk; the residue is 45 steps a uop |
 
-**⇒ SO THE LENS IS HARVESTED WHERE IT CAN BE.** The `String.eq`-as-ordering primitive was worth 9.4% at one
+**SO THE LENS IS HARVESTED WHERE IT CAN BE.** The `String.eq`-as-ordering primitive was worth 9.4% at one
 site (3,253 calls) and ~2% at all the others combined (91 calls), and `eq_cls` never used it. There is no
 third site of that class in the render.
 
@@ -4932,7 +4932,7 @@ steps, 18,225 steps a render.
 | `fld` | nine named fields, one cons match each | 0.9751 then 1.0075 (§81), reverted |
 | `U32_read` | `u32` ablated to a constant | noise (§89) |
 
-**⇒ SO THE CENSUS CONFIRMS THE SHAPE AND FINDS NO UNTRIED TERM.** The one thing it adds is a number: `fld`'s
+**SO THE CENSUS CONFIRMS THE SHAPE AND FINDS NO UNTRIED TERM.** The one thing it adds is a number: `fld`'s
 45 steps a row is an UPPER bound, and §81 -- which removed all of it -- measured 0-2.5% on a build where the
 decode was 40% of a *5.7 ms* turn. The turn is now 3.5 ms, so `fld`'s share is a third larger; that is the
 only reason to re-test §81's shape, and it is a re-proposal rather than a new mechanism.
@@ -4977,7 +4977,7 @@ and at even 100 ns each that is 0.10 ms, ~3% of the turn, before any of them is 
 means threading six fields through every `_render.*` signature, which is the shape §96's type change had and
 worth far more than 3%.
 
-**⇒ SO BOTH ARE COUNTED AND NEITHER IS TAKEN.** This is the fourth time in this record that a site named by a
+**SO BOTH ARE COUNTED AND NEITHER IS TAKEN.** This is the fourth time in this record that a site named by a
 sampling profile has been two orders of magnitude smaller than the profile implied, and the arithmetic is now
 done BEFORE the change rather than after -- which is the correction §108 taught in the other direction (a
 sample count read as a call count hid a 9.4% win).
@@ -5024,7 +5024,7 @@ run 3:  base 4.02 ms   new 3.57 ms   ratio min 0.5553 p25 0.8888 median 0.9452  
 CHECK`, opbattery 39/39, portexec 7/7, and both e2e fixtures.** The change is KEPT: the median is at or
 under the keeper line in all three runs and 69 of 90 paired rounds are faster.
 
-**⇒ AND IT ANSWERS A QUESTION THE RECORD HAD ASKED THE WRONG WAY ROUND.** §74 and §96-§102 all attacked the
+**AND IT ANSWERS A QUESTION THE RECORD HAD ASKED THE WRONG WAY ROUND.** §74 and §96-§102 all attacked the
 work that REACHES the output. This is work that never reaches it: a strict `Bool.pick` whose untaken arm is
 a whole-kernel walk. The base build's absolute medians (3.55-4.04 ms) also show the machine was busier than
 the 3.3 ms the earlier turns recorded, which is why the PAIRED ratio and not the median of absolute times is
@@ -5070,7 +5070,7 @@ top 28 hold only 30% of them. The largest single group is `uops_to_dtypes` (2,55
 accessor calls = **18% of every call in the walk**) for a list of distinct `(dtype, numel)` pairs; then the
 `St` record (1,004 allocations + 7,789 accessors) and the `KU`/`Rows` readers.
 
-**⇒ SO THE NEXT CHANGE IS NOT A NEW MECHANISM, IT IS A COUNT.** The walk has no hot spot to attack; it has
+**SO THE NEXT CHANGE IS NOT A NEW MECHANISM, IT IS A COUNT.** The walk has no hot spot to attack; it has
 159 calls a uop, and the only two terms in the whole turn that are a *structural* single item are `nums`
 (0.54, one call per field, two fields a uop) and the dtype pass (0.20, one whole extra pass over the kernel).
 
@@ -5087,7 +5087,7 @@ behind their total count, field 7 carries the rank, the decoder splits once and 
 - `base median 3.91 ms   new median 4.10 ms`
 - `ratio min 0.5619 p25 1.0065 median 1.0546 max 2.0263   6 of 26 faster`
 
-**⇒ REVERTED, AND THE MODEL THAT PREDICTED −6% WAS WRONG BY 11 POINTS.** The correction: of the 814 `nums`
+**REVERTED, AND THE MODEL THAT PREDICTED −6% WAS WRONG BY 11 POINTS.** The correction: of the 814 `nums`
 calls, **330 return on a literal `match` against `"-"`, and 301 of the rest are field 3**, so the merge
 removes ~183 real splits (~0.12 ms), not 409 (~0.27 ms) -- while 3 list walks a row plus 724 extra wire
 characters cost more than that. **A COUNT IS NOT A COST, AND THIS TIME THE COUNT WAS MINE.**
@@ -5111,7 +5111,7 @@ $ .venv/bin/python .agents/slop/parity/ksweep.py
 live_4c65f6609f17912c: unknown op REFPARAM
 ```
 
-**⇒ SO THE BYTE-IDENTITY GATE IS BLIND UNTIL THE PORT'S ENUM IS RE-PINNED, AND THAT IS A ~900-OCCURRENCE
+**SO THE BYTE-IDENTITY GATE IS BLIND UNTIL THE PORT'S ENUM IS RE-PINNED, AND THAT IS A ~900-OCCURRENCE
 RENAME ACROSS 30 `.bend` FILES PLUS `gen_kus.py`'s op table — NOT A ONE-UNIT EDIT AND NOT ONE TO START
 CONCURRENTLY WITH WHOEVER IS RE-PINNING.** Until then every A/B in this record can be validated only
 DIFFERENTIALLY (previous build vs new build on the same input), which is what §112 and §114 did.
@@ -5173,11 +5173,11 @@ $ .venv/bin/python gates/ops_bend_exec-e2e.py                  # compiled: 7 mat
 $ emit-mm / emit-f64                                           # byte-identical
 ```
 
-**⇒ AND THE TWO LANES AGREED ON 29 OF 37 AT THE FIRST FIX AND ON 37 AFTER FOUR**, which is the useful part of
+**AND THE TWO LANES AGREED ON 29 OF 37 AT THE FIRST FIX AND ON 37 AFTER FOUR**, which is the useful part of
 the record: the enum re-pin is a mechanical sweep whose gate is 37 kernels, and each remaining kernel was ONE
 named divergence, not a hunt.
 
-**⇒ AND `pad_cat` IS `ORACLE REFUSED`, NOT A PASS:** the CPython lane asserts, so its kernels are captured by
+**AND `pad_cat` IS `ORACLE REFUSED`, NOT A PASS:** the CPython lane asserts, so its kernels are captured by
 neither side and the row says so. The 37 that were captured are compared.
 
 ## 117. THE DTYPE PASS WAS 18% OF THE WALK'S CALLS TO EMIT ONE TYPEDEF ROW
@@ -5257,7 +5257,7 @@ FIELD ONE SIDE NO LONGER HAS**: the faithful change is to DROP the tag from the 
 R6 row on BOTH sides, which is a feature REMOVAL and not a re-pin -- 231 `tag` mentions in `ops.bend` alone,
 and the arena is the structure that stores it.
 
-**⇒ AND THE PREVIOUS ARTIFACTS SURVIVED THE FAILED RUN** (`runs/graphcmp/D/D0-run-summary.txt` is still the
+**AND THE PREVIOUS ARTIFACTS SURVIVED THE FAILED RUN** (`runs/graphcmp/D/D0-run-summary.txt` is still the
 2026-10-31 22:52 file, `graphs-agree=38`), so `unhealthy()` correctly reports it STALE against the live
 substrate rather than a fresh run reporting a false green. **A REFUSED RUN LEAVES THE LAST CERTIFICATE
 VISIBLY OLD, WHICH IS THE BEHAVIOUR THE `D/`-GUARD WAS BUILT FOR.**
@@ -5313,7 +5313,7 @@ bw          39        34
 gral        48        52      (this one the port has MORE)
 ```
 
-**⇒ SO THE RE-VENDOR ALSO MOVED SEVEN OF THE PORT'S HAND-BUILT GRAPH FIXTURES**, which is the class §116
+**SO THE RE-VENDOR ALSO MOVED SEVEN OF THE PORT'S HAND-BUILT GRAPH FIXTURES**, which is the class §116
 named when it said the re-pin was the easy half: `test/` and the corpus models are built from upstream's uop
 construction, and 223 upstream commits moved it. `kept` is untouched: `ksweep` 37/37 and `opbattery` 39/39
 compare the RENDERER, and the renderer has not moved.
@@ -5334,7 +5334,7 @@ base cpu/render 12.084 ms  new 12.858 ms  ratio min 0.9067 p25 0.9592 median 0.9
 base cpu/render 11.632 ms  new 11.556 ms  ratio min 0.8649 p25 0.9687 median 0.9883  10/16 faster
 ```
 
-**⇒ REVERTED, AND THE MODEL IS THE THING THAT MOVED.** Thirty-three thousand list steps is ~1% of a 3.1 ms
+**REVERTED, AND THE MODEL IS THE THING THAT MOVED.** Thirty-three thousand list steps is ~1% of a 3.1 ms
 turn (~1 ns a step), so the change could not have paid for the two extra index helpers it needs. §76's 7% was
 250,000 steps on a 5.7 ms turn whose DECODE was 40% of it -- **the step count was a proxy for time only
 because the steps were then a third of the turn, and after §75-§81 and §117 they are not.** What is left in
@@ -5407,7 +5407,7 @@ ARE tracked, and their outputs are compared to **CPython's** by `run-kernel.sh` 
 stored file. So the honest comparison for a renderer change is HEAD's output vs the new build's output,
 which is what §121.1 did (`mm: new == HEAD`, `f64: new == HEAD`, byte-identical).
 
-**⇒ AND A GATE THAT COMPARES AGAINST A FILE THAT NO LONGER EXISTS IS NOT A GATE**: it reads as a failure
+**AND A GATE THAT COMPARES AGAINST A FILE THAT NO LONGER EXISTS IS NOT A GATE**: it reads as a failure
 ("DIFFERS") when it is a missing input, and a missing input and a wrong output look the same in a shell
 script. The record's own rule ("A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO GATE") applies
 to the *inputs* too: the expectation must live IN the tree.
@@ -5438,14 +5438,14 @@ wall 34 rounds: median 0.9908  19/34     cpu 14 rounds: median 1.0096   6/14
 wall 30 rounds: median 1.0374  14/30     cpu 16 rounds: median 1.0065   8/16
 ```
 
-**⇒ REVERTED, AND THE REASON IS THE THING §108 MEASURED AND §110.2's REVERT CONFIRMED AGAIN: A `match` ON A
+**REVERTED, AND THE REASON IS THE THING §108 MEASURED AND §110.2's REVERT CONFIRMED AGAIN: A `match` ON A
 STRING IS NOT `===`.** The compiler emits the literal arms as a chain of FIRST-CHARACTER compares with a
 `slice` per character (11 `char_code` and 25 `slice` calls in `under.of` alone), so the change replaced 2,220
 recursive split calls over 2,220 characters with 400 chains of up to five arms of ~10 characters each.
 **THE TWO COST THE SAME, AND THE PORT'S OWN `Ops` TABLE IS THE PROOF: `op_by_idx` is a `match` on a STRING
 and it is ordered BY MEASURED FREQUENCY precisely because the arms cost their position.**
 
-**⇒ AND THIS IS THE SIXTH TIME A SHAPE MEASURED IN ONE PLACE WAS NOT A MEASUREMENT OF ANOTHER** (§113's
+**AND THIS IS THE SIXTH TIME A SHAPE MEASURED IN ONE PLACE WAS NOT A MEASUREMENT OF ANOTHER** (§113's
 `nums` merge, §114's merge, §120's blocked view, §121's `fld` in a different caller, §110.2's `fld` in the
 renderer, and now this). **THE ONLY INSTRUMENT THAT SETTLES IT IS AN END-TO-END A/B ON THE CHANGE ITSELF.**
 
@@ -5495,13 +5495,13 @@ cpu  20 rounds:  median 0.9917  11/20
 cpu  20 rounds:  median 0.9855  14/20
 ```
 
-**⇒ REVERTED: the wall medians are 0.8480/0.9852/0.9658/0.9729 and the CPU medians 0.9690-1.0067, so
+**REVERTED: the wall medians are 0.8480/0.9852/0.9658/0.9729 and the CPU medians 0.9690-1.0067, so
 SEVEN OF ELEVEN READINGS ARE AT OR UNDER THE LINE AND FOUR ARE NOT, and no instrument clears it.** The
 call count DID fall (797 -> 246) and the C is byte-identical, so the mechanism is real and the win is not:
 **the 551 removed lookups were ~2,900 list steps of 11,025, i.e. 0.26% of the turn, and the flag's cost
 (642 records one word wider, plus a `match` per read) is the same size.**
 
-**⇒ AND THE ORDER FIX ALONE IS NOT THE CHANGE EITHER:** with the flag in place the lookup is a FIELD READ
+**AND THE ORDER FIX ALONE IS NOT THE CHANGE EITHER:** with the flag in place the lookup is a FIELD READ
 rather than a LOOKUP, so the 551 calls were already cheap by the time the order mattered. **THE TWO CHANGES
 ARE NOT INDEPENDENT, AND MEASURING THEM TOGETHER MEASURED NEITHER.**
 
@@ -5530,7 +5530,7 @@ wall 30 rounds: median 0.9881  16/30      cpu 16 rounds: median 0.9995   8/16
 wall 34 rounds: median 1.0125  15/34      cpu 16 rounds: median 1.0046   4/16
 ```
 
-**⇒ REVERTED, AND THE ARITHMETIC SAYS WHY: 47,640 cons steps ARE ~0.04 ms OF A 3.1 ms TURN (0.8 ns A STEP).**
+**REVERTED, AND THE ARITHMETIC SAYS WHY: 47,640 cons steps ARE ~0.04 ms OF A 3.1 ms TURN (0.8 ns A STEP).**
 §120 measured the same lesson from the other side (33,000 steps bought nothing) and this is the third
 measurement of it. **THE LIST STEPS ARE NOT THE COST. THE CALLS ARE: 83,617 cstyle calls at ~18 ns is the
 1.5 ms the render takes, and no group of them is bigger than ~3,700** -- `St_r` 3,718, `KU_op` 3,520,
@@ -5555,7 +5555,7 @@ the biggest string term, and it is already the optimised shape. **`String.split`
 WIRE CHARACTER and it is the decode's floor** (§91's scanner, §92's chunking and §104's base-64 all closed
 it).
 
-**⇒ SO THE TURN IS 83,617 + 10,890 CALLS AND EVERY GROUP OF THEM IS UNDER 4%.** There is no single lever
+**SO THE TURN IS 83,617 + 10,890 CALLS AND EVERY GROUP OF THEM IS UNDER 4%.** There is no single lever
 left in the call profile, and the honest statement of the objective is that the daemon turn is at the floor
 of what this runtime's per-call cost allows.
 
@@ -5567,7 +5567,7 @@ ABLATION: the same daemon with `kus`'s `String.split(text, ' ')` replaced by `Ni
 only):
 
 ```
-full 5.58 ms   no-wire-split 0.42 ms   ⇒ THE WIRE SPLIT IS 5.16 ms OF 5.58 ms (92.6%)
+full 5.58 ms   no-wire-split 0.42 ms THE WIRE SPLIT IS 5.16 ms OF 5.58 ms (92.6%)
 ```
 
 **EVERYTHING ELSE IN THE TURN IS 0.42 ms.** And the split is 15,346 characters, 15,346 recursive calls, two
@@ -5582,7 +5582,7 @@ the same algorithm INDEXING the string (no slices): 0.38 ms
 the token as an array, joined at the end: 0.57 ms
 ```
 
-**⇒ THE PORT PAYS 5.16 ms WHERE THE SAME ALGORITHM IN JS COSTS 0.72 ms**, because the interpreter charges
+**THE PORT PAYS 5.16 ms WHERE THE SAME ALGORITHM IN JS COSTS 0.72 ms**, because the interpreter charges
 ~18 ns a call and the split makes two calls a character. **THE PORT CANNOT BEAT THE PRELUDE IN BEND -- BUT IT
 CAN CALL THE NATIVE ONE, AND THE MECHANISM IS ALREADY IN THE TREE.**
 
@@ -5614,11 +5614,11 @@ the wire split:  5.16 ms -> ~0.3-0.5 ms   (the effect's own cost + the list walk
 the turn:        5.58 ms -> ~0.9-1.1 ms
 ```
 
-**⇒ THIS IS THE FIRST BIG RATIO IN THE RECORD** (§112 was 4%, and every census-led change since has been
-under 4%). **⇒ AND IT IS NOT A NEW MECHANISM: the port has shipped JS effects for `os.walk`, for the CPU
+**THIS IS THE FIRST BIG RATIO IN THE RECORD** (§112 was 4%, and every census-led change since has been
+under 4%). **AND IT IS NOT A NEW MECHANISM: the port has shipped JS effects for `os.walk`, for the CPU
 device's compile/exec and for the fp8 conversions, and the DECODER is the only hot path that is still pure.**
 
-**⇒ THE DECODER IS `live.bend`, AND `live.bend` IS IN THE PORT'S TREE, SO THE EFFECT BELONGS THERE**
+**THE DECODER IS `live.bend`, AND `live.bend` IS IN THE PORT'S TREE, SO THE EFFECT BELONGS THERE**
 (`tinybendygrad/renderer/wire.js` beside `live.bend`), and the `kus` call site becomes
 `IO.bind(...)` -- WHICH MEANS THE DECODER BECOMES AN `IO` EFFECT INSTEAD OF A PURE FUNCTION, and the
 `serve.bend` frame machine has to thread it.
@@ -5668,7 +5668,7 @@ the same, per turn (20 turns, the daemon's pattern):     min 0.120  median 0.136
 the prelude's split, in the port:                       5.16 ms
 ```
 
-**⇒ THE EFFECT IS ~30x CHEAPER AND ITS PER-TURN MEDIAN IS 0.136 ms, AGAINST 5.16 ms.**
+**THE EFFECT IS ~30x CHEAPER AND ITS PER-TURN MEDIAN IS 0.136 ms, AGAINST 5.16 ms.**
 
 ### 126.3 The shape of the change, and the `.c` half
 
@@ -5736,11 +5736,11 @@ the turn from 5.58 ms to 0.42 ms. **THAT ABLATION ALSO STARVED THE PORT'S OWN WA
 token list, so with no tokens there was nothing to walk. The split's OWN cost is about 1.0 ms and the walk
 is the rest.
 
-**⇒ AND THE INSTRUMENTED PARTS CONFIRM IT:** in both builds the port's `ku_ws` accounts for ~3.8-4.6 ms of
+**AND THE INSTRUMENTED PARTS CONFIRM IT:** in both builds the port's `ku_ws` accounts for ~3.8-4.6 ms of
 the turn, `nums` 1.6-1.9 ms and `u32` 0.5 ms. **THE EFFECT MOVES THE SPLIT'S ~1 ms AND LEAVES THE PORT'S
 WALK ALONE, WHICH IS EXACTLY WHY THE RATIO IS 0.78 AND NOT THE 0.07 THE EFFECT'S OWN COST WOULD PREDICT.**
 
-**⇒ THE CORRECTED STATEMENT OF THE DECODE'S COST:** the prelude's per-character split is ~1.0 ms of a
+**THE CORRECTED STATEMENT OF THE DECODE'S COST:** the prelude's per-character split is ~1.0 ms of a
 5.6 ms turn (18%), the port's token walk and KU construction is ~4.2 ms (75%), and the effect removes the
 first. **THE NEXT LEVER IS THE WALK, AND §121's `ku_ws.r` IS ITS FIRST HALF.**
 
@@ -5771,7 +5771,7 @@ cpu  18 rounds:  base 12.089 ms new 12.016 ms ratio median 0.9883 15/18 faster
 0.9932).** Byte-identical at 37 of 37 on both decoders; `ALL PROOFS CHECK`; opbattery 39/39; portexec 7/7;
 the two e2e fixtures byte-identical to HEAD's own output.
 
-**⇒ AND THE TWO INSTRUMENTS DISAGREE, AND THE WALL IS THE ONE THAT MATTERS:** the CPU-time instrument says
+**AND THE TWO INSTRUMENTS DISAGREE, AND THE WALL IS THE ONE THAT MATTERS:** the CPU-time instrument says
 0.99 and the wall says 0.93. **THE DIFFERENCE IS THE PAGE FAULTS AND THE GC: THE OLD VIEW ALLOCATES A
 BLOCK LIST PER RENDER AND THE NEW ONE WALKS IT, SO THE WALL SEES THE CACHE AND THE CPU CLOCK DOES NOT.**
 
@@ -5782,7 +5782,7 @@ BLOCK LIST PER RENDER AND THE NEW ONE WALKS IT, SO THE WALL SEES THE CACHE AND T
 - **THE `St` RECORD SPLIT HOT/COLD** (§129's first idea): 0.9971 / 1.0162. **REVERTED.** `St.r` became TWO
   calls (`St.hot` + `Hot.r`) for 7,141 reads a render, and the six reads became four. ALSO A WASH.
 
-**⇒ THE PATTERN IS NOW MEASURED FOUR TIMES: MOVING WORK BETWEEN THE DECODER AND THE RENDERER IS A WASH,
+**THE PATTERN IS NOW MEASURED FOUR TIMES: MOVING WORK BETWEEN THE DECODER AND THE RENDERER IS A WASH,
 AND ONLY DELETING IT (OR SHORTENING A WALK) PAYS.** §127's effect DELETED the per-character split;
 §129's blocked view DELETED 54,000 cons steps. Both won. The two that moved work did not.
 
@@ -5797,7 +5797,7 @@ wall 34 rounds: median 0.9880  19/34      cpu 16 rounds: median 1.0011   8/16
 wall 30 rounds: median 0.9539  17/30
 ```
 
-**⇒ REVERTED: three wall medians of 0.9503/0.9880/0.9539 and two CPU medians of 0.9983/1.0011 do not clear
+**REVERTED: three wall medians of 0.9503/0.9880/0.9539 and two CPU medians of 0.9983/1.0011 do not clear
 0.97 CONSISTENTLY, AND THE WALL MEDIANS SCATTER AROUND IT (0.9503, 0.9539, 0.9880).** A ~1,000-call
 saving is below this machine's resolution: the turn's wall medians move by ±0.05 between runs. **THE
 KEEPER LINE IS ~0.97 AND A CHANGE THAT SAVES 1,000 CALLS OF 100,000 IS A 1% CHANGE, WHICH IS THE SAME
@@ -5829,13 +5829,13 @@ wall 34 rounds: median 0.9722  23/34
 wall 30 rounds: median 0.9430  18/30
 ```
 
-**⇒ REVERTED, AND THE TWO INSTRUMENTS SAY WHY.** The wall says ~0.95 (88 of 128 rounds faster) and the CPU
+**REVERTED, AND THE TWO INSTRUMENTS SAY WHY.** The wall says ~0.95 (88 of 128 rounds faster) and the CPU
 clock says ~1.02 (18 of 68 rounds faster). **§129 EXPLAINED THE DISAGREEMENT: THE WALL SEES THE CACHE AND
 THE CPU CLOCK DOES NOT.** A ninth field makes every `KU` record one word wider, so every one of the 132,000
 record reads moves more memory -- invisible to the CPU clock, visible to the wall. **§129's VIEW NARROWED THE
 DATA AND MOVED BOTH; THIS ONE WIDENED IT AND MOVED THEM APART.**
 
-**⇒ AND THE GENERAL RULE IS NOW MEASURED IN BOTH DIRECTIONS: A CHANGE THAT NARROWS WHAT THE RENDER TOUCHES
+**AND THE GENERAL RULE IS NOW MEASURED IN BOTH DIRECTIONS: A CHANGE THAT NARROWS WHAT THE RENDER TOUCHES
 WINS ON BOTH INSTRUMENTS; A CHANGE THAT MOVES CALLS BETWEEN THE DECODER AND THE RENDERER IS A WASH; AND A
 CHANGE THAT WIDENS A RECORD THE RENDER READS 132,000 TIMES A RENDER IS A LOSS ON THE CPU CLOCK.**
 
@@ -5854,7 +5854,7 @@ the port's algorithm over 1,284 numbers (char-by-char):  0.015-0.025 ms
 the whole wire's numbers in ONE pass:                     0.086 ms
 ```
 
-**⇒ THE PORT IS ~40x SLOWER THAN THE SAME ARITHMETIC IN JS, BECAUSE ITS STRING PRIMITIVES SLICE.** And the
+**THE PORT IS ~40x SLOWER THAN THE SAME ARITHMETIC IN JS, BECAUSE ITS STRING PRIMITIVES SLICE.** And the
 ceiling: the decode is ~1.45 ms of a ~3.7 ms turn, and ~0.8 ms of it is this parsing. **AN EFFECT COULD TAKE
 THE TURN FROM ~3.7 ms TO ~2.9 ms** -- the largest single number in this record.
 
@@ -5870,7 +5870,7 @@ pair of lists of different kinds. The shapes tried, in order:
    DAEMON HUNG.** The effect itself answers correctly (`@@N 1` for a one-uop wire, measured with a probe),
    so the hang is in the PORT's read of the two lists, and this shape is where the turn was spent.
 
-**⇒ THE SHAPE IS NOT FOUND, AND THE HONEST COST OF THE SEARCH IS THE RECORD'S OWN: EVERY ONE OF THE SIX
+**THE SHAPE IS NOT FOUND, AND THE HONEST COST OF THE SEARCH IS THE RECORD'S OWN: EVERY ONE OF THE SIX
 CANDIDATES THIS SESSION WAS BUILT, MEASURED AND REVERTED, AND THE TWO THAT WON DELETED WORK RATHER THAN
 MOVING IT.** §131's number is real and it is the biggest remaining term, but it is NOT a turn-sized change
 and it is not landed.
@@ -5888,7 +5888,7 @@ The seven stale fixtures are NOT a fixture problem. MEASURED against the re-vend
   **THE PORT STILL SPELLS THE AXES AS `O.ATuple{[0, 2, 1]}` IN THE ARG** (`mixin/movement.bend:1001`,
   `schedule/prepare.bend:275`).
 
-**⇒ SO TWO OF THE SEVEN FIXTURES' DIFFERENCES ARE A *MODEL* DIFFERENCE IN THE PORT (PERMUTE'S AXES), NOT A
+**SO TWO OF THE SEVEN FIXTURES' DIFFERENCES ARE A *MODEL* DIFFERENCE IN THE PORT (PERMUTE'S AXES), NOT A
 FIXTURE-STALENESS, AND FIXING THEM MEANS CHANGING THE PORT'S PERMUTE REPRESENTATION** -- which touches
 `ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the renderer's `ku_render_index` and
 `schedule/rangeify.bend`. **THAT IS A PORT CHANGE, NOT A CERTIFICATE CHANGE, AND IT IS BIGGER THAN A TURN.**
@@ -5934,11 +5934,11 @@ daemon emits `@@END`):
 | `List_take` / `List_drop` | 0 / 0 | 2,518 / 642 | +3,160 |
 | `ku_row_s` / `ku_row_n` / `ku_row_of` | 0 | 642 each | +1,926 |
 
-**⇒ THE 2,518 NUMBERS THE PORT USED TO PARSE ARE NOW PARSED IN JS, AND THE 23,684 CHARACTER SLICES ARE
+**THE 2,518 NUMBERS THE PORT USED TO PARSE ARE NOW PARSED IN JS, AND THE 23,684 CHARACTER SLICES ARE
 GONE.** The remaining 13,853 `char_len` calls are the RENDERER's own `arg_of` payload splitting, which is
 a different thing and is not touched by this change.
 
-**⇒ AND THE TWO EFFECTS COST 0.212-0.240 ms IN JS** (measured in isolation, 200 rounds after 20 warm-ups:
+**AND THE TWO EFFECTS COST 0.212-0.240 ms IN JS** (measured in isolation, 200 rounds after 20 warm-ups:
 `/tmp/effcost.js`), which is well under the ~0.8 ms they replace.
 
 ### 132.4 Three defects that cost a day, and each is a class
@@ -5947,19 +5947,19 @@ a different thing and is not touched by this change.
    (a Bend-style comment). The compiler copies the `.js` verbatim into the output, which IS JS, so the line
    was a syntax error, the daemon's JS NEVER PARSED, and the worker never answered -- **which looks exactly
    like a hang.** MEASURED: the instrumented build printed `error: Syntax Error ... Unexpected end of
-   file`. **⇒ A SYNTAX ERROR IN A FOREIGN HALF IS A HANG, AND THE INSTRUMENT THAT PROVES IT IS `bun` ON
+   file`. **A SYNTAX ERROR IN A FOREIGN HALF IS A HANG, AND THE INSTRUMENT THAT PROVES IT IS `bun` ON
    THE COMPILED FILE.** The tree's other `.js` files (`sz.js`, `ops_cpu.js`) have no `#` lines; that is the
    rule and this change broke it.
 2. **`List.append(xs, ys)` IS `xs ++ ys` AND IT COPIES `xs`.** So `List.append(acc, [x])` IS O(n) AND THE
    ROW WALK WAS O(n²). MEASURED: the O(n) form cost **+91,096** `List.append` calls a render and was a
    **REGRESSION** (the wall clock read 1.05 and the CPU clock 0.91). `List.append([x], acc)` IS THE O(1)
-   FORM, and it is what the port's own `ku_all` uses. **⇒ THE CHEAP FORM AND THE EXPENSIVE FORM ARE THE
+   FORM, and it is what the port's own `ku_all` uses. **THE CHEAP FORM AND THE EXPENSIVE FORM ARE THE
    SAME CALL WITH THE ARGUMENTS SWAPPED, AND A WALK THAT BUILDS A LIST MUST SAY WHICH.**
 3. **A READER MUST NOT BE COPIED FROM A READER OF A DIFFERENT SHAPE.** `ku_row.s` was written by copying
    `ku_ws.r`, which binds NINE fields and wants a TENTH (the token path's row is nine tokens plus the next
    row's first token). The effect's row is EXACTLY FIVE strings, so the fifth's tail IS Nil -- and the
    copied reader took the `Nil` arm, i.e. `ku_ws.bad()`, for EVERY row. MEASURED: the render came out as
-   `void test() { }` -- empty -- while the decoder had built 642 correct KUs. **⇒ A MALFORMED ROW THAT IS
+   `void test() { }` -- empty -- while the decoder had built 642 correct KUs. **A MALFORMED ROW THAT IS
    ACCEPTED IS WORSE THAN A REJECTED ONE, BECAUSE IT RENDERS.**
 
 ### 132.5 And the C lane, which is NOT a working lane for `live.bend` -- measured, not assumed
@@ -5969,7 +5969,7 @@ compiler rewrites that to `#ifdef CID_Wire_split`, and **`CID_Wire_split` IS NOT
 (MEASURED: `grep -n 'define CID_Wire_split' /tmp/live_c_lane.c` answers nothing), so **THE `.c` HALF IS
 DEAD IN THE C LANE** -- and `io_eff(CID_Wire_split, wire_split_run, 0)` passes THREE arguments to a
 TWO-argument `io_eff`, which would not compile if the block were live. MEASURED: `cc -c
-/tmp/live_c_lane.c` succeeds, so the block is not compiled. **⇒ THE C LANE OF `live.bend` HAS NEVER HAD A
+/tmp/live_c_lane.c` succeeds, so the block is not compiled. **THE C LANE OF `live.bend` HAS NEVER HAD A
 WORKING `Wire.split` EITHER, AND THIS CHANGE DID NOT MAKE IT WORSE.** A C half was written for the two new
 effects and then **REVERTED**, because dead code in a dead block is not a fix and it is not a
 contribution. (The renderer is built to JS only: `portc.py:364` builds `-o str(js)`.)
@@ -6009,11 +6009,11 @@ compares the first character, slices, compares the second, slices. **A `match` o
 INTEGER COMPARES** (MEASURED on a four-arm probe: `if (_n_0 == 30) ...`), and a runtime `U32` IS A PLAIN
 JS NUMBER (`_n_0 === 0` in the emitted code), so an arm costs ONE integer compare and no slice.
 
-**⇒ SO THE OP INDEX RIDES IN THE WIRE's NUMBERS.** `wire.js`'s `wire_numbers` prepends `Number(parts[i])`
+**SO THE OP INDEX RIDES IN THE WIRE's NUMBERS.** `wire.js`'s `wire_numbers` prepends `Number(parts[i])`
 and the strings row is FOUR fields wide (dt, addr, kind, payload). **THE OP TRIE IS GONE -- IT DOES NOT
 APPEAR IN THE CENSUS AT ALL.**
 
-**⇒ AND `portc.py`'s OP-TABLE COVERAGE CHECK NOW READS BOTH SPELLINGS** (`case "30": O.Ops` AND
+**AND `portc.py`'s OP-TABLE COVERAGE CHECK NOW READS BOTH SPELLINGS** (`case "30": O.Ops` AND
 `case 30: O.Ops`), because its subject is the COVERAGE and not the SPELLING. The ENUM-PIN is UNCHANGED --
 it hashes the enum's MEMBER NAMES, not the table's form.
 
@@ -6030,12 +6030,12 @@ one of the twenty-six literals in `rd_base_plain` / `rd_base_clang` / `rd_base_o
 **EXACTLY FIVE OF THOSE CONTAIN A SPACE** (`signed char`, `unsigned char`, `unsigned int`,
 `unsigned long`, `unsigned short`), and the port's own comment above `under_split` already said so.
 
-**⇒ SO `under_code` MATCHES THE CODE** (two to four characters) and answers the underscored form as a
+**SO `under_code` MATCHES THE CODE** (two to four characters) and answers the underscored form as a
 LITERAL, and the device is consulted ONLY where it OVERRIDES a spaced code: OpenCL overrides all five
 (`i8`->`char`, `u8`->`uchar`, `u16`->`ushort`, `u32`->`uint`, `u64`->`ulong`), Metal and CUDA override
 `u32` (->`uint`), and Clang, HIP and the base override none.
 
-**⇒ AND `has_space` IS GONE.** `cstyle.py:189` is `name.replace(" ", "_") if sz > 1 else name` -- the
+**AND `has_space` IS GONE.** `cstyle.py:189` is `name.replace(" ", "_") if sz > 1 else name` -- the
 replace is UNCONDITIONAL on the `sz > 1` branch and there is NO "has a space" test upstream. The port had
 one because its `under` was the general replace; with the closed set, a name with no space IS its own
 underscored form, so the test has no subject left.
@@ -6047,7 +6047,7 @@ its two arms are JS ARGUMENTS and both are built before the call. `rd_body_at` c
 -- once with `True` and once with `False` -- so every dtype render built BOTH the underscored name and the
 plain one: MEASURED `rd_name_at` **200** calls for **100** bodies.
 
-**⇒ SO THE ARMS ARE CHOSEN WITH A `match`, WHICH THE COMPILER MAKES A REAL `if`.** Now `rd_name_at` is
+**SO THE ARMS ARE CHOSEN WITH A `match`, WHICH THE COMPILER MAKES A REAL `if`.** Now `rd_name_at` is
 **100** calls and `under_code` is **83** -- the `sz > 1` bodies only (MEASURED: 17 bodies at `sz = 1`, 83
 at `sz = 4`).
 
@@ -6074,7 +6074,7 @@ On the 642-uop wire, `same C: True`, 5,649 bytes, byte-identical.
 | **WALL** vs §129 (cumulative) | 0.3772 | 0.6094 | **0.7458** | **121/150** |
 | **CPU** vs §129 (cumulative) | 0.7365 | 0.8032 | **0.8237** | **39/40** |
 
-**⇒ THE TURN IS ~3.44 ms WALL, DOWN FROM ~4.53 ms AT THE §129 BASELINE.**
+**THE TURN IS ~3.44 ms WALL, DOWN FROM ~4.53 ms AT THE §129 BASELINE.**
 
 THE CALL CENSUS AFTER: `char_len` **13,853 -> 9,579**, and the remaining terms are `dt_of` 1,284,
 `arg_of` 898, `addr_of` 691, the prelude's `U32.read` 628/812, `rd_base_plain` 594, `rd_base_clang` 374 and
@@ -6091,7 +6091,7 @@ THE CALL CENSUS AFTER: `char_len` **13,853 -> 9,579**, and the remaining terms a
 error is `expected : List<&2, String> / observed : String` at `cfo_row` line 357, and the gate's driver
 passes `["a","b","c"]` to `C.code_for_op.of`, whose third argument has been `List<&2, List<&2, String>>`
 since before this session (MEASURED: `git show HEAD:tinybendygrad/renderer/cstyle.bend | grep
-'def code_for_op.of'` and the signature is IDENTICAL, only the line number moved). **⇒ IT IS A PRE-EXISTING
+'def code_for_op.of'` and the signature is IDENTICAL, only the line number moved). **IT IS A PRE-EXISTING
 FAILURE AND NOT THIS CHANGE'S, AND IT IS NOT FIXED HERE.**
 
 ## 133.1 BEND v2.0.40, AND THE CORPUS's CANONICALISER AND ITS `pI(` READER WERE BOTH STALE
@@ -6112,14 +6112,14 @@ clone with the tool's OWN fix command, and then every cell that names the compil
 | `checks/bend-health.rows` | REGENERATED by the instrument that owns it |
 | `checks/differ.py`, `checks/gate_norm.py`, `checks/bend-health.py` | the prose asserting a CURRENT fact |
 
-**⇒ AND THE PIN IS *SATISFIED*, NOT MERELY DECLARED, AND IT IS VIOLABLE.** MEASURED:
+**AND THE PIN IS *SATISFIED*, NOT MERELY DECLARED, AND IT IS VIOLABLE.** MEASURED:
 `sh tools/get-bend.sh` answers `references/bend already at v2.0.40` rc=0, and
 `BEND_REF=v2.0.39 sh tools/get-bend.sh` answers `bend REFUSED: references/bend is at v2.0.40, the pin
 says v2.0.39` rc=3. **`checks/bend-health.py` READS THE PIN BY PATH AND NOW ANSWERS CLAUSE I PASS**
 (`pin.declared=v2.0.40  pin.checkout_tag=v2.0.40  pin.checkout_sha=624dd9f4607c...  pin.checkout_dirty_files=0`)
 AND OVERALL PASS.
 
-**⇒ AND TWO DATED MEASUREMENTS DID NOT MOVE, BECAUSE THEY ARE MEASUREMENTS AND NOT FACTS.**
+**AND TWO DATED MEASUREMENTS DID NOT MOVE, BECAUSE THEY ARE MEASUREMENTS AND NOT FACTS.**
 `checks/differ.py`'s two `cache ver=2.0.39 -> ...` rows are the 2026-10-22 cache experiments; the
 prose that says what the LOCAL compiler IS moved.
 
@@ -6132,16 +6132,16 @@ MEASURED, the two builds are byte-identical on the C (15,242 bytes, `same C: Tru
 | **WALL** 2.0.39 -> 2.0.40 | 0.5228 | 0.8026 | **0.9536** | 97/150 |
 | **CPU** 2.0.39 -> 2.0.40 | 0.8639 | 0.9326 | **0.9568** | 30/40 |
 
-**⇒ AND THE CODEGEN IS UNCHANGED WHERE IT MATTERS.** `dt_of` STILL COMPILES TO 17 SLICES AND 17
+**AND THE CODEGEN IS UNCHANGED WHERE IT MATTERS.** `dt_of` STILL COMPILES TO 17 SLICES AND 17
 `char_len` -- BYTE FOR BYTE THE SAME SHAPE AS ON 2.0.39 -- AND `op_by_idx` STILL COMPILES TO **ZERO**
 SLICES, so §133's NUMERIC ARM IS STILL FREE ON THE NEW COMPILER.
 
-**⇒ AND THE UPGRADE's CASUALTY WAS CHECKED, BECAUSE THE LAST UPGRADE BROKE `autogen.bend`:**
+**AND THE UPGRADE's CASUALTY WAS CHECKED, BECAUSE THE LAST UPGRADE BROKE `autogen.bend`:**
 `sh .agents/slop/bendup39/match-rule.sh` answers **`VERDICT PASS`** on all four -- the `match` rules
 (a computed value, a local binder) are UNCHANGED and `String.replace` still does not exist in
 `base.bend` -- AND THE COMPILE CENSUS READS THE SAME ON BOTH COMPILERS UNDER THE SAME LOAD
 (`COMPILES=190 COMPILES-AS-C=3 COLD-BY-DESIGN=7 FINDING=1`, and the one FINDING is `kuconv.bend`,
-UNCHANGED). **⇒ AND `COMPILES-AS-C` vs `COLD-BY-DESIGN` IS A MEMORY-CEILING ARTIFACT, NOT A COMPILER
+UNCHANGED). **AND `COMPILES-AS-C` vs `COLD-BY-DESIGN` IS A MEMORY-CEILING ARTIFACT, NOT A COMPILER
 DIFFERENCE: MEASURED, `device.bend` MOVED BETWEEN THE TWO CLASSES ON BOTH COMPILERS UNDER THE SAME
 LOAD, AND THE INSTRUMENT SAYS SO ITSELF** ("the class came from the COMPILER's OWN ERROR TEXT and not
 from the emit").
@@ -6154,12 +6154,12 @@ DELETED THE `tag` COLUMN AND CHANGED `canon_rows` FROM EIGHT FIELDS TO SEVEN -- 
 `canon_key`'s UNPACK AND TWO STALE INDICES ALONE**, so `canon_body` RAISED `not enough values to
 unpack (expected 8, got 7)` FOR **EVERY GRAPH**.
 
-**⇒ AND THAT IS A CANONICAL FORM OF NOTHING, WHICH IS THE FAILURE `canon_bijection` EXISTS TO
+**AND THAT IS A CANONICAL FORM OF NOTHING, WHICH IS THE FAILURE `canon_bijection` EXISTS TO
 PREVENT.** MEASURED: the corpus read **`not-comparable=38 byte-identical=0`**, and `AGENTS.md`'s
 RECORDED STATE SAYS `byte-identical=38` -- so the corpus HAD BEEN UN-CERTIFIABLE SINCE `0021a7c33`
 (2026-11-04) AND NOTHING SAID SO.
 
-**⇒ THE FIX IS THREE SITES IN ONE FUNCTION:** the unpack is seven, the refs are at index 6, and the
+**THE FIX IS THREE SITES IN ONE FUNCTION:** the unpack is seven, the refs are at index 6, and the
 payload is `[1:6]`. MEASURED: **`not-comparable` 38 -> 0 AND `byte-identical` 0 -> 31**, AND THE
 CANONICALISER's OWN PROOF NOW ANSWERS: the py side of `matmul` is `ids=1..24 each once, 23
 reference(s) all resolve` and the bend side `ids=1..20 each once, 19 reference(s) all resolve` --
@@ -6171,14 +6171,14 @@ NONE REFUSED.
 **THE SELFCHECK SAID "the py side's `--graph prog` emits 0 `pI(` rows, not 1 -- the `pI(` form is DEAD
 on the py side", AND IT WAS NOT DEAD.** MEASURED, `D2-canon-py-prog.txt` CARRIES
 `3:i51 7:PROGRAM 4:void 1:R 2:i0 201:pI(...) 6:n(i50)` -- SEVEN FIELDS, WITH THE `pI(` PAYLOAD IN IT.
-**⇒ TWO READERS IN `graphcmp.py` STILL ASKED FOR EIGHT** (`prog_args` AND `split_debug`), AND THE
+**TWO READERS IN `graphcmp.py` STILL ASKED FOR EIGHT** (`prog_args` AND `split_debug`), AND THE
 FIX IS THE SAME TWO SITES.
 
-**⇒ AND THE CONSEQUENCE WAS NOT COSMETIC: `differ.py repro` REFUSES WITHOUT A HEALTHY RUN**, so THE
+**AND THE CONSEQUENCE WAS NOT COSMETIC: `differ.py repro` REFUSES WITHOUT A HEALTHY RUN**, so THE
 CORPUS's SECOND MEASUREMENT -- "340 of 340 files identical across two clean runs" -- WAS NOT TAKEN
 AT ALL, and `corpus-figure.py` READ `RUN HEALTH: FAILED`.
 
-**⇒ AND THE CLASS IS: A ROW FORMAT AND ITS READERS MUST MOVE TOGETHER, AND `0021a7c33` FOUND ONE
+**AND THE CLASS IS: A ROW FORMAT AND ITS READERS MUST MOVE TOGETHER, AND `0021a7c33` FOUND ONE
 READER's ARITY FROM A DIFFERENT PLACE.** THREE READERS WERE STALE (`canon_key`, `prog_args`,
 `split_debug`) AND ONE COMMIT MOVED THE FORMAT.
 
@@ -6196,11 +6196,11 @@ MAKES `UOp.const(x)` PER AXIS AND A `STACK` OF THEM, AND `movement.py:231` CALLS
 `_mop(Ops.PERMUTE, arg=order_arg)` -- SO UPSTREAM'S PERMUTE HAS **TWO** SRCS (THE RESHAPE AND THE
 STACK) AND ITS ARG IS `None`. **THE PORT SPELLS THE AXES IN THE ARG** (`mixin/movement.bend:1001`,
 `schedule/prepare.bend:275`: `O.ATuple{[0, 2, 1]}`), SO THE PORT'S PERMUTE HAS **THREE** SRCS (THE
-AXES AS CONSTS) AND NO STACK. **⇒ AND EVERY ONE OF THE SEVEN DISAGREES ON ROW COUNT** -- `matmul` py
+AXES AS CONSTS) AND NO STACK. **AND EVERY ONE OF THE SEVEN DISAGREES ON ROW COUNT** -- `matmul` py
 24 / bend 20, `reduce` 11/8, `commute` 18/16, `binblob` 25/21, `flip` 31/29, `bw` 39/34, `gral` 48/52
 (THE PORT HAS MORE HERE, SO THE COUNT IS NOT ONE DIRECTION).
 
-**⇒ AND `WANT` CARRIES THE SEVEN EXCEPTIONS AGAIN, WITH THE MEASURED CAUSE**, AND THE FIX IS THE
+**AND `WANT` CARRIES THE SEVEN EXCEPTIONS AGAIN, WITH THE MEASURED CAUSE**, AND THE FIX IS THE
 PORT's PERMUTE REPRESENTATION -- `ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the
 renderer's `ku_render_index` and `schedule/rangeify.bend` -- **A PORT CHANGE, NOT A CERTIFICATE CHANGE,
 AND BIGGER THAN A TURN.** RECORDED, NOT DELETED, AND NOT PINNED TO DISAGREE ONCE FIXED.
@@ -6220,7 +6220,7 @@ corpusverdict-gate: PASS -- the recorded verdict describes THIS tree
 corpuswitness-gate: PASS -- the claim is ESTABLISHED
 ```
 
-**⇒ AND THE PORT's GATES ON THE NEW COMPILER:** `ksweep` **37/37 byte-identical on BOTH decoders**,
+**AND THE PORT's GATES ON THE NEW COMPILER:** `ksweep` **37/37 byte-identical on BOTH decoders**,
 `opbattery` **39/39**, `portexec` **7/7**, `PROOF-ALL` **rc=0**, `cstyle.bend` **ALL PROOFS CHECK**.
 
 ### 133.1.6 The retention gate is RED, and it was RED BEFORE THIS WORK
@@ -6230,12 +6230,12 @@ DIRS`, AND EIGHTEEN OF THEM ARE PRE-EXISTING** (the two corpus gates' were from 
 runs). `GATEKIT_OUTPUT` NAMES gatekit's LANE FILES AND NOTHING ELSE, so EVERY gate that writes its own
 `<name>.rows` into `gates/artifacts/<gate>/` IS RESIDUE.
 
-**⇒ A FIX WAS TRIED AND REVERTED.** Reading each file's OWN first line (`# <name> -- GENERATED by
+**A FIX WAS TRIED AND REVERTED.** Reading each file's OWN first line (`# <name> -- GENERATED by
 `<path>`, its ONLY writer.`) FIXED THE TWO CORPUS GATES (19 -> 17 dirs) **BUT NOT THE OTHER
 SEVENTEEN**, because their files carry NO DECLARATION AT ALL (`names_count=32`, `pyr_empty_device=`,
-`type_map float=f32` -- RAW DATA ROWS WITH NO HEADER). **⇒ AND A PARTIAL FIX THAT HIDES TWO OF THE
+`type_map float=f32` -- RAW DATA ROWS WITH NO HEADER). **AND A PARTIAL FIX THAT HIDES TWO OF THE
 TWENTY WITHOUT CLOSING THE CLASS IS WORSE THAN NO FIX**, SO IT WAS REVERTED AND THE FINDING IS
-RECORDED INSTEAD. **⇒ AND THE COMPLETE FIX IS TEN GATES' DECLARATIONS, WHICH IS NOT THIS SESSION's
+RECORDED INSTEAD. **AND THE COMPLETE FIX IS TEN GATES' DECLARATIONS, WHICH IS NOT THIS SESSION's
 WORK.**
 
 ## 134. THE THREE CODE TABLES ARE NUMBERS, AND THE C-NAME MATCH IS A MEMO NOT A KEY
@@ -6254,9 +6254,9 @@ LENGTH TEST -- **TWO SLICES AND TWO `char_len` PER CALL**. **A `match` ON A `U32
 COMPARES** (MEASURED on a four-arm probe: `if (_n_0 == 30) ...`), and a runtime `U32` IS A PLAIN JS
 NUMBER.
 
-**⇒ SO THE THREE CODES RIDE IN THE WIRE's NUMBERS**, WHERE `charCodeAt` IS FREE IN JS:
+**SO THE THREE CODES RIDE IN THE WIRE's NUMBERS**, WHERE `charCodeAt` IS FREE IN JS:
 `wire.js`'s `wire_numbers` PREPENDS `dtCode`, `addrCode`, `kindC0` AND `kindC1`, AND **THE STRINGS ROW
-IS JUST THE PAYLOAD**. **⇒ AND THE KIND IS TWO NUMBERS BECAUSE ELEVEN OF THE NINETEEN KINDS ARE TWO
+IS JUST THE PAYLOAD**. **AND THE KIND IS TWO NUMBERS BECAUSE ELEVEN OF THE NINETEEN KINDS ARE TWO
 CHARACTERS** ("RW", "M1"): THE FIRST SEPARATES THE SEVEN ONE-CHARACTER KINDS FROM THE ELEVEN
 TWO-CHARACTER ONES, AND THE SECOND PICKS INSIDE THAT ARM.
 
@@ -6266,19 +6266,19 @@ TWO-CHARACTER ONES, AND THE SECOND PICKS INSIDE THAT ARM.
 ### 134.2 The second source of truth, and the probe that holds it
 
 **A COMPUTED ARM KEY IS REFUSED** ("expected : a pattern"), SO THE TABLE CANNOT DERIVE ITS OWN KEYS AND
-THE NUMERIC KEYS ARE A SECOND SOURCE OF TRUTH. **⇒ SO A PROBE HOLDS IT**:
+THE NUMERIC KEYS ARE A SECOND SOURCE OF TRUTH. **SO A PROBE HOLDS IT**:
 `.agents/slop/parity/code-table-probe.py` BUILDS THE LIVE RENDERER, EXTRACTS THE PORT's OWN COMPILED
 TABLES, AND CALLS THEM OVER EVERY CODE, COMPARING EACH ANSWER AGAINST THE STRING TABLE **RE-TYPED IN
-THE PROBE** -- **37 OF 37, 0 MISMATCHES**. **⇒ AND A PROBE THAT COMPARES A TABLE WITH ITSELF PROVES
+THE PROBE** -- **37 OF 37, 0 MISMATCHES**. **AND A PROBE THAT COMPARES A TABLE WITH ITSELF PROVES
 NOTHING, SO THE TWO ARE SEPARATE.**
 
-**⇒ AND THE PROBE CAN GO RED, WHICH IS THE PART THAT MAKES IT A GATE.** MEASURED: PLANTING
+**AND THE PROBE CAN GO RED, WHICH IS THE PART THAT MAKES IT A GATE.** MEASURED: PLANTING
 `case 101: S.double()` FOR `case 100:` MAKES IT PRINT `DT MISMATCH "d" -> void want f64` AND EXIT 1,
-AND THE PLANT IS REMOVED AFTERWARDS. **⇒ AND ITS FIRST VERSION EXITED 0 ON A MISMATCH**, BECAUSE `bun`
+AND THE PLANT IS REMOVED AFTERWARDS. **AND ITS FIRST VERSION EXITED 0 ON A MISMATCH**, BECAUSE `bun`
 ON A `.js` FILE UNDER THIS TREE's `package.json` LOADS IT AS ESM AND THE `process.exit` NEVER RAN --
-**⇒ A PROBE THAT CANNOT GO RED IS NOT A PROBE**, AND THE DRIVER NOW CHECKS FOR THE VERDICT LINE.
+**A PROBE THAT CANNOT GO RED IS NOT A PROBE**, AND THE DRIVER NOW CHECKS FOR THE VERDICT LINE.
 
-**⇒ AND THE PROBE'S OWN BUILDING BLOCKS ARE MEASURED CLASSES.** THE COMPILED FILE IS NOT LOADED AS A
+**AND THE PROBE'S OWN BUILDING BLOCKS ARE MEASURED CLASSES.** THE COMPILED FILE IS NOT LOADED AS A
 MODULE (IT IS THE PORT's OWN JS, WITH `require` CALLS, AND `bun` AND `node` BOTH LOAD A `.js` FILE AS
 ESM HERE), SO **THE CLOSURE IS EXTRACTED AND EVALUATED IN ONE PIECE** -- BECAUSE THE COMPILER'S ALIASES
 ARE `const` (MEASURED: `const $$_________tinybendygrad_helpers_i64_of_hi_lo =
@@ -6292,7 +6292,7 @@ BEGINS `function word_to_u32(w) {`), SO THE PATTERN IS `(?:^|\n)`.
 
 **`kus_bytes` HAS NO CALLER.** MEASURED: THE ONLY REFERENCES ARE ITS OWN DEFINITION AND A COMMENT; THE
 LITERAL PATH GENERATES ITS OWN `kus()` VIA `gen_kus.py`, AND THE DAEMON CALLS `L.kus` (THE EFFECT
-PATH). **⇒ SO THE TOKEN PATH's `code_of`/`code1_of` CONVERSION (WHICH SLICES, TWICE) IS OFF EVERY
+PATH). **SO THE TOKEN PATH's `code_of`/`code1_of` CONVERSION (WHICH SLICES, TWICE) IS OFF EVERY
 MEASURED PATH -- AND IT IS ALSO A HAZARD, BECAUSE §133.1's DEFECT WAS EXACTLY A READER THAT READ THE
 WRONG NUMBER OF FIELDS.** REPORTED, NOT DELETED: DELETING A DEF FROM THE PORT IS A BIGGER CHANGE THAN
 THIS WIN JUSTIFIES, AND THE TREE's RULE IS TO INVESTIGATE BEFORE DELETING.
@@ -6302,7 +6302,7 @@ THIS WIN JUSTIFIES, AND THE TREE's RULE IS TO INVESTIGATE BEFORE DELETING.
 On the 782-uop wire, against §133.1: **CPU 0.9851 MEDIAN, 89/100 FASTER** (100 rounds x 8 renders);
 **WALL 0.9897 MEDIAN, 160/300 FASTER**. `same C: True`, 15,242 bytes, byte-identical.
 
-**⇒ AND THE HONEST SIZE OF IT: `char_len` IS `s.length`, AND 5,122 OF THEM COST 0.0137 ms -- 0.39% OF A
+**AND THE HONEST SIZE OF IT: `char_len` IS `s.length`, AND 5,122 OF THEM COST 0.0137 ms -- 0.39% OF A
 3.6 ms TURN** (MEASURED: 1,000,000 `char_len` ON A THIRTEEN-CHARACTER STRING IS 2.313 ms). **SO THIS
 REMOVES REAL WORK AND MEASURES ~0.985, WHICH IS OVER THE KEEPER LINE AND IS NOT A BIG WIN.**
 
@@ -6318,9 +6318,9 @@ RENDER, AND THEY ARE THE SAME CLASS.** BUT THE NUMERIC KEY IS NOT AVAILABLE:
   MATTERS ON CUDA** (MEASURED: CUDA GIVES `fp8e4m3` -> `__nv_fp8_e4m3` BUT `fp8e4m3fnuz` -> ITSELF, WHILE
   HIP GIVES BOTH -> `hip_fp8`).
 
-**⇒ SO THE FIX THERE IS A MEMO AND NOT A KEY: THE C NAME IS A FUNCTION OF (DEVICE, DTYPE), AND THE PORT
+**SO THE FIX THERE IS A MEMO AND NOT A KEY: THE C NAME IS A FUNCTION OF (DEVICE, DTYPE), AND THE PORT
 CALLS IT 557 TIMES A RENDER FOR SIX DISTINCT DTYPES.** MEASURED: `rd_base_name` **557** calls,
-`rd_base_dev` **576**, `rd_base_plain` **544**, `render_type` **439**, `render_dtype` **574**. **⇒ AND
+`rd_base_dev` **576**, `rd_base_plain` **544**, `render_type` **439**, `render_dtype` **574**. **AND
 THAT IS THE NEXT WORK ITEM, AND IT IS NOT A TURN-SIZED ONE: THE RENDERER IS A PER-UOP WALK WITH NO
 MEMO TABLE, SO A MEMO MEANS A STRUCTURAL CHANGE TO `cstyle.bend`.**
 
@@ -6328,8 +6328,8 @@ MEMO TABLE, SO A MEMO MEANS A STRUCTURAL CHANGE TO `cstyle.bend`.**
 
 **THE TREE's OWN PROFILER IS `bun --cpu-prof` (PER `cstyle.bend`'s COMMENT AT :938: "MEASURED with
 `bun --cpu-prof` on a 405-uop kernel: `render_dtype` was 58% of the whole render"), AND IT IS NOT USED
-IN THIS SESSION YET.** **⇒ AND IT NEEDS A DRIVER**: THE PROFILE IS WRITTEN ON EXIT AND THE DAEMON LOOPS
-ON THE FIFO FOREVER, SO `bun --cpu-prof` NEVER FLUSHES. **⇒ SO THE PROFILER IS DRIVEN FROM A CHILD
+IN THIS SESSION YET.** **AND IT NEEDS A DRIVER**: THE PROFILE IS WRITTEN ON EXIT AND THE DAEMON LOOPS
+ON THE FIFO FOREVER, SO `bun --cpu-prof` NEVER FLUSHES. **SO THE PROFILER IS DRIVEN FROM A CHILD
 PROCESS** (`.agents/slop/parity/prof_top.py` READS THE `.cpuprofile`, WHICH IS CHROME'S FORMAT).
 
 **MEASURED, ON THE 782-UOP WIRE, 40 FRAMES:**
@@ -6345,29 +6345,29 @@ PROCESS** (`.agents/slop/parity/prof_top.py` READS THE `.cpuprofile`, WHICH IS C
 | **`cstyle_render` (THE PORT's RENDER)** | **79.2 ms** | **3.49%** |
 | `decode` (THE PORT's DECODE) | 21.7 ms | 0.96% |
 
-**⇒ THE PORT's ENTIRE WORK IS ~4% OF THE PROFILED TIME, AND THE TURN IS ~96% WAITING FOR THE FIFO.**
-**⇒ AND `fstatSync` IS 38% -- AND IT IS PER READ:** THE RUNTIME'S `file_read_room`
+**THE PORT's ENTIRE WORK IS ~4% OF THE PROFILED TIME, AND THE TURN IS ~96% WAITING FOR THE FIFO.**
+**AND `fstatSync` IS 38% -- AND IT IS PER READ:** THE RUNTIME'S `file_read_room`
 (`references/bend/bend2/effs/file_read.js:20`) CALLS `fs.fstatSync(file)` ON **EVERY READ** TO SIZE THE
 BUFFER, AND **FOR A FIFO THAT ANSWER CAN NEVER CHANGE** (A FIFO IS NOT A REGULAR FILE, SO THE ROOM STAYS
-64 KiB). **⇒ AND THE PORT'S READ PATTERN MAKES 20 READS PER WIRE** (MEASURED: 17 LENGTH BYTES + 3
+64 KiB). **AND THE PORT'S READ PATTERN MAKES 20 READS PER WIRE** (MEASURED: 17 LENGTH BYTES + 3
 PAYLOADS), BECAUSE `sz_of` ASKS FOR **1 BYTE** IN MODE 0.
 
 ### 134.7 AND THE READ SIZE CANNOT GROW, BECAUSE A FIFO READ BLOCKS FOR THE FULL COUNT
 
-**⇒ THAT IS THE ANSWER TO §83's UNDIAGNOSED STALL, AND IT IS MEASURED.** §83 BUILT THE LENGTH-PREFIXED
+**THAT IS THE ANSWER TO §83's UNDIAGNOSED STALL, AND IT IS MEASURED.** §83 BUILT THE LENGTH-PREFIXED
 FIFO FRAME, IT **"STALLS ON THE FIRST FRAME"**, AND THE DIAGNOSIS WAS NEVER MADE ("Bun answers `""` rather
-than blocking at some point in this path" was a HYPOTHESIS). **⇒ THE REAL CONSTRAINT: A READ OF N BYTES
+than blocking at some point in this path" was a HYPOTHESIS). **THE REAL CONSTRAINT: A READ OF N BYTES
 ON A FIFO BLOCKS UNTIL N BYTES ARE AVAILABLE.** MEASURED: CHANGING THE PORT'S MODE-0 READ FROM 1 BYTE TO
 32 **HANGS THE DAEMON OUTRIGHT** (IT NEVER RENDERS AND NEVER EXITS) -- BECAUSE THE CALLER SENDS THE
 LENGTH LINE AND THE PAYLOAD, AND THE PAYLOAD'S FIRST BYTES MAY NOT ALL BE THERE YET.
 
-**⇒ AND SO THE 17 LENGTH BYTES COST 17 READS, AND THAT IS THE FLOOR FOR THIS PROTOCOL.**
+**AND SO THE 17 LENGTH BYTES COST 17 READS, AND THAT IS THE FLOOR FOR THIS PROTOCOL.**
 `File.read_line` IS NOT A DROP-IN EITHER: MEASURED, IT READS UNTIL THE NEWLINE AND RETURNS **ONLY THE
 LINE** (`io_text(b, n)` DECODES THE FIRST `n` BYTES, AND THE `line` MODE'S LOOP STOPS AT THE NEWLINE), SO
-**THE PAYLOAD THAT CAME AFTER THE NEWLINE IS DROPPED**. **⇒ AND THE FRAME MACHINE IS THE HARNESS
+**THE PAYLOAD THAT CAME AFTER THE NEWLINE IS DROPPED**. **AND THE FRAME MACHINE IS THE HARNESS
 (`serve.bend` IS AGENT SCRATCH), NOT THE SHIPPED PORT -- SO A HARNESS PROTOCOL CHANGE IS NOT A PORT WIN.**
 
-**⇒ AND THE ATTEMPT WAS REVERTED, AND THE REASON IS RECORDED HERE RATHER THAN IN A COMMENT:** THE 32-BYTE
+**AND THE ATTEMPT WAS REVERTED, AND THE REASON IS RECORDED HERE RATHER THAN IN A COMMENT:** THE 32-BYTE
 READ **HANGS**, AND A HARNESS THAT DOES NOT WORK IS A HARNESS THAT ROTS (§83's own words).
 
 ## 135. THE FRAME's LENGTH IS A FIXED-WIDTH FIELD: 20 READS A WIRE BECOME 8
@@ -6380,11 +6380,11 @@ READ **HANGS**, AND A HARNESS THAT DOES NOT WORK IS A HARNESS THAT ROTS (§83's 
 `sz_of` ASKED FOR **ONE BYTE** IN MODE 0 AND THE LENGTH LINE WAS VARIABLE-WIDTH. THE READ SEQUENCE (FROM
 THE INSTRUMENTED BUILD): `[1,1,1,1,1, 8474, 1,1,1,1,1, 8893, 1,1,1,1,1, 932, 1,1, 0]`.
 
-**⇒ AND EVERY READ CARRIED A `stat` SYSCALL.** `references/bend/bend2/effs/file_read.js:20`'s
+**AND EVERY READ CARRIED A `stat` SYSCALL.** `references/bend/bend2/effs/file_read.js:20`'s
 `file_read_room` CALLS `fs.fstatSync(file)` ON EVERY READ TO SIZE THE BUFFER, AND **FOR A FIFO THAT
 ANSWER CAN NEVER CHANGE** (A FIFO IS NOT A REGULAR FILE, SO THE ROOM STAYS 64 KiB).
 
-**⇒ AND THE RUNTIME's READ IS "READ EXACTLY N"**: THE SAME FUNCTION's LOOP IS `while (got < len)`, SO A
+**AND THE RUNTIME's READ IS "READ EXACTLY N"**: THE SAME FUNCTION's LOOP IS `while (got < len)`, SO A
 READ OF N BYTES **WAITS FOR N BYTES**.
 
 ### 135.1 WHY A VARIABLE-WIDTH LENGTH CANNOT BE READ IN ONE READ
@@ -6392,9 +6392,9 @@ READ OF N BYTES **WAITS FOR N BYTES**.
 **BECAUSE THE PORT DOES NOT KNOW HOW MANY BYTES THE LINE IS BEFORE IT READS IT.** THE OLD PROTOCOL's
 LENGTH LINE IS `"8474\n"` -- FOUR DIGITS AND A NEWLINE -- AND THE MACHINE READ IT ONE BYTE AT A TIME.
 
-**⇒ AND THAT IS WHY A 32-BYTE READ OF THE LENGTH LINE HANGS THE DAEMON OUTRIGHT, WHICH IS THE ANSWER TO
+**AND THAT IS WHY A 32-BYTE READ OF THE LENGTH LINE HANGS THE DAEMON OUTRIGHT, WHICH IS THE ANSWER TO
 §83's UNDIAGNOSED STALL** ("It compiles. It stalls on the first frame, and it is not shipped."): A READ OF
-N WAITS FOR N BYTES, AND THE PAYLOAD's FIRST BYTES MAY NOT ALL BE THERE YET. **⇒ THE FIXED WIDTH IS WHAT
+N WAITS FOR N BYTES, AND THE PAYLOAD's FIRST BYTES MAY NOT ALL BE THERE YET. **THE FIXED WIDTH IS WHAT
 MAKES ONE READ POSSIBLE AT ALL.**
 
 ### 135.2 The protocol, and the two off-by-ones
@@ -6404,18 +6404,18 @@ PAYLOAD's FIRST BYTE WOULD HAVE TO BE CARRIED), **AND THE ZERO-LENGTH CHUNK IS E
 
 **MEASURED, THE READS: 20 -> 8** -- `[8, 8474, 8, 8893, 8, 932, 8, 0]`.
 
-**⇒ AND TWO OFF-BY-ONE DEFECTS WERE FOUND, AND BOTH ARE THE SAME CLASS: A READ THAT EATS THE FIRST BYTE
+**AND TWO OFF-BY-ONE DEFECTS WERE FOUND, AND BOTH ARE THE SAME CLASS: A READ THAT EATS THE FIRST BYTE
 OF A FIXED-WIDTH FIELD.** THE FIRST READ (`serve_after`) AND THE POST-RENDER READ BOTH ASKED FOR **ONE
 BYTE** -- WHICH, UNDER THE OLD PROTOCOL, WAS THE FIRST DIGIT OF THE NEXT LENGTH LINE (THE OLD PROTOCOL's
-FIRST READ AND ITS POST-RENDER READ WERE THE SAME READ). **⇒ WITH A FIXED-WIDTH FIELD, BOTH MUST ASK FOR
+FIRST READ AND ITS POST-RENDER READ WERE THE SAME READ). **WITH A FIXED-WIDTH FIELD, BOTH MUST ASK FOR
 THE WHOLE FIELD.**
 
 **MEASURED, THE SYMPTOM OF GETTING IT WRONG WAS EXACT: THE STATE LOGGED `need=84745` WHERE THE LENGTH IS
 **8474**, AND THE READS LOGGED `TEXT n=1 [0]` THEN `TEXT n=8 [00084745]` -- EIGHT DIGITS *AND THE
 PAYLOAD's FIRST BYTE* -- BECAUSE THE FIELD'S EIGHT BYTES PLUS ONE MORE ARRIVED IN THE SECOND READ.**
 
-**⇒ AND THE FRAME BOUNDARY: MEASURED, THE EIGHT-DIGIT NO-NEWLINE PROTOCOL RENDERED **ONE** TURN FOR
-THREE FRAMES**, BECAUSE WITH NO NEWLINE THE MACHINE CANNOT SEE WHERE ONE FRAME ENDS. **⇒ THE FIX IS THE
+**AND THE FRAME BOUNDARY: MEASURED, THE EIGHT-DIGIT NO-NEWLINE PROTOCOL RENDERED **ONE** TURN FOR
+THREE FRAMES**, BECAUSE WITH NO NEWLINE THE MACHINE CANNOT SEE WHERE ONE FRAME ENDS. **THE FIX IS THE
 POST-RENDER READ ASKING FOR THE WHOLE FIELD**, WHICH RESTORES THE BOUNDARY: MEASURED, THREE FRAMES NOW
 RENDER THREE TURNS (`@@BEGIN` 3, `@@END` 3), EXACTLY AS THE OLD PROTOCOL DID.
 
@@ -6424,16 +6424,16 @@ RENDER THREE TURNS (`@@BEGIN` 3, `@@END` 3), EXACTLY AS THE OLD PROTOCOL DID.
 On the 782-uop wire: **WALL 0.9796 MEDIAN, 135/250 FASTER** (250 rounds); **CPU 0.9740 MEDIAN, 37/40
 FASTER**. `same C: True`, 15,242 bytes, byte-identical.
 
-**⇒ AND THE GATES:** `ksweep` **37/37 BYTE-IDENTICAL ON BOTH DECODERS**, `opbattery` **39/39**, `portexec`
-**7/7**, `PROOF-ALL` **rc=0**. **⇒ AND THE CORPUS:** `differ.py run` **rc=0** WITH `graphs=38
+**AND THE GATES:** `ksweep` **37/37 BYTE-IDENTICAL ON BOTH DECODERS**, `opbattery` **39/39**, `portexec`
+**7/7**, `PROOF-ALL` **rc=0**. **AND THE CORPUS:** `differ.py run` **rc=0** WITH `graphs=38
 graphs-agree=31 graphs-disagree=7 byte-identical=31 not-comparable=0 expect-moved=0
 selfcheck=# SELFCHECK: OK` AND `substrate-start == substrate-end`.
 
 ### 135.4 And what this costs, stated plainly
 
-**⇒ THE PROTOCOL IS THE HARNESS's, NOT THE PORT's** (`serve.bend` AND `portc.py` ARE AGENT SCRATCH UNDER
-`.agents/slop/cpuseam/`), **⇒ SO THIS IS A HARNESS WIN AND NOT A PORT WIN** -- THE SHIPPED ARTIFACT IS
-THE SAME C, AND THE PORT's OWN CODE IS UNCHANGED BY IT. **⇒ AND §134's THREE NUMERIC TABLES ARE THE PORT
+**THE PROTOCOL IS THE HARNESS's, NOT THE PORT's** (`serve.bend` AND `portc.py` ARE AGENT SCRATCH UNDER
+`.agents/slop/cpuseam/`), **SO THIS IS A HARNESS WIN AND NOT A PORT WIN** -- THE SHIPPED ARTIFACT IS
+THE SAME C, AND THE PORT's OWN CODE IS UNCHANGED BY IT. **AND §134's THREE NUMERIC TABLES ARE THE PORT
 CHANGES, AND §135's FIXED-WIDTH PROTOCOL IS THE HARNESS CHANGE THAT MAKES THEIR MEASUREMENT HONEST:**
 WITHOUT IT, THE TURN MEASURED 20 READS' WORTH OF SYSCALLS, AND A PORT-SIDE IMPROVEMENT OF 0.4% WAS
 INVISIBLE UNDER IT.
@@ -6449,48 +6449,48 @@ current   min 2.8260  p25 3.1703  median 3.7787  mean 3.8977 ms
 ratio min 0.4386  p25 0.7609  median 0.8456  max 1.4430   faster 150/200
 ```
 
-**⇒ THE TURN IS ~3.78 ms WALL, DOWN FROM ~4.39 ms, AND THE MEDIAN RATIO IS 0.8456.**
+**THE TURN IS ~3.78 ms WALL, DOWN FROM ~4.39 ms, AND THE MEDIAN RATIO IS 0.8456.**
 
-**⇒ AND THE TWO HALVES ARE SEPARATE AND BOTH MEASURED:** §132's TWO-EFFECT DECODE (THE WIRE's NUMBERS
+**AND THE TWO HALVES ARE SEPARATE AND BOTH MEASURED:** §132's TWO-EFFECT DECODE (THE WIRE's NUMBERS
 IN JS) AND §133's NUMERIC CODE TABLES ARE **PORT CHANGES**; §135's FIXED-WIDTH PROTOCOL IS **A HARNESS
 CHANGE** (`serve.bend` AND `portc.py` ARE AGENT SCRATCH UNDER `.agents/slop/cpuseam/`), AND IT IS WHAT
 MAKES THE PORT's 0.4% MEASURABLE AT ALL, BECAUSE **TWENTY READS' WORTH OF SYSCALLS WAS UNDER IT.**
 
-**⇒ AND THE PORT's OWN WORK IS STILL ~4% OF THE PROFILED TURN** (§134.6: `cstyle_render` 3.49% AND
-`decode` 0.96%), **⇒ SO THE NEXT PORT-SIDE TERM IS THE C-NAME MATCH** (`rd_base_plain` 3,188 AND
+**AND THE PORT's OWN WORK IS STILL ~4% OF THE PROFILED TURN** (§134.6: `cstyle_render` 3.49% AND
+`decode` 0.96%), **SO THE NEXT PORT-SIDE TERM IS THE C-NAME MATCH** (`rd_base_plain` 3,188 AND
 `rd_base_clang` 1,934 `char_len` CALLS A RENDER, AND `rd_base_name` IS CALLED **557 TIMES A RENDER FOR
-SIX DISTINCT DTYPES**) **⇒ AND ITS FIX IS A MEMO AND NOT A NUMERIC KEY** (THE CODES ARE UP TO ELEVEN
-CHARACTERS AND `pri` IS AMBIGUOUS FOR THE TWO fp8 PAIRS, AND THE DISTINCTION MATTERS ON CUDA), **⇒ SO IT
+SIX DISTINCT DTYPES**) **AND ITS FIX IS A MEMO AND NOT A NUMERIC KEY** (THE CODES ARE UP TO ELEVEN
+CHARACTERS AND `pri` IS AMBIGUOUS FOR THE TWO fp8 PAIRS, AND THE DISTINCTION MATTERS ON CUDA), **SO IT
 IS A STRUCTURAL CHANGE TO `cstyle.bend` AND IT IS NOT TURN-SIZED.**
 
 ### 136 THE PROFILE WAS MEASURING A **BLOCKED** PROCESS, AND THE BASELINE WAS A **STALE BUILD**
 
-**⇒ ⇒ ⇒ TWO FINDINGS, AND THE SECOND ONE INVALIDATED THE FIRST'S MEASUREMENT. ⇒ ⇒ ⇒ BOTH ARE
+**TWO FINDINGS, AND THE SECOND ONE INVALIDATED THE FIRST'S MEASUREMENT. BOTH ARE
 RECORDED HERE BECAUSE THE CLASS IS THE POINT: **A BUILD AND A PROFILE ARE BOTH ARTEFACTS, AND BOTH
 CAN BE STALE, AND NEITHER ANNOUNCES ITSELF.**
 
-**⇒ ⇒ ⇒ FINDING ONE: THE PROFILER'S FEEDER WAS **BLOCKED**, SO THE PROFILE MEASURED AN IDLE PROCESS.
+**FINDING ONE: THE PROFILER'S FEEDER WAS **BLOCKED**, SO THE PROFILE MEASURED AN IDLE PROCESS.
 MEASURED: THE OLD FEEDER (`/tmp/prof_wrap.js`) DID `fs.writeSync(fd, frame.repeat(frames))` -- **THE
 WHOLE BATCH AT ONCE** -- AND THE FIFO's BUFFER IS 64 KiB, SO 40 FRAMES (349 KiB) DO NOT FIT: THE
 WRITE BLOCKED, THE DAEMON SPENT ITS LIFE **BLOCKED IN `readvSync` WITH NO FRAME TO WORK ON**, AND A
 PROFILER THAT SAMPLES THE WALL CLOCK ATTRIBUTES THAT BLOCKED TIME TO `readvSync`/`fstatSync`.
-**⇒ ⇒ ⇒ THE CORRECT FEEDER (`/tmp/prof_wrap2.js`) WAITS FOR EACH `@@END` BEFORE IT WRITES THE NEXT
+**THE CORRECT FEEDER (`/tmp/prof_wrap2.js`) WAITS FOR EACH `@@END` BEFORE IT WRITES THE NEXT
 FRAME.** MEASURED, THE CORRECTED PROFILE: `fstatSync` 14.071 ms/turn AND `readvSync` 12.615 ms/turn
 -- **AND BOTH ARE THE WAIT, NOT THE SYSCALL:** MEASURED, `os.fstat` ON A FIFO IS **0.653 us**, SO THE
 PROFILER's "1.32 ms A `fstatSync`" IS **2,000x THE TRUTH** AND IS THE POLLER's WAIT ATTRIBUTED TO THE
 SYSCALL's FRAME.
 
-**⇒ ⇒ ⇒ FINDING TWO, AND IT IS THE ONE THAT MATTERS: **`/tmp/serve_final135.js` WAS A BUILD OF A
+**FINDING TWO, AND IT IS THE ONE THAT MATTERS: **`/tmp/serve_final135.js` WAS A BUILD OF A
 TREE THAT NO LONGER EXISTS.** MEASURED: THE BUILD IS FROM **Nov 7 23:08** AND TWO FIXES LANDED AT
 **Nov 8 00:55** (`f46431e0f`, "the kernel's lines are prepended: 82,039 elements copied a render
 become 10,494") AND **00:57** (`f009270b3`, "the op equality is a match on the two tags: 1.1 million
 comparisons become 30 thousand"). MEASURED BY THE COMPILED FORM: THE STALE BUILD's `st_kernel` CALLS
 `$$List_append(St_kernel(_st_0), [x])` -- **APPEND AT THE END, O(n)** -- AND HEAD's CALLS
-`$$List_append([x], St_kernel(_st_0))` -- **PREPEND, O(1)**. **⇒ ⇒ ⇒ ⇒ SO EVERY NUMBER MEASURED
-AGAINST THE STALE BUILD WAS A NUMBER ABOUT A PROGRAM THAT IS NOT THE TREE.** ⇒ ⇒ ⇒ AND THE BUILD's
+`$$List_append([x], St_kernel(_st_0))` -- **PREPEND, O(1)**. **SO EVERY NUMBER MEASURED
+AGAINST THE STALE BUILD WAS A NUMBER ABOUT A PROGRAM THAT IS NOT THE TREE.** AND THE BUILD's
 SIZE SAYS SO: **356,603 BYTES (STALE) AGAINST 362,309 (HEAD) -- A 5,706-BYTE DIFFERENCE.**
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ THE CORRECT MEASUREMENT, WITH CLOCKS **INSIDE** THE DAEMON's OWN PROCESS** (THE
+**THE CORRECT MEASUREMENT, WITH CLOCKS **INSIDE** THE DAEMON's OWN PROCESS** (THE
 COMPILED FORM's `$serve_c6`/`$serve_c8`/`$serve_c12`, ON THE SAME 782-UOP WIRE, 40 TURNS, THE TREE's
 OWN `portc.Worker`):
 
@@ -6500,15 +6500,15 @@ caller's wall per turn      median 3.9728 ms
   render                    2.2649 ms/turn
     walk (the 782 emits)    2.1381 ms/turn
     kern (the assembly)     0.1051 ms/turn
-⇒⇒⇒ THE PORT's OWN SHARE (decode + render): 3.2596 ms = 82.0% OF 3.9728 ms
+THE PORT's OWN SHARE (decode + render): 3.2596 ms = 82.0% OF 3.9728 ms
 ```
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ SO THE PORT's OWN WORK IS **82%** OF THE TURN, AND §134.6's "THE PORT's OWN WORK IS
-~4%" WAS A MEASUREMENT OF A **BLOCKED** PROCESS. ⇒⇒⇒ AND THE TURN DECOMPOSES AS
+**SO THE PORT's OWN WORK IS **82%** OF THE TURN, AND §134.6's "THE PORT's OWN WORK IS
+~4%" WAS A MEASUREMENT OF A **BLOCKED** PROCESS. AND THE TURN DECOMPOSES AS
 `read 0.73 (MOSTLY THE CALLER's WAIT) + decode 0.99 (THE PORT) + render 2.26 (THE PORT) + ~0.99 (THE
 CALLER's ROUND TRIP)`.
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ AND THE RENDER's 2.26 ms IS **THE NEXT PORT-SIDE TERM**, AND **NOTHING HAS EVER
+**AND THE RENDER's 2.26 ms IS **THE NEXT PORT-SIDE TERM**, AND **NOTHING HAS EVER
 ATTACKED IT**: §132--§134 ALL CUT THE **DECODE**, WHICH IS 0.99 ms. MEASURED, THE RENDER's SHAPE
 (THE PROFILER's INCLUSIVE SAMPLES, NORMALISED TO ms A TURN, 40 TURNS, 1 SAMPLE = 1.493 ms):
 
@@ -6519,7 +6519,7 @@ ATTACKED IT**: §132--§134 ALL CUT THE **DECODE**, WHICH IS 0.99 ms. MEASURED, 
 0.560  kus_rows                  0.523  _render_decl
 ```
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ AND THE CALL COUNTS, MEASURED **INSIDE** THE FUNCTION BODIES** (SO THE CALL's SHAPE
+**AND THE CALL COUNTS, MEASURED **INSIDE** THE FUNCTION BODIES** (SO THE CALL's SHAPE
 IS UNCHANGED AND THE COUNT IS WHAT "CALLS A RENDER" MEANS):
 
 ```
@@ -6529,13 +6529,13 @@ rd_base_clang  576   rd_body_at      574   rd_name_at    574   rd_base_plain 544
 st_kernel      407   ku_text_alu     294   code_for_base_of 294
 ```
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ SO §135's "NEXT TERM IS THE C-NAME MATCH" IS **MEASURED AND IT IS SMALL**:
+**SO §135's "NEXT TERM IS THE C-NAME MATCH" IS **MEASURED AND IT IS SMALL**:
 `rd_base_clang`'s INCLUSIVE TIME IS **0.223 ms A TURN** FOR 576 CALLS, AND `O.eq_op` (WHICH §138's
-FIX ALREADY LANDED) IS **0.298 ms**. ⇒⇒⇒ **NEITHER IS THE 2.26 ms.** ⇒⇒⇒ ⇒⇒⇒ AND THE TWO LARGEST
+FIX ALREADY LANDED) IS **0.298 ms**. **NEITHER IS THE 2.26 ms.** AND THE TWO LARGEST
 COUNTS ARE **17,825 `List.append` AND 13,389 `String.concat` A TURN** -- **23 LIST-APPENDS AND 17
 STRING-CONCATS PER UOP** -- SO THE NEXT QUESTION IS **THE LIST AND STRING MACHINERY**, NOT A TABLE.
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ AND THE PROBE THAT SETTLES THE ARGUMENT-ORDER QUESTION, BECAUSE THE
+**AND THE PROBE THAT SETTLES THE ARGUMENT-ORDER QUESTION, BECAUSE THE
 COMPILED FORM AND THE SOURCE APPEAR TO DISAGREE ABOUT `List.append`'s ARGUMENT ORDER**
 (`.agents/slop/parity/probe/append-order.bend`, WHICH **RUNS** AND **IS TRACKED** (A `*probe.bend` FILE IS GITIGNORED BY `.gitignore:85`, AND THE TREE's CONVENTION FOR A COMMITTED PROBE IS A `probe/` **DIRECTORY** -- 57 ARE TRACKED)):
 
@@ -6544,74 +6544,74 @@ append([a],[b,c]) = a|b|c|
 append([b,c],[a]) = b|c|a|
 ```
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **THE COMPILER DOES **NOT** REORDER** -- `base.bend`'s OWN
+****THE COMPILER DOES **NOT** REORDER** -- `base.bend`'s OWN
 `List.append(xs, ys)` PUTS `xs` FIRST, AND THE PROBE's OWN COMPILED FORM SHOWS IT
-(`$$List_append(["a"], ["b","c"])`). ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **SO THE SOURCE AND THE COMPILED FORM AGREE, AND
-THE STALE BUILD WAS SIMPLY THE PRE-FIX SOURCE.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND `base.bend`'s `List.append` IS
-**O(|xs|)** (IT WALKS TO THE TAIL AND REBUILDS) AND `List.set` IS **O(index)** -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND
+(`$$List_append(["a"], ["b","c"])`). **SO THE SOURCE AND THE COMPILED FORM AGREE, AND
+THE STALE BUILD WAS SIMPLY THE PRE-FIX SOURCE.** AND `base.bend`'s `List.append` IS
+**O(|xs|)** (IT WALKS TO THE TAIL AND REBUILDS) AND `List.set` IS **O(index)** -- AND
 `st_kernel`'s CURRENT FORM IS THE O(1) PREPEND, WHICH IS WHY `f46431e0f` LANDED.
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ AND THE TOOLING RULES THIS SECTION ESTABLISHES, BOTH MEASURED
+**AND THE TOOLING RULES THIS SECTION ESTABLISHES, BOTH MEASURED
 THE HARD WAY:**
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ (1) **A BUILD IS A SECOND SOURCE OF TRUTH, AND IT DOES NOT
+**(1) **A BUILD IS A SECOND SOURCE OF TRUTH, AND IT DOES NOT
 ANNOUNCE ITSELF.** MEASURED: A STALE `/tmp/serve_instr.bc` (BUILT FROM A BROKEN INSTRUMENT) WAS SERVED
 FOR TWO RUNS, AND THE SYMPTOM WAS "bend: no effect registers undefined" **WITH THE SOURCE ALREADY
-FIXED**. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND `_serve_bin`'s CACHE NEVER REBUILDS, SO A FIXED SOURCE AND A BROKEN BINARY
-COEXIST. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **THE FIX IS TO MEASURE A BUILD THAT IS **KNOWN** TO BE FRESH**, AND THE
+FIXED**. AND `_serve_bin`'s CACHE NEVER REBUILDS, SO A FIXED SOURCE AND A BROKEN BINARY
+COEXIST. **THE FIX IS TO MEASURE A BUILD THAT IS **KNOWN** TO BE FRESH**, AND THE
 CHEAPEST WAY TO KNOW IS TO **BUILD IT IN THE MEASUREMENT**, NOT TO FIND ONE IN `/tmp`.
 
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ (2) **THE INSTRUMENT MUST RUN UNDER `bun` AND NOT UNDER THE
+**(2) **THE INSTRUMENT MUST RUN UNDER `bun` AND NOT UNDER THE
 COMPILED EXECUTABLE.** MEASURED: `bun build --compile --minify` RELOCATES `require("fs")` INTO A
-MODULE SCOPE WHERE THE PATCH IS NOT. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND **A REST-ARGUMENTS WRAPPER IS NOT FREE**:
+MODULE SCOPE WHERE THE PATCH IS NOT. AND **A REST-ARGUMENTS WRAPPER IS NOT FREE**:
 MEASURED, WRAPPING SEVEN FUNCTIONS IN `(...a) => f(...a)` MOVED THE RENDER FROM **2.265 ms TO 3.494
-ms** -- **A 54% INSTRUMENT OVERHEAD ON THE VERY THING BEING MEASURED.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THAT IS WHY THE CLOCKS ARE **INSIDE** THE FUNCTIONS
+ms** -- **A 54% INSTRUMENT OVERHEAD ON THE VERY THING BEING MEASURED.** **
+AND THAT IS WHY THE CLOCKS ARE **INSIDE** THE FUNCTIONS
 AND NOT AROUND THEM, AND WHY THE COUNTS ARE **INSIDE** THE FUNCTION BODIES AND NOT AT THE CALL
 SITES.**
 
 ### 137 THE OP EQUALITY IS **ONE** COMPARISON PER LITERAL, AND THE RENDER IS **13% FASTER**
 
-**⇒ ⇒ ⇒ §136 FOUND THE TARGET -- **THE RENDER**, AT **2.26 ms** OF A **3.97 ms** TURN -- AND THIS
-SECTION IS **THE FIRST CHANGE THAT ATTACKS IT**. ⇒ ⇒ ⇒ THE RENDER's SHAPE WAS MEASURED (THE
+**§136 FOUND THE TARGET -- **THE RENDER**, AT **2.26 ms** OF A **3.97 ms** TURN -- AND THIS
+SECTION IS **THE FIRST CHANGE THAT ATTACKS IT**. THE RENDER's SHAPE WAS MEASURED (THE
 PROFILER's INCLUSIVE SAMPLES, NORMALISED TO ms A TURN): `_render_named` **2.389** →
 `ku_text` **1.157** + `_render_emit` **1.045** → `_render_stmt` **0.597** → `_render_decl`
 **0.523**; AND THE **LEAVES** UNDER IT ARE **66% OF THE RENDER**, AND **THE TOP LEAF IS
-`cstyle_eq_op` AT 0.746 ms** -- ⇒⇒⇒ ⇒⇒⇒ **THE 75-ARM CHAIN, AND NOT THE STRING OR LIST
+`cstyle_eq_op` AT 0.746 ms** -- **THE 75-ARM CHAIN, AND NOT THE STRING OR LIST
 MACHINERY.**
 
-**⇒ ⇒ ⇒ ⇒⇒⇒ THE COUNT, MEASURED **INSIDE** THE FUNCTION BODY (SO THE CALL's SHAPE IS UNCHANGED):
+**THE COUNT, MEASURED **INSIDE** THE FUNCTION BODY (SO THE CALL's SHAPE IS UNCHANGED):
 **30,608 `cstyle.eq_op` CALLS A TURN**, ~**39 A UOP** -- `ku_inline2a` 3,220 · `ku_strips` 3,010 ·
 `ku_inline_op_set` 1,932 · `ku_inline2b2a` 1,288 · `ku_not_stmt_op` 1,221 · `_render_pop` 1,221 ·
 `_render_push` 814 · `ku_inline` 644 · `ku_inline2b1` 644 · `ku_is_alu_ex_where` 644 ·
-`ku_alu_srcs_go` 602 · `_render_plain` 48. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **AND AT THE ENUM's ORDER AN `OpsADD`
-COMPARISON IS THE **30TH**, AN `OpsMUL` THE 31ST, AN `OpsLOAD` THE 18TH -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-**⇒⇒⇒ THE TURN PAID ~1.13 MILLION STRING TAG COMPARISONS.**
+`ku_alu_srcs_go` 602 · `_render_plain` 48. **AND AT THE ENUM's ORDER AN `OpsADD`
+COMPARISON IS THE **30TH**, AN `OpsMUL` THE 31ST, AN `OpsLOAD` THE 18TH -- 
+**THE TURN PAID ~1.13 MILLION STRING TAG COMPARISONS.**
 
-**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ THE FIX, AND IT IS **THE HOUSE PATTERN** THAT WAS ALREADY THERE. ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-AT **18 OF THE 19** CALL SITES THE SECOND ARGUMENT IS **A LITERAL** -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **SO THE
+**THE FIX, AND IT IS **THE HOUSE PATTERN** THAT WAS ALREADY THERE. 
+AT **18 OF THE 19** CALL SITES THE SECOND ARGUMENT IS **A LITERAL** -- **SO THE
 QUESTION IS *IS THIS OP's TAG THE CONSTANT `OpsADD`?* -- WHICH IS **ONE** COMPARISON WHEN IT IS
-WRITTEN AS A MATCH **ON THE VARIABLE** WITH THE LITERAL AS THE **ONLY** ARM.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ **⇒⇒⇒ AND **FOUR SUCH PREDICATES ALREADY EXISTED** -- `is_index`, `is_cast`, `is_const`,
-`is_add` -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ `eq_op` WAS THE **LEFTOVER** THAT NONE OF THEM
+WRITTEN AS A MATCH **ON THE VARIABLE** WITH THE LITERAL AS THE **ONLY** ARM.** 
+**AND **FOUR SUCH PREDICATES ALREADY EXISTED** -- `is_index`, `is_cast`, `is_const`,
+`is_add` -- **`eq_op` WAS THE **LEFTOVER** THAT NONE OF THEM
 REPLACED**, AND THE CHANGE IS **18 MORE PREDICATES** AND **29 CALL SITES** REWRITTEN.**
 
-**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ MEASURED, IN ONE PROGRAM, ON THE SAME WORKLOAD** (THE ELEVEN OPS THE
+****MEASURED, IN ONE PROGRAM, ON THE SAME WORKLOAD** (THE ELEVEN OPS THE
 RENDER SEES, EACH COMPARED AGAINST ELEVEN LITERALS), **BY CPU TIME**: `eq_op` **1537 us** AND THE
-PREDICATES **293 us** -- **A RATIO OF 0.1906**, SO THE PREDICATES COST **80.9% LESS**. ⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ ⇒⇒⇒ **AND THE TWO FORMS' ANSWERS **AGREE** (MEASURED, `same T`), SO THIS IS NOT A SEMANTIC
-CHANGE.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ AND WHY A GENERIC HELPER IS NOT THE SHAPE: A `match` CANNOT
+PREDICATES **293 us** -- **A RATIO OF 0.1906**, SO THE PREDICATES COST **80.9% LESS**. 
+**AND THE TWO FORMS' ANSWERS **AGREE** (MEASURED, `same T`), SO THIS IS NOT A SEMANTIC
+CHANGE.** **AND WHY A GENERIC HELPER IS NOT THE SHAPE: A `match` CANNOT
 SCRUTINIZE A **COMPUTED VALUE** (\"give it its own def\"), AND A NESTED `match` ON A CALL IS REFUSED
-TOO -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ SO THE LITERAL MUST BE ITS OWN ARM, WHICH IS WHY THERE IS
-**ONE PREDICATE PER LITERAL** AND NOT **ONE** HELPER.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ AND `eq_op`
+TOO -- **SO THE LITERAL MUST BE ITS OWN ARM, WHICH IS WHY THERE IS
+**ONE PREDICATE PER LITERAL** AND NOT **ONE** HELPER.** **AND `eq_op`
 ITSELF STAYS, FOR THE **ONE** CALL SITE THAT COMPARES **TWO VARIABLES**
 (`eq_op(ku_op_at(kus, h), op)`).**
 
-**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ON THE TREE, THE **RENDER's OWN WALL** (THE CLOCK IS **INSIDE**
+****ON THE TREE, THE **RENDER's OWN WALL** (THE CLOCK IS **INSIDE**
 THE RENDER, SO IT IS **THE PORT's WORK** AND NOT THE CALLER's WAIT), **100 PAIRED TURNS** -- THE TWO
 DAEMONS **ALTERNATED TURN BY TURN**, BECAUSE MEASURED, THE MACHINE RAN AT **LOAD AVERAGE 20–47**
 WITH OTHER UNITS' `tsc --noEmit` AT **354%/153%/131%** AND **A WHOLE-SIDE RUN's MEDIAN MOVED BY
-2.4x BETWEEN RUNS ON THE **SAME** BUILD -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ A WHOLE-SIDE RUN
+2.4x BETWEEN RUNS ON THE **SAME** BUILD -- **A WHOLE-SIDE RUN
 IS **A MEASUREMENT OF THE LOAD**; AN ALTERNATED PAIR IS **A COMPARISON**:**
 
 ```
@@ -6620,11 +6620,11 @@ RUN 2  RATIO 0.8766   74/100 FASTER   same C: True
 RUN 3  RATIO 0.8763   75/100 FASTER   same C: True
 ```
 
-**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ THE **WHOLE TURN** (THE CALLER's WALL) IS **0.9432**, BECAUSE THE
-RENDER's 13% IS DILUTED BY THE **DECODE** AND THE **CALLER's ROUND TRIP** -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-**⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE DECODE IS THE **NEXT** PORT-SIDE TERM, AT **0.99 ms** (§136).**
+****THE **WHOLE TURN** (THE CALLER's WALL) IS **0.9432**, BECAUSE THE
+RENDER's 13% IS DILUTED BY THE **DECODE** AND THE **CALLER's ROUND TRIP** -- 
+**AND THE DECODE IS THE **NEXT** PORT-SIDE TERM, AT **0.99 ms** (§136).**
 
-**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ AND THE **CERTIFICATE**, TAKEN IN A **CLEAN WORKTREE** BECAUSE
+****AND THE **CERTIFICATE**, TAKEN IN A **CLEAN WORKTREE** BECAUSE
 ANOTHER UNIT HAD AN IN-FLIGHT EDIT IN THE MAIN TREE (WHICH MOVED `substrate-end`):**
 
 ```
@@ -6638,31 +6638,31 @@ repro: 339 of 339 files identical across two clean runs
 corpuswitness-gate: PASS -- the claim is ESTABLISHED
 ```
 
-**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE **SEVEN** DISAGREEMENTS ARE THE **RECORDED** PERMUTE
+****AND THE **SEVEN** DISAGREEMENTS ARE THE **RECORDED** PERMUTE
 EXCEPTIONS (`matmul`, `reduce`, `commute`, `binblob`, `flip`, `bw`, `gral`) -- **UNCHANGED** BY THIS
-COMMIT, WHICH IS WHAT "THE C DID NOT MOVE" MEANS.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND THE
+COMMIT, WHICH IS WHAT "THE C DID NOT MOVE" MEANS.** **AND THE
 PROOF GATE IS **GREEN**: `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` → **rc=0**,
 "ALL PROOFS CHECK".**
 
-**⇒ ⇒ ⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND **TWO TOOLING NOTES §136 ESTABLISHED, BOTH REPAID**:
-**⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ (1) **A BUILD IS A SECOND SOURCE OF TRUTH**, AND IT DOES
+****AND **TWO TOOLING NOTES §136 ESTABLISHED, BOTH REPAID**:
+****(1) **A BUILD IS A SECOND SOURCE OF TRUTH**, AND IT DOES
 NOT ANNOUNCE ITSELF** -- MEASURED, `/tmp/serve_final135.js` WAS FROM **Nov 7 23:08** AND TWO FIXES
-LANDED AT **Nov 8 00:55** AND **00:57**, ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ SO EVERY
-NUMBER MEASURED AGAINST IT WAS A NUMBER ABOUT **A PROGRAM THAT IS NOT THE TREE**; ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ (2) **`RUSAGE_CHILDREN` IS **STALE UNTIL THE CHILD IS REAPED** --
+LANDED AT **Nov 8 00:55** AND **00:57**, **SO EVERY
+NUMBER MEASURED AGAINST IT WAS A NUMBER ABOUT **A PROGRAM THAT IS NOT THE TREE**; 
+**(2) **`RUSAGE_CHILDREN` IS **STALE UNTIL THE CHILD IS REAPED** --
 MEASURED, IT READ `(0.0, 0.0)` WHILE THE DAEMON WAS RUNNING AND THE NUMBERS ONLY APPEARED AFTER
-`kill(); wait()`** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-**⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ SO THE CPU CLOCK IS **THE DAEMON's OWN `process.cpuUsage()`**,
-READ **INSIDE** IT.** ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-**⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ AND ON A **LOADED** MACHINE EVEN THAT IS **NOISE**:
+`kill(); wait()`** **
+**SO THE CPU CLOCK IS **THE DAEMON's OWN `process.cpuUsage()`**,
+READ **INSIDE** IT.** **
+**AND ON A **LOADED** MACHINE EVEN THAT IS **NOISE**:
 MEASURED, THE RENDER's **CPU** RATIO READ **1.1746** (A LOSS) WHERE THE **WALL** READ **0.9029** (A
-WIN) ON THE **SAME** TURNS -- ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ **⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
-⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒ ⇒⇒⇒
+WIN) ON THE **SAME** TURNS -- **
+****
+
+
+
+
+
 
 
 

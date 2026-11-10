@@ -72,7 +72,7 @@ W=${1:-${TMPDIR}opencode/f64-lane}
 # `mkdir -p "$W"` created a directory NAMED `--help` AT THE REPO ROOT, holding this
 # script's own `.log` files and two `.txt` dumps -- and `checks/no-txt.py` OWNS those
 # `.txt` files, so a stray directory became HARD debt the `.txt` gate charges.
-# **⇒ A DIRECTORY ARGUMENT IS **REFUSED **WHEN **IT **LOOKS **LIKE **A **FLAG**, **AND
+# **A DIRECTORY ARGUMENT IS **REFUSED **WHEN **IT **LOOKS **LIKE **A **FLAG**, **AND
 # **IT **IS **REFUSED **WHEN **IT **WOULD **LAND **INSIDE **THE **REPO** -- **BOTH
 # **BECAUSE **THE **WRITE **IS **THE **DAMAGE**, **AND **BECAUSE **A **DIRECTORY **AT
 # **THE **REPO **ROOT **IS **A **PATH **THE **TREE **OWNS.** **EXIT **3** **IS **THE
@@ -127,13 +127,13 @@ hr
 say "== 0  THE SUBSTRATE, AND A REPAIR THAT IS CHECKED RATHER THAN ASSERTED"
 LIVE_SHA=$(shasum -a 256 "$ROOT/tinybendygrad/renderer/cstyle.bend" | cut -d' ' -f1)
 say "   live   renderer/cstyle.bend sha256 $LIVE_SHA"
-# **⇒ AND THE QUOTED LOG IS **OPTIONAL**, AND THAT IS A CORRECTION.** The line
+# **AND THE QUOTED LOG IS **OPTIONAL**, AND THAT IS A CORRECTION.** The line
 # quoted `checks/.e2e-fixture/cstyle-live/run-all.log`, which was **NEVER
 # TRACKED**: it is the captured stdout of `.agents/slop/cstyle-live/run-all.sh`,
 # and a CAPTURED STREAM IS AN OUTPUT, NOT A REQUIREMENT (`AGENTS.md` says so, and
-# `checks/*.out` is ignored for exactly this reason). **⇒ AND THE FIXTURE MOVE
+# `checks/*.out` is ignored for exactly this reason). **AND THE FIXTURE MOVE
 # OUT OF THE PRUNED TREE (0841bcfb0) MOVED THE SCRIPT AND NOT THE LOG**, so the
-# lane printed an EMPTY sha256 and carried on. **⇒ AND THE QUOTE IS NOW SAID TO
+# lane printed an EMPTY sha256 and carried on. **AND THE QUOTE IS NOW SAID TO
 # BE ABSENT RATHER THAN QUOTED AS AN EMPTY HASH.**
 RUNALL_LOG="$ROOT/checks/.e2e-fixture/cstyle-live/run-all.log"
 if [ -f "$RUNALL_LOG" ]; then
@@ -159,7 +159,7 @@ rm -rf "$NC"; mkdir -p "$NC/.agents/slop" "$NC/checks/.e2e-fixture" "$NC/gates" 
 cp -R "$ROOT/tinybendygrad" "$NC/tinybendygrad" || exit 1
 cp -R "$ROOT/checks/.e2e-fixture/portexec" "$NC/checks/.e2e-fixture/portexec" || exit 1
 cp -R "$F64" "$NC/checks/.e2e-fixture/f64" || exit 1
-# **⇒ AND THE TRACKED ROWS FILE GOES IN, FOR THE SAME REASON THE e2e_port LANE's
+# **AND THE TRACKED ROWS FILE GOES IN, FOR THE SAME REASON THE e2e_port LANE's
 # COPY NEEDS IT.** `portexec/run-kernel.sh` reads the port's own rows from
 # `$ROOT/gates/cstyle-live.rows`, and `plant.py` re-points the copy's `ROOT` at
 # the COPY -- so the copy's `gates/` must hold it, or the lane dies with

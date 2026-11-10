@@ -11,16 +11,16 @@ WHAT IT ANSWERS, AND NOTHING MORE:
     3. `linearize`                                (linearizer.py:7)
     4. `ClangRenderer.render`                     (cstyle.py:268)
 
-  **⇒ AND THE QUESTION IT SETTLES IS WHETHER THE PORT's RENDERED C IS CPYTHON's
+  **AND THE QUESTION IT SETTLES IS WHETHER THE PORT's RENDERED C IS CPYTHON's
   RENDERED C.** The port answered 198 bytes with `Lidx0 < ;` -- an EMPTY TRIP
   COUNT -- so the comparison is the thing that says whether that is a port
   defect or the shape of this program.
 
-**⇒ AND THE KERNEL IS A STORE, NOT A CALL, BECAUSE THE PORT's `split_kernels`
+**AND THE KERNEL IS A STORE, NOT A CALL, BECAUSE THE PORT's `split_kernels`
 IS A STUB.** `rangeify.bend:811`'s `sk_0` answers `M.Hop{ar, 0}` -- "no
 rewrite" -- where upstream's `split_store` (`rangeify.py:326-335`) builds
 `ret.sink(arg=KernelInfo()).call(*lctx.map.values())`. So CPython's kernel is a
-CALL and the port's is the STORE the END wrapped. **⇒ AND THAT IS A NAMED WALL,
+CALL and the port's is the STORE the END wrapped. **AND THAT IS A NAMED WALL,
 NOT A SILENT ONE**, and it is why the two kernels are compared by their BODIES
 rather than by their root ops.
 """
@@ -65,25 +65,25 @@ def main():
         print(f"py_kernel[{i}]={k.op}")
 
     k = lin.src[0]
-    # **⇒ AND THE ORACLE USES CPYTHON's OWN `do_to_program`, NOT A HAND-WIRED
+    # **AND THE ORACLE USES CPYTHON's OWN `do_to_program`, NOT A HAND-WIRED
     # `linearize` + `render`.** The hand-wired version died with
     # `KeyError: dtypes.weakint` from `ClangRenderer.type_map`, because
     # `linearize` alone does NOT lower `weakint` to `int32` -- `do_to_program`
     # (`codegen/__init__.py:475`) runs `full_rewrite_to_sink` first, which is
-    # where the weak dtypes become concrete. **⇒ SO A HAND-WIRED ORACLE WOULD BE
+    # where the weak dtypes become concrete. **SO A HAND-WIRED ORACLE WOULD BE
     # A SECOND, WRONG PIPELINE**, and the whole point of an oracle is that it is
     # CPython's own.
     #
-    # **⇒ AND `do_to_program` NEEDS `ast.arg` TO BE A `KernelInfo`**
+    # **AND `do_to_program` NEEDS `ast.arg` TO BE A `KernelInfo`**
     # (`:488` asserts it), which `split_store` puts there
-    # (`rangeify.py:335`: `ret.sink(arg=KernelInfo())`). **⇒ AND THE PORT HAS
+    # (`rangeify.py:335`: `ret.sink(arg=KernelInfo())`). **AND THE PORT HAS
     # `KernelInfo` TOO** (`c2fbda4ca` made it upstream's six fields), which is
     # what makes this comparison meaningful rather than one-sided.
     from tinygrad.device import Device
     from tinygrad.codegen import do_to_program
     ast = k.src[0]
     prg = do_to_program(ast, Device["CPU"].renderer)
-    # **⇒ AND `PROGRAM`'s SOURCE IS AT `src[2]`, NOT `src[1]`** -- MEASURED:
+    # **AND `PROGRAM`'s SOURCE IS AT `src[2]`, NOT `src[1]`** -- MEASURED:
     # `src[0]=SINK(KernelInfo)`, `src[1]=LINEAR(None)`, `src[2]=SOURCE(str)`,
     # `src[3]=BINARY(bytes)`. A reader that took `src[1]` got `None` and printed
     # `py_c_nbytes=4`, which is the length of the string `"None"` -- a WRONG

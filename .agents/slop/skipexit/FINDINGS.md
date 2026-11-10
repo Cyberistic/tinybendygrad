@@ -68,7 +68,7 @@ Three options were on the table. The measurement that settled it is that the thr
 the table above are three distinct calls a caller can legitimately make, and the SKIP one was
 folded into PASS.
 
-**Option 1, SKIP ⇒ non-zero.** Rejected: the only non-zero it could reach that is not already
+**Option 1, SKIP => non-zero.** Rejected: the only non-zero it could reach that is not already
 spoken for is 1 or 2, and both are taken by *this* script (`1` = a stage RAN and failed,
 `2` = eight fruitless `bend` attempts). Collapsing SKIP into 1 destroys the distinction the
 three-outcome design exists for — "the port is broken" versus "this machine cannot judge" —

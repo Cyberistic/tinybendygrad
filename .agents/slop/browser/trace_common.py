@@ -6,7 +6,7 @@
 WHY THIS FILE EXISTS AND NOT AN EDIT TO `.agents/slop/xd2/trace_forward.py`.
 `AGENTS.md` records the rule and the cost: *"a SCRIPT that others are EXECUTING
 is SHARED STATE TOO, and EDITING IT IN PLACE IS THE HAZARD ... THE SAFE FORM IS
-TO WRITE A NEW PATH AND LEAVE THE OLD ONE ALONE."* **⇒ SO THIS IS A NEW PATH.**
+TO WRITE A NEW PATH AND LEAVE THE OLD ONE ALONE."* **SO THIS IS A NEW PATH.**
 `xd2/trace_forward.py` is STALE and now raises `AttributeError: 'Buffer' object
 has no attribute 'size'`; it is REPORTED here rather than patched.
 
@@ -17,14 +17,14 @@ THE ONE SUBSTRATE FACT THAT MOVED, MEASURED:
      'ensure_allocated', 'get_buf', 'get_storage', 'host', 'is_allocated', 'meta',
      'profile_events', 'trace_num', 'view']
 
-**⇒ `size` IS GONE AND `nbytes` IS WHAT IT BECAME** (`tinygrad/device.py:116`
-sets `self.device, self.nbytes, self.offset, self._base`). **⇒ AND THE TRACER
+**`size` IS GONE AND `nbytes` IS WHAT IT BECAME** (`tinygrad/device.py:116`
+sets `self.device, self.nbytes, self.offset, self._base`). **AND THE TRACER
 WENT STALE SILENTLY**: nothing read the tracer, so nothing noticed -- which is
 the same class the tree names for a gate that is never run.
 
 EVERYTHING ELSE IS `xd2/trace_forward.py`'s, AND IT WAS GOOD: the
 `exec_kernel` hook, the two measured WGSL shims, the buffer naming with its
-strong-ref list, and the per-launch `after` snapshot. **⇒ THE HOOK IS THE PART
+strong-ref list, and the per-launch `after` snapshot. **THE HOOK IS THE PART
 THAT MATTERS: it wraps `tinygrad/engine/realize.py`'s ONE place that knows every
 launch's binding order, dispatch geometry and buffer contents, so nothing about
 the schedule is re-derived here.**
@@ -36,26 +36,26 @@ import pathlib
 import re
 import sys
 
-# **⇒ `DEV=CPU` MUST BE SET BEFORE TINYGRAD IMPORTS, AND ITS ABSENCE IS WHAT
+# **`DEV=CPU` MUST BE SET BEFORE TINYGRAD IMPORTS, AND ITS ABSENCE IS WHAT
 # MADE THE FIRST THREE ATTEMPTS AT THIS TRACER FAIL.** MEASURED: with no `DEV`
 # the default device on darwin is `METAL`, so the traced AST was a METAL kernel
 # and `to_program(..., WGSLRenderer)` died with
-# `RuntimeError: long decomposition of variable None unsupported`. **⇒ AND THE
+# `RuntimeError: long decomposition of variable None unsupported`. **AND THE
 # CAUSE WAS TWO U64 `PARAM`s NAMED `mtl_cb` AND `mtl_enc`** --
 # `tinygrad/runtime/ops_metal.py:104` mints exactly those for a Metal command
 # buffer and encoder -- so the "u64 problem" was never WGSL's: it was a METAL
-# kernel handed to a WGSL renderer. **⇒ A DECOMPOSITION ERROR IS A SYMPTOM AND
+# kernel handed to a WGSL renderer. **A DECOMPOSITION ERROR IS A SYMPTOM AND
 # THE PARAM NAMES WERE THE EVIDENCE.**
 os.environ.setdefault("DEV", "CPU")
 
-# **⇒ AND `DMC=1` IS REQUIRED FOR THE BACKWARD PASS, AND IT IS MEASURED.**
+# **AND `DMC=1` IS REQUIRED FOR THE BACKWARD PASS, AND IT IS MEASURED.**
 # ONE of the training step's 90 launches failed to render with
 # `AssertionError: memory coalescing does not support gated loads/stores`
 # (`tinygrad/codegen/late/coalesce.py`), and it is the cross-entropy kernel:
 # a `WHERE`-guarded LOAD is exactly what the coalescer cannot vectorise.
-# **⇒ AND `DMC` IS TINYGRAD's OWN SWITCH FOR IT** -- "1=skip memory coalescing
+# **AND `DMC` IS TINYGRAD's OWN SWITCH FOR IT** -- "1=skip memory coalescing
 # pass" -- so this is the compiler's own flag and not a patch. **MEASURED:
-# `DMC=0` renders 89 of 90; `DMC=1` renders 90 of 90.** **⇒ AND IT IS HONEST
+# `DMC=0` renders 89 of 90; `DMC=1` renders 90 of 90.** **AND IT IS HONEST
 # RATHER THAN CONVENIENT: the traced AST is the CPU's, and the CPU does not
 # coalesce either, so the un-coalesced WGSL is the same arithmetic the CPU ran.**
 os.environ.setdefault("DMC", "1")
@@ -85,12 +85,12 @@ ENTRY_RE = re.compile(r"@compute[^\n]*\bfn\s+(\w+)\s*\(", re.M)
 def raw_of(buf) -> bytes:
     """The buffer's bytes as the page will upload them.
 
-    **⇒ AND `as_memoryview` READS THE **BASE ALLOCATION**, NOT THE VIEW.** A
+    **AND `as_memoryview` READS THE **BASE ALLOCATION**, NOT THE VIEW.** A
     `Buffer` can be a view with `nbytes` smaller than its `base`'s, so a `size`
     taken from `buf.nbytes` and a payload taken from `as_memoryview(buf)` are TWO
-    DIFFERENT LENGTHS. **⇒ MEASURED: EfficientNet's replay died with `Write range
+    DIFFERENT LENGTHS. **MEASURED: EfficientNet's replay died with `Write range
     (size: 4816896) does not fit in [Buffer] size (1605632)`**, which is exactly
-    that mismatch. **⇒ SO THE SIZE IS DERIVED FROM THE BYTES AND NOT READ FROM A
+    that mismatch. **SO THE SIZE IS DERIVED FROM THE BYTES AND NOT READ FROM A
     FIELD**, and the two cannot disagree by construction.
     """
     return bytes(buf.as_memoryview(allow_zero_copy=True))
@@ -99,16 +99,16 @@ def raw_of(buf) -> bytes:
 def bits_of(buf) -> str:
     """The buffer's bytes, base64'd -- exactly the u32 words the gate is about.
 
-    **⇒ AND `buf.dtype` IS READ OFF `buf.base`, NOT `buf`**: a `Buffer` here has
+    **AND `buf.dtype` IS READ OFF `buf.base`, NOT `buf`**: a `Buffer` here has
     no `dtype` of its own (`tinygrad/device.py:116`), the ALLOCATION does.
     """
     raw = bytes(buf.as_memoryview(allow_zero_copy=True))
-    # **⇒ AND `buf.dtype` DOES NOT EXIST ANY MORE**, AND NEITHER DOES
+    # **AND `buf.dtype` DOES NOT EXIST ANY MORE**, AND NEITHER DOES
     # `buf.base.dtype`: MEASURED, `AttributeError: 'Buffer' object has no
     # attribute 'dtype'` (`tinygrad/device.py:116` sets only
-    # `device, nbytes, offset, base`). **⇒ THE DTYPE LIVES ON THE UOP THAT OWNS
+    # `device, nbytes, offset, base`). **THE DTYPE LIVES ON THE UOP THAT OWNS
     # THE BUFFER**, so this function reads BYTES and the caller names the dtype
-    # from the CALL. **⇒ AND THE 4-BYTE TEST WENT WITH IT**: `len(raw) %
+    # from the CALL. **AND THE 4-BYTE TEST WENT WITH IT**: `len(raw) %
     # itemsize` cannot be asked of a Buffer that does not carry one, so the
     # caller asks the UOP instead.
     return base64.b64encode(raw).decode("ascii")
@@ -149,15 +149,15 @@ class BrowserWGSL(WGSLRenderer):
     GAP 2 -- `float4` is None (`supports_float4 = False`, wgsl.py:58), and that
     flag is read in exactly ONE place (`coalesce.py:143`), which gates only
     vectorised LOAD/STORE; a STACK built elsewhere still reaches
-    `string_rewrite` and raises `AttributeError: 'NoneType' ...`. **⇒ AND THE
+    `string_rewrite` and raises `AttributeError: 'NoneType' ...`. **AND THE
     ARITY COMES FROM THE STACK's OWN SRC COUNT** -- the max-pool kernel stacks
     two f32 and `vec4<f32>(a, b)` is rejected by WGSL.
 
-    **⇒ AND NO THIRD SHIM IS ADDED HERE, ON PURPOSE.** A shim covers a MEASURED
+    **AND NO THIRD SHIM IS ADDED HERE, ON PURPOSE.** A shim covers a MEASURED
     gap; guessing at `Ops.CMOD`/`Ops.THREEFRY` before a trace asks for one would
     be inventing arithmetic, and my first draft invented `Ops.FMOD`, **WHICH IS
     NOT IN THIS ENUM AT ALL** (`AttributeError: type object 'Ops' has no
-    attribute 'FMOD'`). **⇒ THE TRACE PRINTS EVERY LAUNCH IT COULD NOT RENDER**,
+    attribute 'FMOD'`). **THE TRACE PRINTS EVERY LAUNCH IT COULD NOT RENDER**,
     so the gaps the backward pass really hits are NAMED by the run and not by me.
     """
     string_rewrite = PatternMatcher([
@@ -190,7 +190,7 @@ def traced_exec_kernel(ctx, call, ast, devices=None):
             rec["wgsl"] = src[0] if src else None
             # THE ENTRY POINT IS READ OUT OF THE WGSL, because that string is
             # what the browser hands `createComputePipeline`. The fallback is
-            # the KernelInfo's own name -- **⇒ AND IT IS `ast.arg.name`, NOT
+            # the KernelInfo's own name -- **AND IT IS `ast.arg.name`, NOT
             # `ProgramInfo.function_name`**: MEASURED, `ProgramInfo` now carries
             # `global_size, local_size, params, globals, outs, ins, target` and
             # nothing else.
@@ -215,10 +215,10 @@ def traced_exec_kernel(ctx, call, ast, devices=None):
                 buffers[n] = {"size": len(raw_of(b)),
                               "dtype": str(dt) if dt is not None else "-",
                               "f32": dt is not None and getattr(dt, "itemsize", 0) == 4,
-                              # **⇒ AND `w32` IS WHAT THE SNAPSHOTS FILTER ON, NOT
+                              # **AND `w32` IS WHAT THE SNAPSHOTS FILTER ON, NOT
                               # `f32`, AND THE DIFFERENCE IS A MEASURED BUG.** The
                               # filter was `itemsize == 4`, which is TRUE FOR i32 AND
-                              # u32 TOO -- **⇒ BUT THE FIRST VERSION ASKED FOR `f32`
+                              # u32 TOO -- **BUT THE FIRST VERSION ASKED FOR `f32`
                               # AND SO RECORDED **NO SNAPSHOT AT ALL** FOR AN INT32
                               # BUFFER.** MEASURED: the MNIST training step's LABEL is
                               # an i32 buffer, so it was never uploaded, the
@@ -228,15 +228,15 @@ def traced_exec_kernel(ctx, call, ast, devices=None):
                               "w32": dt is not None and getattr(dt, "itemsize", 0) == 4,
                               "b64": payload}
             rec["bufs"].append(n)
-        # **⇒ AND THE `vals` UNIFORMS **ARE** RECORDED, AND DROPPING THEM WAS A
+        # **AND THE `vals` UNIFORMS **ARE** RECORDED, AND DROPPING THEM WAS A
         # MEASURED BUG.** `ProgramInfo` has no `vals` any more (the 2026-10-20
         # re-vendor, upstream `a6addc2d4`), so the first version of this tracer
-        # recorded none -- **⇒ AND THE PAGE THEN BUILT BIND GROUPS WITH TOO FEW
+        # recorded none -- **AND THE PAGE THEN BUILT BIND GROUPS WITH TOO FEW
         # ENTRIES, SO EVERY KERNEL THAT TAKES A SCALAR `vals` DID NOT RUN AND ITS
         # OUTPUT BUFFER KEPT ITS FILL.** MEASURED: 26 of 50 buffers agreed and the
         # rest held `0` or `1.0f`.
         #
-        # **⇒ AND THE READING IS `exec_kernel`'s OWN** (`realize.py:164-166`): the
+        # **AND THE READING IS `exec_kernel`'s OWN** (`realize.py:164-166`): the
         # kernel's params in SLOT ORDER, and a param is a `vals` scalar iff its
         # addrspace is ALU. Its value is the bound variable's value, or the
         # resolved `call.src[1+slot]`'s constant.
@@ -273,7 +273,7 @@ _written: set = set()
 
 
 def install() -> None:
-    """Put the hook on. **⇒ AND THE RETURNED `restore` MUST BE CALLED**, or every
+    """Put the hook on. **AND THE RETURNED `restore` MUST BE CALLED**, or every
     later realize in the process is traced too."""
     RZ.exec_kernel = traced_exec_kernel
 
@@ -290,16 +290,16 @@ def reset() -> None:
 def normalize_sizes(buffers: dict, frames: list, final: dict) -> int:
     """Make ONE allocation SIZE per buffer name: the longest payload seen.
 
-    **⇒ AND A BASE ALLOCATION CAN BE **REALLOCATED BIGGER** DURING A TRACE**, so
+    **AND A BASE ALLOCATION CAN BE **REALLOCATED BIGGER** DURING A TRACE**, so
     one name can carry two payload lengths -- MEASURED: `Write range (size:
     4816896) does not fit in [Buffer] size (1605632)` on EfficientNet's replay,
     because the first-bind view was 1605632 bytes and a later snapshot of the SAME
     allocation was 4816896.
 
-    **⇒ AND ONLY THE **SIZE** MOVES. THE PAYLOADS ARE LEFT ALONE**, because a
+    **AND ONLY THE **SIZE** MOVES. THE PAYLOADS ARE LEFT ALONE**, because a
     `Queue.writeBuffer` of FEWER bytes than the buffer is legal and leaves the
     rest at whatever they were -- which for a freshly created `GPUBuffer` is
-    zero. **⇒ PADDING THE PAYLOADS INSTEAD WAS MEASURED TO BE WRONG: it rewrote
+    zero. **PADDING THE PAYLOADS INSTEAD WAS MEASURED TO BE WRONG: it rewrote
     215 payloads and took the JSON past `RangeError: Invalid string length`, so a
     transport detail became a file nobody can read.**
     """
@@ -329,14 +329,14 @@ def normalize_sizes(buffers: dict, frames: list, final: dict) -> int:
 def intern_payloads(buffers: dict, frames: list, final: dict):
     """Replace every base64 payload with an INDEX into one deduplicated table.
 
-    **⇒ AND THE DUPLICATION IS THE WHOLE SIZE PROBLEM.** MEASURED: EfficientNet-0's
+    **AND THE DUPLICATION IS THE WHOLE SIZE PROBLEM.** MEASURED: EfficientNet-0's
     training step is **13 154 launches** and its trace was **5.5 GB** at 224x224
     and **610 MB** at 64x64 -- and the launch count did not move with the input
     size, because the WEIGHTS are re-uploaded by every launch that reads them and
-    they are BYTE-IDENTICAL every time. **⇒ SO THE FILE WAS ONE ARRAY OF THE SAME
+    they are BYTE-IDENTICAL every time. **SO THE FILE WAS ONE ARRAY OF THE SAME
     WEIGHTS COPIED TWENTY THOUSAND TIMES.**
 
-    **⇒ AND AN INDEX IS THE RIGHT SPELLING**: the page resolves
+    **AND AN INDEX IS THE RIGHT SPELLING**: the page resolves
     `typeof v === "number" ? payloads[v] : v`, so the trace keeps its shape and
     only the transport changes. Returns `(payloads, buffers, frames, final)`.
     """

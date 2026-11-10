@@ -10,16 +10,16 @@
 #   4. `kuconv.convert`                        `renderer/kuconv.bend:432`
 #   5. `C.render`                              `renderer/cstyle.bend:2297`
 #
-# **⇒ AND EVERY ONE OF THEM EXISTS. WHAT THIS FILE ASKS IS WHETHER THEY COMPOSE.**
+# **AND EVERY ONE OF THEM EXISTS. WHAT THIS FILE ASKS IS WHETHER THEY COMPOSE.**
 # A chain whose every link is measured and whose JOINTS are not is the class this
 # tree calls "a row that cannot go red" one level up: each part works, and the
 # question is the composition.
 #
-# **⇒ AND THE COMPOSITION IS THE THING NOBODY HAS MEASURED.** `cpuseam` measured
+# **AND THE COMPOSITION IS THE THING NOBODY HAS MEASURED.** `cpuseam` measured
 # links 4 and 5 on FIVE REAL MNIST KERNELS, with the `KU` list supplied by a
 # GENERATED fixture (`gen/<name>.bend`) rather than by link 3. `realize.bend`
 # measured links 1 and 2 on its own program and answered `rz_lin_n=0`, because
-# the sink was never rangeified. **⇒ AND `.agents/slop/browser/schedbridge.bend`
+# the sink was never rangeified. **AND `.agents/slop/browser/schedbridge.bend`
 # then measured that rangeifying the sink gives `bridge_lin_ranged=1`.** So this
 # file is the LAST measurement: does that one kernel render?
 import Base
@@ -45,7 +45,7 @@ def chain_sched() -> Chain:
   +q = RZ.rz_built()
   +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
   +l = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
-  # **⇒ AND `Lin.out` IS BOUND TO A `+` LOCAL AND THEN PASSED TO A DEF, NOT
+  # **AND `Lin.out` IS BOUND TO A `+` LOCAL AND THEN PASSED TO A DEF, NOT
   # MATCHED DIRECTLY** -- a `match` cannot scrutinize a local binder, which is
   # one of the four Bend facts `.agents/slop/imagenet2/REPORT.md` measured.
   chain_pick(SCH.Lin.out(l), SCH.Lin.ar(l))
@@ -61,15 +61,15 @@ def chain_k(+cc: Chain) -> U32:
     case Chain{ar, k}: k
 
 # THE SRCs OF THE KERNEL, as an index list. A STORE-carried kernel has its
-# sources directly; an END has one src (the STORE). **⇒ AND `SCH.sc_srcs` IS THE
+# sources directly; an END has one src (the STORE). **AND `SCH.sc_srcs` IS THE
 # PORT's OWN READER, so this is not a second spelling of the arena's layout.**
 def chain_lst(+ar: O.Arena, +k: U32) -> List<&2, U32>:
-  # **⇒ AND THE LIST IS THE KERNEL's **WHOLE TOPOSORT**, NOT ITS DIRECT SRCS,
+  # **AND THE LIST IS THE KERNEL's **WHOLE TOPOSORT**, NOT ITS DIRECT SRCS,
   # AND THE DIFFERENCE IS MEASURED.** Upstream's `linearize(sink:UOp)`
   # (`tinygrad/codegen/late/linearizer.py:7`) takes THE KERNEL NODE and does
   # `lst = list(sink.toposort())` INSIDE ITSELF. The port's
   # `linearize(+ar, +lst, vms, +sink)` takes the list, so the CALLER owes the
-  # toposort. **⇒ AND PASSING THE DIRECT SRCS IS WHAT PRODUCED
+  # toposort. **AND PASSING THE DIRECT SRCS IS WHAT PRODUCED
   # `void test() { * = ; }`** -- a kernel rendered from two nodes with no
   # CONSTs, no INDEX and no RANGE, which is the shape of an EMPTY BODY and not
   # of a wrong one.

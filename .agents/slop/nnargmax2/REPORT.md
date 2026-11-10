@@ -66,7 +66,7 @@ Not a value -- a SHAPE. Concretely, three things the list form never asks for:
    0-dim `idx` and a 4-element `idx` are indistinguishable to a reducer that cannot
    read shapes, and the reducer's answer decides which axis is reduced.
 
-**⇒ THE ONE THING THAT WAS MISSING WAS #2 AND #3, AND IT WAS MISSING BECAUSE THE
+**THE ONE THING THAT WAS MISSING WAS #2 AND #3, AND IT WAS MISSING BECAUSE THE
 FOLD REFUSED TO READ THE `arange`'S SHAPE. THAT IS Q4, AND Q4's CAUSE WAS FOUND.**
 
 ---
@@ -93,7 +93,7 @@ FOLD REFUSED TO READ THE `arange`'S SHAPE. THAT IS Q4, AND Q4's CAUSE WAS FOUND.
   probe asked `mxw_dims_of` and `mo_dims` and got the SAME EMPTY STRING FROM BOTH, and
   took that agreement as confirmation. **IT WAS THE SAME AMBIGUITY, TWICE.**
 
-**⇒ THE READER THAT CAN TELL THE THREE APART IS `F.fold.shape`
+**THE READER THAT CAN TELL THE THREE APART IS `F.fold.shape`
 (`tinybendygrad/uop/fold.bend:4764`), WHICH ANSWERS THE DOUBLE `Maybe`.** The probe in
 this directory uses it, and it is what `nn/argmax.bend`'s `nn_argmax_g.shp` uses.
 
@@ -122,13 +122,13 @@ case Ops.RESHAPE:
   return self.marg
 ```
 
-**⇒ THE PORT'S FOLD IS FAITHFUL. `tinybendygrad/uop/fold.bend:2180-2189`'s
+**THE PORT'S FOLD IS FAITHFUL. `tinybendygrad/uop/fold.bend:2180-2189`'s
 `reshape_ds` IS THAT `raise`, PORTED AS A REFUSAL: `reshape_ok`
 (`uop/fold.bend:2146-2149`) is the product test and `dt_of_if` drops the node when it
 fails. SO THE PORT WAS BUILDING A GRAPH THAT CPYTIN WOULD REFUSE, AND THE FOLD WAS
 SAYING SO BY BEING UNABLE TO ANSWER IT.**
 
-**⇒ AND ONE UNANSWERABLE NODE MAKES THE WHOLE GRAPH UNANSWERABLE**, because a node's
+**AND ONE UNANSWERABLE NODE MAKES THE WHOLE GRAPH UNANSWERABLE**, because a node's
 shape is a function of its source's shape and `Kahn.gather` refuses a node whose src is
 unresolved (`uop/fold.bend:4658-4672`).
 
@@ -166,7 +166,7 @@ BY THE FACTOR `k`**, so the port's reshape had `prod = k² * (i*f+1)` against a 
 `prod = k * (i*f+1)`. For `arange(4)`: upstream's number is `iz = 5` and the port's was
 `sz = 20`.
 
-**⇒ BOTH SITES ARE FIXED. AFTER THE FIX THE `arange` ROOT READS `SHAPE[4]` AND EVERY
+**BOTH SITES ARE FIXED. AFTER THE FIX THE `arange` ROOT READS `SHAPE[4]` AND EVERY
 NODE IN IT IS IN THE FOLD'S TABLE.**
 
 ### 2d. THE LAYER THAT REFUSED, NAMED
@@ -180,7 +180,7 @@ NODE IN IT IS IN THE FOLD'S TABLE.**
 | the fold's EXPAND arm | `tinybendygrad/uop/fold.bend:1736-1737` (`expand_ds`) | `marg + src_shape`, upstream's `ops.py:400-401`; **THIS ARM ALWAYS WORKED**: `B_full_root_nnshape=SHAPE[4]` -- a `full` (CONST -> CAST -> EXPAND) HAS A READABLE SHAPE |
 | the read the layers use | `tinybendygrad/nn/layers.bend:94-95` (`nn_shape`) | `nn_u32(M.mo_dims(...))` -- the second collapse |
 
-**⇒ AND THE ANSWER TO THE BRIEF'S NARROW QUESTION -- "CAN THE PORT BUILD A NODE WHOSE
+**AND THE ANSWER TO THE BRIEF'S NARROW QUESTION -- "CAN THE PORT BUILD A NODE WHOSE
 SHAPE IS `[n]`?" -- IS YES, AND IT ALWAYS COULD: `CR.cr_full` BUILDS ONE
 (`B_full_root_nnshape=SHAPE[4]`, MEASURED). WHAT IT COULD NOT DO IS BUILD UPSTREAM'S
 `arange` GRAPH, BECAUSE TWO OF THAT GRAPH'S NODES WERE ILLEGAL.**
@@ -220,7 +220,7 @@ AFTER   arange3_g=24 op=ADD nsrc=2 srcops=REDUCE|CONST                 fold_np=T
 CPython n=31  op=ADD nsrc=2 srcops=REDUCE|CONST
 ```
 
-**⇒ THE ROOT OP AND THE SRC-OPS NOW AGREE WITH CPYTIN'S EXACTLY. ONLY THE NODE COUNT
+**THE ROOT OP AND THE SRC-OPS NOW AGREE WITH CPYTIN'S EXACTLY. ONLY THE NODE COUNT
 DIFFERS: 24 AGAINST 31.** (`rand_before.out`, `rand_after.out`,
 `oracle_arange.py`'s `cp_arange3_u32`.)
 
@@ -283,7 +283,7 @@ EMPTY):
 g_ar_shape got=(4,) want=(4,)      <-- GREEN
 ```
 
-**⇒ THE ROW IS A CHECK AND NOT A LABEL.**
+**THE ROW IS A CHECK AND NOT A LABEL.**
 
 ### THE READER THE ROWS USE, AND WHY IT IS NOT `nn_shape`
 
@@ -308,7 +308,7 @@ upstream's `_pool` (`movement.py:614-632`) SEES A SOURCE OF LENGTH `2i-1`. The p
 source's and `movement.py:190`'s `return self if ret.shape == self.shape else ret` FOLDS
 THE PAD AWAY.
 
-**⇒ CONSEQUENCE, STATED SO NOBODY INVENTS A WIDER CLAIM: THE PORT'S `_pool` ARITHMETIC IS
+**CONSEQUENCE, STATED SO NOBODY INVENTS A WIDER CLAIM: THE PORT'S `_pool` ARITHMETIC IS
 COMPUTED ON THE UNPADDED LENGTH, SO THE PORT'S `arange` VALUES ARE NOT UPSTREAM'S. THE
 VALUES ARE NOT OBSERVABLE IN THE PORT (IT HAS NO EXECUTOR) AND NO ROW HERE CLAIMS THEM.
 THE `argmax`'s VALUES ARE CHECKED BY THE LIST FORM, WHICH IS UPSTREAM'S FORMULA.**
@@ -334,7 +334,7 @@ THIS GRAPH", AND AFTER THE FIX THE FOLD CAN.** MEASURED: `fold_np=False` before,
 ROWS WHOSE WHOLE CLAIM IS THAT THE FOLD CANNOT ANSWER -- A CLASS WHOSE EXPECTED ANSWER
 IS FALSE".**
 
-**⇒ THAT GATE WILL GO RED ON THOSE TWO ROWS, AND THAT IS THE FIX WORKING. THE FIX IS
+**THAT GATE WILL GO RED ON THOSE TWO ROWS, AND THAT IS THE FIX WORKING. THE FIX IS
 NOT TO MOVE THE ROW BACK; IT IS TO MOVE THE ROW OUT OF `NEG` AND TO RE-PIN THE
 DECLARED DIVERGENCES.** `gates/` IS **NOT THIS UNIT'S FILE** AND **THE BRIEF FORBIDS
 RUNNING ANY GATE**, SO THAT UPDATE IS A NAMED HAND-OVER, NOT SOMETHING DONE HERE.
@@ -368,7 +368,7 @@ NOT DONE HERE:**
   `reduce_dims` -> `drop_n`, and `nn/layers.bend:113-134`'s own header says so: "THE
   PORT'S REDUCE REDUCES THE FIRST `num_axes` AXES"), and upstream's `argmax` RESHAPES
   THE INDEX VECTOR TO `self.shape[axis], *[1]*(self.ndim-axis-1)` (`op.py:887`), WHICH
-  THE 1-D FORM DOES NOT NEED. **⇒ A 2-D `argmax` NEEDS BOTH THE MULTI-AXIS REDUCE
+  THE 1-D FORM DOES NOT NEED. **A 2-D `argmax` NEEDS BOTH THE MULTI-AXIS REDUCE
   CORRECTED AND THE INDEX VECTOR'S RESHAPE BUILT, AND NEITHER IS DONE.**
 * **THE DTYPE.** The graph form's index vector is `int32` because upstream's
   `commit_int(1, n)` IS `int32` FOR EVERY `n` THAT FITS (`rand.bend:441`'s TODO),

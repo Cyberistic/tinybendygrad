@@ -35,7 +35,7 @@ Never a corpus run. Never a parallel fixture loop. Report wall-clock of every co
 `BEND_NO_TELEMETRY=1` is exported for every `bin/bend` call, so `~/.bend/check.json`
 is not touched (the off-repo input `AGENTS.md` records).
 
-**⇒ THE COMPILER IS CHEAP HERE (≈1 s for a 2 839-line file), so the machine
+**THE COMPILER IS CHEAP HERE (≈1 s for a 2 839-line file), so the machine
 constraint is about CONCURRENCY, not about compile time. One `bend` at a time
 costs ≈1 s each and that is affordable.**
 
@@ -48,20 +48,20 @@ STAGE ORDER. The TABLES are eleven, and each is `table()` / `dispatch()` /
 | port table | `file:line` | upstream table | `file:line` | entries | LIVE rules (body ported AND able to fire) |
 |---|---|---|---|---|---|
 | `ct_table` | `:1162` | `pm_const_buffer_folding` | `rangeify.py:110` | 9 | **`ct_6`** (`:979`, INDEX(const)→const), **`ct_8`** (`:1123`, deviceless-MSTACK unwrap) |
-| `rb_table` | `:659` | `pm_remove_bufferize` | `rangeify.py:126` | 3 | **`rb_1`** (`:~610`, STORE→self ⇒ NOOP), **`rb_2`** (`:622`, END(NOOP)⇒NOOP) |
+| `rb_table` | `:659` | `pm_remove_bufferize` | `rangeify.py:126` | 3 | **`rb_1`** (`:~610`, STORE→self NOOP), **`rb_2`** (`:622`, END(NOOP) NOOP) |
 | `lb_table` | `:1463` | `pm_limit_bufs` | `rangeify.py:189` | 1 | none — `lb_0` (`:1440`) refuses to fire by construction |
-| `ab_table` | `:1622` | `pm_add_buffers` | `rangeify.py:245` | 10 | **`ab_7`** (`:1512`, drop RESHAPEs on CALL), **`ab_8`** (`:1534`, invalid write ⇒ NOOP), **`ab_9`** (`:1588`, remove_noop_afters) |
+| `ab_table` | `:1622` | `pm_add_buffers` | `rangeify.py:245` | 10 | **`ab_7`** (`:1512`, drop RESHAPEs on CALL), **`ab_8`** (`:1534`, invalid write NOOP), **`ab_9`** (`:1588`, remove_noop_afters) |
 | `aprt_table` | `:798` | `pm_add_param_range_tags` | `rangeify.py:321` | 1 | **`aprt_0`** (`:775`, `x.rtag(())`) |
 | `nic_table` | `:696` | `pm_no_indexing_calls` | `rangeify.py:155` | 1 | **`nic_0`** (`:677`, `no_indexing_calls`) |
 | `sk_table` | `:834` | `split_kernels` | `rangeify.py:337` | 1 | none — `sk_0` (`:811`) is the `graph_rewrite`-INSIDE-a-rule wall |
-| `nv_table` | `:761` | `pm_no_views` | `rangeify.py:160` | 1 | **`nv_0`** (`:737`, `v ⇒ v.src[0]`) |
+| `nv_table` | `:761` | `pm_no_views` | `rangeify.py:160` | 1 | **`nv_0`** (`:737`, `v => v.src[0]`) |
 | `fb_table` | `:1242` | `pm_flatten_bufferize` | `rangeify.py:235` | 1 | none — the `apply_movement_op` wall |
-| `dg_table` | `:1376` | `to_define_global` | `rangeify.py:302` | 7 | **`dg_3`** (`:1274`, ALU-PARAM ⇒ the scalar), **`dg_6`** (`:1282`, `renumber_range`, counter hard-wired to 0) |
+| `dg_table` | `:1376` | `to_define_global` | `rangeify.py:302` | 7 | **`dg_3`** (`:1274`, ALU-PARAM => the scalar), **`dg_6`** (`:1282`, `renumber_range`, counter hard-wired to 0) |
 | `gs_table` | `:874` | `pm_gate_substitute` | `rangeify.py:45` | 1 | none — it RAISES `BottomUpGate`, which is "no rewrite" |
 
-**⇒ ELEVEN LIVE RULES OUT OF FORTY-ONE TABLE ENTRIES.** The other thirty are
+**ELEVEN LIVE RULES OUT OF FORTY-ONE TABLE ENTRIES.** The other thirty are
 walls, and the file names each one (`# WALL(p3) rangeify.py:NN …` at
-`rangeify.bend:2654-2698`). **⇒ THE ENGINE'S JOB IS TO DRIVE THE ELEVEN, AND
+`rangeify.bend:2654-2698`). **THE ENGINE'S JOB IS TO DRIVE THE ELEVEN, AND
 THE MEASUREMENT MUST SHOW THE OTHER THIRTY AS NAMED DIVERGENCES, NOT HIDE
 THEM.**
 
@@ -80,7 +80,7 @@ THEM.**
 * **stage 2** — `self.replace[n] = self.replace[new_src_n]`, and the ANSWER is
   itself re-traversed (`ops.py:1866-1867`), so **the rule is a FIXED POINT**.
 
-**⇒ THE ENGINE IS: children first (DFS), rebuild with the children's current
+**THE ENGINE IS: children first (DFS), rebuild with the children's current
 indices, apply the table until it stops firing.** `bottom_up` additionally
 applies the table to the node BEFORE descending.
 
@@ -88,14 +88,14 @@ applies the table to the node BEFORE descending.
 
 1. **`Arena.nodes` IS TOPOLOGICALLY SORTED** — `ops.bend:2754`: *"`UOp.new` is
    only ever called with srcs already in the arena, so every node's src indices
-   are all BELOW its own position"*. ⇒ a sweep in index order IS a sweep in an
+   are all BELOW its own position"*. => a sweep in index order IS a sweep in an
    order every node's children precede it, which is the order the DFS produces.
 2. **`+` MEANS "REBINDABLE", NOT "LINEAR"** — `.agents/slop/notes/bend2-constraints.md:8633`:
    *"A `+` PARAMETER MAY BE READ MANY TIMES; A PLAIN ONE MAY BE READ ONCE."*
-   ⇒ the engine can thread an arena through a recursion without a linear-type
+   => the engine can thread an arena through a recursion without a linear-type
    fight.
 
-**⇒ THE ORDER IS NOT OBSERVABLE IN THE PORT TODAY** (every live rule is
+**THE ORDER IS NOT OBSERVABLE IN THE PORT TODAY** (every live rule is
 ctx-free), but it IS observable upstream (the `itertools.count` of
 `pm_add_buffers` at `rangeify.py:357` and of `renumber_range` at `:318`), so
 the engine records the order it used and the report says so.

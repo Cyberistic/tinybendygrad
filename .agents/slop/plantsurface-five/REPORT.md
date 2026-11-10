@@ -23,7 +23,7 @@ II SURFACE: 70 verdicts declared, 45 reached by a declared plant,
    25 not reached, 16 unplanted, 9 misplant, 0 NO-GREEN
 ```
 
-**⇒ AND THE SIX MISSING VERDICTS IN THESE FIVE GATES ARE NOW REACHED, NOT MERELY DECLARED.**
+**AND THE SIX MISSING VERDICTS IN THESE FIVE GATES ARE NOW REACHED, NOT MERELY DECLARED.**
 The census prints the reached set per gate, and for these five it reads:
 
 | gate | declared | reached | unplanted before | unplanted after |
@@ -34,14 +34,14 @@ The census prints the reached set per gate, and for these five it reads:
 | `gates/upstream-promo-lattice-gate.py` | 0/1/3 | **0/1/3** | 1 (rc 3) | **0** |
 | `checks/dup-gate.py` | 0/1/2/3 | **0/1/2/3** | 1 (rc 3) | **0** |
 
-**⇒ AND NO ROW WENT FROM `RESOLVES` TO `UNPLANTED`/`MISPLANT`.** The tree-wide `UNPLANTED` count
+**AND NO ROW WENT FROM `RESOLVES` TO `UNPLANTED`/`MISPLANT`.** The tree-wide `UNPLANTED` count
 FELL 16 -> 0, and the remaining tree-wide reds are in gates that are NOT these five
 (`checks/env-precond.py`, `checks/gate.py`, `checks/hermetic-census.py`, `checks/nl-gate.py`,
 `checks/nl-gate-noguard.py`, `checks/no-txt.py`, `gates/gate-surface.py`, `gates/pyvals-gate.py`,
 `gates/txt-carveout-gate.py`). Every one of them is `MISPLANT` or `UNPLANTED` for a reason this
 task did not touch.
 
-**⇒ AND THIS IS THE OTHER HALF OF THE SAME DEFECT.** `.agents/slop/plantsurface/REPORT.md:27-32`
+**AND THIS IS THE OTHER HALF OF THE SAME DEFECT.** `.agents/slop/plantsurface/REPORT.md:27-32`
 records that the earlier unit's six gates left these five "edited concurrently" by another unit,
 and names them: `checks/dup-gate.py`, `checks/norm_check.py`, `checks/oracle_f64.py`,
 `gates/upstream-pow-dtype-gate.py`, `gates/upstream-promo-lattice-gate.py`. **That unit is this
@@ -84,11 +84,11 @@ oracle) and runs the SHIPPED `build()` over it:
   rc 1, `PLANT fail: the oracle refused the float signature: the port did not emit a double
   signature`.
 
-**⇒ AND `RED_IS = "FINDING"` WAS ADDED.** Its red is the PORT rendering `float*` where the lane
+**AND `RED_IS = "FINDING"` WAS ADDED.** Its red is the PORT rendering `float*` where the lane
 promises `double*` — a defect IN THE PORT, not a broken instrument. The class is EARNED because
 `PLANTS[0]` reaches 0 in the census run.
 
-**⇒ AND `main()` NOW EXITS.** It used to be `main()` with no `sys.exit`, so every code it
+**AND `main()` NOW EXITS.** It used to be `main()` with no `sys.exit`, so every code it
 returned was thrown away and the process always exited 0. That is why `--plant-fail` first
 measured rc 0. The fix is `sys.exit(main())`.
 
@@ -171,7 +171,7 @@ GATE-SURFACE: RED -- 22 gate(s) declare a surface, 64/70 verdicts reached, 0 unp
 ```
 
 The remaining reds are `UNOWNED` (4) and `RENAMED` (10) vocabulary disagreements and the six
-`MISPLANT`s listed in §0. **⇒ AND NO DECLARATION WAS NARROWED.** Every `VERDICTS` mapping in
+`MISPLANT`s listed in §0. **AND NO DECLARATION WAS NARROWED.** Every `VERDICTS` mapping in
 these five files still names exactly the codes it named before; the only change to a declaration
 is the ADDITION of `RED_IS = "FINDING"` to `checks/oracle_f64.py`, which is a class and not a
 verdict.
@@ -184,7 +184,7 @@ become `integers to negative integer powers are not allowed` in the 2026-10-17 r
 prose was NOT mine.
 
 `git commit --only` commits the WORKING-TREE bytes of the pathspec, so the prose was swept into
-`f9f868741` along with my plants. **⇒ AND THAT IS THE HAZARD `AGENTS.md` NAMES: A PATH THAT
+`f9f868741` along with my plants. **AND THAT IS THE HAZARD `AGENTS.md` NAMES: A PATH THAT
 OTHERS HOLD IS A SHARED PATH, AND `--only` BOUNDS THE COMMIT BY THE PATHSPEC BUT NOT THE
 BYTES.** The prose is a MEASURED, CORRECT correction of the same class as the other unit's
 `445cb9d15` ("13 lane-C STALE CLAIMS"), and it is not reverted here: reverting it would destroy

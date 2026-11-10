@@ -280,7 +280,7 @@ more) on top of mine, so the two readings are of two DIFFERENT working trees
 and their agreement is a coincidence of the moving target rather than a
 property of my edit.
 
-**⇒ THE CORPUS RUN IS STALE FOR A SECOND REASON, AND THE DIGEST IS WHAT SAYS
+**THE CORPUS RUN IS STALE FOR A SECOND REASON, AND THE DIGEST IS WHAT SAYS
 SO.** `AGENTS.md` records that the citation work moved `tinybendygrad/uop/fold.bend`,
 `mixin/op.bend`, `runtime/webgpu_call.bend` and forty more `.bend` files, and
 that the live digest is now `ed6a074fe1aa0dfe54df4a768e226f3781df814999e9f7ccafcead1437163cb9`

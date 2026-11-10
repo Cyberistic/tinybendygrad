@@ -34,12 +34,12 @@ after it moved down**. The measured deltas:
 | `UOp.dtype` | 4783 | 4846 | **+63** |
 | `main` | 6492 | 6590 | **+98** |
 
-**⇒ THE CLASS IS THE ONE THE TREE ALREADY NAMED: "THE LINE IS A ROT AND THE
+**THE CLASS IS THE ONE THE TREE ALREADY NAMED: "THE LINE IS A ROT AND THE
 NAME IS NOT, AND THE ROT IS NOT SLOW."**
 
 ## 2. THE REPAIR, AND THE FOUR KINDS
 
-**⇒ THE DURABLE FORM IS `symbol=<name>`, NOT A NEW LINE NUMBER.** A CITATION
+**THE DURABLE FORM IS `symbol=<name>`, NOT A NEW LINE NUMBER.** A CITATION
 THAT NAMES A CONSTRUCT DOES NOT ROT WHEN THE LINES MOVE.
 
 | kind | count | what was done |
@@ -65,7 +65,7 @@ WRONG-SYMBOL   kuconv.bend:35  ops.py:896  symbol=fold.addr  how=symbol-absent
 UNRESOLVABLE    kuconv.bend:37  movement.py:35  symbol=-  how=no-file
 ```
 
-**⇒ SO THE PORT's `symbol=` GOES ON ITS OWN LINE**, and that satisfies BOTH
+**SO THE PORT's `symbol=` GOES ON ITS OWN LINE**, and that satisfies BOTH
 gates: `bendcite-gate` puts every `symbol=` on a line into every citation on
 that line, and `todo-cite-gate` binds the nearest preceding one — a line with
 only the port's citation binds correctly.
@@ -80,12 +80,12 @@ while this slice ran, and it grew by **+104 lines**.
 
 **MEASURED, `g_nr`'s DECLARATION**: `1316 -> 1409 -> 1420 -> 1428`.
 
-**⇒ EVERY POINTER INTO THAT FILE ROTTED WITH EACH MOVE**, and I re-pointed
-them **four times**. **⇒ THE `symbol=` NAME WAS NEVER WRONG** — only the line
+**EVERY POINTER INTO THAT FILE ROTTED WITH EACH MOVE**, and I re-pointed
+them **four times**. **THE `symbol=` NAME WAS NEVER WRONG** — only the line
 moved — **and that is the whole argument for the durable form, measured a
 second time.**
 
-**⇒ AND THE ROWS THAT ROTATED OUTSIDE MY SLICE** (the `indexing.bend`
+**AND THE ROWS THAT ROTATED OUTSIDE MY SLICE** (the `indexing.bend`
 citations at `rangify.bend:26-28, 33, 177, 184, 197, 201, 205` and
 `ops.bend:607`) **WERE `RESOLVES` WHEN THE SLICE STARTED** — they are not in
 `rot1.rows` — **and they are re-pointed anyway, because a pointer I own that
@@ -126,7 +126,7 @@ rots is a pointer I own.**
 | `AMBIGUOUS` / `OUT-OF-CORPUS` | 19 / 10 | 19 / 10 (**not raised**) |
 | **total rows** | 1267 | 1282 |
 
-**⇒ NO OTHER CLASS ROSE BECAUSE OF MY EDIT.** The `UNCLAIMED` +2 is the other
+**NO OTHER CLASS ROSE BECAUSE OF MY EDIT.** The `UNCLAIMED` +2 is the other
 unit's new `schedule/indexing.bend` and `schedule/realize.bend` citations.
 
 ### 4.3 `gates/todo-cite-gate.py`
@@ -155,7 +155,7 @@ lines dropped, sha256 of the surviving code:
 | `codegen/opt/heuristic.bend` | `1eb870624d1936b2` | `1eb870624d1936b2` | **YES** |
 | `schedule/rangify.bend` | `2ff901aa6bee8c94` | `2ff901aa6bee8c94` | **YES** — **against ITS PARENT `92fa67d0b`**, because the other unit's `92fa67d0b` landed their `rr_range_map` CODE **and** swept my comment edits in with it. **My commit's contribution to that file is comment-only, and their 312 lines of in-flight code are NOT in my commit and are still in the working tree.** |
 
-**⇒ ALL TWELVE FILES ARE COMMENT-ONLY. ZERO FILES ARE NOT.**
+**ALL TWELVE FILES ARE COMMENT-ONLY. ZERO FILES ARE NOT.**
 
 ## 6. THE COMPILE TOKENS
 
@@ -196,13 +196,13 @@ def rot1_plant_probe(a: U32) -> U32:
 | **MOVED** (4 CODE lines inserted at the top of `fold.bend`) | 1282 | **47** | **33** | 0 | 0 | 1014 |
 | **TWIN** (byte-identical copy) | 1282 | **0** | **0** | 0 | 0 | 1062 |
 
-**⇒ THE PLANT GOES RED AND THE BYTE-IDENTICAL TWIN STAYS GREEN.** The 33
+**THE PLANT GOES RED AND THE BYTE-IDENTICAL TWIN STAYS GREEN.** The 33
 red rows in the moved copy are exactly this slice's rows.
 
-**⇒ AND THE GATE's OWN `--plant` HAS A PRE-EXISTING DEFECT IN ITS ARM TWO**:
+**AND THE GATE's OWN `--plant` HAS A PRE-EXISTING DEFECT IN ITS ARM TWO**:
 it inserts 2 lines above a pointer that lands **inside a construct's span**,
 and the pointer still resolves (`PLANT arm-two moved : RESOLVES`). **ARM ONE
-WORKS** (`RESOLVES` -> `WRONG-LINE` -> `RESOLVES` on the twin). **⇒ THIS IS A
+WORKS** (`RESOLVES` -> `WRONG-LINE` -> `RESOLVES` on the twin). **THIS IS A
 DEFECT IN `gates/bendcite-gate.py`'s PLANT AND NOT IN MY WORK, AND I DID NOT
 EDIT THE GATE.**
 
@@ -214,11 +214,11 @@ EDIT THE GATE.**
 | `6585d1fb8` | **1** | `uop/ops.bend`'s `g_nr`, re-pointed after `schedule/indexing.bend` moved again |
 | `a797bcd5e` | **1** | `schedule/rangify.bend`'s 12 pointers into `schedule/indexing.bend` |
 
-**⇒ `git show --stat` AND `git fsck --no-progress` WERE RUN IN THE SAME COMMAND
+**`git show --stat` AND `git fsck --no-progress` WERE RUN IN THE SAME COMMAND
 FOR EACH.** `fsck` NAMES **3** MALFORMED TREES — `d57bc484`, `3a60f33f`,
 `d83cf685` — **ALL THREE PRE-EXISTING AND NONE MINE.**
 
-**⇒ THE SHARED INDEX WAS CHECKED BEFORE EACH COMMIT**
+**THE SHARED INDEX WAS CHECKED BEFORE EACH COMMIT**
 (`checks/index-arm-gate.py`: `PASS`, the index agrees with `HEAD` on all
 **10012** paths), **AND NOTHING WAS STAGED WITH `git add -A` OR `git add
 <dir>`.** `schedule/rangify.bend` WAS A SHARED PATH WITH **312 LINES** OF
@@ -235,12 +235,12 @@ before and after).
 | **AFTER** (at the time this report was written) | `40c3e432754207c6a8d4657aeebfec12d2b4defa7b09be01474eefe80cf98268` |
 | **AFTER, minutes later** (the tree kept moving) | `13ed20b8cb6dc4b16932b71b87c5c2542c0f1bcc724043b819f10069efbf0029` |
 
-**⇒ A COMMENT IS SUBSTRATE, SO A CITATION FIX IS A CORPUS-STALING EDIT.**
-**⇒ THE CORPUS MUST BE RE-RUN ONCE THE PORT STOPS MOVING**, and the digest
+**A COMMENT IS SUBSTRATE, SO A CITATION FIX IS A CORPUS-STALING EDIT.**
+**THE CORPUS MUST BE RE-RUN ONCE THE PORT STOPS MOVING**, and the digest
 moved for a second reason too: another unit is editing `schedule/indexing.bend`
 and `schedule/rangify.bend` right now.
 
-**⇒ AND THE DIGEST IS NOT MY NUMBER TO PUBLISH: IT IS A READING OF A MOVING
+**AND THE DIGEST IS NOT MY NUMBER TO PUBLISH: IT IS A READING OF A MOVING
 TREE, AND QUOTING IT WITHOUT THE TIME IS HOW A GOVERNING DOCUMENT ENDS UP
 CARRYING A FALSE CLAIM.** The corpus owner must re-derive it.
 
@@ -248,24 +248,24 @@ CARRYING A FALSE CLAIM.** The corpus owner must re-derive it.
 
 1. **`gates/bendcite-gate.py`'s OWN PLANT, ARM TWO, DOES NOT GO RED.** Its
    inserted 2 lines land above a pointer that is **inside a construct's span**,
-   so the pointer still resolves. **⇒ IT IS A GATE DEFECT AND I WAS TOLD NOT
+   so the pointer still resolves. **IT IS A GATE DEFECT AND I WAS TOLD NOT
    TO EDIT GATES, SO IT IS REPORTED AND NOT FIXED.** ARM ONE IS CORRECT.
 
 2. **THE `WRONG-LINE-BY-BLOCK` **120** AND `UNCLAIMED` **68** ROWS.** These are
    counted and not failed by the gate's own rule (a claim read off the
    enclosing comment block is a weaker claim than one read off the pointer's
-   own line), and they are **not in `rot1.rows`**. **⇒ NOT MINE AND NOT
+   own line), and they are **not in `rot1.rows`**. **NOT MINE AND NOT
    FIXED.**
 
 3. **`schedule/indexing.bend` IS BEING REWRITTEN RIGHT NOW, AND IT WILL ROT
-   MY POINTERS AGAIN.** **⇒ THAT IS EXPECTED AND IT IS WHY THE `symbol=` FORM
+   MY POINTERS AGAIN.** **THAT IS EXPECTED AND IT IS WHY THE `symbol=` FORM
    EXISTS:** the name will still be right, and the next unit only has to move
    the line.
 
 4. **THE OTHER UNIT'S 312 LINES OF IN-FLIGHT `rr_range_map` CODE** IN
-   `schedule/rangify.bend`. **⇒ NOT MINE, NOT COMMITTED BY ME, AND LEFT IN
+   `schedule/rangify.bend`. **NOT MINE, NOT COMMITTED BY ME, AND LEFT IN
    THEIR WORKING TREE.**
 
-5. **`D.refuse("…")` DIAGNOSTIC STRINGS.** **⇒ NONE EXISTED IN THESE TWELVE
+5. **`D.refuse("…")` DIAGNOSTIC STRINGS.** **NONE EXISTED IN THESE TWELVE
    FILES** — every changed line is a comment, and no file needed the
    diagnostic-string exception.

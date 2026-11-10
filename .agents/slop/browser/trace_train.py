@@ -12,25 +12,25 @@ WHAT IT WRITES, to `.agents/slop/browser/train/`:
     train-oracle.json  the weights BEFORE, the weights AFTER, and the loss --
                        CPython's own numbers, as u32 bit patterns
 
-**⇒ SO THE BROWSER CAN BE ASKED THE QUESTION THAT MATTERS: DOES ONE TRAINING
+**SO THE BROWSER CAN BE ASKED THE QUESTION THAT MATTERS: DOES ONE TRAINING
 STEP, REPLAYED ON A REAL ADAPTER, PRODUCE THE SAME WEIGHTS AS CPYTHON?**
 
 `examples/webgpu/mnist` already answers the FORWARD half BIT-EXACTLY -- measured
-today, 17 launches, 10/10 logits. **⇒ AND THIS IS THE OTHER HALF, AND IT IS THE
+today, 17 launches, 10/10 logits. **AND THIS IS THE OTHER HALF, AND IT IS THE
 WHOLE OF WHAT "TRAIN IT IN THE BROWSER" MEANS.**
 
 WHY THE STEP IS SPELLED OUT HERE AND NOT `opt.step()`.
-**⇒ MEASURED**: `opt.zero_grad()` + `loss.backward()` + `loss.realize(*opt.
+**MEASURED**: `opt.zero_grad()` + `loss.backward()` + `loss.realize(*opt.
 schedule_step())` runs -- the weights move, 18 of 18 -- **AND CAPTURES ZERO
 KERNELS.** The hook is correct (a `TRAINING=1` FORWARD captures 23 launches in
 the same process), so the optimizer's realize path does not reach
-`tinygrad/engine/realize.py`'s `exec_kernel`. **⇒ AND A TRACE OF ZERO LAUNCHES
+`tinygrad/engine/realize.py`'s `exec_kernel`. **AND A TRACE OF ZERO LAUNCHES
 READS EXACTLY LIKE A MODEL THAT COMPUTES NOTHING**, which is the failure the
 forward tracer's own header names.
 
-**⇒ SO THE STEP IS THE SAME MATH, SPELLED AS PLAIN TENSOR OPS**: forward, loss,
+**SO THE STEP IS THE SAME MATH, SPELLED AS PLAIN TENSOR OPS**: forward, loss,
 `loss.gradient(*params)` for the gradients, then `p - lr*g` per parameter, each
-stage realized explicitly. **⇒ AND THAT IS NOT A DIFFERENT OPTIMIZER**: it is
+stage realized explicitly. **AND THAT IS NOT A DIFFERENT OPTIMIZER**: it is
 SGD, which is `_apply_update`'s own `t.detach() - up` shape
 (`nn/optim.py:60`), with `up = lr*grad`. What it is NOT is Adam's moment
 buffers, and that is stated rather than implied.
@@ -65,7 +65,7 @@ LABEL = 7
 def weights_b64(params) -> dict:
     """EVERY FLOAT PARAMETER, as u32 bits, keyed by its state-dict name.
 
-    **⇒ AND `realize()` IS REQUIRED**: a parameter that has never been realized
+    **AND `realize()` IS REQUIRED**: a parameter that has never been realized
     has `base.realized is None`, so reading its bits raises
     `AttributeError: 'NoneType' object has no attribute 'as_memoryview'`.
     It is called with the hook OFF, so allocating a weight never enters the trace.
@@ -89,12 +89,12 @@ def main() -> int:
     x = Tensor(np.linspace(-0.5, 0.5, BS * 1 * 28 * 28, dtype=np.float32).reshape(BS, 1, 28, 28))
     y = Tensor(np.array([LABEL], dtype=np.int32))
 
-    # **⇒ NOTHING IS REALIZED BEFORE THE HOOK GOES ON, AND THAT IS MEASURED.**
+    # **NOTHING IS REALIZED BEFORE THE HOOK GOES ON, AND THAT IS MEASURED.**
     # `weights_b64` calls `p.realize()`, and pre-realizing the model's parameters
     # -- or even an identically-seeded TWIN's -- takes the traced forward from
-    # `23` launches to `0`. **⇒ SO THE PRE-STATE IS READ OUT OF THE TRACE ITSELF**:
+    # `23` launches to `0`. **SO THE PRE-STATE IS READ OUT OF THE TRACE ITSELF**:
     # `TC.buffers[n]["b64"]` is each buffer's contents AT FIRST BIND, which is
-    # before any launch in the trace wrote it. **⇒ AND THAT IS THE HONEST SOURCE
+    # before any launch in the trace wrote it. **AND THAT IS THE HONEST SOURCE
     # ANYWAY**: it is the same bytes the page will upload, so a comparison
     # against it cannot disagree about which snapshot it means.
 
@@ -104,16 +104,16 @@ def main() -> int:
         with Context(TRAINING=1):
             # 1. FORWARD, realized, so its kernels are in the trace before the
             #    backward pass adds its own.
-            # **⇒ AND NOTHING IS REALIZED BEFORE THE GRADIENTS, WHICH IS A
+            # **AND NOTHING IS REALIZED BEFORE THE GRADIENTS, WHICH IS A
             # MEASURED PRECONDITION AND NOT STYLE.** MEASURED, with the sequence
             # this file used to run (`logits.realize()`, then `loss.realize()`,
             # then `gradient`): **`MNIST grad absmax: 0.0`** -- REALIZING THE
             # FORWARD OUTPUT DETACHES THE PARAMETERS FROM THE BACKWARD SLICE, so
             # every gradient was exactly zero and the SGD update wrote each
-            # parameter back UNCHANGED. **⇒ SO "MNIST TRAINS" WAS ONLY EVER PROVEN
+            # parameter back UNCHANGED. **SO "MNIST TRAINS" WAS ONLY EVER PROVEN
             # BY THE BATCHNORM RUNNING STATS MOVING**, and the 47-of-47 row was
             # consistent because CPython's side was the same no-op.
-            # **⇒ THE SAME DEFECT WAS FOUND IN THE IMAGENET LANE FIRST**, and it is
+            # **THE SAME DEFECT WAS FOUND IN THE IMAGENET LANE FIRST**, and it is
             # the reason that lane's logits row was replaced by a parameter row.
             logits = model(x)
             # 2. THE LOSS. `beautiful_mnist.py:26`'s own call.
@@ -145,15 +145,15 @@ def main() -> int:
                 "(p - lr*g), u32 bit patterns",
     }, indent=1) + "\n")
 
-    # **⇒ AND `after` IS KEPT ONLY ON THE LAST LAUNCH, WHICH IS A SIZE DECISION
+    # **AND `after` IS KEPT ONLY ON THE LAST LAUNCH, WHICH IS A SIZE DECISION
     # WITH A MEASURED COST: the full per-launch snapshots make the file 10.5 MB,
     # and this tree's `jj` refuses to snapshot a new file over 2.9 MB.** The
     # GATE reads only the final state (`lastAfter`), so the compaction removes
-    # exactly what nothing reads. **⇒ AND THE PER-LAUNCH LADDER IS STILL ONE FLAG
+    # exactly what nothing reads. **AND THE PER-LAUNCH LADDER IS STILL ONE FLAG
     # AWAY** -- `--full` keeps every snapshot, for whoever needs to bisect a
     # kernel rather than compare a step.
     compact = "--full" not in sys.argv
-    # **⇒ AND THE FINAL STATE OF **EVERY** BUFFER IS ITS OWN KEY, AND IT MUST BE:
+    # **AND THE FINAL STATE OF **EVERY** BUFFER IS ITS OWN KEY, AND IT MUST BE:
     # each launch's `after` only holds the buffers THAT launch bound, so a
     # compaction that keeps just the last launch's `after` leaves the gate with
     # 2 buffers to compare instead of 50. MEASURED, that is exactly what the
@@ -166,11 +166,11 @@ def main() -> int:
         for i, fr in enumerate(frames):
             if i != len(frames) - 1:
                 fr.pop("after", None)
-        # **⇒ AND AN `in` ENTRY EQUAL TO THE BUFFER's FIRST BIND IS DROPPED, AND
+        # **AND AN `in` ENTRY EQUAL TO THE BUFFER's FIRST BIND IS DROPPED, AND
         # THAT IS NOT A LOSS: the page WRITES the first bind at creation, so an
         # upload of the same bytes is a no-op.** MEASURED: the `in` snapshots are
         # 3.7 MB of a 5.3 MB file, and most of them are re-uploads of a weight
-        # that never changed. **⇒ AND THE COMPARISON IS `<=` ON THE LENGTH TOO,
+        # that never changed. **AND THE COMPARISON IS `<=` ON THE LENGTH TOO,
         # so a SHORTER snapshot is kept rather than silently dropped.**
         for fr in frames:
             ins = fr.get("in") or {}
@@ -194,7 +194,7 @@ def main() -> int:
               f"wgsl={len(r['wgsl'] or '')}B {r.get('wgslError', '')}")
     print(f"WGSL-UNRENDERED: {len(unrendered)} of {len(TC.launches)}")
     # A STEP WHERE NOTHING MOVED IS INDISTINGUISHABLE FROM A STEP THAT DID NOT RUN.
-    # **⇒ AND BOTH SIDES OF THIS COMPARISON ARE THE TRACE'S OWN**, so it cannot
+    # **AND BOTH SIDES OF THIS COMPARISON ARE THE TRACE'S OWN**, so it cannot
     # disagree with the page about which snapshot it means: `buffers[n]["b64"]`
     # is the FIRST-BIND contents and the LAST launch's `after[n]` is the final
     # one. A buffer no launch wrote has both equal, which is the point.

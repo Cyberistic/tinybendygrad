@@ -62,7 +62,7 @@ def body() -> List<&2, String>:
 # THE `kus` LIST, AND IT IS NOT EMPTY BECAUSE OF THE ARITHMETIC -- IT IS THERE
 # SO THE PORT EMITS THE `float4` TYPEDEF.
 #
-# **⇒ AND `render_kernel`'s SIGNATURE CHANGED**, and the fixture was not moved
+# **AND `render_kernel`'s SIGNATURE CHANGED**, and the fixture was not moved
 # with it. It used to be
 # `render_kernel(dev, fn, lb, bufs, body, emit, cpu)` and it is NOW
 # `render_kernel(dev, cpu, fn, kernel, bufs, kus, lb)` -- upstream's own
@@ -70,15 +70,15 @@ def body() -> List<&2, String>:
 # prefix=None)` (`tinygrad/renderer/cstyle.py:312-314`), which takes the UOP
 # LIST because the CLANG OVERRIDE's VECTOR TYPEDEFS COME FROM IT.
 #
-# **⇒ AND THE `kus` ARE WHAT `uops_to_dtypes` READS** (`cstyle.bend:2242`), and
+# **AND THE `kus` ARE WHAT `uops_to_dtypes` READS** (`cstyle.bend:2242`), and
 # a `KU` with `numel = 4` and an ALU ADDRESS IS WHAT MAKES
-# `render_vector_prefix` EMIT `typedef float float4 ...`. **⇒ AND THE BODY USES
-# `float4`?** NO -- this body's own arithmetic is scalar `float`. **⇒ BUT THE
+# `render_vector_prefix` EMIT `typedef float float4 ...`. **AND THE BODY USES
+# `float4`?** NO -- this body's own arithmetic is scalar `float`. **BUT THE
 # HARNESS'S `vec4_typedef` PREAMBLE AND THE PORT's OWN `float4` TYPEDEF MUST
 # AGREE**, or the kernel does not compile -- and the mm kernel's INPUTS are
 # `float*`, so the typedef is not needed by the body at all.
 #
-# **⇒ AND THEREFORE THE `kus` ARE THE PORT's OWN REAL KERNERS' `kus`**, taken
+# **AND THEREFORE THE `kus` ARE THE PORT's OWN REAL KERNERS' `kus`**, taken
 # from the fixture the cpuseam lane already generated
 # (`.agents/slop/cpuseam/gen/r_10_98_4.bend`), so the typedef the port emits is
 # THE PORT's OWN and not a hand-written guess.

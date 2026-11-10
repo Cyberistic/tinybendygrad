@@ -5,40 +5,40 @@
 
 WHY THIS FILE EXISTS
 --------------------
-**⇒ THE PORT's ENGINE (`tinybendygrad/schedule/rangeify.bend`'s `eng_*`) APPLIES UPSTREAM's
+**THE PORT's ENGINE (`tinybendygrad/schedule/rangeify.bend`'s `eng_*`) APPLIES UPSTREAM's
 SEVEN `graph_rewrite` CALLS TO AN ARENA, AND **NOTHING COMPARES ITS OUTPUT TO CPython.**
 MEASURED: `grep -rln 'eng_a_s|eng_b_s|eng_fixture_rows' --include='*.py' --include='.rows'
---include='*.sh'` ANSWERS **NOTHING** OVER THE WHOLE TREE. **⇒ SO THE ENGINE IS A ROW
+--include='*.sh'` ANSWERS **NOTHING** OVER THE WHOLE TREE. **SO THE ENGINE IS A ROW
 THAT CANNOT GO RED, WHICH IS THE TREE's OWN DOCTRINE 2.**
 
-**⇒ AND THE PORT's OWN TWO FIXTURES (`efx_a()` AND `efx_b()`, `rangeify.bend:3084` AND
+**AND THE PORT's OWN TWO FIXTURES (`efx_a()` AND `efx_b()`, `rangeify.bend:3084` AND
 `:3111`) ARE **NOT** UPSTREAM's INPUT SHAPE**, AND THIS FILE MEASURED THAT: CPython's OWN
 `get_kernel_graph` **REFUSES** BOTH OF THEM, WITH THE EXACT ERROR TEXT:**
 ```
 eng_a_py_out=RAISED:TypeError:'>=' not supported between instances of 'tuple' and 'int'
 eng_b_py_out=RAISED:RuntimeError:UOp verification failed at 1 on Ops.NOOP dtypes.void 0 [] ()
 ```
-**⇒ ⇒ AND **THE FIXTURES ARE NOT THE SAME GRAPH**: MEASURED, THE PORT's `eng_a_in` DUMP AND
-THIS FILE's `eng_a_py_in` DUMP ARE THE **SAME 14-NODE SET** (ORDER-FREE), **⇒ SO THE
+**AND **THE FIXTURES ARE NOT THE SAME GRAPH**: MEASURED, THE PORT's `eng_a_in` DUMP AND
+THIS FILE's `eng_a_py_in` DUMP ARE THE **SAME 14-NODE SET** (ORDER-FREE), **SO THE
 PORT's FIXTURES ARE **SYNTHETIC** GRAPHS BUILT TO FIRE INDIVIDUAL RULES, NOT UPSTREAM's
-ENGINE INPUT, AND **CPython'S VERIFIER REFUSES THEM** — **⇒ WHICH IS WHY A COMPARISON
+ENGINE INPUT, AND **CPython'S VERIFIER REFUSES THEM** — **WHICH IS WHY A COMPARISON
 AGAINST UPSTREAM ON **THOSE** FIXTURES IS IMPOSSIBLE, AND SAYING SO IS THE POINT.**
 
 THE RIGHT FIXTURE, AND IT IS THE PORT's OWN PIPELINE'S FIXTURE
 --------------------------------------------------------------
-**⇒ UPSTREAM's `get_kernel_graph` IS CALLED BY `tinygrad/schedule/__init__.py:132`:
-`create_schedule(get_kernel_graph(prepare_rangeify(function)))`.** **⇒ SO THE ENGINE's
+**UPSTREAM's `get_kernel_graph` IS CALLED BY `tinygrad/schedule/__init__.py:132`:
+`create_schedule(get_kernel_graph(prepare_rangeify(function)))`.** **SO THE ENGINE's
 INPUT IS `prepare_rangeify(function)`'s OUTPUT — A SINK OF AFTERs — NOT A KERNEL GRAPH.**
 
-**⇒ ⇒ AND THIS FILE **SPIES ON UPSTREAM's OWN CALL** TO GET THE EXACT GRAPH CPython
+**AND THIS FILE **SPIES ON UPSTREAM's OWN CALL** TO GET THE EXACT GRAPH CPython
 HANDS THE ENGINE, ON A REAL PROGRAM (`(4,5) = (4,3) @ (3,5)`), AND PRINTS IT IN **THE
 PORT's OWN DUMP SPELLING** (`op:argkey:srcops`, JOINED BY `;`).**
-**⇒ MEASURED, THAT GRAPH IS **23 NODES** AND THE ENGINE'S OUTPUT IS **9 NODES**:
+**MEASURED, THAT GRAPH IS **23 NODES** AND THE ENGINE'S OUTPUT IS **9 NODES**:
 `SINK:AFTER` -> `SINK(AFTER(PARAM, STORE), ...)`, WITH THE CENSUS GOING FROM
 `AFTER CONST MUL PARAM PERMUTE REDUCE RESHAPE SINK STACK STORE` TO
 `AFTER CALL CONST PARAM SINK`.**
 
-**⇒ ⇒ SO THE COMPARISON IS POSSIBLE, AND THE PORT's `eng_*` ROWS ARE COMPARABLE WITH
+**SO THE COMPARISON IS POSSIBLE, AND THE PORT's `eng_*` ROWS ARE COMPARABLE WITH
 THIS FILE's ROWS **ROW BY ROW, NODE FOR NODE**, WITH NO TRANSLATOR.**
 
 THE COST: **ONE CPYTHON PROCESS, ~2 s.**
