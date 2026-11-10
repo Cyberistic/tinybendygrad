@@ -59,6 +59,7 @@ calling `checks_hold()` alone against the unmutated lanes with a mutated `PORT`:
 `False`. **SO A FIXTURE DRIFT IS CAUGHT BY TWO INDEPENDENT INSTRUMENTS AND ONE RUN NAMES ONLY
 ONE OF THEM.**
 """
+import os
 import subprocess
 import sys
 from collections import Counter
@@ -70,6 +71,11 @@ BEND = ROOT / "bin" / "bend"
 PY = ROOT / ".venv" / "bin" / "python"
 GATE = HERE / "amd_dsl_census-gate.py"
 PORT = ROOT / "tinybendygrad" / "renderer" / "amd" / "dsl.bend"
+# THE LANE IS THE DRIVER, NOT THE PORT. MEASURED 2026-11-10: the census body
+# moved out of the port into `gates/dsl-gate.bend`, so the port prints ZERO
+# rows and a lane that ran it read `bd=0 lines` and every mutation below it
+# "MOVED NOTHING". The DRIVER is what emits the 1178 rows.
+DRIVER = HERE / "dsl-gate.bend"
 ORACLE = HERE / "amd_dsl_census-oracle.py"
 PINS = HERE / "amd_dsl_census-pins.rows"
 
@@ -79,11 +85,16 @@ PINS = HERE / "amd_dsl_census-pins.rows"
 # files import the hub's)` -- so the dot-prefixed spelling the other harnesses use is NOT
 # available here.
 MUT_PORT = PORT.with_name("dsl-mut.bend")
+# THE MUTATED DRIVER LIVES BESIDE THE DRIVER AND NOT IN A TMPDIR, for the reason
+# the mutated port does: `gates/dsl-gate.bend` imports `./../tinybendygrad/...`
+# by a RELATIVE path, so a copy in another directory would resolve its import
+# to a different file and the mutation would be measuring the wrong thing.
+MUT_DRIVER = HERE / "dsl-gate-mut.bend"
 MUT_ORACLE = HERE / "amd-mut-oracle.py"
 MUT_PINS = HERE / "amd-mut-pins.rows"
 MUT_GATE = HERE / "amd-mut-gate.py"
 MUT_RUN = HERE / "amd-mut-run.py"
-COPIES = (MUT_PORT, MUT_ORACLE, MUT_PINS, MUT_GATE, MUT_RUN)
+COPIES = (MUT_PORT, MUT_DRIVER, MUT_ORACLE, MUT_PINS, MUT_GATE, MUT_RUN)
 
 VERDICT_TOKENS = {"same", "DIFFER", "DIFF", "AGREE", "MATCH", "EXACT"}
 
@@ -149,15 +160,22 @@ def _runner(checks_only):
     the `def X() -> U32` table out of `PORT` -- so overriding `m.PORT`/`m.PINS` alone would
     leave BOTH mutated files unused and every port and pins mutation a silent green. Both are
     re-derived here, from the mutated files, in the gate's own words.
+
+    AND THE DRIVER IS POINTED AT TOO. MEASURED 2026-11-10: the gate's LANE is
+    the driver, so a runner that left `m.DRIVER` alone ran the UNMUTATED driver
+    and every driver mutation was a silent green -- the lane the mutation was
+    supposed to move was never the lane that ran.
     """
     head = ("import importlib.util, sys, re\nfrom pathlib import Path\n"
             "spec = importlib.util.spec_from_file_location('g', %r)\n"
             "m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)\n"
-            "m.PORT = Path(%r)\nm.ORACLE = Path(%r)\nm.PINS = Path(%r)\n"
+            "m.PORT = Path(%r)\nm.DRIVER = Path(%r)\nm.ORACLE = Path(%r)\nm.PINS = Path(%r)\n"
             "m.DIVERGES, m.WHY = m._pins()\n"
             "m._U32_DEFS = {x.group(1): int(x.group(2)) for x in re.finditer(\n"
             "    r'^def (\\w+)\\(\\) -> U32: (\\d+)$', m.PORT.read_text(), re.M)}\n"
-            % (str(MUT_GATE), str(MUT_PORT), str(MUT_ORACLE), str(MUT_PINS)))
+            "m._U32_DEFS.update({x.group(1): int(x.group(2)) for x in re.finditer(\n"
+            "    r'^def (\\w+)\\(\\) -> U32: (\\d+)$', m.DRIVER.read_text(), re.M)})\n"
+            % (str(MUT_GATE), str(MUT_PORT), str(MUT_DRIVER), str(MUT_ORACLE), str(MUT_PINS)))
     if checks_only:
         return head + "sys.exit(0 if m.checks_hold() else 1)\n"
     return head + "sys.exit(m.main())\n"
@@ -171,8 +189,32 @@ def _clean():
 def write_copies(**which):
     """The mutated copies, with EVERY FILE WRITTEN -- a missing one is a REFUSED exit for the
     wrong reason, and a harness that calls that `the mutation was found` has learned
-    nothing. `which` names the files to mutate; the rest get the originals."""
+    nothing. `which` names the files to mutate; the rest get the originals.
+
+    AND THE MUTATED DRIVER IMPORTS THE MUTATED PORT. MEASURED 2026-11-10: the
+    driver imports the port by a FIXED relative path
+    (`./../tinybendygrad/renderer/amd/dsl.bend`), so a mutated port copy at
+    `dsl-mut.bend` was never the file the driver imported and every PORT
+    mutation was a silent green -- the lane ran the unmutated port through the
+    unmutated driver and the mutation moved nothing because nothing it touched
+    was in the lane. SO THE IMPORT IS RE-POINTED AT THE COPY, BY THE REAL PATH
+    AND NOT BY STRING ARITHMETIC.
+    """
     MUT_PORT.write_text(which.get("port") or PORT.read_text())
+    drv = which.get("driver") or DRIVER.read_text()
+    old_import = "import ./../tinybendygrad/renderer/amd/dsl.bend as P"
+    # THE PATH IS FROM THE MUTATED DRIVER's OWN DIRECTORY, NOT FROM THE
+    # REPOSITORY ROOT. The driver lives in `gates/` and the mutated port lives
+    # in `tinybendygrad/renderer/amd/`, so the path is
+    # `./../tinybendygrad/renderer/amd/dsl-mut.bend` -- and the `..` is the
+    # part that is easy to lose, because a path relative to the ROOT would
+    # resolve to `gates/tinybendygrad/...` and the compiler would answer "no
+    # such file" for the port and the warm check would never print
+    # `ALL PROOFS CHECK`.
+    new_import = f"import ./{os.path.relpath(MUT_PORT, HERE).replace(os.sep, '/')} as P"
+    if old_import not in drv:
+        raise SystemExit(f"the driver does not import the port as {old_import!r}")
+    MUT_DRIVER.write_text(drv.replace(old_import, new_import))
     MUT_ORACLE.write_text(which.get("oracle") or ORACLE.read_text())
     MUT_PINS.write_text(which.get("pins") or PINS.read_text())
 
@@ -277,9 +319,9 @@ MUTATIONS = [
     # does not compile is not evidence in either direction**, so it is reported as its own
     # outcome and not filed as a coverage gap.
     ("P5 one bfset row is DUPLICATED (FINDING A's 14 grows to 15)", "POPULATION", "port",
-     '    srow("bfset_word63", bfs(Fld.plain("lit", 63, 32), w32(0), 2147483648))\n',
-     '    srow("bfset_word63", bfs(Fld.plain("lit", 63, 32), w32(0), 2147483648))\n'
-     '    srow("bfset_word63", bfs(Fld.plain("lit", 63, 32), w32(0), 2147483648))\n'),
+     '    srow("bfset_word63", P.bfs(P.Fld.plain("lit", 63, 32), w32(0), 2147483648))\n',
+     '    srow("bfset_word63", P.bfs(P.Fld.plain("lit", 63, 32), w32(0), 2147483648))\n'
+     '    srow("bfset_word63", P.bfs(P.Fld.plain("lit", 63, 32), w32(0), 2147483648))\n'),
 
     # ----------------------------------------------------------------- AXIS
     # A3 OF THE GATE'S OWN HEADER: `F64_VALS`'s `lit` was `0x1234` on one side and
@@ -290,18 +332,20 @@ MUTATIONS = [
      'Ov.int(305419896)', 'Ov.int(4660)'),
     ("X2 VOP2_ALL's src0 is a different register -- a fixture AXIS, not a value", "AXIS",
      "port",
-     'Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, False{}, False{}, True{}), True{})',
-     'Vf.of(Fld.src("src0", 25, 17), Ov.reg(4, 1, False{}, False{}, True{}), True{})'),
+     'P.Vf.of(P.Fld.src("src0", 25, 17), P.Ov.reg(3, 1, False{}, False{}, True{}), True{})',
+     'P.Vf.of(P.Fld.src("src0", 25, 17), P.Ov.reg(4, 1, False{}, False{}, True{}), True{})'),
     ("X3 VOP2_NEG's `src0` has neg set, so the neg family asks about a different register", "AXIS",
      "port",
-     '   Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, True{}, False{}, False{}), True{}),\n'
-     '   Vf.of(Fld.ssrc("src1", 33, 26), Ov.reg(5, 1, False{}, False{}, False{}), True{}),\n'
-     '   Vf.of(Fld.plain("op_sel", 35, 34), Ov.none(), False{}),\n'
-     '   Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]\n\ndef VOP2_HI()',
-     '   Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, False{}, False{}, False{}), True{}),\n'
-     '   Vf.of(Fld.ssrc("src1", 33, 26), Ov.reg(5, 1, False{}, False{}, False{}), True{}),\n'
-     '   Vf.of(Fld.plain("op_sel", 35, 34), Ov.none(), False{}),\n'
-     '   Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]\n\ndef VOP2_HI()'),
+     '   P.Vf.of(P.Fld.src("src0", 25, 17), P.Ov.reg(3, 1, True{}, False{}, False{}), True{}),\n'
+     '   P.Vf.of(P.Fld.ssrc("src1", 33, 26), P.Ov.reg(5, 1, False{}, False{}, False{}), True{}),\n'
+     '   P.Vf.of(P.Fld.plain("op_sel", 35, 34), P.Ov.none(), False{}),\n'
+     '   P.Vf.of(P.Fld.sbase("sdst", 41, 36), P.Ov.none(), False{})]\n'
+     'def VOP2_FCONST()',
+     '   P.Vf.of(P.Fld.src("src0", 25, 17), P.Ov.reg(3, 1, False{}, False{}, False{}), True{}),\n'
+     '   P.Vf.of(P.Fld.ssrc("src1", 33, 26), P.Ov.reg(5, 1, False{}, False{}, False{}), True{}),\n'
+     '   P.Vf.of(P.Fld.plain("op_sel", 35, 34), P.Ov.none(), False{}),\n'
+     '   P.Vf.of(P.Fld.sbase("sdst", 41, 36), P.Ov.none(), False{})]\n'
+     'def VOP2_FCONST()'),
     ("X4 the ORACLE's `lit` fixture drifts, port untouched", "AXIS", "oracle",
      'F64_VALS = [("op", None), ("lit", 305419896)]',
      'F64_VALS = [("op", None), ("lit", 4660)]'),
@@ -310,13 +354,13 @@ MUTATIONS = [
     # census is not a keyed table.
     ("X5 the fmt axis loses the 105 width, so a `Reg.fmt` arm boundary is uncovered", "AXIS",
      "port",
-     '    srow("fmt_105_1", Res.s(reg_fmt(Rg{105, 1, False{}, False{}, False{}}, 0, False{}, False{})))\n'
-     '    srow("fmtp_105_1", Res.s(reg_fmt(Rg{105, 1, False{}, False{}, False{}}, 0, True{}, True{})))\n'
-     '    srow("fmtm_105_1", Res.msg(reg_fmt(Rg{105, 1, False{}, False{}, False{}}, 0, False{}, False{})))\n'
+     '    srow("fmt_105_1", P.Res.s(P.reg_fmt(P.Rg{105, 1, False{}, False{}, False{}}, 0, False{}, False{})))\n'
+     '    srow("fmtp_105_1", P.Res.s(P.reg_fmt(P.Rg{105, 1, False{}, False{}, False{}}, 0, True{}, True{})))\n'
+     '    srow("fmtm_105_1", P.Res.msg(P.reg_fmt(P.Rg{105, 1, False{}, False{}, False{}}, 0, False{}, False{})))\n'
      '    srow("fmt_256_1"',
-     '    srow("fmt_115_1", Res.s(reg_fmt(Rg{115, 1, False{}, False{}, False{}}, 0, False{}, False{})))\n'
-     '    srow("fmtp_115_1", Res.s(reg_fmt(Rg{115, 1, False{}, False{}, False{}}, 0, True{}, True{})))\n'
-     '    srow("fmtm_115_1", Res.msg(reg_fmt(Rg{115, 1, False{}, False{}, False{}}, 0, False{}, False{})))\n'
+     '    srow("fmt_115_1", P.Res.s(P.reg_fmt(P.Rg{115, 1, False{}, False{}, False{}}, 0, False{}, False{})))\n'
+     '    srow("fmtp_115_1", P.Res.s(P.reg_fmt(P.Rg{115, 1, False{}, False{}, False{}}, 0, True{}, True{})))\n'
+     '    srow("fmtm_115_1", P.Res.msg(P.reg_fmt(P.Rg{115, 1, False{}, False{}, False{}}, 0, False{}, False{})))\n'
      '    srow("fmt_256_1"'),
 
     # ---------------------------------------------------------------- GUARD
@@ -383,7 +427,7 @@ MUTATIONS = [
      '    "62decc9aa674b47a578e06bec68d46695920524da27b10fb63da75d420df8d7b",\n}'),
 ]
 
-SOURCES = {"port": PORT, "oracle": ORACLE, "pins": PINS, "gate": GATE}
+SOURCES = {"port": PORT, "driver": DRIVER, "oracle": ORACLE, "pins": PINS, "gate": GATE}
 
 # `--help` USED TO CRASH, AND THE REASON WAS THAT THE SELECTOR IN `main` WAS NOT TOTAL. It
 # filtered `MUTATIONS` on `argv`, so `--help` -- which is not a label -- selected NOTHING and the
@@ -434,7 +478,7 @@ def main(argv):
     try:
         write_copies()
         rc0, out0 = run_gate()
-        base_bd, why = lane_rows([str(BEND), str(PORT)])
+        base_bd, why = lane_rows([str(BEND), str(DRIVER)])
         base_py, _ = lane_rows([str(PY), str(ORACLE)])
         if rc0 != 0 or base_bd is None or base_py is None:
             print(f"amd_dsl_census-gate: the UNMUTATED tree is rc={rc0} and the lanes are "
@@ -454,7 +498,29 @@ def main(argv):
             # mutation that moved rows without changing a count raised
             # `TypeError: can only concatenate list (not "int") to list`.
             mv, ap, va = 0, [], []
-            src = SOURCES[f].read_text()
+            # A "port" MUTATION MAY LIVE IN EITHER FILE NOW. MEASURED 2026-11-10:
+            # the census body moved out of the port into the driver, so A1-A9 (the
+            # implementation) are in the PORT and P1/P2/P4/P5 and X1/X2/X3/X5 (the
+            # rows and the fixture VALUES) are in the DRIVER. The SOURCE is
+            # RESOLVED BY WHERE THE PATTERN IS, and a pattern in NEITHER or in
+            # BOTH is a REFUSED entry -- not a green one -- because "the pattern
+            # occurs 0 times" means the mutation is measuring nothing.
+            if f == "port":
+                p_text, d_text = PORT.read_text(), DRIVER.read_text()
+                n_p, n_d = p_text.count(old), d_text.count(old)
+                if n_p == 1 and n_d == 0:
+                    src, target = p_text, "port"
+                elif n_d == 1 and n_p == 0:
+                    src, target = d_text, "driver"
+                else:
+                    print(f"  {label:<{width}}  [{kind}]  REFUSED: the pattern occurs "
+                          f"{n_p} times in the port and {n_d} times in the driver, "
+                          f"expected 1 in exactly one")
+                    refused += 1
+                    continue
+            else:
+                src = SOURCES[f].read_text()
+                target = f
             if src.count(old) != 1:
                 print(f"  {label:<{width}}  [{kind}]  REFUSED: the pattern occurs "
                       f"{src.count(old)} times, expected 1")
@@ -470,7 +536,7 @@ def main(argv):
                       + ("RED  the guard speaks" if rc
                          else "GREEN  <-- THE CHECK DID NOT FIRE"))
             else:
-                write_copies(**{f: src.replace(old, new)})
+                write_copies(**{target: src.replace(old, new)})
                 gtext = None
                 if gate_patch is not None:
                     if GATE.read_text().count(gate_patch[0]) != 1:
@@ -479,7 +545,7 @@ def main(argv):
                         refused += 1
                         continue
                     gtext = GATE.read_text().replace(*gate_patch)
-                bd, w = lane_rows([str(BEND), str(MUT_PORT)])
+                bd, w = lane_rows([str(BEND), str(MUT_DRIVER)])
                 py, _ = lane_rows([str(PY), str(MUT_ORACLE)])
                 mv, ap, va = moved(base_bd, bd)
                 if py is not None and py != base_py:
