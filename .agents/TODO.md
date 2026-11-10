@@ -7211,6 +7211,15 @@ FOUND WHILE REPAIRING `decomp_graph_census` AND `rng_graph_census` (THE SAME RE-
       HAD ITS OWN `_xmm_sz_m_name` HELPER** (`:286`), WHICH COMPUTES THE SAME THREE-ARM
       THRESHOLD, **SO THE ROW IS NOW ANSWERED BY THE HELPER.**  **THE ORACLE'S IMPORT
       BLOCK IS REPOINTED AT `tinygrad.renderer.x86` AND `_xmm_sz_m` IS DROPPED.**
+      **⇒ LANDED: `73afaa549` (2026-11-10), ONE FILE, `gates/x86_isa-oracle.py`.**
+      **⇒ AND THE GATE NOW REACHES THE **REAL** WALL, WHICH IS THE `tag=` SHAPE AND NOT THE
+      IMPORT: BEFORE, `rc=3` WITH `ImportError: cannot import name 'rdef' from
+      'tinygrad.renderer.isa'`; **AFTER, `TypeError: UOpMetaClass.__call__() got an unexpected
+      keyword argument 'tag'` AT `:189`'s `membase`.**  **⇒ SO THIS IS A **STRICT ADVANCE AND
+      NOT A FIX**, AND THE REMAINING WALL IS THE `x86` LANE's WORK -- THE NEXT ITEM.**
+      **⇒ AND THE ANSWER IS **UNCHANGED** BY THE REPOINT: `VMOVSSm`/`VMOVSDm`/`VMOVUPSm` ALL
+      EXIST AT THE PIN (`tinygrad/renderer/x86.py:71`), AND THE PIN'S OWN `_xmm_sz` (`:330-334`)
+      RETURNS `VMOVUPS`/`VMOVSD`/`VMOVSS`.**
 - [ ] **THE ORACLE's NODE CONSTRUCTION IS ON THE PRE-PIN `tag=` SHAPE, AND THAT IS THE REAL
       WALL.** MEASURED: `gates/x86_isa-oracle.py`'s `nreg` (`:173`) IS `UOp(Ops.NOOP, tag=(r,))`,
       `ins` (`:176-177`) IS `UOp(Ops.INS, srcs, (op, dt), tag)`, AND `membase` (`:189`) IS

@@ -126,7 +126,7 @@ SEE THE FORM.**
 | **`runtime/ops_dsp.bend`: `grep -c 'py=\['` IS ZERO** | PROVABLY OBSOLETE | `dt_fmt` IS NOW **DTYPE-KEYED** (`:742` `dt_fmt_dt(d: S.Dt)`), `dt_supported` (`:811`) TAKES A **DTYPE**, `supported_12.at` (`:819`) **RETURNS A `S.Dt`**; `grep -c 'py=\['` IS NOW **4** AND ALL FOUR ARE IN THE **PRINTING CODE** (`:1983/1985/1987/1996`); **⇒ AND THE `py=` HALF IS **DERIVED** (THE FILE's OWN HEADER `:1957-1981` SAYS SO) **⇒ AND THE GATE IS GREEN**: `gates/ops_dsp_render-gate.py` READS **"497 rows, 3 lanes byte-identical over 497 COMPARED rows, 0 DECLARED divergences"**, rc=0; **⇒ AND BOTH LANES PRINT THE SAME NAMES**: `dsp_sd_0 = [bool]`, `dsp_sd_7 = [i64]`, `dsp_sd_11 = [f64]`, `dsp_sd_n = [12]`. |
 | **`runtime/ops_dsp.bend`'s ~40 GATE-ROW LITERALS** | PROVABLY OBSOLETE | **⇒ 0 DECLARED DIVERGENCES OVER 497 COMPARED ROWS** (ABOVE); **⇒ AND THE ORACLE WAS RECOVERED FROM GIT** -- `gates/ops_dsp_render-oracle.py`'s OWN HEADER NAMES THE BLOB (`291bbc8821dafb2ae0b8c464488d4b02300ced6b`, COMMIT `192142295`) AND SAYS WHY: "**a gate with no oracle is a gate that CANNOT FAIL, and this one could not.**" |
 | **`renderer/isa/x86.bend`'s `Op.to_int` IS STILL RED IN DISGUISE** | PROVABLY OBSOLETE | **⇒ IT IS NOW **DTYPE-KEYED** (`x86.bend:787-792`) AND ITS `Op.to_int.fp` (`:780-785`) IS KEYED ON `bits`/`pri`; **⇒ AND THE THREE ARMS ARE UPSTREAM'S THREE ARMS AT THE PIN** (`{dtypes.float16: dtypes.int16, dtypes.float32: dtypes.int32, dtypes.float64: dtypes.int64}[dt]`, `tinygrad/renderer/x86.py:253`); **⇒ AND THE `pri` VALUES MATCH**: `spec.bend`'s `half() = Dt{12, 16, CFloat{}, "f16"}`, `single() = Dt{14, 32, CFloat{}, "f32"}`, `double() = Dt{15, 64, CFloat{}, "f64"}`. **⇒ SO THE ITEM's PROBE ROW CANNOT BE TRUE OF THIS TREE.** |
-| **`x86_isa-oracle.py`'s IMPORT PATH IS STALE** | IMPLEMENTED | `git ls-tree -r --name-only f5ac54685074 \| grep 'renderer/'` LISTS **NO `renderer/isa/` AT ALL** -- UPSTREAM FLATTENED IT INTO `tinygrad/renderer/x86.py`; **⇒ AND 30 OF THE 31 NAMES THE ORACLE WANTED ARE PRESENT THERE**, **⇒ AND `_xmm_sz_m` DOES NOT EXIST AT THE PIN** (UPSTREAM DERIVES THE `m` SPELLING INLINE, `x86.py:481`), **⇒ AND THE ORACLE ALREADY HAD ITS OWN `_xmm_sz_m_name` HELPER** (`:286`). |
+| **`x86_isa-oracle.py`'s IMPORT PATH IS STALE** | IMPLEMENTED (`73afaa549`) | `git ls-tree -r --name-only f5ac54685074 \| grep 'renderer/'` LISTS **NO `renderer/isa/` AT ALL** -- UPSTREAM FLATTENED IT INTO `tinygrad/renderer/x86.py`; **⇒ AND 30 OF THE 31 NAMES THE ORACLE WANTED ARE PRESENT THERE**, **⇒ AND `_xmm_sz_m` DOES NOT EXIST AT THE PIN** (UPSTREAM DERIVES THE `m` SPELLING INLINE, `x86.py:481`), **⇒ AND THE ORACLE ALREADY HAD ITS OWN `_xmm_sz_m_name` HELPER** (`:286`). **⇒ AND THE GATE NOW REACHES THE **REAL** WALL: `rc=3` WITH `ImportError` -> `TypeError: UOpMetaClass.__call__() got an unexpected keyword argument 'tag'`.** |
 
 ### 2.4 `4bd91ca19` — FIVE `CSTYLECENSUS` ITEMS (NEW SECTION)
 
@@ -315,11 +315,20 @@ WITH A COUNTED CLAIM, WHICH IS THE HONEST PLACE FOR IT TO LIVE WHILE IT IS TRUE.
   PORT's `stack_pointer`/`base`/`lane` CLUSTER) WAS **NOT** ATTEMPTED** -- IT IS A PORT CHANGE,
   NOT A TURN, AND IT IS THE `x86` LANE's.  **⇒ IT IS RECORDED AS AN OPEN ITEM WITH THE PIN
   CITATIONS INSTEAD OF BEING HALF-DONE.**
-- **⇒ ONE PATCH IS IN THE WORKING TREE AND **NOT** COMMITTED**: THE `gates/x86_isa-oracle.py`
-  IMPORT REPOINT (10 LINES).  **⇒ ANOTHER UNIT IS LOWER-CASING THAT FILE's COMMENTS RIGHT NOW
-  (A 250-LINE WORKING-TREE EDIT ON TOP OF MINE), **⇒ AND `git commit --only` COMMITS A FILE's
-  CURRENT BYTES, SO COMMITTING IT WOULD SWEEP THEIR WORK.**  **⇒ IT IS RECORDED IN THE LEDGER
-  WITH THE EXACT THREE-STEP PATCH INSTEAD.**
+- **⇒ ONE PATCH WAS IN THE WORKING TREE AND **NOT** COMMITTED** AT THE TIME OF THE FIRST PASS:
+  THE `gates/x86_isa-oracle.py` IMPORT REPOINT (10 LINES).  **⇒ ANOTHER UNIT WAS
+  LOWER-CASING THAT FILE's COMMENTS (A 250-LINE WORKING-TREE EDIT ON TOP OF MINE), **⇒ AND
+  `git commit --only` COMMITS A FILE's CURRENT BYTES, SO COMMITTING IT WOULD HAVE SWEPT THEIR
+  WORK.**  **⇒ IT WAS RECORDED IN THE LEDGER WITH THE EXACT THREE-STEP PATCH INSTEAD.**
+  **⇒ AND THEN THAT UNIT's OWN COMMIT (`21be2dfa5`, "x86: 774 LITERAL `py=` cells DERIVED, and
+  the oracle REPAIRED (it was DEAD)") LANDED **WITHOUT** MY PATCH -- **⇒ AND THE GATE WAS STILL
+  `REFUSED` WITH THE SAME `ImportError`**, BECAUSE THAT UNIT REPAIRED A **DIFFERENT** DEFECT IN
+  THE SAME FILE (THE `py=` CELLS) AND LEFT THE IMPORT PATH STALE.**
+  **⇒ SO THE PATCH WAS RE-APPLIED AND LANDED AS `73afaa549`**, **⇒ AND THE GATE NOW REACHES THE
+  **REAL** WALL**: BEFORE `rc=3` WITH `ImportError: cannot import name 'rdef' from
+  'tinygrad.renderer.isa'`; **AFTER `TypeError: UOpMetaClass.__call__() got an unexpected keyword
+  argument 'tag'` AT `:189`'s `membase`**.  **⇒ THAT IS A **STRICT ADVANCE AND NOT A FIX**, AND
+  IT IS EXACTLY WHAT THE LEDGER's `X86ISA` ITEM PREDICTED.**
 - **⇒ ONE HAZARD I CAUSED AND CORRECTED**: I RAN `git checkout -- gates/cstyle_render_census.bend`
   ON A FILE ANOTHER UNIT WAS EDITING, **⇒ AND IMMEDIATELY RESTORED THEIR 14-LINE WORKING-TREE
   EDIT FROM A BYTE COPY.**  **⇒ `git checkout --` ON A SHARED FILE IS A DESTRUCTIVE ACT AND I
@@ -346,6 +355,8 @@ SPELLING.**
 | `5ce5a9ebb` | TODO: FOUR PORT-ITEMS CLOSED BY MEASUREMENT, AND TWO MORE DEAD GATES FOUND BY THE SAME RE-VENDOR |
 | `4bd91ca19` | TODO: THE cstyle_render_census GATE WAS DEAD ON TWO COUNTS, AND IT IS GREEN AGAIN (361 ROWS) |
 | `b00b1dde4` | gates/cstyle_render_census: THE DRIVER DID NOT COMPILE AND THE ORACLE SPOKE PRE-RENAME OPS -- THE GATE WAS `REFUSED`, NOT RED |
+| `72a406979` | THE TODO SWEEP's REPORT, AND THE FIGURE THAT WAS **A DATED READING** AND NOT A STANDING FACT |
+| `73afaa549` | gates/x86_isa-oracle.py: THE IMPORT PATH IS A PACKAGE UPSTREAM DELETED, AND `_xmm_sz_m` NEVER EXISTED AT THE PIN |
 
 **⇒ AFTER EVERY COMMIT: `git show --stat HEAD` (WHICH FILE) AND `git fsck --no-progress` (IN THE
 SAME COMMAND) WERE RUN.  **⇒ EVERY COMMIT CARRIED **ONE** FILE OR **THREE** FILES, NEVER A
