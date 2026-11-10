@@ -399,24 +399,33 @@ def Wire.split(s: String) -> IO(List<&2, String>):
   import "./wire.c"
   import "./wire.js"
 
-# the wire's two lists, in two effects. BEND's list is monomorphic, so a row cannot hold both strings
-# and numbers, and a row cannot be a pair of lists of different kinds -- so the effect gives one list per
-# kind and the port walks them in step.
+# THE WIRE's TWO LISTS, IN **ONE** EFFECT.
 #
-# `Wire.strings` returns, per uop, the five strings (op, dt, addr, kind, payload).
-# `Wire.numbers` RETURNS, PER UOP, THE NUMBERS (numel, cc, shapeCount, srcsCount, shape..., srcs...).
+# BEND's list is monomorphic, so a row cannot hold both strings and numbers, and a row cannot be a
+# pair of lists of different kinds -- so the port needs one list per kind and walks them in step.
+# `Wire.both` RETURNS BOTH: THE STRINGS ROW (THE PAYLOAD, PER UOP) AND THE NUMBERS ROW
+# ([opIndex, dtCode, addrCode, kindC0, kindC1, numel, cc, shapeCount, srcsCount, shape..., srcs...]).
 #
 # WHY THE NUMBERS AT ALL: the port's `U32.read` is the PRELUDE's character-at-a-time fold, and at runtime a
 # string is a JS string, so the compiler emits `slice(0, char_len(s))` AND `slice(char_len(s))` PER CHARACTER.
 # MEASURED (`PARITY.md` §131): the wire's 2,814 numbers cost 21,294 `char_len` calls and ~42,000 string
 # allocations a render, where the SAME ALGORITHM IN JS IS 0.015-0.025 ms -- forty times faster.
-@unsafe
-def Wire.strings(s: String) -> IO(List<&2, List<&2, String>>):
-  import "./wire.c"
-  import "./wire.js"
+#
+# AND **THE TWO EFFECTS ARE **ONE** EFFECT NOW**, AND THE REASON IS **THE SPLIT** (MEASURED,
+# `PARITY.md` §138): THE TWO HALVES DID `s.split(" ")` OVER THE **SAME 18 KB STRING**, AND THE SECOND
+# SPLIT COST **0.063 ms A TURN** -- **14% OF THE DECODE** -- FOR THE **SAME ROWS**. THE OBSTACLE
+# WAS BEND's MONOMORPHIC LISTS, AND THE ANSWER IS **A `Data` TYPE WITH TWO LIST FIELDS**, WHICH
+# **THE RUNTIME ACCEPTS** (MEASURED, `builds/probe/both*.bend`: THE ROW COUNT IS RIGHT AND THE
+# NUMBERS CROSS AND ARE READABLE AS `U32`).
+#
+# ⇒⇒⇒ SO `Wire.both` SPLITS **ONCE** AND `kus.io` USES **IT**. AND THE **TWO** EFFECTS IT REPLACED
+# ARE **GONE**, BECAUSE **THEY HAD NO OTHER CALLER** -- THE TOKEN PATH IS `ku_ws`, WHICH READS A
+# TOKEN LIST AND NEVER TOUCHED THEM, AND **A DEF WITH NO CALLER IS DEAD CODE**.
+type Wire.Both is Data:
+  Wire.Both{ss: List<&2, List<&2, String>>, ns: List<&2, List<&2, U32>>}
 
 @unsafe
-def Wire.numbers(s: String) -> IO(List<&2, List<&2, U32>>):
+def Wire.both(s: String) -> IO(Wire.Both):
   import "./wire.c"
   import "./wire.js"
 
@@ -510,15 +519,23 @@ def kus_rows.go(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>, +
 def kus_rows(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>) -> List<&2, C.KU>:
   List.reverse(&2, C.KU, kus_rows.go(ss, ns, Nil{}))
 
-# the two effects, bound in step. `Wire.strings` gives the five codes and the payload per uop and
-# `Wire.numbers` gives the numbers per uop, and the port walks the two lists together.
 def kus_rows.io(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>) -> IO(List<&2, C.KU>):
   IO.pure(List<&2, C.KU>, kus_rows(ss, ns))
 
+# the ONE effect, and the row walk. `Wire.both` gives the strings row and the numbers row from
+# **ONE** split, and the port walks the two lists together.
+#
+# **AND THE READER IS **ITS OWN `def` WITH A BARE PARAMETER** (`wire_rows`), BECAUSE A `match`
+# CANNOT SCRUTINIZE A COMPUTED VALUE AND CANNOT SCRUTINIZE A BOUND BINDER INSIDE THE
+# CONTINUATION (MEASURED: "**`b` can't be matched in this position**"), AND THAT IS THE TREE's
+# OWN RULE FOR EVERY SUCH READER.
+def wire_rows(b: Wire.Both) -> List<&2, C.KU>:
+  match b:
+    case Wire.Both{ss, ns}: kus_rows(ss, ns)
+
 def kus.io(+text: String) -> IO(List<&2, C.KU>):
-  IO.bind(List<&2, List<&2, String>>, List<&2, C.KU>, Wire.strings(text), ss =>
-    IO.bind(List<&2, List<&2, U32>>, List<&2, C.KU>, Wire.numbers(text), ns =>
-      kus_rows.io(ss, ns)))
+  IO.bind(Wire.Both, List<&2, C.KU>, Wire.both(text), b =>
+    IO.pure(List<&2, C.KU>, wire_rows(b)))
 
 def kus(+text: String) -> IO(List<&2, C.KU>):
   kus.io(text)

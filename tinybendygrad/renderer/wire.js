@@ -33,10 +33,10 @@ function wire_split(s) {
 
 io_eff(CID(Wire.split), wire_split);
 
-// THE WIRE'S TWO LISTS, IN TWO EFFECTS.
+// THE WIRE'S TWO LISTS, IN **ONE** EFFECT.
 //
-// WHY TWO: BEND'S LIST IS MONOMORPHIC, SO A ROW CANNOT HOLD BOTH STRINGS AND NUMBERS, AND A ROW CANNOT BE
-// A PAIR OF LISTS OF DIFFERENT KINDS. ONE LIST PER KIND, THEN THE PORT WALKS THEM IN STEP.
+// WHY TWO LISTS: BEND'S LIST IS MONOMORPHIC, SO A ROW CANNOT HOLD BOTH STRINGS AND NUMBERS, AND A ROW
+// CANNOT BE A PAIR OF LISTS OF DIFFERENT KINDS. ONE LIST PER KIND, THEN THE PORT WALKS THEM IN STEP.
 //
 // WHY THE NUMBERS AT ALL: the port's `U32.read` is the PRELUDE's character-at-a-time fold, and at runtime a
 // string is a JS string, so the compiler emits `slice(0, char_len(s))` AND `slice(char_len(s))` PER CHARACTER.
@@ -58,43 +58,51 @@ io_eff(CID(Wire.split), wire_split);
 // **AND THE KIND IS TWO NUMBERS, BECAUSE ELEVEN OF THE NINETEEN KINDS ARE TWO CHARACTERS** ("RW",
 // "M1"): the first separates the seven one-character kinds from the eleven two-character ones, and
 // the second picks inside that arm. The second is 0 for a one-character kind.
-function wire_strings(s) {
+//
+// **AND THE TWO EFFECTS ARE **ONE** EFFECT NOW, AND THE REASON IS **THE SPLIT.** MEASURED
+// (`PARITY.md` §138): THE TWO HALVES EACH DID `s.split(" ")` OVER THE **SAME 18 KB STRING**, AND THE
+// SECOND SPLIT COST **0.063 ms A TURN** -- **14% OF THE DECODE** -- FOR THE **SAME ROWS**.
+//
+// THE OBSTACLE WAS BEND's MONOMORPHIC LISTS: A ROW CANNOT HOLD BOTH STRINGS AND NUMBERS. THE
+// ANSWER IS **A `Data` TYPE WITH TWO LIST FIELDS** (`live.bend`'s `Wire.Both`), AND THE RUNTIME
+// ACCEPTS IT -- MEASURED (`builds/probe/both*.bend`): THE ROW COUNT IS RIGHT (27 TOKENS -> 3 ROWS)
+// AND THE NUMBERS CROSS AND ARE READABLE AS `U32` (18 TOKENS WITH OP INDICES 10 AND 11 -> 21).
+//
+// AND THE JS SIDE MUST RETURN **THE `Data` TAG** -- `{ $: "Both", ss, ns }` -- THE SAME SHAPE
+// `sz.js` RETURNS (`{ $: CID(Con), head, tail }`).
+//
+// AND **THE SPLIT IS THE WHOLE POINT**, SO IT IS DONE **ONCE**, AT THE TOP, AND **BOTH** LISTS
+// ARE BUILT FROM **THE SAME `parts`**.
+function wire_both(s) {
   const parts = s.split(" ");
-  let rows = { $: "Nil" };
+  // THE STRINGS ROW: THE PAYLOAD, ONE PER 9 TOKENS.
+  let ss = { $: "Nil" };
   for (let i = parts.length - 9; i >= 0; i -= 9) {
     const strs = { $: "Con", head: parts[i + 6], tail: { $: "Nil" } };
-    rows = { $: "Con", head: strs, tail: rows };
+    ss = { $: "Con", head: strs, tail: ss };
   }
-  return rows;
-}
-
-io_eff(CID(Wire.strings), wire_strings);
-
-// THE NUMBERS, PER UOP: [opIndex, dtCode, addrCode, kindC0, kindC1, numel, cc, shapeCount,
-// srcsCount, shape..., srcs...]. THE PORT'S `ku_row.of` TAKES THE OP INDEX, THE THREE CODES, numel,
-// cc, THEN THE TWO COUNTS, THEN THE REST -- AND `take`/`skip` SPLIT THE REST AT THE SHAPE COUNT.
-// EVERY NUMBER ON THE WIRE IS AN INTEGER, SO `Number` IS EXACT.
-//
-// **THE OP INDEX IS FIRST, BECAUSE IT IS A NUMBER AND THE REST OF THE ROW IS NOT.** The op index used
-// to ride in the STRINGS row as a decimal, and the port matched it with a 76-arm STRING match, which
-// the compiler compiled into a CHARACTER TRIE (MEASURED: 84 `slice`s and 2,560 `char_len` calls a
-// render). Here it is `Number(parts[i])` -- free -- and the port's `match` on it is an INTEGER COMPARE.
-//
-// **AND THE THREE CODES COME NEXT, FOR THE SAME REASON** (see `wire_strings`'s comment): the port
-// matched them as STRINGS and paid two slices and two `char_len` per call. Here they are `charCodeAt`,
-// which is free in JS, and the port's arms are INTEGER COMPARES.
-//
-// **THE LIST IS BUILT BACKWARDS-TO-FORWARDS, AND THAT IS THE WHOLE TRICK.** Prepending puts the element
-// at the HEAD, so the LAST thing prepended is the FIRST thing read. The list must read
-// [opIndex, dtCode, addrCode, kindC0, kindC1, numel, cc, sc, gc, shape..., srcs...], so the prepending
-// order is srcs, then shape, then the nine scalars -- and the scalars are prepended innermost-first.
-function wire_numbers(s) {
-  const parts = s.split(" ");
+  // THE NUMBERS ROW: [opIndex, dtCode, addrCode, kindC0, kindC1, numel, cc, shapeCount,
+  // srcsCount, shape..., srcs...]. THE PORT'S `ku_row.of` TAKES THE OP INDEX, THE THREE CODES, numel,
+  // cc, THEN THE TWO COUNTS, THEN THE REST -- AND `take`/`skip` SPLIT THE REST AT THE SHAPE COUNT.
+  // EVERY NUMBER ON THE WIRE IS AN INTEGER, SO `Number` IS EXACT.
+  //
+  // **THE OP INDEX IS FIRST, BECAUSE IT IS A NUMBER AND THE REST OF THE ROW IS NOT.** The op index used
+  // to ride in the STRINGS row as a decimal, and the port matched it with a 76-arm STRING match, which
+  // the compiler compiled into a CHARACTER TRIE (MEASURED: 84 `slice`s and 2,560 `char_len` calls a
+  // render). Here it is `Number(parts[i])` -- free -- and the port's `match` on it is an INTEGER COMPARE.
+  //
+  // **AND THE THREE CODES COME NEXT, FOR THE SAME REASON** (see the header): the port
+  // matched them as STRINGS and paid two slices and two `char_len` per call. Here they are `charCodeAt`,
+  // which is free in JS, and the port's arms are INTEGER COMPARES.
+  //
+  // **THE LIST IS BUILT BACKWARDS-TO-FORWARDS, AND THAT IS THE WHOLE TRICK.** Prepending puts the element
+  // at the HEAD, so the LAST thing prepended is the FIRST thing read. The list must read
+  // [opIndex, dtCode, addrCode, kindC0, kindC1, numel, cc, sc, gc, shape..., srcs...], so the prepending
+  // order is srcs, then shape, then the nine scalars -- and the scalars are prepended innermost-first.
   const list = (t) => (t === "-" ? [] : t.split("~").map(Number));
-  // THE CODE'S CHAR CODES. `charCodeAt(0)` IS FREE, AND THE SECOND IS 0 FOR A ONE-CHARACTER CODE.
   const c0 = (t) => t.charCodeAt(0);
   const c1 = (t) => (t.length > 1 ? t.charCodeAt(1) : 0);
-  let rows = { $: "Nil" };
+  let ns = { $: "Nil" };
   for (let i = parts.length - 9; i >= 0; i -= 9) {
     const shape = list(parts[i + 3]);
     const srcs = list(parts[i + 7]);
@@ -110,9 +118,9 @@ function wire_numbers(s) {
     nums = { $: "Con", head: c0(parts[i + 2]), tail: nums };
     nums = { $: "Con", head: c0(parts[i + 1]), tail: nums };
     nums = { $: "Con", head: Number(parts[i]), tail: nums };
-    rows = { $: "Con", head: nums, tail: rows };
+    ns = { $: "Con", head: nums, tail: ns };
   }
-  return rows;
+  return { $: "Both", ss, ns };
 }
 
-io_eff(CID(Wire.numbers), wire_numbers);
+io_eff(CID(Wire.both), wire_both);
