@@ -95,11 +95,11 @@ turn-cost       [####....] 4/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangR
                                          **THE SPLIT 0.2138 -> 0.0906 ms**, AND THE PAIRED
                                          VERDICT (THE RATIO OF THE TWO MINIMA) IS **0.8526**,
                                          WITH **122/153** PAIRED TURNS FASTER AND `same C: True`.
-                                         **⇒⇒⇒ AND THE SUBSTRATE **MOVED** SINCE §137 (ANOTHER
+                                         **AND THE SUBSTRATE **MOVED** SINCE §137 (ANOTHER
                                          UNIT LANDED A REFACTOR), SO §138's NUMBERS ARE **RE-
                                          MEASURED**, AND THE MEASUREMENTS ARE TAKEN IN **A
                                          DEDICATED WORKTREE** (THE MAIN TREE CARRIES OTHER
-                                         UNITS' IN-FLIGHT EDITS). **⇒⇒⇒ AND `bin/bend` WAS
+                                         UNITS' IN-FLIGHT EDITS). **AND `bin/bend` WAS
                                          **BROKEN** AND IS FIXED: THE `references/` CLONE's
                                          `bend2/main.ts` HAD BEEN OVERWRITTEN WITH THE SHIM
                                          ITSELF, AND **THE COMPILER IS NOW BEND 2.0.40**.
