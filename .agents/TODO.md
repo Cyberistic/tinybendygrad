@@ -28316,7 +28316,22 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       `MISSING` LISTED FOUR BODIES OF WHICH TWO HAD LANDED (`fold_const_where` IS `sy_fcw` AND
       `lift_reduce_gate` IS `sym_90`), WHICH IS THE GATE'S OWN "A PINNED-ABSENT BODY LANDED"
       CHECK FIRING.
-- [ ] `UOp.gcd` / `UOp.divide_exact` / a `usum` reachable from `divandmod.bend` — all ABSENT, and
+- [x] `UOp.gcd` / `UOp.divide_exact` -- **BOTH ARE PORTED, AND THE ITEM's "ALL ABSENT" IS FALSE
+      FOR THESE TWO.** LANDED IN `4a8d15ab6` ("UOp.gcd AND UOp.divide_exact, AND THE ops-core GATE
+      IS ALIVE AGAIN"): `tinybendygrad/uop/ops.bend` HAS `UOp.gcd` AT `:8857` (WITH ITS
+      `UOp.gcd.counter` / `.terms` / `.factors` / `.cfactors` / `.gcd` / `.prod` / `.const` /
+      `.answer` / `.mk` HELPERS AT `:8360-8857`) AND `UOp.divide_exact` AT `:8815` (WITH ITS
+      `Dq`/`Dv` FOLD AT `:8580-8815`). **⇒ AND THE GATE MEASURES THEM AGAINST CPYTHON's OWN
+      `UOp.gcd` / `UOp.divide_exact`: `.venv/bin/python gates/ops-core-gate.py` READS
+      **"ops-core-gate: 44 rows, 3 lanes"** (rc=0, 16 s, 1928 MB) **AND THE GATE NAMES THE SIX
+      ROWS ITSELF** (`gates/ops-core-gate.py:76-90`: `ctr_bump` `ctr_find` `ctr_inter` `gcd_const`
+      `gcd_shared` `de_same` `de_const_none` `de_mul` `de_const_out`).**
+- [ ] A `usum` reachable from `divandmod.bend` -- **STILL REAL, AND IT IS THE `usum` HALF OF THE
+      ORIGINAL BUNDLED ITEM** (WHICH SAID "`UOp.gcd` / `UOp.divide_exact` / A `usum` REACHABLE FROM
+      `divandmod.bend` -- ALL ABSENT"; THE FIRST TWO ARE NOW PORTED AND MEASURED, AND THIS THIRD
+      ONE IS NOT). **MEASURED 2026-11-10: `divandmod.bend`'s IMPORTS ARE `Base` / `H` / `S` / `O` /
+      `F` (`:58-62`) AND **NO** `symbolic.bend`, WHILE `usum` LIVES IN `symbolic.bend` AS `sy_usum`
+      (`:631-642`) -- SO THE `symbolic -> divandmod` IMPORT DIRECTION IS STILL FORBIDDEN.**
       they are standalone primitives that can be built and oracle-tested without the rewriter.
 - [x] **THE BODY-VERIFICATION INSTRUMENT RAN FOR THE FIRST TIME EVER: 232 CASES, 219 AGREE, 13
       DIVERGE.** `gates/symrules-oracle.py` HAD NO PORT SIDE AT ALL AND ITS CPYTHON HALF
@@ -28356,18 +28371,65 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       `AFTER(NOOP, INDEX, LOAD)` -- AND AT THE CURRENT PIN IT IS `after(index)`, ONE SRC.
       MEASURED: THE PORT's ANSWER **CARRIED A LOAD THAT UPSTREAM's DID NOT**, WHICH IS A WRONG
       KERNEL SHAPE AND NOT A COSMETIC DIFFERENCE. FIXED BY TAKING THE INDEX.
-- [ ] **THE ELEVEN DIVERGENCES ARE FOUR CLASSES AND NONE OF THEM IS A CITATION PROBLEM:**
+- [x] **THE ELEVEN DIVERGENCES ARE FOUR CLASSES AND NONE OF THEM IS A CITATION PROBLEM:**
       **FOUR ARE THE `ne`/`eq` PRIMITIVE SWAP** (`r189` `r84` `r243` `r256`), **TWO ARE THE
       MISSING TWO-STAGE ALU FOLDING** (`:171`-`:173`, SIX ROWS: MUL MAX XOR OR AND ADD -- `r295`
       `r296`), **ONE IS THE MISSING `:89` STACK BROADCAST** (`r82`), AND **FOUR ARE THE POW
       HANDLING** (`p193a` `x451a` `x451b` `x451c`).
-- [ ] **THE PORT LACKS UPSTREAM's TWO-STAGE ALU FOLDING** (`:171`-`:173`, SIX CENSUS ROWS: MUL
+**⇒ MEASURED 2026-11-10, THE BODY-VERIFICATION INSTRUMENT READS **232 CASES, 232 AGREE,
+0 DIVERGE** (`./bin/bend gates/symrules-driver.bend` UNDER `checks/bounded.py --mb 3072` ->
+`WITHIN-LIMITS`, 5 s, 2439 MB; THEN `.venv/bin/python gates/symrules-oracle.py --compare <out>` ->
+rc=0), **AND EVERY ROW THIS ITEM NAMES IS A CASE IN THE POPULATION** (`r82` `r295` `r296` `r189`
+`r84` `r243` `r256` ARE 2 ROWS EACH IN `gates/symrules-cases.rows`; `p193a` `x451a` `x451b` `x451c`
+ARE 1 EACH), **⇒ SO THE ELEVEN DIVERGENCES ARE **ZERO** AND THE FOUR CLASSES THIS ITEM NAMED ARE
+THE HISTORY OF THE FIX, NOT THE STATE OF THE TREE.** THE FIXES LANDED IN THE 2026-11-06 SESSION
+(THE NE/EQ SWAP, `r82`'s EXPAND, `r295`/`r296`'s TWO-STAGE ALU FOLD, AND THE `pow` HANDLING).
+      **FOUR ARE THE `ne`/`eq` PRIMITIVE SWAP** (`r189` `r84` `r243` `r256`), **TWO ARE THE
+      MISSING TWO-STAGE ALU FOLDING** (`:171`-`:173`, SIX ROWS: MUL MAX XOR OR AND ADD -- `r295`
+      `r296`), **ONE IS THE MISSING `:89` STACK BROADCAST** (`r82`), AND **FOUR ARE THE POW
+      HANDLING** (`p193a` `x451a` `x451b` `x451c`).
+- [x] **THE PORT LACKS UPSTREAM's TWO-STAGE ALU FOLDING** (`:171`-`:173`, SIX CENSUS ROWS: MUL
       MAX XOR OR AND ADD) -- WHICH IS WHY `r295` AND `r296` DIVERGE. `exec_alu` AND `fits` ARE
       BOTH PRESENT, SO THE RULE IS WRITABLE WITH WHAT THE PORT HAS.
-- [ ] **THE PORT LACKS UPSTREAM's `:89` STACK BROADCAST** (`invalid_pat.broadcast` ->
+**⇒ MEASURED 2026-11-10: **PROVABLY ALREADY DONE**, AND THE ITEM's CLAIM IS FALSE TODAY. THE
+TWO-STAGE ALU FOLDING **IS PORTED**: `tinybendygrad/uop/symbolic.bend:6040-6087` IS `sym_295.inner` /
+`sym_295.outer` / `sym_295.pat` / `sym_295.opok` / `sym_295.hit` / `sym_295.mk`, AND `sym_296` IS ITS
+SIBLING. **⇒ AND THE BODY-VERIFICATION INSTRUMENT MEASURES IT: `gates/symrules-cases.rows` CARRIES
+`r295` AND `r296` AS 2 ROWS EACH, AND `.venv/bin/python gates/symrules-oracle.py --compare
+<driver.out>` READS **232 CASES, 232 AGREE, 0 DIVERGE** (rc=0) -- SO `r295` AND `r296` **DO NOT
+DIVERGE**.** UPSTREAM'S RULE IS AT THE PIN `f5ac54685074`, `tinygrad/uop/symbolic.py`'s
+`# ** two stage ALU folding **` BLOCK (`UPat.var("x", dtypes.wints if op is Ops.ADD else
+None).alu(op, UPat.cvar("c1")).alu(op, UPat.cvar("c2")) ... x.alu(f.op, c1.alu(f.op, c2)) if
+fits(x, exec_alu(f.op, dtypes.weakint, [c1.vmin, c2.vmin])) else None`), **AND `exec_alu` AND
+`fits` ARE BOTH IN THE PORT** (`symbolic.bend:753` NAMES `exec_alu`; `fits` IS THE `sym_295.fitc` /
+`sym_295.ovm` PAIR AT `:6058-6072`) **-- WHICH IS EXACTLY WHAT THIS ITEM SAID WAS TRUE.**
+      MAX XOR OR AND ADD) -- WHICH IS WHY `r295` AND `r296` DIVERGE. `exec_alu` AND `fits` ARE
+      BOTH PRESENT, SO THE RULE IS WRITABLE WITH WHAT THE PORT HAS.
+- [x] **THE PORT LACKS UPSTREAM's `:89` STACK BROADCAST** (`invalid_pat.broadcast` ->
       `i.expand(s.shape)`), WHICH IS WHY `r82` DIVERGES: UPSTREAM ANSWERS `(expand bad 2)` AND
       THE PORT ANSWERS `bad`.
-- [ ] **THE FOUR `pow` DIVERGENCES** (`p193a` `x451a` `x451b` `x451c`) ARE THE PORT's POW
+**⇒ MEASURED 2026-11-10: **PROVABLY ALREADY DONE**. `tinybendygrad/uop/symbolic.bend`'S
+`sym_82.put` (`:1890-1893`) **NOW BUILDS `O.OpsEXPAND{}`**:
+`O.UOp.new(O.Found.ar(sh), O.OpsEXPAND{}, [O.Found.i(inv), O.Found.i(sh)], O.ANone{}, O.TNone{})`,
+WITH `sym_82.shape` (`:1887-1888`) MINTING THE **PLAIN INT CONST** (`O.CInt{H.i64_of_i32(n)}`) THAT
+UPSTREAM'S EXPAND NODE CARRIES. **⇒ AND `r82` IS 2 ROWS IN `gates/symrules-cases.rows` AND THE
+BODY-VERIFICATION INSTRUMENT READS **232 CASES, 232 AGREE, 0 DIVERGE**
+(`gates/symrules-oracle.py --compare`, rc=0) -- SO `r82` **DOES NOT DIVERGE**, AND THE PORT
+ANSWERS THE EXPAND.** UPSTREAM'S RULE IS `symbolic.py:89`'s `invalid_pat.broadcast(name="s")` ->
+`lambda i,s: i.expand(s.shape)` AT THE PIN `f5ac54685074`.
+      `i.expand(s.shape)`), WHICH IS WHY `r82` DIVERGES: UPSTREAM ANSWERS `(expand bad 2)` AND
+      THE PORT ANSWERS `bad`.
+- [x] **THE FOUR `pow` DIVERGENCES** (`p193a` `x451a` `x451b` `x451c`) ARE THE PORT's POW
+      HANDLING AGAINST UPSTREAM's `xpow`, AND UPSTREAM'S ANSWER FOR `p193a` IS `(exp2 (mul xf 0.0))`.
+**⇒ MEASURED 2026-11-10: **PROVABLY ALREADY DONE**. THE PORT's `pow` HANDLING IS
+`tinybendygrad/uop/symbolic.bend`'s `xpow_int` (`:5634`) AND ITS `xpow` CALL SITE (`:5665`, WHICH
+THREADS THE **NODE's DTYPE** -- `sy_dt1(x, sy_src1(x, u))` -- THE DEFECT THIS ITEM's FOUR CASES
+EXPOSED), AND THE FILE's OWN HEADER (`:5646-5657`) NAMES BOTH DEFECTS AND THE FIX. **⇒ AND ALL
+FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW EACH IN
+`gates/symrules-cases.rows`) **AND THE BODY-VERIFICATION INSTRUMENT READS **232 CASES, 232 AGREE,
+0 DIVERGE** (`gates/symrules-oracle.py --compare`, rc=0).** UPSTREAM'S ANSWER FOR `p193a` IS
+`(exp2 (mul xf 0.0))` -- AND THE PORT's DRIVER PRINTS EXACTLY THAT
+(`p193a=6:EXP2:5;5:MUL:2,4;2:~xf:;4:~bad:;`, MEASURED FROM THE DRIVER'S OWN OUTPUT).
       HANDLING AGAINST UPSTREAM's `xpow`, AND UPSTREAM'S ANSWER FOR `p193a` IS `(exp2 (mul xf 0.0))`.
 - [ ] THE CORPUS IS RED (31/38, seven graphs: binblob bw commute flip gral matmul reduce) and it is
       NOT this lane: MEASURED across three `symbolic.bend` versions (HEAD, pre-`sy_trunc`,
