@@ -447,7 +447,7 @@ def main() -> IO(Unit):
 #     module, entryPoint)` (:106) are all fields of objects the trace does not
 #     carry. In particular nothing checks that `pass.pipeline`'s `entryPoint` is
 #     the entry point `P.Pass.of` was given: the only reader would be the ffi seam,
-#     so the reader `P.Pass.entry` was deleted rather than left as a def nothing
+#     so the reader `Pass.entry` was deleted rather than left as a def nothing
 #     called. The entry point is still in the `P.Pass` record, and the gate has no
 #     row that reads it -- that is the gap, stated rather than papered over.
 #   3. the u64 AND f32 arithmetic. Walls 2 and 3. `wg_free_bytes_*` covers the int
