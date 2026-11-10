@@ -257,12 +257,26 @@ nothing that the four import lines did not already buy.
 is armed), over `tinybendygrad/*.bend`:**
 
 ```
-BEFORE   240,529 lines across 194 .bend files   (git ls-tree -r HEAD)
-AFTER    240,529 lines across 194 .bend files   (git ls-tree -r HEAD, this commit)
+BEFORE  240,529 lines across 194 .bend files   (git ls-tree -r HEAD)
+AFTER   235,527 lines across 195 .bend files   (git ls-tree -r HEAD, this commit)
 ```
 
-**⇒ THE PORT'S LINE COUNT IS UNCHANGED. THE MOVE IS LOC-NEUTRAL**, and it had to
-be: a move that changes the line count is a move that edits something.
+**⇒ ⇒ BUT THE TOTAL IS NOT A MEASUREMENT OF *THIS* CHANGE, AND THE HONEST WAY
+TO MEASURE THIS CHANGE IS THE COMMIT'S OWN DIFF.** OTHER UNITS COMMITTED
+CONCURRENTLY, so the tree's totals moved for reasons that have nothing to do
+with this unit. **⇒ THE COMMIT'S OWN NUMSTAT IS THE MEASUREMENT:**
+
+```
+$ git diff --numstat HEAD~1 HEAD -- 'tinybendygrad/*.bend' 'tinybendygrad/**/*.bend'
+5	5	tinybendygrad/LAWS/PROOF-ALL.bend
+3	3	tinybendygrad/{ => LAWS}/PROOF.bend
+6	6	tinybendygrad/{ => LAWS}/PROOF2.bend
+```
+
+**⇒ 14 INSERTIONS, 14 DELETIONS, 3 FILES, AND THE PORT's `.bend` FILE COUNT IS
+195 BEFORE AND 195 AFTER. THE MOVE IS LOC-NEUTRAL BY CONSTRUCTION.** A move that
+changes the line count is a move that edits something; this one renames two
+paths and re-points five import lines, so the count of lines cannot move.
 
 **⇒ AND THE TWO HALVES' OWN LINE COUNTS ARE UNCHANGED TO THE LINE:**
 
@@ -273,6 +287,7 @@ BEFORE  141  tinybendygrad/PROOF2.bend       AFTER  141  tinybendygrad/LAWS/PROO
 
 **⇒ NO LINE WAS ADDED AND NO LINE WAS DELETED. THE MOVE RENAMES TWO PATHS AND
 RE-POINTS FIVE IMPORT LINES. THAT IS THE WHOLE OF IT.**
+
 
 ## 8. THE VERIFICATION RUN
 
@@ -365,7 +380,53 @@ changed lines in `base.bend`, `tensor.bend`, `uop/ops.bend`, `device.bend`,
    instead. **⇒ A REGENERATED ARTIFACT IS NOT A SAFE THING TO REGENERATE ON A
    SHARED TREE, AND THE FIXTURE-PATH PROOF IS CHEAPER THAN THE REGENERATION.**
 
-## 11. WHAT WAS NOT DONE, AND WHY
+## 11. THE COMMIT
+
+**⇒ `328145c7c` -- "THE TWO PROOF HALVES MOVE INTO `LAWS/`..."**
+
+```
+$ git show --name-only --format='' HEAD | sort
+.agents/slop/laws17/laws.py
+.agents/slop/proof-audit/REPORT.md
+AGENTS.md
+checks/port-compile.rows
+checks/substrate-id.py
+checks/unrunnable-recipes.rows
+oracles/hdr_rows.rows
+spec/laws.md
+spec/shape-laws.md
+tinybendygrad/LAWS/PROOF-ALL.bend
+tinybendygrad/LAWS/PROOF.bend
+tinybendygrad/LAWS/PROOF2.bend
+```
+
+**⇒ TWELVE FILES. ZERO FOREIGN FILES SWEPT.** (`--only` with an explicit
+pathspec; the two old paths do not appear because git recorded them as renames:
+`rename tinybendygrad/{ => LAWS}/PROOF.bend (99%)` and
+`rename tinybendygrad/{ => LAWS}/PROOF2.bend (93%)`.)
+
+**⇒ `git fsck --no-progress` NAMES TWO MALFORMED TREES, AND NEITHER IS OURS:**
+
+```
+error in tree 3a60f33f57a4bb2fe120a97720b6bb2af38d9593: duplicateEntries: contains duplicate file entries
+error in tree d83cf685f89af04f607a49a3c6d2c8ef0c1eec65: duplicateEntries: contains duplicate file entries
+```
+
+**⇒ AND BOTH ARE ORPHANED, WHICH IS THE RIGHT OUTCOME:** MEASURED,
+`git merge-base --is-ancestor <tree> HEAD` answers **NOT AN ANCESTOR** for both.
+`AGENTS.md` already names them (`d83cf685` owned by `591f6b499`, `3a60f33f`
+owned by `63b64ebad`, `d57bc484` UNOWNED) as the 435-file armed-index outage.
+**⇒ ⇒ AND `git fsck HEAD` DOES NOT NAME `HEAD`'s OWN TREE, SO THIS COMMIT'S TREE
+IS WELL-FORMED.** A push of HEAD would not carry the malformed trees.
+
+**⇒ AND THE COMMIT CARRIES ANOTHER UNIT'S PROSE-LINT BYTES, DELIBERATELY.**
+MEASURED on `AGENTS.md` alone: **4** changed rows are this unit's path edits and
+**88** are the other unit's `⇒` -> `AND` prose rewrite. **⇒ THE TREE'S RULE IS
+"NEVER DISCARD ANOTHER UNIT'S WORK", AND A COMMIT THAT DROPPED THEM WOULD HAVE
+BEEN A REVERT.** The renames are therefore R99 and R93, not R100 -- and the
+delta is THEIR edit and not this unit's.
+
+## 12. WHAT WAS NOT DONE, AND WHY
 
 * **`tinybendygrad/LAWS.bend` was NOT moved.** 16 path literals in 2 gates, and
   the name `LAWS/LAWS.bend` is self-referential. §5.
