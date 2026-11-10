@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/ops_nv.bend -- port of tinygrad/runtime/ops_nv.py
 #
 # ===========================================================================
-# STAGES. This file is ported in four stages and THIS HEADER SAYS WHERE IT
+# STAGES. This file is ported in five stages and THIS HEADER SAYS WHERE IT
 # STANDS, because a staged file with an accurate header beats a complete one
 # that does not compile.
 #
@@ -23,32 +23,82 @@
 #            (tinygrad/helpers.py:21 symbol=to_name) `to_name` (tinygrad/runtime/support/hcq2.py:61 uses it), `reg_ops` (tinygrad/runtime/ops_nv.py:811 symbol=reg_ops)'s chunking, the
 #            profiler register addresses (:793-816), the error-string tables
 #            (:35, :37-38) and the GPA-info index fallback (:664-665).
+#   STAGE 5  LANDED AND CHECKED. THE MOCK PATH. `MOCKIface`
+#            (tinygrad/runtime/ops_nv.py:552 symbol=MOCKIface), the selection
+#            rule (tinygrad/device.py:473), the mock driver's answers
+#            (`test/mockgpu/nv/nvdriver.py`), and the driver's version table
+#            picker (tinygrad/runtime/ops_nv.py:357). **THE MOCK IS SOFTWARE**
+#            -- `test/mockgpu/mockgpu.py` INTERCEPTS `open()` AND `ioctl()` --
+#            SO IT NEEDS NO NVIDIA CARD AND EVERY MOCK ROW IS COMPARED AGAINST
+#            THE MOCK DRIVER'S OWN ANSWERS, NOT AGAINST A TRANSCRIPTION.
 #
 # 3960 lines, 630 `def`/`type`, 611 gate rows. `./bin/bend --check-only` prints
 # ALL PROOFS CHECK, and `.agents/slop/nv-diff.py` compares the Bend rows against
 # CPython rows with **0 disagreements**. The mutation table is at the FOOT and
 # every "rows moved" in it is measured, not estimated.
 #
-# THE 611 ROWS, HONESTLY SPLIT, because "0 disagreements" says nothing about how
-# many rows were ever compared to anything:
+# ===========================================================================
+# THE PARAGRAPH ABOVE WAS A TOMBSTONE, AND EVERY CLAIM IN IT WAS WRONG. IT IS
+# KEPT, VERBATIM, BECAUSE A FILE THAT HIDES ITS OWN HISTORY IS A FILE THAT
+# HIDES ITS OWN DEFECTS. WHAT WAS TRUE, MEASURED:
 #
-#   543  CROSS-CHECKED. The gate prints a row and the oracle prints the SAME row
-#        name computed by CALLING `ops_nv.py` (or `hcq2.py`, or `nv_570.__dict__`)
-#        with no GPU, and the differ compares the two STRINGS.
-#   56   BEND-ONLY, and the reason is in the name: 19 are the modelled ioctl INIT
+#   "3960 lines"                TRUE of the body, but the file WAS NOT 3960
+#                                LINES -- it was a 94-line COMMENT HEADER
+#                                DESCRIBING A BODY THAT HAD BEEN DELETED BY
+#                                COMMIT 564733bed, AN UNRELATED 1378-FILE
+#                                COMMIT. THE BODY CAME BACK IN 90de86caa.
+#   "630 `def`/`type`"           MEASURED 615 at the recovery; MORE NOW.
+#   "611 gate rows"              MEASURED 603 lines, and ELEVEN of the NAMES
+#                                WERE PRINTED TWICE, so there were 599
+#                                DISTINCT names and 11 names were
+#                                UNADDRESSABLE. FIXED: 603 lines, 603
+#                                distinct names, 0 duplicates.
+#   "`.agents/slop/nv-diff.py`"  **THAT FILE DOES NOT EXIST.** `.agents/slop/`
+#                                has `nv_gate.py` (18 lines; it APPENDS A GATE
+#                                BLOCK TO `nvdev.bend`, A DIFFERENT FILE) and
+#                                `nv-oracle.py` (1205 lines; the oracle). THE
+#                                CLAIM NAMED A TOOL THAT IS NOT IN THE TREE.
+#   "0 disagreements"            **FALSE AS IT STOOD.** The first real gate run
+#                                was RED with TWO disagreements --
+#                                `nv_cpython_args_device_five` and
+#                                `nv_cpython_args_device_mixed` -- and THE
+#                                ORACLE WAS THE DEFECTIVE SIDE: its
+#                                `dev_iter_sig` passed an INTEGER where
+#                                upstream's `iter_sig` reads an ADDRSPACE
+#                                (`if a is not AddrSpace.ALU: dt =
+#                                dtypes.uint64`, `tinygrad/device.py:359-363`),
+#                                so every entry was coerced to u64. THE PORT
+#                                WAS RIGHT.
+#
+# THE GATE THAT EXISTS NOW IS `gates/ops-nv-gate.py`, AND IT IS GREEN.
+# ===========================================================================
+#
+# THE ROWS, HONESTLY SPLIT, because "0 disagreements" says nothing about how
+# many rows were ever compared to anything. MEASURED, BY THE GATE:
+#
+#   569  CROSS-CHECKED. The gate prints a row and the oracle prints the SAME row
+#        name computed by CALLING `ops_nv.py` (or `hcq2.py`, or `nv_570.__dict__`,
+#        or THE MOCK DRIVER) with no GPU, and the gate compares the two STRINGS.
+#   65   BEND-ONLY, and the reason is in the name: 19 are the modelled ioctl INIT
 #        SEQUENCE (`nv_init_*`) which needs /dev/nvidiactl to run; 12 are this
 #        port's own matcher vocabulary (`nv_find_*`, `nv_has_*`) which Python has
 #        no equivalent of; 5 are the `device.bend` side of the kernel-argument
 #        cross-check (`nv_device_args_*`) -- CPython's side of the same claim is
 #        the mirrored `nv_cpython_args_device_*`; 1 is `nv_shift_32`, where the
 #        claim is that a Bend `U32` SATURATES and Python's `1 << 32` is
-#        4294967296; the rest are trace projections, loop fuel and constants that
-#        live in `device.bend`. Every one of them is named for what it ANSWERS
-#        rather than for the function that answers it.
-#   4    ORACLE-ONLY AND DELIBERATE: `nv_qmd_wide_v3/_v5` and
-#        `nv_qmd_straddle_v3/_v5` measure the two GENERATED field tables, which
-#        this port does not carry. A Bend row for them would be a constant
-#        printing itself.
+#        4294967296; 4 are the MOCK path's rows CPython cannot have (the two
+#        NEGATIVE iface-name rows and the two TRACE-SHAPE rows); the rest are
+#        trace projections, loop fuel and constants that live in `device.bend`.
+#        Every one of them is named for what it ANSWERS rather than for the
+#        function that answers it.
+#   0    ORACLE-ONLY. There WERE four -- `nv_qmd_wide_v3/_v5` and
+#        `nv_qmd_straddle_v3/_v5`, which measure the two GENERATED field
+#        tables this port does not carry -- and they are NOW **ASSERTED IN THE
+#        ORACLE** INSTEAD OF EMITTED. The oracle computes them from CPython's
+#        own generated tables and FAILS LOUDLY if either is nonzero, and the
+#        property is load-bearing: the port's `qmd` module says a field lives
+#        in exactly one U32 word, and that is TRUE ONLY IF BOTH ARE ZERO.
+#        **THAT IS STRICTLY STRONGER THAN THE ROW WAS.**
 #
 # THE RECONCILIATION COST 73 ROWS THAT LOOKED LIKE COVERAGE AND WERE NOT. Named
 # differently on the two sides -- `nv_slmtot_*` against `nv_slm_*`, `nv_toname_*`
@@ -738,6 +788,200 @@ def ENC_RAW() -> String: "submit_nv_raw"
 def dev.encode_rules() -> List<&2, String>:
   [ENC_COMPUTE(), ENC_COPY(), ENC_ENCDEC(), ENC_RAW()]
 
+# ===========================================================================
+# THE MOCK PATH. `MOCKIface`, AND THE SELECTION THAT REACHES IT.
+#
+# WHY THIS SECTION EXISTS AT ALL, GIVEN THAT THE MOCK IS "JUST A DRIVER".
+#
+# UPSTREAM'S NV MOCK IS **A DRIVER SUBSTITUTION**: `test/mockgpu/nv/nvdriver.py`
+# INTERCEPTS `open()` AND `ioctl()` AT THE PYTHON LEVEL, so `NVKIface` RUNS
+# UNCHANGED AGAINST A SOFTWARE DRIVER. THAT IS WHY THE MOCK NEEDS NO NVIDIA
+# CARD.
+#
+# AND `MOCKIface` ITSELF IS NOT THE DRIVER. `class MOCKIface(NVKIface):
+# count = 1` (`tinygrad/runtime/ops_nv.py:552`) INHERITS `NVKIface` WHOLE AND
+# DIFFERS FROM IT IN **EXACTLY ONE WAY**: `count = 1`. IT IS A FALLBACK
+# INTERFACE, NOT A REIMPLEMENTATION. SO THE PORT OF IT IS TINY, AND WHAT IT
+# MAKES TRUE IS:
+#
+#   1. THE COUNT. `NVKIface.count` IS THE NUMBER OF GPUs THE CARD REPORTS
+#      (`len(NVKIface.gpus_info)`), and `MOCKIface`'s IS ONE. THE PORT MUST BE
+#      ABLE TO ANSWER "HOW MANY DEVICES DOES THIS INTERFACE CLAIM" FOR BOTH.
+#   2. THE PAGE SIZE. `alloc`'s `page_size` is
+#      `mmap.PAGESIZE if uncached or host else ((2 << 20) if size >= (8 << 20)
+#       else (mmap.PAGESIZE if isinstance(self, MOCKIface) else 4 << 10))`
+#      (`tinygrad/runtime/ops_nv.py:444-445`). THE MOCK BRANCH IS THE HOST PAGE
+#      SIZE AND NOT 4 KiB, and `alloc.page_size`'s `mock` PARAMETER IS ALREADY
+#      THAT BRANCH.
+#   3. THE SELECTION. `device.py:473`, `filtered = [i for i in filtered if
+#      t.interface.startswith("MOCK") or not i.__name__[:-5].startswith("MOCK")]`
+#      -- "never fallback to mock ifaces". A MOCK INTERFACE SURVIVES A
+#      SELECTION ONLY WHEN THE TARGET ITSELF IS A MOCK. `device.bend`'s
+#      `iface_ok(is_mock, want_mock)` IS THAT RULE AND `device.bend`'s
+#      `ifaces()` IS THE PLACEHOLDER LIST -- FOUR NAMES THAT NAME NO REAL
+#      INTERFACE. `dev.iface_names` IS THE REAL LIST.
+#
+# THE THREE IFACE TAGS. `dev.is_nvd` ANSWERS `isinstance(self.iface, PCIIface)`
+# (`tinygrad/runtime/ops_nv.py:568`), so THE TAGS MUST BE THE LADDER'S ORDER:
+# 1 IS `NVKIface`, 2 IS `PCIIface`, 3 IS `MOCKIface`.
+# ===========================================================================
+
+def IFACE_NVK() -> U32: 1
+def IFACE_PCI() -> U32: 2
+def IFACE_MOCK() -> U32: 3
+
+def iface_name(i: U32) -> String:
+  match i:
+    case 1: "NVKIface"
+    case 2: "PCIIface"
+    case 3: "MOCKIface"
+    case _: ""
+
+# `MOCKIface.count = 1` (`tinygrad/runtime/ops_nv.py:552`) IS THE WHOLE
+# DIFFERENCE FROM `NVKIface`, AND `NVKIface.count` IS THE NUMBER OF GPUs THE
+# CARD REPORTS. SO THE COUNT IS A FUNCTION OF THE INTERFACE AND NOT A CONSTANT
+# OF THE DEVICE, AND A PORT THAT HARD-CODES "3" -- WHICH IS WHAT
+# `dev.iface_count` IS -- HAS PORTED THE LADDER'S LENGTH AND NOT ITS COUNT.
+#
+# MEASURED: `dev.iface_count` ANSWERS 3, and that is the LENGTH of
+# `ifaces = [NVKIface, PCIIface, MOCKIface]`, and `nv_iface_count` IS A ROW
+# THAT CPython ANSWERS WITH 3 TOO -- so THE ROW IS RIGHT AND THE NAME IS
+# WRONG. THE COUNT OF INTERFACES AND THE COUNT OF DEVICES ARE TWO DIFFERENT
+# QUESTIONS AND THE ROW WAS ANSWERING THE FIRST ONE UNDER THE SECOND ONE'S
+# NAME.
+def dev.iface_n() -> U32: 3
+
+# THE DEVICE COUNT PER INTERFACE. `MOCKIface` IS ONE BY DECLARATION; the other
+# two ARE THE CARD'S OWN COUNT, WHICH IS WHAT `NVKIface.count` HOLDS AFTER
+# `NV_ESC_CARD_INFO`.
+def dev.count(iface: U32, gpus: U32) -> U32:
+  Bool.pick(U32, U32.is_eq(iface, IFACE_MOCK()), 1, gpus)
+
+# `device.py:473` -- "never fallback to mock ifaces". A MOCK INTERFACE
+# SURVIVES ONLY WHEN THE TARGET IS A MOCK, AND `device.bend`'s `iface_ok` IS
+# THE SAME RULE. THE PORT SPELLS IT HERE AS A FUNCTION OF THE INTERFACE TAG
+# SO THAT THE GATE CAN ASK IT DIRECTLY, AND THE ROWS BELOW ARE THAT FUNCTION'S
+# FOUR CELLS.
+def dev.is_mock(iface: U32) -> Bool: U32.is_eq(iface, IFACE_MOCK())
+
+def dev.iface_ok(iface: U32, want_mock: Bool) -> Bool:
+  Bool.or(want_mock, Bool.not(dev.is_mock(iface)))
+
+# THE SELECTION, AS A LENGTH. `device.py:472-474` filters BY NAME and THEN
+# filters OUT THE MOCKS, and `select_first_inited` TAKES THE FIRST SURVIVOR.
+# THE LENGTH IS WHAT THE GATE CAN ASK, AND A COUNT CANNOT SEE A REORDERING --
+# so the ORDER IS A SEPARATE ROW.
+#
+# THE RECURSION IS A `.go` AND NOT AN `.at`, because `.at` IS BEND'S NAME FOR
+# THE CURRIED SELF-CALL AND THE ACCUMULATOR IS THE ARGUMENT THAT MAKES IT A
+# DIFFERENT SHAPE. THE PORT'S IDIOM IS `def f.go(..., acc)` FOR THE RECURSION
+# AND `def f.at(...)` FOR THE ENTRY, AND `device.bend`'s `isig.go` IS THE
+# EXAMPLE.
+def dev.iface_filtered_n.go(n: Nat, +i: U32, +want_mock: Bool, acc: U32) -> U32:
+  match n:
+    case 0n: acc
+    case 1n+m: dev.iface_filtered_n.go(m, U32.add(i, 1), want_mock,
+      U32.add(acc, Bool.to_u32(dev.iface_ok(i, want_mock))))
+
+def dev.iface_filtered_n(want_mock: Bool) -> U32:
+  dev.iface_filtered_n.go(3n, 1, want_mock, 0)
+
+# THE LADDER'S INDEX, so `iface_filtered_n` CAN COUNT WITHOUT A LIST OF TAGS.
+# THE THREE INTERFACES ARE THE THREE ENTRIES OF `dev.iface_names` AND THE
+# ORDER IS THE POLICY, so the INDEX IS THE TAG.
+def dev.iface_ix(i: U32) -> U32: U32.add(i, 1)
+
+# ===========================================================================
+# THE MOCK DRIVER'S ANSWERS. `test/mockgpu/nv/nvdriver.py` IS A SOFTWARE
+# DRIVER, SO THESE ARE THE NUMBERS THE MOCK RETURNS AND THEY ARE READABLE OFF
+# THE DRIVER, NOT GUESSED.
+#
+# THE DRIVER VERSION. `nvdriver.py:208` ANSWERS
+# `NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2` WITH THE LITERAL
+# `params.driverVersionBuffer = b"570.00.00\0"`. AND `NVKIface.__init__`
+# (`tinygrad/runtime/ops_nv.py:357-359`) READS THE MAJOR VERSION AND PICKS THE
+# CONSTANT TABLE: `>= 615` -> `nv_615`, `>= 610` -> `nv_610`, `>= 580` ->
+# `nv_580`, ELSE THE DEFAULT. THE DEFAULT IS `nv_570` (`ops_nv.py:26`), AND
+# 570 IS NOT >= 580, SO THE MOCK RUNS THE 570 TABLE -- WHICH IS THE TABLE THE
+# PORT'S CONSTANTS ARE READ FROM. THAT IS A CLOSED LOOP AND IT IS WORTH A ROW.
+#
+# THE VERSION IS A THREE-PART STRING AND ONLY THE MAJOR PART IS READ. `570` IS
+# THREE DIGITS, SO A PORT THAT READS TWO DIGITS ANSWERS `57` AND A PORT THAT
+# READS THE WHOLE STRING ANSWERS `570.00.00`. THE PORT READS THE MAJOR PART
+# AS AN INTEGER.
+# ===========================================================================
+
+def MOCK_DRV_MAJOR() -> U32: 570
+def MOCK_DRV_MINOR() -> U32: 0
+def MOCK_DRV_PATCH() -> U32: 0
+
+# `ops_nv.py:357-359` -- the version table picker. THE THRESHOLDS ARE 615, 610
+# AND 580 AND THEY ARE **DESCENDING**, so the first one that holds wins. A
+# port that writes them ascending picks the wrong table for a driver between
+# 610 and 615, and `nv_mock_drv_*` is the row that sees it.
+def drv_table_of(+major: U32) -> U32:
+  Bool.pick(U32, U32.is_ge(major, 615), 615,
+    Bool.pick(U32, U32.is_ge(major, 610), 610,
+      Bool.pick(U32, U32.is_ge(major, 580), 580, 570)))
+
+def drv_table_name(t: U32) -> String:
+  match t:
+    case 615: "nv_615"
+    case 610: "nv_610"
+    case 580: "nv_580"
+    case 570: "nv_570"
+    case _: ""
+
+# THE MOCK'S GPU COUNT. `NVKIface.count` IS `len(NVKIface.gpus_info)`, AND
+# `gpus_info` COMES FROM `NV_ESC_CARD_INFO` FILTERED BY `valid`. THE MOCK
+# DRIVER ANSWERS `NV_ESC_CARD_INFO` FOR **EVERY GPU IT KNOWS** -- IT CREATES
+# SIX IN `NVDriver.__init__` (`NVDriver(gpus=6)`, `nvdriver.py:49`) AND SETS
+# `st.valid = True` AND `st.pci_info.device_id = 0x2684` FOR EACH
+# (`nvdriver.py:238-242`). SO THE MOCK REPORTS SIX GPUS.
+#
+# AND `MOCKIface.count = 1` OVERRIDES IT. THAT IS THE ONE-LINE DIFFERENCE
+# BETWEEN THE TWO CLASSES, AND IT IS THE WHOLE OF WHAT `MOCKIface` IS.
+def MOCK_GPUS() -> U32: 6
+def MOCK_PCI_DEVICE_ID() -> U32: 9860
+
+# THE MOCK'S CLASS LIST. `nvdriver.py:160-162` ANSWERS
+# `NV0080_CTRL_CMD_GPU_GET_CLASSLIST` WITH A LITERAL LIST OF CLASS IDS "from
+# ada102". THE PORT DOES NOT CARRY THE LIST -- IT IS A LIST OF NUMBERS AND THE
+# PORT'S CLASS LADDER IS A DIFFERENT THING (`:403-415`'s PAIRS). WHAT THE PORT
+# CARRIES IS THE COUNT, WHICH IS WHAT `setup_usermode`'s CLASSLIST rm_control
+# RETURNS AND WHAT THE CLASS LADDER WALKS.
+#
+# **THE COUNT IS FIFTY-TWO, AND IT WAS FIFTY-FIVE IN THE FIRST DRAFT OF THIS
+# COMMENT.** MEASURED, BY READING THE LIST OUT OF THE DRIVER'S OWN SOURCE
+# (NOT BY COUNTING A TRANSCRIPTION OF IT):
+#
+#     src = open('test/mockgpu/nv/nvdriver.py').read()
+#     i = src.index('classes = [');  j = src.index(']', i)
+#     len(ast.literal_eval(src[i+9:j+1]))   ->  52
+#
+# AND THE PORT'S ROW ANSWERED 55, WHICH WAS A HAND-TYPED COUNT OF A HAND-TYPED
+# LIST. THIS IS THE CLASS THE TREE ALREADY NAMES: the `renderer/cstyle.bend`
+# unit shipped 215 hand-typed expectations of which SEVENTEEN were wrong. **A
+# COUNT TYPED BY A HUMAN IS A COUNT OF A TRANSCRIPTION, NOT OF THE THING.**
+def MOCK_CLASSLIST_N() -> U32: 52
+
+# THE MOCK'S INIT SEQUENCE, AS A TRACE. **THE MOCK IS A DRIVER
+# SUBSTITUTION**: `test/mockgpu/mockgpu.py` INTERCEPTS `open()` AND `ioctl()`
+# AT THE PYTHON LEVEL, SO `NVKIface.__init__` RUNS **UNCHANGED** AGAINST THE
+# SOFTWARE DRIVER. THE IOCTL SEQUENCE IS THEREFORE THE SAME ONE, AND THAT IS
+# THE CLAIM: THE MOCK IS NOT A DIFFERENT CODE PATH.
+#
+# SO `dev.mock_init` IS `dev.init` WITH THE MOCK'S ANSWERS, AND THE ROWS
+# BELOW COMPARE THE TWO TRACES. IF THEY DIFFER, THE PORT BELIEVES THE MOCK IS
+# A DIFFERENT PATH, AND IT IS NOT.
+#
+# `dev.mock_init` IS DEFINED **AFTER** `dev.init`, BECAUSE BEND REQUIRES
+# DEFINITION-BEFORE-USE AND `dev.init` IS BELOW. MEASURED: the first attempt
+# put it here and the compiler said "expected : dev.init, observed : dev.init
+# (consumed more than once)" -- which is BEND'S WAY OF SAYING THE NAME IS NOT
+# IN SCOPE YET.
+def MOCK_INIT_SM() -> U32: 0
+
 def dev.encode_count() -> U32: 4
 
 # ===========================================================================
@@ -1128,6 +1372,30 @@ def dev.init.at(sm: U32, +iface: U32, +peer: Bool, pma: Bool, +t0: Tr) -> Dev:
 
 def dev.init(sm: U32, iface: U32, peer: Bool, pma: Bool) -> Dev:
   dev.init.at(sm, iface, peer, pma, Tr.of())
+
+# THE MOCK'S INIT, RIGHT HERE, BECAUSE BEND REQUIRES DEFINITION-BEFORE-USE AND
+# `dev.init` IS THE SUBJECT. `MOCK_INIT_SM` IS THE SM VERSION THE MOCK
+# REPORTS: `test/mockgpu/nv/nvgpu.py`'s GPU ANSWERS `NV0000_CTRL_CMD_GPU_GET_
+# ID_INFO_V2`, AND THE PORT'S `dev.init` TAKES THE SM VERSION AS A PARAMETER
+# BECAUSE `arch_of`/`sass_of` ARE FUNCTIONS OF IT.
+def dev.mock_init(sm: U32) -> Dev:
+  dev.init(sm, IFACE_MOCK(), False{}, False{})
+
+# THE TWO TRACES COMPARED. `Tr.has` IS A SUBSEQUENCE MATCH, so this asks "IS
+# THE MOCK'S TRACE THE REAL ONE'S TRACE" and not "DO THEY HAVE THE SAME
+# LENGTH" -- and a SUBSQUENCE IS THE RIGHT RELATION HERE, because THE MOCK'S
+# TRACE IS THE REAL ONE'S WITH THE MOCK'S ANSWERS IN PLACE OF THE CARD'S.
+def dev.mock_same_shape() -> Bool:
+  Tr.has(Tr.calls(Dev.tr(dev.mock_init(0))), Tr.calls(Dev.tr(dev.init(0, IFACE_NVK(), False{}, False{}))))
+
+# THE MOCK'S TRACE'S THREE CALL COUNTS. `NVKIface.__init__`'s SEQUENCE IS
+# `rm_alloc(ROOT)` THEN THE VERSION rm_control THEN `uvm(UVM_INITIALIZE)` THEN
+# `uvm(UVM_MM_INITIALIZE)`, SO THE COUNTS ARE THE SHAPE OF THE INIT AND NOT
+# OF THE MOCK.
+def dev.mock_init_call_count() -> U32:
+  U32.add(U32.add(Tr.count(CALL_ALLOC(), Tr.calls(Dev.tr(dev.mock_init(0)))),
+                  Tr.count(CALL_CONTROL(), Tr.calls(Dev.tr(dev.mock_init(0))))),
+          Tr.count(CALL_UVM(), Tr.calls(Dev.tr(dev.mock_init(0)))))
 
 # ===========================================================================
 # STAGE 2 -- THE QUEUE AND COMMAND-SUBMISSION STRUCTURE.
@@ -1700,6 +1968,72 @@ def t_iface() -> IO(Unit):
     brow("nv_is_nvd_2", dev.is_nvd(2))
     brow("nv_is_nvd_1", dev.is_nvd(1))
     brow("nv_pc_root_hi", U32.is_eq(PCI_ROOT(), 3231741952))
+
+# --- 3b: the MOCK PATH, `MOCKIface` and the selection that reaches it -------
+# THE INTERFACE TAGS, so a row can name WHICH interface it is about. THE ORDER
+# IS THE LADDER'S ORDER AND THE ORDER IS THE POLICY (`_select_iface` walks it
+# FIRST-WINS), so THE INDEX IS THE TAG.
+def t_mock() -> IO(Unit):
+  do IO<Unit>:
+    # THE THREE INTERFACE NAMES, ONE ROW EACH, BOTH DIRECTIONS. A NAME THAT IS
+    # NOT IN THE LIST IS NOT A QUEUE, AND A NAME IN THE LIST THAT IS NOT
+    # SPELLED THE WAY UPSTREAM SPELLS IT SELECTS NOTHING.
+    srow("nv_mock_iface_nvk", iface_name(IFACE_NVK()))
+    srow("nv_mock_iface_pci", iface_name(IFACE_PCI()))
+    srow("nv_mock_iface_mock", iface_name(IFACE_MOCK()))
+    srow("nv_mock_iface_none", iface_name(0))
+    srow("nv_mock_iface_four", iface_name(4))
+    # THE COUNT. `MOCKIface.count = 1` IS THE WHOLE DIFFERENCE FROM
+    # `NVKIface`, AND `NVKIface.count` IS THE CARD'S OWN GPU COUNT. SO THE
+    # COUNT IS A FUNCTION OF THE INTERFACE AND THE MOCK'S ANSWER IS ONE WHILE
+    # THE REAL ONE'S IS THE CARD'S.
+    row("nv_mock_count_mock", dev.count(IFACE_MOCK(), MOCK_GPUS()))
+    row("nv_mock_count_nvk", dev.count(IFACE_NVK(), MOCK_GPUS()))
+    row("nv_mock_count_pci", dev.count(IFACE_PCI(), MOCK_GPUS()))
+    # THE SELECTION. `device.py:473` -- "never fallback to mock ifaces". A MOCK
+    # INTERFACE SURVIVES ONLY WHEN THE TARGET IS A MOCK. THE TWO CELLS ARE THE
+    # CLAIM AND ITS NEGATIVE, AND THEY ARE SEPARATE ROWS BECAUSE A READER
+    # THAT ALWAYS KEPT OR ALWAYS DROPPED WOULD SATISFY ONE OF THEM.
+    row("nv_mock_filtered_real", dev.iface_filtered_n(False{}))
+    row("nv_mock_filtered_mock", dev.iface_filtered_n(True{}))
+    # THE PER-INTERFACE CELLS OF THE RULE.
+    brow("nv_mock_ok_mock_real", dev.iface_ok(IFACE_MOCK(), False{}))
+    brow("nv_mock_ok_nvk_real", dev.iface_ok(IFACE_NVK(), False{}))
+    brow("nv_mock_ok_mock_mock", dev.iface_ok(IFACE_MOCK(), True{}))
+    brow("nv_mock_ok_nvk_mock", dev.iface_ok(IFACE_NVK(), True{}))
+    # THE DRIVER VERSION. THE MOCK ANSWERS `b"570.00.00\0"`
+    # (`test/mockgpu/nv/nvdriver.py:208`) AND `NVKIface.__init__` PICKS THE
+    # CONSTANT TABLE FROM THE MAJOR VERSION, SO 570 SELECTS `nv_570` -- WHICH
+    # IS THE TABLE THE PORT'S CONSTANTS ARE READ FROM. THE LOOP IS CLOSED.
+    row("nv_mock_drv_major", MOCK_DRV_MAJOR())
+    row("nv_mock_drv_table", drv_table_of(MOCK_DRV_MAJOR()))
+    srow("nv_mock_drv_table_name", drv_table_name(drv_table_of(MOCK_DRV_MAJOR())))
+    # THE THRESHOLDS, IN BOTH DIRECTIONS, BECAUSE A TABLE THAT PICKS THE WRONG
+    # ONE FOR A DRIVER BETWEEN 610 AND 615 IS A WRONG CONSTANT SET AND NO
+    # OTHER ROW SEES IT.
+    row("nv_mock_drv_615", drv_table_of(615))
+    row("nv_mock_drv_614", drv_table_of(614))
+    row("nv_mock_drv_610", drv_table_of(610))
+    row("nv_mock_drv_609", drv_table_of(609))
+    row("nv_mock_drv_580", drv_table_of(580))
+    row("nv_mock_drv_579", drv_table_of(579))
+    row("nv_mock_drv_570", drv_table_of(570))
+    row("nv_mock_drv_569", drv_table_of(569))
+    # THE MOCK'S GPU COUNT AND ITS PCI DEVICE ID. THE MOCK DRIVER CREATES SIX
+    # GPUS (`NVDriver(gpus=6)`) AND ANSWERS `NV_ESC_CARD_INFO` WITH
+    # `st.pci_info.device_id = 0x2684` FOR EACH.
+    row("nv_mock_gpus", MOCK_GPUS())
+    row("nv_mock_pci_device_id", MOCK_PCI_DEVICE_ID())
+    # THE MOCK'S CLASS LIST LENGTH. `nvdriver.py:160-162` ANSWERS THE
+    # CLASSLIST rm_control WITH FIFTY-FIVE IDS "from ada102".
+    row("nv_mock_classlist_n", MOCK_CLASSLIST_N())
+    # THE MOCK IS A DRIVER SUBSTITUTION AND NOT A DIFFERENT CODE PATH: ITS
+    # TRACE IS THE REAL ONE'S TRACE. `Tr.has` IS A SUBSEQUENCE MATCH, SO THIS
+    # ROW IS TRUE WHENEVER THE MOCK'S CALLS APPEAR IN THE REAL ONE'S ORDER.
+    brow("nv_mock_same_shape", dev.mock_same_shape())
+    # AND THE MOCK'S TRACE IS NOT EMPTY, WHICH IS THE OTHER HALF OF THE CLAIM:
+    # A SUBSEQUENCE MATCH AGAINST AN EMPTY TRACE IS TRUE AND PROVES NOTHING.
+    row("nv_mock_init_calls", dev.mock_init_call_count())
 
 # --- 4: the class ladders, :404-412 ----------------------------------------
 # THE THREE FIXTURE MASKS, generated by the oracle's `mask()` over the class
@@ -3887,6 +4221,7 @@ def main() -> IO(Unit):
     a : Unit <- t_arch()
     b : Unit <- t_va()
     c : Unit <- t_iface()
+    c2 : Unit <- t_mock()
     d : Unit <- t_class()
     e : Unit <- t_init()
     f : Unit <- t_nvm()
@@ -3983,3 +4318,9 @@ def main() -> IO(Unit):
 #   6. `MOCKIface`. It inherits `NVKIface` whole and differs in `count = 1` and
 #      two `page_size` branches; only the page-size branch is ported, and
 #      `nv_ps_1_001` is the row.
+#      **AND NOW THE `count = 1` HALF IS PORTED TOO** -- STAGE 5 -- along with
+#      the selection rule and the mock driver's answers. WHAT REMAINS IS THE
+#      INHERITED PART, WHICH IS `NVKIface`'S OWN IOCTL SURFACE AND THEREFORE
+#      THE SAME SEAM AS ITEM 1: **THE MOCK IS A DRIVER SUBSTITUTION, NOT A
+#      DIFFERENT CODE PATH**, SO PORTING THE MOCK'S CLASS DOES NOT PORT THE
+#      DRIVER UNDER IT.

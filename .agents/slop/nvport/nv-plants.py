@@ -91,6 +91,25 @@ PLANTS = (
      "case h <> t: to_name.join.parts(t, List.append(&2, String, acc, [String.concat([h, \"_\"])]))",
      "case h <> t: to_name.join.parts(t, List.append(&2, String, acc, [String.concat([h, \"_\", \"_\"])]))",
      "the separator `String.split` drops"),
+    ("P9_mock_count",
+     "def dev.count(iface: U32, gpus: U32) -> U32:\n  Bool.pick(U32, U32.is_eq(iface, IFACE_MOCK()), 1, gpus)",
+     "def dev.count(iface: U32, gpus: U32) -> U32:\n  Bool.pick(U32, U32.is_eq(iface, IFACE_MOCK()), 2, gpus)",
+     "`MOCKIface.count = 1` -- the ONE line that separates the mock from the real one"),
+    ("P10_mock_selection",
+     "def dev.iface_ok(iface: U32, want_mock: Bool) -> Bool:\n  Bool.or(want_mock, Bool.not(dev.is_mock(iface)))",
+     "def dev.iface_ok(iface: U32, want_mock: Bool) -> Bool:\n  Bool.or(want_mock, True{})",
+     "the \"never fallback to mock ifaces\" rule -- a port that KEEPS the mock "
+     "on a real target would benchmark nothing"),
+    ("P11_mock_drv_table",
+     "Bool.pick(U32, U32.is_ge(major, 615), 615,\n    Bool.pick(U32, U32.is_ge(major, 610), 610,\n      Bool.pick(U32, U32.is_ge(major, 580), 580, 570)))",
+     "Bool.pick(U32, U32.is_ge(major, 615), 615,\n    Bool.pick(U32, U32.is_ge(major, 610), 610,\n      Bool.pick(U32, U32.is_ge(major, 580), 580, 580)))",
+     "the driver-version table picker -- a port that picked the WRONG constant "
+     "table would run against constants the driver does not use"),
+    ("P12_mock_classlist_n",
+     "def MOCK_CLASSLIST_N() -> U32: 52",
+     "def MOCK_CLASSLIST_N() -> U32: 55",
+     "THE COUNT THAT WAS WRONG ONCE: the driver's own class list has FIFTY-TWO "
+     "entries and the port first said FIFTY-FIVE"),
 )
 
 # P6 IS THE BLIND SPOT, and it is planted DIFFERENTLY: the port's own mutation
@@ -164,6 +183,15 @@ def main():
         shutil.copy(ORACLE, scratch / "gates/ops-nv-oracle.py")
         shutil.copy(ROOT / "gates/gatekit.py", scratch / "gates/gatekit.py")
         shutil.copy(GATE, scratch / "gates/ops-nv-gate.py")
+        # THE MOCK DRIVER, BECAUSE THE ORACLE READS IT. `gates/ops-nv-oracle.py`
+        # READS `test/mockgpu/nv/nvdriver.py` FOR THE CLASS LIST, THE DRIVER
+        # VERSION AND THE GPU COUNT, AND IT READS IT RELATIVE TO THE ROOT --
+        # WHICH IN THE SCRATCH IS THE SCRATCH. MEASURED: without this, every
+        # plant came back `REFUSED: the oracle failed rc=1` at the driver read,
+        # and A REFUSED IS NOT A RED PLANT.
+        shutil.copytree(ROOT / "test/mockgpu", scratch / "test/mockgpu",
+                        symlinks=False, ignore=shutil.ignore_patterns("__pycache__"))
+        (scratch / "test/__init__.py").write_text("")
         target = scratch / "tinybendygrad/runtime/ops_nv.bend"
 
         for name, old, new, what in PLANTS:

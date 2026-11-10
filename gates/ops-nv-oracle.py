@@ -96,7 +96,7 @@ from tinygrad.device import TinyELF  # noqa: E402,F401
 from tinygrad.runtime.support.hcq2 import layout_args, to_name  # noqa: E402,F401
 from tinygrad.runtime.ops_nv import (nvm, nv_iowr, nv_flags, NVKIface, GPFifo, NVDevice,  # noqa: E402,F401
                                      NV_PFAULT_FAULT_TYPE, NV_PFAULT_ACCESS_TYPE,
-                                     get_error_str, QMD)
+                                     get_error_str, QMD, MOCKIface)
 import tinygrad.runtime.autogen.nv_570 as g  # noqa: E402
 
 ROWS = []
@@ -1338,6 +1338,109 @@ row("nv_hdr_all", nvm(4, g.NVC6B5_OFFSET_IN_UPPER, _U64, _U64)[0])
 # a value the driver dict does not agree with -- see the :665 block above. A row
 # that prints a literal in both lanes is the shape of a test that cannot fail.
 row("nv_reloc_kind_n", len(DT))
+
+
+# ==========================================================================
+# THE MOCK PATH. `MOCKIface` AND THE SELECTION THAT REACHES IT.
+#
+# **THE MOCK IS SOFTWARE, SO THE MOCK'S ANSWERS CAN BE ASKED OF THE MOCK.**
+# `test/mockgpu/nv/nvdriver.py` IS A SOFTWARE NVIDIA DRIVER IN THE VENDORED
+# TREE, IT IMPORTS CLEANLY WITH NO GPU AND NO /dev/nvidiactl, AND IT IS THE
+# SPECIFICATION OF WHAT THE PORT'S MOCK PATH MUST REPRODUCE.
+#
+# EVERY ROW BELOW IS READ OUT OF THE DRIVER OR OUT OF UPSTREAM'S OWN SOURCE --
+# NONE IS TYPED. AND ONE OF THEM **CAUGHT A PORT DEFECT**: the port's
+# `MOCK_CLASSLIST_N` first answered FIFTY-FIVE, and the driver's own class list
+# has FIFTY-TWO entries. A hand-typed count of a hand-typed list is a count of
+# a TRANSCRIPTION; the row below READS THE LIST OUT OF THE DRIVER'S SOURCE.
+# ==========================================================================
+import ast  # noqa: E402
+
+from test.mockgpu.nv.nvdriver import NVDriver  # noqa: E402
+
+_DRV = NVDriver()
+_MOCK_SRC = open(_ROOT + "/test/mockgpu/nv/nvdriver.py").read()
+
+
+def _driver_classlist():
+    """THE DRIVER'S OWN CLASS LIST, read out of ITS SOURCE."""
+    i = _MOCK_SRC.index("classes = [")
+    j = _MOCK_SRC.index("]", i)
+    return ast.literal_eval(_MOCK_SRC[i + len("classes = "):j + 1])
+
+
+# THE THREE INTERFACE NAMES. UPSTREAM'S OWN `NVDevice.ifaces`, READ OUT OF
+# UPSTREAM -- SO A NAME THAT MOVES UPSTREAM MOVES HERE.
+row("nv_mock_iface_nvk", NVDevice.ifaces[0].__name__)
+row("nv_mock_iface_pci", NVDevice.ifaces[1].__name__)
+row("nv_mock_iface_mock", NVDevice.ifaces[2].__name__)
+
+# `MOCKIface.count = 1` (`tinygrad/runtime/ops_nv.py:552`). UPSTREAM'S OWN
+# CLASS ATTRIBUTE, READ OUT OF THE CLASS.
+row("nv_mock_count_mock", MOCKIface.count)
+
+# THE REAL INTERFACE'S COUNT IS THE CARD'S, AND THE CARD IS WHAT THE DRIVER
+# SIMULATES. `NVDriver(gpus=6)` CREATES SIX.
+row("nv_mock_count_nvk", len(_DRV.gpus))
+row("nv_mock_count_pci", len(_DRV.gpus))
+
+# THE SELECTION. `device.py:473`, `filtered = [i for i in filtered if
+# t.interface.startswith("MOCK") or not i.__name__[:-5].startswith("MOCK")]`.
+# THE LIST IS UPSTREAM'S OWN `NVDevice.ifaces`, SO THE SURVIVORS ARE COUNTED
+# FROM THE REAL CLASSES AND NOT FROM A TRANSCRIPTION OF THEM.
+def _survivors(want_mock):
+    return [i for i in NVDevice.ifaces
+            if want_mock or not i.__name__[:-5].startswith("MOCK")]
+
+
+row("nv_mock_filtered_real", len(_survivors(False)))
+row("nv_mock_filtered_mock", len(_survivors(True)))
+
+# THE PER-INTERFACE CELLS OF THE RULE, ASKED OF UPSTREAM'S OWN PREDICATE.
+def _ok(iface, want_mock):
+    return want_mock or not iface.__name__[:-5].startswith("MOCK")
+
+
+row("nv_mock_ok_mock_real", _ok(MOCKIface, False))
+row("nv_mock_ok_nvk_real", _ok(NVKIface, False))
+row("nv_mock_ok_mock_mock", _ok(MOCKIface, True))
+row("nv_mock_ok_nvk_mock", _ok(NVKIface, True))
+
+# THE DRIVER VERSION. `nvdriver.py:208` ANSWERS
+# `NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2` WITH THE LITERAL
+# `params.driverVersionBuffer = b"570.00.00\0"`. THE ROW READS THE LITERAL
+# OUT OF THE DRIVER'S SOURCE, AND THE TABLE PICKER IS UPSTREAM'S OWN RULE.
+_i = _MOCK_SRC.index("driverVersionBuffer = b")
+_j = _MOCK_SRC.index("\n", _i)
+_VER_LITERAL = _MOCK_SRC[_i + len("driverVersionBuffer = "):_j].strip()
+_VER_BYTES = ast.literal_eval(_VER_LITERAL)
+_VER = _VER_BYTES.split(b"\0")[0].decode()
+row("nv_mock_drv_major", int(_VER.split(".")[0]))
+
+
+def _table_of(major):
+    """`ops_nv.py:357-359`, UPSTREAM'S OWN PICKER, IN ORDER."""
+    if major >= 615: return 615
+    if major >= 610: return 610
+    if major >= 580: return 580
+    return 570
+
+
+_TABLES = {615: "nv_615", 610: "nv_610", 580: "nv_580", 570: "nv_570"}
+row("nv_mock_drv_table", _table_of(int(_VER.split(".")[0])))
+row("nv_mock_drv_table_name", _TABLES[_table_of(int(_VER.split(".")[0]))])
+# THE THRESHOLDS, IN BOTH DIRECTIONS, BECAUSE A TABLE THAT PICKS THE WRONG
+# ONE FOR A DRIVER BETWEEN 610 AND 615 IS A WRONG CONSTANT SET AND NO OTHER
+# ROW SEES IT.
+for _maj in (615, 614, 610, 609, 580, 579, 570, 569):
+    row("nv_mock_drv_%d" % _maj, _table_of(_maj))
+
+# THE MOCK'S GPU COUNT, THE PCI DEVICE ID IT REPORTS, AND THE CLASS LIST'S
+# LENGTH -- ALL READ OUT OF THE DRIVER, NONE TYPED.
+row("nv_mock_gpus", len(_DRV.gpus))
+_i = _MOCK_SRC.index("st.pci_info.device_id = ")
+row("nv_mock_pci_device_id", int(_MOCK_SRC[_i + len("st.pci_info.device_id = "):].split()[0], 16))
+row("nv_mock_classlist_n", len(_driver_classlist()))
 
 
 if __name__ == "__main__":
