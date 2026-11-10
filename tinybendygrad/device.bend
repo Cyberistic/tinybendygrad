@@ -5,7 +5,7 @@
 # this is the file the WebGPU phase hangs off.
 #
 # ---------------------------------------------------------------------------
-# WHAT IS PORTED, AND WHY IT IS THE SAME AMOUNT OF CODE.
+# what is ported, and why it is the same amount of code.
 #
 # The pure half of this file is DECISION code, and decision code ports: which
 # device string resolves to which class, which of two available devices is the
@@ -23,7 +23,7 @@
 # and everything around them -- the asserts, the offsets, the counters, the
 # cache keys -- is here so the logic is already right when the C lands.
 #
-# BUFFERS ARE (NBYTES, CONTENT-ADDRESS) PARAMETERS. Python's `Buffer` is an
+# buffers are (nbytes, content-address) parameters. Python's `Buffer` is an
 # object whose IDENTITY `_base_storage is base._storage` depends on
 # (device.py:111), so a Bend `Buffer` is a slot in a `Bar` arena rather than a
 # value: `Bn` carries the dtype, the size, the byte offset, the base slot and a
@@ -40,7 +40,7 @@
 #    `open_two`.  (the port's own row names `open_one` and `open_two` are NOT
 #    in upstream)
 #
-# 2. AND IT IS AN ORDER RATHER THAN A RULE: `ALL_DEVICES` (device.py:18) is
+# 2. and it is an order rather than a rule: `ALL_DEVICES` (device.py:18) is
 #    nine names and `get_available_devices` (device.py:48 symbol=get_available_devices) yields in that order
 #    and `_select_device` (device.py:56 symbol=_select_device) takes `next(...)`. AMD is second and CPU
 #    is seventh, so with both openable the default is AMD. `first_amd` is that row
@@ -68,12 +68,12 @@
 # (`UPat(Ops.PARAM, tag="timeline")`). It is not a method and it is not on
 # `Compiled`.
 #
-# AND NEITHER `link_buffer` NOR `link_bufs` MUTATES A KERNEL'S BUFFER LIST.
+# and neither `link_buffer` nor `link_bufs` mutates a kernel's BUFFER list.
 # `link_buffer` is a PURE QUERY -- a UOp in, a Buffer or None out -- and
 # `link_bufs` is a dict that `|=` mutates. What CHANGES is the ALLOC's
 # BINDING, and `bufferize_buf` builds a NEW UOp (`UOp.from_buffer(...)`).
 #
-# THE `pm_bufferize` RULE TABLE IS GONE FROM THIS PORT, and upstream is why.
+# the `pm_bufferize` rule table is gone from this port, and upstream is why.
 #
 # At the PREVIOUS vendoring `tinygrad/device.py:375` read
 #   `pm_bufferize:Any = None # one for all devices: each adds the rules of the
@@ -93,7 +93,7 @@
 # below, and `bufferize_buf` is `tinybendygrad/runtime/support/hcq2.bend`,
 # sixty-two rows against CPython's own function.
 #
-# THE SEVEN ROWS THAT WENT WITH THE TABLE, and what covers each of them now:
+# the seven rows that went with the table, and what covers each of them now:
 #   pmb_len=2       the table's rule COUNT. Nothing covers it and nothing
 #                   should: there is no attribute to count.
 #   pmb_tl=1        a PARAM tagged "timeline" -> the device's timeline buffer.
@@ -108,29 +108,29 @@
 #                   allocation, measured by `lk_plain_bytes`/`lk_hook_bytes`.
 #   pmb_nonparam=0      a NON-PARAM does not match rule 1.
 #   pmb_tl_nonparam=0   a NON-PARAM does not match rule 0.
-#                   THE LAST TWO ARE COVERED BY NOTHING, AND NOTHING SHOULD BE:
+#                   the last two are covered by nothing, and nothing should be:
 #                   the `is_param` conjunct they exercise was a guard in the
 #                   DELETED table's patterns. Upstream's replacement has no such
 #                   guard -- `bufferize_buf` is called on a PARAM by
 #                   construction and asks about a NAME.
 #
-# TWO MEASURED FACTS THAT SURVIVED THE TABLE, because they are why the port was
+# two measured facts that survived the table, because they are why the port was
 # ALREADY drifting before this removal:
 #   1. Upstream `bdddaad21` ("ccall by symbol", #18521) DELETED the table's
 #      THIRD rule -- the `cfunc_buf` one -- because `ccall` stopped needing a
 #      `Buffer` to hold a C function pointer. Nothing in `device.py` is a PARAM
 #      tagged `"cfunc"` any more.
-#   2. The port's own `pmb_cfunc` row printed **2**, not 3: rule 2 claims the
+#   2. The port's own `pmb_cfunc` row printed 2, not 3: rule 2 claims the
 #      node first and the scan is first-wins, so the third rule's answer never
 #      reached a printed row even BEFORE upstream deleted it.
 # So the table was a corpse that was already a corpse upstream, and this removal
 # deletes it on both sides at once.
 #
 # ---------------------------------------------------------------------------
-# TWO MEASURED BEND CONSTRAINTS THIS FILE IS BUILT AROUND. Both cost a compile
+# two measured BEND constraints this file is built around. Both cost a compile
 # cycle each and neither is in bend2-constraints.md yet.
 #
-# A. **A LIST OF `Bool` IS AWKWARD TO READ, NOT UNUSABLE.** `List<&2, Bool>` is
+# A. A LIST OF `Bool` IS AWKWARD TO READ, NOT UNUSABLE. `List<&2, Bool>` is
 #    accepted as a parameter annotation and `List.length(&2, Bool, xs)` COMPILES
 #    AND RUNS (MEASURED 2026-10-07: `U32.from_nat(List.length(&2, Bool, xs))`
 #    returns a value; an earlier note here claimed it was "refused by every
@@ -144,8 +144,8 @@
 #    `U32.and` against the row's own index -- which also removes the two
 #    parallel lists, and with them a zip fold.
 #
-# B. **A `match` on a list of a LOCALLY DECLARED one-field `Data` record is
-#    refused, and the refusal is NOT reproducible from the file.** The same
+# B. A `match` on a list of a LOCALLY DECLARED one-field `Data` record is
+#    refused, and the refusal is NOT reproducible from the file. The same
 #    three lines pass in a 30-line file and fail in this one, and renaming the
 #    parameter, the record or the def does not always help -- a working
 #    `zz1(fs: List<&2, Fl>)` sat directly above a failing
@@ -370,7 +370,7 @@ def reg_len(+r: Reg) -> U32:
 # ["DISK", "NPY", "PYTHON"]`. `ALLOW_DEVICE_USAGE` is an env read so it is a
 # parameter; the membership is the decision.
 #
-# THE THREE COMMENTS HERE USED TO SAY "`__getitem__` asserts BEFORE it
+# the three comments here used to say "`__getitem__` asserts before it
 # canonicalizes ... so the head is compared exactly as it arrived", AND THEY
 # CITED device.py:30 as the canonicalize and :31 as the assert -- the order they
 # then denied. MEASURED, `.venv/bin/python`, CALLING `Device[...]` under
@@ -1037,7 +1037,7 @@ def dev_id(ix: String) -> U32:
 # `Compiled.link_bufs` (device.py:377) and `Compiled.link_buffer` (device.py:411).
 # THE LINK: which PHYSICAL buffer a logical ALLOC belongs to.
 #
-# WHAT UPSTREAM HAS AND WHAT THE PORT HAD. At the pin (`tinygrad/` IS upstream
+# what upstream has and what the port had. At the pin (`tinygrad/` is upstream
 # 5c2bf39d6c4b) `tinygrad/device.py` carries TWO members and the port carried
 # NEITHER:
 #
@@ -1049,7 +1049,7 @@ def dev_id(ix: String) -> U32:
 # PER-DEVICE METHOD whose base-class answer is `None` -- "this device has no
 # opinion".
 #
-# THE PRIOR READING WAS WRONG IN THREE WAYS, AND ALL THREE ARE MEASURED:
+# the prior reading was wrong in three ways, and all three are measured:
 #
 #   1. THERE IS NO `Compiled.tag()`. `rg -n 'def tag|\.tag\(' tinygrad/` at the
 #      pin answers ONE line -- `tinygrad/uop/ops.py:269: def tagstr(self)` --
@@ -1059,19 +1059,19 @@ def dev_id(ix: String) -> U32:
 #   2. `link_buffer` AND `link_bufs` ARE NOT CALLED BY `device.py` AT ALL. Their
 #      only consumer is `tinygrad/runtime/support/hcq2.py:488-490`, inside
 #      `bufferize_buf`.
-#   3. NEITHER MUTATES A KERNEL'S BUFFER LIST. `link_buffer` is a PURE QUERY --
+#   3. neither mutates a kernel's BUFFER list. `link_buffer` is a pure query --
 #      a UOp in, a Buffer or None out. `link_bufs` is a dict that `|=` mutates.
 #      What CHANGES is the ALLOC's BINDING, and `bufferize_buf` builds a NEW
 #      UOp (`UOp.from_buffer(...)`); it does not mutate an existing one.
 #
-# AND THE PORT WAS PORTING A FUNCTION UPSTREAM DELETED. The `pm_bufferize`
+# and the port was porting a function upstream deleted. The `pm_bufferize`
 # rule table was upstream's PRE-restructure shape: at the previous
 # vendoring `tinygrad/device.py:375` read
 #   `pm_bufferize:Any = None # one for all devices: each adds the rules of the
 #    placeholders it owns, its tags start with its name`
 # and the rules were a `PatternMatcher` that a backend PREPENDED to. At the pin
 # that class attribute is GONE and `link_bufs`/`link_buffer` are what is there.
-# THE TABLE IS GONE FROM THIS PORT TOO, so THIS section is the WHOLE of the
+# the table is gone from this port too, so this section is the whole of the
 # mechanism: there is no corpse left to carry, and no table below.
 # ===========================================================================
 
@@ -1180,7 +1180,7 @@ def LkRes.buf(x: LkRes) -> U32:
 # callable under the plain name and a Buffer under the device-scoped name are
 # BOTH "the registry answered", and the plain one still wins.
 #
-# THE ORDER OF THE DEFS IS THE ORDER OF THE LOOKUP: the device's own answer
+# the order of the defs is the order of the lookup: the device's own answer
 # first (it is the LAST thing asked), then the device-scoped hit, then the
 # plain hit, then the scan that produces both hits, then the entry point.
 # ===========================================================================
@@ -1721,7 +1721,7 @@ def main() -> IO(Unit):
 #                   so the plain key's hit is read as the device-scoped one.
 #                   Six rows move, and `lk_lvl_wrongdev` is the one that says
 #                   the wrong list makes one device's entry visible to another.
-#   A LIST MUTATED IN PLACE WHEN THE CALLER EXPECTED A COPY  THE PORT
+#   a list mutated in place when the caller expected a COPY  the port
 #                   CANNOT EXPRESS THIS ONE, and it says so: upstream's
 #                   `Compiled.link_bufs |= {...}` mutates a CLASS attribute in
 #                   place, and a Bend list is a VALUE, so `link_add` returns a
@@ -1781,7 +1781,7 @@ def main() -> IO(Unit):
 # compiled and RUN in a scratch directory -- so the substrate digest does not
 # move while a mutant is measured -- and the rows are diffed against the
 # baseline. The harness is the tree's rule: "IF YOU MUST TEST A SYSTEM IN
-# ISOLATION, FIRST WRITE ALL THE WAYS IT COULD FAIL, THEN WRITE THE CODE."
+# isolation, first write all the ways it could fail, then write the code."
 #
 # | mutation | rows moved | how many |
 # | --- | --- | --- |
@@ -1794,23 +1794,23 @@ def main() -> IO(Unit):
 # | `to_name` does not fold the colon | `tn_colon` | 1 |
 # | the device-scoped key forgets the device | `lk_buf_dev`, `lk_buf_devcall`, `lk_kind_dev`, `lk_kind_devcall`, `lk_lvl_dev`, `lk_lvl_devcall` | 6 |
 #
-# EVERY ONE OF THE EIGHT MOVES AT LEAST ONE ROW, and that is the property the
+# every one of the eight moves at least one row, and that is the property the
 # table is for: a mutation that moves nothing is a DEAD row, and a dead row is
 # a label. The FIRST-WINS one (`link_add` PREPENDS) moves exactly ONE row, and
 # that one row -- `lk_buf_dup` -- is the whole claim that upstream's
 # `dict.update` overwrites and does not append.
 #
-# FIVE ROWS IN THIS TABLE ARE THE INTERESTING ONES, and three of them were NOT
+# five rows in this table are the interesting ones, and three of them were not
 # interesting until the gate had a fixture for them.
 #
-# THE `pmb_*` BLOCK WAS THE FIRST-WINS FIXTURE, and it is GONE with the table it
+# the `pmb_*` block was the first-wins fixture, and it is gone with the table it
 # exercised. What it taught this gate is still here: a mutation that moves
 # NOTHING is a statement about the GATE and not about the code, and the only
 # honest response to one is to go and build the fixture or fix the mutation it
 # is asking for. The LINK's own table below is the same discipline -- EIGHT
 # mutations, and every one of them moves at least one row.
 #
-# THE `tag_of` ROW WAS A ZERO FOR THREE REVISIONS, AND THAT IS THE MOST USEFUL
+# the `tag_of` row was a zero for three revisions, and that is the most useful
 # THING THIS GATE TAUGHT ME. `tag_of` lower-casing the allow-list moved NOTHING,
 # twice, for two DIFFERENT reasons, and both had to be found before the row moved
 # at all. (1) Every fixture passed a lower-case spelling, so the conjunct was

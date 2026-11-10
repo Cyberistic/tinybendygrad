@@ -1,30 +1,30 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/librispeech.py (82 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/librispeech.py (82 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. A SPEECH-FEATURE EXTRACTOR, and it is the only file in this
 # directory whose WORK HAPPENS AT IMPORT TIME rather than inside a def.
 #   * `FILTER_BANK` (upstream:22) is a mel filter bank, built at module level by
 #     `librosa.filters.mel(sr=16000, n_fft=512, n_mels=80, fmin=0, fmax=8000)`, and
 #     `WINDOW` (upstream:23) is a Hann window of 320, built by
-#     `librosa.filters.get_window("hann", 320)`. **THEY ARE CONSTANTS, NOT FUNCTIONS.**
+#     `librosa.filters.get_window("hann", 320)`. THEY ARE CONSTANTS, NOT FUNCTIONS.
 #   * `BASEDIR` (upstream:18) and the `with open(BASEDIR / "dev-clean-wav.json")`
 #     (upstream:19-20) run AT IMPORT, so the module cannot even be imported until a
 #     human has downloaded a dataset and converted every flac to wav by hand --
 #     upstream's own docstring (upstream:7-17) says so, and gives the `ffmpeg` loop.
 #   * `feature_extract(x, x_lens)` (upstream:25) is the real work: pre-emphasis
 #     (`x[:, 1:] - 0.97 * x[:, :-1]`), an STFT (`librosa.stft`), a power spectrum
-#     (`(x**2).sum(-1)`), the mel filter bank (`np.matmul`), a log, and a feature
+#     (`(x2).sum(-1)`), the mel filter bank (`np.matmul`), a log, and a feature
 #     splice. `load_wav(file)` (upstream:63) reads audio; `iterate(bs=1, start=0)`
 #     (upstream:67) walks the manifest; `if __name__ == "__main__":` (upstream:80).
 # TODO(port): STOPPED AT LINE 4 (extra/datasets/librispeech.py:4) -- `import librosa`.
-#   **THIS FILE IS A WALL, AND IT IS THE FIRST ONE IN THIS DIRECTORY THAT IS A WALL
-#   RATHER THAN A SEAM.**  `AGENTS.md`'s rule is that the port ships NO EXTERNAL
+#   this file is a wall, and it is the first one in this directory that is a wall
+#   RATHER THAN A SEAM.  `AGENTS.md`'s rule is that the port ships NO EXTERNAL
 #   DEPENDENCIES -- "every import under `tinybendygrad/` is `Base` or another `.bend`
 #   file in this repo" -- and upstream's four imports here are `json` (fine, it is
 #   stdlib), `pathlib` (fine), `numpy` (NOT fine) and `librosa` + `soundfile` (NOT
 #   fine, and neither is in this repo).  SO THE MISSING PIECES ARE, IN ORDER:
-#   (1) `librosa` AND `soundfile` -- TWO THIRD-PARTY PACKAGES, and their DSP
+#   (1) `librosa` and `soundfile` -- two third-party packages, and their dsp
 #       (`filters.mel`, `filters.get_window`, `stft`) has no counterpart here.  A
-#       mel filter bank and an STFT are NOT SMALL; PORTING THEM IS A PROJECT, and
+#       mel filter bank and an stft are not small; porting them is a project, and
 #       naming that is worth more than a stub that pretends.
 #   (2) AN NDARRAY. `np.expand_dims`, `np.matmul`, `np.stack`, and the
 #       `x[:, 1:]` slicing are all ndarray operations.  `Tensor` in `tensor.bend` is
@@ -37,11 +37,11 @@
 #   (4) `json` AND `pathlib` ARE PORTABLE and are the only parts of this file that
 #       are -- and they are the two lines upstream spends them on for a manifest
 #       that does not exist here.
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `feature_extract` (upstream:25),
+# not ported, and named so nobody invents it: `feature_extract` (upstream:25),
 #   `load_wav` (upstream:63), `iterate` (upstream:67), `FILTER_BANK` (upstream:22),
 #   `WINDOW` (upstream:23), `BASEDIR` (upstream:18).
 #
-# WHY THIS RETURNS `Refused` INSTEAD OF UPSTREAM'S RETURN TYPE.  Upstream's
+# why this returns `Refused` instead of upstream's return TYPE.  Upstream's
 # `iterate` yields `(x, x_lens)` pairs of ndarrays.  Neither type exists at this
 # seam, so the return type here is `Refused` and NOT a tuple.  The alternative --
 # returning an empty list, which is what a thin stub reaches for -- is a value

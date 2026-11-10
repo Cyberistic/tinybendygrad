@@ -307,7 +307,7 @@ def Sched.axis_types(x : Sched) -> List<&2, O.AxisType>:
   types_go(Sched.rngs(x), Nil{})
 
 # ---------------------------------------------------------------------------
-# THE FOLD SHAPE, AND IT IS THE SAME FOUR TIMES.
+# the FOLD shape, and it is the same four times.
 #
 # `match rs hit:` with `hit` as a fifth parameter is the shape the constraints
 # notes recommend for a `find`-style walk, and it is WRONG for a FILTER, because
@@ -500,7 +500,7 @@ def Sched.max_id(x : Sched) -> U32:
 # `amt` is ALREADY resolved: `apply_opt` turns `amt == 0` into `int(rng.vmax+1)`
 # before `shift_to` ever runs, and `Sched.at` answers an inert DEVICE rng for an
 # out-of-range axis so every read here is total.
-# THE OPT IS THE CARRIER, WHICH IS ALSO PYTHON'S SIGNATURE.
+# the opt is the carrier, which is also python's signature.
 # `def apply_opt(self, opt: Opt, append_opt: bool = True)` takes ONE argument,
 # and this is the reason `Sched.split` does too. The alternative -- `axis: U32,
 # amt: U32, nt: AxisType` -- is unwritable: `axis` is read twice, `amt` is read
@@ -567,7 +567,7 @@ def Sched.split(+x: Sched, +o: O.OPT) -> Sched:
 # so the conjunct order below IS the order of the messages. `Bool.and` is not
 # short-circuiting, so every conjunct is written to be total on its own.
 #
-# THE TWO CHECKS THAT ARE NOT HERE both need the AST and are WALL #1:
+# the two checks that are not here both need the ast and are wall #1:
 #   * `smem_sz <= self.ren.shared_max` needs `self.reduceop.dtype.itemsize`.
 #   * `reducers = [u for u in self.reduceops if rng in merge_dicts(...)]` needs
 #     `UOp.ranges`. The CONDITION that reaches it (`new_type is UNROLL or
@@ -598,7 +598,7 @@ def opt_axis_ok(x: Sched, axis: U32) -> Bool:
 # check has no content here. It is a parameter so the call site reads like
 # `Opt(SPLIT, axis, (amt, atype, top))`.
 #
-# THE SIX CONJUNCTS ARE SIX DEFS. `Bool.and` is a plain 2-argument function, and
+# the six conjuncts are six defs. `Bool.and` is a plain 2-argument function, and
 # a comment INSIDE its argument list stops the parser from seeing it as applied
 # (`expected : Bool, observed : @b:Bool -> Bool`), so the nesting carries no
 # commentary. Six named predicates also give the gate six LOCALISED rows: each
@@ -874,11 +874,11 @@ def nolocal_sched() -> Sched:
 def dsp_sched() -> Sched:
   Sched.of(REN.dsp(), [RNG{0, O.AXIS_GLOBAL{}, 128}])
 
-# THE SIX CONJUNCTS, ONE ROW EACH, SO A MUTATION THAT DROPS ONE IS LOCALISED.
+# the six conjuncts, one row each, so a mutation that drops one is localised.
 # Every `False` arm is a fixture CPython also rejects, and the reason is the
 # message `apply_opt` would have raised.
 def ck_tgt_bad() -> U32:
-  # UNROLL on a GLOBAL axis: "AxisType.UPCAST is from (GLOBAL, LOCAL, WEAK)"
+  # unroll on a global axis: "AxisType.upcast is from (global, local, weak)"
   b2u(ck_tgt(reduce_sched(), 0, O.AXIS_UNROLL{}))
 
 def ck_tgt_ok() -> U32:
@@ -932,7 +932,7 @@ def ck_div_3() -> U32:
   # "3 can't divide 4" -- the `divides(amount) is None` arm of `shift_to`
   b2u(ck_div(plus_sched(), 0, 3))
 
-# THE `rngs` SORT ORDER, AND WHY IT NEEDS A ROW. `pos_key` is the only thing
+# the `rngs` sort order, and why it needs a row. `pos_key` is the only thing
 # that separates LOCAL from UPCAST, and every other fixture on this file has at
 # most ONE of the two -- a `Sched` that has been split once has two rngs of the
 # SAME new type, and `List.sort` is STABLE, so a tie between them is invisible.
@@ -1045,7 +1045,7 @@ def main() -> IO(Unit):
 #                                                     upcasted_plus group_red
 #   `OptOps.value` order shifted                     opsval_swap
 #
-# TWO OF THESE FOUND REAL BUGS WHILE THE TABLE WAS BEING BUILT, which is the
+# two of these found real bugs while the table was being built, which is the
 # argument for building it rather than asserting the gate bites:
 #   * the `match rs hit:` accumulator form used by FIVE folds tested the hit of
 #     the PREVIOUS element and appended unconditionally, so `axes_of` answered 2

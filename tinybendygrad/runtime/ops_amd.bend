@@ -206,7 +206,7 @@
 #    Python string table and a walk over it is a `dict`, so the port keeps the two refusal MESSAGES and the trace
 #    truncation and nothing of the report's body.
 # | WALL(p3) tinygrad/runtime/ops_amd.py:676 symbol=on_device_hang  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st._real_fields_` -- PYTHON REFLECTION over a ctypes struct's field list, which a compiled language does not expose.
-# | WALL(p3) runtime/ops_amd.py:714  the MMU-fault f-string. -- BLOCKED: an MMU-FAULT f-string inside a signal-handler path the port does not have; the FORMAT is not the blocker.
+# | wall(p3) runtime/ops_amd.py:714  the mmu-fault f-string. -- blocked: an mmu-fault f-string inside a signal-handler path the port does not have; the format is not the blocker.
 #    TODO(p3) runtime/ops_amd.py:685  symbol=on_device_hang  the HW-fault f-string.
 #
 # ===========================================================================

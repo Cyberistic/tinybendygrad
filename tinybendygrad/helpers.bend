@@ -74,10 +74,10 @@ def Flags.defaults() -> Flags:
 # is `int` and getenv coerces through `int`, NOT through `bool`. `bool(NO_COLOR)`
 # is then `bool(int(...))`. MEASURED, 31 probes, live CPython
 # (oracles/nocolor-oracle.rows vs the Bend lane):
-# **RETARGETED 2026-10-16.** This read `.agents/slop/nocolor-oracle.txt` AND
+# RETARGETED 2026-10-16. This read `.agents/slop/nocolor-oracle.txt` AND
 # `.agents/slop/nocolor-bend.txt`. The first is `oracles/nocolor-oracle.rows` and the two are
 # BYTE-IDENTICAL -- 206 B either way, verified with `cmp` -- so the content survived the sweep
-# and only the name went stale. The SECOND HAS NO SUCCESSOR AT ANY PATH ON ANY REF: its
+# and only the name went stale. The second has no successor at any path on any ref: its
 # basename is absent from all 18110 paths `git rev-list --all --objects` names, so the Bend
 # side of this comparison was never preserved. Named here rather than quietly dropped.
 #   "0", "00", "-0", "+0", "0 " and " 0" all read as 0 and leave COLOUR ON, and
@@ -153,7 +153,7 @@ def getenv_str(k: String, d: String) -> IO(String):
     return getenv_str.go(v, d)
 
 # ===========================================================================
-# `getenv_int` -- THE OTHER ARM OF THE SAME `getenv`. This is NOT a second
+# `getenv_int` -- the other arm of the same `getenv`. This is not a second
 # environment mechanism: `IO.get_env` (references/bend/bend2/base.bend:185
 # symbol=IO.get_env) is the only reader and both
 # arms call it. helpers.py:163 is the whole of `getenv`:
@@ -197,7 +197,7 @@ def getenv_str(k: String, d: String) -> IO(String):
 type Gi is Data:
   Gi{st: U32, v: U32}
 
-# A `match` MAY ONLY SCRUTINEE A PARAMETER OR A FIELD BINDER, and both of these are
+# a `match` may only scrutinee a parameter or a field binder, and both of these are
 # refused with "a match cannot scrutinize a computed value: give it its own def":
 #   `match gi_dead(st)`        and        `match U32.is_eq(st, 3)`
 # So the whole state transition is ONE indexed read, `gi_tab()[st*3 + kind]`, rather
@@ -267,7 +267,7 @@ def gi_body(sgn: Bool, +t: String) -> List<&2, Char>:
 def gi_neg(+t: String) -> Bool:
   String.starts_with(t, "-")
 
-# THE ACCEPTANCE TEST IS `st == MID`, ONE COMPARISON, and that is the whole point of
+# the acceptance test is `st == MID`, one comparison, and that is the whole point of
 # the four-state walk rather than a separate "seen a digit" flag:
 #
 #   MID is reachable from a prefix that is a legal `int` literal AND ends on a digit.
@@ -326,7 +326,7 @@ def debug() -> IO(U32):
 def debug_ge(dbg: U32, n: U32) -> Bool:
   U32.is_ge(dbg, n)
 
-# THE PRINT, AND THE HALF OF THE SITE THAT IS NOT A BRANCH. `if DEBUG >= N: print(f"…")`
+# the print, and the half of the site that is not a branch. `if DEBUG >= N: print(f"…")`
 # is "build the line iff the gate is open, then write it", and here the two halves are
 # separate defs for a reason that is not stylistic: the gate is a PARAMETER (see
 # `schedule/allreduce.bend`'s header, "THE FLAGS ARE PARAMETERS"), and a def that
@@ -1155,7 +1155,7 @@ def size_to_str(+s: U32) -> String:
 # ===========================================================================
 # ansistrip -- `re.sub('\x1b\[(K|.*?m)', '', s)` (helpers.py:48).
 #
-# THE REGEX MATCHES A RUN OF ARBITRARY LENGTH, SO NOTHING MAY DECIDE BEFORE THE
+# the regex matches a run of arbitrary length, so nothing may decide before the
 # RUN'S END IS SEEN. `.*?m` is non-greedy and unbounded: a walker that emits as it
 # goes has already emitted too much by the time it learns whether the sequence was
 # `K` or `31m`. Bend 2.0.34 offers no way to look ahead, and all three of these
@@ -1172,7 +1172,7 @@ def size_to_str(+s: U32) -> String:
 #     self-call" -- so neither `String.drop(s, n)` nor `List.append(t, [h])` may
 #     step the cursor by more than one character.
 #
-# SO THE RUN IS EMITTED OPTIMISTICALLY AND UN-EMITTED ON A MATCH. `acc` is
+# so the run is emitted optimistically and un-emitted on a match. `acc` is
 # REVERSED, so prepending is O(1) and a run's characters are already on TOP of
 # `acc` when its terminator arrives: dropping the run is `List.drop(acc, n)` for
 # the count `n` of characters put there. One pass, no look-ahead, no flush, no
@@ -1273,7 +1273,7 @@ def ansistrip.go(cs: List<&2, Char>, acc: List<&2, Char>, n: Nat, q: Nat) -> Lis
     case Chr{27} <> t, 1n: ansistrip.go(t, ansistrip.esc(acc), n, 1n)
     case Chr{c} <> t, 1n: ansistrip.go(t, Chr{c} <> ansistrip.esc(acc), n, 0n)
     # A RUN WITH AN EMPTY BODY, where 'K' is the first alternative and matches.
-    # A MATCH DROPS THE RUN AND RESETS `n`, which is never read outside a run --
+    # a match drops the run and resets `n`, which is never read outside a run --
     # and `n` is linear, so it may be spent by the drop and not also carried.
     case Chr{75} <> t, 2n: ansistrip.go(t, List.drop(&2, Char, acc, n), 0n, 0n)
     case Chr{109} <> t, 2n: ansistrip.go(t, List.drop(&2, Char, acc, n), 0n, 0n)
@@ -1533,7 +1533,7 @@ def floordiv_i32(+x: U32, +y: U32) -> U32:
     i32_abs(i32_is_neg(x), x), i32_abs(i32_is_neg(y), y))
 
 # ===========================================================================
-# WHICH OF THE TWO PAIRS IS WHICH. `cdiv_i32_go`/`cmod_i32` TRUNCATE toward zero
+# which of the two pairs is which. `cdiv_i32_go`/`cmod_i32` truncate toward zero
 # (helpers.py:73-74, C semantics, `-7 // 4` is `-1`) and
 # `floordiv_i32`/`floormod_i32` FLOOR (helpers.py:76-77, Python's `//` and `%`,
 # `-7 // 4` is `-2`). Both are correct, both are exported, and they are NOT
@@ -1716,7 +1716,7 @@ def i64_text(+x: I64) -> String:
 # 64-bit add and subtract, so a boundary generator can step either side of a
 # limit without an effect. Carrying into the high word is all either has to get
 # right, and U32's wrap does that for free.
-# THE BORROW AND THE CARRY ARE NOT OPTIONAL. Computing the low word with U32s wrap
+# the borrow and the carry are not optional. Computing the low word with U32s wrap
 # and then subtracting the high words is arithmetically WRONG for every borrow:
 # `5 - 7` answered hi=0 lo=4294967294, where Python answers hi=4294967295 lo=4294967294
 # (that is -2). The low word was right and the high word was wrong, which is the worst
@@ -1803,12 +1803,12 @@ def i64_abs(+x: I64) -> I64:
 # is a `Nat`; and `U32.shln` SATURATES to 0 past 31, which is why an amount of 32 or
 # more is built out of the low word alone rather than by shifting twice.
 #
-# `k == 0` AND `k == 32` ARE THE TWO AMOUNTS WHERE THE TWO FORMS MEET, and both are
+# `k == 0` and `k == 32` are the two amounts WHERE the two forms meet, and both are
 # answered by the SAME arm: `U32.shrn(lo, 32n)` is 0 and `U32.shln(hi, 0n)` is `hi`.
 # That is why the test is `k <= 32` and not `k < 32`.
 #
-# FOR `k >= 32` THE HIGH WORD COMES FROM `lo` AND ONLY FROM `lo`: `a * 2**k` has high
-# word `lo * 2**(k-32)` plus `hi * 2**k` reduced mod 2**32, and the second term is 0
+# for `k >= 32` the high WORD comes from `lo` and only from `lo`: `a * 2k` has high
+# word `lo * 2(k-32)` plus `hi * 2k` reduced mod 2**32, and the second term is 0
 # for every k past 31. Reading `hi` there drops the low word entirely and answers 0
 # for `1 << 63`.
 #
@@ -1828,7 +1828,7 @@ def i64_shl.put(low: Bool, +hi: U32, +lo: U32, +k: Nat) -> I64:
 def i64_shl(+x: I64, +k: Nat) -> I64:
   i64_shl.put(U32.is_le(U32.from_nat(k), 32), hi32(x), lo32(x), k)
 
-# THE RIGHT SHIFT, AND IT IS ARITHMETIC. `tinygrad/uop/ops.py:1429` binds `Ops.SHR` to
+# the right shift, and it is arithmetic. `tinygrad/uop/ops.py:1429` binds `Ops.SHR` to
 # `operator.rshift`, which on a CPython int IS the sign-extending (floor) shift, and
 # `tinygrad/codegen/decomp/dtype.py:48` says it twice -- "vacated high word: sign bits
 # when signed, else 0" and `fill = a1 >> 31 if dt == dtypes.int else zero`. So SHR of an
@@ -1845,7 +1845,7 @@ def i64_shl(+x: I64, +k: Nat) -> I64:
 #                                         the SIGN repeated, which is what makes the shift
 #                                         arithmetic
 #
-# THE FILL IS INVISIBLE ON EVERY NON-NEGATIVE VALUE, which is half the fixture set and the
+# the fill is invisible on every non-negative value, which is half the fixture set and the
 # reason half of it cannot see a deleted fill: the fill is `0` when the high word's bit 31
 # is clear, so dropping it changes nothing for `zero`, `one` or `max` and everything for
 # `neg1`, `signmin` or `spill`. Planted and MEASURED: 18 of 301 rows move, all six on
@@ -1853,7 +1853,7 @@ def i64_shl(+x: I64, +k: Nat) -> I64:
 # four terms load-bearing -- its high word is negative AND not all ones AND its bit 0 is
 # set, so at `k = 1` all four terms are individually necessary.
 #
-# THE SIGN FILL IS NEEDED IN **BOTH** WORDS FOR `k > 32`, AND OMITTED FOR `k <= 32`. This
+# the sign fill is needed in both words for `k > 32`, and omitted for `k <= 32`. This
 # is the whole asymmetry with `i64_shl` and it is a property of the BIT INDEXES, not a
 # choice. Bit `j` of the result is bit `j+k` of `x` while `j+k <= 63`, and the sign after
 # that. The HIGH word is bits 32..63, so for every `k` it is past the top of `x` and is
@@ -1865,22 +1865,22 @@ def i64_shl(+x: I64, +k: Nat) -> I64:
 # `sr_neg1_3`, amount 33; planted as P2, and 36 of 301 rows move, NOT ONE of them at an
 # amount at or below 32 -- which is the 60 cells that implementation still gets right.
 #
-# `k == 0` AND `k == 32` ARE THE TWO AMOUNTS WHERE THE TWO FORMS MEET, and both are
+# `k == 0` and `k == 32` are the two amounts WHERE the two forms meet, and both are
 # answered by the SAME arm, so the test is `k <= 32` and not `k < 32`: at 32 the low word
 # is `hi >> 0 | hi << 0 = hi` and the high word is the fill alone.
 #
 # FOR `k > 32` NOTHING OF `lo` SURVIVES -- `lo` supplies only the bits that land in the
 # high word's bottom `k-32` positions -- so this is the mirror of `i64_shl`'s "FOR
-# `k >= 32` THE HIGH WORD COMES FROM `lo` AND ONLY FROM `lo`", and, as there, `Nat.sub`
+# `k >= 32` the high WORD comes from `lo` and only from `lo`", and, as there, `Nat.sub`
 # TRUNCATES so the eagerly-evaluated other arm of the `Bool.pick` is harmless.
 #
-# THE FILL AMOUNT PAST 64 IS `Nat.sub` TRUNCATION, NOT A CLAMP, AND IT IS RIGHT BY THE
+# the fill amount past 64 is `Nat.sub` truncation, not a clamp, and it is right by the
 # WIDTH LAW: for every `k >= 64` the answer is the fill, and `Nat.sub(32n, k-32)` is 0
 # there, so `U32.shln(fill, 0n)` is the fill -- the saturation `U32.shln` would have done
 # is never reached, and both agree anyway.
 #
-# THERE IS NO WIDTH BOUNDARY, WHICH IS WHERE THIS DIFFERS FROM `i64_shl`. `x >> k` is
-# `floor(x / 2**k)`, so `|x >> k| <= |x| <= 2**63` for every `k <= 63` and for every
+# there is no width boundary, which is WHERE this differs from `i64_shl`. `x >> k` is
+# `floor(x / 2k)`, so `|x >> k| <= |x| <= 2**63` for every `k <= 63` and for every
 # `k >= 64` it is `-1` (x < 0) or `0` (x >= 0) -- ALL IN RANGE. So this def is EXACT AT
 # EVERY `Nat` AMOUNT for every `int64`, the answer is always representable as the pair,
 # and there is nothing to check: no `Maybe`, no wider carrier, no `u1`. `i64_shl` grows in
@@ -1906,14 +1906,14 @@ def i64_shr(+x: I64, +k: Nat) -> I64:
 # ===========================================================================
 # THE 64-STEP UNSIGNED RESTORING DIVIDER
 #
-# STEP `k` READS DIVIDEND BIT `k` AND WRITES QUOTIENT BIT `k` -- the same index on
+# step `k` reads dividend bit `k` and writes quotient bit `k` -- the same index on
 # both sides, which is the whole of restoring division -- so the walk counts DOWN
 # from 64 and the first bit processed is bit 63 of each.
 #
-# THE 65TH BIT IS CARRIED AND NOT LOST. `r` is below `d` before every step, so
+# the 65TH bit is carried and not lost. `r` is below `d` before every step, so
 # `2r + bit` is below `2d` and needs 65 bits; a `U32` shift by 1 drops the top of the
 # high word, and that bit is the one that decides the compare below. EVERY FIXTURE
-# WITH BOTH OPERANDS BELOW 2**32 READS THE SAME WHETHER IT IS CARRIED OR NOT, so
+# with both operands below 2**32 reads the same whether it is carried or not, so
 # `div_2p63_2p62` -- `2**63-1` over `2**62-1` -- is the row that makes this block a
 # test rather than a shape check, and `div_1_neg` is its signed twin.
 # ===========================================================================
@@ -1926,7 +1926,7 @@ type DivSt is Data:
 def u64_lt(+ah: U32, al: U32, +bh: U32, bl: U32) -> Bool:
   Bool.or(U32.is_lt(ah, bh), Bool.and(U32.is_eq(ah, bh), U32.is_lt(al, bl)))
 
-# STEP `k` READS BIT `k` OF THE DIVIDEND, and `U32.shrn` is a shift and NOT a
+# step `k` reads bit `k` of the dividend, and `U32.shrn` is a shift and not a
 # `& 1`, so both arms mask. `Nat.sub` truncating is what makes the other arm of the
 # pick harmless: for `k < 32` it reads bit 0 of the high word and throws it away.
 def div_bit(bh: U32, bl: U32, +k: Nat) -> U32:
@@ -1975,7 +1975,7 @@ def div_qbit(k: Nat, s: DivSt) -> DivSt:
 def div_step(+k: Nat, s: DivSt, +n: I64, d: I64) -> DivSt:
   div_qbit(k, div_fit(div_shift(s, div_bit(hi32(n), lo32(n), k)), d))
 
-# **THE FUEL IS AN UPPER BOUND ON THE DIVIDEND'S BIT LENGTH, NOT ALWAYS 64, AND THAT IS A MEASURED CHANGE.**
+# the fuel is an upper bound on the dividend's bit length, not always 64, and that is a measured change.
 # A restoring division must visit every bit from the dividend's top one down, and the steps above that bit
 # shift in ZEROS: the quotient bit is 0 and the remainder stays 0, so they are pure cost. MEASURED on the
 # shipped path (`PARITY.md` §31): `helpers_div_fit_put` was 20.5% of a 405-uop render, because every integer
@@ -2037,7 +2037,7 @@ def i64_divmod.q(+d: DivMod, +flip: Bool) -> I64:
   +r = divmod_r(d)
   i64_neg(flip, i64_add(divmod_q(d), i64_bit(Bool.to_u32(i64_divmod.up(flip, r)))))
 
-# THE REMAINDER'S SIGN IS THE DIVISOR'S, which is Python's `%` and NOT a property of
+# the remainder's sign is the divisor's, which is Python's `%` and not a property of
 # the magnitudes: `7 % -4` is -1 and `-7 % -4` is -3 and both are negative. Its
 # MAGNITUDE is `|a| % |b|` except in the one case where the quotient was stepped up,
 # where it is the divisor's magnitude MINUS that remainder -- and that is the only
@@ -2051,7 +2051,7 @@ def i64_divmod.put(+d: DivMod, an: Bool, +bn: Bool, mb: I64) -> DivMod:
   +flip = Bool.xor(an, bn)
   DivMod{i64_divmod.q(d, flip), i64_divmod.r(d, flip, bn, mb)}
 
-# THE ZERO DIVISOR ANSWERS THE DIVIDEND FOR THE REMAINDER AND NOT 0, and that is a
+# the zero divisor answers the dividend for the remainder and not 0, and that is a
 # claim about helpers.py:78 rather than about arithmetic: `floormod(x, 0)` is
 # `x - floordiv(x,0)*0` and `floordiv(x, 0)` is 0, so the remainder is the dividend.
 # A restoring divider run on a zero divisor answers a quotient of all ones, so the
@@ -2073,7 +2073,7 @@ def i64_div(a: I64, b: I64) -> I64:
   divmod_q(i64_divmod(a, b))
 
 # ===========================================================================
-# THE MAGNITUDE DIVISION, AND WHY IT IS A SECOND ENTRY POINT
+# the magnitude division, and why it is a second entry point
 #
 # A MAGNITUDE OF 2**63 HAS NO POSITIVE I64 IMAGE, and that is the whole seam.
 # `i64_abs(int64.min)` is int64.min, whose PAIR is 2**63 -- the right UNSIGNED
@@ -2131,7 +2131,7 @@ def u64_divmod(+a: I64, +b: I64) -> DivMod:
 # above), so a signed value IS its two's complement bit pattern and the decimal has
 # to be built by dividing a MAGNITUDE, with the sign carried beside it.
 #
-# AND THE FOLD RUNS ON A `Nat` FUEL, WHICH IS THE WHOLE SHAPE. Every step's next
+# and the FOLD runs on a `Nat` fuel, which is the whole shape. Every step's next
 # value is a CALL -- `i64_divmod(divmod_q(d), 10)` -- and Bend REFUSES a computed
 # self-call argument: "expected : a decreasing self-call (arguments are read left to
 # right: each passed unchanged until one shrinks)". A `match` binder is the only
@@ -2145,7 +2145,7 @@ def u64_divmod(+a: I64, +b: I64) -> DivMod:
 # `go -> fin -> go` cycle is BASE-ONLY syntax; the leading `-` marks a builtin, and
 # a user file is told "expected : 'def', 'type' or 'law'".
 #
-# SO THE FUEL IS DELIBERATELY ONE MORE THAN THE DIGIT COUNT. 2**63-1 is nineteen
+# so the fuel is deliberately one more than the digit count. 2**63-1 is nineteen
 # digits and the fuel is 20, so the fold always emits exactly 20 digits and the
 # surplus ones are the surplus ZEROS of the magnitude -- which is why `i64_dec.trim`
 # exists and why it runs on the REVERSED list: the surplus digits are the MOST
@@ -2181,7 +2181,7 @@ def i64_dec.text(+cs: List<&2, U32>, +acc: String) -> String:
     case c <> t:
       i64_dec.text(t, String.append(acc, String.from_list([Char.from_u32(U32.add(c, 48))])))
 
-# THE SIGN IS PREPENDED TO THE WHOLE BODY, and the order matters: pushing a "-" onto
+# the sign is prepended to the whole body, and the order matters: pushing a "-" onto
 # the head of a not-yet-reversed list would put it on the LAST character.
 def i64_dec.put(neg: Bool, +body: String) -> String:
   Bool.pick(String, neg, String.append("-", body), body)
@@ -2197,14 +2197,14 @@ def i64_dec.put(neg: Bool, +body: String) -> String:
 # `hi:lo` fallback answered `2147483648:0` where CPython's `str` says
 # `-9223372036854775808`. So the fallback and its `wide` test are DELETED rather
 # than widened: the one value they existed for is now the one value that works.
-# **THE FUEL IS THE ACTUAL DIGIT COUNT, AND THAT IS A MEASURED CHANGE.** Every fold step is one
+# the fuel is the actual digit count, and that is a measured change. Every fold step is one
 # `u64_divmod` and every division is `div_loop(64n, ...)`, i.e. SIXTY-FOUR bit steps whatever the values
 # are -- so the fixed fuel of 20 paid 21 divisions for a constant like `392`, which needs three. The count is
 # found by COMPARISON, never by division: multiply a power of ten up and add one for each that fits, which is
 # `u64_mul` (four `U32` multiplies) and `u64_lt` (two compares) per step and no division at all.
 # MEASURED on the 405-uop kernel: this took the render from 94.0 ms to the number in `PARITY.md` §28.
 #
-# **THE TEST IS `p <= x`, WRITTEN AS `not (x < p)`.** The first spelling compared `p` on the left and counted
+# THE TEST IS `p <= x`, WRITTEN AS `not (x < p)`. The first spelling compared `p` on the left and counted
 # every power of ten ABOVE the value -- MEASURED: `2147483647` printed `147483647`, one digit short, and the
 # truncation was invisible on nine-digit-and-under rows.
 #
@@ -2221,14 +2221,14 @@ def i64_dec.dig(+x: I64, f: Nat, +p: I64, +c: U32) -> U32:
       i64_dec.dig(x, g, i64_dec.times10(p),
         U32.add(c, Bool.to_u32(Bool.not(u64_lt(hi32(x), lo32(x), hi32(p), lo32(p))))))
 
-# ZERO HAS ONE DIGIT AND THE COUNT ABOVE SAYS IT HAS NONE, so the floor is here rather than in the fold.
+# zero has one digit and the count above says it has NONE, so the floor is here rather than in the fold.
 def i64_dec.digits.at(+c: U32) -> U32: Bool.pick(U32, U32.is_zero(c), 1, c)
 
 def i64_dec.digits(+x: I64) -> U32: i64_dec.digits.at(i64_dec.dig(x, 19n, i64_of_i32(1), 0))
 
-# **A DECIMAL BY DIVISION, NOT BY A 32-CELL BIT LIST.** `U32.show` is `u32_to_word` (thirty-two cons cells
+# a decimal by division, not by a 32-cell bit list. `U32.show` is `u32_to_word` (thirty-two cons cells
 # per number, in the language prelude) plus a fold, which is why §90's swap to it measured NEUTRAL: both
-# formatters are expensive. MEASURED (`PARITY.md` §99): `i64_dec` is **0.65 ms of a 4.7 ms turn, 13.9%**,
+# formatters are expensive. MEASURED (`PARITY.md` §99): `i64_dec` is 0.65 ms of a 4.7 ms turn, 13.9%,
 # the largest single cost inside CAST. This walks the digits: one `U32.div`/`U32.mod` and one cons per
 # DIGIT (at most ten), then one `String.from_list`. Negative and wide values keep the fold, so the text
 # cannot move.
@@ -2260,7 +2260,7 @@ def i64_dec(+x: I64) -> String:
 # `18446744073709551552ul`. MEASURED (`PARITY.md` §116): every kernel carrying a uint64 constant diverged on
 # exactly this value. The digits are `i64_dec`'s own -- that loop already divides through `u64_divmod`, which
 # reads bit 63 as a MAGNITUDE -- so the only differences are WHICH PAIR goes in and that no "-" comes out.
-# THE FUEL IS 20 AND THE EXTRA ZEROS ARE `i64_dec.trim`'s JOB: 20 is the digit count of 2**64-1, and dividing
+# the fuel is 20 and the extra zeros are `i64_dec.trim`'s job: 20 is the digit count of 2**64-1, and dividing
 # a short value 20 times leaves leading zeros for `trim` to drop -- the same def the sign path uses.
 def i64_udec(+x: I64) -> String:
   i64_dec.text(i64_dec.trim(List.reverse(&2, U32,
@@ -2281,7 +2281,7 @@ def i64_mod(a: I64, b: I64) -> I64:
 # then violated by the port. MEASURED: `gcd(int64.min, int64.min)` answered
 # -2**63 where CPython answers +2**63, and 97 of 2106 rows disagreed.
 #
-# THE LOOP TESTS `b` AND NOT THE REMAINDER, and that is the load-bearing detail:
+# the LOOP tests `b` and not the remainder, and that is the load-bearing detail:
 # testing `a % b == 0` reaches a zero-divisor `u64_divmod`, whose remainder is the
 # DIVIDEND, so `gcd(A, 0)` would recurse to `(0, A)` and answer 0.
 #
@@ -2302,7 +2302,7 @@ def gcd(a: I64, b: I64) -> I64:
 # ===========================================================================
 # THE MULTIPLY
 #
-# THE SPLIT IS 16-BIT LIMBS AND NOT 32-BIT, and that is the whole of it. A 32x32
+# the split is 16-bit limbs and not 32-bit, and that is the whole of it. a 32x32
 # product does not fit a U32, and `U32.mul` WRAPS mod 2**32 (MEASURED:
 # `U32.mul(4294967295, 4294967295)` answers 1), so a correct 32x32 multiply has to
 # accumulate its own carries. Sixteen-bit limbs make every PARTIAL PRODUCT exact
@@ -2311,7 +2311,7 @@ def gcd(a: I64, b: I64) -> I64:
 # exactness is a property of the OPERANDS, not of `U32.mul`, and that is why the
 # split is 16 and not 32.
 #
-# THE CARRY OUT OF `cross` IS RE-ENTERED AT BIT 16 AND NOT AT BIT 0. `cross` holds
+# the carry out of `cross` is re-entered at bit 16 and not at bit 0. `cross` holds
 # (p10+p01) mod 2**32, so the true sum is `cross + c*2**32`; it arrives in `carry`'s
 # word multiplied by 2**16, so `c` contributes 2**48 -- which is bit 16 of this word.
 # MEASURED: adding it at bit 0 answers 0xFFFF0000-1 for 0xFFFFFFFF*0xFFFFFFFF where
@@ -2349,10 +2349,10 @@ def u64_mul32_of(a: U32, b: U32) -> I64:
 
 # a*b mod 2**64 = al*bl + (al*bh + ah*bl)*2**32, and the ah*bh term is 2**64 wide so
 # it vanishes. Only `al*bl` needs 64 bits; the other two are needed mod 2**32, which
-# `U32.mul`'s wrap already gives, so TWO ADDS AND ONE FULL-WIDTH PRODUCT IS THE
+# `U32.mul`'s wrap already gives, so two adds and one full-width product is the
 # WHOLE WORD LEVEL.
 #
-# THE CROSS SUM GOES IN THE HIGH WORD, because it is `(...)*2**32`. Putting it in
+# the cross sum goes in the high WORD, because it is `(...)*2**32`. Putting it in
 # the low word (`i64_of_hi_lo(0, cross)`) answers 0xFFFFFFFE_00000003 where the
 # truth is 1 for 0x7FFFFFFFFFFFFFFF squared -- again a wrong HIGH word beside a
 # right low word. Gate row `m_f_max_max`.
@@ -2367,7 +2367,7 @@ def u64_mul_parts(+al: U32, +ah: U32, +bl: U32, +bh: U32) -> I64:
 def u64_mul(+a: I64, +b: I64) -> I64:
   u64_mul_parts(lo32(a), hi32(a), lo32(b), hi32(b))
 
-# TWO'S COMPLEMENT MULTIPLY IS THE MAGNITUDE PRODUCT NEGATED ON A SIGN MISMATCH, and
+# two's complement multiply is the magnitude product negated on a sign mismatch, and
 # it is exact mod 2**64 because `~x+1` is negation IN THAT SAME RING.
 # `i64_abs(int64.min)` answers int64.min, whose PAIR is 2**63 -- the right unsigned
 # magnitude for this computation -- so the most negative value needs no special case.
@@ -2385,13 +2385,13 @@ def i64_mul(+a: I64, +b: I64) -> I64:
 # would answer +1 where the truth is -1. `cdiv_sign`/`cdiv_i32` above already read
 # the sign this way for the same reason.
 #
-# **THE MULTIPLY NEVER WRAPS INSIDE `cmod`.** `cdiv` divides MAGNITUDES and applies
+# the multiply never wraps inside `cmod`. `cdiv` divides magnitudes and applies
 # the sign afterwards, so `|cdiv(x,y)*y| = floor(|x|/|y|)*|y| <= |x|`, and the only
 # i64 value whose magnitude is 2**63 is int64.min, for which the product is
 # int64.min itself -- representable. So `i64_mul` is exact wherever `cdiv` is.
 #
-# **AND THE 54 ROWS THAT USED TO DISAGREE ARE GONE, AND THEY WERE NOT AN `i64_div`
-# DEFECT.** They are fixed above, by `u64_divmod`: the quotient this def needs is
+# and the 54 rows that used to disagree are gone, and they were not an `i64_div`
+# DEFECT. They are fixed above, by `u64_divmod`: the quotient this def needs is
 # the UNSIGNED one, and it used to ask `i64_div` for it, which read the magnitude
 # pair's bit 63 as a sign and floored a dividend that was already unsigned.
 # Measured over 2106 rows: `cdiv_i64` 236 disagreements before and 0 after,
@@ -2403,7 +2403,7 @@ def cdiv_i64.of(zero: Bool, neg: Bool, q: I64) -> I64:
     case True{}: i64_zero()
     case False{}: i64_neg(neg, q)
 
-# THE QUOTIENT IS THE UNSIGNED ONE, through `u64_divmod` and NOT `i64_div`. Both
+# the quotient is the unsigned one, through `u64_divmod` and not `i64_div`. Both
 # operands are MAGNITUDES here and the sign is applied by the line above, so asking
 # `i64_div` for the quotient asks a signed floor division to divide a positive
 # number whose pair still has bit 63 set -- which is 236 rows wrong, every one of
@@ -2772,9 +2772,9 @@ def Timing.report(enabled: Bool, prefix: String, st: Nat, en: Nat) -> IO(Unit):
   Timing.report.go(enabled, Timing.report.text(prefix, st, en))
 
 # ===========================================================================
-# trange -- `def trange(n:int, **kwargs) -> tqdm[int]`, helpers.py:619
+# trange -- `def trange(n:int, kwargs) -> tqdm[int]`, helpers.py:619
 #
-# The entire body is `return tqdm(range(n), total=n, **kwargs)`, so a `trange` IS its
+# The entire body is `return tqdm(range(n), total=n, kwargs)`, so a `trange` IS its
 # `range(n)` with a total attached, and there are no `kwargs` to pass: every call
 # site in tinygrad is a bare `trange(k)` (`examples/beautiful_mnist.py:39` is the one
 # this block was added for). `Tqdm` therefore holds exactly what `trange` supplies:
@@ -2857,10 +2857,10 @@ def printable(path: String, line: U32) -> IO(String):
   printable.pick(line, lines(path))
 
 # ===========================================================================
-# `Target` -- tinygrad/helpers.py:197-220. THE DEV TARGET, AND UPSTREAM PUTS
+# `Target` -- tinygrad/helpers.py:197-220. the dev target, and upstream puts
 # IT HERE.
 #
-# WHY THIS FILE, AND NOT THE TWO THAT WANTED IT. THE IMPORT GRAPH DECIDES, AND
+# why this file, and not the two that wanted it. the import graph decides, and
 # IT IS A CYCLE, AND IT IS MEASURED:
 #
 #   * upstream's `helpers.py:198` DEFINES `Target`, and upstream's
@@ -2876,9 +2876,9 @@ def printable(path: String, line: U32) -> IO(String):
 #     `a.bend`, and the compiler answers "an import cycle through ...".
 #   * THIS FILE IS A LEAF -- it imports `Base` and nothing else -- so both
 #     consumers can import it without closing an edge. THAT IS THE WHOLE
-#     REASON IT IS HERE AND NOT IN EITHER OF THEM.
+#     reason it is here and not in either of them.
 #
-# TWO COPIES IS THE DEFECT THIS FILE CLOSES. `runtime/ops_python.bend` held
+# two copies is the defect this file closes. `runtime/ops_python.bend` held
 # one `Target` (the record, its accessors and the DEV parser) and
 # `uop/ops.bend` held another (the record and `Target.of()`), and the two were
 # DIFFERENT TYPES with the same five fields: a parsed target could not go into
@@ -2891,7 +2891,7 @@ def printable(path: String, line: U32) -> IO(String):
 # the same order is a no-op that can only ever be wrong SILENTLY, so there is
 # not one.
 #
-# THE ORDER IS THE ARM THAT MATTERS, and it is a SILENT one. Two records with
+# the order is the arm that matters, and it is a silent one. Two records with
 # the same five field NAMES in a different order are not interchangeable: a
 # positional construction puts the values in the wrong slots, a positional
 # pattern (`eq_target`, `uop/ops.bend`) compares the wrong pairs, and nothing
@@ -2943,40 +2943,40 @@ def Target.indices(+t: Target) -> String:
 # SIX FACTS, and a port that misses any one of them is wrong in a way a
 # "looks about right" reading will not catch.
 #
-# 1. THE `+` CUT IS NOT THE MIDDLE OF THE STRING. `s.split('+')` gives the
-#    INTERFACE half FIRST and the DEVICE half SECOND, so `DEV=USB+AMD` is the
+# 1. the `+` cut is not the middle of the string. `s.split('+')` gives the
+#    interface half first and the device half second, so `DEV=USB+AMD` is the
 #    interface "USB" and the device "AMD" -- the OPPOSITE of the order the two
 #    are written in. A string with NO '+' is all device and the interface is
 #    empty; a string with a '+' is the interface half and the device half.
-# 2. THE INTERFACE HALF MAY CARRY ITS OWN ':'. `split[0].rsplit(":", 1)` cuts
+# 2. the interface half may carry its own ':'. `split[0].rsplit(":", 1)` cuts
 #    that half at its LAST ':' -- before the cut is the interface, after it is
 #    the indices -- and `rsplit` with a maxsplit of ONE means "A:B:C" is the
 #    interface "A:B" and the indices "C", NOT the interface "A" and the
 #    indices "B:C".
-# 3. THE DEVICE HALF IS SPLIT ON ':' AND ITS FIRST TWO FIELDS ARE UPPERCASED.
+# 3. the device half is split on ':' and its first two fields are uppercased.
 #    The arch is NOT: `DEV=AMD:LLVM:gfx1100` keeps "gfx1100" as it is written,
 #    and `render.of` (runtime/ops_python.bend) matches the arch with
 #    `String.starts_with(arch, "gfx")`, so an uppercased arch would stop being
 #    an AMD arch at all. The interface and the indices are not uppercased either.
-# 4. TWO REFUSALS, AND THEY ARE NOT THE SAME REFUSAL. A third '+' is "too
+# 4. two refusals, and they are not the same refusal. a third '+' is "too
 #    many '+'"; a fourth ':' IN THE DEVICE HALF is "too many ':'". Upstream
 #    raises `RuntimeError`; the port's `None` IS that RuntimeError
 #    (helpers.bend:3072 symbol=Target.parse), so `Target.parse` answers a `Maybe`. The port cannot
 #    carry upstream's MESSAGE -- `None` is a value with no room for one -- but
 #    the BOUNDARY, which strings are refused and which are not, is the fact
 #    that matters and it is carried exactly.
-# 5. THE COLONS OF THE INTERFACE HALF ARE NOT THE DEVICE HALF'S BUDGET. The
+# 5. the colons of the interface half are not the device half's budget. The
 #    ':' count that refuses is the count of the DEVICE half ALONE, so
 #    "A:B:C+D" parses (the device half "D" has one field) and "A+B:C:D" parses
 #    too (the device half "B:C:D" has three, which is the most there is).
 #    Upstream's own error message is narrower still: it rebinds `s` to
 #    `split[1]` BEFORE the ':' split, so the "too many ':'" message names the
 #    DEVICE half and not the whole string.
-# 6. THE EMPTY STRING IS NOT A MALFORMED STRING. `Target.parse("")` is
+# 6. the empty string is not a malformed string. `Target.parse("")` is
 #    `Target("", "", "", "", "")`: the device half is "" and the interface is
 #    "". A port that treats "" as malformed refuses a string upstream accepts.
 #
-# THE PORT'S OWN NAME FOR THE FIELDS. Upstream's record is
+# the port's own name for the fields. Upstream's record is
 # `Target{device, renderer, arch, interface, indices}` and the port's is
 # `Target{device, renderer, arch, iface, indices}` -- ONE name differs and it
 # is the port's SHORT one: `interface` is `iface` here and NOTHING ELSE. Every
@@ -3015,13 +3015,13 @@ def Target.indices(+t: Target) -> String:
 #
 # The five fields are printed as `device|renderer|arch|interface|indices`, in
 # upstream's order, with upstream's `interface` spelled `iface`. THE REFUSALS
-# AGREE ON THE BOUNDARY AND NOT ON THE MESSAGE: upstream raises
+# agree on the boundary and not on the message: upstream raises
 # `RuntimeError("too many ':' in target string: 'B:C:D:E'")` and the port
 # answers `None`, which IS that RuntimeError in this tree's vocabulary
 # (helpers.bend:2382) and cannot carry its text, because `None` is a value
 # with no room for one.
 #
-# THE PLANT, AND WHERE EACH PLANTED CASE LANDS. The ways this could be wrong,
+# the plant, and WHERE each planted case lands. The ways this could be wrong,
 # and the row that catches each:
 #
 #   * A COMPONENT IN THE WRONG ORDER -- the `+` cut puts the interface half
@@ -3140,7 +3140,7 @@ def Target.parse_split(parts: List<&2, String>, too_many: Bool, two: Bool) -> Ma
 # `Target.parse` itself. Upstream's is a `staticmethod`, so the port makes it a
 # top-level def of the same name; the `Maybe` is upstream's `RuntimeError`.
 #
-# THE SHAPE IS THE LANGUAGE'S, NOT A STYLE CHOICE. Four rules of Bend, each
+# the shape is the language's, not a style choice. Four rules of Bend, each
 # MEASURED by the compiler while this was written:
 #
 #   1. A `match` scrutinizes a PARAMETER or a bound FIELD. Never a computed
@@ -3196,7 +3196,7 @@ def Target.parse_list(s: String) -> Maybe<&2, List<&2, Target>>:
   Target.parse_list_of(Target.parse_list_go(String.split(s, Target.SEMI()), Nil{}, True{}))
 
 # `Target.select` -- `_DEV.target(dev)` (helpers.py:216-218). THE PRECEDENCE
-# WHEN A DEVICE IS NAMED MORE THAN ONCE: the FIRST target in the DEV list
+# when a device is named more than once: the first target in the dev list
 # whose device is empty or is `dev` wins, and the answer's device is `dev`
 # whatever the winner said. So "CPU:CLANG;CPU:LLVM" answers the FIRST, and a
 # target with an EMPTY device matches ANY device.

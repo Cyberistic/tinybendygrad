@@ -38,7 +38,7 @@
 #      second Bend rule. `ew_remint.put` then has to build in the arena its OWN
 #      recursion grew, which is the same rule one level down.
 #
-# THE FLOAT-CONST FAMILY IS A THIRD WALL AND IT IS BIG. Every method whose Python
+# the FLOAT-CONST family is a third wall and it is big. Every method whose Python
 # body names a float LITERAL -- `cos` (math.pi/2), `exp` and `sigmoid` and
 # `tanh` (1/math.log(2)), `log`/`log10`, `erf`, `asin`, `gelu`, `round` (0.5),
 # `isinf` (float("inf")) and everything built on them -- cannot be written, because
@@ -66,7 +66,7 @@
 #   4. `Maybe` is a `Type`: no `+`, read once. Every optional answer here is
 #      therefore a total wrapper over a `Bool` (`ew_base.pick`, `ew_const_val`) or
 #      is dropped at the boundary (`wk_dt`'s `void` default).
-#   5. THE ARENA A BUILD RETURNED IS NOT THE ARENA THAT WENT IN. Every def here that
+#   5. the arena a build returned is not the arena that went in. Every def here that
 #      builds returns a `Found` or a `Tensor` carrying the GROWN arena, and
 #      `ew_promo2` re-folds between the two promotions for exactly that reason.
 #
@@ -151,7 +151,7 @@ def ew_is_const(+fx: F.Folded, +b: U32) -> Bool:
 def ew_of(+f: O.Found) -> T.Tensor:
   T.tn_wrap_uop(O.Found.ar(f), O.Found.i(f))
 
-# THE FOLD IS TAKEN FROM THE TENSOR, NEVER HANDED IN. A `F.Folded` is a fold of ONE
+# the FOLD is taken from the tensor, never handed in. a `F.Folded` is a fold of one
 # arena, and every build grows it, so a fold passed down a call chain goes stale the
 # moment the callee mints -- and a stale fold does not raise: `wk_dt` answers `void`,
 # `void` is not weak, and the node takes the CAST arm. Taking the fold from the
@@ -206,7 +206,7 @@ def ew_con(e: Ew) -> O.Const:
 
 # AND `ew_ten` IS NOT OPTIONAL. An earlier version of `ew_ufix.at` answered `t` on
 # the `ETen` arm -- `self` -- because `t` was in scope and `e` was not read. Python's
-# `ufix` returns **x**, the argument, and returning `self` instead makes EVERY binop
+# `ufix` returns x, the argument, and returning `self` instead makes EVERY binop
 # `(t OP t)`: it typechecks, it checks, every node COUNT and every ARITY is right
 # (both operands hash-cons to one node), and the only thing in the whole file that
 # sees it is a row whose two operands have DIFFERENT dtypes -- `ew_promo_remint`,
@@ -218,7 +218,7 @@ def ew_ten(e: Ew) -> T.Tensor:
     case ETen{t}: t
     case _: T.tn_new(O.Arena.empty(), 0)
 
-# TWO ARENAS, AND THE LONGER ONE CONTAINS THE OTHER. `ufix` can hand back a Tensor
+# two arenas, and the longer one contains the other. `ufix` can hand back a Tensor
 # built in a DIFFERENT store from `self`'s -- the `ETen` case, where the operand was
 # made elsewhere -- and then `_broadcasted` folds one arena and promotes against
 # another. `Arena.node` answers the BOTTOM for an index past the end, which is a
@@ -234,7 +234,7 @@ def ew_ten(e: Ew) -> T.Tensor:
 def ew_rebase(ar: O.Arena, +t: T.Tensor) -> T.Tensor:
   T.tn_new(ar, T.Tensor.u(t))
 
-# THE REBASED INDEX NEEDS A SPELLING OF ITS OWN once the arena is a MERGE: after
+# the rebased INDEX needs a spelling of its own once the arena is a merge: after
 # `O.Arena.merge`, the right operand's index is no longer `Tensor.u(y)` but `O.Merge.at(m, ...)`.
 def ew_rebase.at(ar: O.Arena, u: U32) -> T.Tensor:
   T.tn_new(ar, u)
@@ -343,7 +343,7 @@ def ew_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
 # under-provisioned one answers `None` for everything (uop/upat.bend's M2 lesson).
 # ===========================================================================
 
-# `+ar` IS THE ARENA THE ANSWER LIVES IN, on EVERY arm -- including the two that mint
+# `+ar` is the arena the answer lives in, on every arm -- including the two that mint
 # nothing. That is the point. An arm that answers `t` unchanged hands back a tensor
 # carrying the arena as it was BEFORE the sibling promotion grew it, and the next
 # build in that stale store takes an index a real node already holds. Rebasing on the
@@ -627,7 +627,7 @@ def ew_div_round(rm: Rm, +d: T.Tensor) -> T.Tensor:
     case RFloor{}: ew_floor(d)
     case _: d
 
-# THE THREE BUILDS ARE IN PYTHON'S ORDER, and `b` is REBASED into the arena `cast`
+# the three builds are in python's order, and `b` is rebased into the arena `cast`
 # grew before `reciprocal` builds in it. Without that, `cast` and `reciprocal` each
 # append at index N to stores that are SIBLINGS -- same length, same index, different
 # nodes -- and the `MUL` then names whichever one `ew_join` picked. That is the whole
@@ -663,7 +663,7 @@ def ew_div(+t: T.Tensor, +e: Ew, rev: Bool, rm: Rm) -> T.Tensor:
 
 # `mod` -- elementwise.py:212-214. `a, b = self._broadcasted(x, reverse)` and THEN
 # `if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype)`. The dtype test is on the PROMOTED
-# pair, and THAT ORDER IS THE WHOLE OF THIS DEF. It used to read `is_int` from the UNPROMOTED
+# pair, and that order is the whole of this DEF. It used to read `is_int` from the unpromoted
 # `t` in the caller and pass `True{}` as the second scrutinee, and the two answers DIFFER:
 #
 #   .venv/bin/python -c "from tinygrad.tensor import Tensor; from tinygrad.dtype import dtypes
@@ -816,10 +816,10 @@ def ew_k.selu_gamma() -> F32: 1.050701
 #   EVEN INF IS PRODUCIBLE, which the `isinf` marker below had as its own reason:
 #   `F32.div(1.0, 0.0)` is 0x7F800000. So `float("inf")` is not a wall either.
 #
-# AND THREE OF THE OBVIOUS SPELLINGS MEASURED WRONG, which is the part worth keeping:
+# and three of the obvious spellings measured wrong, which is the part worth keeping:
 #   `0.30102999` for log10(2) is one ulp LOW and `0.30103` -- FIVE digits -- is right.
-#   `1.0507009` for selu's gamma is wrong and `1.050701` is right. **More digits is not
-#   more accurate in f32**, and the intuition that it is is what wrote the first two.
+#   `1.0507009` for selu's gamma is wrong and `1.050701` is right. More digits is not
+#   more accurate in f32, and the intuition that it is is what wrote the first two.
 #   `F32.sqrt(F32.div(2.0, F32.pi()))` is one ulp off, because it rounds twice where
 #   CPython rounds once. A LITERAL cannot double-round, so that constant is a literal.
 #
@@ -882,7 +882,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # `mo_isfinite` (`mixin/op.bend:1084 symbol=mo_isfinite`). Gated at `gates/tn_isfinite-gate.py`
 # 6/6 rows.
 #
-# WHAT THE GATE DOES NOT ASSERT, AND WHY:
+# what the gate does not assert, and why:
 #   * `src[0]` of the top is OR in CPython, CAST in the port. The port's
 #     `tn_logical_not` keeps the explicit `cast(bool)` and CPython folds it
 #     out on a bool-typed `or`, so the row `or_or_cast` is an OR-vs-CAST
@@ -896,7 +896,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 #     and `bend` answers `a declared datatype (unknown: IO)` past about two.
 #     Stated here because a fix nobody can see is not a gate.
 #
-# A DEFECT THAT WAS HERE AND IS NOT ANY MORE. `tn_logical_not` and
+# a defect that was here and is not any more. `tn_logical_not` and
 # `tn_bitwise_not` both built their CMPNE as
 # `tn_alu(tn_alu.put(cast), CMPNE, [Found.i(true_c)])`: the const index is minted
 # in `true_c.ar`, which is one node LONGER than the `cast.ar` the CMPNE was built
@@ -1201,7 +1201,7 @@ def g_unary(u: Un) -> T.Tensor:
 # `F32.neg(ew_k.inv_log2())` and it is BIT-EXACT -- ew-consts-gate.sh row `k_inv_log2` --
 # so this is the first of the 22 unmarked methods whose stated blocker is measurably gone.
 #
-# THE ORDER OF THE THREE BUILDS IS THE ORDER OF THE PYTHON and it does not matter to the
+# the order of the three builds is the order of the python and it does not matter to the
 # signature: `ew_sig` reads `O.UOp.toposort`, the same DFS-POSTORDER CPython's `u.toposort`
 # is, so what the row compares is the SHAPE and not the arena indices. That is why
 # `ew_cf` may intern the constant whenever it is called without perturbing a row.
@@ -1238,10 +1238,10 @@ def ew_quick_gelu(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(ew_mul2(t, ew
 # 4294967296.0. MEASURED, and the fix is `wk_i64_to_f32` carrying the magnitude in 24-bit
 # chunks, gated by `.agents/slop/wk-f32-gate.sh` (18 rows, three lanes).
 #
-# BOTH MULs PUT THE CONSTANT ON THE LEFT, as CPython writes `2.0 * self` and
+# both MULs put the constant on the left, as CPython writes `2.0 * self` and
 # `2.0 * (...)`, and that is `rev=True` -- the same thing sigmoid's ADD needed.
 #
-# **AND THE ORDER OF THE TWO ARGUMENTS IS LOAD-BEARING, AND IT WAS WRONG HERE.**
+# and the order of the two arguments is LOAD-bearing, and it was wrong here.
 # `ew_mul2(a, b, True{})` IS `b * a` -- `_broadcasted`'s reverse arm puts the UFIXED
 # operand on the LEFT -- so `2.0 * X` is `ew_mul2(X, c2, True{})` and NOT
 # `ew_mul2(c2, X, True{})`.  The version that was here wrote `ew_mul2(t, sigmoid,
@@ -1249,10 +1249,10 @@ def ew_quick_gelu(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(ew_mul2(t, ew
 # `sigmoid(2*self) * self - 1.0` where upstream's is `2*sigmoid(2*self) - 1.0`.
 # MEASURED, 2026-10-22, against CPython over seventeen inputs: the port's `tanh(0.5)`
 # was `-0.6344707012176514` and CPython's is `0.46211719512939453`; the port's
-# `tanh(0.0)` was `-1.0` and CPython's is `0.0`.  **NO GATE COULD SEE IT**: the
+# `tanh(0.0)` was `-1.0` and CPython's is `0.0`.  NO GATE COULD SEE IT: the
 # census's `ew_tanh` row prints the ROOT's src ops, and the root is the ADD of
 # `sub` either way -- `Ops.MUL Ops.MUL` -- so the signature is IDENTICAL for the
-# right graph and the wrong one.  It took a COMPARISON THAT READS THE WHOLE GRAPH
+# right graph and the wrong one.  It took a comparison that reads the whole graph
 # (`.agents/slop/ew-activations/`) to see it.
 def ew_tanh(+t: T.Tensor) -> T.Tensor:
   +c2 = ew_ct(ew_cf(T.Tensor.ar(t), 2.0))
@@ -1268,7 +1268,7 @@ def ew_tanh(+t: T.Tensor) -> T.Tensor:
 # TENSOR, because a `CFloat` in an `ECon` is the representation the promotion path reads.
 # The operand ORDER is CPython's and it is load-bearing: the signature row is the only thing
 # in this port that can see it, which is the same reason `sigmoid`'s ADD is reversed.
-# THE CONSTANT MUST BE MINTED IN THE **RESULT'S** ARENA, NOT IN `t`'s: `t`'s arena is
+# the constant must be minted in the result's arena, not in `t`'s: `t`'s arena is
 # STALE the moment `ew_log2(t)` has run, so a const minted there lands on the index the
 # LOG2 node already occupies and the two COLLIDE -- `3 CONST LOG2 MUL` where CPython
 # prints `4 CONST LOG2 CONST MUL`. `O.UOp.const` is innocent: MEASURED, two consts in one
@@ -1298,7 +1298,7 @@ def ew_log10(+t: T.Tensor) -> T.Tensor:
 # folds at exactly bool/weakint/weakfloat and this file implements that faithfully. The
 # defect was the promotion DTYPE, chosen by a constant instead of written down.
 #
-# **AND THAT VERSION DROPPED BOTH OUTER CASTS.** `self.dtype` is REBOUND by the first line,
+# and that version dropped both outer casts. `self.dtype` is rebound by the first line,
 # so cast 2's target is `least_upper_dtype(least_upper_float(d0), float32)` and cast 3 casts
 # back to `least_upper_float(d0)` -- NOT to `d0`. MEASURED against CPython's own `t4().exp()`:
 # `7 Ops.CAST/1 Ops.EXP2` with root CAST dtype `weakfloat`, where the one-cast version
@@ -1306,7 +1306,7 @@ def ew_log10(+t: T.Tensor) -> T.Tensor:
 # the same body at the `ew_*` layer. Cast 1 and cast 3 share a target, so `d1` is bound once
 # and read twice.
 #
-# AND THE CONSTANT GOES IN THE CAST RESULT'S ARENA, for the same reason as `ew_log.mul`:
+# and the constant goes in the CAST result's arena, for the same reason as `ew_log.mul`:
 # `t`'s arena is stale the moment the cast has run.
 def ew_exp.mul(+t: T.Tensor, +c: F32) -> T.Tensor:
   ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), c)), False{})
@@ -1346,14 +1346,14 @@ def ew_exp(+t: T.Tensor) -> T.Tensor:
 # `ew_k.selu_gamma` are upstream's two, and a caller that wants upstream's
 # `elu()` writes `ew_elu(t, ew_k.elu_alpha())`.
 #
-# TWO RULES THAT THE `ew_*` LAYER OWNS AND EVERY ONE OF THESE FOLLOWS.
+# two rules that the `ew_*` layer owns and every one of these follows.
 #   1. THE OPERAND ORDER IS PYTHON'S. `ew_mul2(a, b, False{})` is `a * b` and
 #      `ew_mul2(a, b, True{})` is `b * a`, because `_broadcasted`'s reverse arm
 #      puts the UFIXED operand on the LEFT. CPython's `2.0 * X` is
 #      `Tensor.__rmul__` -> `mul(2.0, True)` -> `MUL(CONST 2.0, X)`, and its
 #      `X - 1.0` is `Tensor.__sub__` -> `sub(1.0, False)` -> `ADD(X, -1.0)` --
 #      so the CONST is on the LEFT for `alpha * X` and on the RIGHT for `X - 1`.
-#   2. THE CONST GOES IN THE ARENA OF WHATEVER LAST BUILT. `ew_cf` mints into
+#   2. the CONST goes in the arena of whatever last built. `ew_cf` mints into
 #      the arena it is handed and the arena it returns is the GROWN one, so a
 #      const minted off an OLD tensor is a SIBLING arena -- and `ew_join`'s
 #      `O.Arena.merge` is what keeps that from being a silent wrong answer.
@@ -1376,13 +1376,13 @@ def ew_relu(+t: T.Tensor) -> T.Tensor:
 #     a = (s:=(self >= 0).where(1.0, -1.0)) * self
 #     return s * (math.pi / 2 - (1.0 - a).sqrt() * polyN(a, coefficients))
 #
-# `polyN` IS HORNER, AND THE ORDER IS THE ORDER: `helpers.py:154`'s
+# `polyN` is horner, and the order is the order: `helpers.py:154`'s
 # `functools.reduce(lambda acc,c: acc*x+c, p, 0.0)` starts at `0.0` and folds
 # the coefficients IN ORDER, so the LAST coefficient is the CONSTANT TERM -- and
 # the last coefficient IS `math.pi / 2`, which is why the polynomial's constant
 # term and the outer `math.pi / 2` are ONE CONST node and not two.
 #
-# THE EIGHT STEPS ARE WRITTEN OUT rather than folded over a list, and the reason
+# the eight steps are written out rather than folded over a list, and the reason
 # is a MEASUREMENT rather than a taste: a wrong ORDER of the coefficients
 # changes no node COUNT and no op -- it changes which CONST is added when --
 # and the CONST BITS are the only thing that sees it.  Written out, the order
@@ -1401,7 +1401,7 @@ def ew_asin.poly(+a: T.Tensor) -> T.Tensor:
   +p7 = ew_add(ew_mul2(p6, a, False{}), ECon{O.CFloat{F32.neg(0.2145988016)}}, False{})
   ew_add(ew_mul2(p7, a, False{}), ECon{O.CFloat{ew_k.pi_2()}}, False{})
 
-# `asin` -- elementwise.py:929-940.  THE DOMAIN IS NOT CLAMPED, AND THAT IS
+# `asin` -- elementwise.py:929-940.  the domain is not clamped, and that is
 # UPSTREAM'S ANSWER: there is no `where` on `|self| <= 1` anywhere in it, so
 # `asin(2.0)` is `sqrt(1.0 - 2.0)` and the NaN IS THE ANSWER.  CPython's
 # `asin` of a weakfloat 2.0 is NaN, and so is the port's, because the port
@@ -1463,7 +1463,7 @@ def ew_celu(+t: T.Tensor, +alpha: F32) -> T.Tensor:
   ew_mul2(e, ew_ct(ew_cf(T.Tensor.ar(e), alpha)), True{})
 
 # `selu` -- elementwise.py:986-996. `gamma * self.elu(alpha)`.  TWO PARAMETERS
-# AND THE ORDER IS `alpha` THEN `gamma`, and the DEFAULTS ARE UPSTREAM'S:
+# and the order is `alpha` then `gamma`, and the defaults are upstream's:
 # `alpha=1.6732632423543772` and `gamma=1.0507009873554805` -- which are
 # `ew_k.selu_alpha()` and `ew_k.selu_gamma()`, the f32 spellings the
 # `ew-consts-gate` pins (NOT `1.0507009`, which is one ulp low).
@@ -1484,8 +1484,8 @@ def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 # were node 1 in DIFFERENT arenas and the fold collided them: the int const was read
 # from the float's arena and every value came out as 1.0.
 #
-# **THE THIRD FIXTURE-SHAPED WALL IN THIS SESSION, and the most expensive one, because
-# two commits of diagnosis were built on top of it.** The file's own comment predicted it
+# the third fixture-shaped wall in this session, and the most expensive one, because
+# two commits of diagnosis were built on top of it. The file's own comment predicted it
 # -- "Folding either operand's own arena is the bug this file measured twice" -- and the
 # probe that found it is the one that printed `SAME=T idx=1/1` for the WORKING pair as
 # well as the failing one. A defect that reproduces in the case that works is not a
@@ -1662,7 +1662,7 @@ def g_remint_recurse() -> T.Tensor:
 
 def t_remint_recurse() -> IO(Unit): ew_sig("ew_remint_recurse", g_remint_recurse())
 
-# THE TWO-RULES-CLAIM-ONE-NODE ROW. `t + t` runs the SAME promotion twice over the
+# the two-rules-claim-one-node row. `t + t` runs the same promotion twice over the
 # SAME node, so the two CASTs hash-cons to one and the COUNT is the claim. Asking
 # for an index here would be satisfied by any wrong-but-present node, which is
 # bend2-constraints' rule about negative rows.

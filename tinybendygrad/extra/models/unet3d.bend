@@ -12,9 +12,9 @@ import ./../../mixin/movement.bend as MX
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/unet3d.py (59 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/unet3d.py (59 loc). not yet ported.
 #
-# THE SHORTEST FILE IN THE DIRECTORY AND THE ONLY ONE THAT IS 3-D, and those
+# the shortest file in the directory and the only one that is 3-d, and those
 # two facts pull in opposite directions. It is short because it has four classes
 # and no arithmetic worth the name. It is hard because the ONE conv call at
 # upstream:9 has a 3-tuple kernel `(3,3,3)` and a 6-tuple padding
@@ -62,7 +62,7 @@ import ./../datasets/__init__.bend as D
 # PyTorch's own serializer, not tinygrad's, so this is a SECOND weight format on
 # top of the `torch_load` seam every other model in this directory stops at.
 #
-# EVERY DEF BELOW REFUSES, AND THE RETURN TYPE IS `D.Refused`, NOT A TENSOR. A
+# every DEF below refuses, and the return TYPE is `D.Refused`, not a tensor. a
 # stub that returned a zero Tensor would be indistinguishable from a layer whose
 # weights happen to be zero. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`. Each message names

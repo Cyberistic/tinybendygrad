@@ -26,7 +26,7 @@
 # device present, and produced the gate rows from the same run.
 #
 # ---------------------------------------------------------------------------
-# A DISAGREEMENT WITH THE TASK BRIEF, REPORTED NOT RECONCILED.
+# A disagreement with the task brief, REPORTED not reconciled.
 #
 # The brief said `ops_nv.bend` (3960 lines at this commit, committed, green) cites
 # `nv/ip.py` by line and that those citations "point at nothing" until this file
@@ -47,7 +47,7 @@
 # corroboration of anything in ops_nv.bend.
 #
 # ---------------------------------------------------------------------------
-# THE SHARED CONTRACT WITH hcq2, AND WHY IT IS NOT SETTLED YET.
+# THE shared contract with hcq2, AND why it is not settled yet.
 #
 # `hcq2.py` overlaps this file on exactly one thing: the GSP command queue this
 # file drives (`cmd_q`/`stat_q`, :387/:511) and the doorbell
@@ -105,7 +105,7 @@
 #       # TODO(p3) support/nv/ip.py:147  symbol=prep_ucode FWSECLIC_FRTS_REGION_DESC(...)
 #       # TODO(p3) support/nv/ip.py:374  symbol=init_rm_args MESSAGE_QUEUE_INIT_ARGUMENTS(...)
 #       # TODO(p3) support/nv/ip.py:394  symbol=init_libos_args LibosMemoryRegionInitArgument(...)
-#       # TODO(p3) support/nv/ip.py:438  symbol=init_wpr_meta GspFwWprMeta(**common, ...)
+#       # TODO(p3) support/nv/ip.py:438  symbol=init_wpr_meta GspFwWprMeta(common, ...)
 #       # TODO(p3) support/nv/ip.py:530 rpc_alloc_memory_v(...)
 #       # TODO(p3) support/nv/ip.py:551  symbol=rpc_rm_alloc rpc_gsp_rm_alloc_v(...)
 #       # TODO(p3) support/nv/ip.py:582  symbol=rpc_rm_control rpc_gsp_rm_control_v(...)
@@ -459,7 +459,7 @@ def cn_table() -> List<&2, Cn>:
 # ONE ctypes struct ip.py names: SIZE, the field COUNT, and the fields as
 # "name@offset:bytes" IN DECLARATION ORDER.
 #
-# ORDER AND WIDTH ARE THE WHOLE POINT. A transposed pair is a silently wrong
+# ORDER and width are the whole point. A transposed pair is a silently wrong
 # register write, and a COUNT gate cannot see a transposition -- which is why
 # each struct is one row carrying names, order, offsets AND widths at once, and
 # `nf` is a SECOND, INDEPENDENT transcription of the field count (so a dropped
@@ -1478,7 +1478,7 @@ def wpr.fmc() -> Wm:
 # s.startswith("remote") else (int(s[5:7],16)<<8) | (int(s[8:10],16)<<3) |
 # int(s[-1],16)`
 #
-# TWO hex PAIRS, one hex NIBBLE, and the last character is the one AFTER THE DOT.
+# TWO hex PAIRS, one hex NIBBLE, and the last character is the one AFTER the dot.
 # Two things this gets wrong if it is written the obvious way, and the rows
 # `ip_bdf_*` reach both:
 #   * `int(s[-1],16)` is `s[len-1]`, which for `0000:01:00.0` is `0` -- the digit
@@ -1525,7 +1525,7 @@ def bdf.as_int(+s: String) -> U32:
 # `libos_size(i)` / `libos_pa(i)` with the `i < 5` arm, and `ip_libos_*` pins
 # all six plus the total the memcpy at :399 writes.
 #
-# THE 64-BIT WALL IS HERE AND IT IS NOT OPTIONAL: `id8=int.from_bytes(
+# THE 64-BIT wall is here and it is not optional: `id8=int.from_bytes(
 # bytes(f"LOG{name}", 'utf-8'), 'big')` is an EIGHT-BYTE name read as a big-endian
 # integer. `int.from_bytes(b'LOGINIT','big')` is 0x4C4F47494E49544E, which does
 # not fit a U32 and has no U32 spelling. What survives is that the name is eight
@@ -1541,7 +1541,7 @@ def pma.is_one(nm: String) -> Bool: U32.is_eq(Cn.v(const_of(nm)), 1)
 
 # `over.fixtures_fit` -- the 64-BIT WALL, stated as a predicate rather than as a
 # comment. 24 GiB does not fit a U32 and no port of `init_wpr_meta` can hold it.
-# THE 64-BIT WALL, WRITTEN DOWN TWICE BECAUSE BEND HAS NO HEX LITERALS.
+# THE 64-BIT wall, WRITTEN down twice because BEND HAS no hex literals.
 #
 # There is no `0x` syntax at all in Bend 2.0.34: `U32.show(0xffffffff)` is
 #     expected : a numeric literal (NUMBER is U32, NUMBER n is Nat)
@@ -1909,8 +1909,8 @@ def grctx.sep(first: Bool) -> String: Bool.pick(String, first, ",", "")
 def grctx.tag(+x: U32, first: Bool) -> String: String.concat([grctx.sep(first), U32.show(x)])
 
 
-# THE INSERTION ORDER OF THE DICT AT :501-504 -- and keys 7 and 8 ARE NOT IN IT.
-# `**{x: GRBufDesc(cfgs_sizes[x], ...) for x in range(3, 7)}` covers 3,4,5,6 and
+# THE insertion order of the dict at :501-504 -- and keys 7 and 8 ARE not in it.
+# `{x: GRBufDesc(cfgs_sizes[x], ...) for x in range(3, 7)}` covers 3,4,5,6 and
 # then 9,10,11 are added by key; nothing ever adds 7 or 8. A port that walked
 # 0..11 would emit two rows the source does not have, and `ip_grctx_keys` /
 # `ip_grctx_11_reuses_10` are how the differ says so.
@@ -2041,7 +2041,7 @@ def t_fsp_pad(+blen: U32) -> IO(Unit):
     urow(String.concat(["ip_fsp_tot_", U32.show(blen)]), fsp_tot(blen))
 
 
-# ELEVEN TAGS, AND ELEVEN IS THE NUMBER OF CALL SITES THIS FILE EMITS. The list
+# ELEVEN tags, AND eleven is the number of call sites this file emits. The list
 # used to run to twenty with gaps -- `C_HANDLE`, `C_ALLOC_MEM` and six RPC-kind
 # tags that nothing ever passed to `Tr.emit` -- and the gaps were load-bearing
 # twice over: they kept the dead constants out of the dead-def audit, and
@@ -3105,7 +3105,7 @@ def tr.go(+xs: List<&2, Cx>, +first: Bool) -> String:
 
 # the `seq` the NEXT record will use -- :54's `self.seq += 1` means the record
 # being built uses the CURRENT value and the queue ends up one higher.
-# THE PARAMETER AND THE BINDER MUST NOT SHARE A NAME. `def tr.put_seq(+t, seq)`
+# THE parameter and the binder must not share a name. `def tr.put_seq(+t, seq)`
 # with `case Tr{calls, wp, +seq, ...}` binds the binder OVER the parameter, so the
 # record is rebuilt with the queue's OWN sequence and `tr.at` is a no-op: all seven
 # requests printed `ip_rp_<i>_seq1=1` and every checksum was the sequence-0 value.
@@ -3199,12 +3199,12 @@ def wpr.leg7(+vram: U32, vga_off: U32, frts_off: U32, boot_off: U32, gsp_off: U3
            rd(U32.sub(wpr_st, 1048576), 1048576))
 
 
-# THE LIST TAIL IS THE FIRST ARGUMENT AND THAT IS THE ONLY LEGAL ORDER. A
+# THE list tail is the first argument and that is the only legal order. A
 # self-call is read LEFT TO RIGHT and each argument must pass unchanged until one
 # shrinks, so `seq_walk.go(seq_step(i, o), n, t, ...)` is refused with "expected
 # : a decreasing self-call" -- the computed index sits IN FRONT of the tail that
 # shrinks. The index rides along as the SECOND argument instead.
-# THE FOLD MUST SKIP THE OPERANDS, NOT COUNT THEM, AND IT CANNOT DO IT IN ONE
+# THE FOLD MUST skip the operands, NOT count them, AND it cannot do it in one
 # STEP. :633-651 iterates `cmd_iter` and calls `next(cmd_iter)` INSIDE each arm,
 # so the loop only ever SEES an opcode -- but the buffer is a flat `U32` stream.
 # The first version stepped the index correctly (`seq_step`) and still took `t`,
@@ -3472,7 +3472,7 @@ def t_seq() -> IO(Unit):
     row("ip_seq_ok_8", Bool.not(seq_bad(8)))
 
 
-# THE FOLDS CARRY NO STATE, AND THAT IS THE POINT. The first version threaded
+# THE folds carry no state, AND that is the point. The first version threaded
 # `h` and `l` -- the two partial XORs -- as parameters, and the self-call could
 # never supply them: they are consumed by the accumulator in the computed
 # argument and the call is left partial ("observed : @+l:U32 -> U32"). So the fold
@@ -3495,7 +3495,7 @@ def rp.fold(+k: Nat, +func: U32, +plen: U32, +seq: U32, +hi: Bool, +acc: U32) ->
 
 
 
-# THE QUEUE FIELDS DO NOT ADVANCE PAST A REFUSAL. Without this the trace is
+# THE queue fields do not advance past a refusal. Without this the trace is
 # truncated but `wp` and `seq` still move -- `ip_refuse_at1_wp` printed 1 against a
 # trace holding only the send, which is not what Python does: the statements after
 # a `raise` do not execute. So the store is a `Bool.pick` on `refused`, and that is
@@ -3597,7 +3597,7 @@ def rp.cksum.xor(+func: U32, +plen: U32, +seq: U32) -> U32:
 def rp.bump(+e: Tr) -> Tr: rp.door(rp.bumped(Tr.seq(e), Tr.handle(e), e))
 
 
-# THE COUNTDOWN IS THE FIRST ARGUMENT -- a self-call is read LEFT TO RIGHT and
+# THE countdown is the first argument -- a self-call is read LEFT to right and
 # each argument must pass unchanged until one shrinks, so putting `t` (which the
 # emit rebuilds) in front of the shrinking `p` is "expected : a decreasing
 # self-call". The queue is threaded last and the emit is its argument.

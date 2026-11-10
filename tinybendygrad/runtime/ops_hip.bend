@@ -5,12 +5,12 @@ import ./ops_cuda.bend as CU
 
 # tinybendygrad/runtime/ops_hip.bend -- port of tinygrad/runtime/ops_hip.py.
 #
-# ONE `.bend` PER UPSTREAM `.py`, AT THE SAME PATH. This file was 290 lines of
+# one `.bend` per upstream `.py`, at the same path. This file was 290 lines of
 # `runtime/ops_cl.bend` until the 1:1 ruling. It imports `ops_cl.bend` as `CL.`
 # (the shared trace) and `ops_cuda.bend` as `CU.`, and imports neither of them
 # back: bend has NO IMPORT CYCLE (MEASURED).
 #
-# WHY THIS FILE HOLDS THE CROSS-VENDOR GATE, and that is a MEASUREMENT and not a
+# why this file holds the cross-vendor gate, and that is a measurement and not a
 # preference. `t_cross` is 22 rows that read all three vendors. A reader of
 # three files must live in a file that can import all three, and the only such
 # file in an acyclic three-file graph is the LAST one -- so `t_cross` and the

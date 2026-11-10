@@ -1,10 +1,10 @@
 # __init__.bend -- tinygrad/uop/__init__.py.
 #
-# THIS FILE IS ONE DEF AND THREE GATE ROWS, AND THAT IS THE FINDING.
+# this file is one DEF and three gate rows, and that is the finding.
 #
 # `__init__.py` is 135 lines and has three pieces: the `FastEnum` wrapper (6
 # lines), the `Ops` enum (90 lines, 77 members), and the `GroupOp` class (31
-# lines, 15 frozensets). `ops.bend` ALREADY HOLDS THE FIRST TWO AND FOURTEEN OF
+# lines, 15 frozensets). `ops.bend` already holds the first two and fourteen of
 # THE FIFTEEN:
 #
 #   * `Ops` is `ops.bend`'s `type Op is Data` (uop/ops.bend:170 symbol=Op), with the members
@@ -32,7 +32,7 @@
 #     uop/render.py:71, :122     UPat(GroupOp.All, name=...)
 #     uop/spec.py:207, :208      UPat(GroupOp.All, name="x")
 #
-# THE SET DIFFERENCES ARE NOT PORTED HERE, and the reason is one line: `All` is
+# the set differences are not ported here, and the reason is one line: `All` is
 # EVERY op, so `All - {SINK}` is a predicate, and the honest spelling is the
 # `UPat`'s own `reject` set -- which is where tinygrad already puts a one-op
 # exclusion. A `GroupOp.all_but(op, ...)` here would be a new abstraction for a

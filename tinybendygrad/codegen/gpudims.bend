@@ -12,7 +12,7 @@
 # against the pre-split snapshot. The cut itself is
 # `.agents/slop/split-codegen3.py`, which moved every body by LINE RANGE.
 #
-# THE SHARED SUBSTRATE IS IMPORTED, NOT COPIED. `Rew` (the rule's answer), the
+# the shared substrate is imported, not copied. `Rew` (the rule's answer), the
 # `rw_*` node readers and `G` (the fixture's index map) live in
 # `codegen/rewriter.bend` and every use here is `RW.<name>`. A TYPE MENTION needs
 # the alias as well as a call -- an unqualified imported `type` name is not in
@@ -109,7 +109,7 @@ import ./rewriter.bend as RW
 # existing row does not move. Re-pointing the NAME is the whole of the port for
 # this table.
 #
-# AND THE BODY DID CHANGE UNDER THE NAME, which is the `hcq2.bend` rename lesson
+# and the body did change under the name, which is the `hcq2.bend` rename lesson
 # (`pm_hoist_links` / `pm_lift`) applied to `group_gpudims`. Five measured moves,
 # all inside a def this file marks WALL:
 #   * `all_ranges = {x.axis_id: x ...}`    -> `{x.arg: x ...}`   (the axis_id
@@ -125,7 +125,7 @@ import ./rewriter.bend as RW
 # dicts + ssimplify + ctx), so the port's obligation is to RECORD it and not to
 # pretend the rename was the whole change.
 #
-# THE ADDITION IS PORTABLE AND WAS NOT PORTED. `pm_range_to_special` is one rule
+# the addition is portable and was not ported. `pm_range_to_special` is one rule
 # plus `pm_split_ends`'s one, and the rule is pure: a RANGE whose `axis_type` is
 # GLOBAL or LOCAL is REPLACED by a SPECIAL named `gidx{id}` / `lidx{id}`. Nothing
 # in it needs `ssimplify`, a dict, or `ctx`, so the WALL that stops
@@ -161,7 +161,7 @@ def pm_range_to_special() -> List<&2, O.PMEntry>:
 # and a REBUILD -- the guard reads `axis_type`, the rebuild replaces the op with
 # `Ops.SPECIAL` and the arg with the name string, keeping the srcs and the tag.
 #
-# TWO SPELLINGS UPSTREAM USES AND THIS PORT READS BY NAME. `r.axis_type` and
+# two spellings upstream uses and this port reads by name. `r.axis_type` and
 # `r.axis_id` are PROPERTIES in Python (ops.py:499-509) and `78d482262` changed
 # both BODIES -- `arg[0:-1]`/`arg[-1]` became `arg[1:]`/`arg[0]`. So the arg tuple
 # is read through the properties and never by position, which is the same
@@ -241,12 +241,12 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 #   N-i  `pm_group_gpudims` loses `pm_device_to_var`         gd_len
 #   N-j  `t_se_len` is 0                             rs_ownlen, se_len
 #
-# N-d AND N-g MOVED NOTHING BEFORE THEIR FIXTURES EXISTED. `g_rs` was four
+# n-d and n-g moved nothing before their fixtures existed. `g_rs` was four
 # single-id, untagged ranges; `rs_idlast_two` (a two-id GLOBAL range) and
 # `rs_tag_kept` (a TAGGED GLOBAL range) were added, and both mutations then moved.
 # A `0` is a request for a fixture.
 #
-# N-e IS A THEOREM, and it is about a LINE THAT LOOKS LIKE DEFENCE. `rs_rule` tests
+# n-e is a theorem, and it is about a line that looks like defence. `rs_rule` tests
 # `rw_is(ar, i, OpsRANGE)` and `rs_at`'s non-`ARange` arm answers `AXIS_LOOP`, which
 # `rs_claimed` REFUSES. So `claimed` is FALSE for every non-RANGE whatever its axis
 # type reads, the op test can never change the answer, and no fixture can see it.
@@ -263,7 +263,7 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 # four RANGEs whose axis types are GLOBAL, LOCAL, WARP and LOOP, which is the
 # claim set plus its two nearest misses.
 #
-# THE THREE GLOBALS/LOCALS ARE NOT REDUNDANT. `GLOBAL` answers `gidx<n>` and
+# the three globals/locals are not redundant. `GLOBAL` answers `gidx<n>` and
 # `LOCAL` answers `lidx<n>`, so a one-armed `'g'` test would leave `LOCAL` printing
 # `gidx`; `WARP` is the member `group_gpudims` treats specially and the one a
 # careless `in (GLOBAL, LOCAL, WARP)` would claim; `LOOP` is the member the main
@@ -279,7 +279,7 @@ def g_rs() -> RW.G:
   +rl = rsg_at(rg, 1, O.AXIS_LOCAL{})
   +rw = rsg_at(rl, 2, O.AXIS_WARP{})
   +rk = rsg_at(rw, 3, O.AXIS_LOOP{})
-  # 5 TAGGED and 6 TWO-ID EXIST BECAUSE MUTATIONS MOVED NOTHING WITHOUT THEM.
+  # 5 tagged and 6 two-ID exist because mutations moved nothing without them.
   # `g_rs` was four ranges, all single-id and all untagged, and that made two
   # mutations unmeasurable: N-g (the new node drops the tag) and N-d (`rs_idlast`
   # reads `List.head`) each moved ZERO rows on a fixture with no tag and no
@@ -397,13 +397,13 @@ def main() -> IO(Unit):
     # is the whole of what it is for.
     RW.srow("rs_name_warp", rs_name(O.AXIS_WARP{}, 2))
     RW.srow("rs_name_global", rs_name(O.AXIS_GLOBAL{}, 0))
-    # `r.axis_id[-1]`, and THE ROW THAT MAKES IT `[-1]` AND NOT `[0]`. `g_rs`'s
+    # `r.axis_id[-1]`, and the row that makes it `[-1]` and not `[0]`. `g_rs`'s
     # ranges carry ONE id each, so head-vs-last agree on all four and this fixture
     # cannot separate them; the row is here to pin the value, and the limitation is
     # stated rather than dressed up with a second fixture that would not separate
     # anything either.
     RW.row("rs_idlast_global", rs_idlast(F.Folded.ar(RW.G.fx(g_rs())), RW.G.at(g_rs(), 2n)))
-    # THE THREE ROWS THAT MAKE N-d, N-e AND N-g MEASURABLE. Without them all three
+    # the three rows that make n-d, n-e and n-g measurable. Without them all three
     # mutations moved NOTHING, and a `0` is a request for a fixture rather than a
     # coverage claim -- so the fixtures were added rather than the zeros explained.
     RW.row("rs_idlast_two", rs_idlast(F.Folded.ar(RW.G.fx(g_rs())), RW.G.at(g_rs(), 7n)))

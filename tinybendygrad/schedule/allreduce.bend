@@ -1,7 +1,7 @@
 # allreduce.bend -- tinygrad/schedule/allreduce.py, the ring / all2all / naive
 # allreduce lowering.
 #
-# WHAT THIS FILE IS, AND WHAT IT IS NOT. `allreduce.py` is 75 lines and two defs:
+# what this file is, and what it is not. `allreduce.py` is 75 lines and two defs:
 # `handle_allreduce` and `create_allreduce_function`. Almost all of
 # `handle_allreduce` is BUILDING A GRAPH -- `mselect`, `copy_to_device`, `shrink`,
 # `pad`, `mstack`, `usum`, `reshape`, `allreduce` -- and not one of those builders is
@@ -16,7 +16,7 @@
 # standalone, so the three files in this directory meet only at the call site.
 #
 # ---------------------------------------------------------------------------
-# THE FLAGS ARE PARAMETERS, AND THAT IS THE ONE CONVENTION IN THIS FILE.
+# the flags are parameters, and that is the one convention in this file.
 #
 # `RING`, `ALL2ALL`, `ALLREDUCE_CAST`, `ALLREDUCE_NODE_NDEVS` and
 # `RING_ALLREDUCE_THRESHOLD` are `ContextVar`s (helpers.py) and Bend has no
@@ -235,7 +235,7 @@ def red_sel(+sh: List<&2, O.Sint>, +ndev: U32, +cfg: Cfg) -> Sel:
 # 1 as the always-legal answer. `left` is the remainder: `left` chunks are one unit
 # bigger than the rest, which is how `numel` is split exactly.
 #
-# THE BOUNDS WALK THE SIZES FORWARDS WITH A RUNNING START, which is the direct
+# the bounds walk the sizes forwards with a running start, which is the direct
 # transcription of `accumulate(..., initial=0)` and needs no reversal at all.
 # `List.append(a, A, xs, ys)` is `xs ++ ys` -- ys lands at the TAIL -- so the
 # accumulator is already in order. (It reads like a prepend and it is not: this file
@@ -375,7 +375,7 @@ def red_cs_of(+numel: U32, +hdev: U32) -> List<&2, Chk>:
 # ran `allreduce.py:13-15` and `:36-38` verbatim and printed them, and the table at
 # the foot of this file says which line fixes which row.
 #
-# THE THREE MODES ARE THE POINT, so `sel_*` is a family and not one row. A single
+# the three modes are the point, so `sel_*` is a family and not one row. a single
 # boolean for "did it pick ring" would be satisfied by a `use_ring` that was always
 # True and a `use_all2all` that was always False, which is exactly the shape of the
 # bug this fixture exists to catch.
@@ -668,7 +668,7 @@ def hv_cs2_n() -> U32: U32.from_nat(List.length(&2, Chk, red_cs_of(1000, 2)))
 # | `red_boxes`'s `div` -> `mod` (the box count is the rema... | hv_boxes4, hv_boxes2 | 2 |
 # | `red_cs.k`'s `k+1` -> `k` (every cs bound pair collapse... | hv_cs_e0, hv_cs_e3 | 2 |
 #
-# THE THREE THAT MOVED NOTHING, AND WHAT THEY COST. Each is now a row.
+# the three that moved nothing, and what they cost. Each is now a row.
 #   * `ndev > 2` -> `ndev >= 2`: `sel_two` alone cannot see it, because its size test
 #     already fails. `sel_two_big` exists for this and only this.
 #   * `numel > thr` -> `numel >= thr`: no fixture sat ON the threshold. `sel_thr` and
@@ -705,7 +705,7 @@ def hv_cs2_n() -> U32: U32.from_nat(List.length(&2, Chk, red_cs_of(1000, 2)))
 #   term.
 # `assert not remaining` in `multi.py:114` is `multi.py`'s, not this file's.
 # ===========================================================================
-# WHAT THE OTHER FILES NEED FROM HERE.
+# what the other files need from here.
 #   * `schedule/multi.py`'s `replace_allreduce` / `_early_allreduce` call
 #     `handle_allreduce`, and `_early_allreduce` is exactly
 #     `(UPat(Ops.ALLREDUCE, src=(UPat.var("buf"),), name="red"), handle_allreduce)`.

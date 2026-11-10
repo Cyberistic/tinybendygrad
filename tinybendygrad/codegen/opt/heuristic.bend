@@ -1,6 +1,6 @@
 # heuristic.bend -- tinygrad/codegen/opt/heuristic.py.
 #
-# A CHECKING FILE, NOT A PORT, AND THE BRIEF ASKS FOR THAT. "A checking file
+# a checking file, not a port, and the brief asks for that. "a checking file
 # naming its unported lines beats a complete one that does not compile."
 #
 # NOTHING IS PORTED HERE. `heuristic.py` is 193 lines and every one of its
@@ -105,7 +105,7 @@
 #
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-# WHAT IS PORTED HERE, EXACTLY, AND WHAT THE ROWS BELOW PIN.
+# what is ported here, exactly, and what the rows below PIN.
 #
 # Two of the thirteen blocks are pure over `Sched` with nothing left over, and
 # both are below. Everything else needs a predicate this port does not have.
@@ -122,7 +122,7 @@
 #   empty product is 1. `group_up_*` pin that, and a mutation that seeds 0
 #   instead of 1 moves all three.
 #
-# WHAT IS NEXT, AND IT IS NOT A ONE-LINER. The GROUPING guard at
+# what is next, and it is not a one-liner. The grouping guard at
 # heuristic.py:81 is `prod(k.full_shape[i] for i in k.upcastable_dims) <= 2048`,
 # and `upcastable_dims` is GLOBAL/LOCAL/WEAK with size > 1 -- a DIFFERENT index
 # set from `up_go`'s UPCAST/UNROLL, so the product is a different number and
@@ -135,7 +135,7 @@
 # and the running product -- the `MAXA` shape in postrange.bend -- and that is
 # the first thing a follow-up should write.
 #
-# SO THE ROWS ARE SMALL AND THAT IS THE POINT: `group_up_*` is 1 on all three
+# so the rows are small and that is the point: `group_up_*` is 1 on all three
 # fixtures and `gfr_*` is 0 on all three, and both are derived from CPython.
 # `gfr_red` in particular is 0 because `group_for_reduces` counts WARP and LOCAL
 # axes and a base reduce kernel has a REDUCE, not a LOCAL -- which is what makes

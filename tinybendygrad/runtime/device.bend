@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/device.bend -- THE PORT's OWN `Device` LANE.
 #
 # ---------------------------------------------------------------------------
-# WHAT THIS FILE IS, AND WHY IT EXISTS.
+# what this file is, and why it exists.
 #
 # The port has EVERY STAGE of the device lane and NOTHING drives them:
 #
@@ -19,15 +19,15 @@
 #     upstream's `jit_loader` (`tinygrad/runtime/support/elf.py:52-86`).
 #
 # AND `grep -rn "Cpu.compile\|Cpu.exec" tinybendygrad/` ANSWERS ONLY THE TWO
-# DEFINITIONS: NOTHING IN THE PORT CALLS THEM, AND NOTHING IN THE PORT CALLS
-# `schedule()` OUTSIDE ITS OWN GATE ROWS. **THE PORT'S `Device` LANE IS A SET OF
-# STAGES WITH NO LANE.**
+# definitions: nothing in the port calls them, and nothing in the port calls
+# `schedule()` outside its own gate rows. the port's `Device` lane is a set of
+# STAGES WITH NO LANE.
 #
 # `.agents/slop/cpuseam/launch.bend:113-131` IS that lane, and it is IN A
 # SCRATCH DIRECTORY. This file is the lane, IN THE PORT.
 #
 # ---------------------------------------------------------------------------
-# THE FOUR ENTRIES, AND WHAT EACH ONE IS UPSTREAM'S.
+# the four entries, and what each one is upstream's.
 #
 #   `program`  THE PROGRAM. Upstream's `Compiled.runtime(obj)` takes a
 #              `TinyELF` (`tinygrad/device.py:402`) and the renderer's C is
@@ -59,9 +59,9 @@
 # `runtime/support/elf.bend:1816`.
 #
 # ---------------------------------------------------------------------------
-# WHAT IS STILL MISSING, AND IT IS NAMED HERE RATHER THAN HIDED.
+# what is still missing, and it is named here rather than hided.
 #
-# `program` TAKES A `List<KU>` AND THE PORT HAS NO DEF THAT BUILDS ONE FROM THE
+# `program` takes a `List<KU>` and the port has no DEF that builds one from the
 # PORT's ARENA. The `KU` record (`renderer/cstyle.bend:126-129`) is a FLATTENED
 # uop list -- `srcs` are POSITIONS IN THAT LIST -- and upstream's renderer takes
 # `list[UOp]` instead (`tinygrad/renderer/cstyle.py:456`). The port's
@@ -69,14 +69,14 @@
 # U32>` IS that `list[UOp]`, in arena indices, so the missing link is exactly
 # `List<&2, U32> -> List<&2, KU>`.
 #
-# AND THE LINK IS BLOCKED BY A NAMED WALL, NOT BY A MISSING IDEA:
+# and the link is blocked by a named wall, not by a missing idea:
 # `renderer/cstyle.bend:49-54` records that "`Ops.SHRINK` HAS NO DTYPE IN THE
 # FOLD" and that "`F.fold.dt` answers `None` for SHRINK, LOAD and every ALU above
 # one", and the `KU` record carries a dtype on EVERY node. So the conversion
 # needs a dtype the fold cannot answer for three of the ops a real kernel uses.
 #
-# ⇒ SO `program`'s INPUT IS A `List<KU>`, AND WHOEVER PRODUCES IT IS THE NEXT
-# UNIT. THIS FILE IS THE LANE THAT RECEIVES IT.
+# - so `program`'s input is a `List<KU>`, and whoever produces it is the next
+# unit. this file is the lane that receives it.
 import Base
 import ./../uop/ops.bend as O
 import ./../LAWS/spec.bend as S
@@ -108,7 +108,7 @@ def Prog.src(p: Prog) -> String:
 #
 # THE `+kus` IS AFFINE, so the caller hands over the list and does not get it
 # back: the port's `List` is a persistent structure and `render` CONSUMES it.
-# ⇒ A CALLER THAT NEEDS THE LIST TWICE BUILDS IT TWICE, which is what
+# - a caller that needs the list twice builds it twice, which is what
 # `.agents/slop/cpuseam/launch.bend:120-122` already does.
 def program(name: String, kus: List<&2, C.KU>) -> Prog:
   Prog{name, C.render(C.dev_clang(), True{}, kus)}
@@ -120,11 +120,11 @@ def program(name: String, kus: List<&2, C.KU>) -> Prog:
 # (`schedule/__init__.bend:1136` symbol=linear) IS upstream's
 # `return UOp(Ops.LINEAR, src=tuple(linearized))` (`__init__.py:80`).
 #
-# ⇒ THIS IS THE CALLER THE PORT's SCHEDULER DID NOT HAVE, AND IT IS WHY THE
-# PORT's `Device` LANE "HAS NO SCHEDULER" WAS TRUE IN CODE AND NOT IN PROSE:
-# THE FUNCTION WAS THERE AND UNREACHABLE FROM ANY DEVICE.
+# - this is the caller the port's scheduler did not have, and it is why the
+# port's `Device` lane "has no scheduler" was TRUE in code and not in prose:
+# the function was there and unreachable from any device.
 #
-# THE ANSWER IS THE LINEAR NODE AND ITS ARENA: `schedule` CONSUMES the arena and
+# the answer is the linear node and its arena: `schedule` consumes the arena and
 # `linear` hands back the node in the arena it grew, so the caller keeps the
 # arena by taking the `Found`.
 def schedule(ar: O.Arena, sink: U32) -> O.Found:
@@ -135,7 +135,7 @@ def schedule(ar: O.Arena, sink: U32) -> O.Found:
 # `cc` on the C source with upstream's OWN argv
 # (`runtime/support/compiler_cpu.py:21-22`), and the ELF OBJECT comes back.
 #
-# `cc_argv` IS THE PORT's OWN SPELLING OF THAT ARGV
+# `cc_argv` is the port's own spelling of that argv
 # (`runtime/support/compiler_cpu.bend:268 symbol=ClangCompiler.compile_argv`), and it is
 # JOINED WITH NEWLINES because the C side has no argv of its own -- a second copy
 # of upstream's argv is a second thing to rot.
@@ -156,7 +156,7 @@ def compile(src: String, argv: String) -> IO(String):
 # `jit_loader(lib, base=mv_address(self.mem))` and it is the port's own
 # `runtime/support/elf.bend:1816`.
 #
-# THE BASE IS `0`, AND THAT IS MEASURED, NOT CHOSEN: the port's
+# the base is `0`, and that is measured, not chosen: the port's
 # `.agents/slop/cpuseam/REPORT.md:507-523` records that BOTH bases give the same
 # five kernels, and the reason is that those five kernels have NO `CALL26`/
 # `JUMP26` relocations, so the image-relative arms are the only ones that fire.
@@ -169,11 +169,11 @@ def relocate(+elf: String) -> String:
 # THE EXECUTION. Upstream's steps 3-7 (`ops_cpu.py:29-46`) and `__call__`
 # (`:51, :61`).
 #
-# ⇒ THE BUFFERS CROSS AS HEX, and that is UPSTREAM's SHAPE AND NOT A
+# - the buffers cross as hex, and that is upstream's shape and not a
 # CONVENIENCE: `Process.run` hands its stdout back as a UTF-8 STRING
 # (`references/bend/bend2/effs/process_run.c:277` builds it with `io_str`, and
-# `io_str` REPLACES EVERY INVALID SEQUENCE WITH U+FFFD) and AN ELF OBJECT IS NOT
-# UTF-8. ⇒ THE HEX IS THE ONLY WAY THE BYTES SURVIVE THE SEAM.
+# `io_str` replaces every invalid sequence with u+fffd) and an elf object is not
+# utf-8. - the hex is the only way the bytes survive the seam.
 def exec(img: String, bufs: String, sizes: String) -> IO(String):
   do IO<String>:
     +out : String <- IO.try(String, CPU.Cpu.exec(img, bufs, sizes))

@@ -25,7 +25,7 @@
 # `tiny_jit.of2(prune, f)` from Section 9, and those take a function VALUE, so the two files
 # compose without a cycle.
 #
-# WHAT IS PORTED, AND THAT IS THE WHOLE LIST.
+# what is ported, and that is the whole list.
 #   jit.py:14-22   prune_linear            the fold, `needed |= si_bufs`, both replaces
 #   jit.py:24-27   _copy_input             the DISK refusal and `on_disk()`
 #   jit.py:29-42   jit_lower               the five steps in order; 3 are seams
@@ -52,12 +52,12 @@
 #   jit.py:124-177 _TinyJit.__call__       all four arms and both refusals
 #   jit.py:179-183 TinyJit + 2 overloads   both decorator spellings
 #
-# THE THREE WALLS, WITH THE OWNER AND THE PYTHON LINE, at Section 10.
+# the three walls, with the owner and the python line, at Section 10.
 #   * NO EXCEPTIONS. A Python `raise JitError(...)` is a `Maybe<&2, String>` here and the
 #     message is BUILT rather than raised. That is not a downgrade: a row that builds the
 #     message and diffs it byte for byte also pins the ORDER of the two mismatch checks
 #     (jit.py:172 before :174), and a row that raises pins nothing.
-#   * NO `self.fxn(*args, **kwargs)`. The Python call invokes the traced body, which MUTATES
+#   * NO `self.fxn(*args, kwargs)`. The Python call invokes the traced body, which MUTATES
 #     `self.captured`, `self._linears` and the `capturing` global. Here the traced body is a
 #     PARAMETER of the driver and `captured` is a `Data` field, so
 #     `CapturedJit(ret, linear, names, expected_input_info)` is the SAME constructor call and
@@ -70,7 +70,7 @@
 #     site with `# TODO(p3)` and the Python line; Section 10 collects them with the phase that
 #     owns each.
 #
-# ONE MEASURED FACT THAT CHANGES WHAT THIS FILE IS FOR, and it is why the gate prints a shape
+# one measured fact that changes what this file is for, and it is why the gate prints a shape
 # and a `True` next to each other. `expected_input_info` (jit.py:99) is `(view, variables,
 # dtype, device)` per input, and jit.py:98 builds `view` as
 # `u.substitute({u.base: UOp(Ops.NOOP)}, extra_pm=mop_cleanup)`. The base is REPLACED BY A
@@ -87,7 +87,7 @@
 # names the SHAPE where CPython's names the DTYPE. The gate prints both, so the difference is
 # a row and not a footnote.
 #
-# TWO MEASURED FACTS ABOUT THE RECORD RULES, because the notes disagree with the compiler and
+# two measured facts about the record rules, because the notes disagree with the compiler and
 # this file is built on the compiler's answer.
 #   * A `Data` record CAN hold a `Maybe` field. `Slot{slot, nm: Maybe<&2, String>}` in
 #     engine/realize.bend:1433 symbol=rz_tab_rej checks. The standing "a `Data` record cannot hold a `Maybe` field"
@@ -104,7 +104,7 @@ import ./../uop/ops.bend as O
 import ./realize.bend as RZ
 
 # ===========================================================================
-# SECTION 0 -- THE NODE HANDLE AND THE TWO PRIMITIVES THE FILE USES EVERYWHERE.
+# section 0 -- the node handle and the two primitives the file uses everywhere.
 #
 # `U32` is affine and `+` is refused on it, so every `(arena, index)` pair read
 # twice in one expression is an `O.Found`: `Found` is `Data`, its readers are
@@ -138,7 +138,7 @@ def j_str(m: Maybe<&2, String>) -> String:
 # (helpers.bend:107 symbol=nc_in). `_written_uops` (jit.py:64) and `held_bufs` (jit.py:161) are
 # both set comprehensions, and this is the set.
 #
-# THE `.go` SPLIT IS NOT OPTIONAL, and the ORDER IS `.go` FIRST. `Bool.pick`
+# the `.go` split is not optional, and the order is `.go` first. `Bool.pick`
 # evaluates BOTH arms, so `Bool.pick(List<&2,U32>, contains(...,x), append(acc,[x]),
 # acc)` reads `x` twice and a `U32` is affine -- `+` is refused on it -- so it is a
 # `Data` record or a def boundary. The def boundary is one line here, and it is
@@ -176,7 +176,7 @@ def j_at.go(xs: List<&2, U32>, n: Nat) -> List<&2, U32>:
 def j_at(xs: List<&2, U32>, n: U32) -> List<&2, U32>:
   j_at.go(xs, U32.to_nat(n))
 
-# THE SAME LOOKUP ONE LEVEL DEEPER, and the reason Bend needs two defs for one
+# the same lookup one level deeper, and the reason Bend needs two defs for one
 # `List.get`: there are no generic defs, so a `List<&2, List<&2, U32>>` is a
 # different TYPE and gets its own reader. `prune_linear`'s `si_bufs_of` is exactly
 # that type -- a table of one `si_bufs` per `linear.src` element.
@@ -196,7 +196,7 @@ def j_at_l(xs: List<&2, List<&2, U32>>, n: U32) -> List<&2, U32>:
 # there is no string
 # one in the tree yet.
 #
-# `Bool.pick` IS THE SHAPE AND IT IS THE RECORDED ONE (`mixin/rand.bend` rule 4): it
+# `Bool.pick` is the shape and it is the recorded one (`mixin/rand.bend` rule 4): it
 # is the only way to put a SELF-CALL in a choice position. The two leaves cannot be
 # pulled out -- `srt_ins.here` (the `x ++ [h] ++ t` arm) calling `srt_ins` back is
 # MUTUAL recursion, which is why BOTH halves of the expression are inline and `+t`
@@ -204,7 +204,7 @@ def j_at_l(xs: List<&2, List<&2, U32>>, n: U32) -> List<&2, U32>:
 # and `h` in both arms, and a pattern binder takes the `+` for exactly this
 # (`1.1`: "matching a `+` value hands out `+` fields").
 #
-# THE FIRST VERSION OF THIS DEF DROPPED THE TAIL IN BOTH ARMS -- it returned `[x, h]`
+# the first version of this DEF dropped the tail in both arms -- it returned `[x, h]`
 # where it needed `[x, h] ++ t`, and `srt_ins(x, t)` where it needed `h <> srt_ins(x,
 # t)`. `sort_exprs` answered `c` for `["b","a","c"]` and `sort_stable` answered `b`
 # for `["b","a","b"]`, so the row caught a sort that had thrown away two elements and

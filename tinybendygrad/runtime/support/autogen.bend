@@ -52,7 +52,7 @@
 #   "drop the extras that do not compile"; the gate below pins the extras the
 #   fixture produces, which is the part that can be checked without CPython.
 #
-# WALL 4 -- `tname`'s RECORD ARM, and it is the wall that DECIDES THE SCOPE
+# wall 4 -- `tname`'s record arm, and it is the wall that decides the scope
 #   QUESTION, not WALL 1. autogen.py:147-153 resolves `tname` for EACH field
 #   (a descent on the field's TYPE) and then continues with the REMAINING
 #   fields (a descent on the field LIST). TWO DESCENTS IN ONE ARM is refused:
@@ -69,14 +69,14 @@
 #   so a citation into it would have pointed at nothing -- the same defect a
 #   second time).
 #
-#   THE THREE ESCAPE HATCHES ARE CLOSED BY THE PROJECT'S OWN RULES: a regex
+#   the three escape hatches are closed by the project's own rules: a regex
 #   over the emitted text is WALL 2 and a regex ENGINE is Turing-completeness,
 #   forbidden without approval; `List.foldl`/`List.filter` over a CLOSURE
 #   cannot be written at all because `+` cannot be spelled in a closure TYPE;
 #   and the `List.filter.put`/`List.find.put` accumulator trick used here
 #   (`rep_go2`, `rows_br_go`) resolves ORDER but not the two-descents shape.
 #
-#   WHY THIS MATTERS MORE THAN WALL 1: WALL 4 is INDEPENDENT of WALL 1. A
+#   why this matters more than wall 1: wall 4 is independent of wall 1. a
 #   perfect libclang binding would hand `tname` a real AST and change nothing,
 #   because the arm that turns that AST into emitted source is the one bend
 #   refuses. So closing the FFI does not make the generator able to emit.
@@ -252,12 +252,12 @@ def te_at(+k: U32, xs: List<&2, TE>) -> Maybe<&2, TE>:
   match xs:
     case Nil{}: None{}
     # `List.find.put` WAS RENAMED: BEND 2.0.38 REPLACED IT WITH `List.find.if`,
-    # AND THE ACCUMULATOR BECAME A **THUNK** (`Unit -> Maybe<&2, A>`) INSTEAD OF A
-    # VALUE -- SO THE TAIL IS NOW EVALUATED ONLY WHEN THE HEAD MISSES, WHERE THE
-    # OLD SHAPE EVALUATED IT EITHER WAY. **⇒ AND THIS FILE DID NOT COMPILE
-    # BETWEEN THE 2.0.38 UPGRADE (2026-10-20) AND THIS FIX (2026-10-30): THE
-    # COMPILE CENSUS RECORDED IT AS ITS ONE `FINDING`
-    # (`checks/port-compile.rows`).**
+    # and the accumulator became a thunk (`Unit -> Maybe<&2, A>`) instead of a
+    # value -- so the tail is now evaluated only when the HEAD misses, WHERE the
+    # old shape evaluated it either way. - and this file did not compile
+    # between the 2.0.38 upgrade (2026-10-20) and this fix (2026-10-30): the
+    # compile census recorded it as its one `FINDING`
+    # (`checks/port-compile.rows`).
     case TE{+kind, cty} <> rest: List.find.if(TE, TE{kind, cty}, u => te_at(k, rest), U32.is_eq(kind, k))
 
 # LAST MATCH WINS, and that is the whole point of this def being different
@@ -461,7 +461,7 @@ def attrs_mem(+k: U32, xs: List<&2, U32>) -> Bool:
 # ===========================================================================
 # SECTION 9 -- `typehint`, autogen.py:107-110. PORTED, BOTH DIRECTIONS.
 #
-#     {**{i:"int" for i in ints}, **{CXType_{f}:"float" for f in [...]},
+#     {{i:"int" for i in ints}, {CXType_{f}:"float" for f in [...]},
 #      CXType_Enum:"int", CXType_WChar:"str", CXType_SChar:"int",
 #      CXType_Char_S:"bytes", CXType_Bool:"bool"}.get(ty.kind, None)
 #
@@ -529,7 +529,7 @@ def typehint_table() -> List<&2, TH>:
 # `emit_reg_cell`), and those templates gate against CPython. What is missing
 # is the LOOP that calls `emit_field_line` once per field.
 #
-# WHAT THE ROWS THAT DO PORT BUY: meas2 counts 30,979 `register_fields([...])`
+# what the rows that do port buy: meas2 counts 30,979 `register_fields([...])`
 # lines in the generated set. That is the size of the arm, stated as a number
 # rather than as a feeling.
 # ===========================================================================
@@ -543,7 +543,7 @@ def typehint_table() -> List<&2, TH>:
 # reports every mutation as "did not compile" (measured, and it cost 20
 # mutations in another unit).
 #
-# THE HARNESS HAD A BUG AND IT LOOKED EXACTLY LIKE A BLIND SPOT. Keying a row
+# the harness had a bug and it looked exactly like a blind spot. Keying a row
 # on its FIRST TOKEN collapses all eighteen `tmap N = V` rows onto the key
 # `tmap`, and eighteen of forty mutations reported 0. Fixing the key took the
 # same harness from 24/40 to 41/44, and the newly-moving mutations were `tmap`
@@ -638,9 +638,9 @@ def typehint_table() -> List<&2, TH>:
 #   | | _why it should move:_ | the `dict[int, str]` annotation |
 #   | M43 | emit_reg_fields: `register_fields` -> `fields` | 1  emit.regf |
 #   | | _why it should move:_ | the method name every generated record carries |
-#   
 #
-# THE TWO ZEROS, REPORTED RATHER THAN CLOSED:
+#
+# the two zeros, reported rather than closed:
 #
 #   M39 `gtn_is_reserved` is a DEAD DEF. Nothing calls it, because its only
 #      caller is `tname`'s typedef arm and WALL 4 removed `tname`. This is the
@@ -738,7 +738,7 @@ def anon_name(g: G, tag: String) -> String:
 # WHICH IS NOT A Bend DEF), so this is WALL 2's
 # second mouth.
 #
-# THE WALK IS ONE CHAR PER STEP AND CARRIES A PENDING STATE, and the reason is
+# the walk is one char per step and carries a pending state, and the reason is
 # that Python's `replace` FINDS THE PATTERN AT ANY OFFSET: `"a::b"` has its
 # "::" at offset 1, so a walk that took the chars in PAIRS would only ever see
 # "::" at even offsets and would answer "a::b" where Python answers "a_b".
@@ -763,7 +763,7 @@ def underscore() -> Char: '_'
 
 def space() -> Char: ' '
 
-# WHAT ONE CHAR CONTRIBUTES, GIVEN WHETHER A ':' IS HELD BACK. Four cases, and
+# what one char contributes, given whether a ':' is held back. Four cases, and
 # `Bool.pick` takes all of them: a held-back ':' followed by a ':' is the pair
 # and becomes one '_'; a held-back ':' followed by anything else is emitted
 # alone and the other char follows it; an unheld ':' is held back (or, if the
@@ -773,7 +773,7 @@ def rep_emit2(+pend: Bool, +c: Char) -> List<&2, Char>:
     Bool.pick(List<&2, Char>, Char.is_eq(c, colon()), [underscore()], [colon(), c]),
     Bool.pick(List<&2, Char>, Char.is_eq(c, colon()), Nil{}, [c]))
 
-# WHETHER THE NEXT CHAR IS HELD BACK. A held-back ':' is settled by whatever
+# whether the next char is held back. a held-back ':' is settled by whatever
 # comes next, so the state is CLEARED either way; an unheld ':' starts a new
 # hold.
 def rep_next(+pend: Bool, +c: Char) -> Bool:
@@ -794,7 +794,7 @@ def rep_go1(cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
     case Nil{}: acc
     case c1 <> rest: rep_go1(rest, List.append(&2, Char, acc, [rep_emit1(c1)]))
 
-# THE ACCUMULATOR IS IN ORDER AND IS NOT REVERSED AT THE END. `List.append(xs,
+# the accumulator is in order and is not reversed at the end. `List.append(xs,
 # ys)` is `xs ++ ys` (`references/bend/bend2/base.bend:906`), so appending the
 # emission to the accumulator leaves it in order, and the `List.reverse` that
 # stood here reversed the whole answer. This file's own M29 records the
@@ -1148,8 +1148,8 @@ def types_fixture() -> List<&2, Gt>:
 # `runtime/ops_nv.bend` broke with 33 wrong constants behind 590 green rows.
 #
 # ----------------------------------------------------------------------------
-# MEASURED 2026-10-17. THE PARAGRAPH THIS ONE REPLACED WAS WRONG IN THREE WAYS,
-# AND TWO OF THEM WERE FALSE CLAIMS RATHER THAN STALE NUMBERS, so it is quoted
+# measured 2026-10-17. the paragraph this one replaced was wrong in three ways,
+# and two of them were FALSE claims rather than stale numbers, so it is quoted
 # and answered here instead of deleted.
 # ----------------------------------------------------------------------------
 # IT SAID: `gates/autogen-oracle.py`, run from `gates/`, "answers rc=0, 51 rows",
@@ -1165,7 +1165,7 @@ def types_fixture() -> List<&2, Gt>:
 #   base + one extra anonymous struct -> 123 rows, rc=0
 #
 # So the 51 was the EMPTY file, not the real header; the real header is 117. And
-# "IDENTICAL" was never true: 50 row NAMES are invariant and **56 MOVE**. The 56
+# "IDENTICAL" was never true: 50 row NAMES are invariant and 56 MOVE. The 56
 # that move are exactly the `### GEN output` block, and the 50 that do not are
 # 6 `###` section LABELS (the oracle's own, not values), the module's own tables
 # -- 18 `ag.tmap`, 4 `ag.uints/ints/fps/specs`, `ag.arc_families`, 13
@@ -1175,24 +1175,24 @@ def types_fixture() -> List<&2, Gt>:
 #
 # ----------------------------------------------------------------------------
 # IT SAID: "the TYPEHINT block above them does call libclang and does move."
-# **FALSE, AND THE BLOCK WAS DEAD.** `gates/autogen-oracle.py` counted kinds with
+# FALSE, AND THE BLOCK WAS DEAD. `gates/autogen-oracle.py` counted kinds with
 # `re.finditer(r"^CXType_(\w+) = (\d+)$", <libclang.py>, re.M)`. libclang.py does
 # not spell its enums that way -- it generates
 # `enum_CXTypeKind: dict[int, str] = {(CXType_Invalid:=0): 'CXType_Invalid', ...}`
-# -- so that pattern matched **0 of the 256 `CXType_` occurrences in the file** and
+# -- so that pattern matched 0 of the 256 `CXType_` occurrences in the file and
 # `cxkind_count` printed `0`: the length of an empty list, reported as a census of
 # libclang, and invariant because NO change to libclang could move it. It is now
-# `len(clang.enum_CXTypeKind)` = **122** over **128** `CXType_*` names (libclang
+# `len(clang.enum_CXTypeKind)` = 122 over 128 `CXType_*` names (libclang
 # ALIASES, which is why both numbers are printed), read BY ATTRIBUTE from the
 # generator's own declaration. Proof the row is live and was not: with one kind
 # added to the population the repaired row answers 123 and the old one still
 # answered 0.
 #
 # ----------------------------------------------------------------------------
-# THE "6-ROW FLOOR" IS NOT A FLOOR, AND `gates/oracleblind.rows` SHOULD NOT BE
+# the "6-row floor" is not a floor, and `gates/oracleblind.rows` should not be
 # READ AS ONE. The census's ARGV arm reports `EMPTY=54 GARBAGE=56
 # VALID-DIFFERENT=6` and takes `floor = 6 of 117 rows`. MEASURED, that 6 is the
-# EMISSION COST OF THE ONE PERTURBATION THE INSTRUMENT CHOSEN -- appending a
+# emission cost of the one perturbation the instrument chosen -- appending a
 # single struct, which this generator emits as exactly 6 lines (`@c.record`,
 # `class X(c.Struct):`, `  SIZE = 16`, two field lines, `X.register_fields([...])`).
 # Appending N such structs moves 6, 10, 14, 18, 22, 26 rows for N = 1..6, and the
@@ -1202,13 +1202,13 @@ def types_fixture() -> List<&2, Gt>:
 # instrument.
 #
 # ----------------------------------------------------------------------------
-# THIS FILE COMPILES AND PRINTS ITS ROWS. It did not, until 2026-10-22, and the
+# this file compiles and prints its rows. It did not, until 2026-10-22, and the
 # reason it did not is the shape of the defect this project has catalogued most:
-# THE INSTRUMENT THAT AUDITED IT WAS AUDITING ROWS OF A FILE THAT DID NOT
+# the instrument that audited it was auditing rows of a file that did not
 # COMPILE. The commit that last touched it before that (`bfcc46fcd`, "autogen-
-# oracle: ONE ROW WAS DEAD AND 50 ROWS WERE NOT A FLOOR -- AND THE PORT IS AT 0
-# ROWS") measured the ORACLE's rows and reported "THE PORT IS A DEAD LANE".
-# A ROW-LEVEL INSTRUMENT CANNOT NOTICE THAT ITS SUBJECT DOES NOT COMPILE: the
+# oracle: one row was dead and 50 rows were not a floor -- and the port is at 0
+# rows") measured the oracle's rows and reported "the port is a dead lane".
+# a row-level instrument cannot notice that its subject does not compile: the
 # port printed ZERO rows, and zero rows is what a file that prints none looks
 # like.
 #
@@ -1230,7 +1230,7 @@ def types_fixture() -> List<&2, Gt>:
 #          definition (an unfilled law is a dead claim: live code cannot use
 #          it)"). The `def` had to move above its use.
 #
-# AND TWO OF THOSE WERE NOT SPELLING BUGS BUT SEMANTIC DEFECTS, and this file
+# and two of those were not spelling bugs but semantic defects, and this file
 # already named BOTH in its own MUTATION TABLE, which is where the specification
 # for the repair came from: M29 ("colons_to_underscores: the accumulator is
 # reversed", 10 rows, "the ORDER of the output -- the bug the differ caught")
@@ -1248,7 +1248,7 @@ def types_fixture() -> List<&2, Gt>:
 # the oracle prints no `nm.*` row, so nothing in the tree gates them, and they
 # are checked here against CPython's `str.replace` directly.
 #
-# THE INSTRUMENT THAT WOULD HAVE CAUGHT IT EXISTED AND COVERED THIS FILE:
+# the instrument that would have caught it existed and covered this file:
 # `checks/substrate.py`'s `POP_ROOT` is `tinybendygrad`, so this file is in it,
 # and `checks/substrate.py tinybendygrad/runtime/support/autogen.bend` answered
 # `COLD ... :: SOME PROOFS FAIL` on the bytes as they stood. What it could not
@@ -1257,12 +1257,12 @@ def types_fixture() -> List<&2, Gt>:
 # 2026-10-22T04:46:41Z) it is recorded `RAN REFUSED rc=3 0.58s`. The reading
 # that turns a compile census into a verdict is `checks/port-compile-gate.py`.
 #
-# THE py= EXPECTATIONS ABOVE ARE REACHABLE TODAY, and they are the reason this
+# the py= expectations above are reachable today, and they are the reason this
 # block is here at all: a file that prints zero rows has no expectations to
 # fail.
 #
 # ----------------------------------------------------------------------------
-# TEN OF THE TWELVE PATHS CITED BY THIS HEADER ARE GONE, and the two that remain
+# ten of the twelve paths cited by this header are gone, and the two that remain
 # are `.agents/slop/notes/bend2-constraints.md` (1,665,622 B) and
 # `gates/ag-fixture.h` (1,020 B). Absent: `ag-wall1-census.py`,
 # `ag-wall1-census.txt`, `ag-wall4-repro.bend`, `ag-wall4-control.bend`,
@@ -1273,14 +1273,14 @@ def types_fixture() -> List<&2, Gt>:
 # wall becomes a guess.
 # ----------------------------------------------------------------------------
 #
-# THE ABI LADDER IS GATED, NOT LEFT DEAD. Every constant in SECTION 0 is a
+# the abi ladder is gated, not left dead. Every constant in section 0 is a
 # number this project has been wrong about before -- `ops_nv`'s audit found 33
 # of 219 -- and a constant nothing calls is a constant nothing checks. So the
 # `abi` row prints the WHOLE ladder and `ag-abi-oracle.py` prints the same
 # ladder resolved by calling libclang. That turns the 78 definitions WALL 1
 # would otherwise have left inert into 78 rows with a live CPython answer.
 #
-# AND THE HARNESS FOR THAT ROW HAD TO BE KEYED BY NAME, NOT BY VALUE, because
+# and the harness for that row had to be keyed by name, not by value, because
 # libclang ALIASES constants: `CXCursor_FirstRef` and `CXCursor_ObjCSuperClassRef`
 # are both 40, `CXCursor_FirstAttr` and `CXCursor_UnexposedAttr` are both 400.
 # Keyed on the integer, 78 constants collapse onto 58 keys and the diff passes

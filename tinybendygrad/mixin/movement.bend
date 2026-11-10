@@ -8,7 +8,7 @@
 #       `tinygrad/uop/movement.py`, the path movement.py had BEFORE it moved to `mixin/`, so
 #       it is real and at the wrong path. It imports `./ops.bend` and `./fold.bend` and
 #       nothing from `mixin/`.
-#   (2) THE SHAPE ARITHMETIC AND THE WRAPPERS -- THIS FILE.
+#   (2) the shape arithmetic and the wrappers -- this file.
 # Neither is a subset of the other: `uop/movement.bend` builds a `Hop{ar, at}` from a table
 # and knows `fold.Table`; this file never builds a `Hop`, never reads a rule table, builds
 # UOp arenas and reads `marg`. So the naming should say the HALF, not move the content.
@@ -63,13 +63,13 @@
 # PARSER, the same wall as `mixin/op.bend`'s W2 (`einsum`). `max_shape` (movement.py:50 symbol=max_shape) /
 # `max_numel` (movement.py:55 symbol=max_numel) -- it needs `to_max_shape`, a deferred import.
 #
-# THE WALL THIS FILE EXISTS TO ANSWER. `examples/beautiful_mnist.bend` names two walls, W1
+# the wall this file exists to answer. `examples/beautiful_mnist.bend` names two walls, W1
 # (conv2d, `mixin/op.py:1562`) and W2 (max_pool2d, `mixin/op.py:1333`), and both bottom out
 # in `_pool` (`movement.py:614 symbol=_pool`), both recorded there as "BUILDABLE, NOT CHECKABLE" because
 # `fold.bend:1620-1626` answers `None{}` for PERMUTE, EXPAND, PAD, SHRINK and FLIP and
 # gives the reason: `marg` -> `as_shape` -> `ssimplify`.
 #
-# **`ssimplify` IS THE WHOLE WALL, AND FOR A CONCRETE SHAPE IT IS THE IDENTITY.** Two
+# `ssimplify` is the whole wall, and for a concrete shape it is the identity. Two
 # CPython facts (`.agents/slop/notes/mxm-oracle.py`): (1) `ssimplify` (ops.py:94) is
 # `uop.ssimplify() if isinstance(uop, UOp) else uop`, so an `int` comes back UNCHANGED; (2)
 # `UOp.simplify` (ops.py:495 symbol=simplify) opens with `if self.op is Ops.CONST: return self`, and a shape
@@ -79,11 +79,11 @@
 # reshape, permute, flip, `_pool`, the `_pool` inside `max_pool2d` and inside conv2d's own
 # `_pad_constant`, `every concrete marg elem is a plain int: True`.
 #
-# SO `mxm_marg` AND `mxm_shape` ARE THE PORT OF THE `ssimplify` ARMS `fold.bend` IS MISSING,
+# so `mxm_marg` and `mxm_shape` are the port of the `ssimplify` arms `fold.bend` is missing,
 # and they close W1 and W2 for every shape `examples/beautiful_mnist.bend` builds.
 # `fold.bend` is READ-ONLY here, so the arms are SUPPLIED as a function the consumer calls
 # rather than installed in the fold; that is the one structural cost of this answer.
-# **AND THE ARM THAT DOES NOT CLOSE IS NAMED, NOT HIDDEN:** a SYMBOLIC shape puts a
+# and the arm that does not close is named, not hidden: a symbolic shape puts a
 # `UOp(PARAM)` in the marg and `ssimplify(PARAM)` is `graph_rewrite(PARAM, symbolic)`
 # (`graph_rewrite`, ops.py:501 symbol=simplify), so `mxm_marg` answers `None{}` and the row is `mxm_sym_NONE`. That is a WALL
 # in `uop/symbolic.py`, another unit.
@@ -103,7 +103,7 @@
 #       `pool_perm`, NOT written.
 # `mxm_marg` needs `+ar: O.Arena` and a node index.
 #
-# WHAT IS MEASURED RATHER THAN ASSUMED IN THE ARITHMETIC. `H.ceildiv_u32` is overflow-free
+# what is measured rather than assumed in the arithmetic. `H.ceildiv_u32` is overflow-free
 # but TRUNCATES toward zero, and `o*s - d` on movement.py:606 CAN BE NEGATIVE. CPython,
 # measured: `k=3, d=2, i=5, s=1` gives `o*s-d == -1`, where `H.ceildiv_u32` answers
 # 858993459. So the sign is carried as a `Bool` and there are two arms, `mx_ceildiv_s`, and
@@ -266,7 +266,7 @@ def mx_pool_out(i: List<&2, U32>, d: List<&2, U32>, k: List<&2, U32>, s: List<&2
 # `i_`, so a reversed `f_` makes every per-axis repeat count wrong rather than merely
 # reordered. MEASURED: `mx_pool_f([3,5],[1,2],[2,3],[1,1])` answered `3,1` where CPython
 # answers `1,3`, and `mx_pool_f([9,2,7],[1,3,1],[4,5,2],[1,1,1])` answered `3,1,2` where
-# CPython answers `2,1,3`. ALL SIX `f_*` GATE ROWS ARE BLIND: every one of them feeds an
+# CPython answers `2,1,3`. all six `f_*` gate rows are blind: every one of them feeds an
 # ALL-EQUAL shape list, and reversing a constant list is the identity, so the fix left all
 # 70 rows byte-identical. TWO READS OF `d` are resolved by a PARAMETER rather than by `+`,
 # which is the general form of "a match may not scrutinise a call"; `+d: U32` is legal but
@@ -341,7 +341,7 @@ def mx_range(n: Nat) -> List<&2, U32>: MO.mo_range(n)
 
 # THE TWO WALKS that make `[nn + i*2 + 1 for i in range(ni)]` and `[nn + i*2 for i in
 # range(ni)]` (movement.py:616, the MIDDLE and LAST thirds), each with its own `Nat`
-# countdown. THE ONE-WALK VERSION WAS TRIED AND REFUSED: carrying both lists in one `Data`
+# countdown. the one-walk version was tried and refused: carrying both lists in one `Data`
 # record needs `case 1n+q:` to pass `q` to the self-call AND read `k` for the two indices AND
 # read `acc` for both prepends, and the checker then reports `expected : q / observed : q
 # (consumed more than once)` AT THE PATTERN -- an error that sends you looking at `1n+q:`
@@ -349,7 +349,7 @@ def mx_range(n: Nat) -> List<&2, U32>: MO.mo_range(n)
 # decreasing subterm) and a `let` is affine. Two walks cost eight lines and each is the shape
 # `mo_range.go` already has.
 #
-# THE INDEX IS A PARAMETER, AND THAT IS THE ONLY SPELLING THAT CHECKS. Three shapes were
+# the INDEX is a parameter, and that is the only spelling that checks. Three shapes were
 # measured on this walk and two fail:
 #   `List.append(..., [U32.from_nat(k)], g(p, nn))`                        REFUSED
 #   `List.append(..., [U32.add(nn, 2*U32.from_nat(p))], g(p, nn))`        REFUSED
@@ -409,7 +409,7 @@ def mx_pool_perm(+nn: U32, +ni: U32) -> List<&2, U32>:
 #     if self.op is not Ops.STACK: return (ssimplify(self),)
 #     return tuple(s.val if s.op is Ops.CONST else ssimplify(s) for s in self.src)
 #
-# THE CONCRETE ARM IS ALL THREE OF THOSE, and the fold's refusal is exactly the
+# the concrete arm is all three of those, and the fold's refusal is exactly the
 # `(ssimplify(self),)` and the `ssimplify(s)` halves -- the two that need
 # `uop/symbolic.bend`. `mxm_as_shape` below walks a STACK of CONSTs and returns
 # their values; a STACK element that is NOT a CONST answers `None{}`, and that is
@@ -545,7 +545,7 @@ def mxm_arg_op(op: O.Op) -> Bool:
 def mxm_dim_op(op: O.Op) -> Bool:
   O.op_in([O.OpsRESHAPE{}, O.OpsEXPAND{}], op)
 
-# IS A MOVEMENT OP WHOSE `marg` IS A PAIR LIST -- PAD and SHRINK, and the arg is
+# is a movement op whose `marg` is a pair list -- pad and shrink, and the arg is
 # `tuple(zip(src[1].as_shape, src[2].as_shape))`, so it is a LIST OF PAIRS and a
 # pair is a 2-element `List<&2, U32>` (a `Type` cannot be a list element).
 def mxm_pair_op(op: O.Op) -> Bool:
@@ -573,7 +573,7 @@ def mxm_marg_pair(+ar: O.Arena, +i: U32) -> List<&2, List<&2, U32>>:
 # `marg` as a sum type rather than as a `List`, because the three arms hold
 # DIFFERENT shapes -- a dim list, a list of pairs, and an index list -- and a
 # `Data` record cannot hold a `Maybe` (rule 15) so the three cases are three
-# constructors. `A` is DIM (RESHAPE/EXPAND), `P` is PAIR (PAD/SHRINK), `Y` is
+# constructors. `A` is dim (reshape/expand), `P` is pair (pad/shrink), `Y` is
 # ORDER (PERMUTE/FLIP), and the names are movement.py's `arg` not the ops.
 # RESHAPE and EXPAND share the `MDim` marg -- both are `src[1].as_shape` -- so the
 # marg's TAG cannot tell them apart, and `_shape` gives them different answers
@@ -624,7 +624,7 @@ def MxMarg.ys(m: MxMarg) -> List<&2, U32>:
 # `match` may scrutinise a PARAMETER but the op is reached through
 # `O.Arena.op(ar, i)` -- a call, and a call is not a valid scrutinee. The three
 # tests are computed and handed down, which is the `.go`/`.of` split every other
-# dispatch in this port uses. THE SELLS ARE DECLARED IN CALL-CHAIN ORDER and each
+# dispatch in this port uses. the sells are declared in call-chain order and each
 # is `def X.of`-immediately-before-its-caller, because Bend has no forward
 # references.
 def mxm_marg.sel3(pair: Bool, +ar: O.Arena, i: U32) -> MxMarg:
@@ -660,7 +660,7 @@ def mxm_marg.of(+op: O.Op, +ar: O.Arena, i: U32) -> MxMarg:
 def mxm_marg(+ar: O.Arena, +i: U32) -> MxMarg:
   mxm_marg.of(O.Arena.op(ar, i), ar, i)
 
-# THE THREE READERS OVER A PAIR MARG, and they are the SECOND use of `mx_zip2` in
+# the three readers over a pair marg, and they are the second use of `mx_zip2` in
 # the file -- the los and the his. `lo` is the `(o,)` of each `(o, sz)` and `sz` is
 # the size, and both come from the SAME zip, so they are two projections of one
 # walk rather than two walks over the arena.
@@ -750,10 +750,10 @@ def mxm_mem.go(+ys: List<&2, U32>, +y: U32, sofar: Bool) -> Bool:
 def mxm_mem(+ys: List<&2, U32>, y: U32) -> Bool:
   mxm_mem.go(ys, y, False{})
 
-# A DUPLICATE EXISTS AMONG THE ELEMENTS SEEN SO FAR, and it is ONE self-recursive
+# a duplicate exists among the elements seen so far, and it is one self-recursive
 # def with the VERDICT as an accumulator parameter, matching the ELEMENT in the head.
 #
-# THE TWO-DEF SHAPE WAS TRIED AND IS MUTUAL RECURSION. `mxm_dup.go` walked the list
+# the two-DEF shape was tried and is mutual recursion. `mxm_dup.go` walked the list
 # and `mxm_dup.sel` held the decision and called back into the walk, and Bend refuses
 # the pair in either declaration order with the misleading "a filled definition (an
 # unfilled law is a dead claim)" pointing at the LATER def. The same shape is legal
@@ -785,7 +785,7 @@ def mxm_len_u32(xs: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, xs)
 # needs `self.arg[1]`, and `fold.bend` defers UNSHARD for the same reason
 # (uop/fold.bend:1685 symbol=sym_dim.end). `SPLIT_REDUCE` is the same arm as REDUCE.
 #
-# THE SELS ARE DECLARED IN CALL-CHAIN ORDER, bottom first, because Bend has no
+# the sels are declared in call-chain order, bottom first, because Bend has no
 # forward references and the `match`-on-a-parameter shape needs the leaf to exist.
 def mxm_shape.sel4(exp: Bool, +m: MxMarg, ps: List<&2, U32>) -> List<&2, U32>:
   match exp:
@@ -819,7 +819,7 @@ def mxm_shape.sel2(dim: Bool, pair: Bool, +m: MxMarg, ps: List<&2, U32>) -> List
     case True{}: mxm_shape.sel4(MxMarg.is_expand(m), m, ps)
     case _: mxm_shape.sel3(pair, m, ps)
 
-# THE LADDER, AND THE ORDER OF ITS TWO ARMS IS THE WHOLE OF `mxm_shape`. An earlier
+# the ladder, and the order of its two arms is the whole of `mxm_shape`. An earlier
 # revision had the `True` arm recursing and the catch-all returning `ps`, which is the
 # shape of every OTHER sel in this file and is EXACTLY BACKWARDS here: `ps` is
 # FLIP's answer, so the catch-all handed FLIP's answer to RESHAPE, EXPAND, PAD and
@@ -846,7 +846,7 @@ def mxm_shape(+m: MxMarg, ps: List<&2, U32>) -> List<&2, U32>:
 # THE OUTPUT SHAPE, which is the row `mx_pool_shape` and the whole of W1/W2's
 # answer.
 #
-# IT IS `noop ++ o_ ++ k_` AND NOT THE CHAIN'S SEVEN CALLS, and that is a
+# it is `noop ++ o_ ++ k_` and not the chain's seven calls, and that is a
 # deliberate shortcut with its reason stated rather than a divergence: the seven
 # calls are `shrink_to`/`reshape` to shapes this def already computes, and the only
 # step that REORDERS is the final permute -- `_pool` leaves each window as
@@ -905,7 +905,7 @@ def mx_pool_shape.of(+shp: List<&2, U32>, +k: List<&2, U32>, +s: List<&2, U32>, 
 def mx_pool_shape(+shp: List<&2, U32>, +k: List<&2, U32>, s: List<&2, U32>, d: List<&2, U32>) -> List<&2, U32>:
   mx_pool_shape.of(shp, k, s, d, mxm_len_u32(shp), mx_pool_ni(k))
 
-# THE PERMUTE ORDER rows are printed WITH THEIR LENGTH because the order is a list of
+# the permute order rows are printed with their length because the order is a list of
 # the right length whichever way round it is -- the mutation M2 swaps the ODD and EVEN
 # thirds and the length is 6 either way, so the length row witnesses nothing about the
 # order and the ORDER row is the only thing that does.
@@ -1018,7 +1018,7 @@ def marg_tag(+m: MxMarg) -> U32: marg_tag.of(MxMarg.is_ord(m), MxMarg.is_dim(m),
 # ZIPS of the two STACKs, and `mxm_shape` must answer the SIZES. CPython's own answer
 # for the same pad is `marg=((0,1),(0,4),(1,10),(1,10))` and `shape=(1, 4, 10, 10)`
 # (mxm-oracle.py), which is what these three numbers are.
-# A PURE `let` FOR THE MARG AND AN `IO` DEF FOR THE PRINTING. An `IO<Unit>` `do`
+# a pure `let` for the marg and an `IO` DEF for the printing. An `IO<Unit>` `do`
 # block can only BIND AN `IO` -- `m : MxMarg <- pure(...)` is `expected : a defined
 # name / observed : pure` -- so the marg is computed in a `let` and the `do` block
 # takes it as a PARAMETER of the printing def. This is the notes' "an `IO<Unit>` `do`
@@ -1030,7 +1030,7 @@ def marg_tag(+m: MxMarg) -> U32: marg_tag.of(MxMarg.is_ord(m), MxMarg.is_dim(m),
 # happened to be current -- the aliasing rule the notes record ("an index is only
 # meaningful in the arena that produced it, and `+` does not enforce it").
 #
-# THE ARENA COMES BACK OUT IN A `Cs` BECAUSE THE INDICES ARE AFFINE TO IT, and that is
+# the arena comes back out in a `Cs` because the indices are affine to it, and that is
 # the second reason a fixture builder cannot return a bare list: the caller has to
 # know which arena the four indices belong to. A pair is a `Type` and cannot travel in
 # a list, so it is a two-field `Data` record.
@@ -1047,7 +1047,7 @@ def marg_tag(+m: MxMarg) -> U32: marg_tag.of(MxMarg.is_ord(m), MxMarg.is_dim(m),
 def G.padfix.of(+b: O.Found, +lo: O.Found, +hi: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(hi), O.OpsPAD{}, [O.Found.i(b), O.Found.i(lo), O.Found.i(hi)], O.ANone{}, O.TNone{})
 
-# THE PAD FIXTURE, AND IT IS FULLY STRAIGHT-LINE ON PURPOSE. Eight CONSTs and two STACKs are
+# the pad fixture, and it is fully straight-line on purpose. Eight CONSTs and two STACKs are
 # interned one after another with `+f = ...` bindings and no fold at all. THE FOLDED VERSION
 # WAS WRITTEN AND REFUSED: building four CONSTs from a `List<&2, U32>` of values wants a
 # `Nat` countdown that doubles as the value index, which wants a `1n+p` / `2n+p` / catch-all
@@ -1058,10 +1058,10 @@ def G.padfix.of(+b: O.Found, +lo: O.Found, +hi: O.Found) -> O.Found:
 # fixture is exactly where the transliteration argument does not apply: the reader under test
 # is `mxm_marg`, not this.
 #
-# EVERY CONST IS BUILT IN THE ARENA THE PREVIOUS ONE LEFT -- the whole of the aliasing rule
+# every CONST is built in the arena the previous one left -- the whole of the aliasing rule
 # the notes record ("an index is only meaningful in the arena that produced it"), because a
 # literal list of CONST indices would be interned in whatever arena happened to be current and
-# read back as a different node. THE TWO SHAPE ARGS OF A PAD: the OFFSETS `((0,1),(0,0),(1,1))`
+# read back as a different node. the two shape args of a pad: the offsets `((0,1),(0,0),(1,1))`
 # and the SIZES `((1,4),(8,8),(10,10))` -- which is CPython's `marg=((0,1),(0,4),(1,10),
 # (1,10))` zipped apart, and the row `pad_n` is what says the zip happened rather than the
 # two lists having been concatenated.
@@ -1113,7 +1113,7 @@ def marg_reshape_row() -> IO(Unit):
   +f = G.reshape(O.Arena.empty(), 1, 2, 8, 16)
   marg_dim.go(mxm_marg(O.Found.ar(f), O.Found.i(f)), f, "resh")
 
-# ONE ROW, THREE FIXTURES, and they are the THREE WAYS ops.py:416's check can fail: a real
+# one row, three fixtures, and they are the three ways ops.py:416's check can fail: a real
 # permutation, a REPEAT, and an index past the end. The repeat case is the one that matters --
 # `mxm_perm_lt` alone accepts `[0, 0, 2, 3]`, so without `mxm_dup` the check would pass a marg
 # that is not a permutation and `mxm_pick_all` would then answer a shape of the right length
@@ -1141,7 +1141,7 @@ def marg_permchk_row() -> IO(Unit):
 
 
 # ===========================================================================
-# SECTION H -- THE THREE ROWS THAT CLOSE THE MEASURED BLIND SPOTS. Each of these
+# section h -- the three rows that close the measured blind spots. Each of these
 # was added because the mutation table said a rule was untested, and each names the
 # mutation that found it. A row added for that reason is a row with a job.
 # ===========================================================================
@@ -1198,7 +1198,7 @@ def pool_wide_row() -> IO(Unit):
 # node it JUST BUILT -- and `uop/fold.bend:1685 symbol=sym_dim.end` does not answer that for PAD, SHRINK,
 # EXPAND, FLIP or PERMUTE.
 #
-# **THE MERGE POINT, and it is the reason this section is buildable at all.** The
+# THE MERGE POINT, and it is the reason this section is buildable at all. The
 # wrappers use `MX.mxm_shape(MX.mxm_marg(ar, made), src_shape)` for that test rather
 # than `mixin/op.bend`'s `mo_reshape`/`mo_permute`, whose `mo_sints` comparison is the
 # one that has to work around the gap. `op.bend` is READ-ONLY here, so the gap is
@@ -1231,7 +1231,7 @@ def mxw_buf.of(+ar: O.Arena, +f: O.Found) -> T.Tensor:
 def mxw_buf(+ar: O.Arena, slot: U32, size: U32) -> T.Tensor:
   mxw_buf.of(ar, O.UOp.new.param(ar, O.OpsBUFFER{}, Some{size}, O.AParam{mxw_pbuf(slot)}, O.TNone{}))
 
-# A SHAPE ARG of ARBITRARY LENGTH, interned as a STACK of CONSTs. It walks the VALUE LIST
+# a shape ARG of arbitrary length, interned as a stack of CONSTs. It walks the value list
 # rather than a `Nat` countdown, which is what makes it one def: the list tail `t` is a strict
 # subterm of `vs`, so the decrease check is satisfied by the FIRST argument and there is no
 # fuel to thread. The `1n+p` spelling of the same walk would need the current value AND the
@@ -1243,21 +1243,21 @@ def mxw_buf(+ar: O.Arena, slot: U32, size: U32) -> T.Tensor:
 # STAYS, and it is CORRECT rather than lucky: `G.c1` is `O.UOp.const(ar, ...)` with no srcs
 # and no dependence on `ar` beyond the intern table, so both calls intern the same node and
 # answer the same index. The cost is one wasted intern-table lookup per dim. THIS IS THE
-# GENERAL SHAPE OF THE TRAP IN THIS FILE: the fix that reads obviously right (intern once,
+# general shape of the trap in this file: the fix that reads obviously right (intern once,
 # read the `Found` twice) is the fix that needs a def, and in a WALK the def is mutual
 # recursion. The workable forms are a straight-line fixture (`G.stk4`), a `Data` record
 # carrying the accumulator, or -- what is done here -- a pure call made twice.
 #
-# **AND IT PREPENDED, WHICH WAS THE ACTUAL BUG, MEASURED NOT GUESSED.** The walk goes DOWN
+# and it prepended, which was the actual bug, measured not guessed. The walk goes down
 # `vs` and accumulates UP, and `List.append(a, A, [i], acc)` puts the new index at the FRONT,
 # so the STACK came out as `STACK(8, 8, 4, 1)` for a target of `[1, 4, 8, 8]`. `dbg_sk_marg`
 # is the row that saw it: the shape came back EMPTY because `mxm_as_shape` saw a first
 # element of 8 where the fold's own base had 1. This is the SECOND time in this file that a
 # prepend/append slip produced the right LENGTH and the wrong VALUES -- the first was
 # `mx_shows.go`, and M11 measures it at 22 of 42 rows. The lesson generalises past this file:
-# **an accumulator fold over a list of DIMENSIONS must say which end it adds to, in a
-# comment, because the mistake is invisible in the type and in the count.**
-# **THE ONE-ELEMENT FOLD, AND IT IS `shape_to_shape_arg` (ops.py:104-110): `return src[0]
+# an accumulator fold over a list of DIMENSIONS must say which end it adds to, in a
+# comment, because the mistake is invisible in the type and in the count.
+# THE ONE-ELEMENT FOLD, AND IT IS `shape_to_shape_arg` (ops.py:104-110): `return src[0]
 # if len(src) == 1 else UOp(Ops.STACK, src=src)`, so a ONE-dim shape arg is the bare CONST
 # and NOT a STACK of one. The fold belongs at the base arm of the walk, and it is a def
 # rather than a `match` on `acc` inside that arm because a match may not scrutinise a
@@ -1304,20 +1304,20 @@ def mxw_fold_shape.go(+ds: List<&2, O.Sint>, acc: List<&2, U32>) -> List<&2, U32
 def mxw_fold_shape(ar: O.Arena, u: U32) -> List<&2, U32>:
   mxw_fold_shape.go(mxw_dims(ar, u), Nil{})
 
-# **THE MERGE POINT.** The shape of ANY node: `mxm_shape` for the six movement ops that
+# THE MERGE POINT. The shape of ANY node: `mxm_shape` for the six movement ops that
 # `uop/fold.bend:1685 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's identity
 # test goes through here, and it is ONE def rather than six call sites because the six would
 # each have to re-derive the op test and each of them is a chance to disagree about which ops
 # are movement ops.
 #
-# THE MOVEMENT HALF, and IT IS ONE SELF-RECURSIVE DEF with a TWO-SCRUTINEE match. THE
+# the movement half, and it is one self-recursive DEF with a two-scrutinee match. the
 # THREE-DEF SHAPE (`go` -> `at` -> `of`, each calling the one below) IS A MUTUAL RECURSION and
 # Bend refuses it in every declaration order, with the misleading "a filled definition (an
 # unfilled law is a dead claim)" naming the LAST def in the cycle. The working shape is ONE
 # def matching `fuel mv` together, which is legal precisely because the `False` arm is a CALL
 # and not a recursion -- so `mxw_fold_shape` is NOT evaluated on a movement node, which
 # matters because it runs a whole Kahn fold and doing it wastefully on every movement node
-# would cost a fold per wrapper step. `mv` IS A PARAMETER AND NOT A `match` INSIDE THE ARM
+# would cost a fold per wrapper step. `mv` is a parameter and not a `match` inside the arm
 # because `mxw_mv(O.Arena.op(...))` is a CALL and a call cannot be a scrutinee. It is
 # recomputed for the SOURCE on every step, which is the right place: the source is a different
 # node with a different op.
@@ -1327,7 +1327,7 @@ def mxw_shape_of(fuel: Nat, mv: Bool, +ar: O.Arena, +u: U32) -> List<&2, U32>:
     case _ False{}: mxw_fold_shape(ar, u)
     case 1n+p True{}: mxm_shape(mxm_marg(ar, u), mxw_shape_of(p, mxw_mv(O.Arena.op(ar, O.Arena.src0(ar, u))), ar, O.Arena.src0(ar, u)))
 
-# **THE MERGE POINT.** The shape of ANY node: `mxm_shape` for the six movement ops that
+# THE MERGE POINT. The shape of ANY node: `mxm_shape` for the six movement ops that
 # `uop/fold.bend:1685 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's
 # identity test goes through here, and it is ONE def rather than six call sites because
 # the six would each have to re-derive the op test and each of them is a chance to
@@ -1373,7 +1373,7 @@ def mxw_srcops(+ar: O.Arena, +ss: List<&2, U32>) -> List<&2, String>:
 
 # THE WHOLE SIGNATURE AS ONE STRING: `n=<count> op=<root> nsrc=<n> srcops=<seq>`.
 #
-# IT IS ONE STRING AND NOT FOUR ROWS ON PURPOSE. Four separate rows let a fixture drop
+# it is one string and not four rows on purpose. Four separate rows let a fixture drop
 # one of them, and a PAD built with ONE STACK instead of two has the right root op and
 # the right node count, so a gate carrying only those two is green on a wrong graph.
 # `pad_nsrc` in Section H exists for the same reason and this is the generalisation.
@@ -1388,7 +1388,7 @@ def mxw_sig(+ar: O.Arena, +u: U32) -> String:
 # `reshape`, `pad`, `shrink`, `permute`, `flip` (movement.py:128-254) and this file
 # follows it.
 #
-# THE SHAPE OF EVERY ONE IS THE SAME FOUR STEPS, and that is worth saying once:
+# the shape of every one is the same four steps, and that is worth saying once:
 #   1. build the arg as a `List<&2, U32>` of python ints (the `List` algebra);
 #   2. intern it as a STACK of CONSTs (`mxw_stk`), in the arena it grows;
 #   3. build the movement node in THAT arena (never the caller's);
@@ -1424,12 +1424,12 @@ def mxw_reshape.of(+t: T.Tensor, +sk: O.Found) -> T.Tensor:
 def mxw_reshape.go(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor:
   mxw_reshape.of(t, mxw_stk(ds, T.Tensor.ar(t), Nil{}))
 
-# **THE ARENA IS `made`'s.** `mxw_same(T.Tensor.ar(t), ...)` is the same aliasing slip as
+# THE ARENA IS `made`'s. `mxw_same(T.Tensor.ar(t), ...)` is the same aliasing slip as
 # `dbg_made_shape` one function away, and it is MEASURED here: `resh_noop` built a
 # RESHAPE where CPython returns `self`, because the identity test read the base's arena
 # with the made node's index, the index was past the end, and `mxw_same` compared the
-# BOTTOM's shape against the base's and answered False. **THE RULE THAT ACTUALLY BITES
-# IS: read the arena off the node whose INDEX you are about to read**, and a node that
+# bottom's shape against the base's and answered False. the rule that actually bites
+# IS: read the arena off the node whose INDEX you are about to read, and a node that
 # grows another node's arena is the one case where the two differ.
 def mxw_reshape(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor:
   +made = mxw_reshape.go(t, ds)
@@ -1454,12 +1454,12 @@ def mxw_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
            t, mxw_permute.go(t, ys))
 
 # --- pad / shrink (movement.py:186-212) ------------------------------------
-# BOTH ARE THE SAME NODE SHAPE: `UOp(op, src=(self, STACK_a, STACK_b))`, because
+# both are the same node shape: `UOp(op, src=(self, STACK_a, STACK_b))`, because
 # `_mop`'s `case Ops.PAD | Ops.SHRINK: src_args = list(zip(*arg))` (ops.py:829) is a
 # TRANSPOSE into two lists and the node has THREE srcs. The rows that say so are `pad` and
 # `shrink` and both print `nsrc=3 srcops=<op>|Ops.STACK|Ops.STACK`.
 #
-# THE TWO STACKS ARE BUILT IN SEQUENCE AND THE SECOND IN THE FIRST'S ARENA. That is
+# the two stacks are built in sequence and the second in the first's arena. That is
 # `tn_mop.pairs`' rule restated, and it is load-bearing twice over: an index means nothing
 # outside its own arena, and the NODE must be interned in the arena that contains the shape
 # args -- an arena one node short of them interns the node at an index that arena does not
@@ -1473,7 +1473,7 @@ def mxw_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
 # `tn_mop.pairs` takes a `MopArg` whose `APairs` arm is `List<&2, O.Const>` (CONST VALUES)
 # while the wrappers here carry `List<&2, U32>` (Python ints) and intern them themselves.
 # Two spellings of the same arg is a real duplication and it is named rather than hidden.
-# THE NODE, AND IT IS CALLED TWICE ON PURPOSE -- the same shape as `mxw_stk` and for the
+# the node, and it is called twice on purpose -- the same shape as `mxw_stk` and for the
 # same reason. `O.UOp.new` is PURE given its arena and its arguments (the arena carries the
 # intern table, so the second call finds the node the first one added and answers the same
 # index), and the alternative -- a `let` carrying the `Found` -- needs a def boundary, and
@@ -1494,7 +1494,7 @@ def mxw_pairs_node(+t: T.Tensor, +op: O.Op, +a: O.Found, +b: O.Found) -> T.Tenso
 def mxw_add_new2(+c: O.Found, +t: T.Tensor) -> O.Found:
   O.UOp.new(O.Found.ar(c), O.OpsADD{}, [T.Tensor.u(t), O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# **THE CONST IS INTERNED FIRST, IN ITS OWN `let`, AND THAT IS THE WHOLE FIX.**
+# the CONST is interned first, in its own `let`, and that is the whole fix.
 # `O.UOp.new(ar, ..., [T.Tensor.u(t), O.Found.i(G.c1(ar, v))], ...)` typechecked and
 # produced `add=n=6 op=Ops.ADD nsrc=2 srcops=Ops.RESHAPE|Ops.ADD` -- the ADD names ITSELF
 # as its second src. The cause is Bend's STRICT evaluation: an argument is evaluated
@@ -1542,7 +1542,7 @@ def mxw_shrink(+t: T.Tensor, +offs: List<&2, U32>, +sizes: List<&2, U32>) -> T.T
   mxw_pick(mxw_same(T.Tensor.ar(made), T.Tensor.u(made), T.Tensor.u(t)), t, made)
 
 # --- flip (movement.py:233-267) ---------------------------------------------
-# UPSTREAM HAS NO `Ops.FLIP` AND HAS NOT FOR A WEEK. `900880433` ("remove Ops.FLIP",
+# upstream has no `Ops.FLIP` and has not for a week. `900880433` ("remove Ops.flip",
 # 2026-10-11) deleted the member and reimplemented `Tensor.flip` as a COMPOSITION --
 # `movement.py:253-267` is now `_mop(Ops.PAD, ...)` / `Ops.SHRINK` / `.transpose` and nothing
 # else -- so this wrapper no longer MINTS A NODE OF ITS OWN. It CALLS `mxw_pad`, `mxw_shrink`,
@@ -1552,11 +1552,11 @@ def mxw_shrink(+t: T.Tensor, +offs: List<&2, U32>, +sizes: List<&2, U32>) -> T.T
 # no-op test any more, it is upstream's `if resolve((n:=ret.shape[axis]) <= 1, False): continue`
 # PER AXIS.
 #
-# THE ARGUMENT IS THE AXIS LIST, NOT A FLAG VECTOR, and that is the behavioural half of the
+# the argument is the axis list, not a flag vector, and that is the behavioural half of the
 # change. The old port took `flip_arg` -- the 0/1 vector `tuple(i in axis_arg for i in
 # range(len(self.shape)))` -- because the old upstream fed it to `_mop(Ops.FLIP, arg=flip_arg)`.
 # Current upstream LOOPS over `axis_arg`, and the order of that loop is observable: each axis
-# appends its own PAD/PAD/PAD/SHRINK/SHRINK/SHRINK chain to the running tensor, so `flip(0, 1)`
+# appends its own pad/pad/pad/shrink/shrink/shrink chain to the running tensor, so `flip(0, 1)`
 # and `flip(1, 0)` are the same nodes in a different sequence. A flag vector is a SET, so it
 # cannot say which order the caller asked for. `mxw_flip`'s callers that still pass a flag
 # vector (`gates/mx_graph_census.bend`) are reading the OLD contract and are stale by
@@ -1575,8 +1575,8 @@ def mxw_shrink(+t: T.Tensor, +offs: List<&2, U32>, +sizes: List<&2, U32>) -> T.T
 # TRANSPOSE of line 256, so this is the shape minus the AXIS dim, with an EMPTY dim bumped to 1
 # because a 0-length dim has no anti-diagonal to read off.
 #
-# **NO `List.reverse` AT THE END, AND THAT IS THE THIRD TIME IT HAD TO BE REMOVED FROM THIS
-# SECTION.** `List.append(&2, T, acc, [x])` APPENDS AT THE END -- `mxw_fold_shape.go` and
+# no `List.reverse` at the end, and that is the third time it had to be removed from this
+# SECTION. `List.append(&2, T, acc, [x])` APPENDS AT THE END -- `mxw_fold_shape.go` and
 # `mxw_srcops.go` build their lists down the walk with no reversal and print them in order, and
 # `dbg_made_shape`'s own history is the record of what happens when a direction is wrong. So a
 # walk that appends is already in order and a trailing `List.reverse` TURNS IT UPSIDE DOWN.
@@ -1612,7 +1612,7 @@ def mxf_zeros(n: Nat) -> List<&2, U32>: mxf_zeros.go(MO.mo_range(n), Nil{})
 # function of the RANK and the AXIS alone, so this walks a counter and never reads the list it
 # is permuting -- which is what lets the SAME def serve `transpose(0, 1)` on the (n, n, *tail)
 # of the middle step, where the list it would otherwise read is a shape and not a range.
-# THE THREE-WAY MATCH IS THE PYTHON'S TWO-LINE SWAP: `zero` writes the head, `at` writes the
+# the three-way match is the python's two-line swap: `zero` writes the head, `at` writes the
 # axis, and the arm that is neither keeps `h`. The two Bools are PARAMETERS because Bend
 # refuses a computed scrutinee -- `match U32.is_eq(h, axis):` is an error, "give it its own
 # def" -- and a parameter is this file's own answer to that, the same one `mxw_any.go` uses.
@@ -1642,7 +1642,7 @@ def mxf_order(n: Nat, +axis: U32) -> List<&2, U32>: mxf_order.go(MO.mo_range(n),
 # all-`None` tail of the fifth line -- is an all-zero offset list against `mxf_tail`, and the
 # `crop` of the last line is `(0, x.shape[j+1])` over the TRANSPOSED ORIGINAL's tail, which is
 # the UNMODIFIED drop: `tail` bumps an empty dim to 1 and `crop` does not.
-# **`crop` IS `sh` MINUS THE `axis` ELEMENT, NOT `sh[1:]`, AND THE DIFFERENCE IS THE WHOLE BUG.**
+# `crop` is `sh` minus the `axis` element, not `sh[1:]`, and the difference is the whole bug.
 # `x = ret.transpose(0, axis)` (movement.py:256) is `permute` by `ord0`, so `x.shape[1:]` is
 # `ord0`'s tail read through `sh` -- `mxm_pick_all(sh, ord0)` then `List.drop(.., 1n)`. Reading
 # `sh[1:]` instead drops dim 0 and KEEPS dim `axis`, so the two lists agree iff
@@ -1652,8 +1652,8 @@ def mxf_order(n: Nat, +axis: U32) -> List<&2, U32>: mxf_order.go(MO.mo_range(n),
 # `shape[0] == shape[axis]`, so the gate's eleven rows agreed on a substitution that is the
 # identity there -- a green on a base that cannot distinguish the axis.
 #
-# **THE FIRST FOUR CALLS ARE `_mop` AND NOT `Tensor.pad`/`Tensor.shrink`, AND THAT IS THE WHOLE
-# DIFFICULTY.** `Tensor.pad` (movement.py:186) and `Tensor.shrink` (:192) each end
+# the first four calls are `_mop` and not `Tensor.pad`/`Tensor.shrink`, and that is the whole
+# DIFFICULTY. `Tensor.pad` (movement.py:186) and `Tensor.shrink` (:192) each end
 # `return self if ret.shape == self.shape else ret`, and `mxw_pad`/`mxw_shrink` are their ports
 # and carry that identity test. `_mop` (ops.py:796) has no such test: its only early return is
 # the zero-length ARG (`:799`). So a `_mop(Ops.PAD, ...)` that does not change the shape STILL
@@ -1663,8 +1663,8 @@ def mxf_order(n: Nat, +axis: U32) -> List<&2, U32>: mxf_order.go(MO.mo_range(n),
 # flip rows. So the four `_mop` calls go through the `.go` half -- which is `_mop`, and the
 # wrappers' own `.go`/wrapper split is already that pair -- and the two `shrink` calls go
 # through the wrapper, where the identity test is upstream's.
-# **AND EVERY `_mop` ARG LIST HAS THE LENGTH OF THE NODE IT IS APPLIED TO, WHICH IS NOT ALWAYS
-# `nd`.** `tail_pad` is `(0, s) for s in tail` -- `nd-1` entries -- so the three PAD/SHRINK args
+# and every `_mop` ARG list has the length of the node it is applied to, which is not always
+# `nd`. `tail_pad` is `(0, s) for s in tail` -- `nd-1` entries -- so the three PAD/SHRINK args
 # that carry a leading pair are `nd` long (`(0,m)`/`(m-1, m*m)`/`(m-n, m)` plus `tail_pad` or
 # `crop`) and the two that carry TWO leading pairs, or one pair plus the `None` tail
 # `bounds`, are `nd+1`. MEASURED: one `zeros(nd)` used for all five offset lists made the last
@@ -1728,7 +1728,7 @@ def mxw_base() -> T.Tensor:
   mxw_base.of(mxw_buf(O.Arena.empty(), 0, 256), 1, 4, 8, 8)
 
 # ===========================================================================
-# SECTION I2 -- THE GATE ROWS FOR THE WRITE HALF. Every row is `mxw_sig` (Section I):
+# section I2 -- the gate rows for the write half. Every row is `mxw_sig` (Section i):
 # node count, root op, src count, src OP SEQUENCE, in one string, so no row can drop
 # one of the four. The expectations are CPython's, from `mxm-oracle.py`.
 #
@@ -1746,7 +1746,7 @@ def mxw_row(+nm: String, +t: T.Tensor) -> IO(Unit):
 # as a PARAMETER -- the same shape as `marg_pad.go`. Building the base once per row would
 # also be correct here (each row has its own arena) but the rows are meant to be READ as
 # a sequence, and one arena for the whole sequence is what makes the counts comparable.
-# **THE ARENA IS `made`'s AND NOT `t`'s, and that cost a cycle.** The row that first
+# THE ARENA IS `made`'s AND NOT `t`'s, and that cost a cycle. The row that first
 # printed the made node's shape read `mxw_dims_of(T.Tensor.ar(t), T.Tensor.u(made))` --
 # the BASE's arena with the MADE node's index. `Arena.node` answers the BOTTOM for an
 # index past the end, so `mxw_mv` read the bottom's op, the node was "not a movement
@@ -1793,7 +1793,7 @@ def mxw_resh_row(+t: T.Tensor) -> IO(Unit):
     mxw_row("pad_noop", mxw_pad(t, [0, 0, 0, 0], [1, 4, 8, 8]))
     mxw_row("shrink", mxw_shrink(t, [0, 0, 1, 1], [1, 4, 4, 4]))
     mxw_row("shrink_noop", mxw_shrink(t, [0, 0, 0, 0], [1, 4, 8, 8]))
-    # THE THREE FLIP ROWS ARE AXIS LISTS NOW, not the old 0/1 flag vectors: `flip0` is
+    # the three flip rows are axis lists now, not the old 0/1 flag vectors: `flip0` is
     # axis 0, `flip01` is axes 0 then 1, and `flip_noop` is the EMPTY axis list, which is
     # upstream's own `for axis in ()` -- no node at all.
     mxw_row("flip0", mxw_flip(t, [0]))
@@ -1858,26 +1858,26 @@ def main() -> IO(Unit):
 # ===========================================================================
 # THE MEASURED MUTATION TABLE. Twenty-seven mutations: sixteen on the READ half
 # (Sections A-H) and eleven on the WRITE half (Section I). Driver:
-# `.agents/slop/notes/mxm-mutate.py`. THE COPY IT MUTATES MUST LIVE BESIDE THIS FILE
+# `.agents/slop/notes/mxm-mutate.py`. the COPY it mutates must live beside this file
 # because the imports are relative -- a copy in /tmp cannot resolve `./../helpers.bend`
 # and every mutation reads REFUSED, which is itself a measured fact. The full 27-row table
 # with row sets is appended to `.agents/slop/notes/bend2-constraints.md`.
 #
-# **NO MUTATION MOVES NOTHING, AND FOUR BLIND SPOTS WERE FOUND AND CLOSED** (M5, M8, M12,
+# no mutation moves nothing, and four blind spots were found and closed (M5, M8, M12,
 # and W7, whose `case _ False{}` arm -- the one that answers a NON-movement op from the
 # fold -- had no fixture at all, because every node in the rows was a movement op and the
 # one non-movement node they reached is a node `fold.bend` does not answer, so the arm's
 # answer was the empty list EITHER WAY). The four rows that closed them are `f_neg`,
 # `add_tag`, `pool_wide` and `add_shape`. A rule no mutation can reach is not gated.
 #
-# **M11 AND W10 ARE THE GATE'S TWO LOAD-BEARING WEAKNESSES, AND THEY ARE THE SAME KIND OF
-# WEAKNESS.** M11 is the printer's own append direction and it moves 25 of 70 rows; W10
+# M11 and W10 are the gate's two LOAD-bearing weaknesses, and they are the same kind of
+# WEAKNESS. M11 is the printer's own append direction and it moves 25 of 70 rows; W10
 # replaces the toposort count with `1` and it moves all 15 `n=` rows. Together they say
 # that a 70-row gate here is NOT seventy independent witnesses: the printer is one shared
 # component and the `n=` field is one shared component. A mutation in EITHER invalidates a
 # quarter of the suite, and neither is a rule under test.
 #
-# **W2 IS THE ROW THIS PROJECT NEEDED AND DID NOT HAVE.** Swapping a PAD's two shape args --
+# W2 is the row this project needed and did not have. Swapping a pad's two shape args --
 # `self|a|b` to `self|b|a` -- leaves the ROOT OP, the SRC COUNT and (mostly) the NODE COUNT
 # alone, and it moves only `pad_noop` and `shrink_noop`, the two rows where the identity
 # test fires. A gate carrying `op` and `nsrc` but not the src OP SEQUENCE would be
@@ -1885,17 +1885,17 @@ def main() -> IO(Unit):
 # MEASURED in this file, and `mxw_sig` prints all four facts in one string precisely so a
 # fixture cannot drop one of them.
 #
-# **W11 IS THE ALIASING RULE'S THIRD SYMPTOM, and it is the quietest one.** The identity
+# W11 IS THE ALIASING RULE'S THIRD SYMPTOM, and it is the quietest one. The identity
 # test reading the BASE's arena with the MADE node's index returned False for a no-op
 # reshape, so `resh_noop` built a RESHAPE where CPython returns `self`. The usual symptom of
 # the rule is a WRONG node; this one is a MISSING node, because `Arena.node` answers the
 # BOTTOM for an index past the end. One row (`resh_noop`) sees it and nothing else would.
 #
-# **W4 AND M16 ARE COMPILE ERRORS AND THAT IS THE FINDING** -- inverting `mxw_permute`'s
+# W4 and M16 are compile errors and that is the finding -- inverting `mxw_permute`'s
 # order test and reading src[0]'s arg in `mxm_ys` are both refused before they run, so the
 # two are the only rules in this file the type checker defends rather than the gate.
 #
-# **WHAT THE TABLE STILL DOES NOT COVER, and it is most of the write half.** Every row is a
+# what the table still does not cover, and it is most of the write half. Every row is a
 # node signature or a shape. Nothing here builds `_pool`'s CHAIN, so nothing sees the seven
 # `shrink_to`/`reshape` calls, the `repeat`, or the permute that closes it. Nor does
 # anything here build a whole conv2d: `examples/beautiful_mnist.bend` is the consumer and its
@@ -1907,7 +1907,7 @@ def main() -> IO(Unit):
 #
 # The file's own header lists this as NOT PORTED: "`_broadcast_to` (:128) /
 # `expand` (:149) -- WALL: `broadcast_axes` (ops.py:89) needs `resolve` on a
-# `Sint` ...; portable for a CONCRETE shape and NOT DONE." THIS IS THAT HALF.
+# `Sint` ...; portable for a concrete shape and not done." this is that half.
 #
 # CPython's rule, quoted (movement.py:134-146):
 #
@@ -1922,7 +1922,7 @@ def main() -> IO(Unit):
 #     n_left + (expand_at.index(i) if i in expand_at else len(expand_at) + kept.index(i)) for i in range(len(self.shape)))
 #   return expanded.permute(perm)
 #
-# **THE MARG IS NOT THE TARGET.** It is the LEFT-ADDED dims (`new_shape[:n_left]`)
+# the marg is not the target. It is the left-added dims (`new_shape[:n_left]`)
 # and THEN the dims of the SOURCE axes that were 1 and became BIGGER
 # (`new_shape[n_left+i] for i in expand_at`). THE SQUEEZE AND THE PERMUTE are what
 # make the result's shape the target's, and a marg that is the whole target is
@@ -1961,7 +1961,7 @@ def mxw_bc_sq.go(+ss: List<&2, U32>, +dd: List<&2, U32>, +acc: List<&2, U32>) ->
 def mxw_bc_sq(+ss: List<&2, U32>, +dd: List<&2, U32>) -> List<&2, U32>:
   mxw_bc_sq.go(ss, dd, Nil{})
 
-# THE STATE OF THE PERMUTE WALK. THREE LISTS, because a `U32` is CONSUMED once
+# the state of the permute walk. three lists, because a `U32` is consumed once
 # and the walk needs each of its counters TWICE -- once for the entry and once
 # for the increment -- while a LIST is `&2` and can be read as often as the walk
 # likes. `ex` AND `kp` ARE THE COUNTERS: their LENGTHS are the slot numbers, and
@@ -2006,14 +2006,14 @@ def mxw_expand(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor:
 # `_broadcast_to` -- `self._broadcast_to(new_shape)`, i.e. `Tensor.expand`
 # (movement.py:149-162) for a CONCRETE target.
 #
-# THE SOURCE'S SHAPE IS READ OFF THE TENSOR (`mxw_dims_of`), which is the DECLARED
+# the source's shape is read off the tensor (`mxw_dims_of`), which is the declared
 # shape of a movement node and the fold's answer for anything else. The source is
 # a RESHAPE at every caller, so the read is the marg and costs no fold.
 #
 # `base` IS `len(new_shape) - len(self.shape)` AND IT IS NOT NEGATIVE at any
 # caller: `expand` onto a narrower shape is CPython's `ValueError`
 # (movement.py:131) and nothing here asks for it. IT IS KEPT AS A LIST BECAUSE A
-# `U32` IS CONSUMED ONCE AND IT IS NEEDED FOUR TIMES.
+# `U32` is consumed once and it is needed four times.
 def mxw_bcast(+t: T.Tensor, +dst: List<&2, U32>) -> T.Tensor:
   +src = mxw_dims_of(T.Tensor.ar(t), T.Tensor.u(t))
   +bs = MO.mo_range(U32.to_nat(U32.sub(U32.from_nat(mxw_len_nat(dst)), U32.from_nat(mxw_len_nat(src)))))

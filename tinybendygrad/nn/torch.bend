@@ -9,7 +9,7 @@
 #     5  except ImportError as e: raise ImportError("...") from e
 #
 # The brief asked whether this is "an upstream-backed wrapper" and demanded an
-# honest answer either way. IT IS UPSTREAM-BACKED AND THE BACKEND IS PRESENT:
+# honest answer either way. it is upstream-backed and the backend is present:
 # `extra/torch_backend/backend.py` is in this checkout, so the file is not a
 # re-export of anything and it is not a stub -- it is a GATE. MEASURED, by
 # importing it:
@@ -80,7 +80,7 @@
 # than as a flag alone, which is why no step below needs a guard of its own.
 # There is only one step after the import in this file, so the truncation is
 # measured by the COUNT and by the absence of a third entry, not by a later
-# call being suppressed. THAT IS THE HONEST LIMIT OF THE CLAIM; see
+# call being suppressed. that is the honest limit of the claim; see
 # `torch_refuse_n`.
 # ===========================================================================
 import Base
@@ -480,14 +480,14 @@ def main() -> IO(Unit):
 # | M3 | `as_posix` maps EVERY character to a slash | 6 | :3's `as_posix()`. It moves the POSIX rows too, which is the point: a fold that mapped everything would otherwise pass them. |
 # | M4 | `drop2` answers `.` for a rooted path as well | 1 | the `"/"` corner, and ONE row is the whole of it -- `Path('/torch.py').parent.parent` is `"/"` and not `"."`. A LOCALISED row, and it is the only one that is. |
 # | M5 | `drop2` takes a PREFIX (`String.drop`) instead of a SUFFIX (`String.take`) | 7 | the same trap `device.bend`'s `strip0` fell into, and the reason `torch_root_is_prefix` exists: the leading `/` is part of `s` and a prefix must be kept. |
-# | M6 | `MSG()` joins the two halves the wrong way round | 3 | **THIS WAS A ZERO FOR THREE RUNS.** `torch_msg_head`/`tail` read the two CONSTANTS, `torch_msg_nl` reads `String.length(MSG_HEAD())`, and `torch_msg_has_nl` is True either way -- so nothing printed `MSG()` itself and swapping its halves moved nothing. Fixed by adding `torch_msg_line0`/`line1`/`order`, which are `MSG().split("\n")` and are derived from the Python. The honest reading: a gate row that reads a CONSTANT is not a row about the thing that USES it. |
+# | M6 | `MSG()` joins the two halves the wrong way round | 3 | this was a zero for three runs. `torch_msg_head`/`tail` read the two constants, `torch_msg_nl` reads `String.length(MSG_HEAD())`, and `torch_msg_has_nl` is True either way -- so nothing printed `MSG()` itself and swapping its halves moved nothing. Fixed by adding `torch_msg_line0`/`line1`/`order`, which are `MSG().split("\n")` and are derived from the Python. The honest reading: a gate row that reads a constant is not a row about the thing that uses it. |
 # | M7 | the path append happens AFTER the import | 4 | :3 before :4. `torch_has_rejects_reverse` moves too, because the mutation makes the reversed pair actually present -- that row was written to pin `Tr.has` and turned out to double as an order row, exactly as in `ops_webgpu.bend`. |
 # | M8 | the raise is NOT recorded in the trace | 4 | that `raise` is an EVENT and not merely a flag. `torch_raise_arg` and `torch_raise_n_bad` move because the entry is what they read. |
 # | M9 | the raise does NOT set `refused` | 1 | `torch_refused_bad` only. The count and the order rows are unaffected, because a raise with no entry still leaves the trace at two calls -- which is why the flag and the entry are SEPARATE rows. |
 # | M10 | `ok` is ignored -- the raise always fires | 4 | the guard at :4/:5. It moves `torch_n_ok` and `torch_raise_n_ok` (the good fixture now refuses) AND `torch_has_rejects_absent` (the refusal is now in the trace where it was not). |
 # | M11 | a comment-only edit | 0 -- THE CONTROL | a table with no row that CANNOT move is a table of coincidences. |
 #
-# WHAT THIS GATE STILL DOES NOT SEE, and it is a short list:
+# what this gate still does not see, and it is a short list:
 #
 #   1. PATHLIB'S NORMALISATION. `'a//b/c.py'`, `'x/y/'` and `'a/./b/c.py'` are
 #     three measured cases where a string operation and `Path` disagree, and the

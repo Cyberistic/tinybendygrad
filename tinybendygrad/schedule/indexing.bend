@@ -11,7 +11,7 @@
 # node (`create_bufferize_and_index_srcs`) and a WHERE chain (`_stack_select`),
 # and those builders are the walls named below.
 #
-# THE ORDER OF THE FILE IS PYTHON'S ORDER, and one piece of it is load-bearing:
+# the order of the file is python's order, and one piece of it is load-bearing:
 # `ALWAYS_CONTIGUOUS` (indexing.py:24) is named at the TOP of the file because
 # `create_bufferize_and_index_srcs` (indexing.py:73 symbol=create_bufferize_and_index_srcs) and `realize_srcs`
 # (indexing.py:5) read it, and `broadcast_axes` (indexing.py:64) reads
@@ -122,10 +122,10 @@ type IxMap is Data:
 # THE RANGE TABLE'S ENTRY. Upstream's range is a `UOp` -- a `RANGE` node, or an
 # affine expression built by `_apply_reshape` -- and the PORT's arena is a VALUE
 # THAT GROWS, so a range held as a node index would force EVERY builder in the
-# range map to thread the arena. SO THE RANGE MAP HOLDS **TABLE INDICES**:
+# range map to thread the arena. SO THE RANGE MAP HOLDS TABLE INDICES:
 # INDEX 0 IS THE CONST 0 (`UOp.const(0)`, AND `r.const_like(0)`) AND EVERY
-# OTHER INDEX IS A RANGE WITH AN AXIS ID AND AN EXTENT. THE APPLY REWRITE
-# MATERIALISES, AND THE PORT's ARENA INTERNES (`ops.bend:2522`), SO ONE RANGE IS
+# other INDEX is a RANGE with an axis ID and an extent. the apply rewrite
+# materialises, and the port's arena internes (`ops.bend:2522`), so one RANGE is
 # ONE NODE EVERYWHERE.
 #
 # `kind` 0 IS A RANGE AND `kind` 1 IS THE CONST 0.
@@ -154,7 +154,7 @@ def ix_rg_r(idx: U32, ext: U32) -> IxRange: IxRange{0, idx, ext}
 
 def ix_rg_is_c0(x: IxRange) -> Bool: U32.is_eq(IxRange.kind(x), 1)
 
-# THE RANGE TABLE's READ: THE ENTRY AT AN INDEX. THE MISSING ENTRY IS THE CONST
+# the RANGE table's read: the entry at an INDEX. the missing entry is the CONST
 # 0, WHICH IS INDEX 0 AND IS ALWAYS THERE.
 def ix_tbl_at.of(m: Maybe<&2, IxRange>) -> IxRange:
   match m:
@@ -168,10 +168,10 @@ def ix_tbl_at(+tbl: List<&2, IxRange>, i: U32) -> IxRange:
 # -- the (INPUT ranges, OUTPUT ranges) pair. A PAIR IS A `Type` in Bend, so this
 # is a two-field `Data` record (bend2-constraints.md rule 1 of the general set).
 #
-# **⇒ AND THE NODE ID IS A FIELD, NOT A CONVENTION.** The revision this
+# - and the node ID is a field, not a convention. The revision this
 # replaces read the key "out of the `inp` list's own head by convention" --
-# **⇒ AND `inp` HOLDS THE **RANGE TABLE INDICES**, NOT THE NODE, so THE RANGE
-# MAP WAS UNLOOKABLE.** The key is `n`.
+# - and `inp` holds the RANGE table indices, not the node, so the RANGE
+# MAP WAS UNLOOKABLE. The key is `n`.
 type IxRngs is Data:
   IxRngs{n: U32, inp: List<&2, U32>, outp: List<&2, U32>}
 
@@ -207,9 +207,9 @@ def IxCtx.empty() -> IxCtx:
 def IxCtx.at(ridx: U32) -> IxCtx:
   IxCtx{IxMap{Nil{}}, IxSet{Nil{}}, IxRMap{Nil{}}, ridx}
 
-# A CONTEXT WITH A REALIZE MAP AND NOTHING ELSE. **⇒ UPSTREAM FILLS THE REALIZE
-# MAP BEFORE THE RANGE-MAP LOOP (`indexing.py:188`), SO THE LOOP's CONTEXT
-# STARTS WITH IT.**
+# a context with a realize map and nothing ELSE. - upstream fills the realize
+# map before the RANGE-map LOOP (`indexing.py:188`), so the LOOP's context
+# STARTS WITH IT.
 def ix_ctx_realize(rm: IxMap) -> IxCtx:
   IxCtx{rm, IxSet{Nil{}}, IxRMap{Nil{}}, 0}
 
@@ -317,7 +317,7 @@ def ix_hd.of(m: Maybe<&2, O.Op>) -> O.Op:
 
 def ix_hd(+xs: List<&2, O.Op>) -> O.Op: ix_hd.of(List.head(&2, O.Op, xs))
 
-# THE SCAN, AND THE HEAD IS TESTED ON THE WAY PAST IT. Peeling the head in the
+# the scan, and the HEAD is tested on the way past it. Peeling the head in the
 # driver and never comparing it was the first version, and it answered False for
 # every set member except the FIRST: `ac_after=True` beside `ac_alloc=False` in a
 # nine-element list. Eight of nine rows FALSE and the gate was not red, because
@@ -546,19 +546,19 @@ def ix_ds_n.of(zero: Bool, one: Bool, +ss: List<&2, U32>) -> U32:
   Bool.pick(U32, zero, 0, ix_len(ix_ds_take(one, ss)))
 
 # THE ANSWER, as a LIST -- upstream's `data_srcs` (`indexing.py:68-71`) IS
-# THREE CASES: **ZERO** srcs for `{PARAM, BUFFER, ALLOC, RANGE, SPECIAL}`,
-# **`src[:1]`** for the movements, and **ALL** of them otherwise.
+# THREE CASES: ZERO srcs for `{PARAM, BUFFER, ALLOC, RANGE, SPECIAL}`,
+# `src[:1]` for the movements, and ALL of them otherwise.
 #
-# **⇒ AND THE SAME DECISION IS ALREADY WRITTEN TWICE, AND THE TWO SPELLINGS
-# DISAGREEED: `ix_ds_n.of` READS `ix_ds_zero` AS "THIS OP HAS ZERO DATA SRCS"
-# (SO THE ANSWER IS 0), AND `rangify.bend`'s `rr_dsrcs` READ THE SAME PREDICATE
+# - and the same decision is already written twice, and the two spellings
+# disagreeed: `ix_ds_n.of` reads `ix_ds_zero` as "this op has zero data srcs"
+# (so the answer is 0), and `rangify.bend`'s `rr_dsrcs` read the same predicate
 # AS "TAKE ONE" -- `ix_ds_take(ix_ds_zero(op), ss)` -- SO A `PARAM` GOT ITS FIRST
-# SRC BACK AS A DATA SRC, AND THE RANGE MAP GREW AN ENTRY FOR EVERY `CONST` THAT
-# FEEDS A `PARAM`.** A DOCUMENT RESTATING A DOCUMENT IS ONE WITNESS, NOT TWO,
+# SRC back as a data SRC, and the RANGE map grew an entry for every `CONST` that
+# feeds a `PARAM`. a document restating a document is one witness, not two,
 # AND THE TWO DISAGREEED.
 #
-# **⇒ AND THIS IS THE LIST FORM OF THE SAME THREE CASES, BESIDE THE LENGTH
-# FORM, SO THE DECISION IS MADE ONCE.**
+# - and this is the list form of the same three cases, beside the length
+# FORM, SO THE DECISION IS MADE ONCE.
 def ix_ds_list.of(zero: Bool, one: Bool, +ss: List<&2, U32>) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, zero, Nil{}, ix_ds_take(one, ss))
 
@@ -881,9 +881,9 @@ def ix_nr_pick(one: Bool, at: O.AxisType, +ar: O.Arena, s: U32, ridx: U32) -> O.
   match one:
     case True{}: O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})
     case False{}:
-      # **⇒ THE REVISION THIS REPLACES PUT THE **VALUE** `s` WHERE THE RANGE's
-      # `src0` -- A NODE INDEX -- BELONGS. THE EXTENT IS A CONST NODE, AND
-      # UPSTREAM's `UOp.range` IS `src=(sint_to_uop(end, dtype),)`.**
+      # - the revision this replaces put the value `s` WHERE the RANGE's
+      # `src0` -- a node INDEX -- belongs. the extent is a CONST node, and
+      # UPSTREAM's `UOp.range` IS `src=(sint_to_uop(end, dtype),)`.
       +c = O.UOp.const(ar, O.CInt{H.i64_of_i32(s)})
       O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [ridx], at)
 
@@ -897,32 +897,32 @@ def ix_new_range(+ctx: IxCtx, +ar: O.Arena, +s: U32, at: O.AxisType) -> O.Found:
 
 def ix_nr_next(+ridx: U32, one: Bool) -> U32: Bool.pick(U32, one, ridx, U32.add(ridx, 1))
 
-# THE ABSTRACT `new_range` -- `indexing.py:18-21`, THE SAME DECISION WITHOUT
+# the abstract `new_range` -- `indexing.py:18-21`, the same decision without
 # THE NODE:
 #
 #   def new_range(self, s:sint) -> UOp:
 #     if isinstance(s, UOp) and s.op is Ops.RANGE: return s
 #     return UOp.range(s, next(self.range_idx)) if resolve(s!=1) else UOp.const(0)
 #
-# **⇒ A CONST 0 WHEN THE EXTENT IS 1 AND A RANGE (AXIS ID, EXTENT) OTHERWISE.
-# THE COUNTER ADVANCES ONLY IN THE SECOND CASE, AND `ix_nr_next` IS THAT
-# ARITHMETIC -- SO THE CALLER THREADS `ridx` AND GETS THE NEXT ONE BACK.**
+# - a CONST 0 when the extent is 1 and a RANGE (axis ID, extent) otherwise.
+# the counter advances only in the second case, and `ix_nr_next` is that
+# arithmetic -- so the caller threads `ridx` and gets the next one back.
 def ix_rg_new(one: Bool, ridx: U32, ext: U32) -> IxRange:
   Bool.pick(IxRange, one, ix_rg_c0(), ix_rg_r(ridx, ext))
 
 # TABLE INDEX 0 IS THE CONST 0. IT IS THE ONLY CONST 0, SO `const_like(0)` AND
-# `new_range(1)` ARE ONE TABLE INDEX AND NOT TWO.
+# `new_range(1)` are one table INDEX and not two.
 def ix_rg_c0_idx() -> U32: 0
 
-# THE MATERIALISER: a TABLE ENTRY BECOMES A NODE. IT IS `ix_nr_pick` -- THE SAME
-# `new_range` DECISION WITH THE NODE -- SO THERE IS ONE `new_range` AND NOT TWO.
-# **⇒ THE PORT's ARENA INTERNES (`uop/ops.bend:2571 symbol=UOp.make.intern`), SO ONE RANGE IS ONE NODE
-# EVERYWHERE, WHICH IS WHAT MAKES THE TABLE SOUND.**
+# the materialiser: a table entry becomes a node. it is `ix_nr_pick` -- the same
+# `new_range` decision with the node -- so there is one `new_range` and not two.
+# - the port's arena internes (`uop/ops.bend:2571 symbol=UOp.make.intern`), so one RANGE is one node
+# everywhere, which is what makes the table sound.
 def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
   ix_nr_pick(ix_rg_is_c0(r), at, ar, IxRange.ext(r), IxRange.idx(r))
 
 # ===========================================================================
-# THE REALIZE-MAP RULE BODIES -- indexing.py:28-43. All four MUTATE the Python
+# the realize-map rule bodies -- indexing.py:28-43. All four mutate the Python
 # context, and all four are therefore DECISIONS here: each answers the LIST of
 # keys it would insert, and `ix_m*` is the def a caller folds into `IxCtx.rmap`.
 #
@@ -1079,12 +1079,12 @@ def ix_br_in_baxes(+baxes: List<&2, U32>, j: U32) -> Bool:
   ix_br_in_baxes.go(baxes, j, False{})
 
 def ix_br_one(bcast: Bool, +nleft: U32, r: U32, +acc: List<&2, U32>, j: U32) -> List<&2, U32>:
-  # `r.const_like(0) if j in baxes else r`, FILTERED BY `j >= nleft` -- **=> AND
-  # `j >= nleft` IS NOT `j > nleft`: THE REVISION THIS REPLACES DROPPED THE RANGE
-  # AT `j == nleft`, WHICH UPSTREAM KEEPS.**
-  # **⇒ THE REVISION THIS REPLACES KEPT `r` IFF `j in baxes AND j > nleft` --
-  # WHICH KEEPS THE RANGE WHERE UPSTREAM REPLACES IT WITH A CONST 0, AND DROPS
-  # IT WHERE UPSTREAM KEEPS IT. IT HAD NO ROW: `main()` READS NONE OF IT.**
+  # `r.const_like(0) if j in baxes else r`, FILTERED BY `j >= nleft` -- => AND
+  # `j >= nleft` is not `j > nleft`: the revision this replaces dropped the RANGE
+  # AT `j == nleft`, WHICH UPSTREAM KEEPS.
+  # - the revision this replaces kept `r` iff `j in baxes AND j > nleft` --
+  # which keeps the RANGE WHERE upstream replaces it with a CONST 0, and drops
+  # IT WHERE UPSTREAM KEEPS IT. IT HAD NO ROW: `main()` READS NONE OF IT.
   Bool.pick(List<&2, U32>, Bool.not(U32.is_lt(j, nleft)),
             Bool.pick(List<&2, U32>, bcast,
                       List.append(&2, U32, acc, [ix_rg_c0_idx()]),
@@ -1205,11 +1205,11 @@ def ix_rmap_del(+rm: IxMap, k: U32) -> IxMap:
 
 # THE REALIZE MAP's SET: `ctx.realize_map[x] = list(range(len(x.shape)))`
 # (indexing.py:231) AND `ctx.realize_map[x] = _realize_axis` (indexing.py:261
-# AND :268). **⇒ IT IS A DELETE AND AN APPEND, BECAUSE THE MAP IS A LIST.**
+# and :268). - it is a delete and an append, because the map is a list.
 def ix_rmap_set(+rm: IxMap, k: U32, e: IxReal) -> IxMap:
   IxMap{List.append(&2, IxReal, IxMap.es(ix_rmap_del(rm, k)), [e])}
 
-# THE REALIZE MAP's READ: THE ENTRY, SO THE AXES ARE READABLE.
+# the realize map's read: the entry, so the axes are readable.
 def ix_rmap_get.go(+es: List<&2, IxReal>, +k: U32, acc: Maybe<&2, IxReal>) -> Maybe<&2, IxReal>:
   match es:
     case Nil{}: acc
@@ -1246,8 +1246,8 @@ def ix_rngm_get(+rm: IxRMap, k: U32) -> Maybe<&2, IxRngs>:
   ix_rngm_get.go(IxRMap.es(rm), k, None{})
 
 # THE RANGE MAP's MEMBERSHIP. `x in rctx.range_map` (`indexing.py:79`, `:212`,
-# `:223`) IS THE LOOKUP, AND THE LOOKUP IS THE ENTRY -- SO THE MEMBERSHIP IS
-# THE LOOKUP AND NOT A SECOND SCAN.
+# `:223`) is the lookup, and the lookup is the entry -- so the membership is
+# the lookup and not a second scan.
 def ix_rngm_has.of(m: Maybe<&2, IxRngs>) -> Bool:
   match m:
     case Some{e}: True{}
@@ -1604,7 +1604,7 @@ def ix_ids(+ar: O.Arena, i: U32) -> List<&2, U32>:
 # ===========================================================================
 # 4b. `apply_movement_op`'s SIX ARMS. THE UNIFORM WALK, and it is one walker
 #     because SHRINK, FLIP and PAD are all `keep the range, or build a new node`
-#     PER DIM. Only the FLAGS differ -- SHRINK hands `off`, FLIP hands `f`, PAD
+#     per dim. Only the flags differ -- shrink hands `off`, flip hands `f`, pad
 #     hands `not (sz == sh and off == 0)` -- so each arm keeps its own decision
 #     def and only its flags come here. A kept range renders `R<k>` and `LOOP`; a
 #     rebuilt one renders `new` and `?`, because the rebuilt node is not a RANGE
@@ -2104,7 +2104,7 @@ def main() -> IO(Unit):
 # this port, and it is why the row is not emitted at all: a constant is not a
 # gate.
 #
-# THE ROWS THIS PORT CANNOT PRINT, and the one substrate fact behind them:
+# the rows this port cannot print, and the one substrate fact behind them:
 #
 #   * `<tag>_<k>_{slen,rlen,anylen,name,nalts,src}` -- 55 rows. These are `UPat`
 #     fields (`strict_length`, `required_len`, `name`, the src permutation tuple

@@ -1,9 +1,9 @@
 # tinybendygrad/nn/mnist_cnn.bend -- THE MNIST MODEL, PORTED.
 #
-# **GENERATED FILE. DO NOT HAND-EDIT.** `.agents/slop/mnist/gen_mnist_cnn.py`
+# GENERATED FILE. DO NOT HAND-EDIT. `.agents/slop/mnist/gen_mnist_cnn.py`
 # writes it, from `.agents/slop/mnist/model.py`'s constants, and the next run
 # overwrites it. The reason it is generated is the brief's rule that the
-# EXPECTATIONS ARE TRANSCRIBED BY SCRIPT AND NEVER TYPED: every `want=` below
+# expectations are transcribed by script and never typed: every `want=` below
 # is computed, not written.
 #
 # WHAT THIS FILE IS. The port's own copy of the MNIST model that the end-to-end
@@ -22,22 +22,22 @@
 #     flat   flatten(1)                          -> (1, 392)
 #     fc     Linear(392, 10)
 #
-# WHAT IS PORTED HERE, AND WHAT IS NOT, AND WHY. THE SHAPE IS CLOSED FOR EVERY
+# what is ported here, and what is not, and why. the shape is closed for every
 # LAYER: the convs' shapes come from the port's OWN `nn_conv2d`
 # (`tinybendygrad/nn/layers.bend`), the pool's from the port's OWN
 # `mx_pool_shape` (`tinybendygrad/mixin/movement.bend:905`), and the linear's
-# from the port's OWN `nn_linear`. THE NODE IS CLOSED FOR THE CONVS AND THE
-# LINEAR AND NOT FOR THE POOL: `examples/beautiful_mnist.bend`'s header names
+# from the port's own `nn_linear`. the node is closed for the convs and the
+# linear and not for the pool: `examples/beautiful_mnist.bend`'s header names
 # the reason -- `max_pool2d`'s `repeat`/`shrink_to`/`reshape`/`permute` chain
 # (`tinygrad/mixin/movement.py:608-616`) is not built by the substrate, so the
-# pool is a SHAPE here and not a GRAPH. **=> THE PORT CAN BUILD THIS MODEL'S
-# GRAPH APART FROM THE POOLING NODE, AND IT SAYS SO INSTEAD OF FAKING THE
-# POOL.**
+# pool is a shape here and not a graph. => the port can build this model's
+# graph apart from the pooling node, and it says so instead of faking the
+# POOL.
 #
-# THE FOUR WALLS OF `tinybendygrad/nn/datasets.bend`, RE-EXAMINED FOR THIS MODEL:
+# the four walls of `tinybendygrad/nn/datasets.bend`, re-examined for this model:
 #
-#   W1 THE HTTP GET -- `Tensor.from_url(url, gunzip=True)`. **STILL A WALL, AND
-#      IT IS STILL THE RIGHT WALL TO ROUTE AROUND**: the bytes are prepared on
+#   W1 the http get -- `Tensor.from_url(url, gunzip=True)`. still a wall, and
+#      it is still the right wall to route around: the bytes are prepared on
 #      the HOST (`.agents/slop/mnist/prepare_npy.py`, from the SAME four
 #      `storage.googleapis.com/cvdf-datasets/mnist` files upstream's
 #      `base_url` names (tinygrad/nn/datasets.py:5)); upstream writes them as
@@ -47,19 +47,19 @@
 #      arithmetic and not a socket.
 #   W2 THE TENSORS THEMSELVES -- "`.reshape`, `.astype` AND `np.frombuffer`
 #      HAVE NO COUNTERPART HERE: `Tensor` IN `tensor.bend` IS A UOP SLOT IN AN
-#      ARENA, NOT A BUFFER". **THIS WALL IS THE ONE THE END-TO-END RUN GOES
-#      THROUGH, AND IT IS NOT A WALL FOR THE EXECUTOR.** `Tensor` in
+#      arena, not a BUFFER". this wall is the one the end-to-end run goes
+#      through, and it is not a wall for the executor. `Tensor` in
 #      `tensor.bend` is a graph node; the BEND DEVICE's tensors are buffers in
 #      the host allocator. The run therefore drives the model through upstream
 #      tinygrad's OWN `Tensor` on the port's OWN device -- the device whose
 #      kernels are the port's compiled executor -- and reads the result back
-#      through `BendProgram.__call__`'s `PACKET.out` copy. **=> THE DEVICE READ
-#      IS NOT A NEW SUBSYSTEM: IT IS THE EXECUTOR's OUTPUT COMING BACK.**
-#   W3 `tarfile`/`pickle` FOR CIFAR -- **NOT REACHED BY THIS MODEL.** MNIST has
+#      through `BendProgram.__call__`'s `PACKET.out` copy. => THE DEVICE READ
+#      is not a new subsystem: it is the executor's output coming back.
+#   W3 `tarfile`/`pickle` for cifar -- not reached by this model. mnist has
 #      no tar and no pickle; the label file is a flat `uint8` vector and the
 #      image file is a `uint8` matrix. The wall is untouched, and it is named
 #      here so that "not reached" is a measurement and not an omission.
-#   W4 `os.path.isfile` -- **THE PORT's OWN `.npy` PATH DOES NOT CALL IT**, and
+#   W4 `os.path.isfile` -- the port's own `.npy` path does not call it, and
 #      that is a DELIBERATE OMISSION AND NOT AN ACCIDENT: the `.npy` header's
 #      own length field IS the presence check, because a truncated `.npy` fails
 #      to decode, and a file that is not there fails to open. The port's path
@@ -67,7 +67,7 @@
 #      asked when it opened it.
 #
 # THE ROWS. `mn_row.line(nm, got, want)` prints `nm got=<...> want=<...>` -- the
-# spelling `tinybendygrad/nn/layers.bend` uses. **A PRINTED ROW IS A LABEL**:
+# spelling `tinybendygrad/nn/layers.bend` uses. A PRINTED ROW IS A LABEL:
 # `examples/beautiful_mnist.bend`'s own header records that a one-line
 # regression in a copy leaves `bend --check-only` GREEN, because the port's
 # compilation IR is outside the law system by design. So the COMPARER is
@@ -121,7 +121,7 @@ def mn_in() -> MnShape: MnShape{1, 1, MN_IN_H(), MN_IN_W()}
 # tensor is built over needs its ELEMENT count.
 def mn_prod(xs: List<&2, U32>) -> U32: H.prod_u32(xs)
 
-# THE TENSOR FIXTURE: a BUFFER plus a RESHAPE. A BUFFER ALONE IS UNUSABLE --
+# the tensor fixture: a BUFFER plus a reshape. a BUFFER alone is unusable --
 # `fold.shape` does not answer a BUFFER, and every identity test in the layers
 # reads its source's shape. This is `tinybendygrad/nn/layers.bend`'s own
 # `nn_row.t`, and it is copied rather than re-derived.

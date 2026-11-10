@@ -1,7 +1,7 @@
 # ptx.bend -- tinygrad/renderer/ptx.py: `render`'s NAMING WALK, ptx.py:171-229
 #
 # ===========================================================================
-# WHAT IS HERE, WHAT IS NOT, AND WHY NEITHER IS A SECOND COPY
+# what is here, what is not, and why neither is a second COPY
 # ===========================================================================
 # `renderer/tc_ptx.bend` already ports ptx.py's EMITTERS -- `render_val`, the
 # twenty-one `asm_for_op` entries, `supports_half`/`doesnt_support_half`,
@@ -41,7 +41,7 @@
 #   ./bin/bend tinybendygrad/renderer/ptx.bend -o /tmp/p3 && /tmp/p3 > /tmp/bdn.rows
 #   diff /tmp/bd.rows  /tmp/s3py.rows
 #   diff /tmp/bdn.rows /tmp/s3py.rows
-# **RETARGETED 2026-10-16.** These four lines read `.agents/slop/ptx-s3-oracle.py` and
+# RETARGETED 2026-10-16. These four lines read `.agents/slop/ptx-s3-oracle.py` and
 # `.agents/slop/ptxown/{s3py,bd,bdn}.txt`; the oracle was deleted by the sweep of 2026-10-05
 # (blob e853efc4b, 13071 B) and `ptxown/` is gone with it. The oracle that replaced it is
 # `gates/ptx_render_census-oracle.py`, MEASURED rc=0 at 593 rows from `gates/`. The path
@@ -50,7 +50,7 @@
 # exits 1 on this repo even when the file is fine (14 unfilled `dtype.bend`
 # laws). Read its FIRST LINE.
 #
-# THE ORACLE STUBS EXACTLY ONE THING AND SAYS WHY. `render` finishes the whole
+# the oracle stubs exactly one thing and says why. `render` finishes the whole
 # register map BEFORE it first calls `string_rewrite.rewrite(u, ctx=self)`
 # (ptx.py:223), and the rewrite answers kernel LINES rather than register names,
 # so returning `[]` leaves this file's entire subject intact and removes only
@@ -199,7 +199,7 @@ def Wk.idx_ok(w: Wk) -> Bool:
 # from the TAIL. `c`'s order is therefore FIRST-USE order, which is `c.items()`
 # and therefore the `.reg` order, and no sort reproduces it.
 # ===========================================================================
-# A RECORD PATTERN BINDS, IT DOES NOT TEST. MEASURED: `case Cnt{key, ty, n}`
+# a record pattern binds, it does not test. measured: `case Cnt{key, ty, n}`
 # matches every entry, so these two took their FIRST arm for every key -- `c`
 # grew one entry per ALLOCATION (seven for three keys) and every register read
 # the HEAD's counter, printing `%alu_f32_1` seven times. `cnt.is` is the
@@ -251,7 +251,7 @@ def ssa_many.ago(k: Nat, +n: U32, +c: List<&2, Cnt>, +key: String) -> Ssa2:
       +rest = ssa_many.ago(fm, U32.add(n, 1), c, key)
       Ssa2{Ssa2.c(rest), List.append(&2, String, [ssa_name(key, n)], Ssa2.ps(rest))}
 
-# THE BUMP IS `k`, NOT ONE. MEASURED: ptx.py:199 and 209 call `ssa` ONCE PER
+# the bump is `k`, not one. measured: ptx.py:199 and 209 call `ssa` once per
 # ELEMENT, and `c[prefix] += 1` runs inside `ssa`, so a four-element REG buffer
 # leaves the counter at FOUR and `.reg .f32 %reg_f32_<4>;` -- bumping by one
 # printed `<1>`, and the SECOND vector LOAD of `f10_loads` restarted at 1 instead
@@ -366,7 +366,7 @@ def pf.of(+op: O.Op, +dt: S.Dt, +addr: S.Addr, +nmn: U32) -> Pf:
 # ===========================================================================
 def is_any3(+op: O.Op, os: List<&2, O.Op>) -> Bool: List.contains(~O.Op, O.eq_op, os, op)
 
-# THE TAGS, AND `wk1.go`'s CASES ARE THESE NUMBERS. The two had drifted: A_ALLOC
+# the tags, and `wk1.go`'s cases are these numbers. The two had drifted: a_alloc
 # was 8 and `wk1.go` had no `case 8`, so every ordinary uop fell through `case _:`
 # and the walk emitted NOTHING -- a green compile, 76 rows, every one of them
 # empty. A_REG and A_ALLOC are ONE tag because `pf.of` already folded ptx.py:198
@@ -402,7 +402,7 @@ def arm.of(+op: O.Op, +addr: S.Addr, idx_ok: Bool) -> U32:
 # in-range index (MEASURED -- the `List<&2, Bool>` note in agent-core.md is
 # about `Bool`, not about records).
 # ===========================================================================
-# THE "THIS STEP ALLOCATED NOTHING" MARKER: an `Rg` with no parts. It is what
+# the "this step allocated nothing" marker: an `Rg` with no parts. It is what
 # keeps `Wal.r` and the step list the same length, and `r_go` skips it.
 def none_rg() -> Rg: Rg{False{}, Nil{}}
 def has_rg(r: Rg) -> Bool: Bool.not(List.is_empty(&2, String, Rg.p(r)))
@@ -587,7 +587,7 @@ def Wt.want(+w: Wt) -> String:
   match w:
     case Wt{nm, want}: want
 
-# THE COMPUTED SIDE, ONE ENTRY PER ROW -- a LIST, not one concatenated string,
+# the computed side, one entry per row -- a list, not one concatenated string,
 # because `zip.of` reads the computed value by index and a string would be
 # indexed by CHARACTER.
 #
@@ -626,7 +626,7 @@ def gots.fix(+w: Wal) -> List<&2, String>:
 def gots.happy(+ss: List<&2, Wk>, +w: Wal) -> List<&2, String>:
   List.concat(&2, String, [r_go(ss, Wal.r(w), 0, Nil{}), gots.fix(w)])
 
-# THE FIXTURE'S OWN ROW COUNT, appended as the LAST row. The per-line diff cannot
+# the fixture's own row count, appended as the last row. The per-line diff cannot
 # see a PERMUTATION -- the same rows in the wrong order -- and this is the one row
 # a permutation would have to break to stay invisible.
 def gots.seal(+ls: List<&2, String>, n: U32) -> List<&2, String>:
@@ -650,14 +650,14 @@ def zip.over(+gs: List<&2, String>, +nm: String, +i: U32) -> String:
     case g <> +r : String.concat([T.r(String.concat([nm, ".EXTRA[", U32.show(i), "]"]), g, "<no row>"),
                                  zip.over(r, nm, U32.add(i, 1))])
 
-# THE WANTS DRIVE AND THE COMPUTED VALUES ARE READ BY INDEX. A `Wt` with no
+# the wants drive and the computed values are read by INDEX. a `Wt` with no
 # computed value prints `<none>` and the walk CONTINUES; a computed value with no
 # `Wt` prints as `.EXTRA[i]`. A gate that silently drops its tail is a gate that
 # agrees with a port that stops early, and `reg.count` is the one row that makes
 # either visible in a single place. The lists are at most thirty rows, so the
 # quadratic `List.get` is the price of not needing a MUTUAL recursion -- which
 # Bend refuses, and which is why `zip.of` walks ONE list.
-# THE COMPUTED VALUES THE WANTS NEVER REACHED. `zip.of` reads `gs` BY INDEX, so
+# the computed values the wants never reached. `zip.of` reads `gs` by INDEX, so
 # the leftovers are `dropn(gs, i)` -- dropping them is what stops every computed
 # value being reported twice, once matched and once as EXTRA.
 def dropn(+xs: List<&2, String>, +n: U32) -> List<&2, String>:
@@ -677,10 +677,10 @@ def r_fix(+nm: String, +ss: List<&2, Wk>, +ws: List<&2, Wt>) -> String:
 
 # ==== BEGIN GENERATED FIXTURES
 # GENERATOR gates/ptx_render_census-gen.py --port
-# THE 25 FIXTURE GRAPHS AND EVERY `want` BELOW ARE CPython's OWN ANSWERS,
-# READ OFF THE GRAPH CPython BUILT, AND THIS FILE IS THEIR GENERATOR.  A
-# REGION WHOSE GENERATOR IS GONE IS A FROZEN COPY; THIS ONE NAMES ITS
-# GENERATOR, SO A CENSUS CAN RUN IT AND COMPARE.
+# the 25 fixture graphs and every `want` below are CPython's own answers,
+# read off the graph CPython built, and this file is their generator.  a
+# region whose generator is gone is a frozen COPY; this one names its
+# generator, so a census can run it and compare.
 def r_fns() -> String: String.concat([T.rd(String.concat(["to_function_name ", "'test'"]), fn_name("test")), T.rd(String.concat(["to_function_name ", "'my kernel'"]), fn_name("my kernel")), T.rd(String.concat(["to_function_name ", "'MyKernel'"]), fn_name("MyKernel")), T.rd(String.concat(["to_function_name ", "'a-b'"]), fn_name("a-b")), T.rd(String.concat(["to_function_name ", "'x$y.z'"]), fn_name("x$y.z")), T.rd(String.concat(["to_function_name ", "'  lead'"]), fn_name("  lead")), T.rd(String.concat(["to_function_name ", "'trail  '"]), fn_name("trail  ")), T.rd(String.concat(["to_function_name ", "'a b c'"]), fn_name("a b c")), T.rd(String.concat(["to_function_name ", "'a~b'"]), fn_name("a~b")), T.rd(String.concat(["to_function_name ", "'a/b'"]), fn_name("a/b")), T.rd(String.concat(["to_function_name ", "'a:b'"]), fn_name("a:b")), T.rd(String.concat(["to_function_name ", "'a0b'"]), fn_name("a0b")), T.rd(String.concat(["to_function_name ", "'a_b'"]), fn_name("a_b"))])
 
 def f1_alu_ss() -> List<&2, Wk>:
@@ -1274,13 +1274,13 @@ def main() -> IO(Unit):
 # resolve it. Full table with every row count: `.agents/slop/notes/bend2-constraints.md`,
 # search `MUT-PTX-S3`.
 #   .venv/bin/python gates/ptx_render_census-mutate.py > /tmp/ptxmut.rows
-# **RETARGETED 2026-10-16.** This read `.agents/slop/ptx-s3-mutate.py`, deleted by the sweep of
+# RETARGETED 2026-10-16. This read `.agents/slop/ptx-s3-mutate.py`, deleted by the sweep of
 # 2026-10-05 (blob e853efc4b, 10195 B). The harness that replaced it is
 # `gates/ptx_render_census-mutate.py`, beside its own gate and its own `.bend` driver.
 #
 # WHAT THE TABLE SAYS
 # ---------------------------------------------------------------------------
-# M29 IS A THEOREM FOR THIS FILE, NOT A FIXTURE GAP. Dropping CONST from the skip
+# M29 is a theorem for this file, not a fixture gap. Dropping CONST from the skip
 # list routes it to `A_ALLOC`, and `pf.of` has no CONST arm -- so it takes
 # `no_pf()` and `wk_alloc.go` writes the SAME `none_rg()` the skip arm writes. A
 # CONST allocates nothing under every arm, so no graph can separate the two. It
@@ -1288,7 +1288,7 @@ def main() -> IO(Unit):
 # (ptx.py:83), which this file does not port. The honest record: `arm.of`'s skip
 # LIST is not gated by this file, and its CONST member is dead here.
 #
-# M12, M13 AND M14 WERE BLINDS UNTIL THREE FIXTURES EXISTED -- the clearest
+# M12, M13 and M14 were blinds until three fixtures existed -- the clearest
 # argument in this file for the discipline. There was no fixture with a LOAD of
 # `max_numel == 1` and none with an `Ops.RANGE` AT ALL. `f23_load1` is the fix for
 # M12 and is the ONLY thing separating ptx.py:209's `if max_numel > 1` from
@@ -1301,9 +1301,9 @@ def main() -> IO(Unit):
 # match the source, so the "mutation" was a no-op -- a mutation that does not
 # apply is a zero that means nothing.
 #
-# M03 MOVES ONLY TWO ROWS AND THAT IS THE POINT. `c[prefix] += 1` runs inside
+# M03 moves only two rows and that is the point. `c[prefix] += 1` runs inside
 # `ssa`, once per ELEMENT, so a four-element REG buffer leaves the counter at four.
-# M15 AND M16 ARE BOTH ORDER BUGS IN OPPOSITE DIRECTIONS: ptx.py:228 PREPENDS each
+# M15 and M16 are both order bugs in opposite directions: ptx.py:228 prepends each
 # SPECIAL's `.reg .u32` line and `render_kernel` puts the declarations BEFORE the
 # body, so the block is `decls ++ kern` and the specials come out in REVERSE
 # toposort order (`f10_loads` prints `%g2, %g1, %g0`). A gate that compared the
@@ -1317,7 +1317,7 @@ def main() -> IO(Unit):
 # added `a~b` (126, one above 122), `a/b` (47, one below 48), `a:b` (58, one below
 # 65) because no `to_function_name` input sat just OUTSIDE a range; round 2 added
 # `a0b` and `a_b` because no input contained a DIGIT (`48` is the digit range's LOW
-# bound) or an UNDERSCORE (`95` is `_`). THE TWO THAT REMAIN ARE PROVEN INERT, not
+# bound) or an underscore (`95` is `_`). the two that remain are proven inert, not
 # unexplained: `A_ALLOC`'s value 7 is absorbed by `case _:`, so `wk1.go`'s
 # catch-all makes the LAST tag unobservable -- the tag's MEANING is pinned instead
 # by M28 (14 rows), which reaches it through `arm.of` rather than through its
@@ -1326,7 +1326,7 @@ def main() -> IO(Unit):
 # either. "PROVEN INERT" is the difference between a blind list and an excuse:
 # `case _` and a single consumer are readable facts about the code.
 #
-# AND THE SWEEP ITSELF HAD THREE BUGS BEFORE IT MEASURED ANYTHING, all three worth
+# and the sweep itself had three bugs before it measured anything, all three worth
 # recording because each reported a confident 0: (1) it rewrote byte 0 of the file
 # for every site (the offset was into the LINE, not into the source), so all 119
 # sites -- every one of them a comment -- reported 0; (2) after the offset fix it

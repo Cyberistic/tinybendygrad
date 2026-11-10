@@ -1,6 +1,6 @@
 # tinybendygrad/llm/cli.bend -- port of tinygrad/llm/cli.py
 #
-# **PARTIAL, AND ONE PART IS NOT PORTABLE AT ALL -- WHICH IS THE FINDING.**
+# partial, and one part is not portable at all -- which is the finding.
 #
 # `llm/cli.py` is 223 lines in three pieces:
 #
@@ -16,7 +16,7 @@
 #   3. `main()` + the `models` URL table -- NOT ported: it needs `model.bend`'s `Transformer` (itself a
 #      TODO) and a network fetch.
 #
-# ⇒ AND `end_turn`'S ONE DEPENDENCY IS EXPRESSED AS A PARAMETER, NOT RECONSTRUCTED: upstream writes
+# - and `end_turn`'s one dependency is expressed as a parameter, not reconstructed: upstream writes
 # `self.tok.decode([self.tok.eos_id])`, and `decode` is a concatenation of the token's BYTES followed by
 # a UTF-8 decode. Taking the already-decoded end-of-turn STRING as an argument keeps the port honest --
 # it does not pretend to know the vocabulary -- and is the same seam `ops_dsp.bend` uses for its device
@@ -26,7 +26,7 @@ import Base
 import ./gguf.bend as G
 
 # ===========================================================================
-# cli.py:13-16 -- THE PRESET IS A BEHAVIOUR CLASS, NOT A NAME. Upstream normalises `qwen35`/`qwen35moe`
+# cli.py:13-16 -- the preset is a behaviour class, not a name. Upstream normalises `qwen35`/`qwen35moe`
 # to `qwen2` before using it, and `llama-v3`/`llama-bpe`/`gpt-4o` fall through `role`/`end_turn`'s
 # default branch. So the code below identifies WHICH BRANCH a preset takes, which is all this file reads.
 # `Maybe` is the honest type for `Preset.of`: upstream raises `ValueError` on an unknown preset.
@@ -83,7 +83,7 @@ def Template.end_turn(+preset: U32, +eos: String) -> String:
 # ===========================================================================
 # cli.py:77,82 -- `decode` AND `is_end`, THE CHEAP HALF OF `SimpleTokenizer`.
 #
-# **`decode` IS THE UTF-8 DECODE OF THE TOKENS' BYTES, AND THE PORT ALREADY HAS THAT DECODER.**
+# `decode` is the utf-8 decode of the tokens' bytes, and the port already has that decoder.
 # `llm/gguf.bend:396`'s `utf8.of` is imported and reused rather than re-written, so the two ports cannot
 # disagree about a code point. THE SEAM, STATED: upstream decodes with `errors='replace'`, and `utf8.of`
 # does NOT emit U+FFFD for an invalid sequence -- it decodes what it can. A vocabulary whose bytes are
@@ -146,14 +146,14 @@ def Tokenizer.is_end(+ends: List<&2, U32>, +tid: U32) -> Bool:
     case h <> t: Bool.or(U32.is_eq(h, tid), Tokenizer.is_end(t, tid))
 
 # ===========================================================================
-# cli.py:126-141 -- `render`. **THE MAP-THEN-FOLD SHAPE, BECAUSE THE DIRECT SHAPE IS NOT EXPRESSIBLE.**
+# cli.py:126-141 -- `render`. the map-then-FOLD shape, because the direct shape is not expressible.
 #
 # Upstream threads a `Maybe` (`role()` raises for tekken) through a `for` over messages. Here a loop whose
 # continuation consumes a `Maybe` cannot be loop + helper: a def may not use a later def, and two defs may
 # not call each other (PARITY 18). So PASS 1 resolves every message into a record of ALREADY-RESOLVED
 # `Maybe`s, and PASS 2 is ONE recursive fold over that list with a single chain of matches per step.
 #
-# THE CONTENT VARIANTS ARE UPSTREAM'S FOUR CASES, INCLUDING THE TWO THAT RAISE: a non-text part and a
+# the content variants are upstream's four cases, including the two that raise: a non-text part and a
 # content that is neither a string, a list nor None. Upstream raises `RuntimeError`; the port answers
 # `None`, which is the same choice `Template.role` makes for tekken's `ValueError`.
 # ===========================================================================
@@ -166,14 +166,14 @@ type Content is Data:
 type Msg is Data:
   Msg{role: String, content: Content}
 
-#: **ONE `ok` BIT, NOT TWO `Maybe`s, AND THAT IS A LANGUAGE CONSTRAINT RATHER THAN A SIMPLIFICATION.**
+#: one `ok` bit, not two `Maybe`s, and that is a language constraint rather than a simplification.
 #: MEASURED: a record field typed `Maybe<&1, String>` is REFUSED -- "expected : Data, observed : Type" --
 #: the same message `Maybe<&1, F32>` gave in `SSMConfig` (PARITY 7). Either failure makes the whole render
 #: fail, so one bit carries it and the two strings are "" when `ok` is False.
 type RMsg is Data:
   RMsg{ok: Bool, role: String, content: String}
 
-# **`Maybe.default` CANNOT TAKE A `String` PAYLOAD** -- MEASURED: `Maybe.default(&1, String, ...)` answers
+# `Maybe.default` CANNOT TAKE A `String` PAYLOAD -- MEASURED: `Maybe.default(&1, String, ...)` answers
 # "expected : Data, observed : Type", because `String` is a `Type`. (`Maybe.default(&2, String, ...)` IS
 # used in `helpers.bend:3024`, so the constraint is on the depth.) Matching a PARAMETER has no such
 # constraint, so the two projections below are the way out.

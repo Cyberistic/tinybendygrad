@@ -14,10 +14,10 @@ import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/efficientnet.py (164 LOC). NOT YET
+# stub -- 1:1 path mirror of extra/models/efficientnet.py (164 loc). not yet
 # PORTED.
 #
-# THE ONLY MODEL HERE THAT STORES ITS WEIGHTS AS BARE `Tensor`s RATHER THAN IN
+# the only model here that stores its weights as bare `Tensor`s rather than in
 # LAYER CLASSES, and that single design decision removes this file's most
 # obvious blocker and creates a different one. `self._expand_conv =
 # Tensor.glorot_uniform(oup, input_filters, 1, 1)` (upstream:11) is a TENSOR,
@@ -41,7 +41,7 @@ import ./../datasets/__init__.bend as D
 #   "`Tensor.assign` is not a def (tinybendygrad/tensor.bend:2535 symbol=t_alu3 states the immutability
 #   divergence)".
 #
-#   AND HERE THAT HALF IS NOT OPTIONAL. Upstream:39 is
+#   and here that half is not optional. Upstream:39 is
 #       x = self._bn0(x.conv2d(self._expand_conv)).swish()
 #   which takes BatchNorm's EVAL branch (nn/__init__.py:43,
 #   `track_running_stats and not TRAINING`) -- the branch `pool.bend:412-414`
@@ -52,7 +52,7 @@ import ./../datasets/__init__.bend as D
 #   checkpoint. A model that cannot be trained and cannot be loaded is a model
 #   that can only ever produce its own random initialisation.
 #
-# `avg_pool2d` IS BUILT (`pool_avgpool`, nn/pool.bend:260) BUT NOT FOR THE CALLS
+# `avg_pool2d` is built (`pool_avgpool`, nn/pool.bend:260) but not for the calls
 # THIS FILE MAKES, and that is worth stating precisely because it is the kind of
 # near-miss a count hides:
 #   upstream:44  x.avg_pool2d(kernel_size=x.shape[2:4])     -- UNPADDED, BUILT
@@ -68,7 +68,7 @@ import ./../datasets/__init__.bend as D
 # the `SU` arm it answers `None`. THAT IS THE SEAM, and it is a `Maybe` rather
 # than a wall.
 #
-# EVERY DEF BELOW REFUSES, AND THE RETURN TYPE IS `D.Refused`, NOT A TENSOR. A
+# every DEF below refuses, and the return TYPE is `D.Refused`, not a tensor. a
 # stub that returned a zero Tensor would be indistinguishable from a weight that
 # happens to be zero -- and in THIS file that is not a hypothetical, because
 # every weight IS a bare Tensor and a zeroed Tensor is exactly what a failed
@@ -138,7 +138,7 @@ def ef_skip_equal(+a: T.Tensor, +b: T.Tensor) -> D.Refused:
   D.refuse("extra/models/efficientnet.py:50 MBConvBlock.__call__ -- tn_add (tensor.bend:680 symbol=tn_add.go) EXISTS and the fold answers the broadcast (uop/fold.bend:1002 symbol=where_ds); blocked only by upstream:49's BatchNorm2d, i.e. by nn/pool.bend:416 symbol=pool_bn_running_stats")
 
 # ---------------------------------------------------------------------------
-# :54-132 EfficientNet. THE `global_params` TABLE IS PURE DATA AND IS RESTATED,
+# :54-132 EfficientNet. the `global_params` table is pure data and is restated,
 # because a reader of this stub should not have to open Python to learn that
 # `b7` is 2.0 x 3.1 and `l2` is 4.3 x 5.3.
 # ---------------------------------------------------------------------------
@@ -239,7 +239,7 @@ def ef_load_pretrained(number: U32) -> D.Refused:
   D.refuse("extra/models/efficientnet.py:134 EfficientNet.load_from_pretrained -- FIRST MISSING SYMBOL torch_load(fetch(...)) at :146; THE PORT's `helpers.bend` `NOT PORTED` BLOCK records the fetch seam as unported and THE PORT's `extra/models/resnet.bend` HEADER records torch_load as 0 hits")
 
 # :148 if k.endswith("num_batches_tracked"): continue -- SPELLED, AND IT IS
-# THE UN-DOTTED FORM UPSTREAM USES HERE. That is worth saying because
+# the un-dotted form upstream uses here. That is worth saying because
 # `inception.py:278` spells the SAME guard WITH a leading dot
 # (`k.endswith(".num_batches_tracked")`), and a reader who has read one of these
 # files will half-remember the other's spelling.

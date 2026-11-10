@@ -1,4 +1,4 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/wikipedia.py (398 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/wikipedia.py (398 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. The largest file in this slice and the one with the most PORTABLE
 # logic: the BERT BasicTokenizer + Wordpiece front end is pure string work over
@@ -41,7 +41,7 @@
 #   `tqdm.contrib.concurrent.process_map` with `chunksize=1` (upstream:394);
 #   `diskcache` (upstream:381); and numpy for `instance_to_features`' seven
 #   `np.expand_dims(np.array(...), 0)` rows (upstream:343-349).
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `_is_control`, `_is_punctuation`,
+# not ported, and named so nobody invents it: `_is_control`, `_is_punctuation`,
 #   `_is_chinese_char`, `_run_split_on_punc`, `_run_strip_accents`, `_clean_text`,
 #   `_tokenize_chinese_chars`, `whitespace_tokenize`, `_wordpiece_tokenize`, the
 #   `Tokenizer` class (`__init__`/`tokenize`/`convert_tokens_to_ids`/

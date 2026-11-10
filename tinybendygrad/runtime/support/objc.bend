@@ -129,7 +129,7 @@
 # a one-step reading gets wrong. `nm = m[0].strip(':').replace(':', '_')`.
 #
 #   `strip(':')` removes colons from BOTH ends -- so a SELECTOR ENDING IN A
-#   COLON DOES NOT GET A TRAILING UNDERSCORE. `newBufferWithLength:options:`
+#   colon does not get a trailing underscore. `newBufferWithLength:options:`
 #   mangles to `newBufferWithLength_options`, not `...options_`. Measured
 #   (`mangle_3`, `mangle_trailing_colon_keeps_underscore`).
 #
@@ -335,7 +335,7 @@ def Msg.clsmeth(m: Msg) -> Bool:
 
 
 # ===========================================================================
-# THE ARGUMENT LIST, :36. THE HEADLINE RULE OF THIS FILE:
+# the argument list, :36. the headline rule of this file:
 #
 #   sender.restype, sender.argtypes = restype, [id_, id_]+list(argtypes) if argtypes else []
 #
@@ -553,7 +553,7 @@ def Meth.clsmeth(m: Meth) -> Bool:
   match m:
     case Meth{sel, ret, args, retain, clsmeth}: clsmeth
 
-# :70 -- THE MANGLED NAME IS THE ATTRIBUTE NAME. There is nothing else to it.
+# :70 -- the mangled name is the attribute name. There is nothing else to it.
 def Meth.name(+m: Meth) -> String: mangle(Meth.sel(m))
 
 # :71-72 -- the instancetype substitution. The return slot and EVERY argument
@@ -666,12 +666,12 @@ def Tr.syms(+t: Tr) -> List<&2, String>: syms.go(U32.to_nat(Tr.next(t)), Tr.call
 # off one line and a hand-typed want is visible as a mismatch rather than as an
 # absence.
 #
-# THE DERIVED ROW.  The `py=` half is the PORT'S OWN VALUE, read through the same
+# the derived row.  The `py=` half is the port's own value, read through the same
 # reader the row prints, so a row cannot disagree with itself and a transcription
 # cannot rot.  `rd` is `r` with the `py=` half FILLED BY THE PORT'S OWN VALUE,
 # which is the shape `renderer/tc.bend` and `renderer/llvmir.bend` use.
 #
-# THE TEETH MOVE, AND WHERE THEY MOVE IS THE POINT.  A derived row's two halves
+# the teeth MOVE, and WHERE they MOVE is the point.  a derived row's two halves
 # always agree with each other, so the row can no longer disagree with ITSELF --
 # and THAT is the point: the frozen `want` literal was rot waiting to happen, and
 # it is gone.  What catches a wrong VALUE now is the byte diff against CPython's
@@ -787,7 +787,7 @@ def t_argtypes() -> IO(Unit):
     nrow("msg_argc_none", msg_argc(NONE_ARGS()))
     nrow("msg_argc_one", msg_argc(ONE_ARGS()))
     nrow("msg_argc_two", msg_argc(TWO_ARGS()))
-    # THE ROW THAT SEPARATES THE TWO READINGS. A naive `++ [ID, ID]` answers 2
+    # the row that separates the two readings. a naive `++ [ID, ID]` answers 2
     # here; the measured value is 0, and 0 is a value no reorder can produce.
     orow("msg_argtypes_none_is_not_two", Bool.not(U32.is_eq(msg_argc(NONE_ARGS()), 2)))
     # :36 tests TRUTHINESS, so an explicitly `[]` and an ABSENT argtypes are the
@@ -799,7 +799,7 @@ def t_argtypes() -> IO(Unit):
     # not substitute, and `msg_argtypes_one` ends in 7 (CT_CLASS) not 1.
     lrow("msg_argtypes_keeps_declared_tail", msg_argtypes(ONE_ARGS()))
 
-# --- 3: the call shape, :37. THE RECEIVER, THE SELECTOR, THE ORDER ---------
+# --- 3: the call shape, :37. the receiver, the selector, the order ---------
 # `sender(ptr._objc_class_ if clsmeth else ptr, getsel(sel.encode()), *args)`.
 # The instance is 0xAAAA and the class 0xBBBB in every fixture, so a receiver
 # that picked the wrong one is a different NUMBER and not a wording.
@@ -824,7 +824,7 @@ def t_shape() -> IO(Unit):
     nrow("shape_argv_no_args", msg_argv_len(msg_args(INST(), 0, NONE_ARGS())))
     nrow("shape_argv_one_arg", msg_argv_len(msg_args(INST(), 0, ONE_ARGS())))
     lrow("shape_argv_order", msg_args(7, 9, TWO_ARGS()))
-    # ONE MESSAGE IS TWO CALLS, SELECTOR FIRST. This is the measured
+    # one message is two calls, selector first. This is the measured
     # `shape_call_names=sel_registerName,objc_msgSend,...` and it is the reason
     # the generated device program needs BOTH symbols (cstyle.py:268 emits an
     # `extern` per CUSTOM_FUNCTION and hcq2.py:84 names one per ccall).
@@ -834,7 +834,7 @@ def t_shape() -> IO(Unit):
     nrow("shape_total_calls", s_two_calls(tr_two()))
     orow("shape_sym0_is_selname", String.eq(Tr.sym_at(tr_end(), 0), SYM_SELNAME()))
     orow("shape_sym1_is_msgsend", String.eq(Tr.sym_at(tr_end(), 1), SYM_MSGSEND()))
-    # THE SELECTOR LOOKUP IS A CALL OF ITS OWN, so a reversed pair would show up
+    # the selector lookup is a call of its own, so a reversed pair would show up
     # here and nowhere else. `shape_order_reverse` is that row.
     orow("shape_order_reverse", String.eq(Tr.sym_at(tr_end(), 0), SYM_MSGSEND()))
     # the receiver the send carried, and the argtypes count it declared
@@ -1024,7 +1024,7 @@ def t_own() -> IO(Unit):
     # and :37 evaluates `getsel` first. `own_c_calls_is_2` is the row.
     nrow("own_c_calls_is_2", s_two_calls(Owned.tr(own_y())))
     srowl("own_c_call_names", Tr.syms(Owned.tr(own_y())))
-    # THE FLAG AND THE CALL ARE SEPARATE: `retained()` sends NOTHING.
+    # the flag and the call are separate: `retained()` sends nothing.
     nrow("own_retained_c_calls", s_two_calls(Tr.of()))
     orow("own_release_leaves_flag", Idr.retain(Idr.retained(idr_x())))
     # `release()` is `msg("release")(self)`, so on a FRESH registry it is also
@@ -1099,22 +1099,22 @@ def main() -> IO(Unit):
 # | # | the edit | rows moved | what it is testing |
 # | --- | --- | --- | --- |
 # | M1 | `msg_argtypes`: the `Nil{}` arm answers `[id_, id_]` | 1 | THE HEADLINE, `:36`'s `[id_,id_]+list(argtypes) if argtypes else []`. `msg_argtypes_none` is the only row that reads it, and one row is the right count for one rule. |
-# | M2 | `mangle.rtrim.go`: answer `c <> t` instead of `c <> r` | 12 | `:70`'s rtrim. Keeping the UNTRIMMED tail is **the bug this port actually had**; `mangle_1`, `mangle_3`, `mangle_4`, `mangle_5`, `mangle_leading_and_trailing_stripped`, `mangle_trailing_no_underscore` and the four `inh_*` rows that print mangled names are what caught it. |
+# | M2 | `mangle.rtrim.go`: answer `c <> t` instead of `c <> r` | 12 | `:70`'s rtrim. Keeping the UNTRIMMED tail is the bug this port actually had; `mangle_1`, `mangle_3`, `mangle_4`, `mangle_5`, `mangle_leading_and_trailing_stripped`, `mangle_trailing_no_underscore` and the four `inh_*` rows that print mangled names are what caught it. |
 # | M3 | `mangle.ltrim`: strip unconditionally | 23 | `:70`'s ltrim. Eats the whole string, so every non-empty fixture changes and every row printing a mangled name moves. |
 # | M4 | `mangle`: `replace` before `strip` | 17 | THE ORDER of `strip(':').replace(':','_')`. A leading colon becomes an underscore, so `mangle_2` (`:init:`) and `mangle_6`/`mangle_7` (`::`, `:`) all move. |
-# | M5 | `getsel_ix`: drop the MISS arm | 1 | Index 0 is a REAL index, so a 0-based id and a miss are the same answer unless `sel.hit` separates them. **The bug this port actually had**: `sel_ix_absent_is_0` read 1. |
-# | M6 | `msg_argc`: count the `d <> r` TAIL | 3 | The head of a list pattern. **The bug this port actually had**: `msg_argc_one` read 2 and wanted 3. Also `meth_args_inst_len_is_5`, which is the row that found the SECOND `msg_argc` bug (feeding it `:36`'s already-prepended output). |
+# | M5 | `getsel_ix`: drop the MISS arm | 1 | Index 0 is a REAL index, so a 0-based id and a miss are the same answer unless `sel.hit` separates them. The bug this port actually had: `sel_ix_absent_is_0` read 1. |
+# | M6 | `msg_argc`: count the `d <> r` TAIL | 3 | The head of a list pattern. The bug this port actually had: `msg_argc_one` read 2 and wanted 3. Also `meth_args_inst_len_is_5`, which is the row that found the SECOND `msg_argc` bug (feeding it `:36`'s already-prepended output). |
 # | M7 | `msg`: drop the selector lookup | 18 | `:37`'s ORDER. `getsel(sel.encode())` is an ARGUMENT of the send, so the lookup is a C call that precedes it. Every call-count and call-NAME row moves, including `own_*` and `del_*` because they go through `msg`. |
-# | M8 | `Idr.own`: emit only the msgSend | 2 | `:20 own()` IS `msg("retain")`. **The third bug the oracle caught**: the port sent one C call where the real `objc.py` sends two. |
+# | M8 | `Idr.own`: emit only the msgSend | 2 | `:20 own()` IS `msg("retain")`. The third bug the oracle caught: the port sent one C call where the real `objc.py` sends two. |
 # | M9 | `Idr.finalize`: drop the `retain` conjunct | 1 | `:13-14`'s FIRST conjunct, and only `del_flag_false_sends_none` moves -- so the two conjuncts are separate claims and not one. |
 # | M10 | `Idr.finalize`: drop the `is_finalizing` conjunct | 2 | `:13-14`'s SECOND conjunct. `del_finalizing_sends_none` AND `del_finalizing_sends_nothing`, which is the count row beside the list row. |
 # | M11 | `Owned.of`: ignore `Msg.retain` | 1 | `:23`/`:38`, `returns_retained`. One row, and it is the only row that reads the WRAPPER half of the ownership lattice. |
 # | M12 | `subst`: no substitution | 5 | `:71`'s `cls if m[1] == 'instancetype' else m[1]`. |
-# | M13 | `subst_list`: stop after the head | 2 | `:72`'s PER-ARGUMENT substitution. **This moved 0 rows until `meth_args_inst_both_ends` existed** -- every other fixture declares ONE argument, so a truncating `subst_list` was indistinguishable from a correct one. A zero that was a fixture request, and the fixture is the second and THIRD declared arguments. |
+# | M13 | `subst_list`: stop after the head | 2 | `:72`'s PER-ARGUMENT substitution. This moved 0 rows until `meth_args_inst_both_ends` existed -- every other fixture declares ONE argument, so a truncating `subst_list` was indistinguishable from a correct one. A zero that was a fixture request, and the fixture is the second and THIRD declared arguments. |
 # | M14 | `msg_receiver`: always the instance | 2 | `:37`'s `ptr._objc_class_ if clsmeth else ptr`. |
 # | M15 | `inh.go`: no dedup | 2 | `:67`'s re-inherit. Two selectors that mangle alike (`::` and `:`) collide on one attribute, and the dedup is keyed on the MANGLED NAME for that reason. |
 # | M16 | `sel.put`: a HIT that appends | 10 | `:27`'s memo. Every counter row and the frozen-`count` row move, because `currsize` grows and a repeat stops being a repeat. |
-# | M17 | a comment-only edit | **0 -- THE CONTROL** | a table in which every entry moves is measuring noise. |
+# | M17 | a comment-only edit | 0 -- THE CONTROL | a table in which every entry moves is measuring noise. |
 # | M18 | `mangle.colons`: identity | 6 | `:70`'s `.replace(':','_')`. Every fixture with an INTERIOR colon moves and every fixture without one does not -- which is what a non-uniform fixture set buys. |
 #
 # THE THREE ZEROS, and none of them is a theorem:

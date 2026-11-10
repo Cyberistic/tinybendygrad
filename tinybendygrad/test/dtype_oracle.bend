@@ -229,7 +229,7 @@ def edges.go(ds: List<&2, S.Dt>, acc: List<&2, H.I64>) -> List<&2, H.I64>:
     case Nil{}: acc
     case d <> t: edges.go(t, List.append(&2, H.I64, acc, i64_edges(d)))
 
-# ONLY THE SIX DTYPES WHOSE bitsize IS AT MOST 32 GENERATE EDGES. The I64 is a
+# only the six dtypes whose bitsize is at most 32 generate edges. The I64 is a
 # SIGNED pair of U32s, so its range is [-2^63, 2^63-1]: int64's `min - 1` and
 # uint64's `max + 1` have no image, and `i64_sub`/`i64_add` SATURATE rather than
 # wrapping -- so int64's min-1 would print as 2147483647:4294967295, which is

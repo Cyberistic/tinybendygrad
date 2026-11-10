@@ -1,4 +1,4 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/squad.py (148 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/squad.py (148 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. SQuAD v1.1 to BERT features. It is (b) and the interesting part is
 # that HALF of it is pure arithmetic that ports cleanly once the tokenizer exists:
@@ -26,7 +26,7 @@
 #   `token_to_orig_map` / `token_is_max_context` (upstream:91-92) plus the 384-entry
 #   pad loops (upstream:113-116) whose three `assert len(...) == 384` (upstream:118-120)
 #   are the shape claim.
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `_check_is_max_context` (upstream:43),
+# not ported, and named so nobody invents it: `_check_is_max_context` (upstream:43),
 #   `convert_example_to_features` (upstream:59), `iterate` (upstream:133), and the
 #   `__main__` block (upstream:143) which loads `weights/bert_vocab.txt`.
 #

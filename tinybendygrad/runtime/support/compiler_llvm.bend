@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/support/compiler_llvm.bend -- port of tinygrad/runtime/support/compiler_llvm.py
 #
 # ===========================================================================
-# EIGHTY-EIGHT LINES, AND THE HEADLINE IS A `KeyError` THAT IS NOT A TYPO.
+# eighty-eight lines, and the headline is a `KeyError` that is not a typo.
 #
 # :17  triple = {'arm64': b'aarch64-none-unknown-elf', 'x86_64': b'x86_64-none-unknown-elf',
 #                'AMDGPU': b'amdgcn-amd-amdhsa'}[arch]
@@ -22,7 +22,7 @@
 #   are the same arch's two answers side by side.
 #
 # ===========================================================================
-# THE SECOND HEADLINE: `getenv("LLVMOPT", 1)` IS A PROCESS-BOOT CONSTANT.
+# the second headline: `getenv("LLVMOPT", 1)` is a process-boot constant.
 # tinygrad/helpers.py:161 symbol=getenv carries `@functools.cache` on upstream's `getenv`, so `LLVMOPT` is read ONCE per
 # interpreter. `LLVMCompiler.__init__` therefore answers `default<O2>` and sets
 # FOUR PassBuilderOptions, or `default<O0>` and sets NONE, and there is no way to
@@ -121,7 +121,7 @@ def cerr_inner() -> String: "c_char"
 #   1. the TRUTHINESS test on `x` -- a C pointer is falsy only when NULL, so a
 #      non-zero handle is a failure and zero is a success;
 #   2. the `isinstance(err, str)` arm -- a Python `str` is the message itself
-#      and anything else is a `char**` to read. There are THREE states, not two:
+#      and anything else is a `char` to read. There are THREE states, not two:
 #      zero `x` returns `ret`, non-zero `x` with a str raises with that str, and
 #      non-zero `x` with a pointer raises with the pointed-to text.
 # MEASURED: `expect(0, "boom", "RET")` -> `"RET"`; `expect(1, "boom")` ->

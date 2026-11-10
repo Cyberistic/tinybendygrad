@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/support/compiler_cpu.bend -- port of tinygrad/runtime/support/compiler_cpu.py
 #
 # ===========================================================================
-# THIRTY LINES, AND THE ONLY THING THAT IS NOT PURE IS ONE `subprocess` CALL
+# thirty lines, and the only thing that is not pure is one `subprocess` call
 # WHICH `Process.run` ALREADY COVERS.
 #
 #   subprocess.check_output([getenv("CC", 'clang'), '-c', '-x', 'c', '-O2', '-fPIC',
@@ -535,7 +535,7 @@ def t_x86() -> IO(Unit):
     u : Unit <- srow("cpu.x86dis", X86Compiler.dis_row())
     IO.print("cpu_x86_done=1")
 
-# THE FRESH-PROCESS ROWS. `getenv("CC", "clang")` is a PROCESS-BOOT CONSTANT, so
+# the fresh-process rows. `getenv("CC", "clang")` is a process-boot constant, so
 # the two values of `CC` live in TWO processes: `@0` with `CC` unset answers
 # `clang` and `@1` with `CC=mycc` answers `mycc`. One bend program cannot read
 # the environment twice, so the row pair is written as the two DEFAULTS the port

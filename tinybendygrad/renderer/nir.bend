@@ -1,7 +1,7 @@
 # tinybendygrad/renderer/nir.bend -- tinygrad/renderer/nir.py
 
 # ===========================================================================
-# THE FILE, AND THE TWO MEASURED FACTS THAT DECIDED ITS SHAPE.
+# the file, and the two measured facts that decided its shape.
 #
 # `nir.py` is 321 lines of which almost none is data: it is `ctypes` calls into
 # mesa (`nir_def_init`, `nir_builder_instr_insert`, `nir_intrinsic_instr_create`,
@@ -45,17 +45,17 @@
 #      builder and three maxima, so each is one `Nir` record below and the gate
 #      READS THE RECORD -- a wrong constant is a moved row, not a wrong shader
 #      nobody diffs.
-#   2. THE GATE IS A STRING DIFF, NEVER A BOOLEAN ABOUT STRINGS. Every row is
+#   2. the gate is a string diff, never a boolean about strings. Every row is
 #      `<name> = [BEND]   py=[CPYTHON]`, the `py=` half is a LITERAL so it cannot
 #      be the same expression as the BEND half, and `String.concat` -- which
 #      drops a literal silently -- is why every table is emitted as ONE joined
 #      string rather than a count.
-#   4. A `match` MAY ONLY SCRUTINISE A PARAMETER OR A PATTERN BINDER. Every test
+#   4. a `match` may only scrutinise a parameter or a pattern binder. Every test
 #      of a computed value is therefore a trailing `Bool`/`U32` parameter of a
 #      `.of`/`.go` helper and the `match` is inside THAT. Measured: the first
 #      draft of this file refused on `match Bool.and(c.is_uint(d), unsigned):`
 #      at line 173, which is why there are eleven `.of` helpers below.
-#   6. A RECORD LITERAL AND A RECORD PATTERN BOTH NAME EVERY FIELD.
+#   6. a record literal and a record pattern both name every field.
 #
 # BOTH DIRECTIONS ARE WRITTEN INDEPENDENTLY, and that is deliberate. Folding the
 # reverse table out of the forward one would make the two rows agree by
@@ -76,7 +76,7 @@ import ./../LAWS/spec.bend as S
 # group of rows is a `String` and the whole gate is ONE `IO.print` whose own
 # newline is the only frame.
 #
-# THE DERIVED ROW.  The `py=` half is the PORT'S OWN VALUE, re-read through the same
+# the derived row.  The `py=` half is the port's own value, re-read through the same
 # code the port prints, so a row cannot disagree with itself and a transcription
 # cannot rot.  `r` takes the `py=` half as an argument because `tc_ptx.bend` calls
 # it too; `rd` is this file's derived half of that.  THE TEETH MOVE TO THE ORACLE:
@@ -155,7 +155,7 @@ def dnames(+ds: List<&2, S.Dt>) -> String:
     case d <> +t: dngo(t, dtn(d))
 
 # ===========================================================================
-# THE THREE SET-MEMBERSHIP TESTS, and they are NOT `S.Dt`'s.
+# the three set-membership tests, and they are not `S.Dt`'s.
 #
 #     c(t,u): "u" if t in dtypes.uints and u else ("i" if t in dtypes.ints else
 #             ("f" if t in dtypes.floats else "b"))
@@ -209,7 +209,7 @@ def c.in_floats(d: S.Dt) -> Bool:
 # class alone. Both are boundary cases with their own row.
 # ===========================================================================
 
-# THE THREE ARMS, INNERMOST FIRST: a def may only call defs ABOVE it, so the
+# the three arms, innermost first: a def may only call defs above it, so the
 # chain `arm1 -> arm2 -> arm3` is spelled bottom-up. Measured refusal otherwise.
 def c.arm3(d: S.Dt, is_float: Bool) -> String:
   match is_float:
@@ -340,7 +340,7 @@ def op_const(nm: String) -> U32:
     case "u2u64": 418
     case _: 0
 
-# NINE OF THE THIRTY-SIX CAST NAMES DO NOT EXIST: every `*2f8` (the fp8s are not
+# nine of the thirty-six CAST names do not exist: every `*2f8` (the fp8s are not
 # in `glsl_type`'s key set and neither are they in NIR's op enum) and every
 # `*2b1` (`nir_op_i2b1` and friends are not ops). So `ncast` to an fp8 or to
 # `bool` RAISES in CPython, and `op_const`'s `case _` of 0 would be a plausible
@@ -523,7 +523,7 @@ def f_aop(op: O.Op) -> String:
     case O.OpsSQRT{}: "fsqrt"
     case _: ""
 
-# THE REVERSE DIRECTION -- nir.py:19-23 READ BACKWARDS, AND NOT FOLDED OUT OF
+# the reverse direction -- nir.py:19-23 read backwards, and not folded out of
 # THE FORWARD ONE. See the header: folding would make the two rows agree by
 # construction and an error made twice reads as zero disagreements.
 def u_aop.rev(nm: String) -> String:
@@ -579,8 +579,8 @@ def f_aop.rev(nm: String) -> String:
     case "fsqrt": "SQRT"
     case _: ""
 
-# `aop` -- nir.py:24. `{**{x:u_aop for x in (dtypes.bool,)+dtypes.uints},
-# **{x:s_aop for x in dtypes.sints}, **{x:f_aop for x in dtypes.floats}}`.
+# `aop` -- nir.py:24. `{{x:u_aop for x in (dtypes.bool,)+dtypes.uints},
+# {x:s_aop for x in dtypes.sints}, {x:f_aop for x in dtypes.floats}}`.
 #
 # The INSERTION ORDER is bool, uints, sints, floats -- NOT `dtypes.all`'s
 # floats-first order, and that is a real diff rather than a cosmetic one: it is
@@ -738,7 +738,7 @@ def glsl_sym(+d: S.Dt) -> String: glsl_sym.keyed(d, glsl_keyed(d))
 # for all twelve -- and the refusal NAMES the symbol, which is what turns it from
 # a shrug into a diagnosis. The FIRST one is `double`'s, because the dict
 # comprehension is eager, so that is the symbol the traceback actually says.
-# THE CALL RAISES FOR EVERY `t`, INCLUDING THE FIVE WHOSE KEY IT DOES NOT HOLD.
+# the call raises for every `t`, including the five whose key it does not hold.
 # `nir.py:15` builds the dict EAGERLY, so `g("glsl_type_builtin_double")` runs --
 # and raises -- before `[t]` is ever indexed, so an unkeyed `t` never gets that
 # far. The first run printed `NO_KEY` for the fp8s and `__bf16` here and
@@ -770,7 +770,7 @@ def glsl_call_row(+d: S.Dt) -> String: String.concat([dtn(d), "=", glsl_const(gl
 # part of the 17x17 grid, which is the point.
 # ===========================================================================
 
-# BOTH PREFIXES ARE COMPUTED AND PASSED IN, rather than one computed per arm:
+# both prefixes are computed and passed in, rather than one computed per arm:
 # Bend counts a parameter read in each arm as read TWICE (measured at line 617,
 # `ot` in `ncast_mid.of`), so the arms must select between two values rather than
 # compute one. That also puts the two-way condition in ONE place.
@@ -879,7 +879,7 @@ def nstore_align.of(is_reg: Bool, bits: U32, n: U32) -> U32:
 
 def nstore_align(space: S.Addr, bits: U32, n: U32) -> U32: nstore_align.of(is_reg(space), bits, n)
 
-# `0` IS NOT THE HONEST ANSWER FOR REG: the intrins dict simply HAS NO
+# `0` is not the honest answer for reg: the intrins dict simply has no
 # `ALIGN_MUL` key, and 0 is a plausible wrong alignment. So the printed form is
 # chosen by the SAME `Bool` the arithmetic is, and `nstore align R` says ABSENT
 # where `nstore align A` says 32.
@@ -1128,7 +1128,7 @@ def arch_int(nm: String) -> U32:
 # ===========================================================================
 # `code_for_op` -- nir.py:119 and :262.
 #
-#     code_for_op = {**{k:None for k in s_aop.keys()}, **{k:None for k in f_aop.keys()}}
+#     code_for_op = {{k:None for k in s_aop.keys()}, {k:None for k in f_aop.keys()}}
 #     LVPRenderer: {k:v for k,v in NIRRenderer.code_for_op.items() if k != Ops.EXP2}
 #
 # A SET of ops -- 14 signed + 13 float with SIX shared op names, so 21 unique,
@@ -1209,7 +1209,7 @@ def idx_names() -> List<&2, String>: ["NIR_INTRINSIC_ALIGN_MUL","NIR_INTRINSIC_W
 # `ilt` of `nif`, `END` and `BACKEDGE` (tinygrad/renderer/nir.py:216, :222, :224).
 def alu_names() -> List<&2, String>: ["mov","vec2","vec3","vec4","vec5","vec8","vec16","iadd","imul","ilt"]
 
-# THE SELECTOR IS A `U32` TAG, NOT A FUNCTION ARGUMENT: a `String -> U32`
+# the selector is a `U32` tag, not a function argument: a `String -> U32`
 # parameter would have to be a `~` TEMPLATE, and `const_of.rows`'s own `f` may
 # not mention a local of its caller -- so the first spelling of this fold was
 # refused. A tag keeps the file free of a foreign effect and is one `match`.
@@ -1234,7 +1234,7 @@ def const_rows3(+names: List<&2, String>, +tag: U32, +pre: String, +acc: List<&2
 def const_pick(names: List<&2, String>, tag: U32, pre: String) -> String: const_rows3(names, tag, pre, Nil{})
 
 # ===========================================================================
-# THE GATE, AND WHAT EVERY GROUP IS FOR.
+# the gate, and what every group is for.
 #
 #   .venv/bin/python .agents/slop/nir/nir-oracle.py rows > .agents/slop/nir/py1.txt
 #   ./bin/bend tinybendygrad/renderer/nir.bend            > /tmp/nir_i.txt
@@ -1314,7 +1314,7 @@ def pad_tbl.go(+ps: List<&2, U32>, +ss: List<&2, U32>, acc: String) -> String:
     case Nil{}: acc
     # `;` ENDS A COLUMN and `,` ends a CELL, so the 11 x 5 grid is readable.
     #
-    # THE ACCUMULATOR IS A STRING, NOT A LIST. `join` puts a `,` BETWEEN
+    # the accumulator is a string, not a list. `join` puts a `,` between
     # elements, so a list of columns read `...,pi32,|1:ru1,...` with `|` as a
     # prefix and `...,pi32;,1:ru1` with `;` as a suffix -- in both cases a
     # separator this fold does not own sat between two columns. MEASURED in a
@@ -1467,7 +1467,7 @@ def main() -> IO(Unit):
 
 # ===========================================================================
 # THE MUTATION TABLE -- 37 mutations, MEASURED, one per ported rule, reported
-# WITH THE ROWS THEY MOVED BY NAME. Reproduce with:
+# with the rows they moved by name. Reproduce with:
 #
 #   .venv/bin/python .agents/slop/nir/nir_mutate.py         > .agents/slop/nir/mut.txt
 #   .venv/bin/python .agents/slop/nir/nir_mutate.py --const > .agents/slop/nir/const_sweep.txt
@@ -1499,7 +1499,7 @@ def main() -> IO(Unit):
 #
 # ---------------------------------------------------------------------------
 # baseline: 102 rows
-# 
+#
 # ID    WHAT                                           ROWS MOVED (BY NAME)
 # --------------------------------------------------------------------------------------------------------------
 # M01   c: uint arm -> i                               c uint32 u=True, c uint8 u=True , ncast from uint8
@@ -1507,85 +1507,85 @@ def main() -> IO(Unit):
 # M03   c: f arm -> b (bool never reaches)             c bf16 u=True  , c double u=True, c fp8_e4m3 u=T , c half u=True  , ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
 # M04   c: `and u` dropped                             c uint64 u=Fal, c uint8 u=Fals, ncast from bool , ncast from float, ncast from weaki
 # M05   c: `ints` widened to `S.Dt.is_int` (weakint!)  c index u=True, c weakint u=T , ncast from weaki
-# M06   u_aop: ADD -> uadd                             aop rev u      , aop u  table   
-# M07   s_aop: MAX imax -> umax                        aop rev s      , aop s  table   
-# M08   f_aop: FDIV -> rcp                             aop f  table   , aop rev f      
-# M09   f_aop: CMPEQ feq -> fneu                       aop f  table   , aop rev f      
-# M10   u_aop.rev: ishl swapped with ushr              aop rev u      
-# M11   f_aop.rev: ftrunc dropped                      aop rev f      
-# M12   aop_kind: bool no longer unsigned              aop kind bool  
-# M13   aop_kind: float class becomes 1                aop kind half  
-# M14   op_of: WHERE -> OpsCONST                       aop rev s      , aop rev u      , aop s  table   , aop u  table   
-# M15   glsl_sym_int: `glsl_type_builtin_` head dropped glsl keys      
-# M16   glsl_sym_int: `itemsize == 4` exception dropped glsl keys      
-# M17   glsl_keyed: `bool` stops being a key           glsl keys      
+# M06   u_aop: ADD -> uadd                             aop rev u      , aop u  table
+# M07   s_aop: MAX imax -> umax                        aop rev s      , aop s  table
+# M08   f_aop: FDIV -> rcp                             aop f  table   , aop rev f
+# M09   f_aop: CMPEQ feq -> fneu                       aop f  table   , aop rev f
+# M10   u_aop.rev: ishl swapped with ushr              aop rev u
+# M11   f_aop.rev: ftrunc dropped                      aop rev f
+# M12   aop_kind: bool no longer unsigned              aop kind bool
+# M13   aop_kind: float class becomes 1                aop kind half
+# M14   op_of: WHERE -> OpsCONST                       aop rev s      , aop rev u      , aop s  table   , aop u  table
+# M15   glsl_sym_int: `glsl_type_builtin_` head dropped glsl keys
+# M16   glsl_sym_int: `itemsize == 4` exception dropped glsl keys
+# M17   glsl_keyed: `bool` stops being a key           glsl keys
 # M18   ncast: two-way condition `and` -> `or`         ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
-# M18b  ncast: second prefix taken from the DESTINATION's signedness only [THEOREM] *** NOTHING MOVED ***
+# M18b  ncast: second prefix taken from the DESTINATION's signedness only [THEOREM] * NOTHING MOVED *
 # M19   ncast: destination bitsize -> source           ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
-# M20   scope: ALU given its own case                  scope alu      
-# M21   nstore: REG srcs no longer reversed            nstore mask    , nstore srcs R  
-# M22   nstore: ALIGN_MUL becomes REG-only             nstore align A , nstore align L , nstore align R 
-# M23   nstore: WRITE_MASK off by one                  nstore mask    
-# M24   nload: ACCESS for every space                  nload hasACC A , nload hasACC L , nload hasACC R 
-# M25   padded_idx: the extra `+ size` dropped         padded 0 4     , padded 17 32   , padded 3 8     , padded 8 8     , padded 9 16    , padded tbl     
-# M26   round_up: multiply BEFORE dividing             padded 17 32   , padded 3 8     , padded 9 16    , padded tbl     
-# M27   sd: NAK's arch test `>= 53` becomes `> 53`     sd nak sm_53   
-# M28   sd: bfloat16 stops being dropped               sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir         
-# M28b  sd: one fp8 stops being dropped                sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir         
-# M29   cfo: EXP2 no longer dropped by LVP             cfo lvp        
-# M30   Nir: LVP's global_max 1 -> 2147483647          rec LVP        
-# M31   Nir: shared_max 49152 -> 32768 (the BASE value) rec NIR        
-# M32   arch_off: the offset becomes 2                 arch_off sm_53 
-# M33   build_alu: a fifth arity invented              alu arities    
-# M34   aop_keys: insertion order float-first (`dtypes.all`'s, not `aop`'s) aop u  keys    
-# M35   cfo: WHERE dropped from the op set             cfo ir3        , cfo lvp        , cfo nak        , cfo nir        
-# 
+# M20   scope: ALU given its own case                  scope alu
+# M21   nstore: REG srcs no longer reversed            nstore mask    , nstore srcs R
+# M22   nstore: ALIGN_MUL becomes REG-only             nstore align A , nstore align L , nstore align R
+# M23   nstore: WRITE_MASK off by one                  nstore mask
+# M24   nload: ACCESS for every space                  nload hasACC A , nload hasACC L , nload hasACC R
+# M25   padded_idx: the extra `+ size` dropped         padded 0 4     , padded 17 32   , padded 3 8     , padded 8 8     , padded 9 16    , padded tbl
+# M26   round_up: multiply BEFORE dividing             padded 17 32   , padded 3 8     , padded 9 16    , padded tbl
+# M27   sd: NAK's arch test `>= 53` becomes `> 53`     sd nak sm_53
+# M28   sd: bfloat16 stops being dropped               sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir
+# M28b  sd: one fp8 stops being dropped                sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir
+# M29   cfo: EXP2 no longer dropped by LVP             cfo lvp
+# M30   Nir: LVP's global_max 1 -> 2147483647          rec LVP
+# M31   Nir: shared_max 49152 -> 32768 (the BASE value) rec NIR
+# M32   arch_off: the offset becomes 2                 arch_off sm_53
+# M33   build_alu: a fifth arity invented              alu arities
+# M34   aop_keys: insertion order float-first (`dtypes.all`'s, not `aop`'s) aop u  keys
+# M35   cfo: WHERE dropped from the op set             cfo ir3        , cfo lvp        , cfo nak        , cfo nir
+#
 # 37 mutations, 1 blind
 # ---------------------------------------------------------------------------
 # THE CONSTANT SWEEP. `+1` on every constant arm, one at a time.
 # ---------------------------------------------------------------------------
 # baseline: 102 rows
-# 
+#
 # ID     LINE   ARM                                ROWS MOVED
 # ----------------------------------------------------------------------------------------------------
-# K01    255    case "iadd": 306                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu  
-# K02    256    case "imul": 338                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu  
-# K03    257    case "udiv": 427                   aop rev u      , aop u  table   
-# K04    258    case "umod": 451                   aop rev u      , aop u  table   
-# K05    259    case "ult": 441                    aop rev u      , aop u  table   
-# K06    260    case "ilt": 326                    aop rev s      , aop s  table   , mesa alu  
-# K07    261    case "ine": 344                    aop rev s      , aop rev u      , aop s  table   , aop u  table   
-# K08    262    case "ieq": 314                    aop rev s      , aop rev u      , aop s  table   , aop u  table   
-# K09    263    case "ior": 353                    aop rev s      , aop rev u      , aop s  table   , aop u  table   
-# K10    264    case "iand": 309                   aop rev s      , aop rev u      , aop s  table   , aop u  table   
-# K11    265    case "ixor": 361                   aop rev s      , aop rev u      , aop s  table   , aop u  table   
-# K12    266    case "bcsel": 115                  aop rev s      , aop rev u      , aop s  table   , aop u  table   
-# K13    267    case "umax": 447                   aop rev u      , aop u  table   
-# K14    268    case "imax": 334                   aop rev s      , aop s  table   
-# K15    269    case "ishl": 356                   aop rev s      , aop rev u      , aop s  table   , aop u  table   
-# K16    270    case "ushr": 479                   aop rev u      , aop u  table   
-# K17    271    case "ishr": 357                   aop rev s      , aop s  table   
-# K18    272    case "idiv": 313                   aop rev s      , aop s  table   
-# K19    273    case "irem": 354                   aop rev s      , aop s  table   
-# K20    274    case "fadd": 177                   aop f  table   , aop rev f      
-# K21    275    case "fmul": 253                   aop f  table   , aop rev f      
-# K22    276    case "flt": 240                    aop f  table   , aop rev f      
-# K23    277    case "fneu": 260                   aop f  table   , aop rev f      
-# K24    278    case "feq": 213                    aop f  table   , aop rev f      
-# K25    279    case "fdiv": 198                   aop f  table   , aop rev f      
-# K26    280    case "frcp": 270                   aop f  table   , aop rev f      
-# K27    281    case "fmax": 248                   aop f  table   , aop rev f      
-# K28    282    case "ftrunc": 288                 aop f  table   , aop rev f      
-# K29    283    case "fsin": 279                   aop f  table   , aop rev f      
-# K30    284    case "fexp2": 221                  aop f  table   , aop rev f      
-# K31    285    case "flog2": 238                  aop f  table   , aop rev f      
-# K32    286    case "mov": 365                    mesa alu  
-# K33    287    case "vec2": 484                   mesa alu  
-# K34    288    case "vec3": 485                   mesa alu  
-# K35    289    case "vec4": 486                   mesa alu  
-# K36    290    case "vec5": 487                   mesa alu  
-# K37    291    case "vec8": 488                   mesa alu  
-# K38    292    case "vec16": 483                  mesa alu  
+# K01    255    case "iadd": 306                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu
+# K02    256    case "imul": 338                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu
+# K03    257    case "udiv": 427                   aop rev u      , aop u  table
+# K04    258    case "umod": 451                   aop rev u      , aop u  table
+# K05    259    case "ult": 441                    aop rev u      , aop u  table
+# K06    260    case "ilt": 326                    aop rev s      , aop s  table   , mesa alu
+# K07    261    case "ine": 344                    aop rev s      , aop rev u      , aop s  table   , aop u  table
+# K08    262    case "ieq": 314                    aop rev s      , aop rev u      , aop s  table   , aop u  table
+# K09    263    case "ior": 353                    aop rev s      , aop rev u      , aop s  table   , aop u  table
+# K10    264    case "iand": 309                   aop rev s      , aop rev u      , aop s  table   , aop u  table
+# K11    265    case "ixor": 361                   aop rev s      , aop rev u      , aop s  table   , aop u  table
+# K12    266    case "bcsel": 115                  aop rev s      , aop rev u      , aop s  table   , aop u  table
+# K13    267    case "umax": 447                   aop rev u      , aop u  table
+# K14    268    case "imax": 334                   aop rev s      , aop s  table
+# K15    269    case "ishl": 356                   aop rev s      , aop rev u      , aop s  table   , aop u  table
+# K16    270    case "ushr": 479                   aop rev u      , aop u  table
+# K17    271    case "ishr": 357                   aop rev s      , aop s  table
+# K18    272    case "idiv": 313                   aop rev s      , aop s  table
+# K19    273    case "irem": 354                   aop rev s      , aop s  table
+# K20    274    case "fadd": 177                   aop f  table   , aop rev f
+# K21    275    case "fmul": 253                   aop f  table   , aop rev f
+# K22    276    case "flt": 240                    aop f  table   , aop rev f
+# K23    277    case "fneu": 260                   aop f  table   , aop rev f
+# K24    278    case "feq": 213                    aop f  table   , aop rev f
+# K25    279    case "fdiv": 198                   aop f  table   , aop rev f
+# K26    280    case "frcp": 270                   aop f  table   , aop rev f
+# K27    281    case "fmax": 248                   aop f  table   , aop rev f
+# K28    282    case "ftrunc": 288                 aop f  table   , aop rev f
+# K29    283    case "fsin": 279                   aop f  table   , aop rev f
+# K30    284    case "fexp2": 221                  aop f  table   , aop rev f
+# K31    285    case "flog2": 238                  aop f  table   , aop rev f
+# K32    286    case "mov": 365                    mesa alu
+# K33    287    case "vec2": 484                   mesa alu
+# K34    288    case "vec3": 485                   mesa alu
+# K35    289    case "vec4": 486                   mesa alu
+# K36    290    case "vec5": 487                   mesa alu
+# K37    291    case "vec8": 488                   mesa alu
+# K38    292    case "vec16": 483                  mesa alu
 # K39    293    case "b2b1": 28                    ncast from bool , ncast from weaki
 # K40    294    case "b2f16": 32                   ncast from bool , ncast from weaki
 # K41    295    case "b2f32": 33                   ncast from bool , ncast from weaki
@@ -1601,13 +1601,13 @@ def main() -> IO(Unit):
 # K51    305    case "f2i16": 163                  ncast from float
 # K52    306    case "f2i32": 164                  ncast from float
 # K53    307    case "f2i64": 165                  ncast from float
-# K54    308    case "i2f16": 293                  ncast from int32, ncast from long 
-# K55    309    case "i2f32": 294                  ncast from int32, ncast from long 
-# K56    310    case "i2f64": 295                  ncast from int32, ncast from long 
-# K57    311    case "i2i8": 301                   ncast from int32, ncast from long 
-# K58    312    case "i2i16": 298                  ncast from int32, ncast from long 
-# K59    313    case "i2i32": 299                  ncast from int32, ncast from long 
-# K60    314    case "i2i64": 300                  ncast from int32, ncast from long 
+# K54    308    case "i2f16": 293                  ncast from int32, ncast from long
+# K55    309    case "i2f32": 294                  ncast from int32, ncast from long
+# K56    310    case "i2f64": 295                  ncast from int32, ncast from long
+# K57    311    case "i2i8": 301                   ncast from int32, ncast from long
+# K58    312    case "i2i16": 298                  ncast from int32, ncast from long
+# K59    313    case "i2i32": 299                  ncast from int32, ncast from long
+# K60    314    case "i2i64": 300                  ncast from int32, ncast from long
 # K61    315    case "u2f16": 411                  ncast from uint8
 # K62    316    case "u2f32": 412                  ncast from uint8
 # K63    317    case "u2f64": 413                  ncast from uint8
@@ -1615,44 +1615,44 @@ def main() -> IO(Unit):
 # K65    319    case "u2u16": 416                  ncast from uint8
 # K66    320    case "u2u32": 417                  ncast from uint8
 # K67    321    case "u2u64": 418                  ncast from uint8
-# K68    413    case "nir_intrinsic_store_global": mesa intr 
-# K69    414    case "nir_intrinsic_store_shared": mesa intr 
-# K70    415    case "nir_intrinsic_store_deref":  mesa intr 
-# K71    416    case "nir_intrinsic_load_global":  mesa intr 
-# K72    417    case "nir_intrinsic_load_shared":  mesa intr 
-# K73    418    case "nir_intrinsic_load_deref": 2 mesa intr 
-# K74    419    case "nir_intrinsic_load_workgroup mesa intr 
-# K75    420    case "nir_intrinsic_load_local_inv mesa intr 
-# K76    421    case "nir_intrinsic_barrier": 46   mesa intr 
-# K77    422    case "nir_intrinsic_ldc_nv": 213   mesa intr 
-# K78    423    case "nir_intrinsic_load_ubo": 552 mesa intr 
-# K79    424    case "nir_intrinsic_image_store":  mesa intr 
-# K80    425    case "nir_intrinsic_image_load": 1 mesa intr 
-# K81    426    case "nir_type_float16": 144       mesa intr 
-# K82    427    case "nir_type_float32": 160       mesa intr 
-# K83    428    case "nir_deref_type_var": 0       mesa intr 
-# K84    429    case "nir_deref_type_array": 1     mesa intr 
-# K85    430    case "nir_jump_break": 2           mesa intr 
-# K86    431    case "MESA_SHADER_COMPUTE": 5      mesa intr 
-# K87    432    case "SCOPE_WORKGROUP": 4          mesa intr 
-# K88    433    case "ACCESS_CAN_REORDER": 64      mesa intr 
-# K89    434    case "GLSL_SAMPLER_DIM_2D": 1      mesa intr 
-# K90    442    case "NIR_INTRINSIC_ALIGN_MUL": 20 mesa idx  
-# K91    443    case "NIR_INTRINSIC_WRITE_MASK": 1 mesa idx  
-# K92    444    case "NIR_INTRINSIC_ACCESS": 17    mesa idx  
-# K93    445    case "NIR_INTRINSIC_EXECUTION_SCOP mesa idx  
-# K94    446    case "NIR_INTRINSIC_IMAGE_DIM": 14 mesa idx  
-# K95    447    case "NIR_INTRINSIC_SRC_TYPE": 23  mesa idx  
-# K96    448    case "NIR_INTRINSIC_DEST_TYPE": 24 mesa idx  
-# K97    449    case "NIR_INTRINSIC_RANGE": 5      mesa idx  
-# K98    1100   case "sm_52": 52                   arch_int sm_52 
-# K99    1101   case "sm_53": 53                   arch_int sm_53 
-# K100   1102   case "sm_86": 86                   arch_int sm_86 
+# K68    413    case "nir_intrinsic_store_global": mesa intr
+# K69    414    case "nir_intrinsic_store_shared": mesa intr
+# K70    415    case "nir_intrinsic_store_deref":  mesa intr
+# K71    416    case "nir_intrinsic_load_global":  mesa intr
+# K72    417    case "nir_intrinsic_load_shared":  mesa intr
+# K73    418    case "nir_intrinsic_load_deref": 2 mesa intr
+# K74    419    case "nir_intrinsic_load_workgroup mesa intr
+# K75    420    case "nir_intrinsic_load_local_inv mesa intr
+# K76    421    case "nir_intrinsic_barrier": 46   mesa intr
+# K77    422    case "nir_intrinsic_ldc_nv": 213   mesa intr
+# K78    423    case "nir_intrinsic_load_ubo": 552 mesa intr
+# K79    424    case "nir_intrinsic_image_store":  mesa intr
+# K80    425    case "nir_intrinsic_image_load": 1 mesa intr
+# K81    426    case "nir_type_float16": 144       mesa intr
+# K82    427    case "nir_type_float32": 160       mesa intr
+# K83    428    case "nir_deref_type_var": 0       mesa intr
+# K84    429    case "nir_deref_type_array": 1     mesa intr
+# K85    430    case "nir_jump_break": 2           mesa intr
+# K86    431    case "MESA_SHADER_COMPUTE": 5      mesa intr
+# K87    432    case "SCOPE_WORKGROUP": 4          mesa intr
+# K88    433    case "ACCESS_CAN_REORDER": 64      mesa intr
+# K89    434    case "GLSL_SAMPLER_DIM_2D": 1      mesa intr
+# K90    442    case "NIR_INTRINSIC_ALIGN_MUL": 20 mesa idx
+# K91    443    case "NIR_INTRINSIC_WRITE_MASK": 1 mesa idx
+# K92    444    case "NIR_INTRINSIC_ACCESS": 17    mesa idx
+# K93    445    case "NIR_INTRINSIC_EXECUTION_SCOP mesa idx
+# K94    446    case "NIR_INTRINSIC_IMAGE_DIM": 14 mesa idx
+# K95    447    case "NIR_INTRINSIC_SRC_TYPE": 23  mesa idx
+# K96    448    case "NIR_INTRINSIC_DEST_TYPE": 24 mesa idx
+# K97    449    case "NIR_INTRINSIC_RANGE": 5      mesa idx
+# K98    1100   case "sm_52": 52                   arch_int sm_52
+# K99    1101   case "sm_53": 53                   arch_int sm_53
+# K100   1102   case "sm_86": 86                   arch_int sm_86
 # K101   1103   case "sm_120": 120                 arch_int sm_120
-# 
+#
 # constant sweep: 101 arms, 0 blind, 0 did-not-compile
 # ---------------------------------------------------------------------------
-# WHAT THE GATE DOES NOT COVER, named rather than left implied.
+# what the gate does not cover, named rather than left implied.
 #
 # * `nir_instr`'s `index_map` SLOT for each `NIR_INTRINSIC_*` key (nir.py:50).
 #   The eight ENUM values are audited and gated; the array that maps them to
@@ -1689,7 +1689,7 @@ def main() -> IO(Unit):
 #   over `itertools.count`. `TODO(p3) nir.py:312 symbol=IR3Renderer.postrender`.
 #
 # ---------------------------------------------------------------------------
-# THE WALLS `nir_llvmir.bend` NAMES, and which of them THIS PORT CLOSES.
+# the walls `nir_llvmir.bend` names, and which of them this port closes.
 #
 # Its header lists STAGE 3 as "`nir.py`: `glsl_type` (:14), `u_aop`/`s_aop`/
 # `f_aop` (:19-23), `c` (:26), `ncast` (:27-28), `scope` (:83), `padded_idx`

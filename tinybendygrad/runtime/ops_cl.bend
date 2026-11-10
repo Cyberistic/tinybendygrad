@@ -121,7 +121,7 @@
 #   :134-136 _wait_signal          PORTED  `cu.wait_signal` -- upstream waits on the context in `_wait_signal`
 #
 # ops_hip.py
-#   tinygrad/runtime/ops_cuda.py:18 check      PARTIAL `hp_err_of` (the STRING is WALL 7) -- upstream's own HIP `check` is GONE at this pin; HIP imports CUDA's `check`
+#   tinygrad/runtime/ops_cuda.py:18 check      partial `hp_err_of` (the string is wall 7) -- upstream's own hip `check` is gone at this pin; hip imports CUDA's `check`
 #   :14-18  HIPDevice.__init__     PORTED  `hp.init`
 #   :20     count                  PORTED  `hp.count`
 #   :22-24  synchronize            PORTED  `hp.sync`

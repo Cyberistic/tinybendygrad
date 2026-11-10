@@ -1,4 +1,4 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/openimages.py (209 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/openimages.py (209 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. Open Images v6 -> COCO, for the detection MLPerf benchmark. It is
 # (b), and it is the only file in this slice whose constant table is bigger than its
@@ -43,7 +43,7 @@
 #   The one thing that IS reachable is `normalize` -- `Tensor` and `dtypes` are ported
 #   (`tensor.bend:200`, `dtype.bend:57`) -- but it cannot be written honestly until
 #   `permute` and `cast` on the port's Tensor exist, so it is left named, not faked.
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `MLPERF_CLASSES` (upstream:18),
+# not ported, and named so nobody invents it: `MLPERF_CLASSES` (upstream:18),
 #   `extract_dims`, `export_to_coco`, `get_image_list`, `download_image`,
 #   `fetch_openimages`, `image_load`, `prepare_target`, `download_dataset`,
 #   `random_horizontal_flip`, `resize`, `normalize`, `get_dataset_count`, and the

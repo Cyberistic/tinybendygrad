@@ -1,5 +1,5 @@
 # 1:1 PATH MIRROR of extra/datasets/imagenet.py (91 LOC upstream). PORTED -- the
-# FILE-LIST HALF, over a USER-PROVIDED ROOT.
+# file-list half, over a user-provided root.
 #
 # WHAT UPSTREAM IS. Three defs that answer "which files are the dataset", and
 # nothing else. Upstream's own comment says it: "for imagenet download
@@ -14,7 +14,7 @@
 #     {p}")`. THE WALRUS: the glob result AND the pattern come from one expression,
 #     so the pattern is part of the answer.
 #
-# THE ROOT IS THE CALLER'S, NOT OURS. Upstream's `BASEDIR` is
+# the root is the caller's, not ours. Upstream's `BASEDIR` is
 # `pathlib.Path(__file__).parent / "imagenet"` (upstream:25), a path inside the
 # installed package, and `tinygrad/nn/datasets.py`'s `ImageNet` class takes a
 # root directory THE USER PROVIDES. So this port takes the root as an argument:
@@ -31,7 +31,7 @@
 # `D.Refused` is the port's named "cannot answer" value (`__init__.bend:40-46`);
 # its `at` carries the upstream address AND the path that was missing.
 #
-# THE PRIMITIVES, AND WHERE THEY LIVE. MEASURED, not assumed:
+# the primitives, and WHERE they live. measured, not assumed:
 #   * LISTING A DIRECTORY: `Sz.read_dir` (`tinybendygrad/sz.bend:124`), the ONLY
 #     directory listing in the port. It is `@unsafe` -- a foreign call, because
 #     `base.bend` has no `File.list` (the TODO at `sz.bend:120` says so) -- and it
@@ -48,13 +48,13 @@
 #   * A GLOB: THERE IS NONE. `train/*/*` is expanded HERE, from the two
 #     primitives above, and the expansion is measured against CPython's
 #     `glob.glob` -- see `.agents/slop/imagenet2/REPORT.md`.
-#   * A JSON PARSER: THERE IS NONE EITHER. `THE PORT's `tinybendygrad/viz/serve.bend` HEADER`
+#   * a json parser: there is NONE either. `THE PORT's `tinybendygrad/viz/serve.bend` HEADER`
 #     says "`json.loads` IS NOT PORTED" and `tinybendygrad/nn/state.bend:97`
 #     calls `json.loads` "a PARSER" it lacks. So the class index is read by the
 #     READER BELOW, which is a decoder for the class-index format and NOT a JSON
 #     parser: it refuses any shape it does not know instead of guessing one.
 #
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `image_resize` (upstream:37),
+# not ported, and named so nobody invents it: `image_resize` (upstream:37),
 #   `rand_flip` (upstream:43), `center_crop` (upstream:48),
 #   `random_resized_crop` (upstream:57), `preprocess_train` (upstream:88) -- the
 #   TRAINING-TIME TRANSFORMS, which need the imaging library and are not this
@@ -221,7 +221,7 @@ def split.files(root: String, split: String, at: String, what: String) -> IO(Loa
 # THE CLASS INDEX READER
 #
 # A decoder for the class-index format, NOT a JSON parser: the port has none
-# (THE PORT's `tinybendygrad/viz/serve.bend` HEADER and THE PORT's `nn/state.bend` HEADER), and a general one is a project
+# (the port's `tinybendygrad/viz/serve.bend` header and the port's `nn/state.bend` header), and a general one is a project
 # with its own termination story -- see `.agents/slop/imagenet2/REPORT.md`.
 #
 # THE FORMAT IT READS, and the two shapes in evidence:
@@ -242,7 +242,7 @@ def split.files(root: String, split: String, at: String, what: String) -> IO(Loa
 # smaller part of its parameter and a computed suffix is not one
 # (MEASURED, `.agents/slop/imagenet2/t1-suffix.bend`).
 #
-# THE WHITESPACE IS `Char.is_space`, WHICH IS ONE CHARACTER WIDER THAN JSON's:
+# the whitespace is `Char.is_space`, which is one character wider than json's:
 # Base's is `x == 32 or 9 <= x <= 13` (`base.bend:1950-1953`), so a vertical tab
 # or a form feed BETWEEN TWO TOKENS is accepted here and rejected by `json`.
 # Nothing writes one, and the refusal is the port's habit, so the wider set is

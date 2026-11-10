@@ -8,7 +8,7 @@ import ./../uop/ops.bend as O
 # ===========================================================================
 # nn/onnx.bend -- tinygrad/nn/onnx.py (1230 lines).
 #
-# STAGE 1 -- WHAT IS PORTED, WHAT IS NOT, AND WHICH PYTHON LINES THE REST
+# stage 1 -- what is ported, what is not, and which python lines the rest
 # COVERS. Staged on purpose: this file is 40% of what is left to port, and a
 # file that TRIES to be complete and is not is worse than one that is honestly
 # partial. Every stage leaves the file CHECKING with this header true.
@@ -26,7 +26,7 @@ import ./../uop/ops.bend as O
 #     thirty-eight); and the four frozen records the parser builds toward
 #     (:53-70 `OpSetId`, `OnnxValue`, `OnnxNode`) with the attribute-VALUE sum
 #     type `OnnxNode.opts` needs.
-#   STAGE 2 -- LANDED, CHECKING, GATED. The op NAME TABLE (:1308-1317, 171 keys
+#   stage 2 -- landed, checking, gated. The op name table (:1308-1317, 171 keys
 #     and 171 count), the four VERSIONED ops' seven (domain, version, impl) rows,
 #     the three-way IMPLEMENTATION IDENTITY, `_select_op`'s version ROUTER
 #     (:415-423) with 22 fixtures over all three arms and both Python raises, and
@@ -75,7 +75,7 @@ import ./../uop/ops.bend as O
 #     `RotaryEmbedding` (onnx.py:1017 symbol=RotaryEmbedding) name the three largest
 #     op bodies, pure mixin chains; their `_select_op` ROUTING is ported, the bodies are not.
 #
-# THE NODE TYPES LEFT UNPORTED, WITH THE WALL FOR EACH. The brief's list, and the
+# the node types left unported, with the wall for each. The brief's list, and the
 # honest answer for every one: the PADS and the ROUTING are ported (Stage 2), the
 # node that CONSUMES them is not, and the wall is the same for all of them.
 #
@@ -110,7 +110,7 @@ import ./../uop/ops.bend as O
 #     land on thirteen distinct dtypes; a fourteenth ONNX type mapping onto one of
 #     them would break the bijection and the row would say so.
 #
-# THE GATE IS THE PART THAT IS WORTH HAVING, and it is this file's reason to
+# the gate is the part that is worth having, and it is this file's reason to
 # exist. `OnnxDataType.to_dtype()` is `DTYPES_DICT[self.name.lower()]` (:37), so
 # tinygrad maps thirteen ONNX type strings onto its dtypes THROUGH A NAME TABLE,
 # and a wrong entry is a silent wrong-dtype kernel rather than a crash.
@@ -149,7 +149,7 @@ import ./../uop/ops.bend as O
 # `skip_field` (:112-119) is the only consumer and it is a WALL with
 # `PBBufferedReader`; the table itself is the ported part.
 #
-# THE ARMS ARE IN DESCENDING ORDER AND THAT IS LOAD-BEARING. A `U32` literal
+# the arms are in descending order and that is LOAD-bearing. a `U32` literal
 # pattern is a PREFIX match over the successor relation (bend2-constraints'
 # `mixin/rand` rule 2), so `case 5:` claims 5,6,7,... and any `case 6:` written
 # after it is DEAD CODE that still checks. Listed high-to-low, no arm claims a
@@ -820,7 +820,7 @@ def onx_odt_tbl() -> String:
 # for exactly these, and it used to spell "unsigned char" and "__bf16" until
 # tinygrad 793abbb moved `DType.name` onto the rust names -- so the two
 # vocabularies are the same and a byte diff is a real test rather than a spelling
-# argument. NOTE THAT THIS ROW IS INSENSITIVE TO THE RENAME: `onx_odt_dt_name`
+# argument. NOTE that this row is insensitive to the rename: `onx_odt_dt_name`
 # walks the ONNX integer codes and prints `dt_name` of the result, so the rename
 # moves BOTH sides of the row together and the diff stays empty. The ONNX NAME
 # table above is a different vocabulary ("float", "int32", ...) and did not move.
@@ -850,7 +850,7 @@ def onx_wt_tbl() -> String:
   onx_join([onx_wt_name(0), onx_wt_name(1), onx_wt_name(2), onx_wt_name(3),
     onx_wt_name(4), onx_wt_name(5)])
 
-# THE ROUND TRIP, BOTH DIRECTIONS, ONE ROW PER TABLE AND THE PER-ENTRY FOLDS.
+# the round trip, both directions, one row per table and the per-entry folds.
 # `code -> name -> code` is the claim. The fold calls the named defs directly
 # rather than taking them as parameters, which is the wall at the top of this
 # section.
@@ -1077,7 +1077,7 @@ def onx_pc_has_neg() -> Bool: onx_pc_has(required_input_python_consts(), "Slice"
 
 
 # ===========================================================================
-# STAGE 2. THE OP TABLE AND THE PADDING ARITHMETIC.
+# stage 2. the op table and the padding arithmetic.
 #
 # `get_onnx_ops` (:475-1319) is 845 lines and two different things. ONE HUNDRED
 # SEVENTY-ONE of those lines are the names of the operator dictionary the final
@@ -1361,7 +1361,7 @@ def onx_sel(+nm: String, +dom: Dom, +ver: U32) -> Maybe<&1, String>:
 # and `Pad` actually compute -- so they are the portable core of the op table
 # and they are gated against CPython.
 #
-# WHY THEY ARE INTEGERS AND NOT TENSORS, which is the decision that made this
+# why they are integers and not tensors, which is the decision that made this
 # stage possible: `_resolve_pool_pads(x, ...)` reads `x.shape` (:497) and
 # NOTHING ELSE off `x`. Its output is a padding tuple. So the port takes the
 # spatial shape as a `List<&2, U32>` and nothing about it is a weakening.
@@ -1420,16 +1420,16 @@ def Ap.isupper(a: Ap) -> Bool:
 #     hi' = (hi >>> 1) | (sign ? 1<<31 : 0)    # the only SIGN extension
 # THREE bugs got this file, all caught by the gate, and the third is the one
 # worth writing down:
-#   1. THE FILL WAS NOT CONDITIONAL ON THE SIGN, so `floor(3/2)` answered
+#   1. the fill was not conditional on the sign, so `floor(3/2)` answered
 #      `-2147483647` (`onnx_ap_su33`, where CPython says `[1,1,2,2]`).
-#   2. THE LOW WORD'S FILL WAS TAKEN FROM THE LOW WORD'S OWN BIT 0 instead of
+#   2. the low WORD's fill was taken from the low WORD's own bit 0 instead of
 #      from `hi & 1`, so `floor(-2/2)` answered `0x7FFFFFFF:0xFFFFFFFF`.
 #   3. ... and the HIGH word's fill was taken from the LOW word's bit 0, so the
 #      same value came out `0xFFFFFFFF:0x7FFFFFFF`. `-5` (`lo & 1 == 1`) answers
 #      CORRECTLY under all three, which is why only the EVEN negative exposed
 #      them: `onnx_ap_su_neg2` is the row that saw it, where CPython says
 #      `[-1, 0, -1, 1]`.
-# THE SIGN IS A `Bool` PARAMETER AND NOT A CALL because a `match` may not
+# the sign is a `Bool` parameter and not a call because a `match` may not
 # scrutinise a call (bend2-constraints rule 2), and `H.i64_is_neg` is a call.
 def onx_halve_lo(+x: H.I64) -> U32:
   U32.or(U32.shrn(H.lo32(x), 1n), U32.shln(U32.and(H.hi32(x), 1), 31n))
@@ -1609,7 +1609,7 @@ def onx_auto_pad(+pads: List<&2, H.I64>, +up: Bool) -> List<&2, H.I64>:
 #   o_ = [((i - 1) // s + 1) for i,s in zip(i_, s_)]
 #   return _onnx_pads_to_tiny_pads(_auto_pad([(o-1)*s+k-i for o,i,k,s in zip(o_, i_, k_, s_)], auto_pad))
 #
-# THREE FACTS THE PORT HAS TO KEEP AND NONE IS OBVIOUS FROM THE SIGNATURE:
+# three facts the port has to keep and NONE is obvious from the signature:
 #   1. `i_` is `x.shape[-len(k_):]` -- the SPATIAL tail, not the whole shape. The
 #      port takes it already sliced, which is the one place this def's signature
 #      differs from Python's and the comment says so.
@@ -1901,7 +1901,7 @@ def main() -> IO(Unit):
     onx_row("onnx_stage2", True{})
 
 # ===========================================================================
-# THE WALLS, ONE `TODO(p3)` PER PYTHON LINE GROUP. No prose pretending to be
+# the walls, one `TODO(p3)` per python line group. No prose pretending to be
 # code: `nn/__init__.bend` says the same thing about its own `__call__`s and the
 # reason is the same -- a def with no body is a paragraph pretending to be a def.
 # ===========================================================================
@@ -1921,10 +1921,10 @@ def main() -> IO(Unit):
 # TODO(p3) onnx.py:475  get_onnx_ops -- the 167 bodies. The NAME TABLE and
 #   `_select_op` are PORTED (:1067, :1240); everything below is not, and every one
 #   of these is a mixin method belonging to another file:
-# WALL(p3) onnx.py:543  contiguous_1 / :547 If / :564 Identity / :565 Constant / -- BLOCKED: needs x.contiguous, WHICH THE PORT'S `mixin/elementwise.bend` NO LONGER CARRIES -- upstream's `elementwise.py:59` is the record -- and Tensor.eye (NOT defs); If needs an OnnxRunner VALUE (:67-69) and ImageDecoder needs PIL (:72).
+# wall(p3) onnx.py:543  contiguous_1 / :547 If / :564 Identity / :565 Constant / -- blocked: needs x.contiguous, which the port's `mixin/elementwise.bend` no longer carries -- upstream's `elementwise.py:59` is the record -- and Tensor.eye (not defs); If needs an OnnxRunner value (:67-69) and ImageDecoder needs pil (:72).
 #   :575 Range / :578 ImageDecoder / :587 EyeLike / :591 OptionalHasElement /
 #   :593 ConstantOfShape / :597 Size / :598 Shape, and the port's own pointer for `contiguous` is mixin/elementwise.bend:926 symbol=contiguous
-# WALL(p3) onnx.py:601  Not / Clip / IsInf -- BLOCKED: needs x.clip, WHICH THE PORT'S `mixin/elementwise.bend` NO LONGER CARRIES -- upstream's `elementwise.py:586` is the record -- and x.isinf (:832) (NOT defs); x.logical_not IS ported (ew_logical_not).
+# wall(p3) onnx.py:601  Not / Clip / IsInf -- blocked: needs x.clip, which the port's `mixin/elementwise.bend` no longer carries -- upstream's `elementwise.py:586` is the record -- and x.isinf (:832) (not defs); x.logical_not is ported (ew_logical_not).
 # TODO(p3) onnx.py:526  softmax_1 / softmax_13 / HardSigmoid / Gelu / BiasGelu /
 #   FastGelu / PRelu / LeakyRelu / ThresholdedRelu / LogSoftmax / Hardmax /
 #   Binarizer / Swish -- the Softmax ROUTING is PORTED, its two bodies are not.
@@ -1933,13 +1933,13 @@ def main() -> IO(Unit):
 #   BitwiseXor / BitwiseNot / Mod
 # TODO(p3) onnx.py:563  Cast / CastLike -- `OnnxDataType(to).to_dtype()` is
 #   PORTED (`onx_odt_dt`), so only `x.cast` is missing.
-# WALL(p3) onnx.py:647  Max / Min / Sum / Mean / ReduceMax / ReduceMin / -- BLOCKED: needs x.argmax and x.argmin (NOT defs, op.bend:11); the reduce mixins ARE ported (mo_max/mo_min/mo_sum/mo_mean, op.bend:819/:1117/:803/:883) and _axes is PORTED and GATED (:479).
+# wall(p3) onnx.py:647  Max / Min / Sum / Mean / ReduceMax / ReduceMin / -- blocked: needs x.argmax and x.argmin (not defs, op.bend:11); the reduce mixins are ported (mo_max/mo_min/mo_sum/mo_mean, op.bend:819/:1117/:803/:883) and _axes is ported and gated (:479).
 #   ReduceSum / ReduceMean / ReduceSumSquare / ReduceProd / ReduceL1 / ReduceL2 /
 #   ReduceLogSum / ReduceLogSumExp / ArgMax / ArgMin. `_axes` (:479) is PORTED and
 #   GATED, so only `x.max`/`x.min`/`x.sum`/`x.mean`/`x.argmax` are missing, and the port's own pointer for `clamp` is mixin/elementwise.bend:933 symbol=clamp
 # WALL(p3) onnx.py:679  Reshape / Flatten / Expand / Shrink / Transpose / Squeeze / -- BLOCKED: needs x.unsqueeze (NOT a def); x.reshape/x.pad/x.shrink ARE ported (mxw_reshape/mxw_pad/mxw_shrink) and _broadcast_shape IS bcast_shape (fold.bend:667); Pad's own wall is fold's PAD refusal (:96-100).
 #   Unsqueeze / Tile / Concat / Slice / Split / Pad / CenterCropPad
-# WALL(p3) onnx.py:724  AveragePool / MaxPool / Conv / ConvTranspose / MaxUnpool / -- BLOCKED: needs x.avg_pool2d/x.max_pool2d/x.conv2d/x.conv_transpose2d (NOT defs) -- the padding is decidable and the OUTPUT SHAPE is not (mixin/op.bend's `_pool`; fold.bend refuses EXPAND/SHRINK/PAD/FLIP), plus x.einsum (op.bend W2) and x.cumsum/x.trilu/x.topk.
+# wall(p3) onnx.py:724  AveragePool / MaxPool / Conv / ConvTranspose / MaxUnpool / -- blocked: needs x.avg_pool2d/x.max_pool2d/x.conv2d/x.conv_transpose2d (not defs) -- the padding is decidable and the output shape is not (mixin/op.bend's `_pool`; fold.bend refuses expand/shrink/pad/flip), plus x.einsum (op.bend W2) and x.cumsum/x.trilu/x.topk.
 #   GlobalAveragePool / GlobalMaxPool / Gemm / Einsum / CumSum / Trilu / Resize /
 #   Upsample / TopK
 # WALL(p3) onnx.py:896  BatchNormalization / GroupNormalization / -- BLOCKED: needs x.batchnorm and x.layernorm (mixin/op.bend SIDE B, not built) and x.one_hot/x.unsqueeze (NOT defs).
@@ -1949,7 +1949,7 @@ def main() -> IO(Unit):
 #   of the whole index expression and has no mixin method of its own.
 # TODO(p3) onnx.py:881  dropout_7 / dropout_6 -- legacy `numpy.random.RandomState`,
 #   which is a NUMPY seeding requirement the port cannot state.
-# WALL(p3) onnx.py:982  _window / HannWindow / HammingWindow / BlackmanWindow / -- BLOCKED: needs x.rearrange (movement.bend WALL 2, a STRING FORMULA) and x.nll_loss (NOT a def); _window's x.cos is on the F32/`Word` wall (elementwise.bend:41-50); the three mixin chains' _select_op ROUTING is PORTED and GATED (:73-76), their bodies are not.
+# wall(p3) onnx.py:982  _window / HannWindow / HammingWindow / BlackmanWindow / -- blocked: needs x.rearrange (movement.bend wall 2, a string formula) and x.nll_loss (not a def); _window's x.cos is on the F32/`Word` wall (elementwise.bend:41-50); the three mixin chains' _select_op routing is ported and gated (:73-76), their bodies are not.
 #   LRN / NegativeLogLikelihoodLoss / SoftmaxCrossEntropyLoss / AffineGrid /
 #   attention_contrib / attention_onnx / RMSNormalization / RotaryEmbedding
 # WALL(p3) onnx.py:1133 NonZero / ArrayFeatureExtractor / Gather / Scatter / -- BLOCKED: needs x.gather, x.scatter and x.scatter_reduce (NOT defs); x.shrink/x.cat it also calls ARE ported (mxw_shrink/mx_cat).
@@ -1975,9 +1975,9 @@ def main() -> IO(Unit):
 #
 # | mutation | the edit | rows MOVED | what it was testing |
 # | --- | --- | --- | --- |
-# | M1 | `OnnxDataType`'s `uint8` KEY becomes `"uchar"` (:37 `self.name.lower()`) | `onnx_odt_rt2` `onnx_odt_ktbl` | **THE MOST IMPORTANT ROW IN THIS TABLE.** `uchar` is ALSO a `DTYPES_DICT` key, so the lookup still answers the RIGHT dtype and `onnx_odt_dtbl` does not move. Only the two rows that print or invert the KEY see it. A gate carrying only the dtype table would be blind to a wrong lookup key, which is exactly the silent wrong-dtype kernel this file exists to prevent. |
+# | M1 | `OnnxDataType`'s `uint8` key becomes `"uchar"` (:37 `self.name.lower()`) | `onnx_odt_rt2` `onnx_odt_ktbl` | the most important row in this table. `uchar` is also a `DTYPES_DICT` key, so the lookup still answers the right dtype and `onnx_odt_dtbl` does not move. Only the two rows that print or invert the key see it. a gate carrying only the dtype table would be blind to a wrong lookup key, which is exactly the silent wrong-dtype kernel this file exists to prevent. |
 # | M2 | the `int64` KEY becomes `"long"` | `onnx_odt_rt2` `onnx_odt_ktbl` | the same hazard on the entry whose `DType.name` is also `long`. M1 and M2 are the SAME defect at two cells, so they are not independent claims about two entries -- they are one claim that the key table is the lower-cased NAME and not the attribute name. |
-# | M3 | the `BOOL` arm is deleted from `onx_odt_name` | `onnx_odt_rt` `onnx_odt_all` `onnx_odt_tbl` | a MISSING MEMBER. **`onnx_odt_n` does NOT move**, because it counts `onx_odt_codes()` and not the table's arms: the count and the table are two independent transcriptions of one Python list. This is a measured limit of the count row and it is written into the header rather than left for a reader to find. |
+# | M3 | the `BOOL` arm is deleted from `onx_odt_name` | `onnx_odt_rt` `onnx_odt_all` `onnx_odt_tbl` | a MISSING MEMBER. `onnx_odt_n` does NOT move, because it counts `onx_odt_codes()` and not the table's arms: the count and the table are two independent transcriptions of one Python list. This is a measured limit of the count row and it is written into the header rather than left for a reader to find. |
 # | M4 | the `bfloat16` reverse-table entry gets an `X` | `onnx_odt_rt2` `onnx_odt_dt_rt` `onnx_odt_inv` `onnx_odt_inv_tbl` `onnx_odt_ktbl` `onnx_odt_dtbl` | SIX rows, the widest blast radius in the table: the reverse table is the one every forward row inverts through, so a single cell there is shared by the whole dtype family. `onnx_odt_inv` moving is the point -- the reverse is a real bijection and breaking one end breaks both. |
 # | M5 | `to_field_name`'s `7` becomes `"int"` | `onnx_at2` `onnx_at_tbl` | the ATTRIBUTE SPELLING (:27). `"int"` is not a key `_parse_AttributeProto` writes (:253-267), so a wrong singular is a silent read of an absent key. |
 # | M6 | `to_field_name`'s `5` becomes `"graph"` | `onnx_at2` `onnx_at_tbl` | the GRAPH arm, the one whose value is an `OnnxRunner` and therefore has no payload in `AVal`. |
@@ -1989,15 +1989,15 @@ def main() -> IO(Unit):
 # | M12 | `"Where"` is MISSPELLED as `"Wherf"` | `onnx_ops_tbl` | ONE row, and this is the interesting half of M11/M12: a same-length typo leaves the COUNT green, so the count row alone is not the table claim. |
 # | M13 | `IsNaN`'s Tensor method becomes `is_nan` (:1310) | `onnx_sel_isnan` | the ONE `getattr(Tensor, op.lower())` entry whose Tensor method is not simply the lower-cased name (`Tensor.isnan`). One row, localised, and it is the whole reason the 36-entry identity table is written out rather than derived. |
 # | M14 | the eligibility test's `<=` becomes `<` (:421) | `onnx_sel_sm1` `onnx_sel_sm13` `onnx_sel_dr6` `onnx_sel_at_onnx` `onnx_sel_at_ms` `onnx_sel_ct_tiny` | SIX rows, and every one of them is a VERSION-1 registration: strict `<` refuses the opset each version was introduced at. An off-by-one in a `<=` is invisible at any opset above the introduction version, which is why the fixtures include opsets 1, 0 and 5 and not only the current ones. |
-# | M15 | the versioned router's `bi` pick becomes FIRST-WINS instead of `U32.is_gt`-max (:423) | `onnx_sel_sm1` `onnx_sel_sm12` `onnx_sel_sm13` `onnx_sel_sm20` `onnx_sel_dr6` `onnx_sel_dr99` `onnx_sel_at_onnx` `onnx_sel_at_ms` `onnx_sel_at_onnx2` `onnx_sel_ct_tiny` `onnx_sel_ct_tiny5` | ELEVEN rows, all of them the versioned ops. **This mutation found a real bug in the port**: the first version of `onx_elig` AND-ed `not hit`, which is first-wins, and `Softmax` at opset 13 answered `softmax_1`. |
-# | M15b | the sibling edit on the `bv` ACCUMULATOR (`U32.max(bv, …)` -> `bv`) | **NOTHING** | **THE BLIND SPOT, and the reason this table records a null result.** `bv` feeds only the max COMPARISON and the answer is the `bi` string, so `bv` is not load-bearing on its own. The mutation that moves rows is M15, on `bi`. Two claims about one rule, and only one of them is localised. |
+# | M15 | the versioned router's `bi` pick becomes FIRST-WINS instead of `U32.is_gt`-max (:423) | `onnx_sel_sm1` `onnx_sel_sm12` `onnx_sel_sm13` `onnx_sel_sm20` `onnx_sel_dr6` `onnx_sel_dr99` `onnx_sel_at_onnx` `onnx_sel_at_ms` `onnx_sel_at_onnx2` `onnx_sel_ct_tiny` `onnx_sel_ct_tiny5` | ELEVEN rows, all of them the versioned ops. This mutation found a real bug in the port: the first version of `onx_elig` AND-ed `not hit`, which is first-wins, and `Softmax` at opset 13 answered `softmax_1`. |
+# | M15b | the sibling edit on the `bv` accumulator (`U32.max(bv, …)` -> `bv`) | nothing | the blind spot, and the reason this table records a null result. `bv` feeds only the max comparison and the answer is the `bi` string, so `bv` is not load-bearing on its own. The mutation that moves rows is M15, on `bi`. Two claims about one rule, and only one of them is localised. |
 # | M16 | `p2t`'s SECOND reversal is dropped (:483) | `onnx_p2t_4` `onnx_p2t_6` `onnx_p2t_neg` `onnx_p2t_8` `onnx_pool_ns1` `onnx_pool_ns2` | SIX rows. Reversing only the first half is a real bug this gate CAUGHT during the port (`onnx_p2t_neg` answered `(0,0,0,0,0,5)` where CPython says `(0,5,0,0,0,0)`). `onnx_p2t_6c` does NOT move, and that is the fixture that was built for it: a CONSTANT pads tuple is invariant under the swap, so a fixture of constants could never have seen this. |
 # | M17 | `p2t`'s second half stops being `take(n, drop(n))` | `onnx_p2t_odd` | ONE row, and it is the only ODD-length fixture. `p2t` indexes `pads[i+n]` for `i in range(n)`, which is exactly `n` elements, so a 5-pad tuple drops its last pad. A gate of even-length fixtures would not have a row here at all. |
-# | M18 | the 64-bit shift's LOW-word fill comes from the low word's own bit 0 | `onnx_ap_su33` `onnx_ap_sl33` `onnx_ap_su5` `onnx_ap_sl5` `onnx_ap_sl123` `onnx_ap_su_neg2` `onnx_ap_odd2` `onnx_pool_su2` `onnx_pool_sl2` `onnx_pool_su_dil` `onnx_pool_su_s3` `onnx_pool_su_odd` `onnx_pool_sl_neg` | THIRTEEN rows, the widest in the table, and every one of them is a row with a NON-ZERO pad. The correct identity is `lo' = (lo >>> 1) | ((hi & 1) << 31)` -- a bit SHUFFLE, not a sign fill -- and the high word's `hi' = (hi >>> 1) | sign` is the only sign extension. This is the SECOND of the three bugs the gate caught in `onx_halve`, and `-5` answers correctly under all three (its `lo & 1` is 1), which is why only an EVEN negative exposed it. |
-# | M19 | a COMMENT-ONLY edit | **NOTHING** | THE CONTROL. A mutation table with no row that CANNOT move is a table of coincidences. |
+# | M18 | the 64-bit shift's low-word fill comes from the low word's own bit 0 | `onnx_ap_su33` `onnx_ap_sl33` `onnx_ap_su5` `onnx_ap_sl5` `onnx_ap_sl123` `onnx_ap_su_neg2` `onnx_ap_odd2` `onnx_pool_su2` `onnx_pool_sl2` `onnx_pool_su_dil` `onnx_pool_su_s3` `onnx_pool_su_odd` `onnx_pool_sl_neg` | thirteen rows, the widest in the table, and every one of them is a row with a non-zero pad. The correct identity is `lo' = (lo >>> 1) | ((hi & 1) << 31)` -- a bit shuffle, not a sign fill -- and the high word's `hi' = (hi >>> 1) | sign` is the only sign extension. This is the second of the three bugs the gate caught in `onx_halve`, and `-5` answers correctly under all three (its `lo & 1` is 1), which is why only an even negative exposed it. |
+# | M19 | a comment-only edit | nothing | the control. a mutation table with no row that cannot move is a table of coincidences. |
 # | M20 | the WireType table swaps `FIXED32` and `FIXED64` (:18) | `onnx_wt` `onnx_wt_tbl` | the round trip over the six WireType codes. `onnx_wt_n` does NOT move because a swap preserves the count -- the same COUNT-vs-CONTENT lesson as M3, on a different table. |
 #
-# WHAT THE TABLE DOES NOT COVER, stated rather than left to be discovered:
+# what the table does not cover, stated rather than left to be discovered:
 #   * no mutation of `onx_dom_empty`'s EMPTY-string arm, because `onnx_dom_onnx`
 #     is the arm that also lands on ONNX and only those TWO rows can see the
 #     difference; that is a MISSING ROW and the fix is a third fixture whose

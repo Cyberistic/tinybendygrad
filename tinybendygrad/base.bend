@@ -31,7 +31,7 @@
 # the inverse -- there is deliberately no second name for it here.
 #
 # ---------------------------------------------------------------------------
-# THE LANE SPLIT, MEASURED, AND IT IS THE INTERESTING PART. The round trip
+# the lane split, measured, and it is the interesting part. The round trip
 # `F32.bits(F32.from_bits(p)) == p` holds for EVERY one of the 2^32 patterns in
 # the C lane and for all but the NaNs in the JS lane:
 #

@@ -329,7 +329,7 @@ def E_SSCAP() -> List<&2, Ent>:
   [   Ent{2, "LIBUSB_BM_LTM_SUPPORT"}]
 
 # ===========================================================================
-# THE TWO FOLDS, ONE TABLE EACH. `enum_nm` is the dict and `enum_val` is its
+# the two folds, one table each. `enum_nm` is the dict and `enum_val` is its
 # inverse, so both directions come off ONE walk over the same data.
 # ===========================================================================
 
@@ -378,7 +378,7 @@ def enum_val(+nm: String, +es: List<&2, Ent>) -> U32:
 # is the whole bug the differ found: zero `_n_` rows and every seen set already
 # full.
 #
-# THE CONS ORDER IS THE HEADER'S OWN: the walk goes FORWARD and each entry conses
+# the cons order is the header's own: the walk goes forward and each entry conses
 # its `_n_` row before its `_v_` row, so the accumulator is already in order and
 # needs no `List.reverse` anywhere. Walking the REVERSED table instead does not
 # help -- a cons fold over a reversed walk builds the accumulator backwards, and
@@ -398,7 +398,7 @@ def enum_rows(+tag: String, +es: List<&2, Ent>) -> List<&2, String>:
 
 
 # ===========================================================================
-# THE STRUCT FIELD LISTS, BY NAME AND IN ORDER. `usb.py` addresses
+# the struct field lists, by name and in order. `usb.py` addresses
 # `struct_libusb_transfer` THREE TIMES BY NAME (:350-351 `field("status")`,
 # `field("length")`, `field("buffer")`) and reads
 # `struct_libusb_device_descriptor` FOUR times (:34 `idVendor`/`idProduct`, :50
@@ -421,7 +421,7 @@ def Fld.name(x: Fld) -> String:
   match x:
     case Fld{ix, name}: name
 
-# THE ORDINAL OF A FIELD NAME IN A LIST, and `NOT_FOUND` when absent. :350's
+# the ordinal of a field name in a list, and `NOT_FOUND` when absent. :350's
 # `field("status")` is this lookup, and its index is the byte offset divisor in
 # `usb_chunk` (:344 `end // 4 - 1`), so a lookup answering the wrong ordinal is a
 # wrong transfer.
@@ -674,7 +674,7 @@ def usb_window(+is_copyin: Bool) -> U32:
 # ---------------------------------------------------------------------------
 # `_f0_out` (:106-107) and `pcie_request` (:113-135).
 #
-# THE 64-BIT ADDRESS IS A PAIR, ON PURPOSE. `struct.pack('<III', address &
+# the 64-bit address is a pair, on purpose. `struct.pack('<iii', address &
 # 0xFFFFFFFF, address >> 32, value)` SPLITS it before anything else happens, and
 # `helpers.bend` has `i64_add`/`i64_sub`/`i64_cmp` and NO 64-bit shift, so
 # `address >> 32` is not spellable here at all. Representing the address as the
@@ -851,7 +851,7 @@ def table_size_word(+k: U32, +r: U32) -> U32:
 # fallback is the seam's `len`.
 def off_of_index(+index: U32, +el_sz: U32) -> U32: U32.mul(index, el_sz)
 
-# THE INTEGER ARM AND THE SLICE ARM ARE SEPARATE FUNCTIONS, because :180-182 is
+# the integer arm and the slice arm are separate functions, because :180-182 is
 # two arms and an off-by-one in one does not move the other.
 def off_of_index_sz(+el_sz: U32) -> U32: el_sz
 
@@ -1317,7 +1317,7 @@ def t_remote() -> IO(Unit):
 # `libusb_strerror` is a C call whose return is the message's tail.
 # | WALL(p3) tinygrad/runtime/support/usb.py:16   `libusb_strerror(rc)`. -- BLOCKED. #   `libusb_strerror(rc)` IS A C LIBRARY CALL, and the message also interpolates `fn.__name__` --
 #   the NAME OF A PYTHON FUNCTION OBJECT. The port declares its own C; it has no generic `fn(*args)`.
-# | WALL(p3) tinygrad/runtime/support/usb.py:102  `0x{ltssm:02X}`. -- BLOCKED. #   THE FORMAT IS NOT THE BLOCKER -- the port has `byte_hex`/`hex_of`/`hex_digits` in
+# | wall(p3) tinygrad/runtime/support/usb.py:102  `0x{ltssm:02X}`. -- blocked. #   the format is not the blocker -- the port has `byte_hex`/`hex_of`/`hex_digits` in
 #   `helpers.bend`. What is missing is the PCIe LINK-UP CHECK that raises with it.
 # | WALL(p3) tinygrad/runtime/support/usb.py:129  `address={address:#x}`. -- BLOCKED. #   `address={address:#x}` -- the same shape as the marker above: a format in a raise site this
 #   driver layer does not have.
@@ -1377,7 +1377,7 @@ def cpl_named(+cpl_status: U32) -> Bool:
 # exactly the `bulk_read(13)` on the next line. A reader who counts `16s` as four
 # more uint32 gets 39.
 #
-# THE FIELD NAMES ARE THE ROLES the calling code gives them -- `struct.pack` has no
+# the field names are the roles the calling code gives them -- `struct.pack` has no
 # field names, so this is a reading of `"<IIIBBB16s"` against the seven arguments
 # :89 hands it, and the WIDTHS beside each name are `struct.calcsize` of the
 # field's own format.
@@ -1412,7 +1412,7 @@ def EP_IN() -> U32: 129        # 0x81, bulk IN 0x01 | 0x80
 
 def ep_dir(+ep: U32) -> U32: U32.and(ep, 128)
 
-# THE THREE SIZES COME FROM `struct.calcsize`, and they are ROWS rather than
+# the three sizes come from `struct.calcsize`, and they are rows rather than
 # literals precisely because a reader who counts `"<IIIBBB16s"` by eye gets 37.
 # `usb-constsweep.py` confirms all three by calling `struct.calcsize`.
 def CDB_SIZE() -> U32: 31
@@ -1610,11 +1610,11 @@ def head_name(xs: List<&2, String>, dflt: String) -> String:
     case Nil{}: dflt
     case h <> t: h
 
-# THE HEAD-AT-ZERO ARM IS ITS OWN DEF so `M31`'s off-by-one edit COMPILES, and the
+# the HEAD-at-zero arm is its own DEF so `M31`'s off-by-one edit compiles, and the
 # arm answers `h0`: the head IS the zero-th entry.
 def sym_at_head(+h0: String, +t2: List<&2, String>) -> String: h0
 
-# THE KIND -> SYMBOL LOOKUP. `n` IS THE INDEX and the head is the ZERO-th entry.
+# the kind -> symbol lookup. `n` is the INDEX and the head is the zero-th entry.
 # The version that matched `1n+m` and returned the head when `m == 0n` was off by
 # one, and every order row in the file read as the symbol BELOW the truth --
 # exactly the error a count-only gate cannot see and a whole-value row can.
@@ -1635,7 +1635,7 @@ def call_sym(+k: U32) -> String: sym_at(U32.to_nat(k), SYMS())
 
 def Call.sym(x: Call) -> String: call_sym(Call.k(x))
 
-# THE CALL KINDS. They are PORT-INVENTED -- no line of `usb.py` says "K_INIT is
+# the call kinds. They are port-invented -- no line of `usb.py` says "k_init is
 # 0" -- so what is checkable is the BIJECTION onto `SYMS()`, and `usb-symmap.py`
 # checks that plus that every name is a real `autogen.libusb` export.
 def K_INIT() -> U32: 0
@@ -1676,7 +1676,7 @@ def Tr.refused(t: Tr) -> Bool:
   match t:
     case Tr{calls, next, bad_at, seen, refused}: refused
 
-# THE ORDINAL OF THE REFUSAL THAT SHOULD FIRE, so one fixture reaches each raise
+# the ordinal of the refusal that should fire, so one fixture reaches each raise
 # site in turn. 0 = never, which is every successful fixture.
 def Tr.fail_at(t: Tr, n: U32) -> Tr:
   match t:
@@ -1687,7 +1687,7 @@ def Tr.fail_at(t: Tr, n: U32) -> Tr:
 # same breath, so on entry its own `refused` is still False. Every step goes
 # through `Tr.emit.go`, so two steps cannot disagree about the guard.
 #
-# `Tr.emit` AND `Tr.raise` ARE THE SAME FUNCTION with a different GUARD, and which
+# `Tr.emit` and `Tr.raise` are the same function with a different guard, and which
 # one a step uses IS THE PORTED FACT: `usb.py`'s `checked` (:13-18) raises when the
 # return code is negative, so every call wrapped in `checked` is a `Tr.raise` site
 # and every RAW call is a `Tr.emit`. A `Tr.emit` CANNOT refuse at all, which is why
@@ -1775,7 +1775,7 @@ def list_match(+idVendor: U32, +idProduct: U32, +vendor: U32, +dev: U32) -> Bool
 def list_label(+bus: U32, +addr: U32) -> String:
   String.concat(["usb:", U32.show(bus), "-", U32.show(addr)])
 
-# THE DESCRIPTOR IS READ FIRST AND THE SELECTION IS SECOND (:33 then :34), and the
+# the descriptor is read first and the selection is second (:33 then :34), and the
 # emit chain records the INNERMOST call first. A MISS STILL READS IT: the read is
 # unconditional and only the ref/bus/address triple is conditional, so a miss is
 # FOUR calls shorter than a hit and not three.
@@ -1791,7 +1791,7 @@ def usb_enum.device(+hit: Bool, +bus: U32, +addr: U32, +t: Tr) -> Tr:
         Tr.emit(K_REF_DEVICE(), 0, 0, 0, Tr.raise(K_GET_DESC(), 0, 0, 0, t)))),
     Tr.raise(K_GET_DESC(), 0, 0, 0, t))
 
-# THE FUEL IS THE DEVICE COUNT and there is no device LIST, because
+# the fuel is the device count and there is no device list, because
 # `libusb_get_device_list` hands back a POINTER to a C array: the seam's. The
 # first version destructured an always-empty list and so emitted ONE device
 # whatever `n` said.
@@ -1879,7 +1879,7 @@ def usb_chunk.reap(+t: Tr) -> Tr: Tr.emit(K_EVENTS(), 0, 0, 0, t)
 def usb_chunk.memcpy(+half: U32, +wire: U32, +t: Tr) -> Tr:
   Tr.emit(K_MEMCPY(), chunk_off(half, wire), 0, 0, t)
 
-# :342..:352 IN EXECUTION ORDER, WHICH IS NOT LINE ORDER. The `h = h.after(...)`
+# :342..:352 in execution order, which is not line order. The `h = h.after(...)`
 # chain runs bottom-up in the source, so :347's usb_drained happens BEFORE :348's
 # usb_ctrl -- the port had them the other way round and the CPython order row,
 # built from `usb_chunk`'s call SITES, is what caught it. A count is identical
@@ -1947,7 +1947,7 @@ def t_f0() -> IO(Unit):
      u1("usb_xfer_buffer_ix", K_XFER_BUFFER())]))
 
 # ===========================================================================
-# THE TRANSFER ROWS. Order and identity, one row per fixture. THE HALF PAIR is
+# the transfer rows. Order and identity, one row per fixture. the half pair is
 # the negative case: half 1's window is 2*HALF and not HALF, so every recorded
 # offset differs.
 # ===========================================================================
@@ -2014,7 +2014,7 @@ def t_trace() -> IO(Unit):
      b1("usb_open_claim_checked", Tr.refused(usb_open(True{}, False{}, Tr.fail_at(Tr.of(), 6)))),
      b1("usb_open_alt_checked", Tr.refused(usb_open(True{}, False{}, Tr.fail_at(Tr.of(), 7)))),
      b1("usb_open_kdrv_checked", Tr.refused(usb_open(True{}, True{}, Tr.fail_at(Tr.of(), 5)))),
-     # THE SEAM'S INVENTORY IN THE PORT'S OWN VOCABULARY: each `K_*` and the symbol
+     # the seam's inventory in the port's own vocabulary: each `K_*` and the symbol
      # it names. `usb-symmap.py` proves the mapping is a BIJECTION onto `SYMS()`
      # and that every symbol is a real libusb export; these rows are what a
      # transposed `K_*` ladder would move. `usb_inventory_past_end` is the
@@ -2100,7 +2100,7 @@ def t_select() -> IO(Unit):
 #
 # THE ORDINALS. `Tr.raise` records the failing call and THEN sets `refused`, so a
 # refusal at `bad_at = k` leaves a k-call trace. The no-detach open emits 1 OPEN,
-# 2 GET_DEVICE, 3 GET_DESC, 4 STR_ASCII, 5 SET_CONFIG, 6 CLAIM, 7 SET_ALT; the
+# 2 get_device, 3 get_desc, 4 str_ascii, 5 set_config, 6 claim, 7 set_alt; the
 # detach branch adds 5 KDRV_ACTIVE, 6 DETACH, 7 RESET and shifts the rest by three.
 # A RAW ordinal -- 2 GET_DEVICE in the open, 6 FREE_DEVLIST in the enumeration --
 # cannot refuse at all, so its truncation row is the FULL trace and that is the row
@@ -2325,7 +2325,7 @@ def t_consts() -> IO(Unit):
 # string read that precedes it. Those two facts are what `usb_open_refuse_4_product`
 # measures.
 # ===========================================================================
-# WHAT IS NOT IN THIS FILE, NAMED BY ITS LINE. Each is an FFI seam or an
+# what is not in this file, named by its line. Each is an ffi seam or an
 # outside-the-arena owner, and each is a TODO(p3) with the line that owns it. An
 # honest "this is a seam" is a complete result; what is NOT acceptable is a row that
 # pretends to cover one. The full list of `TODO(p3)` lines is at the end of this
@@ -2337,7 +2337,7 @@ def t_consts() -> IO(Unit):
 # row NAMES, because agent-core.md records a name-comparing harness that reported
 # 0 for all 30 mutations in one unit and 0 for all 68 in another.
 #
-# A mutation that moves nothing is a BLIND SPOT and is REPORTED WITH ITS REASON,
+# a mutation that moves nothing is a blind spot and is reported with its reason,
 # not closed with a row that encodes the bug. One zero here is a THEOREM: `M6`
 # swaps the two operands of a two-term SUM, which no fixture in any file could
 # separate.
@@ -2352,7 +2352,7 @@ def t_consts() -> IO(Unit):
 # | M3 | 3 | `usb_sentinel`: the 0xFFFFFF mask -> 0xFFFF | :254's 24-bit mask. `usb_sentinel_0` and `usb_sentinel_max24` are the fixtures that see it; the COLLISION rows are the ones that say why 24 and not 16. |
 # | M4 | 5 | `usb_sentinel`: the 0x51 magic -> 0x50 | the high byte. This is the constant the differ caught me getting wrong (1363148800), so the row set has to see a change here. |
 # | M5 | 4 | `usb_split`: `full > 1` -> `full >= 1` | :260's `full if full > 1 else 0` -- the no-one-trip-loops rule. The `_full1` and `_full1_p1` fixtures are the boundary and they are the only ones that separate `>` from `>=`. |
-# | M6 | 0 | `usb_split`: `nranges` counts full as `full != 0` -> `tail != 0` | THE ZERO, AND IT IS A THEOREM. `nranges` is a two-term SUM, so swapping the terms cannot change the value for ANY input: no fixture in any file could separate them. The rule that matters -- that both terms are `!= 0` and not `> 0` -- is held by `M25` and `M26`, which move 3 rows each. |
+# | M6 | 0 | `usb_split`: `nranges` counts full as `full != 0` -> `tail != 0` | the zero, and it is a theorem. `nranges` is a two-term sum, so swapping the terms cannot change the value for any input: no fixture in any file could separate them. The rule that matters -- that both terms are `!= 0` and not `> 0` -- is held by `M25` and `M26`, which move 3 rows each. |
 # | M7 | 3 | `usb_window`: copyin and copyout share CHUNK | :257's `CHUNK if host else 2*CHUNK`. The two window rows and the two split fixtures move, which is the whole point of pairing them. |
 # | M8 | 5 | `pcie_byte_en`: `<< offset` -> `<< 0` | :118's shift AMOUNT. Five of the eight fixtures use offset 0 and do not move, so this measures 3 of 8 -- a partial-zero, reported as such. |
 # | M9 | 10 | `pcie_read_mask`: `1 << (8*size)` -> `1 << size` | :135's mask. `usb_pcie_mask_1` is a THEOREM here (8*1 - 1 == 1 - 1 is false, so it does move), and `_mask_4` is the row that sees the 1<<32 saturation. |
@@ -2377,14 +2377,14 @@ def t_consts() -> IO(Unit):
 # | M28 | 1 | `product_ok`: the second prefix -> the first | :52's `or`. `usb_prod_as2462_x_either` is the only fixture that moves. |
 # | M29 | 5 | `cpl_name`: fall back to `Completer Abort` instead of Reserved | :133's `.get(cpl_status, f'Reserved (0b...)')`. The five statuses with no map entry are the fixtures and the three with one are the negative case. |
 # | M30 | 1 | `reply_ok`: drop the `status == 0` test | :92's three-tuple compare. `usb_reply_ok_nonzero_status` is the fixture, one row from `usb_reply_ok_exact`. |
-# | M31 | 73 | `sym_at_head`: answer the NEXT symbol instead of this one | THE OFF-BY-ONE THIS FILE SHIPPED FOR AN HOUR: every order row named the symbol AFTER the one it meant, every COUNT stayed right, and only the whole-string order rows plus the CPython oracle could see it. Same class, one index, same arity, same length. The edit is the whole def body because `sym_at_head` is the head-at-zero ARM lifted into its own def exactly so this edit compiles. |
+# | M31 | 73 | `sym_at_head`: answer the next symbol instead of this one | the off-by-one this file shipped for an hour: every order row named the symbol after the one it meant, every count stayed right, and only the whole-string order rows plus the CPython oracle could see it. Same class, one index, same arity, same length. The edit is the whole def body because `sym_at_head` is the head-at-zero arm lifted into its own def exactly so this edit compiles. |
 # | M32 | 4 | `usb_enum.device`: the descriptor read AFTER the ref triple | :33-35 read the descriptor BEFORE the comparison. Four order rows move, and the oracle is the AST so the direction is not a matter of taste. |
 # | M33 | 5 | `usb_open.detach`: emit the detach branch unconditionally | :55-57's `if libusb_kernel_driver_active`. The `_nodetach` order row moves and the `_detach` one does not -- and they are ONE call string apart in the output, so the negative case is right there. |
 # | M34 | 3 | `usb_open.after`: `Tr.raise` -> `Tr.emit` on the product read | THE CHECKED/RAW SPLIT. If the string read cannot refuse, then `usb_open_refuse_4_product` grows to the full seven-call trace and every later ordinal shifts -- which is exactly what the four `usb_open_refuse_*` rows are for. |
 # | M35 | 26 | `Tr.sym`: the separator `,` -> `|` | the ORDER rows' own encoding. Every order row is a whole value, so a separator that lost a call would still be a different string -- this is the check that the string is not accidentally insensitive to a dropped element. |
-# | M36 | 1 | `enum_nm`: LAST-wins -> FIRST-wins | the LAST-wins rule the generated dicts have. The ONLY row in the file that sees it is `usb_synth_n_10`, because 6 is the only value that ever repeats in twenty-one tables and `LIBUSB_CLASS_IMAGE` is not a table entry at all -- a one-row fixture for a real rule, BUILT for it. |
-# | M37 | 1 | `enum_val`: LAST-wins -> FIRST-wins | the same rule the other way, and the ONLY row that sees it is `usb_synth_v_beta`: no name repeats in the twenty-one live tables, so the fixture had to be BUILT (`E_SYNTH` carries SYNTH_BETA at 11 and 12) for the rule to be observable at all. |
-# | M38 | 6 | `F_TRANSFER`: swap `status` and `length` | THE FIELD-ORDER MUTATION. `ops_cl`'s unit found `Sig`'s field names INVERTED and this is the same class of bug: `usb_chunk` addresses three of these by NAME, so a transposed pair writes the timeout where the status goes. The `usb_fld_*_ix` rows are the ones that see it. |
+# | M36 | 1 | `enum_nm`: last-wins -> first-wins | the last-wins rule the generated dicts have. The only row in the file that sees it is `usb_synth_n_10`, because 6 is the only value that ever repeats in twenty-one tables and `LIBUSB_CLASS_IMAGE` is not a table entry at all -- a one-row fixture for a real rule, built for it. |
+# | M37 | 1 | `enum_val`: last-wins -> first-wins | the same rule the other way, and the only row that sees it is `usb_synth_v_beta`: no name repeats in the twenty-one live tables, so the fixture had to be built (`E_SYNTH` carries synth_beta at 11 and 12) for the rule to be observable at all. |
+# | M38 | 6 | `F_TRANSFER`: swap `status` and `length` | the field-order mutation. `ops_cl`'s unit found `Sig`'s field names inverted and this is the same class of bug: `usb_chunk` addresses three of these by name, so a transposed pair writes the timeout where the status goes. The `usb_fld_*_ix` rows are the ones that see it. |
 # | M39 | 5 | `F_DEVICE_DESCRIPTOR`: swap `idVendor` and `idProduct` | the two names `list_devices` compares, and the pair the comparison cannot survive being transposed: `usb_list_match_vendor_only` and `_product_only` are its negative cases. |
 # | M40 | 1 | `F_DEVICE_DESCRIPTOR`: drop `bNumConfigurations` | a DROPPED field. The whole-string row moves and a field COUNT would not -- which is why the field list is diffed as a string. |
 # | M41 | 18 | `CHUNK`: `HALF - 512` -> `HALF` | :208's reserved sentinel block. This is the constant that sets HALF-DEPENDENT arithmetic everywhere, so it is the widest mutation in the file and the row count says how wide. |
@@ -2409,7 +2409,7 @@ def t_consts() -> IO(Unit):
 # | `usb-mutate.py` | 45 mutations, one edit each, diffing whole `name=value` lines | 44 move rows, 1 theorem |
 # | `usb-build.py` | assembles THIS FILE from its pieces | -- |
 #
-# THE ONE UNVERIFIED CONSTANT IS `NOT_FOUND`, and it is PORT-INTERNAL: it is this
+# the one unverified constant is `NOT_FOUND`, and it is port-internal: it is this
 # port's own "no such name" answer, chosen to be 0xFFFFFFFF because every
 # `enum_libusb_*` value is a C enum and the largest negative is -1. It has no line
 # in `usb.py` and it is reported rather than counted as right.

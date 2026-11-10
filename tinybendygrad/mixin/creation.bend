@@ -3,7 +3,7 @@
 # MEASURED: `UOp.empty.__qualname__ == "CreationMixin.empty"`).
 #
 # ---------------------------------------------------------------------------
-# THE SCOPE IS SMALLER THAN MY UNIT BRIEF'S INVENTORY, and that is a FINDING, not a
+# the scope is smaller than my unit brief's inventory, and that is a finding, not a
 # shortfall. The brief lists `eye`, `arange`, `linspace`, `tril`/`triu`, `rand`,
 # `randn`, `uniform`, `normal`. None of them is in this file. MEASURED:
 # `grep -rn "def arange\|def eye\|def linspace\|def tril\|def triu\|def rand\b\|def
@@ -18,7 +18,7 @@
 # `creation.py` (creation.py:112 symbol=zeros) and `zeros`/`ones`/`*_like` are all `full`.
 #
 # ---------------------------------------------------------------------------
-# THE WALLS. W1 AND W2 ARE MINE; W3 AND W4 ARE OTHER FILES' AND NAMED TWICE BECAUSE
+# the walls. W1 and W2 are mine; W3 and W4 are other files' and named twice because
 # THIS FILE REACHES BOTH.
 #
 #   W1 mixin/creation.py:23 symbol=empty `empty` -- `canonicalize_device` is `tinygrad/device.py`,
@@ -50,7 +50,7 @@
 #      `broadcast_axes` (ops.py:89), which calls `resolve` on a `Sint`. That is
 #      `mixin/op.bend`'s W3 wall reached from a THIRD direction (op.bend already names
 #      it under W7, `normalize` -> `_broadcast_to`), and the same todo.
-#      WHAT IS PORTED IS THE SPECIAL CASE, AND IT IS THE ONLY CASE `creation.py`
+#      what is ported is the special case, and it is the only case `creation.py`
 #      REACHES. `full`'s source is ALWAYS a 0-dim CONST, so `self.shape` is `()`,
 #      `_align_left` gives all 1s, `broadcast_axes((), ds)` is `range(len(ds))`, so
 #      `n_left == len(ds)` and every added axis is `< n_left`, so `expand_at` is EMPTY,
@@ -67,10 +67,10 @@
 # ---------------------------------------------------------------------------
 # FIVE BEND FACTS THIS FILE LEARNS, each of which cost a cycle or a wrong answer.
 #
-#   1. THE ARENA IS THE PORT'S `UOpMetaClass.ucache`, AND THE INTERNING GATE IS THE
+#   1. the arena is the port's `UOpMetaClass.ucache`, and the interning gate is the
 #      ONLY THING THAT CAN SEE IT. Python interns on `(op, src, arg, tag, type(arg))`
 #      against a process-wide dict, so a second `Tensor.full((2,3), 42)` re-uses the
-#      CONST, the STACK and the EXPAND and mints ONLY the ALLOC/RESHAPE/STORE/AFTER
+#      CONST, the stack and the expand and mints only the alloc/reshape/STORE/after
 #      (the ALLOC's slot moved). Both graphs have a NINE-node toposort, so every
 #      `row_*` row is blind to it; `int_full_new=4` is the row, and M4 is the mutation
 #      that moves it.
@@ -135,10 +135,10 @@
 #   ./bin/bend tinybendygrad/mixin/creation.bend -o /tmp/bn && /tmp/bn > /tmp/bn.rows
 #   diff /tmp/py.rows /tmp/bd.rows && diff /tmp/py.rows /tmp/bn.rows
 #
-# **THREE CITATIONS DELETED 2026-10-16, AND THEY WERE NEVER REAL.** This block ran a
+# three citations deleted 2026-10-16, and they were never real. This block ran a
 # `cr-gate.sh`, an `cr-truth.py` and a `cr-mutate.py` out of an `ORACLE_DIR` variable, and
 # said in so many words that "`$ORACLE_DIR` is outside the tree". MEASURED: `ORACLE_DIR` has
-# ZERO ASSIGNMENTS tree-wide and FIVE reads, and all three basenames are ABSENT AT EVERY PATH ON
+# zero assignments tree-wide and five reads, and all three basenames are absent at every path on
 # EVERY REF -- `git rev-list --all --objects` over 193760 objects names 18110 distinct paths and
 # `cr-gate.sh`, `cr-truth.py`, `cr-mutate.py` are ZERO of them. So the oracle was never written,
 # not merely lost, and a recipe naming it was a claim about a file that never existed.
@@ -270,8 +270,8 @@ def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 # `f32` AND `weakfloat` ARE THE IDENTITY, so the rows that were already right do not move.
 #
 # ---------------------------------------------------------------------------
-# THE `weakfloat` ARM IS THE IDENTITY ON THE PORT'S F32, WHICH IS NOT UPSTREAM'S IDENTITY ON
-# A DOUBLE, AND THE DIFFERENCE IS REACHABLE -- it is a MERGE of two upstream constants into
+# the `weakfloat` arm is the identity on the port's F32, which is not upstream's identity on
+# a double, and the difference is reachable -- it is a merge of two upstream constants into
 # one, and a merge is a hash collision in the port's constant identity.  MEASURED, and the
 # instrument is `gates/constid-gate.py`:
 #
@@ -282,7 +282,7 @@ def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 #   (`bend.ts:2204-2210`), so the port's `0.1` and its `0.10000000149011612` are the SAME
 #   `0x3DCCCCCD` and ONE KEY in ONE arena.  `merge_keys`: upstream 2, the port 1.
 #
-# AND THE CONSTANT HOLDS A DIFFERENT NUMBER: upstream's weakfloat const for `16777217.0`
+# and the constant holds a different number: upstream's weakfloat const for `16777217.0`
 # holds `16777217.0` and the port's holds `16777216.0`, because 2**24+1 is the smallest
 # integer an f32 cannot hold.  `merge_value_text`.
 #
@@ -333,7 +333,7 @@ def cr_mop(+t: T.Tensor, +op: O.Op, ds: List<&2, U32>) -> T.Tensor:
 # `_broadcast_to` AND NOT A BARE EXPAND. `mxw_bcast` is CPython's rule: the marg is
 # the LEFT-ADDED dims and THEN the dims of the source axes that were 1 and became
 # bigger, and the squeeze and the permute are what make the result's shape the
-# target's. FOR A 0-dim SOURCE EVERY DIM IS LEFT-ADDED, so the marg IS the whole
+# target's. for a 0-dim source every dim is left-added, so the marg is the whole
 # target and `mxw_bcast` BUILDS EXACTLY WHAT `cr_mop` BUILT -- the squeeze is a
 # no-op reshape and the permute is the identity, and both wrappers drop their node.
 # FOR A SOURCE WITH A 1 IN IT -- `nn/pool.bend:191 symbol=pool_rep.rp`'s `_pool` repeat -- the marg is
@@ -393,7 +393,7 @@ def cr_slot.count(+ns: List<&2, O.Node>, acc: U32) -> U32:
 def cr_slot(+ar: O.Arena) -> U32: cr_slot.count(O.Arena.nodes(ar), 0)
 
 # `next(UOp.unique_num)` -- ops.py:1191 -- is a MONOTONE slot counter that "must never be
-# reset", and it is WHAT MAKES TWO `full`s NOT SHARE AN ALLOC. CPython says so
+# reset", and it is what makes two `full`s not share an alloc. CPython says so
 # (`int_full_new=4`) and no `row_*` row can see it, because both graphs are nine nodes.
 def cr_alloc(+ar: O.Arena, +dt: S.Dt, size: U32, dev: S.Dev) -> T.Tensor:
   T.tn_alu.put(O.UOp.new.param(ar, O.OpsALLOC{}, Some{size}, O.AParam{cr_alloc.arg(cr_slot(ar), dt, dev)}, O.TNone{}))
@@ -535,11 +535,11 @@ def cr_invalids(+ar: O.Arena, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
 def cr_full_like(+ar: O.Arena, +v: O.Const, +dt: S.Dt, buf: Bool, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
   cr_full(buf, ar, v, dt, ds, dev)
 
-# `cls.full(argfix(*shape), 0.0, **kwargs)` -- creation.py:122.
+# `cls.full(argfix(*shape), 0.0, kwargs)` -- creation.py:122.
 def cr_zeros(+ar: O.Arena, v: O.Const, +dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
   cr_full(True{}, ar, v, dt, ds, dev)
 
-# `self.full_like(0, **kwargs)` -- creation.py:135. `dtype or self.dtype` with `dtype`
+# `self.full_like(0, kwargs)` -- creation.py:135. `dtype or self.dtype` with `dtype`
 # unset is `self.dtype`, so `dt` IS the tensor's own dtype and a float32 receiver gets
 # a CONST int CAST to float32 -- `row_zeros_like2d_g` is 9 nodes with that CAST, and
 # `row_zeros23_g` is 9 nodes with a float CONST, so the two look alike in COUNT and are
@@ -549,7 +549,7 @@ def cr_zeros(+ar: O.Arena, v: O.Const, +dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev
 # `cr_zeros_like` / `cr_ones_like` hardcoded `MO.mo_ki`, an INT, so a BOOL receiver got
 # `CONST(int 0)` PLUS a real CAST where CPython's CONST IS the bool and `.cast(bool)` folds --
 # one extra node, MEASURED and pinned in `gates/cr_graph_census-gate.py` (`zeros_like_vbool`,
-# `ones_like_vbool`). THE FLOAT ARM IS THE SILENT ONE: there both consts cast, so the COUNT
+# `ones_like_vbool`). the FLOAT arm is the silent one: there both consts cast, so the count
 # agrees and only the CONST's ARG differs -- which `Rng.sig` did not print before this session.
 def cr_cval0.f(isfloat: Bool) -> O.Const:
   match isfloat:
@@ -576,11 +576,11 @@ def cr_zeros_like(+ar: O.Arena, +self_dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) 
   +if_ = S.Dt.is_float(self_dt)
   cr_full_like(ar, cr_cval0(ib, if_), self_dt, True{}, ds, dev)
 
-# `cls.full(argfix(*shape), 1.0, **kwargs)` -- creation.py:152.
+# `cls.full(argfix(*shape), 1.0, kwargs)` -- creation.py:152.
 def cr_ones(+ar: O.Arena, v: O.Const, +dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
   cr_full(True{}, ar, v, dt, ds, dev)
 
-# `self.full_like(1, **kwargs)` -- creation.py:165.
+# `self.full_like(1, kwargs)` -- creation.py:165.
 def cr_ones_like(+ar: O.Arena, +self_dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
   +ib = S.Dt.is_bool(self_dt)
   +if_ = S.Dt.is_float(self_dt)
@@ -590,11 +590,11 @@ def cr_ones_like(+ar: O.Arena, +self_dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -
 # THE GATE PRINTERS.
 # ===========================================================================
 
-# A NODE INDEX THAT IS READ MORE THAN ONCE GOES IN A `Data` RECORD. `cr_g.of` reads its
+# a node INDEX that is read more than once goes in a `Data` record. `cr_g.of` reads its
 # index four times and a `U32` is affine and cannot take a `+` as a parameter
 # (device.bend's rule 3: the operands of a two-read `U32` expression go in a record),
 # and `CU.u` is a reader so the record itself is read any number of times. THE SAME
-# RECORD THEN SOLVES THREE PROBLEMS AT ONCE: the index here, `cr_new`'s node being
+# record then solves three problems at once: the index here, `cr_new`'s node being
 # counted, and `cr_store_val`'s `AFTER -> STORE -> val` descent.
 type CU is Data:
   CU{u: U32}
@@ -603,7 +603,7 @@ def CU.u(c: CU) -> U32:
   match c:
     case CU{u}: u
 
-# The ROOT's src op sequence, as `A|B|C`. THE WALK IS OVER `Arena.srcs` AND NOT OVER A
+# The root's src op sequence, as `A|B|C`. the walk is over `Arena.srcs` and not over a
 # COUNTDOWN: the first version threaded `U32.to_nat(Arena.nsrc(...))` as a `Nat` and
 # read `Arena.src(ar, u, 0)` on every level, so every row printed `ALLOC|ALLOC|` for a
 # two-src root. That is the `mxm_as_shape.go` class of bug -- a walk that compiles and
@@ -657,7 +657,7 @@ def cr_g.of(nm: String, +ar: O.Arena, +c: CU, +xs: List<&2, U32>) -> IO(Unit):
     O.Ops.name.of(O.Arena.op(ar, CU.u(c))), " nsrc=", U32.show(O.Arena.nsrc(ar, CU.u(c))),
     " srcops=", cr_srcops(ar, CU.u(c)), " topo=", cr_topo(xs, ar)]))
 
-# `full`'s root is an AFTER, AND THE FOLD CANNOT ANSWER AN AFTER WHOSE GRAPH CONTAINS
+# `full`'s root is an after, and the FOLD cannot answer an after whose graph contains
 # AN EXPAND. MEASURED, `probe_fold.bend` over `full((2,3),42)`: nodes 1..6 (ALLOC,
 # CONST, CONST, STACK, RESHAPE, CONST) resolve for both dtype and shape, node 7 (EXPAND)
 # resolves for NEITHER, and 8 (STORE) and 9 (AFTER) resolve for NEITHER either --
@@ -688,7 +688,7 @@ def cr_d.of(nm: String, +ar: O.Arena, +c: CU) -> IO(Unit):
   cr_d.put(nm, cr_dims(MO.mo_dims(F.folded(ar), CU.u(cr_d_root(ar, c)))),
     T.dt_name(T.tn_repr.dt(T.tn_new(ar, CU.u(cr_d_root(ar, c))))))
 
-# `<n>_t=dtype=<name>` -- THE DTYPE HALF ONLY, AND IT EXISTS BECAUSE OF W3.
+# `<n>_t=dtype=<name>` -- the dtype half only, and it exists because of W3.
 #
 # `GroupOp.Movement` gives `src[0].dtype`, so an EXPAND-rooted tensor's DTYPE is its
 # source's and the fold answers it. Its SHAPE is not `src[0].shape` -- it is the EXPAND's
@@ -827,7 +827,7 @@ def t_ones_like2d() -> IO(Unit):
   cr_row("ones_like2d", cr_ones_like(T.Tensor.ar(f), S.single(), [2, 2], S.D1{0}))
 
 # ===========================================================================
-# THE INTERNING AND REFUSAL ROWS. All in ONE arena each, which is the point: Python's
+# the interning and refusal rows. All in one arena each, which is the point: Python's
 # ucache is process-wide, so `Tensor.full` twice in a row shares nodes.
 # ===========================================================================
 def t_intern_full() -> IO(Unit):
@@ -853,7 +853,7 @@ def t_intern_diff() -> IO(Unit):
   IO.print(String.concat(["int_ones_new=", U32.show(cr_new(T.Tensor.ar(b), b, a))]))
 
 # ===========================================================================
-# THE `ALLOC` FIELD ROWS. THEY EXIST BECAUSE MUTATION M5 MOVED NOTHING.
+# the `ALLOC` field rows. they exist because mutation M5 moved nothing.
 #
 # `cr_g`'s row prints op and nsrc and `cr_d`'s prints shape and dtype, and between them
 # they read a ParamArg's `dtype` and `size` -- and NOTHING ELSE. M5 (`bind_on_realize`
@@ -880,7 +880,7 @@ def cr_alloc_rows(+ar: O.Arena, +c: CU) -> IO(Unit):
     cr_bl("alloc_bind", O.ParamArg.bind_on_realize(cr_alloc_pa(ar, CU.u(c))))
     cr_bl("alloc_addr", O.eq_addr(O.ParamArg.addrspace(cr_alloc_pa(ar, CU.u(c))), S.AGlobal{}))
 
-# THE `ref_*` ROWS ASK CPython's OWN PREDICATES, NOT THIS PORT'S ANSWERS, so all four
+# the `ref_*` rows ask CPython's own predicates, not this port's answers, so all four
 # are shared rows rather than BEND-ONLY ones:
 #
 #   ref_empty_weak{,int}   `dt in dtypes.weaks` -- creation.py:37's own guard. The port's
@@ -965,7 +965,7 @@ def main() -> IO(Unit):
 #   .venv/bin/python cr-mutate.py          # the table below, regenerated
 #   .venv/bin/python cr-mutate.py M4       # one mutation, left applied, for inspection
 #
-# EVERY MUTATION EXCEPT THE CONTROL MOVES AT LEAST ONE ROW, and that is the claim this
+# every mutation except the control moves at least one row, and that is the claim this
 # table exists to make. `moved == 0` on a mutation of live code is a MISSING ROW (see
 # wgsl.bend's gate lesson), so the two entries marked HISTORY below are reported rather
 # than dropped.
@@ -996,9 +996,9 @@ def main() -> IO(Unit):
 #  M23 `cr_srcops`'s separator becomes `:`                 25           every multi-src `_g`
 #  M20 CONTROL: a comment                                   0           nothing, which is the point
 #
-# FIVE THINGS THIS TABLE SAYS THAT "67 GREEN ROWS" DOES NOT.
+# five things this table says that "67 green rows" does not.
 #
-#   * M1 IS THE WHOLE ARGUMENT FOR THE FOUR-FACTS ROW, MEASURED. Reversing the STORE's
+#   * M1 is the whole argument for the four-facts row, measured. Reversing the STORE's
 #     two srcs moves EXACTLY ONE row out of 67. The root op is unchanged, the root nsrc
 #     is unchanged, the root's src op SEQUENCE is unchanged (`RESHAPE|STORE` -- both
 #     orders print the same names), the toposort is unchanged, and every `_d` row reads
@@ -1006,7 +1006,7 @@ def main() -> IO(Unit):
 #     node count and nothing else is blind to it entirely. `int_full_expand` exists
 #     because this measurement produced it, and it is the only row in the file that is
 #     about an INDEX rather than a shape or a count.
-#   * M5 MOVED NOTHING THE FIRST TIME IT WAS RUN, and the reason was not subtle: the
+#   * M5 moved nothing the first time it was run, and the reason was not subtle: the
 #     suite reads a ParamArg's `dtype` and `size` and NOTHING ELSE, so a whole
 #     thirteen-field record had a field nobody looked at. `alloc_bind` and `alloc_addr`
 #     were added, their expectations are CPython's own (`ParamArg(...,
@@ -1020,7 +1020,7 @@ def main() -> IO(Unit):
 #     localised row is a claim that the predicate is reachable from exactly where it
 #     should be -- `full23f42_d` and `full23b_d` staying put IS the assertion that the
 #     weakfloat and bool arms do not reach `commit_int`.
-#   * M11 AND M3 MOVE DISJOINT SETS AND NEITHER IS A SUBSET OF THE OTHER. M3 drops the
+#   * M11 and M3 MOVE disjoint sets and neither is a subset of the other. M3 drops the
 #     `.cast` fold (a CONST that should be bare gets a CAST) and M11 swaps
 #     `dtype if dtype is not None else self.commit_dtype()`'s arms (a node that should
 #     commit does not). Both are "the wrong number of CASTs" to a reader and they are

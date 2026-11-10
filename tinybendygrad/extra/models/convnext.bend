@@ -12,12 +12,12 @@ import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/convnext.py (63 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/convnext.py (63 loc). not yet ported.
 #
-# WHAT CHANGED SINCE `resnet.bend` WAS WRITTEN, AND THIS FILE IS THE EVIDENCE:
-# THE PORT's `resnet.bend` HEADLINE BLOCK still reads "nn.Conv2d, nn.BatchNorm2d AND nn.Linear ARE ALL
+# what changed since `resnet.bend` was written, and this file is the evidence:
+# the port's `resnet.bend` headline block still reads "nn.Conv2d, nn.BatchNorm2d and nn.Linear are all
 # MISSING", and THE PORT's `resnet.bend` HEADLINE BLOCK cites
-# THE PORT's `mixin/op.bend` LAST LINE as "SIDE B IS THE
+# the port's `mixin/op.bend` last line as "side b is the
 # BUILT THE OPS:
 #   `Tensor.conv2d`  nn/layers.bend:937 symbol=nn_conv2d `nn_conv2d`   -- from the primitives,
 #                        `mixin/op.bend`'s SIDE B never having been filled
@@ -42,12 +42,12 @@ import ./../datasets/__init__.bend as D
 #   are expressible) -- but there is NO `nn.Conv2d` CLASS: nothing builds the
 #   `(dim, dim, 7, 7)` weight, nothing gives the layer a name, and nothing makes
 #   it a `get_state_dict` (nn/state.bend:318) node.
-#   AND THE SECOND LINE IS A HARDER MISS: `:8 self.norm = LayerNorm(dim,
+#   and the second line is a harder miss: `:8 self.norm = LayerNorm(dim,
 #   eps=1e-6)`. `Tensor.layernorm` does not exist. The port says so in its own
 #   words at `nn/__init__.bend:230`: "TODO(p3) mixin/op.py:1661 x.layernorm --
 #   SIDE B, not built", and that line is still true even though the conv2d and
 #   linear lines beside it stopped being true.
-#   SO THE HONEST FIRST BLOCKER IS THE CONSTRUCTOR, AND THE HONEST FIRST
+#   so the honest first blocker is the constructor, and the honest first
 #   *PRIMITIVE* BEHIND IT IS `Tensor.layernorm`.
 #
 # THE TWO SPELLINGS OF A VALUE, because upstream keeps them apart and this file
@@ -71,7 +71,7 @@ import ./../datasets/__init__.bend as D
 # place; this returns a new [tensor]"), so `mv.assign(...)` and `.realize()` are
 # both refused for the same reason BatchNorm's running stats are.
 #
-# EVERY DEF BELOW REFUSES, AND THE RETURN TYPE IS `D.Refused`, NOT A TENSOR. A
+# every DEF below refuses, and the return TYPE is `D.Refused`, not a tensor. a
 # stub that returned a zero Tensor or an empty list would be indistinguishable
 # from a layer whose weights happen to be zero. `refuse` and the `Refused` type
 # are DECLARED ONCE at `extra/datasets/__init__.bend:40-46` and imported as `D`.

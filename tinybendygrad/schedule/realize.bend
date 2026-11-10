@@ -1,4 +1,4 @@
-# schedule/realize.bend -- THE PORT's OWN REALIZE-TO-SINK DRIVER.
+# schedule/realize.bend -- the port's own realize-to-sink driver.
 #
 # WHAT THIS FILE IS. The link between the port's `Tensor` graph and the port's
 # `schedule()`: it takes a program the port built and answers the SINK OF AFTERs
@@ -13,7 +13,7 @@
 #      `mixin/movement.bend:1452` (`mxw_permute`), `tensor.bend:656` (`tn_mul`).
 #   2. THE ALLOC -> BUFFER REBIND. upstream `tinygrad/tensor.py:184`
 #      (`if x.op is Ops.ALLOC ... u = UOp.new_buffer(...)`).
-#      **A NO-OP IN THE PORT**: MEASURED, `grep -n "def UOp.new_buffer"
+#      A NO-OP IN THE PORT: MEASURED, `grep -n "def UOp.new_buffer"
 #      tinybendygrad/uop/ops.bend` ANSWERS NOTHING (the port's `ops.bend:5332`
 #      carries it as a `TODO(p3)`), and the port's `Tensor` path has no ALLOC --
 #      `mxw_buf` builds the BUFFER (`mixin/movement.bend:1232`). The port's
@@ -36,7 +36,7 @@
 #      The TWO rules' NET: the movement op moves ABOVE the AFTER and the SINK
 #      then drops it, so the AFTER's `src[0]` BECOMES THE BASE and the SINK's
 #      `src` is the AFTER.
-#      **MEASURED, not assumed**: `.agents/slop/realize/probe3.py` prints
+#      MEASURED, not assumed: `.agents/slop/realize/probe3.py` prints
 #      upstream's own graph at each stage, and the net is
 #      `SINK(AFTER(PARAM, STORE(RESHAPE(PARAM, STACK), REDUCE)))`.
 #      port: `rz_rule.after` below.
@@ -51,13 +51,13 @@
 # CONST's arg in this upstream is a BARE VALUE (MEASURED,
 # `UOp.const(20).arg` is the int `20`), so it is NOT the three-tuple the rule
 # looks for and the key is `cother` for EVERY CONST.
-# **⇒ AND THAT IS A DIVERGENCE FROM THE PORT's OWN `eng_constkey`**
+# - and that is a divergence from the port's own `eng_constkey`
 # (`schedule/rangeify.bend:3008`), which spells a CONST `c:hi:lo`. The two
 # CANNOT both be right about the same graph, and the report names it.
-# ⇒ AND THE CONST VALUES ARE NOT LOST: `rz_consts` and `rz_params` below carry
+# - and the CONST values are not lost: `rz_consts` and `rz_params` below carry
 # them, and the comparator checks them as MULTISETS.
 #
-# WHY THE COMPARISON IS ORDER-FREE. MEASURED, the port's `eng_dump`
+# why the comparison is order-free. measured, the port's `eng_dump`
 # (`schedule/rangeify.bend:3055`) is a BFS -- `List.concat(&2, U32, [t, srcs])`
 # puts the srcs at the END of the worklist -- and the oracle's `dump`
 # (`eng-oracle.py:79`) is a DFS -- `todo = list(u.src) + todo` puts them at the
@@ -101,10 +101,10 @@ def rz_dot_w(+rhs: T.Tensor) -> T.Tensor:
 # FRONT (`perm = reduce_axis + tuple(i for i in range(len(self.shape)) if i not
 # in reduce_axis)`) and the REDUCE's arg is `(op, len(reduce_axis))` -- the
 # NUMBER OF AXES, and the axes reduced are the FIRST ones.
-# ⇒ The port's `O.UOp.reduce` (`uop/ops.bend:7479`) builds `AReduce{rop, 0}`
+# - The port's `O.UOp.reduce` (`uop/ops.bend:7479`) builds `AReduce{rop, 0}`
 # -- `num_axes` HARDCODED to zero -- so this def builds the node with
-# `O.UOp.new` and the RIGHT num_axes. **THAT IS A PORT DIVERGENCE AND IT IS
-# NAMED: `uop/ops.bend:7479 symbol=UOp.reduce.arg` cannot spell `AReduce{op, 1}`.**
+# `O.UOp.new` and the RIGHT num_axes. THAT IS A PORT DIVERGENCE AND IT IS
+# NAMED: `uop/ops.bend:7479 symbol=UOp.reduce.arg` cannot spell `AReduce{op, 1}`.
 def rz_reduce(+t: T.Tensor) -> T.Tensor:
   +p = MX.mxw_permute.go(t, [2, 0, 1])
   +r = O.UOp.new(T.Tensor.ar(p), O.OpsREDUCE{}, [T.Tensor.u(p)],
@@ -113,13 +113,13 @@ def rz_reduce(+t: T.Tensor) -> T.Tensor:
 
 # THE ASSIGN -- upstream `tinygrad/tensor.py:271`:
 #   self.uop = self.uop.after(self.uop.store(x.uop))
-# **THE ARENA IS THE VALUE's, AND IT MUST BE.** An `Arena` is an IMMUTABLE
+# the arena is the value's, and it must be. An `Arena` is an immutable
 # `Data` VALUE and an index is only meaningful in the arena that minted it, so
 # a STORE that holds `dst`'s index must be interned in an arena that HOLDS
 # `dst`'s node. The VALUE's arena does -- it is the merge of the two operand
 # arenas, and BOTH descend from the destination's -- and the DESTINATION's
 # arena does NOT hold the value's nodes.
-# ⇒ MEASURED, THE BUG THIS AVOIDS: interning the SINK in the destination's
+# - measured, the bug this avoids: interning the sink in the destination's
 # arena put the AFTER's index into a SIBLING arena, where it named whatever
 # node sat at that index -- a BUFFER -- and the dump answered
 # `SINK:none:BUFFER` over a THREE-node graph.
@@ -153,7 +153,7 @@ def rz_program() -> RZProg:
   +val = T.tn_mul(rz_dot_x(lhs), rz_dot_w(rhs))
   +red = rz_reduce(val)
   +aft = rz_after(dst, red)
-  # THE SINK IS INTERNED IN THE AFTER's ARENA. An index is only meaningful in
+  # the sink is interned in the after's arena. An index is only meaningful in
   # the arena that minted it, and the AFTER was interned in an arena that is
   # NEWER than the REDUCE's -- so a SINK interned in the REDUCE's arena reads
   # the AFTER's index OUT OF RANGE and answers the arena's bottom.
@@ -172,11 +172,11 @@ def rz_program() -> RZProg:
 # THE ORDER. The port's `UOp.toposort` (`uop/ops.bend:3404`) is a PRE-ORDER
 # DFS (`Topo.push`, `uop/ops.bend:3347`) and upstream's is a POST-ORDER one
 # (MEASURED, `.agents/slop/realize/probe.py` prints upstream's `toposort()`
-# with the CONSTs FIRST and the SINK LAST). **⇒ THE PORT's toposort AND
-# UPSTREAM's ARE NOT THE SAME ORDER, AND THE PORT's REBUILD NEEDS CHILDREN
-# FIRST** -- so the rebuild walks `List.reverse` of the pre-order, which is
+# with the CONSTs first and the sink last). - the port's toposort and
+# upstream's are not the same order, and the port's rebuild needs children
+# FIRST -- so the rebuild walks `List.reverse` of the pre-order, which is
 # children-first.
-# ⇒ AND THE PARAM SLOTS ARE ASSIGNED IN THE PRE-ORDER, because upstream's
+# - and the PARAM slots are assigned in the pre-order, because upstream's
 # `pm_replace_buf` visits the BUFFERs in upstream's POST-ORDER and the two
 # orders pick the SAME buffer first (MEASURED: the destination is slot 0 in
 # CPython -- `ParamArg(0, ...)` on the 20-element buffer).
@@ -267,7 +267,7 @@ def rz_rule.reshape(+ar: O.Arena, +map: List<&2, RZPair>, +u: U32) -> O.Found:
                                 rz_get(map, O.Arena.src(ar, u, 1))],
             O.Arena.arg(ar, u), O.Arena.tag(ar, u))
 
-# RULE 3 -- THE AFTER's src0 BECOMES THE BASE. The NET of upstream's
+# rule 3 -- the after's src0 becomes the base. The net of upstream's
 # `prepare.py:85-86` and `prepare.py:273-274`; MEASURED by
 # `.agents/slop/realize/probe3.py`.
 def rz_rule.after(+ar: O.Arena, +map: List<&2, RZPair>, +u: U32) -> O.Found:
@@ -276,7 +276,7 @@ def rz_rule.after(+ar: O.Arena, +map: List<&2, RZPair>, +u: U32) -> O.Found:
                                rz_get(map, O.Arena.src(ar, u, 1))],
             O.Arena.arg(ar, u), O.Arena.tag(ar, u))
 
-# THE DISPATCH. `match` MAY NOT SCRUTINIZE A COMPUTED VALUE, so each test is
+# the dispatch. `match` may not scrutinize a computed value, so each test is
 # its own def and the choice is a `Bool.pick` chain.
 def rz_rule(+ar: O.Arena, +map: List<&2, RZPair>, +slot: U32, no_merge: Bool, slot_off: Bool, +u: U32) -> O.Found:
   Bool.pick(O.Found, rz_is_buf(ar, u), rz_rule.buf(ar, map, slot, slot_off, u),
@@ -293,11 +293,11 @@ def rz_go(+ar: O.Arena, ns: List<&2, U32>, +no_merge: Bool, +slot_off: Bool, +st
   match ns:
     case Nil{}: st
     case +u <> t:
-      # THE ARENA IS THE ONE THE LAST BUILD RETURNED. An `Arena` is an
+      # the arena is the one the last build returned. An `Arena` is an
       # IMMUTABLE `Data` VALUE, so interning into the ORIGINAL one would put
       # this node in a DIFFERENT arena from the node before it, and the map's
       # indices would name nothing. THE SAME RULE AS `tensor.bend`'s
-      # "THE ARENA A BUILD RETURNS IS NOT THE ARENA THAT WENT IN".
+      # "the arena a build returns is not the arena that went in".
       +f = rz_rule(RZSt.ar(st), RZSt.map(st), RZSt.slot(st), no_merge, slot_off, u)
       +st2 = RZSt.of(O.Found.ar(f),
                      List.append(&2, RZPair, RZSt.map(st), [RZPair{u, O.Found.i(f)}]),
@@ -505,7 +505,7 @@ def rz_row_nodes() -> String:
   +q = rz_built()
   U32.show(rz_nodes(q))
 
-# THE PORT's OWN SCHEDULER, ON THE PORT's OWN SINK. `SCH.schedule` is
+# the port's own scheduler, on the port's own sink. `SCH.schedule` is
 # `create_schedule` (`schedule/__init__.bend:1143 symbol=schedule`), and it wants a SINK OF
 # AFTERs WHOSE SECOND SRC IS A KERNEL -- a CALL or an END -- because
 # `_split_after` (`schedule/__init__.bend:467 symbol=sc_split`) partitions the AFTER's srcs
@@ -515,13 +515,13 @@ def rz_row_lin() -> String:
   +l = SCH.schedule(RZProg.ar(q), RZProg.sink(q))
   U32.show(U32.from_nat(List.length(&2, U32, SCH.Lin.out(l))))
 
-# THE PORT's OWN ENGINE, ON THE PORT's OWN SINK. **⇒ AND THIS ROW MOVED TO
-# `rangify.bend` ON 2026-10-30, AND THE MOVE IS THE POINT:**
+# the port's own engine, on the port's own sink. - and this row moved to
+# `rangify.bend` ON 2026-10-30, AND THE MOVE IS THE POINT:
 # `realize.bend` IMPORTS `rangeify.bend` (THE ENGINE) AND `rangify.bend` IMPORTS
-# `realize.bend` (THE FIXTURE), **⇒ SO `rangeify.bend` COULD NOT IMPORT
+# `realize.bend` (THE FIXTURE), - SO `rangeify.bend` COULD NOT IMPORT
 # `rangify.bend` -- WHICH IS WHERE `run_rangeify` LIVES -- AND THE ENGINE's
-# STAGE 1 WAS AN EMPTY TABLE.** **⇒ AND THE MOVE MAKES THE EDGE ONE-WAY:
-# `rangify.bend` -> `rangeify.bend`, AND `rangeify.bend` -> NOTHING BACK.**
+# stage 1 was an empty table. - and the MOVE makes the edge one-way:
+# `rangify.bend` -> `rangeify.bend`, AND `rangeify.bend` -> NOTHING BACK.
 
 def rz_row_dump0() -> String:
   +p0 = rz_program()

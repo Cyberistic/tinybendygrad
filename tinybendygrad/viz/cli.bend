@@ -11,7 +11,7 @@
 # ran out after the first wall below was found. Everything here is either PORTED
 # or NAMED, and nothing is a stub that answers a placeholder.
 #
-# THE WALL THAT STOPPED THE GATE, and it is a Bend one. `to_str`
+# the wall that stopped the gate, and it is a Bend one. `to_str`
 # (tinygrad/viz/cli.py:51-55 -- upstream's `to_str` IS the function and it is at
 # :51; the `FLOPS` arm that tests `v < 1e13` is at
 # tinygrad/viz/cli.py:53 (`FLOPS` IS that arm)) decides its answer with
@@ -119,7 +119,7 @@ def Item.val(+i: Item) -> String:
 #             f" {time_to_str(k['dur_ms']*1e-3, w=9)} {k['count']:7d} {k['pct']:6.2f}%"
 #             + (" "*4+fmt_data(k['fmt']) if k['fmt'] else "")
 #   fmt_all:  f"--- {k['device']} {k['name']}" (+ f"/{k['st_ms']:9.2f}ms" if st_ms)
-#             or  f"*** {k['device'][:7]:7s} " + k["name"] + " "*(46-ansilen(k["name"]))
+#             or  f"* {k['device'][:7]:7s} " + k["name"] + " "*(46-ansilen(k["name"]))
 #                  + f" tm {ptm}/{k['st_ms']:9.2f}ms" (+ f" ({fmt_data(k['fmt'])})")
 #
 # THE COLUMN WIDTHS ARE 38, 7, 46 AND 9, and a `max(0, ...)` pad means a value
@@ -143,7 +143,7 @@ def Item.val(+i: Item) -> String:
 
 
 
-# `{"MARKER", "SOURCE"}` take the `---` arm and every other device the `***` arm,
+# `{"MARKER", "SOURCE"}` take the `---` arm and every other device the `*` arm,
 # and the two arms share NOTHING -- not the name, not the width, not whether a
 # timestamp follows. MEASURED upstream: `if k["device"] in {"MARKER", "SOURCE"}`
 

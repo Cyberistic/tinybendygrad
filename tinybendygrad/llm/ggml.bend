@@ -7,7 +7,7 @@ import ./gguf.bend as G
 # ===========================================================================
 # llm/ggml.bend -- `ggml_data_to_tensor`'s DECODE (gguf.py:29-185), as VALUES.
 #
-# WHY THIS IS A SECOND FILE AND NOT MORE OF `gguf.bend`. It is the same upstream file,
+# why this is a second file and not more of `gguf.bend`. It is the same upstream file,
 # but `gguf.bend` is 24,915 bytes and the interpreter's per-file byte cliff is 28,987
 # (bend2-constraints), so the quant decode cannot live there.
 #
@@ -31,7 +31,7 @@ import ./gguf.bend as G
 # 14 Q6_K, 16 IQ2_XXS, 17 IQ2_XS, 18 IQ3_XXS, 19 IQ1_S, 21 IQ3_S, 22 IQ2_S, 23 IQ4_XS,
 # 29 IQ1_M, 39 MXFP4, 41 Q1_0. They answer `None` here and the gate has a row for that.
 #
-# AND THE BRIEF'S OWN FACT IS WRONG, MEASURED: `Q4_K` (:79-87) and `Q6_K` (:88-92) are NOT
+# and the brief's own fact is wrong, measured: `Q4_K` (:79-87) and `Q6_K` (:88-92) are not
 # grid quants. Neither body mentions `_ggml_iq_grid`; they are arithmetic over 6-bit
 # sub-block scales. The GRID family is the `IQ*` ones (:93-170), and `IQ4_NL` (:131-133)
 # is the cheapest member: its whole grid is the sixteen-entry `kvalues_iq4nl`, which is

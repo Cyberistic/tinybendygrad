@@ -4,7 +4,7 @@ import ./ops_cl.bend as CL
 
 # tinybendygrad/runtime/ops_cuda.bend -- port of tinygrad/runtime/ops_cuda.py.
 #
-# ONE `.bend` PER UPSTREAM `.py`, AT THE SAME PATH. This file was 707 lines of
+# one `.bend` per upstream `.py`, at the same path. This file was 707 lines of
 # `runtime/ops_cl.bend` until the 1:1 ruling; it now holds ONLY what
 # ops_cuda.py says, plus its half of the gate. The shared trace -- `OP_*`,
 # `Tr`, `Tr.*`, `vend.argname`, `u32s`, `one_s`, the row printers -- is imported
@@ -22,7 +22,7 @@ import ./ops_cl.bend as CL
 # ARE renumbered here because the pin is settled.
 # (the pre-split header's `cu:132` and `cu:134-136` are the SAME two lines, renumbered.)
 #
-# THE ONLY ONE OF THE THREE THAT IS NOT A SEQUENCE OF DRIVER CALLS. `CUDAQueue`
+# the only one of the three that is not a sequence of driver calls. `CUDAQueue`
 # is a COMMAND ENCODER: its six methods do not talk to the GPU, they append to a
 # command buffer and remember the LAST handle they wrote in `self.h`. The index
 # arithmetic on `rt_vars` -- `index(1)` for compute and `index(2)` for a COPY
@@ -512,7 +512,7 @@ def cu.map_err_ctx() -> String: " device memory is only reachable through the ho
 def cu.map_err_align() -> String: " memory is not page aligned host memory"
 def NO_REFUSAL() -> String: ""
 
-# cu:88 `host.addr % mmap.PAGESIZE`. THE AUTHORITY IS HOST-DEPENDENT AND A `U32`
+# cu:88 `host.addr % mmap.PAGESIZE`. the authority is host-dependent and a `U32`
 # CONSTANT CANNOT BE, so `cu.map_err.at` below takes `aligned: Bool` -- the SEAM's
 # answer -- and never computes the modulus. There is therefore NO page-size
 # constant here any more, and that is the fix rather than the loss: a `PAGE_SIZE`

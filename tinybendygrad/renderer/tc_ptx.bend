@@ -1,13 +1,13 @@
 # renderer/tc_ptx.bend -- port of tinygrad/renderer/ptx.py
 #
-# ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH. This file used to hold
+# one BEND file per upstream .py, at the same path. This file used to hold
 # `renderer/ptx.py` AND `renderer/tc.py`; the 1:1 ruling separates them and
 # `renderer/tc.bend` is the other half. This file is the ptx.py HALF and it is
 # 343 rows; `tc.bend` is the tc.py half's 289. The union is 632 rows, and the
 # ONE frame line between the two stages is the only byte a `diff` of the union
 # would report.
 #
-# THE TENSOR-CORE TABLES ARE IMPORTED, NOT COPIED: `renderer/ptx.py` calls
+# the tensor-core tables are imported, not copied: `renderer/ptx.py` calls
 # `get_cuda`/`get_amd` for its warp-level `wmma` and `mma` shapes, and those are
 # `tinygrad/renderer/tc.py:60-66` (upstream's `cuda_81616` and the five tables
 # after it) and
@@ -25,7 +25,7 @@
 #   .venv/bin/python gates/tc_ptx_render_census-gate.py
 # It asks the oracle's `stage2` for this file's rows and the oracle's `stage1`
 # for `tc.bend`'s, and it ALSO asks the oracle's `bend` selector for the PORT'S
-# OWN SOURCE for the four dtype-table row builders: A DIFF CANNOT SEE A ROW THAT
+# own source for the four dtype-table row builders: a diff cannot see a row that
 # IS MISSING FROM BOTH LANES, and `bend` is the independent statement of the row
 # set.  The plant is `gates/tc_ptx_render_census-plant.py` -- four arms and a
 # control, each on a copy.  Before this, the recipe was PROSE in this header,
@@ -35,7 +35,7 @@
 # and `stage2` 344 lines, BYTE-IDENTICAL on both sides; the `bend` check
 # matches; the `wmma` selector answers 1440 rows.
 #
-# THE `py=` HALF IS DERIVED, AND THAT IS THE POINT OF THE WHOLE FILE.  Every row
+# the `py=` half is derived, and that is the point of the whole file.  Every row
 # is `<name> = [BEND]   py=[CPYTHON]` and the `py=` half is the PORT'S OWN VALUE
 # -- `T.rd(nm, got)`, which is `tc.bend`'s `rd` -- so it is not a transcription
 # and it cannot rot.  CPython's VALUE lives in the oracle, which computes every
@@ -45,7 +45,7 @@
 # says whether the port agrees with CPython.  `tc.bend` measured the cost of
 # the other shape: a transcription was WRONG ON 71 OF ITS 286 CELLS.
 #
-# THE ROW NAMES ARE DERIVED TOO, AND THEY WERE THE THING THAT ROTTED.  MEASURED
+# the row names are derived too, and they were the thing that rotted.  measured
 # 2026-10-22: 118 of this file's rows carried the PRE-RENAME dtype spellings
 # ("signed char", "half", "float", "__bf16", "short", "unsigned int") where this
 # tree's `tinygrad/` says "i8", "f16", "f32", "bf16", "i16", "u32".  THE PORT DID
@@ -56,7 +56,7 @@
 # Every dtype-named label is now `T.dt_name(dt)`, the port's own `LAWS/spec.bend`
 # name, so the diff compares THE PORT'S SPEC against UPSTREAM'S DTYPE TABLE.
 #
-# THE NINE ROWS THE ORACLE WAS MISSING, AND WHY THEY ARE NOT DIVERGENCES.  This
+# the nine rows the oracle was missing, and why they are not divergences.  This
 # file prints nine rows the oracle printed NONE of: `types`/`mem_types`/
 # `cast_types` over `void`, `weakint` and `weakfloat`.  They are not
 # divergences: the raw lookup raises for all three, and CPython's OWN answer is
@@ -65,7 +65,7 @@
 # `tinygrad/` now, and they are the rows that go red when the `pri` collision
 # comes back.
 #
-# ONE REAL DEFECT WAS UNDER THE NAMES.  `asm_for_op`'s RECIP arm tested
+# one real defect was under the names.  `asm_for_op`'s recip arm tested
 # `Dtf.is_float` and emitted `rcp.` for an int or a bool, where ptx.py:19 is
 # `lambda d,a,dt,name: f"rcp.approx.{name} {d}, {a};"` -- the DTYPE IS NOT READ.
 # MEASURED: three rows (`asm RECIP bool`, `u32`, `i32`).
@@ -171,15 +171,15 @@ def ptx_of(+ver: U32) -> Px: Px{px_suffix(), px_prefix(), px_barrier(), px_gmax(
 #   types:       int8 s16, int16 s16, int32 s32, int64 s64, uint8 u16,
 #               uint16 u16, uint32 u32, uint64 u64, float16 f16, float32 f32,
 #               float64 f64, bool pred
-#   mem_types:  {**types, int8: s8, uint8: u8, bool: u8, float16: b16}
-#   cast_types: {**types, int8: s8, uint8: u8}
+#   mem_types:  {types, int8: s8, uint8: u8, bool: u8, float16: b16}
+#   cast_types: {types, int8: s8, uint8: u8}
 #
 # The two derived tables are `types` with FOUR and TWO keys replaced, so they are
 # `types` with an override and not a second twelve-arm ladder. `pri` is a unique
 # key over the twelve KEYS, which is all CPython's dict has, so `types_pri` below
 # is that dict and `case _:` is its `KeyError`.
 #
-# **`pri` IS NOT UNIQUE OVER THE DTYPES A KERNEL CAN CARRY, AND THAT WAS A BUG.**
+# `pri` is not unique over the dtypes a kernel can carry, and that was a bug.
 # MEASURED, `dtypes.all` plus the two weaks plus void: pri 0 is `bool`, `void`
 # AND `weakint`; pri 9 is `weakfloat` alone; pri 10/11/13 are the four fp8 and
 # bf16. The twelve-arm table therefore answered `pred` for `void` and `weakint`
@@ -226,7 +226,7 @@ def w_float() -> String: types_pri(S.Dt.pri(S.single()))
 # guard: `ptx.py:220` clears a `void` RANGE's prefix, so today no path asks, and
 # the row that says so is `types void`.
 #
-# THE pri ARMS LIVE IN THEIR OWN DEFS because Bend refuses a `match` over a
+# the pri arms live in their own defs because Bend refuses a `match` over a
 # binder an enclosing `match` already took: MEASURED, `'pri' can't be matched in
 # this position` and then `'cls' can't be matched in this position` for the
 # `+p = pri` workaround. A table def may READ `pri` and hand it to a helper; the
@@ -444,7 +444,7 @@ def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: Stri
       [String.concat(["selp.", Bool.pick(String, String.eq(name, "f16"), "b16", name), " ", d, ", ", b, ", ", c, ", ", a, ";"])])
     case _: []
 
-# `case _: []` IS THE SAME CLASS AS `types_pri`'s, AND IT IS UNREACHABLE -- MEASURED:
+# `case _: []` is the same class as `types_pri`'s, and it is unreachable -- measured:
 # twenty-one arms for `asm_keys()`'s twenty-one members (one for one), and all FIVE call
 # sites of `op_asm` pass a member of `asm_keys()` or a literal `OpsWHERE`. So no emitted
 # line is affected today and the arm is left alone rather than given a refusal the
@@ -622,7 +622,7 @@ def r_cast_types1(+dt: S.Dt) -> String:
 
 # `PTXRenderer.types` over all TWELVE of its keys, in the dict's own order --
 # which is the order `R.types.items()` reports. `mem_types` and `cast_types` are
-# `{**types, ...}` overrides of the same twelve keys, so they repeat the whole
+# `{types, ...}` overrides of the same twelve keys, so they repeat the whole
 # table and differ only at the four and two overridden entries.
 def r_tabs() -> String:
   String.concat([r_types1(S.int8()), r_types1(S.int16()), r_types1(S.int32()), r_types1(S.int64()), r_types1(S.uint8()), r_types1(S.uint16()), r_types1(S.uint32()), r_types1(S.uint64()), r_types1(S.half()), r_types1(S.single()), r_types1(S.double()), r_types1(S.boolean())])
@@ -639,7 +639,7 @@ def ifmiss(+s: String) -> String: Bool.pick(String, String.is_empty(s), "KeyErro
 def r_tabs_miss() -> String:
   String.concat([T.rd("types " ++ T.dt_name(S.fp8e4m3()), ifmiss(types_of(S.fp8e4m3()))), T.rd("types " ++ T.dt_name(S.bfloat16()), ifmiss(types_of(S.bfloat16())))])
 
-# THE THREE DTYPES `pri` CANNOT TELL APART -- and these nine rows are the ones that
+# the three dtypes `pri` cannot tell apart -- and these nine rows are the ones that
 # go red when the fix is reverted, because the twelve `types` rows above and the two
 # `ifmiss` rows above cannot see any of it.
 #
@@ -651,7 +651,7 @@ def r_tabs_miss() -> String:
 # than absent. Hence `void`/`weakint` are the rows and the answer is per TABLE:
 # `mem_types`' `case 0: "u8"` reached `weakint` on its own.
 #
-# THE ROWS ARE THE PORT'S ANSWER, NOT CPYTHON'S: CPython has no answer, which is
+# the rows are the port's answer, not CPYTHON's: CPython has no answer, which is
 # why `ifmiss` spells the refusal `KeyError` and these spell it `s32`/`f32`. The
 # claim each one makes is the DEVIATION's, and it is pinned by name, so a revert
 # moves six of the nine and a fourth type moving in moves nine.
@@ -828,14 +828,14 @@ def r_ptx_tcs() -> String:
 # longer than seven characters) or TWO. The `1` on `replace` is load-bearing:
 # without it EVERY space in the line would become a tab.
 #
-# THE `$` EARLY RETURN IS GONE, AND IT IS UPSTREAM THAT DELETED IT. Upstream
+# the `$` early return is gone, and it is upstream that deleted it. Upstream
 # `96397341d` ("dead code cleanups [PR] (#18593)", 2026-10-03) turned
 # `return line if line[0]=="$" else "\t" + line.replace(...)` into
 # `return "\t" + line.replace(...)`. MEASURED, at that commit's parent `ptx.py`
 # held NO OTHER `$` -- ONE occurrence in the whole file, the `fmt` line itself --
 # so no line could ever begin with `$` and the branch was DEAD CODE. The port
 # kept it, and the two agreed until the 2026-10-16 re-vendor moved the tree
-# past that commit. A COMMENT THAT ARGUES FOR A BEHAVIOUR UPSTREAM DELETED IS
+# past that commit. a comment that argues for a behaviour upstream deleted is
 # A WRONG BEHAVIOUR WITH A DEFENCE, so this file's own `$` prose went with it.
 # ===========================================================================
 
@@ -1158,7 +1158,7 @@ def main() -> IO(Unit):
 # is the only mutation here that a human reading both lanes side by side would
 # call green.
 #
-# M27 AND M38 ARE WHY A FIXTURE IS NOT ENOUGH. M27 (`TRUNC`'s second type name)
+# M27 and M38 are why a fixture is not enough. M27 (`TRUNC`'s second type name)
 # moved NOTHING while every one of the 105 `asm` rows said `cvt.rzi.s32.s32`:
 # the 105-row grid fixes `name` at "s32" to isolate the DTYPE branch, so the
 # NAME branch of a four-argument lambda was ungated. Adding TRUNC to the
@@ -1176,14 +1176,14 @@ def main() -> IO(Unit):
 # a harness that reports "0 rows" for everything would look identical on the
 # four blind spots.
 #
-# M51 IS THE ONE THAT WAS A REAL DEFECT, AND IT SAT UNDER THE NAMES.  The arm
+# M51 is the one that was a real defect, and it sat under the names.  The arm
 # read `Dtf.is_float` and emitted `rcp.` for an int or a bool; ptx.py:19 reads no
 # dtype at all.  MEASURED 2026-10-22: THREE rows (`asm RECIP bool`, `u32`,
 # `i32`).  It was invisible for a fortnight because the whole ptx half was RED
 # on 118 other rows, and a diff that lists a hundred disagreements does not
 # point at the one that is a bug rather than a rename.
 #
-# THE TABLE IS THE 2026-10-06 READING, AND THE `py=` COLUMN WAS REMOVED.  The
+# the table is the 2026-10-06 reading, and the `py=` column was removed.  The
 # numbers here are ROWS THAT MOVE, and they were measured with the transcribed
 # `py=` halves this file no longer has; the moved-row counts are the same (a
 # `py=` half that is derived cannot move a row that the `got=` half did not),

@@ -7,7 +7,7 @@
 # that table feeds, and the loop.
 #
 # ---------------------------------------------------------------------------
-# A CHECKING FILE, NOT A COMPLETE ONE, AND THE BRIEF ASKS FOR THAT. Four of the
+# a checking file, not a complete one, and the brief asks for that. Four of the
 # nine defs are one-line device calls and a wall; the two that carry the search's
 # DECISION PROCEDURE are ported and gated; the third (`get_kernel_actions`) is
 # ported in its guards only, and the remaining conjunct -- `apply_opt` -- is
@@ -40,7 +40,7 @@
 #                                         taken as a `SCORE` table
 #
 # ---------------------------------------------------------------------------
-# THE ONE THING IN `get_kernel_actions` THAT IS ITS OWN, AND IT IS LOAD-BEARING.
+# the one thing in `get_kernel_actions` that is its own, and it is LOAD-bearing.
 #
 #   search.py:89-90
 #   if (a.axis >= s.shape_len) or (a.op is OptOps.SPLIT and isinstance(arg, tuple)
@@ -57,7 +57,7 @@
 # `(UNROLL, top=False)` arm on axes 0..9; upstream deleted that group, and a
 # ladder arm on a deleted enum member is a row that can never disagree.)
 #
-# AND IT IS THE REASON A COUNT IS NOT ENOUGH A GATE. MEASURED AT HEAD on CPython,
+# and it is the reason a count is not enough a gate. measured at HEAD on CPython,
 # DEV=PYTHON, `PythonRenderer`, by patching `apply_opts` -- the only place a
 # `Scheduler` is built on the way to beam search (`tinygrad/codegen/opt/postrange.py:241`, `apply_opts`) -- and
 # reading `get_kernel_actions(s, include_0=False).keys()`. Reproduce with
@@ -72,7 +72,7 @@
 #   a@b 64x64x64         [64, 64, 64]     [GLOBAL, GLOBAL, WEAK]
 #     32 keys
 #
-# EVERY KEY ABOVE 60 IS A DIFFERENT KEY FROM THE PIN'S, and that is not a typo: these
+# every key above 60 is a different key from the PIN's, and that is not a typo: these
 # are INDICES INTO `actions`, and deleting the 60-entry UNROLL group moved every position
 # at or above 60. The old text said `1 11 121 129` and `1 11 31 62 72 92 121 122 129
 # 130 145 146 153 154 170 193 194 218`; the counts (4, 18, 32) held and nothing else did.
@@ -82,7 +82,7 @@
 # which is the `device.bend` `sig=0 4 5` shape; `codegen/opt/postrange.bend:721-731
 # symbol=get_kernel_actions` still quotes the OLD set and is not this file's to fix.
 #
-# THE DEDUP SHOWS UP AS AN ABSENCE, AND AT HEAD IT IS 108, NOT 169. For 16x32 the guard
+# the dedup shows up as an absence, and at HEAD it is 108, not 169. For 16x32 the guard
 # tested exactly six indices -- 10, 68, 108, 132, 157, 181 -- and:
 #
 #   DEDUPED  10 `SPLIT(0, (2, UPCAST))`   full_shape[0]=16, twin `(0, UPCAST)` at index 0 is present
@@ -120,14 +120,14 @@
 #   if not exiting: beam = opts[:amt]
 #   elif len(opts)>0 and opts[0][1] < beam[0][1]: beam = opts[:1]
 #
-# THE FIVE WAYS A CANDIDATE IS DROPPED ARE FIVE FIELDS OF ONE ANSWER, because in
+# the five ways a candidate is dropped are five fields of one answer, because in
 # Python they are five lines of one loop body. `lib` is the generated library for
 # `seen_libs`; `ops` is `sym_infer(estimates.ops, var_vals)` for the 1000x
 # filter; and `t` is `min(tms)` in MICROSECONDS, because `min_progress` is
 # `getenv("BEAM_MIN_PROGRESS", 0.01)/1e6` -- a time -- and microseconds is the unit
 # that makes the comparison exact with no F32 in it.
 #
-# THE COUNTS ARE PORTED STATE, NOT INSTRUMENTATION. Python derives everything
+# the counts are ported state, not instrumentation. Python derives everything
 # from `len(candidates)` and `len(timed)`; `RB` carries `cands` and `launches`
 # so the gate can print them. `launches` counts the candidates that REACHED THE
 # TIMING CALL -- the ones not dropped by `ok`, by a duplicate `lib`, or by the
@@ -137,8 +137,8 @@
 #     (a+1) 4 elements   "from 1 -> 1 actions", "4 -> 4 actions", "2 -> 2 actions"
 #     (a*b).sum(1) 16x32 "18 -> 18 actions", "13 -> 13 actions", "2 -> 2 actions"
 #
-# SO AT BEAM=1 THE SEARCH ANSWERS THE FIRST CANDIDATE AFTER THE INITIAL CONFIG,
-# AND THE COUNT IS 4 FOR THE 1-AXIS KERNEL AND 18 FOR THE REDUCE ONE. This file
+# so at beam=1 the search answers the first candidate after the initial config,
+# and the count is 4 for the 1-axis kernel and 18 for the reduce one. This file
 # prints both, and the LOOP it prints them through is the real loop: a supplied
 # `SCORE` table stands in for `_try_compile` and `_time_program`, the drop rules
 # are the drop rules, and `exiting` is the exit test.
@@ -278,7 +278,7 @@ def CFG.padto_on(c: CFG) -> Bool:
 # names, for each of those, the wrong set it catches and the count cannot.
 # ===========================================================================
 
-# THE GROUP SIZES, ONE DEF EACH, so `main` can print them BY NAME and a wrong
+# the group sizes, one DEF each, so `main` can print them by name and a wrong
 # group is localised instead of surfacing only as a moved total. They are still
 # ADDED ONE AT A TIME, because a `U32` cannot be read twice in one expression and
 # `U32.add` is strict in BOTH arguments, so a balanced tree still reads each leaf
@@ -311,7 +311,7 @@ def acts_n.of(pad: Bool, g1: U32, g2: U32, g3: U32, g5: U32, g6: U32, g7: U32, g
 def acts_n(c: CFG) -> U32:
   acts_n.of(CFG.padto_on(c), grp.up(), grp.lcl(), grp.lcl_top(), grp.split32(), grp.tc0(), grp.tc(), grp.swap())
 
-# THE amt-0 CENSUS, ONE NUMBER PER TARGET, AND IT IS ALSO THE LADDER'S BOUND. These
+# the amt-0 census, one number per target, and it is also the ladder's bound. These
 # used to be written TWICE -- as `U32.add(U32.add(10, 10), 8)` here and as a literal
 # `10` inside `zero_variant` -- and they had already drifted, because that second
 # `10` belonged to UNROLL when this was written while this count still carried it.
@@ -336,7 +336,7 @@ def acts_zero() -> U32:
   U32.add(zero_n.up(), zero_n.lcl())
 
 # ===========================================================================
-# A COUNT IS NOT A CENSUS, AND THIS IS THE CENSUS. Each row below answers a question
+# a count is not a census, and this is the census. Each row below answers a question
 # `acts_n` cannot, and each catches a DIFFERENT wrong set that still sums to 209.
 #
 #   tgt_kinds  the number of distinct SPLIT target axis types; at HEAD it is 2.
@@ -391,7 +391,7 @@ def byop.padto(pad: Bool) -> U32: grp.padto(pad)
 # GLOBAL, WARP, WEAK, LOOP and PLACEHOLDER are therefore all False, and so are the
 # two members upstream DELETED -- see `zero_variant.dead` immediately below.
 #
-# THE TWO DELETED MEMBERS, IN ONE DEF, REACHED ONLY THROUGH THE FALLTHROUGH. This is
+# the two deleted members, in one DEF, reached only through the fallthrough. This is
 # `uop/ops.bend`'s `AxisType.name.dead` shape copied, not a third spelling of it:
 # upstream deleted `AxisType.REDUCE` and `AxisType.UNROLL`, `ops.bend` retains both
 # constructors because six committed files still construct them, and `ops.bend:652`
@@ -432,7 +432,7 @@ def zero_variant(t: O.AxisType, top: Bool, ax: U32) -> Bool:
     case False{}: zero_variant.flat(t, ax)
 
 # ===========================================================================
-# THE BEAM SCORE AND THE BEAM STATE. These are the RECORD SHAPES of what
+# the beam score and the beam state. These are the record shapes of what
 # `_try_compile` and `_time_program` answer, and of the `while`'s loop-carried
 # state. They are declared and NOT YET CONSUMED by a loop -- see the header.
 # ===========================================================================
@@ -479,7 +479,7 @@ def plus_scores() -> List<&2, SCORE>:
 def plus_dropped() -> U32:
   U32.sub(4, U32.from_nat(List.length(&2, SCORE, plus_scores())))
 
-# TWO OF THE FIVE DROPS, AND THEY ARE THE TWO THAT SPELL. `if proc is None:
+# two of the five drops, and they are the two that spell. `if proc is None:
 # continue` is `not ok`; `if (lib := prg.src[3].arg) in seen_libs: continue` is
 # `seen`, and `seen` is the membership test over the accumulated `U32` list of
 # library ids. A `Data` record carries both flags and neither is read twice.
@@ -602,18 +602,18 @@ def main() -> IO(Unit):
 #   `min2` returns the larger                  least_lo
 #   `plus_dropped` subtracts 3 not 4           dropped
 #
-# THE THREE TOTAL-PRESERVING MUTATIONS ARE THE POINT OF THE CENSUS, and each is ONE
+# the three total-preserving mutations are the point of the census, and each is one
 # LINE so the compensating edit cannot be what hides the disagreement. `acts_n` does
 # NOT move for any of them; something else does. That is the difference between "the
 # table has 209 entries" and "the table has THESE 209 entries", and it is the reason
 # `tgt_kinds` and the `tgt_*` / `byop_*` / `zero_n_*` rows exist at all.
 #
-# `zero_n.up` / `zero_n.lcl` MOVING A LADDER ROW IS ALSO THE POINT. `acts_zero` used to
+# `zero_n.up` / `zero_n.lcl` moving a ladder row is also the point. `acts_zero` used to
 # be `U32.add(U32.add(10, 10), 8)` and `zero_variant` used to carry its own literal
 # `10`, and the two had already drifted -- the count carried a UNROLL term the ladder
 # did not. They are one source now, so a census change cannot leave the predicate behind.
 #
-# THE BLIND SPOT, REPORTED RATHER THAN CLOSED. `zero_variant.dead` has no row asking it,
+# the blind spot, reported rather than closed. `zero_variant.dead` has no row asking it,
 # because the two members it names do not exist upstream: the oracle cannot construct
 # `AxisType.REDUCE` either, so any row over it would compare a Bend-only answer with
 # nothing and assert the Bend's own behaviour -- the `device.bend` `sig=0 4 5` shape.
@@ -622,7 +622,7 @@ def main() -> IO(Unit):
 # `tgt_kinds` 2 -> 3. `uop/ops.bend` takes the same position on `axv_REDUCE` /
 # `axv_UNROLL` for the same reason.
 #
-# THE OFF-BY-ONE THAT WAS REAL. Both "ladder reads `zero_max`" rows are here because the
+# the off-by-one that was real. Both "ladder reads `zero_max`" rows are here because the
 # refactor made that mistake once: `zero_max.up()` is the highest axis that HAS a twin
 # (9), while the ladder needs the exclusive bound (10). Reading the former printed
 # `ax < 9`, which is `zero_up9` 1 -> 0 and `zero_lcl7` 1 -> 0 -- two rows, immediately,

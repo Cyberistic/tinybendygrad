@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/support/compiler_cuda.bend -- port of tinygrad/runtime/support/compiler_cuda.py
 #
 # ===========================================================================
-# NINETY-NINE LINES, AND THE HEADLINE IS THAT THE SIX REGEXES ARE A WALL.
+# ninety-nine lines, and the headline is that the six regexes are a wall.
 #
 # `pretty_ptx(s)` is six `re.sub(pattern, lambda m: m[1] + colored(m[2], c) + m[3], s,
 # flags=re.M)` calls, IN SEQUENCE. Each one rewrites the WHOLE string, so the
@@ -765,7 +765,7 @@ def t_nvptx() -> IO(Unit):
     n : Unit <- srow("cu.nvptx_sm86.dis", NVPTXCompiler.dis_row("sm_86"))
     IO.print("cu_nvptx_done=1")
 
-# THE FRESH-PROCESS ROWS. `CUDA_PATH` and `NO_COLOR` are both
+# the fresh-process rows. `CUDA_PATH` and `NO_COLOR` are both
 # `@functools.cache`d `getenv` reads, so BOTH values of each live in two
 # processes. `cu.cudapath` is compared against `@0` (unset) and
 # `cu.cudapath_set` against `@2` (`CUDA_PATH=/my/cuda`), and the latter is the

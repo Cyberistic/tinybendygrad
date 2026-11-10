@@ -128,7 +128,7 @@ def Scan.cp(s: Scan) -> List<&2, U32>:
 # `_collect_bufs` -- memory.py:7-10. BUFFER is itself, MSELECT/MSTACK recurse
 # over every src, and everything else contributes nothing.
 #
-# THE FUEL IS THE ONLY `match` IN THE RECURSIVE DEF, and the descent is a
+# the fuel is the only `match` in the recursive DEF, and the descent is a
 # separate `step`. That is `ops.bend`'s `toposort` shape, and it is forced:
 #   * a def may only call defs declared ABOVE it, so a wrapper/step pair that
 #     calls each other is MUTUAL recursion and is refused;
@@ -186,7 +186,7 @@ def mem_collect_of(fuel: Nat, ar: O.Arena, u: U32) -> List<&2, U32>:
 # `_can_plan` -- memory.py:12-16. Two tests: not held, and no device that starts
 # with DISK, CL or WEBGPU (see the note on `contiguous_view_offset`).
 #
-# THE DEVICE NAME TEST IS A WALL AND IT IS THE INTERESTING ONE. Python tests
+# the device name test is a wall and it is the interesting one. Python tests
 # `d.startswith(("DISK", "CL", "WEBGPU"))` on a device NAME. Here a device is
 # `S.Dev` -- a `U32` tag -- so there is no string to test and this file cannot ask
 # the question. The unplannable TAGS are therefore a PARAMETER (`unpl`), and WHO
@@ -460,7 +460,7 @@ def mem_tc_add(+i: U32, b: U32, tc: List<&2, Bf>) -> List<&2, Bf>:
 
 # `copy_bufs.update(si_bufs)` -- a SET, so a repeat leaves it alone.
 #
-# THE FUEL MATCH IS THE ONLY `match`, and the self-call is IN ITS ARM, with the
+# the fuel match is the only `match`, and the self-call is in its arm, with the
 # head and the tail read by `mem_head`/`List.tail` -- `mem_collect`'s shape. A
 # step def that recursed would have to live BELOW this one to be callable and
 # would then be a forward reference, which is why the step lives in the arm.
@@ -589,8 +589,8 @@ def mem_scan.of(+ar: O.Arena, +pl: Plan, +linear: U32) -> Scan:
 #                     [(last_appearance[b] + 1 + buf_hold.get(b, 0), False, b) for b in first_appearance],
 #                     key=lambda x: (x[0], x[1]))
 #
-# THE SORT KEY IS `(index, is_open)` OVER PYTHON BOOLEANS and `False < True`, so AT
-# ONE INDEX EVERY CLOSE RUNS BEFORE EVERY OPEN. That is load-bearing: a copy
+# the sort key is `(index, is_open)` over python booleans and `False < True`, so at
+# one INDEX every close runs before every open. That is load-bearing: a copy
 # buffer's free must be able to precede the next buffer's alloc at the same index,
 # and a port that sorted opens first would reuse memory it just handed back and
 # would change every arena size. `Ev.o` is `1` for an open and `0` for a close
@@ -835,7 +835,7 @@ def mem_lane_add(+ln: Lane, +ls: List<&2, Lane>) -> List<&2, Lane>:
   mem_lane_add.of(mem_lane_in.of(ls, ln), ls, ln)
 
 
-# THE HIGH-WATER MARK ONE EVENT TOUCHES: `offsets[buf] + buf.max_numel() *
+# the high-water mark one event touches: `offsets[buf] + buf.max_numel() *
 # buf.dtype.itemsize`. Both of a buffer's events carry the same value, which is
 # why Python can compute it on the open and on the close alike.
 def mem_top(+fx: F.Folded, +offs: List<&2, Off>, +e: Ev) -> U32:
@@ -1250,7 +1250,7 @@ def mem_dbg_text.keep(same: Bool, t: String) -> String:
     case True{}: ""
     case _: t
 
-# THE THREE NUMBERS, AND WHERE EACH ONE ACTUALLY LIVES. `Planned` does NOT hold
+# the three numbers, and WHERE each one actually lives. `Planned` does not hold
 # `nbytes`, and getting this wrong was worth two wrong rows, so each is cited:
 #
 #   `len(first_appearance)` -- NOT `len(Planned.tc)`. `Scan.tc` is the fused
@@ -1281,9 +1281,9 @@ def mem_omem(+p: Planned) -> U32:
 def mem_nmem(+p: Planned) -> U32:
   mem_sum_arena(Planned.azs(p))
 
-# THE FOUR NUMBERS AS PARAMETERS, so the `!=` CONDITION IS REACHABLE FROM A ROW.
+# the four numbers as parameters, so the `!=` condition is reachable from a row.
 #
-# MEASURED BLIND SPOT, AND THIS IS THE FIX. The mutation "drop the `!=`" moved NOTHING
+# measured blind spot, and this is the fix. The mutation "drop the `!=`" moved nothing
 # (.agents/slop/debug-mutate.txt), and the reason is not a theorem: this file's only
 # plan fixture HAS a saving -- omem 12032 against nmem 11776 -- so the suppressing arm
 # of `keep` is never reached and "print only when there is a saving" and "always
@@ -1486,7 +1486,7 @@ def p_tot() -> U32: mem_eq(Planned.tot(mem_plan(proj_of())), 24064)
 # the `_key` comment on avoiding copy->compute->copy, so the count is the row.
 def p_nlanes() -> U32: mem_npk(mem_peaks(plan_plan(Proj.fx(proj_of())), Scan.cp(mem_scan_of(proj_of())), mem_offs(), Planned.evs(mem_plan(proj_of()))))
 
-# THE LANE ORDER IS THE EVENT ORDER, and the FIRST event belongs to a COPY
+# the lane order is the event order, and the first event belongs to a COPY
 # buffer (B2), so lane 0 is ("CPU", 1) and lane 1 is ("CPU", 0). Python's
 # `defaultdict` creates `peaks[_key(buf)]` on the first event and `dict` keeps that
 # insertion order, and `arena_sizes` iterates it -- so this file's lane 0 is the
@@ -1653,7 +1653,7 @@ def e_nbufs() -> U32: mem_len(mem_scan_bs(empty_of()))
 # | `mem_touch.one`'s `mem_bs_add` -> append unconditionall... | p_nbufs, p_nev, p_ev3_i, p_ev3_o0, p_ev3_b0, p_ev3_b1, p_ev3_o2, p_ev3_b2, p_tot, p_nplan, COUNT bufs | 11 |
 # | `mem_scan`'s kernel fuel -> `+ 1n` (one step past the e... | NONE | 0 |
 #
-# THE TWO THAT MOVE NOTHING ARE BOTH WORTH READING.
+# the two that MOVE nothing are both worth reading.
 #
 # `mem_args.one`'s `src_from(ar, si, 1)` -> `src_from(ar, si, 0)` moves NOTHING, and
 # that is an EQUIVALENCE rather than a gap: `si.src[0]` is a kernel SINK's BODY and

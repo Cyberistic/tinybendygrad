@@ -41,7 +41,7 @@
 #      one-element tensor, which is the only element there is.
 #
 # ===========================================================================
-# WHAT THE PORT HAS, AND WHAT IT DOES NOT.
+# what the port has, and what it does not.
 #
 # IT HAS THE DTYPE HALF. `S.Dt.itemsize` (`LAWS/spec.bend:176-181`) is
 # `(bitsize + 7) // 8`, exactly `tinygrad/dtype.py:63`. `MD.commit_dtype`
@@ -50,9 +50,9 @@
 # (`tinygrad/dtype.py:171-174`, `commit_int`), so the weak-dtype branch of `data()` -- the
 # one that decides int32-vs-int64 and float32 -- is PORTED.
 #
-# IT DOES NOT HAVE THE BUFFER HALF, and this is the port's WALL, measured not
+# it does not have the BUFFER half, and this is the port's wall, measured not
 # guessed:
-#   * THE PORT's `uop/ops.bend` STORAGE, DEVICE AND ALLOC WALL -- "NO LIVE `Buffer` -- there is no
+#   * the port's `uop/ops.bend` storage, device and alloc wall -- "no live `Buffer` -- there is no
 #     `type Buffer is Data` anywhere in the port and ZERO `Buffer{`
 #     constructors". MEASURED: `grep -rn "type Buffer is Data" tinybendygrad/`
 #     answers ONE line and it is that COMMENT; `grep -rn "Buffer{" tinybendygrad/`
@@ -67,20 +67,20 @@
 #   * THE PORT's `nn/onnx.bend` NOT PORTED BLOCK -- the port's own words: "Nothing in
 #     this port can read a byte out of a tensor".
 #
-# SO THE PORT'S `item` READS A VALUE FROM THE ONE PLACE A VALUE EXISTS, and
+# so the port's `item` reads a value from the one place a value exists, and
 # REFUSES, BY NAME, EVERYWHERE ELSE. The one place is a CONST node: its arg is
 # `APy{v}` (`uop/ops.bend:1234`) and `v` is an `O.Const`
 # (`uop/ops.bend:799-803`) -- `CBool`/`CInt`/`CFloat`. That is the port's
 # `PyConst`, which is exactly what upstream's `item` returns.
 #
-# THE DOMAIN IS THEREFORE SMALLER THAN UPSTREAM'S, AND THE DIFFERENCE IS
+# the domain is therefore smaller than upstream's, and the difference is
 # NAMED IN EVERY ANSWER:
 #   * a one-element CONST -- READ, and the value is upstream's value.
 #   * a multi-element tensor -- REFUSED, with upstream's own message.
 #   * anything else -- REFUSED, with the wall named.
 #
 # ===========================================================================
-# THE ORCHESTRATOR'S THREE PRIMITIVES, AND WHAT EACH ONE ACTUALLY IS. They
+# the orchestrator's three primitives, and what each one actually is. They
 # were briefed as "a buffer element read", "the dtype's byte width" and "a
 # tensor index", and TWO OF THE THREE ARE SOMETHING ELSE. The measurements:
 #
@@ -138,7 +138,7 @@ type Itm is Data:
   ItmNotOne{n: U32}
   ItmNoRead{at: String}
 
-# THE WALL, IN ONE STRING, WITH ITS TWO MEASUREMENTS IN IT. It is a `def` and
+# the wall, in one string, with its two measurements in it. It is a `def` and
 # not a literal at each use site so that the string is ONE string.
 def nn_item_wall() -> String:
   String.concat([
@@ -149,8 +149,8 @@ def nn_item_wall() -> String:
 # 1. THE PRECONDITION. `prod(self.shape)` -- upstream's `numel()`
 # (`tinygrad/mixin/movement.py:38-46`).
 #
-# THE DIMS COME FROM THE FOLD (`M.mo_dims`, `mixin/op.bend:284`) AND THE
-# PRODUCT IS `H.prod_u32` (`helpers.bend:486`). `M.mo_reduced` IS **NOT** THE
+# the dims come from the FOLD (`M.mo_dims`, `mixin/op.bend:284`) and the
+# PRODUCT IS `H.prod_u32` (`helpers.bend:486`). `M.mo_reduced` IS NOT THE
 # PRODUCT DEF: it is `prod([si for si, so in zip(shape, sum.shape) if
 # resolve(si != so)])` (`mixin/op.bend:876`), which is the product of the
 # dims the REDUCTION TOUCHED, so `mo_reduced(t, Nil{})` is the EMPTY product
@@ -180,9 +180,9 @@ def nn_item_numel(+t: T.Tensor) -> U32:
 # 2. THE VALUE. A CONST node's arg is `APy{v}` (`uop/ops.bend:1234`) and `v`
 # is an `O.Const` (`uop/ops.bend:799-803`).
 #
-# `match` MAY NOT SCRUTINISE A COMPUTED VALUE, AND NOT A LET-BOUND ONE
+# `match` may not scrutinise a computed value, and not a let-bound one
 # EITHER (bend 2.0.39 refuses both, RE-MEASURED 2026-10-30 AFTER THE 2.0.39
-# UPGRADE -- AND THE MESSAGES NOW CARRY A PREFIX, "a parameter or field
+# upgrade -- and the messages now carry a prefix, "a parameter or field
 # scrutinee (a match cannot scrutinize a computed value: give it its own
 # def)" AND "a parameter or field scrutinee (a match cannot scrutinize a
 # local binder: give it its own def)", SO THE QUOTED TEXT IS STILL VERBATIM
@@ -217,13 +217,13 @@ def nn_item_const(+t: T.Tensor) -> Maybe<&2, O.Const>:
 # `(default_int, int, long, ulong)` -- and for a weakfloat it is
 # `strong_dtype(weakfloat)` = float32.
 #
-# THE BOUNDS ARE THE CONST'S OWN VALUE, because for a CONST `vmin == vmax ==
+# the bounds are the CONST's own value, because for a CONST `vmin == vmax ==
 # the value` (`tinygrad/uop/ops.py:259-262` reads `self.arg` for a CONST).
 # `F.const_i64` (`uop/fold.bend:1420-1420`) is that read, and it answers
 # `None{}` for a `CFloat` -- which is FINE, because the weakfloat branch of
 # `commit_dtype` ignores the bounds and takes `strong_dtype`.
 #
-# THE ONE THING THIS FILE ADDS IS THE QUANTITY HOP. `F.const_i64.go`
+# the one thing this file adds is the quantity hop. `F.const_i64.go`
 # answers `Maybe<&2, H.I64>` (a `Data` payload, so the `Maybe` is a `Data`
 # too) and `MD.commit_dtype` takes `Maybe<&1, H.I64>`. A `&2` payload USED
 # ONCE is inside a `&1` budget, so the hop is one `match` and NOT a second
@@ -237,7 +237,7 @@ def nn_item_bounds.of(m: Maybe<&2, H.I64>) -> Maybe<&1, H.I64>:
 
 def nn_item_bounds(v: O.Const) -> Maybe<&1, H.I64>: nn_item_bounds.of(F.const_i64.go(v))
 
-# THE WEAK TEST IS A PARAMETER AND NOT A CALL IN THE SCRUTINEE POSITION, for
+# the weak test is a parameter and not a call in the scrutinee position, for
 # the reason in section 2.
 def nn_item_dt.p(weak: Bool, +dt: S.Dt, +v: O.Const) -> S.Dt:
   match weak:
@@ -279,12 +279,12 @@ def nn_item(+t: T.Tensor) -> Itm: nn_item.of(nn_item_numel(t), t)
 # ===========================================================================
 # THE PRINTING.
 #
-# `nn_item_show` IS UPSTREAM'S OWN TEXT WHERE UPSTREAM HAS TEXT: the
+# `nn_item_show` is upstream's own text WHERE upstream has text: the
 # multi-element refusal prints `AssertionError: must have one element for
 # item` -- `tinygrad/mixin/op.py:32` VERBATIM, with nothing added, so the
 # row's `want` IS the upstream literal.
 #
-# THE VALUE IS A PYTHON NUMBER, AND THE PORT SPELLS IT THE WAY PYTHON DOES
+# the value is a python number, and the port spells it the way python does
 # WHERE IT CAN:
 #   * `H.i64_dec` (`helpers.bend:2180`) is the SIGNED DECIMAL -- `str(int)` in
 #     Python -- and NOT `H.i64_text` (`helpers.bend:1713`), which is the
@@ -331,7 +331,7 @@ def nn_item_bits(it: Itm) -> String:
     case ItmVal{dt, v}: nn_item_bits.v(v)
     case _: "NONE"
 
-# THE DTYPE THE VALUE WAS READ UNDER, and its BYTE WIDTH -- upstream's
+# the dtype the value was read under, and its BYTE width -- upstream's
 # `dtype.itemsize`, which is how many bytes `data()`'s `cast(fmt, shape)`
 # reads per element. `S.Dt.itemsize` is `LAWS/spec.bend:176-181`.
 def nn_item_size(it: Itm) -> String:
@@ -342,8 +342,8 @@ def nn_item_size(it: Itm) -> String:
 # ===========================================================================
 # THE ROWS.
 #
-# EVERY `want` BELOW IS AN ANSWER MEASURED IN CPython IN THIS REPO'S `.venv`
-# ON 2026-10-22, AGAINST `tinygrad`'s own `Tensor`, AND NOT COPIED FROM THE
+# every `want` below is an answer measured in CPython in this repo's `.venv`
+# on 2026-10-22, against `tinygrad`'s own `Tensor`, and not copied from the
 # PORT'S OUTPUT. The commands and the raw answers are in
 # `.agents/slop/nnitem/REPORT.md`. IN SHORT:
 #
@@ -436,10 +436,10 @@ def nn_item_row_multi() -> IO(Unit):
     nn_item_line("item_multi_numel", U32.show(nn_item_numel(t)), "2")
 
 # --- ROW 5: a one-element DEVICE BUFFER ------------------------------------
-# THIS ROW IS RED BY DESIGN. It is THE DIVERGENCE, and it is the only red
+# this row is red by design. It is the divergence, and it is the only red
 # row in the file. Upstream reads the buffer's element: CPython answers 3.5
 # for `Tensor([3.5]).item()`. THE PORT HAS NO BUFFER TO READ, so it refuses.
-# THE `want` IS UPSTREAM'S ANSWER, NOT THE PORT'S, so the row CAN go red and
+# the `want` is upstream's answer, not the port's, so the row can go red and
 # DOES.
 def nn_item_row_buf() -> IO(Unit):
   +t = nn_item_buf_t()

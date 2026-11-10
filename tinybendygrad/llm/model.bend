@@ -1,15 +1,15 @@
 # tinybendygrad/llm/model.bend -- port of tinygrad/llm/model.py
 #
-# **PARTIAL, AND THE SPLIT IS THE POINT.** `llm/model.py` is 650 lines and almost all of it is
+# partial, and the split is the point. `llm/model.py` is 650 lines and almost all of it is
 # `Tensor`/`nn` machinery: RoPE, four attention variants (plain, MLA, GatedDeltaNet/SSM, sliding-window),
 # MoE experts, manifold-constrained hyper-connections, a GGUF loader and a generation loop. What is
-# ported here is the part that is PURE DATA AND CAN BE CHECKED WITHOUT A DEVICE:
+# ported here is the part that is pure data and can be checked without a device:
 #
 #   * `ExpertGating` -- an `enum.IntEnum` whose members are 1..4, so the VALUE is the contract.
 #   * `YaRNConfig`, `SSMConfig`, `HCConfig`, `IndexerConfig` -- frozen dataclasses of numbers, ported
 #     verbatim with upstream's defaults, because a default that differs is a silent behaviour change.
 #
-# **WHAT IS NOT PORTED, AND WHY IT IS NOT SILENCE:**
+# what is not ported, and why it is not silence:
 #   * `TransformerConfig` (model.py:92-133) -- 40 fields with defaults. It is the type every block below
 #     takes, so it belongs with the first block that CONSUMES it, not with a file that nothing reads yet.
 #     Porting it now would be a record with no reader: the class `.agents/slop/PARITY.md` records as
@@ -19,7 +19,7 @@
 #   * `ExpertWeights`, `HyperConnection`, `FFNBlock`, `TransformerBlock`, `MLATransformerBlock`,
 #     `GatedDeltaNetBlock`, `Indexer`, `Transformer` -- the blocks and the model itself.
 #
-# ⇒ AND THE ORDER IS FORCED BY THE TREE'S OWN RULE: a port earns its place by having a CHECK. The
+# - and the order is forced by the tree's own rule: a port earns its place by having a check. The
 # configs below are checkable the moment a consumer exists; the blocks need `gguf.bend`'s loader to
 # hand them weights, and the loader needs a fixture. `PARITY.md` 7 records the numbers.
 
@@ -48,7 +48,7 @@ def YaRNConfig.of(+factor: F32, +orig_ctx_len: U32, +beta_fast: F32, +beta_slow:
 # `Maybe<&1, F32>`, because "kda: bounded decay gate" is an ABSENT bound for every non-kda model and a
 # `0.0` sentinel would be a real value.
 # ===========================================================================
-# ⇒ AND `float|None` CANNOT TRAVEL AS A `Maybe` HERE, WHICH IS A LANGUAGE FACT AND NOT A SIMPLIFICATION.
+# - and `float|None` cannot travel as a `Maybe` here, which is a language fact and not a simplification.
 # MEASURED with `bin/bend --check-only`: a record field typed `Maybe<&1, F32>` is REFUSED -- "expected :
 # Data, observed : Type" -- because `F32` is a `Type`, so a `Maybe` over it is not storable in a
 # constructor. (`Maybe<&1, F32>` IS legal as a RETURN type; `cstyle.bend` uses it in three places.) So

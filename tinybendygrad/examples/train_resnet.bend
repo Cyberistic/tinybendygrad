@@ -12,9 +12,9 @@ import ./../extra/models/resnet.bend as RESNET
 import ./../extra/datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of examples/train_resnet.py (45 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of examples/train_resnet.py (45 loc). not yet ported.
 #
-# ** THIS FILE IS BLOCKED ON A BACKWARD PASS THAT NOBODY HAS EVER EXECUTED. **
+#  this file is blocked on a backward pass that nobody has ever executed. 
 #
 # That is a measured sentence and the measurement is the whole reason this
 # stub is honest rather than merely incomplete. Read it before budgeting.
@@ -22,12 +22,12 @@ import ./../extra/datasets/__init__.bend as D
 #
 # THE FORWARD CORPUS IS GREEN: 34 of 34 graphs byte-identical (`unhealthy() -> 0`,
 # `artefacts_ok() -> 0`, `repro_bad() -> 0`, `310 of 310 files identical across
-# two clean runs`). EVERY ONE OF THOSE 34 GRAPHS IS A FORWARD GRAPH. So the
+# two clean runs`). every one of those 34 graphs is a forward graph. So the
 # corpus proves the port can express and execute forward graph construction and
 # execution, and it proves NOTHING about a gradient because no graph in it asks
 # for one.
 #
-# THE BACKWARD MACHINERY IS WRITTEN AND UNEXERCISED. Read these five together:
+# the backward machinery is written and unexercised. Read these five together:
 #   `compute_gradient`  mixin/gradient.bend:1581 symbol=compute_gradient   EXISTS
 #   `gr_N` rule defs     mixin/gradient.bend        61 entries, `grep -cE
 #                        "^def gr_[0-9]+" = 61
@@ -39,10 +39,10 @@ import ./../extra/datasets/__init__.bend as D
 #                        inside `tn_backward.of`. Its only other mention in the
 #                        whole tree is a COMMENT, THE PORT's `mixin/op.bend` HEADER.
 #   `tn_backward`        CALL SITES OUTSIDE tensor.bend = 0. THE INSTRUMENT IS
-#                        SELF-REFERENTIAL AND THE DISCLOSURE MATTERS: `grep -rn
+#                        self-referential and the disclosure matters: `grep -rn
 #                        "tn_backward" --include='*.bend' tinybendygrad/ | grep
 #                        -v "tensor.bend"` returns 5 lines and ALL FIVE ARE
-#                        PROSE IN THE TWO STUB FILES THIS UNIT WROTE. Before
+#                        prose in the two stub files this unit wrote. Before
 #                        this unit ran, that grep returned 0. A grep whose hits
 #                        are the instrument's own comments measures nothing, and
 #                        reporting it as "0 callers" without saying so would be
@@ -56,11 +56,11 @@ import ./../extra/datasets/__init__.bend as D
 # argument `AGENTS.md` makes about `DEAD`, and it is why the word here is
 # "unexercised" and not "working".
 #
-# SO THE TRAINING PATH IS BLOCKED TWICE OVER, on the backward pass and on the
+# so the training path is blocked twice over, on the backward pass and on the
 # loss it would differentiate:
 #   `sparse_categorical_crossentropy`  MISSING. `THE PORT's `mixin/op.bend` HEADER` puts "the
 #   losses" in SIDE B, `mixin/op.bend:1530 symbol=t_softmax3.go` is the last line of the file and
-#   reads "# SIDE B's SECTION GOES BELOW THIS LINE.", and `grep -rnE "^def
+#   reads "# side b's section goes below this line.", and `grep -rnE "^def
 #   mo_sparse" --include='*.bend' tinybendygrad/` = 0. It is the DEFAULT
 #   `lossfn` of `extra/training.py:7`.
 #
@@ -98,7 +98,7 @@ import ./../extra/datasets/__init__.bend as D
 #       EXISTS (see the header) and NOTHING CALLS IT.
 #
 #   3 of the 12 upstream symbols are present, 8 are missing and 1 is partial.
-#   TWO OF THE MISSING EIGHT ARE THE MILESTONE ITSELF: a loss and a backward
+#   two of the missing eight are the milestone itself: a loss and a backward
 #   pass. The eval path (`examples/test_pkl_imagenet.bend`) needs neither, which
 #   is exactly why it is the achievable first milestone and this one is not.
 # ===========================================================================

@@ -8,7 +8,7 @@ import ./../uop/ops.bend as O
 # ===========================================================================
 # nn/state.bend -- tinygrad/nn/state.py (299 lines).
 #
-# WHAT IS PORTED HERE IS THE PURE PART, AND IT IS THE PART THAT IS WORTH
+# what is ported here is the pure part, and it is the part that is worth
 # HAVING. `get_state_dict` (state.py:89) is a LADDER over six Python types that
 # reduces to a walk over a `Data` tree, and it is the function every weight
 # save/load in tinygrad goes through. It needs no device: a `state_dict` is a
@@ -16,7 +16,7 @@ import ./../uop/ops.bend as O
 # CPython oracle prints key lists and this file prints key lists, and the two are
 # diffable line for line with nothing realized.
 #
-# THE LADDER, VERBATIM IN ORDER, because THE ORDER IS THE WHOLE FUNCTION
+# the ladder, verbatim in order, because the order is the whole function
 # (state.py:103-112):
 #
 #     if isinstance(obj, tensor_type):        return {prefix.strip('.'): obj}
@@ -63,7 +63,7 @@ import ./../uop/ops.bend as O
 # contributes a `..` in the middle of a prefix that must survive. Two defs
 # because dropping the head and dropping the tail are two different walks.
 #
-# THE ACCUMULATOR IS A LIST, NOT A MAP, and that is a DIVERGENCE THAT COSTS
+# the accumulator is a list, not a map, and that is a divergence that costs
 # SOMETHING. Python returns a `dict`, so a repeated key COLLAPSES: measured,
 # `get_state_dict({'a.b': t1, 'a': {'b': t2}})` is `{'a.b': t2}` -- one entry,
 # the LAST value, at the FIRST position. A `List` keeps both. So `sd_update` is
@@ -147,7 +147,7 @@ def sd_dot() -> Char: Char.from_u32(46)
 # caller's problem. Walking the char list is the honest spelling.
 # ---------------------------------------------------------------------------
 
-# `drop_lead` -- the head walk. THE FIRST VERSION OF THIS WAS WRONG and the gate
+# `drop_lead` -- the head walk. the first version of this was wrong and the gate
 # caught it: a bare `case '.':` arm drops EVERY dot, so `a..b..` came back `ab`
 # where Python's `str.strip` keeps the interior run (`a..b`). Stripping a RUN at
 # the HEAD needs to know whether a non-dot has been seen yet, and that flag is
@@ -544,7 +544,7 @@ def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
 # comment on it says it is "NOTE this is not for security, only speed", so the set is
 # four literal strings and the port spells them as four.
 #
-# THE PRINTED `module` IS NOT THE ONE THAT WAS TESTED, and the difference is a real
+# the printed `module` is not the one that was tested, and the difference is a real
 # trap. `pickle` resolves `os.path.join` to `posixpath.join`, so the f-string's
 # `{module}` is `posixpath` even though the caller wrote `os.path`. MEASURED by
 # CALLING `torch_load` over a real on-disk pickle (`.agents/slop/debug_oracle.py`
@@ -567,7 +567,7 @@ def sd_fc_whitelist() -> List<&2, String>:
 #     "torch.storage" -> "torch"       "" -> ""
 # which is `str.split(".")[0]` for the same four.
 #
-# THE ARGUMENT ORDER IS `(s, sep)` AND THE SEPARATOR IS `+`: base.bend's `String.split`
+# the argument order is `(s, sep)` and the separator is `+`: base.bend's `String.split`
 # takes `+sep: Char` and a literal needs no annotation. `46` is the byte for `.`, and
 # `Char.from_u32(46)` is how the rest of the repository spells it.
 def sd_fc_dot() -> Char: Char.from_u32(46)
@@ -589,7 +589,7 @@ def sd_dbg_text.gate(open: Bool, t: String) -> String:
     case True{}: t
     case _: ""
 
-# THE GATE, AS A DECISION RATHER THAN A PRINT. `find_class` returns `Dummy` on this
+# the gate, as a decision rather than a print. `find_class` returns `Dummy` on this
 # branch and `intercept[name]` / `super().find_class(...)` on the other one, and both
 # of those are the pickle VM this file does not have, so what is gated is "is this
 # module outside the whitelist", which is the condition the `print` hangs off. Two
@@ -734,7 +734,7 @@ def t_dup() -> IO(Unit):
 # the 15 `safe_dtypes` SPELLINGS in the source's order. The KEYS are state.py's
 # own data and they are the diff line.
 #
-# WHY THE DTYPES ARE NOT IN THIS ROW. `spec.bend`'s `Dt.nm` is the C spelling
+# why the dtypes are not in this row. `spec.bend`'s `Dt.nm` is the c spelling
 # (`signed char`, `unsigned char`, `float8_e4m3`, `__bf16`) and tinygrad's
 # `DType.name` is the short one (`char`, `uchar`, `fp8e4m3`, `bfloat16`); eight of
 # the fifteen differ. `spec.bend` is READ-ONLY to this unit, so a joined
@@ -853,7 +853,7 @@ def main() -> IO(Unit):
     t_param()
 
 # ===========================================================================
-# THE GATE, AS A COMMAND, AND EVERY ROW IS GREEN. Both lanes and the oracle:
+# the gate, as a command, and every row is green. Both lanes and the oracle:
 #
 #     .venv/bin/python .agents/slop/state-gate.py  > /tmp/py.txt
 #     ./bin/bend tinybendygrad/nn/state.bend        > /tmp/bd.txt
@@ -877,17 +877,17 @@ def main() -> IO(Unit):
 # | M1 | the mapping child's key loses its trailing `"."` | `sd_nest` `sd_dup` | the ONE character `f"{prefix}{k}."` adds (state.py:111). `sd_tens`/`sd_map` do not move because a top-level key is `strip`ped to the same string either way -- the strip hides the bug at depth 0, which is why the fixture has a depth. |
 # | M2 | the sequence child's key is `prefix ++ "."` instead of `prefix ++ str(i)` | `sd_seq` `sd_nest` `sd_param` | `str(i)` at state.py:109. This is the ONLY row family that can see `OSeq` and `OMap` differ, and M1 cannot see it. |
 # | M3 | `sd_put` appends instead of overwriting | `sd_dup` | `dict.__setitem__` semantics: FIRST position, LAST value. The count assertion in `sd_dup` passes under this mutation; only the value assertion fails, which is why `sd_dup` asserts both. |
-# | M4 | `sd_drop.head`'s dot arm is removed, so EVERY dot is dropped | `sd_map` `sd_seq` `sd_nest` `sd_strip` `sd_attr` `sd_ord` `sd_dup` `sd_param` (8 of 14) | the head RUN only. `layers.0.weight` loses its interior dots. **This mutation is the first version of this file's own bug** -- the shipped code had a bare `case '.':` arm with no `St`, which drops interior dots too; the gate caught it as `sd_strip=False` and `sd_nest=False` and the `St` sum type is the fix. |
+# | M4 | `sd_drop.head`'s dot arm is removed, so EVERY dot is dropped | `sd_map` `sd_seq` `sd_nest` `sd_strip` `sd_attr` `sd_ord` `sd_dup` `sd_param` (8 of 14) | the head RUN only. `layers.0.weight` loses its interior dots. This mutation is the first version of this file's own bug -- the shipped code had a bare `case '.':` arm with no `St`, which drops interior dots too; the gate caught it as `sd_strip=False` and `sd_nest=False` and the `St` sum type is the fix. |
 # | M5 | `sd_strip` drops the `rstrip` half | `sd_map` `sd_seq` `sd_nest` `sd_strip` `sd_attr` `sd_ord` `sd_dup` | the TAIL run. Seven rows because every key in the gate ends in a dot, so the tail half is load-bearing for the whole file. |
-# | M6 | `sd_seek.above` returns `x` unconditionally | `sd_seek` | the SIGNED `max(0, x)`. The two negative offsets in the row are the fixture; a `U32` clamp answers `4294967295:4294967295` for `seek(-1)`. **This is the second bug the gate caught in this file**: the first `sd_seek` was `U32` throughout and was wrong for exactly the backwards-seek case a file reader hits. |
+# | M6 | `sd_seek.above` returns `x` unconditionally | `sd_seek` | the SIGNED `max(0, x)`. The two negative offsets in the row are the fixture; a `U32` clamp answers `4294967295:4294967295` for `seek(-1)`. This is the second bug the gate caught in this file: the first `sd_seek` was `U32` throughout and was wrong for exactly the backwards-seek case a file reader hits. |
 # | M7 | the `whence == 2` candidate is `pos+off` instead of `len+off` | `sd_seek` | the THIRD element of `[offset, pos+offset, len+offset][whence]`. M6 and M7 are two rules over one row, so neither is localised: one row, two independent claims, and both are named in the row's comment. |
 # | M8 | the `OOther` rung emits a key | `sd_nest` `sd_param` | Python's `state_dict` staying `{}` at state.py:107. Only the two rows with a non-mapping child move, which is the fixture's whole job: a `Tensor.relu` between two convolutions must not shift every key after it. |
 # | M9 | the walk's final `List.reverse` is removed | `sd_seq` `sd_nest` `sd_attr` `sd_ord` `sd_dup` | DOCUMENT ORDER. The accumulator is built by consing, so without the reversal every multi-key row is reversed. `sd_tens`/`sd_map` are single-entry and cannot see it. |
 # | M10 | a 16th, empty-spelling entry is appended to `safe_dtypes` | `sd_safe` `sd_invn` | the table's LENGTH and its spelling list. M10 is why `sd_invn` exists as a COUNT row: `sd_safe` alone would also go red, but the count is the claim that says "exactly fifteen" rather than "this particular fifteen". |
 # | M11 | the leaf does not `sd_strip` its prefix | `sd_map` `sd_seq` `sd_nest` `sd_attr` `sd_ord` `sd_dup` | `prefix.strip('.')` AT THE LEAF (state.py:103), as opposed to at the point of insertion. Six rows because the strip applies to every key. |
-# | M12 | a no-op edit | **NOTHING** | the control. A mutation table with no row that CANNOT move is a table of coincidences, and M12 is what makes M1-M11 mean something. |
+# | M12 | a no-op edit | NOTHING | the control. A mutation table with no row that CANNOT move is a table of coincidences, and M12 is what makes M1-M11 mean something. |
 #
-# TWO MUTATIONS THAT WERE ATTEMPTED AND ARE NOT IN THE TABLE, because they are
+# two mutations that were attempted and are not in the table, because they are
 # not expressible as a one-token edit and pretending otherwise would be a lie:
 #   * swapping the `OMap` and `OSeq` ARMS. The arms are selected by the `Obj`
 #     sum type, so a value has exactly one constructor and there is no order to
@@ -898,7 +898,7 @@ def main() -> IO(Unit):
 #     Python TYPE, and a type in a `Data` field forces `Type`; the port's tensor
 #     rung is structural. There is no row for it because there is no port for it.
 #
-# WHAT THE TABLE DOES NOT COVER, stated rather than left to be discovered:
+# what the table does not cover, stated rather than left to be discovered:
 #   * `TensorIO.readinto`/`read` are a WALL (see the TODO list), so the `sd_seek`
 #     row pins the clamp and nothing pins that a read honours the clamp.
 #   * `safe_load`/`safe_save` are WALLS, so `safe_dtypes` is gated as a TABLE and

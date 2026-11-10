@@ -16,9 +16,9 @@ import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/bert.py (300 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/bert.py (300 loc). not yet ported.
 #
-# THE FIRST MISSING THING IS `nn.Embedding`, AND IT IS ONE OF THE FOUR THE
+# the first missing thing is `nn.Embedding`, and it is one of the four the
 # VISION MODELS NEVER ASKED FOR. `grep -rnwE "def .*Embedding" --include='*.bend'
 # tinybendygrad/` = 0, and so is `grep -rnwE "def .*mo_i\(|def .*mo_fx\("`. The
 # resnet.bend census at :40-123 asks for conv2d, batchnorm, linear, sequential,
@@ -27,7 +27,7 @@ import ./../datasets/__init__.bend as D
 # a token id. Three of the eight files in this directory cannot name one weight
 # without it.
 #
-# WHAT BERT GETS FOR FREE FROM THE VISION WORK, and this is measured, not hoped:
+# what bert gets for free from the vision work, and this is measured, not hoped:
 #   `nn.Linear`             nn/layers.bend:530 symbol=nn_linear  (:16,:130,:225,:264,:265,:266,:292,:310,:239)
 #   `Tensor.stack`          mixin/movement.bend:1272 symbol=mxw_stk (:40)
 #   `reshape`               mixin/movement.bend:1434 symbol=mxw_reshape (:37,:38,:282,:287)
@@ -41,17 +41,17 @@ import ./../datasets/__init__.bend as D
 #                           census is a census and not a list of what is convenient
 #   `x +` / `x *`           mixin/elementwise.bend:509/510 `ew_add`/`ew_mul` (:56,:67,:197,:232)
 #   `Adam`                   nn/optim.bend -- `op_mstep` :898 `op_vstep` :903 `op_mhat` `op_vhat`.
-#                           BERT DOES NOT CONSTRUCT ONE, but its TF loader at :90 FILTERS ON
+#                           bert does not construct one, but its tf loader at :90 filters on
 #                           `["adam_v", "adam_m", "beta1_power", "beta2_power"]`, so the names
 #                           are load-bearing here even though the optimizer is not called.
 #
-# WHAT BERT ASKS FOR THAT NO VISION MODEL ASKED FOR -- THE NAMED FOUR:
+# what bert asks for that no vision model asked for -- the named four:
 #   (1) `nn.Embedding`      MISSING. (:182,:183,:184,:46) THE FIRST MISSING SYMBOL.
 #   (2) `nn.LayerNorm`      MISSING. (:149,:185,:226,:293) `grep -rnwE "def .*layernorm" = 0`.
 #   (3) `Tensor.scaled_dot_product_attention` MISSING. (:279) THE WALL for :270.
 #   (4) `Tensor.dropout`    MISSING. (:199,:231,:298) and `:29` skips dropout keys, so the
 #                           NAME is in the loader even where the op is not.
-# AND TWO MORE, BOTH BERT-ONLY:
+# and two more, both bert-only:
 #   (5) `gelu` as BERT DEFINES IT, at :236 -- `x * 0.5 * (1.0 + (x / 1.41421).erf())`.
 #       `ew_gelu` is MISSING (mixin/elementwise.bend:772 has only the CONSTANT `ew_k.gelu`)
 #       and `.erf` is MISSING entirely. clip.py:12 `gelu = Tensor.gelu` is the OTHER
@@ -66,16 +66,16 @@ import ./../datasets/__init__.bend as D
 # FIRST MISSING SYMBOL: `Embedding(vocab_size, hidden_size)` at extra/models/bert.py:182, where
 # `Embedding = nn.Embedding` is the module-level alias at extra/models/bert.py:9 and there is no `def Embedding`
 # anywhere under `tinybendygrad/`, and no `def mo_i` either.
-# **THE `mo_fx` HALF OF THIS EVIDENCE WAS FALSE. CORRECTED 2026-10-20:** `def mo_fx1d` is at
+# the `mo_fx` half of this evidence was FALSE. corrected 2026-10-20: `def mo_fx1d` is at
 # `mixin/op.bend:1308` symbol=mo_fx1d and `def mo_fx2d` at `mixin/op.bend:1316` symbol=mo_fx2d,
 # so "no `def mo_fx` anywhere" was falsifiable
 # and falsified -- the audit's grep demanded a literal `(` after the name and matched neither.
-# **THE CONCLUSION IS UNCHANGED AND WAS NEVER IN DOUBT:** `mixin/op.bend:1316` symbol=mo_fx2d
+# the conclusion is unchanged and was never in doubt: `mixin/op.bend:1316` symbol=mo_fx2d
 # shows both are FIXTURES
-# returning `r` unchanged, not a gather, and `def mo_i` is still absent. **A CITATION WRONG ON ITS
-# EVIDENCE AND RIGHT ON ITS CONCLUSION STILL MISLEADS THE NEXT READER, WHO CHECKS THE EVIDENCE.**
+# returning `r` unchanged, not a gather, and `def mo_i` is still absent. A CITATION WRONG ON ITS
+# evidence and right on its conclusion still misleads the next reader, who checks the evidence.
 #
-# THE TWO `load_from_pretrained` ARE NOT A PORTING PROBLEM AND SHOULD NOT BE
+# the two `load_from_pretrained` are not a porting problem and should not be
 # TREATED AS ONE. extra/models/bert.py:78-124 reads a TENSORFLOW checkpoint through
 # `tf.train.list_variables` (extra/models/bert.py:85), and the TORCH loader is
 # `extra/models/bert.py:24-31`, whose `torch.load` is at extra/models/bert.py:26. `THE PORT's `helpers.bend` HEADER`

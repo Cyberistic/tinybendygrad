@@ -9,7 +9,7 @@ import ./state.bend as ST
 # ===========================================================================
 # nn/__init__.bend -- tinygrad/nn/__init__.py (420 lines).
 #
-# FIRST, THE FINDING THAT CHANGES THE SHAPE OF THIS FILE: THERE IS NO
+# first, the finding that changes the shape of this file: there is no
 # `nn.Module`. I went looking for one and it is not there -- `nn/__init__.py` is
 # eleven plain classes with no base class, no `parameters()`, no `state_dict()`
 # method and no registry, and `get_state_dict` (state.py:89) reaches a layer by
@@ -79,7 +79,7 @@ import ./state.bend as ST
 #   LSTMCell         the four parameter shapes (:409-412)
 #   Embedding        the `glorot_uniform` bound (mixin/rand.py:192 symbol=glorot_uniform) and the shape
 #
-# TWO WALLS SHAPE THE FILE AND NEITHER IS A SURPRISE.
+# two walls shape the file and neither is a surprise.
 #   1. REALIZATION. `Tensor.uniform` (:106, :174), `Tensor.ones` (:35, :197, :254),
 #      `Tensor.zeros` (:36, :198, :255) and `Tensor.glorot_uniform` (:389) are all
 #      `creation.py`'s `full`/`_frompy`, which need a Buffer. So every shape here
@@ -95,7 +95,7 @@ import ./state.bend as ST
 #      I am NOT writing defs that return a `TODO` -- a def with no body is a
 #      paragraph pretending to be code, and the honest form is the comment.
 #
-# A THIRD WALL IS NEITHER A DEVICE NOR A MIXIN and it is what shaped three defs:
+# a third wall is neither a device nor a mixin and it is what shaped three defs:
 # `scale = 1 / math.sqrt(in_channels * prod(kernel_size))` (:105, :149, :173,
 # :408) is a `U32` product fed to `F32.sqrt`, and the only `Nat`-to-`F32`
 # conversion in Bend is `U32.to_f32`, which tensor.bend's header records as an
@@ -105,7 +105,7 @@ import ./state.bend as ST
 # at all -- a literal-`U32` version could only be gated for shapes I chose, which
 # is the tautology the brief warns about.
 #
-# ONE MORE FACT THE GATE LEANS ON, and it is a tinygrad QUIRK rather than a
+# one more fact the gate leans on, and it is a tinygrad quirk rather than a
 # design: `BatchNorm.__init__` (:32-39) assigns `eps`, `track_running_stats` and
 # `momentum` BEFORE its tensors, and `num_batches_tracked` is
 # `Tensor.zeros(dtype='long').is_param_(False)` -- a TENSOR, so it IS in the
@@ -213,7 +213,7 @@ def nn_scale(f: F32, n: F32) -> F32: F32.div(1.0, F32.sqrt(F32.mul(f, n)))
 def nn_bound(n: F32) -> F32: F32.div(1.0, F32.sqrt(n))
 
 # `Tensor.glorot_uniform`'s bound -- mixin/rand.py:201,
-# `(6 / (argfix(*shape)[0] + prod(argfix(*shape)[1:]))) ** 0.5`. It is a `sqrt` of
+# `(6 / (argfix(*shape)[0] + prod(argfix(*shape)[1:])))  0.5`. It is a `sqrt` of
 # a RATIO and NOT `1/sqrt`, and the two differ by `sqrt(6)`: measured,
 # `nn.Embedding(10,3)`'s bound is `0.6793662204867574` where `1/sqrt(13)` is
 # `0.2773501`, so mixing them up rescales every embedding.
@@ -260,28 +260,28 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # :474, :460, :457), gated at
 # `gates/tn_contiguous_backward-gate.py` and `gates/tn_trunc_reciprocal_threefry-gate.py`.
 # ===========================================================================
-# WHAT `_broadcasted` IS, AND WHAT THE "BROADCASTING CASE" IS ACTUALLY WALLED ON.
+# what `_broadcasted` is, and what the "broadcasting case" is actually walled on.
 # Every mention of `_broadcasted` in this tree used to say the broadcasting case was "walled on
-# `_broadcasted`". THAT NAMES THE WRONG THING, and it did so in 110 places. MEASURED:
+# `_broadcasted`". that names the wrong thing, and it did so in 110 places. measured:
 #
 #   .venv/bin/python -c "a=Tensor([[1],[2]]); b=Tensor([[1,2,3]]); x,y=a._broadcasted(b);
 #                        print(a.shape, b.shape, '->', x.shape, y.shape, x.dtype, y.dtype)"
 #   ->  (2, 1) (1, 3) -> (2, 1) (1, 3)  f32 f32
 #
-# THE SHAPES COME BACK UNCHANGED. `_broadcasted` is DTYPE PROMOTION -- `ufix`, then
+# the shapes come back unchanged. `_broadcasted` is dtype promotion -- `ufix`, then
 # `least_upper_dtype`, then `cast(out_dtype)` with a weak-CONST carve-out -- and the name is the
 # only thing about it that says "broadcast". `UOp.alu` (`uop/ops.py:627`) does not broadcast
 # either: it is `UOp(op, src=(self, *src))`. And the broadcast IS REAL:
 #
 #   a+b ->  op ADD, nsrc 2, src shapes [(2, 1), (1, 3)], uop.shape (2, 3)
 #
-# SO THE BROADCAST IS A DERIVED PROPERTY OF THE NODE AND NOT AN OPERATION. It is computed when
+# so the broadcast is a derived property of the node and not an operation. It is computed when
 # the node's `_shape` is set at construction, from `_broadcast_shape` -- which is why it appears
 # in neither the op nor the argument list.
 #
-# TWO DISTINCT WALLS GOT CONFLATED UNDER ONE NAME, and they are not equally hard:
+# two distinct walls got conflated under one name, and they are not equally hard:
 #
-#   WALL A, THE SHAPE FOLD. `_broadcast_shape` (`uop/ops.py:78`) IS ABSENT FROM THE PORT --
+#   wall a, the shape FOLD. `_broadcast_shape` (`uop/ops.py:78`) is absent from the port --
 #     `grep -rhc "def _broadcast_shape" tinybendygrad/` -> 0. This is the wall the phrase was
 #     reaching for. Its siblings are PRESENT: `_align_left` -> 2, `broadcast_axes` -> 1.
 #
@@ -293,10 +293,10 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 #     `t.dtype`, `t._uop.base.op is Ops.CONST`), which `mixin/elementwise.bend`'s `ew_fx` fold
 #     context already supplies.
 #
-# SO THE REASON EVERY ONE OF THESE PORTS GIVES IS WRONG IN A SPECIFIC WAY: the no-broadcasting
+# so the reason every one of these ports gives is wrong in a specific way: the no-broadcasting
 # case is not "the easy half" of a broadcasting wall, it is the half that needs no shape
 # inference, and the dtype promotion it ALSO skips is a separate, largely-unblocked fold.
-# A UNIT THAT TAKES THIS WALL SHOULD START WITH WALL B.
+# a unit that takes this wall should start with wall b.
 # ===========================================================================
 
 # `Tensor.where` (elementwise.py:426) is ported as `tn_where`
@@ -396,14 +396,14 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # PORTED AND GATED, not walled. It returns `Maybe<&2, Tensor>` and lets the caller
 # decide; the port convention (`tn_replace`, `tn_as_param`) is the same shape.
 #
-# THIS PARAGRAPH WAS WRICE ON THREE COUNTS AND ALL THREE ARE CORRECTED HERE:
+# this paragraph was wrice on three counts and all three are corrected here:
 # (1) "the arith arms ... stay walled" -- they are ported. (2) "gated 4/4" -- the gate
 # is `gates/tn_bitwise_not-gate.py` and it is 7 rows (it was 8, and one was `True{}`,
 # which asserted nothing; that row was REPLACED with one that can fail).
-# (3) IT CITED `gates/tn_dunder_invert-gate.py`, WHICH DOES NOT EXIST -- MEASURED:
+# (3) it cited `gates/tn_dunder_invert-gate.py`, which does not exist -- measured:
 # `ls gates/tn_dunder_invert-gate.py` answers "No such file or directory". There is no
 # `__invert__` gate; `~t` is gated by `tn_bitwise_not`'s signed row and `tn_graph_census`'s
-# `tn_dunder_invert`. A CITATION TO A FILE THAT IS NOT THERE IS WORSE THAN NO CITATION,
+# `tn_dunder_invert`. a citation to a file that is not there is worse than no citation,
 # because the next reader trusts it. The broadcasting case for all
 # `__lt__`/`__gt__`/`__ne__`/`__and__`/`__rand__`/`__or__`/`__ror__`/`__xor__`/
 # `__rxor__`/`maximum`/`__lshift__`/`__rlshift__`/`__rshift__`/`__rrshift__`/

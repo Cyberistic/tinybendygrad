@@ -28,7 +28,7 @@
 #      DECORATION: for 2^-97 the nearest 16-digit candidate is BELOW the lower bound while the
 #      next one along is inside and is the string CPython prints.
 #
-# THE PAIR THAT WENT WRONG TWICE while the algorithm was being worked out, recorded because both
+# the pair that went wrong twice while the algorithm was being worked out, recorded because both
 # are easy to re-introduce:
 #   * a trailing zero is ABSORBED into the exponent and never dropped: "43431769050439315619840"
 #     times 10^0 is not "4343176905043931561984" times 10^0;
@@ -78,7 +78,7 @@ def ds_str(+ds: List<&2, U32>) -> String:
 # ---------------------------------------------------------------------------
 # the bignum: multiply by a small constant, add or subtract one, and count bits.
 #
-# THE CARRY OF A MULTIPLICATION TRAVELS TOWARD THE MOST SIGNIFICANT END, so the digits are
+# the carry of a multiplication travels toward the most significant end, so the digits are
 # visited least-significant first: the input is reversed, each result digit is PREPENDED (which
 # un-reverses it), and whatever carry is left becomes the new leading digit. That is one pass,
 # not one pass per digit, and it is why `big_mul` does not use `List.append`.
@@ -434,7 +434,7 @@ def step.go(short: Bool, +p: Nat, +c: Ctx) -> Maybe<&2, String>:
 def step(+p: Nat, +c: Ctx) -> Maybe<&2, String>:
   step.go(Nat.is_le(String.length(Ctx.d(c)), p), p, c)
 
-# THE FUEL IS THE TERMINATION ARGUMENT, so the digit count is DERIVED from it: p = 18 - f walks
+# the fuel is the termination argument, so the digit count is derived from it: p = 18 - f walks
 # 1..17 as f walks 17..1. f = 0 is unreachable -- the 17-digit candidate always fits -- and it
 # answers the exact expansion rather than a wrong string if that ever stops being true.
 def search(+f: Nat, +m: Maybe<&2, String>, +c: Ctx) -> String:
@@ -471,7 +471,7 @@ def repr.exp.go(sub: Bool, +be: U32) -> H.I64:
 
 def repr.exp(+be: U32) -> H.I64: repr.exp.go(U32.is_zero(be), be)
 
-# THE TRAILING ZERO BITS OF THE SIGNIFICAND ARE STRIPPED FIRST, and not for tidiness: they are
+# the trailing zero BITS of the significand are stripped first, and not for tidiness: they are
 # what makes the exponent's 5s cheap. 1.0 is m=0x800000, e=-23, and stripping turns that into
 # m=1, e=0 -- one digit and no multiplications at all.
 type ME is Data:

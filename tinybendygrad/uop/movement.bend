@@ -23,7 +23,7 @@
 # (fold.bend does not answer a movement op's shape), and a float CONST where an int is
 # wanted. `ret is not uop` is in `hop_self` and is unreachable from these nine rules.
 #
-# PYTHON'S LIST INDEX IS NO LONGER DEFERRED, AND IT WAS A PARITY GAP. `a.src[v]` reads
+# python's list INDEX is no longer deferred, and it was a parity gap. `a.src[v]` reads
 # from the END when `v` is negative, and the port read every index as a `U32`, so a
 # negative `v` became a huge `U32` and the answer was the FIRST element. MEASURED
 # 2026-10-30 against CPython at the pin, on `UOp(Ops.INDEX, src=(STACK(CONST 3, CONST 5,
@@ -282,12 +282,12 @@ def const_is(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
 # `UOp.index` -- ops.py:559. Three of these nine rules call it and it belongs in ops.bend
 # the next time that file is edited (`# TODO(p3) ops.py:559  def index`).
 #
-#     def index(self, *srcs, **kwargs):
+#     def index(self, *srcs, kwargs):
 #       new_srcs = [UOp.const(x) if isinstance(x, int) else x for x in srcs if x is not None]
 #       if len(new_srcs) == 1 and new_srcs[0].op is Ops.CONST and self.op is Ops.STACK: return self.src[new_srcs[0].val]
-#       return UOp(Ops.INDEX, src=(self,)+tuple(new_srcs), **kwargs)
+#       return UOp(Ops.INDEX, src=(self,)+tuple(new_srcs), kwargs)
 #
-# THE SPECIAL CASE IS WHY A REWRITE CAN RETURN A NODE IT DID NOT BUILD, and `idx_pick` is
+# the special case is why a rewrite can return a node it did not build, and `idx_pick` is
 # the row for it: `INDEX(INDEX(STACK, C1))` has no offsets of its own, so the outer
 # `index()` hands back `STACK.src[C1.val]`. Every `extra` is already a UOp index and never
 # a Python int, so the `UOp.const(x)` half and the `is not None` filter are vacuous here.
@@ -823,7 +823,7 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
 #     nodes rule 5 fires on is unchanged. The `>= 2` reading is exactly the defect M2 was,
 #     and M2 DOES move two rows -- so the arity test is load-bearing, just not here.
 #
-# (3) M11 IS THE BIGGEST MUTATION IN THE TABLE and it is a GATE defect, not a rule defect.
+# (3) M11 is the biggest mutation in the table and it is a gate defect, not a rule defect.
 #     `G.ix` is the arena's index list, and the bottom's `0` was missing, so `G.at(g, n)`
 #     was one node PAST the one every row's comment names. That is why half this file's
 #     rows read 0 before the fix and why the reported `hop_self` evidence ("four rows moved,
@@ -838,7 +838,7 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
 #     rule's row: a misspelled set moves four rows where the fold's connective moves none,
 #     because the difference is in WHICH ops are in the set, not in how they combine.
 #
-# (5) M14 IS `M1` AGAIN, AND THAT IS THE FINDING. Last-wins moves M1's THIRTEEN rows and
+# (5) M14 is `M1` again, and that is the finding. Last-wins moves M1's thirteen rows and
 #     not `ret_new` -- so `hop_self` and the first-wins fold are the same defect seen from
 #     two sides: both are "the answer survives when it should not". They are separate defs
 #     with separate bugs, and one mutation does not substitute for the other: M1 leaves the
@@ -850,7 +850,7 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
 #     measured nothing, and a table entry reading "0 rows moved" because the edit was
 #     refused is a lie. `mop-mut.py` reports "DOES NOT CHECK" for exactly this.
 #
-# M15 IS THE ROW THE COUNT ROWS EXIST FOR. It DELETES a `PMEntry` rather than editing it,
+# M15 is the row the count rows exist for. It deletes a `PMEntry` rather than editing it,
 # and it deletes the LAST one, so no tag after it renumbers and no rule can fire
 # differently: `mop_len` and `idx_shaped` are the only rows in the 26 that can move. Delete
 # the COUNT rows and this mutation is invisible. (M13 is the same table with a wrong op set,
@@ -1053,7 +1053,7 @@ def t_shrink1_marg() -> U32:
   +h = rw(g(), 13n)
   marg_pair(shr_o(hop_ar(h), hop_ix(h)), shr_n(hop_ar(h), hop_ix(h)))
 
-# THE FIRST OF THE TWO DEFERRED WALLS, and the row that says so. CPython answers a 3-src
+# the first of the two deferred walls, and the row that says so. CPython answers a 3-src
 # SHRINK for S4; the port answers none, because rank 2's `_mop` needs
 # `UOp.sink(*usrcs).simplify()` and that is `graph_rewrite(self, symbolic)`. So this reads
 # 1 where CPython says 0 -- and that is the row's job: it FAILS the day the wall is ported.

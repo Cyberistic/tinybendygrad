@@ -5,7 +5,7 @@
 # half can drift apart.
 #
 # ===========================================================================
-# WHY THIS FILE IS ON THE CRITICAL PATH, AND WHAT IS BROKEN UNDER IT.
+# why this file is on the critical path, and what is broken under it.
 #
 # `runtime/ops_cpu.py:19/21` builds `link_libs=[self.libm, self.rt_lib]` and
 # `libobjc` is MISSING from that list. MEASURED against the real dylibs on this
@@ -23,7 +23,7 @@
 # `.agents/slop/elf/REPORT.md` has the full report.
 #
 # ===========================================================================
-# THIS IS A BYTE-PACKING DOMAIN, WHICH IS THE GOOD CASE.
+# this is a BYTE-packing domain, which is the good case.
 #
 # There is no Python behaviour to interpret: the authority is the ELF
 # specification and the actual bytes of real object files. So the gate is REAL
@@ -36,14 +36,14 @@
 # lands on a DIFFERENT number per fixture instead of agreeing by accident.
 #
 # ===========================================================================
-# FIELD ORDER IS GATED AS A STRING, NEVER AS A COUNT.
+# field order is gated as a string, never as a count.
 #
 # `struct_libusb_transfer` shipped with transposed fields and a count-based gate
 # passed it, because a count cannot see a transposition. So `F_EHDR`, `F_SHDR`,
 # `F_SYM64`, `F_SYM32`, `F_RELA`, `F_REL` are the FIELD-NAME STRINGS out of
 # `autogen/libc.py`'s `register_fields`, and every per-section row spells
 # `name@byteoffset:value` for all ten Shdr fields and all six Sym fields. TWO REAL
-# PORT BUGS WERE CAUGHT BY EXACTLY THAT STRING AND BY NOTHING ELSE -- see the
+# port bugs were caught by exactly that string and by nothing ELSE -- see the
 # `Shdr.o_*` / `W64.at` notes, where a 64-bit word's high half was read four bytes
 # past the field and `sh_link` was filled with the OFFSET instead of the VALUE.
 # A count saw neither.
@@ -59,7 +59,7 @@
 #   Error: - expected : Quant / - observed : String
 #
 # ===========================================================================
-# THE TWO UPSTREAM DEFECTS. `tinygrad/` is READ-ONLY to this unit; both are
+# the two upstream defects. `tinygrad/` is read-only to this unit; both are
 # REPRODUCED against real files (`.agents/slop/elf/REPORT.md`) and the PORT
 # MATCHES THE CODE AS WRITTEN, because a 1:1 port that silently fixed them
 # would diverge from the SUT on every linked image.
@@ -146,7 +146,7 @@
 #   :84-85 the 4-byte write-back   PORTED  `Jit.instr` (unpack), `Jit.pack`, and
 #                                         `Img.write_at` as the placed write
 #
-# WHAT IS PORTED BUT NOT YET GATED is stated once, here, rather than left to be
+# what is ported but not yet gated is stated once, here, rather than left to be
 # discovered. The 353 rows the gate emits cover the READERS, the byte layer, the
 # hex layer, the section walk, `_strtab` and `magic_ok`. The image loop
 # (`Built`), the relocation list (`Rc`), `jit_loader` (`Jit`), the ten `Reloc.a_*`
@@ -186,7 +186,7 @@ def Hex.d55(c: Char) -> U32: U32.sub(Hex.d(c), 55)
 # the range tests on `isupp`/`islow` in that order, `Hex.val('z')` answered 35.
 # So `Hex.in_af` and `Hex.in_f` test the SPECIFIC hex digits and every other
 # character answers 15.
-# THE HEX LETTER RANGE, NOT FOUR SPELLINGS. `'a'`..`'f'` is 97..102 and `'A'`..`'F'`
+# the hex letter RANGE, not four spellings. `'a'`..`'f'` is 97..102 and `'A'`..`'F'`
 # is 65..70, so the test is `>= lo and <= hi`. MEASURED, and the four-spelling
 # version was WRONG IN A WAY A SPOT CHECK MISSES: it listed `a` and `f` and nothing
 # between, so `Hex.val('c')` answered 15 -- the same answer as a non-hex character.
@@ -197,7 +197,7 @@ def Hex.d55(c: Char) -> U32: U32.sub(Hex.d(c), 55)
 # caught it is `elf_blk_magic_hex`, which is a REAL BYTE.
 def Hex.in_af(+c: Char) -> Bool: Bool.and(U32.is_ge(Hex.d(c), 97), U32.is_le(Hex.d(c), 102))
 def Hex.in_AF(+c: Char) -> Bool: Bool.and(U32.is_ge(Hex.d(c), 65), U32.is_le(Hex.d(c), 70))
-# THE THREE-WAY CHAIN, AND THE UPPERCASE ARM IS THE ONE THAT GETS LOST. Each
+# the three-way chain, and the uppercase arm is the one that gets lost. Each
 # level tests ONE range and its `else` is the NEXT level, so `'A'` reaches `d55`
 # and `'z'` -- which is a lowercase letter but NOT a hex digit -- reaches 15.
 # MEASURED, and the two failures were DIFFERENT: `Hex.val('A')` answered 15
@@ -295,7 +295,7 @@ def W64.text(+w: W64) -> String: String.concat([U32.show(W64.hi(w)), ":", U32.sh
 # which is the honest total form: every address a real object file has is under
 # 2^32, and `elf_w64_is_addr` pins that against the oracle.
 def W64.as_idx(+w: W64) -> U32: W64.lo(w)
-# THE WORD READ, AND THE BUG IT FIXES. A 64-bit little-endian WORD at byte `k` is
+# the WORD read, and the bug it fixes. a 64-bit little-endian WORD at byte `k` is
 # `le32(k)` and `le32(k+4)`. Writing the pair as `(k, k+8)` -- the start of the
 # NEXT field -- reads FOUR BYTES PAST the field and returns the next section
 # header's bytes as this field's high half. `sh_entsize` is at 56, so its high
@@ -312,7 +312,7 @@ def W64.at(+h: String, +k: U32, +x: Bool) -> W64:
 # struct.unpack("<I", ...) -> a U32, and struct.pack("<I", u) -> the four bytes
 # back. The write is an IMAGE STEP (WALL 5) rather than a string splice.
 def Blob.unpack4(+h: String, +i: U32) -> U32: Blob.le32(h, i)
-# THE FOUR MAGIC BYTES AS HEX, IN ORDER. `Hex.of(Blob.le32(h,0))` is
+# the four magic bytes as hex, in order. `Hex.of(Blob.le32(h,0))` is
 # `464c457f` where the file says `7f454c46`, because `le32` already put them in
 # the wrong order for printing. MEASURED, and it is why the row reads
 # `Blob.magic_hex(h)` and not `Hex.of(le32(..))`: a blob's first bytes are the
@@ -608,14 +608,14 @@ def Ehdr.text(+e: Ehdr) -> String:
      String.concat(["e_shstrndx@62:", U32.show(Ehdr.e_shstrndx(e))])], ",")
 
 # ===========================================================================
-# THE FIELD-OFFSET TABLE FOR Shdr, ONE ENTRY PER FIELD, EACH SPELLING BOTH
+# the field-OFFSET table for Shdr, one entry per field, each spelling both
 # LAYOUTS.
 # Elf64_Shdr: sh_name@0 u32 sh_type@4 u32 sh_flags@8 u64 sh_addr@16 u64
 #              sh_offset@24 u64 sh_size@32 u64 sh_link@40 u32 sh_info@44 u32
 #              sh_addralign@48 u64 sh_entsize@56 u64
 # Elf32_Shdr:  0 4 8 12 16 20 24 28 32 36, ALL u32.
 #
-# THE SECOND REAL PORT BUG WAS HERE. `sh_link` and `sh_info` are u32 FIELDS READ
+# the second real port bug was here. `sh_link` and `sh_info` are u32 fields read
 # AT `off+40` / `off+44`. Passing the OFFSET ITSELF as the value put 936 (which is
 # 896+40) into `sh_link` where the file holds 0. `Shdr.v_link` / `Shdr.v_info`
 # read the value; `Shdr.o_link` / `Shdr.o_info` name where. A COUNT SAW NOTHING.
@@ -719,13 +719,13 @@ def Shdr.entsize(+s: Shdr) -> W64:
     case Shdr{sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link,
               sh_info, sh_addralign, sh_entsize}: sh_entsize
 
-# THE FIELD-ORDER ROW FOR ONE SECTION: all ten fields, `name@spec-offset:value`,
+# the field-order row for one section: all ten fields, `name@spec-offset:value`,
 # in the order the reader walks them. A transposed pair changes this STRING and
 # changes NO count. Both real bugs in this file were visible HERE and nowhere else:
 # a 64-bit word's high half read at `k+8` instead of `k+4`, and `sh_link` filled
 # with the OFFSET instead of the VALUE.
 #
-# THE LABEL IS THE CLASS'S OWN REGISTER OFFSET, not the Elf64 one. MEASURED: a
+# the label is the class's own register OFFSET, not the Elf64 one. measured: a
 # fixed Elf64 label made every Elf32 row disagree with the oracle on the LABELS
 # while the VALUES agreed exactly, which is the worst shape a diff can have -- it
 # looks like a reader bug and it is a label. So `Shdr.at_text` takes the class and
@@ -847,7 +847,7 @@ def Sym.at_text(+s: Sym, +x: Bool) -> String:
 # THE ONLY `find` IN EITHER FILE. Bend has no `find` and no regex, so it is a
 # fold to the first NUL.
 #
-# THE FUEL IS A `Nat` AND IS SPENT BY A `Succ{q}` MATCH ARM. MEASURED, and this
+# the fuel is a `Nat` and is spent by a `Succ{q}` match arm. measured, and this
 # is why the fold is written this way: a U32 fuel with `U32.sub(fuel, 1)` is NOT
 # accepted as a decreasing self-call, because `term_descend` on `U32.sub(fuel,1)`
 # is EQ rather than LT --
@@ -880,12 +880,12 @@ def Str.drop_n(+s: String, +n: U32) -> String: String.drop(s, U32.to_nat(n))
 # ===========================================================================
 # THE SECTION LIST. elf.py:22-24.
 #
-# FOUR THINGS MEASURED HERE, ALL OF THEM ABOUT THE SAME LIST-WALK SHAPE:
+# four things measured here, all of them about the same list-walk shape:
 #
 #   1. `List.append(&2, A, xs, ys)` is `xs ++ ys` -- an APPEND DOES NOT PRESERVE
-#      THE ORDER ITS ARGUMENTS WERE WRITTEN IN. helpers.bend:1366 symbol=pool_pads_dup.go
+#      the order its arguments were written in. helpers.bend:1366 symbol=pool_pads_dup.go
 #      and ops_amd.bend:624 symbol=sig.step both put the accumulator FIRST for this.
-#   2. THE FUEL IS THE LIST, NOT A NUMBER. `sig.go` (ops_amd.bend:627 symbol=sig.go) descends
+#   2. the fuel is the list, not a number. `sig.go` (ops_amd.bend:627 symbol=sig.go) descends
 #      the tail `t` and the scrutinee IS the fuel -- no `Nat` countdown, no
 #      `Succ{q}`, and therefore no "decreasing self-call" to get wrong.
 #   3. THE ACCUMULATOR STEP IS ITS OWN DEF. A `Data` record whose reader is used
@@ -937,7 +937,7 @@ def Sections.of(+h: String, +e: Ehdr, +x: Bool) -> List<&2, Shdr>:
 def Sections.at(+xs: List<&2, Shdr>, +i: U32) -> Shdr:
   Maybe.default(&2, Shdr, List.get(&2, Shdr, xs, U32.to_nat(i)), Shdr.zero())
 def Sections.len(+xs: List<&2, Shdr>) -> U32: U32.from_nat(List.length(&2, Shdr, xs))
-# THE SAME INDEX, OVER THE BUILT LIST. `Sections.at` reads the raw header table
+# the same INDEX, over the built list. `Sections.at` reads the raw header table
 # and `Sections.at_sec` reads the list `elf_loader` returns, and they are two
 # defs because they are two DIFFERENT LISTS -- keeping the two tables apart is
 # not decoration, it is the only thing that stops them being confused.
@@ -993,7 +993,7 @@ def Sections.build(+h: String, +e: Ehdr, +x: Bool) -> List<&2, ElfSection>:
 # the four real dylibs, so `elf_ls_*` says what this machine answers rather than
 # what this port believes. A MISS is the total form of `AttributeError`.
 #
-# THE SCAN IS A FOLD, NOT THE SHORT-CIRCUIT. python.py's `for lib in libs: try:
+# the scan is a FOLD, not the short-circuit. python.py's `for lib in libs: try:
 # return ... except: pass` returns the FIRST hit, and in bend a `Bool.pick` of
 # two self-calls on the SAME list is mutual recursion (refused) while one on a
 # SHORTER list is the descent -- so the short-circuit shape cannot be written.
@@ -1117,7 +1117,7 @@ def Rel.has_ehf(xs: List<&2, ElfSection>) -> Bool:
     case +h <> t: Bool.pick(Bool, Rel.head_is_ehf(h), True{}, Rel.has_ehf(t))
 def Rel.skip_ehframe(+xs: List<&2, ElfSection>) -> Bool: Bool.pick(Bool, Rel.has_ehf(xs), True{}, False{})
 
-# THE TARGET NAMES THE DERIVATION PRODUCES. This is UPSTREAM DEFECT 2:
+# the target names the derivation produces. This is upstream defect 2:
 # `.rela.dyn` strips to `.dyn` and `.rela.plt` to `.plt`, and
 # `next(tsh for tsh in sections if tsh.name == trgt_sh_name)` at elf.py:44 is
 # exhausted for `.dyn`. Naming them is what makes the refusal legible instead of a
@@ -1212,7 +1212,7 @@ def Sec.align_of(+s: ElfSection, +force: U32) -> U32:
 # the one thing the fixture sets. `.agents/slop/elf_reloc_probe.py` does that and
 # measured all ten arms distinct; `elf_reloc_*` rows carry the words.
 #
-# THE TWO ARMS THAT WRITE INTO `image` ARE THE TRAMPOLINES, and they are the ones
+# the two arms that write into `image` are the trampolines, and they are the ones
 # this port can gate DIRECTLY, because they are `struct.pack` of literal bytes:
 #   x86-64 PLT32 out of range: `struct.pack("<HIQ", 0x25FF, 0, tgt-addend)` -- the
 #     `JMP [RIP+0] .quad target` trampoline, 14 bytes.
@@ -1250,7 +1250,7 @@ def Tramp.arm_ret(len_image: U32, ploc: U32) -> U32:
 # ===========================================================================
 # THE BYTE DIGEST. Every IMAGE row in the oracle is a hash of the image, and
 # sha256 is not writable in bend, so the hash is FNV-1a 32 over the hex string.
-# IT IS NOT A CRYPTOGRAPHIC HASH AND IS NOT ASKED TO BE: its only job is to be a
+# it is not a cryptographic hash and is not asked to be: its only job is to be a
 # compact, Bend-computable fingerprint so a 3624-byte image is one row and not
 # 7248 hex digits. `U32.mul` and `U32.xor` wrap mod 2**32 exactly as Python's
 # `& 0xffffffff` does -- MEASURED, both agree that 0xffffffff*0xffffffff == 1 --
@@ -1551,7 +1551,7 @@ def Rc.walk(+c: Rctx, +h: String, +x: Bool, +xs: List<&2, ElfSection>) -> List<&
 # ===========================================================================
 # elf_loader, elf.py:15-50. THE RETURN VALUE.
 #
-# THE ORDER IS LOAD-BEARING AND IT IS THE POINT OF `Built`: the image is built
+# the order is LOAD-bearing and it is the point of `Built`: the image is built
 # BEFORE the relocs, because elf.py:44's `sh_addr` is read off the section list
 # that elf.py:38 JUST REWROTE. Reading the addresses before the image loop gives
 # the PRE-ALLOC addresses and every reloc lands in the wrong place.
@@ -1671,7 +1671,7 @@ def Rloc.pad(+r: Rloc) -> String:
 def Reloc.a_pc32(+ploc: U32, +tgt: U32) -> Rloc:
   Rloc.same(Sdiff.i2u32(Sdiff.of(tgt, ploc)))
 # elf.py:62, the IN-RANGE arm of PLT32: `i2u(32, tgt-ploc-base)`. THE BASE IS
-# SUBTRACTED HERE AND NOT IN THE RANGE TEST at :62, which tests `tgt-ploc-base`
+# subtracted here and not in the RANGE test at :62, which tests `tgt-ploc-base`
 # -- and the test at :62 is on the same expression, so `Sdiff.of(tgt,ploc)` is
 # subtracted from `base` ONCE and both the test and the encode read the result.
 def Reloc.plt32_d(+base: U32, +ploc: U32, +tgt: U32) -> Sdiff:
@@ -1718,7 +1718,7 @@ def Reloc.a_call26_tramp(tgt: U32) -> String: Tramp.arm(tgt)
 #   `image[ploc:ploc+4] = struct.pack("<I", relocate(unpack("<I",
 #    image[ploc:ploc+4]), base, ploc, tgt+r_addend, r_type, r_addend))`
 #
-# THE FOLD IS OVER THE RELOC LIST, NOT OVER A COUNT, and `Bool.pick` picks the arm
+# the FOLD is over the reloc list, not over a count, and `Bool.pick` picks the arm
 # so the image is threaded once. The 4-byte patch is a PLACED WRITE at `ploc`
 # (`Img.write_at`) and the word is packed little-endian (`Hex.pair`), which is
 # little-endian order -- `Hex.of` is big-endian and swapping them writes the
@@ -1821,11 +1821,11 @@ def jit_loader(+e: ElfImage, +base: U32) -> Img:
 # names -- a name-comparing harness reported 0 for all 30 mutations in one unit
 # and 0 for all 68 in another.
 #
-# THE ORACLE'S OWN EXIT PATH IS CHECKED, because an oracle that emits 0 rows and
+# the oracle's own exit path is checked, because an oracle that emits 0 rows and
 # exits 1 while the gate prints 432 green rows is not a passing gate: breaking its
 # import deliberately gives `EXIT=1 ROWS=0`, recorded in REPORT.md.
 #
-# THE ROW KIND IS CHOSEN PER CLAIM, AND THE CHOICE IS THE POINT:
+# the row kind is chosen per claim, and the choice is the point:
 #   * FIELD ORDER is a STRING (`F_SHDR`, `F_SYM64`, `F_SYM32` and the per-section
 #     `*_hdrtxt` / `*_sym0` rows that spell `name@byteoffset:value`). A COUNT CANNOT
 #     SEE A TRANSPOSITION and `struct_libusb_transfer` shipped one -- and so did
@@ -1872,9 +1872,9 @@ def Sec.hd.go(xs: List<&2, ElfSection>, +x: Bool,
 def Sec.hd_text(+xs: List<&2, ElfSection>, +x: Bool) -> String:
   String.join(Sec.hd.go(xs, x, Nil{}), ";")
 
-# ONE U32 COLUMN OF THE WHOLE TABLE, IN ORDER -- ONE WALK PER COLUMN.
+# one U32 column of the whole table, in order -- one walk per column.
 #
-# FIVE COLUMNS FIVE WALKS, NOT ONE WALK WITH A COLUMN PICKER, and the reason is
+# five columns five walks, not one walk with a column picker, and the reason is
 # measured three times over:
 #   * a `Shdr` read by five readers in ONE body  -> "consumed more than once"
 #   * a `U32` read by two `Bool.pick` TESTS      -> "consumed more than once"
@@ -1970,7 +1970,7 @@ def Str.names(+xs: List<&2, Shdr>, +sstr: String) -> String:
   String.join(Str.nm.go(xs, sstr, Nil{}), ",")
 
 # ===========================================================================
-# THE LIST RENDERERS THE GATE READS. Every one of them builds the STRING while
+# the list renderers the gate reads. Every one of them builds the string while
 # the walk runs rather than collecting and joining afterwards, because there is
 # no `let` to name a collected list and no map-then-join without two walks.
 #

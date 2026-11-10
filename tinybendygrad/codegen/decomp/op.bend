@@ -28,10 +28,10 @@
 # it is not a missing `mulhi64`, it is `_min_max` and a 65-bit `//`.
 #
 # ---------------------------------------------------------------------------
-# TWO THINGS THAT ARE EASY TO INVERT, both measured against the real tables.
+# two things that are easy to invert, both measured against the real tables.
 #
 # 1. `powers_of_two.get(c, 0)` IS NOT A FUNCTION OF `c in powers_of_two`.
-#    op.py:64 is `{2**i: i for i in range(64)}`, so `get(1, 0)` is `0` AND `1` IS
+#    op.py:64 is `{2i: i for i in range(64)}`, so `get(1, 0)` is `0` AND `1` IS
 #    IN THE DICT`. The two lambdas read it differently: op.py:71 and op.py:88 and
 #    op.py:92 and op.py:96 all spell `if (v := powers_of_two.get(c.val, 0))`,
 #    which is a TRUTH test and `0` is falsy, while op.py:74 spells
@@ -349,9 +349,9 @@ def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
 # `rejl0..rejl17` come from the eighteen-rule build.
 #
 # `0`  !x & !y      -> !(x|y)              op.py:85-86   AND    [CMPNE]
-# `1`  x * 2**y     -> x << y              op.py:88      MUL    [CONST]
-# `2`  u // 2**y    -> u >> y              op.py:91-92   TRUNCDIV   [CONST]
-# `3`  x // 2**y    -> (x + (x<0 ? c-1:0)) >> y   op.py:94-96  TRUNCDIV [CONST]
+# `1`  x * 2y     -> x << y              op.py:88      MUL    [CONST]
+# `2`  u // 2y    -> u >> y              op.py:91-92   TRUNCDIV   [CONST]
+# `3`  x // 2y    -> (x + (x<0 ? c-1:0)) >> y   op.py:94-96  TRUNCDIV [CONST]
 # `4`  x // d       -> fast_idiv           op.py:99      TRUNCDIV   [CONST]
 # `5`  x % d        -> x - d*fast_idiv     op.py:102-103 TRUNCMOD   [CONST]
 # `6`  x * -1       -> x.alu(NEG)          op.py:105     MUL    [CONST]
@@ -363,12 +363,12 @@ def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
 # `12` (c1<x)&(x<c2) -> x.eq(c1+1) if c1+1==c2-1  op.py:114-115 AND [CMPLT]
 # `13` x.ne(y)      -> x.alu(CMPEQ, y)     op.py:117     CMPNE  [CMPNE,CONST]
 # `14` a*b + c      -> a.alu(MULACC,b,c)   op.py:119     ADD    [MUL]
-# `15` (x<<n) + c   -> x.alu(MULACC, 2**n, c)  op.py:121  ADD    [SHL]
+# `15` (x<<n) + c   -> x.alu(MULACC, 2n, c)  op.py:121  ADD    [SHL]
 # `16` x.reciprocal -> 1.0.alu(FDIV, x)    op.py:124     RECIP  []
 # `17` a * (1/b)    -> a.alu(FDIV, b)      op.py:125     MUL    [FDIV]
 #
-# THE TWO RULES BOTH CLAIMING ONE NODE are `2`/`3`/`4`: `3` (the signed
-# power-of-two TRUNCDIV) and `4` (`fast_idiv`) both claim `TRUNCDIV(x, 2**y)` and they
+# the two rules both claiming one node are `2`/`3`/`4`: `3` (the signed
+# power-of-two TRUNCDIV) and `4` (`fast_idiv`) both claim `TRUNCDIV(x, 2y)` and they
 # answer DIFFERENTLY -- `3` is an ADD under a SHR and `4` is a MUL under a SHR.
 # FIRST-WINS, and `l7`/`l8`/`l9` are the three sides: `l7` is int32 `// 4` and
 # rule 3 answers, `l8` is the same on a non-negative numerator and STILL rule 3
@@ -428,7 +428,7 @@ def dc_is_lt(+ar: O.Arena,+s: U32) -> Bool:
 # The pattern is `UPat.var("x", dtypes.bool).logical_not() & ...`, so the AND's
 # two srcs are each a `logical_not` -- a CMPNE against the bool CONST -- and the
 # `dtypes.bool` conjunct is on `x`, the CMPNE's src0. THERE IS NO CAST AND THE
-# READERS MAY NOT LOOK FOR ONE, on both sides and for one reason each: the
+# readers may not look for one, on both sides and for one reason each: the
 # PATTERN has none because `UPat.cast` (ops.py:1512) returns `self` when
 # `self.match_dtype == (dtype,)`, which is what `UPat.var("x", dtypes.bool)`
 # states, and the TREE has none because `mixin/dtype.py:19` is `self if
@@ -445,7 +445,7 @@ def dc_l0.y(+ar: O.Arena,+u: U32) -> U32:
 def dc_l0.x2(+ar: O.Arena,+s: U32) -> U32:
   O.Arena.src0(ar, s)
 
-# ---- rule 1 -- op.py:88. `x * 2**y -> x << y`. MUL is an `is_any`, so the
+# ---- rule 1 -- op.py:88. `x * 2y -> x << y`. MUL is an `is_any`, so the
 # CONST may be EITHER src; `l1` and `l25` are the two sides. The lambda is
 # `lambda c,x:` -- the captures are declared cvar-FIRST, which is why the
 # fixture's `x` is `self.src0` in one and `self.src1` in the other.
@@ -466,7 +466,7 @@ def dc_negside(+ar: O.Arena,+u: U32) -> U32:
 def dc_l7.x(+ar: O.Arena,+self: U32) -> U32:
   dc_other(ar, self, dc_negside(ar, self))
 
-# `c1` and `c2` are the two CMPLTs' CONSTs and BOTH ARE TWO STEPS DEEP: the AND
+# `c1` and `c2` are the two CMPLTs' CONSTs and both are two steps deep: the and
 # and the CMPLT. A third `src0` reads `src0` of a CONST, which is the arena's
 # bottom NOOP (index 0), and `dc_val` of that is `None` -- so `dc_l12.val`
 # compares `0 + 1 == c2.val - 1`, which is false for `l16` and the rule never
@@ -586,7 +586,7 @@ def rows(+nm: String,+v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))
 
 # WHICH rule fired. `tag_*` is the row that makes first-wins observable and not
-# just on/off: rules 3 and 4 both claim `TRUNCDIV(x, 2**y)` and answer differently, and
+# just on/off: rules 3 and 4 both claim `TRUNCDIV(x, 2y)` and answer differently, and
 # the `out_` row says which answer while the `tag_` row says it was the EARLIER
 # rule. 0 means "nothing fired", which is unambiguous because the scan never
 # reaches tag 0 without rule 0 firing.
@@ -1003,23 +1003,23 @@ def dc_s3(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 
 # ===========================================================================
 # `magicgu` -- op.py:9-18. Hacker's Delight chapter 10: the smallest `s` with
-# `2**s > nc*(d-1-(2**s-1)%d)`, and then `m = (2**s + d-1-(2**s-1)%d)//d`.
+# `2s > nc*(d-1-(2s-1)%d)`, and then `m = (2s + d-1-(2s-1)%d)//d`.
 #
 # PORTED IN SHAPE: the `nc`, the `nbits`, the `2*nbits+1` bound and the test are
 # all here, as VALUES on a `U32`/`Nat` pair, so the loop shape is readable and
 # the ONE thing missing is named rather than approximated.
 #
 # TODO(p3) op.py:9-18 `magicgu`. THE WALL, MEASURED, and it is NOT the one the
-#   brief predicted. `2**s` must be materialised and COMPARED against
-#   `nc*(d-1-((2**s-1)%d))`, and for a 32-bit `vmax` that product is 62 bits and
-#   `2**s` is 63, so a 64-bit carrier is the minimum -- and for a uint32 `vmax`
+#   brief predicted. `2s` must be materialised and COMPARED against
+#   `nc*(d-1-((2s-1)%d))`, and for a 32-bit `vmax` that product is 62 bits and
+#   `2s` is 63, so a 64-bit carrier is the minimum -- and for a uint32 `vmax`
 #   they are 64 and 65 bits, which does not fit an UNSIGNED 64-bit word. So
 #   `magicgu` needs, on top of each other:
 #     * `i64_mul`  -- the 32x32 carry chain, plus the three-term add with a carry
 #       out, because `nc * (d-1-...)` is a 32x32 product and `m*vmax` is a 33x32.
 #     * `i64_div` and `i64_mod` by a 32-bit divisor -- a restoring divider, and
-#       `(2**s - 1) % d` at `s = 2*nbits` is a 65-bit modulus.
-#     * `i64_shl`  -- `2**s` for `s` up to `2*nbits = 64`.
+#       `(2s - 1) % d` at `s = 2*nbits` is a 65-bit modulus.
+#     * `i64_shl`  -- `2s` for `s` up to `2*nbits = 64`.
 #     * an UNSIGNED 64-bit compare -- `H.i64_cmp` (helpers.bend:1697 symbol=i64_cmp) is SIGNED,
 #       and `2**64` reads negative in it.
 #     * a 65-bit third limb, for `2**64 + d`, which is the numerator of `m`.
@@ -1064,7 +1064,7 @@ def dc_idiv(+ar: O.Arena,+x: U32,+d: U32,+small: Bool) -> Maybe<&2, O.Found>:
 # `H.i64_of_hi_lo` and NOT arithmetic. PORTED IN FULL, and it is the largest
 # single piece of arithmetic in the file.
 #
-# THE TWO LOOPS ARE ONE RECURSION because they interleave in Python: the round
+# the two loops are one recursion because they interleave in Python: the round
 # loop is INNER and the `ks` update is the loop body's last line. `i` is not
 # threaded -- `i` IS `5 - fuel` -- so `rotations[i % 2]` is "the odd list when
 # `fuel` is even" and `ks[i % 3]` is an index into the three-element list.
@@ -1245,7 +1245,7 @@ def tf_split_str(+ar: O.Arena,+x: U32) -> String:
 #
 # `0` DIV(x:ints, c) -> x >> v if v            op.py:70-71
 # `1` DIV(a, b)     -> floordiv_to_idiv        op.py:72
-# `2` MOD(x:ints, c) -> x & (c-1) if c is 2**y op.py:74
+# `2` MOD(x:ints, c) -> x & (c-1) if c is 2y op.py:74
 # `3` MOD(a, b)     -> floormod_to_mod         op.py:75
 # `4` THREEFRY(x, key)   -> threefry2x32            op.py:77
 #
@@ -1673,7 +1673,7 @@ def dc_l13(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 def dc_cminus1(+ar: O.Arena, +u: U32) -> U32:
   U32.sub(dc_ival(dc_val(ar, O.Arena.src(ar, u, 1))), 1)
 
-# THE SAME TWO READS for a COMMUTATIVE node, where the CONST may be EITHER src.
+# the same two reads for a commutative node, where the CONST may be either src.
 # `dc_cval`/`dc_hit` read `src1` because DIV and TRUNCDIV are not commutative, and
 # a rule that reuses them on a MUL reads the OTHER operand: `l25` is
 # `MUL(C(4), i)`, `dc_cval` there sees the PARAM, answers 0, and the rule skips.
@@ -1704,7 +1704,7 @@ def dc_l1.go(+ar: O.Arena,+fx: F.Folded,+self: U32,+ok: Bool) -> Maybe<&2, O.Fou
     case True{}: dc_l1.put(ar, dc_other(ar, self, dc_cside(ar, self)), dc_cval_s(ar, self))
     case False{}: None{}
 
-# ---- rule 2 -- op.py:91-92. `u // 2**y -> u >> y` for an UNSIGNED numerator.
+# ---- rule 2 -- op.py:91-92. `u // 2y -> u >> y` for an UNSIGNED numerator.
 # TRUNCDIV is not commutative, so the CONST is `src1` with no side question, and the
 # `dtypes.uints` conjunct is what separates this rule from rule 3. `l6` is the
 # row and `l7` is its negative: the same `// 4` on a SIGNED numerator skips here.
@@ -1965,7 +1965,7 @@ def dc_l5.go(+ar: O.Arena,+fx: F.Folded,+self: U32,+ok: Bool) -> Maybe<&2, O.Fou
 def dc_l5(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
   dc_l5.go(F.Folded.ar(fx), fx, self, dc_l5.pat(F.Folded.ar(fx), fx, self))
 
-# ---- rule 3 -- op.py:94-96. Signed `x // 2**y ->
+# ---- rule 3 -- op.py:94-96. Signed `x // 2y ->
 # (x + (x<0 ? c-1 : 0)) >> y`.
 #
 # `l.const_like(l.vmin) if l.vmin == l.vmax else l` is the ONE `vmin == vmax`
@@ -2326,7 +2326,7 @@ def main() -> IO(Unit):
   gate()
 
 # ===========================================================================
-# THE MUTATION TABLE AND WHAT IS NOT DONE. Both are measured, and the second
+# the mutation table and what is not done. Both are measured, and the second
 # one is the honest half of the gate.
 #
 # THE MUTATIONS, by hand, one edit at a time, diffing the interpreted lane
@@ -2364,7 +2364,7 @@ def main() -> IO(Unit):
 #
 # SEVEN ROWS DIFFER FROM PYTHON. Grouped by cause, and the causes are two:
 #
-# A. SIX ROWS ARE THE `magicgu` WALL, and they are SUPPOSED to differ:
+# a. six rows are the `magicgu` wall, and they are supposed to differ:
 #      on_l9 tag_l9 out_l9   Python: SHR(MUL(Pz,C(43)),C(7))
 #      on_l10 tag_l10 out_l10 Python: ADD(Pz,MUL(MUL,C(-1)))
 #    The port prints `none` because op.py:23 is P3. `dc_idiv` answers the three
@@ -2381,7 +2381,7 @@ def main() -> IO(Unit):
 #    is Python's tree. FIXING IT IS AN ORACLE FIX, not a port fix.
 #
 # ---------------------------------------------------------------------------
-# THE THREE RULES THAT DID NOT FIRE, NOW DIAGNOSED. Nine rows, THREE readers,
+# the three rules that did not fire, now diagnosed. Nine rows, three readers,
 # and ONE shape of mistake: a reader that steps one hop further than the tree is
 # deep, or a predicate that reads a FIXED side where the op is commutative. Both
 # land on the arena's bottom NOOP -- index 0, a node with no srcs and no dtype

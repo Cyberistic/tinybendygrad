@@ -48,7 +48,7 @@
 #   Bend spelling for any of it and no `ElementTree`.  So the XML and the PDF
 #   are FIXTURES here, values, exactly as `runtime/support/autogen.bend` makes
 #   the libclang AST a value: "each field is a fact one call would have
-#   returned".  EVERY DECISION THAT RUNS OVER THOSE FIXTURES IS PORTED AND
+#   returned".  every decision that runs over those fixtures is ported and
 #   GATED; the descent that produces them is not, and the seam is named.
 #
 # WALL 2 -- regex.  `extract_pdf_text` matches `rb'startxref\s+(\d+)'`,
@@ -582,7 +582,7 @@ def EO.ops(e: EO) -> List<&2, OP>:
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]"])
 
-# THE DERIVED ROW.  The `py=` half is the PORT'S OWN VALUE, read through the same
+# the derived row.  The `py=` half is the port's own value, read through the same
 # reader the row prints, so a row cannot disagree with itself and a transcription
 # cannot rot.  `rd` is the derived half of `r`, the shape `renderer/tc.bend` and
 # `renderer/llvmir.bend` use.  THE TEETH MOVE TO THE ORACLE: a derived row's two
@@ -592,7 +592,7 @@ def rd(+nm: String, +got: String) -> String: r(nm, got, got)
 
 def g(nm: String, got: String) -> IO(Unit): IO.print(rd(nm, got))
 
-# THE EMITTER ROWS ARE ONE ROW PER EMITTED FILE, the file JOINED by newline.
+# the emitter rows are one row per emitted file, the file joined by newline.
 # A count row would be identical for a dropped member, a dropped alias, a
 # swapped `default=NULL` and a reordered field; a string diff is not.  This is
 # the renderer convention 2 applied to a GENERATOR: the answer is the file.
@@ -704,7 +704,7 @@ def enum_names.take.op(+e: EO, +acc: List<&2, String>, is_plain: Bool) -> List<&
 
 # `enum_names = sorted(f"{k}Op" for k in enums if enums[k] and k not in ("HWREG","MSG"))`
 # then `enum_names += sorted(k for k in enums if k in ("HWREG","MSG") and enums[k])`.
-# TWO WALKS, TWO SORTS AND A CONCATENATION -- not one sort of the union: the
+# two walks, two sorts and a concatenation -- not one sort of the union: the
 # plain enums are emitted last and WITHOUT the `Op` suffix, which is why the
 # import line ends `..., VSCRATCHOp, HWREG, MSG` rather than sorting `HWREG`
 # between `GLOBALOp` and `HWREGOp`.  A single sorted union is a DIFFERENT FILE.
@@ -792,7 +792,7 @@ def sort_fields(fs: List<&2, Fld>) -> List<&2, Fld>: List.sort(Fld, fld_le, fs)
 # ladder is a TABLE here, in source order, and the walk returns the FIRST
 # match.  The table IS the spec; reordering the table reorders the spec.
 #
-# THE KIND CODES ARE `K2_*`, NOT `dsl.bend`'s `K_*`, DELIBERATELY.  dsl.bend
+# the kind codes are `K2_*`, not `dsl.bend`'s `K_*`, deliberately.  dsl.bend
 # exports `K_PLAIN`/`K_FIXED`/`K_ENUM`/`K_SRC`/`K_VGPR`/`K_SGPR`/`K_SSRC`/
 # `K_ALIGN`/`K_SBASE`/`K_SRSC`/`K_VDSTY`, which classify the SAME eleven
 # classes -- at the ENCODE side, where `SGPRField(7,0)` is ONE class.  The
@@ -970,7 +970,7 @@ def ty_le.b(t: TY, +a_name: String, +a_base: String) -> Bool:
 # so this halves with the digits PREPENDED, which turns least-significant first
 # into most-significant first.
 #
-# THE `Nat` COUNTDOWN IS THE ONLY DECREASING ARGUMENT BEND ACCEPTS HERE.
+# the `Nat` countdown is the only decreasing argument BEND accepts here.
 # `U32.div(x, 2)` is not a STRUCTURAL subterm of `x` and the
 # decreasing-self-call rule is structural, so a `U32`-only recursion is refused
 # outright.  `U32.log2` supplies the digit count, which is exactly Python's `b`
@@ -1037,7 +1037,7 @@ def Fd2.k(x: Fd2) -> String:
 
 # `suffix = "_E32" if name in ("VOP1","VOP2","VOPC") else "_E64" if name == "VOP3" else ""`
 
-# THE FIVE SEARCHES SHARE ONE SHAPE, and it is the shape bend forces: a walk
+# the five searches share one shape, and it is the shape bend forces: a walk
 # that RETURNS a `Maybe` cannot be `find` -> `hit` -> `find`, because two defs
 # that call each other have no order.  So the accumulator IS the recursion
 # parameter, `kv` is the per-element answer (never recursive), and `go` is the
@@ -1048,7 +1048,7 @@ def field_def.fd_kv(+k: Fd2, +fmt: String, +nm: String) -> Maybe<&2, Fd2>:
   Bool.pick(Maybe<&2, Fd2>, Bool.and(String.eq(Fd2.fmt(k), fmt), String.eq(Fd2.k(k), nm)),
     Some{k}, None{})
 
-# THE FIVE `Maybe`-RETURNING SEARCHES SHARE ONE SHAPE, and it is the shape bend
+# the five `Maybe`-returning searches share one shape, and it is the shape bend
 # forces.  A search cannot be `find` -> `hit` -> `find`, because two defs that
 # call each other have no order; and it cannot match a second list inside a
 # match arm, because a `match` on a parameter NESTED in a match arm is refused.
@@ -1167,7 +1167,7 @@ def fmt_exempt_b(+pc: U32, fmt: String, +base_fmt: String) -> Bool:
       Bool.or(String.eq(base_fmt, "GLOBAL"), String.eq(base_fmt, "SCRATCH")), True{}))
 
 # ===========================================================================
-# THE RECORD SHAPES, and the FOUR DIFFERENT SORTS.  They are NOT
+# the record shapes, and the four different sorts.  They are not
 # interchangeable and a gate that only diffed counts would pass with all four
 # collapsed into one:
 #   sorted(ops.items())       -- by OPCODE; in write_ins the opcode IS the
@@ -1359,7 +1359,7 @@ def write_enum.aliases.go(os_: List<&2, OP>, +fmt: String, +acc: List<&2, String
 # `Fmt` blocks in common.py are in different orders for the same key set.
 # ===========================================================================
 
-# THE ALIAS PASS IS SECOND AND SEPARATE: `aliases` collects (mem, msuf) for
+# the alias pass is second and separate: `aliases` collects (mem, msuf) for
 # every op that GOT a suffix and is emitted after all the value cells, so
 # `V_CNPY = V_CNPY_E32` follows `V_CNPY_E32 = 0`.  Folding the two passes into
 # one list puts the aliases before the values, which is legal Python and a
@@ -1368,13 +1368,13 @@ def write_enum.aliases.go(os_: List<&2, OP>, +fmt: String, +acc: List<&2, String
 def write_enum.aliases(fmt: String, os_: List<&2, OP>) -> List<&2, String>:
   write_enum.aliases.go(os_, fmt, Nil{})
 
-# THE ALIAS PASS IS SECOND AND SEPARATE: `aliases` collects (mem, msuf) for
+# the alias pass is second and separate: `aliases` collects (mem, msuf) for
 # every op that GOT a suffix and is emitted after all the value cells, so
 # `V_CNPY = V_CNPY_E32` follows `V_CNPY_E32 = 0`.  Folding the two passes into
 # one list puts the aliases before the values, which is legal Python and a
 # different file.
 
-# ONE CLASS = HEADER, VALUE CELLS, ALIAS CELLS, BLANK, in that order.  The
+# one class = header, value cells, alias cells, blank, in that order.  The
 # value walk (`enum_members.go`) and the alias walk (`write_enum.aliases.go`)
 # are separate folds over the SAME sorted opcode list, and the alias walk emits
 # only for the ops that received a suffix.
@@ -1385,7 +1385,7 @@ def write_enum.one(+fmt: String, +os_: List<&2, OP>, acc: List<&2, String>) -> L
       enum_members.go(os_, fmt, Nil{})),
     List.append(&2, String, write_enum.aliases(fmt, os_), [""])))
 
-# `if not ops: continue` -- AN ENUM WITH NO OPCODES EMITS NOTHING AT ALL, not
+# `if not ops: continue` -- an enum with no opcodes emits nothing at all, not
 # even a class line and not even the blank separator.  A fixture with one such
 # format is what makes that a gated row rather than a reading of the source.
 
@@ -1548,7 +1548,7 @@ def write_operands.tail(rows: List<&2, String>, head: List<&2, String>) -> List<
     ["# instruction operand info: {Op: {field: (Fmt, size_bits, OpType)}}", "OPERANDS = {"]),
     rows)
 
-# THE CLOSING BRACE IS ITS OWN STEP, not a fourth nested `List.append`: four
+# the closing brace is its own step, not a fourth nested `List.append`: four
 # opens with three closes parses as "a term with no value" and bend reports it
 # against the NEXT `def`, thirty lines away, with no mention of the paren.
 
@@ -1596,7 +1596,7 @@ def used_bases.go(tys: List<&2, TY>, +vs: List<&2, VF>, +acc: List<&2, String>) 
       Bool.pick(List<&2, String>, vf_hit(vs, TY.name(t), TY.base(t)),
         List.append(&2, String, acc, [TY.base(t)]), acc))
 
-# THE RECURSION IS AN ARGUMENT, NOT AN ARM OF THE PICK.  `Bool.pick` CHOOSES
+# the recursion is an argument, not an arm of the pick.  `Bool.pick` chooses
 # between two already-computed values and never sequences one, so a self-call
 # inside a pick arm means the walk stops at the first element whose accumulator
 # is chosen -- `dedup_adj(["a","a","b","b","c"])` answered `["a"]`, and the
@@ -1784,7 +1784,7 @@ def write_pcode(+ps: List<&2, PK>, +eos: List<&2, EO>, +arch: String) -> List<&2
 #
 # FOUR FOLDS, in upstream order, and the order is the file:
 #   1. base classes -- with the RDNA3 `seg` special case that splits FLAT into
-#      FLAT/GLOBAL/SCRATCH and VFLAT into VFLAT/VGLOBAL/VSCRATCH, and the
+#      flat/global/scratch and vflat into vflat/vglobal/vscratch, and the
 #      EXCLUSION list (`FLAT_GLOBAL`, `FLAT_SCRATCH`, `FLAT_GLBL`, `DPP`,
 #      `SDWA`) that emits nothing at all;
 #   2. variant classes -- only the fields the base does NOT already have, plus
@@ -1946,7 +1946,7 @@ def ty_find.take(acc: Maybe<&2, TY>, hit: Maybe<&2, TY>) -> Maybe<&2, TY>:
     case Some{+g}: Some{g}
     case None{}: hit
 
-# THE WALK NEVER STOPS AND NEVER NESTS.  A `match` on a parameter NESTED in a
+# the walk never stops and never nests.  a `match` on a parameter nested in a
 # match arm is refused, and `Bool.pick` does not SEQUENCE a self-call, so
 # first-hit-wins is `take` on an accumulator the walk keeps feeding: the answer
 # is the first match either way, and this shape is ONE `match`.
@@ -2598,14 +2598,14 @@ def fx_ssx() -> List<&2, SS>:
 
 def fx_ps() -> List<&2, PK>:
   [PK{"V_ADDTID", 256, "V_ADDTID()\nT0 = EXEC;"}, PK{"V_ADD_F32", 300, "V_ADD_F32(vdst, src0)\nÎ"}, PK{"V_CNPY", 0, "V_CNPY(dst, src0)\n{\ndst = src0;\n} // end"}]
-# THE EMITTER ROWS ARE ONE ROW PER EMITTED LINE, `nm | <index>`, PLUS `nm lines`.
+# the emitter rows are one row per emitted line, `nm | <index>`, plus `nm lines`.
 #
 # A count row alone would be identical for a dropped member, a dropped alias, a
 # swapped `default=NULL` and a reordered field; the 634 line rows are what see
 # those, and they are the renderer convention 2 applied to a GENERATOR: the
 # answer is the FILE, one line at a time.
 #
-# AND IT MUST BE PER LINE, MEASURED TWICE OVER.  The row parser splits lane
+# and it must be per line, measured twice over.  The row parser splits lane
 # output on newlines, so one whole-file row became 335 fragments whose NAMES
 # are the first token before an `=` inside the generated Python: 233 row names
 # for 91 rows, 84 shared with the oracle, the other 149 naming text the oracle
@@ -2618,7 +2618,7 @@ def fx_ps() -> List<&2, PK>:
 # (references/bend/bend2/base.bend:1987 symbol=String.append) appends onto a growing
 # prefix (references/bend/bend2/base.bend:1987 symbol=String.append).  Probe: 177 lines of 95 characters, 6 of 6 through
 # `String.concat`, and on the real file 10 of 20 through either join.  THE
-# ORIGINAL, ONE WHOLE-FILE ROW AND NO ESCAPE AT ALL, WAS 5 OF 12 -- so the flake
+# original, one whole-file row and no escape at all, was 5 of 12 -- so the flake
 # predates this change and no lane on this port was reliably runnable.
 #
 # A per-line row builds no string longer than one emitted line, so it cannot

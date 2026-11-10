@@ -1,8 +1,8 @@
 # tinybendygrad/runtime/support/compiler_mesa.bend -- port of tinygrad/runtime/support/compiler_mesa.py
 #
 # ===========================================================================
-# THE SCOPE NOTE FOR THIS UNIT SAID `compiler_mesa.py` "invokes external cc for
-# Mesa/software". THAT IS NOT WHAT THE FILE DOES, and the difference matters,
+# the scope NOTE for this unit said `compiler_mesa.py` "invokes external cc for
+# Mesa/software". that is not what the file does, and the difference matters,
 # so it is stated first and MEASURED rather than argued.
 #
 # Of compiler_mesa.py's 133 lines, ONE shells out: `NAKCompiler.disassemble`'s
@@ -141,7 +141,7 @@ def NAKD() -> String: "1ac1ef01e96caf1be0d329331a4fc2a8"
 # out of alignment and a decimal `n` that lost its width does the same.
 #
 # Written with `Char.from_u32` rather than an alphabet lookup because a `U32`
-# LITERAL ARM LADDER is a PREFIX MATCH (bend2-constraints.md POSITION 1885) and
+# literal arm ladder is a prefix match (bend2-constraints.md position 1885) and
 # sixteen arms of it would be sixteen ways to be silently wrong.
 # ===========================================================================
 def hx.digit(+d: U32) -> Char:
@@ -445,7 +445,7 @@ def ir3.ret_parts_str(+variant: U32, +const_state: U32, +count: U32, +info_size:
   String.join(ir3.ret_parts_str.of(ir3.ret_parts(variant, const_state, count, info_size), []), ",")
 
 # ===========================================================================
-# :127-131  unpack_lib. THE HEADLINE PURE LOGIC OF THIS FILE.
+# :127-131  unpack_lib. the headline pure logic of this file.
 #
 #     shifted = lib[ctypes.sizeof(v:=struct_ir3_shader_variant.from_buffer_copy(lib)):]
 #     shifted = shifted[ctypes.sizeof(cs:=struct_ir3_const_state.from_buffer_copy(shifted)):]

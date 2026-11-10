@@ -1,6 +1,6 @@
 # wgsl_walk.bend -- THE UOP -> BODY WALK: `_render`'s equivalent (cstyle.py:208-266) for WGSL.
 #
-# IT LIVES IN ITS OWN FILE AND NOT IN `wgsl.bend`, AND THAT IS A DECISION THE CENSUS GATE
+# it lives in its own file and not in `wgsl.bend`, and that is a decision the census gate
 # FORCED: `gates/wgsl_render_census-gate.py`'s `never_folding_cast_hold` PINs the bytes of
 # every `OpsCAST` site in `wgsl.bend`, so that a new cast site cannot appear without someone
 # re-deciding its ROLE. MEASURED: adding this walk inside `wgsl.bend` moved that pin
@@ -149,7 +149,7 @@ def R.at(+rs: List<&2, R>, +k: U32) -> R:
 
 def R.src0(r: R) -> U32: Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 0n), 0)
 
-# **=> AND A CONSTANT'S VALUE IS MATERIALISED AT ITS USE, WHICH IS WHERE UPSTREAM PUTS IT.**
+# => and a constant's value is materialised at its use, which is WHERE upstream puts it.
 # `_render` SKIPS every CONST (`cstyle.py:222`), so `r[const]` is never bound, and the value
 # reaches the text because `base_rewrite`'s `cvar.cast(...)` rules (`cstyle.py:24-30`) rewrite a
 # CAST OF A CONST into the literal: `f"{c.val}f"` for `dtypes.float`, `f"{val}u"` for u32, the
@@ -188,7 +188,7 @@ def axis_letter(+nm: String) -> String:
 
 def is_where_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsWHERE{}), True{}, False{})
 
-# **THE LITERAL IS COMPUTED, NOT CARRIED.** `R.f` is the const's f32 VALUE and `FR.repr` is
+# the literal is computed, not carried. `R.f` is the const's f32 value and `FR.repr` is
 # CPython's own `repr(float)` algorithm (uop/f32_repr.bend, 1044 of 1044 values identical), so the
 # digits now come from the port's arithmetic. They used to come from `R.str`, which is CPython's
 # repr TRANSCRIBED into the `.rows` dump -- a comparison of two copies of CPython's string rather
@@ -259,7 +259,7 @@ def c_at(+c: List<&2, U32>, +ix: U32) -> U32:
 def c_bump(+c: List<&2, U32>, +ix: U32) -> List<&2, U32>:
   List.set(&2, U32, c, U32.to_nat(ix), U32.add(c_at(c, ix), 1))
 
-# **AND A NUMBER IS BURNED ONLY BY A DECLARATION.** cstyle.py:261 increments `c[prefix]` INSIDE
+# and a number is burned only by a declaration. cstyle.py:261 increments `c[prefix]` inside
 # the else branch, so an INLINED uop leaves the counter alone. MEASURED: bumping
 # unconditionally numbered the WHERE `alu2` where CPython has `alu1`, because the inlined CMPLT
 # had already taken `alu1` -- same text, same size, different names.
@@ -396,7 +396,7 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
       +txt = W.code_for_op.of(op2, tx(all, Wk.names(acc), R.src0(r), R.dt(r)),
         tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0), R.dt(r)),
         tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 2n), 0), R.dt(r)))
-      # **AND A `WHERE` IS NEVER INLINED.** Upstream's set is
+      # AND A `WHERE` IS NEVER INLINED. Upstream's set is
       # `{Ops.STACK, *(GroupOp.ALU - {Ops.WHERE}), Ops.CAST, Ops.BITCAST}` (cstyle.py:253), and
       # the SUBTRACTION is load-bearing: MEASURED, `relu`/`maximum` rendered the same
       # `select(...)` expression on both sides but CPython DECLARED it (`var alu1 = select(...)`)

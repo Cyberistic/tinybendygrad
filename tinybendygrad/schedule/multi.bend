@@ -11,7 +11,7 @@
 # shrink resolves its own UNSHARD, whether an INDEX is contiguously or strided owned, and
 # the three-way per-source decision in `shard_srcs` that the resharding fallbacks all call.
 #
-# THE ONE WALL THAT CUTS ACROSS EVERY LINE: `UOp._min_max` (ops.py:1094), which
+# the one wall that cuts across every line: `UOp._min_max` (ops.py:1094), which
 # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
 # `copy_multi`. `uop/fold.bend:5140 symbol=ranged` names it at 1104 in its own PROSE and carries it as
 # its `_min_max` WALK -- there is no `TODO(p3)` marker for it there -- and it is not a
@@ -452,7 +452,7 @@ def mu_scalar(xs: List<&2, U32>) -> Bool:
 # `tuple(x.shape) == tuple(multi.shape)` -- multi.py:264 and :96 and :265. It is
 # a SHAPE COMPARISON, so it is a fold over two lists and not a length test:
 # two shapes of the same length can differ, and `can_handle` turns on it.
-# THE TWO-CONS ARM COMES FIRST. `case _ _: False{}` in second position SWALLOWS
+# the two-cons arm comes first. `case _ _: False{}` in second position swallows
 # the cons-cons case and every non-empty comparison answers False -- MEASURED, it
 # moved `t_sv_eq`, `t_sv_ne`, `t_sv_rank` and `t_al_full` all at once. The rule is
 # that the SPECIFIC constructor pair precedes the catch-all, which is the same
@@ -508,7 +508,7 @@ def mu_exp_add(keep: Bool, ax: U32, acc: List<&2, U32>) -> List<&2, U32>:
 # because `mu_exp` calling back into `mu_exp.go` would be MUTUAL recursion and
 # is refused, and the declaration rule means a helper above cannot call a def
 # below it. The two helpers above are leaves, so this stays a single self-call.
-# THE LIST IS THE FIRST PARAMETER because the self-call must be DECREASING AND
+# the list is the first parameter because the self-call must be decreasing and
 # READ LEFT TO RIGHT, so the subterm has to come first -- the shape `red_factor`
 # and `red_bounds` use. `nleft` and `i` ride at the end and are never both read
 # before the shrink.
@@ -1123,7 +1123,7 @@ def Rs.acc(r: Rs) -> List<&2, U32>:
 # product, and it STARTS AT 1 -- so `arg_acc` has `len(new_shape) + 1` entries
 # and `rs_acc_n` in the gate is that +1, which is the row that says the initial
 # 1 is there.
-# EVERY STEP APPENDS ITS RUNNING PRODUCT, not only the last one. Appending only at
+# every step appends its running product, not only the last one. Appending only at
 # the end gives `[1, prod]` -- MEASURED, that made every `rsa*` row wrong and
 # `rsa_n` short by `len(new_shape)`.
 def rs_acc.go(xs: List<&2, U32>, +acc: U32, out: List<&2, U32>) -> List<&2, U32>:
@@ -1272,7 +1272,7 @@ def ns_count.hit(hit: Bool, c: U32, acc: U32) -> U32:
     case True{} : c
     case False{}: acc
 
-# THE LISTS COME FIRST because the self-call must be DECREASING AND READ LEFT TO
+# the lists come first because the self-call must be decreasing and read left to
 # RIGHT (brief-port.md, rule 5): the axes are the subterm and they come first.
 def ns_count.go(aa: List<&2, U32>, cs: List<&2, U32>, +ax: U32, acc: U32) -> U32:
   match aa cs:
@@ -1310,7 +1310,7 @@ def rs_local.one(+n: Ns, +ax: U32, +d: U32) -> U32:
 # INDEX beside it. `List.append` puts each dim at the tail, so the order is
 # `new_shape`'s.
 #
-# THE DIM LIST IS THE FIRST PARAMETER, for the same reason `ns_count.go` is: the
+# the dim list is the first parameter, for the same reason `ns_count.go` is: the
 # self-call must be decreasing and read left to right, so the shrinking list is
 # first and the `Ns` and the counter ride at the end.
 def rs_local.go(dims: List<&2, U32>, +n: Ns, +a: Nat, acc: List<&2, U32>) -> List<&2, U32>:
@@ -1492,7 +1492,7 @@ def fl_of(+marg: List<&2, U32>) -> List<&2, U32>:
   fl_of.go(marg, 0n, Nil{})
 
 # `pad_multi` (multi.py:147-152) -- one ASSERT over the sharded axes and a per-axis extent.
-# THE ASSERT IS NOT A COSMETIC GUARD: a PAD on a sharded axis would have to be replicated per
+# the assert is not a cosmetic guard: a pad on a sharded axis would have to be replicated per
 # shard with the sharded dim UNPADDED, and Python refuses it because the local pad it would
 # compute is not the shard's extent. The port keeps the test and `pd_*_bad` is the row that
 # says it fires. The local pad is then the same divide-or-keep shape as `reshape_multi`'s
@@ -1541,7 +1541,7 @@ def pd_bad(sh: List<&2, Sh>, marg: List<&2, Bd>, shape: List<&2, U32>) -> Bool:
 # walked the same sharding and Python rebuilds the set only because it is written as a
 # comprehension.
 #
-# THE HEAD PAIR IS A PARAMETER AND NOT A RE-READ OF THE LIST, and that is the whole of
+# the HEAD pair is a parameter and not a re-read of the list, and that is the whole of
 # `pd_one.step`. MEASURED both ways: the version that reached back into the full marg
 # (`pd_one(marg, ax, axs)`) came back with the DEFAULT `Bd{0, 0}` for every entry after the
 # first -- whatever the `+` marks were and whether the counter was a `Nat` or an `Ax` record
@@ -1713,7 +1713,7 @@ def sk_len_eq(+marg: List<&2, Bd>, shard_sz: U32, +ax: Nat) -> Bool:
 def sk_whole_eq(+marg: List<&2, Bd>, +full: List<&2, U32>, +ax: Nat) -> Bool:
   pd_ok(marg, full, ax)
 
-# THE FOUR-WAY PER-AXIS OUTCOME, in Python's order:
+# the four-way per-axis outcome, in Python's order:
 #   OWN       -- `l == shard_sz and s == rng*shard_sz`: the UNSHARD RESOLVES and the axis
 #                leaves `remaining` ("a fragment indexed by its LOCAL thread range becomes
 #                that thread's REG shard, no copy needed").
@@ -1728,7 +1728,7 @@ def sk_whole_eq(+marg: List<&2, Bd>, +full: List<&2, U32>, +ax: Nat) -> Bool:
 # IT IS ONE `mu_pick` CHAIN, not a ladder of `match`es, because a `match` may not
 # scrutinise a call and every rung here tests a CONJUNCTION. `sk_raise2` is split out because
 # its three conjuncts are a fact about the WHOLE shrink and `sk_raise` exists for the same
-# reason `rd_bad` does. THE RAISE IS THE `or` OF THE THREE FAILURES: MEASURED, reading the
+# reason `rd_bad` does. the raise is the `or` of the three failures: measured, reading the
 # two device/pb terms as POSITIVE (`bad_n or (one_dev and in_pb)`) answers PARTITION whenever
 # the shape is legal, and `t_sk_r_n`, `t_sk_r_dev` and `t_sk_r_pb` were all 0 until the two
 # `not`s went in.
@@ -1750,7 +1750,7 @@ def sk_kind(own: Bool, whole: Bool, bad_n: Bool, one_dev: Bool, in_pb: Bool) -> 
 # filter, and `sk_keep` is that filter with the equality `sk_eq` already has.
 # ONE self-call per fold, and the equality is a separate LEAF because a def may
 # not call a def declared below it and `sk_mem` recurses.
-# `Sh` IS A `Data` RECORD AND `al_sh_eq` ALREADY COMPARES TWO OF THEM, so this is
+# `Sh` is a `Data` record and `al_sh_eq` already compares two of them, so this is
 # `al_sh_eq` under a second name rather than a fourth copy of the same fold.
 def sk_same(a: Sh, b: Sh) -> Bool:
   al_sh_eq([a], [b])
@@ -1760,7 +1760,7 @@ def sk_mem(sh: List<&2, Sh>, +s: Sh) -> Bool:
     case Nil{}: False{}
     case +x <> +t: Bool.or(sk_same(x, s), sk_mem(t, s))
 
-# AN AXIS THAT IS IN `drop` LEAVES THE SHARDING, so the KEEP test is the NEGATION of
+# an axis that is in `drop` leaves the sharding, so the keep test is the negation of
 # the membership. MEASURED, without the negation the fold kept the dropped axis and
 # dropped a kept one: `sk_keep` was 1 where Python's `remaining` is 1 long AFTER
 # removing one of two, and `t_sk_keep0` printed the wrong axis.
@@ -1903,7 +1903,7 @@ def ix_div(diff: U32, shard_sz: U32) -> U32:
 def ix_strid_ok(diff: U32, shard_sz: U32) -> Bool:
   U32.is_zero(ix_mod(diff, shard_sz))
 
-# THE THREE-WAY OUTCOME per sharded axis: 0 CONTIGUOUS, 1 STRIDED, 2 RAISE. It is
+# the three-way outcome per sharded axis: 0 contiguous, 1 strided, 2 raise. It is
 # `mu_pick` twice because the strided arm has its OWN window and the raise is the
 # fall-through of both.
 # `ix_w` turns the strided window into the OUTCOME NUMBER, so `mu_pick` can select
@@ -2070,7 +2070,7 @@ def mu_early(+ar: O.Arena, self: U32, rej: List<&2, O.Op>) -> Bool:
 def mu_claimed(+ar: O.Arena, +self: U32, ops: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
   mu_and2(O.pm_claimed(ops, ar, self), mu_early(ar, self, rej))
 
-# THE SRC TEST, PER TAG. `PMEntry.ops` is `pdict`'s KEY -- the ROOT op and nothing
+# the SRC test, per tag. `PMEntry.ops` is `pdict`'s key -- the root op and nothing
 # else -- so an op-set count alone cannot separate a rule whose pattern also
 # tests its srcs. Every tag whose pattern has NO src test answers `True{}` and the
 # name says so; the twenty-five entries are read off CPython's own patterns by
@@ -2361,7 +2361,7 @@ def ALLREDUCE() -> U32: O.Ops.value(O.OpsALLREDUCE{})
 def COPY() -> U32: O.Ops.value(O.OpsCOPY{})
 def MSELECT() -> U32: O.Ops.value(O.OpsMSELECT{})
 
-# THE TAG IS AN INDEX and the ROWS COMPARE THE OP THE TAG CLAIMS, which is the
+# the tag is an INDEX and the rows compare the op the tag claims, which is the
 # Python fact: `pdict`'s key for tag 19 is COPY when `LATE_ALLREDUCE` is on and
 # ALLREDUCE when it is off. `mt_tag` (the index itself) is a separate row below.
 def mt_op.head.go(os: List<&2, O.Op>) -> U32:
@@ -2911,7 +2911,7 @@ def t_sk_w_ok() -> U32: eq(yes(sk_whole_eq(marg1(0, 8), s1(8), 0n)), 1)
 def t_sk_w_no() -> U32: eq(yes(sk_whole_eq(marg1(0, 4), s1(8), 0n)), 0)
 def t_sk_w_s() -> U32: eq(yes(sk_whole_eq(marg1(1, 8), s1(8), 0n)), 0)
 
-# THE FOUR-WAY OUTCOME: 0 OWN, 1 WHOLE, 2 PARTITION, 3 RAISE.
+# the four-way outcome: 0 own, 1 whole, 2 partition, 3 raise.
 def t_sk_own() -> U32: eq(sk_kind(True{}, True{}, False{}, True{}, True{}), 0)
 def t_sk_whole() -> U32: eq(sk_kind(False{}, True{}, False{}, True{}, True{}), 1)
 def t_sk_part() -> U32: eq(sk_kind(False{}, False{}, False{}, True{}, True{}), 2)
@@ -3433,7 +3433,7 @@ def main() -> IO(Unit):
 # to `checks/marker-audit.py`, which reads a marker's line plus the lines that FOLLOW
 # it, so a block written this way reads as BACKLOG however well it is explained.
 #
-# "CANNOT REACH" IS THE RIGHT WORD AND "NOT PORTED" IS NOT, MEASURED: of the builders
+# "cannot reach" is the right WORD and "not ported" is not, measured: of the builders
 # these lines name, `G.permute`, `G.flip`, `UOp.copy_to_device`, `UOp.after`,
 # `UOp.allreduce`, `UOp.mselect`, `ssimplify` and `_min_max`/`vmin` are ALL PRESENT --
 # in `mixin/movement.bend`, `uop/weak.bend` and `uop/ops.bend`. What multi.bend does not
@@ -3443,7 +3443,7 @@ def main() -> IO(Unit):
 # of this block is REACHABILITY and unported RULE BODIES, not missing primitives, and a
 # reader who trusts "not ported" will under-scope the work.
 #
-# THE `unshard` FAMILY IS THE EXCEPTION AND IT IS THE ONE THAT IS REALLY BLOCKED:
+# the `unshard` family is the exception and it is the one that is really blocked:
 # fourteen markers end in `.unshard(...)`, and `unshard` is a WALL in `ops.bend` whose
 # own text names `_shard`, absent as a definition. Those carry the reason on their own
 # line now.
@@ -3455,4 +3455,4 @@ def main() -> IO(Unit):
 #
 #   `_mop` (ops.py:799) -- every `.arg`-carrying rewrite is a `_mop`.
 #   TODO(p3) schedule/multi.py:9  symbol=_apply_shrink  -- `_apply_shrink`, SHRINK  -- BLOCKED. needs `UOp._mop` (ops.py:799)
-#   -- which is PORTED as `tn_mop` in `tensor.bend:1704 symbol=tn_mop` -- but `multi.bend` does NOT import `tensor.bend`. MEASURED at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is CYCLE-FREE (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an IMPORT EDGE, not an absent def.
+#   -- which is ported as `tn_mop` in `tensor.bend:1704 symbol=tn_mop` -- but `multi.bend` does not import `tensor.bend`. measured at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is cycle-free (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an import edge, not an absent def.

@@ -47,7 +47,7 @@ import ./mixin/dtype.bend as D
 # BUFFER, and the multi-dimensional `_rop` cases are on the wall list. `tn_rop_gap`
 # is the row that REPORTS this and it prints False.
 #
-# WHAT I NEED FROM THE SCHEDULE CLUSTER (`tinybendygrad/schedule/`, READ-ONLY to
+# what i need from the schedule cluster (`tinybendygrad/schedule/`, read-only to
 # me, five files in flight), named so the hand-off is unambiguous:
 #   * `create_linear_with_vars(sink) -> (UOp, var_vals)` -- tensor.py:26. The
 #     return is a pair, so it is a two-field `Data`, and `var_vals` is read by
@@ -114,7 +114,7 @@ import ./mixin/dtype.bend as D
 #     dtype.bend:350-350 records that it is missing `CWeakFloat`) while `cast_at` compares
 #     with the shared `O.eq_dt`.
 #
-# FIVE BEND RULES THIS FILE LEARNS THE HARD WAY, between them about twenty compile
+# five BEND rules this file learns the hard way, between them about twenty compile
 # cycles, and every def below obeys all five. They are in `.agents/slop/notes/
 # bend2-constraints.md` too; what is here is the shape each one took IN THIS FILE.
 #
@@ -133,7 +133,7 @@ import ./mixin/dtype.bend as D
 #      DEAD CODE. `bend2-constraints` records this for `case 0n:`; it is equally true of
 #      `1n+p` and it is the more dangerous of the two, because the arm reads like a test
 #      for "one or more" and silently eats the rest. `tn_shape_arg.n` is the casualty.
-#   5. THE ARENA A BUILD RETURNS IS NOT THE ARENA THAT WENT IN. `UOp.new`/`alu`/`const`
+#   5. the arena a build returns is not the arena that went in. `UOp.new`/`alu`/`const`
 #      return a `Found` because the arena grew, and passing the INCOMING `ar` on builds
 #      a node whose index points into the arena as it was BEFORE the node was interned.
 #      It typechecks. It prints `NOOP/0`, and an empty toposort, and a five-src PAD, and
@@ -287,7 +287,7 @@ def tn_alu.put(+f: O.Found) -> Tensor:
 def tn_alu.of(+ar: O.Arena, uop: U32, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
   tn_alu.put(O.UOp.alu(ar, op, List.append(&2, U32, [uop], srcs)))
 
-# THE ARENA RULE IN ONE SPELLING, AND NOW IT IS TOTAL. `Arena` is an IMMUTABLE `Data` VALUE
+# the arena rule in one spelling, and now it is total. `Arena` is an immutable `Data` value
 # (`ops.bend:2765`, `type Arena is Data: Arena{nodes, shp}`), so a `Found` SNAPSHOTS the
 # arena it was built in and an index is legal only in an arena DESCENDING FROM the one that
 # minted it -- append-only, so a prefix's indices still name the same nodes. `O.Arena.merge`
@@ -322,7 +322,7 @@ def tn_where_srcs_are(+r: Tensor, +cond: Tensor, +x: Tensor, +y: Tensor) -> Bool
   O.eq_u32(O.Arena.srcs(Tensor.ar(r), Tensor.u(r)),
     [Tensor.u(cond), O.Merge.at(mx, Tensor.u(x)), O.Merge.at(my, Tensor.u(y))])
 
-# SIBLING ARENAS: WAS A WALL, NOW CLOSED. The reverse-dispatch binops (`tn_mul.go`,
+# sibling arenas: was a wall, now closed. The reverse-dispatch binops (`tn_mul.go`,
 # `tn_add.go`, `tn_sub.go`, `tn_cmplt.go`, `tn_cmpne.go`, `tn_and.go`, `tn_or.go`,
 # `tn_xor.go`, `tn_maximum.go`, `tn_lshift.go`, `tn_rshift.go`,
 # `tn_pow.go`, `tn_fdiv.go`, `tn_mod.go`) and `tn_max` used to build with
@@ -347,11 +347,11 @@ def tn_where_srcs_are(+r: Tensor, +cond: Tensor, +x: Tensor, +y: Tensor) -> Bool
 # before -- VERIFIED at the time: `grep -nE "def [a-zA-Z_.]*\(.*ar: Arena.*,.*ar2?: Arena"`
 # over `ops.bend` and `tensor.bend` answered exactly one hit, `UOp.group.of`, a GROUP fold.
 #
-# AND ONE CONSEQUENCE FOR THE GATES. A driver can no longer compare `r.srcs` to
+# and one consequence for the gates. a driver can no longer compare `r.srcs` to
 # `[c.u, d.u]`: `d.u` is an index in `d`'s OWN arena and the node lives in the merged one.
 # That comparison is `tn_srcs_are`, below, and it recomputes the merge rather than guessing.
 
-# THE ARENA IS THE ONE THE BUILD RETURNED, and that is the whole of the second rule
+# the arena is the one the build returned, and that is the whole of the second rule
 # this file learns. `UOp.alu` RETURNS a `Found` because the arena grew, and the `Found`
 # carries the grown arena; passing the INCOMING `ar` on to `tn_new` builds a Tensor
 # whose index points into the arena as it was BEFORE the node was interned, and every
@@ -454,7 +454,7 @@ def tn_rsqrt(+t: Tensor) -> Tensor:
 # no-broadcasting case; the broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it)
 # (mixin/movement.py:24, fold reads and a `least_upper_dtype` helper).
 #
-# THREE OPERANDS, THREE ARENAS, TWO MERGES. `tn_binop` covers the two-operand node and this
+# three operands, three arenas, two merges. `tn_binop` covers the two-operand node and this
 # is the shape it cannot reach: `x` and `y` are re-minted in TURN and the accumulator is
 # read at the end, so both indices are minted in a PREFIX of the arena the WHERE is built in.
 # The one-line version this replaces read `x.u` and `y.u` in `cond.ar`, and was MEASURED
@@ -503,7 +503,7 @@ def tn_logical_not(+t: Tensor) -> Tensor:
   +true_c = O.UOp.const(O.Found.ar(cast), O.CBool{True{}})
   tn_logical_not.cmpne(cast, true_c)
 
-# `bitwise_not` -- elementwise.py:145, body at :156-157. THREE ARMS, AND ALL THREE ARE
+# `bitwise_not` -- elementwise.py:145, body at :156-157. three arms, and all three are
 # PORTED:
 #   if self.dtype == dtypes.bool: return self.logical_not()
 #   return (self ^ self.dtype.max) if dtypes.is_unsigned(self.dtype) else (self ^ -1)
@@ -516,7 +516,7 @@ def tn_logical_not(+t: Tensor) -> Tensor:
 # `weakint` and is NOT promoted, so the graph is `XOR(CAST u8, CONST weakint 255)` with no
 # CAST of its own. It is a literal swap, not a promotion this port would have to have.
 #
-# `Maybe<&2, Tensor>` AND NOT `Tensor`, AND THE `Maybe` IS ONE DTYPE WIDE. CPython's
+# `Maybe<&2, Tensor>` and not `Tensor`, and the `Maybe` is one dtype wide. CPython's
 # `dtype.max` is a Python `int` with no width limit; `S.Dt.max` (tinybendygrad/LAWS/spec.bend:221 symbol=Dt.max) is
 # `Maybe<&2, U32>` and answers `None` past 32 bits (`Dt.range.wide`). So an unsigned dtype
 # wider than `u32` is a REFUSAL here and not a wrong graph -- the port's convention, and the
@@ -524,7 +524,7 @@ def tn_logical_not(+t: Tensor) -> Tensor:
 # def cannot refuse, and the graph it would have to build instead (`^ -1` on a `u64`) is
 # WRONG.
 #
-# THE DTYPE READ IS NOT A WALL IN THIS FILE, and the old header's reason for that claim was
+# the dtype read is not a wall in this file, and the old header's reason for that claim was
 # wrong. It said the arith arms "stay WALL" because `self.dtype` is a FOLD property and "a
 # method body has no fold context". `tn_dtype` (line 208, `F.UOp.dtype` over `F.UOp.fold`)
 # IS that read and `tn_neg` has dispatched on it all along; the fold is not a CONTEXT to be
@@ -714,7 +714,7 @@ def tn_sub.neg(+b: Tensor) -> Tensor:
 # of them are `X86Ops.SUB`, a different enum; the one graph-level hit is an x86 rewrite
 # pattern at `renderer/isa/x86.py:119`, not a Tensor method.
 #
-# SO THIS BODY WAS WRONG AND THE GATE THAT SHOULD HAVE CAUGHT IT WAS COMPARING THE WRONG
+# so this body was wrong and the gate that should have caught it was comparing the wrong
 # THING. `gates/tn_add_sub-oracle.py` called `c.alu(Ops.SUB, d)` -- a path CPython's `sub`
 # never takes -- so `sub_srcs_are_self_and_x` agreed with the port while both were wrong.
 # The oracle now calls the DUNDER.
@@ -1162,7 +1162,7 @@ def tn_isfinite.promote(+t: Tensor) -> Tensor:
   tn_isfinite.promote.at(O.UOp.is_invalid(D.md_ar(fx), Tensor.u(t)),
     W.wk_is_weak_const(fx, Tensor.u(t)), D.md_dt_eq(D.md_dt(fx, Tensor.u(t)), wd), fx, t, od, wd)
 
-# `p` IS THE PROMOTED `self`, AND BOTH `eq` HALVES READ IT -- not `t` and not `ep`.
+# `p` is the promoted `self`, and both `eq` halves read it -- not `t` and not `ep`.
 # CPython's body is `self.eq(+inf)*True + self.eq(-inf)*True` with `self` on BOTH
 # sides, and each `_broadcasted` remints it to the SAME hash-consed node; the old
 # spelling compared `ep` (the positive arm's bool MUL) against `-inf`, which was
@@ -1190,7 +1190,7 @@ def tn_isfinite(+t: Tensor) -> Tensor:
   tn_logical_not(tn_binop(inf_part, tn_isfinite.nan_in(Tensor.ar(inf_part), Tensor.u(t)), O.OpsOR{}))
 
 # `_apply_uop` -- tensor.py:104-113. `new_uop: UOp = fxn(*[t.uop for t in srcs],
-# **kwargs)` is a CALLBACK, and Bend has no function values, so every op in this
+# kwargs)` is a CALLBACK, and Bend has no function values, so every op in this
 # file is its own def that builds the node and then calls `tn_new`. The wall is the
 # one `uop/upat.bend` records for `upat_compile`: the closure cannot be stored, so
 # the call is inlined at each site.
@@ -1465,7 +1465,7 @@ def tn_replace(+t: Tensor, +x: Tensor) -> Maybe<&2, Tensor>:
 # in that block all need a `Buffer` or a fetch or mutable class state, and this one
 # needs a dtype and a shape, which are fold answers.
 #
-# WHY `as_param` IS NOT TRIVIAL AND THE ROWS PROVE IT. A toposort signature prints the
+# why `as_param` is not trivial and the rows prove it. a toposort signature prints the
 # op and the arity and NEVER THE ARG -- this file's own mutation M5 is that lesson, and
 # it is why `tn_rop_arg` exists as a separate row. So `tn_asparam` (the signature) is
 # BLIND to a dropped or wrong `slot`, and `tn_asparam_slot` (the arg) is the row that
@@ -1541,7 +1541,7 @@ def tn_sarg.acc(ds: List<&2, O.Const>, +a: SArg) -> SArg:
     case Nil{}: a
     case c <> t: tn_sarg.acc(t, tn_sarg.push(a, c))
 
-# THE COUNT DECIDES AND THE LIST IS PASSED WHOLE, and the `Bool` is a PARAMETER
+# the count decides and the list is passed whole, and the `Bool` is a parameter
 # because a numeric countdown is a PREFIX MATCH. Two rules meet here and both were
 # measured the hard way:
 #
@@ -1775,7 +1775,7 @@ def tn_rop.dim(+k: List<&2, O.Sint>, +x: U32) -> O.Sint:
 # `tuple(x for x in axis if resolve(self.shape[x] != 1))`, and `None` when the fold
 # cannot answer the shape at all.
 #
-# THE ORDER OF THE PARAMETERS IS THE WHOLE TRICK, and it took four compile cycles to
+# the order of the parameters is the whole trick, and it took four compile cycles to
 # find. A def may only call defs declared above it, a `.go`/`.step` pair would be
 # MUTUAL RECURSION (refused), a def body is ONE EXPRESSION (no statements, no `|>` in
 # Bend 2.0.34), and a self-call must read LEFT TO RIGHT with the SHRINKING argument
@@ -1859,7 +1859,7 @@ def tn_rop(+ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
 # ===========================================================================
 
 # `UOp.after(self, *src)` is ops.py:599 and ops.bend HAS it (`O.UOp.after`); the
-# STORE it wraps is `UOp.store` (ops.py:594), `UOp(Ops.STORE, src=srcs, **kwargs)`.
+# STORE it wraps is `UOp.store` (ops.py:594), `UOp(Ops.STORE, src=srcs, kwargs)`.
 # TODO(p3) ops.py:594  symbol=UOp.store  -- written here for `tn_mop`'s reason.
 def tn_assign_store(+ar: O.Arena, +self: U32, +x: U32) -> O.Found:
   +st = O.UOp.new(ar, O.OpsSTORE{}, [self, x], O.ANone{}, O.TNone{})
@@ -1948,7 +1948,7 @@ def tn_need_grad(+ar: O.Arena, self: U32, scope: Tensors) -> List<&2, U32>:
 # `G.gslot` IS the `x in grads` half and `G.GSlot.v_of` the `grads[x]` half, so the ONLY
 # thing this def adds is the ELSE. `x.const_like(0)` (ops.py:600) is `CONST(0)._mop(EXPAND,
 # x._shape)` and the CONST is a FLOAT literal, which is the DEPS header's second wall
-# THE CLAIM IS FALSE AND NOTHING HERE IS MISSING BUT A CALL: a decimal literal IS
+# the claim is FALSE and nothing here is missing but a call: a decimal literal is
 # an `F32` (MEASURED: `F32.bits(0.044715)` is CPython's f32 of 0.044715), so
 # `O.CFloat{0.044715}` is a legal constant with no exported `Word` in sight, and
 # `nn/optim.bend` already constructs `CFloat{...}` NINE TIMES. What is missing is
@@ -2026,7 +2026,7 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # `return self.assign(self.<op>(x))`, and the reason they are not here is NOT operator
 # overloading -- BEND HAS IT (`bend guide:630`: inside `(.. : T)` the operators call `T.add`
 # through `T.mod`). It is the ASSIGNMENT half: `self.assign(...)` MUTATES, and Bend is affine.
-# THIS HEADER SAID "Bend has none" AND WAS WRONG; corrected by measurement, not preference. Each is named here
+# this header said "Bend has none" and was wrong; corrected by measurement, not preference. Each is named here
 # with the op its sugar resolves to, because that is the part of the line that is
 # tensor.py's; the other two thirds are `assign` (above, itself a wall) and
 # `mixin/elementwise.py`'s `<op>`, which is not mine.
@@ -2053,70 +2053,70 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # is `_broadcast_to` (mixin/movement.py:128) -- which is why the `__i*__` are not
 # ported even though `alu` is.
 # TODO(p3) tensor.py:534  __iadd__        assign + elementwise.py:101 (Ops.ADD)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:535  __isub__        assign + elementwise.py sub (Ops.SUB)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:536  __imul__        assign + elementwise.py:143 (Ops.MUL)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:537  __itruediv__    assign + elementwise.py div (Ops.FDIV)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:538  __ifloordiv__   assign + elementwise.py floordiv
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:539  __ipow__        assign + elementwise.py pow (Ops.POW)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:540  __iand__        assign + elementwise.py:171 (Ops.AND)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:541  __ior__         assign + elementwise.py:185 (Ops.OR)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:542  __ixor__        assign + elementwise.py:200 (Ops.XOR)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:543  __ilshift__     assign + elementwise.py:353 (Ops.SHL)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:544  __irshift__     assign + elementwise.py:364 (Ops.SHR)
-#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   -- blocked. in-place mutation, and Bend has no such form: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:545  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
 # TODO(p3) tensor.py:549  __eq__          elementwise.py eq (Ops.CMPEQ)
-#   -- BLOCKED. `==` IS THE TYPE COMPARISON IN BEND, NOT A VALUE ONE: bend guide:632 --
+#   -- blocked. `==` is the TYPE comparison in BEND, not a value one: bend guide:632 --
 #   "Equality of values is a call, `T.is_eq(a, b)`; `==` is only the type." So `__eq__` has no
 #   operator to be, and the port names `T.is_eq` where it needs the comparison. This is NOT the
 #   `__i*__` blocker: there the operator exists and the assignment does not; here it is reversed.
 # ===========================================================================
 
 # ===========================================================================
-# THE REALIZE PATH -- tensor.py:167-225. THE FOREIGN SEAM, and the whole of it is
+# the realize path -- tensor.py:167-225. the foreign seam, and the whole of it is
 # three `TODO(p3)`s. They are here, in Python's order and with the wall each CALL
 # names, because "the realize path is a wall" is only useful if the next reader can see
 # which call in each body is the wall.
@@ -2210,8 +2210,8 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # ===========================================================================
 # THE METADATA LANE -- tensor.py:567-589 AT THE PIN.
 #
-# THE PORT'S THREE MARKERS NAMED 570, 578 AND 588, AND ALL THREE ARE TWO LINES
-# LATE. The FUNCTION NAMES are all RIGHT; the LINE NUMBERS are not. The pin's
+# the port's three markers named 570, 578 and 588, and all three are two lines
+# late. The function names are all right; the line numbers are not. The pin's
 # lines, in full:
 #
 #   567  # this tracks the tensor.py METADATA, contextvars.ContextVar was
@@ -2223,11 +2223,11 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #   573      return ret
 #   574  _METADATA: _ContextVar[Metadata|None] = _ContextVar(default=None)
 #   576  def _metadata_wrapper(fn: Callable[P, T]) -> Callable[P, T]:
-#   577    def _wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-#   578      if TRACEMETA < 1 or _METADATA.get() is not None: return fn(*args, **kwargs)
+#   577    def _wrapper(*args: P.args, kwargs: P.kwargs) -> T:
+#   578      if TRACEMETA < 1 or _METADATA.get() is not None: return fn(*args, kwargs)
 #   579      token = _METADATA.set(Metadata(name=fn.__name__))
 #   580      with cpu_profile(TracingKey(fn.__name__), "USER"):
-#   581        ret = fn(*args, **kwargs)
+#   581        ret = fn(*args, kwargs)
 #   582      _METADATA.set(token)
 #   583      return ret
 #   584    return _wrapper
@@ -2263,7 +2263,7 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # metadata another call sees. The port's cell is a VALUE, so two lanes are two
 # cells and one lane's state CANNOT leak into another's.
 #
-# AND THE STATE IS ABSENT OR IT IS A `Metadata`, AND THERE IS NO THIRD THING.
+# and the state is absent or it is a `Metadata`, and there is no third thing.
 # Upstream's cell holds `Metadata|None` and `None` IS its default, so "never
 # set" and "explicitly set to None" are the SAME state -- a port that told
 # them apart would DIVERGE. And an EMPTY NAME is a SET state, not an absent
@@ -2282,9 +2282,9 @@ type MetaCell is Data:
 type MetaScope is Data:
   MetaScope{eff: Maybe<&2, O.Metadata>, token: Maybe<&2, O.Metadata>}
 
-# THE SWAP. `_ContextVar.set` RETURNS THE OLD STATE, and that return is the
+# the swap. `_ContextVar.set` returns the old state, and that return is the
 # token the wrapper restores at :582, so a port that dropped it could not
-# restore. THE PAIR IS (NEXT, OLD) AND IT IS A RECORD, not a tuple: Bend
+# restore. the pair is (next, old) and it is a record, not a tuple: Bend
 # refuses to destructure a tuple out of a COMPUTED value, and the set IS one.
 type MetaSwap is Data:
   MetaSwap{now: MetaCell, old: Maybe<&2, O.Metadata>}
@@ -2338,22 +2338,22 @@ def tn_meta_is_set(cur: Maybe<&2, O.Metadata>) -> Bool:
     case Some{m}: True{}
     case None{}: False{}
 
-# THE GUARD, tensor.py:578. BOTH TERMS MATTER: the first is "TRACEMETA is off"
+# the guard, tensor.py:578. both terms matter: the first is "tracemeta is off"
 # and the second is "a metadata is ALREADY in effect", and the second is what
 # makes the OUTER name win.
 def tn_meta_guarded(tm: U32, cur: Maybe<&2, O.Metadata>) -> Bool:
   Bool.or(tn_meta_off(tm), tn_meta_is_set(cur))
 
-# THE WRAPPER, tensor.py:576-584. THE CALL IS THE CALLER'S, because Bend has
+# the wrapper, tensor.py:576-584. the call is the caller's, because Bend has
 # no function values; WHAT THE WRAPPER DECIDES IS HERE.
 #
-# THE SET IS COMPUTED UNCONDITIONALLY AND THE GUARD DECIDES WHICH HALF IS
+# the set is computed unconditionally and the guard decides which half is
 # TAKEN, and that is not a shortcut: upstream's token IS the value `set`
 # returns, so the old half is the token in BOTH arms. In the guarded arm the
 # next half is DISCARDED, which is upstream's "no set at all", and because the
 # port's cell is a VALUE the discarded half has no effect anywhere.
 #
-# `Bool.pick` IS THE FILE'S IDIOM FOR A COMPUTED CONDITION (a `match` may only
+# `Bool.pick` is the file's idiom for a computed condition (a `match` may only
 # scrutinize a PARAMETER), and the two arms are the two halves of the choice.
 def tn_meta_enter(tm: U32, +c: MetaCell, name: String) -> MetaScope:
   +sw = tn_meta_set(c, Some{O.Metadata{name, False{}}})
@@ -2361,7 +2361,7 @@ def tn_meta_enter(tm: U32, +c: MetaCell, name: String) -> MetaScope:
     MetaScope{tn_meta_get(c), MetaSwap.old(sw)},
     MetaScope{tn_meta_get(MetaSwap.now(sw)), MetaSwap.old(sw)})
 
-# THE SKIP LIST, tensor.py:588. UPSTREAM'S OWN LITERAL, and it is the portable
+# the skip list, tensor.py:588. upstream's own literal, and it is the portable
 # content of the reflection loop: a method in this list is NOT wrapped, so the
 # tensor it builds opens NO scope and carries NOTHING. `__init__` is in it, and
 # that is why a plain `Tensor(5)` has no metadata.
@@ -2445,7 +2445,7 @@ def g_sbuf(+ar: O.Arena, slot: U32) -> O.Found:
     O.AParam{O.ParamArg{slot, S.single(), None{}, None{}, None{}, S.AGlobal{},
       Some{S.D1{0}}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 
-# EVERY FIXTURE TAKES THE INCOMING ARENA. Two `Found`s from two `Arena.empty()`s are two
+# every fixture takes the incoming arena. Two `Found`s from two `Arena.empty()`s are two
 # arenas, and an index means nothing outside its own, so a fixture that built its lhs and
 # rhs from separate empties would silently intern the ADD over the SAME index twice. It
 # typechecks, and it prints `CONST/0 ADD/2` where Python prints two CONSTs -- so the `n=`
@@ -2576,7 +2576,7 @@ def t_mop_exp() -> IO(Unit):
 def t_mop.pair(lo: U32, hi: U32) -> List<&2, O.Const>:
   [tn_mop.k(lo), tn_mop.k(hi)]
 
-# SHRINK `((0, 2),)`, and THE ROW THAT TEACHES THE TRANSPOSE, because `list(zip(*arg))`
+# shrink `((0, 2),)`, and the row that teaches the transpose, because `list(zip(*arg))`
 # means TWO DIFFERENT THINGS at ndim 1 and at ndim 2 and both are in this file:
 #   * ndim 2, `arg = ((0,0),(0,1))`: `*arg` is TWO tuples, so `zip` pairs them and the
 #     transpose is `[(0,0), (0,1)]` -- two 2-element lists, and each is a STACK. That is
@@ -2627,7 +2627,7 @@ def t_rop_none() -> IO(Unit):
   +f = tn_rop(O.Found.ar(b), O.Found.i(b), O.OpsADD{}, Nil{})
   tn_sig("tn_rop_none", O.Found.ar(f), O.Found.i(f))
 
-# THE ARG ROW, and it exists because a SIGNATURE PRINTS THE OP AND THE ARITY AND NEVER
+# the ARG row, and it exists because a signature prints the op and the arity and never
 # THE ARG -- which is a real hole and mutation M5 measured it: a `_rop` that forwarded
 # `OpsMAX` into every REDUCE left all thirteen signature rows untouched, because the node
 # is still `REDUCE/1` either way. Python's own `u.arg` is `(Ops.ADD, 1)`, so the oracle
@@ -2985,14 +2985,14 @@ def t_meta_exit() -> IO(Unit):
 def t_meta_never() -> IO(Unit):
   t_srow("tn_meta_never", md_show(tn_meta_carries(1, MetaCell{None{}}, "__init__")))
 
-# THE SKIP LIST, BOTH WAYS: `__init__` IS skipped and `alu` is NOT.
+# the skip list, both ways: `__init__` is skipped and `alu` is not.
 def t_meta_excl() -> IO(Unit):
   t_row("tn_meta_excl", tn_meta_excluded("__init__"))
 
 def t_meta_excl2() -> IO(Unit):
   t_row("tn_meta_excl2", tn_meta_excluded("alu"))
 
-# TWO CELLS DO NOT LEAK INTO EACH OTHER. Upstream has ONE module global, so a
+# two cells do not leak into each other. Upstream has one module global, so a
 # metadata set in one call IS the metadata another call sees; the port's cell
 # is a VALUE, so two lanes are two cells. This row has no CPython counterpart
 # and is the file's BEND-ONLY lane, like `tn_holds` and `tn_arena`.
@@ -3067,18 +3067,18 @@ def main() -> IO(Unit):
 #     .venv/bin/python .agents/slop/tensor-mutate.py
 # RESTORED 2026-10-16 from `.agents/slop/tensor-mutate.py`, blob e853efc4b, 5821 B, byte for
 # byte, together with `.agents/slop/zero-classify.py` (18662 B), the dependency its
-# `import patch_not_apply` chain needed and had lost. **IT STAYS AT ITS OLD PATH AND THAT IS
-# THE POINT**: `patch_not_apply.py` has 10 other tracked consumers under `.agents/slop/`
+# `import patch_not_apply` chain needed and had lost. it stays at its old path and that is
+# THE POINT: `patch_not_apply.py` has 10 other tracked consumers under `.agents/slop/`
 # (`usb-mutate.py`, `ga_mutate.py`, `state-mutate.py`, `dd-mutate.py`, `ansi_gate.py`,
 # `nn-init-mutate.py`, `anchor-audit.py`, `rf2-mutate.py`, ...) that import it as a SIBLING, so
 # moving the library into `gates/` would break ten files this unit does not own. The library
 # wins the path argument; the sweep's real defect was that the files were gone, not where they
 # were. MEASURED from the restored path: rc=0, 21 rows, 21.3 s, and it reproduces this table
-# including its three `**NOTHING**` rows (M4, M14, and M17, which is a declared control).
+# including its three `NOTHING` rows (M4, M14, and M17, which is a declared control).
 #
 # M18-M20 ARE NOT IN `tensor-mutate.py`: they are measured by
 #     sh .agents/slop/backward/bwd-mutate.sh <arm>
-# **AND THAT HARNESS IS NOT IN THIS TREE AND IS NOT RESTORED.** It exists on exactly one ref,
+# and that harness is not in this tree and is not restored. It exists on exactly one ref,
 # `5444ea42e`, which is not an ancestor of HEAD, so `git log HEAD -- <path>` returns nothing
 # and `git rev-list --all --objects` names it once. It is 11620 B and its three inputs
 # (`./bin/bend`, `tinybendygrad/tensor.bend`, `tinybendygrad/uop/ops.bend`) all still exist, so
@@ -3107,10 +3107,10 @@ def main() -> IO(Unit):
 # `tn_arena`, `tn_param_old`, `tn_holds` and `tn_meta_isolated`; the script lists all
 # five rather than filtering them silently.
 #
-# THREE ROWS THE CPYTHON LANE NEVER GAINED, and they are the gate's remaining red:
+# three rows the CPYTHON lane never gained, and they are the gate's remaining red:
 # `tn_asparam`, `tn_bwd_row` and `tn_bwd_grad`. They are the `as_param` and the
 # `backward` spine's rows and they belong to those slices, not to this one.
-# MEASURED 2026-10-22, and the lane was RED AT REST FOR A DIFFERENT REASON: it died
+# measured 2026-10-22, and the lane was red at rest for a different reason: it died
 # at `tn_mop_flip` with `AttributeError: type object 'Ops' has no attribute 'FLIP'`
 # (`Ops.FLIP` does not exist at the pin `5c2bf39d6c4b`), so it printed ELEVEN rows
 # and stopped. Deleting that one line made the lane run to the end; the 42 rows that
@@ -3118,10 +3118,10 @@ def main() -> IO(Unit):
 #
 # | mutation | the edit | rows that MOVED | what it is testing |
 # | --- | --- | --- | --- |
-# | M1 | `tn_mop.node2`: `[self] ++ srcs` -> `srcs ++ [self]` | `tn_mop_resh` `tn_mop_exp` `tn_mop_pad` `tn_mop_shr` | `(self,)+srcs` is SELF FIRST (ops.py:835). THE ROW THIS FILE WAS BUILT ON: the buggy version had the same four nodes and the same arities and the WRONG GRAPH, and no COUNT could see it. Only the ORDER of the signature does, which is why the gate prints a toposort and not a set of op names. |
+# | M1 | `tn_mop.node2`: `[self] ++ srcs` -> `srcs ++ [self]` | `tn_mop_resh` `tn_mop_exp` `tn_mop_pad` `tn_mop_shr` | `(self,)+srcs` is self first (ops.py:835). the row this file was built on: the buggy version had the same four nodes and the same arities and the wrong graph, and no count could see it. Only the order of the signature does, which is why the gate prints a toposort and not a set of op names. |
 # | M2 | `tn_shape_arg.n`: `Nat.is_eq(n, 1n)` -> `False{}` | `tn_mop_exp` `tn_mop_shr` | `shape_to_shape_arg`'s middle arm: ONE element is the CONST ITSELF and not a STACK (ops.py:110). Also the `1n+p` prefix-match trap, which is why the test is a `Bool` parameter. |
 # | M3 | `tn_mop.noop.of`: drop `OpsEXPAND{}` from the op set | `tn_mop_exp0` | the early NOOP `if op is Ops.EXPAND and len(arg) == 0` (ops.py:823). LOCALISED: every other movement row has a non-empty `arg` and does not move, so this row is the only thing that can see a NOOP that was not taken. |
-# | M4 | `tn_rop.ins`: `U32.is_lt` -> `U32.is_le` | **NOTHING** | a NEGATIVE, and the gate's limit. Every `_rop` fixture has a ONE-element axis, and one element never compares, so `sorted`'s strictness is unobservable here. It is a real hole and it is not closed: the fix is a two-element `axis` fixture, which needs a two-dimensional source, which needs a RESHAPE, which is WALL 5. |
+# | M4 | `tn_rop.ins`: `U32.is_lt` -> `U32.is_le` | NOTHING | a NEGATIVE, and the gate's limit. Every `_rop` fixture has a ONE-element axis, and one element never compares, so `sorted`'s strictness is unobservable here. It is a real hole and it is not closed: the fix is a two-element `axis` fixture, which needs a two-dimensional source, which needs a RESHAPE, which is WALL 5. |
 # | M5 | `tn_rop.red2.of`: `AReduce{op,..}` -> `AReduce{OpsMAX{},..}` | `tn_rop_arg` | the `op` `_rop` forwards into the REDUCE arg (tensor.py:500). This row was ADDED because M5 originally moved NOTHING: a signature prints the op and the arity and NEVER THE ARG, so a wrong reduce-op is invisible to all thirteen signature rows. The hole was real and the row closes it. |
 # | M6 | `tn_assign_store`: drop the `AFTER` | `tn_assign` | the `self.uop.after(store := ...)` half of the assign spine (tensor.py:259). |
 # | M7 | `tn_is_param_`: read `Tensor.flag(t)` instead of the parameter | `tn_param` | `is_param_(self, is_param)` (tensor.py:125). |
@@ -3130,18 +3130,18 @@ def main() -> IO(Unit):
 # | M10 | `tn_len.first`: the `Nil{}` arm returns `Some{0}` | `tn_len0` | `__len__`'s `if not self.shape: raise TypeError` (tensor.py:139). LOCALISED: `tn_len3` has a non-empty shape and does not move. |
 # | M11 | `tn_replace.same.go`: always `True{}` | `tn_replace_bad` | `replace`'s `assert self.shape == x.shape` (tensor.py:232). The PAIR is the point: `tn_replace` does not move, so a `replace` that ignored the assert entirely would pass one row and fail the other. |
 # | M12 | `tn_need_grad.is_float.go`: always `True{}` | `tn_needgrad` | `backward`'s `is_floating_point` term (tensor.py:487). This row was REWRITTEN because M12 originally moved NOTHING: the first fixture put the `weakint` CONST outside the graph, so `t.uop in all_uops` was already False for it and the second term was unfalsifiable. A scope filter needs a member that fails the SECOND term. |
-# | M13 | `tn_mop.node`: build the SINK in a FRESH arena | `tn_mop_resh` `tn_mop_exp` `tn_mop_pad` `tn_mop_shr` `tn_arena` | the orphan SINK of `UOp.sink(*usrcs).simplify().src` (ops.py:835), and a CORRECTION to a claim this file made earlier. `tn_arena` was written to be the LOCALISED row that sees the SINK; measured, it does NOT: a fresh arena also breaks the indices, so all five move together. `tn_arena` is an ARENA count and not a toposort count, and what it actually pins is that the arena does not grow where Python's ucache does not either. |
+# | M13 | `tn_mop.node`: build the sink in a fresh arena | `tn_mop_resh` `tn_mop_exp` `tn_mop_pad` `tn_mop_shr` `tn_arena` | the orphan sink of `UOp.sink(*usrcs).simplify().src` (ops.py:835), and a correction to a claim this file made earlier. `tn_arena` was written to be the localised row that sees the sink; measured, it does not: a fresh arena also breaks the indices, so all five move together. `tn_arena` is an arena count and not a toposort count, and what it actually pins is that the arena does not grow where Python's ucache does not either. |
 # | M14 | `tn_rop.reduce.of`: reduce anyway when the fold cannot answer | `tn_rop_gap` | the `_rop` GAP arm (WALL 5). A one-sided row on purpose: it PRINTS FALSE and M14 is the only mutation that makes it print True. |
 # | M15 | `tn_alu.of`: `[uop] ++ srcs` -> `srcs ++ [uop]` | `tn_alu_ord` | `UOp.alu`'s `src=(self, *src)` (ops.py:630). `tn_alu_ord` was ADDED for this: its srcs are a BUFFER and a CONST, so the two orders print DIFFERENT signatures, while `tn_alu2`'s two CONSTs print the same one either way round. |
 # | M16 | `tn_rop.of`: drop the `case 0n` arm | `tn_rop_none` | `if not len(reduce_axis): return self.reshape(kept)` (ops.py:659). LOCALISED: `tn_rop0` and `tn_ropmax` have a non-empty axis. |
-# | M17 | a no-op edit | **NOTHING** | a control. A mutation table with no row that CANNOT move is a table of coincidences. |
-# | M18 | `tn_bwd_gs.go`: `[slot] ++ tail` -> `tail ++ [slot]` | `tn_bwd_row` `tn_bwd_grad` | the ANSWER LIST's ORDER, `mixin/op.py:471`'s `for x in target_uops`. `writes` is UNCHANGED and the signature PERMUTES, so this is the arm that proves `tn_bwd_row`'s COUNT half is blind. |
-# | M19 | `tn_bwd_write.go`: drop the `grad_set` answer | `tn_bwd_row` `tn_bwd_grad` | the `.grad` WRITER. `writes` goes 3 -> 0 and the signature is UNCHANGED (the answer is built before the zip), so this is the arm that proves `tn_bwd_row`'s SIGNATURE half is blind. **This is the state the file shipped in all session: a `grad_set` with no caller and nothing to read it.** |
+# | M17 | a no-op edit | NOTHING | a control. A mutation table with no row that CANNOT move is a table of coincidences. |
+# | M18 | `tn_bwd_gs.go`: `[slot] ++ tail` -> `tail ++ [slot]` | `tn_bwd_row` `tn_bwd_grad` | the answer list's order, `mixin/op.py:471`'s `for x in target_uops`. `writes` is unchanged and the signature permutes, so this is the arm that proves `tn_bwd_row`'s count half is blind. |
+# | M19 | `tn_bwd_write.go`: drop the `grad_set` answer | `tn_bwd_row` `tn_bwd_grad` | the `.grad` WRITER. `writes` goes 3 -> 0 and the signature is UNCHANGED (the answer is built before the zip), so this is the arm that proves `tn_bwd_row`'s SIGNATURE half is blind. This is the state the file shipped in all session: a `grad_set` with no caller and nothing to read it. |
 # | M18/M19 are the SEPARATION, and it is measured per half by
 # `.agents/slop/backward/bwd-mutate.sh`, which prints each half's verdict separately. A
 # one-part row would have called one of them green. |
 #
-# THREE OF THESE FOUND REAL BUGS IN THIS FILE, and all three are the same bug wearing
+# three of these found real bugs in this file, and all three are the same bug wearing
 # different clothes: AN ARENA IS THE ONE A BUILD RETURNED, not the one that went in.
 # `tn_alu.of`, `tn_mop.dims` and three gate fixtures each built a node in the arena as it
 # was BEFORE the node was interned, and every symptom was a plausible-looking number --

@@ -1,10 +1,10 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/preprocess_imagenet.py (21 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/preprocess_imagenet.py (21 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. An `if __name__ == "__main__":` block and NOTHING else -- all 21
 # lines are a top-level script that packs 3200 ImageNet rows into two `disk:` buffers.
 # There is no def to mirror, so the ported unit is `main`.
 #
-# UPSTREAM IS BROKEN, MEASURED, AND THAT IS THE FIRST THING TO KNOW. Line 2 is
+# upstream is broken, measured, and that is the first thing to know. Line 2 is
 #     from extra.datasets.imagenet import iterate, get_val_files
 # and `extra/datasets/imagenet.py` DEFINES NO `iterate`. Measured at HEAD: the only
 # `def iterate` under `extra/datasets/` is `datasets/kits19.py:73`,

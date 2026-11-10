@@ -246,7 +246,7 @@ def op2eq(c0: U32) -> U32:
     case _: 0
 
 def op2same(c0: U32) -> U32:
-  # ** // << >> : the operators that double, and with '=' the three-char ones
+  #  // << >> : the operators that double, and with '=' the three-char ones
   match c0:
     case 42: 1
     case 47: 1

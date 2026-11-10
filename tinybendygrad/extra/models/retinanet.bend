@@ -17,26 +17,26 @@ import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/retinanet.py (263 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/retinanet.py (263 loc). not yet ported.
 #
-# RETINANET IS THE ONE FILE IN THIS SLICE THAT ASKS FOR **NOTHING NEW**. Its
+# retinanet is the one file in this slice that asks for nothing new. Its
 # layer needs are a SUBSET of resnet.bend's, and that is the measured finding of
 # this slice: `nn.Conv2d`, `nn.Linear`, `max_pool2d`, `pad`, `permute`,
 # `reshape`, `relu`, `where`, `sigmoid` and `sum` are ALL the same symbols
 # resnet.bend's census at :40-123 already asked for, and three of them have
 # since landed.
 #
-# WHAT LANDED SINCE resnet.bend WAS WRITTEN, WITH ITS INSTRUMENT:
+# what landed since resnet.bend was written, with its instrument:
 #   `nn.Conv2d`  nn/layers.bend:937 symbol=nn_conv2d `nn_conv2d`  -- THE PORT's `extra/models/resnet.bend` HEADER records this as
 #                 MISSING and discloses that its own instrument was the file's own
 #                 refusal. `nn/layers.bend:1-30` is the unit that closed it and it
-#                 says so: "THE WALL TEXT NAMED THE WRONG BLOCKER".
+#                 says so: "the wall text named the wrong blocker".
 #   `x.max_pool2d` nn/pool.bend:250 `pool_maxpool` -- THE PORT's `extra/models/resnet.bend` HEADER recorded the
 #                 POOL SHAPE ARITHMETIC as existing and the BODY as SIDE B.
 #   `Tensor.sigmoid` mixin/elementwise.bend:1208 symbol=ew_sigmoid `ew_sigmoid` (:148,:153)
 #   `Tensor.where`   mixin/elementwise.bend:571 `ew_where`   (:153)
 #
-# WHAT IS STILL MISSING HERE, AND IT IS ALL resnet.bend's LIST:
+# what is still missing here, and it is all resnet.bend's list:
 #   `Tensor.sequential` MISSING (:141,:167,:214,:215,:216,:217). THE PORT's `extra/models/resnet.bend` HEADER
 #                 already names it MISSING with the same instrument, so this is NOT
 #                 a new ask. It is the FIVETH most-hit missing symbol in this file
@@ -55,11 +55,11 @@ import ./../datasets/__init__.bend as D
 #   `x.pad`            mixin/movement.bend:1517 symbol=mxw_pad.put `mxw_pad.go` EXISTS (:213).
 #   `x.relu`           nn/layers.bend:299 symbol=nn_relu `nn_relu` EXISTS (:137,:159,:212,:213,:230).
 #   `x.sum`            nn/layers.bend:279 symbol=nn_sum `nn_sum` and mixin/op.bend:954 symbol=mo_mean `mo_mean` EXIST.
-#   `nn.Embedding`     NOT USED BY THIS FILE. `softmax` NOT USED (no attention).
+#   `nn.Embedding`     not used by this file. `softmax` not used (no attention).
 #   `adam`             NOT USED BY THIS FILE, though `TRAINING` is read at :144 and
 #                 :170 and :190 and IS available as helpers.bend:67 `type Flags`.
 #
-# TWO THINGS IN retinanet.py ARE NOT THE PORT'S PROBLEM AND ARE NAMED SO THEY
+# two things in retinanet.py are not the port's problem and are named so they
 # ARE NOT COUNTED AS OURS:
 #   (1) `examples/mlperf/helpers.py` (`generate_anchors`, `BoxCoder`) and
 #       `examples/mlperf/losses.py` (`sigmoid_focal_loss`, `l1_loss`) -- retinanet.py:4-5.
@@ -122,11 +122,11 @@ def rn_decode_bbox() -> D.Refused:
 def rn_retinanet_init(num_classes: U32, num_anchors: U32) -> D.Refused:
   D.refuse("extra/models/retinanet.py:39 RetinaNet.__init__ -- FIRST MISSING SYMBOL ResNetFPN (:46), whose backbone is extra/models/resnet.bend, which EXISTS AND REFUSES")
 
-# :49 def __call__(self, x:Tensor, **kwargs)
+# :49 def __call__(self, x:Tensor, kwargs)
 def rn_retinanet_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/retinanet.py:49 RetinaNet.__call__ -- FIRST MISSING SYMBOL self.forward (:50) -> self.head (:53) -> Tensor.sequential")
 
-# :52 def forward(self, x:Tensor, **kwargs)
+# :52 def forward(self, x:Tensor, kwargs)
 def rn_retinanet_forward(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/retinanet.py:52 RetinaNet.forward -- FIRST MISSING SYMBOL self.backbone (:53), i.e. the ResNet stub")
 
@@ -178,7 +178,7 @@ def rn_reg_head_loss(+x: T.Tensor, +bboxes: T.Tensor, +matches: T.Tensor, +ancho
 def rn_head_init(in_channels: U32, num_anchors: U32, num_classes: U32) -> D.Refused:
   D.refuse("extra/models/retinanet.py:185 RetinaHead.__init__ -- FIRST MISSING SYMBOL ClassificationHead (:186) -> Tensor.sequential (:141)")
 
-# :189 def __call__(self, x, **kwargs)
+# :189 def __call__(self, x, kwargs)
 def rn_head_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/retinanet.py:189 RetinaHead.__call__ -- FIRST MISSING SYMBOL Tensor.sequential (:167); the TRAINING branch at :190 reads helpers.bend:67 symbol=Flags, which EXISTS")
 

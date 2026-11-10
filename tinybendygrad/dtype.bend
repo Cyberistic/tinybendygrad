@@ -5,7 +5,7 @@
 # second, competing dtype; if the shape of `Dt` is wrong it is fixed there, in
 # one place, and both readers see the fix.
 #
-# THE LATTICE IS A BITMASK, NOT A MATCH LADDER. dtype.py spells least_upper_dtype
+# the lattice is a bitmask, not a match ladder. dtype.py spells least_upper_dtype
 # as `min(set.intersection(*recursive_parents(d) for d in ds))`, with the parent
 # relation as a table of tuples and the closure over it. Bend has no sets and no
 # sets-of-sets, and a 19-way ladder of pairs is 361 cases that would need a
@@ -42,7 +42,7 @@ import ./base.bend as F
 # (`dtypes.f32`, `dtypes.f16`, ...), which are not always the names the spec IR
 # uses (`single`, `half`). One value, twenty names, no second value.
 #
-# THE ATTRIBUTE NAMES ARE THE RUST NAMES. tinygrad 793abbb renamed them, keeping
+# the attribute names are the rust names. tinygrad 793abbb renamed them, keeping
 # the old ones only in a block it labels `# legacy dtype aliases` -- so this list
 # spells `i8`..`u64`, `f16`, `bf16`, `f32`, `f64` and carries NO legacy accessor.
 # `dtypes.f16()`, `dtypes.f32()` and their kin were removed from the port on
@@ -57,7 +57,7 @@ import ./base.bend as F
 # `dtypes` has no such name to spell, so a `dtypes.index()` would be a name the
 # port could write and upstream could not, and nothing called it.
 #
-# THE GROUPINGS FOLLOW THIS BLOCK -- `dtypes.fp8s()` and its kin answer a LIST of
+# the groupings follow this block -- `dtypes.fp8s()` and its kin answer a list of
 # dtypes, and upstream spells them as tuples. They are counted apart from the
 # twenty because a grouping is a LIST and not a dtype.
 #
@@ -89,7 +89,7 @@ import ./base.bend as F
 #                 below, which are the ones `dtypes.all` is built from, and
 #                 leaves out the ones it does not need.
 #
-# A CLASS UPSTREAM NO LONGER HAS, OR A CLASS THE GATE DOES NOT KNOW, IS RED: a
+# a class upstream no longer has, or a class the gate does not know, is red: a
 # rule that stops matching upstream is a lie the gate is asked to believe.
 # ---------------------------------------------------------------------------
 # ===========================================================================
@@ -630,7 +630,7 @@ def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
 # round-half-to-even. bf16 IS the top half of an f32 pattern, so there is no
 # rebias.
 #
-# THE `isfinite` GUARD IS NOT OPTIONAL, and `runtime/dtype.c:168-176` DOES NOT
+# the `isfinite` guard is not optional, and `runtime/dtype.c:168-176` does not
 # HAVE IT -- `bf16_run` rounds every pattern, so on a non-finite input it answers
 # +infinity where dtype.py:230 answers x unchanged. `dtype.bend`'s gate against
 # CPython measured it: at 0x7F800001 the C's line gives 0x7F800000 and dtype.py
@@ -672,7 +672,7 @@ def Dt.bf16(+bits: U32) -> F32:
 # Bend will not match on a computed Bool. A def must be declared before its
 # caller, so the arms run bottom-up.
 #
-# TWO OF THE C's FOUR TESTS ARE GONE, and both are subsumed rather than
+# two of the c's four tests are gone, and both are subsumed rather than
 # dropped-by-accident:
 #   `if (e == 0 && m == 0) return s;` (:122) -- e is 0, which is <= 101, so the
 #     underflow arm answers `s` too. The C needs the early exit; the ladder does
@@ -752,7 +752,7 @@ def fp16_encode(+s: U32, +e: U32, +m: U32) -> U32:
 # `c958d7b0b`) is that same number, because `__builtin_clz(m)` is
 # `31 - floor(log2 m)`.  The `31 -` that used to stand in front of `U32.log2(m)`
 # here made the exponent `31 - floor(log2 m) + 103`: 2**31 too large at `m = 1`,
-# where the answer is 2**-24 and the rule answered 128.0.  The JS lane's `k`
+# where the answer is 2-24 and the rule answered 128.0.  The JS lane's `k`
 # (`tinybendygrad/runtime/dtype.js:161` AT PIN `c958d7b0b`) is
 # `31 - Math.clz32(m)`, the same number spelled the other way round, and
 # `fp8_decode.sub_pat` below already spells `k` this way.
@@ -1138,7 +1138,7 @@ def Dt.i64_cmod(+a: H.I64, +b: H.I64) -> H.I64:
 # exists in the form it does. `cmod_i64` is a multiply and a subtract; asking twice
 # was a cost as well as a redundancy.
 #
-# THE ZERO DIVISOR IS GUARDED HERE AND ONLY HERE. helpers.py:66-69 has no guard and
+# the zero divisor is guarded here and only here. helpers.py:66-69 has no guard and
 # CPython raises ZeroDivisionError; `runtime/dtype.c:262-263` and `runtime/dtype.js:171`
 # both totalise it to 0, so 0 is the answer these seams already gave. The gate labels
 # those rows TOTALISE and never counts one as a pass.
@@ -1206,7 +1206,7 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # that file is another unit's.
 #
 # ---------------------------------------------------------------------------
-# THE WALL IS WIDER THAN THE VALUE, AND THE WIDER PART IS THE IDENTITY.  MEASURED, and the
+# the wall is wider than the value, and the wider part is the identity.  measured, and the
 # instrument is `gates/constid-gate.py` (three lanes, and a PLANT in `gates/constid-plant.py`):
 #
 # UPSTREAM'S CONST IDENTITY FOR A FLOAT IS 64 BITS.  `dtype.py:8-25`'s `ConstFloat` packs
@@ -1218,16 +1218,16 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # THE PORT'S IS 32.  A Bend float LITERAL is an F32 literal (`bend.ts:2204-2210`), so the
 # port's `0.1` and its `0.10000000149011612` are the SAME 32 bits (`0x3DCCCCCD`) and
 # therefore ONE key in ONE arena.  `gates/constid-gate.py`'s `merge_keys` row: upstream 2,
-# the port 1.  AND THE CONSTANT HOLDS A DIFFERENT NUMBER: upstream's weakfloat const holds
+# the port 1.  and the constant holds a different number: upstream's weakfloat const holds
 # the DOUBLE, so `16777217.0` stays `16777217.0`, and the port's holds the f32 of it, which
 # is `16777216.0` -- 2**24+1 is the smallest integer an f32 cannot hold, and it is the
 # pair whose difference the port's own formatter can SEE (`merge_value_text`).
 #
-# SO THIS IS NOT A NEAR MISS ON THE VALUE ALONE: it is a MERGE of two upstream constants
+# so this is not a near miss on the value alone: it is a merge of two upstream constants
 # into one, and a merge is a hash collision in the port's constant identity.
 #
 # ---------------------------------------------------------------------------
-# WHAT THE COMPILER ACTUALLY OFFERS, FROM ITS SOURCE, because "there is no F64" is a
+# what the compiler actually offers, from its source, because "there is no F64" is a
 # claim about a file and the file is right here:
 #
 #   * NO F64.  `references/bend/bend2/base.bend:65-68` declares `U32{data: Word(32n)}` and
@@ -1241,7 +1241,7 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 #     `Word(64n)` is a legal type, and THE PORT ALREADY HOLDS 64 BITS: `helpers.bend:1648 symbol=I64`
 #     is `type I64 is Data: I64{hi: U32, lo: U32}`.
 #
-# SO THE WALL IS NOT "THE BITS DO NOT FIT".  IT IS: THE PORT CANNOT WRITE A DOUBLE AND
+# so the wall is not "the BITS do not fit".  it is: the port cannot write a double and
 # CANNOT COMPUTE ONE (no f64 arithmetic), so a `CFloat` that carried the double's bits
 # would have to have its f32 carried ALONGSIDE it, computed by an f64->f32 rounding that
 # Bend cannot do -- and every `CFloat{...}` site in the tree would have to spell the
@@ -1252,14 +1252,14 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # nans are equal and upstream's `__hash__` says otherwise -- upstream's own two rules
 # contradict each other, and upstream's own hash table settles it in favour of `__hash__`
 # (two entries in one dict).  `gates/constid-plant.py` MEASURES BOTH ALTERNATIVES, AND
-# NEITHER IS A FIX: the IEEE comparator SPLITS a constant upstream interns as ONE (IEEE says
+# neither is a fix: the ieee comparator splits a constant upstream interns as one (ieee says
 # a nan is not equal to itself, so the same payload twice becomes two nodes), and upstream's
 # own `__eq__` MERGES two DIFFERENT nan payloads upstream's hash table keeps apart -- a hash
-# collision upstream does not have.  **THE BITWISE COMPARATOR IS THE ONLY ONE OF THE THREE
-# THAT MATCHES UPSTREAM's HASH TABLE IN BOTH NAN CELLS.  THE MERGE IS THE WIDTH.  THE
-# COMPARATOR IS NOT WHAT DIVERGES.**
+# collision upstream does not have.  the bitwise comparator is the only one of the three
+# that matches upstream's hash table in both nan cells.  the merge is the width.  the
+# COMPARATOR IS NOT WHAT DIVERGES.
 #
-# THE INT ARM IS dtype.py:296's OTHER HALF and is NOT PORTED: it needs the value to be
+# the INT arm is dtype.py:296's other half and is not ported: it needs the value to be
 # an `H.I64` and the width to be a mask, and the port's `CInt` holds a full `H.I64`.
 # `mixin/creation.bend` names what is left of that.
 # ===========================================================================

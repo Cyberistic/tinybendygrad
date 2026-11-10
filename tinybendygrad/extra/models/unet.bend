@@ -13,9 +13,9 @@ import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/unet.py (262 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/unet.py (262 loc). not yet ported.
 #
-# THE LARGEST FILE IN THIS DIRECTORY AFTER inception.py, AND THE ONLY ONE THAT
+# the largest file in this directory after inception.py, and the only one that
 # IS NOT A VISION CLASSIFIER: it is a Stable-Diffusion UNet, so it brings
 # three things no other model here names -- an ATTENTION (`Tensor.scaled_dot_
 # product_attention`), a CONDITIONAL EMBEDDING (`timestep_embedding`, upstream:10,
@@ -32,14 +32,14 @@ import ./../datasets/__init__.bend as D
 #   `Tensor.exp` IS built (`ew_exp`, mixin/elementwise.bend:1314 symbol=ew_exp), so :12 is
 #   blocked by its SECOND half only -- and the sentence above says which.
 #
-#   THE HEADLINE, WHICH IS FARTHER UP AND WORTH NAMING FIRST: upstream:7 binds
+#   the headline, which is farther up and worth naming first: upstream:7 binds
 #       attention = Tensor.scaled_dot_product_attention
 #   and that symbol is MISSING. `extra/models/transformer.bend:19-27` reaches the
-#   same wall and THE PORT's `mixin/rand.bend` WALLS BLOCK carries FOUR arms of it -- "GQA arm",
+#   same wall and the port's `mixin/rand.bend` walls block carries four arms of it -- "gqa arm",
 #   "the matmul", "the causal mask", "the attn_mask arm", each "BLOCKED: needs".
-#   SO UNET AND TRANSFORMER SHARE ONE BLOCKER, AND IT IS THE SAME ONE.
+#   so unet and transformer share one blocker, and it is the same one.
 #
-# THE OTHER TWO THAT NO COUNT WOULD REVEAL, BECAUSE THEY ARE ONE-LINE CALLS TO
+# the other two that no count would reveal, because they are one-line calls to
 # FAMILIAR NAMES:
 #   `Tensor.cat`   MISSING. :14 builds the embedding with it, and so does
 #                  `CrossAttention` (:57) and `UNetModel.__call__` (:259).
@@ -59,7 +59,7 @@ import ./../datasets/__init__.bend as D
 #   carries the op, but "what can THIS device do" is a runtime fact with no
 #   def.
 #
-# WHAT IS ALREADY HERE IS WORTH SAYING TOO, BECAUSE IT REMOVES THE OBVIOUS
+# what is already here is worth saying too, because it removes the obvious
 # GUESS: `Tensor.silu` IS built (`ew_silu`, mixin/elementwise.bend:1221 symbol=ew_silu, which is
 # `ew_swish` at :1208) and this file names it FIVE times (:21,:25,:27,:229,:240).
 # `Tensor.expand` IS built (`cr_expand`, mixin/creation.bend:343 symbol=cr_expand) and :137 needs
@@ -67,7 +67,7 @@ import ./../datasets/__init__.bend as D
 # (`nn_linear`, :427) EXIST. So this file is not far; it is far in FOUR PLACES
 # AT ONCE, which is the shape a diffusion UNet has.
 #
-# EVERY DEF BELOW REFUSES, AND THE RETURN TYPE IS `D.Refused`, NOT A TENSOR. A
+# every DEF below refuses, and the return TYPE is `D.Refused`, not a tensor. a
 # stub that returned a zero Tensor would be indistinguishable from a layer whose
 # weights happen to be zero. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`. Each message names
@@ -236,8 +236,8 @@ def un_sp_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
   D.refuse("extra/models/unet.py:112 SpatialTransformer.__call__ -- FIRST MISSING SYMBOL Tensor.permute at :116 (mxw_permute, mixin/movement.bend:1449 symbol=mxw_permute.go, EXISTS) reached only after nn.GroupNorm at :115, which is MISSING")
 
 # ---------------------------------------------------------------------------
-# :124-138 Downsample and Upsample. THE TWO SHORTEST CLASSES IN THE FILE, AND
-# THE ONLY ONES WHOSE BODY IS ONE BUILT OP.
+# :124-138 Downsample and Upsample. the two shortest classes in the file, and
+# the only ones whose body is one built op.
 # ---------------------------------------------------------------------------
 
 # :125 def __init__(self, channels)

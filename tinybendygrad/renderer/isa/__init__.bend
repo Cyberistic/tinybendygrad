@@ -1,6 +1,6 @@
 # tinybendygrad/renderer/isa/__init__.bend -- port of tinygrad/renderer/isa/__init__.py
 #
-# **NOT AN EMPTY MARKER. UPSTREAM IS 50 LINES AND THEY ARE NOT PORTED HERE.**
+# not an empty marker. upstream is 50 lines and they are not ported here.
 #
 # `tinygrad/renderer/isa/__init__.py` declares the ISA renderers' shared furniture:
 #
@@ -9,7 +9,7 @@
 #   * the helpers built on it (`Reg`, register-set constructors) and `Renderer`
 #     subclasses' entry points that take one.
 #
-# WHY THIS IS A MARKER AND NOT A PORT: MEASURED, the port's own ISA renderer does not
+# why this is a marker and not a port: measured, the port's own isa renderer does not
 # use it. `tinybendygrad/renderer/isa/x86.bend` carries the register table as DATA with
 # `TODO(p3)` markers naming `x86.py`'s `Register`/`alloc_vregs` (see its lines 19, 157,
 # 255-257), so the algebra in this file has no consumer until that work lands. Porting a
@@ -17,7 +17,7 @@
 # can check -- the class of marker `.agents/slop/PARITY.md` records as "a row that
 # cannot go red".
 #
-# ⇒ SO THE HONEST STATE IS: ONE GAP, NAMED TWICE, IN TWO PLACES. `x86.bend` records
+# - so the honest state is: one gap, named twice, in two places. `x86.bend` records
 # `TODO(p3)` for the same defs from the consumer's side; this file records it from the
 # provider's side. When p3 lands, the two collapse into one real port and this marker
 # becomes the `engine/__init__.py` shape (empty upstream, nothing to re-export).

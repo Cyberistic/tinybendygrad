@@ -17,16 +17,16 @@ import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/mask_rcnn.py (1214 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/mask_rcnn.py (1214 loc). not yet ported.
 #
-# MASK R-CNN IS THE BIGGEST FILE IN THIS SLICE AND IT HAS **ONE** SYMBOL THE OTHER
+# mask r-cnn is the biggest file in this slice and it has one symbol the other
 # SEVEN DO NOT ASK FOR. Everything else it names is on resnet.bend's list, or on
 # bert/t5/llama's, or already built. The census below is by HIT COUNT, because
 # the count is what makes `Tensor.cat` the file's real subject: it is named
 # EIGHTEEN TIMES here, and there is no `def mo_cat`, `def tn_cat` or `def ew_cat`
 # under `tinybendygrad/`.
 #
-# THE CENSUS OF THIS FILE'S OWN CALLS, MEASURED BY
+# the census of this file's own calls, measured by
 # `grep -onE "Tensor\.[a-z_0-9]+|x\.(...)\(|nn\.[A-Z][a-zA-Z]*|get_child|torch_load"
 # extra/models/mask_rcnn.py | sort | uniq -c | sort -rn`:
 #
@@ -53,7 +53,7 @@ import ./../datasets/__init__.bend as D
 #    1   Tensor.chunk                MISSING.
 #    1   nn.ConvTranspose2d          MISSING, and it is THE ONLY NEW LAYER.
 #
-# AND THE ONES THIS GREP CANNOT SEE, WHICH IS WHY IT IS NOT THE CENSUS:
+# and the ones this grep cannot see, which is why it is not the census:
 #   `topk` (:29) as a MODULE-LEVEL PYTHON FUNCTION, called at :569 and :623 --
 #     MISSING. It sorts `argsort` (`mixin/rand.bend:969 symbol=rd_randperm` marks `argsort` `TODO(p3)`
 #     as a bitonic sort over four nested Python `for` loops) and then takes n.
@@ -70,13 +70,13 @@ import ./../datasets/__init__.bend as D
 #   `op_arange`, `mxw_reshape`, `ew_mul`, `ew_add`) all exist and the def does not.
 #   `numpy` -- `USE_NP_GATHER` (:74) selects between `npgather` and `_gather`.
 #
-# NOT USED BY THIS FILE, NAMED BECAUSE A READER OF THIS DIRECTORY WOULD ASK:
+# not used by this file, named because a reader of this directory would ask:
 #   `nn.Embedding`     not named.  `softmax` named ONCE (:1 hit, `Tensor.softmax`)
 #                      and EXISTS.  `adam` NOT named -- R-CNN's TRAIN path is a
 #                      `_loss` composition, and `nn/optim.bend:900 symbol=op_mstep`
 #                      / `:903 op_vstep` exist and go unused, as in all seven.
 #
-# THE BIGGEST SINGLE DELEGATION IS TO THE SIBLING STUB. mask_rcnn.py:1186
+# the biggest single delegation is to the sibling stub. mask_rcnn.py:1186
 # `MaskRCNN.__init__` takes `backbone:ResNet` and :117 symbol=__init__ builds
 # `ResNet(50, num_classes=None, stride_in_1x1=True)`. `tinybendygrad/extra/models/
 # resnet.bend` EXISTS, is 264 lines, and REFUSES -- `rs_resnet_init` at its :214
@@ -177,7 +177,7 @@ def mr_boxlist_convert() -> D.Refused:
 def mr_boxlist_split() -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:186 _split_into_xyxy -- Tensor.chunk (:188); `def mo_chunk` does not exist. This is the ONE Tensor.chunk hit in the whole file")
 
-# :200 def resize(self, size, *args, **kwargs)
+# :200 def resize(self, size, *args, kwargs)
 def mr_boxlist_resize() -> D.Refused:
   D.refuse("extra/models/mask_rcnn.py:200 BoxList.resize -- FIRST MISSING SYMBOL Tensor.cat (:218) and x.clip (:215) -- TWO missing symbols in one expression")
 

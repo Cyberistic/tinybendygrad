@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/support/compileserver.bend -- port of tinygrad/runtime/support/compileserver.py
 #
 # ===========================================================================
-# THIRTEEN LINES, AND THE PORT IS MOSTLY THE PROTOCOL.
+# thirteen lines, and the port is mostly the protocol.
 #
 #   if __name__ == "__main__":
 #     assert len(sys.argv) >= 3, f"usage: {sys.argv[0]} <compiler> <arch> [<args>]"
@@ -35,7 +35,7 @@
 #      what `tinygrad/device.py:339 symbol=CompileError` relies on when it raises `CompileError` on an empty
 #      read. MEASURED end to end: a frame set of four requests where two fail
 #      still answers four frames, and the server's exit code is 0.
-#   3. THE LOOP IS DRIVEN BY THE PIPE, NOT BY EOF ON THE SOURCE. A zero-length
+#   3. the LOOP is driven by the pipe, not by eof on the source. a zero-length
 #      REQUEST frame is `\x00\x00\x00\x00`, which is a real frame: the read of
 #      four bytes succeeds, the length is zero, and `compile("")` runs. Only the
 #      FOUR-BYTE READ returning empty ends the loop. `cs.read4` and

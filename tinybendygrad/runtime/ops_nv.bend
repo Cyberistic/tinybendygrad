@@ -1373,7 +1373,7 @@ def dev.init.at(sm: U32, +iface: U32, +peer: Bool, pma: Bool, +t0: Tr) -> Dev:
 def dev.init(sm: U32, iface: U32, peer: Bool, pma: Bool) -> Dev:
   dev.init.at(sm, iface, peer, pma, Tr.of())
 
-# THE mock'S init, RIGHT here, BECAUSE BEND REQUIRES definition-BEFORE-USE and
+# the mock's init, right here, because BEND requires definition-before-use and
 # `dev.init` IS the subject. `MOCK_INIT_SM` IS the sm version the mock
 # REPORTS: `test/mockgpu/nv/nvgpu.py`'s GPU ANSWERS `NV0000_CTRL_CMD_GPU_GET_
 # ID_INFO_V2`, AND THE PORT'S `dev.init` TAKES the sm version as a parameter

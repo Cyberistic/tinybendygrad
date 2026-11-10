@@ -1,4 +1,4 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/fake_imagenet_from_mnist.py (40 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/fake_imagenet_from_mnist.py (40 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. The `MNISTMOCK` path made real: it writes a 10-class ImageNet
 # tree of upscaled 28x28 MNIST digits so `imagenet.py`'s mock branch has something to
@@ -23,7 +23,7 @@
 #   `imap_unordered` (a fan-out over `trange`, and `helpers.bend:3200-3201` records only
 #   `trange` as ported); and `pathlib.Path.mkdir(parents=True, exist_ok=True)`
 #   (upstream:23,29-30). `os.cpu_count` is not needed -- 64 is a literal upstream.
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `gen` (upstream:32) and the
+# not ported, and named so nobody invents it: `gen` (upstream:32) and the
 #   `__main__` block (upstream:40), and the `create_fake_mnist_imagenet(BASEDIR)`
 #   call that `imagenet.py:25` makes -- so `imagenet.bend`'s MNISTMOCK branch is
 #   still unreachable.

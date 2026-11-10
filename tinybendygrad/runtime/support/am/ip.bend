@@ -35,7 +35,7 @@
 # the seam is `Tr.emit`, not a `def ... -> IO(R)` over two `import "./x.c"`.
 #
 # ---------------------------------------------------------------------------
-# EVERY CONSTANT AND EVERY STRUCT FIELD BELOW WAS READ OUT OF CPYTHON, never
+# every constant and every struct field below was read out of CPYTHON, never
 # typed. The oracle is `.agents/slop/ip_oracle.py`; it prints the SAME rows by
 # importing `tinygrad/runtime/support/am/ip.py` (which imports with NO device
 # present), by walking the `am` autogen enums, by PROBING each
@@ -45,8 +45,8 @@
 # expectation, so there are none.
 #
 # ===========================================================================
-# STATUS: STAGE 4, FINAL. THE GATE PRINTS 447 ROWS; THE INTERPRETED AND THE
-#   NATIVE LANE ARE IDENTICAL, AND THE CPYTHON ORACLE DISAGREES ON 0 OF 444 ROW
+# status: stage 4, final. the gate prints 447 rows; the interpreted and the
+#   native lane are identical, and the CPYTHON oracle disagrees on 0 of 444 row
 #   NAMES. Drivers: `.agents/slop/ip_check.sh` (three lanes),
 #   `.agents/slop/ip_mutate.sh` (45 logic mutations),
 #   `.agents/slop/ip_sweep.py` (415 leaf permutations).
@@ -77,7 +77,7 @@
 #   WALL 5  thirteen `wait_cond` polls and six `time.sleep`s             :113 :117 :121 :219 :222 :271 :284 :346 :393 :417 :450 :584 :640 :656 :692 :695 :702 :704 :717
 #   WALL 6  the memory manager: `mm.palloc`, `mm.map_range`, `paddrs`    :278 :331
 #
-# THE CROSS-FILE CONTRACT. WALL 1 is the SEAM'S, and `ops_amd.bend`'s WALL 2
+# the cross-file contract. wall 1 is the seam's, and `ops_amd.bend`'s wall 2
 # (its lines 173-178) says the same thing about `regCOMPUTE_*`: the port carries
 # their USE -- which register, with which field names, in which order -- and not
 # their OFFSETS, which belong to `autogen/am/regs/*`, PER ARCH. This file and that
@@ -297,11 +297,11 @@ def PDE_BFS_SHIFT() -> U32: 59
 def VM_PDB1() -> U32: 1
 def VM_PDB0() -> U32: 2
 def VM_PTB() -> U32: 3
-# THE THREE MTYPE FIELDS, and THEY ARE AT THREE DIFFERENT BITS. MEASURED out of
+# the three mtype fields, and they are at three different BITS. measured out of
 # the `AMDGPU_PTE_MTYPE_*_MASK` values: GFX12 0xc0000000000000, NV10
 # 0x7000000000000, VG10 0x600000000000000 -- so the mtype value lands at bit 50,
 # 48 and 53 respectively, and a port that treats them as ONE shift computes a
-# PTE that is wrong in 2 of the 3 generations. THE ORACLE CAUGHT ALL THREE:
+# pte that is wrong in 2 of the 3 generations. the oracle caught all three:
 # the first version of this file had 50 / 48 / 53, read off the MASK's TOP bit
 # instead of its LOWEST, and `amp_pte_mtype_12_uc` printed 786432 where
 # CPython's `AMDGPU_PTE_MTYPE_GFX12(0, 3)` is 12582912. `MTYPE_UC` is the value ip.py
@@ -452,7 +452,7 @@ def V.ne2(+am: U32, +an: U32, +bm: U32, +bn: U32) -> Bool:
   Bool.not(V.eq2(am, an, bm, bn))
 
 # ===========================================================================
-# THE PER-ARCH SMU MESSAGE TABLE, `import_module("smu", ip_ver[MP1_HWIP])`.
+# the per-arch smu message table, `import_module("smu", ip_ver[MP1_HWIP])`.
 #
 # `_ip_module("smu", am.MP1_HWIP)` at :199 does NOT give a fixed set of numbers:
 # it picks the newest `autogen/am/smu_<maj>_<min>_<pat>` at or below the version,
@@ -528,7 +528,7 @@ def smu.name_of(col: U32) -> String:
   Maybe.default(&2, String, List.get(&2, String, smu.names(), U32.to_nat(col)), "?")
 
 # ===========================================================================
-# THE SMU MESSAGE PROTOCOL, :264-273. THE THREE-REGISTER TRIPLE.
+# the smu message protocol, :264-273. the three-register triple.
 #
 # `_smu_cmn_send_msg` writes THREE registers in this order and they are three
 # different registers depending on ONE flag:
@@ -642,7 +642,7 @@ def amp_smu_mode1(+mp0_0: U32, +mp0_1: U32, +mp0_2: U32) -> U32:
       smu.get(smu.arch(mp0_0, mp0_1, mp0_2), SMU_COL_MODE1())))
 
 # ===========================================================================
-# THE PTE FLAG TABLES, :177-195. FOUR GENERATIONS OF THE SAME FIVE-TERM OR.
+# the pte flag tables, :177-195. four generations of the same five-term or.
 #
 #   :179  extra |= SYSTEM*system | SNOOPED*snooped | VALID*valid | FRAG(frag)
 #   :180  if not is_table: extra |= WRITEABLE | READABLE | EXECUTABLE
@@ -809,7 +809,7 @@ def pte.of(+pte_lv: U32, +is_table: U32, +frag: U32, +uncached: U32,
     pte.of.body(pte_lv, is_table, pte.mt.gfx12(gc0, gc1, gc2),
       pte.mt.gfx10(gc0, gc1, gc2), gc0, uncached, mtype_uc))
 
-# :193-195, `is_pte_huge_page`. THE THREE ARMS ANSWER DIFFERENT SHAPES and the
+# :193-195, `is_pte_huge_page`. the three arms answer different shapes and the
 # pre-gfx10 arm MASKS (`pte & ...`) where the other two return the same thing, so
 # a port that assumes "the answer is a bit" is wrong for exactly one generation.
 #   >= (12,0,0)   pte & AMDGPU_PDE_PTE_GFX12   (2**63)
@@ -885,7 +885,7 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # ===========================================================================
 
 # ===========================================================================
-# THE PER-ARCH SMU MESSAGE TABLE, `import_module("smu", ip_ver[MP1_HWIP])`.
+# the per-arch smu message table, `import_module("smu", ip_ver[MP1_HWIP])`.
 #
 # `_ip_module("smu", am.MP1_HWIP)` at :199 does NOT give a fixed set of numbers:
 # it picks the newest `autogen/am/smu_<maj>_<min>_<pat>` at or below the version,
@@ -904,7 +904,7 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # ===========================================================================
 
 # ===========================================================================
-# THE SMU MESSAGE PROTOCOL, :264-273. THE THREE-REGISTER TRIPLE.
+# the smu message protocol, :264-273. the three-register triple.
 #
 # `_smu_cmn_send_msg` writes THREE registers in this order and they are three
 # different registers depending on ONE flag:
@@ -920,7 +920,7 @@ def SDMA_ENTRY_BASE() -> U32: 1
 # ===========================================================================
 
 # ===========================================================================
-# THE PTE FLAG TABLES, :177-195. FOUR GENERATIONS OF THE SAME FIVE-TERM OR.
+# the pte flag tables, :177-195. four generations of the same five-term or.
 #
 #   :179  extra |= SYSTEM*system | SNOOPED*snooped | VALID*valid | FRAG(frag)
 #   :180  if not is_table: extra |= WRITEABLE | READABLE | EXECUTABLE
@@ -1117,7 +1117,7 @@ def mqd.eop_control(eop_size: U32) -> U32: mqd.esize(eop_size)
 # ===========================================================================
 
 # ===========================================================================
-# THE PER-ARCH SMU MESSAGE TABLE, `import_module("smu", ip_ver[MP1_HWIP])`.
+# the per-arch smu message table, `import_module("smu", ip_ver[MP1_HWIP])`.
 #
 # `_ip_module("smu", am.MP1_HWIP)` at :199 does NOT give a fixed set of numbers:
 # it picks the newest `autogen/am/smu_<maj>_<min>_<pat>` at or below the version,
@@ -1136,7 +1136,7 @@ def mqd.eop_control(eop_size: U32) -> U32: mqd.esize(eop_size)
 # ===========================================================================
 
 # ===========================================================================
-# THE SMU MESSAGE PROTOCOL, :264-273. THE THREE-REGISTER TRIPLE.
+# the smu message protocol, :264-273. the three-register triple.
 #
 # `_smu_cmn_send_msg` writes THREE registers in this order and they are three
 # different registers depending on ONE flag:
@@ -1152,7 +1152,7 @@ def mqd.eop_control(eop_size: U32) -> U32: mqd.esize(eop_size)
 # ===========================================================================
 
 # ===========================================================================
-# THE PTE FLAG TABLES, :177-195. FOUR GENERATIONS OF THE SAME FIVE-TERM OR.
+# the pte flag tables, :177-195. four generations of the same five-term or.
 #
 #   :179  extra |= SYSTEM*system | SNOOPED*snooped | VALID*valid | FRAG(frag)
 #   :180  if not is_table: extra |= WRITEABLE | READABLE | EXECUTABLE
@@ -1255,7 +1255,7 @@ def amp_sdma_db_row(+dev_inst: U32) -> List<&2, U32>:
 
 # ===========================================================================
 
-# THE KIQ `flush_tlb` PACKET, :99-112. SEVENTEEN WORDS, BUILT IN ORDER.
+# the kiq `flush_tlb` packet, :99-112. seventeen words, built in order.
 #
 # :108-110 is one list literal with THREE PM4 packets and the whole thing is
 # written into the KIQ ring at `ring[(ptrs[1] + i) % 0x400]` for `i` in
@@ -1347,7 +1347,7 @@ def kiq.pkt(+req_addr: U32, +ack_addr: U32, +vmid: U32, +req: U32,
     kiq.pkt.wr(kiq_va, base), kiq.pkt.wr_hi(kiq_va, base), U32.add(wptr, 1)))
 
 # ===========================================================================
-# THE IH ENTRY DECODE, :502-513. ELEVEN EXTRACTORS AND THEIR BIT POSITIONS.
+# the ih entry decode, :502-513. eleven extractors and their bit positions.
 #
 # `:502` reads EIGHT dwords out of the ring and `:505-506` calls
 # `getattr(am, f'SOC15_{n}_FROM_IH_ENTRY')(entry)` for seven names while `:507`
@@ -1360,7 +1360,7 @@ def kiq.pkt(+req_addr: U32, +ack_addr: U32, +vmid: U32, +req: U32,
 #   CONTEXT_ID0 128:159(32)  CONTEXT_ID1 160:191(32)
 #   CONTEXT_ID2 192:223(32) CONTEXT_ID3 224:255(32)
 #
-# THE FOUR CONTEXT IDs ARE NOT CONTIGUOUS: 28..31 are unused, which is why the
+# the four context IDs are not contiguous: 28..31 are unused, which is why the
 # positions are a table and not `128 + 32*i`. `amp_ih_pos` prints the table.
 # ===========================================================================
 
@@ -1650,7 +1650,7 @@ def amp_reg_604b() -> Row:
   Row.of(604, "{reg}_RB_CNTL", ["rb_vmid", "rptr_writeback_enable", "rptr_writeback_timer", "rb_enable", "rb_priv", "rb_size", "inst"])
 
 # ===========================================================================
-# THE PSP RING FRAME AND THE FOUR COMMANDS, :707-751.
+# the psp ring frame and the four commands, :707-751.
 #
 # `struct_psp_gfx_rb_frame` is 64 bytes and `struct_psp_gfx_cmd_resp` is 1024,
 # and :715 advances the ring wptr by `ctypes.sizeof(rb_frame) // 4` -- MEASURED
@@ -1809,9 +1809,9 @@ def psp.rlc_cmd(+gc0: U32, +gc1: U32, +gc2: U32) -> U32:
 #    all probe the `adev` or the module for a NAME, and :506-507 does
 #    `getattr(am, f'SOC15_{n}_FROM_IH_ENTRY')`. A Python attribute table is a
 #    `dict`; what survives is the ANSWER and not the lookup.
-# | WALL(p3) runtime/support/am/ip.py:260  hasattr(smu_mod, 'PPSMC_MSG_QueryValidMcaCount'). -- BLOCKED: needs a DYNAMIC ATTRIBUTE PROBE: Python resolves a NAME against an object at RUNTIME (`hasattr(x, 'regMM_ATC_L2_MISC_CG')`). A compiled language has no name-to-field table, and this is the same blocker as `bnxtdev`'s `getattr` on a constructed f-string.
-# | WALL(p3) runtime/support/am/ip.py:389  hasattr(adev, 'regMM_ATC_L2_MISC_CG'). -- BLOCKED: needs a DYNAMIC ATTRIBUTE PROBE: Python resolves a NAME against an object at RUNTIME (`hasattr(x, 'regMM_ATC_L2_MISC_CG')`). A compiled language has no name-to-field table, and this is the same blocker as `bnxtdev`'s `getattr` on a constructed f-string.
-# | WALL(p3) runtime/support/am/ip.py:646  hasattr(adev.fw, 'smu_psp_desc'). -- BLOCKED: needs a DYNAMIC ATTRIBUTE PROBE: Python resolves a NAME against an object at RUNTIME (`hasattr(x, 'regMM_ATC_L2_MISC_CG')`). A compiled language has no name-to-field table, and this is the same blocker as `bnxtdev`'s `getattr` on a constructed f-string.
+# | wall(p3) runtime/support/am/ip.py:260  hasattr(smu_mod, 'PPSMC_MSG_QueryValidMcaCount'). -- blocked: needs a dynamic attribute probe: Python resolves a name against an object at runtime (`hasattr(x, 'regMM_ATC_L2_MISC_CG')`). a compiled language has no name-to-field table, and this is the same blocker as `bnxtdev`'s `getattr` on a constructed f-string.
+# | wall(p3) runtime/support/am/ip.py:389  hasattr(adev, 'regMM_ATC_L2_MISC_CG'). -- blocked: needs a dynamic attribute probe: Python resolves a name against an object at runtime (`hasattr(x, 'regMM_ATC_L2_MISC_CG')`). a compiled language has no name-to-field table, and this is the same blocker as `bnxtdev`'s `getattr` on a constructed f-string.
+# | wall(p3) runtime/support/am/ip.py:646  hasattr(adev.fw, 'smu_psp_desc'). -- blocked: needs a dynamic attribute probe: Python resolves a name against an object at runtime (`hasattr(x, 'regMM_ATC_L2_MISC_CG')`). a compiled language has no name-to-field table, and this is the same blocker as `bnxtdev`'s `getattr` on a constructed f-string.
 #
 # 3. `functools.cache`. `get_pte_flags` (:177) and `read_clocks` (:230) are
 #    memoised on their argument tuples. Bend has no memo table and the VALUE is a
@@ -1824,7 +1824,7 @@ def psp.rlc_cmd(+gc0: U32, +gc1: U32, +gc2: U32) -> U32:
 #    `table_t.from_buffer(bytearray(vram.view(...)))`, and :250's
 #    `int(round(watts))` is a float round. The KEYS and the clamp are ported; the
 #    bytes and the round are not.
-# | WALL(p3) runtime/support/am/ip.py:250  int(round(watts)). -- BLOCKED: needs Python's `round`, which is ROUND-HALF-TO-EVEN: MEASURED, `round(3.5)` is 4 and `int(3.5)` is 3, and `round(0.6)` is 1 while `int(0.6)` is 0. So this is a SEMANTIC difference and NOT a missing float-to-int conversion.
+# | wall(p3) runtime/support/am/ip.py:250  int(round(watts)). -- blocked: needs Python's `round`, which is round-half-to-even: measured, `round(3.5)` is 4 and `int(3.5)` is 3, and `round(0.6)` is 1 while `int(0.6)` is 0. So this is a semantic difference and not a missing float-to-int conversion.
 # | WALL(p3) runtime/support/am/ip.py:228  table_t.from_buffer(...). -- BLOCKED: needs `table_t.from_buffer(...)` -- CTYPES buffer aliasing, a Python object whose memory IS the table.
 #
 # 5. `wait_cond` and `time.sleep`. Thirteen `wait_cond`s (:113, :117, :121, :222,
@@ -1832,7 +1832,7 @@ def psp.rlc_cmd(+gc0: U32, +gc1: U32, +gc2: U32) -> U32:
 #    (:219, :346, :417, :584, :692, :702). Each wait is a POLL with a timeout and
 #    a message; the port carries the POLLED VALUE and the EXPECTED VALUE and not
 #    the spin.
-# | WALL(p3) runtime/support/am/ip.py:113  wait_cond on the KIQ fence. -- BLOCKED: needs `wait_cond` on the KIQ fence: a POLLING wait whose predicate is a device read, which is an FFI seam -- device MMIO / an `mmap` -- which cannot be anything in Bend but a foreign call (`ip.bend:3-8` says what survives the crossing is DATA: the register field lists).
+# | wall(p3) runtime/support/am/ip.py:113  wait_cond on the kiq fence. -- blocked: needs `wait_cond` on the kiq fence: a polling wait whose predicate is a device read, which is an ffi seam -- device mmio / an `mmap` -- which cannot be anything in Bend but a foreign call (`ip.bend:3-8` says what survives the crossing is data: the register field lists).
 # | WALL(p3) runtime/support/am/ip.py:219  time.sleep(0.5) after mode1 reset. -- BLOCKED: needs the mode1 RESET and the `read_config` poll that follows it -- and NOT the sleep: `IO.sleep` EXISTS (`bend guide:359`). The blocker is the device I/O on either side of it, so the marker's own annotation names the wrong half.
 #
 # 6. THE MPS AND PAGE TABLES. `mm.palloc`, `mm.map_range`, `mm.alloc_vaddr`,
@@ -1840,7 +1840,7 @@ def psp.rlc_cmd(+gc0: U32, +gc1: U32, +gc2: U32) -> U32:
 #    manager, which is `support/memory.py` and not this file. What survives is
 #    the SIZE and the ALIGNMENT each asks for.
 # | WALL(p3) runtime/support/am/ip.py:278  mm.palloc(0x1000 * xccs, 2 + is_vf). -- BLOCKED: needs `mm.palloc(0x1000 * xccs, 2 + is_vf)`: an FFI seam -- device MMIO / an `mmap` -- which cannot be anything in Bend but a foreign call (`ip.bend:3-8` says what survives the crossing is DATA: the register field lists).
-# | WALL(p3) runtime/support/am/ip.py:331  mm.map_range(..., AddrSpace.SYS, snooped, uncached). -- BLOCKED: needs `mm.map_range(..., AddrSpace.SYS, snooped, ...)`: an FFI seam -- device MMIO / an `mmap` -- which cannot be anything in Bend but a foreign call (`ip.bend:3-8` says what survives the crossing is DATA: the register field lists).
+# | wall(p3) runtime/support/am/ip.py:331  mm.map_range(..., AddrSpace.sys, snooped, uncached). -- blocked: needs `mm.map_range(..., AddrSpace.SYS, snooped, ...)`: an ffi seam -- device mmio / an `mmap` -- which cannot be anything in Bend but a foreign call (`ip.bend:3-8` says what survives the crossing is data: the register field lists).
 #
 # ===========================================================================
 # ===========================================================================
@@ -1982,7 +1982,7 @@ def PSP_TMR(+mp0_0: U32, +mp0_1: U32, +mp0_2: U32) -> List<&2, U32>:
      psp.autoload_tmr(mp0_0, mp0_1, mp0_2)))]
 
 # ===========================================================================
-# GATE 1: THE REGISTER FIELD LISTS, BY NAME AND IN ORDER.
+# gate 1: the register field lists, by name and in order.
 # ===========================================================================
 def t_regs() -> IO(Unit):
   do IO<Unit>:
@@ -2116,10 +2116,10 @@ def PQ_KMI_PRIV_BIT() -> U32: 1073741824
 def PQ_KMD_QUEUE_BIT() -> U32: 2147483648
 
 # :367-369, `cp_hqd_pq_control=encode(rptr_block_size=5, unord_dispatch=0,
-# queue_size=..., **({'priv_state':1,'kmd_queue':1} if kiq else {}),
-# **({'queue_full_en':1,'slot_based_wptr':2,'no_update_rptr':...} if aql else {}))`.
+# queue_size=..., ({'priv_state':1,'kmd_queue':1} if kiq else {}),
+# ({'queue_full_en':1,'slot_based_wptr':2,'no_update_rptr':...} if aql else {}))`.
 #
-# WHAT IS PORTED IS THE FIELD VALUES IN SOURCE ORDER and not the encoded word:
+# what is ported is the field values in source order and not the encoded word:
 # `AMDReg.encode` is `reduce(or, (value << fields[name][0] ...))` and those bit
 # POSITIONS are per-ARCH tables in `autogen/am/regs.py`, which is WALL 1 and the
 # same split `ops_amd.bend`'s WALL 2 records for `regCOMPUTE_*`.
@@ -2191,7 +2191,7 @@ def MQD_RBSIZE() -> List<&2, U32>:
   [sdma.rbsize(256), sdma.rbsize(1024), sdma.rbsize(65536)]
 
 # ===========================================================================
-# GATE 2: THE PSP STRUCT FIELD LISTS, BY NAME AND IN ORDER.
+# gate 2: the psp struct field lists, by name and in order.
 # ===========================================================================
 def t_structs() -> IO(Unit):
   do IO<Unit>:
@@ -2289,7 +2289,7 @@ def t_smu() -> IO(Unit):
     urow("amp_smu_clocks_unlimited", SMU_CLOCK_UNLIMITED())
 
 # ===========================================================================
-# GATE 4: THE PTE FLAG TABLES, :177-195. FOUR GENERATIONS, BOTH HALVES.
+# gate 4: the pte flag tables, :177-195. four generations, both halves.
 #
 # Every row prints hi AND lo, because the whole point of the section is that the
 # flags do not fit in 32 bits: `amp_pte_pde_hi` is 2147483648 for gfx12 and 0
@@ -2350,7 +2350,7 @@ def t_pte() -> IO(Unit):
     i64lorow("amp_pte_gfx9_pdb1_n_u_lo", pte.of(1, 0, 2, 1, 0, 0, 1, 0, 9, 4, 3, 3))
     i64hirow("amp_pte_extra_9_0_0_7_hi", pte.of(3, 1, 0, 0, 0, 0, 1, 7, 9, 4, 3, 3))
     i64lorow("amp_pte_extra_9_0_0_7_lo", pte.of(3, 1, 0, 0, 0, 0, 1, 7, 9, 4, 3, 3))
-    # `is_pte_huge_page`, :193-195. THE THREE ARMS ANSWER DIFFERENT SHAPES.
+    # `is_pte_huge_page`, :193-195. the three arms answer different shapes.
     i64row("amp_pte_huge_9_pdb0_p", pte.huge(2, i64_lit(0, 1), 9, 4, 3))
     i64row("amp_pte_huge_9_pdb0_q", pte.huge(2, i64_lit(1, 1), 9, 4, 3))
     i64row("amp_pte_huge_9_ptb_p", pte.huge(3, i64_lit(0, 1), 9, 4, 3))
@@ -2360,7 +2360,7 @@ def t_pte() -> IO(Unit):
     i64row("amp_pte_huge_10_ptb_q", pte.huge(3, i64_lit(1, 1), 10, 3, 0))
 
 # ===========================================================================
-# GATE 5: THE DOORBELL ARITHMETIC AND THE MQD SIZE ENCODINGS.
+# gate 5: the doorbell arithmetic and the mqd SIZE encodings.
 # ===========================================================================
 def t_db() -> IO(Unit):
   do IO<Unit>:
@@ -2429,7 +2429,7 @@ def t_db() -> IO(Unit):
 
 
 # ===========================================================================
-# GATE 6: THE KIQ PM4 PACKET, :108-112. EIGHTEEN WORDS, IN ORDER.
+# gate 6: the kiq PM4 packet, :108-112. eighteen words, in order.
 # ===========================================================================
 def t_kiq() -> IO(Unit):
   do IO<Unit>:
@@ -2510,7 +2510,7 @@ def t_ih() -> IO(Unit):
     lrow("amp_ih_drain", IH_DRAIN())
 
 # ===========================================================================
-# GATE 8: THE PSP PREDICATES AND THE COMMAND IDS, :611-755.
+# gate 8: the psp predicates and the command ids, :611-755.
 # ===========================================================================
 def t_psp() -> IO(Unit):
   do IO<Unit>:
@@ -2554,7 +2554,7 @@ def t_psp() -> IO(Unit):
     urow("amp_psp_msg1_shift", PSP_MSG1_ADDR_SHIFT())
 
 # ===========================================================================
-# GATE 9: THE ONE REFUSAL, :588, AND `Tr`'s OWN INVARIANTS.
+# gate 9: the one refusal, :588, and `Tr`'s own invariants.
 #
 # `if self.adev.ip_ver[am.SDMA0_HWIP] >= (5,0,0) and idx > 0: raise RuntimeError(f"am
 # {self.adev.devfmt}: sdma queue {idx} is not available")` is the ONLY `raise` in
@@ -2693,7 +2693,7 @@ def main() -> IO(Unit):
     IO.print("ip-done=1")
 
 # ===========================================================================
-# THE MUTATION TABLE. MEASURED, NOT ASSERTED.
+# the mutation table. measured, not asserted.
 #
 # `rows MOVED` is the load-bearing column. A mutation that moves NOTHING is not a
 # gate that passed; it is a measurement of what this gate CANNOT see, and it is
@@ -2754,7 +2754,7 @@ def main() -> IO(Unit):
 #   M44   3  kiq.pkt.wr_hi collapses onto the LOW half of the WR_CONFIRM address
 #   M45   3  kiq.pkt.addr: the `+ 0x1010` fence offset dropped
 #
-# THE THREE NON-MOVERS ARE EQUIVALENCES, NOT HOLES, AND EACH IS PAIRED.
+# the three non-movers are equivalences, not holes, and each is paired.
 #   M08  `U32.or` is commutative, so re-associating a union of flags is the same
 #        set. M43 drops a TERM instead, which is a different function: 9 rows.
 #   M22  `V.ge(13,0,6)` already covers (13,0,7) and (13,0,10), so both `V.eq`
@@ -2770,7 +2770,7 @@ def main() -> IO(Unit):
 #   REG       115 register LINE perturbations, 115 move rows.
 #   REG@name  115 register NAME perturbations, 106 move rows.
 #
-# 14 BLIND SPOTS SURVIVE, AND HERE THEY ARE:
+# 14 blind spots survive, and here they are:
 #   1. NINE field-name swaps that move nothing, in `amp_reg_` order: 422, 430,
 #      467, 467b, 493, 583, 689, 695, 699. MEASURED and EXPLAINED: each of those
 #      rows shares its field name with its neighbour because the name is a Python

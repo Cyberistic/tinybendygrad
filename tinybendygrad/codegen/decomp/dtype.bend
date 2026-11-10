@@ -42,7 +42,7 @@
 #  18  218-224   table   pm_dtype_decomps           PORTED, 2 rules
 #
 # ---------------------------------------------------------------------------
-# HOW THE DTYPE QUESTIONS ARE ASKED. A `match` arm on a dtype NAME is a silent
+# how the dtype questions are asked. a `match` arm on a dtype name is a silent
 # fall-through after a rename, so this file arms on `Cls` and `bits` and `pri`
 # everywhere it can, and on the NAME only where nothing else can work.
 #
@@ -103,7 +103,7 @@
 # arm of `is_nan`, which are otherwise dead defs.
 #
 # E. `float64` AS AN `f2f_clamp` TARGET IS NOT PORTED, because `mx` is
-# `2**1023 * (2 - 2**-52)` = the `float64` maximum and the port's only float
+# `2**1023 * (2 - 2-52)` = the `float64` maximum and the port's only float
 # type is `F32`. Its CPython value is in the oracle (`c7=F(ovf)`) and the
 # fixture is absent rather than gated wrong.
 #
@@ -184,7 +184,7 @@
 # and this loop's body calls only arms that are themselves leaves.
 #
 # ---------------------------------------------------------------------------
-# THE ORDER OF THIS FILE IS A TOPOLOGICAL SORT, not an accident. bend 2.0.34
+# the order of this file is a topological sort, not an accident. bend 2.0.34
 # refuses a forward reference, and `.agents/slop/dd-sort.py` reads the call
 # graph off this file and rewrites it; run it after adding a def.
 
@@ -342,7 +342,7 @@ def dd_const.int(+ar: O.Arena, +v: H.I64, +dt: S.Dt) -> O.Found:
   O.UOp.new(O.Found.ar(c), O.OpsCAST{}, [O.Found.i(c)], O.ADt{dt}, O.TNone{})
 
 # `UOp.const(v)` with NO dtype: `from_py` answers `weakint`, the `.cast` folds,
-# and the value keeps Python's sign. This is `shl`/`shr`'s `2**y` and every bare
+# and the value keeps Python's sign. This is `shl`/`shr`'s `2y` and every bare
 # integer literal in the file.
 
 def dd_wk(+ar: O.Arena, +v: H.I64) -> O.Found:
@@ -469,7 +469,7 @@ def dd_cast_bool(+ar: O.Arena, +x: U32, isb: Bool) -> O.Found:
 # literal 31 is on the LEFT and the answer is `C(31) + n * -1`. Writing it as
 # `n - 31` swaps the two operands of the ADD and nothing else catches it.
 #
-# BOTH HALVES OF THAT SENTENCE WERE FALSE IN THE BODY THIS COMMENT SITS ON, and
+# both halves of that sentence were FALSE in the body this comment sits on, and
 # both were measured rather than guessed. `.agents/slop/dd-probe-ops.py`, called
 # live on `(31 - n)` with `n = (b0 & 31).cast(dtypes.uint)`:
 #
@@ -560,7 +560,7 @@ def reindex(+ar: O.Arena, +idx: U32, +off: U32, +mul: U32) -> Maybe<&2, O.Found>
 # selector over three Booleans and not three separate answers.
 # ===========================================================================
 
-# dtype.py:28-40 IS FOUR `case ... if` CLAUSES AND PYTHON TAKES THE FIRST THAT
+# dtype.py:28-40 is four `case ... if` clauses and python takes the first that
 # MATCHES, so the selector is first-wins over three Booleans and NOT a priority
 # list. Guard 1 is `dt in (long,ulong) AND the source is NOT a float`, guard 2 is
 # `dt in (long,ulong)` ALONE -- so `dt` being a float is never consulted while it
@@ -614,7 +614,7 @@ def l2i_cast0(+ar: O.Arena, +x: U32, +ldt: S.Dt, +zeroext: Bool, +xdt: S.Dt) -> 
 # -- arm 1: a long CAST off a float source (dtype.py:33-34)
 
 def l2i_cast1.quo(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt, +loi: U32) -> O.Found:
-  # ⚠ dtype.py:34's `2**32` AND `0` ARE PYTHON INTEGERS AND BOTH GO THROUGH
+  # ⚠ dtype.py:34's `2**32` and `0` are python integers and both go through
   # `_broadcasted`'s `promote` (`mixin/elementwise.py:29-31`), WHICH REMINTS A weak
   # CONST TO `weak_dtype(out_dtype)` = `weakfloat`. So the `RECIP`'s operand is the
   # FLOAT 4294967296.0 and NOT `C(1:0)`, and `x < 0`'s ZERO is a node of its own rather
@@ -726,7 +726,7 @@ def l2i_shift.words(+isu: Bool, +ar: O.Arena, +ws: List<&2, U32>) -> W2:
   +a1u = dd_bcast(isu, O.Found.ar(a0u), nth(ws, 1n), S.uint32())
   W2{O.Found.ar(a1u), O.Found.i(a0u), O.Found.i(a1u)}
 
-# THE ARENA IS THREADED AND EVERY INDEX IS TAKEN FROM THE `Found` THAT OWNS IT.
+# the arena is threaded and every INDEX is taken from the `Found` that owns it.
 # This body did neither: it handed the SAME `ar` to all six node builders, and
 # `O.Arena` is an immutable `Arena{nodes: List<Node>}` (uop/ops.bend:1314 symbol=Arena),
 # so `O.UOp.new(ar, ...)` returns a Found over `ar ++ [node]` and the NEXT builder
@@ -781,7 +781,7 @@ def l2i_shr.fill(+ar: O.Arena, +a1: U32, +zero: U32, signed: Bool) -> O.Found:
 # dtype.py:47: `lo, hi = ((a0u >> n) | ((a1u << 1) << (31 - n))).bitcast(dt),
 # a1 >> (b0 & 31)`.
 #
-# THE `.bitcast(dt)` BELONGS TO `lo` AND NOT TO `hi`, AND THAT IS THE WHOLE OF
+# the `.bitcast(dt)` belongs to `lo` and not to `hi`, and that is the whole of
 # `lga`'s second disagreement: `hi` is a bare `SHR` at `u32` and this body wrapped
 # it. MEASURED (`dd-cone.py lga`): the `hi` node is `#7 SHR dt=u32` with no
 # BITCAST parent, and `lgasig` carries a `BITCAST/1` at position 7 that CPython's
@@ -863,7 +863,7 @@ def l2i_sub(+ar: O.Arena, +ad: S.Dt, +bd: S.Dt, +ws: List<&2, U32>) -> W2:
 
 # ONE product `x*y` yields BOTH halves of dtype.py:54, and `shr` READS THE RAW
 # PRODUCT. `shr(a00*b01, 16)` is the raw `a00*b01` floored, not the bitcast `shl`
-# of it -- `shl`/`shr` are transcendental.py:19-20 (`x * 2**y`, `x // 2**y`) and
+# of it -- `shl`/`shr` are transcendental.py:19-20 (`x * 2y`, `x // 2y`) and
 # dtype.py:54 spells both off the same parenthesised product. MEASURED
 # (`dd-cone.py lge`): `#24 DIV` has `#4 MUL` as its src0 and `#4` is the
 # `a00*b01` product itself, while `#2 BITCAST` sits over `#3 MUL` which is that same
@@ -1123,11 +1123,11 @@ def l2i_cdiv.abs(+ar: O.Arena, +xdt: S.Dt, +zero: U32, +a0: U32, +a1: U32, +b0: 
 #
 # THE SHIFT AMOUNT IS `i % 32`, NOT `i`. dtype.py:68 writes
 # `shl(cond.cast(dtypes.uint), i % 32)` and `shl` is transcendental.py:20,
-# `x * 2**y` -- so for `i = 63` the constant is `2**31` = `C(2147483648)` and NOT
+# `x * 2y` -- so for `i = 63` the constant is `2**31` = `C(2147483648)` and NOT
 # `2**63`, which `tx_powi(63)` builds as the 64-bit `C(2147483648:0)`. `U32.mod` is
 # a machine word, so the reduction is exact and needs no special case.
 #
-# ⚠ THE MEASUREMENT THAT USED TO STAND HERE WAS WRONG AND IS CORRECTED IN PLACE, because a
+# ⚠ the measurement that used to stand here was wrong and is corrected in place, because a
 # stale measurement in a comment is a measurement that gets cited. It claimed: "CPython's
 # cone constants after the fixed six are `C(63), C(62), ..., C(2)` ... while the port
 # printed `C(64)` and `C(2147483648)` there and NEVER PRODUCED A `2**31` AT ALL."
@@ -1142,7 +1142,7 @@ def l2i_cdiv.abs(+ar: O.Arena, +xdt: S.Dt, +zero: U32, +a0: U32, +a1: U32, +b0: 
 #
 # So the real difference is not a missing power of two. It is that the port emits ONE
 # leading word `C(64)` and then a RUN of powers of two, while CPython interleaves
-# `C(i)` with `2**(i-32)` for i = 63..33 -- the port never emits the 31 `UOp.const(i,
+# `C(i)` with `2(i-32)` for i = 63..33 -- the port never emits the 31 `UOp.const(i,
 # dtypes.uint)` shift words of dtype.py:65 at all. Whether that is the TRUNCDIV loop or the
 # `q` accumulator is not yet established; `lgtk` is still 3 constants against CPython's
 # 66 and `lgtsig` 57 cone nodes against 2184, so the family is OPEN. `.agents/slop/
@@ -1435,9 +1435,9 @@ def l2i_define(+ar: O.Arena, +self: U32, +pa: O.ParamArg) -> Maybe<&2, O.Found>:
 
 # `shl(1, k) - 1`, the mask dtype.py writes four times. `P.dc_sub` is
 # `a - 1` = `ADD(a, MUL(C(1), C(-1)))`, and THAT IS THE BUG: `shl(1, k)` is
-# `1 * (2**k)` and BOTH of its arguments are Python ints (transcendental.py:20), so
+# `1 * (2k)` and BOTH of its arguments are Python ints (transcendental.py:20), so
 # tinygrad folds the subtraction in PYTHON and the mask is ONE interned `CONST` node
-# before any graph exists. Building it as `ADD(C(2**k), MUL(C(1), C(-1)))` costs FOUR
+# before any graph exists. Building it as `ADD(C(2k), MUL(C(1), C(-1)))` costs FOUR
 # nodes where CPython has one, and the three the `+s`/`+m1`/`+m` binders mint are DEAD
 # -- nothing reads them -- so they are invisible in a cone walk from the root.
 # MEASURED, `f2f-arena-diff.py` against `.agents/slop/f2f-arena-oracle.py`:
@@ -1454,7 +1454,7 @@ def dd_mask1(+k: U32) -> U32:
 # THE SAME NUMBER AS A NODE, for the three places dtype.py COMPARES against the mask
 # (`x.eq(shl(1, k) - 1)` twice) or ORs it in (`nan_mantissa = shl(1, tm) - 1`) rather
 # than ANDing it. One interned `CONST`; `H.i64_of_i32` of `mask1` is exact because
-# `2**k - 1` is below `2**31` for every `k` dtype.py writes here.
+# `2k - 1` is below `2**31` for every `k` dtype.py writes here.
 def dd_mask1.node(+ar: O.Arena, +k: U32) -> O.Found:
   dd_wk(ar, H.i64_of_i32(dd_mask1(k)))
 
@@ -1481,11 +1481,11 @@ def rne.go(+ar: O.Arena, +v: U32, +s: U32) -> O.Found:
 # `f2f_clamp_max` -- the `mx` CONSTANT of `f2f_clamp` (dtype.py:131), factored
 # out because it is a VALUE and `f2f_clamp`'s own gate is about the GRAPH.
 #
-# `2.0**(max_exp - bias) * (1.0 + max_man / (1 << m))` IS
-# `(2**m + max_man) * 2**(max_exp - bias - m)` with ONE rounding instead of two,
+# `2.0(max_exp - bias) * (1.0 + max_man / (1 << m))` IS
+# `(2m + max_man) * 2(max_exp - bias - m)` with ONE rounding instead of two,
 # and for every target whose mantissa is 23 bits or fewer both factors and the
 # product are exact in `F32`. `float64` is the one exception (divergence E):
-# its `2**m + max_man` does not fit a `U32`, so the def refuses.
+# its `2m + max_man` does not fit a `U32`, so the def refuses.
 # ===========================================================================
 
 def rne.sel(zero: Bool, +ar: O.Arena, +v: U32, +s: U32) -> Maybe<&2, O.Found>:
@@ -1554,7 +1554,7 @@ def f2f_clamp.sat(sat: Bool, +mx: O.Found, +inf: O.Found) -> O.Found:
 # NotImplementedError` -- which is `fe > te` or `fm == tm`, and the second is
 # the pair `f16 -> bf16` among them.
 #
-# THE WIDENING BRANCH HAS NO `f2f_clamp` AND NO FLOAT CONSTANT, so an fp8 source
+# the widening branch has no `f2f_clamp` and no FLOAT constant, so an fp8 source
 # is gated there (divergence D) and the `fp8_fnuz` arm is not a dead def.
 # ===========================================================================
 
@@ -1613,7 +1613,7 @@ def f2f.qmask(+ar: O.Arena, +k: U32, +j: U32) -> O.Found:
   dd_wk(ar, H.i64_shl(H.i64_of_i32(dd_mask1(k)), U32.to_nat(j)))
 
 # `qnan = shl(shl(1, te) - 1, tm) | shl(1, tm - 1)`, dtype.py:108. BOTH operands of that
-# `|` are Python ints -- `shl` is `x * (2**y)` with two int arguments (transcendental.py:20)
+# `|` are Python ints -- `shl` is `x * (2y)` with two int arguments (transcendental.py:20)
 # -- so the disjunction is evaluated in PYTHON and the whole thing is ONE interned CONST.
 # MEASURED, `q4` (fp8e4m3fnuz -> float32): cpy[145] is `CONST/0 C(2143289344)` =
 # `2139095040 | 4194304` = `0x7FC00000`, feeding cpy[146] `WHERE <- 140,145,144`. The port
@@ -1629,14 +1629,14 @@ def f2f.qnan.c(+ar: O.Arena, +k: U32, +j: U32) -> O.Found:
 # `shl((v & shl(1, fs-1)).cast(f2f_dt[to]), ts - fs)`
 
 # `shl(shl(1, k) - 1, j)`, the `nan` pattern of dtype.py:106 and :120. `shl` is
-# `x * (2**y)` (transcendental.py:20) with BOTH arguments Python ints, so the whole
-# expression is one Python int by the time a node exists: `(2**k - 1) * 2**j`. ONE
+# `x * (2y)` (transcendental.py:20) with BOTH arguments Python ints, so the whole
+# expression is one Python int by the time a node exists: `(2k - 1) * 2j`. ONE
 # `CONST`. MEASURED, `shl(255, 23)` is `C(2139095040)`, and CPython's `q1` slot 15 is
-# `CONST/0 C(2139095040)` with an `OR` for src1 -- not a `MUL` by a `CONST 2**j`.
-# This def REPLACED `f2f.em1`, which built `2**k - 1` as a three-node graph and then
+# `CONST/0 C(2139095040)` with an `OR` for src1 -- not a `MUL` by a `CONST 2j`.
+# This def REPLACED `f2f.em1`, which built `2k - 1` as a three-node graph and then
 # handed the SAME arena to `tx_shl`, so `tx_shl`'s `MUL` overwrote the `em1` CONST and
 # its own src0 pointed FORWARD. See `f2f.qnan`.
-# ⚠ THE MASK WAS ROUTED THROUGH `dd_band`'s `U32` THIRD PARAMETER, AND `dc_cint` is
+# ⚠ the mask was routed through `dd_band`'s `U32` third parameter, and `dc_cint` is
 # `O.CInt{H.i64_of_i32(v)}` -- `H.i64_of_i32` SIGN-EXTENDS. `shl(1, fs - 1)` is `2**31` for a
 # `float32` source, and `2**31` as a `U32` sign-extends to `-2147483648`, so `q7` interned
 # `C(-2147483648)` where CPython has `C(2147483648)` -- and a SECOND, DEAD `C(2147483648)`
@@ -1651,7 +1651,7 @@ def f2f.sign(+ar: O.Arena, +udt: S.Dt, +v: U32, +fs: U32, +ts: U32) -> O.Found:
   T.tx_shl(O.Found.ar(c), O.Found.i(c), U32.sub(ts, fs))
 
 # `(v & (shl(1, fs-1) - 1)).cast(f2f_dt[to])`
-# ⚠ THE THREE `+s`/`+m1`/`+m` BINDERS BUILT A `2**k - 1` NODE GRAPH AND NOTHING READ
+# ⚠ the three `+s`/`+m1`/`+m` binders built a `2k - 1` node graph and nothing read
 # IT. `dd_band`'s third parameter IS the mask VALUE (`op.bend`'s `dc_band` interns it as
 # `dc_cint(ar, k)`), so those were four dead slots -- see `f2f.mask1`. `f2f.sign` keeps
 # its one `+s` line and this one does not: there the CONST `+s` interns is the one
@@ -1663,11 +1663,11 @@ def f2f.nosign(+ar: O.Arena, +udt: S.Dt, +v: U32, +fs: U32) -> O.Found:
   P.dc_cast(O.Found.ar(a), O.Found.i(a), udt)
 
 # `shl(nosign, tm - fm) + shl(tb - fb, tm)`. `tb - fb` is a Python int and so is `tm`,
-# so `shl(tb - fb, tm)` is `(tb - fb) * (2**tm)` evaluated IN PYTHON -- one interned
+# so `shl(tb - fb, tm)` is `(tb - fb) * (2tm)` evaluated IN PYTHON -- one interned
 # `CONST`. It is never negative in the widening branch, which is what keeps the
 # weakfloat remint out of this arm.
-# ⚠ THIS ARM BUILT THE WRONG NODE until this rewrite: it passed `O.Found.i(a)` to
-# `tx_shl`, so the graph was `a + (a * 2**tm)` and the `tb - fb` CONST it had just
+# ⚠ this arm built the wrong node until this rewrite: it passed `O.Found.i(a)` to
+# `tx_shl`, so the graph was `a + (a * 2tm)` and the `tb - fb` CONST it had just
 # interned was DEAD. MEASURED: cpy[13] is `CONST C(1006632960)` feeding cpy[14]
 # `ADD <- 12,13`, and `120 * 2**23 == 1006632960`; port[18] was `CONST C(120)` read by
 # nothing, port[20] was `MUL <- 16,18` (a *masked*, not an offset) and port[21] was
@@ -1681,15 +1681,15 @@ def f2f.norm(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +fr: S.Dt, +to: S.D
   dd_add(O.Found.ar(bf), O.Found.i(a), O.Found.i(bf))
 
 # `shl(nosign, tm - fm) | shl((shl(1, te) - 1), tm)`
-# ⚠ THIS ARM WAS ONE ARENA HANDED TO TWO NODE BUILDERS. `T.tx_shl(O.Found.ar(a),
+# ⚠ this arm was one arena handed to two node builders. `t.tx_shl(o.Found.ar(a),
 # f2f.em1(O.Found.ar(a), te), tm)` reads `O.Found.ar(a)` -- the arena BEFORE `em1` grew
 # it -- so `tx_shl` wrote its `MUL` into the slot `em1`'s first `CONST` had just taken,
 # and read `src0` at `em1`'s LAST slot, three past the `MUL`. The result was a graph
 # whose `OR`'s operand pointed forward into the `OR` itself: on `f1` port slot 22 was
-# `MUL <- 23,19` and slot 23 was `OR <- 17,22`, a CYCLE, and slot 18's `CONST C(2**te)`
+# `MUL <- 23,19` and slot 23 was `OR <- 17,22`, a CYCLE, and slot 18's `CONST C(2te)`
 # was gone. `+` means "the callee may REBIND this name", not "consumed on every path":
 # two mints from one arena name both returned index 2 and overwrote each other.
-# The rule this arm now follows is ONE ARENA, ONE BUILDER, PER NODE: `f2f.qmask`
+# The rule this arm now follows is one arena, one builder, per node: `f2f.qmask`
 # returns the arena it grew and that arena is what `dd_or` is handed.
 
 def f2f.qnan(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +te: U32) -> O.Found:
@@ -1708,7 +1708,7 @@ def f2f.fnuz(+ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Foun
   +a = dd_ne(O.Found.ar(z), O.Found.i(sg), O.Found.i(z))
   +b = dd_eq1(O.Found.ar(a), O.Found.i(ns), O.Found.i(z))
   +fn = dd_and(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
-  # ⚠ `qnan` IS ONE CONST. It used to be `f2f.qmask`, then `CONST 2**(tm-1)`, then an
+  # ⚠ `qnan` IS ONE CONST. It used to be `f2f.qmask`, then `CONST 2(tm-1)`, then an
   # `OR` -- three nodes -- and the `OR` was handed `q1`'s arena with `qk` minted in
   # between, so it also wrote over `qk` and pointed at ITSELF: `23 OR/2 OR <- 16,23
   # FORWARD` on `q4` before. See `f2f.qnan.c` for the `C(2143289344)` measurement.
@@ -1719,9 +1719,9 @@ def f2f.fnuz(+ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Foun
   dd_where(O.Found.ar(s), O.Found.i(fn), O.Found.i(q), O.Found.i(s))
 
 # `is_nan = nosign.eq(shl(1, fm + fe) - 1)` for `fp8e4m3` else `exp.eq(shl(1, fe) - 1)`
-# ⚠ BOTH ARMS COMPARED AGAINST `2**(fm+fe)` AND `2**fe` -- THE MASK, NOT THE MINUS ONE.
-# dtype.py's `- 1` is inside the Python int `shl(1, k) - 1`, so the node is `C(2**k - 1)`
-# and the port's `C(2**k)` was a different function. MEASURED: cpy[6] is `C(127)` feeding
+# ⚠ both arms compared against `2(fm+fe)` and `2fe` -- the mask, not the minus one.
+# dtype.py's `- 1` is inside the Python int `shl(1, k) - 1`, so the node is `C(2k - 1)`
+# and the port's `C(2k)` was a different function. MEASURED: cpy[6] is `C(127)` feeding
 # cpy[17] `CMPNE <- 8,6` (`nosign` vs `127`); the port's q1 read `CMPNE <- 12,1` (`nosign`
 # vs `128`). CPython's own `q1k` carries the `C(127)` the port never compared against.
 
@@ -1763,7 +1763,7 @@ def f2f.up(+fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S
   +w = f2f.up.tail(T.tx_is_fnuz(fr), dd_is_e4m3(fr), O.Found.ar(nq), ns, sg, ex, nm, nq, fe, fm, te, tm)
   T.tx_bitcast(O.Found.ar(w), O.Found.i(w), to)
 
-# ⚠ THE SAME `U32` MASK ROUND-TRIP AS `f2f.sign`, at `2**(ts - 1)`. No fixture the file owns
+# ⚠ THE SAME `U32` MASK ROUND-TRIP AS `f2f.sign`, at `2(ts - 1)`. No fixture the file owns
 # reaches `ts = 32` -- `ts` is the TARGET's width and every narrowing target here is fp8 --
 # so this is a latent defect, fixed because the fix is the same one line and the wrong
 # version is what `f2f.sign` shipped.
@@ -1781,9 +1781,9 @@ def f2f.down.nosign(+ar: O.Arena, +v: O.Found, +fs: U32) -> O.Found:
 
 # `(rne(nosign, fm - tm) - shl(fb - tb, tm)).cast(f2f_dt[to])`
 
-# ⚠ `+k` interned `C(fb - tb)` and `tx_shl` multiplied `x` by `2**tm` -- so the graph was
-# `(x - (fb - tb)) * 2**tm`, which is not the function, and it cost a `CONST 2**tm` and a
-# `MUL` that CPython does not have. `shl(fb - tb, tm)` is `x * (2**y)` with BOTH
+# ⚠ `+k` interned `C(fb - tb)` and `tx_shl` multiplied `x` by `2tm` -- so the graph was
+# `(x - (fb - tb)) * 2tm`, which is not the function, and it cost a `CONST 2tm` and a
+# `MUL` that CPython does not have. `shl(fb - tb, tm)` is `x * (2y)` with BOTH
 # arguments Python ints (transcendental.py:20), so the whole offset is one CONST and the
 # subtraction keeps `dc_sub`'s `x + MUL(C(k), C(-1))`. MEASURED, `q2`: cpy[58] is
 # `CONST C(960)` (`120 * 2**3` for `float32 -> fp8e4m3`) feeding cpy[59] `MUL <- 58,32`
@@ -1823,7 +1823,7 @@ def f2f.down.uf(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +fr: S.Dt, +to: S
 
 # `nan_mantissa = (shl(1, tm) - 1) if to == dtypes.fp8e4m3 else (shr(nosign, fm - tm) & (shl(1, tm) - 1))`
 
-# ⚠ THE THIRD DEAD MASK GRAPH. MEASURED, `q2`: cpy[50] is `CONST C(524287)` and it is
+# ⚠ the third dead mask graph. measured, `q2`: cpy[50] is `CONST C(524287)` and it is
 # OR'd straight into the `nan`; the port minted `CONST C(8388608)`, `CONST C(1)`,
 # `CONST C(-1)`, `MUL` and `ADD` for the same number.
 def f2f.down.m1(+ar: O.Arena, +tm: U32) -> O.Found:
@@ -1840,7 +1840,7 @@ def f2f.down.mant(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, e4m3: Bool) ->
     case True{}: f2f.down.m1(ar, tm)
     case False{}: f2f.down.m2(ar, ns, fm, tm)
 
-# ⚠ THE THIRD OF THE THREE ALIASED ARMS -- `f2f.qnan`, `f2f.fnuz` and this one all wrote
+# ⚠ the third of the three aliased arms -- `f2f.qnan`, `f2f.fnuz` and this one all wrote
 # `T.tx_shl(O.Found.ar(a), f2f.em1(O.Found.ar(a), te), tm)`, one arena to two builders.
 # On `n2` the two `FORWARD` slots 41 and 48 were this arm and its `.cast`, and slot 26's
 # `MUL <- 36,25` and slot 28's `ADD <- 36,27` were the overwritten pair.
@@ -1854,7 +1854,7 @@ def f2f.down.npat(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, 
 # `is_nan = (shr(v, fm) & (shl(1, fe) - 1)).eq(shl(1, fe) - 1)`. The AND is the
 # one `underflow` built, so it is interned; the `eq` is two CMPNEs.
 
-# ⚠ `+mc` minted `2**fe - 1` as `ADD(C(2**fe), MUL(C(1), C(-1)))` -- four nodes -- and
+# ⚠ `+mc` minted `2fe - 1` as `ADD(C(2fe), MUL(C(1), C(-1)))` -- four nodes -- and
 # `dd_band`'s third parameter interned the SAME mask as a `CONST` two slots later, so the
 # graph and the constant were both in the arena. MEASURED, `q2`: cpy[50] `C(524287)` is
 # the single CONST the AND and the EQ both read.
@@ -1919,7 +1919,7 @@ def f2f.narrow(+v: O.Found, +udt: S.Dt, +fe: U32, +fm: U32, +te: U32, +tm: U32, 
 
 # `shr(v, fs - ts) & shl(1, ts - 1)`
 
-# ⚠ NEITHER DEF TAKES AN `ar` ANY MORE, AND THAT IS THE POINT. Both used to, and
+# ⚠ neither DEF takes an `ar` any more, and that is the point. Both used to, and
 # `f2f.down.has` passed the SAME `ar` to `f2f_clamp` and to `f2f.clamped`, so `tx_bitcast`
 # and `f2f.narrow` rebuilt the whole clamp on top of itself. The arena now travels INSIDE
 # the `Maybe` -- `case Some{O.Found{+ca, +ci}}` -- so there is no name a caller can hand
@@ -2063,7 +2063,7 @@ def pm_dtype_decomps() -> O.PMEntrys:
     O.PMEntry{1,  [O.OpsSINK{}], Nil{}}]}
 
 # ===========================================================================
-# THE REWRITE HALF, PORTED IN SHAPE. Each of these is a Python def whose ONE
+# the rewrite half, ported in shape. Each of these is a Python def whose one
 # hard call is `graph_rewrite`, so the arguments, the `ctx`, the `bottom_up=True`
 # and the table choice are all here and the call itself answers "no node". The
 # header states the wall; `wall` is the one predicate they all end in.
@@ -2141,7 +2141,7 @@ def do_dtype_decomps(sink: U32, ctx: U32) -> Maybe<&2, U32>:
 #   * `sig` is the arena's CREATION ORDER, which is why every def above builds
 #     its nodes in CPython's evaluation order and not in a tidier one.
 #
-# EVERY PRINTER TAKES THE ARENA BY VALUE: the arena is a `Data` value, a reader
+# every printer takes the arena by value: the arena is a `Data` value, a reader
 # does not move it, and a printer must read it many times.
 # ===========================================================================
 
@@ -2261,7 +2261,7 @@ def dd_sig1(+ar: O.Arena, +u: U32) -> String:
 # ===========================================================================
 # THE CANONICAL ROW, and the invariant it has.
 #
-# `sig` IS THE ANSWER'S CONE IN DFS PRE-ORDER: every arena node REACHABLE from
+# `sig` is the answer's cone in dfs pre-order: every arena node reachable from
 # the answer root(s), each ONCE, listed parent-before-child and src[0] first.
 #
 # WHAT IT IS INVARIANT TO, which is what the old row was not:
@@ -2911,7 +2911,7 @@ def l2i.hi42(nm: String, +ga: Ga) -> Ga:
 # it was wrong on all SEVEN dtypes it answers, in a way that cancelled on the
 # two fnuz layouts.
 #
-# THE ORACLE'S `c{i}` ROW IS A FUNCTION OF `dt` ALONE AND CPython'S IS NOT.
+# the oracle's `c{i}` row is a function of `dt` alone and CPython's is not.
 # `mx` is `val.const_like(...)`, so its VALUE also depends on `fr`, and the two
 # answers differ for `float64` AND ONLY THERE. Called, in
 # `.agents/slop/dd-divE-probe.py`:
@@ -2954,7 +2954,7 @@ def dd_cmx.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
     case 1n+p: dd_cmx.rows(p, U32.add(i, 1), dd_cmx.pick(i, ga))
 
 # ===========================================================================
-# THE `f2f` ROWS -- dtype.py:101-125, THE WHOLE REGION, WHICH HAD NO ROW AT ALL.
+# the `f2f` rows -- dtype.py:101-125, the whole region, which had no row at all.
 #
 # Until these existed the 182-row gate reached `f2f_clamp_max` (the `c*` rows) and
 # NOTHING ELSE in dtype.py's float half. `f2f`, `f2f.up`, `f2f.up.tail`, `f2f.fnuz`,
@@ -2991,7 +2991,7 @@ def dd_cmx.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
 # transcribed: that file calls `DD.f2f` on a live `tinygrad`.
 #
 # !! THE NAMES ARE `q*` AND NOT `f*`/`g*`/`h*`/`k*`, because `.agents/slop/dd-oracle.py`
-# ALREADY OWNS THOSE for the SAME DEFS with DIFFERENT fixtures: its `f1` is
+# already owns those for the same defs with different fixtures: its `f1` is
 # `fp8e4m3 -> f32` where `q1` is, its `f2` is `fp8e4m3fnuz -> f32` where `q4` is, and
 # its `g3`/`g4`/`g6`/`g7` are `q2`/`q3`/`q5`/`q7`. Two DIFFERENT fixtures sharing one
 # `name=` key is a disagreement MANUFACTURED BY THE NAMING, and `dd-band-diff.py` cannot
@@ -3042,7 +3042,7 @@ def f2f.got(nm: String, r: Maybe<&2, O.Found>, +ga: Ga, from: U32) -> Ga:
 # it, and the cone must be walked in the grown one. That distinction is the whole of the
 # forward reference this file used to have.
 #
-# ⚠ THE PARAM'S DTYPE IS `f2f_dt[fr]` AND NOT `fr`, because BOTH REAL CALL SITES PASS A
+# ⚠ the PARAM's dtype is `f2f_dt[fr]` and not `fr`, because both real call sites pass a
 # UINT: dtype.py:142 `f2f(val.bitcast(f2f_dt[to]), to, fr)` and dtype.py:196
 # `f2f(x.bitcast(f2f_dt[ctx[0]]), ctx[0], ctx[1])`, with `f2f_dt[f] =
 # getattr(dtypes, f"uint{f.bitsize}")` at dtype.py:97. `f2f.udt(fr)` IS that table, and

@@ -12,7 +12,7 @@
 # snapshot. The cut itself is `.agents/slop/split-codegen3.py`, which moved every
 # body by LINE RANGE, so "moved verbatim" is a checkable claim and not a promise.
 #
-# THE SHARED SUBSTRATE IS IMPORTED, NOT COPIED. `Rew` (the rule's answer), the
+# the shared substrate is imported, not copied. `Rew` (the rule's answer), the
 # `rw_*` node readers, `rw_ranges`, `G` (the fixture's index map), `n_of` and the
 # two row printers live in `codegen/rewriter.bend` and every use here is `RW.<name>`.
 # A TYPE MENTION needs the alias as well as a call -- an unqualified imported
@@ -51,8 +51,8 @@
 # SET is exact, so the dispatch tables below are the real ones -- they are what
 # `UPat` compiles to, whatever the rules inside them can do.
 #
-# THE WALL, and it is ONE wall and it is NOT this file's: **`UOp.ranges` is not
-# ported.** `rw_ranges` is the reader, it is DEFERRED to `fold.bend`, and
+# THE WALL, and it is ONE wall and it is NOT this file's: `UOp.ranges` is not
+# ported. `rw_ranges` is the reader, it is DEFERRED to `fold.bend`, and
 # `codegen/rewriter.bend` carries the whole argument. Two rules here need it and
 # both are PORTED with every other conjunct reachable: `flatten_range`
 # (simplify.py:81-85 symbol=reduce_unparented) and `reduce_unparented` (simplify.py:87-101). `ru_range` is
@@ -60,7 +60,7 @@
 # not `None`, and it is the one whose srcs are all RANGEs.
 #
 # ---------------------------------------------------------------------------
-# FOUR THINGS THAT ARE EASY TO INVERT, all measured against the real tables.
+# four things that are easy to invert, all measured against the real tables.
 #
 # 1. `range_start` IS NOT ZERO FOR REDUCE OR END. ops.py:55 is
 #    `{STAGE: 1, REDUCE: 1, END: 1, CALL: 1, LINEAR: 0}`, so `flatten_range`'s
@@ -71,7 +71,7 @@
 #    `if (self.op, self.src, self.arg, self.tag) == new_args: return self`
 #    turns that into `self`, and `ops.py:83`'s `ret is not uop` drops it.
 #    `fr_same` is the row.
-# 3. `reduce_unparented` MULTIPLIES BY THE RANGE'S **END**, not by its id:
+# 3. `reduce_unparented` MULTIPLIES BY THE RANGE'S END, not by its id:
 #    `ret * r.src[0]` where `r` is a RANGE, so `r.src[0]` is the RANGE's bound
 #    UOp. `ru_end` is the row, and it is a node index -- a mutation that reads
 #    `r.src[1:]` instead typechecks and moves it.
@@ -89,7 +89,7 @@
 # `ru_table`, `rc_table`, `lc_table`, so this is EIGHT renames and every one of
 # them is inside this file; `.agents/slop/split-codegen3.py` does them in ONE
 # single-pass token rewrite and `--check` undoes them to find the original bytes.
-# THE REMAING ELEVEN ARE PORT-LOCAL and the naming rule does not apply to them:
+# the remaing eleven are port-local and the naming rule does not apply to them:
 # `fr_off`, `dd_put`, `fr_new`, `fr_head`, `fr_src`, `fr_rule`, `fr_0`, `fr_early`,
 # `fr_dispatch`, `fr_try`, `fr_scan` are `flatten_range`'s decomposition into the
 # shapes Bend needs, and `ru_rop`, `ru_rop_ok`, `ru_all_ranges`, `ru_parented`,
@@ -160,7 +160,7 @@ import ./rewriter.bend as RW
 # are the real ones -- they are what `UPat` compiles to, whatever the rules
 # inside them can do.
 
-# FOUR THINGS THAT ARE EASY TO INVERT, all measured against the real tables.
+# four things that are easy to invert, all measured against the real tables.
 #
 # 1. `range_start` IS NOT ZERO FOR REDUCE OR END. ops.py:58 is
 #    `{STAGE: 1, REDUCE: 1, END: 1, CALL: 1, LINEAR: 0}`, so `flatten_range`'s
@@ -171,7 +171,7 @@ import ./rewriter.bend as RW
 #    `if (self.op, self.src, self.arg, self.tag) == new_args: return self`
 #    turns that into `self`, and `ops.py:1610`'s `ret is not uop` drops it.
 #    `fr_same` is the row.
-# 3. `reduce_unparented` MULTIPLIES BY THE RANGE'S **END**, not by its id:
+# 3. `reduce_unparented` MULTIPLIES BY THE RANGE'S END, not by its id:
 #    `ret * r.src[0]` where `r` is a RANGE, so `r.src[0]` is the RANGE's bound
 #    UOp. `ru_end` is the row, and it is a node index -- a mutation that reads
 #    `r.src[1:]` instead typechecks and moves it.
@@ -183,7 +183,7 @@ import ./rewriter.bend as RW
 # `range_start` -- ops.py:58. `{STAGE: 1, REDUCE: 1, END: 1, CALL: 1, LINEAR: 0}`
 # and ops NOT in the dict have no offset, which `ops.py:474` never asks for: the
 # `if self.op in range_start` guard means an absent op is the `()` arm.
-# FIVE OPS ANSWER 0 -- LINEAR plus every op OUTSIDE the dict -- and FOUR answer 1.
+# five ops answer 0 -- linear plus every op outside the dict -- and four answer 1.
 # An early version matched on "is LINEAR" to answer 0, which answers 1 for LINEAR
 # because LINEAR IS in the dict, and `fr_off_linear` is the row that caught it.
 # ===========================================================================
@@ -340,7 +340,7 @@ def flatten_range(+ar: O.Arena, self: U32) -> RW.Rew:
 #       if red.arg[0] is Ops.ADD:
 #         for r in reduce_unparented: ret = ret * r.src[0]
 #       if red.arg[0] is Ops.MUL:
-#         for r in reduce_unparented: ret = ret ** r.src[0]
+#         for r in reduce_unparented: ret = ret  r.src[0]
 #       return ret
 #
 # PORTED IN FULL except `x in red.src[0].ranges` (the header's wall) and the
@@ -437,7 +437,7 @@ def ru_ret.of(empty: Bool, +ar: O.Arena, +self: U32, ps: List<&2, U32>) -> RW.Re
     case False{}: RW.rew_hit(O.UOp.new(ar, RW.rw_op(ar, self), List.append(&2, U32, [RW.rw_src0(ar, self)], ps),
                                          RW.rw_arg(ar, self), RW.rw_tag(ar, self)))
 
-# `ret = ret * r.src[0]` (ADD) and `ret = ret ** r.src[0]` (MUL). `r` is a RANGE, so
+# `ret = ret * r.src[0]` (ADD) and `ret = ret  r.src[0]` (MUL). `r` is a RANGE, so
 # `r.src[0]` is its BOUND -- the single most invertible line in the three files.
 def ru_scale.of(add: Bool, mul: Bool, +r: RW.Rew, bnd: U32, +ar: O.Arena) -> RW.Rew:
   match add mul:

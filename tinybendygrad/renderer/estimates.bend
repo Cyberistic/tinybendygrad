@@ -7,7 +7,7 @@
 #   tinygrad/uop/ops.py:26   if TYPE_CHECKING:
 #                              from tinygrad.renderer import Estimates
 #
-# BEND HAS NO `TYPE_CHECKING`, AND AN IMPORT CYCLE IS REFUSED OUTRIGHT --
+# BEND has no `TYPE_CHECKING`, and an import cycle is refused outright --
 # MEASURED, `a.bend` importing `b.bend` while `b.bend` imports `a.bend` answers
 # "an import cycle through .../a.bend". SO THE CYCLE IS BROKEN BY A THIRD
 # FILE: this one, which imports `Base` and NOTHING ELSE, and which BOTH
@@ -17,7 +17,7 @@
 #
 # THE METHODS THAT NEED `ops.bend` STAY IN `renderer/__init__.bend`:
 # `Estimates.from_uops` reads `Ops`, so it lives beside its subject's
-# consumers. WHAT IS HERE IS THE RECORD AND ITS ACCESSORS, which need `U32`.
+# consumers. what is here is the record and its accessors, which need `U32`.
 
 import Base
 
@@ -37,7 +37,7 @@ import Base
 # `to_max_shape` is `# TODO(p3) ops.py:1092 symbol=UOp.vmax`) is unreachable from that call site,
 # so counting the linear list needs none of it.
 #
-# THE `mem` DICT IS THE ONE PLACE THE PORT'S SHAPE DEPARTS FROM 1:1, and the
+# the `mem` dict is the one place the port's shape departs from 1:1, and the
 # departure is load-bearing rather than cosmetic. Python keys it by
 # `(buffer, op)`, so a buffer that is both READ and WRITTEN carries TWO counts
 # that `sum(mem.values())` adds. A `Data` record cannot key a `Map` by a pair --

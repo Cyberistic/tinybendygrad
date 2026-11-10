@@ -12,8 +12,8 @@
 # `.agents/slop/split-codegen3.py`, which moved every body by LINE RANGE.
 #
 # THIS IS THE SMALLEST OF THE THREE, and it is small for the reason upstream is
-# small: **two of coalesce.py's nine defs are TABLES and the seven around them are
-# all one wall.** So this file is two `O.PMEntry` lists, two length rows, and the
+# small: two of coalesce.py's nine defs are TABLES and the seven around them are
+# all one wall. So this file is two `O.PMEntry` lists, two length rows, and the
 # inventory that says which wall each of the other seven hits.
 #
 # ---------------------------------------------------------------------------
@@ -36,8 +36,8 @@
 # gateable, so the dispatch tables below are the real ones: they are what `UPat`
 # compiles to, whatever the rules inside them can do.
 #
-# THE WALL, stated once and honestly: **`_drop_valid_stmts` is `@functools.cache`d
-# and `memory_coalescing` keeps a `defaultdict` keyed by a 5-tuple.** Neither is a
+# THE WALL, stated once and honestly: `_drop_valid_stmts` is `@functools.cache`d
+# and `memory_coalescing` keeps a `defaultdict` keyed by a 5-tuple. Neither is a
 # set this architecture can hold, and neither has a rule that would fire without
 # it, so neither is a missing TABLE -- they are the WALL, marked above against
 # their own lines.

@@ -14,10 +14,10 @@ import ./transformer.bend as TR
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/vit.py (73 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/vit.py (73 loc). not yet ported.
 #
-# THE ONLY MODEL IN THIS DIRECTORY THAT DOES NOT BEGIN WITH A CONVOLUTION, AND
-# THAT IS THE WHOLE OF ITS DISTINCTIVE BLOCKER. Every other file here names
+# the only model in this directory that does not begin with a convolution, and
+# that is the whole of its distinctive blocker. Every other file here names
 # `nn.Conv2d` in its first constructor; `ViT.__init__` names `Tensor.uniform`,
 # `Tensor.zeros` and `Tensor.ones` (upstream:8-11,16-17) -- all FOUR are built
 # (`rd_uniform` mixin/rand.bend:925 symbol=rd_uniform, `cr_zeros` mixin/creation.bend:539 symbol=cr_zeros,
@@ -33,23 +33,23 @@ import ./../datasets/__init__.bend as D
 #   `Tensor.scaled_dot_product_attention`. `extra/models/transformer.bend:108 symbol=tf_block_attn` is
 #   `tf_block_attn`, which refuses on it, and `THE PORT's `mixin/rand.bend` HEADER` carries
 #   FOUR walls for its arms -- "GQA arm", "the matmul", "the causal mask", "the
-#   attn_mask arm". So THIS FILE IS NOT BLOCKED ON A SIBLING THAT IS ABSENT. IT
-#   IS BLOCKED ON A SIBLING THAT IS PRESENT AND REFUSING, WHICH IS A DIFFERENT
+#   attn_mask arm". So this file is not blocked on a sibling that is absent. it
+#   is blocked on a sibling that is present and refusing, which is a different
 #   AND MORE USEFUL FACT: `tf_block_init` (transformer.bend:96) is the exact
 #   address to go to, and its refusal carries the exact symbol.
 #
-#   THE SECOND BLOCKER, AND IT IS ONE UNBELIEVABLY SHORT LINE: upstream:29
+#   the second blocker, and it is one unbelievably short line: upstream:29
 #       x = x.layernorm().linear(*self.encoder_norm)
 #   `Tensor.layernorm` does not exist. `THE PORT's `nn/__init__.bend` WALL BLOCK` names it as an
 #   open wall -- "TODO(p3) mixin/op.py:1661 x.layernorm -- SIDE B, not built" --
 #   and that line is STILL TRUE even though the `x.conv2d` (:231), `x.batchnorm`
 #   (:229) and `x.linear` (:227) walls beside it stopped being true, because
 #   `nn/layers.bend` and `nn/pool.bend` were written to close exactly those
-#   three and nobody went back for layernorm. THE WALL LIST DECAYED AND NOTHING
-#   NOTICED, WHICH IS THE POINT OF NAMING IT BY LINE INSTEAD OF BY "SIDE B".
+#   three and nobody went back for layernorm. the wall list decayed and nothing
+#   noticed, which is the point of naming it by line instead of by "side b".
 #
 # THE `-1` IN `x.reshape(shape=(x.shape[0], x.shape[1], -1))` (upstream:21) IS A
-# REAL MISSING PRIMITIVE AND IT IS NOT A LAYER. `mxw_reshape`
+# real missing primitive and it is not a layer. `mxw_reshape`
 # (mixin/movement.bend:1434 symbol=mxw_reshape) takes an EXPLICIT `List<&2, U32>`; it does not infer
 # an axis. `nn/pool.bend:327 symbol=pool_flatten` states the same boundary for its own `flatten`
 # ("`-1` is NOT spelled because no def here infers an axis (that is
@@ -70,7 +70,7 @@ import ./../datasets/__init__.bend as D
 # worth saying plainly: a ViT whose weights cannot be written is a ViT that can
 # only ever produce its own random initialisation.
 #
-# EVERY DEF BELOW REFUSES, AND THE RETURN TYPE IS `D.Refused`, NOT A TENSOR. A
+# every DEF below refuses, and the return TYPE is `D.Refused`, not a tensor. a
 # stub that returned a zero Tensor would be indistinguishable from a layer whose
 # weights happen to be zero. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`. Each message names
@@ -117,7 +117,7 @@ def vt_encoder_norm(embed_dim: U32) -> D.Refused:
   D.refuse("extra/models/vit.py:16 ViT.encoder_norm -- rd_uniform/cr_zeros EXIST; blocked by Tensor.layernorm at :29")
 
 # ---------------------------------------------------------------------------
-# :19-22 patch_embed. THE FIRST CONVOLUTION IN THE FILE, AND IT IS BUILT.
+# :19-22 patch_embed. the first convolution in the file, and it is built.
 # ---------------------------------------------------------------------------
 
 # :19 def patch_embed(self, x)

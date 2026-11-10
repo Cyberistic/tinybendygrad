@@ -1,7 +1,7 @@
 # kernel.bend -- tinygrad/codegen/__init__.py: the LOWERER'S PASS STRUCTURE.
 #
 # ---------------------------------------------------------------------------
-# THE UNIT WAS NAMED `kernel.py` + `rewriter.py`. NEITHER FILE EXISTS in this
+# the unit was named `kernel.py` + `rewriter.py`. neither file exists in this
 # tinygrad; `codegen/` is a package and `find tinygrad -name kernel.py` finds only
 # `extra/thunder/tiny/tk/kernel.py`, a Thunder TK harness. The lowerer is here:
 #
@@ -13,7 +13,7 @@
 #   tinygrad/codegen/late/{linearizer,regalloc,gater}.py  NOT CLAIMED
 #   tinygrad/codegen/opt/*        636 lines    NOT CLAIMED
 #
-# NOTHING FROM ANY OTHER `.py` IS IN THIS FILE. It used to name three -- the three
+# nothing from any other `.py` is in this file. It used to name three -- the three
 # above, all of them claimed by `rewriter.bend` -- and the 1:1 ruling (one `.bend`
 # per upstream `.py`, AT THE SAME PATH) moved them to their own paths, which took
 # this file's last merged-in `.py` with it. `.agents/slop/split-codegen3.py` is the
@@ -29,7 +29,7 @@
 # `__init__.py` is a rule a stage owns. So the split is: the PASS LIST and the
 # KERNEL COUNT live here, and the rules live in the files that own them.
 #
-# THE ONE NUMBER THE SIBLINGS NEED is `kernels_per_schedule`: how many
+# the one number the siblings need is `kernels_per_schedule`: how many
 # `graph_rewrite` passes a scheduled kernel goes through on its way to renderable
 # UOps, which is `kn_passes` below and which `renderer/cstyle.bend` and
 # `renderer/wgsl.bend` both need in order to know how deep the pipeline is.
@@ -89,8 +89,8 @@
 # the weaker claim and is the one the list means.
 #
 # ---------------------------------------------------------------------------
-# THE WALL THAT DOMINATES, and it is ONE wall: **`itertools.product` over a shape
-# and `UOp.permute`/`reshape`/`reduce`/`unflatten`.** Items 4, 5, 6, 9, 10, 13
+# THE WALL THAT DOMINATES, and it is ONE wall: `itertools.product` over a shape
+# and `UOp.permute`/`reshape`/`reduce`/`unflatten`. Items 4, 5, 6, 9, 10, 13
 # and 19 are all the same wall from seven directions: the vectorizer
 # DE-INDEXES a node by enumerating every element of its shape and rebuilding the
 # node per element. That is a cartesian product whose size is the node's numel,
@@ -204,7 +204,7 @@ def kn_nsrc_ge(+ar: O.Arena, i: U32, n: U32) -> Bool:
   U32.is_ge(kn_nsrc(ar, i), n)
 
 # ===========================================================================
-# `pm_cast_float_alu` -- __init__.py:244-247. THE OP SET AND THE TABLE ARE
+# `pm_cast_float_alu` -- __init__.py:244-247. the op set and the table are
 # PORTED; THE DTYPE GUARD IS A WALL.
 #
 #     (UPat((Ops.SIN, Ops.LOG2, Ops.EXP2, Ops.SQRT, Ops.RECIP), src=(UPat(name="x"),), name="u"),
@@ -364,7 +364,7 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
   pm_number_params.of(O.pm_claimed([O.OpsPARAM{}], ar, self), kn_np(ar, self, n), ar, self)
 
 # ===========================================================================
-# `build_range_map` -- __init__.py:40-45. PORTED, AND THE PORT IS NOW WRONG.
+# `build_range_map` -- __init__.py:40-45. ported, and the port is now wrong.
 #
 #     def build_range_map(sink):
 #       ctx = {}
@@ -434,10 +434,10 @@ def kn_is_expand0(tb: F.Table, +ar: O.Arena, +i: U32) -> Bool:
   Bool.and(kn_is(ar, i, O.OpsRANGE{}), kn_unroll.at(F.UOp.axis_type(ar, i)))
 
 # THE FUEL IS FIRST, as everywhere else in this port (bend2-constraints.md, "A
-# SELF-CALL MUST BE DECREASING, READ LEFT TO RIGHT"): the walk is over arena
+# self-call must be decreasing, read left to right"): the walk is over arena
 # INDICES 0..next-1 and the budget is exactly that bound, so it can never cut the
 # count short. `kerm` is the fuel and `acc` is the count so far.
-# THE INDEX DESCENDS AND THE FUEL FOLLOWS IT. The decrease check reads a
+# the INDEX descends and the fuel follows it. The decrease check reads a
 # recursive call's arguments left to right and stops at the first strict subterm,
 # so only the FUEL has to shrink -- everything after it is free -- but `p` may not
 # be READ twice either, so the index is threaded as its own parameter rather than
@@ -756,7 +756,7 @@ def lw_answer(+fired: Maybe<&2, Ker>, nu: U32) -> U32:
 def lw_tail(rest: Line, +step: Line) -> Line:
   Line{Line.subs(step), Line.out(rest)}
 
-# THE STEP IS AN ARGUMENT, NOT A TAIL WRAP, and that is the fix worth recording.
+# the step is an argument, not a tail wrap, and that is the fix worth recording.
 # A tail wrap -- `lw_tail(lw_go(t, ...), lw_step(...))` -- can only return ONE of
 # the step's two fields paired with the recursion's OTHER field, because `subs` and
 # `out` both live in the `Data` and a wrap may only combine two of them. Taking
@@ -835,8 +835,8 @@ def cfg_ctx_len() -> U32:
 # and the LINEAR node's `arg=to_function_name(...)` is a string. The TABLE is
 # therefore exact and the BODIES are all `codegen/late/` and the renderer, i.e. the
 # walls, and `tp_len`/`tp_stage`/`tp_ins` are the rows for the part that is here.
-# `UPat(LINEAR, src=UPat(Ops.INS))` -- the pattern claims the FIRST SRC **OF THE
-# LINEAR**, and the LINEAR is `self.src[1]`, so reading `self`'s own `src[0]` is
+# `UPat(LINEAR, src=UPat(Ops.INS))` -- the pattern claims the FIRST SRC OF THE
+# LINEAR, and the LINEAR is `self.src[1]`, so reading `self`'s own `src[0]` is
 # reading the SINK and answers False on every ISA program. `k_ins` is the row that
 # caught it: it read 0 on a LINEAR whose only src IS an INS.
 #
@@ -853,7 +853,7 @@ def k_lins(+ar: O.Arena, self: U32) -> U32:
 def k_is_ins(+ar: O.Arena, self: U32) -> Bool:
   tp_ins(kn_src(ar, self, 1), ar)
 
-# THE STAGE NUMBER, which is the TABLE'S TAG: 1 is LINEARIZE, 2 ESTIMATES, 3
+# the stage number, which is the table's tag: 1 is linearize, 2 estimates, 3
 # ASSEMBLE, 4 RENDER, 5 COMPILE.
 #
 # THE ARITY IS THE FIRST TEST, and this is what `k_stage_pr1` caught. Reading the
@@ -865,7 +865,7 @@ def k_is_ins(+ar: O.Arena, self: U32) -> Bool:
 # `0` is "no stage": not a PROGRAM, or a PROGRAM with no LINEAR. There is no
 # fixture for it, because `Ops.PROGRAM`'s own `arg` is the point and no rule
 # matches a zero-src PROGRAM.
-# THE ARITY LADDER, AS THREE EQUALITY TESTS. `case 1n:` is a PREFIX match that
+# the arity ladder, as three equality tests. `case 1n:` is a prefix match that
 # claims its successors (constraint 9), so an arity dispatch CANNOT be a `match` on
 # the count -- `case 1n: 1 / case 2n+p: ...` makes 1 answer 2's arm too. It is three
 # `Nat.is_eq`s, and the order is the ORDER OF PYTHON'S RULES: 1 src is stage 1, 3 is
@@ -884,7 +884,7 @@ def k_is_ins(+ar: O.Arena, self: U32) -> Bool:
 # `pm_to_program.rewrite(PROGRAM(SINK, LINEAR(INS)))` reaches `do_estimates` (it
 # raises on `sink.arg.estimates is None`), not `do_assemble`.
 #
-# SO A DISPATCH THAT READS THE INS IS WRONG, and this file read it: `stage_pr3` said
+# so a dispatch that reads the ins is wrong, and this file read it: `stage_pr3` said
 # 3 where Python says 2. `tp_ins` and `k_is_ins` stay, because the INS TEST is what
 # rule 3's pattern says and a reader that omits it has not read the table -- but
 # they are DOCUMENTED as unreachable and `stage_pr3` is what pins that.
@@ -971,7 +971,7 @@ def tp_stage(+ar: O.Arena, +self: U32) -> U32:
 #  16 INS0=INS()  17 PR3=PROGRAM(SINK(SQ1), LINEAR(INS0))
 #  18 PR4=PROGRAM(SINK(SQ1), LINEAR(ST1), SOURCE)
 #
-# `ix` PRINTS THE WHOLE LIST and `pos_same` COMPARES ITS LENGTH to `Arena.next`,
+# `ix` prints the whole list and `pos_same` compares its length to `Arena.next`,
 # and both exist because `PR3` was once built from `Found.ar(pr2)` -- a STALE
 # arena, `INS0` having already been interned in it -- so `PR3` came back at index 17
 # and every position after it named the node one slot behind its comment. That read
@@ -1314,7 +1314,7 @@ def k_pos() -> U32:
 # values, so a dedup makes a later entry REPEAT an earlier index and every position
 # from there on reads a node that is one slot behind its name. That is the whole of
 # `pos_same=0`.
-# WHICH ENTRY IS THE STALE ONE. `k_dup` is the first POSITION whose node repeats
+# which entry is the stale one. `k_dup` is the first position whose node repeats
 # the one before it: the ix list is built from `Found.i` values, so a dedup makes a
 # later entry REPEAT an earlier index and every position from there on names a node
 # that is not the one its comment claims. `at` is a `U32`, not a `Nat`, because the

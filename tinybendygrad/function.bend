@@ -27,7 +27,7 @@
 # measurably blind to swapped operands (see `pctx_swapped` and mutation M7).
 #
 # ---------------------------------------------------------------------------
-# WHAT IS PORTED, AND THAT IS THE WHOLE LIST:
+# what is ported, and that is the whole list:
 #
 #   function.py:9-13    `add_to_ctx`               the capture, and its refusal
 #   function.py:15-17   `is_implicit_storage`      the predicate, in full
@@ -42,7 +42,7 @@
 #   `UOp.param_like`  ops.py:1228-1234 symbol=param_like  `UOp.substitute`  ops.py:514 symbol=substitute
 #   `UOp.call_with_outputs` ops.py:1260 symbol=call_with_outputs  `UOp.replace`     ops.py:245
 #   `get_state_dict((args, kwargs))`     `Context(...)`    `time.perf_counter`
-#   `self.fxn(*args, **kwargs)`          `__get__`         `functools.partial`
+#   `self.fxn(*args, kwargs)`          `__get__`         `functools.partial`
 #
 # ---------------------------------------------------------------------------
 # THE LAZY BEHAVIOUR, STATED HONESTLY, because the brief asked for it and the
@@ -71,7 +71,7 @@
 # `Marg{o, n}` in `movement.bend`). It is not a workaround for a missing
 # feature; it is what a node-indexed fold with no mutable local has to be.
 #
-# A SPEC MISMATCH BECOMES A TYPED REFUSAL RATHER THAN AN EXCEPTION, and this
+# a SPEC mismatch becomes a typed refusal rather than an exception, and this
 # file has exactly one such thing and it is NOT a spec match. `TinyJit` has the
 # spec match. `function.py` has two refusals and both are ANSWERABLE IN THE
 # PURE DOMAIN, so both are values here rather than failures:
@@ -450,13 +450,13 @@ def fn_realized.of(arg: O.Arg) -> Bool:
 #     return {u.src[0].buf_uop for u in uret.backward_slice_with_self
 #             if u.op is Ops.STORE and u.src[1].base.is_invalid and not u.src[0].buf_uop.is_realized}
 #
-# `backward_slice_with_self` is `{self, **backward_slice}` (ops.py:284) and
+# `backward_slice_with_self` is `{self, backward_slice}` (ops.py:284) and
 # `backward_slice` is `toposort(enter_calls=False)` minus self (ops.py:278), so
 # the pair is EXACTLY the toposort. That is why `fn_bslice` exists, and the
 # difference between the two walks is exactly one node -- which is what rows
 # `bs_self` and `bs_nself` pin, and it is the only thing that can see a rule
 # written over the wrong one of the two.
-# THE FILTER IS THREE DEFS AND ONE RECORD, and the record is the whole answer.
+# the filter is three defs and one record, and the record is the whole answer.
 # `h` is read TWICE in the step -- once in `U32.is_eq(h, self)` and once in the
 # `h <> acc` prepend -- and a `U32` read twice in one expression is UNWRITABLE,
 # and `self` is read both in the step and in the self-call. So both travel in a
@@ -564,7 +564,7 @@ def fn_invalid(+f: O.Found) -> List<&2, U32>:
 # row `renum_one` is what separates them: on a graph whose toposort is
 # [src0, STORE] the two spellings answer 0 and 0, and on
 # [src0, src1, STORE] they answer 0 and 1.
-# THE COUNTER, THE MEMBERSHIP TEST AND THE PREPEND ALL TOUCH `n`, AND `n` IS A
+# the counter, the membership test and the prepend all touch `n`, and `n` is a
 # `U32`. So the walk's state is a `Data` record, the emit takes `+` on all three
 # pattern binders, and the pick takes the flag as a PARAMETER rather than
 # computing it beside the `n` it tests. This is the "a fold that must answer
@@ -1028,7 +1028,7 @@ def fn_imp_body.go(+ar: O.Arena, xs: List<&2, U32>, +st: Imp) -> Imp:
 
 def fn_imp_body(+ar: O.Arena, xs: List<&2, U32>) -> String:
   # `\n  '.join(...)` and the join is at the END, on a `List` built with
-  # `List.append` APPENDING (measured: `schedule/memory.py` section A -- 
+  # `List.append` APPENDING (measured: `schedule/memory.py` section A --
   # `List.append(a, A, xs, ys)` is `xs ++ ys`, so an accumulator must append).
   String.join(Imp.rows(fn_imp_body.go(ar, xs, Imp{0, Nil{}})), "\n  ")
 
@@ -1096,7 +1096,7 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 #   `getenv` is an effect. The `finally` that restores the depth is the same
 #   shape as `fn_exit`, and `fn_enter`/`fn_exit` ARE ported and gated, so the
 #   depth half of line 61 is not lost.
-# TODO(p3) function.py:64  `self.fxn(*args, **kwargs)` -- no function values in
+# TODO(p3) function.py:64  `self.fxn(*args, kwargs)` -- no function values in
 #   Bend. The seam `mixin/tensor.bend` names for `_apply_uop` too.
 # TODO(p3) function.py:51  `time.perf_counter()` -- an effect. `fn_trace` takes
 #   the elapsed time as a PARAMETER, which is the injected-time discipline.
@@ -1144,7 +1144,7 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # the field names. `function_`/`function.curried` are the two decorator spellings
 # and they build the same value, which is what `fac_same` gates.
 #
-# WHAT THIS SEAM DOES **NOT** REPLACE, and it is the important half:
+# what this seam does not replace, and it is the important half:
 # `examples/beautiful_mnist.ts`'s `@TinyJit` is NOT this file. `TinyJit` is
 # `tinygrad/engine/jit.py`, its spec match is
 # `self.captured.expected_input_info != expected_input_info`, and its counter is
@@ -1422,7 +1422,7 @@ def add_refused() -> String:
 # ARGUMENT and returns the `Found`, because a builder that returns an index
 # throws the grown arena away (measured: `mixin/rand.bend` rule 5).
 def fx_inv1.of(+ar: O.Arena, +b: O.Found, +v: O.Found) -> O.Found:
-  # THE ARENA THE STORE RETURNED, NOT THE ONE THAT WENT IN. Passing `ar` on to
+  # the arena the STORE returned, not the one that went in. Passing `ar` on to
   # `fx_sink` builds a SINK whose src is not in its own store, so every reader of
   # that STORE answers `Arena.bottom` and the graph is one node that reads as a
   # NOOP. It typechecks, it runs, and the toposort answers 0 -- the whole family of
@@ -1552,7 +1552,7 @@ def renum_gap() -> String:
 
 
 
-# AND THE WRAPPER TAKES THE LAST BUILT NODE'S ARENA, not the first's: `b` is
+# and the wrapper takes the last built node's arena, not the first's: `b` is
 # interned before `v`, so `O.Found.ar(b)` does not CONTAIN `v` and the next node
 # lands at the index `v` already holds. Two builds from the same base are SIBLING
 # arenas of equal length, and "the ar of the first argument" picks the wrong one
@@ -1733,7 +1733,7 @@ def imp_two() -> String:
   imp_two.of(fx_nbuf(0, 4), fx_nbuf(1, 4))
 
 
-# THE REFUSAL SET IS THE TAIL, NOT THE HEAD. With `num_explicit=0` on a ctx
+# the refusal set is the tail, not the HEAD. With `num_explicit=0` on a ctx
 # holding one buffer the whole list is implicit; with `num_explicit=1` it is
 # empty. CPython's `call_uops[num_explicit:]` is a slice on a list the rewrite
 # has ALREADY GROWN, and this row is that slice -- a port reading
@@ -1760,7 +1760,7 @@ def dep_enter() -> String:
 def dep_exit() -> String:
   String.concat(["dep_exit=", U32.show(Fn.depth(fn_exit(fn_enter(Fn.of()))))])
 
-# TWO INSTANCES SHARE ONE COUNTER, which is what the CLASS-level field means. The
+# two instances share one counter, which is what the class-level field means. The
 # value is read off a DIFFERENT `Fn` than the one entered, so a port that stored
 # the depth per instance would answer 1.
 def dep_shared.of3(a: Fn, b: Fn) -> Fn:
@@ -1939,14 +1939,14 @@ def main() -> IO(Unit):
 #
 # | id | mutation | rows moved |
 # | --- | --- | --- |
-# | M1 | `add_to_ctx` refuses on `ctx[0]` instead of `ctx[1]` | **2** `add_first` `add_refused` |
+# | M1 | `add_to_ctx` refuses on `ctx[0]` instead of `ctx[1]` | 2 `add_first` `add_refused` |
 # | M2 | the ALLOC arm drops `bind_on_realize` | 1 `iis_alloc_nobor` |
 # | M3 | the ALLOC arm uses `<=` not `<` | 1 `iis_alloc_ge` |
 # | M4 | `is_variable` drops `_shape == ()` | 1 `iis_var_1d` |
 # | M5 | `is_variable` drops `addrspace is ALU` | 1 `iis_var_reg` |
 # | M6 | `is_variable` drops `vmin_vmax is not None` | 1 `iis_var_novmin` |
 # | M7 | `renumber` counts the WHOLE toposort | 2 `renum_two` `renum_gap` |
-# | M8 | `add_to_ctx` appends on the REFUSAL arm | **6** `add_first` `add_refused` `imp_tail` `pctx_buf` `pctx_aft_buf` `pctx_aft_slot0` |
+# | M8 | `add_to_ctx` appends on the REFUSAL arm | 6 `add_first` `add_refused` `imp_tail` `pctx_buf` `pctx_aft_buf` `pctx_aft_slot0` |
 # | M9 | the `num_explicit:` slice becomes a whole-list filter | 1 `imp_tail` |
 # | M10 | `dedup` PREPENDS instead of appending | 1 `callu_ops` |
 # | M11 | `invalid_outputs` drops `not is_realized` | 1 `inv_real` |
@@ -1960,9 +1960,9 @@ def main() -> IO(Unit):
 # | M19 | the refusal message drops the `dtypes.` prefix | 2 (`imp_one` `imp_two`) |
 # | M20 | the per-buffer line drops its index | 2 (`imp_one` `imp_two`) |
 #
-# TWO MUTATIONS MOVED NOTHING AT FIRST, and BOTH ARE THE SAME LESSON.
+# two mutations moved nothing at first, and both are the same lesson.
 #
-# **M14** (`slot == -1` instead of `slot >= 0`) moved nothing over the two rule-1
+# M14 (`slot == -1` instead of `slot >= 0`) moved nothing over the two rule-1
 # fixtures that existed. For slot `0` the mutant stops refusing, and then the SECOND
 # conjunct fails because the rest of the graph holds nothing implicit; for slot `-1`
 # both spellings refuse. So the two fixtures were both refused for different
@@ -1971,7 +1971,7 @@ def main() -> IO(Unit):
 # the only thing that can refuse it -- "put the decision in a parameter and make the
 # other conjunct vacuously true" is the same sentence the notes reach for a fold.
 #
-# **M16** (conjunction for equality) moved nothing over `fac_same`, which compares
+# M16 (conjunction for equality) moved nothing over `fac_same`, which compares
 # two IDENTICAL `Fn`s where the two spellings agree. The fix is `fac_diff`, a pair
 # that DIFFERS. A comparison row needs a positive and a negative case; a comparison
 # of two equal values is a restatement of the reader, which is the thing the gate
@@ -1983,7 +1983,7 @@ def main() -> IO(Unit):
 # notes' "a shared predicate has a shared blast radius" is measured here rather than
 # quoted.
 #
-# AND THE ROWS THAT ARE **NOT** COVERED BY ANY MUTATION, which is the honest
+# and the rows that are not covered by any mutation, which is the honest
 # negative list. `pctx_aft_buf`'s captured COUNT is the one number in this gate that
 # is KNOWN to disagree with CPython (`bot=2` where CPython answers 1), and no
 # mutation here can move it: the divergence is the `param_like`/`substitute` seam --

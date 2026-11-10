@@ -1,4 +1,4 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/kits19.py (219 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/kits19.py (219 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. The KiTS19 kidney tumour 3-D segmentation loader. It is (b) and
 # the honest headline is that it is the only file in this slice that imports BOTH
@@ -33,7 +33,7 @@
 #   `torch.nn.functional` (upstream:8-9) for `interpolate` -- and the port's own
 #   `Tensor` (upstream:11) is a UOp slot in an arena (`tensor.bend:200`), not the
 #   runtime tensor `model` needs, so `sliding_window_inference` has no callee at all.
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `get_val_files` (upstream:23),
+# not ported, and named so nobody invents it: `get_val_files` (upstream:23),
 #   `load_pair`, `resample3d`, `normal_intensity`, `pad_to_min_shape`, `preprocess`,
 #   `preprocess_dataset`, `iterate` (upstream:73), `gaussian_kernel`, `pad_input`,
 #   `sliding_window_inference`, `rand_flip`, `random_brightness_augmentation`,

@@ -3,10 +3,10 @@
 #
 # ============================ READ THIS FIRST ==============================
 #
-# THERE IS A SECOND PORT OF THE SAME PYTHON FILE, at
+# there is a second port of the same python file, at
 # `tinybendygrad/codegen/transcendental.bend` (TODO.md, "Session 2026-10-01 round
-# 4", 891 STRING rows, `--check-only` = ALL PROOFS CHECK).  THE TWO ARE
-# COMPLEMENTARY HALVES OF ONE UPSTREAM FILE, NOT TWO PORTS OF IT, and this is the
+# 4", 891 string rows, `--check-only` = all proofs check).  the two are
+# complementary halves of one upstream file, not two ports of it, and this is the
 # statement of which is which -- the one thing a reader must not have to guess:
 #
 #   transcendental.bend     the GRAPH.  It builds UOp nodes and the gate reads
@@ -51,7 +51,7 @@
 # `eval`).  `tc-build.py` reassembles head + generated + tail and the three
 # parts reproduce this file byte for byte.
 #
-# THE HEX CROSS-CHECK EARNED ITS KEEP, and this is why transcendental
+# the hex cross-check earned its keep, and this is why transcendental
 # coefficients need both readings.  Two float64 constants share an f32 rounding
 # with a float32 sibling, so EVERY f32 row is blind to the difference between
 # them and only the `cd_` decimal row separates them:
@@ -64,9 +64,9 @@
 # that only reads one of them is half-blind exactly where it matters.
 #
 # ---------------------------------------------------------------------------
-# TWO DEFECTS THIS FILE FOUND, both in OTHER people's code, both left loud.
+# two defects this file found, both in other people's code, both left loud.
 #
-# 1. THE REVERSE LOOKUP WAS ANSWERING "NOT FOUND" FOR EVERYTHING, and it was one
+# 1. the reverse lookup was answering "not found" for everything, and it was one
 #    bug worth 45 rows, not 45.  `tc.vi`/`tc.uvi` search a table for a bit
 #    pattern and every `xv_*` row answered 4294967295 while every `xf_*` row for
 #    the same table agreed -- which is what made it look like a coefficient bug.
@@ -151,11 +151,11 @@
 #     transcendental (`e == 0`, `base == 0`).
 #     MEASURED, and worth knowing: `xpow` with an INFINITE exponent is not
 #     realisable at all on the interpreter backend, because :261 casts the
-#     exponent to int32 and `int(inf)` raises.  `(-1)**inf` therefore has no
+#     exponent to int32 and `int(inf)` raises.  `(-1)inf` therefore has no
 #     value anywhere -- on hardware `(int)inf` is undefined too.  It gets a
 #     predicate row and no value row, which is the honest shape.
 #
-# **`U32 -> F32` bitcast** -- absent.  `pow2if` (:27), `frexp`'s mantissa (:52)
+# `U32 -> F32` bitcast -- absent.  `pow2if` (:27), `frexp`'s mantissa (:52)
 # and `ldexp3k`'s exponent add (:39) are integer fields written into a float;
 # each is computed ARITHMETICALLY and the pattern recovered with `F32.bits`, so
 # the gate compares against the bitcast tinygrad performs.  `xf_pow2if_*`,
@@ -165,7 +165,7 @@
 # THE INVENTORY, in upstream's order.  PORTED = the float32 lane is evaluated and
 # gated.  GATES = only the predicate is gated.  W1/W2 as above.
 #
-# THE LEFT COLUMN IS UPSTREAM'S OWN NAME, BACKTICKED, AND THE CITED LINE IS
+# the left column is upstream's own name, backticked, and the cited line is
 # UPSTREAM'S.  The right column is THIS PORT's row name, and it is NOT in upstream --
 # `xf_lazy0_*` and `cu_mb_*` are the port's own gate-row prefixes.  So the port
 # symbol is written as the port's and the upstream construct is named beside it:
@@ -515,20 +515,20 @@ def tc.vi(+xs: List<&2, String>, +b: U32, +i: U32) -> U32:
 
 def tc.pow2u(+y: U32) -> U32: U32.shln(1, tc.nat(y))
 
-# :20 `x * (2**y)`, wrapped -- `U32.mul` already wraps, and a y >= 32 gives 0,
+# :20 `x * (2y)`, wrapped -- `U32.mul` already wraps, and a y >= 32 gives 0,
 # which is exactly what `x * 2**32 mod 2**32` is.
 def tc.shr_u(+x: U32, +y: U32) -> U32: U32.div(x, tc.pow2u(y))
 
 # :19 on a SIGNED operand: FLOOR, not a truncating shift, so the
 # `-1 <= ilog2bk(d) <= 128` claim at :36 survives a negative `dint`.
-# `floor(x / 2**y)` is `-( (-x) // 2**y)` for a negative x and the plain
+# `floor(x / 2y)` is `-( (-x) // 2y)` for a negative x and the plain
 # division otherwise; that is what makes it FLOOR and not truncate-toward-zero.
 def tc.isneg(+x: U32) -> Bool: U32.is_ge(x, 2147483648)
 
 def tc.neg(+a: U32, +b: U32) -> U32: U32.sub(0, b)
 
-# :19 `x // (2**y)` on an UNSIGNED operand.
-# :19 `x // (2**y)` on an UNSIGNED operand.  ONE division, not `y` of them: a
+# :19 `x // (2y)` on an UNSIGNED operand.
+# :19 `x // (2y)` on an UNSIGNED operand.  ONE division, not `y` of them: a
 # y >= 32 divides by 2**32 and answers 0, which `U32.shln` already gives.
 def tc.shr_i(+x: U32, +y: U32) -> U32:
   Bool.pick(U32, tc.isneg(x), tc.neg(0, tc.shr_u(tc.neg(0, x), y)),
@@ -590,7 +590,7 @@ def tc.i2f(+b: U32) -> F32:
   +m = U32.to_f32(Bool.pick(U32, tc.isneg(b), tc.neg(0, b), b))
   Bool.pick(F32, tc.isneg(b), F32.neg(m), m)
 
-# `2**n` for a signed n held as a u32 bit pattern, as `F32.pow(2.0, n)`.
+# `2n` for a signed n held as a u32 bit pattern, as `F32.pow(2.0, n)`.
 #
 # THIS IS A MEASURED PERFORMANCE FIX, and it is the difference between a mutation
 # table that gets run and one that does not.  The doubling loop it replaced cost
@@ -600,7 +600,7 @@ def tc.i2f(+b: U32) -> F32:
 # at hours on a loaded 12-core box.
 #
 # `F32.pow(2.0, n)` is the EXACT spelling for a base of exactly 2.0, and it is
-# bit-exact with CPython's `struct.pack('<f', 2.0**n)` over the whole range this
+# bit-exact with CPython's `struct.pack('<f', 2.0n)` over the whole range this
 # file uses, including the two saturations the loop also produced -- MEASURED, 11
 # probes, `n` in {0, 1, 10, 126, 127, -1, -10, -126, 150, -150, 50000}, every
 # answer equal to CPython's, with 150 and 50000 both 0x7f7fffff (FLT_MAX) and -150
@@ -660,7 +660,7 @@ def tc.fe(+v: F32) -> U32: U32.and(tc.shr_u(F32.bits(v), sp.mb_32()), sp.em_32()
 # came back as the raw exponent field -- 127 for frexp(0.5) where CPython says 0.
 def tc.fexp(+v: F32) -> U32: U32.sub(tc.fe(v), U32.sub(sp.eb_32(), 1))
 
-# `ldexp3k`'s `d * 2**e`: the exponent of the PRODUCT is the exponent of `d`
+# `ldexp3k`'s `d * 2e`: the exponent of the PRODUCT is the exponent of `d`
 # plus `e`, and `fe` is one below the stored field, so the field is
 # `fe + 23 - bias + 1`.
 # the STORED exponent field of `v`, `(bits >> mb) & em` with no bias applied.
@@ -682,7 +682,7 @@ def tc.frexp_mant(+v: F32) -> F32:
 def tc.ilogb2k(+d: F32) -> U32:
   U32.sub(U32.and(tc.shr_i(F32.bits(d), sp.mb_32()), sp.em_32()), sp.eb_32())
 
-# :27-30 `pow2if`.  The value is 2**q by doubling; the gate compares its bit
+# :27-30 `pow2if`.  The value is 2q by doubling; the gate compares its bit
 # pattern against CPython's, which IS the `(q + bias) << 23` field.
 def tc.pow2if(+q: U32) -> F32: tc.pow2f(q)
 
@@ -696,7 +696,7 @@ def tc.ldexp2k(+d: F32, +e: U32) -> F32:
 def tc.ldexp3k_word(+d: U32, +e: U32) -> U32:
   U32.add(d, tc.shl(U32.and(e, 255), sp.mb_32()))
 
-# :45 `m1 + (e << mantissa_bits)`, evaluated as `d * 2**e`.  Exact while the
+# :45 `m1 + (e << mantissa_bits)`, evaluated as `d * 2e`.  Exact while the
 # result stays in the NORMAL range, which is the case at the one call site
 # (:232), where `a` has already been scaled out of the denormal band at :229.
 def tc.ldexp3k.up(+i: Nat, +d: F32) -> F32:
@@ -840,7 +840,7 @@ def tc.xexp2_nan(+d: F32) -> Bool: F32.is_eq(d, d)
 
 # `xlog2` (:219-255).  MEASURED on a float32 UOp: EVERY node in the graph is
 # float32, because `UOp.const`'s `weakfloat` (ops.py:1893) lets the consumer's
-# dtype win -- so `d * (2.0 ** 64)` at :229 is a binary32 multiply and the
+# dtype win -- so `d * (2.0  64)` at :229 is a binary32 multiply and the
 # denormal arm is NOT a float64 detour.
 def tc.xexp2(+d: F32) -> F32:
   +x = tc.mask0(d)
@@ -853,7 +853,7 @@ def tc.xexp2(+d: F32) -> F32:
 # :213 `d >= upper`, :215 `d < lower`, :217 `d.ne(d)`
 def tc.is_denorm(+d: F32) -> Bool: F32.is_lt(d, tc.f(sp.flmin_32()))
 
-# :229 `a = is_denormal.where(d * (2.0 ** denormal_exp), d)`
+# :229 `a = is_denormal.where(d * (2.0  denormal_exp), d)`
 def tc.xlog2_a(+d: F32, +den: Bool) -> F32:
   Bool.pick(F32, den, F32.mul(d, tc.f(sp.denorm_scale())), d)
 
@@ -864,7 +864,7 @@ def tc.xlog2_e0(+a: F32) -> U32: tc.ilogb2k(F32.mul(a, tc.f(sp.one_over_075())))
 # back as a signed float, which is what `tc.i2f` then hands to `tc.ldexp3k`; and
 # `tc.ldexp3k` takes the DIRECTION off that sign itself, so negating here and again
 # in there is the one thing that must not happen.  MEASURED, passing `e0` unnegated
-# gave `m = a * 2**e` and every `log2` came out a factor of two wrong.
+# gave `m = a * 2e` and every `log2` came out a factor of two wrong.
 def tc.xlog2_m(+a: F32, +e0: U32) -> F32: tc.ldexp3k(a, tc.i2f(tc.neg(0, e0)))
 
 # :233 `e = is_denormal.where(e - denormal_exp, e)`
@@ -1087,7 +1087,7 @@ def t_u(+xs: List<&2, String>, +raw: String, +nm: String) -> IO(Unit):
     t_u.pair(xs, raw, nm, 0)
 
 
-# THE FLOAT SCALARS, ONE ROW PAIR EACH: `xf_` is the binary32 the lane uses and
+# the FLOAT scalars, one row pair each: `xf_` is the binary32 the lane uses and
 # `cd_` is the exact float64 DECIMAL, and they are printed out of ONE pair of
 # elements of `sp.fscal()` so the two readings cannot drift apart -- a missing
 # one would be a missing PAIR, which a name-only diff cannot see.  Bend has no

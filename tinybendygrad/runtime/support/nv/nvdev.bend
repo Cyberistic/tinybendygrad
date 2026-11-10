@@ -3,7 +3,7 @@
 #   port of tinygrad/runtime/support/nv/nvdev.py (163 lines)
 #
 # ===========================================================================
-# A DISAGREEMENT WITH THE TASK BRIEF, REPORTED NOT RECONCILED.
+# a disagreement with the task brief, reported not reconciled.
 #
 # The brief said this file is "an ioctl layer: `fcntl.ioctl` on /dev/nvidiactl
 # with NVOS21/NVOS54 command numbers", and that porting it "unblocks a
@@ -31,11 +31,11 @@
 # The ioctl layer is `ops_nv.py`'s `NVKIface` (:337-399), a different `.py` in a
 # different directory, and both walls above name `ops_nv.py` lines. SO:
 #
-#   * THIS PORT CLOSES NEITHER OF THE TWO `ops_nv` WALLS. It cannot; they are
+#   * this port closes neither of the two `ops_nv` walls. It cannot; they are
 #     not about this file. `NVKIface.__init__` opens two device nodes and issues
 #     three `rm_control`s, and `rm_alloc`/`rm_control`/`uvm` marshal NVOS21 /
 #     NVOS54 / UVM_* ctypes structs. Nothing in nvdev.py appears in either.
-#   * WHAT THIS PORT DOES CLOSE is `nv/ip.bend`'s nvdev walls, which are REAL and
+#   * what this port does close is `nv/ip.bend`'s nvdev walls, which are real and
 #     which nobody had counted. `ip.bend:111-118` lists four of its own TODOs
 #     naming `self.nvdev.*`, and `ip.bend` cites `nvdev` twelve times:
 #         ip.bend:115  self.nvdev.include("dev_gsp", "ga102")        -> nv.include (:161-163)
@@ -55,7 +55,7 @@
 # header, which recorded the same class of disagreement about `ip.py`.
 #
 # ===========================================================================
-# THE FFI SEAM, MEASURED, AND THE ANSWER IS "NONE, AND NONE IS NEEDED".
+# the ffi seam, measured, and the answer is "NONE, and NONE is needed".
 #
 # The brief warned that "`we have an FFI seam` is not a safe assumption" and
 # pointed at `ops_metal.py:86` binding `metal.dll.sel_registerName`. MEASURED:
@@ -91,7 +91,7 @@
 # The 14 unfilled dtype laws are not inherited here.
 #
 # ===========================================================================
-# THE TRACE IS THE SEAM, REUSED NOT COPIED. `Cx`, `Tr`, `Tr.emit`, `Tr.fail_at`
+# the trace is the seam, reused not copied. `Cx`, `Tr`, `Tr.emit`, `Tr.fail_at`
 # and `tr.show` are IMPORTED from the committed `ip.bend` (`import ./ip.bend as
 # IP`), which is the nv package's other file and already owns ids 0..10
 # (`C_RPC_SEND` .. `C_FSP_HEAD`). This file's ids therefore start at 11 and go
@@ -124,7 +124,7 @@
 # see it. So `nv_reg_*_names` and `nv_reg_*_ranges` are rows, and `nv_dec_*` is
 # the ordered `name=value,...` string.
 #
-# AND THE ALIAS THAT MAKES IT WORTH GATING. On `NV_PMC_BOOT_42`,
+# and the alias that makes it worth gating. On `NV_PMC_BOOT_42`,
 # `implementation` is bits 20:23, `architecture` is 24:29, and `chip_id` is
 # 20:29 -- it SPANS BOTH. So `mask("implementation","architecture")` and
 # `mask("chip_id")` are the SAME NUMBER (1072693248, measured) and differ only in
@@ -178,7 +178,7 @@
 # W4. `time.sleep(0.1)` at :109. A time gap, not a call, so it has no trace tag and
 #     no tag claims to be it. Reported here rather than left as a missing row.
 #
-# AND ONE THING THAT IS NOT A WALL, because it looks like one: the six MMU_VER
+# and one thing that is not a wall, because it looks like one: the six mmu_ver
 # descriptors have NO REGISTER ADDRESS. They are `(None, None, {fields})` in
 # dev_mmu.py, and nvdev.py never reads them -- :128 hands them to
 # `NVPageTableEntry`, which uses them only for `.encode`/`.decode`/`.mask`. So
@@ -516,7 +516,7 @@ def nv.dual_lv(+v: U32) -> U32: U32.sub(nv.level_cnt(v), 2)
 # page, and getting the comparison the wrong way round makes the top level a
 # directory.
 
-# THE STORED WORD IS INJECTED, AND IT IS A PARAMETER RATHER THAN A CONSTANT.
+# the stored WORD is injected, and it is a parameter rather than a constant.
 # :58 `return (self.entry(entry_id) & 1 == 1) if self.lv < level_cnt - 1 else True`
 # reads DEVICE MEMORY for the test, and at every level below the top the answer
 # therefore DEPENDS ON WHAT WAS WRITTEN. `nv.stored_word` returning a literal 0
@@ -983,7 +983,7 @@ def nv.rreg(+addr: U32, t: IP.Tr) -> IP.Tr: IP.Tr.emit(C_NV_RREG(), nv.word(addr
 def nv.wreg(+addr: U32, val: U32, t: IP.Tr) -> IP.Tr:
   IP.Tr.emit(C_NV_WREG(), nv.word(addr), val, 0, t)
 
-# :23 `write(_ini_val=0, **kwargs)` -- `nvdev.wreg(base + off, _ini | encode(**kw))`.
+# :23 `write(_ini_val=0, kwargs)` -- `nvdev.wreg(base + off, _ini | encode(kw))`.
 
 def nv.fini(t: IP.Tr) -> IP.Tr:
   nv.chain([Cal.of(C_NV_WREG(), 0, 0, 0), Cal.of(C_NV_WREG(), 0, 0, 1)], t)
@@ -1043,7 +1043,7 @@ def nv.wait_reset(t: IP.Tr) -> IP.Tr: IP.Tr.emit(C_NV_WAIT_RESET(), 0, 0, 0, t)
 # CALLING the real `NVReg` / `NVPageTableEntry` classes over the real
 # `tinygrad/runtime/autogen/nv_regs/` tables. Nothing here is transcribed.
 #
-# The shape of a gate row in this file is FOUR FACTS PLUS THE ANSWER as ONE
+# The shape of a gate row in this file is four facts plus the answer as one
 # string wherever a count would not do it:
 #
 #   * `nv_reg_*_names`  -- the field ORDER. `nv_reg_*_nf` is the COUNT, and the
@@ -1153,7 +1153,7 @@ def t_sf_v(+v: U32) -> IO(Unit):
     IP.srow(String.concat(["nv_sf_pde_l3_", nv.v_tag(v)]), nv.pte_uncfield_pde(v, nv.dual_lv(v)))
     IP.srow(String.concat(["nv_sf_pde_l4_", nv.v_tag(v)]), nv.pte_uncfield_pde(v, 4))
     IP.urow(String.concat(["nv_sf_pdeval_", nv.v_tag(v)]), nv.pte_uncval_pde(v))
-    # THE PTE/DIRECTORY VALUE ASYMMETRY: a PTE stores `int(uncached)` and a
+    # the pte/directory value asymmetry: a pte stores `int(uncached)` and a
     # directory stores 0b10 (ver 3) or the CONSTANT 1 (ver 2). `uncached` is not
     # consulted on either directory path, so a port that threaded it through would
     # answer 0 or 1 where nvdev.py writes 2.
@@ -1413,7 +1413,7 @@ def nv.vram_read(t: IP.Tr) -> IP.Tr:
 # self.pci_dev.map_bar(0, fmt='I')`. BAR 1 THEN BAR 0, with a format on the second
 # and not the first; `b` carries that.
 
-# THE HIGH WORD IS THE 32-BIT WALL, STATED. `bar1_hi` is 1 for EVERY element --
+# the high WORD is the 32-bit wall, stated. `bar1_hi` is 1 for every element --
 # `bar_info(1)[0]` is 2^32, so `bar + paddr + i*0x1000` is a 33-bit value whose
 # high word is 1 whatever the offset. The only thing that could make it 2 is a
 # CARRY out of `paddr + i*0x1000`, and a U32 that already wrapped cannot be told
@@ -1463,7 +1463,7 @@ def nv.upd_mask(+r: Rgv, ks: List<&2, Kv>) -> U32: nv.mask_of(r, ks)
 
 def nv.fld_of(+r: Rgv, nm: String, which: U32) -> U32: nv.fo.go(Rgv.nat(r), Rgv.fs(r), nm, which, 0)
 
-# --- PER-FIELD ROWS. THE ORDER-INSIDE-A-PAIR CHECK, per SITE.
+# --- per-field rows. the order-inside-a-pair check, per site.
 #
 # `Se` is `(start, end)` as a VALUE rather than two lookups, and it exists for a
 # linearity reason, not a taste one: a `String` in Bend 2 is consumed by its one
@@ -1493,7 +1493,7 @@ def nv.pe.go(n: Nat, +fs: List<&2, Fld>, +nm: String, acc: Se) -> Se:
 
 def nv.fld_se(+r: Rgv, nm: String) -> Se: nv.pe.go(Rgv.nat(r), Rgv.fs(r), nm, Se.of(0, 0))
 
-# THE ROUND TRIP, AND IT NEEDS THE ALL-ONES WORD. Measured: the two naive probes
+# the round trip, and it needs the all-ones WORD. Measured: the two naive probes
 # are provably BLIND to a transposition, i.e. as gates they cannot fail --
 #   getb(enc(1))       = 1 under (8,11) AND 1 under (11,8)
 #   getb(enc(pw(w-1))) = 8 under (8,11) AND 0 under (11,8), and the expected
@@ -1516,7 +1516,7 @@ def nv.fld_abw(r: Rgv, nm: String) -> String: nv.se_abw(nv.fld_se(r, nm))
 
 def nv.fld_max(r: Rgv, nm: String) -> U32: nv.se_max(nv.fld_se(r, nm))
 
-# ONE ROW GROUP PER FIELD for the WHOLE BOOT_42 table, so the check is per SITE and
+# one row group per field for the whole BOOT_42 table, so the check is per site and
 # not a property of one lucky field. The expected values are CPython's --
 # nv_nvdev_oracle.py's `(a, b, b - a + 1)`, `B42.mask(nm)` and `(1 << (b - a + 1)) - 1`.
 # Between them a transposition cannot hide: all six of these fields have s != e, and
@@ -1524,7 +1524,7 @@ def nv.fld_max(r: Rgv, nm: String) -> U32: nv.se_max(nv.fld_se(r, nm))
 # every one of them. (`s == e` fields are the other 33 sites in the file and no
 # transposition exists there -- see t_mmu's comment for the one shape that IS invisible.)
 #
-# THE ROW NAMES ARE LITERALS AND SO IS THE LOOKUP KEY, because a `String` is
+# the row names are literals and so is the lookup key, because a `String` is
 # consumed by its one use: a def that built `"nv_fld_" ++ nm` and then looked the
 # field up by `nm` could not exist. Twenty-six literal rows is cheaper than the
 # alternatives, and it has the property that matters -- a mutation has to be written
@@ -1647,11 +1647,11 @@ def nv.mask(+r: Rgv) -> U32: nv.mask.go(Rgv.nat(r), Rgv.fs(r), 0)
 
 # `encode` (:30) over `(name, value)` pairs in the register's own field order.
 
-# :25 `self.write(self.read() & ~self.mask(*kwargs.keys()), **kwargs)` -- the mask
+# :25 `self.write(self.read() & ~self.mask(*kwargs.keys()), kwargs)` -- the mask
 # is over THE NAMES GIVEN. `nv.mask_named` used to answer `nv.mask(r)`, which masks
 # EVERY field, and `~` of that clears every OTHER bit: with a four-bit
 # `implementation` update on a word of all ones the ini came out 0xC00000FF, which
-# wipes `major_revision` and `architecture` as well. THE PORT WAS WRONG AND THE
+# wipes `major_revision` and `architecture` as well. the port was wrong and the
 # ORACLE WAS RIGHT, and the row that caught it is `nv_upd_u1_ini`.
 
 def nv.mask_named(+r: Rgv, ks: List<&2, Kv>) -> U32: nv.mask_of(r, ks)
@@ -1802,7 +1802,7 @@ def t_regs() -> IO(Unit):
 
 def t_mmu() -> IO(Unit):
   do IO<Unit>:
-    # THE SIX `_ranges` ROWS, AND THEY ARE NOT REDUNDANT WITH `_maxw`/`_wide`.
+    # the six `_ranges` rows, and they are not redundant with `_maxw`/`_wide`.
     # MEASURED (nv_mmustrans.py): transposing `aperture` `(1,2)`->`(2,1)` in
     # v2_pte / v2_pde / v2_dpd moved NOTHING. `nv.wid(s,e) = e - s + 1` wraps, and for
     # a 2-BIT field the swapped width is `1 - 2 + 1 = 0` -- small, so neither `_maxw`
@@ -1847,7 +1847,7 @@ def t_mmu() -> IO(Unit):
     IP.urow("nv_reg_NV_MMU_VER3_DUAL_PDE_maxw", nv.maxw(nv.reg_v3_dpd()))
     IP.urow("nv_reg_NV_MMU_VER3_DUAL_PDE_wide", nv.wide(nv.reg_v3_dpd()))
     IP.srow("nv_reg_NV_MMU_VER3_DUAL_PDE_wide_names", nv.wide_names(nv.reg_v3_dpd()))
-    # THE WALL, STATED AS ROWS. These six `addr_*` are ALL ZERO, and that is the
+    # the wall, stated as rows. These six `addr_*` are all zero, and that is the
     # point: the six MMU_VER descriptors are `(None, None, {...})` in dev_mmu.py,
     # so they have no register address and `mask` over one is not a register mask.
     IP.urow("nv_addr_v2_pte", nv.addr_v2_pte())
@@ -2057,7 +2057,7 @@ def nv.reg_write(+r: Rgv, ini: U32, ks: List<&2, Kv>, t: IP.Tr) -> IP.Tr:
   nv.wreg(Rgv.addr(nv.reg_boot42()), U32.or(ini, nv.enc(r, ks)), t)
 
 # The `read()` answer `update` needs, INJECTED. :25 is
-# `self.write(self.read() & ~self.mask(*kwargs.keys()), **kwargs)`, and the read
+# `self.write(self.read() & ~self.mask(*kwargs.keys()), kwargs)`, and the read
 # is device memory, so it is a parameter rather than a second trace call: one
 # update is ONE write plus one read it already knows.
 

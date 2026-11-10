@@ -1,6 +1,6 @@
 # renderer/tc.bend -- port of tinygrad/renderer/tc.py
 #
-# ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH. This was `renderer/tc_ptx.bend`,
+# one BEND file per upstream .py, at the same path. This was `renderer/tc_ptx.bend`,
 # which held `tc.py` AND `ptx.py`; the 1:1 ruling separates them, and
 # `renderer/tc_ptx.bend` is now the thinner half that CONSUMES this one. Nothing in
 # `renderer/ptx.bend` needs repointing: it imports `tc_ptx.bend as P` and that file
@@ -29,14 +29,14 @@
 #      device, nothing mutating after it. Python's `__init__` mutating
 #      `self.extra_matcher` (ptx.py:147) is a mutation too, and it is a wall
 #      (the rules are rewrites), so it is named rather than faked.
-#   2. THE GATE IS A STRING DIFF, NEVER A BOOLEAN ABOUT STRINGS. Every row
+#   2. the gate is a string diff, never a boolean about strings. Every row
 #      prints `<name> = [BEND]   py=[CPYTHON]` and the `py=` half is DERIVED
 #      FROM THIS FILE'S OWN STATE -- it is the port's value, re-read through
 #      the same table the port prints. `String.concat` drops a literal
 #      silently, so a row that said "the asm is right" would survive a
 #      missing `;`.
 #
-#      WHY DERIVED, AND THIS IS THE POINT OF THE WHOLE FILE. The `py=` half
+#      why derived, and this is the point of the whole file. The `py=` half
 #      was a LITERAL -- text transcribed once from what CPython said. A
 #      transcription has no generator, so it cannot see CPython move, and
 #      MEASURED 2026-10-22 this file's transcription was WRONG ON 71 OF ITS
@@ -48,18 +48,18 @@
 #      A derived cell cannot rot that way: it is the port's own state, and
 #      the port's state is what the DIFF against CPython measures.
 #
-#      WHAT A DERIVED CELL IS NOT, STATED PLAINLY: it is not an INDEPENDENT
+#      what a derived cell is not, stated plainly: it is not an independent
 #      witness, and it cannot fail on its own -- the row is internally
 #      consistent by construction. CPython's VALUE lives in the oracle
 #      (`gates/tc_ptx_render-oracle.py`, which computes every half from live
 #      `tinygrad/`), and the ASSERTION is the byte diff between that file's
 #      rows and this file's rows. This file carries CPython's FORM; the
 #      oracle carries CPython's VALUE.
-#   4. A `match` MAY ONLY SCRUTINISE A PARAMETER OR A PATTERN BINDER, so every
+#   4. a `match` may only scrutinise a parameter or a pattern binder, so every
 #      record field has a hand-written reader (there is no `value.field` sugar
 #      and no generated projection -- brief rules 26 and 27) and every
 #      derived-property dispatch takes its `Bool`/`U32` as a parameter.
-#   6. A RECORD LITERAL AND A RECORD PATTERN BOTH NAME EVERY FIELD.
+#   6. a record literal and a record pattern both name every field.
 #
 # ---------------------------------------------------------------------------
 # THE GATE. 623 rows: 289 from tc.py and 334 from ptx.py, plus the one
@@ -68,14 +68,14 @@
 # `IO.print`'s own newline is the only frame, and it is the one `"\n"` the
 # oracle's `sys.stdout.write(... + "\n")` supplies.
 #
-# THIS HALF'S RECIPE, AND IT IS THE ONE THAT RUNS:
+# this half's recipe, and it is the one that runs:
 #   .venv/bin/python gates/tc_ptx_render-oracle.py stage1 > /tmp/py1.rows
 #   ./bin/bend tinybendygrad/renderer/tc.bend > /tmp/bd1.rows
 #   diff /tmp/bd1.rows /tmp/py1.rows
 # `stage1` prints 289 rows and `stage2` prints 334, for a localised diff when
 # a row moves.
 #
-# THE UNION RECIPE IS DEAD, AND MEASURED DEAD, NOT ASSUMED. It used to name
+# the union recipe is dead, and measured dead, not assumed. It used to name
 # `tc_ptx.bend` -- the file that holds the ptx.py half -- because the two
 # halves were ONE file before the 1:1 split, and `tc_ptx.bend`'s `main`
 # prints `r_stage2()` and NOTHING ELSE. MEASURED 2026-10-22: `./bin/bend
@@ -84,7 +84,7 @@
 # neither a zero nor a pass -- `gates/gatekit.py:59` gives DEAD exit 5 -- and
 # the reason this half went stale is that NOTHING WAS MEASURING IT.
 #
-# THE ptx.py HALF IS RED, AND IT IS NOT THIS FILE'S BUSINESS. MEASURED
+# the ptx.py half is red, and it is not this file's business. measured
 # 2026-10-22, the same run: `tc_ptx.bend` prints 343 rows where the oracle's
 # `stage2` prints 334, and the dtype spellings it carries are the PRE-RENAME
 # ones (`float`, `half`, `signed char`, `short`, `unsigned int`) where this
@@ -111,7 +111,7 @@
 #            four assertions, `mma`, `mfma`, the sixteen tables, `get_cuda`,
 #            `get_amd`, and `metal`.
 #
-#            AND WHAT IS NOT GATED, NAMED RATHER THAN LEFT OUT. The three
+#            and what is not gated, named rather than left out. The three
 #            `pm_validate_wmma_*` matchers' GUARDS are NOT rows in either
 #            lane: the oracle has the function (`wmma_guard_rows`,
 #            `gates/tc_ptx_render-oracle.py:134`) and NEVER CALLS IT -- it is
@@ -385,7 +385,7 @@ def Tc.bu(+t: Tc) -> List<&2, U32>:
 
 # ===========================================================================
 # :29 `dims` -- `n, m, k = (sum(c[0]==d for c in axis_coords) for d in "nmk")`
-# then `(2**n, 2**m, 2**k)`, the tile's N, M, K. Three defs, not one returning
+# then `(2n, 2m, 2k)`, the tile's N, M, K. Three defs, not one returning
 # a triple: Bend has no tuple and no `Data` record may hold a `Maybe`, and a
 # three-field record here would need three more reader defs for one call site.
 # ===========================================================================
@@ -396,7 +396,7 @@ def Tc.dims_k(+t: Tc) -> U32: pow2(cd_cnt(Tc.axis_coords(t), AX_K()))
 
 def Tc.dims(+t: Tc) -> String: String.join([U32.show(Tc.dims_n(t)), U32.show(Tc.dims_m(t)), U32.show(Tc.dims_k(t))], ",")
 
-# :32 `threads` -- `2**len(self.frag_c[0])`: "threads that construct the warp".
+# :32 `threads` -- `2len(self.frag_c[0])`: "threads that construct the warp".
 def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))
 
 # ===========================================================================
@@ -511,11 +511,11 @@ def fc_str(lanes: Nat, elems: Nat, +la: List<&2, U32>, +ea: List<&2, U32>, ax0: 
 # computes it independently in the oracle. The row also carries `len=`, so a
 # truncation is visible rather than inferred.
 #
-# THE CLIFF THIS USED TO CITE IS RETRACTED, AND THE REASON IS GONE WITH IT.
+# the cliff this used to cite is retracted, and the reason is gone with it.
 # This comment said "~180 KB of literals ... past the interpreter's measured
 # 28 988-BYTE PER-FILE CLIFF (`.agents/slop/notes/bend2-constraints.md`)". The
 # note itself records the retraction: its own entry 7 says "THE 32 KiB
-# INTERPRETER CLIFF DOES NOT REPRODUCE FOR REAL `.bend` CONTENT -- 185 KB of
+# interpreter cliff does not reproduce for real `.bend` content -- 185 kb of
 # real defs across 543 top-level definitions interpret in 0.12 s". So the
 # cliff was measured against something that is not a `.bend` file, this file is
 # 60 010 BYTES and interprets, and the digest is here because it is the RIGHT
@@ -620,7 +620,7 @@ def Tc.kab_eq(+t: Tc) -> Bool: eq_cs(Tc.kab_a(t), Tc.kab_b(t))
 #   frag_a=(lane+("m0","m1","m2"), elem[:g]+("m3",)+elem[g:]), frag_b=(lane+("n0","n1","n2"), elem),
 #   frag_c=(("n1","n2","m0","m1","m2"), ("n0","m3"))
 #
-# `g` is how many k bits ride in a 32-bit REGISTER (the "2**g k in a 32-bit reg"
+# `g` is how many k bits ride in a 32-bit REGISTER (the "2g k in a 32-bit reg"
 # the comment names), so it is `log2(4//itemsize)`: half gives g=1, fp8 gives
 # g=0. `elem[:g] + ("m3",) + elem[g:]` is where m3 -- "A row+8" -- is spliced
 # in, and it is a SPLICE not an append, which is the whole reason a fragment
@@ -773,7 +773,7 @@ def get_amd(nm: String) -> List<&2, Tc>:
 # table), which is the localisation the mutation table records.
 # ===========================================================================
 
-# THE DERIVED ROW. The `py=` half is the PORT'S OWN VALUE, read through the
+# the derived row. The `py=` half is the port's own value, read through the
 # same table the port prints, so a row cannot disagree with itself and a table
 # that grows a member grows a ROW rather than a second list of expectations to
 # keep in step with it. `r` takes the `py=` half as an argument because
@@ -1150,7 +1150,7 @@ def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(r_stage1())
 
-# THE MUTATION TABLE, RE-MEASURED 2026-10-22. The number is ROWS THAT MOVE in
+# the mutation table, re-measured 2026-10-22. The number is rows that MOVE in
 # the lane of the file that OWNS the def the rule edits, and it is POSITIONAL:
 # a `diff` is positional, so a dropped row shifts every row after it. The
 # CONTENT column says how many rows actually say something different.
@@ -1179,18 +1179,18 @@ def main() -> IO(Unit):
 #   M15 `supported_dtypes` appends instead of consing             0  <-- BLIND
 #   M18 `tensor_cores` filters on dtype_OUT                      2
 #
-# TWO OF THESE NUMBERS MOVED, AND THE DELTA IS EXACTLY THE THREE ROWS
+# two of these numbers moved, and the delta is exactly the three rows
 # `amd_rdna4` GAINED: M1 and M10 were 259 and are 262. They were measured
 # over a table with FOUR (di,do) pairs; upstream has SEVEN.
 #
-# AND TWO RULES IN THE TREE'S OWN HARNESS COULD NOT BE APPLIED AT ALL. The
+# and two rules in the tree's own harness could not be applied at all. The
 # harness aims every edit at `tc_ptx.bend` and spells the tc.py type as `Tc`,
 # which the SPLIT renamed to `T.Tc` -- so M14 and M18 matched NOTHING until
 # the qualification was adapted, and M1-M10 (whose defs are in THIS file)
 # cannot be applied in `tc_ptx.bend` at all. A rule whose edit does not
 # apply is not a measurement.
 #
-# THE PLANTS, AND WHAT EACH ONE NAMES. A mutation asks what the file's own
+# the plants, and what each one names. a mutation asks what the file's own
 # output does; a PLANT asks whether the GATE goes red, and that is the
 # question a fix has to answer. Measured 2026-10-22 against
 # `gates/tc_ptx_render-oracle.py stage1`:

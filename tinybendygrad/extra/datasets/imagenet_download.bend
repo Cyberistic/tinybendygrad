@@ -1,4 +1,4 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/imagenet_download.py (51 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/imagenet_download.py (51 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. The ILSVRC2012 fetcher, and it is NOT class (c). The obvious
 # reason to skip it -- "ImageNet is behind a registration wall" -- was CHECKED AND IS
@@ -24,11 +24,11 @@
 #   "What is left of `tqdm` is its terminal progress bar"); `os.makedirs`,
 #   `os.replace`, `os.remove`, `os.listdir` and `Path` arithmetic for the
 #   `__file__`-relative roots; and `fetch(url, local_path)` (upstream:43-45,49), which
-#   is the THE PORT's `helpers.bend` HEADER HTTP seam. `fetch`'s SECOND ARGUMENT is the whole
+#   is the the port's `helpers.bend` header http seam. `fetch`'s second argument is the whole
 #   design here -- upstream downloads STRAIGHT TO THE FINAL PATH, so a partial
 #   download leaves a truncated `ILSVRC2012_img_val.tar` that `tarfile.open` will
 #   later accept and read short. Whatever ports `fetch` must port that hazard too.
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `imagenet_prepare_val` (upstream:15),
+# not ported, and named so nobody invents it: `imagenet_prepare_val` (upstream:15),
 #   `imagenet_prepare_train` (upstream:29), and the `__main__` block
 #   (upstream:39-51), whose `IMGNET_TRAIN` gate holds the 138GB train tar.
 import Base

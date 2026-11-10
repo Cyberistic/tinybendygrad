@@ -1,4 +1,4 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/__init__.py (43 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/__init__.py (43 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. Two loaders, and NEITHER is a bare `fetch`: both do real work on
 # the bytes AFTER the download, which is why this file is class (b) and not (a).
@@ -22,10 +22,10 @@
 #       `parse(...)` (upstream:7) cannot be written at all yet.
 #   (3) `gzip`, `tarfile`, `pickle`, and `os.path.isfile` for the `/tmp/cifar_extracted`
 #       cache flag (upstream:25).
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `cifar_mean` (upstream:15),
+# not ported, and named so nobody invents it: `cifar_mean` (upstream:15),
 #   `cifar_std` (upstream:16), `_load_disk_tensor` (upstream:26).
 #
-# WHY THESE DEFUSE RETURN `Refused` INSTEAD OF UPSTREAM'S RETURN TYPE. `fetch_mnist`
+# why these defuse return `Refused` instead of upstream's return TYPE. `fetch_mnist`
 # returns four ndarrays, or four `Tensor`s when `tensors=True`; `fetch_cifar` returns
 # four `Tensor.empty` disk buffers. Neither type exists at this seam, so the return
 # type here is `Refused` and NOT a four-tuple. The alternative -- returning an empty

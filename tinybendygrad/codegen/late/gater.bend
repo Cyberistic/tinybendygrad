@@ -15,7 +15,7 @@
 # `gater.py` -- 1-29, WHOLE FILE. TWO TABLES: a six-rule `pm_move_gates_from_index`
 # and the `move_where_load` function those last two rules name.
 #
-# THE TABLE'S OP SETS ARE THE PORTED HALF and the REST of each rule is a WALL. All
+# the table's op sets are the ported half and the rest of each rule is a wall. All
 # six rules are `UPat.var(...).index(...).load(...)`, `.store(...)`,
 # `UPat((INDEX, SHRINK), ...).load/.store(...)` and `UPat.var("gate").where(...)`,
 # and what a rule MATCHES is its nested structure: the `index`, the `where`, the
@@ -34,7 +34,7 @@ import ./linearizer.bend as LT
 # `gater.py` -- 1-29, WHOLE FILE. TWO TABLES: a six-rule `pm_move_gates_from_index`
 # and the `move_where_load` function those last two rules name.
 #
-# THE TABLE'S OP SETS ARE THE PORTED HALF and the REST of each rule is a WALL. All
+# the table's op sets are the ported half and the rest of each rule is a wall. All
 # six rules are `UPat.var(...).index(...).load(...)`, `.store(...)`,
 # `UPat((INDEX, SHRINK), ...).load/.store(...)` and `UPat.var("gate").where(...)`,
 # and what a rule MATCHES is its nested structure: the `index`, the `where`, the

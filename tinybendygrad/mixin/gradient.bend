@@ -9,7 +9,7 @@
 # there is no generic dispatcher: a rule is a def, not a value, so `ops.bend` cannot call
 # into this file and each table owns its driver.
 #
-# THE ONE MEASURED FACT IN THIS HEADER, and it is the reason the file exists in this shape:
+# the one measured fact in this header, and it is the reason the file exists in this shape:
 # `mixin/gradient.py:101` binds the name `dest` TWICE.
 #     (UPat(Ops.AFTER, src=(UPat(name="dest"), UPat(Ops.STORE, src=(UPat(name="dest"), UPat())))),
 #      lambda ctx,dest: (None, ctx)),
@@ -116,7 +116,7 @@ def gs_solid(r: GRes) -> U32:
 def k_pi_2() -> O.Const: O.CFloat{1.5707963267948966}
 # `math.log(2)` -- gradient.py:70, :71, :77.
 def k_ln2() -> O.Const: O.CFloat{0.6931471805599453}
-# THE FOLDED LITERALS ARE BARE CONSTs AND THAT IS NOT AN OMISSION. `UOp.const(v)` with
+# the folded literals are bare CONSTs and that is not an omission. `UOp.const(v)` with
 # NO dtype is `CFloat{v}` -> weakfloat and the `.cast(dtype)` at ops.py:632 is against
 # `None`, so no CAST is built. Measured: `(math.pi/2 - c)` is `ADD(CONST, MUL(...))`
 # where the CONST's dtype is `weakfloat` and the MUL's is `float` -- the promotion
@@ -132,7 +132,7 @@ def k_inf() -> F32: F32.mul(1.0e30, 1.0e30)
 def k_neginf() -> O.Const: O.CFloat{F32.neg(k_inf())}
 def k_neginf_bits() -> U32: F32.bits(F32.neg(k_inf()))
 
-# THE INTS AND THE FLOATS ARE DIFFERENT NODES, and this is load-bearing rather than
+# the ints and the floats are different nodes, and this is load-bearing rather than
 # pedantic. A CONST's dtype FOLLOWS its value (ops.py:632 `dtype or dtypes.from_py(b)`),
 # so `UOp.const(0)` is `CInt{0}` -> weakint and `UOp.const(0.0)` is `CFloat{0.0}` ->
 # float32. `least_upper(weakint, float32)` is float32 and not weakint, so a rule that
@@ -252,7 +252,7 @@ def gwhere(+ar: O.Arena, m: U32, a: U32, b: U32) -> O.Found: gnew(ar, O.OpsWHERE
 # swap is not foldable and both directions are genuinely two nodes.
 def gcmplt(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPLT{}, [x, y], O.ANone{})
 
-# `x.eq(y)` IS NOT `Ops.CMPEQ` AND ITS NOTATION IS NOT XOR. `eq` (elementwise.py:336) is
+# `x.eq(y)` is not `Ops.CMPEQ` and its notation is not xor. `eq` (elementwise.py:336) is
 # `ne().logical_not()` and `logical_not` (:49) is `alu(Ops.CMPNE, const(True))` -- so
 # `eq` is TWO `CMPNE` nodes. Measured three ways:
 #   `UOp.const(1.0).logical_not().op`      == CMPNE, srcs (CAST, CONST)
@@ -472,7 +472,7 @@ def gr_9(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: fired([ctx, ctx], ar)
 # `pow_n0`/`pow_n1` pin the tree SIZE -- 24 for `dx` and 29 for `de`, CPython's own
 # numbers -- because a rule that dropped a factor or a guard would still answer a VALUE
 # (wrongly) and only the count would move.
-# THE ZEROS ARE ALL ONE BARE NODE. `e.eq(0)`, `e < 0` and `where`'s untaken `0` all
+# the zeros are all one bare node. `e.eq(0)`, `e < 0` and `where`'s untaken `0` all
 # take the WEAK literal that `UOp.const(0)` derives (ops.py:632), so all three are the
 # SAME interned `CONST/0` at `weakfloat` -- NOT a `CAST(CONST)`. MEASURED against
 # CPython's own `pm_gradient` tree. An earlier revision split them into `zero` (cast),
@@ -536,21 +536,21 @@ def gr_10(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 # The gradient of a max goes to the larger argument; a TIE splits it evenly, which is
 # the `ctx * 0.5` and is why `max_tie` is a separate gate row from `max_gt`.
 #
-# *** `(x>y)` AND `(x<y)` ARE THE SAME OP WITH THE OPERANDS SWAPPED, AND ONLY THE OUTER
-# ONE IS SWAPPED. ***  `_binop(Ops.CMPLT, y, reverse=True)` (elementwise.py:323) puts
+# * `(x>y)` and `(x<y)` are the same op with the operands swapped, and only the outer
+# ONE IS SWAPPED. *  `_binop(Ops.CMPLT, y, reverse=True)` (elementwise.py:323) puts
 # `y` on the LEFT, so `(x>y)` is `CMPLT(y, x)` and `(x<y)` is `CMPLT(x, y)` --
 # MEASURED on CPython's own tree, both slots, 2026-10-31.
 #
-# *** AND THE INNER `(x.eq(y))` IS THE SAME NODE IN BOTH SLOTS. ***  upstream's rule body
+# * and the inner `(x.eq(y))` is the same node in both slots. *  upstream's rule body
 # binds `x` and `y` ONCE and writes `(x.eq(y)).where(ctx * 0.5, 0)` in both arms, and
 # `UOp` is hash-consed, so the second arm's `(x.eq(y))` IS the first arm's node.
 # MEASURED on CPython's own tree, 2026-10-31: the two slots' inner WHEREs are the SAME
 # `id()`, so the MAX gradient is 15 nodes and 3 WHEREs.
 #
-# **⇒ THE PORT BUILT FOUR WHEREs AND THREE CMPNEs, AND `max_n0`/`max_n1` DID NOT SEE
-# IT.**  The port computed slot 1 from `(y.eq(x))` -- the operands SWAPPED -- which is a
+# - the port built four WHEREs and three CMPNEs, and `max_n0`/`max_n1` did not see
+# IT.  The port computed slot 1 from `(y.eq(x))` -- the operands SWAPPED -- which is a
 # DIFFERENT node (CMPNE is not commutative), so the port built a SECOND inner WHERE.
-# **AND THE PORT'S OWN COUNT ROWS ARE BLIND TO IT**: `size1` counts a SHARED subtree ONCE
+# and the port's own count rows are blind to it: `size1` counts a shared subtree once
 # PER PATH, so a duplicated inner WHERE costs exactly what a shared one costs, and
 # `max_n0`/`max_n1` read 21 on both sides -- MEASURED, on the defect and on the fix.
 # A COUNT that is right and a STRUCTURE that is wrong is the failure the header of this
@@ -558,7 +558,7 @@ def gr_10(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 # cannot see it' failure"), and `gates/gr_graph_census-gate.py` reads `max_eq_op`, which
 # asks whether the mask's op is `CMPNE` -- TRUE for both spellings.
 #
-# **⇒ THE FIX IS TO BUILD THE INNER ONCE AND SWAP ONLY THE OUTER.**
+# - the fix is to build the inner once and swap only the outer.
 def gr_11.inner(+ar: O.Arena, +ctx: U32, +x: U32, +y: U32) -> O.Found:
   +c = gcmplt(ar, x, y)
   +n = gcmpne(O.Found.ar(c), x, y)
@@ -658,7 +658,7 @@ def gr_16(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([ctx], ar)
 
 # --- 17. RESHAPE -- gradient.py:85. `(ctx.reshape(ret.src[0].shape), None)`
 #
-# TWO SLOTS FOR A ONE-SRC NODE, and that is a REAL PYTHON BUG, measured: `pm_gradient`
+# two slots for a one-SRC node, and that is a real python bug, measured: `pm_gradient`
 # is a per-OP table with no arity check, so this rule answers 2 gradients for a node
 # whose `src` has length 1, and `compute_gradient`'s own assert (gradient.py:128
 # `assert len(lgrads) == len(t0.src)`) FIRES. Verified: `pm_gradient.rewrite(RESHAPE)`
@@ -699,47 +699,47 @@ def gr_20(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 21. PERMUTE -- gradient.py:89. `(ctx.permute(argsort(ret.marg)),)`
 #
-# THE RULE, IN THREE PIECES, AND EVERY PIECE IS UPSTREAM'S OWN:
+# the rule, in three pieces, and every piece is upstream's own:
 #
 #   1. `ret.marg` for a PERMUTE is `self.arg` (ops.py:792) -- an `ATuple{ys}` here.
 #   2. `argsort` (helpers.py:28) SORTS BY VALUE AND RETURNS INDICES, and
 #      `helpers.bend`'s `argsort_u32` IS that function: it pairs each value with its
 #      index (`Ix{i, v}`), sorts by `(value, index)` -- Python's `sorted` is stable, so
-#      the INDEX breaks the ties -- and projects the INDEX back out.  **⇒ IT IS NOT
-#      "A SORT OF ARENA INDICES": THE SORT KEY IS THE VALUE AND THE PROJECTION IS
-#      THE INDEX.**  MEASURED against upstream's own `argsort` on six inputs, in the
+#      the INDEX breaks the ties -- and projects the INDEX back out.  - IT IS NOT
+#      "a sort of arena indices": the sort key is the value and the projection is
+#      THE INDEX.  MEASURED against upstream's own `argsort` on six inputs, in the
 #      `pm_argsort_*` rows.
 #   3. `ctx.permute(order)` (movement.py:214-231) has THREE observable behaviours:
 #      a. `_resolve_dim` (movement.py:81-84) is PURE INTEGER ARITHMETIC over
 #         `self.ndim` -- `total = self.ndim + extra`, a range test, and
-#         `dim + total if dim < 0 else dim` -- and it NEVER calls `resolve`.  **⇒
-#         THERE IS NO `resolve` WALL AT `gr_21`.**
+#         `dim + total if dim < 0 else dim` -- and it NEVER calls `resolve`.  -
+#         THERE IS NO `resolve` WALL AT `gr_21`.
 #      b. THE IDENTITY EARLY-RETURN: `return self._mop(Ops.PERMUTE, arg=order_arg)
 #         if order_arg != tuple(range(self.ndim)) else self` (movement.py:231).  For
 #         the IDENTITY order the answer is `ctx` ITSELF and NO PERMUTE NODE IS BUILT.
 #      c. THE VALIDITY RAISE: `if sorted(order_arg) != list(range(self.ndim)):
 #         raise RuntimeError(...)` (movement.py:230).
 #
-# (a) AND (c) BOTH READ `ctx.ndim`, AND THE PORT HAS NO `ndim`: `ops.bend` has no
-# `as_shape` and no `shape`, so a node's DIMENSION COUNT is not available here.  **⇒
-# (c) IS NOT REPRODUCED.  THAT IS A NAMED DIVERGENCE AND IT IS BOUNDED BY A
-# MEASUREMENT, NOT BY AN ARGUMENT:** upstream's `compute_gradient` guarantees
+# (a) and (c) both read `ctx.ndim`, and the port has no `ndim`: `ops.bend` has no
+# `as_shape` and no `shape`, so a node's DIMENSION COUNT is not available here.  -
+# (c) is not reproduced.  that is a named divergence and it is bounded by a
+# MEASUREMENT, NOT BY AN ARGUMENT: upstream's `compute_gradient` guarantees
 # `ctx.ndim == len(ret.marg)`, because the gradient flowing into a node is reshaped
 # to THAT NODE'S SHAPE by the shaped-edge reduce at gradient.py:131-133 -- so the two
 # agree BY CONSTRUCTION and (c) is UNREACHABLE from `compute_gradient`.  The
 # `pm_raise_*` rows MEASURE both of upstream's raises on the fixtures that DO reach
 # them, and the report names the one case where the port and upstream differ.
 #
-# (b) IS REPRODUCED, AND IT IS THE ONE THAT MATTERS: the identity order is reachable
+# (b) is reproduced, and it is the one that matters: the identity order is reachable
 # in a hand-built graph, and upstream's answer for it is `ctx` itself -- a rule that
 # builds a PERMUTE node for it would produce a DIFFERENT GRAPH.
 #
 # WHAT THE PORT USES INSTEAD OF `ctx.ndim`: `len(ret.marg)`, which is the length of
 # the ATuple.  It is `ret.ndim` by upstream's own construction (`permute()` validates
 # `sorted(order_arg) == list(range(self.ndim))`, so the arg's length IS the ndim), and
-# `ctx.ndim == ret.ndim` by the shaped-edge reduce.  **⇒ THE TWO NUMBERS ARE EQUAL
-# ON EVERY REACHABLE FIXTURE, AND THE PORT'S IS THE ONE IT CAN READ.**
-# THE MARGIN, READ OFF THE NODE'S ARG.  The `match` scrutinises a PARAMETER -- Bend
+# `ctx.ndim == ret.ndim` by the shaped-edge reduce.  - THE TWO NUMBERS ARE EQUAL
+# on every reachable fixture, and the port's is the one it can read.
+# the margin, read off the node's ARG.  The `match` scrutinises a parameter -- Bend
 # refuses to match a computed value (notes, rule 2) -- so the read and the match are
 # two defs.
 def gr_21_marg.of(a: O.Arg) -> List<&2, U32>:
@@ -852,7 +852,7 @@ def gr_27(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 29. AFTER, clone/assign -- gradient.py:101. `(None, ctx)`
 #
-# *** THE NAME REBIND. *** `dest` is bound at `AFTER.src[0]` AND at
+# * THE NAME REBIND. * `dest` is bound at `AFTER.src[0]` AND at
 # `AFTER.src[1].src[0]`. The rule fires ONLY when those are the SAME node, and the
 # compiled form states that as an explicit `is` (upat.py:100-105). Without the check
 # the rule claims every `AFTER(_, STORE(_,_))` -- including the ordering-only shape of
@@ -905,7 +905,7 @@ def gr_28(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_28.go(ar, ctx, self)
 
 # --- 30. AFTER, partial store -- gradient.py:100-101. `partial_store_gradient(ctx, dest, view)`
 #
-# THE HELPER IS A `while` LOOP plus a RE-ENTRY INTO THE MATCHER, and both halves are
+# the helper is a `while` LOOP plus a re-entry into the matcher, and both halves are
 # walls here. `gradient.py:54-58` walks `base` up through
 # `{RESHAPE, SHRINK, PERMUTE, PAD}` accumulating a `path`, and returns `None` if it
 # never reaches `dest`; `gradient.py:61` then calls `compute_gradient`, whose own
@@ -966,7 +966,7 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 #       `symbolic.py`'s `resolve` is not ported. It also needs `sum_acc_dtype` (dtype.py:220),
 #       which is `least_upper_dtype` against `getenv("SUM_DTYPE")`, and `Config` is a P6
 #       concern (`uop/symbolic.py` is also P3).
-#       **AND IT IS WORSE THAN A WALL: IT IS A PLACE CPTHON ITSELF RAISES.** The committed
+#       and it is worse than a wall: it is a place cpthon itself raises. The committed
 #       oracle's second fixture drives `compute_gradient` into
 #       `RuntimeError: cannot broadcast (UOp(Ops.ADD, ...)) into ()` at gradient.py:133,
 #       so that line has no CPython answer to gate against on a shaped edge at all.
@@ -1169,7 +1169,7 @@ def gr_rewrite(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 # ===========================================================================
 # THE WALK -- `compute_gradient` (gradient.py:116-145) and `_deepwalk` (:109-114).
 #
-# WHAT LANDED AND WHAT DID NOT, and the split is the one upstream's own source
+# what landed and what did not, and the split is the one upstream's own source
 # dictates rather than one chosen here. THREE of upstream's five pieces ported:
 #
 #   (a) `_deepwalk`'s `in_target_path` LATTICE (:112) -- ported as a forward pass over
@@ -1236,7 +1236,7 @@ def dw_read.of(hit: Bool, f: Bool, rest: Maybe<&2, Bool>) -> Maybe<&2, Bool>:
 # `List<&2, (U32, Bool)>` is refused outright).
 #
 # TWO SCRUTINEES because the two lists shrink TOGETHER and a self-call must shrink an
-# argument (notes, position 612), and THE PARAMETER ORDER MUST BE THE SCRUTINEE ORDER --
+# argument (notes, position 612), and the parameter order must be the scrutinee order --
 # MEASURED here: `match ns fs:` over `(fs, ns, ...)` is refused with "a match on a
 # parameter or field (this name is a def or a consumed binder)", which names the SECOND
 # scrutinee and not the mismatch.
@@ -1277,10 +1277,10 @@ def dw_any.go(+p: Itp, +targets: List<&2, U32>, srcs: List<&2, U32>) -> Bool:
 def dw_push(+p: Itp, +x: U32, +f: Bool) -> Itp:
   Itp{List.append(&2, U32, Itp.nodes_of(p), [x]), List.append(&2, Bool, Itp.flags_of(p), [f])}
 
-# THE FLAG PASS. ONE forward pass over the toposort, and the FLAG IS COMPUTED ON THE
+# the flag pass. one forward pass over the toposort, and the flag is computed on the
 # TABLE AS IT STANDS BEFORE THE PUSH -- the argument `dw_push(p, x, dw_any(...))` is
 # evaluated before `dw_push` branches, which is notes rule 5 ("BEND IS STRICT: AN
-# ARGUMENT IS EVALUATED BEFORE THE CALLEE BRANCHES") and is what makes the one-line arm
+# argument is evaluated before the callee branches") and is what makes the one-line arm
 # legal.
 #
 # THE ACCUMULATOR IS THE LAST PARAMETER, and that is not taste. `dw_flags(ar, targets,
@@ -1473,7 +1473,7 @@ def cg_sum.add(+sl: GSlot, +s: CState, +v: U32) -> CState:
 # is the only reason the fixture is a DAG: a node with two parents is written twice, and
 # `oracle_dag_grad_a` answers `root=ADD/2` where a fresh insert would answer the MUL.
 #
-# *** THE ORDER OF THIS CHAIN IS NOT COSMETIC. *** `done -> grow -> noop -> add -> put`
+# * the order of this chain is not cosmetic. * `done -> grow -> noop -> add -> put`
 # is the only order that compiles: a `case Some{sl}:` binder cannot call a def declared
 # LATER in the file. MEASURED in six lines -- a `put.of` whose `Some{sl}` arm calls a
 # following `add` is refused with "expected : a filled definition (an unfilled law is a
@@ -1494,7 +1494,7 @@ def cg_hole.of(is_hole: Bool, hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U3
 # THE INNER LOOP, gradient.py:129-139: `for k, v in zip(t0.src, lgrads)`. ONE
 # self-recursive def and the two lists shrink together.
 #
-# THE SHAPE IS THE POINT AND IT COST FOUR EDGES TO FIND. The obvious spelling -- `cg_puts`
+# the shape is the point and it cost four edges to find. The obvious spelling -- `cg_puts`
 # calls a `cg_hole` that calls `cg_puts` back -- is a MUTUAL RECURSION and this compiler
 # refuses the pair with "expected : a filled definition". Lifting the recursion OUT of
 # the branch is what works: `step` answers the state after ONE (k, v) pair and `go` owns
@@ -1502,7 +1502,7 @@ def cg_hole.of(is_hole: Bool, hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U3
 def cg_puts.step(+s: CState, +k: U32, +v: U32) -> CState:
   cg_hole.of(U32.is_zero(v), gslot(CState.g_of(s), k), s, k, v)
 
-# *** THE COVER ARM GOES LAST, AND GETTING IT WRONG IS SILENT. *** With `case _ _:` first
+# * the cover arm goes last, and getting it wrong is silent. * With `case _ _:` first
 # it catches EVERY two-scrutinee match -- the arm below it is dead code and the compiler
 # does not say so (notes, rule 1 at position 1620) -- so `cg_puts` returned the state
 # untouched on the first pair and `walk_grads_n` answered 1 with `walk_skip_n` 2 instead
@@ -1532,7 +1532,7 @@ def cg_ctx.of(hit: Maybe<&2, GSlot>, ar: O.Arena) -> U32:
 # TWICE: the rules GROW it and the `GRes` carries the grown one, which is the only way a
 # rule that mints three nodes can be followed by one that reads them.
 #
-# *** THE ONE PLACE THE PORT DIVERGES FROM UPSTREAM, AND IT IS NAMED. ***
+# * the one place the port diverges from upstream, and it is named. *
 # gradient.py:127 is `if lgrads is None: raise RuntimeError(...)`. The port CANNOT
 # raise, so a node no rule claims STOPS the walk: `cg_step` is not re-entered and the
 # grads built so far stand. "No answer after this point" is the honest reading of both,
@@ -1622,7 +1622,7 @@ type Fix is Data:
 # the two-sided identity gate is built on.
 def fx_pa(slot: U32) -> O.ParamArg: O.ParamArg.of(slot, S.single())
 
-# *** THE LEAF IS `BUFFER(STACK())` AND NOT `BUFFER()`. ***
+# * THE LEAF IS `BUFFER(STACK())` AND NOT `BUFFER()`. *
 # upstream's `_shape` for a BUFFER reads `self.src[0].as_shape` (ops.py:359), so a
 # SRC-LESS buffer has no `src[0]` and `_shape` raises `IndexError: tuple index out of
 # range` -- and `compute_gradient` reads `k._shape` at gradient.py:130, so a src-less
@@ -1807,13 +1807,13 @@ def Fix.store28(x: Fix) -> U32:
 
 def fx_ar(f: Fix) -> O.Arena: F.Folded.ar(Fix.fx(f))
 def Fix.n(x: Fix) -> U32: Fix.t1(x)
-# THE COUNT. `pm_gradient.pdict` has 33 entries and the PORTED TABLE MUST TOO, because
+# the count. `pm_gradient.pdict` has 33 entries and the ported table must too, because
 # `UPAT_COMPILE=1` (ops.py:1588) means the COMPILED table is the live one and tag 29 --
 # the rebind -- is only a tag if the entries before it are in the same order and number.
 # A dropped entry shifts every tag after it and this row is the only thing that says so.
 def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_table())))
 
-# THE ROWS THAT ACTUALLY PIN THE RULES. A rule's node COUNT is the one fact that no
+# the rows that actually PIN the rules. a rule's node count is the one fact that no
 # amount of value-agreement can hide: a port that emitted a bare CONST instead of
 # Python's `CAST(CONST)` pair (ops.py:632) would build a SHORTER graph with the SAME
 # value, and every boolean row above would still pass. `Arena.next` is the length, so
@@ -1826,7 +1826,7 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 #   pow   24 (slot 0) and 29 (slot 1) -- the SAME rule, and they differ because slot 1
 #         builds the `b.eq(0)` / `e<0` / `-inf` branch that slot 0 does not.
 #   max   21 per slot, both slots equal.
-# ---- THE ROWS THAT ACTUALLY PIN THE RULES -------------------------------------
+# ---- the rows that actually PIN the rules -------------------------------------
 #
 # A rule's gradient is a NODE TREE, and its SIZE is the one fact no amount of
 # value-agreement can hide. A port that folded the `CAST` away from a CONST would build
@@ -1845,7 +1845,7 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 #   max   21 per slot, and the two are EQUAL, which is the tie-symmetry fact.
 #   mul   12, where 12 -- not 2 -- is the point: a SQUARE's two slots are the SAME node,
 #         and Python's tree for that one node is still 12.
-# THE NODE COUNT OF THE GRADIENT TREE: `1 + sum(size(s) for s in u.src)`.
+# the node count of the gradient tree: `1 + sum(size(s) for s in u.src)`.
 #
 # ONE def, no helper, and the reason is worth recording because it cost four attempts.
 # ANY split into "count this node" and "count this node's srcs" is MUTUALLY RECURSIVE,
@@ -1873,10 +1873,10 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 # A `match` may only scrutinise a PARAMETER or a PATTERN BINDER (notes rule 2), so the
 # fuel countdown cannot be nested inside the list arm -- the inner `match fuel:` reads a
 # binder by then and is refused with "this name is a def or a consumed binder". It has to
-# be a TWO-SCRUTINEE `match fuel todo` with ONE PATTERN PER SCRUTINEE (notes: `case _ _:`
+# be a two-scrutinee `match fuel todo` with one pattern per scrutinee (notes: `case _ _:`
 # is the cover, `case _:` is not).
 #
-# AND `p` MAY NOT BE BOUND IN TWO ARMS -- it is consumed by the arm that uses it, so
+# and `p` may not be bound in two arms -- it is consumed by the arm that uses it, so
 # `case 1n+p Nil{}` and `case 1n+p s <> t` are both illegal together. The fix is to put
 # the fuel test ONLY in the arm that consumes it, and let the empty-list case be reached
 # by the COVER arm. That is why the cover arm is `_ _` and not `1n+p _`: the cover is
@@ -2086,7 +2086,7 @@ def t_rebind_1_ctx() -> U32: b32(U32.is_eq(gs_get(rw(fx_ar(fix()), Fix.n(fix()),
 # rewrite skips, which is Python's `None` (measured: `pm_gradient.rewrite` on this shape
 # returns `None`).
 #
-# THIS IS THE ROW THE NAME-REBIND EXISTS FOR. Without `U32.is_eq`, `t_rebind_solid` on
+# this is the row the name-rebind exists for. Without `U32.is_eq`, `t_rebind_solid` on
 # `af28` would be 1 and this row would be 0 -- i.e. the rule would fire on a node Python
 # refuses. And `af28`'s `buf_uop`s DIFFER, so tag 28 (ordering-only) is the Python rule
 # that OWNS this node; the port does not implement tag 28, so the honest answer here is
@@ -2151,7 +2151,7 @@ def t_cast_solid() -> U32: gs_solid(rw(fx_ar(fix()), Fix.n(fix()), Fix.t0(fix())
 def t_bitcast_len() -> U32: gs_len(rw(fx_ar(fix()), Fix.n(fix()), Fix.t32(fix())))
 def t_bitcast_solid() -> U32: gs_solid(rw(fx_ar(fix()), Fix.n(fix()), Fix.t32(fix())))
 
-# THE SINK ROWS THAT ACTUALLY PIN THE RULE. `gs_len` alone is satisfied by ANY
+# the sink rows that actually PIN the rule. `gs_len` alone is satisfied by any
 # two-element list; `sink_srcs` reads the INDICES and says they are `ctx`'s own srcs,
 # which is the whole of gradient.py:94 (`ctx.src`). A rule returning `[ctx, ctx]` passes
 # `sink_len` and fails `sink_srcs` -- that is M10, and it is why this row is here.
@@ -2164,7 +2164,7 @@ def t_sink_srcs() -> U32:
   +f = fix()
   b32(O.eq_u32(sink.of(rw(fx_ar(f), Fix.n(f), Fix.t26(f))), O.Arena.srcs(fx_ar(f), Fix.n(f))))
 
-# THE FIRST-WINS DISCRIMINATOR, and this is the brief's SECOND TRAP made concrete:
+# the first-wins discriminator, and this is the brief's second trap made concrete:
 # "if your table has no node that TWO rules both claim, a first-wins-vs-conjunction bug
 # moves NOTHING and your gate cannot see it."
 #
@@ -2179,7 +2179,7 @@ def t_first_wins() -> U32:
   +f = fix()
   b32(U32.is_eq(gs_get(rw(fx_ar(f), Fix.n(f), Fix.af29(f)), 1n), Fix.n(f)))
 
-# AND THE DIRECT ROW FOR `gs_keep`, because a scan-level row only proves the ANSWER and
+# and the direct row for `gs_keep`, because a scan-level row only proves the answer and
 # not the fold. Two `GFired` answers in, and the EARLIER must survive: `keep_pair`
 # answers 11 if `gs_keep(fired([1,2]), fired([3,4]))` is `[1,2]` and 33 if it is `[3,4]`.
 # Under last-wins this row is 33, and it is the ONLY row that moves for M2 -- the
@@ -2188,7 +2188,7 @@ def t_keep_pair() -> U32:
   +r = gs_keep(fired([1, 2], O.Arena.empty()), fired([3, 4], O.Arena.empty()))
   U32.add(gs_len(r), U32.mul(10, gs_get(r, 0n)))
 
-# AND THE DIRECT ROW FOR `gs_keep` ON A SKIP: a `GSkip` must not erase an earlier
+# and the direct row for `gs_keep` on a skip: a `GSkip` must not erase an earlier
 # `GFired`. `keep_skip` answers 1 if `gs_keep(fired([7]), GSkip{})` is `[7]`.
 def t_keep_skip() -> U32:
   b32(U32.is_eq(gs_get(gs_keep(fired([7], O.Arena.empty()), GSkip{}), 0n), 7))
@@ -2200,7 +2200,7 @@ def t_keep_skip() -> U32:
 def t_rej_len() -> U32:
   U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(gr_e29())))
 
-# THE ROW THAT SEES `gr_rej` DECIDE SOMETHING. A MISSPELLED reject set is invisible to
+# the row that sees `gr_rej` decide something. a misspelled reject set is invisible to
 # every other row -- the op test alone claims the node, the rule body is unchanged, and
 # the answer is identical. The only thing that notices is the SET ITSELF, and the way to
 # notice is to check that `early_reject` REFUSES a node it should refuse: tag 27 rejects
@@ -2225,7 +2225,7 @@ def t_rej_len27() -> U32:
 
 # ---- the WALK rows: `compute_gradient`'s control flow, gated on CPython ---------
 #
-# THE FIXTURE IS THE ORACLE'S, NODE FOR NODE. `.agents/slop/backward/oracle-cg.py`'s
+# the fixture is the oracle's, node for node. `.agents/slop/backward/oracle-cg.py`'s
 # `build1` is a DAG and not a tree ON PURPOSE, and the two shapes a tree cannot reach are
 # the two this file's rows are for:
 #
@@ -2241,17 +2241,17 @@ def t_rej_len27() -> U32:
 #     r = ADD(p, q)        <- root, seed CONST 1.0
 #   targets = {a, b, c}, `root_grad = UOp.const(1.0, dtypes.float32)`.
 #
-# *** THE DENOMINATOR, AND IT IS NOT 2/2. *** The oracle's FIRST fixture (`build1`, this
+# * THE DENOMINATOR, AND IT IS NOT 2/2. * The oracle's FIRST fixture (`build1`, this
 # one) prints its FIFTEEN rows and the oracle's SECOND fixture (`build2`, the EXPAND)
 # drives CPython's own `compute_gradient` into `RuntimeError: cannot broadcast ... into
 # ()` at gradient.py:133 -- the SHAPED-EDGE REDUCE, because `build2`'s EXPAND's shape src
 # is an ADD whose `as_shape` is a ONE-tuple (ops.py:788) while a leaf's is `()`.
-# **⇒ THE ORACLE NO LONGER DIES SILENTLY: `main()` catches that raise and PRINTS IT AS A
-# ROW** (`oracle_hole_error=...`), and the seven rows that used to be unreachable
+# - the oracle no longer dies silently: `main()` catches that raise and prints it as a
+# ROW (`oracle_hole_error=...`), and the seven rows that used to be unreachable
 # (`oracle_pmul`, `oracle_pmul0/1`, `oracle_seed`, `oracle_fwdwalk_n`,
 # `oracle_fwdwalk_skipped`, `oracle_fwdwalk_a`) are now emitted, because they are built
 # from the FIRST fixture alone.
-# **⇒ WHAT THE HOLE FIXTURE STILL CANNOT GATE IS ITS GRADIENTS**, and that is why the
+# - what the hole fixture still cannot gate is its gradients, and that is why the
 # hole/skip counters are gated at 0 here: 0 is the truth for THIS fixture and no coverage
 # statement about the other.
 type Dag is Data:
@@ -2289,10 +2289,10 @@ def Dag.seed_of(d: Dag) -> U32:
   match d:
     case Dag{ar, a, b, c, p, q, r, seed}: seed
 
-# THE THREE BUFFERS ARE ON DISTINCT SLOTS (ParamArg 0/1/2), which is what makes `a` and
+# the three buffers are on distinct slots (ParamArg 0/1/2), which is what makes `a` and
 # `b` DIFFERENT NODES -- interning would otherwise collapse them and `grad_b` would be
 # `root=MUL/2` over the wrong buffer. `fx_pa`/`fx_buf` are the fixture builders above.
-# **`fx_buf` GIVES EVERY LEAF AN EMPTY-STACK SRC** (`BUFFER(STACK())`), which is what
+# `fx_buf` gives every leaf an empty-stack SRC (`BUFFER(STACK())`), which is what
 # upstream's `_shape` needs (ops.py:359) and what the oracle's `leaf()` builds; so the
 # port's graph and CPython's are the SAME GRAPH, node for node, and not merely two
 # graphs that happen to produce the same numbers.
@@ -2320,7 +2320,7 @@ def dag_grads(+d: Dag) -> CState:
 def dag_one(+ar: O.Arena, +k: U32) -> String:
   String.concat([O.Ops.name.of(O.Arena.op(ar, k)), "/", U32.show(O.Arena.nsrc(ar, k))])
 
-# THE SPACE RULE, and `Bool.pick` RETURNS THE FIRST ARM WHEN THE CONDITION IS TRUE
+# the space rule, and `Bool.pick` returns the first arm when the condition is TRUE
 # (notes, T-3), so "acc is empty" is the `acc ++ tok` arm. BOTH ARMS ARE EVALUATED --
 # `pick` is a value selector and not a guard (notes, LW-15) -- which is harmless here
 # because both are pure concatenations, and it is why the polarity is written beside the
@@ -2358,8 +2358,8 @@ def dag_grads_n.of(+d: Dag) -> U32:
 
 def dag_grads_n() -> U32: dag_grads_n.of(dag())
 
-# *** THE HEADLINE ROW, AND IT IS ONE VALUE CARRYING BOTH HALVES OF THE PROOF. ***
-# THE WALK'S SIGNATURE (`oracle_dag_walk`) AND THE COUNT OF GRADIENTS PRODUCED
+# * the headline row, and it is one value carrying both halves of the proof. *
+# the walk's signature (`oracle_dag_walk`) and the count of gradients produced
 # (`oracle_dag_grads_n`), in one string. A wrong walk cannot produce the right count by
 # accident: CPython's own forward-order counterfactual (`oracle_fwdwalk_n`) leaves almost
 # nothing, and the three tokens here are the only three nodes a reverse walk can reach
@@ -2370,7 +2370,7 @@ def dag_row.of(+d: Dag) -> String:
 
 def dag_row() -> String: dag_row.of(dag())
 
-# `in_target_path` OVER THE TOPOSORT -- `oracle_dag_inpath`, and it is the ROW THAT SEES
+# `in_target_path` over the toposort -- `oracle_dag_inpath`, and it is the row that sees
 # THE LATTICE. `oracle_dag_inpath=0 0 0 1 0 1 1` is NOT the walk, and it is read over
 # the TOPOSORT's SEVEN nodes -- the empty STACK, `a`, `b`, `p`, `c`, `q`, `r`:
 #   * the STACK is `0` because it has NO SRCS at all -- `any(...)` over an empty list.
@@ -2430,20 +2430,20 @@ def dag_keys() -> String:
   +d = dag()
   dag_keys.go(Grads.ks_of(CState.g_of(dag_grads(d))), Dag.ar_of(d), "")
 
-# ONE GRADIENT'S SIGNATURE, `oracle_dag_grad_<x>` WITHOUT ITS `srcs=` FIELD. The oracle
+# one gradient's signature, `oracle_dag_grad_<x>` without its `srcs=` field. The oracle
 # sorts the src tokens ALPHABETICALLY, which is a STRING order, and reproducing it would
 # need an alphabetical rank for all sixty ops -- `Ops.value` is DECLARATION order and
 # disagrees with it (`BUFFER` is 2 and `ADD` is late), so it is not a substitute. This row
-# prints the node COUNT and the ROOT's op and arity and stops there. **THE `srcs=`
-# MULTISET IS A NAMED LOSS**, stated here rather than quietly dropped: two of the
+# prints the node COUNT and the ROOT's op and arity and stops there. THE `srcs=`
+# MULTISET IS A NAMED LOSS, stated here rather than quietly dropped: two of the
 # oracle's three `osig` fields are gated and the third is not. Those two are the ones
 # that separate all four cases (`grad_a` accumulated -> `6 root=ADD/2`, `grad_b` fresh ->
 # `5 root=MUL/2`, and `grad_c`/`_p`/`_q`/`_r` the seed verbatim -> `2 root=CAST/1`).
-# **THE COUNTS MOVED WHEN THE LEAF MOVED** -- `5`/`4` before the leaf carried a STACK
+# the counts moved when the leaf moved -- `5`/`4` before the leaf carried a stack
 # src and `6`/`5` after -- because a leaf's node set grew by the STACK, and a gradient's
 # operands ARE the leaves.  That is the count row moving for a STRUCTURAL reason and not
 # for a wrong walk.
-# *** `size1` IS NOT A TOPOSORT COUNT, AND HERE IS WHERE IT SHOWS. *** `size` is
+# * `size1` is not a toposort count, and here is WHERE it shows. * `size` is
 # `1 + sum(size(s) for s in u.src)`, so it counts a SHARED subtree ONCE PER PATH. CPython's
 # `len(u.toposort())` counts it once. The two agree on every `*_n` row above because
 # every one of those fixtures is a TREE, and they part company the moment the walk's
@@ -2462,12 +2462,12 @@ def dag_grad_root.of(hit: Maybe<&2, GSlot>, +ar: O.Arena) -> String:
     case Some{+sl}: dag_grad_root.put2(ar, sl)
     case None{}: "NONE"
 
-# THE FIXTURE IS BUILT ONCE AND PASSED IN, not built twice. `dag_grads(dag())` beside
+# the fixture is built once and passed in, not built twice. `dag_grads(dag())` beside
 # `Dag.a_of(dag())` would read a KEY INDEX out of one arena and a VALUE INDEX out of
 # another -- notes T-4's shape exactly -- and it would work here only because `dag()` is
 # deterministic. `main` holds the one `Dag` every `dag_grad_*` row shares.
 #
-# *** AND THE READS COME OUT OF THE WALK'S OWN ARENA, NOT THE FIXTURE'S. *** `grads`'s
+# * and the reads come out of the walk's own arena, not the fixture's. * `grads`'s
 # VALUES for `a` and `b` are nodes the walk MINTED, so their indices are past the end of
 # the fixture arena: `size1` on an index `Arena.at` cannot find answers `Arena.bottom()`,
 # which is `1 root=NOOP/0`. That is what the first run printed for `walk_grad_a` and
@@ -2486,19 +2486,19 @@ def dag_grad_p(+d: Dag) -> String: dag_grad_root.put(d, Dag.p_of(d))
 def dag_grad_q(+d: Dag) -> String: dag_grad_root.put(d, Dag.q_of(d))
 def dag_grad_r(+d: Dag) -> String: dag_grad_root.put(d, Dag.r_of(d))
 
-# ONE FIXTURE FOR THE SIX `walk_grad_*` ROWS, so every one of them reads the SAME arena's
+# one fixture for the six `walk_grad_*` rows, so every one of them reads the same arena's
 # key indices and the same arena's value indices (see `dag_grad_root.put`).
 def walk_dag() -> Dag: dag()
 
 # ===========================================================================
-# THE GRADIENT SET -- mixin/op.py:471 -- AND THE `bw` GRAPH.
+# the gradient set -- mixin/op.py:471 -- and the `bw` graph.
 #
 # WHAT UPSTREAM SAYS.  `tinygrad/mixin/op.py:470-471`:
 #
 #     grads = compute_gradient(self._uop, gradient._uop, set(target_uops))
 #     return [self._wrap_uop(grads[x] if x in grads else x.const_like(0)) for x in target_uops]
 #
-# so the GRADIENT SET is ONE SLOT PER TARGET, IN TARGET ORDER, and a target with no
+# so the gradient set is one slot per target, in target order, and a target with no
 # entry in `grads` gets the `const_like(0)` SUBSTITUTE rather than a hole.
 #
 # WHY IT LIVES HERE AND NOT IN `tensor.bend`.  `tensor.bend`'s `tn_bwd_slot` implements
@@ -2562,7 +2562,7 @@ def gs() -> Gs:
 def gs_targets.of(a: U32, b: U32, z: U32) -> List<&2, U32>: [a, b, z]
 
 # ---------------------------------------------------------------------------
-# THE RUN.  ONE record, ONE fixture, ONE arena: the walk's arena (the FIXTURE's) and
+# the run.  one record, one fixture, one arena: the walk's arena (the fixture's) and
 # the walk's own grown arena (the CState's) are DIFFERENT arenas, and every row below
 # reads indices out of exactly one of them.  The notes' T-4 shape -- reading a key
 # index out of one arena and a value index out of another -- is what this record
@@ -2571,7 +2571,7 @@ def gs_targets.of(a: U32, b: U32, z: U32) -> List<&2, U32>: [a, b, z]
 type GRun is Data:
   GRun{ar: O.Arena, cs: CState, ts: List<&2, U32>, r: U32}
 
-# THE TARGETS COME FROM `gs_targets` AND FROM NOWHERE ELSE.  An earlier revision spelled
+# the targets come from `gs_targets` and from nowhere ELSE.  An earlier revision spelled
 # `[a, b, z]` in here as well, and `gs_targets` was then a def with NO CALLER -- which is
 # the tree's own "a def claiming a CPython expression with no caller is a claim of
 # unknown value" (this file's `gbool` note).  ONE spelling, one caller.
@@ -2612,7 +2612,7 @@ def gs_dt(+ar: O.Arena, +x: U32) -> Maybe<&2, S.Dt>:
 # `x.const_like(0)` -- ops.py:581-583:
 #     ret = UOp.const(b, dtype or self.dtype)
 #     return ret._mop(Ops.EXPAND, arg=self._shape) if self._shape and ret._shape != self._shape else ret
-# THE EXPAND ARM IS UNREACHABLE HERE and that is a NAMED OMISSION: a target's `_shape`
+# the expand arm is unreachable here and that is a named omission: a target's `_shape`
 # is `None` or `()` in every fixture, and `()` is FALSY, so the arm never fires.  The
 # CONST is `gconst_raw` (a BARE `CONST` at weakfloat) and the CAST is `gcast` to the
 # target's dtype -- so a float32 target gets `CAST(CONST 0.0)`, upstream's
@@ -2661,7 +2661,7 @@ def grad_set(+s: CState, targets: List<&2, U32>) -> GSet:
 #   `<OP>/<nsrc><ident> [<the SORTED tokens of its srcs>]`
 # and the whole signature is those tokens SORTED.
 #
-# *** AND THE LIMIT IS NAMED, BECAUSE A SIGNATURE WITH AN UNNAMED LIMIT IS A CLAIM:
+# * and the limit is named, because a signature with an unnamed limit is a claim:
 # this is the 1-ROUND WEISFEILER-LEMAN refinement, so two graphs that differ only in
 # WHICH node of the same class a src points to share this signature -- UNLESS the two
 # nodes carry different IDENTs, and on THIS fixture every node's token is DISTINCT
@@ -2801,7 +2801,7 @@ def gs_keys.of(+run: GRun) -> String:
 
 def gs_keys() -> String: gs_keys.of(gs_run(gs()))
 
-# THE TWO COUNTERS -- `oracle_gs_skip_n` and `oracle_gs_hole_n`.  THE HOLE IS NON-ZERO
+# the two counters -- `oracle_gs_skip_n` and `oracle_gs_hole_n`.  the hole is non-zero
 # HERE and it is the point of this fixture: the prior art's `walk_hole_n=0` was a fact
 # about ITS fixture and not a coverage statement.
 def gs_skip_n.of(+run: GRun) -> U32:
@@ -2902,26 +2902,26 @@ def bw_distinct() -> U32: bw_distinct.of(gs_run(gs()))
 #     (gradient.py:112), so a node is in the WALK only if one of its SRCS reaches a
 #     target -- A TARGET IS NEVER ITSELF IN THE WALK.  So the target's own rule is
 #     never needed, and the target here is a STACK, whose rule (`ctx[i]`,
-#     gradient.py:91) this port cannot do (`gr_22` is `GSkip`).  **⇒ MAKING THE 3-D
-#     NODE THE TARGET IS WHAT KEEPS THE FIXTURE INSIDE `gr_21` ALONE.**
+#     gradient.py:91) this port cannot do (`gr_22` is `GSkip`).  - MAKING THE 3-D
+#     node the target is what keeps the fixture inside `gr_21` alone.
 #   * THE ROOT GRAD IS A STACK TOO, for the same reason plus one more: `ctx` must
 #     have `ndim == 3` or upstream's `_resolve_dim` (movement.py:81-84) rejects a
 #     3-element order, and a BUFFER is at most 1-D.
-#   * THE SHAPES AGREE -- both `(2, 2, 2)` -- so the SHAPED-EDGE REDUCE at gradient.py:131
+#   * the shapes agree -- both `(2, 2, 2)` -- so the shaped-edge reduce at gradient.py:131
 #     never fires, and this file's OMISSION of that line (named in its own header) is
 #     not observable here.
 #
-# ⇒ THE BACKWARD GRAPH IS EXACTLY: `PERMUTE(ctx, ATuple{[2, 0, 1]})`, and the `bw` graph
+# - THE BACKWARD GRAPH IS EXACTLY: `PERMUTE(ctx, ATuple{[2, 0, 1]})`, and the `bw` graph
 # over it is TWELVE nodes.  CPython's own answer, from `oracle-pm.py`, is the same twelve.
 # ===========================================================================
 
 # A CONST AT AN INT VALUE -- the shape src's value.  A BARE CONST, because upstream's
 # `UOp(Ops.CONST, arg=2)` is ONE node with `dtype=dtypes.weakint` (MEASURED in
-# `probe.py`) and the port's `O.UOp.const` is the bare one too.  **⇒ THE IDENT IS
-# `@i2` ON BOTH SIDES, AND THE `bw` SIGNATURE'S `CONST/0@i2` TOKEN IS THE SAME TOKEN.**
+# `probe.py`) and the port's `O.UOp.const` is the bare one too.  - THE IDENT IS
+# `@i2` on both sides, and the `bw` signature's `CONST/0@i2` token is the same token.
 def pm_c(+ar: O.Arena, n: U32) -> O.Found: O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})
 
-# THE 1-D LEAF WITH A STATIC SHAPE: `BUFFER(STACK(CONST n))`.  The STACK is the shape
+# the 1-d leaf with a static shape: `BUFFER(STACK(CONST n))`.  The stack is the shape
 # src and it is NOT EMPTY, so the leaf's `_shape` is `(n,)` and not `()`.
 def pm_leaf(+ar: O.Arena, slot: U32, size: U32) -> O.Found:
   +c = pm_c(ar, size)
@@ -2931,12 +2931,12 @@ def pm_leaf(+ar: O.Arena, slot: U32, size: U32) -> O.Found:
 type Pm is Data:
   Pm{ar: O.Arena, a: U32, per: U32, ctx: U32}
 
-# THE 3-D FIXTURE.  `a` is the TARGET, `per` is the ROOT, `ctx` is the ROOT GRAD.
+# the 3-d fixture.  `a` is the target, `per` is the root, `ctx` is the root grad.
 #
-# *** WHY IT IS 3-D AND NOT 2-D, AND IT IS NOT A TASTE: A 2-ELEMENT PERMUTATION IS AN
-# INVOLUTION, SO ITS ARGSORT IS ITSELF. ***  `argsort((1,0))` is `(1,0)` (MEASURED, §1.4),
+# * why it is 3-d and not 2-d, and it is not a taste: a 2-element permutation is an
+# INVOLUTION, SO ITS ARGSORT IS ITSELF. *  `argsort((1,0))` is `(1,0)` (MEASURED, §1.4),
 # so on a 2-D fixture the rule's ORDER row would read the same whether the rule ARGSORTED
-# or merely copied the order -- **A ROW THAT CANNOT GO RED IS A LABEL.**  With the order
+# or merely copied the order -- A ROW THAT CANNOT GO RED IS A LABEL.  With the order
 # `(1, 2, 0)` the argsort is `(2, 0, 1)`, so the row distinguishes them.
 #
 # AND WHY EVERY DIMENSION IS 2: the shape of `per` is the shape of `a` PERMUTED, and the
@@ -2957,7 +2957,7 @@ def pm() -> Pm:
   +ctx = gnew(O.Found.ar(n01), O.OpsSTACK{}, [O.Found.i(n01), O.Found.i(m2)], O.ANone{})
   Pm{O.Found.ar(ctx), O.Found.i(a), O.Found.i(per), O.Found.i(ctx)}
 
-# THE TARGETS, IN ORDER -- `gs_targets`' twin.  THE LIST LITERAL NEEDS ITS TYPE
+# the targets, in order -- `gs_targets`' twin.  the list literal needs its TYPE
 # ANNOTATED (`+ts = [a]` cannot infer it), and upstream's order is the CALLER's order
 # (mixin/op.py:471), so it is ONE def and ONE caller.
 def pm_targets.of(a: U32) -> List<&2, U32>: [a]
@@ -2973,8 +2973,8 @@ def pm_run() -> GRun: pm_run.of(pm())
 # THE 1-D IDENTITY FIXTURE -- the CONTROL for the one above, and the arm where
 # upstream's `permute()` returns `ctx` ITSELF (movement.py:231).  `perm`'s order is
 # `(0,)`, so `argsort((0,))` is `(0,)`, which IS `tuple(range(1))`, so the answer is
-# `ctx` and NO PERMUTE NODE IS BUILT.  **⇒ THE BACKWARD GRAPH IS `g`'s OWN NODE SET
-# AND NOTHING ELSE -- THREE NODES.**
+# `ctx` and no permute node is built.  - the backward graph is `g`'s own node set
+# AND NOTHING ELSE -- THREE NODES.
 type Pm1 is Data:
   Pm1{ar: O.Arena, leaf: U32, per: U32, g: U32}
 
@@ -2994,7 +2994,7 @@ def pm1_run.of(+fx: Pm1) -> GRun:
 
 def pm1_run() -> GRun: pm1_run.of(pm1())
 
-# THE RULE'S ANSWER, AS A RECORD.  `rw` is the WHOLE TABLE, so this asks upstream's
+# the rule's answer, as a record.  `rw` is the whole table, so this asks upstream's
 # question ("what does `pm_gradient.rewrite` answer for this node?") and not the rule's
 # question ("what does `gr_21` answer?").  The `ctx` is carried so the IDENTITY
 # EARLY-RETURN can be READ as "the answer IS the ctx" -- and the answer and the ctx
@@ -3021,9 +3021,9 @@ def pm1_rule.of(+fx: Pm1) -> PmRule1:
 
 def pm1_rule() -> PmRule1: pm1_rule.of(pm1())
 
-# THE ORDER, AS TEXT.  **THIS ROW IS WHAT PINS THE ARGSORT.**  The `bw` signature's
+# the order, as text.  this row is what pins the argsort.  The `bw` signature's
 # token is `OP/nsrc` plus the IDENT, and a PERMUTE's IDENT IS EMPTY -- so the
-# signature CANNOT SEE WHICH PERMUTATION WAS BUILT.  A rule that answered
+# signature cannot see which permutation was built.  a rule that answered
 # `PERMUTE(ctx, (0, 1))` where upstream answers `PERMUTE(ctx, (1, 0))` would produce a
 # BYTE-IDENTICAL `bw_sig`.  The ORDER is therefore a row of its own.
 def pm_join.go(xs: List<&2, U32>, first: Bool, acc: String) -> String:
@@ -3031,7 +3031,7 @@ def pm_join.go(xs: List<&2, U32>, first: Bool, acc: String) -> String:
     case Nil{}: Bool.pick(String, first, "none", acc)
     case h <> t: pm_join.go(t, False{}, String.concat([acc, Bool.pick(String, first, "", ","), U32.show(h)]))
 
-# THE ORDER, OR THE WORD `none`.  **NEVER AN EMPTY STRING**: an empty expectation is
+# the order, or the WORD `none`.  never an empty string: an empty expectation is
 # the gate's VACUITY class -- `UNCHECKABLE`, which is RED -- and "there is no order
 # here" is a REAL, MEASURED value (the answer IS the ctx, and the ctx's arg is a
 # PARAM, not a tuple).  A row whose value is legitimately empty needs a SENTINEL, or
@@ -3043,13 +3043,13 @@ def pm_arg.of(a: O.Arg) -> String:
 
 def pm_arg_read(+ar: O.Arena, +n: U32) -> String: pm_arg.of(O.Arena.arg(ar, n))
 
-# THE ARGSORT, MEASURED.  **THE BRIEF'S SUSPICION WAS WRONG AND THIS IS THE PROOF:**
+# the argsort, measured.  the brief's suspicion was wrong and this is the proof:
 # `argsort_u32` SORTS BY THE VALUE and projects the INDEX back out -- it is
 # upstream's `argsort` (helpers.py:28) and not "a sort of arena indices".  The rows
 # are upstream's own `argsort` on the same six inputs.
 #
-# AND ALL SIX INPUTS ARE UNSORTED, and that is not decoration: **AN ALREADY-SORTED
-# INPUT HAS THE SAME ANSWER UNDER A VALUE-SORT AND UNDER AN INDEX-SORT**, so a sorted
+# and all six inputs are unsorted, and that is not decoration: an already-sorted
+# input has the same answer under a value-sort and under an INDEX-sort, so a sorted
 # input would make its row a LABEL -- and the `argsortbyindex` plant would not move it.
 # The first version of these rows used `(0,)` and `(0, 1)` and the plant sweep FOUND
 # exactly that: 34 of 36 rows covered, and the two gaps were those two.

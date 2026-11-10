@@ -11,8 +11,8 @@ import ./../extra/datasets/__init__.bend as D
 # STUB -- 1:1 PATH MIRROR of examples/test_pkl_imagenet.py (19 LOC).
 # NOT YET PORTED.
 #
-# THIS IS THE EVAL PATH AND IT IS THE FIRST MILESTONE TOWARD IMAGENET,
-# BECAUSE IT IS THE ONE OF THE THREE FILES THAT NEEDS NO BACKWARD PASS. Every
+# this is the eval path and it is the first milestone toward imagenet,
+# because it is the one of the three files that needs no backward pass. Every
 # other thing about it is bad news, and the news is measured rather than felt.
 # Measured 2026-10-19 03:46-04:15Z at HEAD 80d329a33.
 #
@@ -25,8 +25,8 @@ import ./../extra/datasets/__init__.bend as D
 # forward pass. `train_resnet.bend` is the mirror image and is blocked twice
 # over. That asymmetry is the entire reason this file is the milestone.
 #
-# BUT "NEEDS NO BACKWARD PASS" IS NOT "NEEDS NOTHING", AND THE HEADLINE FINDING
-# IS THAT THE EVAL PATH AND THE MODEL PATH CONVERGE ON THE SAME WALL.
+# but "needs no backward pass" is not "needs nothing", and the headline finding
+# is that the eval path and the model path converge on the same wall.
 # This file LOOKS like it dodges ResNet entirely, because it runs a
 # PRE-EXECUTED pickle instead of building the graph. It does not dodge it. The
 # pickle's bytes CONTAIN a ResNet-50 ONNX graph, and executing that graph needs
@@ -65,7 +65,7 @@ import ./../extra/datasets/__init__.bend as D
 #
 #   MISSING
 #     `sys.argv`            (:7)      MISSING. No argv reader.
-#     `pickle`              (:1,:8)   MISSING. ** NO UNPICKLER EXISTS. **
+#     `pickle`              (:1,:8)   MISSING.  NO UNPICKLER EXISTS. 
 #         This is the deepest wall in the file and it is worth being exact,
 #         because the name LOOKS like it is covered. `engine/jit.bend:261` has
 #         a def called `m_pickle` and it is NOT a codec: it is the MESSAGE
@@ -103,7 +103,7 @@ import ./../extra/datasets/__init__.bend as D
 #         unwritten, and :57-58 gives the reason -- "`OnnxRunner.__call__
 #         (:441-470) -- the interpreter loop, and it dispatches into the op
 #         table, so it is unreachable before the op bodies exist."
-#     THE 167 ONNX OP BODIES (:15)   MISSING. STAGE 4, nn/onnx.bend:39 -- "NOT
+#     the 167 onnx op bodies (:15)   missing. stage 4, nn/onnx.bend:39 -- "not
 #         DONE. The 167 op BODIES (:475-1307), the node-shape arithmetic that
 #         goes with them, and the quantization family." And the PROTOBUF READER
 #         they need is blocked too, THE PORT's `nn/onnx.bend` NOT PORTED BLOCK: "`PBBufferedReader`
@@ -144,7 +144,7 @@ def pkl_at(r: D.Refused) -> String:
 
 # ---------------------------------------------------------------------------
 # :7   with open(fetch(sys.argv[1]), "rb") as f:
-# TWO MISSING SYMBOLS IN ONE LINE, IN THIS ORDER: `sys.argv` (no argv reader)
+# two missing symbols in one line, in this order: `sys.argv` (no argv reader)
 # and `fetch` (no def). The second is the wall that also blocks the unpickler,
 # because there is no byte source either.
 # ---------------------------------------------------------------------------
@@ -171,7 +171,7 @@ def pkl_device() -> D.Refused:
 def pkl_dataloader(cnt: U32) -> D.Refused:
   D.refuse("examples/test_pkl_imagenet.py:13 FIRST MISSING SYMBOL imagenet_dataloader (examples/test_onnx_imagenet.py:25); nn/datasets.bend has no imagenet table")
 
-# :15  p = run_onnx_jit(**{input_name: img.to(device)})
+# :15  p = run_onnx_jit({input_name: img.to(device)})
 def pkl_run() -> D.Refused:
   D.refuse("examples/test_pkl_imagenet.py:15 BLOCKED ON OnnxRunner -- nn/onnx.bend STAGE 3 NOT DONE, and STAGE 4's 167 op bodies NOT DONE. THE PORTED HALF IS nn/onnx.bend:515 symbol=onx_dom (the STAGE 2 Domain table); THERE IS NO `OnnxRunner` DEF IN THE PORT -- IT IS ONNX.py:294 symbol=OnnxRunner.__init__ UPSTREAM")
 

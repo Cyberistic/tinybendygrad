@@ -64,7 +64,7 @@
 # ===========================================================================
 # THE ONE FINDING, and it is about what is NOT here.
 #
-# **tinygrad does not parse the IDX header.** :7 slices at a hardcoded 0x10 -- upstream's
+# tinygrad does not parse the IDX header. :7 slices at a hardcoded 0x10 -- upstream's
 # own `0x10`, and it is a SKIP of the 16-byte header.
 # for an idx3 file and a hardcoded `8` for an idx1 file and then RESHAPES to a
 # hardcoded `(1,28,28)`. The magic number, the dimension count and the element
@@ -423,7 +423,7 @@ def t_cifar() -> IO(Unit):
                                            CIFAR_IMAGE_BYTES()))
 
 # ===========================================================================
-# THE `.npy` PATH -- MNIST WITHOUT THE SOCKET.
+# the `.npy` path -- mnist without the socket.
 #
 # WHAT THIS IS. A SECOND ROUTE to the same four tensors, one that does not go
 # through `Tensor.from_url` and therefore does not go through WALL 1. The BYTES
@@ -441,29 +441,29 @@ def t_cifar() -> IO(Unit):
 #
 #     file_bytes = 10 + header_len + payload_bytes
 #
-# and the header's length field IS the presence check. **=> WALL 4,
-# `os.path.isfile`, IS NOT CALLED BY THIS PATH, AND THAT IS DELIBERATE: a `.npy`
+# and the header's length field IS the presence check. => WALL 4,
+# `os.path.isfile`, is not called by this path, and that is deliberate: a `.npy`
 # file that is not there fails to open, and one that is truncated fails to
 # decode, so the length field answers "is this file whole" and the open answers
-# "is it there". The port does not need a third question.**
+# "is it there". The port does not need a third question.
 #
 # THE FOUR WALLS, RE-EXAMINED. `tinybendygrad/nn/mnist_cnn.bend`'s header
 # carries the long version. The short one is:
 #
-#   W1 THE HTTP GET -- **STILL A WALL.** The `.npy` route moves the socket to
+#   W1 THE HTTP GET -- STILL A WALL. The `.npy` route moves the socket to
 #      the HOST and leaves the port the arithmetic. It does not make the port
 #      capable of a socket and it does not pretend to.
-#   W2 THE TENSORS -- **STILL A WALL FOR `tensor.bend`'s `Tensor`, WHICH IS A
-#      UOP SLOT IN AN ARENA AND NOT A BUFFER.** What IS here is the shape and
+#   W2 the tensors -- still a wall for `tensor.bend`'s `Tensor`, which is a
+#      UOP SLOT IN AN ARENA AND NOT A BUFFER. What IS here is the shape and
 #      the byte count the tensor would have, which is the arithmetic half of
 #      `reshape(-1,1,28,28)` and of the `.to(device)`.
-#   W3 `tarfile`/`pickle` -- **NOT REACHED.** MNIST has no tar and no pickle;
+#   W3 `tarfile`/`pickle` -- NOT REACHED. MNIST has no tar and no pickle;
 #      the label file is a flat `uint8` vector and the image file is a `uint8`
 #      matrix. The wall is untouched and it is named so that "not reached" is a
 #      measurement and not an omission.
-#   W4 `os.path.isfile` -- **NOT CALLED**, as above.
+#   W4 `os.path.isfile` -- NOT CALLED, as above.
 #
-# WHAT THE `.npy` PATH AND THE IDX PATH MUST AGREE ON. Both produce the same
+# what the `.npy` path and the idx path must agree on. Both produce the same
 # four tensors, so the row counts, the byte counts and the per-image row width
 # are the SAME NUMBERS, and `dst_npy_matches_idx` is the row that says so. The
 # two routes read different bytes -- the IDX files carry a 16- or 8-byte header
@@ -471,7 +471,7 @@ def t_cifar() -> IO(Unit):
 # which is why the two payloads agree and the two file sizes do not.
 # ===========================================================================
 
-# THE `.npy` HEADER'S THREE FIXED PARTS AND THE ONE FIELD THAT IS NOT FIXED.
+# the `.npy` header's three fixed parts and the one field that is not fixed.
 def NPY_MAGIC() -> U32: 6
 def NPY_VERSION() -> U32: 2
 def NPY_LENFIELD() -> U32: 2
@@ -517,9 +517,9 @@ def Npy.payload(x: Npy) -> U32: U32.mul(Npy.numel(x), NPY_U1_ITEM())
 # every dimension but the first. For the image files that is 1*28*28 = 784 --
 # the same row width `Ds.per` carries on the IDX side -- and for the label
 # files it is the empty product, which is 1 (`prod_u32` of `Nil{}` is 1, and
-# `helpers.py:14`'s `prod` says so). **=> THE LABEL FILES' ROW COUNT IS THEIR
+# `helpers.py:14`'s `prod` says so). => the label files' row count is their
 # ELEMENT COUNT, and the same `rows` def says so for both halves of the tuple
-# because the per-row width is derived rather than written down twice.**
+# because the per-row width is derived rather than written down twice.
 def Npy.per(x: Npy) -> U32: H.prod_u32(List.drop(&2, U32, Npy.dims(x), 1n))
 
 # THE FILE SIZE, which is the header plus the payload. `+x` because the record
@@ -535,7 +535,7 @@ def Npy.divides(+x: Npy) -> Bool: U32.is_zero(U32.mod(Npy.payload(x), Npy.per(x)
 
 def Npy.rows(+x: Npy) -> U32: U32.div(Npy.payload(x), Npy.per(x))
 
-# THE LABEL FILES ARE NOT RESHAPED: one dimension, and the row count IS the
+# the label files are not reshaped: one dimension, and the row count is the
 # element count. This is the same asymmetry between the two halves of one tuple
 # that `dst_labels_unreshaped` records on the IDX side.
 def Npy.flat(x: Npy) -> Bool: U32.is_eq(U32.from_nat(List.length(&2, U32, Npy.dims(x))), 1)
@@ -624,7 +624,7 @@ def main() -> IO(Unit):
     IO.print("dst-done=1")
 
 # ===========================================================================
-# THE MUTATION TABLE. **MEASURED** by `.venv/bin/python gates/datasets-mutate.py`, which
+# THE MUTATION TABLE. MEASURED by `.venv/bin/python gates/datasets-mutate.py`, which
 # applies each edit in place, runs the interpreted lane and diffs the baseline.
 # (RESTORED 2026-10-16 from `.agents/slop/dk-mutate.py`, blob e853efc4b, 20941 B, byte for
 # byte. The sweep of 2026-10-05 took it and this recipe outlived it, which made the recipe a
@@ -637,19 +637,19 @@ def main() -> IO(Unit):
 # NAME appearing or disappearing -- is 0 for all 13: no mutation changed the shape
 # of this suite, only its answers.
 #
-# **D0 IS THE CONTROL AND IT IS THE ONLY `0/0`.** It is a comment-only edit. The
+# D0 IS THE CONTROL AND IT IS THE ONLY `0/0`. It is a comment-only edit. The
 # other twelve change at least one row, which is what makes the table evidence
 # rather than a list of intentions.
 #
-# THE TWO THAT WOULD HAVE BEEN INVISIBLE WITHOUT A ROW, and both are here because
+# the two that would have been invisible without a row, and both are here because
 # the oracle is a SECOND IMPLEMENTATION and not a mirror:
 #
-#   - **D12, the shape printer, is the only row that sees `reshape(-1,1,28,28)`'s
-#     SPELLING.** `dst_img_shape` is the row that compares the printed string to
+#   - D12, the shape printer, is the only row that sees `reshape(-1,1,28,28)`'s
+#     SPELLING. `dst_img_shape` is the row that compares the printed string to
 #     `-1,1,28,28`, and the `-1` arm carries its own comma: concatenating a bare
 #     `-1` to the rest printed `-11,28,28`, which was the first thing this row caught.
-#   - **D5 and D6 (the channel dimensions) move `dst_img_shape` / `dst_cifar_shape`
-#     and the byte counts, and NOT the row counts.** A wrong shape dimension changes
+#   - D5 and D6 (the channel dimensions) move `dst_img_shape` / `dst_cifar_shape`
+#     and the byte counts, and NOT the row counts. A wrong shape dimension changes
 #     how many BYTES a row covers and never how many rows there are, so a suite of
 #     count rows alone would print `60000` for a broken reshape.
 #

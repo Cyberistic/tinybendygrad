@@ -44,7 +44,7 @@
 #  26  helpers   fold    polyN                      PORTED IN FULL (helpers.py:153)
 #
 # ---------------------------------------------------------------------------
-# THE HEADLINE MEASUREMENT: THERE IS NO 64-BIT ARITHMETIC IN THIS FILE, and the
+# the headline measurement: there is no 64-bit arithmetic in this file, and the
 # brief predicted there would be. The prediction is wrong for a structural reason
 # worth stating: transcendental.py BUILDS GRAPHS, it does not EVALUATE them.
 # Every `*`, `//`, `&`, `<<` here is an `Ops` node, so `_hp_mul` -- the one place
@@ -62,10 +62,10 @@
 # `H.i64_of_hi_lo`.
 #
 # ---------------------------------------------------------------------------
-# SIX THINGS THAT ARE EASY TO GET WRONG, and the row that holds each down.
+# six things that are easy to get wrong, and the row that holds each down.
 #
 # 1. `shr`/`shl` (lines 19-20) TAKE A `UOp` `y` AND CALL `y.simplify().val`.
-#    EVERY ONE OF THE ELEVEN CALL SITES IN THIS FILE PASSES A PYTHON `int`.
+#    every one of the eleven call sites in this file passes a python `int`.
 #    MEASURED by regex over the source. So the fold is DEAD here and
 #    `tx_shr`/`tx_shl` are `DIV`/`MUL` by a CONST, NOT `SHR`/`SHL` -- and
 #    `ldexp2k`, which DOES take a symbolic `e`, survives without the fold
@@ -179,7 +179,7 @@ def tx_cf_neg0(+ar: O.Arena) -> O.Found:
   +i = O.Arena.next(ar)
   O.Found{O.intern.put(ar, O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CFloat{F32.neg(0.0)}}, O.TNone{}}), i}
 
-# `2**y` for the Python-int `y` every `shr`/`shl` in this file gets.
+# `2y` for the Python-int `y` every `shr`/`shl` in this file gets.
 # `H.i64_of_i32` SIGN-EXTENDS, so `1 << 31` would come out negative; the two
 # halves are therefore chosen and `2**62` needs the high word.
 def tx_powi.go(wide: Bool, +y: U32) -> H.I64:
@@ -213,7 +213,7 @@ def tx_cb(+ar: O.Arena, b: Bool) -> O.Found:
 
 # `eq` / `ne` / `logical_not` -- mixin/elementwise.py:332-336 and :57 AT THE PIN.
 #
-# **AND AT THE PIN THESE ARE NOT THE PRIMITIVE `CMPNE`.** MEASURED 2026-11-07 ON
+# and at the PIN these are not the primitive `CMPNE`. measured 2026-11-07 on
 # CPYTHON AT `f5ac54685074`:
 #
 #   def logical_not(self): return self.cast(dtypes.bool).eq(False)   # :57
@@ -221,19 +221,19 @@ def tx_cb(+ar: O.Arena, b: Bool) -> O.Found:
 #   def ne(self, x):        return self.eq(x).logical_not()           # :332
 #
 # SO AT THE PIN:
-#   * `logical_not(x)` IS `CMPEQ(x, False)` -- **ONE** NODE.
-#   * `ne(x, y)` IS `CMPEQ(CMPEQ(x, y), False)` -- **TWO** NODES DEEP.
+#   * `logical_not(x)` IS `CMPEQ(x, False)` -- ONE NODE.
+#   * `ne(x, y)` IS `CMPEQ(CMPEQ(x, y), False)` -- TWO NODES DEEP.
 #
-# **AND UPSTREAM's `codegen/decomp/transcendental.py` BUILDS `Ops.CMPNE` ZERO TIMES** --
-# MEASURED, `grep -c CMPNE` READS **0** ON THE PIN's FILE -- **AND EVERY `ne`/`==` IN IT GOES
-# THROUGH `elementwise.ne`/`eq`.** SO EVERY `CMPNE` THIS FILE BUILT WAS THE WRONG SHAPE.
+# AND UPSTREAM's `codegen/decomp/transcendental.py` BUILDS `Ops.CMPNE` ZERO TIMES --
+# measured, `grep -c CMPNE` reads 0 on the PIN's file -- and every `ne`/`==` in it goes
+# through `elementwise.ne`/`eq`. so every `CMPNE` this file built was the wrong shape.
 #
-# **AND THE OLD SHAPE IS NOT A STYLISTIC CHOICE: A GRAPH THAT SAYS `CMPNE(x, y)` IS NOT
-# UPSTREAM's GRAPH, SO A PORT THAT BUILDS IT CANNOT MATCH UPSTREAM's `xpow`/`xlog2`/
-# `xexp2` NODE FOR NODE.** MEASURED: UPSTREAM's `xpow(b, e)` AT THE PIN CONTAINS **0 `CMPNE`
-# AND 5 `CMPEQ`**, AND THE PORT's ANSWER CONTAINED `CMPNE` IN THE SAME PLACES.
+# and the old shape is not a stylistic choice: a graph that says `CMPNE(x, y)` is not
+# upstream's graph, so a port that builds it cannot match upstream's `xpow`/`xlog2`/
+# `xexp2` node for node. measured: upstream's `xpow(b, e)` at the PIN contains 0 `CMPNE`
+# and 5 `CMPEQ`, and the port's answer contained `CMPNE` in the same places.
 #
-# THE THREE HELPERS BELOW ARE THE PIN's SHAPES, AND `tx_lnot` IS THE ONE THAT WAS WRONG.
+# the three helpers below are the PIN's shapes, and `tx_lnot` is the one that was wrong.
 def tx_eq(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
   tx_alu2(ar, O.OpsCMPEQ{}, x, y)
 
@@ -242,10 +242,10 @@ def tx_eq(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
 # `CMPEQ` against a BOOL CONST and not against an int 1. `a_xexp2 65` is the row and a port
 # that wrote `C(1)` there builds a different node.
 #
-# **AND THIS USED TO BE `CMPNE(x, True)` -- THE PRE-PIN SHAPE, WHICH IS WHAT THE COMMENT ABOVE
-# QUOTED (`mixin/elementwise.py:57, self.cast(dtypes.bool).ne(True)`).** THE NAME DID NOT
-# CHANGE AND THE NODE DID, AND `tinybendygrad/uop/symbolic.bend`'s OWN `sym_134` COMMENT
-# RECORDS THE SAME SWAP: "THE PRIMITIVE SWAPPED AT THE 2026-11-03 RE-VENDOR".
+# and this used to be `CMPNE(x, True)` -- the pre-PIN shape, which is what the comment above
+# QUOTED (`mixin/elementwise.py:57, self.cast(dtypes.bool).ne(True)`). THE NAME DID NOT
+# change and the node did, and `tinybendygrad/uop/symbolic.bend`'s own `sym_134` comment
+# records the same swap: "the primitive swapped at the 2026-11-03 re-vendor".
 def tx_lnot(+ar: O.Arena, +x: U32) -> O.Found:
   +f = tx_cb(ar, False{})
   tx_alu2(O.Found.ar(f), O.OpsCMPEQ{}, x, O.Found.i(f))
@@ -613,7 +613,7 @@ def LOG264() -> List<&2, F32>:
 # interned by `reduce` BETWEEN its `MUL` and its `ADD`, because `_binop` calls
 # `_broadcasted` on the right operand before it calls `alu`. `a_sp10` is the row.
 # ===========================================================================
-# THE COEFFICIENT LIST IS THE FUEL. It is FIRST and it shrinks first, so the arena
+# the coefficient list is the fuel. It is first and it shrinks first, so the arena
 # and the accumulator -- which both CHANGE on every step -- ride after it, and a
 # self-call whose first argument is a computed arena is refused outright.
 # `O.Found` AND NOT A BARE `U32`. A def that returns only the index DISCARDS its
@@ -698,7 +698,7 @@ def sin_poly_large(+ar: O.Arena, +d: U32, +q: U32, +d64: Bool) -> O.Found:
   tx_alu2(O.Found.ar(w2), O.OpsMUL{}, O.Found.i(r), O.Found.i(w2))
 
 # ===========================================================================
-# `payne_hanek_reduction` -- lines 66-113. THE BIGGEST SINGLE PIECE IN THE FILE
+# `payne_hanek_reduction` -- lines 66-113. the biggest single piece in the file
 # AND IT IS ALL 32-BIT GRAPH CONSTRUCTION: see the header's i64 note. It returns
 # a TUPLE, so the pair rides in a `Data` record beside the arena.
 # ===========================================================================
@@ -729,7 +729,7 @@ def TWO_OVER_PI() -> List<&2, U32>:
 def two_over_pi(+k: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, TWO_OVER_PI(), U32.to_nat(k)), 0)
 
-# `_take` -- lines 88-92 -- header note 3. THE FUEL AND THE COUNT ARE TWO
+# `_take` -- lines 88-92 -- header note 3. the fuel and the count are two
 # PARAMETERS and they are not the same number: the guard is
 # `count+offset < len(two_over_pi_f) - 1` -- a COMPILE-TIME test in Python --
 # while the table index is `two_over_pi_f[count+offset]` and the comparison is
@@ -737,7 +737,7 @@ def two_over_pi(+k: U32) -> U32:
 # 0..5-k. Reading one Nat as both makes `a_ph36` compare against 6, misses
 # `i.ne(0)` entirely, and shifts every node by one.
 #
-# THE CONST IS INTERNED AFTER THE RECURSIVE CALL because Python evaluates
+# the CONST is interned after the recursive call because Python evaluates
 # `i.ne(count).where(_take(...), an.const_like(...))` receiver-first: the six
 # CMPNEs are `a_ph36`..`a_ph43` OUTERMOST FIRST and the six WHEREs
 # `a_ph45`..`a_ph54` INNERMOST FIRST.
@@ -856,7 +856,7 @@ def ph_lo(+ar: O.Arena, +az: As, +e: U32, +off: U32) -> O.Found:
 # -- line 105. Three 64-bit products and three CONSTs, and `2**32` is interned ONCE
 # because `shl` and `shr` both mint it and the arena interns it. `a_ph88` is the
 # row and `n_ph` is the count that says how big this is.
-# EVERY STEP TAKES THE PREVIOUS STEP'S ARENA. Written as `hp_mul(ar, ...)` then
+# every step takes the previous step's arena. Written as `hp_mul(ar, ...)` then
 # `tx_ci64(ar, ...)`, the compiler is free to evaluate them in either order and
 # it chose the const first, which put `ci1:0` at `a_ph88` instead of `a_ph90` and
 # moved twenty rows. Reading `O.Found.ar` of the previous step is what makes the
@@ -933,7 +933,7 @@ def ph_off(+ar: O.Arena, +ec: O.Found) -> O.Found:
   +m = tx_alu2(O.Found.ar(n), O.OpsMUL{}, O.Found.i(ec), O.Found.i(n))
   tx_alu2(O.Found.ar(m), O.OpsADD{}, O.Found.i(c), O.Found.i(m))
 
-# EVERY STEP THREADS THE ARENA. Bend ELIMINATES a call whose result is unused,
+# every step threads the arena. Bend eliminates a call whose result is unused,
 # and `ph_ia`/`ph_i`/`ph_ec`/`ph_off` build their nodes by RETURNING an
 # `O.Found`, so an unused one loses its nodes: the first version of this def
 # passed the post-`frexp` arena to all four, `ph_i`'s CAST was eliminated
@@ -1083,7 +1083,7 @@ def cody_waite_reduction.reduce2(+ar: O.Arena, +d: U32, +d64: Bool, +qdh: U32,
     case True{}: tx_cw64.chain(ar, d, O.Found.i(quad), qdh)
     case False{}: tx_cw32.chain(ar, d, O.Found.i(quad))
 
-# `d64` AND `f16` ARE SEPARATE BOOLS AND NEITHER IS DERIVABLE FROM THE OTHER. The
+# `d64` and `f16` are separate bools and neither is derivable from the other. The
 # first version of this def took one and treated "not float64" as "float32", which
 # sends float16 down the float32 chain.
 def cody_waite_reduction.reduce(+ar: O.Arena, +d: U32, +d64: Bool, +f16: Bool,
@@ -1092,7 +1092,7 @@ def cody_waite_reduction.reduce(+ar: O.Arena, +d: U32, +d64: Bool, +f16: Bool,
     case True{}: tx_cw16.chain(ar, d, O.Found.i(quad), dt)
     case False{}: cody_waite_reduction.reduce2(ar, d, d64, qdh, quad)
 
-# THE RETURNED `q` IS THE INT32 QUADRANT AND `_reduce_d` READS THE FLOAT ONE.
+# the returned `q` is the INT32 quadrant and `_reduce_d` reads the FLOAT one.
 # Python returns `quadrant.cast(dtypes.i32)`, which ELIDES because the quadrant
 # is already int32 for float32 and float64 -- and does NOT for float16, whose
 # quadrant is `short` -- while `_reduce_d` is handed `quadrant.cast(d.dtype)`. One
@@ -1132,7 +1132,7 @@ def tx_nan() -> F32: F32.div(0.0, 0.0)
 # innermost `x.ne(-inf).where(ratio, _inf)` is the FIRST node after the three
 # CMPNEs; `a_xexp2 15` is the row.
 #
-# `math.inf` AND `-math.inf` ARE LITERALS IN THE BODY and are NOT the `inf` and
+# `math.inf` and `-math.inf` are literals in the body and are not the `inf` and
 # `_inf` PARAMETERS -- `inf` is the caller's `d.const_like(...)` and it only
 # appears in the OUTERMOST `where`. So this def mints the two itself: for
 # `xexp2` all three parameters are `C(0.0)` and the literals are still arena
@@ -1174,7 +1174,7 @@ def xsin.sign(+ar: O.Arena, +x: U32) -> O.Found:
 #     r_small, q_small = cody_waite_reduction(x_abs)  # line 185
 #     result = (x_abs<switch_over).where(sin_poly_small(r_small, q_small),
 #                                        sin_poly_large(r, q))
-# so PAYNE-HANEK IS BUILT FIRST even though `sin_poly_small` reads the CODY-WAITE
+# so payne-hanek is built first even though `sin_poly_small` reads the cody-waite
 # values: the reduction is a separate statement, not an argument. `a_xsin26` is
 # the first payne-hanek node and `a_xsin131` is the first cody-waite one, and a
 # port that read them in source order swaps 105 nodes.
@@ -1447,18 +1447,18 @@ def xpow.negbase(+xp: Xp, +base: U32) -> O.Found:
   +w2 = tx_alu3(O.Found.ar(nr), O.OpsWHERE{}, Xp.io(xp), O.Found.i(nr), ret)
   tx_alu3(O.Found.ar(w2), O.OpsWHERE{}, Xp.ni(xp), O.Found.i(w1), O.Found.i(w2))
 
-# `exponent.eq(0)` -- line 265 -- is `CMPEQ(exponent, 0)` AT THE PIN AND **NOT**
+# `exponent.eq(0)` -- line 265 -- is `CMPEQ(exponent, 0)` AT THE PIN AND NOT
 # `ne(0).logical_not()`. MEASURED 2026-11-07 ON CPYTHON AT `f5ac54685074`:
 #
 #   def eq(self, x):  return self._binop(Ops.CMPEQ, x, False)   # elementwise.py:335
 #
-# SO `eq` IS **ONE** NODE, `ne` IS `eq(...).logical_not()` AND SO **TWO**, AND `logical_not` IS
-# **ONE** (`CMPEQ(x, False)`). THE OLD COMMENT HERE SAID "IS `ne(0).logical_not()`
-# (elementwise.py:337)" -- AND `elementwise.py:337` AT THE PIN IS `def eq`, **NOT** `ne`.
+# SO `eq` IS ONE NODE, `ne` IS `eq(...).logical_not()` AND SO TWO, AND `logical_not` IS
+# one (`CMPEQ(x, False)`). the old comment here said "is `ne(0).logical_not()`
+# (elementwise.py:337)" -- AND `elementwise.py:337` AT THE PIN IS `def eq`, NOT `ne`.
 #
-# **SO THIS USED TO BUILD THREE NODES WHERE UPSTREAM BUILDS ONE** -- `ne` THEN `not` -- AND
-# THAT IS WHY THE PORT's `xpow` ANSWER HAD `cmpeq (cmpeq (cmpeq yf bad) bf) bf` WHERE UPSTREAM
-# HAS `cmpeq yf bad`. **THE COMPOSITION IS NOT IDEMPOTENT AND THE EXTRA LAYER IS VISIBLE.**
+# so this used to build three nodes WHERE upstream builds one -- `ne` then `not` -- and
+# that is why the port's `xpow` answer had `cmpeq (cmpeq (cmpeq yf bad) bf) bf` WHERE upstream
+# has `cmpeq yf bad`. the composition is not idempotent and the extra layer is visible.
 def xpow.zero(+ar: O.Arena, +ex: U32) -> O.Found:
   +z = tx_pintf(ar, 0)
   tx_eq(O.Found.ar(z), ex, O.Found.i(z))
@@ -1493,7 +1493,7 @@ def xpow(+ar: O.Arena, +base: U32, +ex: U32, +edt: S.Dt) -> O.Found:
 # MEASURED, the identifier occurs nowhere in transcendental.py or in anything it
 # calls.
 #
-# THE SHAPE IS PYTHON'S: for each of EXP2, LOG2, SIN in that order, ZERO OR TWO
+# the shape is python's: for each of EXP2, LOG2, sin in that order, zero or two
 # rules, and then one SQRT rule. `if op not in ops or force_transcendental` is
 # `tx_tab.keep`, and because a kept op contributes exactly two, the tag of every
 # later rule DEPENDS ON the flags -- which is why `tx_t_op` re-derives the
@@ -1579,7 +1579,7 @@ def tx_t_apply(+op: O.Op, +ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
     case _: tx_t_apply.sqrt(ar, d, dt)
 
 # ===========================================================================
-# THE FIXTURE. ONE ARENA, addressed BY INDEX, and it is REBUILT FRESH for every
+# the fixture. one arena, addressed by INDEX, and it is rebuilt fresh for every
 # window: `tx_win` drops every node the expansion added and hands back the nine
 # fixture slots, so a node that leaks between two expansions moves a row instead
 # of making two windows agree on a wrong answer. THE ORDER IS THE ORACLE'S
@@ -1818,7 +1818,7 @@ def tx_tab.ot() -> String:
 # THE ENTRY ROW: `ops|early_reject|match_dtype|name`, exactly as the oracle
 # spells them. `name` is `"x"` for the cast-to-float32 half of a pair and `None`
 # otherwise, and `match_dtype` is `-` for the SQRT rule, which has no `dtype=`.
-# BOTH ARE READ OFF THE TAG AND THE OP rather than stored, because `PMEntry` has
+# both are read off the tag and the op rather than stored, because `PMEntry` has
 # no dtype field -- the `dtype=` conjunct LIVES IN THE RULE BODY, which is
 # decomp.bend's arrangement and this file's too.
 def tx_tab.mdx(x: Bool) -> String:
@@ -1916,7 +1916,7 @@ def win(+nm: String, +v: String) -> IO(Unit):
 # a `do` block inside a `match` arm, and arm-printing plus a helper is MUTUAL
 # RECURSION, which Bend refuses; so the rows are built as one String and printed
 # once, exactly as `tx_win` does for a node window.
-# THE ENTRY COUNT IS THE Nat FUEL and it is the FIRST parameter, because Bend
+# the entry count is the Nat fuel and it is the first parameter, because Bend
 # wants a decreasing self-call read left to right and `i` only ever goes up.
 def tx_tab_go.e(+k: Nat, +nm: String, +t: O.PMEntrys, +i: U32) -> String:
   match k:
@@ -2013,9 +2013,9 @@ def main() -> IO(Unit):
 # | `tx_tab.sqrt` ignores `force` | `e_force6`, `n_force` | `force` is `TRANSCENDENTAL` and it is the ONLY difference between the `non` and `force` tables; `n_non` does not move |
 # | the `name="x"` half of every pair loses its name | `e_empty1`, `e_empty3`, `e_empty5`, `e_force1`, `e_force3`, `e_force5`, `e_non1`, `e_non3`, `e_non5` | a rule table whose SIZE and SHAPE are right and whose `name=` is wrong. Only a per-entry row sees this |
 # | `rintk`'s `d.const_like(-0.5)` -> `+0.5` | `a_rintk#11`, `a_cw#19`.., `a_xsinf#35`, `a_xsin#140`, ... (+187) and `n_rintk`, `n_cw`, `n_xexp2`, `n_xsin`, `n_xsinf`, `sw30`, `sw7` | the sign of the rounding bias, which is `round away from 0` and not `round half up`. Every expansion that rounds moves |
-# | `ldexp2k`: `shr(e, 1)` -> `shr(e, 2)` | `a_ldexp2#10`..`#22`, `a_xexp2#49`.., ... (+37) and `n_ldexp2`, `n_xexp2` | header note 1: `shr` by a Python int is a `DIV` by `2**y`, and `y` is 1 |
+# | `ldexp2k`: `shr(e, 1)` -> `shr(e, 2)` | `a_ldexp2#10`..`#22`, `a_xexp2#49`.., ... (+37) and `n_ldexp2`, `n_xexp2` | header note 1: `shr` by a Python int is a `DIV` by `2y`, and `y` is 1 |
 # | `payne_hanek`: `shl(p, 62)` -> `shl(p, 63)` | `a_ph#99`, `a_xsin#115` and nothing else | the `2**62` CONST is one node and one reader in each window; `n_ph` does not move because the node is still there |
-# | `xpow`: `ret.const_like(1)` -> `2.0` | `a_xpow#38`, `a_xpow#39`, `a_xpow#40`, `n_xpow` | `x ** 0 = 1`, and the CONST is the last node of the window |
+# | `xpow`: `ret.const_like(1)` -> `2.0` | `a_xpow#38`, `a_xpow#39`, `a_xpow#40`, `n_xpow` | `x  0 = 1`, and the CONST is the last node of the window |
 # | `xsin`'s `switch_over` hard-coded at 30.0 | `sw7` and nothing else | `switch_over` is a PARAMETER. This is the only mutation `sw30`/`sw7` exists to see, and it is why both rows are read at the SAME SLOT: the shape does not depend on the value |
 #
 # A row that ONE mutation moves is a LOCALISED row, and there are four of those:
@@ -2026,7 +2026,7 @@ def main() -> IO(Unit):
 # ===========================================================================
 # WHAT IS NOT DONE. Stated, not hidden.
 #
-# 1. THE float16 AND float64 WINDOWS ARE NOT GATED. The whole gate is float32,
+# 1. the float16 and float64 windows are not gated. The whole gate is float32,
 #    because the oracle's fixture is. `xsin`'s `switch_over` is the only
 #    non-structural parameter with two gated values. All THREE of
 #    `cody_waite_reduction`'s arms are WRITTEN -- `cw_quadrant.d64` subtracts
@@ -2062,7 +2062,7 @@ def main() -> IO(Unit):
 #    parameter is only read on the `fast=False` path, which is Python's own dead
 #    arm -- `switch_over` is unused when `fast` is true. The port keeps the
 #    parameter and does not model the deadness.
-# 4. THE TABLE'S `dtype=` CONJUNCTS LIVE IN THE RULE BODY, not in `PMEntry`,
+# 4. the table's `dtype=` conjuncts live in the rule body, not in `PMEntry`,
 #    because `O.PMEntry` has no dtype field. `tx_tab.md` therefore DERIVES the
 #    dtype string from the tag's parity and the entry's op rather than reading it
 #    off the rule. That is decomp.bend's arrangement and this file follows it, but

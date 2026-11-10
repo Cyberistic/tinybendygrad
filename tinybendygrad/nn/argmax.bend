@@ -9,37 +9,37 @@
 # `arange(n, 0, -1)` is `[n, n-1, ..., 1]`, so `idx[j]` is `n - j` where the value at
 # `j` IS a maximum and `0` where it is not, so `idx.max` picks the LARGEST `n - j`
 # among the maxima, which is the SMALLEST `j` among them -- THE FIRST OCCURRENCE.
-# **THE TIE-BREAKING RULE IS A CONSEQUENCE OF THE FORMULA, NOT AN ASSERTION ABOUT IT.**
+# the tie-breaking rule is a consequence of the formula, not an assertion about it.
 #
-# THE TWO FORMS, AND WHY THERE ARE TWO.
+# the two forms, and why there are two.
 #
-#   * THE LIST FORM (`nn_argmax`, below) is the RECIPE AS A FORMULA ON THE VALUES. It
+#   * the list form (`nn_argmax`, below) is the recipe as a formula on the values. It
 #     has an ANSWER, and the six rows are UPSTREAM'S ANSWERS, re-checked against
-#     CPython in `.venv`: **0 disagreements of 6.**
-#   * THE GRAPH FORM (`nn_argmax_g`, below) is the RECIPE AS A UOP GRAPH -- the four
+#     CPython in `.venv`: 0 disagreements of 6.
+#   * the graph form (`nn_argmax_g`, below) is the recipe as a uop graph -- the four
 #     nodes upstream builds -- and it has a SHAPE and a DTYPE but NO VALUE, because
-#     THE PORT BUILDS GRAPHS AND HAS NO EXECUTOR.
+#     the port builds graphs and has no executor.
 #
-# **AND THE GRAPH FORM IS BUILDABLE ONLY BECAUSE OF A FIX IN `mixin/rand.bend`, AND THE
-# FIX IS THE WHOLE OF THE STORY.** MEASURED 2026-10-23, `.agents/slop/nnargmax2/`:
+# and the graph form is buildable only because of a fix in `mixin/rand.bend`, and the
+# fix is the whole of the story. measured 2026-10-23, `.agents/slop/nnargmax2/`:
 # the port's `arange` chain contained TWO nodes whose products disagree with their
 # source's, so `uop/fold.bend`'s `reshape_ds` -- which is upstream's `ops.py:499-503`
 # INCLUDING ITS `raise` -- REFUSED them, and a node whose source has no shape has no
-# shape either, so THE WHOLE ARANGE GRAPH WAS UNREADABLE. `mixin/rand.bend`'s
-# `op_expand_lead` and `op_pool1.sh` are the two sites and both are FIXED. **BEFORE
-# THE FIX THE ARANGE'S ROOT READ `SHAPE[]`; AFTER IT READS `SHAPE[4]`.**
+# shape either, so the whole arange graph was unreadable. `mixin/rand.bend`'s
+# `op_expand_lead` and `op_pool1.sh` are the two sites and both are FIXED. BEFORE
+# the fix the arange's root read `SHAPE[]`; after it reads `SHAPE[4]`.
 #
 # `am_pick` IS THE MASK-TIMES-COUNTER (`idx[j]`), `am_max` IS `self.max`, AND `am_best`
-# IS `idx.max`. `Bool.pick` AND NOT `match` ON A COMPUTED VALUE: `match` MAY NOT
+# is `idx.max`. `Bool.pick` and not `match` on a computed value: `match` may not
 # SCRUTINISE A CALL (BEND'S RULE 1), AND `tinybendygrad/uop/ops.bend:8991 symbol=fs.pinfo.of` IS THE
-# TREE'S OWN COUNTER-EXAMPLE OF WHAT THAT COSTS -- A `match` ON A CALL THERE POISONED
+# tree's own counter-example of what that costs -- a `match` on a call there poisoned
 # EVERY FILE THAT IMPORTS `uop/ops.bend`.
 #
-# SCOPE, STATED SO NOBODY INVENTS A WIDER CLAIM: THE LIST FORM IS A 1-D F32 FORMULA
-# AND THE GRAPH FORM IS A 1-D F32 GRAPH. Upstream's `argmax` takes an AXIS and any
-# dtype. A generalisation is a WIDENING OF THIS FILE, NOT A NEW IDEA, AND IT IS NOT
-# DONE HERE. **THE GRAPH FORM'S REMAINING DIVERGENCES FROM UPSTREAM'S GRAPH ARE NAMED
-# IN `.agents/slop/nnargmax2/REPORT.md` AND THEY ARE NOT CLOSED HERE.**
+# scope, stated so nobody invents a wider claim: the list form is a 1-d F32 formula
+# and the graph form is a 1-d F32 graph. Upstream's `argmax` takes an axis and any
+# dtype. a generalisation is a widening of this file, not a new idea, and it is not
+# done here. the graph form's remaining divergences from upstream's graph are named
+# in `.agents/slop/nnargmax2/REPORT.md` and they are not closed here.
 
 import Base
 import ./../helpers.bend as H
@@ -55,7 +55,7 @@ import ./../mixin/rand.bend as RD
 import ./layers.bend as L
 
 # ===========================================================================
-# THE LIST FORM -- THE RECIPE AS A FORMULA ON THE VALUES.
+# the list form -- the recipe as a formula on the values.
 # ===========================================================================
 
 # `idx[j]` -- `n - j` where `v[j]` is a maximum, `0` where it is not.
@@ -94,12 +94,12 @@ def nn_argmax(+vals: List<&2, F32>) -> U32:
   +best = nn_argmax.best(vals, nn_argmax.head_max(vals), 0, n, 0)
   U32.sub(n, best)
 
-# THE ROWS. The `want` IS UPSTREAM'S OWN ANSWER, NOT THIS FILE'S OUTPUT.
+# the rows. The `want` is upstream's own answer, not this file's output.
 def nn_argmax.row(nm: String, vals: List<&2, F32>, want: U32) -> IO(Unit):
   IO.print(String.concat([nm, " got=", U32.show(nn_argmax(vals)), " want=", U32.show(want)]))
 
 # ===========================================================================
-# THE GRAPH FORM -- THE RECIPE AS THE FOUR NODES UPSTREAM BUILDS.
+# the graph form -- the recipe as the four nodes upstream builds.
 #
 # `mixin/op.py:863-888`, ONE DEF PER NODE, IN UPSTREAM'S ORDER:
 #   1  `m   = self.eq(self.max(axis=axis, keepdim=True))`      -> `nn_argmax_g.m`
@@ -108,14 +108,14 @@ def nn_argmax.row(nm: String, vals: List<&2, F32>, want: U32) -> IO(Unit):
 #   4  `(self.shape[axis] - idx.max(...)).cast(dtypes.int32)`  -> `nn_argmax_g.out`
 #
 # THE `.reshape(self.shape[axis], *[1]*(self.ndim-axis-1))` OF NODE 2 IS A NO-OP FOR A
-# 1-D SOURCE -- `[n]` IS ALREADY `[n]` -- SO THE 1-D FORM IS THE SAME RECIPE AND THE
-# RESHAPE IS NOT BUILT. **THE WIDENING IS NAMED IN THE SCOPE PARAGRAPH ABOVE.**
+# 1-d source -- `[n]` is already `[n]` -- so the 1-d form is the same recipe and the
+# reshape is not built. the widening is named in the scope paragraph above.
 # ===========================================================================
 
-# THE `n` -- `self.shape[axis]` -- IS CARRIED IN A RECORD AND NOT IN A `U32`, BECAUSE
-# A `U32` IS CONSUMED ONCE AND `n` IS NEEDED TWICE: ONCE FOR THE `arange` AND ONCE FOR
-# THE SUBTRACTION. THE TREE'S OWN SPELLING OF THIS IS `mixin/rand.bend`'s `U1`
-# (`mixin/rand.bend:270-274`), AND IT IS THE SAME FACT AND THE SAME FIX.
+# the `n` -- `self.shape[axis]` -- is carried in a record and not in a `U32`, because
+# a `U32` is consumed once and `n` is needed twice: once for the `arange` and once for
+# the subtraction. the tree's own spelling of this is `mixin/rand.bend`'s `U1`
+# (`mixin/rand.bend:270-274`), and it is the same fact and the same fix.
 type AN is Data:
   AN{v: U32}
 
@@ -129,7 +129,7 @@ def nn_argmax_g.mx(+t: T.Tensor) -> T.Tensor: L.nn_reduce(t, [0], O.OpsMAX{}, Tr
 
 # NODE 1b -- `self.eq(...)`. UPSTREAM'S `eq` IS A `CMPEQ` (`mixin/elementwise.py`), AND
 # THE PORT SPELLS IT `NOT(CMPNE)` IN `mixin/op.bend:628 symbol=mo_eqc`'s `mo_eqc` -- SO THE `CMPEQ`
-# IS BUILT DIRECTLY HERE AND THE `NOT` IS NOT BUILT, WHICH IS UPSTREAM'S GRAPH AND NOT
+# is built directly here and the `NOT` is not built, which is upstream's graph and not
 # THE PORT'S OWN SPELLING.
 def nn_argmax_g.m(+t: T.Tensor, +mx: T.Tensor) -> T.Tensor: M.mo_bin(t, O.OpsCMPEQ{}, mx)
 
@@ -148,7 +148,7 @@ def nn_argmax_g.imx(+idx: T.Tensor) -> T.Tensor: L.nn_reduce(idx, [0], O.OpsMAX{
 # NODE 4a -- `self.shape[axis] - idx.max(...)`. UPSTREAM'S `__rsub__`
 # (`mixin/elementwise.py:296`) IS `self.sub(x, True)`, AND `sub` IS
 # `a.alu(Ops.ADD, -b)` (elementwise.py:122) WITH THE OPERANDS REVERSED, SO IT IS
-# `n + (-imx)` AND NOT `n - imx` -- THE PORT'S `mo_sub` IS EXACTLY THAT AND IS CALLED.
+# `n + (-imx)` and not `n - imx` -- the port's `mo_sub` is exactly that and is called.
 def nn_argmax_g.sub(+imx: T.Tensor, n: U32) -> T.Tensor:
   M.mo_sub(M.mo_const_t(imx, O.CInt{H.i64_of_i32(n)}), imx)
 
@@ -156,7 +156,7 @@ def nn_argmax_g.sub(+imx: T.Tensor, n: U32) -> T.Tensor:
 def nn_argmax_g.out(+imx: T.Tensor, +q: AN) -> T.Tensor:
   M.mo_cast_t(nn_argmax_g.sub(imx, AN.v(q)), S.int32())
 
-# THE WHOLE GRAPH, AND THE ARENA IS `t`'s.
+# the whole graph, and the arena is `t`'s.
 def nn_argmax_g(+t: T.Tensor, +q: AN, +dev: S.Dev) -> T.Tensor:
   +mx = nn_argmax_g.mx(t)
   +m = nn_argmax_g.m(t, mx)
@@ -166,25 +166,25 @@ def nn_argmax_g(+t: T.Tensor, +q: AN, +dev: S.Dev) -> T.Tensor:
   nn_argmax_g.out(imx, q)
 
 # ===========================================================================
-# THE READERS THE GRAPH ROWS USE. **THEY DO NOT USE `nn/layers.bend`'s `nn_shape`,
-# AND THAT IS THE POINT.**
+# the readers the graph rows use. they do not use `nn/layers.bend`'s `nn_shape`,
+# AND THAT IS THE POINT.
 #
 # `nn_shape` (nn/layers.bend:94) IS `nn_u32(M.mo_dims(F.folded(...)))`, AND `mo_dims`
-# (mixin/op.bend:281) ANSWERS `Nil{}` FOR THREE DIFFERENT THINGS: A NODE THE FOLD
-# CANNOT RESOLVE, A NODE WITH NO SHAPE, AND A NODE WHOSE SHAPE IS THE EMPTY LIST --
+# (mixin/op.bend:281) answers `Nil{}` for three different things: a node the FOLD
+# cannot resolve, a node with no shape, and a node whose shape is the empty list --
 # A 0-dim SHAPE. `nn_u32` (nn/layers.bend:100 symbol=nn_u32) MAPS `Nil{}` BACK TO
 # `Some{[]}`, SO
-# `nn_shape` CANNOT TELL A REFUSAL FROM A 0-dim SHAPE. **UPSTREAM'S `imx` IS 0-dim,
-# SO A READER THAT CONFLATES THE TWO WOULD PRINT `()` FOR A REFUSAL AND THE ROW WOULD
-# PASS ON NOTHING.** THE READER BELOW ASKS `F.fold.shape` (uop/fold.bend:4827 symbol=fold.shape), WHICH
-# ANSWERS THE DOUBLE `Maybe`: THE OUTER IS "THE NODE IS IN THE FOLD'S TABLE" AND THE
-# INNER IS "THE NODE HAS A SHAPE", AND THE TWO ARE NOT THE SAME QUESTION.
+# `nn_shape` cannot tell a refusal from a 0-dim shape. upstream's `imx` is 0-dim,
+# so a reader that conflates the two would print `()` for a refusal and the row would
+# pass on nothing. the reader below asks `F.fold.shape` (uop/fold.bend:4827 symbol=fold.shape), which
+# answers the double `Maybe`: the outer is "the node is in the FOLD's table" and the
+# inner is "the node has a shape", and the two are not the same question.
 # ===========================================================================
 
-# THE SHAPE AS CPYTHON PRINTS IT: `()` FOR A 0-dim SHAPE, `(4,)` FOR A 1-dim ONE AND
-# `(1, 3)` FOR A 2-dim ONE. **THE COUNT AND THE STRING ARE BUILT IN ONE WALK**, BECAUSE A
-# `List` IS CONSUMED WHEN IT IS READ AND THE COUNT AND THE ELEMENTS ARE THE SAME LIST.
-# THE RECORD IS THE TREE'S OWN SPELLING OF "TWO ANSWERS OUT OF ONE WALK" -- IT IS
+# the shape as CPYTHON prints it: `()` for a 0-dim shape, `(4,)` for a 1-dim one and
+# `(1, 3)` for a 2-dim one. the count and the string are built in one walk, because a
+# `List` is consumed when it is read and the count and the elements are the same list.
+# the record is the tree's own spelling of "two answers out of one walk" -- it is
 # `mixin/rand.bend`'s `PK` AND `uop/fold.bend`'s `Sized`/`Shapes`.
 type SP is Data:
   SP{s: String, n: U32}
@@ -229,9 +229,9 @@ def nn_argmax_g.dt(+t: T.Tensor) -> String:
   E.ew_dtnm(W.wk_dt(fx, T.Tensor.u(t)))
 
 # ===========================================================================
-# THE GRAPH ROWS. **EVERY `want` IS CPYTHON'S OWN SHAPE OR DTYPE FOR THAT NODE** --
-# READ OFF `.agents/slop/nnargmax2/oracle_argmax.py`, WHICH ASKS CPYTIN ITSELF. NONE
-# OF THEM IS COPIED FROM THE PORT'S OUTPUT.
+# the graph rows. every `want` is CPYTHON's own shape or dtype for that node --
+# read off `.agents/slop/nnargmax2/oracle_argmax.py`, which asks cpytin itself. NONE
+# of them is copied from the port's output.
 #
 #   cp_t     = (4,) dt=dtypes.f32
 #   cp_mx    = (1,) dt=dtypes.f32
@@ -242,10 +242,10 @@ def nn_argmax_g.dt(+t: T.Tensor) -> String:
 #   cp_res   = ()   dt=dtypes.i32
 #   cp_out   = ()   dt=dtypes.i32
 #
-# **THE DTYPE NAMES ARE TRANSLATED ONCE AND THE TRANSLATION IS THE WHOLE OF IT:**
+# the dtype names are translated once and the translation is the whole of it:
 # CPython prints `dtypes.f32` / `dtypes.i32` / `dtypes.bool` AND THE PORT'S
 # `mixin/elementwise.bend`'s `ew_dtnm` PRINTS `f32` / `i32` / `bool`. THE SAME THREE
-# DTYPES, SPELLED THE PORT'S WAY, BECAUSE A ROW THAT PRINTS `dtypes.f32` ON ONE SIDE
+# dtypes, spelled the port's way, because a row that prints `dtypes.f32` on one side
 # AND `f32` ON THE OTHER IS NOT A ROW.
 # ===========================================================================
 

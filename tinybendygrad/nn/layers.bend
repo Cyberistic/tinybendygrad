@@ -7,7 +7,7 @@
 # `Tensor.relu` mixin/elementwise.py:672) and NONE of them was built. THIS FILE
 # IS THE OTHER HALF: the defs that INTERN UOps.
 #
-# THE WALL TEXT NAMED THE WRONG BLOCKER, MEASURED AGAINST WHAT IS ON DISK.
+# the wall text named the wrong blocker, measured against what is on disk.
 #   `THE PORT's `nn/__init__.bend` WALL BLOCK` -- `x.linear` "walled on `linear_with_vars`
 #     (movement.py) P3 and mixin/op.bend's W8 (the WMMA lowering)". NOT REACHED.
 #     `Tensor.linear` (mixin/op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
@@ -49,7 +49,7 @@
 # THAT is the half this file refuses rather than assumes, and `nn_dot.dts`
 # refuses it by NAME.
 #
-# ONE REFUSAL POINT, AND IT IS A `Maybe` RATHER THAN A SILENT ZERO. Every dim
+# one refusal point, and it is a `Maybe` rather than a silent zero. Every dim
 # `dot` does arithmetic on is a `sint` -- `tinygrad/uop/ops.py:1923`'s
 # `int|UOp`, spelled `SI{i64} | SU{uop}` at `uop/ops.bend:810 symbol=Sint`. The port has FOUR
 # defs on that union (`SInt.of`, `SInt.uop`, `SInt.i`, `SInt.u`; ops.bend:814-822
@@ -84,7 +84,7 @@ import ./../uop/weak.bend as W
 # fact from the other side -- a walk that PREPENDS builds the answer backwards
 # and needs the `List.reverse` that `mxm_pick.go` (mixin/movement.bend:687 symbol=mxm_pick.go) carries.
 #
-# MEASURED, AND IT WAS WRONG FIRST: this walk appended at the tail AND reversed,
+# measured, and it was wrong first: this walk appended at the tail and reversed,
 # so it answered `[3, 2]` for the shape `[2, 3]` -- every dim transposed, with
 # every dim still a legal size, which is why `--check-only` was green and the row
 # `where_xshape` was not. `nn_ks.go`, `nn_rep.*.go` and `nn_zipcat.go` below all
@@ -120,25 +120,25 @@ def nn_ks(+xs: List<&2, U32>) -> List<&2, O.Const>: nn_ks.go(xs, Nil{})
 def nn_range(n: U32) -> List<&2, U32>: M.mo_range(U32.to_nat(n))
 
 # ===========================================================================
-# `_rop` -- tinygrad/uop/ops.py:630-639. THIS IS THE ONE PLACE A LAYER CANNOT
-# USE THE PORT'S OWN REDUCE, AND THE REASON IS NAMED.
+# `_rop` -- tinygrad/uop/ops.py:630-639. this is the one place a layer cannot
+# use the port's own reduce, and the reason is named.
 #
 # CPython SAYS IT IN A COMMENT: "permute so reduced axes are at the FRONT"
 # (ops.py:636), then `UOp(Ops.REDUCE, src=(self.permute(perm),), arg=(op,
-# len(reduce_axis)))` (:637). The port's TWO HALVES AGREE WITH EACH OTHER --
+# len(reduce_axis)))` (:637). The port's two halves agree with each other --
 # `F.reduce_dims.put` (uop/fold.bend:904 symbol=reduce_dims.put) answers `drop_n(shape, num_axes)` and
 # `S.drop_n` (LAWS/spec.bend:270 symbol=drop_n) drops FROM THE HEAD -- SO THE PORT'S REDUCE
-# REDUCES THE FIRST `num_axes` AXES. THE PERMUTE THAT WOULD MAKE THAT TRUE FOR
+# reduces the first `num_axes` axes. the permute that would make that TRUE for
 # AN ARBITRARY AXIS IS NOT BUILT: `tn_rop.perm.of` (tinybendygrad/tensor.bend:1820 symbol=tn_rop.perm.of) answers
 # `self` IN BOTH ARMS and its own comment says so.
 #
-# MEASURED ON THIS FILE, AND IT IS WHY EVERY LAYER REDUCE IS WRONG WITHOUT THE
+# measured on this file, and it is why every layer reduce is wrong without the
 # PERMUTE: `sum(axis=-1)` over a `(2, 4, 3)` product answered `(4, 3)` -- axis 0
 # -- where CPython answers `(2, 4)`, and `sum(..., keepdim=True)` answered
 # `(1, 4, 3)` where CPython answers `(2, 4, 1)`. Both are legal shapes of the
 # right RANK-adjacent size, so no node count and no op name sees it.
 #
-# `tensor.bend` IS NOT THIS UNIT'S FILE, SO THE PERMUTE IS BUILT HERE. It is
+# `tensor.bend` is not this unit's file, so the permute is built here. It is
 # ops.py:636 verbatim -- `reduce_axis` ++ the axes not in it -- and `nn_reduce`
 # IS `_rop` with that line restored; it is not a workaround and it does not
 # change the REDUCE node, whose arg is still `(op, len(reduce_axis))`.
@@ -172,7 +172,7 @@ def nn_reduce.rest(ns: List<&2, U32>, axis: List<&2, U32>) -> List<&2, U32>:
 # again on the PERMUTED tensor, where it keeps everything -- which is the point:
 # this filter decides the SHAPE, that one decides the ARG, and they agree
 # because the permute moved exactly these axes to the front.
-# THE INDEX IS READ OUT OF THE SHAPE, NOT POSITIONALLY. `resolve(self.shape[x] !=
+# the INDEX is read out of the shape, not positionally. `resolve(self.shape[x] !=
 # 1)` is `shape[axis[j]]`, and a walk that zips `axis` with `ds` and reads `ds[j]`
 # agrees with it only when `axis` IS `range(n)` -- which is the case for
 # `mixin/op.bend`'s own rows (`t_sh_sum0kd` reduces axis 0 of a 1-D tensor) and
@@ -238,28 +238,28 @@ def nn_reduce.pick(+rn: List<&2, U32>, +t: T.Tensor, +kept: List<&2, U32>, +n: U
 # substituted for the values it minted a second RESHAPE to `(0, 1)`, which the
 # fold could not read, and the row printed nothing.
 # `1 if i in axis else s for i,s in enumerate(self.shape)` -- reduce.py:18,
-# THE KEEPDIM TARGET. **THIS IS NOW READ FROM `mixin/op.bend`'s `mo_keep_ds` AND NOT
-# SPELLED HERE, AND THE REASON THE LOCAL COPY EXISTED IS GONE.**
-# THE HISTORY, BECAUSE IT IS WHY THE BUG WAS HARD TO SEE: THE LOCAL COPY WAS WRITTEN
+# the keepdim target. this is now read from `mixin/op.bend`'s `mo_keep_ds` and not
+# spelled here, and the reason the local COPY existed is gone.
+# the history, because it is why the bug was hard to see: the local COPY was written
 # WHEN `mo_keep_ds`'S INDEX WAS WRONG -- `mixin/op.bend`'s `mo_at` ANSWERED `len(t)`, THE
-# INDEX **COUNTED FROM THE END**, WHILE EVERY NEIGHBOUR IS FORWARD (`mo_dim_at` READS
+# INDEX counted from the end, while every neighbour is forward (`mo_dim_at` reads
 # `mo_dims` AT A FORWARD INDEX, `mo_resolve` ADDS `total` TO A NEGATIVE AXIS, `mo_range`
 # BUILDS `0..n-1`). `.agents/slop/nnconv/probe/moat.bend` MEASURED `idx(10,20,30) = 2,1,0`
-# OVER A FORWARD WALK, SO `mo_keep_ds` WAS RIGHT ON A ONE-DIMENSIONAL SHAPE -- WHERE THE
-# TWO READINGS AGREE, AND WHERE `mixin/op.bend`'s `sh_sum0kd` ROW LIVES -- **AND WRONG ON
-# EVERY OTHER**: IT ANSWERED `(1,4,3)` ON `(2,4,3)` WITH AXIS `[2]` WHERE CPython ANSWERS
+# over a forward walk, so `mo_keep_ds` was right on a one-dimensional shape -- WHERE the
+# two readings agree, and WHERE `mixin/op.bend`'s `sh_sum0kd` row lives -- and wrong on
+# every other: it answered `(1,4,3)` on `(2,4,3)` with axis `[2]` WHERE CPython answers
 # `(2,4,1)` (tinygrad/mixin/reduce.py:18).
-# **⇒ SO THE PORT HAD *TWO* IMPLEMENTATIONS OF ONE RULE, ONE RIGHT AND ONE WRONG, AND THE
-# NN LAYER USED THE RIGHT ONE -- WHICH IS EXACTLY WHY THE WRONGNESS WAS INVISIBLE: THE ROW
-# THAT CAUGHT IT, `fold_smk`, EXPECTED `2,1,3`, WHICH IS CPython's ANSWER FOR AXIS `[1]`
-# **AND ALSO WHAT THE PORT'S `mo_keep_ds` ANSWERED FOR EVERY AXIS**. A WRONG ANSWER THAT
-# COINCIDES WITH A RIGHT ONE IS THE DEEPEST FORM OF *\"A ROW THAT CANNOT GO RED IS A
-# LABEL\"*.**
-# **⇒ AND `mo_at` IS NOW FIXED** (`mixin/op.bend`: `n - len(ds)`, THE ORIGINAL LENGTH
-# THREADED, BECAUSE `ds` AT THE CALL SITE IS THE *REMAINING* LIST), SO `mo_keep_ds` IS
-# FORWARD AND CORRECT, AND THE LOCAL COPY IS DEAD WEIGHT. **⇒ AND THE TWO READ THE SAME
+# - so the port had *two* implementations of one rule, one right and one wrong, and the
+# nn layer used the right one -- which is exactly why the wrongness was invisible: the row
+# that caught it, `fold_smk`, expected `2,1,3`, which is CPython's answer for axis `[1]`
+# and also what the port's `mo_keep_ds` answered for every axis. a wrong answer that
+# coincides with a right one is the deepest form of *\"a row that cannot go red is a
+# LABEL\"*.
+# - and `mo_at` is now fixed (`mixin/op.bend`: `n - len(ds)`, the original length
+# threaded, because `ds` at the call site is the *remaining* list), so `mo_keep_ds` is
+# forward and correct, and the local COPY is dead weight. - and the two read the same
 # SHAPE: `nn_shape` IS `nn_u32(M.mo_dims(...))` AND `mo_keep_ds` IS `mo_dims(...)` -- THE
-# FOLD'S SHAPE, BOTH OF THEM -- SO THE SWAP CHANGES THE INDEX AND NOTHING ELSE.**
+# FOLD's shape, both of them -- so the swap changes the INDEX and nothing ELSE.
 def nn_reduce.keep(kd: Bool, +src: T.Tensor, +r: T.Tensor,
   +axis: List<&2, U32>) -> T.Tensor:
   M.mo_reduce.keep(kd, src, r, axis)
@@ -299,7 +299,7 @@ def nn_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 def nn_relu(+x: T.Tensor) -> T.Tensor: T.tn_relu(x)
 
 # ===========================================================================
-# `dot` -- mixin/op.py:367-392 (THE VENDORED `002630241`), THE BODY LINE BY LINE.
+# `dot` -- mixin/op.py:367-392 (the vendored `002630241`), the body line by line.
 #
 #   x, dx, dw = self, self.ndim, w.ndim                                         # :387
 #   if not (dx > 0 and dw > 0): raise RuntimeError(...)                        # :388
@@ -308,22 +308,22 @@ def nn_relu(+x: T.Tensor) -> T.Tensor: T.tn_relu(x)
 #   w = w.reshape(*w.shape[0:-2], *[1]*min(dx-1, dw-1, 1), *w.shape[axis_w:]).transpose(-1, axis_w)  # :391
 #   return (x*w).sum(-1, dtype=dtype).cast(least_upper_dtype(x.dtype, w.dtype))  # :392
 #
-# AND THE TWO RAISES AT :388-389 ARE PORTED AS A `Maybe`, not skipped: a def
+# and the two raises at :388-389 are ported as a `Maybe`, not skipped: a def
 # whose answer for a 0-D operand is a well-formed graph is a def that builds the
 # wrong graph silently, which is the failure mode this file is written against.
 #
 # `axis_w = -min(w.ndim, 2)` (:389) -- NOT THE `-w.ndim` AN EARLIER REVISION OF
-# THIS BLOCK CLAIMED. THE TWO SPELLINGS ARE NOT THE SAME EXPRESSION:
+# this block claimed. the two spellings are not the same expression:
 #
 #   * :389 IS `w.shape[axis_w:=-min(w.ndim,2)]`, AND PYTHON'S GRAMMAR MAKES THE
-#     WALRUS THE SUBSCRIPT'S ONLY INDEX -- THERE IS NO SECOND `:` -- SO THE
+#     walrus the subscript's only INDEX -- there is no second `:` -- so the
 #     GUARD READS `w.shape[axis_w]`, A SINGLE DIM. MEASURED, `.venv/bin/python`:
 #     IT ANSWERS `3` FOR `w.shape=(3,4)`, NOT `(3,4)`.
 #   * :391 IS `w.shape[axis_w:]` WITH `axis_w` A PLAIN NAME, SO IT IS A SLICE
 #     AND ANSWERS THE LAST `min(dw,2)` DIMS.
 #
 # SO ON THE RESHAPED `w` OF LENGTH `len` THE AXIS `axis_w` IS `len - min(dw,2)`
-# AND `-1` IS `len - 1`. THAT IS THE PAIR `nn_dot.order` EXCHANGES, AND IT IS
+# and `-1` is `len - 1`. that is the pair `nn_dot.order` exchanges, and it is
 # WHY :391 NEEDS NO NEGATIVE INDEX ANYWHERE.
 # ===========================================================================
 
@@ -340,8 +340,8 @@ def nn_dotk(+dx: U32, +dw: U32) -> U32:
 # `take(xs, k)` ANSWERS `xs[:k]`. MEASURED, `.agents/slop/dotfix/sem.bend`:
 # `drop([2,4,3], 1)` = `[4,3]` AND `drop([2,4,3], 2)` = `[3]`.
 #
-# CPython's `x.shape[0:-1]` (op.py:390) IS THE OTHER END: IT KEEPS EVERY DIM
-# BUT THE LAST, AND ITS ANSWER IS `xs[:len-1]`. `Nat.sub` SATURATES AT 0
+# CPython's `x.shape[0:-1]` (op.py:390) is the other end: it keeps every dim
+# but the last, and its answer is `xs[:len-1]`. `Nat.sub` saturates at 0
 # (references/bend/bend2/base.bend:683 symbol=Nat.sub), SO A SHAPE SHORTER THAN `n` ANSWERS `Nil{}` -- WHICH IS
 # WHAT `xs[0:-2]` ANSWERS FOR A 1-D OR A 2-D `w`.
 #
@@ -358,13 +358,13 @@ def nn_dot.xshape(+xs: List<&2, U32>, k: U32) -> List<&2, U32>:
 
 # `axis_w = -min(dw,2)` (header), SO `w.shape[axis_w:]` IS THE LAST
 # `min(dw,2)` DIMS -- `(w0,)` FOR dw==1, `(w0,w1)` FOR dw==2, `(w1,w2)` FOR
-# dw==3 -- AND `w.shape[0:-2]` IS EVERY DIM BUT THE LAST TWO -- `()` FOR
+# dw==3 -- and `w.shape[0:-2]` is every dim but the last two -- `()` for
 # dw<=2 AND `(w0,)` FOR dw==3.
 #
-# SO THE TARGET IS `DROP_LAST 2` ++ `ONES k` ++ `DROP_FIRST (dw-min(dw,2))`, AND
+# so the target is `DROP_LAST 2` ++ `ONES k` ++ `DROP_FIRST (dw-min(dw,2))`, and
 # `Nat.sub` SATURATES AT 0 (references/bend/bend2/base.bend:683 symbol=Nat.sub) SO `dw-min(dw,2)` IS 0 FOR dw==1
 # AND dw==2 -- WHICH IS EXACTLY CPython's `w.shape[axis_w:]` THERE. THE HEAD
-# DROP `List.drop(ws, 2n)` THIS USED TO SPELL ANSWERED `ws[2:]`, WHICH IS
+# drop `List.drop(ws, 2n)` this used to spell answered `ws[2:]`, which is
 # `(w2,)` FOR dw==3 WHERE CPython'S FIRST SLICE ANSWERS `(w0,)`.
 def nn_dot.wshape(+ws: List<&2, U32>, k: U32) -> List<&2, U32>:
   +dw = List.length(&2, U32, ws)
@@ -373,11 +373,11 @@ def nn_dot.wshape(+ws: List<&2, U32>, k: U32) -> List<&2, U32>:
 
 def nn_umin(a: U32, b: U32) -> U32: U32.min(a, b)
 
-# `.transpose(-1, axis_w)` -- :391, AS THE IDENTITY ORDER WITH TWO POSITIONS
+# `.transpose(-1, axis_w)` -- :391, as the identity order with two positions
 # EXCHANGED. `axis_w = -min(dw,2)` (header), SO ON THE RESHAPED `w` OF LENGTH
-# `len` THE AXIS IS `len - min(dw,2)` AND `-1` IS `len - 1`: THOSE ARE THE TWO
-# POSITIONS EXCHANGED. FOR dw==1 THEY COINCIDE (BOTH 0), SO THE ORDER IS THE
-# IDENTITY AND `M.mo_permute`'s OWN IDENTITY TEST HANDS `w` BACK UNCHANGED --
+# `len` the axis is `len - min(dw,2)` and `-1` is `len - 1`: those are the two
+# positions exchanged. for dw==1 they coincide (both 0), so the order is the
+# identity and `M.mo_permute`'s own identity test hands `w` back unchanged --
 # WHICH IS EXACTLY WHAT CPython'S `transpose(-1, -1)` ON A 1-D TENSOR DOES.
 def nn_dot.order(+len: U32, +dw: U32) -> List<&2, U32>:
   +ids = nn_range(len)
@@ -388,7 +388,7 @@ def nn_dot.order(+len: U32, +dw: U32) -> List<&2, U32>:
 # `sum(-1)` -- :392. PYTHON'S `-1` HAS NO `U32` IMAGE, and the port's own
 # `mo_ax`/`mo_resolve` (mixin/op.bend:794 symbol=mo_ax / mixin/op.bend:758 symbol=mo_resolve) cannot spell it:
 # `mo_resolve(neg, dim, total) = dim + total`, so `neg=True, dim=1` answers
-# `ndim+1`, one PAST the last axis. THE RESOLVED INDEX IS TAKEN FROM THE OTHER
+# `ndim+1`, one past the last axis. the resolved INDEX is taken from the other
 # END -- `nn_last_ax` -- which is the same value and is total.
 def nn_last_ax(n: U32) -> U32: U32.sub(n, 1)
 
@@ -408,17 +408,17 @@ def nn_dot.dts(xdt: Maybe<&2, S.Dt>, wdt: Maybe<&2, S.Dt>) -> Maybe<&2, S.Dt>:
 
 # `(x*w).sum(-1).cast(dt)` -- :392. `M.mo_sum(False{}, ...)` IS
 # `mixin/reduce.py:20` hoisted (mixin/op.bend:811), downcast-and-cast-back
-# included. IT TAKES THE PRODUCT, NOT THE TWO OPERANDS, BECAUSE THE PRODUCT
+# included. it takes the product, not the two operands, because the product
 # IS WHERE THE SECOND REFUSAL LIVES.
 def nn_dot.tail(+xw: T.Tensor, ax: U32, dt: S.Dt) -> T.Tensor:
   M.mo_cast_t(nn_sum(False{}, xw, [ax]), dt)
 
 # CPython's SECOND REFUSAL IS AT `(x*w)`: `_broadcast_shape` (ops.py:80) RAISES
-# `IndexError` WHEN THE TWO RESHAPED SHAPES DO NOT BROADCAST. THE PORT'S FOLD
-# REFUSES THE SAME WAY -- `F.bcast_shape` (fold.bend:672) ANSWERS `None` -- AND
-# THE PRODUCT IS WHERE THAT REFUSAL SHOWS. THE PRODUCT IS NEVER 0-D (BOTH
-# OPERANDS HAVE AT LEAST ONE DIM), SO AN EMPTY SHAPE IS THE REFUSAL AND NOT A
-# ZERO-RANK TENSOR: THE RESULT OF A 1-D `dot` A 1-D IS 0-D, AND THE PRODUCT IS
+# `IndexError` when the two reshaped shapes do not broadcast. the port's FOLD
+# refuses the same way -- `F.bcast_shape` (fold.bend:672) answers `None` -- and
+# the product is WHERE that refusal shows. the product is never 0-d (both
+# operands have at least one dim), so an empty shape is the refusal and not a
+# zero-rank tensor: the result of a 1-d `dot` a 1-d is 0-d, and the product is
 # NOT.
 def nn_dot.mul(+xr: T.Tensor, +wr: T.Tensor, ax: U32, dt: S.Dt) -> Maybe<&2, T.Tensor>:
   +xw = T.tn_mul(xr, wr)
@@ -449,16 +449,16 @@ def nn_dot.pair(+x: T.Tensor, +w: T.Tensor, +ax: List<&2, U32>, +bw: List<&2, U3
 # fold refuses the third.
 # ===========================================================================
 
-# A MISSING DIM IS A REFUSAL, NOT A DEFAULT VALUE: THE WHOLE GUARD IS `False`.
+# a missing dim is a refusal, not a default value: the whole guard is `False`.
 def nn_dot.guard.ans(m: Maybe<&2, Bool>) -> Bool:
   match m:
     case Some{b}: b
     case None{}: False{}
 
-# `x.shape[-1] != w.shape[axis_w]` (:389) -- THE SECOND REFUSAL, AND THE ONE
+# `x.shape[-1] != w.shape[axis_w]` (:389) -- the second refusal, and the one
 # THAT WAS NEVER PORTED. `axis_w = -min(dw,2)` (header), SO `w.shape[axis_w]`
 # IS `w.shape[-1]` FOR dw==1 AND `w.shape[-2]` FOR dw>=2: THE INDEX IS
-# `dw - min(dw,2)` INTO `w.shape`. A MISSING DIM IS A REFUSAL, NOT A DEFAULT
+# `dw - min(dw,2)` into `w.shape`. a missing dim is a refusal, not a default
 # VALUE: THE WHOLE GUARD IS `False`.
 def nn_dot.guard(+ax: List<&2, U32>, +bw: List<&2, U32>) -> Bool:
   +dw = List.length(&2, U32, bw)
@@ -468,8 +468,8 @@ def nn_dot.guard(+ax: List<&2, U32>, +bw: List<&2, U32>) -> Bool:
         List.get(&2, U32, bw, Nat.sub(dw, Nat.min(dw, 2n))))))
 
 # `dx > 0 and dw > 0` (:388) AND `x.shape[-1] != w.shape[axis_w]` (:389) --
-# BOTH REFUSALS, AND A `Bool` AND NOT A `Maybe`, BECAUSE IT SELECTS BETWEEN
-# TWO ANSWERS THAT BOTH EXIST. CPython RAISES ON THE FIRST, SO THE ORDER IS
+# both refusals, and a `Bool` and not a `Maybe`, because it selects between
+# two answers that both exist. CPython raises on the first, so the order is
 # CPython's: THE RANK GUARD FIRST.
 def nn_dot.rd(+ax: List<&2, U32>, +bw: List<&2, U32>) -> Bool:
   Bool.and(U32.is_gt(nn_len32(ax), 0), Bool.and(U32.is_gt(nn_len32(bw), 0), nn_dot.guard(ax, bw)))
@@ -531,7 +531,7 @@ def nn_linear(+x: T.Tensor, +w: T.Tensor, bias: Maybe<&2, T.Tensor>) -> Maybe<&2
   Maybe.bind(&2, T.Tensor, T.Tensor, nn_transpose(w),
     wt => Maybe.bind(&2, T.Tensor, T.Tensor, nn_dot(x, wt), d => nn_linear.add(d, bias)))
 # ===========================================================================
-# `conv2d` -- mixin/op.py:1562-1603. THE WALL NAMED AT `THE PORT's `nn/__init__.bend` WALL BLOCK`
+# `conv2d` -- mixin/op.py:1562-1603. the wall named at `THE PORT's `nn/__init__.bend` WALL BLOCK`
 # IS NOT A WALL, and both halves of that are measurements.
 #
 #   "mixin/op.bend SIDE B, not built" -- `mixin/op.bend`'s SIDE B IS EMPTY.
@@ -552,7 +552,7 @@ def nn_linear(+x: T.Tensor, +w: T.Tensor, bias: Maybe<&2, T.Tensor>) -> Maybe<&2
 #     belongs with the layer that calls it, and every node in it is one of
 #     `mixin/movement.bend`'s own gated `mxw_*` builders.
 #
-# WHAT IS STILL REFUSED IS THE `SU` SHAPE ARM, by `nn_u32` (header) and by
+# what is still refused is the `SU` shape arm, by `nn_u32` (header) and by
 # nothing else: `_pool`'s whole domain is concrete dims, which is exactly what
 # `mixin/movement.bend`'s Section A is written in, so a symbolic input is the
 # one thing this section cannot answer and says so with a `Maybe`.
@@ -626,12 +626,12 @@ def nn_rep.fin(ss: List<&2, U32>, rr: List<&2, U32>) -> List<&2, U32>: nn_rep.fi
 # arm is `tn_mop.dims` and which `mxw_reshape` / `mxw_permute` / `mxw_pad` /
 # `mxw_shrink` all wrap. `nn_ks` is `nn_dot`'s own `U32 -> O.Const` projection.
 #
-# **IT IS `_broadcast_to` (movement.py:128-146) AND NOT A BARE EXPAND.** CPython's
+# IT IS `_broadcast_to` (movement.py:128-146) AND NOT A BARE EXPAND. CPython's
 # `expand` (movement.py:149-162) IS `_broadcast_to`, and `_broadcast_to`'s marg is
 # the LEFT-ADDED dims and THEN the dims of the source axes that were 1 and became
 # BIGGER -- with a squeeze before and a permute after, so that the result's shape
 # is the TARGET's. A marg that is the WHOLE TARGET is what `tuple(self.marg) + ps`
-# (ops.py:397) reads as: THE TARGET CONCATENATED WITH THE SOURCE, which is a
+# (ops.py:397) reads as: the target concatenated with the source, which is a
 # `1,64,4,58,4,58,1,64,1,58,1,58` where CPython's answer is `1,64,4,58,4,58`.
 # `mixin/movement.bend`'s `mxw_bcast` IS that rule, and it is the SAME def
 # `mixin/creation.bend`'s `cr_expand` calls, so the two sites cannot disagree.
@@ -644,7 +644,7 @@ def nn_repeat(+t: T.Tensor, +shp: List<&2, U32>, +reps: List<&2, U32>) -> T.Tens
 #
 # NO ARITHMETIC IS SPELLED HERE. Every number is `mixin/movement.bend`'s.
 #
-# THE CHAIN IS UPSTREAM'S, LINE BY LINE, AND THE ORDER IS LOAD-BEARING:
+# the chain is upstream's, line by line, and the order is LOAD-bearing:
 #   movement.py:624  x = self.repeat(noop ++ [ceildiv(k*(i*f+d), i)])
 #   movement.py:626  x = x.shrink_to(noop ++ [k*(i*f+d)])
 #   movement.py:627  x = x.reshape(noop ++ flatten((k, i*f+d)))
@@ -653,13 +653,13 @@ def nn_repeat(+t: T.Tensor, +shp: List<&2, U32>, +reps: List<&2, U32>) -> T.Tens
 #   movement.py:632  return x.permute(range(nn), *[nn+2i+1], *[nn+2i])
 #
 # `noop` IS `[None] * (self.ndim - len(k_))` (movement.py:618) AND `None` MEANS
-# "THIS AXIS IS NOT SHRUNK", so the shrink's target KEEPS THE SOURCE'S OWN SIZE
+# "this axis is not shrunk", so the shrink's target keeps the source's own SIZE
 # on those axes. THE PORT'S TARGETS ARE SIZES, so the noop axes carry the
 # SOURCE'S OWN DIMS -- which is `nn/pool.bend:145`'s `W4.lead` and NOT a list of
 # ones. MEASURED: with ones there, the channel axis was shrunk from 3 to 1 and
 # every shape in the chain was wrong.
 #
-# AND THE TWO SHRINK TARGETS ARE NOT THE SAME LIST. `movement.py:626` shrinks to
+# and the two shrink targets are not the same list. `movement.py:626` shrinks to
 # `k*(i*f+d)` and `movement.py:627` reshapes to `(k, i*f+d)` -- THE DILATED SIZE
 # WITHOUT THE `k *`. `mx_pool_kid` (movement.bend:316) IS `k*(i*f+d)`, so the
 # reshape's target needs a SECOND number, and a reshape that is not
@@ -697,7 +697,7 @@ def nn_zipcat3.go(+a: List<&2, U32>, +b: List<&2, U32>, +c: List<&2, U32>,
 def nn_zipcat3(a: List<&2, U32>, b: List<&2, U32>, c: List<&2, U32>) -> List<&2, U32>:
   nn_zipcat3.go(a, b, c, Nil{})
 
-# THE NOOP AXES, AS THE SOURCE'S OWN DIMS.
+# the noop axes, as the source's own dims.
 def nn_pool.noop(+padded: List<&2, U32>, nn: U32) -> List<&2, U32>:
   List.take(&2, U32, padded, U32.to_nat(nn))
 
@@ -760,7 +760,7 @@ def nn_pads.grp(ps: List<&2, U32>) -> List<&2, List<&2, U32>>:
 
 # --- `_pad_constant(..., 0.0)` -- op.py:282-290 ------------------------------
 #
-# WITH `value == 0` THE WHOLE BODY IS ONE `PAD`. `:290` is `if value == 0:
+# with `value == 0` the whole body is one `PAD`. `:290` is `if value == 0:
 # return base`, and `base` is `MovementMixin.pad(X, pads)` at :288. `has_neg` is
 # FALSE for the pads `conv2d` builds -- `resolve_pool_pads` never invents a
 # negative and a negative one would take the `shrink` arm at :286 -- so THAT arm
@@ -776,12 +776,12 @@ def nn_pad.his.go(+shp: List<&2, U32>, +pb: List<&2, U32>, +pa: List<&2, U32>,
   match shp pb pa:
     case s <> st b <> bt a <> at:
       nn_pad.his.go(st, bt, at, List.append(&2, U32, acc, [U32.add(U32.add(s, b), a)]))
-    # THE BASE ARM RETURNED `Nil{}` AND DISCARDED ITS OWN ACCUMULATOR, so `conv2d`'s FIRST node
+    # the base arm returned `Nil{}` and discarded its own accumulator, so `conv2d`'s first node
     # read EMPTY rather than wrong -- and `nn_cnv.build:735` fires it before a single UOp is
     # interned. MEASURED 2026-10-20: this line was the ONLY base arm in this file not returning
     # `acc` (`nn_ks.go:102`, `:150`, `:174`, `:204`, `nn_zipcat.go:467` and four more all do), out
-    # of 4 `.go` walks and 37 `Nil{}` returns. **A base arm that drops the accumulator reads the
-    # same as an empty fold, which is why THREE units were needed to find it.**
+    # of 4 `.go` walks and 37 `Nil{}` returns. A base arm that drops the accumulator reads the
+    # same as an empty fold, which is why THREE units were needed to find it.
     case _ _ _: acc
 
 def nn_pad.at(g: List<&2, U32>, n: Nat) -> U32:
@@ -845,13 +845,13 @@ def nn_cnv.dot(+a: T.Tensor, +b: T.Tensor, +ni: U32, +ds: List<&2, U32>, dt: S.D
 
 # --- `nn_conv2d` -- THE ENTRY, op.py:1591-1603 -----------------------------
 #
-# AND THE ONE REFUSAL THE WHOLE SECTION CARRIES, NAMED: NEGATIVE PADDING IS
+# and the one refusal the whole section carries, named: negative padding is
 # NOT EXPRESSIBLE. `_pad_constant` opens with
 #     `has_neg = not all(resolve(p >= 0) for p in flatten(pX))` (op.py:285)
 #     `X = self.shrink(...) if has_neg else self` (op.py:286)
 #     `pads = tuple((smax(pB,0), smax(pA,0)) ...) if has_neg else pX` (:287)
 # (op.py:285-287) and `padding` arrives here as `U32`, which has no negative.
-# SO THE `has_neg` ARM IS UNREACHABLE RATHER THAN PORTED, and it is unreachable
+# so the `has_neg` arm is unreachable rather than ported, and it is unreachable
 # for a reason that is upstream's too: `nn.Conv2d`'s `padding` is an `int` or a
 # tuple of non-negative ints, and `resolve_pool_pads` invents none. A caller that
 # genuinely needs a shrink-then-pad passes the shrunk tensor and the positive
@@ -948,7 +948,7 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
 # next to its answer cannot pass by having both be wrong, which is the whole
 # point of printing the pair and not the answer alone.
 #
-# THE SPELLING IS THE PORT'S AND THE VALUE IS CPython's, and the two are
+# the spelling is the port's and the value is CPython's, and the two are
 # separate questions. The port prints in three spellings and the expectations
 # are written in those three:
 #
@@ -972,7 +972,7 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
 #          `M.mo_valsig.of` (mixin/op.bend:1255) prints the same value-carrying
 #          list the witness prints, CONST payloads included.
 #
-# THE GRAPH WITNESS IS CPython's OWN GRAPH, AND THE FIXTURE IS WHY. The port's
+# the graph witness is CPython's own graph, and the fixture is why. The port's
 # fixture `nn_row.t` is a BUFFER and a RESHAPE, with NO COPY: `mxw_buf`
 # (mixin/movement.bend:1231 symbol=mxw_buf) builds `Ops.BUFFER` directly. Upstream's numpy
 # path builds the same node -- `Tensor.__init__` calls `_fromnp`
@@ -1015,7 +1015,7 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
 # use it. THE WITNESS IS CPython's graph, which is a DIFFERENT IMPLEMENTATION
 # of the same computation and is independent of the port's fold.
 #
-# TWO OF THE FIVE GRAPH ROWS ARE THE SAME STRING, AND THAT IS NOT A DEFECT.
+# two of the five graph rows are the same string, and that is not a defect.
 # `dbg_dot_sig` and `fold_cc_sig` both answer
 # `n=20 op=Ops.REDUCE nsrc=1 srcops=Ops.PERMUTE`, on BOTH sides, because they
 # ARE the same computation: upstream's `dot` IS a reshape-transpose-multiply-
@@ -1090,7 +1090,7 @@ def nn_row_linear_nb() -> IO(Unit):
 #   padding=0                            -> (1, 8, 30, 30)
 #   padding=1, stride=2                   -> (1, 8, 16, 16)
 #
-# THE EXPECTATIONS ARE CPython's, AND EVERY ONE OF THEM WAS READ OFF CPython's
+# the expectations are CPython's, and every one of them was read off CPython's
 # OWN `tinygrad` IN THIS REPO'S `.venv` (`Tensor.zeros(1,3,32,32).conv2d(
 # Tensor.zeros(8,3,3,3), padding=...).shape`), WHICH IS UPSTREAM'S LINE FOR
 # LINE: op.py:1591-1603. `op.py:1596` is the pad+`_pool`, `op.py:1598` the
@@ -1197,7 +1197,7 @@ def nn_row_fold() -> IO(Unit):
     nn_row.line("fold_sm", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(sm), Nil{})), "2,4")
     # `sum(axis=[2], keepdim=True)` over (2,4,3) is (2,4,1): reduce.py:18's
     # `tuple(1 if i in axis else s for i,s in enumerate(self.shape))` puts the
-    # ONE AT THE REDUCED INDEX. THE OLD EXPECTATION "2,1,3" WAS WRONG: it is
+    # one at the reduced INDEX. the old expectation "2,1,3" was wrong: it is
     # CPython's answer for axis [1], and it is ALSO what the port's
     # `mixin/op.bend:787 symbol=mo_axis0 mo_keep_ds` answers for axis [1] -- because
     # `mixin/op.bend:336 symbol=mo_at` counts the index FROM THE END, so the port

@@ -46,7 +46,7 @@
 #                       packed store's string rule, which IS ported
 #   :41  wgsl_matcher   the seven GUARDS ported, the seven rewrites walled
 #   :53  WGSLRenderer   every attribute and every method below
-#   :67  string_rewrite ALL SEVENTEEN RULES' STRINGS AND THEIR SEVENTEEN `UPat`s,
+#   :67  string_rewrite all seventeen rules' strings and their seventeen `UPat`s,
 #                       in Python's order. This was the largest wall in the file
 #                       and it was not a big one: `ctx[x]` is `self.r[x]`, a dict
 #                       the naming pass has already filled, so `ctx[x]` is the
@@ -68,7 +68,7 @@
 #
 # `code_for_op`'s TWENTY-INHERITED entries are cstyle.py:142-150, not wgsl.py:
 # wgsl.py:60 only overrides WHERE. They are spelled out here anyway, because the
-# `{**CStyleLanguage.code_for_op, ...}` merge needs a base class this port does
+# `{CStyleLanguage.code_for_op, ...}` merge needs a base class this port does
 # not have yet (renderer/cstyle.bend is a stub) and a gate row cannot cite a
 # table it cannot call. This is the ONE duplication in the file and it is a
 # merge point: when cstyle.bend lands, twenty of `code_for_op`'s twenty-two
@@ -311,20 +311,20 @@ def nan_m(+dt: S.Dt) -> U32: nan_fi(dt, False{})
 
 def nan_bs(+dt: S.Dt) -> U32: S.Dt.bits(dt)
 
-# `(1 << (bs - 1)) - 1`. **THE MASK IS 64 BITS WIDE AND IT IS COMPUTED AT 64 BITS.**
+# `(1 << (bs - 1)) - 1`. THE MASK IS 64 BITS WIDE AND IT IS COMPUTED AT 64 BITS.
 #
-# IT WAS NOT, AND THE PROSE THAT DEFENDED IT WAS THE DEFECT AS MUCH AS THE ARITHMETIC
+# it was not, and the prose that defended it was the defect as much as the arithmetic
 # WAS.  The old body was `U32.sub(U32.shln(1, Nat.sub(U32.to_nat(nan_bs(dt)), 1n)), 1)`
 # -- a U32 -- and `U32.shln` SATURATES past 31 (`helpers.bend:1802`), so for a double
 # `U32.shln(1, 63n)` is 0 and `U32.sub(0, 1)` is 4294967295.  CPython's mask is
 # `(1 << 63) - 1` = 9223372036854775807.  The old comment here said "THE WIDTH LIMIT
 # IS REAL ... the overflowing width is unreachable from this renderer", and that was
 # an argument that a wrong answer was harmless because no WGSL shader can ask for a
-# double.  **A WRONG ANSWER THAT NOTHING ASKS FOR IS STILL A WRONG ANSWER**, and
+# double.  a wrong answer that nothing asks for is still a wrong answer, and
 # the census that runs this file found it: `nan_mask double` was one of four rows
 # whose two halves disagreed.
 #
-# SO THE ANSWER IS A `H.I64` -- THE PAIR OF 32-BIT WORDS `helpers.bend` already
+# so the answer is a `H.I64` -- the pair of 32-bit words `helpers.bend` already
 # carries (`i64_shl`, `i64_sub`) -- and the row prints it with `H.i64_dec`, the
 # DECIMAL printer `helpers.bend:2180` already carries.  CPython's `1 << 63` is an
 # ARBITRARY-PRECISION int and this is the 64-BIT answer to the same expression, which
@@ -333,7 +333,7 @@ def nan_bs(+dt: S.Dt) -> U32: S.Dt.bits(dt)
 def nan_mask(+dt: S.Dt) -> H.I64:
   H.i64_sub(H.i64_shl(H.i64_one(), Nat.sub(U32.to_nat(nan_bs(dt)), 1n)), H.i64_one())
 
-# `((1 << exp) - 1) << mant`. **THE SAME WIDTH, THE SAME WAY.**  The old body was a
+# `((1 << exp) - 1) << mant`. the same width, the same way.  The old body was a
 # U32 and `U32.shln(2047, 52n)` saturates to 0, so the port answered 0 where CPython
 # answers 9218868437227405312 -- the same truncation seen from the other side.  The
 # threshold is a MASK over the same 64 bits as `nan_mask`, so it is a pair too.
@@ -417,7 +417,7 @@ def wi_axis.of(x: U32) -> Maybe<&1, String>:
 # construction and the None arm is unreachable. Recorded rather than dressed up as
 # a name: `i32(lindex.)` would be plausible wrong WGSL.
 #
-# THE `None` ARM LIVES IN `code_for_workitem.ret` AND NOT IN A `wi_axis` OF ITS
+# the `None` arm lives in `code_for_workitem.ret` and not in a `wi_axis` of its
 # OWN. It used to be `wi_axis.of2`, and `wi_axis` -- the one the header named as
 # the totalizer -- called nothing: `code_for_workitem` went to `wi_axis.of`
 # directly and `code_for_workitem.ret`'s `None` arm is what actually answers "".
@@ -458,7 +458,7 @@ def type_map(+dt: S.Dt) -> String:
         case 12: "f16"     # dtypes.f16
         case _ : type_map.miss(dt)
 
-# :60 `code_for_op = {**CStyleLanguage.code_for_op, Ops.WHERE: lambda
+# :60 `code_for_op = {CStyleLanguage.code_for_op, Ops.WHERE: lambda
 # a,b,c,dtype: f"select({c},{b},{a})"}`. The WHERE arm takes FOUR arguments and
 # the rest take two or one, and NONE of them read `dtype`, so one def with three
 # string parameters answers all twenty-two: the unary arms ignore `b` and `c`.
@@ -505,7 +505,7 @@ def code_for_op.of(+op: O.Op, +a: String, +b: String, +c: String) -> String:
       # (measured: KeyError - Ops.LOAD). This port returned "", which is the divergence that let
       # Ops.FDIV render as the EMPTY STRING -- a malformed shader, not an error.
       # Bend is total and cannot raise, so the equivalent of KeyError is an operand that CANNOT
-      # COMPILE and that NAMES THE OP: `UNHANDLED(Ops.FDIV)` is a call to nothing. A WGSL comment
+      # compile and that names the op: `UNHANDLED(Ops.FDIV)` is a call to nothing. a wgsl comment
       # would have been valid and would have silently deleted the operand instead.
     case _                : String.concat(["UNHANDLED(Ops.", O.Ops.name.of(op), ")"])
 
@@ -1031,7 +1031,7 @@ def sr_cbool(+dt: S.Dt, v: Bool) -> String:
 # int32` is `ctypes.c_int32`, so rule 4's mask is the 32-bit one and NOT a
 # 64-bit one.
 #
-# RULE 3 HAS NO NEGATIVE ARM, and that is THE PIN'S CHANGE: upstream dropped
+# rule 3 has no negative arm, and that is the PIN's change: upstream dropped
 # `f"bitcast<u32>({c.val})" if c.val < 0 else ...` and a negative const cast to
 # u8/u16/u32 is now the MASKED value with its `u` suffix. MEASURED against the
 # vendored `tinygrad/renderer/wgsl.py`: `c.val = -1` answers `4294967295u` and
@@ -1075,7 +1075,7 @@ def sr_buffer(+op: O.Op, +nm: String, +n: U32, +d: S.Dt, +a: S.Addr) -> String:
 # and that source dtype is the arm, so it is a `S.Dt` here and not a Bool handed
 # in, or the two spellings would be one spelling with a flag.
 #
-# RULE 11 IS THE CATCH-ALL AND ITS PATTERN IS `UPat(Ops.BITCAST, name="x")` WITH
+# rule 11 is the catch-all and its pattern is `UPat(Ops.BITCAST, name="x")` with
 # NO dtype, so its op is the whole of it and `srneg 11` hands it a CONST. THE
 # CATCH-ALL'S REAL WORK IS `sr_pick_bitcast` above: nothing here can keep a
 # `half` off rule 11, because CPython's rule 11 genuinely ACCEPTS a half BITCAST
@@ -1257,7 +1257,7 @@ def u32_show(us: List<&2, U32>) -> List<&2, String>:
     case h <> t: U32.show(h) <> u32_show(t)
 
 # -- is_packed / buf_map / packed_size, over every dtype and addrspace ---------
-# THE FIXTURE CLASS THIS FILE WAS MISSING, added because the gate found
+# the fixture class this file was missing, added because the gate found
 # `is_packed`'s third clause inverted with every other row green. A predicate
 # that no row calls is a predicate no mutation finds, and `is_packed` decides
 # whether a buffer is `atomic<u32>` at all.
@@ -1409,22 +1409,22 @@ def r_tms() -> String:
 # until FINDING 2 was fixed, and `""` is a SPELLING no WGSL parser knows. The
 # name is `dt_name`'s, which is `DType.name`.
 #
-# **AND THE `py=` HALF CARRIES THE PORT'S OWN REFUSAL TOKEN, NOT CPython's EXCEPTION
-# NAME.**  It used to carry `REFUSE:KeyError`, and that made the row compare TWO
+# and the `py=` half carries the port's own refusal token, not CPython's exception
+# NAME.  It used to carry `REFUSE:KeyError`, and that made the row compare TWO
 # DIFFERENT CONVENTIONS: the port's half said "UNHANDLED(dtypes.f64)" and the
 # claimed CPython half said "REFUSE:KeyError", so no two halves could ever agree and
-# the row was ROT by construction rather than by measurement.  **CPython's
-# CONVENTION IS TO RAISE**, and Bend cannot raise: `type_map`'s answer reaches the
+# the row was ROT by construction rather than by measurement.  CPython's
+# CONVENTION IS TO RAISE, and Bend cannot raise: `type_map`'s answer reaches the
 # RENDERED WGSL (`render_cast`, `buf_map`, `code_for_op`), so the port has to answer
 # SOMETHING, and the only honest something is the token a shader cannot silently
 # hold.  `REFUSE:KeyError` is the ORACLE's spelling of an exception and is not a
 # WGSL fragment; `UNHANDLED(dtypes.f64)` is the port's, and it is what this row's
 # `got=` half already was.
 #
-# **THIS IS THE FILE'S OWN CONVENTION, NOT A NEW ONE.**  `code_for_op LOAD/MAX/POW`
+# this is the file's own convention, not a new one.  `code_for_op LOAD/MAX/POW`
 # below record CPython's `KeyError` as the port's `UNHANDLED(Ops.X)`, and
-# `workitem l3` records CPython's `IndexError` as the port's `""`.  **THE `py=` HALF
-# IS "WHAT THE PORT MUST ANSWER HERE FOR THE PORT TO AGREE WITH CPython"**, and for a
+# `workitem l3` records CPython's `IndexError` as the port's `""`.  THE `py=` HALF
+# is "what the port must answer here for the port to agree with CPython", and for a
 # CPython refusal that is the port's refusal token, because the port cannot raise.
 def r_tm_miss() -> String: r_tm1("double", S.double(), "UNHANDLED(dtypes.f64)")
 
@@ -1469,11 +1469,11 @@ def r_nan5(+nm: String, +d: S.Dt, b: String, e: String, m: String, k: String, t:
     r("nan_m " ++ nm, U32.show(nan_m(d)), m), r("nan_mask " ++ nm, H.i64_dec(nan_mask(d)), k),
     r("nan_thr " ++ nm, H.i64_dec(nan_thr(d)), t)])
 
-# `nan_mask` AND `nan_thr` ARE 64-BIT ANSWERS AND THEY PRINT IN DECIMAL, so the two
+# `nan_mask` and `nan_thr` are 64-bit answers and they print in decimal, so the two
 # lanes of each row now AGREE with CPython's own integers.  They used to be U32s and
 # they used to differ: `nan_mask double` was 4294967295 where CPython says
 # 9223372036854775807, and `nan_thr double` was 0 where CPython says
-# 9218868437227405312.  **BOTH WERE THE SAME TRUNCATION** -- a U32 holding a 64-bit
+# 9218868437227405312.  BOTH WERE THE SAME TRUNCATION -- a U32 holding a 64-bit
 # mask -- and both are gone now, because the defs above compute in `H.I64` and
 # `H.i64_dec` prints the pair as the decimal CPython prints.
 def r_nans() -> String:
@@ -1483,8 +1483,8 @@ def r_nans() -> String:
     r_nan5("double", S.double(), "64", "11", "52", "9223372036854775807", "9218868437227405312")])
 
 # `getattr(dtypes, f"uint{bs}")` -- the bitcast TARGET of the whole rule.
-# THE `py=` HALVES HERE WERE THE C SPELLINGS (`unsigned int`, `unsigned short`,
-# `unsigned long`) AND THIS `tinygrad/` ANSWERS THE RUST ONES. Measured against
+# the `py=` halves here were the c spellings (`unsigned int`, `unsigned short`,
+# `unsigned long`) and this `tinygrad/` answers the rust ones. Measured against
 # `gates/wgsl_render_census-oracle.py`, which reads `DType.name` off the class:
 # `u32`, `u16`, `u64`. `selfcheck_hold()` re-derives the stale set on every run.
 def r_nan_uint() -> String:
@@ -1551,7 +1551,7 @@ def r_srneg(i: U32, +nm: String, got: String, py: String) -> String:
 # THE SEVENTEEN REFUSALS. Each `srneg` row drives the SAME body as the `sr` row
 # for the same rule, on a node CPython's `UPat` REJECTS -- the oracle asserts that
 # rejection with `UPat.match`, so the row's `py=[NOMATCH]` half is a refusal by
-# construction rather than a transcription. UNTIL THE PATTERNS LANDED THESE ROWS
+# construction rather than a transcription. until the patterns landed these rows
 # ANSWERED ANYWAY, and two of them answered WRONG: `srneg 14` is a PACKED store of
 # an ordinary CONST, `packed_rmw`'s `AND` is the whole of rule 14's pattern, and
 # `sr_rmw` emitted `atomicAnd(&B[1],W);` and DROPPED THE STORED VALUE; `srneg 15`
@@ -1561,7 +1561,7 @@ def r_srneg(i: U32, +nm: String, got: String, py: String) -> String:
 # is a CONST, the src count for the four that divide on arity -- and the body
 # answers `NOMATCH`, which is the word CPython's `None` is spelled.
 #
-# THE ARGUMENTS ARE THE POSITIVE ROW'S OWN, so a `srneg` row changes the NODE and
+# the arguments are the positive row's own, so a `srneg` row changes the node and
 # nothing else: the two rows for a rule differ only in whether the pattern would
 # have accepted what the body was handed.
 def r_srneg_0() -> String:
@@ -1590,7 +1590,7 @@ def r_sr_0() -> String:
     r_sr("neg", sr_neg(S.uint32(), "X"), "(0-X)"),
     r_sr("cbool 1", sr_cbool(S.boolean(), True{}), "true"), r_sr("cbool 0", sr_cbool(S.boolean(), False{}), "false")])
 
-# rules 3-4: the two CONST casts. THE FIXTURE IS THE WEAKINT CONST'S OWN VALUE AS
+# rules 3-4: the two CONST casts. the fixture is the weakint CONST's own value as
 # AN I64, SPELLED `hi:lo`, because that is the one representation that tells -1
 # from 4294967295 -- and the PINNED rule 3 renders BOTH of them `4294967295u`,
 # which is why the AXIS and not the rendering is what these rows carry.
@@ -1652,7 +1652,7 @@ def r_sr_12() -> String:
 # `rmw plain` node's stored value, which is why that row is a refusal and not a
 # second rendering.
 #
-# THE CAST CONSTRUCTOR AND THE INDEX CONSTRUCTOR ARE THE STORE'S BUFFER, and they
+# the CAST constructor and the INDEX constructor are the STORE's BUFFER, and they
 # are what the pinned rule-14 pattern discriminates on. `rmw nv` is CPython's OWN
 # `packed_store` output, whose buffer is `word = idx.cast(dtypes.uint32)` -- a
 # CAST -- so it IS rule 14. `rmw bare` is the same AND without the `new_v`, and
@@ -1775,7 +1775,7 @@ def main() -> IO(Unit):
 #   M53 ssimp walks ONE cast, not the chain       2  rk_sz mixed rk mixed
 #   M54 type_map's KeyError arm answers nothing   1  type_map double, via the PIN check
 #
-# M55-M63 ARE THE SEVENTEEN PATTERNS, one edit per DISCRIMINATING FIELD, and each
+# M55-M63 are the seventeen patterns, one edit per discriminating field, and each
 # moves EXACTLY ONE `srneg` row -- the row for the rule it breaks. MEASURED
 # 2026-10-14 on this tree, one row each, and they are what makes the seventeen
 # `NOMATCH`s load-bearing rather than seventeen tokens nobody could tell apart.
@@ -1816,7 +1816,7 @@ def main() -> IO(Unit):
 # answer to "an oracle that covers whatever the port happens to do is not an
 # oracle". P9 keeps the row COUNT at 207 and still goes red, by NAME.
 #
-# M51 IS THE ONE A READING MISSED AND A MUTATION CAUGHT. `sr_cuint`'s
+# M51 is the one a reading missed and a mutation caught. `sr_cuint`'s
 # `& 0xFFFFFFFF` is only observable on a weakint CONST whose HIGH WORD is set
 # and whose low word reads as non-negative; the original three axis rows all had
 # `hi == 0`, so replacing `masked(v)` with `v` left every one of them unchanged
@@ -1827,7 +1827,7 @@ def main() -> IO(Unit):
 # is observable on it too.
 #
 # ===========================================================================
-# THE PIN, AND THE THREE BLIND SPOTS IT OPENED.
+# the PIN, and the three blind spots it opened.
 #
 # `tinygrad/renderer/wgsl.py` MOVED under this port, and TWO of its changes
 # touch the rows: `string_rewrite`'s rule 3 lost its negative-const arm and
@@ -1838,8 +1838,8 @@ def main() -> IO(Unit):
 # W);` on the second -- so this file's `sr rmw bare` row is a REFUSAL now, and
 # `sr rmw nv` still renders the pair.
 #
-# THE THREE BLIND SPOTS ARE ALL THE SAME ONE: THE RULE-14 PREDICATE IS NOW THREE
-# CLAUSES AND NO FIXTURE ISOLATES THE SECOND. `sr_pick_store` and `sr_rmw` test
+# the three blind spots are all the same one: the rule-14 predicate is now three
+# clauses and no fixture isolates the second. `sr_pick_store` and `sr_rmw` test
 # the src COUNT, the VALUE's op (`Ops.AND`) and the BUFFER's op (`Ops.CAST`),
 # and the oracle's three rule-14 fixtures are `rmw nv` (AND, CAST), `rmw bare`
 # (AND, INDEX) and `rmw plain` (CONST, INDEX): every one of them is refused by
@@ -1849,7 +1849,7 @@ def main() -> IO(Unit):
 # fix -- a fourth rule-14 node whose buffer IS a CAST and whose value is NOT an
 # AND -- and it needs a row on both sides.
 #
-# P7 IS THE SAME SHAPE FROM THE OTHER END. Rule 3 renders a weakint CONST of -1
+# P7 is the same shape from the other end. Rule 3 renders a weakint CONST of -1
 # and one of 4294967295 as the SAME `4294967295u`, so drifting the `-1` axis
 # entry's high word changes no row: MEASURED, P7 moves 0 rows where it moved 1.
 # The AXIS still carries -1 because the WEAKINT value is still a different one,
@@ -1875,7 +1875,7 @@ def main() -> IO(Unit):
 # `atomicLoad`, the `atomicAnd`/`atomicAdd` read-modify-write -- was dead, because
 # no buffer a shader reads is a register. It typechecked. Every `pf_*` row, every
 # `wmask` row and all 100-odd other rows stayed green. Only `rk mixed` moved, and
-# only on ONE line of a 700-character module. THE FIXTURE CLASS THIS FILE WAS
+# only on one line of a 700-character module. the fixture class this file was
 # MISSING IS A PREDICATE WITH NO ROW: `is_packed` had none, so no mutation could
 # find it, and the 40 `is_packed`/`buf_map`/`packed_size` rows exist because of
 # that. M1 now moves 36.
@@ -1901,7 +1901,7 @@ def main() -> IO(Unit):
 #   case whose walk order DIFFERS from its sort order -- a `uops` list holding l1
 #   before l0 -- and then M20 says `2,8`. That is the brief's two-rules-claim-one-
 #   node trap in its purest form, and this table is the evidence that the trap is
-#   still open here. THE ORACLE HAS THE CASE and asserts it (`UOPS_MIXED_SWAPPED`
+#   still open here. the oracle has the case and asserts it (`UOPS_MIXED_SWAPPED`
 #   in `gates/wgsl_render_census-oracle.py`, whose `assert` names "the sort is not
 #   load-bearing"), so the gap is on the PORT's side only.
 #   M7 is the control: an edit that changes nothing must move nothing.

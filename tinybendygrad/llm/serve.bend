@@ -1,6 +1,6 @@
 # tinybendygrad/llm/serve.bend -- port of tinygrad/llm/serve.py
 #
-# **PARTIAL, AND THE SPLIT IS THE POINT.** `llm/serve.py` is 176 lines in four pieces:
+# partial, and the split is the point. `llm/serve.py` is 176 lines in four pieces:
 #
 #   1. `StreamRouter` -- PORTED HERE. A pure string state machine: it splits streamed text on
 #      `<think>` / `</think>` / `<tool_call>` and yields `(field, text)` deltas. No regex, no JSON, no I/O.
@@ -12,7 +12,7 @@
 #      mutable message representation; it ports with the JSON layer, not before it.
 #   4. `Handler` / `LLMServer` -- `http.server`, `uuid`, `time`, and `model.Transformer`. Not ported.
 #
-# ⇒ AND THE STATE MACHINE IS THE PIECE WITH A GATE. The port is PURE -- `route` returns the new `Router`
+# - and the state machine is the piece with a gate. The port is pure -- `route` returns the new `Router`
 # and the list of deltas instead of mutating and yielding -- because Bend has no mutable cell. That is a
 # representation change and NOT a behaviour change, and `gates/llm_serve_router-gate.py` proves it by
 # running upstream's `StreamRouter` beside this one over the same piece sequences.
@@ -105,7 +105,7 @@ def Router.split(+tag: String, +buf: String, +final: Bool) -> Split:
 
 # ===========================================================================
 # `serve.py:56-70` -- `route`. The yields become a LIST because the function is pure, and the DEFS ARE
-# ORDERED SO THAT NO TWO CALL EACH OTHER: Bend refuses mutual recursion (the same wall `run` in
+# ordered so that no two call each other: Bend refuses mutual recursion (the same wall `run` in
 # `ops_python.bend` hit), so the pipeline is written bottom-up -- content, then reason, then decide, then
 # the dispatch. Upstream gets away with one method because Python evaluates in sequence.
 # ===========================================================================

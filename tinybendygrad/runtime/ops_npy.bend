@@ -22,7 +22,7 @@
 # NpyDevice('NPY').renderers]` is `['Renderer']` and `renderers[0] is Renderer`.
 # That is the headline row of this file and it is one token of Python.
 #
-# THE SECOND THING THE FOUR LINES SAY, by what they DO NOT contain:
+# the second thing the four lines say, by what they do not contain:
 # `RDMADevice.__init__` (ops_rdma.py:70) calls `self._select_iface(device)`.
 # `NpyDevice.__init__` does not. So:
 #   * `self.iface` is never set, and `peer_group` (tinygrad/device.py:384 symbol=__init__) falls all the
@@ -35,12 +35,12 @@
 #   * `self.host` is device.py:418, `host_name(peer_group, HCQ_RUNTIME_DEV)`,
 #     which for a local peer group is the string "CPU".
 #   * `arch` is None, so `_select_renderer` (tinygrad/device.py:462 symbol=_select_renderer) passes NO `arch`
-#     kwarg at all: `**({"arch": self.arch} if self.arch else {})`.
+#     kwarg at all: `({"arch": self.arch} if self.arch else {})`.
 #   * `NpyDevice.ifaces` is `[]`, inherited from `Compiled` (tinygrad/device.py:363 symbol=ifaces).
 #
 # ===========================================================================
 # THE PORTABLE END-TO-END DEVICE. The brief asked for a judgement here and the
-# answer is YES, WITH ONE CORRECTION TO THE PREMISE.
+# answer is yes, with one correction to the premise.
 #
 # `ops_npy.py` does not touch numpy: `NpyDevice`'s storage is `mmap` and its
 # surface is `HostAllocator`'s, so "the whole surface is numpy files" is not
@@ -211,7 +211,7 @@ def Tr.emit(k: U32, arg: U32, t: Tr) -> Tr:
   match t:
     case Tr{calls, refused}: Tr.emit.go(refused, k, arg, calls)
 
-# A REFUSAL IS RECORDED AND IS ALSO THE THING THAT TRUNCATES. `calls` and
+# a refusal is recorded and is also the thing that truncates. `calls` and
 # `refused` are both read twice and both take `+`, and the `+refused` on the
 # parameter is what makes the entry survive on a trace that is already
 # refused -- which is the case ops_webgpu.bend found in itself and this file
@@ -689,7 +689,7 @@ def main() -> IO(Unit):
 # | M9 | the refusal ENTRY is guarded on `refused` as well | 2 | the arrangement `ops_webgpu.bend` found in itself: the failing call is recorded, so its own `refused` must still be False on entry. Guarding both would make every refusal vanish and `npy_alloc0_*` would read as "no refusal happened". |
 # | M10 | a comment-only edit | 0 -- THE CONTROL | a table with no row that CANNOT move is a table of coincidences. |
 #
-# WHAT THIS GATE STILL DOES NOT SEE, and it is a short list:
+# what this gate still does not see, and it is a short list:
 #
 #   1. THE ROUND TRIP ITSELF. The CPython oracle runs it -- allocate 12 bytes,
 #     write 0..11, read them back, compare -- and `npy_roundtrip=True` is printed

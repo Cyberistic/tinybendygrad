@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/support/c.bend -- tinygrad/runtime/support/c.py
 #
 # ===========================================================================
-# c.py IS A ctypes FILM. WHAT IS IN HERE, AND WHY IT IS NOT NOTHING.
+# c.py is a ctypes film. what is in here, and why it is not nothing.
 #
 # `c.py` is 142 lines and eleven of them are `import ctypes, functools, os,
 # pathlib, re, sys, sysconfig`. What it carries is the ALGEBRA A C STRUCT AND
@@ -17,7 +17,7 @@
 # Python, and a pure integer or string function here.
 #
 # ---------------------------------------------------------------------------
-# THE SIX THINGS MEASURED THAT NOBODY WOULD GUESS
+# the six things measured that nobody would guess
 #
 # 1. THE NO-STRUCT ARM THROWS AWAY `__idir`. `_do_ioctl` is
 #      `if __struct is None: return ioctl((__base<<8)|__nr, ...)`
@@ -42,7 +42,7 @@
 #    both 1 and `fl_found_paths_two_abs` is 0. `findlib.abs` is that
 #    three-way decision and it is four lines.
 #
-# 4. THE `emsg` DEFAULT AND THE ENV KEY DISAGREE ON A DASH. `findlib` reads
+# 4. the `emsg` default and the env key disagree on a dash. `findlib` reads
 #    `nm.replace('-','_').upper()+"_PATH"`, so `my-lib-x` is overridden by
 #    `MY_LIB_X_PATH`; `__init__`'s fallback message says
 #    `try setting MY-LIB-X_PATH?`. Two different keys for one variable, in one
@@ -61,7 +61,7 @@
 #    the zero-length array `Field._resolve` builds by hand.
 #
 # ---------------------------------------------------------------------------
-# THE BOUNDARIES OF THE ARITHMETIC, MEASURED NOT ASSUMED
+# the boundaries of the arithmetic, measured not assumed
 #
 # * `mask = (1 << bit_width) - 1` is exact in a `U32` for `bit_width <= 32`,
 #   and `bit_width == 32` lands on `(1<<32) & 0xFFFFFFFF == 0` so the answer
@@ -120,12 +120,12 @@ def H_ceildiv_u32(+num: U32, +amt: U32) -> U32:
 # ===========================================================================
 # c.py:6-18  `_do_ioctl`, `_IO`, `_IOW`, `_IOR`, `_IOWR`
 #
-#     def _do_ioctl(__idir, __base, __nr, __struct, __fd, *args, __payload=None, **kwargs):
+#     def _do_ioctl(__idir, __base, __nr, __struct, __fd, *args, __payload=None, kwargs):
 #       assert not WIN, "ioctl not supported"
 #       import tinygrad.runtime.support.system as system, fcntl
 #       ioctl = __fd.ioctl if isinstance(__fd, system.FileIOInterface) else functools.partial(fcntl.ioctl, __fd)
 #       if __struct is None: return ioctl((__base<<8)|__nr, __payload or (args[0] if args else 0))
-#       if (rc:=ioctl((__idir<<30)|(ctypes.sizeof(out:=(__payload or __struct(*args, **kwargs)))<<16)|(__base<<8)|__nr, out)):
+#       if (rc:=ioctl((__idir<<30)|(ctypes.sizeof(out:=(__payload or __struct(*args, kwargs)))<<16)|(__base<<8)|__nr, out)):
 #         raise RuntimeError(f"ioctl returned {rc}")
 #       return out
 #
@@ -146,7 +146,7 @@ def _do_ioctl(idir: U32, base: U32, nr: U32, size: U32, has_struct: Bool) -> U32
     case False{}:
       U32.or(U32.shln(base, 8n), nr)
 
-# THE FOUR CONSTRUCTORS DIFFER IN EXACTLY ONE FIELD, `__idir`, and `_IO` is the
+# the four constructors differ in exactly one field, `__idir`, and `_IO` is the
 # only one of the four that passes no struct. Read off the functools.partial.
 def _IO(base: U32, nr: U32) -> U32: _do_ioctl(0, base, nr, 0, False{})
 def _IOW(base: U32, nr: U32, size: U32) -> U32: _do_ioctl(1, base, nr, size, True{})
@@ -199,7 +199,7 @@ def Array_.getitem(typ: U32, n: U32, has_args: Bool) -> U32:
 #
 #     class Struct(ctypes.Structure):
 #       SIZE = 0
-#       def __init__(self, *args, **kwargs):
+#       def __init__(self, *args, kwargs):
 #         ctypes.Structure.__init__(self)
 #         for f,v in [*zip((rf[0] for rf in self._real_fields_), args), *kwargs.items()]: setattr(self, f, v)
 #       @classmethod
@@ -240,7 +240,7 @@ def Array_.getitem(typ: U32, n: U32, has_args: Bool) -> U32:
 type Field is Data:
   Field{typ: U32, off: U32, bit_width: U32, has_bit_width: Bool, bit_off: U32, name: String, idx: U32}
 
-# `SIZE` AND THE `_mem_` LENGTH ARE TWO FIELDS, NOT ONE, and the gate found it:
+# `SIZE` and the `_mem_` length are two fields, not one, and the gate found it:
 # `record` sets `_fields_` FROM `cls.SIZE` while `init_c_struct_t` sets
 # `_fields_` FROM `sz` and NEVER TOUCHES `SIZE`, so a class built by the second
 # has `SIZE == 0` and `sizeof == 8`. One field would have made one of the two
@@ -311,7 +311,7 @@ def Field.set_name.idx(has_real: Bool, n: U32) -> U32:
 def register_fields.idx(i: U32) -> U32: i
 
 # ---------------------------------------------------------------------------
-# M2 IS A THEOREM, AND IT IS MEASURED RATHER THAN ARGUED. These three defs and
+# M2 is a theorem, and it is measured rather than argued. These three defs and
 # their three rows exist only to say so.
 #
 # `__set_name__` appends only when `hasattr(owner, "_real_fields_")`, and then
@@ -788,7 +788,7 @@ def findlib.no_path_key(has_path: Bool) -> String:
     case False{}: "KeyError:'PATH'"
 
 # ===========================================================================
-# THE NAME CORRESPONDENCE, WHICH IS A CORRESPONDENCE AND NOT A SCORE.
+# the name correspondence, which is a correspondence and not a score.
 #
 # `python3 .agents/slop/slop_1to1.py --names` says: `upstream=18 bend=55
 # verbatim=10 local=45`. The `10` is NOT a 55% score and the `45` is NOT sloppiness:
@@ -862,7 +862,7 @@ def findlib.no_path_key(has_path: Bool) -> String:
 # fixtures that took a whole debugging pass each (`getenv`'s `functools.cache`
 # and `findlib` naming `p` rather than `nm`).
 #
-# `b2s` IS THE ROW FORMATTER AND `u32_hex` IS THE WIDTH-8 HEX, because
+# `b2s` is the row formatter and `u32_hex` is the width-8 hex, because
 # `ioctl_none_ord_A_11=00004111` is a number in hex and every other `so_*` and
 # `bf_set_*` row is a byte string in hex. A count row is never emitted.
 # ===========================================================================
@@ -943,7 +943,7 @@ def mem_a001() -> List<&2, U32>: [1, 0, 240, 0, 0, 0, 0, 0]
 
 # THREE ROWS OVER ONE `_real_fields_`, each a reader per element.
 #
-# `List.map` IS NOT USABLE HERE AND THE REASON IS WORTH WRITING DOWN:
+# `List.map` is not usable here and the reason is worth writing down:
 # `List.map(~A, ~B, ~f, xs) -> List<B>` returns a `List<&1, B>` -- a LINEAR list
 # -- and there is no `List` def in base.bend that widens `&1` to `&2`. Measured:
 # `String.join(List.map(Field, String, ..., fs), ",")` answers "expected :
@@ -994,7 +994,7 @@ def Struct.init_row(+s: Struct, args: List<&2, U32>, kwn: String, kwv: U32) -> S
   Struct.init_row.put(s, Struct.init(s, mem_hex.zeros(Struct.mem_len(s)), args, kwn, kwv))
 
 # `SIZE, sizeof, _fields_[0][0], _fields_[0][1]._length_` -- `record`'s own four.
-# THE FIRST DRAFT OF THIS ROW WAS THREE LITERAL `8`s AND NO CALL TO `record`, so
+# the first draft of this row was three literal `8`s and no call to `record`, so
 # it restated the fixture instead of testing `Struct.of`. The M7 mutation
 # (`Struct.of` writing 0 into `SIZE`) moved NOTHING, and that zero is what said
 # so. A row whose expected value is a constant in the row is not a test.
@@ -1053,7 +1053,7 @@ def libpaths_unknown() -> String: String.join(findlib.prefixes("", Nil{}, Nil{},
 def so_row(p: String, name: String, m0: U32, m1: U32, m2: U32, m3: U32) -> String:
   b2s(Bool.and(findlib.so_ok(p, name), findlib.elf_ok(m0, m1, m2, m3)))
 
-# DOES THE SEARCH REACH THE PREFIX LOOP? `findlib.abs` is 0 for `continue`, 1
+# does the search reach the prefix LOOP? `findlib.abs` is 0 for `continue`, 1
 # for `return p` and 2 for "search", and the loop body -- the whole `libpaths`
 # walk -- is only reachable on 2. So the row is a fold over the `paths` entries.
 def findlib.reaches.go(+ds: List<&2, U32>, seen: Bool) -> Bool:
@@ -1219,7 +1219,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["arr_default_type_length=", arr_default_row()]))
     _ : Unit <- IO.print(String.concat(["arr_getitem_zero_len=", U32.show(Array_.getitem(4, 0, True{}))]))
     _ : Unit <- IO.print(String.concat(["arr_getitem_is_product=", Array_.getitem_row(True{}, 4, 3)]))
-    # A `do IO<Unit>:` BODY ENDS WITH A BARE TERM (convention 7), so the LAST
+    # a `do IO<Unit>:` body ends with a bare term (convention 7), so the last
     # row of the file is the one statement with no `_ : Unit <-` in front of it.
     # MEASURED, and the failure mode is worth recording: a trailing `<-` binding
     # does not report itself. It reports "expected : a term / observed : end of
@@ -1303,10 +1303,10 @@ def main() -> IO(Unit):
 # removing its `+` is not a behaviour change, it stops the file compiling. M6b is the
 # behavioural half and it moves `ics_sizes` and `ics_size_attr_stays_0`.
 #
-# M11 IS THE SECOND OF THE TWO UNMASKED-BYTE BUGS IN THIS FILE AND IT IS NOT A THEOREM:
+# M11 is the second of the two unmasked-BYTE bugs in this file and it is not a theorem:
 # dropping the `& 255` from byte 0 moves three rows, because `U32.shrn(x, 0n)` is `x`.
 #
-# M18 AND M19 ARE THE TRAP THIS PROJECT PAID FOR TWICE. Each rewrites a CHARACTER
+# M18 and M19 are the trap this project paid for twice. Each rewrites a character
 # INSIDE A STRING LITERAL -- M18 changes `nope` to `nop3`, M19 DELETES the emsg from the
 # message. In both cases the row COUNT is unchanged at 129 and only a byte diff sees it,
 # which is exactly how `renderer/tc_ptx.bend` shipped `"mov.b32 %r0, %r1;"` corrupted to

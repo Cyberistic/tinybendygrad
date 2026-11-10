@@ -1,22 +1,22 @@
 # codegen/late/linearizer.bend -- port of tinygrad/codegen/late/linearizer.py
 #
-# ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH. This was `codegen/late.bend`
+# one BEND file per upstream .py, at the same path. This was `codegen/late.bend`
 # until the 1:1 ruling; `codegen/late/regalloc.bend` and `codegen/late/gater.bend` are
 # the other two slices, the rows are the SAME rows, and 128 before the split is 128
 # across the three after it.
 #
-# THIS FILE ALSO CARRIES THE SHARED SUBSTRATE. `linearizer.py` needs an assoc list
+# this file also carries the shared substrate. `linearizer.py` needs an assoc list
 # (`out_degree`, `priorities`, `nkey`, `CFGContext.deps`, `CFGContext.nesting`) and so
 # does every other table in the lowerer, and Bend's `Map` is string-keyed only while
 # all seven of regalloc's dicts are `U32`-keyed -- so ONE `RaTb` serves them all. It
 # has no upstream counterpart, so it lives in the FIRST of the three files in Python's
 # order and `regalloc.bend` imports it as `LT`. `gater.bend` needs none of it.
 #
-# THE DEF-BY-DEF MAP FOR ALL THREE FILES follows, whole; each of the other two points
+# the DEF-by-DEF map for all three files follows, whole; each of the other two points
 # back at it rather than repeating it.
 #
 # `regalloc.py:69`'s `assert` -- bend has no assert form and no row can see an assert
-# fire. TWO VALUES ARE ALSO NOT CARRIED and both are named below: `Register.size`
+# fire. two values are also not carried and both are named below: `Register.size`
 # (W5, unobservable because `Register.__repr__` is the name) and the three renderer
 # hooks' own bodies (`assign_spill_slot`, `fill`, `spill`), which are
 # `NotImplementedError` in tinygrad's own base class and which the ORACLE supplies.
@@ -72,9 +72,9 @@
 #                         from_index                                     gt_ops0..5
 #
 # ---------------------------------------------------------------------------
-# WHY THIS UNIT IS THE TAIL OF THE LOWERER, and what that buys it. `linearizer`
+# why this unit is the tail of the lowerer, and what that buys it. `linearizer`
 # folds the axis structure, `regalloc` assigns registers and `gater` decides
-# which branches survive. All three are PURE FUNCTIONS OF THE KERNEL'S UOP LIST,
+# which branches survive. All three are pure functions of the kernel's uop list,
 # so a CPython oracle can be handed the same inputs and the two lanes diffed row
 # for row -- there is no device, no driver and no codegen cache in the way.
 # `regalloc`'s two renderer hooks are the exception and are named below.
@@ -149,7 +149,7 @@
 # same order, so
 #   diff <(.venv/bin/python gates/linearizer_census-oracle.py) <(./bin/bend tinybendygrad/codegen/late/linearizer.bend)
 # is the acceptance test and NEITHER side can be nudged to match the other.
-# **BOTH SIDES OF THAT LINE WERE WRONG AND THE ORACLE IS NOW NAMED.** It read
+# both sides of that line were wrong and the oracle is now named. It read
 # `python3 /tmp/opencode/late-oracle.py`, which has never existed, against
 # `tinybendygrad/codegen/late.bend`, which the port moved INTO `late/` as this file --
 # MEASURED 2026-10-16: `late-oracle.py` is absent at every path on every ref
@@ -170,7 +170,7 @@ import ./../../uop/fold.bend as F
 import ./../kernel.bend as KER
 
 # ===========================================================================
-# ONE ASSOC LIST FOR EVERY TABLE IN THE FILE. `v` is a scalar answer and `vs` a
+# one assoc list for every table in the file. `v` is a scalar answer and `vs` a
 # list answer, and a FLAT PAIR LIST for the two `dict[int, dict[Register,
 # Register]]` tables (regalloc.py:34-35) where `[v,r,v,r,...]` is the inner dict.
 #
@@ -246,7 +246,7 @@ def tb_vs(+t: RaTb, k: U32) -> List<&2, U32>:
 def tb_ins.cat(pre: Bool, +old: List<&2, U32>, +vs: List<&2, U32>) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, pre, List.append(&2, U32, vs, old), List.append(&2, U32, old, vs))
 
-# THE MISS ARM APPENDS and the hit arm REWRITES IN PLACE, which is what keeps a
+# the miss arm appends and the hit arm rewrites in place, which is what keeps a
 # key at its first-insertion position; and the miss arm MUST carry the whole
 # walked prefix, not the tail. Returning the tail is a `del` -- and a silent one,
 # because the table still answers `1` for the key that survived and only the keys
@@ -638,7 +638,7 @@ def lt_nkey(srt: List<&2, LtKey>, u: U32) -> U32:
   lt_nkey.go(srt, 0, u)
 
 
-# W1 AGAIN, AND THIS TIME IT IS THE PASS'S OWN CALLER. `vms` is ONE flat list of
+# W1 again, and this time it is the pass's own caller. `vms` is one flat list of
 # `vmax`es for the WHOLE walk, LENGTH-PREFIXED per list position:
 #
 #     vms = [ n0, v0, ..., v_{n0-1}, n1, v0, ..., ... ]
@@ -720,7 +720,7 @@ def lt_keys(+ar: O.Arena, lst: List<&2, U32>, vms: List<&2, U32>) -> List<&2, Lt
 # of them was in the right relative order. That is the worst shape of bug --
 # right prefixes, wrong count, no error.
 #
-# SO THE QUEUE IS THE STATE and the fuel is THE QUEUE'S LENGTH, which is why
+# so the queue is the state and the fuel is the queue's length, which is why
 # `rem` is `List.length(HP.heap(h))` and not a bound: the `0n` arm IS the `while
 # heap:` test. A queue that GROWS cannot be a Bend self-call's shrinking first
 # argument, so it travels inside a `Data` record and only `rem` decreases.
@@ -922,7 +922,7 @@ def lt_fix() -> KER.K:
 def lt_lst() -> List<&2, U32>:
   [1, 2, 7, 8, 9, 11, 12, 5, 6, 16, 17, 3, 4, 10, 14, 15, 18, 13, 19]
 
-# THE IDENTITY SINK'S TOPOSORT: `SINK(CALL(STORE, ADD))` under
+# the identity sink's toposort: `SINK(CALL(STORE, ADD))` under
 # `enter_calls=False`, so the CALL's `src[0]` is NOT walked and the STORE and the
 # PARAM are absent. Six nodes, all rc=1, and the sort is already in nkey order --
 # so the heap loop must emit it unchanged. It is also the ONLY test of
@@ -938,13 +938,13 @@ def lt_vm_call() -> List<&2, U32>:
   [0, 0, 0, 0, 0, 0]
 
 # ===========================================================================
-# THE GATE, PART ONE: the linearizer. Every row is DERIVED FROM PYTHON by
+# the gate, part one: the linearizer. Every row is derived from python by
 # /tmp/opencode/late-oracle.py, which drives tinygrad/codegen/late/linearizer.py
 # over this exact fixture and prints its rows in THIS ORDER and with THIS
 # SPELLING, so
 #   diff <(.venv/bin/python gates/linearizer_census-oracle.py) <(./bin/bend tinybendygrad/codegen/late/linearizer.bend)
 # is the acceptance test and NEITHER side can be nudged to match the other.
-# **BOTH SIDES OF THAT LINE WERE WRONG AND THE ORACLE IS NOW NAMED.** It read
+# both sides of that line were wrong and the oracle is now named. It read
 # `python3 /tmp/opencode/late-oracle.py`, which has never existed, against
 # `tinybendygrad/codegen/late.bend`, which the port moved INTO `late/` as this file --
 # MEASURED 2026-10-16: `late-oracle.py` is absent at every path on every ref
@@ -1020,7 +1020,7 @@ def lt_srcs(+ar: O.Arena, ix: List<&2, U32>) -> String:
   String.join(lt_srcs.go(ar, ix, Nil{}), " ")
 
 # ===========================================================================
-# `lin_edg` -- THE EDGE LIST, IN THE DECLARED TOPOSORT'S OWN POSITIONS. THIS IS
+# `lin_edg` -- the edge list, in the declared toposort's own positions. this is
 # THE ROW `lin_srcs` COULD NOT BE.
 #
 # The defect, measured and not argued. `lt_lst()` and `lt_vm_lst()` are LITERALS
@@ -1143,7 +1143,7 @@ def lt_rc_max() -> U32:
 def lt_rc_big() -> U32:
   lt_rc([63, 63, 63])
 
-# `po_*` -- ONE ROW PER ARM OF THE LADDER, because a mutation dropping one arm of
+# `po_*` -- one row per arm of the ladder, because a mutation dropping one arm of
 # a disjunction moves only the row for that arm (`k_alu_recip`'s lesson).
 # `po_bufl` and `po_bufg` are the two halves of `linearizer.py:27`'s conditional.
 def lt_po_op2(local: Bool) -> U32:
@@ -1313,13 +1313,13 @@ def lt_exmix.pair(+done: List<&2, LtKey>, +e: LtKey, n: U32) -> U32:
     case Nil{}    : n
     case +d <> +r : lt_exmix.pair(r, e, U32.add(n, b2u(lt_exmix.hit(d, e))))
 
-# THE WALK LIST IS THE FIRST PARAMETER and the accumulator is second, so the
+# the walk list is the first parameter and the accumulator is second, so the
 # self-call's shrinking argument -- the tail -- is first and the GROWING list
 # (`done`) is second. That is the notes' rule 5 read left to right, and it is
 # also why this is not the same shape as `lt_ties.go` above: two accumulators
 # cannot both be parameters after the tail, so the new `done` is a computed
 # argument and the decrease check only ever sees the tail.
-# THE CALL MUST PASS THE SORT FIRST. `lt_exmix.go(Nil{}, lt_srt(), 0)` TYPECHECKS
+# the call must pass the sort first. `lt_exmix.go(Nil{}, lt_srt(), 0)` typechecks
 # -- both parameters are the same type -- and answers 0 because the walk list is
 # empty, so the row was green and MEASURING NOTHING. Two same-typed parameters in
 # a fold are a silent swap, and the row that catches one COUNTS a difference
@@ -1349,7 +1349,7 @@ def lt_srt_call_idx() -> List<&2, U32>:
 # ===========================================================================
 # `CFGContext` -- linearizer.py:53-81, and `pm_add_control_flow` :83-85.
 #
-# THE THREE TABLES ARE ONE RECORD. `deps` is a U32 -> SET OF U32 map, `nesting`
+# the three tables are one record. `deps` is a U32 -> set of U32 map, `nesting`
 # and `edges` are U32 -> U32 maps, all three are `RaTb`, and all three are keyed
 # by an arena index -- which is why `Cfg` is a two-field `Data` record and not
 # three parameters every call site has to keep in step. The walk is
@@ -1804,7 +1804,7 @@ def se_cnt(rest: List<&2, O.Node>, +n: U32) -> U32:
     case Nil{}    : n
     case +d <> +r : se_cnt(r, Bool.pick(U32, lt_is_end(O.Node.op(d)), U32.add(n, 1), n))
 
-# AND MINUS THE ONE END THE FIXTURE STARTED WITH, because the arena is walked, not
+# and minus the one end the fixture started with, because the arena is walked, not
 # the graph: `e` is not in `ret`'s toposort but it IS in the arena.
 def se_len(+se: Se, skip: U32) -> U32:
   U32.sub(se_cnt(O.Arena.nodes(Se.ar(se)), 0), skip)

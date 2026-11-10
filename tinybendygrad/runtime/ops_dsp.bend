@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/ops_dsp.bend -- port of tinygrad/runtime/ops_dsp.py
 #
-# THE GENERIC C-BACKEND-FOR-A-DSP WRAPPER. ops_dsp.py is 292 lines and almost none
+# the generic c-backend-for-a-dsp wrapper. ops_dsp.py is 292 lines and almost none
 # of them are DSP-specific arithmetic: it is a ClangRenderer subclass that emits a
 # Hexagon `entry` shim, a fastrpc argument packer, an ION/mmap allocator, a clang
 # invocation, and a `threading.Thread` that emulates fastrpc's file system on the
@@ -106,7 +106,7 @@
 #    TODO(p3) runtime/ops_dsp.py:132  symbol=__init__ -- os.open('/dev/ion').
 #    TODO(p3) runtime/ops_dsp.py:172  symbol=init_dsp -- os.open('/dev/adsprpc-smd').
 #
-# 3. THE RPCListener's HOST FILE SYSTEM AND ITS OBJECT WALK (:199-238). The DSP
+# 3. the RPCListener's host file system and its object walk (:199-238). The dsp
 #    asks the HOST for these over the listener socket; this file implements
 #    fastrpc's file system in python so the shell image can be paged in. The sc
 #    DISPATCH TABLE, the seven arms' argument counts, the 8-byte object alignment
@@ -137,7 +137,7 @@
 # -- ops_dsp.py needs no dtype conversion, only dtype NAMES.
 #
 # ===========================================================================
-# THE HEART OF IT: FOUR PURE FUNCTIONS OF A DTYPE.
+# the heart of it: four pure functions of a dtype.
 #
 # The brief named `to_scalar`/`from_scalar` as this file's centre. MEASURED:
 # NEITHER EXISTS anywhere in tinygrad -- `rg -n "to_scalar|from_scalar" tinygrad/`
@@ -169,7 +169,7 @@
 #                      the byte SIZE and not the value.
 #
 # ===========================================================================
-# THE ARGUMENT TRACE, :62-70. THE DEVICE CONTRACT SIX OTHER UNITS ARE PORTING.
+# the argument trace, :62-70. the device contract six other units are porting.
 #
 # `DSPProgram.__call__` packs ONE 8-byte-aligned block for the whole call:
 #
@@ -212,13 +212,13 @@
 #     `has_share` and `share_handle` propagate and a MOCKDSP view stays share-less.
 #   * `recycled` (device.bend, from tinygrad/device.py:280) is the eviction policy, and -- upstream's `BufferSpec(nolru=True)` is in `__init__`
 #     ops_dsp.py:135 allocates the fastrpc shell with `BufferSpec(nolru=True)`, so
-#     the NEGATIVE CASE IS IN THIS FILE'S OWN CODE and not a fixture invented for
+#     the negative case is in this file's own code and not a fixture invented for
 #     it. `dsp_norecycle_nolru` and `dsp_recycle_plain` are the same row family with
 #     opposite answers at the SAME size, which is the only way a wrong eviction
 #     cannot pass by accident.
 #
 # ===========================================================================
-# THE KERNEL NAME, :143. A STRING ROW, NEVER A BOOLEAN ABOUT A STRING.
+# the kernel name, :143. a string row, never a boolean about a string.
 #
 #   fp = "file:///tinylib?entry&_modver=1.0&_dom=cdsp\0"
 #
@@ -230,13 +230,13 @@
 # silently, so `dsp_fp_*` and `dsp_link_script` diff the STRING itself.
 #
 # ===========================================================================
-# NO DSP AND NO ION IN THIS ENV. `Device['DSP']` needs /dev/ion and
+# no dsp and no ion in this env. `Device['DSP']` needs /dev/ion and
 # `/dsp/cdsp/fastrpc_shell_3` does not exist, so NOTHING here was measured against
 # a live DSP. Every constant and every `py=` expectation was produced by CALLING
 # CPython -- see `.agents/slop/dsp_oracle.py`, which GENERATES the expectations. No
 # expectation in this file was typed by hand.
 #
-# TWO MEASURED FACTS WORTH THEIR OWN ROWS:
+# two measured facts worth their own rows:
 #
 #   * `ClangRenderer(Target("DSP","CLANG","hexagonv65,hexagonv65"))` RAISES
 #     `RuntimeError: unsupported arch: 'hexagonv65'` from ClangCompiler (tinygrad/runtime/support/compiler_cpu.py:15).
@@ -455,7 +455,7 @@ def dt_cname_dt(d: S.Dt) -> String:
 # :261,:265 and :271 all make, and it decides whether the entry shim reads a SIZE
 # or a VALUE out of the same 8-byte slot.
 #
-# IT CARRIES THE DTYPE, NOT ITS NAME. It carried `cn: String` -- a dtype NAME -- and
+# it carries the dtype, not its name. It carried `cn: String` -- a dtype name -- and
 # every consumer fed it straight to `dt_cname` / `dt_itemsize`, both of which were
 # ladders keyed on that name. So a dtype rename made eleven `dt_fmt` rows print the
 # EMPTY STRING where CPython prints `b`/`e`/`f`/`d`, and it was invisible: the gate
@@ -483,7 +483,7 @@ def Param.numel(p: Param) -> U32:
     case Param{is_alu, dt, numel}: numel
 
 # ===========================================================================
-# THE FIXTURES. THE DTYPE IS AN `S.Dt`, BUILT BY `LAWS/spec.bend`'s OWN CONSTRUCTOR,
+# the fixtures. the dtype is an `S.Dt`, built by `LAWS/spec.bend`'s own constructor,
 # so a fixture cannot name a dtype that does not exist.
 def fx.g(dt: S.Dt, numel: U32) -> Param: Param{False{}, dt, numel}
 def fx.a(dt: S.Dt, numel: U32) -> Param: Param{True{}, dt, numel}
@@ -628,7 +628,7 @@ def Tr.args(k: U32, +cs: List<&2, Call>) -> List<&2, U32>:
 
 def cargs(k: U32, t: Tr) -> List<&2, U32>: Tr.args(k, Tr.calls(t))
 
-# THE FUEL IS THE TRACE LENGTH AND THE ANSWER IS `at == patlen`. With the fuel set
+# the fuel is the trace length and the answer is `at == patlen`. With the fuel set
 # to the PATTERN length instead, `case 0n:` fires after patlen trace entries and
 # returns True without ever looking at `at`, so a reversed pattern matches and a
 # pattern longer than the trace matches too. That bug was MEASURED in
@@ -707,7 +707,7 @@ def entry.method_ok(sc: U32) -> Bool: U32.is_eq(sc_method(sc), M_INVOKE())
 # because there is no string to print. `dsp_fmt_nones` pins how many there are.
 def dt_fmt_none() -> String: ""
 
-# KEYED ON `cls` AND `bits` -- A `Data` TAG AND A NUMBER -- NEVER ON A NAME. This ladder
+# keyed on `cls` and `bits` -- a `Data` tag and a number -- never on a name. This ladder
 # WAS keyed on names, and 793abbb renamed them: eleven `dt_fmt` rows printed the EMPTY
 # STRING where CPython prints `b`/`e`/`f`/`d`, and nothing noticed, because the gate
 # carried the expectation in a COMMENT. A name-keyed arm is a silent fall-through
@@ -756,7 +756,7 @@ def dt_has_fmt_dt(d: S.Dt) -> Bool: Bool.not(String.eq(dt_fmt_dt(d), dt_fmt_none
 # wider than a slot, which is exactly why the "high bytes untouched" claim below
 # needs a dtype it cannot reach.
 #
-# A NINETEEN-ARM NAME TABLE WAS HERE. It is `(bitsize + 7) // 8`, which is dtype.py's
+# a nineteen-arm name table was here. It is `(bitsize + 7) // 8`, which is dtype.py's
 # own `DType.itemsize` PROPERTY -- measured on all twenty: void 0, bool 1, the four
 # 8-bits 1, the four 16-bits 2, the four 32-bits 4, the four 64-bits 8, weak 100. So
 # this is arithmetic on `bits` and a table was twenty opportunities to be wrong.
@@ -768,7 +768,7 @@ def dt_itemsize_dt(d: S.Dt) -> U32:
 # the TWO extra keys ops_dsp.py:15 adds. MEASURED: `ClangRenderer.type_map` has
 # exactly two keys, `bool` and `half`, so both additions are new entries and neither
 # is a correction.
-# KEYED ON `cls`/`bits`/`pri`, and it is a TOTAL FOURTEEN-ENTRY TABLE with NO FALLBACK.
+# keyed on `cls`/`bits`/`pri`, and it is a total fourteen-entry table with no fallback.
 # It HAD a `case _: nm`, and that is wrong twice over: `cstyle.py:30` is
 # `self.type_map[dtype]` -- a KEY LOOKUP that RAISES, not `.get(dt, dt.name)` -- and the
 # `nm` it fell back to was a dtype NAME, which since 793abbb is `i8` and not the C
@@ -789,7 +789,7 @@ def dt_cname_global(+is_alu: Bool, +d: S.Dt) -> String:
 # dtypes, a hexagon arch gives 12, and DSP gives 12 on BOTH -- so the arch test is
 # irrelevant here, and the `dtypes.bf16` in :46 is the WHOLE difference on x86
 # and a NO-OP on hexagon. `dsp_sdtype_n` plus `dsp_sdtype_x86_drop` pins that.
-# BOTH DROPS ARE STRUCTURAL, `(cls, bits, pri)` AND NOTHING ELSE. They were
+# both drops are structural, `(cls, bits, pri)` and nothing ELSE. They were
 # `dt_is_fp8("fp8e4m3")` and `String.eq(nm, "__bf16")` -- NAME TESTS on strings that
 # `LAWS/spec.bend` had already renamed, so BOTH ANSWERED FALSE for a real dtype and
 # `dsp_sd_drop_fp8` printed False where CPython drops. Measured: `dtypes.bf16 in
@@ -1422,7 +1422,7 @@ def compile_cmd(+mock: Bool, +cc: String) -> String:
 
 
 # ===========================================================================
-# DSPDevice, :128-176. THE INIT SEQUENCE AND THE THREE LIB CALLS.
+# DSPDevice, :128-176. the init sequence and the three lib calls.
 # ===========================================================================
 
 # :129 `if getenv("MOCKDSP"):` -- ONE branch, and it selects FOUR things at once:
@@ -1576,7 +1576,7 @@ def dev.exec_lib(+sc: U32, fail_first: Bool, fail_second: Bool, +t: Tr) -> Tr:
 
 
 # ===========================================================================
-# RPCListener, :178-239. THE sc DISPATCH AND THE ARGUMENT LAYOUTS.
+# RPCListener, :178-239. the sc dispatch and the argument layouts.
 # ===========================================================================
 
 # :185 `context, status, TINYFD = 0, 0xffffffff, 0xffff`.
@@ -1596,7 +1596,7 @@ def RPC_GREET_IS_EXEC() -> Bool: U32.is_eq(RPC_GREET(), rpc_sc(M_INVOKE(), 2, 1,
 # :213-238. The chain's ORDER is not the numeric order, so `rpc.arm` is a table and
 # `dsp_rpc_arms` is its image.
 #
-# THE SEVEN LITERALS, READ OUT OF UPSTREAM'S OWN SOURCE at
+# the seven literals, read out of upstream's own source at
 #   :213 `if sc == 0x20200: pass`          :213  0x0020200
 #   :214 `elif sc == 0x13050100: # open`   :214  0x13050100
 #   :217 `elif sc == 0x3010000:`           :217  0x03010000
@@ -3909,7 +3909,7 @@ def t_entry() -> IO(Unit):
 
 
 
-    # THE agga FIXTURE -- ALU, GLOBAL, GLOBAL, ALU. The index is the PARAM index.
+    # the agga fixture -- alu, global, global, alu. The index is the PARAM index.
     
     
     
@@ -6456,7 +6456,7 @@ def main() -> IO(Unit):
 # | | | moved: dsp_rpc_msg_ix |
 # | M99 | 0 | THE CONTROL: a comment-only edit. A table with no row that CANNOT move is a table of coincidences. |
 #
-# THE SIX REAL BUGS THIS GATE FOUND IN ITS OWN FIRST RUN, each of which a
+# the six real bugs this gate found in its own first run, each of which a
 # hand-typed expectation would have agreed with:
 #
 #   1. `attrs_of` wrote the DMA head and the BUF tail (M3, 4 rows). `List.append(a,
@@ -6474,7 +6474,7 @@ def main() -> IO(Unit):
 #      in REVERSE (M31, M32). Found only because `dsp_link_script` diffs all
 #      SEVENTEEN lines of the script against CPython's own string.
 #
-# WHAT THIS GATE STILL DOES NOT SEE, and it is a short list:
+# what this gate still does not see, and it is a short list:
 #
 #   1. `Tr.emit`'s GUARD IS ALMOST UNREACHABLE. The port models a device error by
 #      choosing a different arm in `exec_once` (:154-164's except), not by setting

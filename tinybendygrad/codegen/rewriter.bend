@@ -31,7 +31,7 @@
 # exist. The precedent is `codegen/kernel.bend`, which is `codegen/__init__.py` and
 # hosts the twin `Ker` answer and the `kn_*` readers for exactly this reason:
 # `codegen/late/*.bend` imports it as `KER`. `codegen/late/regalloc.bend`'s header
-# calls the arrangement "THE SHARED SUBSTRATE IS IMPORTED, NOT COPIED" and this
+# calls the arrangement "the shared substrate is imported, not copied" and this
 # file is the same shape one level up.
 #
 # IT IS IMPORTED, NOT COPIED. Every use in the three files is `RW.<name>`, and a
@@ -56,7 +56,7 @@
 # `upat.py` emits.
 #
 # ---------------------------------------------------------------------------
-# THE UNIT WAS NAMED `kernel.py` + `rewriter.py`. NEITHER FILE EXISTS in this
+# the unit was named `kernel.py` + `rewriter.py`. neither file exists in this
 # tinygrad. `codegen/` here is a PACKAGE -- there is no `kernel.py` and no
 # `rewriter.py`, and `find tinygrad -name kernel.py` finds only
 # `extra/thunder/tiny/tk/kernel.py`, which is a Thunder TK harness and not the
@@ -79,7 +79,7 @@
 
 # ---------------------------------------------------------------------------
 # THE WALL, stated once and honestly, because it is ONE wall and it is not in
-# this file: **`UOp.ranges` is not ported.** fold.bend:5118 symbol=UOp.ranges marks
+# this file: `UOp.ranges` is not ported. fold.bend:5118 symbol=UOp.ranges marks
 # `ops.py:465 _ranges` and `ops.py:497 ranges` P3, and says why: `_ranges` is a
 # `dict[UOp, None]`, i.e. a SET, taken as the union of the srcs' `ranges` minus
 # the union of the `ended_ranges`'. That is set union followed by set difference
@@ -218,7 +218,7 @@ def rw_ranges(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, U32>>:
   rw_ranges.go(rw_is(ar, i, O.OpsRANGE{}), ar, i)
 
 # ===========================================================================
-# THE REMAINING TABLES: their LENGTH and their `ops` KEY are exact, their BODIES
+# the remaining tables: their length and their `ops` key are exact, their bodies
 # are not ported. Each is listed with the Python line that builds it and the wall
 # that stops its rules, so the table set is a real inventory rather than a claim
 # that nothing else exists. `ops` is `pdict`'s key -- the op set the pattern claims
@@ -238,7 +238,7 @@ def rw_ranges(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, U32>>:
 #   pm_group_gpudims          3   dicts + ssimplify + ctx      gpudims.py:101
 #   pm_range_to_special       2   PORTED, see below + pm_split_ends
 #
-# THE LAST TWO ROWS ARE THE HEAD NAMES. `pm_add_gpudims` was RENAMED
+# the last two rows are the HEAD names. `pm_add_gpudims` was renamed
 # `pm_group_gpudims` and `pm_range_to_special` was ADDED, and the difference
 # matters: the rename is 3 rules at BOTH ends with the SAME `ops` in the same
 # order, so `gd_len` does not move and re-pointing the name is the whole of the
@@ -248,7 +248,7 @@ def rw_ranges(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, U32>>:
 # `pm_split_ends` is linearizer.py's and linearizer.py is NOT MINE, so only its
 # LENGTH is claimed.
 #
-# THE TWO COMPOSITE NUMBERS ARE WORTH THE TROUBLE, because a table built with `+`
+# the two composite numbers are worth the trouble, because a table built with `+`
 # hides how much of it is the author's and how much is inherited:
 # `pm_reduce_collapse` is `pm_reduce_unparented + 6 rules + symbolic`, so its own
 # count is 7 and its LENGTH is 130 with `symbolic`'s 123. Reading 130 as "130

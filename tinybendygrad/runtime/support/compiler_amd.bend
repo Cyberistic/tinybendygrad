@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/support/compiler_amd.bend -- port of tinygrad/runtime/support/compiler_amd.py
 #
 # ===========================================================================
-# WHAT A BEND FILE CAN REACH, MEASURED, BECAUSE IT DECIDES WHAT THIS FILE IS.
+# what a BEND file can reach, measured, because it decides what this file is.
 #
 # The scope note for this unit asserted "bend 2.0.34 has no exec and no
 # process spawn". THE FIRST HALF IS WRONG. It was measured rather than believed,
@@ -51,7 +51,7 @@
 # both lanes -- the `ops_webgpu.bend` lane, not the `dtype.bend` one.
 #
 # ===========================================================================
-# THE MEASUREMENT THAT DELETED A FAMILY OF BUGS, and it belongs at the top
+# the measurement that deleted a family of bugs, and it belongs at the top
 # because it changed what got written rather than only how.
 #
 # `set_options` (:32) is `options.split(b' ')` and `IR3Compiler`/`QCOMCompiler`
@@ -184,7 +184,7 @@ def A.act_link() -> U32: 9
 def A.act_compile() -> U32: 15
 
 # ===========================================================================
-# :4-10  THE comgr VERSION SWITCH AND ITS ASSERT.
+# :4-10  the comgr version switch and its assert.
 #
 #     if major.value >= 3:
 #       import tinygrad.runtime.autogen.comgr_3 as comgr
@@ -214,7 +214,7 @@ def c.msg(+status: U32, msg: String) -> String:
 
 # ===========================================================================
 # :28-32  set_options(). `sp.n` is the number of arguments comgr is handed.
-# See THE MEASUREMENT THAT DELETED A FAMILY OF BUGS: `String.split` already
+# See the measurement that deleted a family of bugs: `String.split` already
 # keeps the empty fields, so this is the length and nothing else.
 # ===========================================================================
 def sp.n(options: String) -> U32: U32.from_nat(List.length(&2, String, String.split(options, ' ')))
@@ -391,7 +391,7 @@ def C.suffix_of(+i: U32) -> String:
   Bool.pick(String, U32.is_eq(i, 0), ".cpp", Bool.pick(String, U32.is_eq(i, 1), ".bc", ".hsaco"))
 
 # ===========================================================================
-# :102-106  THE TWO ARGV LISTS. THE HEADLINE OF THIS FILE.
+# :102-106  the two argv lists. the headline of this file.
 #
 #   subprocess.run(["hipcc", "-c", "-emit-llvm", "--cuda-device-only", "-O3", "-mcumode",
 #                   f"--offload-arch={self.arch}", f"-I{rocm_path}/include/hip",

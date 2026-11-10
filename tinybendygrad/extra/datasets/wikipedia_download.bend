@@ -1,4 +1,4 @@
-# STUB -- 1:1 PATH MIRROR of extra/datasets/wikipedia_download.py (53 LOC upstream). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/datasets/wikipedia_download.py (53 loc upstream). not yet ported.
 #
 # WHAT UPSTREAM IS. The MLPerf BERT 2020 corpus fetcher, off Google Drive. Not class
 # (c): the Drive ids are public links and `gdown` is a plain HTTP client, not a
@@ -24,7 +24,7 @@
 #   prevent, because `VERIFY_CHECKSUM` (upstream:50) is how the corpus proves it is
 #   the corpus MLPerf scored. `getenv` IS ported (`helpers.bend:150` `getenv_str`,
 #   `:299` `getenv_int`), so lines 46/50/54 are the only part already reachable.
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `wikipedia_uncompress_and_extract`
+# not ported, and named so nobody invents it: `wikipedia_uncompress_and_extract`
 #   (upstream:13), `verify_checksum` (upstream:24), `download_wikipedia`
 #   (upstream:37), and the `__main__` block (upstream:53).
 import Base

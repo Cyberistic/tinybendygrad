@@ -3,15 +3,15 @@
 # `ops_webgpu.bend` ports the STRUCTURE of the browser target and records every
 # wgpu call in a trace. Its own header says every actual wgpu call is a
 # `# TODO(p3) runtime/ops_webgpu.py:<line>` naming the JS import it becomes, and
-# that "nothing here calls wgpu". THIS FILE IS THAT MISSING HALF: the FFI seam
+# that "nothing here calls wgpu". this file is that missing half: the ffi seam
 # that header names and `ops_webgpu.bend` does not have.
 #
-# It is also what that file's own "WHAT THIS GATE STILL DOES NOT SEE" list asks
+# It is also what that file's own "what this gate still does not see" list asks
 # for, in its own words:
 #
 #   "nothing checks that the RIGHT [usage bitmask] is passed to the RIGHT call"
 #   "NOTHING checks that pass.pipeline's entryPoint is the entry point Pass.of
-#    was given: THE ONLY READER WOULD BE THE FFI SEAM"
+#    was given: the only reader would be the ffi seam"
 #
 # ===========================================================================
 # THE BOUNDARY, and why it is THIS one. Measured, not chosen by taste.
@@ -25,7 +25,7 @@
 #   bend tinybendygrad/runtime/webgpu_call.bend -o tinybendygrad/runtime/webgpu_call.mjs
 #
 # hands JavaScript the whole pure half and `tinybendygrad/runtime/webgpu_call.js`
-# drives `navigator.gpu` from it: a GENERATED JS MODULE THE PORT'S OWN DEFS NAME,
+# drives `navigator.gpu` from it: a generated js module the port's own defs name,
 # with the port's defs still pure and gated.
 #
 # The two rejected seams, and the measurement that rejects each:
@@ -50,13 +50,13 @@
 # `Tr.*` are CALLED, never reimplemented. What is written here is the step ORDER
 # and which descriptor belongs to which call -- the thing the trace cannot carry.
 #
-# AND THAT ORDER IS PINNED, NOT ASSERTED. Every `Step` carries the trace entry
+# and that order is pinned, not asserted. Every `Step` carries the trace entry
 # `W.Call` it must correspond to, and `wgc_call_trace` checks the two lists
 # against each other with `W.Tr.has` AT EQUAL LENGTH, which is an equality test.
 # A missing step, an extra step, or a wrong tag in THIS file moves that row, and
 # `wgc_call_len` is the length half of it.
 #
-# ONE PLACE THE TRACE IS COARSER THAN PYTHON, and it is load-bearing.
+# one place the trace is coarser than python, and it is load-bearing.
 # tinygrad/runtime/ops_webgpu.py:94 `bg_entry` calls `dev.create_uniform(x)` (tinygrad/runtime/ops_webgpu.py:202-206 symbol=create_uniform), which
 # CREATES a 4-byte buffer AND writes the value into it -- two calls. The committed
 # trace records ONE `CALL_CREATE OBJ_BUFFER` per uniform slot, because
@@ -291,12 +291,12 @@ def Cs.bg(c: Cs) -> List<&2, Bind>:
 # order IS the list order -- the same trade `bgl.flat` makes in `ops_webgpu.bend`,
 # and for the same reason.
 #
-# **`Cs.mint` RETURNS A STATE AND THE REST OF THE STEP MUST BE BUILT FROM THAT
-# ONE.** Binding the mint to a name and then writing `Cs.at(Cs.push(c), ...)` --
+# `Cs.mint` returns a state and the rest of the step must be built from that
+# ONE. Binding the mint to a name and then writing `Cs.at(Cs.push(c), ...)` --
 # threading the ORIGINAL `c` -- throws the mint away: the handle reads back
 # correctly and the counter never advances.
 #
-# MEASURED, and it WAS INVISIBLE TO EVERY ROW ABOVE. Every handle came out
+# measured, and it was invisible to every row above. Every handle came out
 # 4294967295, which is `Cs.next(0) - 1`, so all three layouts and the pipeline
 # were built against the same unbound slot and the whole gate stayed green:
 # `Cs.calls` and `Cs.bg` do not read `next` at all, so a counter frozen at zero
@@ -652,7 +652,7 @@ def Cs.encoder(+c: Cs) -> Cs:
   Cs.at(m, W.CALL_CREATE, W.OBJ_COMMAND_ENCODER, CreateEncoder{Cs.last(m)})
 
 # :112-117 -- `if wait:` the query set (type Timestamp, count 2) and a 16-byte
-# QueryResolve|CopySrc buffer. THE ORDER IS THE BUFFER BEFORE THE QUERY SET,
+# QueryResolve|CopySrc buffer. the order is the BUFFER before the query set,
 # which is the reverse of the Python's reading order (:113 then :115) because
 # `pass.query.on` nests `emit(CREATE BUFFER)` OUTSIDE `emit(CREATE QUERY_SET)` --
 # and the INNER one runs first. `wg_wait_query_created` pins it on the trace side.
@@ -930,7 +930,7 @@ def BOTH() -> List<&2, U32>: [W.FEATURE_TIMESTAMP_QUERY(), W.FEATURE_SHADER_F16(
 def F16() -> List<&2, U32>: [W.FEATURE_SHADER_F16()]
 def CODE() -> String: "k"
 
-# THE ONE VAL, as a VALUES list. `BOTH` is the FEATURE list and is not this: :78's
+# the one val, as a values list. `BOTH` is the feature list and is not this: :78's
 # `len(vals)` is a count of `ProgramInfo.vals` and :95's `bg_entry(i+1, x)` binds
 # each one as a uniform. `wgc_vals_count` is the row that pins the two against each
 # other, and `ONE` is what the browser run hands `Cs.call`.
@@ -977,7 +977,7 @@ def fx_nowait() -> Cs: fx(False{})
 # `Cs.of()`, so the two lists are the same eight steps from the same Python.
 def fx_real_init() -> W.Dev: W.dev.init(METAL(), BOTH())
 
-# THE PASS WITH `dev.init`'s TRACE ALREADY GONE AND THE SHADER MODULE'S STILL
+# the pass with `dev.init`'s trace already gone and the shader module's still
 # THERE. `Tr.reset` on the DEV's trace is the operation: `prog.init` copies the
 # `Dev`'s trace, so emptying the `Dev` first empties the copy WITHOUT emptying
 # the `Pass` -- which is what `Pass.reset` (used one step too late) got wrong.
@@ -1097,13 +1097,13 @@ def Cs.dupe_of.go(n: Nat, xs: List<&2, U32>, +seen: List<&2, U32>, +got: U32) ->
 # 0, 1, 2, ... in mint order. THE QUESTION NO OTHER ROW ASKS: is the counter
 # actually counting? A frozen counter hands out the same handle forever and every
 # other row in this file stays green, because nothing else reads `next`.
-# MONOTONE, NOT CONTIGUOUS: each slot is AT LEAST the one before it. THE QUESTION
+# monotone, not contiguous: each slot is at least the one before it. the question
 # NO OTHER ROW ASKS -- is the counter actually counting? A frozen counter hands out
 # the same handle forever and every other row in this file stays green, because
 # nothing else reads `next`. MEASURED: with the mint bound and then discarded,
 # every handle came out 4294967295 and 50 rows were green; the BROWSER caught it.
 #
-# MONOTONE AND NOT "EACH IS THE PREVIOUS PLUS ONE", BECAUSE REPEATS ARE CORRECT:
+# monotone and not "each is the previous plus one", because repeats are correct:
 # `Finish`+`Submit` share the command buffer's slot, and in the wait path the
 # staging buffer's encoder shares its own. MEASURED: the wait slots are
 # `0,1,2,3,4,5,6,7,8,9,10,10,11,12,13,13` -- two shared pairs, each the same
@@ -1252,7 +1252,7 @@ def t_desc() -> IO(Unit):
     row("wgc_layout_entries", W.u32_list_eq(W.bgl.flat(W.bgl.of(3, 1), Nil{}),
                                             [0, 1, 1, 2, 2, 2, 3, 2, 4, 1]))
     row("wgc_vals_count", U32.is_eq(U32.from_nat(List.length(&2, U32, ONE())), 1))
-    # EVERY SLOT THE WALK MINTS IS DISTINCT, and this row exists because a counter
+    # every slot the walk mints is distinct, and this row exists because a counter
     # that never advances is invisible to every other row in the file. MEASURED:
     # with `Cs.mint(c)` bound and then `Cs.at(Cs.push(c), ..)` written, every
     # handle came out 4294967295 -- `Cs.next(0) - 1` -- and 50 rows stayed green,
@@ -1260,8 +1260,8 @@ def t_desc() -> IO(Unit):
     # NEITHER READS `next`. The browser was what caught it, at `PipelineLayout`.
     # So this asks the counter a question no other row asks: are the slots the walk
     # hands out pairwise different?
-    # THE SLOTS THE DRIVER HANGS EVERY RESULT ON, and the claim is NOT "all
-    # distinct" -- it is "distinct EXCEPT THE ONE PAIR THAT MUST SHARE".
+    # the slots the driver hangs every result on, and the claim is not "all
+    # distinct" -- it is "distinct except the one pair that must share".
     #
     # `Finish` (:128) and `Submit` (:129) both take the SAME command buffer, so
     # `Cs.finish` gives them one slot and `wgc_handles_shared` is the row that says
@@ -1292,7 +1292,7 @@ def t_wall3() -> IO(Unit):
     row("wgc_wall3_found", U32.is_eq(Bind.n(b), 0))
     urow("wgc_wall3_size", Bind.size(b))
     row("wgc_wall3_int_bytes", W.u32_list_eq(W.dev.uniform_bytes(7), [7, 0, 0, 0]))
-    # AND THE BYTES THE UNIFORM OP ACTUALLY CARRIES. M20 reintroduces the
+    # and the bytes the uniform op actually carries. M20 reintroduces the
     # one-bit shift INSIDE this file's own `Uniform` and moved no row at all,
     # because `wgc_wall3_int_bytes` calls `dev.uniform_bytes` DIRECTLY and never
     # reads what `Cs.entry` put in the op. That is the row that was missing and

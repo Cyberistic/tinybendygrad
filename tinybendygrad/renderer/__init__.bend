@@ -11,7 +11,7 @@
 #    has no inheritance, so `Data` plus one constructor def per device IS the
 #    inheritance. Nothing mutates after construction.
 #
-# 2. THE GATE IS A STRING DIFF, NEVER A BOOLEAN ABOUT STRINGS. `String.concat`
+# 2. the gate is a string diff, never a boolean about strings. `String.concat`
 #    drops a literal silently, so `render(..) == "..."` is not a claim. Every row
 #    prints its answer BESIDE the CPython string, so a dropped ", " is a DIFF.
 #    A count row is necessary and nowhere near sufficient.
@@ -20,36 +20,36 @@
 #    payload and let the `False` arm be the `None`. `Renderer.global_max` is
 #    `tuple|None`, so it is `has_gmax: Bool` plus `gmax: List<&2, U32>`.
 #
-# 4. A `match` MAY ONLY SCRUTINISE A PARAMETER OR A PATTERN BINDER. `match
+# 4. a `match` may only scrutinise a parameter or a pattern binder. `match
 #    fold.dt(ar, tb, i):` is refused -- "a match cannot scrutinize a computed
 #    value: give it its own def". EVERY reader is therefore two defs: the arena
 #    read, then a `.of` that matches the `Maybe`. There is no third way.
 #
-# 5. A PARAM IS AFFINE UNLESS PREFIXED `+`, AND A `let` IS AFFINE TOO. A value
+# 5. a PARAM is affine unless prefixed `+`, and a `let` is affine too. a value
 #    read twice is a `+` parameter; a value bound to a `let` and read twice is
 #    RECOMPUTED, not bound. `+` cannot be spelled on a closure type or a `Maybe`
 #    parameter, so the two-`Maybe` readers pass the `Maybe` to a separate `.of`.
 #
-# 6. A RECORD LITERAL AND A RECORD PATTERN BOTH MUST NAME EVERY FIELD. There is
+# 6. a record literal and a record pattern both must name every field. There is
 #    no projection syntax in Bend 2.0.34 (`pa.slot` is "expected : a defined
 #    name"), so a `ParamArg` with one field changed is thirteen
 #    `O.ParamArg.*(pa)` calls. AND THE FIELD ORDER IS ops.bend's DECLARATION
 #    order, not the header's prose order: `volatile, image, buffer,
 #    bind_on_realize, val`. Read the declaration.
 #
-# 7. A `do IO<Unit>:` BODY MUST END WITH A BARE TERM, not a `_ : Unit <- ...`
+# 7. a `do IO<Unit>:` body must end with a bare term, not a `_ : Unit <- ...`
 #    binding, and a def whose body is a `do` block must be the LAST def in the
 #    file. MEASURED on 2.0.34 while writing this file; both errors are parse
 #    errors with unhelpful locations. `main` is therefore last.
 #
-# 8. A RECURSIVE ARENA REBUILD MUST BE BUILT ON THE INNER NODE'S ARENA --
+# 8. a recursive arena rebuild must be built on the inner node's arena --
 #    `O.Found.ar(inner)`, never the arena handed in. An arena only GROWS, so the
 #    passed arena is a PREFIX and the inner node's index is not in it; the outer
 #    node's src0 then points past the end and `Arena.arg` answers the bottom's
 #    `ABad`. It typechecks, it runs, and it prints a plausible wrong answer.
 #    MEASURED: `INDEX float src0=?` where CPython prints `float`.
 #
-# 9. A SELF-CALL MUST BE LEXICALLY INSIDE THE DEF THAT OWNS THE FUEL MATCH. A
+# 9. a self-call must be lexically inside the DEF that owns the fuel match. a
 #    def may only call defs above it, so a helper that HOLDS the self-call cannot
 #    be separated from the recursion -- that is mutual recursion and Bend refuses
 #    it, and `hoist.py` reports "no progress" after eight rounds. So the guard
@@ -74,7 +74,7 @@
 #     concrete dims and a shape carrying an `SU` is the case this file does not
 #     have. Name the two cases apart rather than answering 1 for both.
 #
-# 12. A GATE ROW IS ONLY WORTH ITS COST IF A MUTATION MOVES IT. The mutation
+# 12. a gate row is only worth its cost IF a mutation moves it. The mutation
 #     table at the foot of `cstyle.bend` is the evidence that the rows bite.
 # ===========================================================================
 
@@ -141,7 +141,7 @@ def with_storage.leaf(+ar: O.Arena, dt: S.Dt, +i: U32) -> O.Found:
 # `x.replace(src=(with_storage(x.src[0], dt),)+x.src[1:])` -- a new node whose
 # src[0] is the recursion's answer and whose src[1:] is the OLD tail, copied.
 #
-# CONVENTION 8 IS THE WHOLE REASON THIS DEF EXISTS AS A SEPARATE ONE: the outer
+# convention 8 is the whole reason this DEF exists as a separate one: the outer
 # node is built on `O.Found.ar(inner)`, never on `ar`.
 def with_storage.rebuild(+ar: O.Arena, dt: S.Dt, +i: U32, +inner: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(inner), O.Arena.op(ar, i),
@@ -458,7 +458,7 @@ def sd_names_of(ds: List<&2, S.Dt>) -> List<&2, String>: sd_names.go(ds, Nil{})
 
 def sd_names(emu: List<&2, S.Dt>) -> List<&2, String>: sd_names_of(supported_dtypes(emu))
 
-# ONE LINE, AND THAT IS THE POINT. This row printed its answer and its `py=` on
+# one line, and that is the point. This row printed its answer and its `py=` on
 # TWO lines so the `py=` would line up under a 200-character dtype list, and a
 # two-line row is INVISIBLE to a row-keyed diff: the mutation harness keys on
 # ` = [` followed by `]   py=[`, so a row whose oracle is on the next line is not
@@ -470,7 +470,7 @@ def sd_row(nm: String, emu: List<&2, S.Dt>) -> IO(Unit):
   IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
 
 # `Estimates.__repr__` IS `estimates.bend`'s `Estimates.str`, because
-# `uop/render.bend` PRINTS THE SAME THING in `KernelInfo`'s repr. ONE SPELLING,
+# `uop/render.bend` prints the same thing in `KernelInfo`'s repr. one spelling,
 # TWO CALLERS.
 def est_str(+e: E.Estimates) -> String: E.Estimates.str(e)
 
@@ -492,7 +492,7 @@ def main() -> IO(Unit):
     # same seventeen dtypes in the same order, and a drop or a swap in either is
     # a visible string difference.
     #
-    # THE THREE `py=` STRINGS BELOW AND THE THREE `ws` ROWS MOVED, AND BOTH SIDES
+    # the three `py=` strings below and the three `ws` rows moved, and both sides
     # OF EACH MOVED WITH THE RENAME -- that is the point. They are CPython's own
     # printed dtype names, and tinygrad 793abbb moved `DType.name` off the C
     # spellings, so `half`/`__bf16`/`float`/`double`/`unsigned char`/... became

@@ -16,14 +16,14 @@ import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/t5.py (285 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/t5.py (285 loc). not yet ported.
 #
-# T5 IS THE CHEAPEST OF THE ATTENTION FILES AND THE REASON IS WORTH NAMING:
-# OF THE FIVE IN THIS SLICE THAT HAVE ATTENTION -- transformer:27, bert:279,
-# clip:176 and :271, llama:101 and :104 -- t5 IS THE ONLY ONE THAT SPELLS ITS
-# ATTENTION OUT INSTEAD OF CALLING `scaled_dot_product_attention`. **UPSTREAM
+# T5 is the cheapest of the attention files and the reason is worth naming:
+# of the five in this slice that have attention -- transformer:27, bert:279,
+# clip:176 and :271, llama:101 and :104 -- t5 is the only one that spells its
+# ATTENTION OUT INSTEAD OF CALLING `scaled_dot_product_attention`. UPSTREAM
 # `extra/models/t5.py` HAS NO `scaled_dot_product_attention` AT ALL -- NOT AT THE
-# PIN AND NOT AT ANY REVISION** -- so the claim is an ABSENCE, and the claim about
+# PIN AND NOT AT ANY REVISION -- so the claim is an ABSENCE, and the claim about
 # what IS there is the one the citation has to carry: extra/models/t5.py:210
 # symbol=Tensor.matmul is `Tensor.matmul(query_states, key_states.transpose(3, 2))`
 # and the PORT's OWN extra/models/t5.py:217 (upstream has NO extra/models/ AT THIS PIN) is
@@ -155,7 +155,7 @@ def t5_ff_call(+hidden_states: T.Tensor) -> D.Refused:
   D.refuse("extra/models/t5.py:94 T5LayerFF.__call__ -- FIRST MISSING SYMBOL T5DenseGatedActDense.__call__ (:96) -> Tensor.gelu")
 
 # ---------------------------------------------------------------------------
-# :101-221 T5Attention. THE CLASS THE WHOLE FILE IS ABOUT.
+# :101-221 T5Attention. the class the whole file is about.
 # ---------------------------------------------------------------------------
 
 # :102 def __init__(self, config:T5Config, has_relative_attention_bias:bool=False)

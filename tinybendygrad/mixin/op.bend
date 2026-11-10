@@ -19,7 +19,7 @@
 # `allclose` (op.py:998). NOTHING IS PORTED TWICE.
 #
 # ---------------------------------------------------------------------------
-# WHAT IS PORTED, IN PYTHON'S ORDER, AND WHAT IS NOT.
+# what is ported, in python's order, and what is not.
 #
 # PORTED AND GATED: the reduction family -- `min` (op.py:473), `mean` (:496),
 # `var` (:523), `var_mean` (:551), `std` (:568), `std_mean` (:592), `logsumexp`
@@ -141,7 +141,7 @@
 #      either a `+` parameter or a second CALL. Every dispatch below passes its
 #      tests IN -- `keepdim`, `inv`, `wc`, `same`, `isid`, `uns`, `ok` -- because a
 #      `match` may scrutinise a PARAMETER or a PATTERN BINDER and not a call.
-#   2. THE ARENA A BUILD RETURNED IS NOT THE ARENA THAT WENT IN, and every def here
+#   2. the arena a build returned is not the arena that went in, and every def here
 #      that builds returns a `Tensor`/`Found` carrying the GROWN arena. W9 is that
 #      rule being broken one file over, and the rule is why `mo_reduce` re-folds
 #      between its `cast` and its `rop` exactly the way `ew_promo2` does.
@@ -193,7 +193,7 @@
 # refusal or a defect rather than a graph Python can be asked for. They are listed
 # here rather than filtered silently.
 #
-# THE TWO-RULES-CLAIM-ONE-NODE ROW is `t_two_rules`. `softmax` (op.py:663) and
+# the two-rules-claim-one-node row is `t_two_rules`. `softmax` (op.py:663) and
 # `log_softmax` (op.py:686 symbol=log_softmax) are TWO defs that both call `_softmax`, so
 # the thirteen nodes `_softmax` (op.py:657 symbol=_softmax) builds are interned ONCE.
 # `log_softmax` prints 18 over a graph whose shared prefix is 13 nodes -- MEASURED on
@@ -204,7 +204,7 @@
 # because the arena is a hashcons.
 #
 # ---------------------------------------------------------------------------
-# THE MUTATION TABLE -- WHAT THE GATE SEES AND WHAT IT CANNOT. Seventeen one-token
+# the mutation table -- what the gate sees and what it cannot. Seventeen one-token
 # edits, each applied, each run through BOTH lanes, each diffed against the
 # unmutated output and reverted from a byte snapshot:
 #
@@ -246,7 +246,7 @@
 # `mo_exp`'s cast ordering.
 #
 # ---------------------------------------------------------------------------
-# THE TWO HALVES SHARE THIS FILE. SIDE B must not re-declare any `mo_*` def, must
+# the two halves share this file. side b must not re-declare any `mo_*` def, must
 # not re-declare `main`, and must not touch anything above this line. Its own
 # section goes below `main`, and its rows go in its own `mo2_*` printers.
 
@@ -305,41 +305,41 @@ def mo_dim_u32(d: O.Sint) -> U32:
 def mo_dim_at(+fx: F.Folded, +i: U32, k: U32) -> U32:
   mo_dim_u32(Maybe.default(&2, O.Sint, List.get(&2, O.Sint, mo_dims(fx, i), U32.to_nat(k)), F.sint_of(1)))
 
-# THE INDEX OF A HEAD ELEMENT, `i` in `enumerate(self.shape)`, AND **`enumerate`
-# COUNTS FROM THE FRONT**. THE HEAD OF `ds` IS THE LAST ELEMENT OF `ds`, SO ITS
-# FORWARD INDEX IS `n - len(ds)` WHERE `n` IS THE ORIGINAL LENGTH -- AND `n` HAS TO BE
-# THREADED, BECAUSE `ds` AT THE CALL SITE IS THE *REMAINING* LIST, NOT THE ORIGINAL ONE.
+# THE INDEX OF A HEAD ELEMENT, `i` in `enumerate(self.shape)`, AND `enumerate`
+# counts from the front. the HEAD of `ds` is the last element of `ds`, so its
+# forward INDEX is `n - len(ds)` WHERE `n` is the original length -- and `n` has to be
+# threaded, because `ds` at the call site is the *remaining* list, not the original one.
 #
-# **THIS DEF WAS WRONG TWICE AND BOTH ERRORS WERE INVISIBLE TO THE ROWS THAT EXIST.**
-# THE FIRST VERSION SAID `len(ds) - len(t)`, WHICH IS THE FORWARD INDEX PLUS ONE, AND
-# EVERY INDEX IN EVERY WALK WAS OFF BY ONE; `t_sum0kd` STILL PRINTED THE RIGHT FOUR
-# NODES -- `RESHAPE(REDUCE, CONST(4))` HAS THE SAME NODE COUNT AND THE SAME OP NAMES AS
-# `RESHAPE(REDUCE, CONST(1))` -- SO THE SIGNATURE ROWS COULD NOT SEE IT AND THE COUNT
-# COULD NOT EITHER. IT IS `sh_sum0kd` (THE SHAPE ROW) THAT CAUGHT IT. **THE SECOND
-# VERSION SAID `len(t)`, WHICH IS THE INDEX COUNTED FROM THE *END* -- AND THAT IS ALSO
-# WRONG, AND IT IS WRONG WHERE IT MATTERS.**
+# this DEF was wrong twice and both errors were invisible to the rows that exist.
+# the first version said `len(ds) - len(t)`, which is the forward INDEX plus one, and
+# every INDEX in every walk was off by one; `t_sum0kd` still printed the right four
+# nodes -- `RESHAPE(REDUCE, CONST(4))` has the same node count and the same op names as
+# `RESHAPE(REDUCE, CONST(1))` -- so the signature rows could not see it and the count
+# could not either. it is `sh_sum0kd` (the shape row) that caught it. the second
+# version said `len(t)`, which is the INDEX counted from the *end* -- and that is also
+# WRONG, AND IT IS WRONG WHERE IT MATTERS.
 #
-# **MEASURED 2026-10-22, THE THREE NEIGHBOURS ARE ALL FORWARD AND THIS ONE WAS NOT:**
+# measured 2026-10-22, the three neighbours are all forward and this one was not:
 # `mo_dim_at` READS `mo_dims` AT A FORWARD INDEX, `mo_resolve` ADDS `total` TO A
 # NEGATIVE AXIS (UPSTREAM'S `_resolve_dim`, reduce.py:15), AND `mo_range` BUILDS
-# `0..n-1`. SO THE PORT'S AXIS LIST IS FORWARD AND THE WALK'S INDEX MUST BE TOO.
-# **THE CONSEQUENCE, MEASURED AGAINST CPython IN `.venv`:**
+# `0..n-1`. so the port's axis list is forward and the walk's INDEX must be too.
+# THE CONSEQUENCE, MEASURED AGAINST CPython IN `.venv`:
 #   * THE KEEPDIM TARGET FOR `(2,2)` ON AXIS `[0]` IS `(1)(2)` (reduce.py:18, `1 if i
 #     in axis else s for i, s in enumerate(self.shape)`) AND THIS DEF ANSWERED `(2)(1)`
-#     -- **THE ORDER IS WRONG EVEN ON A SQUARE.**
-#   * THE REDUCED SIZE FOR A `(2,3)` TENSOR ON AXIS `[0]` IS 3 AND THIS DEF ANSWERED 2.
-#   * `tinybendygrad/nn/layers.bend:229 symbol=nn_reduce.pick` MEASURED THE SAME DIVERGENCE ON `(2,4,3)` WITH AXIS `[2]`,
+#     -- THE ORDER IS WRONG EVEN ON A SQUARE.
+#   * the reduced SIZE for a `(2,3)` tensor on axis `[0]` is 3 and this DEF answered 2.
+#   * `tinybendygrad/nn/layers.bend:229 symbol=nn_reduce.pick` measured the same divergence on `(2,4,3)` with axis `[2]`,
 #     WHERE `mo_keep_ds` ANSWERED `(1,4,3)` AND CPython ANSWERS `(2,4,1)`.
-# **AND NOTHING IN THE TREE COULD SEE IT: THE PORT'S ONLY RANK-2 FIXTURE IS `(2,2)` --
-# WHERE THE SIZE IS ACCIDENTALLY RIGHT BECAUSE THE TWO DIMENSIONS ARE EQUAL -- AND ITS
-# ONLY KEEPDIM ROW IS ONE-DIMENSIONAL, WHERE `len(t)` AND THE FORWARD INDEX AGREE.**
+# and nothing in the tree could see it: the port's only rank-2 fixture is `(2,2)` --
+# WHERE the SIZE is accidentally right because the two dimensions are equal -- and its
+# only keepdim row is one-dimensional, WHERE `len(t)` and the forward INDEX agree.
 def mo_at(+ds: List<&2, O.Sint>, +n: U32) -> U32:
   U32.sub(n, U32.from_nat(List.length(&2, O.Sint, ds)))
 
 # `tuple(range(n))` -- `permute`'s identity test (movement.py:214) and
 # `_reduce`'s `range(self.ndim)` when `axis is None` (reduce.py:15) are the SAME list,
 # so this is one def and both are calls.
-# The SELF-CALL TAKES THE LIST FIRST and the countdown second, which is Bend's rule
+# The self-call takes the list first and the countdown second, which is Bend's rule
 # (a self-call must read left to right and the SHRINKING argument goes first) and is
 # why `tensor.bend`'s `tn_rop.ne1` and `tn_sarg.acc` are both shaped this way. `i` is
 # not a parameter at all: it is `len(acc)`, which is what `range(n)` is.
@@ -471,7 +471,7 @@ def mo_weakconst.cls(cls: S.Cls, +isc: Bool) -> Bool:
 def mo_weakconst(+fx: F.Folded, +t: T.Tensor) -> Bool:
   mo_weakconst.cls(S.Dt.cls(W.wk_dt(fx, T.Tensor.u(t))), E.ew_is_const(fx, E.ew_base(fx, T.Tensor.u(t))))
 
-# THE SAME NODE IN A NEWER ARENA, and it is one line. Every def here that is HANDED a
+# the same node in a newer arena, and it is one line. Every def here that is handed a
 # fold (`mo_promote`, `mo_remint`) re-wraps its answer in `F.Folded.ar(fx)` rather than
 # handing back the tensor it was given, because `wk_cast_at` answers a same-dtype cast
 # with `Found{md_ar(fx), self}` and a fold is the only handle a caller has on the arena
@@ -542,7 +542,7 @@ def mo_alu3(+ar: O.Arena, c: U32, op: O.Op, x: U32, y: U32) -> T.Tensor:
 def mo_bin_out(+fx: F.Folded, +t: T.Tensor, +y: T.Tensor) -> S.Dt:
   F.least_upper.of(W.wk_dt(fx, T.Tensor.u(t)), W.wk_dt(fx, T.Tensor.u(y)))
 
-# THE FOLD IS TAKEN FROM THE OPERANDS' COMMON DESCENDANT ARENA, and that is the whole of
+# the FOLD is taken from the operands' common descendant arena, and that is the whole of
 # the arena rule made unfalsifiable. The first spelling folded `y`'s arena and ASSUMED `y`
 # was the NEWEST node -- true for `mo_bin_c` (whose CONST is interned in `t`'s arena) but
 # FALSE for a caller whose operands come from two DIFFERENT tensors: `rd_p64` builds
@@ -581,7 +581,7 @@ def mo_bin(+t: T.Tensor, op: O.Op, +y: T.Tensor) -> T.Tensor:
 # not a no-op: MEASURED 2026-10-23, `mo_bin` put a `CAST/1` between the RECIP
 # and the MUL in ELEVEN of this gate's rows.
 #
-# `mo_alu2` IS THE ARENA-LEVEL NODE BUILDER FOR A TWO-SOURCE `alu`; THIS IS THE
+# `mo_alu2` is the arena-level node builder for a two-source `alu`; this is the
 # TENSOR-LEVEL ONE, and it is `mo_bin` with the right-hand promotion removed.
 def mo_alu(+t: T.Tensor, op: O.Op, +y: T.Tensor) -> T.Tensor:
   +m = O.Arena.merge(T.Tensor.ar(t), T.Tensor.ar(y))
@@ -631,7 +631,7 @@ def mo_eqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_notb(mo_neqc(t, v))
 # `return a.alu(Ops.ADD, -b)`, and the NOTE says "alu, not +: _broadcasted already
 # promoted these, and a second promote would cast -b (only a weak CONST is kept weak)".
 #
-# IT IS SPELLED HERE AND NOT CALLED AS `E.ew_sub` FOR W9'S SECOND HALF, and the reason is
+# it is spelled here and not called as `E.ew_sub` for W9'S second half, and the reason is
 # the same one-word error as in `mo_alu2`: `ew_sub.of` (mixin/elementwise.bend:405 symbol=ew_pair) ends
 # `T.tn_alu(a, Ops.ADD{}, [Tensor.u(b)])` where `a` is `t` UNCHANGED whenever the
 # promotion is the identity, and `b = ew_neg(...)` has already grown the arena -- so the
@@ -665,7 +665,7 @@ def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
 # port that skipped them builds a RESHAPE where Python hands back `self` and every
 # signature moves.
 #
-# THE ARENA RULE, SPELLED ONCE AND THEN NEVER AGAIN (rule 2): a def that BUILDS takes
+# the arena rule, spelled once and then never again (rule 2): a def that builds takes
 # `+t: T.Tensor` and NOT a caller-supplied `+fx: F.Folded`, and it reads
 # `F.folded(T.Tensor.ar(t))` itself. Python's mixins read `self.dtype` from a live
 # tensor, so the fold and the node can never disagree; a Bend `Folded` is a separate
@@ -681,7 +681,7 @@ def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
 # shape arg is a STACK and does NOT answer one whose shape arg is a BARE CONST, and a
 # one-element shape arg is a bare CONST (`tn_shape_arg.n`'s middle arm, tensor.bend:590).
 # So `mo_dims` over `RESHAPE(REDUCE, CONST(1))` answers `Nil{}`, the identity test sees
-# `() == ()`, and EVERY KEEPDIM REDUCE SILENTLY LOSES ITS RESHAPE -- `t_sum0kd` printed
+# `() == ()`, and every keepdim reduce silently loses its reshape -- `t_sum0kd` printed
 # two nodes where CPython prints four, and nothing else in the file said so.
 #
 # The fix is BETTER than the fold, not a workaround: the shape being compared is the
@@ -858,7 +858,7 @@ def mo_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # `prod` -- reduce.py:47-71. `self.cast(dtype if dtype is not None else self.dtype)
 # ._reduce(Ops.MUL, axis, keepdim)`; `dtype` is `None` here so the cast is the
 # identity, and `E.ew_cast` hands `t` back unchanged when the dtypes agree.
-# NOT DEAD, DESPITE READING THAT WAY IN ITS OWN FILE: `mixin/reduce.bend` calls
+# not dead, despite reading that way in its own file: `mixin/reduce.bend` calls
 # it as `M.mo_prod`. The per-file dead-def pruners cannot see that, because they
 # read one file; see xdead in the cross-cutting pass's notes.
 def mo_prod(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
@@ -916,11 +916,11 @@ def mo_divn(+t: T.Tensor, n: U32) -> T.Tensor:
   mo_div(t, mo_const_t(t, mo_ki(n)))
 
 # `prod([si for si, so in zip(shape, sum.shape) if resolve(si != so)])` (op.py:520,
-# :547). THE ZIP KEEPS THE DIMS WHOSE SIZE CHANGED, AND THOSE ARE EXACTLY THE DIMS
+# :547). the zip keeps the dims whose SIZE changed, and those are exactly the dims
 # THE REDUCE TOUCHED: the keepdim sum has a 1 where the reduce happened and the
 # source's own size everywhere else, so `si != so` is TRUE for the reduced dims and
-# FALSE for the others. **THE WALK THEREFORE MULTIPLIES `shape[i]` FOR EVERY `i` IN
-# `axis`** -- and this comment used to say the opposite ("the dims the reduce did
+# FALSE for the others. the walk therefore multiplies `shape[i]` for every `i` in
+# `axis` -- and this comment used to say the opposite ("the dims the reduce did
 # not touch", "for every `i not in axis`"), which is the SAME claim as upstream's
 # formula read backwards. The CODE was right and the PROSE was wrong, and the prose
 # is what a reader trusts. MEASURED 2026-10-23, by the `val_*` rows, which print
@@ -1038,7 +1038,7 @@ def mo_norm0(+axis: List<&2, U32>, +t: T.Tensor) -> T.Tensor:
 # `TODO(p3) ... exp  -- 1/math.log(2)` and rule 5 MEASURED that an F32 literal is live.
 #     self = self.cast(least_upper_float(self.dtype))
 #     return self.cast(least_upper_dtype(self.dtype, float32)).mul(1/log(2)).exp2().cast(self.dtype)
-# THE FIRST LINE REBINDS `self`, SO CAST 3 CASTS BACK TO `least_upper_float(d0)` AND NOT TO
+# the first line rebinds `self`, so CAST 3 casts back to `least_upper_float(d0)` and not to
 # `d0` -- the easy misreading, and the one this def had. MEASURED on a STRONG int32 source
 # (`mo_i1d`): the port emitted 6 nodes with the final CAST back to `int32` where CPython's
 # `Tensor([1,2,3,4]).exp()` is `5 BUFFER/0 CAST/1 CONST/0 MUL/2 EXP2/1`. `mixin/elementwise.bend`'s
@@ -1061,7 +1061,7 @@ def mo_log(+t: T.Tensor) -> T.Tensor:
 def mo_isnan(+t: T.Tensor) -> T.Tensor: mo_neq(t, t)
 
 # `eq(x) * detect_positive` -- one arm of `isinf` (mixin/elementwise.py:612).
-# THE CONST IS BUILT OFF `eq`, NOT OFF `t`, AND THAT IS THE RULE: `mo_const_t` interns
+# the CONST is built off `eq`, not off `t`, and that is the rule: `mo_const_t` interns
 # into the arena of the tensor it is GIVEN, so it must be given the NEWEST one. MEASURED:
 # writing `mo_mul(mo_eqc(t, v), mo_const_t(t, mo_ki(1)))` interned the CONST into `t`'s
 # arena -- four nodes stale -- and `t_lse0` printed `1 NOOP/0`.
@@ -1075,7 +1075,7 @@ def mo_eqmul(+t: T.Tensor, f: F32) -> T.Tensor:
   mo_mul(eq, mo_const_t(eq, O.CBool{True{}}))
 
 # `isfinite` -- elementwise.py:623. `(self.isinf() | self.isnan()).logical_not()`.
-# IT TAKES THE ARENA, AND IT RE-WRAPS `t` BEFORE EVERY USE, because the three reads of
+# it takes the arena, and it re-wraps `t` before every use, because the three reads of
 # `t` are separated by builds and `mo_const_t` interns into `Tensor.ar` of whatever it
 # is handed. MEASURED: `mo_eqmul(t, -inf)` with a seven-node `t` appended its CONST at
 # index 7 and OVERWROTE the REDUCE, and `t_lse0` printed `0`. The re-wrap is the whole
@@ -1091,7 +1091,7 @@ def mo_isfinite(+ar: O.Arena, +t: T.Tensor) -> T.Tensor:
 def mo_first(+axis: List<&2, U32>) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, axis, 0n), 0)
 
-# IT TAKES THE ARENA BECAUSE `m` IS OLDER THAN THE `+ lg` THAT PRECEDES IT on
+# it takes the arena because `m` is older than the `+ lg` that precedes it on
 # op.py:655, and every build inside `mo_squeeze` reads `Tensor.ar` of whatever it is
 # given. MEASURED: without the parameter the tail's `STACK/0 RESHAPE/2` was interned
 # into a thirteen-node arena while the `log()` beside it had already made twenty-eight,
@@ -1126,7 +1126,7 @@ def mo_logsumexp(+kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 type Softmax3 is Data:
   Softmax3{m: T.Tensor, e: T.Tensor, ss: T.Tensor}
 
-# THE FIELD NAMES AND THE `+` LOCALS MUST NOT COLLIDE. A record constructor BINDS its
+# the field names and the `+` locals must not collide. a record constructor binds its
 # own field names, so `Softmax3{m, e, ss}` with locals also called `m` and `e` built the
 # record out of the CONSTRUCTOR's binders rather than the locals -- which typechecked,
 # ran, and produced a graph with no REDUCE in it. MEASURED: `t_softmax0` printed seven
@@ -1206,7 +1206,7 @@ def mo_min(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # ===========================================================================
 
 # ===========================================================================
-# THE VALUE ROWS -- THE ROW `0eee58d9d` NAMED AND NO ROW PRINTED.
+# the value rows -- the row `0eee58d9d` named and no row printed.
 #
 # `mo_sig` prints each node's OP and its src COUNT, and a CONST's PAYLOAD lives in
 # the node's ARG, so `CONST/0` says the node is a CONST and says NOTHING about
@@ -1214,14 +1214,14 @@ def mo_min(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # REDUCED dims (op.py:520) -- and a wrong product is a wrong MEAN with every
 # other row in this file still green.
 #
-# THE SPELLING, AND WHY IT IS NOT PYTHON's `repr`. The port's `f32_show` prints
+# the spelling, and why it is not python's `repr`. The port's `f32_show` prints
 # an integral float as "4" and Python prints "4.0", so a FLOAT is printed in SIX
 # DECIMAL PLACES on both sides -- `f32_fixed.body(f, 6n)` here and
 # `f"{float(v):.6f}"` in the oracle -- an INT is `i<decimal>`, a BOOL is
 # `True`/`False` and the INVALID payload is `x`. A row the two sides spell
 # differently is not a row.
 #
-# THE THREE ROWS ARE THE THREE DISTINCT DIVISORS, and one row per divisor is
+# the three rows are the three distinct divisors, and one row per divisor is
 # what makes the row a COVERAGE claim rather than a sample: `mean` divides by
 # 4 (a `(4,)` source) and by 2 (a `(2,2)` source -- the SQUARE fixture, where a
 # wrong index is invisible), and `var` divides by `n - correction` = 3.
@@ -1239,7 +1239,7 @@ def mo_cval_of.arg(arg: O.Arg) -> String:
     case O.APy{v}: mo_cval(v)
     case _: ""
 
-# THE VALUE OF THE NODE AT `u`, OR "" WHEN IT IS NOT A CONST.
+# the value of the node at `u`, or "" when it is not a CONST.
 def mo_cval_of.op(op: O.Op, +ar: O.Arena, u: U32) -> String:
   match op:
     case O.OpsCONST{}: String.concat(["=", mo_cval_of.arg(O.Arena.arg(ar, u))])
@@ -1297,10 +1297,10 @@ def mo_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
 def mo_buf4(+ar: O.Arena, dt: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{4}, O.AParam{mo_buf.arg(0, dt)}, O.TNone{})
 
-# A BUFFER OF `n` ELEMENTS, so a fixture can be a shape that is NOT A SQUARE. **THE
-# ONLY RANK-2 FIXTURE THIS FILE HAD WAS `(2,2)`, AND ON A SQUARE THE REDUCED SIZE IS
-# ACCIDENTALLY RIGHT WHATEVER THE INDEX SAYS, BECAUSE THE TWO DIMENSIONS ARE EQUAL --
-# SO THE `(2,3)` FIXTURE BELOW IS WHAT MAKES THE INDEX VISIBLE.**
+# A BUFFER OF `n` ELEMENTS, so a fixture can be a shape that is NOT A SQUARE. THE
+# only rank-2 fixture this file had was `(2,2)`, and on a square the reduced SIZE is
+# accidentally right whatever the INDEX says, because the two dimensions are equal --
+# so the `(2,3)` fixture below is what makes the INDEX visible.
 def mo_bufn(+ar: O.Arena, dt: S.Dt, n: U32) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{n}, O.AParam{mo_buf.arg(0, dt)}, O.TNone{})
 
@@ -1318,9 +1318,9 @@ def mo_fx2d() -> T.Tensor:
   +r = T.tn_mop(T.Tensor.ar(x), T.Tensor.u(x), O.OpsRESHAPE{}, T.ADims{[mo_ki(2), mo_ki(2)]})
   T.tn_new(O.Found.ar(r), O.Found.i(r))
 
-# THE NON-SQUARE RANK-2 FIXTURE, `(2,3)`. **CPython IN `.venv`: `sum(axis=0)` IS
+# THE NON-SQUARE RANK-2 FIXTURE, `(2,3)`. CPython IN `.venv`: `sum(axis=0)` IS
 # `(3,)` AND `sum(axis=0, keepdim=True)` IS `(1,3)`; `sum(axis=1)` IS `(2,)` AND
-# `sum(axis=1, keepdim=True)` IS `(2,1)`.** THE PORT, WITH THE BACKWARD INDEX, ANSWERED
+# `sum(axis=1, keepdim=True)` is `(2,1)`. the port, with the backward INDEX, answered
 # `(2,)` AND `(2,1)` FOR AXIS 0 -- SEE `mo_at`'s COMMENT.
 def mo_fx23() -> T.Tensor:
   +b = mo_bufn(O.Arena.empty(), S.single(), 6)
@@ -1328,11 +1328,11 @@ def mo_fx23() -> T.Tensor:
   +r = T.tn_mop(T.Tensor.ar(x), T.Tensor.u(x), O.OpsRESHAPE{}, T.ADims{[mo_ki(2), mo_ki(3)]})
   T.tn_new(O.Found.ar(r), O.Found.i(r))
 
-# THE SQUEEZE FIXTURE, `(1,2,3)`. **THE SIZE-1 DIM IS FIRST AND THE OTHER TWO DIFFER,
-# SO THE INDEX AND THE DIM ITSELF CANNOT BE CONFUSED** -- which is the whole point, because
-# `mo_squeeze` IS THE THIRD CALL SITE OF `mo_at` AND IT HAD **NO ROW AT ALL**, SO THE
+# the squeeze fixture, `(1,2,3)`. the SIZE-1 dim is first and the other two differ,
+# so the INDEX and the dim itself cannot be confused -- which is the whole point, because
+# `mo_squeeze` is the third call site of `mo_at` and it had no row at all, so the
 # BACKWARD INDEX WAS INVISIBLE THERE TOO. CPython: `squeeze(0)` ON `(1,2,3)` IS `(2,3)`;
-# WITH THE BACKWARD INDEX THE PORT DROPPED THE **LAST** DIM AND ANSWERED `(1,2)`.
+# with the backward INDEX the port dropped the last dim and answered `(1,2)`.
 def mo_fx123() -> T.Tensor:
   +b = mo_bufn(O.Arena.empty(), S.single(), 6)
   +x = T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
@@ -1482,7 +1482,7 @@ def t_softmin0() -> IO(Unit):
   +x = mo_fx1d()
   mo_sig_t("softmin0", mo_softmin(x, mo_ax(False{}, x, 0)))
 
-# THE TWO-RULES-CLAIM-ONE-NODE ROW, and it is the row the brief asks for. `softmax`
+# the two-rules-claim-one-node row, and it is the row the brief asks for. `softmax`
 # (op.py:663) and `log_softmax` (op.py:686) are TWO defs that both call `_softmax`
 # (op.py:657), so the thirteen nodes `_softmax` builds are interned ONCE and the two
 # results SHARE them. Both rows below are printed from ONE arena, and the sharing is
@@ -1495,7 +1495,7 @@ def t_softmin0() -> IO(Unit):
 #   * a `_softmax` that forgot `.detach()` drops the `DETACH/1` and both rows lose a
 #     node (M13).
 #
-# AND WHAT THIS ROW CANNOT SEE, which is the half worth writing down: the arena is a
+# and what this row cannot see, which is the half worth writing down: the arena is a
 # HASHCONS, so a `_softmax` DUPLICATED -- inlined into both callers, or spelled twice --
 # re-interns the very same nodes and the union stays 20. MEASURED: CPython's
 # `len({id(u) for u in a} | {id(u) for u in b})` is 20 against 15 + 18, and the arena
@@ -1580,9 +1580,9 @@ def t_sh_norm0() -> IO(Unit):
   +r = mo_norm0(mo_ax(False{}, x, 0), x)
   mo_shape("sh_norm0", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
 
-# THE TWO ROWS THAT MAKE `mo_at`'s INDEX VISIBLE. **THEY ARE RANK 2 AND NOT A SQUARE,
-# AND ONE OF THEM KEEPS THE DIMENSION -- SO BETWEEN THEM THEY PIN BOTH HALVES OF THE
-# DEFECT: THE REDUCED SIZE (`mo_reduced`) AND THE KEEPDIM TARGET (`mo_keep_ds`).**
+# the two rows that make `mo_at`'s INDEX visible. they are rank 2 and not a square,
+# and one of them keeps the dimension -- so between them they PIN both halves of the
+# defect: the reduced SIZE (`mo_reduced`) and the keepdim target (`mo_keep_ds`).
 # CPython: `sum(axis=0)` ON `(2,3)` IS `(3,)` AND `sum(axis=0, keepdim=True)` IS `(1,3)`.
 def t_sh_sum0_23() -> IO(Unit):
   +x = mo_fx23()
@@ -1594,9 +1594,9 @@ def t_sh_sum0kd_23() -> IO(Unit):
   +r = mo_sum(True{}, x, mo_ax(False{}, x, 0))
   mo_shape("sh_sum0kd_23", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
 
-# THE SQUEEZE ROW. `mo_squeeze` READS THE DIM WITH `mo_dim_at` -- A **FORWARD** INDEX --
-# AND DROPS IT WITH `mo_squeeze.go`, WHOSE TEST USED `mo_at`'s BACKWARD ONE. **SO THE TWO
-# HALVES OF THE SAME OPERATION DISAGREED ABOUT WHICH DIM WAS BEING DROPPED.** CPython:
+# the squeeze row. `mo_squeeze` reads the dim with `mo_dim_at` -- a forward INDEX --
+# and drops it with `mo_squeeze.go`, whose test used `mo_at`'s backward one. so the two
+# halves of the same operation disagreed about which dim was being dropped. CPython:
 # `squeeze(0)` ON `(1,2,3)` IS `(2,3)`.
 def t_sh_sq0_123() -> IO(Unit):
   +x = mo_fx123()
@@ -1622,7 +1622,7 @@ def t_commit_weak() -> IO(Unit):
 # once for the ARENA it returns it in. CPython cannot be asked for either answer -- Python
 # has no arenas -- so this is a BEND-ONLY row and it is labelled as one.
 #
-# THE ORDER IS THE WHOLE ROW. `iv` is interned FIRST, so every node after it lands in a
+# the order is the whole row. `iv` is interned first, so every node after it lands in a
 # strictly NEWER arena and each fold handed to `mo_promote` is newer than the operand it
 # is asked to promote -- which is the only situation in which `mo_arena` does anything.
 #
@@ -1713,5 +1713,5 @@ def main() -> IO(Unit):
     t_bin_promote()
 
 # ===========================================================================
-# SIDE B's SECTION GOES BELOW THIS LINE.
+# side b's section goes below this line.
 # ===========================================================================

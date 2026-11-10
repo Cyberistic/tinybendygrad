@@ -462,7 +462,7 @@ type Sp is Data:
   #     `UOp.index` over a `beautiful_mnist` train step (forward, backward and an
   #     Adam step) gives 2008 calls at arity 1 and 308 at arity 4.
   #
-  # WHAT THE BOUND DOES NOT COVER, stated plainly: the schedule builds Index
+  # what the bound does not cover, stated plainly: the schedule builds Index
   # nodes by SPLAYING a range list -- `schedule/rangeify.py:195` `index(
   # *orig_ranges)` and `schedule/indexing.py:93` `index(*src_rngs)` -- so the
   # arity there is a kernel's axis count, and the same instrumented run reaches
@@ -704,7 +704,7 @@ def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
 # `name` field, which is what `repr` prints; dtype.bend aliases them to the
 # attribute names tinygrad code uses (float32 for "f32" and so on).
 #
-# THE NAMES ARE THE RUST NAMES. tinygrad 793abbb ("modernize tinygrad's dtype to
+# the names are the rust names. tinygrad 793abbb ("modernize tinygrad's dtype to
 # match rust") moved `DType.name` off the C spellings -- "signed char", "half",
 # "__bf16", "float", "double", "float8_e4m3" -- and onto i8/u8/i16/u16/i32/u32/
 # i64/u64/f16/bf16/f32/f64/fp8e4m3/fp8e5m2/..., keeping the OLD ATTRIBUTE names

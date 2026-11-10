@@ -11,36 +11,36 @@ import ./../../mixin/reduce.bend as RC
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/resnet.py (170 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/resnet.py (170 loc). not yet ported.
 #
 # This is the ResNet DEFINITION and the first thing that has to exist before
 # any ImageNet-shaped number can be produced, so the header states the distance
 # exactly rather than rounding it to "not done".
 # Measured 2026-10-19 03:46-04:05Z at HEAD 80d329a33, all by reading the port.
 #
-# THE HEADLINE, CORRECTED 2026-10-20 -- **AND THE CORRECTION IS THE POINT.** This used to read
-# "`nn.Conv2d`, `nn.BatchNorm2d` AND `nn.Linear` ARE ALL MISSING", and **THREE UNITS REPORTED IT AS
-# STALE WHILE IT WAS STILL TRUE-ISH**: `nn/layers.bend` and `nn/pool.bend` landed and CLOSED IT, and a
+# the headline, corrected 2026-10-20 -- and the correction is the point. This used to read
+# "`nn.Conv2d`, `nn.BatchNorm2d` and `nn.Linear` are all missing", and three units reported it as
+# stale while it was still TRUE-ish: `nn/layers.bend` and `nn/pool.bend` landed and closed it, and a
 # wall that has FALLEN is still NAMED as a wall. Measured now, by NAME, not by count --
 #   nn_conv2d     nn/layers.bend:937 symbol=nn_conv2d      nn_linear    nn/layers.bend:530 symbol=nn_linear
 #   nn_relu       nn/layers.bend:299 symbol=nn_relu      pool_bn      nn/pool.bend:382 symbol=pool_bn
 #   pool_maxpool  nn/pool.bend:251 symbol=pool_maxpool
-# **WHAT IS ACTUALLY STILL MISSING**, named and checked, and the distinction MATTERS: `vt_sequential`
+# WHAT IS ACTUALLY STILL MISSING, named and checked, and the distinction MATTERS: `vt_sequential`
 # and `vt_layernorm` DO exist -- one at upstream's `vt_sequential`
 # (`extra/models/vit.bend:153` symbol=vt_sequential) and upstream's
-# `vt_layernorm` at `extra/models/vit.bend:157` symbol=vt_layernorm -- **but both are STUB
-# REFUSALS inside another model's stub, not ported layers.** So "the name is absent" and "the layer is
+# `vt_layernorm` at `extra/models/vit.bend:157` symbol=vt_layernorm -- but both are STUB
+# REFUSALS inside another model's stub, not ported layers. So "the name is absent" and "the layer is
 # absent" are DIFFERENT QUESTIONS, and a census that answers the first while being read as the second
 # is the same defect as this headline was. Genuinely ABSENT everywhere, 0 defs:
 # `scaled_dot_product_attention` and `identity_element` (the latter is why BOTH padded pool arms
-# refuse), plus `Tensor.cat` and reshape's `-1` inference. **ZERO nn LAYER CLASSES** --
+# refuse), plus `Tensor.cat` and reshape's `-1` inference. ZERO nn LAYER CLASSES --
 # `nn/__init__.bend` is 429 lines of shape arithmetic and still holds no class.
 # `THE PORT's `nn/__init__.bend` WALL BLOCK` still reads "`x.layernorm -- SIDE B, not built`", which is TRUE, so it is
 # deliberately NOT touched.
 # `nn/__init__.bend` holds the SHAPE ARITHMETIC the layers need and nothing else:
 #   nn_mt      :151   `make_tuple`                        nn_groups :175  `in_channels//groups`
 #   nn_same    :196   `padding='same'`                    nn_scale  :209  `1/sqrt(in_c*prod(ks))`
-#   nn_bound   :210   `1/sqrt(n)`                         nn_glorot :217  `(6/(fan_in+fan_out))**0.5`
+#   nn_bound   :210   `1/sqrt(n)`                         nn_glorot :217  `(6/(fan_in+fan_out))0.5`
 # Its own wall list named the three this file needs first:
 #   :231  `TODO(p3) mixin/op.py  x.conv2d           -- SIDE B, not built.`
 #   :229  `TODO(p3) mixin/op.py:1678  x.batchnorm   -- SIDE B, not built.`
@@ -48,13 +48,13 @@ import ./../datasets/__init__.bend as D
 # 2026-10-19, because a deleted blocker is how the NEXT reader thinks nothing was ever missing.
 #   :227  `TODO(p3) mixin/op.py:1254  x.linear       -- ...`
 #
-# AND `tinybendygrad/mixin/op.bend:1523` IS THE LAST LINE OF THAT FILE and reads
-# `# SIDE B's SECTION GOES BELOW THIS LINE.` -- so SIDE B IS THE EMPTY HALF.
+# and `tinybendygrad/mixin/op.bend:1523` is the last line of that file and reads
+# `# SIDE B's SECTION GOES BELOW THIS LINE.` -- so side b is the empty half.
 # `mixin/op.bend:13-15` enumerates it: "sequential, linear, the pools, the
 # convolutions, layernorm, batchnorm, the losses, qr, svd, keccak, hash". The
 # file is 1523 lines and every `def` in it is on SIDE A. THAT IS THE WALL.
 #
-# THE SYMBOL CENSUS, EVERY UPSTREAM SYMBOL THIS FILE NAMES, WITH ITS INSTRUMENT:
+# the symbol census, every upstream symbol this file names, with its instrument:
 #
 #   EXISTS
 #     `Tensor`            tensor.bend (Tensors, tn_*)
@@ -139,14 +139,14 @@ import ./../datasets/__init__.bend as D
 #                         function.bend will need, `tiny_jit.of3(f)`, and there
 #                         is no `tiny_jit` def.                            (:166)
 #
-# THE ARITHMETIC HALF IS DONE AND THE EXECUTION HALF IS NOT. So the shapes of a
+# the arithmetic half is done and the execution half is not. So the shapes of a
 # ResNet18 can be computed today -- `nn_scale`, `nn_bound`, `nn_groups`,
 # `nn_same` and `nn_mt` are all callable and all gated upstream -- and not one
 # activation can be produced. A port that could print the shape of
 # `conv1.weight` and not run `conv1` is exactly half of ResNet, and this header
 # is where that half is recorded.
 #
-# EVERY DEF BELOW REFUSES, AND THE RETURN TYPE IS `D.Refused`, NOT A TENSOR. A
+# every DEF below refuses, and the return TYPE is `D.Refused`, not a tensor. a
 # stub that returned a zero Tensor or an empty list would be indistinguishable
 # from a layer whose weights happen to be zero, and a model file that reports
 # silence instead of absence is the one lie this file must not tell. `refuse`

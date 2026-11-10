@@ -16,10 +16,10 @@ import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/clip.py (480 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/clip.py (480 loc). not yet ported.
 #
-# CLIP IS BOTH HALVES AT ONCE, AND THAT IS WHY IT IS THE ONE FILE IN THIS SLICE
-# WHOSE WALLS OVERLAP resnet.bend's AND bert.bend's RATHER THAN CHOOSING.
+# clip is both halves at once, and that is why it is the one file in this slice
+# whose walls overlap resnet.bend's and bert.bend's rather than choosing.
 # Its vision half (`ClipVisionTransformer`, :338) asks for `nn.Conv2d`, which
 # resnet.bend's census at :68-81 called MISSING and which is NOW BUILT --
 # nn/layers.bend:937 `nn_conv2d`. Its text half (`ClipTextTransformer`, :318)
@@ -27,10 +27,10 @@ import ./../datasets/__init__.bend as D
 # resnet.bend NEVER ASKED FOR and both of which are MISSING.
 # So the honest reading of THE PORT's `resnet.bend` HEADLINE BLOCK -- "`nn.Conv2d`, `nn.BatchNorm2d` AND
 # `nn.Linear` ARE ALL MISSING" -- is STALE for conv2d and linear, and
-# `nn/layers.bend:14-27` says so in its own words: "THE WALL TEXT NAMED THE WRONG
+# `nn/layers.bend:14-27` says so in its own words: "the wall text named the wrong
 # BLOCKER, MEASURED AGAINST WHAT IS ON DISK."
 #
-# THE NAMED CENSUS FOR THIS FILE:
+# the named census for this file:
 #   `nn.Embedding`  MISSING (:201,:202,:319) -- the TEXT side.
 #   `nn.LayerNorm`  MISSING (:182,:184,:222,:289,:292,:322,:348,:349) -- SEVEN sites,
 #                     and this is why clip.py is further from running than retinanet.py
@@ -71,14 +71,14 @@ import ./../datasets/__init__.bend as D
 #                     `scaled_dot_product_attention`. `mo_softmax`
 #                     (mixin/op.bend:1095) EXISTS and would serve T5 but not this.
 #
-# THE FIRST 140 LINES ARE A BPE TOKENIZER AND ARE NOT A PORTING PROBLEM.
+# the first 140 lines are a bpe tokenizer and are not a porting problem.
 # clip.py:15 `default_bpe()` `fetch`es a gzip file (:17), clip.py:17
 # `bytes_to_unicode` is a 256-entry dict, and clip.py:60 `gzip.open` +
 # `:75 re.compile` are Python string machinery. THE PORT's `helpers.bend` HEADER already
 # records the whole HTTP/download seam as unported. Named here so the LOC count
 # is not read as arithmetic left undone.
 #
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `OpenClipEncoder.prepare_image`
+# not ported, and named so nobody invents it: `OpenClipEncoder.prepare_image`
 # (:446) is PIL -- `from PIL import Image` at :447, `.resize(..., BICUBIC)`,
 # `.crop`, `np.array(image.convert('RGB'))` -- and is HOST I/O, not a graph.
 #
@@ -162,7 +162,7 @@ def cl_closed_embedder_init(ret_layer_idx: Maybe<&2, U32>) -> D.Refused:
 def cl_closed_embedder_call() -> D.Refused:
   D.refuse("extra/models/clip.py:242 FrozenClosedClipEmbedder.__call__ -- FIRST MISSING SYMBOL TextTransformer.forward (:247) -> LayerNorm (:222)")
 
-# :249 Open. NOT PORTED. NOT PORTED. NOT PORTED: the "leaky" softmax of open-clip
+# :249 Open. not ported. not ported. not ported: the "leaky" softmax of open-clip
 # at :277 is `(x * 100.0).softmax(dim=-1).to(x.dtype)` and it is the ONLY
 # `softmax` any file in this slice calls DIRECTLY on the open side.
 # ---------------------------------------------------------------------------
@@ -219,7 +219,7 @@ def cl_embed_tokens(+tokens: T.Tensor) -> D.Refused:
 def cl_frozen_open_call() -> D.Refused:
   D.refuse("extra/models/clip.py:399 FrozenOpenClipEmbedder.__call__ -- FIRST MISSING SYMBOL self.tokenizer (:401), i.e. gzip + re")
 
-# :428 class OpenClipEncoder / :429 def __init__(self, dims, text_cfg, vision_cfg, **_)
+# :428 class OpenClipEncoder / :429 def __init__(self, dims, text_cfg, vision_cfg, _)
 def cl_openclip_encoder_init(dims: U32) -> D.Refused:
   D.refuse("extra/models/clip.py:429 OpenClipEncoder.__init__ -- FIRST MISSING SYMBOL Open.ClipTransformer (:450) -> LayerNorm")
 

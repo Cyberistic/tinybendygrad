@@ -1,6 +1,6 @@
 # tinybendygrad/runtime/ops_null.bend -- port of tinygrad/runtime/ops_null.py
 #
-# ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH. This was `ops_cpu_null.bend`,
+# one BEND file per upstream .py, at the same path. This was `ops_cpu_null.bend`,
 # which held `ops_cpu.py` AND `ops_null.py`; the 1:1 ruling gives each its own file.
 # `runtime/ops_cpu.bend` is the other half and the rows are the SAME rows -- 308 across
 # the pair before the split, 308 after. The unit's THE GATE paragraph, its FIXTURES
@@ -23,7 +23,7 @@
 # the assert and the device's trace is then EMPTY: the same observable for a different
 # reason, and `nr_assert_trace_n` is the row that pins it.
 #
-# THE SUBSTRATE IS IMPORTED, NOT COPIED: `C.Tr`/`C.Tr.*` (the trace), `C.CALL_PING` (the
+# the substrate is imported, not copied: `C.Tr`/`C.Tr.*` (the trace), `C.CALL_PING` (the
 # seam tag the `EMULATE` assert probes with), `C.Cn`/`C.cn_slot` (the slot walk the
 # kernargs layout shares with upstream's `struct.pack_into` value slots, tinygrad/runtime/ops_cpu.py:58-59 symbol=__call__),
 # `C.Cr`, the port's own `C.nth`
@@ -76,7 +76,7 @@ def NTIMESTAMP() -> U32: 4
 
 # ===========================================================================
 # ops_null.py:25, `def cmd(self, op, *args): self.q(*[... for a in (op, *args,
-# 0, 0, 0)][:4])`. THREE FACTS AND ALL THREE ARE THE FILE:
+# 0, 0, 0)][:4])`. three facts and all three are the file:
 #
 #   1. the tuple is (op, *args, 0, 0, 0) -- THREE trailing zeros, so a command
 #      with one argument is padded by two and one with two is padded by one;
@@ -90,7 +90,7 @@ def NTIMESTAMP() -> U32: 4
 # `nr_pads_*` and fail `nr_words`.
 # ===========================================================================
 
-# THE ARITY OF EACH `cmd` CALL SITE, as a `U32` literal ladder in DESCENDING
+# the arity of each `cmd` call site, as a `U32` literal ladder in descending
 # order (bend2-constraints.md, tc_ptx rule 4: an ascending ladder makes every
 # arm after `case 0:` dead code that still typechecks).
 def nr.nargs(op: U32) -> U32:
@@ -478,7 +478,7 @@ def nprog.lane(+ds: List<&2, String>, +i: Nat) -> U32:
 # structure is the row that checks it.
 def nprog.sig_one(st: U32, lane: U32, k: U32) -> U32: U32.add(U32.add(st, lane), k)
 
-# THE INDEX IS A PARAMETER AND THE LIST IS NEVER MATCHED. The first version read
+# the INDEX is a parameter and the list is never matched. The first version read
 # `i` out of `len(acc)/2` and matched on `ds` in the same arm -- and
 # `case h <> t:` SPENDS its scrutinee, so `nprog.lane(ds, i)` was handed a spent
 # list, `nprog.dev_at_list` answered "" for every entry and every lane was 0.
@@ -503,7 +503,7 @@ def nprog.sigs(+st: U32, +ds: List<&2, String>) -> List<&2, U32>:
 # numbers `sigs` is indexed by.
 def nprog.ent_ids(+i: U32) -> List<&2, U32>: [U32.mul(i, 2), U32.add(U32.mul(i, 2), 1)]
 
-# THE SIGNATURE MEASURED ON THE REAL NULL DEVICE (DEV=NULL, DEBUG=3): seven
+# the signature measured on the real NULL device (dev=NULL, DEBUG=3): seven
 # entries, itemsizes [8,1,8,1,8,1,1], two of them named `cmdbuf_*` at indices 3
 # and 5 with 160 and 224 bytes. The fixture is this list and nothing else.
 def nprog.sig7() -> List<&2, Sg>:
@@ -565,11 +565,11 @@ def nalloc.map_is_null(dev: String) -> Bool: String.starts_with(dev, "NULL")
 # overrides, and the overrides are the file's only STRING-BUILDING code.
 #
 #   has_local = False; float4 = "float4"; barrier = "// BARRIER"
-#   code_for_op = {**CStyleLanguage.code_for_op,
+#   code_for_op = {CStyleLanguage.code_for_op,
 #                  Ops.THREEFRY: lambda a,b,dtype: f"threefry({a},{b})",
 #                  Ops.MAX:      lambda a,b,dtype: f"max({a},{b})"}
 #
-# MEASURED: `{**CStyleLanguage.code_for_op}` has 21 entries, NullRenderer's has
+# MEASURED: `{CStyleLanguage.code_for_op}` has 21 entries, NullRenderer's has
 # 23, and the two it adds are EXACTLY MAX and THREEFRY -- every shared entry is
 # the SAME lambda object (`cfop_changed == 0`). So the merge is ADDITIVE, and
 # `nr_cfop_overrides` being 2 rather than 23 is the row that says so.
@@ -653,7 +653,7 @@ def ndev.emulate_table() -> List<&2, C.Ca>:
 
 def ndev.emulate_fallback() -> String: "<arch>"
 
-# THE FALLBACK IS NOT THE KEY HERE. `Ca.lookup`'s default arm is the key itself,
+# the fallback is not the key here. `Ca.lookup`'s default arm is the key itself,
 # which is right for the CPU arch map (an unknown machine IS its own arch) and
 # wrong here (an unknown emu is literally the five-character string "<arch>").
 # So the substitution is this def's, and it is why `nr_emulate_arch_empty` and

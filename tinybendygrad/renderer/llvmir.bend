@@ -19,17 +19,17 @@
 #   diff .agents/slop/li/port.txt .agents/slop/li/py.txt
 # ONE `IO.print` for the whole table, so `IO.print`'s own newline is the only
 # frame and the oracle's single trailing "\n" is its match. BOTH LANES WERE
-# MEASURED BYTE-IDENTICAL TO EACH OTHER AND TO THE ORACLE.
+# measured BYTE-identical to each other and to the oracle.
 # ⚠ THE ORACLE MOVED. This header used to say `.agents/slop/li/li-oracle.py`, and that
 # file does not exist: `rebase-gate.py`'s roster points at `.agents/slop/llvmir-oracle.py`,
 # which is where it lives. `.agents/slop/li/` holds CAPTURES, not the oracle.
-# ⚠ AND A BYTE DIFF IS NOT A COVERAGE STATEMENT. The two lanes print the SAME BYTES, so a
+# ⚠ and a BYTE diff is not a coverage statement. The two lanes print the same bytes, so a
 # value comparison over them agrees by construction no matter what this file computes --
 # `disagree` is 0 for free. What the diff cannot see is how many of the 471 printed rows any
 # NAME can reach, and for most of this file's life that was 323. See the next section.
 #
 # ---------------------------------------------------------------------------
-# ROW NAMES CARRY NO `=`, AND 157 OF THEM USED TO. 2026-10-04.
+# row names carry no `=`, and 157 of them used to. 2026-10-04.
 #
 # `rebase-gate.py:row` splits a row line at its FIRST `=`. This lane's boundary is
 # `<name> = [v]   py=[w]`, so a name containing `=` is cut in the wrong place and TWO rows
@@ -63,7 +63,7 @@
 # `.agents/slop/li/li-rename.py`, `.agents/slop/li/li-rename-oracle.py`,
 # `.agents/slop/li/rename-audit.txt`, `.agents/slop/llvmir-nameshape-control.md`
 #
-# `lt 1 ptr f32` IS PRINTED TWICE, ON BOTH SIDES, AND IS NOT FIXED HERE. `r_lts()` below
+# `lt 1 ptr f32` is printed twice, on both sides, and is not fixed here. `r_lts()` below
 # and the PORT'S OWN ORACLE (`llvmir-oracle.py`, lines 647-648) each list the tuple
 # `(1, dtypes.f32, True)` twice in the same `lt` count/ptr table, so the fourth entry is
 # the first again. This is the `nv_query_litter` shape agent-core.md records -- wrong in
@@ -72,7 +72,7 @@
 # fourth entry was meant to be would invent a row, so it is REPORTED. `llvmir-gate.py --drop-dup`
 # shows what the lane reads like without it: 470 rows, 470 names, AGREE, rc=0.
 # ---------------------------------------------------------------------------
-# THE `py=` HALVES ARE DERIVED, NOT TRANSCRIBED. `rd` is the row builder's derived
+# the `py=` halves are derived, not transcribed. `rd` is the row builder's derived
 # half: the `py=` half IS the port's own value, re-read through the same code the
 # port prints, so a row cannot disagree with itself and there is no transcription
 # left to rot.  This file's 471 `py=` cells were TRANSCRIPTIONS until 2026-10-22,
@@ -83,7 +83,7 @@
 # while the `got=` half beside it was WRONG -- a file that agreed with itself and
 # was wrong on thirty rows.  A derived cell cannot rot that way.
 #
-# WHAT A DERIVED CELL IS NOT, STATED PLAINLY: it is not an INDEPENDENT witness, and
+# what a derived cell is not, stated plainly: it is not an independent witness, and
 # it cannot fail on its own -- the row is internally consistent by construction.
 # CPython's VALUE lives in the oracle (`gates/llvmir_render-oracle.py`, RECOVERED
 # from git history, and the ASSERTION is the byte diff between that file's rows and
@@ -91,7 +91,7 @@
 # CPython's VALUE.  `gates/llvmir_render-gate.py` runs all three lanes --
 # CPython, bend interpreted, bend compiled -- and compares them byte for byte.
 #
-# AND THE ORACLE CALLS THE REAL CODE, which is the other half of the point:
+# and the oracle calls the real code, which is the other half of the point:
 # `base_rewrite.patterns[i][1]` IS CPython's own emitter and `_render_fn` is
 # called for real on real `ParamArg`s, so no f-string from llvmir.py is re-typed
 # on either side of the diff. `llvmir-oracle.py` calls `L.ldt`, `L.lcast.a`,
@@ -99,7 +99,7 @@
 # ports of the first three and names the last.
 #
 # ---------------------------------------------------------------------------
-# A READ-ONLY NEIGHBOUR IS RED, AND IT IS NOT THIS FILE
+# a read-only neighbour is red, and it is not this file
 #
 # `nir_llvmir.bend:181-191` spells `ldt.fp` as EIGHT `case`s on the dtype NAME
 # (`"float"`, `"half"`, `"__bf16"`, `"double"`, `"float8_e4m3"`, ...).
@@ -119,7 +119,7 @@
 # `nir_llvmir.bend` is COMMITTED and was out of scope to edit, so the fix is
 # REPORTED, not applied, and this file carries its own `lt`.
 #
-# `lt` IS `ldt` RE-ARMED ON FIELDS THE RENAME DOES NOT TOUCH: `Cls`, `bits` and
+# `lt` is `ldt` re-armed on fields the rename does not touch: `Cls`, `bits` and
 # `pri`. Within `CFloat`, `bits == 8` is the fp8 quadruple and every one of them
 # spells `i8`, so the four-name collapse is the MAP'S OWN property and not a
 # shortcut -- `ldt(fp8e4m3) == ldt(int8) == "i8"` is true in CPython too and
@@ -133,7 +133,7 @@
 # ---------------------------------------------------------------------------
 # THE TWELVE CONVENTIONS of `renderer/__init__.bend`'s header are obeyed. The five
 # that bite here:
-#   2. THE GATE IS A STRING DIFF, NEVER A BOOLEAN ABOUT STRINGS. Every row is
+#   2. the gate is a string diff, never a boolean about strings. Every row is
 #      `<name> = [BEND]   py=[CPYTHON]`, and every MULTI-LINE emitter is gated ONE
 #      LINE PER ROW and never as a re-joined blob: `String.concat` drops a literal
 #      silently, and a boolean about a joined string can be true while the string
@@ -142,17 +142,17 @@
 #      `abi: str | None` is `""` for absent, and the ROW LABEL keeps the Python
 #      spelling (`rfn abi None global [0]`) -- a port that passed the literal
 #      `"None"` prints `define None void`, which is what the first draft did.
-#   4. A `match` MAY ONLY SCRUTINISE A PARAMETER OR A PATTERN BINDER. Every ladder
+#   4. a `match` may only scrutinise a parameter or a pattern binder. Every ladder
 #      here destructures its own parameter first; there is no `value.field` sugar
 #      and no generated projection.
-#   6. A RECORD LITERAL AND A RECORD PATTERN BOTH NAME EVERY FIELD.
-#  10. A WALL WITH A NAME INSTEAD OF A PLAUSIBLE WRONG STRING: `KeyError`,
+#   6. a record literal and a record pattern both name every field.
+#  10. a wall with a name instead of a plausible wrong string: `KeyError`,
 #      `RuntimeError` and `ValueError` are the strings the port answers where
 #      CPython raises, and each has a row that says so -- `lt weakfloat`,
 #      `br6 bitcast i8x1->f32x1`, `fp8_pos i32`.
 #
 # ---------------------------------------------------------------------------
-# WHAT IS NOT PORTED, WITH PYTHON LINES. Measured, not guessed.
+# what is not ported, with python lines. Measured, not guessed.
 #
 #   * `_render_kernel`'s NAMING WALK (llvmir.py:161-202). This is the one
 #     STAGE-2 item left out and it is the CENTREPIECE, so the reason is the
@@ -224,7 +224,7 @@ def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
 
 
-# THE DERIVED ROW.  The `py=` half is the PORT'S OWN VALUE, re-read through the same
+# the derived row.  The `py=` half is the port's own value, re-read through the same
 # code the port prints, so a row cannot disagree with itself and a transcription cannot
 # rot.  `r` takes the `py=` half as an argument because `tc_ptx.bend` calls it too;
 # `rd` is this file's derived half of that.
@@ -295,7 +295,7 @@ def lt.pri(+d: S.Dt) -> U32:
 #     def is_volatile(u:UOp) -> bool:
 #       return (buf:=u.buf_uop).op is Ops.PARAM and buf.arg.volatile
 #
-# TWO FACTS AND BOTH ARE ROWS. `buf_uop` walks UP to the PARAM, so a CAST and
+# two facts and both are rows. `buf_uop` walks up to the PARAM, so a CAST and
 # an AFTER above a PARAM answer the PARAM's flag -- and a BUFFER is NOT a PARAM,
 # so `is_volatile` on a buffer carrying `volatile=True` is STILL False. That
 # second one is the row a reader who tests `u.arg.volatile` gets wrong, and it
@@ -326,7 +326,7 @@ def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
 #       return truncate[dtype](x)
 #     return int(x)
 #
-# THE HEX ARM IS ALL THAT IS PORTABLE, and it is not a table: Bend has no `F64`
+# the hex arm is all that is portable, and it is not a table: Bend has no `F64`
 # (`uop/fold.bend:3628 symbol=bnd_f` says so), so `struct.pack("d", x)` is not expressible --
 # but the FOUR answers are constants of the IEEE-754 layout rather than of `x`.
 #
@@ -339,7 +339,7 @@ def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
 
 def lconst_neg(pos: Bool) -> Bool: Bool.not(pos)
 
-# THE SIGN RIDES BIT 7 OF THE TOP BYTE AND NOWHERE ELSE, so byte 0 is `0x7F`
+# the sign rides bit 7 of the top BYTE and nowhere ELSE, so byte 0 is `0x7F`
 # for `+` and `0xFF` for `-` -- NOT `0x87`, which is what `0x7F | 0x08` gives and
 # is the reading that costs a hex digit-pair. Byte 1 is `0xF0` plus the nan quiet
 # bit and bytes 2..7 are zero, so the WHOLE of the sign-and-nan behaviour is two
@@ -655,7 +655,7 @@ def r_br5(+nm: String, +xn: String, +sdts: List<&2, S.Dt>, +snames: List<&2, Str
 # `br9 binary f32 FDIV` is the row that says the wall is the TABLE and not the
 # op; `N.lop.has` is the membership test and `N.lop.cell` is the value.
 # ---------------------------------------------------------------------------
-# THE ITEMSIZE WALL IS NOT THIS EMITTER'S. `UOp(Ops.BITCAST, ...)` asserts
+# the itemsize wall is not this emitter's. `UOp(Ops.BITCAST, ...)` asserts
 # `in_dtype.itemsize == out_dtype.itemsize` in ops.py BEFORE `base_rewrite` is
 # consulted, so `i8 -> float` is refused upstream and rule 6 never runs. Naming
 # the wall here is convention 10; the row `br6 bitcast i8x1->f32x1` is what says
@@ -705,7 +705,7 @@ def r_br10(+nm: String, +d0: S.Dt, +d1: S.Dt, +d2: S.Dt, +xn: String, +s0: Strin
 # lines) and the END. All four are built on `lab(...)` or on `range_str`, so a `%`
 # that never gets dropped is a DIFFERENT LABEL on four of the five.
 #
-# THE FIVE LABELS ARE `range_str`'s, NOT THE WALK'S. `loop_{r}`, `loop_entry_`,
+# the five labels are `range_str`'s, not the walk's. `loop_{r}`, `loop_entry_`,
 # `loop_latch_{r}`, `loop_footer_{r}`, `loop_body_{r}`, `loop_exit_{r}` -- and `r`
 # here is `range_str(r)`, whose leading digit is the AXIS ID and not `ctx[r][1:]`.
 # A port that used `lab(ctx[r])` answers `loop_v3` where CPython answers `loop_0`,
@@ -828,7 +828,7 @@ def r_f8i(+nm: String, +d: S.Dt) -> String:
 def r_f8p(+nm: String, +d: S.Dt) -> String:
   rd(String.concat(["fp8_pos ", nm]), f8pos.miss(f8pos(d)))
 
-# THE SAME WALL THROUGH THE OTHER DIRECTION, as its own pair of defs: `fp8_pos i32`
+# the same wall through the other direction, as its own pair of defs: `fp8_pos i32`
 # and `fp8_index i32` are two rows of the SAME miss and they are what make the
 # sentinel reachable. One def for both would give one of them the other's NAME.
 def r_f8mp(+nm: String, +d: S.Dt) -> String: rd(String.concat(["fp8_pos ", nm]), f8pos.miss(f8pos(d)))
@@ -1064,18 +1064,18 @@ def main() -> IO(Unit):
 #
 #   M1 lt.fp's 16-bit arm is half 9 amd1 exp2 f16->f16, amd1 log2 f16->f16, amd1 s
 #   M2 lt.fp answers double at pri 13 11 br5 stack n 3 bf16 [0], br5 stack n 3 bf1
-#   M3 lt.ints is bits // 8 70 br1 extractelement alu i32, br10 where mixed, br13 
+#   M3 lt.ints is bits // 8 70 br1 extractelement alu i32, br10 where mixed, br13
 #   M4 CONTROL a comment-only edit 0
-#   M5 lt.v's count arm is >= 1 33 br2 load vol False f32 [4], br2 load vol False 
+#   M5 lt.v's count arm is >= 1 33 br2 load vol False f32 [4], br2 load vol False
 #   M6 lt.v's count arm is dropped 19 br1 extractelement alu, br1 extractelement a
 #   M7 lt.fp's 8-bit arm is 9 4 lt fp8e4m3, lt fp8e4m3fnuz, lt fp8e5m2 ...
-#   M8 lt.fp's catch-all is float 12 amd1 exp2 f64->f64, amd1 log2 f64->f64, amd1 
+#   M8 lt.fp's catch-all is float 12 amd1 exp2 f64->f64, amd1 log2 f64->f64, amd1
 #   M9 lt.of weak-class catch-all is void 2 lt weakfloat, lt weakint
 #   M10 ivol ORs instead of ANDs 5 is_volatile AFTER vol False, is_volatile BUFFER
 #   M11 ivol ignores is_param 2 is_volatile BUFFER vol True, is_volatile CONST vol
 #   M12 ivol ignores vol 3 is_volatile AFTER vol False, is_volatile CAST vol False
 #   M13 volsp's volatile arm has no space 9 br2 load vol True f32 [4], br2 load vo
-#   M14 lconst_b0 is 7F/87 (the OR reading) 2 lconst special -inf, lconst special 
+#   M14 lconst_b0 is 7F/87 (the OR reading) 2 lconst special -inf, lconst special
 #   M15 lconst_b0 swaps its arms 4 lconst special +inf, lconst special +nan, lcons
 #   M16 lconst_b1 drops the nan quiet bit 2 lconst special +nan, lconst special -n
 #   M17 lconst_hex tail is 10 zeros 4 lconst special +inf, lconst special +nan, lc
@@ -1091,13 +1091,13 @@ def main() -> IO(Unit):
 #   M27 br_rules's first arm is 19 1 base_rewrite.rules
 #   M28 br_rules.b's 23 becomes 22 1 amd.string_rewrite.rules
 #   M29 br_rules.b's third arm is 6 1 base_rewrite.after_amd
-#   M30 br1 answers None for ALU 2 br1 extractelement alu, br1 extractelement alu 
+#   M30 br1 answers None for ALU 2 br1 extractelement alu, br1 extractelement alu
 #   M31 br1 answers a line for every addrspace 3 br1 extractelement global, br1 ex
 #   M32 br1's index type is i64 2 br1 extractelement alu, br1 extractelement alu i
-#   M33 br1 drops the extractelement 2 br1 extractelement alu, br1 extractelement 
+#   M33 br1 drops the extractelement 2 br1 extractelement alu, br1 extractelement
 #   M34 br2 drops volatile 3 br2 load vol True f32 [4], br2 load vol True i32 [4],
 #   M35 br2 phi drops the alt 6 br2 load vol False f32 [7], br2 load vol False i32
-#   M36 br2's phi is a bare name 6 br2 load vol False f32 [7], br2 load vol False 
+#   M36 br2's phi is a bare name 6 br2 load vol False f32 [7], br2 load vol False
 #   M37 br2 swaps _load and _exit 6 br2 load vol False f32 [2], br2 load vol False
 #   M38 br2's entry label keeps the % 6 br2 load vol False f32 [1], br2 load vol F
 #   M39 br2 branches on the node not the mask 6 br2 load vol False f32 [2], br2 lo
@@ -1109,12 +1109,12 @@ def main() -> IO(Unit):
 #   M45 br5's element count is len(srcs) 10 br5 stack n 1 f32 [0], br5 stack n 2 f
 #   M46 br6.same is always True 1 br6 bitcast i8x1->f32x1
 #   M47 br8 types the RESULT od 3 br8 trunc f32->i32, br8 trunc f64->f32, br8 trun
-#   M48 br9 never walls 20 br9 binary bf16 TRUNCDIV, br9 binary bf16 TRUNCMOD, br9 binary 
+#   M48 br9 never walls 20 br9 binary bf16 TRUNCDIV, br9 binary bf16 TRUNCMOD, br9 binary
 #   M49 br10 reuses d0 three times 1 br10 where mixed
 #   M50 br11's loop label is bare 1 br11 rangevoid [0]
 #   M51 br13 labels from the NAME not the axis id 2 br13 range [5], br13 range neg
 #   M52 br13's icmp bound is a literal 2 br13 range [6], br13 range neg [6]
-#   M53 br14 drops the latch label 4 br14 end neg [2], br14 end neg [3], br14 end 
+#   M53 br14 drops the latch label 4 br14 end neg [2], br14 end neg [3], br14 end
 #   M54 br16 labels from the ENDIF own name 4 br16 endif bool [0], br16 endif bool
 #   M55 br17 drops the leading two spaces 1 br17 barrier
 #   M56 amd2 drops the barrier's quotes 4 amd2 barrier [0], amd2 barrier [1], amd2
@@ -1158,7 +1158,7 @@ def main() -> IO(Unit):
 # gate is a POSITIONAL diff and not a per-row boolean -- a per-cell comparison
 # would have called 84 changed rows "84 rows, same count".
 #
-# FOUR MUTATIONS MOVE EXACTLY ONE ROW AND THAT IS THE POINT OF THEM, not a
+# four mutations MOVE exactly one row and that is the point of them, not a
 # thinness: M27/M28/M29 are the three rule COUNTS and each count has one row;
 # M31 is `br1`'s `None` arm and it is the only `None`-producing rule in the file;
 # M46 is the BITCAST itemsize wall and `br6 bitcast i8x1->f32x1` is its only
@@ -1172,7 +1172,7 @@ def main() -> IO(Unit):
 # note in its sharpest form, and moving four is better than moving one for the
 # same reason: the test has to be one test and the column has to exist.
 #
-# M22 IS A GENUINE THINNESS AND IT IS STATED, NOT PATCHED. `lc.arm(flt, fp8)`
+# M22 is a genuine thinness and it is stated, not patched. `lc.arm(flt, fp8)`
 # answers `dtype.truncate` for a float and `int` for an integer, and swapping the
 # fp8 arm (M19, 4 rows) moves while swapping the OUTER arms (M22) moves 0. The
 # reason is that `lconst branch <d>` is the only group reading `lc.arm`, and every
@@ -1189,7 +1189,7 @@ def main() -> IO(Unit):
 # LOGIC defects and a rules sweep finds all of them. Here the ratio is 6 against
 # 76.
 #
-# ALL SIX MOVES ARE FIXTURE LITERALS INSIDE THE GENERATED ROW BUILDERS -- the
+# all six moves are fixture literals inside the generated row builders -- the
 # `py=` halves of `ftr amd prod wx64h8`, `ftr amd prod wgx1024`, `ftr amd w3`,
 # `ftr amd prod wbig` and `ftr amd wbig` -- and NOT ONE IS PORT LOGIC. They are
 # the width constants of the AMD footer FIXTURES, and they move because the
@@ -1197,13 +1197,13 @@ def main() -> IO(Unit):
 # five places where this file's expectation and its input are the SAME NUMBER,
 # and knowing about those five is worth the run.
 #
-# THE FIFTY-TWO BLIND SPOTS ARE ALMOST ALL PYTHON LINE NUMBERS IN COMMENTS.
+# the fifty-two blind spots are almost all python line numbers in comments.
 # `llvmir.py:225`, `nir_llvmir.bend:181-191`, `spec.bend:694-701` and so on: the
 # sweep cannot tell a citation from a constant, so fifty of its fifty-eight
 # mutations edit a comment. The two that are neither comments nor fixture widths
 # are C50 (`f8pos.go`'s 4294967295 MISS sentinel, which BROKE because 4294967296
 # is not a `U32`) and C1/C2/C3/C4, which are all citations. THAT IS THE HARNESS'S
-# OWN BLIND LIST AND IT IS THE DELIVERABLE: a sweep over a file that cites its
+# own blind list and it is the deliverable: a sweep over a file that cites its
 # sources by line number is mostly a sweep over prose, and a reader who wanted a
 # guarantee from it would be reading the wrong table.
 # ===========================================================================

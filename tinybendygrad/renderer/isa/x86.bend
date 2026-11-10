@@ -2,17 +2,17 @@
 #
 # THE CONVENTIONS are `renderer/__init__.bend`'s HEADER, read in full before this
 # line was written; all twelve are obeyed. The three that bite here:
-#   2. THE GATE IS A STRING DIFF, NEVER A BOOLEAN ABOUT STRINGS. `String.concat`
+#   2. the gate is a string diff, never a boolean about strings. `String.concat`
 #      drops a literal silently, so every row below prints its answer BESIDE
 #      CPython's, and the rows that matter -- the ENCODED MACHINE BYTES and the
 #      ASSEMBLY TEXT -- are the strings themselves.
-#   4. A `match` MAY ONLY SCRUTINISE A PARAMETER OR A PATTERN BINDER, so every
+#   4. a `match` may only scrutinise a parameter or a pattern binder, so every
 #      `Data` field has a hand-written reader (there is no `value.field` sugar and
 #      no generated projection) and every lookup crosses a def boundary as a `Bool`.
-#   6. A RECORD LITERAL AND A RECORD PATTERN BOTH NAME EVERY FIELD.
+#   6. a record literal and a record pattern both name every field.
 #
 # ===========================================================================
-# WHAT IS COVERED, BY STAGE, WITH THE PYTHON LINES EACH IS WORTH
+# what is covered, by stage, with the python lines each is worth
 # ===========================================================================
 #
 #   STAGE 1  THE REGISTER TABLE                     py:173-192, 20 lines   DONE
@@ -20,7 +20,7 @@
 #     name, class membership (GPR / WGPR / XMM / CALLEE_SAVED), and `reg_strs`'s
 #     forty-eight sub-register names. 121 rows.
 #
-#   STAGE 2  THE OP ENUM AND THE OPERAND CLASSES    py:15-87, 73 lines   DONE
+#   stage 2  the op enum and the operand classes    py:15-87, 73 lines   done
 #     `X86Ops`'s eighty-eight names with their `auto()` numbers in BOTH directions,
 #     the seven `X86GroupOp` / module-level op sets, and `GPR_DEST_OPS` /
 #     `XMM_OPS`. 105 rows. `Rm1st` is a FORMULA in the source (x86.py:86,
@@ -53,7 +53,7 @@
 #     output plus a count. 13 rows. `Asm.line` is the whole formatter; the UOp graph
 #     is the gate's input and not this file's type.
 #
-#   STAGE 6  THE RENDERER'S OWN CONSTANTS           py:709-726, 18 lines   DONE
+#   stage 6  the renderer's own constants           py:709-726, 18 lines   done
 #            + py:779, 1 line
 #     `device`, `has_local`, `global_max`, `code_for_op`, and `supported_dtypes` as
 #     the SET DIFFERENCE it is: `Cls.base_dtypes` walked and filtered by
@@ -72,11 +72,11 @@
 #     which made the seven rows below incapable of failing; see `Op.to_int` itself.
 #
 #   COVERED: 372 of 770 Python lines, and the 372 are the lines that DECIDE WHAT
-#   BYTES AND WHAT TEXT COME OUT. The 398 not covered are the five `PatternMatcher`
+#   bytes and what text come out. The 398 not covered are the five `PatternMatcher`
 #   tables and the `ctx`-mutating rewrite helpers -- see NOT PORTED.
 #
 # ===========================================================================
-# NOT PORTED, WITH PYTHON LINES AND THE REASON FOR EACH
+# not ported, with python lines and the reason for each
 # ===========================================================================
 #
 # * `extra_matcher` (py:92-132, 41 lines) -- NINETEEN `(UPat, lambda)` pairs. `UPat`
@@ -183,7 +183,7 @@
 #   ./bin/bend tinybendygrad/renderer/isa/x86.bend > /tmp/port.rows
 #   diff /tmp/port.rows /tmp/py.rows && echo GATE GREEN
 #
-# 769 rows, AND NO `py=` HALF IN THIS FILE IS A LITERAL ANY MORE. Every row is
+# 769 rows, and no `py=` half in this file is a literal any more. Every row is
 # `rd(NAME, EXPR)`, and `rd` puts the PORT'S OWN VALUE in both halves, so a row
 # cannot disagree with itself and a stale row cannot sit here saying something the
 # port does not believe. THE ASSERTION IS THE LANE DIFF: the port's bytes against
@@ -224,7 +224,7 @@ def Hex.alpha(+b: U32) -> String:
     case 15: "f"
     case _: "?"
 
-# A NIBBLE IS ALREADY 0..15 AND `Hex.alpha` IS THE WHOLE SIXTEEN-ENTRY TABLE, so
+# a nibble is already 0..15 and `Hex.alpha` is the whole sixteen-entry table, so
 # `Hex.digit` IS `Hex.alpha` and the `b - 10` an earlier version subtracted was pure
 # loss: it printed `0xc3` as `23` and `0x0f` as `05`. MEASURED on `direct.RET` and on
 # all eighty-four `hex.*` rows at once. The reason it looked necessary is that the
@@ -237,8 +237,8 @@ def Hex.nibble(+b: U32) -> U32: U32.and(b, 15)
 def Hex.byte(+b: U32) -> String:
   String.concat([Hex.digit(Hex.nibble(U32.shrn(b, 4n))), Hex.digit(Hex.nibble(b))])
 
-# AN APPENDING FOLD, AND NOT A PREPEND-ONE-AND-REVERSE. `String.concat` PREPENDS and
-# `String.reverse` then reverses the WHOLE STRING -- the NIBBLES INSIDE EACH BYTE TOO,
+# an appending FOLD, and not a prepend-one-and-reverse. `String.concat` prepends and
+# `String.reverse` then reverses the whole string -- the nibbles inside each BYTE too,
 # so `0xc3` printed as `3c`. MEASURED on every one of the 84 `hex.*` rows at once,
 # which is the only reason a two-byte emitter was worth its own gate rows.
 
@@ -256,10 +256,10 @@ def Hex.bytes(bs: List<&2, U32>) -> String: Hex.bytes.go(bs, "")
 #     GPR  = (RAX..RDI) + tuple(Register(f"r{i}", i) for i in range(8, 16))
 #     XMM  = tuple(Register(f"xmm{i}", i, size=16) for i in range(16))
 #     WGPR = tuple(r for r in GPR if r != RSP)
-#     CALLEE_SAVED = (RBX, RBP, GPR[12], GPR[13], GPR[14], GPR[15])
+#     callee_saved = (rbx, rbp, gpr[12], gpr[13], gpr[14], gpr[15])
 #     reg_strs = {"rax": {4:"eax", 2:"ax", 1:"al"}, ...}
 #
-# THIRTY-TWO REGISTERS AND FORTY-EIGHT SUB-NAMES ARE BUILT, NOT TYPED, and the
+# thirty-two registers and forty-eight SUB-names are built, not typed, and the
 # reason is that `r8..r15` and `xmm0..xmm15` ARE `f`-STRINGS IN THE SOURCE: a
 # hand-written `Reg` literal would put sixty-four transcribed strings in the file
 # and `ops_nv`'s audit found 33 wrong constants in a file already printing 590
@@ -393,7 +393,7 @@ def Reg.xmm_list() -> List<&2, Reg>: Reg.xmm_list.go(List.range(16n), Nil{})
 # `tuple(r for r in GPR if r != RSP)` -- RSP is index 4, and comparing by INDEX is
 # comparing by identity here because `Register` is a frozen dataclass.
 #
-# THIS USES THE ARM-INDEX `match` AND NOT `Bool.pick` OVER A LIST, and that is a
+# this uses the arm-INDEX `match` and not `Bool.pick` over a list, and that is a
 # MEASURED choice rather than a stylistic one. Two `Bool.pick(List, cond, ...)` folds
 # over the register class each printed something plausible and wrong -- one BACKWARDS
 # and one keeping only `rsp` -- while the `grp.*` rows, which use the same `Bool.pick`
@@ -499,7 +499,7 @@ def Reg.strs_lookup(+nm: String, +sz: U32) -> String:
 # by `gates/x86_isa-oracle.py tables`; what the gate then tests is the
 # ARITHMETIC (both directions, 176 rows) and every derived predicate below.
 #
-# EIGHTY-EIGHT NAMES, AND `DEFINE` IS NOT ONE OF THEM. Upstream removed the
+# eighty-eight names, and `DEFINE` is not one of them. Upstream removed the
 # "register placeholder that defines a register without emitting an instruction"
 # (x86.py:14-16) -- `def_reg` went with it -- so the eighty-nine-name table that was
 # here was a name upstream does not have, and every `op.*` / `oprev *` / `2a.*` row
@@ -522,19 +522,19 @@ def op_names() -> List<&2, String>: [
 def op_len() -> U32: U32.from_nat(List.length(&2, String, op_names()))
 
 # `X86Ops[op.name]` is the forward lookup and `X86Ops(n).name` the reverse; both are
-# POSITION lookups here, plus a BASE. TWO WALKS AND NOT ONE THAT CARRIES BOTH: a walk
+# position lookups here, plus a base. two walks and not one that carries both: a walk
 # returning a pair would need a `String & U32` and Bend has a tuple TYPE and no tuple
 # LITERAL -- `ops.bend`'s `Found.of(p: Arena & U32)` destructures one, nothing
 # constructs one.
 #
-# THE BASE IS 76 AND NOT 0, AND THAT IS THE FIRST THING THIS GATE FOUND. `FastEnum`'s
+# the base is 76 and not 0, and that is the first thing this gate found. `FastEnum`'s
 # `auto()` CONTINUES FROM THE BASE `Ops` ENUM rather than restarting, so
 # `X86Ops.FRAME_INDEX` is 76 and `X86Ops.RET` is 163 -- eighty-eight ops numbered FROM
 # 76. A port that assumed 0..87 would print eighty-eight plausible numbers, every one
 # wrong, and `op.count` would still read 88. The 176 `op.*` / `oprev *` rows are what
 # caught it, which is why BOTH DIRECTIONS are gated and why a count is never a gate.
 #
-# THE BASE MOVED WHEN UPSTREAM'S `Ops` ENUM SHRANK, AND IT MOVED WITHOUT THE PORT
+# the base moved when upstream's `Ops` enum shrank, and it moved without the port
 # NOTICING: the `op.*` rows carried LITERAL `py=` halves, so a base that no longer
 # matched upstream was A NUMBER IN A STRING and nothing compared the two. The rows are
 # DERIVED now -- `rd("op.FRAME_INDEX", op_num("FRAME_INDEX"))` -- so the port's base and
@@ -560,7 +560,7 @@ def op_name_of(+want: U32) -> String: Op.rev(op_names(), want, 0)
 # ===========================================================================
 # STAGE 2b -- THE OPERAND CLASSES. x86.py:55-86 and :279-280.
 #
-# SEVEN SETS, and TWO OF THEM ARE FORMULAS RATHER THAN LISTS, which is the reason
+# seven sets, and two of them are formulas rather than lists, which is the reason
 # this stage is gated per-op rather than as a joined string:
 #
 #   Copy, TwoAddress, Rm2nd, WriteMem, ReadFlags, WriteFlags  -- literals
@@ -577,7 +577,7 @@ def op_name_of(+want: U32) -> String: Op.rev(op_names(), want, 0)
 # `sel != 0`, so the legacy entries carry 0 and print `-`.
 # ===========================================================================
 
-# THE NAME IS A FIELD AND NOT A POSITION, because `x86.py` writes the table as a
+# the name is a field and not a position, because `x86.py` writes the table as a
 # dict literal and a positional lookup would make the port's answer depend on its
 # own row order rather than on what the row says.
 
@@ -657,7 +657,7 @@ def Op.in_.go(+nm: String, +which: U32, +i: U32) -> Bool:
 def Op.in_(+nm: String, +which: U32) -> Bool: Op.in_.go(nm, which, 0)
 
 # which: 0 Copy, 1 TwoAddress, 2 Rm2nd, 3 WriteMem, 4 ReadFlags, 5 WriteFlags,
-#        6 GPR_DEST_OPS. THE TWO FORMULA SETS ARE NOT HERE -- `Rm1st` and `XMM_OPS`
+#        6 gpr_dest_ops. the two formula sets are not here -- `Rm1st` and `XMM_OPS`
 #        are computed from the sets above, and a dispatcher that both consulted and
 #        provided them would be a cycle. `Op.member` below is the nine-way
 #        dispatcher; `Op.in_` is the seven-way literal one.
@@ -726,7 +726,7 @@ def Op.set_len(+which: U32) -> U32: U32.from_nat(List.length(&2, String, Op.set_
 #                       if bits >= 8:  return X86Ops.VMOVSD
 #                       return X86Ops.VMOVSS
 #
-# TWO THRESHOLDS AND THREE ARMS, and the gate's fixture grid straddles BOTH: the
+# two thresholds and three arms, and the gate's fixture grid straddles both: the
 # (dtype, numel) pairs are chosen so bits takes the values 1, 2, 3, 4, 6, 8, 12, 16,
 # 24, 32 and 64 -- which puts a fixture one step below each threshold and one on
 # it. A grid that only hit `>= 16` would leave the other two arms unvisited and
@@ -763,7 +763,7 @@ def Op.xmm_sz_m(+bits: U32) -> String: Op.xmm_sz_m.of(Op.sz_arm(bits))
 # row rather than a hole: `to_int(dtypes.int32)` has no answer, and a port that answered one
 # would be answering a question nobody asked. Every one of the TWENTY dtypes is a row.
 #
-# RE-ARMED ON `cls` / `bits` / `pri`, NEVER ON A NAME. THIS IS THE FIX AND IT IS NOT A
+# re-armed on `cls` / `bits` / `pri`, never on a name. this is the fix and it is not a
 # REWORDING: the earlier ladder matched the strings "float16"/"float32"/"float64", and
 # tinygrad 793abbb ("modernize tinygrad's dtype to match rust") renamed `DType.name` to
 # `f16`/`f32`/`f64` (measured: `dtypes.float16.name == "f16"`), keeping the old attribute
@@ -773,7 +773,7 @@ def Op.xmm_sz_m(+bits: U32) -> String: Op.xmm_sz_m.of(Op.sz_arm(bits))
 # expected `KeyError`, which is what a DEAD ladder also answers. A name-keyed arm is a
 # fall-through, never a compile error (`agent-core.md`'s dtype-rename section).
 #
-# THE KEY IS THE WHOLE TRIPLE, AND `bits` ALONE IS NOT ENOUGH: `f16` and `bf16` are both
+# the key is the whole triple, and `bits` alone is not enough: `f16` and `bf16` are both
 # `bits == 16`, and only `pri` separates them (12 from 13), exactly as `renderer/llvmir.bend`'s
 # `lt.of` separates `half` from `bfloat`. `cls` is what excludes the EIGHTEEN non-floats, and
 # `bits` is what excludes the four fp8s and the two weak dtypes.
@@ -798,7 +798,7 @@ def Op.to_int(+d: S.Dt) -> String:
 # we=)` and EIGHT of which build bytes DIRECTLY. Those eight are ported below as
 # `Enc.direct`, because a jump's opcode is data here and not an arithmetic fact.
 #
-# THE TABLE IS A TABLE OF SMALL INTEGERS AND THE DANGER IS A WRONG ONE, which is
+# the table is a table of small integers and the danger is a wrong one, which is
 # silent everywhere except the gate: `ops_nv`'s audit found 33 wrong constants in a
 # file already printing 590 green rows. So the table below is written in BEND
 # DECIMAL (Bend 2.0.34 has no `0x` literal -- MEASURED, `0x8B` is a parse error
@@ -964,7 +964,7 @@ def Enc.imm_int(+k: Nat, +n: Nat, +imm: U32) -> List<&2, U32>:
   # 4- and 8-byte immediate row diffed on -- `MOVABS 0` came out
   # `48b80000000000001234` where CPython emits `48b83412000000000000`, so the whole
   # immediate was reversed and the row was a bare string concatenation nobody read.
-  # THE COUNTDOWN `k` AND THE TOTAL `n` ARE BOTH `Nat`, and the byte index is
+  # the countdown `k` and the total `n` are both `Nat`, and the byte index is
   # `n - k` in `Nat` too, because the byte offset feeds `Nat.mul` in `Enc.imm_byte`.
   match k:
     case 0n: Nil{}
@@ -1021,7 +1021,7 @@ def Enc.prefix_byte.of(+sz: U32, +arm: U32) -> List<&2, U32>:
     case 1: [102]
     case _: Nil{}
 
-# THE ARM-INDEX PATTERN, USED BY EVERY THRESHOLD IN THIS FILE. A `match` may only
+# the arm-INDEX pattern, used by every threshold in this file. a `match` may only
 # scrutinise a PARAMETER, so the comparison is arithmetic that yields an INDEX and the
 # branch is a `match` on that index, in a second def that takes it as a parameter.
 # `Bool.pick` evaluates BOTH arms (bend2-constraints.md line 1389), so this shape also
@@ -1060,7 +1060,7 @@ def Enc.rex_bit2(+sz: U32, +r: U32) -> Bool:
 
 def Enc.needs_rex(+w: Bool, +r: U32, +x: U32, +b: U32, +reg_sz: U32, +reg: U32, +rm_sz: U32, +rm: U32, +demote: Bool, +has_disp: Bool) -> Bool:
   # `w | r | x | b | (reg_sz == 1 & reg >> 2) | (rm_sz == 1 & rm >> 2) | (demote and
-  # disp_uop is None and rm >= 4)`. THE LAST CLAUSE IS THE ONE THAT IS EASY TO LOSE:
+  # disp_uop is None and rm >= 4)`. the last clause is the one that is easy to lose:
   # without it a one-byte `mov rsp, rcx` gets no REX and cannot address the low byte
   # of rsp at all. The two `& >> 2` clauses are `Enc.rex_bit2`, which is NOT the same
   # predicate as `== 1 and >= 4`.
@@ -1140,7 +1140,7 @@ def Enc.sib_byte(+scale: U32, +idx3: U32, +rm3: U32) -> U32:
 def Enc.want_sib(+noidx: Bool, +mod: U32) -> Bool: Bool.and(Bool.not(noidx), Bool.not(U32.is_eq(mod, 3)))
 
 def Enc.legacy_head.of(+pfx: List<&2, U32>, +need: Bool, +rex: U32) -> List<&2, U32>:
-  # `inst += bytes([0x66])` then OPTIONALLY the REX. THIS IS EVERYTHING BEFORE THE
+  # `inst += bytes([0x66])` then optionally the rex. this is everything before the
   # OPCODE and nothing else: the prefix and the REX are the only two bytes that can
   # precede it and they are both optional, so this is a two-arm shape rather than three.
   #
@@ -1168,7 +1168,7 @@ def Enc.legacy_head(+nm: String, +r: U32, +x: U32, +b: U32, +sz: U32, +rm: U32, 
 
 def Enc.pp_of(+nm: String) -> U32: Enc.pp(enc_find(nm))
 
-# THE WHOLE ENCODER, in the order x86.py emits it: VEX OR PREFIX+REX, the OPCODE,
+# the whole encoder, in the order x86.py emits it: vex or prefix+rex, the opcode,
 # MODRM, SIB, DISPLACEMENT, IMMEDIATE. Fourteen numbers are what `_encode`'s closure
 # captures, and `nm` supplies the rest from the table. `sel != 0` IS the `if sel:`
 # fork -- a VEX-encoded opcode never emits a REX and a legacy one never emits a VEX, so
@@ -1257,8 +1257,8 @@ def Enc.imm_bytes(+kind: U32, +n: Nat, +imm: U32) -> List<&2, U32>:
     case 2: [Enc.shl(U32.and(imm, 15), 4n)]
     case _: Nil{}
 
-# --- bit helpers. EVERY `~` IN x86.py SURVIVES AS A BOUNDED COMPLEMENT, AND WRITING
-# `U32.not` INSTEAD WOULD ZERO EVERY OTHER BIT -- the VEX byte would lose its map bits
+# --- bit helpers. every `~` in x86.py survives as a bounded complement, and writing
+# `U32.not` instead would zero every other bit -- the vex byte would lose its map bits
 # and the gate would say so on eighty rows. `~r & 0b1` is `1 - r`; `~vvvv & 0b1111` is
 # `15 - vvvv`.
 
@@ -1306,7 +1306,7 @@ def Enc.emit.tail(+nm: String, +head: List<&2, U32>, +opcs: List<&2, U32>, +reg:
 def Enc.emit(+nm: String, +reg: U32, +rm: U32, +idx: U32, +rm_sz: U32, +reg_sz: U32,
     +vvvv: U32, +has_disp: Bool, +disp_val: U32, +disp_sz: U32, +imm_kind: U32,
     +imm_n: Nat, +imm: U32, +no_demote: Bool, +xsz: U32, +src1sz: U32) -> List<&2, U32>:
-  # THE SIXTEEN NUMBERS `_encode` READS OUT OF ITS SIX PARAMETERS AND THE NODE `x`,
+  # the sixteen numbers `_encode` reads out of its six parameters and the node `x`,
   # in x86.py:533-544 order with the table's `opc`/`pp`/`sel`/`we` resolved from `nm`.
   # `xsz` and `src1sz` are the last two because the two computed `we=` expressions read
   # them (x86.py:641-644) and neither is any of the other fourteen.
@@ -1321,7 +1321,7 @@ def Enc.emit(+nm: String, +reg: U32, +rm: U32, +idx: U32, +rm_sz: U32, +reg_sz: 
     reg, rm, idx, rm_sz, has_disp, disp_val, disp_sz, imm_kind, imm_n, imm)
 
 def Enc.direct.of(+nm: String) -> List<&2, U32>:
-  # `int(0).to_bytes(4)` is FOUR ZERO BYTES for every jump, and `JMP` HAS ONE OPCODE
+  # `int(0).to_bytes(4)` is four zero bytes for every jump, and `JMP` has one opcode
   # where the other five have two (x86.py:680-686), so `JMP` is FIVE bytes and the rest
   # are six. The first cut appended the same four zeros to both, which made
   # `Enc.direct("JMP")` six bytes -- `e90000000000` where CPython emits `e900000000` --
@@ -1337,7 +1337,7 @@ def Enc.direct(+nm: String) -> List<&2, U32>: Enc.direct.of(nm)
 # `MOVABS` (x86.py:627) --
 #     bytes([0b0100 << 4 | 0b1 << 3 | 0b00 << 2 | r.index >> 3,
 #            0xB8 + (r.index & 0b111)]) + struct.pack(x.dtype.fmt, v)
-# THE ONLY ENTRY WHOSE SECOND BYTE IS AN OPCODE PLUS A REGISTER NUMBER rather than a
+# the only entry whose second BYTE is an opcode plus a register number rather than a
 # fixed constant, and the only one whose FIRST byte carries `r.index >> 3` in the REX
 # position. `64 | 8` is the `0b0100 << 4 | 0b1 << 3`, and `0b00 << 2` contributes
 # nothing -- so the REX is 0x48 or 0x49 depending on the register's top bit.
@@ -1348,7 +1348,7 @@ def Enc.movabs(+reg: U32, +imm: U32) -> List<&2, U32>:
 # ===========================================================================
 # STAGE 7 -- `asm_str`. x86.py:737-758. THE ASSEMBLY TEXT.
 #
-# THE PORT IS THE FORMAT AND NOT THE GRAPH. `asm_str` reads a `list[UOp]`, and a UOp
+# the port is the format and not the graph. `asm_str` reads a `list[UOp]`, and a UOp
 # graph is not this file's type: `ops.bend`'s `Arena` is a different representation with
 # different provenance, so the gate hands this port one `AsmOp` per `uops` entry, carrying
 # only the facts the FORMATTER reads -- `str(x.arg[0])`, `str(rdef(s))`, `rdef(s).size`,
@@ -1357,7 +1357,7 @@ def Enc.movabs(+reg: U32, +imm: U32) -> List<&2, U32>:
 # split / the skip / the join. The oracle reads those facts off the SAME UOps CPython
 # formats, so a wrong formatter byte is a diff.
 #
-# WHAT THE ORACLE DOES AND DOES NOT DECIDE. It decides which uop is a LABEL, which is a
+# what the oracle does and does not decide. It decides which uop is a label, which is a
 # RET and which is skipped, because that is `u.op is not Ops.INS` -- a property of the
 # graph. (`arg[0] is X86Ops.DEFINE` was the second clause and upstream removed
 # `DEFINE`.) It does NOT decide how a mnemonic is
@@ -1554,7 +1554,7 @@ def AsmLines(+os: List<&2, AsmOp>) -> List<&2, String>: Asm.go(os, Nil{})
 
 def AsmLines_n(+os: List<&2, AsmOp>) -> U32: U32.from_nat(List.length(&2, String, AsmLines(os)))
 
-# THE INDEX AND THE COUNT ARE ROWS OF THEIR OWN so that a mutation which drops a LINE
+# the INDEX and the count are rows of their own so that a mutation which drops a line
 # moves a count rather than silently renumbering every line after it -- and a count is
 # what says "the join lost an entry" instead of "line 7 reads differently".
 def AsmN(+ls: List<&2, String>) -> U32: U32.from_nat(List.length(&2, String, ls))
@@ -1578,14 +1578,14 @@ def asm_str(+fn: String, +os: List<&2, AsmOp>) -> List<&2, String>:
 # `for u in uops: if (t:=jumps.get(u)) is not None:
 #  binary[t-4:t] = (targets[u.tag] - t).to_bytes(4, 'little', signed=True)`.
 #
-# THE PATCH IS THE PORT AND THE DICTS ARE NOT. `targets` is keyed by a UOp's `tag` (a
+# the patch is the port and the dicts are not. `targets` is keyed by a UOp's `tag` (a
 # Python object) and `jumps` by the UOp itself, and the substrate's `Map` is keyed by a
 # `Nat`/`String`. Two lists in `render`'s own recording order plus a scan by tag name is
 # the whole of what the dicts hold, and the walk that fills them is not here either:
 # `render`'s loop is `raise`-on-unencodable and `LOOP_CMP`-skipping over the uops.
 # `TODO(p3) x86.py:776 symbol=render`.
 #
-# WHAT IS PORTED IS THE PART THAT HAD A REAL QUESTION IN IT: the delta is SIGNED and it
+# what is ported is the part that had a real question in it: the delta is signed and it
 # is packed little-endian, so a BACKWARD jump produces a negative delta and
 # `to_bytes(4, 'little', signed=True)` is two's complement. `U32.sub` WRAPS -- it is
 # `Word.sub(32n, x, y)` -- so the arithmetic agrees, and the `render.*` rows exist to
@@ -1643,7 +1643,7 @@ def Enc.has_reg_s(+e: Enc) -> String: Enc.has_reg_s.of(Enc.has_reg(e), Enc.reg(e
 def EncRow.lex(+e: Enc) -> String:
   String.concat(["opc=", U32.show(Enc.opc(e)), ",reg=", Enc.has_reg_s(e), ",pp=-,sel=-,we=-"])
 
-# FOUR SELECTORS AND NOT THREE: `we=1` on `VMOVQ`/`VMOVQm` is a CONSTANT, and
+# four selectors and not three: `we=1` on `VMOVQ`/`VMOVQm` is a constant, and
 # `we=x.src[1].dtype.itemsize == 8` on the two `VCVTSI2` is a different expression from
 # `we=x.dtype.itemsize == 8` on the two `VCVTT*SI`. MEASURED: with three selectors the
 # `VMOVQ` row printed `x.dtype.itemsize == 8` where CPython's `ast` read a literal `1`,
@@ -1708,14 +1708,14 @@ def EncCount.encode_calls.go(es: List<&2, Enc>, +i: U32) -> U32:
     case Nil{}: i
     case h <> t: EncCount.encode_calls.go(t, Bool.pick(U32, U32.is_zero(Enc.opc(h)), i, U32.inc(i)))
 
-# AN ENTRY COUNTS AS AN `encode` CALL WHEN IT HAS A NON-ZERO OPCODE: `Enc.none()` is the
+# an entry counts as an `encode` call when it has a non-zero opcode: `Enc.none()` is the
 # sentinel the four non-instructions hit, and no real opcode is 0.
 
 def EncCount.encode_calls(es: List<&2, Enc>, +i: U32) -> U32: EncCount.encode_calls.go(es, i)
 
 def enc_paramcount() -> U32: EncCount.encode_calls(enc_table(), 0)
 
-# THE THREE THAT MISS, AND NOT THE TWELVE THAT LOOK LIKE IT. An op has no `encode`
+# the three that miss, and not the twelve that look like it. An op has no `encode`
 # PARAMETERS either because it is not an instruction (`LABEL`, `FRAME_INDEX`,
 # `LOOP_CMP`; upstream's fourth, `DEFINE`, is gone) or because it builds its BYTES
 # DIRECTLY (the six jumps, `JMP`, `RET`, `MOVABS`) -- and the second group IS in
@@ -1815,7 +1815,7 @@ def Cls.supported_dtypes() -> String:
   # `{d for d in super().supported_dtypes() if d not in dtypes.fp8s+(dtypes.bfloat16,)}`
   # -- a SET DIFFERENCE walked over `Cls.base_dtypes`. The input is sorted and the walk
   # keeps order, so the answer is sorted, which is what CPython's `sorted()` asks for.
-  # THE FIRST CUT RETURNED THE ANSWER AS A LITERAL, so the filter asserted NOTHING, and
+  # the first cut returned the answer as a literal, so the filter asserted nothing, and
   # it spelled the names "short"/"int"/"long"/"double" -- the C spellings tinygrad moved
   # off in 793abbb (see the head of `LAWS/spec.bend`'s `Dt` and `Op.to_int` above).
   String.join(Cls.supported_dtypes_list(), ",")
@@ -1823,13 +1823,13 @@ def Cls.supported_dtypes() -> String:
 def Cls.supported_dtypes_n() -> U32:
   U32.from_nat(List.length(&2, String, Cls.supported_dtypes_list()))
 
-# THE GATE STATE: **774 ROWS, `diff` AGAINST CPython EMPTY, BOTH LANES BYTE-IDENTICAL.**
+# the gate state: 774 rows, `diff` against CPython empty, both lanes BYTE-identical.
 # That diff -- not the exit status of `--check-only`, which is 1 on a clean file because
 # `dtype.bend` has 14 unfilled laws -- is the acceptance test for this file, and it is
 # STRONGER than "ALL PROOFS CHECK", which is what the previous 723-row version printed
 # while eighty of its rows disagreed with CPython.
 #
-# WHY THE ROWS ARE NOW STRONGER. The eighty `hex.*` and `direct.*` rows were BARE STRING
+# why the rows are now stronger. The eighty `hex.*` and `direct.*` rows were bare string
 # CONCATENATIONS: `"hex.LEA = [" ++ Hex.bytes(Enc.emit(...)) ++ "]   py=[488d948c08000000]"`.
 # Nothing in the file asserted anything about them; their correctness lived only in a
 # human running a diff, and all eighty disagreed. Every one of them is a `Bool` row now --
@@ -1838,7 +1838,7 @@ def Cls.supported_dtypes_n() -> U32:
 # moved. A row that cannot fail is worse than no row in this project: that is how
 # `device.bend` shipped `sig=0 4 5`.
 #
-# WHAT WAS ACTUALLY WRONG IN THE ENCODER, since every individual byte def was correct:
+# what was actually wrong in the encoder, since every individual byte def was correct:
 #   * `Enc.legacy_head` ENDED IN THE OPCODE and `Enc.emit.tail` appended it AGAIN, so
 #     every instruction carried its opcode twice and lost its displacement and immediate.
 #     The head is prefix/REX/VEX only now, and there is ONE call site for the opcode.
@@ -1877,12 +1877,12 @@ def Cls.supported_dtypes_n() -> U32:
 #   ./bin/bend tinybendygrad/renderer/isa/x86.bend > /tmp/port.rows
 #   diff /tmp/port.rows /tmp/py.rows && echo GATE GREEN
 #
-# AND NO `py=` HALF IN THIS FILE IS A LITERAL ANY MORE. Every row is `rd(NAME, EXPR)`,
+# and no `py=` half in this file is a literal any more. Every row is `rd(NAME, EXPR)`,
 # and `rd` puts the PORT'S OWN VALUE in both halves: the `py=` half is the same
 # expression the `got=` half is, read through the same table. A literal `py=` half was
 # a TRANSCRIPTION of CPython's answer -- a second copy of the thing the port is being
 # asked about -- and it was the reason a stale row could sit here saying something the
-# port did not believe. THE ASSERTION MOVED TO THE LANE DIFF: the port's bytes against
+# port did not believe. the assertion moved to the lane diff: the port's bytes against
 # CPython's bytes, byte for byte, is what a derived row cannot do to itself.
 
 # THE ROW BUILDER. `r` is `renderer/tc.bend`'s, copied and not invented: it takes the

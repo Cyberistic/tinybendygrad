@@ -16,10 +16,10 @@ import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/transformer.py (61 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/transformer.py (61 loc). not yet ported.
 #
-# THE HEADLINE, AND IT IS THE ANSWER TO "DO THESE MODELS NEED ANYTHING THE VISION
-# MODELS DID NOT ASK FOR": YES, AND IT IS EXACTLY ONE NAME.
+# the headline, and it is the answer to "do these models need anything the vision
+# models did not ask for": yes, and it is exactly one name.
 # `Tensor.scaled_dot_product_attention` (extra/models/transformer.py:27) is MISSING, and
 # `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend' tinybendygrad/`
 # returns 0. A vision model never names it -- resnet.bend's own census at :40-123
@@ -68,7 +68,7 @@ import ./../datasets/__init__.bend as D
 #   (7) `x.sequential(self.tbs)` (:59) -- MISSING, and resnet.bend's own census names
 #       it MISSING too, so this one is NOT a new ask.
 #
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `maxlen_eye` (:51), the three-element
+# not ported, and named so nobody invents it: `maxlen_eye` (:51), the three-element
 # list comprehension of :26 (a Python comprehension over `self.query`/`key`/`value`).
 #
 # ON `adam`: NOT USED BY THIS FILE. `extra/models/transformer.py` never constructs an

@@ -16,16 +16,16 @@ import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/llama.py (286 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/llama.py (286 loc). not yet ported.
 #
-# LLAMA IS THE FURTHEST OF THE THREE TRANSFORMERS AND IT IS FURTHEST BY A
-# DIFFERENT REASON THAN THE OTHER TWO. bert.bend and t5.bend both fail on a LAYER
+# llama is the furthest of the three transformers and it is furthest by a
+# different reason than the other two. bert.bend and t5.bend both fail on a layer
 # (`nn.Embedding`, `nn.LayerNorm`/`nn.RMSNorm`). llama fails on a STACK: FOUR
 # norms where BERT has one kind and T5 has a hand-written one.
 #
-# THE NAMED CENSUS FOR THIS FILE:
+# the named census for this file:
 #   `nn.Embedding`  MISSING. (:201,:202) `grep -rnwE "def .*Embedding" --include='*.bend' tinybendygrad/` = 0, and so is `def mo_i`/`def mo_fx`.
-#   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200)  FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: extra/models/llama.py:53 `self.q_norm
+#   `nn.RMSNorm`    missing. (:53,:54,:137,:138,:200)  five sites, and this is the first missing symbol of the file: extra/models/llama.py:53 `self.q_norm
 #   `Tensor.scaled_dot_product_attention` MISSING. (:101,:104) `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend'` = 0.
 #   `softmax`       EXISTS, mixin/op.bend:1158 symbol=mo_softmax `mo_softmax` (:165 in `sample`).
 #   `adam`          EXISTS and UNUSED BY THIS FILE. nn/optim.bend:900 symbol=op_mstep
@@ -37,10 +37,10 @@ import ./../datasets/__init__.bend as D
 #                   is upstream's `assign` at nn/optim.py:168; `op_mhat`/`op_vhat` are
 #                   upstream's `m_hat`/`v_hat` at nn/optim.py:169-170. The optimizer
 #                   llama.py would train with is ALREADY PORTED; llama.py only INFERENCES.
-#                   THAT IS THE ANSWER TO "DOES A TRAINING LOOP NEED SOMETHING NEW": NO. The
+#                   that is the answer to "does a training LOOP need something new": no. The
 #                   adam half is DONE; a training loop would add a loss (`binary_crossentropy_logits`, extra/models/bert.py:61, MISSING).
 #
-# WHAT EXISTS AND LLAMA GETS IT FROM THE VISION WORK, WITH ITS INSTRUMENT:
+# what exists and llama gets it from the vision work, with its instrument:
 #   `nn.Linear`           nn/layers.bend:530 symbol=nn_linear `nn_linear`   (:45,:46,:47,:48,:51,:123,:124,:125,:202)
 #   `Tensor.silu`         mixin/elementwise.bend:1221 symbol=ew_silu `ew_silu` (:128) -- and it is `ew_swish` :1220 symbol=ew_swish, no extra def
 #   `Tensor.sin`          mixin/elementwise.bend:550 `ew_sin`  (:10)
@@ -56,7 +56,7 @@ import ./../datasets/__init__.bend as D
 #   `x.contiguous_backward` mixin/elementwise.bend:546 `ew_contiguous_backward` (:64,:71,:129,:142,:216)
 #   `x.sigmoid`/`x.tanh`  mixin/elementwise.bend:1195 symbol=g_unary / :1232  (through ew_sigmoid, which llama does not name)
 #
-# THE THREE THAT ARE LLAMA-ONLY AND NOT ATTENTION-ANYWHERE-ELSE:
+# the three that are llama-only and not attention-anywhere-ELSE:
 #   (1) `Tensor.cos`   MISSING. (:10) mixin/elementwise.bend:550 has `def ew_sin` and there is
 #                     NO `def ew_cos`. RoPE needs the pair and only half of it landed.
 #   (2) `Tensor.erf`   MISSING. extra/models/bert.py:236 needs it too.
@@ -65,7 +65,7 @@ import ./../datasets/__init__.bend as D
 #                     `argsort` is a bitonic sort over four nested Python `for` loops and
 #                     marks it `TODO(p3)` -- `multinomial` sits behind the same sort.
 #
-# NOT PORTED, AND NAMED SO NOBODY INVENTS IT:
+# not ported, and named so nobody invents it:
 #   * `cache_kv` (extra/models/llama.py:82,:83,:86,:90,:92,:93) -- the kv cache is
 #     an IN-PLACE slice-assign on a
 #     realized tensor plus a `hasattr`/`isinstance(device, tuple)`/`shard_` probe.
@@ -115,7 +115,7 @@ def lm_repeat_kv(+x: T.Tensor, n_rep: U32) -> D.Refused:
   D.refuse("extra/models/llama.py:30 repeat_kv -- nn/layers.bend:640 symbol=nn_repeat EXISTS (:34) and mxw_reshape EXISTS; BLOCKED BY the missing signature tuple at :31")
 
 # ---------------------------------------------------------------------------
-# :36-119 Attention. THE CLASS THAT NAMES THE TWO MISSING FAMILIES.
+# :36-119 Attention. the class that names the two missing families.
 # ---------------------------------------------------------------------------
 
 # :37 def __init__(self, dim, n_heads, n_kv_heads=None, max_context=0, linear=nn.Linear, qk_norm=None)
@@ -144,7 +144,7 @@ def lm_ff_init(dim: U32, hidden_dim: U32) -> D.Refused:
 
 # :127 def __call__(self, x:Tensor) -> Tensor
 def lm_ff_call(+x: T.Tensor) -> D.Refused:
-# THE REFUSAL BELOW NAMES `mixin/elementwise.bend:1221`, AND `ew_silu` IS THERE:
+# the refusal below names `mixin/elementwise.bend:1221`, and `ew_silu` is there:
 # mixin/elementwise.bend:1221 symbol=ew_silu. THE STRING IS A DIAGNOSTIC ADDRESS,
 # NOT BEHAVIOUR: `Refused{at}` is a payload no computation reads, and the address
 # it names WAS STALE.

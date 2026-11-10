@@ -5,7 +5,7 @@
 # file in its header and in its constant table; those citations are the scope,
 # and they are CHECKED rather than assumed -- see THE CITATIONS below.
 #
-# WHAT SURVIVES, AND WHY THESE PARTS. The file is 237 lines of firmware
+# what survives, and why these parts. The file is 237 lines of firmware
 # driver, and the arithmetic in it is where a wrong constant becomes a
 # silently wrong DMA:
 #
@@ -20,7 +20,7 @@
 #      three flags land in the low 32 bits of a 64-bit physical address. This
 #      is the table most likely to carry a wrong constant, so the entry is
 #      gated both ways: encode from (paddr, flags) and decode back out.
-#   3. THE LOGGING TABLE (:11, `BNXT_BACKING_STORE`) AND WHAT DRIVES IT
+#   3. the logging table (:11, `BNXT_BACKING_STORE`) and what drives it
 #      (:91-108, `setup_backing_store`). Nine (type, extra) pairs, a
 #      `counts[typ] = counts[0] if typ == 15 else max(min_num_entries, ...)`
 #      that makes type 15 REUSE type 0's count, a bitmap walk for instances,
@@ -33,7 +33,7 @@
 #      :191-217). The three QP modify masks, the `state | network_type`
 #      composition, the `level << LVL_SFT | log_page << LOG2_SFT` in
 #      `register_mem`, and the enable-mask ORs in `_open_l2`.
-#   6. THE STRUCT FIELD LISTS, BY NAME AND IN ORDER, never by count. A wrong
+#   6. the struct field lists, by name and in order, never by count. a wrong
 #      field order is a silently wrong register write, and a count gate passes
 #      it. `f_struct_*_NAMES` rows print all seven `struct_cq_base` fields in
 #      source order, and `f_CQE_TOGGLE_FIELD` / `f_CQE_STATUS_FIELD` name the
@@ -156,16 +156,16 @@
 # ===========================================================================
 # THE WALLS.
 #
-#   1. THE HWRM/RCFW STRUCT CONSTRUCTION AND PARSING (:77-89, :131-134).
+#   1. the hwrm/rcfw struct construction and parsing (:77-89, :131-134).
 #      `getattr(bnxt, f"struct_hwrm_{name}_input")` is a NAME BUILT AT RUNTIME
-#      from the verb, and `inp(req_type=..., **fields)` is a kwargs
+#      from the verb, and `inp(req_type=..., fields)` is a kwargs
 #      constructor over a ctypes struct. Bend has neither a dynamic name nor a
 #      keyword constructor, and `c.record` structs are OPAQUE: `t._fields_` is
 #      `('_mem_',)`. So the struct LAYOUT is ported (every field name in order,
 #      with its byte offset, gated by name) and the verb names are the trace's
 #      job; the CONSTRUCTION is not. The `wait_cond` on `resp_len`/`seq_id` is
 #      the same shape as `ops_webgpu.bend`'s `Tr.pop`: a WAIT, in the trace.
-# | WALL(p3) bnxtdev.py:77  getattr(bnxt, f"struct_hwrm_{name}_input"). -- BLOCKED. #   DYNAMIC ATTRIBUTE LOOKUP BY A CONSTRUCTED NAME: `getattr(bnxt, f"struct_hwrm_{name}_input")`
+# | wall(p3) bnxtdev.py:77  getattr(bnxt, f"struct_hwrm_{name}_input"). -- blocked. #   dynamic attribute lookup by a constructed name: `getattr(bnxt, f"struct_hwrm_{name}_input")`
 #   resolves a field AT RUNTIME from a string, and the name is built per call.
 # | WALL(p3) bnxtdev.py:87  out.from_buffer_copy(bytes(self.resp[:sizeof])). -- BLOCKED. #   `out.from_buffer_copy(bytes(self.resp[:sizeof]))` IS CTYPES BUFFER ALIASING -- a Python object
 #   whose memory IS the packet, reinterpreted in place.
@@ -177,7 +177,7 @@
 #      Every one of them is carried as TWO U32 halves, and -- MEASURED -- every
 #      flag this file sets lives in the LOW half, so the port loses nothing.
 #      `pbl_hi_untouched` is the row that says the high half is the paddr's.
-# | WALL(p3) bnxtdev.py:32  struct.pack(f"<{len(values)}Q", *values). -- BLOCKED. #   A FORMAT STRING BUILT FROM THE ARGUMENT COUNT -- `struct.pack(f"<{len(values)}Q", *values)` --
+# | wall(p3) bnxtdev.py:32  struct.pack(f"<{len(values)}q", *values). -- blocked. #   a format string built from the argument count -- `struct.pack(f"<{len(values)}Q", *values)` --
 #   and `*values` splats a variable-length tuple.
 #   3. `MMIOInterface` (tinygrad/runtime/support/rdma/bnxtdev.py:40-41 symbol=BNXTQueue). A byte-addressed slice of host memory over a
 #      BAR. `read` and `write` COMPUTE the offsets, and that arithmetic is
@@ -191,7 +191,7 @@
 #      upstream prints them at 61, 74, 157 and 217) are WALLS (`getenv` is IO); the device
 #      node string is `nic.node` in `ops_rdma.bend`, which already ports it.
 #
-# | WALL(p3) bnxtdev.py:54  self.devfmt = pci_dev.pcibus. -- BLOCKED. #   `self.devfmt = pci_dev.pcibus` READS A FIELD OFF A LIVE PCI DEVICE OBJECT. There is no live
+# | wall(p3) bnxtdev.py:54  self.devfmt = pci_dev.pcibus. -- blocked. #   `self.devfmt = pci_dev.pcibus` reads a field off a live pci device object. There is no live
 #   device object in the port: `Dev` is a `U32` tag (`LAWS/spec.bend:85`).
 #      TODO(p3) bnxtdev.py:157  symbol=rcfw `if BNXT_DEBUG >= 1: print(...)`.
 #   6. `System.list_devices` / `PCIDevice` probing. Not in this file at all;
@@ -209,7 +209,7 @@
 # trace (and the gate checks the ORDER and the IDENTITY). There is no third
 # kind.
 #
-# THE FOUR REFUSALS ARE IN THE TRACE, and each is one Python `raise`/`assert`:
+# the four refusals are in the trace, and each is one Python `raise`/`assert`:
 #   :34   `assert len(table_paddrs) <= 512`  -> "a pbl has two levels"
 #   :88   `assert ret.error_code == 0`       -> "HWRM <name>"
 #   :155  `assert ret.status == 0`           -> "RCFW <name>"
@@ -342,7 +342,7 @@ def DEV_PCI_COMMAND() -> U32: 4
 def DEV_FID() -> U32: 65535
 
 # ===========================================================================
-# THE STRUCT FIELD LISTS, BY NAME AND IN ORDER.
+# the struct field lists, by name and in order.
 #
 # `c.record` structs are OPAQUE: `bnxt.struct_cq_base._fields_` is
 # `('_mem_',)`, so `ctypes` cannot see the names and `ctypes.sizeof` is the
@@ -352,7 +352,7 @@ def DEV_FID() -> U32: 65535
 # them at once -- so a wrong field ORDER moves a row and a right field COUNT
 # with a wrong order still moves one.
 #
-# WHY THE ORDER MATTERS HERE SPECIFICALLY. Two offsets in this file are read
+# why the order matters here specifically. Two offsets in this file are read
 # BY HAND and nowhere else:
 #   :25  `cqe[24] & CQ_BASE_TOGGLE` -- byte 24 is `cqe_type_toggle`, the
 #        fourth field, and NOT byte 0. Polling byte 0 would read
@@ -427,7 +427,7 @@ def db.lo(+index: U32, +epoch: U32) -> U32:
 #                         size, va, key, size)
 #   recv_wqe: struct.pack("<BBB29xQII", 0x80, 0, 3, va, key, size)
 #
-# FORTY-EIGHT BYTES EACH, and the two formats differ in EXACTLY TWO PLACES,
+# forty-eight bytes each, and the two formats differ in exactly two places,
 # both of which matter:
 #
 #   * byte 0. Send puts `0` there and receive puts `0x80`, which is the "this
@@ -435,7 +435,7 @@ def db.lo(+index: U32, +epoch: U32) -> U32:
 #   * byte 1. Send puts `SQ_SEND_FLAGS_SIGNAL_COMP` (1) there -- "ring the
 #     completion queue when this send retires" -- and receive puts 0.
 #
-# AND THE ONE THAT IS EASY TO GET WRONG. Word 0 is little-endian, so it is
+# and the one that is easy to get wrong. Word 0 is little-endian, so it is
 #
 #       kind << 16 | flags << 8 | type
 #
@@ -545,7 +545,7 @@ def cqe.ready(toggle: U32, cons: U32) -> Bool:
 def cqe.epoch(cons: U32) -> U32: U32.and(U32.div(cons, CQ_ENTRIES()), 1)
 
 # ===========================================================================
-# THE PAGE TABLES. `build_pbl`, :27-37, and it is THE TABLE MOST LIKELY TO
+# the page tables. `build_pbl`, :27-37, and it is the table most likely to
 # CARRY A WRONG CONSTANT, because a wrong PTU_PTE_* flag is a page table the
 # NIC walks off the end of and there is no Python exception to catch it.
 #
@@ -569,12 +569,12 @@ def cqe.epoch(cons: U32) -> U32: U32.and(U32.div(cons, CQ_ENTRIES()), 1)
 #      table IS the page count of the allocation. 1 -> level 1, 2..512 ->
 #      level 2, more -> the REFUSAL. `pbl_q_512_LEVEL == 1` and
 #      `pbl_q_513_LEVEL == 2` sit ONE PAGE APART, which is the negative case.
-#   3. THE THREE FLAGS LAND IN THE LOW 32 BITS. `PTU_PTE_VALID` is 1,
+#   3. the three flags land in the low 32 BITS. `PTU_PTE_VALID` is 1,
 #      `PTU_PTE_LAST` is 2 and `PTU_PTE_NEXT_TO_LAST` is 4, so the high half
 #      of every entry is the physical address's and NOTHING ELSE --
 #      `pbl.entry_hi` is the IDENTITY and `pbl_hi_untouched` says so. This is
 #      what makes WALL 2 cost nothing here.
-#   4. `queue` ADDS TWO FLAGS TO TWO DIFFERENT ENTRIES, and the SECOND-to-last
+#   4. `queue` adds two flags to two different entries, and the second-to-last
 #      is the one that gets NEXT_TO_LAST -- the two are not the same entry and
 #      `pbl_queue_two_entries` is the row that separates them.
 # ===========================================================================
@@ -617,7 +617,7 @@ def pbl.has_ntl(entry: U32) -> Bool: U32.is_ne(U32.and(entry, PTU_PTE_NEXT_TO_LA
 def pbl.addr_of(entry: U32) -> U32: U32.and(entry, U32.not(U32.or(PTU_PTE_LAST(), PTU_PTE_NEXT_TO_LAST())))
 def pbl.flags_exclusive(+entry: U32) -> Bool: Bool.not(Bool.xor(pbl.has_last(entry), pbl.has_ntl(entry)))
 
-# fact 4. WHICH ENTRY GETS WHICH FLAG, as a function of the index. The LAST
+# fact 4. which entry gets which flag, as a function of the index. The last
 # index gets LAST; every other index except the second-to-last gets NEITHER;
 # the second-to-last gets NEXT_TO_LAST. `i == n-1` is the LAST test, and it is
 # evaluated BEFORE the `i == n-2` one, which is what makes them distinct.
@@ -677,13 +677,13 @@ def q.entries_of(stride: U32, +entries: U32) -> U32:
   Bool.pick(U32, U32.is_zero(entries), U32.div(QUEUE_PAGE(), stride), entries)
 
 # :49 `(size := entries * stride) + aux * entries * 8`.
-# `BNXTQueue.size` IS THE RING AND NOT THE ALLOCATION. `alloc_queue` (:49) is
+# `BNXTQueue.size` is the ring and not the allocation. `alloc_queue` (:49) is
 #   mem, paddrs = alloc_sysmem((size := entries * stride) + aux * entries * 8)
 #   return BNXTQueue(mem, paddrs, stride, ..., size=size)
 # so the `+ aux * entries * 8` goes into the ALLOCATION and `size=` keeps the
 # ring alone. A port that adds the aux term to `size` claims a 6144-byte queue
 # where there is a 4096-byte one, and every slot count and every aux base after
-# it is wrong. **THE GATE CAUGHT THIS**: `aq_1_SIZE` and `aq_1_SLOTS` were the
+# it is wrong. THE GATE CAUGHT THIS: `aq_1_SIZE` and `aq_1_SLOTS` were the
 # two rows that moved.
 def q.size_of(+stride: U32, entries: U32) -> U32: U32.mul(q.entries_of(stride, entries), stride)
 
@@ -710,7 +710,7 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 
 def sep(ix: U32) -> String: Bool.pick(String, U32.is_zero(ix), "", " ")
 
-# A SPACE-SEPARATED JOIN WITH NO TRAILING SPACE, because the oracle prints
+# a space-separated join with no trailing space, because the oracle prints
 # Python's `" ".join(...)` and a trailing space would make every list row
 # disagree for a reason that is not arithmetic.
 #
@@ -750,7 +750,7 @@ def nrow(nm: String, xs: List<&2, String>) -> IO(Unit): IO.print(String.concat([
 #   BNXT_BACKING_STORE = ((0, 64), (1, 0), (2, 128), (3, 0), (4, 2), (5, 0),
 #                         (6, 0), (14, 1024), (15, 0))
 #
-# NINE (type, extra) pairs, and TWO THINGS ABOUT THE TABLE ARE NOT VISIBLE IN
+# nine (type, extra) pairs, and two things about the table are not visible in
 # THE LITERAL. First, TYPES 7..13 ARE ABSENT: the type numbers are not 0..8,
 # so an index-into-the-table is NOT a type, and `bs_index_of` has to SEARCH.
 # `bs_absent_7` is the row that says type 7 is not in the table -- the negative
@@ -816,7 +816,7 @@ def bs.count_of(+typ: U32, mne: U32, sum_splits: U32, c0: U32) -> U32:
     U32.max(mne, U32.add(sum_splits, bs.extra_of(typ))))
 
 # :98 -- `for instance in [i for i in range(8) if caps.instance_bit_map >> i & 1] or [0]`.
-# A ZERO BITMAP MEANS THE TYPE HAS A SINGLE INSTANCE 0, which is the `or [0]`
+# a zero bitmap means the TYPE has a single instance 0, which is the `or [0]`
 # and is not a special case of the scan -- it is the scan's answer when the
 # scan finds nothing. `bs_instances_*` rows run six bitmaps, two of them zero.
 def bs.inst_bit(ibm: U32, i: U32) -> Bool: U32.is_ne(U32.and(U32.shrn(ibm, U32.to_nat(i)), 1), 0)
@@ -1151,7 +1151,7 @@ def db_at(db_off: U32) -> U32: U32.div(db_off, 8)
 
 # :64 -- `int.from_bytes(bytes(caps.mac_address), 'big')`. Big-endian.
 #
-# A MAC IS 48 BITS AND DOES NOT FIT IN A `U32`. `U32.shrn(x, 32n)` SATURATES
+# a mac is 48 BITS and does not fit in a `U32`. `U32.shrn(x, 32n)` saturates
 # TO 0, so a MAC read as one word silently loses its top sixteen bits -- and the
 # gate said so: `gid_MAC_HI` printed 0 where CPython says 4386. It is therefore
 # carried as TWO halves, `MAC_HI16` and `MAC_LO32`, and the two 24-bit halves
@@ -1333,7 +1333,7 @@ def qp.post_send_seq(+sq_size: U32, +sq_stride: U32, +wi: U32, t: Tr) -> Tr:
   Tr.emit(CALL_RING_W(), q.write_off(wi, sq_size, sq_stride, True{}), AUX_ENTRY(),
           Tr.emit(CALL_RING_W(), q.write_off(wi, sq_size, sq_stride, False{}), sq_stride, t))
 
-# THE MSN ENTRY'S VALUE IS NOT PACKED HERE, deliberately. There was a
+# the msn entry's value is not packed here, deliberately. There was a
 # `qp.post_send_msn` that folded `msn.hi` and `msn.lo` into one `U32` so the
 # trace could carry it, and that packing is INVENTED -- it is not a number
 # Python ever computes, and it exists only to fill an argument. The msn's two
@@ -1405,7 +1405,7 @@ def pbl.build_check(n: U32, +t: Tr) -> Tr:
 #   ./bin/bend tinybendygrad/runtime/support/rdma/bnxtdev.bend -o .agents/slop/bnxtdev \
 #     && .agents/slop/bnxtdev
 #
-# THE THREE LANES ARE DIFFED, not the row NAMES.
+# the three lanes are diffed, not the row names.
 #
 # A CONSTANT IS GATED BOTH DIRECTIONS, and that is the point: `c_DBC_DBC_TYPE_RQ`
 # says the number is right, and `db_3_HI` says a FUNCTION USING IT is right. A
@@ -1538,9 +1538,9 @@ def t_const() -> IO(Unit):
     urow("c_SLOTS_CMDQ_DEREGISTER_MR", rcfw.slots_of(SIZEOF_CMDQ_DEREGISTER_MR()))
 
 # ---------------------------------------------------------------------------
-# THE STRUCT FIELD LISTS, BY NAME AND IN ORDER.
+# the struct field lists, by name and in order.
 #
-# EVERY FIELD IS NAMED AT ITS OWN CALL SITE. That is deliberate and it is the
+# every field is named at its own call site. That is deliberate and it is the
 # whole requirement: a wrong field ORDER moves a row, and a right field COUNT
 # with a wrong order STILL moves one, because the row is named after the field
 # and not after its position. A walk that printed `f_struct_cq_base_<i>_AT`
@@ -1982,7 +1982,7 @@ def t_bs() -> IO(Unit):
     # sum wins for type 2, one entry apart.
     brow("bs_count_1_floor_wins", U32.is_eq(bs.count_of(1, 64, 0, 0), 64))
     brow("bs_count_2_sum_wins", U32.is_eq(bs.count_of(2, 1, 128, 0), 256))
-    # THE SEARCH. Types 7..13 ARE NOT IN THE TABLE, so an index is not a type.
+    # the search. Types 7..13 are not in the table, so an index is not a type.
     brow("bs_absent_7", U32.is_eq(bs.index_of(7), BS_LEN()))
     brow("bs_present_7_is_not_0", Bool.not(U32.is_eq(bs.index_of(7), 0)))
     urow("bs_extra_absent_7", bs.extra_of(7))
@@ -2082,7 +2082,7 @@ def swap16(+v: U32) -> U32: U32.or(U32.shln(U32.and(v, 255), 8n), U32.shrn(v, 8n
 
 # `connect` (:208) uses `struct.unpack("<3H", mac.to_bytes(6, 'big'))` --
 # LITTLE-endian -- where :72 uses `">3H"` on the same six bytes. So the two rows
-# are THE SAME THREE HALVES BYTE-SWAPPED WITHIN EACH, and `gid_SRCMAC` next to
+# are the same three halves BYTE-swapped within each, and `gid_SRCMAC` next to
 # `gid_DMAC` is the only place that shows it.
 def src_mac_le(hi16: U32, +lo32: U32) -> List<&2, U32>: [swap16(hi16), swap16(src_mac_h(lo32, 16n)), swap16(src_mac_h(lo32, 0n))]
 
@@ -2290,7 +2290,7 @@ def pack_row(+pfx: String, +nm: String, +ats: List<&2, U32>, +ws: List<&2, U32>,
     urow(String.concat([pfx, "_", nm, "_W"]), nth_at(ws, i))
 
 # one row per FIELD, by name: the byte the source puts it at and its width.
-# THE THREE SCATTER-GATHER INDICES ARE PARAMETERS, not literals: the SEND's `va`
+# the three scatter-gather indices are parameters, not literals: the send's `va`
 # is field 6 and the RECEIVE's is field 4, because the receive pack has no
 # `size` field and so no `pad20`. Hard-coding 6 for both printed 0 for every
 # receive row and the gate said so.
@@ -2316,13 +2316,13 @@ def pack_rows(+pfx: String, +ats: List<&2, U32>, +ws: List<&2, U32>, vi: Nat, ki
 def show_str(xs: List<&2, U32>) -> String: join_u32(xs)
 
 # ---------------------------------------------------------------------------
-# THE TWO PACK FORMATS, BY NAME AND IN ORDER. `ops_rdma.py:140` calls the REAL
+# the two pack formats, by name and in order. `ops_rdma.py:140` calls the real
 # `send_wqe`/`recv_wqe` and unpacks the first 32 bytes as `<8I`, so word 0 and
 # word 2 are facts about this file, and the nine field NAMES and the seven
 # field NAMES -- WITH their byte offsets and widths -- are the only spelling
 # that cannot be transposed without a row moving.
 #
-# THESE SIX LISTS WERE DEAD UNTIL THIS GATE. `.agents/slop/dead-defs2.py` found
+# these six lists were dead until this gate. `.agents/slop/dead-defs2.py` found
 # `send_pack_names`, `send_pack_at`, `send_pack_w`, `recv_pack_names`,
 # `recv_pack_at` and `recv_pack_w` never called by anything, which is the
 # `schedule/indexing.bend` lesson: a def nothing calls is invisible to every
@@ -2354,7 +2354,7 @@ def t_packs() -> IO(Unit):
     urow("slot64", SLOT64())
 
 # ---------------------------------------------------------------------------
-# THE OPERATIONS THAT HAD NO GATE ROW AT ALL. Twelve trace-emitting defs were
+# the operations that had no gate row at all. Twelve trace-emitting defs were
 # dead, so M23 (`rcfw.prod_write`) was a BLIND SPOT: the mutation moved nothing
 # because nothing called the def. These rows call each one, so the SEQUENCE is
 # checked and the defs are no longer invisible.
@@ -2411,7 +2411,7 @@ def tag_rows(n: Nat, +ix: U32, +ts: List<&2, U32>) -> IO(Unit):
         +a : Unit <- tag_pair(nth_at(ts, U32.to_nat(ix)), nth_at(ts, U32.to_nat(U32.inc(ix))))
         tag_rows(m, U32.inc(ix), ts)
 
-# THE CALL TAGS ARE IDENTITIES, NOT VALUES. The constant sweep is blind on all
+# the call tags are identities, not values. The constant sweep is blind on all
 # nineteen of them and that is a THEOREM, not a gap: a tag is only ever compared
 # against another tag (`Tr.has.step.same2` and `Tr.count`'s `U32.is_eq`), never
 # against a number Python produces, so ANY permutation of the nineteen is
@@ -2467,32 +2467,32 @@ def main() -> IO(Unit):
 #
 # | # | the edit | rows moved | what it is testing |
 # | --- | --- | --- | --- |
-# | 1 | :29 -- `PTU_PTE_VALID` becomes `PTU_PTE_LAST`, so no entry is ever VALID | 2 | `pbl_noq_ENTRY0_LO`, `pbl_noq_ENTRYLAST_LO`. Two and not eight because `pbl_q_*_ENTRYLAST_LO` has VALID AND LAST and swapping VALID for LAST is a no-op on a two-flag entry -- the single-flag rows are the only ones that see it. |
+# | 1 | :29 -- `PTU_PTE_VALID` becomes `PTU_PTE_LAST`, so no entry is ever valid | 2 | `pbl_noq_ENTRY0_LO`, `pbl_noq_ENTRYLAST_LO`. Two and not eight because `pbl_q_*_ENTRYLAST_LO` has valid and last and swapping valid for last is a no-op on a two-flag entry -- the single-flag rows are the only ones that see it. |
 # | 2 | :30 -- `NEXT_TO_LAST` goes on the LAST entry | 8 | every `*_ENTRYN1_LO`, which is the whole point of two DISTINCT flags on two DISTINCT entries |
 # | 3 | :30 -- the last index is `n-2`, so LAST and NEXT_TO_LAST collide | 16 | the boundary of `is_last`. Sixteen because it moves both the last-entry and the second-to-last rows for every fixture at once. |
-# | 4 | :14 -- `BNXT_QPLIB_DBR_VALID` replaced by `DBC_DBC_TYPE_CQ` | 9 | **the constant table both ways**: `c_BNXT_QPLIB_DBR_VALID` is a row AND eight `db_*_HI` rows move, so a right table with a wrong formula fails the second set and a right formula with a wrong table fails the first. Neither alone can be satisfied by the other's mistake. |
+# | 4 | :14 -- `BNXT_QPLIB_DBR_VALID` replaced by `DBC_DBC_TYPE_CQ` | 9 | the constant table both ways: `c_BNXT_QPLIB_DBR_VALID` is a row AND eight `db_*_HI` rows move, so a right table with a wrong formula fails the second set and a right formula with a wrong table fails the first. Neither alone can be satisfied by the other's mistake. |
 # | 5 | :15 -- the epoch rides at bit 48 instead of bit 24 | 4 | `db_3_LO`, `db_4_LO`, `db_6_LO`, `db_7_LO` -- and NOT the two cases with `epoch == 0`, which is why the fixture has to carry four non-zero epochs and not one. |
 # | 6 | :24 -- the slot sits at hi32 bit 24, i.e. at word bit 56 | 5 | the 48/24/24 msn split, and NOT `msn_0`/`msn_1` whose slot is 0. |
-# | 7 | :22 -- `nxt`'s `& 0xffffff` is dropped | 3 | the mask, and only the fixtures that straddle 2^24 (`msn_3`, `msn_4`). **This was a ZERO until the fixture straddled 2^24** -- every original psn is below 0xffffff, so the mask is vacuously true. Same lesson `ops_rdma.bend`'s M8 records. |
+# | 7 | :22 -- `nxt`'s `& 0xffffff` is dropped | 3 | the mask, and only the fixtures that straddle 2^24 (`msn_3`, `msn_4`). This was a ZERO until the fixture straddled 2^24 -- every original psn is below 0xffffff, so the mask is vacuously true. Same lesson `ops_rdma.bend`'s M8 records. |
 # | 8 | :22 -- `max(1, ...)` becomes `max(0, ...)` | 3 | a ZERO-LENGTH send. One row and not more, because `max` only differs at `size == 0`, and `msn_5` is the only fixture at zero. |
 # | 9 | :28 -- the one-page shortcut allocates instead of returning | 8 | the `len(paddrs) == 1` shortcut, and it moves the three `aq_*_LEVEL` rows as well because the level is what tells the allocation apart. |
-# | 10 | :34 -- `<=` becomes `<`, so exactly 512 pages stops being legal | 2 | **the boundary, and it was a ZERO until `pbl_edge_262144_LEVEL` existed.** Every other `pbl_q_*` fixture is 1, 2 or 3 pages, so no fixture reached the limit at all. Two rows for one boundary is not redundancy: `pbl_edge_*_REFUSED` reads `refuses` (`>`) and `pbl_edge_*_LEVEL` reads `level_of` (`<=`), and M10 mutates only the second. |
+# | 10 | :34 -- `<=` becomes `<`, so exactly 512 pages stops being legal | 2 | the boundary, and it was a ZERO until `pbl_edge_262144_LEVEL` existed. Every other `pbl_q_*` fixture is 1, 2 or 3 pages, so no fixture reached the limit at all. Two rows for one boundary is not redundancy: `pbl_edge_*_REFUSED` reads `refuses` (`>`) and `pbl_edge_*_LEVEL` reads `level_of` (`<=`), and M10 mutates only the second. |
 # | 11 | :44 -- the aux arm uses the RING stride, so the msn table overlaps the ring | 18 | `size + i%slots*stride` against `size + i%slots*8`. Eighteen because it moves every `aq_*_WA*` except the index-0 and wrap ones, where `i%slots` is 0 or 1 and both formulas agree. |
 # | 12 | :44 -- the aux base loses the `size +`, so the msn table is at offset 0 | 30 | every `aq_*_WA*` including the zeros, which is why thirty and not eighteen. It also moves `aq_*_W*`, because a queue whose aux base is inside the ring has a different total. |
-# | 13 | :49 -- **re-introduces the bug this gate caught**: `size` grows by the aux term | 44 | **THE BIGGEST IN THE FILE.** `alloc_queue`'s `size=` is the RING and the allocation is what carries `+ aux*entries*8`; a port that adds the aux term to `size` claims a 6144-byte queue where there is a 4096-byte one, and every slot count and every aux base after it is wrong. This is a REAL BUG, not a hypothetical: the first version of `q.size_of` did exactly this and `aq_1_SIZE` and `aq_1_SLOTS` are the two rows that said so. |
+# | 13 | :49 -- re-introduces the bug this gate caught: `size` grows by the aux term | 44 | the biggest in the file. `alloc_queue`'s `size=` is the ring and the allocation is what carries `+ aux*entries*8`; a port that adds the aux term to `size` claims a 6144-byte queue where there is a 4096-byte one, and every slot count and every aux base after it is wrong. This is a real bug, not a hypothetical: the first version of `q.size_of` did exactly this and `aq_1_SIZE` and `aq_1_SLOTS` are the two rows that said so. |
 # | 14 | :31 -- the PBL level is a function of the ENTRY count rather than the pages | 6 | all six `aq_*_LEVEL`. The level is `ceildiv(alloc_bytes, 0x1000)` and NOT `entries_of(...)`, which is the same class as M13 and one line away from it. |
 # | 15 | :96 -- `max` becomes `+`, so the firmware's `min_num_entries` floor is ignored | 6 | the three types where the floor wins (`bs_COUNT_0`, `_2`, `_4`, `_6`, `_14`) and NOT the three where the sum is already larger. Five rows and not nine is the fixture doing its job. |
-# | 16 | :96 -- type 15's `counts[0]` REUSE is dropped and it computes its own | 3 | `bs_COUNT_15` and the two rows that assert the reuse directly. **This is a distinct table row and not a variant of M15**: the two mutations are one line apart and neither moves the other's rows. |
+# | 16 | :96 -- type 15's `counts[0]` REUSE is dropped and it computes its own | 3 | `bs_COUNT_15` and the two rows that assert the reuse directly. This is a distinct table row and not a variant of M15: the two mutations are one line apart and neither moves the other's rows. |
 # | 17 | :98 -- the fold keeps the LAST hit, so the HIGHEST set bit answers | 1 | `bs_inst_fwd_0` ONLY -- the bitmap with bits 0 and 2 set. One row and it exists for this mutation: without it a fold that overwrites passes every other instance row. |
 # | 18 | :98 -- the bitmap is masked by 2, not 1 | 13 | every `bs_INST_*` plus the four `c_MASK_*_POP` rows, because `mask_pop` and `bs.ninstances` SHARE `bs.count.go`. That sharing is deliberate and it is why a one-bit slip in the popcount moves the constant table too. |
-# | 19 | :102 -- the sweep count ignores `ctx_init_offset` | 1 | `bs_INIT_6_NPOS` ONLY, and **it was a ZERO until that row existed.** With `mem` a whole number of strides and `off` a multiple of the stride, `ceildiv(mem-off, size)` and `ceildiv(mem, size)` are EQUAL -- four fixtures all agreed and the mutation was invisible. It takes an UNALIGNED offset (129 over 128) to separate them. |
+# | 19 | :102 -- the sweep count ignores `ctx_init_offset` | 1 | `bs_INIT_6_NPOS` ONLY, and it was a ZERO until that row existed. With `mem` a whole number of strides and `off` a multiple of the stride, `ceildiv(mem-off, size)` and `ceildiv(mem, size)` are EQUAL -- four fixtures all agreed and the mutation was invisible. It takes an UNALIGNED offset (129 over 128) to separate them. |
 # | 20 | :153 -- the CREQ consumer index is unmasked, so it is 32 bits and not 8 | 2 | `creq_nq_arm_index` and `creq_nq_arm_index_256`. Two and not four because 255 fits in eight bits either way. |
 # | 21 | :154 -- `<` becomes `<=`, so the threshold event itself becomes a skip | 1 | `rcfw_skip_192` ONLY, and that row exists for this mutation: 191 is a skip either way and 192 is the whole boundary. `rcfw_skip_0` and `rcfw_skip_191` are the negative case one value away. |
 # | 22 | :86 -- the wait's `resp_len` conjunct is dropped | 1 | `dev_gate_len0` ONLY -- the zero-length response is the ONLY case where the two conjuncts differ, so a one-row fixture is the whole claim and `dev_gate_ok` is the negative case beside it. |
-# | 23 | :136-138 -- the FIRMWARE_FIRST flag is applied to the UNMASKED write index | 1 | `op_rcfw_prod_wrap` ONLY. **This was a BLIND SPOT until `t_ops` existed**: `rcfw.prod_write` was a def nothing called, which is the `schedule/indexing.bend` lesson -- a def nothing calls is invisible to every other check, and thirteen other trace-emitting defs were in the same state. |
+# | 23 | :136-138 -- the FIRMWARE_FIRST flag is applied to the UNMASKED write index | 1 | `op_rcfw_prod_wrap` ONLY. This was a BLIND SPOT until `t_ops` existed: `rcfw.prod_write` was a def nothing called, which is the `schedule/indexing.bend` lesson -- a def nothing calls is invisible to every other check, and thirteen other trace-emitting defs were in the same state. |
 # | 24 | :186 -- `level << 2` "fixes" the zero `LVL_SFT` into the page-size field | 5 | four `mr_LVLPG_*` and `mr_lvl_roundtrip`. `CMDQ_REGISTER_MR_LVL_SFT` is 0 and that is a fact about the FIELD, so a version that "fixes" the missing shift moves the level into the page size. |
 # | 25 | :19 -- the RECEIVE header gets the size in word 2, which its 29-byte pad covers | 3 | `wqe_0_R`, `wqe_2_R` and `recv_2_W2`. A receive's work queue element says nothing about its length in the header, which is why `ops_rdma.py:141` supplies it as a separate word. |
-# | 26 | :18 -- the INVERTED reading `ops_rdma.bend`'s COMMENT gives, applied to the SEND arm | 5 | `hdr0_SEND_KIND_AT16`, `hdr0_SEND_REAL` and the three `wqe_*_S` rows. **This is the contradiction reported at the top of this file, as a mutation**: the comment claims `type << 16 | flags << 8 | kind`, and applying it moves five rows. |
+# | 26 | :18 -- the INVERTED reading `ops_rdma.bend`'s COMMENT gives, applied to the SEND arm | 5 | `hdr0_SEND_KIND_AT16`, `hdr0_SEND_REAL` and the three `wqe_*_S` rows. This is the contradiction reported at the top of this file, as a mutation: the comment claims `type << 16 | flags << 8 | kind`, and applying it moves five rows. |
 # | 27 | :25 -- the CQE toggle test is inverted, so a ready entry is never ready | 10 | all eight `cqe_*_READY` and `has_arg_matters`. Ten and not eight because the toggle bit is shared with the `Tr.has` argument check. |
 # | 28 | :78 -- the `& 0xffff` is dropped, so the sequence counter never wraps | 1 | `dev_SEQ_WRAP` ONLY, and that row exists for this mutation: `dev_SEQ_NEXT` is the negative case one step away and cannot see it. |
 # | 29 | :66/:164 -- the byte offset is divided by 4, i.e. a 32-bit doorbell bar | 2 | `dev_DBOFF_DWORDS` and `db_seq`, the second because the doorbell trace carries the dword index. `dev_DBOFF_BYTES` does NOT move, and that is the pair being a pair: the two scales are separate claims. |
@@ -2501,12 +2501,12 @@ def main() -> IO(Unit):
 # | 32 | :116 -- the `CMDQ_SIZE` shift is dropped | 2 | `dev_CMDQ_LVL_SHIFTED` and `_LO`, and not `_HI` which is 0 either way. |
 # | 33 | :172 -- the receive ring shares the COMPLETION ring's enable word | 1 | `c_RING_ALLOC_RX_ENABLES` ONLY, and `c_RING_ALLOC_L2_ENABLES` beside it is the negative case: the two lines are one apart in the source and sharing one constant would pass neither. |
 # | 34 | :72 -- the `>3H` halves are unmasked, so the low one is the whole low word | 3 | `gid_SRCMAC`, `gid_SRCMAC_REV` and `gid_DMAC`, the last because `connect`'s `<3H` is the SAME three halves byte-swapped and `swap16` composes from the same reader. |
-# | 35 | :178 -- the `PATH_RX` flag word becomes `ENABLES_L2_ADDR` | 0 | **A THEOREM AND NOT A GAP.** `CFA_L2_FILTER_ALLOC_REQ_FLAGS_PATH_RX == CFA_L2_FILTER_ALLOC_REQ_ENABLES_L2_ADDR == 1` in autogen/bnxt.py, so the substitution is a no-op over EVERY possible input and no fixture can separate them. It is closed with a claim about the CONSTANTS (`c_CFA_L2_*_FLAGS_PATH_RX` and `c_CFA_L2_FILTER_ALLOC_REQ_ENABLES_L2_ADDR` are both rows) and not with a row that asserts the swapped word is wrong. |
-# | 36 | :27 -- **THE CONTROL**: a comment-only edit | 0 | a table with no row that CANNOT move is a table of coincidences. |
+# | 35 | :178 -- the `PATH_RX` flag word becomes `ENABLES_L2_ADDR` | 0 | a theorem and not a gap. `CFA_L2_FILTER_ALLOC_REQ_FLAGS_PATH_RX == CFA_L2_FILTER_ALLOC_REQ_ENABLES_L2_ADDR == 1` in autogen/bnxt.py, so the substitution is a no-op over every possible input and no fixture can separate them. It is closed with a claim about the constants (`c_CFA_L2_*_FLAGS_PATH_RX` and `c_CFA_L2_FILTER_ALLOC_REQ_ENABLES_L2_ADDR` are both rows) and not with a row that asserts the swapped word is wrong. |
+# | 36 | :27 -- THE CONTROL: a comment-only edit | 0 | a table with no row that CANNOT move is a table of coincidences. |
 # ===========================================================================
 # THE CONSTANT SWEEP. `.agents/slop/bnxt_sweep.py` puts `+1` on every one of the
 # 136 `def NAME() -> U32: V` constant defs, ONE AT A TIME, and diffs the whole
-# lines. **134 of 136 move a row.** The two that do not are `BNXT_HWRM_NO_CMPL_RING`
+# lines. 134 of 136 move a row. The two that do not are `BNXT_HWRM_NO_CMPL_RING`
 # and `MISSING`, both `4294967295`, where `+1` OVERFLOWS THE U32 and the mutated
 # file does not compile -- that is a limitation of the `+1` method, not a
 # coverage gap, and it is reported as `DID NOT COMPILE` rather than counted as a
@@ -2515,7 +2515,7 @@ def main() -> IO(Unit):
 # `ops_metal`'s sweep found 30 blind of 111, all `CALL_*` tags. On this file the
 # nineteen `CALL_*` tags were BLIND at first and are not any more, because
 # `t_tags` added `tag_distinct_*` rows. That is the right fix and not a row that
-# asserts a tag's number: **a tag is an identity, not a value.** It is only ever
+# asserts a tag's number: a tag is an identity, not a value. It is only ever
 # compared against another tag, so any permutation of the nineteen is
 # observationally equivalent, and what is actually checkable is that they are
 # DISTINCT.

@@ -40,7 +40,7 @@
 # `gates/verdict-lane-gate.py`'s PLANT-TARGETED-KERNEL disagreement set,
 # whose `want_disagree` is exactly `{LAWS/alu.bend, LAWS/PROOF-ALL.bend}`.
 # Measured: importing `./PROOF.bend` here -- which does make this file complete
-# -- gives PLANT-TARGETED-KERNEL and PLANT-BLANKET-KERNEL `NOT AS EXPECTED`,
+# -- gives plant-targeted-kernel and plant-blanket-kernel `NOT AS EXPECTED`,
 # the disagree set growing from 2 to 3 of 7 files. The population holds
 # exactly three complete files -- `LAWS/alu.bend`, `LAWS/spec.bend` and
 # `LAWS/PROOF-ALL.bend` -- and a fourth breaks the anchor.

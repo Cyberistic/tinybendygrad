@@ -12,7 +12,7 @@
 #     type Task is Data: Task{tag: U32, name: String, args: List<&2, Arg>}
 # and the pool's `map` is a COMPILE-TIME FOLD that computes the SCHEDULE -- the tag sequence,
 # the per-task arity, the work count -- and NOT ONE of the tasks runs. That is the wall,
-# stated as a boundary rather than faked: **the schedule is data, the execution is the seam.**
+# stated as a boundary rather than faked: the schedule is data, the execution is the seam.
 # Every row in Section 3 is about the schedule, because the schedule is the only part
 # derivable from the Python and therefore the only part a row can be wrong about.
 #
@@ -56,7 +56,7 @@
 #     port keeps -- it is the reason a worker's environment cannot be mutated under it -- and
 #     the reach-through is named as a CPython implementation detail rather than an API.
 #
-# ONE MEASURED FACT ABOUT `_init_worker` THAT IS WORTH A ROW, because it is a bug in the
+# one measured fact about `_init_worker` that is worth a row, because it is a bug in the
 # Python rather than a wall in Bend: `Context(ALLOW_DEVICE_USAGE=0, VIZ=0,
 # TRACK_MATCH_STATS=0)` sets a ContextVar called `TRACK_MATCH_STATS`, and there is NO
 # `TRACK_MATCH_STATS` in `tinygrad/helpers.py` (`rg -n TRACK_MATCH_STATS tinygrad/` returns
@@ -100,7 +100,7 @@ def eq_mstr(l: Maybe<&2, String>, r: Maybe<&2, String>) -> Bool:
   eq_mstr.go(l, r)
 
 # ===========================================================================
-# SECTION 1 -- WHAT A WORKER IS: A `Data` RECORD OF A TAG PLUS ARGUMENTS. See the
+# section 1 -- what a worker is: a `Data` record of a tag plus arguments. See the
 # header for why the callable is a tag and not a function value.
 type Arg is Data:
   AU32{v: U32}
@@ -207,7 +207,7 @@ def pool_init_name() -> String:
   "_init_worker"
 
 # ===========================================================================
-# SECTION 2 -- THE PORTED FUNCTIONS, IN PYTHON ORDER.
+# section 2 -- the ported functions, in python order.
 #
 # worker.py:8-10 -- `_init_worker`: `Context(ALLOW_DEVICE_USAGE=0, VIZ=0,
 # TRACK_MATCH_STATS=0).__enter__()` and `signal.signal(signal.SIGINT,
@@ -414,7 +414,7 @@ def close_pool(pool: Maybe<&2, Pool>) -> Bool:
 def terminated(pool: Maybe<&2, Pool>) -> Bool:
   has_pool(pool)
 
-# BOTH ARMS OF THIS `Bool.pick` ARE `None{}` AND THAT IS THE POINT, NOT A SLIP: Python's
+# both arms of this `Bool.pick` are `None{}` and that is the point, not a slip: Python's
 # `terminate_worker_pool` RETURNS nothing and its last statement is `worker_pool = None`,
 # so the pool is GONE whatever it was. The first version guarded it with `has_pool`,
 # which made the guard VACUOUS -- mutation W4 could not check, because reading `pool` in

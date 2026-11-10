@@ -21,15 +21,15 @@
 #     ./bin/bend tinybendygrad/mixin/reduce.bend    > /tmp/bd.rows
 #     ./bin/bend tinybendygrad/mixin/reduce.bend -o /tmp/bn && /tmp/bn > /tmp/bn.rows
 #     diff /tmp/bd.rows /tmp/bn.rows
-# **THE CPYTHON LINE THAT OPENED THIS BLOCK IS DELETED 2026-10-16 BECAUSE IT WAS NEVER REAL.**
+# the CPYTHON line that opened this block is deleted 2026-10-16 because it was never real.
 # It ran a `mixin-reduce-gate.py` out of a `TMP` variable that has no assignment in this file.
-# MEASURED: that basename is ABSENT AT EVERY PATH ON EVERY REF -- `git rev-list --all --objects`
+# measured: that basename is absent at every path on every ref -- `git rev-list --all --objects`
 # names 18110 distinct paths and this is zero of them. The two
 # `bend` lanes above DO run and are left standing; the CPython half of this comparison has no
 # instrument in the tree, which is a hole rather than a citation, and `oracles/rows-reduce-py.rows`
 # and `oracles/rows-reduce-bend.rows` exist with no code reader of their own.
 #
-# TWO MEASURED DEFECTS IN OTHER FILES, REPORTED NOT FIXED. Four of the 32 rows are
+# two measured defects in other files, reported not fixed. Four of the 32 rows are
 # red and every one is one of these. The rows STAY red: they are the measurement,
 # and closing them with the port's own answer would encode the bug.
 #
@@ -372,7 +372,7 @@ def t_sum_axs01() -> IO(Unit):
 # dim`, so `axis=(-2,)` on a rank-2 source resolves to `0` and the graph is
 # `sum2d_ax0`'s.
 #
-# THE RANK MATTERS AND IT COST A ROW. The first version of this row was
+# the rank matters and it cost a row. The first version of this row was
 # `axis=(-1,)` on the rank-1 source, and it could not tell "the resolve is
 # correct" from "`neg` was dropped" -- because `mo_resolve`'s negative arm is
 # wrong (see the header), `(-1,)` resolves to `2` and dropping `neg` yields `1`,

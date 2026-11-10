@@ -19,7 +19,7 @@
 # graph and rebuilds the result. `pm_post_sched_cache` is the smallest test
 # case (PARAM and ALLOC) and the spec's example.
 #
-# AN INDEX IS ONLY MEANINGFUL IN THE ARENA THAT PRODUCED IT. `O.UOp.new` is
+# an INDEX is only meaningful in the arena that produced it. `O.UOp.new` is
 # `+`: it grows the arena and hands back `O.Found{ar, i}` with the GROWN
 # arena in `ar`. So the fold's accumulator is `(O.Arena & Map<&2, U32>)`,
 # `walk_rewrite` returns that same 3-tuple, and the two DRIVERS' answers are
@@ -33,7 +33,7 @@
 # over the WRONG toposort it answers `NOOP` for every key, which is why
 # `grw_rows.fix` takes its toposort from the answer's own arena.
 #
-# THE REBUILD ORDER IS REBUILD THEN RULE, but the rule is tried on `u`, the
+# the rebuild order is rebuild then rule, but the rule is tried on `u`, the
 # ORIGINAL node. Upstream tries it on the REBUILT one (ops.py:1812). For
 # `pm_post_sched_cache` the two arguments are the same object, so it is
 # unobservable: both of upstream's patterns are bare `UPat(Ops.X)` with no
@@ -78,7 +78,7 @@ import ./../LAWS/spec.bend as S
 # `R.cu32` answers DEFAULT `0` for an absent key, and `0` is a LEGAL arena index.
 # MEASURED 2026-11-03, the first run after the default became `toposort_nocalls`:
 # a CALL's body is not visited, so `repl[body]` is absent and the CALL was rebuilt
-# pointing at node **0**. The row said `ec_default=0` and the cause was not the
+# pointing at node 0. The row said `ec_default=0` and the cause was not the
 # walk at all. `Map.has` is the presence test the assumption needed.
 def wr.has.of(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
   match r:
@@ -175,7 +175,7 @@ def walk_rewrite.put(+sink: U32, p: (O.Arena & Map<&2, U32>)) -> (O.Arena & Mayb
 # wall-passing shape until the typed `CTX` record lands.
 # `enter_calls=True` -- ops.py:1841. THE DEFAULT IS `enter_calls=False` AND BOTH
 # DRIVERS USED TO ENTER CALLS. Upstream's `pm_post_sched_cache` says so in its own
-# comment ("Resolve positional arguments **outside kernel bodies**"), and MEASURED
+# comment ("Resolve positional arguments outside kernel bodies"), and MEASURED
 # 2026-11-03 on a CALL whose body is a slot-0 PARAM, with `ctx=(px,)` and `pp`/`px`
 # DIFFERENT nodes (same fixture interned them on the first attempt, which made the
 # probe vacuous):
@@ -279,7 +279,7 @@ def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -
 #     the port does not have.
 #
 # ---------------------------------------------------------------------------
-# THE STOP IS "the sink index did not move", AND IT IS SOUND BECAUSE THE ARENA
+# the stop is "the sink index did not move", and it is sound because the arena
 # INTERNS. `uop/ops.bend:2531 UOp.make` calls `intern.find` and a HIT returns the
 # arena UNTOUCHED, so two passes handing back the same sink INDEX handed back the
 # same `Node{op, src, arg, tag}`. The reachable graph is identical,
@@ -290,8 +290,8 @@ def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -
 # A cap and a fixpoint ARE DISTINGUISHABLE here, and `capped` says which.
 # Upstream raises for both -- `REWRITE_STACK_LIMIT` at ops.py:1821 and the
 # stalled waitlist at :1883 -- and a Bend def returns a value, so both raise
-# sites become one Bool. **`capped=True` IS NOT A FIXPOINT and must never be read
-# as one.** What it does NOT separate is a genuine rewrite CYCLE (R(n)=m,
+# sites become one Bool. `capped=True` IS NOT A FIXPOINT and must never be read
+# as one. What it does NOT separate is a genuine rewrite CYCLE (R(n)=m,
 # R(m)=n) from a chain that merely needs more passes: both are "the sink was
 # still moving when the bound ran out", and the port cannot tell them apart
 # because it has no `seen` set. So `capped=True` means NOT-CONVERGED and nothing
@@ -317,7 +317,7 @@ def unified_rewrite.go(fuel: Nat, +done: U32, +prev: U32, +w: Rewritten, +pm: O.
 # fixpoint has to be CONFIRMED by a pass that changed nothing, and `prev` is the
 # sink as it was BEFORE the pass in `w`.
 #
-# `done` COUNTS THE PASS IN `w`, WHICH HAS ALREADY RUN, so BOTH arms report `done`
+# `done` counts the pass in `w`, which has already run, so both arms report `done`
 # and the increment belongs to the self-call alone. An earlier version reported
 # `done + 1` on the `1n+f` arm, and the fixture's fixpoint answered `passes=3`
 # where the graph reached its fixed point on pass 2 -- a counter that grows by one
@@ -352,18 +352,18 @@ def graph_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, wal
 #   graph_rewrite(self, _substitute, dvars, bottom_up=True, ...)
 #   _substitute = PatternMatcher([(UPat(tuple(Ops), name="x"), lambda ctx,x: ctx.get(x,None))])
 #
-# so the TABLE IS ONE RULE THAT MATCHES ANY NODE and answers a lookup, and the
+# so the table is one rule that matches any node and answers a lookup, and the
 # observable behaviour is "replace these nodes, rebuild the rest". It is written
 # here as a MAP WALK and not as a `PMEntrys` rule because the port's `ctx` is a
 # `List<&2, U32>` and `dvars` is keyed BY NODE -- the typed-`CTX` wall this file's
 # header names. THE BEHAVIOUR IS WHAT `apply_binds` (schedule/__init__.py:107-111)
 # calls, and that is what this def has to reproduce.
 #
-# TWO PROPERTIES OF `bottom_up=True` ARE EASY TO LOSE AND BOTH ARE HERE:
+# two properties of `bottom_up=True` are easy to lose and both are here:
 #   1. THE FIXPOINT. `cached_bpm_rewrite` is called IN A LOOP until it answers
 #      None, so a chain `{a:b, b:c}` resolves `a -> c` AT ONE NODE and not across
 #      passes. `sub_fix` is that loop; dropping it answers `b`.
-#   2. THE REPLACEMENT IS REBUILT FROM ITS OWN SRCS. Upstream's stage 1 works on
+#   2. the replacement is rebuilt from its own srcs. Upstream's stage 1 works on
 #      `new_n`, so a replacement whose children are ALSO in `dvars` is rewritten
 #      too. `sub_one` rebuilds the replacement, not the original.
 def sub_has.of2(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
@@ -406,7 +406,7 @@ def wr.go_sub(lst: List<&2, U32>, +dvars: Map<&2, U32>, acc: (O.Arena & Map<&2, 
 # and it is not a micro-optimisation: an entry `u -> u` would still rebuild the
 # node, so the identity filter is what makes `substitute` with no real entries
 # answer THE SAME NODE.
-# `enter_calls=False` IS THE DEFAULT HERE TOO, AND MEASURED: `call.substitute({pp: c})`
+# `enter_calls=False` is the default here too, and measured: `call.substitute({pp: c})`
 # in CPython answers `src0 is pp` (UNTOUCHED); only `enter_calls=True` reaches into a
 # call body. `apply_binds` calls `s.substitute(subs, name=...)` with the default, so a
 # `toposort` here rewrote bodies upstream leaves alone -- the same defect as

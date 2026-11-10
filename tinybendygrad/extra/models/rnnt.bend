@@ -16,9 +16,9 @@ import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/rnnt.py (202 LOC). NOT YET PORTED.
+# stub -- 1:1 path mirror of extra/models/rnnt.py (202 loc). not yet ported.
 #
-# RNN-T IS THE ONLY FILE IN THIS SLICE THAT ASKS FOR A KIND OF LAYER THE PORT
+# rnn-t is the only file in this slice that asks for a kind of layer the port
 # HAS NEVER HAD AT ALL. resnet.bend asked for more of the layers that exist
 # (conv2d, batchnorm, linear). bert/t5/llama asked for more normalizers and one
 # embedding. RNN-T asks for RECURRENCE: `class LSTM` (rnnt.py:118) and
@@ -28,7 +28,7 @@ import ./../datasets/__init__.bend as D
 #   `grep -rnE "^def .*(lstm|LSTMCell|rnn|GRU|gru|cell)\(" --include='*.bend'
 #   tinybendygrad/` = 0.
 #
-# AND THE PROOF THAT IT IS NOT THERE BY ACCIDENT: `mixin/elementwise.bend:1186`
+# and the proof that it is not there by accident: `mixin/elementwise.bend:1186`
 # is where the activation LIST ends, and `mixin/op.bend:8` enumerates op.py's
 # own side and lists `-- _pad_reflect_replicate, pad, dot, matmul, einsum,
 # gradient, min, mean, var,` -- no recurrence anywhere in the upstream op mixin
@@ -36,7 +36,7 @@ import ./../datasets/__init__.bend as D
 # (`rnnt.py:135`), NOT an op, so its absence is the honest shape of the port's
 # progress and not an omission inside a finished area.
 #
-# THE NAMED CENSUS FOR THIS FILE:
+# the named census for this file:
 #   `nn.Embedding` MISSING (:178). THE FIRST MISSING SYMBOL.
 #   `nn.Linear`    EXISTS, nn/layers.bend:530 symbol=nn_linear (:191,:192,:107).
 #   `Tensor.sigmoid` EXISTS, mixin/elementwise.bend:1208 symbol=ew_sigmoid (:110).
@@ -63,7 +63,7 @@ import ./../datasets/__init__.bend as D
 #   `x.relu`          nn/layers.bend:299 symbol=nn_relu      (:200)
 #   `x +`/`x *`       mixin/elementwise.bend:509/510 `ew_add`/`ew_mul` (:112,:182)
 #
-# WHAT IS MISSING, NAMED -- AND MOST OF IT IS NOT RECURRENCE, WHICH IS THE
+# what is missing, named -- and most of it is not recurrence, which is the
 # FINDING: fixing LSTM would NOT make this file run.
 #   (1) `nn.Embedding` (:178) -- MISSING.
 #   (2) `Tensor.cat`   (:59,:115,:140,:199,:289,:296) -- MISSING, and it appears in
@@ -202,7 +202,7 @@ def rt_prediction_call(+x: T.Tensor, +hc: T.Tensor, +m: T.Tensor) -> D.Refused:
   D.refuse("extra/models/rnnt.py:181 Prediction.__call__ -- FIRST MISSING SYMBOL self.emb (:182), the same missing Embedding")
 
 # ---------------------------------------------------------------------------
-# :187-202 Joint. THE TWO DEFS THAT ARE ALMOST PORTABLE.
+# :187-202 Joint. the two defs that are almost portable.
 # ---------------------------------------------------------------------------
 
 # :188 def __init__(self, vocab_size, pred_hidden_size, enc_hidden_size, joint_hidden_size, dropout)

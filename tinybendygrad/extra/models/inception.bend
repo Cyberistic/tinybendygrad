@@ -12,10 +12,10 @@ import ./../../mixin/movement.bend as MX
 import ./../datasets/__init__.bend as D
 
 # ===========================================================================
-# STUB -- 1:1 PATH MIRROR of extra/models/inception.py (344 LOC). NOT YET
+# stub -- 1:1 path mirror of extra/models/inception.py (344 loc). not yet
 # PORTED.
 #
-# THE LARGEST FILE IN THIS DIRECTORY, AND THE ONLY ONE WITH A SECOND, FOREIGN
+# the largest file in this directory, and the only one with a second, foreign
 # MATHEMATICS REQUIREMENT AT THE END. Two thirds of it is ordinary Inception v3;
 # the last twenty lines are `calculate_frechet_distance` (upstream:323-344),
 # which is `scipy.linalg.sqrtm` -- a MATRIX SQUARE ROOT over 2048x2048 float
@@ -26,13 +26,13 @@ import ./../datasets/__init__.bend as D
 #
 # TODO(port): STOPPED AT `BasicConv2d.__init__` (extra/models/inception.py:12),
 # at upstream:14
-#       self.conv = Conv2d(in_ch, out_ch, bias=False, **kwargs)
+#       self.conv = Conv2d(in_ch, out_ch, bias=False, kwargs)
 #   `Tensor.conv2d` IS BUILT (`nn_conv2d`, nn/layers.bend:937 symbol=nn_conv2d, and its bias IS a
 #   `Maybe<&2, T.Tensor>` so `bias=False` is `None{}` -- exactly the arm
 #   `nn_cnv.add` at nn/layers.bend:895 symbol=nn_cnv.add spells). WHAT IS MISSING IS THE CLASS: `nn/__init__.bend`
 #   has 17 defs and ZERO classes, so there is no `nn.Conv2d` to construct, no
-#   `**kwargs` to forward and no weight to hold a shape.
-#   AND THE VERY NEXT LINE IS A HARDER ONE: upstream:15
+#   `kwargs` to forward and no weight to hold a shape.
+#   and the very next line is a harder one: upstream:15
 #       self.bn = BatchNorm2d(out_ch, eps=0.001)
 #   `pool_bn` (nn/pool.bend:382 symbol=pool_bn) is BUILT and `pool_bend:44-48` measures
 #   `Tensor.batchnorm` as a pure DECOMPOSITION. The half that is NOT a
@@ -42,10 +42,10 @@ import ./../datasets/__init__.bend as D
 #   `running_mean`/`running_var` out of the checkpoint, so this is not optional
 #   for this file.
 #
-# THE POOLS ARE WHERE THIS FILE BREAKS SHARPLY WITH THE OTHERS, AND IT IS WORTH
-# BEING PRECISE BECAUSE A COUNT WOULD CALL ALL OF IT "pools: DONE".
+# the pools are WHERE this file breaks sharply with the others, and it is worth
+# being precise because a count would call all of it "pools: done".
 #   `pool_maxpool` (nn/pool.bend:250) and `pool_avgpool` (:260) are BUILT and
-#   both are UNPADDED. THIS FILE PADS ON EVERY POOL IT CALLS:
+#   both are unpadded. this file pads on every pool it calls:
 #     upstream:38  x.avg_pool2d(kernel_size=(3,3), stride=1, padding=1)
 #     upstream:79  x.avg_pool2d(kernel_size=(3,3), stride=1, padding=1)
 #     upstream:123 x.avg_pool2d(kernel_size=(3,3), stride=1, padding=1)
@@ -64,14 +64,14 @@ import ./../datasets/__init__.bend as D
 #   rather than being pedantry: "A `max_pool2d` padded with ZERO would be wrong
 #   for any negative input, so the padded arm is REFUSED rather than built
 #   wrong."
-#   SO: 12 of the 17 POOL CALLS IN THIS FILE NEED AN ARM THAT IS REFUSED, and
+#   so: 12 of the 17 pool calls in this file need an arm that is refused, and
 #   the 5 that do not are NAMED HERE SO THE NUMBER IS CHECKABLE:
 #     NEEDS A REFUSED ARM -- :38 :79 :123 :134 :135 :147 :150 :162 :203 :213
 #                            :225 :237
 #     ON THE BUILT ARM    -- :54 :97 :290 :294 :308
 #   (measured with `grep -nE '(avg_pool2d|max_pool2d)\(' extra/models/inception.py`,
 #   which is why the denominator 17 is here and not "the pools".)
-#   AND THE 5 SURVIVORS ARE THE TRIVIAL ONES: each is in InceptionB (:54),
+#   and the 5 survivors are the trivial ones: each is in InceptionB (:54),
 #   InceptionD (:97) or FidInceptionV3.__call__ (:290, :294, :308), while every
 #   named branch pool of a class (:38, :79, :123, :134, :147, :150, :162) is
 #   refused. A "5 of 17 pools work" line would be true AND useless, because the
@@ -92,7 +92,7 @@ import ./../datasets/__init__.bend as D
 # file: "`.reshape`, `.astype` and `np.frombuffer` have no counterpart here:
 # `Tensor` in `tensor.bend` is a UOp slot in an arena, not a buffer".
 #
-# EVERY DEF BELOW REFUSES, AND THE RETURN TYPE IS `D.Refused`, NOT A TENSOR. A
+# every DEF below refuses, and the return TYPE is `D.Refused`, not a tensor. a
 # stub that returned a zero Tensor would be indistinguishable from a layer whose
 # weights happen to be zero. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`. Each message names
@@ -108,11 +108,11 @@ def ic_at(r: D.Refused) -> String:
     case D.Refused{at}: at
 
 # ---------------------------------------------------------------------------
-# :12-18 BasicConv2d -- THE ONLY CLASS IN THE FIRST HALF OF THE FILE, AND EVERY
+# :12-18 BasicConv2d -- the only class in the first half of the file, and every
 # OTHER CLASS IS BUILT OUT OF IT.
 # ---------------------------------------------------------------------------
 
-# :13 def __init__(self, in_ch:int, out_ch:int, **kwargs)
+# :13 def __init__(self, in_ch:int, out_ch:int, kwargs)
 def ic_basic_init(in_ch: U32, out_ch: U32) -> D.Refused:
   D.refuse("extra/models/inception.py:13 BasicConv2d.__init__ -- FIRST MISSING SYMBOL nn.Conv2d CLASS at :14; the OP nn_conv2d (nn/layers.bend:937 symbol=nn_conv2d) EXISTS and its bias is a Maybe<&2, T.Tensor>, so bias=False IS expressible")
 
@@ -144,7 +144,7 @@ def ic_incepa_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:33 InceptionA.__call__ -- FIRST MISSING SYMBOL the padded avg_pool2d at :38 (nn/pool.bend:263 symbol=pool_avgpool_padded)")
 
 # ---------------------------------------------------------------------------
-# :42-56 InceptionB. THE FIRST CLASS WITH A `max_pool2d`, AND SO THE FIRST ONE
+# :42-56 InceptionB. the first class with a `max_pool2d`, and so the first one
 # WHOSE BODY CANNOT BE SPELLED AT ALL.
 # ---------------------------------------------------------------------------
 
@@ -186,7 +186,7 @@ def ic_incepe_cat() -> D.Refused:
   D.refuse("extra/models/inception.py:121 InceptionE.__call__ -- MISSING Tensor.cat; and these two branches are nested cats, so one missing symbol costs THREE calls in this def")
 
 # ---------------------------------------------------------------------------
-# :127-136 InceptionAux. THE ONE CLASS WHOSE POOLS ARE `padding=1` WITH A
+# :127-136 InceptionAux. the one class whose pools are `padding=1` with a
 # KERNEL THAT IS NOT 3.
 # ---------------------------------------------------------------------------
 
@@ -203,7 +203,7 @@ def ic_aux_flatten(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:135 InceptionAux.__call__ -- pool_flatten (nn/pool.bend:327 symbol=pool_flatten) EXISTS and takes b0/rest AS VALUES; the missing part is reading `rest` out of x.shape instead of being handed it, which is the -1 INFERENCE nn/pool.bend:323-325 symbol=pool_flatten says no def here has")
 
 # ---------------------------------------------------------------------------
-# :138-192 Inception3. TWENTY-EIGHT NAMED SUBLAYERS, RESTATED AS A COUNT AND A
+# :138-192 Inception3. twenty-eight named sublayers, restated as a count and a
 # SPAN RATHER THAN A LIST, because a list of twenty-eight names in a comment is
 # the census that rots.
 # ---------------------------------------------------------------------------
@@ -238,8 +238,8 @@ def ic_incep3_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/inception.py:165 Inception3.__call__ -- FIRST MISSING SYMBOL the padded max_pool2d at :147 via :170 (nn/pool.bend:253 symbol=pool_maxpool_padded)")
 
 # ---------------------------------------------------------------------------
-# :195-239 THE FID VARIANTS. FOUR CLASSES THAT OVERRIDE ONE METHOD EACH, AND
-# EACH OVERRIDE CHANGES EXACTLY ONE THING: `count_include_pad`.
+# :195-239 the fid variants. four classes that override one method each, and
+# each override changes exactly one thing: `count_include_pad`.
 # ---------------------------------------------------------------------------
 
 # :197-205 FidInceptionA  :203 ... avg_pool2d(..., count_include_pad=False)

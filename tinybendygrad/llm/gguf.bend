@@ -37,7 +37,7 @@ import ./../helpers.bend as H
 #     one recursion Bend's termination check will not accept: the tail of a
 #     length-prefixed read is not a subterm of the list it came from.
 #
-# TWO SYNTAX FACTS THIS FILE HAD TO BE WRITTEN AROUND, both measured, because
+# two syntax facts this file had to be written around, both measured, because
 # they decide its shape and not its meaning:
 #   * a record literal's fields are POSITIONAL. `CS{a: x}` is `expected a term`.
 #   * `(a, b) = f(x)` is REFUSED -- a destructuring let is a match, and a match

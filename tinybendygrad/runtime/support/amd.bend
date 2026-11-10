@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/support/amd.bend -- port of tinygrad/runtime/support/amd.py
 #
 # ===========================================================================
-# FORTY-SEVEN LINES, AND THE WHOLE FILE IS PURE. No FFI, no process spawn, no
+# forty-seven lines, and the whole file is pure. No ffi, no process spawn, no
 # environment read -- which makes it the cleanest instrument in this unit:
 # everything below is arithmetic and set membership, and every row is a number
 # the oracle computed by CALLING the real Python against the real
@@ -131,7 +131,7 @@ def hd(+xs: List<&2, U32>) -> U32: Maybe.default(&2, U32, List.head(&2, U32, xs)
 def tl(+xs: List<&2, U32>) -> List<&2, U32>: List.tail(&2, U32, xs)
 
 # ===========================================================================
-# `AMDReg.encode(**kwargs)`: `functools.reduce(int.__or__, (value <<
+# `AMDReg.encode(kwargs)`: `functools.reduce(int.__or__, (value <<
 # fields[name][0] for name, value in kwargs.items()), 0)`. The fold is over the
 # KWARGUMENT ORDER, which Python preserves, so two OVERLAPPING fields would
 # depend on it. `amd_enc_rev` is the row for the reordering and
@@ -525,7 +525,7 @@ def t_enc() -> IO(Unit):
     f : Unit <- srow("amd.asic_hdp_6_0_0.enc2", U32.show(AMDReg.encode([1, 1], [0, 1])))
     g : Unit <- srow("amd.asic_hdp_6_0_0.enc_rev", U32.show(AMDReg.encode([1, 1], [0, 1])))
     # the SAME value at TWO different fields, which is what the oracle's
-    # `encode(**{n0: v0}) == encode(**{n1: v0})` asks: 1 at bit 0 against 1 at
+    # `encode({n0: v0}) == encode({n1: v0})` asks: 1 at bit 0 against 1 at
     # bit 1
     h : Unit <- srow("amd.asic_hdp_6_0_0.enc_same", U32.show(Bool.to_u32(U32.is_eq(
       AMDReg.encode([1], [0]), AMDReg.encode([1], [1])))))

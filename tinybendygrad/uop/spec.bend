@@ -30,13 +30,13 @@
 # none dispatch on a tag, so one copy is right. Duplicated per table: `try`, `go`,
 # `scan`, `rewrite`, `dispatch`, the table, and the verifier fold.
 #
-# THE TAG SPACES ARE PER TABLE, starting at 0, and each rule carries its `spec.py`
+# the tag spaces are per table, starting at 0, and each rule carries its `spec.py`
 # line. `spec_tensor` and friends are `PatternMatcher(...) + spec_shared`, so a tag
 # means "(table, index in THAT table's own list)" -- see the `+` composition note on
 # `fu_table`.
 #
 # ---------------------------------------------------------------------------
-# TWO FACTS THAT ARE EASY TO INVERT, both measured against `spec.py`.
+# two facts that are easy to invert, both measured against `spec.py`.
 #
 # 1. `early_reject` IS A NECESSARY CONDITION, not a veto, despite the name:
 #    `ops.py:1701` is `if not early_reject.issubset(ler): continue`, so the rule
@@ -49,7 +49,7 @@
 #    `prog4_ok` rows exist to catch a MISSPELLED set, which would silently skip a
 #    rule that should have fired.
 #
-# 2. A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it
+# 2. a name bound twice must emit an identity check (`upat.py:100-105` builds it
 #    as a literal `"{0} is {1}"`, and `mixin/gradient.py:101` and
 #    `schedule/__init__.py:182` both depend on it). The only name bound twice in
 #    THIS file is `uidx`, in `sh_28`..`sh_31`, and both bindings are in the two
@@ -651,7 +651,7 @@ def sp_claimed(ops: List<&2, O.Op>, ar: O.Arena, self: U32) -> Bool:
   O.op_in(ops, O.Arena.op(ar, self))
 
 # ===========================================================================
-# THE FOLDS AND READERS THE RULES SHARE. A rule body is Python's lambda with
+# the folds and readers the rules share. a rule body is Python's lambda with
 # `self` spelled out, and these are the pieces it reaches for. `sp_src0` is
 # `sp_src(.., 0)` because `src[0]` is written most.
 # ===========================================================================
@@ -731,7 +731,7 @@ def sp_vb(b: Bool) -> O.Verdict:
 # `X or (CAST and X)`. That is also why no identity check is emitted for the doubled
 # `uidx` name: the two bindings are in the two ALTERNATIVES and never meet.
 #
-# THE WRAPPER TEST IS THE NODE'S OWN OP, not its src's: `or_casted` wraps the node,
+# the wrapper test is the node's own op, not its src's: `or_casted` wraps the node,
 # so reading src[0] for the op instead asks whether the node's CHILD is the wrapper.
 def alt_of(plain: Bool, wrapped: Bool, inner: Bool) -> Bool:
   Bool.or(plain, Bool.and(wrapped, inner))
@@ -884,7 +884,7 @@ def OP_BITS() -> List<&2, O.Op>:
 
 # spec.py:70  (UPat((Ops.AND, Ops.OR, Ops.XOR, Ops.SHL, Ops.SHR), name="x"),
 #              lambda x: False if any(dtypes.is_float(s.dtype) for s in x.src) else None)
-# THE FIRST RULE THAT CLAIMS A SHL, and it is the one that carries the `False`, which
+# the first rule that claims a shl, and it is the one that carries the `False`, which
 # is load-bearing: `sh_8` claims a SHL too and would answer `True`.
 def sh_7(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, OP_BITS()), sp_vd(sp_tri(any_float(sp_srcs(fx, self), fx, False{}), False{})))
@@ -986,7 +986,7 @@ def sh_15.body(+fx: F.Folded, +self: U32) -> Bool:
 # spec.py:89  (UPat(Ops.BACKEDGE, dtypes.void,
 #                    src=(UPat(), UPat(Ops.RANGE, dtypes.void), UPat(dtype=dtypes.bool)), name="x"),
 #              lambda x: x.arg is None and x.src[2].shape == () and not x.src[2].base.is_invalid)
-# ONE OF ONLY FOUR NON-EMPTY `early_reject` SETS: `src[0]` of the pattern is
+# one of only four non-empty `early_reject` sets: `src[0]` of the pattern is
 # `UPat(Ops.RANGE, dtypes.void)`, a single-op upat, so `rej` is `[RANGE]`.
 def sh_15(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_15.pat(fx, self), sp_vb(sh_15.body(fx, self)))
@@ -1034,7 +1034,7 @@ def OP_AFTER19() -> List<&2, O.Op>:
 # spec.py:101 (UPat(Ops.AFTER, src=(UPat(Movement|PARAM|BUFFER|ALLOC|STAGE|INDEX|AFTER|
 #                     UNSHARD|BITCAST|INS|CONST|CAST|NOOP|STACK),), allow_any_len=True), lambda: True)
 #
-# THE SRC CLAUSE IS A PATTERN CLAUSE AND IT HAS TO BE ONE. Upstream's rule is a
+# the SRC clause is a pattern clause and it has to be one. Upstream's rule is a
 # PATTERN: a node whose src[0] is not in the set does not MATCH it, so the rule is
 # SKIPPED and the rules after it get their turn. The port had the src-op test in
 # the BODY, and a `False` STOPS the fold, so the port answered False at rule 19
@@ -1044,7 +1044,7 @@ def OP_AFTER19() -> List<&2, O.Op>:
 # the port said 0 before rule 20 existed and 0 after it, because rule 19 answered
 # first. `gates/specnew.bend` is the probe that measures it.
 #
-# THE FOUR OPS AT THE END ARE UPSTREAM'S RE-VENDOR (86c4f1343, 2026-10-16): the pin's
+# the four ops at the end are upstream's re-vendor (86c4f1343, 2026-10-16): the pin's
 # set had no CONST/CAST/NOOP/STACK, and upstream added them because they are the
 # RANGE bounds -- `RANGE(AFTER(CONST, other_range))` orders a loop after a sibling.
 def sh_19.pat.of(op: Bool, n: Bool, s: Bool) -> Bool:
@@ -1089,7 +1089,7 @@ def sh_21(+fx: F.Folded, +self: U32) -> O.Verdict:
 # upstream) with `Arg`'s `ACustom` arm, so `isinstance(x.arg, CustomFunction)` is
 # one compiler-checked arm here instead of a `str` test standing in for it.
 #
-# THE STALENESS WAS INVISIBLE TO EVERY COUNT, which is the part worth keeping. At the
+# the staleness was invisible to every count, which is the part worth keeping. At the
 # pin `spec.py:110` read `lambda x: isinstance(x.arg, str)`; at HEAD it reads
 # `isinstance(x.arg, CustomFunction)`. `sh_len` is 33 at the pin and 33 at HEAD, so
 # the table-size rows could not notice, and NO OTHER ROW READ THE ARG'S TYPE. Same
@@ -1146,7 +1146,7 @@ def sh_26(+fx: F.Folded, +self: U32) -> O.Verdict:
 
 # spec.py:125 (UPat(Ops.STORE, src=(UPat(name="t"), UPat(name="v")), allow_any_len=True),
 #              lambda t,v: None if matches_dtype(v, t.dtype) or v.dtype == weak_dtype(t.dtype) else False)
-# A STORE'S VALUE MUST MATCH ITS TARGET'S DTYPE. The pattern claims EVERY STORE with
+# a STORE's value must match its target's dtype. The pattern claims every STORE with
 # two srcs, so this rule is a FILTER and it runs BEFORE the INDEX-store rules below:
 # a mismatch is `False` here and the fold stops, and a match is `None` and the scan
 # goes on. `matches_dtype` is `sp_md` and `weak_dtype` is upstream's `dtype.py:175`,
@@ -1303,7 +1303,7 @@ def OP_ALU() -> List<&2, O.Op>:
 # `ops` is the op set `pdict` keys on and `rej` is `early_reject` -- NON-EMPTY at
 # tag 15 only, and see the header for why that set decides nothing.
 #
-# THE `# NN` ON EACH ROW IS THE `spec.py` LINE THE RULE CAME FROM, and every row
+# the `# NN` on each row is the `spec.py` line the rule came from, and every row
 # but two cites the PIN's `spec.py` -- the revision this file was written against,
 # which upstream has since moved. The two that do NOT are tag 20 (`# 104`, the
 # AFTER on a scalar ALU) and tag 27 (`# 125`, the STORE whose value matches its
@@ -1568,7 +1568,7 @@ def all_dev(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
 #     def is_device(d): return isinstance(d, str) or (isinstance(d, tuple) and
 #                                            all(isinstance(s, str) for s in d))
 #
-# WHAT THIS PORT CAN STATE, PLAINLY. Python's `device` is `str | tuple[str, ...]`
+# what this port can state, plainly. Python's `device` is `str | tuple[str, ...]`
 # and `S.Dev` is `D1{tag} | Dn{tags}`: `D1` is the `str` case and `Dn` is the
 # `tuple` case, so the two `isinstance` tests are the two constructors and the
 # `all(...)` is the `List` being well-formed. Both are TRUE of every `S.Dev` BY
@@ -1981,8 +1981,8 @@ def bump(n: U32, ts: O.PMEntrys) -> O.PMEntrys:
   bump.go(n, O.PMEntrys.es(ts), Nil{})
 
 # ---------------------------------------------------------------------------
-# THE TWENTY-THIRD TENSOR RULE -- RESOLVED 2026-10-03, AND THE ROOT CAUSE IS NOT
-# WHAT THE OLD TEXT SAID. It is kept because the OLD TEXT was wrong in an instructive
+# the twenty-third tensor rule -- resolved 2026-10-03, and the root cause is not
+# what the old text said. It is kept because the old text was wrong in an instructive
 # way, and because the reason it was wrong is the one thing a reader needs here.
 #
 # THE OLD TEXT claimed `tensor_own()` was "CPython's 22 tensor rules plus a DUPLICATE of
@@ -2006,7 +2006,7 @@ def bump(n: U32, ts: O.PMEntrys) -> O.PMEntrys:
 # left to reject. The port was CORRECT at the pin and upstream moved -- which is why the
 # old text called the count a DUPLICATE: from HEAD it looks exactly like one.
 #
-# THE THREE-LINE TELL WAS THE CLUE AND IT WAS READ BACKWARDS. Every `# NN` on the rows
+# the three-line tell was the clue and it was read backwards. Every `# NN` on the rows
 # from row 4 down was three too high -- 164 for a rule now at 161, 167 for 164, and so on
 # to 201 for 198 -- and rows 0..3 were exact. Three extra lines inside `spec_tensor`,
 # below row 3, is the deletion itself. The port read that as "the citations drifted", when
@@ -2023,8 +2023,8 @@ def bump(n: U32, ts: O.PMEntrys) -> O.PMEntrys:
 # `sh_22` and again by `te_4` -- which changed no ANSWER, because first-wins made the
 # second unreachable.
 #
-# THE DELETE WAS NOT ONE LINE, AND THAT IS THE PART TO CARRY AWAY. Renaming the rule defs
-# and renumbering the table was the easy half. THREE THINGS ELSE READ THE SAME NUMBERS and
+# the delete was not one line, and that is the part to carry away. Renaming the rule defs
+# and renumbering the table was the easy half. three things ELSE read the same numbers and
 # had to move with it, and each of the three failed SILENTLY -- compiled, ran, raised
 # nothing, and answered a different question:
 #
@@ -2312,7 +2312,7 @@ def hq_0.pat(+fx: F.Folded, +self: U32) -> Bool:
 # queues: a GETADDR takes a device and a PROGRAM takes the bound buffers.
 # ===========================================================================
 # spec.py:228 (UPat(Ops.GETADDR, dtypes.u64, name="x",
-#                    src=(UPat((BUFFER, ALLOC, PARAM, SHRINK, BITCAST, MSTACK, MSELECT, LINEAR))
+#                    src=(UPat((BUFFER, alloc, PARAM, shrink, bitcast, mstack, mselect, linear))
 #                         .or_after(),)), lambda x: is_device(x.arg))
 #
 # The `or_after` is a DISJUNCTION (`after_or`), and `hcq_plain` / `hcq_after` are
@@ -2380,7 +2380,7 @@ def hcq_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
 # `+ spec_tensor + spec_program + spec_hcq`, and each of those is its own list
 # followed by `spec_shared` again.
 #
-# PYTHON'S LITERAL LIST IS 139 ENTRIES AND FOUR OF THIS FILE'S BLOCKS ARE
+# python's literal list is 139 entries and four of this file's blocks are
 # 4 + 22 + 34 + 9 + 2 = 71. THE OTHER 68 ARE DEAD: `spec_shared` appears three times
 # in `spec_full`'s 139 and only the FIRST is reachable, because the fold is
 # first-wins -- a rule that skipped in the first block skips again in the second,
@@ -2453,7 +2453,7 @@ def fu_block.pick(a: Bool, b: Bool, c: Bool) -> U32:
 # scrutinise a call, so the three comparisons have to cross a def boundary as three
 # Bools and be re-joined here -- and joining them as a number is what lets the
 # dispatch below be a four-arm `match` instead of a nine-def ladder.
-# THE THREE THRESHOLDS ARE THE BASES `full_table.go` BUMPS BY, and each was ONE MORE
+# the three thresholds are the bases `full_table.go` bumps by, and each was one more
 # THAN ITS BASE, so a block's FIRST rule sat in the PREVIOUS block's ladder -- where the
 # ladder's `case _` arm handed it to a rule that does not apply to it. `spec_hcq`'s
 # GETADDR rule (`spec.py:230`) went to `spec_shared`'s SINK rule (`spec.py:50`) and
@@ -2471,7 +2471,7 @@ def fu_block(tag: U32) -> U32:
 # `spec_program` (9 own), 69-70 `spec_hcq` (2 own). The bases are the CUMULATIVE
 # SIZES -- 4, 26, 60, 69 -- so the tag space has no hole in it.
 #
-# EVERY NUMBER HERE IS SPELLED THREE TIMES -- once as the `bump(N, ...)` that builds the
+# every number here is spelled three times -- once as the `bump(N, ...)` that builds the
 # table, once as the `U32.sub(tag, N)` below, and once as a threshold in `fu_block.go` --
 # and NOTHING TIES THE THREE TOGETHER. Deleting the twenty-third tensor rule (2026-10-17)
 # rebased `full_table.go` and `fu_dispatch.of` to 26 / 59 / 68 and left `fu_block.go` at
@@ -2858,7 +2858,7 @@ def buf_param() -> O.ParamArg:
 # between two rules that both claim one node. A row that merely restates the code
 # is not in this file.
 #
-# THE LANDMARKS ARE RESOLVED, NOT COUNTED, and that is not tidiness. The first
+# the landmarks are resolved, not counted, and that is not tidiness. The first
 # version of this gate hard-coded `22` and `23` for the two GETADDRs and
 # `hcq_plain` printed 1 -- for the WRONG REASON: node 22 is the AFTER, so the hcq
 # table fell through to `spec_shared`'s AFTER rule and answered `True` without
@@ -3209,7 +3209,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # numbers are `spec.py`'s, so this list diffs against `spec.py` line for line and
 # `grep "TODO(p3)" tinybendygrad/uop/spec.bend` is the work queue.
 #
-# THE FOUR THAT ARE GENUINELY UNAVAILABLE, and they are all P3 or later.
+# the four that are genuinely unavailable, and they are all P3 or later.
 # ===========================================================================
 # TODO(p3) upat.py:173  symbol=upat_compile  -- the pyrender GLOBALS: NOT IN
 #   upstream at this pin -- `grep -r pyrender tinygrad/` is EMPTY -- and the
@@ -3235,7 +3235,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #   wall is stated there. P6.
 # ===========================================================================
 #
-# THE REST ARE NOT UNAVAILABLE, THEY ARE BEHIND A PROPERTY FOLD, and each one names
+# the rest are not unavailable, they are behind a property FOLD, and each one names
 # the fold that owns it so the phase is unambiguous.
 # ===========================================================================
 # TODO(p3) spec.py:11  def validate_index -- the first two returns
@@ -3371,21 +3371,21 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # | `te_scan` last-wins | NONE | 0 |
 # | `fu_block.go`'s thresholds 26 / 58 / 67 -> 27 / 60 / 69 | NONE | 0 |
 #
-# THE FIRST ROW IS THE ONE THAT ANSWERS "WAS THE DELETION WORTH MAKING": three rows, not
+# the first row is the one that answers "was the deletion worth making": three rows, not
 # two. `tag_rej` joins `te_len` and `fu_len` because re-inserting the rule pushes the
 # four-src PROGRAM rule from index 21 back to 22, and `t_tag_rej` reads index 21 -- so the
 # deletion is witnessed by a row that reads a rule's CONTENT, not only by two that count
 # entries. Before the deletion that row read the three-src rule's reject set, which is
 # where it would have gone wrong.
 #
-# THE FOUR TAG-SPACE BLIND SPOTS SHARE ONE REASON AND IT IS WORTH NAMING. Nothing in the
+# the four tag-space blind spots share one reason and it is worth naming. Nothing in the
 # gate drives `full_table()` or the tensor-to-shared HANDOFF on any fixture, so every
 # offset in `full_table.go` and `fu_dispatch.of` and `te_dispatch.go`'s `case _` arm is
 # ungated: `fu_len` counts entries and `bump` does not change how many there are. Two of
 # those offsets were WRONG for part of this session -- `fu_dispatch.of` said 27 / 60 / 69
 # while `full_table.go` said 26 / 59 / 68 -- and no row noticed, because no row could.
 #
-# THE THIRD SPELLING WAS THE ONE THAT STAYED WRONG FOR FIVE DAYS. `fu_block.go`'s three
+# the third spelling was the one that stayed wrong for five days. `fu_block.go`'s three
 # thresholds are a THIRD copy of the same bases, and the twenty-third tensor rule's
 # deletion (2026-10-17) moved two of the three and left this one at 27 / 60 / 69 -- so
 # every tag past `full_own`'s four entered the WRONG table's dispatch, and dropping the
@@ -3406,7 +3406,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # the four; the two handoff rows need a node that no tensor rule claims, which is a
 # different fixture again.
 #
-# THE THREE `te_dispatch.go` LADDER BLIND SPOTS ARE PURE COVERAGE. `Land` has no SPECIAL
+# the three `te_dispatch.go` ladder blind spots are pure coverage. `Land` has no special
 # node and no RESHAPE/EXPAND node, so `te_4` and `te_5` have no row that can reach them,
 # and shifting either arm is invisible. `te_scan`'s first-wins is blind for the same kind
 # of reason: no tensor fixture has two rules claiming one node with DISAGREEING answers,
@@ -3414,7 +3414,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # the missing nodes is fixture work, and saying so is more useful than a row that cannot
 # fail.
 #
-# THE FIRST ROW IS THE INTERESTING ONE, and it is a NEGATIVE result worth keeping.
+# the first row is the interesting one, and it is a negative result worth keeping.
 # Flipping the subset test's `and` for its `or` moves NOTHING, and that is the
 # MEASURED PROOF of a claim this file's header makes: every non-empty
 # `early_reject` set in `spec.py` is ALREADY IMPLIED by its rule's own src-op test,

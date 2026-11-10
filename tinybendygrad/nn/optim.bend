@@ -52,7 +52,7 @@ import ./../dtype.bend as DT
 # still reads the old graph -- which is the whole cost of the divergence and which
 # Python cannot be asked about at all.
 #
-# WHAT I NEED FROM THE MIXIN CLUSTER (`tinybendygrad/mixin/`, READ-ONLY to me and
+# what i need from the mixin cluster (`tinybendygrad/mixin/`, read-only to me and
 # NOT BUILT -- op.bend and elementwise.bend are stubs), one line per def called:
 #   * `mul`, `add`, `sub`, `div` -- elementwise.py:36 `_binop`. Every arithmetic
 #     line of `_step` is one of these four.
@@ -78,7 +78,7 @@ import ./../dtype.bend as DT
 # with `buffer=None`, the one field of `ParamArg` that needs a device. These are
 # the gate's fixtures and the header says so.
 #
-# EVERY FIXTURE TAKES THE INCOMING ARENA. Two `Found`s from two `Arena.empty()`s
+# every fixture takes the incoming arena. Two `Found`s from two `Arena.empty()`s
 # are two arenas and an index means nothing outside its own, so a fixture that
 # built its lhs and its rhs from separate empties would intern the same node
 # twice under one index. It typechecks and it prints plausible numbers, which is
@@ -232,7 +232,7 @@ def op_filter.of(want: Bool, xs: List<&2, T.Tensor>) -> List<&2, U32>:
 # `initial=0` at the HEAD, so sizes `[2, 3]` give `[0, 2, 5]` and the oracle
 # confirms it. The seed is `[0]` and not `Nil{}` precisely because of that head.
 #
-# THE RUNNING TOTAL IS THE ACCUMULATOR'S LAST ELEMENT, and that is the whole
+# the running total is the accumulator's last element, and that is the whole
 # trick. `accumulate` appends `tot + numel(x)` at the END, so the total never has
 # to be a second parameter -- it is read back off the list being built. Both
 # values are then read ONCE (`x` for its numel, `acc` for its tail), which is what
@@ -599,14 +599,14 @@ def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
 # can fix it, because the grown arena is simply not in a `U32`. A `Tensor` is exactly
 # the pair (`Arena & U32`) that ops.bend's `Found` exists to spell.
 # ===========================================================================
-# THE ARENA RULE, IN ONE PLACE, AND IT IS THE WHOLE OF THIS FILE'S HARDEST PART.
+# the arena rule, in one place, and it is the whole of this file's hardest part.
 #
 # A node belongs in the arena as it stood AFTER the last node built before it, and in
 # Bend that arena is a VALUE rather than an ambient store. So every helper here takes
 # the arena where it is NOT already carried and takes a `Tensor` where it IS, and a
 # `U32` where nothing has been built since the arena it came from.
 #
-# THE BUG THIS PREVENTS, MEASURED THREE TIMES IN THIS FILE:
+# the bug this prevents, measured three times in this file:
 #   * helpers that returned a bare `U32` -> every graph row printed `1 NOOP/0`;
 #   * helpers that took `ar` but were handed a STALE one -> `op_apply` printed `0`;
 #   * `Bool.pick` re-wrapping a `U32` in a fresh arena -> `op_nesterov` printed
@@ -616,7 +616,7 @@ def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
 # arena that went in.
 # ===========================================================================
 
-# `lhs + rhs` -- elementwise.py:267 `__add__`. BOTH OPERANDS ARE `Tensor`s AND THE BUILD
+# `lhs + rhs` -- elementwise.py:267 `__add__`. both operands are `Tensor`s and the build
 # MERGES THEIR ARENAS. `Arena` is an immutable `Data` value, so `b`'s index is meaningful
 # only in `b`'s own arena; `tn_binop` re-mints it into a common descendant (`Arena.merge`,
 # CONTENT and not length), which is the one spelling correct whether the operands are a
@@ -646,7 +646,7 @@ def op_mul_l(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
 def op_where(+q: T.Tensor, +x: T.Tensor, y: F32) -> T.Tensor:
   T.tn_where(q, x, T.tn_const(op_ar(x), O.CFloat{y}))
 
-# EVERY UNARY HELPER TAKES A `Tensor` AND NOT A `U32`, and the reason is the FOURTH
+# every unary helper takes a `Tensor` and not a `U32`, and the reason is the fourth
 # measured instance of tensor.bend's rule 5: these four each built into a FRESH
 # `Arena.empty()`, so their nodes landed in an arena the rest of the graph cannot see.
 # MEASURED: `op_lars0` printed `1 BUFFER/0`, `op_trust` printed `0`, `op_mom` printed
@@ -718,7 +718,7 @@ def op_cast(+t: T.Tensor, dt: S.Dt) -> T.Tensor:
 # ===========================================================================
 # `LARS._step` -- optim.py:109-129, in SOURCE ORDER. Eight `if`s in Python and each
 # one is a `Bool` here, because each guards a rebinding of `g` and a `let` is affine.
-# THE ORDER OF THE CALLS IS THE PORT: :117 before :119 before :121 before :122 before
+# the order of the calls is the port: :117 before :119 before :121 before :122 before
 # :125 before :127. A port that hoisted the `classic` multiply would build the same
 # nodes in a different graph and every signature row would see it.
 # ===========================================================================
@@ -769,7 +769,7 @@ def op_normsq_u(+ar: O.Arena, +a: U32) -> T.Tensor:
 # (elementwise.py:24) returns `(self, y) if not reverse else (y, self)` -- `__mul__`
 # passes `reverse=False`, so the CONST IS src[0]. Getting this backwards typechecks and
 # prints `MUL/2` identically, so `op_prewd` and `op_trust` are the rows that see it.
-# THE CONST IS INTERNED INTO `ar` AND `op_mul_l` MERGES IT WITH `a`'s ARENA. The old
+# the CONST is interned into `ar` and `op_mul_l` merges it with `a`'s arena. The old
 # spelling built the CONST into `op_ar(a)` and then the MUL into that SAME pre-growth
 # arena, at the index the CONST had just taken: the CONST was orphaned and the MUL's
 # src[0] was its own index, a SELF-LOOP that made `toposort` answer `0`. `op_mul_l`'s
@@ -843,7 +843,7 @@ def op_lr_mul(+ar: O.Arena, g: U32, +r: T.Tensor, lr: U32) -> T.Tensor:
 def op_mom.mix(+ar: O.Arena, +b: U32, g: U32, momentum: F32) -> T.Tensor:
   op_add(op_mulf(ar, momentum, T.tn_wrap_uop(ar, b)), T.tn_wrap_uop(ar, g))
 
-# THE ASSIGN SPINE IS BUILT ON THE MIX'S ARENA (`T.Tensor.ar(m)`): the ADD grew it, so the
+# the assign spine is built on the mix's arena (`T.Tensor.ar(m)`): the ADD grew it, so the
 # old `ar` did not contain the mix's index and the STORE's src[1] was wrong.
 def op_mom(+ar: O.Arena, +b: U32, g: U32, momentum: F32) -> T.Tensor:
   +m = op_mom.mix(ar, b, g, momentum)
@@ -932,7 +932,7 @@ def op_vhat(+ar: O.Arena, v: U32, b2_t: U32) -> T.Tensor:
 # not an execution gate. `optim.py`'s `_step` is PURE graph construction: it touches
 # no Buffer and calls no realize, so the same graphs are available on both sides.
 #
-# THE FIXTURES ARE HANDLES, and that is WALL 1 applied to the ORACLE as well as to
+# the fixtures are handles, and that is wall 1 applied to the oracle as well as to
 # the port: Python's `self.b[i]` is a `Tensor.zeros` whose graph is
 # `ALLOC/CAST/CONST/EXPAND/STORE/AFTER`, six nodes that are `empty_like` -- device
 # state the port does not build. So the oracle REPLACES the momentum buffer with a
@@ -941,7 +941,7 @@ def op_vhat(+ar: O.Arena, v: U32, b2_t: U32) -> T.Tensor:
 # the only way the row can mean anything. It is stated here because a reader who
 # compares against an unreplaced oracle will see six extra nodes and wonder.
 #
-# THE `n=` COUNT IS IN EVERY SIGNATURE ROW ON PURPOSE, for tensor.bend's reason: a
+# the `n=` count is in every signature row on purpose, for tensor.bend's reason: a
 # boolean row that says "the ADD is there" cannot see a missing CONST, and two CONSTs
 # print the same signature whichever way round they are swapped. The rows that pin
 # ORDER specifically are `op_lars0` (two CONSTs, so order-free by construction) and
@@ -968,7 +968,7 @@ def sig.print(nm: String, +xs: List<&2, U32>, +ar: O.Arena) -> IO(Unit):
 def sig(nm: String, +ar: O.Arena, i: U32) -> IO(Unit):
   sig.print(nm, O.UOp.toposort(O.Arena.budget(ar), ar, i), ar)
 
-# AND THE ROWS READ THE ARENA OFF THE BUILT TENSOR, not off the fixture. That is
+# and the rows read the arena off the built tensor, not off the fixture. That is
 # tensor.bend's rule 5 one level up: every graph is built into an arena that GREW past
 # `St.ar`, so `st_ar(s)` is the arena the four fixtures live in and the graph's nodes
 # are not all in it. MEASURED: passing `st_ar(s)` printed `1 NOOP/0` for every graph
@@ -998,9 +998,9 @@ def us(xs: List<&2, U32>) -> String:
 # per element. That is the brief's "include a row that pins a COUNT, not just a
 # boolean" rule applied to a list rather than to a graph.
 #
-# EVERY FIXTURE TAKES THE INCOMING ARENA. Three `Arena.empty()`s would intern the same
+# every fixture takes the incoming arena. Three `Arena.empty()`s would intern the same
 # nodes under the same indices and every row would still print a plausible number.
-# THE ARENA IS THREADED, AND THIS IS NOT A STYLE POINT -- it is tensor.bend's rule 5,
+# the arena is threaded, and this is not a style point -- it is tensor.bend's rule 5,
 # "the arena a build returns is not the arena that went in". `pbuf` RETURNS a `Found`
 # carrying the grown arena, and a fixture that passed the INCOMING `ar` on to the next
 # call would intern every node under index 1. It typechecks, `op_params` and
@@ -1029,7 +1029,7 @@ def g_tb(ar: O.Arena) -> T.Tensor:
 def g_all.go2(xs: List<&2, T.Tensor>, b: T.Tensor) -> List<&2, T.Tensor>:
   List.append(&2, T.Tensor, xs, [b])
 
-# THE THREE FIXTURE TENSORS IN ONE PASS, so the arena is threaded ONCE instead of
+# the three fixture tensors in one pass, so the arena is threaded once instead of
 # re-derived at each site, and `g_two` and `g_all` cannot disagree about the indices.
 def g_all.pick(a: O.Found, +c: O.Found) -> List<&2, T.Tensor>:
   g_all.go2(List.append(&2, T.Tensor, [g_ta.put(a)], [g_ta.put(c)]), g_tb(O.Found.ar(c)))
@@ -1130,13 +1130,13 @@ def t_acc() -> IO(Unit):
 # the two arms share a cell, so a fixture that reached one of them had to be edited away
 # from the other. Each row below carries its OWN device and its OWN expected string, and
 # the two literals disagree on the LETTER -- `zeros:2,zeros:3,` against `zeros_like:2,zeros_like:3,`.
-# **AND THAT IS NOT THE WHOLE OF THE DISCRIMINATION, WHICH IS WHY THERE IS A THIRD ROW:** two
+# and that is not the whole of the discrimination, which is why there is a third row: two
 # literals that differ do not stop a single edit from satisfying both at once, and
 # `t_nop.tag`'s comment below names the edit and the two green rows it produced. What the
 # differing literals DO buy is that each row fails if its own fixture stops reaching its own
 # arm, which is the reading to take from the first two and not more than the reading.
 
-# THE RECORD CARRIES THE ARENA ITS PARAMS LIVE IN, and that is load-bearing rather
+# the record carries the arena its params live in, and that is load-bearing rather
 # than tidy: `op_nop` reads each param's shape through `o.ar`, so a record built with
 # an `Arena.empty()` reads every numel as the fold's bottom. MEASURED: with the arena
 # unthreaded, `op_nop` printed `Nzs:0,Nzs:0` while `op_params`, `op_bufs` and `op_acc`
@@ -1165,7 +1165,7 @@ def op_last_ar(xs: List<&2, T.Tensor>, d: O.Arena) -> O.Arena:
 def g_opt.grown.on(d: S.Dev, +xs: List<&2, T.Tensor>) -> Optim:
   op_with_arena(op_set_params(g_opt.on(d), op_filter.of(True{}, xs)), op_last_ar(xs, O.Arena.empty()))
 
-# THE ONE-ARGUMENT FORM IS NOT A CONVENIENCE, IT IS A PEER'S ENTRY POINT.
+# the one-argument form is not a convenience, it is a peer's entry point.
 # `gates/op_graph_census.bend:293` calls `Op.op_nop(Op.g_opt.grown(Op.g_two(...)))` with
 # ONE argument, and that file is not this unit's to edit, so `g_opt.grown` keeps its
 # arity and its `S.D1{0}` and the device-parameterised form is the sibling. MEASURED: the
@@ -1173,7 +1173,7 @@ def g_opt.grown.on(d: S.Dev, +xs: List<&2, T.Tensor>) -> Optim:
 def g_opt.grown(+xs: List<&2, T.Tensor>) -> Optim:
   g_opt.grown.on(S.D1{0}, xs)
 
-# ONE ROW PER ARM, and each row builds its OWN arena and its OWN record. `op_nop.dn` is
+# one row per arm, and each row builds its own arena and its own record. `op_nop.dn` is
 # the `S.Dn` arm of `op_nop.arm` (optim.py:26, `isinstance(self.device, tuple)`), whose
 # body is `Tensor.zeros_like` rather than `Tensor.zeros` -- `zeros_like` against `zeros`.
 def t_nop() -> IO(Unit):
@@ -1182,7 +1182,7 @@ def t_nop() -> IO(Unit):
 def t_nop.dn() -> IO(Unit):
   row("op_nop.dn", String.eq(nop_names(op_nop(g_opt.grown.on(S.Dn{[6, 0]}, g_two(O.Arena.empty()))), ""), "zeros_like:2,zeros_like:3,"))
 
-# THE PRINTER'S OWN ROW, AND IT IS THE ONE THAT MAKES THE TWO ABOVE NON-VACUOUS. Both of them
+# the printer's own row, and it is the one that makes the two above non-vacuous. Both of them
 # compare `nop_names`' OUTPUT against a literal, so any edit that moves the output and the
 # literal together leaves them green -- MEASURED, and this row was written because it did:
 # collapsing `nop_name`'s `zeros_like` arm to `zeros` AND replacing `op_nop.dn`'s expectation with
@@ -1205,7 +1205,7 @@ def t_nop.tag() -> IO(Unit):
 # construction -- no Buffer, no realize, no `.data()` -- so the same graph is available
 # on both sides and CPython prints its toposort as the oracle.
 #
-# THE FIXTURES ARE HANDLES, and that is WALL 1 applied to the ORACLE as well as to
+# the fixtures are handles, and that is wall 1 applied to the oracle as well as to
 # the port. Python's `self.b[i]` is a `Tensor.zeros` whose graph is six nodes
 # (`ALLOC/CONST/CAST/CONST/EXPAND/STORE/AFTER`) that are `empty_like` -- device state
 # the port does not build. So the ORACLE REPLACES the momentum buffer with a plain
@@ -1230,12 +1230,12 @@ type St is Data:
 # `BUFFER/0` -- so it IS a buffer on the oracle side and a CONST here, which is a
 # DESIGNED divergence and the reason it is called out: a CONST is what `Tensor(lr)`
 # reduces to once `full`'s `empty_like` is not built, and WALL 1 already said the
-# materialization is the caller's. THE ROWS THAT USE `lr` ARE THE ONES THAT WOULD
+# materialization is the caller's. the rows that use `lr` are the ones that would
 # SEE IT, so each prints its own signature and the difference is one CONST.
 def st_of(f: O.Found, h: O.Found, j: O.Found, +lr: O.Found) -> St:
   St{O.Found.ar(lr), O.Found.i(f), O.Found.i(h), O.Found.i(j), O.Found.i(lr)}
 
-# THE THREE BUFFERS AND THE CONST IN ONE ARENA, and each is threaded off the
+# the three buffers and the CONST in one arena, and each is threaded off the
 # PREVIOUS one's `Found` -- four `Arena.empty()`s would intern all four at index 1 and
 # every graph row would print a plausible graph over the wrong nodes. The chaining is
 # written out rather than looped because a `fold` over a list of `Found`s is the one
@@ -1281,7 +1281,7 @@ def st_lr(s: St) -> U32:
 
 # --- 5: `_apply_update`, optim.py:60 -----------------------------------------
 #
-# `t.detach() - up.to(t.device)`. THE ROW IS CHOSEN FOR ITS TWO ARITIES: elementwise.py:43
+# `t.detach() - up.to(t.device)`. the row is chosen for its two arities: elementwise.py:43
 # is `return self.alu(Ops.DETACH)`, a ZERO-src node, and the SUB is a ONE-src alu.
 # A `_apply_update` that inlined the DETACH or that dropped the `.to()` (WALL: the COPY
 # is a device wall and the header says it is dropped) prints `DETACH/1` or no DETACH,
@@ -1371,7 +1371,7 @@ def t_nesterov() -> IO(Unit):
 # updates each carrying their own `STORE/2 AFTER/2`.
 # `m_hat / (v_hat.sqrt() + self.eps)` then `+ self.wd * t.detach()`, optim.py:171.
 # `m_hat / (v_hat.sqrt() + self.eps)` then `+ self.wd * t.detach()` -- optim.py:171.
-# THE ROW COMPRESSES THE TWO MOMENTS INTO ONE VARIABLE on purpose: `v_hat.sqrt()` is
+# the row compresses the two moments into one variable on purpose: `v_hat.sqrt()` is
 # `.sqrt()` of the SECOND moment, and `op_lamb` feeds it the first, so what this row
 # pins is the SHAPE of the expression (a DIV by a SQRT-plus-eps, then an ADD of a
 # float-times-detach) rather than LAMB's full moment bookkeeping. `op_lamb_extra`
@@ -1402,7 +1402,7 @@ def t_lamb() -> IO(Unit):
   t_lamb.of(g_step())
 
 # ===========================================================================
-# THE FILE'S OWN `main`, AND ITS HONEST STATE. SIX VALUE ROWS AND SEVEN GRAPH ROWS.
+# the file's own `main`, and its honest state. six value rows and seven graph rows.
 #
 # THE ARENA PLUMBING IS FINISHED. `gates/op_graph_census-gate.py` drives each builder directly
 # and diffs the deep toposort (with each node's arg) against CPython's own graph; as of
@@ -1410,7 +1410,7 @@ def t_lamb() -> IO(Unit):
 # used to print `1 NOOP/0` (or a one-node graph) now print CPython's exact trees. The
 # `unverified_*` NAMES ARE HISTORICAL, kept only so this file's own output is stable.
 #
-# THE ONE DIVERGENCE THAT IS NOT A GRAPH DEFECT: `op_1mb`'s `(1.0 - self.b1)` is a DOUBLE
+# the one divergence that is not a graph defect: `op_1mb`'s `(1.0 - self.b1)` is a double
 # subtraction in CPython and an f32 one here, so the `mstep`/`vstep` CONSTs differ by one ULP.
 # MEASURED: CPython double-then-cast answers 0x3dcccccd, the port's f32 answers 0x3dccccd0, and
 # NO f32 operand within +-200000 ULP of the f32 literal reproduces CPython's bits under `1 - v`.
@@ -1430,7 +1430,7 @@ def t_lamb() -> IO(Unit):
 # operands' arenas (`tn_binop`) and every three-operand node is `tn_where`.
 # ===========================================================================
 
-# THE SEVEN ROWS ABOVE, PRINTED UNDER NAMES THAT SAY WHAT THEY ARE.
+# the seven rows above, printed under names that say what they are.
 def t_unverified() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- t_apply()
@@ -1465,7 +1465,7 @@ def main() -> IO(Unit):
 #
 #     .venv/bin/python gates/optim-nop-mutate.py     # 11 entries, 13 rows of base
 #
-# **FOUR OF ITS ELEVEN FIND-STRINGS ARE NOW STALE AND IT WILL SAY SO.** `nop_name` stopped
+# four of its eleven find-strings are now stale and it will say so. `nop_name` stopped
 # printing the port-only `Nz`/`Nzl`/`Nzs` and prints upstream's constructor names instead
 # (`zeros` / `zeros_like`), which moves the text of P2, P4, Z1 and, through them, P5. The
 # harness REFUSES a pattern it cannot match uniquely and prints `REFUSED` per entry rather
@@ -1474,25 +1474,25 @@ def main() -> IO(Unit):
 # refusal is in its OUTPUT and not in its `$?`. That harness is another unit's file; the four
 # strings it needs are its own table rows and this file's three `nop_name` arms.
 #
-# IT READS THIS FILE'S OWN `main`, WRITES A COPY BESIDE IT (`optim-mut.bend`, `.gitignore`d),
-# AND NEVER WRITES THIS FILE. Eleven entries: four of these rows, five PLANTS that must turn an
+# it reads this file's own `main`, writes a COPY beside it (`optim-mut.bend`, `.gitignore`d),
+# and never writes this file. Eleven entries: four of these rows, five plants that must turn an
 # arm red, and two that are expected to move nothing with the cause named beside them.
 #
 # | mutation | the edit | rows that MOVED | what it was testing |
 # | --- | --- | --- | --- |
 # | M1 | `op_acc`: `op_acc.go(params, [0])` -> `(params, Nil{})` | `op_acc` | `initial=0` at the HEAD of `itertools.accumulate` (optim.py:22). Without it the prefix sum is `[2,5]` and the fused slice bounds at :53 are off by one for every parameter. |
 # | M2 | `op_filter.t`: `True{}` -> `False{}` | `op_params` `op_nop` `op_nop.dn` | optim.py:13's `if x.is_param`, the half of the pair that :15's `if not x.is_param` is written against. `op_nop` moves too because it builds its `params` through the same filter, so the row that reads shapes is downstream of the row that selects tensors. `op_nop.dn` joined it when the second row landed, which is the price of a second row and is paid here in the open. |
-# | M3 | `op_nop.arm`: the `S.Dn{tags}` arm -> `map_nzs` | `op_nop.dn` | **CLOSED.** This row read **NOTHING** and the reason it gave was MEASURED FALSE: "a `Dn` fixture would un-gate the `D1` arm". It would not have, and the mechanism is that `op_nop` was ONE row with ONE fixture and the device was hardcoded inside `g_opt` -- so *any* `Dn` fixture was a REPLACEMENT, because there was no second row to put it in. Nothing needed a symbol: `device.bend:348 symbol=reg_has tag_of` interns two names into two DISTINCT tags (DISK gets 6, everything else 0), so `S.Dn{[6, 0]}` needs no interner, and `schedule/memory.bend:1007 symbol=mem_buf` already mints `S.Dn{[2, 3]}`. The fix is `op_nop.dn` ABOVE, and `g_opt.grown` keeps its ONE argument because `gates/op_graph_census.bend:293` calls it with one. MEASURED on the shipped tree, not on a copy: M3 moves `op_nop.dn` and **nothing else** -- `op_nop` is unaffected, which is the whole claim. |
-# | M4 | a no-op edit | **NOTHING** | a control, and its zero is a VACUOUS EDIT rather than a gap: a mutation table with no row that CANNOT move is a table of coincidences. |
+# | M3 | `op_nop.arm`: the `S.Dn{tags}` arm -> `map_nzs` | `op_nop.dn` | closed. This row read nothing and the reason it gave was measured FALSE: "a `Dn` fixture would un-gate the `D1` arm". It would not have, and the mechanism is that `op_nop` was one row with one fixture and the device was hardcoded inside `g_opt` -- so *any* `Dn` fixture was a replacement, because there was no second row to put it in. Nothing needed a symbol: `device.bend:348 symbol=reg_has tag_of` interns two names into two distinct tags (disk gets 6, everything else 0), so `S.Dn{[6, 0]}` needs no interner, and `schedule/memory.bend:1007 symbol=mem_buf` already mints `S.Dn{[2, 3]}`. The fix is `op_nop.dn` above, and `g_opt.grown` keeps its one argument because `gates/op_graph_census.bend:293` calls it with one. measured on the shipped tree, not on a copy: M3 moves `op_nop.dn` and nothing else -- `op_nop` is unaffected, which is the whole claim. |
+# | M4 | a no-op edit | NOTHING | a control, and its zero is a VACUOUS EDIT rather than a gap: a mutation table with no row that CANNOT move is a table of coincidences. |
 # | P1 | `g_opt.on` ignores its `d` and writes `S.D1{0}` | `op_nop.dn` | the PLANT for "a later fixture edit". It edits the def BOTH rows call, not the row, which is what such an edit is in practice. `op_nop` stays green. |
 # | P2 | `op_nop.dn`'s expectation `zeros_like:2,zeros_like:3,` -> `zeros:2,zeros:3,` | `op_nop.dn` | HALF the vacuity edit, and on its own it does NOT make the new row vacuous: the `Dn` fixture still prints `zeros_like`. |
 # | P3 | `op_nop.dn`'s fixture `S.Dn{[6, 0]}` -> `S.D1{0}` | `op_nop.dn` | the prior unit's three-token edit, re-measured on the row it belongs to. Its damage is now LOCAL; before this change it landed on `op_nop`. |
 # | P4 | `nop_name`'s `Nzl` arm -> `"zeros"` | `op_nop.dn` `op_nop.tag` | the PRINTER's letters collapse. `ptx.bend`'s alias-defect shape, where every fixture put the aliased node at one position. |
-# | P5 | P2 and P4 TOGETHER | `op_nop.tag` | **THE VACUITY PLANT, AND IT IS WHY `op_nop.tag` EXISTS.** With only `op_nop` and `op_nop.dn`, this pair left BOTH green at rc=0 -- MEASURED, once, before the third row existed -- with the `zeros_like`/`zeros` distinction that is the whole of the two arms GONE. "The two expectations are mutually exclusive" is NOT a guard: the vacuity route never hands both rows one string, it collapses the printer until both read the same line, and only `op_nop.dn`'s literal has to move because `op_nop`'s was already `zeros`. `op_nop.tag` builds the three `NewOpt`s by hand, so nothing in `op_nop.arm`, in the fixtures or in the device reaches it. |
+# | P5 | P2 and P4 together | `op_nop.tag` | the vacuity plant, and it is why `op_nop.tag` exists. With only `op_nop` and `op_nop.dn`, this pair left both green at rc=0 -- measured, once, before the third row existed -- with the `zeros_like`/`zeros` distinction that is the whole of the two arms gone. "The two expectations are mutually exclusive" is not a guard: the vacuity route never hands both rows one string, it collapses the printer until both read the same line, and only `op_nop.dn`'s literal has to move because `op_nop`'s was already `zeros`. `op_nop.tag` builds the three `NewOpt`s by hand, so nothing in `op_nop.arm`, in the fixtures or in the device reaches it. |
 # | Z1 | `nop_name`'s `Nz` arm -> `"zeros_like"` | `op_nop.tag` | the `Nz` TAG, which no `op_nop` fixture can print, and which prints `zeros` rather than a letter of its own because `optim.py:24` and `:27` both call `Tensor.zeros`. Closed by `op_nop.tag`. |
-# | Z2 | `op_nop.arm`'s `case True{} _` -> `[Nzs{op_last(pp)}]` | **NOTHING** | **THE ONE MEASURED LIMIT LEFT IN THIS FILE: DEAD ARM.** Every `g_opt.on` record has `fused=False{}`, so the FUSED arm -- `Tensor.zeros(self.pos_params[-1])` -- never fires and its body is changed by nothing. **IT IS NOT THREE TOKENS, and that is the measurement rather than an excuse:** a fused record needs `fused=True{}` AND `pos_params = op_acc(params)`, and `op_pos.of` already computes the right `pos_params` from `fused` and the tensors, so the only missing piece is a record mutation -- and `Optim` has twenty-four fields, which is why `op_with_arena` is a def and why closing this costs one more def rather than one more token. |
+# | Z2 | `op_nop.arm`'s `case True{} _` -> `[Nzs{op_last(pp)}]` | nothing | the one measured limit left in this file: dead arm. Every `g_opt.on` record has `fused=False{}`, so the fused arm -- `Tensor.zeros(self.pos_params[-1])` -- never fires and its body is changed by nothing. it is not three tokens, and that is the measurement rather than an excuse: a fused record needs `fused=True{}` and `pos_params = op_acc(params)`, and `op_pos.of` already computes the right `pos_params` from `fused` and the tensors, so the only missing piece is a record mutation -- and `Optim` has twenty-four fields, which is why `op_with_arena` is a def and why closing this costs one more def rather than one more token. |
 #
-# THE SEVEN `unverified_*` ROWS ARE NOW CLAIMS TOO: the census gate drives each builder and
+# the seven `unverified_*` rows are now claims too: the census gate drives each builder and
 # diffs the deep toposort against CPython, and all seven match. They are not mutated HERE --
 # the census gate's pins ARE their mutation -- so this table stays the VALUE rows' table.
 #

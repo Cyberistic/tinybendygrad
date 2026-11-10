@@ -6,13 +6,13 @@
 # from Python by `.agents/slop/rf-rows.py` and `rf-ct-oracle.py`, never restated from
 # this file. A rule body that is not ported is one `# WALL(p3)` line at the foot naming
 # the Python line it stands in for, so `rg 'WALL\(p3\)'` is the whole outstanding list.
-# **⇒ AND THIS HEADER USED TO SAY `# TODO(p3)` AND `rg 'TODO\(p3\)'`, WHICH IS **FALSE**:
-# MEASURED 2026-11-10, `grep -c 'TODO(p3)'` IN THIS FILE ANSWERS **3** AND ALL THREE ARE
-# **THIS PARAGRAPH AND ITS TWO SIBLINGS**, WHILE `grep -c 'WALL(p3)'` ANSWERS **30** AND THOSE
-# ARE THE MARKERS.  **⇒ SO THE HEADER NAMED A SPELLING THE FILE DOES NOT USE, AND A READER
-# WHO BELIEVED IT WAS READING A LIST OF THREE PROSE LINES AS IF IT WERE THE OUTSTANDING
-# WORK.**  THE MARKER FORM HERE IS `# WALL(p3)` AND IT IS DISTINCT FROM `# TODO(p3)` ON
-# PURPOSE: A WALL IS A PYTHON FACT AND A TODO IS A DECISION, AND `checks/marker-audit.py`
+# - and this header used to say `# TODO(p3)` and `rg 'TODO\(p3\)'`, which is FALSE:
+# measured 2026-11-10, `grep -c 'TODO(p3)'` in this file answers 3 and all three are
+# this paragraph and its two siblings, while `grep -c 'WALL(p3)'` answers 30 and those
+# are the markers.  - so the header named a spelling the file does not use, and a reader
+# who believed it was reading a list of three prose lines as IF it were the outstanding
+# work.  the marker form here is `# WALL(p3)` and it is distinct from `# TODO(p3)` on
+# purpose: a wall is a python fact and a TODO is a decision, and `checks/marker-audit.py`
 # READS BOTH (SEE `.agents/TOOLS.md`'s ENTRY).
 # The long form of this header -- the staged-delivery record, the 41-mutation table and
 # its five proofs -- is appended to `.agents/slop/notes/bend2-constraints.md`.
@@ -25,7 +25,7 @@
 # the gate checks, and each dispatches to `rf_foreign`, which answers "no node" and
 # names the owning file.
 #
-# WALL: THE ROOT, NOT THE CHILD. `.f()` rebuilds the pattern with the op passed to `f`
+# wall: the root, not the child. `.f()` rebuilds the pattern with the op passed to `f`
 # at the ROOT and the receiver as the CHILD, and `pdict` is keyed on `p.op` (ops.py:1587,
 # 1607) -- so a `.f()` entry's op set is the one handed to `f`, and the RECEIVER's op
 # belongs in the rule BODY test. The wrong op makes the rule unfireable rather than
@@ -39,11 +39,11 @@
 # empty or a singleton (`max(len) == 1`) and every `.f()` rule re-checks its own pattern,
 # so mutating the subset test moves NOTHING (M3, M36).
 #
-# A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it as a
+# a name bound twice must emit an identity check (`upat.py:100-105` builds it as a
 # literal `"{0} is {1}"`). The ONE place it happens here is `rb_1` (tinygrad/schedule/rangeify.py:126, `pm_remove_bufferize`);
 # without it every two-src STORE would rewrite to a NOOP. `uop/spec.bend`'s wall list
 # cites this note by its first line, so that line is kept verbatim:
-# 2. A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it
+# 2. a name bound twice must emit an identity check (`upat.py:100-105` builds it
 #
 # `Hop` is `uop/movement.bend`'s, reused rather than copied: a rule answers a NEW node or
 # `None`, and `None` is arena index 0, so the ARENA ITSELF separates "the rule fired"
@@ -70,7 +70,7 @@ import ./../uop/movement.bend as M
 # THE READERS. `movement.bend`'s `mp_*` are reused, not copied: they are the
 # same six reads of the same arena and a second copy would be pure weight. What
 # is added here is what rangeify.py needs and `movement.bend` does not have --
-# the fold's SHAPE, DTYPE, ADDRSPACE, DEVICE, BASE and ENDED_RANGES, and
+# the fold's shape, dtype, addrspace, device, base and ended_ranges, and
 # `UOp.ranges`, which is the wall.
 #
 # A `Data` record parameter still needs `+` for two reads in ONE body
@@ -232,7 +232,7 @@ def rf_has_src(+ar: O.Arena, +self: U32) -> Bool:
 def noopf.cont(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_is(ar, self, O.OpsEND{}), rf_has_src(ar, self))
 
-# THE ONLY RECURSIVE DEF IS `noopf_go`, AND IT IS DECLARED LAST. That is `ops.bend`'s
+# the only recursive DEF is `noopf_go`, and it is declared last. That is `ops.bend`'s
 # `Topo.step` shape and it is forced, not stylistic: the ladder `go -> desc -> go` is
 # MUTUAL RECURSION, which Bend refuses, and the declaration rule means the ladder helpers
 # can only ever call back into the LAST def. MEASURED: every other arrangement of these
@@ -318,7 +318,7 @@ def raf.keep_srcs(+ar: O.Arena, +self: U32) -> List<&2, U32>:
 def raf_one(kept: List<&2, U32>) -> Bool:
   Nat.is_eq(List.length(&2, U32, kept), 1n)
 
-# `shrank` IS ASKED FIRST AND THAT ORDER IS THE WHOLE RULE. Upstream's line is
+# `shrank` is asked first and that order is the whole rule. Upstream's line is
 # `if len(src) != len(x.src): return src[0] if len(src) == 1 else x.replace(src=src)` and
 # the `return None` is the ELSE of that test -- so a ONE-SRC AFTER that LOST NOTHING is not
 # rewritten at all. Asking `one` first answers `src[0]` for every one-src AFTER, which
@@ -398,7 +398,7 @@ def strip_zero_offset_shrink(+ar: O.Arena, +self: U32) -> M.Hop:
 def rf_strip_ix(ar: O.Arena, self: U32) -> U32:
   M.hop_ix(strip_zero_offset_shrink(ar, self))
 
-# `no_indexing_calls` -- rangeify.py:143-158. FULLY PORTED. THE MSTACK ARM BUILDS A
+# `no_indexing_calls` -- rangeify.py:143-158. fully ported. the mstack arm builds a
 # NODE, so this fold CARRIES THE ARENA and cannot be a pure `List` fold: the record `Bld`
 # is the arena plus the accumulator, and it is `Data` so it is copyable, which is what
 # lets a later arm build in the arena an earlier arm grew -- `movement.bend`'s `Hop` for
@@ -859,8 +859,8 @@ def sk_table() -> List<&2, O.PMEntry>:
 def sk_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
   sk_scan(sk_table(), self, M.Hop{ar, 0})
 
-# TABLE 6: `pm_gate_substitute` -- rangeify.py:45-47. ONE RULE, and it is the ODD ONE OUT IN
-# THIS ENTIRE FILE. IT DOES NOT RETURN A NODE. It RAISES `BottomUpGate` (ops.py:1764),
+# table 6: `pm_gate_substitute` -- rangeify.py:45-47. one rule, and it is the odd one out in
+# this entire file. it does not return a node. It raises `BottomUpGate` (ops.py:1764),
 # which the graph engine's own loop catches (ops.py:1827) and reads as "stop descending
 # here", and a raise is not a value, so it is not a `Hop` and there is no dispatch for it.
 # From the engine's point of view the rule answers "no rewrite" -- which IS the `Hop` at
@@ -909,7 +909,7 @@ def gs_table() -> List<&2, O.PMEntry>:
 def rf_foreign(src: String, +ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # THE ROOT/SUB SPLIT, and it is the whole reason the table is written out longhand. `.f()`
-# is `def f(self, op, **kwargs): return UPat(op, src=(self,), **kwargs)` (ops.py:1449):
+# is `def f(self, op, kwargs): return UPat(op, src=(self,), kwargs)` (ops.py:1449):
 # the chain REBUILDS the pattern with the op passed to `f` as the ROOT and the receiver as
 # the CHILD. `PatternMatcher.__init__` keys `pdict` on `p.op` and `rewrite` looks the node
 # up with `self.pdict.get(uop.op)` (ops.py:1607). So for every `.f()` entry the pdict key is
@@ -952,13 +952,13 @@ def rf_mops_en(ar: O.Arena) -> M.Hop: rf_foreign("prepare.py:82", ar, 0)
 # rules (foreign, tags 0-2) and SIX OWN -- `cleanup_dead_axes`, `remove_noop_bufferize`,
 # `const_like`, `index-a-const`, `after_all_invalid`, and the deviceless-MSTACK unwrap.
 #
-# THE REJECT SETS ARE THE INTERESTING PART and they are three of the file's six: `ct_4` is
+# the reject sets are the interesting part and they are three of the file's six: `ct_4` is
 # `{INDEX}`, `ct_7` is `{AFTER}`, `ct_8` is `{MSTACK}`. Each is the op of the pattern's
 # FIRST src and each is already implied by the rule's own op test, so `early_reject` decides
 # no verdict here. `rej_ct4` is the row that catches a MISSPELLED set, which is the failure
 # mode that is real.
 #
-# TWO OF THE SIX ARE FULLY PORTED and they are the two a reader checks first, because they
+# two of the six are fully ported and they are the two a reader checks first, because they
 # are the ones with no `ranges` and no `BufferizeOpts`: `ct_6` ("indexing a const is the
 # const") and `ct_4`'s `remove_noop_bufferize`. `ct_5` needs `const_like` (ops.py:603, a
 # `DType` method, P3) and `ct_7` needs `after_all_invalid`'s `resolve(...eq(...))`, which is
@@ -994,7 +994,7 @@ def ct_6.of(alt: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
     case False{}: M.Hop{ar, 0}
 
-# THE CLAIM IS THE CLAIM, AND THE BODY USES IT: this reads the op of `src[0]` alone, so
+# the claim is the claim, and the body uses it: this reads the op of `src[0]` alone, so
 # a TWO-src INDEX over a CONST answered `CONST 4` and THREW THE RANGE AWAY -- a two-src
 # INDEX over a CONST is exactly what `_mop_index` (prepare.py:67) builds, so the node is
 # reachable in a real pass. MEASURED, `ct_20`: `1 Ops.CONST/0 - arg=cint` -> `none`.
@@ -1075,7 +1075,7 @@ def ct_5(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 # `to_max_shape`, ops.py:1886). `ended_ranges` and `is_invalid` ARE ported, which is why
 # `rf_ended` and `rf_invalid` are readers with no caller yet rather than omitted.
 #
-# MEASURED DEFECT IN CPYTHON, REPORTED AND NOT FIXED, because it is a fact about
+# measured defect in CPYTHON, reported and not fixed, because it is a fact about
 # rangeify.py and not about this file. With an END that ends no RANGE, `ended_ranges` is
 # empty, `prod()` over it is the PYTHON INT 1, and `1..eq(...)` raises
 # `AttributeError: 'int' object has no attribute 'eq'`. So `after_all_invalid` CRASHES on
@@ -1094,8 +1094,8 @@ def ct_7_claim(+ar: O.Arena, +self: U32) -> Bool:
            Bool.and(M.mp_nsrc_ge(ar, self, 1),
                     M.mp_is(ar, M.mp_src0(ar, self), O.OpsAFTER{})))
 
-# ct_8: the deviceless-MSTACK arm -- rangeify.py:127-128. THE CLAIM AND THE REBUILD are
-# ported, and MEASURED LIVE. THE ROOT IS THE INDEX, so this is the ONE `.f()` entry whose
+# ct_8: the deviceless-mstack arm -- rangeify.py:127-128. the claim and the rebuild are
+# ported, and measured live. the root is the INDEX, so this is the one `.f()` entry whose
 # body read the outer node correctly in the port as it stood, and `s` is the MSTACK's
 # src[0]. It is gated now, which is the point. MEASURED:
 #   INDEX(MSTACK(c4,c1))       claim_n 1  ->  INDEX, srcops=[CONST]
@@ -1496,7 +1496,7 @@ def lb_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 # non-empty reject sets. All three are the op of the pattern's FIRST src and so are already
 # implied by the rule's own op test; `rej_ab8` is the row for a MISSPELLED one.
 #
-# THE TWO RULES CLAIMING ONE NODE ARE TAGS 3 AND 4, and this is the first-wins row. `stg2`
+# the two rules claiming one node are tags 3 and 4, and this is the first-wins row. `stg2`
 # is a two-src `STAGE`; tag 3 (`UPat(Ops.STAGE, name="x")`) and tag 4
 # (`UPat(Ops.STAGE, src=(UPat(), UPat(name="idx")), name="x")`) BOTH match it and they
 # DISAGREE -- tag 3 returns `None` because `len(x.src) == 2` and tag 4 returns a node -- and
@@ -1754,7 +1754,7 @@ def g() -> G:
   +af = O.UOp.new(O.Found.ar(af1), O.OpsAFTER{},
                   [O.Found.i(b4), O.Found.i(e0), O.Found.i(e1), O.Found.i(ek)], O.ANone{}, O.TNone{})
   +afk = O.UOp.new(O.Found.ar(af), O.OpsAFTER{}, [O.Found.i(b4), O.Found.i(ek)], O.ANone{}, O.TNone{})
-  # A STAGE'S `src[0]` MUST HAVE SHAPE `()`, AND THAT IS A CONSTRAINT OF THE READER AND NOT A
+  # a stage's `src[0]` must have shape `()`, and that is a constraint of the reader and not a
   # STYLE. `cleanup_dead_axes` (`rangeify.py:30-41`) walks `for s,rng in zip(b.shape, b.src[1:])`
   # -- a STAGE's shape is `src[0].shape + (range lengths...)`, so that `zip` is length-correct
   # ONLY when `src[0]` is a SCALAR. `STAGE(BUFFER(4,), r0)` has shape `(4,4)`, the zip pairs one
@@ -1812,7 +1812,7 @@ def g() -> G:
   # member other than BUFFER -- `rs` and `rsi` only ever test BUFFER.
   +rsaf = O.UOp.new(O.Found.ar(stc0), O.OpsRESHAPE{}, [O.Found.i(af), O.Found.i(c4)], O.ANone{}, O.TNone{})
 # CLIK and CLIK0: the CALLI shape (CALL(IXSTG,RS)) carrying a REAL `Kernel` arg, and
-# its `ANone` twin. THEY ARE THE ONLY TWO NODES THAT MAKE AN ARG VISIBLE. Every other
+# its `ANone` twin. they are the only two nodes that make an ARG visible. Every other
 # node the four `mp_replace` rules can reach -- an AFTER, an MSTACK, a CALL -- is given
 # `ANone` by this fixture, and an AFTER's and an MSTACK's arg is `None` in CPython too
 # (measured: `raf_after_arg_is_none = 1`, `mstack_arg_is_none = 1`). So a row of the
@@ -1861,7 +1861,7 @@ def g() -> G:
   +ct5c = O.UOp.new(O.Found.ar(ct5k0), O.OpsSTAGE{}, [O.Found.i(c4), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +ct5k = O.UOp.new(O.Found.ar(ct5c), O.OpsSTAGE{}, [O.Found.i(ct5k0), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +ct5b = O.UOp.new(O.Found.ar(ct5k), O.OpsSTAGE{}, [O.Found.i(c0), O.Found.i(r0)], O.ANone{}, O.TNone{})
-  # `MSTACK(c4, c1)` IS TWO WEAK CONSTS, AND `debuf` MINTS A PARAM FROM THE STACK'S DTYPE, so
+  # `MSTACK(c4, c1)` is two weak consts, and `debuf` mints a PARAM from the stack's dtype, so
   # upstream's own `cannot create param for weak dtype` (`ops.py:1223`) fires. Two int32 BUFFERs
   # are the same shape and a dtype a param can be minted from. MEASURED: that was `dg_56`.
   +mstc = O.UOp.new(O.Found.ar(ct5b), O.OpsMSTACK{}, [O.Found.i(bd), O.Found.i(bx)], O.ANone{}, O.TNone{})
@@ -1912,8 +1912,8 @@ def g() -> G:
 # 19 IXSTG=INDEX(STG2,R0)  20 IXC=INDEX(C4,R0)
 # 21 RS=RESHAPE(B4,C4)  22 RSI=RESHAPE(IXSTG,C4)
 # 23 SH0=SHRINK(B4,C0,C4)  24 SH1=SHRINK(B4,C1,C2)  25 INVALID
-# 26 MST=MSTACK(SH1,SH0)  27 CALLI=CALL(IXSTG,RS)  28 CALLS=CALL(SH1,C0)
-# 29 CALLM=CALL(MST,C0)  30 MSRS=MSTACK(RS,RS)  31 STINV=STORE(B4,Invalid)
+# 26 mst=mstack(SH1,SH0)  27 calli=call(ixstg,rs)  28 calls=call(SH1,C0)
+# 29 callm=call(mst,C0)  30 msrs=mstack(rs,rs)  31 stinv=STORE(B4,Invalid)
 # 32 SELFSTORE=STORE(B4,B4)  33 DIFFSTORE=STORE(B4,BX)
 # 34 PG=PARAM(2,GLOBAL)  35 PA=PARAM(3,ALU)  36 IXPG  37 IXPA
 # 38 R0T=R0.rtag(())  39 PGT  40 PAT
@@ -2311,7 +2311,7 @@ def t_ab7_clik_arg() -> U32:
                M.mp_arg(M.hop_ar(ab_rewrite(G.fx(g()), g_ar(g()), g_clik(g()))),
                         M.hop_ix(ab_rewrite(G.fx(g()), g_ar(g()), g_clik(g()))))))
 
-# THE NEGATIVE, the twin with no arg, ONE ROW FROM the positive at the SAME shape:
+# the negative, the twin with no arg, one row from the positive at the same shape:
 # py: `arg_is_own_kernel=0 arg_is_none=1`. So `ab7_clik_arg` is not passing because
 # every CALL rebuilds to a Kernel.
 def t_ab7_clik0_arg() -> U32:
@@ -2346,7 +2346,7 @@ def t_rej_ab8() -> U32: U32.from_nat(List.length(&2, O.Op, O.PMEntry.rej(ab_entr
 
 
 
-# THE FOUR ROWS THAT CLOSE THE FIXTURE GAPS, and what each one is FOR. Each was
+# the four rows that close the fixture gaps, and what each one is for. Each was
 # added because a MEASURED mutation moved nothing, and a row that cannot fail is
 # not a row. `rf-mut.py` in `.agents/slop/` re-measures all of them.
 #
@@ -2383,7 +2383,7 @@ def t_dg_r0t_ans() -> U32:
 def t_ren_axis_out() -> U32:
   b2u(O.eq_axis(rf_axis(M.hop_ar(rf_renumber(g_ar(g()), g_r0t(g()), 3)), M.hop_ix(rf_renumber(g_ar(g()), g_r0t(g()), 3))), O.AXIS_WEAK{}))
 
-# ... AND THE ROW THAT MAKES M12 SHARP. Every other RANGE in the fixture is
+# ... and the row that makes M12 sharp. Every other RANGE in the fixture is
 # AXIS_WEAK, so "rebuild the AxisType" and "read it off the node" are the same
 # function over the rest of the fixture and M12 moved nothing. RGT's input axis is
 # `AXIS_DEVICE`, so the two spellings differ here and nowhere else.
@@ -2452,7 +2452,7 @@ def ar_of(i: U32) -> O.Arena: g_ar(g())
 #
 # `ct_claim_n` is `claim_full` specialised to the `ct` table: the op-set claim PLUS each
 # `.f()` rule's own body test, which is what makes tags 3 and 4 both claim a STAGE and
-# nothing claim a BUFFER. EVERY TAG IN `ct_table` NEEDS ITS OWN BODY TEST HERE, and tags
+# nothing claim a BUFFER. every tag in `ct_table` needs its own body test here, and tags
 # 0, 6 and 7 are the three the first version of this fold left at `True{}`. A claim count
 # built on the op set alone counts an INDEX as claimed by four rules when CPython binds
 # it in one, so `ct4b_claim` and `ct8d_claim` were both wrong until they were added.
@@ -2599,7 +2599,7 @@ def t_ct7a_claim() -> U32:
 
 def t_ct7a_cnt() -> U32: ct_claim_n(ct_table(), ar_of(g_ct7a(g())), g_ct7a(g()))
 
-# THE ONE NODE WHERE TAG 7's REJECT SET IS NOT ITS CLAIM. `early_reject` is
+# the one node WHERE tag 7's reject set is not its claim. `early_reject` is
 # `{AFTER}` and it is satisfied by an AFTER in ANY src, so CT7B is claimed by the
 # set test and NOT by the pattern. py: `ct7_ix_after tag7_nbind=1`; and for CT7B
 # CPython's `rewrite` returns `None` because tag 6, tag 0 and tag 8 all miss and
@@ -2623,13 +2623,13 @@ def claim_ab(+fx: F.Folded, +ar: O.Arena, +self: U32) -> U32: claim_full(ab_tabl
 # previous stage left, and `rf_stages` is the row that pins the count. What is NOT here
 # is the engine that walks the arena applying them -- see the TODO block at the foot.
 #
-# TWO OF THE STAGES ARE NOT IN THIS FILE'S TABLES and that is a Python fact, not an
+# two of the stages are not in this file's tables and that is a Python fact, not an
 # omission: `run_rangeify` (353) is `schedule/indexing.py:190`, and `symbolic` +
 # `pm_reduce_simplify` (357) are `uop/symbolic.py` (123 rules) and
 # `codegen/simplify.py`. `type_verify` (375) is `uop/spec.py` and IS ported, as
 # `uop/spec.bend`.
 #
-# THE TWO `ctx` LINES ARE THE WALL and they are the only two: `itertools.count` at 360 and
+# the two `ctx` lines are the wall and they are the only two: `itertools.count` at 360 and
 # 366, and `LimitBufsContext` at 360. Every one is a MUTABLE object threaded through a
 # pass, which is exactly the shape `schedule/__init__.bend` refuses for the same reason.
 def rf_stage_count() -> U32: 9
@@ -2652,7 +2652,7 @@ def t_stages() -> U32: U32.from_nat(List.length(&2, U32, rf_stages()))
 def t_spec() -> U32: b2u(rf_spec())
 def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 
-# THE MEASURED MUTATION TABLE. FORTY-ONE textual edits, one at a time, by
+# the measured mutation table. forty-one textual edits, one at a time, by
 # `.agents/slop/rf2-mutate.py`, each diffed as WHOLE `name=value` LINES rather than row
 # names -- a name-comparing harness reported 0 for all 30 mutations in one unit and 0 for
 # all 68 in another. Raw table: `.agents/slop/rf2-mutations.txt`; the full 41-row table
@@ -2668,22 +2668,22 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #      conjoins the SHRINK test in AGAIN, so the dropped `match` arm is unreachable.
 #  (3) M20b -- `ct_8`'s reject set `{MSTACK}` is implied by `ct_8_claim`, the rule's own
 #      test, which is what ops.py:1477 says the reject set is for.
-#  (4) M36 AND M38 ARE A BLIND SPOT AND ITS NEGATIVE, REPORTED NOT CLOSED. Removing
+#  (4) M36 and M38 are a blind spot and its negative, reported not closed. Removing
 #      `ct_8`'s self-re-check moves nothing alone, and moves nothing together with the
 #      vacuous reject set either, so no fixture in the port as it stands can see the
 #      self-check: the two defects it defends against are one defect seen from two ends
 #      and each alone is invisible. The pre-self-check measurement in (1) is the
 #      evidence that the self-check is load-bearing and it cannot be reproduced by the
 #      gate as it now stands. NOT closed with a row that encodes either behaviour.
-# M20 IS THE ROW THE COUNT ROWS EXIST FOR: it DELETES the LAST `PMEntry`, so no tag
+# M20 is the row the count rows exist for: it deletes the last `PMEntry`, so no tag
 # renumbers and `ct_len` is one of only six rows it can move.
 # ===========================================================================
 # THE WALLS. Every one is a Python fact rather than a choice, and every one is a
 # `# WALL(p3)` line, so `rg 'WALL\(p3\)'` is the whole outstanding list. `rg 'NOT PORTED'`
-# finds the site for each. **⇒ AND THIS SENTENCE USED TO NAME `# TODO(p3)` AND
-# `rg 'TODO\(p3\)'`, WHICH IS **FALSE** OF THIS FILE -- MEASURED 2026-11-10, `TODO(p3)`
-# ANSWERS **3** HERE AND ALL THREE ARE PROSE IN THIS HEADER, WHILE `WALL(p3)` ANSWERS **30**
-# AND THOSE ARE THE MARKERS.**  The first group is ONE LINE PER UNPORTED BODY, the second is
+# finds the site for each. - and this sentence used to name `# TODO(p3)` and
+# `rg 'TODO\(p3\)'`, WHICH IS FALSE OF THIS FILE -- MEASURED 2026-11-10, `TODO(p3)`
+# answers 3 here and all three are prose in this header, while `WALL(p3)` answers 30
+# and those are the markers.  The first group is one line per unported body, the second is
 # the three whose Python answer is reached anyway (wall and all), and the third is the
 # walls read by more than one rule, so they have no single site. The recurring shapes:
 # a STAGE's `x.arg` is a `BufferizeOpts` that `ops.bend`'s `Arg` cannot construct, so
@@ -2694,14 +2694,14 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # `renumber_range`) while a `ctx` DICT is an assoc list of `Data` records and NONE of the
 # three is written.
 # --- the bodies that are NOT PORTED, one line each ----------------------------
-# EACH LINE NAMES THE WALL THAT WAS FOUND BY ASKING CPython, not by reading the body.
+# each line names the wall that was found by asking CPython, not by reading the body.
 # "LIVE" means CPython rewrites the node: a live rule behind a wall is a WALL ROW, not a
 # missing row.
-# WALL(p3) rangeify.py:24  cleanup_dead_axes     LIVE (measured); arg.removable, ranges, reshape, expand -- BLOCKED: needs `removable` (`ops.bend`'s `Arg` cannot construct a `BufferizeOpts`, so `removable`/`addrspace`/`device` cannot be read at all), `ranges` (`UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL), and the `reshape`/`expand` builders.
+# wall(p3) rangeify.py:24  cleanup_dead_axes     live (measured); arg.removable, ranges, reshape, expand -- blocked: needs `removable` (`ops.bend`'s `Arg` cannot construct a `BufferizeOpts`, so `removable`/`addrspace`/`device` cannot be read at all), `ranges` (`UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the keyed set with removal), and the `reshape`/`expand` builders.
 # WALL(p3) rangeify.py:50  remove_bufferize      LIVE; a substitute(..., extra_pm=) over a ctx dict -- BLOCKED: needs `UOp.substitute` with `extra_pm`, over a `ctx` DICT is an assoc list of `Data` records and is not written.
-# WALL(p3) rangeify.py:120  const_like            LIVE on BOTH arms; DType.const + _mop(EXPAND) -- BLOCKED: needs `DType.const` and `_mop(EXPAND)` -- LIVE on BOTH arms.
-# WALL(p3) rangeify.py:124  after_all_invalid     LIVE and CRASHES on a rangeless END; _min_max, numel -- BLOCKED: needs `_min_max` to resolve on SYMBOLIC bounds, plus `numel`.
-# WALL(p3) rangeify.py:127  deviceless MSTACK src PORTED -- the UOp.device wall is `rf_dev` and it reads -- BLOCKED: needs nothing new for the DEVICE half (`rf_dev` reads it); the MSTACK src half is PORTED and this line records the split, not a gap.
+# wall(p3) rangeify.py:120  const_like            live on both arms; DType.const + _mop(expand) -- blocked: needs `DType.const` and `_mop(EXPAND)` -- live on both arms.
+# wall(p3) rangeify.py:124  after_all_invalid     live and crashes on a rangeless end; _min_max, numel -- blocked: needs `_min_max` to resolve on symbolic bounds, plus `numel`.
+# wall(p3) rangeify.py:127  deviceless mstack src ported -- the UOp.device wall is `rf_dev` and it reads -- blocked: needs nothing new for the device half (`rf_dev` reads it); the mstack src half is ported and this line records the split, not a gap.
 # WALL(p3) rangeify.py:208  bufferize_to_store    LIVE; commit_dtype, sorted(ranges), ParamArg, next(ctx) -- BLOCKED: needs `commit_dtype`, `sorted(ranges)`, a `ParamArg` the `Arg` sum cannot build, and `next(ctx)`.
 # WALL(p3) rangeify.py:259  weak-CAST INDEX       the claim is ported; the cast it must re-add is not -- BLOCKED: needs the CAST it must re-add -- the claim itself is ported.
 # WALL(p3) rangeify.py:263  RESHAPE through       UOp.base, apply_movement_op -- BLOCKED: needs `UOp.base` and `apply_movement_op`.
@@ -2712,17 +2712,17 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # --- the three whose Python answer is ALREADY REACHED, wall and all ----------
 # WALL(p3) rangeify.py:45  gate_substitute       the raise became the 0, exactly -- BLOCKED: NOT A GAP: the raise became the `0` exactly, so the port answers the same thing and the row pins it.
 # WALL(p3) rangeify.py:176  _limit_bufs           the one line refuses to fire -- BLOCKED: NOT A GAP: the one line refuses to fire, and the port's answer matches by construction.
-# WALL(p3) rangeify.py:351  get_kernel_graph      the order is here, the engine is not -- BLOCKED: NOT A GAP: the ORDER is here; the ENGINE that would consume it is not, so this is a downstream unit.
+# wall(p3) rangeify.py:351  get_kernel_graph      the order is here, the engine is not -- blocked: not a gap: the order is here; the engine that would consume it is not, so this is a downstream unit.
 # --- the walls with no single site, and `ops.bend`'s OWN walls ---------------
 #  The first two are the same problem `ops.bend` already records at its foot, so they are
 #  ONE wall counted from two files, not two.
 # WALL(p3) ops.py:470  ended_ranges          ops.bend's own wall -- BLOCKED: ops.bend's own wall, counted from two files -- ONE wall, not two.
-# WALL(p3) ops.py:483  UOp._ranges           recursive dict, pops as it goes -- BLOCKED: needs the keyed set with removal: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL.
-# WALL(p3) ops.py:497  UOp.ranges            the property over the above -- BLOCKED: needs `UOp._ranges` above: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL.
+# wall(p3) ops.py:483  UOp._ranges           recursive dict, pops as it goes -- blocked: needs the keyed set with removal: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the keyed set with removal.
+# wall(p3) ops.py:497  UOp.ranges            the property over the above -- blocked: needs `UOp._ranges` above: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the keyed set with removal.
 # WALL(p3) ops.py:532  substitute            a dvars substitution walk -- BLOCKED: needs a `dvars` substitution walk -- `UOp.substitute`, and the `extra_pm` form adds a second rewriter.
 # WALL(p3) ops.py:603  const_like            a dtype plus a Const value -- BLOCKED: needs a dtype plus a Const value; `DType.const` and `_mop(EXPAND)` are the two halves.
-# WALL(p3) ops.py:784  UOp.base              a recursive property -- BLOCKED: a memoised `recursive_property`: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL.
-# WALL(p3) ops.py:890  UOp.device            a recursive property -- BLOCKED: a memoised `recursive_property`: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL.
+# wall(p3) ops.py:784  UOp.base              a recursive property -- blocked: a memoised `recursive_property`: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the keyed set with removal.
+# wall(p3) ops.py:890  UOp.device            a recursive property -- blocked: a memoised `recursive_property`: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the keyed set with removal.
 # WALL(p3) ops.py:925  buf_uop               the bufid walk -- BLOCKED: needs the `bufid` walk.
 # WALL(p3) ops.py:1104  _min_max              resolve on symbolic bounds -- BLOCKED: needs `_min_max` to resolve on a SYMBOLIC bound; the constant case is ported (17/17 rows).
 # WALL(p3) ops.py:1886  to_max_shape          sint.vmax on a symbolic -- BLOCKED: needs `sint.vmax` on a SYMBOLIC shape.
@@ -2744,11 +2744,11 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #  `ab7_clik_arg` compares against `O.KernelInfo.of()` on both sides and that still holds.
 #  WHAT IS STILL NOT TRUE: the port can build NO `KernelInfo` with a non-`None`
 #  `estimates`, because upstream's only writer -- `codegen/__init__.py:446` -- is
-#  a WALL in `codegen/kernel.bend`. SO EVERY VALUE THE PORT BUILDS CARRIES
-#  `estimates=None` AND `optimized=False`, WHICH IS UPSTREAM'S DEFAULT AND NOT
+#  a wall in `codegen/kernel.bend`. so every value the port builds carries
+#  `estimates=None` and `optimized=False`, which is upstream's default and not
 #  A LIE.
 # ===========================================================================
-# `movement.bend`'s `hop_self` WAS INVERTED, AND IS NOT ANY MORE. It is kept here
+# `movement.bend`'s `hop_self` was inverted, and is not any more. It is kept here
 # because the note above `M.hop_self`'s use is only worth reading if the thing it
 # records is real. `hop_self.of` used to answer `r` on `True` (the answer IS self, or
 # the answer IS none) and `Hop{ar, 0}` on `False`, keeping `self` and dropping a
@@ -2772,18 +2772,18 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #     `self.bpm` is applied to the node BEFORE its children are visited
 #     (ops.py:1826-1832).
 #
-# WHY A SWEEP AND NOT A DFS. `Arena.nodes` IS TOPOLOGICALLY SORTED
+# why a sweep and not a dfs. `Arena.nodes` is topologically sorted
 # (ops.bend:2776): `UOp.new` is only ever called with srcs already in the
 # arena, so every node's src indices are BELOW its own position. INDEX ORDER is
 # therefore an order every node's children precede it, which is the order the
 # DFS's post-order produces -- and a sweep is the SAME computation with none of
-# the mutual recursion Bend refuses. THE ONE THING A SWEEP CANNOT REPRODUCE IS
-# THE ORDER UPSTREAM'S `ctx` COUNTERS SEE, and every rule the port has PORTED
+# the mutual recursion Bend refuses. the one thing a sweep cannot reproduce is
+# the order upstream's `ctx` counters see, and every rule the port has ported
 # is CTX-FREE, so the order is not observable in the port today. It IS
 # observable upstream (`itertools.count` at rangeify.py:357 and `:318`), and
 # `eng_order_note` is the row that says so.
 #
-# THE BOTTOM-UP MODE IS NOT IMPLEMENTED, and the CPython ORACLE is what says
+# the bottom-up mode is not implemented, and the CPython oracle is what says
 # so: `get_kernel_graph` runs stages 4 and 6 with `bottom_up=True`, and the
 # oracle runs the SAME two stages the same way. If the port and CPython agree
 # there, the mode is not observable ON THESE FIXTURES -- which is a
@@ -2845,7 +2845,7 @@ def Stg.tabs(s: Stg) -> List<&2, U32>:
     case Stg{mode, tabs}: tabs
 
 # THE SEVEN STAGES of `get_kernel_graph` -- rangeify.py:341-376 -- with the
-# TABLE NUMBERS this file's tables carry. THE NUMBERS ARE THE TABLE'S OWN, so
+# table numbers this file's tables carry. the numbers are the table's own, so
 # the map is in one place and `eng_one` is the only reader of it:
 #   0 ct   pm_const_buffer_folding   rangeify.py:110   port :1162
 #   1 rb   pm_remove_bufferize        rangeify.py:126   port :659
@@ -2949,7 +2949,7 @@ def eng_fix.go(fuel: Nat, +st: Stg, +fx: F.Folded, +ar: O.Arena, +self: U32, fir
           eng_fix.go(p, st, fx2, a, ix, Bool.not(U32.is_eq(eng_hop_ix(h2), 0)), eng_hop_ix(h2), h2, h)
         case False{}: last
 
-# THE ANSWER IS THE LAST FIRING HOP and not the last hop: the loop's LAST
+# the answer is the last firing hop and not the last hop: the loop's last
 # application is the one that did NOT fire, and its index is 0, so returning
 # it would throw the rewrite away. MEASURED: with `last` the arena grows by
 # the rule's node AND the map records the move; without it the arena grew and
@@ -3013,9 +3013,9 @@ def eng_range.go(ns: List<&2, Nat>, acc: List<&2, U32>) -> List<&2, U32>:
 
 # ONE STAGE, over the whole arena. The root is the node the caller cares
 # about; its new index is the map's answer for it.
-# THE SWEEP LIST IS THE WALK AND NOT THE ARENA, AND THE DIFFERENCE IS A CALL'S BODY.
+# the sweep list is the walk and not the arena, and the difference is a call's body.
 # `eng_sweep` wants an order where every node's children are already final, and the ARENA in
-# index order gives that -- but it also gives THE NODES NOBODY CAN REACH, and a CALL's `src[0]`
+# index order gives that -- but it also gives the nodes nobody can reach, and a call's `src[0]`
 # is one of them. CPython does not enter a CALL's body unless `enter_calls` (`ops.py:298`,
 # `node.src_without_body`), so a body-only node is NEVER rewritten; sweeping the arena rewrites
 # it. MEASURED 2026-11-03 by `gates/gkg-oracle.py`: on fx_a the arena sweep turned
@@ -3054,13 +3054,13 @@ def eng_op_name(op: O.Op) -> String:
     case O.OpsCALL{}   : "CALL"
     case O.OpsSTORE{}  : "STORE"
     case O.OpsSINK{}   : "SINK"
-    # **⇒ AND THE `OTHER` ARM IS NOT "AN OP I DO NOT KNOW": IT IS **THE PORT's OWN
-    # GENERAL OP-NAME TABLE**, WHICH COVERS **ALL 75 OPS** (`ops.bend:287`
-    # `Ops.name.of`), **⇒ AND IT IS SPELLED WITH THE PORT's OWN `Ops.` PREFIX SO A
-    # NAME THAT IS NOT IN THE TEN ABOVE **CANNOT** BE READ AS ONE THAT IS.** **⇒ ⇒ SO
-    # `OTHER` MEANT "AN OP OUTSIDE THE FIXTURE'S TEN", AND THE ENGINE'S OUTPUT ON A REAL
-    # PROGRAM IS FULL OF THEM -- **PARAM, RANGE, MUL, INDEX, ADD, REDUCE** -- **⇒ AND THE
-    # DUMP WAS SAYING "OTHER" WHERE UPSTREAM SAYS THE REAL NAME.**
+    # - and the `OTHER` arm is not "an op i do not know": it is the port's own
+    # general op-name table, which covers all 75 ops (`ops.bend:287`
+    # `Ops.name.of`), - and it is spelled with the port's own `Ops.` prefix so a
+    # name that is not in the ten above cannot be read as one that is. - - so
+    # `OTHER` meant "an op outside the fixture's ten", and the engine's output on a real
+    # program is full of them -- PARAM, RANGE, MUL, INDEX, ADD, reduce -- - and the
+    # dump was saying "other" WHERE upstream says the real name.
     case _: String.concat(["OTHER(", O.Ops.name.of(op), ")"])
 
 # THE ARG KEY. Four keys, because the fixture uses four: `none`, a CONST's
@@ -3094,7 +3094,7 @@ def eng_node_str(+ar: O.Arena, +n: U32) -> String:
   String.concat([eng_op_name(M.mp_op(ar, n)), ":", eng_argkey(ar, n, M.mp_arg(ar, n)), ":",
                  String.join(eng_src_names.go(ar, O.Arena.srcs(ar, n), Nil{}), ",")])
 
-# THE DUMP IS A DFS FROM THE RESULT ROOT, and it must be: the arena KEEPS the
+# the dump is a dfs from the result root, and it must be: the arena keeps the
 # nodes a rule replaced (the arena is append-only, ops.bend:1327 symbol=Arena.nodes), so a dump
 # of the WHOLE ARENA would show the OLD graph and the NEW graph side by side
 # and neither of them is the answer. The DFS walks the CURRENT graph -- the
@@ -3200,7 +3200,7 @@ def efx_b() -> G:
 # left, and one row per stage: how many nodes the stage MOVED and the arena
 # after it. The row NAME carries the fixture and the stage number, so a stage
 # can be read on its own.
-# TWO ROWS PER STAGE, AND THE SPLIT IS WHAT MAKES THE STAGE COMPARABLE TO CPYTHON.
+# two rows per stage, and the split is what makes the stage comparable to CPYTHON.
 #
 # `eng_<tag>_s<n>` IS THE GRAPH AND NOTHING ELSE, so CPython can answer it: the dump is
 # `op:argkey:srcops` BFS from the root, and CPython produces the same string from its own
@@ -3232,9 +3232,9 @@ def eng_drive(+stages: List<&2, Stg>, +e: Eng, +root: U32, +n: U32, +tag: String
                 List.append(&2, String, acc,
                             [eng_stage_row(n, tag, e2, root), eng_rep_row(n, tag, e2)]))
 
-# THE SAME DRIVE, AND THE **ARENA AND THE ROOT** INSTEAD OF THE ROWS. **⇒ AND
-# THE ANSWER IS **THE PORT's OWN `O.Found{ar, i}`** -- THE ARENA AND A NODE --
-# **⇒ SO NO NEW TYPE IS INVENTED.**
+# the same drive, and the arena and the root instead of the rows. - and
+# the answer is the port's own `O.Found{ar, i}` -- the arena and a node --
+# - SO NO NEW TYPE IS INVENTED.
 def eng_run_stages(+stages: List<&2, Stg>, +e: Eng, +root: U32) -> O.Found:
   match stages:
     case Nil{}: O.Found{Eng.ar(e), root}
@@ -3244,15 +3244,15 @@ def eng_run_stages(+stages: List<&2, Stg>, +e: Eng, +root: U32) -> O.Found:
       eng_run_stages(t, eng_fresh(e2), r2)
 
 # THE STAGES AFTER `run_rangeify` -- `rangeify.py:347-360` -- ON A GRAPH THAT IS
-# **ALREADY RANGEIFIED**.
+# ALREADY RANGEIFIED.
 #
-# **⇒ AND `rangeify.bend` MUST NOT IMPORT `rangify.bend`, AND THE REASON IS THE
-# IMPORT CYCLE: `rangify.bend` IMPORTS `realize.bend` (THE FIXTURE) AND
-# `realize.bend` IMPORTS `rangeify.bend` (THE ENGINE), **⇒ SO A
-# `rangeify.bend` -> `rangify.bend` EDGE WOULD CLOSE IT.** **⇒ AND SO THE
-# STAGE-1 RESULT COMES IN **AS AN ARGUMENT**, AND THE COMPOSITION LIVES IN
-# `rangify.bend`, WHICH OWNS `run_rangeify`.** **⇒ AND THAT IS UPSTREAM's SHAPE
-# FUNCTIONALLY: `get_kernel_graph` IS `run_rangeify` AND THEN THE SIX STAGES.**
+# - and `rangeify.bend` must not import `rangify.bend`, and the reason is the
+# import cycle: `rangify.bend` imports `realize.bend` (the fixture) and
+# `realize.bend` IMPORTS `rangeify.bend` (THE ENGINE), - SO A
+# `rangeify.bend` -> `rangify.bend` EDGE WOULD CLOSE IT. - AND SO THE
+# stage-1 result comes in as an argument, and the composition lives in
+# `rangify.bend`, which owns `run_rangeify`. - and that is upstream's shape
+# functionally: `get_kernel_graph` is `run_rangeify` and then the six stages.
 def eng_after_rangeify(+ar: O.Arena, +root: U32) -> O.Found:
   eng_run_stages(eng_stages(), eng_fresh(Eng{ar, Nil{}}), root)
 

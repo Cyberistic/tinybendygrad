@@ -16,7 +16,7 @@
 #     across the `header_version_major` and `header_version_minor` and `ip_ver` ladders.
 #     A wrong entry here loads the wrong firmware: a silently wrong register write's
 #     firmware analogue.
-#   * the STRUCT FIELD LISTS, BY NAME AND IN ORDER (:33 :47 :57 :68 :86 :91 :365-395),
+#   * the struct field lists, by name and in order (:33 :47 :57 :68 :86 :91 :365-395),
 #     with their BYTE OFFSETS. This is the best gate in the project and the thing that
 #     has repeatedly caught real bugs: `ops_cl`'s unit found `Sig`'s field names
 #     INVERTED, which made a correct computation look wrong.
@@ -47,7 +47,7 @@
 # `def ... -> IO(R)` over two `import "./x.c"` lines.
 #
 # ---------------------------------------------------------------------------
-# EVERY CONSTANT AND EVERY `py=` EXPECTATION BELOW CAME FROM CPYTHON, never from
+# every constant and every `py=` expectation below came from CPYTHON, never from
 # a header. The oracle is `.agents/slop/amdev_oracle.py` (1472 rows) with
 # `.agents/slop/amdev_fw.py` and `.agents/slop/amdev_drv.py`, and it is STRONG
 # rather than transcribed in the three places that matter:
@@ -192,7 +192,7 @@ def PALLOC_BIG_I() -> U32: 9
 def PALLOC_SMALL() -> U32: 4096
 def PALLOC_BIG() -> U32: 2097152
 
-# the STRUCT FIELD LISTS, BY NAME AND IN ORDER, with their byte offsets.
+# the struct field lists, by name and in order, with their byte offsets.
 # `names` is `_real_fields_`; `offs` is the generator's own `register_fields`,
 # which lists the SCALAR members ONLY -- a nested struct or an array is in the
 # first list and not the second, and the scalars are INTERSPERSED among those
@@ -365,7 +365,7 @@ def sf.rlc_firmware_v2_3.maxoff() -> U32: 200
 # `hwid_names` (:400) is `{v: k.removesuffix('_HWID') ...}`, a value -> NAME
 # table, and :382 never uses it -- so the port carries the reverse name ->
 # value too, because a firmware blob's hw_id is a VALUE and a diagnostic's
-# is a NAME. THE COLLISION IS THE POINT: UVD_HWID and VCN_HWID are BOTH 12,
+# is a name. the collision is the point: uvd_hwid and vcn_hwid are both 12,
 # so the comprehension DROPS UVD, and `hwid_names` has 77 entries for 78 keys.
 def hwid.names() -> List<&2, String>: ["MP1", "MP2", "THM", "SMUIO", "FUSE", "CLKA", "PWR", "GC", "UVD", "VCN", "AUDIO_AZ", "ACP", "DCI", "DMU", "DCO", "DIO", "XDMA", "DCEAZ", "DAZ", "SDPMUX", "NTB", "VPE", "IOHC", "L2IMU", "VCE", "MMHUB", "ATHUB", "DBGU_NBIO", "DFX", "DBGU0", "DBGU1", "OSSSYS", "HDP", "SDMA0", "SDMA1", "ISP", "DBGU_IO", "DF", "CLKB", "FCH", "DFX_DAP", "L1IMU_PCIE", "L1IMU_NBIF", "L1IMU_IOAGR", "L1IMU3", "L1IMU4", "L1IMU5", "L1IMU6", "L1IMU7", "L1IMU8", "L1IMU9", "L1IMU10", "L1IMU11", "L1IMU12", "L1IMU13", "L1IMU14", "L1IMU15", "WAFLC", "FCH_USB_PD", "SDMA2", "SDMA3", "PCIE", "PCS", "DDCL", "SST", "LSDMA", "IOAGR", "NBIF", "IOAPIC", "SYSTEMHUB", "NTBCCP", "UMC", "SATA", "USB", "CCXSEC", "XGMI", "XGBE", "MP0"]
 def hwid.vals() -> List<&2, U32>: [1, 2, 3, 4, 5, 6, 10, 11, 12, 12, 13, 14, 15, 271, 16, 272, 17, 18, 274, 19, 20, 21, 24, 28, 32, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 80, 89, 90, 91, 100, 108, 124, 128, 144, 150, 168, 170, 176, 200, 216, 255]
@@ -721,7 +721,7 @@ def aspm.more(+links: List<&2, U32>, +seen: List<&2, U32>, +cap: U32, i: Nat) ->
   Bool.and(Bool.and(U32.is_ne(cap, 0), Bool.not(aspm.seen(cap, seen))),
     U32.is_ne(aspm.at(links, i), ASPM_LINK_CAP()))
 
-# THE THREE THINGS THE BODY DOES, each gated by the condition. A `Bool.pick`
+# the three things the body does, each gated by the condition. a `Bool.pick`
 # selects a VALUE and both arms are evaluated, which is exactly right here: the
 # trace IS a value, so `rd_cfg(cap,1, rd_cfg(cap+1,1,t))` costs nothing when the
 # walk is over -- the branch is not taken, the extra `Tr` is simply discarded.
@@ -1123,7 +1123,7 @@ def aid.keep(n: Nat, +aidn: U32, +maxa: U32, +flags: List<&2, U32>, +acc: List<&
         List.append(&2, U32, acc, [aidn]), acc))
 
 # ===========================================================================
-# `:405-407` THE MODULE LADDER, and `:233` THE PALLOC LADDER.
+# `:405-407` the module ladder, and `:233` the palloc ladder.
 # ===========================================================================
 
 # :406 `"nbio" if self.ip_ver[am.GC_HWIP] < (12,0,0) else "nbif"` -- ONE
@@ -1269,7 +1269,7 @@ def aspm_fx.lnkctl() -> U32: 65535
 #     :251  if DEBUG >= 2: print(f"am {self.devfmt}: {ip.__class__.__name__} initialized")
 #     :254  if DEBUG >= 2: print(f"am {self.devfmt}: Finalizing")
 #
-# WHY THESE ARE PORTED AND NOTHING ELSE IS. All four are inside `AMDev`'s OWN methods
+# why these are ported and nothing ELSE is. All four are inside `AMDev`'s own methods
 # -- `boot` (:168-225), `init_hw` (:248-251), `fini` (:253-254) -- and this file ports
 # NONE of those bodies: the register writes are `Tr.emit` calls behind a `pci_dev`
 # that only exists on real hardware, and `AMDev.boot` reaches `:185` only after
@@ -1280,14 +1280,14 @@ def aspm_fx.lnkctl() -> U32: 65535
 # call behind it. So one `am_dbg_text` and four gates is the whole of it, and it is
 # honest about being the prefix rather than pretending to be `boot`.
 #
-# THE THRESHOLD IS 2 FOR ALL FOUR, MEASURED rather than read off the pattern: the
+# the threshold is 2 for all four, measured rather than read off the pattern: the
 # oracle's LANE B pulls the right-hand side out of each cited line with
 # `re.search(r"DEBUG\s*>=\s*(\d+)", src)` and prints `thr_am185..thr_am254`, all `2`.
 # `:185` is NOT a level-1 site -- `schedule/memory.py:59` is the only one of the seven
 # that is, and mixing the two up in a single-level gate is invisible.
 #
 # :251 IS THE ONE WITH A SECOND INPUT, and `ip.__class__.__name__` is not derivable
-# here: the IP classes are `AM_SOC`, `AM_GMC`, `AM_IH`, `AM_PSP`, `AM_SMU`, `AM_GFX`,
+# here: the ip classes are `AM_SOC`, `AM_GMC`, `AM_IH`, `AM_PSP`, `AM_SMU`, `AM_GFX`,
 # `AM_SDMA` and they live in `ip.py`, which this repository does not port as records
 # (ip.bend's header names them but has no `AM_GFX` def). So the class name is a
 # PARAMETER and the gate supplies upstream's own spelling. `init_hw` is called as
@@ -1390,7 +1390,7 @@ def amaprow(nm: String, +xs: List<&2, U32>) -> IO(Unit):
 def jrow_s(nm: String, +xs: List<&2, String>) -> IO(Unit): srow(nm, jgs(List.length(&2, String, xs), xs, "|", ""))
 
 # ===========================================================================
-# THE NINE STRUCTS THE GATE READS, one def each, so the dispatch is a TABLE and
+# the nine structs the gate reads, one def each, so the dispatch is a table and
 # not a `match` on a computed value. The key is the struct's index and the slot is
 # its field's, so every field is its own ROW: an inverted list then shows up as
 # two rows disagreeing rather than as a count that happens to match.
@@ -1425,7 +1425,7 @@ def gate.field(key: Nat, slot: Nat) -> String:
 def sfrow(nm: String, key: Nat, slot: Nat) -> IO(Unit):
   srow(nm, gate.field(key, slot))
 
-# THE TRACE ROWS. Each is a COUNT plus the ORDERED ADDRESSES and the ordered
+# the trace rows. Each is a count plus the ordered addresses and the ordered
 # VALUES, never a boolean: an all-True gate on a sequence says nothing, and
 # `ops_webgpu`'s M23 measured that its matcher had been answering True to
 # everything.
@@ -1581,7 +1581,7 @@ def t_rlcg() -> IO(Unit):
 # --------------------------------------------------------------------------
 
 
-# THE TWO-WAY LOOKUPS. :400 builds a value -> NAME dict and :382 needs a NAME ->
+# the two-way lookups. :400 builds a value -> name dict and :382 needs a name ->
 # value, so the port carries both directions of BOTH tables. A one-way table
 # cannot catch itself being built the wrong way up, which is why `ops_nv`'s audit
 # of 219 constants found 33 wrong in a file already printing 590 green rows.
@@ -1594,7 +1594,7 @@ def t_rlcg() -> IO(Unit):
 # value -> name, i.e. `hwid_names`. The comprehension drops a LATER duplicate, so
 # the table holds the FIRST occurrence's slot only if the values are unique --
 # they are not, once, and `hwid_of` finds the FIRST match like `dict` would.
-# THE WALKED LIST IS THE FIRST `+` PARAMETER, so the self-call shrinks before it
+# the walked list is the first `+` parameter, so the self-call shrinks before it
 # touches anything else; the parallel list rides along because the answer is an
 # INDEX into it rather than a value.
 # LAST MATCH, not first and not "a" match. `:400`'s comprehension is
@@ -1809,7 +1809,7 @@ def t_palloc() -> IO(Unit):
     # `i` of `amp_list` is `lo, align` for index `i`, so the order IS the rows.
 
 # ===========================================================================
-# THE MODULE LADDER (:405-407) and THE AID ALIVE-MASK (:417-421).
+# the module ladder (:405-407) and the aid alive-mask (:417-421).
 # ===========================================================================
 def modsrow(+maj: U32, +min: U32, +rev: U32) -> IO(Unit):
   do IO<Unit>:
@@ -1904,8 +1904,8 @@ def t_aids() -> IO(Unit):
     aidsrow("aids_maskc", aid.list4([1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
     aidscount("aids_maskc", aid.list4([1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
 
-# (1) THE STRUCT FIELD LISTS, BY NAME AND IN ORDER: nine structs, every field,
-# one row each. THE COUNT ROWS ARE HERE TOO and they are NOT the gate -- they are
+# (1) the struct field lists, by name and in order: nine structs, every field,
+# one row each. the count rows are here too and they are not the gate -- they are
 # there so a reader can see that a transposition left every count alone. That is
 # the whole reason the fields are gated by NAME: `ops_cl`'s unit found `Sig`'s
 # field names INVERTED, which made a correct computation look wrong, and a count
@@ -2126,7 +2126,7 @@ def main() -> IO(Unit):
 # baseline rows: 552
 # mutations moving nothing: ['M1', 'M20', 'M21', 'M22']
 
-# M20 AND M22 ARE THE CONTROLS and M1 AND M21 ARE BLIND SPOTS, and the two pairs
+# M20 and M22 are the controls and M1 and M21 are blind spots, and the two pairs
 # are different things:
 #
 #   * M22 is an equivalent edit and M20 substitutes `AID_ALIVE_C()` for its own
@@ -2136,7 +2136,7 @@ def main() -> IO(Unit):
 #   * M1 replaces the tail's `bn` with `an` in `v.ge3`. Every fixture has
 #     `bn == 0` for the (11,0,0) and (12,0,0) boundaries -- `an` is 11 or 12 and
 #     `bn` is 0, so `v.ge2(an, ax, bn, an)` and `v.ge2(an, ax, bn, bn)` agree on
-#     all of them. THE FIXTURES ARE ALL ON ONE SIDE, so no fixture can separate
+#     all of them. the fixtures are all on one side, so no fixture can separate
 #     them. This is `ops_nv`'s lesson: a `0` here is a REQUEST FOR A FIXTURE, not
 #     a coverage claim, and a ladder whose boundary fixtures all share a zero in
 #     the same slot cannot test that slot. A `(11, 5, 0)` fixture against `(11, 0, 0)`

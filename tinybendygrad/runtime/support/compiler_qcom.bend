@@ -1,7 +1,7 @@
 # tinybendygrad/runtime/support/compiler_qcom.bend -- port of tinygrad/runtime/support/compiler_qcom.py
 #
 # ===========================================================================
-# THE PURE LOGIC OF THIS FILE IS ONE LINE, and it is the sharpest one in the
+# the pure logic of this file is one line, and it is the sharpest one in the
 # unit:
 #
 #   def disassemble(self, lib):
@@ -78,8 +78,8 @@
 #   `subprocess.Popen(argv.split() + [...], stdout=PIPE, stdin=PIPE, bufsize=0)`
 #   (tinygrad/device.py:333-339 symbol=server) and `compile_server` writes a length-prefixed frame and
 #   reads one back on the SAME long-lived pipe. `Process.run` spawns and
-#   collects; it cannot hold a duplex pipe open. **This is the one seam in the
-#   whole unit that `Process.run` does NOT close**, and it is why
+#   collects; it cannot hold a duplex pipe open. This is the one seam in the
+#   whole unit that `Process.run` does NOT close, and it is why
 #   `compileserver.py` gets its own file.
 #   TODO(p3) device.py:335  symbol=server -- `subprocess.Popen(..., stdout=PIPE, stdin=PIPE)`.
 #   TODO(p3) device.py:337  symbol=compile_server -- `compile_server`'s write/read/read.

@@ -16,7 +16,7 @@ import ./../extra/datasets/__init__.bend as D
 # ops: THERE IS NO POOL OP, UPSTREAM OR HERE. `tinygrad/uop/__init__.py:13-97`
 # is the whole `Ops` enum and its members are ADD MUL SHL SHR TRUNCDIV MAX TRUNCMOD
 # CMPLT CMPNE CMPEQ XOR OR AND THREEFRY SUB FDIV POW DIV MOD WHERE
-# MULACC ... RESHAPE PERMUTE EXPAND PAD UNSHARD REDUCE ALLREDUCE. There is no
+# mulacc ... reshape permute expand pad unshard reduce allreduce. There is no
 # MAXPOOL, no AVGPOOL, no MAXPOW2, no AVGPOW2 and no CMOV in it, and
 # `grep -rn "MAXPOW2\|AVGPOW2\|MAX_POOL\|AVG_POOL" tinygrad/` = 0 HITS.
 #
@@ -36,7 +36,7 @@ import ./../extra/datasets/__init__.bend as D
 # GroupNorm(:179), InstanceNorm(:209), LayerNorm(:235), LayerNorm2d(:263),
 # RMSNorm(tinygrad/nn/__init__.py:281), Embedding(tinygrad/nn/__init__.py:374) and
 # LSTMCell(tinygrad/nn/__init__.py:395) and no others. So the pool ops below are
-# PORTED FROM THE TENSOR METHODS THEY ARE MADE OF,
+# ported from the tensor methods they are made of,
 # and that is stated per def below rather than dressed up as a layer port.
 # `flatten` is `tinygrad/helpers.py:53`, `[item for sublist in l for item in
 # sublist]`, a list helper and NOT a layer; the LAYER of that name in a ResNet
@@ -56,7 +56,7 @@ def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
   List.foldl(~&2, ~U32, ~U32, (a: U32) => (d: U32) => U32.mul(a, d), ds, acc)
 
 # ===========================================================================
-# `W4` -- `_pool`'s WINDOW over TWO SPATIAL AXES of a FOUR-DIMENSIONAL NCHW
+# `W4` -- `_pool`'s window over two spatial axes of a four-dimensional nchw
 # tensor: `b0 b1` are the batch and channel extents, which `_pool` carries
 # through every reshape as its `noop` (movement.py:618), and `i k s d` are the
 # input size, kernel, stride and dilation per spatial axis.
@@ -69,7 +69,7 @@ def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
 # NON-CONSUMING, so a `+q: W4` chain step can read the window as many times as
 # its expression needs (`mixin/rand.bend:260 symbol=PK.i`).
 #
-# FOUR DIMENSIONS IS NOT A LIMITATION DRESSED UP AS A SHAPE: it is the case
+# four dimensions is not a limitation dressed up as a shape: it is the case
 # every pooling call in a ResNet makes, and the `noop` axes pass through
 # untouched, so the generalisation is "read `noop` from the tensor instead of
 # from the record", which is stated as the wall it is (`WALL(nn_pool_4d)`).
@@ -239,7 +239,7 @@ def pool_nd(+t: T.Tensor, +q: W4) -> T.Tensor:
 # sum axis as the literal `[1]`: "`mo_ax` takes the tensor and would rebuild the
 # whole of `_pool` ... so the literal is the cheap correct spelling".
 #
-# PADDING IS NOT INCLUDED AND THAT IS A WALL, NOT AN OMISSION. op.py:1370 pads
+# padding is not included and that is a wall, not an omission. op.py:1370 pads
 # with `self.commit_dtype().min`, and `_pad_constant`'s `value != 0` arm
 # (op.py:290) is `MovementMixin.pad(X.const_like(True, dtypes.bool), pads)`
 # `.where(base, value)`, which `mixin/rand.bend:330 symbol=op_padc` records as
@@ -256,7 +256,7 @@ def pool_maxpool_padded() -> D.Refused:
 # ===========================================================================
 # `avg_pool2d` (mixin/op.py:1285-1331), THE `not count_include_pad and not
 # ceil_mode` ARM, which op.py:1329 spells as `return pool(self, pads).mean(axis)`.
-# THE PADDED ARM IS REFUSED FOR THE SAME REASON AS MAX POOL'S.
+# the padded arm is refused for the same reason as max pool's.
 # ===========================================================================
 def pool_avgpool(+t: T.Tensor, +q: W4) -> T.Tensor: MO.mo_mean(False{}, pool_nd(t, q), [4, 5])
 
@@ -370,7 +370,7 @@ def pool_bn.cen(+x: T.Tensor, +m: T.Tensor, +q: BN) -> T.Tensor:
 def pool_bn.wt(+x: T.Tensor, +w: T.Tensor, +q: BN) -> T.Tensor:
   MO.mo_mul(x, MX.mxw_reshape(w, BN.sh(q)))
 # op.py:1697  ret = x.mul(invstd.reshape(shape) if len(invstd.shape) == len(axis_) else invstd)
-# THE `else invstd` BRANCH IS A GUARD ON A SHAPE AND `invstd` IS GIVEN ALREADY
+# the `else invstd` branch is a guard on a shape and `invstd` is given already
 # BROADCAST-SHAPED BY THE CALLER (`calc_stats`, nn/__init__.py:49, hands back the
 # per-channel vector), so the `len(...) == len(axis_)` test is always true here.
 def pool_bn.iv(+x: T.Tensor, +v: T.Tensor, +q: BN) -> T.Tensor:
@@ -398,7 +398,7 @@ def pool_bn_stats.mean(+x: T.Tensor, +axis: List<&2, U32>) -> T.Tensor: MO.mo_me
 def pool_bn_stats.cen(+x: T.Tensor, +m: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
   MO.mo_mean(False{}, MO.mo_mul(MO.mo_sub(x, m), MO.mo_sub(x, m)), axis)
 
-# THE OTHER HALF OF `nn.BatchNorm` IS REFUSED, AND BOTH BLOCKERS ARE NAMED.
+# the other half of `nn.BatchNorm` is refused, and both blockers are named.
 # op.py:55-58 is the running-statistics update, and it needs two things that are
 # not defs in this tree:
 #   * `TRAINING` -- the helpers ContextVar every branch at op.py:43 and op.py:55
@@ -416,7 +416,7 @@ def pool_bn_stats.cen(+x: T.Tensor, +m: T.Tensor, +axis: List<&2, U32>) -> T.Ten
 def pool_bn_running_stats() -> D.Refused:
   D.refuse("nn/__init__.py:55-58  BatchNorm's running_mean/var update -- BLOCKED: TRAINING is not a binding in tinybendygrad (comments only), and Tensor.assign is not a def (tensor.bend:2717 symbol=tn_param.of states the immutability divergence)")
 
-# TWO MORE WALLS, AND BOTH ARE ROWED IN `t_ref` SO THEY CANNOT DRIFT QUIETLY.
+# two more walls, and both are rowed in `t_ref` so they cannot drift quietly.
 #
 # WALL(nn_pool_4d) -- `_pool` for `self.ndim != 4`. `noop = [None] * (self.ndim -
 # len(k_))` (movement.py:618) is a count of the SOURCE tensor's axes, and `W4`
@@ -434,7 +434,7 @@ def pool_wall_4d() -> D.Refused:
 def pool_wall_1d() -> D.Refused:
   D.refuse("movement.py:614  _pool for one spatial axis -- NOT DUPLICATED: mixin/rand.bend:375 symbol=op_pool1 already is it for stride 1 and dilation 1")
 
-# WALL(nn_pool_r1) -- THE ONE THAT COSTS THIS FILE ITS UOP-LEVEL ROWS. Measured:
+# wall(nn_pool_r1) -- the one that costs this file its uop-level rows. Measured:
 # `pool_nd` reads `(1)(1)(4)(4)(2)(2)` from the arena and is CORRECT, while
 # `mo_max(False{}, <that>, [4, 5])` reads the SAME `(1)(1)(4)(4)(2)(2)` -- the
 # pre-reduce dims -- and `mo_mean` over a six-axis reshape reads an EMPTY string.
@@ -453,17 +453,17 @@ def pool_wall_r1() -> D.Refused:
 # caller consumes (`mixin/op.bend:1400-1401`), so they are the same measurement
 # `mo_shape` takes.
 # ===========================================================================
-# THE ROWS, AND WHAT THEY ARE NOT.
+# the rows, and what they are not.
 #
 # `main` PRINTS AND MEASURES. There are no expectations in this file because a
 # row compared against a number this file wrote is the change-detector
 # AGENTS.md forbids. The rows are SHAPES, and a shape is what a caller consumes
 # (`mixin/op.bend:1400-1401`).
 #
-# A MOVEMENT-ONLY RESULT IS READ FROM THE ARENA AND IS TRUSTWORTHY: `pool_nd_*`
+# a movement-only result is read from the arena and is trustworthy: `pool_nd_*`
 # and `flatten_*` are exactly that and they are measured below.
 #
-# A RESULT WHOSE ROOT IS A REDUCE OR AN ELEMENTWISE OP IS **NOT** READ FROM THE
+# a result whose root is a reduce or an elementwise op is not read from the
 # ARENA, AND THAT IS R1, NAMED AT `mixin/rand.bend:128-137`: "`O.Arena` is
 # affine and a def that BUILDS grows a copy, so two operands built in different
 # copies name indices neither copy has ... A toposort of ONE node means the
@@ -474,9 +474,9 @@ def pool_wall_r1() -> D.Refused:
 # reshape read `` (an empty string).
 #
 # SO `max_pool` / `avg_pool` / `adaptive_avg_pool` / `batchnorm` ARE ROWED BY
-# THEIR OUTPUT SHAPE COMPUTED IN `U32` FROM THE WINDOW RECORD, which is the same
+# their output shape computed in `U32` from the window record, which is the same
 # `_pool` arithmetic the UOp path uses and does not touch an arena. THAT IS A
-# WEAKER ROW THAN A NODE COUNT AND IT IS CALLED A WEAKER ROW HERE RATHER THAN
+# weaker row than a node count and it is called a weaker row here rather than
 # DISGUISED: `WALL(nn_pool_r1)` below is the blocker to closing it.
 # ===========================================================================
 def pool_sh_str.go(ds: List<&2, U32>, acc: String) -> String:
@@ -518,13 +518,13 @@ def t_pool_arith() -> IO(Unit):
 def t_pool_nchw() -> IO(Unit):
   +t: T.Tensor = CR.cr_zeros(O.Arena.empty(), O.CFloat{0.0}, S.single(), [1, 1, 8, 8], S.D1{0})
   do IO<Unit>:
-    # THE TWO `_pool` ROWS ARE READ FROM THE ARENA (`mxw_dims_of`) and they are the
+    # the two `_pool` rows are read from the arena (`mxw_dims_of`) and they are the
     # real measurement of this file's central claim: `_pool` over two spatial axes
     # leaves `[N, C, o0, o1, k0, k1]`, which is movement.py:632's permute.
     pool_shape("pool_nd_8k2s2", pool_nd(t, W4{1, 1, 8, 8, 2, 2, 2, 2, 1, 1}))
     pool_shape("pool_nd_7k3s2", pool_nd(t, W4{1, 1, 7, 7, 3, 3, 2, 2, 1, 1}))
     pool_shape("pool_nd_112k3s2", pool_nd(t, W4{1, 1, 112, 112, 3, 3, 2, 2, 1, 1}))
-    # THE THREE REDUCE ROWS ARE `U32` ARITHMETIC, NOT ARENA READS -- see the header.
+    # the three reduce rows are `U32` arithmetic, not arena reads -- see the header.
     pool_shs("pool_max_8k2s2", W4.out(W4{1, 1, 8, 8, 2, 2, 2, 2, 1, 1}))
     pool_shs("pool_max_7k3s2", W4.out(W4{1, 1, 7, 7, 3, 3, 2, 2, 1, 1}))
     pool_shs("pool_max_112k3s2", W4.out(W4{1, 1, 112, 112, 3, 3, 2, 2, 1, 1}))

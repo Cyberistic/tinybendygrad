@@ -1,7 +1,7 @@
 # tinybendygrad/schedule/prepare.bend
 # Port of tinygrad/schedule/prepare.py (278 lines). `prepare_rangeify`.
 #
-# WHAT THIS FILE IS, IN ONE PARAGRAPH. `prepare.py` is a SCHEDULING PASS: it
+# what this file is, in one paragraph. `prepare.py` is a scheduling pass: it
 # takes a UOp graph and rewrites it into a form the device can run. Almost all of
 # it is DECISION -- eleven functions and five `PatternMatcher`s, most of whose
 # rules are lambdas -- and the decisions are arithmetic over SHAPES (a `prod`, a
@@ -11,7 +11,7 @@
 # `UOp.store`, `.after`, `.index`, `.pad_to`, `.contiguous`, `.usum` and
 # `UOp.unique_num`, and those builders are the wall named below.
 #
-# THE ORDER OF THE FILE IS PYTHON'S ORDER: `forward_call_outputs` (11-38),
+# the order of the file is python's order: `forward_call_outputs` (11-38),
 # `walk_mop` (40-43), `found_after` (45-53) and its table (56-62), `_mop_index`
 # (65-74) and `pm_mops` (76-83), then the "0. cleanup" block: the hazard pair
 # (89-101), `split_reduceop` (103-125), `resolve_function` (127-150),
@@ -145,7 +145,7 @@ def shape_str.go(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String:
 def shape_str(+ar: O.Arena, +tb: F.Table, +self: U32) -> String:
   shape_str.go(F.fold.shape(ar, tb, self))
 
-# THE GATE'S FOUR FACTS PLUS THE ANSWER AS ONE STRING. `toposort` SIZE and not
+# the gate's four facts plus the answer as one string. `toposort` SIZE and not
 # arena size: the size of a node's OWN subgraph is graph-intrinsic, so it is the
 # one number that survives the difference between CPython's arena and this one.
 # The dtype is left out because `LAWS/spec.bend` has no `Dt.name` and a dtype is
@@ -245,7 +245,7 @@ def pr_shp2(+ar: O.Arena, a: U32, b: U32) -> O.Found:
   +y = pr_c1(O.Found.ar(z), b)
   O.UOp.new(O.Found.ar(y), O.OpsSTACK{}, [O.Found.i(z), O.Found.i(y)], O.ANone{}, O.TNone{})
 
-# EVERY BUILDER TAKES THE ARENA FIRST AND USES *IT*, never the arena of one of its
+# every builder takes the arena first and uses *it*, never the arena of one of its
 # own arguments.  A builder that reads `O.Found.ar(x)` builds into the arena as it
 # stood BEFORE `x` was interned, which silently interns the new node into a stale
 # arena and makes every later index wrong -- and every later index is what the gate
@@ -669,7 +669,7 @@ def pr_wm_keep(hop: Bool, +n: U32, a: WmA) -> WmA:
 # AFTER: `(b:=walk_mop(u.src[0])) is not u.src[0]` decides whether to rebuild, and
 # the rebuild is `b.after(*u.src[1:])`.  `ops.bend` HAS `UOp.after`, so this arm is
 # PORTED and is not a wall -- it is the only builder `walk_mop` needs.
-# THE BUILDER'S ARENA IS THE ONE `UOp.new` RETURNS, never the one it was handed.
+# the builder's arena is the one `UOp.new` returns, never the one it was handed.
 # `UOp.make` appends, so the arena it returns is one node longer than the one it
 # took, and an index read against the OLD arena is out of range -- which is what
 # every `wm_after_mov*_out` row did before this line existed: index `next`, op NOOP.
@@ -909,7 +909,7 @@ def g_wm() -> IO(Unit):
 #   `O.SI`, so `sint_str.go`'s second arm never runs.  This is `fold.bend`'s M9
 #   verbatim and it is reported here for the same reason.
 #
-#   M23 IS THE SAME KIND OF THING WITH ONE EXTRA EDGE.  `dt_name.of`'s `None` arm
+#   M23 is the same kind of thing with one extra edge.  `dt_name.of`'s `None` arm
 #   fires for a node the FOLD does not resolve, and the only such node in this
 #   gate's fixtures would be a UNSHARD -- which is why the UNSHARD fixture was
 #   REMOVED from the gate, and the reason is written into `wm_fix` beside the node
@@ -919,7 +919,7 @@ def g_wm() -> IO(Unit):
 #   with a row that could not pass, and the removal is visible in the diff.  The
 #   arm of `pr_wm_extra` that reads UNSHARD is still live, and M08 measures it.
 #
-# THE ROWS THIS PORT CANNOT PRINT, and the substrate fact behind each.  The oracle
+# the rows this port cannot print, and the substrate fact behind each.  The oracle
 # is 2544 rows; 321 of them are gated here and the rest are the WALLS above, named
 # rather than faked:
 #

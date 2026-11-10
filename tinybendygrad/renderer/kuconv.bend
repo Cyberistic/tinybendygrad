@@ -1,32 +1,32 @@
 # tinybendygrad/renderer/kuconv.bend -- THE CONVERTER.
 #
-# THE PORT's OWN ARENA -> THE RENDERER's `List<KU>`.
+# the port's own arena -> the renderer's `List<KU>`.
 #
 # `renderer/cstyle.bend:127` DECLARES `KU` AND `renderer/cstyle.bend:2297`
-# CONSUMES A `List<&2, KU>`, AND BEFORE THIS FILE NO DEF IN THE PORT PRODUCED
+# consumes a `List<&2, KU>`, and before this file no DEF in the port produced
 # ONE: `grep -rn 'KU{' tinybendygrad/ --include='*.bend'` ANSWERED EXACTLY ONE
-# HIT, THE TYPE DECLARATION ITSELF.  SO THE RENDERER HAD NO INPUT AND THE
+# hit, the TYPE declaration itself.  so the renderer had no input and the
 # PORT HAD NO DEVICE.
 #
-# THE INPUT IS AN ARENA AND A LIST OF ARENA INDICES, AND THE LIST IS IN THE
-# PORT's OWN POST-ORDER (CHILDREN BEFORE PARENTS) -- which is what
+# the input is an arena and a list of arena indices, and the list is in the
+# port's own post-order (children before parents) -- which is what
 # `codegen/late/linearizer.bend:836 linearize` returns and what upstream's
 # `tinygrad/codegen/late/linearizer.py:8-51 linearize` returns.
 #
 # ===========================================================================
-# THE WHOLE PROBLEM IS THE `srcs` FIELD, AND IT IS A RE-INDEXING.
+# the whole problem is the `srcs` field, and it is a re-indexing.
 #
-# `KU.srcs` ARE **POSITIONS IN THE `KU` LIST**, NOT ARENA INDICES.  THE
+# `KU.srcs` are positions in the `KU` list, not arena indices.  the
 # RENDERER'S `r` MAP IS A LIST INDEXED BY POSITION (`cstyle.bend:1896` says so
-# in prose) BECAUSE THE LIST IS POST-ORDER: EVERY UOP's SRCS SIT AT A LOWER
+# in prose) because the list is post-order: every uop's srcs sit at a lower
 # INDEX, SO A POSITION IS ALSO A "DEFINED BEFORE" MARKER.
 #
-# SO: FOR EACH NODE, EACH SRC's ARENA INDEX MUST BECOME **THE POSITION OF THAT
-# SRC IN THE `KU` LIST**.  THE CONVERTER COMPUTES THAT POSITION BY SEARCHING
-# THE INDEX LIST, AND THAT SEARCH IS THE ENTIRE DELTA BETWEEN "AN ARENA" AND
+# so: for each node, each SRC's arena INDEX must become the position of that
+# SRC in the `KU` list.  the converter computes that position by searching
+# the INDEX list, and that search is the entire delta between "an arena" and
 # "A RENDERABLE LIST".
 #
-# THE UPSTREAM SIDE OF EVERY FIELD, WITH `file:line`:
+# the upstream side of every field, with `file:line`:
 #
 #   | `KU` field | upstream                        | the port                          |
 #   |-------------|---------------------------------|-----------------------------------|
@@ -40,7 +40,7 @@
 #   | `arg`       | `u.arg`  (ops.py:253)           | `O.Arena.arg(ar, i)` (ops.bend:1400) |
 #   | `srcs`      | `u.src`  (ops.py:253)           | `O.Arena.srcs(ar, i)` (ops.bend:1406), RE-INDEXED |
 #   the durable pointer for the `dtype` row is uop/fold.bend:4833 symbol=fold.dt
-# THE `arg` MAPPING, ONE ROW PER `O.Arg` VARIANT THE RENDERER READS:
+# the `arg` mapping, one row per `O.Arg` variant the renderer reads:
 #
 #   | `O.Arg`         | `KUArg`                       | who reads it                |
 #   |-----------------|-------------------------------|-----------------------------|
@@ -58,7 +58,7 @@
 # `arg=Ops.ADD`.  THE PORT SPELLS A BARE `Op` AS `AOpLit{op}`
 # (`uop/ops.bend:1247` symbol=AOpLit), AND THE CONVERTER COMPARES IT TO `OpsADD` ITSELF.
 #
-# `AInt` IS THE OTHER INDEX FORM: UPSTREAM's INDEX CARRIES AN INTEGER OFFSET
+# `AInt` is the other INDEX form: upstream's INDEX carries an integer OFFSET
 # WHEN IT IS NOT AN `Ops.ADD` (`ops.py:432`'s `arg` is `int` for the offset
 # form), AND THE CONVERTER KEEPS THE OFFSET IN `KAIndex.off`.
 # ===========================================================================
@@ -70,16 +70,16 @@ import ./../helpers.bend as H
 import ./cstyle.bend as C
 
 # ===========================================================================
-# THE POSITION MAP.  `kuconv.pos` ANSWERS "AT WHICH POSITION IN THE `KU` LIST
-# DOES THIS ARENA INDEX STAND", AND THE ANSWER IS A SEARCH, NOT A TABLE:
-# THE LIST IS SHORT (A KERNEL'S WORTH OF NODES) AND A TABLE WOULD BE A SECOND
+# the position map.  `kuconv.pos` answers "at which position in the `KU` list
+# does this arena INDEX stand", and the answer is a search, not a table:
+# the list is short (a kernel's worth of nodes) and a table would be a second
 # COPY OF THE LIST.
 #
-# THE MISSING CASE ANSWERS `0`, AND `0` IS ALSO THE POSITION OF THE FIRST
-# NODE, SO A MISSING SRC IS NOT DISTINGUISHABLE FROM THE FIRST NODE BY THE
-# ANSWER ALONE.  THAT IS WHY THE CONVERTER'S OWN ROWS ARE THE BYTE
-# COMPARISON AND NOT A COUNT: A CONVERTER THAT DROPPED A SRC WOULD RENDER A
-# DIFFERENT KERNEL, NOT A DIFFERENT NUMBER OF ROWS.
+# the missing case answers `0`, and `0` is also the position of the first
+# node, so a missing SRC is not distinguishable from the first node by the
+# answer alone.  that is why the converter's own rows are the BYTE
+# comparison and not a count: a converter that dropped a SRC would render a
+# different kernel, not a different number of rows.
 def kuconv.pos.go(ix: List<&2, U32>, +want: U32, +n: U32) -> U32:
   match ix:
     case Nil{}: 0
@@ -88,7 +88,7 @@ def kuconv.pos.go(ix: List<&2, U32>, +want: U32, +n: U32) -> U32:
 def kuconv.pos(ix: List<&2, U32>, want: U32) -> U32:
   kuconv.pos.go(ix, want, 0)
 
-# THE RE-INDEX ITSELF.  `O.Arena.srcs` GIVES ARENA INDICES; THIS GIVES
+# the re-INDEX itself.  `O.Arena.srcs` gives arena indices; this gives
 # POSITIONS.
 def kuconv.srcs.go(+ix: List<&2, U32>, ss: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ss:
@@ -99,22 +99,22 @@ def kuconv.srcs(ix: List<&2, U32>, ss: List<&2, U32>) -> List<&2, U32>:
   kuconv.srcs.go(ix, ss, Nil{})
 
 # ===========================================================================
-# THE DTYPE.  `F.fold.dt` IS A DOUBLE-`Maybe` FREE READ: THE OUTER ONE IS
-# "THE FOLD KNOWS THIS NODE", AND A NODE THE FOLD DOES NOT KNOW HAS NO
-# DTYPE, WHICH UPSTREAM ALSO DOES NOT HAVE (ITS `dtype_from_uop` IS TOTAL
+# the dtype.  `F.fold.dt` is a double-`Maybe` free read: the outer one is
+# "the FOLD knows this node", and a node the FOLD does not know has no
+# dtype, which upstream also does not have (its `dtype_from_uop` is total
 # BECAUSE IT NEVER DEFERS).
 #
-# `S.void()` IS THE DEFAULT BECAUSE THAT IS WHAT UPSTREAM'S `Ops.SINK` AND
-# `Ops.END` ANSWER (`ops.py:247`'s ladder), AND A VOID DTYPE IS WHAT MAKES
+# `S.void()` is the default because that is what upstream's `Ops.SINK` and
+# `Ops.END` answer (`ops.py:247`'s ladder), and a void dtype is what makes
 # THE RENDERER SKIP THE DECLARATION (`cstyle.bend:1652` `ku_is_decl`).
 def kuconv.dt(+fx: F.Folded, a: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), a), S.void())
 
-# THE ADDRSPACE.  THE FOLD ANSWERS `Maybe<Maybe<S.Addr>>`: THE OUTER ONE IS
-# "THE FOLD KNOWS THIS NODE" AND THE INNER ONE IS "THE NODE HAS AN
+# the addrspace.  the FOLD answers `Maybe<Maybe<S.Addr>>`: the outer one is
+# "the FOLD knows this node" and the inner one is "the node has an
 # ADDRSPACE" (`ops.py:896` ANSWERS `None` FOR A SINK).  `S.Aalu{}` IS THE
-# DEFAULT BECAUSE UPSTREAM'S `Ops.CONST`/`Ops.RANGE`/`Ops.SPECIAL` ARE ALU
-# (`ops.py:899`) AND A SINK'S `None` IS SPELLED `ALU` IN THE RENDERER'S OWN
+# default because upstream's `Ops.CONST`/`Ops.RANGE`/`Ops.SPECIAL` are alu
+# (`ops.py:899`) and a sink's `None` is spelled `ALU` in the renderer's own
 # FIXTURE (`gen_kus.py`'s `ADDRS` TABLE MAPS `NONE` TO `S.Aalu{}`).
 def kuconv.addr.go(m: Maybe<&2, Maybe<&2, S.Addr>>) -> S.Addr:
   match m:
@@ -125,31 +125,31 @@ def kuconv.addr(+fx: F.Folded, a: U32) -> S.Addr:
   kuconv.addr.go(F.fold.addr(F.Folded.ar(fx), F.Folded.t(fx), a))
 
 # ===========================================================================
-# THE SHAPE.  `F.fold.shape` IS A DOUBLE-`Maybe` TOO: THE OUTER ONE IS "THE
-# FOLD KNOWS THIS NODE" AND THE INNER ONE IS "`_shape` IS NOT None"
-# (`ops.py:323`).  A `None` SHAPE AND AN UNKNOWN NODE ARE THE SAME EMPTY
-# LIST HERE, AND BOTH GIVE A `numel` OF ONE -- WHICH IS UPSTREAM'S ANSWER,
+# the shape.  `F.fold.shape` is a double-`Maybe` too: the outer one is "the
+# FOLD knows this node" and the inner one is "`_shape` is not None"
+# (`ops.py:323`).  a `None` shape and an unknown node are the same empty
+# list here, and both give a `numel` of one -- which is upstream's answer,
 # BECAUSE `max_numel` IS `prod(max_shape)` AND `max_shape` OF AN ABSENT SHAPE
 # IS `()` (`movement.py:55`).
 #
-# THE `O.Sint` -> `U32` CONVERSION IS THE ONE THAT HAS TO BE SPELLED.
+# the `O.Sint` -> `U32` conversion is the one that has to be spelled.
 # `O.Sint` IS EITHER A LITERAL (`SI{i}`) OR AN ARENA INDEX (`SU{u}`, A
 # SYMBOLIC DIMENSION), AND `KU.shape` IS A `List<&2, U32>`.
 #
-# **THE SYMBOLIC CASE IS A NAMED LIMIT AND NOT A SILENT ONE.**  UPSTREAM'S
+# the symbolic case is a named limit and not a silent one.  upstream's
 # `max_numel` IS `prod(max_shape)` AND `max_shape` REPLACES A SYMBOLIC
 # DIMENSION WITH ITS MAXIMUM (`ops.py:1896`'s `to_max_shape`), AND `to_max_shape`
 # IS A WALL IN THIS PORT (`renderer/cstyle.bend:60` NAMES IT).  SO A `SU`
-# HAS NO `U32` ANSWER HERE AND THE CONVERTER ANSWERS **ZERO**, WHICH MAKES
-# THE `numel` ZERO AND THE KERNEL WRONG.  A CONCRETE SHAPE IS FINE, AND ALL
-# FIVE OF THE MEASURED CPU KERNELS HAVE CONCRETE SHAPES.
+# has no `U32` answer here and the converter answers zero, which makes
+# the `numel` zero and the kernel wrong.  a concrete shape is fine, and all
+# five of the measured CPU kernels have concrete shapes.
 # `SI{i}` IS AN `H.I64` AND `KU.shape` IS `U32`, SO THE LOW WORD IS THE
-# ANSWER.  A SHAPE DIMENSION BIGGER THAN 2^32 IS NOT A THING A KERNEL HAS.
+# answer.  a shape dimension bigger than 2^32 is not a thing a kernel has.
 #
-# `SU{u}` IS A SYMBOLIC DIMENSION AND IT HAS **NO** `U32` ANSWER HERE: THE
-# ANSWER IS ZERO, WHICH MAKES THE `numel` ZERO AND THE KERNEL WRONG, AND
-# WRONG IS THE POINT -- A SYMBOLIC DIMENSION THAT RENDERED AS A PLAUSIBLE
-# NUMBER WOULD BE A KERNEL THAT COMPILES AND MISCOMPUTES.  SEE THE HEADER.
+# `SU{u}` is a symbolic dimension and it has no `U32` answer here: the
+# answer is zero, which makes the `numel` zero and the kernel wrong, and
+# wrong is the point -- a symbolic dimension that rendered as a plausible
+# number would be a kernel that compiles and miscomputes.  see the header.
 def kuconv.sint(s: O.Sint) -> U32:
   match s:
     case O.SI{i}: H.lo32(i)
@@ -172,7 +172,7 @@ def kuconv.shape.go(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> List<&2, U32>:
 def kuconv.shape(+fx: F.Folded, a: U32) -> List<&2, U32>:
   kuconv.shape.go(F.fold.shape(F.Folded.ar(fx), F.Folded.t(fx), a))
 
-# THE NUMEL.  `prod(shape)`, WITH AN EMPTY SHAPE GIVING ONE -- WHICH IS
+# the numel.  `prod(shape)`, with an empty shape giving one -- which is
 # UPSTREAM'S `prod(())` (`helpers.py`'s `prod` IS 1 ON AN EMPTY TUPLE, AND
 # `cstyle.py:162` SAYS SO IN PROSE ABOUT `launch_bounds`).
 def kuconv.numel.go(ss: List<&2, U32>, +acc: U32) -> U32:
@@ -184,7 +184,7 @@ def kuconv.numel(ss: List<&2, U32>) -> U32:
   kuconv.numel.go(ss, 1)
 
 # ===========================================================================
-# THE ARG.  THE `O.Arg` VARIANT IS THE DISCRIMINATOR, AND EACH ARM IS ONE
+# the ARG.  the `O.Arg` variant is the discriminator, and each arm is one
 # `O.Arg` -> ONE `KUArg`.
 #
 # `KAParam`'s `bytes` IS `numel * itemsize`, WHICH IS UPSTREAM'S OWN SPELLING
@@ -206,23 +206,23 @@ def kuconv.arg(+ar: O.Arena, +fx: F.Folded, a: U32, nm: U32, dt: S.Dt) -> C.KUAr
   kuconv.arg.of(nm, dt, O.Arena.arg(ar, a))
 
 # ===========================================================================
-# THE COMPLETION PASS -- AND WHY IT IS HERE.
+# the completion pass -- and why it is here.
 #
-# THE PORT's OWN FOLD DOES NOT SETTLE ON A PROGRAM WITH A SYMBOLIC SHRINK
+# the port's own FOLD does not settle on a program with a symbolic shrink
 # OFFSET: `fold.bend:1704 symbol=sym_dim.of`'s `sym_dim` REFUSES EVERY `Arg` THAT IS NOT A
 # CONST, A PARAM OR A SPECIAL, WHERE UPSTREAM's `as_shape` ANSWERS
 # `(ssimplify(self),)` FOR AN EXPRESSION (`ops.py:783-786`).  A FOLD THAT DOES
-# NOT SETTLE ANSWERS `void` FOR EVERY NODE DOWNSTREAM OF THE REFUSAL, AND
-# EVERY NODE DOWNSTREAM OF A `SHRINK` IS A NODE THE RENDERER READS.
+# not settle answers `void` for every node downstream of the refusal, and
+# every node downstream of a `SHRINK` is a node the renderer reads.
 #
-# SO THE COMPLETION PASS RE-ANSWERS, FOR EVERY NODE WHOSE FOLD ANSWER WAS
-# VOID **AND** WHOSE OP IS NOT VOID BY NATURE (A STORE, AN END AND A SINK ARE
-# VOID AND MUST STAY VOID), THE `dtype`, THE `shape`, THE `numel` AND THE
+# so the completion pass re-answers, for every node whose FOLD answer was
+# void and whose op is not void by nature (a STORE, an end and a sink are
+# void and must stay void), the `dtype`, the `shape`, the `numel` and the
 # `addr`.
 #
-# THE RULES ARE UPSTREAM's OWN, SPELLED OVER THE PORT's OWN `KU` LIST, AND THE
-# SRCS ARE READ FROM THE **ALREADY COMPLETED** LIST -- WHICH IS AT LOWER
-# POSITIONS, BECAUSE THE LIST IS POST-ORDER.
+# the rules are upstream's own, spelled over the port's own `KU` list, and the
+# srcs are read from the already completed list -- which is at lower
+# positions, because the list is post-order.
 #
 #   ops.py:136-138  INDEX          : src[0].dtype
 #   ops.py:141-142  LOAD/AFTER/END : src[0].dtype
@@ -233,20 +233,20 @@ def kuconv.arg(+ar: O.Arena, +fx: F.Folded, a: U32, nm: U32, dt: S.Dt) -> C.KUAr
 #   ops.py:409      SHRINK         : tuple(sz for _, sz in self.marg)
 #
 # `promo_dtype` (`ops.py:111-113`) IS `dts[0] if all_same(dts) else
-# least_upper_dtype(*dts)`, AND THE **LEAST UPPER** OF TWO DTYPES THAT DIFFER
-# IS NOT SPELLED HERE: THE COMPLETION ANSWERS THE FIRST SRC's DTYPE WHEN ALL
-# THE SRCS AGREE AND **THE FIRST SRC's DTYPE** OTHERWISE, WHICH IS THE ANSWER
-# FOR EVERY NODE OF THE FIVE MEASURED KERNELS (THEIR SRCS AGREE) AND IS NAMED
+# least_upper_dtype(*dts)`, and the least upper of two dtypes that differ
+# is not spelled here: the completion answers the first SRC's dtype when all
+# the srcs agree and the first SRC's dtype otherwise, which is the answer
+# for every node of the five measured kernels (their srcs agree) and is named
 # AS A LIMIT FOR THE OTHERS.
 # ===========================================================================
 
-# THE COMPLETED SRC AT A POSITION.  `done` IS IN THE SAME ORDER AS THE `KU`
+# the completed SRC at a position.  `done` is in the same order as the `KU`
 # LIST, SO POSITION `p` IS POSITION `p`.
 def ku_c.src(+done: List<&2, C.KU>, p: U32) -> Maybe<&2, C.KU>:
   List.get(&2, C.KU, done, U32.to_nat(p))
 
-# EVERY READER BELOW IS A `.go` PAIR, BECAUSE A `match` MAY NOT SCRUTINIZE A
-# COMPUTED VALUE AND MAY NOT SCRUTINIZE A LOCAL BINDER (`cstyle.bend`'s OWN
+# every reader below is a `.go` pair, because a `match` may not scrutinize a
+# computed value and may not scrutinize a local binder (`cstyle.bend`'s own
 # HOUSE STYLE, `ku_op_at.go` AND `ku_ptr.go`).
 def ku_c.dt0.go(m: Maybe<&2, C.KU>, +k: C.KU) -> S.Dt:
   match m:
@@ -272,15 +272,15 @@ def ku_c.ad0.go(m: Maybe<&2, C.KU>, +k: C.KU) -> S.Addr:
 def ku_c.ad0(+done: List<&2, C.KU>, +k: C.KU) -> S.Addr:
   ku_c.ad0.go(ku_c.src(done, C.KU.src0(k)), k)
 
-# THE SRC's SHAPE WITH ITS FIRST DIMENSION DROPPED -- `ops.py:343-346`'s
+# the SRC's shape with its first dimension dropped -- `ops.py:343-346`'s
 # `tuple(shp) + self.src[0].shape[len(self.src[1:]):]`, WITH THE INDEX
-# EXPRS' OWN SHAPES BEING EMPTY IN EVERY MEASURED KERNEL.
+# exprs' own shapes being empty in every measured kernel.
 def ku_c.drop1(+xs: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{}: Nil{}
     case _ <> t: t
 
-# THE CONSTANT VALUE A NODE CARRIES, FOLLOWING A CAST TO ITS OWN SRC -- THE
+# the constant value a node carries, following a CAST to its own SRC -- the
 # PORT's SPELLING OF UPSTREAM's `ssimplify` (`ops.py:783-786`'s `as_shape`).
 def ku_c.cval.src(m: Maybe<&2, C.KU>) -> Maybe<&1, H.I64>:
   match m:
@@ -295,8 +295,8 @@ def ku_c.cval.go(m: Maybe<&1, H.I64>, m2: Maybe<&2, C.KU>) -> Maybe<&1, H.I64>:
 def ku_c.cval(+done: List<&2, C.KU>, +k: C.KU) -> Maybe<&1, H.I64>:
   ku_c.cval.go(C.KUArg.const_int(C.KU.arg(k)), ku_c.src(done, C.KU.src0(k)))
 
-# THE PROMO OF THE SRCS' DTYPES: THE FIRST WHEN THEY ALL AGREE, THE FIRST
-# REGARDLESS OTHERWISE (THE NAMED LIMIT ABOVE).
+# the promo of the srcs' dtypes: the first when they all agree, the first
+# regardless otherwise (the named limit above).
 def ku_c.promo.step(m: Maybe<&2, C.KU>, +want: S.Dt, +acc: S.Dt) -> S.Dt:
   match m:
     case Some{+s}: Bool.pick(S.Dt, O.eq_dt(C.KU.dtype(s), want), acc, C.KU.dtype(s))
@@ -320,7 +320,7 @@ def ku_c.promo2.go(m: Maybe<&2, C.KU>, +done: List<&2, C.KU>, +k: C.KU) -> S.Dt:
 def ku_c.promo2(+done: List<&2, C.KU>, +k: C.KU) -> S.Dt:
   ku_c.promo2.go(ku_c.src(done, C.KU.src1(k)), done, k)
 
-# THE VOID-BY-NATURE OPS, AND THE TEST FOR "THE FOLD REFUSED".
+# the void-by-nature ops, and the test for "the FOLD refused".
 def ku_c.void_op(+op: O.Op) -> Bool:
   Bool.or(Bool.or(O.eq_op(op, O.OpsSTORE{}), O.eq_op(op, O.OpsEND{})),
     Bool.or(O.eq_op(op, O.OpsSINK{}), O.eq_op(op, O.OpsNOOP{})))
@@ -344,8 +344,8 @@ def ku_c.size.go(m: Maybe<&2, C.KU>, +done: List<&2, C.KU>) -> List<&2, U32>:
 def ku_c.size(+done: List<&2, C.KU>, +k: C.KU) -> List<&2, U32>:
   ku_c.size.go(ku_c.src(done, C.KU.src2(k)), done)
 
-# ONE COMPLETED NODE.  THE OP-SPECIFIC RULES, IN UPSTREAM's OWN ORDER.  EACH
-# OF THE THREE IS A `.go` DEF, BECAUSE A `match` HEADS A DEF BODY AND IS NOT A
+# one completed node.  the op-specific rules, in upstream's own order.  each
+# of the three is a `.go` DEF, because a `match` heads a DEF body and is not a
 # TERM.
 def ku_c.dt.go(op: O.Op, +done: List<&2, C.KU>, k: C.KU) -> S.Dt:
   match op:
@@ -391,12 +391,12 @@ def ku_c.fill.of(+done: List<&2, C.KU>, +op: O.Op, +k: C.KU) -> C.KU:
 def ku_c.fill(+done: List<&2, C.KU>, +k: C.KU) -> C.KU:
   Bool.pick(C.KU, ku_c.refused(C.KU.op(k), k), ku_c.fill.of(done, C.KU.op(k), k), k)
 
-# THE PASS.  `done` IS THE COMPLETED LIST, IN THE SAME ORDER AS THE INPUT, SO
+# the pass.  `done` is the completed list, in the same order as the input, so
 # POSITION `p` IS POSITION `p` IN BOTH.
 #
-# THE ARGUMENT ORDER IS (SHRINKING, CHANGING), WHICH IS `linearizer.bend`'s OWN
-# `lt_deg.go(+ar, rest, +acc)` SHAPE WITH THE UNCHANGED ARGUMENT DROPPED: THE
-# COMPILER READS THE ARGUMENTS LEFT TO RIGHT AND EACH IS PASSED UNCHANGED
+# the argument order is (shrinking, changing), which is `linearizer.bend`'s own
+# `lt_deg.go(+ar, rest, +acc)` shape with the unchanged argument dropped: the
+# compiler reads the arguments left to right and each is passed unchanged
 # UNTIL ONE SHRINKS.
 def ku_c.go(+rest: List<&2, C.KU>, +done: List<&2, C.KU>) -> List<&2, C.KU>:
   match rest:
@@ -406,7 +406,7 @@ def ku_c.go(+rest: List<&2, C.KU>, +done: List<&2, C.KU>) -> List<&2, C.KU>:
       ku_c.go(t, List.append(&2, C.KU, done, [k]))
 
 # ===========================================================================
-# ONE NODE.  THE SEVEN FIELDS, IN `KU`'s OWN ORDER.
+# one node.  the seven fields, in `KU`'s own order.
 def kuconv.ku(+fx: F.Folded, +ix: List<&2, U32>, +a: U32) -> C.KU:
   +ar = F.Folded.ar(fx)
   +op = O.Arena.op(ar, a)
@@ -419,8 +419,8 @@ def kuconv.ku(+fx: F.Folded, +ix: List<&2, U32>, +a: U32) -> C.KU:
   C.KU{op, dt, ad, nm, sh, ag, ss}
 
 # ===========================================================================
-# THE CONVERTER.  AN ARENA (THROUGH ITS FOLD) AND A LIST OF ARENA INDICES IN
-# POST-ORDER, AND A `List<&2, KU>` IN THE SAME ORDER, WITH EVERY `srcs`
+# the converter.  an arena (through its FOLD) and a list of arena indices in
+# post-order, and a `List<&2, KU>` in the same order, with every `srcs`
 # RE-INDEXED TO A POSITION.
 def kuconv.convert.go(+fx: F.Folded, +ix: List<&2, U32>, xs: List<&2, U32>,
                        +acc: List<&2, C.KU>) -> List<&2, C.KU>:

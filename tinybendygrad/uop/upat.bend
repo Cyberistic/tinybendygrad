@@ -9,13 +9,13 @@
 #     UPat --_get_clause--> a predicate tree --do_process_and--> normalised
 #         --pm_renderer--> a string tree     --_final_render--> Python source
 #
-# # **** UPat compiled ****
+# #  UPat compiled 
 # # This file builds an IR of match predicates and compiles them to Python source.
 # # Ops used: CUSTOM (format-string predicate over operands), CUSTOMI (inline string fragment),
 # #           STORE (bind a matched UOp to a name), PYLITERAL (Python literal for CUSTOM operands),
 # #           AND/OR (clause combininers).
 #
-# THE PREDICATE TREE IS A TREE, NOT AN ARENA. Python builds the IR out of
+# the predicate tree is a tree, not an arena. Python builds the ir out of
 # `UOp(...)`, so it lands in the same `ucache` as the graph and two equal
 # subtrees are ONE object -- which is what `dedup` and the duplicate-store test
 # in `do_process_and` rely on, and what makes `wrap` spend one `a{n}` per
@@ -201,7 +201,7 @@ def marker() -> C:
 # `32 * len(pat.upats)`: the header's bound. A BOUND, not a count, and every
 # `case 0n:` is `marker()`, so too small a fuel is a missed compile.
 #
-# THE CONSTANT IS 32 AND NOT 8 BECAUSE `proc_fix` IS A WAITLIST, NOT A DEPTH.
+# the constant is 32 and not 8 because `proc_fix` is a waitlist, not a depth.
 # `unified_rewrite` resolves a node's srcs before the node runs, so a round
 # promotes ONE more level of the whole tree and a store that moves into a branch
 # re-triggers everything above it. Measured on the shape that needs the most --
@@ -232,7 +232,7 @@ def head1c(gs: List<&2, C>) -> C:
 # Python gets it from `ucache` (two equal nodes are one object and `UOp.__eq__`
 # is identity); here it is spelled out.
 #
-# THE DEDUP KEY IS THE `arg`, AND THE `arg` OF A MULTI-ELEMENT op/dtype IS A
+# the dedup key is the `arg`, and the `arg` of a multi-element op/dtype is a
 # `frozenset` -- upat.py:25 and 36 both build `UOp(Ops.PYLITERAL,
 # arg=frozenset(...))`. So the equality is SET equality and must be spelled as
 # such. Three facts, each measured, and they are why:
@@ -1541,7 +1541,7 @@ def proc.node(+op: O.Op, +lit: Lit, b: Pg, a: Pg) -> Pg:
         case True{}: Pg{List.append(&2, C, [C{op, lit, cs}], Pg.cs(a)), True{}}
         case False{}: proc.step(op, lit, cs, a)
 
-# THE LIST'S `ch` IS THE `or` OVER EVERY ELEMENT, and that is the whole point:
+# the list's `ch` is the `or` over every element, and that is the whole point:
 # the head's bit alone is the FIRST child's, so a parent reading it decides on
 # one child and runs while another is still moving.
 
@@ -1798,7 +1798,7 @@ def pat_share() -> O.PatFound:
   m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
   O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, O.STuple{[0, 0]}, None{}, None{}, False{}, None{}, False{})
 
-# THE SAME LITERAL SPELLED IN A DIFFERENT ORDER --
+# the same literal spelled in a different order --
 # `UPat((Ops.MUL, Ops.ADD), dtype=(dtypes.i32, dtypes.f16),
 # src=(UPat((Ops.ADD, Ops.MUL), dtype=(dtypes.f16, dtypes.i32)),))`.
 # BOTH multi-element arms are one node per axis, so both print the same
@@ -1898,7 +1898,7 @@ def want_set_ord() -> String:
     "  if (uop.op in a0 and len(uop.src) == 1 and uop.dtype in a1 and uop.src[0].op in a0 and uop.src[0].dtype in a1) and (_ret:=_fxn(ctx=ctx)) is not None: return _ret",
     "  return None"
   ], "\n")
-# A BIND ONE LEVEL ABOVE A FORK, AND A BIND ABOVE THAT. This is the row that
+# a bind one level above a fork, and a bind above that. This is the row that
 # pins `proc`'s WAITLIST, and it is the shape `upatfuzz` reaches at seed 40
 # (`--max-depth 4`, 5 and 6) and seed 39 (`--max-depth 8`).
 #
@@ -2001,7 +2001,7 @@ def show(+f: O.PatFound, has_ctx: Bool) -> IO(Unit):
 # line. No new logic: everything below is the case FORMAT's reader, and the
 # only call into the port is `upat_compile`.
 #
-# THE CASE IS A STRING AND BOTH SIDES READ IT. A case is one line, the `ctx`
+# the case is a string and both sides read it. a case is one line, the `ctx`
 # flag, and a `|`-separated list of nodes in POST-ORDER -- a node's `src`
 # indices always name nodes already listed. That is what makes the fold below
 # a fold instead of a recursive parser, and it is what lets the fuzzer build
@@ -2156,7 +2156,7 @@ def drv.bit.of(s: String) -> Bool:
 # construction API the gate's own fixtures use, so the driver adds no shape a
 # fixture could not have written.
 #
-# THE INPUT'S FIELD 4 IS THE TAG, AND IT IS ACCEPTED AND IGNORED. The driver's
+# the input's field 4 is the tag, and it is accepted and ignored. The driver's
 # input format is eight `,`-separated fields -- 0 op, 1 name, 2 arg, 3 dtype,
 # 4 TAG, 5 src, 6 allow_any_len, 7 is_any -- and field 4 is STILL THERE so the
 # POSITIONS of 5, 6 and 7 do not move and the fuzzer's format is unchanged.
@@ -2244,7 +2244,7 @@ def gate() -> IO(Unit):
     r : Unit <- row("deep", code_is(pat_deep(), True{}, want_deep()))
     show(pat_add(), True{})
 
-# NO ARGUMENT IS THE GATE, ONE ARGUMENT IS THE DRIVER. `sz.bend`'s `main` reads
+# no argument is the gate, one argument is the driver. `sz.bend`'s `main` reads
 # its argument the same way; the dispatch is on the shape of the argument list,
 # so a missing case file cannot be mistaken for a case. The `match` heads the
 # def because a match cannot sit inside a `do` block.
@@ -2313,7 +2313,7 @@ def main() -> IO(Unit):
 #                                                             any_rep dup_store
 #                                                             rep_src_dyn
 #
-# M18 IS THE ONE THIS FILE LOST A ROW OVER, and the pair of rows it took is the
+# M18 is the one this file lost a row over, and the pair of rows it took is the
 # interesting part. The repeat arm lifts `st.src[1].substitute({it: base.index(0)})`
 # and `INDEX(CUSTOMI, CONST)` is TWO elements, so rebuilding the list tail-first
 # SWAPS them; `render`'s `idx` rule then sees a CONST first, keeps the INDEX,
