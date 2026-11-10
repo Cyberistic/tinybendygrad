@@ -80,26 +80,43 @@ backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
                                         **STEPS 2 AND 3 (`grad_set`, the `bw` graph) ARE
                                         NOT DONE AND ARE NOT THIS UNIT.**
 proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
-turn-cost       [###.......] 3/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangRenderer`'s
-                                        0.12-2.54 ms. **MEASURED ON THE 782-UOP WIRE, WITH
-                                        CLOCKS **INSIDE** THE DAEMON** (`PARITY.md` §136):
-                                        wall **3.97 ms** = read 0.73 (MOSTLY THE CALLER's WAIT)
-                                        + **decode 0.99** + **render 2.26** + ~0.99 (THE CALLER's
-                                        ROUND TRIP), **THE PORT's OWN SHARE IS 82%**.
-                                        **§137 CUT THE **RENDER** BY 13%** (THE OP EQUALITY:
-                                        A 75-ARM CHAIN BECAME ONE COMPARISON PER LITERAL), AND
-                                        THE **WHOLE TURN** IS **0.9432**. `same C: True`.
-                                        **THE NEXT PORT-SIDE TERM IS THE **DECODE** (0.99 ms),
-                                        AND THEN THE RENDER's REMAINING LEAVES (`ku_text` 1.157,
-                                        `_render_decl` 0.523, `rd_base_*` 0.223).
-                                        **THE INSTRUMENTS ARE IN `.agents/slop/cpuseam/builds/`
-                                        (`drive.py`, `instrument.py`, `abrender.py`, `cpuab2.py`),
-                                        AND A BUILD IS **A SECOND SOURCE OF TRUTH** (§136), SO
-                                        THE MEASUREMENT **BUILDS INSIDE** IT.
-                                        **AND THE CORPUS CERTIFICATE IS **GREEN** ON
-                                        `64bc53f29` (`substrate-start == substrate-end`,
-                                        38 graphs / 31 agree / 7 RECORDED exceptions,
-                                        repro 339 of 339, `corpuswitness-gate` PASS).
+turn-cost       [####....] 4/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangRenderer`'s
+                                         0.12-2.54 ms. **MEASURED ON THE 782-UOP WIRE, WITH
+                                         CLOCKS **INSIDE** THE DAEMON** (`PARITY.md` §136):
+                                         wall **3.97 ms** = read 0.73 (MOSTLY THE CALLER's WAIT)
+                                         + **decode 0.99** + **render 2.26** + ~0.99 (THE CALLER's
+                                         ROUND TRIP), **THE PORT's OWN SHARE IS 82%**.
+                                         **§137 CUT THE **RENDER** BY 13%** (THE OP EQUALITY:
+                                         A 75-ARM CHAIN BECAME ONE COMPARISON PER LITERAL), AND
+                                         THE **WHOLE TURN** IS **0.9432**. `same C: True`.
+                                         **§138 CUT THE **DECODE** BY 15%** (THE WIRE WAS SPLIT
+                                         **TWICE**: ONE EFFECT, ONE SPLIT, TWO LISTS IN A `Data`
+                                         TYPE). **THE DECODE's SHAPE: 1.5324 ms -> 1.0858 ms**,
+                                         **THE SPLIT 0.2138 -> 0.0906 ms**, AND THE PAIRED
+                                         VERDICT (THE RATIO OF THE TWO MINIMA) IS **0.8526**,
+                                         WITH **122/153** PAIRED TURNS FASTER AND `same C: True`.
+                                         **⇒⇒⇒ AND THE SUBSTRATE **MOVED** SINCE §137 (ANOTHER
+                                         UNIT LANDED A REFACTOR), SO §138's NUMBERS ARE **RE-
+                                         MEASURED**, AND THE MEASUREMENTS ARE TAKEN IN **A
+                                         DEDICATED WORKTREE** (THE MAIN TREE CARRIES OTHER
+                                         UNITS' IN-FLIGHT EDITS). **⇒⇒⇒ AND `bin/bend` WAS
+                                         **BROKEN** AND IS FIXED: THE `references/` CLONE's
+                                         `bend2/main.ts` HAD BEEN OVERWRITTEN WITH THE SHIM
+                                         ITSELF, AND **THE COMPILER IS NOW BEND 2.0.40**.
+                                         **THE NEXT PORT-SIDE TERMS ARE THE **ROW WALK**
+                                         (0.656 ms, 43%) **AND THE RENDER's REMAINING LEAVES**
+                                         (`ku_text` 1.157, `_render_decl` 0.523, `rd_base_*` 0.223).
+                                         **THE INSTRUMENTS ARE IN `.agents/slop/cpuseam/builds/`
+                                         (`paired2.py`, `verdict.py`, `noisefloor2.py`,
+                                         `decode-shape.py`, `drive.py`, `instrument.py`,
+                                         `abrender.py`, `cpuab2.py`), AND A BUILD IS **A SECOND
+                                         SOURCE OF TRUTH** (§136), SO THE MEASUREMENT **BUILDS
+                                         INSIDE** IT.
+                                         **AND THE CORPUS CERTIFICATE IS **GREEN** ON
+                                         **`ca79ddb54`** (`substrate-start == substrate-end ==
+                                         live`, 38 graphs / 31 agree / 7 RECORDED exceptions,
+                                         repro 339 of 339, `corpuswitness-gate` PASS) **AND ON
+                                         `64bc53f29`** (§137).
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
                                         **324 bindings -> 308 laws -> 305 LINKED ->

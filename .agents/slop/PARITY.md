@@ -6659,289 +6659,139 @@ MEASURED, THE RENDER's **CPU** RATIO READ **1.1746** (A LOSS) WHERE THE **WALL**
 WIN) ON THE **SAME** TURNS -- **
 ****
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### 138 THE DECODER SPLITS THE WIRE **ONCE**, AND THE DECODE IS **15% FASTER**
+
+**THE SUBSTRATE MOVED SINCE §137 -- ANOTHER UNIT LANDED A LARGE REFACTOR -- SO EVERY NUMBER IN
+THIS SECTION IS **RE-MEASURED ON THE CURRENT SUBSTRATE**, AND THE WORK IS DONE IN **A DEDICATED
+WORKTREE** (`git worktree add ... --detach`), BECAUSE THE MAIN TREE CARRIES OTHER UNITS'
+IN-FLIGHT EDITS (`git status --porcelain -- 'tinybendygrad/**/*.bend'` READS `M
+tinybendygrad/runtime/ops_disk.bend` AND `M tinybendygrad/uop/fold.bend`).
+
+**AND THE TOOLCHAIN WAS **BROKEN** AND IS FIXED FIRST.** MEASURED: **`bin/bend` READ A SHELL
+SCRIPT AS JAVASCRIPT.** THE SHIM EXECS `bun "$_d/../references/bend/bend2/main.ts"`, AND **THE
+`references/` CLONE's `bend2/main.ts` HAD BEEN OVERWRITTEN WITH THE SHIM ITSELF** (2,097 B --
+THE SHIM's EXACT SIZE), SO `bin/bend` ANSWERED `Syntax Error`. **RESTORED** WITH
+`git -C references/bend checkout -- bend2/main.ts`, AND **THE COMPILER IS NOW BEND 2.0.40**
+(`git -C references/bend describe --tags` -> `v2.0.40`; `git log -1` -> `624dd9f4 Bend 2.0.40`).
+**AND THE LESSON IS THE TREE's OWN, ONE LEVEL UP:** `AGENTS.md` NAMES THE SHIM AND ITS
+TARGET **BY THE SAME NAME**, AND **A SHIM AND ITS TARGET MUST NOT SHARE A FILE.**
+
+**THE NOISE FLOOR, RE-MEASURED ON **THIS** MACHINE** (60 PAIRS, IDENTICAL BYTES, LOAD AVERAGE
+6.81). **THE 0.9957 IS A READING OF A **DIFFERENT** MACHINE STATE, AND THE TREE's OWN TEXT SAYS THE
+**STATISTIC** MATTERS MORE THAN THE NUMBER** (`verdict.py`: "**THE PORT's OWN COST IS **THE FLOOR OF
+ITS OWN TIME**"):
+
+| | ratio of the minima | median of the paired ratios |
+|---|---|---|
+| RENDER | 0.9884 – 1.0149 | 0.9926 |
+| DECODE | 0.9888 – 1.0149 | 0.9874 |
+
+**SO THE VERDICT IS **THE RATIO OF THE TWO MINIMA**, AND THE **~0.97** KEEPER LINE SITS **AT
+THE EDGE** OF THAT NOISE, WHICH IS **WHY EVERY CANDIDATE IS MEASURED TWICE.**
+
+**THE BASELINE, RE-MEASURED** (103 PAIRED TURNS, THE BASELINE AGAINST ITSELF): **RENDER min 0.978
+· p25 1.099 · median 1.178 ms**; **DECODE min 0.622 · p25 0.672 · median 0.706 ms**.
+
+**THE DECODE's SHAPE, ON THE CURRENT SUBSTRATE** (MEASURED, `builds/decode-shape.py`, 60 TURNS,
+**CLOCKS **INSIDE** THE DAEMON**):
+
+| part | ms a turn | share |
+|---|---|---|
+| **decode** | **1.5324** | 100% |
+| rows | 0.6556 | 43% |
+| ku_row | 0.5306 | 35% |
+| numbers | 0.4906 | 32% |
+| arg_of | 0.2666 | 17% |
+| **split** | **0.2138** | **14%** |
+| append | 0.0412 | 3% |
+| strings | 0.0160 | 1% |
+
+**AND THE `numbers` READING IS **NOT** WHAT IT LOOKS LIKE.** MEASURED
+(`builds/probe-effsplit.py`, 59 TURNS, **THE EFFECT's OWN JS BODY CLOCKED**): THE `wire_numbers`
+JS BODY ITSELF COSTS **0.207 ms** A TURN, AND **THE PURE JS PROBE READS 0.187 ms FOR THE SAME
+FUNCTION**. **SO THE JS HALF IS NOT THE PROBLEM, AND THE `numbers` CLOCK's 0.49 ms
+**INCLUDES THE ROW WALK** -- BECAUSE THE EFFECT's CONTINUATION IS `kus_io_c3` **AND THE CONTINUATION
+RUNS THE WHOLE `kus_rows_go`.** **SO THE TWO REAL TARGETS ARE **THE SPLIT (0.214 ms, 14%)** AND
+**THE ROW WALK (0.656 ms, 43%)**.
+
+**THE SPLIT, QUANTIFIED** (MEASURED, PURE JS, `builds/probe-numbers.js`): `split(" ")` ALONE
+**0.063 ms**; THE 600 `~`-SPLITS + `map(Number)` **0.136 ms**; THE WHOLE `wire_numbers`
+**0.187 ms**. **SO **THE SECOND SPLIT IS 0.063 ms A TURN**, AND IT IS **PURE DUPLICATE
+WORK**: THE SAME 18 KB STRING, SPLIT TWICE, FOR THE SAME ROWS. **AND THE WIRE IS 18,301 BYTES /
+7,038 TOKENS / 782 ROWS.**
+
+**THE OBSTACLE WAS BEND's MONOMORPHIC LISTS** -- A ROW CANNOT HOLD BOTH STRINGS AND NUMBERS,
+WHICH IS WHY THE PORT HAD **TWO** EFFECTS AND WALKS THEM **IN STEP**. **AND THE ANSWER IS
+**A `Data` TYPE WITH TWO LIST FIELDS**, AND **THE RUNTIME ACCEPTS IT.** MEASURED
+(`builds/probe/both*.bend`):
+
+```
+type Both is Data:
+  Both{ss: List<&2, List<&2, String>>, ns: List<&2, List<&2, U32>>}
+```
+
+**THE COMPILE SUCCEEDS**, THE **ROW COUNT IS RIGHT** (27 TOKENS -> 3 ROWS), AND **THE NUMBERS
+CROSS AND ARE READABLE AS `U32`** (18 TOKENS WITH OP INDICES 10 AND 11 -> **21**). **AND THE
+FIELD READ IS A `match`, NOT DOT-ACCESS** -- `b.ss` IS **"NOT A DEFINED NAME"** (MEASURED) -- AND
+THE `match` CANNOT SCRUTINIZE A BOUND BINDER ("**`b` can't be matched in this position**"), **SO
+THE READER IS **ITS OWN `def` WITH A BARE PARAMETER** (`wire_rows(b: Wire.Both)`), WHICH IS THE
+TREE's OWN RULE.** AND THE JS SIDE MUST RETURN **THE `Data` TAG** -- `{ $: "Both", ss, ns }` -- THE
+SAME SHAPE `sz.js` RETURNS.
+
+**AND THE TWO EFFECTS THE CHANGE REPLACED ARE **GONE**, BECAUSE **THEY HAD NO OTHER
+CALLER** -- THE TOKEN PATH IS `ku_ws`, WHICH READS A TOKEN LIST AND NEVER TOUCHED THEM -- AND **A
+DEF WITH NO CALLER IS DEAD CODE.** (AND §138's FIRST DRAFT CLAIMED THEY "STAY, BECAUSE THE TOKEN
+PATH MUST NOT DEPEND ON THE EFFECT" -- **WHICH WAS FALSE, AND THE GREP THAT FALSIFIED IT IS THE
+ONE THAT COMES WITH THE COMMIT.**)
+
+**THE MEASUREMENT** (THE PAIRED, ALTERNATING INSTRUMENT, `builds/paired2.py`, 153 PAIRED TURNS,
+**THE VERDICT IS THE RATIO OF THE TWO MINIMA**):
+
+```
+  DECODE   A min 0.5239  p25 0.6469  median 0.6989 ms
+           B min 0.4467  p25 0.5713  median 0.6135 ms
+           RATIO OF THE MINIMA 0.8526   MEDIAN OF THE PAIRED RATIOS 0.8754   122/153 FASTER
+  RENDER   A min 0.9864  B min 0.9825
+           RATIO OF THE MINIMA 0.9961   MEDIAN OF THE PAIRED RATIOS 0.9882
+
+  same C: True (BYTE-IDENTICAL OUTPUT)
+```
+
+**AND THE RENDER IS UNCHANGED, AND THAT IS **MEASURED**, NOT ASSUMED**: THE COMPILED RENDER
+FUNCTION IS **BYTE-IDENTICAL** BETWEEN THE TWO BUILDS (MEASURED, THE FUNCTION BODIES COMPARED
+CHARACTER BY CHARACTER -- `$_________tinybendygrad_renderer_cstyle_render`, 445 BYTES, IDENTICAL;
+AND `ku_row_of`, `arg_of`, `ku_row_n`, `ku_row_s` TOO). **SO THE RENDER'S RATIO IS **THE
+NOISE** AND NOT A REGRESSION, AND THE DECODE'S 0.8526 IS **FAR OUTSIDE** THE NOISE.**
+
+**THE DECODE's SHAPE, AFTER** (MEASURED, SAME INSTRUMENT, 60 TURNS): **1.5324 ms -> 1.0858 ms**,
+AND THE SPLIT **0.2138 ms -> 0.0906 ms**.
+
+**THE CORPUS CERTIFICATE** (TAKEN IN THE CLEAN WORKTREE, ON THE COMMIT **AND NOT** ON A MOVING
+TREE):
+
+```
+graphs=38  graphs-answered=38  graphs-agree=31  graphs-disagree=7  byte-identical=31
+graphs-refused=0  not-comparable=0  expect-moved=0
+stable-pairs=5 of 5  stable-failed=0 of 5  stable-differ=0 of 5
+plants-disagree=8 of 8  cross=1 of 1  conflations=4 of 4  controls=5 of 5
+selfcheck=# SELFCHECK: OK   oracle-selfcheck=# ORACLE SELFCHECK: OK   census-rc=rc=0
+substrate-start=502eed69960908c1d8dd2eb4273171be82ae300c7ae368922246157c2a65ca78
+substrate-end  =502eed69960908c1d8dd2eb4273171be82ae300c7ae368922246157c2a65ca78
+substrate-head =ca79ddb54bdc8c3c813b00f84dea9b2770410b6e
+```
+
+**AND `substrate-start == substrate-end == live` AND `git status --porcelain -- tinybendygrad/` WAS
+EMPTY AT RUN START.** **AND THE SEVEN DISAGREEMENTS ARE **THE SEVEN RECORDED PERMUTE EXCEPTIONS**
+(`differ.WANT` == `{matmul, reduce, commute, binblob, flip, bw, gral}`) -- **NO NEW ONE.** **AND
+`differ.unhealthy()` -> `[]`, `differ.artefacts_ok()` -> `[]`, `differ.repro_bad()` -> `[]`.** **AND
+`repro`: `339 of 339 files identical across two clean runs`.** **AND `gates/corpuswitness-gate.py`
+-> `PASS -- the claim is ESTABLISHED`**, WITH **ALL SEVEN READINGS OK**: `control` · `verdict.current`
+(`CURRENT`) · `witness.fresh` (`FRESH`, `delta_ms=+96.499`) · `freshness.source` ·
+`witness.substrate` (`CURRENT`, `rows=3 of 3`) · `verdict.reported` (`reported=rc=0 derived=rc=0
+verdict=AGREE`) · `claim` (`verdict=REPRODUCIBLE`). **AND THE PROOF GATE: `bin/bend
+tinybendygrad/LAWS/PROOF-ALL.bend --check-only` -> `ALL PROOFS CHECK`, rc=0.**
+
+**AND THE COMMIT IS **BY PATH ONLY** (`git commit --only -F <msg> -- <path>`), TWO FILES, AND
+`git fsck --no-progress` NAMES **ONLY THE TWO PRE-EXISTING ORPHAN TREES** (`3a60f33f`,
+`d83cf685` -- THE ONES `AGENTS.md` ALREADY NAMES, AND NEITHER IS AN ANCESTOR OF HEAD).**
 
