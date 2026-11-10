@@ -364,6 +364,21 @@ def _lines(path):
     return [l for l in path.read_text().splitlines() if l.strip() != ""]
 
 
+def _row_name(line):
+    """The row's NAME -- the part before the first `=` -- or the whole line.
+
+    A lane row is `name=value`, and the name is what the two lanes are ALIGNED
+    on when `Gate(order="by_name")`. A line with no `=` sorts by ITSELF, which
+    puts it before every `name=value` line because `=` (0x3d) sorts after most
+    characters but the comparison here is on the WHOLE line for those, so the
+    two kinds are not strictly separated -- and that is fine, because a lane row
+    without a `=` is a MALFORMED row and the count check above already noticed
+    it.
+    """
+    i = line.find("=")
+    return line if i < 0 else line[:i]
+
+
 class Gate:
     """One gate: a bend driver, a CPython oracle, a row count, and its divergences.
 
@@ -382,6 +397,27 @@ class Gate:
               assertion of the absence here. MEASURED, not assumed; see the commit.
     pins      extra (lane, row_name) assertions -- that row is PRESENT in that lane -- for
               claims a diff cannot express. Its CONTENT, if it matters, goes in `diverges`.
+    order     "positional" (default) or "by_name". HOW THE TWO LANES ARE ALIGNED BEFORE
+              THE DIFF. "positional" compares the lanes LINE BY LINE, which is the
+              original behaviour and the right one when the two sides are expected to
+              emit in the same order -- a driver and an oracle that walk the SAME
+              fixture list in the same nesting order.
+              "by_name" sorts both lanes by ROW NAME before the diff, which is the
+              right one when the two sides GROUP their rows differently. MEASURED, on
+              `ops_nv`: the port groups its 543 compared rows by RULE (21 test
+              functions) and the oracle groups them by UPSTREAM SOURCE ORDER, so
+              the same 543 rows sit in two different sequences -- 540 of 543
+              POSITIONS differ while every VALUE agrees. A positional diff of that
+              is a wall of 540 "disagreements" that are really 0 disagreements seen
+              from the wrong axis, and a reader who sees 540 is right to distrust
+              the gate.
+              "by_name" COSTS A REAL CLAIM, and the cost is stated here so nobody
+              adopts it for free: a positional diff can see a row that MOVED, and a
+              by-name diff cannot -- the same set of names with the same values in a
+              different order is GREEN. So "by_name" is only sound for a gate whose
+              ORDER is not a claim. A gate whose order IS a claim -- the copy queues'
+              word order, `to_name`'s parts order -- must stay "positional", or must
+              assert the order separately.
     warm      "fatal" (default) or "report". THE SHELL'S TWO VERDICT SHAPES, because the two
               gates being ported did NOT agree on this and a port that picks one is a verdict
               change: `mixin-op-gate.sh:22` runs `--check-only` bare under `set -e`, so a COLD
@@ -397,7 +433,8 @@ class Gate:
     """
 
     def __init__(self, name, *, bend, oracle, rows, compared=None, diverges=None,
-                 pins=None, port_only=None, warm="fatal", device=NO_DEVICE):
+                 pins=None, port_only=None, warm="fatal", device=NO_DEVICE,
+                 order="positional"):
         self.name = name
         # A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF `run()`.
         # MEASURED 2026-10-06: `_clear()` sat in `run()`, and **5 of 17 exits are AFTER the lanes write** —
@@ -421,6 +458,13 @@ class Gate:
         self.port_only = list(port_only or [])
         self.pins = list(pins or [])
         self.warm_mode = warm
+        # THE ORDER MODE, AND IT IS VALIDATED AT CONSTRUCTION rather than at the
+        # diff. A typo here would otherwise be a silently-positional gate that
+        # LOOKS like a by-name one, and the failure would be a wall of
+        # "disagreements" that names the wrong cause.
+        if order not in ("positional", "by_name"):
+            raise ValueError(f"order must be 'positional' or 'by_name', not {order!r}")
+        self.order = order
         # THE DEVICE PRECONDITION IS STATE, NOT AN ARGUMENT THE LANES SEE. Kept beside
         # `warm` because it is the same kind of declaration: something about the RUN's
         # standing conditions, checked once in `run()` and never threaded into a lane.
@@ -732,6 +776,27 @@ class Gate:
                 s = self.dir / _staged(f"{tag}{LANE_CMP}")
                 s.write_text("\n".join(kept) + "\n")
                 subs[tag] = s
+
+            # THE ALIGNMENT, AND IT IS THE ORDER MODE'S WHOLE JOB. "positional" is
+            # the original behaviour and the diff below is untouched by it. "by_name"
+            # sorts each lane by ROW NAME first, which is what makes a driver that
+            # groups its rows by RULE comparable with an oracle that groups them by
+            # SOURCE ORDER.
+            #
+            # THE SORT IS BY THE NAME ONLY -- THE WHOLE `name=value` LINE IS KEPT
+            # INTACT, so the diff still compares VALUES and only the ALIGNMENT
+            # changes. And the sort is STABLE, so two rows with the SAME name keep
+            # their relative order, which is what makes a duplicate name visible as
+            # a diff rather than as a silently-resolved one.
+            #
+            # THE COST IS STATED IN THE CLASS DOCSTRING and it is REAL: a by-name
+            # diff cannot see a row that MOVED. So this is only sound for a gate
+            # whose ORDER is not a claim, and `ops-nv-gate.py` says which of its
+            # claims are order-bearing and asserts those separately.
+            if self.order == "by_name":
+                for tag in subs:
+                    ls = _lines(subs[tag])
+                    subs[tag].write_text("\n".join(sorted(ls, key=_row_name)) + "\n")
 
             base = _lines(subs["py"])
             for tag in ("bd", "bn"):

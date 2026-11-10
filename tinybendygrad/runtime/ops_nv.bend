@@ -3464,7 +3464,11 @@ def t_cache() -> IO(Unit):
     # a hit does not advance them and a miss does.
     row("nv_pc_id_0", pc.new_id(PC.of()))
     row("nv_pc_id_after_3", pc.new_id(a))
-    row("nv_pc_id_after_hit", pc.new_id(pc_one(a, K2())))
+    # THE FIRST SITE IS A HIT ON A CACHE THAT DOES NOT YET HOLD THE KEY, AND THE
+    # SECOND (BELOW) IS A HIT ON ONE THAT DOES. THEY ARE TWO FIXTURES AND THEY
+    # USED TO SHARE ONE NAME, WHICH IS HOW A VALUE CAN BE RIGHT AT ONE SITE AND
+    # WRONG AT THE OTHER WITH NOTHING SAYING WHICH IS WHICH.
+    row("nv_pc_id_after_miss_hit", pc.new_id(pc_one(a, K2())))
     # A HIT ADVANCES NOTHING. `UOp.unique_num` is a monotone counter over every
     # unique num the process mints, so its ABSOLUTE value is not the cache size
     # and this port numbers from 0 because nothing else here consumes it. The
@@ -3642,20 +3646,29 @@ def t_pool() -> IO(Unit):
     brow("nv_slm_early_1024_48428", dev.slm_early(1024, 0))
     brow("nv_slm_early_4096_64828", dev.slm_early(4096, 0))
     brow("nv_slm_early_1024_644214", dev.slm_early(1024, 0))
-    row("nv_slmtot_1_48428", dev.slm_bytes(196608, 2, 8))
-    i64row("nv_slmtot_1_48428_hi", H.i64_of_i32(dev.slm_bytes(196608, 2, 8)))
+    # THE SAME TOTAL, PRINTED THROUGH THE OTHER PRINTER. `hilo.str32` splits a
+    # `U32` with a saturating shift and `H.i64_of_i32` builds an `I64` and then
+    # splits THAT, so the two paths are independent and a defect in either shows
+    # up as ONE of the two rows moving while the other holds. THIS SITE USED TO
+    # PRINT `nv_slmtot_1_48428` AND `nv_slmtot_1_48428_hi` -- the names the
+    # `srow` SITE ABOVE already owns -- and the two are now distinguished by the
+    # PATH THAT PRODUCED THEM, which is the thing that actually differs.
+    row("nv_slmtot_1_48428_i64", dev.slm_bytes(196608, 2, 8))
+    i64row("nv_slmtot_1_48428_hi_i64", H.i64_of_i32(dev.slm_bytes(196608, 2, 8)))
     row("nv_bpt_32_48428", dev.bpt(32, 48, 4))
     row("nv_bpt_1024_48428", dev.bpt(1024, 48, 4))
     row("nv_bpt_4096_64828", dev.bpt(4096, 64, 8))
     row("nv_bpt_1024_644214", dev.bpt(1024, 64, 4))
-    row("nv_slmtot_0_48428", dev.slm_bytes(0, 2, 8))
-    row("nv_slmtot_32_48428", dev.slm_bytes(196608, 2, 8))
-    row("nv_slmtot_1024_48428", dev.slm_bytes(6291456, 2, 8))
-    row("nv_slmtot_4096_64828", dev.slm_bytes(67108864, 2, 8))
-    row("nv_slmtot_1024_644214", dev.slm_bytes(8388608, 2, 14))
-    # the two commands the raise submits
+    # THE TWO COMMANDS THE RAISE SUBMITS, AS ONE TRACE. THE ROW ABOVE
+    # (`nv_slm_cmd`) IS THE SAME TWO COMMANDS BUILT BY THE SAME CALL WITH THE
+    # SAME ARGUMENTS, so THIS SITE USED TO PRINT THE SAME NAME A SECOND TIME --
+    # and a NAME PRINTED TWICE IS A ROW THAT CANNOT BE ADDRESSED. THE CLAIM HERE
+    # IS THE ONE THE FIRST SITE CANNOT MAKE: that the trace is BUILT AND HELD IN
+    # A VARIABLE AND THE VARIABLE'S CONTENTS ARE THE TRACE, not a fresh
+    # construction that happens to agree. THAT IS A DIFFERENT QUESTION, so it
+    # gets a different name.
     +a2 : Tr <- IO.pure(Tr, dev.slm_cmd(196608, 0, 187, Tr.of()))
-    lrow("nv_slm_cmd", wstream(a2))
+    lrow("nv_slm_cmd_held", wstream(a2))
     # :449-451 `alloc`'s page size and the size it rounds to. `mmap.PAGESIZE` is
     # a HOST constant, so it is a parameter here and 16384 on this machine.
     row("nv_pagesize", HOST_PAGESIZE())
@@ -3852,13 +3865,22 @@ def t_tags() -> IO(Unit):
 # `GPFifo`'s field order IS its constructor order and `ifaces` is a FIRST-WINS
 # ladder, so both are name lists rather than counts -- a count of seven and a
 # count of three would pass with every name wrong.
+#
+# `nv_iface_count` AND `nv_encode_names` ARE NOT PRINTED HERE. `t_iface()`
+# ALREADY PRINTS BOTH, AND THIS FUNCTION USED TO PRINT THEM A SECOND TIME
+# UNDER THE SAME NAMES. MEASURED: 11 row names in this file were emitted TWICE,
+# and a NAME EMITTED TWICE IS A ROW THAT CANNOT BE ADDRESSED -- the reader
+# sees two values under one name and cannot tell which site produced which, so
+# a wrong one is not a wrong value but an unnameable one. The names are
+# different questions: `t_iface` asks WHICH interfaces and WHICH encode rules
+# exist, and it answers with the COUNT and the LIST; this function asks about
+# the OTHER two name tables, `GPFifo`'s field order and the interface ladder's
+# names, which are questions `t_iface` does not ask.
 def t_names() -> IO(Unit):
   do IO<Unit>:
     slrow("nv_iface_names", dev.iface_names())
     slrow("nv_gpfifo_fields", dev.gpfifo_fields())
     row("nv_gpfifo_n", dev.gpfifo_n())
-    row("nv_iface_count", dev.iface_count())
-    slrow("nv_encode_names", dev.encode_rules())
 
 def main() -> IO(Unit):
   do IO<Unit>:
