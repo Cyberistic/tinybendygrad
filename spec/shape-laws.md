@@ -105,5 +105,5 @@ tree.
 | file | what |
 | --- | --- |
 | `tinybendygrad/LAWS.bend` | the shape laws |
-| `tinybendygrad/PROOF.bend` | their proofs, with the mutation-test record |
+| `tinybendygrad/LAWS/PROOF.bend` | their proofs, with the mutation-test record |
 | `spec/tinyspec.tex` | the prose this replaces |

@@ -1815,11 +1815,11 @@ tinybendygrad	tinybendygrad/LAWS.bend	138	.agents/slop/notes/bend2-constraints.m
 tinybendygrad	tinybendygrad/LAWS.bend	154	.agents/slop/ind/dropn-measure.bend	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/LAWS.bend	331	.agents/TODO.md	ON-DISK/TRACKED	yes	no	code	.agents/TODO.md	yes	-
 tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	1	../LAWS.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/LAWS.bend	no	-
-tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	3	../PROOF.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/PROOF.bend	no	-
-tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	4	../PROOF2.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/PROOF2.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	3	./PROOF.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/PROOF.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	4	./PROOF2.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/PROOF2.bend	no	-
 tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	7	bendgrad/LAWS/PROOF-ALL.bend	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	14	../PROOF.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/PROOF.bend	no	-
-tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	15	../PROOF2.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/PROOF2.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	14	./PROOF.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/PROOF.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF-ALL.bend	15	./PROOF2.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/PROOF2.bend	no	-
 tinybendygrad	tinybendygrad/LAWS/alu.bend	21	./spec.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS/spec.bend	no	-
 tinybendygrad	tinybendygrad/LAWS/spec.bend	1	spec/tinyspec.tex	ON-DISK/TRACKED	yes	no	code	spec/tinyspec.tex	no	-
 tinybendygrad	tinybendygrad/LAWS/spec.bend	9	tinygrad/uop/ops.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/ops.py	no	-
@@ -1827,15 +1827,15 @@ tinybendygrad	tinybendygrad/LAWS/spec.bend	12	.agents/slop/notes/bend2-constrain
 tinybendygrad	tinybendygrad/LAWS/spec.bend	51	tinygrad/dtype.py	ON-DISK/TRACKED	yes	no	code	tinygrad/dtype.py	no	-
 tinybendygrad	tinybendygrad/LAWS/spec.bend	605	.agents/TODO.md	ON-DISK/TRACKED	yes	no	code	.agents/TODO.md	no	-
 tinybendygrad	tinybendygrad/LAWS/spec.bend	814	.agents/slop/ind/dropn-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-tinybendygrad	tinybendygrad/PROOF.bend	2	./LAWS.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS.bend	no	-
-tinybendygrad	tinybendygrad/PROOF.bend	3	./LAWS/spec.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS/spec.bend	no	-
-tinybendygrad	tinybendygrad/PROOF.bend	27	.agents/slop/notes/bend2-constraints.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/notes/bend2-constraints.md	no	-
-tinybendygrad	tinybendygrad/PROOF.bend	33	.agents/slop/plans/00-master-plan.md	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-tinybendygrad	tinybendygrad/PROOF.bend	39	spec/depth.md	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-tinybendygrad	tinybendygrad/PROOF.bend	44	spec/shape-laws.md	ON-DISK/TRACKED	yes	no	code	spec/shape-laws.md	no	-
-tinybendygrad	tinybendygrad/PROOF2.bend	5	LAWS/PROOF-ALL.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/LAWS/PROOF-ALL.bend	no	-
-tinybendygrad	tinybendygrad/PROOF2.bend	15	tinybendygrad/LAWS/PROOF-ALL.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/LAWS/PROOF-ALL.bend	no	-
-tinybendygrad	tinybendygrad/PROOF2.bend	20	./LAWS.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF.bend	2	../LAWS.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF.bend	3	./spec.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS/spec.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF.bend	27	.agents/slop/notes/bend2-constraints.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/notes/bend2-constraints.md	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF.bend	33	.agents/slop/plans/00-master-plan.md	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF.bend	39	spec/depth.md	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF.bend	44	spec/shape-laws.md	ON-DISK/TRACKED	yes	no	code	spec/shape-laws.md	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF2.bend	5	LAWS/PROOF-ALL.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/LAWS/PROOF-ALL.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF2.bend	15	tinybendygrad/LAWS/PROOF-ALL.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/LAWS/PROOF-ALL.bend	no	-
+tinybendygrad	tinybendygrad/LAWS/PROOF2.bend	20	../LAWS.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS.bend	no	-
 tinybendygrad	tinybendygrad/__init__.bend	1	tinybendygrad/__init__.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/__init__.bend	no	-
 tinybendygrad	tinybendygrad/__init__.bend	1	tinygrad/__init__.py	ON-DISK/TRACKED	yes	no	code	tinygrad/__init__.py	no	-
 tinybendygrad	tinybendygrad/__init__.bend	3	tinygrad/__init__.py	ON-DISK/TRACKED	yes	no	code	tinygrad/__init__.py	no	-

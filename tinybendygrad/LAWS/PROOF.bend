@@ -1,6 +1,6 @@
 import Base
-import ./LAWS.bend as L
-import ./LAWS/spec.bend as S
+import ../LAWS.bend as L
+import ./spec.bend as S
 
 # PROOF.bend -- the shape half of the proof set (LAWS.bend sections I, II, III,
 # VI, VII and VIII).
@@ -8,7 +8,7 @@ import ./LAWS/spec.bend as S
 # A proof is a def of the law's name whose parameters are that law's `for`
 # binders IN ORDER.
 #
-# ORDER IS THE WHOLE FILE, because a def may only call a def DECLARED ABOVE it.
+# ORDER is the whole file, because a def may only call a def DECLARED above it.
 # The shape algebra -- section VIII's two laws, and the Maybe-level lemmas the
 # section II and VI laws are built from -- therefore comes FIRST and the law
 # proofs follow it. Nothing else in the repo is order-sensitive in this way,

@@ -71,29 +71,29 @@ When using bend:
 - run `bin/bend guide` to learn it — **MEASURED rc=0, 677 lines. This is the one that works.**
 - use `LAWS.bend` to keep important rules — **the path is `tinybendygrad/LAWS.bend`; there is no
   `LAWS.bend` at the repo root, so the bare name resolves to nothing.** `--check-only` reports
-  `Error: 34 TODOs found. The code is incomplete, and not a valid proof yet.` — **⇒ AND **THAT **COUNT
+  `Error: 34 TODOs found. The code is incomplete, and not a valid proof yet.` — **AND **THAT **COUNT
   **IS **AN **ARTIFACT **OF **CHECKING **THE **WRONG **FILE**, **AND **THE **FILE **THIS **SECTION
   **NAMED **NEXT **IS **THE **ONE **THAT **IS **WRONG:**
-- **run `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` before committing** — **⇒ AND **THE
+- **run `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` before committing** — **AND **THE
   **AGGREGATE **IS **THE **ONLY **CORRECT **ENTRY **POINT**, **AND **THE **PER-FILE **COUNTS **ARE **A
   **TRAP.**  **MEASURED 2026-10-30: **THE **AGGREGATE **REPORTS **`ALL PROOFS CHECK`** (**rc=0**, **31
-  **MB**, **`WITHIN-LIMITS`**), **AND **`tinybendygrad/PROOF.bend` **REPORTS **`Error: 18 TODOs found.`**
-  **AND **`tinybendygrad/PROOF2.bend` **REPORTS **`Error: 16 TODOs found.`** — **⇒ AND **ALL **34
+  **MB**, **`WITHIN-LIMITS`**), **AND **`tinybendygrad/LAWS/PROOF.bend` **REPORTS **`Error: 18 TODOs found.`**
+  **AND **`tinybendygrad/LAWS/PROOF2.bend` **REPORTS **`Error: 16 TODOs found.`** — **AND **ALL **34
   **LAWS **ARE **PROVED, **AND **THE **REASON **THE **HALVES **ARE **RED **IS **THAT **THEY **ARE
   **HALF-BOOKS**: **`PROOF-ALL.bend`'s **OWN **HEADER **SAYS **IT — **"bend **discharges **a **law **by **a
   **def **of **the **same **name **ANYWHERE **IN **THE **BOOK**, **so **the **two **halves **simply **have
   **to **meet **in **one **book"**, **AND **`LAWS/PROOF-ALL.bend` **IS **THAT **ONE **BOOK.**
-  **⇒ AND **THE **DISCOVERY **CENSUS **CONFIRMS **IT**: **`.agents/slop/laws17/laws.py` **READS
+  **AND **THE **DISCOVERY **CENSUS **CONFIRMS **IT**: **`.agents/slop/laws17/laws.py` **READS
   **`LAWS/PROOF-ALL.bend` **AS **`0/34/34`** **(ALL **PROVED**), **AND **`PROOF.bend` **AS **`18/16/34`**
   **AND **`PROOF2.bend` **AS **`16/18/34`** — **EACH **HALF **SEES **THE **OTHER's **LAWS **AS **OPEN.**
-  **⇒ AND **⇒ AND **THIS **LINE **IS **A **CORRECTION, **NOT **A **SOFTENING**: **THE **PREVIOUS
+  **AND **AND **THIS **LINE **IS **A **CORRECTION, **NOT **A **SOFTENING**: **THE **PREVIOUS
   **REVISION **OF **THIS **SECTION **SAID **"THE **GATE **IS **RED **AT **REST"** **AND **QUOTED **18
   **TODOs**, **AND **THAT **WAS **A **MEASUREMENT **OF **A **HALF-BOOK**, **NOT **OF **THE **PROOF** —
   **AND **A **GOVERNING **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY
   **BRIEF **THAT **CITES **IT**: **TWO **AGENTS **WERE **BRIEFED **TO **PROVE **LAWS **THAT **WERE
   **ALREADY **PROVED, **AND **ONE **OF **THEM **MEASURED **THE **MISTAKE **RATHER **THAN **REPEATING
   **IT.**
-  **⇒ AND **THE **PER-FILE **PEAK **RSS **NUMBERS **STILL **COME **FROM **THE **PER-FILE **RUNS** —
+  **AND **THE **PER-FILE **PEAK **RSS **NUMBERS **STILL **COME **FROM **THE **PER-FILE **RUNS** —
   **THE **AGGREGATE **IS **A **DIFFERENT **FILE, **SO **IT **HAS **ITS **OWN.**
 - **PARALLELISE EVERYTHING THAT IS NOT A `bend` PROCESS. FOR `bend`, THE PRECONDITION IS THE SUM, NOT
   THE COUNT: parallelise only when the sum of the concurrently-running files' MEASURED peak RSS is under
@@ -147,52 +147,52 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **AND AS OF **2026-10-22T17:2xZ** (`b5c16d646`, **AFTER **TONIGHT's **247 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
-  **⇒ AND **THE **RUN **WAS **RE-TAKEN **2026-10-31**, **AFTER **THE **`api` **GRAPH **JOINED **THE
+  **AND **THE **RUN **WAS **RE-TAKEN **2026-10-31**, **AFTER **THE **`api` **GRAPH **JOINED **THE
   **CORPUS** **AND **THE **NEGATIVE-INDEX **PARITY **FIX **LANDED** (`6c3d059e12268117308663a74602d6951ade8c5f`),
   **AND **AFTER **THE **`api` **GRAPH's **ALLOC-SLOT **DEFECT **WAS **FIXED**
   (**`gates/alloc_slot-gate.py`**) **AND **`KernelInfo` **WAS **MADE **UPSTREAM's **SIX **FIELDS**
   (**`c2fbda4ca`**) **AND **THE **BEND **LANE **WAS **BATCHED** (**`09945ab98`**): **`substrate-start ==
   substrate-end == live == repro-substrate == b8cde217ef91d2828b287c6417688e9ff7cbe2455c3dc0da02013d1d1129d502`**,
   **AND **`graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0 byte-identical=38 graphs-refused=0`** —
-  **⇒ AND **THE **CORPUS's **FIRST **EVER **EXCEPTION **IS **GONE**: **`checks/differ.py`'s **`WANT` **TABLE
+  **AND **THE **CORPUS's **FIRST **EVER **EXCEPTION **IS **GONE**: **`checks/differ.py`'s **`WANT` **TABLE
   **IS **NOW **`{}`**, **AND **THE **`api` **GRAPH **— **THE **FIRST **GRAPH **WHOSE **BEND **SIDE **IS
   **BUILT **BY **THE **PORT's **OWN **TENSOR **API**, **AND **SO **THE **FIRST **THAT **CAN **SEE **THE
   **PORT's **OWN **ALLOCATOR** — **AGREES**, **BECAUSE **`cr_alloc` **NOW **MINTS **THE **SLOT **FROM **A
   **MONOTONE **COUNTER **LIKE **UPSTREAM's **`next(UOp.unique_num)`**, **NOT **FROM **`O.Arena.next(ar)`**,
   **THE **ARENA's **LENGTH.**
-  **⇒ AND **⇒ AND **⇒ AND **THE **REPRODUCIBILITY **WITNESS **IS **GREEN **ON **ALL **SEVEN **OF **ITS
+  **AND **AND **AND **THE **REPRODUCIBILITY **WITNESS **IS **GREEN **ON **ALL **SEVEN **OF **ITS
   **READINGS** — **`PASS -- the claim is ESTABLISHED`**, **WITH **`witness.fresh`** **`FRESH`**
   (**`delta_ms=+92.203`**), **`witness.substrate`** **`CURRENT`** (**`rows=3 of 3`**), **`verdict.current`**
   **`CURRENT`**, **`verdict.reported`** **`AGREE`** (**`graphs=38 agree=38`**), **AND **`claim`**
   **`REPRODUCIBLE`** — **AND **`unhealthy() -> []`**, **`artefacts_ok() -> []`**, **`repro_bad() -> []`**, **AND
   **`repro`: **`340 of 340 files identical across two clean runs`**.**
-  **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **BEND **LANE **NOW **PAYS **THE **21,440-LINE **TYPECHECK **ONCE**:
+  **AND **AND **AND **AND **THE **BEND **LANE **NOW **PAYS **THE **21,440-LINE **TYPECHECK **ONCE**:
   **THE **LANE'S **`main()`** **TOOK **ONE **GRAPH **FROM **`IO.args()`** **AND **EXITED**, **SO **EVERY **GRAPH
   **NEEDED **ITS **OWN **PROCESS **AND **EVERY **PROCESS **RE-TYPECHECKED **THE **SAME **CLOSURE** — **AND
   **THERE **IS **NO **TYPECHECK **CACHE** (**MEASURED: **TWO **CONSECUTIVE **BENDS **TAKE **2.64 **s **AND
-  **2.45 **s**).  **⇒ AND **THE **`ALLGRAPHS`** **MODE **ASKS **ONE **PROCESS **FOR **EVERY **GRAPH**, **AND
-  **ONE **NAME **IS **THE **OLD **LANE **BYTE **FOR **BYTE.**  **⇒ AND **THE **BEND **SIDE **FOR **36
+  **2.45 **s**).  **AND **THE **`ALLGRAPHS`** **MODE **ASKS **ONE **PROCESS **FOR **EVERY **GRAPH**, **AND
+  **ONE **NAME **IS **THE **OLD **LANE **BYTE **FOR **BYTE.**  **AND **THE **BEND **SIDE **FOR **36
   **GRAPHS **WENT **68.6 **s -> 2.0 **s** (**MEASURED **BY **ME: **TWO **GRAPHS **ARE **3.38 **s **IN **TWO
   **PROCESSES **AND **1.69 **s **IN **ONE**), **AND **THE **WHOLE **CORPUS **RUN **4:50 -> 1:42**, **AND **THE
   **COVERAGE **CENSUS **6:06 -> 18.8 **s** — **AND **ALL **36 **GRAPH **ROWS **ARE **BYTE-IDENTICAL.**
-  **⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **PYTHON **SIDE **MUST **STAY **ONE **PROCESS **PER
+  **AND **AND **AND **AND **AND **THE **PYTHON **SIDE **MUST **STAY **ONE **PROCESS **PER
   **GRAPH**, **AND **THE **REASON **IS **A **PORT **FACT **NOT **A **HARNESS **ONE**: **`Tensor.empty` **MINTS **A
   **`ParamArg.slot` **FROM **A **PROCESS-GLOBAL **COUNTER** (`UOp.unique_num`), **SO **A **PROCESS **THAT
   **BUILDS **`reduce` **AND **THEN **`matmul`** **GIVES **`matmul` **SLOTS **1 **AND **2** **WHILE **THE
   **PER-GRAPH **PATH **GIVES **IT **0 **AND **1** — **AND **THE **FIRST **BATCH **IMPLEMENTATION **REPORTED **A
-  **DISAGREE **THAT **WAS **THE **HARNESS, **NOT **THE **PORT.**  **⇒ AND **THE **CHEAP **SIDE **KEEPS **ITS
+  **DISAGREE **THAT **WAS **THE **HARNESS, **NOT **THE **PORT.**  **AND **THE **CHEAP **SIDE **KEEPS **ITS
   **PROCESSES **AND **THE **EXPENSIVE **SIDE **LOSES **35 **OF **ITS **36.**
-  **⇒ AND **THE **CLAIM **BELOW **IS **A **RECORD **OF **A **RUN, **NOT **A **STANDING **FACT** --
+  **AND **THE **CLAIM **BELOW **IS **A **RECORD **OF **A **RUN, **NOT **A **STANDING **FACT** --
   **AND **A **GOVERNING **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY
-  **BRIEF **THAT **CITES **IT.**  **⇒ AND **THE **DOSE **OF **STALENESS **IS **THE **SUBSTRATE
+  **BRIEF **THAT **CITES **IT.**  **AND **THE **DOSE **OF **STALENESS **IS **THE **SUBSTRATE
   **DIGEST**: **A **COMMIT **THAT **TOUCHES **NOTHING **IN **`tinybendygrad/`** **OR **`tinygrad/`**
   **DOES **NOT **MAKE **THE **RUN **STALE**, **AND **THE **DIGEST **IS **WHAT **SAYS **SO.**
   `graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0 byte-identical=38 graphs-refused=0`,
   `population=d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31`,
-  **⇒ AND **THE **CORPUS **IS **38 **GRAPHS**, **AND **THE **LAST **TWO **ARE **`grad`** **AND **`gral`** —
+  **AND **THE **CORPUS **IS **38 **GRAPHS**, **AND **THE **LAST **TWO **ARE **`grad`** **AND **`gral`** —
   **THE **FIRST **GRAPH **WHOSE **BEND **SIDE **CALLS **THE **PORT's **OWN **`compute_gradient`**, **SO
   **`mixin/gradient.bend` **WENT **0 / 494 **-> **174 / 495** **AND **ALL **32 **RULES **`gr_0`..`gr_31`**
-  **ARE **REACHED.**  **⇒ AND **`gral` **DISAGREED **ON **ITS **FIRST **RUN** **AND **FOUND **A **REAL
+  **ARE **REACHED.**  **AND **`gral` **DISAGREED **ON **ITS **FIRST **RUN** **AND **FOUND **A **REAL
   **PORT **DEFECT**: **THE **PORT's **MAX **GRADIENT **RULE **BUILT **FOUR **`WHERE` **NODES **WHERE **CPYTHON
   **BUILDS **THREE**, **BECAUSE **THE **PORT **COMPUTED **SLOT **1's **INNER **FROM **THE **SWAPPED
   **OPERANDS** (**`CMPNE` **IS **NOT **COMMUTATIVE**) **AND **`UOp` **IS **HASH-CONSED** — **AND **THE
@@ -210,18 +210,18 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **STANDS**, **AND `substrate-head=1fa9e3828f7f82705e2601edeb975042e23e837d` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **THE **LIVE
   **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
-  **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION**, **THE **RANGEIFY **AND
+  **AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION**, **THE **RANGEIFY **AND
   **THE **`UNCLAIMED` **WORK **LEFT** (AND **THE **`UNCLAIMED` **CLASS **IS **NOW **0**): **THE
   **CITATION **CLASSES **ARE **CLOSED** -- **`gates/pin-cite-gate.py` **READS
   **`cite.unverifiable_no_claim_about_the_file=0`** **AND **`cite.at_no_revision_dangling=0`**,
   **`gates/todo-cite-gate.py` **READS **`0 **WRONG-LINE`**, **`0 **WRONG-SYMBOL`**, **`0
   UNRESOLVABLE`**, **AND **`gates/bendcite-gate.py` **IS **rc=0`**, **AND **`gates/specfold-gate.py`
   **GRADES **48 **CELLS **AND **48 **AGREE`.**
-  **⇒ AND **THE **CORPUS **IS **A **SINGLETON **NOW**, **WHICH **IS **WHAT **THE **2026-10-23 **COLLISION
+  **AND **THE **CORPUS **IS **A **SINGLETON **NOW**, **WHICH **IS **WHAT **THE **2026-10-23 **COLLISION
   **PROVED **IT **NEEDED**: **`checks/differ.py`'s **`run`/`repro`/`plant`/`snap` **TAKE **AN
   **`fcntl.flock` **ON **`runs/graphcmp/.corpus.lock`** **BEFORE **ANYTHING **TOUCHES **`D/`**, **AND **A
   **SECOND **CORPUS **RUN **EXITS **3 **WITH **"another **corpus **run **holds **the **lock" **AND **THE
-  **HOLDER'S **PID**.  **⇒ AND **`gates/corpusverdict-gate.py`'s **`run.gated` **ROW **NOW **MEASURES **THE
+  **HOLDER'S **PID**.  **AND **`gates/corpusverdict-gate.py`'s **`run.gated` **ROW **NOW **MEASURES **THE
   **PROPERTY **BY **RUNNING **THE **REAL **COMMAND** (it holds the lock, runs `differ.py run` against a
   **`GRAPHCMP_ARTIFACTS` **SCRATCH **DIR**, and asserts the command REFUSED, NAMED THE HOLDER, and WROTE
   **NOTHING**), **AND **THE **OLD **SOURCE-LEVEL **QUESTION **WAS **NOT **DROPPED**: **IT **IS **THE
@@ -243,11 +243,11 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   -- **ALL **SEVEN **READINGS **OK**: `control`, `verdict.current`, `witness.fresh` (`FRESH`,
   `order=mtime(W2)>=mtime(W1)`, `delta_ms=+92.013`), `freshness.source`, `witness.substrate`
   (`CURRENT`, `rows=3 of 3`), `verdict.reported` (`reported=rc=0  derived=rc=0  verdict=AGREE`), and
-  `claim` (`verdict=REPRODUCIBLE`).  **⇒ A **SUMMARY **SAYS **GREEN **AND **A **WITNESS **SAYS **THE
+  `claim` (`verdict=REPRODUCIBLE`).  **A **SUMMARY **SAYS **GREEN **AND **A **WITNESS **SAYS **THE
   **CLAIM **IS **ESTABLISHED** -- **AND **THE **WITNESS **IS **THE **ONE **THAT **HAS **CAUGHT **THREE
   **REAL **THINGS **TONIGHT**: **A **STALE **`d10-transcript` **PIN**, **A **REPRO **THAT **EXITED **1
   **WHILE **THE **SUMMARY **SAID **EVERYTHING **AGREED**, **AND **ARTEFACTS **OUT **OF **ORDER** (the
-  **summary **NEWER **THAN **THE **REPRO**).  **⇒ A **SUMMARY **IS **A **CLAIM **AND **A **WITNESS **IS
+  **summary **NEWER **THAN **THE **REPRO**).  **A **SUMMARY **IS **A **CLAIM **AND **A **WITNESS **IS
   **A **CHECK**, **AND **ONLY **THE **SECOND **CAN **GO **RED.**
 
   ***AND ***THE **CORPUS's **D10 **PIN **WAS **A **PIN **ON **A **NETWORK **ANSWER, **AND **IT **IS **NOT
@@ -256,26 +256,26 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   `runs/graphcmp/D/D10-zerorow-guard.txt.err`, and **THOSE 240 CHARACTERS ARE THE COMPILER'S "A NEWER
   BEND IS AVAILABLE" NOTICE** -- **WHICH `references/bend/bend2/main.ts:185-211` FETCHES FROM
   `https://bend-lang.com/check` ONCE A DAY INTO **`~/.bend/check.json`, A FILE IN THE **DEVELOPER's
-  **HOME**, NOT IN THIS **REPOSITORY**.**  **⇒ THE **PIN **WAS **NOT **A **FUNCTION **OF **THE **TREE.**
+  **HOME**, NOT IN THIS **REPOSITORY**.**  **THE **PIN **WAS **NOT **A **FUNCTION **OF **THE **TREE.**
   **MEASURED, FIVE **CASES, THE **ORACLE's **OWN `emit_bend`, EACH **WITH **ITS **OWN `HOME` **SO **THE
   **USER's **CACHE **WAS **NEVER **TOUCHED**:** **cache `2.0.38` -> `f35b2d90...`; cache `2.0.39` ->
   `312e2b4f...` (***DIFFERENT*** -- **SO **UPSTREAM's **NEXT **RELEASE **WOULD **HAVE **REDDED **THE
   **PIN **WITH **NO **REPO **CHANGE, NO **PORT **CHANGE, NO **BUG **AND **NO **COMMIT **TO **EXPLAIN
   **IT**); `BEND_NO_TELEMETRY=1` -> `9bfb8517...`, **IDENTICAL **WITH **AND **WITHOUT **A **CACHE **AND
   **WITH **AND **WITHOUT **A **NETWORK**.**
-  **⇒ AND **THE **CURE **IS **THE **COMPILER's **OWN **SWITCH** (`main.ts:186-188`), **APPLIED **AT **THE
+  **AND **THE **CURE **IS **THE **COMPILER's **OWN **SWITCH** (`main.ts:186-188`), **APPLIED **AT **THE
   **TWO **BOUNDARIES **WHERE **A `bin/bend` **CHILD **IS **LAUNCHED** -- **`checks/differ.py`'s `ENV`
   **(which **every **child **of **the **corpus **driver **inherits**, **and **WHICH `settled()` -- **THE
   **ONLY **CHILD **THAT **DID **NOT **USE **IT** -- **NOW **DOES**) **AND **`graphcmp.py`'s
   `clean_env()`** -- **SO **THE **PIN **IS **BACK **ON **`9bfb8517...`**, THE **VALUE **IT **HELD
-  **BEFORE **UPSTREAM's **2.0.38 **RELEASE **TURNED **THE **NOTICE **ON.**  **⇒ AND **THE **DIRECT
+  **BEFORE **UPSTREAM's **2.0.38 **RELEASE **TURNED **THE **NOTICE **ON.**  **AND **THE **DIRECT
   **PROOF **THAT **THE **OFF-REPO **INPUT **IS **GONE **FROM **THE **MEASUREMENT**: **`~/.bend/check.json`'s
   **MTIME **IS **UNCHANGED** (`Oct 21 20:52`) **AFTER **A **FULL `run` **AND `repro`** -- **THE **CORPUS
-  **DID **NOT **PHONE **HOME.**  **⇒ AND **`settled()` **WAS **CHECKED **AND **IS **NOT **A **HAZARD**:
+  **DID **NOT **PHONE **HOME.**  **AND **`settled()` **WAS **CHECKED **AND **IS **NOT **A **HAZARD**:
   **it **merges **stderr **into **stdout **and **reads **LINE **1**, **and **THE **NOTICE **LANDS
   **AFTER **`ALL PROOFS CHECK`** -- **MEASURED, **LINE **1 **IS **`ALL PROOFS CHECK`** **WITH **AND
   **WITHOUT **THE **FLAG.  **A **NEGATIVE **RESULT **IS **A **RESULT.**
-  **⇒ AND **THE **CLASS:** **A **PIN **MUST **BE **A **FUNCTION **OF **THE **REPOSITORY**, **AND **A **PIN
+  **AND **THE **CLASS:** **A **PIN **MUST **BE **A **FUNCTION **OF **THE **REPOSITORY**, **AND **A **PIN
   **OVER **BYTES **THAT **A **THIRD **PARTY **CAN **MOVE **IS **NOT **A **PIN**, **IT **IS **A **BET.**
 
   ***AND ***THE **`pI(` **LANE **IS **ALIVE** -- **AND **IT **WAS **DEAD **WHEN **THIS **PARAGRAPH **WAS **FIRST
@@ -284,18 +284,18 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **THE **CORPUS **COULD **NOT **SEE **THE `vars` -> `params` **RENAME** (`9974c9d9b` / upstream
   `a6addc2d4`) -- **WHICH **IS **A **REAL **PORT **CHANGE**, **BECAUSE **UPSTREAM's `params` **IS **EVERY
   **PARAM, **SORTED **BY **SLOT**, **WHERE **THE **OLD `vars` **WAS **THE **ALU-ONLY **LIST.**
-  **⇒ THE **FIX **WAS **A **35TH **GRAPH**, `prog`, **WHOSE **PROGRAM **CARRIES **THREE **BUFFER **PARAMS**
+  **THE **FIX **WAS **A **35TH **GRAPH**, `prog`, **WHOSE **PROGRAM **CARRIES **THREE **BUFFER **PARAMS**
   (**GLOBAL **ADDRSPACE**), **AND **THE **THIRD **COMPONENT **IS **THE **PARAMS' **FULL `P(...)` **RECORDS
   **IN **SLOT **ORDER** -- **NOT **A **SLOT **LIST**, **FOR **THE **MEASURED **REASON **THAT **FOR **AN
   **ALL-BUFFER **KERNEL **THE **PARAMS' **SLOTS **ARE **THE **GLOBALS' **SLOTS**, **SO **A **SLOT **LIST
   **WOULD **HAVE **BEEN **A **RESTATEMENT **OF **THE **FOURTH **COMPONENT: **A **ROW **THAT **CANNOT **GO
   **RED.**  **THE **FULL **RECORD **CARRIES **THE **ADDRSPACE** (`SGLOBAL` vs `SALU`), **WHICH **IS **HOW
   **THE **CORPUS **SEES **THAT **A **BUFFER **PARAM **IS **IN **THE **LIST.**
-  **⇒ AND **THE `target` **IS **NOT **CARRIED, **AND **THE **LEDGER **SAYS **SO **ON **EVERY **REPORT**: the
+  **AND **THE `target` **IS **NOT **CARRIED, **AND **THE **LEDGER **SAYS **SO **ON **EVERY **REPORT**: the
   **value **is **the **RENDERER's **and **its `arch` **is **THE **MACHINE's**, **so **carrying **it **would
   **make **the **canonical **form **machine-specific**, **and **the **alternative **-- **both **sides' **defaults
   -- **puts **A **CONSTANT **ON **BOTH **SIDES: **A **LABEL, **NOT **A **COMPARISON.**
-  **⇒ AND **THE **ORACLE's **BRANCH **WAS **STALE **CODE** (`graphcmp.py:580` **READ **`x.vars`, AND **AT **THE
+  **AND **THE **ORACLE's **BRANCH **WAS **STALE **CODE** (`graphcmp.py:580` **READ **`x.vars`, AND **AT **THE
   **PIN `hasattr(ProgramInfo(), "vars")` **IS **False**), **AND **IT **WAS **RE-POINTED **AT **`params` **IN
   **THE **SAME **COMMIT **AS **THE **GRAPH** -- **BECAUSE **A **RE-POINT **WITHOUT **A **GRAPH **TO **REACH
   **IT **IS **A **RE-POINT **OF **DEAD **CODE.**
@@ -305,49 +305,49 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **PIN, **NOT **IN **`ops.py`** -- **SO **A **GREP **OF **`ops.py` **FINDS **NO `class Ops` **AND **A
   **REGEX **THAT **TAKES **ONLY **THE **FIRST `auto()` **PER **LINE **UNDERCOUNTS **BY **HALF** (upstream
   **writes **`BUFFER = auto(); ALLOC = auto()`**).**
-  **⇒ AND **THE **FALLOUT **OF **THE **ENUM **BEING **EXACT **WAS **THREE **DRIVERS **CONSTRUCTING
-  **OPS **UPSTREAM **DELETED**, **AND **ALL **THREE **HAVE **SINCE **BEEN **REPAIRED**.  **⇒ AND
+  **AND **THE **FALLOUT **OF **THE **ENUM **BEING **EXACT **WAS **THREE **DRIVERS **CONSTRUCTING
+  **OPS **UPSTREAM **DELETED**, **AND **ALL **THREE **HAVE **SINCE **BEEN **REPAIRED**.  **AND
   **THE **THREE **WERE **THESE**, **AND **THE **OP **NAME **COMES **FIRST**:
   `OpsGROUP` **WAS **IN **`gates/ptx_render_census_axis.bend`**;
   `OpsFLIP` **WAS **IN **`oracles/lift-rows.bend`**;
-  `OpsX` **WAS **IN **`gates/tn_binop_sweep.bend`**.  **⇒ AND **THE
+  `OpsX` **WAS **IN **`gates/tn_binop_sweep.bend`**.  **AND **THE
   **REPAIRS **ARE **THE **TREE's **OWN, **AND **THE
   **DATES **ARE **THE **RECORD**: `a7b3cede3` (2026-10-22) **REGENERATED **`gates/ptx_render_census_axis.bend`,
   **WHICH **IS **NOW **GENERATED **BY **`gates/ptx_render_census-gen.py`**, **SO **THE **STALE **OP **IS
   **NOT **IN **THE **AXIS **AT **ALL**; **AND **`4c4766fe4` **REMOVED **THE **`OpsFLIP` **ROW **FROM
   **`oracles/lift-rows.bend`** **AND **FOUND **THAT **`OpsX` **WAS **A **PLACEHOLDER **IN **A **COMMENT
-  **IN **`gates/tn_binop_sweep.bend`**, **NOT **A **CONSTRUCTION.  **⇒ AND **MEASURED **NOW: **THE **THREE
+  **IN **`gates/tn_binop_sweep.bend`**, **NOT **A **CONSTRUCTION.  **AND **MEASURED **NOW: **THE **THREE
   **DRIVERS **CONSTRUCT **NONE **OF **THE **THREE**, **AND **THE **ONLY **`OpsFLIP`/`OpsX`/`OpsGROUP`
   **OCCURRENCES **LEFT **ARE **THE **PROSE **THAT **RECORDS **THE **REPAIR** -- **SO **THE **CLAIM **IS
-  **A **HISTORY, **NOT **A **STANDING **FACT.**  **⇒ AND **THE **PTX **GATE **WAS **REFUSED, **NOT
+  **A **HISTORY, **NOT **A **STANDING **FACT.**  **AND **THE **PTX **GATE **WAS **REFUSED, **NOT
   **RED: **IT **CANNOT **RUN **AT **ALL** -- **AND **A **GATE **THAT **IS **REFUSED **IS **A **DEAD
   **GATE, **AND **THE **DIFFERENCE **MATTERS.**
-  **⇒ AND **UPSTREAM's `group()` **WAS **NOT **DELETED **WITH **THE **OP**: `4e0192eaf remove Ops.GROUP
+  **AND **UPSTREAM's `group()` **WAS **NOT **DELETED **WITH **THE **OP**: `4e0192eaf remove Ops.GROUP
   (#18637)` **REMOVED **THE **ENUM **MEMBER **AND **CHANGED **WHAT **THE **METHOD **BUILDS** (now
   `Ops.STACK.after(...)`), **AND **THE **PORT's `UOp.group` **MATCHES **UPSTREAM **EXACTLY** -- so **THE
   **PORT **IS **RIGHT **AND **THE **DRIVERS **ARE **STALE.  **DO **NOT **"FIX" **THE **PORT.**
-  **⇒ AND **THE **GENERAL **LESSON: **A **DRIVER **THAT **CONSTRUCTS **AN **OP **UPSTREAM **DELETED **IS
+  **AND **THE **GENERAL **LESSON: **A **DRIVER **THAT **CONSTRUCTS **AN **OP **UPSTREAM **DELETED **IS
   **A **DRIVER **PINNED **TO **AN **OLDER **UPSTREAM, **AND **THE **PIN **IS **INVISIBLE** -- **A **FIXTURE
   **AGAINST **AN **UNSTATED **REVISION **IS **A **FIXTURE **AGAINST **NOBODY.**
 
   ***AND ***THE **75 **HAS **A **HISTORY, **AND **IT **IS **UPSTREAM's **OWN:** MEASURED 2026-10-22 on the enum's
   **OWN **MEMBER **COUNT**: **77 -> 76** at `4e0192eaf remove Ops.GROUP (#18637)` (2026-10-06) and
   **76 -> 75** at `900880433 remove Ops.FLIP [pr] (#18729)` (2026-10-11) -- **WHICH **IS **THE **COUNT **AT
-  **THE **PIN, **AND **WHICH **IS **THE **PORT's **COUNT.**  **⇒ THE **PORT's `Op` **ENUM **IS **EXACTLY
+  **THE **PIN, **AND **WHICH **IS **THE **PORT's **COUNT.**  **THE **PORT's `Op` **ENUM **IS **EXACTLY
   **UPSTREAM's `Ops` **ENUM **AT **THE **PIN**, **AND **THE **TWO **UPSTREAM **DELETIONS **ARE **EXACTLY
   **WHAT **TOOK **IT **THERE.**
-  **⇒ AND **A **TEXT **CENSUS **OVERSTATES**: **A **UNIT **THAT **FIXED **THE **DRIVER **CORRECTED **MY
+  **AND **A **TEXT **CENSUS **OVERSTATES**: **A **UNIT **THAT **FIXED **THE **DRIVER **CORRECTED **MY
   **CENSUS, **WHICH **COUNTED **TEXT **AND **NOT **CODE**: `OpsGROUP` **WAS **A **REAL **COMPILE **ERROR**;
   `OpsFLIP` **WAS **A **LATENT **STALE **REFERENCE **IN **A **FRAGMENT** (whose **standing **condition **IS
   **A **DIFFERENT **ONE**: *"expected : 'def', 'type' or 'law'"* -- **BARE **STATEMENTS **AT **TOP **LEVEL**,
   **NOT **`OpsFLIP`**); **AND `OpsX` **WAS **A **PLACEHOLDER **IN **A **COMMENT**, **AND **THE **FILE
-  **COMPILES.**  **⇒ A **CENSUS **THAT **NAMES **A **BROKEN **DRIVER **WITHOUT **SAYING **WHETHER **IT
+  **COMPILES.**  **A **CENSUS **THAT **NAMES **A **BROKEN **DRIVER **WITHOUT **SAYING **WHETHER **IT
   **IS **BROKEN **IS **A **CENSUS **OF **NAMES.**
-  **⇒ AND **THE **PTX **AXIS **WAS **STALE **BY **+14 **ROWS **FOR **A **REASON **THAT **NO **INSTRUMENT
+  **AND **THE **PTX **AXIS **WAS **STALE **BY **+14 **ROWS **FOR **A **REASON **THAT **NO **INSTRUMENT
   **SAW:** the 2026-10-16 **re-vendor **moved **A **BUFFER's **SIZE **OUT **OF **THE **`ParamArg` **AND **INTO
   **A **SIZE **CONST **SRC**, so **CPYTHON's **OWN **GRAPHS **GAINED **A **NODE** -- **15 **FIXTURES **GAINED
   **ONE, `f14_skips` **LOST **ONE** -- **AND **THE **AXIS's **BYTES **HAD **NOT **MOVED, **AND **THE **GATE
-  **THAT **WOULD **HAVE **SAID **SO **WAS **REFUSED **ON **THE **COMPILE **ERROR.**  **⇒ THE **DRIVER **IS
+  **THAT **WOULD **HAVE **SAID **SO **WAS **REFUSED **ON **THE **COMPILE **ERROR.**  **THE **DRIVER **IS
   **NOW **GENERATED**, **AND **IT **CARRIES **A `# UPSTREAM-PIN <path> <sha256>` **LINE **PER **FILE **THE
   **ORACLE **READS** -- **DERIVED **FROM **THE **ORACLE's **OWN **IMPORTS **PLUS **EACH **SYMBOL's **DEFINING
   **MODULE**, **WHICH **IS **HOW **`tinygrad/uop/__init__.py` **GETS **IN **AT **ALL** (the **oracle **imports
@@ -358,7 +358,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **BY **DESIGN** (`LAWS.bend`, `PROOF.bend`, `PROOF2.bend` -- EACH **DECLARES **IT **IS **NOT **A **PROOF
   **YET** -- **AND `sz.bend`, **WHOSE **COLDNESS **IS **A **MEMORY **CEILING**, **NOT **A **VERDICT**:
   **MEASURED `KILLED-ON-MEMORY` **AT **2100 MB **UNDER **A **2048 **CEILING **AND **4197 MB **UNDER **A
-  **4096 **ONE**).  **⇒ AND **A **ROW-LEVEL **INSTRUMENT **CANNOT **NOTICE **THAT **ITS **SUBJECT **DOES **NOT
+  **4096 **ONE**).  **AND **A **ROW-LEVEL **INSTRUMENT **CANNOT **NOTICE **THAT **ITS **SUBJECT **DOES **NOT
   **COMPILE**: **`runtime/support/autogen.bend` **HAD **NOT **COMPILED **FOR **AT **LEAST **TWO **COMMITS**,
   **AND **THE **COMMIT **THAT **AUDITED **ITS **ROWS **SAID **"THE **PORT **IS **AT **0 **ROWS"** -- **A **FILE
   **THAT **PRINTS **ZERO **ROWS **IS **INDISTINGUISHABLE, **TO **SUCH **AN **INSTRUMENT**, **FROM **A **FILE
@@ -580,7 +580,7 @@ BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   OUTPUTS, **AND **IT **SWEPT **IN **SIX **FILES **THAT **WERE **NOT **INSTRUMENT **OUTPUTS** -- **FOUR
   `checks/.tmp-*.py` **STAGING **COPIES **OF **OTHER **GATES** (which **is **the **worst **kind **to
   **commit: **A **FILE **THAT **LOOKS **LIKE **THE **THING **IT **SHADOWS**), **PLUS **A **`.err` **AND **A
-  **`.out`.**  **⇒ THE RULE **IS **"**STAGE **BY **PATH**", **AND **NOT **"NEVER `git add -A`"** -- a
+  **`.out`.**  **THE RULE **IS **"**STAGE **BY **PATH**", **AND **NOT **"NEVER `git add -A`"** -- a
   **DIRECTORY **IS **NOT **A **PATH**.**  **AND **THE **HOLE **IS **CLOSED**: `.gitignore` **NOW
   **COVERS **`checks/.tmp-*`, **`checks/*.out` **AND **`checks/*.err`**, **SO **THE **NEXT **`git add
   checks/` **CANNOT **SWEEP **THEM **AGAIN.**

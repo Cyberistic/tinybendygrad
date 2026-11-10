@@ -12,8 +12,8 @@
 # obstacle does not arise here. See PROOF.bend for the full statement of that
 # obstacle and of the two fuel defects it replaced.
 #
-# THE BOOK IS GREEN, AND THIS FILE IS NOT THE REASON IT IS NOT: `./bin/bend
-# tinybendygrad/PROOF2.bend --check-only` reports SIXTEEN TODOs, and every one
+# THE book is green, AND this file is not the reason it is not: `./bin/bend
+# tinybendygrad/LAWS/PROOF2.bend --check-only` reports SIXTEEN TODOs, and every one
 # of the sixteen is a law of the OTHER half -- this file's own eighteen are
 # proved, and the aggregate's thirty-four are proved. A TODO count is a
 # property of the BOOK, and a book's population is its import closure
@@ -25,7 +25,7 @@
 # `PROOF2.bend` 16 open / 18 filled, `PROOF.bend` 18 open / 16 filled,
 # `PROOF-ALL.bend` 0 open / 34 filled.
 #
-# THE SIXTEEN CANNOT BE DISCHARGED HERE, AND THE REASON IS A CONSTRAINT, NOT A
+# THE sixteen cannot be discharged here, AND the reason is a constraint, NOT a
 # BACKLOG. Bend discharges a law by a def of that name, and allows ONE such def
 # per book: `bend.ts:2437` takes the law's own qualified name only while the
 # law has no body (`law ? q : parse_fresh`), so a second `def L.<name>` for a
@@ -35,7 +35,7 @@
 # helper defs, so a move duplicates them, which is the regression `98721d492`
 # repaired.
 #
-# AND MAKING THIS FILE COMPLETE IS REFUSED BY A PINNED GATE. A second complete
+# AND making this file complete is refused by a pinned gate. A second complete
 # book in the proof population joins `LAWS/PROOF-ALL.bend` in
 # `gates/verdict-lane-gate.py`'s PLANT-TARGETED-KERNEL disagreement set,
 # whose `want_disagree` is exactly `{LAWS/alu.bend, LAWS/PROOF-ALL.bend}`.
@@ -45,11 +45,11 @@
 # exactly three complete files -- `LAWS/alu.bend`, `LAWS/spec.bend` and
 # `LAWS/PROOF-ALL.bend` -- and a fourth breaks the anchor.
 #
-# SO THE TWO HALVES STAY TWO HALVES, and this file's sixteen TODOs are the
+# SO the two halves stay two halves, and this file's sixteen TODOs are the
 # boundary between them, not work.
 
 import Base
-import ./LAWS.bend as L
+import ../LAWS.bend as L
 
 # ---------------------------------------------------------------------------
 # IV. tinyspec.tex "Decomposed elementwise ops" (lines 188-208): each op is

@@ -81,8 +81,8 @@ def book(root):
 def main(argv):
     named = argv[1:] or [
         "tinybendygrad/LAWS.bend",
-        "tinybendygrad/PROOF.bend",
-        "tinybendygrad/PROOF2.bend",
+        "tinybendygrad/LAWS/PROOF.bend",
+        "tinybendygrad/LAWS/PROOF2.bend",
         "tinybendygrad/LAWS/PROOF-ALL.bend",
     ]
     roots = named

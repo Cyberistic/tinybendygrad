@@ -87,7 +87,7 @@ import time
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SUMMARY = ROOT / "runs/graphcmp/D/D0-run-summary.txt"
 
-#: THE DECLARATION, IN GIT, BESIDE THE GATE THAT ASKS IT. This is the only path this file looks
+#: THE declaration, IN GIT, BESIDE the gate that asks it. This is the only path this file looks
 #: the population up from, so it is a population by (a) of `AGENTS.md` doctrine 1 -- a generator's
 #: own declaration, loaded by path -- and NOT a hand list, a basename shape or a suffix set.
 DECLARER = "checks/substrate-snapshot.py"
@@ -292,7 +292,7 @@ def verdict_for(start: str | None, end: str | None, here: dict) -> tuple[int, st
         return REFUSED, (f"the substrate MOVED DURING THE RUN ({start[:12]} -> {end[:12]}). "
                          "The artifacts are not all measurements of one substrate. DO NOT WAIT "
                          f"-- SNAPSHOT ({DECLARER})")
-    # **AN ABSENT DECLARED INPUT IS A NOTE, NOT A VERDICT, AND THAT IS THE WHOLE ARGUMENT.**
+    # AN absent declared input is a NOTE, NOT a verdict, AND that is the whole argument.
     # The digest is computed over `path` + `bytes` OR `path` + `ABSENT`, so a reader whose
     # digest EQUALS the run's already proves both populations have the same paths and the same
     # bytes-or-absence -- the shape check is subsumed, and refusing on it as well would double
@@ -381,7 +381,8 @@ def _seed(root: pathlib.Path) -> None:
     mod = _snapshot_mod()
     (root / "tinybendygrad/uop").mkdir(parents=True)
     (root / "tinybendygrad/uop/ops.bend").write_text("def op: 0\n" * 40)
-    (root / "tinybendygrad/PROOF.bend").write_text("theorem t: True\n" * 20)
+    (root / "tinybendygrad/LAWS").mkdir(parents=True)
+    (root / "tinybendygrad/LAWS/PROOF.bend").write_text("theorem t: True\n" * 20)
     (root / "checks").mkdir(parents=True)
     (root / "bin").mkdir()
     shutil.copyfile(ROOT / DECLARER, root / DECLARER)
@@ -411,7 +412,7 @@ def _steps(root: pathlib.Path, out: pathlib.Path, n: int) -> int:
 def _one_line(root: pathlib.Path) -> None:
     """THE SMALLEST POSSIBLE SUBSTRATE CHANGE: one line, one character, one input. If a digest
     over 6 inputs cannot see this, the aggregation is wrong and no other measurement matters."""
-    p = root / "tinybendygrad/PROOF.bend"
+    p = root / "tinybendygrad/LAWS/PROOF.bend"
     p.write_text(p.read_text().replace("True", "Truex", 1))
 
 
@@ -468,13 +469,13 @@ def plant() -> int:
         bad += _expect("between: rows are EQUAL so the run is not implicated",
                        start["digest"] == end["digest"], True)
 
-        # CASE 3 -- MID-RUN. THE UNTESTED CASE. Two inputs change BETWEEN steps, ONE COLD and
+        # CASE 3 -- MID-RUN. THE untested case. Two inputs change BETWEEN steps, ONE cold and
         # then ONE HOT, and the digest is taken again at the end.
         tree, out = tdp / "s3", tdp / "o3"
         _seed(tree); out.mkdir()
         start = digest(tree)
         rcs = [_steps(tree, out, 1)]
-        (tree / "tinybendygrad/PROOF.bend").write_text("MIDRUN-BREAK\n")  # a COLD input
+        (tree / "tinybendygrad/LAWS/PROOF.bend").write_text("MIDRUN-BREAK\n")  # a COLD input
         cold_moved = digest(tree)["digest"] != start["digest"]
         rcs.append(_steps(tree, out, 1))
         (tree / "tinybendygrad/uop/ops.bend").write_text("MIDRUN-BREAK\n" + "def op: 0\n" * 40)
@@ -493,7 +494,7 @@ def plant() -> int:
         _seed(tree); out.mkdir()
         start = digest(tree)
         rcs = [_steps(tree, out, 1)]
-        (tree / "tinybendygrad/PROOF.bend").write_text("MIDRUN-BREAK\n")
+        (tree / "tinybendygrad/LAWS/PROOF.bend").write_text("MIDRUN-BREAK\n")
         rcs.append(_steps(tree, out, 1))
         end = digest(tree)
         rc, _ = verdict_for(start["digest"], end["digest"], end)
@@ -504,14 +505,14 @@ def plant() -> int:
 
         # CASE 4a -- a WALK-DISCOVERED input is DELETED. The digest MOVES (the population shrank,
         # so the byte stream is a different function) -- and NOTHING IS NAMED, because a walk
-        # cannot report a member it no longer sees. **THIS IS A REAL LIMIT OF THE AGGREGATION
-        # AND IT IS STATED IN THE REPORT, NOT PAPERED OVER**: detection is complete, attribution
+        # cannot report a member it no longer sees. THIS IS A REAL LIMIT OF THE AGGREGATION
+        # AND it is stated in the report, NOT papered over: detection is complete, attribution
         # for this one case is absent, and the diagnosis is `quiesce/quiesce.py`'s mtime log or
         # `git`, neither of which this row may depend on.
         tree, out = tdp / "s4a", tdp / "o4a"
         _seed(tree); out.mkdir()
         before = digest(tree)
-        (tree / "tinybendygrad/PROOF.bend").unlink()
+        (tree / "tinybendygrad/LAWS/PROOF.bend").unlink()
         after = digest(tree)
         print(f"PLANT delete-walk before={before['digest'][:12]} after={after['digest'][:12]} "
               f"named={after['absent'] or 'NOTHING'}")
@@ -542,7 +543,7 @@ def plant() -> int:
         bad += _expect("delete-cop: and it is NAMED, not just refused",
                        bool(note_absent(after)), True)
 
-        # CASE 5 -- THE ONE-LINE CHANGE, and the CONTROL THAT FAILS IF THE INSTRUMENT IS BROKEN.
+        # CASE 5 -- THE one-LINE change, and the CONTROL that fails IF THE instrument is broken.
         tree, out = tdp / "s5", tdp / "o5"
         _seed(tree); out.mkdir()
         before = digest(tree)
@@ -568,7 +569,7 @@ def plant() -> int:
         rc_gone = judge(tdp / "does-not-exist.txt", tree)
         print(f"PLANT dead       absent summary -> {token(rc_gone)}")
         bad += _expect("dead: an absent summary is DEAD", rc_gone, DEAD)
-        # AND THE STATE EVERY RUN IN THIS TREE IS IN: 22 rows, none of which names bytes.
+        # AND the state every run in this tree is in: 22 rows, none of which names bytes.
         no_sub = tdp / "no-substrate-rows.txt"
         no_sub.write_text("graphs=34\ngraphs-unset=0\ndev=CPU\n")
         rc_nosub = judge(no_sub, tree)
@@ -576,7 +577,7 @@ def plant() -> int:
               f"(an ABSENT row is a complaint, not a pass)")
         bad += _expect("absent rows are REFUSED, not DEAD and not PASS", rc_nosub, REFUSED)
 
-        # CASE 7 -- THE EMPTY POPULATION, WHICH IS WHAT A `git archive HEAD` TREE WAS. This is the
+        # CASE 7 -- THE empty population, WHICH is what a `git archive HEAD` TREE was. This is the
         # case that had NO BRANCH: `git ls-tree -r HEAD -- .agents/slop/quiesce/` answered 0 paths
         # over 9 files on disk, so on a tree that HAS the declarer this gate hashed 0 inputs and
         # returned PASS over the sha256 of the empty string. Reproduced here on a tree that has no
@@ -601,7 +602,7 @@ def plant() -> int:
                        DECLARER in why_bare and "ABSENT" in why_bare, True)
         bad += _expect("empty: measured() and verdict_for() cannot disagree",
                        measured(d_bare), rc_bare)
-        # AND THE CONTROL THAT PROVES THE GUARD IS NOT MERELY A CONSTANT THAT NEVER FIRES: the
+        # AND the control that proves the guard is not merely a constant that never fires: the
         # SAME function on a tree whose declarer is present must not be DEAD.
         d_seeded = digest(tdp / "s5")
         bad += _expect("CONTROL: a seeded tree with the declarer present is not DEAD",
