@@ -46,6 +46,29 @@ ANY_DEF = re.compile(r"^def ([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\(")
 # THE CALLABLE DEFS -- LOWERCASE ONLY -- AND THAT IS THE CLOSURE's POPULATION, BECAUSE AN
 # UPPERCASE DEF IS A CONSTANT AND NOT A CALLABLE HELPER.
 CALLABLE = re.compile(r"^def ([a-z_][a-z0-9_]*(?:\.[a-z0-9_]+)*)\(")
+# **⇒ AND A **DECLARATION** IS **NOT A DEF** -- **AND A HELPER's BLOCK MUST STOP AT IT.**
+# **⇒ MEASURED 2026-11-10 ON `elf.bend`: `param_size`'s BLOCK SWALLOWED THE
+# `type Slot is Data:` DECLARATION THAT FOLLOWS IT, **BECAUSE THE SCAN ONLY STOPPED AT
+# `def ` AND AT A COMMENT** -- **AND A `type` DECLARATION IS NEITHER.**
+# **⇒ AND THE CONSEQUENCE WAS **THE PORT LOST ITS OWN `Slot` TYPE** AND FAILED TO
+# COMPILE WITH "a declared constructor (unknown: Slot)" -- **WHILE THE TOOL REPORTED
+# `WITHIN-LIMITS` FOR BOTH FILES, BECAUSE THE TOKEN IS **THE WATCHDOG's**, NOT THE
+# COMPILER's.**
+DECL = re.compile(r"^(?:def|type|struct|datatype|enum)\s")
+
+
+def block_end(lines: list[str], j: int) -> int:
+    """⇒ **THE END OF THE DECLARATION THAT STARTS AT `j`** -- **A DEF, A TYPE, A STRUCT.
+
+    **⇒ AND THE SCAN STOPS AT THE NEXT DECLARATION **OR** AT A COMMENT LINE, **BECAUSE A
+    COMMENT BLOCK **BEFORE** THE NEXT DECLARATION BELONGS TO THAT DECLARATION** (AND THE
+    CALLER MOVES IT WITH THE DECLARATION).**
+    """
+    e = j + 1
+    while e < len(lines) and not DECL.match(lines[e]) and not lines[e].strip().startswith("#"):
+        e += 1
+    return e
+
 
 
 def bounded_bend(path: Path) -> str:
@@ -100,9 +123,7 @@ def split(path: Path) -> tuple[list[str], list[str], list[str]]:
         changed = False
         for h in list(helpers):
             j = next(k for k, l in enumerate(impl) if l.startswith(f"def {h}("))
-            e = j + 1
-            while e < len(impl) and not impl[e].startswith("def ") and not impl[e].strip().startswith("#"):
-                e += 1
+            e = block_end(impl, j)
             body = "\n".join(impl[j:e])
             for d in all_defs:
                 if d == h or d in helpers:
@@ -121,9 +142,7 @@ def split(path: Path) -> tuple[list[str], list[str], list[str]]:
         s = j
         while s > 0 and impl[s - 1].strip().startswith("#"):
             s -= 1
-        e = j + 1
-        while e < len(impl) and not impl[e].startswith("def ") and not impl[e].strip().startswith("#"):
-            e += 1
+        e = block_end(impl, j)
         moved.extend(impl[s:e])
         drop.update(range(s, e))
     impl = [l for k, l in enumerate(impl) if k not in drop]
@@ -158,22 +177,48 @@ def rebased_path(src: str, port: Path, root: Path) -> str:
 
 
 def order_defs(lines: list[str]) -> list[str]:
-    """⇒ **TOPOLOGICAL ORDER OF THE DEFS**, BY **THE NAMES THEY CALL**."""
+    """⇒ **TOPOLOGICAL ORDER OF THE DEFS**, BY **THE NAMES THEY CALL**.
+
+    **⇒ AND **NOTHING IS DROPPED** -- **A LINE THAT IS NOT PART OF A DEF BLOCK IS KEPT IN
+    ITS ORIGINAL PLACE.** **⇒ MEASURED 2026-11-10: THE FIRST VERSION RETURNED **ONLY** THE
+    BLOCKS IT RECOGNISED, **AND EVERY DOTTED DEF AND EVERY `type` DECLARATION VANISHED
+    WITHOUT A WORD** -- `ops_cl.bend` LOST **101** LINES AND `ops_webgpu.bend` LOST **41**,
+    **AND THE MOVE STILL REPORTED SUCCESS.**
+    """
     defs: dict[str, list[str]] = {}
     order: list[str] = []
+    claimed: set[int] = set()
     for i, l in enumerate(lines):
-        m = re.match(r"^def ([a-z_][a-z0-9_]*)\(", l)
+        # **⇒ AND THE DEF NAME MAY BE **DOTTED** (`alloc.free`, `prog.call.at`) -- **AND THE
+        # REGEX IS **THE TOOL's OWN `CALLABLE` PATTERN**, **NOT** A DOT-LESS ONE.**
+        # **⇒ MEASURED 2026-11-10: THE DOT-LESS REGEX **DROPPED EVERY DOTTED DEF** ON THE
+        # MOVE -- `ops_cl.bend` LOST **101** LINES AND `ops_webgpu.bend` LOST **41** --
+        # **AND THE MOVE WAS STILL REPORTED AS SUCCESSFUL**, **BECAUSE `order_defs` RETURNS
+        # ONLY THE BLOCKS IT RECOGNISED AND SILENTLY DROPS THE REST.**
+        m = re.match(r"^def ([a-z_][a-z0-9_]*(?:\.[a-z0-9_]+)*)\(", l)
         if not m:
             continue
         s = i
         while s > 0 and lines[s - 1].strip().startswith("#"):
             s -= 1
-        e = i + 1
-        while e < len(lines) and not lines[e].startswith("def ") and not lines[e].strip().startswith("#"):
-            e += 1
+        e = block_end(lines, i)
         defs[m.group(1)] = lines[s:e]
         order.append(m.group(1))
-    body = "\n".join(lines)
+        claimed.update(range(s, e))
+    # **⇒ AND THE **UNCLAIMED** LINES ARE THE **NON-DEF** CONTENT** -- **A `type`
+    # DECLARATION, A BLANK LINE, A STANDALONE COMMENT** -- **AND THEY ARE EMITTED IN
+    # ORDER, **INTERLEAVED WITH THE DEFS** BY THE POSITION OF THEIR FIRST LINE.**
+    loose: list[tuple[int, list[str]]] = []
+    i = 0
+    while i < len(lines):
+        if i in claimed:
+            i += 1
+            continue
+        j = i
+        while j < len(lines) and j not in claimed:
+            j += 1
+        loose.append((i, lines[i:j]))
+        i = j
     out: list[str] = []
     seen: set[str] = set()
 
@@ -191,6 +236,11 @@ def order_defs(lines: list[str]) -> list[str]:
 
     for n in order:
         emit(n)
+    # **⇒ AND THE LOOSE CONTENT IS APPENDED, **BECAUSE A `type` DECLARATION IS **NOT
+    # DEPENDENT ON** THE DEFS THAT USE IT** -- **BEND READS A TYPE DECLARATION WHERE IT
+    # IS WRITTEN AND THE USES THAT FOLLOW IT.**
+    for _, chunk in loose:
+        out.extend(chunk)
     return out
 
 
