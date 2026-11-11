@@ -580,12 +580,12 @@ def mp_perm(p2: List<&2, U32>, xa: List<&2, U32>) -> List<&2, U32>:
 # **`lambda x,x2: x2.src[0].permute(tuple(x2.marg[i] for i in x.marg))`** -- **AND
 # **THE **CURRENT **ONE **GOES **THROUGH **`permute`**, **WHICH **GOES **THROUGH **`_mop`**,
 # **AND **SO **THE **MERGED **NODE **IS **`PERMUTE(x2.src[0], order-STACK)`.**
-# **⇒ THE **MERGED **PERMUTE's **SRCS** -- **THE **DATA (`src[0]`) **AND **THE **ORDER
+# **THE **MERGED **PERMUTE's **SRCS** -- **THE **DATA (`src[0]`) **AND **THE **ORDER
 # **STACK** (`src[1]`) -- **AND **THE **ORDER **STACK **IS **BUILT **IN **THE **SAME
-# **ARENA** **AS **THE **NODE**, **BECAUSE **THE **NODE **IS **BUILT **THERE** -- **⇒ AND
+# **ARENA** **AS **THE **NODE**, **BECAUSE **THE **NODE **IS **BUILT **THERE** -- **AND
 # **THE **HELPER **IS **A **DEF **OF **ITS **OWN** **BECAUSE **A **CROSS-FILE **`Found`
 # **CANNOT **BE **BOUND **AND **READ **TWICE** ("consumed more than once") **AND **BEND
-# **SPENDS **A **BINDER **WHEN **IT **READS **IT** -- **⇒ AND **THE **PORT's **OWN **IDiom
+# **SPENDS **A **BINDER **WHEN **IT **READS **IT** -- **AND **THE **PORT's **OWN **IDiom
 # **IS **THE **`let` **AND **THE **ONE **READ**.**
 def mp_perm_srcs(ar: O.Arena, perm2: List<&2, U32>, x2: U32) -> List<&2, U32>:
   [x2, O.shape_arg(ar, perm2)]
