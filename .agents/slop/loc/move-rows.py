@@ -27,6 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 
+DECL = re.compile(r"^\s*(?:def|type)\s+([A-Za-z_][\w.]*)")
 QUOTED = re.compile(r'"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\'')
 WORD = re.compile(r"[A-Za-z_]\w*")
 IMPORT = re.compile(r"^import\s+(\S+)\s+as\s+(\w+)")
@@ -49,7 +50,13 @@ import ./../{port_noext} as P
 
 def region(lines: list[str]) -> tuple[int, int]:
     start = next(i for i, l in enumerate(lines) if PRINTER.match(l))
-    main = next(i for i, l in enumerate(lines[start:], start) if l.startswith("def main"))
+    # The region's END is the first column-0 line that is not a comment after the
+    # region's own `main`. A file whose region has NO `main` -- because the rows
+    # were already moved once and the port kept only the seam -- ends at EOF.
+    mains = [i for i, l in enumerate(lines[start:], start) if l.startswith("def main")]
+    if not mains:
+        return start, len(lines)
+    main = mains[0]
     end = len(lines)
     for i in range(main + 1, len(lines)):
         if lines[i] and not lines[i][0].isspace() and not lines[i].startswith("#"):
@@ -68,12 +75,32 @@ def names_of(lines: list[str], end: int) -> set[str]:
     return names
 
 
+METHOD = re.compile(r"^def\s+([A-Za-z_]\w*)\.")
+DECLARED = re.compile(r"^(?:def|type)\s+([A-Za-z_]\w*)(?:\s|\(|$)", re.M)
+ASSIGNED = re.compile(r"^([A-Za-z_]\w*)\s*[:=]", re.M)
+
+
+def declared_in(lines: list[str]) -> set[str]:
+    """Names the region itself declares -- and only those.
+
+    A `def Hit.tg(...)` EXTENDS a type the port defines; it does not make `Hit`
+    local, so the method form contributes nothing here. Measured: counting it made
+    the driver spell `case Hit{...}` at a `type Hit` that had stayed in the port,
+    and the error was `a declared constructor (unknown: Hit)`.
+    """
+    text = "\n".join(lines)
+    return set(DECLARED.findall(text)) | set(ASSIGNED.findall(text))
+
+
 def prefix(line: str, names: set[str]) -> str:
     # A quoted span is DATA. A row name like `"npy-done"` holds `npy`, and `npy` is
     # also a port def, so a prefixer that reads through quotes printed `P.npy-done=1`.
     inside = set()
     for q in QUOTED.finditer(line):
         inside.update(range(q.start(), q.end()))
+    # A declaration NAME is the new binding, not a reference to the port's.
+    for d in DECL.finditer(line):
+        inside.update(range(d.start(1), d.end(1)))
     out, i = [], 0
     for m in WORD.finditer(line):
         out.append(line[i : m.start()])
@@ -96,7 +123,29 @@ def main() -> int:
     driver = Path(args.driver)
     lines = port.read_text().split("\n")
     start, end = region(lines)
-    names = names_of(lines, start)
+    # A name the region DECLARES is the region's own, and gets no prefix even when
+    # the port declares one too -- `type TFP` is in both, and prefixing its uses
+    # while the declaration stays local is a type error at the first call.
+    # A name the port declares BEFORE the region and the region EXTENDS -- a
+    # `def Cx.k` where `type Cx` is above -- is a namespace the region owns
+    # methods of, and the driver cannot reopen it: the port's `Cx` and the
+    # driver's `Cx` would be two different types. So such a namespace stays
+    # with the port, and the region is cut ABOVE it.
+    pre = names_of(lines, start)
+    # A namespace the region EXTENDS -- `def Cx.k` where `type Cx` is ABOVE the
+    # region -- cannot move: the port's `Cx` and the driver's `Cx` would be two
+    # different types, and `nvdev.bend`'s `IP.Cx` would name the port's. So the
+    # region is cut ABOVE the first such namespace, and the namespace stays with
+    # the port.
+    methods = {m.group(1) for m in METHOD.finditer("\n".join(lines[start:end]))}
+    extended = {n for n in methods if n in pre}
+    if extended:
+        for i, line in enumerate(lines[start:end], start):
+            m = re.match(r"^(?:def|type)\s+([A-Za-z_]\w*)(?:\s|\(|$)", line)
+            if m and m.group(1) in extended:
+                start = i
+                break
+    names = names_of(lines, start) - declared_in(lines[start:end])
     header = HEADER.format(
         path=args.driver,
         port=args.port,

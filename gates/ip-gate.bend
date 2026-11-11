@@ -4,6 +4,11 @@
 # instrument: `gates/README.md:173` -- "a gate's `.bend` driver and its CPython
 # oracle sit in `gates/`, named by the gate that needs them."
 #
+# THE SEAM IS HERE TWICE, ON PURPOSE. The rows call `tr.tagname` and `Tr.emit`,
+# and `runtime/support/nv/nvdev.bend` imports the PORT and calls the same names.
+# So the driver carries the seam's vocabulary and the port keeps its own copy: a
+# type is a type, and a driver cannot hold a type another file imports.
+#
 # Every row calls a port def through `P.` and defines nothing the port needs.
 
 import Base
@@ -21,6 +26,240 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # THREE rows per struct: nf, size, fields. nf and size are the record's own
 # values and the field string is a SECOND transcription of the same struct, so a
 # dropped name is caught by nf and a wrong offset only by the field row.
+# ELEVEN tags, AND eleven is the number of call sites this file emits. The list
+# used to run to twenty with gaps -- `C_HANDLE`, `C_ALLOC_MEM` and six RPC-kind
+# tags that nothing ever passed to `Tr.emit` -- and the gaps were load-bearing
+# twice over: they kept the dead constants out of the dead-def audit, and
+# `C_ALLOC_MEM` was passed to `rp.record` WHERE PYTHON PASSES A FUNCTION ID, so
+# the alloc trace claimed to send function 8 and sent function 4. The tags are
+# numbered densely because the gate prints them and a hole in a printed sequence
+# is a hole nobody can read.
+def C_RPC_SEND() -> U32: 0
+
+def C_QUEUE_WRITE() -> U32: 1
+
+def C_QUEUE_WP() -> U32: 2
+
+def C_BARRIER() -> U32: 3
+
+def C_QUEUE_HEAD() -> U32: 4
+
+def C_WAIT_RESP() -> U32: 5
+
+def C_RPC_RAISE() -> U32: 6
+
+def C_FSP_EMEMC() -> U32: 7
+
+def C_FSP_EMEMD() -> U32: 8
+
+def C_FSP_TAIL() -> U32: 9
+
+def C_FSP_HEAD() -> U32: 10
+
+
+type Cx is Data:
+  Cx{k: U32, a: U32, b: U32, c: U32}
+
+
+def Cx.of(k: U32, a: U32, b: U32, c: U32) -> Cx:
+  Cx{k, a, b, c}
+
+
+def Cx.k(x: Cx) -> U32:
+  match x:
+    case Cx{+k, a, b, c}: k
+
+
+def Cx.a(x: Cx) -> U32:
+  match x:
+    case Cx{k, +a, b, c}: a
+
+
+def Cx.b(x: Cx) -> U32:
+  match x:
+    case Cx{k, a, +b, c}: b
+
+
+def Cx.c(x: Cx) -> U32:
+  match x:
+    case Cx{k, a, b, +c}: c
+
+
+# THE MACHINE STATE OF THE SEAM. `wp` and `seq` are the ring's own fields, so they
+# live here rather than being recomputed per call; `handle` is the
+# `itertools.count(0xcf000000)` from :348; `fail_at` is the call ordinal at which
+# the seam reports a refusal (0 = never, which is every successful fixture).
+type Tr is Data:
+  Tr{calls: List<&2, Cx>, wp: U32, seq: U32, handle: U32, fail_at: U32, refused: Bool}
+
+
+def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 3472883712, 0, False{}}
+
+def Tr.of.wp(+wp: U32) -> Tr: Tr{Nil{}, wp, 0, 3472883712, 0, False{}}
+
+
+def Tr.calls(t: Tr) -> List<&2, Cx>:
+  match t:
+    case Tr{+calls, wp, seq, handle, fail_at, refused}: calls
+
+
+def Tr.wp(t: Tr) -> U32:
+  match t:
+    case Tr{calls, +wp, seq, handle, fail_at, refused}: wp
+
+
+def Tr.seq(t: Tr) -> U32:
+  match t:
+    case Tr{calls, wp, +seq, handle, fail_at, refused}: seq
+
+
+def Tr.handle(t: Tr) -> U32:
+  match t:
+    case Tr{calls, wp, seq, +handle, fail_at, refused}: handle
+
+
+def Tr.refused(t: Tr) -> Bool:
+  match t:
+    case Tr{calls, wp, seq, handle, fail_at, +refused}: refused
+
+
+def Tr.ncalls(t: Tr) -> U32:
+  match t:
+    case Tr{+calls, wp, seq, handle, fail_at, refused}: U32.from_nat(List.length(&2, Cx, calls))
+
+
+# the refusal at `fail_at`, and the call ordinal the emit is ABOUT
+def tr.hit(refused: Bool, fail_at: U32, n: U32) -> Bool:
+  Bool.or(refused, U32.is_eq(U32.add(n, 1), fail_at))
+
+
+# THE SEAM. `Bool.pick` answers its TRUE arm first and the untaken arm does not
+# reach the answer, so the accumulator is computed by `tr.go` and the append is
+# the CALL -- see the note on `P.bump`. The failing call IS appended; everything
+# after it is not, which is what makes a refusal a truncation.
+def Tr.emit.go(+k: U32, +a: U32, +b: U32, +c: U32, +calls: List<&2, Cx>, +n: U32,
+               refused: Bool) -> List<&2, Cx>:
+  Bool.pick(List<&2, Cx>, refused, calls, List.append(&2, Cx, calls, [Cx.of(k, a, b, c)]))
+
+
+def tr.put2(+calls: List<&2, Cx>, +wp: U32, +seq: U32, +handle: U32, +fail_at: U32,
+            +refused: Bool) -> Tr:
+  Tr{calls, wp, seq, handle, fail_at, refused}
+
+
+def Tr.fail_at(+t: Tr, n: U32) -> Tr:
+  match t:
+    case Tr{calls, wp, seq, handle, +fail_at, refused}:
+      Tr{calls, wp, seq, handle, n, refused}
+
+
+
+# :38-55 `_send_rpc_record`, AND NOTHING ELSE. The five facts the trace carries
+# are the five the Python computes, in the order Python computes them:
+#
+#   length    = len(msg) + 0x20                                  (:40)
+#   elemCount = ceildiv(len(header) + len(msg) + 48, msgSize)    (:43)
+#   total     = elemCount * msgSize                              (:45)
+#   off/first = wp * msgSize, min(total, ring_len - wp * msgSize) (:48)
+#   wp'       = (wp + elemCount) % msgCount                      (:51)
+#
+# and then `seq += 1` (:54) and `NV_PGSP_QUEUE_HEAD[0].write(0x0)` (:55), with a
+# memory barrier between the pointer store and the doorbell (:52,:78).
+
+def tr.fail(+t: Tr) -> U32:
+  match t:
+    case Tr{calls, wp, seq, handle, +fail_at, refused}: fail_at
+
+
+def tr.tagname(+k: U32) -> String:
+  Bool.pick(String, U32.is_eq(k, C_RPC_SEND()), "send",
+    Bool.pick(String, U32.is_eq(k, C_QUEUE_WRITE()), "qwrite",
+      Bool.pick(String, U32.is_eq(k, C_QUEUE_WP()), "qwp",
+        Bool.pick(String, U32.is_eq(k, C_BARRIER()), "barrier",
+          Bool.pick(String, U32.is_eq(k, C_QUEUE_HEAD()), "doorbell",
+            Bool.pick(String, U32.is_eq(k, C_WAIT_RESP()), "wait",
+              Bool.pick(String, U32.is_eq(k, C_RPC_RAISE()), "raise",
+                Bool.pick(String, U32.is_eq(k, C_FSP_EMEMC()), "ememc",
+                  Bool.pick(String, U32.is_eq(k, C_FSP_EMEMD()), "ememd",
+                    Bool.pick(String, U32.is_eq(k, C_FSP_TAIL()), "tail",
+                      Bool.pick(String, U32.is_eq(k, C_FSP_HEAD()), "head", "?")))))))))))
+
+
+def tr.one(+x: Cx) -> String:
+  String.concat([tr.tagname(Cx.k(x)), "(", U32.show(Cx.a(x)), ",", U32.show(Cx.b(x)), ",",
+                 U32.show(Cx.c(x)), ")"])
+
+
+def tr.sep(+first: Bool) -> String: Bool.pick(String, first, ",", "")
+
+
+def tr.put_seq(+t: Tr, want: U32) -> Tr:
+  match t:
+    case Tr{calls, wp, +cur, handle, fail_at, refused}:
+      Tr{calls, wp, want, handle, fail_at, refused}
+
+
+
+# :77 `self.rx_view[0] = (self.rx_view[0] + round_up(hdr.length, msgSize) //
+# msgSize) % msgCount` -- the RESPONSE pointer advances by the ROUNDED length, so
+# a header of 0x1001 consumes TWO elements and not one, and the modulo is by
+# `msgCount` and not by the ring length. `ip_rp_rx_*` walks six (rx, length)
+# pairs so the boundary, the modulo and the rounding each have a row.
+
+# `refused` is RECOMPUTED from the ordinal the emit was ABOUT, not read: `Tr.ncalls`
+# is evaluated before the emit is spliced in, so it counts the calls BEFORE this
+# one and `n + 1` is this call's ordinal. Reading `refused` out of the pattern AND
+# asking `Tr.hit(t)` for it is two reads of one binder and the compiler refuses it
+# as `refused (consumed more than once)` -- which names the field, not the twice.
+def tr.put(+t: Tr, +calls: List<&2, Cx>, n: U32) -> Tr:
+  match t:
+    case Tr{c2, wp, seq, handle, +fail_at, refused}:
+      tr.put2(calls, wp, seq, handle, fail_at, tr.hit(refused, fail_at, n))
+
+
+# ONE word of the image, by INDEX. The image is
+#   [0..7]   authTagBuffer (zero)          [8]  checkSum   (ZERO here -- see above)
+#   [8..15]  aadBuffer (zero)              [9]  seqNum
+#   [10]     elemCount                     [11] padding (zero)
+#   [12]     header_version                [13] signature
+#   [14]     length                        [15] function
+#   [16]     rpc_result                    [17] rpc_result_private
+#   [18]     sequence (zero)               [19] u (zero)
+#
+# `elemCount` is at [10] and not [11]. `ip_rp_0_w10` is 1 for the seven requests
+# and `ip_rp_0_w11` is 0, read off CPython's `bytes(phdr)`; this comment said the
+# other way round for the whole life of the file, which no gate could see because
+# a comment is not a row. The FOUR ZERO slots ([8], [11], [18], [19]) have no
+# `rp.w_*` constant because `rp.word2` has no arm for them -- the arm would answer
+# `0`, and a branch whose only answer is a literal is a comment with a runtime.
+def tr.go(+xs: List<&2, Cx>, +first: Bool) -> String:
+  match xs:
+    case Nil{}: ""
+    case x <> r: String.concat([tr.sep(first), tr.one(x), tr.go(r, True{})])
+
+
+# the `seq` the NEXT record will use -- :54's `self.seq += 1` means the record
+# being built uses the CURRENT value and the queue ends up one higher.
+# THE parameter and the binder must not share a name. `def tr.put_seq(+t, seq)`
+# with `case Tr{calls, wp, +seq, ...}` binds the binder OVER the parameter, so the
+# record is rebuilt with the queue's OWN sequence and `tr.at` is a no-op: all seven
+# requests printed `ip_rp_<i>_seq1=1` and every checksum was the sequence-0 value.
+# A pattern binder that shadows a parameter is reported as an ARITY error only
+# when the names collide with a FIELD; here it silently used the wrong value.
+def tr.at(+t: Tr, want: U32) -> Tr: tr.put_seq(t, want)
+
+
+# eight `next()` calls on `itertools.count(0xcf000000)`, folded -- :348.
+def Tr.emit(+k: U32, +a: U32, +b: U32, +c: U32, +t: Tr) -> Tr:
+  match t:
+    case Tr{+calls, wp, seq, handle, fail_at, +refused}:
+      tr.put(t, Tr.emit.go(k, a, b, c, calls, 0, refused), Tr.ncalls(t))
+
+
+def tr.show(+t: Tr) -> String: tr.go(Tr.calls(t), False{})
+
+
+
 def st_rows.go(+xs: List<&2, P.St>, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: List.reverse(&2, String, acc)
@@ -916,146 +1155,6 @@ def t_fsp_pad(+blen: U32) -> IO(Unit):
     urow(String.concat(["ip_fsp_tot_", U32.show(blen)]), fsp_tot(blen))
 
 
-# ELEVEN tags, AND eleven is the number of call sites this file emits. The list
-# used to run to twenty with gaps -- `C_HANDLE`, `C_ALLOC_MEM` and six RPC-kind
-# tags that nothing ever passed to `Tr.emit` -- and the gaps were load-bearing
-# twice over: they kept the dead constants out of the dead-def audit, and
-# `C_ALLOC_MEM` was passed to `rp.record` WHERE PYTHON PASSES A FUNCTION ID, so
-# the alloc trace claimed to send function 8 and sent function 4. The tags are
-# numbered densely because the gate prints them and a hole in a printed sequence
-# is a hole nobody can read.
-def C_RPC_SEND() -> U32: 0
-
-def C_QUEUE_WRITE() -> U32: 1
-
-def C_QUEUE_WP() -> U32: 2
-
-def C_BARRIER() -> U32: 3
-
-def C_QUEUE_HEAD() -> U32: 4
-
-def C_WAIT_RESP() -> U32: 5
-
-def C_RPC_RAISE() -> U32: 6
-
-def C_FSP_EMEMC() -> U32: 7
-
-def C_FSP_EMEMD() -> U32: 8
-
-def C_FSP_TAIL() -> U32: 9
-
-def C_FSP_HEAD() -> U32: 10
-
-
-type Cx is Data:
-  Cx{k: U32, a: U32, b: U32, c: U32}
-
-
-def Cx.of(k: U32, a: U32, b: U32, c: U32) -> Cx:
-  Cx{k, a, b, c}
-
-
-def Cx.k(x: Cx) -> U32:
-  match x:
-    case Cx{+k, a, b, c}: k
-
-
-def Cx.a(x: Cx) -> U32:
-  match x:
-    case Cx{k, +a, b, c}: a
-
-
-def Cx.b(x: Cx) -> U32:
-  match x:
-    case Cx{k, a, +b, c}: b
-
-
-def Cx.c(x: Cx) -> U32:
-  match x:
-    case Cx{k, a, b, +c}: c
-
-
-# THE MACHINE STATE OF THE SEAM. `wp` and `seq` are the ring's own fields, so they
-# live here rather than being recomputed per call; `handle` is the
-# `itertools.count(0xcf000000)` from :348; `fail_at` is the call ordinal at which
-# the seam reports a refusal (0 = never, which is every successful fixture).
-type Tr is Data:
-  Tr{calls: List<&2, Cx>, wp: U32, seq: U32, handle: U32, fail_at: U32, refused: Bool}
-
-
-def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 3472883712, 0, False{}}
-
-def Tr.of.wp(+wp: U32) -> Tr: Tr{Nil{}, wp, 0, 3472883712, 0, False{}}
-
-
-def Tr.calls(t: Tr) -> List<&2, Cx>:
-  match t:
-    case Tr{+calls, wp, seq, handle, fail_at, refused}: calls
-
-
-def Tr.wp(t: Tr) -> U32:
-  match t:
-    case Tr{calls, +wp, seq, handle, fail_at, refused}: wp
-
-
-def Tr.seq(t: Tr) -> U32:
-  match t:
-    case Tr{calls, wp, +seq, handle, fail_at, refused}: seq
-
-
-def Tr.handle(t: Tr) -> U32:
-  match t:
-    case Tr{calls, wp, seq, +handle, fail_at, refused}: handle
-
-
-def Tr.refused(t: Tr) -> Bool:
-  match t:
-    case Tr{calls, wp, seq, handle, fail_at, +refused}: refused
-
-
-def Tr.ncalls(t: Tr) -> U32:
-  match t:
-    case Tr{+calls, wp, seq, handle, fail_at, refused}: U32.from_nat(List.length(&2, Cx, calls))
-
-
-# the refusal at `fail_at`, and the call ordinal the emit is ABOUT
-def tr.hit(refused: Bool, fail_at: U32, n: U32) -> Bool:
-  Bool.or(refused, U32.is_eq(U32.add(n, 1), fail_at))
-
-
-# THE SEAM. `Bool.pick` answers its TRUE arm first and the untaken arm does not
-# reach the answer, so the accumulator is computed by `tr.go` and the append is
-# the CALL -- see the note on `P.bump`. The failing call IS appended; everything
-# after it is not, which is what makes a refusal a truncation.
-def Tr.emit.go(+k: U32, +a: U32, +b: U32, +c: U32, +calls: List<&2, Cx>, +n: U32,
-               refused: Bool) -> List<&2, Cx>:
-  Bool.pick(List<&2, Cx>, refused, calls, List.append(&2, Cx, calls, [Cx.of(k, a, b, c)]))
-
-
-def tr.put2(+calls: List<&2, Cx>, +wp: U32, +seq: U32, +handle: U32, +fail_at: U32,
-            +refused: Bool) -> Tr:
-  Tr{calls, wp, seq, handle, fail_at, refused}
-
-
-def Tr.fail_at(+t: Tr, n: U32) -> Tr:
-  match t:
-    case Tr{calls, wp, seq, handle, +fail_at, refused}:
-      Tr{calls, wp, seq, handle, n, refused}
-
-
-
-# :38-55 `_send_rpc_record`, AND NOTHING ELSE. The five facts the trace carries
-# are the five the Python computes, in the order Python computes them:
-#
-#   length    = len(msg) + 0x20                                  (:40)
-#   elemCount = ceildiv(len(header) + len(msg) + 48, msgSize)    (:43)
-#   total     = elemCount * msgSize                              (:45)
-#   off/first = wp * msgSize, min(total, ring_len - wp * msgSize) (:48)
-#   wp'       = (wp + elemCount) % msgCount                      (:51)
-#
-# and then `seq += 1` (:54) and `NV_PGSP_QUEUE_HEAD[0].write(0x0)` (:55), with a
-# memory barrier between the pointer store and the doorbell (:52,:78).
-
 type Rq is Data:
   Rq{func: U32, plen: U32, elem: U32, total: U32, off: U32, first: U32,
      wraps: Bool, wp: U32, seq: U32, cksum: U32, t: Tr}
@@ -1251,11 +1350,6 @@ def rp.wrapbit(+total: U32, +wp: U32) -> U32:
   Bool.pick(U32, rp.wraps(total, wp), 1, 0)
 
 
-def tr.fail(+t: Tr) -> U32:
-  match t:
-    case Tr{calls, wp, seq, handle, +fail_at, refused}: fail_at
-
-
 def rp.cont_more(+plen: U32) -> U32:
   Bool.pick(U32, U32.is_gt(plen, rp.max_payload),
             cdiv(U32.sub(plen, rp.max_payload), rp.max_payload), 0)
@@ -1336,41 +1430,6 @@ def door.token(+tok: U32, +rl: U32, +chip: String) -> U32:
 # an ORDER row is a VALUE the differ can compare and not merely a count. Each
 # entry is `tag(a,b,c)`, and the tag NAME is spelled out rather than numbered so a
 # row can be read without the source.
-
-def tr.tagname(+k: U32) -> String:
-  Bool.pick(String, U32.is_eq(k, C_RPC_SEND()), "send",
-    Bool.pick(String, U32.is_eq(k, C_QUEUE_WRITE()), "qwrite",
-      Bool.pick(String, U32.is_eq(k, C_QUEUE_WP()), "qwp",
-        Bool.pick(String, U32.is_eq(k, C_BARRIER()), "barrier",
-          Bool.pick(String, U32.is_eq(k, C_QUEUE_HEAD()), "doorbell",
-            Bool.pick(String, U32.is_eq(k, C_WAIT_RESP()), "wait",
-              Bool.pick(String, U32.is_eq(k, C_RPC_RAISE()), "raise",
-                Bool.pick(String, U32.is_eq(k, C_FSP_EMEMC()), "ememc",
-                  Bool.pick(String, U32.is_eq(k, C_FSP_EMEMD()), "ememd",
-                    Bool.pick(String, U32.is_eq(k, C_FSP_TAIL()), "tail",
-                      Bool.pick(String, U32.is_eq(k, C_FSP_HEAD()), "head", "?")))))))))))
-
-
-def tr.one(+x: Cx) -> String:
-  String.concat([tr.tagname(Cx.k(x)), "(", U32.show(Cx.a(x)), ",", U32.show(Cx.b(x)), ",",
-                 U32.show(Cx.c(x)), ")"])
-
-
-def tr.sep(+first: Bool) -> String: Bool.pick(String, first, ",", "")
-
-
-def tr.put_seq(+t: Tr, want: U32) -> Tr:
-  match t:
-    case Tr{calls, wp, +cur, handle, fail_at, refused}:
-      Tr{calls, wp, want, handle, fail_at, refused}
-
-
-
-# :77 `self.rx_view[0] = (self.rx_view[0] + round_up(hdr.length, msgSize) //
-# msgSize) % msgCount` -- the RESPONSE pointer advances by the ROUNDED length, so
-# a header of 0x1001 consumes TWO elements and not one, and the modulo is by
-# `msgCount` and not by the ring length. `ip_rp_rx_*` walks six (rx, length)
-# pairs so the boundary, the modulo and the rounding each have a row.
 
 def rx_up(+hlen: U32) -> U32: ru(hlen, rp.msg_size())
 
@@ -1917,32 +1976,6 @@ def t_am() -> IO(Unit):
     row("ip_am_pages_bad", am_pages_ok(4096, 8192))
 
 
-# `refused` is RECOMPUTED from the ordinal the emit was ABOUT, not read: `Tr.ncalls`
-# is evaluated before the emit is spliced in, so it counts the calls BEFORE this
-# one and `n + 1` is this call's ordinal. Reading `refused` out of the pattern AND
-# asking `Tr.hit(t)` for it is two reads of one binder and the compiler refuses it
-# as `refused (consumed more than once)` -- which names the field, not the twice.
-def tr.put(+t: Tr, +calls: List<&2, Cx>, n: U32) -> Tr:
-  match t:
-    case Tr{c2, wp, seq, handle, +fail_at, refused}:
-      tr.put2(calls, wp, seq, handle, fail_at, tr.hit(refused, fail_at, n))
-
-
-# ONE word of the image, by INDEX. The image is
-#   [0..7]   authTagBuffer (zero)          [8]  checkSum   (ZERO here -- see above)
-#   [8..15]  aadBuffer (zero)              [9]  seqNum
-#   [10]     elemCount                     [11] padding (zero)
-#   [12]     header_version                [13] signature
-#   [14]     length                        [15] function
-#   [16]     rpc_result                    [17] rpc_result_private
-#   [18]     sequence (zero)               [19] u (zero)
-#
-# `elemCount` is at [10] and not [11]. `ip_rp_0_w10` is 1 for the seven requests
-# and `ip_rp_0_w11` is 0, read off CPython's `bytes(phdr)`; this comment said the
-# other way round for the whole life of the file, which no gate could see because
-# a comment is not a row. The FOUR ZERO slots ([8], [11], [18], [19]) have no
-# `rp.w_*` constant because `rp.word2` has no arm for them -- the arm would answer
-# `0`, and a branch whose only answer is a literal is a comment with a runtime.
 def rp.word(+i: U32, +func: U32, +plen: U32, +seq: U32) -> U32:
   rp.word2(rp.which(i), i, func, plen, seq)
 
@@ -1972,24 +2005,6 @@ def rp.cont_n(+plen: U32) -> U32:
   U32.add(1, rp.cont_more(plen))
 
 
-def tr.go(+xs: List<&2, Cx>, +first: Bool) -> String:
-  match xs:
-    case Nil{}: ""
-    case x <> r: String.concat([tr.sep(first), tr.one(x), tr.go(r, True{})])
-
-
-# the `seq` the NEXT record will use -- :54's `self.seq += 1` means the record
-# being built uses the CURRENT value and the queue ends up one higher.
-# THE parameter and the binder must not share a name. `def tr.put_seq(+t, seq)`
-# with `case Tr{calls, wp, +seq, ...}` binds the binder OVER the parameter, so the
-# record is rebuilt with the queue's OWN sequence and `tr.at` is a no-op: all seven
-# requests printed `ip_rp_<i>_seq1=1` and every checksum was the sequence-0 value.
-# A pattern binder that shadows a parameter is reported as an ARITY error only
-# when the names collide with a FIELD; here it silently used the wrong value.
-def tr.at(+t: Tr, want: U32) -> Tr: tr.put_seq(t, want)
-
-
-# eight `next()` calls on `itertools.count(0xcf000000)`, folded -- :348.
 def hgen.nxt7() -> U32: hgen.go(7n, hgen.first())
 
 
@@ -2180,12 +2195,6 @@ def t_cls() -> IO(Unit):
     row("ip_cls_AD_viddec_set", Bool.not(U32.is_eq(cls.viddec("AD102"), 0)))
 
 
-def Tr.emit(+k: U32, +a: U32, +b: U32, +c: U32, +t: Tr) -> Tr:
-  match t:
-    case Tr{+calls, wp, seq, handle, fail_at, +refused}:
-      tr.put(t, Tr.emit.go(k, a, b, c, calls, 0, refused), Tr.ncalls(t))
-
-
 def rp.acc4(+acc: U32, +p: Nat, +func: U32, +plen: U32, +seq: U32, +hi: Bool) -> U32:
   U32.xor(acc, rp.wordof(p, func, plen, seq, hi))
 
@@ -2200,9 +2209,6 @@ def rp.door(+e: Tr) -> Tr: Tr.emit(C_QUEUE_HEAD(), 0, 0, 0, e)
 
 def rp.bumped2(+seq: U32, +handle: U32, +e: Tr, +s2: U32) -> Tr:
   Tr{Tr.calls(e), Tr.wp(e), s2, handle, rp.fail_of(e), Tr.refused(e)}
-
-
-def tr.show(+t: Tr) -> String: tr.go(Tr.calls(t), False{})
 
 
 def fsp.put(+t: Tr, +w: U32) -> Tr: Tr.emit(C_FSP_EMEMD(), w, 0, 0, t)
@@ -2945,3 +2951,4 @@ def main() -> IO(Unit):
     +c : Unit <- t_trace()
     +d : Unit <- t_refuse()
     IO.print("ip-done=1")
+
