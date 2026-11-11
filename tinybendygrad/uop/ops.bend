@@ -3106,6 +3106,83 @@ def shape_to_shape_arg(+ar: Arena, n: Maybe<&2, U32>) -> U32:
 # :1219, :1002. The `device_range_src` half is P6 (no multi-device ALLOC in the port)
 # and is `()` for a single device (`mixin/creation.bend:429 symbol=cr_empty` says so), so the src of a
 # PARAM/BUFFER/ALLOC here is exactly this one element.
+# **⇒ THE **TUPLE **FORM **OF **`shape_to_shape_arg`** -- **AND **THIS **IS **THE **ONE
+# **UPSTREAM's **`_mop` (`ops.py:790-791`) **CALLS**:
+#
+# ```
+# usrcs = [shape_to_shape_arg(arg) for arg in src_args]
+# return UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)
+# ```
+#
+# **⇒ AND **IT **LIVES **HERE**, **AND **NOT **ONLY **HERE** -- **⇒ THE **PORT **HAD **THREE
+# **COPIES **OF **THE **SHAPE-ARG **BUILDING **BECAUSE **EVERY **FILE **THAT **NEEDED **IT
+# **COULD **NOT **SEE **THE **OTHERS**:**
+#   - **`mixin/movement.bend`'s **`G.stkN`** (**AND **`G.stk4`**, **THE **HARD-CODED
+#     **LENGTH-4 **ONE**), **AND**
+#   - **`mixin/gradient.bend`'s **`gstkN`** (**AND **THE **COPY **IS **THE **POINT**:
+#     **`mixin/gradient.bend` **CANNOT **IMPORT **`mixin/movement.bend`**, **BECAUSE
+#     **`mixin/movement.bend` **IMPORTS **`tensor.bend` **AND **`tensor.bend` **IMPORTS
+#     **`mixin/gradient.bend`**), **AND**
+#   - **`uop/ops.bend`'s **THE **SCALAR **`shape_to_shape_arg`** (**WHICH **IS **THE
+#     **0-OR-1-DIM **FORM**).
+#
+# **⇒ AND **`uop/ops.bend` **IS **THE **ONE **FILE **EVERY **ONE **OF **THEM **CAN **SEE**
+# -- **⇒ AND **SO **THE **TUPLE **FORM **IS **HERE**, **AND **THE **OTHER **TWO **CALL
+# **IT**, **AND **THE **DUPLICATION **IS **THE **DEFECT **AND **NOT **THE **COPY**.**
+#
+# **⇒ AND **THE **LENGTH-1 **ARM **IS **A **BARE **CONST** -- **`ops.py:112`: `return src[0]
+# if len(src) == 1 else UOp(Ops.STACK, src=src)`** -- **AND **THE **EMPTY **ARM **IS **AN
+# **EMPTY **STACK**, **WHICH **IS **WHAT **`shape_to_shape_arg.of` **ALREADY **DOES**.
+def shape_arg.const(+ar: Arena, v: U32) -> Found:
+  UOp.const(ar, CInt{H.i64_of_i32(v)})
+
+# **⇒ THE **PUSH **IS **A **DEF **OF **ITS **OWN**, **BECAUSE **BEND **SPENDS **A **BINDER
+# **WHEN **IT **READS **IT** ("consumed more than once") **AND **THE **RECURSIVE **CALL's
+# **ARGUMENTS **MUST **EACH **BE **SMALLER **THAN **THE **MATCHED **EXPRESSION** ("a call
+# smaller than ...") -- **⇒ AND **THIS **IS **THE **IDiom **`mixin/movement.bend`'s
+# **`G.stk.go`/`G.stk.push` **USES**, **AND **THE **TWO **COPIES **OF **IT **ARE **THE
+# **DUPLICATION **THIS **FILE **EXISTS **TO **END**.**
+type ShapeArg is Data:
+  ShapeArg{ar: Arena, acc: List<&2, U32>}
+
+def ShapeArg.ar(+s: ShapeArg) -> Arena:
+  match s:
+    case ShapeArg{ar, acc}: ar
+
+def ShapeArg.acc(+s: ShapeArg) -> List<&2, U32>:
+  match s:
+    case ShapeArg{ar, acc}: acc
+
+def shape_arg.push(+ar: Arena, acc: List<&2, U32>, v: U32) -> ShapeArg:
+  +c = shape_arg.const(ar, v)
+  ShapeArg{Found.ar(c), List.append(&2, U32, acc, [Found.i(c)])}
+
+def shape_arg.go(ys: List<&2, U32>, +s: ShapeArg) -> Found:
+  match ys:
+    case Nil{}:
+      UOp.new(ShapeArg.ar(s), OpsSTACK{}, ShapeArg.acc(s), ANone{}, TNone{})
+    case v <> t:
+      shape_arg.go(t, shape_arg.push(ShapeArg.ar(s), ShapeArg.acc(s), v))
+
+def shape_arg_found(ar: Arena, ys: List<&2, U32>) -> Found:
+  match ys:
+    case v <> Nil{}: shape_arg.const(ar, v)
+    case _: shape_arg.go(ys, ShapeArg{ar, Nil{}})
+
+# **⇒ THE **INDEX **FORM**, **AND **IT **IS **THE **ONE **A **CROSS-FILE **CALLER **WANTS**:
+# **A **CROSS-FILE **`Found` **CAN **NOT **BE **READ **TWICE** ("consumed more than once"),
+# **AND **THE **CALLERS **NEED **BOTH **ITS **ARENA **AND **ITS **INDEX** -- **⇒ AND **THE
+# **INDEX **IS **A **PLAIN **`U32`**, **SO **THE **CALLER **CAN **READ **IT **AS **MANY
+# **TIMES **AS **IT **LIKES** **AND **TAKE **THE **ARENA **FROM **THE **`Found` **IT **BUILT
+# **THE **SHAPE **IN** -- **⇒ AND **THAT **IS **WHY **THE **INDEX **FORM **IS **THE **ONE
+# **THE **`uop`-LAYER **CALLERS **USE**.**
+def shape_arg(ar: Arena, ys: List<&2, U32>) -> U32:
+  Found.i(shape_arg_found(ar, ys))
+
+# `src=(shape_to_shape_arg(...),)+UOp.device_range_src(device)` -- ops.py:829, :1187,
+# :1219, :1002. The `device_range_src` half is P6 (no multi-device ALLOC in the port)
+# and is `()` for a single device (`mixin/creation.bend:429 symbol=cr_empty` says so), so the src of a
+# PARAM/BUFFER/ALLOC here is exactly this one element.
 def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
   [shape_to_shape_arg(ar, n)]
 
