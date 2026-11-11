@@ -10,19 +10,37 @@ lists a different set) × each file's **own header** (which names its upstream c
 
 | | before | after |
 |---|---|---|
-| the port's lines | 321,417 | **279,414** |
+| the port's lines | 321,417 | **278,847** |
 | upstream's | 63,395 | 63,395 |
-| **the ratio** | **5.08×** | **4.41×** |
-| GATE ROWS | 9,389 | **1,041** |
-| COMMENTS | 131,240 | **112,944** |
-| BLANK | 43,365 | 42,041 |
-| **CODE** | **137,423** | **123,388** |
-| **the code-only ratio** | **2.44×** | **2.19×** |
+| **the ratio** | **5.08×** | **4.40×** |
+| GATE ROWS | 9,389 | **1,131** |
+| COMMENTS | 131,240 | **113,263** |
+| BLANK | 43,365 | 41,930 |
+| **CODE** | **137,423** | **122,523** |
+| **the code-only ratio** | **2.44×** | **2.17×** |
 
 **THE HEADLINE IS **THE CODE-ONLY RATIO**, BECAUSE A COMMENT IS NOT A LINE OF PORT AND A
 GATE ROW IS NOT EITHER.**
 
 **AND THE MEASUREMENT IS AN INSTRUMENT: `.agents/slop/loc/the-1to1.py`.**
+
+### AND THE CORPUS, WHICH IS **THE **INSTRUMENT **THAT **FOUND **THE **LAST **DEFECTS**
+
+**⇒ MEASURED 2026-11-11, **ON **A **CLEAN **TREE** (`git archive HEAD` **INTO **A **FRESH
+**DIRECTORY**, **WITH **`bin/bend`**, **`references/` **AND **`.venv`**):**
+```
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-disagree=0
+graphs-refused=0  byte-identical=38  not-comparable=0  expect-moved=0
+stable-pairs=5 of 5  plants-disagree=8 of 8  cross=1 of 1  controls=5 of 5
+conflations=4 of 4  selfcheck=# SELFCHECK: OK  oracle-selfcheck=# ORACLE SELFCHECK: OK
+```
+**⇒ AND **THE **CORPUS's **`WANT` **TABLE **IS **EMPTY** -- **⇒ AND **AN **EMPTY **TABLE **IS
+**THE **STRONGEST **STATEMENT **THE **CORPUS **CAN **MAKE**, **BECAUSE **EVERY **GRAPH **NOW
+**HAS **TO **AGREE**.  **⇒ AND **THE **SEVEN **EXCEPTIONS **IT **USED **TO **CARRY** (**
+`matmul`, `reduce`, `commute`, `binblob`, `flip`, `bw`, `gral`**) **HAD **THREE **ROOTS, **AND
+**ALL **THREE **WERE **THE **SAME **CLASS**: **A **RULE **SPELLED **AGAINST **AN **OLDER
+**UPSTREAM**, **AND **THE **SPELLING **HAD **DRIFTED **BETWEEN **THE **PORT **AND **THE
+**INSTRUMENTS **THAT **MEASURE **IT**.**
 
 ### The four corrections the metric makes
 

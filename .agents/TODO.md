@@ -29399,3 +29399,119 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       TWENTY WITHOUT CLOSING THE CLASS IS WORSE THAN NO FIX**, SO IT WAS REVERTED AND THE FINDING IS
       RECORDED INSTEAD. **THE COMPLETE FIX IS TEN GATES' DECLARATIONS, WHICH IS NOT A TURN-SIZED
       WORK ITEM.**
+
+### Session 2026-11-11 — THE SEVEN DISAGREEMENTS ARE GONE, AND THE CLASS WAS **SPELLING **DRIFT**
+
+- [x] **THE CORPUS IS **38 **OF **38**, **AND **THE `WANT` **TABLE **IS **EMPTY**.**
+      **MEASURED 2026-11-11 ON **A **CLEAN **TREE** (`git archive HEAD` **INTO **A **FRESH
+      **DIRECTORY**, **WITH **`bin/bend`**, **`references/` **AND **`.venv`**, **AND **NO
+      **OTHER AGENT's **WORKING-TREE **EDITS**): `graphs=38` `graphs-answered=38`
+      `graphs-agree=38` `graphs-disagree=0` `graphs-refused=0` `byte-identical=38`
+      `not-comparable=0` `expect-moved=0` `stable-pairs=5 of 5` `plants-disagree=8 of 8`
+      `cross=1 of 1` `controls=5 of 5` `conflations=4 of 4` `selfcheck=# SELFCHECK: OK`
+      `oracle-selfcheck=# ORACLE SELFCHECK: OK` **AND **THE **RUN's **EXIT **CODE **IS **`0`**
+      (**IT **WAS **`1` **FOR **THE **WHOLE **SESSION **BEFORE**).**
+      **⇒ AND **AN **EMPTY **TABLE **IS **THE **STRONGEST **STATEMENT **THE **CORPUS **CAN
+      **MAKE**: **EVERY **GRAPH **NOW **HAS **TO **AGREE**, **AND **A **DISAGREEING **GRAPH
+      **WOULD **BE **A **FAILURE **AND **NOT **AN **EXCEPTION**.**
+      **⇒ AND **THE **OLD **COMMENT's **WARNING **STANDS** ("a **pin **moved **to **whatever
+      **printed **is **a **pin **that **can **never **fail**") **⇒ AND **A **TABLE **PINNED **TO
+      **DISAGREE **WOULD **BE **EXACTLY **THAT**.**
+- [x] **THE **PERMUTE's **ORDER **IS **A **`src[1]`** **AT **EVERY **CONSTRUCTION **SITE**, **AND
+      **THE **READER **IS **`src[1]`'s **STACK **CHILDREN`.**
+      **⇒ UPSTREAM's **`_mop` (`ops.py:784,790-791`) **BUILDS **A **PERMUTE **AS
+      `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`**, **⇒ AND **`marg` (`ops.py:772`)
+      **IS ** `case Ops.PERMUTE: return self.src[1].as_shape`**, **⇒ AND **`mop_cleanup`'s
+      "merge **PERMUTEs" **RULE **IS **A **TWO-SRC **PATTERN** -- **WHICH **ONLY **MATCHES **A
+      **PERMUTE **THAT **HAS **AN **`src[1]`**.**
+      **⇒ THE **TWELVE **CONSTRUCTION **SITES **AND **THE **`order_arg` **READER **MOVED**, **AND
+      **THE **PORT's **OWN **"merge **PERMUTEs" **RULE **(`uop/movement.bend`'s **`mp_3`) **WAS
+      **PINNED **TO **AN **OLDER **UPSTREAM** -- **ITS **COMMENT **QUOTED
+      **`lambda x,x2: x2.replace(arg=tuple(x2.arg[i] for i in x.arg))`** **AND **UPSTREAM's
+      **CURRENT **RULE **IS **`lambda x,x2: x2.src[0].permute(tuple(x2.marg[i] for i in
+      x.marg))`.**
+      **⇒ AND **THE **READER **WAS **ALSO **WRONG **IN **A **SECOND **WAY, **AND **ONLY **THE
+      **CORPUS **CAUGHT **IT**: **AN **EARLIER **REVISION **OF **`perm_ds` **PASSED **`marg` **AS
+      **THE **SOURCE's **DIMS**, **AND **`marg` **IS **`src[1].as_shape`** -- **WHICH **FOR **A
+      **PERMUTE **IS **THE **ORDER**, **NOT **THE **SOURCE's **SHAPE**.  **⇒ SO **THE **SHAPE
+      **CAME **OUT **AS **THE **ORDER **PERMUTED **BY **THE **ORDER** (`matmul`: CPYTHON's
+      **`(l0:1,l0:5,l0:3)`** **AGAINST **THE **PORT's **`(l0:0,l0:1,l0:2)`)**.**
+- [x] **THE **`eq`/`ne`/`logical_not` **FAMILY **WAS **SIX **HALVES **OF **ONE **RULE, **AND **THE
+      **HALVES **HAD **DRIFTED.****
+      **⇒ AT **THE **PIN **`f5ac54685074`**: `logical_not` **IS
+      `self.cast(dtypes.bool).eq(False)`** (`mixin/elementwise.py:49-57`), `ne` **IS
+      `self.eq(x).logical_not()`** (`:332-333`), `eq` **IS **`self._binop(Ops.CMPEQ, x, False)`**
+      (`:335-336`) -- **⇒ AND **NO **OF **THEM **IS **A **`CMPNE`, **AND **UPSTREAM's **OWN
+      **NEGATION **DETECTION **KEYS **ON **THE **`CMPEQ` **SPELLING** (`uop/symbolic.py:349`)**.
+      **⇒ THE **PORT's **HALVES **WERE **A **`CMPNE`**, **A **DOUBLE **NEGATION**, **A
+      **`CMPNE`-AGAINST-`True`**, **A **`CMPNE`** **AND **A **`CMPNE`** -- **AND **TWO **OF
+      **THEM **WERE **ALREADY **RIGHT**.**
+      **⇒ AND **THE **PORT's **OWN **COMMENT **CLAIMED **THE **OPPOSITE **AND **WAS **FALSE **AT
+      **THE **PIN** ("no **`elementwise.py` **method **emits **[`Ops.CMPEQ`]**, **so **a **rule
+      **that **spelled **`eq` **as **CMPEQ **would **build **a **graph **Python **never
+      **builds**").**
+- [x] **THE **CORPUS's **OWN **DRIVER **AND **ORACLE **WERE **SPELLED **THE **SAME **OLD **WAY**,
+      **⇒ AND **THEY **AGREED **WITH **EACH **OTHER **AND **DISAGREED **WITH **CPYTHON`.**
+      **⇒ MEASURED **ON **CPYTHON **AT **THE **PIN**: `a != b` **IS
+      **`CMPEQ(CMPEQ(a, b), CONST false)`**, **AND **THE **ORACLE's **OWN **DOCSTRING **SAID
+      **"`a != b` **-> **CMPNE**" **AND **"`(Tensor.empty(4,3) == Tensor.empty(4,3)).uop` **emits
+      **CMPNE **CONST **CMPNE** **rather **than **a **CMPEQ**"** -- **⇒ AND **BOTH **WERE
+      **STALE **IN **THE **SAME **DIRECTION**, **⇒ AND **THE **`commute` **GRAPH **AGREED **WITH
+      **A **STALE **INSTRUMENT **AND **THE **CORPUS **COULD **NOT **SEE **THE **DRIFT **AT
+      **ALL**.**
+      **⇒ A **PAIR **OF **AGREEING **INSTRUMENTS **IS **NOT **A **WITNESS, **AND **ONLY **THE
+      **CPYTHON **SIDE **IS **THE **WITNESS**.**
+      **⇒ AND **AN **INSTRUMENT **THAT **HAND-BUILDS **THE **NODES **IT **COMPARES **IS **PINNED
+      **TO **A **SPELLING**, **AND **A **SPELLING **ROTS**.**
+- [x] **THE **SIX **`eq`/`ne`/`logical_not` **GATES **HAD **BECOME **VACUOUS**, **AND **THEY **ARE
+      **RE-DECIDED **AGAINST **CPYTHON`.**
+      **⇒ AFTER **THE **PORT's **FAMILY **MOVED **TO **THE **PIN's **SPELLING**, **THE **GATES
+      **STILL **PASSED** -- **⇒ AND **THEY **PASSED **BECAUSE **THEY **WERE **NO **LONGER
+      **TESTING **ANYTHING**: **THE **ORACLE **ASKED **"IS **IT **CMPNE?**"** **AND **CPYTHON's
+      **ANSWER **IS **NOW **"NO"**, **⇒ AND **THE **PORT's **ANSWER **IS **ALSO **"NO"**, **⇒ AND
+      **THE **ROW **COMPARED **TWO **"NO"s **AND **ANSWERED **1**.  **⇒ THAT **IS **"A **ROW
+      **THAT **CANNOT **GO **RED **IS **WORSE **THAN **NO **ROW"**, **AND **THE **FIX **IS **THE
+      **POSITIVE **FORM** ("IS **IT **`CMPEQ`**?")**.**
+      **⇒ AND **`tn_neg` **GAINED **`neg_bool_src1_is_const_false`**, **WHICH **ASKS **THE
+      **`CMPEQ`'s **`src[1]`'s **VALUE** -- **⇒ AND **A **`CMPEQ` **AGAINST **`True` **AND **A
+      **`CMPEQ` **AGAINST **`False` **ARE **THE **SAME **OP**, **⇒ AND **SO **THE **OP **ROW
+      **ALONE **CANNOT **DISTINGUISH **THEM**, **AND **THE **VALUE **IS **THE **WHOLE
+      **DIFFERENCE.**
+      **⇒ AND **`tn_binop2_cmp` **GAINED **THREE **ROWS **THAT **ASK **THE **INNER **NODE**
+      (**`ne` **IS **TWO **NODES**, **`ge`/`le` **ARE **THE **REVERSE **ORDER**, **AND **`eq`
+      **IS **ONE **NODE**)**.**
+      **⇒ AND **THE **THREE **FILES **PER **GATE **MUST **AGREE **ON **THE **ROW **NAMES** --
+      **THE **`.bend` **DRIVER's **`row("...")`**, **THE **ORACLE's **`print(f"...")`** **AND **THE
+      **GATE's **`ROWS` **LIST** -- **⇒ AND **THE **GATE **CAUGHT **BOTH **A **MISSING **ROW
+      **AND **A **DUPLICATE **PRINT** **BY **THE **COUNT** ("py.rows **has **30 **rows, **expected
+      **27**")**.**
+- [x] **THE **SHAPE-ARG **BUILDER **IS **ONE **DEF **IN **`ops.bend`**, **AND **THE **PORT **HAD
+      **THREE **COPIES **OF **IT`.**
+      **⇒ THE **PORT **HAD **`mixin/movement.bend`'s **`G.stkN`**, **`mixin/gradient.bend`'s
+      **`gstkN`** (**AND **THE **COPY **IS **THE **POINT**: **`mixin/gradient.bend` **CANNOT
+      **IMPORT **`mixin/movement.bend`**, **BECAUSE **`mixin/movement.bend` **IMPORTS
+      **`tensor.bend` **AND **`tensor.bend` **IMPORTS **`mixin/gradient.bend`**) **AND
+      **`uop/ops.bend`'s **THE **SCALAR **`shape_to_shape_arg`** -- **⇒ AND **`uop/ops.bend` **IS
+      **THE **ONE **FILE **EVERY **ONE **OF **THEM **CAN **SEE**, **⇒ AND **THE **DUPLICATION
+      **IS **THE **DEFECT **AND **NOT **THE **COPY**.**
+      **⇒ AND **THE **TUPLE **FORM **HAS **TWO **SHAPES** -- **THE **`Found`** (**FOR **A
+      **SAME-FILE **CALLER**) **AND **THE **INDEX** (**A **PLAIN **`U32`**, **FOR **A
+      **CROSS-FILE **CALLER**, **WHICH **CAN **READ **IT **AS **MANY **TIMES **AS **IT **LIKES**)
+      -- **⇒ AND **A **SUB-NAMESPACE **(`shape_arg.of`) **IS **NOT **VISIBLE **FROM **ANOTHER
+      **FILE**, **⇒ AND **THE **FLAT **NAME **IS **THE **SECOND **FORM**.**
+- [ ] **THE **`uop/symbolic.bend`'s **`sym_132` **IS **THE **SEVENTH **HALF**, **AND **IT **IS **A
+      **RULE **FOR **AN **UPSTREAM **THAT **NO **LONGER **HAS **IT`.**
+      **⇒ AT **THE **PIN **`tinygrad/uop/symbolic.py` **HAS **NO **`CMPNE` **AT **ALL**, **AND
+      **UPSTREAM's **LINE **140 **IS ** `UPat.var("x", dtype=dtypes.bool).logical_not().
+      logical_not()`** -- **⇒ A **DOUBLE **`CMPEQ(x, False)`** -- **AND **`UPat` **AT **THE **PIN
+      **HAS **NO **`__ne__` **METHOD **AT **ALL**, **⇒ SO **THE **OLD **`!=` **RULE **IS **NOT **A
+      **SPELLING **DIFFERENCE **BUT **A **DIFFERENT **RULE**.**
+      **⇒ THIS **ONE **IS **LEFT **OPEN **BECAUSE **IT **IS **A **RULE **AND **NOT **A
+      **SPELLING**, **AND **A **RULE **REWRITE **NEEDS **ITS **OWN **INSTRUMENT**.**
+- [ ] **THE **CORPUS **MUST **BE **RE-RUN **ON **THE **WORKING **TREE** **ONCE **THE **OTHER
+      **AGENT's **`uop/ops.bend` **REWRITE **LANDS**, **BECAUSE **THE **RUN **I **REPORTED **WAS
+      **ON **A **CLEAN **`git archive HEAD`**, **AND **THE **WORKING **TREE's **`ops.bend` **IS
+      **CURRENTLY **BROKEN **(`unknown: Dq`)**.**
+      **⇒ AND **THE **SIX **`eq`/`ne` **GATES **AND **THE **CORPUS **MUST **BE **RE-RUN
+      **TOGETHER**, **BECAUSE **THE **GATES **WERE **VACUOUS **BEFORE **AND **THEIR **ROWS **ARE
+      **THE **ONLY **WAY **TO **KNOW **THEY **ARE **NOT **VACUOUS **NOW**.**
