@@ -458,7 +458,32 @@ gates-sweep     [##########] 10/10    `/tmp/sweep.sh` is FOREIGN and NON-COMPLIA
                                        (one defect: `pins-shape-gate.py` is indexread's NEW
                                        offender, `ls-files`); the 2 SKIPs are
                                        `ops_python_census`/`_exec`, KILLED-ON-MEMORY at the
-                                       2048 MB ceiling (peaks 2127/2168 MB).
+                                       2048 MB ceiling (peaks 2127/2168 MB); **2026-11-11: THE 313 IS NOW 423 AND THE SWEEP WAS RUNNING
+                                       ITSELF.** MEASURED by `--plan`: WALK 423, split by the new
+                                       `ROLES` line into gate=333, lane=48, proof=41, runner=1.
+                                       `checks/gatesweep.py` is `py-main` in its OWN walk, so a
+                                       default sweep spawned itself, recursed until the 600 s
+                                       watchdog, and its child opened the SAME default `--out`
+                                       with `w`, TRUNCATING the rows file its parent held open.
+                                       A lane (`-oracle.py`/`-rows.py`, or named by a `Gate`) and a
+                                       proof (`-plant.py`/`-mutate.py`, e.g. the 93 staged mutations
+                                       in `realize_graph_census-mutate.py`) cannot issue a verdict
+                                       about the tree and are no longer RUN -- they keep a
+                                       `SKIP`/`NOT-RUN:<role>` row, so the denominator is intact;
+                                       `--roles all --jobs 1` is the old run. `--jobs` (default 4)
+                                       is capped by `AGENTS.md`'s SUM rule, 60% of `hw.memsize`
+                                       divided by `--mb`; a run with any non-gate role is forced
+                                       serial, because a proof stages copies beside the real
+                                       drivers. `--plan` went 64.4 s -> 10.2 s: `report()` walked
+                                       three times and `entry_reason` is now memoised per (path,
+                                       size, mtime), so the 18.7 s + 8.7 s + 2.7 s passes cost one
+                                       parse. SMOKE, real gates: 4 cheap members at `--jobs 4` took
+                                       3.45 s wall for 4.6 s of gate time, and a `gatesweep.py`-only
+                                       sweep answers `SKIP`/`SELF` in 0.01 s with no child.
+                                       Selftest 7/7 (the new ROLES case fails if a lane/proof
+                                       writes its sentinel), `--plant` 1, `--prove` 14/14. The
+                                       `--out` lock refuses a second writer with `REFUSED` (3),
+                                       like `differ.py`'s corpus lock.
 false-fails     [#########] 9/10     The apostrophe guard LANDED (`checks/cites-census.py:394`,
                                        `(?<![\w`])'([^']{4,})'`) and PASSED the bar: on one frozen
                                        snapshot it retired 16 FAIL rows and silenced 0 PASS rows

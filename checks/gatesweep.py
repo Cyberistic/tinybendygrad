@@ -6,7 +6,8 @@
     .venv/bin/python checks/gatesweep.py --prove          # classify REAL captured outcomes, run nothing
     .venv/bin/python checks/gatesweep.py --selftest       # drive the loop on SYNTHETIC gates, temp-dir
     .venv/bin/python checks/gatesweep.py --selftest --plant   # ... and the selftest MUST fail
-    .venv/bin/python checks/gatesweep.py                  # run every gate, write the rows
+    .venv/bin/python checks/gatesweep.py                  # run every GATE-role member, in parallel
+    .venv/bin/python checks/gatesweep.py --roles all --jobs 1   # every member, SERIALLY (slow)
 
 THE FOREIGN SWEEP THIS REPLACES. A zsh script under `/tmp` ran `gates/*-gate.py`, kept only `$?`,
 and sent every gate's output to `/dev/null` -- so a gate that ran and emitted nothing (DEAD, 5)
@@ -59,6 +60,29 @@ WHAT THIS FILE DOES NOT DO. It does not scrape a gate's PROSE for a verdict word
 `gatekit.py:60` is `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`. A word matched out of free
 text is a shape, and this project has paid for shape-matching a population three times.
 
+WHAT IT COSTS, AND WHAT A SWEEP NOW DOES ABOUT IT. MEASURED 2026-11-11: `--plan` alone takes 64 s
+(three walks plus the control, each re-parsing every file), and the population is 423 members. A
+`gates/gatekit.py` gate starts `bin/bend` THREE times (`--check-only`, the rows lane, `-o`) at
+~2.5 s each with no typecheck cache, so its floor is ~7.5 s; the measured mean over 70 gates is
+8.8 s / 616.0 s. 203 `-gate.py` members is therefore ~30 min before a single outlier, and the
+outliers are minutes apiece (91 and 169 `bend` compiles in `compile-census`/`port-compile-gate`, and
+93 staged mutations in `realize_graph_census-mutate` alone). So:
+
+  ROLES  a member that cannot issue a verdict about the TREE is not RUN -- and is still a ROW.
+         `lane` (`-oracle.py`/`-rows.py`, or named by a `Gate`), `proof` (`-plant.py`/`-mutate.py`)
+         and `runner` (this file: its child recursed, and truncated the very `--out` its parent
+         held open) each get `SKIP` with the role in the token. `--roles all` runs them, forced
+         SERIAL because a proof stages copies beside the real drivers. **THIS IS NOT THE LANE
+         FILTER REFUSED BELOW**: that refusal is about the VERDICT -- calling a bare lane `PASS` --
+         and `classify()` still owns it. A ROLE is about the SCHEDULE: the member stays in the
+         population, the denominator and the rows file, and says why it did not run. The name
+         shape only CLASSIFIES what the walk enumerated, and `report()` prints all four counts.
+  JOBS   the gate lane runs `--jobs` at a time (default 4), capped by the SUM precondition
+         `AGENTS.md` states: 60% of `hw.memsize` divided by the per-member `--mb` reservation.
+         `--jobs 1` is the old serial loop.
+  WRITER `fcntl.flock` on `<out>.lock`: two sweeps over one rows file is the self-run's defect one
+         level up, and `checks/differ.py` holds the corpus the same way.
+
 TWO CLASSES A WIDER POPULATION ADMITS, AND ONE OF THEM IS NOW CLOSED. `--selftest`'s WIDTH case
 plants both, because a walk is not made honest by being wide.
 
@@ -93,6 +117,8 @@ from __future__ import annotations
 
 import argparse
 import ast
+import concurrent.futures
+import fcntl
 import importlib.util
 import os
 import re
@@ -266,6 +292,82 @@ OLD_HOME = "gates"     # THE HOME THIS FILE USED TO WALK. A record of the PAST, 
 # dotted and stay in, which is why `WALK` and `CONTROL` differ.
 SKIPPED = tuple(gpop._SKIP)
 
+# THE POPULATION IS CLASSIFIED, NOT FILTERED. Membership is still the walk, and EVERY member still
+# gets a row; the role only decides whether the sweep spends its budget RUNNING it. The four shapes
+# are the tree's own names for them -- a name is not a population (DOCTRINE 1) but it is what this
+# file uses to CLASSIFY what the walk already enumerated, and `report()` prints all four counts on
+# every run, so the exclusion is a number and not a silence:
+#
+#   runner  THIS FILE. A sweep that runs itself RECURSES until the watchdog kills it, and the child
+#           writes the same default `--out` the parent holds open, so it truncates the parent's
+#           rows. MEASURED 2026-11-11: the population already carries it, as `py-main`.
+#   lane    a member that PRINTS ROWS for something else -- `-oracle.py`/`-rows.py`, or a file a
+#           `Gate(bend=..., oracle=...)` NAMES as its input. `classify()` already refuses to call a
+#           bare lane `PASS`; running it to discover that spends a subprocess on no verdict.
+#   proof   a harness that DRIVES another member -- `-plant.py`/`-mutate.py`. It is how a gate is
+#           PROVEN, not a gate over the tree: `realize_graph_census-mutate.py` stages 93 mutations
+#           and re-runs the full gate for each, and `--seconds 600` cuts it off. A proof also
+#           writes copies BESIDE the real drivers, so it may not run beside anything.
+#   gate    everything else: the members that measure the tree, which is what a sweep is for.
+ROLES = ("gate", "lane", "proof", "runner")
+LANE_NAMES = ("-oracle.py", "-rows.py")
+PROOF_NAMES = ("-plant.py", "-mutate.py")
+
+
+def role(p: Path, lanes: frozenset[str] = frozenset()) -> str:
+    """Which of `ROLES` this member is. `lanes` is `lanes()`'s own set."""
+    if p.resolve() == Path(__file__).resolve():
+        return "runner"
+    if p.name.endswith(PROOF_NAMES):
+        return "proof"
+    if p.name.endswith(LANE_NAMES) or p.name in lanes:
+        return "lane"
+    return "gate"
+
+
+def lanes(declared: dict[str, list[str]]) -> frozenset[str]:
+    """`lane-census.declared()`'s names MINUS every member that names ITSELF.
+
+    MEASURED 2026-11-11: `gates/beautiful-mnist-gate.py` declares
+    `oracle=".agents/slop/beautiful-mnist-gate.py"` -- a PRUNABLE path whose BASENAME collides with
+    the gate's own -- so `declared()`'s basename key names the gate, and a role read straight off
+    it SKIPPED a 13.8 s gate. A member that names itself is its own lane, not anybody's.
+    """
+    return frozenset(k for k, who in declared.items() if any(Path(p).name != k for p in who))
+
+
+def workers(mb: int, jobs: int | None = None) -> int:
+    """How many members may run at once: a COUNT and a SUM, never the count alone.
+
+    `AGENTS.md` states the precondition as a sum -- parallelise only under 60% of `hw.memsize` --
+    and `--mb` is the only per-member number this file holds before a run, so it is the reservation
+    (a ceiling, which over-reserves on purpose). An unreadable `hw.memsize` answers 1: a budget that
+    cannot be measured is not a budget.
+    """
+    try:
+        mem = int(subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True,
+                                 text=True, timeout=5).stdout)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return 1
+    budget = mem * 3 // 5 // (max(mb, 1) * 1024 * 1024)
+    return max(1, min(jobs or 4, os.cpu_count() or 1, budget))
+
+
+_REASON: dict[tuple[str, int, int], str | None] = {}
+
+
+def _reason(p: Path, st: os.stat_result) -> str | None:
+    """`gates-pop.entry_reason(p)`, memoised per (path, size, mtime) FOR THIS PROCESS.
+
+    `report()` walks three times and `artifact_census()` a fourth, and each pass re-read and
+    re-parsed every file (MEASURED 2026-11-11: 18.7 s + 8.7 s + 2.7 s). The key carries size and
+    mtime so a file another unit is writing is re-read rather than remembered.
+    """
+    key = (str(p), st.st_size, st.st_mtime_ns)
+    if key not in _REASON:
+        _REASON[key] = gpop.entry_reason(p)
+    return _REASON[key]
+
 
 def _prune(dirnames: list[str], keep_dot: bool) -> None:
     dirnames[:] = [d for d in dirnames
@@ -315,9 +417,10 @@ def walk(root: Path, hs: tuple[str, ...], keep_dot: bool = False) -> list[tuple[
                     if name.startswith(".") and not keep_dot:
                         continue
                     p = Path(dirpath) / name
-                    if not stat.S_ISREG(os.lstat(p).st_mode):
+                    st = os.lstat(p)
+                    if not stat.S_ISREG(st.st_mode):
                         continue               # a symlink is not a file: lstat, never exists()
-                    reason = gpop.entry_reason(p)
+                    reason = _reason(p, st)
                     if reason in ENTRIES:
                         found.append((p, reason))
     return sorted(found)
@@ -574,10 +677,12 @@ def artifact_census(root: Path = ROOT, pop: list[tuple[Path, str]] | None = None
           "verdict may rest on it.")
 
 
-def report(root: Path = ROOT) -> list[tuple[Path, str]]:
-    """Print the DENOMINATORS, then return the population. Every number is derived here.
+def report(root: Path = ROOT) -> tuple[list[tuple[Path, str]], dict[str, list[str]]]:
+    """Print the DENOMINATORS, then return `(population, declared lanes)`. All derived here.
 
-    THE ROWS, AND WHY THERE ARE SIX. `WALK` is what this file now sweeps. `SUFFIX` is the old
+    THE ROWS, AND WHY THERE ARE SEVEN. `WALK` is what this file now sweeps. `ROLES` splits it by
+    whether a member can issue a verdict about the tree, and prints all four counts so the split is
+    a number rather than a silence. `SUFFIX` is the old
     question, asked and answered beside it so the widening is a number rather than an intention.
     `BEFORE` is what this file ACTUALLY swept before the change -- the walk hard-coded to one
     home -- and it is a third number because the two defects are independent: MEASURED, 9 of the
@@ -594,6 +699,8 @@ def report(root: Path = ROOT) -> list[tuple[Path, str]]:
               "population that is empty cannot fail (artefacts_ok()'s shape)", file=sys.stderr)
         raise SystemExit(gatekit.REFUSED)
     pop = walk(root, hs)
+    declared = lanecensus.declared(pop) if lanecensus is not None else {}
+    roster = [role(p, lanes(declared)) for p, _ in pop]
     sfx = [p for p, _ in pop if p.name.endswith(SUFFIX)]
     before = [p for p, _ in walk(root, (OLD_HOME,)) if p.name.endswith(SUFFIX)]
     pruned = len(walk(root, hs, keep_dot=True)) - len(pop)
@@ -605,10 +712,12 @@ def report(root: Path = ROOT) -> list[tuple[Path, str]]:
         print(f"CONTROL   : gates-pop.discover() -> UNAVAILABLE ({type(exc).__name__})")
         print("PROJECTION : REFUSED, NOT A VERDICT -- one walk is missing, and a bridge between "
               "one walk\n              and nothing is the number beside it written twice.")
-        return pop
+        return pop, declared
     print(f"HOMES     : gate_homes() -> {', '.join(hs)}  (MEASURED, not named here)")
     print(f"PRUNED    : dotted entries the walk skips                 -> {pruned}")
     print(f"WALK      : entry points in every derived home            -> {len(pop)}")
+    print("ROLES     : " + "  ".join(f"{r}={roster.count(r)}" for r in ROLES)
+          + "   (the sweep RUNS `gate`; `--roles all` runs the rest, SERIALLY)")
     print(f"SUFFIX    : of those, ending in `{SUFFIX}`                -> {len(sfx)}"
           f"   ({files} files end so; {files - len(sfx)} has no entry point)")
     print(f"BEFORE    : `-gate.py` in the one home this file walked   -> {len(before)}")
@@ -617,7 +726,7 @@ def report(root: Path = ROOT) -> list[tuple[Path, str]]:
     print(f"CONTROL   : gates-pop.discover() -> {len(entries)} entries + {len(modules)} modules")
     print("            (immediate files only; the walk descends, and `gates/oracles/` is tracked)")
     bridge(project([p for p, _ in pop], entries, {root / h for h in hs}), root)
-    return pop
+    return pop, declared
 
 
 def _all_files(root: Path, hs: tuple[str, ...]):
@@ -647,10 +756,22 @@ def main(argv: list[str]) -> int:
                     help="sweep the OLD suffix set instead of the walk (the pre-change denominator)")
     ap.add_argument("--seconds", type=int, default=600, help="per-gate wall bound")
     ap.add_argument("--mb", type=int, default=2048, help="per-gate peak-RSS ceiling")
+    ap.add_argument("--jobs", type=int, default=None,
+                    help="members run at once (default 4, capped by 60%% of hw.memsize / --mb)")
+    ap.add_argument("--roles", default="gate",
+                    help=f"comma list of {', '.join(ROLES)}, or `all`; a role not listed is SKIP")
     ap.add_argument("--out", type=Path, default=ROOT / "gates" / "artifacts" / "gates-sweep.rows")
     args = ap.parse_args(argv)
+    roles = set(ROLES) if args.roles == "all" else {r.strip() for r in args.roles.split(",")}
+    if unknown := roles - set(ROLES):      # NOT `ap.error`: exit 2 is a code no vocabulary names
+        print(f"REFUSED, NOT A VERDICT -- --roles takes {', '.join(ROLES)} or `all`; "
+              f"unknown {sorted(unknown)}", file=sys.stderr)
+        return gatekit.REFUSED
+    roles.discard("runner")      # NEVER: the sweep cannot run itself, whatever was asked for
 
-    gates = report(ROOT)
+    if args.selftest:            # synthetic, so the real population is not walked at all
+        return selftest(plant=args.plant)
+    gates, declared = report(ROOT)
     if args.suffix:
         named = {p for p, _ in gates if p.name.endswith(SUFFIX)}
         gates = [(p, r) for p, r in gates if p in named]
@@ -659,11 +780,12 @@ def main(argv: list[str]) -> int:
               f"the difference between the two lines is the HOME half of `DELTA`, not the name.")
 
     if args.plan:
+        laneset = lanes(declared)
         for g, reason in gates:
-            print(f"  would run  {reason:<11} {g.relative_to(ROOT)}")
+            r = role(g, laneset)
+            print(f"  {'would run ' if r in roles else 'would skip'}  {r:<6} {reason:<11} "
+                  f"{g.relative_to(ROOT)}")
         return 0
-    if args.selftest:
-        return selftest(plant=args.plant)
     if args.prove:
         artifact_census(ROOT, gates)
         drift = gatekit.oracle_drift(PROVE_PIN)   # a transcript that MOVED is a proof of other bytes
@@ -672,46 +794,99 @@ def main(argv: list[str]) -> int:
             return gatekit.REFUSED
         return prove(ROOT / PROVE_COST, ROOT / PROVE_TRUTH, gates)
 
-    return sweep(gates, args.out, args.seconds, args.mb)
+    return sweep(gates, args.out, args.seconds, args.mb, jobs=args.jobs, roles=roles,
+                 declared=declared)
 
 
-def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int) -> int:
-    """THE LOOP `main()` RUNS: header, one row per gate, tally, denominator. Describes THE RUN.
+def tally_row(sink, gate: Path, tally: dict, verdict: str, token: str, rc, took: float,
+              peak: str) -> None:
+    """One row: PRINTED, TALLIED, and FLUSHED -- the durability the selftest reads mid-sweep."""
+    rel = str(gate.relative_to(ROOT))
+    print(f"  {verdict:<8} {took:6.1f}s  rc={rc:<4} peak={peak:>4}MB  {rel:<38} {token}")
+    sink.write(f"{rel}\t{verdict}\t{token}\t{rc}\t{took:.1f}\n")
+    sink.flush()
+    tally[verdict] = tally.get(verdict, 0) + 1
+
+
+def shown(p: Path) -> str:
+    """`p` relative to the repo when it is inside it, else as it is -- `--out` may be anywhere."""
+    p = p.resolve()
+    return str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p)
+
+
+def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int, *,
+          jobs: int | None = None, roles=frozenset({"gate"}),
+          declared: dict[str, list[str]] | None = None) -> int:
+    """THE LOOP `main()` RUNS: header, one row per member, tally, denominator. Describes THE RUN.
 
     `main()`'s default branch is this call and nothing else, so the `--selftest` that drives it drives
-    the REAL path rather than a copy of it. Every row is `flush()`ed as its gate finishes, which is
-    the durability property: a sweep killed at gate 69 leaves 68 rows on disk, not zero -- and that
+    the REAL path rather than a copy of it. Every row is `flush()`ed as its member finishes, which is
+    the durability property: a sweep killed at member 69 leaves 68 rows on disk, not zero -- and that
     is the one claim a run that COMPLETES cannot make, so `--selftest` reads the file mid-sweep.
+
+    EVERY MEMBER GETS A ROW, including the ones this call does not run: a member skipped for its
+    ROLE is still in the denominator, and its token says which role kept it out. A population that
+    shrinks to whatever was convenient is the `0 over 0` this file exists to stop.
+
+    THE PARALLELISM IS BOUNDED BY MEMORY, NOT BY AMBITION. `workers()` divides 60% of `hw.memsize`
+    by `--mb`; `--jobs 1` is the old serial loop. A run that includes `lane` or `proof` is FORCED
+    serial, because a proof stages copies beside the real drivers and may not share the tree.
+
+    ONE WRITER. `fcntl.flock` on `<out>.lock` names a second sweep's pid and refuses; the rows file
+    is a shared writable path, and the self-run this file used to admit is what proved a child can
+    truncate it while the parent holds it open.
     """
+    roles = frozenset(roles)
+    jobs = 1 if roles - {"gate"} else workers(mb, jobs)
+    if declared is None:         # ONE DECLARATION PER RUN, never one per member
+        declared = lanecensus.declared(gates) if lanecensus is not None else {}
+    consumed, laneset = frozenset(declared), lanes(declared)
+    roster = {p: role(p, laneset) for p, _ in gates}
+    run = {g for g, _ in gates if roster[g] in roles and roster[g] != "runner"}
     tally = dict.fromkeys(set(gatekit.VERDICT.values()), 0)
-    # THE DECLARATION, ONCE PER RUN AND NEVER PER MEMBER. `gates/lane-census.py:declared()` reads the
-    # `Gate(oracle=..., bend=...)` call sites off the AST of `gates` -- the walk THIS CALL holds, so
-    # the declaring set is a SUBSET of the walked set by construction and no lane can be declared
-    # that the sweep would not run. With the helpers absent the set is EMPTY, and an empty set makes
-    # every row-printing member unconsumed: `classify()` answers `NO-RULE` before it can use it, so
-    # the failure is a REFUSED sweep rather than a sweep that charged 252 members on no evidence.
-    consumed = frozenset(lanecensus.declared(gates)) if lanecensus is not None else frozenset()
     out.parent.mkdir(parents=True, exist_ok=True)
-    with out.open("w") as sink:
-        sink.write(HEADER + "\n")
-        sink.flush()
-        rows = 0
-        for g, reason in gates:
-            verdict, token, rc, took, peak = run_one(g, reason, seconds, mb, consumed)
-            tally[verdict] = tally.get(verdict, 0) + 1
-            rel = str(g.relative_to(ROOT))
-            print(f"  {verdict:<8} {took:6.1f}s  rc={rc:<4} peak={peak:>4}MB  {rel:<38} {token}")
-            sink.write(f"{rel}\t{verdict}\t{token}\t{rc}\t{took:.1f}\n")
+    lock = out.with_name(out.name + ".lock")
+    with lock.open("a+") as fh:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            fh.seek(0)
+            print(f"REFUSED, NOT A VERDICT -- {lock.name} is held by pid "
+                  f"{fh.read().strip() or '?'}", file=sys.stderr)
+            return gatekit.REFUSED
+        fh.seek(0)
+        fh.truncate()
+        fh.write(str(os.getpid()))
+        fh.flush()
+        with out.open("w") as sink:
+            sink.write(HEADER + "\n")
             sink.flush()
-            rows += 1
+            rows = 0
+            for g, _reason in gates:
+                if g in run:
+                    continue
+                token = "SELF" if roster[g] == "runner" else f"NOT-RUN:{roster[g]}"
+                tally_row(sink, g, tally, "SKIP", token, "-", 0.0, "-")
+                rows += 1
+            print(f"RUN       : {len(run)} of {len(gates)} members"
+                  + (f", {jobs} at a time" if run else " -- nothing to run for these roles"))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:
+                futures = {pool.submit(run_one, g, reason, seconds, mb, consumed): g
+                           for g, reason in gates if g in run}
+                for done in concurrent.futures.as_completed(futures):
+                    tally_row(sink, futures[done], tally, *done.result())
+                    rows += 1
     print("TALLY: " + "  ".join(f"{k}={v}" for k, v in sorted(tally.items())))
     # the denominator, which is not the tally: only PASS/FAIL are verdicts about the TREE
     about = tally.get("PASS", 0) + tally.get("FAIL", 0)
     print(f"THE DENOMINATOR: {about} of {rows} gates reached a verdict about the tree; "
           f"{tally.get('REFUSED', 0)} refused, {tally.get('SKIP', 0)} did not finish, "
           f"{tally.get('DEAD', 0)} crashed or said nothing.")
-    print(f"rows -> {out.relative_to(ROOT)}")
-    return 0 if rows else gatekit.DEAD            # describes THE RUN, never the tree
+    print(f"rows -> {shown(out)}")
+    # describes THE RUN, never the tree -- and `rows` includes the SKIP rows, so the RUN's own
+    # emptiness is what may return DEAD, not the file's row count: a role filter that selected
+    # nothing measured nothing, and 0 must not be printed for that.
+    return 0 if run else gatekit.DEAD
 
 
 # --------------------------------------------------------------------- the selftest, on plants
@@ -754,6 +929,8 @@ WITNESS = "home-witness.py"           # certifies the synthetic tree's home (see
 DEEPER = "oracles/planted-deeper.py"  # a SUBDIRECTORY member: the walk descends, `iterdir()` cannot
 DOT_A, DOT_B = ".tmp-plant-a.py", ".tmp-plant-b.py"   # dotted members: pruned by the walk, kept
 THIRD = "third-reason.py"             # immediate, undotted, and DENIED the control: a THIRD rule
+LANE = "role-oracle.py"               # a LANE: prints rows for a gate, so the sweep must not run it
+PROOF = "role-mutate.py"              # a PROOF: drives a gate, so the sweep must not run it
 
 
 def selftest(plant: bool = False) -> int:
@@ -784,9 +961,17 @@ def selftest(plant: bool = False) -> int:
         (root / "gates").mkdir()
         for name, _, src in PLANTS:
             (root / "gates" / name).write_text(guarded(src))
+        # THE ROLE FIXTURES. Each body WRITES A SENTINEL if it is EXECUTED, so "the sweep did not
+        # run it" is a missing file rather than an inference. `role()` classifies both by the
+        # tree's own suffixes; neither may be run by a default sweep.
+        noise = root / "executed.out"
+        for name in (LANE, PROOF):
+            (root / "gates" / name).write_text(guarded(f"open({str(noise)!r}, 'a').write('x')"))
         gates = walk(root, HOMES)                      # the SAME directory walk the real run uses
+        members = len(gates)
         out = root / "rows.rows"
-        worker = threading.Thread(target=sweep, args=(gates, out, 1, 512), daemon=True)
+        worker = threading.Thread(target=sweep, args=(gates, out, 1, 512), kwargs={"jobs": 1},
+                                  daemon=True)
         worker.start()
         # THE FLUSH PROOF. Read the file while the sweep is STILL RUNNING and require rows on disk;
         # `worker.is_alive()` is sampled with the read, so a file that was complete at exit cannot
@@ -799,6 +984,8 @@ def selftest(plant: bool = False) -> int:
                 break
             time.sleep(0.02)
         worker.join(60)
+        for name in (LANE, PROOF):                     # not bridge material; see `base` below
+            (root / "gates" / name).unlink()
 
         lines = out.read_text().splitlines() if out.exists() else []
         want = {name: token for name, token, _ in PLANTS}
@@ -810,13 +997,25 @@ def selftest(plant: bool = False) -> int:
         results.append(("FIVE VERDICTS: the rows file classifies each planted child as planted",
                         not wrong, "; ".join(wrong) or
                         "  ".join(f"{k}={v}" for k, v in sorted(got.items()))))
-        results.append(("SHAPE: a header and exactly one row per gate",
-                        lines[:1] == [HEADER] and len(cells) == len(PLANTS),
-                        f"{len(cells)} rows, header {lines[:1]!r}"))
+        results.append(("SHAPE: a header and exactly one row per member",
+                        lines[:1] == [HEADER] and len(cells) == members,
+                        f"{len(cells)} rows, {members} members, header {lines[:1]!r}"))
         results.append(("INCREMENTAL: rows are ON DISK while the sweep is STILL RUNNING",
-                        sample is not None and sample[1] and 1 <= sample[0] < len(PLANTS),
+                        sample is not None and sample[1] and 1 <= sample[0] < members,
                         f"read {sample} (rows, sweep-alive) mid-sweep"
                         if sample else "never saw a row on disk before the sweep exited"))
+
+        # THE ROLE CASE, AND ITS COUNTEREXAMPLE IS A MISSING SENTINEL -- not a claim about a name.
+        # `role(Path(__file__))` is what stops the sweep recursing into itself, and it is a measured
+        # identity rather than a spelling; the two fixtures prove the other direction.
+        role_of = {Path(c[0]).name: (c[1], c[2]) for c in cells}
+        roles_ok = (role_of.get(LANE) == ("SKIP", "NOT-RUN:lane")
+                    and role_of.get(PROOF) == ("SKIP", "NOT-RUN:proof")
+                    and not noise.exists() and role(Path(__file__)) == "runner")
+        results.append(("ROLES: a LANE and a PROOF are NOT EXECUTED (no sentinel) and their rows "
+                        "say why; this file's OWN role is `runner`, so a sweep cannot recurse",
+                        roles_ok, f"{LANE}={role_of.get(LANE)} {PROOF}={role_of.get(PROOF)} "
+                        f"executed={noise.exists()} self={role(Path(__file__))}"))
 
         # THE BRIDGE PLANT: the two walks DIFFER BY A KNOWN AMOUNT, AND THE PROJECTION MUST MOVE.
         # `gates-pop.py`'s OWN home witness is LOADED BY PATH and never transcribed -- it is the
@@ -828,7 +1027,16 @@ def selftest(plant: bool = False) -> int:
         home_dirs = {root / h for h in hs}
 
         def reading() -> dict:
-            """Both walks over the synthetic tree -- THE SAME PAIR `report()` bridges."""
+            """Both walks over the synthetic tree -- THE SAME PAIR `report()` bridges.
+
+            **`_MEASURED` IS CLEARED, AND THAT IS THE FIXTURE'S OWN CONDITION RATHER THAN A
+            WORKAROUND.** `gates-pop._measure` memoises a derivation ONCE PER TREE PER PROCESS --
+            correct for the live tree, which `report()` measures once, and wrong for a fixture that
+            MOVES the same tree three times inside one process: without the clear, the planted
+            dotted members are absent from `carried()`'s stale path list and the control cannot
+            see them, which is the `dot 0/2` this case used to report.
+            """
+            gpop._MEASURED.clear()
             return project([p for p, _ in walk(root, hs)], control(root)[0], home_dirs)
 
         base = reading()
