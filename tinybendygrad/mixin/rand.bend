@@ -438,7 +438,7 @@ def op_arange(+ar: O.Arena, n: U32, +dev: S.Dev) -> T.Tensor:
 # (`.agents/slop/nnargmax2/oracle_arange.py`, `cp_arange4_neg_dtype=dtypes.i32`), and
 # the VALUES are `[4, 3, 2, 1]` (`cp_arange4_neg_values`). THE `step` IS `-1` AND IT IS
 # spelled as the two's complement `4294967295` because `H.i64_of_i32` sign-extends a
-# `U32` AND `-1` IS NOT A `U32` LITERAL -- `mixin/op.bend:603`'s `mo_neg` SPELLS IT THE
+# `U32` AND `-1` IS NOT A `U32` LITERAL -- `mixin/op.bend:593`'s `mo_neg` SPELLS IT THE
 # SAME WAY.
 # TODO(p3) mixin/op.py:190  `commit_int(lo, hi)` -- the DTYPE IS CHOSEN, NOT GIVEN, and
 #   `mixin/dtype.bend`'s `commit_int` is not ported; `int32` is HARD-CODED HERE AND IS
@@ -1011,7 +1011,7 @@ def rd_sdpa_dt(+q: S.Dt, +k: S.Dt) -> S.Dt: F.least_upper.of(F.least_upper.of(q,
 # second implementation of a printer whose output a byte-diff already pins.
 # `CU` is creation.bend's one-field `Data` record for "a node index read more than once",
 # which is the same reason `PK` and `U1` exist above.
-# `rd_g` IS `cr_g` WITHOUT the `_d` half, and the reason is rule 18: `fold.bend:1654 symbol=sym_dim.signable`
+# `rd_g` IS `cr_g` WITHOUT the `_d` half, and the reason is rule 18: `fold.bend:1639 symbol=sym_dim.signable`
 # carries the `ssimplify` WALL -- `as_shape`'s arms cannot be run, so the EXPAND arm
 # that `arange` builds DEFERS, and a graph containing `arange` is UNANSWERABLE: asking for its shape
 # `_g`-only row below is a graph that contains a PERMUTE, and saying so in the ROW NAME is

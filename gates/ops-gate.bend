@@ -394,8 +394,8 @@ def s_blob_sweep_count() -> String:
 #
 # The measurement and the reason `F32.is_eq` is right here and `F32.bits` would be a
 # regression are the comment on `eq_arg.AFloat` above; this block is the GATE for it.
-# `AFloat` has no constructor anywhere in the tree -- `uop/upat.bend:396 symbol=arg_int` and
-# `uop/render.bend:741 symbol=arg_repr` only READ it, and its one would-be builder `_frompy` is
+# `AFloat` has no constructor anywhere in the tree -- `uop/upat.bend:392 symbol=arg_int` and
+# `uop/render.bend:729 symbol=arg_repr` only READ it, and its one would-be builder `_frompy` is
 # `TODO(p3)` at :4318 -- so no interning fixture can reach the arm the normal way and
 # the comparator was untested rather than unreachable. These rows intern two
 # `AFloat`s on ONE arena through `P.UOp.new`, so the answer is IDENTITY OF THE TWO
@@ -1382,10 +1382,10 @@ def UOp.is_inline_call(+ar: P.Arena, +self: U32) -> Maybe<&2, Bool>:
 #
 # ops.py:1073-1079 -- `P.UOp.gcd` and `P.UOp.divide_exact`.
 #
-# and the port has no integer-keyed map. measured 2026-11-08: `helpers.bend:502` says
+# and the port has no integer-keyed map. measured 2026-11-08: `helpers.bend:494` says
 # "Bend's `Map` is string-keyed only, so the set is a linear scan", and there is no
 # `HashMap` and no `HashSet` in the port. but the port has the honest spelling already,
-# TWICE: `dedup_u32` (`helpers.bend:509`) AND `merge_dicts` (`helpers.bend:2467`) ARE BOTH "A
+# TWICE: `dedup_u32` (`helpers.bend:500`) AND `merge_dicts` (`helpers.bend:2412`) ARE BOTH "A
 # list of pairs with a linear scan", and `merge_dicts`'s own NOTE says exactly that: "a list
 # of pairs is the honest representation". so the claim "the port has no multiset" was a
 # claim about a container and not about a capability.
@@ -1415,7 +1415,7 @@ def UOp.is_inline_call(+ar: P.Arena, +self: U32) -> Maybe<&2, Bool>:
 #    so every comparison is a parameter and every branch is a DEF.
 # 4. arguments are read left to right and each is passed unchanged until used, so a list's
 #    tail may not be passed to two calls. and the port's own `P.Merge.go` is the pattern
-#    -- `ops.bend:2845`: `P.Merge.go(t, P.Found.ar(f), List.append(&2, U32, map, [P.Found.i(f)]))`
+#    -- `ops.bend:2843`: `P.Merge.go(t, P.Found.ar(f), List.append(&2, U32, map, [P.Found.i(f)]))`
 #    -- the tail is the recursion's first argument and the accumulator is the third.
 #
 # ---------------------------------------------------------------------------
@@ -1562,7 +1562,7 @@ def UOp.gcd.factors.go(+ar: P.Arena, +uops: List<&2, U32>, +acc: List<&2, H.I64>
 # and the port spells it with the port's own pieces:
 #   * `self is v` is `U32.is_eq(self, v)` -- and the port's nodes are indices into an
 #     arena, so two nodes are the same iff their indexes are.
-#   * `self.divides(v.val)` IS THE PORT's OWN `P.UOp.divides` (`ops.bend:8569`), WHICH ANSWERS A
+#   * `self.divides(v.val)` IS THE PORT's OWN `P.UOp.divides` (`ops.bend:8152`), WHICH ANSWERS A
 #     `P.Dv{ok, f, i}` -- the `ok` is the "it divides" flag and `f`/`i` are the quotient's node
 #     AND ITS INDEX.
 #   * `new_count.subtract(...)` and `all(v>=0 ...)` are one comparison of two unsigned
@@ -1592,10 +1592,10 @@ def UOp.gcd.factors.go(+ar: P.Arena, +uops: List<&2, U32>, +acc: List<&2, H.I64>
 # and the answer is a `P.Dq` and not a `Maybe` -- and that is because the two srcs' answers
 # must be bound and a `Maybe` is a TYPE and not a `Data`, and a `+` binder's TYPE
 # MUST BE `Data` -- MEASURED 2026-11-08: "Note: +m can be used many times, so its type must be
-# Data". and the port's own `P.UOp.divides.op` is the pattern that works (`ops.bend:8252`):
+# Data". and the port's own `P.UOp.divides.op` is the pattern that works (`ops.bend:7887`):
 # one DEF, a `match` on the op, two direct self-calls bound with `+` in the ADD's arm, and
 # the results combined by a helper. and a `P.Dq{ok: Bool, f: P.Found}` is exactly the port's own
-# `P.Dv{ok: Bool, f: P.Found}` shape (`ops.bend:8467`) -- so the answer's TYPE is the port's own
+# `P.Dv{ok: Bool, f: P.Found}` shape (`ops.bend:8050`) -- so the answer's TYPE is the port's own
 # ANSWER TYPE AND NOT A NEW ONE.
 #
 # and `None{}` is upstream's `None`, which is the "we aren't sure" answer and not an
@@ -2068,7 +2068,7 @@ def vr.expr.rows(+ar: P.Arena) -> IO(Unit):
 #   `__floordiv__`. `const_like` is ops.py:572 and is NOT ported (:5441): it is
 #   `P.UOp.const(b, dtype or self.dtype)` plus `_mop(Ops.EXPAND, arg=self._shape)`, so the
 #   SHAPED half needs the shape field this arena does not carry. The scalar half already
-#   exists as `sy_const_like` (symbolic.bend:485).
+#   exists as `sy_const_like` (symbolic.bend:484).
 
 
 # ==== ops.py:1901 symbol=resolve_returned_after  ===============================
@@ -2368,7 +2368,7 @@ def vrn_rows(+ar: P.Arena) -> IO(Unit):
     vrn_row("vrn_int32", P.UOp.variable(ar, "k", H.i64_of_i32(1), H.i64_of_i32(2), 1, S.int32()))
 
 # `Map.has` answers a `Sigma` and not a `Maybe`, so the Bool rides out in the second
-# half of the pair. `uop/render.bend:1076 symbol=ctx_has.of`'s `ctx_has.of` destructures the same shape and
+# half of the pair. `uop/render.bend:1049 symbol=ctx_has.of`'s `ctx_has.of` destructures the same shape and
 # this is the third copy of THAT two-line destructure -- see `Maybe.has` below.
 def vv_has.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => Bool>) -> Bool:
   match r:
@@ -2406,18 +2406,18 @@ def vv_has(v: P.VarVals, k: String) -> Bool:
 # a BEND LANGUAGE CHANGE was needed and never grepped for it. `Map` is a stdlib type
 # from `import Base` -- `references/bend/bend2/base.bend:2752 symbol=Map.put` Map.put, `:2876`
 # Map.set, `:2683` Map.has, `:2736` Map.get, all four present -- and
-# `uop/render.bend:1012 symbol=range_ids.of` and `:1017` were already CALLING `Map.set` and `Map.get`
+# `uop/render.bend:989 symbol=range_ids.of` and `:1017` were already CALLING `Map.set` and `Map.get`
 # through `Ctx` while the note here said the rule did not exist.
 #
 # and the second caller i named was wrong too. i wrote that `pyrender`'s `Ctx` walk
-# wanted the same fold; `render.bend:1728 symbol=render_with_splits`'s `render_with_splits` answers
+# wanted the same fold; `render.bend:1690 symbol=render_with_splits`'s `render_with_splits` answers
 # `List<&2, Bind>` and not a `Maybe`, so it does not. The REAL second caller is
 # `unified_rewrite`'s fixpoint (ops.py:1826-1837 symbol=RewriteContext.unified_rewrite), where `test_n: UOp|None` is
 # carried through a loop and a `BottomUpGate` breaks out of it -- and THAT is the
 # engine's remaining named wall. Two real callers, and the second one is why the
 # idiom was worth looking for.
 #
-# THE IDIOM IS `bcast.go` (uop/fold.bend:587 symbol=bitcast_dims.res) verbatim: a `Maybe`-carried LIST
+# THE IDIOM IS `bcast.go` (uop/fold.bend:583 symbol=bitcast_dims.res) verbatim: a `Maybe`-carried LIST
 # accumulator and `Maybe.bind` for the miss arm. `memory.bend:405`'s `mem_some` is
 # the element form of the same thing, and both are in files this one imports. My
 # first draft was TEN defs and did not compile because a def may hold ONE `match`
@@ -2429,7 +2429,7 @@ def vv_has(v: P.VarVals, k: String) -> Bool:
 # zeros. So the Bool comes from `Map.has` and the value from `Map.get`. The default
 # is never a value the map can hold, which is why the `has` is not belt-and-braces.
 # `Map.get` answers a `Sigma` -- the MAP and the value -- not a bare value, so the
-# pair is destructured before the value is used. `render.bend:1009`'s `ctx_get.of` is
+# pair is destructured before the value is used. `render.bend:986`'s `ctx_get.of` is
 # the same two lines on a `String` map, and getting this wrong is what the
 # `expected : Data / observed : Quant` was: a `Map` where an `H.I64` was expected.
 def vv_of.val(r: Sigma<&1, &1, Map<&2, H.I64>, _ => H.I64>) -> H.I64:
@@ -2442,14 +2442,14 @@ def vv_of.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => H.I64>, present: Bool) -> May
 # `Map.get(-V: Data, d: V, m, key)` TAKES A DEFAULT and it is the SECOND argument,
 # which is how the `expected : Data / observed : Quant` happened: the `&2` that
 # `Map.has` and `Map.set` want was written here too, and it landed in the `V` slot
-# where a bare `H.I64` belongs. `Map.get` has NO quantifier -- `uop/render.bend:1025 symbol=multirange_str.go`'s
+# where a bare `H.I64` belongs. `Map.get` has NO quantifier -- `uop/render.bend:1001 symbol=multirange_str.go`'s
 # `Map.get(String, "", Ctx.map(c), U32.show(u))` shows the shape with the `""` in
 # the same slot. Three of the four `Map` readers in the tree and not the fourth.
 #
 # the default is 0 and that is why the `has` is not redundant. a miss returns 0,
 # which is a legal bound, so "unbound" and "bound to 0" are the same value here and
 # only `Map.has` separates them. `ctx_get` gets away with `""` because
-# uop/render.bend:1025 symbol=multirange_str.go states every src was written first; `vals` has no such guarantee.
+# uop/render.bend:1001 symbol=multirange_str.go states every src was written first; `vals` has no such guarantee.
 def vv_of(+v: P.VarVals, +k: String) -> Maybe<&2, H.I64>:
   vv_of.of(Map.get(H.I64, H.i64_of_i32(0), P.VarVals.m(v), k), vv_has(v, k))
 
@@ -2460,7 +2460,7 @@ def vv_of(+v: P.VarVals, +k: String) -> Maybe<&2, H.I64>:
 #
 # `Maybe.bind`'s LAMBDA is the continuation, so the three become one def with ONE
 # `match` (on the list, the only scrutinee) and TWO binds. `bcast.go` at
-# uop/fold.bend:587 symbol=bitcast_dims.res is the same shape and is why that fold is two lines: the recursion
+# uop/fold.bend:583 symbol=bitcast_dims.res is the same shape and is why that fold is two lines: the recursion
 # is in the CLOSURE, not in a call chain. `Maybe.bind` is the answer to "a `Maybe`
 # accumulator wants two matches per step", and it was already in the tree.
 def vals.step(+ar: P.Arena, +v: P.VarVals, xs: List<&2, U32>, acc: List<&2, H.I64>) -> Maybe<&2, List<&2, H.I64>>:
@@ -2581,7 +2581,7 @@ def vd_put(nm: String, x: H.I64, base: P.VarVals) -> P.VarVals:
 #   Map.set(a, -V: Kind(a), m, key, x)  -- quantifier SECOND, after the linearity
 #   Map.has(-a: Quant, -V: Kind(a), m, key)
 #   Map.get(-V: Data, d, m, key)        -- NO linearity parameter at all
-# `uop/render.bend:1012 symbol=range_ids.of` and `:1017` already spell all three correctly; this cost three
+# `uop/render.bend:989 symbol=range_ids.of` and `:1017` already spell all three correctly; this cost three
 # compile rounds to find, and the first of them I had recorded as a LANGUAGE gap.
 # `Map.set` puts its QUANTIFIER SECOND (`Map.set(a, -V: Kind(a), m, key, x)`) and
 # the three `Map` readers in the tree disagree about that -- `Map.has` takes it
@@ -2599,7 +2599,7 @@ def vd_put(nm: String, x: H.I64, base: P.VarVals) -> P.VarVals:
 # accumulates. A fold that compiles and returns nothing is worse than one that does
 # not compile, and this is the second time this session that bit (the first was
 # `rra.filter`).
-# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:6555 symbol=ax_names_str): collect the
+# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:6305 symbol=ax_names_str): collect the
 # pieces, `List.reverse`, `String.join`. Three attempts got here and the third is
 # the file's own idiom --
 #   1. a `+acc` String that COMPILED and answered `()` for every input, because a
@@ -2621,7 +2621,7 @@ def vd_text.go(+ys: List<&2, H.I64>, +acc: List<&2, String>) -> List<&2, String>
 # NO `match` HERE, and that is the fourth attempt's only content. A match on
 # `vd_text.go(ys, Nil{})` -- a computed value -- is refused, so the empty case is
 # handled by the JOIN: `String.join` of an empty list is "", and "" wrapped in
-# parentheses is "()". `ax_names_str` at ops.bend:6555 symbol=ax_names_str is the same shape and it has
+# parentheses is "()". `ax_names_str` at ops.bend:6305 symbol=ax_names_str is the same shape and it has
 # no `match` either.
 def vd_text(ys: List<&2, H.I64>) -> String:
   String.concat(["(", String.join(vd_text.go(ys, Nil{}), ","), ")"])
@@ -2708,7 +2708,7 @@ def PSlot.le(a: P.PSlot, b: P.PSlot) -> Bool:
 # `sym_infer` (ops.py:95) IS THE IDENTITY ON AN INT, and `UOp.sym_infer`
 # (ops.py:1169) EVALUATES RENDERED SOURCE WITH `exec` -- the port's `sym_infer`
 # WALL, named at this file's `TODO(p3) ops.py:1169 def sym_infer` and at
-# `uop/fold.bend:6590 symbol=main`. SO THE PORT'S `launch_dims` IS EXACT FOR EVERY
+# `uop/fold.bend:6523 symbol=main`. SO THE PORT'S `launch_dims` IS EXACT FOR EVERY
 # `P.ProgramInfo` the port can build and not one more: the port's `global_size`
 # and `local_size` are `List<&2, H.I64>`, so their elements are INTS.
 #
@@ -2958,7 +2958,7 @@ def UOp.set.end.of(e: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
 # logic of its own. So the only things a row can test are (a) that the three pieces
 # are wired in this ORDER and (b) that `argfix`'s `None`-means-empty arm is
 # honoured -- and `argfix` is already ported, as `argfix1` / `argfix2` /
-# `argfix_seq` (helpers.bend:547-554), one def per arity.
+# `argfix_seq` (helpers.bend:536-543), one def per arity.
 #
 # `end` IS A `Maybe<&2, List<&2, U32>>` and not a node, because Python's `end` is
 # `UOp | tuple | list` and the tuple and the single node are the SAME thing to
@@ -3025,7 +3025,7 @@ def set_ar() -> P.Arena:
     P.Node{P.OpsCONST{}, Nil{}, P.APy{P.CInt{H.i64_of_i32(9)}}, P.TNone{}},
     P.Node{P.OpsCONST{}, Nil{}, P.APy{P.CInt{H.i64_of_i32(3)}}, P.TNone{}}], [0]}
 
-# the printer is `P.Rng.srcops.seeded` (ops.bend:6101) and not a new one. It folds
+# the printer is `P.Rng.srcops.seeded` (ops.bend:5970) and not a new one. It folds
 # op names in SOURCE ORDER with no trailing separator, which is the whole of what
 # these rows need: `set` is a composition whose only failure modes are the SHAPE and
 # the ORDER, and a row that printed a top-level op name could not tell `END` from a

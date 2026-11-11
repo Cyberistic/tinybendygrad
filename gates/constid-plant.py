@@ -63,7 +63,7 @@ OLD = "    case CFloat{g}: U32.is_eq(F32.bits(f), F32.bits(g))"
 IEEE = "    case CFloat{g}: F32.is_eq(f, g)"
 
 # ARM B -- UPSTREAM's `__eq__`, spelled out: two nans are equal, and everything else is
-# IEEE.  `H.f32_is_nan` is the port's own nan test (`helpers.bend:913`: the exponent field
+# IEEE.  `H.f32_is_nan` is the port's own nan test (`helpers.bend:894`: the exponent field
 # all ones AND the mantissa non-zero), and `ops.bend:167` already imports `H`.  THE `+` ON
 # THE BINDER IS LOAD-BEARING: `g` is used TWICE, and Bend's linear types REFUSE a binder
 # consumed more than once -- MEASURED, the first attempt said

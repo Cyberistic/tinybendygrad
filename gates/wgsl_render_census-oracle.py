@@ -167,7 +167,7 @@ shape of the `ssimp` story and is reported rather than papered over:
 `mixin/dtype.py:36` is `return self if self.dtype == to_dtype(dtype) else ...`,
 so `UOp.cast` FOLDS when the dtypes agree, and a `CAST(weakint, CONST)` is
 UNBUILDABLE: the only CONST is `weakint`, and casting a weakint CONST to weakint
-returns the CONST. `wgsl.bend:838` builds exactly that node, and it is the ONE
+returns the CONST. `wgsl.bend:827` builds exactly that node, and it is the ONE
 `OpsCAST` site in the file that MINTS (the other two, `:334` and `:575`, are
 pattern TESTS). The gate's `never_folding_cast_hold()` re-measures this on
 every run so the statement cannot rot.
@@ -189,12 +189,12 @@ from tinygrad.uop.ops import Ops, ParamArg, PatternMatcher, UOp
 # comparison compares ANSWERS rather than printers.
 # ===========================================================================
 def one_line(s: str) -> str:
-    """`wgsl.bend:832`'s `one_line`: a module's newlines SPELLED `\\n`."""
+    """`wgsl.bend:821`'s `one_line`: a module's newlines SPELLED `\\n`."""
     return s.replace("\n", "\\n")
 
 
 def b(x) -> str:
-    """`str(True)` is `"True"` -- `wgsl.bend:823`'s `bs`."""
+    """`str(True)` is `"True"` -- `wgsl.bend:813`'s `bs`."""
     return "True" if x else "False"
 
 

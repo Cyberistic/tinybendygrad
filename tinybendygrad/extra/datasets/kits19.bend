@@ -25,13 +25,13 @@
 #   def, whose body is a directory scan (upstream:20):
 #   `sorted([x for x in BASEDIR.iterdir() if x.stem.startswith("case") and
 #    int(x.stem.split("_")[-1]) < 210 and x not in get_val_files()])`.
-#   MISSING: `fetch` (upstream:24, the `helpers.bend:3194` HTTP seam) which
+#   MISSING: `fetch` (upstream:24, the `helpers.bend:3123` HTTP seam) which
 #   `get_val_files` needs for `evaluation_cases.txt`; `pathlib`/`iterdir`/`functools.cache`
 #   for the scan; `nibabel` (`nib.load`, `image.header["pixdim"][1:4].tolist()`,
 #   `get_fdata()`, upstream:28-30) for NIfTI volumes; `scipy.signal`/`scipy.ndimage`
 #   (upstream:6) for `gaussian_kernel` (upstream:99) and the filtering; torch and
 #   `torch.nn.functional` (upstream:8-9) for `interpolate` -- and the port's own
-#   `Tensor` (upstream:11) is a UOp slot in an arena (`tensor.bend:200`), not the
+#   `Tensor` (upstream:11) is a UOp slot in an arena (`tensor.bend:195`), not the
 #   runtime tensor `model` needs, so `sliding_window_inference` has no callee at all.
 # not ported, and named so nobody invents it: `get_val_files` (upstream:23),
 #   `load_pair`, `resample3d`, `normal_intensity`, `pad_to_min_shape`, `preprocess`,

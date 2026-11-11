@@ -123,7 +123,7 @@ type IxMap is Data:
 # range map to thread the arena. SO THE RANGE MAP HOLDS TABLE INDICES:
 # INDEX 0 IS THE CONST 0 (`UOp.const(0)`, AND `r.const_like(0)`) AND EVERY
 # other INDEX is a RANGE with an axis ID and an extent. the apply rewrite
-# materialises, and the port's arena internes (`ops.bend:2522`), so one RANGE is
+# materialises, and the port's arena internes (`ops.bend:2521`), so one RANGE is
 # ONE NODE EVERYWHERE.
 #
 # `kind` 0 IS A RANGE AND `kind` 1 IS THE CONST 0.
@@ -873,7 +873,7 @@ def ix_rg_c0_idx() -> U32: 0
 
 # the materialiser: a table entry becomes a node. it is `ix_nr_pick` -- the same
 # `new_range` decision with the node -- so there is one `new_range` and not two.
-# - the port's arena internes (`uop/ops.bend:2571 symbol=UOp.make.intern`), so one RANGE is one node
+# - the port's arena internes (`uop/ops.bend:2570 symbol=UOp.make.intern`), so one RANGE is one node
 # everywhere, which is what makes the table sound.
 def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
   ix_nr_pick(ix_rg_is_c0(r), at, ar, IxRange.ext(r), IxRange.idx(r))

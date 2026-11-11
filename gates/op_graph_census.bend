@@ -30,7 +30,7 @@
 # `O.Rng.sig` prints the node COUNT, the root op, the root nsrc and the SRC op sequence -- it
 # does NOT print an ARG, and the layer's headline defect hides EXACTLY there: the trust-ratio
 # guards compare against `CONST 1.0` where CPython compares against `CONST 0.0`
-# (`op_cmplt1`, optim.bend:801). The two graphs are the SAME op sequence
+# (`op_cmplt1`, optim.bend:762). The two graphs are the SAME op sequence
 # (`... CMPLT/2 ... CONST/0 ...`), so NO op-level printer can see it. Every node therefore
 # prints `<op>/<nsrc>:<arg>` -- `f<bits>` for a float CONST (`F32.bits`), `b<bool>` for a
 # bool, `-` otherwise -- and the oracle prints the same from `ConstFloat.bits` re-encoded to

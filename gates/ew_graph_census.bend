@@ -405,9 +405,9 @@ def main() -> IO(Unit):
 # THIS IS NOT A ROW AND IT IS NOT PINNED, and it is NOT SMOOTHED EITHER: it is recorded
 # because the fair fixture above is exactly what HIDES it. The reachability is NOT established
 # here and is left as the open half. The BINARY `ew_*` surface is NOT confined to this file:
-#   `mixin/op.bend:986` `mo_isnan` calls `E.ew_ne(t, ETen{t})` -- the SAME tensor twice, which
+#   `mixin/op.bend:970` `mo_isnan` calls `E.ew_ne(t, ETen{t})` -- the SAME tensor twice, which
 #     is the harmless case; and
-#   `mixin/rand.bend:428` `rd_tfb.three` calls `E.ew_threefry(x, ETen{rd_p64(...)})` -- TWO
+#   `mixin/rand.bend:426` `rd_tfb.three` calls `E.ew_threefry(x, ETen{rd_p64(...)})` -- TWO
 #     operands built by two `mo_bin` chains, whose arena relationship this unit did NOT measure.
 # The rest of `op.bend`'s use of `E.*` is the UNARY defs (`ew_exp2`, `ew_sqrt`, `ew_square`,
 # `ew_reciprocal`, `ew_log2`, `ew_sin`, `ew_bitwise_not`, `ew_detach`) and the readers/helpers

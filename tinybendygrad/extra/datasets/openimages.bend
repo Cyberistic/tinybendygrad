@@ -31,7 +31,7 @@
 #   MISSING: `MLPERF_CLASSES` as a value first -- it must be the real 601-name list,
 #     not a placeholder, because it is the left side of the join above; `boto3` +
 #     `botocore` (upstream:7) for the UNSIGNED S3 bucket and its `ClientError` branch
-#     (upstream:108); `fetch` for the three CSVs (the `helpers.bend:3194` HTTP seam);
+#     (upstream:108); `fetch` for the three CSVs (the `helpers.bend:3123` HTTP seam);
 #     `pandas` -- `read_csv` (upstream:125/129), `merge`, `isin`, `groupby`,
 #     `factorize`, `apply(..., axis=1, result_type="expand")` (upstream:78), i.e. a
 #     dataframe engine, not a CSV reader; `PIL.Image` (upstream:5) for `extract_dims`
@@ -41,7 +41,7 @@
 #     178) for the flip and resize; `tqdm` (upstream:135) and `diskcache`-style env
 #     `getenv("BASEDIR", ...)` (upstream:208).
 #   The one thing that IS reachable is `normalize` -- `Tensor` and `dtypes` are ported
-#   (`tensor.bend:200`, `dtype.bend:57`) -- but it cannot be written honestly until
+#   (`tensor.bend:195`, `dtype.bend:56`) -- but it cannot be written honestly until
 #   `permute` and `cast` on the port's Tensor exist, so it is left named, not faked.
 # not ported, and named so nobody invents it: `MLPERF_CLASSES` (upstream:18),
 #   `extract_dims`, `export_to_coco`, `get_image_list`, `download_image`,

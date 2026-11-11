@@ -103,8 +103,8 @@ def device_holds(census: Path | None = None) -> bool:
   THREE CLAIMS: THE ORACLE PASSES A ONE-DEVICE TUPLE, THE PORT PASSES ITS OWN
   `cpu_dev()`, AND THE PLANT FIXTURE's BUFFERS ARE ON THE SAME DEVICE.
 
-  `device.bend:757`'s `dev_name` IS NOT A WAY TO COMPARE THE DEVICE: IT IS THE OTHER
-  TABLE, AND IT DISAGREES WITH `device.bend:344`'s `tag_of` -- `tag_of("CPU")` IS 0 AND
+  `device.bend:750`'s `dev_name` IS NOT A WAY TO COMPARE THE DEVICE: IT IS THE OTHER
+  TABLE, AND IT DISAGREES WITH `device.bend:340`'s `tag_of` -- `tag_of("CPU")` IS 0 AND
   `dev_name(0)` IS THE EMPTY STRING, WHILE `dev_name(6)` IS "CL" AND `tag_of("DISK")` IS
   6. **THE PORT HAS NO DEVICE NAME TO PRINT FOR `S.D1{0}`, AND THE COUNT IS WHAT THE
   BIG CENSUS COMPARES.**
@@ -160,7 +160,7 @@ def device_holds(census: Path | None = None) -> bool:
 
   # THE PLANT FIXTURE's OWN BUFFERS ARE ON THE SAME DEVICE: `_buf` BUILDS THEM WITH
   # "CPU", AND `cpu_dev()` IS `S.D1{0}` -- THE PORT's TAG FOR EVERY DEVICE THAT IS NOT
-  # DISK, NPY OR PYTHON (`device.bend:344`'s `tag_of`).
+  # DISK, NPY OR PYTHON (`device.bend:340`'s `tag_of`).
   if '"CPU"' not in oracle:
     print("  device_holds: the oracle's plant fixture does not build its buffers on "
           "'CPU'")

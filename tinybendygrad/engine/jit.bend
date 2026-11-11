@@ -90,7 +90,7 @@
 # two measured facts about the record rules, because the notes disagree with the compiler and
 # this file is built on the compiler's answer.
 #   * A `Data` record CAN hold a `Maybe` field. `Slot{slot, nm: Maybe<&2, String>}` in
-#     engine/realize.bend:1433 symbol=rz_tab_rej checks. The standing "a `Data` record cannot hold a `Maybe` field"
+#     engine/realize.bend:1419 symbol=rz_tab_rej checks. The standing "a `Data` record cannot hold a `Maybe` field"
 #     note is not true of 2.0.34; what IS true is the narrower `device.bend` rule 6 -- a
 #     `Data` FIELD may not be a `match` SCRUTINEE.
 #   * A `Data` FIELD may not be scrutinised and `+` cannot be spelled on a `Maybe`, so every
@@ -108,7 +108,7 @@ import ./realize.bend as RZ
 # `U32` is affine and `+` is refused on it, so every `(arena, index)` pair read
 # twice in one expression is an `O.Found`: `Found` is `Data`, its readers are
 # non-consuming, and `+f: O.Found` is a refcount. And `Bool.to_u32` EXISTS in
-# base 2.0.34 (base.bend:621 symbol=Bool.to_u32), which `mixin/rand.bend` rule 3
+# base 2.0.34 (base.bend:620 symbol=Bool.to_u32), which `mixin/rand.bend` rule 3
 # records as missing;
 # it is not missing and every `Bool` -> `U32` in this tree should be this call
 # rather than a `Bool.pick` per site.
@@ -134,7 +134,7 @@ def j_str(m: Maybe<&2, String>) -> String:
     case _: "unprintable"
 
 # `dedup` for a list of arena indices -- Python's `dict.fromkeys`
-# (helpers.bend:107 symbol=nc_in). `_written_uops` (jit.py:64) and `held_bufs` (jit.py:161) are
+# (helpers.bend:105 symbol=nc_in). `_written_uops` (jit.py:64) and `held_bufs` (jit.py:161) are
 # both set comprehensions, and this is the set.
 #
 # the `.go` split is not optional, and the order is `.go` first. `Bool.pick`
@@ -191,7 +191,7 @@ def j_at_l(xs: List<&2, List<&2, U32>>, n: U32) -> List<&2, U32>:
 
 # A STABLE string sort. jit.py:101 is `tuple(sorted(x[1].keys(), key=lambda v:
 # v.expr))` and `sorted` is stable, so this is insertion sort and not a commutative
-# one -- `H.argsort_u32` (helpers.bend:603 symbol=argsort_u32) is the u32 sibling and
+# one -- `H.argsort_u32` (helpers.bend:590 symbol=argsort_u32) is the u32 sibling and
 # there is no string
 # one in the tree yet.
 #
@@ -438,4 +438,4 @@ def ii_vars_repr(xs: List<&2, String>) -> Maybe<&2, String>:
 # `Device`-less caller that prints a dtype needs it, so the fix belongs in
 # spec.bend; `LAWS/spec.bend` is READ-ONLY to this unit, so the reader is LOCAL
 # here and named `j_dt_nm` so a merge is a rename.
-# TODO(p3) tinybendygrad/LAWS/spec.bend:76 symbol=Dt -- Dt.nm -- BLOCKED. needs a `dt_nm` / `nm_of(Dt)` reader for the `nm: String` field of `Dt{pri, bits, cls, nm}` (`tinybendygrad/LAWS/spec.bend:76 symbol=Dt`). MEASURED, no `def dt_nm` / `nm_of` / `nm` exists; the port's `dn_gate` (`LAWS/spec.bend:853`) is an unrelated debug gate. The field is THERE, the reader is NOT.
+# TODO(p3) tinybendygrad/LAWS/spec.bend:74 symbol=Dt -- Dt.nm -- BLOCKED. needs a `dt_nm` / `nm_of(Dt)` reader for the `nm: String` field of `Dt{pri, bits, cls, nm}` (`tinybendygrad/LAWS/spec.bend:74 symbol=Dt`). MEASURED, no `def dt_nm` / `nm_of` / `nm` exists; the port's `dn_gate` (`LAWS/spec.bend:837`) is an unrelated debug gate. The field is THERE, the reader is NOT.

@@ -21,7 +21,7 @@ WHAT WAS MEASURED BEFORE THIS FILE EXISTED, so the reader does not have to re-de
       4. `z3` is in neither `.venv` (3.12) nor PATH `python3` (3.15). `uv run --with z3-solver`
          yields 5.3.1.0, and the file pins `z3_d3=4.16.0.0`.
   * the file has ZERO READERS. Discovered by walking the tree for its basename; the only hit
-    outside itself is prose at `tinybendygrad/uop/validate.bend:2298`. So deleting rows here
+    outside itself is prose at `tinybendygrad/uop/validate.bend:2286`. So deleting rows here
     turns nothing green, and this file is the first thing that can say so out loud.
 
 THE POPULATION, and it is discovered twice over, never hand-listed. `Ops.<NAME>` references are

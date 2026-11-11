@@ -32,24 +32,24 @@
 # its `at` carries the upstream address AND the path that was missing.
 #
 # the primitives, and WHERE they live. measured, not assumed:
-#   * LISTING A DIRECTORY: `Sz.read_dir` (`tinybendygrad/sz.bend:124`), the ONLY
+#   * LISTING A DIRECTORY: `Sz.read_dir` (`tinybendygrad/sz.bend:118`), the ONLY
 #     directory listing in the port. It is `@unsafe` -- a foreign call, because
-#     `base.bend` has no `File.list` (the TODO at `sz.bend:120` says so) -- and it
+#     `base.bend` has no `File.list` (the TODO at `sz.bend:114` says so) -- and it
 #     answers the NAMES of a directory, except "." and "..", in the order the host
 #     lists them (`runtime/sz.c:31-63`). A directory it cannot open is NO NAMES,
 #     which is why `Sz.is_dir` is asked first.
-#   * IS A NAME A DIRECTORY: `Sz.is_dir` (`tinybendygrad/sz.bend:132`), 1 or 0
+#   * IS A NAME A DIRECTORY: `Sz.is_dir` (`tinybendygrad/sz.bend:126`), 1 or 0
 #     (`runtime/sz.c:106-113`). It is an LSTAT, so a symlink to a directory is
 #     NOT a directory here.
 #   * READING A FILE: `File.open` + `File.read` + `File.close` from `base.bend`
 #     (`:288`, `:293`, `:323`). `File.read` answers a `Result`, and the Fail arm
 #     is the file that is not there -- the port's own idiom for it is
-#     `tinybendygrad/helpers.bend:2736-2759`.
+#     `tinybendygrad/helpers.bend:2674-2695`.
 #   * A GLOB: THERE IS NONE. `train/*/*` is expanded HERE, from the two
 #     primitives above, and the expansion is measured against CPython's
 #     `glob.glob` -- see `.agents/slop/imagenet2/REPORT.md`.
 #   * a json parser: there is NONE either. `THE PORT's `tinybendygrad/viz/serve.bend` HEADER`
-#     says "`json.loads` IS NOT PORTED" and `tinybendygrad/nn/state.bend:97`
+#     says "`json.loads` IS NOT PORTED" and `tinybendygrad/nn/state.bend:96`
 #     calls `json.loads` "a PARSER" it lacks. So the class index is read by the
 #     READER BELOW, which is a decoder for the class-index format and NOT a JSON
 #     parser: it refuses any shape it does not know instead of guessing one.
@@ -67,9 +67,9 @@
 #   `{"0": ["tench", 0], ...}`.
 # TODO(p3) `@functools.cache` (upstream:8/16/32) AND `@diskcache` (upstream:27).
 #   Upstream caches all three answers. Bend has no mutable globals
-#   (`helpers.bend:2577 symbol=Counters`), so a cache is not a decorator here: the
+#   (`helpers.bend:2519 symbol=Counters`), so a cache is not a decorator here: the
 #   port's own spelling of a keyed table is the first-wins `Reg` scan
-#   (`tinybendygrad/device.bend:296-323`), and the caller holding the first
+#   (`tinybendygrad/device.bend:292-319`), and the caller holding the first
 #   answer IS the cache. `@diskcache` additionally wants a disk cache the port
 #   does not have.
 #
@@ -227,7 +227,7 @@ def split.files(root: String, split: String, at: String, what: String) -> IO(Loa
 # ANYTHING ELSE IS REFUSED, with the place it refused.
 #
 # It is a CHARACTER-AT-A-TIME machine, the port's own idiom for a parser
-# (`sz.bend:967 symbol=go` runs its lexer exactly this way): one char
+# (`sz.bend:955 symbol=go` runs its lexer exactly this way): one char
 # per step, the state carries everything, and the char list shrinks by one per
 # step. That is what makes it TERMINATE -- a recursive-descent parser that
 # returns "the rest of the input" cannot be written here, because Bend's
@@ -236,7 +236,7 @@ def split.files(root: String, split: String, at: String, what: String) -> IO(Loa
 # (MEASURED, `.agents/slop/imagenet2/t1-suffix.bend`).
 #
 # the whitespace is `Char.is_space`, which is one character wider than json's:
-# Base's is `x == 32 or 9 <= x <= 13` (`base.bend:1950-1953`), so a vertical tab
+# Base's is `x == 32 or 9 <= x <= 13` (`base.bend:1949-1952`), so a vertical tab
 # or a form feed BETWEEN TWO TOKENS is accepted here and rejected by `json`.
 # Nothing writes one, and the refusal is the port's habit, so the wider set is
 # the price of one `Char.is_space` call instead of four match arms in six

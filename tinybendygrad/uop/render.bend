@@ -87,7 +87,7 @@
 # (`ParamArg`, `UOp`, `PatternMatcher`, `UPat`) are rewritten as closed datatypes
 # here and their absence is not a gap. One of the five exists, four do not.
 #
-#   strip_parens              EXISTS, helpers.bend:983. Used as-is.
+#   strip_parens              EXISTS, helpers.bend:964. Used as-is.
 #   range_str                 ABSENT from ops.bend. Rebuilt here, from `AxisType`,
 #                             `axis_colors`, `Ops.value` and `sint_show` -- all
 #                             present. `ops.bend` has no `range_str` at all, so
@@ -104,7 +104,7 @@
 #                             used to name two defs, `consumers.of` and
 #                             `consumers.who`, that were never written; `who` is a
 #                             FIELD of `Cons`, not a def.)
-#   sint                     ABSENT, and so is `sint_to_uop` (`uop/ops.bend:3914 symbol=UPat.after.put` marks
+#   sint                     ABSENT, and so is `sint_to_uop` (`uop/ops.bend:3869 symbol=UPat.after.put` marks
 #                             that one `TODO(p3)`). `sint` is a TYPE ALIAS for
 #                             `UOp | int`, which has no Bend spelling, so
 #                             `marg_str`'s `isinstance(a, UOp)` test becomes a
@@ -298,8 +298,8 @@ def addr_name(a: S.Addr) -> String:
 def addr_repr(a: S.Addr) -> String:
   String.concat(["AddrSpace.", addr_name(a)])
 
-# THE DEVICE TABLE. `S.Dev` is a `U32` tag (LAWS/spec.bend:85 symbol=Dev) and
-# schedule/rangeify.bend:1410 symbol=rf_webgpu8 says the tag is "per name interned by the runtime" -- a table that is NOT
+# THE DEVICE TABLE. `S.Dev` is a `U32` tag (LAWS/spec.bend:83 symbol=Dev) and
+# schedule/rangeify.bend:1405 symbol=rf_webgpu8 says the tag is "per name interned by the runtime" -- a table that is NOT
 # THERE. `repr` is the one reader that needs the NAME, so the table lands here,
 # at the point of use, and is the P6 device table ops.bend points at.
 #
@@ -696,7 +696,7 @@ def customfunction_repr(+cf: O.CustomFunction) -> String:
 # is `tuple.__lt__`, so the order between two nodes is LEXICOGRAPHIC over FOUR KINDS OF THING:
 # an int (`op.value`), a STRING (`repr(arg)`), a `DType` and then the children as nested tuples.
 #
-# the key has no purpose here and the order does. `ops.bend:5321` records that `tuplize` exists
+# the key has no purpose here and the order does. `ops.bend:5227` records that `tuplize` exists
 # to KEY CPython's `ucache` and that this port's interner is `intern.find`, a direct comparison
 # over `Arena.nodes` -- so no key is wanted. But `uop/symbolic.py:225` is its OTHER consumer,
 # `commutative`'s single rule, which compares two OPERANDS, and that is an order.
@@ -1086,7 +1086,7 @@ def dt_of.of(m: Maybe<&2, S.Dt>) -> S.Dt:
     case Some{d}: d
     case None{}: S.void()
 
-# `x.dtype`. It is a FOLD (uop/fold.bend:2028 symbol=Step), not an arena read, so it is threaded
+# `x.dtype`. It is a FOLD (uop/fold.bend:2009 symbol=Step), not an arena read, so it is threaded
 # as the table `tb` alongside the arena -- and the `void` default is Python's
 # "the fold did not settle this node", which is a wrong answer rather than a
 # crash. `Kahn.settled` is the honest question and the gate rows are all built
@@ -1102,7 +1102,7 @@ def dt_of(tb: F.Table, ar: O.Arena, u: U32) -> S.Dt:
 # is `tuple.__lt__`, so the order is LEXICOGRAPHIC over an int, a STRING, a `DType`, then the
 # children as nested tuples.
 #
-# why the order and not the key. `ops.bend:5321` records that `tuplize` exists to key CPython's
+# why the order and not the key. `ops.bend:5227` records that `tuplize` exists to key CPython's
 # `ucache` and that this port's interner is `intern.find`, a direct comparison over `Arena.nodes`
 # -- so no key is wanted. But `uop/symbolic.py:225` is its OTHER consumer, `commutative`'s rule
 # `x.src[1].tuplize < x.src[0].tuplize`, and THAT IS AN ORDER.
@@ -2791,7 +2791,7 @@ def rnd_rows() -> IO(Unit):
 #
 # the header of this file listed this DEF as gap (a) -- "no `sprintf`, no
 # field-width specifier" -- and said the gap is "CLOSED by composition". It is, and
-# the composition is the file's own: `H.pad_left` / `H.pad_right` (helpers.bend:1044-1047,
+# the composition is the file's own: `H.pad_left` / `H.pad_right` (helpers.bend:1025-1028,
 # :1039) for every `:20s` / `:40s` / `:32s`, and `multirange_str`'s own `pad`
 # argument for the `pad=10`. Nothing new is written here for the widths.
 #
@@ -2944,7 +2944,7 @@ def pu_dtype(+tb: F.Table, +ar: O.Arena, +u: U32) -> String:
 #   `{str(u.dtype):40s}` 40 STRING -> H.pad_right   (was pad_left)
 #   `{str(srcs):32s}` 32  STRING   -> H.pad_right   (was pad_left)
 #
-# `H.pad_left` prepends the blank and `H.pad_right` appends it (helpers.bend:1044-1047),
+# `H.pad_left` prepends the blank and `H.pad_right` appends it (helpers.bend:1025-1028),
 # so the names read the way they act, and the mistake was using the NAME to decide the
 # direction instead of the SPEC. Three of the four were the same mistake and one was the
 # mirror of it, which is why the row read as one shifted field rather than four.

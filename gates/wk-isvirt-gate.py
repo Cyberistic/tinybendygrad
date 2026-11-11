@@ -9,12 +9,12 @@ WHAT IS UNDER TEST. `tinygrad/uop/ops.py:902` is ONE line:
 
     return self.device is None or self.dtype in dtypes.weaks
 
-and the port spells it as TWO claims joined by `or` (`uop/weak.bend:268`): the device
+and the port spells it as TWO claims joined by `or` (`uop/weak.bend:267`): the device
 half and the dtype half. The device half is a NESTED `Maybe` -- the outer answers "does
 this node carry a device at all" and the inner "is it there" -- and flattening them
 first would lose the one case `is_virtual` asks about.
 
-WHY THIS GATE EXISTS, AND THE REASON IS A STALE CLAIM THAT WAS MEASURED. `uop/ops.bend:5345`
+WHY THIS GATE EXISTS, AND THE REASON IS A STALE CLAIM THAT WAS MEASURED. `uop/ops.bend:5251`
 says of `wk_is_virtual`:
 
     PORTED BUT UNGATED, AND THE REASON IS A FIXTURE, NOT A DEF. `is_virtual` answers
@@ -23,7 +23,7 @@ says of `wk_is_virtual`:
     port sets it, so EVERY node is virtual and the reader has no negative witness. MEASURED:
     both candidate rows came out `True`, and two rows that are always `True` cannot fail.
 
-THAT REASON IS FALSE TODAY. MEASURED 2026-10-30: `renderer/__init__.bend:450` builds a
+THAT REASON IS FALSE TODAY. MEASURED 2026-10-30: `renderer/__init__.bend:441` builds a
 `ParamArg` with `device = Some{S.D1{0}}`, and `fold.bend`'s `device_of.param` reads
 `O.ParamArg.device(pa)` -- so a node that CARRIES a device is reachable and
 `wk_is_virtual` has a negative witness for the first time. This gate is that witness.
@@ -74,6 +74,6 @@ GATE = Gate(
 if __name__ == "__main__":
     sys.exit(main(GATE, "wk-isvirt-gate: 5 rows, 3 lanes, 0 documented divergences -- "
                         "`is_virtual` is `device is None or dtype in weaks`, and the DEVICE "
-                        "half has a negative witness for the first time (`renderer/__init__.bend:450` "
-                        "builds a ParamArg that CARRIES a Dev, which is what `uop/ops.bend:5345` "
+                        "half has a negative witness for the first time (`renderer/__init__.bend:441` "
+                        "builds a ParamArg that CARRIES a Dev, which is what `uop/ops.bend:5251` "
                         "said no def in the port did)"))

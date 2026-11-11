@@ -207,7 +207,7 @@ def tok(u) -> str:
     DTYPE.
 
     The fourth shape is the one this census was missing, and it is `creation.bend`'s own
-    `cr_cast` (creation.bend:217) that needed it: that mints its CAST with `O.ADt{dt}`,
+    `cr_cast` (creation.bend:214) that needed it: that mints its CAST with `O.ADt{dt}`,
     which is ops.py:640's `Ops.CAST, arg=dt`, and the two lanes printed it `CAST/1` --
     MEASURED on the base lanes, 118 occurrences and NOT ONE carrying an argument, on BOTH
     sides. So the `de` that `cr_const_of` hands `.cast` as its TARGET was in no token and a
@@ -233,7 +233,7 @@ def tok(u) -> str:
 
 def sig(r) -> str:
     """THE WHOLE CONE, in `UOp.toposort`'s OWN ORDER -- which is the order the port's
-    `UOp.toposort` (ops.bend:3213) builds, both POST-ORDER with each node once."""
+    `UOp.toposort` (ops.bend:3211) builds, both POST-ORDER with each node once."""
     return ",".join(tok(u) for u in r.uop.toposort())
 
 

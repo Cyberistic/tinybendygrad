@@ -18,7 +18,7 @@ why `helpers-mut/gate.bend`'s small pair rows are the control and not the test.
 
     neg1  -1     the only value whose `k = 63` answer is still a nonzero pair, so it
                   is the row that separates `63` from `64`
-    one    1     `helpers.bend:1803-1804` names `1 << 63` verbatim as the case that
+    one    1     `helpers.bend:1760-1761` names `1 << 63` verbatim as the case that
                   separates the high arm from a wrong one
     lowhi  1:2596069104    both words NONZERO and different, so for `k` in `1..30` the
                   high arm and the spill out of the low word both contribute and for
@@ -86,7 +86,7 @@ def rt_amt(seed, i):
 
 def signed(hi, lo):
     """`hi:lo` read back as a signed 64-bit integer, which is how the port's pair is
-    meant to be read (`helpers.bend:1698-1700`)."""
+    meant to be read (`helpers.bend:1657-1659`)."""
     v = (hi << 32) | lo
     return v - (1 << 64) if v >> 63 else v
 
@@ -128,7 +128,7 @@ def main():
                 # THE CLAIM, AS ONE PREDICATE, WHICH IS ALL OF THE WALL:
                 #   `i64_shl` answers `x << k` EXACTLY iff `x << k` fits a SIGNED 64-bit
                 #   word, and the boundary is therefore `k + bit_length(x)`, NOT a
-                #   constant amount. `helpers.bend:1819` returns a SIGNED pair, so the
+                #   constant amount. `helpers.bend:1776` returns a SIGNED pair, so the
                 #   pair's range is [-2**63, 2**63-1].
                 #
                 #   * in signed range  -> the pair reads back as `x << k`, equal decimals
@@ -169,7 +169,7 @@ def main():
     #    ones and the claim is untested.
     assert len({a for (_, a) in by_amount}) == len(AMOUNTS), sorted({a for (_, a) in by_amount})
     # 5. THE WIDTH ROWS MUST ALL BE `0:0`, or the port's documented "THE AMOUNT IS
-    #    MODULO 2**64" (helpers.bend:1806-1809) is not what the table says. `lowhi`
+    #    MODULO 2**64" (helpers.bend:1763-1766) is not what the table says. `lowhi`
     #    reaches it at 62 rather than 64 -- its 33 bits overflow 64 at 31 -- which is the
     #    same width law seen from the other side.
     # 6. AND `neg1` AT 63 MUST NOT BE AMONG THEM, because `-1 << 63` is exactly the

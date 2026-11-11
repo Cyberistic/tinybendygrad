@@ -24,21 +24,21 @@
 #   <tag> <sig4> dtype=<nm|ABSENT> shape=<(..)|none|raise|ABSENT> base=<op|ABSENT>
 #         self=<0|1|-> invalid=<0|1> vmin=<bnd|ABSENT> vmax=<bnd|ABSENT>
 #
-#   * `sig4` is `F.sig4` (fold.bend:5553): `n=<toposort len> op=<Ops.X> nsrc=<k>
+#   * `sig4` is `F.sig4` (fold.bend:5498): `n=<toposort len> op=<Ops.X> nsrc=<k>
 #     srcops=<A|B>`. It is the same four facts the sibling censuses print, so a
 #     fixture built with the wrong op or src count is caught BEFORE its value is read.
-#   * `dtype` is `F.dt_nm` (fold.bend:5891), which reads `S.Dt`'s fourth field -- the
+#   * `dtype` is `F.dt_nm` (fold.bend:5831), which reads `S.Dt`'s fourth field -- the
 #     port's spelling of tinygrad's `DType.name`. `spec.bend` has no reader for it.
-#   * `shape` is `F.dims_str` (fold.bend:5867). `none` is Python's `_shape is None`,
+#   * `shape` is `F.dims_str` (fold.bend:5807). `none` is Python's `_shape is None`,
 #     `raise` is a Python raise, and `ABSENT` is the PORT's own refusal (the fold
 #     produced no `Derived` for the node). The port's `F.shape_str` conflates `none`
 #     with `raise`; this driver keeps them apart because they are different claims.
 #   * `base` is the base NODE's op name (`Ops.name`), and `self` is 1 when the base
 #     IS the node (`u.base is u`). Both fields are needed: `ADD(ADD(x,y), z)` has
 #     `base.op == ADD` and `base is not self`.
-#   * `invalid` is `F.is_invalid` (fold.bend:2405) -- a reader over the node's own
+#   * `invalid` is `F.is_invalid` (fold.bend:2382) -- a reader over the node's own
 #     arg, so it is total where a table read is not.
-#   * `vmin`/`vmax` are `F.bnd_show` (fold.bend:3494): `+hi:lo`/`-hi:lo` for an
+#   * `vmin`/`vmax` are `F.bnd_show` (fold.bend:3453): `+hi:lo`/`-hi:lo` for an
 #     integer (a sign plus an UNSIGNED 64-bit magnitude), `NInf`/`PInf` for an
 #     infinity, `F<float>` for a finite float. The oracle renders CPython's real
 #     `u.vmin` into the SAME three shapes, so the diff is a value diff.

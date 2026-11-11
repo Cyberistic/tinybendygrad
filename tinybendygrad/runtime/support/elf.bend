@@ -873,9 +873,9 @@ def Str.drop_n(+s: String, +n: U32) -> String: String.drop(s, U32.to_nat(n))
 # four things measured here, all of them about the same list-walk shape:
 #
 #   1. `List.append(&2, A, xs, ys)` is `xs ++ ys` -- an APPEND DOES NOT PRESERVE
-#      the order its arguments were written in. helpers.bend:1366 symbol=pool_pads_dup.go
-#      and ops_amd.bend:624 symbol=sig.step both put the accumulator FIRST for this.
-#   2. the fuel is the list, not a number. `sig.go` (ops_amd.bend:627 symbol=sig.go) descends
+#      the order its arguments were written in. helpers.bend:1335 symbol=pool_pads_dup.go
+#      and ops_amd.bend:614 symbol=sig.step both put the accumulator FIRST for this.
+#   2. the fuel is the list, not a number. `sig.go` (ops_amd.bend:617 symbol=sig.go) descends
 #      the tail `t` and the scrutinee IS the fuel -- no `Nat` countdown, no
 #      `Succ{q}`, and therefore no "decreasing self-call" to get wrong.
 #   3. THE ACCUMULATOR STEP IS ITS OWN DEF. A `Data` record whose reader is used
@@ -1830,7 +1830,7 @@ def b01(v: Bool) -> U32: Bool.to_u32(v)
 # `List.map` is NOT USABLE: it takes a CLOSURE (`~f`) and the standing rule is
 # that closures are avoided (`+` cannot be spelled in a closure TYPE). The walks
 # are hand-written on the ONE idiom in this file -- `JName.reprs.go`
-# (engine/jit.bend:358 symbol=JName.reprs.go) is the template: APPEND the rendered cell onto `acc` with
+# (engine/jit.bend:355 symbol=JName.reprs.go) is the template: APPEND the rendered cell onto `acc` with
 # `[f(h)]`, descend the tail, return `acc` unreversed. Nothing here reverses,
 # because these rows do not carry order; the rows that DO carry order are the
 # `Sections` walks, which prepend and reverse once.

@@ -501,7 +501,7 @@ def mod_hi(+v: P.Ov, has: Bool) -> U32: Bool.pick(U32, Bool.and(has, Bool.and(U3
 # this DEF was an outer `Bool.pick` over that answer, with the literal `0` as its ELSE
 # ARM AND `Bool.and(has, U32.is_zero(bits))` AS ITS CONDITION -- so it returned 0 for
 # every case where `has` is false OR `bits` is nonzero, i.e. for every case that was
-# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:614` is
+# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:613` is
 # `match c: case False{}: b / case True{}: a`, and `Bool.pick(U32, Bool.and(has,
 # U32.is_zero(bits)), ..., 0)` reads exactly as written. The cause was here and not
 # there, and `mod_merge(2, True{}, 1)` was CPython `3` against port `0`.
@@ -659,8 +659,8 @@ def base_size(P.hi_max: U32) -> U32: U32.div(U32.add(P.hi_max, P.BASE_SIZE_ROUND
 # :164 is `isinstance(val, float)` and :164's other half looks a float up in
 # `_FLOAT_ENC`. Bend here cannot construct an `F32` at all: `F32` is
 # `F32{data: Word(32n)}` and `Word` is not exported -- the identical wall
-# `tinybendygrad/tensor.bend:1214 symbol=tn_const` and
-# `tinybendygrad/renderer/wgsl.bend:340 symbol=nan_thr` record, for the identical reason. `_f32` (:147, `struct.pack('f')`) is behind
+# `tinybendygrad/tensor.bend:1207 symbol=tn_const` and
+# `tinybendygrad/renderer/wgsl.bend:334 symbol=nan_thr` record, for the identical reason. `_f32` (:147, `struct.pack('f')`) is behind
 # the same door, and so is `_needs_literal`'s float arm (:251).
 #
 # SO WHAT IS PORTED. The TABLE (`_FLOAT_ENC`, both directions) is ported, and so
@@ -868,7 +868,7 @@ def canon_seed_bits(id: U32) -> U32: P.CANON_SEED()
 # this DEF was an outer `Bool.pick` over that answer, with the literal `0` as its ELSE
 # ARM AND `Bool.and(has, U32.is_zero(bits))` AS ITS CONDITION -- so it returned 0 for
 # every case where `has` is false OR `bits` is nonzero, i.e. for every case that was
-# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:614` is
+# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:613` is
 # `match c: case False{}: b / case True{}: a`, and `Bool.pick(U32, Bool.and(has,
 # U32.is_zero(bits)), ..., 0)` reads exactly as written. The cause was here and not
 # there, and `mod_merge(2, True{}, 1)` was CPython `3` against port `0`.

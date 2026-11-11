@@ -266,8 +266,8 @@ and the code kept a name for citation `i` when the name was within 40 characters
 some OTHER citation -- so on a line with two citations the name went to the FARTHER one
 and was DROPPED from the nearest.
 
-THE MEASURED INSTANCE: `tinybendygrad/extra/models/clip.bend:105` reads
-`"mixin/elementwise.bend:772 has the CONSTANT ew_k.gelu and :1217 has `def
+THE MEASURED INSTANCE: `tinybendygrad/extra/models/clip.bend:101` reads
+`"mixin/elementwise.bend:754 has the CONSTANT ew_k.gelu and :1217 has `def
 ew_quick_gelu`"`. The name is 5 characters from `:1217` and 42 from `:772`, and the
 shipped rule gave it to `:772` -- which holds NEITHER the name NOR the claim, and
 `:1217`, which DOES hold it, was given nothing at all.
@@ -553,7 +553,7 @@ def window_tokens(line: str, spans: list[tuple[int, int]], i: int) -> list[str]:
   THE SHIPPED RULE WAS THE INVERSE OF THIS ONE, AND IT IS NOT A LINE-NUMBER BUG: it kept
   a name for citation `i` when the name was within 40 characters of some OTHER citation,
   so on a line with two citations the name went to the FARTHER one and was DROPPED from
-  the nearest. MEASURED, `tinybendygrad/extra/models/clip.bend:105`: the name is 5
+  the nearest. MEASURED, `tinybendygrad/extra/models/clip.bend:101`: the name is 5
   characters from `:1217` and 42 from `:772`, and the shipped rule gave
   `ew_quick_gelu` to `:772`, which holds NEITHER the name NOR the claim. **A TOKEN ON
   THE WRONG ROW IS A ROW WHOSE VERDICT IS ABOUT THE WRONG CLAIM**, and every class
@@ -676,7 +676,7 @@ def file_words(texts) -> set[str]:
   same line that cites an upstream line. Such a citation makes NO claim about the cited
   upstream file, so the gate cannot verdict it: an unfalsifiable claim is not a passing
   claim, and it is not a failing one either. MEASURED, `tinybendygrad/codegen/decomp/
-  dtype.bend:138` cites `dtype.py:65` and backticks `l2i_cdiv` and `step` -- the PORT's
+  dtype.bend:135` cites `dtype.py:65` and backticks `l2i_cdiv` and `step` -- the PORT's
   own helper and a generic noun -- and NEITHER occurs in
   `tinygrad/codegen/decomp/dtype.py` at ANY revision. MEASURED ON THE FROZEN TREE: that
   row is `at_no_revision` before the repair and `unverifiable` after it.

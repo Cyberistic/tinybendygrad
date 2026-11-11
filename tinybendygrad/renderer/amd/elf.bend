@@ -18,12 +18,12 @@
 #               extraction is that generated table.
 #   elf.py:41-46  the sink `toposort`
 #               BLOCKER: `u.addrspace` is `ops.py:896` and IS PORTED -- the port's
-#               `uop/fold.bend:4818 symbol=UOp.addrspace` is it. `u.dtype.itemsize` is
-#               `Dt.itemsize` in `LAWS/spec.bend:176`, not a UOp method.
+#               `uop/fold.bend:4770 symbol=UOp.addrspace` is it. `u.dtype.itemsize` is
+#               `Dt.itemsize` in `LAWS/spec.bend:174`, not a UOp method.
 #               `u.max_numel` is `mixin/movement.py:55` (`prod(max_shape)`),
 #               not a def in `movement.bend`. `AddrSpace` itself EXISTS as
 #               `S.Addr` (`Aalu`/`ALocal`/`AGlobal`/`AReg`) in
-#               `LAWS/spec.bend:79`. Adding the three missing UOp methods to
+#               `LAWS/spec.bend:77`. Adding the three missing UOp methods to
 #               `uop/ops.bend` is not local: 56 importers, measured before
 #               this file was written (ops.bend 4977 lines / 509 defs,
 #               spec.bend 3317 / 583, ops_metal.bend 4045 / 466, among

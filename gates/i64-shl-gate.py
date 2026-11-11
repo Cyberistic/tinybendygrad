@@ -4,7 +4,7 @@
 
 WHAT THIS GATE IS, AND WHY IT IS A GATE AND NOT A NOTE.  A wall records that "`i64_shl`
 takes a `Nat`, which a runtime shift amount cannot be".  `i64_shl` is at
-`tinybendygrad/helpers.bend:1819`, it is PURE (`grep -c 'import \"' helpers.bend` is 0),
+`tinybendygrad/helpers.bend:1776`, it is PURE (`grep -c 'import \"' helpers.bend` is 0),
 and it takes `+k: Nat` -- so the claim is about a TYPE and a grep settles it.  A grep is
 not a gate.  The rows here are what makes the claim checkable: for every amount in a
 table of ten `Nat` literals, `i64_shl` is called TWICE with the same amount, once with

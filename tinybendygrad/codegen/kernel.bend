@@ -390,8 +390,8 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
 # is port LOGIC (a membership predicate, a fixture, and three row values), it is
 # B1's own RE-PORT -- `ad117c928` lists `kernel.bend`'s line 353 by name -- and folding
 # it in beside an orphan citation would move three rows without the row audit
-# that a three-row move owes. `ad117c928` names that line -- the `build_range_map` doc-comment -- and the port carries it at codegen/kernel.bend:367 symbol=kn_unroll.ax. `uop/ops.bend` already keeps `AXIS_UNROLL` for
-# exactly this reason: it names `codegen/kernel.bend:366,:956` as a live consumer,
+# that a three-row move owes. `ad117c928` names that line -- the `build_range_map` doc-comment -- and the port carries it at codegen/kernel.bend:363 symbol=kn_unroll.ax. `uop/ops.bend` already keeps `AXIS_UNROLL` for
+# exactly this reason: it names `codegen/kernel.bend:363,:956` as a live consumer,
 # so the enum's ten members are load-bearing until this lands.
 #   TODO(p3) codegen/__init__.py:43  `build_range_map`'s set is `{UPCAST}` and its
 #     key is `x.arg`; `kn_unroll.ax`, `kn_fixture`'s `R_U`, `k_rm` and `k_rm_unroll`
@@ -401,8 +401,8 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
 # `dict[axis_id, int]`, a map from an axis id to its ORDINAL AMONG UNROLL/UPCAST
 # RANGEs, and `fold.bend`'s `Derived` has no such field. So it is a table here,
 # and `kn_unroll` is the row for the membership test. `ops.bend`'s `UOp.axis_id`
-# and `UOp.axis_type` are both PORTED (`fold.bend:3091` symbol=UOp.axis_id and
-# `fold.bend:3099` symbol=UOp.axis_type), which is why this half is cheap.
+# and `UOp.axis_type` are both PORTED (`fold.bend:3054` symbol=UOp.axis_id and
+# `fold.bend:3062` symbol=UOp.axis_type), which is why this half is cheap.
 
 # `kn_unroll.ax` IS THE PIN'S PREDICATE. The UNROLL arm has no upstream
 # counterpart -- `AxisType.UNROLL` was deleted from the enum -- so this arm is

@@ -171,7 +171,7 @@ function half_to_f32(h) {
 
 function dtype_bf16(u) {
   // dtype.py:230 hands a non-finite back UNTOUCHED, so a NaN's payload and its
-  // sign survive; rounding is what destroys them (dtype.c:205, dtype.bend:609).
+  // sign survive; rounding is what destroys them (dtype.c:205, dtype.bend:586).
   if ((u & 0x7f800000) === 0x7f800000) return of32(u);
   return of32(((u + 0x7fff + ((u >>> 16) & 1)) & 0xffff0000) >>> 0);
 }

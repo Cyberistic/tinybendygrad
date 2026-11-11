@@ -2572,7 +2572,7 @@ def fx_ps() -> List<&2, PK>:
 # output on newlines, so one whole-file row became 335 fragments whose NAMES
 # are the first token before an `=` inside the generated Python: 233 row names
 # for 91 rows, 84 shared with the oracle, the other 149 naming text the oracle
-# not a construct there -- is a newline INSIDE the record, at renderer/amd/generate.bend:2599 symbol=fx_ps -- FAILS TWICE OVER
+# not a construct there -- is a newline INSIDE the record, at renderer/amd/generate.bend:2562 symbol=fx_ps -- FAILS TWICE OVER
 # HERE.  `String.split` is one frame per CHARACTER
 # (references/bend/bend2/base.bend:2210 symbol=String.split) and the file
 # is 16,815 characters; and even handed the lines as a list, `String.join` is

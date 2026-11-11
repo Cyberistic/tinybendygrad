@@ -2,7 +2,7 @@
 #
 # THE LAST STEP OF AN EVAL. Forward pass -> logits on device -> argmax -> `item`
 # -> compare with the label. Without it there is NO eval output at all, and
-# `examples/test_pkl_imagenet.bend:179 symbol=pkl_predict` names it as the wall in front of the
+# `examples/test_pkl_imagenet.bend:176 symbol=pkl_predict` names it as the wall in front of the
 # ImageNet milestone ("`p.to('cpu').argmax().item()`").
 #
 
@@ -23,7 +23,7 @@
 #      (`tinygrad/mixin/movement.py:38-46`, `numel`) -- or an `AssertionError` whose
 #      MESSAGE is a literal in the source. THE PORT HAS THIS: the shape is
 #      `fold.shape` (`uop/fold.bend`) and the product is `H.prod_u32`
-#      (`helpers.bend:485`). This is the half that decides whether a
+#      (`helpers.bend:478`). This is the half that decides whether a
 #      multi-element tensor is an ERROR or a silent "first element", and
 #      upstream says ERROR.
 #
@@ -43,10 +43,10 @@
 
 # what the port has, and what it does not.
 #
-# IT HAS THE DTYPE HALF. `S.Dt.itemsize` (`LAWS/spec.bend:176-181`) is
+# IT HAS THE DTYPE HALF. `S.Dt.itemsize` (`LAWS/spec.bend:174-179`) is
 # `(bitsize + 7) // 8`, exactly `tinygrad/dtype.py:63`. `MD.commit_dtype`
-# (`mixin/dtype.bend:326-328`) IS `commit_dtype` (`tinygrad/mixin/dtype.py:16-17`)
-# and `MD.commit_int` (`mixin/dtype.bend:273-275`) IS `commit_int`
+# (`mixin/dtype.bend:322-324`) IS `commit_dtype` (`tinygrad/mixin/dtype.py:16-17`)
+# and `MD.commit_int` (`mixin/dtype.bend:270-272`) IS `commit_int`
 # (`tinygrad/dtype.py:171-174`, `commit_int`), so the weak-dtype branch of `data()` -- the
 # one that decides int32-vs-int64 and float32 -- is PORTED.
 #
@@ -56,9 +56,9 @@
 #     `type Buffer is Data` anywhere in the port and ZERO `Buffer{`
 #     constructors". MEASURED: `grep -rn "type Buffer is Data" tinybendygrad/`
 #     answers ONE line and it is that COMMENT; `grep -rn "Buffer{" tinybendygrad/`
-#     answers `SpBuffer{` (the SPEC datatype, `LAWS/spec.bend:424`), the
+#     answers `SpBuffer{` (the SPEC datatype, `LAWS/spec.bend:414`), the
 #     WEBGPU `CreateBuffer{`/`CopyBuffer{` wire constructors
-#     (`runtime/webgpu_call.bend:204-252`) and the comment above. NONE of them
+#     (`runtime/webgpu_call.bend:200-248`) and the comment above. NONE of them
 #     is an allocated buffer with contents.
 #   * `tinybendygrad/engine/realize.bend` -- the FOREIGN-EFFECT list, [b]:
 #     "realize.py:148 exec_copy -- allocators, `_transfer`, `host[:]`". The
@@ -84,7 +84,7 @@
 # were briefed as "a buffer element read", "the dtype's byte width" and "a
 # tensor index", and TWO OF THE THREE ARE SOMETHING ELSE. The measurements:
 #
-#   * `Buf.at` -- `tinybendygrad/runtime/ops_python.bend:836`:
+#   * `Buf.at` -- `tinybendygrad/runtime/ops_python.bend:813`:
 #         def Buf.at(fs: List<&2, Buf>, +b: U32) -> Buf:
 #           Maybe.default(&2, Buf, List.get(&2, Buf, fs, U32.to_nat(b)), Buf{0, 4, 0})
 #     It answers THE `b`-th BUFFER IN A LIST OF BUFFERS -- the PYTHON
@@ -92,22 +92,22 @@
 #     scalar. It is NOT an element read of a buffer's CONTENTS. MEASURED: the
 #     ONLY `def X.at(` whose receiver is `Buf` in the whole port is this one
 #     (`grep -rn "^def [A-Za-z_0-9]*\\.at(" tinybendygrad/`); the other `Buf`
-#     receivers (`runtime/ops_webgpu.bend:930,939`, `runtime/ops_cl.bend:776,780`)
-#     are `size`/`id`, and `renderer/wgsl.bend:577 symbol=Buf` is a renderer's own
+#     receivers (`runtime/ops_webgpu.bend:909,939`, `runtime/ops_cl.bend:763,780`)
+#     are `size`/`id`, and `renderer/wgsl.bend:567 symbol=Buf` is a renderer's own
 #     `Buf` with `dt`/`addr`/`numel`/`name`.
-#   * `Dt.itemsize` -- `tinybendygrad/LAWS/spec.bend:176-181`. IT IS WHAT IT
+#   * `Dt.itemsize` -- `tinybendygrad/LAWS/spec.bend:174-179`. IT IS WHAT IT
 #     SAYS: `(bitsize + 7) // 8`.
-#   * `mo_at` -- `tinybendygrad/mixin/op.bend:316-317`:
+#   * `mo_at` -- `tinybendygrad/mixin/op.bend:314-315`:
 #         def mo_at(+ds: List<&2, O.Sint>, +t: List<&2, O.Sint>) -> U32:
 #           U32.from_nat(List.length(&2, O.Sint, t))
 #     It is the INDEX OF A HEAD ELEMENT of a SHAPE -- `enumerate(self.shape)`'s
 #     `i` -- NOT an index into a tensor. Its three call sites
-#     (`mixin/op.bend:696,779,874`) all pass a SHAPE list.
+#     (`mixin/op.bend:685,779,874`) all pass a SHAPE list.
 #
 
 # THE RESULT IS A SUM TYPE, NOT A `Maybe`, because the three outcomes are
 # THREE different things and a `None` would flatten a refusal into a value.
-# `Itm` is the name (not `Item`: `viz/cli.bend:97` already owns that
+# `Itm` is the name (not `Item`: `viz/cli.bend:91` already owns that
 # constructor, and Bend has ONE constructor namespace across modules).
 #
 #   ItmVal{dt, v}     -- the scalar, read, under the dtype it was read under.
@@ -141,22 +141,22 @@ type Itm is Data:
 def nn_item_wall() -> String:
   String.concat([
     "NO-READ: no live Buffer in the port (uop/ops.bend:175 symbol=OpsBUFFER is the ONLY Buffer-named construct and it is the OP, not an allocated object); realize.py:145",
-    " exec_copy -- the device-to-host _copyout -- is a foreign effect (engine/realize.bend:966 symbol=rz_est_is_copy RECOGNISES the copy and BUILDS NO Estimates, so there is no copyout)"])
+    " exec_copy -- the device-to-host _copyout -- is a foreign effect (engine/realize.bend:958 symbol=rz_est_is_copy RECOGNISES the copy and BUILDS NO Estimates, so there is no copyout)"])
 
 # 1. THE PRECONDITION. `prod(self.shape)` -- upstream's `numel()`
 # (`tinygrad/mixin/movement.py:38-46`).
 #
-# the dims come from the FOLD (`M.mo_dims`, `mixin/op.bend:284`) and the
-# PRODUCT IS `H.prod_u32` (`helpers.bend:486`). `M.mo_reduced` IS NOT THE
+# the dims come from the FOLD (`M.mo_dims`, `mixin/op.bend:282`) and the
+# PRODUCT IS `H.prod_u32` (`helpers.bend:479`). `M.mo_reduced` IS NOT THE
 # PRODUCT DEF: it is `prod([si for si, so in zip(shape, sum.shape) if
-# resolve(si != so)])` (`mixin/op.bend:876`), which is the product of the
+# resolve(si != so)])` (`mixin/op.bend:862`), which is the product of the
 # dims the REDUCTION TOUCHED, so `mo_reduced(t, Nil{})` is the EMPTY product
 # and answers 1 for EVERY TENSOR. MEASURED: it answered 1 for a (2,)-shaped
 # and for a (8,)-shaped tensor alike, and the first version of this file's
 # `item_multi` row therefore read a multi-element tensor as a ONE-element one
 # and answered the wall instead of upstream's `AssertionError`.
 #
-# THE PROJECTION IS `M.mo_dim_u32` (`mixin/op.bend:297-300`), which answers 0
+# THE PROJECTION IS `M.mo_dim_u32` (`mixin/op.bend:295-298`), which answers 0
 # for a SYMBOLIC dim -- and 0, not 1, because "a symbolic dim that silently
 # became 1 would be a WRONG shape rather than a missing one". A symbolic
 # shape therefore reads as numel 0 here, which is the same refusal upstream
@@ -203,8 +203,8 @@ def nn_item_const(+t: T.Tensor) -> Maybe<&2, O.Const>:
 #
 #     if self.dtype in dtypes.weaks: return self.cast(self.commit_dtype()).data()
 #
-# `MD.md_weak` (`mixin/dtype.bend:124`) IS `dtype in dtypes.weaks`, and
-# `MD.commit_dtype` (`mixin/dtype.bend:326-328`) IS `commit_dtype`
+# `MD.md_weak` (`mixin/dtype.bend:122`) IS `dtype in dtypes.weaks`, and
+# `MD.commit_dtype` (`mixin/dtype.bend:322-324`) IS `commit_dtype`
 # (`tinygrad/mixin/dtype.py:16-17`). For a weakint the commit is
 # `commit_int(vmin, vmax, default_int)` -- the ladder
 # `(default_int, int, long, ulong)` -- and for a weakfloat it is
@@ -212,7 +212,7 @@ def nn_item_const(+t: T.Tensor) -> Maybe<&2, O.Const>:
 #
 # the bounds are the CONST's own value, because for a CONST `vmin == vmax ==
 # the value` (`tinygrad/uop/ops.py:259-262` reads `self.arg` for a CONST).
-# `F.const_i64` (`uop/fold.bend:1420-1420`) is that read, and it answers
+# `F.const_i64` (`uop/fold.bend:1409-1409`) is that read, and it answers
 # `None{}` for a `CFloat` -- which is FINE, because the weakfloat branch of
 # `commit_dtype` ignores the bounds and takes `strong_dtype`.
 #
@@ -275,14 +275,14 @@ def nn_item(+t: T.Tensor) -> Itm: nn_item.of(nn_item_numel(t), t)
 #
 # the value is a python number, and the port spells it the way python does
 # WHERE IT CAN:
-#   * `H.i64_dec` (`helpers.bend:2180`) is the SIGNED DECIMAL -- `str(int)` in
-#     Python -- and NOT `H.i64_text` (`helpers.bend:1713`), which is the
+#   * `H.i64_dec` (`helpers.bend:2130`) is the SIGNED DECIMAL -- `str(int)` in
+#     Python -- and NOT `H.i64_text` (`helpers.bend:1672`), which is the
 #     `hi:lo` bit pattern and would print `0:7` where Python prints `7`.
 #   * `Bool.show` is `str(bool)`.
-#   * `H.f32_show` (`helpers.bend:1030`) is NOT Python's `repr`: it prints an
+#   * `H.f32_show` (`helpers.bend:1011`) is NOT Python's `repr`: it prints an
 #     integer-valued float as an integer and every other float with SIX
-#     decimals (`helpers.bend:1001-1006`), where Python prints the shortest
-#     decimal that reads back. `helpers.bend:999` CLAIMS it is "the shortest
+#     decimals (`helpers.bend:982-987`), where Python prints the shortest
+#     decimal that reads back. `helpers.bend:980` CLAIMS it is "the shortest
 #     decimal that reads back, the way Python's repr does" and the code under
 #     that comment does six decimals. SO THE FLOAT ROWS ARE TWO: one spells
 #     the value (`3.500000`) and one spells its EXACT float32 BIT PATTERN
@@ -321,7 +321,7 @@ def nn_item_bits(it: Itm) -> String:
 
 # the dtype the value was read under, and its BYTE width -- upstream's
 # `dtype.itemsize`, which is how many bytes `data()`'s `cast(fmt, shape)`
-# reads per element. `S.Dt.itemsize` is `LAWS/spec.bend:176-181`.
+# reads per element. `S.Dt.itemsize` is `LAWS/spec.bend:174-179`.
 def nn_item_size(it: Itm) -> String:
   match it:
     case ItmVal{dt, v}: U32.show(S.Dt.itemsize(dt))
@@ -344,7 +344,7 @@ def nn_item_size(it: Itm) -> String:
 #   Tensor([1.0,2.0]).item()  -> AssertionError: must have one element for item
 #   Tensor([3.5]).item()      -> 3.5     (the ONE-ELEMENT BUFFER case)
 #
-# THE ROW PRINTER. `nn/layers.bend:971-972` has
+# THE ROW PRINTER. `nn/layers.bend:956-957` has
 #     def nn_row.line(nm: String, got: String, want: String) -> IO(Unit):
 #       IO.print(String.concat([nm, " got=", got, " want=", want]))
 # and this file does NOT import it: `layers.bend` is owned by another unit
@@ -357,20 +357,20 @@ def nn_item_line(nm: String, got: String, want: String) -> IO(Unit):
 
 # THE FIXTURES.
 #
-# A CONST TENSOR. `M.mo_const_t` (`mixin/op.bend:370-370`) is the port's
+# A CONST TENSOR. `M.mo_const_t` (`mixin/op.bend:366-366`) is the port's
 # `UOp.const` in a tensor's arena: it interns a CONST node and wraps it. The
-# BASE is `MX.mxw_buf` (`mixin/movement.bend:1231-1232`), a BUFFER node, and
+# BASE is `MX.mxw_buf` (`mixin/movement.bend:1219-1220`), a BUFFER node, and
 # it is there only to give the arena something to hold the CONST next to; the
-# CONST's own SHAPE is `()` (`uop/fold.bend:2282 symbol=const_ds`), so its `numel`
+# CONST's own SHAPE is `()` (`uop/fold.bend:2259 symbol=const_ds`), so its `numel`
 # is 1 -- which is upstream's `Tensor(3.5).shape == ()`.
 def nn_item_const_t(v: O.Const) -> T.Tensor:
   M.mo_const_t(MX.mxw_buf(O.Arena.empty(), 0, 4), v)
 
 # A TWO-ELEMENT TENSOR: a BUFFER OF SIZE 2. MEASURED: a BUFFER's shape is the
 # one dim `(size,)`, and it is CONCRETE (`fold.param_ds`,
-# `uop/fold.bend:1209 symbol=param_ds`), so `numel` is 2. A RESHAPE is not used here
+# `uop/fold.bend:1201 symbol=param_ds`), so `numel` is 2. A RESHAPE is not used here
 # because a ONE-element shape arg is a bare CONST rather than a STACK
-# (`mixin/movement.bend:1267 symbol=mxw_stk.done`) and `fold.shape` does not read it -- so
+# (`mixin/movement.bend:1252 symbol=mxw_stk.done`) and `fold.shape` does not read it -- so
 # `mo_dims` answers the EMPTY list for `mxw_reshape(buf, [2])` and the
 # numel would read as 1.
 def nn_item_multi_t() -> T.Tensor: MX.mxw_buf(O.Arena.empty(), 0, 2)

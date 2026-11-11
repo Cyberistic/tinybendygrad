@@ -9,11 +9,11 @@
 # the walls are half stale, and measured (2026-11-06). the header used to say "the one
 # wall is `UOp._min_max`", and two of the three walls the TODO block named are gone:
 #
-#   * `divides` -- the port has it (`ops.bend:7972`), a full recursion over ADD/MUL/CONST
+#   * `divides` -- the port has it (`ops.bend:7656`), a full recursion over ADD/MUL/CONST
 #     carrying a `Dv`, and it answers the same as upstream's on four measured cases.
-#   * `_min_max` -- THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax` (`fold.bend:5399`/`5402`) AND THEY
+#   * `_min_max` -- THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax` (`fold.bend:5344`/`5402`) AND THEY
 #     MATCH UPSTREAM'S ON FIVE MEASURED CASES.
-#   * `const_factor` -- THE PORT HAS IT (`ops.bend:7855`) AS A FULL GCD FOLD.
+#   * `const_factor` -- THE PORT HAS IT (`ops.bend:7545`) AS A FULL GCD FOLD.
 #
 # what is actually left is scope and three shape problems, not missing primitives:
 # `UOp.divide_exact` (which needs a multiset over `split_uop(MUL)` factors, and the port has
@@ -122,7 +122,7 @@ def dm_ival(m: Maybe<&2, U32>) -> U32:
 
 # `dm_floordiv` / `dm_floormod` ARE NOT `H.`: `H.floordiv_i32`/`H.floormod_i32` add
 # one on every INEXACT division and ignore the sign, so `6 // 4` answers 2 where
-# Python says 1 (`helpers.bend:1529`; bend2-constraints, "floor IS NOT AVAILABLE").
+# Python says 1 (`helpers.bend:1494`; bend2-constraints, "floor IS NOT AVAILABLE").
 # The step belongs to the opposite-sign case alone. DELETE BOTH AND CALL THE `H.`
 # versions when that one-line fix lands; nothing else in this file changes.
 def dm_floordiv.exact(exact: Bool, q: U32) -> U32:
@@ -861,7 +861,7 @@ def trees() -> Gate:
 #   CONST/CONST only, where `_min_max` (ops.py:1127) is four identical `a//b` and
 #   the test is always true. Outside CONST/CONST it needs `_min_max`. THE `_min_max` WALL IS
 #   MEASURED FALSE (2026-11-06): THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax`
-#   (`fold.bend:5399`/`5402`) and they match upstream's `_min_max` on all five measured cases
+#   (`fold.bend:5344`/`5402`) and they match upstream's `_min_max` on all five measured cases
 #   -- `x[0..10]`, `y[-5..5]`, `x*4[0..40]`, `x+y[-5..15]`, `x*4+8[8..48]` (PAIRED PROBES:
 #   `.agents/slop/sym92/probe-vminmax.bend` AND `probe-vminmax.py`, AND THE TWO PRINT
 #   BYTE-identical output). what is left is scope, not a wall: the port's bounds are a
@@ -881,14 +881,14 @@ def trees() -> Gate:
 # TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
 #   the mod case is handled by remove_nested_mod below` -- needs
 #   `x.src[1].divides(c)`. THE WALL THIS NAMED IS MEASURED FALSE (2026-11-06): `divides` IS
-#   not the blocker. the port's `UOp.divides` (`ops.bend:7972`) is a full recursion over
+#   not the blocker. the port's `UOp.divides` (`ops.bend:7656`) is a full recursion over
 #   ADD/MUL/CONST carrying a `Dv` record, and it answers the same as upstream's on all four
 #   MEASURED CASES -- `(x*4).divides(4)` IS `MUL(x, 1)`, `(x*4+8).divides(4)` IS
 #   `ADD(MUL(x, 1), 2)`, AND `(x*6).divides(4)` AND `x.divides(4)` ARE BOTH `none` (PAIRED
 #   probes: `.agents/slop/sym92/probe-divides.bend` and `probe-divides.py`). the old wall said
 #   "`divides` needs `gcd` needs a `Counter` FOLD", but the file it named -- `ops.bend` -- has
 #   that implementation already. what is left is scope, not a wall: the stack arm of
-#   `divides` is not ported (seen at `ops.bend:7955`'s own NOTE), so a stack operand declines
+#   `divides` is not ported (seen at `ops.bend:7645`'s own NOTE), so a stack operand declines
 #   WHERE UPSTREAM REBUILDS IT.
 # TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
 #   `divides`, and the same measurement applies: the wall is gone and what is left is the
@@ -908,8 +908,8 @@ def trees() -> Gate:
 #   `new_x.vmin >= 0`. WALL: `gcd`, `_min_max`, `simplify`. `math.gcd` over a
 #   VARIADIC fold is a fold over a list, which is expressible; the rest is not.
 #   measured 2026-11-06: `divides` and `_min_max` are no longer walls (see the two pairs
-#   above). `gcd` is half a wall: the port has `H.gcd` (`helpers.bend:2299`) for two I64s and
-#   `UOp.const_factor` (`ops.bend:7855`) as a full gcd FOLD over the MUL factors, but not the
+#   above). `gcd` is half a wall: the port has `H.gcd` (`helpers.bend:2249`) for two I64s and
+#   `UOp.const_factor` (`ops.bend:7545`) as a full gcd FOLD over the MUL factors, but not the
 #   variadic `math.gcd(*factors, c)` over a list of factors -- which is a FOLD over a list and
 #   THEREFORE EXPRESSIBLE. WHAT IS LEFT IS SCOPE.
 # TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
@@ -919,7 +919,7 @@ def trees() -> Gate:
 #   step), then a RECURSIVE call to `fold_divmod_general(x//div)` (mutual
 #   recursion, refused), then `backward_slice` twice for the `min(results, key=
 #   len(slice))`. WALL: mutual recursion, `backward_slice` (a set walk,
-#   uop/fold.bend:2189 symbol=marg_prod.step), and `_min_max`. P3, and the largest single omission here.
+#   uop/fold.bend:2167 symbol=marg_prod.step), and `_min_max`. P3, and the largest single omission here.
 #
 #  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
 # apply to variables OR constants that failed the checks above, and reconstruct all
@@ -941,21 +941,21 @@ def trees() -> Gate:
 #
 # and this list was stale by two items and it was measured 2026-11-08. the items 1 and 2
 # below are done and have been done:
-#   * `_min_max` (ops.py:1104) IS `fold.bend:7380` ("DONE(p3) ops.py:1094 def _min_max"), AND
+#   * `_min_max` (ops.py:1104) IS `fold.bend:7306` ("DONE(p3) ops.py:1094 def _min_max"), AND
 #     the header above already said "the `_min_max` wall is measured FALSE (2026-11-06)".
-#   * `const_factor` IS `ops.bend:7855` (`def UOp.const_factor(fuel, ar, i) -> H.I64`) AND
-#     `divides` IS `ops.bend:7972` (`def UOp.divides(fuel, ar, v, i) -> Dv`).
+#   * `const_factor` IS `ops.bend:7545` (`def UOp.const_factor(fuel, ar, i) -> H.I64`) AND
+#     `divides` IS `ops.bend:7656` (`def UOp.divides(fuel, ar, v, i) -> Dv`).
 #
 # SO THE TWO THAT REMAIN ARE:
 #   1. `UOp.gcd` (ops.py:1073) AND `UOp.divide_exact` (ops.py:1079) -- AND THEY ARE ONE
 #      shape, not two: both need a counter over node lists, and upstream's `UOp` is
 #      HASHABLE BY IDENTITY (`ops.py:219-220`: `__hash__ = tuple.__hash__` AND
 #      `__eq__` IS `self is other`), SO THE COUNTER's KEYS ARE NODES.
-#      and the port has no integer-keyed map at all -- measured, `helpers.bend:502` says
+#      and the port has no integer-keyed map at all -- measured, `helpers.bend:494` says
 #      "Bend's `Map` is string-keyed only, so the set is a linear scan", and the port has no
 #      `HashMap` AND NO `HashSet`.
-#      but the port has the honest spelling already, twice: `dedup_u32` (`helpers.bend:509`)
-#      and `merge_dicts` (`helpers.bend:2467`) are both "a list of pairs with a linear scan",
+#      but the port has the honest spelling already, twice: `dedup_u32` (`helpers.bend:500`)
+#      and `merge_dicts` (`helpers.bend:2412`) are both "a list of pairs with a linear scan",
 #      so a counter over `U32` keys is a list of `(U32, Nat)` pairs and a FOLD -- and the
 #      port's own `merge_dicts` NOTE says exactly that: "a list of pairs is the honest
 #      representation". so the claim "the port has no multiset" is a claim about a

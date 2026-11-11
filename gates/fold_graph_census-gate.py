@@ -34,7 +34,7 @@ THE TWO DIVERGENCES, BOTH DOCUMENTED IN `fold.bend`, PINNED ON BOTH SIDES:
   `fold_reshbare_w` -- the port ANSWERS where CPython RAISES. `w` over `[0, 3]` and
     `prod(ps) = 4` are DISJOINT, so `resolve(..., False)` is decidable and True and
     CPython raises `bad reshape`; this fold answers `(U(Ops.PARAM:w))` because it cannot
-    multiply intervals. This is the `mv_reshbare_dis` residual (fold.bend:2053-2059).
+    multiply intervals. This is the `mv_reshbare_dis` residual (fold.bend:2034-2040).
 
   BOTH ARE CARVE-OUTS OF A NAMED INPUT CLASS, not defects: the port's refusal
   convention is documented ("a rule it cannot run is not a rule that passed"), and the
@@ -48,15 +48,15 @@ SUBJECT AND SAID "IT BELONGS TO THE `md_graph_census` LANE", AND BOTH WERE WRONG
   * CPython folds it: `tinygrad/mixin/dtype.py:36` is
     `return self if self.dtype == (dt:=to_dtype(dtype)) else self._wrap_uop(...)` (body of the
     `cast` def at `:19`).
-  * THE PORT FOLDS IT TOO. `tinybendygrad/mixin/dtype.bend:342` `cast_at.of` is the two-arm match and
+  * THE PORT FOLDS IT TOO. `tinybendygrad/mixin/dtype.bend:337` `cast_at.of` is the two-arm match and
     its `True` arm answers `O.Found{md_ar(fx), self}` -- the src, un-minted. `cast_at` was NEVER the
-    offender. THE OFFENDER IS `UOp.cast` at `tinybendygrad/uop/ops.bend:2919`, whose body is
+    offender. THE OFFENDER IS `UOp.cast` at `tinybendygrad/uop/ops.bend:2917`, whose body is
     `UOp.new(ar, OpsCAST{}, [self], ADt{dt}, TNone{})` -- it always mints, and its own comment says
     the full check "would need a FOLD CONTEXT, which is what `cast_at` ... IS".
   * SO IT DOES NOT BELONG TO `md_graph_census`: that gate's `cast_same_weakint` pin is
     `1 Ops.CONST/0` on BOTH sides, i.e. evidence that the port DOES fold an identity cast.
   * THE REAL BLAST RADIUS IS ONE FILE, AND IT IS NARROWER THAN "THREE SITES". `grep -rn "UOp\.cast("`
-    outside `uop/ops.bend` answers EXACTLY ONE LINE -- `tensor.bend:514` -- and
+    outside `uop/ops.bend` answers EXACTLY ONE LINE -- `tensor.bend:507` -- and
     `grep -c "wk_cast_at\|cast_at" tinybendygrad/tensor.bend` answers **0**, so `tensor.bend` is the
     ONLY layer that never reaches the folding spelling; every other one goes through
     `W.wk_cast_at(F.folded(ar), ...)`. THAT ALONE IS WHY `ew_graph_census` carries one pin and

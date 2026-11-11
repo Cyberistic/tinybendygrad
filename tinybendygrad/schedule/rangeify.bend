@@ -2290,7 +2290,7 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #     (ops.py:1826-1832).
 #
 # why a sweep and not a dfs. `Arena.nodes` is topologically sorted
-# (ops.bend:2776): `UOp.new` is only ever called with srcs already in the
+# (ops.bend:2774): `UOp.new` is only ever called with srcs already in the
 # arena, so every node's src indices are BELOW its own position. INDEX ORDER is
 # therefore an order every node's children precede it, which is the order the
 # DFS's post-order produces -- and a sweep is the SAME computation with none of

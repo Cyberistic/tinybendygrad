@@ -18,7 +18,7 @@ so `tn_bitwise_not` returns `Maybe<&2, Tensor>`. Rows 1-7 ALL use `mk_bitnot`'s 
 therefore all take the FIRST arm; the eighth row is signed, takes the `^ -1` arm, and asserts the
 top op is XOR. THIS ROW WAS `True{}` -- IT COULD NOT FAIL.
 
-WHAT THIS IS FOR. Closes the third of the four `nn/__init__.bend:241` walls.
+WHAT THIS IS FOR. Closes the third of the four `nn/__init__.bend:230` walls.
 The remaining two: `where` (needs `_broadcasted`) and `square` (needs
 `__mul__`).
 """

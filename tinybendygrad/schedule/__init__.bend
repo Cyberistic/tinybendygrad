@@ -12,7 +12,7 @@
 #      record of four append-only lists (`CallifyCtx` below), and the two rules
 #      named here were ported ON TOP of it.
 #   2. It then said the wall left was "the `graph_rewrite` ENGINE is not [ported]".
-#      THAT IS ALSO FALSE. `codegen/__init__.bend:298` HAS `graph_rewrite` (the
+#      THAT IS ALSO FALSE. `codegen/__init__.bend:292` HAS `graph_rewrite` (the
 #      dispatcher, `ops.py:1888-1890`), and it has `pm_post_sched_cache` -- THE
 #      EXACT TWO-RULE TABLE FROM `__init__.py:96-101` -- with its own fixture and
 #      oracle. The engine exists; what does not exist is one of its two TABLES.
@@ -28,7 +28,7 @@
 #            create_linear_with_vars
 #
 #   A. STORAGE. There is no `type Buffer is Data` anywhere in the port
-#      (`uop/ops.bend:5399` states the wall), so `new_buffer`, `max_numel`,
+#      (`uop/ops.bend:5300` states the wall), so `new_buffer`, `max_numel`,
 #      `on_disk`, `contiguous_view` and `param_like` DO NOT EXIST AS DEFS --
 #      MEASURED: all five are comment-only. That blocks
 #      `create_new_buffer`, `contiguous_mops_to_view` and `replace_input_buffer`.
@@ -44,14 +44,14 @@
 #      `bottom_up=True` is just TABLE SELECTION -- `pm=None`, `bpm=pm`.
 #
 #      THE PORT'S DRIVER IS A DIFFERENT ALGORITHM. `unified_rewrite`
-#      (`codegen/__init__.bend:285-286`) runs `walk_rewrite` to a FIXED POINT
+#      (`codegen/__init__.bend:279-280`) runs `walk_rewrite` to a FIXED POINT
 #      OUTSIDE the walk (`FIXPOINT_PASSES`, `:162`) -- whole-graph passes, not a
 #      per-node stage. So there is no stage 0 for a `bpm` to fire in, and
 #      `bottom_up` cannot be added by threading a `Bool`: IT IS A PROPERTY OF
 #      THE stack, AND the port has a LOOP.
 #
 #      AND there is a second `graph_rewrite` THAT *DOES* TAKE `bottom_up`, AND
-#      IT IS A STUB. `codegen/decomp/dtype.bend:2078` is
+#      IT IS A STUB. `codegen/decomp/dtype.bend:2044` is
 #      `graph_rewrite(x, pm, ctx, bottom_up) -> Maybe<&2, U32>` whose body is
 #      `graph_rewrite.wall(x)`, and the wall answers `None{}`. A PARAMETER A DEF
 #      ACCEPTS and discards is worse than one it omits: IT reads as though the
@@ -755,7 +755,7 @@ def sc_subs_var.hit(miss: Bool, +b: U32, +v: U32, +r: LinBinds) -> LinBinds:
     case False{}: LinBinds{LinBinds.ar(r), Map.set(&2, U32, LinBinds.m(r), U32.show(v), b)}
 
 # `Map.get` answers a `Sigma`, not the value, so it needs a projection here -- the
-# same two-line match `render.bend:1467 cu32.of` and `ctx_get.of` use. The default
+# same two-line match `render.bend:1435 cu32.of` and `ctx_get.of` use. The default
 # is the NO-SLOT sentinel rather than `0`, because `0` is a legal arena index and a
 # missing bind and a bind to node 0 would be the same answer.
 def sc_mapget.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>) -> U32:
@@ -1726,7 +1726,7 @@ def cs_run(c: O.CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> O.CallifyCtx:
 #     so they exercise the same early return. MEASURED 2026-10-31: each of the
 #     guard's three conjuncts has its own row, and breaking any ONE of them
 #     moves that row and no other.
-#   wall(p3) tinygrad/schedule/__init__.py:133      `if SPEC: type_verify(function, spec_tensor)` -- blocked: needs the `if SPEC:` gate wired to `uop/spec.bend`'s `verify_tensor` over `tensor_table()`; upstream's `type_verify` is declared at tinygrad/uop/spec.py:34 and its `spec_tensor` at tinygrad/uop/spec.py:145, and both are ported in the port -- the port's own `verify_tensor` is at uop/spec.bend:2833 and its `tensor_table` at uop/spec.bend:2074 -- so these are not missing defs, and only the `SPEC > 1` and `DEBUG >= 3` arms are absent.
+#   wall(p3) tinygrad/schedule/__init__.py:133      `if SPEC: type_verify(function, spec_tensor)` -- blocked: needs the `if SPEC:` gate wired to `uop/spec.bend`'s `verify_tensor` over `tensor_table()`; upstream's `type_verify` is declared at tinygrad/uop/spec.py:34 and its `spec_tensor` at tinygrad/uop/spec.py:145, and both are ported in the port -- the port's own `verify_tensor` is at uop/spec.bend:2812 and its `tensor_table` at uop/spec.bend:2058 -- so these are not missing defs, and only the `SPEC > 1` and `DEBUG >= 3` arms are absent.
 #   TODO(p3) __init__.py:132      `get_kernel_graph(prepare_rangeify(function))`
 #     -- `schedule/rangeify.py` and `schedule/prepare.py`, out of scope.
 #   TODO(p3) __init__.py:139-148  the `inspect.stack()` DEBUG block.
@@ -1782,7 +1782,7 @@ def lower_sink_to_linear.p_ok(+ar: O.Arena, +call: U32) -> Bool:
 # rows of `gates/schedstore-gate.py` are what saw it.
 #
 # THE DEVICE IS A TAG, NOT A NAME. `S.Dev` is `D1{tag}` / `Dn{tags}` and the name
-# is gone, so `startswith("DISK")` cannot be asked here. `schedule/memory.bend:210 symbol=mem_ok_tag`
+# is gone, so `startswith("DISK")` cannot be asked here. `schedule/memory.bend:207 symbol=mem_ok_tag`
 # already hit this on `startswith(("DISK","CL","WEBGPU"))` and the treatment is a
 # PARAMETER: `disk` is the DISK TAG SET and the caller is the device table. So
 # `disk=[]` is a PERMITTED answer and the prefix test is PARAMETERISED, not
@@ -1909,7 +1909,7 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 #                      if x.op is Ops.PARAM and x.device is not None])
 #     if len(devices) >= 2: raise RuntimeError(...)
 #
-# `UOp.toposort` (uop/ops.bend:3404 symbol=UOp.toposort) is the ungated one, so no `sc_topo` copy is
+# `UOp.toposort` (uop/ops.bend:3402 symbol=UOp.toposort) is the ungated one, so no `sc_topo` copy is
 # needed. `dedup` preserves FIRST-OCCURRENCE order and it DEDUPS THE DEVICE
 # VALUES AND NOT THE NODES: upstream's `dedup` is `list(dict.fromkeys(x))` over
 # `x.device`, so TWO params on one device are one device. MEASURED
@@ -2023,7 +2023,7 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 # on the RANGES FOLD, and `ops.py:514 UOp.substitute` waits behind it.
 # `ab_C_LIN` is arm 1, whose recursion target `resolve_linear_call` is NOT in `uop/ops.bend` --
 # an earlier revision of this sentence said it was "already ... as tag 42's table", AND THAT IS
-# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:4372 symbol=pm_r_rp_m.slot`) and no `def ...resolve_linear_call`
+# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:4290 symbol=pm_r_rp_m.slot`) and no `def ...resolve_linear_call`
 # exists anywhere. See the corrected note at `__init__.py:274` for the measurement. Arm 1 is
 # therefore ALSO blocked on it, not on `binds` alone (:104-106), which is `dict[int,UOp]` keyed by a
 # Python int -- the same String-keyed-`Map` bill `Aa` pays above.
@@ -2340,7 +2340,7 @@ def canonicalize_call_body(+ar: O.Arena, +c: U32) -> O.Found:
 #         return b.param_like(len(ctx.replacements)-1)
 #     The append is one `List.append` and the `len` is one `List.length`; the
 #     mint is the wall. `UOp.param_like` is `TODO(p3) ops.py:1228  symbol=UOp.param_like` in
-#     `uop/ops.bend:4453` -- named, unported, and named as a TODO, so this is a
+#     `uop/ops.bend:4371` -- named, unported, and named as a TODO, so this is a
 #     recorded deferral and not a gap I found.
 #     TODO(p3) ops.py:1228  symbol=UOp.param_like  -- no port. Blocks this body.
 #
@@ -2376,7 +2376,7 @@ def canonicalize_call_body(+ar: O.Arena, +c: U32) -> O.Found:
 #     WALL(p3) __init__.py:271  `pm_schedule` -> `lower_sink_to_linear` (ported
 #       above) but the PASS is a rewriter -- BLOCKED: needs the `pm_schedule` PatternMatcher + its `graph_rewrite` pass; the rule body `lower_sink_to_linear` IS ported (:1362) and `pm_schedule` has no def in the tree.
 #     WALL(p3) __init__.py:274  `pm_resolve_linear_call` -> `resolve_linear_call`
-#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:4372 symbol=pm_r_rp_m.slot), and `pm_flatten_linear` is absent too.
+#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:4290 symbol=pm_r_rp_m.slot), and `pm_flatten_linear` is absent too.
 #     WALL(p3) __init__.py:277  `pm_copy_from_store` -> the two bodies above plus
 #       `assert_all_same_devices`, and the PASS is a rewriter -- BLOCKED: needs the `pm_copy_from_store` PatternMatcher + `graph_rewrite` pass. The THREE rule bodies are ALL ported (`cks_*` :1407, `simplify_copy_kernel` :1466, `assert_all_same_devices` :1527); only the PASS is absent.
 #     TODO(p3) __init__.py:280  symbol=create_linear_with_vars  -- `used_vars` -- `UOp.variables`.

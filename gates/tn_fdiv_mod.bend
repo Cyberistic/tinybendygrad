@@ -21,7 +21,7 @@
 # return a.alu(Ops.MOD, b)`. The same `_broadcasted`-is-identity collapse:
 # `__mod__` builds `MOD(self, x)` and `__rmod__` builds `MOD(x, self)`.
 # The dispatch is `tn_fdiv.go` / `tn_mod.go`, each keyed on a `Bool` (the same
-# shape as `tn_pow.go` at `tensor.bend:674`). The broadcasting case stays walled
+# shape as `tn_pow.go` at `tensor.bend:667`). The broadcasting case stays walled
 # on `_broadcasted` (mixin/movement.py:24, fold reads and a `least_upper_dtype`
 # helper). The float arms of `div` and `mod` (the `cast(default_float).alu(FDIV, b)`
 # path past the int guard) stay walled on the dtype fold and on the FDIV op.

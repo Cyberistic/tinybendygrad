@@ -21,7 +21,7 @@ import ./../datasets/__init__.bend as D
 # whose walls overlap resnet.bend's and bert.bend's rather than choosing.
 # Its vision half (`ClipVisionTransformer`, :338) asks for `nn.Conv2d`, which
 # resnet.bend's census at :68-81 called MISSING and which is NOW BUILT --
-# nn/layers.bend:937 `nn_conv2d`. Its text half (`ClipTextTransformer`, :318)
+# nn/layers.bend:923 `nn_conv2d`. Its text half (`ClipTextTransformer`, :318)
 # asks for `nn.Embedding` (:319) and `nn.LayerNorm` (:322), both of which
 # resnet.bend NEVER ASKED FOR and both of which are MISSING.
 # So the honest reading of THE PORT's `resnet.bend` HEADLINE BLOCK -- "`nn.Conv2d`, `nn.BatchNorm2d` AND
@@ -34,12 +34,12 @@ import ./../datasets/__init__.bend as D
 #   `nn.LayerNorm`  MISSING (:182,:184,:222,:289,:292,:322,:348,:349) -- SEVEN sites,
 #                     and this is why clip.py is further from running than retinanet.py
 #                     even though both are "vision".
-#   `nn.Conv2d`     EXISTS, nn/layers.bend:937 `nn_conv2d` (:343). THE VISION HALF'S
+#   `nn.Conv2d`     EXISTS, nn/layers.bend:923 `nn_conv2d` (:343). THE VISION HALF'S
 #                     ONLY conv.
-#   `nn.Linear`     EXISTS, nn/layers.bend:530 `nn_linear` (:153,:154,:167-170,:261,:279,:280)
+#   `nn.Linear`     EXISTS, nn/layers.bend:518 `nn_linear` (:153,:154,:167-170,:261,:279,:280)
 #   `Tensor.scaled_dot_product_attention` MISSING (:176,:271) -- BOTH attention sites.
-#   `Tensor.quick_gelu` EXISTS, mixin/elementwise.bend:1227 `ew_quick_gelu` (:157).
-#   `Tensor.gelu`    AS A BODY, MISSING (mixin/elementwise.bend:772 symbol=ew_k.gelu has only the
+#   `Tensor.quick_gelu` EXISTS, mixin/elementwise.bend:1205 `ew_quick_gelu` (:157).
+#   `Tensor.gelu`    AS A BODY, MISSING (mixin/elementwise.bend:754 symbol=ew_k.gelu has only the
 #                     CONSTANT `ew_k.gelu`). clip.py:12 binds `Tensor.gelu`, NOT
 #                     `Tensor.quick_gelu`, so :156's `h.quick_gelu()` reaches the
 #                     body that EXISTS while the module-level alias points at one
@@ -48,27 +48,27 @@ import ./../datasets/__init__.bend as D
 #   `Tensor.triu`    MISSING (:324) -- and it is NOT a creation op: THE PORT's `mixin/creation.bend` HEADER
 #                     names `tril`/`triu` in the inventory it measures itself against
 #                     and records that they are not in that file either.
-#   `Tensor.empty`   mixin/creation.bend:429 `cr_empty` EXISTS (:320,:323,:345,:346,:351).
-#   `Tensor.full`    mixin/creation.bend:510 `cr_full`  EXISTS (:324).
-#   `Tensor.arange`  mixin/rand.bend:424 `op_arange`   EXISTS (:470).
-#   `x.reshape`/`view` mixin/movement.bend:1431 `mxw_reshape` EXISTS.
-#   `x.permute`      mixin/movement.bend:1449 `mxw_permute` EXISTS (:272,:290,:463).
-#   `x.expand`       nn/layers.bend:638 `nn_expand`     EXISTS (:356).
-#   `x.cat`          MISSING (:356) -- and `mx_cat` at mixin/movement.bend:127 is
+#   `Tensor.empty`   mixin/creation.bend:424 `cr_empty` EXISTS (:320,:323,:345,:346,:351).
+#   `Tensor.full`    mixin/creation.bend:499 `cr_full`  EXISTS (:324).
+#   `Tensor.arange`  mixin/rand.bend:422 `op_arange`   EXISTS (:470).
+#   `x.reshape`/`view` mixin/movement.bend:1414 `mxw_reshape` EXISTS.
+#   `x.permute`      mixin/movement.bend:1432 `mxw_permute` EXISTS (:272,:290,:463).
+#   `x.expand`       nn/layers.bend:625 `nn_expand`     EXISTS (:356).
+#   `x.cat`          MISSING (:356) -- and `mx_cat` at mixin/movement.bend:125 is
 #                     SHAPE ARITHMETIC `(a,b) -> a+b`, not the op.
-#   `x @ proj`       nn/layers.bend:486 `nn_dot` EXISTS but RETURNS `Maybe`, so
+#   `x @ proj`       nn/layers.bend:476 `nn_dot` EXISTS but RETURNS `Maybe`, so
 #                     `pooled = x @ self.text_projection` (:337,:361,:471) is not
 #                     a call that type-checks today.
 #   `x.sin`/`x.cos`  NOT NAMED BY clip.py. (extra/models/llama.py:10 needs `.cos` and there is
 #                     no `def ew_cos`; clip.py does not share that wall.)
-#   `square().sum().sqrt()`  ALL THREE EXIST: ew_square (mixin/elementwise.bend:557 symbol=ew_square),
-#                     mo_mean/mo_sum (mixin/op.bend:891 / nn/layers.bend:242),
-#                     ew_sqrt (mixin/elementwise.bend:549). The Frobenius norm at
+#   `square().sum().sqrt()`  ALL THREE EXIST: ew_square (mixin/elementwise.bend:545 symbol=ew_square),
+#                     mo_mean/mo_sum (mixin/op.bend:877 / nn/layers.bend:238),
+#                     ew_sqrt (mixin/elementwise.bend:537). The Frobenius norm at
 #                     :475,:478 is PORTABLE.
 #   `adam`           NOT USED BY THIS FILE.
 #   `softmax`        NOT USED DIRECTLY -- both attention sites delegate to
 #                     `scaled_dot_product_attention`. `mo_softmax`
-#                     (mixin/op.bend:1095) EXISTS and would serve T5 but not this.
+#                     (mixin/op.bend:1078) EXISTS and would serve T5 but not this.
 #
 # the first 140 lines are a bpe tokenizer and are not a porting problem.
 # clip.py:15 `default_bpe()` `fetch`es a gzip file (:17), clip.py:17
@@ -84,7 +84,7 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `Open.ClipTextTransformer.__init__` (extra/models/clip.py:318).
 # FIRST MISSING SYMBOL: `Embedding(vocab_size, width)` at clip.py:319.
 # REACHED BEFORE IT, AND PORTED: `Tensor.empty(ctx_length, width)` at :320
-# (mixin/creation.bend:429 symbol=cr_empty) and `Tensor.empty(width, width)` at :323.
+# (mixin/creation.bend:424 symbol=cr_empty) and `Tensor.empty(width, width)` at :323.
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -98,11 +98,11 @@ def cl_at(r: D.Refused) -> String:
 
 # :11 gelu = Tensor.gelu
 def cl_gelu_alias() -> D.Refused:
-  D.refuse("extra/models/clip.py:11 gelu = Tensor.gelu -- MISSING as a BODY; mixin/elementwise.bend:1227 has the CONSTANT ew_k.gelu and :1217 has `def ew_quick_gelu`, which is a DIFFERENT function")
+  D.refuse("extra/models/clip.py:11 gelu = Tensor.gelu -- MISSING as a BODY; mixin/elementwise.bend:1205 has the CONSTANT ew_k.gelu and :1217 has `def ew_quick_gelu`, which is a DIFFERENT function")
 
 # :14-17 @lru_cache() / def default_bpe()
 def cl_default_bpe() -> D.Refused:
-  D.refuse("extra/models/clip.py:14 default_bpe -- FIRST MISSING SYMBOL fetch (:16); helpers.bend:2758 symbol=lines is that file's ONLY I/O construct, so the HTTP seam is NOT ported")
+  D.refuse("extra/models/clip.py:14 default_bpe -- FIRST MISSING SYMBOL fetch (:16); helpers.bend:2694 symbol=lines is that file's ONLY I/O construct, so the HTTP seam is NOT ported")
 
 # :19-138 Tokenizer / Tokenizer.ClipTokenizer. NOT PORTED: gzip, re, and a
 # Python `dict` of 49408 entries. One def is named so the class is not invisible.
@@ -116,11 +116,11 @@ def cl_tokenizer_init(version: Maybe<&2, String>) -> D.Refused:
 
 # :152 class Closed.ClipMlp / :153 def __init__(self)
 def cl_mlp_init() -> D.Refused:
-  D.refuse("extra/models/clip.py:152 ClipMlp.__init__ -- fc1/fc2 are Linear (:153,:154) and nn/layers.bend:530 symbol=nn_linear EXISTS; BLOCKED BY the missing class shell")
+  D.refuse("extra/models/clip.py:152 ClipMlp.__init__ -- fc1/fc2 are Linear (:153,:154) and nn/layers.bend:518 symbol=nn_linear EXISTS; BLOCKED BY the missing class shell")
 
 # :155 def __call__(self, h)
 def cl_mlp_call(+h: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/clip.py:155 ClipMlp.__call__ -- FIRST MISSING SYMBOL Tensor.quick_gelu (:157); mixin/elementwise.bend:1227 `def ew_quick_gelu` EXISTS, so this ONE line is REACHABLE")
+  D.refuse("extra/models/clip.py:155 ClipMlp.__call__ -- FIRST MISSING SYMBOL Tensor.quick_gelu (:157); mixin/elementwise.bend:1205 `def ew_quick_gelu` EXISTS, so this ONE line is REACHABLE")
 
 # :160 class Closed.ClipAttention / :161 def __init__(self, width, heads)
 def cl_closed_attn_init(width: U32, heads: U32) -> D.Refused:
@@ -144,7 +144,7 @@ def cl_closed_text_transformer(+x: T.Tensor) -> D.Refused:
 
 # :207 def vision_transformer(self, x)
 def cl_closed_vision_transformer(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/clip.py:207 vision_transformer -- FIRST MISSING SYMBOL Conv2d (:230); nn/layers.bend:937 `def nn_conv2d` EXISTS, so THIS def's only wall is the missing layer class")
+  D.refuse("extra/models/clip.py:207 vision_transformer -- FIRST MISSING SYMBOL Conv2d (:230); nn/layers.bend:923 `def nn_conv2d` EXISTS, so THIS def's only wall is the missing layer class")
 
 # :236 class FrozenClosedClipEmbedder / :237 def __init__(self, ret_layer_idx=None)
 def cl_closed_embedder_init(ret_layer_idx: Maybe<&2, U32>) -> D.Refused:
@@ -176,7 +176,7 @@ def cl_open_transformer_call(+x: T.Tensor) -> D.Refused:
 
 # :318 class Open.ClipTextTransformer / :319 def __init__(self, width, n_heads, layers, vocab_size=49408, ctx_length=77)
 def cl_text_transformer_init(width: U32, n_heads: U32, layers: U32, vocab_size: U32, ctx_length: U32) -> D.Refused:
-  D.refuse("extra/models/clip.py:319 ClipTextTransformer.__init__ -- FIRST MISSING SYMBOL Embedding (:319) -- THE FIRST MISSING SYMBOL OF THE WHOLE FILE; cr_empty (:320,:323) EXISTS at mixin/creation.bend:429 symbol=cr_empty")
+  D.refuse("extra/models/clip.py:319 ClipTextTransformer.__init__ -- FIRST MISSING SYMBOL Embedding (:319) -- THE FIRST MISSING SYMBOL OF THE WHOLE FILE; cr_empty (:320,:323) EXISTS at mixin/creation.bend:424 symbol=cr_empty")
 
 # :327 def __call__(self, text)
 def cl_text_transformer_call(+text: T.Tensor) -> D.Refused:
@@ -184,7 +184,7 @@ def cl_text_transformer_call(+text: T.Tensor) -> D.Refused:
 
 # :338 class Open.ClipVisionTransformer / :339 def __init__(self, width, layers, d_head, image_size, patch_size)
 def cl_vision_transformer_init(width: U32, layers: U32, d_head: U32, image_size: U32, patch_size: U32) -> D.Refused:
-  D.refuse("extra/models/clip.py:339 ClipVisionTransformer.__init__ -- FIRST MISSING SYMBOL LayerNorm (:348); the ONLY conv, nn_conv2d at nn/layers.bend:937 symbol=nn_conv2d, EXISTS (:343)")
+  D.refuse("extra/models/clip.py:339 ClipVisionTransformer.__init__ -- FIRST MISSING SYMBOL LayerNorm (:348); the ONLY conv, nn_conv2d at nn/layers.bend:923 symbol=nn_conv2d, EXISTS (:343)")
 
 # :352 def __call__(self, x)
 def cl_vision_transformer_call(+x: T.Tensor) -> D.Refused:

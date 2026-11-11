@@ -24,14 +24,14 @@
 #   4. `type` and `Kind` are bend keywords and were used as parameter names -> `_type`, `_Kind`.
 #
 # the 64-bit spelling in this file, because `I64` here and `I64` in `helpers.bend`
-# are different types with one name.  `helpers.bend:1641` is the tree's 64-bit
+# are different types with one name.  `helpers.bend:1601` is the tree's 64-bit
 # value -- `I64{hi: U32, lo: U32}`, 678 uses in 41 files, 40 defs of arithmetic on
 # it, and it is what `runtime/dtype.c:205` opens with `ctr_take`.  The `I64{}` here
 # is NULLARY: a placeholder for a width bend has no type for, on 13 signatures
 # whose bodies are all `None{}`.  It is an ABI annotation on a column that never
 # executes, it is not a value, and it has no constructor that carries one.  See
 # `.agents/slop/SPELLING.md`; the three of them cannot all be canonicalised
-# (`helpers.bend:1648 symbol=I64` -- an `I64` is a SIGNED pair, so `U64` has no image).
+# (`helpers.bend:1607 symbol=I64` -- an `I64` is a SIGNED pair, so `U64` has no image).
 #
 # COVERAGE OF THE TRAMPOLINES: unchanged and still what it always was.  A name, an
 # arity, ordered parameter names, an ABI type, a return type.  No def among the 324

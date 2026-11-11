@@ -17,7 +17,7 @@
 # `tn_alu(self, ADD, [Tensor.u(x)])` for `__add__` (srcs `(self, x)`) and
 # `tn_alu(x, ADD, [Tensor.u(self)])` for `__radd__` (srcs `(x, self)`). The
 # dispatch is `tn_add.go`, keyed on a `Bool` (the same shape as `tn_mul.go` at
-# `tensor.bend:466`). `__sub__`/`__rsub__` (elementwise.py:103, :270, :297) are
+# `tensor.bend:459`). `__sub__`/`__rsub__` (elementwise.py:103, :270, :297) are
 # the same shape with `Ops.SUB`. The broadcasting case stays walled on
 # `_broadcasted` (mixin/movement.py:24, fold reads and a `least_upper_dtype`
 # helper).

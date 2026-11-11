@@ -5,7 +5,7 @@
 
 EIGHT ROWS, THREE LANES -- CPython, bend interpreted, bend compiled -- over the claims
 that `UOp.replace` does what CPython's `UOp.replace` does. The wall that lived at
-`function.bend:1084` ("UOp.replace -- `ParamArg` is a 13-field Data record ... a builder
+`function.bend:1061` ("UOp.replace -- `ParamArg` is a 13-field Data record ... a builder
 with no caller is a lie") was closed by porting the def itself: 8 callers (`ptx.py:49,52`,
 `pm_replace_buffers` at hcq2.py:103, and the bodies behind the `UOp.replace` calls in
 `pm_unwrap_multi`/`pm_lift_deps`) now have a def to resolve to, and this gate is the
@@ -22,7 +22,7 @@ WHY THIS GATE INSTEAD OF ANOTHER IN-FILE `t_*` TEST. The `t_*` cluster in `ops.b
 already tests CONST identity (32 rows in `ops-core-gate.py`), and those are the rows the
 project's own notes say are "MEASURED on the live tree". `UOp.replace` is a different
 property -- the constructor's behaviour under field swap -- and the wall text at
-`function.bend:1084` was the project's admission that it had no row to back the
+`function.bend:1061` was the project's admission that it had no row to back the
 "DONE" claim, so the cheapest honest answer was a gate.
 """
 

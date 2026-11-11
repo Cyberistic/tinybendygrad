@@ -6,7 +6,7 @@
 FIVE ROWS, THREE LANES -- CPython, bend interpreted, bend compiled -- over the claims
 that `tn_isnan` does what CPython's `Tensor.isnan` (elementwise.py:603) does:
 `return self != self`. The graph is a single CMPEQ with the input tensor on both
-srcs -- the same shape `mo_isnan` (`mixin/op.bend:986`) builds at the reduction
+srcs -- the same shape `mo_isnan` (`mixin/op.bend:970`) builds at the reduction
 layer.
 """
 

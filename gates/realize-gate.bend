@@ -33,14 +33,14 @@ def rz_row_nodes() -> String:
   +q = P.rz_built()
   U32.show(P.rz_nodes(q))
 # the port's own scheduler, on the port's own sink. `SCH.schedule` is
-# `create_schedule` (`schedule/__init__.bend:1143 symbol=schedule`), and it wants a SINK OF
+# `create_schedule` (`schedule/__init__.bend:1128 symbol=schedule`), and it wants a SINK OF
 # AFTERs WHOSE SECOND SRC IS A KERNEL -- a CALL or an END -- because
-# `_split_after` (`schedule/__init__.bend:467 symbol=sc_split`) partitions the AFTER's srcs
+# `_split_after` (`schedule/__init__.bend:462 symbol=sc_split`) partitions the AFTER's srcs
 # into kernels and dependencies.
 # the port's own scheduler, on the port's own sink. `SCH.schedule` is
-# `create_schedule` (`schedule/__init__.bend:1143 symbol=schedule`), and it wants a SINK OF
+# `create_schedule` (`schedule/__init__.bend:1128 symbol=schedule`), and it wants a SINK OF
 # AFTERs WHOSE SECOND SRC IS A KERNEL -- a CALL or an END -- because
-# `_split_after` (`schedule/__init__.bend:467 symbol=sc_split`) partitions the AFTER's srcs
+# `_split_after` (`schedule/__init__.bend:462 symbol=sc_split`) partitions the AFTER's srcs
 # into kernels and dependencies.
 def rz_row_lin() -> String:
   +q = P.rz_built()

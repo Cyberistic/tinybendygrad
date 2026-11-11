@@ -7,7 +7,7 @@ WHAT IS UNDER TEST. `tinygrad/uop/ops.py:902` is ONE line:
 
     return self.device is None or self.dtype in dtypes.weaks
 
-and the port spells it as two claims joined by `or` (`uop/weak.bend:268`): the device
+and the port spells it as two claims joined by `or` (`uop/weak.bend:267`): the device
 half and the dtype half. The device half is a NESTED `Maybe` -- the outer answers "does
 this node carry a device at all" and the inner "is it there" -- and flattening them
 first would lose the one case `is_virtual` asks about.

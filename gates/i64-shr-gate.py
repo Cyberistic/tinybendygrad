@@ -3,7 +3,7 @@
     I64SHR_SEED=7 .venv/bin/python gates/i64-shr-gate.py     # 301 rows, 3 lanes
 
 WHAT THIS GATE IS. `mixin/dtype.bend:58` records `SHL/SHR -> i64 shift -> NOWHERE` as ONE
-row. `i64_shl` is at `tinybendygrad/helpers.bend:1819`, so that half of the row was stale
+row. `i64_shl` is at `tinybendygrad/helpers.bend:1776`, so that half of the row was stale
 when it was written; `def i64_shr` was genuinely absent everywhere, and a grep settles
 it, so a grep is not a gate. These rows are what makes the RIGHT shift checkable: every
 amount in a table of ten `Nat` literals reaches `i64_shr` TWICE, once with the amount at

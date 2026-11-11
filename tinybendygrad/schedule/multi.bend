@@ -11,7 +11,7 @@
 # the three-way per-source decision in `shard_srcs` that the resharding fallbacks all call.
 # the one wall that cuts across every line: `UOp._min_max` (ops.py:1094), which
 # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
-# `copy_multi`. `uop/fold.bend:5140 symbol=ranged` names it at 1104 in its own PROSE and carries it as
+# `copy_multi`. `uop/fold.bend:5088 symbol=ranged` names it at 1104 in its own PROSE and carries it as
 # its `_min_max` WALK -- there is no `TODO(p3)` marker for it there -- and it is not a
 # fold at all -- it is arithmetic over the srcs. What `mu_count`
 # ports is the NARROW case that is exact and load-bearing: a RANGE over a CONST end, where
@@ -356,7 +356,7 @@ def mu_and3(a: Bool, b: Bool, c: Bool) -> Bool:
 def mu_or3(a: Bool, b: Bool, c: Bool) -> Bool:
   mu_or2(a, mu_or2(b, c))
 
-# `a if cond else b` for a `U32` answer -- `Bool.pick` (base.bend:614 symbol=Bool.pick) with the
+# `a if cond else b` for a `U32` answer -- `Bool.pick` (base.bend:613 symbol=Bool.pick) with the
 # arguments in Python's order rather than base's. This is the ONE def that
 # conjoined conditions are allowed to feed, because inside it the scrutinee is a
 # PARAMETER: MEASURED, `match mu_and2(a, b):` is still refused
@@ -561,7 +561,7 @@ def mu_dev_miss() -> Bool: False{}
 # THE AXIS-TYPE READ, and it reads the NODE'S OWN ARG rather than going through
 # `fold.bend`, which is deliberate. `F.axis_at` is the fold's spelling and it
 # works -- but it drags `F.folded(ar)` in, and that build currently reaches
-# `fold.bend:1053` `const_i64.go`, whose wildcard arm is `case _ _:` for a
+# `fold.bend:1047` `const_i64.go`, whose wildcard arm is `case _ _:` for a
 # ONE-scrutinee `match` and is a compile error. That is a bug in a READ-ONLY
 # sibling, REPORTED NOT FIXED (see the foot), and this def is the local spelling
 # so this file does not depend on it: `UOp.axis_type` (ops.py:507) is a RANGE's
@@ -1022,9 +1022,9 @@ def rd_fires(+r: Rd) -> Bool:
 # is `in (bfloat16, half)` -- TWO dtypes and not one, and `S.Dt` is a `Data`
 # record so the comparison is `S.bfloat16()` / `S.half()` by value. The graph is
 # the wall (`allreduce.bend`'s, plus two `.cast`s).
-# `S.Dt` is a `Data` record {pri, bits, cls, nm} (tinybendygrad/LAWS/spec.bend:76 symbol=Dt) so equality is
+# `S.Dt` is a `Data` record {pri, bits, cls, nm} (tinybendygrad/LAWS/spec.bend:74 symbol=Dt) so equality is
 # NOT structural -- `O.eq_dt` is what `ops.bend` itself uses for a dtype
-# comparison (uop/ops.bend:3798 symbol=UPat.load) and it compares the RANK (`pri`), which is
+# comparison (uop/ops.bend:3768 symbol=UPat.load) and it compares the RANK (`pri`), which is
 # `dtype.py`'s declaration order and is unique per dtype.
 def rd_low_dt(+dt: S.Dt) -> Bool:
   Bool.or(O.eq_dt(dt, S.bfloat16()), O.eq_dt(dt, S.half()))
@@ -1795,7 +1795,7 @@ def ix_strid(idx: U32, i: U32) -> U32:
   U32.sub(idx, i)
 
 # NO ZERO GUARD, and that is a MEASURED fact rather than an omission:
-# `U32.div(x, 0)` is 0 and `U32.mod(x, 0)` is `x` (base.bend:1626 symbol=U32.div and
+# `U32.div(x, 0)` is 0 and `U32.mod(x, 0)` is `x` (base.bend:1625 symbol=U32.div and
 # :1623 symbol=U32.mod, both
 # `U32.div.if`/`U32.mod.if` take `U32.is_zero(b)` and short-circuit), so neither
 # traps. A `shard_sz` of 0 is `mu_sym_dim`'s wall marker, and `U32.div(_, 0)` is
@@ -2406,4 +2406,4 @@ def cxn(k: List<&2, U32>) -> U32: U32.from_nat(mu_len(k))
 # (ops.py:1701 is `if not early_reject.issubset(ler): continue`): the rule FIRES when its op
 # set IS a subset of the node's src ops, and the empty set is a subset of everything.
 #   TODO(p3) schedule/multi.py:9  symbol=_apply_shrink  -- `_apply_shrink`, SHRINK  -- BLOCKED. needs `UOp._mop` (ops.py:799)
-#   -- which is ported as `tn_mop` in `tensor.bend:1704 symbol=tn_mop` -- but `multi.bend` does not import `tensor.bend`. measured at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is cycle-free (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an import edge, not an absent def.
+#   -- which is ported as `tn_mop` in `tensor.bend:1685 symbol=tn_mop` -- but `multi.bend` does not import `tensor.bend`. measured at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is cycle-free (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an import edge, not an absent def.

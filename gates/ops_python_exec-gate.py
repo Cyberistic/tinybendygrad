@@ -13,7 +13,7 @@ be run that way. MEASURED 2026-10-14 on a 7-uop packet: the compiled executor ex
 0 in 1.79 s and writes both buffers, while
 `bend tinybendygrad/runtime/ops_python.bend PACKET 1 1 1` exits **1** in 6.76 s with
 `bend: memory fault (machine stack overflow?)` and writes no PACKET.out at all --
-`run` is a fuel recursion (`FUEL() = 4000000n`, ops_python.bend:2064) and the HVM
+`run` is a fuel recursion (`FUEL() = 4000000n`, ops_python.bend:2009) and the HVM
 interpreter cannot hold it. So this gate says TWO and does not invent a third.
 
 WHAT IS IN IT, AND WHY IT IS NOT THE OTHER GATE. `ops_python_census-gate.py` covers
@@ -168,13 +168,13 @@ def port_lane(exe, root, name, argv, packet):
     """Run ONE fixture through the compiled executor and return its rows.
 
     ONE DIRECTORY PER FIXTURE, and that is the port's contract rather than tidiness:
-    `Prog.write.out` (ops_python.bend:2160) finds the LAST `/` of `Args.path` and
+    `Prog.write.out` (ops_python.bend:2101) finds the LAST `/` of `Args.path` and
     writes `PACKET.out` beside it, so one shared directory has every lane racing for
     one file -- MEASURED with a shared directory: 8 fixtures, rc=0 each, and every
     lane answering `NO-PACKET.out`.
 
     A REFUSAL IS A ROW, not an error: `Prog.launch.run.at` dies 1 with "executor:
-    refused the packet" (ops_python.bend:2269) and CPython's lane answers the same
+    refused the packet" (ops_python.bend:2203) and CPython's lane answers the same
     packet's `UOp` list, so the pair says something. A run that dies any OTHER way,
     or writes the wrong number of buffer lines, is a failure of the harness and is
     reported as such rather than folded into the rows.

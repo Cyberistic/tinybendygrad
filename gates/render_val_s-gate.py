@@ -5,7 +5,7 @@
 
 EIGHT ROWS, THREE LANES -- CPython, bend interpreted, bend compiled -- over the claims
 that `render_val_s` does what CPython's `str(int(v))` does on a 32-bit signed value.
-The wall that lived at `tc_ptx.bend:191` ("the blocker is that nobody has WIRED `i64_dec`
+The wall that lived at `tc_ptx.bend:183` ("the blocker is that nobody has WIRED `i64_dec`
 INTO THIS ARM -- a row, not a wall") was closed by wiring `i64_dec(i64_of_i32(v))` -- a
 one-line port that uses the helpers `i64_of_i32` (SIGN-EXTEND) and `i64_dec` (gated at
 `gates/i64-shl-gate.py` 301 rows, 3 lanes and `gates/i64-shr-gate.py` 151 rows, 3 lanes).

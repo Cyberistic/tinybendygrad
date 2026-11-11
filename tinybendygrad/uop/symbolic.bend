@@ -20,7 +20,7 @@
 #   6  63-70   data  invalid_pat/gate/bare_const/casted_const/const_arg  PORTED
 #   7  72      fold  lift_reduce_gate    missing, and the stated reason was FALSE. It said
 #                                             "DEFERRED `UOp.ranges`", and `UOp.ranges` IS
-#                                             PORTED (`fold.bend:5271`, with the `rg_self` row
+#                                             PORTED (`fold.bend:5218`, with the `rg_self` row
 #                                             that makes the prepend visible). THE TWO REAL
 #                                             BLOCKERS, MEASURED 2026-11-03:
 #                                               1. `UOp.uprod` -- elementwise.py:41,
@@ -29,10 +29,10 @@
 #                                               2. ~~`c.ranges` needs an `RTable` BUILT INSIDE A
 #                                                  rule body~~ -- this was FALSE and the
 #                                                  MEASUREMENT THAT REFUTED IT IS ONE GREP:
-#                                                  `fold.bend:5293` `def ranged(+ar: O.Arena)
+#                                                  `fold.bend:5240` `def ranged(+ar: O.Arena)
 #                                                  -> Ranged` IS the builder, and
 #                                                  `Ranged.rt` hands back the `RTable`.
-#                                                  `fold.bend:5589` already uses it that way
+#                                                  `fold.bend:5532` already uses it that way
 #                                                  in its own rows. SO `c.ranges` IS REACHABLE
 #                                                  FROM A RULE BODY AND `:90` HAS NO
 #                                                  REMAINING BLOCKER -- `uprod` landed last
@@ -535,9 +535,9 @@ def sy_neg(+ar: O.Arena, x: U32) -> U32:
 # THE PORT HAD THREE HALVES OF THE SAME RULE, AND THEY HAD
 # DRIFTED APART:
 # - `uop/symbolic.bend`'s `mint_not` ALREADY BUILT `CMPEQ(x, False)`
-# (`symbolic.bend:1693-1695`), AND
+# (`symbolic.bend:1687-1689`), AND
 # - `tensor.bend`'s `tn_logical_not` ALREADY BUILT `CMPEQ(x, False)`
-# (`tensor.bend:513-516`), AND
+# (`tensor.bend:506-509`), AND
 # - THIS DEF BUILT `CMPNE(x, True)` -- AND THE CORPUS MEASURED THE
 # DRIFT: THE `commute` GRAPH READ `CMPEQ 2/0` AND `CMPNE 0/1`
 # (`runs/graphcmp/D/D1-graph-commute.txt`, 2026-11-11), AND THE ONLY
@@ -2802,7 +2802,7 @@ def sym_131(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # `UPat.var("x", dtype=dtypes.bool).logical_not().logical_not()`, - AND THAT RULE
 # IS ALREADY PORTED, AS `sym_134` (`symbolic.bend`'s TABLE TAG 27,
 # WHICH IS THE PIN's RULE 140 SLOT) -- - AND `sym_134` ALREADY USES
-# THE `CMPEQ` SPELLING (`symbolic.bend:2852-2862`) -- - AND SO THE RULE
+# THE `CMPEQ` SPELLING (`symbolic.bend:2843-2853`) -- - AND SO THE RULE
 # THIS DELETED DEF PORTED HAS A REPLACEMENT IN THE PORT ALREADY, AND
 # THE REPLACEMENT IS THE PIN's.
 #
@@ -5696,7 +5696,7 @@ def sym_451(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 #
 # `t.substitute({key: val})`, which is what `symbolic.py:235` needs, reached WITHOUT Bend's `Map`:
 # `Map.put` has no call site in this tree, the language guide never names it, and
-# `nn/onnx.bend:722` records that it LOSES KEYS.
+# `nn/onnx.bend:711` records that it LOSES KEYS.
 #
 # NO MUTUAL RECURSION IS NEEDED: a rebuild that walks the tree has a node case and a src-list case
 # that would call each other, which Bend refuses -- but a FOLD over `toposort_nocalls`, CHILDREN
@@ -5706,7 +5706,7 @@ def sym_451(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # tree with ONE WHERE over two arms, `toposort_nocalls(next, ...)` returns TWO nodes and
 # `toposort_nocalls(budget, ...)` returns FOUR (`.agents/slop/sym92/probe-topo.bend`). A worklist
 # entry is pushed once per EDGE into a node plus once for the root, so the node count is a LOWER
-# bound and not the bound. `codegen/__init__.bend:415`'s `UOp.substitute` uses the SAME
+# bound and not the bound. `codegen/__init__.bend:407`'s `UOp.substitute` uses the SAME
 # `Arena.next` expression, so its toposort is truncated on any graph with a non-tree shape.
 type Ky is Data:
   Ky{k: U32, n: U32}
@@ -6321,7 +6321,7 @@ def sy_wself(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # const must KEEP the strong dtype, or the fold silently narrows the result. So the `ccast` is
 # guarded on BOTH sides: the branch is weak AND the WHERE is not.
 #
-# `sy_ccast` HAD NO CALLER BEFORE THIS -- ported (`symbolic.bend:456`) and unreachable, which is
+# `sy_ccast` HAD NO CALLER BEFORE THIS -- ported (`symbolic.bend:455`) and unreachable, which is
 # a body with no rule; this rule is its first. `sy_val_truthy` is `bool(gate.val)` (its own
 # comment cites symbolic.py:127-128) and `dt_weak_of` is `dtype in dtypes.weaks`.
 def sy_fcw_pick(truthy: Bool, +c0: U32, +c1: U32) -> U32:
@@ -6788,8 +6788,8 @@ def sym_88(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 #
 # `F.ranged(ar)` is built here and not in the scan. It folds the whole arena, so building it per
 # candidate node would be quadratic; this body runs only when the pattern matched, and the pattern
-# is a REDUCE, so it is built once per reduce and not once per node. `fold.bend:5293` is the
-# builder and `fold.bend:5589` already uses it this way.
+# is a REDUCE, so it is built once per reduce and not once per node. `fold.bend:5240` is the
+# builder and `fold.bend:5532` already uses it this way.
 type KS is Data:
   KS{keep: List<&2, U32>, lift: List<&2, U32>}
 
@@ -6950,7 +6950,7 @@ def dm_nd_val(+x: F.Folded, +u: U32) -> U32:
   dm_nd_val.go(dm_nd_val.of(sy_val(x, u)))
 
 # and the CONST's value as an `H.I64` -- and the port's own `UOp.divides` takes an `H.I64`
-# DIVISOR (`ops.bend:8273`).
+# DIVISOR (`ops.bend:7893`).
 def dm_nd_val64.go(v: Maybe<&2, U32>) -> H.I64:
   match v:
     case Some{n}: H.i64_of_i32(n)
@@ -6961,7 +6961,7 @@ def dm_nd_val64(+x: F.Folded, +u: U32) -> H.I64:
 
 # and the `k.vmin > 0` guard -- and it is an I64 comparison (measured 2026-11-09: the
 # sign is lost IF the CONST's value is read with `H.lo32`) and `Cmp` has no `is_gt`, so the
-# PORT's OWN `i64_le` SPELLING IS USED (`helpers.bend:1705`: `Cmp.is_le(i64_cmp(a, b))` FOR
+# PORT's OWN `i64_le` SPELLING IS USED (`helpers.bend:1664`: `Cmp.is_le(i64_cmp(a, b))` FOR
 # `a <= b`) -- AND `v > 0` IS `0 <= v`.
 def dm_nd_positive.go(v: H.I64) -> Bool:
   Cmp.is_le(H.i64_cmp(H.i64_of_i32(0), v))
@@ -7194,7 +7194,7 @@ def t_nd_nodiv() -> Bool:
 # missing  -  missing`, and it is the one missing row of all 133).
 #
 # AND THE ARM THAT ANSWERS `(div (mul x y) y)` IS `divide_by_gcd` (`divandmod.py:73-77`) --
-# and the port's own TODO block already said so (`divandmod.bend:983`): "the arm that
+# and the port's own TODO block already said so (`divandmod.bend:978`): "the arm that
 # ANSWERS IT IS `divide_by_gcd` (LINE 66) ... MEASURED, `UOp.gcd(x, y)` ANSWERS THE PARAM
 # `y`".
 #
@@ -7205,10 +7205,10 @@ def t_nd_nodiv() -> Bool:
 #       return ret*gcd if d.op is Ops.MOD else ret
 #
 # and the port spells it with the port's own pieces, and the three primitives are now in
-# `ops.bend` -- `UOp.gcd` (`ops.bend:8857`), `UOp.divide_exact` (`ops.bend:8815`) AND
-# `UOp.split_uop` (`ops.bend:5169`) -- AND THE FOURTH, `.simplify()`, IS THE SYMBOLIC
+# `ops.bend` -- `UOp.gcd` (`ops.bend:8414`), `UOp.divide_exact` (`ops.bend:8372`) AND
+# `UOp.split_uop` (`ops.bend:5076`) -- AND THE FOURTH, `.simplify()`, IS THE SYMBOLIC
 # matcher, which a rule here can call -- and what it does to the `gcd` is FOLD a MUL by
-# the identity, which is this file's own `sym_122` (`symbolic.bend:2698`,
+# the identity, which is this file's own `sym_122` (`symbolic.bend:2689`,
 # `(UPat.var("x") * 1, lambda x: x)`).
 #
 # - so the FOLD is spelled here, WHERE it is needed, and not by calling the matcher -- and
@@ -7278,7 +7278,7 @@ def dm_gcd_fold(+ar: O.Arena, +u: U32) -> U32:
 
 # and the `all_uops`: `list(x.split_uop(Ops.ADD))` plus the denominator -- and
 # upstream's call is `UOp.gcd(*all_uops, y)`. -- and the split is the port's own
-# `sy_split` (`symbolic.bend:687`), AND THE LIST IS BUILT BY A FOLD.
+# `sy_split` (`symbolic.bend:686`), AND THE LIST IS BUILT BY A FOLD.
 def dm_gcd_uops.go(+l: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match l:
     case Nil{}: acc
@@ -8550,7 +8550,7 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #      `reduce_mul_chain`, `parse_valid`, `uop_given_valid`, `_valid_priority`,
 #      `simplify_valid`, `gated_given_valid` and about half of `symbolic`'s 47 --
 #      nine of the fourteen deferred blocks. It is `fold.bend`'s biggest piece.
-#   2. `UOp.ranges` IS PORTED (`fold.bend:5271`), so this line was false; what
+#   2. `UOp.ranges` IS PORTED (`fold.bend:5218`), so this line was false; what
 #      `lift_reduce_gate` actually needs is `UOp.uprod` and an `RTable` buildable in a rule
 #      body -- see row 7 above. The set algebra does unblock
 #      `drop_and_clauses`, `where_on_load` and `fold_where_closure`.

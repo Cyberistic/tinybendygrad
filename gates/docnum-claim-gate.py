@@ -11,7 +11,7 @@ Four times in one day the tree's own instruments contradicted a number its prose
 on, and every one of the four was the same shape:
 
   1. `decomp`'s FOOTER named the wrong blocker and its own rows refuted it.
-  2. `uop/spec.bend:1488` justified a P6 wall with `Device.tag`, WHICH DOES NOT EXIST, and a
+  2. `uop/spec.bend:1476` justified a P6 wall with `Device.tag`, WHICH DOES NOT EXIST, and a
      gate (`devtag-gate.py`'s `C2`) quoted the citation forward.
   3. `nn/optim.bend`'s claim that a fixture "NEEDS `Device.tag`" was PROVED FALSE.
   4. `gates/README.md`'s `## HOW THEY ARE RUN` justifies the whole section on "THE NUMERATOR

@@ -306,7 +306,7 @@ def ew_ufix(+t: T.Tensor, +e: Ew) -> T.Tensor:
 # there, and `helpers.bend` / `LAWS/spec.bend` / `uop/ops.bend` / `uop/fold.bend`
 # are all below `weak.bend`, which imports every one of them.
 #
-# THE NAME STAYS BECAUSE `mixin/op.bend:465 symbol=mo_weakconst.cls` CALLS `E.ew_remint`, and that file
+# THE NAME STAYS BECAUSE `mixin/op.bend:458 symbol=mo_weakconst.cls` CALLS `E.ew_remint`, and that file
 # is not this move's to rename. It is the ONLY external call site:
 # `grep -rn 'ew_remint|ew_ccast|ew_const_bare|ew_const_val|ew_src0|ew_is_c0'`
 # over `tinybendygrad/` and `gates/` names nothing else outside this block --
@@ -541,7 +541,7 @@ def ew_lt(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: ew_binop(O.OpsCMPLT{}, t
 # AND `rev` IS THE PORT's OWN GENERALIZATION -- UPSTREAM's `eq`/`ne` ALWAYS PASS
 # `reverse=False` TO `_binop`, BUT `_broadcasted`'s SWAP IS UPSTREAM's TOO
 # (`elementwise.py:26`, `x, y = (self, y) if not reverse else (y, self)`), AND THE PORT's
-# `ew_broadcasted` MATCHES IT (`elementwise.bend:423`, `ew_pair(rev, tf, uf)`).
+# `ew_broadcasted` MATCHES IT (`elementwise.bend:413`, `ew_pair(rev, tf, uf)`).
 def ew_ne(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
   ew_logical_not(ew_binop(O.OpsCMPEQ{}, t, e, rev))
 
@@ -854,7 +854,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:838  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:850  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
 # TODO(p3) elementwise.py:611  isinf  -- float("inf") is PRODUCIBLE: `F32.div(1.0, 0.0)` is 0x7F800000.
-#   `mo_eqmul` is one arm (mixin/op.bend:1074 symbol=mo_eqmul); the second arm + add is the
+#   `mo_eqmul` is one arm (mixin/op.bend:1057 symbol=mo_eqmul); the second arm + add is the
 #   remainder, and a `tn_isinf` would still need the same `isinf` body. UNDIAGNOSED
 # TODO(p3) elementwise.py:633  isclose  -- rtol=1e-05 and atol=1e-08 are literals, bit-exact. the rule body is the remainder; UNDIAGNOSED
 # TODO(p3) elementwise.py:654  ceil  -- b+1 is fine and was always fine -- the marker said so. `round` is the remainder; see 890
@@ -887,7 +887,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # `CMPNE` whose two srcs are the same tensor. NaN is the only float where
 # `x == x` is false, so `cmpne(t, t)` IS the NaN test. The port at
 # `tensor.bend:tn_isnan` is one line: `tn_cmpne(t, t)`. The mo-layer peer is
-# `mo_isnan` (`mixin/op.bend:1061 symbol=mo_isnan`), the same shape. Gated at
+# `mo_isnan` (`mixin/op.bend:1045 symbol=mo_isnan`), the same shape. Gated at
 # `gates/tn_isnan-gate.py` 5/5 rows.
 #
 # PORTED with two carve-outs. `isfinite` is elementwise.py:623,
@@ -896,7 +896,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # `self.eq(+inf) + self.eq(-inf)` (the `True` arms are the identity and the
 # default-args case collapses). The chain is then `OR(ADD, isnan) -> cmpne(True)`,
 # built by `tn_isfinite` (`tensor.bend:tn_isfinite`). The mo-layer peer is
-# `mo_isfinite` (`mixin/op.bend:1084 symbol=mo_isfinite`). Gated at `gates/tn_isfinite-gate.py`
+# `mo_isfinite` (`mixin/op.bend:1067 symbol=mo_isfinite`). Gated at `gates/tn_isfinite-gate.py`
 # 6/6 rows.
 #
 # what the gate does not assert, and why:
@@ -920,7 +920,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # in, so the CMPNE landed on the slot the const index names and became its own
 # `src[1]`. `Arena` is an immutable `Data` value (`ops.bend:1305 symbol=Arena`), so `Found.ar`
 # SNAPSHOTS, and an index is legal only in an arena DESCENDING FROM the one that
-# minted it. MEASURED with `O.Rng.sig` (`uop/ops.bend:6109 symbol=Rng.sig`) as the instrument on a
+# minted it. MEASURED with `O.Rng.sig` (`uop/ops.bend:5978 symbol=Rng.sig`) as the instrument on a
 # `CInt` input: `CMPNE/2 Ops.CAST Ops.CMPNE` against CPython's
 # `CMPNE(CAST(CONST()), CONST())`. The rule and the helper that states it are
 # `tensor.bend:tn_binop`; the two ports are `tn_logical_not.cmpne` and
@@ -1343,8 +1343,8 @@ def ew_exp(+t: T.Tensor) -> T.Tensor:
 # activations in that range and THIS FILE'S MARKERS NAMED SIX of them: `asin`
 # (`:929`), `acos` (`:942`), `atan` (`:952`), `elu` (`:962`), `celu` (`:974`)
 # and `selu` (`:986`). They are ported here, TOGETHER WITH `relu` (`:672`),
-# which `elu` calls and which was NOT in this layer before: `tinybendygrad/nn/layers.bend:263 symbol=nn_reduce.keep`'s
-# `nn_relu` is a NAME onto `tensor.bend:774`'s `tn_relu`, and the `tn_*` layer
+# which `elu` calls and which was NOT in this layer before: `tinybendygrad/nn/layers.bend:259 symbol=nn_reduce.keep`'s
+# `nn_relu` is a NAME onto `tensor.bend:767`'s `tn_relu`, and the `tn_*` layer
 # does NOT PROMOTE -- CPython's `relu` on a float32 `self` REMINTS the zero to
 # weakfloat and the `tn_*` layer's does not, so `tn_relu` cannot stand in for
 # `elu`'s `self.relu()`.

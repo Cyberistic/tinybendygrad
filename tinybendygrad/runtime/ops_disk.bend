@@ -663,7 +663,7 @@ def dsk_filename(name: String) -> String:
 
 # `filename[4:].lstrip("/")` -- :29. `String.trim_start` is WHITESPACE-only in
 # 2.0.34 and takes no `Char`, and `String.split` pushes the separator back onto
-# every piece (`nn/state.bend:195` measured both), so a char-list walk is the
+# every piece (`nn/state.bend:189` measured both), so a char-list walk is the
 # honest spelling. This is `state.bend`'s `sd_lstrip` with `/` instead of `.`, and
 # it is not a shared helper because `state.bend` is read-only here.
 type Lst is Data:

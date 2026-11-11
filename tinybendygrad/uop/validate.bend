@@ -56,7 +56,7 @@
 # `ctx = (solver, z3map)`. This file's `Sol` is `{cs, es, ms}`: the assertion
 # list, the `z3map`, and a MIN/MAX TABLE. The third component is not in Python
 # because Python reads `UOp.vmin` / `UOp.vmax`, and `_min_max` is P3 work owned
-# by `uop/fold.bend` (uop/fold.bend:5238 symbol=UOp.min_max is the reader, and the walk behind it is that file's P3 work queue).
+# by `uop/fold.bend` (uop/fold.bend:5185 symbol=UOp.min_max is the reader, and the walk behind it is that file's P3 work queue).
 # Passing it in the context is the honest spelling: the renderer needs the
 # bounds, the bounds are not computable here yet, and a node whose bounds are
 # absent gets a VIOLATION rather than a guessed bound. `vz_mm` answers CONST
@@ -2492,14 +2492,14 @@ def bv_w.ofneg() -> U32:
 #               device, getting {...}"`   a FOURTH one, not in the port's comment, and it has a
 #               MESSAGE where 761 has none
 #
-# `ops.bend:7053` says "the two `raise`s are not ported", which under-counts by one `assert`
+# `ops.bend:6762` says "the two `raise`s are not ported", which under-counts by one `assert`
 # and misses the fourth entirely. `vw-boundaries.py` exhausts all four and this lane turns the
 # result into rows; `c2d-refusal-rows.py` is the CPython side and every value there is CALLED.
 #
 
 # what is green and what is red, with the denominator. 12 identity rows and 19 outcome rows
 # are shared with the oracle. Of the 19, CPython REFUSES SEVEN (`c2d_shared_refused_n`), so
-# SEVEN ROWS ARE RED ON PURPOSE: `ops.bend:7044-7012` implements none of the four refusals, so
+# SEVEN ROWS ARE RED ON PURPOSE: `ops.bend:6753-6721` implements none of the four refusals, so
 # every one of them answers `BUILT <sig>`. Seven reds out of nineteen shared outcome rows, and
 # the other twelve are green -- which is the number that says a fix that refuses everything
 # will be caught, because thirteen green outcomes must keep building.
@@ -2524,15 +2524,15 @@ def bv_w.ofneg() -> U32:
 #     port's `k` is `Maybe<&2, U32>`, and a guard written as "no shard index means no shard"
 #     passes `c2d_761 argzero`. That row is here for that reason alone.
 
-# ⚠ `S.Dev` is a tag, not a name, and that bounds this lane. `device.bend:381`'s `tag_of`
+# ⚠ `S.Dev` is a tag, not a name, and that bounds this lane. `device.bend:376`'s `tag_of`
 # gives DISK the tag 6, so `c2d_759 disk` is `S.D1{6}` and `c2d_759 disktuple` is
 # `S.Dn{[6, 0]}`. The port cannot spell `'disk'`, `'DISK:0'`, `'NODISK'` or `'DISKX'`, because
 # `S.D1{tag: U32}` has no name to case-fold or colon-split, so those four rows are ORACLE-ONLY
 # (`c2d_oracle_only_n = 5` counts them with `c2d_892 deviceread`). A second tag space exists
-# and disagrees: `schedule/memory.bend:1012` symbol=disk says `disk() = S.D1{1}`. Until one is chosen the
+# and disagrees: `schedule/memory.bend:984` symbol=disk says `disk() = S.D1{1}`. Until one is chosen the
 # DISK guard is not decidable in `ops.bend`, and that is REPORTED rather than gated.
 
-# `ParamArg.of(slot, dtype)` -- ops.bend:6165 -- is `s5.pa`, so the fixtures reuse the port's
+# `ParamArg.of(slot, dtype)` -- ops.bend:6028 -- is `s5.pa`, so the fixtures reuse the port's
 # OWN constructor and cannot drift from `s5.ga.arena()` on any default.
 def c2d_pa(slot: U32, dt: S.Dt) -> O.ParamArg: O.ParamArg.of(slot, dt)
 
@@ -2550,7 +2550,7 @@ def c2d_buf(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
 def c2d_buft(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
 
-# node 4 of `s5.ga.arena()` -- uop/ops.bend:7332 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
+# node 4 of `s5.ga.arena()` -- uop/ops.bend:7034 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
 # here over a `c2d_buf` so the arena is this file's own and no index is inherited.
 def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
   O.UOp.new(ar, O.OpsSHRINK{}, [src], O.ATuple{Nil{}}, O.TNone{})
@@ -2560,7 +2560,7 @@ def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
 # `assert` is a DIFFERENT upstream behaviour from `RuntimeError` from a `raise`, and a row that
 # accepted either would be testing neither.
 #
-# ⚠ and this is the `BUILT` arm only. `UOp.copy_to_device` (uop/ops.bend:7968 symbol=UOp.copy_to_device) answers `Found`,
+# ⚠ and this is the `BUILT` arm only. `UOp.copy_to_device` (uop/ops.bend:7656 symbol=UOp.copy_to_device) answers `Found`,
 # so the port cannot refuse; the `REFUSED` arm arrives with the owner's guard, which changes
 # `copy_to_device`'s return type because a refusal is not a `Found`. When it does, this def is
 # the one line to change and the twenty-four rows are the ones that go green.
@@ -2738,7 +2738,7 @@ def c2d_761() -> String:
                  c2d_761_tupleargnone()])
 
 # ---------------------------------------------------------------- ops.py:759, THE DISK raise
-# DISK is tag 6 (`device.bend:384`'s `tag_of`), so the fixtures are `S.D1{6}` and
+# DISK is tag 6 (`device.bend:379`'s `tag_of`), so the fixtures are `S.D1{6}` and
 # `S.Dn{[6, 0]}`. The two positives are the SAME node and device with the tag changed.
 def c2d_759_disk() -> String:
   +b = c2d_buf(O.Arena.empty(), 1, S.int32())

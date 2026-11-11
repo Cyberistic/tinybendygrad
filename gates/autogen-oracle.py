@@ -49,7 +49,7 @@ for i, (pat, rep) in enumerate(ag.base_rules):
 # the shape doctrine 1 asks for (`differ.declared()`): `clang.enum_CXTypeKind` is libclang's
 # own enumeration, already imported. `cxkind_names` is printed beside it because libclang
 # ALIASES -- 128 `CXType_*` names over 122 distinct kinds, MEASURED -- and the same trap
-# is written down at `autogen.bend:1195-1200` ("Keyed on the integer, 78 constants collapse
+# is written down at `autogen.bend:1154-1159` ("Keyed on the integer, 78 constants collapse
 # onto 58 keys and the diff passes over the wrong pairs"), so both numbers are here rather
 # than one.
 # `typehint` itself is NOT printed: it takes a `clang.CXType`, not a kind, and its

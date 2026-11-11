@@ -192,7 +192,7 @@
 #      node string is `nic.node` in `ops_rdma.bend`, which already ports it.
 #
 # | wall(p3) bnxtdev.py:54  self.devfmt = pci_dev.pcibus. -- blocked. #   `self.devfmt = pci_dev.pcibus` reads a field off a live pci device object. There is no live
-#   device object in the port: `Dev` is a `U32` tag (`LAWS/spec.bend:85`).
+#   device object in the port: `Dev` is a `U32` tag (`LAWS/spec.bend:83`).
 #      TODO(p3) bnxtdev.py:157  symbol=rcfw `if BNXT_DEBUG >= 1: print(...)`.
 #   6. `System.list_devices` / `PCIDevice` probing. Not in this file at all;
 #      WALL 2 of `ops_rdma.bend` owns it and names `bnxtdev.py`.
@@ -436,7 +436,7 @@ def db.lo(+index: U32, +epoch: U32) -> U32:
 #       kind << 16 | flags << 8 | type
 #
 # with `kind` -- the 3, the size in 16-byte units -- in the HIGH byte and
-# `type` in the LOW. `ops_rdma.bend:224-225` says `type << 16 | flags << 8 |
+# `type` in the LOW. `ops_rdma.bend:223-224` says `type << 16 | flags << 8 |
 # kind`, which is INVERTED; its code at :1490-1492 gets it right and this
 # file's `wqe.hdr0` follows the code and the measurement, not the comment.
 # `hdr0_SEND_COMMENT_IS_RIGHT` and `hdr0_RECV_COMMENT_IS_RIGHT` are oracle
@@ -1585,11 +1585,11 @@ def t_offset_names() -> IO(Unit):
 def WQE_KIND_AT() -> U32: 16
 
 # WORD 0, AND THE COMMENT `ops_rdma.bend` GETS WRONG. See the header: the code
-# at `ops_rdma.bend:1490-1492` is right and the comment at :224-225 is
+# at `ops_rdma.bend:1463-1465` is right and the comment at :224-225 is
 # INVERTED. These rows print the three bytes out of their places so the claim
 # is `kind at 16, flags at 8, type at 0` and not a restatement of `wqe.hdr0`.
 
-# WHAT `ops_rdma.bend:238 symbol=WQE_KIND` CLAIMS: `type << 16 | flags << 8 | kind`. Both
+# WHAT `ops_rdma.bend:237 symbol=WQE_KIND` CLAIMS: `type << 16 | flags << 8 | kind`. Both
 # the claim and its refutation are rows, so the disagreement is a NUMBER in a
 # committed artefact rather than an argument in a commit message.
 # `type << 16 | flags << 8 | kind`, with each byte taken from where the REAL

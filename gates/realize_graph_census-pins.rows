@@ -56,7 +56,7 @@
 #     `prod(shape) * dtype.itemsize` is an INT for a concrete shape, so the `else` branch
 #     runs and no symbolic machinery is reached. MEASURED on this very node: shape `(16,)`,
 #     dtype `i32`, product `64`, `sym_infer(64, {}) == 64`. What the arm needed was
-#     `size_to_str` and `colored`, BOTH ALREADY PORTED (`helpers.bend:1143`, `:1083`), plus
+#     `size_to_str` and `colored`, BOTH ALREADY PORTED (`helpers.bend:1120`, `:1083`), plus
 #     `rz_nbytes`, which was in `realize.bend` and already answers `None` for a SYMBOLIC
 #     dim -- and CPython's `sym_infer` on a symbolic node with `var_vals or {}` = `{}`
 #     raises `NameError`, so that `None` is the faithful absence. EIGHTH instance in this

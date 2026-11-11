@@ -27,7 +27,7 @@ below. The `CAST` half: `logical_not` is
 `self.cast(dtypes.bool).ne(True)` (elementwise.py:49), `cast` is `self if self.dtype ==
 (dt:=to_dtype(dtype)) else ...alu(Ops.CAST, arg=dt)` (mixin/dtype.py:38) -- IT FOLDS on an
 identity cast -- and the port built it with `O.UOp.cast`, which mints a node UNCONDITIONALLY
-(ops.bend:2919). Every one of `tn_eq`, `tn_dunder_ge`, `tn_dunder_le`, `tn_dunder_invert` and
+(ops.bend:2917). Every one of `tn_eq`, `tn_dunder_ge`, `tn_dunder_le`, `tn_dunder_invert` and
 `tn_isfinite` is a `logical_not` over a node the fold already knows is `bool`, so CPython
 built no CAST and the port built one. `tn_bitwise_not` was a SIXTH instance of the same thing
 wearing a different hat: CPython's body has THREE arms (elementwise.py:156-157) and on a
@@ -49,7 +49,7 @@ call it. It is now `wk_remint` in `tinybendygrad/uop/weak.bend`, which is the lo
 that can hold it (`wk_dt_const`, `wk_const_of` and `replace_in` are all there, and
 `helpers.bend` / `LAWS/spec.bend` / `uop/ops.bend` / `uop/fold.bend` are all below `weak.bend`,
 which imports every one of them). `mixin/elementwise.bend` keeps a one-line forwarder because
-`mixin/op.bend:468` calls `E.ew_remint`. `tn_isfinite.promote` is `_broadcasted`'s promote for
+`mixin/op.bend:461` calls `E.ew_remint`. `tn_isfinite.promote` is `_broadcasted`'s promote for
 `self` ALONE against the weakfloat `inf`, and `tn_isfinite.isinf_part` now compares BOTH eq
 halves against the promoted `self` -- the old spelling compared the positive arm's bool MUL
 against `-inf`, which was `CMPNE(MUL, CONST)` where CPython has `CMPNE(CONST, CONST)`.

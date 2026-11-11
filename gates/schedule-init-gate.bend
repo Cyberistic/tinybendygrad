@@ -35,8 +35,8 @@ def schedule_vars(+ar: O.Arena, +big_sink: U32, +linear: U32) -> P.SVar:
 #          19 TOP1 20 BAD            (so `fx1_nodes`=21 and `fx1_topo`=19)
 #   THE TABLE IS A READING, NOT A CONTRACT.  It was written against the
 #   substrate of 2026-10-07, whose `param_src` DROPPED the size CONST and the
-#   PARAM's STACK (uop/ops.bend:3097 symbol=param_src); `UOp.new.param` interns BOTH
-#   (uop/ops.bend:2776 symbol=UOp.new.param), so every index after the first PARAM moved and 18
+#   PARAM's STACK (uop/ops.bend:3095 symbol=param_src); `UOp.new.param` interns BOTH
+#   (uop/ops.bend:2774 symbol=UOp.new.param), so every index after the first PARAM moved and 18
 #   rows were reading the WRONG NODE.  The rows no longer READ this table: they
 #   read GRAPH POSITIONS (`fx1.a()`, `fx2.kb()`, ...), which cannot move.  The
 #   three `fx*_nodes` rows are the only rows that still count arena slots, and
@@ -158,8 +158,8 @@ def fx4() -> O.Found:
 # by its arena index.
 #
 # WHY, MEASURED.  The arena is a MOVING TARGET: `UOp.new.param` interns the
-# shape node that the old `param_src` DROPPED (uop/ops.bend:3088 symbol=param_src
-# and uop/ops.bend:2776 symbol=UOp.new.param), so one substrate change moved every index after the first
+# shape node that the old `param_src` DROPPED (uop/ops.bend:3086 symbol=param_src
+# and uop/ops.bend:2774 symbol=UOp.new.param), so one substrate change moved every index after the first
 # PARAM.  The port's rows were ADDRESSED by index and 18 of them went on
 # reading the WRONG NODE -- `unwrap_A1` answered 9 (a CONST) where CPython
 # answers 1 (a BUFFER) -- and the gate did not see it because its CPython

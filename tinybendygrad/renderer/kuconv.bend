@@ -2,7 +2,7 @@
 #
 # the port's own arena -> the renderer's `List<KU>`.
 #
-# `renderer/cstyle.bend:127` DECLARES `KU` AND `renderer/cstyle.bend:2297`
+# `renderer/cstyle.bend:122` DECLARES `KU` AND `renderer/cstyle.bend:2257`
 # consumes a `List<&2, KU>`, and before this file no DEF in the port produced
 # ONE: `grep -rn 'KU{' tinybendygrad/ --include='*.bend'` ANSWERED EXACTLY ONE
 # hit, the TYPE declaration itself.  so the renderer had no input and the
@@ -10,14 +10,14 @@
 #
 # the input is an arena and a list of arena indices, and the list is in the
 # port's own post-order (children before parents) -- which is what
-# `codegen/late/linearizer.bend:836 linearize` returns and what upstream's
+# `codegen/late/linearizer.bend:827 linearize` returns and what upstream's
 # `tinygrad/codegen/late/linearizer.py:8-51 linearize` returns.
 #
 
 # the whole problem is the `srcs` field, and it is a re-indexing.
 #
 # `KU.srcs` are positions in the `KU` list, not arena indices.  the
-# RENDERER'S `r` MAP IS A LIST INDEXED BY POSITION (`cstyle.bend:1896` says so
+# RENDERER'S `r` MAP IS A LIST INDEXED BY POSITION (`cstyle.bend:1861` says so
 # in prose) because the list is post-order: every uop's srcs sit at a lower
 # INDEX, SO A POSITION IS ALSO A "DEFINED BEFORE" MARKER.
 #
@@ -31,26 +31,26 @@
 #   | `KU` field | upstream                        | the port                          |
 #   |-------------|---------------------------------|-----------------------------------|
 #   | `op`        | `u.op`  (ops.py:253)            | `O.Arena.op(ar, i)` (ops.bend:1385) |
-#   | `dtype`     | `u.dtype` (ops.py:239 symbol=dtype) | `F.fold.dt(ar, tb, i)` (uop/fold.bend:4833 symbol=fold.dt) |
-#   | `addr`      | `u.addrspace` (ops.py:896)      | `F.fold.addr(ar, tb, i)` (fold.bend:4815) |
-#     the port's reader for `addr` is fold.bend:4815 symbol=fold.addr
+#   | `dtype`     | `u.dtype` (ops.py:239 symbol=dtype) | `F.fold.dt(ar, tb, i)` (uop/fold.bend:4785 symbol=fold.dt) |
+#   | `addr`      | `u.addrspace` (ops.py:896)      | `F.fold.addr(ar, tb, i)` (fold.bend:4767) |
+#     the port's reader for `addr` is fold.bend:4767 symbol=fold.addr
 #   | `numel`     | `u.max_numel()` (movement.py:55)| `prod(shape)` of the fold's shape  |
-#   | `shape`     | `u.shape` (movement.py:35)      | `F.fold.shape(ar, tb, i)` (fold.bend:4827) |
-#     the port's reader for `shape` is fold.bend:4827 symbol=fold.shape
+#   | `shape`     | `u.shape` (movement.py:35)      | `F.fold.shape(ar, tb, i)` (fold.bend:4779) |
+#     the port's reader for `shape` is fold.bend:4779 symbol=fold.shape
 #   | `arg`       | `u.arg`  (ops.py:253)           | `O.Arena.arg(ar, i)` (ops.bend:1400) |
 #   | `srcs`      | `u.src`  (ops.py:253)           | `O.Arena.srcs(ar, i)` (ops.bend:1406), RE-INDEXED |
-#   the durable pointer for the `dtype` row is uop/fold.bend:4833 symbol=fold.dt
+#   the durable pointer for the `dtype` row is uop/fold.bend:4785 symbol=fold.dt
 # the `arg` mapping, one row per `O.Arg` variant the renderer reads:
 #
 #   | `O.Arg`         | `KUArg`                       | who reads it                |
 #   |-----------------|-------------------------------|-----------------------------|
-#   | `APy{v}`        | `KAConst{v}`                  | `cstyle.bend:1366` symbol=ku_is_const_at |
-#   | `AParam{pa}`    | `KAParam{slot,name,vol,bytes}`| `cstyle.bend:1648` symbol=ku_param_name |
-#   | `ARange{ids,at}`| `KARange{at, ids}`            | `cstyle.bend:1614` symbol=ku_range_name |
-#   | `AOpLit{op}`    | `KAIndex{0, op == Ops.ADD}`   | `cstyle.bend:2078` symbol=ku_render_index |
-#   | `AInt{i}`       | `KAIndex{i, False{}}`          | `cstyle.bend:2078` symbol=ku_render_index |
-#   | `AKernel{ki}`   | `KASink{ki.name}`             | `cstyle.bend:1294` symbol=KUArg.sink_name |
-#   |                 |                               | `KUArg.sink_name` in `_render.one.go` (`cstyle.bend:2212-2217`) |
+#   | `APy{v}`        | `KAConst{v}`                  | `cstyle.bend:1336` symbol=ku_is_const_at |
+#   | `AParam{pa}`    | `KAParam{slot,name,vol,bytes}`| `cstyle.bend:1614` symbol=ku_param_name |
+#   | `ARange{ids,at}`| `KARange{at, ids}`            | `cstyle.bend:1580` symbol=ku_range_name |
+#   | `AOpLit{op}`    | `KAIndex{0, op == Ops.ADD}`   | `cstyle.bend:2041` symbol=ku_render_index |
+#   | `AInt{i}`       | `KAIndex{i, False{}}`          | `cstyle.bend:2041` symbol=ku_render_index |
+#   | `AKernel{ki}`   | `KASink{ki.name}`             | `cstyle.bend:1265` symbol=KUArg.sink_name |
+#   |                 |                               | `KUArg.sink_name` in `_render.one.go` (`cstyle.bend:2173-2178`) |
 #   | everything else | `KANone{}`                    | --                          |
 #
 # `AOpLit` IS UPSTREAM's `idx.arg == Ops.ADD` TEST (`cstyle.py:174`): the
@@ -104,7 +104,7 @@ def kuconv.srcs(ix: List<&2, U32>, ss: List<&2, U32>) -> List<&2, U32>:
 #
 # `S.void()` is the default because that is what upstream's `Ops.SINK` and
 # `Ops.END` answer (`ops.py:247`'s ladder), and a void dtype is what makes
-# THE RENDERER SKIP THE DECLARATION (`cstyle.bend:1652` `ku_is_decl`).
+# THE RENDERER SKIP THE DECLARATION (`cstyle.bend:1618` `ku_is_decl`).
 def kuconv.dt(+fx: F.Folded, a: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), a), S.void())
 
@@ -186,7 +186,7 @@ def kuconv.numel(ss: List<&2, U32>) -> U32:
 # `KAParam`'s `bytes` IS `numel * itemsize`, WHICH IS UPSTREAM'S OWN SPELLING
 # FOR A PARAM's SIZE IN BYTES (`dump_kernel.py`'s `str(u.max_numel() *
 # u.dtype.itemsize)`), AND `S.Dt.itemsize` IS THE PORT's OWN READER
-# (`LAWS/spec.bend:176`).
+# (`LAWS/spec.bend:174`).
 def kuconv.arg.of(nm: U32, dt: S.Dt, arg: O.Arg) -> C.KUArg:
   match arg:
     case O.APy{v}: C.KAConst{v}
@@ -204,7 +204,7 @@ def kuconv.arg(+ar: O.Arena, +fx: F.Folded, a: U32, nm: U32, dt: S.Dt) -> C.KUAr
 # the completion pass -- and why it is here.
 #
 # the port's own FOLD does not settle on a program with a symbolic shrink
-# OFFSET: `fold.bend:1704 symbol=sym_dim.of`'s `sym_dim` REFUSES EVERY `Arg` THAT IS NOT A
+# OFFSET: `fold.bend:1689 symbol=sym_dim.of`'s `sym_dim` REFUSES EVERY `Arg` THAT IS NOT A
 # CONST, A PARAM OR A SPECIAL, WHERE UPSTREAM's `as_shape` ANSWERS
 # `(ssimplify(self),)` FOR AN EXPRESSION (`ops.py:783-786`).  A FOLD THAT DOES
 # not settle answers `void` for every node downstream of the refusal, and

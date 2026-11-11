@@ -194,7 +194,7 @@ THE 65 DIVERGENCES, CLASSIFIED, PINNED ON BOTH SIDES, AND EVERY CLASS MEASURED.
   10 `VAL_BODY` -- `pm_validate`'s BODY is not ported. `validate_table()` is read by
        `t_va_len` and by the census driver's tag-0 arm alone, and `_validate`'s
        `UOp.new_buffer` is a P6 device call while its `store_call` is `TODO(p3)` with
-       `param_like` absent (ops.bend:5170-5171), so the port has a CLAIM and no graph and
+       `param_like` absent (ops.bend:5077-5078), so the port has a CLAIM and no graph and
        this lane compares a claim against a cone. Eight rows are that, `val_50`/`val_53`
        are CPython raising inside `_validate`. THE ELEVENTH WAS A DEAD DEF AND IS NOW
        FIXED: `val_27` is `pm_validate`'s TAG 1, which is `pm_flatten_linear` carried in
@@ -259,7 +259,7 @@ a list of TWO DISTINCT devices on BOTH lanes and `kern_66` really is `2` -- whic
 precondition under which `rs_d_kern`'s COUNT is worth comparing at all, and the measure of
 what is left blind when it is (an ORDER SWAP inside `Dn{[6, 0]}`, because the port has no
 device vocabulary to be wrong in: `device_vocab_holds` MEASURES that CPython has no
-`str -> int` device index and that `device.bend:344`'s `tag_of` is a three-valued sentinel,
+`str -> int` device index and that `device.bend:340`'s `tag_of` is a three-valued sentinel,
 and `kern_blind_holds` refuses to read its own rows if that premise did not hold). It says
 so out loud rather than in a comment.
 
@@ -303,7 +303,7 @@ NODES = 66
 # can be comprehensions rather than 125 literals.
 #
 # AND THE MAP MOVED ON 2026-10-22. THE PORT's `main_arena` MINTS A SIZE CONST FOR
-# EVERY PARAM AND BUFFER (`ops.bend:3075`'s `UOp.new.param`), SO EVERY INDEX FROM SLOT 3
+# EVERY PARAM AND BUFFER (`ops.bend:3073`'s `UOp.new.param`), SO EVERY INDEX FROM SLOT 3
 # ON IS ONE HIGHER THAN IT WAS. MEASURED: `arena_n` READ 67 ON THE PORT AND 66 ON THE
 # ORACLE, AND 365 OF THE 1004 ROWS DIVERGED BECAUSE EVERY ONE OF THEM WAS ANSWERING A
 # DIFFERENT NODE'S ANSWER. THE GATE IS NOT IN ANY WORKFLOW, SO NOBODY RAN IT AND NOBODY
@@ -536,7 +536,7 @@ def _header(n_div, n_same):
 #     `prod(shape) * dtype.itemsize` is an INT for a concrete shape, so the `else` branch
 #     runs and no symbolic machinery is reached. MEASURED on this very node: shape `(16,)`,
 #     dtype `i32`, product `64`, `sym_infer(64, {{}}) == 64`. What the arm needed was
-#     `size_to_str` and `colored`, BOTH ALREADY PORTED (`helpers.bend:1143`, `:1083`), plus
+#     `size_to_str` and `colored`, BOTH ALREADY PORTED (`helpers.bend:1120`, `:1083`), plus
 #     `rz_nbytes`, which was in `realize.bend` and already answers `None` for a SYMBOLIC
 #     dim -- and CPython's `sym_infer` on a symbolic node with `var_vals or {{}}` = `{{}}`
 #     raises `NameError`, so that `None` is the faithful absence. EIGHTH instance in this
@@ -1262,7 +1262,7 @@ def _compared() -> tuple[int, int, int]:
 
 def device_vocab_holds() -> bool:
     """THE P6 WALL'S PREMISE, MEASURED INSTEAD OF QUOTED. **THIS IS THE REPLACEMENT FOR
-    `uop/spec.bend:1488` AS THIS GATE'S REASON, AND IT CAN GO RED WHERE THE COMMENT
+    `uop/spec.bend:1476` AS THIS GATE'S REASON, AND IT CAN GO RED WHERE THE COMMENT
     COULD NOT.**
 
     THE DEFECT THIS FIXES, STATED AS A SHAPE. This guard used to justify itself by naming a
@@ -1387,7 +1387,7 @@ def kern_blind_holds() -> bool:
          returns `D1{tag}` -> `[tag]` and `Dn{tags}` -> `tags`. So printing the tags is a
          one-line change and it is NOT made here, for (2) and (3).
       2. **CPYTHON HAS NO `str -> int` DEVICE INDEX, AND THIS IS NOW CHECKED, NOT QUOTED.**
-         It used to be justified here by naming `Device.tag` in `uop/spec.bend:1488`'s
+         It used to be justified here by naming `Device.tag` in `uop/spec.bend:1476`'s
          COMMENT -- a gate reading a comment cannot fail on the comment being wrong, and the
          comment was wrong. **`device_vocab_holds()` above now measures the premise in
          CPython and in `device.bend` on every run**, against six witnesses, and
@@ -1396,11 +1396,11 @@ def kern_blind_holds() -> bool:
          comparison would be comparing two fixtures' private numbering with nothing to say
          they agree.
       3. **THE PORT'S OWN ONLY TAG/NAME FUNCTION IS A THREE-VALUED SENTINEL, AND A SECOND
-         ONE DISAGREES WITH IT.** `device.bend:344 tag_of` is DISK 6, NPY 10, PYTHON 13,
+         ONE DISAGREES WITH IT.** `device.bend:340 tag_of` is DISK 6, NPY 10, PYTHON 13,
          EVERYTHING ELSE 0 -- built to decide `ALLOW_DEVICE_USAGE` (`device.py:31`), and it
          puts CPU, METAL, AMD, NV, CUDA, QCOM, CL, DSP, WEBGPU and every typo on the same
-         0. And `schedule/memory.bend:999` is `disk() = S.D1{1}`, where `tag_of("DISK")` is
-         6; `uop/validate.bend:2532` records the disagreement and refuses to arbitrate it.
+         0. And `schedule/memory.bend:971` is `disk() = S.D1{1}`, where `tag_of("DISK")` is
+         6; `uop/validate.bend:2519` records the disagreement and refuses to arbitrate it.
          **`device_vocab_holds` asserts `tag_of`'s arm list, so the sentinel growing an arm
          takes this guard RED** -- a guard that only checked absences could not notice that.
          **SO `S.D1{tag}` IS NOT AN INDEX INTO ANY DEVICE TABLE THE PORT OR CPYTHON HAS.**

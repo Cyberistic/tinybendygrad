@@ -131,7 +131,7 @@ import ../LAWS/spec.bend as S
 import ./support/compiler_cpu.bend as CC
 
 # A DEFECT FOUND IN device.bend, REPORTED AND NOT FIXED (device.bend is
-# read-only to this unit). `device.bend:988 symbol=TinyELF.iter_sig` ports `TinyELF.iter_sig`
+# read-only to this unit). `device.bend:975 symbol=TinyELF.iter_sig` ports `TinyELF.iter_sig`
 # (device.py:365-368) as
 #
 #     def go_slot.go(e: Ent) -> Sig:
@@ -1002,7 +1002,7 @@ def rnames(+cs: List<&2, Cr>) -> String:
 # UPSTREAM's SEQUENCE, `tinygrad/runtime/ops_cpu.py:23-46`:
 #   1. `cc` COMPILES THE C TO AN ELF OBJECT (support/compiler_cpu.py:21-22)
 #   2. `jit_loader` RELOCATES IT (support/elf.py:52-86) -- THE PORT's OWN
-#      `runtime/support/elf.bend:1816`
+#      `runtime/support/elf.bend:1796`
 #   3. `mmap` AN ANONYMOUS RWX REGION (ops_cpu.py:30) AND COPY THE IMAGE IN
 #   4. `pthread_jit_write_protect_np` ON macOS (ops_cpu.py:33, :35)
 #   5. `__clear_cache` OR `msync` (ops_cpu.py:41-44)
@@ -1016,7 +1016,7 @@ def rnames(+cs: List<&2, Cr>) -> String:
 # THE ARGV. UPSTREAM'S `ClangCompiler.compile_argv` (support/compiler_cpu.py:21-22)
 # IS `[cc, '-c', '-x', 'c', '-O2', '-fPIC', '-ffreestanding', '-fno-math-errno',
 # '-nostdlib', '-fno-ident', '--target=<arch>-none-unknown-elf', *args, '-', '-o',
-# '-']`, AND `support/compiler_cpu.bend:268` IS THE PORT's SPELLING OF IT.
+# '-']`, AND `support/compiler_cpu.bend:260` IS THE PORT's SPELLING OF IT.
 #
 # THE ARGV CROSSES THE SEAM AS ONE "\n"-JOINED STRING AND THE C SIDE SPLITS
 # IT, BECAUSE THE ARGV IS THE PORT's OWN SPELLING AND THE C SIDE MUST NOT HAVE

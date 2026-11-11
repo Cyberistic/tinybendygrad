@@ -100,7 +100,7 @@ rows added two more, so the count went 3 -> 6 while the constant stayed at 3.
 OWN TEXT and asserts the ROLES, which is the DERIVED form of the claim:
 
   * MINT -- the port CONSTRUCTS a CAST node.  There is ONE, `f_cast_dt`, and
-    it calls `O.UOp.new` DIRECTLY rather than `O.UOp.cast` (`ops.bend:2919`), so
+    it calls `O.UOp.new` DIRECTLY rather than `O.UOp.cast` (`ops.bend:2917`), so
     it mints whatever the arguments are.  This is class (b), the never-folding
     CAST, and it is a FIXTURE defect with a measured consequence -- see
     FINDING 1 below.
@@ -125,7 +125,7 @@ them is a formatting slip.
     is a different totalization of the SAME exception (see FINDING 2).
   * `MISSING_ARM` -- `code_for_op FDIV`. MEASURED: `Ops.FDIV` is in
     `ClangRenderer.code_for_op` and NOT in `WGSLRenderer.code_for_op`, and
-    `wgsl.bend:441-448` records the same measurement. `axes_hold()` re-derives
+    `wgsl.bend:432-439` records the same measurement. `axes_hold()` re-derives
     the set difference on every run and asserts it is EXACTLY `{Ops.FDIV}`, so
     "one missing arm, not five" stays a fact.
   * `WMASK_IS_GRAPH` -- `wmask m_s` (6). `wgsl.py:18` is
@@ -146,7 +146,7 @@ them is a formatting slip.
     are EXACT MATCHES and this class has no rows left to hold. See `RETIRED`.
   * `INDEXERROR_TOTALIZED` -- `workitem l3`. `'xyz'[int(x)]` is an INDEX and 3
     is past the end of a three-character string; CPython raises `IndexError` and
-    the port answers "" for the whole call (`wgsl.bend:375-378` records that the
+    the port answers "" for the whole call (`wgsl.bend:368-371` records that the
     None arm is unreachable because `codegen/gpudims.py:37` builds `x` as 0..2).
 
 THE FIVE `SELFCHECK_STALE` ROWS WERE FIXED AT THE SOURCE, so the class is now
@@ -188,7 +188,7 @@ and `ssimp` read it. MEASURED, three facts:
       `UOp.const(8).cast(weakint) is UOp.const(8)` is `True`. The only CONST is
       `weakint`, so casting it to `weakint` returns it and `CAST(weakint,
       CONST)` is UNBUILDABLE. `f_cast_dt` calls `O.UOp.new(..., OpsCAST{}, ...)`
-      DIRECTLY -- not `O.UOp.cast` (`ops.bend:2919`) -- so it mints whatever it
+      DIRECTLY -- not `O.UOp.cast` (`ops.bend:2917`) -- so it mints whatever it
       is handed, and `fx_mixed` hands it exactly that shape twice, for `l0` and
       `l1`.
   (b) `UOp.special(...)` has **ZERO** call sites in `tinygrad/` (it is defined
@@ -199,9 +199,9 @@ and `ssimp` read it. MEASURED, three facts:
       printer agrees: `uop/render.py:91` spells a SPECIAL as
       `UPat(Ops.SPECIAL, src=(UPat(Ops.CONST),), ...)`. MEASURED:
       `UOp.special(8, "l0").src[0].op is Ops.CONST`.
-  (c) So `ssimp`'s second arm (`op == OpsCAST{} && ss_is(src0)`, `wgsl.bend:575`)
+  (c) So `ssimp`'s second arm (`op == OpsCAST{} && ss_is(src0)`, `wgsl.bend:565`)
       is UNREACHABLE from any CPython path, and `fx_mixed` is the only thing
-      that reaches it. `wgsl.bend:843-844` says the fixture is "exactly as
+      that reaches it. `wgsl.bend:832-833` says the fixture is "exactly as
       `codegen/gpudims.py:37` and `ops.py:1382` leave it"; `gpudims.py:37` is
       `get_grouped_dims`' return statement and constructs no SPECIAL, and
       `ops.py:1382` is `u.src[0].ssimplify()` reading that CONST.
@@ -745,7 +745,7 @@ def axes_hold():
     """The axes that COULD be derived from CPython, re-derived.
 
     (a) `WGSLRenderer.code_for_op` minus the oracle's arm list is EXACTLY
-        `{Ops.FDIV}` -- `wgsl.bend:443` claims "ONE missing arm, not five" and
+        `{Ops.FDIV}` -- `wgsl.bend:434` claims "ONE missing arm, not five" and
         this is the measurement of it. A second op appearing or disappearing
         turns this red.
     (b) `WGSLRenderer.type_map` has nine entries, `code_for_workitem` has two
@@ -763,7 +763,7 @@ def axes_hold():
     from tinygrad.uop.ops import Ops
     bad = []
     have = set(w.WGSLRenderer.code_for_op)
-    # THE CLAIM `wgsl.bend:443` MAKES is "clang - wgsl = ['Ops.FDIV'] ... so
+    # THE CLAIM `wgsl.bend:434` MAKES is "clang - wgsl = ['Ops.FDIV'] ... so
     # this is ONE missing arm, not five", and it is a claim about the TWENTY-TWO
     # arms the port actually renders. `CFO_PROBES` are the three ops probed only
     # for the KeyError totalization, so the set difference is FDIV plus the
@@ -971,7 +971,7 @@ def dead_defs_hold():
     `render_load`, `se_shift`, `w_numel`, `wi_axis` -- are a def nothing calls,
     which is the fault class `amd_dsl_census` recorded twice and which its own
     `ALIGN_SHIFT` notes record a third time ("`a def nothing calls is invisible
-    to every other check`"). `wgsl.bend:1224-1226` says of `render_load` that it
+    to every other check`"). `wgsl.bend:1207-1209` says of `render_load` that it
     "is ported, called by nothing in this file, and ungated"; this measures the
     rest of the set rather than leaving it to a reader.
     """
@@ -1135,7 +1135,7 @@ CLASS_WHY = {
     "MISSING_ARM": "Ops.FDIV is in ClangRenderer.code_for_op and NOT in "
                    "WGSLRenderer.code_for_op (wgsl.py:60 merges the BASE's "
                    "table, which has no FDIV), and the port adds one. "
-                   "wgsl.bend:441-448 records the same measurement and "
+                   "wgsl.bend:432-439 records the same measurement and "
                    "axes_hold() re-derives the set difference on every run.",
     "WMASK_IS_GRAPH": "wgsl.py:18 is ((mask << shift_am) ^ 0xFFFFFFFF).cast(u32) "
                       "and shift_am is SYMBOLIC, so CPython has no integer for "
@@ -1473,7 +1473,7 @@ RETIRED = [
      "whether or not a shader can reach it. THE FIX IS NOT A CARVE-OUT: `nan_mask` "
      "and `nan_thr` now compute in `H.I64` -- the pair of 32-bit words "
      "`helpers.bend` already carries -- and print with `H.i64_dec`, the DECIMAL "
-     "printer `helpers.bend:2180` already carries and that this same file already "
+     "printer `helpers.bend:2130` already carries and that this same file already "
      "used for `sr_cuint`. BOTH ROWS ARE EXACT MATCHES NOW, so this class has no "
      "rows left to hold, and a class whose rows all became EXACT MATCHES is not a "
      "weaker reason for being here, it is the strongest: the class existed to "

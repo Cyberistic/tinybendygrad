@@ -18,7 +18,7 @@
 #     bool  -> cast_bool       bfloat16 -> cast_bfloat16
 #     double -> cast_double    long  -> cast_long      short -> cast_short
 #
-# THE PRINTER IS THE PORT'S OWN `O.Rng.sig` (`uop/ops.bend:5897`) PLUS THE ROOT ARG.
+# THE PRINTER IS THE PORT'S OWN `O.Rng.sig` (`uop/ops.bend:5766`) PLUS THE ROOT ARG.
 # `Rng.sig` prints the toposort length, the root op and its src COUNT and the SRC OP
 # SEQUENCE -- and it does NOT print an arg. A CAST's whole point is its arg (`ADt{dt}`),
 # so `Rng.sig` ALONE cannot tell `cast_short` (i16) from `cast_int` (i32): both are
@@ -45,8 +45,8 @@ import ./../tinybendygrad/uop/fold.bend as F
 import ./../tinybendygrad/mixin/dtype.bend as D
 
 # THE WORLD: five nodes in ONE arena, every dtype class the cast layer distinguishes.
-#   c0 CONST(3)     -> weakint    (CInt folds to weakint, fold.bend:2173)
-#   c1 CONST(1.0)   -> weakfloat  (CFloat folds to weakfloat, fold.bend:2174)
+#   c0 CONST(3)     -> weakint    (CInt folds to weakint, fold.bend:2152)
+#   c1 CONST(1.0)   -> weakfloat  (CFloat folds to weakfloat, fold.bend:2153)
 #   c2 CONST(True)  -> bool       (CBool)
 #   c3 CAST(c0->i32) -> concrete int32 -- the only CONCRETE source; built by a CAST
 #                      because `UOp.const` of an int is always weakint.

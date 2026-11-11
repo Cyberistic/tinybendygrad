@@ -5,17 +5,17 @@
 #
 # The port has EVERY STAGE of the device lane and NOTHING drives them:
 #
-#   * `schedule/__init__.bend:1139` `schedule(+ar, +sink) -> Lin` IS upstream's
+#   * `schedule/__init__.bend:1124` `schedule(+ar, +sink) -> Lin` IS upstream's
 #     `create_schedule` (`tinygrad/schedule/__init__.py:32-80`), and
-#     `schedule/__init__.bend:1140` `linear(+x: Lin) -> O.Found` IS upstream's
+#     `schedule/__init__.bend:1125` `linear(+x: Lin) -> O.Found` IS upstream's
 #     `return UOp(Ops.LINEAR, src=tuple(linearized))`
 #     (`tinygrad/schedule/__init__.py:80`).
-#   * `renderer/cstyle.bend:2297` `render(+dev, cpu, +kus) -> String` IS upstream's
+#   * `renderer/cstyle.bend:2257` `render(+dev, cpu, +kus) -> String` IS upstream's
 #     `ClangRenderer.render` (`tinygrad/renderer/cstyle.py:268-278`).
-#   * `runtime/ops_cpu.bend:1578` `Cpu.compile(src, argv)` and `:1582`
+#   * `runtime/ops_cpu.bend:1546` `Cpu.compile(src, argv)` and `:1582`
 #     `Cpu.exec(img, bufs, sizes)` ARE upstream's `CPUProgram.__init__` +
 #     `__call__` (`tinygrad/runtime/ops_cpu.py:23-62`), in upstream's own order.
-#   * `runtime/support/elf.bend:1816` `jit_loader(+e, +base) -> Img` IS
+#   * `runtime/support/elf.bend:1796` `jit_loader(+e, +base) -> Img` IS
 #     upstream's `jit_loader` (`tinygrad/runtime/support/elf.py:52-86`).
 #
 # AND `grep -rn "Cpu.compile\|Cpu.exec" tinybendygrad/` ANSWERS ONLY THE TWO
@@ -45,7 +45,7 @@
 #              (`tinygrad/runtime/support/compiler_cpu.py:21-22`), and the ELF
 #              object comes back. The port's `Cpu.compile` is that effect; this
 #              is the entry that hands it the argv
-#              (`runtime/support/compiler_cpu.bend:268`) and the C.
+#              (`runtime/support/compiler_cpu.bend:260`) and the C.
 #
 #   `exec`     THE EXECUTION. Upstream's `CPUProgram.__init__` steps 3-7 are
 #              `mmap` -> `pthread_jit_write_protect_np` -> write -> `__clear_cache`
@@ -56,16 +56,16 @@
 #
 # `relocate` IS THE MISSING MIDDLE: upstream's step 2 is `jit_loader(lib, base)`
 # (`tinygrad/runtime/ops_cpu.py:34`) and it is the port's own
-# `runtime/support/elf.bend:1816`.
+# `runtime/support/elf.bend:1796`.
 #
 
 # what is still missing, and it is named here rather than hided.
 #
 # `program` takes a `List<KU>` and the port has no DEF that builds one from the
-# PORT's ARENA. The `KU` record (`renderer/cstyle.bend:126-129`) is a FLATTENED
+# PORT's ARENA. The `KU` record (`renderer/cstyle.bend:121-124`) is a FLATTENED
 # uop list -- `srcs` are POSITIONS IN THAT LIST -- and upstream's renderer takes
 # `list[UOp]` instead (`tinygrad/renderer/cstyle.py:456`). The port's
-# `codegen/late/linearizer.bend:836 linearize(+ar, +lst, vms, +sink) -> List<&2,
+# `codegen/late/linearizer.bend:827 linearize(+ar, +lst, vms, +sink) -> List<&2,
 # U32>` IS that `list[UOp]`, in arena indices, so the missing link is exactly
 # `List<&2, U32> -> List<&2, KU>`.
 #
@@ -114,8 +114,8 @@ def program(name: String, kus: List<&2, C.KU>) -> Prog:
 
 # THE SCHEDULER. Upstream's `create_schedule(sched_sink)`
 # (`tinygrad/schedule/__init__.py:32-80`) IS THE PORT's `schedule()`
-# (`schedule/__init__.bend:1139` symbol=schedule), and `linear`
-# (`schedule/__init__.bend:1136` symbol=linear) IS upstream's
+# (`schedule/__init__.bend:1124` symbol=schedule), and `linear`
+# (`schedule/__init__.bend:1121` symbol=linear) IS upstream's
 # `return UOp(Ops.LINEAR, src=tuple(linearized))` (`__init__.py:80`).
 #
 # - this is the caller the port's scheduler did not have, and it is why the
@@ -133,7 +133,7 @@ def schedule(ar: O.Arena, sink: U32) -> O.Found:
 # (`runtime/support/compiler_cpu.py:21-22`), and the ELF OBJECT comes back.
 #
 # `cc_argv` is the port's own spelling of that argv
-# (`runtime/support/compiler_cpu.bend:268 symbol=ClangCompiler.compile_argv`), and it is
+# (`runtime/support/compiler_cpu.bend:260 symbol=ClangCompiler.compile_argv`), and it is
 # JOINED WITH NEWLINES because the C side has no argv of its own -- a second copy
 # of upstream's argv is a second thing to rot.
 #
@@ -150,7 +150,7 @@ def compile(src: String, argv: String) -> IO(String):
 
 # THE RELOCATION. Upstream's step 2 (`ops_cpu.py:34`) is
 # `jit_loader(lib, base=mv_address(self.mem))` and it is the port's own
-# `runtime/support/elf.bend:1816`.
+# `runtime/support/elf.bend:1796`.
 #
 # the base is `0`, and that is measured, not chosen: the port's
 # `.agents/slop/cpuseam/REPORT.md:507-523` records that BOTH bases give the same

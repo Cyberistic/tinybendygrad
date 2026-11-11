@@ -73,8 +73,8 @@ STRONGEST possible evidence (`proof=record-size`) rather than on an inference.
 these nodes "simply HAVE NO SIZE" and that `nil-src` and `param_src` "both print `size=N`, and
 the acceptance rows cannot tell them apart". MEASURED here: its 38 live rows are exactly these
 43 minus 5, and 31 of them are class B. So a gate has been printing rows for 31 lost sizes and
-nothing in those rows says so. The 5 it misses are `uop/ops.bend:6302/6303/8352` (the op is
-spelled `OpsPARAM{}`, without the `O.` its class test requires) and `codegen/__init__.bend:339,
+nothing in those rows says so. The 5 it misses are `uop/ops.bend:6150/6303/8352` (the op is
+spelled `OpsPARAM{}`, without the `O.` its class test requires) and `codegen/__init__.bend:333,
 345` (the `Arg` is `ABad{}`, which fails its `"AParam" in args[3]` test).
 
 ## THE FIVE VERDICTS ARE `gatekit`'s AND NOT LOCAL CONSTANTS

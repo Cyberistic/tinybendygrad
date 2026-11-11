@@ -39,12 +39,12 @@ FAIL, so a reader can tell a clause that measured a lot from one that measured o
 
 WHAT C4 MEASURED BEFORE, AND WHY IT WAS WRONG (2026-10-23). C4 was "every claim sits in a
 directory the table assigns to the phase it names", and it was red on 3 of 3 claims it
-judged: `helpers.bend:438` (`TODO(p6)`), `helpers.bend:2573` (`TODO(p4)`) and
-`runtime/ops_metal.bend:277` (`TODO(p1)`). **All three were FALSE POSITIVES, and the tree
+judged: `helpers.bend:433` (`TODO(p6)`), `helpers.bend:2515` (`TODO(p4)`) and
+`runtime/ops_metal.bend:276` (`TODO(p1)`). **All three were FALSE POSITIVES, and the tree
 says why, in three places and two files.** `helpers.bend` is a SHARED file -- the table
 assigns it to no phase, and it serves every phase -- and its two claims name the phase that
 OWNS THE WORK (`P6` = `runtime/`, whose ContextVar work the note describes at
-`helpers.bend:52`; `P4` = `engine/`, whose clock the note asks for). And `p1` names a
+`helpers.bend:51`; `P4` = `engine/`, whose clock the note asks for). And `p1` names a
 phase the table gives NO directory, so it cannot be naming ownership of work at all: the
 tree's own ledger calls it "a severity" (`.agents/TODO.md:11110`,
 `.agents/slop/WALLMAP.md:328`). **A CLAUSE THAT IS RED ON EVERY CLAIM IT JUDGES IS NOT
@@ -68,7 +68,7 @@ phase table's cell STEMS BY NAME (`stem_of("viz/") == "viz"`, so `P3/VIZ` "contr
 `viz/` at P8) and could not tell a FEATURE from a DIRECTORY. MEASURED 2026-10-21: all six
 `P3/VIZ` sites are trailing labels on a wall about upstream's `pyrender` round-trip, whose
 consumers are all in `tinygrad/uop/`, and the ONE compound in the tree that is an ownership
-statement -- `schedule/memory.bend:1686`, *"P6/runtime owns the allocator"* -- AGREES with
+statement -- `schedule/memory.bend:1654`, *"P6/runtime owns the allocator"* -- AGREES with
 the table. The markers are obedient; the READING was wrong. C5 now reads a compound as two
 PARTIES and only contradicts the table when the compound ASSERTS OWNERSHIP and the two
 parties disagree.
@@ -307,8 +307,8 @@ def tag_class(tag):
   """PHASE -- `p` and digits. MALFORMED -- spelled like a phase and is not one (`P3`, `p3a`).
   DISPOSITION -- does not name a phase: an instruction (`delete`), a stopping point (`port`),
   or a subject label (`nn_pool_4d`). The gate does NOT need to tell those three apart, and
-  does not pretend to: the tree explains them at `mixin/rand.bend:253` (delete),
-  `extra/datasets/__init__.bend:14` (port) and `nn/pool.bend:420` (nn_pool_*), and a tag that
+  does not pretend to: the tree explains them at `mixin/rand.bend:251` (delete),
+  `extra/datasets/__init__.bend:14` (port) and `nn/pool.bend:409` (nn_pool_*), and a tag that
   names no phase is not a phase claim under any of those readings."""
   if CANON.match(tag):
     return "PHASE"
@@ -491,8 +491,8 @@ def verdicts(c):
   #
   # WHAT "LOCATED" MEANS, AND why it is not "SITS in the phase'S directory". A claim
   # names the phase that OWNS THE WORK -- that is the tree's own reading of the two
-  # singletons (`helpers.bend:438` `TODO(p6)` is P6's `runtime/` ContextVar work;
-  # `helpers.bend:2573` `TODO(p4)` is P4's `engine/` clock) -- and a phase owns work
+  # singletons (`helpers.bend:433` `TODO(p6)` is P6's `runtime/` ContextVar work;
+  # `helpers.bend:2515` `TODO(p4)` is P4's `engine/` clock) -- and a phase owns work
   # only in a directory the table assigns to it. So a claim is located when the site is
   # in the phase's own directory OR the site is in a SHARED file: a file the table
   # assigns to NO phase, which serves every phase, and is therefore in nobody's phase

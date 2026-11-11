@@ -46,7 +46,7 @@ pin dropped:
     CPython's `code_for_op[...]` (MEASURED: `args=(Ops.FDIV,)` and `(Ops.EXP2,)` etc., and
     `Ops.FDIV not in CStyleLanguage.code_for_op` while the four deleted ones are `in base` and
     `not in clang`). Bend is total and cannot raise, so the port answers
-    `UNHANDLED(Ops.X)` -- the spelling `wgsl.bend:489` already uses for the SAME KeyError on
+    `UNHANDLED(Ops.X)` -- the spelling `wgsl.bend:480` already uses for the SAME KeyError on
     the SAME twenty inherited arms, because `wgsl.bend:71-72` says those arms move HERE. It
     USED TO answer `""`, which is the shape this file's own header calls dangerous: the ALU
     rule wraps the answer in `f"..."`, so an empty one deletes the operand.
@@ -109,7 +109,7 @@ ROWS = 361
 # divergence stops being a claim; a `want` that is not the exact line fails the gate.
 #
 # `opt_float4_0` WAS here and is not any more. CPython's base `float4` is `None` -- an ABSENT
-# VALUE, not a refusal -- and the port answered `""`, which `dsl.bend:2066-2069` already ruled
+# VALUE, not a refusal -- and the port answered `""`, which `dsl.bend:2041-2044` already ruled
 # out for exactly this case ("an empty string is NOT the same answer, so the port prints
 # `None`"). `float4.of` answers `"None"` and the row AGREES.
 #

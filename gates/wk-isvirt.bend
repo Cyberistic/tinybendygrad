@@ -6,18 +6,18 @@
 #
 #     return self.device is None or self.dtype in dtypes.weaks
 #
-# and the port spells it as TWO claims (uop/weak.bend:268): the device half and the dtype
+# and the port spells it as TWO claims (uop/weak.bend:267): the device half and the dtype
 # half, joined by `Bool.or`. The device half is the NESTED `Maybe` -- the outer is "does
 # this node carry a device at all" and the inner is "is it there" -- and flattening them
 # first would lose the one case `is_virtual` is asking about.
 #
-# WHY THIS GATE EXISTS, and the reason is a STALE CLAIM. `uop/ops.bend:5345` says
+# WHY THIS GATE EXISTS, and the reason is a STALE CLAIM. `uop/ops.bend:5251` says
 # "PORTED BUT UNGATED, AND THE REASON IS A FIXTURE, NOT A DEF ... fold.bend's `mw_pa`
 # hard-codes `ParamArg`'s device field to `None{}` and no def in the port sets it, so
 # EVERY node is virtual and the reader has no negative witness. MEASURED: both candidate
 # rows came out `True`, and two rows that are always `True` cannot fail."
 #
-# THAT REASON IS NOW FALSE. MEASURED 2026-10-30: `renderer/__init__.bend:450` builds a
+# THAT REASON IS NOW FALSE. MEASURED 2026-10-30: `renderer/__init__.bend:441` builds a
 # `ParamArg` with `device = Some{S.D1{0}}`, and `fold.bend`'s `device_of.param` reads
 # `O.ParamArg.device(pa)` -- so a node that CARRIES a device is reachable, and
 # `wk_is_virtual` has a negative witness for the first time.

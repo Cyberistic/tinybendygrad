@@ -8,13 +8,13 @@ SEVENTEEN ROWS, THREE LANES. CPython's `Tensor.__floordiv__` (elementwise.py:279
 which at :249-252 is `a, b = self._broadcasted(x, reverse); if
 dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype): if rounding_mode == "floor":
 return a.alu(Ops.FLOORDIV, b)`. For two Tensors of the same shape (the
-no-broadcasting case the wall text at `nn/__init__.bend:241` cited as the
+no-broadcasting case the wall text at `nn/__init__.bend:230` cited as the
 blocker), `_broadcasted` is identity: `__floordiv__` is `self.alu(FLOORDIV, x)`
 -- srcs `(self, x)`. The `reverse=True` arm swaps: `__rfloordiv__` is
 `x.alu(FLOORDIV, self)` -- srcs `(x, self)`. CPython's `__mod__`
 (elementwise.py:282, `self.mod(x)`) is the same shape with `Ops.FLOORMOD` via
 `mod` at elementwise.py:212-213, and `__rmod__` is the `reverse=True` arm.
-The wall at `nn/__init__.bend:241` named `_broadcasted` as the blocker; with
+The wall at `nn/__init__.bend:230` named `_broadcasted` as the blocker; with
 `tn_fdiv` / `tn_rfdiv` / `tn_mod` / `tn_rmod` ported, the no-broadcasting case
 of all four dunders is covered. The broadcasting case stays walled on
 `_broadcasted`. `__truediv__` (elementwise.py:276) is SKIPPED because its body

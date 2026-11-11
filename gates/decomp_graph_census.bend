@@ -59,13 +59,13 @@ def dc_put(+nm: String, +s: String) -> List<&2, String>:
 
 # `OP/NSRC`, AND `OP/NSRC[TARGET]` WHEN THE NODE'S ARG IS A `Dt`. MEASURED ON THE BASE
 # LANES AT `d1c1e3a`: 453 `CAST/1` and 33 `BITCAST/1` tokens on the port lane and 741 and 34
-# on CPython's, and NOT ONE carried an argument -- `D.dd_sig1` (dtype.bend:2249) prints the
+# on CPython's, and NOT ONE carried an argument -- `D.dd_sig1` (dtype.bend:2215) prints the
 # op and the arity and stops, because a node's DTYPE is in no node shape. So the 282 casts
 # `classes_hold` deletes were counted but never READ, a `bool->u32` promotion and a
 # `f32->i32` narrowing were the same token, and `witnesses()` could not separate `lg1`'s
 # `CAST(i32->i64)` at index 1 from its `CAST(weakint->i32)` at index 2. `dc_tok` is the same
 # walk with `dd_sig1` replaced; `P.dc_opname` is the ONE place a bare op name is spelled
-# (op.bend:1508), and `O.dt_name` the ONE place a dtype's name is (ops.bend:5956).
+# (op.bend:1508), and `O.dt_name` the ONE place a dtype's name is (ops.bend:5825).
 def dc_tok.plain(+a: O.Arena, +u: U32) -> String:
   String.concat([P.dc_opname(O.Arena.op(a, u)), "/", U32.show(O.Arena.nsrc(a, u))])
 
@@ -94,7 +94,7 @@ def dc_esig(+ar: O.Arena, f: Nat, +xs: List<&2, U32>, +first: Bool, +acc: String
           s = D.dd_join.add(first, acc, dc_tok.at(ar, u))
           dc_esig(ar, q, t, False{}, s)
 
-# `l2i` answers `Maybe<W2>`; `W2.hi == 0` IS "ONE NODE" (dtype.bend:2698), which is how a
+# `l2i` answers `Maybe<W2>`; `W2.hi == 0` IS "ONE NODE" (dtype.bend:2664), which is how a
 # one-word arm is rooted at `lo` alone -- four of dtype.py's eighteen arms answer one UOp.
 def dc_roots(two: Bool, lo: U32, hi: U32) -> List<&2, U32>:
   match two:
@@ -128,7 +128,7 @@ def dc_l2i1(+nm: String, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, base: Nat, nw: U32) -
   +r = D.l2i(D.Ga.ar(ga), op, dt, xdt, ws)
   dc_put(nm, dc_sig.of(r, D.Ga.ar(ga)))
 
-# dtype.bend:2780-2834 `l2i.pick`, its pool-fed arms in the port's own order.
+# dtype.bend:2746-2800 `l2i.pick`, its pool-fed arms in the port's own order.
 def dc_l2i_pick(+i: U32) -> List<&2, String>:
   match i:
     case 0: dc_l2i1("lg1", O.OpsNEG{}, S.int32(), S.uint32(), 9n, 2)
@@ -179,7 +179,7 @@ def dc_l2i_pick(+i: U32) -> List<&2, String>:
     #   lgz f64<-f32  sel=1  l2i_dt=NONE   -> REFUSES
     # SAME `sel`, SAME source, SAME words, and `l2i_cast.ldt`'s `case 3` is the only arm that
     # bypasses the guard, so the refusal is `l2i_cast.wide`'s `l2i_dt(dt) == None`
-    # (dtype.bend:678) and NOT `l2i_cast.got`'s `case 2: None{}` (:667). That REFUTES this
+    # (dtype.bend:654) and NOT `l2i_cast.got`'s `case 2: None{}` (:667). That REFUTES this
     # gate's own footer, which named :667.
     case 29: dc_l2i1("lgz", O.OpsCAST{}, S.double(), S.single(), 19n, 2)
     case _: dc_l2i1("lgy", O.OpsCAST{}, S.int32(), S.int32(), 4n, 2)
@@ -191,7 +191,7 @@ def dc_l2i_go(fuel: Nat, +i: U32, acc: List<&2, String>) -> List<&2, String>:
 
 # --------------------------------------------------- `l2i.const`'s three arms
 
-# `l2i.const` (dtype.bend:2773) MINTS ITS CONST OUTSIDE `l2i` -- at `xdt`, by `dd_const.int`
+# `l2i.const` (dtype.bend:2739) MINTS ITS CONST OUTSIDE `l2i` -- at `xdt`, by `dd_const.int`
 # (:333) -- and hands the word in, so these three arms read NO word of the pool. A population
 # rule keyed on "ARMS THAT READ THE WORD POOL" therefore cannot see them, which is the same
 # class as `amd_dsl_census`'s `VOP2_FIELDS` having no `src2`, and `l2i.pick`'s cases 28/29/30
@@ -225,7 +225,7 @@ def dc_lc_go(fuel: Nat, +i: U32, acc: List<&2, String>) -> List<&2, String>:
 
 # ------------------------------------------------------- `unpack32` and the `f2f`s
 
-# `unpack32` (dtype.py:13) over the pool's u32 word at offset 9 -- dtype.bend:2850. `match`
+# `unpack32` (dtype.py:13) over the pool's u32 word at offset 9 -- dtype.bend:2816. `match`
 # cannot scrutinise a LOCAL BINDER, so `W2` is destructured in its own def.
 def dc_up.sig(w: D.W2) -> String:
   match w:
@@ -238,11 +238,11 @@ def dc_up() -> List<&2, String>:
 
 # THE SECOND `unpack32` FIXTURE, AND IT IS THE ONE THAT MAKES A BITCAST'S `ADt` LOAD-BEARING.
 # `up` reads the pool's `u32` word at offset 9 and passes `xdt = u32`, so
-# `unpack32.bc`'s fold (`dtype.bend:591`, `O.eq_dt(xdt, S.uint32())`) FIRES and the row
+# `unpack32.bc`'s fold (`dtype.bend:569`, `O.eq_dt(xdt, S.uint32())`) FIRES and the row
 # carries NO BITCAST AT ALL: MEASURED, `up` is `AND/2,PARAM/0,CONST/0,DIV/2,CONST/0` and
 # `gates/decomp_graph_census-mutate.py` A13 -- which breaks ONLY that arm's `ADt` -- moved
 # 0 of 38 rows and 0 under the bare printer. So the BITCAST `ops.py:13` builds was in no row,
-# which is the same coverage hole `dtype.bend:2824-2830` records for `l2i_cast3.bitc`'s False
+# which is the same coverage hole `dtype.bend:2790-2796` records for `l2i_cast3.bitc`'s False
 # arm and calls "live code with zero coverage".
 #
 # `uq` READS THE POOL'S `i32` WORD AT OFFSET 4 and passes `xdt = int32`, so the fold does not

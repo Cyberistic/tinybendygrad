@@ -33,8 +33,8 @@ import ./../extra/datasets/__init__.bend as D
 #   `gr_table`           referenced ONLY inside mixin/gradient.bend;
 #                        `grep -rn "gr_table" --include='*.bend' tinybendygrad/
 #                        | grep -v gradient.bend` = 0
-#   `tn_backward`        tensor.bend:2015           EXISTS
-#   `compute_gradient`   CALLED FROM EXACTLY ONE PLACE, tensor.bend:2011,
+#   `tn_backward`        tensor.bend:1988           EXISTS
+#   `compute_gradient`   CALLED FROM EXACTLY ONE PLACE, tensor.bend:1985,
 #                        inside `tn_backward.of`. Its only other mention in the
 #                        whole tree is a COMMENT, THE PORT's `mixin/op.bend` HEADER.
 #   `tn_backward`        CALL SITES OUTSIDE tensor.bend = 0. THE INSTRUMENT IS
@@ -58,7 +58,7 @@ import ./../extra/datasets/__init__.bend as D
 # so the training path is blocked twice over, on the backward pass and on the
 # loss it would differentiate:
 #   `sparse_categorical_crossentropy`  MISSING. `THE PORT's `mixin/op.bend` HEADER` puts "the
-#   losses" in SIDE B, `mixin/op.bend:1530 symbol=t_softmax3.go` is the last line of the file and
+#   losses" in SIDE B, `mixin/op.bend:1509 symbol=t_softmax3.go` is the last line of the file and
 #   reads "# side b's section goes below this line.", and `grep -rnE "^def
 #   mo_sparse" --include='*.bend' tinybendygrad/` = 0. It is the DEFAULT
 #   `lossfn` of `extra/training.py:7`.
@@ -70,12 +70,12 @@ import ./../extra/datasets/__init__.bend as D
 #       `np.asarray` at :24-38 have no counterpart.
 #   `PIL.Image` (:3, used :35)             MISSING. `Image.fromarray(...).resize(
 #       (64,64))` at :35 is decode-then-resize and neither half exists.
-#   `get_parameters` (:5, used :41)        EXISTS -- nn/state.bend:375.
+#   `get_parameters` (:5, used :41)        EXISTS -- nn/state.bend:363.
 #   `optim.SGD` (:6, used :41)             MISSING. `grep -c SGD
 #       tinybendygrad/nn/optim.bend` = 0. That file's two bodies are LAMB
-#       (nn/optim.bend:870 symbol=op_postwd) and LARS (:717); SGD is not among them, and SGD is
+#       (nn/optim.bend:830 symbol=op_postwd) and LARS (:717); SGD is not among them, and SGD is
 #       the DEFAULT optimizer of tinygrad's own `train_resnet.py`.
-#   `getenv` (:7, used :28)                EXISTS -- helpers.bend:150 symbol=getenv_str
+#   `getenv` (:7, used :28)                EXISTS -- helpers.bend:148 symbol=getenv_str
 #       `getenv_str` and :304 `getenv_int`. Typed, which is exactly what
 #       `getenv('TRANSFER')` (a String) and `getenv('NUM', 18)` (a U32) need.
 #   `extra.training.train` (:8, used :42)  MISSING. `extra/training.py:7`.
@@ -121,7 +121,7 @@ def tr_compose_init(trans: List<&2, String>) -> D.Refused:
   D.refuse("examples/train_resnet.py:14 ComposeTransforms.__init__ -- FIRST MISSING SYMBOL PIL.Image (:3)")
 
 def tr_compose_call(+x: T.Tensor) -> D.Refused:
-  D.refuse("examples/train_resnet.py:17 ComposeTransforms.__call__ -- BLOCKED ON unexercised backward pass: tn_backward tensor.bend:2015 symbol=tn_backward has 0 call sites")
+  D.refuse("examples/train_resnet.py:17 ComposeTransforms.__call__ -- BLOCKED ON unexercised backward pass: tn_backward tensor.bend:1988 symbol=tn_backward has 0 call sites")
 
 # :22-45 `if __name__ == "__main__":`. The block is five rounds (`for _ in
 # range(5)`, :40), each of which ends in `optimizer.step()` inside
@@ -139,10 +139,10 @@ def tr_reshape_uint8() -> D.Refused:
 
 # :29  model = ResNet(getenv('NUM', 18), num_classes=classes)
 def tr_model(num: U32, num_classes: U32) -> D.Refused:
-  D.refuse("examples/train_resnet.py:29 ResNet -- BLOCKED ON nn.Conv2d, which is mixin/op.bend SIDE B (mixin/op.bend:1530 symbol=t_softmax3.go)")
+  D.refuse("examples/train_resnet.py:29 ResNet -- BLOCKED ON nn.Conv2d, which is mixin/op.bend SIDE B (mixin/op.bend:1509 symbol=t_softmax3.go)")
 
 # :41  optimizer = optim.SGD(get_parameters(model), lr=lr, momentum=0.9)
-# `get_parameters` EXISTS (nn/state.bend:375). `optim.SGD` does not.
+# `get_parameters` EXISTS (nn/state.bend:363). `optim.SGD` does not.
 def tr_optimizer(lr: F32) -> D.Refused:
   D.refuse("examples/train_resnet.py:41 FIRST MISSING SYMBOL optim.SGD -- grep -c SGD tinybendygrad/nn/optim.bend = 0; that file bodies are LAMB :873 and LARS :717")
 

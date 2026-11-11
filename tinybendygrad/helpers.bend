@@ -2889,7 +2889,7 @@ def Target.indices(+t: Target) -> String:
 # 4. two refusals, and they are not the same refusal. a third '+' is "too
 #    many '+'"; a fourth ':' IN THE DEVICE HALF is "too many ':'". Upstream
 #    raises `RuntimeError`; the port's `None` IS that RuntimeError
-#    (helpers.bend:3072 symbol=Target.parse), so `Target.parse` answers a `Maybe`. The port cannot
+#    (helpers.bend:3002 symbol=Target.parse), so `Target.parse` answers a `Maybe`. The port cannot
 #    carry upstream's MESSAGE -- `None` is a value with no room for one -- but
 #    the BOUNDARY, which strings are refused and which are not, is the fact
 #    that matters and it is carried exactly.
@@ -2946,7 +2946,7 @@ def Target.indices(+t: Target) -> String:
 # agree on the boundary and not on the message: upstream raises
 # `RuntimeError("too many ':' in target string: 'B:C:D:E'")` and the port
 # answers `None`, which IS that RuntimeError in this tree's vocabulary
-# (helpers.bend:2382) and cannot carry its text, because `None` is a value
+# (helpers.bend:2329) and cannot carry its text, because `None` is a value
 # with no room for one.
 #
 # the plant, and WHERE each planted case lands. The ways this could be wrong,
@@ -3092,7 +3092,7 @@ def Target.parse(s: String) -> Maybe<&2, Target>:
 #
 # The fold carries TWO things -- the targets parsed so far, and whether every
 # component so far parsed -- and a def returns ONE value, so the two travel as
-# a PAIR, the shape `helpers.bend:2500` already uses for the same reason.
+# a PAIR, the shape `helpers.bend:2444` already uses for the same reason.
 # Bend refuses MUTUAL recursion, so the fold is ONE def and the parsed
 # component is read through the two accessors below instead of through a
 # second fold that would have to call this one back.

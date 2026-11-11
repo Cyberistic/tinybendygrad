@@ -9,7 +9,7 @@ claims that `ops.bend` already asserts in-file AND the arg-type asymmetry its ke
 WHAT THIS IS FOR. `ops.bend` carries 55 `t_*` tests and, until this gate, no denominator at all:
 each one was written, believed and unverified, which is the exact state the project rules call
 unportable. Five of them are the CONST-identity cluster, and they are the five whose CPython
-answers are already MEASURED in the port's own notes (`ops.bend:5044-5045`), so the oracle here
+answers are already MEASURED in the port's own notes (`ops.bend:4951-4952`), so the oracle here
 is a restatement of a measurement rather than a guess about what tinygrad would do.
 
 THE FIVE CLAIMS, and the failure each one is shaped to catch:

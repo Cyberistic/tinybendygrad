@@ -877,7 +877,7 @@ def dc_dt(+fx: F.Folded,+u: U32,+want: U32) -> Bool:
 #     `out_s7` (a uint numerator, `vmin >= 0` on both, so the SHORT TRUNCDIV) is the
 #     row that says the guard was read rather than assumed.
 #   * Any other op needs the recursive `_min_max`, which is P3 and the port's
-#     `uop/fold.bend:5238 symbol=UOp.min_max` is the reader that would answer it.
+#     `uop/fold.bend:5185 symbol=UOp.min_max` is the reader that would answer it.
 #     `dc_end` answers `False` for those ops, which makes the guard fail and sends
 #     the rule down the GENERAL path. That is Python's answer whenever the guard is
 #     false, so the divergence is SOUND. It is DIVERGENCE D and the alternative --
@@ -1008,7 +1008,7 @@ def dc_s3(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 #     * `i64_div` and `i64_mod` by a 32-bit divisor -- a restoring divider, and
 #       `(2s - 1) % d` at `s = 2*nbits` is a 65-bit modulus.
 #     * `i64_shl`  -- `2s` for `s` up to `2*nbits = 64`.
-#     * an UNSIGNED 64-bit compare -- `H.i64_cmp` (helpers.bend:1697 symbol=i64_cmp) is SIGNED,
+#     * an UNSIGNED 64-bit compare -- `H.i64_cmp` (helpers.bend:1656 symbol=i64_cmp) is SIGNED,
 #       and `2**64` reads negative in it.
 #     * a 65-bit third limb, for `2**64 + d`, which is the numerator of `m`.
 #   `helpers.bend` has `i64_add`, `i64_sub`, `i64_cmp`, `i64_of_hi_lo` and

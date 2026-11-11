@@ -355,7 +355,7 @@ def for_ri(+devs: List<&2, U32>) -> IO(Unit):
 # AND THE `xs` SHAPE IS A LIST OF PIECE-LISTS, NOT A LIST OF STRINGS.  THE PORT's
 # `code_for_op.of` IS
 # `def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt) ->
-# List<&2, String>` (`tinybendygrad/renderer/cstyle.bend:1354`), AND ITS FIRST TWO READERS
+# List<&2, String>` (`tinybendygrad/renderer/cstyle.bend:1325`), AND ITS FIRST TWO READERS
 # ARE `cfo_xs1(xs)` AND `cfo_xs2(xs)` (`:1211-1213`), WHICH ARE `xs_at(xs, 0n)` AND
 # `xs_at(xs, 1n)` -- I.E. OPERAND 0's PIECES AND OPERAND 1's PIECES, NOT OPERAND 0 AND
 # OPERAND 1.  AND THE PORT's OWN CALLER PASSES EXACTLY THAT: `ku_alu_srcs` IS
@@ -364,7 +364,7 @@ def for_ri(+devs: List<&2, U32>) -> IO(Unit):
 # STRINGS WHERE A LIST OF LISTS IS WANTED, AND THE JOIN IS NOT A NO-OP.
 #
 # AND THE JOIN IS `String.join(l, "")` -- AN EMPTY SEPARATOR.  MEASURED OFF THE PORT's OWN
-# EMIT SITE: `tinybendygrad/renderer/cstyle.bend:2936` IS `... " ", nm, " = ",
+# EMIT SITE: `tinybendygrad/renderer/cstyle.bend:2886` IS `... " ", nm, " = ",
 # String.join(l, ""), ...`, AND THAT IS THE STATEMENT LIST, WHICH IS WHAT
 # `code_for_op.of` RETURNS.
 def cfo_row(+pre: String, +dev: U32, +i: U32, +dti: U32) -> IO(Unit):
@@ -486,8 +486,8 @@ def main() -> IO(Unit):
 # `(buf1+a+b)`.
 #
 # The port matches on `AReduce{rop, num_axes}` with `is_add(rop) and num_axes == 0`
-# (`cstyle.bend:932-935`), and `AReduce{ADD, 0}` is the port's OWN spelling of CPython's
-# `(Ops.ADD, 0)` (`ops.bend:7257-7264`). So the port's test is TRUE for the node CPython's test is
+# (`cstyle.bend:911-914`), and `AReduce{ADD, 0}` is the port's OWN spelling of CPython's
+# `(Ops.ADD, 0)` (`ops.bend:6960-6967`). So the port's test is TRUE for the node CPython's test is
 # FALSE for, and the two strings differ by the inner parens: the port emits `(buf1+a+b)` where
 # CPython emits `(buf1+(a+b))`.
 #

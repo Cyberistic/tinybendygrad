@@ -469,7 +469,7 @@ MUTATIONS = [
     ("G2 methods_hold: `_multi_like` is no longer declared unported", "GUARD", "gate",
      'MISSING = {"_multi_like": "W2, the multi-device arm (creation.py:16-20); `cr_full_like` "\n'
      '                          "is single-device and the tuple arm is a TODO(p3) at "\n'
-     '                          "creation.bend:414",\n           "const": "a '
+     '                          "creation.bend:409",\n           "const": "a '
      '`raise NotImplementedError` (creation.py:12), a @staticmethod, and so "\n'
      '                    "neither regex matches it; it has no def and no graph"}',
      'MISSING = {"const": "a `raise NotImplementedError` (creation.py:12), a @staticmethod, '

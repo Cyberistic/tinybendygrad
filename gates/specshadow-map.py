@@ -540,7 +540,7 @@ def main() -> int:
   f, b = forward_ref_probe()
   print(f"#    {f}")
   print(f"#    {b}")
-  print("#    THE LOCATED INSTANCE: `tinybendygrad/uop/ops.bend:2810`, inside `UOp.group.of` (def at 2803),")
+  print("#    THE LOCATED INSTANCE: `tinybendygrad/uop/ops.bend:2808`, inside `UOp.group.of` (def at 2803),")
   print("#    calls `UOp.after`, whose def is at 2851 -- 48 lines LATER. Verified by reading the file and")
   print("#    by `bin/bend tinybendygrad/uop/spec.bend`, whose whole-subtree compile fails on it.")
   print("#    It is not this unit's file to fix (three units are editing `uop/ops.bend` right now) and the")

@@ -13,7 +13,7 @@
 # `tn_neg.arith`. Both arms are ported, and the bool arm is the SAME graph `tn_logical_not`
 # already gates -- WHICH IS `CONST(True) + CMPEQ`, NOT `CAST(bool) + CONST(True) + CMPEQ`: the
 # identity bool cast FOLDS on both sides now that `tn_logical_not` reaches `D.cast_at`
-# (`mixin/dtype.bend:342`). The arith arm is `MUL(self, -1)`
+# (`mixin/dtype.bend:337`). The arith arm is `MUL(self, -1)`
 # with the `-1` literal as a `CInt{4294967295}` (the u32 two's-complement pair of `-1`).
 # The driver builds the two inputs and calls `tn_neg` on each; the rows inspect the result.
 

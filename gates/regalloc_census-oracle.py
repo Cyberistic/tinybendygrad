@@ -60,7 +60,7 @@ def srow(nm, v):
 
 
 # ===========================================================================
-# THE REGISTER UNIVERSE -- `ra_un0` / `ra_un2` (regalloc.bend:1105-1119).
+# THE REGISTER UNIVERSE -- `ra_un0` / `ra_un2` (regalloc.bend:1072-1086).
 # `(name, index, cons)` where `cons` are INTERN INDICES, so the port's `Ru{name, index,
 # cons}` is CPython's `Register(name, index, tuple(regs[j] for j in cons))`.
 # ===========================================================================
@@ -75,15 +75,15 @@ OPS0 = [("CONST", (), ()), ("INS", (0,), (6,)), ("INS", (0,), (7,)), ("INS", (0,
         ("INS", (0,), (9,)), ("INS", (1,), ()), ("INS", (2,), ()), ("INS", (3, 4), (10,)),
         ("CONST", (), ()), ("INS", (1,), ()), ("INS", (2, 3), ()), ("INS", (4,), ())]
 # `RaUop.ss` IS A LIST OF NODE INDICES, NOT REGISTER INDICES, and getting that wrong is
-# the trap this fixture exists to avoid. `ra_rdef` (regalloc.bend:369-372) is `ds`'s HEAD --
-# the DEF of a node -- and `ra_rdefs` (regalloc.bend:570) applies it to `ss`, so `ss` indexes
+# the trap this fixture exists to avoid. `ra_rdef` (regalloc.bend:362-365) is `ds`'s HEAD --
+# the DEF of a node -- and `ra_rdefs` (regalloc.bend:560) applies it to `ss`, so `ss` indexes
 # `ops`. MEASURED, it has to: with `ss` read as registers, `ra0` would give `rax` a live range
 # and five spill slots, and the port's own `ra0_lr` carries only `v0..v4`. So `("INS", (0,),
 # (6,))` is "this uop's src is NODE 0, and it DEFINES register 6 (v0)", and node 0 is a
 # CONST with no tag -- which is why no real register appears in `ra<t>_lr`.
 #
 # `regalloc.py:29`'s `loops[idx] = max(j for j,x in enumerate(uops) if u in x.src)` is
-# therefore ported CORRECTLY as `ra_lastuse` (regalloc.bend:576-583), and `ra2`'s END srcs
+# therefore ported CORRECTLY as `ra_lastuse` (regalloc.bend:566-573), and `ra2`'s END srcs
 # `[4, 3]` are nodes 4 and 3 -- node 3 IS the RANGE, which is the structural relation CPython
 # asks for. MEASURED: rewriting those to `[4, 5]` -- replacing the RANGE with the END itself,
 # so the loop has no user -- moves `ra2_lr`, `ra2_spills` and `ra2_before`, which is the
@@ -151,7 +151,7 @@ class TwoAddress(ISARenderer):
 class Slots(LinearContext):
     """`assign_spill_slot` is `NotImplementedError("arch specific")` in tinygrad's own base
     (`isa/__init__.py:37`). The port derives the slot from the register's NAME (`ra_slot`,
-    regalloc.bend:737), so the oracle does too -- which makes `slot:v1` a spelling both lanes
+    regalloc.bend:724), so the oracle does too -- which makes `slot:v1` a spelling both lanes
     agree on rather than one lane's private invention."""
 
     def assign_spill_slot(self, r, u):

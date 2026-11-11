@@ -217,14 +217,14 @@ def glrow(nm, call, tag):
     for 91 rows, 84 of them shared with the oracle and the other 149 naming text the
     oracle calls `tag | line`.
 
-    `cstyle.bend:1760`'s `esc_row` -- turn a newline into `\\` `n` -- is the fix that
+    `cstyle.bend:1726`'s `esc_row` -- turn a newline into `\\` `n` -- is the fix that
     is written down for this, and it does not work here for TWO reasons.  A `String`
     is an `SCon` spine (references/bend/bend2/base.bend:1848) and the interpreter has
     no tail call, so the row it would fix -- a 16,815-character value -- is 16,815
     nested frames: measured, 4,000 characters works and 8,000 is "the machine stack
     overflowed".  And even handed the lines as a list, `String.join` is O(total
-    length) in depth because base.bend:1980 appends onto a growing prefix
-    (base.bend:1806).  The whole-file row measured 5 successes in 12 runs on the real
+    length) in depth because base.bend:1979 appends onto a growing prefix
+    (base.bend:1805).  The whole-file row measured 5 successes in 12 runs on the real
     file WITH NO ESCAPING AT ALL, so that flake predates this change.
 
     So the answer is one row per emitted LINE, which builds no string longer than a
@@ -245,7 +245,7 @@ def glrow(nm, call, tag):
     correct oracle that disagreed with the RIGHT port.
 
     A list and not the whole file as one string, measured: walking `want` with
-    `String.take`/`String.drop` (base.bend:1932/1941) recurses over the prefix it
+    `String.take`/`String.drop` (base.bend:1931/1941) recurses over the prefix it
     consumes, so ONE 177-line file measured 9 successes in 12 while the same 177 rows
     over two LIST arguments measured 20 of 20.  `write_*` returns a list anyway
     (generate.py:276-282, :457, :469, :494), so the expectation is written in the
@@ -271,12 +271,12 @@ def gate():
     w("# output on newlines, so one whole-file row became 335 fragments whose NAMES")
     w("# are the first token before an `=` inside the generated Python: 233 row names")
     w("# for 91 rows, 84 shared with the oracle, the other 149 naming text the oracle")
-    w("# calls `tag | line`.  The fix `cstyle.bend:1760` writes down for this --")
+    w("# calls `tag | line`.  The fix `cstyle.bend:1726` writes down for this --")
     w("# `esc_row`, a newline turned into a backslash and an `n` -- FAILS TWICE OVER")
-    w("# HERE.  `String.split` is one frame per CHARACTER (base.bend:2009) and the file")
+    w("# HERE.  `String.split` is one frame per CHARACTER (base.bend:2008) and the file")
     w("# is 16,815 characters; and even handed the lines as a list, `String.join` is")
-    w("# O(total length) in stack depth, because base.bend:1980 appends onto a growing")
-    w("# prefix (base.bend:1806).  Probe: 177 lines of 95 characters, 6 of 6 through")
+    w("# O(total length) in stack depth, because base.bend:1979 appends onto a growing")
+    w("# prefix (base.bend:1805).  Probe: 177 lines of 95 characters, 6 of 6 through")
     w("# `String.concat`, and on the real file 10 of 20 through either join.  THE")
     w("# ORIGINAL, ONE WHOLE-FILE ROW AND NO ESCAPE AT ALL, WAS 5 OF 12 -- so the flake")
     w("# predates this change and no lane on this port was reliably runnable.")
@@ -289,7 +289,7 @@ def gate():
     w("# from a line break.")
     w("#")
     w("# `want` IS A LIST, NOT ONE STRING, and that is measured too: walking `want`")
-    w("# with `String.take`/`String.drop` (base.bend:1932/1941) recurses over the prefix")
+    w("# with `String.take`/`String.drop` (base.bend:1931/1941) recurses over the prefix")
     w("# it consumes, so one 177-line file was 9 of 12 while the same 177 rows over two")
     w("# list arguments were 20 of 20.  `write_*` RETURNS a list (generate.py:276-282,")
     w("# :457, :469, :494), so the expectation is written in the shape the function")

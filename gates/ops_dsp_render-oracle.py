@@ -21,7 +21,7 @@ the port prints has a value here, so the reference could not be short and diff
 cleanly against a short gate.
 
 THE SIXTEEN KINDS, AND WHY THIS BLOB AND NOT THE OTHER ONE.  The port's trace has
-SIXTEEN `CALL_*` kinds (`ops_dsp.bend:288-303`) and this oracle's `KIND` table has
+SIXTEEN `CALL_*` kinds (`ops_dsp.bend:285-300`) and this oracle's `KIND` table has
 sixteen values, which is the `assert sorted(KIND.values()) == list(range(len(KNM)))`
 at the top of this file.  The tree also carries a SEVENTEEN-kind `dsp_oracle2.py`
 (blob `9aec63288b8d7a3d579cce1010766ba97a7585eb`, `KNM` ends in `MUNMAP`), and that

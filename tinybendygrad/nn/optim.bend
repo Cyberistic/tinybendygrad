@@ -1047,8 +1047,8 @@ def nop_names(ns: List<&2, NewOpt>, acc: String) -> String:
 # `S.D1{0}` because `op_nop.arm` selects on the device's CLASS and nothing else: a
 # fixture pinned to one class can never reach the other arm, so a pinned fixture
 # gates one arm and reports nothing about the other. `S.Dn{[6, 0]}` is the
-# two-device list `device.bend:348 symbol=reg_has tag_of` interns DISK into (6) alongside a tag-0
-# device, and `schedule/memory.bend:1007 symbol=mem_buf` already mints `S.Dn{[2, 3]}`, so the
+# two-device list `device.bend:344 symbol=reg_has tag_of` interns DISK into (6) alongside a tag-0
+# device, and `schedule/memory.bend:979 symbol=mem_buf` already mints `S.Dn{[2, 3]}`, so the
 # multi-device spelling needs no interner and no missing symbol.
 def g_opt.on(d: S.Dev) -> Optim:
   Optim{O.Arena.empty(), Nil{}, Nil{}, d, S.single(), False{}, 0, Nil{},
@@ -1369,7 +1369,7 @@ def t_lamb() -> IO(Unit):
 #
 # "BEND HAS NO f64, SO IT CANNOT BE CLOSED" IS TOO STRONG, and the correction matters because it
 # says who can close it. `self.b1` is a CONSTRUCTOR PARAMETER (default 0.9) and `F32.from_bits`
-# EXISTS (`base.bend:54`), so a CALLER that knows the double -- the default, or any literal --
+# EXISTS (`base.bend:53`), so a CALLER that knows the double -- the default, or any literal --
 # can close it by building the CONST with the double-computed-then-cast bits. What cannot be
 # closed is the GENERAL case: `op_1mb` receives an f32 `b1` and cannot recover the double that
 # produced it. So the pin is honest for the general case and a literal-defaults caller could
@@ -1432,7 +1432,7 @@ def main() -> IO(Unit):
 # | --- | --- | --- | --- |
 # | M1 | `op_acc`: `op_acc.go(params, [0])` -> `(params, Nil{})` | `op_acc` | `initial=0` at the HEAD of `itertools.accumulate` (optim.py:22). Without it the prefix sum is `[2,5]` and the fused slice bounds at :53 are off by one for every parameter. |
 # | M2 | `op_filter.t`: `True{}` -> `False{}` | `op_params` `op_nop` `op_nop.dn` | optim.py:13's `if x.is_param`, the half of the pair that :15's `if not x.is_param` is written against. `op_nop` moves too because it builds its `params` through the same filter, so the row that reads shapes is downstream of the row that selects tensors. `op_nop.dn` joined it when the second row landed, which is the price of a second row and is paid here in the open. |
-# | M3 | `op_nop.arm`: the `S.Dn{tags}` arm -> `map_nzs` | `op_nop.dn` | closed. This row read nothing and the reason it gave was measured FALSE: "a `Dn` fixture would un-gate the `D1` arm". It would not have, and the mechanism is that `op_nop` was one row with one fixture and the device was hardcoded inside `g_opt` -- so *any* `Dn` fixture was a replacement, because there was no second row to put it in. Nothing needed a symbol: `device.bend:348 symbol=reg_has tag_of` interns two names into two distinct tags (disk gets 6, everything else 0), so `S.Dn{[6, 0]}` needs no interner, and `schedule/memory.bend:1007 symbol=mem_buf` already mints `S.Dn{[2, 3]}`. The fix is `op_nop.dn` above, and `g_opt.grown` keeps its one argument because `gates/op_graph_census.bend:293` calls it with one. measured on the shipped tree, not on a copy: M3 moves `op_nop.dn` and nothing else -- `op_nop` is unaffected, which is the whole claim. |
+# | M3 | `op_nop.arm`: the `S.Dn{tags}` arm -> `map_nzs` | `op_nop.dn` | closed. This row read nothing and the reason it gave was measured FALSE: "a `Dn` fixture would un-gate the `D1` arm". It would not have, and the mechanism is that `op_nop` was one row with one fixture and the device was hardcoded inside `g_opt` -- so *any* `Dn` fixture was a replacement, because there was no second row to put it in. Nothing needed a symbol: `device.bend:344 symbol=reg_has tag_of` interns two names into two distinct tags (disk gets 6, everything else 0), so `S.Dn{[6, 0]}` needs no interner, and `schedule/memory.bend:979 symbol=mem_buf` already mints `S.Dn{[2, 3]}`. The fix is `op_nop.dn` above, and `g_opt.grown` keeps its one argument because `gates/op_graph_census.bend:293` calls it with one. measured on the shipped tree, not on a copy: M3 moves `op_nop.dn` and nothing else -- `op_nop` is unaffected, which is the whole claim. |
 # | M4 | a no-op edit | NOTHING | a control, and its zero is a VACUOUS EDIT rather than a gap: a mutation table with no row that CANNOT move is a table of coincidences. |
 # | P1 | `g_opt.on` ignores its `d` and writes `S.D1{0}` | `op_nop.dn` | the PLANT for "a later fixture edit". It edits the def BOTH rows call, not the row, which is what such an edit is in practice. `op_nop` stays green. |
 # | P2 | `op_nop.dn`'s expectation `zeros_like:2,zeros_like:3,` -> `zeros:2,zeros:3,` | `op_nop.dn` | HALF the vacuity edit, and on its own it does NOT make the new row vacuous: the `Dn` fixture still prints `zeros_like`. |

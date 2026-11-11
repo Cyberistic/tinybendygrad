@@ -94,7 +94,7 @@ def row_srcs(+b: Bitnot) -> Bool:
         case None{}: False{}
 
 # ROW 4: THE IDENTITY CAST FOLDED. `src[0]` IS the input uop, so `cast(dtypes.bool)`
-# minted nothing -- the port reaches the folding `D.cast_at` (`mixin/dtype.bend:342`),
+# minted nothing -- the port reaches the folding `D.cast_at` (`mixin/dtype.bend:337`),
 # which is the fix this row exists to keep.
 def row_cast_folded(+b: Bitnot) -> Bool:
   match b:

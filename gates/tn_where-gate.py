@@ -7,7 +7,7 @@ FIVE ROWS, THREE LANES. CPython's `Tensor.where` (elementwise.py:426) is
 `x, y = self.ufix(x)._broadcasted(y); return self.alu(Ops.WHERE, x, y)`. The
 `_broadcasted` step is walled (fold reads and a `least_upper_dtype` helper), but
 the no-broadcasting case reduces to `tn_alu(cond, WHERE, [x, y])`. The wall
-text at `nn/__init__.bend:241` called `where` "needs `_broadcasted`" -- that
+text at `nn/__init__.bend:230` called `where` "needs `_broadcasted`" -- that
 note is now stale for the no-broadcasting case. `tn_where` covers the
 no-broadcasting case; the broadcasting case stays walled.
 """

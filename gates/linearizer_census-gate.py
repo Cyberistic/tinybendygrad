@@ -103,11 +103,11 @@ def _pins():
 # row that stops being its class is a red run and not a stale sentence.
 CLASSES = [
     ("ORPHAN-CONST", r"^(ix|ix_len)$",
-     "A FIXTURE DEFECT, NOT AN INSTRUMENT CARVE-OUT. `lt_fix` (linearizer.bend:867-904) "
+     "A FIXTURE DEFECT, NOT AN INSTRUMENT CARVE-OUT. `lt_fix` (linearizer.bend:857-894) "
      "opens with `+c1a = O.UOp.const(O.Arena.empty(), O.CInt{1})` and then "
      "`+c1 = lt_i32(1, O.Found.ar(c1a))`, and `lt_i32` (:864) is "
      "`lt_i32.go(O.UOp.const(ar, O.CInt{...}), ar)` -- it mints its OWN const from the arena "
-     "it is handed instead of reading the one it was given. `UOp.const` (ops.bend:2961) is "
+     "it is handed instead of reading the one it was given. `UOp.const` (ops.bend:2959) is "
      "`UOp.new(ar, OpsCONST{}, Nil{}, APy{v}, TNone{})` and `UOp.new` (:2700) APPENDS, so "
      "arena index 0 is ORPHANED. MEASURED FROM THE PORT'S OWN ROWS: `lt_lst` is "
      "`[1,2,7,8,9,11,12,5,6,16,17,3,4,10,14,15,18,13,19]` and `lt_lst_call` is "

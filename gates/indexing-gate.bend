@@ -330,7 +330,7 @@ def g_ds() -> IO(Unit):
 # is load-bearing.
 def ix_tbl_of(+tag: String, +ts: O.PMEntrys) -> IO(Unit):
   ix_tbl_go(tag, O.PMEntrys.es(ts), 0n)
-# `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (ops.bend:4043), so the
+# `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (ops.bend:3973), so the
 # oracle's `<tag>_<k>_slen`, `_rlen`, `_anylen`, `_name`, `_nalts` and `_src`
 # columns have no field to read: those are `UPat` facts (`strict_length`,
 # `required_len`, `name`, the src permutation tuple -- upat.py:47) and `UPat`
@@ -473,7 +473,7 @@ def g_flip() -> IO(Unit):
 #
 #   * `<tag>_<k>_{slen,rlen,anylen,name,nalts,src}` -- 55 rows. These are `UPat`
 #     fields (`strict_length`, `required_len`, `name`, the src permutation tuple
-#     at upat.py:47) and `PMEntry` (ops.bend:4043) is `tag`/`ops`/`rej` and
+#     at upat.py:47) and `PMEntry` (ops.bend:3973) is `tag`/`ops`/`rej` and
 #     nothing else. `UPat` does not survive into the compiled IR.
 #   * `par_3_ops` -- the tag -> `Op` INVERSE, which `ops.bend` does not have
 #     (`Ops.name` and `Ops.value` go the other way).
@@ -545,7 +545,7 @@ def main() -> IO(Unit):
 #
 #   * `<tag>_<k>_{slen,rlen,anylen,name,nalts,src}` -- 55 rows. These are `UPat`
 #     fields (`strict_length`, `required_len`, `name`, the src permutation tuple
-#     at upat.py:47) and `PMEntry` (ops.bend:4043) is `tag`/`ops`/`rej` and
+#     at upat.py:47) and `PMEntry` (ops.bend:3973) is `tag`/`ops`/`rej` and
 #     nothing else. `UPat` does not survive into the compiled IR.
 #   * `par_3_ops` -- the tag -> `Op` INVERSE, which `ops.bend` does not have
 #     (`Ops.name` and `Ops.value` go the other way).

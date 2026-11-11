@@ -7,10 +7,10 @@ THIRTEEN ROWS, THREE LANES. CPython's `Tensor.__mul__` (elementwise.py:125) is
 `return self._binop(Ops.MUL, x, reverse)`, where `_binop` (elementwise.py:36) is
 `lhs, rhs = self._broadcasted(x, reverse); return lhs.alu(MUL, rhs)`. For two
 Tensors of the same shape (the no-broadcasting case the wall text at
-`nn/__init__.bend:241` cited as the blocker), `_broadcasted` is identity, so
+`nn/__init__.bend:230` cited as the blocker), `_broadcasted` is identity, so
 `__mul__` is `self.alu(MUL, x)` -- srcs are `(self, x)`. The `reverse=True`
 arm swaps: `lhs, rhs = (y, self)`, so `__rmul__` is `x.alu(MUL, self)` -- srcs
-are `(x, self)`. The wall at `nn/__init__.bend:241` named `__mul__` as "a
+are `(x, self)`. The wall at `nn/__init__.bend:230` named `__mul__` as "a
 separate wall (no arith ops are ported yet)"; with `tn_mul` / `tn_rmul`
 ported, the body of `Tensor.square` (elementwise.py:575, `return self * self`)
 collapses to `tn_mul(self, self)`. The port covers all three defs; the

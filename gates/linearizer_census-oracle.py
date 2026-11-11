@@ -99,7 +99,7 @@ def u32s(xs):
 
 
 # ===========================================================================
-# THE FIXTURE -- `lt_fix` (linearizer.bend:867-904), 22 constructions.
+# THE FIXTURE -- `lt_fix` (linearizer.bend:857-894), 22 constructions.
 # ===========================================================================
 def build_lin():
     c1a = UOp(Ops.CONST, src=(), arg=1)

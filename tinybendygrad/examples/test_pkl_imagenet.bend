@@ -18,7 +18,7 @@ import ./../extra/datasets/__init__.bend as D
 # WHY EVAL AND NOT TRAIN. The forward corpus is 34 of 34 byte-identical
 # (`unhealthy() -> 0`, `artefacts_ok() -> 0`, `repro_bad() -> 0`, `310 of 310
 # files identical across two clean runs`) and every one of those 34 graphs is a
-# FORWARD graph. `mixin/gradient.bend`'s 61 rules and `tensor.bend:2015
+# FORWARD graph. `mixin/gradient.bend`'s 61 rules and `tensor.bend:1988
 # tn_backward` exist and NOTHING CALLS THEM. So the forward pass is exercised,
 # the backward pass is not, and this file is the one that only needs the
 # forward pass. `train_resnet.bend` is the mirror image and is blocked twice
@@ -31,7 +31,7 @@ import ./../extra/datasets/__init__.bend as D
 # pickle's bytes CONTAIN a ResNet-50 ONNX graph, and executing that graph needs
 # the same Conv/Gemm/MaxPool/Relu/BatchNormalization bodies that
 # `extra/models/resnet.bend` needs -- and those bodies are `mixin/op.bend`
-# SIDE B, whose last line, mixin/op.bend:1523, reads `# SIDE B's SECTION GOES
+# SIDE B, whose last line, mixin/op.bend:1502, reads `# SIDE B's SECTION GOES
 # BELOW THIS LINE.`. What the eval path genuinely does NOT need is the
 # BACKWARD pass, and that is the whole and ONLY difference between the two
 # milestones. "First milestone toward ImageNet" is therefore right, and
@@ -40,17 +40,17 @@ import ./../extra/datasets/__init__.bend as D
 # THE SYMBOL CENSUS. Every symbol :1-19 names, with its instrument:
 #
 #   EXISTS
-#     `GlobalCounters`      (:2,:14)  helpers.bend:2581 symbol=GlobalCounters.init, :2585 `.reset`.
+#     `GlobalCounters`      (:2,:14)  helpers.bend:2523 symbol=GlobalCounters.init, :2585 `.reset`.
 #         Both TYPED -- `reset` takes and returns a `Counters` value rather than
 #         mutating an ambient one, which is the port's convention.
-#     `getenv`              (:3,:13)  helpers.bend:150 `getenv_str`, :304
+#     `getenv`              (:3,:13)  helpers.bend:148 `getenv_str`, :304
 #         `getenv_int`. `getenv("CNT", 100)` is `getenv_int` verbatim.
-#     `Tensor.shape`        (:16)     tensor.bend:216 `tn_shape` -- for the half
+#     `Tensor.shape`        (:16)     tensor.bend:211 `tn_shape` -- for the half
 #         that has an object to inspect.
 #     `captured.expected_input_info` (:10)  PARTIAL-EXISTS: `engine/jit.bend`
 #         :380-401 `InInfo` IS `(view, variables, dtype, device)`, which is
 #         jit.py:55 (upstream's `CapturedJit`), and the port says it is ported "IN FULL":
-#         `jit.bend:403` symbol=ii_vars
+#         `jit.bend:399` symbol=ii_vars
 #         :403 is the name list. The RECORD EXISTS. The object that carries it
 #         does not -- see `pickle` below.
 #     `TinyJit`             (:15, indirectly, via the pickle's payload)
@@ -66,18 +66,18 @@ import ./../extra/datasets/__init__.bend as D
 #     `sys.argv`            (:7)      MISSING. No argv reader.
 #     `pickle`              (:1,:8)   MISSING.  NO UNPICKLER EXISTS. 
 #         This is the deepest wall in the file and it is worth being exact,
-#         because the name LOOKS like it is covered. `engine/jit.bend:261` has
+#         because the name LOOKS like it is covered. `engine/jit.bend:259` has
 #         a def called `m_pickle` and it is NOT a codec: it is the MESSAGE
 #         STRING `"can't pickle an uncaptured JIT"`. A `.pkl` here is not a
 #         tensor dump; it is a Python OBJECT GRAPH containing a live
 #         `run_onnx_jit` with a `captured` record, and decoding it means
 #         INSTANTIATING CLASSES. The port's own header says it in as many
-#         words, `tinybendygrad/helpers.bend:3190`: "The sqlite disk cache is a
+#         words, `tinybendygrad/helpers.bend:3119`: "The sqlite disk cache is a
 #         persistent object store with pickle values. Bend has no pickle and no
 #         object graph to store, so the cache becomes the C-effect arena of P6
 #         and this is replaced rather than ported."
 #     `fetch`               (:3,:7)   MISSING. `grep -rnE "^def fetch\("
-#         --include='*.bend' tinybendygrad/` = 0, and helpers.bend:3193 gives
+#         --include='*.bend' tinybendygrad/` = 0, and helpers.bend:3122 gives
 #         the reason in the port's own words: "The HTTP machinery (fetch,
 #         fetch_fw, _ensure_downloads_dir) is urllib plus a temp file plus an
 #         atomic rename. It is I/O of exactly the kind the master plan puts in
@@ -88,7 +88,7 @@ import ./../extra/datasets/__init__.bend as D
 #         prefix and calls it a hit is the failure this tree already has a name
 #         for.
 #     `open(..., "rb")`     (:7)      MISSING, and it is the SAME wall twice.
-#         `nn/state.bend:498` is `# TODO(p3) state.py:8 TensorIO -- io.RawIOBase;
+#         `nn/state.bend:480` is `# TODO(p3) state.py:8 TensorIO -- io.RawIOBase;
 #         readinto (:17) needs ...` and `nn/onnx.bend` names the same wall in
 #         its own words: "Nothing in this port can read a byte out of a tensor".
 #         So there is no byte source for the pickle OR for the images.
@@ -97,12 +97,12 @@ import ./../extra/datasets/__init__.bend as D
 #         (469 lines) has the MNIST AND CIFAR URL TABLES and no ImageNet one:
 #         `grep -c imagenet tinybendygrad/nn/datasets.bend` = 0.
 #     `OnnxRunner`          (:9,:10,:15)  MISSING. STAGE 3 of `nn/onnx.bend`,
-#         and STAGE 3 is "NOT DONE": nn/onnx.bend:37-38 lists
+#         and STAGE 3 is "NOT DONE": nn/onnx.bend:36-37 lists
 #         `OnnxRunner.__init__` :374-376 through `__call__` :441-470 as
 #         unwritten, and :57-58 gives the reason -- "`OnnxRunner.__call__
 #         (:441-470) -- the interpreter loop, and it dispatches into the op
 #         table, so it is unreachable before the op bodies exist."
-#     the 167 onnx op bodies (:15)   missing. stage 4, nn/onnx.bend:39 -- "not
+#     the 167 onnx op bodies (:15)   missing. stage 4, nn/onnx.bend:38 -- "not
 #         DONE. The 167 op BODIES (:475-1307), the node-shape arithmetic that
 #         goes with them, and the quantization family." And the PROTOBUF READER
 #         they need is blocked too, THE PORT's `nn/onnx.bend` NOT PORTED BLOCK: "`PBBufferedReader`
@@ -111,7 +111,7 @@ import ./../extra/datasets/__init__.bend as D
 #     `Tensor.argmax`       (:17)     MISSING. `grep -rnE "^def mo_argmax"
 #         --include='*.bend' tinybendygrad/` = 0. THE PORT's `mixin/op.bend` SIDE A INVENTORY lists
 #         `argmax` inside SIDE A but no def carries it, and `rc_arg`
-#         mixin/reduce.bend:208 symbol=rc_arg.of is a REDUCTION INTERNAL, not `Tensor.argmax`.
+#         mixin/reduce.bend:203 symbol=rc_arg.of is a REDUCTION INTERNAL, not `Tensor.argmax`.
 #         So the eval loop has no way to produce a PREDICTION, which is the one
 #         thing an eval script exists to produce.
 #     `Tensor.to`           (:15,:17) MISSING. `mixin/movement.bend`'s wall list
@@ -146,31 +146,31 @@ def pkl_at(r: D.Refused) -> String:
 # because there is no byte source either.
 
 def pkl_open(path: String) -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:7 FIRST MISSING SYMBOL fetch -- grep -c '^def fetch(' = 0; helpers.bend:2758 symbol=lines is that file's ONLY I/O construct, so the HTTP machinery (fetch, fetch_fw, _ensure_downloads_dir) is NOT ported")
+  D.refuse("examples/test_pkl_imagenet.py:7 FIRST MISSING SYMBOL fetch -- grep -c '^def fetch(' = 0; helpers.bend:2694 symbol=lines is that file's ONLY I/O construct, so the HTTP machinery (fetch, fetch_fw, _ensure_downloads_dir) is NOT ported")
 
 # :8   run_onnx_jit = pickle.load(f)
 def pkl_load() -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:8 FIRST MISSING SYMBOL pickle -- NO UNPICKLER EXISTS; helpers.bend:2758 symbol=lines is that file's ONLY I/O construct and it reads LINES, so the sqlite disk cache (whose values are pickle) is NOT ported: Bend has no pickle and no object graph")
+  D.refuse("examples/test_pkl_imagenet.py:8 FIRST MISSING SYMBOL pickle -- NO UNPICKLER EXISTS; helpers.bend:2694 symbol=lines is that file's ONLY I/O construct and it reads LINES, so the sqlite disk cache (whose values are pickle) is NOT ported: Bend has no pickle and no object graph")
 
 # :9   input_name = run_onnx_jit.captured.expected_names[0]
-# The RECORD EXISTS (InInfo engine/jit.bend:380 symbol=InInfo, ii_vars engine/jit.bend:387
+# The RECORD EXISTS (InInfo engine/jit.bend:376 symbol=InInfo, ii_vars engine/jit.bend:383
 # symbol=InInfo.vars); the object does not.
 def pkl_input_name() -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:9 BLOCKED ON pickle.load; engine/jit.bend:380 symbol=InInfo and engine/jit.bend:391 symbol=InInfo.dt hold expected_input_info but the object does not")
+  D.refuse("examples/test_pkl_imagenet.py:9 BLOCKED ON pickle.load; engine/jit.bend:376 symbol=InInfo and engine/jit.bend:387 symbol=InInfo.dt hold expected_input_info but the object does not")
 
 # :10  device = run_onnx_jit.captured.expected_input_info[0][-1]
 def pkl_device() -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:10 BLOCKED ON pickle.load; InInfo.dev engine/jit.bend:395 symbol=InInfo.dev exists but the object does not")
+  D.refuse("examples/test_pkl_imagenet.py:10 BLOCKED ON pickle.load; InInfo.dev engine/jit.bend:391 symbol=InInfo.dev exists but the object does not")
 
 # :13  for i,(img,y) in enumerate(imagenet_dataloader(cnt=getenv("CNT", 100))):
-# `getenv("CNT", 100)` IS PORTED -- helpers.bend:307 symbol=getenv_int `getenv_int` is the typed
+# `getenv("CNT", 100)` IS PORTED -- helpers.bend:304 symbol=getenv_int `getenv_int` is the typed
 # spelling of exactly this call -- and the dataloader is not.
 def pkl_dataloader(cnt: U32) -> D.Refused:
   D.refuse("examples/test_pkl_imagenet.py:13 FIRST MISSING SYMBOL imagenet_dataloader (examples/test_onnx_imagenet.py:25); nn/datasets.bend has no imagenet table")
 
 # :15  p = run_onnx_jit({input_name: img.to(device)})
 def pkl_run() -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:15 BLOCKED ON OnnxRunner -- nn/onnx.bend STAGE 3 NOT DONE, and STAGE 4's 167 op bodies NOT DONE. THE PORTED HALF IS nn/onnx.bend:515 symbol=onx_dom (the STAGE 2 Domain table); THERE IS NO `OnnxRunner` DEF IN THE PORT -- IT IS ONNX.py:294 symbol=OnnxRunner.__init__ UPSTREAM")
+  D.refuse("examples/test_pkl_imagenet.py:15 BLOCKED ON OnnxRunner -- nn/onnx.bend STAGE 3 NOT DONE, and STAGE 4's 167 op bodies NOT DONE. THE PORTED HALF IS nn/onnx.bend:507 symbol=onx_dom (the STAGE 2 Domain table); THERE IS NO `OnnxRunner` DEF IN THE PORT -- IT IS ONNX.py:294 symbol=OnnxRunner.__init__ UPSTREAM")
 
 # :17  t = p.to('cpu').argmax().item()
 def pkl_predict() -> D.Refused:

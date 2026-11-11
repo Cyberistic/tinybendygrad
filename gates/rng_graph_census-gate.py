@@ -68,7 +68,7 @@ carries the `rangeify.py` line its rule body is on -- MEASURED by asking each ma
   its refusal. Both are answers; neither is smoothed.
 
   6 CARVE-OUTS, INSTRUMENT ONLY -- `rb_11`, `rb_32`, `ab_31`, `ab_41`, `aprt_34`, `dg_37`. The
-  GRAPHS AGREE; the two lines differ by ONE character. `Rng.srcops` (ops.bend:5894) prints `-`
+  GRAPHS AGREE; the two lines differ by ONE character. `Rng.srcops` (ops.bend:5763) prints `-`
   for a node with NO srcs where CPython's `join` prints the empty string. This is the SAME
   carve-out `ew_graph_census` pins as `ew_ufix` and `md_graph_census` pins three times, and it is
   six rows here rather than one because a REWRITER answers src-free nodes far more often than a
@@ -87,7 +87,7 @@ WHAT IT ASSERTS THAT NEEDS NO CPYTHON, AND IT IS NOT THE `NOOP` CLAIM. `NOOP` IS
 `ab_31`, `ab_41` are those two rules working. A gate that asserted "no NOOP" here would be
 asserting that two ported rules are broken. What IS asserted instead is `gs_and_lb_are_silent`:
 the eleven tables produce 726 rows of which `gs` and `lb` contribute ZERO non-`none` answers --
-the measurement `rangeify.bend:2667-2668` makes in prose -- checked off the lane's own output.
+the measurement `rangeify.bend:2649-2650` makes in prose -- checked off the lane's own output.
 
 EXIT STATUS: 0 all three lanes identical after the pins · 1 a lane took the wrong row count, the
 oracle failed, the native compile failed, the lanes disagree, or a pinned row moved · 3 a
@@ -256,7 +256,7 @@ GATE = Gate(
 
 def gs_and_lb_are_silent() -> bool:
     """ELEVEN TABLES, NINE OF THEM SPEAK. `gs` and `lb` contribute ZERO answers over 66 nodes
-    each, and `rangeify.bend:2667-2668` says why in prose: `gate_substitute` raises
+    each, and `rangeify.bend:2649-2650` says why in prose: `gate_substitute` raises
     `BottomUpGate` (which `graph_rewrite` catches as "no rewrite", ops.py:1835) and
     `_limit_bufs` returns `None` at its second line whenever `MAX_KERNEL_BUFFERS` is unset.
 

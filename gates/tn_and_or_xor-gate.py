@@ -7,13 +7,13 @@
 TWENTY-FIVE ROWS, THREE LANES. CPython's `Tensor.__and__` (elementwise.py:285,
 via `bitwise_and` at :159) is `self._binop(Ops.AND, x, False)`. For two
 Tensors of the same shape (the no-broadcasting case the wall text at
-`nn/__init__.bend:241` cited as the blocker) `_broadcasted` is identity and
+`nn/__init__.bend:230` cited as the blocker) `_broadcasted` is identity and
 the body reduces to `_binop`'s shape (elementwise.py:36) with `MUL` replaced
 by `AND`: `__and__` is `self.alu(AND, x)` -- srcs `(self, x)`. The
 `reverse=True` arm swaps: `__rand__` is `x.alu(AND, self)` -- srcs
 `(x, self)`. `__or__`/`__ror__`/ `__xor__`/`__rxor__` are the same shape
 with `Ops.OR` / `Ops.XOR` instead of `Ops.AND`. The wall at
-`nn/__init__.bend:241` named `_broadcasted` as the blocker; with
+`nn/__init__.bend:230` named `_broadcasted` as the blocker; with
 `tn_and` / `tn_rand` / `tn_or` / `tn_ror` / `tn_xor` / `tn_rxor` ported,
 the no-broadcasting case of all six dunders is covered. The broadcasting
 case stays walled on `_broadcasted`.

@@ -288,10 +288,10 @@ import ../uop/ops.bend as O
 import ../uop/symbolic.bend as SY
 
 # F32 AND U32 SHARE A WORD, so the bitcast has a NAME and this file does not
-# carry one: `F.F32.from_bits` (`../base.bend:54`). It is one destructuring and
+# carry one: `F.F32.from_bits` (`../base.bend:53`). It is one destructuring and
 # one constructor -- both payloads are the same type `Word(32n)`, so the
 # constructor `F32{..}` WAS already the bitcast -- and its inverse is
-# `F32.bits` (the `law` at `base.bend:1826`), which is where `bits_of` and
+# `F32.bits` (the `law` at `base.bend:1825`), which is where `bits_of` and
 # `Prog.cast.dt` below read. ONE name per direction: importing both is what
 # local `w32`/`f32_of` pair and is now a duplicate retired; the measurement
 # that decided it is in .agents/slop/OPSPY.md.
@@ -549,7 +549,7 @@ def op_of(nm: String) -> Maybe<&1, O.Op>:
 # the lane follows the python TYPE of the operands, which is why `is_f` reads the
 # ELEMENT and not the uop dtype: a CONST's weakint is a Python int and a LOAD's
 # float is a Python float, and `1 + 2.5` is a float in Python (ops.py:1425's
-# comment on the lane, restated at uop/symbolic.bend:825 symbol=f32_pow).
+# comment on the lane, restated at uop/symbolic.bend:823 symbol=f32_pow).
 #
 # `Elem <-> O.Const` is three constructors and nothing else, so the reuse is
 # lossless: `Sc` IS `O.Const`'s payload with a dtype attached.
@@ -634,9 +634,9 @@ def cf_of(+e: Elem) -> F32: f_of(e)
 # they ARE ops.py:1432-1435's body, and reusing them is the point.
 #
 # WHY NOT `SY.exec_alu1/2/3`, which wrap the same two lanes with a selector? MEASURED:
-# `symbolic.bend`'s `ci_fits` (symbolic.bend:917) is wired to `i64_big`
-# (symbolic.bend:1041), which asks "does NOT fit an i32" -- and `exec_alu.of2`
-# (symbolic.bend:928) reads it as "fits", so the INTEGER lane is skipped for every
+# `symbolic.bend`'s `ci_fits` (symbolic.bend:915) is wired to `i64_big`
+# (symbolic.bend:1039), which asks "does NOT fit an i32" -- and `exec_alu.of2`
+# (symbolic.bend:926) reads it as "fits", so the INTEGER lane is skipped for every
 # small value. Measured: `SY.exec_alu2(Ops.MUL, int32, [CInt(6), CInt(7)])` answers
 # `None{}`, and so has no `MUL` for an int at all. A fold that never fires is a
 # safe fold; a DEVICE that answers `None{}` is a wrong device, so the two lanes

@@ -1021,7 +1021,7 @@ def fn_implicit_msg.of(+bs: List<&2, U32>, name: String, +ar: O.Arena) -> String
 # `uop/fold.bend` rule 5 -- "expected : a decreasing self-call", and
 # `U32.sub(d, 1)` is not a subterm of `d`), so the depth is converted to a `Nat`
 # once and the countdown is destructured as `Succ{p}`, which IS the strict
-# subterm the decrease check looks for. The spelling is `helpers.bend:401 symbol=CV`'s.
+# subterm the decrease check looks for. The spelling is `helpers.bend:396 symbol=CV`'s.
 def fn_trace.indent.go(d: Nat, +acc: List<&2, String>) -> List<&2, String>:
   match d:
     case 0n: acc
@@ -1057,7 +1057,7 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # TODO(p3) ops.py:1272  `UOp.call_with_outputs` -- `uret.call_with_outputs(...)`.
 #   It is the PROGRAM/CallInfo construction and it needs `grad_fxn`, which is a
 #   Python callable; a function value in a record forces `Type`, not `Data`.
-# DONE(p3) ops.py:245   `UOp.replace` -- PORTED at `ops.bend:2986` (gate `gates/replace-gate.py` rc=0 8/8 rows) and
+# DONE(p3) ops.py:245   `UOp.replace` -- PORTED at `ops.bend:2984` (gate `gates/replace-gate.py` rc=0 8/8 rows) and
 #   `replace(arg=ParamArg{...})` is a single-arg call to a def that takes the new
 #   arg as `Maybe<&2, Arg>`, and the identity case (no kwargs) is the row that
 #   `gates/replace-gate.py`'s `identity_returns_self` pins (8 rows, 3 lanes, gate

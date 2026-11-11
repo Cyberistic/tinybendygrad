@@ -54,7 +54,7 @@
 # THE WALL, and it is the only one, and it is not the framing.
 #
 # The server is a LONG-LIVED process holding a duplex pipe. `Process.run`
-# (base.bend:182, measured in compiler_amd.bend's header) spawns a process,
+# (base.bend:181, measured in compiler_amd.bend's header) spawns a process,
 # feeds it stdin, collects stdout and stderr, and exits -- it cannot hold a pipe
 # open across requests, and `base.bend` has no `Pipe`. So the REQUEST/RESPONSE
 # pair is ported as two frames and the LOOP that drives them is declared.

@@ -37,7 +37,7 @@ Three tests, in order, and the first that fires is the verdict:
 AND THE MEASURED INSTANCE, WHICH IS WHAT THE VERDICT IS FOR. `gates/op_graph_census-oracle.py:97`
 is `print("nop=%s," % ",".join("%s:%d" % ("Nzs", x.numel()) for x in o._new_optim_param()))`.
 MEASURED: `Nzs` occurs **0 times in all of `tinygrad/`** -- it is a PORT-ONLY tag
-(`tinybendygrad/nn/optim.bend:1059` `case Nzs{sz}: "Nzs"`), and
+(`tinybendygrad/nn/optim.bend:1015` `case Nzs{sz}: "Nzs"`), and
 `.venv/bin/python -c "optim.Optimizer([Tensor([1.0,2.0])],lr=0.1)._new_optim_param()"` answers
 `[('f32', 2)]`. So the row prints `Nzs:2,` where CPython's derivable name is `f32`, the `:2` IS
 computed from `x.numel()`, and **driver and oracle agree on a letter neither computed.** One

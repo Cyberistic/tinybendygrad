@@ -82,11 +82,11 @@
 
 # THE WALLS, named once each with the `hcq2.py` line that owns them.
 #
-# 1. THE uop arena -- THE reason that stood here was FALSE. MEASURED 2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:298`;
-#    `uop/spec.bend:2725 symbol=kernel_graph_rewrite` `kernel_graph_rewrite`),
+# 1. THE uop arena -- THE reason that stood here was FALSE. MEASURED 2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:292`;
+#    `uop/spec.bend:2705 symbol=kernel_graph_rewrite` `kernel_graph_rewrite`),
 #    `UOp.toposort` IS a def
-#    (`uop/ops.bend:3404 symbol=UOp.toposort`), and the port writes rules as `pm_*` defs over
-#    `PMEntrys` returning `Maybe<&2, U32>` / `Verdict` (`uop/ops.bend:4047 symbol=PMEntrys`,
+#    (`uop/ops.bend:3402 symbol=UOp.toposort`), and the port writes rules as `pm_*` defs over
+#    `PMEntrys` returning `Maybe<&2, U32>` / `Verdict` (`uop/ops.bend:3976 symbol=PMEntrys`,
 #    `:4033 symbol=Verdict`). So "every UPat/PatternMatcher/toposort reads and writes the UOp
 #    graph" is NOT the blocker. The real blocker per rule is the absent symbol
 #    its body calls: the SHAPED `UOp.param` (only the shape-less arm is ported,
@@ -96,7 +96,7 @@
 #    (`Buffer`/`_resolve`/`lower_and_compile`) and the `HWQueue` device methods.
 #    THE `PORTED` TABLE above is not a witness for these: its helper names
 #    (`view_*`, `pkey`, `submit_of`, `build_queues`, `finalize`, `hwq`, `enq_*`)
-#    have 0 defs here (`pkey` is `renderer/ptx.bend:231 symbol=pkey`, a different function).
+#    have 0 defs here (`pkey` is `renderer/ptx.bend:226 symbol=pkey`, a different function).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:141   `pm_replace_buffers` symbol=pm_replace_buffers -- BLOCKED: needs the shaped `UOp.param` (`view_as` absent).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:148   `pm_unwrap_multi` symbol=pm_unwrap_multi -- BLOCKED: rule body unwritten here (`UOp.mselect`/`UOp.replace` are defs at `ops.bend`; no `def pm_unwrap_multi` in this file).
 

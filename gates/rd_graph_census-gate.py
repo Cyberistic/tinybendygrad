@@ -30,7 +30,7 @@ malformed SHRINK on the `key[i]` path, and both rows now match CPython byte-for-
     tfb    26 ... THREEFRY/2 CAST/1 SHR/2 CAST/1 STACK/2 CONST/0 RESHAPE/2
 
 THREE DEFECTS WERE FIXED, all on the `_threefry_random_bits` path:
-  * `rd_tail` (rand.bend:391) REBUILT its input -- the `go`/`acc` fold appended every element
+  * `rd_tail` (rand.bend:389) REBUILT its input -- the `go`/`acc` fold appended every element
     and handed back the list it was given -- instead of returning its TAIL, so `rd_take.sz`
     shrank with a two-element size arg and `rd_take.of` reshaped to `[0]` instead of `[]`. It is
     now the one-line `ds[1:]` (`viz/serve.bend`'s `vs.tail` shape).
@@ -38,7 +38,7 @@ THREE DEFECTS WERE FIXED, all on the `_threefry_random_bits` path:
     `mxw_stk.done` one-element fold's CONST could not be read back and the `mxw_reshape` after
     `rd_take`'s SHRINK folded as the identity. CPython's `as_shape` (ops.py:806) opens with
     `if self.op is Ops.CONST: return (self.val,)`, which is the arm the port was missing.
-  * `rd_tfb.cat` (rand.bend:432) read `x` twice while `rd_c32(x)` grew `x`'s arena, so
+  * `rd_tfb.cat` (rand.bend:430) read `x` twice while `rd_c32(x)` grew `x`'s arena, so
     `rd_shr32(x)` built its SHR in the stale arena and `op_cat1`'s STACK named the SHR as
     `src[0]` -- the `x.cast(uint32)` was LOST. The shift is now re-wrapped into the cast's arena.
 

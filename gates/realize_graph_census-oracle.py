@@ -22,7 +22,7 @@ UNDER IT.** MEASURED 2026-10-22, on the vendored `tinygrad/` (the pin `5c2bf39d6
     children PLUS `ProgramInfo.params`, in SLOT ORDER -- and a PARAM MAY BE A BUFFER, in
     which case the entry is the ADDRESS of the CALL's ARGUMENT AT THAT SLOT.
   * `get_call_written_bufs` WAS DELETED UPSTREAM (`a26c50b01`, "jit no written uops",
-    2026-10-05). The PORT KEEPS IT -- `tinybendygrad/engine/realize.bend:865` IS ITS
+    2026-10-05). The PORT KEEPS IT -- `tinybendygrad/engine/realize.bend:859` IS ITS
     LAST REVISION AND `tinybendygrad/engine/jit.bend` READS IT -- SO THE PORT IS RIGHT
     TO KEEP IT AND THE ORACLE CANNOT CALL IT. ITS ANSWER IS THEREFORE THE DELETED
     FUNCTION's OWN TEXT, TRANSCRIBED, AND BUILT FROM THE PIN's OWN `get_call_arg_uops`
@@ -182,7 +182,7 @@ def _add(u):
 c3 = _add(UOp.const(3))                                                       # 1
 # THE SIZE CONST, AND IT IS A NODE OF ITS OWN IN THE PORT's ARENA. `1af4ba921`
 # ("size -> src[0]") MOVED THE PARAM's SIZE INTO ITS FIRST SRC, AND THE PORT's
-# `ops.bend:3075` `UOp.new.param` MINTS IT: `shape_to_shape_arg.of` IS
+# `ops.bend:3073` `UOp.new.param` MINTS IT: `shape_to_shape_arg.of` IS
 # `UOp.const(made, CInt{k})` FOR A SCALAR SIZE. SO THE PORT's `main_arena` HAS A
 # CONST 16 AT SLOT 2 AND EVERY PARAM AND BUFFER AFTER IT IS ONE SLOT LATER THAN IT
 # WAS. THE ORACLE's FIXTURE DID NOT MINT IT, SO EVERY INDEX AFTER SLOT 1 WAS OFF BY
@@ -274,7 +274,7 @@ cVv = _add(_call("vv", k1, g1, gv, c1))                                         
 # a TUPLE puts more than one kernel in the answer. Every device above is the scalar "CPU",
 # so all 22 `kern_*` rows were lists of length 0 or 1 and the COUNT that both lanes print
 # was only ever tested on a list that could not surprise it. `Port: S.Dn{[6, 0]}` -- DISK
-# and not-DISK, per `device.bend:344`'s `tag_of` -- so a dropped or a duplicated device
+# and not-DISK, per `device.bend:340`'s `tag_of` -- so a dropped or a duplicated device
 # moves the count, and the two tags are distinct on purpose. NOTHING IS OPENED.
 g2 = _add(UOp(Ops.BUFFER, src=(c3,), arg=_buf_dev(3, "g2", ("DISK", "CPU"))))       # 65
 cDm = _add(_call("dm", p0, g2))                                                    # 65 two devices
@@ -609,7 +609,7 @@ def _written_bufs(call) -> list:
     ("jit no written uops", 2026-10-05) DELETED `tinygrad/engine/realize.py`'s
     `get_call_written_bufs` BECAUSE THE JIT STOPPED ASKING FOR THE WRITTEN BUFS AND
     STARTED ASKING FOR THE LINEAR's BUFFERs INSTEAD (`_jit_bufs`, `jit.py:67`).
-    **THE PORT KEEPS IT**: `tinybendygrad/engine/realize.bend:865` IS THAT FUNCTION's
+    **THE PORT KEEPS IT**: `tinybendygrad/engine/realize.bend:859` IS THAT FUNCTION's
     LAST REVISION, PORTED, AND `tinybendygrad/engine/jit.bend:35` CITES IT. SO THE
     PORT IS RIGHT TO KEEP IT AND THE ORACLE CANNOT CALL IT -- AND DROPPING THE 23
     `wbuf_*` ROWS WOULD BE A ROW COUNT THAT FELL BECAUSE A FUNCTION WAS DELETED, WHICH
@@ -651,7 +651,7 @@ def drive(drv: str, u):
             # answer's `d` is a device NAME (or a tuple of them, or `None`) and the port's
             # is a TAG, and there is no table to convert between them -- CPython
             # has no `str -> int` device index (`hasattr(Device, 'tag')` is False) and the port's only
-            # tag/name function is `device.bend:344`'s three-valued sentinel. So this lane
+            # tag/name function is `device.bend:340`'s three-valued sentinel. So this lane
             # prints the LENGTH, the port prints the LENGTH, and `gates/realize_graph_census-gate.py`'s
             # `device_vocab_holds` MEASURES that premise every run while `kern_blind_holds`
             # measures the residual rather than asserting it away.

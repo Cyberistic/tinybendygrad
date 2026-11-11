@@ -238,7 +238,7 @@ def ws_split.go(cs: List<&2, String>) -> List<&2, String>:
     case h <> t: ws_step(String.trim(h), ws_split.go(t))
 
 # `int(x)` on a decimal string. STRING.TO_U32 DOES NOT EXIST in bend 2.0.34 --
-# MEASURED, and `runtime/ops_cpu.bend:168 symbol=Cn` records the same wall for
+# MEASURED, and `runtime/ops_cpu.bend:167 symbol=Cn` records the same wall for
 # `int(parts[2])`. So this is a parse, and Python's `int()` raises on a
 # non-digit while this answers `None`; every caller (`row_tuple`,
 # `device_sort_fn`, `get_int`) reaches it either after a digit test or with a
@@ -539,7 +539,7 @@ def filter_keys(kvs: List<&2, Kv>) -> List<&2, Kv>:
 # job. `shape_to_str.sym` is that seam and it is not called by any row.
 
 # `srender` of an `SI` is the INTEGER, in decimal. `H.i64_text` is `hi:lo` --
-# helpers.bend:1305 says so and gives the reason -- so a decimal renderer is
+# helpers.bend:1278 says so and gives the reason -- so a decimal renderer is
 # needed and it is only honest for a value that FITS: `hi == 0` is checked and the
 # `hi:lo` form is the fallback, which is a stated limit and not a silent one.
 def v_of(hi: U32, lo: U32) -> H.I64: H.i64_of_hi_lo(hi, lo)

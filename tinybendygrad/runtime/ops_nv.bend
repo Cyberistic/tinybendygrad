@@ -311,7 +311,7 @@
 # NOT `off + k`. The two agree on every uniform list -- which is every list a
 # CUDA kernel's buffers produce, all uint64 -- and disagree the moment a
 # narrow type follows a narrow type: the uint16 at slot 8 ends at 10, and the
-# ulong after it is padded to 16. THE BUG WAS IN `device.bend:871` AND IS FIXED
+# ulong after it is padded to 16. THE BUG WAS IN `device.bend:861` AND IS FIXED
 # (`7f170f644`): it computed `Sig{round_up(off, k), U32.add(off, k)}` -- the
 # advance off the UNROUNDED offset -- and answered `0, 4, 6, 8, 16, 19` for this
 # same list where `hcq2.layout_args` answers `0, 4, 8, 16, 24, 28`. This port

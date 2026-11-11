@@ -38,7 +38,7 @@ THE OTHER TWO ARE A DEFECT AND THE PIN LOCKS IT:
     zeros_like_vbool  CPython 6 AFTER/2 ALLOC STORE      port 7 AFTER/2 ALLOC STORE   [FIXED]
     ones_like_vbool   CPython 6 AFTER/2 ALLOC STORE      port 7 AFTER/2 ALLOC STORE   [FIXED]
 
-`cr_zeros_like` (creation.bend:427) hardcodes `MO.mo_ki(0)` and `cr_ones_like` (:435)
+`cr_zeros_like` (creation.bend:422) hardcodes `MO.mo_ki(0)` and `cr_ones_like` (:435)
 `MO.mo_ki(1)` -- INT consts -- while CPython's `full_like(0)` resolves `dt = self.dtype` and
 `cls.const(0, bool)` calls `DType.const`, whose bool arm is `bool(val)` (dtype.py:84). So on a
 BOOL receiver CPython's CONST is the BOOL `False`/`True` and `.cast(bool)` FOLDS; the port's

@@ -43,7 +43,7 @@ in the source with its reason:
 THIS GATE IS RED ON THIS TREE, AND IT SAYS SO RATHER THAN HIDING IT. Two rows are red, and
 both are ONE-TOKEN FIXES IN A `.bend` FILE:
 
-  `op_color_len.literal`  the row at `tinybendygrad/viz/serve.bend:1868` hard-codes `65`.
+  `op_color_len.literal`  the row at `tinybendygrad/viz/serve.bend:1720` hard-codes `65`.
                            Upstream's `len(uops_colors)` is **64** at
                            `refs/remotes/upstream/master` (MEASURED), because `Ops.FLIP` was
                            deleted from `GroupOp.Movement` after the port was written.
@@ -57,9 +57,9 @@ both are ONE-TOKEN FIXES IN A `.bend` FILE:
                            and a COMPILER INTRINSIC (`comp.ts:227` -> `f32_bits: { C: "$0",
                            JS: "f32_bits($0)" }`, `comp.ts:493` -> `new Uint32Array(new
                            Float32Array([x]).buffer)[0]`), and the PORT ALREADY CALLS IT in
-                           `tinybendygrad/dtype.bend:758`, `helpers.bend:909`,
-                           `renderer/tc_ptx.bend:299` and three more files. `F32.from_bits`
-                           is defined port-locally at `tinybendygrad/base.bend:54`.
+                           `tinybendygrad/dtype.bend:734`, `helpers.bend:890`,
+                           `renderer/tc_ptx.bend:289` and three more files. `F32.from_bits`
+                           is defined port-locally at `tinybendygrad/base.bend:53`.
 
 A GATE THAT CANNOT PASS TEACHES NOTHING, so note what the RED is and is not: the
 CAPABILITY-TABLE lane -- the lane this gate exists for -- is GREEN, and it is green because

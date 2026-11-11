@@ -43,7 +43,7 @@ CALL, AND THE `seek_neg2_w2` ROW IS THE ONE THAT USES A NON-ZERO `pos` (`1`, WHI
 ANSWER OF THE FIRST ROW).
 
 THE PORT HAS NO `TensorIO` OBJECT AND THAT IS FINE FOR BOTH HALVES, AND THE REASON IS NAMED
-IN THE PORT's OWN FILE: `tinybendygrad/nn/state.bend:498` records `TODO(p3) state.py:8
+IN THE PORT's OWN FILE: `tinybendygrad/nn/state.bend:480` records `TODO(p3) state.py:8
 TensorIO -- io.RawIOBase; readinto (:17) needs .data() (REALIZATION, tensor.bend WALL 4) and
 buffer[:n] = data mutates a Python bytearray`. **AND NEITHER HALF OF THE UPSTREAM TEST IS
 ABOUT `readinto`**: THE REFUSAL PREDICATE IS A PREDICATE ON THE TENSOR's SHAPE AND DTYPE, AND

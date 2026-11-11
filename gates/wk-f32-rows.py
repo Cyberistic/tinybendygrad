@@ -3,7 +3,7 @@
 
     .venv/bin/python .agents/slop/wk-f32-rows.py
 
-The unit is `wk_i64_to_f32` (uop/weak.bend:271), and it is the primitive every
+The unit is `wk_i64_to_f32` (uop/weak.bend:270), and it is the primitive every
 `weakint -> weakfloat` promotion goes through, so `tanh` is held behind it and so is
 anything else that widens an int constant.
 

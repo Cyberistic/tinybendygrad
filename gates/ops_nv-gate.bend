@@ -1024,7 +1024,7 @@ def cq.sig(h: U32, l: U32, v: U32, t: P.Tr) -> P.Tr: P.cq.semaphore(h, l, v, P.D
 # `iter_sig` (device.py:364-368) is
 #   `yield (offset := round_up(offset, dt.itemsize)), dt; offset += dt.itemsize`
 # and the `:=` REBINDS `offset`, so the advance is `round_up(off, k) + k`. See
-# THE WALRUS IS LOAD-BEARING in the header: `device.bend:871` advances off the
+# THE WALRUS IS LOAD-BEARING in the header: `device.bend:861` advances off the
 # UNROUNDED offset and disagrees on any list whose widths are not all 8.
 # ===========================================================================
 # `ifaces = [NVKIface, PCIIface, MOCKIface]` spelled out, because
@@ -1789,7 +1789,7 @@ def t_args() -> IO(Unit):
     row("nv_args_buf3_n", U32.from_nat(List.length(&2, U32, args.layout(args.buf3(), 0))))
     row("nv_args_buf0_n", U32.from_nat(List.length(&2, U32, args.layout(Nil{}, 0))))
     row("nv_args_mixed_n", U32.from_nat(List.length(&2, U32, args.layout(args.mixed(), 0))))
-    # device.bend:871's `iter_sig` USED TO advance off the UNROUNDED offset and to
+    # device.bend:861's `iter_sig` USED TO advance off the UNROUNDED offset and to
     # disagree with `hcq2.layout_args` on the mixed list; `7f170f644` fixed it to
     # `U32.add(round_up(off, k), k)` and the two implementations now AGREE. THE ROWS
     # ARE kept because the pair is the claim -- `nv_device_args_*` is
@@ -2350,7 +2350,7 @@ def main() -> IO(Unit):
 # | M14 | `arch_of`: `>> 4` becomes `>> 1` | 8 | :601 `val >> 4` where the test is `val > 0xf`. |
 # | M15 | `sass_of`: `(sm & 0xf00) >> 4` becomes `(sm & 0xf)` | 7 | :602, and it is the only place in the file where the two masks are confused with each other. |
 # | M16 | `iowr.cmd`: the size mask is dropped | 3 | :44 `ctypes.sizeof(args) & 0x1FFF` -- an 8 KiB struct encodes as if it were empty. |
-# | M17 | `pd.min_cbuf0`: a `max` becomes a `min` | 7 | `device.bend:584`'s own rule, one layer down: `max(cbuf0 // 4, min_cbuf0)`. |
+# | M17 | `pd.min_cbuf0`: a `max` becomes a `min` | 7 | `device.bend:577`'s own rule, one layer down: `max(cbuf0 // 4, min_cbuf0)`. |
 # | M18 | `reg_ops`: the chunk is 128 instead of 124 | 10 | :819 `range(0, len(ops), 124)` and the last chunk is short, so 125 ops are TWO ioctls. |
 # | M19 | `dev.slm`: the early-return guard is dropped | 1 | :689 the NEGATIVE CASE for the whole pool. It moved NOTHING until `nv_slmp_33_have48` was added, because every other fixture had `have` already equal to `round_up(required, 32)`. |
 # | M20 | `NV_PICK`: the ladders are walked oldest-first | 7 | :408-412 the ladders are NEWEST GENERATION FIRST, and `nv_ladder_*` print the whole chosen row. |

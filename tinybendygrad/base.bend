@@ -8,7 +8,7 @@
 # only runs one way.
 #
 
-# THE OBSERVATION. `base.bend:60` declares
+# THE OBSERVATION. `base.bend:59` declares
 #
 #     type U32 is Data:
 #       U32{data: Word(32n)}
@@ -18,16 +18,16 @@
 # so a float's payload and an integer's payload are the SAME TYPE, `Word(32n)`,
 # and a float's payload IS its IEEE-754 bit pattern. The constructor `F32{..}`
 # is therefore already a bitcast -- it takes the pattern and yields the float.
-# `runtime/ops_python.bend:299` had already measured this (`w32`/`f32_of`); that pair
+# `runtime/ops_python.bend:298` had already measured this (`w32`/`f32_of`); that pair
 # is now a duplicate retired in favour of `F.F32.from_bits`, and it had no way to hand it to `dtype.bend`. So `from_bits` is not a new
 # primitive, an intrinsic, or a law: it is one destructuring and one
 # constructor, and it is safe, so `bend --check-only` accepts it.
 #
-# `U32.to_f32` IS NOT THIS. `base.bend:1673` symbol=U32.to_f32 declares it a `law`
+# `U32.to_f32` IS NOT THIS. `base.bend:1672` symbol=U32.to_f32 declares it a `law`
 # and it is the NUMERIC conversion: `U32.to_f32(3) == 3.0`, so `U32.to_f32(0x3F800000)`
 # is 1.0e9-ish and not 1.0. Reaching for it produces plausible floats.
 #
-# INVERSE: `F32.bits` (`base.bend:1826` symbol=F32.bits, also a `law`). `F32.bits` IS
+# INVERSE: `F32.bits` (`base.bend:1825` symbol=F32.bits, also a `law`). `F32.bits` IS
 # the inverse -- there is deliberately no second name for it here.
 #
 

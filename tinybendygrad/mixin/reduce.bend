@@ -161,7 +161,7 @@ def rc_all(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 
 # `_rop` -- reduce.py:10-11. `raise NotImplementedError`: a DECLARATION, not a
 # body, and Bend has no `raise`. The concrete one is `UOp._rop` (ops.py:655),
-# `T.tn_rop` (tensor.bend:1843 symbol=tn_rop), and this is the forwarding line so the reader of
+# `T.tn_rop` (tensor.bend:1822 symbol=tn_rop), and this is the forwarding line so the reader of
 # reduce.py finds the name where reduce.py has it.
 def rc_rop(+ar: O.Arena, self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
   T.tn_rop(ar, self, op, axis)
@@ -222,8 +222,8 @@ def rc_find.go(xs: List<&2, U32>, +ar: O.Arena, +acc: RcRed) -> RcRed:
 def rc_find(+ar: O.Arena, i: U32) -> RcRed:
   rc_find.go(O.UOp.toposort(O.Arena.budget(ar), ar, i), ar, RcRed{False{}, O.OpsNOOP{}, 0})
 
-# THE ROW. `mo_shape`'s shape string (mixin/op.bend:1556 symbol=mo_shape) and `mo_sig`'s signature
-# (mixin/op.bend:1276 symbol=mo_sig) are REUSED -- they are defs in another file and Bend has no
+# THE ROW. `mo_shape`'s shape string (mixin/op.bend:1535 symbol=mo_shape) and `mo_sig`'s signature
+# (mixin/op.bend:1255 symbol=mo_sig) are REUSED -- they are defs in another file and Bend has no
 # privacy -- so this is the three new columns and the assembly.
 def rc_red_str(ok: Bool, +r: RcRed) -> String:
   match ok:

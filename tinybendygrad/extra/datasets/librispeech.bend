@@ -28,7 +28,7 @@
 #       naming that is worth more than a stub that pretends.
 #   (2) AN NDARRAY. `np.expand_dims`, `np.matmul`, `np.stack`, and the
 #       `x[:, 1:]` slicing are all ndarray operations.  `Tensor` in `tensor.bend` is
-#       a UOp SLOT IN AN ARENA, not a buffer, and `tensor.bend:1341` says so: a
+#       a UOp SLOT IN AN ARENA, not a buffer, and `tensor.bend:1332` says so: a
 #       "list/tuple/bytes/ndarray/Path" is "the uop the maker already" holds.  So
 #       `feature_extract` has nowhere to put its argument.
 #   (3) THE MANIFEST. `dev-clean-wav.json` is not in the repo and cannot be: it is

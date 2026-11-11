@@ -5,7 +5,7 @@
 
 FIVE ROWS, THREE LANES -- CPython, bend interpreted, bend compiled -- over the claims
 that `tn_detach` does what CPython's `Tensor.detach` (elementwise.py:43) does:
-`return self.alu(Ops.DETACH)`. The wall that lived at `nn/__init__.bend:241`
+`return self.alu(Ops.DETACH)`. The wall that lived at `nn/__init__.bend:230`
 ("`Tensor.detach` ... NOT a def in `tensor.bend`") was closed by porting the
 one-liner that mirrors `tn_sqrt`'s shape: a single `tn_alu` call with
 `OpsDETACH{}` and an empty src list.
@@ -43,4 +43,4 @@ if __name__ == "__main__":
     sys.exit(main(GATE, "tn_detach-gate: 5 rows, 3 lanes -- tn_detach's op/src/arg set, "
                         "input purity and reachability all agree with CPython's "
                         "Tensor.detach (the one-line port closes the second of the four "
-                        "Tensor methods nn/__init__.bend:241 named)"))
+                        "Tensor methods nn/__init__.bend:230 named)"))

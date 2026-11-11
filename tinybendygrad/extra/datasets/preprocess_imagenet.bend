@@ -20,7 +20,7 @@
 #   a stub's to paper over. AFTER that, MISSING: the packing loop itself --
 #   `Tensor.empty(sz, *x.shape[1:], device="disk:/tmp/imagenet_x",
 #   dtype=dtypes.uint8)` (upstream:14-15), the `X[idx:idx+bs].assign(x)` slice-assign
-#   (upstream:18-19) which is the same wall `device.bend:872` records as "disk is a
+#   (upstream:18-19) which is the same wall `device.bend:862` records as "disk is a
 #   WALL; what is PORTED is the DECISION", and `iterate`/`get_val_files` from
 #   `imagenet.bend`, both of which are `Refused` there.
 import Base

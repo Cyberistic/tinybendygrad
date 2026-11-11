@@ -11,7 +11,7 @@
 #   F32.show                 1.442695
 #   repr(float(f32(log2e)))  1.4426950216293335
 #
-# render.bend:214 recorded that gap and called it a WALL ("no def can print the 17-significant-
+# render.bend:209 recorded that gap and called it a WALL ("no def can print the 17-significant-
 # is a NAMED number (significand times a power of two), so its decimal expansion is finite and
 # computable with exact integer arithmetic. This file does that, in three steps:
 #

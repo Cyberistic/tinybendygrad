@@ -100,9 +100,9 @@
 
 # a read-only neighbour is red, and it is not this file
 #
-# `nir_llvmir.bend:181-191` spells `ldt.fp` as EIGHT `case`s on the dtype NAME
+# `nir_llvmir.bend:178-187` spells `ldt.fp` as EIGHT `case`s on the dtype NAME
 # (`"float"`, `"half"`, `"__bf16"`, `"double"`, `"float8_e4m3"`, ...).
-# `LAWS/spec.bend:735-735` now spells those names `"fp8e4m3"`, `"f16"`, `"bf16"`,
+# `LAWS/spec.bend:721-721` now spells those names `"fp8e4m3"`, `"f16"`, `"bf16"`,
 # `"f32"`, `"f64"`. So EVERY arm of that ladder stopped matching and fell through
 # to `case _: "KeyError"`, and that file's gate is RED on 79 of its 205 rows:
 #
@@ -317,7 +317,7 @@ def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
 #     return int(x)
 #
 # the hex arm is all that is portable, and it is not a table: Bend has no `F64`
-# (`uop/fold.bend:3628 symbol=bnd_f` says so), so `struct.pack("d", x)` is not expressible --
+# (`uop/fold.bend:3586 symbol=bnd_f` says so), so `struct.pack("d", x)` is not expressible --
 # but the FOUR answers are constants of the IEEE-754 layout rather than of `x`.
 #
 # The eight reversed bytes are most-significant FIRST: byte 0 is `0x7F` plus the
@@ -1157,7 +1157,7 @@ def main() -> IO(Unit):
 # and knowing about those five is worth the run.
 #
 # the fifty-two blind spots are almost all python line numbers in comments.
-# `llvmir.py:225`, `nir_llvmir.bend:181-191`, `spec.bend:694-701` and so on: the
+# `llvmir.py:225`, `nir_llvmir.bend:178-187`, `spec.bend:694-701` and so on: the
 # sweep cannot tell a citation from a constant, so fifty of its fifty-eight
 # mutations edit a comment. The two that are neither comments nor fixture widths
 # are C50 (`f8pos.go`'s 4294967295 MISS sentinel, which BROKE because 4294967296

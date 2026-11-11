@@ -25,7 +25,7 @@ answer on every node is "no rewrite" -- which is exactly the port's `gs_0` retur
 it; that is the engine's own control flow, not a reimplementation of the rule.
 
 THE FIXTURE IS THE PORT'S, MIRRORED, WITH ONE LEGALITY REPAIR. `rangeify.bend`'s `g()` builds
-66 nodes in ONE arena (rangeify.bend:1707-1862) and :1865-1944 names each index; this lane
+66 nodes in ONE arena (rangeify.bend:1697-1852) and :1865-1944 names each index; this lane
 rebuilds the same 66 nodes with the same ops, srcs, tags and index order, so index `n` is the
 same node on both sides. STAGE nodes are the ONE repair and it is a CPython invariant, not a
 convenience: `remove_bufferize` reads `buf.arg.removable` (rangeify.py:54) and
@@ -33,15 +33,15 @@ convenience: `remove_bufferize` reads `buf.arg.removable` (rangeify.py:54) and
 real matcher -- MEASURED, `AttributeError: 'NoneType' object has no attribute 'removable'`.
 Every STAGE in a real rangeified graph carries `BufferizeOpts` (`indexing.py:57-60`), so this
 lane gives them `BufferizeOpts(device=None)`. The PORT cannot: `ops.bend`'s `Arg` has no
-`BufferizeOpts` arm, which is the wall `rangeify.bend:2683` records. That asymmetry is why
+`BufferizeOpts` arm, which is the wall `rangeify.bend:2665` records. That asymmetry is why
 `rb` and `ct` answer here and refuse there, and it is DECLARED, not smoothed.
 
-THE SIGNATURE IS `Rng.sig` PLUS AN ARG AND A TAG. `Rng.sig` (ops.bend:5897) prints
+THE SIGNATURE IS `Rng.sig` PLUS AN ARG AND A TAG. `Rng.sig` (ops.bend:5766) prints
 `toposort_len Ops.ROOT/nsrc src_ops...` and NO arg -- and for THIS file the arg and the tag
 are half the meaning: `pm_add_param_range_tags` exists to set a TAG, `renumber_range` to
 rewrite a RANGE's arg, `pm_no_views` to hand back an EXISTING node. So ` arg=<ctor>` and
 ` t=<tag>` are appended, using the port's own `sg.ctor` / `sg.tag` vocabulary
-(ops.bend:7540,7534) so the lanes agree on names rather than on a spelling chosen here.
+(ops.bend:7232,7534) so the lanes agree on names rather than on a spelling chosen here.
 """
 
 import itertools
@@ -66,7 +66,7 @@ def seq(u, seen=None, out=None):
 
 
 def ctor(a) -> str:
-    """`sg.ctor` -- ops.bend:7540, the ARG CONSTRUCTOR's name. `Invalid` is an INSTANCE of
+    """`sg.ctor` -- ops.bend:7232, the ARG CONSTRUCTOR's name. `Invalid` is an INSTANCE of
     `InvalidType`, not a class (`tinygrad/dtype.py`), so it is tested by identity."""
     if a is None:
         return "none"
@@ -84,7 +84,7 @@ def ctor(a) -> str:
 
 
 def tagnm(t) -> str:
-    """`sg.tag` -- ops.bend:7534. `()` and `None` are DISTINCT (ops.py:244)."""
+    """`sg.tag` -- ops.bend:7226. `()` and `None` are DISTINCT (ops.py:244)."""
     if t is None:
         return "none"
     if isinstance(t, tuple):
@@ -119,7 +119,7 @@ def stage(*src):
 
 
 def world():
-    """THE PORT'S FIXTURE, node for node -- rangeify.bend:1707-1862, index for index."""
+    """THE PORT'S FIXTURE, node for node -- rangeify.bend:1697-1852, index for index."""
     c0, c1, c2, c4 = (UOp.const(v) for v in (0, 1, 2, 4))
     sp = UOp.special(4, "0")
     b4 = UOp(Ops.BUFFER, src=(c4,), arg=ps(0))

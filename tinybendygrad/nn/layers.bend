@@ -13,11 +13,11 @@
 #     `Tensor.linear` (mixin/op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
 #     self.dot(w)`; for `nn.Linear` the weight is 2-D so it takes `dot`, and
 #     `dot` (mixin/op.py:367) is RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST.
-#     All six are built today: `M.mo_reshape` (mixin/op.bend:704 symbol=mo_reshape),
-#     `M.mo_permute` (mixin/op.bend:720 symbol=mo_permute), `T.tn_mul` (tensor.bend:656
-#     symbol=tn_mul), `M.mo_sum` (mixin/op.bend:854 symbol=mo_sum),
-#     `M.mo_cast_t` (mixin/op.bend:390 symbol=mo_cast_t),
-#     `DT.least_upper_dtypes` (dtype.bend:257 symbol=least_upper_dtypes). The UPSTREAM
+#     All six are built today: `M.mo_reshape` (mixin/op.bend:692 symbol=mo_reshape),
+#     `M.mo_permute` (mixin/op.bend:708 symbol=mo_permute), `T.tn_mul` (tensor.bend:649
+#     symbol=tn_mul), `M.mo_sum` (mixin/op.bend:840 symbol=mo_sum),
+#     `M.mo_cast_t` (mixin/op.bend:386 symbol=mo_cast_t),
+#     `DT.least_upper_dtypes` (dtype.bend:252 symbol=least_upper_dtypes). The UPSTREAM
 #     half of those six is tinygrad/uop/ops.py:799 symbol=_mop, whose
 #     `Ops.RESHAPE`/`Ops.PERMUTE` arms build the first two and whose
 #     `Ops.REDUCE` arm (tinygrad/uop/ops.py:641; the enum member is DECLARED at
@@ -27,21 +27,21 @@
 #     least-upper-dtype rule is tinygrad/dtype.py:193 symbol=least_upper_dtype.
 #     WMMA is
 #     `dot`'s HANDLER, and the layer's own arithmetic never selects it.
-#   `nn/__init__.bend:231` -- `x.conv2d` "SIDE B, not built". `mixin/op.bend`'s
-#     SIDE B is EMPTY: `tinybendygrad/mixin/op.bend:1523` is the last line and
+#   `nn/__init__.bend:220` -- `x.conv2d` "SIDE B, not built". `mixin/op.bend`'s
+#     SIDE B is EMPTY: `tinybendygrad/mixin/op.bend:1502` is the last line and
 #     reads `# SIDE B's SECTION GOES BELOW THIS LINE.`. Nothing there to wait on
 #     -- `mixin/op.bend:246` reserves that half for a unit that writes it, and
 #     this file is not that unit, so `conv2d` is built HERE from the same
 #     primitives.
-#   `Tensor.relu` is ALREADY PORTED at `tensor.bend:774` as `tn_relu`. So the
+#   `Tensor.relu` is ALREADY PORTED at `tensor.bend:767` as `tn_relu`. So the
 #     wall line naming it as missing is STALE; `nn_relu` below is a NAME onto it
 #     and not a second copy of its body.
 #
 # WHY THE MUL IS NOT A WALL HERE, and this is the one non-obvious thing here.
 # `THE PORT's `nn/__init__.bend` HEADER` says the broadcasting case of `__mul__` is walled on
 # the SHAPE FOLD. THE FOLD IS NOT THE WALL: `_broadcast_shape` (ops.py:80 symbol=_broadcast_shape) is
-# PORTED -- `F.bcast_shape` (uop/fold.bend:672) over `bcast.first(_align_left
-# (sh))` -- and `F.alu_ds` (fold.bend:999) is where every elementwise `OpsMUL` /
+# PORTED -- `F.bcast_shape` (uop/fold.bend:668) over `bcast.first(_align_left
+# (sh))` -- and `F.alu_ds` (fold.bend:993) is where every elementwise `OpsMUL` /
 # `OpsADD` node's SHAPE is read from. A `T.tn_mul` of two DIFFERENTLY SHAPED
 # tensors therefore builds the right node and folds to the right shape. What
 # `nn/__init__` calls walled is the other half of `_broadcasted`
@@ -78,9 +78,9 @@ import ./../uop/weak.bend as W
 # NOT AT THE HEAD, and that is the whole reason it needs no reversal: Bend's
 # `List.append(a, A, xs, ys)` IS `xs ++ ys`, so `append(acc, [x])` puts the new
 # element at the END and a walk that descends `ds` while accumulating UP
-# therefore rebuilds `ds` in order. `mixin/movement.bend:240 symbol=mx_pool_out.go` records the same
+# therefore rebuilds `ds` in order. `mixin/movement.bend:236 symbol=mx_pool_out.go` records the same
 # fact from the other side -- a walk that PREPENDS builds the answer backwards
-# and needs the `List.reverse` that `mxm_pick.go` (mixin/movement.bend:687 symbol=mxm_pick.go) carries.
+# and needs the `List.reverse` that `mxm_pick.go` (mixin/movement.bend:679 symbol=mxm_pick.go) carries.
 #
 # measured, and it was wrong first: this walk appended at the tail and reversed,
 # so it answered `[3, 2]` for the shape `[2, 3]` -- every dim transposed, with
@@ -102,8 +102,8 @@ def nn_shape(+t: T.Tensor) -> Maybe<&2, List<&2, U32>>:
   nn_u32(M.mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
 
 # `U32` -> `O.Const`, so a projected shape is a legal movement ARG.
-# `mo_reshape` (mixin/op.bend:704 symbol=mo_reshape) takes `List<&2, O.Const>` and `mo_ki`
-# (mixin/op.bend:360 symbol=mo_ki) is the tree's one def for the conversion, so it is CALLED.
+# `mo_reshape` (mixin/op.bend:692 symbol=mo_reshape) takes `List<&2, O.Const>` and `mo_ki`
+# (mixin/op.bend:356 symbol=mo_ki) is the tree's one def for the conversion, so it is CALLED.
 def nn_ks.go(+xs: List<&2, U32>, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
   match xs:
     case Nil{}: acc
@@ -122,10 +122,10 @@ def nn_range(n: U32) -> List<&2, U32>: M.mo_range(U32.to_nat(n))
 # CPython SAYS IT IN A COMMENT: "permute so reduced axes are at the FRONT"
 # (ops.py:636), then `UOp(Ops.REDUCE, src=(self.permute(perm),), arg=(op,
 # len(reduce_axis)))` (:637). The port's two halves agree with each other --
-# `F.reduce_dims.put` (uop/fold.bend:904 symbol=reduce_dims.put) answers `drop_n(shape, num_axes)` and
-# `S.drop_n` (LAWS/spec.bend:270 symbol=drop_n) drops FROM THE HEAD -- SO THE PORT'S REDUCE
+# `F.reduce_dims.put` (uop/fold.bend:898 symbol=reduce_dims.put) answers `drop_n(shape, num_axes)` and
+# `S.drop_n` (LAWS/spec.bend:266 symbol=drop_n) drops FROM THE HEAD -- SO THE PORT'S REDUCE
 # reduces the first `num_axes` axes. the permute that would make that TRUE for
-# AN ARBITRARY AXIS IS NOT BUILT: `tn_rop.perm.of` (tinybendygrad/tensor.bend:1820 symbol=tn_rop.perm.of) answers
+# AN ARBITRARY AXIS IS NOT BUILT: `tn_rop.perm.of` (tinybendygrad/tensor.bend:1799 symbol=tn_rop.perm.of) answers
 # `self` IN BOTH ARMS and its own comment says so.
 #
 # measured on this file, and it is why every layer reduce is wrong without the
@@ -163,7 +163,7 @@ def nn_reduce.rest(ns: List<&2, U32>, axis: List<&2, U32>) -> List<&2, U32>:
 # `reduce_axis = tuple(x for x in axis if resolve(self.shape[x] != 1)` --
 # ops.py:633. IT IS NOT OPTIONAL: an axis of size 1 is excluded from the permute
 # AND from `len(reduce_axis)`, so a port that keeps it reduces one axis too many.
-# `T.tn_rop`'s own `ne1` filter (tensor.bend:1796) is the same test and runs
+# `T.tn_rop`'s own `ne1` filter (tensor.bend:1776) is the same test and runs
 # again on the PERMUTED tensor, where it keeps everything -- which is the point:
 # this filter decides the SHAPE, that one decides the ARG, and they agree
 # because the permute moved exactly these axes to the front.
@@ -226,7 +226,7 @@ def nn_reduce.pick(+rn: List<&2, U32>, +t: T.Tensor, +kept: List<&2, U32>, +n: U
 
 # `ret.reshape(kept) if axis != reduce_axis else ret` -- ops.py:638. APPLIED
 # UNCONDITIONALLY, which is the same thing: `axis == reduce_axis` makes `kept`
-# the identity, and `M.mo_reshape` (mixin/op.bend:704 symbol=mo_reshape) answers its source
+# the identity, and `M.mo_reshape` (mixin/op.bend:692 symbol=mo_reshape) answers its source
 # unchanged on an identity target rather than minting a RESHAPE. MEASURED: with
 # the reshape applied, `sum(axis=[2])` over `(2, 4, 3)` is a 20-node graph whose
 # root IS the REDUCE and whose folded shape is `(2, 4)`; with the INDICES
@@ -267,7 +267,7 @@ def nn_reduce(+t: T.Tensor, +axis: List<&2, U32>, op: O.Op, kd: Bool) -> T.Tenso
   nn_reduce.keep(kd, t, red, axis)
 
 # `sum` -- mixin/reduce.py:20, on top of `nn_reduce`. The HEAD is `mo_sum`'s own
-# (mixin/op.bend:854 symbol=mo_sum): `sum_acc_dtype(commit_dtype())` then a cast back iff the
+# (mixin/op.bend:840 symbol=mo_sum): `sum_acc_dtype(commit_dtype())` then a cast back iff the
 # dtype was defaulted AND it is half/bfloat16/fp8 (`mo_downcast`). A layer sum
 # is `dtype=None` upstream, so the head is not optional.
 def nn_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
@@ -277,7 +277,7 @@ def nn_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 
 # `relu` -- mixin/elementwise.py:672, `return (self > 0).where(self, 0)`.
 #
-# THE BODY IS ALREADY PORTED at `tensor.bend:774` (`tn_relu`), as the chain
+# THE BODY IS ALREADY PORTED at `tensor.bend:767` (`tn_relu`), as the chain
 # `tn_rcmplt` -> `tn_where` over one shared `CONST 0`, and gated at
 # `gates/tn_relu-gate.py`. `nn_relu` is a NAME onto it and not a second copy:
 # a repeated line is a shared function, so the layer entry point and the tensor
@@ -319,7 +319,7 @@ def nn_relu(+x: T.Tensor) -> T.Tensor: T.tn_relu(x)
 
 # `*[1]*min(dx-1, dw-1, 1)` -- ONE def for the count that appears in BOTH
 # reshapes (:387 and :388). It is 1 exactly when both operands have >= 2 dims,
-# and `Bool.to_u32` is the Bool-as-`U32` helpers.bend:1609 already uses.
+# and `Bool.to_u32` is the Bool-as-`U32` helpers.bend:1570 already uses.
 def nn_dotk(+dx: U32, +dw: U32) -> U32:
   Bool.to_u32(Bool.and(U32.is_ge(dx, 2), U32.is_ge(dw, 2)))
 
@@ -376,7 +376,7 @@ def nn_dot.order(+len: U32, +dw: U32) -> List<&2, U32>:
     U32.to_nat(U32.sub(len, 1)), b)
 
 # `sum(-1)` -- :392. PYTHON'S `-1` HAS NO `U32` IMAGE, and the port's own
-# `mo_ax`/`mo_resolve` (mixin/op.bend:794 symbol=mo_ax / mixin/op.bend:758 symbol=mo_resolve) cannot spell it:
+# `mo_ax`/`mo_resolve` (mixin/op.bend:781 symbol=mo_ax / mixin/op.bend:746 symbol=mo_resolve) cannot spell it:
 # `mo_resolve(neg, dim, total) = dim + total`, so `neg=True, dim=1` answers
 # `ndim+1`, one past the last axis. the resolved INDEX is taken from the other
 # END -- `nn_last_ax` -- which is the same value and is total.
@@ -385,9 +385,9 @@ def nn_last_ax(n: U32) -> U32: U32.sub(n, 1)
 def nn_umax(a: U32, b: U32) -> U32: U32.max(a, b)
 
 # `_broadcasted`'s dtype half (elementwise.py:24) -- THE REFUSAL. `tn_mul`
-# (tensor.bend:651) is the NODE, and the node's shape comes from the fold
-# (`F.alu_ds`, uop/fold.bend:1011 symbol=alu_ds), but the `cast(out_dtype)` is `mo_promote`'s job
-# (mixin/op.bend:510 symbol=mo_promote) and it is what the no-broadcasting gates do not
+# (tensor.bend:644) is the NODE, and the node's shape comes from the fold
+# (`F.alu_ds`, uop/fold.bend:1005 symbol=alu_ds), but the `cast(out_dtype)` is `mo_promote`'s job
+# (mixin/op.bend:502 symbol=mo_promote) and it is what the no-broadcasting gates do not
 # cover. `dot` multiplies two tensors of the SAME dtype, where that cast is the
 # identity, so this answers `None` rather than assuming it -- and `None` for an
 # UNREADABLE dtype too, so a caller can never `least_upper_dtype` from `void`.
@@ -397,7 +397,7 @@ def nn_dot.dts(xdt: Maybe<&2, S.Dt>, wdt: Maybe<&2, S.Dt>) -> Maybe<&2, S.Dt>:
     case None{}: None{}
 
 # `(x*w).sum(-1).cast(dt)` -- :392. `M.mo_sum(False{}, ...)` IS
-# `mixin/reduce.py:20` hoisted (mixin/op.bend:811), downcast-and-cast-back
+# `mixin/reduce.py:20` hoisted (mixin/op.bend:797), downcast-and-cast-back
 # included. it takes the product, not the two operands, because the product
 # IS WHERE THE SECOND REFUSAL LIVES.
 def nn_dot.tail(+xw: T.Tensor, ax: U32, dt: S.Dt) -> T.Tensor:
@@ -405,7 +405,7 @@ def nn_dot.tail(+xw: T.Tensor, ax: U32, dt: S.Dt) -> T.Tensor:
 
 # CPython's SECOND REFUSAL IS AT `(x*w)`: `_broadcast_shape` (ops.py:80) RAISES
 # `IndexError` when the two reshaped shapes do not broadcast. the port's FOLD
-# refuses the same way -- `F.bcast_shape` (fold.bend:672) answers `None` -- and
+# refuses the same way -- `F.bcast_shape` (fold.bend:668) answers `None` -- and
 # the product is WHERE that refusal shows. the product is never 0-d (both
 # operands have at least one dim), so an empty shape is the refusal and not a
 # zero-rank tensor: the result of a 1-d `dot` a 1-d is 0-d, and the product is
@@ -420,7 +420,7 @@ def nn_dot.mul(+xr: T.Tensor, +wr: T.Tensor, ax: U32, dt: S.Dt) -> Maybe<&2, T.T
 # is one expression in CPython and must be one value here, or the two arms can
 # disagree about `dw`. The product's rank is `max(len(x'), len(w'))` -- that is
 # `_align_left` + `bcast.first`, the same fold the node's own shape is read from
-# (`F.bcast_shape`, fold.bend:672) -- and `sum(-1)` is over THAT, so the axis is
+# (`F.bcast_shape`, fold.bend:668) -- and `sum(-1)` is over THAT, so the axis is
 # `nn_last_ax` of the max and not of either operand. `xs` and `ws` are VALUES
 # because each is both a reshape argument and the source of a rank; computing
 # either twice is how the two would drift apart.
@@ -488,7 +488,7 @@ def nn_dot(+x: T.Tensor, +w: T.Tensor) -> Maybe<&2, T.Tensor>:
 # `linear`, and it is why the wall naming `linear_with_vars` never binds --
 # `linear_with_vars` is `dot`'s HANDLER, which this graph never reaches.
 #
-# THE BIAS IS A `Maybe<&2, T.Tensor>` AND NOT A THIRD TYPE. `nn/__init__.bend:26`
+# THE BIAS IS A `Maybe<&2, T.Tensor>` AND NOT A THIRD TYPE. `nn/__init__.bend:25`
 # measured that a `Data` field cannot hold a `Maybe`, which is why that file's
 # `*_st` defs put a `Bool` BESIDE the value; here the `Maybe` is a PARAMETER, and
 # a parameter may hold anything. So Python's `Tensor|None` is one `Maybe` here
@@ -521,7 +521,7 @@ def nn_linear(+x: T.Tensor, +w: T.Tensor, bias: Maybe<&2, T.Tensor>) -> Maybe<&2
 # IS NOT A WALL, and both halves of that are measurements.
 #
 #   "mixin/op.bend SIDE B, not built" -- `mixin/op.bend`'s SIDE B IS EMPTY.
-#     `mixin/op.bend:1530 symbol=t_softmax3.go` is that file's LAST line and reads
+#     `mixin/op.bend:1509 symbol=t_softmax3.go` is that file's LAST line and reads
 #     `# SIDE B's SECTION GOES BELOW THIS LINE.` There is nothing to wait for,
 #     and `THE PORT's `mixin/op.bend` HEADER` reserves that half for whoever writes it. So
 #     `conv2d` is written HERE, out of the primitives, rather than parked.
@@ -607,7 +607,7 @@ def nn_rep.fin(ss: List<&2, U32>, rr: List<&2, U32>) -> List<&2, U32>: nn_rep.fi
 
 # THE EXPAND NODE. `repeat` needs one and `mixin/movement.bend` has NO `mxw_*`
 # for it (its `EXPAND` readers at :635/:707 are `marg` readers, not builders),
-# so it is `T.tn_mop` -- `tensor.bend:1699`, the movement builder whose `ADims`
+# so it is `T.tn_mop` -- `tensor.bend:1680`, the movement builder whose `ADims`
 # arm is `tn_mop.dims` and which `mxw_reshape` / `mxw_permute` / `mxw_pad` /
 # `mxw_shrink` all wrap. `nn_ks` is `nn_dot`'s own `U32 -> O.Const` projection.
 #
@@ -640,7 +640,7 @@ def nn_repeat(+t: T.Tensor, +shp: List<&2, U32>, +reps: List<&2, U32>) -> T.Tens
 # `noop` IS `[None] * (self.ndim - len(k_))` (movement.py:618) AND `None` MEANS
 # "this axis is not shrunk", so the shrink's target keeps the source's own SIZE
 # on those axes. THE PORT'S TARGETS ARE SIZES, so the noop axes carry the
-# SOURCE'S OWN DIMS -- which is `nn/pool.bend:145`'s `W4.lead` and NOT a list of
+# SOURCE'S OWN DIMS -- which is `nn/pool.bend:142`'s `W4.lead` and NOT a list of
 # ones. MEASURED: with ones there, the channel axis was shrunk from 3 to 1 and
 #
 # and the two shrink targets are not the same list. `movement.py:626` shrinks to
@@ -791,7 +791,7 @@ def nn_cnv.k(ws: List<&2, U32>) -> List<&2, U32>: List.drop(&2, U32, ws, 2n)
 # `[0, 1, 3]` ++ `range(4, 4+ni)` ++ `[2]` ++ `range(4+ni, 4+2*ni)` -- the
 # permute at :1582, which is `*[4+i for i in range(len(oyx))]` then
 # `*[4+len(oyx)+i for i in range(len(HW))]` around the literal `0, 1, 3` and
-# `2`. It is NOT `mx_pool_perm` (`mixin/movement.bend:392`): that one moves a
+# `2`. It is NOT `mx_pool_perm` (`mixin/movement.bend:388`): that one moves a
 # window's `o` after its `k`, this one moves the product's reduce axes next to
 # the channel axis so the `sum` at :1585 is contiguous.
 def nn_cnv.perm(+ni: U32) -> List<&2, U32>:
@@ -800,7 +800,7 @@ def nn_cnv.perm(+ni: U32) -> List<&2, U32>:
     List.drop(&2, U32, mid, U32.to_nat(ni))])
 
 # `[-1-i for i in range(1+len(oyx))]` -- :1585, resolved against the PRODUCT's
-# rank. `T.tn_rop` (tensor.bend:1843) sorts the axis tuple, so the direction is
+# rank. `T.tn_rop` (tensor.bend:1822) sorts the axis tuple, so the direction is
 # a readability choice and not a correctness one; it is DESCENDING because that
 # is what CPython's comprehension produces.
 def nn_cnv.axes.go(+hs: List<&2, U32>, +t: U32, +acc: List<&2, U32>) -> List<&2, U32>:
@@ -815,7 +815,7 @@ def nn_cnv.axes(t: U32, ni: U32) -> List<&2, U32>:
 # `.expand(bs, groups, cin, rcout, *oyx, *HW)` -- :1582, as ONE def taking the
 # fourth entry as a VALUE, because the two calls differ only in it (`1` then
 # `rcout`). `rcout` is `cout//groups` and `NN.nn_groups` IS that division
-# (`nn/__init__.bend:175`), unguarded, because tinygrad does not guard it
+# (`nn/__init__.bend:168`), unguarded, because tinygrad does not guard it
 # either: `nn.Conv2d(1, 4, 3, groups=2)` has a weight of shape `(4, 0, 3, 3)`
 # and a port that "fixed" it would answer `(4, 2, 3, 3)`.
 # `weight.reshape(1, groups, rcout, *[1]*len(oyx), cin, *HW)` -- :1585.
@@ -871,7 +871,7 @@ def nn_cnv.bias(cout: U32, ni: U32) -> List<&2, U32>:
 # `ret if bias is None else ret.add(bias.reshape(1, -1, *[1]*len(HW)))` -- :1603.
 # The ADD is a BROADCAST add -- `(bs, cout, oy, ox)` against `(1, cout, 1, 1)` --
 # and the fold answers its shape through the same `F.alu_ds` arm `nn_dot` and
-# `nn_linear` already rely on (uop/fold.bend:1002 symbol=where_ds).
+# `nn_linear` already rely on (uop/fold.bend:996 symbol=where_ds).
 def nn_cnv.add.put(+ret: T.Tensor, +b: T.Tensor, ds: List<&2, U32>) -> T.Tensor:
   T.tn_add(ret, MX.mxw_reshape(b, ds))
 
@@ -934,29 +934,29 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
 # separate questions. The port prints in three spellings and the expectations
 # are written in those three:
 #
-#   SHAPE  `MX.mx_show` (mixin/movement.bend:878) is
+#   SHAPE  `MX.mx_show` (mixin/movement.bend:868) is
 #          `String.join(mx_shows.go(xs, Nil{}), ",")` -- the dims joined by a
 #          comma, with NO parentheses. CPython's `Tensor.shape` is a TUPLE and
 #          prints `(1, 4, 8, 8)`, so the shape rows' `want` is the DIMS in the
 #          port's punctuation.
-#   DTYPE  `E.ew_dtnm` (mixin/elementwise.bend:1035 symbol=ew_dtnm) is the `nm` field of
-#          `S.Dt`, and `S.single()` (LAWS/spec.bend:741) is
+#   DTYPE  `E.ew_dtnm` (mixin/elementwise.bend:1013 symbol=ew_dtnm) is the `nm` field of
+#          `S.Dt`, and `S.single()` (LAWS/spec.bend:727) is
 #          `Dt{14, 32, CFloat{}, "f32"}`. CPython's own `DType.name` for
 #          float32 is "f32" (tinygrad/dtype.py:136, `DType.new(14, 32, "f32",
 #          'f')`); `float32` is the ALIAS (dtype.py:140), not the name. So the
 #          port's spelling and CPython's NAME are the same string.
-#   GRAPH  `MX.mxw_sig` (mixin/movement.bend:1380) is
+#   GRAPH  `MX.mxw_sig` (mixin/movement.bend:1363) is
 #          `n=<count> op=Ops.<root> nsrc=<n> srcops=Ops.<a>|Ops.<b>`, and the
 #          witness renders CPython's graph in that spelling. CPython's own
 #          oracle format (`gates/mixin-op-oracle.py`) is
 #          `n OP/nsrc OP/nsrc ...` -- a DIFFERENT format, so it cannot be a
 #          `want`; the witness prints both, and the port's own
-#          `M.mo_valsig.of` (mixin/op.bend:1255) prints the same value-carrying
+#          `M.mo_valsig.of` (mixin/op.bend:1234) prints the same value-carrying
 #          list the witness prints, CONST payloads included.
 #
 # the graph witness is CPython's own graph, and the fixture is why. The port's
 # fixture `nn_row.t` is a BUFFER and a RESHAPE, with NO COPY: `mxw_buf`
-# (mixin/movement.bend:1231 symbol=mxw_buf) builds `Ops.BUFFER` directly. Upstream's numpy
+# (mixin/movement.bend:1219 symbol=mxw_buf) builds `Ops.BUFFER` directly. Upstream's numpy
 # path builds the same node -- `Tensor.__init__` calls `_fromnp`
 # (tinygrad/tensor.py:37-40), which is `UOp.new_buffer("NPY", x.size, ...)` --
 # but ONLY while the requested device IS "NPY": `tinygrad/tensor.py:93` is
@@ -973,14 +973,14 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
 # (spec.bend:422) is one constructor per op in tinyspec.tex, a TREE, with the
 # derived properties `Sp.shape` (:546) and `Sp.dtype` (:750). It has NO op-name
 # function, NO arity function and NO node count, and it CANNOT have the last
-# one: `mxw_sig`'s `n=` is `mxw_count` (mixin/movement.bend:1359) -- the
+# one: `mxw_sig`'s `n=` is `mxw_count` (mixin/movement.bend:1342) -- the
 # COMPILED ARENA's toposort length -- and `Sp` is not that arena. Three
 # measured reasons. (1) `Sp` is a tree and the arena is HASH-CONSED: the
 # port's own fixture says "The two CONSTs HASH-CONS to one node"
-# (uop/fold.bend:4435), so equal spec subtrees collapse to one arena node and a
+# (uop/fold.bend:4390), so equal spec subtrees collapse to one arena node and a
 # tree count over-counts. (2) `Sp` is the PRE-compilation form: `SpReshape`
 # carries its target dims as a VALUE (`dst: List<&2, Sdim>`, spec.bend:436),
-# while the arena's RESHAPE carries a STACK node (mixin/movement.bend:1234) --
+# while the arena's RESHAPE carries a STACK node (mixin/movement.bend:1220) --
 # so the spec tree has no node where the arena has one. CONCRETE: the port's
 # `dbg_x_sig` arena graph is 6 nodes (CONST(size) BUFFER CONST(2) CONST(3)
 # STACK RESHAPE) and the spec-level description of the same computation is
@@ -1023,7 +1023,7 @@ def nn_row.t(ns: List<&2, U32>, slot: U32, size: U32) -> T.Tensor:
 # THE SHAPE OF A BUILT TENSOR, printed as CPython prints it: `1,3,34,34`.
 #
 # IT READS `nn_shape` -- `M.mo_dims` over the real fold -- AND NOT
-# `MX.mxw_dims_of` (`mixin/movement.bend:1332`). MEASURED: on the 19-node `dot`
+# `MX.mxw_dims_of` (`mixin/movement.bend:1315`). MEASURED: on the 19-node `dot`
 # graph `mxw_dims_of` answered the EMPTY list and on the 37-node `conv2d` graph
 # it answered `1,8` -- a truncation, not a shape. `mxw_dims_of` is a FUELLED
 # WALK over a movement chain (`mxw_shape_of`, :1321) and this file's graphs are
@@ -1138,7 +1138,7 @@ def nn_row_where() -> IO(Unit):
     nn_row.line("where_wdt", nn_row_dt(T.tn_dtype(w)), "f32")
     nn_row.line("where_dts", nn_row_dt(nn_dot.dts(T.tn_dtype(x), T.tn_dtype(w))), "f32")
 
-# THE GRAPH, not just the shape: `mxw_sig` (mixin/movement.bend:1377) prints
+# THE GRAPH, not just the shape: `mxw_sig` (mixin/movement.bend:1360) prints
 # node count, root op and the SOURCE OP SEQUENCE in one string, so a row cannot
 # drop one of the three.
 def nn_row.sig.of(+t: T.Tensor) -> String: MX.mxw_sig(T.Tensor.ar(t), T.Tensor.u(t))
@@ -1179,8 +1179,8 @@ def nn_row_fold() -> IO(Unit):
     # `sum(axis=[2], keepdim=True)` over (2,4,3) is (2,4,1): reduce.py:18's
     # `tuple(1 if i in axis else s for i,s in enumerate(self.shape))` puts the
     # CPython's answer for axis [1], and it is ALSO what the port's
-    # `mixin/op.bend:787 symbol=mo_axis0 mo_keep_ds` answers for axis [1] -- because
-    # `mixin/op.bend:336 symbol=mo_at` counts the index FROM THE END, so the port
+    # `mixin/op.bend:775 symbol=mo_axis0 mo_keep_ds` answers for axis [1] -- because
+    # `mixin/op.bend:334 symbol=mo_at` counts the index FROM THE END, so the port
     # answers the axis [1] target for every axis.
     nn_row.line("fold_smk", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(smk), Nil{})), "2,4,1")
     nn_row.line("fold_cc", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(cc), Nil{})), "2,4")

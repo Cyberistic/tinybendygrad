@@ -4,7 +4,7 @@
     .venv/bin/python gates/tn_maximum-gate.py
 
 SEVEN ROWS, THREE LANES. CPython's `Tensor.maximum` (elementwise.py:378) is
-`self._binop(Ops.MAX, x, False)`. The wall text at `nn/__init__.bend:241`
+`self._binop(Ops.MAX, x, False)`. The wall text at `nn/__init__.bend:230`
 cited `_broadcasted` as the blocker. The no-broadcasting case (two same-
 shape Tensors) reduces to `self.alu(MAX, x.uop)`, the same shape as
 `tn_add` / `tn_mul`. THERE IS NO REVERSE ARM: CPython's `maximum` (elementwise.py:378) is

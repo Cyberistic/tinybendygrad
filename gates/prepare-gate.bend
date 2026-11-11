@@ -332,7 +332,7 @@ def g_wm() -> IO(Unit):
 #     two itemsizes and a last dim, with NO arena and NO builder.  This is the
 #     highest-value un-ported section and the shortest.
 #   * `fa_*` (56 rows) -- `found_after`'s loop.  `argsort` is `H.argsort_u32`
-#     (helpers.bend:196) and the RESHAPE / WHERE / SHRINK arms are pure, so it is
+#     (helpers.bend:193) and the RESHAPE / WHERE / SHRINK arms are pure, so it is
 #     PORTABLE; only the `.after(...)` at the end is W3.
 #   * `shb_*` / `fsh_*` (55 rows) -- `store_hazard_boundary` and `fix_store_hazard`.
 #     The gated toposort is `O.UOp.toposort_nocalls` FILTERED by the boundary, which
@@ -365,7 +365,7 @@ def g_wm() -> IO(Unit):
 #     separates them.
 #   * `<t>_<k>_{dt,src}` (2 per rule) -- `UPat.match_dtype` and the src permutation
 #     tuple (upat.py:47).  `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE
-#     (uop/ops.bend:4043 symbol=PMEntry), so `UPat` does not survive into the compiled IR.
+#     (uop/ops.bend:3973 symbol=PMEntry), so `UPat` does not survive into the compiled IR.
 def pr_mop_keys() -> List<&2, O.Op>: [O.OpsAFTER{}, O.OpsEND{}, O.OpsINDEX{}]
 def g_t2() -> IO(Unit):
   do IO<Unit>:
@@ -424,8 +424,8 @@ def g_t6() -> IO(Unit):
 # The SHAPE is `fold.bend`'s: ONE self-recursive def with the decreasing fuel
 # first, and a `Data` RECORD for the rest of the state, because a `match` on a
 # record's field binder is legal where a `match` on a computed value is not.  That
-# is `Kahn.run` / `Kahn.step` / `Kahn.pop` exactly (uop/fold.bend:4896 symbol=Kahn.run,
-# uop/fold.bend:4887 symbol=Kahn.step, uop/fold.bend:4881 symbol=Kahn.pop), and it is
+# is `Kahn.run` / `Kahn.step` / `Kahn.pop` exactly (uop/fold.bend:4848 symbol=Kahn.run,
+# uop/fold.bend:4839 symbol=Kahn.step, uop/fold.bend:4833 symbol=Kahn.pop), and it is
 # the only reason this walk is writable at all: Python's two `if`s become one
 # `match` on `WmSt{kind}`, and the AFTER arm's "build or keep" becomes a
 # `Bool.pick` inside `pr_wm_fork`, which is a FUNCTION and not a scrutinee -- which

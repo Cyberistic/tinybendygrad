@@ -1346,7 +1346,7 @@ type Dev is Data:
 # `mmap.mmap(-1, size)` and returns a raw address -- and there is no address.
 #
 # What IS ported is the CONTRACT: one byte store, a base offset per buffer, and
-# an extent. `Buf` in `ops_python.bend:858` is exactly `Buf{base, w, e}` and
+# an extent. `Buf` in `ops_python.bend:835` is exactly `Buf{base, w, e}` and
 # `Mem.byte`/`Mem.put` at :855/:858 are exactly the read and the write. So the
 # allocator here has the SAME shape as the executor's, deliberately: the wire is
 # one wire, and two disagreeing memory models over it would be a second silent
@@ -1464,15 +1464,15 @@ def second.of(p: (Mem & Store)) -> Store:
 #     import and must not become hostage to another unit's transient breakage.
 #     The dependency bought ONE nine-line fold. REPORTED, not fixed: `uop/ops.bend`
 #     is not this unit's to touch.
-#   * `ops_python.bend:427`'s `hexdig_str` is DEAD and WRONG -- see THE FINDING
+#   * `ops_python.bend:421`'s `hexdig_str` is DEAD and WRONG -- see THE FINDING
 #     above -- so reusing that side of the codec was never an option.
 #
-# THE NIBBLE RULES ARE `ops_python.bend:382-396` verbatim in shape: three range
+# THE NIBBLE RULES ARE `ops_python.bend:376-390` verbatim in shape: three range
 # tests tell a digit from a lower-case letter from an upper-case one, and
 # `hexdig_val` answers 0-15 for a hex character.
 # `+c` ON EVERY ONE, because `Bool.and`/`Bool.or` read both operands and a
 # parameter read twice is "consumed more than once" (MEASURED). This is why
-# `runtime/ops_python.bend:380 symbol=keep_word` spells its three range tests as ONE-ARGUMENT helpers with
+# `runtime/ops_python.bend:374 symbol=keep_word` spells its three range tests as ONE-ARGUMENT helpers with
 # the `+`, rather than inlining the ranges.
 def hexdig_digit(+c: U32) -> Bool: Bool.and(U32.is_ge(c, 48), U32.is_le(c, 57))
 
@@ -1528,13 +1528,13 @@ def hexdec.go(+cs: List<&2, Char>, +pend: U32, +live: Bool,
       hexdec.go(t, Char.to_u32(h), True{}, acc)
 
 # THE nibble order is the third bug this milestone found, and it is the one
-# `runtime/ops_python.bend:1201 symbol=Prog.alloc.ss` warns about BY NAME: "writing every byte DIGIT-SWAPPED
+# `runtime/ops_python.bend:1168 symbol=Prog.alloc.ss` warns about BY NAME: "writing every byte DIGIT-SWAPPED
 # -- 0x3f as \"f3\" -- and, because the reader was digit-swapped in the same way,
 # the two cancelled on a pure COPY". MEASURED here on the first real launch: the
 # pattern `efbeadde` came back out of the store as `deadbeef`, i.e. every BYTE was
 # reversed, which is what you get from `high*16 + low` when the wire is `low*16 +
 # high` -- the hex on the wire is HIGH NIBBLE FIRST
-# (`runtime/ops_python.bend:1201 symbol=Prog.alloc.sp` -- `Prog.hex.nib` reads characters 2k and 2k+1, high first), so the fold must ADD
+# (`runtime/ops_python.bend:1168 symbol=Prog.alloc.sp` -- `Prog.hex.nib` reads characters 2k and 2k+1, high first), so the fold must ADD
 # the high nibble to the low one, not the other way round.
 def hexbytes(hex: String) -> List<&2, U32>:
   hexdec.go(String.to_list(hex), 0, False{}, Nil{})
@@ -1545,7 +1545,7 @@ def hexdig_str2(v: U32) -> String:
   String.from_list([Char.from_u32(hexdig.chr(v))])
 
 # THE EMITTED ORDER is high nibble first, low byte first -- the order
-# `runtime/ops_python.bend:1201 symbol=Prog.alloc.ss` measured the hard way ("writing every byte
+# `runtime/ops_python.bend:1168 symbol=Prog.alloc.ss` measured the hard way ("writing every byte
 # DIGIT-SWAPPED -- 0x3f as \"f3\" -- and, because the reader was digit-swapped in
 # the same way, the two cancelled on a pure COPY"). The reader and the writer are
 # therefore INDEPENDENT above, and `bend_hexbyte_*` pins the writer against
@@ -1614,7 +1614,7 @@ def drop.go(xs: List<&2, U32>, +n: Nat) -> List<&2, U32>:
 # The copy into a fresh `&2` list is the depth hop again, and it is free because
 # the store is already `&2` and `List.append` rebuilds at the callee's depth.
 # THE COUNT IS A `Nat`, NOT A `U32`, and that is forced by the substrate rather
-# than chosen: `U32` is `U32{data: Word(32n)}` (base.bend:64), an OPAQUE record,
+# than chosen: `U32` is `U32{data: Word(32n)}` (base.bend:63), an OPAQUE record,
 # so it cannot be destructured into a countdown at all (MEASURED: "expected a
 # constructor of U32"). `Nat` is `Zero{}/Succ{pred}` and a `case 1n+p` arm consumes
 # it -- which is ALSO what stops the walk, where a saturating `U32.sub` would not.

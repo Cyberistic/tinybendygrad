@@ -15,7 +15,7 @@
 # Tensors of the same shape, `_broadcasted` is identity: `__mul__` builds
 # `MUL(self, x)` with srcs `(self, x)`, and `__rmul__` (with `reverse=True`)
 # builds `MUL(x, self)` with srcs `(x, self)`. The dispatch is `tn_mul.go`, keyed
-# on a `Bool` (the same shape as `tn_neg.go` at `tensor.bend:437`). The
+# on a `Bool` (the same shape as `tn_neg.go` at `tensor.bend:430`). The
 # broadcasting case stays walled on `_broadcasted` (mixin/movement.py:24, fold
 # reads and a `least_upper_dtype` helper).
 

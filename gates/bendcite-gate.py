@@ -36,7 +36,7 @@ with no generator.
 
 THE CITED CORPUS IS BIGGER THAN THE CITING POPULATION, AND THE DIFFERENCE IS A
 MEASUREMENT. The port cites the Bend COMPILER's own `references/bend/bend2/base.bend` --
-`base.bend:1542` claims `U32.is_even`, and `tinybendygrad/base.bend` is a 56-LINE file
+`base.bend:1541` claims `U32.is_even`, and `tinybendygrad/base.bend` is a 56-LINE file
 while the compiler's `references/bend/bend2/base.bend` is **THREE THOUSAND**-ODD lines and
 declares `U32.is_even` at :1648. **A POINTER CANNOT BE ABOUT A FILE THAT DOES NOT HAVE THE
 LINE**, so the two `base.bend`s are told apart by WHICH ONE HAS THE CITED LINE, and the
@@ -131,7 +131,7 @@ sys.path.insert(0, str(HERE))
 from gatekit import DEAD, FAIL, PASS, REFUSED, VERDICT  # noqa: E402
 
 PORT_REL = "tinybendygrad"
-#: THE COMPILER's OWN TREE. The port cites into it (`base.bend:1542` is the compiler's
+#: THE COMPILER's OWN TREE. The port cites into it (`base.bend:1541` is the compiler's
 #: `U32.is_even`, not the port's 56-line `base.bend`), so it is a RESOLUTION corpus and
 #: not a population. Its absence changes the resolution of the `base.bend` pointers and
 #: is reported when it happens.
@@ -152,7 +152,7 @@ def load_sibling(name: str, filename: str):
 
 # --------------------------------------------------------------------------- the shapes
 
-#: A `.bend` citation: `ops.bend:823`, `fold.bend:1620-1626`, `uop/ops.bend:1167`.
+#: A `.bend` citation: `ops.bend:823`, `fold.bend:1606-1612`, `uop/ops.bend:1167`.
 CITE = re.compile(r"([A-Za-z0-9_./-]*[A-Za-z0-9_]\.bend)\s*:\s*(\d+)(?:\s*-\s*(\d+))?")
 #: The port's own import line: `import ./../uop/ops.bend as O`.
 IMPORT = re.compile(r"^\s*import\s+(\S+)(?:\s+as\s+(\S+))?")
@@ -170,7 +170,7 @@ SYMBOL_FIELD = re.compile(r"\bsymbol\s*=\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_]
 #: WORDS THAT NAME NOTHING. `pin-cite-gate.py`'s KEYWORDS holds `None`, `True` and
 #: `False` in CAPITAL form and compares them against a lowercased token, so they are NOT
 #: filtered there; in a `.bend` file `None{}` is a literal and a claim about it is about
-#: a VALUE. Measured: `codegen/decomp/op.bend:264` cites `spec.bend:207` and backticks
+#: a VALUE. Measured: `codegen/decomp/op.bend:260` cites `spec.bend:207` and backticks
 #: `None{}`, and `None` is not a construct.
 NOT_A_NAME = frozenset("""none some true false def type law import export match case else if then
 else elif return let var fn struct enum impl trait use mod pub const static mut move ref self super where
@@ -319,10 +319,10 @@ class Corpus:
     spelling that needs no help. **THE LINE RANGE COMES BEFORE THE IMPORT, because a
     pointer at line N CANNOT BE ABOUT A FILE WITH FEWER THAN N LINES** -- that is a fact
     about the file and not a guess about the prose. MEASURED:
-    `tinybendygrad/dtype.bend:658` cites `base.bend:1251` and the port's `base.bend` is
+    `tinybendygrad/dtype.bend:634` cites `base.bend:1250` and the port's `base.bend` is
     56 lines while the compiler's `references/bend/bend2/base.bend` is **three thousand**-odd;
     the import rule picked the port's file and reported a DANGLING line for a pointer that
-    is about the COMPILER's `base.bend`. And `tinybendygrad/schedule/__init__.bend:1390`
+    is about the COMPILER's `base.bend`. And `tinybendygrad/schedule/__init__.bend:1371`
     cites `spec.bend:3121` where `LAWS/spec.bend` is 869 lines and `uop/spec.bend` is
     3,473. The citing file's OWN IMPORTS settle a bare basename the range does not:
     the port writes `import ./../uop/ops.bend as O`, so the import NAMES the path a bare
@@ -332,7 +332,7 @@ class Corpus:
       return (subject, "root-relative") if subject in self.bodies else (None, "absent")
     if subject.startswith("."):
       # A subject spelled relative to the citing file, the way the port spells its
-      # IMPORTS: `runtime/ops_python.bend` cites `../base.bend:54` for the file it
+      # IMPORTS: `runtime/ops_python.bend` cites `../base.bend:53` for the file it
       # imports as `./../base.bend`.
       stack = citing.split("/")[:-1]
       for part in [p for p in subject.split("/") if p not in ("", ".")]:
@@ -498,8 +498,8 @@ class Judge:
     docstring and implements the OPPOSITE: it keeps a name for citation `i` when the
     name is within 40 characters of some OTHER citation, so on a line with two
     citations the name goes to the FARTHER one. MEASURED:
-    `tinybendygrad/extra/models/clip.bend:105` reads
-    `"mixin/elementwise.bend:772 has the CONSTANT ew_k.gelu and :1217 has
+    `tinybendygrad/extra/models/clip.bend:101` reads
+    `"mixin/elementwise.bend:754 has the CONSTANT ew_k.gelu and :1217 has
     `def ew_quick_gelu`"` -- and the shared rule gave `ew_quick_gelu` to `:772`, which
     is TRUE of neither, and the pointer read as stale. The rule is NOT copied here
     because it is not the rule; the shared rule's own docstring is right and its code
@@ -562,7 +562,7 @@ class Judge:
     the tight claim and is used whenever it names something the target holds. Only when
     it does not is the enclosing comment block read, because the port's prose often puts
     the name on the line BEFORE the pointer: MEASURED,
-    `tinybendygrad/uop/fold.bend:1661` writes "(ops.bend:823) has been for with no caller"
+    `tinybendygrad/uop/fold.bend:1646` writes "(ops.bend:823) has been for with no caller"
     and the lines above it name `O.Sint.uop` -- the construct `ops.bend:823` used to be.
     A block is a WIDER claim than a line, so the row records WHICH tier decided it and a
     reader can see the difference.
@@ -637,7 +637,7 @@ class Judge:
     # LINE is a claim about that pointer; a claim read off the enclosing COMMENT BLOCK
     # is a claim about the paragraph, and the paragraph names things the pointer is not
     # about. MEASURED, of 12 sampled tier-two rows, at least 4 are pointers that are
-    # RIGHT -- `tinybendygrad/uop/render.bend:422` cites `ops.bend:1036-1090` and says
+    # RIGHT -- `tinybendygrad/uop/render.bend:411` cites `ops.bend:1036-1090` and says
     # "ops.bend:1036-1090 already has the `ops.ParamArg` pattern with 13 fields", and
     # `ops.bend:1036` IS inside the `ParamArg` arm; the block's names include
     # `ParamArg`, whose DECLARATION is at :869, and the pointer was called stale on it.
@@ -671,7 +671,7 @@ class Judge:
     **ONLY A CONSTRUCT THE TARGET DECLARES CAN FALSIFY A POINTER.** A name the target
     merely MENTIONS -- a local, a type from another module, an English word in a
     comment -- is not "the thing the pointer is about", and a pointer that fails to land
-    on it is not thereby stale. MEASURED: `tinybendygrad/nn/layers.bend:533` cites
+    on it is not thereby stale. MEASURED: `tinybendygrad/nn/layers.bend:521` cites
     `mixin/op.bend:60-70` and says "(W4) calls it 'BUILDABLE but not CHECKABLE'", and
     `mixin/op.bend:60-70` SAYS EXACTLY THAT -- the pointer is RIGHT. The block's names
     included `Maybe`, a type `mixin/op.bend` does not declare, and the pointer read as

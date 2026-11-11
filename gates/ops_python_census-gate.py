@@ -25,7 +25,7 @@ axis is the port's own fixture-lane groups, the NODE axis is the rows they print
 
 WHAT THE PORT ITSELF ALREADY HAD, AND WHAT WAS MISSING. `ops_python.bend` HAS a
 `main()`, and it branches: with a PACKET on the command line it is the EXECUTOR
-(`Prog.launch`), with none it runs a FIXTURE LANE (`gate()` at ops_python.bend:2719)
+(`Prog.launch`), with none it runs a FIXTURE LANE (`gate()` at ops_python.bend:2642)
 that prints 84 `name=value` rows across five groups. **The port is therefore its own
 driver and this gate needs no `.bend` of its own** -- `./bin/bend
 tinybendygrad/runtime/ops_python.bend` with an empty argv, which `main.at`
@@ -81,7 +81,7 @@ moved nothing without them.
 class (b) trap answered rather than dodged. The three are `op_of`'s parser arm
 (:486), `opname`'s printer arm (:1340) and `Prog.dispatch`'s interpreter arm (:2038)
 -- all three a NAME or a DISPATCH, and none of them a cast being minted. The
-never-folding-CAST defect of `uop/ops.bend:2919` therefore has no surface in this
+never-folding-CAST defect of `uop/ops.bend:2917` therefore has no surface in this
 file: there is no `O.UOp.new(...)` in it at all, because this layer does not build
 UOps. The 3 is a measurement, not an absence.
 
@@ -161,14 +161,14 @@ fixed. Every number in what follows was measured on 2026-10-13.
      `literal_rows()` answers `[]`, and that is what `literal_rows_hold()` now pins.
 
   B. **THE HEADER SAID THERE ARE NO `pyc_*` ROWS, AND THERE WERE TWO. CLOSED.**
-     ops_python.bend:2374 read "A row that disagrees with CPython is a row that
+     ops_python.bend:2306 read "A row that disagrees with CPython is a row that
      encodes a bug, so there are NO `pyc_*` rows here at all" while :2660/:2661
      printed `pyc_is_b64decode` and `pyc_refused` -- same file, 285 lines apart.
      The header now says there are two, says what each one is, and says which of the
      two sides of the identity it can establish. `pyc_rows_hold()` re-measures both
      halves: the disclaimer must stay GONE and the two rows must stay the two.
 
-  C. **TWO DEAD DEFS. CLOSED, BY DELETION.** `B64_EQ` (ops_python.bend:2381) was the
+  C. **TWO DEAD DEFS. CLOSED, BY DELETION.** `B64_EQ` (ops_python.bend:2313) was the
      `=` of a base64 alphabet whose decoder was abandoned mid-file -- WALL 5 -- and
      `prog.init` (:2572) returned `Nil{}`: it built neither of the two maps its own
      comment described, and nothing called it. Each had EXACTLY ONE mention on the
@@ -180,7 +180,7 @@ fixed. Every number in what follows was measured on 2026-10-13.
   D. **THE INTERPRETER HALF HAS NO ROWS IN THE POPULATION. STILL OPEN, AND THIS IS
      THE HONEST LIMIT.** `ops_python.py`'s `PythonProgram.__call__` is :52-157 --
      106 of 186 lines, 57% of the upstream file -- and every dispatch arm of it
-     (`Prog.dispatch`, ops_python.bend:2019) is reachable through `main()` only with
+     (`Prog.dispatch`, ops_python.bend:1967) is reachable through `main()` only with
      a PACKET on the command line, which is the EXECUTOR lane and not a value lane.
      MEASURED: the population this gate compares is 85 rows and 84 of them come from
      the five `t_*` bodies, none of which is a `Prog.dispatch` row. The `t_*` groups
@@ -200,7 +200,7 @@ fixed. Every number in what follows was measured on 2026-10-13.
   E. **`Prog.dispatch` HAS NO `assert`-FOR AN UNREACHED ARM. REPORTED, NOT FIXED,
      AND IT IS A STRONGER CLAIM THAN CPYTHON'S.** CPython's :155 is
      `assert u in values, u` -- a PER-DISPATCH check. The port's catch-all is
-     `case _: Prog.alu(p, u)` (ops_python.bend:2042) with no guard, which would be a
+     `case _: Prog.alu(p, u)` (ops_python.bend:1988) with no guard, which would be a
      silent wrong answer -- except that `op_of` (:481) has no `BINARY`, `CALL`,
      `WMMA` or `CUSTOM_FUNCTION` arm, so those uops parse to `None`, `Uop.of.op2`
      leaves the op unparsed, `Uop.refused` (:1087) is `kind >= 14` and
@@ -694,7 +694,7 @@ def dead_defs_hold() -> bool:
 def interpreter_hold() -> bool:
     """FINDING E, class (f), checked structurally, and STRONGER than CPython's.
     CPython's :155 is `assert u in values, u` -- a PER-DISPATCH check. The port's
-    catch-all `case _: Prog.alu(p, u)` (ops_python.bend:2042) is unguarded, which
+    catch-all `case _: Prog.alu(p, u)` (ops_python.bend:1988) is unguarded, which
     would be a silent wrong answer, EXCEPT that the refusal happens earlier and
     everywhere at once: `op_of` has no `BINARY`, `CALL`, `WMMA` or `CUSTOM_FUNCTION`
     arm, so those uops parse to `None`; `Uop.of.op2` leaves the op unparsed;
@@ -957,7 +957,7 @@ def run():
     """PRODUCE THREE LANES, COMPARE THEM, AND SETTLE ON EVERY EXIT.
 
     `bd` is `./bin/bend tinybendygrad/runtime/ops_python.bend` with an EMPTY argv,
-    which `main.at` (ops_python.bend:2734) routes to the fixture lane `gate()`; `bn`
+    which `main.at` (ops_python.bend:2657) routes to the fixture lane `gate()`; `bn`
     is the same program compiled with `-o` and run as a binary. Staging is
     gatekit's `.tmp.` convention and the promote-or-discard is its `_settle`, so a
     red run leaves neither a half-written artifact nor a temp.

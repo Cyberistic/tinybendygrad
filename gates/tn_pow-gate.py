@@ -10,7 +10,7 @@ NINE ROWS, THREE LANES. CPython's `Tensor.__pow__` (elementwise.py:569, via
  if isinstance(exponent, ConstType): ...
  return base.alu(Ops.POW, exponent)`.
 For two Tensors of the same shape (the no-broadcasting case the wall text
-at `nn/__init__.bend:241+` cited as the blocker) `_broadcasted` is the
+at `nn/__init__.bend:230+` cited as the blocker) `_broadcasted` is the
 identity and the `isinstance(exponent, ConstType)` guard is unreachable
 (both `exponent` and `self` are Tensors), so the body reduces to
 `_binop`'s shape (elementwise.py:36) with `MUL` replaced by `POW`:
@@ -19,7 +19,7 @@ arm swaps: `__rpow__` is `x.alu(POW, self)` -- srcs `(x, self)`. CPython
 also has a `Tensor.pow(x, reverse=False)` (elementwise.py:548) which is
 the same `_binop` body, and the `__pow__` dunder simply calls
 `self.pow(x)` (elementwise.py:569). With `tn_pow` / `tn_rpow` ported at
-`tensor.bend:673-682`, the no-broadcasting case of both dunders is
+`tensor.bend:666-675`, the no-broadcasting case of both dunders is
 covered. The broadcasting case stays walled on `_broadcasted`.
 """
 

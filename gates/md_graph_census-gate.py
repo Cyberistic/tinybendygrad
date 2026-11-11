@@ -29,7 +29,7 @@ censuses drop `ew_join` / `cr_cast`.
 
 WHAT IT ASSERTS. The port's toposort OP SEQUENCE **plus the root's arg dtype name** against
 CPython's, for the method each def mirrors. The printer is the port's OWN `O.Rng.sig`
-(`ops.bend:5897`); the ` arg=<name>` suffix is added because `Rng.sig` does NOT print an arg and
+(`ops.bend:5766`); the ` arg=<name>` suffix is added because `Rng.sig` does NOT print an arg and
 a CAST's whole point is its arg -- without it `cast_short` (i16) and `cast_int` (i32) are the
 same line. CPython's `DType.name` and the port's `S.Dt` `nm` are the same table (f16/f32/i32/...),
 measured.

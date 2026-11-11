@@ -11,10 +11,10 @@
 # does not exist would need a scratch arena and a second Kahn worklist per query.
 #
 # `UOp._min_max` (ops.py:1104-1158) IS LANDED, and the reader that joins it to
-# `commit_dtype` is landed with it. `fold.bend:3165 symbol=mm.u64.of` once recorded the
+# `commit_dtype` is landed with it. `fold.bend:3127 symbol=mm.u64.of` once recorded the
 # sweep as the biggest single piece left in that half of ops.py and named what was missing
 # (`i64_mul`, `i64_div`, `i64_mod`; there is no F32 min/max) -- all of which now exist, and
-# the arithmetic core is at `fold.bend:3165 symbol=mm.u64.of` under a "when helpers.bend
+# the arithmetic core is at `fold.bend:3127 symbol=mm.u64.of` under a "when helpers.bend
 # grows them these defs go there" notice that has been kept.
 #
 # SO the nine markers below that say "`commit_dtype` IS missing" ARE out of date, and the
@@ -276,7 +276,7 @@ def wk_is_virtual(+fx: F.Folded, +i: U32) -> Bool:
 #
 #   * `_eval` and the three dunders -- `ops.bend` cannot NAME `fold.bend`'s bounds.
 #   * `param_noshape` -- `ops.bend` cannot IMPORT `dtype.bend`, because its fp16/bf16/i64 C
-#     effects make the checker exit 1 for ANY importer, so `md_weak` (`mixin/dtype.bend:124
+#     effects make the checker exit 1 for ANY importer, so `md_weak` (`mixin/dtype.bend:122
 #     symbol=md_weak`) is unreachable from there. The file says so in its own header and it
 #     is TRUE: a two-line file that imports `dtype.bend` and does nothing else prints the same fourteen lines.
 #
@@ -332,7 +332,7 @@ def wk_dt_list(+fx: F.Folded, ss: List<&2, U32>) -> List<&2, S.Dt>:
   wk_dt_list.go(fx, ss, Nil{})
 
 # promo_dtype -- ops.py:120, which the port hoisted into `fold.bend`.
-# THE HOIST IS `promo_dtype` AT fold.bend:298 symbol=promo_dtype. THE `symbol=` IS ON
+# THE HOIST IS `promo_dtype` AT fold.bend:296 symbol=promo_dtype. THE `symbol=` IS ON
 # ITS own line because a `.py` CITATION on the same line takes it and is judged
 # AGAINST UPSTREAM's `promo_dtype` INSTEAD OF THE PORT's.
 def wk_meet(+fx: F.Folded, ss: List<&2, U32>) -> S.Dt:
@@ -593,7 +593,7 @@ def replace_walk(+w: Walk, +fx: F.Folded, +self: U32) -> O.Found:
 
 # A `Maybe` this file can answer, because `wk_blocked` has already refused the sealed
 # case. The `None` arm is unreachable on every path that gets here and is the dead
-# default `fold.bend:630` writes for the same reason.
+# default `fold.bend:626` writes for the same reason.
 def wk_const_of.pick(m: Maybe<&1, O.Const>) -> O.Const:
   match m:
     case Some{c}: c
@@ -614,9 +614,9 @@ def wk_cast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   wk_cast_at.of(wk_eq_dt(wk_dt(fx, self), dt), fx, self, dt)
 
 # ops.py:632-638 `UOp.const`: `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`
-# -- the bare CONST the fold derives a dtype from, PLUS the CAST. `ops.bend:3050 symbol=UOp.const`
+# -- the bare CONST the fold derives a dtype from, PLUS the CAST. `ops.bend:3048 symbol=UOp.const`
 # has the bare half; `.cast` folds away at exactly bool/weakint/weakfloat, so for those three
-# Python has ONE node and this has two, which `ops.bend:3050 symbol=UOp.const`'s own doc comment
+# Python has ONE node and this has two, which `ops.bend:3048 symbol=UOp.const`'s own doc comment
 # documents. Spelling the CAST unconditionally is what `UOp.const`'s own shape does.
 def wk_const_at(+fx: F.Folded, +dt: S.Dt, cv: Maybe<&1, O.Const>) -> O.Found:
   wk_cast_at.of(False{}, fx, O.Found.i(O.UOp.const(F.Folded.ar(fx), wk_const_of(cv))), dt)
@@ -661,11 +661,11 @@ def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 # sink.
 #
 # `W.wk_remint` IS CALLED BY `mixin/elementwise.bend` (`ew_promote.b`) AND BY `tensor.bend`
-# (`tn_isfinite.promote`), and `mixin/op.bend:485 symbol=mo_remint.at` reaches it as
+# (`tn_isfinite.promote`), and `mixin/op.bend:478 symbol=mo_remint.at` reaches it as
 # `E.ew_remint` -- the ONE-LINE FORWARDER left at the old name is deliberate: it is the only
 # external call site of the six defs below, and renaming it would have meant editing a file
 # this move does not otherwise touch. MEASURED with `grep -rn
-# 'ew_remint|ew_ccast|ew_const_bare|ew_const_val|ew_src0|ew_is_c0'` over `tinybendygrad/` and `gates/`: `ew_remint` at `mixin/op.bend:485` and at
+# 'ew_remint|ew_ccast|ew_const_bare|ew_const_val|ew_src0|ew_is_c0'` over `tinybendygrad/` and `gates/`: `ew_remint` at `mixin/op.bend:478` and at
 # `mixin/elementwise.bend`'s own `ew_promote.b`, and NOTHING for the other five. The
 # `ew_src0_rev`/`ew_src0_fwd` names in `mixin/elementwise.bend` are ROW LABELS of an unrelated
 # `ew_opname_src` probe, `gates/ew_graph_census.bend` names `ew_remint` only in prose, and
@@ -1077,7 +1077,7 @@ def wk_uncast_table() -> O.PMEntrys:
 # only per-table difference is WHICH of the two already-written dispatches a tag goes to,
 # and a `Bool` selects between them. The two dispatches and the tables stay separate.
 #
-# `wk_keep` is first-wins, the same shape as ops.bend:4088 `pm_keep`: a `Some` accumulator
+# `wk_keep` is first-wins, the same shape as ops.bend:4017 `pm_keep`: a `Some` accumulator
 # keeps what it holds and discards a later hit.
 
 def wk_keep.take(acc: Maybe<&2, O.Found>, v: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:

@@ -27,7 +27,7 @@ import ./../datasets/__init__.bend as D
 #   `grep -rnE "^def .*(lstm|LSTMCell|rnn|GRU|gru|cell)\(" --include='*.bend'
 #   tinybendygrad/` = 0.
 #
-# and the proof that it is not there by accident: `mixin/elementwise.bend:1186`
+# and the proof that it is not there by accident: `mixin/elementwise.bend:1164`
 # is where the activation LIST ends, and `mixin/op.bend:8` enumerates op.py's
 # own side and lists `-- _pad_reflect_replicate, pad, dot, matmul, einsum,
 # gradient, min, mean, var,` -- no recurrence anywhere in the upstream op mixin
@@ -37,30 +37,30 @@ import ./../datasets/__init__.bend as D
 #
 # the named census for this file:
 #   `nn.Embedding` MISSING (:178). THE FIRST MISSING SYMBOL.
-#   `nn.Linear`    EXISTS, nn/layers.bend:530 symbol=nn_linear (:191,:192,:107).
-#   `Tensor.sigmoid` EXISTS, mixin/elementwise.bend:1208 symbol=ew_sigmoid (:110).
-#   `Tensor.tanh`    EXISTS, mixin/elementwise.bend:1257 symbol=ew_tanh    (:110).
-#   `softmax`        NOT USED BY THIS FILE. (`mo_softmax` mixin/op.bend:1158 symbol=mo_softmax exists.)
-#   `adam`           NOT USED BY THIS FILE. `nn/optim.bend:900 symbol=op_mstep` / `:903 op_vstep` EXIST and go unused
+#   `nn.Linear`    EXISTS, nn/layers.bend:518 symbol=nn_linear (:191,:192,:107).
+#   `Tensor.sigmoid` EXISTS, mixin/elementwise.bend:1186 symbol=ew_sigmoid (:110).
+#   `Tensor.tanh`    EXISTS, mixin/elementwise.bend:1235 symbol=ew_tanh    (:110).
+#   `softmax`        NOT USED BY THIS FILE. (`mo_softmax` mixin/op.bend:1141 symbol=mo_softmax exists.)
+#   `adam`           NOT USED BY THIS FILE. `nn/optim.bend:858 symbol=op_mstep` / `:903 op_vstep` EXIST and go unused
 #                    here, as in every other file in
 #                    this slice.
-#   `matmul`/`dot`   NOT USED BY THIS FILE. `tinybendygrad/nn/layers.bend:382 symbol=nn_dot.order nn_dot` exists and
+#   `matmul`/`dot`   NOT USED BY THIS FILE. `tinybendygrad/nn/layers.bend:374 symbol=nn_dot.order nn_dot` exists and
 #                    RNN-T reaches matmul only through `x.linear` (:107,:191-192).
 #   `Tensor.argmax`  MISSING (:46).
 #   `LSTM`/`LSTMCell` MISSING, and this is the RECURRENCE wall.
 #
 # WHAT EXISTS, WITH ITS INSTRUMENT:
-#   `Tensor.uniform`  mixin/rand.bend:925 symbol=rd_uniform  (:101,:102,:103,:104)
-#   `Tensor.zeros`    mixin/creation.bend:539 symbol=cr_zeros (:33,:35,:36)
-#   `Tensor.ones`     mixin/creation.bend:580 symbol=cr_ones  (:18)
-#   `x.linear`        nn/layers.bend:530 symbol=nn_linear    (:107,:191,:192)
-#   `x.reshape`       mixin/movement.bend:1434 symbol=mxw_reshape (:157)
-#   `x.transpose`     mixin/movement.bend:1452 symbol=mxw_permute (:171,:183)
-#   `x.expand`        nn/layers.bend:638 symbol=nn_expand     (:196,:197)
-#   `x.pad`           mixin/movement.bend:1523 symbol=mxw_pad (:58,:156)
-#   `Tensor.stack`    mixin/movement.bend:1272 symbol=mxw_stk  (:148)
-#   `x.relu`          nn/layers.bend:299 symbol=nn_relu      (:200)
-#   `x +`/`x *`       mixin/elementwise.bend:509/510 `ew_add`/`ew_mul` (:112,:182)
+#   `Tensor.uniform`  mixin/rand.bend:918 symbol=rd_uniform  (:101,:102,:103,:104)
+#   `Tensor.zeros`    mixin/creation.bend:526 symbol=cr_zeros (:33,:35,:36)
+#   `Tensor.ones`     mixin/creation.bend:567 symbol=cr_ones  (:18)
+#   `x.linear`        nn/layers.bend:518 symbol=nn_linear    (:107,:191,:192)
+#   `x.reshape`       mixin/movement.bend:1417 symbol=mxw_reshape (:157)
+#   `x.transpose`     mixin/movement.bend:1435 symbol=mxw_permute (:171,:183)
+#   `x.expand`        nn/layers.bend:625 symbol=nn_expand     (:196,:197)
+#   `x.pad`           mixin/movement.bend:1504 symbol=mxw_pad (:58,:156)
+#   `Tensor.stack`    mixin/movement.bend:1257 symbol=mxw_stk  (:148)
+#   `x.relu`          nn/layers.bend:292 symbol=nn_relu      (:200)
+#   `x +`/`x *`       mixin/elementwise.bend:499/510 `ew_add`/`ew_mul` (:112,:182)
 #
 # what is missing, named -- and most of it is not recurrence, which is the
 # FINDING: fixing LSTM would NOT make this file run.
@@ -79,7 +79,7 @@ import ./../datasets/__init__.bend as D
 #       through it". `_greedy_decode` (extra/models/rnnt.py:32) reads a TENSOR BACK to the host
 #       at extra/models/rnnt.py:45 with `numpy` and extra/models/rnnt.py:46 and writes it into a fresh Tensor, so it cannot be a graph.
 #   (8) `unsqueeze` (extra/models/rnnt.py:26, :38, :196, :197) --
-#       `tinybendygrad/nn/layers.bend:518 symbol=nn_transpose nn_expand` covers the `expand` half and NOT the
+#       `tinybendygrad/nn/layers.bend:506 symbol=nn_transpose nn_expand` covers the `expand` half and NOT the
 #       `unsqueeze` half.
 #   (9) `TinyJit` (:15,:54,:127) -- PARTIAL, per THE PORT's `extra/models/resnet.bend` HEADER:
 #       `engine/jit.bend` is a real port (`InInfo` :370-389) and the NAME and the
@@ -87,7 +87,7 @@ import ./../datasets/__init__.bend as D
 #
 # `load_from_pretrained` (:62-94) is THIRTY-THREE `.assign(...)` LINES against a
 # TORCH checkpoint read through `torch.load` (:68) and a `fetch` (:64) that
-# `helpers.bend:3194` records as unported. It is not arithmetic left undone and it
+# `helpers.bend:3123` records as unported. It is not arithmetic left undone and it
 # is not counted as such.
 #
 # TODO(port): STOPPED AT `Prediction.__init__` (extra/models/rnnt.py:175).
@@ -138,17 +138,17 @@ def rt_rnnt_load_from_pretrained() -> D.Refused:
 
 # :98 def __init__(self, input_size, hidden_size, dropout)
 def rt_cell_init(input_size: U32, hidden_size: U32, dropout: F32) -> D.Refused:
-  D.refuse("extra/models/rnnt.py:98 LSTMCell.__init__ -- REACHED: all four weights are Tensor.uniform, mixin/rand.bend:925 symbol=rd_uniform EXISTS (:101-104). BLOCKED BY: the missing class shell only -- this def's ARITHMETIC IS PORTED")
+  D.refuse("extra/models/rnnt.py:98 LSTMCell.__init__ -- REACHED: all four weights are Tensor.uniform, mixin/rand.bend:918 symbol=rd_uniform EXISTS (:101-104). BLOCKED BY: the missing class shell only -- this def's ARITHMETIC IS PORTED")
 
 # :106 def __call__(self, x, hc)
 def rt_cell_call(+x: T.Tensor, +hc: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/rnnt.py:106 LSTMCell.__call__ -- FIRST MISSING SYMBOL Tensor.chunk (:109); x.linear (:107) EXISTS, sigmoid/tanh (:110) EXIST at mixin/elementwise.bend:1195 symbol=g_unary/:1232, and Tensor.cat (:115) is MISSING")
+  D.refuse("extra/models/rnnt.py:106 LSTMCell.__call__ -- FIRST MISSING SYMBOL Tensor.chunk (:109); x.linear (:107) EXISTS, sigmoid/tanh (:110) EXIST at mixin/elementwise.bend:1173 symbol=g_unary/:1232, and Tensor.cat (:115) is MISSING")
 
 # :118-148 LSTM.
 
 # :119 def __init__(self, input_size, hidden_size, layers, dropout)
 def rt_lstm_init(input_size: U32, hidden_size: U32, layers: U32, dropout: F32) -> D.Refused:
-  D.refuse("extra/models/rnnt.py:119 LSTM.__init__ -- FIRST MISSING SYMBOL LSTMCell (:124); `self.cells` is a LIST of them, and a list of sub-models is the shape nn/__init__.bend:22-33 settled on for `*_st` defs")
+  D.refuse("extra/models/rnnt.py:119 LSTM.__init__ -- FIRST MISSING SYMBOL LSTMCell (:124); `self.cells` is a LIST of them, and a list of sub-models is the shape nn/__init__.bend:21-32 settled on for `*_st` defs")
 
 # :126 def __call__(self, x, hc)
 def rt_lstm_call(+x: T.Tensor, +hc: Maybe<&2, T.Tensor>) -> D.Refused:
@@ -156,7 +156,7 @@ def rt_lstm_call(+x: T.Tensor, +hc: Maybe<&2, T.Tensor>) -> D.Refused:
 
 # :144 def do_step(self, x, hc)
 def rt_lstm_do_step(+x: T.Tensor, +hc: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/rnnt.py:144 LSTM.do_step -- FIRST MISSING SYMBOL LSTMCell.__call__ (:147) -> Tensor.chunk; Tensor.stack (:148) EXISTS at mixin/movement.bend:1267 symbol=mxw_stk.done")
+  D.refuse("extra/models/rnnt.py:144 LSTM.do_step -- FIRST MISSING SYMBOL LSTMCell.__call__ (:147) -> Tensor.chunk; Tensor.stack (:148) EXISTS at mixin/movement.bend:1252 symbol=mxw_stk.done")
 
 # :151-158 StackTime.
 
@@ -191,7 +191,7 @@ def rt_prediction_call(+x: T.Tensor, +hc: T.Tensor, +m: T.Tensor) -> D.Refused:
 
 # :188 def __init__(self, vocab_size, pred_hidden_size, enc_hidden_size, joint_hidden_size, dropout)
 def rt_joint_init(vocab_size: U32, pred_hidden_size: U32, enc_hidden_size: U32, joint_hidden_size: U32) -> D.Refused:
-  D.refuse("extra/models/rnnt.py:188 Joint.__init__ -- BOTH are Linear (:191,:192) and nn/layers.bend:530 symbol=nn_linear EXISTS; BLOCKED BY the missing class shell")
+  D.refuse("extra/models/rnnt.py:188 Joint.__init__ -- BOTH are Linear (:191,:192) and nn/layers.bend:518 symbol=nn_linear EXISTS; BLOCKED BY the missing class shell")
 
 # :194 def __call__(self, f, g)
 def rt_joint_call(+f: T.Tensor, +g: T.Tensor) -> D.Refused:

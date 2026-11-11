@@ -61,7 +61,7 @@
 #   W4 mixin/op.py:752 `_cumalu` -> mixin/movement.py:614 symbol=_pool `_pool` -- `_pool` is
 #      TWELVE lines of shape arithmetic (`ceildiv`, `smax`, `flatten`, `repeat`,
 #      `shrink_to`, four reshapes, a permute) and `fold.bend`'s `dt_shape`
-#      (fold.bend:1622-1625) leaves PERMUTE, EXPAND, PAD, SHRINK and FLIP
+#      (fold.bend:1608-1611) leaves PERMUTE, EXPAND, PAD, SHRINK and FLIP
 #      un-answered, because their `marg` needs `ssimplify`. So `_pool` is
 #      BUILDABLE but not CHECKABLE, and everything that reaches it through
 #      `arange` (op.py:166) inherits it: `cumsum` (:770), `cumprod` (:784),
@@ -108,12 +108,12 @@
 #     and the int path's toposort answered `1 BUFFER/0`, because the self-edge is
 #     already-visited: `ne(0)` on a FLOAT tensor was a graph with a CYCLE, and it
 #     typechecked and ran. FIXED in the substrate while this file was being
-#     written -- `ew_rebase` (elementwise.bend:234 symbol=ew_rebase), on every arm that mints
+#     written -- `ew_rebase` (elementwise.bend:230 symbol=ew_rebase), on every arm that mints
 #     nothing, which is the whole of the fix. `mo_arena` below is that one line,
 #     kept because W9b means `mo_promote` is spelled here anyway.
 #
 #   W9b -- the MISSING CONJUNCT, and this one is OPEN. `ew_promote`
-#     (mixin/elementwise.bend:363 symbol=ew_promote) hands `ew_promote.at` the weak test as `W.dt_weak(dt)`,
+#     (mixin/elementwise.bend:355 symbol=ew_promote) hands `ew_promote.at` the weak test as `W.dt_weak(dt)`,
 #     and `W.dt_weak` is the CLASS test ALONE (`weak_cls(S.Dt.cls(d))`, weak.bend).
 #     elementwise.py:30 is
 #         `if t.dtype in dtypes.weaks and t._uop.base.op is Ops.CONST:`
@@ -150,9 +150,9 @@
 #      dtype and `Nil{}` for a shape. Both are UNREACHABLE for the recipes below,
 #      and the reason is worth stating because it is why the port is checkable at
 #      all: none of them builds a PERMUTE/PAD/SHRINK/EXPAND/FLIP, which are the
-#      five ops `dt_shape` defers (fold.bend:2673 symbol=dt_shape). The movement op they do
-#      build is RESHAPE, which `reshape_ds` (fold.bend:2251 symbol=reshape_ds) answers, and REDUCE,
-#      which `reduce_ds` (fold.bend:2262 symbol=reduce_ds) answers. MEASURED, both, over a BUFFER-rooted AND
+#      five ops `dt_shape` defers (fold.bend:2644 symbol=dt_shape). The movement op they do
+#      build is RESHAPE, which `reshape_ds` (fold.bend:2228 symbol=reshape_ds) answers, and REDUCE,
+#      which `reduce_ds` (fold.bend:2239 symbol=reduce_ds) answers. MEASURED, both, over a BUFFER-rooted AND
 #      over a RESHAPE-rooted source.
 #   4. `commit_dtype` (tinygrad/mixin/dtype.py:16) answers a `Maybe` because `UOp._min_max`
 #      (ops.py:239 symbol=dtype) is not ported, and `mixin/dtype.bend` measures that refusal
@@ -324,7 +324,7 @@ def mo_dim_at(+fx: F.Folded, +i: U32, k: U32) -> U32:
 #     in axis else s for i, s in enumerate(self.shape)`) AND THIS DEF ANSWERED `(2)(1)`
 #     -- THE ORDER IS WRONG EVEN ON A SQUARE.
 #   * the reduced SIZE for a `(2,3)` tensor on axis `[0]` is 3 and this DEF answered 2.
-#   * `tinybendygrad/nn/layers.bend:229 symbol=nn_reduce.pick` measured the same divergence on `(2,4,3)` with axis `[2]`,
+#   * `tinybendygrad/nn/layers.bend:225 symbol=nn_reduce.pick` measured the same divergence on `(2,4,3)` with axis `[2]`,
 #     WHERE `mo_keep_ds` ANSWERED `(1,4,3)` AND CPython ANSWERS `(2,4,1)`.
 # and nothing in the tree could see it: the port's only rank-2 fixture is `(2,2)` --
 # WHERE the SIZE is accidentally right because the two dimensions are equal -- and its
@@ -371,7 +371,7 @@ def mo_const_t(+t: T.Tensor, v: O.Const) -> T.Tensor:
 # have its own source. MEASURED: `t_mean0` printed `2 NOOP/0 CAST/1` -- a CAST whose
 # src is the arena's bottom node -- and `t_softmax0` lost its REDUCE to the same
 # overwrite. `W.wk_cast_at` is `elementwise.bend`'s `ew_cast` callee
-# (elementwise.bend:126), so this is a CALL and not a reimplementation.
+# (elementwise.bend:124), so this is a CALL and not a reimplementation.
 # AND `mo_promote` NEEDS THE OTHER ONE, because a def that is handed a fold has to build
 # in the fold's arena and not in `t`'s: `t` may be older than the operand that was
 # interned after it. MEASURED: with `mo_cast_t` there, the promoted CAST of `norm0`'s
@@ -423,7 +423,7 @@ def mo_commit_dt(+fx: F.Folded, +t: T.Tensor) -> S.Dt:
 # `sum_acc_dtype` -- tinygrad/dtype.py:213. The float arm reads `getenv("SUM_DTYPE",
 # "float32")`, which is a `Config` read and `Config` is P6; the DEFAULT is float32
 # and no caller in this file's range overrides it, which is the same argument
-# fold.bend makes for `least_upper_float` (fold.bend:322 symbol=least_upper_float).
+# fold.bend makes for `least_upper_float` (fold.bend:320 symbol=least_upper_float).
 # TODO(p3) tinygrad/dtype.py:213  sum_acc_dtype's `getenv("SUM_DTYPE")` -- a
 #   `Config` read (P6). The default float32 is what `mo_sum_acc` uses and what every
 #   gate fixture needs.
@@ -442,7 +442,7 @@ def mo_downcast(+dt: S.Dt) -> Bool:
   Bool.or(D.md_dt_eq(dt, S.half()), Bool.or(D.md_dt_eq(dt, S.bfloat16()), U32.is_eq(S.Dt.bits(dt), 8)))
 
 # `promote` -- elementwise.py:29-33, and it is HERE rather than `E.ew_promote`
-# because of W9: `ew_promote.b` (elementwise.bend:245) threads the pre-remint
+# because of W9: `ew_promote.b` (elementwise.bend:241) threads the pre-remint
 # arena, so its int-CONST path builds a self-referential node. This is
 # `elementwise.py`'s three arms with the arena threaded correctly, and `mo_weakconst`
 # is its `t.dtype in dtypes.weaks and t._uop.base.op is Ops.CONST` test spelled as
@@ -579,7 +579,7 @@ def mo_alu(+t: T.Tensor, op: O.Op, +y: T.Tensor) -> T.Tensor:
   mo_alu2(T.Tensor.ar(l), T.Tensor.u(l), op, T.Tensor.u(y2))
 
 # THE CONST-OPERAND HALF OF `_binop`, and it exists for W9. MEASURED: `E.ew_binop`
-# with a weakINT constant builds a self-referential node (elementwise.bend:245 threads
+# with a weakINT constant builds a self-referential node (elementwise.bend:241 threads
 # the pre-remint arena), so every `x * (-1)` -- `neg` (elementwise.py:82), and therefore
 # `min` (op.py:494), `softmin` (op.py:729) and `var` -- came back as the BUFFER ITSELF.
 # A FLOAT constant is not affected (`ew_promo`'s weak arm keeps a weak CONST weak, so
@@ -594,7 +594,7 @@ def mo_neg(+t: T.Tensor) -> T.Tensor: mo_bin_c(t, O.OpsMUL{}, mo_ki(4294967295))
 
 # THE WHOLE `ew_binop` FAMILY, ON `mo_bin`. `ew_binop` is CORRECT when its left operand's
 # promotion mints a node and WRONG when it does not: `ew_promo2`'s weak arm hands `t`
-# straight back (mixin/elementwise.bend:242 symbol=ew_newer), so `Br.l` keeps `t`'s arena, and the `tn_alu`
+# straight back (mixin/elementwise.bend:238 symbol=ew_newer), so `Br.l` keeps `t`'s arena, and the `tn_alu`
 # at the end of `ew_binop` then interns the node into an arena one node short of the
 # right-hand side's and OVERWRITES it. MEASURED: `t_lse0` printed `2 BUFFER/0 REDUCE/1`
 # where CPython prints 33 nodes, and the graph had a node whose src was itself. `mo_bin`
@@ -650,7 +650,7 @@ def mo_neqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_notb(mo_eqc(t, v))
 # promoted these, and a second promote would cast -b (only a weak CONST is kept weak)".
 #
 # it is spelled here and not called as `E.ew_sub` for W9'S second half, and the reason is
-# the same one-word error as in `mo_alu2`: `ew_sub.of` (mixin/elementwise.bend:405 symbol=ew_pair) ends
+# the same one-word error as in `mo_alu2`: `ew_sub.of` (mixin/elementwise.bend:395 symbol=ew_pair) ends
 # `T.tn_alu(a, Ops.ADD{}, [Tensor.u(b)])` where `a` is `t` UNCHANGED whenever the
 # promotion is the identity, and `b = ew_neg(...)` has already grown the arena -- so the
 # ADD is interned into an arena one node short and OVERWRITES the negated right-hand
@@ -695,7 +695,7 @@ def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
 # obvious spelling asks the fold for `ret`'s shape -- which does NOT always answer.
 # MEASURED on bend 2.0.34: `fold.bend`'s `reshape_ds` (:1537) answers a RESHAPE whose
 # shape arg is a STACK and does NOT answer one whose shape arg is a BARE CONST, and a
-# one-element shape arg is a bare CONST (`tn_shape_arg.n`'s middle arm, tensor.bend:590).
+# one-element shape arg is a bare CONST (`tn_shape_arg.n`'s middle arm, tensor.bend:583).
 # So `mo_dims` over `RESHAPE(REDUCE, CONST(1))` answers `Nil{}`, the identity test sees
 # `() == ()`, and every keepdim reduce silently loses its reshape -- `t_sum0kd` printed
 # two nodes where CPython prints four, and nothing else in the file said so.
@@ -814,7 +814,7 @@ def mo_ax_all(+t: T.Tensor) -> List<&2, U32>:
 
 # THE KEEPDIM RESHAPE, `1 if i in axis else s for i,s in enumerate(self.shape)`
 # (reduce.py:18). It is `RESHAPE` and the fold answers its shape, so
-# `mo_reshape`'s identity test sees the real shapes and `t_sum0kd` is the row (uop/fold.bend:1601 symbol=pre_all). The
+# `mo_reshape`'s identity test sees the real shapes and `t_sum0kd` is the row (uop/fold.bend:1589 symbol=pre_all). The
 # membership test `i in axis` is a `Bool` because a `match` may not scrutinise a call
 # (rule 1).
 def mo_iaxis.go(axis: List<&2, U32>, +i: U32) -> Bool:
@@ -1360,10 +1360,10 @@ def t_sum0() -> IO(Unit):
   mo_sig_t("sum0", mo_sum(False{}, x, mo_ax(False{}, x, 0)))
 
 # `t_rop_gap` is the ONE-SIDED row for `T.tn_rop`'s own refusal. `tn_rop.ne1.of`
-# (tensor.bend:827) returns `None` when the fold cannot answer the source's SHAPE, and
+# (tensor.bend:820) returns `None` when the fold cannot answer the source's SHAPE, and
 # `tn_rop.reduce` then hands `self` back UNCHANGED -- no REDUCE node at all. For a
 # BUFFER-rooted and a RESHAPE-rooted source the fold DOES answer it (MEASURED: fold
-# uop/fold.bend:1591 symbol=stage_widths and uop/fold.bend:1601 symbol=pre_all), so this row is False and prints False; the mutation that
+# uop/fold.bend:1579 symbol=stage_widths and uop/fold.bend:1589 symbol=pre_all), so this row is False and prints False; the mutation that
 # makes it print True is the one that removes the refusal, and no CPython row can see
 # that because CPython never refuses.
 def t_rop_gap() -> IO(Unit):
@@ -1372,7 +1372,7 @@ def t_rop_gap() -> IO(Unit):
   mo_row("rop_gap", O.eq_op(O.Arena.op(O.Found.ar(f), O.Found.i(f)), O.OpsREDUCE{}))
 
 # THE KEEPDIM ROW. `reduce.py:18`'s reshape is `1 if i in axis else s`, and the fold
-# answers a RESHAPE's shape (uop/fold.bend:1601 symbol=pre_all), so the identity test in `mo_reshape`
+# answers a RESHAPE's shape (uop/fold.bend:1589 symbol=pre_all), so the identity test in `mo_reshape`
 # sees the real shapes. Without keepdim the REDUCE is the last node; with it the
 # signature gains `CONST RESHAPE/2` and nothing else, and the COUNT is what says so.
 def t_sum0kd() -> IO(Unit):

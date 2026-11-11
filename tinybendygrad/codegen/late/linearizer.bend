@@ -82,9 +82,9 @@
 
 # THE INTERFACE, CONSUMED NOT INVENTED. `codegen/kernel.bend` already owns
 # `pm_to_program`, whose table carries a PROGRAM gaining a LINEAR, a SOURCE and a
-# BINARY one `graph_rewrite` at a time (codegen/kernel.bend:816 symbol=pm_to_program), and whose stage
+# BINARY one `graph_rewrite` at a time (codegen/kernel.bend:804 symbol=pm_to_program), and whose stage
 # dispatch is keyed on ARITY with the INS read only to discriminate the two
-# two-src rules (kernel.bend:802-865). This file owns what those rules CALL:
+# two-src rules (kernel.bend:791-853). This file owns what those rules CALL:
 #     :429 do_linearize         -> linearize(sink)        -> lt_linearize
 #     :436 LinearScanRegallocContext(lin_ctx, lst, ctx)     -> ra_run
 #     :376 pm_add_control_flow  -> CFGContext(sink)        -> lt_cfg / lt_acf
@@ -98,7 +98,7 @@
 # THE FOUR WALLS, each at the file and line that owns it. W1 and W3 are the SAME
 # lowerer wall the coordinator named -- `itertools.product` over a shape plus
 # `permute`/`reshape`/`reduce`, which `uop/fold.bend` cannot answer for
-# PAD/SHRINK/EXPAND/FLIP (`fold.bend:1620-1626`) -- arriving from two more
+# PAD/SHRINK/EXPAND/FLIP (`fold.bend:1606-1612`) -- arriving from two more
 # directions. Nothing here answers them and nothing here pretends to.
 #
 #  W1 `u.ranges` and `r.vmax`  -- linearizer.py:20, :89

@@ -9,14 +9,14 @@
 #   1. THE PROGRAM. `Tensor.empty(4,5)`, `(4,3) @ (3,5)`, `t.assign(...)`.
 #      upstream `tinygrad/mixin/op.py:386-392` (`dot`),
 #      `tinygrad/tensor.py:420` (`Tensor.empty`), `tinygrad/tensor.py:271` (`assign`).
-#      port: `mixin/movement.bend:1231` (`mxw_buf`), `mixin/movement.bend:1434` (`mxw_reshape`),
-#      `mixin/movement.bend:1452` (`mxw_permute`), `tensor.bend:656` (`tn_mul`).
+#      port: `mixin/movement.bend:1219` (`mxw_buf`), `mixin/movement.bend:1417` (`mxw_reshape`),
+#      `mixin/movement.bend:1435` (`mxw_permute`), `tensor.bend:649` (`tn_mul`).
 #   2. THE ALLOC -> BUFFER REBIND. upstream `tinygrad/tensor.py:184`
 #      (`if x.op is Ops.ALLOC ... u = UOp.new_buffer(...)`).
 #      A NO-OP IN THE PORT: MEASURED, `grep -n "def UOp.new_buffer"
-#      tinybendygrad/uop/ops.bend` ANSWERS NOTHING (the port's `ops.bend:5332`
+#      tinybendygrad/uop/ops.bend` ANSWERS NOTHING (the port's `ops.bend:5238`
 #      carries it as a `TODO(p3)`), and the port's `Tensor` path has no ALLOC --
-#      `mxw_buf` builds the BUFFER (`mixin/movement.bend:1232`). The port's
+#      `mxw_buf` builds the BUFFER (`mixin/movement.bend:1220`). The port's
 #      BUFFER is the node upstream's `new_buffer` makes:
 #      `UOp.new.param(ar, OpsBUFFER{}, Some{size}, AParam{...})`.
 #   3. THE GLOBAL BUFFER -> PARAM REBIND. upstream
@@ -52,13 +52,13 @@
 # `UOp.const(20).arg` is the int `20`), so it is NOT the three-tuple the rule
 # looks for and the key is `cother` for EVERY CONST.
 # - and that is a divergence from the port's own `eng_constkey`
-# (`schedule/rangeify.bend:2605` symbol=eng_constkey), which spells a CONST `c:hi:lo`. The two
+# (`schedule/rangeify.bend:2588` symbol=eng_constkey), which spells a CONST `c:hi:lo`. The two
 # CANNOT both be right about the same graph, and the report names it.
 # - and the CONST values are not lost: `rz_consts` and `rz_params` below carry
 # them, and the comparator checks them as MULTISETS.
 #
 # why the comparison is order-free. measured, the port's `eng_dump`
-# (`schedule/rangeify.bend:2664` symbol=eng_dump) is a BFS -- `List.concat(&2, U32, [t, srcs])`
+# (`schedule/rangeify.bend:2647` symbol=eng_dump) is a BFS -- `List.concat(&2, U32, [t, srcs])`
 # puts the srcs at the END of the worklist -- and the oracle's `dump`
 # (`eng-oracle.py:79`) is a DFS -- `todo = list(u.src) + todo` puts them at the
 # FRONT. The two orders CANNOT agree, so the comparison is over MULTISETS.
@@ -99,10 +99,10 @@ def rz_dot_w(+rhs: T.Tensor) -> T.Tensor:
 # FRONT (`perm = reduce_axis + tuple(i for i in range(len(self.shape)) if i not
 # in reduce_axis)`) and the REDUCE's arg is `(op, len(reduce_axis))` -- the
 # NUMBER OF AXES, and the axes reduced are the FIRST ones.
-# - The port's `O.UOp.reduce` (`uop/ops.bend:7479`) builds `AReduce{rop, 0}`
+# - The port's `O.UOp.reduce` (`uop/ops.bend:7173`) builds `AReduce{rop, 0}`
 # -- `num_axes` HARDCODED to zero -- so this def builds the node with
 # `O.UOp.new` and the RIGHT num_axes. THAT IS A PORT DIVERGENCE AND IT IS
-# NAMED: `uop/ops.bend:7479 symbol=UOp.reduce.arg` cannot spell `AReduce{op, 1}`.
+# NAMED: `uop/ops.bend:7173 symbol=UOp.reduce.arg` cannot spell `AReduce{op, 1}`.
 def rz_reduce(+t: T.Tensor) -> T.Tensor:
   +p = MX.mxw_permute.go(t, [2, 0, 1])
   +r = O.UOp.new(T.Tensor.ar(p), O.OpsREDUCE{}, [T.Tensor.u(p)],
@@ -166,8 +166,8 @@ def rz_program() -> RZProg:
 # `schedule/__init__.bend:5-13`), so the rebuild is ONE PASS over the arena's
 # own toposort with an association list for the old-index -> new-index map.
 #
-# THE ORDER. The port's `UOp.toposort` (`uop/ops.bend:3404`) is a PRE-ORDER
-# DFS (`Topo.push`, `uop/ops.bend:3347`) and upstream's is a POST-ORDER one
+# THE ORDER. The port's `UOp.toposort` (`uop/ops.bend:3402`) is a PRE-ORDER
+# DFS (`Topo.push`, `uop/ops.bend:3345`) and upstream's is a POST-ORDER one
 # (MEASURED, `.agents/slop/realize/probe.py` prints upstream's `toposort()`
 # with the CONSTs first and the sink last). - the port's toposort and
 # upstream's are not the same order, and the port's rebuild needs children
@@ -366,7 +366,7 @@ def rz_node_str(+ar: O.Arena, +n: U32) -> String:
 
 # THE DUMP. A DFS from the result root, each node ONCE -- the oracle's `dump`
 # (`eng-oracle.py:79`) is a DFS and the port's `eng_dump`
-# (`schedule/rangeify.bend:2664` symbol=eng_dump) is a BFS, so the COMPARISON is over
+# (`schedule/rangeify.bend:2647` symbol=eng_dump) is a BFS, so the COMPARISON is over
 # MULTISETS and this dump's ORDER is not the comparison's subject.
 def rz_dump.go(fuel: Nat, todo: List<&2, U32>, +ar: O.Arena, +seen: List<&2, U32>, +n: U32,
                +acc: List<&2, String>) -> List<&2, String>:

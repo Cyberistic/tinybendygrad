@@ -201,7 +201,7 @@ static Term bf16_run(Env e, Term* f, IoWork* w) {
   // not saturation: upstream hands a non-finite back untouched, so the NaN's
   // payload AND its sign survive, and rounding is precisely what destroys them.
   // `math.isfinite` on a pattern is "the exponent field is not all ones"
-  // (dtype.bend:601), which is the mask below.
+  // (dtype.bend:579), which is the mask below.
   if ((x & 0x7F800000u) == 0x7F800000u) return (Term)(intptr_t)x;
   return (Term)(intptr_t)((x + 0x7FFFu + ((x >> 16) & 1u)) & 0xFFFF0000u);
 }

@@ -24,7 +24,7 @@ THE 43 AND THE ROW THAT MADE IT. `l2i.const`'s `lgv lgw lgx` joined at 39 -> 42,
 MEASURED they are NOT inert: `lgv` is what moved A1 5 -> 6, A3 15 -> 16, A4 5 -> 6 and
 A11 17 -> 18, and `lgw`/`lgx` are two of A2's four rows. `A2` is the only mutation visible
 under the bare printer besides A11, and `lgw`/`lgx` are why: breaking the fold test at
-dtype.bend:593 makes dtype.py's sign-extension cone appear, which changes the token SEQUENCE
+dtype.bend:571 makes dtype.py's sign-extension cone appear, which changes the token SEQUENCE
 and not merely a `[target]`. So the three rows that mint their CONST outside `l2i` bought
 coverage on the CONST sites, which the pool-fed arms reached only through `zero`. `lgz` joins at
 42 -> 43 and **MOVES NOTHING IN A1..A13**, and that is a MEASURED PROPERTY OF THE ROW AND NOT
@@ -99,7 +99,7 @@ DTYPE_IMPORTS = (("import ./op.bend as P", f"import ./{MUT_OP.name} as P"),)
 # self._uop.alu(Ops.CAST, arg=dt)`: ONE value, the fold test's right-hand side AND the
 # CAST's `arg`, in one expression. `mixin/creation.bend`'s `cr_const_of` (:242-245) is that
 # line with the value made explicit, which is the `de` the recorded finding is about.
-# `dtype.bend:593` and `:637` are the same two uses of one `ldt` binder, spelled apart:
+# `dtype.bend:571` and `:637` are the same two uses of one `ldt` binder, spelled apart:
 #     +lo = dd_cast_fold(ar, x, ldt, O.eq_dt(xdt, ldt))
 #            ^ the CAST's ADt                  ^ the fold test
 # `dd_cast_fold` (:449) takes the two as SEPARATE parameters, so A1 can break one without
@@ -154,7 +154,7 @@ TABLE = (
      PORT, "  dd_bcast(isu, ar, v, S.uint32())",
      "  dd_bcast(isu, ar, v, S.boolean())", 1),
     # A14 IS THE ONLY ENTRY THAT IS NOT ABOUT A CAST'S ARGUMENT, AND IT IS THE FIXTURE-REPAIR
-    # PROOF FOR `lgz`. `l2i_dt` (dtype.bend:271-282) IS CPython'S TWO-ENTRY DICT
+    # PROOF FOR `lgz`. `l2i_dt` (dtype.bend:265-275) IS CPython'S TWO-ENTRY DICT
     # `{long: int, ulong: uint}` AND ITS CATCH-ALL REFUSES, SO A 64-BIT `CFloat` IS A KeyError
     # THERE. GIVING IT A `CFloat` ENTRY MAKES `l2i_dt(double)` ANSWER, SO `l2i_cast.wide` STOPS
     # REFUSING AND `l2i_cast.got`'s `sel == 1` ARM BUILDS. A FIXTURE THAT CANNOT FAIL IS WORSE
@@ -176,7 +176,7 @@ def lanes(text):
 
 def bare(sig):
     """THE PRE-REPAIR PRINTER: every `[...]` dropped. `OP/NSRC` is what `D.dd_sig1`
-    (dtype.bend:2249) printed and what `s1` printed before this session."""
+    (dtype.bend:2215) printed and what `s1` printed before this session."""
     out = []
     for tok in sig.split(","):
         out.append(tok.split("[", 1)[0])

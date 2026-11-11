@@ -79,7 +79,7 @@
 # `[GLOBAL, REDUCE]` is `[GLOBAL, WEAK]` for the same kind of reason -- `AxisType.REDUCE`
 # is one of the two members upstream renamed away, and `uop/ops.bend` already carries it.
 # A comment that quotes stale indices reads exactly like a gate row without being one,
-# which is the `device.bend` `sig=0 4 5` shape; `codegen/opt/postrange.bend:721-731
+# which is the `device.bend` `sig=0 4 5` shape; `codegen/opt/postrange.bend:704-714
 # symbol=get_kernel_actions` still quotes the OLD set and is not this file's to fix.
 #
 # the dedup shows up as an absence, and at HEAD it is 108, not 169. For 16x32 the guard

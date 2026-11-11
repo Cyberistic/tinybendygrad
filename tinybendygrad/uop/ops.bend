@@ -609,10 +609,10 @@ def GroupOp.elementwise(op: Op) -> Bool:
 #
 # `AXIS_REDUCE` and `AXIS_UNROLL` are DELETED upstream but they are still CONSTRUCTED
 # by six committed files, so they cannot be deleted here:
-#     schedule/indexing.bend:1448 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
-#     codegen/kernel.bend:1002 symbol=kn_fixture       codegen/late/linearizer.bend:877 symbol=lt_fix
-#     codegen/opt/heuristic.bend:159 symbol=reduce_k   codegen/opt/heuristic.bend:162 symbol=matmul_k
-#     codegen/opt/postrange.bend:160 symbol=split_targets   codegen/opt/search.bend:418 symbol=zero_variant.dead
+#     schedule/indexing.bend:1425 symbol=g_nr            codegen/kernel.bend:414 symbol=kn_unroll.ax
+#     codegen/kernel.bend:986 symbol=kn_fixture       codegen/late/linearizer.bend:867 symbol=lt_fix
+#     codegen/opt/heuristic.bend:158 symbol=reduce_k   codegen/opt/heuristic.bend:161 symbol=matmul_k
+#     codegen/opt/postrange.bend:156 symbol=split_targets   codegen/opt/search.bend:412 symbol=zero_variant.dead
 # and three of those six are under `codegen/opt/*`, which another unit owns and which
 # is mid-edit. So the enum here has TEN members where CPython has EIGHT.
 #
@@ -856,7 +856,7 @@ type Img is Data:
 #     all read it.
 #   * `device: str|tuple[str, ...]|None` -- a device NAME or a tuple of them, so
 #     it is `S.Dev` (spec.bend's `D1{tag}` / `Dn{tags}`). and the tag is not one per
-#     NAME, which the field's own comment used to claim: `device.bend:344 tag_of` is
+#     NAME, which the field's own comment used to claim: `device.bend:340 tag_of` is
 #     a THREE-VALUED sentinel (DISK 6, NPY 10, PYTHON 13, everything else 0), so
 #     CPU, metal, AMD, NV, CUDA, qcom, CL, dsp, WEBGPU and every typo share 0.
 #     `device_vocab_holds` reads that arm list out of `device.bend`'s CODE every run,
@@ -1006,7 +1006,7 @@ def KernelInfo.of() -> KernelInfo:
 
 # `Target` -- tinygrad/helpers.py:198. `device, renderer, arch, interface, indices`,
 # and the port spells `interface` as `iface` (which is what
-# `runtime/ops_python.bend:2785 symbol=fx` already does).
+# `runtime/ops_python.bend:2708 symbol=fx` already does).
 #
 # the record is not declared here. It is declared once, in `helpers.bend` -- the
 # `Target` record, in upstream's field order -- which is upstream's own home,
@@ -1181,8 +1181,8 @@ type CallInfo is Data:
 #      and `graphcmp.bend`'s `g_flip` holds one (`O.ATuple{[1, 0]}`). The correct
 #      type is a SEPARATE bool-carrying `Arg` variant, not this one narrowed,
 #      because PERMUTE and UNSHARD really are ints. Five files construct or read a
-#      FLIP's arg -- `fold.bend`'s `order_arg`, `schedule/prepare.bend:274 symbol=pr_perm`,
-#      `mixin/movement.bend:991 symbol=G.pad` and `:1533`, and `graphcmp.bend`'s `g_flip` and its
+#      FLIP's arg -- `fold.bend`'s `order_arg`, `schedule/prepare.bend:267 symbol=pr_perm`,
+#      `mixin/movement.bend:979 symbol=G.pad` and `:1533`, and `graphcmp.bend`'s `g_flip` and its
 #      one `argstr` arm -- so this cannot be a one-file change.
 #   str                     AStr       SPECIAL name (`gpudims.py:104`), SOURCE text
 #                                     (`codegen/__init__.py:455`)
@@ -1480,13 +1480,13 @@ def ParamArg.slot(x: ParamArg) -> U32:
 # line and a wrong sentinel costs a miscompiled buffer later.
 #
 # WHY NOT 0: `Arena.empty` spends arena index 0 on the bottom (ops.bend:1368 symbol=Arena.empty), so
-# `unique_num` starts at 1 and 0 is a REACHABLE real slot. `codegen/kernel.bend:278 symbol=u32_none`
+# `unique_num` starts at 1 and 0 is a REACHABLE real slot. `codegen/kernel.bend:275 symbol=u32_none`
 # already argues this for its own copy.
 #
 # Four sibling files had each invented the same literal -- `FN_NEG1`
-# (function.bend:153), `u32_none` (codegen/kernel.bend:274 AND
-# codegen/late/linearizer.bend:329, two independent definitions), and a bare
-# `4294967295` in uop/symbolic.bend:3488. This def is the one they should name.
+# (function.bend:151), `u32_none` (codegen/kernel.bend:271 AND
+# codegen/late/linearizer.bend:328, two independent definitions), and a bare
+# `4294967295` in uop/symbolic.bend:3479. This def is the one they should name.
 def ParamArg.no_slot() -> U32: 4294967295
 
 def ParamArg.has_slot(x: ParamArg) -> Bool:
@@ -2980,10 +2980,10 @@ def UOp.replace(+ar: Arena, +self: U32, +mop: Maybe<&2, Op>, +msrc: Maybe<&2, Li
 #
 # The extra node is a GRAPH BLOAT, not a correctness issue: the cast is a no-op on
 # the value, and downstream optimizations fold it. The four call sites that name
-# this def as a wall (renderer/tc_ptx.bend:523 symbol=r_pmx_n, :49, :52, :55, :56, plus
-# schedule/rangeify.bend:1568 symbol=ab_5_cast weak-CAST INDEX) get a `UOp.cast` to resolve against, which is
+# this def as a wall (renderer/tc_ptx.bend:506 symbol=r_pmx_n, :49, :52, :55, :56, plus
+# schedule/rangeify.bend:1561 symbol=ab_5_cast weak-CAST INDEX) get a `UOp.cast` to resolve against, which is
 # what unblocks the port. The full identity check would need a FOLD CONTEXT, which
-# is what `cast_at` in `mixin/dtype.bend:350 symbol=cast_at` IS, and a future unit that wires
+# is what `cast_at` in `mixin/dtype.bend:345 symbol=cast_at` IS, and a future unit that wires
 # rule bodies into the fold can call THAT instead.
 def UOp.cast(ar: Arena, self: U32, dt: S.Dt) -> Found:
   UOp.new(ar, OpsCAST{}, [self], ADt{dt}, TNone{})
@@ -3063,7 +3063,7 @@ def shape_to_shape_arg(+ar: Arena, n: Maybe<&2, U32>) -> U32:
 
 # `src=(shape_to_shape_arg(...),)+UOp.device_range_src(device)` -- ops.py:829, :1187,
 # :1219, :1002. The `device_range_src` half is P6 (no multi-device ALLOC in the port)
-# and is `()` for a single device (`mixin/creation.bend:429 symbol=cr_empty` says so), so the src of a
+# and is `()` for a single device (`mixin/creation.bend:424 symbol=cr_empty` says so), so the src of a
 # PARAM/BUFFER/ALLOC here is exactly this one element.
 # THE TUPLE FORM OF `shape_to_shape_arg` -- AND THIS IS THE ONE
 # UPSTREAM's `_mop` (`ops.py:790-791`) CALLS:
@@ -3140,7 +3140,7 @@ def shape_arg(ar: Arena, ys: List<&2, U32>) -> U32:
 
 # `src=(shape_to_shape_arg(...),)+UOp.device_range_src(device)` -- ops.py:829, :1187,
 # :1219, :1002. The `device_range_src` half is P6 (no multi-device ALLOC in the port)
-# and is `()` for a single device (`mixin/creation.bend:429 symbol=cr_empty` says so), so the src of a
+# and is `()` for a single device (`mixin/creation.bend:424 symbol=cr_empty` says so), so the src of a
 # PARAM/BUFFER/ALLOC here is exactly this one element.
 def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
   [shape_to_shape_arg(ar, n)]
@@ -3163,7 +3163,7 @@ def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
 # its OWN parent, a self-loop, which is why the fold does not settle (`F.Kahn.settled`
 # false) and why `rows.of` emits nothing. `size=N` says `ParamArg.size` -- which reads
 # `src[0]` -- cannot answer. And it is not a fixture: `MX.mxw_buf`
-# (`mixin/movement.bend:1229`) is the port's own BOTTOM-OF-EVERY-GRAPH builder and
+# (`mixin/movement.bend:1217`) is the port's own BOTTOM-OF-EVERY-GRAPH builder and
 # measured `nsrc=1 next=2 src0_op=BUFFER size=N` on the live library.
 #
 # So `param_src` is kept only so its 62 call sites can be migrated one at a time and this
@@ -3211,12 +3211,12 @@ def ParamArg.size(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # `ARange` is this file's SPLIT of that tuple, so faithful would be
 # `ARange{at, ids}`. It is `ARange{ids, at}` and that is a DELIBERATE wall, because
 # `ARange` is read and written POSITIONALLY by eleven committed files:
-#     schedule/rangeify.bend:2116 symbol=ren_axis0.go   schedule/multi.bend:611 symbol=mu_at_of.go
-#     schedule/indexing.bend:687,692     codegen/late.bend:910,1000,1573,1796-1798
-#     uop/render.bend:741 symbol=arg_repr              uop/spec.bend:363 symbol=arg_axis.go
-#     uop/fold.bend:2288,2300            uop/validate.bend:1601
+#     schedule/rangeify.bend:2102 symbol=ren_axis0.go   schedule/multi.bend:605 symbol=mu_at_of.go
+#     schedule/indexing.bend:679,692     codegen/late.bend:910,1000,1573,1796-1798
+#     uop/render.bend:729 symbol=arg_repr              uop/spec.bend:360 symbol=arg_axis.go
+#     uop/fold.bend:2265,2300            uop/validate.bend:1593
 #     uop/fold2_work.bend:2280,2292      uop/fold_mm_work.bend:2280,2292
-#     uop/upat.bend:396 symbol=arg_int                engine/realize.bend:1729 symbol=rz_is_devrng.ax
+#     uop/upat.bend:392 symbol=arg_int                engine/realize.bend:1710 symbol=rz_is_devrng.ax
 # Flipping the field order here would break all twenty-nine of those sites and leave
 # six files I do not own red. It is a TWO-FILE change that has to be sequenced, not a
 # one-file rebase, and `.agents/UPSTREAM-PIN.md` outcome 2 ("re-verify, no change") is
@@ -3285,7 +3285,7 @@ def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Fo
 # honest answer, not a nested list). What is missing is that `t_rng_row`'s four rows
 # are only ever fed DEPTH-0 fixtures -- `rng_twoid` builds with `UOp.range_end`, so
 # `axid_twoid=(0,1)/len=2` gates only the flat case, and no row routes a depth-1
-# arg through here. Adding one means a depth-aware `AxIds` (uop/ops.bend:4979 symbol=UOp.split_uop.pop, one def,
+# arg through here. Adding one means a depth-aware `AxIds` (uop/ops.bend:4886 symbol=UOp.split_uop.pop, one def,
 # ONE call site) plus a matching row in `.agents/slop/ops-oracle.py`, and that oracle
 # is a BYTE DIFF whose row order is documented as matching EXACTLY -- so a row added
 # here and not there is a diff, not a silent gap. Hence not done blind.
@@ -4285,9 +4285,9 @@ def aa_has(+as: List<&2, Aa>, +b: U32) -> Bool:
 # `CNodes` IS NOT REACHED BY A RULE YET and that is stated rather than implied.
 # the sentinel it needs already exists and i said it did not: a node-keyed table
 # needs `PMEntry.ops` to mean "any op", `op_in(Nil{}, x)` is `False`, and Nil IS
-# ALREADY A NEVER-MATCH DEFAULT in about ten tables (`weak.bend:1631`,
-# `mixin/gradient.bend:2062`, `schedule/indexing.bend:1307`,
-# `codegen/late/linearizer.bend:1649`, ...), so it cannot be reinterpreted. The
+# ALREADY A NEVER-MATCH DEFAULT in about ten tables (`weak.bend:1606`,
+# `mixin/gradient.bend:2062`, `schedule/indexing.bend:1289`,
+# `codegen/late/linearizer.bend:1633`, ...), so it cannot be reinterpreted. The
 # right sentinel is `all_ops()` -- this file's own, at `:4578`, already used by
 # `pm_drop_after` -- so wiring `_substitute` onto `CNodes` is a TABLE and not a
 # decision. THE TYPE IS THE WALL THIS REMOVES.
@@ -4394,7 +4394,7 @@ def pm_r_alloc_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # table -- and the surviving construct is `spec.py`'s `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`.
 # These four are the WHOLE of `PatternMatcher` surface in ops.py, and until now
 # `pm_dispatch_m` could reach none of them: it answered three placeholder bodies
-# (SINK, NOOP, CAST) and codegen's two. `engine/realize.bend:1072-1080` records the wall this
+# (SINK, NOOP, CAST) and codegen's two. `engine/realize.bend:1064-1072` records the wall this
 # creates -- "a `PMEntrys` built in THIS file can only ever reach those three
 # bodies" -- and the cost is that eleven files in this tree each grew their own
 # scan. What follows puts the four in the table that already exists.
@@ -4599,7 +4599,7 @@ def pm_r_tag_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, Found>:
 # and not by a slot. Bend's `Map` is STRING-keyed -- `Map.set(a, -V, m, key:
 # String, x)` and `Map.has(-a, -V, m, key: String)` in the compiler's `base.bend`
 # -- so the key is `U32.show(self)`, which is the arena index in string form and
-# is what `uop/render.bend:1419` and `:1426` already do for a node-keyed map.
+# is what `uop/render.bend:1388` and `:1426` already do for a node-keyed map.
 #
 # `ctx.get(x, None)` IS ONE LOOKUP, and `Map.get` needs a default because a miss
 # is indistinguishable from a value of 0 by the value alone. `Map.has` is what
@@ -4621,8 +4621,8 @@ def pm_sub_m(+ctx: Map<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # with the compiled function's PLACE taken by the tag.
 #
 # the tag is global and the table is not. Every `PMEntry` in the tree numbers its
-# own rules from 0 -- `codegen/__init__.bend:317 symbol=pm_post_sched_cache`'s tag 0 is `_pm_resolve_params`
-# and `engine/realize.bend:1145 symbol=get_call_name`'s tag 0 is `pm_flatten_linear` -- because the
+# own rules from 0 -- `codegen/__init__.bend:311 symbol=pm_post_sched_cache`'s tag 0 is `_pm_resolve_params`
+# and `engine/realize.bend:1137 symbol=get_call_name`'s tag 0 is `pm_flatten_linear` -- because the
 # scan that reads a table and the dispatch that reads a tag live in DIFFERENT
 # files. That is the "a name is not a binding" trap one level down: the same
 # `PMEntry{0, ...}` means a different rule in every one of them. Tags 40-43 are
@@ -5169,8 +5169,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # PORTED ELSEWHERE -- `uop/render.bend`, which IMPORTS this file, so nothing here
 # can call it and nothing here should re-implement it.
-#     ops.py:18  AxisType.__repr__   -> axis_repr        (render.bend:561)
-#     ops.py:41  ParamArg.__repr__   -> paramarg_repr    (render.bend:512)
+#     ops.py:18  AxisType.__repr__   -> axis_repr        (render.bend:550)
+#     ops.py:41  ParamArg.__repr__   -> paramarg_repr    (render.bend:501)
 #     ops.py:269 UOp.__repr__        -> pretty_print, render.bend's `pyrender`
 # The first two are reached by `arg_repr`'s `ARange` and `AParam` arms, which is
 # where the mutation table's `arg_repr ARng` / `arg_repr AParam` labels point; the
@@ -5180,9 +5180,9 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # PORTED ELSEWHERE -- `uop/fold.bend`, the Kahn worklist the block above this one
 # describes, and the reason the entries below are walls and not chores.
-#     ops.py:329 UOp._shape        -> fold.shape.of / dt_shape  (fold.bend:888)
-#     ops.py:456 UOp.shape         -> UOp.shape                (fold.bend:4038)
-#     ops.py:470 UOp.ended_ranges  -> UOp.ended_ranges         (fold.bend:4013)
+#     ops.py:329 UOp._shape        -> fold.shape.of / dt_shape  (fold.bend:882)
+#     ops.py:456 UOp.shape         -> UOp.shape                (fold.bend:3994)
+#     ops.py:470 UOp.ended_ranges  -> UOp.ended_ranges         (fold.bend:3969)
 # `UOp.dtype` came with them, and `dtype` is what every remaining entry below reads.
 
 # STILL A WALL. Each names the rule, and each is ALSO in the NOT PORTED block at
@@ -5224,7 +5224,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # wall(p3) ops.py:284  def _bool_slice -- blocked. needs `fold`'s walk and a dtype predicate, so it lives downstream of this file like
 #   `_eval`, `param_noshape` and `wk_is_virtual` do -- `dt_is_bool` is in `mixin/dtype.bend`
 #   and this file cannot import it (`ops.bend:87`). Its only consumer is a marker of its own:
-#   `uop/symbolic.bend:3054 symbol=fx_ne0` records that `fold_where_closure` needs `bool_slice` AND
+#   `uop/symbolic.bend:3045 symbol=fx_ne0` records that `fold_where_closure` needs `bool_slice` AND
 #   `substitute`, so porting this alone closes nothing downstream. THE INTERNING DOES MAKE
 #   IT CHEAPER THAN CPYTHON'S: two structurally equal nodes share an arena index, so the
 #   `frozenset[UOp]` is a deduped index list and needs no hash.
@@ -5248,13 +5248,13 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `Sint` list. Every input is the worklist's, so these are fold.bend's rows;
 #   `schedule/multi.bend` is the caller and it inlines what it can today.
 # PORTED -- `ops.py:481 _ranges` and `ops.py:495 ranges` are `fold.bend`'s
-# `Ranged` / `UOp.ranges` (fold.bend:5118 symbol=UOp.ranges), 12 `rg_*` rows byte-identical to
+# `Ranged` / `UOp.ranges` (fold.bend:5067 symbol=UOp.ranges), 12 `rg_*` rows byte-identical to
 # CPython. The reason these two carried for a month -- "Dict set algebra over the
-# with a membership test, and `ended_ranges` is ported too (uop/fold.bend:2868 symbol=ended_of).
+# with a membership test, and `ended_ranges` is ported too (uop/fold.bend:2837 symbol=ended_of).
 # TODO(p3) ops.py:479  def ranges
 #   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
 #   ones the ended ranges close. The wall is named where it is HIT --
-#   `schedule/rangeify.bend:205 symbol=rf_in_ranges`, whose `rf_in_ranges` is the standing stub.
+#   `schedule/rangeify.bend:204 symbol=rf_in_ranges`, whose `rf_in_ranges` is the standing stub.
 
 # TODO(p3) ops.py:495  def simplify
 #   # * uop evaluation *
@@ -5304,10 +5304,10 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # done(p3) ops.py:597 def _uop -- and the honest answer is that there is nothing to
 #   WRITE. CPython's is `def _uop(self) -> UOp: return self`, which is the IDENTITY, and
 #   it is the identity because `Tensor` SUBCLASSES `UOp`. This port's
-#   `type Tensor is Data: Tensor{ar, uop, is_param, grad}` (`tensor.bend:190`) is a RECORD
+#   `type Tensor is Data: Tensor{ar, uop, is_param, grad}` (`tensor.bend:186`) is a RECORD
 #   WRAPPING a U32 index, so it is not a UOp -- and the port's node reference is already a
 #   `Found`, which IS the UOp reference. There is no unwrap on this side to perform.
-#   the tensor side of the same name is ported and gated elsewhere: `tensor.bend:196-200`
+#   the tensor side of the same name is ported and gated elsewhere: `tensor.bend:192-195`
 #   names `Tensor.u` as `_uop -- tensor.py:118` and every graph-building method there
 #   reads that field in place of `self.uop`. So the NAME is done, from the side that has
 #   something to do.
@@ -5339,7 +5339,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # TODO(p3) ops.py:630  def wmma
 
 # PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop`, which is
-# `tensor.bend:1843` symbol=tn_rop.
+# `tensor.bend:1822` symbol=tn_rop.
 
 # TODO(p3) ops.py:644  def invalid
 
@@ -5389,12 +5389,12 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   with the third -- almost certainly "not overflowing is a MAYBE, and every caller
 #   that needs certainty has to say so".
 #
-#   `bnd.lt` DOES exist -- `fold.bend:3306`, with `bnd.eq` at `:3317` -- and an
+#   `bnd.lt` DOES exist -- `fold.bend:3266`, with `bnd.eq` at `:3317` -- and an
 #   narrower and stranger than "add an ordering": `bnd.lt` is a TWO-valued TOTAL
 #   answer over `BndInt`, and what is missing is the third.
 #
 #   AND `dt_max` IS NOT A SUBSTITUTE FOR IT. `dtype.bend`'s `dt_max` answers
-#   `int64.max` for `uint64` -- the `i64_max_u` fallthrough, `dtype.bend:379-389` --
+#   `int64.max` for `uint64` -- the `i64_max_u` fallthrough, `dtype.bend:366-375` --
 #   which is documented as safe only because that bound is read as `hi <= max`.
 #   `uint64.max` is `2**64-1` and `int64.max` is `2**63-1`, so borrowing the table
 #   here would make every `uint64` bound wrong by a factor of two. This needs `Bnd`.
@@ -5424,7 +5424,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   # little helpers
 
 # PORTED -- `ops.py:818 _mop` is `tensor.bend`'s `tn_mop`, which is
-# `tensor.bend:1704` symbol=tn_mop.
+# `tensor.bend:1685` symbol=tn_mop.
 
 # TODO(p3) ops.py:835  def new_buffer
 
@@ -5440,7 +5440,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `device is None or dtype in weaks`, and the device half needs a node that CARRIES a `Dev`:
 #   `fold.bend`'s `mw_pa` hard-codes `ParamArg`'s device field to `None{}`.
 #   the claim that no DEF in the port sets it was FALSE. measured 2026-10-30:
-#   `renderer/__init__.bend:450` builds a `ParamArg` with `device = Some{S.D1{0}}`, and
+#   `renderer/__init__.bend:441` builds a `ParamArg` with `device = Some{S.D1{0}}`, and
 #   `fold.bend`'s `device_of.param` reads `O.ParamArg.device(pa)`, so a node that CARRIES a
 #   device was reachable all along. The rows are `gates/wk-isvirt-gate.py` -- 5 rows, 3 lanes,
 #   0 divergences, and three mutations that each move the row they name.
@@ -5595,7 +5595,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # wired in this ORDER and that `argfix`'s empty arm is honoured. The number of
 # `end` operands is the only input that varies, so it is the only thing the family
 # varies. `argfix` is already ported as `argfix1`/`argfix2`/`argfix_seq`
-# (helpers.bend:547-554), so `end` is a `Maybe<&2, List<&2, U32>>` and not a node.
+# (helpers.bend:536-543), so `end` is a `Maybe<&2, List<&2, U32>>` and not a node.
 #
 # TWO BUGS, AND BOTH COMPILED.
 #
@@ -5709,7 +5709,7 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 # what does read the lane: `gates/valsdiv-gate.py` reads the port-extension
 # DECLARATION above and checks that the extension is LIVE -- DEFINED, CALLED, AND
 # REACHABLE FROM `main` -- which it reports as
-# `finding: declared-extension -- tinybendygrad/uop/ops.bend:8675 via main ->
+# `finding: declared-extension -- tinybendygrad/uop/ops.bend:8257 via main ->
 # vd_rows -> vd_row -> ProgramInfo.vals`. It reads the DECLARATION and the
 # CALL GRAPH; it does not read the five rows' VALUES.
 #
@@ -5725,7 +5725,7 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 # I GOT THIS BLOCKER WRONG TWICE before landing it, and both errors were the same
 # shape: a claim about a LANGUAGE, written without grepping. First that `Map` was
 # undefined in the tree; it is a Bend stdlib type from `import Base` with put, set,
-# has and get all present, and `uop/render.bend:1007`/`:1017` were ALREADY calling
+# has and get all present, and `uop/render.bend:984`/`:1017` were ALREADY calling
 # two of them. Then that `Map.put` needed a new Bend RULE; `Map.set` IS that rule
 # and it exists. The cost of those two was four compile rounds chasing arity, and
 # the arity is the interesting part:
@@ -5743,7 +5743,7 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 # typechecked. A declaration nobody calls is not checked, and this file was green
 # the whole time.
 #
-# already here, and `bcast.go` (fold.bend:590) is a Maybe-carried List accumulator
+# already here, and `bcast.go` (fold.bend:586) is a Maybe-carried List accumulator
 # using it. My first draft was TEN defs and was MUTUALLY RECURSIVE; the lambda in
 # `Maybe.bind` IS the continuation, so the whole fold is one def with one `match`
 # and two binds. Three near-identical presence-test dunders (`sg.pa.put`,
@@ -6651,10 +6651,10 @@ def UOp.const_factor(fuel: Nat, +ar: Arena, +i: U32) -> H.I64:
 #
 # ops.py:1073-1079 -- `UOp.gcd` and `UOp.divide_exact`.
 #
-# and the port has no integer-keyed map. measured 2026-11-08: `helpers.bend:502` says
+# and the port has no integer-keyed map. measured 2026-11-08: `helpers.bend:494` says
 # "Bend's `Map` is string-keyed only, so the set is a linear scan", and there is no
 # `HashMap` and no `HashSet` in the port. but the port has the honest spelling already,
-# TWICE: `dedup_u32` (`helpers.bend:509`) AND `merge_dicts` (`helpers.bend:2467`) ARE BOTH "A
+# TWICE: `dedup_u32` (`helpers.bend:500`) AND `merge_dicts` (`helpers.bend:2412`) ARE BOTH "A
 # list of pairs with a linear scan", and `merge_dicts`'s own NOTE says exactly that: "a list
 # of pairs is the honest representation". so the claim "the port has no multiset" was a
 # claim about a container and not about a capability.
@@ -6683,7 +6683,7 @@ def UOp.const_factor(fuel: Nat, +ar: Arena, +i: U32) -> H.I64:
 #    so every comparison is a parameter and every branch is a DEF.
 # 4. arguments are read left to right and each is passed unchanged until used, so a list's
 #    tail may not be passed to two calls. and the port's own `Merge.go` is the pattern
-#    -- `ops.bend:2845`: `Merge.go(t, Found.ar(f), List.append(&2, U32, map, [Found.i(f)]))`
+#    -- `ops.bend:2843`: `Merge.go(t, Found.ar(f), List.append(&2, U32, map, [Found.i(f)]))`
 #    -- the tail is the recursion's first argument and the accumulator is the third.
 #
 # THE ALGORITHM, AND IT IS UPSTREAM's.
@@ -7031,7 +7031,7 @@ def UOp.divides(fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
 # `UOp.gcd` AND `UOp.divide_exact` -- ops.py:1073-1079.
 #
 # and both are built on the counter (above), and the counter is a list of pairs
-# because the port has no integer-keyed map -- measured 2026-11-08, `helpers.bend:502`:
+# because the port has no integer-keyed map -- measured 2026-11-08, `helpers.bend:494`:
 # "Bend's `Map` is string-keyed only, so the set is a linear scan".
 #
 # `UOp.gcd(*uops)` -- ops.py:1073:
@@ -7055,10 +7055,10 @@ def UOp.divides(fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
 #     `UOp.const(1, dtype)`. so the port spells the unshaped `const_like`, which is
 #     `UOp.const(b, dt)`, and the shaped half is a separate matter.
 #   * `math.gcd(*factors)` is a FOLD over a list of I64s, and the port has `H.gcd` for
-#     TWO OF THEM (`helpers.bend:2299`) -- SO THE VARIADIC FORM IS A FOLD.
+#     TWO OF THEM (`helpers.bend:2249`) -- SO THE VARIADIC FORM IS A FOLD.
 #
 # and `Counter.elements()` -- which repeats each key by its count -- is the port's own
-# `H.make_tuple_rep` (`helpers.bend:1309`: `make_tuple_rep(x, cnt) -> List<&2, U32>`), SO
+# `H.make_tuple_rep` (`helpers.bend:1282`: `make_tuple_rep(x, cnt) -> List<&2, U32>`), SO
 # the product is a concatenation of those and not a hand-unrolled recursion.
 #
 # and every comparison is a parameter and not a computed value -- measured 2026-11-08:
@@ -7100,7 +7100,7 @@ def UOp.gcd.counter(+fuel: Nat, +ar: Arena, +i: U32) -> List<&2, Ctr>:
 # the list of counters, one per term -- and `UOp.gcd.count` is the list that
 # `functools.reduce(operator.and_, ...)` FOLDS OVER.
 #
-# and the FOLD is the port's own `merge_dicts.go` shape (`helpers.bend:2533`):
+# and the FOLD is the port's own `merge_dicts.go` shape (`helpers.bend:2477`):
 # `merge_dicts.go(t, merge_dicts.add(kv_conflict(merged_seen(m), kv), kv, m))` -- THE LIST IS
 # the only argument, the HEAD is bound by the match, the state is passed once inside the
 # adder's argument list, and the adder answers the new state.
@@ -7169,7 +7169,7 @@ def UOp.gcd.gcd(+fs: List<&2, H.I64>) -> H.I64:
 # and `List.concat` takes a list of lists -- measured 2026-11-08: the first spelling
 # passed two lists and the compiler said "expected : List<&2, List<&2, U32>> / observed :
 # List<&2, U32>"; and the port's own uses are `List.concat(&2, U32, [a, b])`
-# (`nn/pool.bend:53`, `llm/cli.bend:126`).
+# (`nn/pool.bend:51`, `llm/cli.bend:122`).
 def UOp.gcd.prod.go(+c: List<&2, Ctr>, +acc: List<&2, U32>) -> List<&2, U32>:
   match c:
     case Nil{}: acc
@@ -7185,8 +7185,8 @@ def UOp.gcd.prod(+c: List<&2, Ctr>) -> List<&2, U32>:
 # `mk=3` with `mk_op=Ops.NOOP`, and the CONST is at INDEX 3 in the grown arena while
 # INDEX 3 in the old arena is the noop -- so a DEF that answers a bare `U32` loses
 # the arena and its INDEX is read in the wrong one. `UOp.const` answers a `Found`
-# (`ops.bend:3071`), `UOp.alu` ANSWERS A `Found` (`ops.bend:2883`), AND THE CALLER
-# THREADS `Found.ar` (`ops.bend:2784`).
+# (`ops.bend:3069`), `UOp.alu` ANSWERS A `Found` (`ops.bend:2881`), AND THE CALLER
+# THREADS `Found.ar` (`ops.bend:2782`).
 #
 # and the three steps are upstream's, in order:
 #   1. the terms are the popped nodes and the factors are the popped consts.
@@ -7238,7 +7238,7 @@ def UOp.gcd.answer.mul2(+made: Found, +h: U32) -> Found:
 # and the port spells it with the port's own pieces:
 #   * `self is v` is `U32.is_eq(self, v)` -- and the port's nodes are indices into an
 #     arena, so two nodes are the same iff their indexes are.
-#   * `self.divides(v.val)` IS THE PORT's OWN `UOp.divides` (`ops.bend:8569`), WHICH ANSWERS A
+#   * `self.divides(v.val)` IS THE PORT's OWN `UOp.divides` (`ops.bend:8152`), WHICH ANSWERS A
 #     `Dv{ok, f, i}` -- the `ok` is the "it divides" flag and `f`/`i` are the quotient's node
 #     AND ITS INDEX.
 #   * `new_count.subtract(...)` and `all(v>=0 ...)` are one comparison of two unsigned
@@ -7276,7 +7276,7 @@ def Ds.es(+d: Ds) -> List<&2, U32>:
 
 # and the FOLD over the numerator's counter -- and the state is passed once and the
 # adder answers the new state, which is the port's own `merge_dicts.go` shape
-# (`helpers.bend:2533`): `merge_dicts.go(t, merge_dicts.add(kv_conflict(merged_seen(m), kv), kv, m))`.
+# (`helpers.bend:2477`): `merge_dicts.go(t, merge_dicts.add(kv_conflict(merged_seen(m), kv), kv, m))`.
 #
 # and the denominator's counter is the FOLD's other state -- and it is passed once per
 # step too -- and the two answers come out of one FOLD, which is what makes `den` a
@@ -7302,10 +7302,10 @@ def UOp.divide_exact.diff(n: U32, +d: U32, gt: Bool) -> U32:
 # and the answer is a `Dq` and not a `Maybe` -- and that is because the two srcs' answers
 # must be bound and a `Maybe` is a TYPE and not a `Data`, and a `+` binder's TYPE
 # MUST BE `Data` -- MEASURED 2026-11-08: "Note: +m can be used many times, so its type must be
-# Data". and the port's own `UOp.divides.op` is the pattern that works (`ops.bend:8252`):
+# Data". and the port's own `UOp.divides.op` is the pattern that works (`ops.bend:7887`):
 # one DEF, a `match` on the op, two direct self-calls bound with `+` in the ADD's arm, and
 # the results combined by a helper. and a `Dq{ok: Bool, f: Found}` is exactly the port's own
-# `Dv{ok: Bool, f: Found}` shape (`ops.bend:8467`) -- so the answer's TYPE is the port's own
+# `Dv{ok: Bool, f: Found}` shape (`ops.bend:8050`) -- so the answer's TYPE is the port's own
 # ANSWER TYPE AND NOT A NEW ONE.
 #
 # and `None{}` is upstream's `None`, which is the "we aren't sure" answer and not an
@@ -7349,7 +7349,7 @@ def Dq.no(+ar: Arena) -> Dq:
   Dq{False{}, Found{ar, 0}}
 
 # and the entry: the two booleans and then the op -- and this is the port's own
-# `UOp.divides` SHAPE (`ops.bend:8573`):
+# `UOp.divides` SHAPE (`ops.bend:8156`):
 # `UOp.divides.one(dv.is1(v), fuel, ar, v, i)`.
 def UOp.divide_exact.add(+ar: Arena, +da: Dq, +db: Dq, +ok: Bool) -> Dq:
   match ok:
@@ -7359,14 +7359,14 @@ def UOp.divide_exact.add(+ar: Arena, +da: Dq, +db: Dq, +ok: Bool) -> Dq:
 # and the CONST's value: and it is the port's own `cf.cv`, which answers the CONST's value
 # or the identity `1` -- and that is upstream's `identity_element(MUL, dt)`, which is
 # 1 (`ops.py:81`: `{Ops.ADD:0, Ops.MUL:1, Ops.MAX:dt.min}[op]`). -- MEASURED 2026-11-09:
-# `ops.bend:7776` READS `def cf.cv(m: Maybe<&1, Const>) -> H.I64` WITH `case Some{+c}: cf.cv.c(c)`
+# `ops.bend:7468` READS `def cf.cv(m: Maybe<&1, Const>) -> H.I64` WITH `case Some{+c}: cf.cv.c(c)`
 # and `case None{}: H.i64_of_i32(1)` -- and a second COPY of that reader is a second COPY.
 def UOp.divide_exact.cval(+ar: Arena, +v: U32) -> H.I64:
   cf.cv(UOp.pop_const_val(ar, v, OpsMUL{}))
 
 # and the CONST node's own value -- and that is the node's own ARG -- and it is what
 # a test reads to check the answer -- measured 2026-11-09: the two are different reads and
-# THE PORT's OWN `cval_arg` READS THE ARG (`ops.bend:7705`).
+# THE PORT's OWN `cval_arg` READS THE ARG (`ops.bend:7397`).
 def UOp.divide_exact.constval(+ar: Arena, +v: U32) -> H.I64:
   cf.cv(cval_arg(Arena.arg(ar, v)))
 
@@ -7390,7 +7390,7 @@ def UOp.divide_exact.start(+ar: Arena, +self: U32, +v: U32) -> Found:
   UOp.const(ar, CInt{H.i64_div(UOp.divide_exact.cval(ar, self), UOp.divide_exact.cval(ar, v))})
 
 # and the remainder: `const % div_const == 0` -- and the port's own `H.i64_mod` is the
-# SPELLING (`helpers.bend:2268`) -- AND A ZERO DIVISOR IS UPSTREAM's `ZeroDivisionError`,
+# SPELLING (`helpers.bend:2218`) -- AND A ZERO DIVISOR IS UPSTREAM's `ZeroDivisionError`,
 # and the port spells the zero case as not dividing rather than as an ERROR, and that
 # IS A DIFFERENCE WORTH NAMING.
 def UOp.divide_exact.mod0(+c: H.I64, d: H.I64, zero: Bool) -> Bool:
@@ -7422,7 +7422,7 @@ def UOp.divide_exact.mul7(+t: List<&2, U32>, +m: Found, +h: U32) -> Dq:
 # EACH, IN TWO DEFS -- MEASURED 2026-11-09: "expected : a call smaller than
 # UOp.divide_exact.mul7(m, nh <> nt) (arguments are read left to right: each passed unchanged
 # until used)" and the port's own `Dv.ok`/`Dv.f`/`Dv.i` are three accessors that each
-# DESTRUCTURE THE RECORD ONCE (`ops.bend:8470`/`8474`/`8478`).
+# DESTRUCTURE THE RECORD ONCE (`ops.bend:8053`/`8474`/`8478`).
 def UOp.divide_exact.mul6(+ar: Arena, +start: Found, +es: List<&2, U32>) -> Dq:
   match es:
     case Nil{}: Dq{True{}, start}
@@ -7430,7 +7430,7 @@ def UOp.divide_exact.mul6(+ar: Arena, +start: Found, +es: List<&2, U32>) -> Dq:
 
 # and the MUL-chain: the first element times the second, and the tail is the recursion --
 # and it is right-nested and has no accumulator, exactly like the port's own
-# `H.prod_u32` (`helpers.bend:486`): `case h <> t: (U32.mul(h, prod_u32(t)) : U32)`.
+# `H.prod_u32` (`helpers.bend:479`): `case h <> t: (U32.mul(h, prod_u32(t)) : U32)`.
 def UOp.divide_exact.mul5(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U32, start: Found,
                           st: Ds) -> Dq:
   match st:
@@ -7451,7 +7451,7 @@ def UOp.divide_exact.mul4(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U3
 # and the `Ds` record is a field and a field scrutinee is legal -- measured 2026-11-09:
 # "a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own
 # def)" -- and the port's own `Dv.ok`/`Dv.f`/`Dv.i` are three accessors that each
-# DESTRUCTURE THE RECORD ONCE (`ops.bend:8470`/`8474`/`8478`).
+# DESTRUCTURE THE RECORD ONCE (`ops.bend:8053`/`8474`/`8478`).
 def UOp.divide_exact.mul3(+ar: Arena, +self: U32, +v: U32, +fac: U32, +div_fac: U32, +start: Found) -> Dq:
   UOp.divide_exact.mul4(ar, self, v, fac, div_fac, start,
                         ctr_of(UOp.split_uop(Arena.budget(ar), ar, fac, OpsMUL{})),
@@ -7494,7 +7494,7 @@ def UOp.divide_exact.op(fuel: Nat, op: Op, +ar: Arena, +v: U32, +self: U32) -> D
         case _: Dq.no(ar)
 
 # and the ADD: both answers must be ok, and the sum is built in the second's arena -- and
-# THE PORT's OWN `dv.add` IS THE PATTERN (`ops.bend:8201`):
+# THE PORT's OWN `dv.add` IS THE PATTERN (`ops.bend:7836`):
 # `dv.add(Bool.and(Dv.ok(da), Dv.ok(db)), da, db)`.
 def UOp.divide_exact.cst(isconst: Bool, +ar: Arena, +self: U32, +v: U32) -> Dq:
   match isconst:
@@ -7503,7 +7503,7 @@ def UOp.divide_exact.cst(isconst: Bool, +ar: Arena, +self: U32, +v: U32) -> Dq:
       UOp.divide_exact.dv(dv, Dv.ok(dv))
     case False{}: UOp.divide_exact.op(Arena.budget(ar), Arena.op(ar, self), ar, v, self)
 
-# and the op match -- and it is the port's own `UOp.divides.op` shape (`ops.bend:8252`):
+# and the op match -- and it is the port's own `UOp.divides.op` shape (`ops.bend:7887`):
 # a `match` on a parameter, and the ADD's arm makes two direct self-calls -- and the
 # op is passed as a call at the call site (`Arena.op(ar, self)`), and the recursion
 # passes the child's op, which is also a call -- and that is exactly
@@ -7531,13 +7531,13 @@ def UOp.gcd.answer(+ar: Arena, +uops: List<&2, U32>) -> Found:
       UOp.gcd.answer.mul(UOp.gcd.prod.elems(ctr_inter(UOp.gcd.count(ar, UOp.gcd.terms(ar, uops)))), c)
 
 # and the FOLD of `MUL`s: the product of the CONST and the counter's elements -- and the
-# state is a `Found`, which is the port's own shape (`ops.bend:3274`:
+# state is a `Found`, which is the port's own shape (`ops.bend:3272`:
 # `def UOp.loop.go(+made: Found, +axis_id: U32) -> Found`), AND IT IS READ ONCE PER FIELD.
 #
 # and the recursion is direct and the helper is out of it -- measured 2026-11-08:
 # THE REORDERER REPORTED "A CYCLE" OVER `['UOp.gcd.answer.mul', 'UOp.gcd.answer.mul2',
 # 'UOp.gcd.answer.mul3']` THREE TIMES, AND THE PORT's OWN `merge_dicts.go` is the shape
-# THAT WORKS (`helpers.bend:2533`):
+# THAT WORKS (`helpers.bend:2477`):
 # `merge_dicts.go(t, merge_dicts.add(kv_conflict(merged_seen(m), kv), kv, m))` -- THE
 # recursion calls itself and the adder is a side branch that answers the new state.
 #
@@ -7885,7 +7885,7 @@ def UOp.expr(+ar: Arena, +self: U32) -> Maybe<&2, String>:
 #   `__floordiv__`. `const_like` is ops.py:572 and is NOT ported (:5441): it is
 #   `UOp.const(b, dtype or self.dtype)` plus `_mop(Ops.EXPAND, arg=self._shape)`, so the
 #   SHAPED half needs the shape field this arena does not carry. The scalar half already
-#   exists as `sy_const_like` (symbolic.bend:485).
+#   exists as `sy_const_like` (symbolic.bend:484).
 
 # ==== ops.py:1015  `UOp.variable` =========================================
 #
@@ -7926,7 +7926,7 @@ def UOp.variable(+ar: Arena, nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt
 #   Map.set(a, -V: Kind(a), m, key, x)  -- quantifier SECOND, after the linearity
 #   Map.has(-a: Quant, -V: Kind(a), m, key)
 #   Map.get(-V: Data, d, m, key)        -- NO linearity parameter at all
-# `uop/render.bend:1012 symbol=range_ids.of` and `:1017` already spell all three correctly; this cost three
+# `uop/render.bend:989 symbol=range_ids.of` and `:1017` already spell all three correctly; this cost three
 # compile rounds to find, and the first of them I had recorded as a LANGUAGE gap.
 # `Map.set` puts its QUANTIFIER SECOND (`Map.set(a, -V: Kind(a), m, key, x)`) and
 # the three `Map` readers in the tree disagree about that -- `Map.has` takes it
@@ -8368,7 +8368,7 @@ def fs.i64_dec(+x: H.I64) -> String:
 # and the arena must be threaded between the two variables -- measured 2026-11-08:
 # a probe built `x` and `y` from one `Arena.empty()` and read `x=1 y=1 z=1 nodes=1` --
 # because `UOp.variable` answers a `Found` which carries the grown arena, and a caller
-# that ignores `Found.ar` gets two sibling arenas (`ops.bend:2784`: "def Found.ar(f: Found)
+# that ignores `Found.ar` gets two sibling arenas (`ops.bend:2782`: "def Found.ar(f: Found)
 # -> Arena"). so the second variable is built in the first's arena.
 def t_gcd_const() -> Bool:
   +ar0 = Arena.empty()

@@ -4,7 +4,7 @@
     .venv/bin/python gates/tn_relu-gate.py
 
 FIVE ROWS, THREE LANES. CPython's `Tensor.relu` (elementwise.py:674) is
-`(self > 0).where(self, 0)`. The wall text at `nn/__init__.bend:241` cited
+`(self > 0).where(self, 0)`. The wall text at `nn/__init__.bend:230` cited
 `_broadcasted` as the blocker for `where`. The `(self > 0)` is `tn_rcmplt`
 (port), the `where(self, 0)` is `tn_where` (port), the `0` is `O.UOp.const`
 (port). The port is a chain: `tn_rcmplt(t, c0)`, then `tn_where(gt0, t, c0t)`.

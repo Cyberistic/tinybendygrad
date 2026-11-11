@@ -197,7 +197,7 @@ def c_const_like_v0d() -> IO(Unit):
 
 # `Tensor([True,False,True,True]).zeros_like()`: `self.dtype` is bool, so CPython's
 # `bool.const(0)` is the BOOL `False` and `.cast(bool)` FOLDS -- a bare CONST. The port's
-# `cr_zeros_like` (creation.bend:427) hardcodes `MO.mo_ki(0)`, an INT const, so
+# `cr_zeros_like` (creation.bend:422) hardcodes `MO.mo_ki(0)`, an INT const, so
 # `cr_const_of` reads `from_py(0) == weakint != bool` and builds a REAL CAST. One extra node.
 def c_zeros_like_vbool() -> IO(Unit):
   crow("zeros_like_vbool", C.cr_zeros_like(O.Arena.empty(), S.boolean(), [4], S.D1{0}))

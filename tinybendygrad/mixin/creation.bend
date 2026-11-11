@@ -81,7 +81,7 @@
 #      `weakint.const(42)` is the int `42`, the CONST is weakint, and `.cast(weakint)`
 #      folds. So `full(shape, 42)` is 9 nodes and `full(shape, 42, dtype=half)` is 10,
 #      and the ONLY difference is one CAST -- same root op, same nsrc, same srcs.
-#      `weak.bend`'s `wk_const_at` (weak.bend:632) spells the CAST UNCONDITIONALLY and
+#      `weak.bend`'s `wk_const_at` (weak.bend:626) spells the CAST UNCONDITIONALLY and
 #      is the wrong shape here, and `wk_ccast` is the other wrong shape: it rebuilds
 #      the CONST and loses the CAST entirely. `cr_cast` is `DTypeMixin.cast`
 #      (dtype.py:36) with the fold, which is the only one of the three that is right.
@@ -158,12 +158,12 @@
 #          either way. `int_full_expand` is the row that sees it and the only row in
 #          this file that is about an INDEX rather than a shape or a count.
 #   <n>_d  shape and dtype, read off the FOLD (`F.fold.shape` / `F.fold.dt`), not off
-#          the construction. AFTER is `thru0` (fold.bend:917) and RESHAPE is
+#          the construction. AFTER is `thru0` (fold.bend:911) and RESHAPE is
 #          `reshape_ds`, so every `full`'s shape comes back THROUGH THE AFTER even
-#          though its EXPAND is unanswerable (fold.bend:1629).
+#          though its EXPAND is unanswerable (fold.bend:1615).
 #   <n>_t  THE DTYPE HALF ONLY, for the two EXPAND-rooted fixtures. `GroupOp.Movement`
 #          gives `src[0].dtype`, so the dtype is answerable; the SHAPE is the EXPAND's
-#          own arg and fold.bend:1629 answers `None{}` for it. The shape of an
+#          own arg and fold.bend:1615 answers `None{}` for it. The shape of an
 #          EXPAND-rooted tensor is W3's wall and is NOT GATED, and saying so is the
 #          point of the row name.
 #   int_*  THE INTERNING ROWS: how many of the SECOND equal call's nodes are not the
@@ -222,7 +222,7 @@ def cr_bounds(v: O.Const) -> Maybe<&1, H.I64>:
 # `DTypeMixin.cast` -- dtype.py:36, `self if self.dtype == (dt := to_dtype(dtype)) else
 # self._uop.alu(Ops.CAST, arg=dt)`. `O.UOp.alu` takes no arg (ops.bend:2072), so the
 # CAST is spelled with `UOp.new` and the `ADt` arg -- `mixin/dtype.bend`'s `cast_at`
-# (dtype.bend:309) and `weak.bend`'s `wk_cast_at` (uop/weak.bend:624 symbol=wk_cast_at) use the same SPELLING
+# (dtype.bend:300) and `weak.bend`'s `wk_cast_at` (uop/weak.bend:618 symbol=wk_cast_at) use the same SPELLING
 # for a different REASON: both of those read the source dtype off a FOLD, and
 # `UOp.const`'s `.cast` reads it off the value it just built, which `cr_from_py` has
 # already answered. Same one line, two sources for the `same` test.
@@ -256,7 +256,7 @@ def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 # THE `import ./../dtype.bend` IS BACK, and `mixin/dtype.bend:17-29` says when it comes
 # back: "when `tinybendygrad/dtype.bend` stops printing the foreign-code notice these
 # defs go back there and the imports come with them". THE NOTICE IS GONE -- the six
-# laws were retired (dtype.bend:568-588) and the file is PURE, so it is importable, and
+# laws were retired (dtype.bend:546-566) and the file is PURE, so it is importable, and
 # `nn/layers.bend`, `nn/optim.bend` and `runtime/ops_python.bend` already import it.
 # IT IS `DT` AND NOT `D` HERE BECAUSE `D` IS `./dtype.bend` -- `mixin/dtype.bend`, a
 # DIFFERENT FILE.
@@ -333,7 +333,7 @@ def cr_mop(+t: T.Tensor, +op: O.Op, ds: List<&2, U32>) -> T.Tensor:
 # target's. for a 0-dim source every dim is left-added, so the marg is the whole
 # target and `mxw_bcast` BUILDS EXACTLY WHAT `cr_mop` BUILT -- the squeeze is a
 # no-op reshape and the permute is the identity, and both wrappers drop their node.
-# FOR A SOURCE WITH A 1 IN IT -- `nn/pool.bend:191 symbol=pool_rep.rp`'s `_pool` repeat -- the marg is
+# FOR A SOURCE WITH A 1 IN IT -- `nn/pool.bend:185 symbol=pool_rep.rp`'s `_pool` repeat -- the marg is
 # the REPEAT COUNTS, and the bare EXPAND this def used to build was the shape
 # `tuple(self.marg) + ps` (ops.py:397) reads as: THE WHOLE TARGET CONCATENATED WITH
 # THE SOURCE.
@@ -646,10 +646,10 @@ def cr_g.of(nm: String, +ar: O.Arena, +c: CU, +xs: List<&2, U32>) -> IO(Unit):
 # AN EXPAND. MEASURED, `probe_fold.bend` over `full((2,3),42)`: nodes 1..6 (ALLOC,
 # CONST, CONST, STACK, RESHAPE, CONST) resolve for both dtype and shape, node 7 (EXPAND)
 # resolves for NEITHER, and 8 (STORE) and 9 (AFTER) resolve for NEITHER either --
-# uop/fold.bend:1695 symbol=sym_dim.val's `Ops.EXPAND` arm answers `None{}`, and an unresolved node never
+# uop/fold.bend:1680 symbol=sym_dim.val's `Ops.EXPAND` arm answers `None{}`, and an unresolved node never
 # releases its consumers in the Kahn worklist. That is W3's wall (the EXPAND's `marg`
 # needs `ssimplify`) and it is the SAME one op.bend names.
-# SO THE `_d` ROW READS `AFTER.src[0]`, which is exactly what `thru0` (fold.bend:917)
+# SO THE `_d` ROW READS `AFTER.src[0]`, which is exactly what `thru0` (fold.bend:911)
 # would have returned for the AFTER -- `dt_of(src_dt(0), src_shape(0))` -- and is the
 # node the fold DOES answer. `full`'s shape and dtype are therefore gated, and the only
 # part that is not gated is whether the AFTER passes src[0] through, which is a line of
@@ -677,7 +677,7 @@ def cr_d.of(nm: String, +ar: O.Arena, +c: CU) -> IO(Unit):
 #
 # `GroupOp.Movement` gives `src[0].dtype`, so an EXPAND-rooted tensor's DTYPE is its
 # source's and the fold answers it. Its SHAPE is not `src[0].shape` -- it is the EXPAND's
-# own arg -- and uop/fold.bend:1695 symbol=sym_dim.val answers `None{}` for it, so the shape half is NOT GATED
+# own arg -- and uop/fold.bend:1680 symbol=sym_dim.val answers `None{}` for it, so the shape half is NOT GATED
 # for `full(..., buffer=False)` or for `const_like` on a non-empty shape. Those rows say
 # so rather than printing a shape fold.bend cannot produce.
 def cr_t_root.of(+ar: O.Arena, +c: CU, after: Bool, exp: Bool) -> CU:

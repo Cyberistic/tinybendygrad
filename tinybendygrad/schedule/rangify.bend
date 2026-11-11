@@ -4,7 +4,7 @@
 # `run_rangeify`, and it is the ONE stage of `get_kernel_graph`
 # (`tinygrad/schedule/rangeify.py:341-376`) that the port's own engine spells
 # `Stg{0, Nil{}}` -- "run_rangeify -- NOT PORTED"
-# (`tinybendygrad/schedule/rangeify.bend:2368` symbol=Stg).
+# (`tinybendygrad/schedule/rangeify.bend:2352` symbol=Stg).
 #
 #   upstream: tinygrad/schedule/rangeify.py:344
 #     tsink = run_rangeify(tsink, bool(DEBUG_RANGEIFY))     # "convert movement ops to ranges"
@@ -23,18 +23,18 @@
 # so the driver is four things and the port had NONE of them:
 #
 #   1. THE DISPATCH for `pm_generate_realize_map` -- `indexing.bend`'s
-#      `grm_table()` (schedule/indexing.bend:1241 symbol=grm_table) is the TABLE and the four rule BODIES are in
-#      the same file (`realize` schedule/indexing.bend:935 symbol=realize, `realize_srcs` schedule/indexing.bend:969 symbol=realize_srcs,
-#      `ix_realize_custom` schedule/indexing.bend:1025 symbol=ix_realize_custom, `ix_war_hit` schedule/indexing.bend:986 symbol=ix_war_hit), but there is NO
+#      `grm_table()` (schedule/indexing.bend:1224 symbol=grm_table) is the TABLE and the four rule BODIES are in
+#      the same file (`realize` schedule/indexing.bend:924 symbol=realize, `realize_srcs` schedule/indexing.bend:956 symbol=realize_srcs,
+#      `ix_realize_custom` schedule/indexing.bend:1010 symbol=ix_realize_custom, `ix_war_hit` schedule/indexing.bend:972 symbol=ix_war_hit), but there is NO
 #      `_dispatch`/`_try`/`_scan` for it -- MEASURED, `grep -n "grm_dispatch"
 #      tinybendygrad/schedule/indexing.bend` answers NOTHING.
 #   2. THE CONSUMER MAP -- `data_srcs` is ported (`indexing.bend`'s `ix_ds_*`)
 #      and nothing reads it.
-#   3. THE RANGE-MAP LOOP -- the port has `IxCtx` (`indexing.bend:195` symbol=IxCtx), the
+#   3. THE RANGE-MAP LOOP -- the port has `IxCtx` (`indexing.bend:194` symbol=IxCtx), the
 #      `new_range` counter (`:811`), `broadcast_rngs` (`:1048`) and
 #      `broadcast_axes` (`:427`), and nothing drives them.
 #   4. THE APPLY -- `pm_apply_rangeify`'s five rules (`par_table`,
-#      schedule/indexing.bend:1270 symbol=par_table) and `pm_fix_deviceless` (`pfd_table`, schedule/indexing.bend:1310 symbol=pfd_table).
+#      schedule/indexing.bend:1253 symbol=par_table) and `pm_fix_deviceless` (`pfd_table`, schedule/indexing.bend:1292 symbol=pfd_table).
 #
 # THE ORACLE. `.agents/slop/rangify/rr-oracle.py` spies on upstream's OWN
 # `tinygrad.schedule.indexing.run_rangeify` on the SAME program the port's own
@@ -65,7 +65,7 @@
 #
 #   W-A. `_apply_reshape` (`indexing.py:155-167`) -- the RESHAPE arm of
 #        `apply_movement_op`. It is `UOp.sink`, `usum`, `%`, `//` and a
-#        `graph_rewrite` under `symbolic`. `schedule/indexing.bend:663` already names it
+#        `graph_rewrite` under `symbolic`. `schedule/indexing.bend:655` already names it
 #        ("three builders and W2"). - THE RESHAPE'S INPUT RANGE IS AN AFFINE
 #        expression in CPython (`ADD:none:MUL,RANGE`) and the port cannot build
 #        one. the port's answer is the input RANGE itself. - the output graph
@@ -101,7 +101,7 @@ import ./rangeify.bend as RG
 
 # 1. THE DUMP -- the ORACLE's spelling, `op:argkey:srcops`.
 #
-# `eng_op_name` (`schedule/rangeify.bend:2577`) names TEN ops and answers
+# `eng_op_name` (`schedule/rangeify.bend:2560`) names TEN ops and answers
 # "OTHER" for the rest, and the graph this file produces is made of INDEX,
 # RANGE, END, ADD and MUL -- so this file needs its own. `RZ.rz_argkey` IS
 # reused: it is the oracle's `arg_key` (`cother` for a CONST, `none` for a node
@@ -145,7 +145,7 @@ def rr_node_str(+ar: O.Arena, +n: U32) -> String:
                  String.join(rr_src_names.go(ar, O.Arena.srcs(ar, n), Nil{}), ",")])
 
 # THE DUMP. A DFS from the root, each node ONCE, joined by `;` -- the same
-# traversal as `RZ.rz_dump` (`schedule/realize.bend:391` symbol=rz_dump), which is the oracle's
+# traversal as `RZ.rz_dump` (`schedule/realize.bend:387` symbol=rz_dump), which is the oracle's
 # own `dump` (`eng-oracle.py:79`) and NOT the port's `eng_dump` (a BFS). The
 # comparison is over MULTISETS, so the order is not the subject; the TRAVERSAL
 # is, because a different traversal would not visit the same nodes.
@@ -182,13 +182,13 @@ def rr_dump(+ar: O.Arena, +root: U32) -> String:
 # EVERY rule that MATCHES. That is why rule 1 AND rule 3 both fire on a STORE:
 # the STORE is realized AND its src is tested for the WAR hazard.
 #
-# THE PORT's `grm_table()` (`indexing.bend:1241` symbol=grm_table) carries the op sets and the
+# THE PORT's `grm_table()` (`indexing.bend:1224` symbol=grm_table) carries the op sets and the
 # TAG, and the tag IS the rule index -- the same convention `rangeify.bend`'s
 # `aprt_table`/`aprt_dispatch` uses. - so the dispatch is: the tag picks the
 # body, and the op set picks the match.
 
 # RULE 3's TEST: `if dest.base in src.toposort()` (`indexing.py:34-36`). The
-# port's `ix_war_hit` (`indexing.bend:986` symbol=ix_war_hit) is that test.
+# port's `ix_war_hit` (`indexing.bend:972` symbol=ix_war_hit) is that test.
 def rr_war(+ar: O.Arena, +u: U32) -> Bool:
   IX.ix_war_hit(ar, O.Arena.src0(ar, u), O.Arena.src(ar, u, 1))
 
@@ -201,15 +201,15 @@ def rr_war(+ar: O.Arena, +u: U32) -> Bool:
 def rr_war_real(+ar: O.Arena, u: U32) -> List<&2, IX.IxReal>:
   [IX.realize(O.Arena.src(ar, u, 1))]
 
-# RULE 0's BODY: `ix_realize_custom` (`indexing.bend:1025` symbol=ix_realize_custom).
+# RULE 0's BODY: `ix_realize_custom` (`indexing.bend:1010` symbol=ix_realize_custom).
 def rr_call_real(+ar: O.Arena, u: U32) -> List<&2, IX.IxReal>:
   IX.ix_realize_custom(ar, u)
 
-# RULE 2's BODY: `realize_srcs` (`indexing.bend:969` symbol=realize_srcs).
+# RULE 2's BODY: `realize_srcs` (`indexing.bend:956` symbol=realize_srcs).
 def rr_mstack_real(+ar: O.Arena, u: U32) -> List<&2, IX.IxReal>:
   IX.realize_srcs(ar, u)
 
-# RULE 1's BODY: `realize` (`indexing.bend:935` symbol=realize).
+# RULE 1's BODY: `realize` (`indexing.bend:924` symbol=realize).
 def rr_store_real(+ar: O.Arena, u: U32) -> List<&2, IX.IxReal>:
   [IX.realize(u)]
 
@@ -810,7 +810,7 @@ def rr_range_map(+ar: O.Arena, +tb: F.Table, sink: U32) -> RrMap:
   +topo = O.UOp.toposort(O.Arena.budget(ar), ar, sk)
   +rev = rr_rev(topo)
   # => and the context is built by the port's own constructor
-  # (`indexing.bend:197` `ix_ctx_realize(rm)`), => BECAUSE A LITERAL WITH A CALL IN IT
+  # (`indexing.bend:196` `ix_ctx_realize(rm)`), => BECAUSE A LITERAL WITH A CALL IN IT
   # CANNOT BE INFERRED -- THE ERROR IS *"expected : an annotated term (cannot infer)"*.
   # => and the constructor is named for exactly this job: *"a context with a realize map
   # and nothing ELSE ... upstream fills the realize map before the RANGE-map LOOP
@@ -915,9 +915,9 @@ def rr_ap_closed.of(m: Maybe<&2, IX.IxRngs>) -> List<&2, U32>:
 #
 # => - - and they are table indices, not nodes -- => because the port's
 # RANGE MAP IS A TABLE (`rangify.bend`'s `RrRs{i, rs, tbl}`) AND A TABLE
-# entry becomes a node only at the boundary (`indexing.bend:921` `ix_rg_node`).
+# entry becomes a node only at the boundary (`indexing.bend:910` `ix_rg_node`).
 # => - - so the apply materialises them, => and the port's arena internes
-# THEM (`indexing.bend:899`), => SO ONE RANGE IS ONE NODE EVERYWHERE.
+# THEM (`indexing.bend:888`), => SO ONE RANGE IS ONE NODE EVERYWHERE.
 def rr_ap_inp.of(m: Maybe<&2, IX.IxRngs>) -> List<&2, U32>:
   match m:
     case Some{e}: IX.IxRngs.inp(e)
@@ -984,32 +984,32 @@ def rr_ap_ranges_only(+tbl: List<&2, IX.IxRange>, +closed: List<&2, U32>) -> Lis
 # AGAINST THE ORACLE WILL SHOW IT.
 # A STORE BECOMES AN `END` (`indexing.py:87`): `new_src = s.end(*[r for r in closed_ranges
 # if r.op is Ops.RANGE])`. => and "is a RANGE" is a table lookup: the table's entries are
-# `IxRange{kind, idx, ext}` AND KIND 0 IS A RANGE (`indexing.bend:153` `ix_rg_r`).
+# `IxRange{kind, idx, ext}` AND KIND 0 IS A RANGE (`indexing.bend:152` `ix_rg_r`).
 # THE INDEXED CASE (`indexing.py:80-81`).
 
 # the apply driver. the rewrite is `bottom_up=True` (`indexing.py:308`), => so the
 # port walks the arena in reverse INDEX order -- => which is children first,
-# because the arena's INDEX order is topological (`ops.bend:2754`: *"UOp.new is only ever
+# because the arena's INDEX order is topological (`ops.bend:2752`: *"UOp.new is only ever
 # called with srcs already in the arena, so every node's SRC indices are all below its own
 # POSITION"*).
 #
 # => - - and each node's rebuilt srcs are the rebuilt srcs of its children --
-# => and the port's own `UOp.replace` (`ops.bend:2986`) is exactly upstream's
+# => and the port's own `UOp.replace` (`ops.bend:2984`) is exactly upstream's
 # `x.replace(src=tuple(...))`.
 #
 # => - - and the map is the old INDEX -> new INDEX map, => and the port's own
-# `Rep{old, new}` (`rangeify.bend:2758`) IS THE SAME SHAPE -- => - - AND SO THE
+# `Rep{old, new}` (`rangeify.bend:2740`) IS THE SAME SHAPE -- => - - AND SO THE
 # apply's output is the same kind of thing the engine's `eng_*` produces, => which
 # IS WHAT MAKES THE TWO COMPOSE.
 
 # the rebuild map -- the (old node, rebuilt node) pairs, in walk order.
 #
-# => - - and the port's arena is append-only (`ops.bend:2754`: *"UOp.new is only ever
+# => - - and the port's arena is append-only (`ops.bend:2752`: *"UOp.new is only ever
 # called with srcs already in the arena"*), => - - so a rebuilt node cannot replace
 # an old one in place -- => - - and upstream's `graph_rewrite` does replace in
 # place (`x.replace(src=...)` returns a new uop and the rewrite's worklist carries it),
 # => - - - so the port needs an explicit map -- => - - - and that is why the
-# port's own `Rep{old, new}` map exists (`rangeify.bend:2758`) and why the engine's
+# port's own `Rep{old, new}` map exists (`rangeify.bend:2740`) and why the engine's
 # `eng_put` EXISTS.
 #
 # => - - and the map is the (old, new) pairs so that a child's rebuilt node can
@@ -1079,14 +1079,14 @@ def ap_rep_get(+es: List<&2, ApRep>, k: U32) -> Maybe<&2, U32>:
 # self.replace.get(x, x) for x in new_n.src)` -- - AND THE PORT's ARENA IS
 # append-only (`uop/ops.bend:1314 symbol=Arena`), - - - so the port needs an explicit
 # map, - - - and that is why the port's own `Rep{old, new}` map exists
-# (`schedule/rangeify.bend:2758 symbol=Rep`) AND WHY THE ENGINE's `eng_put` EXISTS.
+# (`schedule/rangeify.bend:2740 symbol=Rep`) AND WHY THE ENGINE's `eng_put` EXISTS.
 #
 
 # THE ARENA IS A VALUE, NOT A MUTABLE STORE (`ops.bend:1314`: *"`Arena` is
 # `Data`"*), AND BEND's `+` IS A REUSABLE LET, NOT A REBINDING (`bend
 # guide`: *"`x = v  +x = v  -x = v` -- a let: affine, reusable, erased"*), - AND
 # so a DEF that mints a node must hand the grown arena back -- - and
-# the port's spelling for that is `Found{ar, i}` (`ops.bend:2765`), - and
+# the port's spelling for that is `Found{ar, i}` (`ops.bend:2763`), - and
 # `realize.bend:113`'s `O.Found.ar(r)` IS THE PATTERN.
 #
 # - - - and the first attempt at this block dropped the arena (`O.Found.i(f)`
@@ -1127,8 +1127,8 @@ def ApFin.fin(+x: ApFin) -> List<&2, ApRep>:
 def rr_ap_keep(+ar: O.Arena, +s: U32) -> O.Found:
   O.Found{ar, s}
 
-# the materialiser: a table entry becomes a node (`indexing.bend:901`
-# `ix_rg_node`), => AND THE PORT's ARENA INTERNES IT (`indexing.bend:921`),
+# the materialiser: a table entry becomes a node (`indexing.bend:890`
+# `ix_rg_node`), => AND THE PORT's ARENA INTERNES IT (`indexing.bend:910`),
 # => so one RANGE is one node everywhere, => which is what makes the table
 # sound.  => - - and the port's RANGE map is a table, => - - so this is
 # THE BOUNDARY WHERE A RANGE ENTERS THE GRAPH.
@@ -1176,7 +1176,7 @@ def rr_ap_stage_src(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx, +x
 
 # A STORE BECOMES AN `END` (`indexing.py:87`): `new_src = s.end(*[r for r in closed_ranges
 # if r.op is Ops.RANGE])`. => and "is a RANGE" is a table lookup: the table's entries are
-# `IxRange{kind, idx, ext}` AND KIND 0 IS A RANGE (`indexing.bend:153` `ix_rg_r`).
+# `IxRange{kind, idx, ext}` AND KIND 0 IS A RANGE (`indexing.bend:152` `ix_rg_r`).
 def rr_ap_end_src(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +s: U32,
                   +closed: List<&2, U32>) -> O.Found:
   +rs = rr_ap_rng_nodes(ar, tbl, closed)
@@ -1280,7 +1280,7 @@ def rr_ap_red_new(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: 
   +ar3 = ApSrcs.ar(rn)
   +srcs = List.append(&2, U32, [O.Arena.src(ar2, O.Found.i(bx), 0)], ApSrcs.ss(rn))
   rop = rr_ap_red_op(ar2, x)
-  # => - - AND THE ARG IS THE PORT's OWN `UOp.reduce.arg` (`ops.bend:7474`),
+  # => - - AND THE ARG IS THE PORT's OWN `UOp.reduce.arg` (`ops.bend:7168`),
   # => BECAUSE `AReduce{rop, 0}` AS A LET CANNOT BE INFERRED (MEASURED:
   # the compiler says *"an annotated term (cannot infer)"*), => and the port's
   # own spelling takes a `Maybe<&2, Op>` and makes the same pair.
@@ -1495,7 +1495,7 @@ def rr_ap_root(+fin: List<&2, ApRep>, +s: U32) -> U32:
   Maybe.default(&2, U32, ap_rep_get(fin, s), s)
 
 # the map: old INDEX -> new INDEX, and it is the port's own `Rep` shape
-# (`rangeify.bend:2753`). => - - and the map is indexed by the old INDEX, which
+# (`rangeify.bend:2735`). => - - and the map is indexed by the old INDEX, which
 # is why the insert is at the old INDEX's position.
 # the rangeified graph, dumped. => and the port's own `rr_dump` is the port's own
 # spelling (`op:argkey:srcops`, joined by `;`), => and the oracle's output is the same

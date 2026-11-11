@@ -6,7 +6,7 @@
 
 THE ORACLE CALLS THE REAL THING. Every `lg*` row is `l2i(...)` -- the module-level
 function of `tinygrad/codegen/decomp/dtype.py:21` -- on a fixture that MIRRORS the port's
-`l2i.pick` arm (`dtype.bend:2780-2834`) index for index: same op, same target dtype, same
+`l2i.pick` arm (`dtype.bend:2746-2800`) index for index: same op, same target dtype, same
 source dtype, same word count, same offset into the same 24-node pool. `up` is the real
 `unpack32` (:13). `c*` is the real `f2f_clamp` (:127). `q*` is the real `f2f` (:101).
 `nrules_*` are `len()` of the REAL `get_simplifying_rewrite_patterns` /
@@ -20,11 +20,11 @@ with a port that is ITSELF wrong, because both mint the CAST CPython folds.
 THE CONE IS DFS PRE-ORDER, DEDUPED BY IDENTITY, ROOTED AT THE ANSWER'S WORD(S).
 `l2i` answers a TUPLE for the arms dtype.py writes as a tuple and ONE `UOp` for the four
 arms that answer a single word (dtype.py:39 `case Ops.CAST`, and CMPLT/CMPEQ/CMPNE), and
-the port knows which is which without asking (`dtype.bend:2698`: "`hi == 0` IS 'ONE
+the port knows which is which without asking (`dtype.bend:2664`: "`hi == 0` IS 'ONE
 NODE'"). This lane asks `isinstance(r, tuple)` and gets the same answer from CPython.
 
 THE FIXTURE POOL IS THE PORT'S, MIRRORED: four `w` words (u8,u16,u32,u64) and then five
-each of i32, u32, bool and f32 -- `dtype.bend:2549-2597`'s `dd_wpool` -- as SCALAR ALU
+each of i32, u32, bool and f32 -- `dtype.bend:2515-2563`'s `dd_wpool` -- as SCALAR ALU
 PARAMs. `size=None` is `ParamArg`'s own "None for scalars" (`ops.py:28`), which is what
 the port's `size=Some{0}` denotes; a finite size makes `const_like` mint an EXPAND and
 every cone grows a node the port's has no name for.
@@ -55,7 +55,7 @@ from tinygrad.uop.ops import UOp, Ops, ParamArg, AddrSpace
 from tinygrad.codegen.decomp import dtype as DT
 
 # ---------------------------------------------------------------- the 24-node pool
-# dtype.bend:2549-2597 -- four `w` words then five each of i32, u32, bool, f32.
+# dtype.bend:2515-2563 -- four `w` words then five each of i32, u32, bool, f32.
 POOL = [dtypes.uint8, dtypes.uint16, dtypes.uint32, dtypes.uint64]
 for _ in range(5): POOL.append(dtypes.int32)
 for _ in range(5): POOL.append(dtypes.uint32)
@@ -85,7 +85,7 @@ def s1(u):
     `u.arg.name` IS the port's spelling, not a translation: MEASURED on this checkout
     `dtypes.uint8.name == "u8"`, `dtypes.float32.name == "f32"`, `dtypes.half.name == "f16"`,
     `dtypes.bfloat16.name == "bf16"` and `dtypes.fp8e4m3.name == "fp8e4m3"`, which is what
-    `LAWS/spec.bend`'s `Dt.nm` holds (`spec.bend:727-742`) and what `O.dt_name` (ops.bend:5956)
+    `LAWS/spec.bend`'s `Dt.nm` holds (`spec.bend:727-742`) and what `O.dt_name` (ops.bend:5825)
     returns. So the two sides render the same token with no table on either.
     """
     if isinstance(u.arg, DType):
@@ -126,7 +126,7 @@ def drive(fn, *a, **kw):
 
 
 # ------------------------------------------------------------- the `l2i` fixtures
-# dtype.bend:2780-2834 `l2i.pick`, arms 0..32, index for index. The port names them
+# dtype.bend:2746-2800 `l2i.pick`, arms 0..32, index for index. The port names them
 # lg1..lgy; this lane uses the SAME names so a row is one fact on both sides.
 L2I = [
     ("lg1",  Ops.NEG, dtypes.int32, dtypes.uint32, 9, 2),
@@ -168,7 +168,7 @@ L2I = [
     ("lgt",  Ops.TRUNCMOD, dtypes.uint32, dtypes.uint32, 9, 4),
     ("lgu",  Ops.CAST, dtypes.float32, dtypes.float32, 19, 2),
     # `lgz` IS `lgu`'S OWN CELL WITH THE TARGET'S WIDTH CHANGED, and it is NOT `l2i.pick`'s
-    # arm 33 -- `l2i.pick` (dtype.bend:2780-2834) does not list it, and a target axis that is
+    # arm 33 -- `l2i.pick` (dtype.bend:2746-2800) does not list it, and a target axis that is
     # the port's own fixture table therefore has ZERO 64-bit-float cells. MEASURED over the
     # 33 arms: `dt` ranges over {i32, i64, u64, u32, f32} and the pool has no f64 word, so
     # `dtypes.double` -- the only member of `LAWS/spec.bend`'s own `Dt` population with 64 bits
@@ -189,14 +189,14 @@ L2I = [
 for _nm, _op, _dt, _xdt, _base, _nw in L2I:
     print("%s=%s" % (_nm, drive(DT.l2i, _op, _dt, *ws(_base, _nw))))
 
-# `l2i.const`'s THREE arms -- `l2i.pick`'s cases 28/29/30 (dtype.bend:2812, :2816, :2817),
+# `l2i.const`'s THREE arms -- `l2i.pick`'s cases 28/29/30 (dtype.bend:2778, :2816, :2817),
 # `l2i(Ops.CAST, dt, UOp.const(v, xdt))`. The argument is minted OUTSIDE the call, at `xdt`, so
 # it reads NO word of the pool and no pool-based population rule can see these three; they are
 # `uq`'s idea again from the other side, a CONST already AT the source dtype.
 #
 # `UOp.const` (ops.py:634) is `UOp(CONST, arg=dt.const(b)).cast(dt)`, so on this checkout it is
 # itself a CAST -- MEASURED, printed above as `arg op=CAST dtype=u32` -- and the port's mirror of
-# that half is `dd_const.int` (dtype.bend:333). Both sides therefore carry the argument's own
+# that half is `dd_const.int` (dtype.bend:324). Both sides therefore carry the argument's own
 # `CAST/1[u32]`, and `lgw` is the row where CPython's `uops[0].cast(l2i_dt[dt])` FOLDS on top of
 # it (`mixin/dtype.py:36`, `l2i_dt[ulong] == dtypes.uint`) while `lgx` is the ORDER-SENSITIVE
 # NEIGHBOUR of `lgw`: the same two words, a different cone order.
@@ -204,7 +204,7 @@ for _nm, _v, _dt in (("lgv", 0, dtypes.int64), ("lgw", 0, dtypes.uint64),
                      ("lgx", 1, dtypes.uint64)):
     print("%s=%s" % (_nm, drive(DT.l2i, Ops.CAST, _dt, UOp.const(_v, dtypes.uint32))))
 
-# `unpack32` (dtype.py:13) over the pool's u32 word at offset 9 -- dtype.bend:2850.
+# `unpack32` (dtype.py:13) over the pool's u32 word at offset 9 -- dtype.bend:2816.
 print("up=%s" % drive(DT.unpack32, PAR[9]))
 
 # AND OVER THE POOL'S `i32` WORD AT OFFSET 4, which is the fixture that makes the BITCAST
@@ -213,12 +213,12 @@ print("up=%s" % drive(DT.unpack32, PAR[9]))
 # the node away and an `i32` receiver does not. MEASURED both: `PAR[9]` reads
 # `AND/2,PARAM/0,CONST/0,FLOODIV/2,CONST/0` with no BITCAST and `PAR[4]` reads
 # `AND/2,BITCAST/1[u32],PARAM/0,CONST/0,FLOODIV/2,CONST/0` with the ONE node shared by both
-# halves. The port's `unpack32` takes the receiver's dtype as a parameter (`dtype.bend:591`,
+# halves. The port's `unpack32` takes the receiver's dtype as a parameter (`dtype.bend:569`,
 # `O.eq_dt(xdt, S.uint32())`) to model that fold, so the two fixtures select the two graphs on
 # both sides and the `u32` in the token is a TARGET THAT IS NOT THE SOURCE.
 print("uq=%s" % drive(DT.unpack32, PAR[4]))
 
-# `f2f` (dtype.py:101) over dtype.bend:3053-3061's seven pairs.
+# `f2f` (dtype.py:101) over dtype.bend:3019-3027's seven pairs.
 F2F = [("q1", dtypes.fp8e4m3, dtypes.float32), ("q2", dtypes.float32, dtypes.fp8e4m3),
        ("q3", dtypes.float32, dtypes.fp8e5m2), ("q4", dtypes.fp8e4m3fnuz, dtypes.float32),
        ("q5", dtypes.float32, dtypes.fp8e5m2fnuz), ("q6", dtypes.half, dtypes.bfloat16),
@@ -235,7 +235,7 @@ F2F = [("q1", dtypes.fp8e4m3, dtypes.float32), ("q2", dtypes.float32, dtypes.fp8
 #                  fixture under another name
 #     at f2f_dt[fr] 4 agree (q1 q4 q7 + the refusal); q5 stops being its own shape and
 #                  becomes a PROMOTION row like the ten `l2i` ones.
-# The port's own `f2f.one` (dtype.bend:3043-3047) says the same and measures it: "passing
+# The port's own `f2f.one` (dtype.bend:3009-3013) says the same and measures it: "passing
 # `fr` here compiled, ran, and disagreed: ... the `fr` receiver costs `w1` a node (28
 # against CPython's 27)".
 #

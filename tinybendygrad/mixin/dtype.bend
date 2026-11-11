@@ -47,17 +47,17 @@
 # WHAT THE WALL STILL COSTS, and this is the part `uop/weak.bend` is waiting on. Every
 # weak.bend TODO that reads `commit_dtype` also needs the BOUNDS, and the bounds are the half
 # that is missing. Per `_min_max` arm (ops.py:1104-1163), MEASURED:
-#   ADD                                 i64_add, i64_sub        PRESENT, pure -- helpers.bend:1728,1733
-#   MAX/CMPLT/CMPNE/OR/AND-bool/XOR      i64_le/i64_cmp          PRESENT, pure -- helpers.bend:1703,1696
+#   ADD                                 i64_add, i64_sub        PRESENT, pure -- helpers.bend:1687,1733
+#   MAX/CMPLT/CMPNE/OR/AND-bool/XOR      i64_le/i64_cmp          PRESENT, pure -- helpers.bend:1662,1696
 #   WHERE/PAD/STACK/MOVEMENT/CONST       (no arith)              PORTABLE, they are min/max over srcs
-#   CAST (truncation)                   i64 trunc toward zero   `Dt.i64_trunc` -- dtype.bend:555, but
+#   CAST (truncation)                   i64 trunc toward zero   `Dt.i64_trunc` -- dtype.bend:534, but
 #                                                                       an `IO(F32)`-style EFFECT SEAM
 #   MUL                                 i64_mul                 NOWHERE. Not helpers.bend, not
 #                                                                       dtype.bend, not any tinygrad .py.
 #   TRUNCDIV/DIV                       i64_div                 `Dt.i64_cdiv` / `Dt.i64_floor_div` --
-#                                                                       dtype.bend:567,563, EFFECT SEAMS
+#                                                                       dtype.bend:545,563, EFFECT SEAMS
 #   MOD/TRUNCMOD                       i64_mod                 `Dt.i64_floor_mod` / `Dt.i64_cmod` --
-#                                                                       dtype.bend:563,571, EFFECT SEAMS
+#                                                                       dtype.bend:541,571, EFFECT SEAMS
 #   SHL/SHR                             i64 shift               NOWHERE.
 # SO THE WALL IS NOT "three helpers are missing", which is what `uop/weak.bend` and
 # `uop/fold.bend` both record. The real wall has TWO parts and the second is the harder one.
@@ -181,7 +181,7 @@ def md_default_int() -> S.Dt: S.int32()
 #
 #   * every I64 is inside int64's range, so the ladder's int64 rung always fits and its
 #     uint64 rung can never be reached. dtype.py returns `long` off the end anyway, so
-#     the answers agree -- dtype.bend:490-493 records this and it is unchanged.
+#     the answers agree -- dtype.bend:471-474 records this and it is unchanged.
 #   * the ladder starts at default_int, which may already be int32, so the int32 test
 #     runs twice in that case. That is dtype.py's behaviour, kept.
 
@@ -196,7 +196,7 @@ def md_i64_max_u(bits: U32) -> H.I64:
     # the whole domain. The three `u64_at_*` rows are what says so.
     case _: H.i64_of_hi_lo(2147483647, 4294967295)
 
-# CORRECTED: dtype.bend:374-375 read (0xFFFFFF80 -> 0xffffc808) and (0xFFFF8000 ->
+# CORRECTED: dtype.bend:362-363 read (0xFFFFFF80 -> 0xffffc808) and (0xFFFF8000 ->
 # 0xffff0000), which are -14328 and -65536. `i8_past_min` and `i16_past_min` are the
 # rows that caught it: -129 and -32769 were inside int8's and int16's stated minimum.
 def md_i64_min_s(bits: U32) -> H.I64:

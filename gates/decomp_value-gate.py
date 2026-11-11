@@ -9,7 +9,7 @@ compares op SEQUENCES and `ops_python_census` compares counts, and neither can s
 spelled the same way can MEAN something different. CPython's `ElementwiseMixin._broadcasted`
 (`mixin/elementwise.py:24`) inserts a general `least_upper_dtype` PROMOTION CAST via its inner
 `promote` (`:26`, `:32`); decomp's ALU path is `dd_add`/`dd_mul`/... -> `tx_alu2` ->
-`O.UOp.alu` (`transcendental.bend:199`), a raw ALU that never calls it. So the port computes
+`O.UOp.alu` (`transcendental.bend:198`), a raw ALU that never calls it. So the port computes
 intermediates NARROWER. The census's own block records `lg1` 3 of 13 kept nodes at a different
 dtype, `lg5` 1 of 14 and `lgd` 1 of 12, and then says the question is unanswerable there. THIS
 FILE IS THE ANSWER, and the answer is a value.
@@ -454,7 +454,7 @@ class Program:
 
 # ================================================================ the operand families
 # WORD FAMILIES. The census's fixture pool is 24 NAMED PARAMs -- four `w` words (u8,u16,u32,u64)
-# then five each of i32, u32, bool and f32 (`dtype.bend:2549-2597`'s `dd_wpool`, mirrored at
+# then five each of i32, u32, bool and f32 (`dtype.bend:2515-2563`'s `dd_wpool`, mirrored at
 # `decomp_graph_census-oracle.py:59`). MEASURED on this run, the 11 PROMOTION rows read slots
 # `w9 w10 w11 w12` (u32 words), `w19` (f32, `lg5` only) and one PARAM named after its row
 # (`q5`, at `f2f_dt[float32]`). `params_of` reports them per row and the gate FAILS on a PARAM

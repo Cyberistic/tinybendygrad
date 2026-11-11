@@ -3,8 +3,8 @@
 #   I64SHR_SEED=7 .venv/bin/python gates/i64-shr-gate.py
 #
 # `def i64_shr` EXISTS -- `grep -c '^def i64_shr' tinybendygrad/helpers.bend` is 4, the
-# arm at `helpers.bend:1900` -- and its mirror `def i64_shl(+x: I64, +k: Nat) -> I64` is at
-# `helpers.bend:1825`. THIS HEADER USED TO SAY `i64_shr` "EXISTS NOWHERE ... IS 0", AND
+# arm at `helpers.bend:1857` -- and its mirror `def i64_shl(+x: I64, +k: Nat) -> I64` is at
+# `helpers.bend:1782`. THIS HEADER USED TO SAY `i64_shr` "EXISTS NOWHERE ... IS 0", AND
 # THAT WAS NEVER TRUE: it is 4 at EVERY commit that ever added this file (`4ff8ca126`,
 # `813bbec3e`, `02329daf0`), so it was a fabricated measurement, not a stale one. What the
 # driver never had was an IMPORT THAT RESOLVED -- `../../../tinybendygrad/helpers.bend` from
@@ -73,7 +73,7 @@ def amt_lit(i: U32) -> Nat:
 # THE CLAIM UNDER TEST. Same table, but the index is `(seed + i) mod 10` and `seed` is
 # read from the PROCESS ENVIRONMENT (`H.getenv_int`), so the `Nat` handed to `i64_shr` is
 # derived from runtime data and is nowhere in this file's text -- the shape of
-# `uop/fold.bend:3234 bnd.pw2`. `(seed + i) mod len` is a PERMUTATION, so with any seed
+# `uop/fold.bend:3195 bnd.pw2`. `(seed + i) mod len` is a PERMUTATION, so with any seed
 # the ten rows reach all ten amounts and changing the seed changes which amount each row
 # carries, which is what makes the seed a fixture rather than a constant.
 def amt_rt(seed: U32, i: U32) -> Nat:

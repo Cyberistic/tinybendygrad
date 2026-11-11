@@ -4,7 +4,7 @@ r"""docnum-census -- CENSUS LOAD-BEARING NUMBERS AND CLAIMS IN SHIPPED PROSE.
 The four instances that dispatched this census, all one day, all one shape:
 
   1. `decomp`'s FOOTER named the wrong blocker and its own rows refuted it.
-  2. `uop/spec.bend:1488` justified a P6 wall with `Device.tag`, WHICH DOES NOT EXIST, and a
+  2. `uop/spec.bend:1476` justified a P6 wall with `Device.tag`, WHICH DOES NOT EXIST, and a
      gate quoted the citation forward.
   3. `nn/optim.bend`'s claim that a fixture "NEEDS `Device.tag`" was PROVED FALSE.
   4. `gates/README.md` justified a whole section on "THE NUMERATOR OF 'A GATE THAT ANYTHING

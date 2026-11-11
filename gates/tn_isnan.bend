@@ -19,7 +19,7 @@ def row(nm: String, v: Bool) -> IO(Unit):
 
 # Build a CONST{float} tensor and apply isnan. CPython's `isnan` is `self != self`,
 # and the port's `tn_isnan` IS `tn_cmpne(t, t)` -- a single CMPEQ with the SAME
-# tensor on both srcs. The same shape is what `mo_isnan` (`mixin/op.bend:986`)
+# tensor on both srcs. The same shape is what `mo_isnan` (`mixin/op.bend:970`)
 # builds at the reduction layer. A CONST{1.0} is the cheapest valid input.
 def mk_tensor() -> T.Tensor:
   +c = O.UOp.const(O.Arena.empty(), O.CFloat{1.0})

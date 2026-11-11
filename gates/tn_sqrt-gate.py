@@ -5,7 +5,7 @@
 
 FIVE ROWS, THREE LANES -- CPython, bend interpreted, bend compiled -- over the claims
 that `tn_sqrt` does what CPython's `Tensor.sqrt` (elementwise.py:480) does:
-`return self.alu(Ops.SQRT)`. The wall that lived at `nn/__init__.bend:241`
+`return self.alu(Ops.SQRT)`. The wall that lived at `nn/__init__.bend:230`
 ("`Tensor.sqrt` ... NOT a def in `tensor.bend`") was closed by porting the one-liner.
 
 WHAT THIS IS FOR. `tn_sqrt` is a `tn_alu` over `OpsSQRT{}` with an empty src list, and
@@ -41,4 +41,4 @@ GATE = Gate(
 if __name__ == "__main__":
     sys.exit(main(GATE, "tn_sqrt-gate: 5 rows, 3 lanes -- tn_sqrt's op/src/arg set, "
                         "input purity and reachability all agree with CPython's "
-                        "Tensor.sqrt (the one-line port closes nn/__init__.bend:241)"))
+                        "Tensor.sqrt (the one-line port closes nn/__init__.bend:230)"))

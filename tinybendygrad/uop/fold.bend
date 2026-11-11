@@ -361,7 +361,7 @@ def Sized.s(x: Sized) -> List<&2, O.Sint>:
   match x:
     case Sized{n, s}: s
 
-# `List.append` is `xs ++ ys` (base.bend:932), so this accumulator is ALREADY in
+# `List.append` is `xs ++ ys` (base.bend:931), so this accumulator is ALREADY in
 # here turned a list already in ops.py's order into its own mirror, which every
 # COUNT survived -- `Sized.n` is unaffected -- and every positional read did not.
 # Same anti-pattern, same defect, one layer down from `srcs.go`.
@@ -1144,7 +1144,7 @@ def late() -> Maybe<&2, DtShape>:
 # named `call_ds.go` and `ins_ds.shape`. The 2026-10-05 fix landed in `custom_ds.of`'s
 # copy and left both twins wrong, which is the whole of the lesson: a fix to one arm of
 # a rule is not a fix to the rule. What both twins got wrong is that their outer `None`
-# is the PORT-ONLY "the fold produced no `Derived`", which `derived.put` (fold.bend:2891 symbol=derived.put)
+# is the PORT-ONLY "the fold produced no `Derived`", which `derived.put` (fold.bend:2860 symbol=derived.put)
 # passes on and `Kahn.ans.of` turns into A MISSING TABLE ENTRY -- so the node reads `?` in
 # BOTH columns, a hole CPython cannot print, rather than reading `R`. MEASURED on
 # `--graph loop`: ONE node of 26 absent, and `?=2/2` is ONE absence read twice.
@@ -2061,7 +2061,7 @@ def perm_ds.of(ys: List<&2, U32>, ps: Maybe<&2, List<&2, O.Sint>>, +ss: List<&2,
 # `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)` -- THE ORDER IS IN
 # `src[1]` AND THE `arg` IS `None`.
 #
-# AND THE PORT's `marg` (`fold.bend:1766`) ALREADY READS `src[1]` AND
+# AND THE PORT's `marg` (`fold.bend:1751`) ALREADY READS `src[1]` AND
 # ALREADY HANDLES BOTH THE BARE-CONST AND THE `STACK` SHAPE -- SO THE
 # PERMUTE's READER IS THE RESHAPE's READER, AND THE PORT WAS USING
 # A SECOND, PORT-ONLY READER (`order_arg`, WHICH READS `arg`) AND SO THE
@@ -2089,7 +2089,7 @@ def order_srcs.srcs(+ar: O.Arena, s: U32) -> List<&2, U32>:
   order_srcs.go(ar, O.Arena.srcs(ar, s), Nil{})
 
 # THE OP IS TAKEN AS A VALUE AND THE INDEX IS TAKEN AS
-# A VALUE, EXACTLY AS `marg.of` (`fold.bend:1759`) DOES -- THE CALLER
+# A VALUE, EXACTLY AS `marg.of` (`fold.bend:1744`) DOES -- THE CALLER
 # READS THE `op` AND THE INDEX, AND NEITHER IS READ TWICE --
 # AND THAT IS WHY THE ORDER READER AND THE `marg` READER CAN
 # BOTH RUN OFF THE ONE `src[1]`'s INDEX THE CALLER READ.
@@ -2104,7 +2104,7 @@ def order_srcs.of(k: O.Op, +ar: O.Arena, s: U32) -> List<&2, U32>:
 # THE PERMUTE's SHAPE READER -- AND IT NEEDS TWO THINGS: THE
 # CONCRETE ORDER (`src[1]`'s STACK CHILDREN, WHICH IS THE PERMUTATION) AND
 # THE SOURCE's DIMS (`src_shape(0, ss)`, WHICH IS `src[0]`'s SHAPE) -- AND
-# `perm_init` TAKES EXACTLY THOSE TWO (`fold.bend:2058`: `def perm_init(ys:
+# `perm_init` TAKES EXACTLY THOSE TWO (`fold.bend:2039`: `def perm_init(ys:
 # List<&2, U32>, +ps: List<&2, O.Sint>)`).
 #
 # AND THE SOURCE's DIMS ARE NOT `marg` -- MEASURED 2026-11-11 ON THE
@@ -2833,7 +2833,7 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     #     `tinygrad/renderer/cstyle.py:76` reads `x.arg[0].format(...)`, which is only
     #     meaningful on index 0 OF A 2-TUPLE.
     #   * NO change to `Arg` is needed. `AInk{ins: String, dt: S.Dt}` (ops.bend:1240,
-    #     mapped to the INS arg at :910) IS that pair, and `uop/spec.bend:1082
+    #     mapped to the INS arg at :910) IS that pair, and `uop/spec.bend:1074
     #     symbol=sh_21` already gates CUSTOM and CUSTOMI on it: "`AInk` IS that pair,
     #     and it is the only constructor that is".
     # The second correction: the note below claimed the arm needed "its own
@@ -6251,7 +6251,7 @@ def mmk_sibling() -> IO(Unit):
     mmk_row("mmkx_", "sibling_stage", x, O.Found.i(st))
     mmk_row("mmk_", "sibling", x, O.Found.i(f))
 
-# A DIM AS CPython PRINTS IT. `H.i64_text` is `hi:lo` on purpose (helpers.bend:1713)
+# A DIM AS CPython PRINTS IT. `H.i64_text` is `hi:lo` on purpose (helpers.bend:1672)
 # and a dim is a non-negative count under 2^31 -- `sint_of`'s own note says so -- so
 # the LOW WORD is the decimal. `lo32` and not a reader of the whole I64, because a
 # dim is exactly the case where the high word is zero.
@@ -6355,7 +6355,7 @@ def g_rng_after() -> O.Found:
   +af = O.UOp.new(O.Found.ar(c5i), O.OpsAFTER{}, [O.Found.i(c5i)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(af), O.OpsRANGE{}, [O.Found.i(af)], O.ARange{[0], O.AXIS_WEAK{}}, O.TNone{})
 
-# THE ROW. `rng_width` IS `int(r.vmax)+1` (`fold.bend:1426`), - SO THE AFTER-BOUND
+# THE ROW. `rng_width` IS `int(r.vmax)+1` (`fold.bend:1415`), - SO THE AFTER-BOUND
 # RANGE must answer 5 and the CONST-bound one 4. - and the port's `rng_width`
 # answered `None{}` for the first before 2026-10-28, which is a width that was refused
 # AND NOT A WIDTH OF ZERO.
@@ -6383,7 +6383,7 @@ def t_shape_ok() -> Bool:
   # 1 CONST(0) (), 2 SPECIAL (), 3 CONST(4) () , 4 BUFFER (4,), 5 CONST(3) (), 6 ADD (4,)
   # RE-DERIVED, NOT NUDGED. The layout this row used to carry named 3 BUFFER, 4 CONST(3),
   # 5 ADD, which is the arena WITHOUT the size node. `UOp.new.param` interns the size node
-  # FIRST (`ops.bend:3036`), so `CONST(4)` takes index 3 and every later node shifts up by
+  # FIRST (`ops.bend:3034`), so `CONST(4)` takes index 3 and every later node shifts up by
   # one. The layout above is the MEASURED one, not the recalled one: see
   # `.agents/slop/arena11/arena_layout.bend`, which prints op/size/nsrc/src[0] per index of
   # `g_add` and reads `_i3=CONST/size=N/nsrc=0 _i4=BUFFER/size=4/nsrc=1/src0=3` -- the

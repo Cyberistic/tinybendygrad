@@ -270,7 +270,7 @@ def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -
 #
 
 # the stop is "the sink index did not move", and it is sound because the arena
-# INTERNS. `uop/ops.bend:2531 UOp.make` calls `intern.find` and a HIT returns the
+# INTERNS. `uop/ops.bend:2530 UOp.make` calls `intern.find` and a HIT returns the
 # arena UNTOUCHED, so two passes handing back the same sink INDEX handed back the
 # same `Node{op, src, arg, tag}`. The reachable graph is identical,
 # `pm_rewrite_m` is a pure function of that graph and of `ctx`, and the next pass

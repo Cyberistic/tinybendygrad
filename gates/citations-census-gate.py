@@ -213,14 +213,14 @@ REV = re.compile(r"([0-9a-f]{7,40}\^?):\s*$")
 FIELDS = ("at", "subject", "loc", "lo", "hi", "needle", "rev", "neighbourhood",
           "line_text", "tail")
 
-# A RANGE CITATION IS REGRESSED IF ANY LINE IN IT IS.  `tinybendygrad/uop/render.bend:347`'s
+# A RANGE CITATION IS REGRESSED IF ANY LINE IN IT IS.  `tinybendygrad/uop/render.bend:337`'s
 # `ops.bend:865-881` starts BELOW the insertion point and reaches past it, and an extractor
 # that reads only the FIRST number of a range reports the second one resolved.  MEASURED on the
 # live tree: nine range citations straddle their target's boundary and exactly one reaches past
 # it -- and it is a TRUE citation today, so the straddle rule adds a row, never loses one.
 #
 # * A REVERSED RANGE IS A DEFECT IN THE CITATION, AND IT IS TALLIED RATHER THAN GUESSED. *
-# `tinybendygrad/uop/validate.bend:2503` writes `ops.bend:7044-7012` -- an end before a start.
+# `tinybendygrad/uop/validate.bend:2490` writes `ops.bend:6753-6721` -- an end before a start.
 # `range(lo, hi+1)` over the raw pair is EMPTY, so an unnormalised extractor silently reports
 # it as resolved, which is the `[^/]*`-matched-empty moral in a new costume: a token that
 # matches nothing writes NO row, and no row does not argue back.  MEASURED, this ONE row is
@@ -417,7 +417,7 @@ def regressed_lines(subject: str, touched: set[str]) -> set[int]:
     *** A NET DELTA IS NOT A REGRESSION BOUNDARY. ***  `b86e3c25e`'s message records
     `optim.bend` as `+0` and from the delta that is true -- the file is 1,426 lines before
     and 1,426 after. MEASURED HERE: old line 1,407 is the ONE line the commit rewrote
-    (`@@ -1407 +1407 @@`), so a citation to `optim.bend:1407` points at text that no longer
+    (`@@ -1407 +1407 @@`), so a citation to `optim.bend:1361` points at text that no longer
     exists while the line count never moves. A boundary read off a diff's `+N` would have
     called that file clean.  The same derivation moves the other boundaries DOWN to the
     first REPLACED line rather than the first INSERTED one -- MEASURED, 880 not 883 in
@@ -520,8 +520,8 @@ def judge(c: dict, U: Universe, bodies: dict[str, list[str]], reg: dict[str, set
         return c
     # * A NEEDLE THAT IS A DIFFERENT KIND OF CLAIM IS NOT A FALSIFICATION. *  MEASURED on
     # the first live run: 543 of the headline FALSIFIED rows carried needles like `:281`,
-    # `ops.bend:5332` and `llvmir-oracle.py:866` -- which are LOCATORS, and asking a file
-    # whether it "contains `ops.bend:5332`" asks about a different object.  `CC.needle_kind`
+    # `ops.bend:5238` and `llvmir-oracle.py:866` -- which are LOCATORS, and asking a file
+    # whether it "contains `ops.bend:5238`" asks about a different object.  `CC.needle_kind`
     # already classifies exactly this (`reference`, `code`, `output`, `digest`, `exit-status`,
     # `command`, `cell-label`, `fragment`, `short`) and each was bought with a measured fault,
     # so the taxonomy is called rather than re-derived.

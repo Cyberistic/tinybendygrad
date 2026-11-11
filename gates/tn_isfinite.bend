@@ -27,7 +27,7 @@ def row(nm: String, v: Bool) -> IO(Unit):
 # `src[0]` IS A SHARED ROW NOW, AND IT WAS NOT BEFORE. This block used to say "`src[0]` IS NOT A
 # SHARED ROW. It is CAST here -- the port keeps `tn_logical_not`'s explicit `cast(bool)` -- and OR
 # in CPython". BOTH HALVES WERE TRUE AND BOTH ARE NOW FALSE, because `tn_logical_not` reached the
-# FOLDING `D.cast_at` (`mixin/dtype.bend:342`) and the cast folds away on a bool input:
+# FOLDING `D.cast_at` (`mixin/dtype.bend:337`) and the cast folds away on a bool input:
 #
 #   port    tn_isfinite=15 Ops.CMPEQ/2 Ops.OR Ops.CONST
 #   cpython tn_isfinite=15 Ops.CMPEQ/2 Ops.OR Ops.CONST

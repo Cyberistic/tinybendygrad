@@ -46,7 +46,7 @@
 # the four walls under this file. Three are the substrate's and one is device
 # FFI; each is a `TODO(p3)` with its line.
 #
-#   (a) `Ops.SHRINK` HAS NO DTYPE IN THE FOLD. `uop/fold.bend:1695 symbol=sym_dim.val` defers it with
+#   (a) `Ops.SHRINK` HAS NO DTYPE IN THE FOLD. `uop/fold.bend:1680 symbol=sym_dim.val` defers it with
 #       the comment "`marg` -> `zip` -> `ssimplify`", and `Ops.LOAD` is `thru0`
 #       off a SHRINK so it inherits the gap. MEASURED on a hand-built arena:
 #       `F.fold.dt` answers `None` for SHRINK, LOAD and every ALU above one, so
@@ -1165,7 +1165,7 @@ def cfo_tern(+a: List<&2, String>, +b: List<&2, String>, +c: List<&2, String>) -
 # the answer in `f"..."` at the operator's own precedence, so an empty one deletes the
 # operand and leaves a kernel that is wrong rather than broken -- the exact shape this file's
 # own header names as the dangerous one. So the refusal NAMES ITS CAUSE, and it is
-# `wgsl.bend`'s spelling and not a new one: `renderer/wgsl.bend:473 symbol=code_for_op.of` answers `UNHANDLED(Ops.X)` for
+# `wgsl.bend`'s spelling and not a new one: `renderer/wgsl.bend:464 symbol=code_for_op.of` answers `UNHANDLED(Ops.X)` for
 # the same `KeyError` on the same twenty inherited arms, and `THE PORT's `renderer/wgsl.bend` HEADER` says those arms
 # MOVE HERE when cstyle lands. Two spellings of one refusal is FINDING 2 in `wgsl_render_census-gate.py`,
 # which is why this reuses the sibling's token instead of inventing a third.
@@ -2260,7 +2260,7 @@ def barrier.of(+dev: U32) -> String:
 # `AttributeError` and `""` would emit a bare `float4{...}` with no constructor.
 # THE ANSWER IS THE STRING `"None"`, and that is `dsl.bend`'s standing rule for an
 # ABSENT value rather than a refusal -- `_variant_suffix` answers a suffix or `None`,
-# and `dsl.bend:1577-1579` records that "an empty string is NOT the same answer, so the
+# and `dsl.bend:1553-1555` records that "an empty string is NOT the same answer, so the
 # port prints `None`". CPython prints `None` too (`str(None)`), so this row now AGREES
 # instead of being a declared divergence.
 #

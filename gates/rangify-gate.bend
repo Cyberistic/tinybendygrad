@@ -140,7 +140,7 @@ def rr_row_dims() -> String:
   +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
   String.join(P.rr_dims_row.go(ns, ar, tb, Nil{}), " ")
 # the RANGE table, dumped: every entry as `idx:kind:ext`, => and kind 0 is
-# A `RANGE` AND KIND 1 IS THE `CONST 0` (`indexing.bend:153` `ix_rg_r` /
+# A `RANGE` AND KIND 1 IS THE `CONST 0` (`indexing.bend:152` `ix_rg_r` /
 # `:149` `ix_rg_c0`). => and this is the row that says whether the port's
 # `new_range` MADE A `RANGE` WHERE UPSTREAM MADE ONE -- => AND IT IS
 # THE INSTRUMENT FOR W-D (THE `R2` AXIS).

@@ -523,7 +523,7 @@ def main() -> IO(Unit):
   do IO<Unit>:
     # `g_fix()` builds eleven nodes and folds them; every fixture row takes it as a
     # parameter and `main` calls it per row. An `IO<Unit>` `do` block can only BIND an `IO`
-    # (fold.bend:2087's `a : Unit <- row(...)`), and the fixture is pure, so threading it
+    # (fold.bend:2068's `a : Unit <- row(...)`), and the fixture is pure, so threading it
     # through the block would mean an IO wrapper for no reason.
     row("strong_weakint", t_strong_weakint())
     row("strong_weakfloat", t_strong_weakfloat())

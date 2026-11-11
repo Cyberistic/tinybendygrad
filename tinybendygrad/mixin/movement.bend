@@ -66,7 +66,7 @@
 # the wall this file exists to answer. `examples/beautiful_mnist.bend` names two walls, W1
 # (conv2d, `mixin/op.py:1562`) and W2 (max_pool2d, `mixin/op.py:1333`), and both bottom out
 # in `_pool` (`movement.py:614 symbol=_pool`), both recorded there as "BUILDABLE, NOT CHECKABLE" because
-# `fold.bend:1620-1626` answers `None{}` for PERMUTE, EXPAND, PAD, SHRINK and FLIP and
+# `fold.bend:1606-1612` answers `None{}` for PERMUTE, EXPAND, PAD, SHRINK and FLIP and
 # gives the reason: `marg` -> `as_shape` -> `ssimplify`.
 #
 # `ssimplify` is the whole wall, and for a concrete shape it is the identity. Two
@@ -92,7 +92,7 @@
 # else in this file is on the path:
 #   import ../tinybendygrad/mixin/movement.bend as MX
 #   MX.mxm_shape(MX.mxm_marg(ar, i), src_shape) -> List<&2, U32>   # the SHAPE of a movement
-#       node, given the source's shape: the `fold.bend:1620-1626` replacement
+#       node, given the source's shape: the `fold.bend:1606-1612` replacement
 #   MX.mx_pool_shape(shp, k, stride, dilation) -> List<&2, U32>   # `_pool`'s OUTPUT shape.
 #       This is W1/W2 and it needs no arena at all -- it is pure integer arithmetic
 #   MX.mx_pool_perm(nn: U32, ni: U32)                             # `_pool`'s PERMUTE order.
@@ -768,13 +768,13 @@ def mxm_len_u32(xs: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, xs)
 
 # THE WHOLE OF `_shape` FOR A MOVEMENT OP (ops.py:409-431), as a DISPATCH on the
 # marg's tag. Every arm is arithmetic over values already read, which is the whole
-# point: `fold.bend`'s `None{}` for these five ops (uop/fold.bend:1685 symbol=sym_dim.end) is replaced
+# point: `fold.bend`'s `None{}` for these five ops (uop/fold.bend:1670 symbol=sym_dim.end) is replaced
 # by calls that need no rewrite engine, and `fold.bend` is READ-ONLY here so the arms
 # are supplied for a consumer to call rather than installed in the fold.
 #
 # `UNSHARD` and `REDUCE` are NOT here: UNSHARD needs `vmax` (ops.py:432) and REDUCE
 # needs `self.arg[1]`, and `fold.bend` defers UNSHARD for the same reason
-# (uop/fold.bend:1685 symbol=sym_dim.end). `SPLIT_REDUCE` is the same arm as REDUCE.
+# (uop/fold.bend:1670 symbol=sym_dim.end). `SPLIT_REDUCE` is the same arm as REDUCE.
 #
 # the sels are declared in call-chain order, bottom first, because Bend has no
 # forward references and the `match`-on-a-parameter shape needs the leaf to exist.
@@ -973,7 +973,7 @@ def G.stk4(+ar: O.Arena, a: U32, b: U32, c: U32, d: U32) -> O.Found:
 # than ...") -- SO THE CONST INTERNING IS IN A `push` DEF (WHICH
 # IS A SMALLER EXPRESSION THAN THE MATCH) AND THE RECURSION CARRIES
 # THE TAIL AND THE NEW STATE -- EXACTLY THE IDIOM THE PORT
-# ALREADY USES AT `tn_sarg.acc` (`tensor.bend:1583`).
+# ALREADY USES AT `tn_sarg.acc` (`tensor.bend:1566`).
 #
 # AND THE STATE IS A `Data` RECORD BECAUSE THE ARENA AND THE
 # INDEX LIST AND THE TAIL ALL HAVE TO CROSS THE RECURSION AND
@@ -1269,7 +1269,7 @@ def pool_wide_row() -> IO(Unit):
 # four wrappers that call `_mop`, and the reason it is a separate section is the
 # IDENTITY TEST: every one of them ends `return self if ret.shape == self.shape else
 # ret` (movement.py:185, :190, :194, :231, :254), so the wrapper needs the shape of the
-# node it JUST BUILT -- and `uop/fold.bend:1685 symbol=sym_dim.end` does not answer that for PAD, SHRINK,
+# node it JUST BUILT -- and `uop/fold.bend:1670 symbol=sym_dim.end` does not answer that for PAD, SHRINK,
 # EXPAND, FLIP or PERMUTE.
 #
 # THE MERGE POINT, and it is the reason this section is buildable at all. The
@@ -1378,7 +1378,7 @@ def mxw_fold_shape(ar: O.Arena, u: U32) -> List<&2, U32>:
   mxw_fold_shape.go(mxw_dims(ar, u), Nil{})
 
 # THE MERGE POINT. The shape of ANY node: `mxm_shape` for the six movement ops that
-# `uop/fold.bend:1685 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's identity
+# `uop/fold.bend:1670 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's identity
 # test goes through here, and it is ONE def rather than six call sites because the six would
 # each have to re-derive the op test and each of them is a chance to disagree about which ops
 # are movement ops.
@@ -1401,7 +1401,7 @@ def mxw_shape_of(fuel: Nat, mv: Bool, +ar: O.Arena, +u: U32) -> List<&2, U32>:
     case 1n+p True{}: mxm_shape(mxm_marg(ar, u), mxw_shape_of(p, mxw_mv(O.Arena.op(ar, O.Arena.src0(ar, u))), ar, O.Arena.src0(ar, u)))
 
 # THE MERGE POINT. The shape of ANY node: `mxm_shape` for the six movement ops that
-# `uop/fold.bend:1685 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's
+# `uop/fold.bend:1670 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's
 # identity test goes through here, and it is ONE def rather than six call sites because
 # the six would each have to re-derive the op test and each of them is a chance to
 # disagree about which ops are movement ops.
@@ -1424,7 +1424,7 @@ def mxw_same(+ar: O.Arena, +ret: U32, +self: U32) -> Bool:
 
 # --- THE GRAPH INSPECTOR, part two: the numbers and the base ---------------
 #
-# NODE COUNT, and the fuel is `Arena.budget` (ops.bend:3402) = `next + edges`, which is
+# NODE COUNT, and the fuel is `Arena.budget` (ops.bend:3400) = `next + edges`, which is
 # the worklist bound the notes record. A cheaper fuel HANGS rather than answering short
 # and `toposort` on a fuel that runs out returns a PARTIAL list -- so a wrong fuel is a
 # wrong node count that looks like a plausible number, which is the failure mode a count
@@ -1566,7 +1566,7 @@ def mxw_pairs_node(+t: T.Tensor, +op: O.Op, +a: O.Found, +b: O.Found) -> T.Tenso
 
 # --- a NON-MOVEMENT node, for W7's row --------------------------------------
 # `x + 3` is `ADD(RESHAPE, CONST)` and `fold.bend` answers an ADD's shape by inheriting
-# it from its src (uop/fold.bend:1662 symbol=sym_dim.range, the Broadcastable arm). It exists ONLY to give
+# it from its src (uop/fold.bend:1647 symbol=sym_dim.range, the Broadcastable arm). It exists ONLY to give
 # `mxw_shape_of`'s non-movement arm a fixture; no wrapper below calls it.
 def mxw_add_new2(+c: O.Found, +t: T.Tensor) -> O.Found:
   O.UOp.new(O.Found.ar(c), O.OpsADD{}, [T.Tensor.u(t), O.Found.i(c)], O.ANone{}, O.TNone{})

@@ -6,7 +6,7 @@
 ELEVEN ROWS, THREE LANES. CPython's `Tensor.ceil` (elementwise.py:656) is
 `(self > (b := self.trunc())).where(b+1, b)`. CPython's `Tensor.floor`
 (elementwise.py:662) is `(self < (b := self.trunc())).where(b-1, b)`. The
-wall text at `nn/__init__.bend:241` cited `_broadcasted` as the blocker for
+wall text at `nn/__init__.bend:230` cited `_broadcasted` as the blocker for
 `where` and Tensor-arith as the blocker for `b+1` / `b-1`. With `tn_where`,
 `tn_trunc`, `tn_rcmplt`, `tn_cmplt`, `tn_add`, `tn_sub` and `O.UOp.const`
 all ported, the no-broadcasting case of both `ceil` and `floor` is built

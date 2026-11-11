@@ -846,7 +846,7 @@ def frag_sz_div(sz: U32) -> U32: frag_lowbit(sz)
 # halvings to reach 0 -- so `mem_bitlen_max_*` is the row that says the fuel is
 # never the binding constraint.
 # `Base` HAS `U32.log2`, defined by the same bit-walking fold
-# (`base.bend:1446`: `U32.log2.go(5n, n, 0n)`), so this is NOT a
+# (`base.bend:1445`: `U32.log2.go(5n, n, 0n)`), so this is NOT a
 # re-derivation -- `bitlen1` is `1 + log2` plus `x.bit_length(0) == 0`, which is
 # the one case `log2` alone does not give. `U32.log2` returns a `Nat`, so the
 # `U32 -> Nat -> U32` round trip is the shape and `mem_bitlen_*` gates the

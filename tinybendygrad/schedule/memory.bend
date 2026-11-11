@@ -189,7 +189,7 @@ def mem_collect_of(fuel: Nat, ar: O.Arena, u: U32) -> List<&2, U32>:
 # the question. The unplannable TAGS are therefore a PARAMETER (`unpl`), and WHO
 # SUPPLIES IT IS A MEASUREMENT, not a plan: `unpl() = [1, 4]` (`:1002`) is a LITERAL
 # beside the fixtures, and `disk() = S.D1{1}` (`:999`) is this file's OWN tag space,
-# which DISAGREES with `device.bend:381 symbol=tag_of`'s `tag_of("DISK") = 6` -- `uop/validate.bend`'s
+# which DISAGREES with `device.bend:376 symbol=tag_of`'s `tag_of("DISK") = 6` -- `uop/validate.bend`'s
 # `c2d` note records the disagreement and refuses to arbitrate it. So the two tag
 # spaces are the reason the literal is hand-written, and a `U32 -> String` table (P6)
 # is what would replace it with the prefix test itself. That table is THE PORT'S OWN

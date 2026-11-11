@@ -54,7 +54,7 @@ import ./../tinybendygrad/nn/state.bend as St
 # POSITION THAT IS NOT ZERO ACTUALLY GETS READ, AND NO ROW READS IT.
 #
 # THE PORT HAS NO `TensorIO` OBJECT AND THAT IS FINE FOR BOTH HALVES, AND THE REASON IS
-# NAMED IN THE PORT's OWN FILE: `tinybendygrad/nn/state.bend:498` records
+# NAMED IN THE PORT's OWN FILE: `tinybendygrad/nn/state.bend:480` records
 # `TODO(p3) state.py:8 TensorIO -- io.RawIOBase; readinto (:17) needs .data() (REALIZATION,
 # tensor.bend WALL 4) and buffer[:n] = data mutates a Python bytearray, which no Data record
 # can express.`  AND BOTH HALVES OF THE UPSTREAM TEST ARE ABOUT THINGS THAT ARE NOT

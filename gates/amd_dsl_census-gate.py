@@ -108,7 +108,7 @@ THE 31 DIVERGENCES, THREE CLASSES, PINNED ON BOTH SIDES, EVERY CLASS MEASURED.
       why one class held two families and only the `_align = 4` half moved. THE FIX CALLS
       `ALIGN_SHIFT_2`/`ALIGN_SHIFT_4`, WHICH WERE DEAD (`grep -c` answered 2 -- their own two
       definitions) -- the third instance of this file's own recorded class, and the file's note at
-      `dsl.bend:870` had already stated the correct rule.
+      `dsl.bend:859` had already stated the correct rule.
 
   ~~12 `HI_BIT`~~ **TWO DEFECTS, AND HALF THE CLASS WAS A RIGHT ANSWER FOR A WRONG REASON.**
       (i) `vgpr_encode.hi` read `fit(set, or(set, X, f), v, f)`: it OR'd bit 7 in and THEN tested
@@ -129,7 +129,7 @@ THE 31 DIVERGENCES, THREE CLASSES, PINNED ON BOTH SIDES, EVERY CLASS MEASURED.
       default does not encode (:224 wants a Reg) and keeps a refusal.
 
   ~~10 `MOD_MERGE`~~ **THE CAUSE IS NOW ESTABLISHED; IT WAS NOT INSIDE `Bool.pick`.**
-      `base.bend:504` is `match c: case False{}: b / case True{}: a` -- the call read as written.
+      `base.bend:503` is `match c: case False{}: b / case True{}: a` -- the call read as written.
       `mod_merge` put an OUTER `Bool.pick` around the answer with the literal `0` as its else arm
       and `Bool.and(has, U32.is_zero(bits))` as its condition, so it answered 0 for every case
       where `has` is false OR `bits` is nonzero: every case worth encoding. CPython's
@@ -265,7 +265,7 @@ THE FOUR FINDINGS THAT ARE NOT DIVERGENCES, BECAUSE BOTH SIDES AGREE.
 
   B. **THE GENERATOR IS GONE.** `.agents/slop/dsl_gen.py` and
      `.agents/slop/dsl_constmap.py` are both absent (measured above), so the 1177
-     rows cannot be regenerated or extended, only compared. `dsl.bend:1878` and
+     rows cannot be regenerated or extended, only compared. `dsl.bend:1853` and
      :45 cite them as if they were present.
 
   C. **THE FIXTURE OP NAMES ARE NOT OPCODES.** MEASURED: of `dsl.bend`'s five
@@ -590,7 +590,7 @@ KIND = {"plain": "BitField", "fixed": "FixedBitField", "enum": "EnumBitField",
 # MEASURED, CPython's own `_walk` on `VOP2_ALL` with `op=0` REFUSES:
 # `FixedBitField does not accept values, got 0`, word `0`.  So the port was
 # feeding a field a value CPython would reject.  Nothing could see it: the guard
-# dropped the value, `fld_encode.k`'s K_FIXED arm (`dsl.bend:1287`) does not READ
+# dropped the value, `fld_encode.k`'s K_FIXED arm (`dsl.bend:1272`) does not READ
 # the value, and the packed word is the same either way.  That is the same
 # one-line blind spot twice -- the guard, and then the fixture.
 #

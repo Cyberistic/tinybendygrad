@@ -157,7 +157,7 @@ ACCESSOR = re.compile(
     r"\s*case\s+(\w+)\{([^}]*)\}\s*:\s*(\w+)\s*$", re.M)
 
 #: A RECORD TYPE: `type T is Data:` and the next line's `T{field: Type, ...}`.
-#: AND THE ONE-LINE SPELLING, because the pin's `sz.bend:1479` writes
+#: AND THE ONE-LINE SPELLING, because the pin's `sz.bend:1451` writes
 #: `type Run is Data: Run{text: String, ...}` on ONE line and the first version of this
 #: regex missed it.  MEASURED: the two shapes are both in the tree, so a regex that
 #: admits one of them is a census that cannot see half the port's record types.

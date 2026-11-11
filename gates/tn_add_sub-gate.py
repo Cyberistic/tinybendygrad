@@ -7,13 +7,13 @@ SEVENTEEN ROWS, THREE LANES. CPython's `Tensor.__add__` (elementwise.py:267, via
 `add` at :84) is `a, b = self._broadcasted(x, reverse); return a.alu(Ops.ADD,
 -b)`. The `-b` is a CONST trap (and a unary minus on a Tensor is also walled),
 so for two Tensors of the same shape (the no-broadcasting case the wall text
-at `nn/__init__.bend:241` cited as the blocker) `_broadcasted` is identity and
+at `nn/__init__.bend:230` cited as the blocker) `_broadcasted` is identity and
 the body reduces to `_binop`'s shape (elementwise.py:36) with `MUL` replaced by
 `ADD`: `__add__` is `self.alu(ADD, x)` -- srcs `(self, x)`. The `reverse=True`
 arm swaps: `__radd__` is `x.alu(ADD, self)` -- srcs `(x, self)`. CPython's
 `__sub__` (elementwise.py:270, via `sub` at :103) and `__rsub__`
 (elementwise.py:297) are the same shape with `Ops.SUB` instead of `Ops.ADD`.
-The wall at `nn/__init__.bend:241` named `_broadcasted` as the blocker; with
+The wall at `nn/__init__.bend:230` named `_broadcasted` as the blocker; with
 `tn_add` / `tn_radd` / `tn_sub` / `tn_rsub` ported, the no-broadcasting case
 of all four dunders is covered. The broadcasting case stays walled on
 `_broadcasted`.

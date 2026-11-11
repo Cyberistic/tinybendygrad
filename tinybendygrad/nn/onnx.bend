@@ -81,7 +81,7 @@ import ./../uop/ops.bend as O
 #   CONV, CONVTRANSPOSE, MAXPOOL, AVGPOOL -- `_resolve_pool_pads` is PORTED and
 #     GATED; the bodies (onnx.py:642-675) then call `x.max_pool2d` / `x.avg_pool2d` /
 #     `x.conv2d` / `x.conv_transpose2d`, which reach `mixin/op.bend`'s `_pool`
-#     (its W4/W8) and `fold.bend:1654 symbol=sym_dim.signable`'s refusal to answer EXPAND/SHRINK/
+#     (its W4/W8) and `fold.bend:1639 symbol=sym_dim.signable`'s refusal to answer EXPAND/SHRINK/
 #     PAD/FLIP. So the padding is decidable and the OUTPUT SHAPE is not, and the
 #     file does NOT fake a shape row for them.
 #   GATE / BN / LIN / GLOBALPOOL / LEAKYRELU / SCALE -- these are not node types
@@ -293,7 +293,7 @@ def onx_at_name_rev.of(m: Maybe<&1, U32>) -> U32:
 # name it does not spell itself (`uint8`->uchar, `int8`->char, `int32`->int,
 # `int64`->long, `int16`->short, `uint16`->ushort, `uint32`->uint,
 # `uint64`->ulong, `float`->float32, `float16`->half, `double`->float64).
-# `DT.to_dtype_of` (dtype.bend:509 symbol=to_dtype_of) IS that table, already ported, so it is
+# `DT.to_dtype_of` (dtype.bend:488 symbol=to_dtype_of) IS that table, already ported, so it is
 # CALLED and not re-spelled -- which is what makes `onx_odt_dt` a real lookup
 # through the production path rather than a restatement of it.
 
@@ -1421,7 +1421,7 @@ def onx_halve.of(+neg: Bool, +x: H.I64) -> H.I64:
 def onx_halve(+x: H.I64) -> H.I64: onx_halve.of(H.i64_is_neg(x), x)
 
 # A CORRECT 64-BIT SUBTRACTION, carried here because `helpers.bend`'s is WRONG.
-# MEASURED on `H.i64_sub` (helpers.bend:1733-1735), against CPython:
+# MEASURED on `H.i64_sub` (helpers.bend:1692-1694), against CPython:
 #     case            CPython          H.i64_sub
 #     5 - 7           4294967295:4294967294   0:4294967294      <- no borrow
 #     1 - (-1)        0:2             1:2                <- no borrow
@@ -1892,7 +1892,7 @@ def main() -> IO(Unit):
 #   of these is a mixin method belonging to another file:
 # wall(p3) onnx.py:543  contiguous_1 / :547 If / :564 Identity / :565 Constant / -- blocked: needs x.contiguous, which the port's `mixin/elementwise.bend` no longer carries -- upstream's `elementwise.py:59` is the record -- and Tensor.eye (not defs); If needs an OnnxRunner value (:67-69) and ImageDecoder needs pil (:72).
 #   :575 Range / :578 ImageDecoder / :587 EyeLike / :591 OptionalHasElement /
-#   :593 ConstantOfShape / :597 Size / :598 Shape, and the port's own pointer for `contiguous` is mixin/elementwise.bend:926 symbol=contiguous
+#   :593 ConstantOfShape / :597 Size / :598 Shape, and the port's own pointer for `contiguous` is mixin/elementwise.bend:907 symbol=contiguous
 # wall(p3) onnx.py:601  Not / Clip / IsInf -- blocked: needs x.clip, which the port's `mixin/elementwise.bend` no longer carries -- upstream's `elementwise.py:586` is the record -- and x.isinf (:832) (not defs); x.logical_not is ported (ew_logical_not).
 # TODO(p3) onnx.py:526  softmax_1 / softmax_13 / HardSigmoid / Gelu / BiasGelu /
 #   FastGelu / PRelu / LeakyRelu / ThresholdedRelu / LogSoftmax / Hardmax /
@@ -1905,8 +1905,8 @@ def main() -> IO(Unit):
 # wall(p3) onnx.py:647  Max / Min / Sum / Mean / ReduceMax / ReduceMin / -- blocked: needs x.argmax and x.argmin (not defs, op.bend:11); the reduce mixins are ported (mo_max/mo_min/mo_sum/mo_mean, op.bend:819/:1117/:803/:883) and _axes is ported and gated (:479).
 #   ReduceSum / ReduceMean / ReduceSumSquare / ReduceProd / ReduceL1 / ReduceL2 /
 #   ReduceLogSum / ReduceLogSumExp / ArgMax / ArgMin. `_axes` (:479) is PORTED and
-#   GATED, so only `x.max`/`x.min`/`x.sum`/`x.mean`/`x.argmax` are missing, and the port's own pointer for `clamp` is mixin/elementwise.bend:933 symbol=clamp
-# WALL(p3) onnx.py:679  Reshape / Flatten / Expand / Shrink / Transpose / Squeeze / -- BLOCKED: needs x.unsqueeze (NOT a def); x.reshape/x.pad/x.shrink ARE ported (mxw_reshape/mxw_pad/mxw_shrink) and _broadcast_shape IS bcast_shape (fold.bend:667); Pad's own wall is fold's PAD refusal (:96-100).
+#   GATED, so only `x.max`/`x.min`/`x.sum`/`x.mean`/`x.argmax` are missing, and the port's own pointer for `clamp` is mixin/elementwise.bend:914 symbol=clamp
+# WALL(p3) onnx.py:679  Reshape / Flatten / Expand / Shrink / Transpose / Squeeze / -- BLOCKED: needs x.unsqueeze (NOT a def); x.reshape/x.pad/x.shrink ARE ported (mxw_reshape/mxw_pad/mxw_shrink) and _broadcast_shape IS bcast_shape (fold.bend:663); Pad's own wall is fold's PAD refusal (:96-100).
 #   Unsqueeze / Tile / Concat / Slice / Split / Pad / CenterCropPad
 # wall(p3) onnx.py:724  AveragePool / MaxPool / Conv / ConvTranspose / MaxUnpool / -- blocked: needs x.avg_pool2d/x.max_pool2d/x.conv2d/x.conv_transpose2d (not defs) -- the padding is decidable and the output shape is not (mixin/op.bend's `_pool`; fold.bend refuses expand/shrink/pad/flip), plus x.einsum (op.bend W2) and x.cumsum/x.trilu/x.topk.
 #   GlobalAveragePool / GlobalMaxPool / Gemm / Einsum / CumSum / Trilu / Resize /

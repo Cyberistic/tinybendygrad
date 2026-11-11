@@ -235,7 +235,7 @@ def lbcall() -> LBFx:
     [O.Found.i(body), O.Found.i(a0), O.Found.i(a1), O.Found.i(a2), O.Found.i(a3)], O.ANone{}, O.TNone{})
   LBFx{c, O.Found.i(a0), O.Found.i(a1), O.Found.i(a2), O.Found.i(a3)}
 
-# `Map.get` answers a `Sigma`, not the value -- `render.bend:1064`'s `ctx_get.of`
+# `Map.get` answers a `Sigma`, not the value -- `render.bend:1039`'s `ctx_get.of`
 # is the tree's own projection, and this is the same match.
 def lbget.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>) -> U32:
   match r:

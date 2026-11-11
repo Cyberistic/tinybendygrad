@@ -31,7 +31,7 @@
 #
 # `am_pick` IS THE MASK-TIMES-COUNTER (`idx[j]`), `am_max` IS `self.max`, AND `am_best`
 # is `idx.max`. `Bool.pick` and not `match` on a computed value: `match` may not
-# SCRUTINISE A CALL (BEND'S RULE 1), AND `tinybendygrad/uop/ops.bend:8991 symbol=fs.pinfo.of` IS THE
+# SCRUTINISE A CALL (BEND'S RULE 1), AND `tinybendygrad/uop/ops.bend:8547 symbol=fs.pinfo.of` IS THE
 # tree's own counter-example of what that costs -- a `match` on a call there poisoned
 # EVERY FILE THAT IMPORTS `uop/ops.bend`.
 #
@@ -111,7 +111,7 @@ def nn_argmax.row(nm: String, vals: List<&2, F32>, want: U32) -> IO(Unit):
 # the `n` -- `self.shape[axis]` -- is carried in a record and not in a `U32`, because
 # a `U32` is consumed once and `n` is needed twice: once for the `arange` and once for
 # the subtraction. the tree's own spelling of this is `mixin/rand.bend`'s `U1`
-# (`mixin/rand.bend:270-274`), and it is the same fact and the same fix.
+# (`mixin/rand.bend:268-272`), and it is the same fact and the same fix.
 type AN is Data:
   AN{v: U32}
 
@@ -124,7 +124,7 @@ def AN.v(q: AN) -> U32:
 def nn_argmax_g.mx(+t: T.Tensor) -> T.Tensor: L.nn_reduce(t, [0], O.OpsMAX{}, True{})
 
 # NODE 1b -- `self.eq(...)`. UPSTREAM'S `eq` IS A `CMPEQ` (`mixin/elementwise.py`), AND
-# THE PORT SPELLS IT `NOT(CMPNE)` IN `mixin/op.bend:628 symbol=mo_eqc`'s `mo_eqc` -- SO THE `CMPEQ`
+# THE PORT SPELLS IT `NOT(CMPNE)` IN `mixin/op.bend:618 symbol=mo_eqc`'s `mo_eqc` -- SO THE `CMPEQ`
 # is built directly here and the `NOT` is not built, which is upstream's graph and not
 # THE PORT'S OWN SPELLING.
 def nn_argmax_g.m(+t: T.Tensor, +mx: T.Tensor) -> T.Tensor: M.mo_bin(t, O.OpsCMPEQ{}, mx)
@@ -164,14 +164,14 @@ def nn_argmax_g(+t: T.Tensor, +q: AN, +dev: S.Dev) -> T.Tensor:
 # the readers the graph rows use. they do not use `nn/layers.bend`'s `nn_shape`,
 # AND THAT IS THE POINT.
 #
-# `nn_shape` (nn/layers.bend:94) IS `nn_u32(M.mo_dims(F.folded(...)))`, AND `mo_dims`
-# (mixin/op.bend:281) answers `Nil{}` for three different things: a node the FOLD
+# `nn_shape` (nn/layers.bend:92) IS `nn_u32(M.mo_dims(F.folded(...)))`, AND `mo_dims`
+# (mixin/op.bend:279) answers `Nil{}` for three different things: a node the FOLD
 # cannot resolve, a node with no shape, and a node whose shape is the empty list --
-# A 0-dim SHAPE. `nn_u32` (nn/layers.bend:100 symbol=nn_u32) MAPS `Nil{}` BACK TO
+# A 0-dim SHAPE. `nn_u32` (nn/layers.bend:98 symbol=nn_u32) MAPS `Nil{}` BACK TO
 # `Some{[]}`, SO
 # `nn_shape` cannot tell a refusal from a 0-dim shape. upstream's `imx` is 0-dim,
 # so a reader that conflates the two would print `()` for a refusal and the row would
-# pass on nothing. the reader below asks `F.fold.shape` (uop/fold.bend:4827 symbol=fold.shape), which
+# pass on nothing. the reader below asks `F.fold.shape` (uop/fold.bend:4779 symbol=fold.shape), which
 # answers the double `Maybe`: the outer is "the node is in the FOLD's table" and the
 # inner is "the node has a shape", and the two are not the same question.
 

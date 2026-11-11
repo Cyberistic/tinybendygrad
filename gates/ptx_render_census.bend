@@ -7,7 +7,7 @@
 # fact is the whole design of this file, because the module's BODY comes from TWENTY-THREE
 # `string_rewrite` rules of which the port has NONE (`grep -c 'string_rewrite' -w
 # tinybendygrad/renderer/tc_ptx.bend` is 0 -- MEASURED; the single hit is a comment at
-# `tc_ptx.bend:272`). So:
+# `tc_ptx.bend:264`). So:
 #
 #   * EVERY ROW BOTH LANES CAN PRODUCE IS COMPARED, and the value is the WHOLE answer in
 #     its own canonical text with TAB and LF spelled `\t` and `\n` by `TP.esc`, the SAME

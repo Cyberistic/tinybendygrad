@@ -38,7 +38,7 @@ from tinygrad.uop.ops import UOp
 
 
 def shape_of(u: UOp) -> str:
-  """`_shape` rendered the way `F.dims_str` renders it (`fold.bend:5817`): `(` joined
+  """`_shape` rendered the way `F.dims_str` renders it (`fold.bend:5757`): `(` joined
   `)`, NO trailing comma, so the two lanes' spelling is the same string."""
   s = u._shape
   return "none" if s is None else "(" + ",".join(str(x) for x in s) + ")"

@@ -55,10 +55,10 @@ SO THE RULE IS STRUCTURAL, AND THE ROW-MAKER SET IS DISCOVERED FROM THE PORT, NE
 tag is a quoted string **iff it lies inside the FIRST ARGUMENT of a call to a ROW-MAKER**, and a
 row-maker is a function **the port defines** whose **first parameter is the row name** (`nm`).
 MEASURED, the port's own definitions: `def r_lt(+nm: String, +d: S.Dt) -> String:` at
-`tinybendygrad/renderer/llvmir.bend:481`, `def lf_row(nm: String, b: Bnd2) -> IO(Unit):` at
-`tinybendygrad/uop/fold.bend:4661`, `def srow(nm: String, v: String) -> IO(Unit):` and
-`def urow(nm: String, v: U32) -> IO(Unit):` at `tinybendygrad/examples/train_resnet.bend:106,108`,
-and `def u1(nm: String, v: U32) -> String:` at `tinybendygrad/runtime/support/usb.bend:98`. The
+`tinybendygrad/renderer/llvmir.bend:462`, `def lf_row(nm: String, b: Bnd2) -> IO(Unit):` at
+`tinybendygrad/uop/fold.bend:4614`, `def srow(nm: String, v: String) -> IO(Unit):` and
+`def urow(nm: String, v: U32) -> IO(Unit):` at `tinybendygrad/examples/train_resnet.bend:104,108`,
+and `def u1(nm: String, v: U32) -> String:` at `tinybendygrad/runtime/support/usb.bend:96`. The
 gate PRINTS the set it discovered and WHERE each definition is, so a reader can re-run the grep
 and see that the set is not a list somebody typed. The port's def names are DOTTED
 (`Enc.emit.head`, `Op.in_.go`), so a call is matched on its LAST COMPONENT too.

@@ -209,7 +209,7 @@ def main() -> int:
     rrows, rtoken = run_lane1()
     # "MOVED" MEANS: a row this gate cares about CHANGED, and NO row went ABSENT. Tying the
     # criterion to `mxw_buf_*` was too narrow and it FAILED a real defect -- planting
-    # `uop/fold.bend:4308` moves that node's `src[0]` without touching `mxw_buf`, and the
+    # `uop/fold.bend:4264` moves that node's `src[0]` without touching `mxw_buf`, and the
     # check called the unchanged row a non-movement. Tying it to "the row differs" was too
     # weak: a malformed plant makes the lane emit NOTHING, every row goes absent, and that
     # reads as maximal change. Both halves are required.

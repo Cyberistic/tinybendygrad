@@ -4,7 +4,7 @@
     .venv/bin/python gates/tn_relu6-gate.py
 
 FIVE ROWS, THREE LANES. CPython's `Tensor.relu6` (elementwise.py:697) is
-`((r := self.relu()) < 6).where(r, 6)`. The wall text at `nn/__init__.bend:241`
+`((r := self.relu()) < 6).where(r, 6)`. The wall text at `nn/__init__.bend:230`
 cited `_broadcasted` as the blocker. The `self.relu()` and the `< 6` are
 both ported (`tn_relu`, `tn_rcmplt`); the `where` is `tn_where` (port). The
 constant 6 is `O.UOp.const` (port). The port is a chain: `tn_relu(t)` produces

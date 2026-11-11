@@ -149,7 +149,7 @@ def pool_shape(shape, k, stride):
 def const_like_sig(shape):
   """`Y.const_like(True, dtypes.bool)` (op.py:1740) as a SIGNATURE, because its shape is
   ONE-dimensional -- and a one-element shape arg is a BARE CONST
-  (`tinybendygrad/tensor.bend:587`, CPython's ops.py:110), which `mxm_as_shape` reads no
+  (`tinybendygrad/tensor.bend:580`, CPython's ops.py:110), which `mxm_as_shape` reads no
   srcs from and therefore answers `Nil{}` for. So the ONE-dim shape is un-gateable and
   the ONE-dim GRAPH is, which is the row `w3_mask`."""
   return sig(Tensor.empty(shape, dtype=dtypes.i64).const_like(True, dtypes.bool))
@@ -221,7 +221,7 @@ print("w3_mask2d=" + ",".join(str(x) for x in const_like_dims((4, 10))))
 # ONE ULP apart, and neither lane is wrong. The other three scales agree bit for bit.
 #
 # unverified_lin2   needs the 2-D `dot` graph; the Bend lane mints a CAST and drops a
-#                   PERMUTE because uop/fold.bend defers PERMUTE's dtype (fold.bend:1621)
+#                   PERMUTE because uop/fold.bend defers PERMUTE's dtype (fold.bend:1607)
 # unverified_adam   nn.optim.Adam == LAMB(adam=True) (optim.py:139) and
 #                   nn/optim.bend's own `unverified_lamb` row is RED: 1 node vs CPython's 49
 # row_round_2.3456  measures H.f32_fixed(2.3456, 2n) == "2.35"; it prints False

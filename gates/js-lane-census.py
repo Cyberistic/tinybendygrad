@@ -13,7 +13,7 @@ THREE QUESTIONS, THREE SECTIONS, AND THE FIRST ONE IS THE ONE THAT MATTERS.
          `M8` class (`a green gate cannot distinguish "not triggered" from "no such thing"`)
          and a control is the only thing that separates it from a coverage gap.
          MEASURED at the time of writing: all TEN of `dtype.js`'s `Dt.*` registrations are
-         absent from a bundle that calls all ten, and `dtype.bend:607,748,916,1060-1103` are
+         absent from a bundle that calls all ten, and `dtype.bend:584,748,916,1060-1103` are
          PURE with no import, so the lane contributes ZERO bytes to the bundle.
 
   AGREE  Two lanes over the SAME rows -- CPython with every expectation CALLED from
@@ -49,7 +49,7 @@ see is a row that will be read as more than it is.
                             CPython's own `_fp8_cfg`; the rest is a FIXED LCG walk, so the
                             blind spot is a defect whose support misses both.
   Dt.i64_*                  a fixed pair set, not a proof. `Dt.i64_trunc` is the identity in
-                            `dtype.bend:1064`, so ITS row cannot distinguish a seam that
+                            `dtype.bend:1034`, so ITS row cannot distinguish a seam that
                             works from a seam that is not there.
   every row                 ONE f32 pattern per fp8 case, chosen by this file's LCG. A
                             defect that needs a pattern no walk reaches is invisible, and
@@ -184,7 +184,7 @@ PLANTS = {
                     "((s | (103 << 23) | (m  << 14)) >>> 0)")],
     # `dtype.c:205` opens with `if ((x & 0x7F800000u) == 0x7F800000u) return x;` and says why
     # in five lines -- a non-finite is a PASS-THROUGH in `dtype.py:230`, not saturation, so
-    # a NaN's payload and sign survive.  `dtype.bend:609` has the same `Bool.pick` guard.
+    # a NaN's payload and sign survive.  `dtype.bend:586` has the same `Bool.pick` guard.
     # `dtype.js:151` has neither, and it is the only lane of the three that does not.
     "bf16-pass-plant": [("function dtype_bf16(u) {\n  return of32(",
                          "function dtype_bf16(u) {\n  if ((u & 0x7f800000) === 0x7f800000) "
@@ -193,7 +193,7 @@ PLANTS = {
     "bf16-pass-disarm": [("function dtype_bf16(u) {\n  return of32(",
                           "function dtype_bf16(u) {\n  return  of32(")],
     # THE FOURTH DEFECT, WHICH NO PLANT NAMED: the JS lane's f16 SUBNORMAL arm has no
-    # ROUND-HALF-TO-EVEN on the bits it drops, where `dtype.c:156-157` and `dtype.bend:648`
+    # ROUND-HALF-TO-EVEN on the bits it drops, where `dtype.c:156-157` and `dtype.bend:624`
     # both have it.  `f16-shift-plant` fixes the SHIFT and leaves this one behind, so the
     # `f16bits` class does not go to ZERO under it -- it goes to 43 -- and a class that does
     # not close is a class with a SECOND defect wearing one name.  This plant therefore
@@ -378,7 +378,7 @@ def i64_pairs() -> list[tuple[list[int], list[int]]]:
     `hi != lo` is what makes an ABI-3 pair-order defect visible at all: a record whose two
     words are equal cannot be read in the wrong order without being read correctly.
 
-    BOTH WORDS ARE `U32` -- `helpers.bend:1640` is `I64{hi: U32, lo: U32}` -- so a negative
+    BOTH WORDS ARE `U32` -- `helpers.bend:1600` is `I64{hi: U32, lo: U32}` -- so a negative
     word is NOT EXPRESSIBLE and the first draft carried `[0, -3]`, which the lane read as
     `0xFFFFFFFD` (4294967293) and CPython read as -3: **25 mismatches, every one of them
     this file's fixture.**  Negative operands go in as `hi = 0x80000000..` instead, which

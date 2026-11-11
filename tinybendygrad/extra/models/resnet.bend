@@ -21,13 +21,13 @@ import ./../datasets/__init__.bend as D
 # "`nn.Conv2d`, `nn.BatchNorm2d` and `nn.Linear` are all missing", and three units reported it as
 # stale while it was still TRUE-ish: `nn/layers.bend` and `nn/pool.bend` landed and closed it, and a
 # wall that has FALLEN is still NAMED as a wall. Measured now, by NAME, not by count --
-#   nn_conv2d     nn/layers.bend:937 symbol=nn_conv2d      nn_linear    nn/layers.bend:530 symbol=nn_linear
-#   nn_relu       nn/layers.bend:299 symbol=nn_relu      pool_bn      nn/pool.bend:382 symbol=pool_bn
-#   pool_maxpool  nn/pool.bend:251 symbol=pool_maxpool
+#   nn_conv2d     nn/layers.bend:923 symbol=nn_conv2d      nn_linear    nn/layers.bend:518 symbol=nn_linear
+#   nn_relu       nn/layers.bend:292 symbol=nn_relu      pool_bn      nn/pool.bend:371 symbol=pool_bn
+#   pool_maxpool  nn/pool.bend:244 symbol=pool_maxpool
 # WHAT IS ACTUALLY STILL MISSING, named and checked, and the distinction MATTERS: `vt_sequential`
 # and `vt_layernorm` DO exist -- one at upstream's `vt_sequential`
-# (`extra/models/vit.bend:153` symbol=vt_sequential) and upstream's
-# `vt_layernorm` at `extra/models/vit.bend:157` symbol=vt_layernorm -- but both are STUB
+# (`extra/models/vit.bend:145` symbol=vt_sequential) and upstream's
+# `vt_layernorm` at `extra/models/vit.bend:149` symbol=vt_layernorm -- but both are STUB
 # REFUSALS inside another model's stub, not ported layers. So "the name is absent" and "the layer is
 # absent" are DIFFERENT QUESTIONS, and a census that answers the first while being read as the second
 # is the same defect as this headline was. Genuinely ABSENT everywhere, 0 defs:
@@ -47,7 +47,7 @@ import ./../datasets/__init__.bend as D
 # 2026-10-19, because a deleted blocker is how the NEXT reader thinks nothing was ever missing.
 #   :227  `TODO(p3) mixin/op.py:1254  x.linear       -- ...`
 #
-# and `tinybendygrad/mixin/op.bend:1523` is the last line of that file and reads
+# and `tinybendygrad/mixin/op.bend:1502` is the last line of that file and reads
 # `# SIDE B's SECTION GOES BELOW THIS LINE.` -- so side b is the empty half.
 # `mixin/op.bend:13-15` enumerates it: "sequential, linear, the pools, the
 # convolutions, layernorm, batchnorm, the losses, qr, svd, keccak, hash". The
@@ -57,27 +57,27 @@ import ./../datasets/__init__.bend as D
 #
 #   EXISTS
 #     `Tensor`            tensor.bend (Tensors, tn_*)
-#     `dtypes`            dtype.bend:557 symbol=to_dtype `to_dtype` (upstream:2)
-#     `Tensor.relu`       tensor.bend:774 `tn_relu`                      (:29,:32,:57,:58,:61,:62,:109)
-#     `Tensor.cast`       tensor.bend:1389 `tn_cast.put`                (:121)
-#     `Tensor.shape`      tensor.bend:216 `tn_shape`                    (:148,:152)
-#     `Tensor.dtype`      tensor.bend:219 `tn_dtype`                    (:153)
-#     `Tensor.device`     tensor.bend:213 `tn_device`                   (:153)
-#     `Tensor.mean`       mixin/op.bend:954 symbol=mo_mean `mo_mean`                    (:120)
+#     `dtypes`            dtype.bend:536 symbol=to_dtype `to_dtype` (upstream:2)
+#     `Tensor.relu`       tensor.bend:767 `tn_relu`                      (:29,:32,:57,:58,:61,:62,:109)
+#     `Tensor.cast`       tensor.bend:1378 `tn_cast.put`                (:121)
+#     `Tensor.shape`      tensor.bend:211 `tn_shape`                    (:148,:152)
+#     `Tensor.dtype`      tensor.bend:214 `tn_dtype`                    (:153)
+#     `Tensor.device`     tensor.bend:208 `tn_device`                   (:153)
+#     `Tensor.mean`       mixin/op.bend:938 symbol=mo_mean `mo_mean`                    (:120)
 #     `Tensor.sequential` SIDE B -- see MISSING
-#     `get_state_dict`    nn/state.bend:318                              (indirectly, :141)
-#     `GlobalCounters.reset` helpers.bend:2584                           (:168)
-#     `Context`           helpers.bend:407 `Context.arg`                 (:165)
+#     `get_state_dict`    nn/state.bend:308                              (indirectly, :141)
+#     `GlobalCounters.reset` helpers.bend:2526                           (:168)
+#     `Context`           helpers.bend:402 `Context.arg`                 (:165)
 #     `fetch`             MISSING -- see MISSING
 #
 #   PARTIAL
-#     `Tensor.reshape`    `mxw_reshape` mixin/movement.bend:1431 and
-#                         `mo_reshape` mixin/op.bend:704 symbol=mo_reshape EXIST (:153) but the
+#     `Tensor.reshape`    `mxw_reshape` mixin/movement.bend:1414 and
+#                         `mo_reshape` mixin/op.bend:692 symbol=mo_reshape EXIST (:153) but the
 #                         upstream call is `reshape(obj.shape)` on a shape list
 #                         read back out of the layer, and there is no layer.
-#     `Tensor.pad`        `mxw_pad` mixin/movement.bend:1520 EXISTS. The
+#     `Tensor.pad`        `mxw_pad` mixin/movement.bend:1501 EXISTS. The
 #                         `:110` call `out.pad([1,1,1,1])` needs the layer first.
-#     `Tensor.max_pool2d` `mx_pool_f` mixin/movement.bend:300 symbol=mx_pool_f and
+#     `Tensor.max_pool2d` `mx_pool_f` mixin/movement.bend:296 symbol=mx_pool_f and
 #                         `mx_pool_shape` :902 are the POOL SHAPE ARITHMETIC and
 #                         the pool BODIES are SIDE B, so there is nothing to call.
 #
@@ -105,7 +105,7 @@ import ./../datasets/__init__.bend as D
 #     `Tensor.argmax`     `grep -rnE "^def mo_argmax" --include='*.bend'
 #                         tinybendygrad/` = 0. mixin/op.bend:11 lists `argmax`
 #                         inside SIDE A but NO def carries it, and `rc_arg`
-#                         mixin/reduce.bend:208 is a reduction internal, not
+#                         mixin/reduce.bend:203 is a reduction internal, not
 #                         `Tensor.argmax`.                                 (:17)
 #     `Tensor.item`       `grep -rnE "^def .*item" --include='*.bend'
 #                         tinybendygrad/` -> every hit is a renderer or an ELF
@@ -155,7 +155,7 @@ import ./../datasets/__init__.bend as D
 # in that def's body, so a refusal carries the address of the work.
 #
 # SIGNATURE TRANSLITERATION. Python classes have no Bend spelling and the port
-# already settled it (nn/__init__.bend:22-33): "each layer here is a def over
+# already settled it (nn/__init__.bend:21-32): "each layer here is a def over
 # its CONSTRUCTOR ARGUMENTS ... plus a `*_st` def that answers the ordered
 # `(name, tensor)` list that IS `__dict__`". So `BasicBlock.__init__` is
 # `rs_basic_block_init` over its five arguments with the two defaults spelled
@@ -167,7 +167,7 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 
-# the `Refused` accessor, in nn/state.bend:838 symbol=main's shape, so `main` can print the
+# the `Refused` accessor, in nn/state.bend:817 symbol=main's shape, so `main` can print the
 # address the refusal carries rather than discarding it.
 def rs_at(r: D.Refused) -> String:
   match r:

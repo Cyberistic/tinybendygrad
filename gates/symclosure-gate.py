@@ -21,7 +21,7 @@ DEPENDENCY RUNS FROM `pm_reduce_simplify` TO `symbolic`, so `symbolic` IS THE FI
 `pm_reduce_simplify` IS THE LAST.** MEASURED below on `pdict` totals, not on source lines.
 
 CAN `PMEntrys` EXPRESS THE COMPOSITION? YES, AND THE REASON IS THE TYPE. The port's `PMEntrys`
-is `Data` around `List<&2, PMEntry>` (`uop/ops.bend:4047`), every scanner takes that LIST
+is `Data` around `List<&2, PMEntry>` (`uop/ops.bend:3976`), every scanner takes that LIST
 (`pm_scan_m`, `pm_scan_f`) and tries it in order, so `a + b` is `List.concat([a.es, b.es])` and
 the first table wins for the same reason it wins upstream. AND THERE ARE TWO ANSWER TYPES, which
 is what makes `symbolic` portable at all: `pm_rewrite_m` answers `Maybe<U32>` -- an index and NO
@@ -74,8 +74,8 @@ TABLES = (
 # here and the list cannot quietly stay the same size.
 #
 # MEASURED 2026-11-06: THIS LIST WAS FOUR AND IS TWO. `fold_const_where` AND
-# `lift_reduce_gate` LANDED -- `fold_const_where` IS `sy_fcw` (`uop/symbolic.bend:6152`) AND
-# `lift_reduce_gate` IS `sym_90` (`uop/symbolic.bend:6683`) -- AND THE CENSUS AGREES: THE
+# `lift_reduce_gate` LANDED -- `fold_const_where` IS `sy_fcw` (`uop/symbolic.bend:6139`) AND
+# `lift_reduce_gate` IS `sym_90` (`uop/symbolic.bend:6666`) -- AND THE CENSUS AGREES: THE
 # UPSTREAM RULES THAT USE THEM ARE PORTED. `:209` (fold_const_where) IS `sym_table` TAG 65 AND
 # `:97` (lift_reduce_gate) IS TAG 6, BOTH `PORTED`.
 #
@@ -127,7 +127,7 @@ WALLS = ("UOp.tuplize", "uop_tup_cmp")
 #
 # AND THE SURFACE IS NOT ONE RULE: 151 defs mention the type, 53 rules are behind them, 58 rows
 # render through it, and 37 call sites mint. The row driver renders with the OLD arena
-# (`symbolic.bend:4506-4507`), so a minting rule that fires would print a node that does not
+# (`symbolic.bend:4494-4495`), so a minting rule that fires would print a node that does not
 # exist -- which is the same shape as the `sy_cconst_cast` defect, and the reason that defect
 # was invisible is that the case it would have corrupted is not in `symrules-cases.rows`.
 SYM_ANS = "Maybe<&1, U32>"

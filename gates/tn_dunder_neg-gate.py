@@ -4,7 +4,7 @@
     .venv/bin/python gates/tn_dunder_neg-gate.py
 
 FIVE ROWS, THREE LANES. CPython's `Tensor.__neg__` (elementwise.py:261) is
-`return self.neg()`. The port's `tn_neg` (tensor.bend:435) covers BOTH arms:
+`return self.neg()`. The port's `tn_neg` (tensor.bend:428) covers BOTH arms:
 the bool arm goes through `tn_logical_not` (CMPEQ), the arith arm goes through
 `tn_neg.arith` (MUL with -1 const). `tn_dunder_neg` is a thin wrapper that
 delegates to `tn_neg`. The five rows cover the bool op, the int op, the int

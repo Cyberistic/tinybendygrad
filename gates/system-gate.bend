@@ -44,7 +44,7 @@ def meta.bar(+hMemory: U32, +cpu_access: Bool) -> P.Meta: P.Meta.of(cpu_access, 
 # fallback give" as two separate claims -- a single-direction row could pass with the
 # fallback always on.
 #
-# THE CROSS-FILE CITATION. `.agents/TODO.md:1374` and `ops_rdma.bend:826` both record
+# THE CROSS-FILE CITATION. `.agents/TODO.md:1374` and `ops_rdma.bend:814` both record
 # that `peer_group` is "PCIDevice", not the device head, and both cite this line. THEY
 # AGREE WITH THE TABLE ABOVE, and this file gates the value directly rather than
 # taking the citation on trust. Reported, not reconciled.

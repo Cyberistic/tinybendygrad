@@ -6,7 +6,7 @@
 WHAT THIS GATES. `tinybendygrad/uop/fold.bend` prints nine `vb_` rows -- one per fixture --
 carrying `base`/`unsharded_base`/`storage_base`/`is_virtual` for the same graphs CPython's
 `UOp` carries them for. Until this gate existed the comparison was a `diff` written in a
-COMMENT (`fold.bend:6454-6458`) and the oracle that made it possible was an UNTRACKED file
+COMMENT (`fold.bend:6388-6392`) and the oracle that made it possible was an UNTRACKED file
 under `.agents/slop/` -- the directory this tree is pruning -- so the port's nine rows were
 proven by a script nobody ran, against an oracle a prune could delete. `AGENTS.md`: "A GATE'S
 REQUIRED INPUT BELONGS BESIDE THE GATE IN GIT". The oracle and the plant are beside this

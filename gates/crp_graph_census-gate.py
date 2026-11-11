@@ -256,7 +256,7 @@ CPY_METHOD = re.compile(r"^ *def ([a-z_0-9]+)\((?:self|cls)[,)]", re.M)
 PORT_DEF = re.compile(r"^def ([a-z_0-9]+)\(", re.M)
 # `SPEC_DT` STOPS AFTER `<bits>` AND THAT WAS FINE UNTIL THE PRINTER READ A THIRD FIELD.
 # `ALIAS` above named the twenty dtypes, so `spec.bend`'s OWN `Dt{14, 32, CFloat{}, "f32"}`
-# string -- the one `T.dt_name` (tensor.bend:1272) projects onto `nm`, and the one the new
+# string -- the one `T.dt_name` (tensor.bend:1265) projects onto `nm`, and the one the new
 # `ADt` arm of `tok.arg` prints on 118 tokens -- was NEVER COMPARED WITH `DType.name`.
 # So the population was discovered, keyed on priority and bits, and the field the printer
 # depends on was not in the key. `dtypes_hold` reads it with this and refuses a `spec.bend`
@@ -468,7 +468,7 @@ def methods_hold() -> bool:
 # turns it into a check.
 MISSING = {"_multi_like": "W2, the multi-device arm (creation.py:16-20); `cr_full_like` "
                           "is single-device and the tuple arm is a TODO(p3) at "
-                          "creation.bend:414",
+                          "creation.bend:409",
            "const": "a `raise NotImplementedError` (creation.py:12), a @staticmethod, and so "
                     "neither regex matches it; it has no def and no graph"}
 
@@ -631,7 +631,7 @@ def opscast_hold() -> bool:
     """THE (b) TRIAGE, AS A GATE. `grep -c OpsCAST tinybendygrad/mixin/creation.bend` is
     ONE, and this file's brief warned that a tree-wide grep is NOT the answer because most
     of its hits are pattern-matcher arms where an identity fold would be WRONG. MEASURED:
-    the one hit is `cr_cast` (creation.bend:217), `DTypeMixin.cast` (dtype.py:36), and
+    the one hit is `cr_cast` (creation.bend:214), `DTypeMixin.cast` (dtype.py:36), and
     `cr_cast` DOES fold -- it has a `same` arm. What this check adds is the OTHER half of
     the triage: the fold's ANSWER, which `classes_hold` and `fold_axis_hold` read off the
     lanes. A second `OpsCAST` in this file would be a site nobody triaged, so it is a red
@@ -1362,7 +1362,7 @@ if __name__ == "__main__":
 #       exist as SEPARATE reads rather than as part of the diff.
 #
 #   M2  `cr_after` builds the AFTER in `O.Arena.empty()` instead of in the STORE's arena
-#       (creation.bend:252-254) -- the stale arena, defect class (a), the one this layer was
+#       (creation.bend:249-251) -- the stale arena, defect class (a), the one this layer was
 #       called highest-risk for. `mixin/op.bend`'s `mo_bin` and `tensor.bend`'s `tn_binop`
 #       were both fixed for exactly this shape.
 #       RED rc=1, AND THE PORT PRINTS THE SIGNATURE OF THE DEFECT: `zl_void=NOOP/0,NOOP/0`.
@@ -1378,7 +1378,7 @@ if __name__ == "__main__":
 #       either way and the honest reading of it is "the experiment did not run".)
 #
 #   M3  `cr_from_py`'s `CInvalid` arm answers `S.weakint()` instead of `S.boolean()`
-#       (creation.bend:191) -- one arm, one word. This was the mutation that said the whole
+#       (creation.bend:190) -- one arm, one word. This was the mutation that said the whole
 #       nineteen-row finding hung on ONE arm: `iv_bool` was the ONE `iv_` dtype that agreed,
 #       and M3 moved it, because `from_py(Invalid)` is what both the fold predicate AND the
 #       printed derived dtype read.
@@ -1441,7 +1441,7 @@ if __name__ == "__main__":
 #     +de = cr_cast_dt(F.is_cinvalid.val(v), dt)
 #     cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)
 #
-# `is_cinvalid.val` is `uop/fold.bend`'s EXISTING `O.Const` test (fold.bend:2385), not a new
+# `is_cinvalid.val` is `uop/fold.bend`'s EXISTING `O.Const` test (fold.bend:2362), not a new
 # one, and `F` was already imported. `de` is what `.cast` is handed, so the fold test and
 # the CAST's `ADt` arg can no longer disagree with each other -- which is the same shape as
 # `wk_cast_at`/`cast_at`, where the source dtype is read off a FOLD. MEASURED AFTER, over the

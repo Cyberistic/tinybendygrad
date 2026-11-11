@@ -45,7 +45,7 @@ snapshot of this oracle's stdout and it is TWO ROWS STALE against HEAD:
 
 The cause is UPSTREAM and it is a named commit: `793abbb16 "modernize tinygrad's dtype to
 match rust (#18575)"` moved `DType.name` onto the rust spellings. The PORT already moved with
-it (`tinybendygrad/nn/onnx.bend:820-823` says so, and `tinybendygrad/dtype.bend`'s `dt_name`
+it (`tinybendygrad/nn/onnx.bend:807-810` says so, and `tinybendygrad/dtype.bend`'s `dt_name`
 prints the new vocabulary), the LIVE oracle agrees with both, and only the frozen file is
 behind. So this is NOT a port defect and NOT an oracle defect: it is a PIN that was not
 moved when its subject moved, and the pin below is the instrument that would have said so

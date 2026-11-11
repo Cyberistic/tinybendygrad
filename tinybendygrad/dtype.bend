@@ -630,8 +630,8 @@ def Dt.bf16(+bits: U32) -> F32:
 #
 # THE ONE ARITHMETIC SUBSTITUTION, and it is forced by the type: the C writes
 # `int exp = (int)e - 127 + 15` and tests `exp >= 0x1f`, `exp <= 0`, `exp < -10`.
-# `U32.sub` SATURATES AT 0 (base.bend:1376 symbol=Word.sub `Word.sub`; `U32.sub`
-# itself is at base.bend:1484 symbol=U32.sub), so `exp` cannot be
+# `U32.sub` SATURATES AT 0 (base.bend:1375 symbol=Word.sub `Word.sub`; `U32.sub`
+# itself is at base.bend:1483 symbol=U32.sub), so `exp` cannot be
 # formed as a U32 at all -- every `e` under 112 would read 0 and "too small to
 # represent" would be indistinguishable from "subnormal". Every test is
 # therefore restated against `e` itself, which is exact:
@@ -811,7 +811,7 @@ def fp8_is_fnuz(kind: U32) -> Bool:
 # representable in f32 -- so the value arm is arithmetic that never rounds, and
 # the honest translation is the PATTERN those bits have. The C's own comment says
 # so at :106. Writing it as a float expression would import `F32.div` and
-# `F32.pow`, which are `law`s live code cannot call (helpers.bend:2328 symbol=cdiv_i64).
+# `F32.pow`, which are `law`s live code cannot call (helpers.bend:2276 symbol=cdiv_i64).
 #
 #   normal    (dtype.c:109) (1 + mant/2^(sig-1)) * 2^(exp - bias)
 #               = 1.f * 2^(exp - bias), and `1.f`'s top bit is exactly bit
@@ -945,7 +945,7 @@ def Dt.fp8_to(bits: U32, +kind: U32) -> F32:
 # leaves as a byte, and nothing in between is a float value. `F32.from_bits` is a
 # DECODER primitive -- it turns a pattern into an `F32` -- and the three laws that
 # needed it (`Dt.bf16`, `Dt.fp16`, `Dt.fp8_to`) were retired when FROMBITS landed
-# `base.bend:54-56`. The encoder was simply never ported: the live file grew a
+# `base.bend:53-55`. The encoder was simply never ported: the live file grew a
 # decoder (`fp8_decode.*`) and kept an imported body for the other direction.
 #
 # This is runtime/dtype.c:44-87 `fp8_encode`, arm for arm. Ported by DTYPEB into
@@ -1202,9 +1202,9 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 #   * A float LITERAL is an F32 literal.  `bend.ts:2204-2210`: `const v = f32_round(m[0]);
 #     ... return Lit("F32", f32_to_bits(v));`.  So the port's SOURCE cannot even SPELL a
 #     double -- the narrowing happens AT THE LITERAL, before any const identity question.
-#   * 64 BITS ARE HOLDABLE.  `Word(p)` is generic over `Nat` (`base.bend:51-62` --
+#   * 64 BITS ARE HOLDABLE.  `Word(p)` is generic over `Nat` (`base.bend:51-61` --
 #     upstream's `Word.Nil` is at :51 and `Word.Con` at :54), so
-#     `Word(64n)` is a legal type, and THE PORT ALREADY HOLDS 64 BITS: `helpers.bend:1648 symbol=I64`
+#     `Word(64n)` is a legal type, and THE PORT ALREADY HOLDS 64 BITS: `helpers.bend:1607 symbol=I64`
 #     is `type I64 is Data: I64{hi: U32, lo: U32}`.
 #
 # so the wall is not "the BITS do not fit".  it is: the port cannot write a double and

@@ -349,7 +349,7 @@ def t_layout() -> IO(Unit):
     row("hq2_layout_agrees_five32", u32s_eq(layout_ks(FIVE32(), 0), device_sig_ks(FIVE32())))
     # THE WALRUS ITSELF: the uint16 at slot 8 ends at 10, so the ulong after it
     # is padded to 16. An implementation that advanced off the UNROUNDED offset
-    # answers 0, 4, 6, 8, 16, 19 for this list -- which is what `device.bend:874 symbol=map_ok`
+    # answers 0, 4, 6, 8, 16, 19 for this list -- which is what `device.bend:864 symbol=map_ok`
     # did until `7f170f644`. `hq2_layout_ulong_slot` is the narrow claim.
     urow("hq2_layout_ulong_slot", layout_at(MIXED(), 0, 3n))
     urow("hq2_layout_uint16_slot", layout_at(MIXED(), 0, 2n))
@@ -436,7 +436,7 @@ def all_in(+ds: List<&2, String>) -> Bool: P.all_in.go(ds, "", True{})
 # `(offset := round_up(offset, dt.itemsize)), dt; offset += dt.itemsize`, so the
 # advance is `round_up(off, k) + k`. upstream's `iter_sig`
 # (tinygrad/device.py:352 symbol=iter_sig) IS that walrus, and the PORT's own
-# `ops_nv.bend` NO LONGER CARRIES the copy that read it. `device.bend:869-895`
+# `ops_nv.bend` NO LONGER CARRIES the copy that read it. `device.bend:859-885`
 # IS the port's own copy. This file CONSUMES `D.iter_sig` rather than
 # re-deriving it, and `hq2_layout_*_matches_device_bend` is the cross-check:
 # two independent readings of the same walrus agreeing is the claim.
@@ -925,10 +925,10 @@ def t_batch() -> IO(Unit):
 #   4  nothing                         allocate
 #
 # THE RESOLUTION IS ALREADY PORTED -- `device.bend`'s `link_resolve`
-# (device.bend:1226) answers exactly that four-way, with the same levels and
+# (device.bend:1209) answers exactly that four-way, with the same levels and
 # the same Buffer-vs-CALLABLE discriminator. WHAT was missing is the consumer:
 # upstream's `bufferize_buf` is the ONLY caller of `link_bufs` and
-# `link_buffer` (device.bend:1033 symbol=dev_id measures that), so until this existed the
+# `link_buffer` (device.bend:1019 symbol=dev_id measures that), so until this existed the
 # port carried a mechanism with nothing on the other end of it.
 #
 # TWO facts the mechanism alone does not carry, AND they are the point:
@@ -965,7 +965,7 @@ def t_batch() -> IO(Unit):
 # `dev` is the device STRING and `dev_ix` the device INDEX, and they are two
 # fields because the registry lookup folds the STRING
 # (`to_name(b.device, b.arg.name)`) while a buffer the port ALLOCATES lands in
-# an arena slot, and a slot carries an INDEX (`device.bend:636 symbol=Bn.dev`).
+# an arena slot, and a slot carries an INDEX (`device.bend:629 symbol=Bn.dev`).
 # `b.arg.spec` IS NOT PORTED: upstream reads `b.arg.spec or
 # BufferSpec(cpu_access=True)` and only the allocation path uses it, and no
 # alloc in this port names a spec of its own.

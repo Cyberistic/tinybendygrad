@@ -11,7 +11,7 @@ ELEVEN ROWS, THREE LANES. CPython:
 
 The first three are pure one-liners. `rsqrt` is a chain: `tn_sqrt(t)` produces
 SQRT{src=[t]}, then `tn_alu(sqrt, O.OpsRECIPROCAL{}, Nil{})` wraps it in
-RECIPROCAL{src=[sqrt]}. The wall text at `mixin/elementwise.bend:859` called
+RECIPROCAL{src=[sqrt]}. The wall text at `mixin/elementwise.bend:840` called
 `rsqrt` "blocked on sqrt's own fold, not on a constant" -- that note is now
 stale: the chain is built by `tn_alu`, not by a fold.
 """

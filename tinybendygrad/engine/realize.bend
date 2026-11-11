@@ -158,7 +158,7 @@ import ./../uop/fold.bend as F
 # `M` is one import line and it is the only reason `rz_fire` is not the site of
 # ops.py:1618's `ret is not uop`: `movement.bend`'s `hop_self` is that clause, it was
 # INVERTED once and is fixed now (MEASURED today: `ret_self=1`, `ret_new=0`), and
-# `rangeify.bend:2700-2708` is the post-mortem for the local copy that was deleted
+# `rangeify.bend:2682-2690` is the post-mortem for the local copy that was deleted
 # rather than kept. `uop/` does not import `engine/`, so this edge points one way.
 import ./../uop/movement.bend as M
 def has_cst(m: Maybe<&2, O.Const>) -> Bool:
@@ -907,7 +907,7 @@ def gk_dev(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
 
 # `[(d, call, None) for d in to_tuple(call.src[1].device)]` -- realize.py:41, the
 # non-HCQ half. `uop.device` is a FOLD, but `src[1]` of a CALL is a PARAM or a
-# BUFFER, and for those the fold's PARAM arm IS `arg.device` (uop/fold.bend:2285 symbol=device_of.param), so
+# BUFFER, and for those the fold's PARAM arm IS `arg.device` (uop/fold.bend:2262 symbol=device_of.param), so
 # reading the arg is the same answer with one less store threaded.
 def gk_dev.of(src1: U32, +ar: O.Arena) -> List<&2, U32>:
   gk_dev(PArg.dev(PArg.of(O.Arena.arg(ar, src1))))
@@ -1080,7 +1080,7 @@ def rz_nbytes_of(+ar: O.Arena, +call: U32) -> U32:
 # `encdec` node: shape `(16,)`, dtype `i32`, product `64`, an `int` -- so
 # `sym_infer(64, {})` is the `else` branch and `_sym_fxn`'s `exec` (ops.py:1168-1179)
 # is never reached. What the arm needs is `size_to_str` and `colored`, and BOTH ARE
-# PORTED (`helpers.bend:1147` and `helpers.bend:1087`).
+# PORTED (`helpers.bend:1124` and `helpers.bend:1066`).
 #
 # `rz_nbytes` is already the `sym_infer` answer and was already in this file: `rz_prod.dim`
 # answers `None` for a SYMBOLIC dim, and CPython's `sym_infer` on a symbolic node with
@@ -1547,7 +1547,7 @@ def bm_new.call(+sink: O.Found, +call: U32, ctx: U32) -> O.Found:
 # forget it -- and `movement.bend`'s `hop_self` is the ONE copy, after its own inversion
 # was fixed (MEASURED today: `./bin/bend tinybendygrad/uop/movement.bend` answers
 # `ret_self=1` and `ret_new=0`, and `ret_new` is the row that read 1 while the bug was in
-# place). `rangeify.bend:2700-2708` is the post-mortem for the local copy that is GONE.
+# place). `rangeify.bend:2682-2690` is the post-mortem for the local copy that is GONE.
 #
 # `Hop{ar, ix}` and `O.Found{ar, ix}` ARE THE SAME PAIR under two names, so the clause is
 # the shared one with two conversions either side rather than a second `is_eq`.

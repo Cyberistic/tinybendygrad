@@ -80,7 +80,7 @@ def Template.end_turn(+preset: U32, +eos: String) -> String:
 # cli.py:77,82 -- `decode` AND `is_end`, THE CHEAP HALF OF `SimpleTokenizer`.
 #
 # `decode` is the utf-8 decode of the tokens' bytes, and the port already has that decoder.
-# `llm/gguf.bend:396`'s `utf8.of` is imported and reused rather than re-written, so the two ports cannot
+# `llm/gguf.bend:391`'s `utf8.of` is imported and reused rather than re-written, so the two ports cannot
 # disagree about a code point. THE SEAM, STATED: upstream decodes with `errors='replace'`, and `utf8.of`
 # does NOT emit U+FFFD for an invalid sequence -- it decodes what it can. A vocabulary whose bytes are
 # not valid UTF-8 is therefore OUTSIDE this port's contract, and the differential gate uses valid ones.
@@ -168,7 +168,7 @@ type RMsg is Data:
 
 # `Maybe.default` CANNOT TAKE A `String` PAYLOAD -- MEASURED: `Maybe.default(&1, String, ...)` answers
 # "expected : Data, observed : Type", because `String` is a `Type`. (`Maybe.default(&2, String, ...)` IS
-# used in `helpers.bend:3024`, so the constraint is on the depth.) Matching a PARAMETER has no such
+# used in `helpers.bend:2954`, so the constraint is on the depth.) Matching a PARAMETER has no such
 # constraint, so the two projections below are the way out.
 def Template.ok(m: Maybe<&1, String>) -> Bool:
   match m:

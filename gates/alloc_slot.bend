@@ -72,7 +72,7 @@ def slot_one.of(alloc: Bool, n: O.Node) -> Maybe<&2, String>:
 def slot_one(alloc: Bool, n: O.Node) -> Maybe<&2, String>: slot_one.of(alloc, n)
 
 # THE SLOTS OF THE ARENA'S ALLOCATIONS, in ARENA ORDER, comma-joined. The arena order
-# IS the toposort order -- `ops.bend:2754` says every node's srcs are appended before
+# IS the toposort order -- `ops.bend:2752` says every node's srcs are appended before
 # it -- so this is the same list the oracle's `toposort()` gives, and the two lanes
 # print the same thing for the same reason.
 #

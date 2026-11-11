@@ -130,7 +130,7 @@
 #
 # WALL 3 -- the temp file NAMES. `tempfile.NamedTemporaryFile(suffix=...)`
 #   names three files and the two argv lists carry those names. bend has a
-#   working `File` (base.bend:304-347) -- `.agents/slop/cs-probe3.bend` writes
+#   working `File` (base.bend:303-346) -- `.agents/slop/cs-probe3.bend` writes
 #   and reads one on BOTH lanes -- but there is no mkstemp, and the name is
 #   random in Python anyway. So the SUFFIX is ported and gated, and the name is
 #   a PARAMETER of each argv builder, which is the honest shape:

@@ -32,7 +32,7 @@ CONTROLS: they are the part of the file that was already correct.
 THE PRINTER IS THE DEEP TOPOSORT PLUS EACH NODE'S ARG, AND THE ARG IS NOT DECORATION. `O.Rng.sig`
 prints the count, the root op, the root nsrc and the SRC op sequence -- it does NOT print an ARG.
 The layer's own guards compare against `CONST 1.0` where optim.py:115 says `0` (`op_cmplt1`,
-optim.bend:801-802), and the two graphs are the SAME op sequence (`CONST/0 CMPLT/2`), so NO
+optim.bend:762-763), and the two graphs are the SAME op sequence (`CONST/0 CMPLT/2`), so NO
 op-level printer can see it. Every node therefore prints `<op>/<nsrc>:<arg>`.
 
 THE TWO DIVERGENCES THAT REMAIN, AND WHY THEY ARE NOT A GRAPH DEFECT. Both are `op_1mb`

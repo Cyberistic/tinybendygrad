@@ -25,7 +25,7 @@
 # what is ported here, and what is not, and why. the shape is closed for every
 # LAYER: the convs' shapes come from the port's OWN `nn_conv2d`
 # (`tinybendygrad/nn/layers.bend`), the pool's from the port's OWN
-# `mx_pool_shape` (`tinybendygrad/mixin/movement.bend:905`), and the linear's
+# `mx_pool_shape` (`tinybendygrad/mixin/movement.bend:895`), and the linear's
 # from the port's own `nn_linear`. the node is closed for the convs and the
 # linear and not for the pool: `examples/beautiful_mnist.bend`'s header names
 # the reason -- `max_pool2d`'s `repeat`/`shrink_to`/`reshape`/`permute` chain
@@ -150,7 +150,7 @@ def mn_pool_full(shp: List<&2, U32>) -> List<&2, U32>:
 def mn_pool_out(shp: List<&2, U32>) -> List<&2, U32>:
   List.take(&2, U32, mn_pool_full(shp), 4n)
 
-# THE CONV, through the port's OWN `nn_conv2d` (nn/layers.bend:937 symbol=nn_conv2d). The
+# THE CONV, through the port's OWN `nn_conv2d` (nn/layers.bend:923 symbol=nn_conv2d). The
 # argument order is `groups, stride, dilation, pad_v, padding, bias`, and
 # `padding = None{}` with `pad_v = 1` is upstream's `padding=1` --
 # `nn_pads` (layers.bend) turns the int into the flat four-element list

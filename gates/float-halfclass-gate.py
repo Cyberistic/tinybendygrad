@@ -49,7 +49,7 @@ that moves rows is an instrument reading a TOKEN instead of a VALUE:
                 and the h2s disagreements ABOVE zero.
   norm-disarm   the SAME line, re-spelled.  MUST move neither count.
   nan-plant     the half NaN's payload is carried instead of canonicalised -- the
-                spelling `dtype.bend:736` has.  MUST take the h2n distinct count ABOVE
+                spelling `dtype.bend:712` has.  MUST take the h2n distinct count ABOVE
                 the oracle's and the h2n disagreements ABOVE zero.
   nan-disarm    the SAME line, re-spelled.  MUST move neither count.
 
@@ -107,7 +107,7 @@ ARMS: dict[str, tuple[list[tuple[str, str]], dict[str, str]]] = {
     # TOKEN check from a VALUE check.
     "norm-disarm": ([(JS_NORM, JS_NORM.replace("(k + 103)", "(k  + 103)"))],
                     {"h2s/distinct": "same", "h2s/disagree": "same"}),
-    # THE PAYLOAD CARRIED INSTEAD OF CANONICALISED -- `dtype.bend:736`'s spelling.
+    # THE PAYLOAD CARRIED INSTEAD OF CANONICALISED -- `dtype.bend:712`'s spelling.
     "nan-plant": ([(JS_NAN, JS_NAN_PAYLOAD)],
                   {"h2n/distinct": "above", "h2n/disagree": "increase"}),
     # THE SAME LINE, RE-SPELLED.

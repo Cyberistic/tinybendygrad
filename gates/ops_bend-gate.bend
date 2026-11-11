@@ -440,7 +440,7 @@ def run_exe() -> IO(Unit):
 # THE READBACK. `buffer_to` in the executor's own form: PACKET.out is TEXT, so the
 # copy-back is a PARSE of one line per buffer, through the SAME hex codec the
 # copy-in used -- and DELIBERATELY not a symmetric one, because
-# `runtime/ops_python.bend:1201 symbol=P.Prog.alloc.ss` measured what symmetry buys: a reader and a writer wrong
+# `runtime/ops_python.bend:1168 symbol=P.Prog.alloc.ss` measured what symmetry buys: a reader and a writer wrong
 # in the SAME way cancel on a pure copy, so every copy fixture passes while every
 # arithmetic one computes on nonsense. So the comparison below is over the emitted
 # TEXT, not over a re-parse.

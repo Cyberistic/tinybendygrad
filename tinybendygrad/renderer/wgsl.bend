@@ -20,7 +20,7 @@
 #
 # `ops.bend` named the sugar in its own NOT PORTED block (`UOp.cast`,
 # `UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`, `UOp.where` were all
-# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:3008` symbol=UOp.cast, the
+# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:3006` symbol=UOp.cast, the
 # always-builds-new shape (no identity check), gated at `gates/uop_cast-gate.py`
 # 8/8 rows. The FOLD the identity check needs (`dtype_from_uop`) is the same FOLD
 # the remaining four (`UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`) need:
@@ -86,7 +86,7 @@
 #   (b) ParamArg's addrspace. Python's is `AddrSpace|None` and a `None` prints
 #       as `addrspace=None`; ops.bend:1527 symbol=ParamArg.addrspace spells it `S.Addr` with no None arm, so
 #       a port that printed it would print a space where Python prints `None`.
-#       render.bend:341-343 measured and recorded this. HERE it costs nothing:
+#       render.bend:332-334 measured and recorded this. HERE it costs nothing:
 #       `is_packed` reads `buf_uop.addrspace != AddrSpace.REG` and
 #       `render_kernel` reads `== GLOBAL`, and both are comparisons, not
 #       renderings. A PARAM with no addrspace in Python therefore has no
@@ -307,7 +307,7 @@ def nan_bs(+dt: S.Dt) -> U32: S.Dt.bits(dt)
 # `(1 << (bs - 1)) - 1`. THE MASK IS 64 BITS WIDE AND IT IS COMPUTED AT 64 BITS.
 #
 # WAS.  The old body was `U32.sub(U32.shln(1, Nat.sub(U32.to_nat(nan_bs(dt)), 1n)), 1)`
-# -- a U32 -- and `U32.shln` SATURATES past 31 (`helpers.bend:1802`), so for a double
+# -- a U32 -- and `U32.shln` SATURATES past 31 (`helpers.bend:1759`), so for a double
 # `U32.shln(1, 63n)` is 0 and `U32.sub(0, 1)` is 4294967295.  CPython's mask is
 # `(1 << 63) - 1` = 9223372036854775807.  The old comment here said "THE WIDTH LIMIT
 # IS REAL ... the overflowing width is unreachable from this renderer", and that was
@@ -318,7 +318,7 @@ def nan_bs(+dt: S.Dt) -> U32: S.Dt.bits(dt)
 #
 # so the answer is a `H.I64` -- the pair of 32-bit words `helpers.bend` already
 # carries (`i64_shl`, `i64_sub`) -- and the row prints it with `H.i64_dec`, the
-# DECIMAL printer `helpers.bend:2180` already carries.  CPython's `1 << 63` is an
+# DECIMAL printer `helpers.bend:2130` already carries.  CPython's `1 << 63` is an
 # ARBITRARY-PRECISION int and this is the 64-BIT answer to the same expression, which
 # is the same number for every dtype `wgsl.py:36` can ask about: the widest is
 # double's 2^63-1 and it fits.
@@ -1127,7 +1127,7 @@ def sr_store(ns: U32, +b: String, +v: String) -> String:
 
 # 16 `UPat(Ops.INDEX, src=(UPat.var("b"), UPat.var("idx")))` --
 # `f"{ctx[b]}[{strip_parens(ctx[idx]) if idx.arg is Ops.ADD else ctx[idx]}]"`, and
-# `strip_parens` (helpers.bend:1464 symbol=strip_parens) is ALREADY PORTED, `is_balanced` and all,
+# `strip_parens` (helpers.bend:1431 symbol=strip_parens) is ALREADY PORTED, `is_balanced` and all,
 # which is why this rule is four lines and not a walk. The `Ops.ADD` test is the
 # rule's own `isadd` parameter; a source that is not balanced keeps its parens,
 # and `(I0)+(I1)` is that case. `op` is the pattern's, because `srneg 16` is a

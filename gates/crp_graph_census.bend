@@ -29,9 +29,9 @@
 #   * THE CONST's ARG. `DType.const` (dtype.py:79-84) is `ConstFloat(truncate[dt](v))`
 #     for a float, `bool(v)` for a bool and `int(v)` otherwise, so ONE call holds `1.0` at
 #     `f16` and `1` at `i32`. `Rng.sig` prints `CONST/0` for both.
-#   * THE CAST's ARG. `cr_cast` (creation.bend:217) mints `OpsCAST` with `O.ADt{dt}` --
+#   * THE CAST's ARG. `cr_cast` (creation.bend:214) mints `OpsCAST` with `O.ADt{dt}` --
 #     ops.py:640's `arg=dt` -- and `cr_const_of` hands it the `de` it also uses as the fold
-#     test's right-hand side (creation.bend:245). MEASURED BEFORE `tok.arg` grew its `ADt`
+#     test's right-hand side (creation.bend:242). MEASURED BEFORE `tok.arg` grew its `ADt`
 #     arm: 118 `CAST/1` occurrences across this census's 207 rows and NOT ONE carried an
 #     argument, on EITHER lane, so the target of every cast in the census was unreadable and
 #     a wrong one could not move a row. IT IS `OP/NSRC[TARGET]` NOW, WHERE `[TARGET]` IS
@@ -54,7 +54,7 @@
 # dtype.py:84), and a per-cell literal would be this file TRANSCRIBING `DType.const` --
 # the `tn_bitwise_not` post-mortem, where an oracle that hand-built `cast.ne(True)` agreed
 # with a port that was itself wrong. So the value comes from `cr_cval0`/`cr_cval1`, the
-# PORT'S OWN `DType.const` arms (creation.bend:434-452), and the oracle asks `dt.const(1)`
+# PORT'S OWN `DType.const` arms (creation.bend:428-445), and the oracle asks `dt.const(1)`
 # -- CPython's own method -- for its side. NEITHER SIDE GUESSES.
 #
 # ONE FOLD AND ONE DISPATCHER FOR THE EIGHT DTYPE FAMILIES, because Bend has no
@@ -93,7 +93,7 @@ def shp() -> List<&2, List<&2, U32>>: [[], [4], [2, 3], [2, 3, 4]]
 # ===========================================================================
 # THE DEEP SIGNATURE. ONE TOKEN PER NODE OVER THE WHOLE TOPOSORT -- the same
 # post-order CPython's `UOp.toposort` (ops.py:588-601) returns and the port's
-# `UOp.toposort` builds (ops.bend:3213) -- so a swapped operand, a node in the wrong cone
+# `UOp.toposort` builds (ops.bend:3211) -- so a swapped operand, a node in the wrong cone
 # and a wrong CONST value are all differences rather than coincidences. `O.Rng.sig` is a
 # PREFIX; `realize_graph_census-oracle.py:249` is this repair and names the row (`gr_10`)
 # that a prefix printed alike on both sides.
@@ -166,7 +166,7 @@ def pval(+a: O.Arena, +u: U32, +p: O.ParamArg) -> String:
 
 # THE BARE TOKEN, `OP/arity`, AND IT IS SPELLED ONCE HERE so the `ADt` arm below can put a
 # TARGET inside it. `O.Ops.name.of` is the ONE place an op's name is spelled (ops.bend) and
-# `T.dt_name` the ONE place a dtype's name is (tensor.bend:1272, `S.Dt{pri, bits, cls, nm}`
+# `T.dt_name` the ONE place a dtype's name is (tensor.bend:1265, `S.Dt{pri, bits, cls, nm}`
 # projected onto `nm`) -- WHICH IS CPYTHON'S OWN `DType.name`, MEASURED: all twenty of
 # `spec.bend`'s `nm` fields are `void weakint bool i8 u8 i16 u16 i32 u32 i64 u64 weakfloat
 # fp8e4m3 fp8e4m3fnuz fp8e5m2 fp8e5m2fnuz f16 bf16 f32 f64` (spec.bend:719-742) and
@@ -186,11 +186,11 @@ def tok.of(+a: O.Arena, +u: U32, c: Bool, s: String) -> String:
 # BINDER -- so the ARG IS A PARAMETER of the arm-selecting def and the `match` heads that
 # one. THE CONE WALK IS THE ONLY CALLER, so this is one def and not a two-step.
 #
-# `ADt` IS THE FOURTH ARM AND IT IS THE ONE THAT WAS MISSING. `cr_cast` (creation.bend:217)
+# `ADt` IS THE FOURTH ARM AND IT IS THE ONE THAT WAS MISSING. `cr_cast` (creation.bend:214)
 # mints its CAST with `O.ADt{dt}` -- ops.py:640's `Ops.CAST, arg=dt` -- and before this arm
 # the token was `CAST/1`: MEASURED ON THE BASE LANES, 118 `CAST/1` occurrences and NOT ONE
 # carried an argument, on BOTH sides. So the `de` that `cr_const_of` hands to `.cast` as its
-# TARGET (creation.bend:245, the third argument) was never in a token, a wrong `ADt` at
+# TARGET (creation.bend:242, the third argument) was never in a token, a wrong `ADt` at
 # every minted CAST could not move a row, and `gates/crp_graph_census-mutate.py`'s C5 said
 # so as a prediction. The test is ON THE ARG and not on the op, so a fourth op that ever
 # grows a `Dt` is printed by this and not by a list that would rot beside it.
@@ -220,7 +220,7 @@ def row(pfx: String, +d: S.Dt, +t: T.Tensor) -> IO(Unit):
 
 # `UOp.const(1, dt)` and `UOp.const(0, dt)` AS `DType.const`'s three arms spell them: a
 # bool for a bool dtype, a float for a float dtype and an int otherwise. `cr_cval1`/
-# `cr_cval0` ARE that rule (creation.bend:434-452) and are CALLED rather than re-spelled.
+# `cr_cval0` ARE that rule (creation.bend:428-445) and are CALLED rather than re-spelled.
 def cv1(+d: S.Dt) -> O.Const: C.cr_cval1(S.Dt.is_bool(d), S.Dt.is_float(d))
 
 def cv0(+d: S.Dt) -> O.Const: C.cr_cval0(S.Dt.is_bool(d), S.Dt.is_float(d))
@@ -440,7 +440,7 @@ def sh.go(+fam: Nat, +pfx: String, shs: List<&2, List<&2, U32>>, +n: Nat) -> IO(
 # `next(UOp.unique_num)` (creation.py:41, ops.py:1208).
 #
 # `selfref` IS THE STALE-ARENA SELF-LOOP DETECTOR, defect class (a), and it is a row
-# rather than a claim: `cr_after` interns the STORE into a `let` FIRST (creation.bend:252)
+# rather than a claim: `cr_after` interns the STORE into a `let` FIRST (creation.bend:249)
 # because an argument is evaluated before the callee branches, so spelling the STORE inline
 # makes the AFTER name the node the STORE is about to occupy and `Arena.srcs(after)`
 # answers `after`. `mixin/op.bend`'s `mo_bin` and `tensor.bend`'s `tn_binop` were both

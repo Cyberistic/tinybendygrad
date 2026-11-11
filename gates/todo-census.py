@@ -21,7 +21,7 @@ a count, not as a defect in the tree.
 
 THE FOURTH CLASS. The three classes this gate was asked for are gap, deliberate non-goal and
 per-file compile note. The population contains a fourth: lines that name another TODO. A line in
-`viz/serve.bend` that reads "it is `ops.bend:3455 # TODO(p3) ops.py:76`" is PROSE ABOUT a TODO,
+`viz/serve.bend` that reads "it is `ops.bend:3453 # TODO(p3) ops.py:76`" is PROSE ABOUT a TODO,
 not a TODO, and it inflates any census that counts the string. It is decidable by a command --
 the line cites a `.bend` path and no upstream `X.py:NNN` -- so it is a class, not a note.
 

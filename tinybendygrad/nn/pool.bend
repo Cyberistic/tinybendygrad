@@ -23,7 +23,7 @@ import ./../extra/datasets/__init__.bend as D
 # ground. `tinygrad/mixin/movement.py:614-632` `_pool` is a DECOMPOSITION --
 # repeat, shrink, reshape, shrink, reshape, shrink, reshape, permute -- and
 # `max_pool2d`/`avg_pool2d` (`mixin/op.py:1333`, `:1285`) are a REDUCE over it.
-# `mixin/rand.bend:284-313` has ALREADY PORTED `_pool` for the one-axis,
+# `mixin/rand.bend:282-311` has ALREADY PORTED `_pool` for the one-axis,
 # stride-1, dilation-1 case (`op_pool1`, for `_cumalu`), and every line below is
 # that file's arithmetic with the two spatial axes and a real stride.
 #
@@ -59,12 +59,12 @@ def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
 # input size, kernel, stride and dilation per spatial axis.
 #
 # IT IS A `Data` RECORD AND NOT TEN PARAMETERS for the reason
-# `mixin/rand.bend:257 symbol=PK` gives: "_pool reads `i` and `k` four times each
+# `mixin/rand.bend:255 symbol=PK` gives: "_pool reads `i` and `k` four times each
 # across the `ceildiv`s, `smax` and the two `U32.mul`s, a `U32` cannot be read
 # twice in one expression and cannot carry `+` as a parameter, and a `Data`
 # record can" -- that quote IS `PK`'s own doc comment. Every accessor below is
 # NON-CONSUMING, so a `+q: W4` chain step can read the window as many times as
-# its expression needs (`mixin/rand.bend:260 symbol=PK.i`).
+# its expression needs (`mixin/rand.bend:258 symbol=PK.i`).
 #
 # four dimensions is not a limitation dressed up as a shape: it is the case
 # every pooling call in a ResNet makes, and the `noop` axes pass through
@@ -74,12 +74,12 @@ def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
 type W4 is Data:
   W4{b0: U32, b1: U32, i0: U32, i1: U32, k0: U32, k1: U32, s0: U32, s1: U32, d0: U32, d1: U32}
 
-# THE TEN READERS. They are `mixin/rand.bend:260 symbol=PK.i` / `PK.k` EXACTLY --
+# THE TEN READERS. They are `mixin/rand.bend:258 symbol=PK.i` / `PK.k` EXACTLY --
 # a non-consuming `q: W4` and a `match` that returns one field -- and they are
 # readers rather than ten `case` bindings because this file's first spelling put
 # the `case` INSIDE every derived def, and a derived def that calls another
 # derived def (`f0` reads `o0`) then consumed its own binding twice and `bend`
-# answered `W4.f0: d0 consumed more than once`. `mixin/rand.bend:277 symbol=U1.v`
+# answered `W4.f0: d0 consumed more than once`. `mixin/rand.bend:275 symbol=U1.v`
 # already states the rule: "`U1.v` is a def and therefore non-consuming".
 def W4.b0(q: W4) -> U32:
   match q:
@@ -144,7 +144,7 @@ def W4.lead(+q: W4) -> List<&2, U32>: [W4.b0(q), W4.b1(q)]
 
 # RESHAPE/EXPAND/RESHAPE -- `self.reshape(unsqueezed_shape).expand(
 # expanded_shape).reshape(final_shape)`, the spelling `op_repeat1.rp`
-# (mixin/rand.bend:281 symbol=op_repeat1.rp) uses for ONE axis.
+# (mixin/rand.bend:279 symbol=op_repeat1.rp) uses for ONE axis.
 def W4.lift(+q: W4) -> List<&2, U32>:
   [W4.b0(q), W4.b1(q), 1, W4.i0(q), 1, W4.i1(q)]
 def W4.tiled(+q: W4) -> List<&2, U32>:
@@ -178,7 +178,7 @@ def W4.perm(+q: W4) -> List<&2, U32>: [0, 1, 3, 5, 2, 4]
 
 # `_pool` (movement.py:614-632), TWO SPATIAL AXES, in upstream's own order.
 # ONE DEF PER LINE of the upstream expression, because `O.Arena` is affine --
-# `mixin/rand.bend:429 symbol=op_arange` carries R1's whole-file `+ar: O.Arena`
+# `mixin/rand.bend:427 symbol=op_arange` carries R1's whole-file `+ar: O.Arena`
 # thread, so a def that BUILDS grows a copy and the chain must THREAD `+t`.
 
 # movement.py:624  x = self.repeat(noop ++ [ceildiv(k*(i*f+d), i)])
@@ -200,7 +200,7 @@ def pool_resh1(+t: T.Tensor, +q: W4) -> T.Tensor:
   MX.mxw_reshape(t, pool_sh(W4.lead(q), W4.kos(q)))
 
 # movement.py:630  x = x.shrink_to(noop ++ flatten((k, o, 1))).reshape(...)
-# THE THIRD SHRINK IS NOT A FOLD HERE, and `mixin/rand.bend:375 symbol=op_pool1`
+# THE THIRD SHRINK IS NOT A FOLD HERE, and `mixin/rand.bend:373 symbol=op_pool1`
 # says why it is one THERE: "`_pool` for `k_ = (k,)`, `stride = 1`" makes `o*s == o`
 # and the axis already has size 1, so `shrink` returns `self` (movement.py:192).
 # With a real stride `s > 1` the axis has size `s` and the shrink is the node
@@ -213,7 +213,7 @@ def pool_resh2(+t: T.Tensor, +q: W4) -> T.Tensor:
 def pool_perm(+t: T.Tensor, +q: W4) -> T.Tensor: MX.mxw_permute(t, W4.perm(q))
 
 # movement.py:629-630 folded into two defs so the chain is READABLE, and that is
-# not only taste: `O.Arena` is affine (`mixin/rand.bend:429 symbol=op_arange` carries
+# not only taste: `O.Arena` is affine (`mixin/rand.bend:427 symbol=op_arange` carries
 # R1's whole-file `+ar: O.Arena` thread) and this file shipped a seven-deep application
 # line with ONE `, q)` missing out of eight, and `bend` reported the parse error.
 def pool_nd.mid(+t: T.Tensor, +q: W4) -> T.Tensor:
@@ -228,14 +228,14 @@ def pool_nd(+t: T.Tensor, +q: W4) -> T.Tensor:
 # `if not return_indices: return pooled.max(axis)` with
 # `axis = tuple(range(-len(k_), 0))` (op.py:1366). After `_pool` the two window
 # axes ARE the last two, so `axis` is `[4, 5]` on the four-dimensional result --
-# the same reason `mixin/rand.bend:394 symbol=op_cumalu.red` writes `_cumalu`'s
+# the same reason `mixin/rand.bend:392 symbol=op_cumalu.red` writes `_cumalu`'s
 # sum axis as the literal `[1]`: "`mo_ax` takes the tensor and would rebuild the
 # whole of `_pool` ... so the literal is the cheap correct spelling".
 #
 # padding is not included and that is a wall, not an omission. op.py:1370 pads
 # with `self.commit_dtype().min`, and `_pad_constant`'s `value != 0` arm
 # (op.py:290) is `MovementMixin.pad(X.const_like(True, dtypes.bool), pads)`
-# `.where(base, value)`, which `mixin/rand.bend:330 symbol=op_padc` records as
+# `.where(base, value)`, which `mixin/rand.bend:328 symbol=op_padc` records as
 # `TODO(p3) mixin/op.py:282 _pad_constant's ... value != 0 arm ... and needs
 # identity_element (ops.py:61)`. `identity_element` is not a def in this tree.
 # A `max_pool2d` padded with ZERO would be wrong for any negative input, so the
@@ -265,7 +265,7 @@ def pool_avgpool_padded() -> D.Refused:
 # `(r, c)` is the mean of the input block `[ih/oh, iw/ow]` under it, so the
 # six axes `[b0, b1, oh, ih/oh, ow, iw/ow]` carry it and `mean(axis=(3, 5))`
 # names the two window axes. `mo_mean(kd, t, axis)` is
-# `mixin/op.bend:953 symbol=mo_mean`.
+# `mixin/op.bend:937 symbol=mo_mean`.
 #
 # THE NON-DIVISIBLE CASE IS REFUSED, and the blocker is named rather than
 # approximated: `i % o != 0` gives windows of UNEQUAL size, which `_pool`
@@ -340,7 +340,7 @@ def pool_head(+ds: List<&2, U32>) -> U32: pool_head.of(List.get(&2, U32, ds, 0n)
 #
 # `axis = 1` is the default (op.py:1678), so `shape` is `[1, c, 1, 1]` on an
 # NCHW input and that is `BN.sh`. Every one of the five operations is a def
-# here: `mo_sub` (`mixin/op.bend:620`), `mo_mul` (`:581`), `mo_add` (`:580`),
+# here: `mo_sub` (`mixin/op.bend:610`), `mo_mul` (`:581`), `mo_add` (`:580`),
 # `mo_reshape` (`:664`).
 
 type BN is Data:
@@ -373,8 +373,8 @@ def pool_bn(+x: T.Tensor, +w: T.Tensor, +b: T.Tensor, +m: T.Tensor, +iv: T.Tenso
 
 # `batch_var.add(self.eps).rsqrt()` (nn/__init__.py:59). `mo_rsqrt` IS NOT A DEF
 # ANYWHERE IN THIS TREE (`grep -rn "mo_rsqrt" tinybendygrad/` = 0 HITS), and the
-# two halves ARE: `rsqrt(x) = 1/sqrt(x)`, `mo_recip` is `mixin/op.bend:880` and
-# `ew_sqrt` is `mixin/elementwise.bend:549`.
+# two halves ARE: `rsqrt(x) = 1/sqrt(x)`, `mo_recip` is `mixin/op.bend:866` and
+# `ew_sqrt` is `mixin/elementwise.bend:537`.
 def pool_rsqrt(+t: T.Tensor) -> T.Tensor: MO.mo_recip(E.ew_sqrt(t))
 
 # `calc_stats` (nn/__init__.py:41-50) -- the two means and the centred square
@@ -392,18 +392,18 @@ def pool_bn_stats.cen(+x: T.Tensor, +m: T.Tensor, +axis: List<&2, U32>) -> T.Ten
 # not defs in this tree:
 #   * `TRAINING` -- the helpers ContextVar every branch at op.py:43 and op.py:55
 #     reads. MEASURED: `grep -rn "TRAINING" tinybendygrad/` returns THREE HITS
-#     and all three are COMMENTS (`nn/optim.bend:517-522`, and its own
+#     and all three are COMMENTS (`nn/optim.bend:484-489`, and its own
 #     `optim-mut.bend` twin). There is no binding.
 #   * `Tensor.assign` -- op.py:56-57 `self.running_mean.assign(...)`.
 # MEASURED: `grep -rn "def.*assign" tinybendygrad/tensor.bend` finds
 # `tn_assign_store` (:1864), which is the STORE UOp and not a mutating method on
-# a `Tensor`, and `tensor.bend:2539-2541` states the divergence outright --
+# a `Tensor`, and `tensor.bend:2501-2503` states the divergence outright --
 # "Python's `is_param_` mutates in place; this returns a new [tensor]".
 # So the eval-time path (`track_running_stats and not TRAINING`, op.py:43) --
 # which is the ONLY path ResNet INFERENCE takes -- is buildable and the
 # training-time update is not.
 def pool_bn_running_stats() -> D.Refused:
-  D.refuse("nn/__init__.py:55-58  BatchNorm's running_mean/var update -- BLOCKED: TRAINING is not a binding in tinybendygrad (comments only), and Tensor.assign is not a def (tensor.bend:2717 symbol=tn_param.of states the immutability divergence)")
+  D.refuse("nn/__init__.py:55-58  BatchNorm's running_mean/var update -- BLOCKED: TRAINING is not a binding in tinybendygrad (comments only), and Tensor.assign is not a def (tensor.bend:2679 symbol=tn_param.of states the immutability divergence)")
 
 # two more walls, and both are rowed in `t_ref` so they cannot drift quietly.
 #
@@ -417,28 +417,28 @@ def pool_wall_4d() -> D.Refused:
   D.refuse("movement.py:614  _pool for self.ndim != 4 -- BLOCKED: W4 carries noop as VALUES, so every shape is six wide and movement.py:632's permute is [0,1,3,5,2,4] by construction; reading noop from the tensor is a different def")
 
 # WALL(nn_pool_1d) -- the SAME `_pool` for ONE spatial axis.
-# `mixin/rand.bend:375 symbol=op_pool1` ALREADY IS IT (stride 1, dilation 1) and
+# `mixin/rand.bend:373 symbol=op_pool1` ALREADY IS IT (stride 1, dilation 1) and
 # is deliberately not repeated here: a second copy of a def that exists is the
 # thing AGENTS.md calls a ledger that names a path it does not own.
 def pool_wall_1d() -> D.Refused:
-  D.refuse("movement.py:614  _pool for one spatial axis -- NOT DUPLICATED: mixin/rand.bend:375 symbol=op_pool1 already is it for stride 1 and dilation 1")
+  D.refuse("movement.py:614  _pool for one spatial axis -- NOT DUPLICATED: mixin/rand.bend:373 symbol=op_pool1 already is it for stride 1 and dilation 1")
 
 # wall(nn_pool_r1) -- the one that costs this file its uop-level rows. Measured:
 # `pool_nd` reads `(1)(1)(4)(4)(2)(2)` from the arena and is CORRECT, while
 # `mo_max(False{}, <that>, [4, 5])` reads the SAME `(1)(1)(4)(4)(2)(2)` -- the
 # pre-reduce dims -- and `mo_mean` over a six-axis reshape reads an EMPTY string.
-# `mixin/rand.bend:429 symbol=op_arange` names the cause (R1: `O.Arena` is affine,
+# `mixin/rand.bend:427 symbol=op_arange` names the cause (R1: `O.Arena` is affine,
 # a building def grows a copy, two operands built in different copies name indices
 # neither copy has) and its own remedy is the whole-file thread `+ar: O.Arena` with
 # a `T.tn_new(ar, ...)` rebase before each build, which R1 says also HANGS
 # `randn_like` there. So the reduce rows above are `U32` arithmetic.
 def pool_wall_r1() -> D.Refused:
-  D.refuse("R1 THE ARENA -- BLOCKED: O.Arena is affine so a REDUCE-rooted result cannot be read back with mxw_dims_of; max_pool/avg_pool/adaptive_avg_pool/batchnorm rows are U32 arithmetic, not node reads. R1 IS WRITTEN IN mixin/rand.bend:429 symbol=op_arange, WHICH IS THE DEF THAT CARRIES THE WHOLE-FILE `+ar: O.Arena` THREAD R1 ASKS FOR")
+  D.refuse("R1 THE ARENA -- BLOCKED: O.Arena is affine so a REDUCE-rooted result cannot be read back with mxw_dims_of; max_pool/avg_pool/adaptive_avg_pool/batchnorm rows are U32 arithmetic, not node reads. R1 IS WRITTEN IN mixin/rand.bend:427 symbol=op_arange, WHICH IS THE DEF THAT CARRIES THE WHOLE-FILE `+ar: O.Arena` THREAD R1 ASKS FOR")
 
 # THE ROWS. `main` PRINTS AND MEASURES; there are no expectations in this file
 # because a row that compares against a number this file wrote is the
 # change-detector AGENTS.md forbids. The rows are SHAPES, and a shape is what a
-# caller consumes (`mixin/op.bend:1400-1401`), so they are the same measurement
+# caller consumes (`mixin/op.bend:1379-1380`), so they are the same measurement
 # `mo_shape` takes.
 
 # the rows, and what they are not.
@@ -446,7 +446,7 @@ def pool_wall_r1() -> D.Refused:
 # `main` PRINTS AND MEASURES. There are no expectations in this file because a
 # row compared against a number this file wrote is the change-detector
 # AGENTS.md forbids. The rows are SHAPES, and a shape is what a caller consumes
-# (`mixin/op.bend:1400-1401`).
+# (`mixin/op.bend:1379-1380`).
 #
 # a movement-only result is read from the arena and is trustworthy: `pool_nd_*`
 # and `flatten_*` are exactly that and they are measured below.
@@ -485,7 +485,7 @@ def W4.out(+q: W4) -> List<&2, U32>:
 def A.out(+q: AP) -> List<&2, U32>:
   [A.b0(q), A.b1(q), A.o0(q), A.o1(q)]
 
-# the `Refused` accessor, in `extra/models/resnet.bend:275-275`'s shape, so `main`
+# the `Refused` accessor, in `extra/models/resnet.bend:266-266`'s shape, so `main`
 # can print the address a refusal carries rather than discarding it.
 def pool_ref_at(r: D.Refused) -> String:
   match r:

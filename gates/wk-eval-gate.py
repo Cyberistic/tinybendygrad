@@ -66,7 +66,7 @@ GATE = Gate(
     rows=len(ROWS),
     # The previous divergence `int_weakint_val = none (port) vs 0:7 (cpython)` is
     # CLOSED. The cause was a missing `case O.OpsCAST{}: mm.lift.mv(srcs)` in
-    # `mm.lift.rest` (`uop/fold.bend:4052`): a CAST of a CONST was falling through
+    # `mm.lift.rest` (`uop/fold.bend:4008`): a CAST of a CONST was falling through
     # to `mm.default(d)`, which returned the dtype's full range as `BndFlt` (for
     # `bits > 64` like weakint), and `wk_bnd_i64` returns `None` for `BndFlt`. The
     # fix is a one-line addition that says "CAST is a passthrough", which is what

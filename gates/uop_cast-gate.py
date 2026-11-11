@@ -4,9 +4,9 @@
     .venv/bin/python gates/uop_cast-gate.py
 
 EIGHT ROWS, THREE LANES -- CPython, bend interpreted, bend compiled -- over the claims
-that the new `UOp.cast` (ops.bend:2783) does what CPython's `UOp.cast` (mixin/dtype.py:19)
-does. The wall that lived at `tc_ptx.bend:408` ("needs `UOp.cast` (0 defs)") and the
-related walls at `tc_ptx.bend:409-412` were closed by porting the def itself.
+that the new `UOp.cast` (ops.bend:2781) does what CPython's `UOp.cast` (mixin/dtype.py:19)
+does. The wall that lived at `tc_ptx.bend:394` ("needs `UOp.cast` (0 defs)") and the
+related walls at `tc_ptx.bend:395-398` were closed by porting the def itself.
 
 DEVIATION FROM CPYTHON. CPython's identity check reads `self.dtype`, which is a FOLD
 property (ops.py:247 `dtype_from_uop`). A rule body that has no fold context cannot
@@ -15,7 +15,7 @@ ALWAYS BUILDS A NEW NODE, which means: when `self.dtype` already equals `dt`, th
 graph has ONE extra `OpsCAST{}` node that CPython would have skipped. The extra node
 is a GRAPH BLOAT, not a correctness issue: the cast is a no-op on the value, and
 downstream optimizations fold it. The full identity check would need a FOLD CONTEXT,
-which is what `cast_at` in `mixin/dtype.bend:335` IS, and a future unit that wires
+which is what `cast_at` in `mixin/dtype.bend:330` IS, and a future unit that wires
 rule bodies into the fold can call THAT instead.
 
 WHAT THIS IS FOR. `UOp.cast` was the SEAM for `pm_drop_after`-style rule bodies in

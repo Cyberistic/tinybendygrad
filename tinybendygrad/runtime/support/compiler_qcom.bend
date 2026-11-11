@@ -60,7 +60,7 @@
 #
 # WALL 1 -- `tinygrad.runtime.autogen.llvm_qcom` and the fetched rootfs.
 #   `cl_compiler_*` is a shared library, and `fetch(...)` is a download plus a
-#   tarball extract. `IO.get_env` exists (base.bend:185 symbol=IO.get_env) so the ENVIRONMENT is
+#   tarball extract. `IO.get_env` exists (base.bend:184 symbol=IO.get_env) so the ENVIRONMENT is
 #   reachable; the library and the tarball are not.
 #   TODO(p3) compiler_qcom.py:6  -- `from tinygrad.runtime.autogen import llvm_qcom`.
 #   TODO(p3) compiler_qcom.py:17 -- `fetch('https://git.tinygrad.win/...')`.

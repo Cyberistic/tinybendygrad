@@ -38,7 +38,7 @@
 # literal `notacall` there, decided by the node's OWN op tag -- the fixture's fact, not a
 # list -- so the refusal is a byte-identical row and not an exclusion list.
 #
-# THE PRINTER IS DEEPER THAN `Rng.sig`. `Rng.sig` (ops.bend:5897) prints a toposort COUNT,
+# THE PRINTER IS DEEPER THAN `Rng.sig`. `Rng.sig` (ops.bend:5766) prints a toposort COUNT,
 # the top op and a 3-op src PREFIX; `rng_graph_census-gate.py` records the node-swap that
 # hid behind it (`gr_10` printed identically on both sides until a deep printer was used)
 # and `md_graph_census` answered with an ` arg=` suffix. `rs_cone` is the answer's WHOLE
@@ -222,8 +222,8 @@ def rs_pay.pi(+ar: O.Arena, pi: O.ProgramInfo) -> String:
 # fixture has exactly ONE RANGE, so nothing here can be wrong.
 #
 # `Ops.BITCAST`'s `ADt` arm IS crp's, verbatim, and it reads the dtype's name through
-# `fold.bend:5891`'s `dt_nm` -- already imported as `F` -- because `spec.bend` has NO reader
-# for `Dt{..., nm}` (`jit.bend:435` records that as the blocker it was) and `dt_nm` is the
+# `fold.bend:5831`'s `dt_nm` -- already imported as `F` -- because `spec.bend` has NO reader
+# for `Dt{..., nm}` (`jit.bend:431` records that as the blocker it was) and `dt_nm` is the
 # one the tree has. It is tinygrad's own `DType.name`, so `apay`'s `a.name` is the same
 # string and not a translation.
 def rs_pay.ax(at: O.AxisType) -> String:
@@ -232,8 +232,8 @@ def rs_pay.ax(at: O.AxisType) -> String:
 # HOW MANY DEVICES A `S.Dev` NAMES. `D1` IS ONE AND `Dn` IS THAT MANY. THE COUNT IS THE
 # DEVICE PROJECTION BOTH LANES CAN PRODUCE -- CPython's `devs` IS A TUPLE OF NAMES AND
 # THIS IS A LIST OF TAGS, AND THERE IS NO `str -> int` INDEX TO CHECK ONE AGAINST THE
-# OTHER. `device.bend:757`'s `dev_name` IS NOT A WAY OUT: IT IS THE OTHER TABLE, AND IT
-# DISAGREES WITH `device.bend:344`'s `tag_of` -- `tag_of("CPU")` IS 0 AND `dev_name(0)` IS
+# OTHER. `device.bend:750`'s `dev_name` IS NOT A WAY OUT: IT IS THE OTHER TABLE, AND IT
+# DISAGREES WITH `device.bend:340`'s `tag_of` -- `tag_of("CPU")` IS 0 AND `dev_name(0)` IS
 # THE EMPTY STRING, WHILE `dev_name(6)` IS "CL" AND `tag_of("DISK")` IS 6. SO THE PORT HAS
 # NO DEVICE NAME TO PRINT FOR `S.D1{0}` AND THE COUNT IS WHAT IS LEFT.
 def rs_dev_n(d: S.Dev) -> U32:
@@ -313,7 +313,7 @@ def rs_pay(a: O.Arg, ar: O.Arena) -> String:
     case O.AStr{s}: rs_pay.box(s)
     # `Ops.GETADDR`'s `arg` IS A DEVICE. CPython's is `str|tuple[str, ...]` (`ops.py:611`,
     # and `ops.py:825`'s `self.device`), this port's is `ADev{S.D1{tag}}` /
-    # `ADev{S.Dn{tags}}` (`ops.bend:7944` mints `ADev{dev}`) -- and CPYTHON HAS NO
+    # `ADev{S.Dn{tags}}` (`ops.bend:7634` mints `ADev{dev}`) -- and CPYTHON HAS NO
     # `str -> int` DEVICE INDEX for a tag to be checked against a name
     # (`device_vocab_holds` measures that every run: `hasattr(Device,'tag')` is False), so
     # THE NAME IS NOT COMPARABLE. THE COUNT IS. AND THE COUNT IS COMPLETE FOR THIS
@@ -488,7 +488,7 @@ def rs_call(nm: String, +ar: O.Arena, src: List<&2, U32>) -> O.Found:
 #
 # MEASURED 2026-10-22: 365 OF THE 1004 ROWS DIVERGED, AND THE CAUSE WAS ONE NODE.
 # THE PORT's `main_arena` MINTS A SIZE CONST FOR EVERY PARAM AND BUFFER --
-# `ops.bend:3075`'s `UOp.new.param` CALLS `shape_to_shape_arg.of`, WHICH IS
+# `ops.bend:3073`'s `UOp.new.param` CALLS `shape_to_shape_arg.of`, WHICH IS
 # `UOp.const(made, CInt{k})` FOR A SCALAR SIZE -- SO `main_arena`'s ARENA HAS ONE MORE
 # NODE THAN IT HAD, AND EVERY INDEX FROM SLOT 3 ON MOVED BY ONE. THE ORACLE's FIXTURE DID
 # NOT MINT THE CONST, SO IT DID NOT MOVE. THE SYMPTOM WAS THAT EVERY ROW AFTER THE
@@ -602,7 +602,7 @@ def rs_x63(+ar: O.Arena) -> O.Found:
 # name is data and not hardware.
 #
 # AND THE TWO TAGS ARE DISTINCT ON PURPOSE. `S.Dn{[6, 0]}` is DISK and "not DISK",
-# and `device.bend:344`'s `tag_of` gives DISK the tag 6 and everything else 0 -- so a bug
+# and `device.bend:340`'s `tag_of` gives DISK the tag 6 and everything else 0 -- so a bug
 # that emitted one device twice, or dropped one, moves the count, and the tags differ.
 # WHAT IT STILL CANNOT SEE IS STATED AT `rs_d_kern` AND MEASURED IN THE GATE.
 def rs_duo() -> S.Dev:
@@ -838,7 +838,7 @@ def rs_call_dev(+ar: O.Arena, call: U32) -> S.Dev:
 # VARIABLE, OUT OF `ProgramInfo.vars` -- WITH `get_call_kernel_args` -- ONE ENTRY PER
 # KERNEL PARAM, IN SLOT ORDER, OUT OF `prg.kernel_params`, AND A PARAM MAY BE A BUFFER, IN
 # WHICH CASE THE ENTRY IS THE ADDRESS OF THE CALL's ARGUMENT AT THAT SLOT. THE PORT's
-# COPY IS `tinybendygrad/engine/realize.bend:750`.
+# COPY IS `tinybendygrad/engine/realize.bend:744`.
 #
 # AND THE FIXTURE CANNOT ANSWER THE PIN. MEASURED: THE PIN's
 # `get_call_kernel_args` READS `s.is_bound_var` OVER `call.src[1:]`, AND
@@ -884,19 +884,19 @@ def rs_d_wbuf(ar: O.Arena, n: U32) -> String:
 # THROW AWAY, AND THE GATE MEASURES WHY, in `kern_blind_holds` over `device_vocab_holds`:
 #   * `S.D1`'s tag is NOT an index into a device table, AND THIS IS NOW CHECKED RATHER THAN
 #     QUOTED. An earlier revision of this comment justified it by naming `Device.tag` in
-#     `uop/spec.bend:1488` -- a symbol that DOES NOT EXIST in this tree's CPython, so a
+#     `uop/spec.bend:1476` -- a symbol that DOES NOT EXIST in this tree's CPython, so a
 #     driver was quoting a paragraph that named nothing. `device_vocab_holds` now re-measures
 #     the premise in CPython on every run: `hasattr(Device, 'tag')` is False, `ParamArg.device`
 #     (`uop/ops.py:34`) is `str|tuple[str, ...]|None`, `ALL_DEVICES` (`device.py:20`) is a
 #     `list[str]`, and `Device.__getitem__` (`device.py:29`) is keyed by STRING -- SO CPython
 #     HAS NO `str -> int` DEVICE INDEX, and a `U32 -> String` table is the PORT'S OWN to mint.
-#   * the port's ONLY tag/name function, `device.bend:344 tag_of`, is a THREE-VALUED
+#   * the port's ONLY tag/name function, `device.bend:340 tag_of`, is a THREE-VALUED
 #     SENTINEL -- DISK 6, NPY 10, PYTHON 13, EVERYTHING ELSE 0 -- built to decide
 #     `ALLOW_DEVICE_USAGE`, and it puts CPU, METAL, AMD, NV, CUDA, QCOM, CL, DSP, WEBGPU
 #     and every typo on the same 0. `device_vocab_holds` reads its arm list out of
 #     `device.bend`'s CODE every run, so if it grows an arm this wall goes RED.
-#   * and there is a SECOND tag space that disagrees with it: `schedule/memory.bend:999`
-#     is `disk() = S.D1{1}` where `tag_of("DISK")` is 6, which `uop/validate.bend:2532`
+#   * and there is a SECOND tag space that disagrees with it: `schedule/memory.bend:971`
+#     is `disk() = S.D1{1}` where `tag_of("DISK")` is 6, which `uop/validate.bend:2519`
 #     records and refuses to arbitrate.
 # So printing a tag would print a sentinel that no name can be checked against, and a row
 # that LOOKED like it tested the index while testing three values IS A GUARD THAT AGREES
