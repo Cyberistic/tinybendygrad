@@ -29629,6 +29629,43 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       `lambda x:` into `Lambda x:`, `cache.setdefault` into `Cache.setdefault`, and capitalised
       every continuation line -- case is meaning inside the Python samples these comments carry.
       **The removal has to be a rewrite by a reader, file by file.**
-- [ ] The gate rows still inside `tinybendygrad/` are 831 in 41 files, measured with
-      `.agents/slop/loc/the-1to1.py`'s own rule (`row(`/`srow(`). The three largest are
-      `runtime/ops_nvme.bend` 168, `mixin/gradient.bend` 112 and `runtime/support/nv/ip.bend` 100.
+- [x] The gate rows inside `tinybendygrad/` are 447 in 41 files, measured with
+      `.agents/slop/loc/the-1to1.py`'s own rule (`row(`/`srow(`). Three moves landed:
+      `runtime/ops_nvme.bend` (168 rows, 1,344 -> 930 lines), `runtime/ops_npy.bend`
+      (83 rows, 716 -> 512 lines) and `runtime/support/nv/ip.bend` (1,428 rows, and
+      the port keeps the SEAM -- `Cx`, `Tr`, the `C_*` ids and the three printers --
+      because `runtime/support/nv/nvdev.bend` imports it and calls `IP.Cx`).
+      `gates/ops-npy-gate.py` and `gates/ip-gate.py` are NEW and both compare every
+      row against a CPython artifact: 83 of 83 and 1,428 of 1,428, and both go red
+      on a plant.
+- [x] THE IP MOVE BROKE `nvdev.bend`, AND THE CENSUS CAUGHT IT ONE RUN LATE.
+      `87af18c53` took the seam out of `ip.bend` with the rows, and `nvdev.bend`
+      imports `ip.bend` for `IP.Cx`/`IP.Tr`. `checks/port-compile-gate.py` read it
+      as a FINDING -- `expected: a defined name, observed: IP.tr.tagname` -- and the
+      baseline at `87af18c53^` read FINDING=1 (`kuconv.bend` only, already red).
+      Repaired in `5dea15795`: the port keeps the seam and the driver keeps a
+      byte-identical copy of the 43 declarations, because a type is a type and
+      `IP.Cx` names the port's.
+- [x] THE SECOND BLANK LINE BETWEEN DEFINITIONS GOES: 3,802 lines in 192 files.
+      `blank.py` deletes exactly that line. It moved 1,817 citations in 240 files,
+      and `shift-cites.py` maps each through the deletion; `gates/bendcite-gate.py`
+      reads 541 of 1,320 failing, which is the baseline (545) plus the SEVEN that
+      cannot be mapped because `movement.bend` and `dtype.bend` are ambiguous
+      basenames -- two files each -- and a citation that does not say which file it
+      means is not moved by a guess.
+- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-11 on `449f3ffac`: the port is 263,705
+      lines against upstream's 63,395 = **4.16x**; code-only 117,507 vs 56,436 =
+      **2.08x**; gate rows 447, comments 110,539 (42%), blank 35,212 (13%), code
+      117,507 (45%). It was 4.36x / 2.15x before this session's moves.
+- [x] THE CORPUS IS GREEN on `449f3ffac` after every move above:
+      `graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0
+      byte-identical=38`, `controls=5 of 5`, `plants-disagree=8 of 8`,
+      `selfcheck=# SELFCHECK: OK`, `oracle-selfcheck=# ORACLE SELFCHECK: OK`,
+      `census-rc=rc=0`, and `substrate-start == substrate-end == live ==
+      8ec427b4fb0b9a0aeabffa8eb2950a18ca3a02e7b4c96ad00304a6a513616f52`.
+- [ ] The gate rows still inside `tinybendygrad/` are 447 in 41 files. The largest
+      are `mixin/gradient.bend` 112, `runtime/support/nv/ip.bend` 0 (the seam stays)
+      and `runtime/support/am/amdev.bend` 38. `codegen/decomp/op.bend`'s 36 rows
+      cannot be moved by the textual tool: its region EXTENDS a port namespace
+      (`def dc_l5.mul` where `dc_l5` is above), and a namespace cannot be reopened
+      across files -- measured, the driver answers `expected: a defined name`.
