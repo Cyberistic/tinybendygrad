@@ -3,19 +3,19 @@
 
 **⚠ THIS **RECORD's **FIRST **HYPOTHESIS **("A **MISSING **`mop_cleanup` **PASS**") **WAS
 **MEASURED **AND **FALSIFIED**, **AND **THE **FULL **RECORD **IS
-**`.agents/slop/loc/FINDING-spelling-drift.md`** -- **⇒ AND **THE **SHORT **VERSION **IS:
+**`.agents/slop/loc/FINDING-spelling-drift.md`** -- **AND **THE **SHORT **VERSION **IS:
 **THE **PORT **WAS **NOT **MISSING **A **PASS**, **IT **WAS **BUILDING **THE **SAME **OPS
 **WITH **A **DIFFERENT **SPELLING**, **AND **THE **SPELLING **HAD **DRIFTED **BETWEEN **THE
 **PORT **AND **THE **INSTRUMENTS **THAT **MEASURE **IT**.**
 
-**⇒ AND **THE **HYPOTHESIS **WAS **FALSIFIED **BY **READING **UPSTREAM's **`mop_cleanup`
+**AND **THE **HYPOTHESIS **WAS **FALSIFIED **BY **READING **UPSTREAM's **`mop_cleanup`
 **AT **THE **PIN**: **THAT **PASS **DOES **NOT **MOVE **A **SHAPE **OUT **OF **`arg`** **AT
 **ALL** -- **IT **MERGES **PERMUTES**, **MERGES **RESHAPEs**, **REMOVES **NOOP **RESHAPEs**,
-**MERGES **SHRINKs**, **AND **FOUR **INDEX **RULES**.  **⇒ AND **THE **PASS **THAT **EXISTS
+**MERGES **SHRINKs**, **AND **FOUR **INDEX **RULES**.  **AND **THE **PASS **THAT **EXISTS
 **IN **THE **PORT** (`uop/movement.bend`'s **RULE **TABLE**, **24 **GATE **ROWS**) **IS **PINNED
 **TO **THE **OLD **UPSTREAM**.**
 
-**⇒ AND **THE **SEVEN **DISAGREEMENTS **HAD **THREE **ROOTS**, **ALL **THE **SAME **CLASS**
+**AND **THE **SEVEN **DISAGREEMENTS **HAD **THREE **ROOTS**, **ALL **THE **SAME **CLASS**
 (**A **RULE **SPELLED **AGAINST **AN **OLDER **UPSTREAM**), **AND **THE **FINAL **STATE **IS**:
 ```
 graphs=38  graphs-answered=38  graphs-agree=38  graphs-disagree=0

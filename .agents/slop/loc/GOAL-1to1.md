@@ -26,7 +26,7 @@ GATE ROW IS NOT EITHER.**
 
 ### AND THE CORPUS, WHICH IS **THE **INSTRUMENT **THAT **FOUND **THE **LAST **DEFECTS**
 
-**⇒ MEASURED 2026-11-11, **ON **A **CLEAN **TREE** (`git archive HEAD` **INTO **A **FRESH
+**MEASURED 2026-11-11, **ON **A **CLEAN **TREE** (`git archive HEAD` **INTO **A **FRESH
 **DIRECTORY**, **WITH **`bin/bend`**, **`references/` **AND **`.venv`**):**
 ```
 graphs=38  graphs-answered=38  graphs-agree=38  graphs-disagree=0
@@ -34,9 +34,9 @@ graphs-refused=0  byte-identical=38  not-comparable=0  expect-moved=0
 stable-pairs=5 of 5  plants-disagree=8 of 8  cross=1 of 1  controls=5 of 5
 conflations=4 of 4  selfcheck=# SELFCHECK: OK  oracle-selfcheck=# ORACLE SELFCHECK: OK
 ```
-**⇒ AND **THE **CORPUS's **`WANT` **TABLE **IS **EMPTY** -- **⇒ AND **AN **EMPTY **TABLE **IS
+**AND **THE **CORPUS's **`WANT` **TABLE **IS **EMPTY** -- **AND **AN **EMPTY **TABLE **IS
 **THE **STRONGEST **STATEMENT **THE **CORPUS **CAN **MAKE**, **BECAUSE **EVERY **GRAPH **NOW
-**HAS **TO **AGREE**.  **⇒ AND **THE **SEVEN **EXCEPTIONS **IT **USED **TO **CARRY** (**
+**HAS **TO **AGREE**.  **AND **THE **SEVEN **EXCEPTIONS **IT **USED **TO **CARRY** (**
 `matmul`, `reduce`, `commute`, `binblob`, `flip`, `bw`, `gral`**) **HAD **THREE **ROOTS, **AND
 **ALL **THREE **WERE **THE **SAME **CLASS**: **A **RULE **SPELLED **AGAINST **AN **OLDER
 **UPSTREAM**, **AND **THE **SPELLING **HAD **DRIFTED **BETWEEN **THE **PORT **AND **THE
