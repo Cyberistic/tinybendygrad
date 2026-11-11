@@ -1077,7 +1077,7 @@ def g_commute():
   srcs and not one:
 
       a + b            -> ADD     (and only ADD)
-      a != b           -> CMPNE   (dtype bool, so it also tests the CMPLT/CMPEQ/CMPNE
+      a != b           -> CMPEQ   (dtype bool, so it also tests the CMPLT/CMPEQ/CMPNE
                                     arm of `dtype_from_uop`, which no graph reached)
       a.maximum(b)     -> MAX
       a & b            -> AND
@@ -1085,12 +1085,39 @@ def g_commute():
       a ^ b            -> XOR     (reachable on FLOAT operands here, which is itself
                                     worth knowing: `a^b` on f32 is an XOR node)
 
-  And the eighth, `CMPEQ`, is NOT reachable from an eager graph at all -- MEASURED:
-  `UOp` has no `cmpeq`/`cmpne` method (`[a for a in dir(UOp) if 'cmp' in a.lower()]` is
-  `[]`, because `UOp.__eq__` is overridden for the ucache and answers a Python `bool`),
-  and `(Tensor.empty(4,3) == Tensor.empty(4,3)).uop` emits `CMPNE CONST CMPNE` rather
-  than a `CMPEQ`. So `--equiv` is now measured on SEVEN of its eight ops and `CMPEQ` is a
-  measured limit rather than an untested one.
+  **AND **THE **`a != b` **SPELLING **IS **`CMPEQ(CMPEQ(a, b), CONST false)`** -- **MEASURED
+  **ON **CPYTHON **AT **THE **PIN **`f5ac54685074`** **2026-11-11**:
+  ```
+  the != node: Ops.CMPEQ
+    src: Ops.CMPEQ srcs: [Ops.RESHAPE, Ops.RESHAPE]
+    src: Ops.CONST srcs: []
+  ```
+  **AND **THAT **IS **UPSTREAM's **`ne` **AT **THE **PIN**: **`mixin/elementwise.py:332-333`
+  **IS ** `return self.eq(x).logical_not()`**, **`:335-336` **IS ** `return
+  self._binop(Ops.CMPEQ, x, False)`**, **AND **`:49-57` **IS ** `return
+  self.cast(dtypes.bool).eq(False)`**.**
+
+  **AND **THIS **DOCSTRING **USED **TO **SAY **`CMPNE`**, **AND **THE **PORT's **OWN
+  **DRIVER **(`graphcmp.bend`'s **`g_commute`) **BUILT **A **RAW **`CMPNE`** -- **AND
+  **THEY **AGREED **WITH **EACH **OTHER **AND **DISAGREED **WITH **CPYTHON**, **AND **THEY
+  **WERE **STALE **IN **THE **SAME **DIRECTION**, **WHICH **IS **THE **ONE **WAY **A
+  **SELF-CONSISTENT **ORACLE **HIDES **A **DEFECT**: **THE **`commute` **GRAPH **AGREED
+  **WITH **A **STALE **INSTRUMENT **AND **THE **CORPUS **COULD **NOT **SEE **THE **DRIFT
+  **UNTIL **THE **PORT's **OWN **`eq`/`ne` **FAMILY **WAS **SPELLED **THE **PIN's **WAY,
+  **AND **THE **TWO **HALVES **DISAGREED.  **A **PAIR **OF **AGREEING **INSTRUMENTS
+  **IS **NOT **A **WITNESS, **AND **ONLY **THE **CPYTHON **SIDE **IS **THE **WITNESS.****
+
+  **AND **THE **OLD **CLAIM **"the **eighth, **`CMPEQ`, **is **NOT **reachable **from **an
+  **eager **graph **at **all"** **IS **FALSE **AT **THE **PIN** -- **`CMPEQ` **IS **THE
+  **NODE **`a != b` **BUILDS**, **AND **THE **`CMPNE` **ARM **OF
+  **`dtype_from_uop` **IS **STILL **EXERCISED **BY **THE **`CMPEQ` **NODE**, **WHOSE
+  **DTYPE **IS **THE **BOOL **ONE**.  **AND **`UOp` **STILL **HAS **NO **`cmpeq`/`cmpne`
+  **METHOD** (`[a for a in dir(UOp) if 'cmp' in a.lower()]` **IS **`[]`**, **because
+  **`UOp.__eq__` **IS **OVERRIDDEN **FOR **THE **UCACHE **AND **ANSWERS **A **PYTHON
+  **`bool`**) -- ****BUT **`a != b` **IS **`UOp.__ne__`**, **WHICH **AT **THE **PIN **IS
+  **`self is not other`** ... **AND **THAT **IS **A **PYTHON **IDENTITY **CHECK **AND **NOT
+  **A **GRAPH **NODE**, **SO **THE **ORACLE's **`a != b` **IS **THE **`Tensor`'s **AND
+  **NOT **THE **`UOp`'s** -- **AND **THE **`UOp`s **ARE **THE **Tensors' **`.uop`s.**
 
   The two ALLOCs are `Tensor.empty(4,3)` twice, so their `ParamArg.slot`s are 0 and 1 --
   `Tensor.empty` mints from a process-global counter and `base()` builds this graph

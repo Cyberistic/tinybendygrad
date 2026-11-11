@@ -947,13 +947,39 @@ def g_group() -> O.Found:
 # THE OP NAMES ARE CPython's, MEASURED op by op (`runs/graphcmp/probe/p15-comm.py`), and
 # the port's spelling is `O.OpsADD{}` and so on. Two of the six carry a fact worth
 # recording rather than re-deriving:
-#   * `CMPNE`'s dtype is `bool`, which is the `CMPLT|CMPNE|CMPEQ -> dtypes.bool` arm of
+#   * `CMPEQ`'s dtype is `bool`, which is the `CMPLT|CMPNE|CMPEQ -> dtypes.bool` arm of
 #     `dtype_from_uop` (ops.py:157-158) and the only bool-dtype node the corpus carried
 #     before `range`; and its shape is the broadcast of the two srcs, so it also exercises
 #     `broadcast_shape` on two equal shapes.
 #   * `AND`/`OR`/`XOR` are `f32` here, not ints: MEASURED, `a ^ b` on two f32 ALLOCs emits
 #     an `XOR` node with dtype `f32` (`promo_dtype` of f32 and f32), so the port's
 #     `promo` path answers f32 and not "the bitwise dtype".
+#
+# **AND **`a != b` **IS **`CMPEQ(CMPEQ(a, b), CONST false)`** -- **MEASURED **ON
+# **CPYTHON **AT **THE **PIN **`f5ac54685074`** **2026-11-11**:
+# ```
+# the != node: Ops.CMPEQ
+#   src: Ops.CMPEQ srcs: [Ops.RESHAPE, Ops.RESHAPE]
+#   src: Ops.CONST srcs: []
+# ```
+# **AND **THAT **IS **UPSTREAM's **`ne` **AT **THE **PIN**: **`mixin/elementwise.py:332-333`
+# **IS ** `return self.eq(x).logical_not()`**, **`:335-336` **IS ** `return
+# self._binop(Ops.CMPEQ, x, False)`**, **AND **`:49-57` **IS ** `return
+# self.cast(dtypes.bool).eq(False)`** -- **SO **THE **TWO **NODES **ARE **THE **`eq`**
+# **AND **THE **`logical_not`**, **AND **THE **`logical_not` **IS **THE **OUTER **`CMPEQ`
+# **AGAINST **THE **BOOL **`False`**.**
+#
+# **AND **THE **OLD **SPELLING **HERE **WAS **A **RAW **`CMPNE`**, **AND **THE
+# **ORACLE's **OWN **DOCSTRING **(`graphcmp.py:1080-1095`) **SAID **THE **SAME **THING
+# ("`a != b` **-> **CMPNE**" **AND **"`(Tensor.empty(4,3) == Tensor.empty(4,3)).uop`
+# **emits **CMPNE **CONST **CMPNE** **rather **than **a **CMPEQ**")** -- **AND **BOTH
+# **WERE **STALE, **AND **THEY **WERE **STALE **IN **THE **SAME **DIRECTION, **SO **THEY
+# **AGREED **WITH **EACH **OTHER **AND **DISAGREED **WITH **CPYTHON** -- **AND **THAT
+# **IS **EXACTLY **THE **FAILURE **A **SELF-CONSISTENT **ORACLE **CAN **HIDE**, **AND
+# **THE **`commute` **GRAPH **WAS **THE **ONE **THAT **CAUGHT **IT** -- **BECAUSE **THE
+# **PORT's **OWN **`eq`/`ne` **FAMILY **WAS **SPELLED **THE **PIN's **WAY, **AND **THE
+# **TWO **HALVES **DISAGREED.** **A **PAIR **OF **AGREEING **INSTRUMENTS **IS **NOT **A
+# **WITNESS**, **AND **ONLY **THE **CPYTHON **SIDE **IS **THE **WITNESS.****
 def g_commute() -> O.Found:
   +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
@@ -963,7 +989,9 @@ def g_commute() -> O.Found:
   +a1 = O.UOp.new.param(O.Found.ar(ra), O.OpsALLOC{}, Some{12}, O.AParam{alloc(1)}, O.TNone{})
   +rb = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +add = O.UOp.new(O.Found.ar(rb), O.OpsADD{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
-  +ne = O.UOp.new(O.Found.ar(add), O.OpsCMPNE{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +eq = O.UOp.new(O.Found.ar(add), O.OpsCMPEQ{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +fb = O.UOp.const(O.Found.ar(eq), O.CBool{False{}})
+  +ne = O.UOp.new(O.Found.ar(fb), O.OpsCMPEQ{}, [O.Found.i(eq), O.Found.i(fb)], O.ANone{}, O.TNone{})
   +mx = O.UOp.new(O.Found.ar(ne), O.OpsMAX{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +an = O.UOp.new(O.Found.ar(mx), O.OpsAND{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +orr = O.UOp.new(O.Found.ar(an), O.OpsOR{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
