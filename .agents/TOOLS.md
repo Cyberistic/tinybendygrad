@@ -308,6 +308,17 @@ Four things worth knowing before writing the next one:
   field-name swap is a genuine equivalence for those rows while a line-number swap moves
   all 115. That is why `Row` is keyed on `(ln, reg)` and not on the name.
 
+## The LOC tools — `.agents/slop/loc/`
+
+| tool | question | what it does |
+| --- | --- | --- |
+| `the-1to1.py` | how far is the port from 1:1 with upstream? | maps the tracked port by its own headers against the pin `f5ac54685074` and splits it into GATE ROWS / COMMENTS / BLANK / CODE. **THE CODE-ONLY RATIO IS THE 1:1 NUMBER**, because the other three are not the port. Measured 2026-11-11 on `449f3ffac`: 263,705 lines vs 63,395 = **4.16x**; code-only 117,507 vs 56,436 = **2.08x**. |
+| `move-rows.py` | can a port file's gate rows move to `gates/`? | cuts the region from the first row printer to `main` and writes a `gates/` driver that imports the port as `P.`. **IT IS TEXTUAL, AND ITS LIMITS ARE MEASURED**: a quoted row name is data (`"npy-done"` holds `npy`, which is also a port def, so the first pass printed `P.npy-done=1`); a relative import resolves from the PORT's directory; a namespace the region EXTENDS cannot move at all (`def dc_l5.mul` where `dc_l5` is above -- a driver cannot reopen a namespace, and `codegen/decomp/op.bend`'s 36 rows are stuck for exactly this reason). |
+| `blank.py` | how many blank lines separate nothing? | collapses runs of blanks to one. Measured 2026-11-11 over `git ls-tree -r HEAD -- tinybendygrad`: **3,831 in 153 files**, of which 3,802 went in 192 files. |
+| `shift-cites.py` | which citations name a line that moved? | maps every `file.bend:N` citation through a blank-line deletion and rewrites it. **1,817 citations in 240 files.** Measured: `gates/bendcite-gate.py` went from 545 of 1,320 pointers failing to 800, and back to **541** after the shift. **THE SEVEN THAT REMAIN ARE AMBIGUOUS BASENAMES** -- `movement.bend` and `dtype.bend` are two files each, and a citation that does not say which file it means is not moved by a guess. |
+| `demark.py` | what is the old comment emphasis? | strips `**` and the arrow (U+21D2) from comment lines and nothing else. **THE ALL-CAPS SHOUT IS NOT TOUCHED**, and the module header says why: measured on `uop/render.bend`, a block-level re-caser turned `pretty_print` into `Pretty_print` and `lambda x:` into `Lambda x:` -- case is meaning inside the Python samples these comments carry, so only a reader can lower it. |
+| `prune-block.py` | what are the separator lines? | deletes them. Measured: 155 separator + 30 history lines tree-wide. |
+
 ## The `nv/ip.py` toolchain — `tinybendygrad/runtime/support/nv/ip.bend`
 
 | tool | question | what it does |
