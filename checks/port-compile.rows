@@ -1,5 +1,5 @@
 # port-compile: one `bin/bend --check-only` per .bend under tinybendygrad/, ONE AT A TIME, under checks/bounded.py.
-# taken=2026-11-10T00:54:40Z  population=203  ceiling 2048 MB, 300 s each.
+# taken=2026-11-11T06:15:15Z  population=201  ceiling 2048 MB, 300 s each.
 # state= COMPILES | COMPILES-AS-C | COLD-BY-DESIGN | FINDING | NO-MEASUREMENT
 # COMPILES       `--check-only` says `ALL PROOFS CHECK`.
 # COMPILES-AS-C  the checker refuses for a PROMISE (the file binds foreign or
@@ -10,8 +10,6 @@
 #   what fails).  Only FINDING is a defect.
 state	file	detail
 COLD-BY-DESIGN	tinybendygrad/LAWS.bend	Error: 34 TODOs found. -- and the compiler does NOT emit C
-COLD-BY-DESIGN	tinybendygrad/LAWS/PROOF.bend	Error: 18 TODOs found. -- and the compiler does NOT emit C
-COLD-BY-DESIGN	tinybendygrad/LAWS/PROOF2.bend	Error: 16 TODOs found. -- and the compiler does NOT emit C
 COMPILES	tinybendygrad/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/base.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/device.bend	ALL PROOFS CHECK
@@ -21,6 +19,8 @@ COMPILES	tinybendygrad/helpers.bend	ALL PROOFS CHECK
 COLD-BY-DESIGN	tinybendygrad/sz.bend	Error: 7 defs rely on unsafe or foreign code: -- and the EMIT lane was NOT-MEASURED (KILLED-ON-MEMORY), so the EMIT is NOT a verdict about this file
 COMPILES	tinybendygrad/tensor.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/PROOF-ALL.bend	ALL PROOFS CHECK
+COLD-BY-DESIGN	tinybendygrad/LAWS/PROOF.bend	Error: 18 TODOs found. -- and the compiler does NOT emit C
+COLD-BY-DESIGN	tinybendygrad/LAWS/PROOF2.bend	Error: 16 TODOs found. -- and the compiler does NOT emit C
 COMPILES	tinybendygrad/LAWS/alu.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/spec-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/spec.bend	ALL PROOFS CHECK
@@ -109,7 +109,7 @@ COMPILES	tinybendygrad/renderer/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/cstyle.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/estimates.bend	ALL PROOFS CHECK
 FINDING	tinybendygrad/renderer/kuconv.bend	Error:
-COLD-BY-DESIGN	tinybendygrad/renderer/live.bend	Error: 8 defs rely on unsafe or foreign code: -- and the EMIT lane was NOT-MEASURED (KILLED-ON-MEMORY), so the EMIT is NOT a verdict about this file
+COLD-BY-DESIGN	tinybendygrad/renderer/live.bend	Error: 7 defs rely on unsafe or foreign code: -- and the EMIT lane was NOT-MEASURED (KILLED-ON-MEMORY), so the EMIT is NOT a verdict about this file
 COMPILES	tinybendygrad/renderer/llvmir.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/nir.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/nir_llvmir.bend	ALL PROOFS CHECK
@@ -119,14 +119,12 @@ COMPILES	tinybendygrad/renderer/tc_ptx.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/wgsl.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/wgsl_walk.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/amd/__init__.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/renderer/amd/dsl-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/amd/dsl.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/amd/elf.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/amd/generate.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/amd/sqtt.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/isa/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/isa/x86.bend	ALL PROOFS CHECK
-FINDING	tinybendygrad/runtime/.wgpu-orig-probe.bend	Error:
 COMPILES	tinybendygrad/runtime/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/_p6.bend	ALL PROOFS CHECK
 COLD-BY-DESIGN	tinybendygrad/runtime/device.bend	Error: 4 defs rely on unsafe or foreign code: -- and the compiler does NOT emit C
@@ -147,7 +145,7 @@ COMPILES	tinybendygrad/runtime/ops_python.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_qcom.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_rdma.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_webgpu.bend	ALL PROOFS CHECK
-FINDING	tinybendygrad/runtime/webgpu_call.bend	Error:
+COMPILES	tinybendygrad/runtime/webgpu_call.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/zzread.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/autogen/ggml_common.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/autogen/ggml_common_p1.bend	ALL PROOFS CHECK
@@ -175,7 +173,7 @@ COMPILES	tinybendygrad/runtime/support/elf.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/support/hcq2.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/support/memory.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/support/objc.bend	ALL PROOFS CHECK
-FINDING	tinybendygrad/runtime/support/system.bend	Error:
+COMPILES	tinybendygrad/runtime/support/system.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/support/usb.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/support/am/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/support/am/amdev.bend	ALL PROOFS CHECK
