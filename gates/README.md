@@ -43,8 +43,8 @@ nothing about any particular gate, so a bug in it cannot be a bug in a claim.
 This section used not to exist, and its absence is why `gates/README.md` spent its header on why
 gates are Python and never answered the only question a reader has: **who invokes them.** MEASURED
 2026-10-16T15:55Z, **walking `checks/` rather than naming paths in it**: **`checks/gatesweep.py` is
-the one instrument under `checks/` that names a gate, and it sweeps every `gates/*-gate.py` by
-directory walk**; `gates/runner.py` delegates to it by pinned `sha256`. MEASURED over the ten
+the one instrument under `checks/` that names a gate, and it sweeps every `gate`-ROLE entry point in
+both derived homes by directory walk**; `gates/runner.py` delegates to it by pinned `sha256`. MEASURED over the ten
 automated surfaces (`.github/workflows/*.yml` and `.pre-commit-config.yaml`), **0** invoke a gate or
 a `checks/` instrument — so *nothing that runs automatically runs a gate*, and **no CI-verdict claim
 can be made**.
@@ -80,13 +80,13 @@ hour of `bend` at 1–2 GiB a piece.
 
 | | how | measured |
 |---|---|---|
-| **A** | `checks/gatesweep.py:population()` — a directory walk for `*-gate.py` | **`gatesweep.py --plan`** |
+| **A** | `checks/gatesweep.py:population()` — the directory walk of both derived homes | **`gatesweep.py --plan`** |
 | **B** | `gates/gates-pop.py:discover()` in the `gates/` home — AST `__main__`, homes derived by `gate_homes()` | **`gatesweep.py --plan`, the CONTROL line** |
-| **LANES** | entry points a gate names as **its own input**, read from `gatekit.Gate(bend=…, oracle=…)` string literals | 12 |
-| **RUN SET** | `A \ LANES` | **`gatesweep.py --plan`** |
+| **LANES** | entry points a gate names as **its own input**, read from `gatekit.Gate(bend=…, oracle=…)` string literals | **`gates/runner.py --plan`** |
+| **RUN SET** | `A \ (lanes, proofs)` | **`gates/runner.py --plan`** |
 | **EDGE** | gates that construct a `Gate` and are *outside* the run set — **the shape's hole, measured** | **0** |
-| | gates in the run set that construct no `Gate` (hand-rolled: `msgdiff-gate`, `indexread-gate`, `devtag-gate`, …) | 14 |
-| | entry points that are neither (mutators, generators, meta-instruments) | 26 |
+| | gates in the run set that construct no `Gate` (hand-rolled: `msgdiff-gate`, `indexread-gate`, `devtag-gate`, …) | **`gates/runner.py --plan`** |
+| | entry points that are neither (mutators, generators, meta-instruments) | **`gates/runner.py --plan`** |
 
 `B` answers a **different** question from `A` and is printed beside it so the two denominators are
 seen to disagree on purpose. **A DERIVATION THAT WAS WRONG, AND ITS NUMBER, BECAUSE THE WRONG ONE IS
@@ -135,7 +135,7 @@ the repeats present in it):
 | `decomp_graph_census-gate` | 35.9–36.8 | 740–1024 | 1.03× · **+38%** |
 
 Three runs of the ten gave **`PASS=8 FAIL=2` every time** — the verdicts are stable — and
-**113.1 s / 113.0 s / 110.5 s wall**. Projected over the run set `gatesweep.py --plan` prints: **788–913 s (13.1–15.2 min)**.
+**113.1 s / 113.0 s / 110.5 s wall**. The projection over TODAY's run set is `gates/runner.py --plan`'s `PROJECTION` line, and it is NOT transcribed here: the run set moves as other units land gates, and a minutes figure priced over a denominator written down once is a number about a tree that does not exist.
 
 **THE MEASUREMENT NOISE IS PART OF THE ANSWER.** `decomp_graph_census-gate`'s peak moved **740 →
 1024 MB (+38%)** and `indexread-gate`'s runtime moved **1.8 → 3.5 s (1.94×)** on the SAME command

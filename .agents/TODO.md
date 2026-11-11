@@ -495,7 +495,22 @@ gates-sweep     [##########] 10/10    `/tmp/sweep.sh` is FOREIGN and NON-COMPLIA
                                        symbols runner calls are unchanged; bounded: ONE COMMENT;
                                        index-arm: two added refusals, so a PASS can now REFUSE).
                                        `--plant` all five fire, `--plan` reports only INDEX-ARM
-                                       (the tree's index is armed, 19 stale paths).
+                                       (the tree's index is armed, 19 stale paths). **AND
+                                       `gates/README.md`'s derivation table was transcribed from a
+                                       WALK THAT NO LONGER EXISTS**: A said "a directory walk for
+                                       `*-gate.py`" (it is both homes, 427), LANES/RUN SET said
+                                       `A \ LANES` (it is `A \ (lanes, proofs)`, 334), the
+                                       hand-rolled/residual cells held 14/26, and line 138
+                                       printed a **788–913 s** projection priced over the old
+                                       run set. Every moving cell now names its instrument, and
+                                       the projection is a POINTER to `runner.py --plan`'s
+                                       `PROJECTION` line. `gates/docnum-claim-gate.py`'s six
+                                       claims were re-pointed at the shapes the commands actually
+                                       print (`WALK`, `RUN SET`); its old `POPULATION: directory
+                                       walk gates/*-gate.py` regex matched NOTHING, and the gate's
+                                       own line `0 figure(s) transcribed` is now the whole truth
+                                       rather than a stale one. Gate rc=0 (5 UNASKABLE pointers +
+                                       1 dated PASS), `--plant` green.
 false-fails     [#########] 9/10     The apostrophe guard LANDED (`checks/cites-census.py:394`,
                                        `(?<![\w`])'([^']{4,})'`) and PASSED the bar: on one frozen
                                        snapshot it retired 16 FAIL rows and silenced 0 PASS rows

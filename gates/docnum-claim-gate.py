@@ -117,7 +117,7 @@ PY = ".venv/bin/python"
 #
 # WHY TWO SHAPES AND NOT ONE. The first version reused the OUTPUT shape for the PROSE, and
 # every row then read "the site's sentence no longer has this shape" -- which is TRUE, and
-# useless: the output's shape (`POPULATION: ... -> 79`) is not a markdown table row. A shape
+# useless: the output's shape (`WALK ... -> 427`) is not a markdown table row. A shape
 # that fits the instrument and not the document measures the instrument twice.
 #
 # NO FIGURE APPEARS IN THIS TABLE. `--plan` prints every row and there is no number to read.
@@ -129,9 +129,9 @@ PY = ".venv/bin/python"
 # transcribed figure left in this table, and it is the one the pointer check exists to catch.
 CLAIMS = (
     ("gates/README.md:83",
-     "the gate population (A) = the `*-gate.py` walk",
+     "the gate population (A) = the directory walk of both homes",
      (PY, "checks/gatesweep.py", "--plan"),
-     r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
+     r"WALK\s*: entry points in every derived home\s+-> (\d+)",
      None, False),
     ("gates/README.md:84",
      "the control denominator (B) = `gates-pop.discover()`",
@@ -144,19 +144,19 @@ CLAIMS = (
      r"intent-to-add=(\d+)",
      None, False),
     ("gates/README.md:138",
-     "the run set the cost projection is stated over",
-     (PY, "checks/gatesweep.py", "--plan"),
-     r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
+     "the projection's run set, POINTED AT rather than transcribed",
+     (PY, "gates/runner.py", "--plan"),
+     r"RUN SET = A \\ \(lanes, proofs\)\s+(\d+)",
      None, False),
     ("gates/README.md:74",
      "the sweep tally the loop is described by",
      (PY, "checks/gatesweep.py", "--plan"),
-     r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
+     r"WALK\s*: entry points in every derived home\s+-> (\d+)",
      r"over (\d+) gates in", True),
     ("gates/runner.py:49",
      "the same population, quoted by the gate that DELEGATES to the sweep",
      (PY, "checks/gatesweep.py", "--plan"),
-     r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
+     r"WALK\s*: entry points in every derived home\s+-> (\d+)",
      None, False),
 )
 
