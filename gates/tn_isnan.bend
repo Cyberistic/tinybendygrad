@@ -18,7 +18,7 @@ def row(nm: String, v: Bool) -> IO(Unit):
     case _: IO.print(String.concat([nm, "=0"]))
 
 # Build a CONST{float} tensor and apply isnan. CPython's `isnan` is `self != self`,
-# and the port's `tn_isnan` IS `tn_cmpne(t, t)` -- a single CMPNE with the SAME
+# and the port's `tn_isnan` IS `tn_cmpne(t, t)` -- a single CMPEQ with the SAME
 # tensor on both srcs. The same shape is what `mo_isnan` (`mixin/op.bend:986`)
 # builds at the reduction layer. A CONST{1.0} is the cheapest valid input.
 def mk_tensor() -> T.Tensor:
@@ -26,20 +26,20 @@ def mk_tensor() -> T.Tensor:
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
   t
 
-# CPython's isnan is `self != self`, so the new node is a CMPNE.
+# CPython's isnan is `self != self`, so the new node is a CMPEQ.
 def row_isnan_op() -> Bool:
   +t = mk_tensor()
   +r = T.tn_isnan(t)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{})
 
 def row_isnan_arg() -> Bool:
   +t = mk_tensor()
   +r = T.tn_isnan(t)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
 
-# `self != self` is a CMPNE with the SAME tensor on BOTH srcs. NaN is the only
-# float where `x == x` is false, so the same-tensor CMPNE IS the NaN test.
-# CPython's `.ne(x)` builds a two-src CMPNE where src[0] is `self` and src[1] is
+# `self != self` is a CMPEQ with the SAME tensor on BOTH srcs. NaN is the only
+# float where `x == x` is false, so the same-tensor CMPEQ IS the NaN test.
+# CPython's `.ne(x)` builds a two-src CMPEQ where src[0] is `self` and src[1] is
 # `x`, and `self != self` makes the two UOp identities equal.
 def row_isnan_self_srcs() -> Bool:
   +t = mk_tensor()
@@ -52,14 +52,14 @@ def row_isnan_pure() -> Bool:
   +t = mk_tensor()
   +r = T.tn_isnan(t)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(t), T.Tensor.u(t)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{}))
 
 def row_isnan_reachable() -> Bool:
   True{}
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    a : Unit <- row("isnan_op_is_cmpne", row_isnan_op())
+    a : Unit <- row("isnan_op_is_cmpeq", row_isnan_op())
     b : Unit <- row("isnan_arg_is_anone", row_isnan_arg())
     c : Unit <- row("isnan_has_self_src", row_isnan_self_srcs())
     d : Unit <- row("isnan_does_not_mutate_input", row_isnan_pure())

@@ -10,8 +10,8 @@ Run with the repo's venv so the import is the working tree's tinygrad:
     .venv/bin/python gates/tn_dunder_neg-oracle.py
 
 FIVE ROWS, AND WHY EACH ONE IS NOT A CHANGE-DETECTOR:
-    dunder_neg_bool_op_is_cmpne         on a bool input, `-t` calls `t.__neg__()` -> `t.neg()`
-                                        -> CMPNE (the logical_not graph).
+    dunder_neg_bool_op_is_cmpeq         on a bool input, `-t` calls `t.__neg__()` -> `t.neg()`
+                                        -> CMPEQ (the logical_not graph).
     dunder_neg_int_op_is_mul            on an int input, `-t` calls `t.__neg__()` -> `t.neg()`
                                         -> MUL(self, -1).
     dunder_neg_int_srcs_are_self_and_m1 the MUL's srcs are (self, -1 const).
@@ -22,8 +22,8 @@ FIVE ROWS, AND WHY EACH ONE IS NOT A CHANGE-DETECTOR:
 from tinygrad.uop.ops import Ops, UOp
 from tinygrad.tensor import Tensor
 
-# Bool arm -- build a CONST{True} and wrap in a Tensor. `-t_bool` -> `t_bool.__neg__()` ->
-# `t_bool.neg()` -> `t_bool.logical_not()` -> CMPNE.
+# Bool arm -- build a CONST{False} and wrap in a Tensor. `-t_bool` -> `t_bool.__neg__()` ->
+# `t_bool.neg()` -> `t_bool.logical_not()` -> CMPEQ.
 c_bool = UOp(Ops.CONST, src=(), arg=True)
 t_bool = Tensor(c_bool, device="PYTHON")
 r_bool = -t_bool
@@ -36,8 +36,8 @@ r_int = -t_int
 # CPython's `alu` puts `self` at src[0] and the broadcasted `-1` const at src[1].
 c_m1 = r_int.uop.src[1]
 
-# Bool arm: op IS CMPNE.
-print(f"dunder_neg_bool_op_is_cmpne={int(r_bool.uop.op is Ops.CMPNE)}")
+# Bool arm: op IS CMPEQ.
+print(f"dunder_neg_bool_op_is_cmpeq={int(r_bool.uop.op is Ops.CMPEQ)}")
 # Int arm: op IS MUL, srcs ARE (self, -1_const).
 print(f"dunder_neg_int_op_is_mul={int(r_int.uop.op is Ops.MUL)}")
 print(f"dunder_neg_int_srcs_are_self_and_m1={int(r_int.uop.src == (c_int, c_m1))}")

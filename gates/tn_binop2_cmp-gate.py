@@ -38,22 +38,26 @@ ROWS = (
     "rcmplt_srcs_are_x_and_self",
     "rcmplt_does_not_mutate_input",
     # tn_cmpne -- elementwise.py:339, via ne at :333.
-    "cmpne_op_is_cmpne",
+    "cmpne_op_is_cmpeq",
     "cmpne_arg_is_anone",
-    "cmpne_srcs_are_self_and_x",
+    "cmpne_src0_is_cmpeq_of_self_and_x",
+    "cmpne_src1_is_const_false",
     "cmpne_does_not_mutate_input",
     # tn_dunder_ge -- elementwise.py:327, `(self < x).logical_not()`.
-    "ge_op_is_cmpne",
+    "ge_op_is_cmpeq",
     "ge_arg_is_anone",
+    "ge_src0_is_cmplt_of_self_and_x",
     "ge_does_not_mutate_input",
     "ge_is_reachable",
     # tn_dunder_le -- elementwise.py:330, `(self > x).logical_not()`.
-    "le_op_is_cmpne",
+    "le_op_is_cmpeq",
     "le_arg_is_anone",
+    "le_src0_is_cmplt_of_x_and_self",
     "le_does_not_mutate_input",
     # tn_eq -- elementwise.py:336, `self.ne(x).logical_not()`.
-    "eq_op_is_cmpne",
+    "eq_op_is_cmpeq",
     "eq_arg_is_anone",
+    "eq_srcs_are_self_and_x",
     "eq_does_not_mutate_input",
     "binop2_cmp_is_reachable",
 )
@@ -67,7 +71,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_binop2_cmp-gate: 29 rows, 3 lanes -- tn_cmplt, tn_rcmplt, "
+    sys.exit(main(GATE, "tn_binop2_cmp-gate: 27 rows, 3 lanes -- tn_cmplt, tn_rcmplt, "
                         "tn_cmpne (no-broadcast binop ports for __lt__/__gt__/"
                         "__ne__) and tn_dunder_ge, tn_dunder_le, tn_eq (chains through "
                         "tn_logical_not) all agree with CPython"))

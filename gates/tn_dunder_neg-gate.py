@@ -5,7 +5,7 @@
 
 FIVE ROWS, THREE LANES. CPython's `Tensor.__neg__` (elementwise.py:261) is
 `return self.neg()`. The port's `tn_neg` (tensor.bend:435) covers BOTH arms:
-the bool arm goes through `tn_logical_not` (CMPNE), the arith arm goes through
+the bool arm goes through `tn_logical_not` (CMPEQ), the arith arm goes through
 `tn_neg.arith` (MUL with -1 const). `tn_dunder_neg` is a thin wrapper that
 delegates to `tn_neg`. The five rows cover the bool op, the int op, the int
 srcs, the input purity, and reachability. `Tensor.__neg__` is the unary-`-`
@@ -21,7 +21,7 @@ from gatekit import Gate, main
 
 # THE ROWS, NAMED ONCE.
 ROWS = (
-    "dunder_neg_bool_op_is_cmpne",       # bool input: .__neg__() builds a CMPNE (the neg/neg(bool) graph).
+    "dunder_neg_bool_op_is_cmpeq",       # bool input: .__neg__() builds a CMPEQ (the neg/neg(bool) graph).
     "dunder_neg_int_op_is_mul",          # int input: .__neg__() builds a MUL (the neg/neg(arith) graph).
     "dunder_neg_int_srcs_are_self_and_m1", # the MUL's srcs are (self, -1 const).
     "dunder_neg_int_does_not_mutate_input", # the input still has its original op.

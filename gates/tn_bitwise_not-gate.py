@@ -6,7 +6,7 @@
 EIGHT ROWS, THREE LANES -- CPython, bend interpreted, bend compiled -- over the
 claims that `tn_bitwise_not` (the bool arm of elementwise.py:145) does what
 CPython's `Tensor.bitwise_not` does on a bool input: it builds the same
-CONST-True + CMPNE graph (the CAST folds away on a bool input -- CPython's
+CONST-True + CMPEQ graph (the CAST folds away on a bool input -- CPython's
 `cast` returns `self` when the dtype matches, `mixin/dtype.py:36`).
 
 THE THREE-ARM DISPATCH IS NOW PORTED AND ONE ROW WITNESSES IT. `elementwise.py:156-157` is
@@ -31,7 +31,7 @@ from gatekit import Gate, main
 
 # THE ROWS, NAMED ONCE.
 ROWS = (
-    "bitnot_op_is_cmpne",
+    "bitnot_op_is_cmpeq",
     "bitnot_arg_is_anone",
     "bitnot_srcs_are_input_and_true",
     "bitnot_identity_cast_folded",

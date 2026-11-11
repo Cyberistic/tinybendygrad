@@ -12,9 +12,9 @@ that `tn_isfinite` does what CPython's `Tensor.isfinite` (elementwise.py:623) do
 recorded at `mixin/elementwise.bend`'s `isfinite` block rather than asserted away.
 
 THE `src1_is_*` ROWS EXIST BECAUSE `op` / `arg` / `nsrc` CANNOT SEE THE BUG THEY CAUGHT.
-`logical_not` was building its CMPNE in the arena as it stood BEFORE the `CONST{True}` was
+`logical_not` was building its CMPEQ in the arena as it stood BEFORE the `CONST{True}` was
 interned; `Arena` is an immutable `Data` value (`ops.bend:1255`), so `Found.ar` snapshots,
-and the CMPNE landed on the slot the const index names -- a node that was its own `src[1]`.
+and the CMPEQ landed on the slot the const index names -- a node that was its own `src[1]`.
 The graph typechecked and every op/arg/nsrc row answered 1.
 """
 
@@ -26,7 +26,7 @@ from gatekit import Gate, main
 
 # THE ROWS, NAMED ONCE.
 ROWS = (
-    "isfinite_op_is_cmpne",
+    "isfinite_op_is_cmpeq",
     "isfinite_arg_is_anone",
     "isfinite_has_two_top_srcs",
     "isfinite_is_reachable",
@@ -43,7 +43,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_isfinite-gate: 6 rows, 3 lanes -- tn_isfinite's CMPNE/2-srcs "
+    sys.exit(main(GATE, "tn_isfinite-gate: 6 rows, 3 lanes -- tn_isfinite's CMPEQ/2-srcs "
                         "graph (op/arg/nsrc/reachability + src[1] is the CONST and is not "
                         "the node itself) all agree with CPython's Tensor.isfinite; the "
                         "src[0] CAST-vs-OR fold is recorded at mixin/elementwise.bend"))

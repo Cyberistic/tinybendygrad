@@ -11,7 +11,7 @@
 # and `self * (-1)` (= `MUL(self, -1)`) on an arith input. The port splits the dispatch
 # on the fold of `tn_dtype` into `tn_neg.go`, which routes to `tn_logical_not` or
 # `tn_neg.arith`. Both arms are ported, and the bool arm is the SAME graph `tn_logical_not`
-# already gates -- WHICH IS `CONST(True) + CMPNE`, NOT `CAST(bool) + CONST(True) + CMPNE`: the
+# already gates -- WHICH IS `CONST(True) + CMPEQ`, NOT `CAST(bool) + CONST(True) + CMPEQ`: the
 # identity bool cast FOLDS on both sides now that `tn_logical_not` reaches `D.cast_at`
 # (`mixin/dtype.bend:342`). The arith arm is `MUL(self, -1)`
 # with the `-1` literal as a `CInt{4294967295}` (the u32 two's-complement pair of `-1`).
@@ -29,7 +29,7 @@ def row(nm: String, v: Bool) -> IO(Unit):
     case _: IO.print(String.concat([nm, "=0"]))
 
 # Build a CONST{CBool{True}} tensor. `tn_neg` dispatches to `tn_logical_not` on a bool
-# input, and the result op IS the CMPNE from that helper.
+# input, and the result op IS the CMPEQ from that helper.
 def mk_bool_tensor() -> T.Tensor:
   +c = O.UOp.const(O.Arena.empty(), O.CBool{True{}})
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
@@ -42,17 +42,32 @@ def mk_int_tensor() -> T.Tensor:
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
   t
 
-# ROW 1: on a bool input, `tn_neg` builds a CMPNE (the `tn_logical_not` graph).
+# ROW 1: on a bool input, `tn_neg` builds a CMPEQ (the `tn_logical_not` graph).
 def row_neg_bool_op() -> Bool:
   +t = mk_bool_tensor()
   +r = T.tn_neg(t)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{})
 
-# ROW 2: the CMPNE's arg is ANone{}.
+# ROW 2: the CMPEQ's arg is ANone{}.
 def row_neg_bool_arg() -> Bool:
   +t = mk_bool_tensor()
   +r = T.tn_neg(t)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
+
+# **⇒ AND **THE **`CMPEQ`'s **`src[1]` **IS **THE **BOOL **`False`** -- **AND **THIS **IS
+# **THE **ROW **THAT **CAN **GO **RED**, **BECAUSE **THE **OP **ROW **ALONE **CANNOT: **A
+# **`CMPEQ` **AGAINST **`True` **AND **A **`CMPEQ` **AGAINST **`False` **ARE **THE **SAME
+# **OP**.  **⇒ AND **`logical_not` **IS **`cast(bool).eq(False)`** (`mixin/elementwise.py:57`
+# **AT **THE **PIN **`f5ac54685074`**)**, **⇒ AND **THE **OLD **SPELLING **WAS
+# **`CMPNE(x, True)`**, **⇒ AND **THE **VALUE **IS **THE **WHOLE **DIFFERENCE.**
+def row_neg_bool_src1.go(+r: T.Tensor) -> Bool:
+  +s1 = O.Arena.src(T.Tensor.ar(r), T.Tensor.u(r), 1)
+  O.eq_arg(O.Arena.arg(T.Tensor.ar(r), s1), O.APy{O.CBool{False{}}})
+
+def row_neg_bool_src1() -> Bool:
+  +t = mk_bool_tensor()
+  +r = T.tn_neg(t)
+  row_neg_bool_src1.go(r)
 
 # ROW 4, REWRITTEN. It USED TO compare `r.srcs` against
 # `[T.Tensor.u(t), O.Arena.src(ar, u, 1)]` -- that is, against src[1] ITSELF. The row
@@ -108,8 +123,9 @@ def row_neg_reachable() -> Bool:
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    a : Unit <- row("neg_bool_op_is_cmpne", row_neg_bool_op())
+    a : Unit <- row("neg_bool_op_is_cmpeq", row_neg_bool_op())
     b : Unit <- row("neg_bool_arg_is_anone", row_neg_bool_arg())
+    b : Unit <- row("neg_bool_src1_is_const_false", row_neg_bool_src1())
     c : Unit <- row("neg_int_op_is_mul", row_neg_int_op())
     d : Unit <- row("neg_int_srcs_are_self_and_m1", row_neg_int_srcs())
     h : Unit <- row("neg_int_src1_is_not_self", row_neg_int_src1_is_not_self())

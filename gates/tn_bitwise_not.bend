@@ -17,7 +17,7 @@
 # AND THE ORACLE WAS HAND-BUILT TO MATCH, so both lanes were wrong together and compared
 # `1 == 1`. Switching the oracle to the real `Tensor.bitwise_not` is what exposed it:
 # on a bool input CPython's `cast(dtypes.bool)` FOLDS (`mixin/dtype.py:36` returns
-# `self` when the dtype matches), so CPython's bool arm is `CMPNE(CONST, CONST)` with
+# `self` when the dtype matches), so CPython's bool arm is `CMPEQ(CONST, CONST)` with
 # NO CAST -- and the port already agrees, because its bool arm is `tn_logical_not`,
 # which goes through the folding `D.cast_at`.
 #
@@ -30,7 +30,7 @@
 # the third, because every other row is bool-fixture.
 #
 # THE GRAPH ON A BOOL INPUT IS TWO NODES. Input CONST{CBool{True}}, a second
-# CONST{CBool{True}}, and the CMPNE with the two as srcs -- the `cast` folds away, so
+# CONST{CBool{True}}, and the CMPEQ with the two as srcs -- the `cast` folds away, so
 # `src[0]` IS the input. Row 4 is that fold, and it is the row that would have caught a
 # regression to the raw cast.
 
@@ -63,9 +63,9 @@ def mk_bitnot() -> Bitnot:
   Bitnot{T.tn_bitwise_not(t), t}
 
 def bnot(+r: T.Tensor) -> Bool:
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{})
 
-# ROW 1: the outer op is CMPNE.
+# ROW 1: the outer op is CMPEQ.
 def row_op(+b: Bitnot) -> Bool:
   match b:
     case Bitnot{m, t}:
@@ -121,7 +121,7 @@ def row_pure(+b: Bitnot) -> Bool:
     case Bitnot{m, t}: O.eq_op(O.Arena.op(T.Tensor.ar(t), T.Tensor.u(t)), O.OpsCONST{})
 
 # ROW 7: THE THIRD ARM. `CInt{4}` is weakint and SIGNED, so CPython takes `self ^ -1`
-# (`elementwise.py:157`) and the top op must be XOR, not CMPNE. This is the only row on a
+# (`elementwise.py:157`) and the top op must be XOR, not CMPEQ. This is the only row on a
 # non-bool fixture; `None` is `Dt.max`'s refusal and is a FAIL, not a skip.
 def row_signed_xor.go(m: Maybe<&2, T.Tensor>) -> Bool:
   match m:
@@ -137,7 +137,7 @@ def row_signed_xor() -> Bool:
 # row cannot be handed to a second; the six bool rows each call `mk_bitnot()`.
 def row_op.go() -> IO(Unit):
   b : Bitnot = mk_bitnot()
-  row("bitnot_op_is_cmpne", row_op(b))
+  row("bitnot_op_is_cmpeq", row_op(b))
 
 def row_arg.go() -> IO(Unit):
   b : Bitnot = mk_bitnot()

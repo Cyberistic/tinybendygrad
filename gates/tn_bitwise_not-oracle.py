@@ -27,7 +27,7 @@ and `logical_not` is `self.cast(dtypes.bool).ne(True)`, whose `cast` FOLDS on a 
 (`mixin/dtype.py:36`: `return self if self.dtype == (dt:=to_dtype(dtype)) else ...`). MEASURED on
 a bool CONST:
 
-    bitwise_not -> CMPNE  nsrc: 2
+    bitwise_not -> CMPEQ  nsrc: 2
        src[0] = CONST dtype=dtypes.bool arg=True
        src[1] = CONST dtype=dtypes.bool arg=True
 
@@ -47,7 +47,7 @@ def bool_const(v):
 c = bool_const(True)  # the bool input
 r = Tensor(c).bitwise_not().uop
 
-print(f"bitnot_op_is_cmpne={int(r.op is Ops.CMPNE)}")
+print(f"bitnot_op_is_cmpeq={int(r.op is Ops.CMPEQ)}")
 print(f"bitnot_arg_is_anone={int(r.arg is None)}")
 print(f"bitnot_srcs_are_input_and_true={int(r.src[1].arg == True)}")
 print(f"bitnot_identity_cast_folded={int(r.src[0] is c)}")

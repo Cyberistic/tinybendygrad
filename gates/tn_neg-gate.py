@@ -20,8 +20,9 @@ from gatekit import Gate, main
 
 # THE ROWS, NAMED ONCE.
 ROWS = (
-    "neg_bool_op_is_cmpne",           # bool input: result op is CMPNE.
-    "neg_bool_arg_is_anone",          # the CMPNE's arg is None.
+    "neg_bool_op_is_cmpeq",           # bool input: result op is CMPNE.
+    "neg_bool_arg_is_anone",
+    "neg_bool_src1_is_const_false",          # the CMPNE's arg is None.
     "neg_int_op_is_mul",              # int input: result op is MUL.
     "neg_int_srcs_are_self_and_m1",   # the MUL's srcs are (self, -1 const).
     "neg_int_src1_is_not_self",       # the MUL is not its own src[1] -- the self-reference.
@@ -39,7 +40,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_neg-gate: 8 rows, 3 lanes -- tn_neg's bool arm (CMPNE/ANone) "
+    sys.exit(main(GATE, "tn_neg-gate: 9 rows, 3 lanes -- tn_neg's bool arm (CMPEQ/ANone) "
                         "and arith arm (MUL/srcs/self-no-mutation) all agree with "
                         "CPython's Tensor.neg (the two-arm dispatch closes the wall "
                         "that lived on the elementwise.py:74 boundary)"))

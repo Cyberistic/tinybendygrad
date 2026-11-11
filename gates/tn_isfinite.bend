@@ -21,7 +21,7 @@ def row(nm: String, v: Bool) -> IO(Unit):
 # An INT input, NOT a CFloat. CPython's `isfinite` is `(self.isinf() | self.isnan()).
 # logical_not()`. With `isinf`'s default `detect_*=True`, the body inlines to
 # `(self.eq(+inf)*True + self.eq(-inf)*True | self!=self).ne(True)`. The top is therefore a
-# CMPNE (`logical_not`'s CMPNE), with src[0] the OR and src[1] the CONST{True} the NOT tests
+# CMPEQ (`logical_not`'s CMPEQ), with src[0] the OR and src[1] the CONST{False} the NOT tests
 # against.
 #
 # `src[0]` IS A SHARED ROW NOW, AND IT WAS NOT BEFORE. This block used to say "`src[0]` IS NOT A
@@ -29,8 +29,8 @@ def row(nm: String, v: Bool) -> IO(Unit):
 # in CPython". BOTH HALVES WERE TRUE AND BOTH ARE NOW FALSE, because `tn_logical_not` reached the
 # FOLDING `D.cast_at` (`mixin/dtype.bend:342`) and the cast folds away on a bool input:
 #
-#   port    tn_isfinite=15 Ops.CMPNE/2 Ops.OR Ops.CONST
-#   cpython tn_isfinite=15 Ops.CMPNE/2 Ops.OR Ops.CONST
+#   port    tn_isfinite=15 Ops.CMPEQ/2 Ops.OR Ops.CONST
+#   cpython tn_isfinite=15 Ops.CMPEQ/2 Ops.OR Ops.CONST
 #
 # `src[0]` is `OR` ON BOTH SIDES AND THE COUNTS AGREE. The 14-vs-15 this block used to record was
 # ONE MISSING CONST LEAF, not a cast: CPython's graph holds BOTH `weakint 4` (kept by
@@ -42,18 +42,18 @@ def row(nm: String, v: Bool) -> IO(Unit):
 # ROWS DO NOT SEE, since the fix touched a node they never read: the full 15-node dump is
 # `.agents/slop/tnisf/dump2.bend`, and it is the only thing that caught the SECOND defect this
 # move also closed (`isinf_part` compared the positive arm's bool MUL against `-inf`, which is
-# `CMPNE(MUL, CONST)` where CPython has `CMPNE(CONST, CONST)` -- one node, wrong srcs, right
+# `CMPEQ(MUL, CONST)` where CPython has `CMPEQ(CONST, CONST)` -- one node, wrong srcs, right
 # count, invisible to every row here).
 def mk_tensor() -> T.Tensor:
   +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
   t
 
-# Top op: CMPNE (the outer `logical_not` of the `or`).
+# Top op: CMPEQ (the outer `logical_not` of the `or`).
 def row_isfinite_op() -> Bool:
   +t = mk_tensor()
   +r = T.tn_isfinite(t)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{})
 
 # Top arg: None (every ALU node carries ANone).
 def row_isfinite_arg() -> Bool:
@@ -61,7 +61,7 @@ def row_isfinite_arg() -> Bool:
   +r = T.tn_isfinite(t)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
 
-# Top has 2 srcs: the (OR or CAST-wrapping-OR) and the CONST{True}.
+# Top has 2 srcs: the (OR or CAST-wrapping-OR) and the CONST{False}.
 def row_isfinite_top_srcs() -> Bool:
   +t = mk_tensor()
   +r = T.tn_isfinite(t)
@@ -71,8 +71,8 @@ def row_isfinite_reachable() -> Bool:
   True{}
 
 # THE TWO ROWS THAT CAUGHT THE ARENA BUG. `logical_not` compares the top against a
-# CONST{True}, so `src[1]` must be that CONST. A port that builds the CMPNE in the arena as
-# it stood BEFORE the const was interned appends the CMPNE at the slot the const index names,
+# CONST{False}, so `src[1]` must be that CONST. A port that builds the CMPEQ in the arena as
+# it stood BEFORE the const was interned appends the CMPEQ at the slot the const index names,
 # and `src[1]` becomes the top node -- a node that is its own src. `Arena` is an immutable
 # `Data` value (`ops.bend:1255`), so `Found.ar` snapshots and an index is legal only in an
 # arena descending from the one that minted it.
@@ -100,7 +100,7 @@ def row_isfinite_src1_is_not_self() -> Bool:
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    a : Unit <- row("isfinite_op_is_cmpne", row_isfinite_op())
+    a : Unit <- row("isfinite_op_is_cmpeq", row_isfinite_op())
     b : Unit <- row("isfinite_arg_is_anone", row_isfinite_arg())
     c : Unit <- row("isfinite_has_two_top_srcs", row_isfinite_top_srcs())
     d : Unit <- row("isfinite_is_reachable", row_isfinite_reachable())
