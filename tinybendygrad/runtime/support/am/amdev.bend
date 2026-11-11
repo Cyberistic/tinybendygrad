@@ -75,9 +75,7 @@
 #     reads back as version 0_0 rather than as an error.
 import ../../../helpers.bend as H
 
-
 # THE CONSTANTS, and where each one was read.
-
 
 # :162 `self.mmio[am.mmRCC_IOV_FUNC_IDENTIFIER] & 1` -- the VF bit.
 def MMIOV_FUNC_IDENTIFIER() -> U32: 3557
@@ -387,13 +385,11 @@ def hwip.dupvals() -> List<&2, U32>: [108]
 def hwip.max() -> U32: 34
 def hwip.in_range() -> U32: 28
 
-
 # THE VERSION LADDER. :46 `!=`, :48/:85 `>= (11,0,0)`, :67/:406 `>= (12,0,0)`
 # and `(13,0,12)`, :407 `in {(4,4,2), (4,4,4)}`, :397 `[:2] in {(9,4), (9,5)}`.
 # A version is THREE `U32`, never a packed word: `ops_amd`'s agent found
 # `dev_max_copy` comparing a three-part COMPONENTWISE where ops_amd.py:880
 # compares LEXICOGRAPHICALLY, and three of its eight fixtures disagreed.
-
 
 # THE TAIL. `(an,ax) >= (bn,bx)` is decided by the second components when the
 # first agree, so `ge3` never has to hold two triples at once and no parameter is
@@ -437,7 +433,6 @@ def v.fmt3(+maj: U32, +min: U32, +rev: U32) -> String:
 def v.reserved(maj: U32, min: U32, rev: U32) -> U32:
   Bool.pick(U32, v.p2_in_94_95(maj, min), RESERVED_BIG(), RESERVED_SMALL())
 
-
 # THE TRACE. `Tr.emit` is the seam: every register access, every config read and
 # write, every mailbox store and every poll in this file goes through it, so the
 # trace is the ordered list of hardware the seam will perform.
@@ -453,7 +448,6 @@ def v.reserved(maj: U32, min: U32, rev: U32) -> U32:
 # shows up in the trace as a TRUNCATION and no step below needs a guard of its
 # own. `Tr.refuse` is idempotent after the first, and `nth`/`at` let one fixture
 # numbering reach EVERY refusal site in turn.
-
 
 type Call is Data:
   Call{k: U32, a: U32, b: U32, c: U32}
@@ -495,7 +489,6 @@ def Tr.refuse.go(+refused: Bool, +nth: U32, +at: U32) -> Tr:
 def Tr.refuse(t: Tr) -> Tr:
   match t:
     case Tr{calls, +refused, +nth, +at}: Tr.refuse.go(refused, nth, at)
-
 
 # THE OPERATIONS. Each is one FFI call, and the id is what the gate matches on.
 
@@ -573,14 +566,12 @@ def Call.c(c: Call) -> U32:
   match c:
     case Call{k, a, b, c}: c
 
-
 # READING THE TRACE. `Tr.count` is how many entries carry a tag, `Tr.n` is how
 # many there are AT ALL -- and the second is the TRUNCATION LENGTH a refusal
 # shows up as. `Tr.seq` is a real subsequence test, with the matcher fuel set to
 # the TRACE length: ops_webgpu's M23 measured that setting it to the PATTERN
 # length makes it answer True to everything, which left eight order rows
 # decorative.
-
 
 def Tr.n(t: Tr) -> U32: U32.from_nat(List.length(&2, Call, Tr.calls(t)))
 
@@ -665,7 +656,6 @@ def Tr.seq.go(n: Nat, +patlen: Nat, cs: List<&2, Call>, +pat: List<&2, Call>, +a
 def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.seq.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
-
 # `:147-154` `_disable_aspm` -- THE PCI CAPABILITY WALK. The one loop in this
 # file that is bounded by something other than a counter: `seen` exists because
 # "a dead link can return 0xff pointers forever" (:150).
@@ -676,8 +666,6 @@ def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # are the SEAM's, so the fixture supplies them as two parallel lists: `links` is
 # what `read_config(cap, 1)` says and `nexts` is what `read_config(cap + 1, 1)`
 # says. `Tr.count(OP_CFG_RD(), ...)` is what the trace reads back.
-
-
 
 # `:147-154` `_disable_aspm` -- THE PCI CAPABILITY WALK, and the one loop in
 # this file bounded by something other than a counter. `seen` exists because
@@ -694,7 +682,6 @@ def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # The values `read_config` answers are the SEAM's, so the fixture supplies them as
 # two parallel lists: `links` is what `read_config(cap, 1)` says and `nexts` is
 # what `read_config(cap + 1, 1)` says. The port walks those and emits the reads.
-
 
 # `seen` membership. A dead chain repeats a cap, and this is what stops it.
 def aspm.seen.go(n: Nat, +c: U32, cs: List<&2, U32>, hit: Bool) -> Bool:
@@ -821,7 +808,6 @@ def aspm.walk(first: U32, +links: List<&2, U32>, +nexts: List<&2, U32>, raw: U32
   aspm.flush(aspm.go(List.length(&2, U32, links), links, nexts, Nil{},
     U32.and(first, ASPM_MASK()), 0n, Tr.rd_cfg(ASPM_CAP0(), 1, t)), raw)
 
-
 # `:268-281` `_vf_mailbox_request` -- THE MAILBOX PROTOCOL, and the most
 # order-sensitive thing in the file. A VF may only touch engines inside an access
 # window (:255), so the sequence IS the contract:
@@ -840,7 +826,6 @@ def aspm.walk(first: U32, +links: List<&2, U32>, +nexts: List<&2, U32>, raw: U32
 # Every one of the eleven (or nine) trace entries is a hardware store, and the
 # FOUR MSGBUF words are a `(req, 0, 0, 0)` tuple at consecutive addresses -- which
 # is why `mb_init` and `mb_norw` are both nine-plus-two and not the same length.
-
 
 # THE FOUR WORDS :272 writes, as ADDRESSES: `MAILBOX_MSGBUF_TRN_DW0 + i` for
 # i in 0..3. Walking the ADDRESS rather than the index is what lets the countdown
@@ -898,12 +883,10 @@ def mb.request(+req: U32, wait_ready: Bool, +t: Tr) -> Tr:
 # (:265) hands back so the PF recognises which window to close.
 def mb.lease(req: U32) -> U32: U32.add(req, 1)
 
-
 # `:347-354` `_read_vram`. The window protocol is a fixed 3-call sequence per
 # four bytes -- `wreg(0x06, caddr >> 31)`, `wreg(0x00, (caddr & 0x7FFFFFFF) |
 # 0x80000000)`, `rreg(0x01)` -- and the ASSERT is `addr % 4 == 0 and
 # size % 4 == 0` (:348), which refuses BEFORE any word is read.
-
 
 def rv.hi(caddr: U32) -> U32: U32.shrn(caddr, 31n)
 def rv.lo(caddr: U32) -> U32: U32.or(U32.and(caddr, VRAM_WIN_MASK()), VRAM_WIN_FLAG())
@@ -928,7 +911,6 @@ def rv.read(+addr: U32, +size: U32, +t: Tr) -> Tr:
     rv.go(U32.to_nat(U32.div(size, VRAM_WIN_STEP())), addr, t),
     Tr.refuse(t))
 
-
 # `:332-345` `indirect_rreg` / `indirect_wreg` / `indirect_wreg_pcie`. THE 64-BIT
 # ONE. `indirect_wreg_pcie`'s index is
 #
@@ -939,7 +921,6 @@ def rv.read(+addr: U32, +size: U32, +t: Tr) -> Tr:
 # write pointer is `(raw & 0x1FFFFFFF) * 32`, up to 2^34, and the first version
 # computed it in `U32` and WRAPPED. This one is the second instance of the same
 # shape, and it is why the constant above is named.
-
 
 def pc.has_aid(aid: U32) -> Bool: U32.is_gt(aid, 0)
 
@@ -976,7 +957,6 @@ def pc.index(reg: U32) -> U32: U32.shln(reg, 2n)
 def pc.wreg(reg: U32, val: U32, t: Tr) -> Tr:
   Tr.reg_wr(REG_RSMU_DATA(), val, Tr.reg_wr(REG_RSMU_INDEX(), pc.index(reg), t))
 
-
 # :333-334 `self.reg("regBIF_BX_PF0_RSMU_INDEX").write(reg * 4)` THEN
 # `self.reg("regBIF_BX_PF0_RSMU_DATA").read()` -- the INDEX is written FIRST. The
 # argument that reads LAST must therefore be the OUTER call, or the trace records
@@ -986,7 +966,6 @@ def pc.rreg(reg: U32, t: Tr) -> Tr:
 
 def pc.rreg2(reg: U32, t: Tr) -> Tr:
   Tr.reg_rd(REG_RSMU_DATA(), Tr.reg_wr(REG_RSMU_INDEX(), pc.index(reg), t))
-
 
 # `:314-326` `rlcg_rw` -- THE RLC GATEWAY. A register access on a VF goes
 # through scratch registers instead of the MMIO window, and there are TWO paths:
@@ -1003,7 +982,6 @@ def pc.rreg2(reg: U32, t: Tr) -> Tr:
 # The scratch word is 64 bits and `<< 32` is where a `U32` would wrap: for
 # addr 0x1234 read, the high word is 0x10001234 -- bit 28 set -- which is the whole
 # distinction between a read and a write.
-
 
 # :316 `if addr in {self.reg("regGRBM_GFX_CNTL").addr[inst],
 # self.reg("regGRBM_GFX_INDEX").addr[inst]}` -- the MEMBERSHIP is on the register's
@@ -1035,7 +1013,6 @@ def rlcg.access(addr: U32, val: U32, read: Bool, t: Tr) -> Tr:
   rlcg.write(val, rlcg.pair_hi(addr, read), Tr.reg_rd(REG_SCRATCH_REG0(),
     Tr.wait(0, 0, Tr.reg_wr(REG_RLC_SPARE_INT(), 1, Tr.reg_rd(REG_RLC_SPARE_INT(), t)))))
 
-
 # `:417-421` THE AID ALIVE-MASK. "Live AIDs like the kernel: 4 SDMAs per AID;
 # the AID lives iff its group's alive-mask is 0xf/0x3/0xc. Dead AIDs must never
 # be touched via the indirect window: writes poison the whole fabric" (:417-418).
@@ -1049,7 +1026,6 @@ def rlcg.access(addr: U32, val: U32, read: Bool, t: Tr) -> Tr:
 # three numbers {0xf, 0x3, 0xc} decide liveness: all four, the low pair, or the
 # outer pair. Everything else is harvested-and-still-present and must not be
 # touched. `0` goes in unconditionally, and it is NOT a mask -- it is AID 0.
-
 
 # `i & 3` is `i mod 4`, the instance's slot inside its AID's group of four.
 def aid.slot(i: U32) -> U32: U32.and(i, 3)
@@ -1122,9 +1098,7 @@ def aid.keep(n: Nat, +aidn: U32, +maxa: U32, +flags: List<&2, U32>, +acc: List<&
       Bool.pick(List<&2, U32>, aid.keep1(aidn, maxa, flags),
         List.append(&2, U32, acc, [aidn]), acc))
 
-
 # `:405-407` the module ladder, and `:233` the palloc ladder.
-
 
 # :406 `"nbio" if self.ip_ver[am.GC_HWIP] < (12,0,0) else "nbif"` -- ONE
 # character decides which of the two register tables the device is built from.
@@ -1191,7 +1165,6 @@ def palloc.nbig() -> U32: palloc.nbig.go(PALLOC_LEN(), PALLOC_NLV(), 0)
 # tables.
 def va.shifts() -> List<&2, U32>: [VA_SHIFT0(), VA_SHIFT1(), VA_SHIFT2(), VA_SHIFT3()]
 
-
 # THE SIX MODULE NAMES, with the one that is version-dependent last -- that is
 # :405's list, and `nbio`/`nbif` is the only entry that changes.
 def mods.names.at(+nb: String) -> List<&2, String>:
@@ -1213,7 +1186,6 @@ def mods.n_of(add: Bool) -> U32: Bool.pick(U32, add, 7, 6)
 def mods.names_sd(add: Bool, maj: U32, min: U32, +rev: U32) -> List<&2, String>:
   mods.names_sd.at(add, mods.names6(maj, min, rev))
 
-
 def aid.keep4(n: Nat, +aidn: U32, +maxa: U32, +flags: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: acc
@@ -1227,9 +1199,6 @@ def aid.keep4(n: Nat, +aidn: U32, +maxa: U32, +flags: List<&2, U32>, +acc: List<
 # so a fixture with nothing live past group 0 still yields `[0]`.
 def aid.list4(+flags: List<&2, U32>) -> List<&2, U32>:
   aid.keep4(3n, 1, 3, flags, [0])
-
-
-
 
 # THE FIXTURES. Each is a named shape, so a row says what it is about and a
 # mutation's effect is legible. The ASPM chains are the seam's ANSWERS: `links`
@@ -1259,8 +1228,6 @@ def aspm_fx.loop_nexts() -> List<&2, U32>: [60]
 # bytes and written back with `& ~3`. The value is a FIXTURE because the seam
 # supplies it; what is NOT the seam's is the `& ~3`, which is :154.
 def aspm_fx.lnkctl() -> U32: 65535
-
-
 
 # THE FOUR `DEBUG >= 2` SITES -- amdev.py:185, :225, :251, :254.
 #
@@ -1337,7 +1304,6 @@ def am_dbg_ip_of(dbg: U32, devfmt: String, ip: String) -> String:
 def am_dbg_final_of(dbg: U32, devfmt: String) -> String:
   am_dbg_text.gate(H.debug_ge(dbg, 2), am_dbg_final(devfmt))
 
-
 # THE GATE PRINTERS. `IO.print` takes a `String`, so each printer CONCATENATES the
 # name and the value -- and a row's name says which claim it is, so a mutation's
 # effect is legible in the diff.
@@ -1389,7 +1355,6 @@ def amaprow(nm: String, +xs: List<&2, U32>) -> IO(Unit):
 
 def jrow_s(nm: String, +xs: List<&2, String>) -> IO(Unit): srow(nm, jgs(List.length(&2, String, xs), xs, "|", ""))
 
-
 # the nine structs the gate reads, one def each, so the dispatch is a table and
 # not a `match` on a computed value. The key is the struct's index and the slot is
 # its field's, so every field is its own ROW: an inverted list then shows up as
@@ -1434,7 +1399,6 @@ def sfrow(nm: String, key: Nat, slot: Nat) -> IO(Unit):
 # them here, and every one was produced by amdev.py's own method over the
 # matching fixture.
 
-
 # ONE FIXTURE, WALKED ONCE, because `aspm.walk` takes five arguments and writing
 # them out at every call site is how a row ends up walking a DIFFERENT fixture
 # than the row beside it.
@@ -1442,9 +1406,6 @@ def aspm_fx.link() -> Tr: aspm.walk(aspm_fx.link_first(), aspm_fx.link_links(), 
 def aspm_fx.chain() -> Tr: aspm.walk(aspm_fx.chain_first(), aspm_fx.chain_links(), aspm_fx.chain_nexts(), aspm_fx.lnkctl(), Tr.of())
 def aspm_fx.zero() -> Tr: aspm.walk(aspm_fx.zero_first(), aspm_fx.zero_links(), aspm_fx.zero_nexts(), aspm_fx.lnkctl(), Tr.of())
 def aspm_fx.loop() -> Tr: aspm.walk(aspm_fx.loop_first(), aspm_fx.loop_links(), aspm_fx.loop_nexts(), aspm_fx.lnkctl(), Tr.of())
-
-
-
 
 def t_aspm() -> IO(Unit):
   do IO<Unit>:
@@ -1570,16 +1531,11 @@ def t_rlcg() -> IO(Unit):
     urow("amrl_rsv", RLCG_RSV_MASK())
     urow("amrl_err", RLCG_ERR_MASK())
 
-
 # THE ROWS.
-
-
 
 # THE ROWS. Each def is a `do IO<Unit>:` block of bare statements ending in a
 # bare term -- a `match` inside a `do` block is refused, which is why every
 # dispatch above is its own def and never happens here.
-
-
 
 # the two-way lookups. :400 builds a value -> name dict and :382 needs a name ->
 # value, so the port carries both directions of BOTH tables. A one-way table
@@ -1589,7 +1545,6 @@ def t_rlcg() -> IO(Unit):
 # `hw_id_map` is the other one, and it is NOT injective: hw_id 108 is both
 # NBIO_HWIP (14) and NBIF_HWID (26), so the INVERSE :391 builds keeps only the
 # last -- and the harvest table at :393 depends on which one that is.
-
 
 # value -> name, i.e. `hwid_names`. The comprehension drops a LATER duplicate, so
 # the table holds the FIRST occurrence's slot only if the values are unique --
@@ -1711,7 +1666,6 @@ def t_versions() -> IO(Unit):
     urow("amv_min_maj", 9)
     urow("amv_min_rev", 0)
 
-
 # THE PALLOC LADDER (:233) -- 28 entries, each two words plus its alignment, and
 # the first NINE need a HIGH word. A `U32` list would be right for nineteen of
 # them and wrong for the nine that matter most.
@@ -1807,7 +1761,6 @@ def t_palloc() -> IO(Unit):
     # index 10 is 4KB. That single boundary is the whole ladder.
     # the DESCENDING order, which the LIST row already pins positionally: entry
     # `i` of `amp_list` is `lo, align` for index `i`, so the order IS the rows.
-
 
 # the module ladder (:405-407) and the aid alive-mask (:417-421).
 
@@ -2076,7 +2029,6 @@ def main() -> IO(Unit):
     t_rlcg()
     IO.print("amdev-done=1")
 
-
 # THE MUTATION TABLE. Every number below is `.agents/slop/amdev_mutate.py`'s own
 # output, not an estimate: the harness applies one edit to an IN-TREE scratch
 # copy, runs the INTERPRETED lane, and diffs the row values. The useful column is
@@ -2145,8 +2097,6 @@ def main() -> IO(Unit):
 #   * M21 is a THEOREM rather than a hole: reading `ax` on both sides of the same
 #     comparison cannot differ, so no fixture over any input can separate it.
 #     Reported, not closed.
-
-
 
 # THE WALLS, and what is NOT here. `amdev.py` is 421 lines and roughly a third of
 # it is `ctypes` marshalling, `fetch_fw` and BAR access; the rest is what is

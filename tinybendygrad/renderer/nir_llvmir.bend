@@ -132,13 +132,11 @@
 #            `supported_dtypes` (:244, :253, :321) and `code_for_op` (:119, :262).
 #   STAGE 4  NOT STARTED. whatever is left, named.
 
-
 import Base
 import ./__init__.bend as R
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../LAWS/spec.bend as S
-
 
 # THE GATE PRIMITIVES. `r` is `tc_ptx.bend`'s row builder: a row is a VALUE, so
 # a group of them is a `String` and the whole gate is one `IO.print`. The `py=`
@@ -148,7 +146,6 @@ import ./../LAWS/spec.bend as S
 # `String.concat` DROPS A LITERAL SILENTLY: a `", "` that never made it into the
 # list still typechecks, still runs, and emits a line that is wrong rather than
 # broken. That is the whole argument for this file's existence.
-
 
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
@@ -184,7 +181,6 @@ def named(+nm: String, +ds: List<&2, S.Dt>) -> Bool:
     case d <> +t: Bool.or(String.eq(dtn(d), nm), named(nm, t))
     case Nil{}   : False{}
 
-
 # STAGE 1a. `ldt` -- llvmir.py:12-17. THE TYPE MAP.
 #
 #     def ldt(dt:DType, count=1, ptr=False):
@@ -213,7 +209,6 @@ def named(+nm: String, +ds: List<&2, S.Dt>) -> Bool:
 # the same "make the flag a parameter and the work a leaf" shape rule 28 asks for,
 # reached from the other side: there is no second def of one recursion, there are
 # simply two defs and one of them is not recursive.
-
 
 # `"i" + str(bits)`, the integer arm -- NOT `bits // 8`. The map is
 # `int8: "i8", int16: "i16", int32: "i32", int64: "i64"`, so the number after the
@@ -283,7 +278,6 @@ def ldt.v(+d: S.Dt, +count: U32) -> String:
 def ldt.t(+d: S.Dt, +count: U32, ptr: Bool) -> String:
   Bool.pick(String, ptr, String.concat([ldt.v(d, count), "*"]), ldt.v(d, count))
 
-
 # STAGE 1b. `lcast` -- llvmir.py:26-36. THE CAST TABLE, 14x14.
 #
 #     if dtypes.is_float(input_type):
@@ -316,7 +310,6 @@ def ldt.t(+d: S.Dt, +count: U32, ptr: Bool) -> String:
 # `CWeakInt` -- so `void -> int32` is `NI` here, and `lcast.a void` says so for
 # all fourteen outputs.
 
-
 def NI() -> String: "NotImplementedError"
 
 # the SECOND and THIRD top-level `if`s, llvmir.py:30-35.
@@ -339,7 +332,6 @@ def lcast.a(+it: S.Dt, +ot: S.Dt) -> String:
       Bool.pick(String, U32.is_gt(S.Dt.itemsize(ot), S.Dt.itemsize(it)), "fpext", "fptrunc"),
       Bool.pick(String, S.Dt.is_int(ot), Bool.pick(String, S.Dt.is_unsigned(ot), "fptoui", "fptosi"), NI())),
     lcast.b(it, ot))
-
 
 # STAGE 1c. `lop` -- llvmir.py:67-75. THE ALU OP TABLE, 17 dtypes x 13 ops.
 #
@@ -372,7 +364,6 @@ def lcast.a(+it: S.Dt, +ot: S.Dt) -> String:
 # dispatch needs, and `Dts` is the per-table dtype list the op-direction rows
 # walk. `S.Dt.is_bool` and `S.Dt.is_unsigned` are disjoint, so `Bool.or` of the
 # two is the `(dtypes.bool,)+dtypes.uints` membership and needs no third class.
-
 
 def ldt.flags() -> String: " nsz contract afn"
 
@@ -535,7 +526,6 @@ def lop.ors.go(+ds: List<&2, S.Dt>, +op: O.Op, acc: List<&2, String>) -> List<&2
 
 def lop.orow(+op: O.Op) -> String: String.join(lop.ors.go(lop.dts_of(op), op, Nil{}), ",")
 
-
 # stage 1d. the renderer as a record of its options -- llvmir.py:146-155,
 # 204-231, 226-247.
 #
@@ -555,7 +545,6 @@ def lop.orow(+op: O.Op) -> String: String.join(lop.ors.go(lop.dts_of(op), op, Ni
 # `global_prod_max` is `tuple|None` and convention 3 says the same thing about
 # it: `gpmax_has: Bool` plus `gpmax`. `shared_max` is an INT in Python and a
 # `U32` here, so `smax` is one field and not a one-element list.
-
 
 type Llvm is Data:
   Llvm{has_abi: Bool, abi: U32, has_local: Bool, has_shared: Bool, suffix: String,
@@ -677,7 +666,6 @@ def barrier() -> List<&2, String>:
    "tail call void @llvm.amdgcn.s.barrier()",
    "fence syncscope(\"workgroup\") acquire", ""]
 
-
 # STAGE 1e. `supported_dtypes` -- llvmir.py:243-245 and :286.
 #
 #     # CPULLVMRenderer
@@ -713,7 +701,6 @@ def barrier() -> List<&2, String>:
 # itself is `sd base`, and it is `__init__.bend`'s row `sd empty` re-checked here
 # so a change to that file shows up in this diff too.
 
-
 def fp8s() -> List<&2, S.Dt>: [S.fp8e4m3(), S.fp8e5m2(), S.fp8e4m3fnuz(), S.fp8e5m2fnuz()]
 
 # `amd_fp8s(arch)` -- cstyle.py:492-493 -- is a DICT, and the port MIRRORS it
@@ -735,7 +722,6 @@ def amd_fp8s(arch: String) -> List<&2, S.Dt>:
     case "gfx1200" : ocps()
     case "gfx1201" : ocps()
     case _         : Nil{}
-
 
 # `d not in dtypes.fp8s`. `List.contains(~A, eq, xs, +x)` takes a DEF and a list
 # and ONE `+` element, and the `+` on `x` is a REQUIREMENT ON THE CALLER -- so
@@ -786,9 +772,6 @@ def sd.amd.go(+ts: List<&2, S.Dt>, +keep: List<&2, S.Dt>) -> List<&2, S.Dt>:
       +rest = sd.amd.go(t, keep)
       Bool.pick(List<&2, S.Dt>, Bool.not(sd.drop_amd(h, keep)), List.append(&2, S.Dt, [h], rest), rest)
 
-
-
-
 # stage 1f. the naming walk's two names -- llvmir.py:178 and :181.
 #
 #     r[u] = f"%data{u.arg.slot}"
@@ -803,12 +786,10 @@ def sd.amd.go(+ts: List<&2, S.Dt>, +keep: List<&2, S.Dt>) -> List<&2, S.Dt>:
 # mutation can move" note in its sharpest form: three rows here are CONSTANT by
 # construction, and the mutation table says so rather than claiming credit.
 
-
 def nm_param(slot: U32) -> String: String.concat(["%data", U32.show(slot)])
 
 def nm_buf(is_local: Bool, slot: U32) -> String:
   String.concat(["%", Bool.pick(String, is_local, "local", "reg"), "_", U32.show(slot)])
-
 
 # STAGE 1g. `base_rewrite[0]` -- llvmir.py:79-80, THE GETELEMENTPTR LINE.
 #
@@ -822,11 +803,9 @@ def nm_buf(is_local: Bool, slot: U32) -> String:
 # carry counts 4 and 8: `<4 x float>, <4 x float>*` versus a bare `float, float*`
 # is a whole different line.
 
-
 def gep_line(+xn: String, +d: S.Dt, +cnt: U32, +s0: String, +d1: S.Dt, +s1: String) -> String:
   String.concat(["  ", xn, " = getelementptr inbounds ", ldt.t(d, cnt, False{}), ", ", ldt.t(d, cnt, True{}), " ",
     s0, ", ", ldt.t(d1, 1, False{}), " ", s1])
-
 
 # STAGE 1h. THE `f32_to_fp8` PREFIX -- llvmir.py:252-263. THIS IS WHAT `fmt`
 # MEANS FOR THIS FILE: `llvmir.py` has no `fmt` of its own (that is `ptx.py`'s),
@@ -854,7 +833,6 @@ def gep_line(+xn: String, +d: S.Dt, +cnt: U32, +s0: String, +d1: S.Dt, +s1: Stri
 # llvmir.py:258. The gate does not strip them: both sides are CPython's bytes, and
 # `diff` is byte-exact. That is the point of a byte diff (the `creation.bend`
 # rule 22 argument runs the other way, for a printer INHERITED from another file).
-
 
 def nl() -> String: String.from_list([Char.from_u32(10)])
 
@@ -991,7 +969,6 @@ def intr_names.go(+os: List<&2, O.Op>, acc: List<&2, String>) -> List<&2, String
 
 def intr_names() -> String: String.join(intr_names.go(intrs(), Nil{}), ",")
 
-
 # THE ROW BUILDERS. Eleven small wrappers, one per group, and every `py=` half is
 # a LITERAL generated by the ORACLE's `bend` mode -- which computes it by
 # calling live CPython. The generated text is pasted verbatim below under
@@ -1001,7 +978,6 @@ def intr_names() -> String: String.join(intr_names.go(intrs(), Nil{}), ",")
 # same commit. (`.agents/slop/nl/nl-oracle.py` is the same oracle and its `bend`
 # mode is byte-identical; the landed copy is the one to read, because the
 # slop copy is one sweep away from having no witness at all.)
-
 
 def nth(+xs: List<&2, String>, i: U32) -> String: Maybe.default(&2, String, List.get(&2, String, xs, U32.to_nat(i)), "")
 
@@ -1090,9 +1066,7 @@ def r_f32show(py: String) -> String: r("f32show 240.0", F32.show(240.0), py)
 
 def r_fpmax(spelt: String, py: String) -> String: r("fp8 max cpython", spelt, py)
 
-
 # THE GENERATED ROWS. `nl-oracle.py`'s `bend` mode, verbatim.
-
 
 def r_ldts() -> String:
   String.concat([r_ldt("void", S.void(), "void"), r_ldt("fp8e4m3", S.fp8e4m3(), "i8"), r_ldt("fp8e5m2", S.fp8e5m2(), "i8"), r_ldt("fp8e4m3fnuz", S.fp8e4m3fnuz(), "i8"), r_ldt("fp8e5m2fnuz", S.fp8e5m2fnuz(), "i8"), r_ldt("f16", S.half(), "half"), r_ldt("bf16", S.bfloat16(), "bfloat"), r_ldt("f32", S.single(), "float"), r_ldt("f64", S.double(), "double"), r_ldt("u8", S.uint8(), "i8"), r_ldt("u16", S.uint16(), "i16"), r_ldt("u32", S.uint32(), "i32"), r_ldt("u64", S.uint64(), "i64"), r_ldt("i8", S.int8(), "i8"), r_ldt("i16", S.int16(), "i16"), r_ldt("i32", S.int32(), "i32"), r_ldt("i64", S.int64(), "i64"), r_ldt("bool", S.boolean(), "i1"), r_ldt("weakfloat", S.weakfloat(), "KeyError"), r_ldt("weakint", S.weakint(), "KeyError"), r_ldtp("f32", S.single(), "float*"), r_ldtp("i32", S.int32(), "i32*"), r_ldtp("void", S.void(), "void*"), r_ldtp("bool", S.boolean(), "i1*"), r_ldtp("f16", S.half(), "half*"), r_ldtp("bf16", S.bfloat16(), "bfloat*"), r_ldtn("0     f32", S.single(), 0, False{}, "float"), r_ldtn("1     f32", S.single(), 1, False{}, "float"), r_ldtn("2     f32", S.single(), 2, False{}, "<2 x float>"), r_ldtn("4     f32", S.single(), 4, False{}, "<4 x float>"), r_ldtn("8     f64", S.double(), 8, False{}, "<8 x double>"), r_ldtn("16     f16", S.half(), 16, False{}, "<16 x half>"), r_ldtn("4 ptr f32", S.single(), 4, True{}, "<4 x float>*"), r_ldtn("2 ptr i32", S.int32(), 2, True{}, "<2 x i32>*"), r_ldtn("1 ptr f32", S.single(), 1, True{}, "float*"), r_ldtn("4 ptr bf16", S.bfloat16(), 4, True{}, "<4 x bfloat>*")])
@@ -1141,7 +1115,6 @@ def r_stage1() -> String:
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(r_stage1())
-
 
 # THE MUTATION TABLE. Re-measured 2026-10-03 with
 # `.agents/slop/nl/nl-oracle.py`'s sibling `.agents/slop/nl/nl-mutate.py`: one
@@ -1331,4 +1304,3 @@ def main() -> IO(Unit):
 # They are what makes the other forty-one numbers mean something: a harness that
 # reported "0 rows" for everything would look identical on the three thinnesses
 # above.
-

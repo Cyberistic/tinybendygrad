@@ -136,7 +136,6 @@ def wk_eq_dt.go(p: Bool, b: Bool, +x: S.Dt, +y: S.Dt) -> Bool:
 def wk_eq_dt(+x: S.Dt, +y: S.Dt) -> Bool:
   wk_eq_dt.go(U32.is_eq(S.Dt.pri(x), S.Dt.pri(y)), U32.is_eq(S.Dt.bits(x), S.Dt.bits(y)), x, y)
 
-
 # THE READERS. Every dtype read is a read of the FOLD, because a node's dtype is a
 # derived property and `fold.bend` is the only well-founded way to answer it: Bend refuses
 # the mutual recursion Python breaks with `recursive_property`. `wk_dt` answers `void` for
@@ -288,11 +287,6 @@ def wk_is_virtual(+fx: F.Folded, +i: U32) -> Bool:
 # RESHAPE, and `view_as` is ABSENT from the port (so is `unique_num`, which the other arm wants).
 def wk_param_noshape(+ar: O.Arena, slot: U32, +dt: S.Dt, vmm: Maybe<&2, O.PyRange>) -> Maybe<&1, O.Found>:
   Bool.pick(Maybe<&1, O.Found>, Bool.not(D.md_weak(dt)),            Some{O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{O.ParamArg{slot, dt, vmm, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})},            None{})
-
-
-
-
-
 
 # `S.int32()` IS CPython'S `default_int=None` SET TO int32, which is what
 # `absorb_weak_src` and `lower_weak_node` pass (`s.commit_dtype(dtypes.i32)`), and it is
@@ -645,7 +639,6 @@ def wk_ccast.of(isconst: Bool, +fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   wk_ccast.of(O.eq_op(O.Arena.op(F.Folded.ar(fx), self), O.OpsCONST{}), fx, self, dt)
 
-
 # `remint` -- elementwise.py:12.
 #     return u.ccast(dt) if u.op is Ops.CONST else u.replace(src=(remint(u.src[0], dt),)+u.src[1:])
 #
@@ -677,7 +670,6 @@ def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 # `ew_src0_rev`/`ew_src0_fwd` names in `mixin/elementwise.bend` are ROW LABELS of an unrelated
 # `ew_opname_src` probe, `gates/ew_graph_census.bend` names `ew_remint` only in prose, and
 # `gates/ew-explog-gate.py:37`'s `ew_const_bare` is prose.
-
 
 # ops.py:637 says it: ".cast folds away at exactly the dtypes a CONST derives
 # (bool/weakint/weakfloat): bare there, the pair everywhere else". So a CONST rebuilt at a
@@ -801,7 +793,6 @@ def derived_dtypes(+fx: F.Folded, +self: U32, +ss: List<&2, U32>) -> Dts:
 def wk_bare_const(+fx: F.Folded, +s: U32, +dt: S.Dt) -> O.Found:
   O.UOp.const(F.Folded.ar(fx), wk_const_of(wk_dt_const(dt, wk_ccast.val(fx, s))))
 
-
 # commit_srcs_at -- weak.py:16-20.
 #
 #   bare = derived_dtypes(u, u.src) is not None
@@ -833,7 +824,6 @@ def commit_srcs_at.pick(notweak: Bool, bare: Bool, w: Walk, +s: U32, +fx: F.Fold
 def commit_srcs_at.on(w: Walk, bare: Bool, +fx: F.Folded, +s: U32, +dt: S.Dt) -> Walk:
   commit_srcs_at.pick(Bool.not(wk_is_weak(fx, s)), bare, w, s, fx, dt)
 
-
 def commit_srcs_at.go(ss: List<&2, U32>, w: Walk, +fx: F.Folded, +dt: S.Dt, +bare: Bool) -> Walk:
   match ss:
     case Nil{}: w
@@ -854,13 +844,11 @@ def commit_srcs_at.gate(blocked: Bool, dts: Dts, +fx: F.Folded, +self: U32, +ss:
     case True{}: None{}
     case False{}: commit_srcs_at.fin(commit_srcs_at.go(ss, walk_seed(F.Folded.ar(fx)), fx, dt, Dts.some(dts)), fx, self)
 
-
 def commit_srcs_at.ans(+dts: Dts, +fx: F.Folded, +self: U32, +ss: List<&2, U32>, +dt: S.Dt) -> Maybe<&2, O.Found>:
   commit_srcs_at.gate(wk_blocked(fx, dt, Dts.some(dts), ss), dts, fx, self, ss, dt)
 
 def commit_srcs_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> Maybe<&2, O.Found>:
   commit_srcs_at.ans(derived_dtypes(fx, self, wk_srcs(fx, self)), fx, self, wk_srcs(fx, self), dt)
-
 
 # commit_weak_srcs -- weak.py:22-24.
 #
@@ -870,7 +858,6 @@ def commit_srcs_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> Maybe<&2, O.Found>:
 #
 # The meet is `promo_dtype(src)` verbatim (ops.py:120 is `least_upper_dtype` over the
 # operand dtypes), so `wk_meet` is dtype.py:193 through `fold.bend`.
-
 
 def commit_weak_srcs.bad(+fx: F.Folded, +ss: List<&2, U32>) -> Bool:
   Bool.or(Bool.not(wk_any_weak(fx, ss)), dt_weak(wk_meet(fx, ss)))
@@ -882,7 +869,6 @@ def commit_weak_srcs.ans(bad: Bool, +fx: F.Folded, +self: U32, +ss: List<&2, U32
 
 def commit_weak_srcs(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
   commit_weak_srcs.ans(commit_weak_srcs.bad(fx, wk_srcs(fx, self)), fx, self, wk_srcs(fx, self))
-
 
 # uncast_const -- weak.py:80-87.
 #
@@ -923,7 +909,6 @@ def uncast_const.walk(+fx: F.Folded, ss: List<&2, U32>) -> List<&2, U32>:
 
 def uncast_const.reach(bad: Bool) -> Bool:
   bad
-
 
 def uncast_const.bad(+src: List<&2, U32>, +ss: List<&2, U32>, +dts: Dts, +fx: F.Folded, +self: U32) -> Bool:
   uncast_const.reach(Bool.or(Bool.or(H.u32_list_eq(src, ss), Bool.not(Dts.some(dts))),
@@ -977,7 +962,6 @@ def commit_weak_consts.pick(isconst_weak: Bool, w: Walk, +s: U32, +fx: F.Folded,
     case True{}: walk_step(w, wk_ccast(fx, s, dt))
     case False{}: walk_keep(w, s)
 
-
 def commit_weak_consts.on(w: Walk, +fx: F.Folded, +s: U32, +dt: S.Dt) -> Walk:
   commit_weak_consts.pick(Bool.and(wk_op_is(fx, s, O.OpsCONST{}), wk_is_weak(fx, s)), w, s, fx, dt)
 
@@ -985,7 +969,6 @@ def commit_weak_consts.go(ss: List<&2, U32>, w: Walk, +fx: F.Folded, +dt: S.Dt) 
   match ss:
     case Nil{}: w
     case s <> t: commit_weak_consts.go(t, commit_weak_consts.on(w, fx, s, dt), fx, dt)
-
 
 # `u if dt is None else u.replace(src=...)`. The branch is on `dt is None` and the WALK
 # IS INSIDE THE TRUE ARM, because Bend is STRICT: passing the walk as an argument would
@@ -999,7 +982,6 @@ def commit_weak_consts.walked(some: Bool, dt: ODt, +fx: F.Folded, +self: U32, +s
   match some:
     case True{}: replace_walk(commit_weak_consts.go(ss, walk_seed(F.Folded.ar(fx)), fx, ODt.dt(dt)), fx, self)
     case False{}: O.Found{F.Folded.ar(fx), self}
-
 
 # THE pm_commit_weak RULE 1 LAMBDA -- weak.py:37-38, the one rule here with no def of its
 # own in the file (Python spells it as a lambda over a UPat):
@@ -1023,12 +1005,10 @@ def wk_store_cast.srcs(+fx: F.Folded, +self: U32, +dt: S.Dt, mid: U32) -> List<&
   List.append(&2, U32, List.append(&2, U32, [wk_src0(fx, self)], [mid]),
     O.Arena.src_from(F.Folded.ar(fx), self, 2))
 
-
 def wk_store_cast.hit(bad: Bool, +hit: O.Found, +fx: F.Folded, +self: U32, +dt: S.Dt) -> Maybe<&2, O.Found>:
   match bad:
     case True{}: None{}
     case False{}: Some{replace_in(O.Found.ar(hit), self, wk_store_cast.srcs(fx, self, dt, O.Found.i(hit)))}
-
 
 # `(u.src[0], u.src[1].ccast(u.src[0].dtype), *u.src[2:])`, interned in the arena
 # `wk_ccast` grew and not in the fold's own.
@@ -1115,7 +1095,6 @@ def wk_commit_dispatch.go(tag: U32, +fx: F.Folded, self: U32) -> Maybe<&2, O.Fou
     case 1: wk_store_cast(fx, self)
     case _: None{}
 
-
 def wk_commit_dispatch(tag: U32, +fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   wk_commit_dispatch.go(tag, fx, self)
 
@@ -1125,11 +1104,8 @@ def wk_uncast_dispatch.go(tag: U32, +fx: F.Folded, self: U32) -> Maybe<&2, O.Fou
     case 0: uncast_const_fx(fx, self)
     case _: None{}
 
-
 def wk_uncast_dispatch(tag: U32, +fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   wk_uncast_dispatch.go(tag, fx, self)
-
-
 
 def wk_pick(which: Bool, tag: U32, +fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   match which:
@@ -1157,4 +1133,3 @@ def pm_go(ready: Bool, m: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match ready:
     case True{}: m
     case False{}: None{}
-

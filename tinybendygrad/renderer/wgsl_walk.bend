@@ -19,7 +19,6 @@ import ./cstyle.bend as CS
 import ../uop/ops.bend as O
 import ../LAWS/spec.bend as S
 
-
 # THE UOP -> BODY WALK -- the `_render` equivalent (cstyle.py:208-266), which this
 # file did not have: `render_kernel` takes the body as STRINGS and `kern_alu()` /
 # `kern_mixed()` above are LITERALS, so the census's whole-kernel rows are rows
@@ -220,7 +219,6 @@ def const_at(+op: O.Op, +r: R) -> Maybe<&2, String>:
     case O.OpsCONST{}: Some{U32.show(R.idx(r))}
     case _: None{}
 
-
 def const_step(+op: O.Op, +r: R, +rs: List<&2, R>) -> Maybe<&2, String>:
   match op:
     case O.OpsCONST{}: Some{U32.show(R.idx(r))}
@@ -230,7 +228,6 @@ def const_step(+op: O.Op, +r: R, +rs: List<&2, R>) -> Maybe<&2, String>:
 def const_of(+rs: List<&2, R>, +k: U32) -> String:
   +r = R.at(rs, k)
   Maybe.default(&2, String, const_step(R.op(r), r, rs), "")
-
 
 # the six-prefix counter table, same numbering as cstyle.bend's `ku_pfx_ix`
 def pfx_ix(op: O.Op) -> U32:

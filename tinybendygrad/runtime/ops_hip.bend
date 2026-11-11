@@ -85,9 +85,6 @@ def vend.trace.go(cs: List<&2, CL.Call>, +acc: List<&2, String>) -> List<&2, Str
 def vend.trace(cs: List<&2, CL.Call>) -> String:
   String.join(vend.trace.go(cs, Nil{}), " ")
 
-
-
-
 # hp:41 `[(f'f{i}', hip.hipDeviceptr_t, i*8) for i in range(len(args))] +
 # [(f'v{i}', getattr(ctypes, f"c_int{dt.bitsize}"), o) for i,(o,dt) in
 # enumerate(TinyELF.iter_sig(self.signature[len(args):], len(args)*8))]`
@@ -179,10 +176,8 @@ def hp.fields(nf: Nat, +iszs: List<&2, U32>) -> U32:
   +nf = U32.from_nat(nf)
   hp.fields.at(nf, U32.from_nat(List.length(&2, U32, iszs)), hp_val_offsets(nf, iszs), iszs)
 
-
 # `HIPDevice`, hp:12-24. THREE calls in `__init__` and one of them is the only
 # unchecked call in the whole file.
-
 
 # the HIP DEVICE, ops_hip.py:14-24. `didx` is hp:14's device id, `arch` hp:15's
 # `gcnArchName` -- a STRING straight out of the driver, with NO derivation at all,
@@ -243,10 +238,8 @@ def hp.init(device: String, arch: String, +t: CL.Tr) -> HpDev:
   +t3 = hp.event_create(1, t2)
   HpDev{did, arch, CL.Tr.here(t2), CL.Tr.here(t3), 2, t3}
 
-
 # `HIPProgram`, hp:26-57. `__init__` is THREE calls and the FIRST is
 # `hipSetDevice`, which CUDA also does per-entry-point and CL does NOT do at all.
-
 
 # hp:29 `check(hip.hipSetDevice(self.dev.device_id))` -- in `__init__`.
 def hp.prog_init.dev(+t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_SET_DEVICE(), "0", t)
@@ -323,9 +316,7 @@ def hp.call.at(did: U32, cargs: U32, +want: Bool, built: Bool, +t: CL.Tr) -> CL.
   +t3 = hp.launch(cargs, t2)
   hp.elapsed.at(want, t3)
 
-
 # `HIPAllocator`, hp:59-71. Four methods, and `_offset` is the one that is WALL 6.
-
 
 # hp:61-62 `_alloc` -- `check(hip.hipSetDevice(self.dev.device_id))` then
 # `check(hip.hipMalloc(ctypes.byref(x), size))`. TWO calls, where CL's is ONE and
@@ -401,9 +392,7 @@ def t_hptiming() -> IO(Unit):
   do IO<Unit>:
     CL.urow("timing_hp_scale_bits", F32.bits(timing.scale_hp()))
 
-
 # PART 5 -- HIP. hp:9-71.
-
 
 def HPNAME() -> String: "gfx1100"
 def HPDEV0() -> String: ""
@@ -542,7 +531,6 @@ def main() -> IO(Unit):
     # NO trailing print: see the note in `ops_cuda.bend`'s main.
     t_cross()
 
-
 # THE SPLIT, MEASURED. 96 of the pre-split file's 445 rows are here, all of them
 # byte-identical to the pre-split snapshot: the HIP column of
 # `t_vend`/`t_check`/`t_err`, `t_hpinit`, `t_hpargs`, `timing_hp_scale_bits`,
@@ -573,4 +561,3 @@ def main() -> IO(Unit):
 #                `vend_names_hp`, `hp_call_first_trace`, `hp_call_wait_trace`,
 #                `hp_call_second_trace`, `x_launch`. A harness that diffed row
 #                NAMES would have reported 0.
-

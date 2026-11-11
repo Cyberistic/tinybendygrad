@@ -51,12 +51,10 @@
 import Base
 import ../LAWS.bend as L
 
-
 # IV. tinyspec.tex "Decomposed elementwise ops" (lines 188-208): each op is
 # DEFINED in terms of the primitives above it, so each is reflexive. No depth
 # binder, then or now: none of these laws mentions shape_of, dtype_of or
 # numel_of.
-
 
 # tinyspec.tex:192  Neg = Mul(A, -1)
 def L.neg_is_mul_by_minus_one(a):
@@ -94,7 +92,6 @@ def L.not_is_ne_one(a):
 def L.mulacc_is_add_of_mul(a, b, c):
   {==}
 
-
 # V. tinyspec.tex "Derived Properties" dtype column: the arms of Sp.dtype that
 # do not simply read src[0].
 #
@@ -102,7 +99,6 @@ def L.mulacc_is_add_of_mul(a, b, c):
 # on a fuel it had computed as `2*depth+1` and its `case 2n+p:` arm was dead
 # behind `case 1n+p:`, so every one of these compared None with Some{bool} or
 # with None. The fold now reaches its own arm on the first call.
-
 
 # tinyspec.tex:269  CmpLt, CmpNe: bool
 def L.comparison_is_bool(a, b):

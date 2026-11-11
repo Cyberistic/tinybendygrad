@@ -380,9 +380,6 @@ def ku_ws.r(+ws: List<&2, String>) -> C.KU:
 def ku_ws(+ws: List<&2, String>) -> C.KU:
   ku_ws.r(ws)
 
-
-
-
 def ku_of(l: String) -> C.KU: ku_ws(String.split(l, ' '))
 
 # the walk is tail-recursive, and that is what keeps its depth at one. measured in the runtime's own

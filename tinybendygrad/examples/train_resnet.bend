@@ -11,7 +11,6 @@ import ./../mixin/gradient.bend as GR
 import ./../extra/models/resnet.bend as RESNET
 import ./../extra/datasets/__init__.bend as D
 
-
 # stub -- 1:1 path mirror of examples/train_resnet.py (45 loc). not yet ported.
 #
 #  this file is blocked on a backward pass that nobody has ever executed. 
@@ -102,7 +101,6 @@ import ./../extra/datasets/__init__.bend as D
 #   pass. The eval path (`examples/test_pkl_imagenet.bend`) needs neither, which
 #   is exactly why it is the achievable first milestone and this one is not.
 
-
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
@@ -110,7 +108,6 @@ def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.s
 def tr_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
-
 
 # :13-20 ComposeTransforms.
 #   :14  def __init__(self, trans)
@@ -126,12 +123,10 @@ def tr_compose_init(trans: List<&2, String>) -> D.Refused:
 def tr_compose_call(+x: T.Tensor) -> D.Refused:
   D.refuse("examples/train_resnet.py:17 ComposeTransforms.__call__ -- BLOCKED ON unexercised backward pass: tn_backward tensor.bend:2015 symbol=tn_backward has 0 call sites")
 
-
 # :22-45 `if __name__ == "__main__":`. The block is five rounds (`for _ in
 # range(5)`, :40), each of which ends in `optimizer.step()` inside
 # `extra.training.train`. The bodies below are in upstream line order so the
 # first refusal a caller sees is the FIRST missing symbol, not the biggest one.
-
 
 # :23  X_train, Y_train, X_test, Y_test = fetch_mnist()
 # PARTIAL, and the honest reading is that the answer EXISTS and it is a refusal.

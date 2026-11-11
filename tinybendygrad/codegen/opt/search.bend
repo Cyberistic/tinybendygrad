@@ -180,7 +180,6 @@ import Base
 import ./postrange.bend as PR
 import ./../../uop/ops.bend as O
 
-
 # THE ENV VARS ARE PARAMETERS. Bend has no `getenv` and no `Config`, and in
 # Python most of these are read at MODULE IMPORT TIME -- `TC` and `TC_OPT` while
 # the `actions` list is being BUILT, `BEAM_UPCAST_MAX` on every
@@ -190,7 +189,6 @@ import ./../../uop/ops.bend as O
 # `BEAM_ESTIMATE` IS NOT HERE. Python's `beam_search` never reads it: it arrives
 # as `allow_test_size` from `apply_opts` (`tinygrad/codegen/opt/postrange.py:239`), and that is the
 # name this port keeps.
-
 
 type CFG is Data:
   CFG{padto: Bool, tc: U32, tc_opt: U32, upcast_max: U32, local_max: U32,
@@ -250,7 +248,6 @@ def CFG.min_progress(c: CFG) -> U32:
 def CFG.padto_on(c: CFG) -> Bool:
   PARTS.padto(parts(c))
 
-
 # `actions` -- search.py:15-23, AT HEAD. The eight comprehensions, with the count
 # each contributes. THE UNROLL GROUP IS GONE: search.py:15 used to enumerate
 # `AxisType.UNROLL` in the same comprehension as `AxisType.UPCAST`, and HEAD HAS
@@ -276,7 +273,6 @@ def CFG.padto_on(c: CFG) -> Bool:
 # the wrong SET prints, so the gate prints `tgt_kinds`, the `tgt_*` per-target
 # totals and the `zero_n_*` amt-0 census as well. "A COUNT IS NOT A CENSUS" below
 # names, for each of those, the wrong set it catches and the count cannot.
-
 
 # the group sizes, one DEF each, so `main` can print them by name and a wrong
 # group is localised instead of surfacing only as a moved total. They are still
@@ -307,7 +303,6 @@ def acts_n.tail(g: U32, g8: U32, pad: Bool) -> U32:
 def acts_n.of(pad: Bool, g1: U32, g2: U32, g3: U32, g5: U32, g6: U32, g7: U32, g8: U32) -> U32:
   acts_n.tail(U32.add(U32.add(U32.add(U32.add(U32.add(g1, g2), g3), g5), g6), g7), g8, pad)
 
-
 def acts_n(c: CFG) -> U32:
   acts_n.of(CFG.padto_on(c), grp.up(), grp.lcl(), grp.lcl_top(), grp.split32(), grp.tc0(), grp.tc(), grp.swap())
 
@@ -333,7 +328,6 @@ def zero_top_n() -> U32: 0
 
 def acts_zero() -> U32:
   U32.add(zero_n.up(), zero_n.lcl())
-
 
 # a count is not a census, and this is the census. Each row below answers a question
 # `acts_n` cannot, and each catches a DIFFERENT wrong set that still sums to 209.
@@ -430,11 +424,9 @@ def zero_variant(t: O.AxisType, top: Bool, ax: U32) -> Bool:
     case True{}: False{}
     case False{}: zero_variant.flat(t, ax)
 
-
 # the beam score and the beam state. These are the record shapes of what
 # `_try_compile` and `_time_program` answer, and of the `while`'s loop-carried
 # state. They are declared and NOT YET CONSUMED by a loop -- see the header.
-
 
 type SCORE is Data:
   SCORE{i: U32, ok: Bool, lib: U32, ops: U32, t: U32}
@@ -507,7 +499,6 @@ def b2u(b: Bool) -> U32:
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
-
 # THE GATE. Every row is DERIVED FROM CPython, so a row can be wrong. The
 # reference values are in the header.
 #
@@ -527,7 +518,6 @@ def row(nm: String, v: U32) -> IO(Unit):
 # table has none for, a WIDENING and therefore a silent one -- moved NOTHING before
 # this row existed. `zero_lcl8` is the one-axis-from-its-opposite pair the brief asks
 # for, and `zero_up9`/`zero_up10` already had that pair for UPCAST.
-
 
 def main() -> IO(Unit):
   do IO<Unit>:

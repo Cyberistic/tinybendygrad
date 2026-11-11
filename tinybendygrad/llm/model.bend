@@ -25,7 +25,6 @@
 
 import Base
 
-
 # model.py:11-16 -- `class ExpertGating(enum.IntEnum)`. THE VALUE IS THE CONTRACT: it is written
 # into a GGUF-derived config and compared, so it travels as a `U32` and not as a constructor tag.
 
@@ -34,7 +33,6 @@ def ExpertGating.SIGMOID() -> U32: 2
 def ExpertGating.SOFTMAX_WEIGHT() -> U32: 3   # softmax over the top-k selected logits
 def ExpertGating.SQRT_SOFTPLUS() -> U32: 4
 
-
 # model.py:18-23 -- `YaRNConfig`. Four scalars, no defaults upstream.
 
 type YaRNConfig is Data:
@@ -42,7 +40,6 @@ type YaRNConfig is Data:
 
 def YaRNConfig.of(+factor: F32, +orig_ctx_len: U32, +beta_fast: F32, +beta_slow: F32) -> YaRNConfig:
   YaRNConfig{factor, orig_ctx_len, beta_fast, beta_slow}
-
 
 # model.py:68-77 -- `SSMConfig`. `kda` defaults False; `gate_lower_bound` is `float|None` and is
 # `Maybe<&1, F32>`, because "kda: bounded decay gate" is an ABSENT bound for every non-kda model and a
@@ -67,7 +64,6 @@ def SSMConfig.kda(s: SSMConfig, +kda: Bool, +has_bound: Bool, +bound: F32) -> SS
     case SSMConfig{conv_kernel, state_size, group_count, time_step_rank, inner_size, _k, _hb, _b}:
       SSMConfig{conv_kernel, state_size, group_count, time_step_rank, inner_size, kda, has_bound, bound}
 
-
 # model.py:78-83 -- `HCConfig`: manifold-constrained hyper-connections, `count` residual streams mixed
 # by a doubly stochastic matrix in `sinkhorn_iters` steps at `eps`.
 
@@ -76,7 +72,6 @@ type HCConfig is Data:
 
 def HCConfig.of(+count: U32, +sinkhorn_iters: U32, +eps: F32) -> HCConfig:
   HCConfig{count, sinkhorn_iters, eps}
-
 
 # model.py:84-91 -- `IndexerConfig`: a query attends to the `top_k` keys picked by an indexer scoring
 # pools of `kpool` keys.

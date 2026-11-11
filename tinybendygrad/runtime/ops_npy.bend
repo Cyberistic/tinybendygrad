@@ -122,10 +122,8 @@ import ../helpers.bend as H
 import ../device.bend as D
 import ../LAWS/spec.bend as S
 
-
 # THE CONSTANTS. Every literal in the source and the four that come out of
 # running `NpyDevice('NPY')`.
-
 
 # the six host calls, in the order `HostAllocator` can make them.
 def CALL_SYNC() -> U32: 0
@@ -166,9 +164,7 @@ def MSG_MAP_HEAD() -> String: "host memory is not on the node of "
 
 def FMT_B() -> U32: 1
 
-
 # THE TYPES.
-
 
 # ONE host call and the ONE number it is given. `arg` is the size for MMAP,
 # MVIEW and MVWRITE and 0 for SYNC, MUNMAP and REFUSE, where the refused
@@ -187,7 +183,6 @@ type Tr is Data:
 type Npy is Data:
   Npy{dev: String, alloc: U32, runtime: U32, nrender: U32, sup_disk: Bool,
       sup_xfer: Bool, did: U32, peer: String, host: String, t: Tr}
-
 
 # THE TRACE.
 
@@ -232,7 +227,6 @@ def Call.k(c: Call) -> U32:
 def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
-
 
 # READING THE TRACE. Same three readers as ops_webgpu.bend and torch.bend, and
 # the same fuel bug they were written around: the fuel is the TRACE's length and
@@ -318,7 +312,6 @@ def call_list_eq(+a: List<&2, Call>, +b: List<&2, Call>) -> Bool:
   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, Call, a)),
                      U32.from_nat(List.length(&2, Call, b))), call_eq.go(a, b, False{}))
 
-
 # THE CONSTRUCTOR. ops_npy.py:4 as one def, and the five rows it answers.
 #
 # `device_id` is `D.dev_id` (device.py:397) and NOT `_select_iface`'s parse
@@ -373,10 +366,8 @@ def Npy.at(x: Npy, t: Tr) -> Npy:
     case Npy{dev, alloc, runtime, nrender, sup_disk, sup_xfer, did, peer, host, _}:
       Npy{dev, alloc, runtime, nrender, sup_disk, sup_xfer, did, peer, host, t}
 
-
 # THE ALLOCATOR SURFACE. Every def here is one line of `HostAllocator`, and
 # every one of them either builds one host call's argument or records it.
-
 
 # device.py:305 `super().__init__(dev, supports_copy_from_disk=False,
 # supports_transfer=False)` -- BOTH flags off, and they are the only allocator
@@ -498,7 +489,6 @@ def npy.offset(buf: U32, off: U32) -> U32: D.host_offset(buf, off)
 def npy.view_bytes(size: U32) -> U32: size
 
 def page_bytes(size: U32) -> U32: H.round_up_u32(size, 4096)
-
 
 # THE GATE MOVED TO `gates/ops_npy-gate.bend`.
 #

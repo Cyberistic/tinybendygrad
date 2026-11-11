@@ -343,7 +343,6 @@ def mp_stack_val.head(extra: List<&2, U32>, +ar: O.Arena, self: U32) -> Maybe<&1
 def mp_stack_val(+ar: O.Arena, self: U32, extra: List<&2, U32>) -> Maybe<&1, U32>:
   mp_stack_val.head(extra, ar, self)
 
-
 def mp_index(+ar: O.Arena, +self: U32, +extra: List<&2, U32>) -> Hop:
   mp_index.of(mp_stack_val(ar, self, extra), Nat.is_eq(mp_nat(extra), 1n), mp_is(ar, self, O.OpsSTACK{}), ar, self, extra)
 
@@ -784,7 +783,6 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
   mp_try.go(Bool.and(O.pm_claimed(O.PMEntry.ops(e), ar, self), mp_early(ar, self, O.PMEntry.rej(e))),
            O.PMEntry.tag(e), tb, ar, self)
 
-
 # THE MEASURED MUTATION TABLE. Fifteen textual edits, one at a time, each re-checked
 # and re-run against the clean 26-row gate, by `.agents/slop/mop-mut.py`. This is the
 # only evidence in the file that a row can FAIL: a row that cannot fail is a restatement,
@@ -901,7 +899,6 @@ def mop_table() -> List<&2, O.PMEntry>:
 # Python's `None`, and `hop_ar` for the arena to hand to the next node.
 def mop_cleanup(+fx: F.Folded, +self: U32) -> Hop:
   mp_scan(mop_table(), F.Folded.t(fx), O.pm_ler(F.Folded.ar(fx), self), self, Hop{F.Folded.ar(fx), 0})
-
 
 # THE GATE. Every row is DERIVED FROM PYTHON, via
 # `.agents/slop/notes/mop-truth3.py`, which prints its rows in THIS ORDER and with THIS

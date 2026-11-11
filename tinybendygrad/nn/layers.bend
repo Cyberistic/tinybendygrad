@@ -72,9 +72,7 @@ import ./__init__.bend as NN
 import ./../mixin/elementwise.bend as E
 import ./../uop/weak.bend as W
 
-
 # THE SHAPE PROJECTION -- the file's one refusal point.
-
 
 # `Sint` -> `List<U32>`, `None` on the `SU` arm. THE WALK APPENDS AT THE TAIL,
 # NOT AT THE HEAD, and that is the whole reason it needs no reversal: Bend's
@@ -118,7 +116,6 @@ def nn_ks(+xs: List<&2, U32>) -> List<&2, O.Const>: nn_ks.go(xs, Nil{})
 # `U32` list, so it is one walk and not a `Nat` -> `U32` re-projection per cell.
 def nn_range(n: U32) -> List<&2, U32>: M.mo_range(U32.to_nat(n))
 
-
 # `_rop` -- tinygrad/uop/ops.py:630-639. this is the one place a layer cannot
 # use the port's own reduce, and the reason is named.
 #
@@ -141,7 +138,6 @@ def nn_range(n: U32) -> List<&2, U32>: M.mo_range(U32.to_nat(n))
 # ops.py:636 verbatim -- `reduce_axis` ++ the axes not in it -- and `nn_reduce`
 # IS `_rop` with that line restored; it is not a workaround and it does not
 # change the REDUCE node, whose arg is still `(op, len(reduce_axis))`.
-
 
 # `[i for i in range(len(shape)) if i not in axis]` -- ops.py:636's second
 # half and ops.py:638's `kept`, so ONE walk answers both and the two cannot
@@ -279,7 +275,6 @@ def nn_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
   +c = M.mo_cast_t(t, M.mo_sum_acc(M.mo_commit_dt(F.folded(T.Tensor.ar(t)), t)))
   M.mo_sum.castback(uns, nn_reduce(c, axis, O.OpsADD{}, kd))
 
-
 # `relu` -- mixin/elementwise.py:672, `return (self > 0).where(self, 0)`.
 #
 # THE BODY IS ALREADY PORTED at `tensor.bend:774` (`tn_relu`), as the chain
@@ -293,9 +288,7 @@ def nn_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # `CMPLT` + `WHERE` and never `MAX`. `nn_relu` cannot become `tn_maximum` and
 # keep meaning `relu`.
 
-
 def nn_relu(+x: T.Tensor) -> T.Tensor: T.tn_relu(x)
-
 
 # `dot` -- mixin/op.py:367-392 (the vendored `002630241`), the body line by line.
 #
@@ -323,7 +316,6 @@ def nn_relu(+x: T.Tensor) -> T.Tensor: T.tn_relu(x)
 # SO ON THE RESHAPED `w` OF LENGTH `len` THE AXIS `axis_w` IS `len - min(dw,2)`
 # and `-1` is `len - 1`. that is the pair `nn_dot.order` exchanges, and it is
 # WHY :391 NEEDS NO NEGATIVE INDEX ANYWHERE.
-
 
 # `*[1]*min(dx-1, dw-1, 1)` -- ONE def for the count that appears in BOTH
 # reshapes (:387 and :388). It is 1 exactly when both operands have >= 2 dims,
@@ -440,12 +432,10 @@ def nn_dot.pair(+x: T.Tensor, +w: T.Tensor, +ax: List<&2, U32>, +bw: List<&2, U3
   nn_dot.mul(M.mo_reshape(x, nn_ks(xs)),
     M.mo_permute(wr0, nn_dot.order(nn_len32(ws), nn_len32(bw))), nn_last_ax(nn_umax(nn_len32(xs), nn_len32(ws))), dt)
 
-
 # `nn_dot` -- the `dot` ENTRY, refusals first. `Maybe` is the port's spelling
 # of `raise RuntimeError` for the two guards at :388-389 and for the `SU` shape
 # arm, and all three are the SAME `None`: CPython raises for two of them and the
 # fold refuses the third.
-
 
 # a missing dim is a refusal, not a default value: the whole guard is `False`.
 def nn_dot.guard.ans(m: Maybe<&2, Bool>) -> Bool:
@@ -486,7 +476,6 @@ def nn_dot(+x: T.Tensor, +w: T.Tensor) -> Maybe<&2, T.Tensor>:
     ax => Maybe.bind(&2, List<&2, U32>, T.Tensor, nn_shape(w),
       bw => nn_dot.go(x, w, ax, bw)))
 
-
 # `nn.Linear.__call__` -- tinygrad/nn/__init__.py:180,
 # `return x.linear(self.weight.transpose(), self.bias)`.
 #
@@ -504,7 +493,6 @@ def nn_dot(+x: T.Tensor, +w: T.Tensor) -> Maybe<&2, T.Tensor>:
 # `*_st` defs put a `Bool` BESIDE the value; here the `Maybe` is a PARAMETER, and
 # a parameter may hold anything. So Python's `Tensor|None` is one `Maybe` here
 # and not a parallel pair of defs.
-
 
 # `x.transpose()` -- movement.py:343 with the DEFAULT args `(dim0=1, dim1=0)`,
 # so the order is `[1, 0, 2, ..., n-1]`. It is two `List.set`s because that is
@@ -554,7 +542,6 @@ def nn_linear(+x: T.Tensor, +w: T.Tensor, bias: Maybe<&2, T.Tensor>) -> Maybe<&2
 # nothing else: `_pool`'s whole domain is concrete dims, which is exactly what
 # `mixin/movement.bend`'s Section A is written in, so a symbolic input is the
 # one thing this section cannot answer and says so with a `Maybe`.
-
 
 # --- the list algebra `_pool`'s chain needs --------------------------------
 
@@ -854,7 +841,6 @@ def nn_cnv.dot(+a: T.Tensor, +b: T.Tensor, +ni: U32, +ds: List<&2, U32>, dt: S.D
 # genuinely needs a shrink-then-pad passes the shrunk tensor and the positive
 # pads, which is what the arm computes.
 
-
 # THE PADDED SHAPE, and it is ALSO the PAD node's `his` -- `pad`'s marg is
 # `(pB, s + pB + pA)` (movement.py:189), so the padded shape and the marg's
 # second half are THE SAME LIST and computing them twice is the chance for the
@@ -936,7 +922,6 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
   Maybe.bind(&2, List<&2, U32>, T.Tensor, nn_shape(x),
     xs => Maybe.bind(&2, List<&2, U32>, T.Tensor, nn_shape(w),
       ws => nn_conv2d.go(x, w, xs, ws, groups, stride, dilation, pad_v, padding, bias)))
-
 
 # THE ROWS. Every expected value below is CPython's own answer, read off
 # `tinygrad` in this repo's `.venv`, and the ONE witness for all 31 of them is
@@ -1029,7 +1014,6 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
 # BUFFER plus a RESHAPE. A BUFFER ALONE IS UNUSABLE HERE -- `fold.shape` does not
 # answer a BUFFER, and every identity test in `mxw_reshape`/`mxw_pad`/
 # `mxw_shrink` reads its source's shape.
-
 
 def nn_row.buf(+ar: O.Arena, slot: U32, size: U32) -> T.Tensor: MX.mxw_buf(ar, slot, size)
 

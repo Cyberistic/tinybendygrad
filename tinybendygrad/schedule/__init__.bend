@@ -282,7 +282,6 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../codegen/__init__.bend as CG
 
-
 # THE READERS. `ops.bend`'s own, wrapped, because every def here reads the arena
 # and a rule that forgets to thread it is the bug this file exists to prevent.
 
@@ -342,7 +341,6 @@ def sc_is_buf_uop(+ar: O.Arena, +i: U32) -> Bool:
 def sc_fuel(+ar: O.Arena) -> Nat:
   Nat.mul(O.Arena.budget(ar), O.Arena.budget(ar))
 
-
 # TWO LOCAL READERS, `ops.py:562 UOp.body` and `ops.py:622 UOp.store`, and the
 # reason they are HERE is the same one `sc_topo` has: the reader this file needs
 # file. MEASURED, not assumed: `uop/ops.bend` was 8313 lines with 1896-era
@@ -378,7 +376,6 @@ def sc_store.of(gate: Maybe<&2, U32>, +self: U32, +val: U32) -> List<&2, U32>:
 def sc_store(ar: O.Arena, +self: U32, +val: U32, gate: Maybe<&2, U32>) -> O.Found:
   O.UOp.new(ar, O.OpsSTORE{}, sc_store.of(gate, self, val), O.ANone{}, O.TNone{})
 
-
 # `_unwrap_src` -- __init__.py:14-16. The one loop in the first 30 lines:
 #
 #     while len(s.src) and s.op not in {AFTER, BUFFER, ALLOC, PARAM, MSELECT,
@@ -403,7 +400,6 @@ def unwrap.go(fuel: Nat, go: Bool, +ar: O.Arena, +s: U32) -> U32:
 def sc_unwrap(+ar: O.Arena, +s: U32) -> U32:
   unwrap.go(O.Arena.budget(ar), sc_go(ar, s), ar, s)
 
-
 # `buf_uop`'s while loop -- ops.py:931. `unwrap.go`'s shape with a WIDER stop
 # set, and the header says why that is exact for four of the five arms.
 
@@ -420,7 +416,6 @@ def buf.go(fuel: Nat, go: Bool, +ar: O.Arena, +s: U32) -> U32:
 
 def sc_buf_uop(+ar: O.Arena, +s: U32) -> U32:
   buf.go(O.Arena.budget(ar), sc_buf_go(ar, s), ar, s)
-
 
 # `_states` -- __init__.py:19-23:
 #
@@ -479,7 +474,6 @@ def st.go(fuel: Nat, cls: U32, +ar: O.Arena, +u: U32, +t: List<&2, U32>, acc: Li
 def sc_states(fuel: Nat, +ar: O.Arena, +s: U32) -> List<&2, U32>:
   st.go(fuel, st_cl(ar, sc_unwrap(ar, s)), ar, sc_unwrap(ar, s), Nil{}, Nil{})
 
-
 # `_split_after` -- __init__.py:25-30. TWO `partition` calls become ONE walk,
 # which is exact because the second only sees what the first kept: a src is a
 # kernel, an AFTER, or one of the DROPPED, and the dropped are precisely the
@@ -523,7 +517,6 @@ def sp_go(+ar: O.Arena, ss: List<&2, U32>, +sp: Split) -> Split:
 
 def sc_split(+ar: O.Arena, +after: U32) -> Split:
   sp_go(ar, sc_src_from(ar, after, 1), Split{Nil{}, Nil{}})
-
 
 # `gate_kernel_sink` -- ops.py:1909 -- and the second copy of `Topo.step`.
 #
@@ -639,7 +632,6 @@ def sc_topo.go(fuel: Nat, +ar: O.Arena, t: O.Topo) -> List<&2, U32>:
 def sc_topo_of(fuel: Nat, +ar: O.Arena, +self: U32) -> List<&2, U32>:
   sc_topo.go(fuel, ar, sc_topo(ar, O.Topo{Nil{}, List.append(&2, O.Frame, Nil{}, [O.Frame{self, False{}}]), False{}}))
 
-
 # `UOp.is_bound_var` -- ops.py:1023 -- which is `is_variable` (ops.py:1020) plus
 # `self.arg.val is not None`. `is_variable`'s conjuncts are the op test, an
 # `AParam` test, `vmin_vmax is not None`, `addrspace is ALU` and `_shape == ()`,
@@ -664,7 +656,6 @@ def sc_var.of(op: O.Op, arg: O.Arg, shape: List<&2, O.Sint>) -> Bool:
 
 def sc_is_bound_var(+ar: O.Arena, +i: U32) -> Bool:
   Bool.and(sc_var.of(sc_op(ar, i), sc_arg(ar, i), F.param_shape(ar, i, sc_arg(ar, i))), sc_val.some(sc_arg(ar, i)))
-
 
 # `binds` -- __init__.py:104-106, THE HALF OF `resolve_linear_call` THAT WALL C
 # UNBLOCKED:
@@ -736,7 +727,6 @@ def sc_linear_binds_outer(+outer: Map<&2, U32>, +ar: O.Arena, +call: U32) -> Lin
 
 def sc_linear_binds(+ar: O.Arena, +call: U32) -> LinBinds:
   sc_linear_binds_outer(Map.new(&2, U32), ar, call)
-
 
 # `subs` -- __init__.py:109, and it is `variables()`'s ONLY CALLER, so it is what
 # stops `variables` being a gated def that nothing uses:
@@ -818,7 +808,6 @@ def sc_apply_subs(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, Lin
   +fx = F.folded(ar)
   sc_subs_srcs(sc_srcs(ar, si), F.Folded.t(fx), binds, Some{LinBinds{ar, Map.new(&2, U32)}})
 
-
 # `apply_binds` ARM 3'S BODY -- __init__.py:110-111, the last piece:
 #
 #   subs = {v: binds[v.arg.slot] for s in si.src for v in s.variables() if v.arg.slot in binds}
@@ -887,13 +876,10 @@ def sc_ab3.of(m: Maybe<&2, LinBinds>, +si: U32) -> Maybe<&2, SBind>:
 def sc_apply_binds3(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SBind>:
   sc_ab3.of(sc_apply_subs(ar, si, binds), si)
 
-
-
 # `t not in k.backward_slice` -- ops.py:1378 is `toposort(enter_calls=False)` minus
 # self, and the `t is not k` test runs FIRST, so self may stay in the list.
 def sc_in_bs(+ar: O.Arena, +k: U32, +t: U32) -> Bool:
   List.contains(U32, U32.is_eq, O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, k), t)
-
 
 # THE FOUR DICTS. Python's `dict[UOp, X]` is a `List<&2, X>` of one-key records,
 # the lookup is a linear scan and the write is a rebuild -- the same bill
@@ -1100,7 +1086,6 @@ def so_go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, List<&2, U32>>) -> List
 def sc_states_of(+ar: O.Arena, ss: List<&2, U32>) -> List<&2, U32>:
   H.flatten_u32(so_go(ar, ss, Nil{}))
 
-
 # PASS ONE, `__init__.py:39-56`. Five defs, one per Python scope, in Python's
 # order: the per-`t` RAW fold, the per-kernel body, the per-kernels fold, the
 # per-AFTER body and the toposort walk.
@@ -1198,8 +1183,6 @@ def sw.of(after: Bool, +c: Ctx, +ar: O.Arena, +u: U32) -> Ctx:
 def sw.ar(after: Bool, +ar: O.Arena, +u: U32, +c: Ctx) -> Ctx:
   sw.of(after, c, ar, u)
 
-
-
 def sa(fuel: Nat, +ar: O.Arena, us: List<&2, U32>, +c: Ctx) -> Ctx:
   match fuel:
     case 0n: c
@@ -1213,7 +1196,6 @@ def sa(fuel: Nat, +ar: O.Arena, us: List<&2, U32>, +c: Ctx) -> Ctx:
 # pushed once per edge plus once per gated node.
 def pass1(+ar: O.Arena, +sink: U32) -> Ctx:
   sa(O.Arena.budget(ar), ar, sc_topo_of(O.Arena.budget(ar), ar, sink), Ctx.of(Nil{}, Nil{}, Nil{}, Nil{}))
-
 
 # PASS TWO, the WAR loop, `__init__.py:59-65`. Three defs for three scopes.
 
@@ -1262,7 +1244,6 @@ def war(fuel: Nat, +ar: O.Arena, rds: List<&2, Rd>, +c: Ctx) -> Ctx:
 
 def pass2(+ar: O.Arena, +c: Ctx) -> Ctx:
   war(sc_fuel(ar), ar, Ctx.rds(c), c)
-
 
 # PASS THREE, `__init__.py:67-80`. TWO records, because the queue is the one
 # piece of loop state whose SHAPE changes every turn and a fold that must return
@@ -1391,8 +1372,6 @@ def lh.put(+f: O.Found, rest: List<&2, U32>, +l: Lin) -> Lin:
 def lh(rk: U32, rest: List<&2, U32>, +l: Lin) -> Lin:
   lh.put(replace(Lin.ar(l), kernel(Lin.ar(l), rk)), rest, l)
 
-
-
 # THE WHILE, and the whole of it is ONE recursive def. The queue is `ln_go`'s OWN
 # PARAMETER and not a field, because `Q.q(s)` is a CALL and a `match` may not
 # scrutinise a call; so the kids loop answers a `Q`, a `+` local holds it, and the
@@ -1407,12 +1386,8 @@ def ln_go(fuel: Nat, q: List<&2, U32>, +l: Lin) -> Lin:
           +t = lk_go(sc_fuel(Lin.ar(l)), kg(Lin.c(l), rk), rest, lh(rk, rest, l))
           ln_go(p, Q.q(t), Q.l(t))
 
-
-
 def lin(+ar: O.Arena, +c: Ctx) -> Lin:
   ln_go(sc_fuel(ar), zero(c), Lin{ar, c, Nil{}})
-
-
 
 # `create_schedule` -- __init__.py:32-80, and `linear` is the `return UOp(Ops.
 # LINEAR, src=tuple(linearized))`.
@@ -1438,7 +1413,6 @@ def cy_go(+ds: List<&2, Dep>, acc: List<&2, U32>) -> List<&2, U32>:
 
 def cycles(c: Ctx) -> Nat:
   List.length(&2, U32, cy_go(Ctx.degs(c), Nil{}))
-
 
 # `used_vars` AND `var_vals` -- __init__.py:279-291, THE TAIL OF
 # `create_linear_with_vars` AND the one piece of it nothing above it blocks.
@@ -1597,7 +1571,6 @@ def sv_binds(xs: List<&2, U32>, +r: SVar) -> SVar:
     case Nil{}  : r
     case x <> t : sv_binds(t, sv_bind(x, r))
 
-
 # THE TWELVE -- __init__.py:82-301. THE RULE BODIES, in the order they unblock.
 #
 # The header deferred this region on THREE clauses, and the measurement in
@@ -1650,8 +1623,6 @@ def sv_binds(xs: List<&2, U32>, +r: SVar) -> SVar:
 #     PARAMS on ONE device counted as TWO and the `>= 2` threshold RAISED on a
 #     single-device kernel. The `ads_same_*` rows see it (2 of 50 move).
 
-
-
 # 1. `is_store_after` -- __init__.py:217-218. NO ctx, NO table, NO fold, and it
 # is the FIRST of the twelve with NO WALL AT ALL:
 #
@@ -1670,7 +1641,6 @@ def is_store_after(+ar: O.Arena, +u: U32) -> Bool:
   Bool.and(sc_is_after(ar, u),
     Bool.or(Bool.not(sc_is(ar, O.UOp.unsharded_base(O.Arena.budget(ar), ar, sc_src0(ar, u)), O.OpsALLOC{})),
       sc_is(ar, sc_src(ar, u, 1), O.OpsSTORE{})))
-
 
 # 2. `CallifyCtx` -- __init__.py:192-197. THE C2 CLAUSE, and this is the whole
 # of it: a dataclass of a list, a dict, a set and another list.
@@ -1726,7 +1696,6 @@ def cs_run.go(+us: List<&2, U32>, +ar: O.Arena, c: O.CallifyCtx) -> O.CallifyCtx
 
 def cs_run(c: O.CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> O.CallifyCtx:
   cs_run.go(us, ar, c)
-
 
 # 4. `lower_sink_to_linear` -- __init__.py:124-126. NO ctx. THE GUARD is ported
 # and the guard is what decides whether the schedule cache is consulted at all:
@@ -1797,7 +1766,6 @@ def lower_sink_to_linear.p_ok(+ar: O.Arena, +call: U32) -> Bool:
   Bool.and(Bool.and(lower_sink_to_linear.p_sink(ar, call),
     Bool.not(lower_sink_to_linear.p_ki(ar, call))),
     lower_sink_to_linear.p_pre(ar, call))
-
 
 # 5. `copy_kernel_to_store` -- __init__.py:161-163, and
 # 6. `simplify_copy_kernel` -- __init__.py:165-172. BOTH NO ctx, and BOTH open
@@ -1935,7 +1903,6 @@ def copy_kernel_to_store(disk: List<&2, U32>, +ar: O.Arena, +call: U32, +dst: U3
 def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: U32) -> Bool:
   cks_fire(disk, ar, dst, src)
 
-
 # 7. `assert_all_same_devices` -- __init__.py:157-159. NO ctx, NO table:
 #
 #     devices = dedup([x.device for x in ast.toposort()
@@ -2034,7 +2001,6 @@ def assert_all_same_devices(+ar: O.Arena, +ast: U32) -> Ads:
 def assert_all_same_devices.raises(x: Ads) -> Bool:
   Bool.not(U32.is_lt(U32.from_nat(List.length(&2, S.Dev, Ads.ds(x))), 2))
 
-
 # 8. `apply_binds` -- __init__.py:107-111. NO ctx. THE THREE-ARM DISPATCH is
 # ported and ARM 3's BODY IS NOT, so the def is `apply_binds` and the answer is
 # an ARM NUMBER (1, 2, 3) and not a node:
@@ -2077,7 +2043,6 @@ def apply_binds.of(iscall: Bool, +bop: O.Op) -> U32:
 def apply_binds(+ar: O.Arena, +si: U32) -> U32:
   apply_binds.of(sc_is(ar, si, O.OpsCALL{}),
     sc_op(ar, Maybe.default(&2, U32, sc_body(ar, si), 0)))
-
 
 # `apply_binds`'s THREE ARMS, AND `resolve_linear_call` ITSELF -- __init__.py:95-111.
 #
@@ -2168,7 +2133,6 @@ def sc_apply_binds(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SB
 
 def sc_resolve_linear_call(+ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
   sc_resolve(O.Arena.budget(ar), RCall{ar, call, outer, sc_body(ar, call), O.CArgs{sc_src_from(ar, call, 1)}})
-
 
 # 9. `canonicalize_alloc` -- __init__.py:235-237. NEEDS ctx, and it is the
 # SECOND and LAST of the two bodies that do:
@@ -2418,9 +2382,7 @@ def canonicalize_call_body(+ar: O.Arena, +c: U32) -> O.Found:
 #     TODO(p3) __init__.py:280  symbol=create_linear_with_vars  -- `used_vars` -- `UOp.variables`.
 #     TODO(p3) schedule/memory.py:19  symbol=memory_plan_rewrite  -- `memory_plan_rewrite` -- `schedule/memory.py`.
 
-
 # THE GATE.
-
 
 # THE GATE'S READERS. `gate.code` is `sched-truth.py`'s `code()` verbatim, plus
 # LINEAR=10 and MSTACK=11, which that script never needed. `gate.enc` is its
@@ -2448,11 +2410,8 @@ def gate.nsrcs.go(ks: List<&2, U32>, +ar: O.Arena, acc: U32) -> U32:
     case Nil{}     : acc
     case k <> rest : gate.nsrcs.go(rest, ar, U32.add(U32.mul(acc, 10), sc_nsrc(ar, k)))
 
-
-
 def gate.nsrcs(+ar: O.Arena, ks: List<&2, U32>) -> U32:
   gate.nsrcs.go(ks, ar, 0)
-
 
 # every linearized kernel's srcs, in LINEAR ORDER: `Lin.out` is appended at the
 # right, so it needs no reversal (the QUEUE is reversed; `Lin.out` is not).
@@ -2468,4 +2427,3 @@ def gate.ops.go(ks: List<&2, U32>, +ar: O.Arena, acc: U32) -> U32:
 
 def gate.ops(+ar: O.Arena, ks: List<&2, U32>) -> U32:
   gate.ops.go(ks, ar, 0)
-

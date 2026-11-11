@@ -152,7 +152,6 @@ def dm_floordiv(+x: U32, +y: U32) -> U32:
                   dm_floordiv.exact2(H.i32_abs(H.i32_is_neg(x), x), H.i32_abs(H.i32_is_neg(y), y)),
                   H.i32_abs(H.i32_is_neg(x), x), H.i32_abs(H.i32_is_neg(y), y))
 
-
 def dm_floormod(+x: U32, +y: U32) -> U32:
   U32.sub(x, U32.mul(dm_floordiv(x, y), y))
 
@@ -336,7 +335,6 @@ def dm_0.make.go(+ar: O.Arena, d: U32, +s0: U32, +s1: U32, which: U32) -> O.Foun
 def dm_0.make(+ar: O.Arena, d: U32, +add: U32, which: U32) -> O.Found:
   dm_0.make.go(ar, d, O.Arena.src0(ar, add), O.Arena.src(ar, add, 1), which)
 
-
 def dm_0.pat.put(+ar: O.Arena, +d: U32, +add: U32, which: U32, op: Bool, self: U32) -> Bool:
   Bool.and(op, Bool.and(dm_isn2(ar, self), Bool.and(dm_has(dm_val(ar, d)),
     Bool.and(O.op_is(ar, add, O.OpsADD{}), Bool.and(dm_isn2(ar, add), U32.is_lt(which, 2))))))
@@ -348,7 +346,6 @@ def dm_0.armed(ar: O.Arena, d: U32, add: U32, which: U32, ok: Bool) -> Maybe<&2,
 
 def dm_0.go(+ar: O.Arena, +d: U32, +add: U32, +which: U32, op: Bool, self: U32) -> Maybe<&2, O.Found>:
   dm_0.armed(ar, d, add, which, Bool.and(dm_0.pat.put(ar, d, add, which, op, self), dm_pos(dm_ival(dm_val(ar, d)))))
-
 
 def dm_0.put(+ar: O.Arena, +self: U32) -> Maybe<&2, O.Found>:
   dm_0.go(ar, O.Arena.src(ar, self, 1), O.Arena.src0(ar, self),
@@ -396,7 +393,6 @@ def dm_cval(+ar: O.Arena, +add: U32, which: U32) -> U32:
 # other side is `x`, which the Python writes FIRST whatever the input order.
 def dm_1.make(+ar: O.Arena, op: O.Op, d: U32, +add: U32, which: U32, cm: U32, cq: U32) -> O.Found:
   dm_1.finish(ar, op, dm_1.pick(O.Arena.src0(ar, add), O.Arena.src(ar, add, 1), which), d, cm, cq)
-
 
 # WHICH side of the commutative ADD is the `cvar("c")` CONST. The MIRROR of
 # `dm_which`, and the same three arms: 0 = src0, 1 = src1, 2 = both or neither.
@@ -706,7 +702,6 @@ def dm_sh2.put(+ar: O.Arena, +u: U32, s0: U32, s1: U32) -> String:
 
 def dm_sh2(+ar: O.Arena, +u: U32) -> String:
   dm_sh2.put(ar, u, O.Arena.src0(ar, u), O.Arena.src(ar, u, 1))
-
 
 # THE FIXTURES. One arena, and the roots are addressed BY INDEX rather than by a
 # hand-kept record of indices: `Gate.rs` is the list `dm_root` indexes and

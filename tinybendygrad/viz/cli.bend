@@ -52,7 +52,6 @@
 import Base
 import ./../helpers.bend as H
 
-
 # `marker_st` -- cli.py:58. `next(e["ts"] for e in markers if e["name"] == name)`
 # with the `StopIteration` turned into `raise RuntimeError(...)`. The port's
 # answer is a `Maybe`, so the raise is the `None`.
@@ -62,7 +61,6 @@ import ./../helpers.bend as H
 # That is a request for a fixture, not a theorem: `markers_st.first` finds the
 # first by construction and no single-name fixture can separate it from a
 # last-match implementation.
-
 
 type Marker is Data:
   Marker{name: String, ts: H.I64}
@@ -77,9 +75,6 @@ def Marker.ts(+m: Marker) -> H.I64:
   match m:
     case Marker{name, ts}: ts
 
-
-
-
 # `get(data, key)` -- cli.py:75-80. `for k, v in data.items(): if ansistrip(k) ==
 # key: return v` -- and on a miss it runs `difflib.get_close_matches(key,
 # [ansistrip(k) for k in data], n=1, cutoff=0.6)` and raises with the suggestion in
@@ -93,7 +88,6 @@ def Marker.ts(+m: Marker) -> H.I64:
 # hint that is checked against a hand-written ratio would be a gate that asserts
 # its own arithmetic.
 
-
 type Item is Data:
   Item{k: String, v: String}
 
@@ -105,12 +99,8 @@ def Item.val(+i: Item) -> String:
   match i:
     case Item{k, v}: v
 
-
-
 # `difflib.get_close_matches` -- NAMED, see above. It is the only part of `get`
 # that is not ported, and `get.miss` is the refusal both lanes answer.
-
-
 
 # `fmt_top` / `fmt_all` -- cli.py:83-91. Both are PADDED COLUMNS and the pads are
 # where the information is:
@@ -130,34 +120,18 @@ def Item.val(+i: Item) -> String:
 # from `helpers.bend` (`H.time_to_str`, `H.colored`) which are ported and gated
 # there, and the `%.2f` cells are the `F32` wall named in the header.
 
-
-
-
-
 # `k['name']` is already `fmt_colored`'d by the CALLER, and `ansilen` strips
 # escapes, so the pad is computed on the STRIPPED length. MEASURED upstream's
 # `fmt_top` pads with `38 - ansilen(k['name'])` on a name that `render_event` has
 # already passed through `fmt_colored`, which is why a coloured name and a plain
 # name of the same visible width get the same pad.
 
-
-
-
 # `{"MARKER", "SOURCE"}` take the `---` arm and every other device the `*` arm,
 # and the two arms share NOTHING -- not the name, not the width, not whether a
 # timestamp follows. MEASURED upstream: `if k["device"] in {"MARKER", "SOURCE"}`
 
-
 # `k['device'][:7]` -- a SEVEN-CHARACTER SLICE, not a split, so `"GPU:0:1"` is
 # `"GPU:0:1"` truncated to `"GPU:0:"` and `dev7` is a `String.take`.
-
-
-
-
-
-
-
-
 
 def pad_w(+n: Nat, +w: Nat) -> Nat: Bool.pick(Nat, Nat.is_ge(n, w), 0n, Nat.sub(w, n))
 
@@ -180,14 +154,6 @@ def fmt_all_kernel(dev: String, +nm: String) -> String:
   String.concat(["*** ", dev7(dev), " ", nm, pad_name(nm, 46n)])
 
 def fmt_all_marker(dev: String, +nm: String) -> String: String.concat(["--- ", dev, " ", nm])
-
-
-
-
-
-
-
-
 
 def marker_st.go(ms: List<&2, Marker>, +name: String) -> Maybe<&2, H.I64>:
   match ms:
@@ -219,6 +185,3 @@ def main() -> IO(Unit):
     IO.print("marker_st=[" ++ marker_none(Nil{}, "x") ++ "]")
 
 # `None` rendered as `none` so a row can name it without a `Maybe` show.
-
-
-

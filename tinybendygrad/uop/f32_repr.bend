@@ -42,10 +42,8 @@
 # random bit patterns plus every power of two, its negation, the denormals and the edges -- with
 # 0 mismatches, and `.agents/slop/perf/f32_repr.rows` re-checks THIS file on the same population.
 
-
 import Base
 import ./../helpers.bend as H
-
 
 # 64-bit exponents. Base has U32, Nat and F32; an exponent needs a sign, and helpers.bend
 # already carries the two-word I64 with add, sub, compare, negate and abs.
@@ -55,7 +53,6 @@ def i64n(+n: U32) -> H.I64: H.i64_neg(True{}, H.i64_of_i32(n))
 
 # the magnitude of a known-non-negative I64, which is the only way this file reads one
 def nat_of64(+x: H.I64) -> Nat: U32.to_nat(H.lo32(x))
-
 
 # decimal digits, MOST significant first, each 0..9
 
@@ -73,7 +70,6 @@ def ds_str.go(ds: List<&2, U32>, +acc: List<&2, Char>) -> List<&2, Char>:
 
 def ds_str(+ds: List<&2, U32>) -> String:
   String.from_list(List.reverse(&2, Char, ds_str.go(ds, Nil{})))
-
 
 # the bignum: multiply by a small constant, add or subtract one, and count bits.
 #
@@ -146,7 +142,6 @@ def blen(+x: U32) -> U32: blen.go(32n, x, 0)
 def is_pow2(+m: U32) -> Bool:
   U32.is_eq(m, U32.shln(1, Nat.sub(U32.to_nat(blen(m)), 1n)))
 
-
 # EXACT EXPANSION. `scale` is the one primitive: digits times a power of two, answered as digits
 # and the power of ten they are cut by. A NEGATIVE power is the only one that needs 5s, because
 # 2^-k = 5^k / 10^k.
@@ -165,7 +160,6 @@ def scale(+ds: List<&2, U32>, +t: H.I64) -> Scaled:
 # x = m * 2^e
 def dec2(+m: U32, +e: H.I64) -> Scaled:
   scale(ds_of(U32.show(m)), e)
-
 
 # THE ROUNDING BOUNDS. x + s*half_ulp = (m * 2^(step-b) + s) * 2^(e+b-step); `plus` says whether
 # s is +1, and `step` is 55 instead of 54 on the low side of a power of two.
@@ -189,7 +183,6 @@ def bound(+m: U32, +e: H.I64, +plus: Bool, +step: U32) -> Scaled:
   +b = blen(m)
   +num = big_n(2, U32.to_nat(U32.sub(step, b)), ds_of(U32.show(m)))
   bound.scale(plus, bound.num(plus, num), H.i64_sub(H.i64_add(e, i64u(b)), i64u(step)))
-
 
 # an unsigned decimal with the point moved: value = digits * 10^exp, digits most significant
 # first. Two of them compare by where their most significant digit lands and then digit by digit.
@@ -259,7 +252,6 @@ def dec_cmp.ord(h: Cmp, +a: String, +b: String) -> Cmp:
 def dec_cmp(+a: String, +ae: H.I64, +b: String, +be: H.I64) -> Cmp:
   dec_cmp.ord(H.i64_cmp(dec_pos(a, ae), dec_pos(b, be)), a, b)
 
-
 # FORMATTING. `dp` is the position of the decimal point: value = 0.<digits> * 10^dp, so
 # `len(digits) + exp`. Python uses fixed notation for -4 < dp <= 16 and scientific otherwise.
 
@@ -311,7 +303,6 @@ def fmt.go(fixed: Bool, +d: String, +dp: H.I64) -> String:
 def fmt(+d: String, +e: H.I64) -> String:
   +dp = dp_of(d, e)
   fmt.go(fmt.fixed(dp), d, dp)
-
 
 # the candidate search
 
@@ -441,7 +432,6 @@ def search(+f: Nat, +m: Maybe<&2, String>, +c: Ctx) -> String:
     case f0 Some{x}: x
     case 0n None{}: String.concat([sign_of(c), fmt(Ctx.d(c), Ctx.e(c))])
     case 1n+g None{}: search(g, step(Nat.sub(18n, f), c), c)
-
 
 # THE ENTRY POINT
 

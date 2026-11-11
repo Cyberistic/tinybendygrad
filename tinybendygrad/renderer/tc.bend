@@ -131,11 +131,9 @@
 #            as its `BODY` line here. Every STAGE 2 row names a wall for a
 #            stage 3 thing rather than faking one.
 
-
 import Base
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
-
 
 # THE GATE PRIMITIVES. `r` is wgsl.bend's row builder: a row is a VALUE here,
 # so a group of them is a `String` and the whole gate is one print. `r` TAKES
@@ -143,7 +141,6 @@ import ./../uop/ops.bend as O
 # it too and that half still carries its own text. IN THIS FILE every `py=`
 # argument is DERIVED -- see the header, convention 2, for why a LITERAL was
 # the wrong shape and what a derived cell does and does not prove.
-
 
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
@@ -168,7 +165,6 @@ def dt_name(+d: S.Dt) -> String:
   match d:
     case S.Dt{pri, bits, cls, nm}: nm
 
-
 # COORDS. tc.py spells a coordinate as the two-character string "m0" and reads
 # `c[0]` (the axis letter) and `int(c[1:])` (the bit index) off it. A packed
 # `U32` is the same pair -- `(bit << 2) | axis`, with n=0, m=1, k=2 -- and it
@@ -180,7 +176,6 @@ def dt_name(+d: S.Dt) -> String:
 # AXIS CODES are the one place a literal replaces a letter, so they are named:
 # `AX_N`, `AX_M`, `AX_K`. `"nmk"[0]` is n, and tc.py iterates `for d in "nmk"`,
 # so the axis ORDER is n, m, k in `axis_coords` and in `cd_keeps`' callers.
-
 
 def AX_N() -> U32: 0
 def AX_M() -> U32: 1
@@ -270,12 +265,10 @@ def ur(k: Nat, +ax: U32, +i: U32) -> List<&2, U32>:
 
 def ur0(k: Nat, ax: U32) -> List<&2, U32>: ur(k, ax, 0)
 
-
 # COORD LITERALS. Every coordinate in every table tc.py writes by hand, so they
 # are defs rather than inline `cd(3, 1)` calls: `cd(3, 1)` is `mk(3)`, and a
 # reader comparing tc.py's `("m0","m1","m2")` to a row of `mk(0) mk(1) mk(2)`
 # has nothing to hold onto.
-
 
 def mk(b: U32) -> U32: cd(b, AX_M())
 def nk(b: U32) -> U32: cd(b, AX_N())
@@ -298,14 +291,12 @@ def m0123() -> List<&2, U32>: cd4(mk(0), mk(1), mk(2), mk(3))
 def n012() -> List<&2, U32>: cd3(nk(0), nk(1), nk(2))
 def n0123() -> List<&2, U32>: cd4(nk(0), nk(1), nk(2), nk(3))
 
-
 # `TensorCore` -- tc.py:6-14. FIVE FIELDS, SEVEN `U32` LISTS, because a
 # fragment is Python's `(lane_bits, element_bits)` pair and Bend has no tuple
 # (brief: a `Data` record per pair would cost four more reader defs and read
 # worse). The lane list comes first in every constructor because tc.py's
 # `f[0] + f[1]` order is load-bearing for `relabel`, `base_upcast_axes` and
 # `frag_coords`.
-
 
 type Tc is Data:
   Tc{di: S.Dt, dou: S.Dt, la: List<&2, U32>, ea: List<&2, U32>, lb: List<&2, U32>, eb: List<&2, U32>, lc: List<&2, U32>, ec: List<&2, U32>}
@@ -353,7 +344,6 @@ def Tc.allc(+t: Tc) -> List<&2, U32>: cc2(Tc.lc(t), Tc.ec(t))
 def Tc.ealla(+t: Tc) -> List<&2, U32>: cc2(Tc.ea(t), Tc.la(t))
 def Tc.eallb(+t: Tc) -> List<&2, U32>: cc2(Tc.eb(t), Tc.lb(t))
 
-
 # :12 `axis_coords` -- "tile bit of each tc axis in creation order, n then m
 # then the k unrolls. split j of a dim is bit j".
 #
@@ -363,13 +353,11 @@ def Tc.eallb(+t: Tc) -> List<&2, U32>: cc2(Tc.eb(t), Tc.lb(t))
 # `used` is A's lane, A's element, C's lane, C's element -- B is NOT in it,
 # because `k` never is a foreign bit and the post-init assertion checks it.
 
-
 def Tc.used(+t: Tc) -> List<&2, U32>: cc4(Tc.la(t), Tc.ea(t), Tc.lc(t), Tc.ec(t))
 
 def Tc.axis_coords(+t: Tc) -> List<&2, U32>:
   +u = Tc.used(t)
   cc3(ur0(U32.to_nat(cd_cnt(u, AX_N())), AX_N()), ur0(U32.to_nat(cd_cnt(u, AX_M())), AX_M()), ur0(U32.to_nat(cd_cnt(u, AX_K())), AX_K()))
-
 
 # :33 `base_upcast_axes` -- "element slots, most significant bit first: upcast
 # then reduce": `(tuple(c for c in self.axis_coords() if c[0] == "k") +
@@ -377,16 +365,13 @@ def Tc.axis_coords(+t: Tc) -> List<&2, U32>:
 # prefix of this list is what makes a fragment's k unroll read the same way in
 # A and B) so it is written, not implied.
 
-
 def Tc.bu(+t: Tc) -> List<&2, U32>:
   List.reverse(&2, U32, cc2(cd_keeps(AX_K(), Tc.axis_coords(t)), Tc.ec(t)))
-
 
 # :29 `dims` -- `n, m, k = (sum(c[0]==d for c in axis_coords) for d in "nmk")`
 # then `(2n, 2m, 2k)`, the tile's N, M, K. Three defs, not one returning
 # a triple: Bend has no tuple and no `Data` record may hold a `Maybe`, and a
 # three-field record here would need three more reader defs for one call site.
-
 
 def Tc.dims_n(+t: Tc) -> U32: pow2(cd_cnt(Tc.axis_coords(t), AX_N()))
 def Tc.dims_m(+t: Tc) -> U32: pow2(cd_cnt(Tc.axis_coords(t), AX_M()))
@@ -397,7 +382,6 @@ def Tc.dims(+t: Tc) -> String: String.join([U32.show(Tc.dims_n(t)), U32.show(Tc.
 # :32 `threads` -- `2len(self.frag_c[0])`: "threads that construct the warp".
 def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))
 
-
 # :16 `relabel` -- "tc axis -> fragment slot axis, per operand":
 #
 #     return [{c: y for y,c in zip(self.frag_c[0] + self.base_upcast_axes()[:len(f[1])][::-1], f[0]+f[1])} for f in (frag_a, frag_b)]
@@ -407,7 +391,6 @@ def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))
 # PREFIX of `base_upcast_axes`, then reversed -- so `take` then `reverse`, and
 # the order matters (relabel of cdna's K=128 is where a reversed prefix would
 # show).
-
 
 type Kv is Data:
   Kv{ks: List<&2, U32>, vs: List<&2, U32>}
@@ -434,7 +417,6 @@ def Kv.join(k: Kv) -> String:
   match k:
     case Kv{ks, vs}: kv_join(ks, vs)
 
-
 def Tc.relabel.a(+t: Tc) -> String: Kv.join(Kv.of_a(t))
 def Tc.relabel.b(+t: Tc) -> String: Kv.join(Kv.of_b(t))
 
@@ -443,8 +425,6 @@ def Tc.relabel.b(+t: Tc) -> String: Kv.join(Kv.of_b(t))
 # scrutinise two CALLS (convention 4), and `kv_join` conses and reverses because
 # `zip` walks two lists that come out of ONE destructuring and so share a
 # binder (the "returning the tail instead of the input" rule).
-
-
 
 # :19 `frag_coords` -- `[operand][lane][element] -> tile coordinate`:
 #
@@ -459,7 +439,6 @@ def Tc.relabel.b(+t: Tc) -> String: Kv.join(Kv.of_b(t))
 # THE AXIS ORDER is per operand: "mk" for A, "kn" for B, "mn" for C. So the
 # two numbers a cell prints are `ax0` then `ax1` and the caller names them,
 # rather than this def returning a fixed-order triple.
-
 
 # one bit list's contribution to one axis
 # one bit list's contribution to one axis. `Bool.pick(A, c, a, b)` answers `a`
@@ -501,7 +480,6 @@ def fc_lanes(k: Nat, +n: U32, +elems: Nat, +la: List<&2, U32>, +ea: List<&2, U32
 def fc_str(lanes: Nat, elems: Nat, +la: List<&2, U32>, +ea: List<&2, U32>, ax0: U32, ax1: U32) -> String:
   String.join(fc_lanes(lanes, 0, elems, la, ea, ax0, ax1), ",")
 
-
 # THE FNV-1a DIGEST, because `frag_coords`'s own string is 22 647 characters at
 # cdna's K=128 and hard-coding the eight shapes' worth of them would put ~180 KB
 # of literals in this file. A digest is a STRING beside CPython's string, catches
@@ -520,7 +498,6 @@ def fc_str(lanes: Nat, elems: Nat, +la: List<&2, U32>, +ea: List<&2, U32>, ax0: 
 # SHAPE -- a digest is a string beside CPython's string -- not because a cliff
 # forbids the alternative.
 
-
 def fnv.go(+s: String, h: U32) -> U32:
   match s:
     case SNil{}     : h
@@ -529,7 +506,6 @@ def fnv.go(+s: String, h: U32) -> U32:
 def fnv(+s: String) -> U32: fnv.go(s, 2166136261)
 
 def dgst(+s: String) -> String: String.concat(["len=", U32.show(U32.from_nat(String.length(s))), " fnv=", U32.show(fnv(s))])
-
 
 # :44-88 `__post_init__` -- the four assertions. Python `assert`s; a port has
 # no assert form, so each becomes a `Bool` and the gate says which arm is
@@ -544,7 +520,6 @@ def dgst(+s: String) -> String: String.concat(["len=", U32.show(U32.from_nat(Str
 # so FOUR clauses, and the chain is `set(f[1]) <= own`, `own <= set(f[0]+f[1])`
 # and `set(f[0]+f[1]) <= own | mn-coords`. The last one is a union so testing
 # against `own ++ mn-coords` as a LIST is the same statement.
-
 
 def mem(+xs: List<&2, U32>, +x: U32) -> Bool:
   match xs:
@@ -609,8 +584,6 @@ def eq_cs(+xs: List<&2, U32>, +ys: List<&2, U32>) -> Bool:
 
 def Tc.kab_eq(+t: Tc) -> Bool: eq_cs(Tc.kab_a(t), Tc.kab_b(t))
 
-
-
 # :26 `mma` -- NVIDIA `mma.m16n8kK`:
 #
 #   k, g = [f"k{i}" for i in range(int(math.log2(K)))], int(math.log2(4//di.itemsize))
@@ -623,7 +596,6 @@ def Tc.kab_eq(+t: Tc) -> Bool: eq_cs(Tc.kab_a(t), Tc.kab_b(t))
 # g=0. `elem[:g] + ("m3",) + elem[g:]` is where m3 -- "A row+8" -- is spliced
 # in, and it is a SPLICE not an append, which is the whole reason a fragment
 # shape is not just a suffix of `k`.
-
 
 def c_mma_lane() -> List<&2, U32>: cd5(nk(1), nk(2), mk(0), mk(1), mk(2))
 def c_mma_elem() -> List<&2, U32>: cd2(nk(0), mk(3))
@@ -640,7 +612,6 @@ def mma(+kk: U32, +di: S.Dt, dou: S.Dt) -> Tc:
 # because the accumulator layout depends on neither K nor the dtype, which is
 # why it is two literal defs and not a slice of `elem`.
 
-
 # :77 `mfma` -- AMD 16x16xK. "A[i,k] is item k%K_L of lane i + 16*(k//K_L),
 # K_L = K/4; fp8 K=128 is two K=64 halves, k//64 the high item (7.1.5.1)".
 #
@@ -651,7 +622,6 @@ def mma(+kk: U32, +di: S.Dt, dou: S.Dt) -> Tc:
 # kl=4; a `K` instead of `min(K, 64)` would give kl=5 and a different shape.
 # `# NOTE: fp6 and fp4 K=128 keep K_L = 32 and would need their own case` is
 # upstream's note about the ones this table does not carry.
-
 
 def mfma(+kk: U32, di: S.Dt, dou: S.Dt) -> Tc:
   +ks = ur0(U32.log2(kk), AX_K())
@@ -668,7 +638,6 @@ def mfma(+kk: U32, di: S.Dt, dou: S.Dt) -> Tc:
 # `cuda_sm89 = cuda_sm80 + cuda_81632_f8` are CONCATENATIONS, and the ORDER is
 # what the gate pins: a `get_cuda` row and a `cuda_sm89[i]` row both move if a
 # concatenation is reversed.
-
 
 def cuda_81616() -> List<&2, Tc>: [mma(16, S.half(), S.single()), mma(16, S.bfloat16(), S.single()), mma(16, S.half(), S.half())]
 def cuda_81632_f8() -> List<&2, Tc>: [mma(32, S.fp8e4m3(), S.single()), mma(32, S.fp8e5m2(), S.single())]
@@ -746,7 +715,6 @@ def get_amd(nm: String) -> List<&2, Tc>:
     case "gfx1201": amd_rdna4()
     case _:        amd_rdna3()
 
-
 # THE STAGE 1 GATE. 289 rows, every one a STRING beside CPython's own string.
 #
 #   * 16 tables x (a length row + one row per MEMBER).  The member row is
@@ -768,7 +736,6 @@ def get_amd(nm: String) -> List<&2, Tc>:
 # mutation of one table moves only that table's rows, and a mutation of
 # `mma`/`mfma`/`rdna3_of`/`rdna4_of`/`metal_of` moves BOTH (the shape and the
 # table), which is the localisation the mutation table records.
-
 
 # the derived row. The `py=` half is the port's own value, read through the
 # same table the port prints, so a row cannot disagree with itself and a table
@@ -807,8 +774,6 @@ def r_tcs(+ts: List<&2, Tc>, +i: U32, +nm: String) -> String:
       String.concat([rd("tc." ++ nm ++ "[" ++ U32.show(i) ++ "]", p), rest])
 def cuda_81616_rows() -> String: r_tcs(cuda_81616(), 0, "cuda_81616")
 
-
-
 def r_tbl_cuda_81616() -> String: String.concat([rd("tc.cuda_81616.len", tln(cuda_81616())), cuda_81616_rows()])
 def cuda_81632_f8_rows() -> String: r_tcs(cuda_81632_f8(), 0, "cuda_81632_f8")
 def cuda_8168_f16_rows() -> String: r_tcs(cuda_8168_f16(), 0, "cuda_8168_f16")
@@ -841,23 +806,17 @@ def r_tbl_amd_cdna3() -> String: String.concat([rd("tc.amd_cdna3.len", tln(amd_c
 def r_tbl_amd_cdna4() -> String: String.concat([rd("tc.amd_cdna4.len", tln(amd_cdna4())), amd_cdna4_rows()])
 def r_tbl_metal() -> String: String.concat([rd("tc.metal.len", tln(metal())), metal_rows()])
 
-
-
-
 # `frag_coords`' AXIS ORDER is per operand -- 'mk', 'kn', 'mn' -- and the
 # `oi` selector is a parameter, not a computed value (convention 4).
 def fc_a(+t: Tc) -> String: fc_str(U32.to_nat(pow2(ln(Tc.la(t)))), U32.to_nat(pow2(ln(Tc.ea(t)))), Tc.la(t), Tc.ea(t), AX_M(), AX_K())
 def fc_c(+t: Tc) -> String: fc_str(U32.to_nat(pow2(ln(Tc.lc(t)))), U32.to_nat(pow2(ln(Tc.ec(t)))), Tc.lc(t), Tc.ec(t), AX_M(), AX_N())
 def fc_b(+t: Tc) -> String: fc_str(U32.to_nat(pow2(ln(Tc.lb(t)))), U32.to_nat(pow2(ln(Tc.eb(t)))), Tc.lb(t), Tc.eb(t), AX_K(), AX_N())
 
-
-
 def fc_of.of(oi: U32, +t: Tc) -> String:
   match oi:
     case 0: fc_a(t)
     case 1: fc_b(t)
     case _: fc_c(t)
-
 
 def r_tcd0(+t: Tc) -> String:
   +nm = tc_nm(t)

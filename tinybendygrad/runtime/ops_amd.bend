@@ -256,9 +256,7 @@ import Base
 import ../helpers.bend as H
 import ../device.bend as D
 
-
 # THE CONSTANTS, and where each one was read.
-
 
 # ops_amd.py:36, "based on a comment in nvd.h".
 def EVENT_INDEX_PARTIAL_FLUSH() -> U32: 4
@@ -369,9 +367,7 @@ def MOD_GC() -> U32: 4
 def MOD_NBIO() -> U32: 5
 def MOD_N() -> U32: 6
 
-
 # THE TYPES.
-
 
 # ONE driver call and the object it acts on. `arg` is the iface kind for a
 # SELECT, the module id for an IMPORT, and a plain number otherwise. There is
@@ -426,10 +422,8 @@ type Dev is Data:
       se_cnt: U32, cu_cnt: U32, waves_per_cu: U32, wave_cnt: U32,
       max_copy_size: U32, is_aql: Bool, ver: U32, sdma: U32, t: Tr}
 
-
 # THE TRACE. `Tr.emit` is the seam: every driver call in this file goes through
 # it, so the trace is the ordered list of ioctls the seam will make.
-
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, False{}, 0, 0}
 
@@ -493,11 +487,9 @@ def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
 
-
 # READING THE TRACE. `Tr.args` is the args of every entry with tag `k`, in
 # order; `Tr.count` is how many there are; `Tr.seen` is how many calls there
 # are at all, which is the TRUNCATION length a refusal shows up as.
-
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
@@ -566,7 +558,6 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 
 def Tr.seq(t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
 
-
 # THE KERNEL ARGUMENT TRACE. `kernargs` (:361-364) and the two helpers it calls,
 # and this is the section `ops_webgpu.bend`, `ops_cl.bend` and `ops_nv.bend`
 # port too. The three facts, in order:
@@ -583,7 +574,6 @@ def Tr.seq(t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
 #      where a slot does not continue the previous one, PREPENDS a zero blob of
 #      exactly the gap; then it appends one trailing blob of
 #      `kernargs_segment_size - end`, which is ZERO when the args fill it.
-
 
 # `(1)`: `8` per global, then the var widths. The fold APPENDS, so the order is
 # globals-then-vars, and the list of globals is a COUNT because
@@ -661,7 +651,6 @@ def pack_end(ks: List<&2, U32>) -> U32: pk_end.go(ks, 0)
 def pack.tail(end: U32, size: U32) -> List<&2, E>:
   List.append(&2, E, Nil{}, [E{1, U32.sub(size, end)}])
 
-
 # `dispatch_packet` (:61-67), the AQL side. What survives is the SHAPE: a
 # 64-byte packet handed over as a list of words, and the three slice boundaries
 # that split it.
@@ -673,7 +662,6 @@ def pack.tail(end: U32, size: U32) -> List<&2, E>:
 # the grid words -- which is why the split is at 24 and not at 28. The two
 # `UOp`s in the middle are 8 bytes each by default, and the three grid words are
 # `g * l` cast to uint32, `zip`ped over `global_size` and `local_size`.
-
 
 # the grid, `g * l` for the three zipped pairs, and the cast to uint32 is the
 # seam's because a UOp cast is a node. ONE fold over THREE pairs -- three
@@ -709,12 +697,10 @@ def pkt.sh_tail(n: Nat, acc: List<&2, E>) -> List<&2, E>:
     case 0n: acc
     case 1n+m: pkt.sh_tail(m, List.append(&2, E, acc, [E{0, 8}]))
 
-
 # `AMDProgramData` (:525-529, :555-560). ELEVEN fields, and the derivations
 # that :544-554 feeds them. `desc_off` is the `.rodata` section address and
 # `entry_off` is that plus the entry byte offset -- so the two are the SAME
 # number when the entry is at the section head, which is one of the fixtures.
-
 
 def Pd.of() -> Pd: Pd{0, 0, 0, 0, 0, False{}, 0, 0, 0, 0, 0}
 
@@ -789,14 +775,12 @@ def pd.wave32_of(kp: U32) -> Bool:
 def pd.edp_of(kp: U32) -> U32: U32.and(kp, U32.shln(1, U32.to_nat(KPROPS_EDP_BIT())))
 def pd.epsgpr_of(kp: U32) -> U32: U32.and(kp, U32.shln(1, U32.to_nat(KPROPS_EPS_BIT())))
 
-
 # THE CACHE, both directions. `_amd_program_cache` (:531) is keyed by
 # `(lib, devs)`: the library BYTES and the DEVICE SET. Same lib and same devs
 # hits; a different devs is a MISS, because "each device set gets its own
 # program buffer of it" (:534) is the comment that says why. And the profile
 # key `prg.key` is a third component of `ProfileProgramEvent` (:1037), not of
 # the cache key.
-
 
 type CKey is Data:
   CKey{lib: U32, ndev: U32}
@@ -826,8 +810,6 @@ def CKey.same(a: CKey, +b: CKey) -> Bool:
 # they ARE. That is the positive/negative pair, both real Python, and both
 # rows. `amd_recycled_*` is `D.recycled` called with this file's specs.
 
-
-
 # the two flags `Allocator.free` reads, as `D.Bspec.go` hands them over. A
 # `match` may not scrutinise a CALL (constraints line 640), so the record is
 # bound first.
@@ -851,7 +833,6 @@ def spec_scratch() -> D.Bspec: D.Bspec{False{}, False{}, False{}, True{}, False{
 # `"gfx%d%x%x" % target` -- where the two `%x` are UNPADDED, so a minor of 55
 # prints as `37` and the arch string is SEVEN characters. `amd_arch_115501` is
 # that row and it is the reason the formatting is a def and not a format.
-
 
 # shortest lowercase hex, no padding: `%x`. `0 -> "0"`, `4 -> "4"`, `55 -> "37"`.
 #
@@ -924,12 +905,9 @@ def is_am(+iface: U32) -> Bool:
 # `import_module` (:31) is the "greatest module with matching MAJOR that is
 # <= the target" ladder, and it is driven on real autogen names in the oracle.
 
-
-
 # OCCUPANCY. `tmpring_size` (:973-987) is FIVE steps and the last of them is a
 # THREE-WAY union dispatch, so it is the densest piece of pure arithmetic in the
 # file and it is gated end to end.
-
 
 # :977, `mem_alignment_size = 256 if self.target[0] != 9 else 1024`.
 def scr_align(t0: U32) -> U32:
@@ -974,11 +952,9 @@ def scr_num_waves(spx: U32, wsc: U32, +t0: U32, se: U32) -> U32:
 def tmp_ring(nw: U32, msw: U32, wsc: U32) -> U32:
   U32.or(U32.and(U32.min(nw, msw), 4095), U32.shln(wsc, 12n))
 
-
 # THE QUEUE SIZES, :948-959. Five numbers, each a different table, and
 # `compute_queue` is the only place `cu_cnt` and `wave_cnt` are USED rather than
 # derived -- so a wrong `wave_cnt` shows up here and nowhere else.
-
 
 # :952, `lds_size_per_cu = props["lds_size_in_kb"] << 10 if target[:2] == (9,5)
 # else 0x10000`. The check is on the first TWO components, so gfx9.4 takes the
@@ -1003,9 +979,7 @@ def q_vgpr_per_cu(+t0: U32, t1: U32, t2: U32) -> U32:
   Bool.pick(U32, q_is_heavy(t0, t1, t2), VGPR_PER_CU_HEAVY(),
     Bool.pick(U32, U32.is_eq(t0, 9), VGPR_PER_CU_GFX9(), VGPR_PER_CU_LIGHT()))
 
-
 # THE QUEUE TAG GRAMMAR, :943-946 and hcq2.py:66.
-
 
 def to_lower(+c: U32) -> U32: Bool.pick(U32, U32.is_ge(c, 65), U32.add(c, 32), c)
 
@@ -1047,10 +1021,8 @@ def qb_split(tag: String) -> List<&2, U32>:
   List.append(&2, U32, List.append(&2, U32, List.append(&2, U32, Nil{},
     [0]), [1]), [2])
 
-
 # `sqtt_trace` (:1040-1048), which is the offset arithmetic and the ONE assert
 # in the file that a wrong pointer arithmetic trips at RUNTIME.
-
 
 # :1042, `wptr = (self.sqtt_wptrs[slot * sqtt_ses + se] & 0x1FFFFFFF) * 32`. The
 # 29-bit mask drops the two hardware status bits and the `*32` converts a DWORD
@@ -1072,13 +1044,11 @@ def sq_shl5(+x: U32) -> H.I64:
 
 def sq_masked(raw: U32) -> U32: U32.and(raw, 536870911)
 
-
 # THE PMC BLOCK TABLE, :194-195. `{"GRBM": (1,1,1,1), "GL2C": (32,1,1,1),
 # "TCC": (16,1,1,1), "SQ": (1, se_cnt) + ((1,1) if gfx9 else (2, cu_per_simd_array
 # // 2))}` -- four blocks, and only SQ reads the device, and only on the
 # non-gfx9 arm. The tuple is `(inst, se, sa, wgp)` and `prod` over it times
 # `xccs` times 8 is one counter's record size.
-
 
 # :256-260, `sa_mask = (1 << (cu_per_simd_array // 2)) - 1` and
 # `cu_mask = (1 << (cu_per_se + (1 if i == 0 else 0))) - 1` and
@@ -1113,7 +1083,6 @@ def Mk.sm(m: Mk) -> U32:
 def sq_lo(+m: Mk) -> U32: U32.and(Mk.cm(m), Mk.sm(m))
 def sq_hi(+m: Mk) -> U32: U32.shln(U32.and(U32.shln(Mk.cm(m), 16n), Mk.sm(m)), 16n)
 
-
 # `exec`'s USER REGISTERS, :377-380. Three lists concatenated in a fixed order
 # and the ORDER is the whole of it, because `regCOMPUTE_USER_DATA_0` is written
 # with `*user_regs` and the kernel reads them in address order:
@@ -1125,14 +1094,11 @@ def sq_hi(+m: Mk) -> U32: U32.shln(U32.and(U32.shln(Mk.cm(m), 16n), Mk.sm(m)), 1
 # So an empty list, a three-element list, a four-element list and a two-element
 # list are all reachable, and the first element carries the scratch flag bit.
 
-
-
 # THE INIT SEQUENCE, :852-884, in the order the source runs it. Fifteen steps,
 # and the ORDER is the claim: the two interface steps, then the FOUR KFD steps,
 # then the SIX module imports, then the four allocator/queue steps. A port that
 # imports the offsets before opening `/dev/kfd` has the right six names in the
 # wrong place, and no per-step row sees it.
-
 
 def CALL_SELECT() -> U32: 0
 def CALL_OPEN() -> U32: 1
@@ -1165,5 +1131,3 @@ def dev.imports(t: Tr) -> Tr: dev.imports.go(U32.to_nat(MOD_N()), 0, t)
 def dev.tail(t: Tr, ring: U32, gart: U32) -> Tr:
   Tr.emit(CALL_SETUP_RING(), 0, Tr.emit(CALL_ALLOC(), gart,
     Tr.emit(CALL_ALLOC(), ring, Tr.emit(CALL_SUPER(), 0, t))))
-
-

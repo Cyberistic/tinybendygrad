@@ -13,7 +13,6 @@ import ./../../mixin/rand.bend as RD
 import ./transformer.bend as TR
 import ./../datasets/__init__.bend as D
 
-
 # stub -- 1:1 path mirror of extra/models/vit.py (73 loc). not yet ported.
 #
 # the only model in this directory that does not begin with a convolution, and
@@ -76,7 +75,6 @@ import ./../datasets/__init__.bend as D
 # `extra/datasets/__init__.bend:40-46` and imported as `D`. Each message names
 # the upstream `path:line` of the FIRST MISSING SYMBOL.
 
-
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
@@ -85,10 +83,8 @@ def vt_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-
 # :6-17 ViT.__init__. FOUR of the five lines build tensors that EXIST; the fifth
 # is the one that refuses.
-
 
 # :7  def __init__(self, layers=12, embed_dim=192, num_heads=3)
 def vt_vit_init(layers: U32, embed_dim: U32, num_heads: U32) -> D.Refused:
@@ -116,9 +112,7 @@ def vt_act_gelu(+x: T.Tensor) -> D.Refused:
 def vt_encoder_norm(embed_dim: U32) -> D.Refused:
   D.refuse("extra/models/vit.py:16 ViT.encoder_norm -- rd_uniform/cr_zeros EXIST; blocked by Tensor.layernorm at :29")
 
-
 # :19-22 patch_embed. the first convolution in the file, and it is built.
-
 
 # :19 def patch_embed(self, x)
 def vt_patch_embed(+x: T.Tensor) -> D.Refused:
@@ -132,10 +126,8 @@ def vt_patch_reshape(+x: T.Tensor) -> D.Refused:
 def vt_patch_permute(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/vit.py:21 ViT.patch_embed -- mxw_permute (mixin/movement.bend:1452 symbol=mxw_permute) EXISTS; blocked by the reshape at the same line")
 
-
 # :24-30 forward. FIVE lines, THREE of them blocked by symbols this file's own
 # census already names.
-
 
 # :24 def forward(self, x)
 def vt_forward(+x: T.Tensor) -> D.Refused:
@@ -161,9 +153,7 @@ def vt_layernorm(+x: T.Tensor) -> D.Refused:
 def vt_slice(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/vit.py:30 ViT.forward -- MISSING SLICE x[:, 0]; rd_slice (mixin/rand.bend:481 symbol=rd_slice) exists but is a 1-D shrink, not an index read")
 
-
 # :32-73 load_from_pretrained. TWENTY-SEVEN `assign` calls and one `np.load`.
-
 
 # :32 def load_from_pretrained(m)   -- NOTE it is NOT `self`; upstream takes the
 # model as a parameter and it is the only def in this file that does.
@@ -179,7 +169,6 @@ def vt_assign_block(+m: T.Tensor, +v: T.Tensor) -> D.Refused:
 # :34 if m.embed_dim == 192 ... :38-39 raise Exception("no pretrained weights")
 def vt_url(embed_dim: U32) -> D.Refused:
   D.refuse("extra/models/vit.py:34 ViT.load_from_pretrained -- the URL choice is PURE DATA and could be a record; it is refused here only because the fetch at :40 is missing, and saying so is cheaper than a def nobody can call")
-
 
 # THERE IS NO `if __name__ == \"__main__\":` IN THIS FILE -- upstream ends at
 # :73 inside `load_from_pretrained`. `main` below IS the port's own entry and it

@@ -307,10 +307,8 @@ import ../../helpers.bend as H
 import ../../device.bend as D
 import ../../LAWS/spec.bend as S
 
-
 # THE CONSTANTS, and each one is gated BOTH WAYS. A value that does not name
 # its own value is a wrong submission waiting for a driver.
-
 
 def HCQ_DEV_NV() -> U32: 1
 def HCQ_DEV_QCOM() -> U32: 2
@@ -418,7 +416,6 @@ def Fld.sz(x: Fld) -> U32:
   match x:
     case Fld{ix, name, at, sz}: sz
 
-
 # THE TRACE. `Tr.emit` is the seam: every device call in this file goes through
 # it, so the trace is the ordered list of queue commands the driver will see.
 #
@@ -429,7 +426,6 @@ def Fld.sz(x: Fld) -> U32:
 # entry its own `refused` is still False. Every step goes through
 # `Tr.emit.go`, so two steps cannot disagree about the guard; that is the bug
 # ops_webgpu.bend's gate found in ITSELF and the reason the function is one.
-
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 0, False{}}
 
@@ -501,14 +497,12 @@ def Call.c(x: Call) -> U32:
   match x:
     case Call{k, a, b, c}: c
 
-
 # READING THE TRACE. `Tr.seq` is the `a` of every call with tag `k`, IN ORDER
 # -- for a queue that is the sequence of slot indices and for the batch that is
 # the sequence of step kinds. `Tr.count` is how many. `Tr.has` is "contains this
 # (k, a, b, c) sequence, in order", and it is a real SUBSEQUENCE test: the fuel
 # is the TRACE length and the answer is `at == patlen` (the bug ops_webgpu.bend
 # measured, where a fuel set to the PATTERN length made a reversed pattern match).
-
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, +got: U32) -> U32:
   match n:
@@ -571,7 +565,6 @@ def Call.same(a: Call, b: Call) -> Call: a
 
 def nats_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool: H.u32_list_eq(a, b)
 
-
 # hcq2.py:63 `to_name(*parts) = "_".join(parts).replace(":", "_").lower()`.
 #
 # THE ORDER IS THE CLAIM: the replace is on the ORIGINAL case and the lower is
@@ -583,7 +576,6 @@ def nats_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool: H.u32_list_eq(a, b)
 # bug and got `ring_compute0` where CPython prints `ring_compute_0`.
 #
 # `dev.bend`'s `rest_of` is the same fix with `:` where this needs `_`.
-
 
 def to_name.norm(+s: String) -> String:
   String.to_lower(String.join(String.split(s, ':'), "_"))
@@ -698,7 +690,6 @@ def pack.go(n: Nat, +as: List<&2, Arg>, +end: U32, +acc: List<&2, Pk>) -> List<&
           pack.go(m, t, U32.add(Arg.at(a), Arg.k(a)),
                   pack.step(U32.is_eq(U32.sub(Arg.at(a), end), 0), U32.sub(Arg.at(a), end),
                             Arg.k(a), acc))
-
 
 # THE WHOLE THING. `too_big` is the COMPARISON and not the subtraction, for the
 # reason in THE `+` ALIASES BETWEEN TWO ARGUMENTS: a Bool from a leaf call may
@@ -825,8 +816,6 @@ def bstr(+xs: List<&2, U32>) -> String: joined(xs, "")
 def brow(nm: String, +xs: List<&2, U32>) -> IO(Unit):
   IO.print(String.concat([nm, "=", bstr(xs)]))
 
-
-
 # THE batch: hcq2.py:209-311. THE fence and completion model, and almost all of
 # it is ORDER, so almost all of it is a trace.
 #
@@ -839,7 +828,6 @@ def brow(nm: String, +xs: List<&2, U32>) -> IO(Unit):
 # `Device.canonicalize` -- which is what :227 puts in `ctx.peers` and what makes
 # a SECOND device with no calls appear in the output. QUEUE IDS: 1 is
 # `COMPUTE:0`, 2 is `COPY:0`, 3 is `COPY:1`. BUFFER IDS 1..6 are `a`..`f`.
-
 
 def DEV_N0() -> U32: 1
 def DEV_N() -> U32: 2
@@ -944,7 +932,6 @@ def qlist.new(+b: E, +t: List<&2, E>, +dev: U32) -> Bool:
 def qlist.next(+rest: List<&2, E>, +dev: U32) -> Bool:
   qlist.new(ehd(rest), List.tail(&2, E, rest), dev)
 
-
 def qlist.go(n: Nat, +rest: List<&2, E>, +dev: U32, +is_new: Bool,
              +acc: List<&2, U32>) -> List<&2, U32>:
   match n:
@@ -1028,7 +1015,6 @@ def elem.go(n: Nat, +bs: List<&2, E>, +k: U32, +got: E) -> E:
 # never ask for one.
 def elem(+bs: List<&2, E>, k: U32) -> E: elem.go(List.length(&2, E, bs), bs, k, E{1, 1, 0, 0})
 
-
 def qidx.go(n: Nat, +qs: List<&2, U32>, +q: U32, +i: U32, +got: U32) -> U32:
   match n:
     case 0n: got
@@ -1073,13 +1059,11 @@ def lasttag(+bs: List<&2, E>, dev: U32, q: U32) -> U32:
 def same_slot(+bs: List<&2, E>, +t: U32, +tag: U32) -> Bool:
   Bool.and(U32.is_lt(t, tag), is_pair(elem(bs, t), E.dev(elem(bs, tag)), E.q(elem(bs, tag))))
 
-
 def prevt.go(n: Nat, +bs: List<&2, E>, +tag: U32, +t: U32, best: U32) -> U32:
   match n:
     case 0n: best
     case 1n+m: prevt.go(m, bs, tag, U32.add(t, 1),
                   Bool.pick(U32, same_slot(bs, t, tag), t, best))
-
 
 def prevt(+bs: List<&2, E>, +tag: U32) -> U32: prevt.go(List.length(&2, E, bs), bs, tag, 0, tag)
 
@@ -1093,10 +1077,7 @@ def qfirst.go(n: Nat, qs: List<&2, U32>, +got: U32) -> U32:
         case Nil{}: got
         case +h <> t: qfirst.go(m, t, Bool.pick(U32, U32.is_zero(got), h, got))
 
-
 def qfirst(+qs: List<&2, U32>) -> U32: qfirst.go(List.length(&2, U32, qs), qs, 0)
-
-
 
 # `signal_tags` (:230) -- THE LAST-WINS RULE, and it is the rule most likely to
 # be got wrong, because `self.last` holds ONE tag per queue:
@@ -1126,10 +1107,8 @@ def qname(q: U32) -> String:
 
 def has_peer(+bs: List<&2, E>) -> Bool: Bool.not(U32.is_zero(U32.from_nat(List.length(&2, E, bs))))
 
-
 def signs(+bs: List<&2, E>, dev: U32, q: U32) -> Bool:
   Bool.or(Bool.not(U32.is_eq(q, epi(bs, dev))), has_peer(bs))
-
 
 def sig_tags.go(n: Nat, +ps: List<&2, E>, +bs: List<&2, E>, +acc: List<&2, U32>) -> List<&2, U32>:
   match n:
@@ -1155,8 +1134,6 @@ def member.go(n: Nat, xs: List<&2, U32>, +x: U32, hit: Bool) -> Bool:
         case h <> t: member.go(m, t, x, Bool.or(hit, U32.is_eq(h, x)))
 
 def member(+xs: List<&2, U32>, x: U32) -> Bool: member.go(List.length(&2, U32, xs), xs, x, False{})
-
-
 
 # `DepsTracker.access_resources` (:182-207) reduced to WHO OVERLAPS WHOM, and
 # `_wait_ins` (:242-252) which turns that into the WAIT list.
@@ -1210,7 +1187,6 @@ def maxdep.go(n: Nat, +ds: List<&2, U32>, +bs: List<&2, E>, +q: U32, +best: U32)
         case d <> t: maxdep.go(m, t, bs, q,
                  Bool.pick(U32, U32.is_eq(E.q(elem(bs, d)), q), U32.max(best, d), best))
 
-
 # `latest[(q)] = max(latest.get(q, 0), t)` (:246), and `max(..., 0)` is why a
 # producer at tag 0 is still recorded at all.
 def maxdep(+bs: List<&2, E>, +i: U32, q: U32) -> U32: maxdep.go(List.length(&2, U32, deps(bs, i)), deps(bs, i), bs, q, 0)
@@ -1228,7 +1204,6 @@ def waits.go(n: Nat, +ls: List<&2, U32>, +bs: List<&2, E>, +i: U32, +acc: List<&
                                                U32.add(maxdep(bs, i, q), 1), 0}]))
 
 def waits(+bs: List<&2, E>, +i: U32) -> List<&2, Ins>: waits.go(List.length(&2, U32, latest(bs, i)), latest(bs, i), bs, i, Nil{})
-
 
 # `_start_ins` (:254-256) -- `INS(("barrier", void), ())` and then ONE WAIT ON
 # THE DEVICE TIMELINE per device in `[dev, *sorted(peers[(dev, queue)])]`. So
@@ -1257,7 +1232,6 @@ def start.go(n: Nat, +acc: List<&2, Ins>, +dev: U32, +k: U32, first: Bool) -> Li
 def start_ins(+dev: U32) -> List<&2, Ins>:
   start.go(U32.to_nat(start_n(dev)), Nil{}, dev, 0, True{})
 
-
 # `_build_queues` (:258-283) -- THE ORDER, and it is the load-bearing part of the
 # whole file:
 #
@@ -1274,7 +1248,6 @@ def start_ins(+dev: U32) -> List<&2, Ins>:
 # So every queue's stream is
 #   [BARRIER, TIMELINE waits...] ++ dependency waits ++ [pre-TIMESTAMP] ++ CALL
 #   ++ [post-TIMESTAMP] ++ [SIGNAL if this tag is the queue's LAST] ++ epilogue.
-
 
 # `_build_queues` (:258-283) -- THE ORDER, and it is the load-bearing part of the
 # whole file:
@@ -1345,7 +1318,6 @@ def blocks_of.go(n: Nat, +ts: List<&2, U32>, +bs: List<&2, E>, +profile: Bool,
 def blocks_of(+ts: List<&2, U32>, +bs: List<&2, E>, profile: Bool) -> List<&2, Ins>:
   blocks_of.go(List.length(&2, U32, ts), ts, bs, profile, Nil{})
 
-
 # THE EPILOGUE TAIL (:273-282), appended to the device's epilogue queue.
 # `epi_waits(dev)` is
 #   (every OTHER queue of dev) + (every (dev, queue) key of peers that `dev` is a
@@ -1378,7 +1350,6 @@ def bump(dev: U32) -> Ins: Ins{I_BUMP(), TIMELINE_MARK(), dev, 1}
 def epi_tail(+bs: List<&2, E>, +dev: U32) -> List<&2, Ins>:
   List.concat(&2, Ins, [times(epi_waits_n(bs, dev), dev), [bump(dev)]])
 
-
 # THE WHOLE QUEUE STREAM, in the ORDER `_build_queues` returns it: every distinct
 # (device, queue) pair in first-use order, and then -- LAST -- the canonicalized
 # PEER device's epilogue queue, which exists only because
@@ -1389,7 +1360,6 @@ def is_epi_pair(+bs: List<&2, E>, +p: E) -> Bool:
 
 def queue_tail(+bs: List<&2, E>, +p: E, +acc: List<&2, Ins>) -> List<&2, Ins>:
   Bool.pick(List<&2, Ins>, is_epi_pair(bs, p), cat2(acc, epi_tail(bs, DEV_N0())), acc)
-
 
 def queue_of(+bs: List<&2, E>, +p: E, profile: Bool) -> List<&2, Ins>:
   queue_tail(bs, p, cat2(start_ins(E.dev(p)), blocks_of(pair_tags(bs, p), bs, profile)))
@@ -1420,7 +1390,6 @@ def count_kind.go(n: Nat, +xs: List<&2, Ins>, +k: U32, got: U32) -> U32:
         case Nil{}: got
         case x <> t: count_kind.go(m, t, k, U32.add(got, Bool.to_u32(U32.is_eq(Ins.k(x), k))))
 
-
 def count_kind(+xs: List<&2, Ins>, k: U32) -> U32: count_kind.go(List.length(&2, Ins, xs), xs, k, 0)
 
 def npairs_device(+bs: List<&2, E>) -> U32: npairs(bs)
@@ -1431,13 +1400,11 @@ def prev_list.go(n: Nat, +bs: List<&2, E>, +tag: U32, +acc: List<&2, U32>) -> Li
     case 1n+m: prev_list.go(m, bs, U32.add(tag, 1),
                  List.append(&2, U32, acc, [prev_or_self(bs, tag)]))
 
-
 def prev_none_n.go(n: Nat, +bs: List<&2, E>, +tag: U32, got: U32) -> U32:
   match n:
     case 0n: got
     case 1n+m: prev_none_n.go(m, bs, U32.add(tag, 1),
                   U32.add(got, Bool.to_u32(U32.is_eq(prevt(bs, tag), tag))))
-
 
 def prev_last_of(+bs: List<&2, E>, +tag: U32) -> U32:
   Bool.pick(U32, U32.is_eq(prevt(bs, tag), tag), 0, prevt(bs, tag))
@@ -1448,10 +1415,8 @@ def prev_list(+bs: List<&2, E>) -> List<&2, U32>:
 def call_between_stamps.step(x: Ins, seen_ts: Bool) -> Bool:
   Bool.or(seen_ts, U32.is_eq(Ins.k(x), I_TIMESTAMP()))
 
-
 def call_between_stamps.keep(x: Ins, seen_ts: Bool, inside: Bool) -> Bool:
   Bool.or(inside, Bool.and(seen_ts, U32.is_eq(Ins.k(x), I_CALL())))
-
 
 def call_between_stamps.go(n: Nat, +xs: List<&2, Ins>, +seen_ts: Bool, inside: Bool) -> Bool:
   match n:
@@ -1461,7 +1426,6 @@ def call_between_stamps.go(n: Nat, +xs: List<&2, Ins>, +seen_ts: Bool, inside: B
         case Nil{}: inside
         case x <> t: call_between_stamps.go(m, t, call_between_stamps.step(x, seen_ts),
                                               call_between_stamps.keep(x, seen_ts, inside))
-
 
 def ins_str.go(n: Nat, +xs: List<&2, Ins>, +acc: List<&2, String>) -> List<&2, String>:
   match n:
@@ -1475,7 +1439,6 @@ def head_of.at(m: Maybe<&2, U32>) -> U32:
   match m:
     case Some{g}: g
     case None{}: 0
-
 
 type Al is Data:
   Al{has_name: Bool, name: String, dev: String, dev_ix: U32, n: U32, dt: S.Dt}
@@ -1570,4 +1533,3 @@ def bz_tl_arena2(f: D.BFound) -> D.Bar:
 def bz_reg_dev() -> List<&2, D.Lk>: [D.Lk{D.to_name(["CPU", "mine"]), 0, 2}]
 def bz_al_n(name: String, dev: String, dev_ix: U32, n: U32) -> Al:
   Al{True{}, name, dev, dev_ix, n, S.uint8()}
-

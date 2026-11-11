@@ -210,7 +210,6 @@ def vend.trace(cs: List<&2, CL.Call>) -> String:
 
 # hp:10 has the same shape for HIP and lives in `ops_hip.bend`.
 
-
 # `autogen/cuda.py`, read out. These four are the ones ops_cuda.py names
 # explicitly; the rest of the enum is in `cu_err_code`.
 def CU_STREAM_NON_BLOCKING() -> U32: 1
@@ -356,7 +355,6 @@ def cu.init(+device: String, +maj: U32, +min: U32, +t: CL.Tr) -> CuDev:
 # the queue's `h` is the id the trace minted -- `Tr.here` of the trace in front of
 # the call.
 
-
 # cu:36-37 `return self.rt_vars.after(self.h).index(2 if
 # self.queue.startswith("COPY") else 1).load()` -- the stream slot, and the
 # two-way choice on the queue NAME is the whole test. `cu.stream_slot` is that
@@ -454,11 +452,9 @@ def cu.submit(+t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_SIGNAL(), U32.show(CU_IDX_ST
 def cu.exec(nbufs: U32, nvals: U32, +t: CL.Tr) -> CL.Tr:
   cu.launch(0, t)
 
-
 # `CUDAAllocator`, cu:71-95. `_alloc` has THREE branches and the third is the
 # only one that is not an early return: `external_ptr`, then `host or
 # cpu_access`, then device. Two of the three are `Bool.pick`s over one `Spec`.
-
 
 # cu:74 `if options.external_ptr: return BufferStorage(options.external_ptr)` --
 # NO CALL AT ALL, and that is the row: the external branch traces nothing.
@@ -610,9 +606,7 @@ def t_err() -> IO(Unit):
     CL.urow("cu_host_registered", CUDA_HOST_REGISTERED())
     CL.urow("cu_success", CUDA_SUCCESS())
 
-
 # PART 4 -- CUDA. cu:17-129.
-
 
 def CUDEV0() -> String: ""
 def CUDEV1() -> String: "CUDA:1"
@@ -750,7 +744,6 @@ def main() -> IO(Unit):
     # the same).
     t_cualloc()
 
-
 # THE SPLIT, MEASURED. 120 of the pre-split file's 445 rows are here, and every
 # one is byte-identical to the pre-split snapshot. The 22 `x_*` cross-vendor
 # rows are NOT: they are in `ops_hip.bend`, for the DAG reason in this file's
@@ -782,4 +775,3 @@ def main() -> IO(Unit):
 #                consequence is a LOC observation, not a bug: upstream cu:75 is
 #                ONE test (`options.host or options.cpu_access`), so `Spec`'s
 #                two `Bool` fields could be one.
-

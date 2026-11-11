@@ -50,7 +50,6 @@ import Base
 import ../../helpers.bend as H
 import ./dsl.bend as D
 
-
 # NOT PORTED, WITH PYTHON LINES. Named, not half-written.
 #
 #   sqtt.py:566-638  `decode(data)` -- the NIBBLE READER, 73 lines. It keeps a
@@ -95,10 +94,8 @@ import ./dsl.bend as D
 # `OTHER_` member names and the `other_*` source annotations -- all of which are
 # either derived from rows already gated or are annotations.
 
-
 # THE TYPES. `Nm` and `Fld` come from `dsl.bend`, so a `Nm` here and a `Nm` there
 # are the SAME type and a lookup is one function.
-
 
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def u32_text(v: U32) -> String: U32.show(v)
@@ -871,4 +868,3 @@ def InstOpRDNA4() -> List<&2, Pn>: [Pn{"SALU", 0},Pn{"SMEM", 1},Pn{"SMEM_WR", 2}
 def InstOpRDNA4_n() -> Nat: 106n
 def InstOpCDNA() -> List<&2, Pn>: [Pn{"SMEM_RD", 0},Pn{"SALU_32", 1},Pn{"VMEM_RD", 2},Pn{"VMEM_WR", 3},Pn{"FLAT_WR", 4},Pn{"VALU_32", 5},Pn{"LDS", 6},Pn{"PC", 7},Pn{"JUMP", 12},Pn{"NEXT", 13},Pn{"FLAT_RD", 14},Pn{"OTHER_MSG", 15},Pn{"SMEM_WR", 16},Pn{"SALU_64", 17},Pn{"VALU_64", 18},Pn{"VALU_MAI", 28}]
 def InstOpCDNA_n() -> Nat: 16n
-

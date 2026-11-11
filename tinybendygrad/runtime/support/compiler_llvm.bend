@@ -106,7 +106,6 @@
 #   TODO(p3) compiler_llvm.py:51 -- `self.diag_msgs.clear()`.
 import Base
 
-
 # :6  `cerr()` is `ctypes.pointer(ctypes.pointer(ctypes.c_char()))`. The only
 # part of it that can be wrong in a way a reader can see is the DEPTH, so that
 # is what the port carries.
@@ -114,7 +113,6 @@ import Base
 def cerr_depth() -> U32: 2
 
 def cerr_inner() -> String: "c_char"
-
 
 # :8-10  `expect(x, err, ret=None)`: `if x: raise RuntimeError(...)`, then
 # `return ret`. Two facts and they are separate:
@@ -136,7 +134,6 @@ def expect.msg(+err: String) -> String: err
 # `expect` has no return type for `ret=None`, so the sentinel is the EMPTY STRING
 # and `expect.ret_none` is the row that says which one the caller meant
 def expect.ret_none() -> String: "None"
-
 
 # :14-15  the FIRST map: `{'arm64': 'AArch64', 'x86_64': 'X86',
 # 'riscv64': 'riscv64'}.get(arch, "AMDGPU")`. `.get` means an unknown arch is
@@ -165,7 +162,6 @@ def LLVMCompiler.init_names(+arch: String) -> List<&2, String>: inames.go(arch, 
 
 def LLVMCompiler.inits_n() -> U32: 5
 
-
 # :17  the SECOND map, a SUBSCRIPT: three keys, `arm64`, `x86_64` and the
 # LITERAL `AMDGPU`. So `riscv64` -- which the first map accepts and for which
 # five `LLVMInitializeriscv64*` calls are issued -- raises `KeyError` here.
@@ -182,7 +178,6 @@ def LLVMCompiler.triple(+arch: String) -> String:
 def LLVMCompiler.triple_err(+arch: String) -> String: String.concat(["KeyError: '", arch, "'"])
 
 def LLVMCompiler.triple_n() -> U32: 3
-
 
 # :20-21  the target machine. `processor.encode()` and `feats.encode()` are the
 # two arguments that carry the fixture, so they are what the rows pin -- the
@@ -207,7 +202,6 @@ def LLVMCompiler.tm_feats(+feats: String) -> String: feats
 
 def LLVMCompiler.tm_args_n() -> U32: 6
 
-
 # :23-31  the pass pipeline. `getenv("LLVMOPT", 1)` is the boot constant (see
 # the header): truthy sets `default<O2>` and FOUR options, falsy sets
 # `default<O0>` and sets NONE. So the option COUNT is the row that shows the
@@ -222,7 +216,6 @@ def LLVMCompiler.pbosets() -> List<&2, String>:
 def LLVMCompiler.pbosets_n(+opt: Bool) -> U32: Bool.to_u32(opt)
 
 def LLVMCompiler.pbo_flag() -> Bool: True{}
-
 
 # :34-35, :36-43  the per-instance context and the diagnostic list. The list is
 # CLEARED at the top of every `compile` and APPENDED only on `LLVMDSError`, so
@@ -244,7 +237,6 @@ def LLVMCompiler.diag_msg(+xs: List<&2, String>) -> String:
 
 def LLVMCompiler.diag_raise_kind() -> String: "RuntimeError"
 
-
 # :44  the cache key: `cache_key or f"compile_llvm_{processor}_{feats}{'_opt' if opt else ''}"`.
 # Two facts: the `or` means an EMPTY cache_key takes the f-string branch too,
 # and the `_opt` suffix is there only when the flag is set.
@@ -253,7 +245,6 @@ def LLVMCompiler.key(+cache_key: String, +processor: String, +feats: String, +op
   Bool.pick(String, String.is_empty(cache_key),
     String.concat(["compile_llvm_", processor, "_", feats, Bool.pick(String, opt, "_opt", "")]),
     cache_key)
-
 
 # :46-48  `__del__`: `if hasattr(self, 'pbo')` then dispose pbo, then
 # `if hasattr(self, 'context')` then dispose context. TWO disposes, in THAT
@@ -267,7 +258,6 @@ def LLVMCompiler.del_order(+has_pbo: Bool, +has_context: Bool) -> String:
   Bool.pick(String, Bool.not(has_pbo), "",
     Bool.pick(String, Bool.not(has_context), "LLVMPassBuilderOptionsDispose",
       "LLVMPassBuilderOptionsDispose LLVMContextDispose"))
-
 
 # :50-63  `compile`. NINE calls, in order, and the ORDER is the whole content
 # of a trace: memory buffer, parse, verify, run passes, emit, dispose module,
@@ -288,7 +278,6 @@ def LLVMCompiler.compile_expects() -> U32: 3
 def LLVMCompiler.runpasses_err() -> String: "failed to run passes"
 
 def LLVMCompiler.compile_clears() -> Bool: True{}
-
 
 # :66-74  CPULLVMCompiler. Four separate facts and they compose:
 #   `featstr = ','.join(f if f.startswith('-') else '+'+f for f in feats)`
@@ -337,7 +326,6 @@ def CPULLVMCompiler.cpu_final(+cpu: String) -> String:
   Bool.pick(String, CPULLVMCompiler.is_native(cpu), CPULLVMCompiler.host_cpu(), cpu)
 
 def CPULLVMCompiler.dis_row() -> String: "cpu_objdump(lib)"
-
 
 # :78-88  AMDLLVMCompiler. `__reduce__` returns `(AMDLLVMCompiler, (self.arch,))`
 # -- a CLASS and a ONE-TUPLE, which is what pickle needs, so the ported facts
@@ -392,7 +380,6 @@ def ct.at(+s: String, +sep: String) -> String: String.drop(ct.go(String.length(s
 def TAIL3() -> List<&2, String>: []
 def TAIL4() -> List<&2, String>: ["-sve", "+crypto"]
 def TAIL5() -> List<&2, String>: ["-sse", "+avx2", "fma", "-f16c"]
-
 
 # THE GATE. Every `ll_` row is a row of `.agents/slop/ext_oracle.py` section
 # `ll`, which calls the real `LLVMCompiler.__init__`, `compile` and `__del__`

@@ -82,7 +82,6 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-
 # THE ROW PRINTER. One line per claim, `name=value`, so the differ reads whole
 # lines and never compares row NAMES.
 
@@ -146,16 +145,13 @@ def src_ops.go(+ar: O.Arena, +self: U32, ns: List<&2, Nat>, acc: List<&2, O.Op>)
     case n <> t:
       src_ops.go(ar, self, t, List.append(&2, O.Op, acc, [O.Arena.op(ar, O.Arena.src(ar, self, U32.from_nat(n)))]))
 
-
 def topo_ops.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, acc: List<&2, O.Op>) -> List<&2, O.Op>:
   match ns:
     case Nil{}: acc
     case n <> t: topo_ops.go(ar, tb, t, List.append(&2, O.Op, acc, [O.Arena.op(ar, n)]))
 
-
 def topo_ops(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>) -> List<&2, O.Op>:
   topo_ops.go(ar, tb, ns, Nil{})
-
 
 # `S.Dt`'s fourth field is the NAME (`LAWS/spec.bend:76 symbol=Dt`, `Dt{pri, bits, cls, nm}`)
 # and CPython's `uop.dtype.name` is exactly it, so the dtype column is one binder and
@@ -178,7 +174,6 @@ def pr_c(v: U32) -> O.Found: O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(v)
 def pr_pa(slot: U32, name: String, dev: U32) -> O.ParamArg:
   O.ParamArg{slot, S.int32(), None{}, None{}, Some{name}, S.AGlobal{},
     Some{S.D1{dev}}, False{}, None{}, None{}, False{}, None{}}
-
 
 def pr_buf(+ar: O.Arena, slot: U32, size: U32, name: String, dev: U32) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{size}, O.AParam{pr_pa(slot, name, dev)}, O.TNone{})
@@ -241,7 +236,6 @@ def pr_perm(ar: O.Arena, +x: O.Found, +a: U32, b: U32) -> O.Found:
   +sk = O.shape_arg_found(ar, [a, b])
   O.UOp.new(O.Found.ar(sk), O.OpsPERMUTE{}, [O.Found.i(x), O.Found.i(sk)], O.ANone{}, O.TNone{})
 
-
 # REPORTED, NOT USED: `ops.bend`'s `UOp.after` (uop/ops.bend:2897 symbol=UOp.after) and `UOp.end`
 # (uop/ops.bend:2944 symbol=UOp.end) build `List.append(srcs, [self])`, which is `srcs ++ [self]`.
 # `ops.py:621` is `src=(self,)+src` and `ops.py:619` is `src=(self,)+src`, so the
@@ -266,15 +260,12 @@ def pr_store(ar: O.Arena, +d: O.Found, +v: O.Found) -> O.Found:
 
 def pr_sink(+a: O.Found) -> O.Found: O.UOp.sink(O.Found.ar(a), [O.Found.i(a)])
 
-
 # THE SIX TABLES, emitted by `.agents/slop/prep-gen-tables.py` from tinygrad's
 # OWN `PatternMatcher` objects: `pat.op` IS `pdict`'s key (ops.py:1598) and
 # `pat.early_reject` is ops.py:1477.  The comment on each entry is the rule's
 # `strict_length` / `required_len` / `is_any` / `nalts` / `name`.
 
-
 def braced(+rej: List<&2, O.Op>) -> String: String.concat(["{", ops_str(rej), "}"])
-
 
 def pr_pd_str(b: Bool, k: Nat) -> List<&2, String>:
   match b:
@@ -489,4 +480,3 @@ def pr_wm_wmx.of(isafter: Bool, +ar: O.Arena, +self: U32, b: U32) -> String:
 
 def pr_wm_wmx(+ar: O.Arena, +self: U32, b: U32) -> String:
   pr_wm_wmx.of(O.op_is(ar, self, O.OpsAFTER{}), ar, self, b)
-

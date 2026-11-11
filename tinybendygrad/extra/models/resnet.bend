@@ -10,7 +10,6 @@ import ./../../mixin/movement.bend as MX
 import ./../../mixin/reduce.bend as RC
 import ./../datasets/__init__.bend as D
 
-
 # stub -- 1:1 path mirror of extra/models/resnet.py (170 loc). not yet ported.
 #
 # This is the ResNet DEFINITION and the first thing that has to exist before
@@ -164,7 +163,6 @@ import ./../datasets/__init__.bend as D
 # `Data` record has no reflection (THE PORT's `nn/__init__.bend` HEADER), so the state a Python
 # `self` carries is the argument list here.
 
-
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
@@ -174,7 +172,6 @@ def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.s
 def rs_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
-
 
 # :7-9 the three module-level aliases. They exist so `load_from_pretrained` can
 # monkeypatch a layer implementation, and the monkeypatch is part of the
@@ -189,7 +186,6 @@ def rs_conv2d_alias() -> D.Refused:
 def rs_linear_alias() -> D.Refused:
   D.refuse("extra/models/resnet.py:9 Linear = nn.Linear -- mixin/op.py:1254 is SIDE B")
 
-
 # :12-33 BasicBlock. `expansion = 1` (:13) is a CLASS CONSTANT and it is a
 # U32 here; it is the one number in this file that is already KNOWN.
 
@@ -203,7 +199,6 @@ def rs_basic_block_init(in_planes: U32, planes: U32, stride: U32, groups: U32,
 # :28  def __call__(self, x)
 def rs_basic_block_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/resnet.py:28 BasicBlock.__call__ -- FIRST MISSING SYMBOL x.batchnorm (:29)")
-
 
 # :36-62 Bottleneck. `expansion = 4` (:38), `stride_in_1x1` defaults False (:40).
 # `width = int(planes * (base_width / 64.0)) * groups` (:41) is plain float
@@ -222,9 +217,7 @@ def rs_bottleneck_init(in_planes: U32, planes: U32, stride: U32, stride_in_1x1: 
 def rs_bottleneck_call(+x: T.Tensor) -> D.Refused:
   D.refuse("extra/models/resnet.py:56 Bottleneck.__call__ -- FIRST MISSING SYMBOL x.batchnorm (:57)")
 
-
 # :64-153 ResNet.
-
 
 # :65  def __init__(self, num, num_classes=None, groups=1, width_per_group=64,
 #                   stride_in_1x1=False)
@@ -249,7 +242,6 @@ def rs_resnet_call(+x: T.Tensor) -> D.Refused:
 def rs_resnet_load_from_pretrained() -> D.Refused:
   D.refuse("extra/models/resnet.py:128 ResNet.load_from_pretrained -- FIRST MISSING SYMBOL torch_load/fetch (:139)")
 
-
 # :155-160 the six constructors. Python spells them as lambdas returning a
 # `ResNet`, so each refuses exactly as `rs_resnet_init` does with its `num` and
 # `num_classes` already filled in.
@@ -266,7 +258,6 @@ def rs_resnet152(num_classes: U32) -> D.Refused:
   D.refuse("extra/models/resnet.py:159 ResNet152 -- FIRST MISSING SYMBOL Conv2d (:87)")
 def rs_resnext50_32x4d(num_classes: U32) -> D.Refused:
   D.refuse("extra/models/resnet.py:160 ResNeXt50_32X4D -- FIRST MISSING SYMBOL Conv2d (:87)")
-
 
 # :162-170 `if __name__ == "__main__":` -- TinyJit over ResNet18 at 224x224,
 # `GlobalCounters.reset()`, then ten more captures. `main` below is this block

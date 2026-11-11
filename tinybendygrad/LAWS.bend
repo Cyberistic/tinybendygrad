@@ -49,14 +49,12 @@ import ./LAWS/alu.bend as A
 # claim here is a claim about a total function, and a law that holds only
 # because both sides are the same opaque constant is not a proof.
 
-
 # I. The spec's constraints become premises.
 #
 # tinyspec states validity conditions on ops -- "prod s_k = prod s'_k" for
 # Reshape, "buf.shape = val.shape" for Store -- as things a well-formed graph
 # must satisfy. A Bend law is universally quantified, so it cannot carry an
 # assumption inline; the condition enters as a premise carrying its own proof.
-
 
 # tinyspec Reshape: "Reinterpret in row-major order. prod s_k = prod s'_k."
 #
@@ -77,7 +75,6 @@ law reshape_numel_is_the_new_shape:
   for +dst: List<&2, S.Sdim>
   {numel_of(S.SpReshape{t, S.SpInvalid{}, dst}) == prod_of(dst) : Nat}
 
-
 # II. The spec's derived properties, stated as laws.
 #
 # tinyspec's shape column, read off the clauses: every movement op passes the
@@ -85,7 +82,6 @@ law reshape_numel_is_the_new_shape:
 # which have their own clause. The laws below are the ones that constrain the
 # ELEMENT COUNT, because that is the invariant the whole scheduler rests on: a
 # view may not change how many elements a tensor has.
-
 
 # Permute and Flip reorder and mirror; neither adds or removes an element.
 law permute_preserves_numel:
@@ -157,7 +153,6 @@ law reduce_numel_divides_by_the_reduced_axes:
   for +n: Nat
   {Nat.mul(reduced_numel(t, n), prod_of(List.take(&2, S.Sdim, dims_of(t), n))) == numel_of(t) : Nat}
 
-
 # III. Broadcast -- tinyspec: "right-align shapes, element-wise max; each axis
 # must be equal or 1".
 #
@@ -176,7 +171,6 @@ law reduce_numel_divides_by_the_reduced_axes:
 # right-aligns; they coincide exactly when the ranks match). Symbolic axes are
 # excluded because `dim_of(SS)` is 0, which is not tinygrad's symbolic shape.
 
-
 law broadcast_is_elementwise_max:
   for +a: S.Sp
   for +b: S.Sp
@@ -189,7 +183,6 @@ law broadcast_is_elementwise_max:
   for cb: S.AllSN(S.Shape.to_dims(sb))
   {shape_of(S.SpAdd{a, b}) == Some{S.Shape.of(S.elem_pick(S.Shape.to_dims(sa), S.Shape.to_dims(sb)))} : Maybe<&2, S.Shape>}
 
-
 # IV. The decomposed elementwise ops.
 #
 # tinyspec's "Decomposed elementwise ops" table. Each of these is DEFINED in
@@ -197,7 +190,6 @@ law broadcast_is_elementwise_max:
 # proves it by reflexivity. If the port ever changes one of these, a law fails
 # immediately and names the op -- which is the entire value of writing the
 # table down at all.
-
 
 law neg_is_mul_by_minus_one:
   for +a: S.Sp
@@ -243,7 +235,6 @@ law mulacc_is_add_of_mul:
   for +c: S.Sp
   {A.mulacc(a, b, c) == S.SpAdd{S.SpMul{a, b}, c} : S.Sp}
 
-
 # V. The dtype column, for the ops where it is not simply src[0].
 #
 # tinyspec: comparisons are bool; Where takes src[1]; Range is index; Store and
@@ -251,7 +242,6 @@ law mulacc_is_add_of_mul:
 #
 # Every law here reads the dtype fold at a node that answers without
 # descending, so each is a single arm of `Sp.dtype` rather than a fold.
-
 
 law comparison_is_bool:
   for a: S.Sp
@@ -297,12 +287,10 @@ law detach_preserves_numel:
   for +a: S.Sp
   {numel_of(S.SpDetach{a}) == numel_of(a) : Nat}
 
-
 # VI. The elementwise column: "all inputs same shape, output same shape".
 #
 # This is the claim the schedule's fusion decisions rest on, so it is worth
 # stating rather than leaving in a table caption.
-
 
 law add_is_elementwise:
   for +a: S.Sp
@@ -322,7 +310,6 @@ law max_is_elementwise:
   for +premise: {shape_of(a) == shape_of(b) : Maybe<&2, S.Shape>}
   {shape_of(S.SpMax{a, b}) == shape_of(a) : Maybe<&2, S.Shape>}
 
-
 # VII. The Store invariant -- tinyspec: "buf.shape = val.shape".
 #
 # VACUOUS BY CONSTRUCTION, and it was before the folds were fuelled: the
@@ -330,14 +317,12 @@ law max_is_elementwise:
 # law can never fail. It is kept because the spec states the constraint, but it
 # pins no behaviour. See .agents/TODO.md, "Audit against tinyspec".
 
-
 law store_matches_its_buffer:
   for +buf: S.Sp
   for +val: S.Sp
   for +gate: Maybe<&2, S.Sp>
   for +premise: {shape_of(buf) == shape_of(val) : Maybe<&2, S.Shape>}
   {shape_of(buf) == shape_of(val) : Maybe<&2, S.Shape>}
-
 
 # VIII. The shape algebra's own laws.
 #
@@ -349,7 +334,6 @@ law store_matches_its_buffer:
 # `max_dim` is idempotent: broadcasting a dim against itself changes nothing.
 # It is the leaf fact an induction over a dim list needs, and the only part of
 # `Shape.max_dim` that is not a case split in the source.
-
 
 law max_dim_idempotent:
   for +x: S.Sdim
@@ -364,14 +348,12 @@ law zip_max_idempotent:
   for +ds: List<&2, S.Sdim>
   {S.zip_max(ds, ds) == ds : List<&2, S.Sdim>}
 
-
 # Helpers. These are defs, not laws: they exist so each law above reads like
 # the sentence it came from. `for +x` marks them reusable, which is what a
 # premise and its subject have to be to appear in more than one place.
 #
 # `dims_of` is gone: `S.drop_n` is spec.bend's, and the old `dims_of` existed
 # only to open a shape the laws never ask for by name.
-
 
 # The folds, total: a node in, a shape or a dtype out.
 def shape_of(s: S.Sp) -> Maybe<&2, S.Shape>:

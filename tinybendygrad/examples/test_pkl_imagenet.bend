@@ -7,7 +7,6 @@ import ./../nn/onnx.bend as ONNX
 import ./../engine/jit.bend as JIT
 import ./../extra/datasets/__init__.bend as D
 
-
 # STUB -- 1:1 PATH MIRROR of examples/test_pkl_imagenet.py (19 LOC).
 # NOT YET PORTED.
 #
@@ -133,7 +132,6 @@ import ./../extra/datasets/__init__.bend as D
 #   WALL 2 IS THE SAME WALL `extra/models/resnet.bend` STOPS AT. That is the
 #   finding. Wall 1 is the only thing that is UNIQUELY the eval path's.
 
-
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
@@ -141,7 +139,6 @@ def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.s
 def pkl_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
-
 
 # :7   with open(fetch(sys.argv[1]), "rb") as f:
 # two missing symbols in one line, in this order: `sys.argv` (no argv reader)
@@ -182,7 +179,6 @@ def pkl_predict() -> D.Refused:
 # :18  hit += y == t
 def pkl_score() -> D.Refused:
   D.refuse("examples/test_pkl_imagenet.py:18 BLOCKED ON Tensor.item (0 non-renderer defs) and Tensor.to (mixin/movement.bend wall list)")
-
 
 # :6-19 `if __name__ == "__main__":`. `main` below mirrors it and NOTHING ELSE.
 # The bodies are in upstream line order, so the first refusal a caller sees is

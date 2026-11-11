@@ -64,7 +64,6 @@ import Base
 import ../../helpers.bend as H
 import ./dsl.bend as D
 
-
 # CONSTANTS. Every literal below was printed by
 # `.venv/bin/python .agents/slop/elf_amd_oracle.py`, which calls getattr /
 # `.value` / `.to_bytes()` / `ctypes.sizeof`. Not transcribed from a comment.
@@ -75,7 +74,6 @@ import ./dsl.bend as D
 # There is no hand-written Python definition of the shift amounts. The
 # citation is the generated binding, which is the definition site in this
 # repo. hsa.py:1104-1105 and libc.py are the same kind of generated binding.
-
 
 # amdgpu_kd.py, getattr. elf.py:67-80.
 def SHIFT_VGPR() -> U32: 0      # COMPUTE_PGM_RSRC1_GRANULATED_WORKITEM_VGPR_COUNT_SHIFT
@@ -149,11 +147,9 @@ def sub1.go(z: Bool, q: U32) -> U32:
     case False{}: U32.sub(q, 1)
 def sub1(+q: U32) -> U32: sub1.go(U32.is_lt(q, 1), q)
 
-
 # _arch_map, elf.py:14. Insertion order, which is the order `next` walks.
 # A miss is "" -- Python's `next` raises StopIteration, and assemble_linear
 # turns that into the refusal string rather than a descriptor.
-
 
 def arch_pick12(a12: Bool) -> String:
   match a12:
@@ -178,12 +174,10 @@ def is_cdna(arch: String) -> Bool: String.eq(_arch_map(arch), "cdna")
 def is_rdna4(arch: String) -> Bool: String.eq(_arch_map(arch), "rdna4")
 def arch_hit(arch: String) -> Bool: Bool.not(String.eq(_arch_map(arch), ""))
 
-
 # THE REGISTER SCAN, elf.py:18-35. An instruction is the three things the
 # loop reads: `operands` (name, OpType), `_fields` (name, field class, value),
 # and `acc_cd`. `D.Rg` is the value when the value is a Reg. `D.K_FIXED` is
 # the FixedBitField the loop skips.
-
 
 type Opr is Data:
   Opr{name: String, otype: U32}
@@ -308,7 +302,6 @@ def scan(xs: List<&2, Ins>) -> Mx: scan_go(xs, Mx.zero())
 # SINK ARITHMETIC, elf.py:40-42. The walk is the blocker named above. These
 # are the three arms, given the values the walk would have read.
 
-
 type Slot is Data:
   Slot{slot: U32, sz: U32}
 def Slot.slot(p: Slot) -> U32:
@@ -416,11 +409,9 @@ def gid_go(ss: List<&2, String>, g: Gids) -> Gids:
     case h <> t: gid_go(t, gid_add(h, g))
 def gids_of(ss: List<&2, String>) -> Gids: gid_go(ss, Gids.zero())
 
-
 # PADDING AND LAYOUT, elf.py:44-50, :84-96.
 # text = code_len + PAD_LEN * ((ALIGN - code_len % ALIGN) % ALIGN)
 # -- the bytes*n formula, not a byte pad. See the header.
-
 
 def pad_n(code_len: U32) -> U32:
   U32.mod(U32.sub(AMD_ISA_ALIGN_BYTES(), U32.mod(code_len, AMD_ISA_ALIGN_BYTES())), AMD_ISA_ALIGN_BYTES())
@@ -450,9 +441,7 @@ def shdr_off(text: U32) -> U32: U32.add(strtab_off(text), strtab_len())
 def entry_of(text: U32) -> H.I64:
   H.i64_sub(H.i64_of_hi_lo(0, 0), H.i64_of_i32(text))
 
-
 # THE DESCRIPTOR WORDS, elf.py:53-80.
-
 
 def accum_off(has: Bool, max_v: U32) -> U32:
   match has:
@@ -489,12 +478,10 @@ def rsrc3(on: Bool, max_v: U32) -> U32:
     case False{}: 0
     case True{}: bit(sub1(U32.div(accum_off(True{}, max_v), 4)), SHIFT_ACCUM())
 
-
 # assemble_linear, elf.py:15. The UOp walk and the byte buffer are the
 # blockers in the header. Everything from the scan through the header fields
 # is this def. A miss on `_arch_map` is Python's StopIteration. A `gidx`
 # whose last character is not a digit is Python's ValueError.
-
 
 def asm_text(+arch: String, +m: Mx, +text: U32, lds: U32, kern: U32, +g: Gids) -> String:
   String.concat(["lds=", U32.show(lds), " kern=", U32.show(kern),
@@ -519,15 +506,12 @@ def assemble_linear(+arch: String, insts: List<&2, Ins>, code_len: U32,
   asm_go(arch_hit(arch), Gids.bad(gids_of(gid_args)), arch, scan(insts), text_len(code_len),
     lds_sum(locs), kernarg(params), gids_of(gid_args))
 
-
 # FIXTURE BUILDERS. The shapes are the instructions the oracle constructed
 # with the real Reg / FixedBitField / OpType, and the real v_mov / accvgpr
 # the ELF rows were packed from.
-
 
 def rg(off: U32, sz: U32) -> D.Rg: D.Rg{off, sz, False{}, False{}, False{}}
 def ureg(nm: String, off: U32, sz: U32) -> Use: Use{nm, D.K_PLAIN(), True{}, rg(off, sz)}
 def ufix(nm: String, off: U32, sz: U32) -> Use: Use{nm, D.K_FIXED(), True{}, rg(off, sz)}
 def uimm(nm: String) -> Use: Use{nm, D.K_PLAIN(), False{}, rg(0, 1)}
 def ins_of(oprs: List<&2, Opr>, fields: List<&2, Use>, cd: U32) -> Ins: Ins{oprs, fields, cd}
-

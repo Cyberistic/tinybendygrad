@@ -139,7 +139,6 @@ import ./../uop/ops.bend as O
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 
-
 # SECTION 1 -- BYTES. `struct.pack`'s little-endian field writers.
 #
 # `List.append(&2, T, xs, ys)` is `xs ++ ys` (bend2-constraints INDEX row at
@@ -151,7 +150,6 @@ import ./../LAWS/spec.bend as S
 #
 # The shift amounts are `8n`/`16n`/`24n` and NOT `1n`/`2n`/`3n`: `U32.shl` is a
 # ONE-BIT shift and only `U32.shln` takes a width.
-
 
 def pack_u8(acc: List<&2, U32>, +v: U32) -> List<&2, U32>: List.append(&2, U32, acc, [U32.and(v, 255)])
 
@@ -194,12 +192,10 @@ def hex_of(bs: List<&2, U32>) -> String:
     case Nil{}: ""
     case +b <> t: hexbyte(b) ++ hex_of(t)
 
-
 # SECTION 2 -- STRINGS. Everything viz emits is a string, so these are the
 # workhorses. `String.concat` wants `List<&2, String>` and `String.split` answers
 # `List<&1, String>`, which do not meet; `jcat` is not a convenience, it is the
 # only bridge.
-
 
 def jcat(ss: List<&1, String>) -> String:
   match ss:
@@ -304,12 +300,10 @@ def ord1(cs: List<&2, Char>) -> U32:
 
 def ord_of(s: String) -> U32: ord1(String.to_list(s))
 
-
 # SECTION 3 -- JSON. `json.dumps` appears three times in the encoder and
 # `json.loads` once, and both shapes are known: a flat object whose values are an
 # int, a float or a string, with PYTHON'S SPACING (`", "` between items, `": "`
 # after the key) which is a byte difference, not a style one.
-
 
 type Kv is Data:
   Kv{k: String, v: String}
@@ -355,7 +349,6 @@ def json_rest(kvs: List<&2, Kv>) -> String:
 def json_obj(+kvs: List<&2, Kv>) -> String:
   Bool.pick(String, List.is_empty(&2, Kv, kvs), "{}", String.concat(["{", json_rest(kvs), "}"]))
 
-
 # SECTION 4 -- THE COLOUR TABLES.
 #
 # `uops_colors` is a DICT LITERAL with two `` expansions, and a Python dict
@@ -381,8 +374,6 @@ def json_obj(+kvs: List<&2, Kv>) -> String:
 # caller, and the gate carries all 75 ops -- a set of 75 rows cannot hide one op
 # quietly changing colour.
 
-
-
 # THE TWO EXPANSIONS, in the order the `` appear: Movement is written first and
 # ALU second, so an op in BOTH takes ALU's colour.
 # THE STEP-1 EXPLICIT ENTRIES: the earliest writers, so anything in a group
@@ -391,7 +382,6 @@ def json_obj(+kvs: List<&2, Kv>) -> String:
 # ALU second, so an op in BOTH takes ALU's colour.
 
 # THE step-5 EXPLICIT entries and threefry: the writers with nothing after them.
-
 
 def uops_color.tail(mv: Bool, +al: Bool) -> String:
   Bool.pick(String, mv, Bool.pick(String, al, "#ffffc0", "#D8F9E4"), Bool.pick(String, al, "#ffffc0", "#ffffff"))
@@ -460,14 +450,12 @@ def wave_color_of.step(+name: String, ks: List<&2, String>, +vs: List<&2, String
     case +k <> t: Bool.pick(Maybe<&1, String>, String.contains(name, k),
                              vs.head(vs), wave_color_of.step(name, t, vs.tail(vs)))
 
-
 # SECTION 5 -- STEPS. `create_step`'s answer is a PYTHON DICT and dict order is
 # INSERTION order, which is load-bearing twice over: `/ctxs` serialises the steps
 # as JSON and the browser reads them positionally, and `filter_keys` preserves
 # it. So a step is an ORDERED `List<Kv>`, not a map, and `create_step` appends in
 # the source's order: `name`, `query`, `_data`, `depth`, then `kwargs` in the
 # order the caller passed them.
-
 
 # `Kv` is Section 3's pair -- it is the JSON object's item AND the step's item,
 # because Python's `json.dumps(fmt)` and Python's step dict are both the same
@@ -524,8 +512,6 @@ def create_step(name: String, path: String, ctx: U32, st: U32, data: Maybe<&2, S
 # is a byte-for-byte check on BOTH the order and the private-key filter, which is
 # the whole of `do_GET`'s `/ctxs` branch.
 
-
-
 # An int value is stored RENDERED, so the type is gone and this cannot tell `5`
 # from `"5"`. Upstream cannot either -- `json.dumps` sees the same thing -- and
 # MEASURED: `create_step(..., match_count=5)` and `code_line="5"` serialise
@@ -540,7 +526,6 @@ def filter_keys(kvs: List<&2, Kv>) -> List<&2, Kv>:
     case Nil{}: Nil{}
     case +h <> t: filter_keys.step(h, filter_keys(t))
 
-
 # SECTION 6 -- SHAPES. `shape_to_str` is `"(" + ",".join(srender(x) for x in s)
 # + ")"` and `mask_to_str` is the same one level down.
 #
@@ -552,7 +537,6 @@ def filter_keys(kvs: List<&2, Kv>) -> List<&2, Kv>:
 # the `SI` arm -- which is `srender`'s answer for every `sint` that is an int,
 # and is every `sint` the gate builds -- and NAMES the `SU` arm as `srender`'s
 # job. `shape_to_str.sym` is that seam and it is not called by any row.
-
 
 # `srender` of an `SI` is the INTEGER, in decimal. `H.i64_text` is `hi:lo` --
 # helpers.bend:1305 says so and gives the reason -- so a decimal renderer is
@@ -615,7 +599,6 @@ def canonicalize_ast_is(op: O.Op, is_ki: Bool) -> Bool:
 # too: index 0 is a FALSY int, and `cret is not None` (not `if cret`) is what
 # makes index 0 come back as itself. MEASURED: `enum_str.seq=0,1,0,2,1,3,4`.
 
-
 # ONE FOLD, NO `Maybe`. A `match` may not scrutinise a CALL, so the usual
 # `match tbl_pos(...)` is refused; and `Maybe` is a Type, not a Data, so it
 # cannot ride in a record either. The position walk therefore RETURNS THE ANSWER
@@ -666,7 +649,6 @@ def rel_ts.at(r: Rel) -> Maybe<&2, U32>:
 
 def rel_ts(ts: H.I64, start: H.I64) -> Maybe<&2, U32>: rel_ts.at(rel_view(ts, start))
 
-
 # SECTION 8 -- THE EVENT MODEL.
 #
 # `flatten_events`, `timeline_layout`, `graph_layout`, `encode_mem_free`,
@@ -687,7 +669,6 @@ def rel_ts(ts: H.I64, start: H.I64) -> Maybe<&2, U32>: rel_ts.at(rel_view(ts, st
 # TIMESTAMPS ARE `H.I64`. Python's are `Decimal` and both `rel_ts` and
 # `flatten_events` do `int(...)`, which truncates toward zero; every profile
 # timestamp is a positive integer microsecond count, so the two agree exactly.
-
 
 type Ret is Data:
   RNone{}
@@ -754,7 +735,6 @@ def ev_en(m: Maybe<&2, H.I64>, st: H.I64) -> H.I64:
     case Some{v}: v
     case None{}: st
 
-
 # SECTION 9 -- `timeline_layout` -- serve.py:232-255.
 #
 #   struct.pack("<BI", 0, len(events)) + b"".join(events)
@@ -789,7 +769,6 @@ def ev_en(m: Maybe<&2, H.I64>, st: H.I64) -> H.I64:
 #      shape from every other def here and it would be untestable without one, so
 #      it is NAMED at `tl_fmt.str` and the `{"metadata": ret}` arm -- which needs
 #      no parse -- is ported and gated.
-
 
 # The accumulator. `scache` is the only thing `timeline_layout` mutates and it
 # mutates it THROUGH `enum_str` twice per kept event, so the table, the two
@@ -843,7 +822,6 @@ def enum_at(t: (List<&2, String> & U32), +acc: TlAcc, name: Bool) -> TlAcc:
   (tbl, idx) = t
   enum_at.at(tbl, idx, acc, name)
 
-
 # `if dur == 0 or isinstance(e, ProfilePointEvent): continue` -- the two tests
 # are PARAMETERS of one `Bool` so the fold reads them and does not recompute them.
 # `DevEv`'s two readers, same rule as `TlAcc`'s six.
@@ -871,22 +849,14 @@ def is_point(e: Ev) -> Bool:
 
 def tl_keep(dur: F32, e: Ev) -> Bool: Bool.not(Bool.or(U32.is_zero(F32.to_u32(dur)), is_point(e)))
 
-
-
 # `rel_ts` RAISES in Python and `timeline_layout` does NOT catch it, so a refusal
 # propagates out of the WHOLE function. Here it propagates as the accumulator
 # unchanged, which is the same "no answer" and emphatically not a zero event.
-
-
-
-
-
 
 # `enum_str(name, scache)` runs BEFORE `enum_str(json.dumps(fmt), scache)` in the
 # same statement list, so the table grows name, fmt, name, fmt ... and the SECOND
 # call must start from the table the FIRST one produced. Three nested `enum_at`s
 # and `enum_pos` is what makes that ordering visible in the source.
-
 
 # `<I` name, `<I` option(ref), `<I` option(key), `<I` rel_ts, [GAP float],
 # `<I` fmt. The two zeros are the un-ported `ref_map` branch and are 0 because
@@ -894,33 +864,9 @@ def tl_keep(dur: F32, e: Ev) -> Bool: Bool.not(Bool.or(U32.is_zero(F32.to_u32(du
 def tl_pack5(d: DevEv, st: U32, ni: U32, fi: U32, +acc: TlAcc) -> List<&2, U32>:
   pack_u32(pack_u32(pack_u32(pack_u32(pack_u32(TlAcc.bs(acc), ni), 0), 0), st), fi)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # `name = e.name; ...; elif isinstance(e.name, TracingKey): name = display_name`.
 # A `str` name is used verbatim and the fmt is EMPTY; a `TracingKey` name takes
 # its `display_name` and one of THREE `ret` arms.
-
-
-
-
 
 # `ret: str -> json.loads(ret[4:]) if ret.startswith("JSON") else {"metadata": ret}`
 # `ret: int -> {"B/s": int(ret/(dur*1e-6)), "B": ret}`
@@ -1004,9 +950,6 @@ def tl_step.put.at(st: Maybe<&2, U32>, +d: DevEv, +acc: TlAcc) -> TlAcc:
 
 def tl_step.put(+d: DevEv, +acc: TlAcc) -> TlAcc: tl_step.put.at(rel_ts(St.t(d), TlAcc.start(acc)), d, acc)
 
-
-
-
 # NO MUTUAL RECURSION. `Bool.pick` is EAGER, so "skip or emit" wants the tail
 # fold on one arm and `continue` on the other -- and `continue` IS the tail fold,
 # which is exactly the cycle Bend refuses. So the tail is folded FIRST and handed
@@ -1014,8 +957,6 @@ def tl_step.put(+d: DevEv, +acc: TlAcc) -> TlAcc: tl_step.put.at(rel_ts(St.t(d),
 # recomputation. The fold is pure and total, so evaluating a skipped event's tail
 # eagerly changes nothing observable.
 def keep_of(+d: DevEv) -> Bool: tl_keep(Dur.dev(d), Ev.of(d))
-
-
 
 def tl_step(keep: Bool, +d: DevEv, tail: TlAcc, +acc: TlAcc) -> TlAcc:
   Bool.pick(TlAcc, keep, tail, tl_step.put(d, acc))
@@ -1036,7 +977,6 @@ def tl_header(+acc: TlAcc) -> TlAcc:
 def timeline_layout(evs: List<&2, DevEv>, start: H.I64) -> TlAcc:
   tl_header(tl_go(evs, TlAcc.of(Nil{}, Nil{}, 0, 0, 0, start)))
 
-
 # THE ROW. Bytes 0..15 and 20..23 as hex, then `ns=<et-st>` -- the integer
 # `float(en-ts)` is computed from -- then the byte count. A packer that emits one
 # byte too many or too few is a LENGTH diff and no row truncates.
@@ -1053,7 +993,6 @@ def tl_row(+acc: TlAcc, ns: H.I64) -> String:
 # row from each other so a swapped `1` and `2` is a diff and not a coincidence.
 # `num` is the POSITION of the key in `arg["bufs"]`, so it is a 0-based index and
 # an off-by-one shows up as a wrong byte in the middle of a record.
-
 
 # `mode = 2 if (num in inputs and num in outputs) else 1 if (num in outputs) else 0`
 def in_list(xs: List<&2, U32>, +v: U32) -> Bool:
@@ -1109,9 +1048,6 @@ def Exec.nm(+u: Exec) -> String:
 
 # ONE EXEC ROW. `<I` run id, `<I` name id, `<I` num, `<B` mode.
 
-
-
-
 # THE SAME NON-MUTUAL SHAPE AS `tl_go`: the tail is folded first and handed in,
 # because `Bool.pick` is eager and "skip this row" IS the tail fold.
 def memfree_row.pack(t: (List<&2, String> & U32), run: U32, num: U32, mode: U32) -> (List<&2, U32> & List<&2, String> & Bool):
@@ -1159,10 +1095,6 @@ def memfree_head(t: (List<&2, U32> & List<&2, String> & Bool), key: U32, ts: U32
 def encode_mem_free(execs: List<&2, Exec>, +key: U32, ts: U32, sc: List<&2, String>) -> (List<&2, U32> & List<&2, String> & Bool):
   memfree_head(memfree_go(execs, key, sc), key, ts)
 
-
-
-
-
 # The row prints the hex AND the string table the indices point into, because an
 # index is only meaningful against the table it indexes -- and a table printed on
 # its own would be a row with no bytes to check.
@@ -1173,34 +1105,10 @@ def memfree_hex(t: (List<&2, U32> & List<&2, String> & Bool)) -> String:
   (bs, sc, ok) = t
   memfree_hex.at(bs, sc, ok)
 
-
 # SECTION 11 -- `graph_layout` -- serve.py:265-290. TWO BRANCHES on
 # `k.startswith("LINE:")`, and they share NOTHING: the LINE branch packs
 # `<BIBQ` plus `<IQ` pairs and appends `max(y)` to `peaks`; the MEMORY branch
 # packs `<BIIIQ` per alloc and a nested `encode_mem_free` per free.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def mem_suffix(+k: String) -> Bool: String.ends_with(k, " Memory")
 
@@ -1242,20 +1150,6 @@ def device_sort_fn.at(+k: String, +sp0: U32) -> String: ds_join(ds_k(k), sp0, de
 # p[1].isdigit() else f"{p[0]}:{p[1]}"`. So `GPU:007` KEEPS its three digits
 # (`"007".isdigit()` is True) while `AMD:x` collapses to `AMD`. MEASURED, both.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # `special = {"GC": 0, "USER": 1, "TINY": 2, "ALLDEVS": 100, "DISK": 999}` and
 # `special.get(p[0], special['ALLDEVS'])`. The DEFAULT is 100, which is also
 # `special["ALLDEVS"]` -- so a key that is not in the table and the key
@@ -1265,9 +1159,7 @@ def device_sort_fn.at(+k: String, +sp0: U32) -> String: ds_join(ds_k(k), sp0, de
 # FOUR-TUPLE and Python compares it elementwise, so the row prints all four in
 # order and a swapped second and third component is a diff.
 
-
 # `k.endswith(" Memory")`
-
 
 # `get_arch(target) = "rdna3" if target.startswith("gfx11") else "rdna4" if
 # target.startswith("gfx12") else "cdna"`. A chained conditional, so the SECOND
@@ -1284,27 +1176,11 @@ def device_sort_fn.at(+k: String, +sp0: U32) -> String: ds_join(ds_k(k), sp0, de
 # multiply and the ROW are all 64-bit, and `simm16` stays a `U32` because
 # `& 0xffff` is what upstream does.
 
-
 # `x - 0x10000` where `x` is 0..65535, in 64-bit so the underflow is a negative.
-
-
-
 
 # `* 4` by doubling: `H.i64_mul` does not exist in helpers.bend, and a shift is a
 # multiply for a power of two -- but ONLY while it stays positive, which is why
 # this is the LAST step and the sign extension above it is not itself a shift.
-
-
-
-
-
-
-
-
-
-
-
-
 
 def branch_sub_neg(+x0: U32) -> H.I64: H.i64_sub(H.i64_of_i32(U32.and(x0, 65535)), H.i64_of_i32(65536))
 
@@ -1366,14 +1242,6 @@ def get_int_row(+qs: List<&2, Kv>, +k: String) -> String:
 # FALSE, and the fixture has it next to `"GPU Memory"` so a `trim` somewhere
 # upstream of this test would be a diff.
 
-
-
-
-
-
-
-
-
 # `special = {"GC": 0, "USER": 1, "TINY": 2, "ALLDEVS": 100, "DISK": 999}` and
 # `special.get(p[0], special['ALLDEVS'])`. The DEFAULT is 100, which is also
 # `special["ALLDEVS"]` -- so an absent key and the key `"ALLDEVS"` itself are
@@ -1385,9 +1253,6 @@ def get_int_row(+qs: List<&2, Kv>, +k: String) -> String:
 # The FOURTH component is `k` itself. `String.concat` reads `k` once here and
 # once inside `dev_base(k)`, so the two answers are named and joined -- the same
 # reason `wave_of` and `row_one` each get an `.at`.
-
-
-
 
 # `len(ss := x.split(":")) > 1` -- AT LEAST TWO parts, so `"plain"` (one part)
 # takes the `(999, 999)` arm and `"x:0:1"` (three) takes the pair arm and reads
@@ -1407,9 +1272,6 @@ def row_one.at(+ss: List<&2, String>) -> String:
 # THE WHOLE ANSWER IS A LIST, so it is bracketed even when it is empty:
 # MEASURED, `row_tuple('')` is `[]` and not the empty string.
 
-
-
-
 # SECTION 12 -- `row_tuple` -- serve.py:300-301. This is the sharpest function
 # in the file for a gate and the fixture is built for it:
 #
@@ -1424,16 +1286,6 @@ def row_one.at(+ss: List<&2, String>) -> String:
 # is `[[120, 0]]` -- a THREE-part split still takes only `ss[1]`, so a port that
 # joined the rest would answer `0:1`.
 
-
-
-
-
-
-
-
-
 # `len(ss := x.split(":")) > 1`
-
-
 
 # SECTION 13 -- THE GATE.

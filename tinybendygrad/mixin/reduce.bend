@@ -75,7 +75,6 @@ import ./dtype.bend as D
 import ./elementwise.bend as E
 import ./op.bend as M
 
-
 # `rc_axs` -- reduce.py:15, the `Sequence[int]` arm.
 #
 #   axis = tuple(self._resolve_dim(x) for x in (range(self.ndim) if axis is None
@@ -118,7 +117,6 @@ def rc_axs.go(+td: U32, xs: List<&2, Ax>, +acc: List<&2, U32>) -> List<&2, U32>:
 def rc_axs(+t: T.Tensor, xs: List<&2, Ax>) -> List<&2, U32>:
   rc_axs.go(U32.from_nat(M.mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))), xs, Nil{})
 
-
 # `rc_sum_dt` -- reduce.py:44-45 with `dtype` GIVEN.
 #
 #   ret = self.cast(sum_acc_dtype(self.commit_dtype()) if dtype is None else dtype)
@@ -138,7 +136,6 @@ def rc_sum_dt(+t: T.Tensor, dt: S.Dt, kd: Bool, +axis: List<&2, U32>) -> T.Tenso
 # cast back at any dtype.
 def rc_prod_dt(+t: T.Tensor, dt: S.Dt, kd: Bool, +axis: List<&2, U32>) -> T.Tensor:
   M.mo_reduce(kd, M.mo_cast_t(t, dt), O.OpsMUL{}, axis)
-
 
 # `rc_any` -- reduce.py:116. `return self.bool().max(axis, keepdim)`.
 #
@@ -169,9 +166,7 @@ def rc_all(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 def rc_rop(+ar: O.Arena, self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
   T.tn_rop(ar, self, op, axis)
 
-
 # THE GATE. The printers first, because a def may only call defs above it.
-
 
 # The REDUCE's own identity, out of the arena. `AReduce{rop, num_axes}` is a
 # TWO-field record so the pattern names both, and every other `Arg` constructor

@@ -333,7 +333,6 @@ def OP_UNARY() -> List<&2, O.Op>:
   [O.OpsCAST{}, O.OpsBITCAST{}, O.OpsNEG{}, O.OpsRECIP{}, O.OpsEXP2{},
    O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsTRUNC{}]
 
-
 def OP_CMP() -> List<&2, O.Op>: [O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}]
 
 def OP_SELF() -> List<&2, O.Op>: [O.OpsADD{}, O.OpsXOR{}, O.OpsOR{}]
@@ -700,7 +699,6 @@ def sy_usum.go(t: List<&2, U32>, +ar: O.Arena, base: U32, +orb: Bool) -> U32:
 
 def sy_usum(+ar: O.Arena, +base: U32, us: List<&2, U32>) -> U32:
   sy_usum.go(us, ar, base, F.dt_is(F.folded(ar), base, S.boolean()))
-
 
 # `UOp.split_uop` -- ops.py:685,
 #     if self.op is sep: for s in self.src: yield from s.split_uop(sep)
@@ -1391,8 +1389,6 @@ def DTS_INTS() -> List<&2, S.Dt>:
 # `dtypes.sints` -- the four SIGNED ints, which is `:316`'s cast target.
 def DTS_SINTS() -> List<&2, S.Dt>: [S.int8(), S.int16(), S.int32(), S.int64()]
 
-
-
 def DTS_INTISH() -> List<&2, S.Dt>:
   List.append(&2, S.Dt, List.append(&2, S.Dt, DTS_INTS(), [S.boolean()]), [S.weakint()])
 
@@ -1531,7 +1527,6 @@ def const_i32.go(ok: Bool, bits: U32) -> Maybe<&1, U32>:
 
 def const_i32.cint(fits: Bool, +i: H.I64) -> Maybe<&1, U32>: const_i32.go(fits, H.lo32(i))
 
-
 def const_i32(v: O.Const) -> Maybe<&1, U32>:
   match v:
     case O.CInt{+i}: const_i32.cint(i32_fits(i), i)
@@ -1661,7 +1656,6 @@ def fold_const_alu(n: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 
 def fold_const_alu.at(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   fold_const_alu(sy_nsrc(x, u), x, u)
-
 
 # the rules. a rule's captures are `src[k]` of the node it matched -- Python's
 # compiled form passes them as arguments and this port reads them by index,
@@ -1847,7 +1841,6 @@ def sw.b(t1: Bool, s0: U32, s1: U32) -> U32: Bool.pick(U32, t1, s0, s1)
 def sw.of(t0: Bool, +t1: Bool, +s0: U32, +s1: U32) -> Sw:
   Sw{Bool.or(t0, t1), sw.a(t1, s0, s1), sw.b(t1, s0, s1)}
 
-
 # `-x`, `x.const_like(v)`, `const_like(False, dt)` and `x.where(t, e)` — the four ANSWERS
 # the rules below build, each at the arena its caller threads. They are the `Found` twins of
 # `sy_neg`, `sy_const_like`, `sp_false` and `sy_where`, which answer a bare INDEX into an
@@ -1898,8 +1891,6 @@ def simplify_pow_f.val(m: Maybe<&2, O.Const>, +x: F.Folded, +u: U32, +f: O.Found
 
 def simplify_pow_f(+f: O.Found, +x: F.Folded, +u: U32, c: U32) -> Maybe<&1, O.Found>:
   simplify_pow_f.val(sy_val(x, c), x, u, f)
-
-
 
 # `invalid_pat.broadcast()` is a stack whose srcs are all invalid, and the port tested
 # only `src[0]`. MEASURED 2026-11-03: `(stack bad x)` answered `bad` where CPython answers
@@ -3764,7 +3755,6 @@ def sym_284.guard(+x: F.Folded, +u: U32) -> Bool:
 def sym_284(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(Bool.and(sym_284.pat(x, u), sym_284.guard(x, u)), sym_284.mk(x, u))
 
-
 # ---- `symbolic.py:129`, `fold_add_divmod_recombine` -----------------------------
 #
 # `pop_const(op)` -- ops.py:1082 -- DEFAULTS TO `ADD` AND NOT `MUL`: a node that does not pop
@@ -4173,7 +4163,6 @@ def sym_292.pat(+x: F.Folded, +u: U32) -> Bool:
 def sym_292(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_292.pat(x, u), sym_292.c(sy_val(x, sy_src1(x, u)), x, u))
 
-
 # symbolic.py:460  (UPat(Ops.STORE, src=(UPat(Ops.INDEX, name="index"),
 #                                       UPat.var("cond").where(UPat.var("val"), invalid_pat))),
 #                    lambda index, cond, val, i: UOp.store(index.src[0].index(index.src[1].valid(cond)), val))
@@ -4497,7 +4486,6 @@ def sym_276(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +ar = F.Folded.ar(x)
   +bt = F.mm.sweep(F.Folded.ar(x), F.Folded.t(x))
   sy_tri_f(sym_276.pat(x, u), mint_const_v(sym_276.vc(F.UOp.vmin(ar, bt, u)), mint_ar(ar), sy_dt1(x, u)))
-
 
 # divandmod.py:101 -- `(x//c + a)//d -> (x + a*c)//(c*d)` for `c>0, d>0`.
 #
@@ -5960,7 +5948,6 @@ def sym_316.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_316(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_316.pat(x, u), sym_316.mk(x, u))
 
-
 # symbolic.py:300  (UPat.var("x", dtypes.weakint)*-1 < UPat.var("y")*-1, lambda x,y: y<x)
 # negating both sides flips the comparison. `-1 * v` is `MUL(CONST(-1), v)`, so each side is a
 # MUL whose const side is -1 and the answer swaps the two operands.
@@ -6405,10 +6392,6 @@ def valid_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, [O.OpsAND{}],   OP_INVALID()},   # 450
     O.PMEntry{1, [O.OpsWHERE{}], OP_INVALID()}]}  # 451
-
-
-
-
 
 def sym_table() -> O.PMEntrys:
   O.PMEntrys{[
@@ -6911,7 +6894,6 @@ def sym_90.go(ok: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sym_90.go(sym_90.pat(x, u), x, u)
 
-
 # the tags with a minting body. a list and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
 def MINT_TAGS() -> List<&2, U32>: [0,2,3,4,6,8,9,10,11,17,19,22,29,30,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,58,59,60,61,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,98,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130]
@@ -7131,17 +7113,14 @@ def t_nd.shape8(+f: O.Found, +ans: O.Node, a1: U32, d0: U32, d1: U32) -> Bool:
                     O.eq_op(O.Arena.op(ar, d0), O.OpsPARAM{})),
            Bool.and(t_nd.isconst4(ar, d1), t_nd.isconst2(ar, a1)))
 
-
 def t_nd.shape7(+f: O.Found, +ans: O.Node, a1: U32, d0: U32, d1: U32) -> Bool:
   t_nd.shape8(f, ans, a1, d0, d1)
-
 
 def t_nd.shape6(+f: O.Found, +ans: O.Node, a1: U32, +div: O.Node, div_srcs: List<&2, U32>) -> Bool:
   match div_srcs:
     case d0 <> d1 <> _:
       t_nd.shape7(f, ans, a1, d0, d1)
     case _: False{}
-
 
 def t_nd.shape5(+f: O.Found, +ans: O.Node, ans_srcs: List<&2, U32>) -> Bool:
   match ans_srcs:
@@ -7150,23 +7129,19 @@ def t_nd.shape5(+f: O.Found, +ans: O.Node, ans_srcs: List<&2, U32>) -> Bool:
       t_nd.shape6(f, ans, a1, div, O.Node.src(div))
     case _: False{}
 
-
 def t_nd.shape.go2(+f: O.Found) -> Bool:
   match f:
     case O.Found{ar, i}:
       +nd = O.Arena.node(ar, i)
       t_nd.shape5(f, nd, O.Node.src(nd))
 
-
 def t_nd.shape(+f: O.Found) -> Bool:
   t_nd.shape.go2(f)
-
 
 def t_nd.shape.go(m: Maybe<&1, O.Found>) -> Bool:
   match m:
     case Some{f}: t_nd.shape.go2(f)
     case None{}: False{}
-
 
 # and "did the arm fire" -- and `Maybe` has no `is_some` in the prelude (measured 2026-11-09:
 # `rg 'is_some' helpers.bend` and `rg 'is_some' bend.ts` find nothing), so the rows carry
@@ -7212,7 +7187,6 @@ def t_nd_nodiv() -> Bool:
   +x = F.folded(O.Found.ar(f))
   +u = O.Found.i(f)
   Bool.not(t_nd.some(dm_nd.ans(x, u)))
-
 
 # `divandmod.py:103` -- THE SLOW RULE, `(UPat((Ops.DIV, Ops.MOD), dtypes.weakint,
 # name="d"), lambda d: fold_divmod_general(d))` -- and it is the row the census names as
@@ -8302,9 +8276,6 @@ def t_rebind() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_samediv()), 2), 3))
 # `t_inval_n` is the same shape and is written as `is_some` for the same reason.
 def t_rebind0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_diffdiv()), 3)))
 
-
-
-
 # the second rebind, `(x^y)^y -> x` -- symbolic.py:123 -- with a fixture per side.
 # The positive one shares its `y`; the negative one does not.
 def fx_xor() -> O.Found:
@@ -8314,7 +8285,6 @@ def fx_xor() -> O.Found:
   f_alu2(c, O.OpsXOR{}, f_i(b))
 
 def t_xorb() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_xor()), 4), 1))
-
 
 def fx_xor2() -> O.Found:
   +a = f_c(H.i64_of_i32(5))
@@ -8699,7 +8669,6 @@ def t_ig_src2() -> U32:
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
-
 def fz.gate() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("lay", t_lay())
@@ -8982,7 +8951,6 @@ def fz_arg(op: O.Op, nm: String, n: U32) -> O.Arg:
     case O.OpsBITCAST{}: fz_arg.dt.of(fz_dt(fz_part(nm, 1n)))
     case O.OpsREDUCE{}: fz_arg.rop(nm, n)
     case _: O.ANone{}
-
 
 # THE BUILD. One def, and every def it calls does NOT call back, so this is a fold
 # and not a cycle. A frame is pushed on a HEAD and popped on a CLOSE, and `St.root`
@@ -9576,7 +9544,6 @@ def sv.lt2(a: SvP, b: SvP) -> Bool:
 def sv.lt(a: SvP, b: SvP) -> Bool:
   sv.lt2(a, b)
 
-
 # `res[0] is other or res[0] in other.backward_slice` -- the EXPR of this clause is the same
 # node as another clause's expr, or it is in that clause's backward slice.
 def sv.in.slice2(bs: List<&2, U32>, +e: U32, acc: Bool) -> Bool:
@@ -9807,9 +9774,6 @@ def gg.cls.is.weakint(c: S.Cls) -> Bool:
     case S.CWeakInt{}: True{}
     case _: False{}
 
-
-
-
 def gg.x.is.weakint(+x: F.Folded, +u: U32) -> Bool:
   gg.cls.is.weakint(S.Dt.cls(gg.x.dtype(x, u)))
 
@@ -9843,7 +9807,6 @@ def gg.build(+ar: O.Arena, +cond: U32, +xv: U32, +iv: U32) -> O.Found:
 
 # THE RULE. Upstream's `gated_given_valid(cond, x, i)`.
 
-
 # the found is read twice -- its index and its arena -- so it is passed whole.
 def gg.go5(+f: O.Found, +cond: U32, +iv: U32) -> Maybe<&1, O.Found>:
   Some{gg.build(O.Found.ar(f), cond, O.Found.i(f), iv)}
@@ -9864,7 +9827,6 @@ def gg.go5(+f: O.Found, +cond: U32, +iv: U32) -> Maybe<&1, O.Found>:
 # COPIES OF ONE PARAGRAPH IS ONE PIECE OF EVIDENCE AND NOT FOUR. THE REPEATS ARE GONE AND
 # THE FIRST COPY IS THE ONE THAT IS KEPT -- so the reader who arrives at the third valid
 # rule reads the SAME CLAIM, not a copy of it.
-
 
 # THE RULE. Upstream's `gated_given_valid(cond, x, i)`.
 
@@ -9891,9 +9853,6 @@ def gg.go3(+ar: O.Arena, +x: F.Folded, +cond: U32, +xv: U32, +iv: U32) -> Maybe<
   g = Ugv.go(ar, cond, xv)
   gg.go4(ar, g, cond, xv, iv)
 
-
-
-
 def gg.go2(+ar: O.Arena, +x: F.Folded, +u: U32, +cond: U32, +xv: U32, +iv: U32) -> Maybe<&1, O.Found>:
   # THE FIRST GATE: `x.dtype is not dtypes.weakint` -- and the INDEX gate. A rule that may not
   # fire answers `None{}`, and `None{}` IS the refusal.
@@ -9901,9 +9860,7 @@ def gg.go2(+ar: O.Arena, +x: F.Folded, +u: U32, +cond: U32, +xv: U32, +iv: U32) 
     Bool.or(Bool.not(gg.x.is.weakint(x, xv)), gg.has.index(x, xv)),
     None{}, gg.go3(ar, x, cond, xv, iv))
 
-
 # THE RULE. Upstream's `gated_given_valid(cond, x, i)`.
-
 
 # THE RULE. Upstream's `gated_given_valid(cond, x, i)`.
 def gg.go(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -9913,14 +9870,12 @@ def gg.go(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +iv = sy_src2(x, u)
   gg.go2(ar, x, u, cond, xv, iv)
 
-
 # ---- THE VALID LANE ---------------------------------------------------------------
 #
 # THE VALID LANE'S HEADER IS ABOVE, AT ITS FIRST OCCURRENCE -- `pm_simplify_valid` IS A
 # SEPARATE MATCHER upstream (`symbolic.py:448`), it gets ITS OWN TABLE, AND THAT IS WHAT
 # BREAKS THE `sym`/`sym_f` CYCLE. IT IS NOT REPEATED HERE BECAUSE A HEADER THAT IS FOUR
 # COPIES OF ONE PARAGRAPH IS ONE PIECE OF EVIDENCE AND NOT FOUR (MEASURED 2026-11-10).
-
 
 # ---- THE VALID LANE ---------------------------------------------------------------
 #
@@ -9955,9 +9910,6 @@ def gg.go(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sv_450(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   simplify_valid(sy_ar(x), u)
 
-
-
-
 def sv_451(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   gg.go(x, u)
 
@@ -9984,18 +9936,15 @@ def valid_try_f.pick(ok: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.
     case True{}: sy_novel_f(u, valid_dispatch_f(tag, x, u))
     case _     : None{}
 
-
 def valid_try_f(ts: O.PMEntrys, +x: F.Folded, +u: U32, +e: O.PMEntry) -> Maybe<&1, O.Found>:
   valid_try_f.pick(Bool.and(O.op_in(O.PMEntry.ops(e), O.Arena.op(sy_ar(x), u)),
                              O.pm_early(ts, sy_ar(x), u, O.PMEntry.rej(e))),
                    O.PMEntry.tag(e), x, u)
 
-
 def valid_scan_f(+ts: O.PMEntrys, +x: F.Folded, +u: U32, todo: List<&2, O.PMEntry>, acc: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
   match todo:
     case Nil{}  : acc
     case e <> t : valid_scan_f(ts, x, u, t, sy_keep_f.go(acc, valid_try_f(ts, x, u, e)))
-
 
 def valid_rewrite_f(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   valid_scan_f(ts, x, u, O.PMEntrys.es(ts), None{})
@@ -10019,9 +9968,7 @@ def sym_all2(base: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
     case Some{f}: sym_all3(f)
     case None{}: None{}
 
-
 # THE OUTER ENTRY: the base fixpoint and then the valid pass, each on the graph the other
 # produced. this is `sym` -- the composition -- and it is not `sym_f`, which is `symbolic` alone.
 def sym_all(+ar: O.Arena, +i: U32) -> Maybe<&1, O.Found>:
   sym_all2(sy_simplify(ar, i))
-

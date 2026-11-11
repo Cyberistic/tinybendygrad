@@ -112,7 +112,6 @@
 #                             MORE precise, since `sint` is exactly "a UOp or a
 #                             Const".
 
-
 # THE DRIFT RECORD. `78d482262` ("range AxisType is first / delete REDUCE/UNROLL")
 # changed `render.py` in FOUR places and this file was written against the pin,
 # so all four were open until now. Everything below is MEASURED, and every
@@ -177,7 +176,6 @@
 # worst of the three: a tree that no commit in this window ever produced. Every
 # expectation here comes from `xd1/head`, which is `git archive upstream/master`.
 
-
 import Base
 import ./ops.bend as O
 import ./f32_repr.bend as FR
@@ -185,7 +183,6 @@ import ./fold.bend as F
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./../renderer/estimates.bend as E
-
 
 # sint_show -- `str(i)` for a SIGNED int held as a `U32` two's-complement bit
 # pattern. base.bend has `U32.show`, which prints the unsigned value, so this is
@@ -200,7 +197,6 @@ import ./../renderer/estimates.bend as E
 # `pyrender`), and widening the range means a 64-bit formatter, which needs a
 # two-word divide. The limit is stated rather than hidden.
 
-
 # 2**31: the first bit pattern that reads as negative in an int32
 def sint_show.half(x: U32) -> Bool: U32.is_ge(x, 2147483648)
 
@@ -210,7 +206,6 @@ def sint_show.pick(neg: Bool, x: U32) -> String:
     case False{}: U32.show(x)
 
 def sint_show(+x: U32) -> String: sint_show.pick(sint_show.half(x), x)
-
 
 # `f32_repr` -- `repr(float)`. this was a fixer and is now the whole answer.
 #
@@ -235,7 +230,6 @@ def sint_show(+x: U32) -> String: sint_show.pick(sint_show.half(x), x)
 
 def f32_repr(+x: F32) -> String: FR.repr(x)
 
-
 # `repr` OF THE ARG. Wall (d) above: Python dispatches on the runtime type of an
 # `Any` and Bend dispatches on a CLOSED DATATYPE, so what is one dynamic `repr`
 # in Python is one `match` per payload here. Eighteen arms, compiler-checked.
@@ -245,7 +239,6 @@ def f32_repr(+x: F32) -> String: FR.repr(x)
 # (a dataclass with `INVERSE_DTYPES_DICT`), `S.Dev` (a `str|tuple`) and
 # `ParamArg` (a dataclass with a hand-written `__repr__`) -- are the four that
 # needed a def.
-
 
 # `str()` of an `H.I64`, which is `CInt`'s payload and Python's unbounded int.
 # The SAME int32 limit as `sint_show`, and the same reason: a decimal formatter
@@ -305,7 +298,6 @@ def addr_name(a: S.Addr) -> String:
 def addr_repr(a: S.Addr) -> String:
   String.concat(["AddrSpace.", addr_name(a)])
 
-
 # THE DEVICE TABLE. `S.Dev` is a `U32` tag (LAWS/spec.bend:85 symbol=Dev) and
 # schedule/rangeify.bend:1410 symbol=rf_webgpu8 says the tag is "per name interned by the runtime" -- a table that is NOT
 # THERE. `repr` is the one reader that needs the NAME, so the table lands here,
@@ -317,7 +309,6 @@ def addr_repr(a: S.Addr) -> String:
 # requires is only that the tag a graph carries and the name printed for it
 # agree, and both the fixtures here and the runtime that builds the arena read
 # this one list.
-
 
 def dev_names() -> List<&2, String>:
   ["CPU", "GPU", "METAL", "CUDA", "HIP", "CLANG", "LLVM", "PYTHON", "NULL", "DISK"]
@@ -340,7 +331,6 @@ def dev_repr(d: S.Dev) -> String:
   match d:
     case S.D1{tag}: String.concat(["'", dev_name.tag(tag), "'"])
     case S.Dn{tags}: dev_repr.tuple(tags)
-
 
 # `ParamArg.__repr__` -- ops.py:40-48. A dataclass with a hand-written repr:
 #
@@ -366,7 +356,6 @@ def dev_repr(d: S.Dev) -> String:
 #     not from a Buffer object, which is the right text but is a promise that
 #     the slot is a realized buffer, since ops.bend's header already notes that
 #     the object behind it is P6.
-
 
 def comma(ok: Bool, s: String) -> String:
   match ok:
@@ -698,7 +687,6 @@ def aprogram_repr(+pi: O.ProgramInfo) -> String:
 def customfunction_repr(+cf: O.CustomFunction) -> String:
   String.concat(["CustomFunction(name='", O.CustomFunction.name(cf), "', dtype=", dt_repr(O.CustomFunction.dtype(cf)), ")"])
 
-
 # `UOp.tuplize` -- THE ORDER, ops.py:316. IT IS NOT THE KEY.
 #
 #     def tuplize(self) -> _UOpTuple:
@@ -748,7 +736,6 @@ def arg_repr(+ar: O.Arena, +self: U32, a: O.Arg) -> String:
     case O.AFloat{f}: f32_repr(f)
     case O.ABad{}: "ABad"
 
-
 # `tagstr` / `repr(tag)` -- ops.py:275 and render.py:136. `str` and `repr` of a
 # `Tag` DISAGREE on the `str` arm (`x` vs `'x'`), so they are two defs and not
 # one with a flag: `tagstr` is a f-string (render.py:14) and `_render_with_splits`
@@ -759,7 +746,6 @@ def arg_repr(+ar: O.Arena, +self: U32, a: O.Arg) -> String:
 # `pretty_print` is the def that reads `tagstr`. That is a real cycle and the
 # port cannot break it by ordering, so this answers the count instead of a
 # string -- visible, not wrong.
-
 
 def tag_str.go(xs: List<&2, U32>) -> List<&2, String>:
   match xs:
@@ -794,12 +780,10 @@ def tagstr.of(t: O.Tag, isnone: Bool) -> String:
 def tagstr(+t: O.Tag) -> String:
   tagstr.of(t, tag_is_none(t))
 
-
 # `syms` -- render.py:25. `for debug`: the spelling of each binary operator, and
 # it is a `dict` Python never adds to. Eleven arms and a `_`, and the `_` is
 # `KeyError` in Python -- but both readers only ever reach it for an op the
 # `UPat(set(syms.keys()))` rules matched, so it is unreachable and answers "".
-
 
 def syms_of(op: O.Op) -> String:
   match op:
@@ -817,11 +801,9 @@ def syms_of(op: O.Op) -> String:
     case O.OpsXOR{}: "^"
     case _: ""
 
-
 # `precedence` -- render.py:28. Eleven entries, and the readers ask
 # `precedence.get(x.op, 99)`, so the missing arm is 99 rather than a KeyError.
 # 99 IS A CONSTANT HERE, not a magic number: it is `precedence.get`'s default.
-
 
 def precedence_of(op: O.Op) -> U32:
   match op:
@@ -840,7 +822,6 @@ def precedence_of(op: O.Op) -> U32:
 # `x.op not in precedence`
 def has_precedence(op: O.Op) -> Bool: U32.is_lt(precedence_of(op), 99)
 
-
 # `strip_binary_parens` -- render.py:29.
 #
 # `code_for_op` IS INLINED, and that is the one closure this file drops. Both
@@ -854,7 +835,6 @@ def has_precedence(op: O.Op) -> Bool: U32.is_lt(precedence_of(op), 99)
 # `precedence`, so they reach the first line and the srcs are never read -- which
 # is why `has_precedence` is a parameter of the arm rather than a second `if`.
 
-
 # `strip_parens(left) if precedence.get(x.src[0].op, 99) <= p else left`
 def sbp_operand(has: Bool, +ar: O.Arena, u: U32, n: U32, p: U32, +s: String) -> String:
   Bool.pick(String, Bool.and(has, U32.is_le(precedence_of(O.Arena.op(ar, O.Arena.src(ar, u, n))), p)), H.strip_parens(s), s)
@@ -864,7 +844,6 @@ def sbp_arm(+has: Bool, +ar: O.Arena, +u: U32, +p: U32, +left: String, +right: S
 
 def strip_binary_parens(+ar: O.Arena, +u: U32, left: String, right: String) -> String:
   sbp_arm(has_precedence(O.Arena.op(ar, u)), ar, u, precedence_of(O.Arena.op(ar, u)), left, right)
-
 
 # `range_str` -- ops.py:95. Rebuilt here because it is ABSENT from ops.bend
 # (ops.bend:537 says "range_str does not read it", i.e. ops.py's own note that
@@ -879,7 +858,6 @@ def strip_binary_parens(+ar: O.Arena, +u: U32, left: String, right: String) -> S
 # ops.bend carries a RANGE's arg as `ARange{ids, at}`, where `ids` IS the whole
 # `(axis_id, axis_type)` pair with the type lifted out. So the Python slice is
 # exactly `ids` here, and that is the one place the two representations meet.
-
 
 # `str(x) if x >= 0 else "m"+str(-x)`. The ids are non-negative for every RANGE
 # tinygrad builds, so the `m` arm is unreachable in practice -- but it is
@@ -901,7 +879,6 @@ def range_str.of(at: O.AxisType, +ids: List<&2, U32>) -> String:
 # "return ret unchanged", so the flag is the parameter.
 def range_str.color(f: H.Flags, at: O.AxisType, s: String) -> String:
   H.colored(f, s, H.color_of(O.axis_colors(at)), False{})
-
 
 # `multirange_str` -- ops.py:99.
 #
@@ -1011,7 +988,6 @@ def multirange_str.go(+f: H.Flags, +ar: O.Arena, rngs: List<&2, U32>) -> List<&2
 def multirange_str(+f: H.Flags, +ar: O.Arena, +rngs: List<&2, U32>, pad: U32) -> String:
   multirange_str.pad(String.join(multirange_str.go(f, ar, u32_isort(ar, rngs)), ","), pad)
 
-
 # THE CTX. `ctx: dict[UOp, str]` in Python, threaded through `pm.rewrite` and
 # through every rule lambda. It is the ONLY mutable-looking structure pyrender
 # has, and it is the reason `Map` (a string-keyed patricia tree, and the one
@@ -1028,7 +1004,6 @@ def multirange_str(+f: H.Flags, +ar: O.Arena, +rngs: List<&2, U32>, pad: U32) ->
 # one-entry `MLeaf` REPLACES the leaf and drops the old key, which MEASURED as
 # `d[1]=three d[2]= d[3]=` for three sequential puts. `Map.set` is the one that
 # inserts. That is a new Bend rule and it is in the constraints file.
-
 
 type Ctx is Data:
   Ctx{m: Map<&2, String>}
@@ -1061,7 +1036,6 @@ def ctx_has.of(r: Sigma<&1, &1, Map<&2, String>, _ => Bool>) -> Bool:
 def ctx_has(c: Ctx, u: U32) -> Bool:
   ctx_has.of(Map.has(&2, String, Ctx.map(c), U32.show(u)))
 
-
 # `srcs` -- render.py:84.
 #
 #     def srcs(ctx, src): return f"({ctx[src[0]]},)" if len(src) == 1 else f"({', '.join([ctx[x] for x in src])})"
@@ -1071,7 +1045,6 @@ def ctx_has(c: Ctx, u: U32) -> Bool:
 # Python literals, and only the first round-trips through `eval_pyrender`. A join
 # that ignored the case would emit `(x)` and the exec would build a bare name
 # instead of a tuple.
-
 
 def srcs.go(+c: Ctx, srcs: List<&2, U32>) -> List<&2, String>:
   match srcs:
@@ -1089,7 +1062,6 @@ def srcs_one(+c: Ctx, +srcs: List<&2, U32>) -> String:
 def srcs(+c: Ctx, +srcs: List<&2, U32>) -> String:
   Bool.pick(String, Nat.is_eq(List.length(&2, U32, srcs), 1n), srcs_one(c, srcs), String.concat(["(", String.join(srcs.go(c, srcs), ", "), ")"]))
 
-
 # THE pm_pyrender RULES, compiled. render.py:88-123 is fifteen `UPat`s, and the
 # NOTE above them says "you can remove pm_pyrender_extra and it'll still be
 # correct" -- which is TRUE, and is exactly why the rules are a `match` on the op
@@ -1104,7 +1076,6 @@ def srcs(+c: Ctx, +srcs: List<&2, U32>) -> String:
 #   * `SUB` is in `syms` and NOT in rule 12's set (`syms - {SUB, TRUNCDIV, TRUNCMOD}`), so
 #     it goes straight to the fallback and prints `UOp(Ops.SUB, (..))`. That is
 #     why the arm list below omits it, and the gate pins it.
-
 
 # `x.op.name.lower()` -- in five rules, one measurement. `name` is the BARE
 # member and `Ops.name` is the `ClassName.MEMBER` form, so this reads `.name.of`.
@@ -1122,7 +1093,6 @@ def dt_of.of(m: Maybe<&2, S.Dt>) -> S.Dt:
 # from a settled fold.
 def dt_of(tb: F.Table, ar: O.Arena, u: U32) -> S.Dt:
   dt_of.of(F.fold.dt(ar, tb, u))
-
 
 # `UOp.tuplize`'s order -- ops.py:316, and the port decides three of its four keys.
 #
@@ -1389,7 +1359,6 @@ def pmp.special.of(one: Bool, isconst: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -
 def pmp.special(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.special.of(Nat.is_eq(List.length(&2, U32, O.Arena.srcs(ar, u)), 1n), is_const(ar, O.Arena.src0(ar, u)), ar, ctx, u)
 
-
 # RULE 4 IS GONE. `78d482262` DELETED the `Ops.BUFFER` pyrender rule:
 #
 #   # NOTE: multi-device buffers carry the DEVICE range in src, new_buffer recreates it
@@ -1432,7 +1401,6 @@ def pmp.special(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
 #
 # `addr_is_global` also died with `AddrSpace.GLOBAL`, which upstream's `dtype.py`
 # still has -- so its absence is a DELETION here and not a substrate gap.
-
 
 # RULE 5: `UPat(Ops.COPY, src=(UPat(name="x"),), allow_any_len=True, name="copy")`
 #   -> `f"{ctx[x]}.copy_to_device({repr(copy.arg)})"`. `allow_any_len` means the
@@ -1477,7 +1445,6 @@ def range_tuple.go(n: Nat, +p: Nat, acc: List<&2, U32>) -> List<&2, U32>:
 
 def range_tuple(n: U32) -> String:
   String.concat(["(", String.join(u32_list_repr.go(range_tuple.go(U32.to_nat(n), 0n, Nil{})), ", "), ")"])
-
 
 # RULE 8, REWRITTEN UPSTREAM. `78d482262` changed both the BODY and the arity
 #
@@ -1625,7 +1592,6 @@ def sugar_args.go(ar: O.Arena, +ctx: Ctx, u: U32, +ss: List<&2, U32>, +acc: List
 # back-edges (an END whose src[0] is the body it closes over), so a src can be a
 # node `lst` has not visited yet. The guard is why the fold carries `seen`.
 
-
 def cu32.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>) -> U32:
   match r:
     case Tuple{m, v}: v
@@ -1642,7 +1608,6 @@ def chas(m: Map<&2, U32>, u: U32) -> Bool:
 
 type Cons is Data:
   Cons{seen: Map<&2, U32>, cnt: Map<&2, U32>, who: Map<&2, U32>}
-
 
 # `to_render` -- render.py:151-164, the decision of which nodes get their own
 # `cN = ...` line.
@@ -1662,7 +1627,6 @@ type Cons is Data:
 # `not_rendered` test -- it is in the set AND it is rendered inline. The comment
 # on the consumer test says it: "checking the consumers is not enough, you have
 # to make sure it's not used twice by the one consumer".
-
 
 def not_rendered(op: O.Op) -> Bool: is_const.of(op)
 
@@ -1696,7 +1660,6 @@ def uses.go(+ss: List<&2, U32>, +u: U32, n: U32) -> U32:
     case Nil{}: n
     case +s <> t: uses.go(t, u, U32.add(n, Bool.to_u32(U32.is_eq(s, u))))
 
-
 # `_render_with_splits` -- render.py:125-141.
 #
 #     for i,u in enumerate(lst):
@@ -1714,7 +1677,6 @@ def uses.go(+ss: List<&2, U32>, +u: U32, n: U32) -> U32:
 # dicts and this carries two. `ret` is a LIST of pairs because Python's dict is
 # insertion-ordered and the final `'\n'.join(ret.items())` emits in THAT order --
 # a `Map` would not, and the line order is the diff.
-
 
 type Bind is Data:
   Bind{k: String, v: String}
@@ -2032,7 +1994,6 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
     case O.AParam{pa}: Maybe.is_some(&2, U32, O.ParamArg.buffer(pa))
     case _: False{}
 
-
 # WHAT IS NOT PORTED, in upstream order, and why. Nothing here is a Bend wall;
 # four of the five are missing INPUTS in a shared file and the fifth ran out of
 # room.
@@ -2150,7 +2111,6 @@ def pa3() -> O.ParamArg:
   O.ParamArg{3, S.single(), None{}, None{}, None{}, S.ALocal{}, None{},
     True{}, Some{O.Img{2, 2}}, None{}, False{}, None{}}
 
-
 # the arena fixtures that drive `pyrender`. render.py:143 is the whole repr
 # port's reason to exist and until these rows landed NOTHING called it, so the
 # three `pa` fixtures above -- which pin `arg_repr` -- were pinning a formatter
@@ -2168,7 +2128,6 @@ def pa3() -> O.ParamArg:
 # SINK/STORE/REDUCE arms add srcs unconditionally, and `buffer`/`copy`/`index`
 # show the inverse (BUFFER/RANGE/SPECIAL are `always_rendered`, so they get a
 # line even with exactly one consumer).
-
 
 # `UOp.const(n)` -- CONST(3) is a weakint CONST here and in CPython, so `dt_of`
 # agrees and no CAST is involved.
@@ -2265,7 +2224,6 @@ def py_row(nm: String, +f: O.Found) -> IO(Unit):
   +a = pyrender(O.Found.ar(f), F.UOp.fold(O.Found.ar(f)), O.Found.i(f))
   py_cell(nm, a)
 
-
 # `pyr_call` -- REWRITTEN UPSTREAM. `78d482262` replaced the predicate:
 #
 #   pin:  u.op is Ops.CALL and u.body.dtype is dtypes.void
@@ -2356,7 +2314,6 @@ def g_cast() -> O.Found:
 def g_special() -> O.Found:
   +c = f_const(O.Arena.empty(), 4)
   O.UOp.special(O.Found.ar(c), O.Found.i(c), "gidx")
-
 
 # RULE 4 WAS DELETED UPSTREAM, so every BUFFER row below renders through RULE 15.
 # `g_buffer` MOVED (it printed `UOp.new_buffer(...)` at the pin) and the three
@@ -2633,7 +2590,6 @@ def g_reduce2() -> O.Found:
   +r1 = f_range(O.Found.ar(c4), O.Found.i(c4), [0], O.AXIS_WEAK{})
   O.UOp.new(O.Found.ar(r1), O.OpsREDUCE{}, [O.Found.i(r0), O.Found.i(r1)], O.AReduce{O.OpsMAX{}, 2}, O.TNone{})
 
-
 # THE REFUSAL ROWS. Until this unit these were unreachable: the header said
 # "the gate prints them" and `main` printed neither, and `to_render` asked
 # neither -- so `pyr_call` had a `def` line and no call site anywhere in the
@@ -2896,7 +2852,6 @@ def pu_pos.go(+xs: List<&2, U32>, +x: U32, +n: U32) -> U32:
 
 def pu_pos(+xs: List<&2, U32>, +x: U32, +n: U32) -> U32: pu_pos.go(xs, x, n)
 
-
 # A `--` AND a CONST's value are STRINGS and so repr with single quotes; the index is an
 # `int` and so repr WITHOUT them. That is why the quotes live HERE, in the arms, and not
 # in the fold: a fold that quotes every element can only ever print a list of strings,
@@ -2929,7 +2884,6 @@ def pu_src(+ar: O.Arena, +uops: List<&2, U32>, +x: U32) -> String:
 # `match` may not scrutinise it -- so it becomes a `Bool` PARAMETER and the pick is
 # `Bool.pick`. That is the shape the whole file uses for "one of two answers, decided
 # by a test of something computed".
-
 
 # `str(formatted_srcs)` is PYTHON'S REPR OF A LIST -- `['--', '4']`, with quotes, a
 # comma and a SPACE. It is not this file's list-join idiom, and getting the space
@@ -3279,7 +3233,6 @@ def main() -> IO(Unit):
     IO.print("tag_repr TStr    = [" ++ tag_repr(O.TStr{"x"}) ++ "]   py='x'")
     IO.print("tag_repr TNone   = [" ++ tag_repr(O.TNone{}) ++ "]   py=None")
 
-
 # `pyrender` -- render.py:143-167. `lst = list(ast.toposort())`, the to_render
 # pass, `_render_with_splits`, and the final join.
 #
@@ -3296,4 +3249,3 @@ def main() -> IO(Unit):
 # in miniature. No row could have caught the CALL predicate because no row
 # called it, which is the answer to "could any row have caught site 4": no, and
 # the reason is structural rather than an oversight of fixture choice.
-

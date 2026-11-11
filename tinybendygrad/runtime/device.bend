@@ -86,7 +86,6 @@ import ./../schedule/__init__.bend as SCH
 import ./ops_cpu.bend as CPU
 import ./support/elf.bend as E
 
-
 # THE PROGRAM. Upstream's `Compiled.runtime(obj)` (`tinygrad/device.py:402`)
 # takes the compiled OBJECT; the port's `Program` is the C SOURCE, because the
 # port's `compile` is the step that turns the C into the object.
@@ -113,7 +112,6 @@ def Prog.src(p: Prog) -> String:
 def program(name: String, kus: List<&2, C.KU>) -> Prog:
   Prog{name, C.render(C.dev_clang(), True{}, kus)}
 
-
 # THE SCHEDULER. Upstream's `create_schedule(sched_sink)`
 # (`tinygrad/schedule/__init__.py:32-80`) IS THE PORT's `schedule()`
 # (`schedule/__init__.bend:1139` symbol=schedule), and `linear`
@@ -129,7 +127,6 @@ def program(name: String, kus: List<&2, C.KU>) -> Prog:
 # arena by taking the `Found`.
 def schedule(ar: O.Arena, sink: U32) -> O.Found:
   SCH.linear(SCH.schedule(ar, sink))
-
 
 # THE COMPILE. Upstream's `CPUProgram.__init__` step 1 (`ops_cpu.py:29-34`) is
 # `cc` on the C source with upstream's OWN argv
@@ -151,7 +148,6 @@ def compile(src: String, argv: String) -> IO(String):
     +elf : String <- IO.try(String, CPU.Cpu.compile(src, argv))
     IO.pure(String, elf)
 
-
 # THE RELOCATION. Upstream's step 2 (`ops_cpu.py:34`) is
 # `jit_loader(lib, base=mv_address(self.mem))` and it is the port's own
 # `runtime/support/elf.bend:1816`.
@@ -164,7 +160,6 @@ def relocate(+elf: String) -> String:
   +ehdr : E.Ehdr = E.Ehdr.at(elf, True{})
   +img : E.Img = E.jit_loader(E.elf_loader(elf, ehdr, True{}, 1, Nil{}), 0)
   E.Img.body(img)
-
 
 # THE EXECUTION. Upstream's steps 3-7 (`ops_cpu.py:29-46`) and `__call__`
 # (`:51, :61`).

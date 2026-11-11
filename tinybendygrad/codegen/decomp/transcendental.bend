@@ -151,7 +151,6 @@ import ./../../helpers.bend as H
 import ./../../LAWS/spec.bend as S
 import ./../../uop/ops.bend as O
 
-
 # THE NODE BUILDERS. `mixin/elementwise.py` IS NOT PORTED, so every operator
 # below is the RAW `alu`, and decomp.bend's divergence B applies here too: `x - y`
 # is `ADD(x, MUL(y, C(-1)))` and this file writes `-` in three places and never a
@@ -268,7 +267,6 @@ def tx_shl(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
   +c = tx_pow2(ar, y)
   tx_alu2(O.Found.ar(c), O.OpsMUL{}, x, O.Found.i(c))
 
-
 # `dtypes.finfo` -- tinygrad/dtype.py:114, `(exponent, mantissa)`. A TABLE, not a
 # formula; header note 5. `Dt.pri` is the discriminant and it is unique per
 # dtype, so one `match` on the binder reads the whole table.
@@ -360,7 +358,6 @@ def tx_f16(dt: S.Dt) -> Bool:
 def tx_d64(dt: S.Dt) -> Bool:
   match dt:
     case S.Dt{pri, bits, cls, nm}: U32.is_eq(pri, 15)
-
 
 # THE BIT TRICKS. `rintk` -- lines 22-25. The output dtype is the int width of
 # the same name, and `d.const_like(-0.5)` is a CONST of `d`'s dtype: the port has
@@ -560,7 +557,6 @@ def tx_cast_same.go(+ar: O.Arena, +x: U32, +dt: S.Dt, same: Bool) -> O.Found:
 def tx_cast_same(+ar: O.Arena, +x: U32, +dt: S.Dt, same: Bool) -> O.Found:
   tx_cast_same.go(ar, x, dt, same)
 
-
 # THE COEFFICIENTS. Python writes them as Python floats and tinygrad truncates to
 # the operand's dtype (`dtype.py:84`), so a coefficient is an F32 bit pattern and
 # this file's floats ARE F32: `a_sp12` is `cf909052551` and it is the row. The
@@ -603,7 +599,6 @@ def LOG264() -> List<&2, F32>:
   [0.2211941750456081490, 0.2200768693152277689, 0.2623708057488514656,
    0.3205977477944495502, 0.4121985945485324709, 0.5770780162997058982,
    0.96179669392608091449]
-
 
 # `polyN` -- helpers.py:153, `functools.reduce(lambda acc,c: acc*x+c, p, 0.0)`.
 # The seed is the PYTHON FLOAT `0.0`, so the first step is a real
@@ -652,7 +647,6 @@ def trig_poly(+ar: O.Arena, +d: U32, cs: List<&2, F32>) -> O.Found:
 def sin_poly(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
   trig_poly(ar, d, trig_coeffs(d64))
 
-
 # `_ifand` -- line 158, `(q & n).ne(0)`. `uprod` with a bool `self` would be an
 # OR, so `q` MUST be an int for this to be an `AND`; that is the whole reason the
 # line exists.
@@ -694,7 +688,6 @@ def sin_poly_large(+ar: O.Arena, +d: U32, +q: U32, +d64: Bool) -> O.Found:
   +ph = tx_cf(O.Found.ar(nm), 1.0)
   +w2 = tx_alu3(O.Found.ar(ph), O.OpsWHERE{}, O.Found.i(c2), O.Found.i(nm), O.Found.i(ph))
   tx_alu2(O.Found.ar(w2), O.OpsMUL{}, O.Found.i(r), O.Found.i(w2))
-
 
 # `payne_hanek_reduction` -- lines 66-113. the biggest single piece in the file
 # AND IT IS ALL 32-BIT GRAPH CONSTRUCTION: see the header's i64 note. It returns
@@ -954,13 +947,10 @@ def payne_hanek_reduction(+ar: O.Arena, +d: U32, +dt: S.Dt, +same: Bool,
   +p = ph_p(O.Found.ar(lo), ia, hi, mi, lo)
   ph_qr(O.Found.ar(p), O.Found.i(p), f, inter, same, dt)
 
-
 # `cody_waite_reduction` -- lines 115-147. The float64 arm of `_reduce_d` is
 # `qdh * -PI_A + x`, ... , `(qdh + q) * -PI_D + d`, and the float32 arm is the
 # SLEEF four-term chain; header note 2 says why they are two defs and not a
 # self-call.
-
-
 
 # LAST addend is `(qdh + q) * -PI_D`, i.e. the quadrant sum is formed ONCE.
 def tx_cw32.rest3(+ar: O.Arena, +q: U32, +s: O.Found) -> O.Found:
@@ -984,8 +974,6 @@ def tx_cw32.chain(+ar: O.Arena, +x: U32, +q: U32) -> O.Found:
   +d = tx_alu2(O.Found.ar(a), O.OpsMUL{}, q, O.Found.i(a))
   +s = tx_alu2(O.Found.ar(d), O.OpsADD{}, O.Found.i(d), x)
   tx_cw32.rest(O.Found.ar(s), q, s)
-
-
 
 # `qdh = (d * (m_1_pi / 2.0**24)).cast(dtypes.i64).cast(d.dtype) * (2.0**24)`
 # -- line 145. BUILT UNCONDITIONALLY AND DEAD FOR float32/float16; header note 4.
@@ -1058,9 +1046,6 @@ def tx_cw64.chain(+ar: O.Arena, +x: U32, +q: U32, +qdh: U32) -> O.Found:
   +b = tx_alu2(O.Found.ar(s), O.OpsMUL{}, q, O.Found.i(a))
   tx_cw64.rest(O.Found.ar(b), x, q, qdh, s)
 
-
-
-
 # `x.dtype == dtypes.f16` -- line 126 -- is the ONLY ARM OF `_reduce_d` THAT
 # RECURSES: `d = _reduce_d(x.cast(dtypes.f32), q.cast(dtypes.f32)).cast(
 # dtypes.f16)`. It is reached from the TOP-LEVEL call and not from the float32
@@ -1124,7 +1109,6 @@ def tx_inf() -> F32: F32.div(1.0, 0.0)
 def tx_ninf() -> F32: F32.neg(tx_inf())
 def tx_nan() -> F32: F32.div(0.0, 0.0)
 
-
 # `_lazy_map_numbers` -- lines 9-11, `replace inf -> inf, -inf -> _inf,
 # nan -> nan, otherwise -> ratio`. The three WHEREs NEST OUT-IN, so the
 # innermost `x.ne(-inf).where(ratio, _inf)` is the FIRST node after the three
@@ -1160,7 +1144,6 @@ def xsin.sign(+ar: O.Arena, +x: U32) -> O.Found:
   +ph = tx_cf(O.Found.ar(nm), 1.0)
   +w1 = tx_alu3(O.Found.ar(ph), O.OpsWHERE{}, O.Found.i(lt), O.Found.i(nm), O.Found.i(ph))
   tx_alu3(O.Found.ar(w1), O.OpsWHERE{}, O.Found.i(n1), O.Found.i(w1), O.Found.i(z))
-
 
 # `xsin` -- lines 170-191. `fast` and `switch_over` are PARAMETERS because they
 # are PARAMETERS in Python (`fast:bool=False, switch_over:float=30.0`), and
@@ -1224,7 +1207,6 @@ def exp_coeffs(d64: Bool) -> List<&2, F32>:
     case True{}: EXP264()
     case False{}: EXP232()
 
-
 # `xexp2` -- lines 193-217. Paper https://arxiv.org/pdf/2001.09258.
 
 def xexp2.tail.nan(+ar: O.Arena, +u: U32, +d: U32) -> O.Found:
@@ -1267,10 +1249,6 @@ def xexp2(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
 # re-mints it to a float CONST and both are slots; `a_xexp2 62` and `a_xexp2 68`
 # are the two rows and `tx_pintf` cannot express the SIGN, so the one negative
 # literal is written out here.
-
-
-
-
 
 # `xlog2` -- lines 219-255. Paper https://arxiv.org/pdf/2001.09258 5.5. ONE
 # LINEAR DEF: the function is a straight-line chain of 33 steps and Bend's only
@@ -1327,8 +1305,6 @@ def xlog2.slo(+ar: O.Arena, +x: U32, +r2: U32, +sl: U32, +d: U32, +lt: O.Found) 
 
 # Lines 247-255: the four special-case WHEREs and then the `-0.0` reciprocal test.
 # `d.reciprocal()` is a RECIP NODE and not a division: `a_xlog2 76` is the row.
-
-
 
 def xlog2.head(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
   +fm = tx_cf(ar, 0.0001)
@@ -1482,7 +1458,6 @@ def xpow(+ar: O.Arena, +base: U32, +ex: U32, +edt: S.Dt) -> O.Found:
   +nb = xpow.negbase(fp, base)
   xpow.tail(fp, nb, base, ex)
 
-
 # `get_transcendental_patterns` -- lines 267-277. `ops` AND
 # `force_transcendental` ARE PARAMETERS: `codegen/__init__.py:360` calls it as
 # `get_transcendental_patterns(supported_ops, TRANSCENDENTAL >= 2)`, so `force`
@@ -1576,7 +1551,6 @@ def tx_t_apply(+op: O.Op, +ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
     case O.OpsSIN{}: xsin(ar, d, dt, tx_d64(dt), False{}, 30.0)
     case _: tx_t_apply.sqrt(ar, d, dt)
 
-
 # the fixture. one arena, addressed by INDEX, and it is rebuilt fresh for every
 # window: `tx_win` drops every node the expansion added and hands back the nine
 # fixture slots, so a node that leaks between two expansions moves a row instead
@@ -1610,7 +1584,6 @@ def t_fixtures() -> O.Arena:
   O.Found.ar(c2f)
 
 def t_nfix() -> U32: 9
-
 
 # THE ROWS. A node prints as `<idx>,<OP>,<arg>,<src>,<src>...` and the whole
 # window as one string, so a dropped leaf and a rewired src both move a line and
@@ -1705,7 +1678,6 @@ def tx_win(+tag: String, +ar: O.Arena) -> String:
 # the row that cannot be satisfied by a boolean: a rule that builds the right
 # shape with the wrong number of pieces passes every `a_` row it does not touch.
 def tx_n(+ar: O.Arena) -> U32: O.Arena.next(ar)
-
 
 # THE WINDOWS. Each is `t_fixtures()` and then ONE expansion, so the window is
 # self-contained and a node that leaks from the previous expansion shows up as a
@@ -1931,7 +1903,6 @@ def tx_tab_head.go(+nm: String, +t: O.PMEntrys, +n: U32) -> String:
 def tx_tab_head(+nm: String, +t: O.PMEntrys) -> String:
   tx_tab_head.go(nm, t, tx_tab.n(t))
 
-
 def gate() -> IO(Unit):
   do IO<Unit>:
     row("mt_f16", mantissa_bits(S.half()))
@@ -1990,7 +1961,6 @@ def gate() -> IO(Unit):
 
 def main() -> IO(Unit):
   gate()
-
 
 # THE MUTATION TABLE. MEASURED, one hand edit at a time, by
 # `.agents/slop/tools/tx-mut.py` -- which re-checks the file, runs the

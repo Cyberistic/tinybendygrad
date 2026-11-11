@@ -66,7 +66,6 @@
 # inert. Reported, not fixed: `helpers.py` is READ-ONLY here.
 import Base
 
-
 # SECTION 0 -- PRIMITIVES. `+` on a `Data` is a refcount (rule 1.1), a `U32` is
 # affine, and `Maybe<&2, T>` demands a `+` payload -- so a decision about a `Maybe` is
 # always a `Bool` handed to a def, never a field in a `match` scrutinee
@@ -98,7 +97,6 @@ def eq_mstr.go(l: Maybe<&2, String>, r: Maybe<&2, String>) -> Bool:
 
 def eq_mstr(l: Maybe<&2, String>, r: Maybe<&2, String>) -> Bool:
   eq_mstr.go(l, r)
-
 
 # section 1 -- what a worker is: a `Data` record of a tag plus arguments. See the
 # header for why the callable is a tag and not a function value.
@@ -205,7 +203,6 @@ def maxtasks_default() -> U32:
 
 def pool_init_name() -> String:
   "_init_worker"
-
 
 # section 2 -- the ported functions, in python order.
 #
@@ -449,7 +446,6 @@ def m_absent() -> Mod:
 def m_both() -> Mod:
   Mod{"__main__", Some{"/tmp/o.py"}, Some{"<module>"}}
 
-
 # `repr(getattr(main, name, _missing))` as a row value: the value when it is there and
 # the literal `None` Python would have stored. Leaf first (rule 1 / rule 10.4), then the
 # `Bool` choice, then the bare name.
@@ -601,7 +597,6 @@ def main() -> IO(Unit):
     wrow_b("eq_mstr_both", eq_mstr(Some{"a"}, Some{"a"}))
     wrow_b("eq_mstr_one", eq_mstr(Some{"a"}, None{}))
     wrow_b("eq_mstr_neither", eq_mstr(None{}, None{}))
-
 
 # THE MEASURED MUTATION TABLE. Reproduce with
 #     .venv/bin/python gates/worker-mutate.py worker

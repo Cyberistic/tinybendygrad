@@ -143,7 +143,6 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # hangs and the file stops printing at the row before it), and the separator is
 # a fixture choice, not a ported decision: `str.replace` never looks at it.
 
-
 # `helpers.colored`. `colors.index(color.lower())` is the position in
 # `['black','red','green','yellow','blue','magenta','cyan','white']`, and
 # `60*(color.upper() == color)` adds 60 for an UPPER-case name -- so
@@ -181,7 +180,6 @@ def colored(+st: String, +color: String, +bg: Bool, +nocolor: Bool) -> String:
 
 def colored.none() -> String: ""
 
-
 # `pretty_ptx`'s six patterns, VERBATIM from upstream. They are transcribed
 # here as literals and the gate compares them against `ast`-extracted text from
 # `tinygrad/runtime/support/compiler_cuda.py`, so a typo here moves a row.
@@ -197,7 +195,6 @@ def pretty_ptx.pat5() -> String: "(\\.)(version|target|address_size|visible|entr
 
 def pretty_ptx.pat_n() -> U32: 6
 
-
 # :8-9  `root = pathlib.Path(__file__).parents[3]` and the docker command. The
 # root is passed to docker TWICE -- once as the `-v` mount and once as
 # `PYTHONPATH` -- so the row is the whole string and a dropped field moves it.
@@ -210,7 +207,6 @@ def osx_docker_cmd() -> String:
     "ghcr.io/tinygrad/cuda-arm64:v2.3"], " ")
 
 def osx_docker_cmd_n() -> U32: 11
-
 
 # :11-14  `_get_bytes(arg, get_str, get_sz, check)`: the SIZE is read FIRST to
 # size a buffer, then the buffer is filled -- so there are exactly TWO calls, in
@@ -226,7 +222,6 @@ def _get_bytes.calls_name(+ptx: Bool) -> String:
 def _get_bytes.pick(+ptx: Bool) -> U32: Bool.to_u32(ptx)
 
 def _get_bytes.zero() -> U32: 0
-
 
 # :16-24  the two `check`s. They differ in the SECOND half of the message:
 # `nvrtcCheck` reads a C string out of the library (`ctypes.string_at(...).decode()`)
@@ -258,7 +253,6 @@ def jitlink_check.msg(+status: U32) -> String:
 def jitlink_check.kind() -> String: "CompileError"
 
 def jitlink_check.result_n() -> U32: 7
-
 
 # :38-44  `cuda_disassemble`. The digest is WALL 3, so it is a PARAMETER; what
 # is ported is the `tinycuda_` PREFIX, the two command strings, the `try`
@@ -313,7 +307,6 @@ def rst.bs(+bs: List<&2, U32>) -> List<&2, U32>: rst.go(bs, [])
 # `rst.go`'s non-zero arm keeps the head -- so the subtraction counted the head
 # twice and every fixture moved.
 def zr.n(+bs: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, rst.bs(bs)))
-
 
 # :46-54  `NVRTCCompiler.__init__`. `--gpu-architecture=<arch>` first, then
 # EITHER one include (when `CUDA_PATH` is set) OR three fixed ones, and then
@@ -398,7 +391,6 @@ def to_char_p_p_n(+n: U32) -> U32: n
 
 def NVRTCCompiler.name() -> String: "<null>"
 
-
 # :65-76  `NVCCCompiler`. `mode, suffix = ("-ptx", ".ptx") if ptx else
 # ("-cubin", ".cubin")` is ONE ternary feeding TWO values, and the cache key has
 # a ternary INSIDE the f-string: `f"compile_nvcc_{cache_key+'ptx' if ptx else
@@ -434,7 +426,6 @@ def NVCCCompiler.dis_row(+arch: String, +ptx: Bool) -> String:
     String.concat(["cuda_disassemble(", arch, ", ptx=True)"]),
     String.concat(["cuda_disassemble(", arch, ", ptx=False)"]))
 
-
 # :78-84  `PTXCompiler`. `src.replace("TARGET", self.arch).replace("VERSION",
 # ...)` is TWO replaces IN ORDER, and the version is
 # `"8.7" if (ver := int(self.arch[3:])) >= 120 else ("7.8" if ver >= 89 else
@@ -467,7 +458,6 @@ def PTXCompiler.ver_ok(+arch: String) -> Bool: Bool.not(List.is_empty(&2, String
 # `str.replace(find, repl)`, EVERY occurrence, in order
 def rp.drop(+cs: List<&2, Char>, +n: Nat) -> List<&2, Char>: List.drop(&2, Char, cs, n)
 
-
 def hc(+cs: List<&2, Char>) -> Char: Maybe.default(&2, Char, List.head(&2, Char, cs), ' ')
 
 def rp.at(+cs: List<&2, Char>, +find: List<&2, Char>) -> Bool:
@@ -496,7 +486,6 @@ def PTXCompiler.compile(+src: String, +arch: String) -> String:
 
 def PTXCompiler.dis_row(+arch: String) -> String:
   String.concat(["cuda_disassemble(", arch, ", ptx=True)"])
-
 
 # :86-99  `NVPTXCompiler`. `cache_key="nv_ptx"`, so the key is
 # `compile_nv_ptx_<arch>`, and `compile` makes SIX jitlink calls whose third
@@ -559,7 +548,6 @@ def P_BYTES4() -> List<&2, U32>: []
 # the `PTXCompiler.compile` fixture: one `VERSION` and two `TARGET`s, so a
 # replace-one instead of a replace-all shows
 def P_SRC() -> String: String.join([".version TARGET", ".version VERSION", ".target TARGET"], ";")
-
 
 # THE GATE. Every `cu_` row is a row of `.agents/slop/ext_oracle.py` section
 # `cu`, which calls the real module with only `nvrtc`/`nvjitlink` replaced by

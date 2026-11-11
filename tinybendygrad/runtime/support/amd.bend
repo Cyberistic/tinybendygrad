@@ -99,7 +99,6 @@
 #   TODO(p3) amd.py:37 -- `raise ImportError(...)`.
 import Base
 
-
 # `helpers.getbits(value, start, end)` is
 # `(value >> start) & ((1 << (end - start + 1)) - 1)`.
 #
@@ -130,7 +129,6 @@ def hd(+xs: List<&2, U32>) -> U32: Maybe.default(&2, U32, List.head(&2, U32, xs)
 
 def tl(+xs: List<&2, U32>) -> List<&2, U32>: List.tail(&2, U32, xs)
 
-
 # `AMDReg.encode(kwargs)`: `functools.reduce(int.__or__, (value <<
 # fields[name][0] for name, value in kwargs.items()), 0)`. The fold is over the
 # KWARGUMENT ORDER, which Python preserves, so two OVERLAPPING fields would
@@ -146,7 +144,6 @@ def enc.go(+vals: List<&2, U32>, +starts: List<&2, U32>, +acc: U32) -> U32:
         case +s <> ss: enc.go(vs, ss, U32.or(acc, U32.shln(v, U32.to_nat(s))))
 
 def AMDReg.encode(+vals: List<&2, U32>, +starts: List<&2, U32>) -> U32: enc.go(vals, starts, 0)
-
 
 # `AMDReg.decode(val)`: `{name: getbits(val, start, end) for ...}`, joined in
 # FIELD ORDER. Four parallel lists rather than a record: the table is data, and
@@ -167,7 +164,6 @@ def dec.go(+names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32
 
 def AMDReg.decode(+val: U32, +names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32>) -> String:
   String.join(dec.go(names, starts, ends, val, []), ",")
-
 
 # `AMDReg.fields_mask(*names)`: `reduce(int.__or__, ((((1 << (hi - lo + 1)) - 1)
 # << lo) for nm in names), 0)`. The NAME selection is `self.fields[nm]`, a dict
@@ -201,7 +197,6 @@ def fld.go(+names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32
 # the field table as `name:start-end,...` -- the shape a wrong range changes
 def AMDReg.fields(+names: List<&2, String>, +starts: List<&2, U32>, +ends: List<&2, U32>) -> String:
   String.join(fld.go(names, starts, ends, []), ",")
-
 
 # `__post_init__`. `AMDReg.addr` is `instance_tuple[segment] + offset` -- the
 # comprehension's loop variable shadowing the field -- so it takes the instance
@@ -339,7 +334,6 @@ def AMDIP.ga(+found_direct: Bool, +found_rewrite: Bool) -> U32:
 
 def AMDIP.ga_err(+ipname: String, +query: String) -> String:
   String.concat(["AttributeError: ", String.to_upper(ipname), " has no register ", query])
-
 
 # `import_module`. Three conjuncts, and the second is a TUPLE comparison against
 # a variable-length tuple -- so `gc_9` (v=(9,)) is `<=` (9,4,3) while `gc_10` is
@@ -480,7 +474,6 @@ def SRT.greatest(+xs: List<&2, String>) -> String: SRT.go(xs, "")
 # `children[-1]` answer `gc_9_4_2`. The real 28-entry list is WALL 1.
 def FAKE_ALL() -> List<&2, String>:
   ["gc_9_4_3", "gc_9_0_0", "gc_11_0_0", "gc_9_4_2", "gc_9_4_3_1", "gfx_9_4_3"]
-
 
 # THE GATE. Every `amd_` row is a row of `.agents/slop/ext_oracle.py` section
 # `am`, which calls the real `amd.py` against the real autogen package.

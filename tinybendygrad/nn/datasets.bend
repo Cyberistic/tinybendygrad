@@ -115,7 +115,6 @@
 import Base
 import ./../helpers.bend as H
 
-
 # :5 -- `base_url`. A Bool in, a String out, and this is the only branch in the
 # file. The two spellings are verbatim: HTTP for fashion, HTTPS for mnist.
 
@@ -128,7 +127,6 @@ def mn_base_url(fashion: Bool) -> String:
 # The `+` is a concatenation of two Strings and nothing else; the call is WALL 1.
 def mn_url(fashion: Bool, file: String) -> String:
   String.concat([mn_base_url(fashion), file])
-
 
 # THE FOUR MEMBERS, in the order :7 hands them to the returned tuple.
 
@@ -161,7 +159,6 @@ def Shape.rest(s: Shape) -> List<&2, U32>:
 def shape_bytes(s: Shape) -> U32: H.prod_u32(Shape.rest(s))
 
 def MN_IMG() -> Shape: Shape{True{}, [1, 28, 28]}
-
 
 # ONE DOWNLOAD, as the five facts the header arithmetic needs: which member it
 # is, which file, how many bytes the skip takes off it, how many bytes it is in
@@ -256,7 +253,6 @@ def dst_mn_n() -> U32: U32.from_nat(List.length(&2, Ds, mn_entries()))
 def E_SKIP8() -> Ds:
   Ds{"train_images", IMAGES_TRAIN(), SKIP_IDX1(), 47040016, 784}
 
-
 # THE PRINTING, which is the gate's own machinery. `ush` APPENDS and
 # `String.join` is HEAD-FIRST, so the numbers come out in walk order with no
 # trailing separator -- the recorded rule, and the shape `ustate`/`ucreate` use.
@@ -277,7 +273,6 @@ def ujoin(xs: List<&2, U32>) -> String: String.join(ush(xs, Nil{}), ",")
 def shape_str(+s: Shape) -> String:
   Bool.pick(String, Shape.infer(s), String.concat(["-1,", ujoin(Shape.rest(s))]),
             ujoin(Shape.rest(s)))
-
 
 # CIFAR, :11-14.
 
@@ -320,7 +315,6 @@ def cifar_test_bytes() -> U32: U32.mul(CIFAR_TEST_ROWS(), CIFAR_ROW())
 
 def dst_cifar_rows() -> U32: U32.div(cifar_train_bytes(), CIFAR_ROW())
 def dst_cifar_test_rows() -> U32: U32.div(cifar_test_bytes(), CIFAR_ROW())
-
 
 # THE GATE. Every expectation comes from `datasets.py`'s own text or from the
 # published file sizes, and the numeric rows PRINT their value, so a wrong one is
@@ -422,7 +416,6 @@ def t_cifar() -> IO(Unit):
     row("dst_cifar_image_named", U32.is_eq(shape_bytes(CF_IMG()),
                                            CIFAR_IMAGE_BYTES()))
 
-
 # the `.npy` path -- mnist without the socket.
 #
 # WHAT THIS IS. A SECOND ROUTE to the same four tensors, one that does not go
@@ -469,7 +462,6 @@ def t_cifar() -> IO(Unit):
 # two routes read different bytes -- the IDX files carry a 16- or 8-byte header
 # and the `.npy` files carry a 118-byte one -- and the SAME payload after it,
 # which is why the two payloads agree and the two file sizes do not.
-
 
 # the `.npy` header's three fixed parts and the one field that is not fixed.
 def NPY_MAGIC() -> U32: 6
@@ -622,7 +614,6 @@ def main() -> IO(Unit):
     c : Unit <- t_cifar()
     d : Unit <- t_npy()
     IO.print("dst-done=1")
-
 
 # THE MUTATION TABLE. MEASURED by `.venv/bin/python gates/datasets-mutate.py`, which
 # applies each edit in place, runs the interpreted lane and diffs the baseline.

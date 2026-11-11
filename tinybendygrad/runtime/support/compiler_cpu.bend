@@ -108,7 +108,6 @@
 #   TODO(p3) device.py:324  symbol=__init__ -- `cachekey if CCACHE else None`.
 import Base
 
-
 # :7  the assert. `len(arch) >= 2`, and the message interpolates
 # `','.join(arch)!r` -- a Python REPR, so a one-element list prints with quotes.
 # MEASURED: `['x86_64']` -> `invalid arch string: 'x86_64', ...` and `[]` ->
@@ -120,7 +119,6 @@ def ClangCompiler.min_n() -> U32: 2
 
 def ClangCompiler.msg(+arch: List<&2, String>) -> String:
   String.concat(["invalid arch string: '", String.join(arch, ","), "', expected '<arch>,<cpu>,[<feats>]' (eg. 'x86_64,znver2')"])
-
 
 # :8  `self.arch, cpu, *feats = arch`. The unpack fails on a SHORT list, which
 # is what the assert above refuses first, so the three readers are total and the
@@ -146,7 +144,6 @@ def ClangCompiler.feats(+xs: List<&2, String>) -> String: String.join(ClangCompi
 
 def ClangCompiler.feats_n(+xs: List<&2, String>) -> U32: U32.from_nat(List.length(&2, String, ClangCompiler.feats_tail(xs)))
 
-
 # :10  the x86_64 feature flag: `f"-mno{f}" if f.startswith("-") else f"-m{f}"`.
 # The `-mno` arm KEEPS the `-` -- that is upstream, not a typo, and
 # `cpu.x86_64f.args` is the row. The empty string takes the else arm and becomes
@@ -163,7 +160,6 @@ def xf.go(+xs: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
 
 def ClangCompiler.x86_args(+cpu: String, +feats: List<&2, String>) -> List<&2, String>:
   List.append(&2, String, [String.concat(["-march=", cpu])], xf.go(feats, []))
-
 
 # :13  the arm64 feature: `"no" + f[1:] if f.startswith("-") else f`. The `-` is
 # CONSUMED here, unlike the x86 arm, and the join is `+` rather than `_`, which
@@ -186,7 +182,6 @@ def ClangCompiler.arm64_args(+cpu: String, +feats: List<&2, String>) -> List<&2,
 # context switch in macos and holds the TEB pointer on windows/arm
 def ClangCompiler.arm64_fixed() -> String: "-ffixed-x18"
 
-
 # :14  riscv64. `native` becomes `rv64g` and the features are joined RAW -- no
 # `-m`, no `+` -- so `native` + `+zba` is `rv64g_+zba`.
 
@@ -196,7 +191,6 @@ def ClangCompiler.riscv64_cpu(+cpu: String) -> String:
 def ClangCompiler.riscv64_args(+cpu: String, +feats: List<&2, String>) -> List<&2, String>:
   [String.concat(["-march=", String.join(
     List.append(&2, String, [ClangCompiler.riscv64_cpu(cpu)], feats), "_")])]
-
 
 # :9-15  the three-arm dispatch. The arms are decided by STRING EQUALITY, and
 # the order of the tests is the order of the `case` arms, so `ClangCompiler.args`
@@ -235,7 +229,6 @@ def ClangCompiler.arm_n(+arch: List<&2, String>) -> U32:
   Bool.pick(U32, ClangCompiler.is_riscv(ClangCompiler.arch_of(arch)), 1,
     Bool.pick(U32, ClangCompiler.is_arm(ClangCompiler.arch_of(arch)), 2, 1))
 
-
 # :16  `super().__init__(f"{cachekey}_{'_'.join(arch)}")`. The default cachekey
 # is the literal `compile_clang_obj`, and the arch list is joined with `_` -- so
 # a feature `-sse` contributes `-sse` and the key contains a `-`.
@@ -244,7 +237,6 @@ def ClangCompiler.cachekey_default() -> String: "compile_clang_obj"
 
 def ClangCompiler.key(+cachekey: String, +arch: List<&2, String>) -> String:
   String.concat([cachekey, "_", String.join(arch, "_")])
-
 
 # :21-22  the spawn's argv. `getenv("CC", 'clang')` is WALL 3 and is therefore
 # the FIRST ELEMENT and a parameter. The order is load bearing: the target
@@ -276,13 +268,11 @@ def ClangCompiler.compile_argv(+cc: String, +arch: List<&2, String>) -> List<&2,
 # the first version did and `cpu.riscv64.argv_n` answered 17 instead of 15.
 def ClangCompiler.argv_n(+arch: List<&2, String>) -> U32: U32.add(14, ClangCompiler.args_n(arch))
 
-
 # :24  `cpu_objdump(lib)`. The artifact is a byte blob (WALL 2), so the row
 # carries the CALL and its arch, which is all the port knows.
 
 def ClangCompiler.dis_row(+arch: List<&2, String>) -> String:
   String.concat(["cpu_objdump(", ClangCompiler.arch_of(arch), ")"])
-
 
 # :28-30  X86Compiler. `super().__init__(None)` makes the cachekey None
 # unconditionally -- there is no key -- and `bytes.fromhex(src)` is WALL 1.
@@ -398,7 +388,6 @@ def H5() -> String: "7f454c4"
 def H6() -> String: "zz"
 def H7() -> String: "7f-45"
 def H8() -> String: "7f.45"
-
 
 # THE GATE. Every `cpu_` row is a row of `.agents/slop/ext_oracle.py` section
 # `cpu`, which calls the real `ClangCompiler.__init__`, the real `compile` with

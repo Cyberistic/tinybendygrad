@@ -177,14 +177,12 @@
 import Base
 import ../helpers.bend as H
 
-
 # THE CONSTANTS. Every one is `getattr(mesa|kgsl, NAME)` MEASURED by the
 # oracle's `refs`, which walks the AST of ops_qcom.py and reports the value of
 # every `mesa.X` / `kgsl.X` attribute the file actually reads. Sixty-two of
 # them, and they are named WITHOUT a module prefix because the two C
 # namespaces do not collide -- the oracle asserts that, so a future collision
 # is an oracle failure rather than a silent shadow.
-
 
 # --- the packet-type tags, :49 and :51 -------------------------------------
 def CP_TYPE7_PKT() -> U32: 1879048192
@@ -304,7 +302,6 @@ def qreg_name_at(ix: U32) -> String: qreg_name_of(List.get(&2, String, qregs(), 
 
 def qreg_mesa_at(ix: U32) -> String: mesa_of(qreg_name_at(ix))
 
-
 # THE FIELD TABLE. `_qreg_exec`'s second half, and this is where the whole
 # subtlety lives:
 #
@@ -323,7 +320,6 @@ def qreg_mesa_at(ix: U32) -> String: mesa_of(qreg_name_at(ix))
 # the row so the gate can diff it against CPython, because a wrong `nm` with a
 # right `v` still produces a right-looking u32 in the port and a wrong one on
 # the device.
-
 
 type Qf is Data:
   Qf{r: String, f: String, nm: String, v: U32, isb: Bool}
@@ -511,7 +507,6 @@ def parity.bit(+v: U32) -> U32: U32.and(U32.shrn(PARITY_XOR(), U32.to_nat(U32.an
 
 def parity(+v: U32) -> U32: parity.bit(parity.folded(v))
 
-
 # ops_qcom.py:49 and :51 -- THE PACKET HEADERS.
 #
 #     pkt7_hdr(opcode, cnt) = CP_TYPE7_PKT | cnt & 0x3FFF | parity(cnt) << 15
@@ -526,7 +521,6 @@ def parity(+v: U32) -> U32: parity.bit(parity.folded(v))
 # (0x40000000) are already in the HIGH bit, and `parity << 23` / `<< 27` sit
 # above them -- so these are genuinely u32 and not i32, which is why the port
 # can hold them at all. `qc_pkt7_*` and `qc_pkt4_*` are diffed against CPython.
-
 
 def PKT7_CNT_MASK() -> U32: 16383
 def PKT7_OP_MASK() -> U32: 127
@@ -545,7 +539,6 @@ def pkt4_hdr(+reg: U32, +cnt: U32) -> U32:
          U32.shln(U32.and(reg, PKT4_REG_MASK()), 8n)),
          U32.shln(parity(reg), 27n))
 
-
 # ops_qcom.py:57 and :59 -- THE COUNT OF A `cmd`/`reg`.
 #
 #     self.q(pkt7_hdr(opcode, sum(x.dtype.itemsize // 4 if isinstance(x, UOp)
@@ -555,7 +548,6 @@ def pkt4_hdr(+reg: U32, +cnt: U32) -> U32:
 # and the header's count is the sum. `qwords` is that sum over the two kinds,
 # and it is the second half of what makes a cmd header correct -- `qc_qwords_*`
 # is the row that says a `dtypes.u32` buffer is ONE word and not zero.
-
 
 def ITEMSIZE_TO_WORDS() -> U32: 4
 
@@ -669,7 +661,6 @@ def FLAG_CACHEMODE() -> String: "KGSL_CACHEMODE"
 # term counts `ibo_cnt` while the NIR branch's counts `tex_cnt`. The
 # `samp_off` agrees by reordering. `qc_off_swapped` is the row that says so: it
 # is the only way to notice a port that reads the two branches as one rule.
-
 
 # --- the fixed offsets ops_qcom.py reads out of the blob, with Python lines ---
 def OFF_REG_DESC() -> U32: 52       # 0x34, :282
@@ -842,7 +833,6 @@ def desc.count(n: Nat, +want: U32, bs: List<&2, Bi>, +acc: U32) -> U32:
 def desc.count.of(want: U32, +bs: List<&2, Bi>) -> U32:
   desc.count(List.length(&2, Bi, bs), want, bs, 0)
 
-
 # THE CONSTANT WALK, :274-279. A DIFFERENT bound: `cdoff + 40 <= image_offset`,
 # where `image_offset` is a field of the blob and NOT `len(lib)`. A port that
 # reaches for the list length here walks off the end, and one that uses the
@@ -855,7 +845,6 @@ def desc.count.of(want: U32, +bs: List<&2, Bi>) -> U32:
 # `is32` is a FLAG and `sz_bytes := 2 << is32` is 2 or 4 -- so a constant is
 # either a u16 pair or a u32, and the offset is in BYTES. `qc_const_stride` and
 # `qc_const_sz` are the two rows.
-
 
 # `bound` is the U32 the constant walk is bounded BY -- `image_offset`, not
 # `len(lib)`. It is a FIELD because :276 reads it out of the blob and the walk
@@ -1028,7 +1017,6 @@ def pd.parse_full(+bs: List<&2, U32>, +name_len: U32) -> Pd:
 # is a question with an answer, and `qc_ck_nobuild_after_hit` reads the trace
 # rather than the cache's own flag.
 
-
 def CALL_PARSE() -> U32: 0     # QCOMProgramData(dev, prg.to_elf())   :288
 def CALL_PATCH() -> U32: 1      # patch(buf, [], image)                :291
 def CALL_HIT() -> U32: 2        # the walrus found the key              :287
@@ -1079,12 +1067,10 @@ def Tr.args.go(n: Nat, +k: U32, cs: List<&2, Call>, +acc: List<&2, U32>) -> List
         case Nil{}: acc
         case Call{kk, aa} <> t: Tr.args.go(m, k, t, Tr.args.put(Call{kk, aa}, k, acc))
 
-
 # THE CACHE KEY. `Ck` is the tuple `(prg.src[3].arg, devs)` and the equality is
 # PAIRWISE, because that is what a tuple's `==` is and because `devs` is a LIST
 # -- so two keys with the same hash element and a different device set are
 # different keys, and a string-joined key would quietly merge them.
-
 
 type Ck is Data:
   Ck{hash: U32, ndevs: U32, devs: List<&2, U32>}
@@ -1143,12 +1129,10 @@ def ce.find.go(n: Nat, +at: Nat, +want: Ck, es: List<&2, Ce>, +acc: U32) -> U32:
 def ce.find(want: Ck, +es: List<&2, Ce>) -> U32:
   ce.find.go(List.length(&2, Ce, es), 0n, want, es, NO_ENTRY())
 
-
 # `qcom_build_program`. THE three calls on the miss path, IN python'S order,
 # and NONE of them on the hit path. `qc_ck_order` is the row that reads the
 # trace; `qc_ck_nbuild` counts PARSE and `qc_ck_npatch` counts PATCH, and the
 # pair is what says the miss path ran exactly once.
-
 
 # :289 `image = bytes(data.image).ljust(round_up(len(data.image), 4), b"\x00")`.
 # The image is padded to a multiple of FOUR with ZEROES, and the buffer's length
@@ -1245,7 +1229,6 @@ def CALL_READTS() -> U32: 13     # IOCTL_..._READTIMESTAMP_CTXTID    :383
 def CALL_WAITTS() -> U32: 14     # IOCTL_..._WAITTIMESTAMP_CTXTID    :385
 def CALL_SYSFS() -> U32: 15      # System.write_sysfs                :335
 
-
 # THE cache flush, :61-70. FOUR independent conditionals and one def, because
 # `memory_barrier` (:70) is `self._cache_flush(True, True, True, True)` and
 # `exec` (:192) is `self._cache_flush(True, False, False, False)`. So the two
@@ -1260,7 +1243,6 @@ def CALL_SYSFS() -> U32: 15      # System.write_sysfs                :335
 # THE order is not the parameter order: Python tests write_back, invalidate,
 # sync, memsync and issues memsync BEFORE sync. `flush.go` is a fold over the
 # four flags in ISSUE order and `qc_flush_order_*` reads the result.
-
 
 def FLUSH_WRITE_BACK() -> U32: 0
 def FLUSH_INVALIDATE() -> U32: 1
@@ -1316,11 +1298,9 @@ def ISSUE_AT() -> List<&2, U32>: [0, 1, 2, 3]
 def flush.of(+flags: List<&2, Bool>, +t: Tr) -> Tr:
   flush.go(List.length(&2, Bool, flags), flags, ISSUE_AT(), t)
 
-
 # `cmd` AND `reg`. ONE def each, because they differ in the HEADER and nothing
 # else: `cmd` builds `pkt7_hdr(opcode, cnt)` and `reg` builds
 # `pkt4_hdr(reg, cnt)`, and both append the header to the same `q`.
-
 
 # The COUNT is not in the trace -- it is in the HEADER, and `q.hdr7` builds it.
 # Keeping it out of the record is deliberate: one trace entry per CALL, and the
@@ -1377,7 +1357,6 @@ def Tr.refuse(kind: U32, t: Tr) -> Tr:
   match t:
     case Tr{+calls, +refused}: Tr{calls, Bool.or(refused, True{})}
 
-
 # `exec` (:115-192). THE REGISTER SEQUENCE, in Python's order, and the two
 # FORKS: the three `if data.samp_cnt / tex_cnt / ibo_cnt > 0` blocks and the
 # `if data.NIR:` at :184. `qc_exec_order_*` is the subsequence test over the
@@ -1397,7 +1376,6 @@ def exec.pre1.at(which: Nat, t: Tr) -> Tr:
 
 def exec.pre1(which: U32, t: Tr) -> Tr: exec.pre1.at(U32.to_nat(which), t)
 
-
 def exec.pre2(n: Nat, +at: List<&2, U32>, +t: Tr) -> Tr:
   match n:
     case 0n: t
@@ -1406,9 +1384,7 @@ def exec.pre2(n: Nat, +at: List<&2, U32>, +t: Tr) -> Tr:
         case Nil{}: t
         case a <> rest: exec.pre2(m, rest, exec.pre1(a, t))
 
-
 def PRE_AT() -> List<&2, U32>: [0, 1, 2, 3, 4, 5, 6, 7, 8]
-
 
 def exec.pre() -> Tr:
   # :128-138 -- marker, SP_UPDATE_CNTL twice, TSIZE, USIZE, MODE_CNTL,
@@ -1438,12 +1414,7 @@ def exec.mid.go(n: Nat, +at: List<&2, U32>, +t: Tr) -> Tr:
         case a <> rest: exec.mid.go(m, rest, exec.mid1(a, t))
 def MID_AT() -> List<&2, U32>: [0, 1, 2, 3, 4, 5, 6]
 
-
 def exec.mid() -> Tr: exec.mid.go(7n, MID_AT(), exec.pre())
-
-
-
-
 
 # THE THREE CONDITIONAL BLOCKS. Each is a LOAD_STATE6_FRAG followed by a BASE
 # register, in that order, and the counts are 2 and 1. `qc_exec_ibo_is_two`
@@ -1462,7 +1433,6 @@ def exec.block(which: U32, +t: Tr) -> Tr:
   q.reg(exec.base(which), q.cmd(CP_LOAD_STATE6_FRAG(), t))
 def BLOCK_SAMPLER() -> U32: 0
 
-
 # THE sampler block is three calls, NOT two. :165-170 is a LOAD_STATE6_FRAG, then
 # SP_CS_SAMPLER_BASE, then `self.reg(REG_A6XX_TPL1_CS_BORDER_COLOR_BASE,
 # <the 0x1000 border_color placeholder>)`. The port had two and
@@ -1475,18 +1445,12 @@ def exec.samp(+samp_cnt: U32, +t: Tr) -> Tr:
       exec.block(BLOCK_SAMPLER(), t)), t)
 def BLOCK_TEX() -> U32: 1
 
-
 def exec.tex(+tex_cnt: U32, +t: Tr) -> Tr:
   Bool.pick(Tr, U32.is_gt(tex_cnt, 0), exec.block(BLOCK_TEX(), t), t)
 def BLOCK_UAV() -> U32: 2
 
-
 def exec.ibo(+ibo_cnt: U32, +t: Tr) -> Tr:
   Bool.pick(Tr, U32.is_gt(ibo_cnt, 0), exec.block(BLOCK_UAV(), t), t)
-
-
-
-
 
 # :182 `self.reg(REG_A6XX_SP_CS_CONFIG, ...)` then the `if data.NIR:` fork at
 # :184: TWO more registers plus a CP_EXEC_CS, OR a single CP_RUN_OPENCL.
@@ -1500,7 +1464,6 @@ def exec.nir_tail(+t: Tr) -> Tr:
 
 def exec.tail(nir: Bool, +t: Tr) -> Tr:
   Bool.pick(Tr, nir, exec.nir_tail(t), q.cmd(CP_RUN_OPENCL(), t))
-
 
 # `exec` whole, with the two REFUSALS in front of it exactly as Python has them
 # (:118 and :120, before any register is written) and the trailing cache flush
@@ -1540,19 +1503,14 @@ def ls0(+xs: List<&2, U32>) -> U32: at3(xs, 0n)
 def ls1(+xs: List<&2, U32>) -> U32: at3(xs, 1n)
 def ls2(+xs: List<&2, U32>) -> U32: at3(xs, 2n)
 
-
-
-
 def FLUSH_WRITE_BACK_ONLY() -> List<&2, Bool>: [True{}, False{}, False{}, False{}]
 def FLUSH_INVALIDATE_ONLY() -> List<&2, Bool>: [False{}, True{}, False{}, False{}]
-
 
 # READING AN EXEC TRACE. `seen` is the LENGTH -- a count row, because a gate
 # whose only claims are booleans cannot see a dropped call -- and `seq` is the
 # SUBSEQUENCE test, whose fuel is the TRACE length and whose answer is
 # `at == patlen`. Getting either half wrong makes it answer True to everything,
 # and a subsequence test that always says True is the row that cannot fail.
-
 
 def seq.has.put(+c: Call, +want: Call, +at: Nat) -> Nat:
   Bool.pick(Nat, Bool.and(U32.is_eq(Call.k(c), Call.k(want)),
@@ -1562,7 +1520,6 @@ def seq.step(m: Maybe<&2, Call>, +c: Call, at: Nat) -> Nat:
     case None{}: at
     case Some{+w}: seq.has.put(c, w, at)
 
-
 def seq.has(n: Nat, cs: List<&2, Call>, +pat: List<&2, Call>, +at: Nat) -> Bool:
   match n:
     case 0n: Nat.is_eq(at, List.length(&2, Call, pat))
@@ -1571,7 +1528,6 @@ def seq.has(n: Nat, cs: List<&2, Call>, +pat: List<&2, Call>, +at: Nat) -> Bool:
         case Nil{}: Nat.is_eq(at, List.length(&2, Call, pat))
         case Call{kk, aa} <> t:
           seq.has(m, t, pat, seq.step(List.get(&2, Call, pat, at), Call{kk, aa}, at))
-
 
 def exec.last_cmd.go(n: Nat, +cs: List<&2, Call>, +acc: U32) -> U32:
   match n:
@@ -1616,8 +1572,6 @@ def acc_of(n: Nat, at: U32, acc: List<&2, U32>) -> List<&2, U32>:
   acc
 def round4(+n: U32) -> U32: H.round_up_u32(n, LAYOUT_ALIGN())
 
-
-
 def layout_args.at(n: Nat, +sizes: List<&2, U32>, +at: U32, +base: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: acc
@@ -1631,7 +1585,6 @@ def pack_end(+o: U32, +end: U32) -> U32: Bool.pick(U32, U32.is_lt(end, o), o, en
 def pack_pad(+o: U32, +end: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, U32.is_eq(o, end), acc, List.append(&2, U32, acc, [U32.sub(o, end)]))
 
-
 def pack_args.at(n: Nat, +offs: List<&2, U32>, +size: U32, +end: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: List.append(&2, U32, acc, [U32.sub(size, end)])
@@ -1642,9 +1595,6 @@ def pack_args.at(n: Nat, +offs: List<&2, U32>, +size: U32, +end: U32, +acc: List
           pack_pad(o, end, acc))
 def pack_args.put(n: Nat, size: U32, end: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   pack_args.at(List.length(&2, U32, acc), acc, size, end, Nil{})
-
-
-
 
 # THE SORT, and it is the reason `qc_pa_unsorted` exists: `pack_args` does
 # `sorted(args, key=lambda x: x[0])`, so [2064, 2048] is walked as [2048, 2064]
@@ -1692,7 +1642,6 @@ def pack_args.sorted.at(+sorted: List<&2, U32>, size: U32) -> List<&2, U32>:
 # `2048,12,492`, which is a one-element block.
 def pack_args.sorted(+offs: List<&2, U32>, size: U32) -> List<&2, U32>:
   pack_args.sorted.at(pack_args.sort(List.length(&2, U32, offs), offs, Nil{}), size)
-
 
 def ush(xs: List<&2, U32>, +sep: String, +acc: List<&2, String>) -> List<&2, String>:
   match xs:

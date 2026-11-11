@@ -190,10 +190,8 @@
 # `gates/x86_isa-oracle.py`, which replaces the `Gate.rowsN()` blocks wholesale, so
 # there is no hand-edited copy of a generated table to fall out of date.
 
-
 import Base
 import ./../../LAWS/spec.bend as S
-
 
 # `Hex` -- `binary.hex()` (x86.py:777). Base has decimal `Nat.show`/`U32.show` and
 # no hex formatter, and the byte rows are worthless without one, so it is eight
@@ -248,7 +246,6 @@ def Hex.bytes.go(bs: List<&2, U32>, +acc: String) -> String:
 
 def Hex.bytes(bs: List<&2, U32>) -> String: Hex.bytes.go(bs, "")
 
-
 # STAGE 1 -- THE REGISTER TABLE. x86.py:173-192.
 #
 #     RAX = Register("rax", 0) ... RDI = Register("rdi", 7)
@@ -274,7 +271,6 @@ def Hex.bytes(bs: List<&2, U32>) -> String: Hex.bytes.go(bs, "")
 # `ax -> al` but `sp -> spl`, because x86's high-byte registers only lost their
 # `ah`/`ch` forms when REX arrived, and `ax/cx/dx/bx` are the four whose low byte
 # is addressable without REX. The gate's `reg.strs.*` rows are the check.
-
 
 type Reg is Data:
   Reg{name: String, index: U32, size: U32, s4: String, s2: String, s1: String}
@@ -490,7 +486,6 @@ def Reg.strs_lookup(+nm: String, +sz: U32) -> String:
 # superseded by `RegStrRow` in the gate helpers, and it is gone rather than left as a
 # second spelling of a row that already exists.)
 
-
 # STAGE 2 -- THE OP ENUM. x86.py:14-53.
 #
 # `FastEnum` + `auto()` assigns 0, 1, 2, ... IN DECLARATION ORDER, so the NAMES IN
@@ -503,7 +498,6 @@ def Reg.strs_lookup(+nm: String, +sz: U32) -> String:
 # (x86.py:14-16) -- `def_reg` went with it -- so the eighty-nine-name table that was
 # here was a name upstream does not have, and every `op.*` / `oprev *` / `2a.*` row
 # about it was a row about an op that is not in the file being ported.
-
 
 def op_names() -> List<&2, String>: [
     "FRAME_INDEX", "LABEL", "LOOP_CMP", "LEA", "MOV", "MOVm", "MOVi", "MOVABS", "VMOVSS",
@@ -555,7 +549,6 @@ def Op.rev(+ns: List<&2, String>, +want: U32, +i: U32) -> String:
 
 def op_name_of(+want: U32) -> String: Op.rev(op_names(), want, 0)
 
-
 # STAGE 2b -- THE OPERAND CLASSES. x86.py:55-86 and :279-280.
 #
 # seven sets, and two of them are formulas rather than lists, which is the reason
@@ -573,7 +566,6 @@ def op_name_of(+want: U32) -> String: Op.rev(op_names(), want, 0)
 # entries compute it from the UOp (`x.src[1].dtype.itemsize == 8` for the two
 # VCVTSI2 and `x.dtype.itemsize == 8` for the two VCVTT). `we` only matters when
 # `sel != 0`, so the legacy entries carry 0 and print `-`.
-
 
 # the name is a field and not a position, because `x86.py` writes the table as a
 # dict literal and a positional lookup would make the port's answer depend on its
@@ -716,7 +708,6 @@ def Op.set_name(+which: U32) -> String: String.join(Op.set_names(which), ",")
 
 def Op.set_len(+which: U32) -> U32: U32.from_nat(List.length(&2, String, Op.set_names(which)))
 
-
 # STAGE 3 -- THE MOV SPELLING. x86.py:281-289.
 #
 #     def _xmm_sz(x):   bits = x.max_numel() * x.dtype.itemsize
@@ -732,7 +723,6 @@ def Op.set_len(+which: U32) -> U32: U32.from_nat(List.length(&2, String, Op.set_
 #
 # `bits` IS AN ARGUMENT rather than a computed `match` scrutinee (convention 4):
 # the threshold decides an ARM and a match may only scrutinise a parameter.
-
 
 def Op.sz_arm(+bits: U32) -> U32:
   # 2 for the `bits >= 16` arm, 1 for `bits >= 8`, 0 for the fallthrough. A `match`
@@ -789,7 +779,6 @@ def Op.to_int(+d: S.Dt) -> String:
         case S.CFloat{}: Op.to_int.fp(bits, pri)
         case _: "KeyError"
 
-
 # STAGE 4 -- THE ENCODING TABLE. x86.py:624-687.
 #
 # EIGHTY-FIVE entries, SEVENTY-SEVEN of which call `encode(opc, reg=, pp=, sel=,
@@ -804,7 +793,6 @@ def Op.to_int(+d: S.Dt) -> String:
 # the conversion is the risk. It is mitigated twice: the `enc.*` rows print the
 # parameters CPython's own `ast` reads out of the source, and the `hex.*` rows are
 # CPython's own ENCODED BYTES, which no wrong opcode can reproduce.
-
 
 def enc_table() -> List<&2, Enc>: [
   # opc   reg has  pp sel we   -- `encode(opc, reg=, pp=, sel=, we=)` read off
@@ -1343,7 +1331,6 @@ def Enc.direct(+nm: String) -> List<&2, U32>: Enc.direct.of(nm)
 def Enc.movabs(+reg: U32, +imm: U32) -> List<&2, U32>:
   Enc.cat([U32.or(72, U32.shrn(reg, 3n)), U32.add(184, U32.and(reg, 7))], Enc.imm_int(8n, 8n, imm))
 
-
 # STAGE 7 -- `asm_str`. x86.py:737-758. THE ASSEMBLY TEXT.
 #
 # the port is the format and not the graph. `asm_str` reads a `list[UOp]`, and a UOp
@@ -1361,7 +1348,6 @@ def Enc.movabs(+reg: U32, +imm: U32) -> List<&2, U32>:
 # `DEFINE`.) It does NOT decide how a mnemonic is
 # spelled, how wide it is padded, which of the four operand arms fires, or where the
 # commas go: `Asm.line` is the whole of that and it is the thing under test.
-
 
 type AsmArg is Data: AsmArg{nm: String, sz: U32, val: U32, imm: Bool}
 type AsmMem is Data: AsmMem{base: String, idx: String, scale: U32, disp: U32}
@@ -1569,8 +1555,6 @@ def asm_str(+fn: String, +os: List<&2, AsmOp>) -> List<&2, String>:
   # is `xs ++ ys`, so the header list is the first argument.
   List.append(&2, String, [String.concat([".", fn, ":"])], AsmLines(os))
 
-
-
 # STAGE 8 -- `render`'s JUMP PATCH. x86.py:775-776.
 #
 # `for u in uops: if (t:=jumps.get(u)) is not None:
@@ -1589,7 +1573,6 @@ def asm_str(+fn: String, +os: List<&2, AsmOp>) -> List<&2, String>:
 # `Word.sub(32n, x, y)` -- so the arithmetic agrees, and the `render.*` rows exist to
 # SAY SO rather than to leave it as a claim. `Render.target` was an identity with a name
 # on it and is gone.
-
 
 def Render.delta(+target: U32, +t: U32) -> U32:
   # `(targets[u.tag] - t)` -- and `U32.sub` wraps, which is what `signed=True` asks for.
@@ -2697,4 +2680,3 @@ def Gate.rows() -> List<&2, String>:
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(String.concat(Gate.rows()))
-

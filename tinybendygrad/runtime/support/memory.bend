@@ -293,7 +293,6 @@ def MvT.t(x: MvT) -> Tr:
   match x:
     case MvT{m, t}: t
 
-
 def mmio_cast2(h: U32, addr: U32, nbytes: U32, fmt: U32, +t: Tr) -> MvT:
   MvT{mmio_of(h, addr, nbytes, fmt), t}
 # the second call: `.cast(fmt)`, recorded on the handle the first returned.

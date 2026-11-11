@@ -205,7 +205,6 @@
 #   * `CTX`'s aliasing (`ctx[x][1:]` on a `PATTERN VARIABLE` whose name is
 #     shadowed by the binder) is `uop/ops.bend`'s.
 
-
 import Base
 import ./__init__.bend as R
 import ./../uop/ops.bend as O
@@ -213,15 +212,12 @@ import ./../uop/fold.bend as F
 import ./../LAWS/spec.bend as S
 import ./nir_llvmir.bend as N
 
-
 # THE GATE PRIMITIVES. A row is a VALUE, so a group of them is a `String` and
 # the whole gate is one `IO.print`. The `py=` half is a LITERAL, which is what
 # makes the diff a diff -- it cannot be the same expression as the `got=` half.
 
-
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
-
 
 # the derived row.  The `py=` half is the port's own value, re-read through the same
 # code the port prints, so a row cannot disagree with itself and a transcription cannot
@@ -242,11 +238,9 @@ def dtn(+d: S.Dt) -> String:
   match d:
     case S.Dt{pri, bits, cls, nm}: nm
 
-
 # `lt` -- llvmir.py:12-17. THE TYPE MAP, RENAME-PROOF. See the header: this is
 # `nir_llvmir.bend`'s `ldt` re-armed on `Cls`/`bits`/`pri` because that file's
 # `ldt.fp` ladder arms on dtype NAMES and `spec.bend` has renamed them.
-
 
 def lt.ints(bits: U32) -> String: String.concat(["i", U32.show(bits)])
 
@@ -288,7 +282,6 @@ def lt.pri(+d: S.Dt) -> U32:
   match d:
     case S.Dt{pri, bits, cls, nm}: pri
 
-
 # `is_volatile` -- llvmir.py:10.
 #
 #     def is_volatile(u:UOp) -> bool:
@@ -303,7 +296,6 @@ def lt.pri(+d: S.Dt) -> U32:
 # `is_param` is the port's name for `buf_uop`'s answer, and it is a PARAMETER
 # because `buf_uop` is `uop/ops.bend`'s walk. `vol` is `buf.arg.volatile`.
 
-
 def ivol(is_param: Bool, vol: Bool) -> Bool: Bool.and(is_param, vol)
 
 # `volatile ` with a TRAILING space and nothing when False: llvmir.py:90, :95,
@@ -315,7 +307,6 @@ def volsp(vol: Bool) -> String: Bool.pick(String, vol, "volatile ", "")
 
 def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
   rd(nm, bs(ivol(is_param, vol)))
-
 
 # `lconst` -- llvmir.py:19-24. THE FOUR-WAY DISPATCH plus the inf/nan arm.
 #
@@ -334,7 +325,6 @@ def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
 # `0xF0` plus `nan`'s quiet bit, byte 2 is the sign again, bytes 3..7 are zero.
 # `+nan` and `-nan` are TWO rows and not one for exactly that reason, and the
 # `int(x)` rows are gated on the TRUNCATION rather than the float's spelling.
-
 
 def lconst_neg(pos: Bool) -> Bool: Bool.not(pos)
 
@@ -374,7 +364,6 @@ def r_lcb(+nm: String, +d: S.Dt) -> String: rd(nm, lc.branch(d))
 
 def r_lci(+nm: String, x: F32) -> String: rd(nm, lc.int(x))
 
-
 # `range_str` -- uop/ops.py:95-97. THE LABEL GRAMMAR, which is all three of
 # `base_rewrite`'s RANGE rules read:
 #
@@ -384,7 +373,6 @@ def r_lci(+nm: String, x: F32) -> String: rd(nm, lc.int(x))
 # the grammar is the port's. The `m` PREFIX is the load-bearing half: a reader
 # that drops it agrees on every non-negative id, which is why `range_str 0,-2`
 # and `range_str -3,4` are rows.
-
 
 # `'_'.join([str(x) if x >= 0 else "m"+str(-x) for x in u.axis_id])`.
 #
@@ -431,8 +419,6 @@ def r_rsn(+nm: String, v: U32) -> String: rd(nm, rstr.neg(v))
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
 
-
-
 # `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
 # two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
 # the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
@@ -445,9 +431,6 @@ def r_rsn(+nm: String, v: U32) -> String: rd(nm, rstr.neg(v))
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
 
-
-
-
 # `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
 # two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
 # the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
@@ -459,9 +442,6 @@ def r_rsn(+nm: String, v: U32) -> String: rd(nm, rstr.neg(v))
 # `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
-
-
-
 
 # `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
 # two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
@@ -495,10 +475,6 @@ def r_pri(+nm: String, +d: S.Dt) -> String: rd(nm, U32.show(lt.pri(d)))
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
 
-
-
-
-
 # `base_rewrite` -- llvmir.py:77-144. THE EIGHTEEN RULES' OUTPUTS.
 #
 # `brN` IS RULE N. `br_rules` is the COUNT and it is a row rather than a comment
@@ -507,14 +483,12 @@ def r_pri(+nm: String, +d: S.Dt) -> String: rd(nm, U32.show(lt.pri(d)))
 # FIVE extra rules AHEAD of these (llvmir.py:232-242, `amd0`..`amd4` below),
 # which is why AMD's table is 23 and not 18.
 
-
 # A `U32` may be consumed ONCE, so the second test cannot live in a nested
 # `Bool.pick` arm -- it gets its own def. This is the shape every three-way
 # dispatch in this file takes and it is the reason there is no `k of 3` helper.
 def br_rules.b(+k: U32) -> U32: Bool.pick(U32, U32.is_eq(k, 1), 23, 5)
 
 def br_rules(+k: U32) -> U32: Bool.pick(U32, U32.is_eq(k, 0), 18, br_rules.b(k))
-
 
 # `ctx[x][1:]` -- the LABEL SLICE that drops the leading `%`. It appears in NINE
 # of the eighteen rules and it is the one transformation in this file that is not
@@ -526,7 +500,6 @@ def r_lab() -> String:
   String.concat([rd("lab %v0", lab("%v0")), rd("lab %data0", lab("%data0")),
     rd("lab %reg_12", lab("%reg_12")), rd("lab %local_2", lab("%local_2")),
     rd("lab %v99", lab("%v99"))])
-
 
 # RULE 1, the REGISTER INDEX (llvmir.py:82-83). The ONLY rule that can answer
 # `None`, and it does so for every addrspace that is not ALU: the line is
@@ -545,7 +518,6 @@ def br1.line(+is_alu: Bool, +xn: String, +bufn: String, +d: S.Dt, +cnt: U32, +id
 
 def r_br1(+nm: String, +is_alu: Bool, +bufn: String, +d: S.Dt, cnt: U32, idx: U32) -> String:
   rd(nm, br1.line(is_alu, "%v0", bufn, d, cnt, idx))
-
 
 # RULE 2, the PREDICATED LOAD (llvmir.py:86-93). EIGHT lines -- the longest
 # emitter in the file -- and every one is a row.
@@ -578,7 +550,6 @@ def br2.text(+vol: Bool, +d: S.Dt, +cnt: U32, +xn: String, +idx: String, +alt: S
 def r_br2(+nm: String, +vol: Bool, +d: S.Dt, +xn: String, +idx: String, +alt: String, +mask: String, +i: U32) -> String:
   rd(nm, nth(String.lines(br2.text(vol, d, 1, xn, idx, alt, mask)), U32.to_nat(i)))
 
-
 # RULES 3 and 4, the bare `load` and the `store` (llvmir.py:94-99). ONE line
 # each, and the `store` puts the VALUE FIRST and the INDEX LAST -- the only place
 # in this file that the two operand positions are asymmetric.
@@ -599,7 +570,6 @@ def r_br3(+nm: String, +vol: Bool, +d: S.Dt, +xn: String, +idx: String) -> Strin
 
 def r_br4(+nm: String, +vol: Bool, +d: S.Dt, +varn: String, +idx: String) -> String:
   rd(nm, br4.line(vol, d, 1, varn, idx))
-
 
 # RULE 5, the STACK `insertelement` CHAIN (llvmir.py:102-105). The only LOOP in
 # `base_rewrite`, and the only emitter whose lines depend on each other's
@@ -642,7 +612,6 @@ def br5.line(+xn: String, +sdts: List<&2, S.Dt>, +snames: List<&2, String>, cnt:
 
 def r_br5(+nm: String, +xn: String, +sdts: List<&2, S.Dt>, +snames: List<&2, String>, cnt: U32, +i: U32) -> String:
   rd(nm, br5.line(xn, sdts, snames, cnt, i))
-
 
 # RULES 6-10: BITCAST, CAST, TRUNC, the BINARY `lop` and WHERE (llvmir.py:
 # 107-115). Five ONE-LINE emitters, three of which end in a TYPE, so they are
@@ -699,7 +668,6 @@ def r_br9(+nm: String, +d: S.Dt, +op: O.Op, +xn: String, +s0: String, +s1: Strin
 def r_br10(+nm: String, +d0: S.Dt, +d1: S.Dt, +d2: S.Dt, +xn: String, +s0: String, +s1: String, +s2: String) -> String:
   rd(nm, br10.line(d0, d1, d2, xn, s0, s1, s2))
 
-
 # RULES 11-14: the void-RANGE header, the BACKEDGE, the counted RANGE (NINE
 # lines) and the END. All four are built on `lab(...)` or on `range_str`, so a `%`
 # that never gets dropped is a DIFFERENT LABEL on four of the five.
@@ -747,7 +715,6 @@ def r_br13(+nm: String, +aid: String, +rn: String, +bn: String, +d: S.Dt, i: U32
 def r_br14(+nm: String, aid: U32, i: U32) -> String:
   rd(nm, nth_s(String.lines(br14.text(U32.show(aid))), i))
 
-
 # RULES 15-17 AND THE AMD BARRIER (llvmir.py:140-143, :236). The IF header and the
 # ENDIF both label from the IF's name, not from their own -- `br16 endif bool`
 # takes the ENDIF's `%v8` and answers `ifskip_v7`, which is the one place in this
@@ -779,7 +746,6 @@ def r_br17(+nm: String) -> String: rd(nm, br17.text())
 
 def r_amd2(+nm: String, i: U32) -> String:
   rd(nm, nth_s(String.lines(String.join(N.barrier(), nl())), i))
-
 
 # AMD'S FIVE RULES AHEAD OF `base_rewrite` (llvmir.py:232-242). Rule 3's TWO
 # SPACES after the argument type and rule 4's synthesized `%v0_i32` are the two
@@ -860,9 +826,7 @@ def r_amd3(+nm: String, +fp8: S.Dt, +xn: String, +sn: String) -> String:
 def r_amd4(+nm: String, +fp8: S.Dt, +xn: String, +sn: String, i: U32) -> String:
   rd(nm, nth_s(String.lines(amd4.text(fp8i(fp8), xn, sn)), i))
 
-
 # `_render_fn` -- llvmir.py:156-160, the AMD barrier rule, and `_render_footer`.
-
 
 # `sargs`, ONE argument (llvmir.py:158-159):
 #
@@ -910,7 +874,6 @@ def rfn.cat(+a: List<&2, String>, +b: List<&2, String>) -> List<&2, String>: Lis
 
 def rfn.all(+abi: String, +nm: String, +sa: String, +kern: List<&2, String>, +pfx: List<&2, String>) -> String:
   String.join(rfn.cat(rfn.cat(pfx, rfn.cat([rfn.define(abi, nm, sa), "{"], kern)), ["  ret void", "}"]), nl())
-
 
 def r_rfn(+nm: String, +abi: String, +kname: String, +sa: String, +kern: List<&2, String>, +pfx: List<&2, String>, +i: U32) -> String:
   rd(nm, nth_s(String.lines(rfn.all(abi, kname, sa, kern, pfx)), i))
@@ -1051,8 +1014,6 @@ def main() -> IO(Unit):
       r_br1s(), r_br2s(), r_br34s(), r_br5s(), r_br678s(), r_brRBs(), r_brIBs(),
       r_amds(), r_rfns(), r_ftrs(), r_rdnas()]))
 
-
-
 # THE MUTATION TABLE. Measured with `.agents/slop/li/li-mutate.py rules`: ONE
 # TEXTUAL EDIT AT A TIME, and the harness diffs WHOLE `name=value` LINES and
 # prints WHICH rows moved. A name-comparing harness reported 0 for all 30
@@ -1141,7 +1102,6 @@ def main() -> IO(Unit):
 #   M78 CONTROL a comment-only edit 0
 #   M79 CONTROL a comment-only edit 0
 
-
 # WHAT THE TABLE SAYS.
 #
 # M3 IS THE LARGEST SINGLE MOVEMENT (70 rows) and it is `lt.ints` answering
@@ -1205,4 +1165,3 @@ def main() -> IO(Unit):
 # own blind list and it is the deliverable: a sweep over a file that cites its
 # sources by line number is mostly a sweep over prose, and a reader who wanted a
 # guarantee from it would be reading the wrong table.
-

@@ -259,13 +259,11 @@ import ./../tensor.bend as T
 import ./dtype.bend as D
 import ./elementwise.bend as E
 
-
 # THE READERS. Three of them, and each is a fold read with the fold's own
 # "I cannot answer this node" as the default -- rule 3 in the header.
 # `F.fold.dt` answers `Maybe<&2, S.Dt>` and `F.fold.shape` answers a DOUBLE
 # `Maybe` (the outer is the fold, the inner is Python's own `None`), so the shape
 # reader is two unwraps and the dtype reader is one.
-
 
 def mo_dt(+fx: F.Folded, i: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), i), S.void())
@@ -348,12 +346,10 @@ def mo_range.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
 
 def mo_range(n: Nat) -> List<&2, U32>: mo_range.go(n, Nil{})
 
-
 # THE CONSTS. `UOp.const` (ops.py:630) is a BARE CONST here because `dtypes.from_py`
 # and `truncate` are P3 (ops.bend's own `TODO`), and every CONST this file builds is
 # already the dtype Python would derive: an int literal is weakint and a float
 # literal is weakfloat, which is exactly `dtypes.from_py`.
-
 
 def mo_ki(n: U32) -> O.Const: O.CInt{H.i64_of_i32(n)}
 
@@ -416,7 +412,6 @@ def mo_neginf() -> F32: F32.neg(mo_inf())
 # the CALL, not a second copy: the house rule is reuse, and elementwise.bend sets
 # the precedent by reading `W.weak_dtype` for the very same predicate.
 
-
 # `commit_dtype` -- tinygrad/dtype.py:16, read through `mixin/dtype.bend`'s own `commit_dtype`,
 # which is the same refusal `_min_max` (ops.py:1104) forces. The honest
 # totalisation is the node's OWN dtype, which makes the `cast` the identity; a
@@ -446,7 +441,6 @@ def mo_sum_acc(+dt: S.Dt) -> S.Dt: mo_sum_acc.cls(S.Dt.cls(dt), dt)
 def mo_downcast(+dt: S.Dt) -> Bool:
   Bool.or(D.md_dt_eq(dt, S.half()), Bool.or(D.md_dt_eq(dt, S.bfloat16()), U32.is_eq(S.Dt.bits(dt), 8)))
 
-
 # `promote` -- elementwise.py:29-33, and it is HERE rather than `E.ew_promote`
 # because of W9: `ew_promote.b` (elementwise.bend:245) threads the pre-remint
 # arena, so its int-CONST path builds a self-referential node. This is
@@ -458,7 +452,6 @@ def mo_downcast(+dt: S.Dt) -> Bool:
 #   `weaks AND base.op is CONST`             -> the remint arm
 #   `t.dtype == weak_dtype(out_dtype)`       -> return t
 #   otherwise                               -> `t.cast(out_dtype)`
-
 
 def mo_weakconst.cls(cls: S.Cls, +isc: Bool) -> Bool:
   match cls:
@@ -489,7 +482,6 @@ def mo_remint.at(same: Bool, +fx: F.Folded, +t: T.Tensor, +wd: S.Dt) -> T.Tensor
 def mo_remint(+fx: F.Folded, +t: T.Tensor, +wd: S.Dt) -> T.Tensor:
   mo_remint.at(D.md_dt_eq(W.wk_dt(fx, T.Tensor.u(t)), wd), fx, t, wd)
 
-
 # EVERY ARM RETURNS A TENSOR IN `fx`'s ARENA, and the first arm is `mo_arena` rather
 # than `t` for that reason: `mo_promote` is called with a fold of the arena the OTHER
 # operand has already grown, and an arm that hands `t` straight back hands back `t`'s
@@ -510,7 +502,6 @@ def mo_promote(+fx: F.Folded, +t: T.Tensor, +od: S.Dt) -> T.Tensor:
   mo_promote.at(F.is_invalid(F.Folded.ar(fx), T.Tensor.u(t)), mo_weakconst(fx, t),
     D.md_dt_eq(W.wk_dt(fx, T.Tensor.u(t)), wd), fx, t, od, wd)
 
-
 # `_broadcasted` (elementwise.py:24-34) and `_binop` (:36), hoisted because W9 took
 # `ew_binop` out of reach for a CONST that needs promoting -- which is EXACTLY what
 # `mean`'s `div(denominator)` and `var`'s `div(smax(n-correction, 0))` do, since
@@ -519,7 +510,6 @@ def mo_promote(+fx: F.Folded, +t: T.Tensor, +od: S.Dt) -> T.Tensor:
 #
 #   `y = self.ufix(y)`; `x, y = (self, y) if not reverse else (y, self)`
 #   `out_dtype = least_upper_dtype(x.dtype, y.dtype)`; `return promote(x), promote(y)`
-
 
 # `_binop`'s node, SPELLED rather than `T.tn_alu`d, and for the same reason `mo_const_t`
 # is spelled: `T.tn_alu(t, op, srcs)` takes its ARENA from `t` and its src ORDER from
@@ -685,7 +675,6 @@ def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
 # `least_upper_dtype` is `F.least_upper.of` -- fold.bend's own lattice, the same one
 # `promote`'s sibling `_broadcasted` reads, so it is a CALL.
 
-
 # THE MOVEMENT DISPATCH, hoisted. `mixin/movement.py`'s `_mop` is `ops.py:821`, and
 # `tensor.bend` already hoisted it as `T.tn_mop` with its own notice -- so this file
 # does NOT re-hoist it. What `movement.py` adds on top of `_mop` is the IDENTITY TEST
@@ -700,7 +689,6 @@ def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
 # value and WILL disagree the moment anything between the two grows the arena. Every
 # one of the six bugs this file hit on the way to compiling was exactly that, and
 # every one of them printed `NOOP/0` or a plausible-looking small number.
-
 
 # THE `List<&2, O.Sint>` IMAGE OF A SHAPE ARG, and it is here for a MEASURED reason.
 # `mo_reshape`'s identity test is `ret.shape == self.shape` (movement.py:281), and the
@@ -788,7 +776,6 @@ def mo_squeeze(+t: T.Tensor, +dim: U32) -> T.Tensor:
 def mo_resolve(neg: Bool, +dim: U32, total: U32) -> U32:
   Bool.pick(U32, neg, U32.add(dim, total), dim)
 
-
 # THE REDUCE DISPATCH, hoisted. `mixin/reduce.py` does not exist as a `.bend` yet,
 # so this block is its first four defs, and `tensor.bend` sets the precedent by
 # hoisting `_rop` (ops.py:655) as `T.tn_rop`:
@@ -807,7 +794,6 @@ def mo_resolve(neg: Bool, +dim: U32, total: U32) -> U32:
 # (op.py:519), where it is `range(ndim)` -- `mo_ax_all` spells that case, and it is
 # `t_meanN` that says the two agree on a 1-D source and `t_mean0_2d` that says they
 # do not on a 2-D one.
-
 
 # THE RESOLVED AXIS, and it is a LIST from here on because Python's `_reduce` makes it
 # a tuple on its second line (reduce.py:15) and everything downstream reads the tuple.
@@ -897,11 +883,9 @@ def mo_prod(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 def mo_max(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
   mo_reduce(kd, t, O.OpsMAX{}, axis)
 
-
 # THE RECIPES, in `mixin/op.py`'s order. Every one of them is its Python body with
 # the calls above in place of the `mixin/reduce.py` / `mixin/movement.py` /
 # `mixin/elementwise.py` methods it spells, and each carries the line it ports.
-
 
 # `reciprocal` -- elementwise.py:468. `self.alu(Ops.RECIP)`, and `E.ew_reciprocal`
 # IS that one line, so this is the CALL -- elementwise.bend's own export, reused.
@@ -1059,7 +1043,6 @@ def mo_eps() -> F32: 0.000000000001
 def mo_norm0(+axis: List<&2, U32>, +t: T.Tensor) -> T.Tensor:
   +d = mo_sum(True{}, mo_neqc(t, O.CFloat{0.0}), axis)
   mo_div(t, mo_maxc(d, mo_eps()))
-
 
 # `exp` -- elementwise.py:511, hoisted because `mixin/elementwise.bend` carries it as
 # `TODO(p3) ... exp  -- 1/math.log(2)` and rule 5 MEASURED that an F32 literal is live.
@@ -1219,7 +1202,6 @@ def mo_min(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
   +f = S.Dt.is_float(W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
   mo_inverse(f, mo_max(kd, mo_inverse(f, t), axis))
 
-
 # THE GATE. The printers first, because a def may only call defs declared above it
 # and every row below calls these.
 #
@@ -1229,8 +1211,6 @@ def mo_min(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # from here. The signature is a TOPOSORT with each node's op and src COUNT, and the
 # COUNT is the first field of the row so a dropped or duplicated node is visible in
 # the same place every time.
-
-
 
 # the value rows -- the row `0eee58d9d` named and no row printed.
 #
@@ -1251,7 +1231,6 @@ def mo_min(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # what makes the row a COVERAGE claim rather than a sample: `mean` divides by
 # 4 (a `(4,)` source) and by 2 (a `(2,2)` source -- the SQUARE fixture, where a
 # wrong index is invisible), and `var` divides by `n - correction` = 3.
-
 
 def mo_cval(v: O.Const) -> String:
   match v:
@@ -1737,6 +1716,5 @@ def main() -> IO(Unit):
     an : Unit <- t_val_mean0_2d()
     ao : Unit <- t_val_var0()
     t_bin_promote()
-
 
 # side b's section goes below this line.

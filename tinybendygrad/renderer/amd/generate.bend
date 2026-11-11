@@ -133,9 +133,6 @@ type RS is Data:
   RS{out: List<&2, Char>, need: List<&2, Char>, done: List<&2, Char>,
      old: List<&2, Char>, new: List<&2, Char>}
 
-
-
-
 # SECTION 1 -- the string algebra, once, because FOUR of generate.py's
 # functions are `str.replace` and bend has none.
 #
@@ -155,7 +152,6 @@ type RS is Data:
 #   "aaa" drops an "a".  `rep.match` does exactly that by delegating to
 #   `rep.armed` with `done` already flushed, which is why this is exact for
 #   BORDERED needles too and needs no unbordered precondition.
-
 
 type Suf is Data: Suf{old: String, new: String}
 
@@ -318,7 +314,6 @@ def repl(s: String, old: String, new: String) -> String:
 def strip_prefix(+s: String, +p: String) -> String:
   Bool.pick(String, String.starts_with(s, p), String.drop(s, String.length(p)), s)
 
-
 # SECTION 2 -- the CONFIG TABLES, generate.py:11-42.  PORTED AS DATA, in
 # DECLARATION ORDER, and the order is load-bearing twice over:
 #   * `_FIELD_RENAMES` is a `dict`, so it is applied in INSERTION order, and
@@ -329,7 +324,6 @@ def strip_prefix(+s: String, +p: String) -> String:
 #
 # Both orders are gate rows (`order enc_suffix_map`, `order field_renames`)
 # taken from CPython, not from this comment.
-
 
 def enc_suffixes() -> List<&2, String>: ["_NSA1"]
 
@@ -434,10 +428,8 @@ def arch_xml(i: Nat) -> String: str_at(archs(), i)
 
 def xml_url() -> String: "https://gpuopen.com/download/AMD_GPU_MR_ISA_XML_2025_09_05.zip"
 
-
 # SECTION 3 -- `_strip_enc` (:48), `_norm_field` (:56), `_map_flat` (:61).
 # PORTED.  16 of the 28 logic lines of these three functions.
-
 
 # There is no `List.eq`, so membership is its own walk and the NEEDLE LEADS,
 # because a self-call must shrink its first argument (pos 1922).
@@ -488,11 +480,9 @@ def map_flat.five_b(+enc_name: String) -> Bool:
 
 def map_flat.v(enc_name: String) -> String: Bool.pick(String, String.starts_with(enc_name, "V"), "V", "")
 
-
 # SECTION 4 -- `write_ins`'s nested helpers.  `_VARIANT_SUFFIXES`, `get_base_fmt`
 # (:292), the field-kind ladder `field_def` (:295), `ORDER` + `sort_fields`
 # (:319/:327) and `fmt_allowed` (:361).
-
 
 def map_flat.scratch_instr.of(enc_name: String, scr: Bool) -> String:
   match scr:
@@ -806,7 +796,6 @@ def sort_fields(fs: List<&2, Fld>) -> List<&2, Fld>: List.sort(Fld, fld_le, fs)
 # eighteen-arm matches, because a `match` may not scrutinise a computed value
 # and an eighteen-deep `.of` chain would be thirty-six defs.
 
-
 # pk: 0 nm == pa | 1 starts_with(nm, pa) | 2 nm in pa(words)
 # pb: 0 any width | 1 width == pb
 # pc: 0 any format | 1 fmt not in (DPP,SDWA) | 2 base_fmt in (GLOBAL,SCRATCH)
@@ -919,7 +908,6 @@ def arg3(+kind: U32, base_fmt: String) -> String:
 def field_def.hi(kind: U32, +hi: U32) -> U32:
   Bool.pick(U32, U32.is_eq(kind, K2_OFF13()), 12, hi)
 
-
 # `field_def`, generate.py:295-318.  ARMS 1 AND 2 COME FIRST because they are
 # the only two that consult FIXED_FIELDS, and both return a `FixedBitField`
 # with a LITERAL value rather than a class.
@@ -930,7 +918,6 @@ def field_def.hi(kind: U32, +hi: U32) -> U32:
 # zero-padded to the field width.  So the emitted `0b...` is a FUNCTION OF THE
 # OTHER TABLES, and it is where a mis-transcribed opcode would land; the
 # `cdna` `fd.emb` rows diff it against CPython's own emitted file.
-
 
 # `0b{fixed_bits}{opcode:0{bits-len(fixed_bits)}b}` -- `String.repeat` with a
 # NEGATIVE count is the failure, so the padding width is clamped and the clamp
@@ -1022,8 +1009,6 @@ def Fd2.k(x: Fd2) -> String:
   match x:
     case Fd2{+fmt, k, +e, onm, is_pair}: k
 
-
-
 # SECTION 6 -- the emitted FILES, as LISTS OF LINES.
 #
 # WALL 3: four `with open(path, "w") as f: f.write("\n".join(lines))` calls,
@@ -1033,7 +1018,6 @@ def Fd2.k(x: Fd2) -> String:
 # is why the gate can diff the emission at all.
 #
 # `write_enum`, generate.py:273-287.
-
 
 # `suffix = "_E32" if name in ("VOP1","VOP2","VOPC") else "_E64" if name == "VOP3" else ""`
 
@@ -1166,7 +1150,6 @@ def fmt_exempt_b(+pc: U32, fmt: String, +base_fmt: String) -> Bool:
     Bool.pick(Bool, U32.is_eq(pc, 2),
       Bool.or(String.eq(base_fmt, "GLOBAL"), String.eq(base_fmt, "SCRATCH")), True{}))
 
-
 # the record shapes, and the four different sorts.  They are not
 # interchangeable and a gate that only diffed counts would pass with all four
 # collapsed into one:
@@ -1175,7 +1158,6 @@ def fmt_exempt_b(+pc: U32, fmt: String, +base_fmt: String) -> Bool:
 #   sorted(encodings.items()) -- by ENCODING NAME, lexicographic.
 #   sorted(fields, key=(order, lo)) -- the two-key ORDER sort of SECTION 4.
 #   sorted(types.items())     -- by (name, encoding), a PAIR.
-
 
 def r_ok.pc(pk_ok: Bool, pb_ok: Bool, pc_ok: Bool) -> Bool: Bool.and(pk_ok, Bool.and(pb_ok, pc_ok))
 
@@ -1351,13 +1333,11 @@ def write_enum.aliases.go(os_: List<&2, OP>, +fmt: String, +acc: List<&2, String
         Bool.pick(List<&2, String>, String.is_empty(op_msuf(fmt, OP.op(o))), acc,
           List.append(&2, String, acc, ["  " ++ OP.nm(o) ++ " = " ++ OP.nm(o) ++ op_msuf(fmt, OP.op(o))])))
 
-
 # `write_common`, generate.py:256-271.  `all_fmts` and `all_op_types` are the
 # CROSS-ARCH union that `__main__` builds, and `sorted(all_fmts.keys())` is a
 # LEXICOGRAPHIC sort of the keys with `sorted(all_fmts.items())` a second sort
 # over the pairs.  Both are emitted, in that order, which is why the two
 # `Fmt` blocks in common.py are in different orders for the same key set.
-
 
 # the alias pass is second and separate: `aliases` collects (mem, msuf) for
 # every op that GOT a suffix and is emitted after all the value cells, so
@@ -1418,7 +1398,6 @@ def str_le(a: String, b: String) -> Bool: String.is_lt(a, b)
 
 def sort_strs(xs: List<&2, String>) -> List<&2, String>: List.sort(String, str_le, xs)
 
-
 # `fmt_allowed`, generate.py:361-364, and `write_operands`/`fmt_val`,
 # generate.py:464-482.
 #
@@ -1427,7 +1406,6 @@ def sort_strs(xs: List<&2, String>) -> List<&2, String>: List.sort(String, str_l
 # the members from `ops` directly would produce a different string whenever an
 # opcode is in the set but absent from the enum.  `suffix_only_ops` supplies
 # exactly such an opcode in the fixture.
-
 
 def write_common.head() -> List<&2, String>:
   ["# autogenerated from AMD ISA XML - do not edit", "from enum import Enum, auto", "",
@@ -1518,7 +1496,6 @@ def ty_le(a: TY, b: TY) -> Bool:
   match a:
     case TY{name, +base, flds}: ty_le.b(b, name, base)
 
-
 # `FIXED_FIELDS.get(arch, {})` -- the table has ONE arch in it (cdna), so handing
 # rdna3 the same `fixed_fields()` emits a `FixedBitField` where CPython emits a
 # `BitField`.  The ARCH is the lookup key and dropping it is a silent answer.
@@ -1551,7 +1528,6 @@ def write_operands.tail(rows: List<&2, String>, head: List<&2, String>) -> List<
 # the closing brace is its own step, not a fourth nested `List.append`: four
 # opens with three closes parses as "a term with no value" and bend reports it
 # against the NEXT `def`, thirty lines away, with no mention of the paren.
-
 
 # ---- THE FIXTURE.  Built by `.agents/slop/ga_fix.py` from the SAME dicts
 # `ga-oracle.py` hands to `generate.write_ins`, so the port's fixture and
@@ -1649,7 +1625,6 @@ def write_operands(+tys: List<&2, TY>, +eos: List<&2, EO>, +arch: String) -> Lis
       "from tinygrad.runtime.autogen.amd." ++ arch ++ ".enum import " ++
         String.join(write_operands.enum_names(tys, eos), ", "), ""])
 
-
 # FOLD 5 -- `write_pcode`, generate.py:484-499.  The only emitter whose product
 # is DATA rather than a class tree, and the only one that has to spell a Python
 # string LITERAL rather than concatenate one.
@@ -1658,7 +1633,6 @@ def write_operands(+tys: List<&2, TY>, +eos: List<&2, EO>, +arch: String) -> Lis
 # `F32` and no `F64` (`bend base | grep -c F64` is 0), and `extract_pdf_text`
 # accumulates PDF `Td` offsets into Python floats, so `round(y)`'s grouping and
 # every `55 < x < 65` window would be decided on 32-bit values.  See WALL 5.
-
 
 # `{code!r}` -- CPython's `repr` for a `str`: single-quoted unless the text
 # contains `'` and not `"`, and `\\`, `\t`, `\n`, `\r`, `\'` plus a `\xNN` for
@@ -1796,7 +1770,6 @@ def write_pcode(+ps: List<&2, PK>, +eos: List<&2, EO>, +arch: String) -> List<&2
 # `Bool.pick` IS NEVER USED TO SEQUENCE A WALK.  It chooses between two
 # already-computed values, so every fold below passes the self-call as an
 # ARGUMENT and puts only the accumulator in the pick.
-
 
 def u32_in(+x: U32, xs: List<&2, U32>) -> Bool:
   match xs:
@@ -2143,7 +2116,6 @@ def dsl_reexport(+encs: List<&2, EC>, fixed: List<&2, Fd2>, eos: List<&2, EO>) -
 # `_LIT`-only AND VOP1 op 4 writes an SREG), which is what makes the order of the
 # two subtractions unobservable here and therefore worth stating.
 
-
 def all_ops.of(os_: List<&2, OP>, +acc: List<&2, U32>) -> List<&2, U32>:
   match os_:
     case Nil{}: acc
@@ -2246,9 +2218,7 @@ def base_classes(walk: List<&2, EC>, +encs: List<&2, EC>, +eos: List<&2, EO>, +t
     case +e <> +t: base_classes(t, encs, eos, tys, ss, fixed,
       base_class(e, eos, tys, ss, fixed, encs, acc))
 
-
 # FOLD 2 -- THE VARIANT CLASSES.  `class {enc}({base})`, extra fields only.
-
 
 # `next((sfx for sfx in _VARIANT_SUFFIXES if enc_name.endswith(sfx)), None)` --
 # the FIRST matching suffix in TABLE order, not the longest.
@@ -2368,9 +2338,7 @@ def variant_class.of2(+e: EC, +base: EC, eos: List<&2, EO>, ss: List<&2, SS>, fi
   Bool.pick(List<&2, String>, String.is_empty(EC.name(base)), acc,
     variant_class(e, base, eos, ss, fixed, encs, acc))
 
-
 # FOLD 3 -- THE SDST CLASSES.
-
 
 def variant_classes(vs: List<&2, EC>, +encs: List<&2, EC>, +eos: List<&2, EO>, +ss: List<&2, SS>,
                     +fixed: List<&2, Fd2>, +acc: List<&2, String>) -> List<&2, String>:
@@ -2460,7 +2428,6 @@ def sdst_classes(eos: List<&2, EO>, tys: List<&2, TY>, vs: List<&2, EC>, fixed: 
 # in BOTH the FLAT and GLOBAL enums so the PDF has one pseudocode entry for
 # them, and only GLOBAL/VGLOBAL get a helper.
 
-
 # `fmt not in base_encodings and fmt not in ("GLOBAL","SCRATCH","VGLOBAL","VSCRATCH")`
 
 def not(b: Bool) -> Bool: Bool.not(b)
@@ -2515,9 +2482,7 @@ def helpers(+eos: List<&2, EO>, encs: List<&2, EC>, ss: List<&2, SS>, +tys: List
   List.append(&2, String, List.append(&2, String, acc, ["# instruction helpers"]),
     helper_fmts(sort_eos(eos), encs, ss, sdst_ops(tys, eos), tys, Nil{}))
 
-
 # `write_ins` -- the four folds, in order, behind the import header.
-
 
 def write_ins.head.of(+encs: List<&2, EC>, +eos: List<&2, EO>, +arch: String,
                       +fixed: List<&2, Fd2>) -> List<&2, String>:
@@ -2526,7 +2491,6 @@ def write_ins.head.of(+encs: List<&2, EC>, +eos: List<&2, EO>, +arch: String,
    "from tinygrad.runtime.autogen.amd." ++ arch ++ ".enum import " ++
      String.join(enum_names(eos), ", "),
    "import functools", ""]
-
 
 # THE GATE.
 #
@@ -2538,7 +2502,6 @@ def write_ins.head.of(+encs: List<&2, EC>, +eos: List<&2, EO>, +arch: String,
 # oracle file.  That is the rule five files in this project broke by hand
 # (`cstyle` 17/215, `ops_nv` 33/219, `rdma` one hex digit, `amdev` 7/80,
 # `ops_qcom` one table entry).
-
 
 # ---- THE FIXTURE.  Built by `.agents/slop/ga_fix.py` from the SAME dicts
 # `ga-oracle.py` hands to `generate.write_ins`, so the port's fixture and

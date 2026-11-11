@@ -69,7 +69,6 @@ import ./../LAWS/spec.bend as S
 import ./../helpers.bend as H
 import ./cstyle.bend as C
 
-
 # the position map.  `kuconv.pos` answers "at which position in the `KU` list
 # does this arena INDEX stand", and the answer is a search, not a table:
 # the list is short (a kernel's worth of nodes) and a table would be a second
@@ -98,7 +97,6 @@ def kuconv.srcs.go(+ix: List<&2, U32>, ss: List<&2, U32>, +acc: List<&2, U32>) -
 def kuconv.srcs(ix: List<&2, U32>, ss: List<&2, U32>) -> List<&2, U32>:
   kuconv.srcs.go(ix, ss, Nil{})
 
-
 # the dtype.  `F.fold.dt` is a double-`Maybe` free read: the outer one is
 # "the FOLD knows this node", and a node the FOLD does not know has no
 # dtype, which upstream also does not have (its `dtype_from_uop` is total
@@ -123,7 +121,6 @@ def kuconv.addr.go(m: Maybe<&2, Maybe<&2, S.Addr>>) -> S.Addr:
 
 def kuconv.addr(+fx: F.Folded, a: U32) -> S.Addr:
   kuconv.addr.go(F.fold.addr(F.Folded.ar(fx), F.Folded.t(fx), a))
-
 
 # the shape.  `F.fold.shape` is a double-`Maybe` too: the outer one is "the
 # FOLD knows this node" and the inner one is "`_shape` is not None"
@@ -183,7 +180,6 @@ def kuconv.numel.go(ss: List<&2, U32>, +acc: U32) -> U32:
 def kuconv.numel(ss: List<&2, U32>) -> U32:
   kuconv.numel.go(ss, 1)
 
-
 # the ARG.  the `O.Arg` variant is the discriminator, and each arm is one
 # `O.Arg` -> ONE `KUArg`.
 #
@@ -204,7 +200,6 @@ def kuconv.arg.of(nm: U32, dt: S.Dt, arg: O.Arg) -> C.KUArg:
 
 def kuconv.arg(+ar: O.Arena, +fx: F.Folded, a: U32, nm: U32, dt: S.Dt) -> C.KUArg:
   kuconv.arg.of(nm, dt, O.Arena.arg(ar, a))
-
 
 # the completion pass -- and why it is here.
 #
@@ -238,7 +233,6 @@ def kuconv.arg(+ar: O.Arena, +fx: F.Folded, a: U32, nm: U32, dt: S.Dt) -> C.KUAr
 # the srcs agree and the first SRC's dtype otherwise, which is the answer
 # for every node of the five measured kernels (their srcs agree) and is named
 # AS A LIMIT FOR THE OTHERS.
-
 
 # the completed SRC at a position.  `done` is in the same order as the `KU`
 # LIST, SO POSITION `p` IS POSITION `p`.
@@ -405,7 +399,6 @@ def ku_c.go(+rest: List<&2, C.KU>, +done: List<&2, C.KU>) -> List<&2, C.KU>:
       +k = ku_c.fill(done, h)
       ku_c.go(t, List.append(&2, C.KU, done, [k]))
 
-
 # one node.  the seven fields, in `KU`'s own order.
 def kuconv.ku(+fx: F.Folded, +ix: List<&2, U32>, +a: U32) -> C.KU:
   +ar = F.Folded.ar(fx)
@@ -417,7 +410,6 @@ def kuconv.ku(+fx: F.Folded, +ix: List<&2, U32>, +a: U32) -> C.KU:
   +ag = kuconv.arg(ar, fx, a, nm, dt)
   +ss = kuconv.srcs(ix, O.Arena.srcs(ar, a))
   C.KU{op, dt, ad, nm, sh, ag, ss}
-
 
 # the converter.  an arena (through its FOLD) and a list of arena indices in
 # post-order, and a `List<&2, KU>` in the same order, with every `srcs`

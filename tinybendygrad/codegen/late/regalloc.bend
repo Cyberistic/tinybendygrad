@@ -53,9 +53,6 @@ import ./../../uop/ops.bend as O
 import ./../kernel.bend as KER
 import ./linearizer.bend as LT
 
-
-
-
 # `regalloc.py` -- 118 lines, AND 117 OF THEM ARE HERE. The one that is not is :69's
 # `assert isinstance(v, Register) and lr[v][0] == i`: bend has no assert form, the
 # invariant it checks is a property of the fixture rather than of the pass, and no row
@@ -138,7 +135,6 @@ import ./linearizer.bend as LT
 #      arm is needed before the 1-element `case _ <> _` cover.
 # `ra0_*`, `ra1_*`, `ra2_*` and `rw_none` ARE in `main`, between `se_miss` and
 # `rw_tbl_len`, in the oracle's order.
-
 
 # `PSEUDO_OPS` AS A TABLE, so `ra_pseudo_n` COUNTS it. A literal `8` is a row that no
 # mutation of the predicate can move, and the mutation table says so: dropping
@@ -308,8 +304,6 @@ def ra_tbl_ops() -> String:
 # evaluates one arm. Five drafted folds also had to be re-ordered so the SHRINKING
 # argument comes first in every self-call.
 
-
-
 # THE INTERN TABLE. `Regs` in the oracle is a growable LIST of `(name, index,
 # cons)` and an index into it, so it is a list here and not an assoc table: a
 # register's own intern index is its key. `Ru.nm` is `ra<t>_vregs`' name column
@@ -336,7 +330,6 @@ def ra_rnil() -> Ru:
 
 def ra_uni(+rs: List<&2, Ru>, k: U32) -> Ru:
   Maybe.default(&2, Ru, List.get(&2, Ru, rs, U32.to_nat(k)), ra_rnil())
-
 
 # ONE UOP. `op` is `u.op`, `ss` is `u.src` and `ds` is `u.tag` for a tag TUPLE.
 # `ds` empty is Python's `isinstance(u.tag, tuple)` being False, which `rdef`
@@ -385,7 +378,6 @@ def u32_in.go(+xs: List<&2, U32>, +k: U32) -> Bool:
 
 def u32_in(xs: List<&2, U32>, k: U32) -> Bool:
   u32_in.go(xs, k)
-
 
 # THE STATE. Ten fields, and `RaSt.ops` / `RaSt.un` / `RaSt.ta` are `self.uops`,
 # `self.ren` and `ren.is_two_address` -- constants Python hangs off the context.
@@ -495,10 +487,8 @@ def Al.st(+a: Al) -> RaSt:
   match a:
     case Al{r, st}: st
 
-
 # THE LIVE-RANGE PASS -- regalloc.py:22-29. BACKWARD, and the fuel is the
 # countdown so it is the first parameter of the self-call.
-
 
 # STEP 1, regalloc.py:26 -- `lr.setdefault(v, []).insert(0, idx)`. The prepend is
 # `tb_ins`' `pre` arm, and `u32_none()` is the "not a Register" filter: `rdef`
@@ -607,10 +597,8 @@ def ra_lr.go(rest: List<&2, RaUop>, +i: U32, s: RaSt) -> RaSt:
     case Nil{}  : s
     case u <> +r : ra_lr.go(r, U32.sub(i, 1), ra_lr.st(s, i, u))
 
-
 # `alloc` -- regalloc.py:39-45. pick the register with the furthest next use,
 # FREE FIRST, `cons` ORDER BREAKING TIES.
-
 
 # `next((j-i for j in ([] if vreg is None else lr[vreg]) if j >= i), len(uops))`
 # -- the `[]` arm is `lr[None]` answering empty, which `tb_vs` does for free
@@ -707,7 +695,6 @@ def ra_alloc.of(+cs: List<&2, U32>, +s: RaSt, +i: U32, +b: RaBd) -> Al:
 def ra_alloc(+cs: List<&2, U32>, +s: RaSt, +i: U32) -> Al:
   ra_alloc.of(cs, s, i, ra_alloc.go2(cs, s, i, RaBd{0, 0, LT.u32_none(), True{}}))
 
-
 # `fill` -- regalloc.py:48-53. assign a spill slot, allocate, record the fill.
 # `cons=None` IS THE CALLER PASSING `v.cons`, which is what the two call sites
 # do (:62 and :88 versus :97's `(r,)`).
@@ -740,9 +727,7 @@ def ra_slot(+un: List<&2, Ru>, v: U32) -> String:
 def ra_cons(+un: List<&2, Ru>, v: U32) -> List<&2, U32>:
   Ra.cs(ra_uni(un, v))
 
-
 # THE MAIN LOOP -- regalloc.py:55-97.
-
 
 # `self.reals.setdefault(i, {})[v] = live[v]` -- :63 and :77, ONE def.
 def ra_set(+s: RaSt, i: U32, v: U32, r: U32) -> RaSt:
@@ -1071,24 +1056,6 @@ def ra_run.of(+s: RaSt, +ops: List<&2, RaUop>) -> RaSt:
 def ra_run(+ops: List<&2, RaUop>, un: List<&2, Ru>, ta: Bool) -> RaSt:
   ra_run.of(ra_st0(ops, un, ta), ops)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # THE FIXTURES. `Regs` and the two `plan`s of the oracle, one entry per register
 # and one per uop, in the order the oracle interns them -- so `ra<t>_vregs` is a
 # row about the INTERN TABLE and not about the algorithm, and the register ids a
@@ -1124,7 +1091,6 @@ def ra_ops2() -> List<&2, RaUop>:
    RaUop{O.OpsRANGE{}, [0], Nil{}},
    RaUop{O.OpsINS{}, [1, 2], [5]},
    RaUop{O.OpsEND{}, [4, 3], Nil{}}]
-
 
 # `regalloc_rewrite` -- regalloc.py:99-114, and what the rows can see.
 #
@@ -1237,7 +1203,6 @@ def rw_none.go(rest: List<&2, RaUop>, +i: U32, +s: RaSt, +acc: List<&2, String>)
 
 def rw_none(+s: RaSt) -> String:
   String.join(rw_none.go(RaSt.ops(s), 0, s, Nil{}), " ")
-
 
 # the rows. per-uop and ordered: `ra<t>_a<i>` is one row per program point
 # carrying every virtual register live there and the REAL register each landed
@@ -1376,7 +1341,6 @@ def main() -> IO(Unit):
     # does. A trailing empty line is a one-line diff a reader must notice.
     LT.row("rw_pseudo_n", ra_pseudo_n())
 
-
 # THE MUTATION TABLE, MEASURED. One entry per ported rule: the rule is broken on
 # purpose, the interpreted lane is re-run, and the rows that MOVE are listed. A row
 # that only one mutation moves is a LOCALISED row and is said to be. A mutation
@@ -1488,4 +1452,3 @@ def main() -> IO(Unit):
 #   * `regalloc_rewrite`'s `nsrc` -- the oracle prints `r[1]` and not `r[0]`, and the
 #     rewritten srcs live in `r[0]`. This is W5c and it is a WALL, not a fixture
 #     limit: no row can see that half of the function, and the header says so.
-

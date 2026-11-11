@@ -58,7 +58,6 @@ import Base
 type Ty is Data:
   Ty{name: String, spellings: String}
 
-
 type CVoidP is Data:
   CVoidP{}
 

@@ -115,12 +115,10 @@ import Base
 import ./../../helpers.bend as H
 import ./../../uop/ops.bend as O
 
-
 # opt/__init__.py -- `OptOps`, `Opt` and `Opt.arg` live in `uop/ops.bend` now
 # (this file imports that one, and `KernelInfo` carries an `Opt`, so the types
 # had to move to the bottom). `O.OPT` / `O.OPTOPS` are the spellings; the three
 # readers below stay here with the `Sched` that uses them.
-
 
 # the only thing that ever reads `arg` is the `match opt.arg is ...` ladder in
 # `apply_opt`, so the ladder destructures the record directly.
@@ -150,9 +148,7 @@ def opt_target(a: O.OPTARG) -> O.AxisType:
     case O.OA_SPLIT{O.SPL{amt, t, top}}: t
     case _: O.AXIS_LOOP{}
 
-
 # postrange.py: split_targets, the Renderer slice, the Scheduler
-
 
 # `split_targets` is a dict keyed by the TARGET of a split. `shift_to` reads it
 # as `rng.axis_type in split_targets[new_type]` -- so it is a MEMBERSHIP test on
@@ -306,7 +302,6 @@ def types_go(rs: List<&2, RNG>, acc: List<&2, O.AxisType>) -> List<&2, O.AxisTyp
 def Sched.axis_types(x : Sched) -> List<&2, O.AxisType>:
   types_go(Sched.rngs(x), Nil{})
 
-
 # the FOLD shape, and it is the same four times.
 #
 # `match rs hit:` with `hit` as a fifth parameter is the shape the constraints
@@ -322,7 +317,6 @@ def Sched.axis_types(x : Sched) -> List<&2, O.AxisType>:
 # the `match` head is a parameter. `_hit` is the identity on a `Bool` and exists
 # only to satisfy "a `match` may only scrutinise a parameter" for the
 # `List.contains` call; `rng_le.k` above is the same `.z` idiom.
-
 
 def hit(b: Bool) -> Bool:
   b
@@ -364,7 +358,6 @@ def ranges_go(rs: List<&2, RNG>, +ts: List<&2, O.AxisType>, +acc: List<&2, RNG>)
 def Sched.ranges_of(x: Sched, ts: List<&2, O.AxisType>) -> List<&2, RNG>:
   ranges_go(Sched.rngs(x), ts, Nil{})
 
-
 # THE DIMENSION READERS. `upcastable_dims` and `unrollable_dims` are the same
 # fold -- "indices whose axis type is in SET and whose CONST size is > 1" -- so
 # they share `dim_go`, and Python writes them out because they are two
@@ -372,7 +365,6 @@ def Sched.ranges_of(x: Sched, ts: List<&2, O.AxisType>) -> List<&2, RNG>:
 # WALL #1 (`UOp.ranges` over the REDUCE srcs); the assumption stated on
 # `Sched.unrollable_dims` is that every REDUCE-typed axis came off a reduce,
 # which is true of every Scheduler `postrange.py` builds.
-
 
 # `isinstance(s:=self.full_shape[i], int) and s > 1`, the value half.
 def gt1(sz: U32) -> Bool:
@@ -410,7 +402,6 @@ def Sched.upcasted(x : Sched) -> U32:
 def Sched.group_for_reduces(x : Sched) -> U32:
   U32.from_nat(List.length(&2, U32, Sched.axes_of(x, [O.AXIS_WARP{}, O.AXIS_LOCAL{}])))
 
-
 # `get_kernel_actions`' `up`/`lcl`, search.py:94-98, which are also `upcast_size`
 # and the first half of `group_for_reduces`. `up` is
 # `prod(full_shape[i] for i, t in zip(full_shape, axis_types) if t in (UPCAST,
@@ -424,7 +415,6 @@ def Sched.group_for_reduces(x : Sched) -> U32:
 # after it is dead and Bend refuses the match as "already matched". Folding once
 # with the type test inline is the same product, and `axes_go`'s accumulator is
 # already the index if a caller needs the positions.
-
 
 def up_step(acc: U32, sz: U32, t: O.AxisType) -> U32:
   match t:
@@ -456,7 +446,6 @@ def Sched.upcast_size(x : Sched) -> U32:
 def ul_ok(up: U32, lcl: U32, tc_up: U32, max_up: U32, max_lcl: U32) -> Bool:
   Bool.and(U32.is_le(U32.div(up, tc_up), max_up), U32.is_le(lcl, max_lcl))
 
-
 # `apply_opt`'s SPLIT arm, and the rng bookkeeping of `shift_to`. This is the
 # whole reason `Sched` carries fields rather than computing them.
 #
@@ -466,7 +455,6 @@ def ul_ok(up: U32, lcl: U32, tc_up: U32, max_up: U32, max_lcl: U32) -> Bool:
 # every id in the AST, which is `max(id) + 1`. `top` chooses which of the two is
 # the fast axis of `sub_axis`, and `sub_axis` is WALL #2; the two rngs are not,
 # because both are functions of `(old_sz, amount, new_type)` alone.
-
 
 # THE RUNNING MAXIMUM IS A `Data` RECORD, not a `U32`. `max(m, i)` needs `i`
 # in the comparison AND in the answer, and `U32` cannot be `+`, so the fold
@@ -542,7 +530,6 @@ def put_at.at(here: Bool, acc: List<&2, RNG>, +o: O.OPT, h: RNG) -> List<&2, RNG
 def put_at(+acc: List<&2, RNG>, +o: O.OPT, h: RNG) -> List<&2, RNG>:
   put_at.at(at_it(acc, o), acc, o, h)
 
-
 def put_go(rs: List<&2, RNG>, +o: O.OPT, +acc: List<&2, RNG>) -> List<&2, RNG>:
   match rs:
     case Nil{}: acc
@@ -561,7 +548,6 @@ def SPLIT_OPT(axis: U32, amt: U32, t: O.AxisType, top: Bool) -> O.OPT:
 def Sched.split(+x: Sched, +o: O.OPT) -> Sched:
   Sched{Sched.ren(x), split_rngs(x, o), List.append(&2, O.OPT, Sched.opts(x), [o])}
 
-
 # `opt_ok` -- EVERY `check` in `apply_opt`'s SPLIT, PADTO and SWAP arms, plus
 # `shift_to`'s first `check`, as one `Bool`. Python raises on the first failure,
 # so the conjunct order below IS the order of the messages. `Bool.and` is not
@@ -575,7 +561,6 @@ def Sched.split(+x: Sched, +o: O.OPT) -> Sched:
 #     CONSEQUENT is vacuous: MEASURED on CPython, a LOCAL split of a REDUCE axis
 #     on the 16x32 kernel SUCCEEDS, so `check(not any(...))` never fires and the
 #     `reduces` conjunct is droppable. `ok_local_red` is that row.
-
 
 # `is` on two `DEV`s -- `Data` types are nominal, so this is identity.
 def dev_is(d: DEV, w: DEV) -> Bool:
@@ -708,8 +693,6 @@ def opt_ok.tc(a: O.TC, +x: Sched, no_opts: U32) -> Bool:
 def Sched.tc_up(x : Sched) -> U32:
   1
 
-
-
 # THE GATE. `main` prints one row per claim; the interpreter and the native
 # binary must print the same rows. Rows are DERIVED FROM CPython, so a row can
 # actually be wrong:
@@ -736,7 +719,6 @@ def Sched.tc_up(x : Sched) -> U32:
 #
 #   `ok_local_red` is the row that is allowed to be False knowledge: it is the
 #   `reduces` conjunct `opt_ok` drops, and it pins that the drop is a drop.
-
 
 def plus_sched() -> Sched:
   Sched.of(REN.python(), [RNG{0, O.AXIS_GLOBAL{}, 4}])

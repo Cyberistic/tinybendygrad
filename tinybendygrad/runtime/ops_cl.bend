@@ -360,9 +360,6 @@ import ../helpers.bend as H
 #               before the split too. Deleting `V_CL` and `Prog.vendor` is a
 #               real simplification but it is NOT a split; it is the owner's.
 
-
-
-
 # PART 0 -- THE VENDOR TABLE. `vend.name(vendor, op)` is one of the three
 # spellings of `op`, and `""` means THIS VENDOR HAS NO SPELLING, which is itself
 # a gateable fact and the reason this file is worth having.
@@ -370,7 +367,6 @@ import ../helpers.bend as H
 # `vend.argname(op)` says what the trace's `arg` column MEANS for that op. There
 # is deliberately no other per-op argument in the trace: every usage flag, offset
 # and size is a pure function with its own row.
-
 
 def V_CL() -> U32: 0
 
@@ -481,7 +477,6 @@ def vend.count.at(xs: List<&2, String>) -> U32:
 # the per-file `vend.count`, and the `v` argument is gone with the ladder.
 def vend.count() -> U32: vend.count.at(vend.cl())
 
-
 # THE CHECK TABLE, which is the other half of `check` and the only part of it
 # that is PORTABLE. `vend.checked(v, op)` is False exactly where the call's
 # status is DISCARDED, and there are three such places and they are per VENDOR:
@@ -498,7 +493,6 @@ def vend.count() -> U32: vend.count.at(vend.cl())
 #          device PROBE at cl:98 whose status is compared against 0 instead.
 #          Those are three facts with their own rows, because "cl is checked" is
 #          otherwise a claim the gate cannot see.
-
 
 def cl_unchecked() -> List<&2, U32>: Nil{}
 
@@ -517,14 +511,12 @@ def chk_count.at(n: Nat, +op: U32) -> U32:
 
 def chk_count() -> U32: chk_count.at(U32.to_nat(OP_N()), 0)
 
-
 # INTEGER PRINTING. `u32s` is CPython's `str()` of an `i32`: a `U32` above
 # 2^31-1 is negative and gets a minus sign and a complemented magnitude. Bend has
 # no signed integer, so this is the ONE place in the file that has to put the
 # sign back, and it is gated as a STRING against CPython's `str()` for a negative
 # CL code AND for a positive CUDA code -- the asymmetry between the two tables is
 # itself the row.
-
 
 def digits() -> List<&2, String>:
   ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
@@ -563,11 +555,9 @@ def u32s.at(is_neg: Bool, v: U32) -> String:
 # `0x80000000` is the sign bit. `U32.shrn` is LOGICAL, so this is the whole test.
 def u32s(+v: U32) -> String: u32s.at(Bool.not(U32.is_zero(U32.and(v, 2147483648))), v)
 
-
 # THE ERROR TABLES. See THE ERROR TABLES in the header: the comprehension is
 # keyed by the CODE, 74 names collapse to 63, and the codes are stored as `U32`
 # two's complement because Bend has no signed integer.
-
 
 # MEASURED: 74 names carry a value <= 0, 63 distinct values, and the four shared
 # codes keep the alphabetically LAST name (CL_SUCCESS / CL_DEVICE_NOT_FOUND /
@@ -641,9 +631,7 @@ def CL_UNKNOWN() -> String: "Unknown error"
 def cl_err_of(+status: U32) -> String:
   cl_err_step(U32.to_nat(cl_err_n()), status, cl_err_code(), cl_err_name(), False{}, CL_UNKNOWN())
 
-
 # THE TYPES.
-
 
 # ONE vendor call and the ONE argument the trace records for it. `op` is the
 # table index above, so `vend.name(vendor, Call.op(c))` reads the trace BACK as
@@ -761,7 +749,6 @@ def Made.tr(+m: Made) -> Tr:
   match m:
     case Made{buf, t}: t
 
-
 # THE TRACE, and THE RAISE.
 #
 # `check(status)` (:17) is called after EVERY vendor call in all three files, and
@@ -778,7 +765,6 @@ def Made.tr(+m: Made) -> Tr:
 # `bad_at` is read AT EMIT TIME, so it must be armed BEFORE the calls happen.
 # MEASURED: the first version armed a finished trace and every refusal row
 # printed the full trace with `refused=False`.
-
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, 0, False{}}
 
@@ -849,10 +835,8 @@ def Call.arg(+c: Call) -> String:
   match c:
     case Call{op, arg}: arg
 
-
 # READING THE TRACE. `Tr.ops` is the op sequence in order, `Tr.args` the args of
 # one op, `Tr.count` how many of one op, and `Tr.has` a real subsequence test.
-
 
 def Tr.count.go(n: Nat, +op: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
@@ -937,9 +921,7 @@ def vend.trace.go(cs: List<&2, Call>, +acc: List<&2, String>) -> List<&2, String
 def vend.trace(cs: List<&2, Call>) -> String:
   String.join(vend.trace.go(cs, Nil{}), " ")
 
-
 # PART 1 -- OpenCL. `ops_cl.py`, all 130 lines.
-
 
 # `autogen/opencl.py`, read out. Every one of these is a value the three CL
 # functions pass and none of them is derived, so they are constants -- and every
@@ -1051,7 +1033,6 @@ def cl.probe_init(+p: Prb, +t: Tr) -> Prb:
   +p2 = cl.probe.go(cl_types(), Prb.nd(p), 0, Prb{NO_IDX(), 0, Prb.nd(p), t2})
   Prb{Prb.idx(p2), Prb.n(p2), Prb.nd(p), cl.device_ids(p2, Prb.t(p2))}
 
-
 # cl:120-123 -- THE ARCH STRING, which is the `Compiled.__init__` argument and
 # the only derivation in `__init__` that is not a call.
 #
@@ -1063,7 +1044,6 @@ def cl.probe_init(+p: Prb, +t: Tr) -> Prb:
 # so the suffix is there ONLY for that one extension and it is appended AFTER the
 # join, which is why a device WITH the extension has one more comma-separated
 # field than one without and never a leading comma.
-
 
 def cl.IMG_EXT() -> String: "cl_khr_image2d_from_buffer"
 def cl.ipa_prefix() -> String: ",IMAGE_PITCH_ALIGNMENT="
@@ -1086,10 +1066,8 @@ def cl.arch_of(+exts: List<&2, String>, has_ipa: Bool, ipa: U32) -> String:
 # entry and not a substring test on the joined string.
 def cl.has_img_ext(+exts: List<&2, String>) -> Bool: List.contains(~String, ~String.eq, exts, cl.IMG_EXT())
 
-
 # cl:105-123 -- THE INIT SEQUENCE, in order. Eleven calls when the extension is
 # absent and twelve when it is there, and the ORDER is the whole of this def.
-
 
 # cl:105 `self.device_name = (clGetDeviceInfo(self.cl_dev, CL_DEVICE_NAME, 256,
 # buf, None), buf.value.decode())[1]` -- UNCHECKED (cl_info_checked). The `arg` is
@@ -1232,11 +1210,9 @@ def cl.init(+p: Prb, +device: String, +name: String, +drv: String,
       name, drv, exts, ipa, has, cl.key(name, drv),
       cl.arch_of(exts, has, ipa), cl.pending_init(), cl.ipa_get.at(has, t6)}
 
-
 # cl:25-37 -- `CLCompiler.compile`. Five calls on the success path and FOUR on
 # the failure path, because the two build-log reads at :29-30 sit inside
 # `if build_status != 0:` and the raise at :32 stops everything else.
-
 
 # cl:26 `checked(cl.clCreateProgramWithSource(self.dev.context, 1,
 # to_char_p_p([src.encode()]), None, status), status)`.
@@ -1266,14 +1242,12 @@ def comp.release(+t: Tr) -> Tr: Tr.emit(OP_RELEASE_PRG(), "0", t)
 # and the log is WALL 3, so only the PREFIX is portable.
 def CL_COMPILE_ERR() -> String: "OpenCL Compile Error\n\n"
 
-
 # cl:39-53 -- `CLProgram.__init__` and `__del__`.
 #
 # `__init__` is FOUR calls and the order is load-bearing in a way the comment
 # names: cl:46's `clBuildProgram` "# NOTE: OSX requires this", i.e. a program
 # created from a BINARY must still be BUILT before `clCreateKernel`. Drop it and
 # OSX rejects the kernel.
-
 
 # ONE program call's state. `unit`/`ctx` are the device's handles (prog:52 reads
 # `self.dev.context` and :46 `device.cl_dev`), `prg`/`kernel` the two handles
@@ -1401,7 +1375,6 @@ def prog.del.go(have_k: Bool, have_p: Bool, +t: Tr) -> Tr:
     case True{}: prog.del.prg(have_p, Tr.emit(OP_RELEASE_KERNEL(), "0", t))
     case False{}: prog.del.prg(have_p, t)
 
-
 # cl:55-76 -- ONE PROGRAM CALL, as the step list it is. Every step is one line
 # range of the Python and takes the `Prog` it is handed, so the order IS the
 # whole of `__call__`: the arg loop (:57-65), then the geometry (:66, no call),
@@ -1410,7 +1383,6 @@ def prog.del.go(have_k: Bool, have_p: Bool, +t: Tr) -> Tr:
 # THE `raise` IS IN THE TRACE (see THE RAISE): `check` after every call, so once
 # a refusal lands nothing further records and a refusal shows up as a TRUNCATED
 # trace. `cl_refuse_*` reads that.
-
 
 # `Arg.kind`: 0 is a `cl_mem`, 1 is a `clCreateImage` result, 2 is the boxed
 # `c_int{bitsize}` scalar. The three are not decoration -- they select three
@@ -1548,11 +1520,9 @@ def prog.time.at(+want: Bool, +p: Prog) -> Prog:
 def prog.launch(+want: Bool, +p: Prog) -> Prog:
   prog.time.at(want, prog.with_t(p, cl.launch(3, Prog.t(p))))
 
-
 # cl:78-89 -- `CLAllocator`. Four methods, and the ASYMMETRY between them is the
 # content: `_copyout` calls `self.dev.synchronize()` and `_copyin` does not, and
 # `_free` calls nothing at all.
-
 
 # cl:80 `BufferStorage(checked(clCreateBuffer(self.dev.context, CL_MEM_READ_WRITE,
 # size, None, status), status))` -- the `arg` is the SIZE, so `cl_alloc_args`
@@ -1583,12 +1553,10 @@ def cl.sync(+t: Tr) -> Tr: Tr.emit(OP_FINISH(), "0", t)
 # the ONLY transfer that synchronises.
 def copy.copyout(nbytes: U32, +t: Tr) -> Tr: cl.sync(Tr.emit(OP_COPY_OUT(), U32.show(nbytes), t))
 
-
 # helpers.py:38 -- `is_image_shape(shape)` is `shape is not None and len(shape) ==
 # 3 and shape[-1] == 4`. The LAST dim is 4 and not the first, so `(4, 8, 8)` is a
 # plain buffer and `(8, 8, 4)` is an image. Two fixtures and the difference is
 # the whole of `img.is_image`.
-
 
 # cl:14 `OSX_TIMING_RATIO = (125/3) if OSX else 1.0` -- "it's in like GPU clocks or
 # something". An F32, and the only F32 in the three files besides hp:57's.

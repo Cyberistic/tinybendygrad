@@ -76,8 +76,6 @@
 # `kernel.bend`'s output, not this file's.
 #
 
-
-
 # THE WALL, stated once and honestly, because it is ONE wall and it is not in
 # this file: `UOp.ranges` is not ported. fold.bend:5118 symbol=UOp.ranges marks
 # `ops.py:465 _ranges` and `ops.py:497 ranges` P3, and says why: `_ranges` is a
@@ -103,7 +101,6 @@
 # the one whose srcs are all RANGEs.
 #
 
-
 # `_drop_valid_stmts` is `@functools.cache`d and `memory_coalescing` keeps a
 # `defaultdict` keyed by a 5-tuple. Neither is a set the tables here can hold, and
 # neither has a rule that would fire without it, so neither is a missing TABLE --
@@ -114,7 +111,6 @@ import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
-
 
 # THE RESULT. A rule RETURNS THE ARENA, not a pair -- `movement.bend`'s `Hop`
 # shape, renamed `Rew` because both files are live in one tree. `at == 0` is
@@ -158,7 +154,6 @@ def b2u(have: U32, r: U32) -> U32:
 def rew_next(h: Rew, r: Rew) -> Rew:
   match h r:
     case Rew{ha, hn} Rew{ra, rn}: Rew{ra, b2u(hn, rn)}
-
 
 # THE READERS. `O.Arena`'s readers return BARE values, not `Maybe`.
 
@@ -217,7 +212,6 @@ def rw_ranges.go(is_range: Bool, +ar: O.Arena, i: U32) -> Maybe<&2, List<&2, U32
 def rw_ranges(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, U32>>:
   rw_ranges.go(rw_is(ar, i, O.OpsRANGE{}), ar, i)
 
-
 # the remaining tables: their length and their `ops` key are exact, their bodies
 # are not ported. Each is listed with the Python line that builds it and the wall
 # that stops its rules, so the table set is a real inventory rather than a claim
@@ -253,7 +247,6 @@ def rw_ranges(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, U32>>:
 # `pm_reduce_collapse` is `pm_reduce_unparented + 6 rules + symbolic`, so its own
 # count is 7 and its LENGTH is 130 with `symbolic`'s 123. Reading 130 as "130
 # rules in simplify.py" is the obvious mistake and `rc_own` is the row for it.
-
 
 type G is Data:
   G{fx: F.Folded, ix: List<&2, U32>}

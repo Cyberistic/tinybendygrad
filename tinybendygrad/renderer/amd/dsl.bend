@@ -64,9 +64,7 @@ def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.
 #    and the 64-bit `literal` field can both be held. What CANNOT be held is a
 #    field WIDER than 64 bits, of which there are none.
 
-
 # THE TYPES.
-
 
 # `dsl.py:18-20`. `Reg` is a WINDOW on the 512-entry src space: an offset, a
 # width, and three source modifiers. `ab` is Python's `abs_` (`abs` is taken).
@@ -146,10 +144,8 @@ type Opd is Data:
 type Nm is Data:
   Nm{name: String, off: U32}
 
-
 # THE CONSTANTS. Every one of these is audited in
 # `.agents/slop/dsl_constmap.py` against CPython, by getattr and by probe.
-
 
 # THE SPACE. `src = Reg(0, 512)` (:66). 512 entries, offsets 0..511.
 def SRC_SZ() -> U32: 512
@@ -339,7 +335,6 @@ def t_stub() -> IO(Unit):
 # one list, so a wrong binding shows up in both at once. That is the property a
 # dict keyed the other way would not have.
 
-
 # `Reg._NAMES` (:11-15), in DICT ORDER -- the order is part of the table, so it
 # is a list and not a set. 32 entries.
 def reg_names() -> List<&2, Nm>:
@@ -375,11 +370,9 @@ def canon_in() -> List<&2, Nm>:
    Nm{"ssrc1", 1}, Nm{"src2", 2}, Nm{"vdst", 3}, Nm{"sdst", 3}, Nm{"sdata", 3},
    Nm{"data", 4}, Nm{"vdata", 4}, Nm{"data0", 4}, Nm{"vsrc", 4}]
 
-
 # THE LOOKUPS. A dict lookup is "walk in lockstep and keep the FIRST hit", so
 # every one of these carries `found` and `Bool.pick`s the value. `List.find`
 # would keep the LAST hit and is NOT the same function.
-
 
 # offset -> name, keeping the first hit. Absent answers "" -- `self._NAMES[o]`
 # is a KeyError, and the port turns it into the arm that follows, which is the
@@ -404,7 +397,6 @@ def nm_off.go(n: Nat, +want: String, xs: List<&2, Nm>, +found: Bool, got: U32) -
         case Nm{nm, +o} <> t:
           +h = String.eq(nm, want)
           nm_off.go(m, want, t, Bool.or(found, h), Bool.pick(U32, Bool.and(Bool.not(found), h), o, got))
-
 
 # Bend has no `value.field` sugar and generates no projection, so ONE reader per
 # field, once. `cstyle.bend` died of writing them inline 43 times.
@@ -512,7 +504,6 @@ def reg_slice.go(bad: Bool, start_neg: Bool, stop_neg: Bool, +start: U32, +stop:
     case True{}:
       Bad{String.concat(["slice [", key_text(start, start_neg), ":", key_text(stop, stop_neg), "] out of bounds for size ", u32_text(Rg.sz(r))])}
     case False{}: Res{0, ""}
-
 
 # `Reg.fmt` -- :44-62. EIGHT arms, and a transposed pair of them is a silently
 # wrong assembly string, so the gate reads the STRING, never a branch taken.
@@ -632,7 +623,6 @@ def reg_fmt.go(+r: Rg, +sz_ov: U32, parens: Bool, upper: Bool) -> Res:
 def reg_fmt(+r: Rg, sz_ov: U32, parens: Bool, upper: Bool) -> Res: reg_fmt.go(r, sz_ov, parens, upper)
 def reg_repr(+r: Rg) -> Res: reg_fmt(r, 0, True{}, True{})
 
-
 # `BitField` -- :100-123. THE FOUR NUMBERS, and only four:
 #
 #   hi, lo, default, mask = (1 << (hi - lo + 1)) - 1   (:103)
@@ -652,7 +642,6 @@ def reg_repr(+r: Rg) -> Res: reg_fmt(r, 0, True{}, True{})
 # for a mask and `H.i64_not` for a word, and `<<` is `U32.shln` on a Nat for the
 # former (`U32.shl` is a ONE-BIT shift, so every shift AMOUNT is a Nat literal or
 # a `U32.to_nat` of a bound) and `H.i64_shl` for the latter.
-
 
 def bf_bits(+f: Fld) -> U32: U32.add(U32.sub(Fld.hi(f), Fld.lo(f)), 1)
 
@@ -945,7 +934,6 @@ def vdsty_low(vdstx_off: U32) -> U32: U32.xor(U32.and(U32.sub(vdstx_off, VDSTY_L
 
 def enum_encode(enc: U32, is_member: Bool) -> Bool: Bool.not(is_member)
 
-
 # `Inst` -- :270-456. The LOGIC, with the autogen DATA as arguments.
 #
 # `_fields` is the field list in DECLARATION order (:274-282), and it is
@@ -955,7 +943,6 @@ def enum_encode(enc: U32, is_member: Bool) -> Bool: Bool.not(is_member)
 # `_variant_suffix` walks it to find the first 249/250/255 (:431-436). A
 # transposed pair is a silently wrong encoding, so `inst_fields` is gated BY
 # NAME, in order, as a String.
-
 
 # ONE field, as the walk needs it: the name, the field, and the value the
 # caller supplied. `has` is Python's `vals[name] is None` test.
@@ -1169,8 +1156,6 @@ def needs_literal.k(k: Nat, +v: Ov) -> Bool:
 
 def needs_literal(+v: Ov) -> Bool: needs_literal.k(U32.to_nat(Ov.k(v)), v)
 
-
-
 # `op_bits` / `op_regs` -- :348-381. FIVE ADJUSTMENTS over the XML widths, and
 # each is a CONDITIONAL on the op NAME or on the raw word, so each needs its own
 # pair of rows: one that fires and one that sits next to it and does not.
@@ -1286,8 +1271,6 @@ def vs_of.go(r: Maybe<&2, String>, dflt: String) -> String:
 def vs_of(r: Maybe<&2, String>) -> String:
   vs_of.go(r, "")
 
-
-
 # THE GATE. Every `py=` below was produced by CALLING CPython --
 # `.agents/slop/dsl_oracle.py`, which imports `tinygrad/renderer/amd/dsl.py` and
 # calls its methods; nothing in this file is transcribed from a Python
@@ -1298,8 +1281,6 @@ def vs_of(r: Maybe<&2, String>) -> String:
 # `SrcField` must be 9 bits, a `VGPRField` 8, an `SGPRField` 7, an `SSrcField`
 # 8 (:155-159) -- laid out non-overlapping. Their widths are chosen; every
 # NUMBER the gate prints about them is dsl.py's arithmetic on those choices.
-
-
 
 def eqr(+a: Res, +b: Res) -> Bool: U32.is_eq(Res.v(a), Res.v(b))
 def eqrs(+a: Res, +b: Res) -> Bool: String.eq(Res.s(a), Res.s(b))
@@ -1336,7 +1317,6 @@ def hi_max.go(fs: List<&2, Fld>, +acc: U32) -> U32:
     case Nil{}: acc
     case Fld{nm, hi, lo, dflt, kind, rlo, rhi, align} <> t: hi_max.go(t, U32.max(acc, hi))
 
-
 # gate 1: the tables, both directions, and one row per entry.
 #
 # `ops_nv`'s audit found 33 of 219 constants wrong in a file already printing
@@ -1348,15 +1328,12 @@ def hi_max.go(fs: List<&2, Fld>, +acc: U32) -> U32:
 # Written out rather than walked: a walker needs an index into the table, and an
 # index that is itself computed is the exact thing that hides a wrong binding.
 
-
 def hi_max(fs: List<&2, Fld>) -> U32: hi_max.go(fs, 0)
-
 
 # THE GATE'S HELPERS. Each exists because a generated row needs it, and NONE of
 # them is a re-implementation of a table -- they are RENDERERS, so a gate row
 # reads as the CPython value it is compared against. `.agents/slop/dsl_gen.py`
 # keeps everything above this block and regenerates everything below.
-
 
 # `Reg` as CPython's tuple spelling, `f"{r.offset},{r.sz},{r.neg},{r.abs_},{r.hi}"`
 # -- and `str(False)` is "False", so the Bool is spelled the Python way.
@@ -1373,7 +1350,6 @@ def rg_eq2(+a: Rg, +b: Rg) -> Bool:
 # a `BitField` as `hi,lo,default,mask` -- dsl.py:103's four values, in order.
 
 def rg_eq.w(head: Bool, neg: Bool, rest: Bool) -> Bool: Bool.and(head, Bool.and(neg, rest))
-
 
 # Bend has no `Bool.eq`; `Bool.xor` is false exactly when the two agree, so
 # equality is NOT XOR and every Bool comparison in this file goes through `beq`.
@@ -1590,4 +1566,3 @@ def vs_text.go(m: Maybe<&2, String>, dflt: String) -> String:
 # --- T  THE FOUR TABLES, BOTH DIRECTIONS -------------------------------
 
 def vs_text(m: Maybe<&2, String>) -> String: vs_text.go(m, "None")
-

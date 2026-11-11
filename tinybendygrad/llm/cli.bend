@@ -25,7 +25,6 @@
 import Base
 import ./gguf.bend as G
 
-
 # cli.py:13-16 -- the preset is a behaviour class, not a name. Upstream normalises `qwen35`/`qwen35moe`
 # to `qwen2` before using it, and `llama-v3`/`llama-bpe`/`gpt-4o` fall through `role`/`end_turn`'s
 # default branch. So the code below identifies WHICH BRANCH a preset takes, which is all this file reads.
@@ -53,7 +52,6 @@ def Preset.of(+s: String) -> Maybe<&1, U32>:
     case "tekken": Some{5}
     case _: None{}
 
-
 # cli.py:109-117 -- `role`. `Maybe` for the same reason: tekken RAISES for a role it does not have
 # (`ValueError`), and returning `""` there would be a silent wrong answer instead.
 
@@ -67,7 +65,6 @@ def Template.role(+preset: U32, +role: String) -> Maybe<&1, String>:
              Bool.pick(Maybe<&1, String>, String.eq(role, "assistant"), Some{""}, None{}))   # tekken
     case _: Some{String.concat(["<|start_header_id|>", role, "<|end_header_id|>\n\n"])}  # default
 
-
 # cli.py:119-125 -- `end_turn`. `+eos` is the tokenizer's end-of-sequence token DECODED, which is the
 # caller's job because the tokenizer is not ported (see the header).
 
@@ -79,7 +76,6 @@ def Template.end_turn(+preset: U32, +eos: String) -> String:
     case 4: ""                                                       # glm4
     case 5: "[/INST]"                                                # tekken
     case _: eos                                                      # default
-
 
 # cli.py:77,82 -- `decode` AND `is_end`, THE CHEAP HALF OF `SimpleTokenizer`.
 #
@@ -134,8 +130,6 @@ def Tokenizer.decode(+vocab: List<&2, Tok>, +ids: List<&2, U32>) -> Maybe<&1, St
   # a lambda, because `utf8.of` takes its bytes LINEARLY (`+bs`) and `Maybe.map` wants a plain function
   Maybe.map(&1, List<&2, U32>, String, b => G.utf8.of(b), Tokenizer.decode.start(vocab, ids))
 
-
-
 #: cli.py:82 -- `token_id in (self.eos_id, self.eot_id, self.eom_id)`. Upstream carries three `int|None`;
 #: the SET of present ids is the same thing, and a `List<&2, U32>` avoids putting a `Maybe` over a `Type`
 #: in a record field -- which Bend REFUSES: MEASURED, `Maybe<&1, U32>` as a record field answers
@@ -144,7 +138,6 @@ def Tokenizer.is_end(+ends: List<&2, U32>, +tid: U32) -> Bool:
   match ends:
     case Nil{}: False{}
     case h <> t: Bool.or(U32.is_eq(h, tid), Tokenizer.is_end(t, tid))
-
 
 # cli.py:126-141 -- `render`. the map-then-FOLD shape, because the direct shape is not expressible.
 #

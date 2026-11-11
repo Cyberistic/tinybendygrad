@@ -70,13 +70,11 @@
 #     the message plus the offending op and nothing else; the
 #     message's own tail is `{u}`, a UOp repr, i.e. the GRAPH and not a value.
 
-
 import Base
 import ./tc_ptx.bend as P
 import ./tc.bend as T
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
-
 
 # THE STATE. `r` is `dict[UOp, str | list[str]]` (ptx.py:176), `c` is a
 # `defaultdict[int]` over a STRING key (ptx.py:175), `kern` is ptx.py:228's
@@ -181,7 +179,6 @@ def Wk.idx_ok(w: Wk) -> Bool:
   match w:
     case Wk{op, dt, addr, nmn, nm, refs, idx, idx_ok}: idx_ok
 
-
 # `ssa` -- ptx.py:180-183, the whole of it:
 #     def ssa(prefix, u=None, dtype=None):
 #       prefix += f"_{dtype if dtype is not None else self.types[unwrap(u).dtype]}_"
@@ -226,8 +223,6 @@ def cnt_bump(+cs: List<&2, Cnt>, +key: String, +ty: String, +k: U32) -> List<&2,
         List.append(&2, Cnt, [Cnt{key, ty, U32.add(Cnt.n(c), k)}], t),
         List.append(&2, Cnt, [c], rest))
 
-
-
 def pkey(+prefix: String, +ty: String) -> String: String.concat([prefix, "_", ty, "_"])
 def ssa_name(+key: String, n: U32) -> String: String.concat(["%", key, U32.show(n)])
 
@@ -260,7 +255,6 @@ def ssa_many.ago(k: Nat, +n: U32, +c: List<&2, Cnt>, +key: String) -> Ssa2:
 def ssa_many(+cs: List<&2, Cnt>, +key: String, +ty: String, +k: U32) -> Ssa2:
   Bool.pick(Ssa2, U32.is_eq(k, 0), Ssa2{cs, Nil{}},
     ssa_many.ago(U32.to_nat(k), cnt_n(cs, key), cnt_bump(cs, key, ty, k), key))
-
 
 # THE PREFIX TABLE -- ptx.py:217-219, plus ptx.py:198-209's three allocating
 # overrides folded in so ONE `alloc` covers all four:
@@ -340,7 +334,6 @@ def pf.of(+op: O.Op, +dt: S.Dt, +addr: S.Addr, +nmn: U32) -> Pf:
   Bool.pick(Pf, O.GroupOp.alu(op), pf1("alu", pf.ty_of("", dt), 1, False{}),
   no_pf()))))))))))
 
-
 # THE ARM SELECTOR. ptx.py:186-221 is a chain of `if`s whose ORDER is
 # load-bearing, because two of them overlap:
 #
@@ -395,7 +388,6 @@ def arm.of(+op: O.Op, +addr: S.Addr, idx_ok: Bool) -> U32:
   Bool.pick(U32, on_regsrc(op, addr), arm.regsrc(op, idx_ok),
   Bool.pick(U32, is_op(op, O.OpsSPECIAL{}), A_SPEC(),
   A_ALLOC())))))))
-
 
 # THE REFERENCE ARMS. `refs` are INDICES into the registers emitted so far,
 # which is `r[u.src[i]]`; `List.get` over a `Data` list answers `Some` for every
@@ -452,8 +444,6 @@ def rg_alias(w: Wal, +s: Wk) -> Rg: rg_at(w, rg_src0(s))
 
 def rg_pick(w: Wal, +s: Wk) -> Rg:
   rg_pick.pick(List.get(&2, String, Rg.p(rg_alias(w, s)), U32.to_nat(Wk.idx(s))))
-
-
 
 # `to_function_name` -- helpers.py:157, reached from ptx.py:193 through
 # `KernelInfo.function_name` (ops.py:1340):
@@ -541,7 +531,6 @@ def wk_all(+ss: List<&2, Wk>, w: Wal) -> Wal:
       +n1 = wk1(w, s)
       Bool.pick(Wal, String.is_empty(Wal.ref(n1)), wk_all(t, n1), n1)
 
-
 # THE `.reg` BLOCK. ptx.py:229 hands `render_kernel` `c.items()` and ptx.py:165 prints
 #
 #     f".reg .{reg.split('_')[-2]} %{reg}<{cnt}>;"    for reg,cnt in regs
@@ -567,7 +556,6 @@ def reg_go(+cs: List<&2, Cnt>, +acc: List<&2, String>) -> List<&2, String>:
 
 def reg_block(+w: Wal) -> List<&2, String>:
   List.concat(&2, String, [reg_go(Wal.c(w), Nil{}), Wal.kern(w)])
-
 
 # THE GATE ROWS.
 
@@ -639,7 +627,6 @@ def gots.of(+ref: String, +ss: List<&2, Wk>, +w: Wal) -> List<&2, String>:
 
 def gots(+nm: String, +ss: List<&2, Wk>) -> List<&2, String>:
   gots.of(Wal.ref(wk_all(ss, wal0())), ss, wk_all(ss, wal0()))
-
 
 def zip1(+g: String, +nm: String, +w: Wt) -> String:
   T.r(String.concat([nm, Wt.nm(w)]), g, Wt.want(w))
@@ -1252,7 +1239,6 @@ def r_all() -> String:
     f14_skips(), f15_bidx(), f16_bitcast(), f17_u64(), f18_name(), f19_mixed(), f20_idx_pred(),
     f21_name(), f22_name2(), f23_load1(), f24_range(), f25_rangevoid()])
 
-
 # `T.r` ENDS EVERY ROW WITH A NEWLINE and `IO.print` appends one more, so the last
 # one is DROPPED here: the oracle's `sys.stdout.write(rows() + "\n")` supplies
 # exactly one frame and this is that frame. Without the drop the two lanes differ
@@ -1263,7 +1249,6 @@ def r_body() -> String:
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(r_body())
-
 
 # THE MUTATION TABLE. Measured 2026-10-02 with `.agents/slop/ptx-s3-mutate.py`:
 # 30 mutations, one textual edit at a time, each row diffed against the
@@ -1339,4 +1324,3 @@ def main() -> IO(Unit):
 # defects: the moving sites are all `to_function_name` and the tag constants, and
 # every port-defect class in this file was found by a RULE mutation or by the
 # string diff, not by `+1`.
-

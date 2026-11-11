@@ -95,7 +95,6 @@ import ./rewriter.bend as RW
 #  36  101-102 table pm_group_gpudims          1 of 1 (1 + pm_device_to_var)
 #  37  103-106 table pm_range_to_special       1 of 1 (+ pm_split_ends)
 
-
 # THE GPUDIMS TABLES, RE-DERIVED AT HEAD. `78d482262` RENAMED `add_gpudims` to
 # `group_gpudims`, renamed `pm_add_gpudims` to `pm_group_gpudims`, and ADDED a
 # second table `pm_range_to_special`. Two of the three are a RENAME and one is an
@@ -147,7 +146,6 @@ def pm_group_gpudims() -> List<&2, O.PMEntry>:
 def pm_range_to_special() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsRANGE{}], Nil{}},                 # gpudims.py:105 RANGE GLOBAL/LOCAL -> SPECIAL
    O.PMEntry{1, [O.OpsEND{}], Nil{}}]                    # linearizer.py:95 do_split_ends (pm_split_ends)
-
 
 # `pm_range_to_special`'s ONE RULE, PORTED. gpudims.py:104-106:
 #
@@ -253,7 +251,6 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 # `case _:` from `AXIS_LOOP` to `AXIS_GLOBAL` and N-e becomes live immediately. So
 # the op test stays -- it is what would catch that change -- and the zero is
 # reported with the argument rather than dressed up.
-
 
 # THE `pm_range_to_special` FIXTURE. The main fixture `g()` builds EVERY range with
 # `AXIS_LOOP`, which is a member the rule REFUSES -- so `rs_rule` would answer

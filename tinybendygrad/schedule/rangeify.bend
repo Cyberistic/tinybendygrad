@@ -66,7 +66,6 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../uop/movement.bend as M
 
-
 # THE READERS. `movement.bend`'s `mp_*` are reused, not copied: they are the
 # same six reads of the same arena and a second copy would be pure weight. What
 # is added here is what rangeify.py needs and `movement.bend` does not have --
@@ -539,7 +538,6 @@ def rf_rtag(+ar: O.Arena, +self: U32, t: O.Tag) -> M.Hop:
 # answers, and a `Hop`'s index is not enough to build a node on; the two are one
 # line apart and the fixture is the only caller that needs the second.
 
-
 # `pm_add_param_range_tags` -- rangeify.py:330-333. FULLY PORTED.
 #
 #     # Scalar parameters keep their identity across the call boundary.
@@ -896,7 +894,6 @@ def GS_ALL() -> List<&2, O.Op>:
 def gs_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, GS_ALL(), Nil{}}]   # 47  b -> raise BottomUpGate (a no-answer here)
 
-
 # THE FOREIGN TAGS. Four of rangeify.py's tables are `a + b` compositions with a table this
 # file does not own, and the foreign rules come FIRST, so their tags are 0..n-1 and every
 # own tag is shifted. Keeping them in the table is the honest choice for three reasons: the
@@ -1227,12 +1224,10 @@ def rf_fb_sym.one(ok: Bool, acc: Bool) -> Bool:
 def rf_fb_symr(+ar: O.Arena, +r: U32) -> Bool:
   Bool.and(M.mp_is(ar, r, O.OpsRANGE{}), Bool.not(M.mp_is(ar, M.mp_src0(ar, r), O.OpsCONST{})))
 
-
 def rf_fb_sym.go(+ar: O.Arena, rs: List<&2, U32>, acc: Bool) -> Bool:
   match rs:
     case Nil{} : acc
     case r <> t: rf_fb_sym.go(ar, t, rf_fb_sym.one(rf_fb_symr(ar, r), acc))
-
 
 def rf_fb_sym(+ar: O.Arena, self: U32) -> Bool:
   rf_fb_sym.go(ar, O.Arena.src_from(ar, self, 1), False{})
@@ -1521,8 +1516,6 @@ def ab_7_src(+ar: O.Arena, +x: U32) -> U32:
 def ab_7.one(ar: O.Arena, x: U32, acc: List<&2, U32>) -> List<&2, U32>:
   List.append(&2, U32, acc, [ab_7_src(ar, x)])
 
-
-
 def ab_7_srcs.go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match ss:
     case Nil{} : acc
@@ -1594,7 +1587,6 @@ def ab_5_cast(+fx: F.Folded, +ar: O.Arena, +c: U32) -> Bool:
 def ab_5_claim(+fx: F.Folded, +ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_is(ar, self, O.OpsINDEX{}),
            Bool.and(M.mp_nsrc_ge(ar, self, 1), ab_5_cast(fx, ar, M.mp_src0(ar, self))))
-
 
 def ab_5(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
@@ -1699,10 +1691,8 @@ def g_pdev(slot: U32) -> O.ParamArg:
              Some{S.D1{1}}, False{}, None{}, None{}, False{}, None{}}
 def g_buf.slot(slot: U32, n: U32, a: S.Addr, s: U32) -> O.Arena: O.Arena.empty()
 
-
 def g_buf(slot: U32, n: U32, a: S.Addr) -> O.Arena:
   g_buf.slot(slot, n, a, 0)
-
 
 def g_c(v: H.I64) -> O.Const: O.CInt{v}
 
@@ -2001,7 +1991,6 @@ def ren_axis0.go(a: O.Arg) -> U32:
 def ren_axis0(+n: U32, +ar: O.Arena, +self: U32) -> U32:
   ren_axis0.go(M.mp_arg(M.hop_ar(rf_renumber(ar, self, n)), M.hop_ix(rf_renumber(ar, self, n))))
 
-
 def claim.one(ok: Bool, acc: U32) -> U32:
   match ok:
     case True{} : U32.add(acc, 1)
@@ -2027,7 +2016,6 @@ def claim_ab_src.of(tag: U32, two: Bool, weakc: Bool, ar: O.Arena, self: U32) ->
 def claim_ab_src(tag: U32, +fx: F.Folded, +ar: O.Arena, +self: U32) -> Bool:
   claim_ab_src.of(tag, ab_4_claim(ar, self), ab_5_claim(fx, ar, self), ar, self)
 
-
 def claim_full.one(ok: Bool, acc: U32) -> U32:
   match ok:
     case True{} : U32.add(acc, 1)
@@ -2045,8 +2033,6 @@ def claim_full(ts: List<&2, O.PMEntry>, fx: F.Folded, ar: O.Arena, self: U32) ->
   claim_full.go(ts, fx, ar, self, 0)
 
 def t_bool(x: Bool) -> U32: b2u(x)
-
-
 
 # THE SRC OP SEQUENCE, because A COUNT IS NOT A GATE. For a rewrite engine the identity
 # of an answer is the SEQUENCE of its srcs' ops, in order, plus its arg: swapping a
@@ -2291,7 +2277,6 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
 # a second copy -- see the note at the top of the `*_try` block.
 
-
 # THE ENGINE. `graph_rewrite` -- ops.py:1886 -- over the port's ARENA.
 #
 # WHAT UPSTREAM DOES, and the four lines that matter:
@@ -2327,7 +2312,6 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # drives the tables it owns. Stage 1 is `Stg{0, Nil{}}` -- an EMPTY table --
 # because `run_rangeify` is not ported, and an empty table is the honest
 # spelling of "this stage does nothing here".
-
 
 # THE MAP. An original node index -> the index it BECAME. It is APPENDED and
 # the scan keeps the LAST match, so the newest entry wins. EVERY visited node
@@ -2569,7 +2553,6 @@ def eng_changed.go(rs: List<&2, Rep>, acc: U32) -> U32:
 
 def eng_changed(rs: List<&2, Rep>) -> U32: eng_changed.go(rs, 0)
 
-
 # THE OP NAME. CPython's `uop.op.name` is the SPELLING both sides use, and the
 # port has no general op-to-string function, so this is the ten ops the
 # fixtures use and "OTHER" for everything else -- which is a MISMATCH, not a
@@ -2663,7 +2646,6 @@ def eng_dump.go(fuel: Nat, todo: List<&2, U32>, +ar: O.Arena, +seen: List<&2, U3
 
 def eng_dump(+ar: O.Arena, +root: U32) -> String:
   String.join(eng_dump.go(eng_fuel(ar), [root], ar, Nil{}, root, Nil{}), ";")
-
 
 # THE FIXTURES. TWO graphs, every arg either `ANone` or a CONST, so the dump
 # has four arg keys and the CPython side can rebuild the graph from it.
@@ -2795,4 +2777,3 @@ def eng_fixture_rows(+g: G, +tag: String, +root: Nat) -> List<&2, String>:
 
 def eng_stage_n() -> U32: U32.from_nat(List.length(&2, Stg, eng_stages()))
 def eng_table_n() -> U32: 8
-

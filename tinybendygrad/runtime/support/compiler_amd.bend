@@ -144,7 +144,6 @@
 #   TODO(p3) compiler_amd.py:108 -- `read_bytes()`.
 import Base
 
-
 # THE TRACE. Which toolchain call the Python makes, in what order, with which
 # argument. `Tr.put` appends, so a REFUSAL is a trace that stops early -- which
 # is how `c.msg` is enforced: there is no `raise` in bend and no step guard.
@@ -183,7 +182,6 @@ def A.act_codegen() -> U32: 6
 def A.act_link() -> U32: 9
 def A.act_compile() -> U32: 15
 
-
 # :4-10  the comgr version switch and its assert.
 #
 #     if major.value >= 3:
@@ -203,7 +201,6 @@ def Ad.hip_lang(major: U32) -> U32:
 # the assert fires ONLY on the comgr-3 path, so on comgr-2 it never runs
 def Ad.hyp3(major: U32) -> Bool: U32.is_eq(Ad.hip_lang(major), 3)
 
-
 # :15-18  check().  `c.msg` answers the message for a NON-zero status and the
 # empty string for zero, so the one caller tests emptiness instead of branching
 # twice, and the trace is truncated at that point.
@@ -212,23 +209,19 @@ def c.msg(+status: U32, msg: String) -> String:
   Bool.pick(String, U32.is_eq(status, 0), "",
     String.concat(["comgr fail ", U32.show(status), ", ", msg]))
 
-
 # :28-32  set_options(). `sp.n` is the number of arguments comgr is handed.
 # See the measurement that deleted a family of bugs: `String.split` already
 # keeps the empty fields, so this is the length and nothing else.
 
 def sp.n(options: String) -> U32: U32.from_nat(List.length(&2, String, String.split(options, ' ')))
 
-
 # :35-38  the ISA NAME.  `b"amdgcn-amd-amdhsa--" + arch.encode()`.
 
 def h.isa(arch: String) -> String: String.append("amdgcn-amd-amdhsa--", arch)
 
-
 # :39  the LOGGING FLAG, and :38's language: both autogen constants.
 
 def h.logging(on: Bool) -> U32: Bool.to_u32(on)
-
 
 # :49-55 / :56-57  THE `asm` BRANCH. The data NAME is the only difference
 # besides the action, and it is a suffix on a fixed prefix:
@@ -236,7 +229,6 @@ def h.logging(on: Bool) -> U32: Bool.to_u32(on)
 #     else: amd_comgr_set_data_name(data_src, b"<null>")
 
 def h.dataname(asm: Bool) -> String: Bool.pick(String, asm, "<null>.s", "<null>")
-
 
 # :60-63  THE THIRTEEN OPTIONS, and :64's `' '.join`.
 #
@@ -271,7 +263,6 @@ def h.opt_string(arch: String) -> String: h.options(arch)
 
 def h.opt_n(arch: String) -> U32: sp.n(h.opt_string(arch))
 
-
 # :52 / :65 / :70 / :72  THE FOUR ACTIONS, in order, and the two constant
 # option strings. The order is the thing a trace exists for: the same three
 # `do_action` calls run in both branches and only the FIRST differs.
@@ -292,7 +283,6 @@ def h.opt_empty_n() -> U32: sp.n(h.opt_empty())
 def c.asm_fail() -> String: "assemble failed"
 def c.compile_fail() -> String: "compile failed"
 
-
 # :20-25  _get_comgr_data. Four calls, and the SIZE is read TWICE -- once to
 # ask how big the buffer is and once inside the buffer that was allocated at
 # that size. The order is what `gd.*` records.
@@ -307,11 +297,9 @@ def gd.calls() -> U32: 4
 def gd.calls_name() -> String:
   "amd_comgr_action_data_get_data amd_comgr_get_data amd_comgr_get_data amd_comgr_release_data"
 
-
 # :81-84  HIPCompiler's CACHE KEY.  `f"compile_hip_{self.arch}"`.
 
 def C.hip_key(arch: String) -> String: String.concat(["compile_hip_", arch])
-
 
 # :85-87  HIPCompiler.compile's ASM PREDICATE, and it is subtler than it
 # looks:
@@ -347,12 +335,10 @@ def C.compile_error(m: String) -> String: m
 
 def C.compile_error_kind(m: String) -> String: "CompileError"
 
-
 # :88  `amdgpu_disassemble(lib)`. The trace entry is the call; its argument is
 # the artifact, which is a WALL.
 
 def C.dis_row(arch: String) -> String: String.concat(["amdgpu_disassemble(", arch, ")"])
-
 
 # :91-94  HIPCCCompiler's CACHE KEY.
 #
@@ -377,7 +363,6 @@ def C.hipcc_key(arch: String, hex8: String, nohipcc: Bool) -> String:
 # :96 `if self.no_hipcc: return b""` -- no spawn, no temp file, no artifact
 def C.short_circuit(nohipcc: Bool) -> U32: Bool.to_u32(nohipcc)
 
-
 # :97-98  THE THREE TEMP SUFFIXES. The names are random (WALL 3); the suffixes
 # are the part the port constructs, and `amd.cc_*.argvn*` counts depend on them
 # being the right three files in the right order.
@@ -389,7 +374,6 @@ def C.suffix_of(+i: U32) -> String:
   # match (bend2-constraints.md POSITION 1885), so `case 2: ... case 1: ...`
   # routes 3 to the 2 arm and there is no error.
   Bool.pick(String, U32.is_eq(i, 0), ".cpp", Bool.pick(String, U32.is_eq(i, 1), ".bc", ".hsaco"))
-
 
 # :102-106  the two argv lists. the headline of this file.
 #
@@ -426,7 +410,6 @@ def C.prog() -> String: "hipcc"
 
 def C.argv_n(n: U32, extra: List<&2, String>) -> U32:
   U32.add(n, U32.from_nat(List.length(&2, String, extra)))
-
 
 # THE GATE. Every `py=` expectation below is a row of `.agents/slop/cs_oracle.py`
 # reproduced BY CALLING the real Python. Nothing here is transcribed.

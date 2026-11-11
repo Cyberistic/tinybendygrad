@@ -58,7 +58,6 @@
 #    turn `LOAD(INDEX(...))` and `LOAD(CAST(INDEX(...)))` into a conjunction. The
 #    rows `hcq_plain` and `hcq_after` are the two-sided check.
 
-
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
@@ -98,7 +97,6 @@ def show_v.go(v: O.Verdict) -> U32:
 
 def show_v(v: O.Verdict) -> U32:
   show_v.go(v)
-
 
 # THE PROPERTY READERS. Every one of them is a read of the FOLD, not of the node,
 # because a node's dtype/shape/device/base/addrspace are derived properties and
@@ -296,7 +294,6 @@ def arg_dt.go(a: O.Arg) -> Bool:
     case O.ADt{dt}: True{}
     case _: False{}
 
-
 # THE `Arg` QUESTIONS. `spec.py` asks `isinstance(x.arg, ...)` about eight
 # different Python types, and `Arg` already names all eighteen, so each question
 # is one constructor arm and the wall is gone: there is no `isinstance`, only a
@@ -476,7 +473,6 @@ def arg_const_int.of(a: O.Arg) -> Maybe<&2, H.I64>:
 def arg_const_int(a: O.Arg) -> Maybe<&2, H.I64>:
   arg_const_int.of(a)
 
-
 # THE FOLDS OVER A NODE'S SRCS. One def each, threaded `Bool` accumulator, self-call
 # on the TAIL. Python's `all(... for s in u.src)` and `any(...)` become the same
 # shape here; there is no early exit, which is a cost and not a semantic change.
@@ -599,7 +595,6 @@ def validate_index.tie(two: Bool, bad: Bool) -> Maybe<&1, Bool>:
 def validate_index.of(n: U32, bad: Bool) -> Maybe<&1, Bool>:
   validate_index.tie(U32.is_eq(n, 2), bad)
 
-
 # `validate_index` -- spec.py:11-27.
 #
 #     if len(uidx.src) != 2: return True
@@ -621,7 +616,6 @@ def validate_index.of(n: U32, bad: Bool) -> Maybe<&1, Bool>:
 
 def validate_index(+fx: F.Folded, +uidx: U32) -> Maybe<&1, Bool>:
   validate_index.of(sp_nsrc(fx, uidx), is_invalid_at(sp_ar(fx), sp_src0(fx, uidx)))
-
 
 # `early_reject` -- a NECESSARY CONDITION, and see the header for why the direction
 # matters. `ler` is Python's `uop.__dict__['_src_ops']`, CACHED ON THE UOP; there is
@@ -649,7 +643,6 @@ def sp_early(ar: O.Arena, self: U32, rej: List<&2, O.Op>) -> Bool:
 
 def sp_claimed(ops: List<&2, O.Op>, ar: O.Arena, self: U32) -> Bool:
   O.op_in(ops, O.Arena.op(ar, self))
-
 
 # the folds and readers the rules share. a rule body is Python's lambda with
 # `self` spelled out, and these are the pieces it reaches for. `sp_src0` is
@@ -758,7 +751,6 @@ def buf_or_bitcasted(+fx: F.Folded, +s: U32) -> Bool:
 # `UPat.cvar().or_casted()` are the SAME rule under a renamed constructor: a spelling change.
 def const_or_casted(+fx: F.Folded, +s: U32) -> Bool:
   alt_of(sp_src_op(fx, s, 0, O.OpsCONST{}), sp_src_op(fx, s, 0, O.OpsCAST{}), sp_op_in(fx, sp_src0(fx, s), [O.OpsCONST{}]))
-
 
 # `spec_shared` -- spec.py:49-138. Thirty-three rules, and the three every other
 # table ends with. The op set is `pdict`'s key and `rej` is `early_reject`; the
@@ -1295,7 +1287,6 @@ def OP_ALU.go() -> List<&2, O.Op>:
 def OP_ALU() -> List<&2, O.Op>:
   OP_ALU.go()
 
-
 # THE TABLE. One entry per rule, in `spec.py`'s order, so tag N is `(spec.py
 # line, N)` by construction and `sh_table_len` in the gate checks the count.
 # `ops` is the op set `pdict` keys on and `rej` is `early_reject` -- NON-EMPTY at
@@ -1346,7 +1337,6 @@ def shared_table() -> O.PMEntrys:
     O.PMEntry{31, [O.OpsSTORE{}],              Nil{}},   # 129
     O.PMEntry{32, [O.OpsSTORE{}],              Nil{}},   # 133
     O.PMEntry{33, [O.OpsWMMA{}],               Nil{}}]}  # 137
-
 
 # THE DRIVER, and it is duplicated five more times. See the header for why.
 
@@ -1412,7 +1402,6 @@ def sh_rewrite(+ts: O.PMEntrys, fx: F.Folded, self: U32) -> O.Verdict:
 def shared_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
   sh_rewrite(shared_table(), fx, self)
 
-
 # THE PARAMARG FACTS, GATHERED ONCE. A `Maybe` is a `Type` -- Bend's affine
 # handler -- so it can be read ONCE, and the four answers spec.py's BUFFER, ALLOC
 # and PARAM rules ask for have to travel together; and a `Data` record cannot
@@ -1435,7 +1424,6 @@ def valid_device_range.pick(d: DevOpt, srcs: List<&2, U32>, +fx: F.Folded) -> Ma
 
 def valid_device_range.go(d: DevOpt, srcs: List<&2, U32>, +fx: F.Folded) -> Maybe<&1, Bool>:
   valid_device_range.pick(d, srcs, fx)
-
 
 # `valid_device_range` -- spec.py:33.
 #     if not isinstance(device, tuple): return len(src) == 0
@@ -1561,7 +1549,6 @@ def all_dev(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
     case Nil{}: acc
     case s <> t: all_dev(t, fx, Bool.and(acc, sp_dev_is(fx, s)))
 
-
 # `is_device` -- spec.py:140.
 #     def is_device(d): return isinstance(d, str) or (isinstance(d, tuple) and
 #                                            all(isinstance(s, str) for s in d))
@@ -1620,7 +1607,6 @@ def sp_and_vdr(facts: Bool, vdr: Maybe<&1, Bool>) -> Maybe<&1, Bool>:
 
 def OP_FUN1() -> List<&2, O.Op>:
   [O.OpsSIN{}, O.OpsLOG2{}, O.OpsEXP2{}, O.OpsSQRT{}, O.OpsRECIP{}]
-
 
 # `spec_tensor` -- spec.py:143-202. Twenty-three rules, then `+ spec_shared`.
 # `PatternMatcher.__add__` is `functools.cache`d list concatenation (ops.py:1597),
@@ -1954,7 +1940,6 @@ def te_20(+fx: F.Folded, +self: U32) -> O.Verdict:
 def te_21(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(prog_pat(fx, self, 4, prog4(fx, self)), O.VTrue{})
 
-
 # THE TAG SHIFT, and it exists because `+` concatenates entry LISTS. ops.py:1597
 # is `PatternMatcher(self.patterns+more.patterns)`, so `spec_tensor`'s entries are
 # its own 23 followed by `spec_shared`'s 33, and the two index spaces COLLIDE:
@@ -1977,7 +1962,6 @@ def bump.go(+n: U32, es: List<&2, O.PMEntry>, acc: List<&2, O.PMEntry>) -> O.PME
 
 def bump(n: U32, ts: O.PMEntrys) -> O.PMEntrys:
   bump.go(n, O.PMEntrys.es(ts), Nil{})
-
 
 # the twenty-third tensor rule -- resolved 2026-10-03, and the root cause is not
 #
@@ -2126,7 +2110,6 @@ def pr_0.claims(+fx: F.Folded, +self: U32) -> Bool:
 
 def pr_0.body(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Bool.not(sp_op(fx, self, O.OpsCAST{})), any_const(sp_srcs(fx, self), fx, False{}))
-
 
 # `spec_program` -- spec.py:205-228. Nine rules, then `+ spec_shared`.
 # "these ops can exist in programs but not the tensor spec. example: LOAD"
@@ -2301,7 +2284,6 @@ def hq_0.pat(+fx: F.Folded, +self: U32) -> Bool:
   hq_0.pat.of(sp_op(fx, self, O.OpsGETADDR{}), sp_dt_is(fx, self, S.uint64()),
               after_or(fx, sp_src(fx, self, 0), OP_HCQ0()), nsrc_is(fx, self, 1))
 
-
 # `spec_hcq` -- spec.py:230-235. Two rules, then `+ spec_shared`. The device
 # queues: a GETADDR takes a device and a PROGRAM takes the bound buffers.
 
@@ -2368,7 +2350,6 @@ def hq_rewrite(+ts: O.PMEntrys, fx: F.Folded, self: U32) -> O.Verdict:
 
 def hcq_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
   hq_rewrite(hcq_table(), fx, self)
-
 
 # `spec_full` -- spec.py:238-250. Four rules, then
 # `+ spec_tensor + spec_program + spec_hcq`, and each of those is its own list
@@ -2513,7 +2494,6 @@ def fu_rewrite(+ts: O.PMEntrys, fx: F.Folded, self: U32) -> O.Verdict:
 
 def full_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
   fu_rewrite(full_table(), fx, self)
-
 
 # `spec_kernel_graph` -- spec.py:254-280. Thirteen rules and NOTHING appended:
 # this is the only table with no `+ spec_shared`, and the gate row `noop_kg` is
@@ -2724,7 +2704,6 @@ def topo_budget.f.go(xs: List<&2, O.Node>, acc: U32) -> U32:
     case Nil{}: acc
     case nd <> t: topo_budget.f.go(t, U32.add(acc, U32.from_nat(List.length(&2, U32, O.Node.src(nd)))))
 
-
 # `type_verify` -- spec.py:36. It walks `ast.toposort()` and raises on the first
 # node no rule answers `True`, and Bend has no `raise`, so this answers the node
 # that failed instead: `None` is "the whole graph is legal" and `Some{i}` is the
@@ -2844,7 +2823,6 @@ def verify_kernel_graph(+fx: F.Folded, sink: U32) -> Maybe<&2, U32>:
 def buf_param() -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
              False{}, None{}, Some{0}, False{}, None{}}
-
 
 # THE FIXTURES. Two hand-built arenas, and the gate below is a set of claims
 # ABOUT them that Python specifies. Every row is one the gate could get WRONG: a
@@ -3034,7 +3012,6 @@ def main_mdev(ax: O.AxisType) -> Mdev:
   +d3 = O.UOp.new.param(O.Found.ar(d2), O.OpsBUFFER{}, Some{4}, O.AParam{mdev_param()}, O.TNone{})
   Mdev{F.folded(O.Found.ar(d3)), O.Found.i(d3)}
 
-
 # THE ROWS. `1` is `VTrue`, `0` is `VFalse`, `9` is `VSkip` -- a real answer and
 # not a failure. Every value here is DERIVABLE from `spec.py`, and the table at
 # the bottom of this file says which line of `spec.py` fixes each one.
@@ -3197,7 +3174,6 @@ def t_multidev_ok() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_DEVIC
 # the same BUFFER with the RANGE on the GLOBAL axis: `rng.axis_type is DEVICE`
 # fails, so `te_1` answers `False` and the fold STOPS.
 def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOBAL{})), Mdev.buf(main_mdev(O.AXIS_GLOBAL{}))))
-
 
 # NOT PORTED, one line each, and the WALL each one is behind. The Python line
 # numbers are `spec.py`'s, so this list diffs against `spec.py` line for line and

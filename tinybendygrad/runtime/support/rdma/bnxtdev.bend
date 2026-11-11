@@ -219,12 +219,10 @@
 
 import Base
 
-
 # THE CONSTANTS. Every one MEASURED, and every one in
 # `.agents/slop/bnxt_constmap.py`, which reads each authority with `getattr`
 # and cross-checks the hex-sourced ones a SECOND way (hex literal -> int),
 # because a transposed digit pair is invisible to a decimal eyeball.
-
 
 # bnxtdev.py:8-12 -- the module's own five lines.
 
@@ -341,7 +339,6 @@ def RESP_BYTES() -> U32: 4096
 def DEV_PCI_COMMAND() -> U32: 4
 def DEV_FID() -> U32: 65535
 
-
 # the struct field lists, by name and in order.
 #
 # `c.record` structs are OPAQUE: `bnxt.struct_cq_base._fields_` is
@@ -390,7 +387,6 @@ def cqe_status_field(nm: String) -> Bool: String.eq(nm, "status")
 # 32 and not 64 and not 16, and it is the same 32 that `ops_rdma.bend` calls
 # `CQE_SIZE` -- one number, two files, and it is the cross-check.
 def CQ_STRIDE() -> U32: SIZEOF_CQ_BASE()
-
 
 # THE 64-BIT DOORBELL WORD, :13-15.
 #
@@ -485,7 +481,6 @@ def wqe.hdr2(+recv: Bool, size: U32) -> U32: Bool.pick(U32, recv, 0, size)
 def wqe.words(+recv: Bool, +size: U32, va_lo: U32, va_hi: U32, key: U32) -> List<&2, U32>:
   [wqe.hdr0(recv), 0, wqe.hdr2(recv, size), 0, 0, 0, 0, 0, va_lo, va_hi, key, size]
 
-
 # msn_entry, :20-24. The 64-bit word is THREE 24-BIT FIELDS:
 #
 #   (wqe_idx % RING_ENTRIES) << SQ_MSN_SEARCH_START_IDX_SFT |   <- bit 48
@@ -526,7 +521,6 @@ def msn.hi(slot: U32, nxt: U32) -> U32:
 def msn.lo(nxt: U32, psn: U32) -> U32:
   U32.or(U32.shln(nxt, U32.to_nat(MSN_NEXT_AT())), psn)
 
-
 # cqe_ready, :25. `(cqe[24] & CQ_BASE_TOGGLE) != (cons // CQ_ENTRIES & 1)`.
 #
 # BYTE 24 is `cqe_type_toggle` -- the FOURTH field of `struct_cq_base`, after
@@ -543,7 +537,6 @@ def cqe.ready(toggle: U32, cons: U32) -> Bool:
 # the epoch `cons // CQ_ENTRIES & 1` on its own, which is the other half of the
 # test and is what `poll`'s doorbell reproduces one step later.
 def cqe.epoch(cons: U32) -> U32: U32.and(U32.div(cons, CQ_ENTRIES()), 1)
-
 
 # the page tables. `build_pbl`, :27-37, and it is the table most likely to
 # CARRY A WRONG CONSTANT, because a wrong PTU_PTE_* flag is a page table the
@@ -635,7 +628,6 @@ def pbl.entry_lo_at(+paddr_lo: U32, queue: Bool, +i: U32, +n: U32) -> U32:
 # a gate row can ask "would this refuse" without building a trace.
 def pbl.refuses(n: U32) -> Bool: U32.is_gt(pbl.table_pages(n), PBL_MAX_PAGES())
 
-
 # BNXTQueue, :39-45, and `alloc_queue`, :47-50.
 #
 #   read(i):  ring[(off := i % (size // stride) * stride) : off + stride]
@@ -697,7 +689,6 @@ def q.alloc_of(+stride: U32, aux: Bool, +entries: U32) -> U32:
 # the rows that see this, and they sit one fixture apart.
 def q.pbl_pages_of(alloc_bytes: U32) -> U32: ceildiv(alloc_bytes, PAGE())
 
-
 # THE ROW PRINTERS. One `name=value` line per claim; the gate is that the
 # interpreted lane, the native lane and `.agents/slop/bnxt_oracle.txt` all
 # print the same lines. A row is never a restatement of the def under test:
@@ -742,7 +733,6 @@ def join_str(+xs: List<&2, String>) -> String:
   names_go(List.length(&2, String, xs), 0, xs)
 
 def nrow(nm: String, xs: List<&2, String>) -> IO(Unit): IO.print(String.concat([nm, "=", join_str(xs)]))
-
 
 # THE LOGGING TABLE. `BNXT_BACKING_STORE`, :11, and what drives it,
 # `setup_backing_store`, :91-108.
@@ -869,7 +859,6 @@ def bs.init_npos(+mem_bytes: U32, +off: U32, entry_size: U32) -> U32:
 
 def bs.init_len(npos: U32) -> U32: npos
 
-
 # THE TRACE. One `CALL_*` per device call, carrying up to TWO U32 arguments:
 # `a` is the address or the index and `b` is the value or the length. Two
 # arguments is the smallest that covers `self.bar0[i] = w`, `self.db[off] =
@@ -968,7 +957,6 @@ def Tr.refuse(t: Tr) -> Tr:
   match t:
     case Tr{calls, next, refused, nth, at}: Tr.refuse.go(refused, nth, at)
 
-
 # READING THE TRACE. `Tr.count` is how many calls carry a tag -- which is the
 # TRUNCATION LENGTH a refusal shows up as. `Tr.seq` is an ordered SUBSEQUENCE
 # test, so a trace that contains the right calls in the WRONG ORDER fails.
@@ -1051,7 +1039,6 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
 def Tr.seq(t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
-
 
 # THE HWRM AND RCFW WORD ARITHMETIC. :55-89 and :130-158.
 #
@@ -1137,10 +1124,8 @@ def rcfw.skip(ret_type: U32, ret_event: U32) -> Bool:
   Bool.and(rcfw.is_event(ret_type),
            U32.is_lt(ret_event, CREQ_QP_EVENT_EVENT_QP_ERROR_NOTIFICATION()))
 
-
 # THE DEVICE INDEX ARITHMETIC. `BNXTDev.__init__`, :53-72, `register_mem`,
 # :183-189, `_open_l2`, :167-180, and `BNXTQP`, :191-217.
-
 
 # :66 -- `self.db_off = hwrm("func_qcfg", fid=0xffff).legacy_l2_db_size_kb *
 # 1024`. A BYTE offset, and :164 then divides it by 8 because the doorbell
@@ -1247,7 +1232,6 @@ def l2_filter_enables() -> U32:
 # shift is MEASURED, not assumed.
 def cmdq_lvl() -> U32: U32.shln(CMDQ_LVL(), U32.to_nat(CMDQ_INIT_CMDQ_SIZE_SFT()))
 def cmdq_lvl_lo16() -> U32: U32.and(cmdq_lvl(), 65535)
-
 
 # THE OPERATIONS. Each one EITHER builds the argument of one device call (and
 # returns it) OR records the call and hands back the trace. There is no third
@@ -1389,7 +1373,6 @@ def pbl.build_top(t: Tr) -> Tr: Tr.emit(CALL_ALLOC(), PBL_TOP_BYTES(), PBL_MAX_P
 # claim "one allocation happened and then the assert fired".
 def pbl.build_check(n: U32, +t: Tr) -> Tr:
   Bool.pick(Tr, pbl.refuses(n), t, Tr.refuse(t))
-
 
 # THE GATE, PART ONE: the constants, the struct field lists, the 64-bit words
 # and the two pack formats.
@@ -1537,7 +1520,6 @@ def t_const() -> IO(Unit):
     urow("c_SIZEOF_CMDQ_DEREGISTER_MR", SIZEOF_CMDQ_DEREGISTER_MR())
     urow("c_SLOTS_CMDQ_DEREGISTER_MR", rcfw.slots_of(SIZEOF_CMDQ_DEREGISTER_MR()))
 
-
 # the struct field lists, by name and in order.
 #
 # every field is named at its own call site. That is deliberate and it is the
@@ -1559,7 +1541,6 @@ def frow(+pfx: String, +nm: String, +ats: List<&2, U32>, +ws: List<&2, U32>, +i:
   do IO<Unit>:
     urow(String.concat([pfx, "_", nm, "_AT"]), nth_at(ats, i))
     urow(String.concat([pfx, "_", nm, "_W"]), nth_at(ws, i))
-
 
 def t_struct() -> IO(Unit):
   do IO<Unit>:
@@ -1603,7 +1584,6 @@ def t_offset_names() -> IO(Unit):
 
 def WQE_KIND_AT() -> U32: 16
 
-
 # WORD 0, AND THE COMMENT `ops_rdma.bend` GETS WRONG. See the header: the code
 # at `ops_rdma.bend:1490-1492` is right and the comment at :224-225 is
 # INVERTED. These rows print the three bytes out of their places so the claim
@@ -1635,7 +1615,6 @@ def t_hdr0() -> IO(Unit):
     urow("hdr0_RECV_COMMENT_SAYS", hdr0_comment_says(True{}))
     brow("hdr0_RECV_COMMENT_IS_RIGHT", U32.is_eq(hdr0_comment_says(True{}), wqe.hdr0(True{})))
 
-
 # THE 64-BIT WORDS, in HALVES. `db_value` (:13-15) and `msn_entry` (:20-24),
 # eight cases each, and every one is the REAL function called by the oracle.
 # The fixtures are chosen so a mask that is vacuous at one scale shows: the
@@ -1663,7 +1642,6 @@ def msn_row(+i: U32, wqe_idx: U32, +psn: U32, +size: U32) -> IO(Unit):
     urow(String.concat(["msn_", U32.show(i), "_HI"]), msn.hi(msn.slot_of(wqe_idx), msn.next_of(msn.mask(psn), size)))
     urow(String.concat(["msn_", U32.show(i), "_LO"]), msn.lo(msn.next_of(msn.mask(psn), size), msn.mask(psn)))
     urow(String.concat(["msn_", U32.show(i), "_NEXT"]), msn.next_of(msn.mask(psn), size))
-
 
 # THE TWO PACKS. Eight words of the send header and seven of the receive, plus
 # the lengths and the scatter-gather element. `wqe_1` is the ZERO case and
@@ -1695,14 +1673,11 @@ def wqe_row(i: U32, +va_lo: U32, +key: U32, +size: U32) -> IO(Unit):
     urow(String.concat(["wqe_", p, "_R_VA_LO"]), nth_at(r, 8n))
     urow(String.concat(["wqe_", p, "_R_VA_HI"]), nth_at(r, 9n))
 
-
 def t_wqe() -> IO(Unit):
   do IO<Unit>:
     wqe_row(0, 4096, 170, 64)
     wqe_row(1, 0, 0, 0)
     wqe_row(2, 3735928559, 4294967295, 4096)
-
-
 
 # THE GATE, PART TWO: the page table, the queue, the completion status, the
 # logging table, the gid/mac unpacking and the device index arithmetic.
@@ -1817,7 +1792,6 @@ def aq_off(+nm: String, +j: U32, +i: U32, ns: U32, +sz: U32, +stride: U32, aux: 
     urow(String.concat([nm, "_WL", U32.show(j)]), q.write_len(sz, stride, False{}, stride))
     urow(String.concat([nm, "_WA", U32.show(j)]), q.write_off(i, sz, stride, True{}))
 
-
 # THE QUEUE. `alloc_queue` (:47-50) and `BNXTQueue.read`/`write` (:42-45), and
 # the oracle for these rows calls the REAL `alloc_queue` against a fake PCI and
 # reads the slice bounds back out of its MMIO stand-in -- so `aq_*_W*` is the
@@ -1860,7 +1834,6 @@ def t_aq() -> IO(Unit):
     urow("qwrap_SLOTS", 256)
     urow("qwrap_READ", 16)
     brow("qwrap_READ_EQ0", U32.is_eq(q.read_off(256, 4096, 16), q.read_off(0, 4096, 16)))
-
 
 # THE COMPLETION AND ERROR STATUS. `cqe_ready` (:25) over real 32-byte
 # entries, `struct_cq_base` byte 24 BY NAME, the CQE status byte at 25, and
@@ -1914,7 +1887,6 @@ def bs_typs(+i: U32) -> IO(Unit):
     urow(String.concat(["c_BS_EXTRA_", U32.show(i)]), bs.extra_at(i))
 
 def bs_typs_all() -> List<&2, U32>: BS_TYP()
-
 
 # THE LOGGING TABLE, both directions. Nine (type, extra) pairs forward, the
 # `counts` derivation that type 15 shares with type 0, the instance bitmap
@@ -2049,7 +2021,6 @@ def t_bs() -> IO(Unit):
     urow("bs_ALLOC_4", bs.alloc_bytes(4096, 64))
     urow("bs_ALLOC_5", bs.alloc_bytes(17, 64))
 
-
 # THE GID AND THE MAC, :71-72 and :208. Real `struct.unpack` calls on the
 # oracle side. `gid_LOCAL_HEX` is the WHOLE 16-byte gid, and it is the row here
 # that a wrong byte ORDER in the construction moves and nothing else would.
@@ -2100,7 +2071,6 @@ def t_gid() -> IO(Unit):
     lrow("gid_DMAC", src_mac_le(MAC_HI16(), MAC_LO32()))
     lrow("l2_ADDR", l2_addr(MAC_HI16(), MAC_LO32()))
     lrow("l2_MASK", l2_mask())
-
 
 # THE DEVICE AND QP INDEX ARITHMETIC. Every number the source LITS in a call,
 # each named by its line, plus the compositions that are the actual arithmetic:
@@ -2263,7 +2233,6 @@ def refuse_twice() -> Bool:
   # site does not refuse twice -- and `nth` does not move either.
   Bool.not(Tr.refused(Tr.refuse(Tr.refuse(Tr.of()))))
 
-
 # THE FOUR REFUSALS, as TRUNCATED TRACES. `Tr.emit` records nothing once a
 # refusal has fired, so the LENGTH of the trace is the claim and no step below
 # needs a guard of its own. `fail_at` numbers the sites and one fixture reaches
@@ -2315,7 +2284,6 @@ def pack_rows(+pfx: String, +ats: List<&2, U32>, +ws: List<&2, U32>, vi: Nat, ki
 # is a JOIN and not a projection.
 def show_str(xs: List<&2, U32>) -> String: join_u32(xs)
 
-
 # the two pack formats, by name and in order. `ops_rdma.py:140` calls the real
 # `send_wqe`/`recv_wqe` and unpacks the first 32 bytes as `<8I`, so word 0 and
 # word 2 are facts about this file, and the nine field NAMES and the seven
@@ -2352,7 +2320,6 @@ def t_packs() -> IO(Unit):
     urow("wqe_total_words", WQE_TOTAL_WORDS())
     urow("cqe_toggle_at", CQE_TOGGLE_AT())
     urow("slot64", SLOT64())
-
 
 # the operations that had no gate row at all. Twelve trace-emitting defs were
 # dead, so M23 (`rcfw.prod_write`) was a BLIND SPOT: the mutation moved nothing
@@ -2452,7 +2419,6 @@ def main() -> IO(Unit):
     o : Unit <- t_refuse()
     IO.print("bnxtdev-done=1")
 
-
 # THE MUTATION TABLE. Every number is `.agents/slop/bnxt_mutate.py`'s output and
 # not an estimate. The harness applies ONE edit to a scratch copy IN THIS
 # DIRECTORY (a `$TMPDIR` copy cannot resolve the relative imports and produced 22
@@ -2522,4 +2488,3 @@ def main() -> IO(Unit):
 # `QUEUE_PAGE` and `BS_TYPE0` were also blind and both are now read: the first by
 # `queue_page` (and its `+1` is a degenerate edit -- `4097 // 16 == 256`), the
 # second by `bs_type0`.
-

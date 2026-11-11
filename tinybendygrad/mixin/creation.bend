@@ -184,7 +184,6 @@
 # THE MUTATION TABLE is at the FOOT of this file, with the five things it says that
 # "67 green rows" does not.
 
-
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
@@ -196,9 +195,7 @@ import ./dtype.bend as D
 import ./op.bend as MO
 import ./movement.bend as MX
 
-
 # THE CONST HELPERS -- `dtypes.from_py` (dtype.py:100) and `UOp.const` (ops.py:632).
-
 
 # `dtypes.from_py(x)` for the four py CONST values this file builds: `InvalidType` and
 # `bool` are bool, `float` is weakfloat, `int` is weakint -- "order matters: bool is an
@@ -352,10 +349,8 @@ def cr_after(+r: T.Tensor, +v: T.Tensor) -> T.Tensor:
   +s = O.UOp.new(T.Tensor.ar(r), O.OpsSTORE{}, [T.Tensor.u(r), T.Tensor.u(v)], O.ANone{}, O.TNone{})
   T.tn_alu.put(O.UOp.new(O.Found.ar(s), O.OpsAFTER{}, [T.Tensor.u(r), O.Found.i(s)], O.ANone{}, O.TNone{}))
 
-
 # creation.py:12 `const` is a `raise NotImplementedError` and is NOT a def here; see
 # the TODO in the header. creation.py:23 `empty` is the first body.
-
 
 # `ParamArg(next(UOp.unique_num), dt, prod(max_shape), device=dev,
 # bind_on_realize=True)` -- creation.py:41. The thirteen fields are `ops.bend`'s
@@ -430,9 +425,7 @@ def cr_empty(+ar: O.Arena, dt: Maybe<&1, S.Dt>, +ds: List<&2, U32>, dev: S.Dev) 
   +a = cr_alloc(ar, Maybe.default(&1, S.Dt, dt, S.void()), H.prod_u32(ds), dev)
   cr_resh(cr_resh.same(ds, H.prod_u32(ds)), a, ds)
 
-
 # creation.py:14 `const_like`.
-
 
 # `self._wrap_uop(self._uop.const_like(b, dtype))` -- creation.py:14 -- which is
 # ops.py:603-605:
@@ -457,9 +450,7 @@ def cr_const_like.of(nz: Bool, +c: T.Tensor, ds: List<&2, U32>) -> T.Tensor:
 def cr_const_like(nz: Bool, +ar: O.Arena, +v: O.Const, +dt: S.Dt, +ds: List<&2, U32>) -> T.Tensor:
   cr_const_like.of(nz, cr_const_of(ar, v, dt), ds)
 
-
 # creation.py:45 `empty_like`.
-
 
 # `self.commit_dtype() if dtype is None else dtype` -- ops.py:867 -- as a
 # `Maybe<&1, S.Dt>`, because that is Python's `None` and `commit_dtype` (dtype.py:16)
@@ -482,13 +473,11 @@ def cr_committed(given: Bool, +dt: S.Dt, +self_dt: S.Dt, m: Maybe<&1, H.I64>, m2
 def cr_empty_like(+ar: O.Arena, given: Bool, +dt: S.Dt, +self_dt: S.Dt, m: Maybe<&1, H.I64>, m2: Maybe<&1, H.I64>, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
   cr_empty(ar, cr_committed.of(given, dt, self_dt, m, m2), ds, dev)
 
-
 # creation.py:64 `full`. IT IS BEFORE `invalids` IN PYTHON AND AFTER IT HERE, and
 # that is the ONLY reordering in this file: a def may only call a def declared ABOVE it
 # (`bend2-constraints` 1.1) and `invalids` IS `full` (creation.py:61). `cr_invalids`
 # therefore sits one def below its own caller, which is the same reorder op.bend makes
 # for `_mop` and `_reduce`.
-
 
 def cr_full.of(buf: Bool, +val: T.Tensor, +e: T.Tensor) -> T.Tensor:
   match buf:
@@ -520,13 +509,11 @@ def cr_full(buf: Bool, +ar: O.Arena, +v: O.Const, +dt: S.Dt, +ds: List<&2, U32>,
 def cr_invalids(+ar: O.Arena, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
   cr_full(True{}, ar, O.CInvalid{}, S.boolean(), ds, dev)
 
-
 # creation.py:89 `full_like`, creation.py:108 `zeros`, :124 `zeros_like`, :138 `ones`,
 # :154 `ones_like`. FOUR DEFS AND NO NEW LOGIC: `full_like` is `full` on `self.shape`
 # with `dtype or self.dtype` (creation.py:105) and `zeros`/`ones` are `full` with a
 # literal (creation.py:122/152), and both `*_like` are `full_like` with a literal
 # (creation.py:135/165).
-
 
 # `type(self).full(self.shape, fill_value, dtype=dtype or self.dtype, device=..., buffer=
 # buffer)` -- creation.py:105. The device-tuple arm is W2 and is a `TODO(p3)` in the
@@ -586,9 +573,7 @@ def cr_ones_like(+ar: O.Arena, +self_dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -
   +if_ = S.Dt.is_float(self_dt)
   cr_full_like(ar, cr_cval1(ib, if_), self_dt, True{}, ds, dev)
 
-
 # THE GATE PRINTERS.
-
 
 # a node INDEX that is read more than once goes in a `Data` record. `cr_g.of` reads its
 # index four times and a `U32` is affine and cannot take a `+` as a parameter
@@ -729,7 +714,6 @@ def cr_rowt(nm: String, +t: T.Tensor) -> IO(Unit):
   cr_rowt.of(nm, T.Tensor.ar(t), CU{T.Tensor.u(t)},
     O.UOp.toposort(O.Arena.budget(T.Tensor.ar(t)), T.Tensor.ar(t), T.Tensor.u(t)))
 
-
 # THE INTERNING ROWS. `u is v` in CPython is `U32.is_eq(u, v)` here, because a UOp IS
 # an arena index and uop/ops.bend:941 symbol=SPL says the index is the identity. `cr_in` is the walk
 # `any(u is v for v in a)`, and `CU` is the record the header's `cr_srcops.go` needed.
@@ -758,7 +742,6 @@ def cr_new(+ar: O.Arena, +b: T.Tensor, +a: T.Tensor) -> U32:
 # share. `int_full_expand` asks the question directly instead of inferring it from a
 # count.
 def cr_store_val.of(+ar: O.Arena, c: CU) -> U32: O.Arena.src(ar, O.Arena.src(ar, CU.u(c), 1), 1)
-
 
 # THE FIXTURES. Every one is CPython's OWN call, listed beside it.
 #
@@ -826,7 +809,6 @@ def t_ones_like2d() -> IO(Unit):
   +f = cr_fx2d()
   cr_row("ones_like2d", cr_ones_like(T.Tensor.ar(f), S.single(), [2, 2], S.D1{0}))
 
-
 # the interning and refusal rows. All in one arena each, which is the point: Python's
 # ucache is process-wide, so `Tensor.full` twice in a row shares nodes.
 
@@ -851,7 +833,6 @@ def t_intern_diff() -> IO(Unit):
   +a = cr_zeros(ar, O.CFloat{0.0}, S.weakfloat(), [2, 3], S.D1{0})
   +b = cr_ones(T.Tensor.ar(a), O.CFloat{1.0}, S.weakfloat(), [2, 3], S.D1{0})
   IO.print(String.concat(["int_ones_new=", U32.show(cr_new(T.Tensor.ar(b), b, a))]))
-
 
 # the `ALLOC` field rows. they exist because mutation M5 moved nothing.
 #
@@ -906,7 +887,6 @@ def t_ref_commit_none() -> IO(Unit):
   cr_bl("ref_commit_none", Maybe.is_none(&1, S.Dt, cr_committed.of(False{}, S.weakint(), S.weakint(), None{}, None{})))
 def t_ref_commit_i32() -> IO(Unit):
   cr_bl("ref_commit_i32", D.md_dt_eq(Maybe.default(&1, S.Dt, cr_committed.of(False{}, S.weakint(), S.weakint(), Some{H.i64_of_i32(42)}, Some{H.i64_of_i32(42)}), S.void()), S.int32()))
-
 
 # THE ALLOC'S OWN FIELDS, read off `RESHAPE.src[0]`. See `cr_alloc_rows`'s comment.
 def t_alloc23() -> IO(Unit):
@@ -1030,4 +1010,3 @@ def main() -> IO(Unit):
 #     ONE predicate rather than to each other. Had `cr_new` been the shared predicate for
 #     all three and wrong, one mutation would have moved three rows that are supposed to
 #     be independent measurements.
-

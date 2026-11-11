@@ -15,7 +15,6 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-
 # stub -- 1:1 path mirror of extra/models/llama.py (286 loc). not yet ported.
 #
 # llama is the furthest of the three transformers and it is furthest by a
@@ -85,7 +84,6 @@ import ./../datasets/__init__.bend as D
 # every configuration llama.py actually builds -- `Transformer.__init__` at extra/models/llama.py:195-196
 # passes `qk_norm` through at :199, and every public config in meta's llama sets it).
 
-
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 
@@ -93,10 +91,8 @@ def lm_at(r: D.Refused) -> String:
   match r:
     case D.Refused{at}: at
 
-
 # :7-10 `precompute_freqs_cis`. The ONE def in this file whose first line is a
 # ported symbol (`Tensor.arange`, mixin/rand.bend:365 symbol=op_pool1.iz) and whose second is not.
-
 
 # :7  def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0) -> Tensor
 def lm_precompute_freqs_cis(dim: U32, end: U32, theta: F32) -> D.Refused:
@@ -114,9 +110,7 @@ def lm_apply_rotary_emb(+xq: T.Tensor, +xk: T.Tensor, +freqs_cis: T.Tensor) -> D
 def lm_repeat_kv(+x: T.Tensor, n_rep: U32) -> D.Refused:
   D.refuse("extra/models/llama.py:30 repeat_kv -- nn/layers.bend:640 symbol=nn_repeat EXISTS (:34) and mxw_reshape EXISTS; BLOCKED BY the missing signature tuple at :31")
 
-
 # :36-119 Attention. the class that names the two missing families.
-
 
 # :37 def __init__(self, dim, n_heads, n_kv_heads=None, max_context=0, linear=nn.Linear, qk_norm=None)
 def lm_attn_init(dim: U32, n_heads: U32, n_kv_heads: Maybe<&2, U32>, max_context: U32, qk_norm: Maybe<&2, F32>) -> D.Refused:
@@ -134,9 +128,7 @@ def lm_attn_n_rep(n_heads: U32, n_kv_heads: U32) -> U32:
 def lm_attn_call(+x: T.Tensor, start_pos: U32, +freqs_cis: T.Tensor) -> D.Refused:
   D.refuse("extra/models/llama.py:56 Attention.__call__ -- FIRST MISSING SYMBOL self.q_norm (:67) if qk_norm is set, else Tensor.scaled_dot_product_attention (:101); the kv-cache arm (:83-93) is a THIRD wall and is NOT PORTED")
 
-
 # :121-130 FeedForward.
-
 
 # :122 def __init__(self, dim:int, hidden_dim:int, linear=nn.Linear)
 def lm_ff_init(dim: U32, hidden_dim: U32) -> D.Refused:
@@ -150,9 +142,7 @@ def lm_ff_call(+x: T.Tensor) -> D.Refused:
 # it names WAS STALE.
   D.refuse("extra/models/llama.py:127 FeedForward.__call__ -- FIRST MISSING SYMBOL Tensor.silu (:128); mixin/elementwise.bend:1221 `def ew_silu` EXISTS, so this def is REACHABLE TODAY")
 
-
 # :132-142 TransformerBlock.
-
 
 # :133 def __init__(self, dim, hidden_dim, n_heads, n_kv_heads, norm_eps, max_context, linear=nn.Linear, feed_forward=FeedForward, qk_norm=None)
 def lm_block_init(dim: U32, hidden_dim: U32, n_heads: U32, n_kv_heads: U32, norm_eps: F32, max_context: U32) -> D.Refused:
@@ -162,19 +152,15 @@ def lm_block_init(dim: U32, hidden_dim: U32, n_heads: U32, n_kv_heads: U32, norm
 def lm_block_call(+x: T.Tensor, start_pos: U32, +freqs_cis: T.Tensor) -> D.Refused:
   D.refuse("extra/models/llama.py:140 TransformerBlock.__call__ -- FIRST MISSING SYMBOL self.attention_norm (:141), a second nn.RMSNorm")
 
-
 # :145-193 `sample`. THE OPENAI SAMPLER. Its alpha counter is a `setattr` on the
 # function object (:158,:191), which is Python-level state with no Bend spelling,
 # so this def has a divergence as well as the four missing ops.
-
 
 # :145 def sample(logits: Tensor, temp: float, k: int, p: float, af: float, ap: float)
 def lm_sample(+logits: T.Tensor, temp: F32, k: U32, p: F32, af: F32, ap: F32) -> D.Refused:
   D.refuse("extra/models/llama.py:145 sample -- FIRST MISSING SYMBOL logits.argmax (:151); mo_softmax EXISTS (:165), arange EXISTS (:167), pad EXISTS (mixin/movement.bend:1517 symbol=mxw_pad.put), and Tensor.multinomial (:184,:187) is MISSING BEHIND `argsort` (mixin/rand.bend:881 symbol=rd_randn_like.src TODO(p3))")
 
-
 # :195-225 Transformer.
-
 
 # :196 def __init__(self, dim, hidden_dim, n_heads, n_layers, norm_eps, vocab_size, linear=nn.Linear, embedding=nn.Embedding, n_kv_heads=None, rope_theta=10000, max_context=1024, jit=True, feed_forward=FeedForward, qk_norm=None, disable_kv_cache=False)
 def lm_transformer_init(dim: U32, hidden_dim: U32, n_heads: U32, n_layers: U32, norm_eps: F32, vocab_size: U32, n_kv_heads: Maybe<&2, U32>, rope_theta: U32, max_context: U32) -> D.Refused:
@@ -188,9 +174,7 @@ def lm_transformer_forward(+tokens: T.Tensor, start_pos: U32, temperature: F32) 
 def lm_transformer_call(+tokens: T.Tensor, start_pos: U32) -> D.Refused:
   D.refuse("extra/models/llama.py:221 Transformer.__call__ -- FIRST MISSING SYMBOL self.forward_jit (:223,:224); TinyJit is PARTIAL per THE PORT's `extra/models/resnet.bend` HEADER -- engine/jit.bend is a port and the NAME and the DECORATOR are not")
 
-
 # :227-286 the three helpers. None of them is a graph.
-
 
 # :230 def convert_from_huggingface(weights:dict[str, Tensor], n_layers, n_heads, n_kv_heads, permute_layers=True)
 def lm_from_huggingface(n_layers: U32, n_heads: U32, n_kv_heads: U32) -> D.Refused:
@@ -203,7 +187,6 @@ def lm_from_gguf(n_layers: U32) -> D.Refused:
 # :284 def fix_bf16(weights:dict[Any, Tensor])
 def lm_fix_bf16() -> D.Refused:
   D.refuse("extra/models/llama.py:284 fix_bf16 -- FIRST MISSING SYMBOL the weights dict (:286); the body (:286) is two `cast`s and mo_cast_t EXISTS, so the CAST is not the wall")
-
 
 # There is no `if __name__ == "__main__":` in llama.py. `main` prints TWO rows.
 

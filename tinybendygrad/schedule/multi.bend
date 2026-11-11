@@ -26,7 +26,6 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-
 # THE RECORDS.
 # `Cfg` is the two flags, as parameters (see the header). `late` is a `Bool`
 # because Python reads it as `not getenv(...)`, and the composition at :50 is
@@ -131,7 +130,6 @@ def mu_count(+ar: O.Arena, +rng: U32) -> U32:
   mu_count.is(Bool.and(O.op_is(ar, rng, O.OpsRANGE{}), Bool.not(U32.is_zero(O.Arena.nsrc(ar, rng)))),
               mu_const_int(ar, O.Arena.src0(ar, rng)))
 
-
 # THE SHARDING -- `UOp.sharding` (ops.py:707), which is two lines:
 #     return tuple(zip(self.arg, self.src[1:])) if self.op is Ops.UNSHARD else ()
 # The axes are `arg`, an `ATuple` of them (ops.py:748, `tuple[int, ...]`), and
@@ -217,7 +215,6 @@ def mu_has_axis(a: Maybe<&2, U32>) -> Bool:
     case Some{v}: True{}
     case _: False{}
 
-
 # THE TABLES. `PatternMatcher.__add__` (ops.py:1603) is
 # `self.patterns+more.patterns`, so the composition is a LIST CONCATENATION and
 # the tag of a rule is its INDEX. That is why `mu_own` and `mu_ra` are separate
@@ -258,7 +255,6 @@ def mu_rej_ms() -> List<&2, O.Op>: [O.OpsMSTACK{}]
 def mu_rej_su() -> List<&2, O.Op>: [O.OpsSTORE{}, O.OpsUNSHARD{}]
 def mu_rej_nil() -> List<&2, O.Op>: Nil{}
 
-
 # `multi_pm` (multi.py:281-311), NINETEEN own rules, tags 0..18. The line comment
 # on each is Python's own.
 
@@ -281,7 +277,6 @@ def mu_own() -> List<&2, O.PMEntry>:
    O.PMEntry{15, mu_pass_ops(),                       mu_rej_uns()},  # 305  passthrough_multi
    O.PMEntry{16, [O.OpsSTORE{}],                      mu_rej_uns()},  # 308  STORE into a WHOLE dest
    O.PMEntry{17, [O.OpsSTORE{}],                      mu_rej_uns()}]  # 310  STORE into a SHARDED dest
-
 
 # `replace_allreduce` (multi.py:29-45), SIX rules. Its tags in `multi_pm` are
 # 19..24, and 19..25 when `LATE_ALLREDUCE` is off.
@@ -327,7 +322,6 @@ def mu_ra_cfg.of(cfg: Cfg, acc: List<&2, O.PMEntry>) -> List<&2, O.PMEntry>:
 
 def mu_table(cfg: Cfg) -> List<&2, O.PMEntry>:
   mu_ra_cfg.of(cfg, mu_own())
-
 
 # THE SHAPES. Every decision in multi.py that reads a shape reads it as an
 # INTEGER -- `prod(shape[:ax])`, `shape[ax] % count`, `len(out_shape)`,
@@ -926,7 +920,6 @@ def al_handle(have_sh: Bool, same_sh: Bool, +m_sc: Bool,
              m_shape: List<&2, U32>, tgt: List<&2, U32>) -> Bool:
   al_handle.of(have_sh, same_sh, m_sc, m_shape, tgt)
 
-
 def al_nmultis(shs: List<&2, Sh>) -> Nat:
   List.length(&2, Sh, shs)
 
@@ -1279,7 +1272,6 @@ def rs_prods(+shape: List<&2, U32>, +new_n: List<&2, U32>) -> Bool:
 # `rs_local`'s answer. `rs_reshape` is the def that would carry it; the graph is
 # the wall named in the header.
 
-
 # `expand_multi` (multi.py:142-145) -- the shortest fully-portable body in the
 # file:
 #     shift = len(root.marg)
@@ -1309,7 +1301,6 @@ def ex_rngs.go(sh: List<&2, Sh>, acc: List<&2, U32>) -> List<&2, U32>:
 
 def ex_rngs(sh: List<&2, Sh>) -> List<&2, U32>:
   ex_rngs.go(sh, Nil{})
-
 
 # `permute_multi` (multi.py:154-157) -- also short, and also pure:
 #     return multi.src[0].permute(root.marg).unshard(
@@ -1389,7 +1380,6 @@ def pm_of.go(sh: List<&2, Sh>, +marg: List<&2, U32>, acc: List<&2, U32>) -> List
 
 def pm_of(+sh: List<&2, Sh>, marg: List<&2, U32>) -> List<&2, U32>:
   pm_of.go(sh, marg, Nil{})
-
 
 # `flip_multi` (multi.py:183-186) -- a CHECK and a list:
 #     for ax, _ in multi.sharding:
@@ -1503,7 +1493,6 @@ def pd_of.go(marg: List<&2, Bd>, +axs: List<&2, U32>, +ax: Nat, acc: List<&2, Bd
 def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
   pd_of.go(marg, axs, 0n, Nil{})
 
-
 # `shrink_multi` (multi.py:159-181) -- THE LONGEST BODY IN THE FILE and the one
 # with the most DECISION in it. Written out first, because the port needs all of
 # it and the three outcomes are not a single expression:
@@ -1540,7 +1529,6 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 # `part_bounds` is `((i*shard_sz, shard_sz) for i in range(count))` -- the
 # PARTITION boundaries, and it is pure arithmetic over two integers, so it is
 # fully ported and gated: `pb_*` in the gate is CPython's own.
-
 
 # `shard_sz = multi.src[0].shape[ax]` (multi.py:165) -- the LOCAL shape, i.e.
 # `multi.src[0]`, NOT `multi.shape`. That distinction is the whole of the OWN test:
@@ -1673,7 +1661,6 @@ def sk_lift(own: Bool, whole: Bool, hi: U32) -> U32:
 
 def sk_kind(own: Bool, whole: Bool, bad_n: Bool, one_dev: Bool, in_pb: Bool) -> U32:
   sk_lift(own, whole, sk_raise2(bad_n, one_dev, in_pb))
-
 
 # `remaining.remove((ax, rng))` (multi.py:169) -- the OWN arm drops the axis from
 # the sharding that the result carries. `List.drop` is not it: `remove` removes
@@ -1838,7 +1825,6 @@ def ix_w(win: Bool) -> U32:
 
 def ix_kind(contig: Bool, strid_mod: Bool, strid_win: Bool) -> U32:
   mu_pick(contig, 0, mu_pick(strid_mod, ix_w(strid_win), 2))
-
 
 # `_shard_idx` (multi.py:224-226):
 #     drngs = [r for r in rng.ranges if r.axis_type is AxisType.DEVICE]
@@ -2122,7 +2108,6 @@ def mu_first.go(rs: List<&2, O.PMEntry>, +ar: O.Arena, +self: U32, +held: U32) -
 def mu_first(ts: List<&2, O.PMEntry>, ar: O.Arena, self: U32) -> U32:
   mu_first.go(ts, ar, self, 4294967295)
 
-
 # THE GATE. Every number is CPython's: `.agents/slop/multi-rows.py` runs
 # `multi.py`'s own expressions -- the tables' pdict keys and reject sets from
 # `UPat.early_reject`, `broadcast_axes`, `_broadcast_shape`, the reduce split,
@@ -2257,7 +2242,6 @@ def g() -> G:
      O.Found.i(ma), O.Found.i(ad), O.Found.i(cp), O.Found.i(cq), O.Found.i(ms),
      O.Found.i(ms2), O.Found.i(mt), O.Found.i(st), O.Found.i(su)]}
 
-
 # THE TABLE ROWS. `LATE_ALLREDUCE=1` is the default, so `mu_c_early` is the
 # 25-entry table and `mu_c_late` the 26-entry one.
 
@@ -2291,7 +2275,6 @@ def mu_head_sh(sh: List<&2, Sh>) -> Sh:
 
 def mu_at_sh(sh: List<&2, Sh>, i: Nat) -> Sh:
   Maybe.default(&2, Sh, List.get(&2, Sh, sh, i), Sh{0, 0})
-
 
 # THE SHARDING ROWS -- `UOp.sharding` (ops.py:707) and `UOp.axis` (:717-726) read
 # off REAL nodes, and `mu_count` is the `_min_max` RANGE arm on a real DEVICE
@@ -2394,7 +2377,6 @@ def pbat(pb: List<&2, Bd>, i: Nat) -> U32: Bd.s(mu_bd_at(pb, i))
 def pbn(pb: List<&2, Bd>) -> U32: U32.from_nat(List.length(&2, Bd, pb))
 
 def cxn(k: List<&2, U32>) -> U32: U32.from_nat(mu_len(k))
-
 
 # TODO(p3) ops.py:1094  symbol=_min_max  -- `UOp._min_max` is DECLARED here and
 # `fold.bend` carries its WALK.

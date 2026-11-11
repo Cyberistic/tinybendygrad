@@ -118,8 +118,6 @@
 # every dotted helper is above the dotted entry point that calls it. Python's
 # order is kept everywhere else.
 
-
-
 # * read this before writing a `Bool` selector in this file. *
 #
 # `case _:` is a wildcard and it does not discriminate. One arm answers for both
@@ -217,7 +215,6 @@ def bl_t.go(b: Bool, t: List<&2, U32>, f: List<&2, U32>) -> List<&2, U32>:
 def bl_t(b: Bool, t: List<&2, U32>, f: List<&2, U32>) -> List<&2, U32>:
   bl_t.go(b, t, f)
 
-
 #  Helpers 
 
 # `call.body` -- ops.py:565, which realize.py reads on lines 22, 39, 48, 58, 76,
@@ -236,7 +233,6 @@ def PArg.of(a: O.Arg) -> PArg:
   match a:
     case O.AParam{pa}: PArg.of.p(pa)
     case _: PArg{False{}, False{}, False{}, False{}, 0, None{}, None{}}
-
 
 # `PArg` -- THE FACTS OFF A `ParamArg`. `is_bound_var` (ops.py:1023) asks
 # `arg.val is not None`; `is_variable` (ops.py:1022) asks `vmin_vmax is not
@@ -555,7 +551,6 @@ def rz_pvars(ar: O.Arena, prg: U32) -> List<&2, U32>:
 def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:
   rz_bound.walk(ar, O.Arena.src_from(ar, call, 1), Nil{})
 
-
 # THE PIN'S VARIABLE-BINDING PATH.
 #
 # `realize.py:16` AT `186fbba2a` WAS `get_call_var_uops`:
@@ -582,7 +577,6 @@ def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:
 # order the caller passed the arguments in. the old `exec_kernel` read `resolved[i]`
 # -- the `i`th entry of the filtered list -- WHERE `i` came from `arg.globals`, which
 # are slots, so a BUFFER behind a dropped argument was read at the wrong INDEX.
-
 
 # `self.src[1].src` -- the linear's children. the PIN raises IndexError on a program
 # with fewer than two srcs and the port answers with the `ProgramInfo` half alone:
@@ -941,8 +935,6 @@ def gn_kernel.go(a: O.Arg) -> Maybe<&2, String>:
 def gn_kernel(+ar: O.Arena, +prog: U32) -> Maybe<&2, String>:
   gn_kernel.go(O.Arena.arg(ar, O.Arena.src(ar, prog, 0)))
 
-
-
 #  Stat 
 #
 # `estimate_uop` (realize.py:55) RETURNS `tinygrad.renderer.Estimates`, and
@@ -1144,7 +1136,6 @@ def gn_body(op: O.Op, a: O.Arg, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
 def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
   gn_body(O.Arena.op(ar, rz_body(ar, call)), O.Arena.arg(ar, rz_body(ar, call)), ar, call)
 
-
 #  runtime cache 
 #
 # TODO(p3) realize.py:107  runtime_cache -- a module-level `dict[tuple[bytes,str],
@@ -1156,8 +1147,6 @@ def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
 #   which ops.bend already lists as P3). The port's version of this call takes
 #   the runtime handle as a PARAMETER, which is what `rz_exec` below says about
 #   it. P6.
-
-
 
 #  run linear 
 #
@@ -1237,7 +1226,6 @@ def ExecContext.timeout_or0.m(m: Maybe<&1, U32>) -> U32:
 
 def ExecContext.timeout_or0(c: ExecContext) -> U32:
   ExecContext.timeout_or0.m(ExecContext.timeout(c))
-
 
 # `_resolve` -- realize.py:128-131, as ONE self-recursive def with a NESTED
 # `match`.
@@ -1361,7 +1349,6 @@ def resolve_params(fuel: Nat, +ar: O.Arena, +call: U32, +inputs: List<&2, U32>) 
 def rz_res_fuel(ar: O.Arena) -> Nat:
   O.Arena.budget(ar)
 
-
 #  the four rule tables 
 
 # the tables are `ops.bend`'s shape, and the claim is `ops.bend`'s code. The four
@@ -1394,7 +1381,6 @@ def rz_res_fuel(ar: O.Arena) -> Nat:
 # and that set is the WHOLE of the rule's claim beyond the op: a LINEAR with NO
 # LINEAR child is REJECTED and `rewrite` answers `None`, while a LINEAR with one
 # fires. `lin_none` and `lin_fired` are the two rows that pin it.
-
 
 # the scan is this file's, because the body is this file's. `O.pm_rewrite` cannot
 # be used here: `pm_rewrite` calls `pm_dispatch`, which is `ops.bend`'s OWN
@@ -1440,7 +1426,6 @@ def rz_fire(claim: Bool, v: O.Verdict) -> O.Verdict:
     case True{}: v
     case False{}: O.VSkip{}
 
-
 # pm_flatten_linear -- realize.py:204-207.
 #
 #     UPat(Ops.LINEAR, custom_early_reject={Ops.LINEAR}, name="lin"),
@@ -1479,7 +1464,6 @@ def flatten_table() -> O.PMEntrys:
 def flatten_rewrite(+ar: O.Arena, +self: U32) -> O.Verdict:
   rz_fire(rz_claim(flatten_table(), ar, self), fl_0(ar, self))
 
-
 # pm_validate -- realize.py:209-214. The table is TWO entries because Python's is
 # `PatternMatcher([...]) + pm_flatten_linear`, so tag 1 IS tag 0 of the other table.
 # The BODY is group [b] and the CLAIM is group [a]: `_validate` mints one shadow
@@ -1500,7 +1484,6 @@ def va_1(+ar: O.Arena, +self: U32) -> O.Verdict:
 
 def validate_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsCALL{}], Nil{}}, O.PMEntry{1, [O.OpsLINEAR{}], [O.OpsLINEAR{}]}]}
-
 
 # pm_beam -- realize.py:217-220, the only rule here with a fully ported body.
 #
@@ -1605,7 +1588,6 @@ def beam_0(+ar: O.Arena, +self: U32) -> O.Verdict:
 def beam_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsCALL{}], Nil{}}]}
 
-
 # `_get_call_to_compile` -- realize.py:226-233. The PREDICATE is group [a] and the
 # Renderer it returns is group [b], so this answers the ast or `None`.
 #
@@ -1667,7 +1649,6 @@ def gcc_pick(+ar: O.Arena, +call: U32, is_sink: Bool) -> Maybe<&2, U32>:
 
 def _get_call_to_compile(+ar: O.Arena, +call: U32) -> Maybe<&2, U32>:
   gcc_pick(ar, call, gcc_sink(ar, rz_body(ar, call)))
-
 
 #  unwrap_multi 
 # realize.py:134-143. The MultiBuffer half is group [b]: a `MultiBuffer` is a
@@ -1753,7 +1734,6 @@ def rz_dnum.go(+ar: O.Arena, todo: List<&2, U32>, acc: Bool) -> Bool:
 def has_dnum(+ar: O.Arena, +call: U32) -> Bool:
   rz_dnum.go(ar, O.UOp.toposort(rz_res_fuel(ar), ar, rz_body(ar, call)), False{})
 
-
 # THE FIXTURE. 42 nodes, and the INDEX of each is spelled out below because
 # `Arena.empty` spends slot 0 on the bottom, so node k is at index k and the whole
 # map is "the order of the `UOp.new` calls". `Land` holds the arena plus the eight
@@ -1782,7 +1762,6 @@ def has_dnum(+ar: O.Arena, +call: U32) -> Bool:
 #  38  BINARY 1 byte                       39  PROGRAM (7, 36, 37, 38) -- COMPILED
 #  40  CALL (39, g0, g1)     p    -- already compiled, so `_get_call_to_compile` says None
 #  41  BITCAST (PARAM slot 1)              <- a view, so `_resolve`'s arm 0 fires
-
 
 def cpu_dev() -> S.Dev:
   S.D1{0}
@@ -2032,7 +2011,6 @@ def main_arena() -> Land:
        O.Found.i(n6), O.Found.i(n9), O.Found.i(n25), O.Found.i(n31), O.Found.i(n35),
        O.Found.i(n40), O.Found.i(n41), O.Found.i(n19), O.Found.i(n20), O.Found.i(n24)}
 
-
 # the plant fixture. its own arena, and the reason is that the MAIN fixture's INDEX
 # MAP IS LOAD BEARING: `gates/realize_graph_census-gate.py`'s CALL_NODES LIST IS READ
 # off `main_arena`'s comment, so a plant that moved a MAIN-fixture INDEX would MOVE
@@ -2128,7 +2106,6 @@ def show_v(v: O.Verdict) -> U32:
 # two-line `rewrite` rather than the `Verdict` shape the three judge-only tables use.
 def beam_rewrite(+ar: O.Arena, +self: U32) -> O.Verdict:
   rz_fire(rz_claim(beam_table(), ar, self), beam_0(ar, self))
-
 
 # THE ROWS. Every value is DERIVABLE from `realize.py` on the arena above, and
 # the Python line that fixes each one is in the table at the foot of this file.
@@ -2329,7 +2306,6 @@ def t_ctx_inputs() -> U32: ExecContext.n_input(ExecContext.of())
 def t_ctx_time() -> U32: bl_of(ExecContext.wait(ExecContext.of_time(False{}, True{}, None{}, False{})))
 
 def t_ctx_time_cache() -> U32: bl_of(ExecContext.cache(ExecContext.of_time(False{}, True{}, None{}, False{})))
-
 
 # THE GATE, and what each row is FOR.
 #

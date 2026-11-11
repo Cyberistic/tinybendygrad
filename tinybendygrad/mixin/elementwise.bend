@@ -111,13 +111,11 @@ import ./../uop/fold.bend as F
 import ./../uop/weak.bend as W
 import ./../tensor.bend as T
 
-
 # THE READERS `promote` NEEDS. `elementwise.py:30-33` reads four things off a
 # tensor: `t._uop.base`, `t.dtype`, `dtypes.weaks` membership and the CONST-ness of
 # the base. All four are here, and the base is a `Maybe` from the fold so it gets a
 # total wrapper -- `None` means "this node IS its own base", which is what Python's
 # `.base` answers for a node with no movement op over it.
-
 
 def ew_base.pick(m: Maybe<&1, U32>, i: U32) -> U32:
   match m:
@@ -180,13 +178,11 @@ def ew_cast.at(+ar: O.Arena, +t: T.Tensor, +dt: S.Dt) -> T.Tensor:
 def ew_cast(+t: T.Tensor, +dt: S.Dt) -> T.Tensor:
   ew_cast.at(T.Tensor.ar(t), t, dt)
 
-
 # `ufix` -- elementwise.py:21. `x if isinstance(x, type(self)) else
 # self._wrap_uop(self._uop.ufix(x))`, and `UOp.ufix` (ops.py:609) is `x if
 # isinstance(x, UOp) else UOp.const(x)`. So the WHOLE of it is: a Tensor stays, and
 # a Const becomes a CONST node in `self`'s arena. The `isinstance` becomes the union
 # tag.
-
 
 type Ew is Data:
   ETen{t: T.Tensor}
@@ -297,7 +293,6 @@ def ew_ufix.at(ist: Bool, +t: T.Tensor, +e: Ew) -> T.Tensor:
 def ew_ufix(+t: T.Tensor, +e: Ew) -> T.Tensor:
   ew_ufix.at(ew_is_t(e), t, e)
 
-
 # `remint` -- elementwise.py:12. IT MOVED DOWN TO `uop/weak.bend` AS `W.wk_remint`,
 # and this is the ONE-LINE FORWARDER left behind. The move was forced and it is
 # MEASURED: `tensor.bend`'s `tn_isfinite` needs `remint` -- CPython's
@@ -319,10 +314,8 @@ def ew_ufix(+t: T.Tensor, +e: Ew) -> T.Tensor:
 # (an unrelated src-order probe) and `gates/ew-explog-gate.py:37`'s
 # `ew_const_bare` is prose.
 
-
 def ew_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
   W.wk_remint(fuel, ar, u, dt)
-
 
 # `promote` -- elementwise.py:29-33, the inner closure of `_broadcasted`.
 #     if t._uop.base.is_invalid: return t
@@ -339,7 +332,6 @@ def ew_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
 # a shape arg is at most a STACK of CONSTs, so four is two levels more than any
 # fixture needs -- and an OVER-provisioned bound costs nothing while an
 # under-provisioned one answers `None` for everything (uop/upat.bend's M2 lesson).
-
 
 # `+ar` is the arena the answer lives in, on every arm -- including the two that mint
 # nothing. That is the point. An arm that answers `t` unchanged hands back a tensor
@@ -371,7 +363,6 @@ def ew_promote(+ar: O.Arena, +t: T.Tensor, +od: S.Dt) -> T.Tensor:
   ew_promote.at(ew_is_invalid(fx, b), Bool.and(W.dt_weak(dt), ew_is_const(fx, b)),
     O.eq_dt(dt, wd), ar, t, od, wd)
 
-
 # `_broadcasted` -- elementwise.py:24-34, and `_binop` -- elementwise.py:36.
 #     y = self.ufix(y); x, y = (self, y) if not reverse else (y, self)
 #     out_dtype = least_upper_dtype(x.dtype, y.dtype); return promote(x), promote(y)
@@ -381,7 +372,6 @@ def ew_promote(+ar: O.Arena, +t: T.Tensor, +od: S.Dt) -> T.Tensor:
 # a second copy of it: the brief's "promotion -- reuse, don't reimplement" is
 # `fold.bend`'s lattice for the MEET and `uop/weak.bend`'s `weak_dtype` for the
 # `weak_dtype(out_dtype)` the weak arm tests against.
-
 
 type Br is Data:
   Br{l: T.Tensor, r: T.Tensor}
@@ -520,12 +510,10 @@ def ew_bitwise_not(+t: T.Tensor) -> T.Tensor:
   ew_bitwise_not.go(S.Dt.is_bool(W.wk_dt(fx, T.Tensor.u(t))),
     S.Dt.is_unsigned(W.wk_dt(fx, T.Tensor.u(t))), t)
 
-
 # THE ARITHMETIC AND COMPARISON FAMILY. One def per Python method, in Python's
 # order, and no abstraction: `_binop` IS the abstraction and the methods below are
 # its twelve call sites. `elementwise.py:103` and `:123` spell out that `sub` is
 # `_binop(Ops.ADD, -b)` and NOT `Ops.SUB`, and `ew_op_sub0` is the row that pins it.
-
 
 def ew_add(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: ew_binop(O.OpsADD{}, t, e, rev)
 def ew_mul(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor: ew_binop(O.OpsMUL{}, t, e, rev)
@@ -574,11 +562,9 @@ def ew_sub.of(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
 def ew_sub(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
   ew_sub.of(t, e, rev)
 
-
 # THE UNARY ALU FAMILY. `self.alu(Ops.X)` with no promotion at all, so each is one
 # line and `alu` is `T.tn_alu`. These are the methods `elementwise.py` writes as
 # `return self.alu(Ops.NAME)` -- eleven of them, plus `threefry`'s one src.
-
 
 def ew_detach(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsDETACH{}, Nil{})
 def ew_contiguous_backward(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsCONTIGUOUS_BACKWARD{}, Nil{})
@@ -594,10 +580,8 @@ def ew_exp2(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsEXP2{}, Nil{})
 # the COUNT, not the shape, that is the claim.
 def ew_square(+t: T.Tensor) -> T.Tensor: ew_binop(O.OpsMUL{}, t, ETen{t}, False{})
 
-
 # THE COMPOSED ARITHMETIC. `where` and `mod`/`fmod`/`div` are the three that build
 # their own src list rather than reusing `_binop`'s.
-
 
 # `where` -- elementwise.py:436-437. `x, y = self.ufix(x)._broadcasted(y)` and then
 # `self.alu(Ops.WHERE, x, y)` -- note the CONDITION is `self`, NOT the promoted
@@ -762,8 +746,6 @@ def ew_fmod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
 # THE WALLS. Each is a Python line and the thing that is missing, in the file's own
 # terms. `p3` is the phase that owns the method surface.
 
-
-
 # the F32 CONSTANTS, and the wall above them was FALSE
 
 #
@@ -829,7 +811,6 @@ def ew_k.elu_alpha() -> F32: 1.0
 def ew_k.selu_alpha() -> F32: 1.6732632
 
 def ew_k.selu_gamma() -> F32: 1.050701
-
 
 # THE `F32` CONST WALL WAS REFUTED. It read: "no float literal anywhere in the
 # port, because `F32` is `F32{data: Word(32n)}`, `Word` is not exported, and
@@ -983,8 +964,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # must answer an `Ops.OR` and an int reduce an `Ops.ADD`, and the two have different
 # `dtype_from_uop` arms.
 
-
-
 # THE GATE.
 #
 # EVERY ROW IS A GRAPH SHAPE, and the shape is the SIGNATURE of the toposort --
@@ -1019,7 +998,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # (bend2-constraints, weak.py rule 8), so a row that prints twice calls its pure
 # builder twice -- which is free, because the builder is pure and the fixture is
 # three nodes.
-
 
 def ew_row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
@@ -1257,7 +1235,6 @@ def ew_sigmoid(+t: T.Tensor) -> T.Tensor:
 
 def ew_threefry(+t: T.Tensor, +e: Ew) -> T.Tensor: ew_binop(O.OpsTHREEFRY{}, t, e, False{})
 
-
 # `swish` is `self * self.sigmoid()` (elementwise.py:806) and `silu` is `self.swish()`
 # (:814), so both are one line over something that now exists -- which is the whole
 # return on landing `sigmoid` first. `sigmoid` is called on the SAME tensor, so the
@@ -1266,7 +1243,6 @@ def ew_threefry(+t: T.Tensor, +e: Ew) -> T.Tensor: ew_binop(O.OpsTHREEFRY{}, t, 
 # DIFFERENT graph and the row would catch it.
 def ew_swish(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(t), False{})
 def ew_silu(+t: T.Tensor) -> T.Tensor: ew_swish(t)
-
 
 # `quick_gelu` (elementwise.py:769) and `tanh` (:757) are one line each over the landed
 # `sigmoid`, so they are the second and third methods the composition pays for. Both MULs
@@ -1363,7 +1339,6 @@ def ew_exp(+t: T.Tensor) -> T.Tensor:
   +b = ew_cast(a, F.least_upper.of(ew_dt(a), S.single()))
   ew_cast(ew_exp2(ew_exp.mul(b, ew_k.inv_log2())), d1)
 
-
 # THE ACTIVATION FAMILY -- elementwise.py:672-1068. Upstream has EIGHTEEN
 # activations in that range and THIS FILE'S MARKERS NAMED SIX of them: `asin`
 # (`:929`), `acos` (`:942`), `atan` (`:952`), `elu` (`:962`), `celu` (`:974`)
@@ -1403,7 +1378,6 @@ def ew_exp(+t: T.Tensor) -> T.Tensor:
 #      the arena it is handed and the arena it returns is the GROWN one, so a
 #      const minted off an OLD tensor is a SIBLING arena -- and `ew_join`'s
 #      `O.Arena.merge` is what keeps that from being a silent wrong answer.
-
 
 # `relu` -- elementwise.py:672. `(self > 0).where(self, 0)`.
 #
@@ -1552,7 +1526,6 @@ def g_wf_wi() -> T.Tensor:
 def t_promo_wf_wi() -> IO(Unit): ew_sig("ew_promo_wf_wi", ew_mul2(g_f32c(), g_i32c(2, g_f32c()), False{}))
 def t_quick_gelu() -> IO(Unit): ew_sig("ew_quick_gelu", ew_quick_gelu(g_i32()))
 def t_tanh() -> IO(Unit): ew_sig("ew_tanh", ew_tanh(g_i32()))
-
 
 def t_contig_bwd() -> IO(Unit): ew_sig("ew_contig_bwd", g_unary(UContigBwd{}))
 def t_recip() -> IO(Unit): ew_sig("ew_recip", g_unary(URecip{}))
@@ -1889,7 +1862,6 @@ def main() -> IO(Unit):
     bf : Unit <- t_op_promo_nc()
     bg : Unit <- t_promo_nc()
     t_lattice()
-
 
 # THE MUTATION TABLE. See .agents/slop/ew-mutate.py, which applies each edit to a
 # scratch copy, runs the interpreted lane and diffs. Every number below is that

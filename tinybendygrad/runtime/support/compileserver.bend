@@ -91,7 +91,6 @@ def Tr.n(tr: Tr) -> U32: U32.from_nat(List.length(&2, String, Tr.items(tr)))
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
-
 # the four bytes, as a lowercase hex string. bend has no `U32.get`, so the
 # index is a two-arm ladder over a FOUR element list, which is a literal.
 # the nth byte of a FOUR element list. `n: Nat` decrements as the walk descends,
@@ -180,7 +179,6 @@ def add2(acc: U32, h: U32) -> U32: U32.add(acc, h)
 
 def cs.frame_total(+lens: List<&2, U32>) -> U32: List.foldl(&2, U32, U32, add2, lens, 0)
 
-
 # THE REQUEST LOOP HEAD. `while (amt := sys.stdin.buffer.read(4))` ends on an
 # EMPTY read, not on a zero length: a zero length is a frame whose payload is
 # the empty string and `compile("")` still runs. `cs.more` is that test and it
@@ -189,7 +187,6 @@ def cs.frame_total(+lens: List<&2, U32>) -> U32: List.foldl(&2, U32, U32, add2, 
 def cs.more(+available: U32) -> Bool: U32.is_gt(available, 0)
 
 def cs.n_needed() -> U32: 4
-
 
 # argv. The assert is `len(sys.argv) >= 3` -- script, spec, arch -- and the
 # spec is `module:attr`, split on ':'. `cs.spec_n` is the field count and
@@ -210,7 +207,6 @@ def cs.usage(+argv0: String) -> String:
   String.concat(["usage: ", argv0, " <compiler> <arch> [<args>]"])
 
 def cs.extra_n(+argc: U32) -> U32: U32.sub(argc, 3)
-
 
 # THE GATE. Every expectation is a row of `.agents/slop/cs_oracle.py` section
 # `cs`, which runs the REAL `compileserver.py` in a subprocess.

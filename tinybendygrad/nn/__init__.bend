@@ -6,7 +6,6 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./state.bend as ST
 
-
 # nn/__init__.bend -- tinygrad/nn/__init__.py (420 lines).
 #
 # first, the finding that changes the shape of this file: there is no
@@ -126,10 +125,7 @@ import ./state.bend as ST
 # tensor with a TRANSPOSED shape (`in, out//groups, *ks` at :150 against
 # `out, in//groups, *ks` at :106), and that is the row `nn_ct` pins.
 
-
-
 # THE PRIMITIVES, and they are the only things above the layers.
-
 
 # `Tensor|None` has no `Data` field and no `Maybe` in a record, so the conditional
 # ENTRY is a `Bool` beside the value at each `*_st` def. This is the one helper
@@ -145,7 +141,6 @@ def nn_neg1() -> H.I64: H.i64_of_i32(4294967295)
 def nn_i64_app(xs: List<&2, H.I64>, v: H.I64) -> List<&2, H.I64>:
   List.append(&2, H.I64, xs, [v])
 
-
 # `make_tuple` -- tinygrad/helpers.py:51, `(x,)*cnt` when x is an int and
 # `tuple(x)` otherwise. `H.make_tuple_rep` and
 # `H.to_tuple_seq` are that pair already, so
@@ -153,7 +148,6 @@ def nn_i64_app(xs: List<&2, H.I64>, v: H.I64) -> List<&2, H.I64>:
 # `Conv2d.__init__` (:98, :102) needs, because `kernel_size` is `int|tuple`.
 def nn_mt(x: U32, cnt: U32) -> List<&2, U32>: H.make_tuple_rep(x, cnt)
 def nn_mt_seq(xs: List<&2, U32>) -> List<&2, U32>: H.to_tuple_seq(xs)
-
 
 # `padding='same'` -- `pad = [(d*(k-1)//2, d*(k-1) - d*(k-1)//2) for d,k in
 # zip(make_tuple(dilation, len(self.kernel_size))[::-1], self.kernel_size[::-1])]`
@@ -166,7 +160,6 @@ def nn_mt_seq(xs: List<&2, U32>) -> List<&2, U32>: H.to_tuple_seq(xs)
 # A `groups=2, in_channels=1` conv is not an error in tinygrad -- measured, its
 # weight shape is `(4, 0, 3, 3)` -- so the products must not be assumed positive
 # in a way that a floor would fix. `d=0` gives `m=0` and both answers `0`.
-
 
 def nn_half(+m: U32) -> U32: U32.div(m, 2)
 def nn_prod(d: U32, k: U32) -> U32: U32.mul(d, U32.sub(k, 1))
@@ -200,14 +193,12 @@ def nn_same(dil: U32, +ks: List<&2, U32>) -> List<&2, U32>:
   H.flatten_u32(nn_pad.go(List.reverse(&2, U32, nn_mt(dil, nn_len(ks))),
     List.reverse(&2, U32, ks), Nil{}))
 
-
 # the three float formulas, each its own def because each is a different Python
 # expression. `nn_scale` is `1 / math.sqrt(in_c * prod(ks))` at :105 and :149;
 # `nn_bound` is `1 / math.sqrt(in_features)` at :173 and `1.0 /
 # math.sqrt(hidden_size)` at :408 -- the SAME expression with one factor, so ONE
 # def and not two, because a repeated line is a shared function, not a pair of
 # coincidentally equal ones.
-
 
 def nn_scale(f: F32, n: F32) -> F32: F32.div(1.0, F32.sqrt(F32.mul(f, n)))
 def nn_bound(n: F32) -> F32: F32.div(1.0, F32.sqrt(n))
@@ -219,9 +210,7 @@ def nn_bound(n: F32) -> F32: F32.div(1.0, F32.sqrt(n))
 # `0.2773501`, so mixing them up rescales every embedding.
 def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(fan_in, fan_out)))
 
-
 # THE WALLS. One TODO per Python line, and no prose pretending otherwise.
-
 
 # TODO(p3) mixin/rand.py:158  symbol=uniform  -- `Tensor.uniform` / `Tensor.glorot_uniform`
 #   (`mixin/rand.py:192` is `glorot_uniform`) -- `creation.py`'s `full` plus
@@ -297,7 +286,6 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # case is not "the easy half" of a broadcasting wall, it is the half that needs no shape
 # inference, and the dtype promotion it ALSO skips is a separate, largely-unblocked fold.
 # a unit that takes this wall should start with wall b.
-
 
 # `Tensor.where` (elementwise.py:426) is ported as `tn_where`
 # for the no-broadcasting case (`self.ufix(x)._broadcasted(y)` collapses to identity

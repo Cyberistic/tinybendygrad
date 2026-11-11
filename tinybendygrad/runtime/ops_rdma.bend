@@ -193,7 +193,6 @@ import ../helpers.bend as H
 import ../device.bend as D
 import ../LAWS/spec.bend as S
 
-
 # THE CONSTANTS. Every one MEASURED, by reading
 # `tinygrad/runtime/support/rdma/bnxtdev.py:12` and the enums out of
 # `tinygrad/runtime/autogen/bnxt.py`; `.agents/slop/oracle_rdma.py` re-derives
@@ -274,7 +273,6 @@ def ASPACE_SYS() -> U32: 1
 # PAGE the doorbell lives in, then write at the low twelve bits INSIDE it.
 def PAGE_MASK() -> U32: 4095
 
-
 # THE TRACE VOCABULARY. Sixteen device calls.
 #
 # The FFI half: the NIC and its driver.
@@ -316,9 +314,7 @@ def CALL_REFUSE() -> U32: 15
 # other twelve record a number instead. 0 is the FFI handle the seam returns.
 def OBJ_NONE() -> U32: 0
 
-
 # THE TYPES.
-
 
 # ONE device call and the ONE number it is given: a bar, an offset, a size, a
 # page count, or the ADDRESS of an instruction. There is deliberately no field
@@ -374,7 +370,6 @@ def Wqe.off(w: Wqe) -> U32:
 def Wqe.size(w: Wqe) -> U32:
   match w:
     case Wqe{n, p, off, size}: size
-
 
 # THE TRACE. Every device call in this file goes through `Tr.emit`, so the trace
 # is the ordered list of things the NIC would be asked to do.
@@ -443,7 +438,6 @@ def REFUSE_NO_KEY() -> U32: 3
 
 def REFUSE_MAP_MSG() -> String: "RDMA requires memory on its node"
 def REFUSE_RING_CAP_MSG() -> String: "a batch posts at most a ring of wqes per pair"
-
 
 # READING THE TRACE. Same three readers as ops_webgpu.bend, and the same fuel bug
 # they were written around: the fuel is the TRACE's length and the answer is
@@ -514,7 +508,6 @@ def ush(xs: List<&2, U32>, +sep: String, +acc: List<&2, String>) -> List<&2, Str
 
 def ustr(xs: List<&2, U32>) -> String: String.join(ush(xs, ",", Nil{}), ",")
 
-
 # THE TRANSLATION TABLE, and both directions.
 #
 # :140 `unwrap_view(buf)[0].getaddr(nic.device)` asks the DEVICE what address the
@@ -578,7 +571,6 @@ def key_of(+t: Pdt, +va: U32) -> U32:
 
 def va_of(+t: Pdt, +key: U32) -> U32:
   va_of.go(List.length(&2, PEnt, Pdt.es(t)), Pdt.es(t), key, 0)
-
 
 # ops_rdma.py:47-48 -- THE PAGE-SIZE DERIVATION, and it is the pure heart of
 # this file.
@@ -659,7 +651,6 @@ def npages.go(n: Nat, ss: List<&2, U32>, +lp: U32, acc: U32) -> U32:
 def npages(+ss: List<&2, U32>, +lp: U32) -> U32:
   npages.go(List.length(&2, U32, ss), ss, lp, 0)
 
-
 # ops_rdma.py:89-96 -- the six placeholder constructors. Their SIZES are the
 # whole content and they are not interchangeable: the SEND ring is
 # `RING_ENTRIES * (WQE_SIZE + 8)` because a send also writes an 8-byte msn entry
@@ -703,7 +694,6 @@ def qp_is_counter(+k: U32) -> Bool: Bool.and(U32.is_ge(k, 5), U32.is_le(k, 7))
 def qp_itemsize(+k: U32) -> U32:
   Bool.pick(U32, qp_is_counter(k), S.Dt.itemsize(S.uint64()), S.Dt.itemsize(S.uint8()))
 
-
 # `to_name` (tinygrad/helpers.py:24) -- `"_".join(parts).replace(":", "_").lower()`.
 # It is the TAG every `rdma_mem` placeholder carries and the key every
 # `pm_bufferize` rule matches on (:84), so a `to_name` that did not lower-case
@@ -732,7 +722,6 @@ def tname.go(n: Nat, cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
 # no `map`, so this is the character walk.
 def tname(+s: String) -> String:
   String.to_lower(String.from_list(tname.go(List.length(&2, Char, String.to_list(s)), String.to_list(s), Nil{})))
-
 
 # ops_rdma.py:20-24 -- `BNXTIface`, the ONE interface `RDMADevice.ifaces` names.
 #
@@ -792,7 +781,6 @@ def Iface.at(i: Iface, t: Tr) -> Iface:
   match i:
     case Iface{dev, ix, bar, base_class, db_off, snooped, _}:
       Iface{dev, ix, bar, base_class, db_off, snooped, t}
-
 
 # ops_rdma.py:66-71 -- `RDMADevice`, and the ORDER of its two statements.
 #
@@ -869,7 +857,6 @@ def Rdma.at(r: Rdma, t: Tr) -> Rdma:
     case Rdma{dev, ifaces, alloc, runtime, nrender, did, peer, _}:
       Rdma{dev, ifaces, alloc, runtime, nrender, did, peer, t}
 
-
 # ops_rdma.py:26-31 -- `BNXTIface.storage` and `BNXTIface.buffer`, and THE
 # DIVERGENCE between them.
 #
@@ -912,7 +899,6 @@ def alloc.sysmem_size(+size: U32) -> U32: H.round_up_u32(size, VA_ALIGN())
 def alloc.sysmem(+size: U32, t: Tr) -> Tr:
   Tr.emit(CALL_ALLOC_SYSMEM(), alloc.sysmem_size(size), t)
 
-
 # ops_rdma.py:33-36 -- the DOORBELL, and the one flag that is False here and True
 # everywhere else.
 #
@@ -930,7 +916,6 @@ def alloc.sysmem(+size: U32, t: Tr) -> Tr:
 def db.off_down(+db_off: U32) -> U32: U32.and(db_off, U32.not(PAGE_MASK()))
 
 def db.off_up(+db_off: U32) -> U32: U32.and(db_off, PAGE_MASK())
-
 
 # ops_rdma.py:42-53 -- `BNXTAllocator._map`, and it is the whole buffer-registration
 # contract in five lines. This is the section the brief is about.
@@ -1000,7 +985,6 @@ def map.page_guard(ok: Bool, +t: Tr) -> Tr:
 # `_unmap` would have nothing to hand back.
 def MAP_ST_ARGS() -> U32: 2
 
-
 # ops_rdma.py:76-87 -- `rdma_qp`, and it is FOUR claims.
 #
 #   :79  `nics = [unwrap(rdma_nic_for(Device[d], Device[min(pair)])) for d in pair]`
@@ -1029,7 +1013,6 @@ def qp.rules_len() -> U32: qp_len()
 def qp.connect(+recv: Bool, t: Tr) -> Tr: Tr.emit(CALL_QP_CONNECT(), Bool.to_u32(recv), t)
 
 def qp.new(t: Tr) -> Tr: Tr.emit(CALL_QP_NEW(), OBJ_NONE(), t)
-
 
 # ops_rdma.py:98-106 -- `rdma_wire`, `is_rdma` and `queue_of`. The wire is the
 # UOp on an RDMA device that `rdma_copies` replaces; finding it is what decides
@@ -1060,7 +1043,6 @@ def wire.is_store(+is_store: Bool) -> Bool: is_store
 
 def wire.of(+is_call: Bool, +is_store: Bool, n_rdma_args: U32) -> U32:
   Bool.pick(U32, Bool.and(is_call, is_store), n_rdma_args, NO_KEY())
-
 
 # ops_rdma.py:117-118 -- THE CHUNKING, and it is the only place a size becomes a
 # COUNT OF WORK.
@@ -1156,7 +1138,6 @@ def psns_at(+ps: List<&2, U32>, i: U32) -> U32:
 def db_value.lo(+index: U32, +epoch: U32) -> U32:
   U32.or(U32.and(index, DB_INDEX_MASK()), U32.shln(epoch, 24n))
 
-
 # :148,:152 -- THE DOORBELL RULE, and it is four arithmetic facts:
 #
 #   ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << SHIFT) | ring_db
@@ -1177,7 +1158,6 @@ def db_slot(+n: U32) -> U32: U32.mod(U32.add(n, 1), RING_ENTRIES())
 def db_epoch(+n: U32) -> U32: U32.and(U32.div(U32.add(n, 1), RING_ENTRIES()), 1)
 
 def RING_EQ_CQ() -> Bool: U32.is_eq(RING_ENTRIES(), CQ_ENTRIES())
-
 
 # :151 -- `wait_eq`, and THE INVERTED EPOCH.
 #
@@ -1210,7 +1190,6 @@ def cq_wait_addr(+cq_addr: U32, n: U32) -> U32:
 def CQE_STATUS_AT() -> U32: 24
 def CQE_SIZE() -> U32: 32
 
-
 # :144-145 -- THE MSN ENTRY, and the 64-bit word is three 24-bit fields.
 #
 #   ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRIES) * 8,
@@ -1240,14 +1219,11 @@ def MSN_FIELD() -> U32: 8
 def MSN_SLOT_HI_AT_NAT() -> Nat: 16n
 def MSN_PSN_AT_NAT() -> Nat: 24n
 
-
-
 def msn.hi(+slot: U32, +next_psn: U32) -> U32:
   U32.or(U32.shln(U32.and(slot, PSN_MASK()), MSN_SLOT_HI_AT_NAT()), U32.shrn(U32.and(next_psn, PSN_MASK()), 8n))
 
 def msn.lo(+next_psn: U32, +p: U32) -> U32:
   U32.or(U32.shln(U32.and(next_psn, PSN_MASK()), MSN_PSN_AT_NAT()), U32.and(p, PSN_MASK()))
-
 
 # :140-141 -- THE work queue element, and the ADDRESS translation appears here.
 #
@@ -1326,7 +1302,6 @@ def ops.wqe_at(recv: Bool, +ring: U32, cq: U32, +db: U32, +n: U32, t: Tr) -> Tr:
 # goes in the header and what the psn advance is measured against.
 def ops.chunk_size(+nbytes: U32, +off: U32) -> U32: chunk_size(nbytes, off)
 
-
 # :120 -- THE RING-CAP ASSERT, and it is the refusal the brief asked for.
 #
 #   assert wqes <= min(RING_ENTRIES, CQ_ENTRIES),
@@ -1350,5 +1325,3 @@ def REFUSE_CAP_MSG() -> String: REFUSE_RING_CAP_MSG()
 
 # :164 -- every src starts as a one-element list holding ITSELF.
 def submit.src_replaced(+n_srcs: U32, n_queues: U32) -> U32: n_queues
-
-

@@ -26,13 +26,11 @@
 # three modes are actually distinguishable -- an all-True selection row would be
 # worthless, since `NAIVE` is the answer for every small case.
 
-
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
-
 
 # THE RECORDS. `Chk` is one `(start, end)` chunk bound and `Ch` is the chunking's
 # three derived numbers, which is all `allreduce.py:36-38` computes before it starts
@@ -98,7 +96,6 @@ def Chk.e(x: Chk) -> U32:
   match x:
     case Chk{s, e}: e
 
-
 # THE MODE, as a number, because `main` prints numbers. 0 is NAIVE, 1 is RING,
 # 2 is ALL2ALL -- and the ORDER IS PYTHON'S: `allreduce.py:16` prints
 # `'ALL2ALL' if use_all2all else 'RING' if use_ring else 'NAIVE'`, so ALL2ALL is
@@ -119,7 +116,6 @@ def red_mode.of(a2: Bool, ring: Bool) -> U32:
 
 def red_mode(+s: Sel) -> U32:
   red_mode.of(Sel.a2(s), Sel.ring(s))
-
 
 # `concrete = all_int(shape)` -- allreduce.py:13. Every dim of `buf.shape` must be a
 # plain int; a symbolic dim makes the whole reduction NAIVE, because the chunk
@@ -151,7 +147,6 @@ def red_dim.of(s: O.Sint) -> U32:
 def red_dim(+s: O.Sint) -> U32:
   red_dim.of(s)
 
-
 # a CONST dim is a non-negative Python int here: `shape` entries are element counts,
 # and the only negative a `SInt` can carry is a symbolic marker, which `SI` is not.
 
@@ -162,7 +157,6 @@ def red_numel.go(+sh: List<&2, O.Sint>, acc: U32) -> U32:
 
 def red_numel(+sh: List<&2, O.Sint>) -> U32:
   red_numel.go(sh, 1)
-
 
 # THE SELECTION -- allreduce.py:13-15, verbatim with the flags as parameters.
 #
@@ -194,14 +188,11 @@ def red_worth(ndev: U32, numel: U32, thr: U32) -> Bool:
 def red_and(a: Bool, b: Bool) -> Bool:
   Bool.and(a, b)
 
-
-
 def red_a2(concrete: Bool, +ndev: U32, +numel: U32, +cfg: Cfg) -> Bool:
   red_and(concrete, Bool.or(red_ge2(Cfg.all2all(cfg)),
                             Bool.and(red_worth(ndev, numel, Cfg.thr(cfg)), red_ge1(Cfg.all2all(cfg)))))
 def red_ring3(concrete: Bool, a2: Bool, ok: Bool) -> Bool:
   Bool.and(Bool.and(concrete, Bool.not(a2)), ok)
-
 
 def red_ring(concrete: Bool, a2: Bool, +ndev: U32, +numel: U32, +cfg: Cfg) -> Bool:
   red_ring3(concrete, a2, Bool.or(red_ge2(Cfg.ring(cfg)),
@@ -216,13 +207,8 @@ def red_sel.put(+concrete: Bool, +a2: Bool, +ndev: U32, +numel: U32, +cfg: Cfg) 
 def red_sel.of(+concrete: Bool, +numel: U32, +ndev: U32, +cfg: Cfg) -> Sel:
   red_sel.put(concrete, red_a2(concrete, ndev, numel, cfg), ndev, numel, cfg)
 
-
-
-
 def red_sel(+sh: List<&2, O.Sint>, +ndev: U32, +cfg: Cfg) -> Sel:
   red_sel.of(red_all_int(sh), red_numel(sh), ndev, cfg)
-
-
 
 # THE CHUNKING -- allreduce.py:36-38.
 #
@@ -271,10 +257,8 @@ def red_factor.pick.of(take: Bool, acc: U32, x: U32) -> U32:
     case True{}: x
     case _: acc
 
-
 def red_factor.pick(found: Bool, ok: Bool, acc: U32, x: U32) -> U32:
   red_factor.pick.of(red_factor.take(found, ok), acc, x)
-
 
 def red_factor(fuel: Nat, +numel: U32, +found: Bool, acc: U32, +fs: List<&2, U32>) -> U32:
   match fuel:
@@ -297,7 +281,6 @@ def red_chunk.of(+per: U32, +ndev: U32, factor: U32) -> Ch:
 def red_chunk(+numel: U32, +ndev: U32) -> Ch:
   red_chunk.of(U32.div(numel, red_factor_of(numel)), ndev, red_factor_of(numel))
 
-
 # one chunk's size: `(base + 1) * factor` for the first `left`, `base * factor` after
 def red_bump.of(early: Bool) -> U32:
   match early:
@@ -309,8 +292,6 @@ def red_bump(+k: U32, +left: U32) -> U32:
 
 def red_size(+k: U32, +factor: U32, +base: U32, +left: U32) -> U32:
   U32.mul(factor, U32.add(base, red_bump(k, left)))
-
-
 
 # the sizes, in order: chunk 0 first. Walking `k` up and APPENDING keeps that order,
 # because `List.append` puts the new element at the tail.
@@ -339,7 +320,6 @@ def red_bounds(fuel: Nat, +ws: List<&2, U32>, +st: U32, acc: List<&2, Chk>) -> L
 def red_bounds_of(+numel: U32, +ndev: U32) -> List<&2, Chk>:
   red_bounds(U32.to_nat(ndev), red_chunk_sizes(numel, ndev), 0, Nil{})
 
-
 # THE NODE-LOCAL BRANCH -- allreduce.py:22-28. It fires before the naive/ring choice
 # and is a different algorithm: instead of one ring over `ndev` devices it splits the
 # devices into `ndev/hdev` boxes of `hdev` each, reduces within a box, all-reduces
@@ -351,7 +331,6 @@ def red_hdev_fires.of(on: Bool, divides: Bool) -> Bool:
 
 def red_hdev_fires(+ndev: U32, +hdev: U32) -> Bool:
   red_hdev_fires.of(U32.is_gt(hdev, 0), U32.is_eq(U32.mod(ndev, hdev), 0))
-
 
 # `boxes = [range(b, b+hdev) for b in range(0, ndev, hdev)]` -- the COUNT is all the
 # gate needs, and the count is `ndev // hdev`.
@@ -405,7 +384,6 @@ def red_eq(a: U32, b: U32) -> U32:
 def red_at(xs: List<&2, Chk>, n: U32) -> Chk:
   Maybe.default(&2, Chk, List.get(&2, Chk, xs, U32.to_nat(n)), Chk{9999, 9999})
 
-
 # `DEBUG >= 2` -- allreduce.py:16. The THRESHOLD IS 2 AND NOT 1, and that is read out
 # of the source rather than assumed: `.agents/slop/debug_oracle.py` LANE B pulls
 # `re.search(r"DEBUG\s*>=\s*(\d+)", linecache.getline(path, 16))` out of the file
@@ -454,4 +432,3 @@ def red_dbg_text.gate(open: Bool, t: String) -> String:
 # the site adds no new selection logic -- it only SPELLS the answer.
 def red_dbg(dbg: U32, +s: Sel, ndev: U32, numel: U32, dt: S.Dt) -> String:
   red_dbg_text.gate(H.debug_ge(dbg, 2), red_dbg_text(s, ndev, numel, dt))
-

@@ -146,7 +146,6 @@
 # does -- which is the theorem, not the point. The point is `mangle_3`.
 import Base
 
-
 # THE CTYPE KINDS. `msg`'s argtypes are lists of ctypes CLASSES, and a class is
 # not a value. So each is a tag, and the tags are what the gate compares
 # against the oracle's `kinds()` spelling. `CT_ID` is `id_`; `CT_INST` is the
@@ -169,7 +168,6 @@ def SYM_MSGSEND() -> String: "objc_msgSend"
 def SYM_SELNAME() -> String: "sel_registerName"
 def SYM_GETCLASS() -> String: "objc_getClass"
 def SYM_DDCREATE() -> String: "dispatch_data_create"
-
 
 # THE SELECTOR-NAME MANGLING. :70. See the header for why it is two steps.
 
@@ -215,7 +213,6 @@ def mangle(s: String) -> String:
 # spelling and `mangle_order_swap` is the row that says they differ.
 def mangle.reversed(s: String) -> String:
   String.from_list(mangle.rtrim(mangle.ltrim(mangle.colons(String.to_list(s)))))
-
 
 # THE SELECTOR REGISTRY, :27. `getsel = functools.cache(lib.sel_registerName)`
 # is a MEMO, so it is a TYPE here rather than a function, and the type carries
@@ -303,7 +300,6 @@ def names.go(n: Nat, +xs: List<&2, SelRow>, acc: List<&2, String>) -> List<&2, S
 def Sels.names(+t: Sels) -> List<&2, String>:
   names.go(List.length(&2, SelRow, Sels.ix(t)), Sels.ix(t), Nil{})
 
-
 # THE MESSAGE SPEC, :34. Five parameters: the selector, the return type, the
 # declared argument types, `retain`, and `clsmeth`.
 
@@ -332,8 +328,6 @@ def Msg.retain(m: Msg) -> Bool:
 def Msg.clsmeth(m: Msg) -> Bool:
   match m:
     case Msg{sel, ret, args, retain, clsmeth}: clsmeth
-
-
 
 # the argument list, :36. the headline rule of this file:
 #
@@ -374,7 +368,6 @@ def msg_argc(declared: List<&2, U32>) -> U32:
     # n+2. Caught by `msg_argc_one` (2, wanted 3).
     case d <> r: U32.add(2, U32.from_nat(List.length(&2, U32, declared)))
 
-
 # THE CALL SHAPE, :37.
 #
 #   f(ptr, *args) = sender(ptr._objc_class_ if clsmeth else ptr,
@@ -411,7 +404,6 @@ def msg_args(recv: U32, sel: U32, args: List<&2, U32>) -> List<&2, U32>:
   List.append(&2, U32, [recv, sel], args)
 
 def msg_argv_len(args: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, args))
-
 
 # THE TRACE, the seam. :37's two calls go through here, and so does `own`'s.
 # `a0`/`a1`/`a2` are the three C argument slots; a selector that is not a
@@ -452,9 +444,6 @@ def msg(recv: U32, +m: Msg, sel_ix: U32, t: Tr) -> Tr:
   Tr.send(recv, sel_ix, msg_argc(Msg.args(m)), Tr.sel(Msg.sel(m), t))
 
 def s_two_calls(t: Tr) -> U32: U32.from_nat(List.length(&2, Call, Tr.calls(t)))
-
-
-
 
 # THE OWNERSHIP LATTICE, :6-23. THREE things that read alike and are not the
 # same, and conflating any two of them is the classic bug in this layer:
@@ -519,7 +508,6 @@ def Idr.finalize(+r: Idr, is_finalizing: Bool, +t: Tr) -> Tr:
 # :23 `returns_retained(f)` -- flag the RESULT. `Msg.retain` (:38) selects it.
 def Owned.of(tr: Tr, +r: Idr, m: Msg) -> Owned: Owned{tr, Bool.pick(Idr, Msg.retain(m), Idr.retained(r), r)}
 
-
 # THE METHOD TABLE, :69-73. `MetaSpec._addmeth` turns one autogen tuple
 # `(selector, restype, [argtypes], *kwargs)` into a bound `msg`. The tuple is
 # the port's `Meth`; the kwargs beyond the first three become `retain` and
@@ -571,7 +559,6 @@ def Meth.msg(+m: Meth) -> Msg:
   Msg{Meth.sel(m), subst(Meth.ret(m)), subst_list(Meth.args(m)),
        Meth.retain(m), Meth.clsmeth(m)}
 
-
 # THE INHERITANCE ORDER, :53-61 and :63-67. `MetaSpec` re-runs `_addmeth` in
 # three situations, and the ORDER of :65-67 is what `inh.go` walks:
 #
@@ -606,8 +593,6 @@ def inh.go(n: Nat, +ms: List<&2, Meth>, +out: List<&2, Meth>) -> List<&2, Meth>:
           inh.go(m, t, Bool.pick(List<&2, Meth>,
                                  meth_seen(out, mangle(sel)),
                                  out, List.append(&2, Meth, out, [Meth{sel, ret, args, retain, clsmeth}])))
-
-
 
 # READING THE TRACE. Three readers and a subsequence-free index, which is all
 # the two-call order needs. `Tr.at` answers `Maybe`, and a `Maybe` index cannot
@@ -660,7 +645,6 @@ def syms.go(n: Nat, +cs: List<&2, Call>, acc: List<&2, String>) -> List<&2, Stri
         case c <> t: syms.go(m, t, List.append(&2, String, acc, [Call.sym(c)]))
 
 def Tr.syms(+t: Tr) -> List<&2, String>: syms.go(U32.to_nat(Tr.next(t)), Tr.calls(t), Nil{})
-
 
 # THE GATE. `r` prints `nm = [got]   py=[want]`, so the differ reads BOTH sides
 # off one line and a hand-typed want is visible as a mismatch rather than as an
@@ -1138,4 +1122,3 @@ def main() -> IO(Unit):
 #   * The SUBSTITUTION fixture declares THREE arguments with `instancetype` in
 #     the FIRST and the LAST, because `:72` is per-argument and a one-argument
 #     fixture cannot see a truncation.
-

@@ -179,7 +179,6 @@ import ./elementwise.bend as E
 import ./movement.bend as MX
 import ./creation.bend as CR
 
-
 # THE BORROWED BLOCK -- `mixin/op.py:166 arange` and `mixin/op.py:731 cat`, plus the
 # two specialisations of `movement.py:128` and `op.py:74` they need. NONE OF THESE IS
 # MINE. Every def is `op_`-prefixed, every def's comment names the file and line it belongs
@@ -188,7 +187,6 @@ import ./creation.bend as CR
 # file with no buildable callee has no gate, and the gate is the only evidence this port
 # has. IT IS GATED (`arange3`, `arange5`), so it is a MEASURED implementation and not a
 # restatement of the code that calls it.
-
 
 # `self.shape[-len(k_):]`, which is the WHOLE shape for the 1-D `k_ = (k,)` that
 # `_cumalu` passes, and `mxw_dims_of` is `movement.bend`'s own merge point (the arg for a
@@ -515,7 +513,6 @@ def rd_take(+t: T.Tensor, n: U32) -> T.Tensor:
 
 def rd_take.scalar(+t: T.Tensor, n: U32) -> T.Tensor: MX.mxw_reshape(rd_take.of(t, U1{n}, [0]), [])
 
-
 # rand.py:12 `_threefry_random_bits`. THE WHOLE OF THE RANDOMNESS, and it is seven
 # elementwise nodes and a `cat`.
 #   x = (counts1.cast(uint64) << 32) | counts0.cast(uint64)           rand.py:13
@@ -551,7 +548,6 @@ def rd_tfb.cat(+x: T.Tensor) -> T.Tensor:
   op_cat1(cx, rd_c32(rd_shr32(MO.mo_arena(T.Tensor.ar(cx), x))))
 def rd_tfb(+ar: O.Arena, +key: T.Tensor, +c0: T.Tensor, +c1: T.Tensor) -> T.Tensor:
   rd_tfb.cat(rd_tfb.three(rd_tfb.x(c0, c1), key))
-
 
 # rand.py:18 `random_bits`. The loop is `for i in range(0, num, dtypes.u32.max)`
 # (rand.py:21) and `dtypes.u32.max` is 4294967295, so for any `num` a real shape produces --
@@ -607,7 +603,6 @@ def rd_bits.cat(+b: T.Tensor) -> T.Tensor:
   MX.mxw_reshape(op_stack0(T.Tensor.ar(b), T.Tensor.u(b), Nil{}), [rd_bits.flat(b)])
 def rd_bits(+ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, n: U32, +dev: S.Dev) -> T.Tensor:
   rd_bits.cat(rd_bits.tfb(ar, key, ctr, U1{n}, dev))
-
 
 # rand.py:32 `_bits_to_rand`. `dtypes.finfo(dtype)` (dtype.py:113) is
 # `(exponent, mantissa)` and only the mantissa is read, so `rd_nmant` is HALF of a table
@@ -738,7 +733,6 @@ def rd_rand.of(contig: Bool, +out: T.Tensor, +ds: List<&2, U32>, +dt: S.Dt, +dev
 def rd_rand(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +ds: List<&2, U32>, +dt: S.Dt, +dev: S.Dev) -> T.Tensor:
   rd_rand.of(contig, rd_btr(False{}, ar, rd_bits(ar, key, ctr, rd_bits_num(ds, dt), dev), ds, dt), ds, dt, dev)
 
-
 # rand.py:46 `_next_counter` -- ported over an INJECTED counter tensor, WITH THE WRITE.
 # `U32` cannot be read twice in one expression, so the five lines are six defs and
 # `rd_next.nlo` is read twice (once for the compare, once for nothing -- Python's `new_high`
@@ -818,7 +812,6 @@ def rd_next.v(lo: U32, hi: U32, n: U32) -> H.I64:
   +nh = U32.add(U32.add(PK.k(c), rd_hi32(U1.v(q))), bh)
   +bl = rd_next.v.put(U32.is_lt(nl, m))
   H.i64_of_hi_lo(U32.sub(U32.sub(nh, rd_hi32(U1.v(q))), bl), U32.sub(nl, m))
-
 
 # rand.py:50 `rand`. `dt = to_dtype(dtype or dtypes.default_float)` (rand.py:62) and the
 # `all_int(shape)` / `all(s >= 0)` / `device is a str` guards (rand.py:64-65) are the
@@ -1012,7 +1005,6 @@ def rd_drop.pick(arm: U32, +t: T.Tensor) -> T.Tensor: rd_drop.pick.of(U1{arm}, t
 # WALL(p3) mixin/rand.py:327  the `attn_mask` arm. -- BLOCKED: needs the `attn_mask` arm.
 def rd_sdpa_dt(+q: S.Dt, +k: S.Dt) -> S.Dt: F.least_upper.of(F.least_upper.of(q, k), S.single())
 
-
 # THE GATE PRINTERS. `CR.cr_row` / `CR.cr_rowt` / `CR.cr_g.of` are creation.bend's and
 # are CALLED: the four-facts string, the `srcops` walk, the toposort walk and the `_d`
 # shape/dtype reader are four defs this file does not own and re-spelling them would be a
@@ -1041,7 +1033,6 @@ def rd_np(nm: String, +t: T.Tensor) -> IO(Unit):
   IO.print(String.concat([nm, "_np=", Bool.show(rd_np.put(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))]))
 def rd_bl(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def rd_nm(nm: String, s: String) -> IO(Unit): IO.print(String.concat([nm, "=", s]))
-
 
 # THE FIXTURES. The generator state is INJECTED, which is the header's decision, and both
 # halves of it are the 1-D TWO-ELEMENT `uint32` tensors Python's own
@@ -1115,7 +1106,6 @@ def t_randc23() -> IO(Unit):
   +k = rd_key(ar)
   +c = rd_ctr(T.Tensor.ar(k))
   CR.cr_row("ctrl_rand", rd_rand_cls(True{}, T.Tensor.ar(c), k, c, [2, 3], S.single(), S.D1{0}))
-
 
 # --- rand.py:70 `rand_like` on a 2-D receiver.
 def t_rand_like23() -> IO(Unit):
@@ -1209,7 +1199,6 @@ def t_drop0() -> IO(Unit): CR.cr_row("drop_arm0", rd_drop.pick(rd_drop.arm(False
 def t_drop1() -> IO(Unit): CR.cr_row("drop_arm1", rd_drop.pick(rd_drop.arm(True{}, 1.0), rd_fx2d()))
 def t_drop2() -> IO(Unit): CR.cr_row("drop_arm2", rd_drop.pick(rd_drop.arm(True{}, 0.5), rd_fx2d()))
 
-
 # THE GENERATOR-STATE ROWS. Four of them, over tensor.py:466-471 with the counter
 # INJECTED, and the oracle is CPython's own five lines. `_g` ONLY and `_np` in the name,
 # because the counter's own graph contains no EXPAND but its consumer `rand23` does.
@@ -1269,8 +1258,6 @@ def t_st_val() -> IO(Unit):
     rd_nm("st_six_v", H.i64_text(rd_next.v(0, 0, 6)))
     rd_nm("st_wrap_v", H.i64_text(rd_next.v(4294967295, 0, 6)))
     rd_nm("st_max_v", H.i64_text(rd_next.v(0, 0, 4294967295)))
-
-
 
 # THE REFUSAL ROWS. CPython's OWN PREDICATES, asked as predicates, so all of them are
 # shared rows rather than BEND-ONLY ones -- except the four that name a Python `raise`
@@ -1334,7 +1321,6 @@ def main() -> IO(Unit):
     l : Unit <- t_randc23()
     m : Unit <- t_rand_like23()
     t_ctrl()
-
 
 # the measured mutation table. eight one-token edits through the interpreted lane,
 # each diffed row-by-row against the unmutated output and reverted from a byte snapshot.
@@ -1413,4 +1399,3 @@ def main() -> IO(Unit):
 #  * no mutation of this table moves a `ref_*` row that it should not, and no mutation moves
 #    A `_d` ROW AT ALL -- the eight `_d` rows are all red already, so they are a PLACEHOLDER
 #    for the shape/dtype half rather than evidence, and the header's GATE STATUS says so.
-

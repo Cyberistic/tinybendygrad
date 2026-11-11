@@ -126,7 +126,6 @@ import ./ops.bend as O
 import ./fold.bend as F
 import ./../LAWS/spec.bend as S
 
-
 # `Z` -- A z3 TERM. Not a value: nothing in this file is ever evaluated, and
 # that is the point. `ZLit.v` is TWO'S COMPLEMENT (`-4` is 4294967292) because
 # `z3.IntVal` takes a Python int and `u.arg` carries negatives:
@@ -134,7 +133,6 @@ import ./../LAWS/spec.bend as S
 # `is_b` is the z3 SORT, which is what `isinstance(a, z3.BoolRef)` asks in
 # `z3_and`/`z3_or`/`z3_xor`; it is a field rather than a `Z.is_b` recursion
 # because every constructor here knows its own sort except `ZIf`.
-
 
 # the gate has an oracle, and it is green on 80 of 90 shared rows.
 #
@@ -242,7 +240,6 @@ import ./../LAWS/spec.bend as S
 #     It does not: `z3_alu[Ops.SHL]` is called as `(x, *srcs)` with ONE src, so it raises
 #     `TypeError: z3_shift() missing 1 required positional argument: 'b'`.
 
-
 # the gate is red. this is the measured defect list and it is not fitted away.
 #
 # Both lanes are byte-identical and `ALL PROOFS CHECK`. The gate is red against
@@ -292,9 +289,6 @@ import ./../LAWS/spec.bend as S
 # D4 (find the `Bool.pick` that both reads and writes `Sol`), D6 (`pow2` on a
 # literal held two's complement), D7 (the gate on `Ops.GROUP` and the BITCAST
 # shape test).
-
-
-
 
 type Z is Data:
   ZSym{nm: String, is_b: Bool}      # z3.Int(name) / z3.Bool(name)
@@ -460,7 +454,6 @@ def ZBv.str(k: U32, w: U32, a: String, b: String) -> String:
   +core = String.concat(["BV2Int(", base, ")"])
   String.concat(["If(", base, " < 0, ", core, " - ", U32.show(U32.shln(1, U32.to_nat(w))), ", ", core, ")"])
 
-
 # THE COMPARISON PRINTER. There are THREE orientation facts and they are all in the
 # AST, never in the printer -- `str()` is the identity on a comparison's sexpr, which is
 # what the 120-pair table below confirms pair by pair.
@@ -481,7 +474,6 @@ def ZBv.str(k: U32, w: U32, a: String, b: String) -> String:
 #
 # `cmpZ_*` (z3 numeral operands), `cmpP_*` (Python int operand) and `refl_*` are rows in
 # `.agents/slop/validate-oracle.py`, and `str()` is the identity on all 120 of them.
-
 
 # `Z.ch` is the one place a child gets parentheses, and the rule is precedence, not
 # associativity. 60 measured cases, all accounted for (`cmp_*` and the `#paren_*` rows of
@@ -1869,7 +1861,6 @@ def vs_str(vs: List<&2, String>) -> String:
 def n_vs(vs: List<&2, String>) -> U32:
   U32.from_nat(List.length(&2, String, vs))
 
-
 # the row shape, and it is `name=value` because that is what the gate reads.
 #
 # `.agents/slop/rebase-gate.py`'s `rows()` splits on the FIRST `=`, so `dv_and21 | ... | ...`
@@ -1945,8 +1936,6 @@ def dv.of(+nm: String, +acc: Vz, idx: U32) -> String:
 # them, so this is one long line rather than a builder nobody else would read.
 def fx_var(+ar: O.Arena, slot: U32, nm: String, dtype: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{O.ParamArg{slot, dtype, None{}, None{}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
-
-
 
 # the `_min_max` entry for a fixture variable
 def mm_i(n: U32, lo: U32, hi: U32) -> List<&2, MRng>:
@@ -2171,7 +2160,6 @@ def dv_where.of(+ar: O.Arena, nm: String) -> String:
   +g = fx_const_bool(O.Found.ar(t), True{})
   String.concat([dv2(b, t, g, mm_i(O.Found.i(v), 0, 15)),
                  vz_walk_ops(b, O.Found.ar(g), O.Found.i(t), O.Found.i(g))])
-
 
 def dv_const_invalid.of(+ar: O.Arena, nm: String) -> String:
   +t = fx_const_invalid(ar)
@@ -2486,7 +2474,6 @@ def bv_w.of15() -> U32:
 def bv_w.ofneg() -> U32:
   dv_w(O.OpsAND{}, O.Arena.empty(), 100, 4294967292)
 
-
 # `c2d` -- `copy_to_device`'s REFUSALS, ops.py:759/761/763, AS GATE ROWS.
 #
 # WHY A `validate.py` LANE CARRIES THEM. The refusals belong to `ops.bend`, which has an owner
@@ -2544,7 +2531,6 @@ def bv_w.ofneg() -> U32:
 # (`c2d_oracle_only_n = 5` counts them with `c2d_892 deviceread`). A second tag space exists
 # and disagrees: `schedule/memory.bend:1012` symbol=disk says `disk() = S.D1{1}`. Until one is chosen the
 # DISK guard is not decidable in `ops.bend`, and that is REPORTED rather than gated.
-
 
 # `ParamArg.of(slot, dtype)` -- ops.bend:6165 -- is `s5.pa`, so the fixtures reuse the port's
 # OWN constructor and cannot drift from `s5.ga.arena()` on any default.

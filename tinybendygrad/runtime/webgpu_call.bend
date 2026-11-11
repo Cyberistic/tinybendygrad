@@ -79,7 +79,6 @@ import Base
 import ./ops_webgpu.bend as W
 import ../helpers.bend as H
 
-
 # THE CONSTANTS ADDED HERE. All six are new to the port. Every one was READ out
 # of `tinygrad/runtime/autogen/webgpu.py` by importing that module; the
 # `file:line` is where the symbol is bound. The oracle is
@@ -103,7 +102,6 @@ def MAP_MODE_READ() -> U32: 1
 def POWER_PREF_HIGH_PERF() -> U32: 2
 def STYPE_SHADER_SOURCE_WGSL() -> U32: 2
 def CALLBACK_MODE_WAIT_ANY_ONLY() -> U32: 1
-
 
 # THE LITERALS ops_webgpu.py writes into descriptors. Not enums, so the citation
 # is the `ops_webgpu.py` line the literal is written on and `wgc_lit_*` checks
@@ -131,13 +129,11 @@ def END_PASS() -> U32: 1
 def SUBMIT_COUNT() -> U32: 1
 def RESOLVE_COUNT() -> U32: 2
 
-
 # THE OPS. One constructor per real `navigator.gpu` method, named for it. `slot`
 # is the handle the driver files the RESULT under, so every later reference to a
 # created object is a `U32` the driver resolves. The object KIND is not a field:
 # the trace already carries it as `Call.arg`, so `Step.arg` and `Op` together say
 # it once and `wgc_kind_from_arg` checks the pairing.
-
 
 # ONE bind group entry (:96) -- `(binding, buffer, offset=0, size)`. `buf` is the
 # uniform THIS call creates for a `vals` slot and the caller's own for a `bufs`
@@ -465,7 +461,6 @@ def Cs.count_of_wait(+c: Cs, which: U32) -> U32:
 def Cs.count(k: U32, +c: Cs) -> U32:
   Cs.count.go(List.length(&2, Step, Cs.ops(c)), k, Cs.ops(c), 0)
 
-
 # DEVICE INIT, ops_webgpu.py:11 then :166-190, in `dev.init`'s order. `dev.init`
 # pins that order on the TRACE side (`wg_init_order`); `wgc_init_trace` pins that
 # the ops here agree with it, so these eight steps and those eight trace entries
@@ -510,7 +505,6 @@ def Cs.init(backend_name: String, +feats: List<&2, U32>) -> Cs:
   a = Cs.adapter(Cs.instance(), backend_name)
   +d = Cs.device(Cs.limits(Cs.features_free(Cs.features(a))), feats)
   Cs.adapter_release(Cs.queue(d), Cs.next(d))
-
 
 # ONE PROGRAM CALL, ops_webgpu.py:53-64 then :69-147. Every step names its Python
 # line, and `wgc_call_trace` checks the WHOLE order against the trace
@@ -619,7 +613,6 @@ def Cs.bind.go(n: Nat, +i: U32, +ss: List<&2, W.Slot>, +bs: List<&2, W.Buf>,
                        List.drop(&2, U32, vs, 1n)),
                      Cs.entry(c, i, is_buf, size, Cs.caller(i, is_buf, bs),
                               Cs.or0(List.get(&2, U32, vs, 0n))))
-
 
 # THE REST OF ONE PROGRAM CALL, :99-147.
 
@@ -867,9 +860,7 @@ def Cs.timing.at(wait: Bool, +c: Cs, +qs: U32, +qbuf: U32) -> Cs:
     case False{}: c
     case True{}: Cs.timing.on(c, qs, qbuf)
 
-
 def Cs.timing(+c: Cs, +qs: U32, +qbuf: U32) -> Cs: Cs.timing.at(Cs.wait(c), c, qs, qbuf)
-
 
 # THE WHOLE CALL, :69-147 in `prog.call.at`'s order. The only place the order is
 # spelled out, so `wgc_call_trace` has exactly one walk to blame.
@@ -923,7 +914,6 @@ def Cs.call(+bs: List<&2, W.Buf>, +nvals: Nat, +vals: List<&2, U32>, gx: U32, gy
   +c15 = Cs.release(c14, Cs.release.ids(bgl, pl, bg, pipe, enc, W.OBJ_QUERY_SET(), cb))
   # :140-145 `if wait:` the staging read, the map, both frees, the query set.
   Cs.timing(c15, qs, qbuf)
-
 
 def METAL() -> String: "WGPUBackendType_Metal"
 def BOTH() -> List<&2, U32>: [W.FEATURE_TIMESTAMP_QUERY(), W.FEATURE_SHADER_F16()]
@@ -1079,7 +1069,6 @@ def Cs.uniform_bytes(+c: Cs) -> List<&2, U32>:
 # cons into. `Cs.calls` already builds one of these for `Call`, and this is the
 # `U32` counterpart -- it exists so `uniform_bytes` does not hand `List.append` a
 # list of a different element type, which does not typecheck.
-
 
 # 0, 1, 2, ... in mint order. THE QUESTION NO OTHER ROW ASKS: is the counter
 # actually counting? A frozen counter hands out the same handle forever and every

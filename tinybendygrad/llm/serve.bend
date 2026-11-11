@@ -23,7 +23,6 @@
 
 import Base
 
-
 # serve.py:44-47 -- the router's four modes. Upstream carries them as `str`; the value is that they are
 # COMPARED and never parsed, so a `U32` constant per mode is the same contract with less to compare.
 
@@ -52,7 +51,6 @@ def Router.buf(r: Router) -> String:
 def Router.mode(r: Router) -> U32:
   match r:
     case Router{buf, mode}: mode
-
 
 # `serve.py:48-55` -- `split(tag, final) -> (before, matched)`, with `self.buf` rebound. A SUBSTRING search,
 # because `String.split` takes a single `Char` and every tag here is longer than one.
@@ -101,7 +99,6 @@ def Router.split.by(m: Maybe<&1, Nat>, +tag: String, +buf: String, +final: Bool)
 
 def Router.split(+tag: String, +buf: String, +final: Bool) -> Split:
   Router.split.by(Router.find(tag, buf), tag, buf, final)
-
 
 # `serve.py:56-70` -- `route`. The yields become a LIST because the function is pure, and the DEFS ARE
 # ordered so that no two call each other: Bend refuses mutual recursion (the same wall `run` in

@@ -178,7 +178,6 @@ import ./rewriter.bend as RW
 #    reads `rop` and NOT `num_axes`. `ru_rop` is the row.
 #
 
-
 # `range_start` -- ops.py:58. `{STAGE: 1, REDUCE: 1, END: 1, CALL: 1, LINEAR: 0}`
 # and ops NOT in the dict have no offset, which `ops.py:474` never asks for: the
 # `if self.op in range_start` guard means an absent op is the `()` arm.
@@ -326,7 +325,6 @@ def fr_scan(rs: List<&2, O.PMEntry>, +ar: O.Arena, +self: U32, +h: RW.Rew) -> RW
 
 def flatten_range(+ar: O.Arena, self: U32) -> RW.Rew:
   fr_scan(pm_flatten_range(), ar, self, RW.Rew{ar, 0})
-
 
 # THE BIG PORT: `reduce_unparented` -- simplify.py:87-101.
 #
@@ -523,7 +521,6 @@ def symbolic_len() -> U32:
 #  16 RD3=REDUCE(MX1, R0, R1, R2)   17 RD4=REDUCE(C1, R0)
 #  18 CALL(SPECIAL)                  19 LINEAR(RD4)
 #  20 EN2 = END(SPECIAL, R0, R0) -- the DUPLICATED RANGE, so `dedup` collapses it
-
 
 def psize(n: Maybe<&2, U32>) -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
@@ -751,7 +748,6 @@ def ru_answer_src0(+gx: RW.G) -> U32:
 
 def ru_answer_is_c0(+gx: RW.G) -> U32:
   RW.b2u_nat(U32.is_eq(ru_answer_src0(gx), RW.G.at(gx, 1n)))
-
 
 # THE MEASURED MUTATION TABLE, by `.agents/slop/notes/codegen-mut.py`. EIGHT
 # textual edits, one at a time, each re-checked and re-run against the clean 32-row

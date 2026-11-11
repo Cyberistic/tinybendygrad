@@ -169,7 +169,6 @@ import ./../../uop/ops.bend as O
 import ./../../uop/fold.bend as F
 import ./../kernel.bend as KER
 
-
 # one assoc list for every table in the file. `v` is a scalar answer and `vs` a
 # list answer, and a FLAT PAIR LIST for the two `dict[int, dict[Register,
 # Register]]` tables (regalloc.py:34-35) where `[v,r,v,r,...]` is the inner dict.
@@ -358,8 +357,6 @@ def range_tuple.go(fuel: Nat, +k: U32, +acc: List<&2, U32>) -> List<&2, U32>:
 def u32s(t: Nat) -> List<&2, U32>:
   range_tuple.go(t, 0, Nil{})
 
-
-
 # `lt_rc` -- `run_count = prod([int(r.vmax)+1 for r in u.ranges])`, linearizer.py:20.
 # PORTED as a fold over the vmax LIST. W1 is the CALLER.
 # `rc_max` = 65536 is the row that pins the composite key's 26-bit range, since
@@ -372,7 +369,6 @@ def lt_rc.go(vmaxs: List<&2, U32>, +acc: U32) -> U32:
 
 def lt_rc(vmaxs: List<&2, U32>) -> U32:
   lt_rc.go(vmaxs, 1)
-
 
 # THE PRIORITY LADDER, linearizer.py:24-32. PORTED IN FULL, all eight arms.
 #
@@ -520,7 +516,6 @@ def lt_extra(+a: O.Arena, +i: U32) -> U32:
 def lt_key(rc: U32, po: U32) -> U32:
   U32.add(U32.mul(rc, 64), po)
 
-
 # `out_degree` -- linearizer.py:11, :16-17. A COUNT OF OCCURRENCES, not a set
 # membership: Python's `out_degree[s] += 1` runs once per (consumer, src) PAIR,
 # and a node an operator names twice has two edges into it.
@@ -603,7 +598,6 @@ def LtKey.rc(x: LtKey) -> U32:
   match x:
     case LtKey{k, i, rc, ex}: rc
 
-
 # THE IDEAL ORDER -- `nkey = {u: i for i, u in enumerate(sorted(lst, key=...))}`,
 # linearizer.py:36. So `nkey` IS the POSITION in the sorted list and the whole
 # table is the sorted list: `lt_nkey` searches it.
@@ -635,7 +629,6 @@ def lt_nkey.go(srt: List<&2, LtKey>, +i: U32, +u: U32) -> U32:
 
 def lt_nkey(srt: List<&2, LtKey>, u: U32) -> U32:
   lt_nkey.go(srt, 0, u)
-
 
 # W1 again, and this time it is the pass's own caller. `vms` is one flat list of
 # `vmax`es for the WHOLE walk, LENGTH-PREFIXED per list position:
@@ -686,8 +679,6 @@ def lt_keys.go(+ar: O.Arena, lst: List<&2, U32>, +vms: List<&2, U32>, +acc: List
 
 def lt_keys(+ar: O.Arena, lst: List<&2, U32>, vms: List<&2, U32>) -> List<&2, LtKey>:
   lt_keys.go(ar, lst, vms, Nil{})
-
-
 
 # THE HEAP LOOP, linearizer.py:39-46. PORTED, and `heapq` is a SORTED LIST.
 #
@@ -835,7 +826,6 @@ def lt_emit(+ar: O.Arena, lst: List<&2, U32>, +srt: List<&2, LtKey>, +sink: U32)
 def linearize(+ar: O.Arena, +lst: List<&2, U32>, vms: List<&2, U32>, +sink: U32) -> List<&2, U32>:
   lt_emit(ar, lst, lt_sorted(lt_keys(ar, lst, vms)), sink)
 
-
 # THE GATE FIXTURE. Twenty-two arena indices built in the interning order the
 # oracle uses, so `ix` can be diffed row by row and a row that reads the wrong
 # index is a DIFFERENT NUMBER rather than a plausible one.
@@ -936,7 +926,6 @@ def lt_vm_lst() -> List<&2, U32>:
 def lt_vm_call() -> List<&2, U32>:
   [0, 0, 0, 0, 0, 0]
 
-
 # the gate, part one: the linearizer. Every row is derived from python by
 # /tmp/opencode/late-oracle.py, which drives tinygrad/codegen/late/linearizer.py
 # over this exact fixture and prints its rows in THIS ORDER and with THIS
@@ -1017,7 +1006,6 @@ def lt_srcs.go(+ar: O.Arena, ix: List<&2, U32>, +acc: List<&2, String>) -> List<
 
 def lt_srcs(+ar: O.Arena, ix: List<&2, U32>) -> String:
   String.join(lt_srcs.go(ar, ix, Nil{}), " ")
-
 
 # `lin_edg` -- the edge list, in the declared toposort's own positions. this is
 # THE ROW `lin_srcs` COULD NOT BE.
@@ -1100,7 +1088,6 @@ def lt_srt_call.of(k: KER.K) -> List<&2, LtKey>:
 
 def lt_srt_call() -> List<&2, LtKey>:
   lt_srt_call.of(lt_fix())
-
 
 # THE ROWS. Grouped by the def they test, in that order.
 
@@ -1344,7 +1331,6 @@ def lt_srt_idx() -> List<&2, U32>:
 def lt_srt_call_idx() -> List<&2, U32>:
   lt_srt_idx.go(lt_srt_call(), Nil{})
 
-
 # `CFGContext` -- linearizer.py:53-81, and `pm_add_control_flow` :83-85.
 #
 # the three tables are one record. `deps` is a U32 -> set of U32 map, `nesting`
@@ -1581,7 +1567,6 @@ def cfg_edges(rest: List<&2, RaEn>, +ar: O.Arena, +deps: RaTb, +ed: RaTb) -> RaT
 def cfg_ed(ar: O.Arena, +c: Cfg) -> RaTb:
   cfg_edges(RaTb.es(cfg_sib(Cfg.ns(c))), ar, Cfg.dp(c), tb_new())
 
-
 # `pm_add_control_flow` -- linearizer.py:83-85. ONE rule, ONE op, and the whole
 # rewrite is `x.src + (edges[x],)`, so the table is two rows and the answer is
 # either the new node's src list or `-`.
@@ -1622,7 +1607,6 @@ def cfg_rewrite.pick(hit: Bool, +ar: O.Arena, +ed: RaTb, +x: U32) -> Cg:
 
 def cfg_rewrite(+ar: O.Arena, +ed: RaTb, +x: U32) -> Cg:
   cfg_rewrite.pick(tb_has(ed, x), ar, ed, x)
-
 
 # THE `cfg_*` ROWS. `cfg_edges` prints `key/axis->value.op` in `edges` insertion
 # order, which is why the assoc list's key order had to be Python's.
@@ -1700,7 +1684,6 @@ def cfg_tbl_len() -> U32:
 def cfg_tbl_ops() -> String:
   lt_ops_name(O.PMEntry.ops(cfg_entry(cfg_tbl(), 0n)))
 
-
 # `do_split_ends` and `pm_split_ends` -- linearizer.py:87-96.
 #
 # W1: `((s,) if s.op is Ops.RANGE else s.ranges)` -- :89. The `else` half is a
@@ -1730,7 +1713,6 @@ def se_rngs(ss: List<&2, U32>, +ar: O.Arena, +acc: List<&2, U32>) -> List<&2, U3
   match ss:
     case Nil{}   : acc
     case +s <> +r : se_rngs(r, ar, se_dedup(List.append(&2, U32, se_ranges.of(ar, s), acc), acc))
-
 
 def se_key(+rngs: List<&2, U32>, +ar: O.Arena, rest: List<&2, U32>) -> List<&2, Sb>:
   match rest:

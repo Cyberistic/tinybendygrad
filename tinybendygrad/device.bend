@@ -160,7 +160,6 @@
 import Base
 import ./LAWS/spec.bend as S
 
-
 # THE TWO FOLD TABLES. Both rows carry their OWN index, which is what lets a
 # first-wins scan answer "which row" without an accumulator -- and an
 # accumulator would have to be read twice in one expression to be passed on.
@@ -188,7 +187,6 @@ def Mk.m(+x: Mk) -> U32:
 # `contextlib.suppress(Exception)` is the seam and a bit is the whole of it.
 def bit(+m: Mk, ix: U32) -> Bool:
   U32.is_eq(U32.and(U32.shrn(Mk.m(m), U32.to_nat(U32.sub(ix, 1))), 1), 1)
-
 
 # THE STRING PRIMITIVES. Three jobs, and the middle one is the one that is easy
 # to get wrong: `String.split` throws the separators away, so the tail has to
@@ -272,7 +270,6 @@ def is_disk(ixs: List<&2, String>) -> Bool:
     case Nil{}: False{}
     case +k <> t: Bool.pick(Bool, is_disk_head(String.to_upper(head(k))), True{}, is_disk(t))
 
-
 # `ALL_DEVICES` -- device.py:20. Nine names, and THE ORDER IS THE POLICY.
 # `_select_device` takes `next(get_available_devices())` and that generator
 # walks this list, so index 2 beating index 7 is the default-device policy.
@@ -289,7 +286,6 @@ def avail(+m: Mk, es: List<&2, AEnt>) -> String:
   match es:
     case Nil{}: ""
     case +k <> t: Bool.pick(String, bit(m, AEnt.ix(k)), AEnt.nm(k), avail(m, t))
-
 
 # THE CLASS REGISTRY. `ALL_DEVICES` above is the ENUMERATION; this is the
 # dispatch, and the two are different lists on purpose. `get_class`
@@ -355,7 +351,6 @@ def claim_row(es: List<&2, DEnt>, +h: String) -> U32:
 # `WEBGPU:2` and `webgpu:2` are one row and `Device['CPU']` finds `CPUDevice`.
 def dcls(ix: String) -> U32:
   claim_row(registry(), String.to_lower(head(ix)))
-
 
 # THE OPENED SET. `_opened_devices` (device.py:24) is a `set[str]` that grows by
 # one per `__get_canonicalized_item`, and the growth IS the point: three
@@ -499,7 +494,6 @@ def deprecated(+m: Mk, es: List<&2, AEnt>, acc: U32) -> U32:
     case Nil{}: acc
     case +k <> t: deprecated(m, t, U32.add(acc, go_dep(m, AEnt.nm(k), AEnt.ix(k))))
 
-
 # THE PROFILE RECORDS, device.py:74-84. Four frozen dataclasses, and the only
 # fields any decision in this file reads are `ProfileGraphEntry`'s `st_id` and
 # `en_id`, which `collect_prof` RENUMBERS.
@@ -512,7 +506,6 @@ type PEnt is Data:
 # start and end, so entry i occupies slots 2i and 2i+1.
 def renum(en: U32) -> U32:
   U32.mul(U32.sub(en, 1), 2)
-
 
 # BUFFERS. `BufferSpec` (device.py:88) is five flags; `external_ptr: int|None`
 # is flattened to a Bool because a `Data` record may not hold a `Maybe` field,
@@ -758,7 +751,6 @@ def mem_used(+ar: Bar, ixs: List<&2, U32>, +dev: U32, acc: U32) -> U32:
     case Nil{}: acc
     case k <> t: mem_used(ar, t, dev, U32.add(acc, go_add2(bar_at(ar, k), dev)))
 
-
 # ALLOCATORS. `Allocator` (device.py:259) is the cache, and the cache has ONE
 # policy: `free` recycles a storage when it is reusable and drops it otherwise,
 # and `alloc` hands back the MOST RECENTLY freed. That is LIFO, and getting it
@@ -831,10 +823,8 @@ def host_offset(buf: U32, off: U32) -> U32:
 def alloc_try(n: U32) -> U32:
   Bool.pick(U32, U32.is_eq(n, 2), 0, 1)
 
-
 # COMPILERS. `Compiler` (device.py:336) with an empty `compile` -- the NOTE says
 # so, and it is the default every backend without a compiler relies on.
-
 
 # device.py:338, `def compile(self, src): return src.encode()`. The identity, on
 # bytes; `src` is already a `String` here so the answer is `src`.
@@ -942,10 +932,8 @@ def timeline_size() -> U32:
 def timeline_bytes() -> U32:
   U32.mul(timeline_size(), S.Dt.itemsize(S.uint64()))
 
-
 # `Compiled` (device.py:375). The composition, and the numbers every backend
 # inherits rather than sets.
-
 
 # device.py:397,
 #   `self.device_id = int(idx) if ":" in device and (idx:=device.split(":")[1]).isdigit() else 0`
@@ -959,7 +947,6 @@ def dev_id.go(m: Maybe<&2, Nat>) -> U32:
 
 def dev_id(ix: String) -> U32:
   dev_id.go(Nat.read(part(ix, 1n)))
-
 
 # `Compiled.link_bufs` (device.py:377) and `Compiled.link_buffer` (device.py:411).
 # THE LINK: which PHYSICAL buffer a logical ALLOC belongs to.
@@ -1000,7 +987,6 @@ def dev_id(ix: String) -> U32:
 # that class attribute is GONE and `link_bufs`/`link_buffer` are what is there.
 # the table is gone from this port too, so this section is the whole of the
 # mechanism: there is no corpse left to carry, and no table below.
-
 
 # `to_name` (tinygrad/helpers.py:21) -- `"_".join(parts).replace(":", "_").lower()`.
 # The fold runs on the JOINED string, not on each part, so a part that is
@@ -1094,7 +1080,6 @@ def LkRes.buf(x: LkRes) -> U32:
   match x:
     case LkRes{level, kind, buf}: buf
 
-
 # THE RESOLUTION, upstream's `bufferize_buf` (hcq2.py:483-494) first four lines:
 #   if b.arg.name is None: return UOp.new_buffer(b.device, b.max_numel(), b.dtype)
 #   owned = Compiled.link_bufs.get(b.arg.name,
@@ -1163,7 +1148,6 @@ def link_resolve(regs: List<&2, Lk>, name: Maybe<&2, String>, dev: String, hook:
     case None{}: LkRes{0, 2, 0}
     case Some{+n}: link_two(1, link_scan(regs, n, to_name([dev, n])), hook)
 
-
 def lk_ar16(+ar: Bar) -> Bar:
   BFound.ar(bnew(ar, root(7, 16, S.uint8(), spec())))
 
@@ -1178,4 +1162,3 @@ def lk_ar64.go(n: Nat, +ar: Bar) -> Bar:
 
 def lk_arena() -> Bar:
   lk_ar16(lk_ar64.go(6n, BFound.ar(bnew(bar_empty(), bar_bot()))))
-

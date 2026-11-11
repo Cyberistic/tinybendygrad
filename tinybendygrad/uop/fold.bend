@@ -170,7 +170,6 @@ import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./ops.bend as O
 
-
 # THE PROMOTION LATTICE -- tinygrad/dtype.py:180-204, hoisted. See the header.
 #
 # dtype.py spells `least_upper_dtype` as
@@ -186,7 +185,6 @@ import ./ops.bend as O
 # are twenty short arms rather than twenty equality comparisons: a `match` on a
 # `Dt` may use its fields directly. `void` is the `case _` arm, and its empty mask
 # is the one totalization this makes.
-
 
 def promo_mask(d: S.Dt) -> U32:
   match d:
@@ -325,13 +323,11 @@ def unary_dt.go(bad: Bool, dt: S.Dt) -> S.Dt:
     case True{}: S.boolean()
     case False{}: least_upper_float(dt)
 
-
 # THE SHAPE ALGEBRA. `sint` is ops.py:1925's `int|UOp` and `ops.bend` already
 # spells it as `O.Sint`, so a dim here is `O.Sint` and nothing else: the
 # distinction between "the literal 4" and "the uop that may be 4" is exactly what
 # `_broadcast_shape`'s `isinstance(s, UOp) or s != 1` filter and `_shape`'s
 # `isinstance(ps[-1], int)` both read.
-
 
 def one_i64() -> H.I64:
   H.i64_of_i32(1)
@@ -682,7 +678,6 @@ def bcast_shape(m: Maybe<&2, Shapes>) -> Maybe<&2, List<&2, O.Sint>>:
     case None{}: None{}
     case Some{sh}: bcast.first(_align_left(sh))
 
-
 # THE ANSWER: one record per resolved node, carrying the six properties that fit
 # without `simplify` or the movement shape algebra. `shape` is Python's own
 # `tuple[sint, ...]|None`, `dev` its `str|tuple[str, ...]|None`, `addr` its
@@ -691,7 +686,6 @@ def bcast_shape(m: Maybe<&2, Shapes>) -> Maybe<&2, List<&2, O.Sint>>:
 #
 # A `Data` record and not six parameters because a Bend `List` is spent when read,
 # and `dt_shape` and `ended_of` both want the srcs.
-
 
 type Derived is Data:
   Derived{dt: S.Dt, shape: Maybe<&2, List<&2, O.Sint>>, dev: Maybe<&2, S.Dev>,
@@ -1123,7 +1117,6 @@ def fold.ended.of(m: Maybe<&2, Derived>) -> Maybe<&2, List<&2, U32>>:
     case Some{d}: Some{Derived.ended(d)}
     case None{}: None{}
 
-
 # `dtype_from_uop` (ops.py:124) and `UOp._shape` (ops.py:329), together.
 #
 # The arms are grouped by the RULE they use rather than by declaration order,
@@ -1138,7 +1131,6 @@ def fold.ended.of(m: Maybe<&2, Derived>) -> Maybe<&2, List<&2, U32>>:
 # "derived from the value. order matters: bool is an int subclass, ConstFloat is a
 # float subclass", and the note that CMPLT, CMPNE, CMPEQ, WHERE, SHL and SHR are
 # handled above rather than by the GroupOp fallbacks.
-
 
 # `always void` in the dtype ladder and `late ops don't have shape` in `_shape`: the
 # same twelve ops in both rules, so one def answers both.
@@ -1377,7 +1369,6 @@ def wmma_ds.go(dt: S.Dt, ws: Maybe<&2, Shapes>, last: Maybe<&2, O.Sint>) -> Mayb
 def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   wmma_ds.go(src_dt(2, ss), all_shapes(List.take(&2, Derived, ss, 3n)), src_last(2, ss))
 
-
 # `marg` -- ops.py:813, RESHAPE's arm of it, and the reason RESHAPE is the one
 # movement shape this file ports.
 #
@@ -1400,7 +1391,6 @@ def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 # checks need, and a `SU` is the arena index of the node the dim IS, which is what
 # makes two different symbolic dims two different answers.
 
-
 # `self.val` for a CONST -- ops.py:259-262, `.val` reads `self.arg` and is only
 # for a CONST or a CAST of one. A `CFloat` is not a dim: `shape_to_shape_arg`
 # asserts `dtypes.is_int(x.dtype)`, and `True == 1` as dict keys, so a `CBool`
@@ -1416,7 +1406,6 @@ def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
   match a:
     case O.APy{v}: const_i64.go(v)
     case _       : None{}
-
 
 # the RANGE width -- `int(r.vmax)+1`, the one quantity unshard and stage both read
 # (ops.py:430 and ops.py:378). This is the block `dt_shape`'s two deferred arms were
@@ -1481,7 +1470,6 @@ def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
 # use it"*), and a self-call's arguments are read left to right, each passed unchanged
 # until one shrinks. the depth below is three: the chain is one pass-through deep
 # for a CAST and two for an after-of-a-CAST, and a CONST is the end.
-
 
 # the order of these is the order rule, not an accident: `end` is the match (a match may
 # not scrutinize a call, so the op arrives as a parameter), and it is written ABOVE the
@@ -1609,8 +1597,6 @@ def stage_shape(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, List
 def stage_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   dt_of(src_dt(0, ss), stage_shape(ar, i, ss))
 
-
-
 # `sym_dim` -- THE `ssimplify` WALL, CLOSED. `as_shape`'s two arms (ops.py:807-808)
 # both end in `ssimplify`, and `marg` reached `None` on every non-CONST element
 # because of it. This is the one def that answers them.
@@ -1640,7 +1626,6 @@ def stage_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape
 # SO: `SU{s}` is right for a PARAM or a SPECIAL whose interval is not a point, and
 # it is a DISTINCT answer per dim because `s` IS the node. That is what the
 # `U` shape column cannot carry and `dim_str` below now does.
-
 
 # A dim this file can answer `x >= 0` about (ops.py:408's `all(...)`), which is a
 # NON-NEGATIVE and NON-EMPTY interval. `lo > hi` is `vmin > vmax`: the value does
@@ -1793,7 +1778,6 @@ def marg.at(k: U32, +ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
 def expand_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   dt_of(src_dt(0, ss), both(marg(ar, i), src_shape(0, ss)))
 
-
 # pad and shrink -- ops.py:419-428. the two arms are one walk.
 #
 # Both read `marg`, which for them is `tuple(zip(self.src[1].as_shape,
@@ -1813,7 +1797,6 @@ def expand_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape
 # symbolic offset; the fold cannot read one at all, so it refuses. That is the
 # uniform rule from the header -- a rule it cannot run is not a rule that passed --
 # and `mv_padsym` is the row that measures the difference.
-
 
 # A DIM AS A COUNT, or a refusal: an `O.SU` is an arena index and `resolve` needs a
 # number, and a negative dim is ops.py's `resolve(sz>=0)` failing. Both are `None`.
@@ -1948,7 +1931,6 @@ def pair3.of(+pad: Bool, ps: Maybe<&2, List<&2, O.Sint>>, os: Maybe<&2, List<&2,
     case Some{p}: pair3.os(pad, p, os, szs)
     case None{}  : None{}
 
-
 # PERMUTE -- ops.py:416-418. `if sorted(self.marg) != list(range(len(ps))): raise`
 # then `return tuple(ps[i] for i in self.marg)`.
 #
@@ -1964,7 +1946,6 @@ def pair3.of(+pad: Bool, ps: Maybe<&2, List<&2, O.Sint>>, os: Maybe<&2, List<&2,
 # "every index is in range" and "no index repeats", and together they are exactly
 # "the multiset is {0..n-1}". `range(n)` also forces the LENGTH, which is why the
 # walk counts rather than merely bounding.
-
 
 # `sorted(self.marg) != list(range(len(ps)))`, over the walk that also builds the
 # answer. `seen` is the multiset-so-far, so "no repeat" is a membership test.
@@ -2148,7 +2129,6 @@ def perm_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   +s = O.Arena.src(ar, i, 1)
   perm_ds.of(order_srcs.of(O.Arena.op(ar, s), ar, s), src_shape(0, ss), ss)
 
-
 # THERE IS NO FLIP ARM HERE, and there is no FLIP in upstream either: `900880433`
 # ("remove Ops.FLIP [pr] (#18729)", 2026-10-11) DELETED the member. Upstream's
 # `GroupOp.Movement` is FIVE ops -- `tinygrad/uop/__init__.py:117 symbol=Movement`
@@ -2167,7 +2147,6 @@ def perm_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 # raise` then `return tuple(ps[i] for i in self.marg)`, and `marg`'s PERMUTE arm is
 # `case Ops.PERMUTE: return self.arg` (ops.py:796 symbol=marg); `perm_ds` is that arm.
 
-
 def pair_ds.put(+pad: Bool, x: Maybe<&1, Pairs>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match x:
     case Some{+v}: dt_of_if(Pairs.ok(v), src_dt(0, ss), Some{Pairs.szs(v)})
@@ -2184,7 +2163,6 @@ def pad_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 
 def shrink_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   pair_ds.of(False{}, pair3.of(False{}, src_shape(0, ss), marg.at(1, ar, i), marg.at(2, ar, i)), ss)
-
 
 # THE TWO CHECKS, ops.py:408-410, and they are ONE walk.
 #
@@ -2213,7 +2191,6 @@ def shrink_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShap
 # `oracles/fold-mvt-rows.py` is the measured fixture: CPython raises
 # `bad reshape` and this fold answers. One input class, named, in place of the
 # whole class of symbolic margs that used to refuse.
-
 
 # `prod(xs)` over a `Maybe` shape, in ONE self-recursive def: the product of the
 # CONCRETE dims, whether any dim was provably negative (ops.py:408's raise), and
@@ -2408,10 +2385,8 @@ def mstack_dev.put(m: Maybe<&2, List<&2, U32>>) -> Maybe<&2, S.Dev>:
 def mstack_dev(ss: List<&2, Derived>) -> Maybe<&2, S.Dev>:
   mstack_dev.put(mstack_dev.go(ss, Some{Nil{}}))
 
-
 # `UOp.device` -- ops.py:890. Its own `match op` because Python's is. ops.py's own
 # comments, kept: "mselect must be on tuple device".
-
 
 def device_of(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, ss: List<&2, Derived>) -> Maybe<&2, S.Dev>:
   match op:
@@ -2484,11 +2459,9 @@ def addrspace_of.mv(mv: Bool, op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Ad
 def addrspace_of.rest(+op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Addr>:
   addrspace_of.mv(O.GroupOp.movement(op), op, ss)
 
-
 # `UOp.addrspace` -- ops.py:910. Its own `match op`, and the two group tests.
 # ops.py's own comments, kept: "LOAD brings things into the ALU" and the
 # `ad`/`all_same` rejection spelled out above.
-
 
 def addrspace_of(arg: O.Arg, op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Addr>:
   match op:
@@ -2527,12 +2500,10 @@ def base_of.is_detach(op: O.Op) -> Bool:
 def base_of.steps(+op: O.Op) -> Bool:
   Bool.or(O.GroupOp.movement(op), base_of.is_detach(op))
 
-
 # `UOp.base` and `UOp.is_invalid` -- ops.py:785 and ops.py:265. `base` is
 # `self.src[0].base` for a movement op or for DETACH ("DETACH can't change base")
 # and `self` otherwise, so the fold carries the INDEX rather than the walk: a
 # node's base is a node before it, so the src's base is already in the table.
-
 
 def base_of(i: U32, op: O.Op, ss: List<&2, Derived>) -> U32:
   base_of.go(ss, i, base_of.steps(op))
@@ -2724,11 +2695,9 @@ def unshard_ds.of(axis: List<&2, U32>, +ar: O.Arena, +i: U32, ps: Maybe<&2, List
 def unshard_ds(+ar: O.Arena, +i: U32, arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   unshard_ds.of(unshard_axis.of(arg), ar, i, src_shape(0, ss), ss)
 
-
 # THE LADDER. `dtype_from_uop` (ops.py:124) and `UOp._shape` (ops.py:329), together:
 # here are the dtype production rules, total over all Ops, grouped by the RULE each
 # arm uses. See the block above for ops.py's own comments on the arms.
-
 
 def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match op:
@@ -2920,11 +2889,9 @@ def ranges_only(+ar: O.Arena, srcs: List<&2, U32>, acc: List<&2, U32>) -> List<&
     case Nil{}: acc
     case s <> t: ranges_only(ar, t, is_range(ar, s, acc))
 
-
 # `UOp.ended_ranges` -- ops.py:470. It walks DOWN the srcs, so it needs only the
 # srcs the fold already answered, and the AFTER/BARRIER arms are exactly
 # `H.flatten_u32` over them.
-
 
 def ended_of(+ar: O.Arena, i: U32, op: O.Op, ss: List<&2, Derived>) -> List<&2, U32>:
   match op:
@@ -2963,14 +2930,11 @@ def derived.of(+ar: O.Arena, +i: U32, nd: O.Node, +x: Srcs) -> Maybe<&2, Derived
     case O.Node{+op, src, +arg, tag}:
       derived.put(dt_shape(ar, i, op, arg, Srcs.ss(x)), ar, i, op, arg, x)
 
-
 # THE ASSEMBLY. The one place that knows all six properties, and the one def the
 # worklist calls.
 
-
 def derived(ar: O.Arena, i: U32, nd: O.Node, ss: List<&2, Derived>) -> Maybe<&2, Derived>:
   derived.of(ar, i, nd, srcs(ss))
-
 
 # THE FOLD: a Kahn worklist over the arena.
 #
@@ -2989,7 +2953,6 @@ def derived(ar: O.Arena, i: U32, nd: O.Node, ss: List<&2, Derived>) -> Maybe<&2,
 # already resolved. `Kahn.step`'s `Kahn.get` is the visited set, which is what makes
 # the worklist a multiset safely. The pending count cannot underflow for the same
 # reason: it starts at `nsrc` and is decremented once per edge.
-
 
 type Kahn is Data:
   Kahn{pend: List<&2, U32>, work: List<&2, U32>, out: Table}
@@ -3160,7 +3123,6 @@ def UOp.axis_type.of(arg: O.Arg, op: O.Op) -> Maybe<&2, O.AxisType>:
 def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
   UOp.axis_type.of(O.Arena.arg(ar, i), O.Arena.op(ar, i))
 
-
 # `UOp.is_variable` / `UOp.variables` -- ops.py:1009 and :1037, AND THE TWO NAMES
 # `schedule/__init__.bend`'s `resolve_linear_call` STANDS ON (its wall C).
 #
@@ -3173,7 +3135,6 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
 # versus `()`. So `Some{Some{Nil{}}}` is `()`, `Some{None{}}` is a shape that is
 # not concrete, and anything else is not scalar. THE COUNT WOULD BE WRONG THREE
 # WAYS AT ONCE, and `cfun_shape_is` already measured that.
-
 
 # THE `_min_max` ARITHMETIC CORE -- the part of ops.py:1104 that is unsigned-64
 # magnitude arithmetic plus a sign bit, and the HALF OF THE WALL that
@@ -3235,7 +3196,6 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
 #     `u != 0 or t3.hi != 0` and NOT `t3.hi + (u >> 32) != 0`.
 #   * for `k >= 32` the shifted high word comes from `al` and only from `al`.
 #   * restoring division subtracts when the remainder REACHED the divisor.
-
 
 def mm.u64.of(ok: Bool, +hi: U32, +lo: U32) -> Maybe<&2, H.I64>:
   match ok:
@@ -3404,7 +3364,6 @@ def mm.u64.shr.go(+k: Nat, +ah: U32, +al: U32) -> H.I64:
 
 def mm.u64.shr(+ah: U32, +al: U32, +k: Nat) -> H.I64:
   mm.u64.shr.go(k, ah, al)
-
 
 # ---- BITWISE, on the two halves ------------------------------------------------
 #
@@ -3581,7 +3540,6 @@ def mm_show(m: Maybe<&2, H.I64>) -> String:
 # why `mm-bl-gate.py` gates the masking rows (`mk_*`) alongside the counts and not
 # only the latter.
 
-
 # `x >= 2**16` picks `x >> 16` and adds 16; the two halves of each stage are separate
 # defs only so the ladder reads as a table. `Bool.pick` CHOOSES an arm and both are
 # evaluated, which is harmless here: every arm is a total shift or a literal.
@@ -3679,7 +3637,6 @@ def mm_mask64(+s0h: U32, +s0l: U32, s1h: U32, s1l: U32) -> Maybe<&2, H.I64>:
 # them from an unbounded value -- both say "no information" -- so saturating is sound.
 # The alternative is an arbitrary-precision integer, which Bend 2.0.34 cannot express
 # (`Nat` refuses past 2**48-1) and which no consumer needs.
-
 
 type Bnd is Data:
   Bnd{inf: U32}
@@ -3855,7 +3812,6 @@ def bnd_lim(+d: S.Dt, top: Bool) -> Bnd:
 #   * `TRUNCMOD`/`TRUNCDIV`/`DIV`/`MOD` need SIGNED division and `mm.dm.*` is an
 #     UNSIGNED restoring divider. `mm.sn.div` below is the signed core and it is gated;
 #     the four arms that call it are the next block, not this one.
-
 
 type Bnd2 is Data:
   Bnd2{lo: Bnd, hi: Bnd}
@@ -4326,7 +4282,6 @@ def mm.bin.cmpne(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
     bnd_tf(Bool.not(Bool.and(bnd.eq(Bnd2.lo(s0), Bnd2.hi(s0)),
       Bool.and(bnd.eq(Bnd2.lo(s1), Bnd2.hi(s1)), bnd.eq(Bnd2.lo(s0), Bnd2.lo(s1))))))}
 
-
 def mm.bin.add(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
   Bnd2{bnd.add(Bnd2.lo(s0), Bnd2.lo(s1)), bnd.add(Bnd2.hi(s0), Bnd2.hi(s1))}
 
@@ -4514,7 +4469,6 @@ def mm.lift.rest(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2
 def mm.lift(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2:
   mm.MM2.get(mm.lift.bin(mm.bin.enter(op, d), op, srcs, d), mm.lift.rest(op, srcs, arg, d))
 
-
 # THE GATE. `main` builds small arenas with `ops.bend`'s own `g_*` constructors and
 # with the `UOp` sugar, folds each, and prints one line per claim. A `False{}`
 # anywhere is the failure.
@@ -4532,7 +4486,6 @@ def mm.lift(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2:
 #                     the BACKEDGE must carry src[1:2] as its ended range.
 #   5. gap_ok      -- a node whose rules are deferred (a RESHAPE) is NOT answered,
 #                     and the fold still terminates and says so by leaving it out.
-
 
 # the folded arena and its table, as one `Data` value, for the same `Data` rule as
 # `Sized` and `Srcs`: every claim below reads the table two or three times.
@@ -4731,7 +4684,6 @@ def bl_row(nm: String, got: String) -> IO(Unit):
 # `2**64` there and `PInf` here; those four rows print CPython's real pair in brackets, so
 # the divergence is IN the row. Same treatment `mv_expsym` gets, and the point is that a
 # saturation is a designed answer rather than a wrong one.
-
 
 def lf_row(nm: String, b: Bnd2) -> IO(Unit):
   IO.print(String.concat(["lf_", nm, " ", bnd2_show(b)]))
@@ -4962,16 +4914,13 @@ def fold.dt(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, S.Dt>:
 def dt_is(+x: Folded, i: U32, want: S.Dt) -> Bool:
   dt_is.pick(fold.dt(Folded.ar(x), Folded.t(x), i), want)
 
-
 # THE READERS. `UOp.dtype(ar, t, i)` and the rest: a table read, so each is a
 # `Maybe` from an index. There is no `UOp.dtype(ar, i)` here, and there cannot be
 # one: answering a single node IS the fold, because the fold is what makes the
 # answer well-founded. ops.py spells that `recursive_property` (ops.py:218).
 
-
 def UOp.dtype(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, S.Dt>:
   fold.dt(ar, tb, i)
-
 
 # `UOp.variables` -- ops.py:1037, THE NAME `schedule/__init__.bend`'s
 # `resolve_linear_call` STANDS ON.
@@ -5122,7 +5071,6 @@ def UOp.fold(+ar: O.Arena) -> Table:
 def folded(+ar: O.Arena) -> Folded:
   Folded{ar, UOp.fold(ar)}
 
-
 # THE RANGES FOLD -- ops.py:483 `UOp._ranges` and ops.py:497 `UOp.ranges`. This is
 # the set algebra the `P3` list wanted for `_bool_slice`, `is_realized` and
 # `variables`, and the one the file's own list named as the reason those three wait.
@@ -5165,7 +5113,6 @@ def folded(+ar: O.Arena) -> Folded:
 # not answered either. Python has no such limit. The refusal is a FLAG and not an
 # absence, so it rides through the union and the pops -- a fold that cannot say "I do not
 # know" is not a fold. `rg_absent` is the row that pins it.
-
 
 # The node index rides IN the set, because the table is a search and a `List` cannot
 # carry the key beside the value without a second record. `ok` is the "do not know".
@@ -5354,7 +5301,6 @@ def Ranged.of(+ar: O.Arena, +tb: Table) -> Ranged:
 def ranged(+ar: O.Arena) -> Ranged:
   Ranged.of(ar, UOp.fold(ar))
 
-
 # THE `_min_max` WALK -- ops.py:1104's fold, and the last of the three pieces the foot of
 # this file names. `mm.lift` is PURE over `(op, srcs, arg, dtype)`, so what is missing is
 # the pass that PRODUCES the src intervals, and it is the same shape as `rng_sweep` and for
@@ -5372,7 +5318,6 @@ def ranged(+ar: O.Arena) -> Ranged:
 # node `dt_shape` DEFERS has no interval here. Python is total, so this is a real
 # divergence and `mmkx_stage`, `mmkx_reshape` and `mmkx_backedge` name every op in it.
 # It is the same divergence `ranges` already pays, and `rg_absent` is its row there.
-
 
 type MBr is Data:
   MBr{i: U32, b: Maybe<&2, Bnd2>}
@@ -5567,12 +5512,10 @@ def MMed.of(+ar: O.Arena, +tb: Table) -> MMed:
 def min_maxed(+ar: O.Arena) -> MMed:
   MMed.of(ar, UOp.fold(ar))
 
-
 # THE RANGES ROWS. `oracles/fold-rng-oracle.py` builds the same twelve
 # graphs node for node and prints CPython's own `u.ranges`, so `diff` of the two lanes
 # IS the test. The label is a RANGE's axis, never an index: CPython's interning order
 # is not the arena's, so a number neither lane means the same thing by.
-
 
 # `UOp.range(end, (axis,), AxisType.LOOP)` -- one fixture, one axis per range, which is
 # what makes a range a NAME rather than a position.
@@ -5736,7 +5679,6 @@ def rng_of_row(nm: String, +f: O.Found) -> IO(Unit):
   IO.print(String.concat(["rg_", nm, " ranges=",
     rng_str(Ranged.ar(x), UOp.ranges(Ranged.ar(x), Ranged.rt(x), O.Found.i(f)))]))
 
-
 # THE MOVEMENT FIXTURES AND ROWS: `dt_shape`'s arms for ops.py:414-431's five
 # deferred movement ops. Every `g_mv*` is built node for node against
 # `oracles/fold-mvt-oracle.py`, and every row prints the FOUR FACTS
@@ -5747,7 +5689,6 @@ def rng_of_row(nm: String, +f: O.Found) -> IO(Unit):
 # and the node count right: that mutation moved exactly TWO of seventy rows in
 # `mixin/movement.bend` and only because two rows happened to notice an identity
 # test. `n= op= nsrc= srcops=` is the spelling that closes it.
-
 
 # `ParamArg(slot=0, int32, size=size)` -- `g_buf` spells the size-4 one, and this
 # is the same record at an arbitrary size so the 2-D fixtures have a source.
@@ -5768,7 +5709,6 @@ def g_mv_st23(ar: O.Arena) -> O.Found:
 def g_mv_r23_of(+b: O.Found) -> O.Found:
   +k = g_mv_st23(O.Found.ar(b))
   O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
-
 
 # RESHAPE(BUFFER(6), STACK(2, 3)) -- shape (2, 3), the PERMUTE src. SIX and
 # not twelve: the RESHAPE's own product check is `prod(ps) != prod(marg)`, so the
@@ -5928,7 +5868,6 @@ def g_mv_st65(ar: O.Arena) -> O.Found:
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(5)})
   O.UOp.new(O.Found.ar(c1), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})
 
-
 def g_mv_st21(ar: O.Arena) -> O.Found:
   +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(2)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(1)})
@@ -5971,7 +5910,6 @@ def g_mv_pad23() -> O.Found:
   +o = g_mv_st01(O.Found.ar(r))
   +z = g_mv_st65(O.Found.ar(o))
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(r), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
-
 
 # PAD whose marg is LONGER than ps -- `len(ps) != len(self.marg)`, ops.py:421's first
 # disjunct, and the ValueError is `invalid pad ((0, 6), (1, 5)) for (4,)`.
@@ -6045,7 +5983,6 @@ def sig4(+ar: O.Arena, +u: U32) -> String:
                   " op=", O.Ops.name(O.Arena.op(ar, u)),
                   " nsrc=", U32.show(O.Arena.nsrc(ar, u)),
                   " srcops=", String.join(sig_srcops(ar, O.Arena.srcs(ar, u)), "|")])
-
 
 # THE `_min_max` WALK ROWS. `.agents/slop/mm-walk-gate.py` builds the same graphs node
 # for node and prints CPython's own `_min_max`, so `diff` of the two lanes IS the test.
@@ -6125,7 +6062,6 @@ def sig4(+ar: O.Arena, +u: U32) -> String:
 # also why the START INDEX is not observable: shifting it by one leaves index 0 unrowed
 # and `Arena.empty()` spends index 0 on a bottom nothing ever names. What the gate pins is
 # the ORDER, and MW5 and MW7 measure that.
-
 
 # `ABSENT` is this file's "this fold cannot answer", the same word `rng_str` prints, so a
 # refused interval is not mistakable for a saturated one.
@@ -6217,7 +6153,6 @@ def mw_pad() -> O.Found:
 # are one row twice.
 def mw_param() -> O.Found:
   O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, Some{4}, O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(4294967293), H.i64_of_i32(7)}})}, O.TNone{})
-
 
 # THE TWO WINDOW ROWS, and the reason `weak.bend` waits on this def: `2**64-1` does not
 # fit a signed word, so `uint64`'s ceiling and `int64`'s floor are the rows that say the
@@ -6397,7 +6332,6 @@ def mv_row(nm: String, +x: Folded, +u: U32) -> IO(Unit):
 
 def mv_of(nm: String, +f: O.Found) -> IO(Unit):
   mv_row(nm, folded(O.Found.ar(f)), O.Found.i(f))
-
 
 # the fixture that no row read, and it is the one the defect lived in.
 #
@@ -6584,7 +6518,6 @@ def t_img() -> Bool:
 def dt_w(nm: String, +bits: U32, top: Bool) -> IO(Unit):
   dt_row(nm, bnd_int(False{}, True{}, bits), bnd_int(True{}, False{}, bits))
 
-
 # `CustomFunction`: the dtype is in the ARG (ops.py:133-135, 374). Filed among the
 # always-void ops until 2026-10-03, so it answered `(void, None)` for EVERY one.
 #
@@ -6600,7 +6533,6 @@ def dt_w(nm: String, +bits: U32, top: Bool) -> IO(Unit):
 #
 # `fold.shape` is a Maybe OF a Maybe and the inner Maybe is exactly ops.py's `None`
 # versus `()`, so the shape column discriminates on the CONSTRUCTOR and not a count.
-
 
 def g_cfun(dt: S.Dt) -> O.Found:
   O.UOp.new(O.Arena.empty(), O.OpsCUSTOM_FUNCTION{}, Nil{},
@@ -6620,7 +6552,6 @@ def t_cfun(+dt: S.Dt, empty: Bool) -> Bool:
   +x = folded(O.Found.ar(f))
   +i = O.Found.i(f)
   Bool.and(dt_is(x, i, dt), cfun_shape_is(x, i, empty))
-
 
 # `void`'s PRIORITY, and why `Dt.pri` is 0 and not the -1 of dtype.py:118.
 #
@@ -6649,7 +6580,6 @@ def t_cfun(+dt: S.Dt, empty: Bool) -> Bool:
 # values of `Dt`, because `eq_dt` compares all four fields. That is why the collision
 # has never been observable, and why the port keeps `pri 0` rather than inventing a
 # signed encoding `U32` cannot hold.
-
 
 # dtype.bend's `dtypes.all()` is SEVENTEEN -- `dtype.py:161` is
 # `floats + ints + (bool,)` -- so the two-lane dtype gate has never printed a void row,
@@ -6712,7 +6642,6 @@ def t_bnd_void_is_bool() -> Bool:
       String.eq(bnd_show(bnd_lim(S.void(), True{})), bnd_show(bnd_lim(S.boolean(), True{})))),
     Bool.not(String.eq(bnd_show(bnd_lim(S.void(), True{})), bnd_show(bnd_flt(True{})))))
 
-
 # THE `vb_` ROWS -- `unsharded_base`, `storage_base` and `is_virtual`, the
 # three properties the TODO list below called P3 and the fold now answers.
 #
@@ -6742,7 +6671,6 @@ def t_bnd_void_is_bool() -> Bool:
 # fires -- and that is the negative witness, the one row that says the reader
 # can say False. A reader with no negative witness is two rows that are always
 # True, and a row that is always True cannot fail.
-
 
 # a BUFFER(int32) of shape (4,) ON A DEVICE. The device is what makes
 # `is_virtual` false; `mw_pa` below has none, and every node built with it is
@@ -6855,7 +6783,6 @@ def vb_row(nm: String, +f: O.Found) -> IO(Unit):
     " sbase=", vb_name(UOp.storage_base(ar, tb, u), ar),
     " sself=", Bool.show(vb_self(UOp.storage_base(ar, tb, u), u)),
     " virt=", vb_virt(UOp.is_virtual(ar, tb, u))]))
-
 
 # THE `vb_` PLANT, MEASURED. `gates/fold-vbase-mutate.py` applies each
 # edit to a SCRATCH COPY of `tinybendygrad/`, compiles it, and diffs the `vb_`
@@ -7271,7 +7198,6 @@ def main() -> IO(Unit):
     # fixtures and these lines, so a row cannot be right on one lane and wrong on the
     # other; 72 rows, byte-identical to CPython on both the interpreted and `-o` lanes.
 
-
 # NOT PORTED, one line each, and the wall each one is behind. The Python line
 # numbers are ops.py's, so this list diffs against ops.py line for line and
 # `rg "TODO(p3)" tinybendygrad/uop/fold.bend` is the work queue.
@@ -7685,7 +7611,6 @@ def main() -> IO(Unit):
 # DIVERGES block with the interval arithmetic that decides them. A file with no
 # divergences left would be a file whose reader could not tell the two apart.
 
-
 # THE MUTATION TABLE for `_min_max`'s OP TABLE, MEASURED.
 # `.agents/slop/fold-lift-mutate.py` applies each edit, re-runs, and diffs whole
 # `name=value` lines against a baseline captured from the SAME file in the SAME state; the
@@ -7791,4 +7716,3 @@ def main() -> IO(Unit):
 # and it does, here, by `del_un` and `rng_union.put`. What no row can reach is a graph
 # whose live ranges change under an op this file DEFERS (`UNSHARD` ends the DEVICE range
 # and is one of the four), so its `ended` list is not in the table.
-

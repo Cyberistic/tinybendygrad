@@ -121,7 +121,6 @@ import ./../uop/fold.bend as F
 # answered nothing for them. It is gone, which is what makes this file's 38 rows a
 # gate over THIS file's code alone instead of a gate over a merged neighbour's.
 
-
 # THE ANSWER. A rule RETURNS THE ARENA, `movement.bend`'s shape, called `Ker` so
 # both files can be live in one tree. `at == 0` is Python's `None`.
 
@@ -203,7 +202,6 @@ def kn_nsrc_is(+ar: O.Arena, i: U32, n: U32) -> Bool:
 def kn_nsrc_ge(+ar: O.Arena, i: U32, n: U32) -> Bool:
   U32.is_ge(kn_nsrc(ar, i), n)
 
-
 # `pm_cast_float_alu` -- __init__.py:244-247. the op set and the table are
 # PORTED; THE DTYPE GUARD IS A WALL.
 #
@@ -241,7 +239,6 @@ def cfa_table() -> List<&2, O.PMEntry>:
 # answer, exactly as `hop_self` does.
 def kn_replace(op: O.Op, arg: O.Arg, +ar: O.Arena, +self: U32, src: List<&2, U32>) -> Ker:
   ker_hit(O.UOp.new(ar, op, src, arg, kn_tag(ar, self)))
-
 
 # PASS 1 -- `do_number_param`, __init__.py:33-36. PORTED IN FULL.
 #
@@ -363,7 +360,6 @@ def pm_number_params.of(ok: Bool, +np: NP, +ar: O.Arena, +self: U32) -> NP:
 def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
   pm_number_params.of(O.pm_claimed([O.OpsPARAM{}], ar, self), kn_np(ar, self, n), ar, self)
 
-
 # `build_range_map` -- __init__.py:40-45. ported, and the port is now wrong.
 #
 #     def build_range_map(sink):
@@ -457,7 +453,6 @@ def kn_rm_len.go(fuel: Nat, +tb: F.Table, +ar: O.Arena, +last: U32, acc: U32) ->
 # `Ops.NOOP` and contributes 0.
 def kn_range_map_n(+tb: F.Table, +ar: O.Arena) -> U32:
   kn_rm_len.go(U32.to_nat(O.Arena.next(ar)), tb, ar, U32.sub(O.Arena.next(ar), 1), 0)
-
 
 # `is_shape_changing_bitcast` and `maybe_load` -- __init__.py:226-227. BOTH
 # PORTED, and `maybe_load` is the one that decides whether `pm_add_loads` fires at
@@ -573,7 +568,6 @@ def al_scan(rs: List<&2, O.PMEntry>, +tb: F.Table, +ar: O.Arena, +self: U32, +h:
 def pm_add_loads(+fx: F.Folded, self: U32) -> Ker:
   al_scan(al_table(), F.Folded.t(fx), F.Folded.ar(fx), self, Ker{F.Folded.ar(fx), 0})
 
-
 # `_is_local_store` -- __init__.py:247. PORTED. `x.op is Ops.STORE and
 # x.addrspace is AddrSpace.LOCAL`, and the `is` on an enum is an identity test, so
 # the second conjunct is `ALocal{}` and nothing else. `LocalStore` uses `is`, so
@@ -583,7 +577,6 @@ def ib_local.addr(m: Maybe<&2, Maybe<&2, S.Addr>>, bad: Bool) -> Bool:
 
 def ib_local(+tb: F.Table, +ar: O.Arena, +i: U32) -> Bool:
   Bool.and(kn_is(ar, i, O.OpsSTORE{}), ib_local.addr(F.fold.addr(ar, tb, i), False{}))
-
 
 # `pm_implicit_barriers` -- __init__.py:266-269. TWO rules, and BOTH are WALLS, but
 # for the SAME wall and it is the wall this whole lowerer keeps hitting:
@@ -604,7 +597,6 @@ def ib_local(+tb: F.Table, +ar: O.Arena, +i: U32) -> Bool:
 def ib_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsAFTER{}], Nil{}},      # :271  AFTER add_raw_barrier
    O.PMEntry{1, [O.OpsEND{}, O.OpsBACKEDGE{}], Nil{}}]   # :272  END|BACKEDGE add_war_barrier
-
 
 # `pm_alloc_to_buf` -- __init__.py:406. ONE rule, and it is the WHOLE of the
 # function: `((buf:=x.replace(op=Ops.BUFFER)), [buf])`. It changes the OP and
@@ -631,7 +623,6 @@ def ab_try.go(ok: Bool, +ar: O.Arena, +self: U32) -> Ker:
 
 def pm_alloc_to_buf(+ar: O.Arena, +self: U32) -> Ker:
   ab_try.go(O.pm_claimed([O.OpsALLOC{}], ar, self), ar, self)
-
 
 # `line_rewrite` -- __init__.py:408-416. PORTED IN FULL, and it is the SECOND
 # engine in this file: a fixpoint over a LIST rather than over the arena.
@@ -773,7 +764,6 @@ def lw_go(lst: List<&2, U32>, +subs: List<&2, Sub>, +acc: List<&2, U32>, +ar: O.
     case Nil{}   : Line{subs, acc}
     case +u <> t : lw_go(t, Line.subs(lw_step(subs, acc, fired, ar, u)), Line.out(lw_step(subs, acc, fired, ar, u)), ar, fired)
 
-
 # `# TODO(p3) __init__.py:409  replaced: dict[UOp, UOp]` -- a mutable dict becomes a
 # threaded LIST of `Sub`. That is a CHANGE OF SHAPE and not of meaning, because the
 # walk is in toposort order and each key is written once, so `lw_find`'s FIRST match
@@ -781,7 +771,6 @@ def lw_go(lst: List<&2, U32>, +subs: List<&2, Sub>, +acc: List<&2, U32>, +ar: O.
 # row for the write itself.
 def line_rewrite(+lst: List<&2, U32>, +ar: O.Arena, fired: Maybe<&2, Ker>) -> Line:
   lw_go(lst, Nil{}, Nil{}, ar, fired)
-
 
 # `to_program_config` -- __init__.py:509-510. ELEVEN ENV FLAGS, and this is the
 # CACHE KEY and not a behaviour list: `to_program_key` (:512-513) is
@@ -810,7 +799,6 @@ def cfg_len() -> U32:
 
 def cfg_ctx_len() -> U32:
   14
-
 
 # `pm_to_program` -- __init__.py:466-472. FIVE rules, ONE PER STAGE, and this is
 # the second engine in this file and it is the one the SIBLINGS consume: a PROGRAM
@@ -917,8 +905,6 @@ def tp_stage(+ar: O.Arena, +self: U32) -> U32:
               Nat.is_eq(U32.to_nat(kn_nsrc(ar, self)), 2n),
               Nat.is_eq(U32.to_nat(kn_nsrc(ar, self)), 3n))
 
-
-
 # THE MEASURED MUTATION TABLE, by `.agents/slop/notes/codegen-mut.py`. TWELVE
 # textual edits, one at a time, each re-checked and re-run against the clean 38-row
 # gate. Ten are REVERTS of one of this file's own fixes, so the set a mutation moves
@@ -950,8 +936,6 @@ def tp_stage(+ar: O.Arena, +self: U32) -> U32:
 # 2's LINEAR arm is unconstrained and shadows rule 3 entirely. `stage_pr2` is the
 # row that moves; `stage_pr3` was the row that exposed it, and it is now a row
 # that agrees with Python rather than one that disagreed.
-
-
 
 # THE GATE. Every row is DERIVED FROM PYTHON by
 # `.agents/slop/notes/kn-truth.py`, which prints its rows in THIS ORDER and with
@@ -1056,7 +1040,6 @@ def k_stage(+kx: K, n: Nat) -> U32:
 
 def k_op(nm: String, +kx: K, n: Nat) -> String:
   O.Ops.name.of(kn_op(F.Folded.ar(K.fx(kx)), K.at(kx, n)))
-
 
 # THE ROWS. Grouped by the def they test, in that order.
 #
@@ -1269,8 +1252,6 @@ def row(nm: String, v: U32) -> IO(Unit):
 
 def srow(nm: String, v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))
-
-
 
 # THE FIXTURE IS INTERNED, NOT COUNTED, so a dedup cannot shift a row silently. The
 # first version of these rows anchored each one at a literal list position, and one

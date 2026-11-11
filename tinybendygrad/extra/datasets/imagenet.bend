@@ -79,9 +79,7 @@ import Base
 import ./__init__.bend as D
 import ../../sz.bend as SZ
 
-
 # THE ANSWER
-
 
 # `Has` is the answer and `Lacks` is the refusal. One type for both file lists
 # and the class map, so "the loader could not answer" is one shape.
@@ -97,9 +95,7 @@ def cats.has(m: Map<&2, U32>) -> Load<&2, Map<&2, U32>>: Has{m}
 
 def cats.lacks(why: String) -> Load<&2, Map<&2, U32>>: Lacks{D.refuse(why)}
 
-
 # READING A FILE
-
 
 def read.pick(r: Result<&1, &1, U32 & String, String>) -> Maybe<&2, String>:
   match r:
@@ -127,9 +123,7 @@ def read.text(path: String) -> IO(Maybe<&2, String>):
     f : Result<&1, &1, U32 & String, File> <- File.open(path, "r")
     read.go(f)
 
-
 # THE TWO-LEVEL EXPANSION: `<root>/<split>/*/*`
-
 
 # glob's `*` does not match a name that starts with a dot: CPython's
 # `glob.py::_ishidden` is `path[0] in ('.', b'.'[0])` and `_glob1` drops those
@@ -217,7 +211,6 @@ def split.files(root: String, split: String, at: String, what: String) -> IO(Loa
     isd : U32 <- SZ.Sz.is_dir(d1)
     split.files.pick(isd, d1, at, what)
 
-
 # THE CLASS INDEX READER
 #
 # A decoder for the class-index format, NOT a JSON parser: the port has none
@@ -248,7 +241,6 @@ def split.files(root: String, split: String, at: String, what: String) -> IO(Loa
 # Nothing writes one, and the refusal is the port's habit, so the wider set is
 # the price of one `Char.is_space` call instead of four match arms in six
 # places. NAMED, not hidden.
-
 
 type Entry is Data:
   Entry{name: String, index: U32}
@@ -481,9 +473,7 @@ def ci.map.go(es: List<&2, Entry>, m: Map<&2, U32>) -> Map<&2, U32>:
 def ci.map(es: List<&2, Entry>) -> Map<&2, U32>:
   ci.map.go(es, Map.new(&2, U32))
 
-
 # THE THREE DEFS
-
 
 def cats.pick2(st: St, es: List<&2, Entry>, path: String) -> IO(Load<&2, Map<&2, U32>>):
   match st:

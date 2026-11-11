@@ -48,7 +48,6 @@
 # property of the JS backend's float representation, not of `from_bits`, and no
 # definition of `from_bits` can repair it.
 
-
 import Base
 
 def F32.from_bits(bits: U32) -> F32:

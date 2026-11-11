@@ -54,9 +54,7 @@ import ./../mixin/elementwise.bend as E
 import ./../mixin/rand.bend as RD
 import ./layers.bend as L
 
-
 # the list form -- the recipe as a formula on the values.
-
 
 # `idx[j]` -- `n - j` where `v[j]` is a maximum, `0` where it is not.
 def nn_argmax.pick(eq: Bool, j: U32, n: U32) -> U32: Bool.pick(U32, eq, U32.sub(n, j), 0)
@@ -98,7 +96,6 @@ def nn_argmax(+vals: List<&2, F32>) -> U32:
 def nn_argmax.row(nm: String, vals: List<&2, F32>, want: U32) -> IO(Unit):
   IO.print(String.concat([nm, " got=", U32.show(nn_argmax(vals)), " want=", U32.show(want)]))
 
-
 # the graph form -- the recipe as the four nodes upstream builds.
 #
 # `mixin/op.py:863-888`, ONE DEF PER NODE, IN UPSTREAM'S ORDER:
@@ -110,7 +107,6 @@ def nn_argmax.row(nm: String, vals: List<&2, F32>, want: U32) -> IO(Unit):
 # THE `.reshape(self.shape[axis], *[1]*(self.ndim-axis-1))` OF NODE 2 IS A NO-OP FOR A
 # 1-d source -- `[n]` is already `[n]` -- so the 1-d form is the same recipe and the
 # reshape is not built. the widening is named in the scope paragraph above.
-
 
 # the `n` -- `self.shape[axis]` -- is carried in a record and not in a `U32`, because
 # a `U32` is consumed once and `n` is needed twice: once for the `arange` and once for
@@ -165,7 +161,6 @@ def nn_argmax_g(+t: T.Tensor, +q: AN, +dev: S.Dev) -> T.Tensor:
   +imx = nn_argmax_g.imx(idx)
   nn_argmax_g.out(imx, q)
 
-
 # the readers the graph rows use. they do not use `nn/layers.bend`'s `nn_shape`,
 # AND THAT IS THE POINT.
 #
@@ -179,7 +174,6 @@ def nn_argmax_g(+t: T.Tensor, +q: AN, +dev: S.Dev) -> T.Tensor:
 # pass on nothing. the reader below asks `F.fold.shape` (uop/fold.bend:4827 symbol=fold.shape), which
 # answers the double `Maybe`: the outer is "the node is in the FOLD's table" and the
 # inner is "the node has a shape", and the two are not the same question.
-
 
 # the shape as CPYTHON prints it: `()` for a 0-dim shape, `(4,)` for a 1-dim one and
 # `(1, 3)` for a 2-dim one. the count and the string are built in one walk, because a
@@ -228,7 +222,6 @@ def nn_argmax_g.dt(+t: T.Tensor) -> String:
   +fx = F.folded(T.Tensor.ar(t))
   E.ew_dtnm(W.wk_dt(fx, T.Tensor.u(t)))
 
-
 # the graph rows. every `want` is CPYTHON's own shape or dtype for that node --
 # read off `.agents/slop/nnargmax2/oracle_argmax.py`, which asks cpytin itself. NONE
 # of them is copied from the port's output.
@@ -247,7 +240,6 @@ def nn_argmax_g.dt(+t: T.Tensor) -> String:
 # `mixin/elementwise.bend`'s `ew_dtnm` PRINTS `f32` / `i32` / `bool`. THE SAME THREE
 # dtypes, spelled the port's way, because a row that prints `dtypes.f32` on one side
 # AND `f32` ON THE OTHER IS NOT A ROW.
-
 
 def nn_argmax_g.row(nm: String, got: String, want: String) -> IO(Unit):
   L.nn_row.line(nm, got, want)

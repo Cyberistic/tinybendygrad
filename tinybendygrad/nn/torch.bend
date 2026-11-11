@@ -86,7 +86,6 @@
 import Base
 import ../helpers.bend as H
 
-
 # THE CONSTANTS. Every literal in the file, and the four measured values that
 # come out of importing it in CPython.
 
@@ -120,7 +119,6 @@ def MSG() -> String: String.concat([MSG_HEAD(), NL(), MSG_TAIL()])
 
 def MSG_LINES_GOT() -> U32: U32.from_nat(List.length(&2, String, String.split(MSG(), LFU())))
 
-
 # THE TYPES.
 
 type Call is Data:
@@ -138,7 +136,6 @@ type Tr is Data:
 # breath -- `device.bend`'s `Reg` and its opened set, which is the same idea.
 type Imp is Data:
   Imp{path: List<&2, String>, t: Tr}
-
 
 # THE TRACE.
 
@@ -184,7 +181,6 @@ def Call.k(c: Call) -> U32:
 def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
-
 
 # READING THE TRACE. Same three readers as ops_webgpu, and the same fuel bug they
 # were written around: the fuel is the TRACE's length and the answer is
@@ -248,7 +244,6 @@ def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
 
-
 # nn/torch.py:3 -- `.parent.parent`, and it is TWO components, not one. The port
 # deletes the last two components and the two separators in front of them, which
 # is what makes the answer `/abs/tinygrad` and not `abs/tinygrad`: the leading
@@ -303,7 +298,6 @@ def drop2(+s: String) -> String:
   drop2.at(List.length(&2, String, String.split(s, SLASH_C())), String.starts_with(s, SLASH()),
            tail2.at2(s), s)
 
-
 # nn/torch.py:3 `-- `PurePath.as_posix()`. A char fold and not a `String.replace`,
 # because base.bend exports no `replace`. It is a no-op on POSIX and a rewrite
 # on Windows, and the fixture set pins BOTH, because a fold that mapped every
@@ -319,10 +313,8 @@ def posix.go(n: Nat, cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
         case Nil{}: acc
         case h <> t: posix.go(m, t, posix.put(h, acc))
 
-
 def as_posix(+s: String) -> String:
   String.from_list(posix.go(List.length(&2, Char, String.to_list(s)), String.to_list(s), Nil{}))
-
 
 # nn/torch.py:2-5, the whole of it, as three steps.
 
@@ -354,7 +346,6 @@ def shim.import(ok: Bool, imp: Imp) -> Imp:
     case Imp{path, t}: Imp{path, Tr.raise.at(ok, Tr.emit(CALL_IMPORT(), 0, t))}
 
 def shim.run(f: String, ok: Bool) -> Imp: shim.import(ok, shim.append(f, Imp.of()))
-
 
 # THE GATE. Every row is a claim about nn/torch.py's TEXT or about a value
 # MEASURED by importing `tinygrad.nn.torch` in CPython. `1`/`0` are booleans,
@@ -501,4 +492,3 @@ def main() -> IO(Unit):
 #   4. THE PREFIX-TEXT WALL is not the same as the SEMANTIC one: the port reads
 #     `__file__` as a normalised POSIX path, so a Windows-style `__file__` is
 #     handled by `as_posix` alone and a drive letter (`C:\...`) is not.
-

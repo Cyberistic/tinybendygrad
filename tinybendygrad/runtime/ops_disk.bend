@@ -202,7 +202,6 @@ import Base
 import ./../helpers.bend as H
 import ./../device.bend as DV
 
-
 # THE constants, AND every one of them is a *PLATFORM fact* WITH two cells.
 #
 # `ops_disk.py` reads these from `os`, from `mmap` and from `helpers.OSX`, so on a
@@ -291,7 +290,6 @@ def NR_IO_URING_ENTER() -> U32: 426
 def SIZEOF_CQE() -> U32: 16
 def SIZEOF_SQE() -> U32: 64
 
-
 # THE CALL TAGS. One per HOST CALL, in Python line order, so a tag names the line
 # it belongs to. `arg` is ONE numeric argument of that call and nothing else --
 # `ops_webgpu.bend`'s `Call` discipline, and the reason the path and the mode are
@@ -317,9 +315,7 @@ def K_FILEIO_CLOSE() -> U32: 16     # the `with` exit at :94
 def K_SQE_STORE() -> U32: 17        # :128
 def K_IORING_ENTER() -> U32: 18     # :130
 
-
 # THE TYPES.
-
 
 type Call is Data:
   Call{k: U32, arg: U32}
@@ -418,7 +414,6 @@ def Sh.devsize(s: Sh) -> U32:
   match s:
     case Sh{sz, seg, total, fd_off, devsize}: devsize
 
-
 # THE TRACE. `Tr.emit` is the seam: every host call in this file goes through it,
 # so the trace is the ordered list of syscalls a port of this file will make.
 
@@ -466,7 +461,6 @@ def Call.k(c: Call) -> U32:
 def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
-
 
 # READING THE TRACE. `Tr.args` is the args of every entry with tag `k`, in order;
 # `Tr.count` is how many; `Tr.pairs` is the whole trace flattened to k,arg,k,arg;
@@ -563,7 +557,6 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # consumed ONCE; the `U32.is_le` spelling at the two sites below was a first
 # draft and read each term twice, which `U32` cannot express.
 
-
 # THE DEVICE. Sixteen fields and sixteen readers, and the readers are the floor
 # this port pays for a `Data` record with no field projections (rule 27).
 
@@ -652,7 +645,6 @@ def dev_cfg(osx: Bool, win: Bool, direct: U32, blockdev: Bool, madv: Bool,
       Dev{name, size, hs, fd, hf, rc, hm, tr, io, osx, win, direct, blockdev,
           madv, stsize, t}
 
-
 # THE PATH, and it is the naming table this file owns.
 #
 # :26  `filename = self.device[len("disk:"):]`
@@ -707,9 +699,7 @@ def dsk_lstrip(s: String) -> String:
 def dev_is_shm(name: String, win: Bool) -> Bool:
   Bool.and(Bool.not(win), String.starts_with(dsk_filename(name), SHM_PREFIX()))
 
-
 # THE CLASS LIFECYCLE, :12-20 and :50-71.
-
 
 # :51 -- `DiskDevice._tried_io_uring_init = True`, set FIRST and before the
 # platform test, so a device on a non-linux host has still TRIED -- which is the
@@ -762,9 +752,7 @@ def dev_init.at(linux: Bool, ok: Bool, name: String) -> Dev:
   dev_cfg(False{}, False{}, open_direct(False{}, True{}), False{}, True{}, 0,
           dev_ioring_setup(linux, ok, Dev.of(name)))
 
-
 # `_might_open`, :21-40. Two branches and six steps, and each is one Python line.
-
 
 # :22 -- `assert self.size is None or size <= self.size`. The message is the
 # f-string and `dev_reopen_msg` IS it, so the gate can diff the string.
@@ -935,7 +923,6 @@ def dev_might_open.at(shm: Bool, fits: Bool, +size: U32, +d: Dev) -> Dev:
 def dev_might_open(+size: U32, +d: Dev) -> Dev:
   dev_might_open.at(dev_is_shm(Dev.name(d), Dev.win(d)), dev_fits(size, d), size, d)
 
-
 # `_might_close`, :41-49. The refcount goes DOWN first and unconditionally, and
 # the close is keyed on the result being ZERO -- so a free with no matching
 # `_might_open` walks the count away from zero and closes ONCE at the crossing.
@@ -987,7 +974,6 @@ def dev_might_close.at(zero: Bool, +d: Dev) -> Dev:
 def dev_might_close(+d: Dev) -> Dev:
   +e: Dev = dev_dropped(d)
   dev_might_close.at(U32.is_zero(Dev.refcount(e)), e)
-
 
 # `DiskBuffer`, :73-79. The default `offset=0` at :74 is why `_alloc`'s buffer
 # starts at 0 and `_offset`'s does not.
@@ -1042,7 +1028,6 @@ def db_buf.at(open: Bool, +w: Win, +d: Dev) -> DbB:
     case False{}: DbB{w, dev_put(d, Tr.refuse(Dev.tr(d)))}
 
 def db_buf(+b: Db, d: Dev) -> DbB: db_buf.at(Db.has_mem(b), db_window(b), d)
-
 
 # THE ALLOCATOR, :82-99. `lru = False` (:83) is a CLASS attribute no allocator
 # overwrites, so it is a constant here and the row says it is False rather than
@@ -1125,10 +1110,8 @@ def Rc.d(r: Rc) -> Dev:
   match r:
     case Rc{b, addr, d}: d
 
-
 # `_copyout_sharded`, :101-116. THE RESULT-CAN-BE-CHECKED PART, and the header
 # says why. Read the gate's section 7 before changing anything here.
-
 
 # :103 -- `minor_offset := src.offset % mmap.PAGESIZE`, the page skew of the source.
 # `U32.mod` and Python's `%` agree for a positive dividend, which an offset is.
@@ -1300,4 +1283,3 @@ def shard.at(go: Bool, +seg_len: U32, +size: U32, +off: U32, +devsize: U32,
   match go:
     case True{}:  shard_ioring(seg_len, size, off, devsize, osx, d)
     case False{}: shard_at(seg_len, size, off, devsize, osx, d)
-

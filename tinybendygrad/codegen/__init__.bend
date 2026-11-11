@@ -51,13 +51,11 @@
 # `def name` that calls it. The order below obeys this rule (leaves first,
 # parents last).
 
-
 import Base
 import ./../uop/ops.bend as O
 import ./../uop/render.bend as R
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
-
 
 # THE HELPER NAMESPACE `wr.*`. Bottom-up (R-3): every sub-def before its
 # caller.
@@ -68,7 +66,6 @@ import ./../LAWS/spec.bend as S
 #   wr.rebuild.found -- `O.Found` -> `(ar, repl)`, out of `O.UOp.new`
 #   wr.step.rebuild  -- `(ar, repl)` -> `(ar, rebuilt, repl)`
 #   wr.step.of       -- that triple -> `(ar, repl)` with the rule applied
-
 
 # Fold over a node's srcs, looking each up in `repl`. If absent, the
 # original `s` is its own replacement.
@@ -147,9 +144,7 @@ def wr.go(lst: List<&2, U32>, +pm: O.PMEntrys, +ctx: O.CTX, acc: (O.Arena & Map<
     case Nil{}: acc
     case +u <> t: wr.go(t, pm, ctx, wr.step(pm, u, ctx, acc))
 
-
 # THE PUBLIC ENTRIES.
-
 
 def walk_rewrite.of(sink: U32, u: U32) -> Maybe<&2, U32>:
   match u:
@@ -248,7 +243,6 @@ def walk_rewrite_ec.counted(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.C
 def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -> Rewritten:
   walk_rewrite.lift(walk_rewrite(Rewritten.ar(w), sink, pm, ctx))
 
-
 # THE FIXPOINT, ops.py:1777-1885.
 #
 # Upstream's `unified_rewrite` is a THREE-STAGE WORKLIST: stage 0 pushes a node
@@ -342,7 +336,6 @@ def graph_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, walk: 
 def graph_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, walk: Bool) -> Rewritten:
   Bool.pick(Rewritten, walk, walk_rewrite_ec.counted(ar, sink, pm, ctx), unified_rewrite_ec(ar, sink, pm, ctx))
 
-
 # `UOp.substitute` -- ops.py:514. Upstream spells it
 #
 #   graph_rewrite(self, _substitute, dvars, bottom_up=True, ...)
@@ -410,12 +403,10 @@ def wr.go_sub(lst: List<&2, U32>, +dvars: Map<&2, U32>, acc: (O.Arena & Map<&2, 
 def UOp.substitute(+ar: O.Arena, +sink: U32, +dvars: Map<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
   walk_rewrite.put(sink, wr.go_sub(O.UOp.toposort_nocalls(U32.to_nat(O.Arena.next(ar)), ar, sink), dvars, (ar, Map.new(&2, U32))))
 
-
 # THE GATE: build the smallest `pm_post_sched_cache` fixture, run
 # `walk_rewrite` over it, and print the repl map (old_index ->
 # new_index). The CPython oracle at `.agents/slop/codegen-init-oracle.py`
 # prints the same shape for the same fixture; the diff is the gate.
-
 
 # The rule table. TWO entries, and TWO upstream: `pm_post_sched_cache` at
 # `tinygrad/schedule/__init__.py:96-101` is a `PatternMatcher` of exactly two
@@ -512,7 +503,6 @@ def gr_show.repl.go(ar: O.Arena, +m: Map<&2, U32>, topo: List<&2, U32>) -> Strin
 # grown arena -- the map's values are indexes into it.
 def gr_show.repl(ar: O.Arena, m: Map<&2, U32>, topo: List<&2, U32>) -> String:
   gr_show.repl.go(ar, m, topo)
-
 
 # THE FIXPOINT GATE. Every row below calls `graph_rewrite` ITSELF, never a
 # caller of it and never a driver directly -- a row that gates `walk_rewrite`

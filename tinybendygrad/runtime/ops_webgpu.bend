@@ -207,13 +207,11 @@
 import Base
 import ../helpers.bend as H
 
-
 # the constants. `autogen/webgpu.py` is generated ctypes bindings, so these are
 # the c enum values read out of it: the bit flags at :2573-2583, and the enum
 # dicts at :10 (BackendType), :135 (BufferBindingType), :268 (PowerPreference),
 # :833 (FeatureName), :1545 (BufferMapState), :1550 (ErrorFilter), :1563
 # (WaitStatus), :2598 (ShaderStage).
-
 
 def OBJ_INSTANCE() -> U32: 0
 def OBJ_ADAPTER() -> U32: 1
@@ -294,9 +292,7 @@ def UNIFORM_SIZE() -> U32: 4
 def QUERY_COUNT() -> U32: 2
 def QUERY_BUF_SIZE() -> U32: 16
 
-
 # the types.
-
 
 # one ffi call and the object it acts on. `arg` is the object kind for create /
 # release / destroy, the sync_* id for a wait, the workgroup count for a
@@ -360,7 +356,6 @@ type Pass is Data:
   Pass{module: U32, entry: String, feats: List<&2, U32>, ls: U32, nentries: U32,
        sizes: List<&2, U32>, gx: U32, gy: U32, gz: U32, wait: Bool, t: Tr}
 
-
 # the trace. `Tr.emit` is the seam: every wgpu call in this file goes through it,
 # so the trace is the ordered list of js imports the browser will make.
 #
@@ -376,7 +371,6 @@ type Pass is Data:
 # pops and one create survived a refusal at pop 1, which is not what Python
 # does); guarding all three is the fix, and `wg_refuse_*_pops` is the row that
 # pins it.
-
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 0, 0, False{}}
 
@@ -467,11 +461,9 @@ def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
 
-
 # reading the trace. `Tr.args` is the args of every entry with tag `k`, in order;
 # `Tr.count` is how many there are; `Tr.has` is "contains this (tag, arg)
 # sequence, in order".
-
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
@@ -556,7 +548,6 @@ def str_eq.go(a: List<&2, String>, b: List<&2, String>, bad: Bool) -> Bool:
         case Nil{}: False{}
         case y <> u: str_eq.go(t, u, Bool.or(bad, Bool.not(String.eq(x, y))))
 
-
 # ops_webgpu.py:10 -- `backend_types = {v: k for k, v in
 # webgpu.enum_WGPUBackendType.items()}`, whose one reader is
 # `backend_types.get(getenv("webgpu_backend", ""), 0)` at :169. So the port needs
@@ -567,7 +558,6 @@ def str_eq.go(a: List<&2, String>, b: List<&2, String>, bad: Bool) -> Bool:
 # The enum is 0..8 (autogen/webgpu.py:10), so the value is the INDEX. Force32 =
 # 2147483647 is in the table too and is deliberately absent here: it is not a
 # backend and no device would accept it.
-
 
 def backend_names() -> List<&2, String>:
   ["WGPUBackendType_Undefined", "WGPUBackendType_Null", "WGPUBackendType_WebGPU",
@@ -590,7 +580,6 @@ def backend_of.go(n: Nat, +s: String, ns: List<&2, String>, +at: U32, got: U32) 
 def backend_of(s: String) -> U32:
   backend_of.go(List.length(&2, String, backend_names()), s, backend_names(), 0, 0)
 
-
 # ops_webgpu.py:23-43 -- `synchronous`, the future-to-synchronous protocol. See
 # the payload for why `has_emsg` changes the payload length and not its content.
 #
@@ -601,7 +590,6 @@ def backend_of(s: String) -> U32:
 # `status_enum.get(status)` cannot be one table, and `sync_name` is six arms.
 # `wg_sync_names_distinct` pins the count and `wg_sync_names2_same` pins the fact
 # that status 2 is the one place they agree.
-
 
 def sync_name.map_async2() -> String: "WGPUBufferMapAsyncStatus_InstanceDropped"
 def sync_name.pop2() -> String: "WGPUPopErrorScopeStatus_InstanceDropped"
@@ -620,7 +608,6 @@ def sync_name.two.at(which: Nat) -> String:
     case _: sync_name.workdone2()
 
 def sync_name.two(which: U32) -> String: sync_name.two.at(U32.to_nat(which))
-
 
 def sync_name.map_async3() -> String: "WGPUBufferMapAsyncStatus_ValidationError"
 def sync_name.pop3() -> String: SYNC_MISSING()
@@ -679,12 +666,10 @@ def sync_name.of.err(+which: U32, status: U32) -> String:
 def sync_name.of(+which: U32, +status: U32) -> String:
   Bool.pick(String, U32.is_eq(status, STATUS_SUCCESS()), "Success", sync_name.of.err(which, status))
 
-
 # ops_webgpu.py:11, :166-190 -- device init. The order is the ported structure
 # and it is what `dev.init` exists to pin: instance, adapter, features, limits,
 # device, queue, release the adapter. Each step is one line of Python, so each
 # step is one def here.
-
 
 def Dev.at(d: Dev, t: Tr) -> Dev:
   match d:
@@ -861,10 +846,8 @@ def dev.free.at(mapped: Bool, +id: U32, +t: Tr) -> Tr:
 def dev.free(map_state: U32, id: U32, t: Tr) -> Tr:
   dev.free.at(U32.is_eq(map_state, MAP_MAPPED()), id, t)
 
-
 # ops_webgpu.py:201-205 -- `create_uniform`. one 4-byte Uniform|CopyDst buffer,
 # then a 4-byte little-endian write into it.
-
 
 def dev.uniform_usage() -> U32: U32.or(USAGE_UNIFORM(), USAGE_COPY_DST())
 
@@ -912,19 +895,15 @@ def Made.tr(m: Made) -> Tr:
   match m:
     case Made{buf, t}: t
 
-
 # ops_webgpu.py:220-221 -- `wgpuQueueWriteBuffer(self.queue, buf, 0, <bytes>,
 # len(src))`. The length is `len` of the argument, so for `_copyin` it is the
 # padded length. That is why `bytes` is a parameter here and not a `U32`: the
 # length is derived from the bytes rather than passed beside them.
 
-
 def copy.write(bytes: List<&2, U32>, t: Tr) -> Tr:
   Tr.emit(CALL_WRITE, U32.from_nat(List.length(&2, U32, bytes)), t)
 
-
 # ops_webgpu.py:150-163 -- the allocator.
-
 
 # :152-153 Storage|CopyDst|CopySrc. The three bits together say: a storage buffer
 # the host can upload into and read back out of.
@@ -977,10 +956,8 @@ def copy.read(usage: U32, +size: U32, t: Tr) -> Tr:
 def copy.read_made(usage: U32, size: U32, +m: Made) -> Made:
   Made{Made.buf(m), copy.read(usage, size, Made.tr(m))}
 
-
 # ops_webgpu.py:52-67 -- WebGPUProgram.__init__ / __del__, and the four `wait`
 # arms of :112, :126 and :140 that the call steps read off `Pass.wait`.
-
 
 def Pass.of(entry: String, feats: List<&2, U32>) -> Pass:
   Pass{0, entry, feats, 0, 0, Nil{}, 1, 1, 1, False{}, Tr.of()}
@@ -1040,7 +1017,6 @@ def prog.init(entry: String, d: Dev) -> Pass:
 # `visibility` WGPUShaderStage_Compute at every entry, which is why it is not a
 # field of Bgl.
 
-
 def bgl.entry.put(+i: U32, nbufs: U32, acc: List<&2, Bgl>) -> List<&2, Bgl>:
   Bgl{U32.add(i, 1),
       Bool.pick(U32, U32.is_ge(i, nbufs), BIND_UNIFORM(), BIND_STORAGE())} <> acc
@@ -1087,7 +1063,6 @@ def slots.bufs(n: Nat, bs: List<&2, Buf>, acc: List<&2, Slot>) -> List<&2, Slot>
 def slots(+bs: List<&2, Buf>, nvals: Nat) -> List<&2, Slot>:
   slots.vals(nvals, slots.bufs(List.length(&2, Buf, bs), bs, [Slot{False{}, UNIFORM_SIZE()}]))
 
-
 # ops_webgpu.py:69-147 -- one program call, as the step list it is. Every step is
 # one line range of the Python and takes the `Pass` it is handed, so the order is
 # the whole of `prog.call` and nothing else.
@@ -1096,7 +1071,6 @@ def slots(+bs: List<&2, Buf>, nvals: Nat) -> List<&2, Slot>:
 # no later step records anything, so these steps need no guard of their own and a
 # refusal shows up as a truncated trace -- which is exactly what the four
 # `wg_refuse_*` rows read.
-
 
 # :71, and the dispatch geometry :123 reads. `local_size` is recorded and never
 # dispatched on: ops_webgpu.py never reads it (see wgsl.bend owes, item 3).
@@ -1306,11 +1280,9 @@ def pass.timing.at(wait: Bool, p: Pass) -> Pass:
 
 def pass.timing(+p: Pass) -> Pass: pass.timing.at(Pass.wait(p), p)
 
-
 # ops_webgpu.py:69-70 -- `def __call__(self, *bufs, global_size=(1,1,1),
 # local_size=(1,1,1), vals=(), wait=False) -> float|None`. The step order below is
 # the order of the Python, and it is the only thing this def knows.
-
 
 def prog.call.at(+bs: List<&2, Buf>, +nvals: U32, gx: U32, gy: U32, gz: U32, ls: U32,
                  want: Bool, p0: Pass) -> Pass:
@@ -1336,7 +1308,6 @@ def prog.call(+bs: List<&2, Buf>, +nvals: U32, gx: U32, gy: U32, gz: U32, ls: U3
               want: Bool, p: Pass) -> Pass:
   prog.call.at(bs, nvals, gx, gy, gz, ls, want, p)
 
-
 # the gate. Every row is a claim about `ops_webgpu.py`'s text or about a constant
 # read out of `autogen/webgpu.py`, and the row name says which Python line it is
 # about. Numeric rows print the value, so a wrong one is diagnosable from the
@@ -1347,6 +1318,5 @@ def prog.call(+bs: List<&2, Buf>, +nvals: U32, gx: U32, gy: U32, gz: U32, ls: U3
 # kernel, which is exactly the fixture `WGSLRenderer.render_kernel` was measured
 # with. `fx_call` resets the trace so the init is not in front of it, and
 # `fx_life` keeps it so the error-scope count covers a whole program lifetime.
-
 
 def seen(t: Tr) -> U32: U32.from_nat(List.length(&2, Call, Tr.calls(t)))

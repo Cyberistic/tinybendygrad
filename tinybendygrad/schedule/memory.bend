@@ -38,7 +38,6 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 
-
 # THE RECORDS. Python's dicts keyed by a UOp, a lane key and a buffer, and Bend's
 # `Map` is string-keyed only, so each dict is a LIST OF RECORDS with a linear
 # scan. The lists are tiny -- one entry per live buffer, one per lane -- so the
@@ -124,7 +123,6 @@ def Scan.cp(s: Scan) -> List<&2, U32>:
   match s:
     case Scan{tc, bs, cp}: cp
 
-
 # `_collect_bufs` -- memory.py:7-10. BUFFER is itself, MSELECT/MSTACK recurse
 # over every src, and everything else contributes nothing.
 #
@@ -181,7 +179,6 @@ def mem_collect(fuel: Nat, +ar: O.Arena, +todo: List<&2, U32>, acc: List<&2, U32
 # the seed: `_collect_bufs(u)` with a one-element worklist
 def mem_collect_of(fuel: Nat, ar: O.Arena, u: U32) -> List<&2, U32>:
   mem_collect(fuel, ar, [u], Nil{})
-
 
 # `_can_plan` -- memory.py:12-16. Two tests: not held, and no device that starts
 # with DISK, CL or WEBGPU (see the note on `contiguous_view_offset`).
@@ -243,7 +240,6 @@ def mem_can_plan(+fx: F.Folded, +self: U32, held: List<&2, U32>, unpl: List<&2, 
   Bool.and(Bool.not(List.contains(U32, U32.is_eq, held, self)),
            mem_ok_dev(unpl, mem_dev(fx, self)))
 
-
 # `mem_numel` / `mem_itemsize` / `mem_raw` -- `b.max_numel() * b.dtype.itemsize`.
 #
 # `max_numel` is `prod(to_max_shape(shape))` and `to_max_shape` (tinygrad/uop/ops.py:1894) is
@@ -294,7 +290,6 @@ def mem_block_size() -> U32: 256
 def mem_nbytes(+fx: F.Folded, +self: U32) -> U32:
   H.round_up_u32(mem_raw(fx, self), mem_block_size())
 
-
 # `_key` -- memory.py:37. `return (b.device, 1 if b in copy_bufs else 0)`.
 # The comment above it is load-bearing and kept: "separate copy and compute
 # buffers into different lanes to avoid introducing dependencies
@@ -315,7 +310,6 @@ def mem_key_of(dev: Maybe<&2, S.Dev>, copy: Bool) -> Lane:
 def mem_is_copy(cp: List<&2, U32>, b: U32) -> Bool:
   List.contains(U32, U32.is_eq, cp, b)
 
-
 def mem_key(+fx: F.Folded, +self: U32, cp: List<&2, U32>) -> Lane:
   mem_key_of(mem_dev(fx, self), mem_is_copy(cp, self))
 def mem_eq_ln.of(same: Bool, cp: Bool) -> Bool:
@@ -329,16 +323,8 @@ def Lane.cp(x: Lane) -> U32:
   match x:
     case Lane{dev, cp}: cp
 
-
-
-
-
 def mem_eq_ln(+a: Lane, +b: Lane) -> Bool:
   mem_eq_ln.of(O.eq_dev(Lane.dev(a), Lane.dev(b)), U32.is_eq(Lane.cp(a), Lane.cp(b)))
-
-
-
-
 
 # `buf_hold` -- memory.py:38. `{b: last_appearance[b] - first_appearance[b] + 1
 # for b in first_appearance if b in copy_bufs}`, so a COPY buffer stays allocated
@@ -355,14 +341,11 @@ def Bf.f(x: Bf) -> U32:
   match x:
     case Bf{b, f, l}: f
 
-
-
 def mem_hold(+b: Bf, copy: Bool) -> U32:
   mem_hold_of(copy, U32.sub(Bf.l(b), Bf.f(b)))
 def Bf.b(x: Bf) -> U32:
   match x:
     case Bf{b, f, l}: b
-
 
 # THE LIFETIME SCAN -- memory.py:28-33.
 #
@@ -465,7 +448,6 @@ def mem_tc_add(+i: U32, b: U32, tc: List<&2, Bf>) -> List<&2, Bf>:
 # step def that recursed would have to live BELOW this one to be callable and
 # would then be a forward reference, which is why the step lives in the arm.
 
-
 def mem_cp_add(fuel: Nat, +bs: List<&2, U32>, +cp: List<&2, U32>) -> List<&2, U32>:
   match fuel:
     case 0n: cp
@@ -514,7 +496,6 @@ def mem_args.of(+pl: Plan, si: U32) -> List<&2, U32>:
 # lifetime upsert needs, not a bound.
 def mem_i_next(i: U32) -> U32:
   U32.add(i, 1)
-
 
 # THE KERNEL SCAN. One kernel per step, and the step is the whole loop body of
 # memory.py:28-33: collect this kernel's plannable buffers, upsert their
@@ -581,7 +562,6 @@ def mem_scan(fuel: Nat, +i: U32, +ar: O.Arena, +pl: Plan, +rest: List<&2, U32>, 
 def mem_scan.of(+ar: O.Arena, +pl: Plan, +linear: U32) -> Scan:
   mem_scan((List.length(&2, U32, O.Arena.srcs(ar, linear))), 0, ar, pl,
            O.Arena.srcs(ar, linear), Scan{Nil{}, Nil{}, Nil{}})
-
 
 # THE EVENTS -- memory.py:43-44.
 #
@@ -739,7 +719,6 @@ def mem_sum_nb(fuel: Nat, +rest: List<&2, U32>, +fx: F.Folded, acc: U32) -> U32:
 def mem_total_memory(+fx: F.Folded, +bs: List<&2, U32>) -> U32:
   U32.mul(mem_sum_nb((List.length(&2, U32, bs) : Nat), bs, fx, 0), 2)
 
-
 # THE ALLOCATOR SEAM. `offsets`, `peaks` and `arena_sizes` are ONE loop over the
 # events with a `TLSFAllocator` per lane (memory.py:48-53), and that allocator is
 # `tinygrad/runtime/support/memory.py:23` -- a MUTABLE Python object, a dict of
@@ -829,10 +808,8 @@ def mem_lane_add.of(seen: Bool, ls: List<&2, Lane>, ln: Lane) -> List<&2, Lane>:
     case True{}: ls
     case _: List.append(&2, Lane, ls, [ln])
 
-
 def mem_lane_add(+ln: Lane, +ls: List<&2, Lane>) -> List<&2, Lane>:
   mem_lane_add.of(mem_lane_in.of(ls, ln), ls, ln)
-
 
 # the high-water mark one event touches: `offsets[buf] + buf.max_numel() *
 # buf.dtype.itemsize`. Both of a buffer's events carry the same value, which is
@@ -852,7 +829,6 @@ def mem_lane_ln(fuel: Nat, +rest: List<&2, Ev>, +pl: Plan, +cp: List<&2, U32>, +
     case 0n: ls
     case 1n+p: mem_lane_ln(p, List.tail(&2, Ev, rest), pl, cp,
                           mem_lane_add(mem_ev_lane(pl, cp, mem_ev_head(rest)), ls))
-
 
 # The lane order comes from walking the EVENTS, which is the same order
 # `peaks[_key(buf)]` gets from a `defaultdict` fed one key per event.
@@ -874,7 +850,6 @@ def mem_peak_go(fuel: Nat, +ln: Lane, +pl: Plan, +cp: List<&2, U32>, +offs: List
 def mem_peak(+pl: Plan, +cp: List<&2, U32>, +offs: List<&2, Off>, +evs: List<&2, Ev>, +ln: Lane) -> Peak:
   Peak{ln, mem_peak_go(List.length(&2, Ev, evs), ln, pl, cp, offs, evs, 0)}
 
-
 def mem_peak_list(fuel: Nat, +ls: List<&2, Lane>, +pl: Plan, +cp: List<&2, U32>, +offs: List<&2, Off>, +evs: List<&2, Ev>, acc: List<&2, Peak>) -> List<&2, Peak>:
   match fuel:
     case 0n: acc
@@ -886,7 +861,6 @@ def mem_peaks.of(+ls: List<&2, Lane>, +pl: Plan, +cp: List<&2, U32>, +offs: List
 
 def mem_peaks(+pl: Plan, +cp: List<&2, U32>, +offs: List<&2, Off>, +evs: List<&2, Ev>) -> List<&2, Peak>:
   mem_peaks.of(mem_lanes(pl, cp, evs), pl, cp, offs, evs)
-
 
 # `arena_sizes` (memory.py:53) and `arenas` (memory.py:56): ONE ARENA PER LANE, so
 # the length of this list is the second number of memory.py:60's row and the first
@@ -909,7 +883,6 @@ def mem_asz(fuel: Nat, +ps: List<&2, Peak>, acc: List<&2, Asz>) -> List<&2, Asz>
 def mem_arenas(+ps: List<&2, Peak>) -> List<&2, Asz>:
   mem_asz((List.length(&2, Peak, ps) : Nat), ps, Nil{})
 
-
 # WHAT `memory_plan_rewrite` COMPUTES. `linear.substitute(replace_map, ...)`
 # (memory.py:62) is the WALL -- it needs `UOp.substitute` (ops.py:532) and
 # `UOp.new_buffer` (ops.py:853, a P6 device call) -- so what comes back is the
@@ -925,7 +898,6 @@ def memory_plan_rewrite(+pl: Plan, +linear: U32, +offs: List<&2, Off>) -> Planne
   +evs = mem_events(Scan.bs(s), Scan.tc(s), Scan.cp(s))
   Planned{Scan.tc(s), Scan.bs(s), evs, mem_total_memory(Plan.fx(pl), Scan.bs(s)),
           mem_arenas(mem_peaks(pl, Scan.cp(s), offs, evs))}
-
 
 # THE GATE. Two fixtures, and every number below is CPython's: it is what
 # sched-mem-truth.py printed for the SAME graph, and the fixture is rebuilt here
@@ -1073,7 +1045,6 @@ def proj_of() -> Proj:
   Proj{F.folded(O.Found.ar(n17)), O.Found.i(n17), O.Found.i(n2), O.Found.i(n3), O.Found.i(n4),
        O.Found.i(n5), O.Found.i(n6), O.Found.i(n7), O.Found.i(n8)}
 
-
 # THE ROWS. `main` prints one per line; `1` is True and `0` is False, and a COUNT
 # row prints the count itself. Every value is CPython's, and the reason each row
 # exists is on the row.
@@ -1165,7 +1136,6 @@ def Planned.azs(r: Planned) -> List<&2, Asz>:
 def Planned.tc(r: Planned) -> List<&2, Bf>:
   match r:
     case Planned{tc, bs, evs, tot, azs}: tc
-
 
 # `DEBUG >= 1` -- memory.py:59-60. This is the ONE site of the seven at level 1 and
 # the only one with a CONDITION beside the gate:
@@ -1317,7 +1287,6 @@ def mem_absent2(found: Bool) -> U32:
 def mem_absent.of(b: U32, bs: List<&2, U32>) -> U32:
   mem_absent2(List.contains(U32, U32.is_eq, bs, b))
 
-
 def mem_absent(bs: List<&2, U32>, b: U32) -> U32:
   mem_absent.of(b, bs)
 
@@ -1344,4 +1313,3 @@ def unaligned_of() -> Proj:
   +n5 = O.UOp.new(O.Found.ar(n4), O.OpsLINEAR{}, [O.Found.i(n4)], O.ANone{}, O.TNone{})
   Proj{F.folded(O.Found.ar(n5)), O.Found.i(n5), O.Found.i(n2), O.Found.i(n2), O.Found.i(n2),
        O.Found.i(n2), O.Found.i(n2), O.Found.i(n2), O.Found.i(n2)}
-

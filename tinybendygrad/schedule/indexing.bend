@@ -101,7 +101,6 @@ import ./../helpers.bend as H
 
 import ./../uop/ops.bend as O
 
-
 # THE RECORDS. Bend has no dict, so `realize_map`, `non_removable` and
 # `range_map` are association lists of `Data` records with a linear scan, which
 # is `schedule/memory.bend`'s `Bf`/`Lane` shape.
@@ -249,7 +248,6 @@ def IxCtx.rngm(x: IxCtx) -> IxRMap:
   match x:
     case IxCtx{rmap, nrem, rngm, ridx}: rngm
 
-
 # THE ASSOCIATION LISTS. Four folds, one per dict, each a two-scrutinee match
 # with the KEY and the rest, because a `Maybe` cannot be threaded through a
 # recursion (bend2-constraints.md rule 2 of the general set) and an early return
@@ -281,7 +279,6 @@ def ixr_find.go(+es: List<&2, IxReal>, +k: Nat, +acc: Maybe<&2, IxReal>) -> Mayb
   match es:
     case Nil{}: acc
     case e <> t: ixr_find.go(t, k, ixr_step(e, acc, k))
-
 
 # `ALWAYS_CONTIGUOUS` -- indexing.py:24-26. NINE ops:
 #   AFTER BUFFER ALLOC CONST MSELECT MSTACK PARAM LOAD CALL
@@ -327,7 +324,6 @@ def ix_ac_ops() -> List<&2, O.Op>:
    O.OpsLOAD{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsPARAM{}]
 
 def ix_ac(w: O.Op) -> Bool: ix_mem1(w, ix_ac_ops())
-
 
 # W1, SUPPLIED: `resolve`'s FIRST arm, extended to the int case of the second.
 #
@@ -385,7 +381,6 @@ def ix_ndim_neg(ns: U32, no: U32) -> Bool: U32.is_lt(no, ns)
 
 def ix_bax_neg(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> Bool:
   ix_ndim_neg(ix_len(srcs), ix_len(outs))
-
 
 # `broadcast_axes` -- ops.py:89-92, which indexing.py:64 CALLS. Full text:
 #
@@ -467,7 +462,6 @@ def ix_bax_pick.of(bad: Bool, +srcs: List<&2, U32>, +outs: List<&2, U32>) -> Lis
 def ix_bax(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> List<&2, U32>:
   ix_bax_pick.of(ix_bax_neg(srcs, outs), srcs, outs)
 
-
 # `data_srcs` -- indexing.py:68-71. FULLY PORTED, and it is the smallest
 # complete thing in the file:
 #
@@ -545,7 +539,6 @@ def ix_ds_list.of(zero: Bool, one: Bool, +ss: List<&2, U32>) -> List<&2, U32>:
 
 def ix_ds_list(+op: O.Op, +ss: List<&2, U32>) -> List<&2, U32>:
   ix_ds_list.of(ix_ds_zero(op), ix_ds_one(op), ss)
-
 
 # `argsort` -- helpers.py, read at indexing.py:174 (`Ops.PERMUTE`). FULLY
 # PORTED: a selection sort over a tuple of permutation indices.
@@ -631,7 +624,6 @@ def ix_asort.go(k: Nat, +ys: List<&2, U32>, +placed: List<&2, U32>, acc: List<&2
 def ix_asort(+ys: List<&2, U32>) -> List<&2, U32>:
   ix_asort.go(U32.to_nat(ix_len(ys)), ys, ix_asc_pad(ix_len(ys)), Nil{})
 
-
 # `apply_movement_op` -- indexing.py:170-187. THE ARITHMETIC, AND THE GATE.
 #
 #   SHRINK:  tuple(a if off == 0 else a+off for a,(off,_) in zip(rngs, arg))
@@ -711,7 +703,6 @@ def ix_rng_at.of(m: Maybe<&2, O.AxisType>) -> O.AxisType:
 
 def ix_rng_at(+ar: O.Arena, +i: U32) -> O.AxisType:
   ix_rng_at.of(ix_axis_at.of(O.Arena.arg(ar, i), O.Arena.op(ar, i)))
-
 
 # `List.length` is per ELEMENT TYPE, so an op list and an entry list each need
 # their own reader; there is no `List<&2, O.Op>` reuse of `ix_len`.
@@ -815,7 +806,6 @@ def ix_ar_acc(acc: U32, s: U32) -> U32: U32.mul(acc, s)
 
 def ix_ar_acc0() -> U32: 1
 
-
 # `IndexingContext.new_range` -- indexing.py:18-21. FULLY PORTED on the
 # CONCRETE arm, and the counter is the parameter that `IxCtx.ridx` is.
 #
@@ -888,7 +878,6 @@ def ix_rg_c0_idx() -> U32: 0
 def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
   ix_nr_pick(ix_rg_is_c0(r), at, ar, IxRange.ext(r), IxRange.idx(r))
 
-
 # the realize-map rule bodies -- indexing.py:28-43. All four mutate the Python
 # context, and all four are therefore DECISIONS here: each answers the LIST of
 # keys it would insert, and `ix_m*` is the def a caller folds into `IxCtx.rmap`.
@@ -936,8 +925,6 @@ def realize_srcs.go(+ss: List<&2, U32>, +ar: O.Arena, +acc: List<&2, IxReal>) ->
 def realize_srcs(+ar: O.Arena, rb: U32) -> List<&2, IxReal>:
   realize_srcs.go(O.Arena.srcs(ar, rb), ar, Nil{})
 
-
-
 def ix_war_hit.go(+ss: List<&2, U32>, +b: U32, +sofar: Bool) -> Bool:
   match ss:
     case Nil{}: sofar
@@ -973,7 +960,6 @@ def ix_rcs_base(+ar: O.Arena, s: U32) -> U32: ix_rcs_at(O.Arena.budget(ar), ar, 
 
 def ix_rcs_one(+s: U32, +ar: O.Arena, +acc: List<&2, IxReal>) -> List<&2, IxReal>:
   Bool.pick(List<&2, IxReal>, ix_ac(O.Arena.op(ar, s)), acc, List.append(&2, IxReal, acc, [realize(s)]))
-
 
 # `BufferizeOpts` -- indexing.py:56-61, a FROZEN dataclass read at :91-92.
 # `ops.bend`'s `Arg` has no constructor for a STAGE's arg at all, so this is a
@@ -1017,7 +1003,6 @@ def ix_nrem_has.go(+xs: List<&2, U32>, +k: U32, +sofar: Bool) -> Bool:
   match xs:
     case Nil{}: sofar
     case x <> t: ix_nrem_has.go(t, k, Bool.or(sofar, U32.is_eq(x, k)))
-
 
 # `broadcast_rngs` -- indexing.py:62-65. FULLY PORTED, and it is the one place
 # `broadcast_axes` is called:
@@ -1073,7 +1058,6 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
   match nb:
     case True{}: rngs
     case False{}: ix_br_go(rngs, 0n, ix_bax_nleft(src, x), ix_bax(src, x), Nil{})
-
 
 # `_stack_select` -- indexing.py:115-122. THE RECURSION, and the `<= 8`
 # cutoff is the whole of it:
@@ -1185,7 +1169,6 @@ def ix_rmap_get.go(+es: List<&2, IxReal>, +k: U32, acc: Maybe<&2, IxReal>) -> Ma
 def ix_rmap_get(+rm: IxMap, k: U32) -> Maybe<&2, IxReal>:
   ix_rmap_get.go(IxMap.es(rm), k, None{})
 
-
 # THE THREE TABLES. Each needs its own table/dispatch/try/scan -- see the
 # header. `ix_early_*` is `early_reject`, a NECESSARY CONDITION.
 
@@ -1276,7 +1259,6 @@ def par_table() -> O.PMEntrys:
 
 def pfd_table() -> O.PMEntrys: O.PMEntrys{[O.PMEntry{0, [O.OpsSTAGE{}], Nil{}}]}
 
-
 # THE GATE PRINTERS. `k=` + str(v) with NO TRAILING SPACE, because the oracle
 # prints the same way and a `diff` between the two is the acceptance test
 # (bend2-constraints.md, `mixin/creation.bend` rule 22).
@@ -1325,7 +1307,6 @@ def ix_at_str.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> Li
 
 def ix_at_str(+ar: O.Arena, +ss: List<&2, U32>) -> String:
   String.join(ix_at_str.go(ar, ss, Nil{}), "|")
-
 
 def ix_c(v: U32) -> O.Found: O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(v)})
 
@@ -1385,7 +1366,6 @@ def ix_rngs.go(n: Nat, +ar: O.Arena, +base: U32, +k: Nat, acc: List<&2, U32>) ->
 def ix_rngs(n: U32, base: U32) -> IxFixture:
   ix_rngs.go(U32.to_nat(n), O.Arena.empty(), base, 0n, Nil{})
 
-
 # 1. `ALWAYS_CONTIGUOUS` -- indexing.py:24-26.  THREE POSITIVES would be a weak
 #    gate, so there are nine positives and SIX NEGATIVES; a set that gained one
 #    member moves a negative row.
@@ -1411,9 +1391,6 @@ def ix_ids.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, U32>) -> List<&2,
 
 def ix_ids(+ar: O.Arena, i: U32) -> List<&2, U32>:
   ix_ids.go(ar, O.Arena.srcs(ar, i), Nil{})
-
-
-
 
 # 4b. `apply_movement_op`'s SIX ARMS. THE UNIFORM WALK, and it is one walker
 #     because SHRINK, FLIP and PAD are all `keep the range, or build a new node`
@@ -1528,4 +1505,3 @@ def ix_ss_term(hi: U32) -> String: String.concat(["|r", U32.show(U32.sub(hi, 1))
 
 def ix_ss_leaf(lo: U32, +hi: U32) -> String:
   String.concat([String.join(ix_ss_chain.go(U32.to_nat(U32.sub(hi, lo)), 0, hi, Nil{}), "|"), ix_ss_term(hi)])
-

@@ -1,6 +1,5 @@
 import Base
 
-
 # sz.py in Bend: the tokens and the counted lines of every .py and .js file under a
 # tree, and the two tables sz.py prints from them. `spec/sz.md` is what the port
 # cost; `.agents/slop/notes/compare/sz.md` is the def-by-def comparison.
@@ -51,14 +50,11 @@ import Base
 #     TRUNCATES. The fix is stat -> lstat in runtime/sz.c; szfuzz generates
 #     symlink cases that pin it.
 
-
-
 # A row of either table: the path as os.path.relpath gives it, the lines, the
 # tokens, and -- in the diff table only -- how many lines and tenths of a ratio it
 # gained or lost. An F32 carries those two because they are signed and U32 is not,
 # and their magnitudes, line counts and tenths, are ones it holds exactly. A row
 # with no name is one a tree does not have.
-
 
 type Row is Data: Row{name: String, lines: U32, toks: U32, dl: F32, dt: F32}
 
@@ -107,7 +103,6 @@ def Dir.rel(d: Dir) -> String:
   match d:
     case Dir{full, rel}: rel
 
-
 # The two questions os.walk asks, as effects: the names in a directory, and
 # whether a name is a directory. A directory that cannot be read is no names and a
 # name that cannot be stat'd is no, which is what os.walk answers. Reading a file
@@ -115,7 +110,6 @@ def Dir.rel(d: Dir) -> String:
 # foreign: these two are the whole of it. bend 2.0.34's base.bend can ask neither,
 # so each is @unsafe -- a promise the checker reads and never checks, like a foreign
 # def -- and each TODO names the primitive it waits for.
-
 
 # TODO(p3) base.bend: File.list(path) -> List<String>  -- no opendir/readdir, so the
 # names of a directory in the order the host lists them are a foreign call, and
@@ -133,7 +127,6 @@ def Sz.is_dir(path: String) -> IO(U32):
   import "./runtime/sz.c"
   import "./runtime/sz.js"
 
-
 # is_docstring
 #
 #   t.type == token.STRING and t.string.startswith('"""') and
@@ -144,7 +137,6 @@ def Sz.is_dir(path: String) -> IO(U32):
 # token has reached this line", which is what `last` already says, so the lexer
 # samples it when the string opens and the test is two comparisons. A `'''` string is
 # not a docstring, and neither is a prefixed one.
-
 
 def is_docstring(quote3: U32, bl: U32) -> U32:
   # 1 when the string is a docstring: a triple-double-quoted one whose line has
@@ -173,7 +165,6 @@ def is_js_token(s: String) -> Bool:
     case SNil{}: False{}
     case _: Bool.not(String.starts_with(s, "//"))
 
-
 # The character tests, as numbers.
 #
 # Bend's checker will not let a match scrutinise a computed value, so every test a
@@ -181,7 +172,6 @@ def is_js_token(s: String) -> Bool:
 # 2 for a digit and 3 for an identifier start, brm is 1 for '{' and 2 for '}', isdig
 # is 1 when the char is a digit of the radix, and pfx2b is 0 for no prefix, 1 for
 # br/rb and 2 for fr/rf. The rest are literal matches on a code.
-
 
 def eq(x: U32, y: U32) -> U32:
   Bool.pick(U32, U32.is_eq(x, y), 1, 0)
@@ -299,7 +289,6 @@ def pfx2b(a: U32, b: U32) -> U32:
     case 114 102: 2
     case _ _: 0
 
-
 # The lexer
 #
 # One char per step, one def, one state. Bend has no lookahead and no rewind, so a
@@ -311,7 +300,6 @@ def pfx2b(a: U32, b: U32) -> U32:
 # highest line a counted token has reached, so a token spanning lines adds only the
 # lines past it -- sz.py's len(set(x for t in tokens for x in range(t.start[0],
 # t.end[0] + 1))). `bad` is 0, or the number of the error the tokenizer raises.
-
 
 type Acc is Data:
   Acc{tok: U32, lines: U32, last: U32, line: U32, bad: U32}
@@ -987,14 +975,12 @@ def chars(s: String) -> List<&2, U32>:
 def lex(s: String) -> Acc:
   go(chars(s), Xs{P0{}, Top{}, Acc{0, 0, 0, 1, 0}})
 
-
 # The .js lane
 #
 # str.split() on a stripped line, and a line that counts when it has something on
 # it that is not a '//' comment. String.trim is str.strip, so the strip is the
 # same set; cls3 is the ASCII half of what str.split() breaks on (see the
 # comparison table).
-
 
 def js.space(+c: U32) -> U32:
   # 1 for a char str.split() breaks a line on, which is the ASCII half of its set
@@ -1040,9 +1026,7 @@ def js.row.put(m: (U32 & U32), p: String) -> Row:
 def js.row(s: String, p: String) -> Row:
   js.row.put(js.count(s), p)
 
-
 # One file
-
 
 def sz.closed(m: File & Result<&1, &1, U32 & String, String>) -> IO(String):
   (f, r) = m
@@ -1072,7 +1056,6 @@ def sz.lane(js: Bool, +s: String, +p: String) -> IO(Row):
   # a .js file is split on whitespace, a .py file is tokenized
   Bool.pick(IO(Row), js, IO.pure(Row, js.row(s, p)), sz.py(lex(s), p))
 
-
 # gen_stats: the walk
 #
 # os.walk yields a directory's files first and then its subdirectories, each in
@@ -1087,7 +1070,6 @@ def sz.lane(js: Bool, +s: String, +p: String) -> IO(Row):
 # sz.rows reads and lexes them, so the lexer and both tables are downstream of no
 # effect. The walk's one impure step is a name: walk.item stats it and walk lists
 # a directory, and the two effects are in those two defs and nowhere else.
-
 
 def Sz.root(base: String) -> It:
   # the one directory os.walk starts at
@@ -1160,10 +1142,8 @@ def walk(k: Nat, out: List<&2, Dir>, todo: List<&2, It>) -> IO(List<&2, Dir>):
             q : List<&2, It> <- walk.scan(names, Dir{fu, re}, (Nil{}, Nil{}), rest)
             walk(j, out, q)
 
-
 # The row-building, which the walk hands its files to and which touches no effect
 # but Base's File: the .js lane is whitespace, the .py lane is the lexer.
-
 
 def sz.rows(its: List<&2, Dir>, +xs: List<&2, Row>) -> IO(List<&2, Row>):
   # One row per counted file, in the order the walk found them, and nothing at all
@@ -1181,14 +1161,12 @@ def sz.rows(its: List<&2, Dir>, +xs: List<&2, Row>) -> IO(List<&2, Row>):
           List.append(&2, Row, xs, [rr]), xs)
         sz.rows(rest, x)
 
-
 # The ratio, as tenths
 #
 # Every ratio is printed with one decimal, so it is carried as tenths: ten tokens
 # over lines, rounded to a whole number with halves to even, which is what "%.1f"
 # does to the quotient. A difference is signed, so it keeps its tenths in an F32,
 # which holds a count of lines and a count of tenths exactly.
-
 
 def tenth.half(c: Cmp, +q: U32) -> U32:
   # a remainder over half the divisor rounds the quotient up, exactly half to even
@@ -1242,9 +1220,7 @@ def dten.put(c: Cmp, tn: U32, +ln: U32, to: U32, +lo: U32) -> F32:
 def dten(+tn: U32, +ln: U32, +to: U32, +lo: U32) -> F32:
   dten.put(U32.cmp(U32.mul(tn, lo), U32.mul(to, ln)), tn, ln, to, lo)
 
-
 # gen_diff: what changed between two trees
-
 
 def pick.go(+r: Row, n: String, +acc: List<&2, Row>) -> List<&2, Row>:
   Bool.pick(List<&2, Row>, String.eq(Row.name(r), n),
@@ -1334,7 +1310,6 @@ def gen_diff(+old: List<&2, Row>, +new: List<&2, Row>) -> List<&2, Row>:
   List.append(&2, Row, List.append(&2, Row, added(old, new), deleted(new, old)),
     same(old, new))
 
-
 # tabulate, hand-rolled
 #
 # The "simple" format with the first row as the header: a column as wide as its
@@ -1342,7 +1317,6 @@ def gen_diff(+old: List<&2, Row>, +new: List<&2, Row>) -> List<&2, Row>:
 # a row of dashes under the header, the name flush left and the numbers flush
 # right, and no trailing space. Both tables are laid out by the same code, the
 # diff one under a flag.
-
 
 type Wid is Data: Wid{w0: U32, w1: U32, w2: U32, w3: U32, w4: U32}
 
@@ -1445,9 +1419,7 @@ def tabulate(+rs: List<&2, Row>, d: U32) -> String:
   # the table, its rows sorted as sz.py sorts them before handing them over
   tab.put(rs, d, tab.wide(rs, Wid{6, 7, 6, 13, 6}), List.sort(~Row, ~tab.le, rs))
 
-
 # The rest of the output: the group summary, the totals, MAX_LINE_COUNT
-
 
 def group.go(xs: List<&2, String>, +n: U32, +out: String) -> String:
   # sz.py's group key: the first two of a path's components save its last, which is
@@ -1634,7 +1606,6 @@ def main() -> IO(Unit):
     as : List<String> <- IO.args()
     sz.main(List.tail(&1, String, as))
 
-
 # The mutation table. One edit at a time, compiled from a scratch copy (the file
 # itself is never edited), run on four fixtures, and compared with the unmutated
 # binary: `tree` this repo against `sz.py`, `edge` the trees from sz-mktrees.py,
@@ -1672,4 +1643,3 @@ def main() -> IO(Unit):
 #     directory, not a readdir name -- and this tree's todo is 289 items, so 400 does
 #     not bite and 100 does. A single fuel mutation at 400 would have read as "the
 #     bound is untested" when the truth is "400 is above every fixture".
-

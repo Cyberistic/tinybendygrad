@@ -103,7 +103,6 @@ import ./uop/fold.bend as F
 import ./tensor.bend as T
 import ./mixin/movement.bend as MX
 
-
 # SECTION 0 -- THE NODE HANDLE. Every def below that needs a node more than once
 # in ONE EXPRESSION takes an `O.Found` rather than `(arena, index)`, and this is
 # the whole reason.
@@ -135,7 +134,6 @@ def fn_nsrc(+f: O.Found) -> U32:
 
 def fn_src(+f: O.Found, n: U32) -> U32:
   O.Arena.src(O.Found.ar(f), O.Found.i(f), n)
-
 
 # SECTION A -- `is_implicit_storage` (function.py:15-17) and the readers it
 # needs. This is the file's only PURE predicate and it is ported in full.
@@ -211,7 +209,6 @@ def fn_alu.of(a: S.Addr) -> Bool:
 def fn_alu(pa: O.ParamArg) -> Bool:
   fn_alu.of(O.ParamArg.addrspace(pa))
 
-
 def fn_has_vv(pa: O.ParamArg) -> Bool:
   fn_has_vv.of(O.ParamArg.vmin_vmax(pa))
 
@@ -237,7 +234,6 @@ def fn_isvar(+f: O.Found) -> Bool:
 def fn_implicit.var(+f: O.Found) -> Bool:
   Bool.and(fn_isvar(f), U32.is_eq(fn_slot(f), FN_NEG1()))
 
-
 def fn_implicit.alloc(+f: O.Found, start: U32) -> Bool:
   Bool.and(O.eq_op(fn_op(f), O.OpsALLOC{}),
            Bool.and(fn_bor(f), U32.is_lt(fn_slot(f), start)))
@@ -245,7 +241,6 @@ def fn_implicit.alloc(+f: O.Found, start: U32) -> Bool:
 def fn_implicit(+f: O.Found, start: U32) -> Bool:
   Bool.or(fn_implicit.var(f),
           Bool.or(O.eq_op(fn_op(f), O.OpsBUFFER{}), fn_implicit.alloc(f, start)))
-
 
 # SECTION B -- `UOp.buf_uop` (ops.py:911). `ops.bend` carries it as
 # `# TODO(p3) ops.py:911  def buf_uop`, and it is not optional here: it is the
@@ -304,7 +299,6 @@ def fn_buf.node(+op: O.Op, +src: List<&2, U32>, +g: O.Found) -> U32:
 def fn_buf(+f: O.Found) -> U32:
   fn_buf.node(fn_op(f), fn_srcs(f), f)
 
-
 # SECTION C -- `add_to_ctx` (function.py:9-13).
 #
 #     def add_to_ctx(ctx, x:UOp):
@@ -332,14 +326,12 @@ type FnCtx is Data:
 def fn_ctx_n(xs: List<&2, U32>) -> U32:
   U32.from_nat(List.length(&2, U32, xs))
 
-
 def FnCtx.of2(start: U32) -> FnCtx:
   FnCtx{Nil{}, Nil{}, start, False{}, 0}
 
 def FnCtx.us(+c: FnCtx) -> List<&2, U32>:
   match c:
     case FnCtx{us, inv, start, added, slot}: us
-
 
 def FnCtx.start(+c: FnCtx) -> U32:
   match c:
@@ -414,7 +406,6 @@ def fn_add(+ar: O.Arena, +c: FnCtx, x: U32) -> FnCtx:
   match c:
     case FnCtx{us, inv, start, added, slot}: fn_add.of2(ar, us, inv, start, x)
 
-
 # SECTION D -- `UOp.is_realized` (ops.py:1008), read through `buf_uop`.
 #
 #     return self.base.realized is not None
@@ -440,7 +431,6 @@ def fn_realized.of(arg: O.Arg) -> Bool:
   match arg:
     case O.AParam{pa}: fn_realized.pa(pa)
     case _: False{}
-
 
 # SECTION E -- `invalid_outputs` (function.py:27-31) and
 # `renumber_invalid_outputs` (function.py:33-36).
@@ -574,8 +564,6 @@ def fn_invalid(+f: O.Found) -> List<&2, U32>:
 type Ren is Data:
   Ren{n: U32, inv: List<&2, U32>, acc: List<&2, U32>}
 
-
-
 def Ren.acc(r: Ren) -> List<&2, U32>:
   match r:
     case Ren{n, inv, acc}: acc
@@ -620,7 +608,6 @@ def fn_renum.go2(+f: O.Found, inv: List<&2, U32>) -> List<&2, U32>:
 
 def fn_renum(+f: O.Found, inv: List<&2, U32>) -> List<&2, U32>:
   fn_renum.go2(f, inv)
-
 
 # SECTION F -- `pm_ctx` (function.py:19-25), as a `Data` rule table and THIS
 # file's own dispatch. `ops.bend` cannot call into here, so the scan and the tag
@@ -767,7 +754,6 @@ def fn_pm_ctx(+f: O.Found, +c: FnCtx) -> FnCtx:
   fn_scan(List.reverse(&2, U32, O.UOp.toposort(O.Arena.budget(O.Found.ar(f)), O.Found.ar(f), O.Found.i(f))),
           O.Found.ar(f), c, pm_ctx())
 
-
 # SECTION G -- `_function` (function.py:39-98) and `function` (101-113).
 #
 # `_function` is a CLASS with five instance fields and one CLASS field:
@@ -829,7 +815,6 @@ def fn_ret.kind(r: FnRet) -> U32:
   match r:
     case FnRet{kind, n}: kind
 
-
 # `f"function return type {type(ret)} not supported"`. CPython prints the CLASS,
 # and the classes a traced body can return that are not Tensors are the two the
 # gate uses: `int` and `NoneType`. The port's `type(ret)` is a `U32` KIND, so the
@@ -846,11 +831,6 @@ def fn_ret_name(kind: U32) -> String:
   fn_ret_name.of(kind)
 def fn_ret_msg(r: FnRet) -> String:
   String.concat(["function return type ", fn_ret_name(fn_ret.kind(r)), " not supported"])
-
-
-
-
-
 
 # SECTION H -- `__call__` (function.py:50-98), the PORTED branches, in order.
 #
@@ -900,7 +880,6 @@ def fn_call_uops.of(xs: List<&2, U32>, +d: Dedup) -> Dedup:
   match xs:
     case Nil{}: d
     case x <> t: fn_call_uops.of(t, fn_call_uops.put(x, d))
-
 
 def fn_call_uops(us: List<&2, U32>) -> List<&2, U32>:
   Dedup.r(fn_call_uops.of(us, Dedup{Nil{}}))
@@ -987,11 +966,9 @@ def fn_imp_sz.of(m: Maybe<&2, List<&2, O.Sint>>) -> U32:
 def fn_imp_sz(+f: O.Found) -> U32:
   fn_imp_sz.of(T.tn_dims(T.tn_new(O.Found.ar(f), O.Found.i(f))))
 
-
 def fn_imp_row.of(+f: O.Found, i: U32) -> String:
   String.concat([U32.show(i), ": dtype=", fn_imp_dt(f), ", size=", U32.show(fn_imp_sz(f)),
                  ", device=", fn_imp_dev(f)])
-
 
 def fn_imp_row.of2(+f: O.Found, i: U32) -> String:
   fn_imp_row.of(f, i)
@@ -1150,7 +1127,6 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # touches. `@function_` is the seam; `@TinyJit` belongs to whatever unit owns
 # `engine/jit.py`.
 
-
 # SECTION J -- THE GATE.
 #
 # EVERY ROW IS DERIVED FROM CPython. The oracle is
@@ -1177,7 +1153,6 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 #   fac_*   both decorator spellings.
 #   callu_* `dedup` keeping the FIRST occurrence.
 #   trace_* the DEBUG print's indent and name.
-
 
 def fn_trace(depth: U32, key8: U32, ms: U32, name: String) -> String:
   fn_trace.of(depth, U32.show(key8), U32.show(ms), name)
@@ -1281,7 +1256,6 @@ def b2u(b: Bool) -> U32:
 def bshow(b: Bool) -> String:
   U32.show(b2u(b))
 
-
 # -- the ctx printer ---------------------------------------------------------
 def ctx_ops.go(+ar: O.Arena, xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
@@ -1290,9 +1264,6 @@ def ctx_ops.go(+ar: O.Arena, xs: List<&2, U32>, +acc: List<&2, String>) -> List<
 
 def ctx_ops(ar: O.Arena, c: FnCtx) -> String:
   String.join(ctx_ops.go(ar, FnCtx.us(c), Nil{}), "|")
-
-
-
 
 # THE REWRITE IN BOTH DIRECTIONS, and the reason there are two rows per fixture
 # is MEASURED, not stylistic. CPython's `graph_rewrite(..., bottom_up=True)`
@@ -1313,11 +1284,9 @@ def pctx_row(c0: FnCtx, +bot: FnCtx, +top: FnCtx, +ar: O.Arena) -> String:
 def pctx_of(+c0: FnCtx, +f: O.Found) -> String:
   pctx_row(c0, fn_pm_ctx(f, c0), fn_pm_ctx_top(f, c0), O.Found.ar(f))
 
-
 # SECTION K -- THE ROWS. One `String.concat` per row, one `IO.print` per row,
 # and every expected value is a CPython answer measured by the oracle beside this
 # file. The ROW CLASS is in the name, so a mutation table can name what moved.
-
 
 def fx_aft(+ar: O.Arena, d: U32, g: U32) -> O.Found:
   fx_node(ar, O.OpsAFTER{}, [d, g], O.ANone{})
@@ -1435,14 +1404,12 @@ def fx_inv2.of2(+ar: O.Arena, +s1: O.Found, +b: O.Found, +v: O.Found) -> O.Found
   +s2 = fx_store.of(O.Found.ar(a2), fn_u(a2), fn_u(v))
   fx_sink(O.Found.ar(s2), [fn_u(s1), fn_u(s2)])
 
-
 def fx_inv2.of(+ar: O.Arena, +b: O.Found, +v: O.Found) -> O.Found:
   +s1 = fx_store.of(ar, fn_u(b), fn_u(v))
   fx_inv2.of2(O.Found.ar(s1), s1, b, v)
 
 def fx_inv2(+b: O.Found, +v: O.Found) -> O.Found:
   fx_inv2.of(O.Found.ar(v), b, v)
-
 
 # THE GAP GRAPH: `SINK(STORE(a1,Invalid), ADD(a1,a1), STORE(a2,Invalid))`. The two
 # invalid buffers sit at toposort positions 0 and 4, so a counter over the WHOLE
@@ -1461,7 +1428,6 @@ def fx_gap.of(+ar: O.Arena, +b: O.Found, +v: O.Found) -> O.Found:
 
 def fx_gap(+b: O.Found, +v: O.Found) -> O.Found:
   fx_gap.of(O.Found.ar(v), b, v)
-
 
 # `SINK(STORE(ALLOC(1,bor), CONST(Invalid)))`. CPython: 1 -- the ALLOC, because it
 # is not realized.
@@ -1538,16 +1504,8 @@ def renum_gap() -> String:
   +v = fx_inval(O.Found.ar(b))
   String.concat(["renum_gap=", fn_slots_row(fx_gap(b, v))])
 
-
-
-
 # `slots@positions`, so each row carries BOTH numbers and the difference between
 # them is in the output rather than in a comment.
-
-
-
-
-
 
 # and the wrapper takes the last built node's arena, not the first's: `b` is
 # interned before `v`, so `O.Found.ar(b)` does not CONTAIN `v` and the next node
@@ -1577,7 +1535,6 @@ def pctx_table.one(i: U32, +e: O.PMEntry) -> String:
 type Ix is Data:
   Ix{i: U32, acc: List<&2, String>}
 
-
 def Ix.acc(x: Ix) -> List<&2, String>:
   match x:
     case Ix{i, acc}: acc
@@ -1599,9 +1556,6 @@ def pctx_table.of(ts: O.PMEntrys) -> String:
 
 def pctx_table() -> String:
   pctx_table.of(pm_ctx())
-
-
-
 
 # A realized BUFFER alone: CPython captures 1 node, `BUFFER` -- rule 0.
 def pctx_buf() -> String:
@@ -1654,8 +1608,6 @@ def pctx_aft_m1() -> String:
   +b = fx_alloc(0, False{})
   +p = fx_buf_param_on(O.Found.ar(b), FN_NEG1())
   String.concat(["pctx_aft_4294967295=", pctx_of(FnCtx.of2(0), fx_aft(O.Found.ar(p), fn_u(b), fn_u(p)))])
-
-
 
 # `AFTER(BUFFER, fresh ALLOC)`: CPython captures 1 node, and the captured node is
 # `AFTER` -- which is only reachable if the AFTER is judged BEFORE its own srcs,
@@ -1717,7 +1669,6 @@ def imp_one.of(+g: O.Found) -> String:
 def imp_one() -> String:
   imp_one.of(fx_nbuf(0, 4))
 
-
 # TWO implicit buffers, so the NUMBERED LINES and their ORDER are pinned -- and
 # that is the part `enumerate` gets wrong first. CPython:
 #     function f5 has 2 implicit buffer(s), but allow_implicit=False
@@ -1728,7 +1679,6 @@ def imp_two.of(+g0: O.Found, +g1: O.Found) -> String:
 
 def imp_two() -> String:
   imp_two.of(fx_nbuf(0, 4), fx_nbuf(1, 4))
-
 
 # the refusal set is the tail, not the HEAD. With `num_explicit=0` on a ctx
 # holding one buffer the whole list is implicit; with `num_explicit=1` it is
@@ -1744,8 +1694,6 @@ def imp_tail.of(+g: O.Found) -> String:
 
 def imp_tail() -> String:
   imp_tail.of(fx_nbuf(0, 4))
-
-
 
 # ---- G: `_function.depth` entering and being RESTORED -----------------------
 # CPython: `_function.depth` is 0 before the call and 0 after it, and 2 inside
@@ -1771,9 +1719,6 @@ def dep_shared.of(a: Fn, b: Fn) -> Fn:
 
 def dep_shared() -> String:
   String.concat(["dep_shared=", U32.show(Fn.depth(dep_shared.of(Fn.of(), Fn.of())))])
-
-
-
 
 # function.py:101-113. BOTH SPELLINGS, and the difference is which argument is
 # `None`: `@function` passes the function, `@function(...)` passes `None` and
@@ -1843,9 +1788,6 @@ def callu_ops.of(+g: O.Found) -> String:
 
 def callu_ops() -> String:
   callu_ops.of(fx_buf(0, 4, Some{0}))
-
-
-
 
 # ---- J: the DEBUG print's indent and name ----------------------------------
 # CPython: `"  "*depth + f"function {key[:8]} in {ms:8.2f} ms: {name}"`. The key
@@ -1924,7 +1866,6 @@ def main() -> IO(Unit):
     IO.print(trace2())
     IO.print(fn_name_row())
     IO.print(ctx_row())
-
 
 # SECTION L -- THE MEASURED MUTATION TABLE.
 #

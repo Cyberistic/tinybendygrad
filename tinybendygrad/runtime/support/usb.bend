@@ -85,14 +85,12 @@
 import Base
 import ../../helpers.bend as H
 
-
 # THE ROW BUILDERS. One `name=value` STRING per fact, and the whole block is
 # printed with one `IO.print` joined on "\n". That is not a style choice: a
 # `do IO<Unit>:` arm and a bare expression arm have DIFFERENT types in Bend
 # 2.0.34, an effectful walk over a list is a type error where a pure one is not,
 # and a `do` block cannot be followed by the next `def`. Pure rows also make the
 # harness's job exact: one line per fact, and `name=value` WHOLE.
-
 
 def u1(nm: String, v: U32) -> String: String.concat([nm, "=", U32.show(v)])
 def b1(nm: String, v: Bool) -> String: String.concat([nm, "=", Bool.show(v)])
@@ -109,10 +107,8 @@ def i1(nm: String, v: U32) -> String: String.concat([nm, "=", show_i32(v)])
 
 def lines_of(xs: List<&2, String>) -> String: String.join(xs, "\n")
 
-
 type Ent is Data:
   Ent{val: U32, name: String}
-
 
 # THE libusb CONSTANT TABLES, GENERATED FROM `autogen.libusb` -- see
 # `usb-gen-tables.py`. Both directions come from ONE list and two folds, because
@@ -327,10 +323,8 @@ def E_EXT20() -> List<&2, Ent>:
 def E_SSCAP() -> List<&2, Ent>:
   [   Ent{2, "LIBUSB_BM_LTM_SUPPORT"}]
 
-
 # the two folds, one table each. `enum_nm` is the dict and `enum_val` is its
 # inverse, so both directions come off ONE walk over the same data.
-
 
 # value -> name, LAST match wins: `enum_libusb_class_code` gives 6 TWO names and
 # the generated dict keeps the LAST, so a first-wins fold is wrong and the differ
@@ -395,8 +389,6 @@ def enum_rows.go(+tag: String, +es: List<&2, Ent>, r: List<&2, Ent>,
 def enum_rows(+tag: String, +es: List<&2, Ent>) -> List<&2, String>:
   enum_rows.go(tag, es, es, Nil{})
 
-
-
 # the struct field lists, by name and in order. `usb.py` addresses
 # `struct_libusb_transfer` THREE TIMES BY NAME (:350-351 `field("status")`,
 # `field("length")`, `field("buffer")`) and reads
@@ -411,7 +403,6 @@ def enum_rows(+tag: String, +es: List<&2, Ent>) -> List<&2, String>:
 # constructions whose ORDER a diff of `name=value` lines cannot see, while
 # `String.concat` drops a literal silently -- so the gate diffs these Strings
 # WHOLE against the header's field names, through `String.split` and back.
-
 
 type Fld is Data:
   Fld{ix: U32, name: String}
@@ -478,7 +469,6 @@ def F_POLLFD() -> List<&2, Fld>: fields("fd events")
 def F_VERSION() -> List<&2, Fld>: fields("major minor micro nano rc describe")
 def F_TIMEVAL() -> List<&2, Fld>: fields("tv_sec tv_usec")
 
-
 # STRUCT SIZES. `ctypes.sizeof` is the SEAM's value, so these are constants read
 # out of the header rather than derived -- and `usb_xfer` (:218) makes one of them
 # the ELEMENT COUNT of a UOp placeholder, which makes it arithmetic and not a
@@ -511,7 +501,6 @@ def SIZ_TIMEVAL() -> U32: 16
 # `struct_libusb_device_handle` and `dll` -- have `sizeof` 0 in the generated
 # binding, and that is WHY `usb.py` treats them as POINTERS (:32,:39,:44,:49).
 
-
 # THE CONSTANTS AND THE WINDOW. `usb.py:208-229` is the whole memory map: two
 # SRAM halves with a reserved sentinel block each, a host block, a vram pair, and
 # the bridge's three slices.
@@ -530,7 +519,6 @@ def SIZ_TIMEVAL() -> U32: 16
 #
 # `CHUNK` is `HALF - 512`, not `HALF`: the reserved sentinel block is what the
 # subtraction is, and `usb_wire` adds a second 512 back on for the same reason.
-
 
 def HALF() -> U32: 262144          # 0x40000
 def SENTINEL_BLOCK() -> U32: 512   # the reserved block at the top of a half
@@ -610,9 +598,7 @@ def USB3_CTRL_BUF() -> U32: CTRL_BUF()
 def TABLE_ROW_BYTES() -> U32: 16
 def TABLE_SIZE_OFF() -> U32: 8
 
-
 # THE TRANSFER ARITHMETIC.
-
 
 # :253 `usb_wire(size) = (size + 512 + SLOT - 1) // SLOT * SLOT`. The 512 is a
 # SECOND sentinel block (:207), not the one `CHUNK` subtracts, so a staged
@@ -670,7 +656,6 @@ def Split.nranges(x: Split) -> U32:
 def usb_window(+is_copyin: Bool) -> U32:
   Bool.pick(U32, is_copyin, CHUNK(), U32.mul(2, CHUNK()))
 
-
 # `_f0_out` (:106-107) and `pcie_request` (:113-135).
 #
 # the 64-bit address is a pair, on purpose. `struct.pack('<iii', address &
@@ -680,7 +665,6 @@ def usb_window(+is_copyin: Bool) -> U32:
 # two dwords it is packed into is not a workaround: it is the value `usb.py`
 # computes. `pcie_addr_hi` is therefore the SEAM and the split is the arithmetic.
 #     TODO(p3) tinygrad/runtime/support/usb.py:107  `address >> 32`.
-
 
 def pcie_offset(+address: U32) -> U32: U32.and(address, 3)
 
@@ -816,7 +800,6 @@ def copyout_wire(+size: U32) -> U32:
                                              SENTINEL_BLOCK())),
                         U32.sub(SRAM_ALIGN(), 1)), SRAM_ALIGN()), SRAM_ALIGN())
 
-
 # :336-355 `usb_chunk`. `end = (half + 1) * HALF`, so half 0's window is
 # `[HALF - wire, HALF)` and half 1's is `[2*HALF - wire, 2*HALF)`, and the dword
 # index of the sentinel word is `end // 4 - 1`. The three `field("...")` stores
@@ -877,7 +860,6 @@ def REMOTE_N() -> U32: 4
 def remote_prefixes() -> String: "usb_host usb_xfer put_value cmdbuf_copy"
 
 def is_remote_prefix(+tag: String, +p: String) -> Bool: String.starts_with(tag, p)
-
 
 def t_wire() -> IO(Unit):
   IO.print(lines_of([
@@ -1304,7 +1286,6 @@ def t_remote() -> IO(Unit):
     b1("usb_remote_xusb_host", is_remote_prefix("xusb_host", "usb_host"))
   ]))
 
-
 # THE STRING TABLE. `usb.py` has twenty-one user-visible strings and every one
 # of them is either a LITERAL or an f-string whose literal parts are load-bearing.
 # They are diffed AS STRINGS, not as a boolean about a string, because
@@ -1321,7 +1302,6 @@ def t_remote() -> IO(Unit):
 # | WALL(p3) tinygrad/runtime/support/usb.py:129  `address={address:#x}`. -- BLOCKED. #   `address={address:#x}` -- the same shape as the marker above: a format in a raise site this
 #   driver layer does not have.
 # | WALL(p3) tinygrad/runtime/support/usb.py:133  `f'Reserved (0b{cpl_status:03b})'`. -- BLOCKED. #   A `dict.get` ON `status_map` PLUS A BINARY FORMAT, again in a raise the port does not have.
-
 
 def MSG_BULK_OUT() -> String: "bulk OUT 0x02 failed"
 def MSG_BULK_IN() -> String: "bulk IN 0x81 failed"
@@ -1368,7 +1348,6 @@ def cpl_name(+cpl_status: U32) -> String:
 def cpl_named(+cpl_status: U32) -> Bool:
   Bool.or(U32.is_eq(cpl_status, CPL_UNSUP()),
           Bool.or(U32.is_eq(cpl_status, CPL_RETRY()), U32.is_eq(cpl_status, CPL_ABORT())))
-
 
 # THE PACKET FORMATS. `send_batch` (:87-92) is the only place `usb.py` packs a
 # wire structure, and both formats are `struct.calcsize` calls this port must not
@@ -1417,12 +1396,6 @@ def ep_dir(+ep: U32) -> U32: U32.and(ep, 128)
 def CDB_SIZE() -> U32: 31
 def REPLY_SIZE() -> U32: 13
 def REPLY_READ_LEN() -> U32: 13
-
-
-
-
-
-
 
 # THE STRING ROWS. Every literal is DIFFED AS A STRING: a row that said "the
 # message is non-empty" would stay green with the prefix removed, and
@@ -1564,7 +1537,6 @@ def t_packets() -> IO(Unit):
 # wValue, a byte count, a request type. A call whose arguments are all POINTERS
 # (`libusb_open(dev, handle)`, `libusb_alloc_transfer(0)`) records zeros, and that
 # is not a gap in the port: the pointer is the SEAM's.
-
 
 type Call is Data:
   Call{k: U32, a: U32, b: U32, c: U32}
@@ -1753,7 +1725,6 @@ def Tr.has.go(n: Nat, +patlen: Nat, cs: List<&2, Call>, +pat: List<&2, Call>,
 def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
-
 # THE ENUMERATION. `USB3.list_devices` (:30-37) is ONE loop and it is the wall
 # ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices`.
 #
@@ -1763,7 +1734,6 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # DEV_ADDRESS on a match. `usb_list_match` is that predicate and `usb_enum_order_*`
 # is the walk, so the negative case -- a descriptor whose ids do not pair -- is one
 # row from its positive.
-
 
 def list_match(+idVendor: U32, +idProduct: U32, +vendor: U32, +dev: U32) -> Bool:
   Bool.and(U32.is_eq(idVendor, vendor), U32.is_eq(idProduct, dev))
@@ -1806,7 +1776,6 @@ def usb_enum(n: Nat, +hit: Bool, +bus: U32, +addr: U32, t: Tr) -> Tr:
   Tr.emit(K_FREE_DEVLIST(), 1, 0, 0,
     usb_enum.walk(n, hit, bus, addr, Tr.raise(K_GET_DEVLIST(), 0, 0, 0, t)))
 
-
 # THE OPEN. `USB3.__init__` (:39-62). `ops_disk.bend` records `_might_open` as a
 # WALK OF STATE THAT ENDS IN A CLAIM; this is the same shape, and it is the one
 # ops_amd.bend could not reach.
@@ -1843,7 +1812,6 @@ def usb_ctx(debug6: Bool, +t: Tr) -> Tr:
              USB3_LOG_LEVEL_DEBUG(), 0, Tr.raise(K_INIT(), 0, 0, 0, t)),
     Tr.raise(K_INIT(), 0, 0, 0, t))
 
-
 # THE TRANSFER CALLS. `usb_chunk` (:336-355), `usb_reap` (:324-328),
 # `usb_drained` (:330-334) and the control/bulk wrappers (:64-84) are where the
 # remaining trace kinds are emitted, and what matters is the SEQUENCE.
@@ -1852,7 +1820,6 @@ def usb_ctx(debug6: Bool, +t: Tr) -> Tr:
 # inside each other is a counting exercise with no compiler help, and a miscount is
 # a silent change to which call is recorded first; one def per call makes the
 # sequence read top-down and each def independently gateable.
-
 
 # :457 `libusb_alloc_transfer(0)` -- the xfer this chunk submits
 def usb_chunk.alloc(+t: Tr) -> Tr: Tr.emit(K_ALLOC_XFER(), 0, 0, 0, t)
@@ -1945,7 +1912,6 @@ def t_f0() -> IO(Unit):
      u1("usb_xfer_length_ix", K_XFER_LENGTH()),
      u1("usb_xfer_buffer_ix", K_XFER_BUFFER())]))
 
-
 # the transfer rows. Order and identity, one row per fixture. the half pair is
 # the negative case: half 1's window is 2*HALF and not HALF, so every recorded
 # offset differs.
@@ -1973,7 +1939,6 @@ def t_xfer() -> IO(Unit):
 # THE TRACE ROWS. Three things are gateable about a trace and only three: the
 # IDENTITY of each call, the ORDER of the calls, and the TRUNCATION POINT of a
 # refusal. All three are whole-value rows here.
-
 
 def t_trace() -> IO(Unit):
   IO.print(lines_of(
@@ -2151,7 +2116,6 @@ def E_SYNTH() -> List<&2, Ent>:
 def LIBUSB_CLASS_IMAGE() -> U32: 6
 def LIBUSB_CLASS_PTP() -> U32: 6
 
-
 # THE STRUCT ROWS. The field lists are printed as the ROUND TRIP of the literal
 # through `String.split` and back, so a dropped field, a transposed pair or a split
 # that eats the separator all change the line -- where a row that printed the
@@ -2227,8 +2191,6 @@ def t_structs() -> IO(Unit):
      u1("usb_siz_version", SIZ_VERSION()),
      u1("usb_siz_timeval", SIZ_TIMEVAL())]))
 
-
-
 # THE ENUM ROWS. Twenty-one table walks, BOTH directions each, then the
 # scalar rows: the signed negatives, the walrus globals, and the two
 # negative cases (`usb_enumval_notfound_is_io` answers with the sentinel,
@@ -2281,9 +2243,6 @@ def t_consts() -> IO(Unit):
      [u1("usb_synth_v_beta", enum_val("SYNTH_BETA", E_SYNTH()))],
      [u1("usb_synth_v_absent", enum_val("SYNTH_NOPE", E_SYNTH()))]])))
 
-
-
-
 # THE FFI SEAM SPLIT. Every `libusb`/`libc`/`ctypes` binding in `usb.py` is one
 # `Call{k, a, b, c}` in `Tr` and nothing else. The table below is the whole
 # inventory: what is a trace tag, and the `usb.py` line that becomes it. An
@@ -2329,7 +2288,6 @@ def t_consts() -> IO(Unit):
 # honest "this is a seam" is a complete result; what is NOT acceptable is a row that
 # pretends to cover one. The full list of `TODO(p3)` lines is at the end of this
 # file.
-
 
 # THE MUTATION TABLE. One edit per RULE, applied to a scratch copy, and the
 # INTERPRETED lane re-run; the diff is over WHOLE `name=value` LINES and not over
@@ -2392,9 +2350,6 @@ def t_consts() -> IO(Unit):
 # | M44 | 3 | `pcie_cfg_addr`: drop the `fn << 16` term | :140's FUNCTION nibble. Only the fixtures with a non-zero fn move. |
 # | M45 | 2 | `SENTINEL_MASK`: 0xFFFFFF -> 0xFFFFFFFF | :254's mask width, and the row that says why 24 and not 32: the COLLISION fixture at 2^24 moves and the one at 2^23 does not. |
 
-
-
-
 # THE GATE. Seven scripts, all in `.agents/slop/`, and every number below is one
 # of their outputs rather than an estimate.
 #
@@ -2436,10 +2391,7 @@ def t_consts() -> IO(Unit):
 #     backwards, so all 478 enum rows came out in the opposite of the header's own
 #     order. A cons fold over a reversed walk is still a backwards fold.
 
-
-
 # THE ENTRY POINT. One line per row section, in the order the sections read.
-
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -2470,4 +2422,3 @@ def main() -> IO(Unit):
     y : Unit <- t_f0()
     z : Unit <- t_xfer()
     IO.print("usb-done=1")
-

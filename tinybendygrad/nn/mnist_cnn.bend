@@ -88,10 +88,8 @@ import ./../uop/ops.bend as O
 import ./../mixin/movement.bend as MX
 import ./layers.bend as L
 
-
 # THE CONSTANTS. Every one of them is in `model.py` too, and the generator
 # copied them from there.
-
 
 def MN_IN_H() -> U32: 28
 def MN_IN_W() -> U32: 28
@@ -195,9 +193,7 @@ def mn_shp_of(m: Maybe<&2, T.Tensor>) -> String:
 def mn_row.line(nm: String, got: String, want: String) -> IO(Unit):
   IO.print(String.concat([nm, " got=", got, " want=", want]))
 
-
 # THE ROWS.
-
 
 # THE MODEL's INPUT, and the shape the walk starts from.
 def mn_row_in() -> IO(Unit):

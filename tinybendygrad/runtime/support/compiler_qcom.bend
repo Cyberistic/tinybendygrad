@@ -110,7 +110,6 @@ def Tr.n(tr: Tr) -> U32: U32.from_nat(List.length(&2, String, Tr.items(tr)))
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
-
 # :8  _read_lib. `struct.unpack("I", lib[off:off+4])[0]` is LITTLE ENDIAN:
 # byte 0 is the LOW byte. `q.read` takes the four bytes in ADDRESS order, which
 # is what makes the endianness a decision rather than a convention.
@@ -143,7 +142,6 @@ def q.read_at(+bs: List<&2, U32>, +off: U32) -> U32:
 def q.off_pos() -> U32: 192         # 0xc0
 def q.len_pos() -> U32: 256         # 0x100
 
-
 # :46  THE SLICE. `lib[ofs : ofs + _read_lib(lib, 0x100)]`, where `ofs` is read
 # at 0xc0. Both ends are data, and the two reads are at DIFFERENT positions, so
 # a port that used 0xc0 for both would produce a slice of the right length in
@@ -158,7 +156,6 @@ def q.slice_len(+n: U32, +bs: List<&2, U32>) -> U32: q.read_at(bs, q.len_pos())
 
 def q.slice_str(+n: U32, +bs: List<&2, U32>) -> String:
   String.concat([U32.show(q.read_at(bs, q.off_pos())), ":", U32.show(q.slice_end(n, bs))])
-
 
 # :12  the arch assert and :13/:16 the chip id and the cache key.
 
@@ -189,7 +186,6 @@ def q.key(+arch: String) -> String: String.concat(["compile_qcomcl_", arch])
 
 def q.is_aarch64(+machine: String) -> Bool: String.eq(machine, "aarch64")
 
-
 # :17  the rootfs and the repo root. `rootlib.Path(__file__).parents[3]` is the
 # repository root, which is where `compileserver.py` and `tinygrad` live, and it
 # is passed to docker twice: once as a `-v` mount and once as `PYTHONPATH`.
@@ -197,7 +193,6 @@ def q.is_aarch64(+machine: String) -> Bool: String.eq(machine, "aarch64")
 def q.root() -> String: "/ROOT"
 
 def q.fs_url() -> String: "https://git.tinygrad.win/tinygrad/images/releases/download/v2/qcomcl.tar.gz"
-
 
 # :18  THE QEMU COMMAND, and it is one string that a shell will word-split, so
 # the SPACES are load bearing:
@@ -212,7 +207,6 @@ def q.cmd_qemu(+qemu: String, +fs: String) -> String:
   String.join([qemu, "-cpu", "max,pauth=off", "-L", fs, String.concat([fs, "/usr/bin/python3"])], " ")
 
 def q.qemu_n(+qemu: String, +fs: String) -> U32: 6
-
 
 # :19-20  THE DOCKER COMMAND. Four pieces of information, and all four are
 # observable: the `--platform`, BOTH `-v` mounts, `PYTHONPATH` and `QEMU_CPU`.
@@ -234,7 +228,6 @@ def q.docker_flags(+fs: String, +root: String) -> List<&2, String>:
    "-v", String.concat([root, ":", root]),
    "-e", String.concat(["PYTHONPATH=", root]),
    "-e", "QEMU_CPU=max,pauth=off", "gcr.io/distroless/static", "python3"]
-
 
 # :27-32  checked(). Two facts, and the second is not a reformat of the first:
 #
@@ -264,7 +257,6 @@ def q.resets(+fails: Bool) -> U32: Bool.to_u32(fails)
 
 def q.is_compile(handle: Bool, log: String) -> String: q.msg(handle, log)
 
-
 # :36  `cl_compiler_compile_source(inst, chip_id, CL_MODE_64BIT, b"", 0, 0, 0,
 #      src.encode(), 0, CL_SRC_STR, None)` -- ELEVEN arguments, and the two
 # consecutive ZEROS at positions 5 and 6 are separate arguments, not one.
@@ -283,7 +275,6 @@ def q.link_arg_n() -> U32: 6
 
 # :40 `cl_compiler_handle_create_binary(lh, byref(ptr), byref(sz))`
 def q.binary_args() -> U32: 3
-
 
 # THE GATE.
 

@@ -268,11 +268,8 @@ import ../helpers.bend as H
 import ../device.bend as D
 import ../LAWS/spec.bend as S
 
-
-
 # THE CONSTANTS. Every one read out of ops_dsp.py, its autogen bindings, or
 # helpers.py -- the three places a number in this file can come from.
-
 
 # the fastrpc selector's four one-byte fields (:48). MEASURED: `U32.shl` is a
 # ONE-bit shift and `U32.shln(a, n)` is the n-bit one, so the field POSITIONS are
@@ -406,7 +403,6 @@ def dt_cname_dt(d: S.Dt) -> String:
         case S.CFloat{} : dt_cname.sf(bits, pri)
         case _: "KeyError"
 
-
 # ONE PARAM of the generated kernel: a GLOBAL buffer (with its element count, so
 # the mock can compute the byte width) or an ALU value (with its C spelling).
 # `is_alu` is the `addrspace == AddrSpace.ALU` test that :32,:35,:37,:39,
@@ -421,7 +417,6 @@ def dt_cname_dt(d: S.Dt) -> String:
 # be misspelled, and a ladder keyed on it cannot be renamed out from under itself.
 type Param is Data:
   Param{is_alu: Bool, dt: S.Dt, numel: U32}
-
 
 def Param.is_alu(p: Param) -> Bool:
   match p:
@@ -439,7 +434,6 @@ def Param.dt(p: Param) -> S.Dt:
 def Param.numel(p: Param) -> U32:
   match p:
     case Param{is_alu, dt, numel}: numel
-
 
 # THE fixtures. THE dtype is an `S.Dt`, BUILT by `LAWS/spec.bend`'s OWN constructor,
 # so a fixture cannot name a dtype that does not exist.
@@ -486,11 +480,8 @@ def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
 
-
-
 # READING THE TRACE. Four readers and nothing else: the length, how many calls of a
 # kind, their args in order, and "contains this (kind, arg) sequence, in order".
-
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
   match n:
@@ -550,11 +541,8 @@ def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
 
-
-
 # THE FOUR DTYPE TABLES. Plain functions of dtype.py's `name` field, so each is
 # gated over its whole domain rather than at a fixture.
-
 
 # `spec.bend` holds `Dt` and has no `nm` reader; dtype.bend has `dt_name` but is a
 # conversion seam and importing it would drag that seam in for nothing.
@@ -779,10 +767,7 @@ def pra_fds(+ps: List<&2, Pra>, acc: List<&2, U32>) -> List<&2, U32>:
     case Nil{}: acc
     case p <> t: pra_fds(t, List.append(&2, U32, acc, [Pra.fd(p)]))
 
-
-
 # var_vals_mv and off_mv, :65-69. THE 8-BYTE SLOT TABLE.
-
 
 # `memoryview(bytearray((len(bufs)+len(vals))*8))` (:65) and
 # `memoryview(bytearray(len(bufs)*4))` for the offsets (:65). The var_vals block is
@@ -875,8 +860,6 @@ def alloc.free.go(+cs: List<&2, Call>, t: Tr) -> Tr:
 def alloc.free(has_share: Bool, nbytes: U32, handle: U32, t: Tr) -> Tr:
   alloc.free.go(alloc.free_calls(has_share, nbytes, handle), t)
 
-
-
 # THE ENTRY SHIM, DSPRenderer._render_entry, :27-44. Every line is a pure string
 # function of the PARAM list and the index, which is what makes it gateable.
 #
@@ -893,7 +876,6 @@ def alloc.free(has_share: Bool, nbytes: U32, handle: U32, t: Tr) -> Tr:
 # GLOBAL, ALU -- where the mmap lines are `buf_1`/`pra[4]` and `buf_2`/`pra[5]` and
 # the `off` subscripts are 1 and 2, NOT 0 and 1. `dsp_e_agga_*` is that row family,
 # and a port that compacted the counter would move it and NOTHING else.
-
 
 def ENTRY_FIXED() -> U32: 4
 def ENTRY_TAIL() -> U32: 4
@@ -1056,10 +1038,7 @@ def dev.exec_lib(+sc: U32, fail_first: Bool, fail_second: Bool, +t: Tr) -> Tr:
     case True{}: dev.exec_lib.retry(sc, fail_second, t)
     case False{}: exec_once(sc, False{}, t)
 
-
-
 # RPCListener, :178-239. THE sc DISPATCH and the argument layouts.
-
 
 def RPC_GREET() -> U32: 67240448
 def ARM_NONE() -> U32: 0
@@ -1296,4 +1275,3 @@ def kind_list.go(+cs: List<&2, Call>, acc: List<&2, U32>) -> List<&2, U32>:
     case c <> t: kind_list.go(t, List.append(&2, U32, acc, [Call.k(c)]))
 
 def kind_list(cs: List<&2, Call>) -> List<&2, U32>: kind_list.go(cs, Nil{})
-

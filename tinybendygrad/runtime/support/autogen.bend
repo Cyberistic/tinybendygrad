@@ -136,11 +136,9 @@
 
 import Base
 
-
 # SECTION 0 -- the libclang ABI. Every number below was resolved by CALLING
 # libclang through `tinygrad.runtime.autogen.libclang` (see
 # `.agents/slop/ag-oracle.py`), not read off a header and not typed from memory.
-
 
 def ty_invalid() -> U32: 0
 def ty_unexposed() -> U32: 1
@@ -223,10 +221,8 @@ def lk_internal() -> U32: 2
 def lk_external() -> U32: 4
 def tok_identifier() -> U32: 2
 
-
 # SECTION 1 -- the tables. One `Data` per table, so a table is a value the
 # gate can print and a mutation can move.
-
 
 # autogen.py:91 tmap -- a CXType kind and the ctypes spelling `tname` emits.
 type TE is Data: TE{kind: U32, cty: String}
@@ -243,9 +239,7 @@ type BR is Data: BR{pat: String, rep: String}
 # than seventy constants nothing checks.
 type KD is Data: KD{kind: U32, nm: String}
 
-
 # SECTION 2 -- table plumbing.
-
 
 def te_at(+k: U32, xs: List<&2, TE>) -> Maybe<&2, TE>:
   match xs:
@@ -307,7 +301,6 @@ def te_hit(+k: U32, xs: List<&2, TE>) -> Bool: Bool.not(String.eq(te_cty(te_at(k
 # so the one spelling agrees with Python on every kind libclang has.
 def th_hit(+k: U32, xs: List<&2, TH>) -> Bool: Bool.not(String.eq(th_hint(th_at(k, xs)), ""))
 
-
 # SECTION 3 -- `tmap`, autogen.py:91. PORTED, BOTH DIRECTIONS.
 #
 # The literal is three parts and they are not independent. Seven kinds are
@@ -320,7 +313,6 @@ def th_hit(+k: U32, xs: List<&2, TH>) -> Bool: Bool.not(String.eq(th_hint(th_at(
 # `Char16`(6) and `Char32`(7) are ABSENT: libclang has them, tmap has no entry
 # for them, and `tname`'s `case _: raise NotImplementedError` is what a C
 # `char16_t` would hit. Rows `tmap_miss_*` pin that absence.
-
 
 # DECLARED IN ASCENDING KIND ORDER, which is not the dict-literal order of
 # autogen.py:91 and does not need to be: bend cannot sort a list of `Data`
@@ -356,14 +348,12 @@ def tmap_rev(xs: List<&2, TE>) -> List<&2, TE>:
     case Nil{}: Nil{}
     case TE{+kind, cty} <> rest: List.append(&2, TE, [TE{kind, cty}], tmap_rev(rest))
 
-
 # SECTION 4 -- `uints` / `ints` / `fps` / `specs`, autogen.py:87-89.
 #
 # `uints` is six explicit kinds. `ints` is `uints + ` the six signed ones, in
 # THAT order -- not sorted -- so `ints` is a genuine reordering and the gate can
 # see it. `fps` is (FunctionProto 111, FunctionNoProto 110), also not ascending.
 # `specs` is one kind: 40.
-
 
 def uints() -> List<&2, U32>:
   [ty_char_u(), ty_uchar(), ty_ushort(), ty_uint(), ty_ulong(), ty_ulonglong()]
@@ -384,14 +374,11 @@ def u32_in(+k: U32, xs: List<&2, U32>) -> Bool:
     case Nil{}: False{}
     case +x <> rest: Bool.pick(Bool, U32.is_eq(x, k), True{}, u32_in(k, rest))
 
-
 # SECTION 5 -- `arc_families`, autogen.py:98.
-
 
 # https://clang.llvm.org/docs/AutomaticReferenceCounting.html#arc-method-families
 def arc_families() -> List<&2, String>:
   ["alloc", "copy", "mutableCopy", "new"]
-
 
 # SECTION 6 -- `base_rules`, autogen.py:82. PORTED AS DATA. WALL 2 is the
 # matcher; the table is the part upstream maintains and the part that gates.
@@ -399,7 +386,6 @@ def arc_families() -> List<&2, String>:
 # THIRTEEN rules and the ORDER IS THE SEMANTICS: `functools.reduce` at :278
 # applies `rules + base_rules` left to right, so rule 4 (strip u/l suffixes)
 # sees what rule 1 (collapse newlines) produced.
-
 
 def base_rules() -> List<&2, BR>:
   [BR{"\\s*\\\\\\n\\s*", " "},
@@ -416,7 +402,6 @@ def base_rules() -> List<&2, BR>:
    BR{"^.*\\d+:\\d+.*$", ""},
    BR{"^.*\\w##\\w.*$", ""}]
 
-
 # SECTION 7 -- `normalize`, autogen.py:100. PORTED.
 #
 #     def normalize(a): return ("_" + n if keyword.iskeyword(n:=nm(a)) else n)
@@ -427,7 +412,6 @@ def base_rules() -> List<&2, BR>:
 # would emit `_match` for a field named `match`. Rows `normalize_*` pin both
 # directions of that.
 
-
 def py_keywords() -> List<&2, String>:
   ["False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue",
    "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import",
@@ -436,7 +420,6 @@ def py_keywords() -> List<&2, String>:
 
 def normalize(+n: String) -> String:
   Bool.pick(String, str_in(n, py_keywords()), String.concat(["_", n]), n)
-
 
 # SECTION 8 -- `attrs`, autogen.py:77.
 #
@@ -449,14 +432,12 @@ def normalize(+n: String) -> String:
 # NSReturnsRetained(420) is IN, MacroDefinition(501) is OUT, FirstAttr(400) is
 # IN, FirstPreprocessing(500) is OUT.
 
-
 def attrs_holds(+k: U32) -> Bool: Bool.and(U32.is_ge(k, cur_firstattr()), U32.is_le(k, cur_lastattr()))
 
 def attrs_mem(+k: U32, xs: List<&2, U32>) -> Bool:
   match xs:
     case Nil{}: False{}
     case +x <> rest: Bool.pick(Bool, U32.is_eq(x, k), True{}, attrs_mem(k, rest))
-
 
 # SECTION 9 -- `typehint`, autogen.py:107-110. PORTED, BOTH DIRECTIONS.
 #
@@ -478,7 +459,6 @@ def attrs_mem(+k: U32, xs: List<&2, U32>) -> Bool:
 # The typehint table is derived from `ints()`, not transcribed, so the
 # overwrite above is visible in the source instead of asserted in a comment.
 
-
 def typehint_ints(xs: List<&2, U32>) -> List<&2, TH>:
   match xs:
     case Nil{}: Nil{}
@@ -493,9 +473,6 @@ def typehint_tail() -> List<&2, TH>:
 
 def typehint_table() -> List<&2, TH>:
   List.append(&2, TH, List.append(&2, TH, typehint_ints(ints()), typehint_floats()), typehint_tail())
-
-
-
 
 # WALL 4 -- `tname`'s RECORD ARM. MEASURED, and it is the wall that decides the
 # scope question. Full statement and consequences in `.agents/slop/ag-scope.txt`.
@@ -531,8 +508,6 @@ def typehint_table() -> List<&2, TH>:
 # what the rows that do port buy: meas2 counts 30,979 `register_fields([...])`
 # lines in the generated set. That is the size of the arm, stated as a number
 # rather than as a feeling.
-
-
 
 # MUTATION TABLE. 44 mutations, 42 move rows, 2 do not.
 #
@@ -672,7 +647,6 @@ def typehint_table() -> List<&2, TH>:
 # because a `Data` record cannot hold a `Maybe` field. `0n` is never an index
 # here: a sub-list is empty or it is the one thing.
 
-
 # one field, as `all_fields` yields it: the name, the cursor's type, the BYTE
 # offset the anonymous-record flatten accumulated, and the bitfield pair.
 type Fld is Data: Fld{nm: String, ty: Ty, off: U32, bw: U32, isbf: Bool}
@@ -690,7 +664,6 @@ type Cur is Data:
   Cur{kind: U32, nm: String, link: U32, anon: Bool, ty: Ty, kids: List<&2, Cur>,
       attrs: List<&2, U32>, vs: String, vu: String}
 
-
 # SECTION 11 -- the generator's mutable state, threaded. Python holds
 # `lines`, `types`, `anoncnt` and `objc` in `nonlocal` closure cells
 # (autogen.py:104, :114). bend has no closures and no mutable bindings, so they
@@ -702,7 +675,6 @@ type Cur is Data:
 # declaration, True once fields have been seen -- and it is what makes the
 # self-referential RECORD case work: a struct may name itself through a
 # pointer, and the forward pass registers the name without a body.
-
 
 type Gt is Data: Gt{nm: String, tnm: String, defd: Bool, ln: Nat}
 type G is Data: G{lines: List<&2, String>, typs: List<&2, Gt>, anon: Nat, objc: Bool}
@@ -717,9 +689,7 @@ def g_ctr2(g: G) -> Nat:
   match g:
     case G{lines, typs, anon, objc}: anon
 
-
 # SECTION 12 -- the generator's derivations, in the order `tname` uses them.
-
 
 # autogen.py:140 `_anon{struct|union}{anoncnt}` / :158 `_anonenum{anoncnt}` /
 # :187 `_anondynamic{anoncnt}` -- ONE counter, shared by all three.
@@ -810,7 +780,6 @@ def spaces_to_underscores(n: String) -> String:
 # is observable, so `rep_go1` then `rep_go2`, not the other way round.
 def record_nm(n: String) -> String: colons_to_underscores(spaces_to_underscores(n))
 
-
 # SECTION 13 -- `tname`, autogen.py:112-190. The heart of the generator.
 #
 # The shape is forced by bend: the function's FIRST act is a membership test
@@ -819,8 +788,6 @@ def record_nm(n: String) -> String: colons_to_underscores(spaces_to_underscores(
 # not merely tolerable: `Bool.pick` discards the arm it does not choose, and
 # `tname_arm` on a kind `tmap` already owns falls through to the refusal, so
 # the wasted branch emits nothing.
-
-
 
 # SECTION 14 -- the `types` dict. autogen.py:117 `nm(t) in types and
 # types[nm(t)][1]`, :135 the same for a Record after `re.sub("^const ", "")`,
@@ -886,7 +853,6 @@ def gtn_set(+n: String, tnm: String, defd: Bool, ln: Nat, xs: List<&2, Gt>) -> L
 # canonical spelling, and `String.starts_with` is the whole of that test.
 def gtn_is_reserved(n: String) -> Bool: String.starts_with(n, "__")
 
-
 # SECTION 15 -- the EMISSION TEMPLATES. PORTED as pure string builders.
 #
 # These are the seven lines meas1 classifies as PURE EMISSION, and they are the
@@ -897,7 +863,6 @@ def gtn_is_reserved(n: String) -> Bool: String.starts_with(n, "__")
 #
 # NOTE what is NOT here: the loop that emits one of these per FIELD. That is
 # WALL 4, and it is the whole argument of `.agents/slop/ag-scope.txt`.
-
 
 # autogen.py:143 `lines.append(f"class {tnm}(c.Struct): pass")`
 def emit_record_pass(tnm: String) -> String: String.concat(["class ", tnm, "(c.Struct): pass"])
@@ -996,7 +961,6 @@ def emit_pointer(p: String) -> String: String.concat(["c.POINTER[", p, "]"])
 def emit_array(elem: String, n: U32) -> String:
   String.concat(["c.Array[", elem, ", Literal[", U32.show(n), "]]"])
 
-
 # SECTION 16 -- the MAIN PROLOGUE, autogen.py:273-276. PORTED.
 #
 #     main = '\n'.join(['# mypy: disable-error-code="empty-body"',
@@ -1011,7 +975,6 @@ def emit_array(elem: String, n: U32) -> String:
 # on a non-empty `dll`. Both are `Bool.pick` over a sentinel row, and the
 # `dll` line's own three optional fragments (`paths`, `use_errno`) are nested
 # in the template, so they get their own three builders.
-
 
 def prolog_head() -> List<&2, String>:
   ["# mypy: disable-error-code=\"empty-body\"",
@@ -1032,8 +995,6 @@ def emit_dll_line(nm: String, dll: String, +paths: String, errno: Bool) -> Strin
                  Bool.pick(String, String.is_empty(paths), "", String.concat([", ", paths])),
                  Bool.pick(String, errno, ", use_errno=True", ""), ")"])
 
-
-
 # SECTION 16b -- the ABI ladder as ONE row, and the `types`-dict fixture.
 #
 # A constant nothing calls is a constant nothing checks, and the whole history
@@ -1041,7 +1002,6 @@ def emit_dll_line(nm: String, dll: String, +paths: String, errno: Bool) -> Strin
 # row. The values were resolved by CALLING libclang
 # (`ag-oracle.py` -> `ag-oracle.txt`, section "CX kinds"), not by reading a
 # header, and `ag-diff3.py` compares the two spaces.
-
 
 def abi_kd(k: U32, n: String) -> KD: KD{k, n}
 
@@ -1136,7 +1096,6 @@ def rows_abi(xs: List<&2, KD>) -> List<&2, String>:
 # `defd = len(fields(t)) != 0` rule at :142 is what upgrades it).
 def types_fixture() -> List<&2, Gt>:
   [Gt{"PairAlias", "struct_Pair", True{}, 12n}, Gt{"_anonstruct0", "_anonstruct0", True{}, 20n}]
-
 
 # SECTION 17 -- the GATE.
 #
@@ -1283,7 +1242,6 @@ def types_fixture() -> List<&2, Gt>:
 # Keyed on the integer, 78 constants collapse onto 58 keys and the diff passes
 # over the wrong pairs. Same trap as keying a `tmap` row on its first token,
 # in a second disguise, and it is in `ag-diff3.py`'s docstring so it stays.
-
 
 def rows_te(xs: List<&2, TE>) -> List<&2, String>:
   match xs:
