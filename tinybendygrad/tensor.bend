@@ -1731,8 +1731,26 @@ def tn_mop.pairs(+ar: O.Arena, +self: U32, +op: O.Op, lo: List<&2, O.Const>, hi:
   +a = tn_shape_arg(tn_sarg.acc(lo, SArg{ar, Nil{}}))
   +b = tn_shape_arg(tn_sarg.acc(hi, SArg{O.Found.ar(a), Nil{}}))
   tn_mop.pairs2(O.Found.ar(b), self, op, [O.Found.i(a), O.Found.i(b)])
+# **THE **ORDER **IS **THE **SHAPE **ARG**, **AND **THE **SHAPE **ARG **IS **A **`src[1]`**,
+# **NOT **AN **`arg`** -- **AND **THIS **IS **UPSTREAM's **`_mop` (`ops.py:784-791`):
+#
+#   case Ops.PERMUTE: src_args = [arg]
+#   ...
+#   usrcs = [shape_to_shape_arg(arg) for arg in src_args]
+#   return UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)
+#
+# **AND **UPSTREAM's **`marg` (`ops.py:772`) **READS **IT **BACK **FROM **`src[1]`**:
+# `case Ops.PERMUTE: return self.src[1].as_shape`.
+#
+# **AND **THE **PORT's **`tn_shape_arg` (`tensor.bend:1614`) **IS **UPSTREAM's
+# **`shape_to_shape_arg` (`ops.py:108-112`) **ALREADY** -- **INCLUDING **THE **LENGTH-1 **IS
+# **A **BARE **CONST** **CASE** (`tn_shape_arg.k`'s `one` **ARM**)** -- **SO **THE **PORT
+# **HAD **THE **HELPER **AND **NOT **THE **STEP**, **AND **THE **PORT's **`G.permute`
+# **(`mixin/movement.bend:1000`) **AND **THIS **DEF** **BUILT **THE **ORDER **INTO **`arg`** --
+# **AND **THAT **IS **WHY **THE **CORPUS **DISAGREED **ON **7 **OF **38 **GRAPHS**.**
 def tn_mop.order(+ar: O.Arena, +self: U32, +op: O.Op, ys: List<&2, U32>) -> O.Found:
-  O.UOp.new(ar, op, [self], O.ATuple{ys}, O.TNone{})
+  +a = tn_shape_arg.of(ys, ar)
+  tn_mop.node(O.Found.ar(a), self, op, [O.Found.i(a)])
 
 def tn_mop.usr(+ar: O.Arena, +self: U32, +op: O.Op, +arg: MopArg) -> O.Found:
   match arg:
