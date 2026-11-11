@@ -140,7 +140,7 @@ f65d140a	"12 OF 13 DType.name SPELLINGS MOVED TO RUST NAMES"	UNVERIFIABLE	Needs 
 f65d140a	"len(differ.declared()) = 176 AND NEITHER IS IN IT"	CONFIRMED	176 measured; neither oracles/*.bend.rows path is a member.
 f65d140a	"C-BOOL (35/21/21) HOLDS ITS EXPECTED VALUE IN THE LANE"	UNVERIFIABLE	Gate output.
 f65d140a	"state FAILED AT C-CTRL n=1 UNTIL FOUR CONTROL ROWS WERE ADDED"	UNVERIFIABLE	Gate runs.
-f65d140a	"THE CALLER'S WALK FINDS 7 FILES NAMING IT; 5 ARE PROSE AND TWO ARE PORT FILES -- tinybendygrad/helpers.bend:1716 AND tinybendygrad/nn/datasets.bend:238 -- BOTH IN COMMENTS"	CONFIRMED	Both cited lines are comment lines that name nn/onnx.bend (helpers.bend:1716, nn/datasets.bend:238). The 7-file total is not re-derivable: gates/onnx_census.bend, gates/onnx_census-gate.py, gates/onnx_census-oracle.py and gates/state_census.py also name it, and the walk's scope is unstated.
+f65d140a	"THE CALLER'S WALK FINDS 7 FILES NAMING IT; 5 ARE PROSE AND TWO ARE PORT FILES -- tinybendygrad/helpers.bend:1682 AND tinybendygrad/nn/datasets.bend:242 -- BOTH IN COMMENTS"	CONFIRMED	Both cited lines are comment lines that name nn/onnx.bend (helpers.bend:1682, nn/datasets.bend:242). The 7-file total is not re-derivable: gates/onnx_census.bend, gates/onnx_census-gate.py, gates/onnx_census-oracle.py and gates/state_census.py also name it, and the walk's scope is unstated.
 0b1edd858	"nn/onnx.bend 218 defs"	CONFIRMED	grep -c '^def ' = 218.
 0b1edd858	"nn/state.bend 84 defs"	CONFIRMED	grep -c '^def ' = 84.
 0b1edd858	"mixin/rand.bend 185 defs"	CONFIRMED	185 ^def lines at this commit (188 at HEAD, after the fix added three).

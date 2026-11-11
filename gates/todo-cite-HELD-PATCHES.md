@@ -204,15 +204,15 @@ Measured 2026-10-22T22:52:02+00:00.
 ```diff
 --- a/tinybendygrad/nn/datasets.bend
 +++ b/tinybendygrad/nn/datasets.bend
-# tinybendygrad/nn/datasets.bend:81  nn/datasets.py:6  -- NO MECHANICAL FIX: the cited line is inside `mnist` (declared at :4) and the marker names no symbol this file declares
+# tinybendygrad/nn/datasets.bend:88  nn/datasets.py:6  -- NO MECHANICAL FIX: the cited line is inside `mnist` (declared at :4) and the marker names no symbol this file declares
 #   #    TODO(p3) nn/datasets.py:6   -- Tensor.from_url(..., gunzip=True).
-# tinybendygrad/nn/datasets.bend:82  nn/datasets.py:11  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
+# tinybendygrad/nn/datasets.bend:89  nn/datasets.py:11  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
 #   #    TODO(p3) nn/datasets.py:11  -- the cifar tarball, and tar_extract with it.
-# tinybendygrad/nn/datasets.bend:86  nn/datasets.py:12  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
+# tinybendygrad/nn/datasets.bend:93  nn/datasets.py:12  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
 #   #    TODO(p3) nn/datasets.py:12  -- tt["cifar-10-batches-bin/data_batch_i.bin"].
-# tinybendygrad/nn/datasets.bend:93  nn/datasets.py:7  -- NO MECHANICAL FIX: the cited line is inside `_mnist` (declared at :6) and the marker names no symbol this file declares
+# tinybendygrad/nn/datasets.bend:100  nn/datasets.py:7  -- NO MECHANICAL FIX: the cited line is inside `_mnist` (declared at :6) and the marker names no symbol this file declares
 #   #    TODO(p3) nn/datasets.py:7   -- reshape(-1,1,28,28).to(device).
-# tinybendygrad/nn/datasets.bend:94  nn/datasets.py:14  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
+# tinybendygrad/nn/datasets.bend:101  nn/datasets.py:14  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
 #   #    TODO(p3) nn/datasets.py:14  -- train[:, 1:] and train[:, 0].
 ```
 

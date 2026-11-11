@@ -29,15 +29,42 @@ mutation that fails to compile still leaves the file intact.
 
 import os, subprocess, sys
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# The tree is the git TOPLEVEL, not `dirname(dirname(dirname(__file__)))`: this
+# file lives at `<root>/gates/datasets-mutate.py`, so three `dirname`s land on
+# `<root>/..` -- and `BEND` became `<parent>/bin/bend`, which does not exist.
+# MEASURED 2026-11-11: the harness died with `FileNotFoundError:
+# '/Users/cyberistic/src/tries/bin/bend'` before its first baseline.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BEND = os.path.join(ROOT, "bin", "bend")
+# THE FILE THE MUTATION IS APPLIED TO IS NOT ALWAYS THE FILE THE LANE RUNS.
+# BOTH files were already moved: their rows live in `gates/ops_disk-gate.bend`
+# and `gates/datasets-gate.bend`, and the port files print nothing (MEASURED
+# 2026-11-11: `bin/bend tinybendygrad/runtime/ops_disk.bend` answers `ALL PROOFS
+# CHECK` and two lines, no rows). So every edit lands in the PORT -- where the
+# logic is -- and every lane is the DRIVER.
+# RUNS[which] is the lane; EDIT[which] is the file the text edit lands in.
 FILES = {"ops_disk": "tinybendygrad/runtime/ops_disk.bend",
+         "datasets": "tinybendygrad/nn/datasets.bend"}
+RUNS = {"ops_disk": "gates/ops_disk-gate.bend",
+        "datasets": "gates/datasets-gate.bend"}
+# WHERE THE EDIT LANDS IS NOT ALWAYS THE PORT. A row's HELPER moved to the driver
+# with the rows -- `dsk_shm_name` is `gates/ops_disk-gate.bend`'s now -- so an
+# edit naming that helper's text must land there. MEASURED 2026-11-11: `M4`
+# named `String.concat(["/", dsk_lstrip(...)])` and the port no longer holds that
+# text, so it read `EDIT MATCHES 0 TIMES` and the mutation never happened.
+# EDITS[which] is the file the text edit lands in; it is the PORT unless an
+# entry says otherwise.
+EDITS = {"ops_disk": "tinybendygrad/runtime/ops_disk.bend",
          "datasets": "tinybendygrad/nn/datasets.bend"}
 
 # (id, file, old, new, what it is testing)
 DK = [
-  ("M0",  "ops_disk", "# THE CONSTANTS, AND EVERY ONE OF THEM IS A *PLATFORM FACT* WITH TWO CELLS.",
-                     "# THE CONSTANTS, AND EVERY ONE OF THEM IS A *PLATFORM FACT* WITH TWO CELLS. (control)",
+  # THE CONTROL'S TEXT WAS RE-CASED BY `46f3b3523` (the rows moved to `gates/`
+  # and the comment lost its shout), so the OLD spelling matches nothing and the
+  # control proved nothing. MEASURED 2026-11-11: `M0` read `EDIT MATCHES 0 TIMES`
+  # and every other M-edit that names comment text read the same.
+  ("M0",  "ops_disk", "# THE constants, AND every one of them is a *PLATFORM fact* WITH two cells.",
+                     "# THE constants, AND every one of them is a *PLATFORM fact* WITH two cells. (control)",
            "CONTROL: a comment-only edit, which must move nothing"),
   # ---- the naming table, :26 / :28 -------------------------------------------
   ("M1",  "ops_disk", 'def DISK_PREFIX() -> String: "disk:"', 'def DISK_PREFIX() -> String: "disk"',
@@ -46,9 +73,13 @@ DK = [
            ":26's slice -- the prefix is stripped, not the string dropped"),
   ("M3",  "ops_disk", 'def SHM_PREFIX() -> String: "shm:"', 'def SHM_PREFIX() -> String: "shm"',
            ":29 strips len(\"shm:\")"),
-  ("M4",  "ops_disk", 'String.concat(["/", dsk_lstrip(String.drop(fn, String.length(SHM_PREFIX())))])',
-                     'String.concat(["", dsk_lstrip(String.drop(fn, String.length(SHM_PREFIX())))])',
-           ":29's leading slash is UNCONDITIONAL"),
+  # M4 NAMES A HELPER THAT MOVED TO THE DRIVER with the rows, so this edit lands
+  # in `gates/ops_disk-gate.bend` and not in the port. MEASURED 2026-11-11: with
+  # the edit in the port it read `EDIT MATCHES 0 TIMES` and the mutation never
+  # happened -- a mutation that was never applied is not a mutation.
+  ("M4",  "ops_disk", 'String.concat(["/", P.dsk_lstrip(String.drop(fn, String.length(P.SHM_PREFIX())))])',
+                     'String.concat(["", P.dsk_lstrip(String.drop(fn, String.length(P.SHM_PREFIX())))])',
+           ":29's leading slash is UNCONDITIONAL", "gates/ops_disk-gate.bend"),
   ("M5",  "ops_disk", "      +keep: Bool = Bool.or(seen, Bool.not(cut))", "      +keep: Bool = Bool.not(cut)",
            "`:29`'s `lstrip(\"/\")` -- a slash is dropped only BEFORE anything is kept"),
   ("M6",  "ops_disk", "def dev_is_shm(name: String, win: Bool) -> Bool:\n  Bool.and(Bool.not(win), String.starts_with(dsk_filename(name), SHM_PREFIX()))",
@@ -70,12 +101,17 @@ DK = [
   ("M11", "ops_disk", "def open_flags(osx: Bool, direct: U32) -> U32:\n  U32.or(O_RDWR(), U32.or(o_creat(osx), direct))",
                      "def open_flags(osx: Bool, direct: U32) -> U32:\n  U32.or(O_RDWR(), U32.or(o_creat(osx), 0))",
            ":34's RETRY drops O_DIRECT and :33's ASK does not -- and BOTH are recorded"),
-  ("M12", "ops_disk", "def map_locked(osx: Bool) -> U32: Bool.pick(U32, osx, 0, MAP_LOCKED_LINUX())",
-                     "def map_locked(osx: Bool) -> U32: Bool.pick(U32, osx, MAP_LOCKED_LINUX(), 0)",
-           ":81's `0x2000` cell"),
-  ("M13", "ops_disk", "def map_populate(osx: Bool) -> U32: Bool.pick(U32, osx, 0, MAP_POPULATE_LINUX())",
-                     "def map_populate(osx: Bool) -> U32: Bool.pick(U32, osx, MAP_POPULATE_LINUX(), 0)",
-           ":81's `getattr(mmap,\"MAP_POPULATE\", 0x008000)` cell"),
+  # M12, M13, M31 AND M39 NAME TEXT THAT MOVED TO THE DRIVER WITH THE ROWS, so
+  # their EDIT TEXT is stale as well as their FILE: the driver's spelling
+  # carries the `P.` prefix. MEASURED 2026-11-11: all four read `EDIT MATCHES 0
+  # TIMES` and no mutation happened -- a mutation that was never applied is not
+  # a mutation, and a control that cannot fire is not a control.
+  ("M12", "ops_disk", "def map_locked(osx: Bool) -> U32: Bool.pick(U32, osx, 0, P.MAP_LOCKED_LINUX())",
+                     "def map_locked(osx: Bool) -> U32: Bool.pick(U32, osx, P.MAP_LOCKED_LINUX(), 0)",
+           ":81's `0x2000` cell", "gates/ops_disk-gate.bend"),
+  ("M13", "ops_disk", "def map_populate(osx: Bool) -> U32: Bool.pick(U32, osx, 0, P.MAP_POPULATE_LINUX())",
+                     "def map_populate(osx: Bool) -> U32: Bool.pick(U32, osx, P.MAP_POPULATE_LINUX(), 0)",
+           ":81's `getattr(mmap,\"MAP_POPULATE\", 0x008000)` cell", "gates/ops_disk-gate.bend"),
   ("M14", "ops_disk", "            U32.or(MAP_SHARED(), U32.or(MAP_POPULATE_LINUX(), MAP_LOCKED_LINUX())))",
                      "            U32.or(MAP_SHARED(), MAP_POPULATE_LINUX()))",
            ":30 ORs THREE flags"),
@@ -130,9 +166,9 @@ DK = [
   ("M30", "ops_disk", "def alloc_copyout.at(arm: Bool, +chunks: List<&2, U32>, +b: Db, +d: Dev) -> Roff:\n  match arm:\n    case True{}:  alloc_copyout.osx(chunks, Db.offset(b), Dev.fd(d), d)",
                      "def alloc_copyout.at(arm: Bool, +chunks: List<&2, U32>, +b: Db, +d: Dev) -> Roff:\n  match arm:\n    case True{}:  alloc_copyout.osx(chunks, 0, Dev.fd(d), d)",
            ":95's `fo.seek(src.offset)` -- the SEEK lands at the buffer's offset"),
-  ("M31", "ops_disk", "  alloc_copyout.at(Bool.and(Dev.osx(d), Dev.has_fd(d)), chunks, b, d)",
-                     "  alloc_copyout.at(Bool.and(Dev.osx(d), True{}), chunks, b, d)",
-           ":92's SECOND conjunct -- a `disk:shm:` device has `fd is None`"),
+  ("M31", "ops_disk", "  P.alloc_copyout.at(Bool.and(P.Dev.osx(d), P.Dev.has_fd(d)), chunks, b, d)",
+                     "  P.alloc_copyout.at(Bool.and(P.Dev.osx(d), True{}), chunks, b, d)",
+           ":92's SECOND conjunct -- a `disk:shm:` device has `fd is None`", "gates/ops_disk-gate.bend"),
   ("M32", "ops_disk", "      dsk_reads.go(t, List.append(&2, U32, offs, [got]), U32.add(got, c),",
                      "      dsk_reads.go(t, List.append(&2, U32, offs, [U32.add(got, c)]), U32.add(got, c),",
            ":97's `bytes_read` is each read's DESTINATION -- the running sum, not the chunk"),
@@ -155,9 +191,9 @@ DK = [
   ("M38", "ops_disk", "      shard.go(m, U32.add(off, Sh.seg(sh)), U32.add(cin, rl), 0, sh,",
                      "      shard.go(m, U32.add(off, Sh.seg(sh)), U32.add(cin, rd), 0, sh,",
            ":115's `copied_in += real_copy_size` -- NOT the bytes read"),
-  ("M39", "ops_disk", "      Bool.and(U32.is_eq(Seg.cin(s), run),\n               shard_contig.go(t, U32.add(run, Seg.real(s))))",
-                     "      Bool.and(U32.is_zero(run),\n               shard_contig.go(t, U32.add(run, Seg.real(s))))",
-           "CONTIGUITY is a RESULT about the data: consecutive `cin`s tile the request"),
+  ("M39", "ops_disk", "      Bool.and(U32.is_eq(P.Seg.cin(s), run),\n               shard_contig.go(t, U32.add(run, P.Seg.real(s))))",
+                     "      Bool.and(U32.is_zero(run),\n               shard_contig.go(t, U32.add(run, P.Seg.real(s))))",
+           "CONTIGUITY is a RESULT about the data: consecutive `cin`s tile the request", "gates/ops_disk-gate.bend"),
   ("M40", "ops_disk", "def dev_ioring.mmaps(+d: Dev) -> Dev:\n  +a: Dev = dev_put(d, Tr.emit(K_MMAP(), 0, Dev.tr(d)))\n  +b: Dev = dev_put(a, Tr.emit(K_MMAP(), IORING_OFF_CQ_RING(), Dev.tr(a)))\n  dev_put(b, Tr.emit(K_MMAP(), IORING_OFF_SQES(), Dev.tr(b)))",
                      "def dev_ioring.mmaps(+d: Dev) -> Dev:\n  +a: Dev = dev_put(d, Tr.emit(K_MMAP(), IORING_OFF_SQES(), Dev.tr(d)))\n  +b: Dev = dev_put(a, Tr.emit(K_MMAP(), IORING_OFF_CQ_RING(), Dev.tr(a)))\n  dev_put(b, Tr.emit(K_MMAP(), 0, Dev.tr(b)))",
            ":57-:60's ORDER -- a nested `emit` appends the INNER call first"),
@@ -193,7 +229,10 @@ DST = [
            ":14's `reshape(-1,3,32,32)`"),
   ("D7",  "datasets", "def CIFAR_ROW() -> U32: 3073", "def CIFAR_ROW() -> U32: 3072",
            ":12's `reshape(-1, 3073)` -- ONE LABEL BYTE plus 3072 image bytes"),
-  ("D8",  "datasets", 'def CIFAR_LABEL_OFF() -> U32: 1', 'def CIFAR_LABEL_OFF() -> U32: 0',
+  # D8 FLIPS THE LABEL'S OFFSET FROM 0 TO 1. MEASURED 2026-11-11: the old text
+  # was `-> U32: 1`, which was the value the ORACLE read and the PORT did not,
+  # so the edit matched nothing and the mutation never happened.
+  ("D8",  "datasets", 'def CIFAR_LABEL_OFF() -> U32: 0', 'def CIFAR_LABEL_OFF() -> U32: 1',
            ":14's `train[:, 0]` -- the LABEL is the FIRST column"),
   ("D9",  "datasets", '  String.concat(["cifar-10-batches-bin/data_batch_", U32.show(i), ".bin"])',
                      '  String.concat(["cifar-10-batches-bin/data_batch_", U32.show(i)])',
@@ -221,8 +260,11 @@ def parse(text):
   return out
 
 def mutate(entry, base):
-  mid, which, old, new, what = entry
-  path = os.path.join(ROOT, FILES[which])
+  # An entry may carry a SIXTH field: the file the edit lands in, for the edits
+  # whose text moved to the driver with the rows.
+  mid, which, old, new, what = entry[:5]
+  where = entry[5] if len(entry) > 5 else EDITS.get(which, FILES[which])
+  path = os.path.join(ROOT, where)
   src = open(path).read()
   n = src.count(old)
   if n != 1:
@@ -230,7 +272,7 @@ def mutate(entry, base):
   code, out, err = None, None, None
   try:
     open(path, "w").write(src.replace(old, new, 1))
-    code, out, err = run(FILES[which])
+    code, out, err = run(RUNS[which])
   finally:
     open(path, "w").write(src)
   if code != 0:
@@ -253,7 +295,7 @@ def main():
   T = "/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/bt"
   base = {}
   for which, stem in (("ops_disk", "ops_disk"), ("datasets", "datasets")):
-    code, out, _ = run(FILES[which])
+    code, out, _ = run(RUNS[which])
     if code != 0: print(f"BASELINE FAILS for {which}"); sys.exit(1)
     base[which] = out
   table, blind = [], []
