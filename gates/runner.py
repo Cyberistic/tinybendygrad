@@ -120,9 +120,12 @@ PEAK = re.compile(r"peak-RSS=(\d+)")
 #   index-arm     `report()` kept `(rc, c)` and gained TWO refusals (a tree that names a path twice)
 #                 plus an EMPTIED line, so a row that read PASS can now REFUSE. That IS a meaning
 #                 change, and it is the one this re-freeze declares.
+#   gatesweep.py MOVED AGAIN in the same session (the RECEIPTS layer); the symbols this file calls
+#                 are still `classify`, `run_one`, `REC`, `PY`, `HERE` and `population`, and none
+#                 of them changed.
 # MEASURED with `shasum -a 256`; `gatekit.oracle_drift` reports any further delta.
 DELEGATED = {
-    "checks/gatesweep.py": "d25b1aef348c8644c528223b3ac9fa1ee6ee2b207c5a9511adf465ad30caad7f",
+    "checks/gatesweep.py": "f70fda976780d23401b745851cafd5c31c1d0206fe3b0bc2a010755d750ee2c2",
     "checks/bounded.py": "887eb76d760899306cae4caf8db188312452db6bd7d43bfe117ae8426937fbb2",
     "checks/index-arm-gate.py": "b75c75986813ee6e0e0f68aff7eee5f2274702d46bf672a5a1209b995ae4aa92",
 }

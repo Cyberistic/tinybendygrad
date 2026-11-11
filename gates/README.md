@@ -137,6 +137,15 @@ the repeats present in it):
 Three runs of the ten gave **`PASS=8 FAIL=2` every time** — the verdicts are stable — and
 **113.1 s / 113.0 s / 110.5 s wall**. The projection over TODAY's run set is `gates/runner.py --plan`'s `PROJECTION` line, and it is NOT transcribed here: the run set moves as other units land gates, and a minutes figure priced over a denominator written down once is a number about a tree that does not exist.
 
+**A WARM SWEEP IS SECONDS.** `checks/gatesweep.py` records a receipt for every `PASS`/`FAIL`, keyed
+on a content digest of every file a gate can read, and replays it with the row marked `CACHED`;
+`--fresh` ignores receipts. MEASURED 2026-11-11: the digest costs **2.4 s** over 3,548 content files
+plus 84,911 scratch entries, and unchanged sweeps of the same gates replayed every row in **3.9–6.4 s
+wall**. A run's OWN writes are calibrated into the key (`churn`), or the sweep would invalidate
+itself; `SKIP`/`REFUSED`/`DEAD` are never replayed. The residual — a churned path edited later, a
+scratch change that preserves size and mtime, a gate reading `/tmp` or the network — is named in
+`gatesweep.py`'s header, and `--fresh` is its remedy.
+
 **THE MEASUREMENT NOISE IS PART OF THE ANSWER.** `decomp_graph_census-gate`'s peak moved **740 →
 1024 MB (+38%)** and `indexread-gate`'s runtime moved **1.8 → 3.5 s (1.94×)** on the SAME command
 against the SAME tree, with `loadavg` 8.4–13.7 on 12 cores throughout — the same 2.02× spread

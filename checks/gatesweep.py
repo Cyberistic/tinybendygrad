@@ -7,6 +7,7 @@
     .venv/bin/python checks/gatesweep.py --selftest       # drive the loop on SYNTHETIC gates, temp-dir
     .venv/bin/python checks/gatesweep.py --selftest --plant   # ... and the selftest MUST fail
     .venv/bin/python checks/gatesweep.py                  # run every GATE-role member, in parallel
+    .venv/bin/python checks/gatesweep.py --fresh          # ... and ignore the receipts (a full run)
     .venv/bin/python checks/gatesweep.py --roles all --jobs 1   # every member, SERIALLY (slow)
 
 THE FOREIGN SWEEP THIS REPLACES. A zsh script under `/tmp` ran `gates/*-gate.py`, kept only `$?`,
@@ -82,6 +83,15 @@ outliers are minutes apiece (91 and 169 `bend` compiles in `compile-census`/`por
          `--jobs 1` is the old serial loop.
   WRITER `fcntl.flock` on `<out>.lock`: two sweeps over one rows file is the self-run's defect one
          level up, and `checks/differ.py` holds the corpus the same way.
+  RECEIPTS  a `PASS` or a `FAIL` is REPLAYED, with the row saying `CACHED`, when the content digest
+         of everything a gate can read is identical to the run that recorded it -- so the tally
+         must be read with the replays subtracted. The digest covers the commit tree's file list
+         with the WORKTREE's bytes, `runs/`, the compiler module tree, and `.agents` + `references`
+         by (size, mtime); every path the run itself writes is calibrated into `churn` and
+         excluded, because a sweep that invalidates its own receipts can never repeat a key.
+         `SKIP`, `REFUSED` and `DEAD` measured nothing and are never stored. `--fresh` ignores
+         them; the residual (a churned path edited later, a content change that preserves size and
+         mtime in scratch, a gate that reads `/tmp` or the network) is why `--fresh` exists.
 
 TWO CLASSES A WIDER POPULATION ADMITS, AND ONE OF THEM IS NOW CLOSED. `--selftest`'s WIDTH case
 plants both, because a walk is not made honest by being wide.
@@ -119,6 +129,7 @@ import argparse
 import ast
 import concurrent.futures
 import fcntl
+import hashlib
 import importlib.util
 import os
 import re
@@ -760,6 +771,8 @@ def main(argv: list[str]) -> int:
                     help="members run at once (default 4, capped by 60%% of hw.memsize / --mb)")
     ap.add_argument("--roles", default="gate",
                     help=f"comma list of {', '.join(ROLES)}, or `all`; a role not listed is SKIP")
+    ap.add_argument("--fresh", action="store_true",
+                    help="ignore `--out`'s receipts: run every member, then rewrite them")
     ap.add_argument("--out", type=Path, default=ROOT / "gates" / "artifacts" / "gates-sweep.rows")
     args = ap.parse_args(argv)
     roles = set(ROLES) if args.roles == "all" else {r.strip() for r in args.roles.split(",")}
@@ -795,7 +808,7 @@ def main(argv: list[str]) -> int:
         return prove(ROOT / PROVE_COST, ROOT / PROVE_TRUTH, gates)
 
     return sweep(gates, args.out, args.seconds, args.mb, jobs=args.jobs, roles=roles,
-                 declared=declared)
+                 declared=declared, fresh=args.fresh)
 
 
 def tally_row(sink, gate: Path, tally: dict, verdict: str, token: str, rc, took: float,
@@ -814,9 +827,157 @@ def shown(p: Path) -> str:
     return str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p)
 
 
+# ------------------------------------------------------- receipts: skip what cannot have moved
+# A RECEIPT IS A CLAIM ABOUT A CONTENT DIGEST, AND THE DIGEST IS THE WHOLE DESIGN. It covers every
+# file a gate can read: the commit tree's file list with the WORKTREE's bytes (so an uncommitted
+# edit moves it), `runs/` and the compiler module tree by content, and `.agents/` + `references/`
+# -- 10 GB of scratch and a 386 MB vendored toolchain -- by `(path, size, mtime)`, which is a
+# FRESHNESS hint and never an identity. `sys.version` is in it because a new interpreter is a new
+# measurement.
+#
+# THE CHURN CALIBRATION IS WHAT MAKES IT USABLE. A run WRITES: `checks/compile-census.rows`,
+# `gates/runner-cost.rows`, `.agents/slop/e2e/...`. Under a plain digest a sweep would invalidate
+# its own receipts every time, so the key would never repeat. So the maps are taken BEFORE and
+# AFTER, every path that moved is `churn`, and the stored key is recomputed over the AFTER state
+# minus `churn` -- which equals the BEFORE state minus `churn`, because those are exactly the
+# differences. MEASURED 2026-11-11 on this tree: content 3,452 files / 85.7 MB in 0.77 s, scratch
+# fingerprint 80,548 + 4,533 files in 1.70 s, and running three real gates moved ZERO of them.
+#
+# THE RESIDUAL, NAMED. A file the run rewrites and a later edit to it are invisible (it is in
+# `churn` for good); a content change that preserves `(size, mtime)` in the two scratch trees is
+# invisible; and a gate that reads the network or `/tmp` is outside any digest. `--fresh` ignores
+# receipts, and `--fresh` is the answer to all three.
+RECEIPT_VER = "gatesweep-receipt-v1"
+RECEIPT_HEADER = "gate\tverdict\trc\tseconds"
+NO_TOP = {".git", ".jj", ".agents", "references", "node_modules"}
+SCRATCH = (".agents", "references")
+CONTENT_EXTRAS = ("runs", "references/bend/bend2")
+TOOLCHAIN = ("bin/bend", ".venv/pyvenv.cfg")
+
+
+def _tracked(root: Path) -> list[str]:
+    """The COMMIT TREE's paths, or `[]` for a tree that is not its own repository.
+
+    `--show-toplevel` must answer THIS root: a synthetic tree under `.agents/slop/` is inside this
+    repository, and `git -C` would otherwise hand back 10,809 paths for a directory holding five.
+    """
+    top = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                         capture_output=True, text=True).stdout.strip()
+    if not top or Path(top).resolve() != Path(root).resolve():
+        return []
+    raw = subprocess.run(["git", "-C", str(root), "ls-tree", "-r", "-z", "--name-only", "HEAD"],
+                         capture_output=True).stdout
+    return [r.decode() for r in raw.split(b"\0") if r]
+
+
+def _walk_rel(root: Path, name: str):
+    base = root / name
+    if not base.is_dir():
+        return
+    for dp, dns, fns in os.walk(base):
+        dns[:] = [d for d in dns if d != "__pycache__"]
+        rel_dir = os.path.normpath(os.path.relpath(dp, root))
+        for f in fns:
+            if not f.endswith(".pyc"):
+                yield f if rel_dir == "." else os.path.join(rel_dir, f)
+
+
+def _content_rels(root: Path):
+    """Every file whose CONTENT is in the key. The commit tree first, so an OUTPUT the tree does
+    not carry cannot churn it; a synthetic tree has no commit tree and falls back to a walk."""
+    tracked = _tracked(root)
+    if tracked:
+        for rel in tracked:
+            if rel.split("/")[0] in NO_TOP or "__pycache__" in rel or rel.endswith(".pyc"):
+                continue
+            yield rel
+    else:
+        for rel in _walk_rel(root, "."):
+            if rel.split("/")[0] in NO_TOP or rel.startswith("gates/artifacts/"):
+                continue
+            yield rel
+    for extra in CONTENT_EXTRAS:
+        yield from _walk_rel(root, extra)
+    for one in TOOLCHAIN:
+        if (root / one).is_file():
+            yield one
+
+
+def state(root: Path, drop: frozenset[str] = frozenset()) -> tuple[dict, dict]:
+    """`(content hashes, scratch fingerprints)` for every file a gate can read, minus `drop`."""
+    content, scratch = {}, {}
+    for rel in set(_content_rels(root)):
+        if rel in drop:
+            continue
+        try:
+            data = (root / rel).read_bytes()
+        except OSError:
+            data = b""
+        content[rel] = hashlib.sha256(data).hexdigest()
+    for name in SCRATCH:
+        for rel in _walk_rel(root, name):
+            if rel in drop or rel in content:
+                continue
+            try:
+                st = os.lstat(os.path.join(str(root), rel))
+            except OSError:
+                continue
+            scratch[rel] = f"{st.st_size}:{st.st_mtime_ns}"
+    return content, scratch
+
+
+def _part(m: dict, drop: frozenset[str]) -> str:
+    h = hashlib.sha256()
+    for rel in sorted(m):
+        if rel in drop:
+            continue
+        h.update(rel.encode())
+        h.update(b"\0")
+        h.update(m[rel].encode())
+    return h.hexdigest()
+
+
+def digest_of(content: dict, scratch: dict, drop: frozenset[str] = frozenset()) -> tuple[str, str, str]:
+    """`(key, content part, scratch part)`; the parts are stored so a MISS can say WHICH moved."""
+    c, s = _part(content, drop), _part(scratch, drop)
+    key = hashlib.sha256(f"{RECEIPT_VER}\0{sys.version}\0{c}\0{s}".encode()).hexdigest()
+    return key, c, s
+
+
+def read_receipts(path: Path) -> tuple[str, str, str, frozenset[str], dict]:
+    """`(key, content part, scratch part, churn, rows)`; anything malformed is DROPPED and reruns."""
+    key = cpart = spart = ""
+    churn, rows = set(), {}
+    if not path.is_file():
+        return key, cpart, spart, frozenset(), rows
+    for line in path.read_text(errors="replace").splitlines():
+        if line.startswith("# gatesweep receipts"):
+            f = dict(kv.split("=", 1) for kv in line.split() if "=" in kv)
+            key, cpart, spart = f.get("key", ""), f.get("c", ""), f.get("s", "")
+        elif line.startswith("# churn "):
+            churn.add(line[8:].strip())
+        elif line and not line.startswith("#") and line != RECEIPT_HEADER:
+            c = line.split("\t")
+            if len(c) == 4 and c[1] in ("PASS", "FAIL"):
+                rows[c[0]] = (c[1], c[2], c[3])
+    return key, cpart, spart, frozenset(churn), rows
+
+
+def write_receipts(path: Path, key: str, cpart: str, spart: str, churn: frozenset[str],
+                   rows: dict) -> None:
+    """ATOMIC, and only ever the CURRENT run set: a receipt for a member that left is a stale claim."""
+    tmp = path.with_name(path.name + ".tmp")
+    body = [f"# gatesweep receipts key={key} c={cpart} s={spart} churn={len(churn)}"]
+    body += [f"# churn {rel}" for rel in sorted(churn)]
+    body += [RECEIPT_HEADER] + [f"{g}\t{v}\t{rc}\t{s}" for g, (v, rc, s) in sorted(rows.items())]
+    tmp.write_text("\n".join(body) + "\n")
+    os.replace(tmp, path)
+
+
 def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int, *,
           jobs: int | None = None, roles=frozenset({"gate"}),
-          declared: dict[str, list[str]] | None = None) -> int:
+          declared: dict[str, list[str]] | None = None, root: Path = ROOT,
+          fresh: bool = False) -> int:
     """THE LOOP `main()` RUNS: header, one row per member, tally, denominator. Describes THE RUN.
 
     `main()`'s default branch is this call and nothing else, so the `--selftest` that drives it drives
@@ -825,8 +986,8 @@ def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int, *,
     is the one claim a run that COMPLETES cannot make, so `--selftest` reads the file mid-sweep.
 
     EVERY MEMBER GETS A ROW, including the ones this call does not run: a member skipped for its
-    ROLE is still in the denominator, and its token says which role kept it out. A population that
-    shrinks to whatever was convenient is the `0 over 0` this file exists to stop.
+    ROLE, or REPLAYED from a receipt, is still in the denominator and its token says which. A
+    population that shrinks to whatever was convenient is the `0 over 0` this file exists to stop.
 
     THE PARALLELISM IS BOUNDED BY MEMORY, NOT BY AMBITION. `workers()` divides 60% of `hw.memsize`
     by `--mb`; `--jobs 1` is the old serial loop. A run that includes `lane` or `proof` is FORCED
@@ -835,9 +996,20 @@ def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int, *,
     ONE WRITER. `fcntl.flock` on `<out>.lock` names a second sweep's pid and refuses; the rows file
     is a shared writable path, and the self-run this file used to admit is what proved a child can
     truncate it while the parent holds it open.
+
+    A RECEIPT REPLAYS A `PASS` OR A `FAIL`, AND ONLY THOSE. `SKIP`, `REFUSED` and `DEAD` measured
+    nothing (or were refused, or crashed), so they are never stored and always run. A replay is
+    keyed on the content digest above, not on a clock, and the row says `CACHED` so a reader can
+    subtract it from the tally. The first run after any input move is a full run; the churn
+    calibration then makes the key repeat across a run that writes.
     """
     roles = frozenset(roles)
     jobs = 1 if roles - {"gate"} else workers(mb, jobs)
+    # `resolve()` ONCE: `tempfile.TemporaryDirectory` hands back `/var/...` on macOS and `resolve()`
+    # hands back `/private/var/...`, so a `skip` built on one side and compared on the other is
+    # EMPTY -- which put the rows file, the receipts and the lock inside their own digest and made
+    # every sweep a MISS. `gates-pop.gate_homes` records the same trap one level up.
+    root = Path(root).resolve()
     if declared is None:         # ONE DECLARATION PER RUN, never one per member
         declared = lanecensus.declared(gates) if lanecensus is not None else {}
     consumed, laneset = frozenset(declared), lanes(declared)
@@ -846,6 +1018,29 @@ def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int, *,
     tally = dict.fromkeys(set(gatekit.VERDICT.values()), 0)
     out.parent.mkdir(parents=True, exist_ok=True)
     lock = out.with_name(out.name + ".lock")
+    receipts_path = out.with_suffix(".receipts.rows")
+
+    def _rel(p: Path) -> str:
+        p = p.resolve()
+        return str(p.relative_to(root)) if p.is_relative_to(root) else ""
+
+    skip = frozenset(filter(None, (_rel(out), _rel(receipts_path), _rel(lock))))
+    if run:
+        old_key, old_c, old_s, churn, old_rows = (("", "", "", frozenset(), {}) if fresh
+                                                  else read_receipts(receipts_path))
+        pre_c, pre_s = state(root, churn | skip)
+        key, cpart, spart = digest_of(pre_c, pre_s)
+        hit = old_key == key
+        cached = {g: old_rows[_rel(g)] for g in run if hit and _rel(g) in old_rows}
+    else:                        # no gate-role member: there is nothing to replay or to key
+        old_key, old_c, old_s, churn = "", "", "", frozenset()
+        pre_c, pre_s, key, cpart, spart, hit, cached = {}, {}, "", "", "", False, {}
+    # KEYED BY REL, NOT BY PATH: a carried-forward row went back to the file keyed by the Path
+    # object, so the next run looked for `gates/x.py`, found `/Users/.../gates/x.py`, and re-ran
+    # everything while printing `HIT cached=0` -- the worst shape, a key that matched and receipts
+    # that could not be found.
+    keep = {_rel(g): row for g, row in cached.items()}
+
     with lock.open("a+") as fh:
         try:
             fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -868,21 +1063,50 @@ def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int, *,
                 token = "SELF" if roster[g] == "runner" else f"NOT-RUN:{roster[g]}"
                 tally_row(sink, g, tally, "SKIP", token, "-", 0.0, "-")
                 rows += 1
-            print(f"RUN       : {len(run)} of {len(gates)} members"
-                  + (f", {jobs} at a time" if run else " -- nothing to run for these roles"))
+            for g in sorted(cached):
+                tally_row(sink, g, tally, cached[g][0], "CACHED", cached[g][1], 0.0, "-")
+                rows += 1
+            if run:
+                print(f"RECEIPTS  : {'HIT ' if hit else 'MISS'} key={key[:12]}  "
+                      f"content={len(pre_c)}  scratch={len(pre_s)}  churn={len(churn)}  "
+                      f"cached={len(cached)}")
+            else:
+                print("RECEIPTS  : not computed -- no gate-role member to replay")
+            if not hit and old_key:
+                moved = [n for n, a, b in (("content", old_c, cpart), ("scratch", old_s, spart))
+                         if a != b]
+                print(f"            {', '.join(moved) or 'toolchain'} moved since the last run")
+            todo = [(g, reason) for g, reason in gates if g in run and g not in cached]
+            print(f"RUN       : {len(todo)} of {len(gates)} members"
+                  + (f", {jobs} at a time" if todo else " -- nothing to run"))
             with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:
                 futures = {pool.submit(run_one, g, reason, seconds, mb, consumed): g
-                           for g, reason in gates if g in run}
+                           for g, reason in todo}
                 for done in concurrent.futures.as_completed(futures):
-                    tally_row(sink, futures[done], tally, *done.result())
+                    g = futures[done]
+                    verdict, token, rc, took, peak = done.result()
+                    tally_row(sink, g, tally, verdict, token, rc, took, peak)
                     rows += 1
+                    if verdict in ("PASS", "FAIL"):
+                        keep[_rel(g)] = (verdict, str(rc), f"{took:.1f}")
+        if run:
+            if todo:
+                post_c, post_s = state(root, churn | skip)
+                moved = {r for r in set(pre_c) | set(post_c) | set(pre_s) | set(post_s)
+                         if pre_c.get(r) != post_c.get(r) or pre_s.get(r) != post_s.get(r)}
+                churn = churn | moved
+                out_key, out_c, out_s = digest_of(post_c, post_s, churn)
+            else:
+                out_key, out_c, out_s = key, cpart, spart
+            write_receipts(receipts_path, out_key, out_c, out_s, churn, keep)
     print("TALLY: " + "  ".join(f"{k}={v}" for k, v in sorted(tally.items())))
     # the denominator, which is not the tally: only PASS/FAIL are verdicts about the TREE
     about = tally.get("PASS", 0) + tally.get("FAIL", 0)
-    print(f"THE DENOMINATOR: {about} of {rows} gates reached a verdict about the tree; "
+    print(f"THE DENOMINATOR: {about} of {rows} gates reached a verdict about the tree "
+          f"({len(cached)} replayed from receipts); "
           f"{tally.get('REFUSED', 0)} refused, {tally.get('SKIP', 0)} did not finish, "
           f"{tally.get('DEAD', 0)} crashed or said nothing.")
-    print(f"rows -> {shown(out)}")
+    print(f"rows -> {shown(out)}   receipts -> {shown(receipts_path)}")
     # describes THE RUN, never the tree -- and `rows` includes the SKIP rows, so the RUN's own
     # emptiness is what may return DEAD, not the file's row count: a role filter that selected
     # nothing measured nothing, and 0 must not be printed for that.
@@ -970,8 +1194,8 @@ def selftest(plant: bool = False) -> int:
         gates = walk(root, HOMES)                      # the SAME directory walk the real run uses
         members = len(gates)
         out = root / "rows.rows"
-        worker = threading.Thread(target=sweep, args=(gates, out, 1, 512), kwargs={"jobs": 1},
-                                  daemon=True)
+        worker = threading.Thread(target=sweep, args=(gates, out, 1, 512),
+                                  kwargs={"jobs": 1, "root": root}, daemon=True)
         worker.start()
         # THE FLUSH PROOF. Read the file while the sweep is STILL RUNNING and require rows on disk;
         # `worker.is_alive()` is sampled with the read, so a file that was complete at exit cannot
@@ -1016,6 +1240,41 @@ def selftest(plant: bool = False) -> int:
                         "say why; this file's OWN role is `runner`, so a sweep cannot recurse",
                         roles_ok, f"{LANE}={role_of.get(LANE)} {PROOF}={role_of.get(PROOF)} "
                         f"executed={noise.exists()} self={role(Path(__file__))}"))
+
+        # THE RECEIPTS CASE, BOTH DIRECTIONS. A second identical sweep must REPLAY `PASS` and `FAIL`
+        # and must still RUN the members that produced no verdict (`DEAD`, `REFUSED`, `SKIP` are
+        # never stored), and one byte in one fixture must invalidate every receipt -- the digest is
+        # global, and a false invalidation is the fail-safe direction. `CACHED` is written only by
+        # the branch that skips `run_one`, so the token is itself the evidence it did not run.
+        cache = root / "cache.rows"
+        live = walk(root, HOMES)
+        sweep(live, cache, 1, 512, jobs=1, root=root)
+        sweep(live, cache, 1, 512, jobs=1, root=root)
+        sweep(live, cache, 1, 512, jobs=1, root=root)   # a THIRD: a receipt that rewrites itself
+                                                        # with the wrong key passes the first replay
+                                                        # and fails the second, which is how the
+                                                        # Path-vs-rel key bug was found.
+
+        def tokens() -> dict:
+            out = {}
+            for ln in cache.read_text().splitlines()[1:]:
+                c = ln.split("\t")
+                if len(c) >= 3:
+                    out[Path(c[0]).name] = c[2]
+            return out
+
+        warm = tokens()
+        (root / "gates" / PLANTS[2][0]).write_text(guarded('print("ok")  # one byte'))
+        sweep(live, cache, 1, 512, jobs=1, root=root)
+        cold = tokens()
+        receipts_ok = (warm.get("pass-gate.py") == "CACHED" and warm.get("fail-gate.py") == "CACHED"
+                       and warm.get("dead-gate.py") not in (None, "CACHED")
+                       and "CACHED" not in cold.values()
+                       and (root / "cache.receipts.rows").read_text().startswith(
+                           "# gatesweep receipts key="))
+        results.append(("RECEIPTS: identical sweeps replay PASS/FAIL (CACHED) and RE-RUN the "
+                        "members that earned no verdict; one byte in a fixture invalidates all",
+                        receipts_ok, f"warm={warm} -> edited pass-gate -> {cold}"))
 
         # THE BRIDGE PLANT: the two walks DIFFER BY A KNOWN AMOUNT, AND THE PROJECTION MUST MOVE.
         # `gates-pop.py`'s OWN home witness is LOADED BY PATH and never transcribed -- it is the

@@ -516,6 +516,29 @@ gates-sweep     [##########] 10/10    `/tmp/sweep.sh` is FOREIGN and NON-COMPLIA
                                        `PASS`. My first reading said rc=0 because I had put the
                                        gate behind `| tail`, so `$?` was `tail`'s; measured
                                        unpiped: 4. `--plant` green.
+                                       **2026-11-11, RECEIPTS: A WARM SWEEP IS SECONDS.**
+                                       `checks/gatesweep.py` stores a receipt per `PASS`/`FAIL`
+                                       keyed on a content digest of every file a gate can read
+                                       (commit-tree file list with WORKTREE bytes + `runs/` +
+                                       the compiler module tree + `.agents`/`references` by
+                                       size+mtime), replays it as `CACHED`, and calibrates
+                                       `churn` from what the run itself writes -- without that
+                                       calibration a sweep invalidates its own receipts
+                                       (`checks/compile-census.rows`, `gates/runner-cost.rows`
+                                       and `.agents/slop/e2e/` are all rewritten by a run).
+                                       `SKIP`/`REFUSED`/`DEAD` are never stored; `--fresh`
+                                       ignores receipts. MEASURED: digest 2.4 s (3,548 content +
+                                       84,911 scratch entries), three unchanged sweeps replaying
+                                       every row at 3.9-6.4 s wall, and the selftest now has a
+                                       RECEIPTS case that runs a THIRD sweep (a receipt that
+                                       rewrites itself with the wrong key passes one replay and
+                                       fails the second -- which is how the Path-vs-rel key bug
+                                       was found) and then edits one byte to prove the digest
+                                       invalidates all. The residual is named in the header: a
+                                       churned path edited later, a scratch change preserving
+                                       size+mtime, and a gate reading `/tmp` or the network.
+                                       `gates/runner.py`'s gatesweep pin moved AGAIN in the same
+                                       commit; the symbols runner calls are still unchanged.
 false-fails     [#########] 9/10     The apostrophe guard LANDED (`checks/cites-census.py:394`,
                                        `(?<![\w`])'([^']{4,})'`) and PASSED the bar: on one frozen
                                        snapshot it retired 16 FAIL rows and silenced 0 PASS rows
