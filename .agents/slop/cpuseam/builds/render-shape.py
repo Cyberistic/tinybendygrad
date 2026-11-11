@@ -295,9 +295,9 @@ def instrument(src: str):
   # WRAPPER's BODY CONTAINS THE ORIGINAL FUNCTION**, AND THE ORIGINAL's `@@END` HEADER IS
   # **STILL IN PLACE** INSIDE IT.
   dump_old = """    return $IO_bind((_x_14) => $IO_print($$ended(), _x_14), run_clo($serve_c11(_f_0,_k_0)), _x_13);"""
-  dump_new = """    { try { require("fs").writeFileSync((process.env.__T_OUT || "/tmp/daemon-cpu.json") + ".d",
+  dump_new = """    globalThis.__R.n = (globalThis.__R.n || 0) + 1;
+    { try { require("fs").writeFileSync((process.env.__T_OUT || "/tmp/daemon-cpu.json") + ".d",
         JSON.stringify({R: globalThis.__R || {}, W: globalThis.__W || []})); } catch (e) {} }
-    globalThis.__R.n = (globalThis.__R.n || 0) + 1;
     return $IO_bind((_x_14) => $IO_print($$ended(), _x_14),
       (_x_14b) => run_clo($serve_c11(_f_0,_k_0))(_x_14b), _x_13);"""
   i = src.index(dump_old)
@@ -318,11 +318,27 @@ if __name__ == "__main__":
   for _ in range(60):
     d.turn()
   d.stop()
-  D = json.loads((BUILD.parent / "nf-render/cpu.json.d").read_text())
+  # **THE DUMP IS **AN OBJECT WITH TWO KEYS** -- `R` (THE PARTS' ACCUMULATOR) AND `W` (THE
+  # RENDER's OWN WALL, PER TURN). **AND READING IT AS A FLAT DICT IS **A SILENT ZERO** -- THE
+  # PARTS' NAMES ARE NOT AT THE TOP LEVEL, SO EVERY KEY MISSES AND **THE REPORT PRINTS
+  # NOTHING** (MEASURED: THE FIRST RUN PRINTED **"1 turns"** AND **NO PARTS**).
+  RAW = json.loads((BUILD.parent / "nf-render/cpu.json.d").read_text())
+  D = RAW.get("R", {})
+  W = RAW.get("W", [])
   n = max(D.get("n", 1), 1)
   print(f"\nTHE RENDER's PARTS, **IN THE DAEMON** ({n} turns), ms a turn:")
   for k in ("render", "text", "inline", "alu", "strip", "decl", "stmt", "named", "emit"):
     if k in D:
       print(f"  {k:8s} {D[k] / n:.4f}")
+  # **AND THE INSTRUMENT's OWN COST, **READ FROM THE SAME DUMP** -- BECAUSE `W` IS **THE
+  # RENDER's OWN WALL IN **THE SHAPED** BUILD**, AND **THE PLAIN** BUILD's WALL IS **WHAT THE
+  # A/B READS**. **⇒⇒⇒ SO THE TWO ARE **COMPARABLE**, AND THE COMPARISON IS **LIKE FOR LIKE**:
+  # **BOTH ARE **THE SAME CLOCK**, AT **THE SAME SITE**, IN **THE SAME PROCESS.**
+  if W:
+    ws = sorted(r["w"] for r in W)
+    print(f"\nAND **THE INSTRUMENT's OWN COST**, FROM **THE SAME DUMP**:")
+    print(f"  THE RENDER's WALL **IN THE SHAPED BUILD**: min {ws[0]:.4f}  median {ws[len(ws) // 2]:.4f}")
+    print(f"  **AND THE PLAIN BUILD's WALL IS **WHAT THE A/B READS** -- SO THE DIFFERENCE IS")
+    print(f"  **THE INSTRUMENT's OWN COST**, AND **IT IS **NOT** SMALL.**")
   print("\n**AND THE PARTS ARE **NESTED** -- `text` CONTAINS `inline` AND `alu`, AND `named`")
   print("CONTAINS `decl` -- SO THEY **DO NOT SUM**, AND **A SUM IS A NUMBER WITH NO SHAPE.**")

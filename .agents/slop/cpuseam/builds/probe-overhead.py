@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
-"""**THE INSTRUMENT's OWN COST**, MEASURED, AND **STATED IN THE OUTPUT**.
+"""**THE INSTRUMENT's OWN COST**, MEASURED **PAIRED**, AND **THE PARTS' TRUE VALUES**.
 
-**WHY:** THE TREE's OWN RULE (`AGENTS.md`, §136): "**A REST-ARGUMENTS WRAPPER IS NOT FREE**"
--- **MEASURED, WRAPPING SEVEN FUNCTIONS MOVED THE RENDER FROM 2.265 ms TO 3.494 ms, A 54%
-INSTRUMENT OVERHEAD ON THE VERY THING BEING MEASURED**."
+**WHY THIS FILE EXISTS.** `render-shape.py` ADDS **WRAPPERS**, AND **A WRAPPER IS NOT FREE**
+(THE TREE's OWN RULE, §136: WRAPPING SEVEN FUNCTIONS MOVED THE RENDER **2.265 ms -> 3.494 ms**).
+**⇒⇒⇒ SO EVERY PART IT REPORTS IS **INFLATED**, AND **AN INSTRUMENT THAT REPORTS **AN
+INFLATED NUMBER** WITHOUT SAYING **HOW MUCH** IS **A NUMBER WITH NO SHAPE**.**
 
-**SO AN INSTRUMENT THAT **ADDS** WRAPPERS **MUST REPORT **THE COST IT ADDS**, OR THE
-READING IS **A NUMBER WITH NO SHAPE** -- **A NUMBER THAT IS MOSTLY THE INSTRUMENT.**
+**⇒⇒⇒ AND THE INFLATION IS **NOT UNIFORM** -- BECAUSE **THE PARTS ARE **NESTED** AND **THE
+WRAPPERS ARE **ON THE LEAVES**, SO **THE DEEPER A PART IS, **THE MORE WRAPPER LAYERS IT
+PAYs** ON THE WAY OUT. **⇒⇒⇒ AND **THE INFLATION IS **NOT A CONSTANT** EITHER, BECAUSE **THE
+WRAPPER's COST DEPENDS ON **HOW MANY TIMES THE FUNCTION IS CALLED**.
 
-**AND THIS IS THE **SAME** COMPARISON §137's `apply-predicates.py` MAKES**: **THE SAME
-PROGRAM, ONCE WITH THE CLOCKS AND ONCE WITHOUT**, AND **THE DIFFERENCE IS **THE INSTRUMENT**.
+**⇒⇒⇒ SO **THE ONLY HONEST FORM** IS: **THE SAME WORKLOAD, ON THE SAME CLOCK, IN THE SAME
+PROCESS, WITH AND WITHOUT THE INSTRUMENT** -- AND **THE VERDICT IS **THE RATIO OF THE TWO
+MINIMA** (VERDICT.PY: "**THE PORT's OWN COST IS **THE FLOOR OF ITS OWN TIME**").
 
-**AND THE VERDICT IS **THE RATIO OF THE TWO MINIMA**, BECAUSE **THE PORT's OWN COST IS **THE
-FLOOR OF ITS OWN TIME** (VERDICT.PY).**
+**AND THE TWO SIDES ARE **ALTERNATED TURN BY TURN**, BECAUSE **A WHOLE-SIDE RUN IS **A
+MEASUREMENT OF THE LOAD** AND AN ALTERNATED PAIR IS **A COMPARISON**.
+
+**AND THE PARTS' TRUE VALUES ARE **THE SHAPED READING DIVIDED BY **THE INFLATION FACTOR** --
+WHICH IS AN **ESTIMATE**, AND **IT IS LABELLED AS ONE**, BECAUSE **THE FACTOR IS **ONE NUMBER
+FOR NESTED PARTS** AND **THE TRUE INFLATION IS **PER PART**.
 """
 
 import json
@@ -55,31 +63,59 @@ def clocked(js: pathlib.Path, out: pathlib.Path):
   return out
 
 
-def read(js: pathlib.Path, tag: str, turns: int):
-  """**THE RENDER's OWN WALL**, **A PER-TURN LIST**, FROM **THE DUMP**."""
-  d = noisefloor.Daemon(js, tag)
-  d.start()
+def run(a_js: pathlib.Path, b_js: pathlib.Path, turns: int, tag: str):
+  """**TWO** DAEMONS, **ALTERNATED TURN BY TURN**, AND **THE SAME** OUTPUTS."""
+  A = noisefloor.Daemon(a_js, f"{tag}-a")
+  B = noisefloor.Daemon(b_js, f"{tag}-b")
+  A.start()
+  B.start()
   time.sleep(0.8)
-  for _ in range(turns):
-    d.turn()
-  d.stop()
-  f = BUILD.parent / f"nf-{tag}/cpu.json.d"
-  rows = json.loads(f.read_text())
-  return [r["w"] for r in rows]
+  for _ in range(3):
+    A.turn()
+    B.turn()
+  same = True
+  for i in range(turns):
+    if i % 2:
+      ob = B.turn()
+      oa = A.turn()
+    else:
+      oa = A.turn()
+      ob = B.turn()
+    same = same and (oa == ob)
+  A.stop()
+  B.stop()
+  da = json.loads((BUILD.parent / f"nf-{tag}-a/cpu.json.d").read_text())
+  db = json.loads((BUILD.parent / f"nf-{tag}-b/cpu.json.d").read_text())
+  # **THE TWO DUMP SHAPES**: THE PLAIN BUILD DUMPS **A LIST**, AND THE SHAPED ONE DUMPS
+  # **AN OBJECT** WITH `W` IN IT.
+  wa = [r["w"] for r in da] if isinstance(da, list) else [r["w"] for r in da.get("W", [])]
+  wb = [r["w"] for r in db] if isinstance(db, list) else [r["w"] for r in db.get("W", [])]
+  parts = db.get("R", {}) if isinstance(db, dict) else {}
+  n = min(len(wa), len(wb))
+  return wa[:n], wb[:n], parts, same
 
 
 if __name__ == "__main__":
-  turns = int(sys.argv[1]) if len(sys.argv) > 1 else 60
+  turns = int(sys.argv[1]) if len(sys.argv) > 1 else 80
   plain = BUILD / "now.js"
   shaped = BUILD / "serve_render.js"
+  # **THE PLAIN BUILD IS CLOCKED HERE**, AND **THE SHAPED BUILD ALREADY CARRIES **ITS OWN**
+  # RENDER CLOCK** (`render-shape.py` PATCHES IT INTO `__W`) -- **SO IT IS **NOT** RE-CLOCKED,
+  # AND **THAT IS CORRECT** BECAUSE **BOTH** ARE **THE SAME CLOCK AT THE SAME SITE**:
+  # **THE SHAPED BUILD's CLOCK IS **INSIDE** THE RENDER, AND **SO IS THE PLAIN's**.
   a = clocked(plain, BUILD / "ovh_a.js")
-  b = clocked(shaped, BUILD / "ovh_b.js")
-  ra = read(a, "ovh-a", turns)
-  rb = read(b, "ovh-b", turns)
-  print(f"\nTHE INSTRUMENT's OWN COST, ON **THE RENDER's OWN WALL** ({len(ra)} TURNS):")
-  print(f"  WITHOUT THE INSTRUMENT   min {min(ra):.4f}  median {statistics.median(ra):.4f}")
-  print(f"  WITH    THE INSTRUMENT   min {min(rb):.4f}  median {statistics.median(rb):.4f}")
-  print(f"  THE RATIO OF THE MINIMA: {min(rb) / min(ra):.4f}")
-  print(f"  **AND SO EVERY PART THE INSTRUMENT REPORTS IS **INFLATED BY ABOUT THAT FACTOR,**")
-  print(f"  **AND THE PART NUMBERS ARE **RELATIVE** (WHICH IS CONTAINS WHAT) RATHER THAN")
-  print(f"  **ABSOLUTE** (HOW MUCH).**")
+  b = shaped
+  wa, wb, parts, same = run(a, b, turns, "ovh")
+  print(f"\nTHE INSTRUMENT's OWN COST, **PAIRED** ({len(wa)} PAIRED TURNS), same C: {same}")
+  print(f"  WITHOUT (THE PLAIN BUILD)   min {min(wa):.4f}  p25 {sorted(wa)[len(wa) // 4]:.4f}  median {statistics.median(wa):.4f}")
+  print(f"  WITH    (THE SHAPED BUILD)  min {min(wb):.4f}  p25 {sorted(wb)[len(wb) // 4]:.4f}  median {statistics.median(wb):.4f}")
+  ratio = min(wb) / min(wa)
+  print(f"\n  **THE INFLATION FACTOR: {ratio:.4f}** (THE RATIO OF THE TWO MINIMA)")
+  n = max(parts.get("n", 1), 1)
+  print(f"\nAND **THE PARTS' TRUE VALUES** (THE SHAPED READING DIVIDED BY **THE FACTOR**):")
+  print("  **⇒⇒⇒ AND THIS IS AN **ESTIMATE**, BECAUSE **THE FACTOR IS **ONE NUMBER** AND")
+  print("  **THE TRUE INFLATION IS **PER PART** (THE PARTS ARE **NESTED**).**")
+  for k in ("named", "emit", "stmt", "alu", "decl", "strip"):
+    if k in parts:
+      shaped_v = parts[k] / n
+      print(f"  {k:8s} shaped {shaped_v:.4f}   ESTIMATED TRUE {shaped_v / ratio:.4f} ms")
