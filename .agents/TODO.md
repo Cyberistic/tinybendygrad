@@ -509,8 +509,13 @@ gates-sweep     [##########] 10/10    `/tmp/sweep.sh` is FOREIGN and NON-COMPLIA
                                        print (`WALK`, `RUN SET`); its old `POPULATION: directory
                                        walk gates/*-gate.py` regex matched NOTHING, and the gate's
                                        own line `0 figure(s) transcribed` is now the whole truth
-                                       rather than a stale one. Gate rc=0 (5 UNASKABLE pointers +
-                                       1 dated PASS), `--plant` green.
+                                       rather than a stale one. **Its exit is `SKIP` (4), NOT 0,
+                                       BEFORE AND AFTER** -- five rows are declared no-figure
+                                       pointers and one is a dated PASS, and its own plant says a
+                                       table of nothing but `UNASKABLE` must never aggregate to
+                                       `PASS`. My first reading said rc=0 because I had put the
+                                       gate behind `| tail`, so `$?` was `tail`'s; measured
+                                       unpiped: 4. `--plant` green.
 false-fails     [#########] 9/10     The apostrophe guard LANDED (`checks/cites-census.py:394`,
                                        `(?<![\w`])'([^']{4,})'`) and PASSED the bar: on one frozen
                                        snapshot it retired 16 FAIL rows and silenced 0 PASS rows
