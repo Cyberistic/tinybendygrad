@@ -970,27 +970,27 @@ def G.stk4(+ar: O.Arena, a: U32, b: U32, c: U32, d: U32) -> O.Found:
 #       if not dtypes.is_int(x.dtype): raise RuntimeError(...)
 #     return src[0] if len(src) == 1 else UOp(Ops.STACK, src=src)
 #
-# **⇒ SO **A **LENGTH-1 **SHAPE **IS **A **BARE **CONST** **AND **A **LONGER **ONE **IS **A
+# **SO **A **LENGTH-1 **SHAPE **IS **A **BARE **CONST** **AND **A **LONGER **ONE **IS **A
 # `STACK` **NODE** -- **AND **THE **PORT's **`G.stk4` **HARD-CODES **THE **LENGTH-4 **CASE**
 # **AND **THE **PERMUTE's **ORDER **IS **ARBITRARY-LENGTH**, **SO **THE **PERMUTE **HAD
 # **NOWHERE **TO **PUT **ITS **ORDER**.**
 #
-# **⇒ AND **THIS **IS **WHY **THE **PORT's **PERMUTE **CARRIED **ITS **ORDER **IN **`arg`**
+# **AND **THIS **IS **WHY **THE **PORT's **PERMUTE **CARRIED **ITS **ORDER **IN **`arg`**
 # **AND **NOT **IN **`src[1]`** -- **AND **THAT **IS **WHY **THE **CORPUS **DISAGREED**:
 # **UPSTREAM's **PERMUTE **IS **`(x, STACK(consts))` **WITH **`arg=None`**, **AND **THE
 # **PORT's **WAS **`(x)` **WITH **`arg=ATuple{ys}`** -- **AND **THE **SHAPE **IS **THE
 # **DIFFERENCE**, **AND **THE **OP **SET **IS **THE **SAME** (`OPS REACHED: py=6 bend=6`).**
-# **⇒ THE **RECURSIVE **CALL **IS **READ **LEFT **TO **RIGHT** **AND **EACH **PASSED
+# **THE **RECURSIVE **CALL **IS **READ **LEFT **TO **RIGHT** **AND **EACH **PASSED
 # **ARGUMENT **MUST **BE **SMALLER **THAN **THE **MATCHED **EXPRESSION** ("a call smaller
-# than ...") -- **⇒ SO **THE **CONST **INTERNING **IS **IN **A **`push` **DEF** (**WHICH
+# than ...") -- **SO **THE **CONST **INTERNING **IS **IN **A **`push` **DEF** (**WHICH
 # **IS **A **SMALLER **EXPRESSION **THAN **THE **MATCH**) **AND **THE **RECURSION **CARRIES
 # **THE **TAIL **AND **THE **NEW **STATE** -- **EXACTLY **THE **IDIOM **THE **PORT
 # **ALREADY **USES **AT **`tn_sarg.acc` (`tensor.bend:1583`)**.**
 #
-# **⇒ AND **THE **STATE **IS **A **`Data` **RECORD** **BECAUSE **THE **ARENA **AND **THE
+# **AND **THE **STATE **IS **A **`Data` **RECORD** **BECAUSE **THE **ARENA **AND **THE
 # **INDEX **LIST **AND **THE **TAIL **ALL **HAVE **TO **CROSS **THE **RECURSION** **AND
 # **THREE **PARAMETERS **WOULD **NOT **BE **READ **LEFT **TO **RIGHT** **THE **WAY
-# **BEND **READS **THEM** -- **⇒ **ONE **RECORD**, **ONE **ARGUMENT**.**
+# **BEND **READS **THEM** -- ****ONE **RECORD**, **ONE **ARGUMENT**.**
 type Stk is Data:
   Stk{ar: O.Arena, acc: List<&2, U32>}
 
@@ -1006,10 +1006,10 @@ def G.stk.push(+ar: O.Arena, acc: List<&2, U32>, v: U32) -> Stk:
   +c = G.c1(ar, v)
   Stk{O.Found.ar(c), List.append(&2, U32, acc, [O.Found.i(c)])}
 
-# **⇒ THE **MATCH **AND **THE **RECURSION **ARE **ONE **DEF**, **AND **THE **LIST **IS **A
-# **PLAIN **PARAMETER** **SO **THE **`match` **CAN **SCRUTINISE **IT** -- **⇒ AND **THE
+# **THE **MATCH **AND **THE **RECURSION **ARE **ONE **DEF**, **AND **THE **LIST **IS **A
+# **PLAIN **PARAMETER** **SO **THE **`match` **CAN **SCRUTINISE **IT** -- **AND **THE
 # **STATE **CROSSES **THE **RECURSION **IN **THE **SECOND **PARAMETER** -- **AND **BEND
-# **CHECKS **DEFS **IN **FILE **ORDER**, **⇒ SO **THE **SELF-CALL **IS **THE **SAME
+# **CHECKS **DEFS **IN **FILE **ORDER**, **SO **THE **SELF-CALL **IS **THE **SAME
 # **DEF** **AND **NOT **A **SECOND **ONE** (**A **SECOND **ONE **WOULD **BE **A **CYCLE
 # **AND **NEITHER **ORDER **IS **ACCEPTED**).**
 def G.stk.go(ys: List<&2, U32>, +st: Stk) -> O.Found:

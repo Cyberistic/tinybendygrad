@@ -252,7 +252,7 @@ def gwhere(+ar: O.Arena, m: U32, a: U32, b: U32) -> O.Found: gnew(ar, O.OpsWHERE
 # swap is not foldable and both directions are genuinely two nodes.
 def gcmplt(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPLT{}, [x, y], O.ANone{})
 
-# **⇒ THE **`eq`/`ne`/`logical_not` **FAMILY **AT **THE **PIN, **AND **THE **OLD
+# **THE **`eq`/`ne`/`logical_not` **FAMILY **AT **THE **PIN, **AND **THE **OLD
 # **COMMENT **HERE **WAS **WRITTEN **AGAINST **AN **OLDER **UPSTREAM.  MEASURED **AT **THE
 # **PIN **`f5ac54685074`:**
 #
@@ -264,22 +264,22 @@ def gcmplt(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPLT{}, [x, 
 #   **`tinygrad/mixin/elementwise.py:49-57`**     `logical_not` IS
 #     **`self.cast(dtypes.bool).eq(False)`**
 #
-# **⇒ AND **UPSTREAM's **OWN **GRADIENT **AT **THE **PIN **CONFIRMS **IT **INDEPENDENTLY**:
+# **AND **UPSTREAM's **OWN **GRADIENT **AT **THE **PIN **CONFIRMS **IT **INDEPENDENTLY**:
 # **`tinygrad/mixin/gradient.py:12` **IS ** `mask = ret.src[0].eq(ret).cast(...)`, **`:16`
 # **IS ** `is_zero:=(x:=ret.src[0]).eq(0)`, **`:78` **IS ** `(x.eq(y)).where(ctx, ...)`,
-# **AND **`:73` **IS ** `(UPat((Ops.CMPLT, Ops.CMPEQ)), lambda: (None, None))` -- **⇒ **NO
+# **AND **`:73` **IS ** `(UPat((Ops.CMPLT, Ops.CMPEQ)), lambda: (None, None))` -- ****NO
 # **`CMPNE` **ANYWHERE **IN **THE **MAX **OR **POW **GRADIENT**.**
 #
-# **⇒ AND **THE **OLD **SPELLING **WAS **WRITTEN **AGAINST **THE **OLD **`eq`**, **WHICH
+# **AND **THE **OLD **SPELLING **WAS **WRITTEN **AGAINST **THE **OLD **`eq`**, **WHICH
 # **WAS **`ne().logical_not()`** **AND **WHOSE **`logical_not` **WAS
-# **`alu(Ops.CMPNE, const(True))`** -- **⇒ **THE **OLD **CLAIM **"Python's **MAX
+# **`alu(Ops.CMPNE, const(True))`** -- ****THE **OLD **CLAIM **"Python's **MAX
 # **gradient **tree **== **... **WHERE, **CMPNE, **CMPNE, **..."** **WAS **TRUE **OF **THE
 # **OLD **UPSTREAM** **AND **IS **FALSE **OF **THE **PIN**, **AND **THE **ROWS
 # **`max_n0`/`max_n1`/`pow_n0`/`pow_n1` **ARE **THE **ROWS **THAT **CATCH **IT**.**
 def geq(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPEQ{}, [x, y], O.ANone{})
 
 # `logical_not(x)` is `cast(bool).eq(False)` (`elementwise.py:57`), and `eq` is
-# `CMPEQ(x, False)` (`elementwise.py:336`) -- **⇒ THE **NODE **IS **`CMPEQ(x, False)`**
+# `CMPEQ(x, False)` (`elementwise.py:336`) -- **THE **NODE **IS **`CMPEQ(x, False)`**
 # **AND **NOT **`CMPNE(x, True)`**.  `UOp.const(False)` is a BOOL CONST whose dtype
 # FOLLOWS the value (ops.py:632), so at bool it is a BARE CONST with no CAST -- the
 # measured srcs are `(CAST, CONST)`, one CAST for `x` and none for the literal. That is
@@ -466,9 +466,9 @@ def gr_7(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0, 0], ar)
 # `t_claims` is 33 rather than 32: the COUNT is of the COMPILED table, which is the live
 # path (`UPAT_COMPILE=1`, ops.py:1588).
 #
-# **⇒ AND **THE **SECOND **OP **IS **`CMPEQ`** -- **MEASURED **AT **THE **PIN
+# **AND **THE **SECOND **OP **IS **`CMPEQ`** -- **MEASURED **AT **THE **PIN
 # **`f5ac54685074`**: **`tinygrad/mixin/gradient.py:73` **IS **
-# `(UPat((Ops.CMPLT, Ops.CMPEQ)), lambda: (None, None))` -- **⇒ AND **THE **OLD **`CMPNE`
+# `(UPat((Ops.CMPLT, Ops.CMPEQ)), lambda: (None, None))` -- **AND **THE **OLD **`CMPNE`
 # **HERE **WAS **WRITTEN **AGAINST **AN **OLDER **UPSTREAM**, **AND **IT **IS **THE **SAME
 # **CLASS **OF **DRIFT **AS **THE **FIVE **OTHER **HALVES**.**
 def gr_8(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0, 0], ar)
@@ -1989,9 +1989,9 @@ def t_max_n0() -> U32:
 # gate cannot see it" failure. `max_eq_op` reads the OP of the node `eq` produced, and it
 # is the ONLY row M7 moves.
 #
-# **⇒ AND **THE **ROW **EXPECTED **`Ops.CMPNE`**, **BECAUSE **THE **PORT **WAS **SPELLED
-# **AGAINST **AN **OLDER **UPSTREAM** -- **⇒ AND **AT **THE **PIN **`f5ac54685074`**
-# **`eq` **IS **`CMPEQ(x, False)`** (`mixin/elementwise.py:335-336`)**, **⇒ AND **THE **ROW
+# **AND **THE **ROW **EXPECTED **`Ops.CMPNE`**, **BECAUSE **THE **PORT **WAS **SPELLED
+# **AGAINST **AN **OLDER **UPSTREAM** -- **AND **AT **THE **PIN **`f5ac54685074`**
+# **`eq` **IS **`CMPEQ(x, False)`** (`mixin/elementwise.py:335-336`)**, **AND **THE **ROW
 # **NOW **EXPECTS **`Ops.CMPEQ`**, **AND **THE **TREE **IS **THE **ONE **THAT **SAYS
 # **WHICH**.**
 #
@@ -2012,7 +2012,7 @@ def max.eq_of(hit: Bool) -> U32:
 
 def max.eq_src(ar: O.Arena, inner: U32) -> U32: O.Arena.src(ar, inner, 1)
 
-# **⇒ THE **ROW **NOW **EXPECTS **`CMPEQ`** -- **AND **THE **PATH **IS **STILL
+# **THE **ROW **NOW **EXPECTS **`CMPEQ`** -- **AND **THE **PATH **IS **STILL
 # **`WHERE.src[1].src[0]`**, **THE **OUTER **`where`'s **UNTAKEN-BRANCH **ARM**, **WHOSE
 # **MASK **IS **THE **`x.eq(y)`**.**
 def max.eq_op.go(+ar: O.Arena, inner: U32) -> U32:

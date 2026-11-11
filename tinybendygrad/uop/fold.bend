@@ -2098,17 +2098,17 @@ def order_srcs.go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, U32>) -> List<&
     case Nil{}   : acc
     case s <> t  : order_srcs.go(ar, t, List.append(&2, U32, acc, [order_srcs.const(ar, s)]))
 
-# **⇒ THE **`srcs` **ARE **READ **IN **A **DEF **THAT **COMES **FIRST**, **BECAUSE
+# **THE **`srcs` **ARE **READ **IN **A **DEF **THAT **COMES **FIRST**, **BECAUSE
 # **BEND **CHECKS **DEFS **IN **FILE **ORDER** ("defs are checked in file order, and an
 # **unfilled hole is not a def")** -- **AND **THE **`srcs` **AND **THE **`op` **ARE **TWO
 # **READS **OF **THE **SAME **INDEX**, **AND **BEND **SPENDS **A **BINDER **WHEN **IT
-# **READS **IT**, **⇒ SO **THE **`op` **IS **READ **BY **THE **CALLER** **AND **THE
+# **READS **IT**, **SO **THE **`op` **IS **READ **BY **THE **CALLER** **AND **THE
 # **`srcs` **BY **THE **ARM**.**
 def order_srcs.srcs(+ar: O.Arena, s: U32) -> List<&2, U32>:
   order_srcs.go(ar, O.Arena.srcs(ar, s), Nil{})
 
-# **⇒ THE **OP **IS **TAKEN **AS **A **VALUE** **AND **THE **INDEX **IS **TAKEN **AS
-# **A **VALUE**, **EXACTLY **AS **`marg.of` (`fold.bend:1759`) **DOES** -- **⇒ THE **CALLER
+# **THE **OP **IS **TAKEN **AS **A **VALUE** **AND **THE **INDEX **IS **TAKEN **AS
+# **A **VALUE**, **EXACTLY **AS **`marg.of` (`fold.bend:1759`) **DOES** -- **THE **CALLER
 # **READS **THE **`op` **AND **THE **INDEX**, **AND **NEITHER **IS **READ **TWICE** --
 # **AND **THAT **IS **WHY **THE **ORDER **READER **AND **THE **`marg` **READER **CAN
 # **BOTH **RUN **OFF **THE **ONE **`src[1]`'s **INDEX** **THE **CALLER **READ**.**
@@ -2126,9 +2126,9 @@ def order_srcs.of(k: O.Op, +ar: O.Arena, s: U32) -> List<&2, U32>:
 # **`perm_init` **TAKES **EXACTLY **THOSE **TWO** (`fold.bend:2058`: `def perm_init(ys:
 # List<&2, U32>, +ps: List<&2, O.Sint>)`).**
 #
-# **⇒ AND **BEND **SPENDS **A **BINDER **WHEN **IT **READS **IT** ("consumed more than
+# **AND **BEND **SPENDS **A **BINDER **WHEN **IT **READS **IT** ("consumed more than
 # **once")**, **SO **THE **`src[1]`'s **INDEX **IS **READ **ONCE** **INTO **A **`let`** --
-# **⇒ THE **ORDER **READER **(`order_srcs.of`) **AND **THE **`marg` **READER
+# **THE **ORDER **READER **(`order_srcs.of`) **AND **THE **`marg` **READER
 # (**`marg.of`) **BOTH **TAKE **THE **SHAPE **INDEX**, **AND **THE **`let` **IS **THE
 # **ONE **VALUE **THEY **BOTH **GET**.**
 def perm_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:

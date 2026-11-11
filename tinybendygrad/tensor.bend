@@ -1156,11 +1156,11 @@ def tn_isfinite.cneginf(+ar: O.Arena) -> O.Found:
 def tn_isfinite.ct(+c: O.Found) -> Tensor:
   tn_new(O.Found.ar(c), O.Found.i(c))
 # `self.eq(inf)` -- **`eq` **IS **`_binop(Ops.CMPEQ, x, False)` (`mixin/elementwise.py:335-336`
-# **AT **THE **PIN **`f5ac54685074`)**, **⇒ SO **THE **NODE **IS **`CMPEQ(self, inf)`** --
+# **AT **THE **PIN **`f5ac54685074`)**, **SO **THE **NODE **IS **`CMPEQ(self, inf)`** --
 # **ONE **NODE**, **AND **NOT **`logical_not(CMPNE(self, inf))`**, **WHICH **IS **WHAT **THIS
 # **DEF **USED **TO **BUILD**.**
 #
-# **⇒ AND **THE **OLD **COMMENT **"**`tn_eq` **IS **`logical_not(cmpne)`"** **WAS **A **CLAIM
+# **AND **THE **OLD **COMMENT **"**`tn_eq` **IS **`logical_not(cmpne)`"** **WAS **A **CLAIM
 # **ABOUT **AN **OLDER **UPSTREAM** -- **AND **THE **SAME **DRIFT **ALREADY **HAD **THREE
 # **HALVES** (**`uop/symbolic.bend`'s **`mint_not`**, **`tensor.bend`'s **`tn_logical_not`**,
 # **AND **`mixin/op.bend`'s **`mo_eqc`**), **AND **THIS **WAS **THE **FOURth**.**

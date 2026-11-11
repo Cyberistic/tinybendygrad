@@ -616,7 +616,7 @@ def mo_add(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsADD{}, y)
 def mo_mul(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsMUL{}, y)
 def mo_maxc(+t: T.Tensor, f: F32) -> T.Tensor: mo_bin_c(t, O.OpsMAX{}, O.CFloat{f})
 
-# **⇒ THE **`ne`/`eq`/`logical_not` **FAMILY, **AND **IT **IS **WRITTEN **AGAINST **AN
+# **THE **`ne`/`eq`/`logical_not` **FAMILY, **AND **IT **IS **WRITTEN **AGAINST **AN
 # **OLDER **UPSTREAM.  MEASURED **AT **THE **PIN **`f5ac54685074`:**
 #
 #   **`tinygrad/mixin/elementwise.py:49-57`**   `logical_not` IS
@@ -627,18 +627,18 @@ def mo_maxc(+t: T.Tensor, f: F32) -> T.Tensor: mo_bin_c(t, O.OpsMAX{}, O.CFloat{
 #     **`return self._binop(Ops.CMPEQ, x, False)`**
 #   **`tinygrad/mixin/elementwise.py:338-339`** `__ne__` IS `return self.ne(x)`
 #
-# **⇒ SO **THE **NODES **ARE**: **`eq` **IS **ONE **`CMPEQ(x, False)`**, **`ne` **IS
+# **SO **THE **NODES **ARE**: **`eq` **IS **ONE **`CMPEQ(x, False)`**, **`ne` **IS
 # **`logical_not(CMPEQ(x, False))`**, **AND **`logical_not` **IS **`CMPEQ(cast(x, bool),
-# False)`** -- **⇒ AND **NO **OF **THEM **IS **A **`CMPNE`**.**
+# False)`** -- **AND **NO **OF **THEM **IS **A **`CMPNE`**.**
 #
-# **⇒ AND **THE **PORT's **SPELLING **WAS **`neq` **= `CMPNE(x, y)`**, **`logical_not` **=
-# **`CMPNE(cast(x, bool), True)`**, **AND **`eq` **= `not(not(CMPNE(x, y)))`** -- **⇒ THE
+# **AND **THE **PORT's **SPELLING **WAS **`neq` **= `CMPNE(x, y)`**, **`logical_not` **=
+# **`CMPNE(cast(x, bool), True)`**, **AND **`eq` **= `not(not(CMPNE(x, y)))`** -- **THE
 # **OLD **`eq` **IS **A **DOUBLE **NEGATION** **AND **THE **OLD **`logical_not` **IS **THE
 # **WRONG **CONST** (**`True` **INSTEAD **OF **`False`**).**
 #
-# **⇒ AND **THIS **IS **THE **THIRD **HALF **OF **ONE **RULE **TO **DRIFT** -- **THE
+# **AND **THIS **IS **THE **THIRD **HALF **OF **ONE **RULE **TO **DRIFT** -- **THE
 # **OTHERS **ARE **`uop/symbolic.bend`'s **`mint_not`** (**ALREADY **`CMPEQ(x, False)`**)
-# **AND **`tensor.bend`'s **`tn_logical_not`** (**ALREADY **`CMPEQ(x, False)`**) -- **⇒ AND
+# **AND **`tensor.bend`'s **`tn_logical_not`** (**ALREADY **`CMPEQ(x, False)`**) -- **AND
 # **THE **CORPUS **MEASURED **THE **DRIFT **ON **THE **`commute` **GRAPH** (**`CMPEQ 2/0`
 # **AND **`CMPNE 0/1`**).**
 # **`eq`** -- **`_binop(Ops.CMPEQ, x, False)`** (`elementwise.py:336`) -- **IS **ONE
