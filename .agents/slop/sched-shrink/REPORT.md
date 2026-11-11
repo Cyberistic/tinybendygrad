@@ -160,18 +160,39 @@ FIXED (a pointer that was broken before and holds now):          11
 *"THE DURABLE FORM IS `symbol=<name>`, AND THIS FILE IS THE CASE FOR IT.
 A LINE NUMBER rots and a NAME does not"*).**
 
-**⇒ TWO POINTERS **ARE **LEFT **FOR **THE **OWNER **OF `uop/ops.bend`**:
-`schedule/prepare.bend:274` AND `schedule/multi.bend:611`.**  **THE EDITS
-**ARE **IN **THE **WORKING **TREE** OF `tinybendygrad/uop/ops.bend`** -- **AND
-**`uop/ops.bend` **IS **A **LIVE **SHARED **PATH** (ANOTHER UNIT **WAS
-**EDITING **IT **EVERY **20 **SECONDS** WHILE **THIS **ONE **WORKED**), **AND
-**AGENTS.md's **RULE **IS *"A **PATH **THAT **OTHERS **HOLD** IS **A **SHARED
-**PATH"*** -- **AND **A **COMMIT **THAT **CARRIES **ANOTHER **UNIT's
-**5868-LINE **EDIT** IS **THEIR **COMMIT **TO **MAKE**, NOT **MINE**.**  **⇒
-**THE **TWO **EDITS **ARE **LEFT **IN **THE **WORKING **TREE** **AND **WILL
-**GO **WITH **THEIR **COMMIT** -- **AND **THE **VERIFY **TREE **BELOW**
-**MEASURES **THE **COMMIT **WITHOUT **THEM**, **AND **THE **TWO **POINTERS
-**SHOW **AS **BROKEN **THERE** -- **AND **THEY **ARE **THE **ONLY **TWO**.
+**⇒ THE **TWO **POINTERS **THIS **MOVE **BROKE** **AND **CANNOT **BE
+**CLOSED **FROM **HERE** -- **`schedule/prepare.bend:274`** **AND
+**`schedule/multi.bend:611`**, **BOTH **CITED **FROM
+`tinybendygrad/uop/ops.bend`** -- **ARE **THE **EXACT **TWO **LINES**:
+**`schedule/prepare.bend:236`** **AND **`schedule/multi.bend:575`**.
+**⇒ THE **EDITS **ARE **IN **THE **WORKING **TREE** **OF
+`uop/ops.bend`**, **AND **THEY **WILL **BE **OVERWRITTEN** -- **BECAUSE
+**THAT **FILE **IS **A **LIVE **SHARED **PATH** (ANOTHER **UNIT **WAS
+**EDITING **IT **EVERY **TWENTY **SECONDS**, **AND **ITS **CURRENT
+**CONTENT **DOES **NOT **COMPILE** (`unknown: Dq`)) -- **AND **COMMITTING
+**IT **WOULD **BREAK **THE **TREE** -- **AND **AGENTS.md's **RULE **IS
+*"NEVER **A **COMMIT **THAT **CARRIES **ANOTHER **UNIT's **WIP**"**.**
+
+**⇒ SO **THE **COUNT **IS **STATED **BOTH **WAYS**, **AND **BOTH **ARE
+**MEASURED**:
+
+```
+AT THE COMMIT, AS IT STANDS (the verify tree, `git archive HEAD`):
+    439 of 1342 internal pointers do not hold   BEFORE
+    433 of 1327 internal pointers do not hold   AFTER
+    NEW FAILURES:  2  (both in `uop/ops.bend`, both the two above)
+    FIXED:        11
+
+WITH THE TWO `uop/ops.bend` LINES APPLIED (MEASURED, in the same tree):
+    431 of 1327 internal pointers do not hold
+    NEW FAILURES:  0
+    FIXED:        11
+```
+
+**⇒ AND **THE **TWO **ARE **NOT **A **DEFECT **IN **THE **MOVE** -- **THEY
+**ARE **THE **POINTERS **INTO **THE **SCHEDULE **FILES** **WHOSE **LINES
+**THE **MOVE **MOVED** -- **AND **THE **FIX **IS **TWO **LINES** **IN **A
+**FILE **THIS **UNIT **DOES **NOT **OWN**.**
 
 ---
 

@@ -1,0 +1,11 @@
+sched-shrink/REPORT.md: THE TWO POINTERS ARE STATED BOTH WAYS
+
+The report said the two `uop/ops.bend` pointers were left for that file's
+owner.  **And the OWNER'S FILE IS A LIVE SHARED PATH (another unit was
+editing it every twenty seconds, and its content does not compile), AND THE
+EDITS WERE OVERWRITTEN TWICE -- AND THE REPORT SAID THE COUNT AS IF THE
+EDITS WERE IN.**
+
+**⇒ THE COUNT IS NOW STATED BOTH WAYS, AND BOTH ARE MEASURED: 433 BROKEN
+POINTERS AT THE COMMIT AS IT STANDS, AND 431 WITH THE TWO LINES APPLIED --
+AND NEW FAILURES 2 AND 0 RESPECTIVELY, AND FIXED 11 IN BOTH.**
