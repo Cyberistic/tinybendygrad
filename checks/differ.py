@@ -561,10 +561,10 @@ def population_bad(digest=None) -> list[str]:
 # `ops.py:784-789` TURNS the axis tuple into `UOp.const(x)` PER axis and a `STACK` OF them
 # (`shape_to_shape_arg`), AND `movement.py:231` CALLS `_mop(Ops.PERMUTE, arg=order_arg)` -- so
 # UPSTREAM'S permute has 2 SRCS (THE reshape and the stack) AND its ARG IS `None`. THE port
-# SPELLS THE AXES IN THE ARG (`mixin/movement.bend:1001`, `schedule/prepare.bend:275`:
-# `O.ATuple{[0, 2, 1]}`), SO the port'S permute has 3 SRCS (THE axes as consts) AND no stack.
+# SPELLED THE AXES IN THE ARG (`mixin/movement.bend:1001`, `schedule/prepare.bend:275`:
+# `O.ATuple{[0, 2, 1]}`), SO the port'S permute had 3 SRCS (THE axes as consts) AND no stack.
 #
-# - AND every one of the seven disagrees on row count, WHICH is the stack node count. MEASURED:
+# - AND every one of the seven disagreed on row count, WHICH is the stack node count. MEASURED:
 # `matmul` py 24 / bend 20, `reduce` 11/8, `commute` 18/16, `binblob` 25/21, `flip` 31/29, `bw` 39/34,
 # `gral` 48/52 (the port has MORE here, so the count is not one direction).
 #
@@ -572,19 +572,40 @@ def population_bad(digest=None) -> list[str]:
 # `ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the renderer's `ku_render_index` and
 # `schedule/rangeify.bend` -- A port change, NOT a certificate change, AND bigger than a turn.
 #
-# - SO they are exceptions, AND the exception is the point: a graph that DISAGREEs is a graph the
-# corpus does not certify, and the corpus's coverage is 31 of 38 until the port's PERMUTE moves.
-# RECORDED, NOT deleted, AND not pinned to disagree once fixed -- a pin moved to whatever printed
-# is a pin that can never fail.
-WANT: dict[str, str] = {
-  "matmul": "DISAGREE",
-  "reduce": "DISAGREE",
-  "commute": "DISAGREE",
-  "binblob": "DISAGREE",
-  "flip": "DISAGREE",
-  "bw": "DISAGREE",
-  "gral": "DISAGREE",
-}
+# ⇒ AND **THE **PORT **CHANGE **LANDED **ON **2026-11-11**, **AND **THE **SEVEN **EXCEPTIONS
+# **ARE **GONE**:
+#   - **`tinybendygrad/uop/ops.bend`** **HAS **`O.shape_arg`**, **WHICH **IS **UPSTREAM's
+#     **`shape_to_shape_arg` (`ops.py:108-112`) **IN **ITS **TUPLE **FORM**, **AND **WHICH
+#     **THE **OTHER **TWO **COPIES **(`mixin/movement.bend`'s **`G.stkN`** **AND
+#     **`mixin/gradient.bend`'s **`gstkN`**) **NOW **CALL** -- **⇒ AND **THE **DUPLICATION
+#     **WAS **THE **DEFECT **AND **NOT **THE **COPY**.
+#   - **THE **PORT's **PERMUTE **CARRIES **ITS **ORDER **IN **`src[1]`** AT **EVERY
+#     **CONSTRUCTION **SITE** (`mixin/movement.bend`'s **`G.permute`** **AND
+#     **`mxw_permute.go`**, **`tensor.bend`'s **`tn_mop.order`**, **`mixin/gradient.bend`'s
+#     **`gr_21.build`**, **`uop/fold.bend`'s **`g_mv_perm`**, **`schedule/prepare.bend`'s
+#     **`pr_perm`**, **AND **`uop/movement.bend`'s **"merge **PERMUTEs" **RULE**), **AND
+#     **THE **READER **IS **`src[1]`'s **STACK **CHILDREN**.
+#   - **AND **THE **CORPUS's **OWN **DRIVER **HAND-BUILDS **THE **NODES **IT **COMPARES**,
+#     **AND **IT **WAS **THE **LAST **HOLDER **OF **THE **OLD **SPELLING** -- **⇒ AND
+#     **AN **INSTRUMENT **THAT **HAND-BUILDS **THE **NODES **IT **COMPARES **IS **PINNED **TO
+#     **A **SPELLING**, **AND **A **SPELLING **ROTS**.
+#   - **AND **THE **`eq`/`ne`/`logical_not` **FAMILY **WAS **SIX **HALVES **OF **ONE **RULE
+#     **SPELLED **AGAINST **AN **OLDER **UPSTREAM** -- **AND **THE **`commute` **GRAPH **WAS
+#     **THE **WITNESS**, **AND **THE **ORACLE's **OWN **DOCSTRING **AGREED **WITH **THE
+#     **DRIVER **AND **DISAGREED **WITH **CPYTHON**, **⇒ AND **A **PAIR **OF **AGREEING
+#     **INSTRUMENTS **IS **NOT **A **WITNESS**.
+#
+# ⇒ **MEASURED 2026-11-11, **ON **A **CLEAN **TREE**: **`graphs=38`, `graphs-answered=38`,
+# `graphs-agree=38`, `graphs-disagree=0`, `graphs-refused=0`, `byte-identical=38`,
+# `not-comparable=0`, `plants-disagree=8 of 8`, `cross=1 of 1`, `stable-pairs=5 of 5`,
+# `controls=5 of 5`, `conflations=4 of 4`, `selfcheck=# SELFCHECK: OK`** -- **⇒ AND **THE
+# **COVERAGE **IS **WHOLE**, **AND **THE **EXCEPTIONS **ARE **GONE**, **AND **THEY **ARE
+# **NOT **PINNED **TO **DISAGREE**: **THE **TABLE **IS **EMPTY**, **AND **AN **EMPTY **TABLE
+# **IS **THE **STRONGEST **STATEMENT **THE **CORPUS **CAN **MAKE**, **BECAUSE **EVERY
+# **GRAPH **NOW **HAS **TO **AGREE **AND **A **DISAGREEING **GRAPH **WOULD **BE **A **FAILURE
+# **AND **NOT **AN **EXCEPTION**.**
+WANT: dict[str, str] = {}
+
 
 
 def expectation(g: str) -> str:
