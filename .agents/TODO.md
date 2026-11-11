@@ -483,7 +483,19 @@ gates-sweep     [##########] 10/10    `/tmp/sweep.sh` is FOREIGN and NON-COMPLIA
                                        Selftest 7/7 (the new ROLES case fails if a lane/proof
                                        writes its sentinel), `--plant` 1, `--prove` 14/14. The
                                        `--out` lock refuses a second writer with `REFUSED` (3),
-                                       like `differ.py`'s corpus lock.
+                                       like `differ.py`'s corpus lock. **AND `gates/runner.py`
+                                       (the PRECONDITION layer, the loop's only other consumer)
+                                       WAS BROKEN AT HEAD**: `derive()` did `p.name` on the
+                                       `(Path, reason)` tuples `population()` has returned since
+                                       2026-10-18 (`AttributeError` before any gate ran), and TWO
+                                       of its three `DELEGATED` pins were stale. Both fixed: the
+                                       run set is now `gatesweep.role() == "gate"` minus this file
+                                       itself, and the three pins were re-frozen WITH THE DELTA
+                                       DECLARED in the comment (gatesweep: loop+report only, the
+                                       symbols runner calls are unchanged; bounded: ONE COMMENT;
+                                       index-arm: two added refusals, so a PASS can now REFUSE).
+                                       `--plant` all five fire, `--plan` reports only INDEX-ARM
+                                       (the tree's index is armed, 19 stale paths).
 false-fails     [#########] 9/10     The apostrophe guard LANDED (`checks/cites-census.py:394`,
                                        `(?<![\w`])'([^']{4,})'`) and PASSED the bar: on one frozen
                                        snapshot it retired 16 FAIL rows and silenced 0 PASS rows

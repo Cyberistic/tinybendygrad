@@ -45,15 +45,16 @@ That is `checks/index-arm-gate.py`'s own shape, copied rather than invented.
 
 THE POPULATION IS DERIVED, AND THE DERIVATION'S BLIND SPOT IS A NUMBER, NOT A HOPE.
 
-  A       `checks/gatesweep.py:population()` -- a directory walk for `*-gate.py`.
-          The figure is `gatesweep.py --plan`'s POPULATION line; it is NOT transcribed here
-          because the population moves as other units land gates -- it read 76, 77, 78, 79 and
-          80 within one session, and `gates/docnum-claim-gate.py` is what holds the comparison.
+  A       `checks/gatesweep.py:population()` -- the DIRECTORY WALK of both derived homes.
+          The figure is `checks/gatesweep.py --plan`'s `WALK` line; it is NOT transcribed here
+          because the population moves as other units land gates -- it read 76-80 on 2026-10-16
+          and 427 on 2026-11-11, and `gates/docnum-claim-gate.py` is what holds the comparison.
   B       `gates/gates-pop.py:discover()`, filtered to the `gates/` home: entry points by AST
-          `__main__`, in HOMES derived by `gate_homes()`. MEASURED 114.
+          `__main__`, in HOMES derived by `gate_homes()`. MEASURED 330 on 2026-11-11.
   LANES   the entry points some gate NAMES AS ITS OWN INPUT, read from the kernel's own
-          declaration -- `gatekit.Gate(bend=..., oracle=...)` string LITERALS. MEASURED 12.
-  RUN SET `A \\ LANES`. MEASURED 76, because no `*-gate.py` is anybody's lane.
+          declaration -- `gatekit.Gate(bend=..., oracle=...)` string LITERALS. MEASURED 29.
+  RUN SET `A` minus every member `gatesweep.role()` does not call a `gate`, so a lane, a proof and
+          this file itself never enter it. MEASURED 334 on 2026-11-11.
 
 **THE FIRST DERIVATION I WROTE WAS WRONG AND THE TREE CAUGHT IT, SO THE NUMBER IS HERE.** It was
 `A \\ B` -- "nothing else claims this file as its input" -- over every AST string constant, which
@@ -109,11 +110,21 @@ PEAK = re.compile(r"peak-RSS=(\d+)")
 # three are LOADED BY PATH and none is re-spelled here. A pin on a delegation is not a lock on a
 # file: it is the statement that the rows already on disk were written by THAT loop -- the same
 # reason `checks/differ.py`'s `ORACLE_PIN` and `gates/gates-pop.py`'s `FIXTURES` exist.
-# MEASURED 2026-10-16 with `shasum -a 256`; `gatekit.oracle_drift` reports the delta.
+#
+# **2026-11-11: ALL THREE WERE STALE AND EACH DELTA IS DECLARED HERE, BECAUSE A BARE RE-FREEZE
+# MOVES THE COMPLAINT FROM CHECK 3 TO CHECK 2 AND TEACHES NOTHING.**
+#   gatesweep.py  the loop gained ROLES / --jobs / the `<out>` lock and `report()` now returns its
+#                 declaration. **`classify`, `run_one`, `REC`, `PY` and `HERE` -- the only symbols
+#                 this file calls -- did not change.**
+#   bounded.py    ONE COMMENT (`**EVERY**` -> `EVERY`). No token, record format or exit moved.
+#   index-arm     `report()` kept `(rc, c)` and gained TWO refusals (a tree that names a path twice)
+#                 plus an EMPTIED line, so a row that read PASS can now REFUSE. That IS a meaning
+#                 change, and it is the one this re-freeze declares.
+# MEASURED with `shasum -a 256`; `gatekit.oracle_drift` reports any further delta.
 DELEGATED = {
-    "checks/gatesweep.py": "7ed8f18430cbc8382c95f97b02184bd1562882f2631719697279e75ba6ab159b",
-    "checks/bounded.py": "e90b068d974107b6ebfab01f1541c6433c43fe10af61350831f0c5cbfc482c37",
-    "checks/index-arm-gate.py": "59cd651638096ed32f319ded3318e791d5a181c5e0f80bf1a6087f6a06645480",
+    "checks/gatesweep.py": "d25b1aef348c8644c528223b3ac9fa1ee6ee2b207c5a9511adf465ad30caad7f",
+    "checks/bounded.py": "887eb76d760899306cae4caf8db188312452db6bd7d43bfe117ae8426937fbb2",
+    "checks/index-arm-gate.py": "b75c75986813ee6e0e0f68aff7eee5f2274702d46bf672a5a1209b995ae4aa92",
 }
 INSTRUMENTS = {"gatekit": "gatekit.py", "sweep": "../checks/gatesweep.py",
                "gpop": "gates-pop.py", "idxarm": "../checks/index-arm-gate.py",
@@ -165,10 +176,11 @@ def derive(mods, root):
 
     `outside` is THE NUMBER THIS FILE EXISTS TO MAKE: an entry point that constructs a
     `gatekit.Gate` and is not in the run set. It is the population's edge, and a non-empty one means
-    the derivation cannot see a gate -- so `decide_population()` REFUSES rather than running 76
-    of 77. MEASURED 0 on this tree, which is the only reason the name shape is tolerable HERE and
-    not in general."""
-    walk = mods["sweep"].population(root)
+    the derivation cannot see a gate -- so `decide_population()` REFUSES rather than running a
+    partial set. MEASURED 0 on this tree, which is the only reason the name shape is tolerable HERE
+    and not in general."""
+    walk = [p for p, _ in mods["sweep"].population(root)]
+    role = mods["sweep"].role
     entries = [p for p in mods["gpop"].discover(root)[0] if p.parent.name == "gates"]
     names = {p.name for p in entries}
     lanes, ctors = {}, set()
@@ -182,10 +194,17 @@ def derive(mods, root):
                     lane = Path(kw.value.value).name
                     if lane in names and lane != p.name:
                         lanes.setdefault(lane, set()).add(p.name)
-    run = [p for p in walk if p.name not in lanes]
+    # A MEMBER THIS FILE WOULD RECURSE INTO, OR ONE THAT MEASURED NOTHING, IS NOT A GATE. The role
+    # is `gatesweep.role()` LOADED BY PATH, so the preconditions and the sweep agree about what the
+    # run set IS; the identity test keeps `runner.py` out of its own set (the lock would refuse it,
+    # which is safe and useless). MEASURED 2026-11-11: the widened walk is 423, of which 333 are
+    # `gate` -- without the role arm this loop would spend its budget on 48 lanes and 41 proofs.
+    run = [p for p in walk
+           if p.resolve() != Path(__file__).resolve() and role(p, frozenset(lanes)) == "gate"]
     got = {p.name for p in run}
     return {"walk": walk, "entries": entries, "lanes": lanes, "run": run,
-            "outside": sorted((ctors & names) - got), "hand_rolled": sorted(got - ctors),
+            "outside": sorted((ctors & names) - got),
+            "hand_rolled": sorted((got & names) - ctors),
             "residual": sorted(names - got - set(lanes))}
 
 
@@ -532,11 +551,11 @@ def main(argv=None):
         return plant()
 
     pop = derive(mods, ROOT)
-    print(f"SET        A  walk gates/*-gate.py           {len(pop['walk']):>4}")
+    print(f"SET        A  the directory walk (both homes)    {len(pop['walk']):>4}")
     print(f"           B  gates-pop.discover() in gates/ {len(pop['entries']):>4}  (a DIFFERENT "
           f"question: entry points)")
     print(f"           LANES  Gate(bend=,oracle=) literals {len(pop['lanes']):>4}")
-    print(f"           RUN SET = A \\ LANES              {len(pop['run']):>4}")
+    print(f"           RUN SET = A \\ (lanes, proofs)     {len(pop['run']):>4}")
     print(f"EDGE       gates OUTSIDE the run set        {len(pop['outside']):>4}  "
           f"{pop['outside'] or '(the name shape misses no gatekit gate)'}")
     print(f"           hand-rolled gates in the set     {len(pop['hand_rolled']):>4}  "
