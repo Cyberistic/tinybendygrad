@@ -52,7 +52,23 @@ def u32(s: String) -> U32: Maybe.default(&2, U32, U32.read(s), 0)
 
 def ysplit(s: String) -> List<&2, String>: String.split(s, '~')
 
-def field(p: String, i: Nat) -> String: fld(ysplit(p), i)
+# **THE PAYLOAD'S FIELDS, AND **THE SPLIT IS **ONCE** PER ROW.** MEASURED (`PARITY.md` §138):
+# `field(p, i)` WAS `fld(ysplit(p), i)` -- **SO EVERY FIELD RE-SPLIT THE WHOLE PAYLOAD**, AND
+# THE PRELUDE's `String.split` IS **ONE RECURSION PER CHARACTER** (TWO `slice`s AND A
+# `char_len` PER CHARACTER). THE `i` ARM READ **TWO** FIELDS AND THE `p` ARM **FOUR**, SO
+# **258 `String.split` CALLS A TURN** -- AND **THE `const` ARM ALONE WAS **0.1389 ms** OF
+# `arg_of`'s **0.2320 ms** (MEASURED, `builds/probe-armof.py`, **EACH ARM CLOCKED
+# SEPARATELY, IN THE DAEMON**).
+#
+# SO **THE SPLIT IS DONE ONCE**, AND **EACH FIELD IS READ FROM **THE SPLIT LIST**.
+# **AND `field` ITSELF IS **GONE** -- IT HAD **NO CALLER** AFTER THIS CHANGE, AND **A DEF WITH
+# NO CALLER IS DEAD CODE.**
+# **AND THE READERS ARE **THEIR OWN `def`s WITH A BARE PARAMETER**, BECAUSE A `match` CANNOT
+# SCRUTINIZE A COMPUTED VALUE (THE TREE's OWN RULE) -- **AND THE `match`es BELOW ARE ON **THE
+# LIST**, WHICH IS A **PARAMETER**, SO THEY ARE LEGAL.
+#
+# **AND THE ARMS THAT NEED **TWO** OR **FOUR** FIELDS CALL **ONE** SPLIT AND PASS **THE LIST**,
+# NOT **THE PAYLOAD** -- SO **THE SPLIT COUNT A TURN IS **13 + 97 + 16 + 0 = 126**, NOT 258.**
 
 def flag(s: String) -> Bool: String.eq(s, "1")
 
@@ -259,16 +275,29 @@ def arg_of.wmma(kind1: U32, +p: String) -> C.KUArg:
     case 51: C.KAWmma{nums(p), S.bfloat16()}  # "M3"
     case _: C.KANone{}
 
+# THE `i` ARM'S TWO FIELDS, FROM **ONE** SPLIT. THE `i` PAYLOAD IS **ALWAYS TWO FIELDS**
+# (MEASURED: 97 OF 97).
+def const_int.of(+fs: List<&2, String>) -> C.KUArg:
+  C.KAConst{O.CInt{H.i64_of_hi_lo(u32(fld(fs, 0n)), u32(fld(fs, 1n)))}}
+
+# THE `p` ARM'S FOUR FIELDS, FROM **ONE** SPLIT. THE `p` PAYLOAD IS **ALWAYS FOUR FIELDS**
+# (MEASURED: 16 OF 16).
+def param_of(+fs: List<&2, String>) -> C.KUArg:
+  C.KAParam{u32(fld(fs, 0n)), maybe_name(fld(fs, 1n)), flag(fld(fs, 2n)), u32(fld(fs, 3n))}
+
+# THE `q` ARM'S THREE FIELDS, FROM **ONE** SPLIT.
+def special_of(+fs: List<&2, String>) -> C.KUArg:
+  C.KASpecial{fld(fs, 0n), u32(fld(fs, 1n)), fld(fs, 2n)}
+
 def arg_of(kind0: U32, kind1: U32, +p: String) -> C.KUArg:
   match kind0:
-    case 105: C.KAConst{O.CInt{H.i64_of_hi_lo(u32(field(p, 0n)), u32(field(p, 1n)))}}   # "i"
+    case 105: const_int.of(ysplit(p))                                                  # "i"
     case 102: C.KAConst{O.CFloat{F.F32.from_bits(u32(p))}}                             # "f"
     case 116: C.KAConst{O.CBool{truth(p)}}                                            # "t"
-    case 112: C.KAParam{u32(field(p, 0n)), maybe_name(field(p, 1n)), flag(field(p, 2n)),  # "p"
-                            u32(field(p, 3n))}
+    case 112: param_of(ysplit(p))                                                      # "p"
     case 120: C.KAIndex{u32(p), False{}}                                              # "x"
     case 115: C.KASink{p}                                                              # "s"
-    case 113: C.KASpecial{field(p, 0n), u32(field(p, 1n)), field(p, 2n)}              # "q"
+    case 113: special_of(ysplit(p))                                                   # "q"
     case 82: arg_of.range(kind1, p)                                                    # "R*"
     case 77: arg_of.wmma(kind1, p)                                                     # "M*"
     case _: C.KANone{}
