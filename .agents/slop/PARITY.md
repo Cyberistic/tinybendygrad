@@ -6795,3 +6795,93 @@ tinybendygrad/LAWS/PROOF-ALL.bend --check-only` -> `ALL PROOFS CHECK`, rc=0.**
 `git fsck --no-progress` NAMES **ONLY THE TWO PRE-EXISTING ORPHAN TREES** (`3a60f33f`,
 `d83cf685` -- THE ONES `AGENTS.md` ALREADY NAMES, AND NEITHER IS AN ANCESTOR OF HEAD).**
 
+### 138.2 THE PAYLOAD IS SPLIT **ONCE** PER ROW, AND THE **`arg_of` ARMS' BODIES** ARE WHERE
+#### THE COST WAS
+
+**§138's FIRST CHANGE CUT THE **WIRE's** SPLIT. THIS ONE CUTS THE **PAYLOAD's** SPLIT, AND THE
+FINDING THAT LED TO IT IS **THE DISPATCH IS NOT THE COST.**
+
+**THE ARMS, ONE AT A TIME** (MEASURED, `builds/probe-armof.py`, **EACH ARM CLOCKED SEPARATELY,
+INSIDE THE DAEMON**, 59 TURNS, AND **EVERY PATCH SITE COUNTED BEFORE IT IS APPLIED**):
+
+| arm | rows | ms a turn |
+|---|---|---|
+| **const** | 100 | **0.1389** |
+| param | 16 | 0.0535 |
+| none | 521 | 0.0174 |
+| index | 127 | 0.0148 |
+| range | 13 | 0.0108 |
+| sink | 5 | 0.0011 |
+| special | 0 | 0.0000 |
+| wmma | 0 | 0.0000 |
+| **TOTAL** | | **0.2365** |
+
+**⇒⇒⇒ AND THE **DISPATCH** IS **0.0020 ms** (MEASURED, `builds/probe-argof-cost.js`: THE
+COMPILED CHAIN'S OWN COST ON **THE REAL KIND SEQUENCE**), WHICH IS **0.9% OF THE PHASE** -- **AND
+A MAP LOOKUP IS NO FASTER.** **⇒⇒⇒ AND THE `x` KIND PAID **17 TESTS** FOR 127 ROWS, WHICH IS
+**2,032 COMPARISONS AND 0.002 ms** -- **SO THE REORDER IS NOT THE ANSWER, AND IT IS NOT WORTH
+REPEATING.**
+
+**⇒⇒⇒ AND **THAT IS A CORRECTION TO THE WORK STATE.** IT SAID "**THE `KANone` CATCH-ALL STILL
+PAYS ALL 17 TESTS**" -- **WHICH WAS **A READING OF THE **OLD** CHAIN** (THE SUBSTRATE MOVED, §138).
+**ON THE CURRENT CHAIN `KANone` PAYS **5**, AND THE COMPILER EMITS **8** MASK ARMS, NOT 17
+TESTS.**
+
+**⇒⇒⇒ AND THE `const` ARM WAS **59%** OF `arg_of` FOR **100 ROWS**, AND THE REASON IS
+**MEASURED, NOT GUESSED**: `field(p, i)` WAS `fld(ysplit(p), i)` -- **SO EVERY FIELD RE-SPLIT THE
+WHOLE PAYLOAD**, AND **THE PRELUDE's `String.split` IS ONE RECURSION PER CHARACTER** (TWO
+`slice`s AND A `char_len` PER CHARACTER). THE `i` ARM READ **TWO** FIELDS AND THE `p` ARM
+**FOUR**, SO **258 PRELUDE `String.split` CALLS A TURN**.
+
+**⇒⇒⇒ AND THE `u32` FOLD IS **NOT** THE COST EITHER** (MEASURED, `builds/probe-u32-cost.js`:
+THE COMPILED FOLD, TAKEN FROM **THE BUILD**, ON THE 127 `x` PAYLOADS): **0.0038 ms**, AGAINST
+**JS's `Number` AT 0.0007 ms** -- **0.0031 ms**, WHICH IS **1.6% OF `arg_of`**. **AND ALL 127 `x`
+PAYLOADS ARE THE **SINGLE CHARACTER "0"** (MEASURED) -- **SO THE FOLD RUNS ONCE PER CALL BUT
+STILL PAYS **TWO SLICES** FOR **ONE CHARACTER**.**
+
+**THE FIX: **THE SPLIT IS DONE ONCE** PER ROW, AND **EACH FIELD IS READ FROM **THE SPLIT LIST**.
+**AND THE READERS ARE **THEIR OWN `def`s WITH A BARE PARAMETER** (`const_int.of`, `param_of`,
+`special_of`), BECAUSE **A `match` CANNOT SCRUTINIZE A COMPUTED VALUE** (THE TREE's OWN RULE) --
+**AND THE `match`es ARE ON **THE LIST**, WHICH IS A **PARAMETER**, SO THEY ARE LEGAL.** **AND
+`field` ITSELF IS **GONE**, BECAUSE IT HAD **NO CALLER** AFTER THIS CHANGE.**
+
+**MEASURED, IN THE COMPILED FORM** (THE COMPILED `arg_of` FUNCTION, COMPARED CHARACTER BY
+CHARACTER): **THE `field()` CALLS GO **9 -> 0** AND THE `ysplit()` CALLS GO **0 -> 3**, AND THE
+PRELUDE `String.split` CALLS A TURN **258 -> 113** (**56% FEWER**).
+
+**THE MEASUREMENT** (THE PAIRED, ALTERNATING INSTRUMENT, `builds/paired2.py`, **TWO RUNS**):
+
+```
+  RUN 1 (153 TURNS)  DECODE  ratio-of-minima 0.8698  median-paired 0.9074  122/153 FASTER
+  RUN 2 (163 TURNS)  DECODE  ratio-of-minima 0.8736  median-paired 0.8904  116/163 FASTER
+  BOTH: same C: True (BYTE-IDENTICAL OUTPUT)
+```
+
+**⇒⇒⇒ AND THE **RENDER** IS **BYTE-IDENTICAL** BETWEEN THE TWO BUILDS** (MEASURED: THE
+COMPILED FUNCTION BODIES OF `cstyle_render`, `ku_row_of`, `ku_row_n`, `ku_row_s` AND
+`kus_rows_go`, COMPARED CHARACTER BY CHARACTER -- **ALL IDENTICAL**), **SO THE CHANGE IS CONFINED
+TO `arg_of`'s ARMS AND THE RENDER'S RATIO IS **THE NOISE**.**
+
+**THE DECODE's SHAPE** (MEASURED, `builds/decode-shape.py`, THE SAME INSTRUMENT):
+
+| part | before | after |
+|---|---|---|
+| rows | 0.5441 | **0.4817** |
+| ku_row | 0.4192 | **0.3421** |
+| arg_of | 0.2320 | **0.1809** |
+
+**THE CORPUS CERTIFICATE** (TAKEN IN A CLEAN WORKTREE, ON THE COMMIT `aa736032b`):
+`substrate-start == substrate-end == live`, **38 graphs / 31 agree / THE 7 RECORDED PERMUTE
+EXCEPTIONS / 0 refused**, **repro 339 of 339**, **`corpuswitness-gate` PASS** (ALL SEVEN READINGS
+OK), **`differ.unhealthy()` -> `[]`**, **`differ.artefacts_ok()` -> `[]`**,
+**`differ.repro_bad()` -> `[]`**, AND **THE PROOF GATE `ALL PROOFS CHECK`**.
+
+**⇒⇒⇒ AND THE TWO CHANGES OF §138, TOGETHER: **THE DECODE IS **1.5324 ms -> 0.93 ms** (THE
+IN-DAEMON SHAPE, `decode-shape.py`), AND THE PAIRED VERDICT FOR EACH IS **0.8526** AND
+**0.8698** -- **BOTH FAR BELOW THE **0.97** KEEPER LINE AND THE **0.99** NOISE.**
+
+**⇒⇒⇒ AND THE **NEXT** TERMS, MEASURED: **THE ROW WALK** (THE `kus_rows.go` WALK AND THE
+`ku_row` READERS) IS **STILL THE LARGEST**, AND THE **JS HALF** OF THE ONE EFFECT IS **0.30 ms**
+(MEASURED, `builds/probe-effsplit.py`: THE `wire_numbers` JS BODY IS **0.207 ms** AND THE PURE
+JS PROBE READS **0.187 ms** FOR THE SAME FUNCTION).
+
