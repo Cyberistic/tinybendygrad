@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=455 MB (ceiling 3072)  6s  :: ./bin/bend /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/schedbase/tinybendygrad/schedule/rangeify.bend  out=4896B err=0B
+  MACHINE: **VIOLATED** -- loadavg 14.7 on 12 cores, swap free 0.43 of 20.00 GiB; loadavg 14.7 > 12 cores and swap free 0.43 of 20.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD
