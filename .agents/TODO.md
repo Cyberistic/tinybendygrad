@@ -3865,6 +3865,47 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         row still resolves), and a byte-identical twin.
                                         See `.agents/slop/unclaimed3/REPORT.md`.
 
+no-arrow         [#########] 1/1      **THE U+21D2 CHARACTER IS GONE FROM THE WHOLE TREE, AND IT IS
+                                        NOT COMING BACK.** MEASURED: **0 FILES HOLD IT, 0
+                                        OCCURRENCES**, OVER **75,056 PATHS** (TRACKED, UNTRACKED AND
+                                        IGNORED, EXCLUDING VENDOR `node_modules`).
+                                        **THE CHARACTER HAD **TWO** MEANINGS, AND A BLIND
+                                        SUBSTITUTION WOULD HAVE DESTROYED ONE**: **9,775
+                                        EMPHASIS MARKERS** (A RUN BEFORE A CAPITALISED WORD --
+                                        DECORATION, SO **THE ARROWS GO AND THE WORD STAYS**) AND
+                                        **64 "IMPLIES" OPERATORS** (A LOWERCASE WORD FOLLOWS --
+                                        MEANING, SO IT BECOMES **`=>`**, **AND `=>` IS THIS TREE's
+                                        OWN ALREADY-ESTABLISHED CONVENTION**: 54,570 OCCURRENCES IN
+                                        1,283 FILES, **INCLUDING INSIDE `.bend` FILES** AS BEND's OWN
+                                        LAMBDA ARROW).
+                                        **THE INSTRUMENT IS `.agents/slop/cpuseam/builds/dearrow.py`,
+                                        AND IT IS **IDEMPOTENT** -- A SECOND PASS CHANGES NOTHING,
+                                        WHICH IS **THE PROPERTY THAT PROVES THE FIRST PASS
+                                        FINISHED.** IT WRITES THE ARROW AS AN ESCAPE SEQUENCE,
+                                        BECAUSE **A TOOL THAT CONTAINS THE CHARACTER IT DELETES
+                                        CANNOT BE COMMITTED ARROW-FREE.**
+                                        **AND THE WHITESPACE POLICY IS **ONE RULE**: THE ARROW RUN AND
+                                        THE WHITESPACE IMMEDIATELY AFTER IT GO AS A UNIT, AND
+                                        NOTHING ELSE MOVES. MEASURED, **THREE EARLIER CUTS WERE
+                                        REJECTED AS MEASURED-WRONG**: A BLANKET `re.sub(r"  +", " ")`
+                                        **DESTROYED `.agents/TODO.md`'s ALIGNED COLUMNS AND SHRANK
+                                        THAT FILE BY 237 KB**; A PER-LINE DE-DOUBLING **ATE THE
+                                        INDENTATION**; AND A RUN BETWEEN TWO WORDS **MERGED THEM**
+                                        AND **GLUED A `=>` TO ITS WORD**. THE FINAL CUT IS
+                                        **POSITION-AWARE AND SINGLE-PASS**.
+                                        **THE GATES ARE GREEN AND THE CHANGE IS **NEUTRAL**:
+                                        `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` ->
+                                        **rc=0, "ALL PROOFS CHECK"**; THE COMPILE GATE READS
+                                        **3 FINDING / 189 COMPILES** BOTH WITH AND WITHOUT THE
+                                        CHANGE, **THE SAME `kuconv.bend` FINDING**; AND THE CORPUS
+                                        CERTIFICATE IS **GREEN AND CURRENT** (rc=0, 38 graphs, 0
+                                        refused, `substrate-start == substrate-end == live`,
+                                        repro 339 of 339, `corpuswitness-gate` **PASS**).
+                                        **AND A **LATER** CORPUS FAILURE IS **ISOLATED TO **NOT** THIS
+                                        CHANGE**: THE PERMUTE COMMIT `872be66fe` FAILS
+                                        **IDENTICALLY WITH THIS CHANGE REVERTED**, AND **THE COMMIT
+                                        BEFORE IT, WITH THIS CHANGE IN, IS GREEN.** SEE
+                                        `.agents/slop/PARITY.md` §139.
 upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE FILE AT A TIME,
                                         AND TWO FILES ARE DONE.**
                                         **THE ARCHITECTURE, AND IT IS THE TREE's OWN:**
