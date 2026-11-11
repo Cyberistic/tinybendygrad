@@ -10,14 +10,14 @@ lists a different set) × each file's **own header** (which names its upstream c
 
 | | before | after |
 |---|---|---|
-| the port's lines | 321,417 | **278,847** |
+| the port's lines | 321,417 | **276,644** |
 | upstream's | 63,395 | 63,395 |
-| **the ratio** | **5.08×** | **4.40×** |
-| GATE ROWS | 9,389 | **1,131** |
-| COMMENTS | 131,240 | **113,263** |
+| **the ratio** | **5.08×** | **4.36×** |
+| GATE ROWS | 9,389 | **991** |
+| COMMENTS | 131,240 | **112,357** |
 | BLANK | 43,365 | 41,930 |
-| **CODE** | **137,423** | **122,523** |
-| **the code-only ratio** | **2.44×** | **2.17×** |
+| **CODE** | **137,423** | **121,366** |
+| **the code-only ratio** | **2.44×** | **2.15×** |
 
 **THE HEADLINE IS **THE CODE-ONLY RATIO**, BECAUSE A COMMENT IS NOT A LINE OF PORT AND A
 GATE ROW IS NOT EITHER.**
@@ -64,7 +64,7 @@ BE **COUNTED **SEPARATELY**, **NOT **AS **A **PORT **OF **AN **UPSTREAM **FILE**
 
 ## THE FIVE LEVERS, AND WHAT EACH IS WORTH — **MEASURED**
 
-### 1 — THE GATE ROWS OUT OF THE IMPLEMENTATION FILES — **DONE, 9,389 → 1,041**
+### 1 — THE GATE ROWS OUT OF THE IMPLEMENTATION FILES — **DONE, 9,389 → 991**
 
 **THE TREE's OWN CONVENTION SAYS SO: `gates/README.md:173` — *"a gate's `.bend` driver and
 its CPython oracle sit in `gates/`, named by the gate that needs them."* **AND 89 SUCH
@@ -74,6 +74,14 @@ DRIVERS ALREADY EXIST.**
 **AND **AFTER **WERE **BYTE-IDENTICAL** ON EVERY FILE.**
 
 **AND **THE **FOUR **MOVES **LANDED **20,000+ **GATE **LINES** OUT OF **THE **PORT.**
+
+**⇒ AND **THE **LAST **BIG **ONE **LANDED **ON **2026-11-11**: **`uop/ops.bend` **WENT
+**11,402 → 9,199 **LINES** (**-2,203**), **AND **ITS **342 **ROWS **MOVED **TO
+**`gates/ops-gate.bend`** (**3,360 **LINES**) -- **⇒ AND **THE **PUBLIC **API **IS
+**UNCHANGED** (**895 **DECLARATIONS **BEFORE**, **895 **IN **THE **PORT**, **NONE **MISSING
+**AND **NONE **DUPLICATED**), **AND **THE **12 **TYPES **THE **PORT **OWNS **STAY **IN **THE
+**PORT** -- **⇒ AND **THE **CITATION **GATES **MOVED **NEITHER **COUNT**, **AND **THE
+**CONSUMERS **COMPILE** -- **⇒ AND **THE **REPORT **IS **`.agents/slop/ops-shrink/REPORT.md`.**
 
 ### 2 — THE COMMENT BLOCK — **PARTLY DONE, AND **THE **REST **IS **MEASURED **NOT **REDUNDANT**
 
