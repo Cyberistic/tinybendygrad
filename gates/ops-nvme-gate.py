@@ -96,7 +96,7 @@ from gatekit import Gate, main
 # PORT LANE HAS 207 ROWS AND THE ORACLE LANE HAS 206.
 GATE = Gate(
     "ops-nvme-gate",
-    bend="tinybendygrad/runtime/ops_nvme.bend",
+    bend="gates/ops_nvme-gate.bend",
     oracle="gates/ops-nvme-oracle.py",
     rows=207,
     compared=206,
