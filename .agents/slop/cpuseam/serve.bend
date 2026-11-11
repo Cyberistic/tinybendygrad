@@ -18,12 +18,35 @@ type St is Data:
 # `String.split` is one recursion per character and it was 5.16 ms of a 5.58 ms daemon turn -- 92.6% -- so
 # the wire is split by `Wire.split`, whose JS half calls the native `String.prototype.split` (0.136 ms a
 # turn). THE PURE HALF (`L.kus_bytes`) IS UNCHANGED AND THE LITERAL PATH NEVER COMES HERE.
+# **THE **O(1) PREPEND FORM**, AND IT IS **A FIX TO **THE HARNESS**, NOT **THE PORT**. MEASURED
+# (`probe-list-sites.py`, IN THE DAEMON): **THE HARNESS's `decode.go` WAS **THE O(n) FORM**
+# (`List.append(&2, C.KU, acc, ks)`), **WHICH COPIES **THE WHOLE ACCUMULATOR** -- AND **THE WIRE
+# IS **3 CHUNKS** AND **THE ACCUMULATOR GROWS TO **740 ELEMENTS**, **SO **THE HARNESS's OWN
+# DECODE WAS **O(n²)**. **⇒⇒⇒ AND **THAT COST IS **INSIDE **THE MEASURED DECODE PHASE** (THE
+# CLOCK WRAPS `$$decode`), **SO **THE DECODE's NUMBER CONTAINED **THE HARNESS's OWN BUG** --
+# **AND THE PORT's `live.bend` IS **NOT** AFFECTED** (ITS `kus_rows.go` USES **THE O(1)
+# PREPEND FORM** AT LINE 536, AND **THAT WAS FIXED LONG AGO**).
+#
+# ⇒⇒⇒ SO **THE PREPEND FORM** IS **THE O(1) ONE** (`List.append(xs, ys)` COPIES `xs`, SO
+# `List.append([x], acc)` IS O(1) AND `List.append(acc, [x])` IS O(n)) -- **AND THE ORDER IS
+# REVERSED AT THE ONE READER**, WHICH IS **THE TREE's OWN PATTERN** (`live.bend`'s `kus_bytes`
+# REVERSES ONCE AT THE END).
+# **THE PREPEND OF **A WHOLE LIST**, IN **O(|xs|)** -- BECAUSE `List.append(a, A, xs, ys)`
+# COPIES **`xs`**, SO PREPENDING **A LIST** BY APPENDING **THE ACCUMULATOR** IS **O(n)** AND
+# PREPENDING **THE LIST** IS **O(|xs|)** BUT **REVERSES **THE ORDER**. **⇒⇒⇒ SO THE CHUNK's
+# KUs ARE **WALKED** ONCE AND **PREPENDED** ONE AT A TIME**, WHICH IS **O(|xs|)** AND **KEEPS
+# **THE ORDER** WITHIN **THE CHUNK**.
+def prepend_all(+xs: List<&2, C.KU>, +acc: List<&2, C.KU>) -> List<&2, C.KU>:
+  match xs:
+    case Nil{}: acc
+    case h <> t: prepend_all(t, List.append(&2, C.KU, [h], acc))
+
 def decode.go(+cs: List<&2, String>, +acc: List<&2, C.KU>) -> IO(List<&2, C.KU>):
   match cs:
-    case Nil{}: IO.pure(List<&2, C.KU>, acc)
+    case Nil{}: IO.pure(List<&2, C.KU>, List.reverse(&2, C.KU, acc))
     case h <> t:
       IO.bind(List<&2, C.KU>, List<&2, C.KU>, L.kus(h), ks =>
-        decode.go(t, List.append(&2, C.KU, acc, ks)))
+        decode.go(t, prepend_all(ks, acc)))
 
 def decode(+cs: List<&2, String>) -> IO(List<&2, C.KU>): decode.go(cs, Nil{})
 
