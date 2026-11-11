@@ -6949,12 +6949,24 @@ IS THE WHITESPACE THE ARROW WAS HOLDING.**
     **rc=0, 339 of 339 files identical across two clean runs**; AND
     `gates/corpuswitness-gate.py` -> **PASS -- the claim is ESTABLISHED** (ALL SEVEN READINGS OK).
 
-**AND THE **ISOLATION** OF A **LATER** CORPUS FAILURE, WHICH IS **NOT** THIS CHANGE'S: A **SUBSEQUENT**
-COMMIT (`872be66fe`, **"PERMUTE's **ORDER** **LIVES **IN **`src[1]`**"**) MADE THE CORPUS FAIL (5 REFUSED,
-`selfcheck FAIL`). MEASURED, **THE FAILURE IS **IDENTICAL** WITH **THIS CHANGE REVERTED** OFF THAT
-COMMIT (5 REFUSED, `selfcheck FAIL`, `plants-disagree 2 of 8`), **AND THE COMMIT **BEFORE** IT -- **WITH
-THIS CHANGE IN** -- IS **GREEN** (rc=0, 38 ANSWERED, 0 REFUSED, SELFCHECK OK). **AND SO THE CAUSE IS
-**THE PERMUTE COMMIT**, AND **THE ARROW REMOVAL IS **NEUTRAL** ON THE CORPUS** -- **MEASURED BOTH WAYS.**
+**AND THE **ISOLATION** OF A **LATER** CORPUS FAILURE, WHICH IS **NOT** THIS CHANGE'S, AND IT IS
+**MEASURED IN **BOTH** DIRECTIONS ON **THE SAME BASE COMMIT** (`6e45ad251`):
+
+| THE TREE | THE ARROWS | THE CORPUS |
+|---|---|---|
+| `6e45ad251` | **WITH** THIS CHANGE | **rc=0**, 38 answered, 0 refused, 31 agree, 7 disagree, 31 byte-identical, `plants-disagree 8 of 8`, **SELFCHECK OK** |
+| `6e45ad251` **+ THE PERMUTE COMMIT `872be66fe`** | **WITHOUT** THIS CHANGE | **rc=1**, **5 refused**, `plants-disagree 2 of 8`, **SELFCHECK FAIL** |
+
+**AND THE FAILING GRAPH IS NAMED BY THE SELFCHECK ITSELF**: `bw`, WHOSE GRADIENT SEED MUST BE **PERMUTED
+`(1,2,0)`**. **AND SO THE CAUSE IS **THE PERMUTE COMMIT**'s `bw` DEFECT, AND **THE ARROW REMOVAL IS
+**NEUTRAL** ON THE CORPUS** -- **MEASURED BOTH WAYS, ON THE SAME BASE COMMIT, WITH THE ONLY VARIABLE
+BEING WHETHER THE ARROWS ARE THERE.**
+
+**AND THE **CERTIFICATE** FOR **THIS** CHANGE WAS TAKEN **BEFORE** THE PERMUTE COMMIT LANDED, **IN A
+CLEAN WORKTREE** WITH `git status --porcelain -- tinybendygrad/` **EMPTY** AT RUN START:
+`substrate-start == substrate-end == live == 46c0b1e30fad123285e852aa871f47a48566c98948ce995a03e47a831113ace8`,
+**38 graphs / 38 answered / 31 agree / 0 refused**, **repro 339 of 339**, AND
+**`corpuswitness-gate` -> **PASS -- the claim is ESTABLISHED** (ALL SEVEN READINGS OK).
 
 **AND THE COMMITS ARE BY PATH ONLY, AND **NEVER AMEND, NEVER REBASE**: `git commit --only -F <msgfile>
 -- <path>`, WITH **NO `git add -A`**, AND `git show --stat` **AND** `git fsck --no-progress` RUN AFTER
