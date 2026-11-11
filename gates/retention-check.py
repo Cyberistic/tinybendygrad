@@ -524,8 +524,8 @@ def report(res):
     # V -- THE DISCOVERED POPULATION, AND THE CLAUSE THAT CLOSES THE CLASS. I-IV run on a
     # TWO-ITEM REGISTRY; this runs on `gates/gendirs.py`, which finds every directory in the tree
     # that something WRITES INTO by scanning write sites and resolving them through a constant-
-    # propagation fixpoint. **A POPULATION DEFINED BY A LIST CANNOT BE WRONG ABOUT A FOURTH ITEM
-    # BECAUSE IT NEVER LOOKS AT ONE**, so the fourth item is looked at here instead.
+    # propagation fixpoint. A POPULATION DEFINED BY A LIST CANNOT BE WRONG ABOUT A FOURTH ITEM
+    # BECAUSE IT NEVER LOOKS AT ONE, so the fourth item is looked at here instead.
     print()
     gendirs = load_gendirs()
     rows = gendirs.table()
@@ -649,16 +649,16 @@ def main():
     unknown = set(over) - {"graphcmp", "gates"}
     if unknown:
         ap.error(f"unknown --dir key(s) {sorted(unknown)}; expected graphcmp or gates")
-    # THE SUBJECT IS GUARDED **BEFORE ANY WORK**, AND THAT IS THE WHOLE FIX. `checks/runs-artifacts.py`
+    # THE SUBJECT IS GUARDED BEFORE ANY WORK, AND THAT IS THE WHOLE FIX. `checks/runs-artifacts.py`
     # LOADED BY PATH (`checks/sweep.py:101` loads it the same way) answers ABSENT / EMPTY / STALE /
     # FRESH in one vocabulary; 3 is REFUSED in this tree (`gates/gatekit.py:60`) and IT OUTRANKS
     # FAIL.
     #
-    # **MEASURED: THE GUARD WAS BELOW `registry()` AND `report()`, AND ON AN ABSENT CORPUS IT NEVER
-    # RAN.** `registry()` calls `differ.declared()`, which reaches `differ.py:110 corpus()` and
+    # MEASURED: THE GUARD WAS BELOW `registry()` AND `report()`, AND ON AN ABSENT CORPUS IT NEVER
+    # RAN. `registry()` calls `differ.declared()`, which reaches `differ.py:110 corpus()` and
     # loads `.agents/slop/graphcmp.py`; with the corpus absent the whole chain raised and the gate
-    # answered `rc=1` with a traceback, not `REFUSED`. **A GUARD PLACED AFTER THE WORK IT GUARDS IS
-    # A COMMENT.** Driving it (`control.py`) is what found this -- the reader passed `ARTIFACTS-STALE`
+    # answered `rc=1` with a traceback, not `REFUSED`. A GUARD PLACED AFTER THE WORK IT GUARDS IS
+    # A COMMENT. Driving it (`control.py`) is what found this -- the reader passed `ARTIFACTS-STALE`
     # on the live tree and would have failed only on a corpus that was gone.
     spec = importlib.util.spec_from_file_location(
         "runs_artifacts", str(ROOT / "checks/runs-artifacts.py"))

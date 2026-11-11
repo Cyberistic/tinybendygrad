@@ -1,7 +1,7 @@
 #!/bin/sh
 # groupflip-baseline.sh -- the BEFORE/AFTER lane for gates/groupflip-gate.py, and NOT A GATE.
 #
-# **IT PRODUCES NO VERDICT AND ITS EXIT STATUS IS NOT ONE.** It is a MEASUREMENT HARNESS, and
+# IT PRODUCES NO VERDICT AND ITS EXIT STATUS IS NOT ONE. It is a MEASUREMENT HARNESS, and
 # `gates/README.md`'s reason the shell form was retired is that a shell gate can pass having
 # measured nothing; this file cannot pass or fail at all, it only writes rows. `gates/*.py` is
 # the gate surface, and `ls gates/*.sh | wc -l` = 1 BECAUSE OF THIS FILE -- MEASURED -- so the

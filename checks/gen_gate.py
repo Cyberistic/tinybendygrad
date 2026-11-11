@@ -68,7 +68,7 @@ for b in [-S, -S + 1, S - 1, S - 2, 1, -1, 3, -3]:
     for a in DIVIDENDS:
         add(f"v_{a}_{b}", a, b)
 
-# the 2**k +- 1 ladder, since a divisor just below a power of two is what pushes
+# the 2k +- 1 ladder, since a divisor just below a power of two is what pushes
 # the quotient's top bit
 for k in (0, 1, 2, 8, 15, 16, 17, 31, 32, 33, 62):
     for d in (-1, 0, 1):

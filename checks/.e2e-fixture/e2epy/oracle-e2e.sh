@@ -227,7 +227,7 @@ verdict "stage 6 port (matmul THROUGH the port, no Node)" "$psrc"
 # still 64 for 32 doubles and the harness needed no change to be dtype-general.  That
 # is the same two-`U32` route `W64.md:124-160` measured, now on a KERNEL.
 #
-# AND IT IS THE ROW f32 CANNOT HAVE.  `out[0] = 1.0 + 2**-40 = 0x3FF0000000001000`,
+# AND IT IS THE ROW f32 CANNOT HAVE.  `out[0] = 1.0 + 2-40 = 0x3FF0000000001000`,
 # which rounds to exactly `1.0` (`0x3F800000`) in f32.  Same kernel shape, same
 # harness, same launch, different width, different answer -- so the width is not a
 # label.  CPython's two answers are printed side by side, never asserted apart.

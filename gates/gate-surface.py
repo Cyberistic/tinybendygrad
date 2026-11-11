@@ -134,17 +134,17 @@ TIMEOUT = 180
 # `0` and `1` are PLANTED, so this gate's surface is 3 of 3 REACHABLE -- without plants, `RED_IS`
 # would be an UNEARNED claim and the census would say so about itself.
 #
-# MEASURED 2026-10-30: the REFUSED CODE WAS **2** HERE, AND **THIS **FILE'S **OWN **MODULE **DOCSTRING**
-# SAYS **3** (**`VERDICTS = {0: "GREEN", 1: "RED", 3: "REFUSED"}`**, **`:22`**), **AND **`refuse()`**
-# **EXITED **3** — **SO **THE **DOCSTRING **AND **THE **CODE **AGREED **AND **ONLY **THE **CONSTANT
-# DISAGREED.**  **AND **3 **IS **THE **RIGHT **NUMBER**: **`refuse()`'s **OWN **COMMENT **SAYS **WHY**
-# (**`:221-225`**) — **THE **HOUSE **VOCABULARY **IS **`gates/gatekit.py`'s **OWN **UNPACK**
-# (**`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`**), **SO **2 **IS **UNNAMED**, **AND **THIS
-# **FILE's **OWN **RULE **IS **THAT **"A **NUMBER **WITH **NO **AGREED **MEANING **MUST **BE **NAMED
-# **RATHER **THAN **RESOLVED"**.  **AND **PLANT **5c **EXPECTED **2**, **WHICH **IS **WHY **THE
-# **PLANT **SUITE **WAS **RED **ON **A **GATE **THAT **REFUSES **CORRECTLY.**  **AND **THE **PLANT
-# **ROW **HERE **IS **`["--root", "/dev/null"]`**, **AND **THAT **ARGV **REACHES **3** — **SO **THE
-# **DECLARATION **AND **THE **PLANT **AGREE **FOR **THE **FIRST **TIME.**
+# MEASURED 2026-10-30: the REFUSED CODE WAS 2 HERE, AND THIS FILE'S OWN MODULE DOCSTRING
+# SAYS 3 (`VERDICTS = {0: "GREEN", 1: "RED", 3: "REFUSED"}`, `:22`), AND `refuse()`
+# EXITED 3 — SO THE DOCSTRING AND THE CODE AGREED AND ONLY THE CONSTANT
+# DISAGREED.  AND 3 IS THE RIGHT NUMBER: `refuse()`'s OWN COMMENT SAYS WHY
+# (`:221-225`) — THE HOUSE VOCABULARY IS `gates/gatekit.py`'s OWN UNPACK
+# (`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`), SO 2 IS UNNAMED, AND THIS
+# FILE's OWN RULE IS THAT "A NUMBER WITH NO AGREED MEANING MUST BE NAMED
+# RATHER THAN RESOLVED".  AND PLANT 5c EXPECTED 2, WHICH IS WHY THE
+# PLANT SUITE WAS RED ON A GATE THAT REFUSES CORRECTLY.  AND THE PLANT
+# ROW HERE IS `["--root", "/dev/null"]`, AND THAT ARGV REACHES 3 — SO THE
+# DECLARATION AND THE PLANT AGREE FOR THE FIRST TIME.
 VERDICTS = {0: "OK", 1: "RED", 3: "REFUSED"}
 PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 3: ["--root", "/dev/null"]}
 RED_IS = "FINDING"
@@ -157,25 +157,25 @@ FINDING, UNTAKEN, FAILURE = "FINDING", "UNTAKEN", "FAILURE"
 # -- while `gates/gates-pop.py:141` puts `.py` AND `.sh` into ONE population (`SUFFIXES =
 # (".py", ".sh")`, 17 of the 133 discovered entry points shipping a shell `#!`). So a `.sh` gate's
 # verdict, as measured by this instrument, was the verdict of a Python parser meeting a shebang:
-# a `SyntaxError` prints a `File "...", line N` traceback and exits **1**, and 1 is `FAIL` -- the
+# a `SyntaxError` prints a `File "...", line N` traceback and exits 1, and 1 is `FAIL` -- the
 # one code a shell gate and a Python parser can both produce, so the error is INDISTINGUISHABLE
 # from agreement. `checks/sb-gate.sh`'s `refuse()` is `exit 3`, and 3 is invisible to a Python
-# parser entirely: **a shell gate that refuses to measure anything can only say so in a shell.**
+# parser entirely: a shell gate that refuses to measure anything can only say so in a shell.
 # `.agents/slop/shellgates/` took the measurement; 17 of 17 are named there.
 #
 # BUT THE SENTENCE ABOVE IS NOT WHY THE LINE BELOW IS RIGHT. It is right because THE FILE SAYS SO.
 # `#!` is a declaration a file ships about itself, and it is the kernel's own rule for what to
 # exec; `AGENTS.md`'s doctrine 1 names the alternatives it replaces -- *"A BASENAME SHAPE, A SUFFIX
 # SET, AND A HAND LIST ARE NOT POPULATIONS."* The line this replaced WAS a suffix set:
-# `if p.suffix != ".py": continue`, which is why the census was silent rather than wrong. **A
+# `if p.suffix != ".py": continue`, which is why the census was silent rather than wrong. A
 # suffix filter does not merely mis-measure the shell half, it makes the shell half INVISIBLE, and
-# an instrument that cannot see a population cannot be anything.**
+# an instrument that cannot see a population cannot be anything.
 #
 # MEASURED AND IT IS NOT FREE: 8 of the 115 `.py` entry points ship NO `#!` AT ALL (`checks/run.py`,
 # `gates/i64-shl-gate.py`, and 6 more). Refusing them would have been a second regression -- 8
 # gates that reach rc 0 today would have read `UNREACHED`, and a census that reds because a file
 # omitted a comment is not a census. So the resolution order is SHEBANG FIRST and only then the
-# kind this file can otherwise establish, and **every plant records which of the two it used**, so
+# kind this file can otherwise establish, and every plant records which of the two it used, so
 # the fallback is a counted number on every run rather than a silent default.
 SHELLS = frozenset({"sh", "bash", "zsh", "dash", "ksh", "mksh", "ash"})
 _SHEBANG = re.compile(r"^#!\s*(\S.*)$")
@@ -230,7 +230,7 @@ def refuse(*why):
     rc 1 and a traceback, which carries no denominator and so counts nowhere).
     """
     print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
-    # **EXIT 3, NOT 2: `2` IS NOT IN THIS FILE'S OWN VOCABULARY.** `vocabulary()` reads
+    # EXIT 3, NOT 2: `2` IS NOT IN THIS FILE'S OWN VOCABULARY. `vocabulary()` reads
     # `gates/gatekit.py`'s unpack, so it inherits {0,1,3,4,5} and 2 is simply UNNAMED, and this
     # file's own rule is that "a number with no agreed meaning must be NAMED rather than resolved".
     # The sentence printed above says REFUSED, and REFUSED is 3: `gates/gendirs.py` exits 3 for the
@@ -390,22 +390,22 @@ def declaration(p):
     try:
         tree = ast.parse(p.read_text(errors="replace"))
     except SyntaxError as e:
-        # A **PYTHON** **FILE **THAT **DOES **NOT **PARSE **IS **MALFORMED**: **A **CALLER **CANNOT **READ
-        # **ITS **DECLARATION, **AND **THE **GATE **IS **UNREADABLE.**
+        # A PYTHON FILE THAT DOES NOT PARSE IS MALFORMED: A CALLER CANNOT READ
+        # ITS DECLARATION, AND THE GATE IS UNREADABLE.
         #
-        # AND **A **FILE **IN **ANOTHER **LANGUAGE **NEVER **REACHES **THIS **LINE:** **THE **CALLER
-        # **ROUTES **IT **INTO **THE **`unread` **BUCKET **BEFORE **CALLING **THIS**, **AND **IT **IS
-        # **COUNTED **AND **NAMED **THERE** — **THE **SAME **RULE **THE **SHELL **HALF **AND **THE
-        # **NO-SHEBANG **HALF **FOLLOW.**  **MEASURED 2026-10-30: `checks/drive.mjs` and
+        # AND A FILE IN ANOTHER LANGUAGE NEVER REACHES THIS LINE: THE CALLER
+        # ROUTES IT INTO THE `unread` BUCKET BEFORE CALLING THIS, AND IT IS
+        # COUNTED AND NAMED THERE — THE SAME RULE THE SHELL HALF AND THE
+        # NO-SHEBANG HALF FOLLOW.  MEASURED 2026-10-30: `checks/drive.mjs` and
         # `checks/nan_census.mjs` were charged MALFORMED for "UNPARSEABLE", and they are JAVASCRIPT
         # (`gates/gates-pop.py`'s `entry_reason()` reads both as `js-main`), so `ast.parse` failing on
-        # them was a finding about **THIS READER**.
+        # them was a finding about THIS READER.
         #
-        # AND **THE **CHARGE **IS **KEPT **WHERE **IT **IS **TRUE** — **A **PYTHON **FILE **THAT **DOES
-        # **NOT **PARSE **IS **AN **OPAQUE **FILE, **NOT **AN **ENTRY** (`gates-pop.py` **CANNOT **READ
-        # **A **`__main__` **GUARD **IN **A **FILE **THAT **DOES **NOT **PARSE**), **SO **THIS **ARM **IS
-        # **REACHABLE **ONLY **FOR **A **GATE **THE **POPULATION **CARRIES **AND **THIS **READER **CANNOT
-        # **PARSE.**
+        # AND THE CHARGE IS KEPT WHERE IT IS TRUE — A PYTHON FILE THAT DOES
+        # NOT PARSE IS AN OPAQUE FILE, NOT AN ENTRY (`gates-pop.py` CANNOT READ
+        # A `__main__` GUARD IN A FILE THAT DOES NOT PARSE), SO THIS ARM IS
+        # REACHABLE ONLY FOR A GATE THE POPULATION CARRIES AND THIS READER CANNOT
+        # PARSE.
         return None, None, None, f"UNPARSEABLE ({e.msg} line {e.lineno})"
     found = {}
     for node in tree.body:
@@ -421,26 +421,26 @@ def declaration(p):
                     found[t.id] = ast.literal_eval(node.value)
                 except (ValueError, SyntaxError, TypeError):
                     found[t.id] = f"NOT A LITERAL"
-    # `VERDICTS` IS THE MARKER -- AND **THE **MARKER **IS **THE **SHAPE, **NOT **THE **NAME.**
+    # `VERDICTS` IS THE MARKER -- AND THE MARKER IS THE SHAPE, NOT THE NAME.
     # A file that names a `VERDICTS` variable for its own reasons is NOT a gate that declared a
-    # surface. MEASURED 2026-10-30: **FOUR** files ship a `VERDICTS` that is not a mapping and
+    # surface. MEASURED 2026-10-30: FOUR files ship a `VERDICTS` that is not a mapping and
     # were charged MALFORMED for it -- `gates/citations-census-gate.py` (a TUPLE of row labels),
     # `gates/e2estage8-stage-selftest.py` (a PATH to a module), `gates/vendordep-census-gate.py`
-    # (a TUPLE) and `gates/verdictcopy-gate.py` (a SET of words) -- and **NOT **ONE **OF **THE **FOUR
-    # **SHIPS **A **`PLANTS` **DICT**, **SO **NOT **ONE **OF **THEM **DECLARED **A **SURFACE.**
+    # (a TUPLE) and `gates/verdictcopy-gate.py` (a SET of words) -- and NOT ONE OF THE FOUR
+    # SHIPS A `PLANTS` DICT, SO NOT ONE OF THEM DECLARED A SURFACE.
     #
-    # AND **A **NAME **TEST **IS **THE **CLASS **DOCTRINE **1 **FORBIDS**: **A **BASENAME **SHAPE, **A
-    # **SUFFIX **SET, **AND **A **HAND **LIST **ARE **NOT **POPULATIONS**, **AND **NEITHER **IS **"A
-    # **VARIABLE **CALLED **`VERDICTS`**".**  **THE **SHAPE **IS **WHAT **DECLARES:** **A **MAPPING **FROM
-    # **EXIT **CODES **TO **WORDS **IS **A **DECLARED **SURFACE**, **AND **A **TUPLE, **A **PATH, **OR **A
-    # **SET **IS **NOT.**
+    # AND A NAME TEST IS THE CLASS DOCTRINE 1 FORBIDS: A BASENAME SHAPE, A
+    # SUFFIX SET, AND A HAND LIST ARE NOT POPULATIONS, AND NEITHER IS "A
+    # VARIABLE CALLED `VERDICTS`".  THE SHAPE IS WHAT DECLARES: A MAPPING FROM
+    # EXIT CODES TO WORDS IS A DECLARED SURFACE, AND A TUPLE, A PATH, OR A
+    # SET IS NOT.
     #
-    # AND **THE **COST **OF **THE **NAME **TEST **WAS **FOUR **FALSE **CHARGES**, **AND **THE **COST **OF
-    # **THE **SHAPE **TEST **IS **THAT **A **GATE **DECLARING **A **SURFACE **WITH **A **BROKEN **SHAPE
-    # **IS **NO **LONGER **CHARGED.**  **AND **THAT **IS **WHY **THE **SHAPE **TEST **KEEPS **THE
-    # **`PLANTS` **HALF:** **A **FILE **THAT **SHIPS **A **`PLANTS` **MAPPING **HAS **DECLARED **A
-    # **SURFACE, **AND **IF **ITS **`VERDICTS` **IS **NOT **A **MAPPING **THEN **THE **DECLARATION **IS
-    # **MALFORMED **AND **THAT **IS **A **FINDING **ABOUT **THE **GATE.**
+    # AND THE COST OF THE NAME TEST WAS FOUR FALSE CHARGES, AND THE COST OF
+    # THE SHAPE TEST IS THAT A GATE DECLARING A SURFACE WITH A BROKEN SHAPE
+    # IS NO LONGER CHARGED.  AND THAT IS WHY THE SHAPE TEST KEEPS THE
+    # `PLANTS` HALF: A FILE THAT SHIPS A `PLANTS` MAPPING HAS DECLARED A
+    # SURFACE, AND IF ITS `VERDICTS` IS NOT A MAPPING THEN THE DECLARATION IS
+    # MALFORMED AND THAT IS A FINDING ABOUT THE GATE.
     if "VERDICTS" not in found:
         return None, None, None, ""
     if not isinstance(found["VERDICTS"], dict):
@@ -526,8 +526,8 @@ def report(root, charge=True):
           f"(+{len(libs)} module(s) with no entry guard)\n")
     # WHERE THE HOMES CAME FROM, IN THE CENSUS THAT CONSUMES THEM. `walk_control` below takes
     # `gpop.HOMES` as a PARAMETER, so before `gate_homes()` existed the two lists it compared were
-    # the SAME list and the comparison was unfalsifiable -- **A CONTROL FED THE LIST IT IS ABOUT TO
-    # CHECK CANNOT DISAGREE.** Printing the derivation next to the population is what makes the
+    # the SAME list and the comparison was unfalsifiable -- A CONTROL FED THE LIST IT IS ABOUT TO
+    # CHECK CANNOT DISAGREE. Printing the derivation next to the population is what makes the
     # difference between "the root set" and "the control's idea of the root set" visible at all,
     # and it is two lines rather than a new population: `report_roots` is `gates-pop`'s, loaded
     # BY PATH, so there is no second copy of anything.
@@ -564,30 +564,30 @@ def report(root, charge=True):
         # ONLY `SHELL` LEAVES THE PYTHON CENSUS, and the reason is that `declaration()` reads a
         # PYTHON module body: a shell script has no `VERDICTS` literal for `ast.literal_eval` to
         # read, so sending it there would report `UNPARSEABLE` on 17 files -- a finding about this
-        # reader wearing the costume of a finding about the tree. **A file that ships NO `#!` is
-        # NOT a shell file**: it went through `continue` in the first version of this line, and
+        # reader wearing the costume of a finding about the tree. A file that ships NO `#!` is
+        # NOT a shell file: it went through `continue` in the first version of this line, and
         # that silently dropped the 8 no-shebang `.py` gates AND every synthetic plant, which is
         # how `--plant green` stopped reaching its own rc 0 and `RED_IS="FINDING"` went UNEARNED.
         # The split is SHELL-AGAINST-EVERYTHING-ELSE, and no-shebang is COUNTED, not routed.
         if kind == "SHELL":
             shell.append(p)
             continue
-        # THE FILE **THIS **CENSUS **CANNOT **READ** IS NOT **A **FILE **WITH **A **MALFORMED
-        # **DECLARATION** — **IT **IS **A **FILE **THIS **CENSUS **DOES **NOT **UNDERSTAND.**
+        # THE FILE THIS CENSUS CANNOT READ IS NOT A FILE WITH A MALFORMED
+        # DECLARATION — IT IS A FILE THIS CENSUS DOES NOT UNDERSTAND.
         #
         # MEASURED 2026-10-30: `checks/drive.mjs` and `checks/nan_census.mjs` were charged MALFORMED
         # for "UNPARSEABLE", and they are JAVASCRIPT (`gates/gates-pop.py`'s `entry_reason()` reads
-        # both as `js-main`), so `ast.parse` failing on them is a finding about **THIS READER**.
+        # both as `js-main`), so `ast.parse` failing on them is a finding about THIS READER.
         #
-        # AND **THE **ROUTING **IS **NOT **SILENT**, **AND **THAT **IS **THE **POINT:** **A **FILE
-        # **THIS **CENSUS **CANNOT **READ **IS **COUNTED **AND **NAMED**, **NOT **EXCLUDED** — **THE
-        # **SAME **RULE **THE **SHELL **HALF **AND **THE **NO-SHEBANG **HALF **FOLLOW.**  **AN
-        # **INSTRUMENT **THAT **CANNOT **SEE **A **POPULATION **CANNOT **BE **ANYTHING.**
+        # AND THE ROUTING IS NOT SILENT, AND THAT IS THE POINT: A FILE
+        # THIS CENSUS CANNOT READ IS COUNTED AND NAMED, NOT EXCLUDED — THE
+        # SAME RULE THE SHELL HALF AND THE NO-SHEBANG HALF FOLLOW.  AN
+        # INSTRUMENT THAT CANNOT SEE A POPULATION CANNOT BE ANYTHING.
         #
-        # AND **THE **LANGUAGE **IS **THE **OWNER's **TO **SAY, **NOT **THIS **READER's:** **
-        # `gates/gates-pop.py`'s **`entry_reason()`** **IS **THE **INSTRUMENT **THAT **CLASSIFIES **WHAT
-        # **A **FILE **IS **WRITTEN **IN**, **AND **IT **READS **JAVASCRIPT **BEFORE **PYTHON** (**"the
-        # **order **is **measured **rather **than **preferred**"**).
+        # AND THE LANGUAGE IS THE OWNER's TO SAY, NOT THIS READER's:
+        # `gates/gates-pop.py`'s `entry_reason()` IS THE INSTRUMENT THAT CLASSIFIES WHAT
+        # A FILE IS WRITTEN IN, AND IT READS JAVASCRIPT BEFORE PYTHON ("the
+        # order is measured rather than preferred").
         if gpop.entry_reason(p) in ("js-main", "js-lib"):
             unread.append(p)
             continue
@@ -626,7 +626,7 @@ def report(root, charge=True):
             issues.append("NO-GREEN  -- declares no rc 0, so it can never report agreement")
         for rc in verdicts:
             if rc not in vocab:
-                # A CODE THE TREE HAS **ALREADY NAMED** IS NOT UNOWNED. MEASURED 2026-10-30: this
+                # A CODE THE TREE HAS ALREADY NAMED IS NOT UNOWNED. MEASURED 2026-10-30: this
                 # charged `checks/dup-gate.py`, `checks/env-precond.py` and `checks/wallcheck.py` for
                 # declaring code `2`, and `checks/exitcode-census.py` had ALREADY classified all three
                 # as `CONVENTION` -- because all three IMPORT `argparse`, so the `2` is argparse's own
@@ -659,19 +659,19 @@ def report(root, charge=True):
                 # UNOWNED counted the codes nobody claimed and was blind to the one code two owners
                 # claimed in two words. The NAME is compared here, by the owner's own word.
                 #
-                # AND **A **GATE **MAY **HAVE **ITS **OWN **WORDS, **AND **THE **TREE's **OWN **RUNNER
-                # **SAYS **SO.**  MEASURED 2026-10-30: `gates/runner.py`'s `spoken_disagrees()` reads
+                # AND A GATE MAY HAVE ITS OWN WORDS, AND THE TREE's OWN RUNNER
+                # SAYS SO.  MEASURED 2026-10-30: `gates/runner.py`'s `spoken_disagrees()` reads
                 # ONLY `gatekit`'s five NAMES out of a gate's output -- "a word this tree has not bound
                 # to a code is not a claim about a code; it is prose" -- and it NAMES `gates/gate-surface.py`
                 # itself (`{0: "GREEN", 1: "RED", 3: "REFUSED"}`) as a case it accepts. So a gate that
                 # declares `0: "CLEAN"` and PRINTS `CLEAN` is not lying to the runner: the runner
                 # reports `PASS` for it and there is no TOKEN-MISMATCH.
                 #
-                # AND **SO **THIS **CHARGE **WAS **STRICTER **THAN **THE **TREE's **OWN **RUNNER**, **AND
-                # **IT **CHARGED **A **GATE **FOR **BEING **CONSISTENT **WITH **ITSELF.**  **THE **FIX **IS
-                # **THE **RUNNER's **RULE, **READ **FROM **THE **RUNNER** -- **NOT **RE-DERIVED:** **A **WORD
-                # **THAT **IS **NOT **ONE **OF **THE **HOUSE **FIVE **IS **PROSE**, **SO **A **GATE **THAT
-                # **USES **ONE **IS **NOT **RENAMED.**
+                # AND SO THIS CHARGE WAS STRICTER THAN THE TREE's OWN RUNNER, AND
+                # IT CHARGED A GATE FOR BEING CONSISTENT WITH ITSELF.  THE FIX IS
+                # THE RUNNER's RULE, READ FROM THE RUNNER -- NOT RE-DERIVED: A WORD
+                # THAT IS NOT ONE OF THE HOUSE FIVE IS PROSE, SO A GATE THAT
+                # USES ONE IS NOT RENAMED.
                 if verdicts[rc] not in set(vocab.values()):
                     issues.append(f"OWN WORD  {rc} {verdicts[rc]!r} -- this gate uses its OWN word for "
                                   f"this code, and the tree's runner reads only the house five "
@@ -1011,16 +1011,16 @@ def plants(red=False):
                    "REFUSED, never a default -- an ambiguous owner is the one thing clause V exists "
                    "for", one == 3 and two == 3, f"rc={one}/{two}"))
 
-    # PLANT 7 -- THE MARKER IS THE **SHAPE**, NOT THE NAME. MEASURED 2026-10-30: four files ship a
+    # PLANT 7 -- THE MARKER IS THE SHAPE, NOT THE NAME. MEASURED 2026-10-30: four files ship a
     # `VERDICTS` that is NOT a mapping (`gates/citations-census-gate.py` a TUPLE of row labels,
     # `gates/e2estage8-stage-selftest.py` a PATH, `gates/vendordep-census-gate.py` a TUPLE,
     # `gates/verdictcopy-gate.py` a SET) and were charged MALFORMED for it -- and NOT ONE OF THE FOUR
     # SHIPS A `PLANTS` MAPPING, so NOT ONE OF THEM DECLARED A SURFACE. The rule is now the SHAPE.
     #
-    # AND **THE **PLANT **IS **BOTH **DIRECTIONS:** **A **FILE **NAMING **`VERDICTS` **WITH **NO
-    # **`PLANTS`** **IS **NOT **CHARGED**, **AND **A **FILE **SHIPPING **A **`PLANTS` **MAPPING **WITH
-    # **A **BROKEN **`VERDICTS`** **IS** — **BECAUSE **THE **SECOND **IS **A **GATE **THAT **DECLARED **A
-    # **SURFACE **AND **DECLARED **IT **BADLY**, **AND **THE **FIRST **IS **NOT **A **GATE **AT **ALL.**
+    # AND THE PLANT IS BOTH DIRECTIONS: A FILE NAMING `VERDICTS` WITH NO
+    # `PLANTS` IS NOT CHARGED, AND A FILE SHIPPING A `PLANTS` MAPPING WITH
+    # A BROKEN `VERDICTS` IS — BECAUSE THE SECOND IS A GATE THAT DECLARED A
+    # SURFACE AND DECLARED IT BADLY, AND THE FIRST IS NOT A GATE AT ALL.
     with tempfile.TemporaryDirectory() as td:
         r = Path(td)
         _tree(r)
@@ -1046,17 +1046,17 @@ def plants(red=False):
                        "excuse a gate that declared one", got == 1 and charged,
                        f"rc={got} charged={charged}"))
 
-    # PLANT 8 -- A FILE THIS CENSUS CANNOT **UNDERSTAND** IS NOT A FILE WITH A MALFORMED
+    # PLANT 8 -- A FILE THIS CENSUS CANNOT UNDERSTAND IS NOT A FILE WITH A MALFORMED
     # DECLARATION. MEASURED 2026-10-30: `checks/drive.mjs` and `checks/nan_census.mjs` were charged
     # MALFORMED for "UNPARSEABLE", and they are JAVASCRIPT (`gates/gates-pop.py`'s `entry_reason()`
     # reads both as `js-main`), so `ast.parse` failing on them is a finding about THIS READER.
     #
-    # AND **THE **OTHER **HALF **IS **NOT **A **PLANT, **AND **THAT **IS **A **MEASUREMENT:** **A
-    # **PYTHON **FILE **THAT **DOES **NOT **PARSE **IS **NEVER **AN **ENTRY** — **`gates-pop.py`'s
-    # **`entry_reason()`** **CANNOT **READ **A **`__main__` **GUARD **IN **A **FILE **THAT **DOES **NOT
-    # **PARSE**, **SO **IT **RETURNS **`None`** **AND **THE **FILE **IS **OPAQUE.**  **AND **SO **THE
-    # **CENSUS's **`UNPARSEABLE` **ARM **IS **REACHABLE **ONLY **FOR **A **NON-PYTHON **ENTRY**, **AND
-    # **THAT **IS **EXACTLY **THE **CASE **THIS **PLANT **IS.**
+    # AND THE OTHER HALF IS NOT A PLANT, AND THAT IS A MEASUREMENT: A
+    # PYTHON FILE THAT DOES NOT PARSE IS NEVER AN ENTRY — `gates-pop.py`'s
+    # `entry_reason()` CANNOT READ A `__main__` GUARD IN A FILE THAT DOES NOT
+    # PARSE, SO IT RETURNS `None` AND THE FILE IS OPAQUE.  AND SO THE
+    # CENSUS's `UNPARSEABLE` ARM IS REACHABLE ONLY FOR A NON-PYTHON ENTRY, AND
+    # THAT IS EXACTLY THE CASE THIS PLANT IS.
     with tempfile.TemporaryDirectory() as td:
         r = Path(td)
         _tree(r)

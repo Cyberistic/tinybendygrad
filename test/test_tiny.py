@@ -5,7 +5,7 @@ from tinygrad.helpers import getenv, OSX
 
 class TestTiny(unittest.TestCase):
 
-  # *** basic functionality ***
+  # * basic functionality *
 
   def test_const(self):
     const = Tensor(2.0)
@@ -70,7 +70,7 @@ class TestTiny(unittest.TestCase):
     def plus_fxn(a:Tensor, b:Tensor) -> Tensor: return (a+b)
     self.assertEqual(plus_fxn(a,b).tolist(), (a+b).tolist())
 
-  # *** randomness ***
+  # * randomness *
 
   def test_random(self):
     out = Tensor.rand(10)
@@ -78,7 +78,7 @@ class TestTiny(unittest.TestCase):
       self.assertGreaterEqual(x, 0.0)
       self.assertLess(x, 1.0)
 
-  # *** JIT (for Python speed) ***
+  # * JIT (for Python speed) *
 
   def test_jit(self):
     cnt = 0
@@ -101,13 +101,13 @@ class TestTiny(unittest.TestCase):
     # function is only called twice
     self.assertEqual(cnt, 2)
 
-  # *** BEAM (for Kernel speed) ***
+  # * BEAM (for Kernel speed) *
 
   @unittest.skipIf(Device.DEFAULT == "WEBGPU" and OSX, "WEBGPU's timestamp-query is unreliable on dawn's metal backend")
   def test_beam(self):
     with Context(BEAM=1, IGNORE_BEAM_CACHE=1): self.test_plus()
 
-  # *** symbolic (to allow less recompilation) ***
+  # * symbolic (to allow less recompilation) *
 
   def test_symbolic(self):
     i = Variable('i', 1, 10)
@@ -123,7 +123,7 @@ class TestTiny(unittest.TestCase):
       ret = ones[:i.bind(s)].sum()
       self.assertEqual(ret.item(), s)
 
-  # *** a model ***
+  # * a model *
 
   # TODO: this is failing because of how swizzling rewrites the ShapeTracker of the final STORE
   @unittest.skipIf(Device.DEFAULT == "DSP", "failing because of make things that can't be images not images")
@@ -159,7 +159,7 @@ class TestTiny(unittest.TestCase):
     Tensor.empty(4, 1, 14, 14).sequential(layers).sum().backward()
     Tensor.realize(*[x.grad for x in nn.state.get_parameters(layers) if x.grad is not None])
 
-  # *** image ***
+  # * image *
 
   @unittest.skipIf(Device.DEFAULT != "CL", "image only supported on CL")
   def test_image(self):

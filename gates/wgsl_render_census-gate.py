@@ -340,8 +340,8 @@ ROWS_TAKEN_AT = {
 # `tinygrad/` files it imports.  These two are pins on the PORT side, and they
 # exist because of the shape of the defect they repair:
 #
-# **A COUNT THAT THE PORT's GROWTH MOVED MUST BE DERIVED OR DECLARED, NEVER
-# TYPED.**  Two counts in this file were typed, and the port's growth moved
+# A COUNT THAT THE PORT's GROWTH MOVED MUST BE DERIVED OR DECLARED, NEVER
+# TYPED.  Two counts in this file were typed, and the port's growth moved
 # both.  `never_folding_cast_hold()` counted `OpsCAST{}` OCCURRENCES and said
 # 3; the port grew `sr_rmw_cast` (the packed read-modify-write's CAST arm) and
 # two FIXTURE rows, and the count became 6.  `sr_dispatch_hold()` said "exactly
@@ -349,11 +349,11 @@ ROWS_TAKEN_AT = {
 # beside `sr_rmw_cast` and there were TWO.  In BOTH cases the population grew
 # on BOTH sides together -- the port's rows and the oracle's fixtures -- so
 # `names_hold()` stayed GREEN and the only thing in the tree that noticed was
-# a typed constant.  **A CONSTANT IS NOT A POPULATION, AND A POPULATION THAT
-# GREW IS A FINDING NOBODY WAS TOLD.**
+# a typed constant.  A CONSTANT IS NOT A POPULATION, AND A POPULATION THAT
+# GREW IS A FINDING NOBODY WAS TOLD.
 #
-# **AND A DERIVED COUNT FOLLOWS THE PORT, SO IT CANNOT NOTICE THE PORT
-# MOVING.**  That is the whole reason these two pins exist, and they are the
+# AND A DERIVED COUNT FOLLOWS THE PORT, SO IT CANNOT NOTICE THE PORT
+# MOVING.  That is the whole reason these two pins exist, and they are the
 # corpus's `POPULATION_PIN` pattern: a sha256 over a POPULATION'S NAMES and
 # the SOURCE of each member -- not over a file, so an unrelated edit does not
 # move it, and not over a number, so a growth moves it.

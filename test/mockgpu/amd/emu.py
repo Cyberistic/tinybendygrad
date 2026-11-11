@@ -161,7 +161,7 @@ _pcode_fixes = {
   # exponent() returns 0 for denormals; frexp_exp handles them per hardware (f32: 0, f64: normalized)
   'V_FREXP_EXP_I32_F32': ('D0.i32 = exponent(S0.f32) - 127 + 1', 'D0.i32 = frexp_exp(S0.f32)'),
   'V_FREXP_EXP_I32_F64': ('D0.i32 = exponent(S0.f64) - 1023 + 1', 'D0.i32 = frexp_exp(S0.f64)'),
-  # route through ldexp() which propagates 0/inf/NaN inputs instead of computing val * 2**exp (0*inf = NaN on the host)
+  # route through ldexp() which propagates 0/inf/NaN inputs instead of computing val * 2exp (0*inf = NaN on the host)
   'V_LDEXP_F32': ('D0.f32 = S0.f32 * 2.0F ** S1.i32', 'D0.f32 = ldexp(S0.f32, S1.i32)'),
   'V_LDEXP_F64': ('D0.f64 = S0.f64 * 2.0 ** S1.i32', 'D0.f64 = ldexp(S0.f64, S1.i32)'),
   # hardware sets SCC only on STRICT inequality for S_MAX (equal operands -> SCC=0)
@@ -1220,7 +1220,7 @@ def _compile_mfma(inst: irc.VOP3P|irc.VOP3PX2, ctx: _Ctx) -> UOp:
   if (M, N) not in _MFMA_SHAPES: raise RuntimeError(f"unsupported MFMA shape {M}x{N}x{K}")
   grp_size, n_grps, out_per_lane = _MFMA_SHAPES[(M, N)]  # lanes per group, lane groups, output regs per lane
 
-  # Source type is the LAST type in the name: V_MFMA_F32_16X16X32_**F16** -> source is F16, not F32
+  # Source type is the LAST type in the name: V_MFMA_F32_16X16X32_F16 -> source is F16, not F32
   src_type = op_name.rsplit('_', 1)[-1]
   is_bf16, is_fp8 = 'BF16' in op_name, 'FP8' in op_name or 'F8' in op_name
   is_i8, is_f32_src = 'I8' in op_name, src_type == 'F32'

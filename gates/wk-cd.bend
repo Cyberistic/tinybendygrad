@@ -13,7 +13,7 @@ import ./../tinybendygrad/uop/weak.bend as W
 #     else self.dtype
 # and the oracle below calls the real `Tensor.commit_dtype` on real PARAMs.
 #
-# THE FIXTURE MUST BE A **weakint** PARAM, and that is the whole first round of this gate:
+# THE FIXTURE MUST BE A weakint PARAM, and that is the whole first round of this gate:
 # a PARAM with dtype int32 answers `dtypes.i32` on EVERY row, because the weakint branch is
 # not taken and `commit_dtype` returns `self.dtype`. Seven rows of `i32` would have been a
 # gate that proves nothing, and the row that discriminates is a range int32 cannot hold.

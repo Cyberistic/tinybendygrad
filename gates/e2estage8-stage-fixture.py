@@ -8,7 +8,7 @@
 #
 # It is the CONTROL for `gates/e2estage8-stage-selftest.py`: three stages, ONE consistent declared
 # denominator (`/3` on every banner and three call sites to disagree with), and countable rows in two
-# of them. **A PLANT IS ONLY A PLANT IF THE UNPLANTED FIXTURE IS GREEN**, because a fixture that is
+# of them. A PLANT IS ONLY A PLANT IF THE UNPLANTED FIXTURE IS GREEN, because a fixture that is
 # already red scores every plant as a success.
 """A FROZEN THREE-STAGE FIXTURE GATE.
 

@@ -558,8 +558,8 @@ def bend():
 # `--help` USED TO CRASH, AND THE REASON WAS THAT THE LOOKUP BELOW WAS NOT TOTAL: it indexed a
 # three-name dict with `sys.argv[1]`, and `--help` is not one of the three, so it raised
 # `KeyError: '--help'` and exited 1. MEASURED with no argument: this oracle runs `rows` and prints
-# 621 lines, so the flag was the WHOLE cause. **THE CONTRACT IS STATED HERE INSTEAD OF BEING
-# INFERRED.** `--help` IS NOT GIVEN rc 0 HERE, AND THE REASON IS THIS FILE'S OWN OUTPUT CHANNEL:
+# 621 lines, so the flag was the WHOLE cause. THE CONTRACT IS STATED HERE INSTEAD OF BEING
+# INFERRED. `--help` IS NOT GIVEN rc 0 HERE, AND THE REASON IS THIS FILE'S OWN OUTPUT CHANNEL:
 # stdout IS the artifact (`... > /tmp/pyall.rows`, then `diff` against the Bend lane), so a
 # `--help` that exits 0 having written nothing to stdout is the SILENT shape -- rc 0 with nothing
 # said -- which `gates/help-census.py` already has two rows of (`gates/qcom-oracle.py`,

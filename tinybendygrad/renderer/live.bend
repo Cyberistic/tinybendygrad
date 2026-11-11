@@ -52,23 +52,23 @@ def u32(s: String) -> U32: Maybe.default(&2, U32, U32.read(s), 0)
 
 def ysplit(s: String) -> List<&2, String>: String.split(s, '~')
 
-# **THE PAYLOAD'S FIELDS, AND **THE SPLIT IS **ONCE** PER ROW.** MEASURED (`PARITY.md` §138):
-# `field(p, i)` WAS `fld(ysplit(p), i)` -- **SO EVERY FIELD RE-SPLIT THE WHOLE PAYLOAD**, AND
-# THE PRELUDE's `String.split` IS **ONE RECURSION PER CHARACTER** (TWO `slice`s AND A
-# `char_len` PER CHARACTER). THE `i` ARM READ **TWO** FIELDS AND THE `p` ARM **FOUR**, SO
-# **258 `String.split` CALLS A TURN** -- AND **THE `const` ARM ALONE WAS **0.1389 ms** OF
-# `arg_of`'s **0.2320 ms** (MEASURED, `builds/probe-armof.py`, **EACH ARM CLOCKED
-# SEPARATELY, IN THE DAEMON**).
+# THE PAYLOAD'S FIELDS, AND THE SPLIT IS ONCE PER ROW. MEASURED (`PARITY.md` §138):
+# `field(p, i)` WAS `fld(ysplit(p), i)` -- SO EVERY FIELD RE-SPLIT THE WHOLE PAYLOAD, AND
+# THE PRELUDE's `String.split` IS ONE RECURSION PER CHARACTER (TWO `slice`s AND A
+# `char_len` PER CHARACTER). THE `i` ARM READ TWO FIELDS AND THE `p` ARM FOUR, SO
+# 258 `String.split` CALLS A TURN -- AND THE `const` ARM ALONE WAS 0.1389 ms OF
+# `arg_of`'s 0.2320 ms (MEASURED, `builds/probe-armof.py`, EACH ARM CLOCKED
+# SEPARATELY, IN THE DAEMON).
 #
-# SO **THE SPLIT IS DONE ONCE**, AND **EACH FIELD IS READ FROM **THE SPLIT LIST**.
-# **AND `field` ITSELF IS **GONE** -- IT HAD **NO CALLER** AFTER THIS CHANGE, AND **A DEF WITH
-# NO CALLER IS DEAD CODE.**
-# **AND THE READERS ARE **THEIR OWN `def`s WITH A BARE PARAMETER**, BECAUSE A `match` CANNOT
-# SCRUTINIZE A COMPUTED VALUE (THE TREE's OWN RULE) -- **AND THE `match`es BELOW ARE ON **THE
-# LIST**, WHICH IS A **PARAMETER**, SO THEY ARE LEGAL.
+# SO THE SPLIT IS DONE ONCE, AND EACH FIELD IS READ FROM THE SPLIT LIST.
+# AND `field` ITSELF IS GONE -- IT HAD NO CALLER AFTER THIS CHANGE, AND A DEF WITH
+# NO CALLER IS DEAD CODE.
+# AND THE READERS ARE THEIR OWN `def`s WITH A BARE PARAMETER, BECAUSE A `match` CANNOT
+# SCRUTINIZE A COMPUTED VALUE (THE TREE's OWN RULE) -- AND THE `match`es BELOW ARE ON THE
+# LIST, WHICH IS A PARAMETER, SO THEY ARE LEGAL.
 #
-# **AND THE ARMS THAT NEED **TWO** OR **FOUR** FIELDS CALL **ONE** SPLIT AND PASS **THE LIST**,
-# NOT **THE PAYLOAD** -- SO **THE SPLIT COUNT A TURN IS **13 + 97 + 16 + 0 = 126**, NOT 258.**
+# AND THE ARMS THAT NEED TWO OR FOUR FIELDS CALL ONE SPLIT AND PASS THE LIST,
+# NOT THE PAYLOAD -- SO THE SPLIT COUNT A TURN IS 13 + 97 + 16 + 0 = 126, NOT 258.
 
 def flag(s: String) -> Bool: String.eq(s, "1")
 
@@ -275,17 +275,17 @@ def arg_of.wmma(kind1: U32, +p: String) -> C.KUArg:
     case 51: C.KAWmma{nums(p), S.bfloat16()}  # "M3"
     case _: C.KANone{}
 
-# THE `i` ARM'S TWO FIELDS, FROM **ONE** SPLIT. THE `i` PAYLOAD IS **ALWAYS TWO FIELDS**
+# THE `i` ARM'S TWO FIELDS, FROM ONE SPLIT. THE `i` PAYLOAD IS ALWAYS TWO FIELDS
 # (MEASURED: 97 OF 97).
 def const_int.of(+fs: List<&2, String>) -> C.KUArg:
   C.KAConst{O.CInt{H.i64_of_hi_lo(u32(fld(fs, 0n)), u32(fld(fs, 1n)))}}
 
-# THE `p` ARM'S FOUR FIELDS, FROM **ONE** SPLIT. THE `p` PAYLOAD IS **ALWAYS FOUR FIELDS**
+# THE `p` ARM'S FOUR FIELDS, FROM ONE SPLIT. THE `p` PAYLOAD IS ALWAYS FOUR FIELDS
 # (MEASURED: 16 OF 16).
 def param_of(+fs: List<&2, String>) -> C.KUArg:
   C.KAParam{u32(fld(fs, 0n)), maybe_name(fld(fs, 1n)), flag(fld(fs, 2n)), u32(fld(fs, 3n))}
 
-# THE `q` ARM'S THREE FIELDS, FROM **ONE** SPLIT.
+# THE `q` ARM'S THREE FIELDS, FROM ONE SPLIT.
 def special_of(+fs: List<&2, String>) -> C.KUArg:
   C.KASpecial{fld(fs, 0n), u32(fld(fs, 1n)), fld(fs, 2n)}
 
@@ -428,7 +428,7 @@ def Wire.split(s: String) -> IO(List<&2, String>):
   import "./wire.c"
   import "./wire.js"
 
-# THE WIRE's TWO LISTS, IN **ONE** EFFECT.
+# THE WIRE's TWO LISTS, IN ONE EFFECT.
 #
 # BEND's list is monomorphic, so a row cannot hold both strings and numbers, and a row cannot be a
 # pair of lists of different kinds -- so the port needs one list per kind and walks them in step.
@@ -440,16 +440,16 @@ def Wire.split(s: String) -> IO(List<&2, String>):
 # MEASURED (`PARITY.md` §131): the wire's 2,814 numbers cost 21,294 `char_len` calls and ~42,000 string
 # allocations a render, where the SAME ALGORITHM IN JS IS 0.015-0.025 ms -- forty times faster.
 #
-# AND **THE TWO EFFECTS ARE **ONE** EFFECT NOW**, AND THE REASON IS **THE SPLIT** (MEASURED,
-# `PARITY.md` §138): THE TWO HALVES DID `s.split(" ")` OVER THE **SAME 18 KB STRING**, AND THE SECOND
-# SPLIT COST **0.063 ms A TURN** -- **14% OF THE DECODE** -- FOR THE **SAME ROWS**. THE OBSTACLE
-# WAS BEND's MONOMORPHIC LISTS, AND THE ANSWER IS **A `Data` TYPE WITH TWO LIST FIELDS**, WHICH
-# **THE RUNTIME ACCEPTS** (MEASURED, `builds/probe/both*.bend`: THE ROW COUNT IS RIGHT AND THE
+# AND THE TWO EFFECTS ARE ONE EFFECT NOW, AND THE REASON IS THE SPLIT (MEASURED,
+# `PARITY.md` §138): THE TWO HALVES DID `s.split(" ")` OVER THE SAME 18 KB STRING, AND THE SECOND
+# SPLIT COST 0.063 ms A TURN -- 14% OF THE DECODE -- FOR THE SAME ROWS. THE OBSTACLE
+# WAS BEND's MONOMORPHIC LISTS, AND THE ANSWER IS A `Data` TYPE WITH TWO LIST FIELDS, WHICH
+# THE RUNTIME ACCEPTS (MEASURED, `builds/probe/both*.bend`: THE ROW COUNT IS RIGHT AND THE
 # NUMBERS CROSS AND ARE READABLE AS `U32`).
 #
-# SO `Wire.both` SPLITS **ONCE** AND `kus.io` USES **IT**. AND THE **TWO** EFFECTS IT REPLACED
-# ARE **GONE**, BECAUSE **THEY HAD NO OTHER CALLER** -- THE TOKEN PATH IS `ku_ws`, WHICH READS A
-# TOKEN LIST AND NEVER TOUCHED THEM, AND **A DEF WITH NO CALLER IS DEAD CODE**.
+# SO `Wire.both` SPLITS ONCE AND `kus.io` USES IT. AND THE TWO EFFECTS IT REPLACED
+# ARE GONE, BECAUSE THEY HAD NO OTHER CALLER -- THE TOKEN PATH IS `ku_ws`, WHICH READS A
+# TOKEN LIST AND NEVER TOUCHED THEM, AND A DEF WITH NO CALLER IS DEAD CODE.
 type Wire.Both is Data:
   Wire.Both{ss: List<&2, List<&2, String>>, ns: List<&2, List<&2, U32>>}
 
@@ -552,11 +552,11 @@ def kus_rows.io(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>) -
   IO.pure(List<&2, C.KU>, kus_rows(ss, ns))
 
 # the ONE effect, and the row walk. `Wire.both` gives the strings row and the numbers row from
-# **ONE** split, and the port walks the two lists together.
+# ONE split, and the port walks the two lists together.
 #
-# **AND THE READER IS **ITS OWN `def` WITH A BARE PARAMETER** (`wire_rows`), BECAUSE A `match`
+# AND THE READER IS ITS OWN `def` WITH A BARE PARAMETER (`wire_rows`), BECAUSE A `match`
 # CANNOT SCRUTINIZE A COMPUTED VALUE AND CANNOT SCRUTINIZE A BOUND BINDER INSIDE THE
-# CONTINUATION (MEASURED: "**`b` can't be matched in this position**"), AND THAT IS THE TREE's
+# CONTINUATION (MEASURED: "`b` can't be matched in this position"), AND THAT IS THE TREE's
 # OWN RULE FOR EVERY SUCH READER.
 def wire_rows(b: Wire.Both) -> List<&2, C.KU>:
   match b:

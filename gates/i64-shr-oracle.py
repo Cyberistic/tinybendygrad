@@ -164,7 +164,7 @@ def main():
                 signed_hits.append(key)
 
                 # ---- AND PAST THE WIDTH IT SATURATES RATHER THAN LOSING -------------
-                # For every `k >= 64` the answer is `floor(x / 2**k)`: -1 for a negative x
+                # For every `k >= 64` the answer is `floor(x / 2k)`: -1 for a negative x
                 # and 0 for a non-negative one. Both are ordinary signed words, so this is
                 # never "lost" -- the distinction the sibling gate drew for `i64_shl`,
                 # whose answer outgrew the carrier instead.
@@ -215,7 +215,7 @@ def main():
     # WHICH OF THOSE ROWS CAN ACTUALLY SEE IT, computed rather than assumed. A wrap answers
     # `x >> (k mod 64)`, so it differs from the saturation exactly when
     # `x >> (k-64) != x >> k`, and the set is NEITHER "the positive values" NOR "64 and 65":
-    # it is whatever has magnitude exceeding `2**(k-64)`, plus the positives whose wrap lands
+    # it is whatever has magnitude exceeding `2(k-64)`, plus the positives whose wrap lands
     # on themselves. Spelled out, it is SEVEN cells:
     #   64   one, max, signmin, spill see it. `neg1` does not (-1 IS the saturation) and
     #        `zero` does not (0 is too).

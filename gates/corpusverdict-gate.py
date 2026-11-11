@@ -280,7 +280,7 @@ def main(argv=None) -> int:
                                   "verdict": "CURRENT" if same else "STALE"}))
 
   # --- IS THE CORPUS A SINGLETON? MEASURED, NOT INFERRED FROM A SOURCE STRING -------------
-  # **THE CONTROL COMES FIRST**, and it is the gate's own rule: an instrument that cannot
+  # THE CONTROL COMES FIRST, and it is the gate's own rule: an instrument that cannot
   # recognise a failure reports the project's load-bearing number as healthy.  The control
   # plants what a second run DID and demands the comparator read each case as NOT refused.
   note2 = control_singleton()
@@ -299,7 +299,7 @@ def main(argv=None) -> int:
                                   "note": single["note"]}))
 
   # --- IS `differ.py run` READINESS-GATED? THE OLD SOURCE-LEVEL PROXY, KEPT AS ITS OWN ROW --
-  # **THIS CHECK IS NOT THE ROW ABOVE AND IT IS NOT WEAKENED BY MOVING.** It asked whether
+  # THIS CHECK IS NOT THE ROW ABOVE AND IT IS NOT WEAKENED BY MOVING. It asked whether
   # `cmd_run` consults the readiness probe, and it still does; what changed is that it is no
   # longer asked to stand in for a DIFFERENT property. A run that does not wait for the
   # substrate to settle overwrites 243 files of evidence with a dead bend lane, and that is

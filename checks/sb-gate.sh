@@ -43,8 +43,8 @@
 # It used to end here: "This gate still gates nothing: the BASELINE is recovered
 # and git-tracked, but sb-oracle.py and sb-diff.py are absent, so exit 3 with the
 # list is the correct verdict for that state. Inventing an oracle to make the gate
-# run would fabricate its own reference." **THAT WAS HONEST, AND IT WAS ALSO TRUE
-# ONLY WHILE BOTH FILES WERE ABSENT.**
+# run would fabricate its own reference." THAT WAS HONEST, AND IT WAS ALSO TRUE
+# ONLY WHILE BOTH FILES WERE ABSENT.
 #
 # MEASURED 2026-10-22, WHAT CHANGED:
 #   * the CPython ORACLE IS NOW IN GIT, at `oracles/schedule-bodies/sb-oracle.py`,
@@ -53,7 +53,7 @@
 #     shape and the same row names as the floor and as the port's own rows.
 #   * `sb-diff.py` is still GONE, and it is still gone because the sweep took it
 #     (`371cc64c9`: "THE SWEEP DELETED 3,603 FILES AND TOOK 166 REPRODUCTION PATHS
-#     WITH THEM"). **IT IS NOT NEEDED.** Its contract was "0 says it agreed, a
+# WITH THEM"). IT IS NOT NEEDED. Its contract was "0 says it agreed, a
 #     non-zero says it did not", which was never MEASURED and was a transcribed
 #     expectation of a differ's exit codes. The comparison this gate now uses is
 #     `rows_agree`: THE COMPARISON THE FILE ALREADY HAD, in the same idiom, on the
@@ -62,9 +62,9 @@
 #     directory of expected values -- a transcript written beside the expected
 #     values would dirty them on every run.
 #
-# **AND THE SHELL FORM IS RETIRED** -- `gates/README.md` says so, and this file is
+# AND THE SHELL FORM IS RETIRED -- `gates/README.md` says so, and this file is
 # the last `.sh` gate that still compares the port to CPython. IT IS NOT A NEW
-# SHELL GATE, IT IS THE OLD ONE REPOINTED, AND **PORTING IT TO PYTHON IS OWED.**
+# SHELL GATE, IT IS THE OLD ONE REPOINTED, AND PORTING IT TO PYTHON IS OWED.
 # The five verdicts are already spelled as EXITS, which is what a Python port
 # would read from `gates/gatekit.py` instead.
 #
@@ -90,9 +90,9 @@
 #     The port's own account, quoted from the unit that made the change: the
 #     substrate's `UOp.new.param` interns the shape node the old `param_src`
 #     dropped (+3), the fixture no longer interns the unbound variable (-2), and
-#     the shared size CONST is +1 for the fixtures that have no PARAM. **A NODE
+# the shared size CONST is +1 for the fixtures that have no PARAM. A NODE
 #     COUNT IS A PORT-SIDE QUANTITY AND CPython CANNOT ANSWER IT, SO THESE THREE
-#     ARE THE PORT'S AND NOT A WITNESS.**
+# ARE THE PORT'S AND NOT A WITNESS.
 #
 # ---------------------------------------------------------------------------
 # WHAT THE TWO LANES COVER, AND WHAT THEY DO NOT. The port prints 111 rows.
@@ -107,8 +107,8 @@
 #   NOT COVERED BY EITHER: `gate_ki=0` and `gate_plain=1` -- the port's OWN
 #                       witnesses that its `gate_kernel_sink` arm fires, and CPython
 #                       has no answer for a port's witness about a port's gate.
-#                       **TWO UNCOVERED ROWS ARE NAMED, WHICH IS THE POINT: AN
-#                       UNCOVERED ROW THAT IS NOT NAMED IS A ROW NOBODY CAN FIND.**
+# TWO UNCOVERED ROWS ARE NAMED, WHICH IS THE POINT: AN
+# UNCOVERED ROW THAT IS NOT NAMED IS A ROW NOBODY CAN FIND.
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -139,7 +139,7 @@ ORACLE=$IN/sb-oracle.py
 # `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`. A shell gate's exit status IS its whole
 # vocabulary -- `gates/gate-surface.py:150` measured that a `.sh` gate can only say what it
 # means in a shell -- so all five are spelled here, and the two files share no code: MEASURED
-# 2026-10-19T04:37:45Z, `grep -v '^ *#' checks/sb-gate.sh | grep -c gatekit` is **0**, and the
+# 2026-10-19T04:37:45Z, `grep -v '^ *#' checks/sb-gate.sh | grep -c gatekit` is 0, and the
 # bare `grep -c gatekit` reads 4 because this header quotes the name. WHAT THEY SHARE IS THE
 # VOCABULARY, and that is MEASURED rather than asserted, because `checks/gatesweep.py:323`
 # reads EVERY member's exit through `gatekit.VERDICT.get(rc)` with no regard for its language:
@@ -221,9 +221,9 @@ floor_check() {
 # comparison (`rows_agree`), and it was WRONG for the CPython lane: the oracle answers
 # 81 rows and the port prints 111, so a two-way comparison reports the port's own 30
 # rows -- the `COUNT_fx*` census, the node counts, the gate's own witnesses -- as
-# disagreements, and CPython HAS NO ANSWER for them. **A COMPARISON THAT REPORTS A
+# disagreements, and CPython HAS NO ANSWER for them. A COMPARISON THAT REPORTS A
 # DISAGREEMENT FOR A ROW CPYTHON NEVER ANSWERED IS NOT A STRICTER CHECK, IT IS A WRONG
-# ONE.** The CPython lane now uses `floor_check` with the ORACLE as the FLOOR, so there
+# ONE. The CPython lane now uses `floor_check` with the ORACLE as the FLOOR, so there
 # is ONE comparison in this file, on ONE unit, with TWO floors.
 
 # `--plant` drives `floor_check` ITSELF, not a second copy of the comparison, on `rows`
@@ -249,7 +249,7 @@ plant() {
   # is RUN -- it needs no compiler -- and its rows are the CPYTHON lane's FLOOR. The arm
   # mutates ONE row's VALUE in a COPY of the floor and asks the lane to notice.
   #
-  # **AND THIS IS THE LANE'S REAL FAILURE SHAPE, NOT A PROXY FOR IT.** The CPython
+  # AND THIS IS THE LANE'S REAL FAILURE SHAPE, NOT A PROXY FOR IT. The CPython
   # lane's claim is "every row CPython ANSWERS is present in the port's rows, with
   # CPython's VALUE". So when CPython and the port disagree about a value, the floor's
   # line `name=value` is simply ABSENT from the port's set -- which is exactly what a

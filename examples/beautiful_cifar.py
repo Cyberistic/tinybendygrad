@@ -81,19 +81,19 @@ class SpeedyConvNet:
     self.linear = nn.Linear(depths['block3'], depths['num_classes'], bias=False)
   def __call__(self, x:Tensor) -> Tensor:
     x = self.whiten(x).quick_gelu()
-    # ************* HACKS *************
+    # * HACKS *
     x = x.pad((1,0,0,1)) # TODO: this pad should not be here! copied from hlb_cifar10 for speed
-    # ************* HACKS *************
+    # * HACKS *
     x = x.sequential([self.conv_group_1, self.conv_group_2, self.conv_group_3])
     return self.linear(x.max(axis=(2,3))) * hyp['opt']['scaling_factor']
 
 if __name__ == "__main__":
-  # *** dataset ***
+  # * dataset *
   X_train, Y_train, X_test, Y_test = nn.datasets.cifar()
   cifar10_std, cifar10_mean = X_train.float().std_mean(axis=(0, 2, 3))
   def preprocess(X:Tensor) -> Tensor: return ((X - cifar10_mean.view(1, -1, 1, 1)) / cifar10_std.view(1, -1, 1, 1)).cast(dtypes.default_float)
 
-  # *** model ***
+  # * model *
   model = SpeedyConvNet()
   state_dict = nn.state.get_state_dict(model)
   if len(GPUS) > 1:

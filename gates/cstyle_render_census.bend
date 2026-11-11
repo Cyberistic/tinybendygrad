@@ -352,21 +352,21 @@ def for_ri(+devs: List<&2, U32>) -> IO(Unit):
         for_ri(dt)
 
 # ---- the ALU dispatch rows -------------------------------------------------
-# **AND THE `xs` SHAPE IS **A LIST OF PIECE-LISTS**, NOT A LIST OF STRINGS.**  THE PORT's
+# AND THE `xs` SHAPE IS A LIST OF PIECE-LISTS, NOT A LIST OF STRINGS.  THE PORT's
 # `code_for_op.of` IS
 # `def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt) ->
-# List<&2, String>` (`tinybendygrad/renderer/cstyle.bend:1354`), **AND ITS FIRST TWO READERS
+# List<&2, String>` (`tinybendygrad/renderer/cstyle.bend:1354`), AND ITS FIRST TWO READERS
 # ARE `cfo_xs1(xs)` AND `cfo_xs2(xs)` (`:1211-1213`), WHICH ARE `xs_at(xs, 0n)` AND
-# `xs_at(xs, 1n)` -- I.E. **OPERAND 0's PIECES AND OPERAND 1's PIECES**, NOT OPERAND 0 AND
-# OPERAND 1.**  **AND THE PORT's OWN CALLER PASSES EXACTLY THAT**: `ku_alu_srcs` IS
+# `xs_at(xs, 1n)` -- I.E. OPERAND 0's PIECES AND OPERAND 1's PIECES, NOT OPERAND 0 AND
+# OPERAND 1.  AND THE PORT's OWN CALLER PASSES EXACTLY THAT: `ku_alu_srcs` IS
 # `-> List<&2, List<&2, String>>` (`:2214`) AND `ku_text_alu` (`:2247-2248`) HANDS IT STRAIGHT
-# TO `code_for_op.of`.  **SO `["a", "b", "c"]` WAS WRONG TWICE OVER -- IT WAS A LIST OF
-# STRINGS WHERE A LIST OF LISTS IS WANTED, AND THE JOIN IS NOT A NO-OP.**
+# TO `code_for_op.of`.  SO `["a", "b", "c"]` WAS WRONG TWICE OVER -- IT WAS A LIST OF
+# STRINGS WHERE A LIST OF LISTS IS WANTED, AND THE JOIN IS NOT A NO-OP.
 #
-# **AND THE JOIN IS `String.join(l, "")` -- AN EMPTY SEPARATOR.**  MEASURED OFF THE PORT's OWN
+# AND THE JOIN IS `String.join(l, "")` -- AN EMPTY SEPARATOR.  MEASURED OFF THE PORT's OWN
 # EMIT SITE: `tinybendygrad/renderer/cstyle.bend:2936` IS `... " ", nm, " = ",
-# String.join(l, ""), ...`, **AND THAT IS THE STATEMENT LIST, WHICH IS WHAT
-# `code_for_op.of` RETURNS.**
+# String.join(l, ""), ...`, AND THAT IS THE STATEMENT LIST, WHICH IS WHAT
+# `code_for_op.of` RETURNS.
 def cfo_row(+pre: String, +dev: U32, +i: U32, +dti: U32) -> IO(Unit):
   go(String.concat([pre, U32.show(dev), "_", op_name(i)]),
      String.join(C.code_for_op.of(dev, op_of(i), [["a"], ["b"], ["c"]], dt_of(dti)), ""))

@@ -56,7 +56,7 @@
 #     order, no FMA contraction, no association can move it;
 #   * all 32 answers are DISTINCT, so a lane that cannot tell one element from
 #     another cannot pass;
-#   * `out[0] = 1.0 + 2**-40 = 0x3FF0000000001000`, a value `f32` CANNOT HOLD, and
+# * `out[0] = 1.0 + 2-40 = 0x3FF0000000001000`, a value `f32` CANNOT HOLD, and
 #     the P1/P1b pair moves exactly that word.
 #
 # EXIT: 0 iff the lane passed AND every control went red AND the C-text diff is 0.
@@ -79,11 +79,11 @@ W=${1:-${TMPDIR}opencode/f64-lane}
 # `mkdir -p "$W"` created a directory NAMED `--help` AT THE REPO ROOT, holding this
 # script's own `.log` files and two `.txt` dumps -- and `checks/no-txt.py` OWNS those
 # `.txt` files, so a stray directory became HARD debt the `.txt` gate charges.
-# **A DIRECTORY ARGUMENT IS **REFUSED **WHEN **IT **LOOKS **LIKE **A **FLAG**, **AND
-# **IT **IS **REFUSED **WHEN **IT **WOULD **LAND **INSIDE **THE **REPO** -- **BOTH
-# **BECAUSE **THE **WRITE **IS **THE **DAMAGE**, **AND **BECAUSE **A **DIRECTORY **AT
-# **THE **REPO **ROOT **IS **A **PATH **THE **TREE **OWNS.** **EXIT **3** **IS **THE
-# **HOUSE'S **REFUSED.**
+# A DIRECTORY ARGUMENT IS REFUSED WHEN IT LOOKS LIKE A FLAG, AND
+# IT IS REFUSED WHEN IT WOULD LAND INSIDE THE REPO -- BOTH
+# BECAUSE THE WRITE IS THE DAMAGE, AND BECAUSE A DIRECTORY AT
+# THE REPO ROOT IS A PATH THE TREE OWNS. EXIT 3 IS THE
+# HOUSE'S REFUSED.
 case "$W" in
   -*) print -r -- "$0: the work directory '$W' looks like a FLAG. This script's argument is a DIRECTORY; exit 3 (REFUSED)." >&2
       exit 3 ;;
@@ -194,7 +194,7 @@ ed "$NC/.agents/slop/portexec/run-kernel.sh" "$ed2_old" "$ed2_new" E2
 # therefore 0 for every k >= 4 WHATEVER `A[i][k]` is.  Dropping the 8th tap cannot
 # move the answer, and no choice of A can change that while B keeps its zero lower
 # half -- which is the price of making `A@B` exactly `diag(2,1,1,1)`, so that
-# `out[0] = 1.0 + 2**-40` is EXACT rather than the root of a rounded solve.
+# `out[0] = 1.0 + 2-40` is EXACT rather than the root of a rounded solve.
 # So it is REPLACED BY A THEOREM LINE, in the copy, visible in the log.  It is not
 # deleted silently and it is not counted as one of the controls.
 ed3_old='  ctl "kernel: the first dot'"'"'s 8 taps become 7" kernel.c \

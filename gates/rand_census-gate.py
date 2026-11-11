@@ -160,11 +160,11 @@ DRIFT_PIN = {
 # `gates/rand_census-oracle.py`; NEITHER is transcribed here, because a transcribed pin is a
 # pin that agrees with whatever was copied out of the lane it was meant to check. Both were
 # captured from the two lanes on 2026-10-16 and are reproduced in the commit message.
-# **AND ON 2026-10-23 THE TRAILING-SPACE HALF OF THIS PARAGRAPH WAS MEASURED AND IT IS NOW
-# FALSE**: AFTER THE `mixin/rand.bend` FIX **NEITHER** SIDE'S LINE ENDS IN A SPACE
-# (`st_zero_g` NOW ENDS `RESHAPE/2`), **AND ALL FOUR PORT-SIDE PINS WERE RE-DERIVED FROM
-# THE LANE AND ARE NOW BYTE-IDENTICAL TO IT.** THE PARAGRAPHS BELOW ARE ABOUT THE
-# **2026-10-16 CAPTURE**, WHICH IS WHY THEY ARE IN THE PAST TENSE NOW.
+# AND ON 2026-10-23 THE TRAILING-SPACE HALF OF THIS PARAGRAPH WAS MEASURED AND IT IS NOW
+# FALSE: AFTER THE `mixin/rand.bend` FIX NEITHER SIDE'S LINE ENDS IN A SPACE
+# (`st_zero_g` NOW ENDS `RESHAPE/2`), AND ALL FOUR PORT-SIDE PINS WERE RE-DERIVED FROM
+# THE LANE AND ARE NOW BYTE-IDENTICAL TO IT. THE PARAGRAPHS BELOW ARE ABOUT THE
+# 2026-10-16 CAPTURE, WHICH IS WHY THEY ARE IN THE PAST TENSE NOW.
 # THE PINS ARE WHOLE LINES, NOT VALUES. `gatekit` tests `want not in raw[lane]` against
 # the lane's LINES, so a value without its `row=` prefix can never match and the first
 # run of this gate reported `py's st_zero_g is not '30 op=...'`. `rd_graph_census-gate.py`
@@ -336,22 +336,22 @@ def _lane_text():
 
 # THE NEGATIVE FIXTURES: every `ref_*_not`, every `absent`, and the `_d`/`_np` rows whose
 # whole claim is that the fold CANNOT answer -- a class whose expected answer is False.
-# **AND ON 2026-10-23 `fold_np` AND `fold5_np` LEFT THIS CLASS.** THEY WERE HERE BECAUSE THE
-# FOLD COULD NOT ANSWER THEM, AND **THE `mixin/rand.bend` FIX MADE THE FOLD ANSWER BOTH** --
-# MEASURED: THEY NOW READ `True` (`.agents/slop/randcensus/pinwalk.py` WALKS THEM). **=> A
+# AND ON 2026-10-23 `fold_np` AND `fold5_np` LEFT THIS CLASS. THEY WERE HERE BECAUSE THE
+# FOLD COULD NOT ANSWER THEM, AND THE `mixin/rand.bend` FIX MADE THE FOLD ANSWER BOTH --
+# MEASURED: THEY NOW READ `True` (`.agents/slop/randcensus/pinwalk.py` WALKS THEM). => A
 # CLASS WHOSE MEMBERS HAVE LEFT IT IS NOT A CLASS, AND LEAVING IT IS PROGRESS, NOT A
-# LOOSENING.** THEY STAY IN `PORT_ONLY`, WHOSE ONLY CLAIM IS THAT THE PORT PRINTS THEM.
-  # **AND THE HOLE THIS EXPOSED IS NOW CLOSED IN `gates/state_census.py`: `classify()` POPULATES
-  # `C-NEG` **BY NAME** -- `[k for k, _ in rows if k in neg]` -- SO IT COULD NOT CHECK THAT A
-  # DECLARED NEGATIVE FIXTURE'S VALUE STILL SAYS *THE ABSENT CASE IS ABSENT*.** **A ROW THAT
-  # HAD LEFT THE CLASS SAT IN IT, UNSEEN, AND THE GATE WAS GREEN.** THAT IS *"A ROW THAT CANNOT
-  # GO RED"* INSIDE THE TREE'S OWN CLASS CENSUS. **=> `class_census()` NOW FAILS WHEN A DECLARED
+# LOOSENING. THEY STAY IN `PORT_ONLY`, WHOSE ONLY CLAIM IS THAT THE PORT PRINTS THEM.
+  # AND THE HOLE THIS EXPOSED IS NOW CLOSED IN `gates/state_census.py`: `classify()` POPULATES
+  # `C-NEG` BY NAME -- `[k for k, _ in rows if k in neg]` -- SO IT COULD NOT CHECK THAT A
+  # DECLARED NEGATIVE FIXTURE'S VALUE STILL SAYS *THE ABSENT CASE IS ABSENT*. A ROW THAT
+  # HAD LEFT THE CLASS SAT IN IT, UNSEEN, AND THE GATE WAS GREEN. THAT IS *"A ROW THAT CANNOT
+  # GO RED"* INSIDE THE TREE'S OWN CLASS CENSUS. => `class_census()` NOW FAILS WHEN A DECLARED
   # NEG ROW'S VALUE IS `True` -- AND `True` IS THE ONE SPELLING THAT MATTERS, BECAUSE IT IS THE
-  # ONE THAT SAYS *THE ABSENT CASE IS PRESENT*.** **=> AND A FIRST DRAFT OF THAT CHECK DEMANDED
-  # THE VALUE BE `False`, WHICH IS **NOT** UNIVERSAL: THIS GATE'S NEGATIVE FIXTURES PRINT
+  # ONE THAT SAYS *THE ABSENT CASE IS PRESENT*. => AND A FIRST DRAFT OF THAT CHECK DEMANDED
+  # THE VALUE BE `False`, WHICH IS NOT UNIVERSAL: THIS GATE'S NEGATIVE FIXTURES PRINT
   # `False`, WHILE `state_census-gate.py`'s PRINT `-` AND `onnx_census-gate.py`'s PRINT `-` OR AN
-  # EMPTY STRING. **=> THE FIRST DRAFT TURNED TWO GATES RED ON PERFECTLY GOOD FIXTURES, WHICH IS
-  # HOW A CORRECTION FOUNDS OUT WHAT IT GOT WRONG.**
+  # EMPTY STRING. => THE FIRST DRAFT TURNED TWO GATES RED ON PERFECTLY GOOD FIXTURES, WHICH IS
+  # HOW A CORRECTION FOUNDS OUT WHAT IT GOT WRONG.
 NEG = tuple(k for k in ("ref_rand_weak_wf", "ref_rand_weak_i32", "ref_uniform_not",
                         "ref_normal_not", "ref_randint_not", "ref_dropout_not",
                         "ref_multi_n31"))
@@ -366,8 +366,8 @@ def class_census() -> bool:
   # the layer does not have. MEASURED 0, and stated rather than floored, because a floor a
   # layer cannot meet is a floor that will be lowered to 0 by the next unit and the class will
   # have stopped meaning anything.
-  # **AND THE `C-NEG` FLOOR IS 7 BECAUSE THE CLASS IS: `NEG` HAD NINE MEMBERS AND NOW
-  # HAS SEVEN, THE TWO THAT LEAVING BEING `fold_np` AND `fold5_np`.**
+  # AND THE `C-NEG` FLOOR IS 7 BECAUSE THE CLASS IS: `NEG` HAD NINE MEMBERS AND NOW
+  # HAS SEVEN, THE TWO THAT LEAVING BEING `fold_np` AND `fold5_np`.
   ok = _class_census(rows, neg=NEG, const=CONST,
                      floors={"C-CTRL": 1, "C-NEG": 7, "C-BOOL": 1, "C-VALUE": 1})
   # The PORT-ONLY rows are a class of their own: they are in no lane that has a peer, so

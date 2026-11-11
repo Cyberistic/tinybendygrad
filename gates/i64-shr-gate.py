@@ -95,7 +95,7 @@ def lane_file(lane):
                                 #
                                 # MEASURED 2026-10-17, by stubbing `GATE.run` and pointing
                                 # `GATE.dir` at a scratch dir: with `bd.out` ABSENT this file exited
-                                # 1 for **all four** of `run()`'s verdicts -- 0, 1, 3 and 5 -- so a
+                                # 1 for all four of `run()`'s verdicts -- 0, 1, 3 and 5 -- so a
                                 # REFUSED precondition and a DEAD lane both left as `FAIL`. `main()`
                                 # now returns `run()`'s own exit, so 3 stays 3 and 5 stays 5.
 
@@ -142,7 +142,7 @@ def main():
     # and the COUNT is still tested BEFORE them, so a malformed `bd.out` reports `FAIL`
     # rather than being pre-empted by a sibling it did not cause.
     #
-    # **`code if code != PASS else REFUSED`, NEVER BARE `code`.** MEASURED 2026-10-17:
+    # `code if code != PASS else REFUSED`, NEVER BARE `code`. MEASURED 2026-10-17:
     # `run()` returns `PASS` with nothing promoted only if something outside this process
     # wrote `GATE.dir`, and returning `code` there would be a GREEN EXIT THAT MEASURED
     # NOTHING -- the one shape `gates/gatekit.py:60` reserves `DEAD` for.
@@ -159,7 +159,7 @@ def main():
         # and `gates/i64-shl-gate.py`'s were the ONLY TWO in the tree, and both answered `1`
         # (FAIL) for an EMPTY `bd.out`.
         #
-        # **`run()`'s OWN VERDICT STILL OUTRANKS THIS ONE**, because a `DEAD` from the lanes is
+        # `run()`'s OWN VERDICT STILL OUTRANKS THIS ONE, because a `DEAD` from the lanes is
         # a fact about the lanes and this arm is about the FILE ON DISK. Hence the shape:
         # `code if code != PASS else DEAD/FAIL` -- the same precedence `main()` already applies
         # to the absent-lane arm below, and the reason a bare `return DEAD` would be WRONG here.
@@ -302,7 +302,7 @@ def main():
     # this is the same rule. It can only make the exit MORE specific: `ok` is already
     # `code == PASS`, so `PASS` is unreachable on a red `code`.
     #
-    # **`VERDICT[code_out]`, NOT `VERDICT[code]`.** MEASURED 2026-10-17: with `run()` stubbed
+    # `VERDICT[code_out]`, NOT `VERDICT[code]`. MEASURED 2026-10-17: with `run()` stubbed
     # to return `PASS` and one claim forced false, the message printed `i64-shr: PASS` while
     # the process exited 1. `code` is the LANES' verdict and the exit here is the GATE'S, and
     # when a claim is what failed they differ -- a confidently wrong word is worse than the

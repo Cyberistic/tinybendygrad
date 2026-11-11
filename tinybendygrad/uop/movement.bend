@@ -573,20 +573,20 @@ def mp_perm.go(todo: List<&2, U32>, +p2: List<&2, U32>, acc: List<&2, U32>) -> L
 def mp_perm(p2: List<&2, U32>, xa: List<&2, U32>) -> List<&2, U32>:
   mp_perm.go(xa, p2, Nil{})
 
-# **AND **THE **MERGED **PERMUTE **CARRIES **THE **ORDER **IN **`src[1]`**, **AS
-# **UPSTREAM's **`_mop` **DOES** -- **AND **THE **OLD **COMMENT **QUOTED **UPSTREAM's
-# **OLD **RULE** (**`lambda x,x2: x2.replace(arg=tuple(x2.arg[i] for i in x.arg))`**) **AND
-# **THE **CURRENT **RULE **AT **THE **PIN **IS
-# **`lambda x,x2: x2.src[0].permute(tuple(x2.marg[i] for i in x.marg))`** -- **AND
-# **THE **CURRENT **ONE **GOES **THROUGH **`permute`**, **WHICH **GOES **THROUGH **`_mop`**,
-# **AND **SO **THE **MERGED **NODE **IS **`PERMUTE(x2.src[0], order-STACK)`.**
-# **THE **MERGED **PERMUTE's **SRCS** -- **THE **DATA (`src[0]`) **AND **THE **ORDER
-# **STACK** (`src[1]`) -- **AND **THE **ORDER **STACK **IS **BUILT **IN **THE **SAME
-# **ARENA** **AS **THE **NODE**, **BECAUSE **THE **NODE **IS **BUILT **THERE** -- **AND
-# **THE **HELPER **IS **A **DEF **OF **ITS **OWN** **BECAUSE **A **CROSS-FILE **`Found`
-# **CANNOT **BE **BOUND **AND **READ **TWICE** ("consumed more than once") **AND **BEND
-# **SPENDS **A **BINDER **WHEN **IT **READS **IT** -- **AND **THE **PORT's **OWN **IDiom
-# **IS **THE **`let` **AND **THE **ONE **READ**.**
+# AND THE MERGED PERMUTE CARRIES THE ORDER IN `src[1]`, AS
+# UPSTREAM's `_mop` DOES -- AND THE OLD COMMENT QUOTED UPSTREAM's
+# OLD RULE (`lambda x,x2: x2.replace(arg=tuple(x2.arg[i] for i in x.arg))`) AND
+# THE CURRENT RULE AT THE PIN IS
+# `lambda x,x2: x2.src[0].permute(tuple(x2.marg[i] for i in x.marg))` -- AND
+# THE CURRENT ONE GOES THROUGH `permute`, WHICH GOES THROUGH `_mop`,
+# AND SO THE MERGED NODE IS `PERMUTE(x2.src[0], order-STACK)`.
+# THE MERGED PERMUTE's SRCS -- THE DATA (`src[0]`) AND THE ORDER
+# STACK (`src[1]`) -- AND THE ORDER STACK IS BUILT IN THE SAME
+# ARENA AS THE NODE, BECAUSE THE NODE IS BUILT THERE -- AND
+# THE HELPER IS A DEF OF ITS OWN BECAUSE A CROSS-FILE `Found`
+# CANNOT BE BOUND AND READ TWICE ("consumed more than once") AND BEND
+# SPENDS A BINDER WHEN IT READS IT -- AND THE PORT's OWN IDiom
+# IS THE `let` AND THE ONE READ.
 def mp_perm_srcs(ar: O.Arena, perm2: List<&2, U32>, x2: U32) -> List<&2, U32>:
   [x2, O.shape_arg(ar, perm2)]
 

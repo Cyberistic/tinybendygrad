@@ -39,7 +39,7 @@ class TestAfterCounterexamples(unittest.TestCase):
     y = x.clone()
     y.assign(y*y)
     y.assign(y*y)
-    # y = x**4, so dy/dx = 4*x**3. Currently raises "cycle detected while indexing".
+    # y = x4, so dy/dx = 4*x3. Currently raises "cycle detected while indexing".
     self.assertEqual(y.sum().gradient(x)[0].tolist(), [32.])
 
   def test_partial_store_gradient(self):

@@ -83,7 +83,7 @@ GATEKIT = load("edge_reach_gatekit", HERE / "gatekit.py")
 # escape, used by `gates/edge-oracle-pin-gate.py` and `gates/compile-census-gate.py`, and read BY
 # PATH the way the edge reads `RED_IS`.
 #
-# **AND THE GATE THAT MEASURES REACHABILITY IS ITSELF REACHABLE, WHICH IS THE POINT OF THE FILE.**
+# AND THE GATE THAT MEASURES REACHABILITY IS ITSELF REACHABLE, WHICH IS THE POINT OF THE FILE.
 # A census that is discovered and not run is the defect it describes.
 EDGE_CANDIDATE = True
 
@@ -176,7 +176,7 @@ def _code_only(text, pc):
     return "\n".join(l for l in pc.strip_comments(text).split("\n") if l.strip())
 
 
-# THE SYNTHETIC GATE THE PLANT MEASURES. **IT CARRIES TWO STATEMENTS ON ONE LINE ON PURPOSE**, so
+# THE SYNTHETIC GATE THE PLANT MEASURES. IT CARRIES TWO STATEMENTS ON ONE LINE ON PURPOSE, so
 # the wrong shape (a comment BETWEEN them) is a shape this file can MEASURE rather than assert.
 CLAIMED = '''#!/usr/bin/env python3
 # a synthetic gate that CLAIMS to be an edge candidate
@@ -262,13 +262,13 @@ def plant():
         # 3. THE COMMENT-ONLY CONTROL: a comment appended to the claiming gate's own file must move
         #    NOTHING -- and the proof is the comment-stripped bytes, not the verdict.
         #
-        #    **THE COMMENT GOES ON A LINE CARRYING ONE STATEMENT, AND THAT IS NOT A STYLE CHOICE.**
+        # THE COMMENT GOES ON A LINE CARRYING ONE STATEMENT, AND THAT IS NOT A STYLE CHOICE.
         #    MEASURED HERE, and it is the brief's own wrong shape: a comment APPENDED between the
         #    two statements of a one-line pair DELETES the second one, the file STILL PARSES, and
         #    only the comment-stripped proof catches it. The first version of this control put the
         #    comment on the two-statement line and the proof REJECTED the control -- correctly,
-        #    because the control was not comment-only. **A CONTROL THAT IS REJECTED FOR BEING WHAT
-        #    IT IS, IS NOT A CONTROL.**
+        # because the control was not comment-only. A CONTROL THAT IS REJECTED FOR BEING WHAT
+        # IT IS, IS NOT A CONTROL.
         commented = CLAIMED.replace('if __name__ == "__main__":',
                                     'if __name__ == "__main__":  # a comment')
         gate.write_text(commented)

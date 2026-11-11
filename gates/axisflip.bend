@@ -11,12 +11,12 @@
 # `shape_sym_a1_on_4444` read `4,4,4,4` on both sides of the same fix. One base can see the
 # axis and the other cannot, and the difference is the base.
 #
-# **THE BASE IS (2,4,4,8) AND NOT (1,4,8,8), BECAUSE (1,4,8,8) HAS A SIZE-1 AXIS 0.**
+# THE BASE IS (2,4,4,8) AND NOT (1,4,8,8), BECAUSE (1,4,8,8) HAS A SIZE-1 AXIS 0.
 # `movement.py:255`'s `if resolve((n:=ret.shape[axis]) <= 1, False): continue` skips it, so
 # `flip([0])` returns the base node and `flip([0,1])` is `flip([1])`: `flip_0` and `flip_01`
 # certify nothing. And it is not (4,4,4,4) for the reason above.
 #
-# **AND (2,4,4,8) IS THE BEST AVAILABLE, NOT AN ARBITRARY ONE.** The buffer holds 256 ELEMENTS
+# AND (2,4,4,8) IS THE BEST AVAILABLE, NOT AN ARBITRARY ONE. The buffer holds 256 ELEMENTS
 # (`mxw_base()` is `mxw_buf(.., 0, 256)`) and CPython's `_shape` checks every reshape's size, so
 # the base must have product 256. 256 = 2^8, and the partitions of 8 into four POSITIVE parts are
 # {5,1,1,1} {4,2,1,1} {3,3,1,1} {2,2,2,2}, i.e. (32,2,2,2) (16,4,2,2) (8,8,2,2) (4,4,4,4) --
@@ -25,7 +25,7 @@
 # `base_separates_the_axis` holds the property this paragraph states, so a base that goes back to
 # a cube turns THIS GATE red while leaving every one of its other rows green.
 #
-# **THE WITNESS IS THE SHAPE, AND THE REASON IS A MEASUREMENT, NOT A PREFERENCE.** groupflip's
+# THE WITNESS IS THE SHAPE, AND THE REASON IS A MEASUREMENT, NOT A PREFERENCE. groupflip's
 # row is `<OP>x<nsrc>[<src ops>]{order}`: it carries the op, the src count, the src op SEQUENCE
 # and the PERMUTE order, and it carries no RESHAPE target shape, no PAD offset and no SHRINK
 # size. The defect was a wrong `crop`/`tail` LIST, so it moved those and nothing else. Across the
@@ -37,7 +37,7 @@
 # 28 / 37 / 37 / 37 / 52 / 52 across these seven bases, so the oracle lane is seven DISTINCT
 # measurements and not one string seven times.
 #
-# **`axis1` IS THIS GATE'S OWN BLINDNESS GUARD, AND IT IS A ROW RATHER THAN A GATE CHECK.**
+# `axis1` IS THIS GATE'S OWN BLINDNESS GUARD, AND IT IS A ROW RATHER THAN A GATE CHECK.
 # It prints the two lists the defect is about -- `base.shape[1:]` (what the port used) against
 # `[base.transpose(0,1).shape[1:]]` (what `movement.py:257` uses, since `:256` makes `x` the
 # transpose first) -- so a base on which they are EQUAL turns the gate RED with every other row
@@ -54,7 +54,7 @@ import ./../tinybendygrad/mixin/movement.bend as MX
 # `<shape> n=<cut-relative node count>`, and the shape comes first because it is the field that
 # did the work.
 #
-# **`n=` IS CUT-RELATIVE AND THE CUT IS `len(topo(base)) - 1` COMPUTED ON EACH SIDE**, for the
+# `n=` IS CUT-RELATIVE AND THE CUT IS `len(topo(base)) - 1` COMPUTED ON EACH SIDE, for the
 # reason `gates/groupflip.bend`'s `gf_cut` gives and MEASURED here: upstream moved a BUFFER's size
 # out of `ParamArg` into a size CONST src (`72f98ffe0`), so the port's base is 9 nodes and
 # CPython's is 10 and the ABSOLUTE counts differ by one on every row including `base` itself. The

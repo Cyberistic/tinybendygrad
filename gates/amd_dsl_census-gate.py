@@ -1175,7 +1175,7 @@ if not PINS.is_file():
 #   py carries 118 excluded rows, expected 117 -- the exclusion list is stale
 #   py has 1057 COMPARED rows, expected 1058
 #
-# **THE DUPLICATED NAME IS NO LONGER PINNED** -- both `modmerge_*` pairs became EXACT -- so the
+# THE DUPLICATED NAME IS NO LONGER PINNED -- both `modmerge_*` pairs became EXACT -- so the
 # two numbers are 31 and 31 today and gatekit's staleness check would pass BY COINCIDENCE.
 # The rows are STILL printed twice (`dup_rows_hold()` measures the 14 duplicates on every run),
 # and a future divergence on either name would reopen exactly this failure, so the gate keeps

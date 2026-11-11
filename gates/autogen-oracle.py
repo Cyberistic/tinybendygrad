@@ -42,7 +42,7 @@ for i, (pat, rep) in enumerate(ag.base_rules):
 # `re.finditer(r"^CXType_(\w+) = (\d+)$", <libclang.py>, re.M)`, and `libclang.py` does not
 # spell its enums that way: it generates
 # `enum_CXTypeKind: dict[int, str] = {(CXType_Invalid:=0): 'CXType_Invalid', ...}`.
-# That pattern matched **0 of the 256 `CXType_` occurrences in the file**, so
+# That pattern matched 0 of the 256 `CXType_` occurrences in the file, so
 # `cxkind_count` printed `0` -- the length of an empty list, reported as a census of
 # libclang. `names` was built from the same 0-match scan and never read.
 # The population is read now from the generator's OWN declarations, BY ATTRIBUTE, which is

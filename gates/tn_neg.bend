@@ -54,12 +54,12 @@ def row_neg_bool_arg() -> Bool:
   +r = T.tn_neg(t)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
 
-# **⇒ AND **THE **`CMPEQ`'s **`src[1]` **IS **THE **BOOL **`False`** -- **AND **THIS **IS
-# **THE **ROW **THAT **CAN **GO **RED**, **BECAUSE **THE **OP **ROW **ALONE **CANNOT: **A
-# **`CMPEQ` **AGAINST **`True` **AND **A **`CMPEQ` **AGAINST **`False` **ARE **THE **SAME
-# **OP**.  **⇒ AND **`logical_not` **IS **`cast(bool).eq(False)`** (`mixin/elementwise.py:57`
-# **AT **THE **PIN **`f5ac54685074`**)**, **⇒ AND **THE **OLD **SPELLING **WAS
-# **`CMPNE(x, True)`**, **⇒ AND **THE **VALUE **IS **THE **WHOLE **DIFFERENCE.**
+# AND THE `CMPEQ`'s `src[1]` IS THE BOOL `False` -- AND THIS IS
+# THE ROW THAT CAN GO RED, BECAUSE THE OP ROW ALONE CANNOT: A
+# `CMPEQ` AGAINST `True` AND A `CMPEQ` AGAINST `False` ARE THE SAME
+# OP.  AND `logical_not` IS `cast(bool).eq(False)` (`mixin/elementwise.py:57`
+# AT THE PIN `f5ac54685074`), AND THE OLD SPELLING WAS
+# `CMPNE(x, True)`, AND THE VALUE IS THE WHOLE DIFFERENCE.
 def row_neg_bool_src1.go(+r: T.Tensor) -> Bool:
   +s1 = O.Arena.src(T.Tensor.ar(r), T.Tensor.u(r), 1)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), s1), O.APy{O.CBool{False{}}})

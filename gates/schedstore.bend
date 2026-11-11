@@ -404,7 +404,7 @@ def cs_ord() -> String: ops2(O.CallifyCtx.stores(ctx()))
 #   * `slot >= 0`, so a slot that is ALREADY canonical is left alone and the
 #     answer is `None{}` (`ca_neg_none`, `ca_neg_n`).
 #
-# **`ParamArg.slot` IS A `U32` AND PYTHON'S IS AN `int`.** That is the whole
+# `ParamArg.slot` IS A `U32` AND PYTHON'S IS AN `int`. That is the whole
 # difficulty of the third clause: `slot >= 0` is TRUE for every Python int, so
 # the only thing it can be excluding is a NEGATIVE slot, and in a `U32` the
 # negative range is the TOP half. `ca_neg_*` uses an incoming slot of `-3`,

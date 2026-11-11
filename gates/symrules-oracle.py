@@ -48,7 +48,7 @@ DT = {"weakint": dtypes.weakint, "bool": dtypes.bool, "i8": dtypes.int8, "u8": d
 # THE PORT'S OP VOCABULARY, AND IT IS THE PORT's OWN TABLE (`tinybendygrad/uop/symbolic.bend`'s
 # `fz_op`, ITS `:8201` DEF) RATHER THAN A SECOND COPY OF IT. MEASURED 2026-11-06: THE ORACLE
 # DID `Ops[name.upper()]` AND CRASHED WITH `KeyError: 'FLOORDIV'` ON THE FIRST CASE THAT
-# SPELLS IT -- AND **24 OF THE 232 CASES SPELL `floordiv` OR `floormod`.** SO THE ORACLE
+# SPELLS IT -- AND 24 OF THE 232 CASES SPELL `floordiv` OR `floormod`. SO THE ORACLE
 # REFUSED EVERY CASE, AND A BODY-VERIFICATION INSTRUMENT THAT REFUSES EVERY CASE VERIFIES
 # NOTHING.
 #
@@ -59,7 +59,7 @@ DT = {"weakint": dtypes.weakint, "bool": dtypes.bool, "i8": dtypes.int8, "u8": d
 #
 # THE OTHER DIRECTION MATTERS AS WELL: UPSTREAM'S `Ops` HAS NAMES THE PORT's VOCABULARY DOES
 # NOT (`SDOT`, `DOT`, ...), AND `Ops[name.upper()]` FOR THOSE WOULD BUILD A GRAPH THE PORT
-# CANNOT READ. SO THE TABLE IS **BOTH** DIRECTIONS: THE PORT's SPELLINGS AND THE UPSTREAM
+# CANNOT READ. SO THE TABLE IS BOTH DIRECTIONS: THE PORT's SPELLINGS AND THE UPSTREAM
 # ONES THAT ARE THE SAME OP.
 OPS = {op.name.lower(): op for op in Ops}
 OPS.update({"floordiv": Ops.DIV, "floormod": Ops.MOD, "cdiv": Ops.TRUNCDIV, "cmod": Ops.TRUNCMOD,
@@ -212,16 +212,16 @@ def renest(flat: str) -> str:
   for row in flat.split(";"):
     if not row: continue
     idx, rest = row.split(":", 1)
-    # THE HEAD MAY CARRY A DTYPE SUFFIX (`cast:i32`), SO THE HEAD/SRCS BOUNDARY IS THE **LAST**
+    # THE HEAD MAY CARRY A DTYPE SUFFIX (`cast:i32`), SO THE HEAD/SRCS BOUNDARY IS THE LAST
     # `:` AND NOT THE FIRST. MEASURED 2026-11-06: A FIRST-`:` SPLIT READ `i32:1` AS A SRC.
     head, srcs = rest.rsplit(":", 1)
-    # THE `L` LEAF MARKER IS **READ BEFORE THE LOWERCASE**, AND THAT IS THE WHOLE POINT:
-    # **THREE OPS HAVE A LOWERCASED NAME THAT STARTS WITH `l`** -- `linear`, `load` AND
+    # THE `L` LEAF MARKER IS READ BEFORE THE LOWERCASE, AND THAT IS THE WHOLE POINT:
+    # THREE OPS HAVE A LOWERCASED NAME THAT STARTS WITH `l` -- `linear`, `load` AND
     # `log2` -- SO A CHECK ON THE LOWERCASED HEAD STRIPS THE `l` OFF THEM AND RENDERS `log2` AS
     # `og2`. MEASURED 2026-11-07: THAT IS WHAT THE `x451*` DIVERGENCES WERE, AND THEY WERE A
-    # BUG IN **THIS** FILE AND NOT IN THE PORT.
+    # BUG IN THIS FILE AND NOT IN THE PORT.
     #
-    # SO THE MARKER IS A **SEPARATE FLAG** AND NOT A PREFIX OF THE HEAD, AND THE HEAD IS
+    # SO THE MARKER IS A SEPARATE FLAG AND NOT A PREFIX OF THE HEAD, AND THE HEAD IS
     # LOWERCASE ONCE.
     leaf = head.startswith("~")
     rows[int(idx)] = head[1:] if leaf else head.lower()
@@ -231,14 +231,14 @@ def renest(flat: str) -> str:
     head = rows[i]
     ch = kids.get(i, [])
     # A LEAF PRINTS ITS HEAD BARE (UPSTREAM's `sh` RETURNS `u.op.name.lower()` FOR A LEAF), AND A
-    # NODE WITH SRCS PRINTS `(` HEAD SPACE SRCS `)` -- **AND THE SPACE IS ALWAYS THERE**, SO A
+    # NODE WITH SRCS PRINTS `(` HEAD SPACE SRCS `)` -- AND THE SPACE IS ALWAYS THERE, SO A
     # NODE WITH NO SRCS IS `(noop )` AND NOT `(noop)`.
     #
     # MEASURED 2026-11-06: THE PORT PRINTS `(noop)` WHERE THE ORACLE PRINTS `(noop )`, AND THE
     # TWO ARE THE SAME GRAPH.
     #
     # MEASURED 2026-11-06: THE FIRST ATTEMPT GUESSED THE LEAVES BY NAME AND 104 OF THE 232
-    # CASES DIVERGED. **A GUESSED CLASS IS NOT A CLASS.**
+    # CASES DIVERGED. A GUESSED CLASS IS NOT A CLASS.
     if isleaf.get(i, False):
       return head
     return "(" + head + " " + " ".join(build(c) for c in ch) + ")"

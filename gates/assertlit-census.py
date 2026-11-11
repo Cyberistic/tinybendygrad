@@ -861,7 +861,7 @@ def subject_tokens():
             continue
         # LINE NUMBERS BY BISECT OVER THE NEWLINE OFFSETS, and the first version of this function
         # wrote `text[:m.start()].count("\n")` inside the loop. MEASURED: that is a slice of the
-        # WHOLE FILE per token -- 1 141 161 tokens over `tinygrad/**.py` -- and it did not finish
+        # WHOLE FILE per token -- 1 141 161 tokens over `tinygrad/.py` -- and it did not finish
         # in 120 s. The offsets are built once per file, so the line is a `bisect` and the walk
         # is linear. A census that times out on its own vocabulary has measured nothing, and the
         # failure is silent: there is no output and no error, only a shell that stops answering.

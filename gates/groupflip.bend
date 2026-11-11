@@ -42,7 +42,7 @@
 # The six children are ADD/MUL/SUB/DIV/MAX/TRUNCMOD over ONE base, each with two srcs, so a
 # swapped pair inside `group6` is visible in the src op sequence of the AFTER.
 #
-# WHAT IS **NOT** A ROW, AND WHY. Upstream's `group` FILTERS `None` OUT OF ITS ARGUMENTS and
+# WHAT IS NOT A ROW, AND WHY. Upstream's `group` FILTERS `None` OUT OF ITS ARGUMENTS and
 # its one-src guard counts the UNFILTERED length, so `UOp.group(None, a)` is
 # `AFTER(STACK, a)` -- a node -- while the port's `UOp.group(ar, [a])` is `a`. The port's
 # parameter is `List<&2, U32>`, already filtered, and it has no spelling for an absent
@@ -62,7 +62,7 @@
 # and `prod((4,4,4,4)) == prod((1,4,8,8)) == 256`, so the SAME base is legal on both sides.
 # `groupflip-oracle.py`'s `fbase` docstring is where CPython's size check is measured.
 #
-# **AND (4,4,4,4) IS THE LIMIT OF WHAT THIS GATE CAN ASK, WHICH IS WHY IT IS NOT THE ONLY GATE.**
+# AND (4,4,4,4) IS THE LIMIT OF WHAT THIS GATE CAN ASK, WHICH IS WHY IT IS NOT THE ONLY GATE.
 # All four dims are 4, so `shape[0] == shape[axis]` on EVERY axis, and that is exactly the
 # condition under which a defect here is invisible: `movement.py:257-259` reads `crop`/`tail` from
 # `x.shape[1:]` with `x = ret.transpose(0, axis)` (:256) -- the shape minus the AXIS dim -- whereas
@@ -89,8 +89,8 @@ def gf_srcs.go(+ar: O.Arena, +ss: List<&2, U32>, acc: List<&2, String>) -> List<
     case Nil{}: acc
     case s <> t: gf_srcs.go(ar, t, List.append(&2, String, acc, [O.Ops.name(O.Arena.op(ar, s))]))
 
-# **THE PERMUTE ORDER IS PRINTED, BECAUSE `Ops.PERMUTEx1` CANNOT TELL ONE PERMUTATION FROM
-# ANOTHER AND A REVERSED ONE IS STILL A PERMUTATION.** MEASURED: with the row carrying only the
+# THE PERMUTE ORDER IS PRINTED, BECAUSE `Ops.PERMUTEx1` CANNOT TELL ONE PERMUTATION FROM
+# ANOTHER AND A REVERSED ONE IS STILL A PERMUTATION. MEASURED: with the row carrying only the
 # op, the src count and the src op SEQUENCE, `mxf_order(4n, 1)` answered `[3,2,0,1]` -- the
 # REVERSE of `transpose(0, 1)`'s `[1,0,2,3]` -- and `flip_1` read AGREE, because a reversed
 # permutation is the same length, the same op and the same src op. So `gf_node` appends `{order}`
@@ -179,7 +179,7 @@ def gf_groups() -> IO(Unit):
 # caller's order -- and the six rows are: the empty list (upstream's `for axis in ()`, which
 # makes no node), one axis, two axes in each order, and the last axis of a rank-4 base.
 #
-# **THE CUT, AND WHY A ROW NEEDS ONE.** A flip needs a SHAPE, so it needs a base, and the base
+# THE CUT, AND WHY A ROW NEEDS ONE. A flip needs a SHAPE, so it needs a base, and the base
 # is where the pre-existing `ParamArg.size` divergence lives (see `gf_consts` above): the port's
 # `mxw_buf` puts the size in the arg and builds `BUFFERx0[]`, upstream's `new_buffer` builds a
 # size CONST src and `BUFFERx1[CONST]`. The base ROOT is identical on both sides --

@@ -4,8 +4,8 @@
 #
 # `def i64_shr` EXISTS -- `grep -c '^def i64_shr' tinybendygrad/helpers.bend` is 4, the
 # arm at `helpers.bend:1900` -- and its mirror `def i64_shl(+x: I64, +k: Nat) -> I64` is at
-# `helpers.bend:1825`. **THIS HEADER USED TO SAY `i64_shr` "EXISTS NOWHERE ... IS 0", AND
-# THAT WAS NEVER TRUE**: it is 4 at EVERY commit that ever added this file (`4ff8ca126`,
+# `helpers.bend:1825`. THIS HEADER USED TO SAY `i64_shr` "EXISTS NOWHERE ... IS 0", AND
+# THAT WAS NEVER TRUE: it is 4 at EVERY commit that ever added this file (`4ff8ca126`,
 # `813bbec3e`, `02329daf0`), so it was a fabricated measurement, not a stale one. What the
 # driver never had was an IMPORT THAT RESOLVED -- `../../../tinybendygrad/helpers.bend` from
 # `gates/` names `/Users/cyberistic/src/tinybendygrad`, a checkout that does not exist -- so

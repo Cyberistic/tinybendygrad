@@ -44,13 +44,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # NAMES A PATH, and the FILESYSTEM is what decides that -- `os.path.exists` below -- so there is no
 # suffix list here to go stale.
 #
-# **THERE WAS ONE, AND IT FAILED THE SAME WAY THREE TIMES.** The set was `sh|py|bend`; `.mjs` was
+# THERE WAS ONE, AND IT FAILED THE SAME WAY THREE TIMES. The set was `sh|py|bend`; `.mjs` was
 # ADDED when `checks/e2e.py`'s two `.mjs` stage inputs proved invisible (9 of 15 counted) and
-# **RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO**; and on 2026-10-15 the five-item set
+# RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO; and on 2026-10-15 the five-item set
 # was still blind to 164 of the 713 paths 584 committed reports name. A SUFFIX FILTER IS A
 # POPULATION DEFINED BY A LIST, AND A LIST IS NOT A POPULATION.
 #
-# **AND A TRUNCATED TOKEN IS NOT A HARMLESS ONE: IT WROTE FALSE ROWS IN BOTH DIRECTIONS.**
+# AND A TRUNCATED TOKEN IS NOT A HARMLESS ONE: IT WROTE FALSE ROWS IN BOTH DIRECTIONS.
 # MEASURED 2026-10-15: `untrack/REPORT.md:142` names `...blastradius.cpython-312.pyc`, which the
 # suffix set read as `...312.py` -- a DANGLING row for a name that never existed -- while
 # `whosecache/REPORT.md:73` names `gates/tn_graph_census-gate.py.bak`, which it read as

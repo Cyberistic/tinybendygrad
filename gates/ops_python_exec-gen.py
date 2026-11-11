@@ -229,7 +229,7 @@ def harvest():
         # THE ALU WORDS COME FROM THE POSITIONAL ARGS, at the positions the
         # callee pops them (ops_python.py:97), because that is where the callee
         # gets them: `pargs = list(args)` at :61, one pop per PARAM. `vals=` is
-        # **kw and the signature does not accept it, so the keyword read that
+        # kw and the signature does not accept it, so the keyword read that
         # used to be here could only ever answer () -- and the caller that used
         # to pass it lost the word, which is what commit 81da82e76 fixed.
         addrs = [a for a, (kind, _e) in zip(bufs, plan) if kind == "buf"]
@@ -412,7 +412,7 @@ def py_run(fx, fresh=False):
     addrs = [ctypes.addressof(ctypes.c_char.from_buffer(b)) for b in bufs]
     # THE ARGS IN THE CALLEE'S ORDER: one per popped PARAM, an ALU word at
     # ops_python.py:97 and a buffer address at :107, so the two kinds INTERLEAVE
-    # and the words cannot simply be appended. `vals=` is **kw and is not read.
+    # and the words cannot simply be appended. `vals=` is kw and is not read.
     prog(*callee_args(fx.uops, addrs, fx.vals), global_size=fx.gsize, local_size=(1, 1, 1))
     return prog, bufs
 

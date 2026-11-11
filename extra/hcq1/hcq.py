@@ -69,7 +69,7 @@ class HWQueue(Generic[SignalType, HCQDeviceType, ProgramType, ArgsStateType]):
         self._q.append(0xbadc0ded)
       else: self._q.append(v)
 
-  # *** common commands  ***
+  # * common commands  *
 
   def timestamp(self, signal:SignalType):
     """
@@ -97,7 +97,7 @@ class HWQueue(Generic[SignalType, HCQDeviceType, ProgramType, ArgsStateType]):
       value: The value to wait for
     """
 
-  # *** commands for compute queues ***
+  # * commands for compute queues *
 
   def memory_barrier(self):
     """
@@ -138,7 +138,7 @@ class HWQueue(Generic[SignalType, HCQDeviceType, ProgramType, ArgsStateType]):
     """
     raise NotImplementedError("poll_bit not implemented")
 
-  # *** commands for copy queues ***
+  # * commands for copy queues *
 
   def copy(self, dest:HCQBuffer, src:HCQBuffer, copy_size:int):
     """
@@ -150,7 +150,7 @@ class HWQueue(Generic[SignalType, HCQDeviceType, ProgramType, ArgsStateType]):
       copy_size: The size of data to copy
     """
 
-  # *** submit and bind commands  ***
+  # * submit and bind commands  *
 
   def bind(self, dev:HCQDeviceType):
     """

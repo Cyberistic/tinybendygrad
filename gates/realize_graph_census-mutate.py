@@ -124,7 +124,7 @@ DRIVER_MUT_IMPORT = "import ./../tinybendygrad/engine/realize-mut.bend as RZ"
 # `pin_lines()` are named in the BRIEF and ARE NOT IN THE FILE at all (both 0) -- the row
 # count is `gatekit.Gate._lane`'s and the pin count is `_pins()`'s.
 #
-# **`RUN_TAIL`'S CHAIN WAS EIGHT OF THE GATE'S NINE** -- `axis_hold` was missing from it, so
+# `RUN_TAIL`'S CHAIN WAS EIGHT OF THE GATE'S NINE -- `axis_hold` was missing from it, so
 # phase 1's end-to-end run never heard the driver-axis guard while phase 2 drove it happily,
 # and the two halves of this harness disagreed about what the gate checks. `RUN_TAIL` now
 # spells the gate's own chain, and `argkinds_hold` (added with the `arg` payload) is in both.
@@ -355,7 +355,7 @@ PHASE1 = [
                "  rz_arg_uops.go(ar, O.Arena.src_from(ar, call, 1), Nil{})",
        "def get_call_arg_uops(+ar: O.Arena, call: U32) -> List<&2, U32>:\n"
        "  rz_arg_uops.go(ar, O.Arena.src_without_body(ar, call), Nil{})")]),
-    # **THIS ONE WAS VACUOUS AND NO LONGER IS.** It moved ZERO of the 974 rows at rc=0 and
+    # THIS ONE WAS VACUOUS AND NO LONGER IS. It moved ZERO of the 974 rows at rc=0 and
     # was reported as a coverage gap; the cause was the PRINTER, not the fixture.
     # `rs_d_beam` printed `Bool.and(claimed, index != 0)` as a single `"0"`, and the default
     # this mutation changes is read only by `bm_zero` -- the CLAIM -- on the one node whose
@@ -476,23 +476,23 @@ PHASE1 = [
      [("port", "+n1 = O.UOp.const(a0, O.CInt{H.i64_of_i32(3)})",
        "+n1 = O.UOp.const(a0, O.CInt{H.i64_of_i32(4)})"),
       ("oracle", "c3 = _add(UOp.const(3))", "c3 = _add(UOp.const(4))")]),
-    # **STILL VACUOUS, AND THE `arg` PAYLOAD DID NOT UN-VACUOUS IT. THE CAUSE IS MEASURED AND IT
-    # IS NOT THE PRINTER.** `KernelInfo.beam`'s VALUE -- as opposed to "is it zero" -- is in
+    # STILL VACUOUS, AND THE `arg` PAYLOAD DID NOT UN-VACUOUS IT. THE CAUSE IS MEASURED AND IT
+    # IS NOT THE PRINTER. `KernelInfo.beam`'s VALUE -- as opposed to "is it zero" -- is in
     # no row: the `:b=` suffix prints the REWRITTEN sink's beam, which is the ctx (7 or 0), never
     # the fixture's, so `grep -c 'b=2$' bd.out` is 0 and `grep -c 'b=' bd.out` is 9, all of them
     # `b=7` or `b=0` from a ctx. `rs_pay`'s `AKernel` arm prints `SINK/0[k2:<beam>]` now, so
     # the PRINTER objection is answered -- and the mutation STILL moves ZERO rows, because
-    # **NO PORT ANSWER NAMES `k2` AT ALL**: `grep -c k2 bd.out` is **0** against **1** on the
+    # NO PORT ANSWER NAMES `k2` AT ALL: `grep -c k2 bd.out` is 0 against 1 on the
     # CPython lane (`val_24`, whose cone names `SINK/0[k2:2]`). The reason is FIXTURE
     # REACHABILITY and not the printer: `k2` is `cK2`'s body, `pm_beam`'s claim is `beam == 0`,
     # so every driver that would carry it either REFUSES it (a non-CALL) or answers `00`, and
-    # `get_call_arg_uops` drops `src[0]`. **A printer that prints a field nothing reads is a
+    # `get_call_arg_uops` drops `src[0]`. A printer that prints a field nothing reads is a
     # printer limit; a printer that prints a field nothing can REACH is a coverage gap, and the
-    # two read identically from here.** Closing it needs a driver whose answer contains node 8,
+    # two read identically from here. Closing it needs a driver whose answer contains node 8,
     # and that is a NEW ROW -- `ROWS = 1004` is asserted in four places and this is not the
     # census-shape decision that belongs to a fixture change.
     #
-    # **THE 30-EVEN ROWS OF THIS ENTRY THAT DID MOVE ARE THE OTHER HALF:** `V4`, `V7`, `V10`
+    # THE 30-EVEN ROWS OF THIS ENTRY THAT DID MOVE ARE THE OTHER HALF: `V4`, `V7`, `V10`
     # and the three `bn`/pin mutations. So `KernelInfo.beam`'s value is now visible WHERE A
     # ROW REACHES IT, which is the honest form of the claim.
     ("X5 BOTH fixtures' `k2` SINK carries beam 5, not 2 -- VACUOUS BY FIXTURE REACHABILITY, "
@@ -501,7 +501,7 @@ PHASE1 = [
       ("oracle", "k2 = _add(UOp(Ops.SINK, src=(), arg=_ki(\"k2\", 2)))",
        "k2 = _add(UOp(Ops.SINK, src=(), arg=_ki(\"k2\", 5)))")]),
     # -------------------------------------------------------------------- THE `arg` PAYLOAD
-    # **THE PAYLOAD'S ARMS, ONE MUTATION EACH, AND THE ANSWER IS NOT "THEY ALL MOVE".** A
+    # THE PAYLOAD'S ARMS, ONE MUTATION EACH, AND THE ANSWER IS NOT "THEY ALL MOVE". A
     # payload is a printer, and a printer's arms are exactly the defs a fixture can leave
     # UNREACHED, so each of the two halves is measured on its own rather than assumed.
     #
@@ -514,7 +514,7 @@ PHASE1 = [
      "the same name print alike (`4` is `bn`'s `val`; `grep -c '\\[n:4\\]' bd.out` is 2)", "VALUE",
      [("driver", "      rs_pay.box(String.concat([rs_opt_str(name), \":\", rs_opt_const(val)]))",
        "      rs_pay.box(rs_opt_str(name))")]),
-    # **V12 IS A LANE FAILURE AND NOT A READING, AND THAT IS THE SEVENTH CAUSE.** The `String`
+    # V12 IS A LANE FAILURE AND NOT A READING, AND THAT IS THE SEVENTH CAUSE. The `String`
     # locals `g`/`o`/`i` cannot be assigned a bare literal in bend -- `expected : an annotated
     # term (cannot infer)` -- so the first form did not compile and the lane VANISHED (1004
     # rows, `rc=3` = REFUSED). Measured here with `bend --check-only` rather than inferred: the
@@ -522,15 +522,15 @@ PHASE1 = [
     # The three `globals;outs;ins` halves ARE reached on the port lane -- ten rows carry a
     # PROGRAM token, MEASURED `grep -c 'PROGRAM/1\\[' bd.out` = 2 and `grep -c 'STORE/2\\['
     # bd.out` = 2 -- so this arm is live; it is its MUTATION that does not compile.
-    # **V12'S FIRST TWO FORMS WERE LANE FAILURES, NOT READINGS, AND THE SECOND IS THE MORE
-    # INTERESTING ONE.** (i) Assigning a bare `String` literal to `g`/`o`/`i` is
+    # V12'S FIRST TWO FORMS WERE LANE FAILURES, NOT READINGS, AND THE SECOND IS THE MORE
+    # INTERESTING ONE. (i) Assigning a bare `String` literal to `g`/`o`/`i` is
     # `expected : an annotated term (cannot infer)` and does not compile. (ii) The fix -- feed
     # `rs_ids` an EMPTY list instead -- DOES compile (`ALL PROOFS CHECK`) and then MOVES 2
     # ROWS: `flat_27` and `val_27`, which are the only two answers whose cone contains a
     # PROGRAM whose `globals;outs;ins` are not all-empty. So `get_call_outs_ins`'s two index
-    # lists are in exactly TWO tokens on this census and the arm is live -- narrowly. **A
+    # lists are in exactly TWO tokens on this census and the arm is live -- narrowly. A
     # mutation that does not compile and a mutation nobody reads are ONE LINE in this sweep,
-    # and getting that wrong would have put a live arm in the dead list.**
+    # and getting that wrong would have put a live arm in the dead list.
     ("V12 `rs_pay.pi` prints `vars` but empties `globals;outs;ins`, so `get_call_outs_ins`'s "
      "two lists are in no cone again -- MEASURED 2 rows, `flat_27` and `val_27`", "VALUE",
      [("driver", "      g = rs_ids(rs_fuel(ar), globals, \"\", True{})\n"
@@ -541,14 +541,14 @@ PHASE1 = [
        "      o = rs_ids(rs_fuel(ar), Nil{}, \"\", True{})\n"
        "      i = rs_ids(rs_fuel(ar), Nil{}, \"\", True{})\n"
        "      v = rs_pay.var(rs_fuel(ar), ar, params, \"\", True{})")]),
-    # **A SEVENTH DISTINCT CAUSE OF ZERO, MEASURED HERE AND IT IS NOT ANY OF THE SIX.** The
+    # A SEVENTH DISTINCT CAUSE OF ZERO, MEASURED HERE AND IT IS NOT ANY OF THE SIX. The
     # FIRST FORM OF `V11` passed `rs_opt_str`'s own `String` RESULT back into `rs_opt_str`,
     # which takes a `Maybe<&2, String>`: `bend` REFUSED the lane (`bd rc=1`, 1004 rows
     # VANISHED, gate `rc=3`). A mutation that does not COMPILE and a mutation nobody reads read
     # identically as "0 rows moved" from outside, and the harness reported both as one line.
     # It is listed here because it is a shape this sweep can produce and a report must name.
     # DEAD ARM: `rs_pay.ax` prints the RANGE's axis, and MEASURED on the promoted lane
-    # `grep -c 'RANGE/' bd.out` is **0** -- the fixture's one RANGE is `rg` (node 28) and no
+    # `grep -c 'RANGE/' bd.out` is 0 -- the fixture's one RANGE is `rg` (node 28) and no
     # driver's ANSWER CONTAINS it, because `get_call_arg_uops` drops `src[0]` and no rewrite
     # mints a RANGE. So the arm is reached by no row and its spelling cannot be wrong. That
     # is a COVERAGE GAP in the FIXTURE and not a printer limit, and the fix is a row whose
@@ -560,7 +560,7 @@ PHASE1 = [
     # THE SAME VERDICT FOR A SECOND ARM, AND IT IS WORTH NAMING BECAUSE THE TWO ARE THE SAME
     # FACT: an arg kind only reaches a token if some ANSWER CONTAINS A NODE OF THAT KIND.
     # `CUSTOM_FUNCTION` is the arg of `cV`/`cE` (nodes 21/22) and `get_call_arg_uops` drops
-    # `src[0]`, so MEASURED `grep -c 'CUSTOM_FUNCTION/' bd.out` is **0** -- while on the
+    # `src[0]`, so MEASURED `grep -c 'CUSTOM_FUNCTION/' bd.out` is 0 -- while on the
     # CPython lane it is 7, inside `val_*`'s cones. So this arm is live on ONE lane and dead
     # on the other, which is a fact about the FIXTURE and about VAL_BODY (the port has no
     # `pm_validate` body, so it answers the claim bit and prints no cone at all).
@@ -593,13 +593,13 @@ PHASE2 = [
     ("G6 classes_hold: a `SINK_NO_KI` row stops being the declared pair", "GUARD",
      {"bd.out": {"beam_56": "1"}}, None),
     # `SLOT_MISS` IS EMPTY AND THE THREE ROWS IT NAMED ARE IN `RES_NO_SHAPE`, WHOSE CLAIM
-    # IS ABOUT **CPython's** ANSWER (`cpy[r] == "raise=IndexError"`). SO THE PLANT BELONGS
+    # IS ABOUT CPython's ANSWER (`cpy[r] == "raise=IndexError"`). SO THE PLANT BELONGS
     # ON THE `py.rows` SIDE AND NOT ON THE PORT's: A PLANT THAT PATCHES THE WRONG LANE IS
     # A PLANT THAT NEVER FIRES.
     ("G7 classes_hold: a `RES_NO_SHAPE` row stops being CPython's raise", "GUARD",
      {"py.rows": {"res_21": "0"}}, None),
-    # **THE OLD PLANT WAS `none` AND THE PORT's VALUE IS `none`, SO IT CHANGED NOTHING AND
-    # THE GUARD WAS SILENT** -- A PLANT THAT PATCHES A ROW WITH THE VALUE IT ALREADY HAS
+    # THE OLD PLANT WAS `none` AND THE PORT's VALUE IS `none`, SO IT CHANGED NOTHING AND
+    # THE GUARD WAS SILENT -- A PLANT THAT PATCHES A ROW WITH THE VALUE IT ALREADY HAS
     # IS A PLANT THAT NEVER FIRES. THE VALUE IS NOW ONE THE PORT DOES NOT HAVE.
     ("G8 classes_hold: `wbuf_61` is no longer the declared MSELECT wall", "GUARD",
      {"bd.out": {"wbuf_61": "BUFFER/1@0[g0:-]"}}, None),
@@ -664,9 +664,9 @@ PHASE2 = [
     ("G23 pin_drift_holds: the pin ALSO answers `res_53`, so 'only one arm' is wrong",
      "GUARD", {"bd.out": {"res_53": "BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]"}}, None),
 # -- `kern_blind_holds`: a SOURCE claim on the driver's `S.Dn{[...]}` and the oracle's
-    #    `("DISK", "CPU")`, AND a LANE claim on `kern_66`. **G24's old anchor was
+    # `("DISK", "CPU")`, AND a LANE claim on `kern_66`. G24's old anchor was
     #    `rs_cpu`'s `S.D1{0}` and G25's was `device="CPU"`, and BOTH ARE SILENT against the
-    #    current check** -- it no longer asks "is there exactly one device", because there
+    # current check -- it no longer asks "is there exactly one device", because there
     #    is a second one on purpose now. A guard mutation aimed at what the guard stopped
     #    watching measures nothing and reads exactly like a guard that never speaks, which
     #    is the third time this harness has made that mistake, so both anchors were
@@ -731,8 +731,8 @@ PHASE2 = [
     ("G30 the pin-COUNT assertion: the pins file gains a row no class declares", "GUARD",
      None, ("pins", "res_64\tres_64=", "res_64_X\tres_64_X=")),
     # -- `argkinds_hold`: NO LANE MAY PRINT `[?]`, AND THE GUARD'S SUBJECT IS A LANE, NOT A
-#    SOURCE. **THE FIRST TAMPER WAS SILENT TWICE, FOR TWO DIFFERENT REASONS, AND BOTH ARE
-#    WORTH NAMING.** (i) The first aimed at `rs_pay`'s `ACustom` arm, which is a DEAD ARM on the
+# SOURCE. THE FIRST TAMPER WAS SILENT TWICE, FOR TWO DIFFERENT REASONS, AND BOTH ARE
+# WORTH NAMING. (i) The first aimed at `rs_pay`'s `ACustom` arm, which is a DEAD ARM on the
 #    port lane (`Z5` measures it: `grep -c 'CUSTOM_FUNCTION/' bd.out` is 0), so the placeholder
 #    reached no row. (ii) The second aimed at the ORACLE'S `ACustom` arm -- a lane that does
 #    print `CUSTOM_FUNCTION/1[validate]`, seven times -- and was ALSO silent, because PHASE 2

@@ -106,11 +106,11 @@ BUDGET_MB = 3072
 
 # THE TREE IS PASSED IN, AND ITS NAME IS IN THE ENVIRONMENT. `gates/gatekit.py` reads it, and
 # `PYTHONPATH` carries the tree's `gates/` directory so a gate COPIED OUT of the tree can still
-# `import gatekit`. **THIS IS NOT "FIND THE TREE".** `gates/reporoot.py` is the tree's own
+# `import gatekit`. THIS IS NOT "FIND THE TREE". `gates/reporoot.py` is the tree's own
 # shape for finding a root -- it walks UPWARD for a directory holding `pyproject.toml`,
 # `tinybendygrad/` and `tinygrad/` -- and a copy in a temp directory has no such ancestor, so
-# that shape answers `RootNotFound` for exactly the case that has to work. **A FIX THAT WORKS
-# ONLY FROM THE REPO ROOT IS A FIX THAT WILL BE BROKEN BY THE NEXT COPY**, and the copy is not
+# that shape answers `RootNotFound` for exactly the case that has to work. A FIX THAT WORKS
+# ONLY FROM THE REPO ROOT IS A FIX THAT WILL BE BROKEN BY THE NEXT COPY, and the copy is not
 # hypothetical: `gates/edge-plant.py` runs its synthetic gates in a temp directory, and
 # `gates/ptx_render_census-mutate.py`'s M13 copies a gate out of the tree.
 TREE_ENV = "TINYGRAD_ROOT"
@@ -310,14 +310,14 @@ def _candidates(gs, popmod, root):
             out.setdefault(site["file"], []).append((site["name"], read))
     # A GATE THAT COVERS ANOTHER GATE'S PIN IS A CANDIDATE EVEN THOUGH IT HOLDS NO PIN.
     #
-    # **`root / rel`, AND NOT `ROOT / rel`.** MEASURED: the corpus above is read out of `root`, so
+    # `root / rel`, AND NOT `ROOT / rel`. MEASURED: the corpus above is read out of `root`, so
     # `rel` is relative to the tree being MEASURED, and the module-global `ROOT` is the tree this
     # file HAPPENS to live in. On the live tree the two are the same directory and the difference
     # is invisible; on any other tree -- and a PLANT is any other tree -- the declaration was read
     # out of the REAL tree while the gate was found in the SYNTHETIC one, so a synthetic gate that
     # declared `EDGE_CANDIDATE = True` was NOT selected, and the instrument that exists to catch
-    # an unrun claim could not see one. **A PATH COMPUTED FROM A CONSTANT IS A PATH ABOUT THE
-    # CONSTANT'S TREE, NOT ABOUT THE TREE BEING MEASURED.**
+    # an unrun claim could not see one. A PATH COMPUTED FROM A CONSTANT IS A PATH ABOUT THE
+    # CONSTANT'S TREE, NOT ABOUT THE TREE BEING MEASURED.
     for rel in corpus:
         if rel in out:
             continue
@@ -453,13 +453,13 @@ def trace_rows(members, cands, selected, ledger, gs, seconds, mb, root=ROOT):
         path, reason = by_rel[rel]
         verdict, token, rc, took, peak = run_one(gs, path, reason, seconds, mb, consumed)
         if token.startswith("UNASSIGNED"):
-            # **A STATUS NO VOCABULARY NAMES IS NOT A PRECONDITION THAT WAS ABSENT.** The
+            # A STATUS NO VOCABULARY NAMES IS NOT A PRECONDITION THAT WAS ABSENT. The
             # tree's five are PASS 0, FAIL 1, REFUSED 3, SKIP 4, DEAD 5, and `checks/differ.py`
             # says so in its own source: "argparse would exit 2 on a name that is not a plant,
             # and 2 IS A CODE NO VOCABULARY NAMES". MEASURED 2026-10-20: bare `differ.py`
             # exits 2 because it has NO BARE MODE -- it is a mode selector with four -- and
             # the edge's classifier folded that usage error into REFUSED, which means "a
-            # precondition was absent". **THOSE ARE DIFFERENT THINGS**, and folding them is
+            # precondition was absent". THOSE ARE DIFFERENT THINGS, and folding them is
             # how "the tool has no such mode" reads as "the tree is not ready". It is
             # COUNTED and it does not CHARGE, and it says which it is.
             status, verdict = "RAN-UNASSIGNED", "UNASSIGNED"

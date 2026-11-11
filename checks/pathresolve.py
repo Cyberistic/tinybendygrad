@@ -52,7 +52,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 
 #: The instrument whose resolver this file MEASURES AGAINST, named as a PATH and loaded by
-#: `load()`. **NOT COPIED.** A second copy of `resolve()` would be a contract with no generator, and
+# : `load()`. NOT COPIED. A second copy of `resolve()` would be a contract with no generator, and
 #: it would drift the moment the original is repaired.
 LEGACY = "checks/runs-artifacts.py"
 #: `gates/gates-pop.py:gate_homes()` -- the homes DERIVED, not typed. Also loaded by path.
@@ -176,17 +176,17 @@ def resolve(node, env, base, depth=0):
         a, b = resolve(node.left, env, base, depth + 1), resolve(node.right, env, base, depth + 1)
         if not (a[0] is not None and b[0] is not None):
             return _refuse(f"{a[1] or ''} | {b[1] or ''}".strip(" |"))
-        # **THE `Div` JOIN IS NORMALIZED AND THE FIRST VERSION DID NOT.** MEASURED, and
+        # THE `Div` JOIN IS NORMALIZED AND THE FIRST VERSION DID NOT. MEASURED, and
         # `gates/path-resolve-gate.py` is what found it: an un-normalised `Path(...) / ".."`
-        # emitted `checks/..` where the answer is the repo root. **A NORMALISED PATH IS THE CLAIM;
-        # AN UNNORMALISED ONE IS A TYPO THAT HAPPENS TO RESOLVE.**
+        # emitted `checks/..` where the answer is the repo root. A NORMALISED PATH IS THE CLAIM;
+        # AN UNNORMALISED ONE IS A TYPO THAT HAPPENS TO RESOLVE.
         return (a[0] + b[0], None) if isinstance(node.op, ast.Add) else _norm(os.path.join(a[0], b[0]))
     if isinstance(node, ast.Attribute):
         if node.attr == "parents":
             return resolve(node.value, env, base, depth + 1)  # the SUBSCRIPT applies the level
         recv = resolve(node.value, env, base, depth + 1)
         if node.attr in ("name", "stem", "suffix"):
-            # **COMPUTED, NOT GUESSED.** These are pure functions of a KNOWN path, and refusing
+            # COMPUTED, NOT GUESSED. These are pure functions of a KNOWN path, and refusing
             # them costs SEVEN REAL PATHS: `gates/gates-pop.py:927` is
             # `LEDGER_PATH = HERE / LEDGER.name`, so refusing `.name` unbound `LEDGER_PATH` and
             # every `LEDGER_PATH.read_bytes()` under it. The legacy's `.name` is a plain descent,
@@ -285,8 +285,8 @@ def env_of(tree, base, rounds=6):
                 # `PY, GCMP = ".venv/bin/python", ".agents/slop/graphcmp.py"` -- `checks/differ.py:44`.
                 # BOTH resolvers skip it, because both require a single `Name` target, so
                 # `.agents/slop/graphcmp.py` was UNANCHORED against the declared substrate inputs
-                # even though the file NAMES it in a module-level binding. **AN INSTRUMENT THAT
-                # CANNOT BIND TWO NAMES AT ONCE CANNOT SEE HALF THIS TREE'S CONSTANTS.**
+                # even though the file NAMES it in a module-level binding. AN INSTRUMENT THAT
+                # CANNOT BIND TWO NAMES AT ONCE CANNOT SEE HALF THIS TREE'S CONSTANTS.
                 names = [t.id for t in target.elts]
             else:
                 continue
@@ -397,13 +397,13 @@ def sites(root, pylanes):
                     if isinstance(leaf, ast.Constant) and id(leaf) in docs:
                         continue
                     legacy, (path, why) = ra.resolve(leaf, lenv), site(leaf, env, rel)
-                    # **NO ROW IS DROPPED, INCLUDING THE ONES BOTH RESOLVERS REFUSE.** The first
+                    # NO ROW IS DROPPED, INCLUDING THE ONES BOTH RESOLVERS REFUSE. The first
                     # version skipped `legacy is None and why is None` to keep the table short, and
                     # MEASURED what that cost: `checks/differ.py:108`'s `ROOT / GCMP` is refused by
                     # the legacy (`GCMP` is unbound there) and RESOLVED by the successor, so the row
                     # vanished and `.agents/slop/graphcmp.py` -- a DECLARED substrate input -- read
-                    # as UNANCHORED. **A TABLE THAT DROPS ITS DISAGREEMENTS IS A TABLE THAT CANNOT
-                    # REPORT A GAIN.**
+                    # as UNANCHORED. A TABLE THAT DROPS ITS DISAGREEMENTS IS A TABLE THAT CANNOT
+                    # REPORT A GAIN.
                     rows.append((rel, node.lineno, legacy, path, why))
                     # A REFUSAL IS ONLY INTERESTING WHERE THE LEGACY ANSWERED. `unbound name` and
                     # `no rule for` are the legacy's own answers too, so counting them would make
@@ -565,7 +565,7 @@ def census(root=ROOT):
     # `_always_exits` -- so the shape is graded by the instrument that owns the shape, and this
     # file only supplies the WIDER population. MEASURED: `W` is {short} files short of HEAD, and
     # `gates/exitcode-census-gate.py` reports `MAYBE-NONE 0`, which is TRUE OF W AND FALSE OF THE
-    # TREE. **BOTH ARE TRUE AND ONE OF THEM IS THE FINDING.**
+    # TREE. BOTH ARE TRUE AND ONE OF THEM IS THE FINDING.
     maybenone = set()
     for rel_ in sorted(tracked_py):
         try:
@@ -593,7 +593,7 @@ def census(root=ROOT):
             "COULD ANSWER IT?", f"  MAYBE-NONE sites over the WHOLE tracked .py universe: "
             f"{len(maybenone)};  of those inside W (the exit-code census's set): "
             f"{sum(1 for m in maybenone if m in graded)}"]
-    # **SORTED, AND THAT IS NOT COSMETIC.** MEASURED: the first version iterated this SET of
+    # SORTED, AND THAT IS NOT COSMETIC. MEASURED: the first version iterated this SET of
     # strings directly, and the census came out byte-identical under `PYTHONHASHSEED=1` and `7`
     # on the first nine rows and different on the rest -- the same 11 sites in 11 orders, hash
     # order. `AGENTS.md` calls a set whose order you print a set difference you have not taken, and

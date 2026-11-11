@@ -127,7 +127,7 @@ def self_test(pr):
             bad_plant = plant_bad(pr)
             _body, _lost, (code, _why), facts = pr.census()
             unexplained = facts["buckets"].get("UNEXPLAINED", 0)
-            # **CAUGHT MEANS SOMETHING WENT RED, NOT THAT A PARTICULAR INSTRUMENT WENT RED.** The
+            # CAUGHT MEANS SOMETHING WENT RED, NOT THAT A PARTICULAR INSTRUMENT WENT RED. The
             # `flat-file` regression is invisible to the set difference -- it moves LOST and GAINED
             # and moves neither verdict -- and is caught by the PLANT instead, because
             # `Path(__file__)` answering the file's DIRECTORY makes `HERE` bind to `".."` rather
@@ -168,7 +168,7 @@ def main(argv=None):
     if "--self-test" in argv:
         print("SELF-TEST, each regression reintroduced in memory and the census re-run:")
         missed = []
-        # **THE LOOP VARIABLE IS NOT NAMED `bad_plant`.** MEASURED: it was, and the loop rebound
+        # THE LOOP VARIABLE IS NOT NAMED `bad_plant`. MEASURED: it was, and the loop rebound
         # `main`'s own `bad_plant`, so `--self-test` made the gate report the LAST REGRESSION'S
         # plant failure as its own verdict -- a self-test that turns the gate red for the wrong
         # reason, which is the shape `gates/runner.py:391`'s lesson names.

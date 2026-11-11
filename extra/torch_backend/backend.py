@@ -132,7 +132,7 @@ def _apply_inplace(target: Tensor, value: Tensor) -> None:
   else: _view_write(base, target, val)
   for v in views: v.replace(_apply_view_ops(base, view_ops_map[v]))
 
-# *** bad functions on CPU ***
+# * bad functions on CPU *
 
 @torch.library.impl("aten::_index_put_impl_", "privateuseone")
 def _index_put_impl_(self, indices, values, accumulate=False, unsafe=False):
@@ -172,7 +172,7 @@ for i in [
 ]:
   torch.library.impl(f"aten::{i}", "privateuseone")(functools.partial(upsample_backward, f=getattr(aten, i)))
 
-# *** end bad functions on CPU ***
+# * end bad functions on CPU *
 
 @torch.library.impl("aten::index.Tensor", "privateuseone")
 def index_tensor(x, y):
@@ -694,7 +694,7 @@ if TORCH_DEBUG:
   from torch.utils._python_dispatch import TorchDispatchMode
   class DispatchLog(TorchDispatchMode):
     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
-      #print(f"Dispatch Log: {func}(*{args}, **{kwargs})")
+      # print(f"Dispatch Log: {func}(*{args}, {kwargs})")
       print(f"Dispatch Log: {func}")
       return func(*args, **(kwargs or {}))
   (_dispatch_log:=DispatchLog()).__enter__() # NOTE: must be kept alive

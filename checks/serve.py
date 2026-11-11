@@ -73,7 +73,7 @@ class VizData:
   ref_map:dict[Any, int] = field(default_factory=dict)
   all_uops:dict[int, UOp] = field(default_factory=dict)
 
-# ** load all saved rewrites
+# load all saved rewrites
 
 def load_rewrites(data:VizData) -> None:
   assert not data.ctxs and not data.ref_map, "load_rewrites called multiple times"
@@ -95,7 +95,7 @@ def load_rewrites(data:VizData) -> None:
     for key in k.keys: data.ref_map[canonicalize_ast(key) if isinstance(key, UOp) else key] = i
     data.ctxs.append({"name":k.display_name, "steps":steps, "ki":ki})
 
-# ** get the complete UOp graphs for one rewrite
+# get the complete UOp graphs for one rewrite
 
 class GraphRewriteDetails(TypedDict):
   graph: dict                            # JSON serialized UOp for this rewrite step
@@ -304,7 +304,7 @@ def soft_err(fn:Callable|None=None):
 def row_tuple(row:str) -> tuple[tuple[int, int], ...]:
   return ((0, 0),) if "Clock" in row else tuple((ord(ss[0][0]), int(ss[1])) if len(ss:=x.split(":"))>1 else (999,999) for x in row.split())
 
-# *** Performance counters
+# * Performance counters
 
 metrics:dict[str, Callable[[dict[str, tuple[int, int, int]]], str]] = {
   "VALU utilization": lambda s: f"{100 * (s['SQ_INSTS_VALU'][0] / s['SQ_INSTS_VALU'][2]) / (s['GRBM_GUI_ACTIVE'][1] * 4):.1f}%",
@@ -336,7 +336,7 @@ def unpack_pmc(e) -> dict:
     except KeyError: pass
   return {"rows":rows, "cols":agg_cols}
 
-# ** on startup, list all the performance counter traces
+# on startup, list all the performance counter traces
 
 def load_amd_counters(data:VizData, profile:list) -> None:
   counter_events:dict[tuple[int, int], dict] = {}
@@ -509,7 +509,7 @@ def get_profile(data:VizData, profile:list[ProfileEvent], sort_fn:Callable[[str]
                       **ext_data}).encode()
   return struct.pack("<IQII", rel_ts(unwrap(end_ts), start_ts, "end_ts"), max(peaks,default=0), len(index), len(ret))+index+b"".join(ret)
 
-# ** PMA counters
+# PMA counters
 
 def load_nv_counters(data:VizData, profile:list) -> None:
   steps:list[dict] = []
@@ -538,7 +538,7 @@ def pma_timeline(blob:bytes, sm_version:int) -> list[ProfileEvent]:
                                  Decimal(n*cycles_per_sample), Decimal((n+1)*cycles_per_sample)))
   return [ProfilePointEvent(r, "start", r, ts=Decimal(0)) for r in rows]+ret
 
-# ** Assembly static analyzers
+# Assembly static analyzers
 
 def get_stdout(f: Callable) -> str:
   buf = io.StringIO()
@@ -622,7 +622,7 @@ def get_cfg(pc_table:dict[int, Inst]) -> dict:
     for pc in pcs: lines.append(f"{disasm[pc]:<{asm_width}}  # {pc:012X}")
   return {"data":{"blocks":blocks, "paths":paths, "pc_tokens":pc_tokens}, "src":"\n".join(lines), "lang":"python"}
 
-# ** Main render function to get the complete details about a trace event
+# Main render function to get the complete details about a trace event
 
 def get_render(viz_data:VizData, query:str, **kwargs) -> dict:
   url = urlparse(query)
@@ -678,7 +678,7 @@ def get_render(viz_data:VizData, query:str, **kwargs) -> dict:
     return ret
   return data
 
-# ** HTTP server
+# HTTP server
 
 def get_int(query:dict[str, list[str]], k:str) -> int: return int(query.get(k,["0"])[0])
 
@@ -710,7 +710,7 @@ class Handler(HTTPRequestHandler):
 
     return self.send_data(ret, content_type, status_code)
 
-# ** main loop
+# main loop
 
 def reloader():
   mtime = os.stat(__file__).st_mtime

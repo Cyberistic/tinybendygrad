@@ -161,7 +161,7 @@ def main() -> None:
 # gate in a synthetic tree which has the repository markers but NOT `.agents/slop/jslane2/
 # gen_f32_seam.py`, so the module-scope refusal fires for exactly the absent subject it names.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-# WHY THE RED IS A FINDING.  The file's own title is "prove `norm` round-trips, **or does not**",
+# WHY THE RED IS A FINDING.  The file's own title is "prove `norm` round-trips, or does not",
 # and exit 1 is the "or does not": the SUBJECT's `norm` does not round-trip the f32 pair, or the
 # negative case no longer discriminates.  The subject is a FILE IN THE TREE
 # (`.agents/slop/jslane2/gen_f32_seam.py`), so the red is a fact ABOUT THE TREE'S NORMALISER,

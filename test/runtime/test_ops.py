@@ -639,7 +639,7 @@ class TestOps(TensorTestCase):
     helper_test_op([(45,65)], lambda x: x**8.0)
     helper_test_op([(45,65)], lambda x: x**5.5)
     helper_test_op([(45,65)], lambda x: x**-5.5)
-    # helper_test_op([(45,65)], lambda x: x**-8.0)  # TODO: fix this
+    # helper_test_op([(45,65)], lambda x: x-8.0)  # TODO: fix this
     helper_test_op([(45,65)], lambda x: 1.0**x)
     helper_test_op([(45,65)], lambda x: 5.5**x)
     helper_test_op([(45,65)], lambda x: (-5.5)**x)
@@ -660,7 +660,7 @@ class TestOps(TensorTestCase):
   @unittest.skipIf(COMPILE_ONLY, "test requires runtime")
   @unittest.skipIf(isinstance(Device[Device.DEFAULT].renderer, NIRRenderer), "TODO: broken in LVP")
   def test_pow_const_direct(self):
-    # x ** c
+    # x  c
     def get_tiny_gradient(x, c):
       t = Tensor([x], dtype=dtypes.float)
       return (t ** c)[0].gradient(t)[0].item()
@@ -685,8 +685,8 @@ class TestOps(TensorTestCase):
     helper_test_op(None, lambda x: x**3.3, vals=[[-math.inf]])
 
   def test_pow_zero_exponent(self):
-    # x ** 0 is the constant 1 for every x, so the gradient with respect to the base is 0, never nan
-    # TODO: nan ** 0, failed on WEBGPU
+    # x  0 is the constant 1 for every x, so the gradient with respect to the base is 0, never nan
+    # TODO: nan  0, failed on WEBGPU
     helper_test_op(None, lambda x,y: x**y, vals=[[-math.inf, math.inf, 0.0], [0.0, 0.0, 0.0]])
 
   def test_pow_zero_tensor(self):
@@ -721,7 +721,7 @@ class TestOps(TensorTestCase):
     for base in ([1, 2, 3], [-1, -2, -3]):
       for exponent in ([2, 3, 4], [-2, -3, -4]):
         _test(base, exponent)
-    # NOTE: torch 0 ** -1 is 0
+    # NOTE: torch 0  -1 is 0
     _test([0, 0, 0], [0, 1, 2])
 
     np.testing.assert_equal((Tensor(11) ** Tensor(7)).item(), 11 ** 7)

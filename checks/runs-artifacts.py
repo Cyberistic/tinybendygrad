@@ -100,19 +100,19 @@ READS = {"read_text", "read_bytes", "iterdir", "glob", "rglob", "is_dir", "is_fi
          "stat", "scandir", "listdir", "readlink"}
 
 #: A SHELL LANE IS FOUND BY ITS SHEBANG, NOT BY ITS NAME. MEASURED 2026-10-17: the tree holds
-#: **272 tracked files whose first line names a shell**, and only **21 of them end in `.sh`** --
+# : 272 tracked files whose first line names a shell, and only 21 of them end in `.sh` --
 #: `checks/bend`, `bin/bend`, `gates/oracles/*.sh` and 16 more. A `*.sh` glob would have missed
 #: every one of those, which is the same suffix-set defect `checks/repro-paths.py` shipped and
 #: retracted. `gates/gates-pop.py` PLANT 6 found the identical thing independently: its
-#: denominator is a **21-entry walk**, and its own header says a `glob("*.sh")` population was
+# : denominator is a 21-entry walk, and its own header says a `glob("*.sh")` population was
 #: "a population it had chosen".
 SHELL_SHEBANG = re.compile(r"^#!.*\b(bash|sh|zsh|dash|ksh)\b")
 #: The verbs that CREATE a file or a directory. A shell READ is not extracted: a read is any
 #: string-shaped token, and a permissive reader is how the first prototype produced `echo`, `fi`
-#: and `local` as paths. **A WRITE IS A NARROW SET OF VERBS; A READ IS NOT.**
+# : and `local` as paths. A WRITE IS A NARROW SET OF VERBS; A READ IS NOT.
 #: `git` IS NOT IN THIS SET AND IS IN `SH_GIT` INSTEAD. MEASURED: with a bare `git` alternative,
-#: `checks/disarm.sh` yielded **20 sites of which 0 existed, and every one of them was a command
-#: name** -- `git`, `grep`, `diff`, `cut`, `sort`, `say`, `OWN`, `i.e.`. Only `git clone` and
+# : `checks/disarm.sh` yielded 20 sites of which 0 existed, and every one of them was a command
+# : name -- `git`, `grep`, `diff`, `cut`, `sort`, `say`, `OWN`, `i.e.`. Only `git clone` and
 #: `git init` create anything, and `git clone` is the one that matters here: it is
 #: `tools/get-bend.sh:21`, the whole of `references/bend`.
 SH_CREATE = re.compile(r"(?<![0-9A-Za-z_.-])(mkdir|cp|mv|install|touch|tee|ln|rsync)\b")
@@ -122,9 +122,9 @@ SH_GIT = re.compile(r"(?<![0-9A-Za-z_.-])git\s+(clone|init)\b")
 SH_ASSIGN = re.compile(r"""(?m)^\s*(?:export\s+|declare\s+-x\s+|local\s+|readonly\s+)*"""
                        r"""([A-Za-z_][A-Za-z0-9_]*)=(?:"([^"]*)"|'([^']*)'|([^\s#;&|]*))""")
 #: `ROOT=$(cd "$(dirname "$0")/.." && pwd)` -- the shell spelling of `Path(__file__).resolve()`,
-#: which `resolve()` above already maps to `""`. **THE SAME IDIOM GETS THE SAME ANSWER**, so
+# : which `resolve()` above already maps to `""`. THE SAME IDIOM GETS THE SAME ANSWER, so
 #: `"$ROOT/references/bend"` resolves to `references/bend` and not to a dropped token. MEASURED:
-#: without this binding the extractor produced **0** sites for `tools/get-bend.sh`, whose entire
+# : without this binding the extractor produced 0 sites for `tools/get-bend.sh`, whose entire
 #: job is to write `references/bend`. The `\b` and not `\s` because `SH_ASSIGN` captures an
 #: UNQUOTED value only up to the first space, so the captured text is `$(cd` and nothing else.
 SH_SELF_ROOT = re.compile(r"\$\(\s*cd\b|\$\(\s*dirname\b|\$\(\s*pwd\b")
@@ -274,8 +274,8 @@ def sites(root=ROOT, tracked=None):
         env = _env(tree)
         # A DOCSTRING IS NOT A USE. MEASURED: including docstrings reported 14 readers on a tree
         # that has 12, because `checks/sweep.py`'s only two mentions of the directory are a
-        # function docstring and a `#` comment. **A POPULATION THAT INCLUDES ITS OWN NARRATION
-        # CANNOT COUNT READERS**, and the extra two are not harmless -- they are the tree's own
+        # function docstring and a `#` comment. A POPULATION THAT INCLUDES ITS OWN NARRATION
+        # CANNOT COUNT READERS, and the extra two are not harmless -- they are the tree's own
         # words about a directory it never opens.
         docs = set()
         for n in ast.walk(tree):
@@ -290,11 +290,11 @@ def sites(root=ROOT, tracked=None):
                 continue
             fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
             # WRITE IF IT IS A WRITE, OTHERWISE IT IS A USE. MEASURED: narrowing this to a
-            # hand-listed set of read method names found **4 of the 12**, because the rest hand
+            # hand-listed set of read method names found 4 of the 12, because the rest hand
             # the path to a FUNCTION -- `substrate-id.py` passes `SUMMARY` to `declared_values`,
             # `disagree-gate.py` to its locator resolver -- and a name I failed to list reads as
-            # "not a reader", which is the `.agents/slop/xd1/pin` blindness again. **AN UNRECOGNISED
-            # CALLEE IS A USE, NOT AN ABSENCE.**
+            # "not a reader", which is the `.agents/slop/xd1/pin` blindness again. AN UNRECOGNISED
+            # CALLEE IS A USE, NOT AN ABSENCE.
             role = "write" if fn in WRITES else "read"
             # THE RECEIVER IS A SITE. `D.write_text(s)` and `D.iterdir()` both name `D` there.
             args = list(node.args) + [k.value for k in node.keywords]
@@ -736,8 +736,8 @@ def clone_paths(root=ROOT, tracked=None):
     # `../runs/graphcmp/D` and builds `D0-run-summary.txt` by string interpolation AT RUNTIME, so
     # `sites()` records the directory and never the filename. MEASURED 2026-10-14: without this
     # inheritance `runs/graphcmp/D/D0-run-summary.txt` came out `HANDMADE` -- a corpus file with no
-    # generator, printed three lines below the directory that generates it. **A WRITER OF A PARENT
-    # IS A WRITER OF THE CHILD**, or the census blames the absence of a spelling for the absence
+    # generator, printed three lines below the directory that generates it. A WRITER OF A PARENT
+    # IS A WRITER OF THE CHILD, or the census blames the absence of a spelling for the absence
     # of a fact. THE PLANTS ARE REMOVED ABOVE, or the inheritance hands out a generator's name
     # to a file no generator ever wrote.
     for p in sorted(writes):
@@ -821,29 +821,29 @@ def clone_report(root=ROOT):
     # THE DENOMINATOR IS RENAMED, AND THE MEASUREMENT IS WHY. The old line read
     #   "DENOMINATOR: {len(holes)} on-disk paths named by {len(sites(root))} call sites"
     # and `sites()` returns ONE ROW PER CALL SITE, so the word `DENOMINATOR` sat over an
-    # OCCURRENCE COUNT while the number beside it was a count of DISTINCT PATHS. **MEASURED TWICE
+    # OCCURRENCE COUNT while the number beside it was a count of DISTINCT PATHS. MEASURED TWICE
     # ON 2026-10-17, AND THE COUNTS MOVE BECAUSE OTHER UNITS ARE WRITING THIS TREE:
-    # 11 060 / 6 643 / 5 854 AND THEN 11 141 / 6 680 / 5 890** -- call-site OCCURRENCES, distinct
+    # 11 060 / 6 643 / 5 854 AND THEN 11 141 / 6 680 / 5 890 -- call-site OCCURRENCES, distinct
     # NAMED VALUES, and distinct values carrying no `/` at all (`=`, `,`, `store_true`, `PYTHON`,
     # `echo`). So 88.2% of the distinct values and 88.7% of the occurrences are BARE TOKENS, and
     # 214/11 141 read as COVERAGE ("2% of our named paths are reproducible") when it is not a
     # ratio of like units.
-    # **A DENOMINATOR THAT DOES NOT MATCH ITS NUMERATOR's SUBJECT IS THE `SPEC=2` CLASS ONE LEVEL
-    # DOWN**, and no verdict moved -- `clone_paths()` intersects with `os.path.exists` before
+    # A DENOMINATOR THAT DOES NOT MATCH ITS NUMERATOR's SUBJECT IS THE `SPEC=2` CLASS ONE LEVEL
+    # DOWN, and no verdict moved -- `clone_paths()` intersects with `os.path.exists` before
     # anything is graded -- which is exactly why it survived: the only symptom was a printed line.
     #
-    # **AND NO FIGURE IS TRANSCRIBED HERE, WHICH IS THE POINT OF THE WHOLE REVISION.** The first
+    # AND NO FIGURE IS TRANSCRIBED HERE, WHICH IS THE POINT OF THE WHOLE REVISION. The first
     # version of this comment carried a fourth number -- "6 032 name no file on this tree" -- that
     # NO COMMAND HAD PRODUCED. It was written because it fit the sentence, and a number that fits
-    # a sentence is exactly the `gates/docnum-claim-gate.py` class: **a number written where a
-    # measurement could be taken, in prose that outlives the measurement.** It is gone rather than
+    # a sentence is exactly the `gates/docnum-claim-gate.py` class: a number written where a
+    # measurement could be taken, in prose that outlives the measurement. It is gone rather than
     # corrected, because the printed line below now reports the bare-token share ITSELF, every
     # run, so a reader who wants the figure takes it from the instrument and not from here.
     #
     # WHAT IT COUNTS NOW, AND EACH NUMBER NAMES ITS UNIT: `paths` is the graded population,
     # `values` is the DISTINCT set `sites()` named (the only denominator in the same unit as
     # `paths`), and `sites` is the occurrence count, labelled OCCURRENCES because that is what it
-    # is. **THE CONSUMERS ARE ZERO** -- MEASURED by grep, not assumed: `grep -rn DENOMINATOR` over
+    # is. THE CONSUMERS ARE ZERO -- MEASURED by grep, not assumed: `grep -rn DENOMINATOR` over
     # `*.py *.sh *.mjs *.md *.rows` returns this file's own two mentions and nothing that reads
     # this line, and `clone_report()`'s stdout is parsed by no instrument in the tree. So the
     # rename costs one line and no consumer edit; had there been a consumer, the count is the
@@ -865,8 +865,8 @@ def clone_report(root=ROOT):
 
 #: A tracked file with a PYTHON shebang and no `.py` name, or a NODE lane, is invisible to BOTH
 #: resolvers -- and the first version of `residual()` got this backwards, reporting three
-#: `#!/usr/bin/env python3` files as "a language neither resolver reads". **AN ADMISSION THAT
-#: MISDESCRIBES ITS OWN POPULATION IS WORSE THAN NO ADMISSION**, so both classes are matched by
+# : `#!/usr/bin/env python3` files as "a language neither resolver reads". AN ADMISSION THAT
+# : MISDESCRIBES ITS OWN POPULATION IS WORSE THAN NO ADMISSION, so both classes are matched by
 #: CONTENT and counted, never by extension.
 PY_SHEBANG = re.compile(r"^#!.*\bpython[0-9.]*\b")
 #: `from "node:fs"` / `require("...")` -- how a Node lane with NO shebang announces itself.
@@ -972,8 +972,8 @@ def plant_shell(root=None):
         lanes = {}
         # A LANE THAT NAMES THE TARGET AND WRITES NOTHING, SO `runs/x` ALWAYS HAS A ROW. Without
         # it a case that correctly finds no writer returns NO-ROW, and `NO-ROW` is not a verdict --
-        # **a census that cannot distinguish "absent from the population" from "in the population
-        # with no writer" is the `AGENTS.md` STALE case**, and a plant that returns NO-ROW for
+        # a census that cannot distinguish "absent from the population" from "in the population
+        # with no writer" is the `AGENTS.md` STALE case, and a plant that returns NO-ROW for
         # half its cases is not a plant.
         lanes["reader"] = "checks/reader.py"
         (r / "checks" / "reader.py").write_text(

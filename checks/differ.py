@@ -433,13 +433,13 @@ def population_digest(path=None) -> str:
 # DOES carry the shapes (`getaddr` a GETADDR, `binblob` a BINARY, and the gate prints both);
 # what is missing is a VERDICT LANE over it, and that is `gates/specreach-map.rows` (the map)
 # and `gates/specreach-gate.py` (the verdict).
-# **AND **THE **PIN **MOVED **ON **2026-11-11**, **BECAUSE **THE **`commute` **GRAPH's
-# **`a != b` **SPELLING **WAS **RE-MEASURED **ON **CPYTHON **AT **THE **PIN**: **IT **IS
-# **`CMPEQ(CMPEQ(a, b), CONST false)`** **AND **NOT **A **RAW **`CMPNE`** -- **AND **THE
-# **GRAPH **HAS **TWO **NODES **MORE, **AND **THE **POPULATION **IS **PINNED **BY
-# **CONTENT**, **SO **THE **PIN **HAS **TO **MOVE **IN **THE **SAME **COMMIT **AS **THE
-# **CHANGE**.  **THE **OLD **VALUE **WAS
-# **`d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31`.**
+# AND THE PIN MOVED ON 2026-11-11, BECAUSE THE `commute` GRAPH's
+# `a != b` SPELLING WAS RE-MEASURED ON CPYTHON AT THE PIN: IT IS
+# `CMPEQ(CMPEQ(a, b), CONST false)` AND NOT A RAW `CMPNE` -- AND THE
+# GRAPH HAS TWO NODES MORE, AND THE POPULATION IS PINNED BY
+# CONTENT, SO THE PIN HAS TO MOVE IN THE SAME COMMIT AS THE
+# CHANGE.  THE OLD VALUE WAS
+# `d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31`.
 POPULATION_PIN = "02e135dc48c3b12e07d4f212b292e8fbe18e48a3fef16949d1b9c023c5f2888f"
 
 
@@ -572,38 +572,38 @@ def population_bad(digest=None) -> list[str]:
 # `ops.bend`, `movement.bend`, `prepare.bend`, `mixin/op.bend`, the renderer's `ku_render_index` and
 # `schedule/rangeify.bend` -- A port change, NOT a certificate change, AND bigger than a turn.
 #
-# ⇒ AND **THE **PORT **CHANGE **LANDED **ON **2026-11-11**, **AND **THE **SEVEN **EXCEPTIONS
-# **ARE **GONE**:
-#   - **`tinybendygrad/uop/ops.bend`** **HAS **`O.shape_arg`**, **WHICH **IS **UPSTREAM's
-#     **`shape_to_shape_arg` (`ops.py:108-112`) **IN **ITS **TUPLE **FORM**, **AND **WHICH
-#     **THE **OTHER **TWO **COPIES **(`mixin/movement.bend`'s **`G.stkN`** **AND
-#     **`mixin/gradient.bend`'s **`gstkN`**) **NOW **CALL** -- **⇒ AND **THE **DUPLICATION
-#     **WAS **THE **DEFECT **AND **NOT **THE **COPY**.
-#   - **THE **PORT's **PERMUTE **CARRIES **ITS **ORDER **IN **`src[1]`** AT **EVERY
-#     **CONSTRUCTION **SITE** (`mixin/movement.bend`'s **`G.permute`** **AND
-#     **`mxw_permute.go`**, **`tensor.bend`'s **`tn_mop.order`**, **`mixin/gradient.bend`'s
-#     **`gr_21.build`**, **`uop/fold.bend`'s **`g_mv_perm`**, **`schedule/prepare.bend`'s
-#     **`pr_perm`**, **AND **`uop/movement.bend`'s **"merge **PERMUTEs" **RULE**), **AND
-#     **THE **READER **IS **`src[1]`'s **STACK **CHILDREN**.
-#   - **AND **THE **CORPUS's **OWN **DRIVER **HAND-BUILDS **THE **NODES **IT **COMPARES**,
-#     **AND **IT **WAS **THE **LAST **HOLDER **OF **THE **OLD **SPELLING** -- **⇒ AND
-#     **AN **INSTRUMENT **THAT **HAND-BUILDS **THE **NODES **IT **COMPARES **IS **PINNED **TO
-#     **A **SPELLING**, **AND **A **SPELLING **ROTS**.
-#   - **AND **THE **`eq`/`ne`/`logical_not` **FAMILY **WAS **SIX **HALVES **OF **ONE **RULE
-#     **SPELLED **AGAINST **AN **OLDER **UPSTREAM** -- **AND **THE **`commute` **GRAPH **WAS
-#     **THE **WITNESS**, **AND **THE **ORACLE's **OWN **DOCSTRING **AGREED **WITH **THE
-#     **DRIVER **AND **DISAGREED **WITH **CPYTHON**, **⇒ AND **A **PAIR **OF **AGREEING
-#     **INSTRUMENTS **IS **NOT **A **WITNESS**.
+# AND THE PORT CHANGE LANDED ON 2026-11-11, AND THE SEVEN EXCEPTIONS
+# ARE GONE:
+# - `tinybendygrad/uop/ops.bend` HAS `O.shape_arg`, WHICH IS UPSTREAM's
+# `shape_to_shape_arg` (`ops.py:108-112`) IN ITS TUPLE FORM, AND WHICH
+# THE OTHER TWO COPIES (`mixin/movement.bend`'s `G.stkN` AND
+# `mixin/gradient.bend`'s `gstkN`) NOW CALL -- AND THE DUPLICATION
+# WAS THE DEFECT AND NOT THE COPY.
+# - THE PORT's PERMUTE CARRIES ITS ORDER IN `src[1]` AT EVERY
+# CONSTRUCTION SITE (`mixin/movement.bend`'s `G.permute` AND
+# `mxw_permute.go`, `tensor.bend`'s `tn_mop.order`, `mixin/gradient.bend`'s
+# `gr_21.build`, `uop/fold.bend`'s `g_mv_perm`, `schedule/prepare.bend`'s
+# `pr_perm`, AND `uop/movement.bend`'s "merge PERMUTEs" RULE), AND
+# THE READER IS `src[1]`'s STACK CHILDREN.
+# - AND THE CORPUS's OWN DRIVER HAND-BUILDS THE NODES IT COMPARES,
+# AND IT WAS THE LAST HOLDER OF THE OLD SPELLING -- AND
+# AN INSTRUMENT THAT HAND-BUILDS THE NODES IT COMPARES IS PINNED TO
+# A SPELLING, AND A SPELLING ROTS.
+# - AND THE `eq`/`ne`/`logical_not` FAMILY WAS SIX HALVES OF ONE RULE
+# SPELLED AGAINST AN OLDER UPSTREAM -- AND THE `commute` GRAPH WAS
+# THE WITNESS, AND THE ORACLE's OWN DOCSTRING AGREED WITH THE
+# DRIVER AND DISAGREED WITH CPYTHON, AND A PAIR OF AGREEING
+# INSTRUMENTS IS NOT A WITNESS.
 #
-# ⇒ **MEASURED 2026-11-11, **ON **A **CLEAN **TREE**: **`graphs=38`, `graphs-answered=38`,
+# MEASURED 2026-11-11, ON A CLEAN TREE: `graphs=38`, `graphs-answered=38`,
 # `graphs-agree=38`, `graphs-disagree=0`, `graphs-refused=0`, `byte-identical=38`,
 # `not-comparable=0`, `plants-disagree=8 of 8`, `cross=1 of 1`, `stable-pairs=5 of 5`,
-# `controls=5 of 5`, `conflations=4 of 4`, `selfcheck=# SELFCHECK: OK`** -- **⇒ AND **THE
-# **COVERAGE **IS **WHOLE**, **AND **THE **EXCEPTIONS **ARE **GONE**, **AND **THEY **ARE
-# **NOT **PINNED **TO **DISAGREE**: **THE **TABLE **IS **EMPTY**, **AND **AN **EMPTY **TABLE
-# **IS **THE **STRONGEST **STATEMENT **THE **CORPUS **CAN **MAKE**, **BECAUSE **EVERY
-# **GRAPH **NOW **HAS **TO **AGREE **AND **A **DISAGREEING **GRAPH **WOULD **BE **A **FAILURE
-# **AND **NOT **AN **EXCEPTION**.**
+# `controls=5 of 5`, `conflations=4 of 4`, `selfcheck=# SELFCHECK: OK` -- AND THE
+# COVERAGE IS WHOLE, AND THE EXCEPTIONS ARE GONE, AND THEY ARE
+# NOT PINNED TO DISAGREE: THE TABLE IS EMPTY, AND AN EMPTY TABLE
+# IS THE STRONGEST STATEMENT THE CORPUS CAN MAKE, BECAUSE EVERY
+# GRAPH NOW HAS TO AGREE AND A DISAGREEING GRAPH WOULD BE A FAILURE
+# AND NOT AN EXCEPTION.
 WANT: dict[str, str] = {}
 
 

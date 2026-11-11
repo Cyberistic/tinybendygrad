@@ -52,7 +52,7 @@ from gatekit import Gate, main
 # would pin the answer twice over, which is how the two copies drift apart.
 ROWS = (
     "hashcons_same_index", "zeros_differ", "nan_interns", "bool_vs_int_key", "backedge_srcs",
-    # THE TOP-LEVEL `arg` LANE -- **AND IT REPLACES THE THREE `tag_*` ROWS**, because upstream
+    # THE TOP-LEVEL `arg` LANE -- AND IT REPLACES THE THREE `tag_*` ROWS, because upstream
     # DELETED `UOp.tag` in `fb518b44e` (an ANCESTOR of the pin `f5ac54685074`), so upstream's
     # pin CANNOT answer a question about a slot it no longer has. THE PROPERTY IS THE SAME ONE
     # -- `type(arg)` splits the key -- and the port's `arg` carries the type in itself.
@@ -72,21 +72,21 @@ ROWS = (
     # rather than passing on a count.
     "valid_is_where", "valid_src0", "valid_src1", "valid_src2",
     "pynest_signed_zero_interns",
-    # THE COUNTER's THREE CLAIMS -- **AND CPYTHON's OWN `collections.Counter` IS THE ORACLE.**
+    # THE COUNTER's THREE CLAIMS -- AND CPYTHON's OWN `collections.Counter` IS THE ORACLE.
     "ctr_bump", "ctr_find", "ctr_inter",
-    # `UOp.gcd` -- ops.py:1073. THE GCD OF TWO UNRELATED VARIABLES IS **1** (A CONST WITH NO
-    # SRCS) AND THE GCD OF `x*z` WITH ITSELF IS **THE SHARED FACTOR** (A MUL). **AND CPYTHON's OWN
-    # `UOp.gcd` IS THE ORACLE.**
+    # `UOp.gcd` -- ops.py:1073. THE GCD OF TWO UNRELATED VARIABLES IS 1 (A CONST WITH NO
+    # SRCS) AND THE GCD OF `x*z` WITH ITSELF IS THE SHARED FACTOR (A MUL). AND CPYTHON's OWN
+    # `UOp.gcd` IS THE ORACLE.
     "gcd_const", "gcd_shared",
-    # `nested_div` -- divandmod.py:23. THE `x*8` CASE **DOES** REWRITE AND THE **TWO** GUARDS
-    # HOLD -- **AND CPYTHON's OWN `nested_div` ARM IS THE ORACLE**, **AND THE ROWS ASK **THE ARM**
-    # AND NOT THE MATCHER** (MEASURED 2026-11-09: `(x%2)//4` IS ANSWERED BY THE **RANGE** ARM
+    # `nested_div` -- divandmod.py:23. THE `x*8` CASE DOES REWRITE AND THE TWO GUARDS
+    # HOLD -- AND CPYTHON's OWN `nested_div` ARM IS THE ORACLE, AND THE ROWS ASK THE ARM
+    # AND NOT THE MATCHER (MEASURED 2026-11-09: `(x%2)//4` IS ANSWERED BY THE RANGE ARM
     # AND NOT BY `nested_div`).
     "nd_rewrite", "nd_neg", "nd_nodiv",
-    # `UOp.divide_exact` -- ops.py:1038-1047. THE `self IS v` ANSWER IS **1**, **A CONST THAT
-    # DOES NOT DIVIDE **2** GIVES **NONE**, **`x*y` DIVIDED BY `y` IS **A MUL**, AND **`x*2`
-    # DIVIDED BY `x` IS **THE CONSTANT** -- **AND CPYTHON's OWN `UOp.divide_exact` IS THE
-    # ORACLE.**
+    # `UOp.divide_exact` -- ops.py:1038-1047. THE `self IS v` ANSWER IS 1, A CONST THAT
+    # DOES NOT DIVIDE 2 GIVES NONE, `x*y` DIVIDED BY `y` IS A MUL, AND `x*2`
+    # DIVIDED BY `x` IS THE CONSTANT -- AND CPYTHON's OWN `UOp.divide_exact` IS THE
+    # ORACLE.
     "de_same", "de_const_none", "de_mul", "de_const_out",
 )
 

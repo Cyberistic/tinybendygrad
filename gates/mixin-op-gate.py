@@ -76,17 +76,17 @@ from gatekit import Gate, oracle_drift, VERDICT
 ORACLE_PIN = {
     "gates/oracles/mixin-op-oracle.sh":
             # RE-FROZEN 2026-10-25, IN THE SAME COMMIT AS THE REPOINT THAT MOVED IT -- WHICH
-            # IS THE ONLY WAY A PIN MAY MOVE. THE SHELL's BYTES CHANGED BECAUSE **THE CPYTHON
-            # LANE's PATH CHANGED**: IT USED TO RUN `.agents/slop/mixin-op-gate.py`, AND IT NOW
-            # RUNS `gates/mixin-op-oracle.py` -- **THE COPY BESIDE THE GATE, IN GIT** -- BECAUSE
+            # IS THE ONLY WAY A PIN MAY MOVE. THE SHELL's BYTES CHANGED BECAUSE THE CPYTHON
+            # LANE's PATH CHANGED: IT USED TO RUN `.agents/slop/mixin-op-gate.py`, AND IT NOW
+            # RUNS `gates/mixin-op-oracle.py` -- THE COPY BESIDE THE GATE, IN GIT -- BECAUSE
             # THE OTHER ONE WAS A SECOND COPY OF ONE FILE THAT HAD TO BE EDITED IN LOCKSTEP, AND
-            # **A SECOND COPY OF A LIST IS A CONTRACT WITH NO GENERATOR.** THE PIN WAS AT
+            # A SECOND COPY OF A LIST IS A CONTRACT WITH NO GENERATOR. THE PIN WAS AT
             # `e8792d0ff1ad`, WHICH WAS CORRECT UNTIL THIS EDIT.
-            # **THE TWO EXTANT COPIES OF THE SHELL ARE BYTE-IDENTICAL AT `90eb25aed53ca517`**
+            # THE TWO EXTANT COPIES OF THE SHELL ARE BYTE-IDENTICAL AT `90eb25aed53ca517`
             # (`gates/oracles/` AND `oracles/gateport/oracles/`), BY DESIGN.
-            # **THIS IS THE SAME FAILURE AS THE `checks/e2e.py` PIN FIRING ON A TODO *COMMENT*: A
+            # THIS IS THE SAME FAILURE AS THE `checks/e2e.py` PIN FIRING ON A TODO *COMMENT*: A
             # PIN GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE SAME
-            # COMMIT.**
+            # COMMIT.
             "90eb25aed53ca517f83eeb993957c6614acdc2d04265bc061e886010972abcbf",
 }
 

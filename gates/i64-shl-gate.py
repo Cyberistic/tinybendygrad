@@ -124,7 +124,7 @@ def main():
     # the wrong number of them. MEASURED 2026-10-17 on the previous revision: `bd.out`
     # absent exited 1 through a `FileNotFoundError` for all four of `run()`'s verdicts.
     #
-    # **`code if code != PASS else REFUSED`, NEVER BARE `code`** -- a `PASS` from `run()`
+    # `code if code != PASS else REFUSED`, NEVER BARE `code` -- a `PASS` from `run()`
     # with no lane to read would be a GREEN EXIT THAT MEASURED NOTHING.
     try:
         bd_text = (GATE.dir / "bd.out").read_text()
@@ -140,7 +140,7 @@ def main():
         # apart): this line and `gates/i64-shr-gate.py`'s were the ONLY TWO in the tree, and
         # both answered `1` (FAIL) for an EMPTY `bd.out`.
         #
-        # **`run()`'s OWN VERDICT OUTRANKS THIS ONE** -- a `DEAD` from the lanes is a fact
+        # `run()`'s OWN VERDICT OUTRANKS THIS ONE -- a `DEAD` from the lanes is a fact
         # about the lanes, and this arm is about the FILE ON DISK -- so the shape is
         # `code if code != PASS else DEAD/FAIL`, identical to the two arms below it.
         if n != ROWS:
@@ -234,7 +234,7 @@ def main():
     # HARD 1 -- `gates/gatekit.py:770-774`'s own `gate()` propagates, and `gatekit.py:618`
     # can return `DEAD(5)` for a lane that emitted nothing while `bd.out` IS promoted.
     #
-    # **`VERDICT[code_out]`, NOT `VERDICT[code]`** -- MEASURED 2026-10-17 on the sibling:
+    # `VERDICT[code_out]`, NOT `VERDICT[code]` -- MEASURED 2026-10-17 on the sibling:
     # with `run()` stubbed to `PASS` and one claim forced false, `VERDICT[code]` printed
     # `PASS` while the process exited 1. The printed token and the returned exit are the
     # same expression here so they cannot drift.

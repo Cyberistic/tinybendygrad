@@ -90,7 +90,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import Gate, main
 
 # THE PORT LANE PRINTS A SENTINEL ROW, `nvme-done=1`, AND THE ORACLE DOES
-# NOT. IT IS A **PORT-ONLY ROW** AND `gatekit`'s `port_only` IS EXACTLY THE
+# NOT. IT IS A PORT-ONLY ROW AND `gatekit`'s `port_only` IS EXACTLY THE
 # CATEGORY FOR IT: "present in the port, absent from the oracle", and the
 # derived oracle count `rows - len(port_only)` HOLDS THE ABSENCE. SO THE
 # PORT LANE HAS 207 ROWS AND THE ORACLE LANE HAS 206.

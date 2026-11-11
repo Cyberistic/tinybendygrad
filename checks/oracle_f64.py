@@ -312,17 +312,17 @@ def main():
   # `IndexError: list index out of range` at rc 1 with a 12-line traceback. THREE READERS READ THAT
   # rc DIFFERENTLY -- `canrun` recorded it RED, `zerogate` recorded it as one of the two entry
   # points it never ran, and `hooks` mapped TRACEBACK -> `DEAD` -- and all three were reading the
-  # same line. **A GATE THAT CRASHES WHERE IT SHOULD REFUSE CANNOT DISTINGUISH "THE INPUT IS ABSENT"
-  # FROM "I AM BROKEN"**, which is this file's own `refuse()` docstring: an assertion downstream of
+  # same line. A GATE THAT CRASHES WHERE IT SHOULD REFUSE CANNOT DISTINGUISH "THE INPUT IS ABSENT"
+  # FROM "I AM BROKEN", which is this file's own `refuse()` docstring: an assertion downstream of
   # what it asserts cannot turn an exception into a refusal.
   #
-  # **IN `main()`, AND NOT WITH THE THREE MODULE-SCOPE GUARDS ABOVE, AND THAT IS MEASURED NOT
-  # STYLED.** `checks/run-f64.sh:147` PLANTS `import oracle_f64` into the harness copy of
+  # IN `main()`, AND NOT WITH THE THREE MODULE-SCOPE GUARDS ABOVE, AND THAT IS MEASURED NOT
+  # STYLED. `checks/run-f64.sh:147` PLANTS `import oracle_f64` into the harness copy of
   # `portexec/oracle.py`, so this module is IMPORTED by a script whose `sys.argv` is that script's --
   # one argument, or none. A guard here rather than at module scope would refuse the f64 lane the
   # moment the harness's own argv was short, and it would do so with a confident `exit 3` naming the
-  # wrong file. **A GUARD ON `sys.argv` BELONGS TO THE COMMAND, NOT TO THE MODULE: `sys.argv` IS
-  # THE COMMAND'S, AND AN IMPORT BORROWS IT.**
+  # wrong file. A GUARD ON `sys.argv` BELONGS TO THE COMMAND, NOT TO THE MODULE: `sys.argv` IS
+  # THE COMMAND'S, AND AN IMPORT BORROWS IT.
   if len(sys.argv) < 3:
     refuse(f"needs <workdir> <mm-rows>; got {len(sys.argv) - 1} argument(s). Without them there is "
            "no denominator to publish.")

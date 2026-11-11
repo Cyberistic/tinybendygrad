@@ -220,32 +220,32 @@ if __name__ == "__main__":
   a = (Tensor.randn(SZ) if getenv("RAND") else Tensor.ones(SZ)).contiguous().realize()
 
   if 1 in examples:
-    # *****
+    # *
     # This is the high level tinygrad way.
     # Note that this is split into multiple kernels for speed.
     correct = eval_harness("basic kernel", a, lambda x: x.sum())
 
   if 2 in examples:
-    # *****
+    # *
     # You can import kernels from CUDA/HIP/Metal.
     # ChatGPT is great at writing these Kernel
     example_2_hip(a, correct)
 
   if 3 in examples:
-    # *****
+    # *
     # Now we get to the lower abstraction layers of tinygrad.
     # You can write a kernel in UOps, and it's 2.5x faster than normal.
     example_3_custom_uop(a, correct)
 
   if 4 in examples:
-    # *****
+    # *
     # You can also BEAM search stock tinygrad for a faster kernel.
     # This does even better than all the kernels to date in this simple case.
     with Context(BEAM=2):
       eval_harness("BEAMed kernel", a, lambda x: x.sum(), check=correct)
 
   if 5 in examples:
-    # *****
+    # *
     # If you really want to go crazy with speed, you can code in assembly.
     # There's not too much to gain here over BEAM, but it's a few percent faster.
     example_5_custom_assembly(a, correct)

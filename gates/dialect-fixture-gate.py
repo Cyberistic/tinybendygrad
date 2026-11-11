@@ -375,7 +375,7 @@ def plant() -> int:
                   "plant arm is satisfied by a gate that always fails.")
             bad += 1
 
-        # THE PLANT: ONE ROW TAG's TEXT, changed so the port does not carry it. **A TEXT EDIT**:
+        # THE PLANT: ONE ROW TAG's TEXT, changed so the port does not carry it. A TEXT EDIT:
         # the tag is still a row tag (still the first argument of a row-maker call), so the gate
         # must still COUNT it -- and then find that the port does not carry it. A plant that
         # changed the tag's POSITION would be measuring the other rule.
@@ -401,7 +401,7 @@ def plant() -> int:
                 print("  THE PLANT DID NOT FIRE: a row tag the port does not carry must be a FAIL, "
                       "or this gate cannot see a missing row and a green run means nothing.")
                 bad += 1
-            # **THE DENOMINATOR DID NOT MOVE, AND THAT IS THE POINT.** A green run that is green
+            # THE DENOMINATOR DID NOT MOVE, AND THAT IS THE POINT. A green run that is green
             # only because the gate counts FEWER rows proves nothing, so the plant shows the two
             # readings side by side: the same number of row tags, and one of them lost.
             before = rowtags_of(out_control)
@@ -427,7 +427,7 @@ def plant() -> int:
                       "tag, so the plant proves nothing about the gate.")
                 bad += 1
 
-        # THE OTHER ARM, AND IT IS THE ONE THAT MATTERS: **THE PORT LOSES A ROW TAG.** A gate
+        # THE OTHER ARM, AND IT IS THE ONE THAT MATTERS: THE PORT LOSES A ROW TAG. A gate
         # that only notices a fragment gaining a tag is measuring the wrong direction -- the
         # defect this gate exists to find is the PORT's row disappearing, with the fragment
         # unchanged. Same text edit, same shape, applied to the PORT's own call site.

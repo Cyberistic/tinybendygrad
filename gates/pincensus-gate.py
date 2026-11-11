@@ -406,7 +406,7 @@ def census(root=ROOT, git_root=ROOT, scratch=False):
     # is only comparable -- and they are counted apart, with their own classes, their own
     # currency vocabulary and their own table.
     #
-    # **THE ARITY OF `census()` IS UNCHANGED**, because `gates/pincensus-plant.py` calls it
+    # THE ARITY OF `census()` IS UNCHANGED, because `gates/pincensus-plant.py` calls it
     # as `rows, meta = census(...)` and that file is not this file's to edit.
     exrows, exmeta = expectation_census(corpus, host, code, decls, git_root, root, upstream, P,
                                         load_pintable(), B)

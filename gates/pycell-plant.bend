@@ -11,7 +11,7 @@
 # WHY A FIXTURE AND NOT A COPY OF THE EXPECTATIONS: a fixture retyped by hand agrees with
 # the instrument by construction, so the PLANT edits THIS TEXT and asserts that the
 # verdict MOVES.  `gates/pycell-plant.py` is the only thing that edits it, and every arm
-# is a TEXT EDIT -- **never `git show HEAD:`**, because a plant that reads HEAD plants
+# is a TEXT EDIT -- never `git show HEAD:`, because a plant that reads HEAD plants
 # nothing the moment HEAD carries the fix.
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]"])

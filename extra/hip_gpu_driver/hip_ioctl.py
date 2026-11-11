@@ -2,7 +2,7 @@
 import ctypes, ctypes.util, struct, platform, pathlib, re, time, os
 start = time.perf_counter()
 
-# *** ioctl lib ***
+# * ioctl lib *
 libc = ctypes.CDLL(ctypes.util.find_library("c"))
 # platform.processor calls `uname -p` which can return `unknown` on some systems
 processor = os.getenv("IOCTL_PROCESSOR") or platform.processor() or platform.machine()
@@ -43,7 +43,7 @@ def install_hook(c_function, python_function):
   assert ret == 0
   libc.memcpy(ioctl_address.contents, ctypes.create_string_buffer(tramp), len(tramp))
 
-# *** ioctl lib end ***
+# * ioctl lib end *
 
 import tinygrad.runtime.autogen.kfd as kfd_ioctl
 import tinygrad.runtime.autogen.hsa as hsa

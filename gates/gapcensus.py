@@ -473,7 +473,7 @@ def unit_corpus() -> tuple[dict, str]:
                          cwd=ROOT, capture_output=True, text=True).stdout.strip()
     # THE FULL `cI` TIMESTAMP, NOT ITS FIRST 10 CHARACTERS. MEASURED, and this row is the
     # only one in the file that was WRONG on its first run for exactly that reason: taking
-    # `2026-10-17` and reading it as midnight made all **242** files "newer than the
+    # `2026-10-17` and reading it as midnight made all 242 files "newer than the
     # re-vendor", when the newest is `01:50` and the re-vendor is `07:14` the same day --
     # so a corpus that is 5h24m STALE read as FRESH. A date is not a timestamp.
     # `cI` CARRIES AN OFFSET and `fromtimestamp` is NAIVE, so the first run raised

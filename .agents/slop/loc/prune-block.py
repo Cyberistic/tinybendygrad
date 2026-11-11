@@ -99,10 +99,10 @@ def main() -> int:
             counts[kind] = counts.get(kind, 0) + 1
             if args.report:
                 print(f"  {rel}:{i+1} [{kind}] {s[:88]}")
-            # **A **SEPARATOR **BECOMES **A **BLANK **LINE** -- **THE **STRUCTURE **STAYS
-            # **AND **THE **TWENTY **DASHES **GO**."
-            if kind == "separator":
-                out.append("")
+            # A SEPARATOR GOES. THE EARLIER FORM REPLACED IT WITH A BLANK LINE, WHICH KEPT
+            # THE LINE COUNT AND ADDED A HOLE: MEASURED 2026-11-11, `tinybendygrad/` HAS
+            # 5,878 SEPARATOR LINES AND THE BLANK-LINE FORM MOVES NONE OF THEM.
+            continue
         if args.apply:
             path.write_text("\n".join(out))
     for k, v in sorted(counts.items()):

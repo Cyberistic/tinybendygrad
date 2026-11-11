@@ -103,7 +103,7 @@ NS = 60 * 10**9
 #: THE DIGEST THAT CANNOT BE LIVE. NOT a constant the gate could agree with by construction: it is
 #: 64 `0`s against a sha256 hexdigest, and case `A` proves the gate answers `CURRENT` for the real
 #: one and `B` proves it answers `STALE` for this one, on the SAME file layout and the SAME
-#: comparator. **TWO SIDES ARE DIFFERENT BYTES** -- a negative whose sides were equal would be
+# : comparator. TWO SIDES ARE DIFFERENT BYTES -- a negative whose sides were equal would be
 #: satisfied by `compare(x, x)` and would prove nothing.
 DEAD = "0" * 64
 
@@ -344,8 +344,8 @@ def suite(cvg, differ, src, repro_src) -> list[tuple[str, bool, str]]:
     # READS, and it used to be `judge("claim", True, False, verdict="REPRODUCIBLE")` -- a LITERAL,
     # so a witness saying `repro-rc=rc=0` and a witness saying `rc=1` produced a BYTE-IDENTICAL
     # row. `differ.py`'s own PLANT 3 names that shape: "if it does not go red, the row is a
-    # label". **THE PROOF IS NOT "THE GATE IS RED" BUT "THE ROW DIFFERS WHEN THE WITNESS
-    # DIFFERS"**, so this case runs the gate THREE times and compares the PRINTED BYTES of the
+    # label". THE PROOF IS NOT "THE GATE IS RED" BUT "THE ROW DIFFERS WHEN THE WITNESS
+    # DIFFERS", so this case runs the gate THREE times and compares the PRINTED BYTES of the
     # `claim` row: G over the real witness, H over a witness whose `repro-rc` says `rc=1`, and I
     # over a BYTE-IDENTICAL copy of G.
     #
@@ -378,7 +378,7 @@ def suite(cvg, differ, src, repro_src) -> list[tuple[str, bool, str]]:
     # THE VERDICT OF THE ROW, AND NOT ITS BYTES ALONE. The row REPORTS the witness's own
     # `repro-rc`, so two rows over two different witnesses differ in BYTES even when the headline
     # has not moved -- and a byte comparison would be satisfied by the report while the judgement
-    # stayed put. **THE HEADLINE MOVING IS A MOVE OF `state=` AND `verdict=`.**
+    # stayed put. THE HEADLINE MOVING IS A MOVE OF `state=` AND `verdict=`.
     g_v = (g_out.get("claim", {}).get("state", "NO-SUCH-ROW"),
            g_out.get("claim", {}).get("verdict", "NO-SUCH-ROW"))
     h_v = (h_out.get("claim", {}).get("state", "NO-SUCH-ROW"),

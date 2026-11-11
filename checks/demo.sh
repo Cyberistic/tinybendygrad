@@ -11,7 +11,7 @@
 #
 # `-n` = HALF 2 ONLY, which SKIPS the ~minutes of `bend --check-only` verdicts and keeps
 # the `PROVENANCE` block, because that block reads `git ls-files` and the filesystem and
-# does not need a verdict. **The split is a pre-gate**: you learn a probe is in the tree
+# does not need a verdict. The split is a pre-gate: you learn a probe is in the tree
 # in 2.4 s, before spending ten minutes finding out whether the port still compiles.
 # ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
 _d=${0%/*}; case $_d in "$0") _d=.;; esac
@@ -23,8 +23,8 @@ say() { print -r -- "$1"; }
 # ⚠ THE LIST IS RE-DERIVED EVERY TIME, AND THE FIRST CUT SNAPSHOT IT ONCE -- WHICH MADE
 # THE WHOLE DEMONSTRATION VACUOUS. Four consecutive passes printed IDENTICAL numbers,
 # `of 138` four times, because a file list frozen before the probe was planted never
-# contains the probe. **A STALE FILE LIST IS A WAY TO MAKE A DENOMINATOR LIE, and it is
-# silent**: the instrument is correct, the input is wrong, and both look like a pass.
+# contains the probe. A STALE FILE LIST IS A WAY TO MAKE A DENOMINATOR LIE, and it is
+# silent: the instrument is correct, the input is wrong, and both look like a pass.
 # `.agents/slop/triage/allfiles.txt` is exactly such a list -- frozen 2026-10-04 22:34 --
 # so a reader comparing a router run against it is comparing against a census, not a tree.
 split() { "$CHECK" -n $(find tinybendygrad -name '*.bend' | sort) 2>&1 \

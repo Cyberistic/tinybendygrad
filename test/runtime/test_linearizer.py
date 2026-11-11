@@ -275,7 +275,7 @@ class TestLinearizer(unittest.TestCase):
     uops = to_program(replace_opts(ast, opts), renderer=Device[Device.DEFAULT].renderer).src[1].src
     self.assertEqual(len([u for u in uops if u.op is Ops.BARRIER]), 2)
 
-# *** helpers ***
+# * helpers *
 
 def helper_realized_ast(r:Tensor|list[Tensor]) -> tuple[UOp, list[Buffer]]:
   if isinstance(r, Tensor): r = [r]

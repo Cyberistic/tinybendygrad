@@ -57,7 +57,7 @@ def train_resnet():
   TRAIN_BEAM = getenv("TRAIN_BEAM", BEAM.value)
   EVAL_BEAM = getenv("EVAL_BEAM", BEAM.value)
 
-  # ** model definition and initializers **
+  # model definition and initializers
   num_classes = 1000
   resnet.Conv2d = Conv2dHeNormal
   resnet.Linear = Linear
@@ -72,7 +72,7 @@ def train_resnet():
       x.realize().to_(GPUS)
   parameters = get_parameters(model)
 
-  # ** hyperparameters **
+  # hyperparameters
   epochs            = config["epochs"]            = getenv("EPOCHS", 37)
   BS                = config["BS"]                = getenv("BS", 104 * len(GPUS))  # fp32 GPUS<=6 7900xtx can fit BS=112
   EVAL_BS           = config["EVAL_BS"]           = getenv("EVAL_BS", BS)
@@ -96,14 +96,14 @@ def train_resnet():
   config["WINO"]          = WINO.value
   config["SYNCBN"]        = getenv("SYNCBN")
 
-  # ** Optimizer **
+  # Optimizer
   skip_list = [v for k, v in get_state_dict(model).items() if "bn" in k or "bias" in k or "downsample.1" in k]
   parameters = [x for x in parameters if x not in set(skip_list)]
   optimizer = LARS(parameters, base_lr, momentum=.9, weight_decay=decay)
   optimizer_skip = SGD(skip_list, base_lr, momentum=.9, weight_decay=0.0, classic=True)
   optimizer_group = OptimizerGroup(optimizer, optimizer_skip)
 
-  # ** LR scheduler **
+  # LR scheduler
   scheduler = PolynomialDecayWithWarmup(optimizer, initial_lr=base_lr, end_lr=1e-4,
                                         train_steps=epochs * steps_in_train_epoch,
                                         warmup=lr_warmup_epochs * steps_in_train_epoch)
@@ -135,14 +135,14 @@ def train_resnet():
       MLLOGGER.event(key=mllog_constants.LARS_OPT_MOMENTUM, value=optimizer.momentum)
       MLLOGGER.event(key=mllog_constants.LARS_OPT_WEIGHT_DECAY, value=optimizer.wd)
 
-  # ** resume from checkpointing **
+  # resume from checkpointing
   start_epoch = 0
   if ckpt:=getenv("RESUME", ""):
     load_training_state(model, optimizer_group, scheduler_group, safe_load(ckpt))
     start_epoch = int(scheduler.epoch_counter.numpy().item() / steps_in_train_epoch)
     print(f"resuming from {ckpt} at epoch {start_epoch}")
 
-  # ** init wandb **
+  # init wandb
   WANDB = getenv("WANDB")
   if WANDB:
     import wandb
@@ -151,7 +151,7 @@ def train_resnet():
 
   BENCHMARK = getenv("BENCHMARK")
 
-  # ** jitted steps **
+  # jitted steps
   input_mean = Tensor([123.68, 116.78, 103.94], device=GPUS, dtype=dtypes.float32).reshape(1, -1, 1, 1)
   # mlperf reference resnet does not divide by input_std for some reason
   # input_std = Tensor([0.229, 0.224, 0.225], device=GPUS, dtype=dtypes.float32).reshape(1, -1, 1, 1)
@@ -188,10 +188,10 @@ def train_resnet():
     x, y, cookie = next(it)
     return x.shard(GPUS, axis=0).realize(), Tensor(y).shard(GPUS, axis=0), y, cookie
 
-  # ** epoch loop **
+  # epoch loop
   step_times = []
   for e in range(start_epoch, epochs):
-    # ** train loop **
+    # train loop
     if MLLOGGER and RUNMLPERF:
       MLLOGGER.start(key=mllog_constants.EPOCH_START, value=e+1, metadata=dict(epoch_num=e+1))
     BEAM.value = TRAIN_BEAM
@@ -262,7 +262,7 @@ def train_resnet():
     if MLLOGGER and RUNMLPERF:
       MLLOGGER.event(key=mllog_constants.EPOCH_STOP, value=e+1, metadata=dict(epoch_num=e+1))
 
-    # ** eval loop **
+    # eval loop
     # always eval for epoch >= 33 to stop the clock as soon as eval target hits, it can converge in epoch in [33, 37]
     if steps_in_val_epoch > 0 and ((e + 1 - eval_start_epoch) % eval_freq == 0 or e + 1 >= 33):
       if MLLOGGER and RUNMLPERF:
@@ -455,7 +455,7 @@ def train_retinanet():
     # reassemble on GPUS[0] before sending back to CPU for speed
     return out.to(GPUS[0]).realize()
 
-  # ** hyperparameters **
+  # hyperparameters
   config["BS"] = BS = getenv("BS", 16 * len(GPUS) if dtypes.default_float == dtypes.float16 else 12 * len(GPUS))
   config["EVAL_BS"] = EVAL_BS = getenv("EVAL_BS", BS)
   config["EPOCHS"] = EPOCHS = getenv("EPOCHS", 4)
@@ -466,12 +466,12 @@ def train_retinanet():
   config["DEFAULT_FLOAT"] = dtypes.default_float.name
   config["EVAL_FREQ"] = eval_freq = getenv("EVAL_FREQ", 1)
 
-  # ** initialize wandb **
+  # initialize wandb
   if (WANDB:=getenv("WANDB")):
     import wandb
     wandb.init(config=config, project="MLPerf-RetinaNet")
 
-  # ** model initializers **
+  # model initializers
   resnet.BatchNorm = FrozenBatchNorm2dRetinaNet
   resnet.Linear = Linear
   resnet.Conv2d = Conv2dRetinaNet
@@ -480,7 +480,7 @@ def train_retinanet():
   retinanet.ConvClassificationHeadLogits = functools.partial(Conv2dNormalRetinaNet, prior_prob=0.01)
   retinanet.ConvFPN = Conv2dKaimingUniformRetinaNet
 
-  # ** model setup **
+  # model setup
   backbone = resnet.ResNeXt50_32X4D(num_classes=None)
   if RUNMLPERF:
     backbone.load_from_pretrained()
@@ -499,10 +499,10 @@ def train_retinanet():
 
   step_times, start_epoch = [], 0
 
-  # ** optimizer **
+  # optimizer
   optim = Adam(params, lr=lr)
 
-  # ** dataset **
+  # dataset
   config["STEPS_IN_TRAIN_EPOCH"] = steps_in_train_epoch = round_up(get_dataset_count((base_dir_path:=Path(BASEDIR)), False), BS) // BS
   config["STEPS_IN_VAL_EPOCH"] = steps_in_val_epoch = (round_up(get_dataset_count(base_dir_path, True), EVAL_BS) // EVAL_BS)
 
@@ -530,7 +530,7 @@ def train_retinanet():
   print(f"training with batch size {BS} for {EPOCHS} epochs")
 
   for e in range(start_epoch, EPOCHS):
-    # ** training loop **
+    # training loop
     if MLLOGGER and RUNMLPERF:
       MLLOGGER.start(key=mllog_constants.EPOCH_START, value=e + 1, metadata={"epoch_num": e + 1})
 
@@ -605,7 +605,7 @@ def train_retinanet():
     if MLLOGGER and RUNMLPERF:
       MLLOGGER.event(key=mllog_constants.EPOCH_STOP, value=e + 1, metadata={"epoch_num": e + 1})
 
-    # ** eval loop **
+    # eval loop
     if (e + 1) % eval_freq == 0:
       if MLLOGGER and RUNMLPERF:
         MLLOGGER.start(key=mllog_constants.EVAL_START, value=e + 1, metadata={"epoch_num": e + 1})
@@ -978,7 +978,7 @@ def train_bert():
   else:
     MLLOGGER = None
 
-  # ** hyperparameters **
+  # hyperparameters
   BS                 = config["BS"]                     = getenv("BS", 11 * len(GPUS) if dtypes.default_float in (dtypes.float16, dtypes.bfloat16) else 8 * len(GPUS))
   grad_acc           = config["GRADIENT_ACC_STEPS"]     = getenv("GRADIENT_ACC_STEPS", 1)
   # TODO: implement grad accumulation + mlperf logging
@@ -1015,14 +1015,14 @@ def train_bert():
 
   assert 10000 <= (EVAL_BS * max_eval_steps), "Evaluation batchsize * max_eval_steps must greater or equal 10000 to iterate over full eval dataset"
 
-  # ** init wandb **
+  # init wandb
   WANDB = getenv("WANDB")
   if WANDB:
     import wandb
     wandb_args = {"id": wandb_id, "resume": "must"} if (wandb_id := getenv("WANDB_RESUME", "")) else {}
     wandb.init(config=config, **wandb_args, project="MLPerf-BERT")
 
-  # ** init model **
+  # init model
 
   model = get_mlperf_bert_model()
   if RUNMLPERF:
@@ -1037,17 +1037,17 @@ def train_bert():
     for p in parameters:
       p.to_(GPUS)
 
-  # ** Log run config **
+  # Log run config
   for key, value in config.items(): print(f'HParam: "{key}": {value}')
 
-  # ** Optimizer **
+  # Optimizer
   parameters_no_wd = [v for k, v in get_state_dict(model).items() if "bias" in k or "LayerNorm" in k]
   parameters_wd = [x for x in parameters if x not in set(parameters_no_wd)]
   optimizer_wd = LAMB(parameters_wd, lr=max_lr, b1=opt_lamb_beta_1, b2=opt_lamb_beta_2, eps=epsilon, weight_decay=decay, adam=False)
   optimizer_no_wd = LAMB(parameters_no_wd, lr=max_lr, b1=opt_lamb_beta_1, b2=opt_lamb_beta_2, eps=epsilon, weight_decay=0.0, adam=False)
   optimizer_group = OptimizerGroup(optimizer_wd, optimizer_no_wd)
 
-  # ** LR scheduler **
+  # LR scheduler
   scheduler_wd = PolynomialDecayWithWarmup(optimizer_wd, max_lr, 0, train_steps, warmup_steps, power=poly_power)
   scheduler_no_wd = PolynomialDecayWithWarmup(optimizer_no_wd, max_lr, 0, train_steps, warmup_steps, power=poly_power)
   scheduler_group = LRSchedulerGroup(scheduler_wd, scheduler_no_wd)
@@ -1076,7 +1076,7 @@ def train_bert():
       MLLOGGER.event(key=mllog_constants.EVAL_SAMPLES, value=config["EVAL_BS"] * config["MAX_EVAL_STEPS"])
       MLLOGGER.event(key=mllog_constants.TRAIN_SAMPLES, value=config["GLOBAL_BATCH_SIZE"] * config["TRAIN_STEPS"])
 
-  # ** resume from checkpointing **
+  # resume from checkpointing
   start_step = 0
   previous_step = None
   if ckpt:=getenv("RESUME", ""):
@@ -1097,7 +1097,7 @@ def train_bert():
     train_it = iter(repeat_fake(BS))
 
   step_times = []
-  # ** train loop **
+  # train loop
   wc_start = time.perf_counter()
 
   i, train_data = start_step, next(train_it)
@@ -1174,7 +1174,7 @@ def train_bert():
         print(f"epoch global_ops: {train_steps * GlobalCounters.global_ops:_}, "
               f"epoch global_mem: {train_steps * GlobalCounters.global_mem:_}")
 
-    # ** eval loop **
+    # eval loop
     if i % eval_step_freq == 0 or (BENCHMARK and i == BENCHMARK) or i == train_steps:
       if MLLOGGER and RUNMLPERF:
         MLLOGGER.start(key=mllog_constants.EVAL_START, value=None, metadata={"epoch_num": i*GBS, "step_num": i})
@@ -1374,7 +1374,7 @@ def train_llama3():
 
   Tensor.manual_seed(SEED)  # seed for weight initialization
 
-  # ** init wandb **
+  # init wandb
   WANDB = getenv("WANDB")
   if WANDB:
     import wandb
@@ -1483,7 +1483,7 @@ def train_llama3():
     loss = vocab_mask.where(-1e9, logits).sparse_categorical_crossentropy(tokens[:, 1:])
     return loss.flatten().float().to("CPU")
 
-  # ** data iters **
+  # data iters
   def fake_data(bs, samples):
     import numpy as np
     for _ in range(samples // bs):
@@ -1678,7 +1678,7 @@ def train_gptoss():
 
   Tensor.manual_seed(SEED)  # seed for weight initialization
 
-  # ** init wandb **
+  # init wandb
   WANDB = getenv("WANDB")
   if WANDB:
     import wandb
@@ -1794,7 +1794,7 @@ def train_gptoss():
     loss = logits.sparse_categorical_crossentropy(tokens[:, 1:])
     return loss.flatten().float().to("CPU")
 
-  # ** data iters **
+  # data iters
   def fake_data(bs, samples):
     import numpy as np
     for _ in range(samples // bs):
@@ -1933,7 +1933,7 @@ def train_stable_diffusion():
   config = {}
   GPUS               = config["GPUS"]                   = [f"{Device.DEFAULT}:{i}" for i in range(getenv("GPUS", 1))]
   seed               = config["seed"]                   = getenv("SEED", 12345)
-  # ** hyperparameters **
+  # hyperparameters
   BS                 = config["BS"]                     = getenv("BS", 1 * len(GPUS))
   BASE_LR            = config["LEARNING_RATE"]          = getenv("LEARNING_RATE", 2.5e-7)
   # https://github.com/mlcommons/training_policies/blob/cfa99da479b8d5931f7a3c67612d021dfb47510a/training_rules.adoc#benchmark_specific_rules

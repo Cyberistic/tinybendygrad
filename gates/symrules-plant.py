@@ -92,7 +92,7 @@ def scratch_tree():
   """A COPY of the port's substrate with the port's source in it, so a mutation never
   touches the live tree."""
   d = tempfile.mkdtemp(prefix="symplant-")
-  # THE SUBSTRATE IS **HEAD'S BYTES**, and not the working tree's: another unit is
+  # THE SUBSTRATE IS HEAD'S BYTES, and not the working tree's: another unit is
   # mid-edit in the live tree, and a plant that measures a tree somebody else is
   # editing measures THEIR breakage and not the mutation.
   subprocess.run(["git", "archive", "HEAD", "tinybendygrad"], cwd=ROOT,

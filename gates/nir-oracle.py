@@ -175,9 +175,9 @@ def c_val(d, u):   return nir.c(d, u)
 # `F_OPS` had TWELVE names because upstream's `f_aop` had twelve when the file was
 # written.  Upstream then added `Ops.SQRT: "fsqrt"` (PR #18815, `c04397442`,
 # 2026-10-18) and the tree took it in the 2026-10-20 re-vendor `77e6c2bec`, so
-# upstream's `f_aop` has THIRTEEN and the hand list had twelve.  **A HAND LIST OF
+# upstream's `f_aop` has THIRTEEN and the hand list had twelve.  A HAND LIST OF
 # NAMES IS A SECOND COPY OF THE ANSWER, AND A SECOND COPY CANNOT SEE THE FIRST ONE
-# MOVE.**  The `aop f` and `aop rev f` rows asked upstream about twelve ops and the
+# MOVE.  The `aop f` and `aop rev f` rows asked upstream about twelve ops and the
 # port was asked about the same twelve, so the two AGREED -- and the denominator was
 # wrong on BOTH sides.  That is how a stale port reads as a green row.
 #
@@ -187,7 +187,7 @@ def c_val(d, u):   return nir.c(d, u)
 U_OPS = [k.name for k in nir.u_aop]
 F_OPS = [k.name for k in nir.f_aop]
 S_OPS = [k.name for k in nir.s_aop]
-# `s_aop` is `{**u_aop, ...}`, so it carries u_aop's KEYS, and the `aop s` rows share
+# `s_aop` is `{u_aop, ...}`, so it carries u_aop's KEYS, and the `aop s` rows share
 # `u_aop`'s denominator.  In the recovered file that was an ASSUMPTION; here it is a
 # MEASUREMENT, and a mismatch is a REFUSAL rather than a diff -- because a shared
 # denominator that is not shared is a row comparing two different questions.
@@ -317,7 +317,7 @@ def mask_val(d, ns):
     i = store_intrins(AddrSpace.GLOBAL, n, d.bitsize)
     l = load_intrins(AddrSpace.GLOBAL, n, d)
     # `num_components` is NOT a closure of `nir_instr` -- it is a keyword that
-    # falls into `**contents` and is applied with `setattr` (nir.py:54) -- so the
+    # falls into `contents` and is applied with `setattr` (nir.py:54) -- so the
     # gate can only ask about `nc` and `bs`, which ARE closures. Stating that is
     # why there is no `num_components` row rather than a row that guessed.
     out.append("x%d=wm%s,al%s,gsrc%s,lsrc%s,lal%s,nc%d,bs%d" % (

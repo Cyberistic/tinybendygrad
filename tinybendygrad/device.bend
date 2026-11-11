@@ -256,7 +256,7 @@ def canon_device.multi(ixs: List<&2, String>) -> List<&2, String>:
 #   is_disk_device(("DISK:0",)) -> True
 #   is_disk_device(("NVME:0",)) -> True    <-- THE PORT ANSWERED False
 #   is_disk_device(("nvme:0",)) -> True    <-- UPPER-CASED, SO ALSO True
-# UPSTREAM'S SPELLING IS `in ("DISK", "NVME")` -- **TWO** NAMES -- AND THE PORT
+# UPSTREAM'S SPELLING IS `in ("DISK", "NVME")` -- TWO NAMES -- AND THE PORT
 # HAD ONE. `NVME` IS NOT A HYPOTHETICAL NAME: `tinygrad/runtime/ops_nvme.py`
 # EXISTS AT THE PIN AND DEFINES `NVMEDevice`, AND THE PORT PORTS THAT FILE AS
 # `tinybendygrad/runtime/ops_nvme.bend` -- SO THE PORT HAS THE DEVICE AND
@@ -317,9 +317,9 @@ def avail(+m: Mk, es: List<&2, AEnt>) -> String:
 #
 # THE INDICES ARE STABLE. `tag_of` (device.py:31's allow-list) HARD-CODES 6 for
 # DISK, 10 for NPY and 13 for PYTHON, AND `DEnt.ix` IS THE ROW's OWN INDEX,
-# SO `nvme` IS ADDED AT **17** -- THE END -- AND EVERY EXISTING INDEX IS
+# SO `nvme` IS ADDED AT 17 -- THE END -- AND EVERY EXISTING INDEX IS
 # UNTOUCHED. THE TABLE IS ALPHABETICAL UP TO `webgpu` AND `nvme` IS THE ONE
-# ROW THAT IS NOT, **AND THAT IS THE PRICE OF A STABLE INDEX** -- THE WALK IS
+# ROW THAT IS NOT, AND THAT IS THE PRICE OF A STABLE INDEX -- THE WALK IS
 # NOT ORDERED AT ALL (`iterdir` IS NOT SORTED), SO THE TABLE's ORDER IS THE
 # PORT's OWN, AND THE INDEX IS WHAT THE OTHER ROWS READ.
 
@@ -468,7 +468,7 @@ def iface_filter(+m: Mk, es: List<&2, AEnt>, +want_mock: Bool, acc: U32) -> U32:
 # `NVME` IS THE ROW THIS TABLE WAS MISSING, AND `stem_len` COULD NOT SEE IT.
 # MEASURED 2026-11-10, UPSTREAM'S OWN WALK OVER `tinygrad/runtime/`:
 #   `[x.stem[len("ops_"):].upper() for x in ...iterdir() if x.stem.startswith("ops_")]`
-#   -> AMD CL CPU CUDA DISK DSP HIP METAL NPY NULL NV **NVME** PYTHON QCOM RDMA
+# -> AMD CL CPU CUDA DISK DSP HIP METAL NPY NULL NV NVME PYTHON QCOM RDMA
 #   WEBGPU -- SIXTEEN, AND `NVME` IS ONE OF THEM. The port's table had SIXTEEN
 #   ROWS TOO, WITH `BEND` WHERE `NVME` BELONGS, SO `stem_len=16` READ
 #   CORRECTLY AND NO ROW COULD SEE THE MISSING ONE. `BEND` IS THE PORT's OWN
@@ -476,7 +476,7 @@ def iface_filter(+m: Mk, es: List<&2, AEnt>, +want_mock: Bool, acc: U32) -> U32:
 #   UPSTREAM'S SIXTEENTH AND IT WAS ABSENT.
 #
 # THE INDICES ARE THE BITMASK SLOTS: `go_dep` READS `bit(m, AEnt.ix(k))`, SO
-# `NVME` IS ADDED AT **17** -- THE END -- AND NO EXISTING SLOT MOVES.
+# `NVME` IS ADDED AT 17 -- THE END -- AND NO EXISTING SLOT MOVES.
 def stems() -> List<&2, AEnt>:
   [AEnt{1, "AMD"}, AEnt{2, "BEND"}, AEnt{3, "CL"}, AEnt{4, "CPU"},
    AEnt{5, "CUDA"}, AEnt{6, "DISK"}, AEnt{7, "DSP"}, AEnt{8, "HIP"},

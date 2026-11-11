@@ -5,8 +5,8 @@
 # SIXTY ROWS, THREE LANES -- `types`, `mem_types` and `cast_types` (ptx.py:156-161) over
 # all TWENTY dtypes, twelve of which are CPython's keys and eight of which are the ones
 # CPython's dict does NOT have and therefore `KeyError`s on. The claim is per row and it
-# is the claim the bug made false: **a dtype CPython refuses must never get a CONCRETE,
-# COMPILABLE PTX type out of these tables**, because `pred` and `u8` are types `ptxas`
+# is the claim the bug made false: a dtype CPython refuses must never get a CONCRETE,
+# COMPILABLE PTX type out of these tables, because `pred` and `u8` are types `ptxas`
 # accepts and the resulting kernel is silently corrupt -- strictly worse than the empty
 # field, which it refuses.
 #

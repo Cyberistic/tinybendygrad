@@ -11,7 +11,7 @@ FP8_DTYPE = dtypes.fp8e4m3
 
 TILE_M, TILE_N, TILE_K = 256, 256, 64
 
-# ** MXFP8 GEMM custom kernel
+# MXFP8 GEMM custom kernel
 
 @functools.cache
 def custom_hk_mxfp8_gemm(C:UOp, A:UOp, B:UOp, scale_A:UOp, scale_B:UOp, *extra:UOp, dname:str) -> UOp:
@@ -34,7 +34,7 @@ def custom_hk_mxfp8_gemm(C:UOp, A:UOp, B:UOp, scale_A:UOp, scale_B:UOp, *extra:U
   return UOp(Ops.PROGRAM, src=(sink, UOp(Ops.LINEAR, src=(*sink.src, sink)), UOp(Ops.SOURCE, arg=src),
                                UOp(Ops.BINARY, arg=lib)))
 
-# ** MXFP4 GEMM custom kernel
+# MXFP4 GEMM custom kernel
 
 MXFP4_TILES = ((256, 256), (192, 256), (128, 512))
 MXFP4_TILE_MAP = {(6144, 4096, 16384):(192, 256), (16384, 4096, 6144):(128, 512), (16384, 6144, 4096):(128, 512)}
@@ -137,7 +137,7 @@ def can_use_asm_gemm(a:Tensor, b:Tensor) -> bool:
     return todo(f"GEMM shape ({M},{N},{K}) not a multiple of ({TILE_M},{TILE_N},{TILE_K})")
   return True
 
-# ** UOp gemm to test Tensor.custom_kernel multi and backward correctness on non cdna4
+# UOp gemm to test Tensor.custom_kernel multi and backward correctness on non cdna4
 # note: this can be removed after we have GEMM on mixins
 
 def custom_uop_gemm(C:UOp, A:UOp, B:UOp) -> UOp:
@@ -153,7 +153,7 @@ def custom_uop_gemm(C:UOp, A:UOp, B:UOp) -> UOp:
   store = C.flatten().index((m*UOp.const(N)+n)).store(red).end(m, n)
   return store.sink(arg=KernelInfo(name=f'uop_gemm_{M}_{N}_{K}'))
 
-# ** bf16 A @ B.T kernel in C
+# bf16 A @ B.T kernel in C
 
 @functools.cache
 def custom_hk_bf16_gemm(C:UOp, A:UOp, B:UOp, *args:UOp, dname:str) -> UOp:
@@ -217,7 +217,7 @@ def hk_bf16_atb_gemm(a:Tensor, b:Tensor) -> Tensor:
   if reduce_out: out = out.sum(0)
   return out.squeeze(0) if out.ndim == 3 else out
 
-# ** backward gemm, might use the asm gemm
+# backward gemm, might use the asm gemm
 
 def custom_gemm_bw(gradient:UOp, kernel:UOp):
   inputs = kernel.src[1:]
@@ -243,7 +243,7 @@ def custom_gemm_bw(gradient:UOp, kernel:UOp):
   # hk_bf16 uses b.T, writes gradients only for a and b
   return (None, grad_a, None, grad_b) if hk_bf16 else (None, grad_a, grad_b)
 
-# ** mxfp8 gemm backward
+# mxfp8 gemm backward
 
 def custom_mx_gemm_bw(gradient:UOp, kernel:UOp, has_w_post:bool, w_stored:bool=False):
   inputs = kernel.src[1:]  # (out, a_q, b_q, a_si, b_si, a_e8, b_e8, [w_post])
@@ -263,7 +263,7 @@ def custom_mx_gemm_bw(gradient:UOp, kernel:UOp, has_w_post:bool, w_stored:bool=F
   if wp is not None: grad_b = grad_b / wp.reshape(-1, 1)
   return (None, grad_a.uop, grad_b.uop) + tuple(None for _ in inputs[3:])
 
-# ** mxfp4 gemm backward
+# mxfp4 gemm backward
 
 def _producer_mxfp4_outputs(gradient:UOp, expected_half_k:int) -> tuple[UOp, UOp, UOp, UOp]|None:
   """Recover quantized sibling outputs from a fused gradient producer without mutable mailboxes or core gradient changes."""
@@ -291,7 +291,7 @@ def custom_mxfp4_gemm_bw(gradient:UOp, kernel:UOp):
   grad_w = _mxfp4_gemm_quantized(g_col, a_col, scale_g_col, scale_a_col).reshape(w.shape)
   return (None, None, None, None, None, grad_a.uop, grad_w.uop, None, None, None, None)
 
-# ** main gemm function
+# main gemm function
 
 def asm_gemm(a:Tensor, b:Tensor, w_post_scale:Tensor|None=None, mx:bool=False, mx_scales:tuple|None=None, mx_w_stored:bool=False,
              a_pretranspose:Tensor|None=None, mxfp4:bool=False, mxfp4_w:tuple[Tensor, Tensor, Tensor, Tensor]|None=None,

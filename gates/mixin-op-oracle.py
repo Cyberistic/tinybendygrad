@@ -99,8 +99,8 @@ def fx1d() -> Tensor: return Tensor([1., 2., 3., 4.], device='PYTHON')
 def i1d() -> Tensor: return Tensor([1, 2, 3, 4], device='PYTHON')
 def fx2d() -> Tensor: return Tensor([[1., 2.], [3., 4.]], device='PYTHON')
 
-# THE NON-SQUARE RANK-2 FIXTURE, `(2,3)`. **THE ORACLE HAS TO HAVE IT, BECAUSE A
-# ROW WITHOUT A WITNESS IS NOT A ROW BUT A LABEL** -- and `(2,2)` is the shape whose
+# THE NON-SQUARE RANK-2 FIXTURE, `(2,3)`. THE ORACLE HAS TO HAVE IT, BECAUSE A
+# ROW WITHOUT A WITNESS IS NOT A ROW BUT A LABEL -- and `(2,2)` is the shape whose
 # reduced size is the same whichever way the index is counted.
 def fx23() -> Tensor: return Tensor([[1., 2., 3.], [4., 5., 6.]], device='PYTHON')
 

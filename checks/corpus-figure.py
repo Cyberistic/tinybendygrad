@@ -42,12 +42,12 @@ from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit
 # `checks/differ.py` pins all ask about THE COMPARISON: `graphs` how many graphs exist,
 # `graphs-agree` how many rows agreed, `not-comparable` whether every graph was PUT TO the
 # comparison, `expect-moved` whether the table's assertions held, `graphs-unset` whether
-# anybody wrote a row.  **THIS ONE ASKS ABOUT THE CONDITIONS THE MEASUREMENT WAS TAKEN
-# UNDER, WHICH IS NONE OF THOSE.** All five were measured to be `OK` on `DEV=CPU`, `DEV=NULL`
+# anybody wrote a row.  THIS ONE ASKS ABOUT THE CONDITIONS THE MEASUREMENT WAS TAKEN
+# UNDER, WHICH IS NONE OF THOSE. All five were measured to be `OK` on `DEV=CPU`, `DEV=NULL`
 # and `DEV=METAL` alike (MEASURED: `not-comparable=0` and the `RUN HEALTH` line printed OK in
-# all three), which is exactly why none of them can stand in for it -- **five conditions that
+# all three), which is exactly why none of them can stand in for it -- five conditions that
 # agree across three devices are not five views of the sixth, they are five conditions blind
-# to it.** That is also why `graphs-unanswered` was correctly NOT added: it would have asked
+# to it. That is also why `graphs-unanswered` was correctly NOT added: it would have asked
 # `graphs-agree`'s question again.
 #
 # WHY IT IS NOT A SECOND SOURCE OF TRUTH.  The pin is DECLARED once, in `checks/devpin.py`'s
@@ -63,8 +63,8 @@ from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit
 #   DEV=NULL   CPYTHON-SIDE UNION : 60 of 77   (a / b stays MUL(a, RECIPROCAL(b)))
 #   DEV=METAL  CPYTHON-SIDE UNION : 60 of 77
 # `g_late` reads `Device.default.renderer.code_for_op.keys()` (graphcmp.py:1441-1448), so the
-# op set is a property of the BACKEND.  **A COVERAGE FIGURE WHOSE DENOMINATOR MOVES WITH THE
-# MACHINE IS A MEASUREMENT OF THE HOST.**
+# op set is a property of the BACKEND.  A COVERAGE FIGURE WHOSE DENOMINATOR MOVES WITH THE
+# MACHINE IS A MEASUREMENT OF THE HOST.
 def pinned_dev() -> str:
     """`checks/devpin.py`'s `PINNED_DEV` -- the one declaration of the device."""
     spec = importlib.util.spec_from_file_location("devpin", ROOT / "checks/devpin.py")
@@ -242,7 +242,7 @@ def main() -> int:
     ap.add_argument("--write", action="store_true", help="also print the CORPUS.md figure block")
     args = ap.parse_args()
 
-    # THE PRECONDITION IS ASKED **FIRST** and its answer is PRINTED WITH THE FIGURE, not
+    # THE PRECONDITION IS ASKED FIRST and its answer is PRINTED WITH THE FIGURE, not
     # instead of it: a refused figure that printed nothing is indistinguishable from an
     # instrument that crashed, and this one has already had that ambiguity once.
     device = device_precondition()
@@ -316,7 +316,7 @@ def main() -> int:
     # A figure that cannot be reproduced is not a measurement. Non-zero exit says so.
     # THE EXIT CODE REFUSES ON THE RUN, NOT ONLY ON THE DECLARATION. A green exit over a failed
     # run is how `graphs built 22 / FAILED 0` was printed beside `graphs-agree=0` for a whole
-    # session. **AN INSTRUMENT THAT CANNOT SEE A TOTAL FAILURE IN ITS OWN INPUT IS A FIGURE.**
+    # session. AN INSTRUMENT THAT CANNOT SEE A TOTAL FAILURE IN ITS OWN INPUT IS A FIGURE.
     # `dev_ok` is ANDed in, not substituted: a run health failure is still a run health failure,
     # and ORing would let a healthy-looking run excuse a floating device (or the reverse).
     # THE REFUSAL IS ON `health_ok`, NOT ON THE ABSENCE OF THE WORD "FAILED": a missing summary

@@ -198,8 +198,8 @@ def plants():
         rc_a2, charges_a2, _no = rg.verdict(a, ledger_a)
         c4 = rc_a2 == PASS
 
-        # G: THE LEDGER ROUND-TRIPS. **THE FIRST VERSION OF THE LEDGER READER CONSUMED THE
-        # FIRST DATA ROW AS A HEADER**, so it read 19 of its own 20 rows, and the row it
+        # G: THE LEDGER ROUND-TRIPS. THE FIRST VERSION OF THE LEDGER READER CONSUMED THE
+        # FIRST DATA ROW AS A HEADER, so it read 19 of its own 20 rows, and the row it
         # dropped was reported as "became reachable and is not in the ledger" -- a finding
         # about the READER, dressed as a finding about the tree. A ledger that silently drops a
         # row cannot be checked, so the write and the read are asserted against EACH OTHER.

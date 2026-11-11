@@ -136,15 +136,15 @@ def namer(entries):
     that must not be counted as an input. KEYED BY BASENAME because the literal is repo-relative
     -- `gates/wk-f32-rows.py:69` spells it `gates/wk-f32-table.rows` -- and keying on the literal
     made a table that IS named report "named by nothing", which is the worst possible reason."""
-    # `gates/symcases.rows: no gate source names this path` WAS A **FALSE CHARGE**, MEASURED:
+    # `gates/symcases.rows: no gate source names this path` WAS A FALSE CHARGE, MEASURED:
     # `gates/sym_graph_census.bend:130` is `def CASES() -> String: "gates/symcases.rows"` and `:626`
     # READS IT AT RUNTIME. `namer()` was `ast.parse`-only, so `if f.suffix != ".py": continue` COULD
-    # NOT SEE A `.bend` OWNER. **THAT IS A TOOL LIMIT AND NOT A POLICY**, and the same limit makes
+    # NOT SEE A `.bend` OWNER. THAT IS A TOOL LIMIT AND NOT A POLICY, and the same limit makes
     # `gates-pop.py` blind to 62 `.bend` drivers -- so NO EXISTING INSTRUMENT ADMITTED `.bend` WHILE
     # EXCLUDING `.md`. A `.bend` DRIVER IS TEXT, SO A LITERAL SCAN FINDS THE PATH WITHOUT `ast`, AND
-    # THAT IS THE NARROW HALF OF THE FIX. **THE WIDE HALF -- LEARNING EACH OWNER'S FORMAT FROM THE
+    # THAT IS THE NARROW HALF OF THE FIX. THE WIDE HALF -- LEARNING EACH OWNER'S FORMAT FROM THE
     # OWNING GATE -- IS A DIFF IN THE REPORT AND IS NOT APPLIED HERE, BECAUSE A GATE THAT LEARNS
-    # FORMATS FROM ITS OWN SUBJECT MUST NOT ALSO BE THE JUDGE.**
+    # FORMATS FROM ITS OWN SUBJECT MUST NOT ALSO BE THE JUDGE.
     out = {}
     for f in entries:
         if f.suffix not in (".py", ".bend"):
@@ -210,12 +210,12 @@ def check(p, owners):
     # `indexread-baseline.rows` writes a FLAG, so a path joined onto the table's own directory
     # reports a generator that is on disk as MISSING.
     #
-    # **TWO FINDINGS, NOT ONE, BECAUSE THE ONE WAS A WRONG REASON FOR 3 OF THE 6 TABLES RED TODAY.**
+    # TWO FINDINGS, NOT ONE, BECAUSE THE ONE WAS A WRONG REASON FOR 3 OF THE 6 TABLES RED TODAY.
     # MEASURED on this tree: all six findings are check II, and `gates/falseclaim-plant.rows`
-    # carries **21 `#` header lines** -- so "no header declares who writes it" is FALSE about it,
+    # carries 21 `#` header lines -- so "no header declares who writes it" is FALSE about it,
     # and `gates/falseclaim-census-gate.py:486` sends its reader to look at "its own header".
     # A WRONG REASON IS WORSE THAN NO REASON: it sends the next agent to add a `#` line to a file
-    # that already has twenty-one of them. **THE TWO ARE ALSO NOT EQUALLY CLOSABLE** -- a file with
+    # that already has twenty-one of them. THE TWO ARE ALSO NOT EQUALLY CLOSABLE -- a file with
     # no header can be GIVEN one, while a file whose header names nobody has to have its WRITER
     # NAMED -- so they are two findings with two fixes.
     #
@@ -355,27 +355,27 @@ def census(root=None, home=None):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", SyntaxWarning)
             entries, libs = pop.discover(root)
-            # `discover()` IS A **TWO-VALUE CONTRACT** -- `gates/gate-surface.py:280` unpacks it
+            # `discover()` IS A TWO-VALUE CONTRACT -- `gates/gate-surface.py:280` unpacks it
             # straight into `entries, libs`, and a THIRD return value was MEASURED to raise
-            # `ValueError: too many values to unpack` in a gate this work may not edit. **SO THE
-            # `.bend` POPULATION IS ADDED HERE AND NOT BY CHANGING `discover()`.** `discover()` is
-            # `ast`-BASED AND RETURNS **0 OF THE 62 `.bend` DRIVERS** -- MEASURED -- which is why
+            # `ValueError: too many values to unpack` in a gate this work may not edit. SO THE
+            # `.bend` POPULATION IS ADDED HERE AND NOT BY CHANGING `discover()`. `discover()` is
+            # `ast`-BASED AND RETURNS 0 OF THE 62 `.bend` DRIVERS -- MEASURED -- which is why
             # `symcases.rows` REPORTED "NAMED BY NOTHING" WHILE `sym_graph_census.bend` NAMES IT
-            # TWICE. **A FIX THAT BREAKS A CALLER IS NOT A FIX; IT IS A TRADE.**
+            # TWICE. A FIX THAT BREAKS A CALLER IS NOT A FIX; IT IS A TRADE.
             #
-            # **`home`, NOT `HERE` -- AND THIS WAS A RED PLANT SINCE THE PLANTS WERE WRITTEN.**
+            # `home`, NOT `HERE` -- AND THIS WAS A RED PLANT SINCE THE PLANTS WERE WRITTEN.
             # `root`/`home` exist SO `--plant` can drive the REFUSED paths on a synthetic tree. This
             # line read the module global instead, so on the `refuse/empty-pop` plant -- whose whole
             # point is `discover()` returning `([], [])` -- the glob reached back into the LIVE
-            # `gates/` and found **60** real `.bend` drivers. `entries` became 60, the
+            # `gates/` and found 60 real `.bend` drivers. `entries` became 60, the
             # "0 entry points is not a green census" refusal NEVER FIRED, and the plant ran a FULL
-            # CENSUS OF THE REAL TREE inside a synthetic-root refusal and returned **1**.
+            # CENSUS OF THE REAL TREE inside a synthetic-root refusal and returned 1.
             # MEASURED: `--plant` at HEAD already prints `refuse/empty-pop  rc=1  NOT OK` -- and
-            # **rc=1 IS ALSO WHAT A GENUINE RED FINDING RETURNS**, so a broken plant and a working
+            # rc=1 IS ALSO WHAT A GENUINE RED FINDING RETURNS, so a broken plant and a working
             # gate are the same exit code. That is doctrine 2's shape one level down: this file
             # publishes its own exit-code table and cannot hear its own harness.
-            # **ON THE LIVE RUN `home IS HERE`** (`census()`: `home = home or HERE`), so this is a
-            # **ZERO-EFFECT CHANGE TO THE REAL CENSUS** and a total fix to the plant.
+            # ON THE LIVE RUN `home IS HERE` (`census()`: `home = home or HERE`), so this is a
+            # ZERO-EFFECT CHANGE TO THE REAL CENSUS and a total fix to the plant.
             entries = list(entries) + sorted(home.glob("*.bend"))
     except Exception as e:                                    # a census that cannot pop is not 0
         return refuse(f"discover() raised {type(e).__name__}: {e}")

@@ -86,7 +86,7 @@ print("FAIL")
 sys.exit(1)
 '''
 
-# H: A GATE WHOSE COMPILER IS NOT THERE. **THE TEXT IS WRITTEN TO DISK**, because a plant that
+# H: A GATE WHOSE COMPILER IS NOT THERE. THE TEXT IS WRITTEN TO DISK, because a plant that
 # reads its subject out of git plants nothing the moment HEAD carries the defect's fix -- and a
 # plant that MUTATES a tracked file is a plant that damages the tree it audits.
 NO_TOOLCHAIN = '''#!/usr/bin/env python3
@@ -182,17 +182,17 @@ def plants():
 
     # H: A GATE THAT CANNOT START IS REFUSED, NOT DEAD.
     #
-    # **WHAT IT REPRODUCES, EXACTLY.** `.gitignore:5` ignores `/bin/bend` and
+    # WHAT IT REPRODUCES, EXACTLY. `.gitignore:5` ignores `/bin/bend` and
     # `git ls-tree -r HEAD -- bin/` is EMPTY, so a CLEAN CHECKOUT HAS NO COMPILER -- and every
     # GitHub Actions run of `.github/workflows/edge-gates.yml` IS a clean checkout. MEASURED
     # 2026-10-22 in a clean checkout of this tree: `gates/mixin-op-gate.py` exited 1 in 0 s at
     # 21 MB with `FileNotFoundError: .../bin/bend`, and the tree's own classifier
     # (`checks/gatesweep.py:classify()`) answered `("DEAD", "TRACEBACK")` -- which says "it ran
-    # and emitted nothing" about a gate that NEVER RAN. **`DEAD` IS A VERDICT ABOUT THE TREE
-    # AND THIS IS NOT ONE.** The absent compiler is a PRECONDITION THAT WAS ABSENT, and the
+    # and emitted nothing" about a gate that NEVER RAN. `DEAD` IS A VERDICT ABOUT THE TREE
+    # AND THIS IS NOT ONE. The absent compiler is a PRECONDITION THAT WAS ABSENT, and the
     # tree's own word for that is `REFUSED`.
     #
-    # **THE FAKE TREE IS A CLEAN CHECKOUT, AND THE GATE IS A COPY.** `gates/gatekit.py` and
+    # THE FAKE TREE IS A CLEAN CHECKOUT, AND THE GATE IS A COPY. `gates/gatekit.py` and
     # `gates/bend-absent.py` are COPIED beside the synthetic gate, so the copy has to find its
     # own module, and THE TREE IS PASSED IN (`TINYGRAD_ROOT`) rather than found by walking
     # upward out of a temp directory -- `gates/reporoot.py`'s shape, which cannot answer here.

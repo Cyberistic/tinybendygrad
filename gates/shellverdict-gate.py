@@ -208,7 +208,7 @@ esac
 # THE MAPPING `checks/gatesweep.py:classify` ASSIGNS TO EACH TOKEN, and it is not one number:
 # a kill and a timeout are both `SKIP`, a run that emitted nothing is `DEAD`, and only
 # `WITHIN-LIMITS` is the absence of a token. So the clean plant is `4 4 5` and not `4 4 4` --
-# **A PLANT THAT PUTS EVERY TOKEN ON ONE EXIT IS PLANTING A GATE THAT IS WRONG**, and the
+# A PLANT THAT PUTS EVERY TOKEN ON ONE EXIT IS PLANTING A GATE THAT IS WRONG, and the
 # detector saying so is the detector working.
 WRONG, RIGHT = (3, 3, 3), (4, 4, 5)
 # `exit "$2"` is the other unreadable shape, and it is planted too: an indirection this file
@@ -221,8 +221,8 @@ SUBJECT = "checks/sb-gate.sh"
 # in `_CERTIFY` plus one of `_CERTIFY_OR` AND declares a ROOT (`gates-pop.py:877`). MEASURED on
 # a temp tree with markers but no root assertion: `rejected ['checks 1/2']`, `discover()` returns
 # `([], [])` -- an EMPTY POPULATION, which this file would have reported as agreement. So the
-# plant copies the files `gate_homes` itself names as `checks`' witnesses. **THOSE NAMES COME FROM
-# THE REAL TREE'S OWN DERIVATION, not from a list in this file**, so a witness that moves cannot
+# plant copies the files `gate_homes` itself names as `checks`' witnesses. THOSE NAMES COME FROM
+# THE REAL TREE'S OWN DERIVATION, not from a list in this file, so a witness that moves cannot
 # make the plant vacuous.
 CERTIFIER = "".join(f"{n}\n" for n in gpop._CERTIFY) + gpop._CERTIFY_OR[0] + "\nif __name__ == '__main__':\n    pass\n"
 
@@ -275,7 +275,7 @@ def plant(root):
     # An earlier version of this plant read the defect out of `git show HEAD:...`, and that was
     # a CHANGE-DETECTOR wearing a plant's clothes: the fix moved HEAD, the blob stopped being
     # broken, and the plant went red for having been RIGHT. `AGENTS.md`: "change-detector tests
-    # considered harmful". **A PLANT MUST NOT DEPEND ON THE REPOSITORY STILL BEING BROKEN.**
+    # considered harmful". A PLANT MUST NOT DEPEND ON THE REPOSITORY STILL BEING BROKEN.
     perturbed = live.replace('KILLED-ON-MEMORY) skip "', 'KILLED-ON-MEMORY) refuse "')
     same = perturbed == live
     real.write_text(perturbed)
@@ -333,7 +333,7 @@ def main(argv):
         print("\n".join(rows))
     print(f"shellverdict: {len(rows)} rows; {len(bad)} TOKEN disagreement(s); "
           f"{len(unresolved)} unresolved (charged to NEITHER verdict)")
-    # **ONLY A TOKEN DISAGREEMENT FAILS, AND THE `EXIT` HALF IS A CENSUS.** An integer outside
+    # ONLY A TOKEN DISAGREEMENT FAILS, AND THE `EXIT` HALF IS A CENSUS. An integer outside
     # `gatekit.VERDICT` is not an undiscovered defect -- `gatekit.charge()` already assigns one
     # to `REFUSED` and `checks/gatesweep.py:329` already prints `UNASSIGNED(n)`, MEASURED on 4
     # live `.sh` gates in `gates/artifacts/gates-sweep.rows` (`checks/run-all.sh`,

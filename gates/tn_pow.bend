@@ -5,8 +5,8 @@
 #
 # NINE ROWS, NAMED ONCE. The row NAME is the claim being asked. The bend lane
 # calls `tn_pow` / `tn_rpow` from the port and asks the shape/op/arg/srcs of
-# the new node; the oracle calls CPython's `c ** d` (forward arm) and
-# `d ** c` (reverse arm, via the `__rpow__` arm) and asks the same. A row
+# the new node; the oracle calls CPython's `c  d` (forward arm) and
+# `d  c` (reverse arm, via the `__rpow__` arm) and asks the same. A row
 # agrees only if the two implementations say so.
 #
 # WHAT THIS GATES, IN ONE PARAGRAPH. `Tensor.__pow__` (elementwise.py:569, via
@@ -40,7 +40,7 @@ def mk_tensor(v: U32) -> T.Tensor:
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
   t
 
-# ROW 1-4: tn_pow -- elementwise.py:569, `c ** d`.
+# ROW 1-4: tn_pow -- elementwise.py:569, `c  d`.
 def row_pow_op() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)

@@ -184,7 +184,7 @@ MODEL_PARAMS = {
   }
 }
 
-# **** helper functions ****
+# helper functions
 def concat_weights(models, device=None):
   def convert(name) -> Tensor:
     disk_tensors: List[Tensor] = [model[name] for model in models]
@@ -284,7 +284,7 @@ class LLaMa:
         if output.endswith(s): return output[0:-len(s)]
     return output
 
-# **** main code ****
+# main code
 r"""
 test:
 python3 examples/llama.py  --temperature=0 --count=50 --prompt="Hello."
@@ -366,7 +366,7 @@ if __name__ == "__main__":
   if args.size is None: args.size = list(MODEL_PARAMS[args.gen].items())[0][0]
   chatbot = args.prompt == None
 
-  # *** prompt engineers work here ****
+  # * prompt engineers work here
 
   if args.personality.lower() == "stacy":
     pre_prompt = f"""Consider that the following is conversation between an AI assistant named Stacy and User
@@ -453,7 +453,7 @@ After you are done speaking, output [EOS]. You are not Chad.
     end_delim = " [EOS]\n"
     pre_prompt += ''.join(f"{user_delim}{k}\n{resp_delim}{v}{end_delim}" for k,v in examples.items())
 
-  # *** prompt engineers stop here ****
+  # * prompt engineers stop here
 
   LLAMA_SUFFIX = {"1": "", "2": "-2", "3": "-3", "code": "-code", "tiny": "-tiny"}[args.gen]
   MODEL_PATH = args.model or Path(__file__).parents[1] / f"weights/LLaMA{LLAMA_SUFFIX}/{args.size}"

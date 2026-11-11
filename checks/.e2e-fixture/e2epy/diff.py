@@ -167,7 +167,7 @@ def _hunks(a: bytes, b: bytes, show: int) -> list[bytes]:
 # runs in any plant, and nothing is copied from the live tree -- every stub is a few lines, because
 # a plant that copies the thing it is meant to displace cannot prove anything.
 #
-# **`live` SETS `E2E_ROOT` EXPLICITLY, AND THAT IS NOT OPTIONAL.** Left to its own `dirname $0`/../..,
+# `live` SETS `E2E_ROOT` EXPLICITLY, AND THAT IS NOT OPTIONAL. Left to its own `dirname $0`/../..,
 # the oracle -- three levels deep, in `e2epy/` -- computes `ROOT` as `<repo>/.agents`, which EXISTS,
 # so `cd "$ROOT"` succeeds and the gate proceeds in a directory that is not the repository. Measured:
 # the first `live` run died at `…/.agents/.venv/bin/python: No such file or directory` and printed

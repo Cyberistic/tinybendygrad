@@ -143,7 +143,7 @@ def custom_gemm(C:UOp, A:UOp, B:UOp) -> UOp:
     acc_store = acc[N_inner_loop, M_inner_loop].store(out)
     return acc_store.end(M_inner_loop, N_inner_loop, K_inner_loop)
 
-  # **** START INNER LOOP *****
+  # START INNER LOOP *
   # inner loop -- locals -> regs
 
   # no pipeline
@@ -174,7 +174,7 @@ def custom_gemm(C:UOp, A:UOp, B:UOp) -> UOp:
     """
     #acc = acc.after(acc_store)
 
-  # **** END LOOPS *****
+  # END LOOPS *
 
   # store the acc into gmem
   cp_i, cp_j = UOp.range(BLOCK_M//TC_M//WARPGROUP_SIZE, 10004), UOp.range(BLOCK_N//TC_N, 10005)

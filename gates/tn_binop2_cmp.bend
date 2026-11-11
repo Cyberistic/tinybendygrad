@@ -104,15 +104,15 @@ def row_cmpne_arg() -> Bool:
   +r = T.tn_cmpne(c, d)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
 
-# **⇒ AND **`ne` **IS **TWO **NODES** **AT **THE **PIN** -- **`ne` **IS **`self.eq(x).
-# logical_not()`** (`mixin/elementwise.py:332-333`) **AND **`logical_not` **IS
-# **`cast(bool).eq(False)`** (`:49-57`) -- **⇒ SO **THE **TOP **`CMPEQ`'s **SRCS **ARE
-# **THE **INNER **`CMPEQ(c, d)`** **AND **THE **BOOL **`False`**, **AND **NOT **`(c, d)`.**
+# AND `ne` IS TWO NODES AT THE PIN -- `ne` IS `self.eq(x).
+# logical_not()` (`mixin/elementwise.py:332-333`) AND `logical_not` IS
+# `cast(bool).eq(False)` (`:49-57`) -- SO THE TOP `CMPEQ`'s SRCS ARE
+# THE INNER `CMPEQ(c, d)` AND THE BOOL `False`, AND NOT `(c, d)`.
 #
-# **⇒ AND **THE **ROW **ASKS **THE **TWO **FACTS **SEPARATELY**, **BECAUSE **THE **`uop`
-# **LAYER's **`Arena` **IS **THE **ONLY **WAY **TO **READ **A **SRC's **OP** -- **AND
-# **BEND **SPENDS **A **BINDER **WHEN **IT **READS **AN **INDEX**, **⇒ SO **THE **TWO
-# **READS **ARE **TWO **DEFS**.**
+# AND THE ROW ASKS THE TWO FACTS SEPARATELY, BECAUSE THE `uop`
+# LAYER's `Arena` IS THE ONLY WAY TO READ A SRC's OP -- AND
+# BEND SPENDS A BINDER WHEN IT READS AN INDEX, SO THE TWO
+# READS ARE TWO DEFS.
 def row_cmpne_srcs.go(+r: T.Tensor) -> Bool:
   +s0 = O.Arena.src(T.Tensor.ar(r), T.Tensor.u(r), 0)
   O.eq_op(O.Arena.op(T.Tensor.ar(r), s0), O.OpsCMPEQ{})
@@ -123,8 +123,8 @@ def row_cmpne_srcs() -> Bool:
   +r = T.tn_cmpne(c, d)
   row_cmpne_srcs.go(r)
 
-# **⇒ AND **THE **OUTER **`CMPEQ`'s **`src[1]` **IS **THE **BOOL **`False`** -- **AND
-# **THAT **IS **WHAT **`logical_not` **IS** (`cast(bool).eq(False)`, `elementwise.py:57`)**.
+# AND THE OUTER `CMPEQ`'s `src[1]` IS THE BOOL `False` -- AND
+# THAT IS WHAT `logical_not` IS (`cast(bool).eq(False)`, `elementwise.py:57`).
 def row_cmpne_src1.go(+r: T.Tensor) -> Bool:
   +s1 = O.Arena.src(T.Tensor.ar(r), T.Tensor.u(r), 1)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), s1), O.APy{O.CBool{False{}}})
@@ -164,8 +164,8 @@ def row_ge_pure() -> Bool:
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
     O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{}))
 
-# **⇒ AND **`ge` **IS **`logical_not(CMPLT(t, x))`** -- **⇒ SO **THE **INNER **`CMPLT`'s
-# **SRCS **ARE **(t, x)**.
+# AND `ge` IS `logical_not(CMPLT(t, x))` -- SO THE INNER `CMPLT`'s
+# SRCS ARE (t, x).
 def row_ge_src0.go(+r: T.Tensor) -> Bool:
   +s0 = O.Arena.src(T.Tensor.ar(r), T.Tensor.u(r), 0)
   O.eq_op(O.Arena.op(T.Tensor.ar(r), s0), O.OpsCMPLT{})
@@ -199,8 +199,8 @@ def row_le_pure() -> Bool:
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
     O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPEQ{}))
 
-# **⇒ AND **`le` **IS **`logical_not(CMPLT(x, t))`** -- **⇒ SO **THE **INNER **`CMPLT`'s
-# **SRCS **ARE **(x, t)**, **THE **REVERSE **ORDER**.
+# AND `le` IS `logical_not(CMPLT(x, t))` -- SO THE INNER `CMPLT`'s
+# SRCS ARE (x, t), THE REVERSE ORDER.
 def row_le_src0.go(+r: T.Tensor) -> Bool:
   +s0 = O.Arena.src(T.Tensor.ar(r), T.Tensor.u(r), 0)
   O.eq_op(O.Arena.op(T.Tensor.ar(r), s0), O.OpsCMPLT{})
@@ -224,9 +224,9 @@ def row_eq_arg() -> Bool:
   +r = T.tn_eq(c, d)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
 
-# **⇒ AND **`eq` **IS **ONE **NODE** -- **`_binop(Ops.CMPEQ, x, False)`** (`elementwise.py:336`)
-# **IS **THE **COMPARISON **AND **NOT **A **NEGATION **OF **ONE** -- **⇒ AND **SO **ITS
-# **SRCS **ARE **(c, d)**.
+# AND `eq` IS ONE NODE -- `_binop(Ops.CMPEQ, x, False)` (`elementwise.py:336`)
+# IS THE COMPARISON AND NOT A NEGATION OF ONE -- AND SO ITS
+# SRCS ARE (c, d).
 def row_eq_srcs() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)

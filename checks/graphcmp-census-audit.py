@@ -157,8 +157,8 @@ STATES = (
 # `--help` USED TO CRASH, AND THE REASON WAS THAT THE LOOKUP IN `one` WAS NOT TOTAL: it was a bare
 # `next(m for n, m, _ in STATES if n == name)`, and `--help` is not a state name, so it raised
 # `StopIteration` at :159 and exited 1. MEASURED both ways today: with no argument this file runs
-# its BASELINE and prints `SELFCHECK OK (rc=0)`, so the flag was the WHOLE cause. **THE ARGUMENT
-# CONTRACT IS STATED HERE INSTEAD OF BEING INFERRED**, and the same table below no longer has to
+# its BASELINE and prints `SELFCHECK OK (rc=0)`, so the flag was the WHOLE cause. THE ARGUMENT
+# CONTRACT IS STATED HERE INSTEAD OF BEING INFERRED, and the same table below no longer has to
 # be scanned twice per run: `one()` took TWO passes over `STATES` for one row.
 STATES_BY = {n: (m, l) for n, m, l in STATES}
 NAMES = " ".join(STATES_BY)

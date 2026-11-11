@@ -438,7 +438,7 @@ class Program:
   def words(self, vals):
     """`(word, ...)` -- each root's OWN value at its OWN dtype -- and `lo | hi<<32` packed."""
     # reader: pargs.pop(0), ops_python.py:97 (ALU) and :107 (GLOBAL), one list, uop order.
-    # `vals=` is **kw and is not read. Do not drop an ALU word the cone still consumes.
+    # `vals=` is kw and is not read. Do not drop an ALU word the cone still consumes.
     addr = {f"out{i}": mv_address(m) for i, m in enumerate(self.mms)}
     args = [addr[u.arg.name] if u.addrspace is AddrSpace.GLOBAL else vals(u.arg.name)
             for u in self.prog.uops
@@ -575,7 +575,7 @@ def executable(rts):
 def walk(rts, vals):
   """`exec_alu` over the cone: `PythonProgram` WITHOUT its ALU-dtype assert.
 
-  ## WHY IT EXISTS. MEASURED: the spliced (i.e. the port's) cone on **10 of the 11** PROMOTION
+  # WHY IT EXISTS. MEASURED: the spliced (i.e. the port's) cone on 10 of the 11 PROMOTION
   rows carries between 1 and 67 ALU nodes whose two srcs disagree in width, so
   `PythonProgram.__call__` raises `AssertionError: dtype mismatch on Ops.ADD` and the value
   question cannot be put to the reference interpreter on those rows at all. Reporting "the

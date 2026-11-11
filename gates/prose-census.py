@@ -224,7 +224,7 @@ def measurers(root):
                 # revisions, and BOTH halves were dead before this commit: MEASURED
                 # 2026-10-18T17:58:42Z, all four `PIN_*` rows bound ZERO lines tree-wide, so
                 # `.agents/UPSTREAM-PIN.md` was not in the table at all. The two shapes that
-                # exist in it today are `| PIN MATCH **204/230** |` (line 669) and `204 of our
+                # exist in it today are `| PIN MATCH 204/230 |` (line 669) and `204 of our
                 # vendored blobs` (line 533).
                 #
                 # EACH FIGURE IS MEASURED AT THE REVISION ITS OWN LINE BELONGS TO, and the
@@ -284,8 +284,8 @@ MEASURERS_BASE = (
     # the words on the line -- which is why both probes exist and why VALUE-COLLISION exists.
     # THE LOOSE PROBE IS A DEFECT AND IT WAS MEASURED. A first version read `(\d+)\s+graphs\b`
     # and bound 121 rows of which most were `.agents/TODO.md` history -- "16 graphs",
-    # "22 graphs", "3 graphs" -- figures about a corpus that WAS 16 and is not now. **A PROBE
-    # BINDS ONLY WHEN THE LINE NAMES THE POPULATION**, which is the whole mechanism of this
+    # "22 graphs", "3 graphs" -- figures about a corpus that WAS 16 and is not now. A PROBE
+    # BINDS ONLY WHEN THE LINE NAMES THE POPULATION, which is the whole mechanism of this
     # file, so `CORPUS_GRAPHS` requires the corpus word on the same line. The dated readings it
     # used to swallow are not thereby excused: they fall into `POPULATION-NOT-DECLARED`, a
     # named row, which is where a claim whose population the line does not name belongs.
@@ -472,17 +472,17 @@ def measure(argv, root, shape=None):
     # 2026-10-18T18:06:48Z on this file's own PIN command, whose zero-population guard spells
     # `print('REFUSED: ...')`: the whole-stream scan returned `REFUSED` while the run answered
     # `population=229 value=229` with `WITHIN-LIMITS rc=0`. A successful measurement was discarded
-    # and named as a refusal. **THAT IS THE SAME DEFECT THIS FUNCTION'S DOCSTRING ALREADY
-    # RECORDS FOR `MACHINE: **VIOLATED**`**, and the same remedy: read the record's own field,
+    # and named as a refusal. THAT IS THE SAME DEFECT THIS FUNCTION'S DOCSTRING ALREADY
+    # RECORDS FOR `MACHINE: VIOLATED`, and the same remedy: read the record's own field,
     # exactly as `checks/sb-gate.sh:103` does, instead of trusting a substring.
     record = BOUNDED_RECORD.search(proc.stderr)
     if record:
         tok = record.group(1)
         if tok in BOUNDED_TOKEN:
             return None, None, tok
-    # THE CHILD'S OWN REFUSAL IS READ FROM **STDOUT**, and the channel is the load-bearing part:
+    # THE CHILD'S OWN REFUSAL IS READ FROM STDOUT, and the channel is the load-bearing part:
     # stdout is passed through verbatim and the watchdog's record never touches it, so a refusal a
-    # measurer prints there cannot be an echo. The old `MACHINE: **VIOLATED**` reading is why the
+    # measurer prints there cannot be an echo. The old `MACHINE: VIOLATED` reading is why the
     # token is a contract and not a shape -- `WITHIN-LIMITS` means the figure printed.
     for kill in ("KILLED-ON-MEMORY", "TIMED-OUT", "NOT-STARTED", "DEAD", "REFUSED"):
         if kill in proc.stdout:
@@ -510,8 +510,8 @@ def prose_files(root):
     # THIS FILE EXCLUDES ITSELF, AND THE EXCLUSION IS COUNTED AND PRINTED. MEASURED on the
     # first run: the census found `77` and `34` in `gates/prose-census.py` and reported them as
     # MOVED, because they ARE in this file -- inside the `MEASURERS` patterns and inside the
-    # prose explaining the `34` collision. **AN INSTRUMENT THAT READS ITS OWN TABLE FINDS ITS
-    # OWN EXAMPLES**, which is the `docnum-census.py` reading of `gates/gapcensus-gate.py`'s
+    # prose explaining the `34` collision. AN INSTRUMENT THAT READS ITS OWN TABLE FINDS ITS
+    # OWN EXAMPLES, which is the `docnum-census.py` reading of `gates/gapcensus-gate.py`'s
     # plant ("`UP`/`PORT` WERE BOUND AT IMPORT" -- the source and the subject from two places)
     # in a fourth costume. A probe is not a claim, and an exclusion that cannot be seen is an
     # exclusion that cannot be checked, so `self_excluded` is on the header of the table.
@@ -612,11 +612,11 @@ def census(root, run_gates=True, measurers_table=None):
     undeclared = {}
     n_claims = 0
     for rel, lineno, line in lines_of(scope, root):
-        # A TOKEN IS ADMITTED IF A PROBE BINDS IT **OR** IT CARRIES A UNIT. This ordering is
+        # A TOKEN IS ADMITTED IF A PROBE BINDS IT OR IT CARRIES A UNIT. This ordering is
         # the fix, and the defect it fixes was MEASURED: admission used to require a unit word
         # AFTER the number, so the figure in `34 of 34 graphs byte-identical` -- whose next
         # token is `of`, not a unit -- was never admitted, and the probe that names it could
-        # never bind. **THE POPULATION WORDS ARE THE UNIT**, so a probe-bound figure must not
+        # never bind. THE POPULATION WORDS ARE THE UNIT, so a probe-bound figure must not
         # have to supply a second one.
         hits = {}
         for name, figure, pop_text, argv, shape, off in bind(line, table):
@@ -909,7 +909,7 @@ def plant(out):
             out.write("PLANT refused-without-walk: %s\n" % rledger["walk"])
         (root / "gates" / "docnum-census.py").write_text(saved, encoding="utf-8")
 
-        # 7. ***THE PLANT'S OWN NEGATIVE.*** An EMPTY tree must yield ZERO rows AND the
+        # 7. *THE PLANT'S OWN NEGATIVE.* An EMPTY tree must yield ZERO rows AND the
         # aggregate must NOT be a green "nothing is stale". A MALFORMED PLANT THAT EMITS
         # NOTHING WHILE ITS CHECK SCORES IT AS A SUCCESSFUL PLANT IS THE DEFECT THIS FILE
         # EXISTS FOR, REPRODUCED INSIDE THE PLANT -- so the empty case is asserted, not
@@ -1075,12 +1075,12 @@ def plant_live(target, out, probe=None):
                  if r["file"] == target and r["probe"] == probe}
         out.write("PLANT-LIVE planted %s -> %d at %s:%d; per-probe %s; tree verdict %s\n"
                   % (written, int(written) + 1, target, ln, sorted(after.items()), dirty))
-        # THE VERDICT MOVES **FOR THAT PROBE**, NOT FOR THE TREE. MEASURED on this plant's first
+        # THE VERDICT MOVES FOR THAT PROBE, NOT FOR THE TREE. MEASURED on this plant's first
         # run: it asserted `dirty == clean` and reported `the verdict did not move from MOVED`
         # while the census had caught the planted figure perfectly -- the mirror was ALREADY
         # `MOVED` on five other probes, so a tree-wide verdict cannot move and the assertion
-        # could never pass on a tree that is not already perfect. **A PLANT ON A DIRTY TREE MUST
-        # BE ASSERTED LOCALLY**, or it can only ever be run on a clean tree -- which is to say it
+        # could never pass on a tree that is not already perfect. A PLANT ON A DIRTY TREE MUST
+        # BE ASSERTED LOCALLY, or it can only ever be run on a clean tree -- which is to say it
         # could never be run at all.
         if after.get(ln) != "MOVED":
             failures.append("probe %s on %s read %s after the plant at line %d and not MOVED"
@@ -1159,7 +1159,7 @@ def main(argv=None):
     # `--prove` IS THE ZERO-DENOMINATOR AND IDENTITY GUARD, AND IT WAS INVERTED.
     # MEASURED on this tree before the fix, 2026-10-18T17:58:42Z: `prose-census.py --prove`
     # printed `PROVE OK: 16504 claim(s) = 23 checked + 16481 undeclared; 24 row(s); 0 leak(s)`
-    # and exited **5**, which is `DEAD` -- "it ran and emitted nothing", said about a run that
+    # and exited 5, which is `DEAD` -- "it ran and emitted nothing", said about a run that
     # emitted a full table and a clean proof. `prove()` returns `bool(bad)`, so `not prove(...)`
     # is true exactly when there are NO leaks: the one state in which the row identity holds was
     # the only state reported as DEAD, and a leaking table fell through to the ordinary verdict

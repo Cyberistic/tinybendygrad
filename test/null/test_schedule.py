@@ -869,7 +869,7 @@ class TestSchedule(unittest.TestCase):
     x = Tensor.rand(32)
     check_schedule(x, 1, [Tensor._device_rng_counters[x.device]])
 
-  # **** custom kernel realize tests
+  # custom kernel realize tests
 
   @staticmethod
   def _copy_fxn(name:str="copy"):

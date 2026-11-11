@@ -252,7 +252,7 @@ def main():
     # ever move PASS somewhere else. No precedence table is invented here, and no sixth state is.
     #
     # MEASURED, AND IT IS NOT HYPOTHETICAL: at the time this was written `P2`, `P4`, `P5` and `Z1`
-    # each name a `find` string with **0** occurrences in `nn/optim.bend`, so this loop printed four
+    # each name a `find` string with 0 occurrences in `nn/optim.bend`, so this loop printed four
     # `REFUSED` lines and then returned 0, and a caller reading `$?` saw PASS on a run in which
     # four of eleven mutations were never applied. `gates/exitcode-census-gate.py` grades that
     # site FOREIGN -- the `0` at the end IS a number the author chose -- so the shape census was

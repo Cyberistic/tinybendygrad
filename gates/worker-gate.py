@@ -72,7 +72,7 @@ ORACLE_MODE = "worker"
 # THE TWO DENOMINATORS, DECLARED AND THEN DERIVED. `ORACLE_ROWS` is how many rows the CPython
 # lane prints and `SHARED_ROWS` is how many of them the port also prints; both are ASSERTED
 # against the live lanes, so a lane that loses a row is RED rather than quietly a smaller
-# comparison. **A GATE THAT COMPARES NOTHING IS NOT A PASS**, and the way to stop that is a
+# comparison. A GATE THAT COMPARES NOTHING IS NOT A PASS, and the way to stop that is a
 # declared denominator the derived one has to equal.
 ORACLE_ROWS = 15
 SHARED_ROWS = 9

@@ -132,7 +132,7 @@ DIFFER = "checks/differ.py"
 LIVE_HOMES = ("checks", "gates", "langs", "examples")
 SWEPT = ".agents/slop/"
 
-# EXTENSIONS THAT ARE SOURCE, NOT DATA. **A LIST, AND IT IS A LIST** -- so its cost is stated:
+# EXTENSIONS THAT ARE SOURCE, NOT DATA. A LIST, AND IT IS A LIST -- so its cost is stated:
 # a data file with an extension absent here is counted as code and drops out of the census. The
 # alternative, "any extension", put `.pyc` and a `CHECKSUMS` file in the population.
 # MEASURED the alternative's damage on this tree: 1,255 `.py` files whose names are mentioned by
@@ -410,8 +410,8 @@ PLANTS = {0: ["--plant"], 1: ["--plant-broken"], 3: ["--plant-undeclared"], 5: [
 # absence is correct: `gate-surface.py:46` reads a missing `RED_IS` as "my red is about the tree",
 # which is what is meant here.
 #
-# **EVERY DECLARED EXIT IS PLANTED, AND TWO OF THE FOUR ARE REAL ARMS OF `main()` RATHER THAN
-# PLANTS BOLTED ON.** An unplanted verdict is "a claim of unknown value" to that same file, and a
+# EVERY DECLARED EXIT IS PLANTED, AND TWO OF THE FOUR ARE REAL ARMS OF `main()` RATHER THAN
+# PLANTS BOLTED ON. An unplanted verdict is "a claim of unknown value" to that same file, and a
 # gate that declares `REFUSED` and can never refuse is the same defect as a comment that says a
 # pin is checked. So `--plant-undeclared` points the declaration LOADER at a path that does not
 # exist, and `--plant-dead` hands `check()` an empty population -- which is what it does when the

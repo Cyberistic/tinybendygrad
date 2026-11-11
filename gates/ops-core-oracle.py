@@ -192,8 +192,8 @@ def _de_const_out() -> bool:
     x = UOp.variable("x", 0, 4, dtype=dtypes.weakint)
     mx2 = UOp(Ops.MUL, (x, UOp.const(2, dtypes.weakint)), dtypes.weakint)
     g = mx2.divide_exact(x)
-    # **AND THE **VALUE** IS READ**: the answer is `const//div_const` = `2//1` = **2**, and a
-    # planted **1** IS A DIFFERENT CONST.
+    # AND THE VALUE IS READ: the answer is `const//div_const` = `2//1` = 2, and a
+    # planted 1 IS A DIFFERENT CONST.
     return g is not None and g.op is Ops.CONST and len(g.src) == 0 and g.arg == 2
 
 
@@ -290,8 +290,8 @@ def main() -> None:
 
     rows = (
         # 1-5: CONST identity. `UOp.const` interns in `ucache`, so identity IS hash-consing.
-        # THE COUNTER's THREE CLAIMS, **AND CPYTHON's OWN `collections.Counter` IS THE
-        # ORACLE** -- SO THE PORT's ANSWER AND PYTHON's ARE TWO INDEPENDENT COMPUTATIONS OF
+        # THE COUNTER's THREE CLAIMS, AND CPYTHON's OWN `collections.Counter` IS THE
+        # ORACLE -- SO THE PORT's ANSWER AND PYTHON's ARE TWO INDEPENDENT COMPUTATIONS OF
         # THE SAME PROPERTY, AND NOT A RESTATEMENT OF THE EXPECTED NUMBERS.
         ("hashcons_same_index", UOp.const(3, dtypes.int32) is UOp.const(3, dtypes.int32)),
         ("zeros_differ", UOp.const(ConstFloat(0.0), F32) is not UOp.const(ConstFloat(-0.0), F32)),
@@ -299,10 +299,10 @@ def main() -> None:
         ("bool_vs_int_key", UOp.const(True, dtypes.bool) is not UOp.const(3, dtypes.int32)),
         ("backedge_srcs", backedge.src[0].op is Ops.SPECIAL and backedge.src[1].op is Ops.RANGE),
 
-        # THE TOP-LEVEL `arg` LANE -- **AND IT REPLACES THE THREE `tag_*` ROWS**, because upstream
+        # THE TOP-LEVEL `arg` LANE -- AND IT REPLACES THE THREE `tag_*` ROWS, because upstream
         # DELETED `UOp.tag` BEFORE the pin (`fb518b44e`, an ancestor of the pin) and so upstream's
-        # pin CANNOT answer a question about a slot it no longer has. **THE PROPERTY IS THE SAME
-        # ONE** -- `type(arg)` splits the key -- and the port's `arg` carries the type in itself,
+        # pin CANNOT answer a question about a slot it no longer has. THE PROPERTY IS THE SAME
+        # ONE -- `type(arg)` splits the key -- and the port's `arg` carries the type in itself,
         # so BOTH lanes can answer it.
         #
         # MEASURED AT THE PIN: `arg=True` vs `arg=1` is False, `arg=None` vs `arg=0` is False,
@@ -370,22 +370,22 @@ def main() -> None:
 
     rows.append(last)
 
-    # THE COUNTER's THREE CLAIMS, **AND CPYTHON's OWN `collections.Counter` IS THE ORACLE** --
+    # THE COUNTER's THREE CLAIMS, AND CPYTHON's OWN `collections.Counter` IS THE ORACLE --
     # SO THE PORT's ANSWER AND PYTHON's ARE TWO INDEPENDENT COMPUTATIONS OF THE SAME PROPERTY,
     # AND NOT A RESTATEMENT OF THE EXPECTED NUMBERS.
     rows.extend((("ctr_bump", _ctr_bump()), ("ctr_find", _ctr_find()), ("ctr_inter", _ctr_inter())))
-    # `UOp.gcd` -- ops.py:1073. **AND CPYTHON's OWN `UOp.gcd` IS THE ORACLE**, so the port's
+    # `UOp.gcd` -- ops.py:1073. AND CPYTHON's OWN `UOp.gcd` IS THE ORACLE, so the port's
     # answer and this one are two independent computations of the same property.
     rows.extend((("gcd_const", _gcd_const()), ("gcd_shared", _gcd_shared())))
-    # `nested_div` -- divandmod.py:23 -- **AND THE **ARM** IS EVALUATED, **AND NOT THE MATCHER AND
-    # NOT `fold_divmod_general`** (MEASURED 2026-11-09: `(x%2)//4` IS **NOT** REWRITTEN BY
-    # `nested_div` **AND THE OTHER TWO ANSWER IT VIA THE **RANGE** ARM**).
+    # `nested_div` -- divandmod.py:23 -- AND THE ARM IS EVALUATED, AND NOT THE MATCHER AND
+    # NOT `fold_divmod_general` (MEASURED 2026-11-09: `(x%2)//4` IS NOT REWRITTEN BY
+    # `nested_div` AND THE OTHER TWO ANSWER IT VIA THE RANGE ARM).
     #
-    # **AND THE ROWS ARE **RIGHT AFTER** THE `gcd_*` ROWS IN **BOTH** LANES**, **BECAUSE THE
-    # GATE COMPARES THEM **POSITIONALLY** (`gates/gatekit.py`: `zip(base, other)`)**.
+    # AND THE ROWS ARE RIGHT AFTER THE `gcd_*` ROWS IN BOTH LANES, BECAUSE THE
+    # GATE COMPARES THEM POSITIONALLY (`gates/gatekit.py`: `zip(base, other)`).
     rows.extend((("nd_rewrite", _nd_rewrite()), ("nd_neg", _nd_neg()), ("nd_nodiv", _nd_nodiv())))
-    # `UOp.divide_exact` -- ops.py:1038-1047. **AND CPYTHON's OWN `UOp.divide_exact` IS THE
-    # ORACLE**, so the port's answer and this one are two independent computations of the same
+    # `UOp.divide_exact` -- ops.py:1038-1047. AND CPYTHON's OWN `UOp.divide_exact` IS THE
+    # ORACLE, so the port's answer and this one are two independent computations of the same
     # property.
     rows.extend((("de_same", _de_same()), ("de_const_none", _de_const_none()),
                  ("de_mul", _de_mul()), ("de_const_out", _de_const_out())))

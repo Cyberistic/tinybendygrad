@@ -582,7 +582,7 @@ MUTATIONS_BY = {e[0].split()[0]: e for e in MUTATIONS}
 # `MUTATIONS` on `argv`, so `--help` -- which is not a label -- selected NOTHING, and the `max()`
 # two lines under `want.sort` had nothing to take a maximum of: `ValueError: max() iterable
 # argument is empty`, exit 1, which `gatekit.VERDICT` reads as `FAIL` while `gates/gatekit.py:140`
-# says a traceback is `DEAD`. **THE ARGUMENT CONTRACT IS STATED HERE INSTEAD OF BEING INFERRED**,
+# says a traceback is `DEAD`. THE ARGUMENT CONTRACT IS STATED HERE INSTEAD OF BEING INFERRED,
 # so `want` is never empty, and a label that exists is the only thing that selects a mutation.
 LABELS = " ".join(sorted(MUTATIONS_BY))
 USAGE = f"usage: {Path(__file__).name} [LABEL ...]   no argument runs the whole table\nlabels: {LABELS}"

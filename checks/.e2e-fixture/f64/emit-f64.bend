@@ -1,4 +1,4 @@
-# checks/.e2e-fixture/f64/emit-f64.bend -- ASK THE PORT FOR A **DOUBLE** KERNEL.
+# checks/.e2e-fixture/f64/emit-f64.bend -- ASK THE PORT FOR A DOUBLE KERNEL.
 #
 #   ./bin/bend checks/.e2e-fixture/f64/emit-f64.bend > mm-rows.txt
 #
@@ -45,7 +45,7 @@
 # that f32 cannot represent.  The arithmetic here is mine; the numbers are not.
 #
 # DELTA IS A C LITERAL, AND THE LITERAL IS CHECKED, NOT TRUSTED.  `9.094947017729282e-13`
-# is `repr(2.0**-40)` -- CPython's shortest round-tripping decimal -- and
+# is `repr(2.0-40)` -- CPython's shortest round-tripping decimal -- and
 # `oracle_f64.py` re-derives it and REFUSES TO RUN if this file's text disagrees.
 # The port itself emits no float literal at all (there is no `_render`), so this is
 # a fixture literal exactly as the matmul body is, and the proof that it survived is

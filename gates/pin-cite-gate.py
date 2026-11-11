@@ -1237,7 +1237,7 @@ def _plant() -> int:
   # the edit and does not hold it after, and a BYTE-IDENTICAL copy holds it exactly as
   # the control does.
   #
-  # **THIS ARM IS RED UNDER THE SHIPPED RULE**, which gave a name to the FARTHER
+  # THIS ARM IS RED UNDER THE SHIPPED RULE, which gave a name to the FARTHER
   # citation: the control's name would sit with the SECOND row and the moved name with
   # the FIRST, so BOTH assertions fail and the plant refuses to pass. That is what makes
   # the arm a witness and not a label.
@@ -1292,8 +1292,8 @@ def _plant() -> int:
       return FAIL
 
     # THE ATTRIBUTION TREES. The control is WRITTEN; the moved arm is a COPY of it with
-    # the edit applied; the twin is a COPY of it, byte for byte. **NEVER `git show
-    # HEAD:`** -- the copy is of the file on disk, so the arm measures the file.
+    # the edit applied; the twin is a COPY of it, byte for byte. NEVER `git show
+    # HEAD:` -- the copy is of the file on disk, so the arm measures the file.
     attrib_trees = {k: td / k for k in ("attrib", "attrib-moved", "attrib-twin")}
     for root in attrib_trees.values():
       (root / PORT_REL).mkdir(parents=True, exist_ok=True)

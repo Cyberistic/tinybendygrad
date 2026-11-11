@@ -322,8 +322,8 @@ def census() -> list[dict]:
     read = readers()
 
     # ONE SHA PER FILE, AND THE CACHE KEY IS THE POINT. The first version keyed a digest cache on
-    # `(st_size, int(st_mtime))` to make a 200-file duplicate group cost one hash, and **18 files
-    # were handed another file's digest**: commit 2f4ffc7a0 moved 131 files in one commit, so they
+    # `(st_size, int(st_mtime))` to make a 200-file duplicate group cost one hash, and 18 files
+    # were handed another file's digest: commit 2f4ffc7a0 moved 131 files in one commit, so they
     # share a size AND an mtime to the second, and `(size, mtime)` is not a unique key for content.
     # It surfaced as the manifest's restore proving 241/259 -- the restores were right and the
     # DIGESTS were wrong, which is the more dangerous direction, because a wrong digest makes a
@@ -362,8 +362,8 @@ def census() -> list[dict]:
         #           basename. Not this file and not a dead read: a namesake.
         #   stale   the reader's path is ABSENT and the reader's sub-tree survived. The gate is
         #           broken, not the file.
-        #   absent  the reader's path is ABSENT with only the basename in common. **THE OLD STALE
-        #           COUNT PUT ALL OF THESE IN ONE BUCKET** -- 63 absent-path tokens over the 259, of
+        # absent  the reader's path is ABSENT with only the basename in common. THE OLD STALE
+        # COUNT PUT ALL OF THESE IN ONE BUCKET -- 63 absent-path tokens over the 259, of
         #           which 6 preserve a sub-tree and 57 do not. A reader whose path is gone is not a
         #           reader whose input moved, which is the one distinction the whole check is for.
         live, shadow, stale, absent = [], [], [], []

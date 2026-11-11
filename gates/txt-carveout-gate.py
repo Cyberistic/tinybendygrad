@@ -62,7 +62,7 @@ def main(plant: bool = False, root: str = ROOT) -> int:
                 return report(nt)
         return report(nt)
     except Exception as e:
-        # MEASURED 2026-10-18: an UNEXPECTED exception here exited **2**, which is NOT in `VERDICTS`
+        # MEASURED 2026-10-18: an UNEXPECTED exception here exited 2, which is NOT in `VERDICTS`
         # — and `gates/gate-surface.py` charges exactly that as `RENAMED` ("a caller charging by
         # integer prints a word this gate never used"). A gate must not be able to leave its own
         # surface, so an unreadable tree is REFUSED (3), not an undeclared integer.

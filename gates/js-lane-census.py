@@ -122,9 +122,9 @@ ORACLE_PIN = {
 # THE SEAM POPULATION IS DISCOVERED, NEVER LISTED -- and this regex was WRONG TWICE, both
 # times SILENTLY, both times by truncating rather than by raising.  First attempt: `(\w+)`
 # for the handler, which cannot match the ARROW LITERALS `dtype.js:203-211` pass, so it
-# found **4 of 10** and printed 4 as a count.  Second attempt: `^... .+\);`, which cannot match
+# found 4 of 10 and printed 4 as a count.  Second attempt: `^... .+\);`, which cannot match
 # the THREE registrations whose body wraps (`i64_cdiv`, `i64_cmod`, `i64_ceildiv`, at `:206,208,210`),
-# so it found **7 of 10**.  That is the `repro-paths.py` class inside this file's own prose: A
+# so it found 7 of 10.  That is the `repro-paths.py` class inside this file's own prose: A
 # TRUNCATED TOKEN IS NOT A HARMLESSLY BLIND ONE, and the instrument that truncates is the one
 # nobody audits -- and a regex is the cheapest possible way to write one.  So the declaration
 # is matched PREFIX-ONLY (`io_eff(CID(Dt.<n>),` is on one line in all ten), the handler is not
@@ -456,8 +456,8 @@ def build_js(work: pathlib.Path, src: str, names: list[str], spec: dict) -> tupl
                   # `KINDS[j]` AND NOT `j`: the first draft drove `SEAM["Dt.fp8_to"](x, j)`
                   # while LABELLING the row `NAMES[j]`, and under `--quick` (kinds 0 and 3)
                   # that answered every `fp8e5m2fnuz` row with the e5m2 arithmetic --
-                  # **1848 mismatches, every one of them this file's bug and none of them the
-                  # lane's.**  An ordinal is not a kind; the two are the same only when the
+                  # 1848 mismatches, every one of them this file's bug and none of them the
+                  # lane's.  An ordinal is not a kind; the two are the same only when the
                   # selection is `0..3`, which is why the bug slept until `--quick`.
                   .replace("%KINDS%", json.dumps(spec["kinds"]))
                   .replace("%NAMES%", json.dumps(spec["names"]))
@@ -657,9 +657,9 @@ def run(*, plant: str | None, quick: bool) -> int:
     walk = lcg(1500 if quick else WALK)
     # `f16_bits`'s subnormal arm is `ue <= 0` with `ue = e - 127 + 15`, i.e. `e <= 112`, and
     # its flush arm is `ue < -10`, i.e. `e <= 101` -- so the arm is reached by f32 exponent
-    # fields **102..112**, eleven fields and 92,274,688 patterns.  THE FIRST DRAFT OF THIS
+    # fields 102..112, eleven fields and 92,274,688 patterns.  THE FIRST DRAFT OF THIS
     # FIXTURE USED `range(113, 127)`: every one of those rows took the NORMAL arm, `f16bits`
-    # reported **0 mismatches**, and the instrument was blind to its own subject while
+    # reported 0 mismatches, and the instrument was blind to its own subject while
     # printing a count -- the `wgsl` `M8` shape, third instance, this time mine.  The band is
     # printed as a CONTROL row so the next misreading of it is visible in the transcript
     # instead of hiding behind a green row set.

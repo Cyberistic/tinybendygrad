@@ -155,8 +155,8 @@ COLUMNS = ("path", "bytes", "tracked", "symlink", "last_commit", "last_age_h",
 #       and `\.[A-Za-z0-9]+` then matches `.agents` -- a path COMPONENT mistaken for a file
 #       extension. MEASURED, the token it produced for `` `.agents/slop/portexec/` `` was `.agents`.
 #
-# **BOTH ARE `repro-paths.py`'s SUFFIX-SET FAILURE IN A NEW COSTUME -- A REMEMBERED SHAPE INSTEAD OF
-# A POPULATION -- AND NEITHER MADE THE GATE GO RED.** A run has no remembered shape: it stops where
+# BOTH ARE `repro-paths.py`'s SUFFIX-SET FAILURE IN A NEW COSTUME -- A REMEMBERED SHAPE INSTEAD OF
+# A POPULATION -- AND NEITHER MADE THE GATE GO RED. A run has no remembered shape: it stops where
 # the text stops, and the ENDING is inspected afterwards. `blastradius.cpython-312.pyc` therefore
 # stays whole and `tn_graph_census-gate.py.bak` stays whole, which is the property that pattern was
 # bought for, and `.agents/slop/portexec/` is a directory because it ends in a separator.

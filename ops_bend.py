@@ -96,7 +96,7 @@ BEND = _repo_root()                                              # the repo root
 BEND_SRC = BEND/"tinybendygrad"/"runtime"/"ops_python.bend"   # ONE .bend per upstream .py: the port of ops_python.py IS the executor
 BEND_BIN = BEND/"bin"/"bend"
 
-# **************** encoding ****************
+# encoding
 
 # the four lanes the executor ports. Anything else -- half, bfloat16, the fp8s, float64, the narrow
 # ints, int64 -- is its wall 1, and wire_dtype raises rather than emitting a name it would misread.
@@ -157,7 +157,7 @@ def encode(uops:list[UOp]) -> str:
     lines.append(f"{i+1}: {u.op.name} {wire_dtype(u)} {wire_arg(u)} {' '.join(str(idx[s]+1) for s in u.src)}".rstrip())
   return "\n".join(lines) + "\n"
 
-# **************** the executor ****************
+# the executor
 
 @functools.cache
 def executor() -> pathlib.Path:
@@ -176,7 +176,7 @@ def executor() -> pathlib.Path:
       os.replace(tmp, out)                                         # atomic: a killed build is never a stale binary
   return out
 
-# **************** the packet, read back ****************
+# the packet, read back
 
 @dataclass(frozen=True)
 class UOpLine:
@@ -202,7 +202,7 @@ def parse(packet:str) -> tuple[list[UOpLine], int]:
     lines.append(UOpLine(op, dtype, arg, tuple(int(s) for s in srcs)))
   return lines, int(nbufs)
 
-# **************** runtime ****************
+# runtime
 
 class BendProgram(Program['BendDevice']):
   def __init__(self, dev:'BendDevice', obj:TinyELF):
@@ -253,28 +253,28 @@ class BendRenderer(PythonRenderer):
   has_local = False
   def render(self, uops:list[UOp]) -> str: return encode(uops)
 
-# **=> AND `BEND_C=1` MAKES THE LANE COMPILE C INSTEAD OF INTERPRETING.** MEASURED:
+# => AND `BEND_C=1` MAKES THE LANE COMPILE C INSTEAD OF INTERPRETING. MEASURED:
 # the interpreter is 56x slower than the PYTHON device on `(A @ B) @ C` (29 973 ms
 # vs 533 ms for a 16x16, `.agents/slop/perf/REPORT.md`), and `sample` puts 95% of
 # its time in Bend's own `term_drop`/`span_fade` -- so the cost is in the runtime,
 # not in this file.
 #
-# **=> AND THE C IS THE SAME C THE PORT RENDERS**: `tinybendygrad/renderer/cstyle.bend`
+# => AND THE C IS THE SAME C THE PORT RENDERS: `tinybendygrad/renderer/cstyle.bend`
 # and CPython's `ClangRenderer` are BYTE-IDENTICAL on all 30 kernel-text rows in
 # `gates/cstyle-live.rows` (measured; `.agents/slop/perf/REPORT.md` §2), so this lane
 # executes the port's own emitted code through the CC compiler, the loader and the
 # call that `.agents/slop/cpuseam/verify.sh` proves byte-identical to CPython's CPU
 # device on five real MNIST kernels.
 #
-# **=> AND IT IS A FLAG AND NOT A REPLACEMENT**, because the interpreter IS this
+# => AND IT IS A FLAG AND NOT A REPLACEMENT, because the interpreter IS this
 # lane's definition (`BendRenderer`/`BendProgram` above, and the header's "the
 # difference is where they RUN"). Both stay; `BEND_C` picks which one runs.
-# **THE DEFAULT IS THE COMPILED LANE, AND IT IS `1` BECAUSE THE INTERPRETER IS 168x SLOWER.**
+# THE DEFAULT IS THE COMPILED LANE, AND IT IS `1` BECAUSE THE INTERPRETER IS 168x SLOWER.
 # MEASURED 2026-11-02 at 32x32 `(A@B)@C`: compiled 1.36 ms, interpreter 228.46 ms, tinygrad's own
 # CPU device 1.209 ms. Both lanes agree with CPython exactly (max|PYTHON-BEND| = 0.000e+00), so the
 # flag is a SPEED choice and not a correctness one; `BEND_C=0` still selects the interpreter.
 BEND_C = getenv("BEND_C", 1)
-# **AND THE COMPILED LANE RENDERS WITH THE PORT'S OWN `cstyle.bend`, NOT TINYGRAD's.**
+# AND THE COMPILED LANE RENDERS WITH THE PORT'S OWN `cstyle.bend`, NOT TINYGRAD's.
 # MEASURED 2026-11-03: byte-identical C for the 32x32 kernel (5251 B each way), so this is a
 # self-containment choice and not a correctness one. `BEND_PORT_C=0` selects tinygrad's renderer.
 BEND_PORT_C = getenv("BEND_PORT_C", 1)

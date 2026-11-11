@@ -24,7 +24,7 @@
 #   CUSTOM         llm/kernels/amd.py:45     the non-void arm, the dtype is in the arg
 #   CUSTOMI        upat.py:66    UOp(Ops.CUSTOMI, arg=("True", dtypes.void))
 #   CUSTOMI        llm/kernels/amd.py:113    two shaped srcs, non-void
-#   INS            ops.py:600     def ins(self, arg, **kwargs): return UOp(Ops.INS, ...)
+# INS            ops.py:600     def ins(self, arg, kwargs): return UOp(Ops.INS, ...)
 #   PROGRAM        codegen/__init__.py:500   UOp(Ops.PROGRAM, src=(full_sink,), arg=prog_info)
 #
 # TWO OF THE SEVEN ARE ONLY LEGAL IN ONE OF THE FIVE SPEC TABLES, and the rows say so:

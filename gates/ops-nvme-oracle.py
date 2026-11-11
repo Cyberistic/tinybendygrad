@@ -103,7 +103,7 @@ row("nvme_feat_num_queues", nvme.NVME_FEAT_NUM_QUEUES)
 # --------------------------------------------------------------------------
 # THE QUEUE'S GEOMETRY. `NVMEQueue.__init__` NEEDS A DEVICE FOR ITS TWO
 # `alloc_sysmem` CALLS, BUT THE DOORBELLS ARE ARITHMETIC ON `qid` AND
-# `db_stride` -- SO THE ORACLE EVALUATES **UPSTREAM'S OWN EXPRESSION**.
+# `db_stride` -- SO THE ORACLE EVALUATES UPSTREAM'S OWN EXPRESSION.
 #
 # `self.sq_db, self.cq_db = nvme.NVME_REG_DBS + 2 * qid * dev.db_stride,
 #                             nvme.NVME_REG_DBS + (2 * qid + 1) * dev.db_stride`
@@ -147,10 +147,10 @@ for _n in (0, 1, 2, 15):
     row(f"nvme_db_stride_cap{_n}", _db_stride(_cap(0, _n)))
 row("nvme_cap_lo", _cap(305419896, 4294967295) & 0xffffffff)
 row("nvme_cap_hi", _cap(305419896, 4294967295) >> 32)
-# **THE FIXTURES MUST EXERCISE BYTE 24.** THE FIRST DRAFT USED 0, 1, 255 AND
+# THE FIXTURES MUST EXERCISE BYTE 24. THE FIRST DRAFT USED 0, 1, 255 AND
 # 4194304 -- AND ALL FOUR HAVE BYTE 24 CLEAR, SO ALL FOUR TIMEOUTS WERE
-# **0** AND THE `* 500` MULTIPLIER WAS NOT MEASURED. **A PLANT THAT DROPPED
-# IT MOVED ZERO ROWS.** THE FIXTURES ARE NOW THE SAME FOUR THE PORT USES.
+# 0 AND THE `* 500` MULTIPLIER WAS NOT MEASURED. A PLANT THAT DROPPED
+# IT MOVED ZERO ROWS. THE FIXTURES ARE NOW THE SAME FOUR THE PORT USES.
 for _n, _v in (("cap0", _cap(0, 0)), ("cap1", _cap(16777216, 0)),
                ("cap255", _cap(4278190080, 0)), ("cap_lo", _cap(1, 0))):
     row(f"nvme_timeout_{_n}", _timeout_ms(_v))
@@ -168,7 +168,7 @@ for _n, _v in (("cap0", _cap(0, 0)), ("cap1", _cap(16777216, 0)),
 # THE SHIM. `submit` WRITES INTO `self.sq` WITH `struct.pack` AND READS
 # `self.cq` FOR THE COMPLETION. THE SHIM GIVES IT A `bytearray` FOR `sq`, A
 # `bytearray` FOR `cq` WITH A COMPLETION THAT SAYS "DONE", AND A `regs` THAT
-# IS A LIST. **THE SHIM SUPPLIES NO ARITHMETIC**: `slot`, `tail`, the packed
+# IS A LIST. THE SHIM SUPPLIES NO ARITHMETIC: `slot`, `tail`, the packed
 # word and the phase all come from upstream's own code.
 # --------------------------------------------------------------------------
 class _CqView:
@@ -225,8 +225,8 @@ row("nvme_cmd_slot_in_word", "True" if _cmd_word(2, 63) > 65536 else "False")
 
 # THE TAIL AND THE PHASE, FROM UPSTREAM'S OWN `submit`.
 #
-# **THE FIRST DRAFT OF THE ORACLE PRINTED THE LITERAL 0 AND 63 UNDER THE
-# TAIL'S NAMES -- THE TAIL, NOT THE NEXT TAIL** -- SO THE TWO SIDES WERE
+# THE FIRST DRAFT OF THE ORACLE PRINTED THE LITERAL 0 AND 63 UNDER THE
+# TAIL'S NAMES -- THE TAIL, NOT THE NEXT TAIL -- SO THE TWO SIDES WERE
 # ANSWERING DIFFERENT QUESTIONS UNDER THE SAME NAME, AND A ROW THAT CANNOT
 # BE ADDRESSED IS THE SAME DEFECT AS A DUPLICATE NAME.
 _ENTRIES = 0x1000 // SQE
@@ -245,17 +245,17 @@ row("nvme_phase_after_wrap", q.phase)
 row("nvme_tail_wraps", q.tail)
 row("nvme_phase_is_bit", "True" if q.phase <= 1 else "False")
 
-# THE SQE'S SIXTY-FOUR BYTES. **UPSTREAM'S OWN `struct.pack`**, through the
+# THE SQE'S SIXTY-FOUR BYTES. UPSTREAM'S OWN `struct.pack`, through the
 # shim's `submit`.
-# **THE FIXTURE IS PART OF THE CLAIM, AND IT IS THE PORT'S FIXTURE.**
+# THE FIXTURE IS PART OF THE CLAIM, AND IT IS THE PORT'S FIXTURE.
 # `sqe_words(opcode, slot, nsid, prp1_hi, prp1_lo, cdw10, cdw11)` -- AND
 # UPSTREAM'S `submit(opcode, nsid=0, prp1=0, cdw10=0, cdw11=0)` TAKES
-# **ONE** PRP VALUE, WHICH IS A SIXTYTY-FOUR-BIT ADDRESS. SO THE ORACLE
+# ONE PRP VALUE, WHICH IS A SIXTYTY-FOUR-BIT ADDRESS. SO THE ORACLE
 # SUBMITS WITH `prp1 = prp1_hi << 32 | prp1_lo` AND THE SLOT IS THE
-# **COMMAND WORD**'S OWN SLOT -- WHICH UPSTREAM'S `submit` DOES NOT TAKE AS
+# COMMAND WORD'S OWN SLOT -- WHICH UPSTREAM'S `submit` DOES NOT TAKE AS
 # AN ARGUMENT, SO THE ORACLE PACKS THE SLOT INTO THE OPCODE AS UPSTREAM
 # DOES (`opcode | slot << 16`).
-# THE SQE'S LENGTH IN WORDS. **ONE ROW, NOT ONE PER FIXTURE** -- THE LENGTH
+# THE SQE'S LENGTH IN WORDS. ONE ROW, NOT ONE PER FIXTURE -- THE LENGTH
 # DOES NOT DEPEND ON THE FIXTURE, AND A PER-FIXTURE ROW WOULD BE TWO ROWS
 # ANSWERING THE SAME QUESTION.
 row("nvme_sqe_len", SQE // 4)
@@ -264,16 +264,16 @@ for _nm, _op, _slot, _nsid, _hi, _lo, _cdw10, _cdw11 in (
         ("1", 2, 5, 7, 11, 13, 17, 19)):
     q = _Queue(0)
     q.submit(_op | _slot << 16, _nsid, (_hi << 32) | _lo, _cdw10, _cdw11)
-    # THE **WORDS**, NOT THE FIELDS. `struct.unpack("<IIQQQQII16x", ...)`
+    # THE WORDS, NOT THE FIELDS. `struct.unpack("<IIQQQQII16x", ...)`
     # GIVES EIGHT FIELDS AND FOUR OF THEM ARE SIXTYTY-FOUR BIT, SO THE WORD
-    # VIEW IS A SECOND UNPACK WITH SIXTEEN 32-BIT WORDS -- AND **THE PRP
-    # ADDRESS'S LOW WORD COMES FIRST**, BECAUSE THE FORMAT IS LITTLE-ENDIAN.
+    # VIEW IS A SECOND UNPACK WITH SIXTEEN 32-BIT WORDS -- AND THE PRP
+    # ADDRESS'S LOW WORD COMES FIRST, BECAUSE THE FORMAT IS LITTLE-ENDIAN.
     row(f"nvme_sqe_words_{_nm}", ",".join(str(x) for x in
                                            struct.unpack("<" + "I" * 16, bytes(q.sq[0:SQE]))))
 
 
 # --------------------------------------------------------------------------
-# THE PRP TABLE. **UPSTREAM'S OWN `prp_table`**, against a shim `dev` whose
+# THE PRP TABLE. UPSTREAM'S OWN `prp_table`, against a shim `dev` whose
 # `pci_dev.alloc_sysmem` RETURNS A `bytearray` AND AN ADDRESS LIST.
 #
 # `prp_table` IS A FREE FUNCTION AND ITS WHOLE BODY IS:
@@ -321,8 +321,8 @@ def _prp(pages):
     return table, table_addrs, entries, dev
 
 
-# THE LIST PAGE COUNT. `ceildiv(len(pages) + 1, 256) * 0x1000` -- **THE `+ 1`
-# IS WHY A SINGLE PAGE STILL GETS A LIST PAGE.**
+# THE LIST PAGE COUNT. `ceildiv(len(pages) + 1, 256) * 0x1000` -- THE `+ 1`
+# IS WHY A SINGLE PAGE STILL GETS A LIST PAGE.
 def _prp_list_pages(n):
     return ceildiv(n + 1, 256)
 
@@ -339,7 +339,7 @@ for _n in (1, 64, 256, 257):
     row(f"nvme_prp_table_bytes_{_n}", _prp_table_bytes(_n))
 for _n in (1, 256):
     row(f"nvme_prp_entries_{_n}", 2 * _n)
-# THE TABLE'S ENTRY COUNT FOR THREE PAGES. **ONE ROW, NOT ONE PER FIXTURE.**
+# THE TABLE'S ENTRY COUNT FOR THREE PAGES. ONE ROW, NOT ONE PER FIXTURE.
 row("nvme_prp_entries_len_3", 2 * 3)
 
 
@@ -358,7 +358,7 @@ for _p in (0, 254, 255, 256):
     row(f"nvme_prp_ptr_page_{_p}", _prp_ptr_page(_p))
 row("nvme_prp_ptr_not_first", "True" if _prp_ptr(4096, 0) != 4096 else "False")
 
-# THE TABLE'S ENTRIES, FROM **UPSTREAM'S OWN `prp_table`**.
+# THE TABLE'S ENTRIES, FROM UPSTREAM'S OWN `prp_table`.
 for _n, _pages in ((2, [100, 200]), (3, [100, 200, 300])):
     _, _, entries, _dev = _prp(_pages)
     row(f"nvme_prp_entries_list_{_n}", ",".join(str(x) for x in entries))
@@ -403,8 +403,8 @@ def _lba_shift(ident):
 
 
 # TWO IDENTIFIES: ONE WITH AN LBA FORMAT DESCRIPTOR OF 1 AT BYTE 26 AND ONE
-# WITH 0. **THE BYTE 26 IS READ FROM THE IDENTIFY AND THE ENTRY IS READ FROM
-# THE IDENTIFY** -- SO A PORT THAT READS THE WRONG BYTE GETS A DIFFERENT
+# WITH 0. THE BYTE 26 IS READ FROM THE IDENTIFY AND THE ENTRY IS READ FROM
+# THE IDENTIFY -- SO A PORT THAT READS THE WRONG BYTE GETS A DIFFERENT
 # INDEX AND A DIFFERENT SHIFT.
 _ident_a = _ident(256)
 _ident_a[26] = 1
@@ -414,9 +414,9 @@ _ident_b[26] = 1
 _ident_b[130] = 9
 row("nvme_lba_shift_0", _lba_shift(_ident_a))
 row("nvme_lba_shift_1", _lba_shift(_ident_b))
-# **THE FIXTURE IS PART OF THE CLAIM.** THE PORT'S ROW READS
+# THE FIXTURE IS PART OF THE CLAIM. THE PORT'S ROW READS
 # `ident_byte([1, 2, 3], 1)` -- A THREE-BYTE IDENTIFY WHOSE SECOND BYTE IS 2
-# -- AND THE ORACLE MUST READ **THE SAME BYTES**. THE FIRST DRAFT READ
+# -- AND THE ORACLE MUST READ THE SAME BYTES. THE FIRST DRAFT READ
 # `_ident_b[1]` OFF THE *LBA* IDENTIFY, WHICH IS ALL ZEROS, SO THE TWO SIDES
 # WERE COMPARING DIFFERENT FIXTURES AND THE PORT WAS RIGHT.
 _ident_c = bytearray([1, 2, 3])
@@ -601,9 +601,9 @@ row("nvme_cqe_status_0", _cqe_status(0))
 row("nvme_cqe_status_1", _cqe_status(131072))
 row("nvme_cqe_status_255", _cqe_status(33554432))
 # UPSTREAM'S OWN TEST: `if (dw3 := self.cq.view(...)[0]) >> 17: raise
-# RuntimeError(...)`. **THE TEST IS `dw3 >> 17` AND NOT `dw3 & (1 << 17)`** --
+# RuntimeError(...)`. THE TEST IS `dw3 >> 17` AND NOT `dw3 & (1 << 17)` --
 # IT IS THE WHOLE WORD ABOVE BIT 17, SO A WORD OF `1 << 17` IS A STATUS OF
-# **ONE** AND THE COMMAND FAILED.
+# ONE AND THE COMMAND FAILED.
 row("nvme_cqe_ok", "True" if not (0 >> 17) else "False")
 row("nvme_cqe_failed", "True" if (131072 >> 17) else "False")
 row("nvme_cqe_slot_0_0", _cqe_slot(0, 0, 1, 64))
@@ -618,13 +618,13 @@ row("nvme_last_63", _last_wave_size(63, 0, 64))
 row("nvme_last_64", _last_wave_size(64, 0, 64))
 row("nvme_last_64_rem", _last_wave_size(64, 100, 64))
 # THE PORT PRINTS A `U32` HERE (`Bool.to_u32(...)`), SO THE ORACLE PRINTS
-# A NUMBER AND NOT A WORD. **A ROW'S TYPE IS PART OF ITS CLAIM**: THE TWO
+# A NUMBER AND NOT A WORD. A ROW'S TYPE IS PART OF ITS CLAIM: THE TWO
 # LANES COMPARE STRINGS.
 row("nvme_last_is_zero", 1 if _last_wave_size(0, 0, 64) == 0 else 0)
 # `def loop(n:int, body:...) -> list[UOp]: return [UOp(Ops.LINEAR, ...)] if n
-# else []` (`ops_nvme.py:105`). **THE QUESTION IS "IS THERE A LOOP", NOT "HOW
-# MANY ITERATIONS"** -- THE LOOP'S COUNT IS THE RANGE'S, AND IT IS INSIDE
-# THE INSTRUCTION. **A LOOP OF ZERO ITERATIONS IS NO INSTRUCTIONS AT ALL**,
+# else []` (`ops_nvme.py:105`). THE QUESTION IS "IS THERE A LOOP", NOT "HOW
+# MANY ITERATIONS" -- THE LOOP'S COUNT IS THE RANGE'S, AND IT IS INSIDE
+# THE INSTRUCTION. A LOOP OF ZERO ITERATIONS IS NO INSTRUCTIONS AT ALL,
 # WHICH IS THE WHOLE POINT OF THE `if n else []`.
 row("nvme_loop_0", 0 if 0 == 0 else 1)
 row("nvme_loop_1", 0 if 1 == 0 else 1)
@@ -678,17 +678,17 @@ row("nvme_fits_ok", "True" if _fits_device(0, 4096, 8192) else "False")
 row("nvme_fits_over", "True" if not _fits_device(4096, 8192, 8192) else "False")
 
 # THE IN-USE ASSERTION. `assert f"/dev/{os.path.basename(b)}" not in mounted
-# and not os.listdir(f"{b}/holders")` (`ops_nvme.py:69-70`). **IT IS A
-# CONJUNCTION**, AND A PORT THAT CHECKED ONE HALF WOULD TAKE A DRIVE OUT FROM
+# and not os.listdir(f"{b}/holders")` (`ops_nvme.py:69-70`). IT IS A
+# CONJUNCTION, AND A PORT THAT CHECKED ONE HALF WOULD TAKE A DRIVE OUT FROM
 # UNDER THE FILESYSTEM. THE FOUR CELLS ARE THE CLAIM AND ITS THREE NEGATIVES.
 def _in_use(mounted, has_holders):
     return mounted or has_holders
 
 
-# **THE PORT'S `in_use` ANSWERS "IS IT IN USE", SO THE FREE CASE IS
-# `False`** -- AND THE ORACLE'S FIRST DRAFT PRINTED `True` FOR IT, BECAUSE
-# IT HAD INVERTED THE QUESTION. **A ROW WHOSE NAME SAYS "FREE" AND WHOSE
-# VALUE SAYS "IN USE" IS A ROW THAT CANNOT BE ADDRESSED.**
+# THE PORT'S `in_use` ANSWERS "IS IT IN USE", SO THE FREE CASE IS
+# `False` -- AND THE ORACLE'S FIRST DRAFT PRINTED `True` FOR IT, BECAUSE
+# IT HAD INVERTED THE QUESTION. A ROW WHOSE NAME SAYS "FREE" AND WHOSE
+# VALUE SAYS "IN USE" IS A ROW THAT CANNOT BE ADDRESSED.
 row("nvme_in_use_free", "True" if _in_use(False, False) else "False")
 row("nvme_in_use_mounted", "True" if _in_use(True, False) else "False")
 row("nvme_in_use_holders", "True" if _in_use(False, True) else "False")

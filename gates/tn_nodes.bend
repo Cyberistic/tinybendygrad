@@ -11,7 +11,7 @@
 #
 # THE DEFECT BOTH MISSED, MEASURED. `tn_isfinite.isinf_part` compared the positive arm's
 # bool MUL against `-inf`, so node 7 was `CMPNE(MUL, CONST)` where CPython has
-# `CMPNE(CONST, CONST)`: **the same count, the wrong srcs, four levels down.** Both gates
+# `CMPNE(CONST, CONST)`: the same count, the wrong srcs, four levels down. Both gates
 # read it as agreement -- the count was right, the root was right, the root's srcs were
 # right. `.agents/slop/tnisf/dump2.bend` caught it and nothing else ever did, which is why
 # this file exists and why its inputs sit in `gates/` rather than under `.agents/slop/`.

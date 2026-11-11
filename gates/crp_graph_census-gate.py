@@ -1294,8 +1294,8 @@ GATE = Gate(
     #
     # MEASURED 2026-10-16, DEV in {CPU, PYTHON, DISK, NPY, UNSET, BOGUS, METAL}: the ANSWER
     # DOES NOT MOVE -- 5 runs, byte-identical stdout and byte-identical artifacts -- because
-    # that literal shadows the ambient on every construction. **SO THIS REFUSAL IS POINTER,
-    # NOT DETECTOR, and it is worth saying so where the refusal happens.** It is still the
+    # that literal shadows the ambient on every construction. SO THIS REFUSAL IS POINTER,
+    # NOT DETECTOR, and it is worth saying so where the refusal happens. It is still the
     # right trade: `runs/graphcmp/D` is the recorded case where an undeclared device cost a
     # 313-vs-312 census (`checks/env-precond.py`'s `DEV=CPU` row exists because it happened
     # one directory over), and REFUSED (3) is not FAIL (1) -- the tree is fine, the DEVICE is
@@ -1460,9 +1460,9 @@ if __name__ == "__main__":
 # `u.arg.name` under `isinstance(u.arg, DType)`. MEASURED ON THE 207-ROW BASE LANES: 118
 # `CAST/1` occurrences and NOT ONE carried an argument, on BOTH sides; MEASURED AFTER, AT 207:
 # 118 argument-bearing casts on each lane -- 22 at `f32` and 6 at each of the other sixteen
-# dtypes, 0 bare. **MEASURED AGAIN AT 287, WHICH IS THE READING THAT COUNTS NOW: 169
+# dtypes, 0 bare. MEASURED AGAIN AT 287, WHICH IS THE READING THAT COUNTS NOW: 169
 # ARGUMENT-BEARING CASTS AND 0 BARE ON EACH LANE, AND 169 - 118 = 51 IS EXACTLY THE NUMBER OF
-# MINTED `vr_` CELLS** -- so the eighty new rows added fifty-one argument-bearing casts and not
+# MINTED `vr_` CELLS -- so the eighty new rows added fifty-one argument-bearing casts and not
 # one of them carries a name the gate has to guess at. `dtypes_hold` also asserts `spec.bend`'s
 # OWN `nm` field against `dir(dtypes)`, because that field is what `T.dt_name` prints and
 # NOTHING CHECKED IT: the population was keyed on priority and bits and the field the printer
@@ -1503,9 +1503,9 @@ if __name__ == "__main__":
 #     CAST minted           51 of 80 -- and 0 of the 51 carry an `ADt` that is not their own `dt`
 #     de != dt AND minted    0 of 80
 #
-# CPYTHON'S OWN EIGHTY CELLS, through the real `UOp.const`, read 19 / 29 / 51 / 0. **THE TWO
+# CPYTHON'S OWN EIGHTY CELLS, through the real `UOp.const`, read 19 / 29 / 51 / 0. THE TWO
 # LANES AGREE CELL BY CELL, WHICH IS WHAT MAKES THE EMPTY CELL CPYTHON'S SHAPE AND NOT A
-# PORT DEFECT**, and `value_axis_hold` asserts the minted `ADt` per row rather than counting
+# PORT DEFECT, and `value_axis_hold` asserts the minted `ADt` per row rather than counting
 # it. `cr_cast_dt` answers `boolean` on its `True{}` arm and `dt` otherwise, so `de != dt`
 # REQUIRES a `CInvalid` value; and `cr_from_py(CInvalid)` IS `boolean`, which is `c0`, which
 # is `de` -- so `md_dt_eq(c0, de)` is `bool == bool`, the fold FIRES, and NO CAST IS MINTED.
@@ -1536,9 +1536,9 @@ if __name__ == "__main__":
 #                        which IS `dt.const(True)`) and `bool` itself, where `bool(1)`,
 #                        `bool(7)` and `bool(2.5)` are all `True`
 #
-# **SO THE CONSTRUCTOR AXIS CANNOT BE MADE INDEPENDENT AT ALL, AND THE MEASUREMENT IS WHY:
+# SO THE CONSTRUCTOR AXIS CANNOT BE MADE INDEPENDENT AT ALL, AND THE MEASUREMENT IS WHY:
 # `DType.const` (dtype.py:79-84) REWRITES every non-`Invalid` value onto the dtype's own
-# class.** `7` at `f32` is `ConstFloat(7.0)`, `2.5` at `i32` is `int(2.5)` = `2`, `True` at
+# class. `7` at `f32` is `ConstFloat(7.0)`, `2.5` at `i32` is `int(2.5)` = `2`, `True` at
 # `void` is `1`. At every one of the sixty non-`Invalid` cells the value that lands in the
 # arena carries the CONSTRUCTOR `cv1(dt)` would have chosen -- so `cr_const_of` cannot be
 # reached with a class it would not have derived, and the only class that IS reachable at an
@@ -1546,8 +1546,8 @@ if __name__ == "__main__":
 # half that NEVER MINTS. What IS free is the PAYLOAD, and it cannot reach `de` either:
 # MEASURED on CPython, the `(derived, minted, cast-target, de != dt)` tuple is IDENTICAL for
 # three payloads at 60 of 60 cells, because `cr_cast_dt` and `cr_from_py` both read the
-# CONSTRUCTOR and neither reads the payload. **THE AXIS IS EIGHTY ROWS AND NOT TWO HUNDRED
-# AND FORTY BECAUSE THAT IS ALL OF IT, MEASURED, NOT BECAUSE EIGHTY WAS THE FLOOR.**
+# CONSTRUCTOR and neither reads the payload. THE AXIS IS EIGHTY ROWS AND NOT TWO HUNDRED
+# AND FORTY BECAUSE THAT IS ALL OF IT, MEASURED, NOT BECAUSE EIGHTY WAS THE FLOOR.
 #
 # THE SHAPE THAT WOULD BE NEEDED, since none is reachable. A row can read `de` in the `ADt`
 # position only if the fold does NOT fire, and the fold cannot fail in the one place where
@@ -1559,9 +1559,9 @@ if __name__ == "__main__":
 # answer. CPYTHON HAS NO SUCH SHAPE: `dtype` is either `None` or the caller's, and `None`
 # means `from_py(b)`.
 #
-# **AND NOW IT HAS A CANARY, WHICH IS WHAT THE EIGHTY ROWS ARE FOR.** The mutation that IS
+# AND NOW IT HAS A CANARY, WHICH IS WHAT THE EIGHTY ROWS ARE FOR. The mutation that IS
 # that third arm -- `cr_cast_dt`'s `True{}` arm answering `dt`, which is V1 in
-# `gates/crp_graph_census-mutate.py` -- is measured at **38 rows** over the 287 and was 20
+# `gates/crp_graph_census-mutate.py` -- is measured at 38 rows over the 287 and was 20
 # over the 207: the nineteen `iv_` rows and the nineteen `vr_CInvalid_*` rows. Before the
 # `vr_` family `opscast_hold`'s SPELLING ASSERTION was the only instrument that could catch
 # V1 at all, because V1's rows do not disagree with CPython -- they disagree WITH THE CLAIM.
@@ -1643,7 +1643,7 @@ if __name__ == "__main__":
 #     THE `iv_` FAMILY IS NOT BEHIND THAT WALL. `DType.const` returns `Invalid` UNCHANGED
 #     (dtype.py:80), so nothing is truncated on the nineteen rows finding 1 was about, and
 #     `opscast_hold` checks the predicate's spelling rather than trusting a row.
-#     **THE `vr_` FAMILY IS NOT BEHIND THAT WALL EITHER, AND THAT IS MEASURED, NOT HOPED FOR**:
+# THE `vr_` FAMILY IS NOT BEHIND THAT WALL EITHER, AND THAT IS MEASURED, NOT HOPED FOR:
 #     its four raws are `Invalid`, `True`, `7` and `2.5`, and on `.venv/bin/python` `dt.const`
 #     returns every one of `True`, `1`, `7`, `2` and the float spellings of `1`, `7` and `2.5`
 #     EXACTLY at all twenty dtypes -- so no `truncate` fires at any of the eighty cells and

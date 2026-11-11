@@ -50,7 +50,7 @@ if __name__ == "__main__":
   BLOCK_SIZE_M, BLOCK_SIZE_N, BLOCK_SIZE_K = 64, 128, 64
   M, N, K = 4096, 4096, 4096
 
-  # **** torch test ****
+  # torch test
 
   if getenv("TORCH"):
     import torch
@@ -66,7 +66,7 @@ if __name__ == "__main__":
       et = time.perf_counter() - st
       print(f"TFLOPS {2*M*N*K*1e-12/et:.2f}")
 
-  # **** tinygrad test ****
+  # tinygrad test
 
   compiled = triton_compile(ASTSource(matmul_kernel, "*fp16,*fp16,*fp16",
                             attrs=AttrsDescriptor(divisible_by_16=(0, 1, 2, 3, 4, 5), equal_to_1=()),

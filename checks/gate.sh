@@ -22,7 +22,7 @@ cd "$_d/.." || exit 2
 SL=.agents/slop/shlscope
 # THE GENERATOR IS AN ABSENT PRECONDITION, AND `set -e` ALREADY KNEW THAT -- WITH A NUMBER
 # THIS TREE HAS NOT ASSIGNED A MEANING TO. MEASURED before this guard: `zsh checks/gate.sh`
-# answers **rc=2**, `python3: can't open file '.agents/slop/shlscope/gen.py'`, and **NO `DIED`**,
+# answers rc=2, `python3: can't open file '.agents/slop/shlscope/gen.py'`, and NO `DIED`,
 # because errexit aborts at the call BELOW. Two consequences, and only the first is fixable here:
 #   * the observable exit was `UNASSIGNED(2)`, which `checks/gatesweep.py:classify` folds to
 #     REFUSED with the token `UNASSIGNED(2)` -- right verdict, for a reason nobody wrote;

@@ -35,7 +35,7 @@ def install_hook(c_function, python_function):
   # get real function address
   fxn_address = ctypes.cast(ctypes.byref(c_function), ctypes.POINTER(ctypes.c_ulong))
   fxn_address_value = fxn_address.contents.value
-  #print(f"** hooking function at 0x{fxn_address_value}")
+  # print(f" hooking function at 0x{fxn_address_value}")
 
   orig_save = (ctypes.c_char*len(tramp))()
   libc.memcpy(orig_save, fxn_address_value, len(tramp))

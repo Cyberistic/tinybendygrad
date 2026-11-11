@@ -86,11 +86,11 @@
 # `gates/groupflip-oracle.py:63-70` and `gates/groupflip.bend:170-180` name this cause, pay for
 # it with a `cut`, and are GREEN.
 #
-# **NO `cut` HERE, AND THAT IS A DECISION WITH A REASON.** A `cut` would take this gate from
+# NO `cut` HERE, AND THAT IS A DECISION WITH A REASON. A `cut` would take this gate from
 # 16-of-17 red to 1-of-17 red and would look like the fixture fix landing. It is not, and it
 # would be worse than the red, for the reason the next paragraph gives.
 #
-# **AND `flip_01` IS A ROW THAT WOULD GO GREEN ON A WRONG GRAPH.** Measured cut-relative it is
+# AND `flip_01` IS A ROW THAT WOULD GO GREEN ON A WRONG GRAPH. Measured cut-relative it is
 # 28 against upstream's 28, same op, same nsrc, same src ops -- while `mxw_dims_of` of the two
 # results are (4,4,8,8) and (1,4,8,8). `mxf_compose` takes `tail`/`crop` from
 # `mxw_dims_of(ret)[1:]` (movement.bend:1675-1676) where `movement.py:257-259` takes them from
@@ -214,11 +214,11 @@ def sig_shrink_noop() -> String:
 # three now carries the SAME one-node shortfall as every other row of this file: the port is one
 # node short of upstream, and THE RESIDUAL above says which node and whose defect it is.
 #
-# **`[0,0,0,0]` PASSED FOR A REASON THAT WAS NOT THE ORACLE'S, AND IT STILL PASSES FOR A REASON
-# THAT IS NOT THE ORACLE'S.** It read `6 Ops.RESHAPE/2 Ops.BUFFER Ops.STACK`, the base's own
+# `[0,0,0,0]` PASSED FOR A REASON THAT WAS NOT THE ORACLE'S, AND IT STILL PASSES FOR A REASON
+# THAT IS NOT THE ORACLE'S. It read `6 Ops.RESHAPE/2 Ops.BUFFER Ops.STACK`, the base's own
 # signature, so it agreed with `flip(())` on the number and agreed for a different cause. MEASURED
 # with `gates/mxgraph-fixture-rows.bend`: `flip([])`, `flip([0])`, `flip([0,0])` and `flip([0,0,0,0])`
-# all return arena index **6**, and `mxw_base()` is index 6 -- so `flip([0,0,0,0])` returns THE BASE
+# all return arena index 6, and `mxw_base()` is index 6 -- so `flip([0,0,0,0])` returns THE BASE
 # NODE, and it does so because axis 0 of (1,4,8,8) has SIZE 1 and `movement.py:255`'s
 # `if resolve((n:=ret.shape[axis]) <= 1, False): continue` fires on every one of the four
 # iterations. It is NOT an even number of flips cancelling. The parity story is REFUTED by the

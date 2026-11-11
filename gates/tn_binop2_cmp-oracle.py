@@ -69,14 +69,14 @@ print(f"rcmplt_arg_is_anone={int(r_gt.uop.arg is None)}")
 print(f"rcmplt_srcs_are_x_and_self={int(r_gt.uop.src == (c_uop, d_uop))}")
 print(f"rcmplt_does_not_mutate_input={int(d_uop.op is Ops.CONST and r_gt.uop.op is Ops.CMPLT)}")
 
-# **⇒ AND **`ne` **IS **`logical_not(CMPEQ(c, d))`** **AT **THE **PIN
-# **`f5ac54685074`** -- **`mixin/elementwise.py:332-333` **IS ** `return
-# self.eq(x).logical_not()`** -- **⇒ SO **THE **TOP **OP **IS **`CMPEQ`** **AND **ITS
-# **`src[0]` **IS **THE **`CMPEQ(c, d)`** **AND **ITS **`src[1]` **IS **THE **BOOL
-# **`False`** -- **⇒ AND **THAT **IS **THE **SPELLING **THE **ROW **NOW **ASSERTS**, **AND
-# **THE **OLD **`CMPNE` **ROW **WAS **VACUOUS **AFTER **THE **FIX** (BOTH **SIDES **READ
-# **`0`**, **WHICH **IS **THE **WORST **KIND **OF **ROW**: **ONE **THAT **CANNOT **GO
-# **RED**).**
+# AND `ne` IS `logical_not(CMPEQ(c, d))` AT THE PIN
+# `f5ac54685074` -- `mixin/elementwise.py:332-333` IS  `return
+# self.eq(x).logical_not()` -- SO THE TOP OP IS `CMPEQ` AND ITS
+# `src[0]` IS THE `CMPEQ(c, d)` AND ITS `src[1]` IS THE BOOL
+# `False` -- AND THAT IS THE SPELLING THE ROW NOW ASSERTS, AND
+# THE OLD `CMPNE` ROW WAS VACUOUS AFTER THE FIX (BOTH SIDES READ
+# `0`, WHICH IS THE WORST KIND OF ROW: ONE THAT CANNOT GO
+# RED).
 r_ne = c != d
 print(f"cmpne_op_is_cmpeq={int(r_ne.uop.op is Ops.CMPEQ)}")
 print(f"cmpne_arg_is_anone={int(r_ne.uop.arg is None)}")
@@ -99,9 +99,9 @@ print(f"le_arg_is_anone={int(r_le.uop.arg is None)}")
 print(f"le_src0_is_cmplt_of_x_and_self={int(r_le.uop.src[0].op is Ops.CMPLT and r_le.uop.src[0].src == (d_uop, c_uop))}")
 print(f"le_does_not_mutate_input={int(c_uop.op is Ops.CONST and r_le.uop.op is Ops.CMPEQ)}")
 
-# **⇒ AND **`eq` **IS **ONE **NODE** -- **`_binop(Ops.CMPEQ, x, False)`** **IS **THE
-# **COMPARISON **AND **NOT **A **NEGATION **OF **ONE** -- **⇒ AND **SO **ITS **SRCS **ARE
-# **(c, d)** **AND **THERE **IS **NO **OUTER **`CMPEQ`**.
+# AND `eq` IS ONE NODE -- `_binop(Ops.CMPEQ, x, False)` IS THE
+# COMPARISON AND NOT A NEGATION OF ONE -- AND SO ITS SRCS ARE
+# (c, d) AND THERE IS NO OUTER `CMPEQ`.
 r_eq = c == d
 print(f"eq_op_is_cmpeq={int(r_eq.uop.op is Ops.CMPEQ)}")
 print(f"eq_arg_is_anone={int(r_eq.uop.arg is None)}")

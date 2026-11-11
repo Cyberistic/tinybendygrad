@@ -158,8 +158,8 @@ def _call(nm, *s):
 
 # `B[i]` is the node at arena slot i. THE INDEX IS THE ARENA'S, NOT THE LIST'S: Bend's
 # `Arena.empty` spends slot 0 on `bottom()`, so a node minted Nth here sits at slot N.
-# **THIS PARAGRAPH USED TO SAY `_add` RETURNS THE SLOT AND THE DOCSTRING BELOW SAYS IT
-# RETURNS THE NODE, AND THE CODE RETURNS THE NODE** -- the same shape as the SRC_BODY
+# THIS PARAGRAPH USED TO SAY `_add` RETURNS THE SLOT AND THE DOCSTRING BELOW SAYS IT
+# RETURNS THE NODE, AND THE CODE RETURNS THE NODE -- the same shape as the SRC_BODY
 # header, which listed a fix at two sites when only one of them had a row behind it. The
 # slot is `len(B)-1` AFTER the append, so a later node is named by the LOCAL it was bound
 # to and never by a subscript: `B[26]` does not exist yet when `B[27]`'s own `src` is
@@ -185,8 +185,8 @@ c3 = _add(UOp.const(3))                                                       # 
 # `ops.bend:3075` `UOp.new.param` MINTS IT: `shape_to_shape_arg.of` IS
 # `UOp.const(made, CInt{k})` FOR A SCALAR SIZE. SO THE PORT's `main_arena` HAS A
 # CONST 16 AT SLOT 2 AND EVERY PARAM AND BUFFER AFTER IT IS ONE SLOT LATER THAN IT
-# WAS. **THE ORACLE's FIXTURE DID NOT MINT IT, SO EVERY INDEX AFTER SLOT 1 WAS OFF BY
-# ONE ON ONE SIDE AND NOT ON THE OTHER** -- MEASURED: `arena_n` READ 66 HERE AND 67 ON
+# WAS. THE ORACLE's FIXTURE DID NOT MINT IT, SO EVERY INDEX AFTER SLOT 1 WAS OFF BY
+# ONE ON ONE SIDE AND NOT ON THE OTHER -- MEASURED: `arena_n` READ 66 HERE AND 67 ON
 # THE PORT, AND 365 OF THE 1004 ROWS DIVERGED. THE `arena_n` ROW IS THE ONE THAT SAID
 # IT.
 c16 = _add(UOp.const(16))                                                     # 2
@@ -251,7 +251,7 @@ l4 = _add(UOp(Ops.LINEAR, src=(cVk, cVs), arg=None))                            
 pM = _add(UOp(Ops.PROGRAM, src=(k1,), arg=_pi((), (0, 1, 2), (2,), (1,))))       # 59 outs -> MSELECT
 cMb = _add(_call("mb", pM, b0, b1, ms))                                          # 60 wbuf MSELECT wall
 cVb = _add(_call("vb", k1, g0, bc))                                              # 61 BITCAST as arg
-# THE GETADDR OVER A **PARAM**, AND IT IS THE POINT OF THE NODE. `ops.py:844` builds
+# THE GETADDR OVER A PARAM, AND IT IS THE POINT OF THE NODE. `ops.py:844` builds
 # `UOp(Ops.GETADDR, src=(self,), ...)` and `self` is a PARAM as often as a BUFFER. A
 # GETADDR over a BUFFER is INVISIBLE to this census on purpose-shaped nodes: HEAD
 # `_resolve` recurses into `src[0]`, `_resolve(BUFFER)` returns it unchanged, the
@@ -350,7 +350,7 @@ def _devs(call) -> tuple:
 # `[...]` ON EVERY NODE WHOSE `arg` IS NOT `None`, AND IT IS NOT COSMETIC.
 #
 # THE HOLE, MEASURED, NOT ASSERTED: over this fixture's own 65 nodes the previous token
-# spelled **32 DISTINCT TOKENS FOR 65 NODES**, so 147 of the 2080 node pairs printed
+# spelled 32 DISTINCT TOKENS FOR 65 NODES, so 147 of the 2080 node pairs printed
 # IDENTICALLY -- fifteen CALLs as `CALL/3`, seven PROGRAMs as `PROGRAM/1`, three SINKs as
 # `SINK/0`, two PARAMs as `PARAM/0@2` (`.agents/slop/realizegaps/collide.py`). Two nodes
 # that print alike are two nodes a reader can confuse, in every row that carries either.
@@ -419,7 +419,7 @@ def apay(u) -> str:
         # holding the wrong variable used to print identically. `global_size`/`local_size`
         # are `4,1,1`/`1,1,1` on all nine and no `realize.py` reader touches them.
         #
-        # **`params`, AND NOT `vars`.** UPSTREAM `a6addc2d4` RENAMED THE FIELD AND THE
+        # `params`, AND NOT `vars`. UPSTREAM `a6addc2d4` RENAMED THE FIELD AND THE
         # PIN HAS NO `vars` AT ALL: `tinygrad/uop/ops.py:1346` READS `params`. THE OLD
         # SPELLING WAS AN `AttributeError` IN EVERY CONE THAT HELD A PROGRAM, AND BECAUSE
         # `rewrite_sig`'s `try` ALSO WRAPPED THE PRINTING IT WAS REPORTED AS THE DRIVER

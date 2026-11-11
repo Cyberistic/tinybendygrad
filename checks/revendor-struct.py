@@ -254,7 +254,7 @@ def changes(old, new, mod, name2=None):
             elif name in o["pos"] and name in n["kw"]:
                 # `def f(a, b)` -> `def f(a, *, b)`: nothing raises at the definition and every
                 # positional `f(1, 2)` becomes a TypeError. The sibling unit measured exactly this
-                # shape as `_storage()`'s keyword-only `**kw` in `deff135d5`.
+                # shape as `_storage()`'s keyword-only `kw` in `deff135d5`.
                 out.append(record("SIG-PARAM-KIND", mod, f"{f}({name})", "positional->kwonly",
                                   tgt + name, here, at))
             elif name in n["kw"] and name not in o["kw"]:

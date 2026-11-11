@@ -215,14 +215,14 @@ ENV = dict(os.environ)
 # disagreed with its oracle on the one input the defect lives on would not be a port, and once on
 # 2026-10-06 when `checks/e2e.sh`'s root was ASSERTED rather than computed (`.agents/slop/e2esh/`).
 #
-# **THE FOURTH MOVE WAS MEASURED BEFORE IT WAS PAID, AND IT IS WHY (3) IS STILL HERE.** Three commits
+# THE FOURTH MOVE WAS MEASURED BEFORE IT WAS PAID, AND IT IS WHY (3) IS STILL HERE. Three commits
 # touched `checks/e2e.sh` and zero of them left the pin behind (`.agents/slop/e2esh/history.py`), which
 # is a fact about DISCIPLINE and not about the pin's ability to see. So the pin was planted two
 # changes and asked (`.agents/slop/e2esh/plant.py`): appending ONE COMMENT LINE, and the root fix
 # itself. Both gave `oracle_drift() -> ['checks/e2e.sh: <sha> != 24d7fbf1…']` and
-# `checks/e2e.py -> rc=3` with `== 1/4 oracle` never printed. **A CHANGE TO `checks/e2e.sh` FAILS
+# `checks/e2e.py -> rc=3` with `== 1/4 oracle` never printed. A CHANGE TO `checks/e2e.sh` FAILS
 # SOMETHING, AND THAT SOMETHING IS THIS GATE, SO DELETING (3) WOULD DELETE THE ONLY THING THAT
-# NOTICES.** The sibling unit's conclusion -- that deleting `checks/e2e.sh` is the clean unblock --
+# NOTICES. The sibling unit's conclusion -- that deleting `checks/e2e.sh` is the clean unblock --
 # rests on the pin's own comment, not on a measurement, and the measurement does not support it.
 #
 # THE THING THAT WAS BELIEVED INSTEAD, AND MEASURED FALSE: that stdout fidelity already covers the
@@ -230,15 +230,15 @@ ENV = dict(os.environ)
 # FROZEN ORACLE and never reads `checks/e2e.sh`, and under both plants it reported
 # `1 of 1 set(s) disagree` with the entire disagreement being the port's own refusal --
 # `.agents/slop/e2epy/artifacts/plant-no-node.port.err` held two lines, both of them `ORACLE DRIFT`,
-# and `plant-no-node.port.out` was EMPTY. **THE PIN IS INSIDE THE MEASUREMENT, SO THE MEASUREMENT
-# CANNOT SEE PAST IT.** There is no stdout-level observer of the live shell to move the pin down to,
+# and `plant-no-node.port.out` was EMPTY. THE PIN IS INSIDE THE MEASUREMENT, SO THE MEASUREMENT
+# CANNOT SEE PAST IT. There is no stdout-level observer of the live shell to move the pin down to,
 # and `checks/e2e.sh` asserting its own root is what makes its bytes worth asserting at all.
 #
-# **A PIN GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE SAME COMMIT**, and a pin
+# A PIN GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE SAME COMMIT, and a pin
 # that has never fired is a pin in a comment, and `checks/differ.py` shipped one (`RECOVERED.md` §6).
 #
-# **`BODY_SHA` IS A CONTENT PIN, NOT A BEHAVIOUR CLAIM, AND THE DISTINCTION IS WRITTEN DOWN HERE
-# BECAUSE A HASH OF A WHOLE FILE CANNOT TELL A COMMENT FROM CODE.** What is pinned is the BYTES of
+# `BODY_SHA` IS A CONTENT PIN, NOT A BEHAVIOUR CLAIM, AND THE DISTINCTION IS WRITTEN DOWN HERE
+# BECAUSE A HASH OF A WHOLE FILE CANNOT TELL A COMMENT FROM CODE. What is pinned is the BYTES of
 # `checks/e2e.sh`, so the question it answers is "is the live body still the body the frozen oracle
 # was taken from", and its remedy is the rule above: move the pin in the same commit. A comment-only
 # edit is an edit; it is not a *smaller* one, and a check that pretended otherwise would be comparing
@@ -249,7 +249,7 @@ ENV = dict(os.environ)
 # PINNED value -- while the blob that restore wrote is `fcf647cd…`. So the pin was RIGHT and the
 # shell moved, and the correct act is to re-freeze it WHILE NAMING THE DELTA in `ORACLE_EDITS`, not
 # to delete the pin and not to teach the hash about comments.
-# **RE-FREEZING `BODY_SHA` ALONE IS MEASURED INSUFFICIENT.** `.venv/bin/python` over a scratch copy
+# RE-FREEZING `BODY_SHA` ALONE IS MEASURED INSUFFICIENT. `.venv/bin/python` over a scratch copy
 # of these three files with only that one line changed returns a NON-EMPTY `oracle_drift()` -- and
 # the surviving complaint is #2 ("reverting its documented edits gives …"), not #3 -- because "the
 # oracle differs from the body by exactly these edits" is a claim about the ORACLE too. The delta is
@@ -275,7 +275,7 @@ ENV = dict(os.environ)
 #   `len(ORACLE_EDITS)` is 11 pairs;
 #   `revert_oracle()` over all 11 and `checks/e2e.sh` are both 20388 bytes and both `2ef51412…`;
 #   `oracle_drift() == []`.
-# **AND `sh -n` ACCEPTS BOTH SIDES**, which is the check that a comment edit cannot be a code edit.
+# AND `sh -n` ACCEPTS BOTH SIDES, which is the check that a comment edit cannot be a code edit.
 # The pair before this one was `69d7cfcd…`, the pair before that was `bdbf6f6c…`, and before that
 # `fcf647cd…`.
 ORACLE_SHA = "05d7cfea0aea9c8523649ad1e277cb03890214cb9c7996807c1b0295207f8696"
@@ -284,14 +284,14 @@ BODY_SHA = "2ef51412c74428b8545a133ebedeb763407ec9b3c78bf58fdf726e10a15cd3bb"
 # NOTHING BUT PROSE SAID WHICH: `ORACLE_SHA` is the FROZEN ORACLE COPY and `BODY_SHA` is the
 # LIVE SHELL BODY. A census that reads pins (`gates/pincensus-gate.py`) measured both as
 # NO-MEASUREMENT -- "len=64, not a revision in this object store and no subject named" --
-# because a digest with no subject is not a measurement, it is a literal. **THE PROSE ABOVE
-# SAYS WHAT KIND OF CLAIM THIS IS AND THESE TWO NAMES SAY WHICH FILE IT IS ABOUT**, and the
+# because a digest with no subject is not a measurement, it is a literal. THE PROSE ABOVE
+# SAYS WHAT KIND OF CLAIM THIS IS AND THESE TWO NAMES SAY WHICH FILE IT IS ABOUT, and the
 # second half was the half a machine could not read.
 #
 # THE JOIN IS BY NAME AND IT IS THE LONGEST PREFIX THAT FITS: a pin `BODY_SHA` takes the
 # subject of `BODY_SUBJECT` because the declaration's prefix is a prefix of the pin's name,
-# and the longest such prefix wins (`gates/bind-subject.py`). **A HASH OF A WHOLE FILE CANNOT
-# TELL A COMMENT FROM CODE, AND A PIN WITHOUT A SUBJECT IS A PIN NOTHING CAN RE-DERIVE** --
+# and the longest such prefix wins (`gates/bind-subject.py`). A HASH OF A WHOLE FILE CANNOT
+# TELL A COMMENT FROM CODE, AND A PIN WITHOUT A SUBJECT IS A PIN NOTHING CAN RE-DERIVE --
 # so these two names are what make the flagship content pin measurable, and they are
 # DECLARATIONS and not derivations.
 #
@@ -305,7 +305,7 @@ BODY_SUBJECT = "checks/e2e.sh"
 # THE DOCUMENTED EDITS, IN ORDER, AS `(ORACLE_SIDE, SHELL_SIDE)`: applying every one of them to the
 # frozen copy must yield the live body, byte for byte. So the ORACLE's text is the FIRST element of
 # each pair. `ORACLE_EDIT` IS STILL THE NAME OF THE FIRST PAIR AND IT IS NO LONGER THE ONLY ONE --
-# **it is not read alone by anything any more**, which is the repair, measured 2026-10-19:
+# it is not read alone by anything any more, which is the repair, measured 2026-10-19:
 # `.agents/slop/e2esh/refreeze.py` applied `ORACLE_EDIT` and nothing else, so its question (2)
 # reported a byte difference that is really 1 of the declared pairs. It now calls `revert_oracle()`
 # below, the SAME function `oracle_drift()` uses, so two readers of this mechanism cannot drift
@@ -336,14 +336,14 @@ ROOT=$(cd "$_d/.." && pwd)
 # PARSER INPUT and not only a printed number -- `.agents/slop/e2estage8/verdicts.py:30` splits
 # stages on `^== (\d+)/\d+`, so whatever is on the right of the slash is what the census inherits.
 #
-# **THE DENOMINATOR IS STILL WRITTEN OUT, AND THAT IS A NAMED REFUSAL, NOT AN OMISSION.** The right
+# THE DENOMINATOR IS STILL WRITTEN OUT, AND THAT IS A NAMED REFUSAL, NOT AN OMISSION. The right
 # fix is to DERIVE it from the seven `say("== n/...")` call sites, so stage 8's retirement cannot make
 # it stale again. It is not done here because `.agents/slop/e2estage8/verdicts.py:49` discovers the
 # emitted stage set with `CODE = re.compile(r'say\("== (\d+)')` -- it READS THE POPULATION OUT OF
 # THESE LITERALS, so a derived header would make the census report `PROSE names [...] the CODE does
 # not emit` and go DARK. That trade, an honest number bought with a dead instrument, is refused.
 #
-# **AND TWO OF THE SEVEN WERE WRONG ANYWAY, MEASURED 2026-10-19T15:41Z BY A CENSUS, NOT BY A READER.**
+# AND TWO OF THE SEVEN WERE WRONG ANYWAY, MEASURED 2026-10-19T15:41Z BY A CENSUS, NOT BY A READER.
 # The fix above took `1/4`..`4/4` to `/7` and DID NOT TOUCH THE TWO STAGES THAT HAD BEEN ADDED: `5/5`
 # and `6/6`, each written by the author of that stage and each internally CONSISTENT, so every reader
 # compared `n/` against the `n` on the same line and saw nothing. `.agents/slop/e2estage8/verdicts.py`
@@ -351,8 +351,8 @@ ROOT=$(cd "$_d/.." && pwd)
 #     gate SAYS 7 denominator(s), from the gate source: 1->7 2->7 3->7 4->7 5->5 6->6 7->7
 #     DENOMINATOR FAIL: stage 5: the gate's own banner says `== 5/5` and the gate emits 7 stage(s)
 #     DENOMINATOR FAIL: stage 6: the gate's own banner says `== 6/6` and the gate emits 7 stage(s)
-# THE LESSON IS THE ONE THE FIX ABOVE ALREADY TAUGHT AND DID NOT APPLY TO ITSELF: **A PARTIAL FIX IS A
-# PARTIAL FIX, AND A GATE THAT PASSES IS NOT EVIDENCE THAT IT IS FINISHED.** Both banners are now `n/7`
+# THE LESSON IS THE ONE THE FIX ABOVE ALREADY TAUGHT AND DID NOT APPLY TO ITSELF: A PARTIAL FIX IS A
+# PARTIAL FIX, AND A GATE THAT PASSES IS NOT EVIDENCE THAT IT IS FINISHED. Both banners are now `n/7`
 # and both sides of the port moved in this commit.
 #
 # THE PIN MOVED A FIFTH TIME, AND `BODY_SHA` MOVED WITH THE SHELL BY ONE BYTE-FOR-BYTE PROOF, not by a
@@ -393,7 +393,7 @@ ORACLE_EDITS = (
      'echo "== 6/7 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"\n'),
     # TWO MORE, AND THEY ARE THE ONES THIS COMMIT IS ABOUT. Both are `#` comment lines in
     # `checks/e2e.sh` naming `ops_bend-milestone-expected.txt`, a path that has not existed since the
-    # fixture was renamed to `.md`. **A COMMENT LINE IS NOT A STRING THE SHELL READS** -- `/bin/sh`
+    # fixture was renamed to `.md`. A COMMENT LINE IS NOT A STRING THE SHELL READS -- `/bin/sh`
     # discards it before execution, `grep -v '^[[:space:]]*#' checks/e2e.sh | grep -c
     # 'ops_bend-milestone-expected'` is `0` and `grep -c '<<' checks/e2e.sh` is `0`, so no heredoc
     # body mentions it either -- which is why this could sit here falsified and run. It was load-bearing
@@ -403,8 +403,8 @@ ORACLE_EDITS = (
     # stage-5 header in this file records in prose.
     # THE SECOND IS A MEASUREMENT -- `FileNotFoundError: .agents/slop/ops_bend-milestone-expected.txt`
     # is what the fixture did on 2026-10-05 -- so the quote is KEPT VERBATIM and the correction is set
-    # BESIDE it, explicitly labelled a record. **A MEASUREMENT IS NOT A PATH AND MUST NOT BE REWRITTEN
-    # TO LOOK LIKE A CURRENT ONE.** Rewriting it to say `.md` would have made the sentence true and the
+    # BESIDE it, explicitly labelled a record. A MEASUREMENT IS NOT A PATH AND MUST NOT BE REWRITTEN
+    # TO LOOK LIKE A CURRENT ONE. Rewriting it to say `.md` would have made the sentence true and the
     # evidence false.
     ('# (`.agents/slop/ops_bend-milestone-expected.txt`). No Node, no browser, no adapter,\n',
      '# (`.agents/slop/ops_bend-milestone-expected.*` -- BY STEM, NEVER BY EXTENSION: the loader resolves\n'
@@ -464,7 +464,7 @@ def stage(argv: list[str], into: Path | None = None) -> int:
         # where the shell put it. Writing it to the gate's stderr instead would be invisible in the
         # artifact the reader is shown.
         #
-        # **THE LINE PREFIX IS THE SHELL'S, NOT OURS, AND IT NAMES THE SCRIPT.** `sh` reports the
+        # THE LINE PREFIX IS THE SHELL'S, NOT OURS, AND IT NAMES THE SCRIPT. `sh` reports the
         # location with its own `$0`, so the oracle's line is
         # `…/oracle-e2e.sh: line 185: zsh: command not found` and a bare `zsh: command not found`
         # diffed against it. `checks/e2e.py` has no line 185 to name, so it prints the prefix a
@@ -558,7 +558,7 @@ def bend_run() -> int:
         # `> TXT 2> ERR` ARE TWO SEPARATE STREAMS, and the row count is read from the FIRST one
         # only. `stage()` has one capture, so the two redirections are spelled out here.
         #
-        # **THE 127 BRANCH IS `stage()`'s, ONE FUNCTION OVER, AND IT WAS MEASURED MISSING.** The
+        # THE 127 BRANCH IS `stage()`'s, ONE FUNCTION OVER, AND IT WAS MEASURED MISSING. The
         # sibling handles an absent command in two lines and this one raised `FileNotFoundError` out
         # of `main()`, so a tree with no `./bin/bend` produced a traceback, no verdict line and no
         # summary -- a CRASH, which is neither of this gate's five outcomes and is the defect the

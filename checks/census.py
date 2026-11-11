@@ -74,7 +74,7 @@ def ops_of(rows):
 # A cache is WHAT THE RUN LAST WROTE. Without the generator beside it, that is all it is: a
 # row set with a date on it and nothing that can say the date is current. MEASURED on this
 # file's own cache, `checks/rows-<graph>-<side>.rows`, 34 py slots against the live
-# `isolate.emit`: **11 reproduce, 23 do not** -- and this file exited 0 over all 68 slots with
+# `isolate.emit`: 11 reproduce, 23 do not -- and this file exited 0 over all 68 slots with
 # `WALLS: []`, a census of the PRE-FIX tree reported as a census.
 #
 # THE KEY IS THE GENERATING FIXTURE'S BYTES, NOT A COMMIT. A commit is not the generator's
@@ -287,8 +287,8 @@ def main():
   a = ap.parse_args()
   G.os.environ["DEV"] = a.dev
   # THE ENVIRONMENT IS THE FOURTH THING A KEY CANNOT SEE, AND MEASURED HERE, NOT ASSUMED.
-  # Regenerating all 68 slots out of process on 2026-10-14 reproduced **67 of 68 rows
-  # byte-for-byte**; the one that did not is `lin`/py, and it differed in ONE field -- the
+  # Regenerating all 68 slots out of process on 2026-10-14 reproduced 67 of 68 rows
+  # byte-for-byte; the one that did not is `lin`/py, and it differed in ONE field -- the
   # `<bytecount>:` prefix, `66:` against `120:` -- with the content after the colon identical.
   # The cause is tinygrad's colourised kernel name: `tinygrad`'s `rgb()` wraps the `4` and the
   # `3` of `sr_4_5_3` in ANSI SGR when `NO_COLOR` is unset, and each escape is a byte the

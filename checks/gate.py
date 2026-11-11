@@ -298,8 +298,8 @@ def plant(kind: str) -> int:
     # ⚠ THE FILE IS `src` WITH THE ONE LINE REPLACED -- NOT `CORRUPT`.  Writing `CORRUPT` as
     # the whole file makes a ONE-LINE module, and node answers `SyntaxError: Illegal return
     # statement` -- which the gate reports as DEAD (5), NOT as the FAIL the plant wants.
-    # MEASURED 2026-10-29: that mistake made `--plant broken` exit **5**; the corrected
-    # replacement exits **1** with MISMATCH 2.
+    # MEASURED 2026-10-29: that mistake made `--plant broken` exit 5; the corrected
+    # replacement exits 1 with MISMATCH 2.
     tree.write_text(src.replace(ANCHOR, CORRUPT, 1) if kind == "broken" else src)
     print(f"[planted] the {'BROKEN' if kind == 'broken' else 'CLEAN'} tree is at {tree} -- "
           + ("the anchor line's value was changed by one bit, and NO FILE ON THE TREE WAS "
@@ -385,23 +385,23 @@ def main() -> None:
 # this tree carries (`.agents/slop/dotfix/scratch/runtime/dtype.js`,
 # `.agents/slop/ropfix/tinybendygrad/runtime/dtype.js`,
 # `.agents/slop/expandfix/scratch{,-before}/runtime/dtype.js`) is a FIXED revision -- `--quick
-# --tree` over each answers **rc 0, MISMATCH 0** -- so **NO argv over a TRACKED file reaches
-# this gate's rc 1**.  A gate whose red is unreachable cannot show that it CAN go red, and a
+# --tree` over each answers rc 0, MISMATCH 0 -- so NO argv over a TRACKED file reaches
+# this gate's rc 1.  A gate whose red is unreachable cannot show that it CAN go red, and a
 # gate that has never gone red has no green to have fallen from.  The plant builds the
 # corrupted tree ITSELF, in a TEMPORARY DIRECTORY, and never writes the port.
 #
 # `PLANTS[3]` IS THE REFUSAL PLANT, AND IT IS NOW AN ARGV- REACHABLE ONE.  The refusal this
 # gate used to carry was the MODULE-SCOPE one -- "input absent: checks/drive.mjs" -- and it fired
-# because the driver was swept by `371cc64c9` and is not in git.  **THE DRIVER IS RESTORED** (the
+# because the driver was swept by `371cc64c9` and is not in git.  THE DRIVER IS RESTORED (the
 # gate's own `checks/drive.mjs`, byte-identical to `371cc64c9^:.agents/slop/jsfp8/drive.mjs`,
 # blob `4b99887189ec87de85d8096c7f4cbabdcc1e288f`), so that refusal no longer fires and the
-# declaration `PLANTS[3] = []` became a MISPLANT: bare argv answers 0, not 3.  **A PLANT THAT
-# NO LONGER REACHES ITS VERDICT IS A FALSE CLAIM, AND THE CURE IS A PLANT OR A WITHDRAWAL.**
+# declaration `PLANTS[3] = []` became a MISPLANT: bare argv answers 0, not 3.  A PLANT THAT
+# NO LONGER REACHES ITS VERDICT IS A FALSE CLAIM, AND THE CURE IS A PLANT OR A WITHDRAWAL.
 # The refusal that IS reachable is the gate's own rule applied at the read site: `--tree` names
 # an input, and an absent input is REFUSED (3), not a traceback.  MEASURED 2026-10-29:
 # `--quick --tree /nonexistent/dtype.js` answers
-# `== REFUSED, NOT A VERDICT: input absent: ... (named by --tree)` and exit **3**; BEFORE the
-# check it answered `== DEAD: the node driver failed` and exit **5**, which is the wrong word
+# `== REFUSED, NOT A VERDICT: input absent: ... (named by --tree)` and exit 3; BEFORE the
+# check it answered `== DEAD: the node driver failed` and exit 5, which is the wrong word
 # for an absent input.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--plant", "clean"], 1: ["--plant", "broken"],

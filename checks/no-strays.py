@@ -90,9 +90,9 @@ def root_files() -> list[Path]:
 # and three `memory.staged-mem-*` sat inside `tinybendygrad/` for two days and this guard could
 # not see them: its population was `ROOT.iterdir()`, ONE LEVEL TOO HIGH.
 #
-# **THE FIRST DEEP VERSION WAS NARROWER AND STILL A SHAPE -- and a unit found six files it
-# missed.** It reused only the residue arms (`\.staged-`, `\.mut$`, `~`, backups). MEASURED
-# 2026-10-06 over all 144 files under `tinybendygrad/`: it flagged **0 of these six**, all
+# THE FIRST DEEP VERSION WAS NARROWER AND STILL A SHAPE -- and a unit found six files it
+# missed. It reused only the residue arms (`\.staged-`, `\.mut$`, `~`, backups). MEASURED
+# 2026-10-06 over all 144 files under `tinybendygrad/`: it flagged 0 of these six, all
 # tracked scratch beside source:
 #
 #   runtime/zzdiag.bend                 runtime/zzread.bend
@@ -102,20 +102,20 @@ def root_files() -> list[Path]:
 # Two say so in their own name (`_mutant`, `_scratch_sweep`); four carry a `zz` prefix this
 # project uses for "sorts last, scratch". So the shape they ARE is a NAME SHAPE.
 #
-# **THE STRUCTURAL TEST WAS MEASURED AND REJECTED.** "Nothing imports it AND it imports nothing"
+# THE STRUCTURAL TEST WAS MEASURED AND REJECTED. "Nothing imports it AND it imports nothing"
 # fires on 32 of 138 `.bend` files, and 28 are REAL ports the .bend wiring simply does not reach
 # yet -- `runtime/support/{objc,c,hcq2,elf,system,usb}.bend`, every `compiler_*.bend`, the
-# `__init__.bend` hubs, `sz.bend`. The header test ("no self-port header") fires on 78. **The
-# import graph is incomplete, so "unreferenced" is NOT "not source"**; the population is the name
+# `__init__.bend` hubs, `sz.bend`. The header test ("no self-port header") fires on 78. The
+# import graph is incomplete, so "unreferenced" is NOT "not source"; the population is the name
 # shape, admitted here as a regex over the tree (doctrine 1c).
 #
-# **`^\.` and `^_` FROM `SCRATCH_NAME` ARE STILL NOT REUSED AT DEPTH**: they catch `.gitignore`
+# `^\.` and `^_` FROM `SCRATCH_NAME` ARE STILL NOT REUSED AT DEPTH: they catch `.gitignore`
 # and `__init__.py`, ordinary everywhere but the root. Only lone-underscore `_p6`-style names are
-# kept. **`probe` is deliberately NOT a bare token**: `uop/probe-mmcore.bend` matches it and a
+# kept. `probe` is deliberately NOT a bare token: `uop/probe-mmcore.bend` matches it and a
 # gate cites it (`.agents/slop/mm-mutate.py:17` names it `SRC`), so it is KEPT --
 # `.agents/slop/hygiene-2026-10-04.md:145,157` records that exemption.
 #
-# **AND THE SHAPE IS A POPULATION ONLY FOR THE TREE IT WAS WRITTEN FOR.** Over the whole repo the
+# AND THE SHAPE IS A POPULATION ONLY FOR THE TREE IT WAS WRITTEN FOR. Over the whole repo the
 # same regex hits upstream's own `test/amd/hw/test_scratch.py`; `test/` is tinygrad's oracle, not
 # this project's source. So the walk is scoped to `SOURCE_TREES`.
 SCRATCH_SHAPE = re.compile(

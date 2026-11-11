@@ -126,7 +126,7 @@ def buffer0() -> O.Found:
 # An ALLOC has no realized buffer, and `te_2`'s size conjunct is a tautology, so the
 # port's pre-commit answer is `True`: the port ACCEPTED a node upstream's scan never
 # reaches.
-# THE ALLOC's PARAMARG, minted HERE rather than borrowed, because `tinybendygrad/**` is
+# THE ALLOC's PARAMARG, minted HERE rather than borrowed, because `tinybendygrad/` is
 # not this lane's to edit. It is `Sp.buf_param()` with the realized buffer REMOVED --
 # an ALLOC declares storage without a runtime buffer -- and it is GLOBAL with a device,
 # so `te_2`'s addrspace conjunct and `kg_6`'s are both satisfied.

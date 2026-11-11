@@ -746,11 +746,11 @@ def selftest():
   `eqs[0]` as the fallback -- silently truncates the name back to `pyrender const` and reports
   `eq=0`.  A control that cannot express the thing it is testing will report a clean 0."""
   # THE CAPTURED PAIR IS TWO MORE DECLARED INPUTS, AND NEITHER IS GUARDED. MEASURED 2026-10-15:
-  # `checks/rn-port.txt` and `checks/rn-orc.txt` are absent from disk, absent from HEAD, and **0
-  # commits in the whole history touch either** -- so `read_text()` raised `FileNotFoundError` and
+  # `checks/rn-port.txt` and `checks/rn-orc.txt` are absent from disk, absent from HEAD, and 0
+  # commits in the whole history touch either -- so `read_text()` raised `FileNotFoundError` and
   # `--selftest` exited 1, which reads as a FAILURE OF THE PORT rather than as an absent subject.
-  # **THE SAME CLASS AS THE ORACLE, IN THE SAME FILE, GUARDED IN TWO PLACES AND MISSED IN THE
-  # THIRD.** The guard is a hand list of what this file happens to read; the file's own inputs are
+  # THE SAME CLASS AS THE ORACLE, IN THE SAME FILE, GUARDED IN TWO PLACES AND MISSED IN THE
+  # THIRD. The guard is a hand list of what this file happens to read; the file's own inputs are
   # wherever it says they are. Refusing here keeps the lane a lane: `DEAD` is not a `PASS`, and an
   # unrunnable selftest that exits 1 will be read as a red port by anything that trusts `$?`.
   for _cap in ("rn-port.rows", "rn-orc.rows"):
@@ -791,13 +791,13 @@ def selftest():
     # LITERAL: the same `UOp.range(4, ...)` string is in the row's EMULATION, and a plant that
     # changed both would have left the port self-consistent and read as a clean 0.
     # ⚠ AND THE `4` MOVED.  THIS PLANT USED TO REWRITE `ParamArg(0, dtypes.i32, 4, device='CPU')`
-    # -> `ParamArg(0, dtypes.i32, device='CPU')`, BECAUSE THE `4` USED TO BE **INSIDE** THE
+    # -> `ParamArg(0, dtypes.i32, device='CPU')`, BECAUSE THE `4` USED TO BE INSIDE THE
     # `ParamArg`.  IT IS NOT: MEASURED, THE CAPTURE'S `pyrender buffer` LITERAL IS
     #     c1 = UOp.range(4, 0, AxisType.WEAK)
     #     ast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device='CPU'))
-    # -- THE `4` IS IN THE **RANGE**, AND THE `ParamArg` CARRIES NO SIZE.  SO THE OLD PLANT
+    # -- THE `4` IS IN THE RANGE, AND THE `ParamArg` CARRIES NO SIZE.  SO THE OLD PLANT
     # MATCHED NO LITERAL, PRINTED "this cell measured nothing and proves nothing", AND LEFT
-    # `stale` AT 0 -- **A PLANT THAT MEASURED NOTHING READ AS A CLEAN 0**, WHICH IS EXACTLY THE
+    # `stale` AT 0 -- A PLANT THAT MEASURED NOTHING READ AS A CLEAN 0, WHICH IS EXACTLY THE
     # FAILURE THIS LANE EXISTS TO RULE OUT.  THE PLANT IS RE-AIMED AT THE `4` THAT IS THERE.
     "literal": (plant_literal(live, "pyrender buffer",
                                "UOp.range(4, 0, AxisType.WEAK)",
@@ -883,7 +883,7 @@ def main():
   # `ORACLE` -- this file's own third declared input -- was never in it. MEASURED 2026-10-15:
   # `.agents/slop/xd1/` is GONE, so the oracle is absent from disk AND from HEAD, and the live lane
   # ran a script that is not there. The only signal it produced was `lane failure`, which is a
-  # **FAIL for what is an absent subject** -- a gate that cannot tell "my fixture is missing" from
+  # FAIL for what is an absent subject -- a gate that cannot tell "my fixture is missing" from
   # "my fixture behaved" is the defect this file's own `refuse()` was written to remove.
   # IT IS GUARDED HERE, AT THE POINT OF USE, NOT AT IMPORT: `--oracle-stdout` reads a captured
   # file and never needs the script, so a guard at import would take away a path that works. And it

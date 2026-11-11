@@ -101,7 +101,7 @@ def ldt_rows():
       got = type(e).__name__
     out += row(f"ldt {d.name}", got, got)
   # `ptr` and `count`. `count > 1` nests `ldt(dt, 1, ptr)` with ptr=False, so
-  # `ldt 4 ptr float` is `<4 x float>*` and NOT `<4 x float**>`.
+  # `ldt 4 ptr float` is `<4 x float>*` and NOT `<4 x float>`.
   for d in (dtypes.f32, dtypes.i32, dtypes.void, dtypes.bool, dtypes.f16, dtypes.bf16):
     got = L.ldt(d, ptr=True)
     out += row(f"ldt ptr {d.name}", got, got)

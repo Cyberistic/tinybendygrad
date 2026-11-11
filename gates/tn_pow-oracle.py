@@ -59,7 +59,7 @@ from tinygrad.tensor import Tensor
 # `c.pow(d, reverse=True)` (the reverse arm, mirror of `tn_rpow(c, d)`).
 # The forward arm puts `c` at src[0] and `d` at src[1]; the reverse arm
 # swaps to `(d, c)` because `pow`'s `_broadcasted` returns `(y, self)` when
-# `reverse=True` (elementwise.py:28). The `**` operator reaches the forward
+# `reverse=True` (elementwise.py:28). The `` operator reaches the forward
 # arm only -- Python never falls back to `__rpow__` because `Tensor.__pow__`
 # always returns a Tensor (so `NotImplemented` is unreachable) -- so the
 # reverse arm is built by calling `Tensor.pow(reverse=True)` directly.

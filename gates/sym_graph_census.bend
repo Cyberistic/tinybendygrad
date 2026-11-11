@@ -5,26 +5,26 @@
 #     bin/bend gates/sym_graph_census.bend
 #
 # ============================ IT IS A PROBE, NOT A GATE ============================
-# There is no `gates/sym_graph_census-gate.py` and there is no committed oracle. **THE OBSTACLE THIS
-# PARAGRAPH NAMED WAS MEASURED AND IT WAS NOT WHAT IT SAID.** It claimed the walk's PRE-ORDER disagreed
+# There is no `gates/sym_graph_census-gate.py` and there is no committed oracle. THE OBSTACLE THIS
+# PARAGRAPH NAMED WAS MEASURED AND IT WAS NOT WHAT IT SAID. It claimed the walk's PRE-ORDER disagreed
 # with CPython's, that `in=` agreed on `t_add`/`t_group` and DISAGREED on the three three-src roots
 # "where this walk enters the node's LAST src first", and that a diff would therefore be a diff of two
-# TRAVERSALS rather than of two rewriters. **ALL OF THAT WAS ONE BUG AND IT IS FIXED**: a new frame went
+# TRAVERSALS rather than of two rewriters. ALL OF THAT WAS ONE BUG AND IT IS FIXED: a new frame went
 # to the BOTTOM (`fz_build.one`'s `THead` arm and `fz_deliver.at` both appending), so the arena's srcs
 # came out reversed. `List.append([1,2],[3])` answers `1 2 3` -- IT APPENDS -- and
-# `O.Arena.new([1,0]).srcs` answers `1 0`, so **THE ARENA PRESERVES SRC ORDER AND THERE WAS NEVER A
-# TRAVERSAL DISAGREEMENT.** `in=` now agrees cell for cell. **"PINNING IT WOULD LAUNDER THE BUG" WAS
-# THE RIGHT CAUTION APPLIED TO A CAUSE THAT DID NOT EXIST**, and a caution taken from a header rather
+# `O.Arena.new([1,0]).srcs` answers `1 0`, so THE ARENA PRESERVES SRC ORDER AND THERE WAS NEVER A
+# TRAVERSAL DISAGREEMENT. `in=` now agrees cell for cell. "PINNING IT WOULD LAUNDER THE BUG" WAS
+# THE RIGHT CAUTION APPLIED TO A CAUSE THAT DID NOT EXIST, and a caution taken from a header rather
 # than a measurement is a defect of the same family as a pin written from memory.
 #
-# SO THE `sym=` DIVERGENCES BELOW ARE FINDINGS, NOT FINDINGS *YET*: **IT SAYS THREE AND ONE IS TRUE.**
-#   t_xor    port `0:x:`        CPython `x`                                  AGREES -- **AND THIS BLOCK
-#              STILL LISTED IT AS `norewrite`**. It was fixed by the frame-stack repair and this
+# SO THE `sym=` DIVERGENCES BELOW ARE FINDINGS, NOT FINDINGS *YET*: IT SAYS THREE AND ONE IS TRUE.
+# t_xor    port `0:x:`        CPython `x`                                  AGREES -- AND THIS BLOCK
+# STILL LISTED IT AS `norewrite`. It was fixed by the frame-stack repair and this
 #              header was not re-run. `DECOUPLE`/`SYMDRV` measured 8 of 9 cases agreeing and this
 #              is one of them.
 #   t_xor0   port `norewrite`  where CPython answers `XOR(y, XOR(x,c5))`   REAL
-#   t_sink   port `minted`      where CPython answers `SINK(x, c2)` (:445)   **NOT A DIVERGENCE**
-# **ONE, NOT TWO OR THREE, AND THE ROW THAT LOOKED WORST WAS THIS LANE LYING.**
+# t_sink   port `minted`      where CPython answers `SINK(x, c2)` (:445)   NOT A DIVERGENCE
+# ONE, NOT TWO OR THREE, AND THE ROW THAT LOOKED WORST WAS THIS LANE LYING.
 # `t_sink` used to print `sym=0:NOOP:` and this header read it as "a NOOP is a MINTED node, so a
 # rule FIRED and built a different graph". IT DID NOT. `Sy.sym` answers an index into the arena
 # IT GREW and `rewrite` drops that arena (`Found.i`), and `ans` rendered that index against the
@@ -61,15 +61,15 @@
 #     which is `Arena.bottom` plus the two CONSTs plus the ADD, and `Arena.next` is 4.
 #   * THE CANONICAL FORM. `t_add` prints `0:ADD:1,2;1:c7:;2:c0:`, `t_group` prints
 #     `0:GROUP:1;1:x:`, `t_xor0` prints `0:XOR:1,4;1:XOR:1,2;2:x:;3:c5:;4:y:`.
-#     **THESE THREE READINGS CHANGED, AND THIS HEADER KEPT THE PRE-FIX ONES.** They read
+# THESE THREE READINGS CHANGED, AND THIS HEADER KEPT THE PRE-FIX ONES. They read
 #     `0:ADD:2,1`, `0:XOR:3,2,1` and `0:XOR:2` -- the arena's srcs REVERSED. The cause is NOT a
 #     traversal-order disagreement, which is what this header used to claim and what the refusal to
 #     pin a "walk-order" divergence rested on. `List.append([1,2],[3])` answers `1 2 3` (it APPENDS)
-#     and `O.Arena.new([1,0]).srcs` answers `1 0` -- **THE ARENA PRESERVES SRC ORDER**. The real
+# and `O.Arena.new([1,0]).srcs` answers `1 0` -- THE ARENA PRESERVES SRC ORDER. The real
 #     cause was `fz_build.one`'s `THead` arm and `fz_deliver.at` BOTH appending, so a NEW FRAME WENT
 #     TO THE BOTTOM: the root of `(xor (xor x c5) c5)` measured `O.Arena.srcs` = `2 3 2` and now
-#     measures `1 3`. **A GOVERNING DOCUMENT THAT NAMES A READING ITS OWN RUN CONTRADICTS IS THE `M8`
-#     CLASS** -- and six of the eight findings this session committed were also stale prose.
+# measures `1 3`. A GOVERNING DOCUMENT THAT NAMES A READING ITS OWN RUN CONTRADICTS IS THE `M8`
+# CLASS -- and six of the eight findings this session committed were also stale prose.
 #   * BOTH TABLES ANSWER. `sym` answers `t_add` with the CONST(7) (`sym=0:c7:`), `t_group` with
 #     the variable (`sym=0:x:`) and `t_sink` with a MINTED node (`sym=minted`), and
 #     `pm_remove_invalid` refuses all three. So the lane is not a lane that measured nothing.

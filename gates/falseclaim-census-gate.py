@@ -105,13 +105,13 @@ from gatekit import DEAD, FAIL, PASS, REFUSED, SKIP, UNASKABLE  # noqa: E402
 #: Claims that name both a value and a call. `neg` is a COLUMN rather than a separate form so a
 #: negated claim and its positive are the same row and cannot drift apart in the census.
 #:
-#: **`IS` WAS WRITTEN, SHIPPED FOR ONE RUN, AND DELETED. MEASURED: it produced **27 of the 30
+# : `IS` WAS WRITTEN, SHIPPED FOR ONE RUN, AND DELETED. MEASURED: it produced 27 of the 30
 #: `FALSE` rows and every one of them was an EXTRACTOR FALSE POSITIVE, not a claim -- "`ops-core-
 #: oracle.py:75` `IS` `claim='0:7' call=7`" is the prose "`0:7` is `7`", a row NAME followed by a
 #: literal, and "`state_census.py:93` `IS` `claim='missing' call=[]`" is the word "missing".
 #: A bare `A is B` in prose is a LINK, not an invocation, and there is no short pattern that
-#: separates the two -- which is the `gates/gates-pop.py:1049` lesson one level up: **a shape that
-#: cannot fail is not a shape, and a shape that cannot succeed is a defect with a count on it.**
+# : separates the two -- which is the `gates/gates-pop.py:1049` lesson one level up: a shape that
+# : cannot fail is not a shape, and a shape that cannot succeed is a defect with a count on it.
 #: The four that remain all put the CALL IN SUBJECT POSITION, which is what makes them invocations.
 FORMS = (
     ("NEG-RETURNS", re.compile(
@@ -126,7 +126,7 @@ FORMS = (
 
 #: THE CAP, AND IT IS PRINTED. A census bounded by a constant that does not say so reports a
 #: bounded count as a total, which is `checks/differ.py`'s own `graphs=` defect in another dress.
-#: MEASURED 2026-10-17 on this tree: **506 runnable calls, and the whole batch costs 0.3 s** --
+# : MEASURED 2026-10-17 on this tree: 506 runnable calls, and the whole batch costs 0.3 s --
 #: a call that fails, and most do, fails in microseconds, so the cap at 400 was cutting 106 REAL
 #: CLAIMS to keep a budget that was never approached. It is 2000 now and the census prints
 #: `capped N` either way, because the day one call costs 20 s the cap is the only thing between a
@@ -490,7 +490,7 @@ def verdict_of(rows, summary):
 #: rewording the case until it stopped being FALSE is a plant that cannot reach the row it exists
 #: to reach.
 #:
-#: **THE ORDER IN THE ROW FILE IS A CONTRACT.** `E` kills the child, so it is LAST among the
+# : THE ORDER IN THE ROW FILE IS A CONTRACT. `E` kills the child, so it is LAST among the
 #: runnable calls, and `F` is BEFORE it so `F`'s reason is a real `TIMEOUT` and not the `NO-ROW`
 #: `E` leaves behind. An earlier revision had `E` fifth, which made `F` pass for the WRONG REASON
 #: -- a green that measures the wrong thing, and the fix for that is an assertion on the REASON,
@@ -522,8 +522,8 @@ def plant_cases():
     return out
 
 #: Three mutations, EACH OF WHICH MUST TURN A ROW. `gates/docnum-claim-gate.py`'s own plant
-#: catches 3 of 3 but its `dropbranch` mutation exits 1 through a `TypeError` -- **a crash is not a
-#: verdict**, and a mutation caught by a traceback proves the plant's harness is brittle rather
+# : catches 3 of 3 but its `dropbranch` mutation exits 1 through a `TypeError` -- a crash is not a
+# : verdict, and a mutation caught by a traceback proves the plant's harness is brittle rather
 #: than that the decision is load-bearing. So `drive()` below returns `(label, got, want)` ROWS
 #: and a mutation is caught when a ROW DIFFERS, and a mutation that RAISES is reported as its own
 #: failure (`DEAD-RAISED`) rather than counted as a catch.

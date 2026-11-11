@@ -214,8 +214,8 @@ def lock_state(path=LOCK):
 # FOUR DECISION FUNCTIONS, EACH RETURNING `None` OR THE REASON, each used by BOTH `preconditions`
 # and `plant()`. The first version of this file had `plant()` reach past them into `oracle_drift`,
 # `lock_state` and `report` and assert that THOSE fired -- and MEASURED, breaking the branch
-# `if state != "FREE":` in `preconditions` left the plant green. **A PLANT THAT DRIVES A HELPER IS
-# NOT A PLANT OF THE DECISION.** The split is one function per precondition precisely so that the
+# `if state != "FREE":` in `preconditions` left the plant green. A PLANT THAT DRIVES A HELPER IS
+# NOT A PLANT OF THE DECISION. The split is one function per precondition precisely so that the
 # plant and the sweep cannot disagree about what the precondition IS.
 
 

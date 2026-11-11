@@ -208,7 +208,7 @@ def main() -> int:
     # `git -C references/bend describe --tags --exact-match HEAD` ANSWERS `v2.0.39` AT
     # `a3efe8a3801f423827424227172eed9802c5e6cb` -- THE SHA IS THE PIN, AND `checks/bend-health.py` NOW RECORDS
     # IT, BECAUSE A TAG IS A NAME ON A REMOTE THAT CAN MOVE.
-    # THE FALLBACK PATH WAS **NOT** TAKEN ON THIS MACHINE, WHICH IS THE MEASUREMENT: `./bin/bend
+    # THE FALLBACK PATH WAS NOT TAKEN ON THIS MACHINE, WHICH IS THE MEASUREMENT: `./bin/bend
     # --help` UNDER `checks/bounded.py --mb 2048` IS `[bounded] WITHIN-LIMITS rc=0`, 1200 B OF
     # STDOUT, 5 LINES CONTAINING `Bend`, AND THIS EXPRESSION EVALUATED ON THAT STDOUT YIELDS
     # `Bend 2.0.39: check, run, build and publish Bend programs.` -- SO TODAY THE LINE IS RIGHT.

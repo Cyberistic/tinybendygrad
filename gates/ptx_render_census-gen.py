@@ -207,8 +207,8 @@ def axis():
 # (`.agents/slop/ptx-s3-gen.py`) were DELETED by the 2026-10-05 sweep, so the region
 # was a FROZEN COPY with nothing able to check it.
 #
-# **THE REGION DECLARES ITS GENERATOR BY PATH, AND THE DECLARATION IS INSIDE THE
-# REGION.**  A census that wants to know whether the region is CURRENT reads the
+# THE REGION DECLARES ITS GENERATOR BY PATH, AND THE DECLARATION IS INSIDE THE
+# REGION.  A census that wants to know whether the region is CURRENT reads the
 # declaration, RUNS what it names, and compares -- and it never needs a hand list of
 # generators, because the region says who wrote it.  `gates/ptx_fixture_region-gate.py`
 # is that census.

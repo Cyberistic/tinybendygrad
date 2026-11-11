@@ -95,7 +95,7 @@ def buf(dt=dtypes.f32, slot=0, addr=AddrSpace.GLOBAL, size=4):
 def prm(dt=dtypes.f32, slot=0, addr=AddrSpace.GLOBAL, size=4):
   # THE PIN's PARAM, AND `UOp.param` IS THE CONSTRUCTOR THAT MINTS ONE AT EVERY
   # ADDRSPACE.  `UOp.placeholder` DOES NOT: ops.py:1200 makes a PARAM only when the
-  # addrspace is GLOBAL and a **BUFFER** for LOCAL and REG, and the LOCAL PARAM is
+  # addrspace is GLOBAL and a BUFFER for LOCAL and REG, and the LOCAL PARAM is
   # EXACTLY WHAT `f13_param` IS ABOUT ("PARAM takes `dat`, and u64 only when GLOBAL"),
   # so a `placeholder`-minted LOCAL PARAM is a LOCAL BUFFER and the fixture loses its
   # second half.  MEASURED: `UOp.placeholder((4,), f32, slot=1, addrspace=LOCAL)` answers

@@ -142,7 +142,7 @@ SELF_EVIDENCE = (SELF, REPORT)
 # The shape is `gates/slop-prune-census.py`'s, MEASURED there: a token ending in `/` has no
 # extension, so a single-regex arm cannot see a DIRECTORY citation; and `[\w./-]*` BACKTRACKS
 # TO EMPTY, so `\.[A-Za-z0-9]+` then matches `.agents` -- a path COMPONENT mistaken for a file
-# extension. **A RUN, NOT A PATTERN WITH AN ALTERNATION.**
+# extension. A RUN, NOT A PATTERN WITH AN ALTERNATION.
 TOKEN_RUN = re.compile(r"(?<![\w./])([\w./-]+)")
 # A FAMILY, NOT A FILE: an ellipsis, a doubled separator, or a parent step.
 FAMILY = re.compile(r"\.\.\.|//|\.\.")
@@ -524,7 +524,7 @@ def recover(paths: list[str], cwd: Path | None = None) -> dict[str, dict]:
     if not cands:
         return {}
     chk = git("cat-file", "--batch-check", stdin="\n".join(cands) + "\n", cwd=cwd)
-    # **THE OUTPUT IS IN INPUT ORDER, AND THAT IS THE ONLY WAY BACK TO THE SPEC.**
+    # THE OUTPUT IS IN INPUT ORDER, AND THAT IS THE ONLY WAY BACK TO THE SPEC.
     # `git cat-file --batch-check` prints `<oid> <type> <size>` -- it does NOT echo the input, so
     # a line cannot be matched to its own request by parsing it. The pairing is positional, and
     # the first version of this file tried to parse `<oid> blob <size>` as if the second field

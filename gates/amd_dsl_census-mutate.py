@@ -315,8 +315,8 @@ MUTATIONS = [
     # THE DUPLICATE IS A WHOLE REPEATED STATEMENT. The first version read
     # `row("bfset_word63"` and spliced `row("bfset_word63", 0n, 0n, 0n, 0n)` in front of it,
     # which is not the port's spelling -- `dsl.bend` uses `srow` and `bfs` takes THREE arguments
-    # -- so `bend` answered with a type error and the run came back REFUSED. **A mutation that
-    # does not compile is not evidence in either direction**, so it is reported as its own
+    # -- so `bend` answered with a type error and the run came back REFUSED. A mutation that
+    # does not compile is not evidence in either direction, so it is reported as its own
     # outcome and not filed as a coverage gap.
     ("P5 one bfset row is DUPLICATED (FINDING A's 14 grows to 15)", "POPULATION", "port",
      '    srow("bfset_word63", P.bfs(P.Fld.plain("lit", 63, 32), w32(0), 2147483648))\n',
@@ -433,8 +433,8 @@ SOURCES = {"port": PORT, "driver": DRIVER, "oracle": ORACLE, "pins": PINS, "gate
 # filtered `MUTATIONS` on `argv`, so `--help` -- which is not a label -- selected NOTHING and the
 # `max()` two lines under `want.sort` had nothing to take a maximum of:
 # `ValueError: max() iterable argument is empty`, rc 1, which `gates/gatekit.py:60` reads as
-# `FAIL` while the same file calls a traceback `DEAD`. **THE ARGUMENT CONTRACT IS STATED HERE
-# INSTEAD OF BEING INFERRED**, so `want` is empty only when `MUTATIONS` is and the crash site is
+# `FAIL` while the same file calls a traceback `DEAD`. THE ARGUMENT CONTRACT IS STATED HERE
+# INSTEAD OF BEING INFERRED, so `want` is empty only when `MUTATIONS` is and the crash site is
 # structurally unreachable. `MUTATIONS_BY` keys on the SAME first token the selector filters on,
 # so the domain the contract names is the domain the selector reads.
 MUTATIONS_BY = {e[0].split()[0]: e for e in MUTATIONS}

@@ -188,9 +188,9 @@ def c2_no_citation() -> int:
         print("devtag-gate: DEAD: the walk found no `.bend` file under `tinybendygrad`, so "
               "the census compared nothing", file=sys.stderr)
         return DEAD
-    # THE RAW TEXT, AND NOT `_code(...)`. **MEASURED, and it is the whole reason this line
+    # THE RAW TEXT, AND NOT `_code(...)`. MEASURED, and it is the whole reason this line
     # exists: stripped of comments, all four of the citations this census is for DISAPPEAR,
-    # because a citation of an upstream symbol is not code -- it is prose in a `#` line.**
+    # because a citation of an upstream symbol is not code -- it is prose in a `#` line.
     # So the two claims read different halves of the file and neither can be satisfied by
     # the other: `C1` needs CODE so that a paragraph cannot fake a measurement, and `C2`
     # needs PROSE because that is where the defect is written. Reading `C2` through

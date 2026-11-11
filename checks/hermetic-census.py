@@ -213,21 +213,21 @@ def main() -> int:
 # 'OK'` here, and `PLANTS[0]` is not plantable at all without `bend` -- which is the honest answer,
 # not a gap to be closed by whoever is holding the machine.
 #
-# ⚠ AND **BOTH** VERDICTS ARE NOW PLANTED, WITHOUT `bend` AND WITHOUT A LONG RUN.  The revision
+# ⚠ AND BOTH VERDICTS ARE NOW PLANTED, WITHOUT `bend` AND WITHOUT A LONG RUN.  The revision
 # above was written when the ONLY reachable state was the refusal; it is no longer the only one.
 #
 # `PLANTS[0]` IS `--check --only allred`.  `--check` re-emits a graph and byte-compares it with
-# the PUBLISHED row set; on `allred` the published set reproduces, so the check answers **0**.
-# MEASURED 2026-10-29: `--check --only allred` exits **0** in **1.9 s** (`70/70` over the whole
-# corpus also answers 0, but it is 35 graphs and every one of them forks two processes).  **THE
-# PLANT IS ONE GRAPH ON PURPOSE**: a plant that compiles the whole corpus is a plant that costs
+# the PUBLISHED row set; on `allred` the published set reproduces, so the check answers 0.
+# MEASURED 2026-10-29: `--check --only allred` exits 0 in 1.9 s (`70/70` over the whole
+# corpus also answers 0, but it is 35 graphs and every one of them forks two processes).  THE
+# PLANT IS ONE GRAPH ON PURPOSE: a plant that compiles the whole corpus is a plant that costs
 # the census a minute, and `gates/gate-surface.py` runs every plant on every census.
 #
 # `PLANTS[3]` IS THE SAME GRAPH WITH A PUBLISHED DIRECTORY THAT DOES NOT HOLD IT:
 # `--check --only allred --out checks/rows/absent`.  `--check` reads `out/rows-<name>-<side>.rows`
-# and a file that is not there is `ABSENT`, which is a disagreement, and the check answers **3**.
-# MEASURED 2026-10-29: exits **3** with `# STALE allred/py: ABSENT` / `# STALE allred/bend:
-# ABSENT`.  **THE PATH IS INSIDE THIS GATE'S OWN PUBLISHED DIRECTORY** (`checks/rows/`), and it is
+# and a file that is not there is `ABSENT`, which is a disagreement, and the check answers 3.
+# MEASURED 2026-10-29: exits 3 with `# STALE allred/py: ABSENT` / `# STALE allred/bend:
+# ABSENT`.  THE PATH IS INSIDE THIS GATE'S OWN PUBLISHED DIRECTORY (`checks/rows/`), and it is
 # a subdirectory that does not exist and never will -- so the plant does not depend on a temporary
 # directory, on another unit's fixture, or on a gitignored file.  ⚠ AND IT IS NOT A TRAP FOR
 # A FRESH CLONE: the published sets are TRACKED (`git ls-tree -r HEAD -- checks/rows/` = 71

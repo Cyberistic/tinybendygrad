@@ -281,8 +281,8 @@ OLD_HOME = "gates"     # THE HOME THIS FILE USED TO WALK. A record of the PAST, 
 
 # WHAT THE WALK DOES NOT DESCEND, and it is `gates-pop.py`'s OWN tuple LOADED BY PATH plus one
 # rule. `gates-pop._SKIP` is `(".git", ".jj", "__pycache__")`; a name beginning with `.` is the
-# second half. **MEASURED 2026-10-18 18:06Z: 6 of the 6 dotted entries under the two homes are
-# ABSENT from `git ls-tree -r HEAD`** -- four `checks/.tmp-*` (another unit's in-flight scratch,
+# second half. MEASURED 2026-10-18 18:06Z: 6 of the 6 dotted entries under the two homes are
+# ABSENT from `git ls-tree -r HEAD` -- four `checks/.tmp-*` (another unit's in-flight scratch,
 # the instance `gates-pop.py`'s own ledger note records), `gates/.wgsl-mut-oracle.py` and a
 # mutation plant's staged copy under `gates/.realize-mut-stage/` -- so the rule agrees with
 # `gates-pop`'s definition of a gate ("the COMMIT TREE carries it") on every file in this tree,
@@ -895,11 +895,11 @@ def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int, *,
 # child that lands on its verdict, and the expected verdict is what `classify` must return -- so a
 # child drifting onto another branch is a FAIL here and not a silent pass.
 #
-# **EVERY BODY IS INSIDE AN ENTRY GUARD, AND BEFORE THIS CHANGE NONE OF THEM WAS.** The population
+# EVERY BODY IS INSIDE AN ENTRY GUARD, AND BEFORE THIS CHANGE NONE OF THEM WAS. The population
 # used to be a suffix, so a fixture that merely printed something counted; the walk asks
 # `entry_reason`, and a one-line `print('ok')` is `py-lib` -- a MODULE that runs at import, which
-# is a real 70-file class in this tree and NOT a gate. **A FIXTURE THAT DOES NOT SATISFY THE
-# POPULATION IS A SELFTEST OF NOTHING**, and it fails the other way: the selftest went 4 of 4
+# is a real 70-file class in this tree and NOT a gate. A FIXTURE THAT DOES NOT SATISFY THE
+# POPULATION IS A SELFTEST OF NOTHING, and it fails the other way: the selftest went 4 of 4
 # red with an EMPTY population while the tool it was testing reported `0 of 0`.
 PLANTS = (
     ("dead-gate.py", "DEAD", "pass"),                                 # rc 0, emitted nothing
@@ -1081,8 +1081,8 @@ def selftest(plant: bool = False) -> int:
         # THE FALSIFICATION, AND IT IS THE CLAUSE THAT MAKES `held` A MEASUREMENT. A file cannot
         # make the two walks disagree on its own -- they share `entry_reason` -- so the third
         # reason is PLANTED: an immediate, undotted member the control is DENIED. Neither rule can
-        # explain it, so `extra` is non-empty and `held` is FALSE. **A check that cannot go red is
-        # a constant wearing a check's name**, and `held` computed as a set difference would be
+        # explain it, so `extra` is non-empty and `held` is FALSE. A check that cannot go red is
+        # a constant wearing a check's name, and `held` computed as a set difference would be
         # exactly that -- see `project()`.
         (root / "gates" / THIRD).write_text(guarded('print("ok")'))
         lying = project([p for p, _ in walk(root, hs)],

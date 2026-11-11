@@ -203,7 +203,7 @@ UNCHECKED_KINDS = ("no_path", "meta", "renamed_or_absent", "pid", "unfalsifiable
 # reader unable to tell WHICH of the two questions failed.
 #
 # THE BLIND SPOT THIS EXISTS TO CLOSE, MEASURED. `9144d179e25a`, `c83f04ad1c12` and
-# `75ab9b8f8984` all PASS the claim lane above with **0 claims checked and 0 uncheckable** -- not
+# `75ab9b8f8984` all PASS the claim lane above with 0 claims checked and 0 uncheckable -- not
 # because the messages are honest but because the claim lane's POPULATION is claim sentences and
 # none of the three messages contains one. 9144d179e25a removed 110 paths; its message names
 # 7 globs and not one of the 110. Nothing to grade, so nothing is graded, and the exit is 0.
@@ -1242,7 +1242,7 @@ def _plant():
         r = verdict(root)
         bad += [] if r[0] == PASS else [f"state F rc={r[0]}, expected PASS(0)"]
 
-        # STATE G: **THE BLIND SPOT.** An HONEST message about `ported.py`, and the commit ALSO
+        # STATE G: THE BLIND SPOT. An HONEST message about `ported.py`, and the commit ALSO
         # removes five files it never mentions -- the `9144d179e25a` shape exactly. The CLAIM
         # lane sees no claim and PASSes, which is not a bug in the claim lane but the reason
         # this lane exists. Asserted on BOTH halves, because the claim lane passing here IS

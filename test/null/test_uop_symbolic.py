@@ -21,7 +21,7 @@ def uconst(val): return UOp.const(val)
 def usum(ops): return functools.reduce(lambda x,y: x+y, ops)
 def uand(ops): return functools.reduce(lambda x,y: x*y, ops)
 
-# *** leave tests the same
+# * leave tests the same
 
 class TestSymbolicPickle(unittest.TestCase):
   def _test_pickle_unpickle(self, x): self.assertEqual(x, pickle.loads(pickle.dumps(x)))

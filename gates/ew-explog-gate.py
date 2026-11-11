@@ -42,7 +42,7 @@
 #        the other way. `Tensor.exp()` (elementwise.py:511-522) prints SEVEN nodes; the SOURCE
 #        EXPRESSION prints FIVE, differing by cast 1 (`least_upper_float`) and cast 3 (the
 #        cast-back). `ew_exp` originally built only the middle cast, so the oracle was pointed
-#        at the source to match it. **THE PORT WAS THE ONE THAT WAS WRONG**: `ew_exp` ports the
+# at the source to match it. THE PORT WAS THE ONE THAT WAS WRONG: `ew_exp` ports the
 #        METHOD, and it now has all three casts, so the oracle calls `t.exp()._uop` again and
 #        both sides print `7 CONST/0 CAST/1 CAST/1 CONST/0=1069066811 MUL/2 EXP2/1 CAST/1 `.
 #

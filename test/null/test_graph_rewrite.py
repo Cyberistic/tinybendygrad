@@ -244,7 +244,7 @@ class TestWalkRewrite(unittest.TestCase):
   walk=True gives a single-pass traversal that does NOT revisit or re-traverse into rewritten subtrees.
   Supports both top-down (default) and bottom-up (bottom_up=True) modes."""
 
-  # *** top-down walk (default): process children first, then try pm on rebuilt node ***
+  # * top-down walk (default): process children first, then try pm on rebuilt node *
 
   def test_walk_topdown_simple_substitute(self):
     a = UOp.variable('a', 0, 10)
@@ -317,7 +317,7 @@ class TestWalkRewrite(unittest.TestCase):
     graph_rewrite(a + b, pm, ctx=visited, walk=True)
     self.assertEqual(visited, [1, 2, Ops.ADD])
 
-  # *** bottom-up walk: try bpm on node first, skip children if it matches ***
+  # * bottom-up walk: try bpm on node first, skip children if it matches *
 
   def test_walk_bottomup_simple_substitute(self):
     a = UOp.variable('a', 0, 10)
@@ -375,7 +375,7 @@ class TestWalkRewrite(unittest.TestCase):
     ret = graph_rewrite((a + 4) + (b + 5), _substitute, {a:c, b:c}, bottom_up=True, walk=True)
     self.assertIs(ret, (c + 4) + (c + 5))
 
-  # *** bidirectional walk: bpm fires before children, pm fires after rebuild ***
+  # * bidirectional walk: bpm fires before children, pm fires after rebuild *
 
   def test_walk_bidirectional_visit_order(self):
     """Bidirectional walk: bpm fires pre-order, pm fires post-order."""

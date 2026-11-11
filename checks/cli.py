@@ -105,7 +105,7 @@ def main(args) -> None:
                             if c["name"].startswith("SQTT") for s in c["steps"] if s["name"].endswith(("PMC", "PKTS"))])
   if args.list and not args.src: return print("\n".join(emit(fmt_colored(k)) for k in ["ALL"]+list(profile["layout"])))
 
-  # ** SQTT printer
+  # SQTT printer
   data = None if not args.src else get(profile["layout"], args.src[0])
   if args.src and "SQTT" in args.src[0]:
     # modern terminals support 24-bit color
@@ -138,7 +138,7 @@ def main(args) -> None:
       row = {"clk":int(e.st)-inst_st, "cycle":int(e.st), "unit":unit, "op":op_name, "dur":int(unwrap(e.en)-e.st), "delay":delay or "", "info":info}
       print(emit(row, lambda _: f"{row['clk']:<12} {unit:<20} {op_str}{' '*(22-ansilen(op_str))} {row['dur']:<4} {str(row['delay']):<4} {info}"))
 
-  # ** PMC printer
+  # PMC printer
   elif args.src and "PMC" in args.src[0]:
     pmc = viz.unpack_pmc(unwrap(data))
     pmc_fmt:list[str] = []
@@ -146,7 +146,7 @@ def main(args) -> None:
       pmc_fmt += [f"{name} {val}"]+([" ".join(f"{k}={v}" for k,v in zip(detail[0]["cols"], r)) for r in detail[0]["rows"]] if detail else [])
     print(emit(pmc, lambda _: "\n".join(pmc_fmt)))
 
-  # ** Memory printer
+  # Memory printer
   elif data is not None and data["event_type"] == 1:
     print(emit({"peak":data["peak"]}, lambda _: f"Peak: {data['peak']}"+"\n"+f"{'TS':<10}  {'Event':<6}  {'Key':>8}  Info"))
     for e in data["events"]:
@@ -154,7 +154,7 @@ def main(args) -> None:
       if e["event"] == "free": info = ', '.join([f"{fmt_colored(k)} {['read','write','write+read'][m]}@data{n}" for _,k,n,m in arg["users"]])
       print(emit({**e, "info":info}, lambda _: f"{e['ts']:<10}  {e['event']:<6}  {e.get('key', ''):>8}  {info}"))
 
-  # ** Profiler printer
+  # Profiler printer
   else:
     timelines = [(n,l) for n,l in profile["layout"].items() if isinstance(l, dict) and l.get("event_type") == 0]
     markers = profile.get("markers", [])

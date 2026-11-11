@@ -12,7 +12,7 @@ class MockUSB:
   def pcie_mem_read(self, address, nbytes): return bytes(self.mem[address:address+nbytes])
   def pcie_mem_write(self, address, data): self.mem[address:address+len(data)] = data
 
-# *** ASM24 Controller Mock ***
+# * ASM24 Controller Mock *
 
 _mock_usb_state: MockASM24State|None = None
 

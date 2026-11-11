@@ -198,11 +198,11 @@
 # no caller -- a dispatch-scan of every `case N: sym_M(x, u)` arm, minus every
 # `def sym_NNN(`, puts them in the unreachable set alongside `sym_464`.
 #
-# and the fourth was `sym_132`, and **it **IS **DELETED **NOW** (2026-11-11) -- **⇒ AND **IT
-# **WAS **THE **SEVENTH **HALF **OF **THE **`eq`/`ne`/`logical_not` **DRIFT**, **AND **THE
-# **DELETE **IS **THE **1:1 **ACTION** **BECAUSE **THE **PIN **HAS **NO **`CMPNE` **AT **ALL**
-# **AND **THE **PIN's **RULE **140 **(`logical_not().logical_not()`) **IS **ALREADY **PORTED
-# **AS **`sym_134`**.**
+# and the fourth was `sym_132`, and it IS DELETED NOW (2026-11-11) -- - AND IT
+# WAS THE SEVENTH HALF OF THE `eq`/`ne`/`logical_not` DRIFT, AND THE
+# DELETE IS THE 1:1 ACTION BECAUSE THE PIN HAS NO `CMPNE` AT ALL
+# AND THE PIN's RULE 140 (`logical_not().logical_not()`) IS ALREADY PORTED
+# AS `sym_134`.
 #
 # and that is correct, because upstream deleted the rule. measured: upstream's
 # `symbolic.py` AT THE PIN (`f5ac54685074`) MENTIONS `RECIP` ZERO TIMES
@@ -298,17 +298,16 @@ def sy_is_op(+x: F.Folded, +u: U32, want: O.Op) -> Bool: O.eq_op(sy_op(x, u), wa
 
 # THE OP-AND-SRC-COUNT PREFIX, ONCE, FOR EVERY RULE THAT USES IT.
 #
-# MEASURED 2026-11-10: **49** of this file's **109** `sym_*.pat` defs have the EXACT body
+# MEASURED 2026-11-10: 49 of this file's 109 `sym_*.pat` defs have the EXACT body
 # `Bool.and(Bool.and(sy_is_op(x, u, OP), sy_nsrc_is(x, u, N)), REST)` -- 45 with `is` and 4
-# with `ge` -- AND THEY SPAN **202 LINES**. `sym_*.pat` IS THE PORT's ANSWER TO UPSTREAM's
+# with `ge` -- AND THEY SPAN 202 LINES. `sym_*.pat` IS THE PORT's ANSWER TO UPSTREAM's
 # `UPat(...)`, AND UPSTREAM WRITES THAT PATTERN IN ONE LINE, SO THE PREFIX IS THE PART THAT
-# IS **THE SAME FOR EVERY RULE** AND IT IS WHAT THE HAND-EXPANSION REPEATED.
+# IS THE SAME FOR EVERY RULE AND IT IS WHAT THE HAND-EXPANSION REPEATED.
 #
-# `rest` IS A `Bool` **VALUE** AND NOT A FUNCTION, AND THAT IS THE WHOLE POINT: Bend has no
+# `rest` IS A `Bool` VALUE AND NOT A FUNCTION, AND THAT IS THE WHOLE POINT: Bend has no
 # higher-order functions, so a closure is not an option -- BUT THE ORIGINAL CODE ALSO
 # EVALUATED `REST` EAGERLY (`Bool.and` IS NOT LAZY IN ITS ARGUMENTS), SO PASSING THE VALUE
-# **PRESERVES THE EVALUATION ORDER EXACTLY**. `sym_82.pat`'s `all_invalid.go(...)` RAN
-# BEFORE THE `Bool.and` AND IT STILL DOES.
+# PRESERVES THE EVALUATION ORDER EXACTLY. `sym_82.pat`'s `all_invalid.go(...)` RAN
 #
 # AND `sy_nsrc_is` AND `sy_nsrc_ge` ARE NOT MERGED INTO ONE HELPER: THEY ARE TWO DIFFERENT
 # PREDICATES (`==` AND `>=`) AND ONE OF THEM WOULD HAVE TO GROW A FLAG, WHICH IS THE SAME
@@ -528,45 +527,45 @@ def sy_neg(+ar: O.Arena, x: U32) -> U32:
 # `x.logical_not()` -- mixin/elementwise.py:57 AT THE PIN `f5ac54685074`, WHICH IS
 # `return self.cast(dtypes.bool).eq(False)`.
 #
-# **AND **`eq` **IS **`_binop(Ops.CMPEQ, x, False)` (`mixin/elementwise.py:335-336`)**,
-# **SO **THE **NODE **IS **`CMPEQ(x, False)`** -- **AND **NOT **`CMPNE(x, True)`**, **WHICH
-# **IS **WHAT **THIS **DEF **USED **TO **BUILD**.**
+# AND `eq` IS `_binop(Ops.CMPEQ, x, False)` (`mixin/elementwise.py:335-336`),
+# SO THE NODE IS `CMPEQ(x, False)` -- AND NOT `CMPNE(x, True)`, WHICH
+# IS WHAT THIS DEF USED TO BUILD.
 #
-# **MEASURED: **THE **OLD **SPELLING **WAS **WRITTEN **AGAINST **AN **OLDER
-# **UPSTREAM**, **WHERE **`logical_not` **WAS **`self.cast(dtypes.bool).ne(True)`** -- **AND
-# **THE **PORT **HAD **THREE **HALVES **OF **THE **SAME **RULE**, **AND **THEY **HAD
-# **DRIFTED **APART**:**
-#   - **`uop/symbolic.bend`'s **`mint_not`** **ALREADY **BUILT **`CMPEQ(x, False)`**
-#     (**`symbolic.bend:1693-1695`**), **AND**
-#   - **`tensor.bend`'s **`tn_logical_not`** **ALREADY **BUILT **`CMPEQ(x, False)`**
-#     (**`tensor.bend:513-516`**), **AND**
-#   - **THIS **DEF **BUILT **`CMPNE(x, True)`** -- **AND **THE **CORPUS **MEASURED **THE
-#     **DRIFT**: **THE **`commute` **GRAPH **READ **`CMPEQ 2/0` **AND **`CMPNE 0/1`**
-#     (**`runs/graphcmp/D/D1-graph-commute.txt`**, **2026-11-11**), **AND **THE **ONLY
-#     **PAIRABLE **DIFFERENCE **WAS **THIS **ONE**.**
+# MEASURED: THE OLD SPELLING WAS WRITTEN AGAINST AN OLDER
+# UPSTREAM, WHERE `logical_not` WAS `self.cast(dtypes.bool).ne(True)` -- AND
+# THE PORT HAD THREE HALVES OF THE SAME RULE, AND THEY HAD
+# DRIFTED APART:
+# - `uop/symbolic.bend`'s `mint_not` ALREADY BUILT `CMPEQ(x, False)`
+# (`symbolic.bend:1693-1695`), AND
+# - `tensor.bend`'s `tn_logical_not` ALREADY BUILT `CMPEQ(x, False)`
+# (`tensor.bend:513-516`), AND
+# - THIS DEF BUILT `CMPNE(x, True)` -- AND THE CORPUS MEASURED THE
+# DRIFT: THE `commute` GRAPH READ `CMPEQ 2/0` AND `CMPNE 0/1`
+# (`runs/graphcmp/D/D1-graph-commute.txt`, 2026-11-11), AND THE ONLY
+# PAIRABLE DIFFERENCE WAS THIS ONE.
 #
-# **AND **UPSTREAM's **OWN **NEGATION **DETECTION **KEYS **ON **THE **`CMPEQ` **SPELLING**:
-# **`tinygrad/uop/symbolic.py:349` **IS ** `neg = v.op is Ops.CMPEQ and v.src[1].op is
-# Ops.CONST and v.src[1].val == 0`** -- **A **`CMPNE` **IS **NOT **EVEN **A **NEGATION
-# **AS **UPSTREAM **KNOWS **IT**, **AND **SO **THE **OLD **SPELLING **COULD **NOT **HAVE
-# **FOUND **THE **RULES**.**
+# AND UPSTREAM's OWN NEGATION DETECTION KEYS ON THE `CMPEQ` SPELLING:
+# `tinygrad/uop/symbolic.py:349` IS  `neg = v.op is Ops.CMPEQ and v.src[1].op is
+# Ops.CONST and v.src[1].val == 0` -- A `CMPNE` IS NOT EVEN A NEGATION
+# AS UPSTREAM KNOWS IT, AND SO THE OLD SPELLING COULD NOT HAVE
+# FOUND THE RULES.
 def sy_logical_not(+ar: O.Arena, x: U32) -> U32:
   sy_alu2(ar, O.OpsCMPEQ{}, x, O.Found.i(O.UOp.const(ar, O.CBool{False{}})))
 
-# `x != 0` -- THE **TWO **HALVES **OF **THE **SAME **RULE**, **AND **BOTH **ARE **THE
-# **PIN's **SPELLING**:
+# `x != 0` -- THE TWO HALVES OF THE SAME RULE, AND BOTH ARE THE
+# PIN's SPELLING:
 #
-# **UPSTREAM's **`__ne__` **AT **THE **PIN **IS **`self.ne(x)` (`mixin/elementwise.py:
-# 338-339`)**, **AND **`ne` **IS **`self.eq(x).logical_not()` (`:332-333`)**, **AND **`eq`
-# **IS **`_binop(Ops.CMPEQ, x, False)` (`:335-336`)** -- **SO **`x != 0` **IS
-# **`logical_not(CMPEQ(x, 0))`**, **TWO **NODES**, **AND **NOT **A **CMPNE**.**
+# UPSTREAM's `__ne__` AT THE PIN IS `self.ne(x)` (`mixin/elementwise.py:
+# 338-339`), AND `ne` IS `self.eq(x).logical_not()` (`:332-333`), AND `eq`
+# IS `_binop(Ops.CMPEQ, x, False)` (`:335-336`) -- SO `x != 0` IS
+# `logical_not(CMPEQ(x, 0))`, TWO NODES, AND NOT A CMPNE.
 #
-# **AND **THIS **IS **THE **SPELLING **UPSTREAM's **OWN **NEGATION **DETECTION
-# **RECOGNISES** (`tinygrad/uop/symbolic.py:349`: `neg = v.op is Ops.CMPEQ and v.src[1].op
-# is Ops.CONST and v.src[1].val == 0`) -- **A **`CMPNE` **IS **NOT **EVEN **THE **OP
-# **UPSTREAM **USES **FOR **A **NEGATION**, **AND **SO **THE **OLD **`CMPNE(x, 0)`
-# **SPELLING **COULD **NOT **HAVE **MATCHED **ANY **OF **THE **RULES **THAT **KEY **ON
-# **A **NEGATION**.**
+# AND THIS IS THE SPELLING UPSTREAM's OWN NEGATION DETECTION
+# RECOGNISES (`tinygrad/uop/symbolic.py:349`: `neg = v.op is Ops.CMPEQ and v.src[1].op
+# is Ops.CONST and v.src[1].val == 0`) -- A `CMPNE` IS NOT EVEN THE OP
+# UPSTREAM USES FOR A NEGATION, AND SO THE OLD `CMPNE(x, 0)`
+# SPELLING COULD NOT HAVE MATCHED ANY OF THE RULES THAT KEY ON
+# A NEGATION.
 def sy_ne0(+ar: O.Arena, x: U32) -> U32:
   +eq = sy_alu2(ar, O.OpsCMPEQ{}, x, O.Found.i(O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})))
   sy_logical_not(ar, eq)
@@ -683,7 +682,6 @@ def sy_ccast(+x: F.Folded, +u: U32, dt: S.Dt) -> Maybe<&1, U32>:
 # `UOp.usum(*us)` / `UOp.uprod(*us)` -- mixin/elementwise.py:40-41:
 #     reduce(operator.or_  if self.dtype is dtypes.bool else operator.add,      uops, self)
 #     reduce(operator.and_ if self.dtype is dtypes.bool else operator.mul,      uops, self)
-# THE BOOL ARM WAS NOT PORTED, which the old comment here admitted and no caller could see,
 # because every caller in `symbolic.py` that reaches a bool is a rule this file defers. THE PORT SAID
 # `ADD` WHERE the source says `OR`, and a comment that admits a divergence is still a divergence --
 # on a bool `self` the two are different nodes, and `:176` rewrites `ADD` to `OR` only later, so the
@@ -881,7 +879,6 @@ def i32_lt(uns: Bool, +x: U32, +y: U32) -> Bool:
 # `i32_max(7, 3)` BOTH ANSWERED 3, and a `max(axis=0)` over a 4x4 int32 tensor
 # answered the first row. upstream's own table is `python_alu[Ops.MAX] = max`
 # (tinygrad/uop/ops.py, and `PythonRenderer.code_for_op` points at that table),
-# so the oracle says `max` and the port was wrong.
 def i32_max(uns: Bool, +x: U32, +y: U32) -> U32:
   Bool.pick(U32, i32_lt(uns, x, y), y, x)
 
@@ -968,7 +965,6 @@ def exec_alu_i32.bit(+uns: Bool, op: O.Op, o: I3) -> Maybe<&1, O.Const>:
 # "vector-store lane" family): `SY.exec_alu_i32(False, OpsCMPNE, I3{2, 0, 1, 0})`
 # ANSWERED `CBool(0)` WHERE CPython's `exec_alu(Ops.CMPNE, dtypes.i32, [0, 1])`
 # ANSWERS `True` (`operator.ne(0, 1)`). THE FLOAT LANE AT `exec_alu_f32.cmp` WAS
-# right (`F32.is_ne`) and this one was not, so the two lanes disagreed with each
 # OTHER ON THE SAME OP.
 #
 # why it matters: `x != y` is the `abs` lowering's second half -- tinygrad spells
@@ -1938,7 +1934,6 @@ def sym_82.pat(+x: F.Folded, +u: U32) -> Bool:
 # CPYTHON at the PIN: upstream's expand node is `EXPAND(CONST(Invalid), CONST(2))` -- the
 # second SRC is a `CONST` whose ARG is the count, and its dtype is `weakint`.
 #
-# and the port's `STACK(CONST(N))` spelling was wrong for this node -- it is the spelling
 # `tinybendygrad/schedule/prepare.bend`'s `pr_shp1` USES FOR A *SHAPE* ARG, AND IT ANSWERED
 # `(expand bad (stack c2))` WHERE UPSTREAM ANSWERS `(expand bad c2)`. THE SHAPE OF A STACK
 # is `(N,)` but the node upstream builds carries `N` itself, not the tuple.
@@ -2806,39 +2801,39 @@ def sym_131(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   +p = p_const(x, u)
   sym_131.hit(sym_131.pat(x, u, p), sy_val_truthy(x, Sw.a(p)), p, x)
 
-# **⇒ THE **`!=`-AGAINST-`False` **RULE **IS **GONE**, **AND **THIS **IS **THE **SEVENTH
-# **HALF **OF **THE **`eq`/`ne`/`logical_not` **DRIFT**, **AND **THE **DELETE **IS **THE
-# **1:1 **ACTION**.**
+# THE `!=`-AGAINST-`False` RULE IS GONE, AND THIS IS THE SEVENTH
+# HALF OF THE `eq`/`ne`/`logical_not` DRIFT, AND THE DELETE IS THE
+# 1:1 ACTION.
 #
-# **⇒ MEASURED **AT **THE **PIN **`f5ac54685074`**: **`tinygrad/uop/symbolic.py` **HAS **NO
-# **`CMPNE` **AT **ALL** (`grep -c CMPNE` **IS **`0`**) **AND **NO **RULE **FOR **"x **!= **
-# **False`"** -- **⇒ AND **UPSTREAM's **LINE **140 **IS
-# **`UPat.var("x", dtype=dtypes.bool).logical_not().logical_not()`**, **⇒ AND **THAT **RULE
-# **IS **ALREADY **PORTED**, **AS **`sym_134`** (**`symbolic.bend`'s **TABLE **TAG **27**,
-# **WHICH **IS **THE **PIN's **RULE **140 **SLOT**) -- **⇒ AND **`sym_134` **ALREADY **USES
-# **THE **`CMPEQ` **SPELLING** (**`symbolic.bend:2852-2862`**) -- **⇒ AND **SO **THE **RULE
-# **THIS **DELETED **DEF **PORTED **HAS **A **REPLACEMENT **IN **THE **PORT **ALREADY**, **AND
-# **THE **REPLACEMENT **IS **THE **PIN's**.**
+# MEASURED AT THE PIN `f5ac54685074`: `tinygrad/uop/symbolic.py` HAS NO
+# `CMPNE` AT ALL (`grep -c CMPNE` IS `0`) AND NO RULE FOR "x !=
+# False`" -- - AND UPSTREAM's LINE 140 IS
+# `UPat.var("x", dtype=dtypes.bool).logical_not().logical_not()`, - AND THAT RULE
+# IS ALREADY PORTED, AS `sym_134` (`symbolic.bend`'s TABLE TAG 27,
+# WHICH IS THE PIN's RULE 140 SLOT) -- - AND `sym_134` ALREADY USES
+# THE `CMPEQ` SPELLING (`symbolic.bend:2852-2862`) -- - AND SO THE RULE
+# THIS DELETED DEF PORTED HAS A REPLACEMENT IN THE PORT ALREADY, AND
+# THE REPLACEMENT IS THE PIN's.
 #
-# **⇒ AND **`UPat` **AT **THE **PIN **HAS **NO **`__ne__` **METHOD **AT **ALL**, **⇒ AND **SO
-# **THE **OLD **`!=` **RULE **IS **NOT **A **SPELLING **DIFFERENCE **BUT **A **DIFFERENT
-# **RULE** -- **⇒ AND **THE **DIFFERENT **RULE **IS **GONE**, **AND **THE **DELETE **IS
-# **THE **1:1 **ACTION**, **AND **NOT **A **REWRITE**.**
+# AND `UPat` AT THE PIN HAS NO `__ne__` METHOD AT ALL, - AND SO
+# THE OLD `!=` RULE IS NOT A SPELLING DIFFERENCE BUT A DIFFERENT
+# RULE -- - AND THE DIFFERENT RULE IS GONE, AND THE DELETE IS
+# THE 1:1 ACTION, AND NOT A REWRITE.
 #
-# **⇒ AND **THE **DEF **WAS **UNREACHABLE **ANYWAY** -- **MEASURED: **A **DISPATCH-SCAN **OF
-# **EVERY **`case N: sym_M(x, u)` **ARM** (**131 **OF **THEM**) **MINUS **EVERY **`def
-# **sym_NNN(`** **PUTS **`sym_132` **IN **THE **UNREACHABLE **SET**, **ALONGSIDE **`sym_249`,
-# **`sym_296` **AND **`sym_469`** -- **⇒ AND **THE **FILE's **OWN **HEADER **SAID **SO
-# **ALREADY** (**`symbolic.bend:199`**: **"puts **them **in **the **unreachable **set
-# **alongside **`sym_132` **and **`sym_464`"**), **⇒ AND **SO **THE **RECORD **AND **THE
-# **CODE **AGREED, **AND **THE **CODE **WAS **KEPT **ANYWAY**.**
+# AND THE DEF WAS UNREACHABLE ANYWAY -- MEASURED: A DISPATCH-SCAN OF
+# EVERY `case N: sym_M(x, u)` ARM (131 OF THEM) MINUS EVERY `def
+# sym_NNN(` PUTS `sym_132` IN THE UNREACHABLE SET, ALONGSIDE `sym_249`,
+# `sym_296` AND `sym_469` -- - AND THE FILE's OWN HEADER SAID SO
+# ALREADY (`symbolic.bend:199`: "puts them in the unreachable set
+# alongside `sym_132` and `sym_464`"), - AND SO THE RECORD AND THE
+# CODE AGREED, AND THE CODE WAS KEPT ANYWAY.
 #
-# **⇒ AND **THE **OTHER **THREE **UNREACHABLE **DEFS **(`sym_462`/`463`/`464`) **ARE **KEPT
-# **ON **PURPOSE** -- **THEY **ARE **"THE **PORT's **GUARDED **FORMS **OF **UPSTREAM's
-# **DELETED **ONES"** (`symbolic.bend:211`) -- **⇒ AND **THAT **IS **A **DIFFERENT
-# **CLASS**: **A **GUARDED **FORM **OF **A **DELETED **RULE **KEEPS **THE **RULE's
-# **CONTENT**, **AND **THIS **ONE **KEPT **A **RULE **THE **PIN **NEVER **HAD **IN **THE
-# **FORM **IT **WAS **WRITTEN **IN**.**
+# AND THE OTHER THREE UNREACHABLE DEFS (`sym_462`/`463`/`464`) ARE KEPT
+# ON PURPOSE -- THEY ARE "THE PORT's GUARDED FORMS OF UPSTREAM's
+# DELETED ONES" (`symbolic.bend:211`) -- - AND THAT IS A DIFFERENT
+# CLASS: A GUARDED FORM OF A DELETED RULE KEEPS THE RULE's
+# CONTENT, AND THIS ONE KEPT A RULE THE PIN NEVER HAD IN THE
+# FORM IT WAS WRITTEN IN.
 
 # symbolic.py:133  (UPat(GroupOp.Idempotent, src=(UPat.var("x"), UPat.var("x"))), lambda x: x)
 # the name is bound twice, so the identity check is load-bearing: without it the
@@ -2875,7 +2870,6 @@ def sym_135(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # At the pin `logical_not` was `cast(bool).ne(True)` -> `CMPNE(x, CONST True)`; at HEAD it is
 # `cast(bool).eq(False)` -> `CMPEQ(x, CONST False)`. Same NAME, same MEANING, DIFFERENT NODE. So the
 # pattern is `CMPEQ(CMPEQ(x, False), False)` and not `CMPNE(CMPNE(x, True), True)`, and a port that
-# kept the old shape matches a node upstream no longer builds.
 # (`git diff 5c2bf39d6c4b..upstream/master -- tinygrad/mixin/elementwise.py` shows both flips.)
 def sym_134.inner(+x: F.Folded, +u: U32) -> Bool:
   +i = sy_src0(x, u)
@@ -3059,7 +3053,6 @@ def sym_188(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # `y IS logical_not(x)`: AT THE PIN `logical_not()` IS `CMPEQ(x, CONST(False))` --
 # `mixin/elementwise.py:57` AT `f5ac54685074` IS `self.cast(dtypes.bool).eq(False)`.
 #
-# and this used to be `CMPNE(x, CONST(True))`, which is the pre-PIN spelling (`ne(True)`).
 # the name did not change and the node did, and the port's own `sym_134` comment records the
 # same swap: "the primitive swapped at the 2026-11-03 re-vendor".
 #
@@ -4126,7 +4119,6 @@ def sym_253.neg(+x: F.Folded, +u: U32) -> U32:
 def sym_253.pat(+x: F.Folded, +u: U32) -> Bool:
   +i = sym_253.inner(x, u)
   # the -1 is a requirement and not a side-check: the first version only said the inner side
-  # was not -1, so every `c * (x + c2)` distributed through THIS rule with the wrong operand
   # order and `:254`'s case caught it.
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsMUL{}), sy_nsrc_is(x, u, 2)),
     Bool.and(p_is_const_neg1(x, sym_253.neg(x, u)),
@@ -5499,7 +5491,6 @@ def sym_193(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 #
 # every shape below was read off the answer and not guessed, because three of them are not the
 # obvious node: `const_like(1)` on a u32 node is `CAST(CONST 1)`; `.eq(v)` is
-# `CMPEQ(x, v)` -- ONE node, and it USED TO BE `CMPNE(CMPNE(x, v), True)`, which is the
 # PRE-PIN SPELLING, and the shape was re-read on CPython at `f5ac54685074` on 2026-11-07;
 # and `-one` is `MUL(one, CONST -1)`.
 # The mask is a BARE weakint `CONST(2bits - 1)`, because `_broadcasted` keeps a weak CONST weak.
@@ -6644,7 +6635,6 @@ def sym_rewrite(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 def sym(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sym_rewrite(sym_table(), x, u)
 
-# ===========================================================================
 # the `Found` family -- the same table, the same order, and an answer that carries the arena.
 #
 # WHY IT EXISTS. `sym` answers `Maybe<&1, U32>`: an index and NO ARENA. A rule whose body MINTS
@@ -6711,7 +6701,6 @@ def sy_fcw_f(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
                                   Bool.not(dt_weak_of(sy_dt1(x, u))))),
                 ret, x, u, sy_dt1(x, u))
 
-# ===========================================================================
 # `symbolic.py:87` AND `:88` -- `invalid_gate` LIFTED THROUGH A BINARY OP.
 #
 #     (UPat(GroupOp.Binary, src=(invalid_gate, UPat.var("y")), name="alu"),
@@ -6801,7 +6790,6 @@ def sym_88(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # ONE BODY FOR THE PAIR: `(g, y)` in that order, the gate's `x` first inside the op for :87 and
 # the swapped pair for :88 -- which is exactly the two upstream lambdas.
-# ===========================================================================
 # `symbolic.py:90` -- `(invalid_gate.reduce(allow_any_len=True, name="red"), lift_reduce_gate)`
 # and the body at `:72`:
 #
@@ -6928,7 +6916,6 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # `match` on the tag and the list is what says which tags it must have an arm for.
 def MINT_TAGS() -> List<&2, U32>: [0,2,3,4,6,8,9,10,11,17,19,22,29,30,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,58,59,60,61,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,98,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130]
 
-# ===========================================================================
 # `nested_div` -- divandmod.py:23. AND IT IS THE NEXT UNPORTED ARM OF
 # `fold_divmod_general`, AND IT IS THE ONE THAT NEEDS NO `usum`.
 #
@@ -6964,7 +6951,6 @@ def MINT_TAGS() -> List<&2, U32>: [0,2,3,4,6,8,9,10,11,17,19,22,29,30,32,33,34,3
 # - and the `k` is the MOD's divisor divided by `c` -- measured 2026-11-09: a probe
 # read `cval=4` in all three cases, because `sy_src1(x, u)` is the DIV's divisor and not
 # THE MOD's.
-# ===========================================================================
 
 # and the CONST's value out of a `Maybe<&2, O.Const>` -- and the `None` case is zero,
 # WHICH IS THE PORT's OWN CONVENTION (`divandmod.bend`'s `dm_ival`).
@@ -7098,7 +7084,6 @@ def dm_nd(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def dm_nd.ans(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   dm_nd.mk(x, u)
 
-# ===========================================================================
 # (THIS WAS A STACK OF 12 IDENTICAL SEPARATOR LINES -- MEASURED 2026-11-10 -- AND ONE
 #  IS ENOUGH: A RUN OF IDENTICAL SEPARATORS CARRIES NOTHING THE ONE LINE DOES NOT.)
 # the `nested_div` rows -- divandmod.py:23. and they are CPYTHON-confirmed against
@@ -7118,7 +7103,6 @@ def dm_nd.ans(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # read once -- measured 2026-11-09, the three failures were "expected : nd / observed : nd
 # (consumed more than once)", "expected : i / observed : i (consumed more than once)" AND "expected
 # : s0 / observed : s0 (consumed more than once)".
-# ===========================================================================
 
 # and the CONST's value is 4 (the divisor) and 2 (the `k`) -- and every value is
 # read, and not only every shape: measured 2026-11-09, a plant that replaced the dividend
@@ -7230,7 +7214,6 @@ def t_nd_nodiv() -> Bool:
   Bool.not(t_nd.some(dm_nd.ans(x, u)))
 
 
-# ===========================================================================
 # `divandmod.py:103` -- THE SLOW RULE, `(UPat((Ops.DIV, Ops.MOD), dtypes.weakint,
 # name="d"), lambda d: fold_divmod_general(d))` -- and it is the row the census names as
 # MISSING (MEASURED 2026-11-09: `gates/symrules.rows` READS `118  divandmod.py:103  DIV,MOD
@@ -7265,7 +7248,6 @@ def t_nd_nodiv() -> Bool:
 # - and the `MOD` half is not ported: upstream's `return ret*gcd if d.op is Ops.MOD else
 # ret` multiplies the remainder by the gcd, and that is a second answer shape and a named
 # WALL (BELOW).
-# ===========================================================================
 
 # and "is this node the CONST 1" over an arena and an INDEX -- and the port's own
 # `p_is_const_1` takes a `Folded` and a rule-side INDEX, and the `gcd` is a node in the
@@ -7656,13 +7638,13 @@ def f_alu2(+f: O.Found, op: O.Op, b: U32) -> O.Found:
 
 def f_i(f: O.Found) -> U32: O.Found.i(f)
 
-# THE FIXTURE's CONST, ONCE. MEASURED 2026-11-10: **28** FIXTURE LINES READ
+# THE FIXTURE's CONST, ONCE. MEASURED 2026-11-10: 28 FIXTURE LINES READ
 # `O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(N)})` -- 18 OF THEM THE CONST `7` --
-# AND **THAT WAS THE ONLY REPEATED CODE LINE IN THE WHOLE FILE** (MEASURED: A CENSUS OF
+# AND THAT WAS THE ONLY REPEATED CODE LINE IN THE WHOLE FILE (MEASURED: A CENSUS OF
 # EVERY CODE LINE IN EVERY DEF, AND NO OTHER LINE APPEARS MORE THAN THREE TIMES).
 #
-# **THE ARENA IS STILL FRESH ON EVERY CALL**, BECAUSE `O.Arena.empty()` IS INSIDE THIS
-# DEF AND NOT AT THE CALL SITE -- **AND THAT IS LOAD-BEARING**: A FIXTURE BUILDS A CHAIN
+# THE ARENA IS STILL FRESH ON EVERY CALL, BECAUSE `O.Arena.empty()` IS INSIDE THIS
+# DEF AND NOT AT THE CALL SITE -- AND THAT IS LOAD-BEARING: A FIXTURE BUILDS A CHAIN
 # OF NODES IN ONE ARENA, AND THE SECOND CONST IN A FIXTURE MUST BE BUILT IN THE ARENA THE
 # FIRST ONE OPENED (`O.Found.ar(a)`), NOT IN A SECOND EMPTY ONE. So this helper is for
 # the FIRST node of a fixture and the SECOND one is still written out, because the
@@ -7755,7 +7737,6 @@ def fx_sink() -> O.Found:
 # sink-like src is a STACK; here the root is a SINK and the sink-like src is an
 # AFTER, so the flatten runs on a NESTED sink-like src and the root's op is
 # carried over -- neither of which `fx_sink` does. And node 3 is the ANSWER,
-# `SINK(a, b)`, INTERNED BEFORE THE REWRITE: `sym_444` rebuilds the src list, asks
 # `UOp.new`, and interning is structural equality (`intern.find` over op, src,
 # arg, tag), so a correct answer HITS the node already there and answers 3. A
 # wrong src list, or a dropped src, mints a fresh node at 6 and answers 6, and
@@ -8169,7 +8150,6 @@ def fx_of(f: O.Found) -> F.Folded: F.folded(O.Found.ar(f))
 #                diagnosed. The pattern reads `p_index_bad_or_cast` on src[0] and
 #                the reject set `{CONST}` is a subset of the STORE's `ler`, so the
 #                intended reasoning says it fires.
-#   alu=1        the row that WAS WRONG IN ITS DIAGNOSIS. It read 0, and this
 #                block blamed the affine arena and the read-back -- both of which
 #                were fine: `i32_is` compares `exec_alu`'s own answer, and
 #                `exec_alu(ADD, weakint, [5,6])` returned `None{}` because
@@ -9072,7 +9052,6 @@ def fz_leaf.sgn(c: U32, w: String, ar: O.Arena) -> O.Found:
 
 # `UOp.variable` -- ops.py:1055, "a Variable is a scalar ALU PARAM with a name
 # and a value range", which is the whole of the `ParamArg` this driver states.
-# the name and the arena are parameters, and both used to be literals: `Some{"v"}`
 # and `O.Arena.empty()`. A case file therefore could not say `x` AND `y`, and the
 # rebind rules -- `(x^y)^y` (symbolic.py:123), `(x%y)%y` (:124), `(x*x*x).recip()`
 # (:464) -- carry an IDENTITY CHECK as their whole guard, so a corpus that cannot
@@ -9138,7 +9117,6 @@ def fz_build.one(t: Tok, +st: St) -> St:
     # "on top": appending the new frame to the END put it BELOW the open ones, so every
     # case with NESTING built a different graph. MEASURED on `(xor (xor x c5) c5)`
     # before/after, `O.Arena.srcs` on the root read `2 3 2` and reads `3 2`: the inner
-    # XOR had been given NO src and the outer three, one of them its own output. The
     # flat cases (`(add c7 c0)`, `(group x)`) were right either way, which is why one
     # corpus row out of two looked healthy.
     case THead{w}: St{St.ar(st), List.append(&2, Frm, [Frm{Nil{}, w}], St.stk(st)), St.root(st)}
@@ -9881,9 +9859,9 @@ def gg.go5(+f: O.Found, +cond: U32, +iv: U32) -> Maybe<&1, O.Found>:
 # (:463), so a valid rule that called `sym_f` would cycle: `sym` includes the valid rules and
 # the valid rules call `sym`. the separate table is what breaks the cycle.
 #
-# MEASURED 2026-11-10: THIS HEADER WAS **PASTED FOUR TIMES** IN THIS FILE (once per valid
+# MEASURED 2026-11-10: THIS HEADER WAS PASTED FOUR TIMES IN THIS FILE (once per valid
 # rule) AND THE "TWO ARMS" BLOCK BELOW WAS PASTED FOUR TIMES, AND A HEADER THAT IS FOUR
-# COPIES OF ONE PARAGRAPH IS **ONE** PIECE OF EVIDENCE AND NOT FOUR. THE REPEATS ARE GONE AND
+# COPIES OF ONE PARAGRAPH IS ONE PIECE OF EVIDENCE AND NOT FOUR. THE REPEATS ARE GONE AND
 # THE FIRST COPY IS THE ONE THAT IS KEPT -- so the reader who arrives at the third valid
 # rule reads the SAME CLAIM, not a copy of it.
 

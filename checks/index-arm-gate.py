@@ -251,8 +251,8 @@ def report(root: Path, rev: str | None = None) -> tuple[int, dict]:
         return REFUSED, c
     # THE PASS IS A CLAIM ABOUT A COUNT, AND `n_tree` IS NOT A COUNT OF THE TREE IF THE TREE NAMES A
     # PATH TWICE. Measured 2026-10-17: on `591f6b499` `ls-tree -r` emits 7,505 lines for 7,253 distinct
-    # paths, so this line would have said "all 7253 paths" about a tree with 7,505 entries. **A PASS
-    # WHOSE COUNT IS MEASURED WITH A DATATYPE THAT CANNOT HOLD THE DEFECT IS NOT A PASS.**
+    # paths, so this line would have said "all 7253 paths" about a tree with 7,505 entries. A PASS
+    # WHOSE COUNT IS MEASURED WITH A DATATYPE THAT CANNOT HOLD THE DEFECT IS NOT A PASS.
     if c["DUPLICATE"]:
         print(f"INDEX-ARM REFUSED, NOT A VERDICT: HEAD's tree names {len(c['DUPLICATE'])} path(s) MORE "
               f"THAN ONCE ({', '.join(c['DUPLICATE'][:3])}"

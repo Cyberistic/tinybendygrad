@@ -2065,31 +2065,31 @@ def perm_init(ys: List<&2, U32>, +ps: List<&2, O.Sint>) -> Perm:
 def perm_ds.of_walk(+x: Perm, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   dt_of_if(Perm.ok(x), src_dt(0, ss), Some{Perm.ds(x)})
 
-# **THE **ORDER **IS **A `Maybe` **NOW** -- **BECAUSE **`marg` **RETURNS **ONE** -- **AND
-# **THE **`None` **ARM **IS **THE **EMPTY **ORDER**, **WHICH **IS **WHAT **UPSTREAM's
-# **`as_shape` **ON **A **MISSING **SHAPE **ANSWERS**.**
+# THE ORDER IS A `Maybe` NOW -- BECAUSE `marg` RETURNS ONE -- AND
+# THE `None` ARM IS THE EMPTY ORDER, WHICH IS WHAT UPSTREAM's
+# `as_shape` ON A MISSING SHAPE ANSWERS.
 def perm_ds.of(ys: List<&2, U32>, ps: Maybe<&2, List<&2, O.Sint>>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match ps:
     case Some{p}: perm_ds.of_walk(perm_init(ys, p), ss)
     case None{}  : None{}
 
-# **THE **PERMUTE's **ORDER **IS **`src[1]`**, **AND **THAT **IS **THE **SAME **READER
-# **THE **RESHAPE **USES** -- **MEASURED 2026-11-10:**
-# **UPSTREAM's **`marg` (`ops.py:772`) IS `case Ops.PERMUTE: return self.src[1].as_shape`, AND
-# **UPSTREAM's **`_mop` (`ops.py:784,790-791`) **BUILDS **THE **NODE **AS
-# `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`** -- **THE **ORDER **IS **IN
-# **`src[1]`** AND **THE **`arg` **IS **`None`**.
+# THE PERMUTE's ORDER IS `src[1]`, AND THAT IS THE SAME READER
+# THE RESHAPE USES -- MEASURED 2026-11-10:
+# UPSTREAM's `marg` (`ops.py:772`) IS `case Ops.PERMUTE: return self.src[1].as_shape`, AND
+# UPSTREAM's `_mop` (`ops.py:784,790-791`) BUILDS THE NODE AS
+# `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)` -- THE ORDER IS IN
+# `src[1]` AND THE `arg` IS `None`.
 #
-# **AND **THE **PORT's **`marg` (`fold.bend:1766`) **ALREADY **READS **`src[1]`** AND
-# **ALREADY **HANDLES **BOTH **THE **BARE-CONST **AND **THE `STACK` **SHAPE** -- **SO **THE
-# **PERMUTE's **READER **IS **THE **RESHAPE's **READER**, **AND **THE **PORT **WAS **USING
-# **A **SECOND, **PORT-ONLY **READER** (`order_arg`, **WHICH **READS **`arg`**) **AND **SO **THE
-# **TWO **HALVES **OF **THE **SAME **RULE **HAD **DRIFTED **APART **AGAIN** -- **THE **SYMPTOM
-# **IS **THE **CORPUS's **7 **DISAGREEMENTS**.**
-# **THE **CONCRETE **ORDER** IS **`src[1]`'s **STACK **CHILDREN**, **READ **ONE **BY
-# **ONE** -- **AND **THE **LENGTH-1 **CASE **IS **A **BARE **CONST**, **SO **THE **READER
-# **SPELLS **BOTH** -- **EXACTLY **AS **UPSTREAM's **`shape_to_shape_arg` (`ops.py:112`) **SPELLS
-# **THE **BUILD** (`return src[0] if len(src) == 1 else UOp(Ops.STACK, src=src)`)**.**
+# AND THE PORT's `marg` (`fold.bend:1766`) ALREADY READS `src[1]` AND
+# ALREADY HANDLES BOTH THE BARE-CONST AND THE `STACK` SHAPE -- SO THE
+# PERMUTE's READER IS THE RESHAPE's READER, AND THE PORT WAS USING
+# A SECOND, PORT-ONLY READER (`order_arg`, WHICH READS `arg`) AND SO THE
+# TWO HALVES OF THE SAME RULE HAD DRIFTED APART AGAIN -- THE SYMPTOM
+# IS THE CORPUS's 7 DISAGREEMENTS.
+# THE CONCRETE ORDER IS `src[1]`'s STACK CHILDREN, READ ONE BY
+# ONE -- AND THE LENGTH-1 CASE IS A BARE CONST, SO THE READER
+# SPELLS BOTH -- EXACTLY AS UPSTREAM's `shape_to_shape_arg` (`ops.py:112`) SPELLS
+# THE BUILD (`return src[0] if len(src) == 1 else UOp(Ops.STACK, src=src)`).
 def order_srcs.const(+ar: O.Arena, s: U32) -> U32:
   H.lo32(Maybe.default(&2, H.I64, const_i64(O.Arena.arg(ar, s)), H.i64_of_i32(0)))
 
@@ -2098,20 +2098,20 @@ def order_srcs.go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, U32>) -> List<&
     case Nil{}   : acc
     case s <> t  : order_srcs.go(ar, t, List.append(&2, U32, acc, [order_srcs.const(ar, s)]))
 
-# **THE **`srcs` **ARE **READ **IN **A **DEF **THAT **COMES **FIRST**, **BECAUSE
-# **BEND **CHECKS **DEFS **IN **FILE **ORDER** ("defs are checked in file order, and an
-# **unfilled hole is not a def")** -- **AND **THE **`srcs` **AND **THE **`op` **ARE **TWO
-# **READS **OF **THE **SAME **INDEX**, **AND **BEND **SPENDS **A **BINDER **WHEN **IT
-# **READS **IT**, **SO **THE **`op` **IS **READ **BY **THE **CALLER** **AND **THE
-# **`srcs` **BY **THE **ARM**.**
+# THE `srcs` ARE READ IN A DEF THAT COMES FIRST, BECAUSE
+# BEND CHECKS DEFS IN FILE ORDER ("defs are checked in file order, and an
+# unfilled hole is not a def") -- AND THE `srcs` AND THE `op` ARE TWO
+# READS OF THE SAME INDEX, AND BEND SPENDS A BINDER WHEN IT
+# READS IT, SO THE `op` IS READ BY THE CALLER AND THE
+# `srcs` BY THE ARM.
 def order_srcs.srcs(+ar: O.Arena, s: U32) -> List<&2, U32>:
   order_srcs.go(ar, O.Arena.srcs(ar, s), Nil{})
 
-# **THE **OP **IS **TAKEN **AS **A **VALUE** **AND **THE **INDEX **IS **TAKEN **AS
-# **A **VALUE**, **EXACTLY **AS **`marg.of` (`fold.bend:1759`) **DOES** -- **THE **CALLER
-# **READS **THE **`op` **AND **THE **INDEX**, **AND **NEITHER **IS **READ **TWICE** --
-# **AND **THAT **IS **WHY **THE **ORDER **READER **AND **THE **`marg` **READER **CAN
-# **BOTH **RUN **OFF **THE **ONE **`src[1]`'s **INDEX** **THE **CALLER **READ**.**
+# THE OP IS TAKEN AS A VALUE AND THE INDEX IS TAKEN AS
+# A VALUE, EXACTLY AS `marg.of` (`fold.bend:1759`) DOES -- THE CALLER
+# READS THE `op` AND THE INDEX, AND NEITHER IS READ TWICE --
+# AND THAT IS WHY THE ORDER READER AND THE `marg` READER CAN
+# BOTH RUN OFF THE ONE `src[1]`'s INDEX THE CALLER READ.
 def order_srcs.op(k: O.Op, +ar: O.Arena, s: U32) -> List<&2, U32>:
   match k:
     case O.OpsSTACK{}: order_srcs.srcs(ar, s)
@@ -2120,30 +2120,30 @@ def order_srcs.op(k: O.Op, +ar: O.Arena, s: U32) -> List<&2, U32>:
 def order_srcs.of(k: O.Op, +ar: O.Arena, s: U32) -> List<&2, U32>:
   order_srcs.op(k, ar, s)
 
-# **THE **PERMUTE's **SHAPE **READER** -- **AND **IT **NEEDS **TWO **THINGS**: **THE
-# **CONCRETE **ORDER** (`src[1]`'s **STACK **CHILDREN**, **WHICH **IS **THE **PERMUTATION**) **AND
-# **THE **SOURCE's **DIMS** (**`src_shape(0, ss)`**, **WHICH **IS **`src[0]`'s **SHAPE**) -- **AND
-# **`perm_init` **TAKES **EXACTLY **THOSE **TWO** (`fold.bend:2058`: `def perm_init(ys:
-# List<&2, U32>, +ps: List<&2, O.Sint>)`).**
+# THE PERMUTE's SHAPE READER -- AND IT NEEDS TWO THINGS: THE
+# CONCRETE ORDER (`src[1]`'s STACK CHILDREN, WHICH IS THE PERMUTATION) AND
+# THE SOURCE's DIMS (`src_shape(0, ss)`, WHICH IS `src[0]`'s SHAPE) -- AND
+# `perm_init` TAKES EXACTLY THOSE TWO (`fold.bend:2058`: `def perm_init(ys:
+# List<&2, U32>, +ps: List<&2, O.Sint>)`).
 #
-# **AND **THE **SOURCE's **DIMS **ARE **NOT **`marg`** -- **MEASURED 2026-11-11 ON **THE
-# **`matmul` **GRAPH: **AN **EARLIER **REVISION **OF **THIS **DEF **PASSED **`marg(ar, i)`
-# **AS **THE **`ps`**, **AND **`marg` **IS **`src[1].as_shape`** -- **WHICH **FOR **A
-# **PERMUTE **IS **THE **ORDER**, **NOT **THE **SOURCE's **SHAPE**.  **SO **THE **SHAPE
-# **CAME **OUT **AS **THE **ORDER **PERMUTED **BY **THE **ORDER**: **CPYTHON's **`matmul`
-# **PERMUTE **IS **`(l0:1,l0:5,l0:3)`** **AND **THE **PORT's **WAS **`(l0:0,l0:1,l0:2)`**
-# (**`runs/graphcmp/D/D2-cmp-matmul.txt`**, **2026-11-11**).**
+# AND THE SOURCE's DIMS ARE NOT `marg` -- MEASURED 2026-11-11 ON THE
+# `matmul` GRAPH: AN EARLIER REVISION OF THIS DEF PASSED `marg(ar, i)`
+# AS THE `ps`, AND `marg` IS `src[1].as_shape` -- WHICH FOR A
+# PERMUTE IS THE ORDER, NOT THE SOURCE's SHAPE.  SO THE SHAPE
+# CAME OUT AS THE ORDER PERMUTED BY THE ORDER: CPYTHON's `matmul`
+# PERMUTE IS `(l0:1,l0:5,l0:3)` AND THE PORT's WAS `(l0:0,l0:1,l0:2)`
+# (`runs/graphcmp/D/D2-cmp-matmul.txt`, 2026-11-11).
 #
-# **AND **UPSTREAM's **`_shape` (`ops.py:394-396`) **IS **`tuple(ps[i] for i in
-# self.marg)`** -- ****THE **ORDER **IS **`marg`** **AND **THE **SOURCE's **DIMS **ARE
-# **`ps`**, **AND **THE **PORT's **`perm.go` **WALKS **THE **ORDER **AND **INDEXES **`ps`
-# **WITH **IT** -- ****WHICH **IS **EXACTLY **UPSTREAM's **FORM**.**
+# AND UPSTREAM's `_shape` (`ops.py:394-396`) IS `tuple(ps[i] for i in
+# self.marg)` -- THE ORDER IS `marg` AND THE SOURCE's DIMS ARE
+# `ps`, AND THE PORT's `perm.go` WALKS THE ORDER AND INDEXES `ps`
+# WITH IT -- WHICH IS EXACTLY UPSTREAM's FORM.
 #
-# **AND **BEND **SPENDS **A **BINDER **WHEN **IT **READS **IT** ("consumed more than
-# **once")**, **SO **THE **`src[1]`'s **INDEX **IS **READ **ONCE** **INTO **A **`let`** --
-# **THE **ORDER **READER **(`order_srcs.of`) **AND **THE **`marg` **READER
-# (**`marg.of`) **BOTH **TAKE **THE **SHAPE **INDEX**, **AND **THE **`let` **IS **THE
-# **ONE **VALUE **THEY **BOTH **GET**.**
+# AND BEND SPENDS A BINDER WHEN IT READS IT ("consumed more than
+# once"), SO THE `src[1]`'s INDEX IS READ ONCE INTO A `let` --
+# THE ORDER READER (`order_srcs.of`) AND THE `marg` READER
+# (`marg.of`) BOTH TAKE THE SHAPE INDEX, AND THE `let` IS THE
+# ONE VALUE THEY BOTH GET.
 def perm_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   +s = O.Arena.src(ar, i, 1)
   perm_ds.of(order_srcs.of(O.Arena.op(ar, s), ar, s), src_shape(0, ss), ss)
@@ -2763,12 +2763,12 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # order, and both answer the sizes. `pad_shrink` above.
     case O.OpsPAD{}: pad_ds(ar, i, ss)
     case O.OpsSHRINK{}: shrink_ds(ar, i, ss)
-    # `case Ops.PERMUTE:` -- ops.py:402-404 symbol=_shape. **AND **NOW **IT **IS **THE
-    # **RESHAPE's **READER**: **UPSTREAM's **`marg` (`ops.py:772`) **IS `case Ops.PERMUTE:
-    # return self.src[1].as_shape`**, **AND **THE **PORT's **`marg` **READS **`src[1]`** --
-    # **SO **THE **ORDER **IS **IN **`src[1]`** AND **NOT **IN **`arg`**. **THE **OLD
-    # **READER (`order_arg`, **WHICH **READ **`arg`**) **IS **THE **PORT's **OWN **SECOND
-    # **SPELLING** **AND **IT **IS **WHAT **THE **CORPUS's **7 **DISAGREEMENTS **MEASURED**.**
+    # `case Ops.PERMUTE:` -- ops.py:402-404 symbol=_shape. AND NOW IT IS THE
+    # RESHAPE's READER: UPSTREAM's `marg` (`ops.py:772`) IS `case Ops.PERMUTE:
+    # return self.src[1].as_shape`, AND THE PORT's `marg` READS `src[1]` --
+    # SO THE ORDER IS IN `src[1]` AND NOT IN `arg`. THE OLD
+    # READER (`order_arg`, WHICH READ `arg`) IS THE PORT's OWN SECOND
+    # SPELLING AND IT IS WHAT THE CORPUS's 7 DISAGREEMENTS MEASURED.
     case O.OpsPERMUTE{}: perm_ds(ar, i, ss)
 
     # RANGE | SPECIAL: pass through first, then `return ()`
@@ -6000,16 +6000,16 @@ def g_mv_shrbad() -> O.Found:
   O.UOp.new(O.Found.ar(z), O.OpsSHRINK{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
 # PERMUTE(RESHAPE(6), (1, 0)) -- `n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE
-# shape=(3,2) dtype=int`. **AND **THE **ORDER **IS **IN **`src[1]`**, **AND **THE **NODE
-# **HAS **TWO **SRCS** -- **UPSTREAM's **`_mop` (`ops.py:784,790-791`) **BUILDS **IT **AS
-# **`UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`**, **AND **`marg` (`ops.py:772`)
-# **READS **IT **BACK **FROM **`src[1].as_shape`**.  **AND **THE **OLD **COMMENT **("`marg`
-# **is **`self.arg`**, **the **arena's **`ATuple`**, **so **the **node **has **ONE **src
-# **and **the **arg **is **not **a **src **at **all**")** **WAS **WRITTEN **AGAINST **AN
-# **OLDER **UPSTREAM** -- **AND **IT **IS **THE **FOURTH **FACT's **WHOLE **JOB**, **AND
-# **THE **FACT **IS **STILL **TRUE**: **THE **ORDER **IS **NOT **A **DATA **SRC**, **IT **IS
-# **THE **ORDER**, **AND **IT **LIVES **IN **`src[1]`** -- **AND **THE **PORT's **`ATuple`
-# **ARG **IS **GONE **FROM **THE **NODE**, **AND **THAT **IS **THE **CHANGE**.**
+# shape=(3,2) dtype=int`. AND THE ORDER IS IN `src[1]`, AND THE NODE
+# HAS TWO SRCS -- UPSTREAM's `_mop` (`ops.py:784,790-791`) BUILDS IT AS
+# `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`, AND `marg` (`ops.py:772`)
+# READS IT BACK FROM `src[1].as_shape`.  AND THE OLD COMMENT ("`marg`
+# is `self.arg`, the arena's `ATuple`, so the node has ONE src
+# and the arg is not a src at all") WAS WRITTEN AGAINST AN
+# OLDER UPSTREAM -- AND IT IS THE FOURTH FACT's WHOLE JOB, AND
+# THE FACT IS STILL TRUE: THE ORDER IS NOT A DATA SRC, IT IS
+# THE ORDER, AND IT LIVES IN `src[1]` -- AND THE PORT's `ATuple`
+# ARG IS GONE FROM THE NODE, AND THAT IS THE CHANGE.
 def g_mv_perm(ys: List<&2, U32>) -> O.Found:
   +r = g_mv_r23()
   +sk = O.shape_arg_found(O.Found.ar(r), ys)

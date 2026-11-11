@@ -199,7 +199,7 @@ class GPT2:
       assert min_time < assert_time, f"Speed regression, expected min step time of < {assert_time} ms but took: {min_time} ms"
     return [self.tokenizer.decode(x) for x in toks]
 
-# **** main code ****
+# main code
 
 if __name__ == "__main__":
   print(f"using {Device.DEFAULT} backend")

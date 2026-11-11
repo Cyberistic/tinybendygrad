@@ -293,10 +293,10 @@ def main():
   # population's artifact from a one-file run OVERWRITES a TRACKED 797,251-BYTE CENSUS with a
   # one-lane one.  MEASURED 2026-10-29: `checks/dup-census.py --one
   # oracles/tinybendygrad_renderer_nir_llvmir.bend.rows` returned 0 and left
-  # `checks/dup-census.json` at **10 insertions / 62,250 deletions** against HEAD -- the same
+  # `checks/dup-census.json` at 10 insertions / 62,250 deletions against HEAD -- the same
   # destruction `.agents/slop/denominator/REPORT.md` §1 measured through the OTHER route
   # (an absent `CACHE`), and the same one `enumerate_population` was added to prevent.
-  # **A GATE THAT RUNS A PLANT MUST NOT REWRITE THE TREE IT IS PLANTED IN**, and the fix is
+  # A GATE THAT RUNS A PLANT MUST NOT REWRITE THE TREE IT IS PLANTED IN, and the fix is
   # to publish ONLY what the invocation actually censused: the population census publishes,
   # a named-file inspection does not.
   if not a.one:
@@ -316,11 +316,11 @@ def main():
 # `PLANTS[0]` IS THE `--one` PLANT, and it is what makes rc 0 REACHABLE.  `--one FILE` is this
 # gate's OWN documented mechanism for naming a lane (its docstring's second usage line), and it
 # reaches `main()`'s census over the named file.  MEASURED 2026-10-29:
-# `--one oracles/tinybendygrad_renderer_nir_llvmir.bend.rows` exits **0** and prints a census
+# `--one oracles/tinybendygrad_renderer_nir_llvmir.bend.rows` exits 0 and prints a census
 # with a NON-TRIVIAL denominator -- 205 rows read, 205 accepted, 201 keys, the reader's own loss
-# 4, attributed as `4` `=`-in-a-name, and `RECONCILES`.  **A PLANT OVER A TRACKED FILE IS
+# 4, attributed as `4` `=`-in-a-name, and `RECONCILES`.  A PLANT OVER A TRACKED FILE IS
 # ALSO A WITNESS: it is the PRE-RENAME lane, so the loss it reports is the `=`-class the
-# rename closed, and the census RECONCILES.**  The one thing it must NOT do is publish -- see
+# rename closed, and the census RECONCILES.  The one thing it must NOT do is publish -- see
 # `main()`'s `if not a.one:` guard, without which the plant overwrites the tracked census.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--one", "oracles/tinybendygrad_renderer_nir_llvmir.bend.rows"], 3: []}

@@ -6,7 +6,7 @@
 #
 # THE POPULATION, AND WHY IT IS NOT THE `*_table` RULE. `gates/rng_graph_census.bend`'s row
 # is a (TABLE, NODE) pair and its TABLE axis is `grep -c '^def [a-z]*_table'`. MEASURED:
-# that count is **0** in all four files of `tinybendygrad/codegen/decomp/` -- `op.bend`,
+# that count is 0 in all four files of `tinybendygrad/codegen/decomp/` -- `op.bend`,
 # `dtype.bend`, `transcendental.bend` and `transcendental_f32.bend`. decomp is not a
 # REWRITER, it is a graph BUILDER, so it has no dispatch tables to range over and the rng
 # rule has nothing to discover. The substitute axis is the FIXTURE, and the fixture
@@ -14,11 +14,11 @@
 # (:2931, eight) and `f2f.pick` (:3053, seven). Thirty of `l2i.pick`'s arms read the word
 # pool and three mint a CONST (`l2i.const`).
 #
-# THE POPULATION IS 30 `l2i.pick` arms + `lgz` + 3 `l2i.const` + 2 `unpack32` + 7 `f2f` = **43**,
+# THE POPULATION IS 30 `l2i.pick` arms + `lgz` + 3 `l2i.const` + 2 `unpack32` + 7 `f2f` = 43,
 # and THE 31ST `l2i` ROW IS A CELL `l2i.pick` DOES NOT LIST. Thirty of `l2i.pick`'s arms read the
 # word pool and three mint a CONST, `dd_cmx.pick`'s eight print a scalar, `uq` is a second
 # `unpack32` fixture on purpose, and `lgz` is a second CAST cell on purpose: a target axis that is
-# the port's own fixture table has **zero** 64-bit-float cells, and that is the third member of
+# the port's own fixture table has zero 64-bit-float cells, and that is the third member of
 # the pool-fed-blindness class this file already names twice (`l2i.const`'s three, and `uq`).
 # Both bend lanes emit every row including a refusal, so the counts agree BY CONSTRUCTION and no
 # exclusion list is needed to make them meet.
@@ -161,7 +161,7 @@ def dc_l2i_pick(+i: U32) -> List<&2, String>:
     case 27: dc_l2i1("lgt", O.OpsTRUNCMOD{}, S.uint32(), S.uint32(), 9n, 4)
     case 28: dc_l2i1("lgu", O.OpsCAST{}, S.single(), S.single(), 19n, 2)
     # `lgz` IS `lgu`'S OWN CELL WITH THE TARGET'S WIDTH CHANGED, AND IT IS NOT ONE OF
-    # `l2i.pick`'s ARMS. A TARGET AXIS THAT IS THE PORT'S OWN FIXTURE TABLE HAS **ZERO**
+    # `l2i.pick`'s ARMS. A TARGET AXIS THAT IS THE PORT'S OWN FIXTURE TABLE HAS ZERO
     # 64-BIT-FLOAT CELLS, AND THAT IS THE THIRD MEMBER OF THE POOL-FED-BLINDNESS CLASS:
     # MEASURED over the 33 arms of `l2i.pick` (:2780-2834), `dt` ranges over {i32, i64, u64,
     # u32, f32} and `dd_wpool` has no f64 word, so `S.double()` -- the only member of

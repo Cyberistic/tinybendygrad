@@ -96,8 +96,8 @@ REBIND_ATTRS = frozenset({"D"})
 #: Calls that LOAD another module by path.  A reader that does this and then calls the loaded
 #: module's functions reads the subject through the AUTHOR'S OWN CLOSURES, and carries no path
 #: literal at all: `checks/corpus-figure.py` reads `runs/graphcmp/D` only because it loads
-#: `checks/differ.py` and calls `unhealthy()`.  **A SCAN THAT SEES ONLY LITERALS REPORTS THE
-#: TREE'S MOST IMPORTANT READER AS ABSENT, WHICH IS A CLEAN NUMBER FROM A HALF-POPULATION.**
+# : `checks/differ.py` and calls `unhealthy()`.  A SCAN THAT SEES ONLY LITERALS REPORTS THE
+# : TREE'S MOST IMPORTANT READER AS ABSENT, WHICH IS A CLEAN NUMBER FROM A HALF-POPULATION.
 LOAD_CALLS = frozenset({"spec_from_file_location", "SourceFileLoader"})
 
 
@@ -182,8 +182,8 @@ def readers_of(rel_dir: str, root: Path = ROOT) -> dict:
         # and `checks/substrate-id.py` (`:88 SUMMARY = ROOT / "runs/graphcmp/D/D0-run-summary.txt"`)
         # use, and a scan that looks only at READ CALLS finds NEITHER -- because the read
         # happens through the NAME (`(tree / "D0-run-summary.txt").read_text()`, where `tree`
-        # is a function parameter).  **A READER THAT NAMES THE DIRECTORY AND THEN PASSES IT AS
-        # AN ARGUMENT IS INVISIBLE TO A SCAN THAT ONLY INSPECTS CALL ARGUMENTS.**  Asking the
+        # is a function parameter).  A READER THAT NAMES THE DIRECTORY AND THEN PASSES IT AS
+        # AN ARGUMENT IS INVISIBLE TO A SCAN THAT ONLY INSPECTS CALL ARGUMENTS.  Asking the
         # fixpoint what every name in the module resolved to costs nothing extra -- the
         # environment is already built for the `call` shape below.
         for name, val in sorted(env.items()):
@@ -217,13 +217,13 @@ def readers_of(rel_dir: str, root: Path = ROOT) -> dict:
             nm = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
             # SHAPE `load` -- the author module, by path.  Everything it closes over.
             #
-            # **THE PATH IS AN ARGUMENT, NOT ANY ARGUMENT, AND THAT IS A MEASURED BUG IN THIS
-            # FILE.**  `spec_from_file_location(name, location)` takes the module's NAME first,
+            # THE PATH IS AN ARGUMENT, NOT ANY ARGUMENT, AND THAT IS A MEASURED BUG IN THIS
+            # FILE.  `spec_from_file_location(name, location)` takes the module's NAME first,
             # and the first version of this loop read EVERY argument -- so it matched on the
             # name.  MEASURED: it reported `checks/oracle-txt-census.py:215 load (... plant)`
             # and `checks/slop-declare.py:130 load (... plant.py)` as readers of
             # `runs/graphcmp/D`, because two `.agents/slop/` scripts named `plant.py` DO have
-            # write sites there and share a STEM with nothing.  **A STEM IS NOT A PATH**, which
+            # write sites there and share a STEM with nothing.  A STEM IS NOT A PATH, which
             # is the same rule as "a basename is not a path" and the same class of error: the
             # before-value was 21 reader files / 35 sites, and 3 of those files were fiction.
             # The location is the LAST argument for both call shapes, and it is resolved
@@ -232,7 +232,7 @@ def readers_of(rel_dir: str, root: Path = ROOT) -> dict:
             if nm in LOAD_CALLS and len(node.args) >= 2:
                 a = node.args[-1]
                 lit = a.value if isinstance(a, ast.Constant) and isinstance(a.value, str) else None
-                # **AND THE PATH IS USUALLY NOT A LITERAL.**  MEASURED: fixing the
+                # AND THE PATH IS USUALLY NOT A LITERAL.  MEASURED: fixing the
                 # module-name bug by demanding a `Constant` dropped the count from 21 files to
                 # 5 and lost `checks/corpus-figure.py`, `checks/sweep.py` and the rest -- because
                 # the real shape is `spec_from_file_location("differ_pins", ROOT / "checks/differ.py")`,
@@ -345,8 +345,8 @@ def main() -> int:
         # A CITATION IS NOT A READ.  Prose in a docstring names the directory -- in this tree
         # ~20 files do -- and a citation cannot distinguish an instrument from a paragraph
         # ABOUT one.  MEASURED while writing this output: printing the two together gave 218
-        # sites of which the reader-facing ones were a dozen, **which is how a report about
-        # readers becomes a report about prose.**  `checks/diary-census.py` is itself in the
+        # sites of which the reader-facing ones were a dozen, which is how a report about
+        # readers becomes a report about prose.  `checks/diary-census.py` is itself in the
         # citation set -- it names the directory in this very docstring -- and a census that
         # counted itself as a reader would be a census that can always confirm itself.
         reads, cites = {}, {}

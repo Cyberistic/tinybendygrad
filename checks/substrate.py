@@ -452,7 +452,7 @@ def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: 
         # BEFORE THE `-n` SHORT-CIRCUIT -- otherwise `-n` hides a DEAD lane it could see for
         # free. The `cc` context is the one instrument whose precondition is a FILE pair
         # (`Ctx.ready`); the shell reaches the same verdict in `c_context`, and this is exactly
-        # where `-n` used to SKIP-VERDICT past it. THE ROUTED WORDING (no `-- **NOT JUDGED**`
+        # where `-n` used to SKIP-VERDICT past it. THE ROUTED WORDING (no `-- NOT JUDGED`
         # suffix) IS THE SHELL'S ASYMMETRY and is kept: a missing context says only WHY, an
         # unrouteable class says THAT (`half1`'s cc arm says the same, for the compile failure).
         if inst == "cc" and not ctx.ready():
@@ -502,7 +502,7 @@ def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: 
             continue
         if not ctx.ok():
             tally["none"] += 1
-            # NO `-- **NOT JUDGED, AND NOT COLD**` HERE, and that asymmetry is the shell's. The
+            # NO `-- NOT JUDGED, AND NOT COLD` HERE, and that asymmetry is the shell's. The
             # unrouteable class says it; a missing context says only why.
             emit(f"NO INSTRUMENT  {head}  :: {why}")
             continue
@@ -631,7 +631,7 @@ REF = re.compile(r"\b([A-Za-z_]\w*)\.([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)")
 # MEASURED, and this is not a curiosity: the port that "fixed" this to the obvious `\"(?:[^"\\]|
 # \\.)*\"` disagreed with the oracle by exactly ONE `unseen` on `uop/validate.bend`, 547 vs 548,
 # on a 663-reference line. A single mis-stripped string literal turned a quoted name into a
-# `Foo.bar` reference. **THE ORACLE IS RIGHT BY ACCIDENT AND THE PORT WAS WRONG ON PURPOSE** --
+# `Foo.bar` reference. THE ORACLE IS RIGHT BY ACCIDENT AND THE PORT WAS WRONG ON PURPOSE --
 # there is nothing to fix here, only to reproduce, and this comment is the only thing standing
 # between the next reader and a well-meaning repair that breaks the gate.
 STRING = re.compile(r"\"(?:[^\"\\\\]|\\\\.)*\"")

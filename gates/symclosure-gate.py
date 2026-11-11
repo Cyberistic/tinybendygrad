@@ -47,8 +47,8 @@ from tinygrad.uop.symbolic import commutative, pm_data_invalid, symbolic, symbol
 # buckets, so placements OVERCOUNT the rules by the size of the sets.
 #
 # THIS FILE SAID `rules` AND MEANT `placements` UNTIL IT MEASURED BOTH. MEASURED 2026-11-03:
-# `commutative` is EIGHT placements and **ONE** rule (`UPat(GroupOp.Commutative)`), and
-# `symbolic` is 335 placements and **122** rules. A work estimate taken off the first number
+# `commutative` is EIGHT placements and ONE rule (`UPat(GroupOp.Commutative)`), and
+# `symbolic` is 335 placements and 122 rules. A work estimate taken off the first number
 # would have been 2.7x too large, and it was the number this gate's own PASS line printed.
 #
 # RE-PINNED 2026-11-06. THE OLD PINS WERE MEASURED ON 2026-11-03, BEFORE THE RE-VENDOR TO
@@ -111,7 +111,7 @@ SCANS = ("pm_scan_m", "pm_rewrite_m", "pm_scan_f", "pm_rewrite_f")
 #
 # KEY THREE IS ORDER-IDENTICAL TO CPYTHON OVER THE WHOLE UNIVERSE: 20 x 20 = 400 dtype pairs,
 # `(port pri, port bits, name)` against `(priority, bitsize, name)` on CPython's own objects,
-# **0 DISAGREE**. The port's `void` carries priority 0 where CPython has -1, and it does not
+# 0 DISAGREE. The port's `void` carries priority 0 where CPython has -1, and it does not
 # matter because NO OTHER DTYPE SHARES PRIORITY 0, so the chain never reaches that term.
 WALLS = ("UOp.tuplize", "uop_tup_cmp")
 
@@ -181,7 +181,7 @@ def distinct_rules(pm) -> int:
     return len({(id(e[0]), id(e[1])) for v in pm.pdict.values() for e in v})
 
 
-# **`^def` AND NOT `def`.** MEASURED 2026-11-03: a COMMENT that records "there is no `def
+# `^def` AND NOT `def`. MEASURED 2026-11-03: a COMMENT that records "there is no `def
 # fold_add_divmod_recombine`" made this function answer True for it, and the gate reported the body
 # as LANDED. A discovery that matches prose is a discovery that reads its own diary -- the same
 # failure as a census that counts its own comments.

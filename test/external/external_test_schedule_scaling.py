@@ -22,7 +22,7 @@ class TestScheduleScaling(unittest.TestCase):
     fn(n).schedule_linear()
     return time.perf_counter() - st
 
-  # *** rangeify: ending_ranges accumulation and consumer merge ***
+  # * rangeify: ending_ranges accumulation and consumer merge *
 
   # ending_ranges accumulation via sum([], []) and nested scan in run_rangeify.
   # this creates reduce ops whose ending_ranges lists grow with graph depth, causing O(n^2) list copies.
@@ -54,7 +54,7 @@ class TestScheduleScaling(unittest.TestCase):
       return x
     self._assert_linear(expand_reduce)
 
-  # *** graph_rewrite: multi-consumer DAG patterns ***
+  # * graph_rewrite: multi-consumer DAG patterns *
 
   # multi-consumer diamond pattern (fan-out/fan-in) stresses consumer_rngs merge in run_rangeify
   def test_diamond_scaling(self):
@@ -83,7 +83,7 @@ class TestScheduleScaling(unittest.TestCase):
       return x
     self._assert_linear(softmax_chain)
 
-  # *** post-rangeify: symbolic rewrites, kernel splitting ***
+  # * post-rangeify: symbolic rewrites, kernel splitting *
 
   # matmul chain stresses symbolic+reduce_collapse and split_store
   def test_matmul_scaling(self):
@@ -102,7 +102,7 @@ class TestScheduleScaling(unittest.TestCase):
       return x
     self._assert_linear(contiguous_chain)
 
-  # *** schedule: AFTER handling, assign ***
+  # * schedule: AFTER handling, assign *
 
   # assign chain stresses AFTER cycle detection (toposort inside toposort loop in get_rangeify_map)
   def test_assign_scaling(self):

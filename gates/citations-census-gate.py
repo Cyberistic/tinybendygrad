@@ -104,8 +104,8 @@ EXCLUDED_DIRS = {
     "__pycache__": "compiled python",
     "node_modules": "not present; listed so the count is 0 and says so",
     "references": "gitignored; 1,714 third-party .bend files, not this tree's claims",
-    # *** `.agents/slop/` IS A POPULATION OF INSTRUMENTS THAT ALREADY CENSUSED CITATIONS, AND
-    # ITS ROWS ARE NOT CLAIMS THE TREE MAKES. ***  MEASURED: nine files there hold ~31,400
+    # * `.agents/slop/` IS A POPULATION OF INSTRUMENTS THAT ALREADY CENSUSED CITATIONS, AND
+    # ITS ROWS ARE NOT CLAIMS THE TREE MAKES. *  MEASURED: nine files there hold ~31,400
     # rows each -- `residual/cites-before.rows`, `cheapguards/{G1,G2,FINAL,BEFORE}.rows`,
     # `textguard/{BEFORE,AFTER}.rows`, `failaudit/fa.rows`, `unreadable/cites.rows`,
     # `precision/claims.rows`, `dangle/cites.rows` -- and together they are 452,070 of this
@@ -126,10 +126,10 @@ EXCLUDED_DIRS = {
 EXCLUDED_PREFIXES = {
     ".ruff_cache/": "ruff's cache, rewritten on every run",
     "gates/artifacts/": "gitignored gate OUTPUT -- AGENTS.md: `rm -rf gates/artifacts` is live",
-    # *** THIS GATE'S OWN FINDINGS FILE IS ITS OWN OUTPUT, AND MEASURED IT IS NOT A SMALL
-    # SELF-REFERENCE. ***  Every row of `gates/citations-census-findings.rows` holds a
+    # * THIS GATE'S OWN FINDINGS FILE IS ITS OWN OUTPUT, AND MEASURED IT IS NOT A SMALL
+    # SELF-REFERENCE. *  Every row of `gates/citations-census-findings.rows` holds a
     # `subject:N`, so the first version of this file -- 394 rows -- made the NEXT run's
-    # headline 628, i.e. **+234 claims that are this instrument reporting its own findings**,
+    # headline 628, i.e. +234 claims that are this instrument reporting its own findings,
     # which is the `realize.bend:881` citation-of-a-citation shape at 234x.  It is excluded
     # for the same reason and with the same rule as `gates/artifacts/`: a gate's OUTPUT is not
     # a claim, and it is tallied below rather than quietly skipped.  `checks/census.json` and
@@ -219,7 +219,7 @@ FIELDS = ("at", "subject", "loc", "lo", "hi", "needle", "rev", "neighbourhood",
 # live tree: nine range citations straddle their target's boundary and exactly one reaches past
 # it -- and it is a TRUE citation today, so the straddle rule adds a row, never loses one.
 #
-# *** A REVERSED RANGE IS A DEFECT IN THE CITATION, AND IT IS TALLIED RATHER THAN GUESSED. ***
+# * A REVERSED RANGE IS A DEFECT IN THE CITATION, AND IT IS TALLIED RATHER THAN GUESSED. *
 # `tinybendygrad/uop/validate.bend:2503` writes `ops.bend:7044-7012` -- an end before a start.
 # `range(lo, hi+1)` over the raw pair is EMPTY, so an unnormalised extractor silently reports
 # it as resolved, which is the `[^/]*`-matched-empty moral in a new costume: a token that
@@ -251,9 +251,9 @@ def _needle(line: str, end: int, spans: list[tuple[int, int, str]]) -> str | Non
             continue
         t = span.strip("*\u2026 ")
         if len(t) >= 4 and "/" not in t:
-            # *** A POSSESSIVE IS A CLAIM ABOUT THE NEIGHBOURHOOD, NOT AN OCCURRENCE. ***
+            # * A POSSESSIVE IS A CLAIM ABOUT THE NEIGHBOURHOOD, NOT AN OCCURRENCE. *
             # MEASURED: `.agents/TODO.md:2800` reads "This is `reduce.py:45`'s `mo_downcast`
-            # neighbourhood", and `grep -c mo_downcast tinygrad/mixin/reduce.py` answers **0**
+            # neighbourhood", and `grep -c mo_downcast tinygrad/mixin/reduce.py` answers 0
             # over 138 lines -- correctly, because the name was RENAMED and TODO.md is a
             # changelog whose subjects are FORMER names. Answering FALSIFIED there would put
             # the census's strongest word on a true sentence about a deletion, so the
@@ -358,7 +358,7 @@ class Universe:
         hits = [p for p in self.suffix.get("/" + subject, ()) if p in self.on_disk]
         if len(hits) == 1:
             return hits[0], "suffix"
-        # *** A SUFFIX THAT MATCHED SEVERAL PATHS IS AMBIGUOUS, NOT ABSENT. ***  MEASURED: the
+        # * A SUFFIX THAT MATCHED SEVERAL PATHS IS AMBIGUOUS, NOT ABSENT. *  MEASURED: the
         # first cut fell through to the basename index and returned `absent` for
         # `uop/fold.bend`, which EXISTS at `tinybendygrad/uop/fold.bend` (402,187 bytes) and is
         # ALSO at `.agents/slop/strays/{origin,working}/tinybendygrad/uop/fold.bend`.  Three
@@ -472,7 +472,7 @@ def judge(c: dict, U: Universe, bodies: dict[str, list[str]], reg: dict[str, set
             c["verdict"] = "AMBIGUOUS"
             c["why"] = f"{how} tracked paths end in /{c['subject']}"
             return c
-        # *** AN EXTENSION NO FILE IN THE CORPUS HAS IS NOT A CITATION. ***  MEASURED on the
+        # * AN EXTENSION NO FILE IN THE CORPUS HAS IS NOT A CITATION. *  MEASURED on the
         # first live run: `1000.0`, `10.0.0.1`, `dev_sort.GPU`, `row_tuple.ALUEXEC` and
         # `Ops.RANGE` were all emitted as DANGLING-FILE, and they are floats, IP addresses and
         # dotted Python attributes -- 95 of the 4,550.  The extension set is READ OUT OF THE
@@ -518,7 +518,7 @@ def judge(c: dict, U: Universe, bodies: dict[str, list[str]], reg: dict[str, set
         c["why"] = f":{c['lo']} exists in a {len(body)}-line file; NOTHING on the claiming " \
                    f"line says what it should say"
         return c
-    # *** A NEEDLE THAT IS A DIFFERENT KIND OF CLAIM IS NOT A FALSIFICATION. ***  MEASURED on
+    # * A NEEDLE THAT IS A DIFFERENT KIND OF CLAIM IS NOT A FALSIFICATION. *  MEASURED on
     # the first live run: 543 of the headline FALSIFIED rows carried needles like `:281`,
     # `ops.bend:5332` and `llvmir-oracle.py:866` -- which are LOCATORS, and asking a file
     # whether it "contains `ops.bend:5332`" asks about a different object.  `CC.needle_kind`
@@ -541,7 +541,7 @@ def judge(c: dict, U: Universe, bodies: dict[str, list[str]], reg: dict[str, set
         c["why"] = f":{c['lo']} carries {c['needle'][:48]!r}"
         return c
     near = [i for i, l in enumerate(body, 1) if CC.cited(l, c["needle"])]
-    # *** LANE X SAYS `OFF-LINE` AND NEVER `STALE`, AND THE REASON IS A MEASURED ONE. ***
+    # * LANE X SAYS `OFF-LINE` AND NEVER `STALE`, AND THE REASON IS A MEASURED ONE. *
     # `.agents/TODO.md:2519` reads "`ptx.py:13`/`ptx.py:16` (`render_val`'s signed-integer and
     # double ...)".  `render_val` is DEFINED at `tinygrad/renderer/ptx.py:11` and line 16 is
     # INSIDE its body -- `sed -n 16p` reads `return str(int(x)) + ("U" if ...)`.  The claim is
@@ -579,7 +579,7 @@ def regressed(c: dict, path: str, reg: dict[str, set[int]],
     c["regressed"] = True
     c["at_old"] = hit
     post = bodies.get(path) or []
-    # *** AN EMPTY NEEDLE MATCHES EVERY LINE. ***  `cited(l, "")` is `re.search(r"(?![\w])", l)`,
+    # * AN EMPTY NEEDLE MATCHES EVERY LINE. *  `cited(l, "")` is `re.search(r"(?![\w])", l)`,
     # which succeeds at position 0 of anything, so a citation carrying no claim at all read as
     # COSMETIC -- the strongest word in the vocabulary, handed to the weakest evidence.  The
     # `if c["needle"]` is the guard and it is the FIRST branch, not a filter at the end.
@@ -758,7 +758,7 @@ def main() -> int:
         # THE FINDINGS ARE A DELIVERABLE AND THEY LIVE BESIDE THE GATE, IN GIT.
         # `gates/artifacts/` is `.gitignore`d and `rm -rf gates/artifacts` is a live command
         # in this tree (AGENTS.md), so an artifact-only answer to "what is broken" is an answer
-        # with a shelf life.  *** AND THE FILE IS ITS OWN CITATION-OF-A-CITATION: every row
+        # with a shelf life.  * AND THE FILE IS ITS OWN CITATION-OF-A-CITATION: every row
         # holds a `subject:N`, so committing it adds ~400 rows to the NEXT run's population.
         # That is the `realize.bend:881` shape at 400x and it is stated here rather than left
         # for the next reader to wonder why the headline grew.
@@ -811,7 +811,7 @@ def selftest() -> int:
         cases.append(("EXISTENCE-ONLY: no needle, so nothing checks what it says",
                       j("subj.bend", "2", "-- where it lives"), "EXISTENCE-ONLY"))
         # MEASURED on the live tree: TODO.md:2800 says "This is `reduce.py:45`'s `mo_downcast`
-        # neighbourhood", and `grep -c mo_downcast tinygrad/mixin/reduce.py` answers **0** over
+        # neighbourhood", and `grep -c mo_downcast tinygrad/mixin/reduce.py` answers 0 over
         # 138 lines -- correctly, because the name was RENAMED and TODO.md is a changelog whose
         # subjects are FORMER names. FALSIFIED there would put the census's strongest word on a
         # true sentence about a deletion.  THE PLANT IS THE TREE'S SPELLING AND NOT A PARAPHRASE:

@@ -74,7 +74,7 @@ UN2 = [("rax", 0, (0,)), ("rcx", 1, (1,)), ("rbx", 3, (2,)),
 OPS0 = [("CONST", (), ()), ("INS", (0,), (6,)), ("INS", (0,), (7,)), ("INS", (0,), (8,)),
         ("INS", (0,), (9,)), ("INS", (1,), ()), ("INS", (2,), ()), ("INS", (3, 4), (10,)),
         ("CONST", (), ()), ("INS", (1,), ()), ("INS", (2, 3), ()), ("INS", (4,), ())]
-# `RaUop.ss` IS A LIST OF **NODE** INDICES, NOT REGISTER INDICES, and getting that wrong is
+# `RaUop.ss` IS A LIST OF NODE INDICES, NOT REGISTER INDICES, and getting that wrong is
 # the trap this fixture exists to avoid. `ra_rdef` (regalloc.bend:369-372) is `ds`'s HEAD --
 # the DEF of a node -- and `ra_rdefs` (regalloc.bend:570) applies it to `ss`, so `ss` indexes
 # `ops`. MEASURED, it has to: with `ss` read as registers, `ra0` would give `rax` a live range

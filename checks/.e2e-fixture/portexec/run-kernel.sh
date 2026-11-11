@@ -30,11 +30,11 @@ MODE=${1:-stage2}
 case "$MODE" in stage2|mm) ;; *) print -r -- "unknown mode '$MODE' (want stage2 | mm)"; exit 2 ;; esac
 WORK=${2:-${WORK:-$TMPDIR/portexec}}
 
-# THE WORK DIRECTORY IS **NOT **A **FLAG**, AND IT IS **NOT **INSIDE **THE **REPO**.  MEASURED
+# THE WORK DIRECTORY IS NOT A FLAG, AND IT IS NOT INSIDE THE REPO.  MEASURED
 # 2026-10-19, IN THE SISTER SCRIPT: `run-f64.sh --help` put a work DIRECTORY at `--help` and
 # `mkdir -p` created it AT THE REPO ROOT, and `checks/no-txt.py` then OWNED the `.txt` files
-# it left there -- so a failed run became HARD debt the `.txt` gate charges.  **`$MODE`
-# **IS **ALREADY **VALIDATED **BY **THE **`case` **ABOVE**, **AND **A **PATH **IS **NOT.**
+# it left there -- so a failed run became HARD debt the `.txt` gate charges.  `$MODE`
+# IS ALREADY VALIDATED BY THE `case` ABOVE, AND A PATH IS NOT.
 case "$WORK" in
   -*) print -r -- "$0: the work directory '$WORK' looks like a FLAG. This script's second argument is a DIRECTORY; exit 3 (REFUSED)." >&2
       exit 3 ;;
@@ -73,15 +73,15 @@ print -r -- "\n== PORT  ./bin/bend cstyle.bend"
 # port's own imports drag in. That is NOT this lane's verdict and NOT this
 # lane's file; the failure is reported as SUBSTRATE so it cannot be read as one.
 #
-# **AND THE CHECK IS **THE COMPILE VERDICT**, NOT A ROW COUNT, AND THAT IS A
-# CORRECTION WITH A MEASURED CAUSE.** The check used to be "220 rows matching
+# AND THE CHECK IS THE COMPILE VERDICT, NOT A ROW COUNT, AND THAT IS A
+# CORRECTION WITH A MEASURED CAUSE. The check used to be "220 rows matching
 # `]   py=[`", because `cstyle.bend` used to PRINT its 227 string-diff gate rows.
-# **AND IT DOES NOT ANY MORE**: commit `564733bed` removed those rows from
+# AND IT DOES NOT ANY MORE: commit `564733bed` removed those rows from
 # `cstyle.bend`, which is now a LIBRARY -- it has no `main()`, and its rows live
-# in the tracked `gates/cstyle-live.rows` (228 rows). **SO THE OLD CHECK
+# in the tracked `gates/cstyle-live.rows` (228 rows). SO THE OLD CHECK
 # MEASURED A SUBJECT THAT NO LONGER EXISTS, AND IT REPORTED "the port produced 0
-# rows" FOR A PORT THAT COMPILES FINE.** **AND THE VERDICT TOKEN IS
-# `ALL PROOFS CHECK`, WHICH IS WHAT THE FILE PRINTS ON SUCCESS** -- and
+# rows" FOR A PORT THAT COMPILES FINE. AND THE VERDICT TOKEN IS
+# `ALL PROOFS CHECK`, WHICH IS WHAT THE FILE PRINTS ON SUCCESS -- and
 # `AGENTS.md` records the whole rule: read the verdict TOKEN, never the exit
 # code.
 i=0; rows=0; ok=0
@@ -97,14 +97,14 @@ done
   fail "SUBSTRATE: the port did not check in 12 attempts. The port's imports reach helpers.bend; if its stderr names a def that is NOT in renderer/cstyle.bend, another agent is mid-edit and this is NOT a verdict on this lane."; }
 print -r -- "   ALL PROOFS CHECK"
 
-# THE ROWS, FROM THE **TRACKED** FILE. `cstyle.bend` no longer PRINTS its
+# THE ROWS, FROM THE TRACKED FILE. `cstyle.bend` no longer PRINTS its
 # `]   py=[` gate rows -- commit `564733bed` made it a LIBRARY with no `main()`
 # -- so the rows live in `gates/cstyle-live.rows` (228 rows), which is the
 # port's own captured stdout, committed BESIDE THE GATE THAT READS IT (the
 # `e2efix` precedent, and the same rule: a gate's input belongs in git beside
 # the gate, not under a tree that is being pruned).
 #
-# **AND IT IS COPIED HERE UNDER THE NAME THE READER EXPECTS**, so
+# AND IT IS COPIED HERE UNDER THE NAME THE READER EXPECTS, so
 # `gen_ffi.py`'s `port_rows(out / "port-rows.txt")` is unchanged and the SOURCE
 # is the tracked one.
 CSTYLE_ROWS="$ROOT/gates/cstyle-live.rows"

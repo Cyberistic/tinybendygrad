@@ -11,7 +11,7 @@ from tinygrad.renderer.cstyle import CStyleLanguage
 from test.helpers import assert_kernel_count
 from test.null.test_custom_kernel import custom_elementwise_add_kernel, custom_elementwise_addmul_kernel, custom_gemm
 
-# **** kernels ****
+# kernels
 
 def custom_arange_kernel(C:UOp) -> UOp:
   i = UOp.range(C.shape[0], 0)
@@ -78,7 +78,7 @@ def simple_qkv_kernel(O:UOp, Q:UOp, K:UOp, V:UOp) -> UOp:
   store = O[i, d_out].store(out_acc[0])
   return store.end(d_out).end(i).sink(arg=KernelInfo(name=f"simple_qkv_{N}_{d}", opts_to_apply=()))
 
-# **** backward callbacks ****
+# backward callbacks
 
 def backward_gemm(gradient:UOp, kernel:UOp) -> tuple[UOp, UOp]:
   out, a, b = kernel.src[1:]
@@ -92,7 +92,7 @@ def backward_gemm_custom(gradient:UOp, kernel:UOp) -> tuple[UOp, UOp]:
   grad_b = Tensor.empty_like(Tensor(b)).custom_kernel(Tensor(a).T, Tensor(gradient), fxn=custom_gemm)[0].uop
   return (None, grad_a, grad_b)
 
-# **** tests ****
+# tests
 
 class TestCustomKernel(unittest.TestCase):
   def test_empty(self):

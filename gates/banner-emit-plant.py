@@ -201,7 +201,7 @@ def main() -> int:
         # THE TWO EXITS NOBODY READS, RUN. `banner-emit-gate.py` writes a DEAD branch and a REFUSED
         # branch and nothing in this tree can reach either: the walk only comes up empty if
         # `checks/e2e.py` loses its `stage([...])` call sites, and the REFUSED guard only fires away
-        # from a repo root. **A BRANCH THAT HAS NEVER RUN IS NOT A VERDICT, IT IS A COMMENT**, so both
+        # from a repo root. A BRANCH THAT HAS NEVER RUN IS NOT A VERDICT, IT IS A COMMENT, so both
         # are provoked here in the scratch and the exits are exercised rather than quoted.
         e2e = tmp / "checks/e2e.py"
         kept = e2e.read_text()

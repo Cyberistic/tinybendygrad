@@ -127,8 +127,8 @@ EXCLUDED_DIRS = (
     # THIS CHECK'S OWN OUTPUT, and it is here because the trap fired rather than because it is tidy.
     # MEASURED 2026-10-06: `000-the-residue.md` names every residue row by path, so the moment it was
     # staged -- which a concurrent unit did with a bare `git add` -- the next run found EVERY ROW CITED
-    # BY THIS CHECK'S OWN REPORT, and the residue collapsed from 40 `UNNAMED` to 0. **A CLEANUP THAT
-    # IMPROVES ITS OWN INSTRUMENT'S NUMBER IS NOT A CLEANUP, IT IS A SELF-DEFINING ONE**, and this is
+    # BY THIS CHECK'S OWN REPORT, and the residue collapsed from 40 `UNNAMED` to 0. A CLEANUP THAT
+    # IMPROVES ITS OWN INSTRUMENT'S NUMBER IS NOT A CLEANUP, IT IS A SELF-DEFINING ONE, and this is
     # the fifth time in this project that a citation index has been built out of the thing it was
     # measuring. `belt_self_cited` below is the second belt: the exclusion is the fix and the belt is
     # what notices if the fix is ever undone.
@@ -144,21 +144,21 @@ SELF = SLOP + "/residue/"
 RESIDUE_ROOTS = (SLOP, RUNS)
 
 # THE WALL BOUND, IN SECONDS, AND IT IS A MEASUREMENT RATHER THAN A ROUND NUMBER. MEASURED
-# 2026-10-07, un-contended, on this tree: **pre-classify 117 s** (all of it `sweep.py`'s
-# `house_excluded`, which re-parses `checks/` and `gates/` once per path) + **1,641 rows x 0.32 s =
-# 525 s** of belt A, so the uncapped run is ~11 minutes and had not finished at 600 s.
+# 2026-10-07, un-contended, on this tree: pre-classify 117 s (all of it `sweep.py`'s
+# `house_excluded`, which re-parses `checks/` and `gates/` once per path) + 1,641 rows x 0.32 s =
+# 525 s of belt A, so the uncapped run is ~11 minutes and had not finished at 600 s.
 #
 # 900 s IS THE BOUND BECAUSE IT IS THE SUM, NOT A ROUND NUMBER, AND THE SUM HAD TO BE RE-MEASURED
 # IN PLACE. The phases before the first `classify` measured 117 s on a quiet tree, and a 240 s bound
-# was the arithmetic consequence -- **and the run it produced PAID 0 BELT-A CALLS AND TOOK 348 s.**
+# was the arithmetic consequence -- and the run it produced PAID 0 BELT-A CALLS AND TOOK 348 s.
 # The number that had been measured was measured while other units were writing the corpus it reads;
 # the cost is `sweep.py`'s and it moves with the tree, so a floor derived from it decays exactly the
-# way `--live-minutes` decays. **THE BOUND MUST BE ABOVE THE WORST OBSERVED PRE-CLASSIFY, NOT ABOVE
-# THE NICEST ONE.** 900 s leaves belt A a budget on this tree and still terminates, which is the
+# way `--live-minutes` decays. THE BOUND MUST BE ABOVE THE WORST OBSERVED PRE-CLASSIFY, NOT ABOVE
+# THE NICEST ONE. 900 s leaves belt A a budget on this tree and still terminates, which is the
 # property the gate was missing; a bound tuned to complete the census is a bound that will not
 # complete it tomorrow, and a gate that stops answering is worse than one that answers partly.
 #
-# **WHAT A SMALL-VALUE READING BUYS, MEASURED: the run finishes and publishes a census.** `--seconds 5`
+# WHAT A SMALL-VALUE READING BUYS, MEASURED: the run finishes and publishes a census. `--seconds 5`
 # answers the population, the DELETE count, the COPY twins, the citation index size and every row
 # decided by a resolver that costs no subprocess -- in 121 s, because the pre-classify floor is not
 # this file's to shrink. The bound decides HOW MUCH of the citation work gets done, never WHETHER
@@ -166,7 +166,7 @@ RESIDUE_ROOTS = (SLOP, RUNS)
 DEFAULT_SECONDS = 1800
 
 # THE ROW BOUND, AND IT IS THE ONE THAT ACTUALLY BINDS. Belt A is 0.32 s MEASURED per `git grep`
-# and 1,641 rows reach it, so 500 calls is **160 s of citation work** on a quiet tree and the run
+# and 1,641 rows reach it, so 500 calls is 160 s of citation work on a quiet tree and the run
 # still terminates on a tree where `sweep.py`'s pre-classify has doubled twice. A row count is the
 # right unit HERE BECAUSE THE PER-ROW COST IS MEASURED AND CONSTANT, which is the same reason the
 # file's own `sweep.py:435` counts corpus scans: the cost is known per item, so the bound is in
@@ -454,7 +454,7 @@ def classify(root: str, rel: str, size: int, *, sweep_named: set[str], first_pas
         if not belt_b:
             return first, "UNNAMED", "every test ran; nothing renders or names it. A CANDIDATE, not a verdict"
         if belt_budget is not None and not belt_budget.spend():
-            # **A SPENT BUDGET IS NOT A CLEAN ROW, IT IS AN UNDECIDED ONE.** Returning `UNNAMED` here
+            # A SPENT BUDGET IS NOT A CLEAN ROW, IT IS AN UNDECIDED ONE. Returning `UNNAMED` here
             # would claim "every test ran" for a row whose second belt never ran, which is the one
             # sentence this whole file exists to make impossible. `UNKNOWN` with a `needs=` is the
             # fifth verdict doing its job, and the run still publishes a census instead of dying.

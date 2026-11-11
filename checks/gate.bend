@@ -14,7 +14,7 @@ import ../tinybendygrad/uop/ops.bend as O
 #   git cat-file blob 5444ea42e:.agents/slop/shlscope/gen.py > /tmp/gen.py
 #   .venv/bin/python /tmp/gen.py --emit-bend > /tmp/regen.bend
 #   diff /tmp/regen.bend checks/gate.bend
-# emits 370 lines and differs on **4 of them -- the imports, and nothing else**. So the
+# emits 370 lines and differs on 4 of them -- the imports, and nothing else. So the
 # claim is TRUE, and this file is the generator's output plus a depth correction: the
 # generator writes `../../../tinybendygrad/...` because it emits into
 # `.agents/slop/shlscope/` (3 levels down) and this file lives in `checks/` (1). That is

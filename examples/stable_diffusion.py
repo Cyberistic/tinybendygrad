@@ -235,20 +235,20 @@ class StableDiffusion:
     #x_prev, pred_x0 = get_x_prev_and_pred_x0(latent, e_t_prime, index)
     return x_prev.realize()
 
-# ** ldm.models.autoencoder.AutoencoderKL (done!)
+# ldm.models.autoencoder.AutoencoderKL (done!)
 # 3x512x512 <--> 4x64x64 (16384)
 # decode torch.Size([1, 4, 64, 64]) torch.Size([1, 3, 512, 512])
 # section 4.3 of paper
 # first_stage_model.encoder, first_stage_model.decoder
 
-# ** ldm.modules.diffusionmodules.openaimodel.UNetModel
+# ldm.modules.diffusionmodules.openaimodel.UNetModel
 # this is what runs each time to sample. is this the LDM?
 # input:  4x64x64
 # output: 4x64x64
 # model.diffusion_model
 # it has attention?
 
-# ** ldm.modules.encoders.modules.FrozenCLIPEmbedder
+# ldm.modules.encoders.modules.FrozenCLIPEmbedder
 # cond_stage_model.transformer.text_model
 
 if __name__ == "__main__":

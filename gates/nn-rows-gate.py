@@ -97,7 +97,7 @@ GATE = "nn-rows-gate"
 OUT = ART / GATE
 # THE FROZEN BASELINE, BESIDE THE GATE AND IN GIT -- `AGENTS.md`'s own rule, and the reason it
 # is here and not under `.agents/slop/`: A GATE'S REQUIRED INPUT BELONGS BESIDE THE GATE.
-# **A BASELINE IS A RECORD, NOT A POPULATION.** THE POPULATION IS STILL THE HARNESS's OWN
+# A BASELINE IS A RECORD, NOT A POPULATION. THE POPULATION IS STILL THE HARNESS's OWN
 # DECLARATION; THE BASELINE IS WHAT MAKES A DELETED ROW NAME VISIBLE.
 BASELINE = HERE / "nn-rows-baseline.rows"
 
@@ -611,7 +611,7 @@ def measure(port: Path, label: str, use_baseline: bool = True):
         lines.append(f"{GATE}: DEAD")
         return DEAD, {}, 0, 0, lines, ()
 
-    # **THE FROZEN BASELINE, AND IT CROSS-CHECKS THE POPULATION RATHER THAN REPLACING IT.**
+    # THE FROZEN BASELINE, AND IT CROSS-CHECKS THE POPULATION RATHER THAN REPLACING IT.
     # THE POPULATION IS STILL THE HARNESS's OWN DECLARATION.
     if use_baseline:
         baseline, meta = read_baseline()
@@ -724,12 +724,12 @@ def plant() -> int:
               + (f" class={cls}" if cls else " class=DEAD-LANE"))
         if got != want:
             bad.append(f"{name}: rc={got}, expected {want}")
-    # **THE BASELINE's TWO CLASSES, PLANTED THE SAME WAY** -- THE PLANTS DRIVE THE SHIPPED
+    # THE BASELINE's TWO CLASSES, PLANTED THE SAME WAY -- THE PLANTS DRIVE THE SHIPPED
     # DECISION, AND THE SHIPPED DECISION IS `classify`, SO A PLANT OF `baseline_delta` ALONE
     # WOULD BE A PLANT OF A HELPER.
     base_cases = [
         # (name, baseline, expected, rows, want_rc, want_class)
-        # **THE EXPECTATION EACH PLANT CARRIES IS THE ONE THAT MAKES ITS OWN ROW NOT `EXTRA`:**
+        # THE EXPECTATION EACH PLANT CARRIES IS THE ONE THAT MAKES ITS OWN ROW NOT `EXTRA`:
         # A ROW THAT IS PRINTED AND NOT DECLARED IS `EXTRA`, WHICH IS A FIRING CLASS, SO THE
         # `ADDED` PLANT DECLARES THE ROW IT ADDS.
         ("DROPPED", {"a", "b"}, exp_one, [Row("a", "1", "1")], FAIL, C_DROPPED),
@@ -1010,18 +1010,18 @@ def _mutate(text: str, rows, name: str):
         # row is declared AND printed, and the FROZEN BASELINE, which does not have it, is the
         # only thing that can see the difference.
         #
-        # **A NEW `def` AND NOT A SECOND STATEMENT IN AN EXISTING ONE.** MEASURED 2026-10-25:
+        # A NEW `def` AND NOT A SECOND STATEMENT IN AN EXISTING ONE. MEASURED 2026-10-25:
         # putting a second `nn_row.line(...)` inside `nn_row_relu` -- BEFORE the existing call
         # AND AFTER IT -- made `bend` answer *"expected : 'def', 'type' or 'law'"* AT THAT LINE,
-        # **IN BOTH POSITIONS**. **A FUNCTION BODY IN BEND IS ONE EXPRESSION, NOT A BLOCK OF
-        # STATEMENTS.** `main` IS THE EXCEPTION BECAUSE ITS BODY IS A `do IO<Unit>:` BLOCK.
+        # IN BOTH POSITIONS. A FUNCTION BODY IN BEND IS ONE EXPRESSION, NOT A BLOCK OF
+        # STATEMENTS. `main` IS THE EXCEPTION BECAUSE ITS BODY IS A `do IO<Unit>:` BLOCK.
         return (_add_row_function(text),
                 "a new row function `nn_row_added` was added and `main` now calls it, so the "
                 "run prints one row the frozen baseline does not have")
     if name == "f":
         # THE ROW NAME LEAVES THE FILE: the function that declared it and its call in
-        # `main` both go. **THE POPULATION IS DECLARED BY THIS FILE, SO THE DECLARATION AND
-        # THE OUTPUT SHRINK TOGETHER** -- AND THE FROZEN BASELINE IS THE ONE THING THAT DOES
+        # `main` both go. THE POPULATION IS DECLARED BY THIS FILE, SO THE DECLARATION AND
+        # THE OUTPUT SHRINK TOGETHER -- AND THE FROZEN BASELINE IS THE ONE THING THAT DOES
         # NOT SHRINK WITH THEM, SO THE GATE NOW CATCHES IT. THAT IS THE HOLE, CLOSED.
         _expected, sites = parse_source(text)
         counts = {}

@@ -37,8 +37,8 @@ ROOT = Path(__file__).resolve().parents[1]
 HERE = ROOT / "gates"
 VERDICTS = ROOT / ".agents/slop/e2estage8/verdicts.py"
 # THE PRE-FIX CENSUS, FROZEN AND BYTE-FOR-BYTE: `git cat-file blob eb67bf05`, which is
-# `.agents/slop/e2estage8/verdicts.py` at HEAD, sha256 `c1c4d328...`. **EVERY PLANT BELOW IS RUN
-# AGAINST IT, AND A PLANT THAT THE BLIND INSTRUMENT ALSO FAILS IS NOT A PLANT OF THIS DEFECT** -- it
+# `.agents/slop/e2estage8/verdicts.py` at HEAD, sha256 `c1c4d328...`. EVERY PLANT BELOW IS RUN
+# AGAINST IT, AND A PLANT THAT THE BLIND INSTRUMENT ALSO FAILS IS NOT A PLANT OF THIS DEFECT -- it
 # is a plant of something the old file could already see. Its own usage line names its old home; the
 # selftest invokes it by absolute path, so that line is stale TEXT and nothing reads it.
 LEGACY = HERE / "e2estage8-stage-legacy.py"
@@ -152,8 +152,8 @@ def main() -> int:
     print(f"  {'OK  ' if results[-1] else 'FAIL'} {'CONTROL every line accounted for exactly once':<50}")
 
     # --- PLANT 1, THE RE-OPEN. The banner goes BETWEEN stage 2's countable row and its verdict, which
-    # is where the old shape did its damage. **MEASURED 2026-10-19T04:28Z: THE PRE-FIX CENSUS IS NOT
-    # BLIND TO THIS ONE, IT IS WRONG ABOUT IT** -- it exits 1 with `no denominator counted`, because
+    # is where the old shape did its damage. MEASURED 2026-10-19T04:28Z: THE PRE-FIX CENSUS IS NOT
+    # BLIND TO THIS ONE, IT IS WRONG ABOUT IT -- it exits 1 with `no denominator counted`, because
     # the reset destroyed the very row the stage printed. The defect did not merely escape the old
     # census, it made the old census accuse the port of a stage 2 that DID print its denominator. The
     # new shape must (a) go red on the re-open, (b) STILL COUNT 24, and (c) never blame the stage.

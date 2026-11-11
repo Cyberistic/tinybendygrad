@@ -169,8 +169,8 @@ def expr(node, env):
         # `Path(__file__).resolve().parents[1]` -- the walk starts at the FILE, so `parents[0]`
         # is the file's own DIRECTORY -- while `checks/abi_gate.py:50` is `HERE.parents[0]` over a
         # `HERE` that is ALREADY a directory. Reading the shape off a NAME (`if "HERE" in expr`)
-        # is the error `gates/gates-pop.py` documents and fixed: **A NAME CANNOT TELL YOU WHAT A
-        # VALUE HOLDS.**
+        # is the error `gates/gates-pop.py` documents and fixed: A NAME CANNOT TELL YOU WHAT A
+        # VALUE HOLDS.
         drop = i if _walks_file(node.value.value) else i + 1
         parts = base.split("/")
         return "/".join(parts[:len(parts) - drop]) or "/"
@@ -318,8 +318,8 @@ def _write_sites(path: Path) -> tuple[list[tuple[str, int, str]], list[tuple[int
     except SyntaxError as e:
         return [], [(e.lineno or 0, f"UNPARSEABLE:{e.msg}")]
     # `__file__` SEEDED WITH THE FILE'S OWN ABSOLUTE PATH. Without it `HERE` never binds and the
-    # scan reports NOTHING for `checks/gen/`. **A CONSTANT PROPAGATION FIXPOINT THAT DOES NOT KNOW
-    # WHAT `__file__` IS PROPAGATES CONSTANTS FROM NOTHING.**
+    # scan reports NOTHING for `checks/gen/`. A CONSTANT PROPAGATION FIXPOINT THAT DOES NOT KNOW
+    # WHAT `__file__` IS PROPAGATES CONSTANTS FROM NOTHING.
     env: dict[str, str] = {"__file__": str(path.resolve())}
     for _ in range(8):                                   # until nothing new binds
         before = len(env)
@@ -401,8 +401,8 @@ def discovered(root: Path = ROOT) -> dict[str, dict]:
                 continue
             # A SHELL HEREDOC BODY IS NOT A PATH. `checks/gen.sh` writes `cat > "$D/cand$1.bend"
             # <<EOF` and the scanner sees the here-document's TEXT as a write target. A target with
-            # whitespace in it is not a directory this process can `mkdir`, and **A POPULATION THAT
-            # CONTAINS ITS OWN SOURCE TEXT IS NOT A POPULATION.**
+            # whitespace in it is not a directory this process can `mkdir`, and A POPULATION THAT
+            # CONTAINS ITS OWN SOURCE TEXT IS NOT A POPULATION.
             if any(c.isspace() for c in target) or len(target) > 200:
                 continue
             absolute = target if os.path.isabs(target) else os.path.normpath(str(p.parent / target))
@@ -410,7 +410,7 @@ def discovered(root: Path = ROOT) -> dict[str, dict]:
             rel = os.path.relpath(absolute, root)
             # THE OUT-OF-REPO TEST IS `rel`, NEVER `target.startswith("/")`. MEASURED: the fixpoint
             # resolves `HERE / "gen"` to an ABSOLUTE path, so an absolute-path filter discards
-            # `checks/gen/` -- **THE SUBJECT OF THE WHOLE BRIEF** -- while a relative filter on the
+            # `checks/gen/` -- THE SUBJECT OF THE WHOLE BRIEF -- while a relative filter on the
             # same value keeps it. A guard whose filter is shaped like its subject excludes its
             # subject, and `checks/gen/` is invisible again for the fifth time.
             if rel.startswith("..") or rel.startswith(("/dev", "/proc", "/sys", "/tmp")):
@@ -602,8 +602,8 @@ def _plants() -> int:
     rc = 0
     checks = []
 
-    # PLANT 1 -- ***THE ONE THE BRIEF ASKS FOR: A NEW GENERATED DIRECTORY THE INSTRUMENT MUST
-    # NOTICE.*** A generator nobody declared, in a home nobody listed, writing through the
+    # PLANT 1 -- *THE ONE THE BRIEF ASKS FOR: A NEW GENERATED DIRECTORY THE INSTRUMENT MUST
+    # NOTICE.* A generator nobody declared, in a home nobody listed, writing through the
     # `bend -o` shape. Asserted as an ASSERTION ABOUT A DIRECTORY THAT DID NOT EXIST, not as a
     # count: a count is what `artefacts_ok()` reported over a directory holding nothing.
     with tempfile.TemporaryDirectory() as td:
@@ -615,8 +615,8 @@ def _plants() -> int:
         checks.append(("1: a NEW generated directory nobody declared IS discovered, through "
                        "`bend -o` AND through `mkdir`", one, f"discovered={sorted(got)}"))
 
-    # PLANT 2 -- ***AND ITS OPPOSITE: A DIRECTORY IT MUST ***NOT*** PICK UP.*** A source tree
-    # whose only writes go into a tempfile. **A CHECK THAT CANNOT SAY NO IS A PRINTER.** And this
+    # PLANT 2 -- *AND ITS OPPOSITE: A DIRECTORY IT MUST *NOT* PICK UP.* A source tree
+    # whose only writes go into a tempfile. A CHECK THAT CANNOT SAY NO IS A PRINTER. And this
     # is the direction the brief's own candidate P3 ("nobody cites it") fails in: a directory
     # nothing writes into is trivially uncited, so P3 would name EVERY directory in the tree.
     with tempfile.TemporaryDirectory() as td:
@@ -694,10 +694,10 @@ def _plants() -> int:
 
     # PLANT 6 -- THE GIT HALF IS INDEPENDENT OF EVERY SOURCE FILE. A directory with an index entry
     # and NO writer is the disagreement both instruments must REPORT rather than resolve, because
-    # **two instruments derived from the same table cannot audit that table.** The live scan
+    # two instruments derived from the same table cannot audit that table. The live scan
     # happens ONCE here and is shared: MEASURED, calling `discovered()` twice on the live tree
-    # inside one plant cost 40 s and **A PLANT THAT RE-MEASURES THE LIVE TREE IS A PLANT THAT
-    # MEASURES THE OTHER SIX UNITS.**
+    # inside one plant cost 40 s and A PLANT THAT RE-MEASURES THE LIVE TREE IS A PLANT THAT
+    # MEASURES THE OTHER SIX UNITS.
     live = set(discovered())
     with tempfile.TemporaryDirectory() as td:
         r = Path(td).resolve()

@@ -31,7 +31,7 @@ class ConvNeXt:
       x = x.sequential(downsample).sequential(stage)
     return x.mean([-2, -1]).sequential([self.norm, self.head])
 
-# *** model definition is done ***
+# * model definition is done *
 
 versions = {
   "tiny": {"depths": [3, 3, 9, 3], "dims": [96, 192, 384, 768]},

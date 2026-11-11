@@ -75,14 +75,14 @@ ART = HERE / "artifacts" / "corpusfresh-gate"
 #: does (the `REPRO_SUBSTRATE` arm). A gate can be BOTH a freshness instrument and its own
 #: discriminator here; that overlap is the point, not a duplicate.
 #:
-#: **THIS IS A DELIBERATE SUPERSET, AND THE DIRECTION IS THE POINT.** MEASURED 2026-10-20T00:59Z
+# : THIS IS A DELIBERATE SUPERSET, AND THE DIRECTION IS THE POINT. MEASURED 2026-10-20T00:59Z
 #: it names 13 of the 277 entries `discover()` returns, and several of the 13 (`substrate-id.py`,
 #: `substrate-manifest.py`, `gendirs.py`) merely COMPUTE a digest rather than judging one, and this
 #: file names itself because its own docstring contains the tokens. The imprecision is left in
 #: because a superset can only make `told` LARGER: a false positive here can turn a finding into a
-#: false alarm, while a false negative would turn `told=0` into a number it is not. **A classifier
+# : false alarm, while a false negative would turn `told=0` into a number it is not. A classifier
 #: tuned until its count looks right is the `kind()` defect this project has already paid for
-#: (`AGENTS.md`: 16 instruments, 2 of them classifier errors).** It is called a SUPERSET in the
+# : (`AGENTS.md`: 16 instruments, 2 of them classifier errors). It is called a SUPERSET in the
 #: rows and the tally names it as such.
 FRESH_TOKENS = ("substrate_digest", "REPRO_SUBSTRATE", "substrate-start", "st_mtime_ns")
 
@@ -191,13 +191,13 @@ def emit(name: str, **kv) -> str:
 # temp dir and drives THE SAME `census()`/`live_hooks()` the live path uses. A control that
 # exercised a copy of the comparator would prove the copy works.
 #
-# **THE FIRST VERSION OF THIS PLANT HAD FOUR DIRECTIONS AND TWO MUTANTS SURVIVED IT** -- MEASURED
+# THE FIRST VERSION OF THIS PLANT HAD FOUR DIRECTIONS AND TWO MUTANTS SURVIVED IT -- MEASURED
 # 2026-10-20T00:58Z, by mutating the comparator: `if stem in body` -> `if "g" in body` and
 # `if True` both still scored 4 of 4, rc=0. The reason is that every one of those four directions
-# asked the comparator about a tree with **ZERO** surfaces, where "matches the name" and "matches
+# asked the comparator about a tree with ZERO surfaces, where "matches the name" and "matches
 # everything" are indistinguishable. DIRECTION 3 IS THE ONE THAT KILLS BOTH, and it could not
-# exist until the plant had a surface that names SOMETHING ELSE. **A control that only ever runs
-# against an empty tree is a control that cannot fail**, which is the same defect as a plant that
+# exist until the plant had a surface that names SOMETHING ELSE. A control that only ever runs
+# against an empty tree is a control that cannot fail, which is the same defect as a plant that
 # compares a number to itself.
 def plant() -> int:
   rows: list[str] = []

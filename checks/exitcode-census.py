@@ -114,7 +114,7 @@ CONVENTIONS = {126: "NOT-EXECUTABLE", 127: "NOT-FOUND"}
 # A number in one of these shapes is a CODE the prose says something ABOUT.  The shapes are
 # stated here, in the reader, rather than in a second copy of anybody's prose.
 #
-# *** THE VERDICT WORDS ARE NOT A LIST.  THEY ARE DISCOVERED.  ***
+# * THE VERDICT WORDS ARE NOT A LIST.  THEY ARE DISCOVERED.  *
 # The word set this test recognises is the OWNER's words (read from `gates/gatekit.py` by path)
 # UNION the words the TREE's own `VERDICTS` tables use (read from every instrument's module body
 # by `ast.literal_eval`, the same shape `gates/gate-surface.py` reads).  A census that retyped
@@ -495,11 +495,11 @@ def census(vocab, words):
         else:
             stats["untracked"] += 1
             untracked_names.append(rel)
-            # **A FILE THAT IS NOT IN HEAD IS NOT IN THE TREE THIS GATE MEASURES, AND THE ROWS
-            # MUST AGREE WITH THE SUMMARY THAT COUNTS THEM.** MEASURED 2026-10-21: the charge was
+            # A FILE THAT IS NOT IN HEAD IS NOT IN THE TREE THIS GATE MEASURES, AND THE ROWS
+            # MUST AGREE WITH THE SUMMARY THAT COUNTS THEM. MEASURED 2026-10-21: the charge was
             # guarded by `tracked` but the ROW was still emitted with verdict `UNOWNED`, so the rows
-            # file carried SEVEN `UNOWNED` rows where the summary said SIX -- **A READER COUNTING THE
-            # FILE A READER ACTUALLY READS GOT A DIFFERENT NUMBER FROM THE SUMMARY.** And a
+            # file carried SEVEN `UNOWNED` rows where the summary said SIX -- A READER COUNTING THE
+            # FILE A READER ACTUALLY READS GOT A DIFFERENT NUMBER FROM THE SUMMARY. And a
             # not-in-HEAD file is another session's IN-FLIGHT work, so charging it measures a moving
             # target. It is skipped, and the summary says so.
             continue
@@ -566,7 +566,7 @@ def census(vocab, words):
                 nt += f"; {code} is POSIX {CONVENTIONS[code]}"
                 stats["convention"] += 1
             elif dec == "yes":
-                # *** THE INSTRUMENT CLAIMS THE NUMBER, AND A CLAIM IS NOT A FINDING. ***
+                # * THE INSTRUMENT CLAIMS THE NUMBER, AND A CLAIM IS NOT A FINDING. *
                 # Its own header says what the number means, so the tree is not silent about it.
                 # This test is a LEXICAL LOWER BOUND, which is why it is safe HERE and unsafe as
                 # a CHARGE: it can only UNDER-report (a meaning stated without the digit is

@@ -30,21 +30,21 @@ HERE = Path(__file__).resolve().parent
 #
 # THIS FILE USED TO BE `.agents/slop/e2estage8/verdicts.py`, WHERE `parents[3]` WAS THE REPO
 # ROOT. IT WAS MOVED TO `gates/e2estage8-stage-legacy.py` AND THE CONSTANT CAME WITH IT --
-# AND `parents[3]` FROM `gates/` IS `/Users/cyberistic/src`, WHICH IS **ABOVE** THE REPO.
+# AND `parents[3]` FROM `gates/` IS `/Users/cyberistic/src`, WHICH IS ABOVE THE REPO.
 # MEASURED BEFORE THE FIX: a bare run raised
 #
 #     FileNotFoundError: [Errno 2] No such file or directory:
 #       '/Users/cyberistic/src/.agents/slop/e2epy/artifacts/live.port.out'
 #
-# **THE INSTRUMENT WAS DEAD, AND IT WAS DEAD OVER 0 ROWS: IT NEVER REACHED A STAGE.**
+# THE INSTRUMENT WAS DEAD, AND IT WAS DEAD OVER 0 ROWS: IT NEVER REACHED A STAGE.
 # AND `gates/gates-pop.py`'s `--ledger check` HAD BEEN REPORTING IT FOR THE WHOLE TIME
 #   UNDER `RESOLVES OUTSIDE` -- the one finding it had left.
 #
-# AND THE HOUSE STYLE IS ALREADY THIS: **123** OF THE `gates/*.py` ROOTS ARE `HERE.parent`,
-#   **19** ARE `parents[1]`, AND **30** ARE `parent.parent`. THE `parents[N]` FORMS ARE THE
+# AND THE HOUSE STYLE IS ALREADY THIS: 123 OF THE `gates/*.py` ROOTS ARE `HERE.parent`,
+# 19 ARE `parents[1]`, AND 30 ARE `parent.parent`. THE `parents[N]` FORMS ARE THE
 #   ONES THAT BAKE THE TREE's DEPTH INTO A CONSTANT, AND A MOVE THAT DOES NOT MOVE THE
-#   CONSTANT IS EXACTLY WHAT HAPPENED HERE. **`HERE.parent` IS NOT A MATTER OF TASTE: IT IS
-#   THE FORM THAT SURVIVES THE MOVE.**
+# CONSTANT IS EXACTLY WHAT HAPPENED HERE. `HERE.parent` IS NOT A MATTER OF TASTE: IT IS
+# THE FORM THAT SURVIVES THE MOVE.
 ROOT = HERE.parent
 DEFAULT = ROOT / ".agents/slop/e2epy/artifacts/live.port.out"
 HEADER = re.compile(r"^== (\d+)/\d+ (.*)$")
@@ -56,12 +56,12 @@ VERDICT = re.compile(r"^  (stage \d+ [^:]*): (PASS|FAIL \(rc=-?\d+\)|SKIP -- .*)
 #
 # A PROSE ROW THAT SAYS `RETIRED` IS THE RECORD OF A RETIREMENT, NOT A STAGE, and it is counted apart
 # from the live rows -- otherwise naming the retirement is the same defect as keeping the stage.
-# **AND THE SHAPE ALONE IS NOT A POPULATION.** MEASURED 2026-10-15: `checks/e2e.py`'s docstring has
+# AND THE SHAPE ALONE IS NOT A POPULATION. MEASURED 2026-10-15: `checks/e2e.py`'s docstring has
 # TWO tables of `  <digit>  <word>` rows -- the STAGE table (`:18`-`:63`) and the EXIT STATUS table
 # (`:125`-`:132`) -- and the first version of this regex scanned the WHOLE docstring, so the exit
 # codes `0`..`4` joined the stage set and the gate reported the fiction
-# `PROSE names [0] the CODE does not emit`. **Stage `0` does not exist and never did; a shape that
-# cannot see its own section boundary reads the NEXT table as if it were its own.** So the scan is
+# `PROSE names [0] the CODE does not emit`. Stage `0` does not exist and never did; a shape that
+# cannot see its own section boundary reads the NEXT table as if it were its own. So the scan is
 # cut at the `EXIT STATUS` header, which is the DECLARATION of where the stage table ends -- not at
 # a line number, which the next edit would move.
 PROSE_TABLE = re.compile(r"^  (\d)  \S+.*$", re.M)

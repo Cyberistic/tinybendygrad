@@ -253,7 +253,7 @@ def defs_of(code):
 # ------------------------------------------------- the py slot of a builder
 
 #: The row TEMPLATE.  A def whose body carries this is a ROW BUILDER, and the expression
-#: after it fills the `py=` slot.  **THE TEMPLATE IS THE DISCOVERY**, and it is a SHAPE in
+# : after it fills the `py=` slot.  THE TEMPLATE IS THE DISCOVERY, and it is a SHAPE in
 #: the SOURCE, not a name in a list: `AGENTS.md`, "a row builder is a def whose body carries
 #: the row TEMPLATE".
 PY_AFTER = re.compile(r'py=\["\s*,\s*')
@@ -836,7 +836,7 @@ ROW_SEP = "]   py=["
 #: MARKERS has NO CPython counterpart: the port asserts that CPython has no answer
 #: for that row at all, and the marker says so.
 #:
-#: **A MARKER IS NOT A VALUE, AND COMPARING THE TWO IS A CATEGORY ERROR.**  The ROT lane
+# : A MARKER IS NOT A VALUE, AND COMPARING THE TWO IS A CATEGORY ERROR.  The ROT lane
 #: asks "does the port's own answer disagree with the port's own claim about CPython?",
 #: and that question has NO ANSWER for a row whose claim is "there is nothing to compare".
 #: `renderer/nir_llvmir.bend`'s `f32show 240.0` is the one such row: CPython's
@@ -844,7 +844,7 @@ ROW_SEP = "]   py=["
 #: oracle for the port's own spelling -- the port's ORACLE generates the marker, and
 #: `checks/nl-gate.py` requires the port's stdout to be BYTE-IDENTICAL to that oracle's.
 #:
-#: **THIS IS A VOCABULARY AND NOT A POPULATION.**  Doctrine 1 is about populations of
+# : THIS IS A VOCABULARY AND NOT A POPULATION.  Doctrine 1 is about populations of
 #: PATHS -- a hand list of files is a list, and a generator's own declaration is the
 #: alternative.  A vocabulary of MARKERS is a different thing: it says what a token
 #: MEANS, and the census REPORTS every row that carries one, BY NAME, so a reader can
@@ -914,7 +914,7 @@ def parse_rows(text):
 #: THE BLOB THAT HOLDS THE 224 KNOWN CASES.  `tinybendygrad/runtime/ops_dsp.bend` at the
 #: commit BEFORE the one that made its `py=` halves DERIVED.
 #:
-#: **A BLOB SHA IS CONTENT-ADDRESSED AND CANNOT MOVE.**  That is why this is a blob and not
+# : A BLOB SHA IS CONTENT-ADDRESSED AND CANNOT MOVE.  That is why this is a blob and not
 #: `HEAD:` -- and `HEAD:` is EXACTLY what a unit's plant read, which is why it planted
 #: nothing the moment HEAD carried the fix.  MEASURED: this blob is 6399 lines and its
 #: `py=` slots carry the transcribed CPython answer as a NUMBER or a BOOLEAN -- the shape the
@@ -922,7 +922,7 @@ def parse_rows(text):
 OPS_DSP_OLD_BLOB = "432d34508c4d28cbb3c1af9b64a6401e7a11d104"
 
 #: The number the brief names: the cells the OLD rule called DERIVED and that are
-#: TRANSCRIPTIONS.  **THE PROOF MUST REPRODUCE IT EXACTLY.**
+# : TRANSCRIPTIONS.  THE PROOF MUST REPRODUCE IT EXACTLY.
 KNOWN_CASES = 224
 
 

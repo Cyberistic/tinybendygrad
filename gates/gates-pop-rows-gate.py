@@ -74,13 +74,13 @@ LEDGER = HERE / "gates-pop.ledger.tsv"
 
 # THE EDGE'S HOOK, DECLARED HERE AND READ BY THE EDGE (`gates/edge-runner.py:declares_edge_candidate`).
 #
-# **A GATE ABOUT GATES THAT NOBODY RAN.** MEASURED 2026-10-22: this file held no pin the edge's
+# A GATE ABOUT GATES THAT NOBODY RAN. MEASURED 2026-10-22: this file held no pin the edge's
 # selection rule could see, was in no `.github/workflows/`, and had no row in
 # `gates/edge-cost.rows` -- so the tree's own record of what a gate-ledger row IS was written by an
 # instrument that nothing executed. The tree's own mechanism is the fix, and it is the SAME one
 # `gates/compile-census-gate.py` and `gates/edge-oracle-pin-gate.py` use: declare it, and let the
-# runner write the cost row and the trace row. **A HAND-WRITTEN ROW IN EITHER LEDGER WOULD BE A
-# ROW THE RUNNER NEVER PRODUCED.** The cost is MEASURED: 0.48 s against the edge's 30 s budget.
+# runner write the cost row and the trace row. A HAND-WRITTEN ROW IN EITHER LEDGER WOULD BE A
+# ROW THE RUNNER NEVER PRODUCED. The cost is MEASURED: 0.48 s against the edge's 30 s budget.
 EDGE_CANDIDATE = True
 PREAMBLE_STATE = ("not-measured",)  # set by `main`; the summary line reads it, and a fact that is
                                    # printed mid-report and absent from the summary is unread
@@ -119,11 +119,11 @@ def conformance(data_lines, rows):
     bad = []
     live = [r for r in rows if r[1] != POP.RETIRED]
     tombs = [r for r in rows if r[1] == POP.RETIRED]
-    # THE CANONICAL SPELLING, ASKED OF THE GENERATOR **FOR BOTH BOOLEAN VALUES**. An earlier draft
+    # THE CANONICAL SPELLING, ASKED OF THE GENERATOR FOR BOTH BOOLEAN VALUES. An earlier draft
     # derived it from `rows[0]` -- which is just THE FIRST ROW'S OWN VALUES, so every row was being
-    # compared against row 0's booleans and 42 of 224 "failed" a rule that does not exist. **A
+    # compared against row 0's booleans and 42 of 224 "failed" a rule that does not exist. A
     # CANONICAL SPELLING TAKEN FROM ONE SAMPLE IS NOT A CANONICAL SPELLING, IT IS A COMPARISON
-    # AGAINST ROW ZERO.** Calling `ledger_line` on both booleans enumerates the whole set, because
+    # AGAINST ROW ZERO. Calling `ledger_line` on both booleans enumerates the whole set, because
     # `ledger_line` writes `int(...)` and `int` over `(False, True)` is exactly `{0, 1}`.
     canon = set()
     for a, o in ((False, False), (False, True), (True, False), (True, True)):

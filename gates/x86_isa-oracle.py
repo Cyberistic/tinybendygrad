@@ -284,12 +284,12 @@ def _xmm_sz_name(opname, bits):
 
 
 def _xmm_sz_m_name(opname, bits):
-  # **`_xmm_sz_m` DOES NOT EXIST AT THE PIN `f5ac54685074`** -- UPSTREAM HAS `_xmm_sz` AND
+  # `_xmm_sz_m` DOES NOT EXIST AT THE PIN `f5ac54685074` -- UPSTREAM HAS `_xmm_sz` AND
   # DERIVES THE `m` SPELLING INLINE (`X86Ops[_xmm_sz(b).name+"m"]`,
-  # `tinygrad/renderer/x86.py:481`), **AND `VMOVSSm`/`VMOVSDm`/`VMOVUPSm` ALL EXIST AT THE PIN**
-  # (`:71`).  **AND THIS FILE ALREADY HAD ITS OWN `_xmm_sz_m_name` HELPER**, WHICH COMPUTES THE
-  # SAME THREE-ARM THRESHOLD -- **SO THE ROW IS ANSWERED BY THE HELPER AND NOT BY AN IMPORT
-  # THAT CANNOT BE MADE.**  **AND THE HELPER TAKES THE OP NAME, NOT THE UOP**, WHICH IS WHY
+  # `tinygrad/renderer/x86.py:481`), AND `VMOVSSm`/`VMOVSDm`/`VMOVUPSm` ALL EXIST AT THE PIN
+  # (`:71`).  AND THIS FILE ALREADY HAD ITS OWN `_xmm_sz_m_name` HELPER, WHICH COMPUTES THE
+  # SAME THREE-ARM THRESHOLD -- SO THE ROW IS ANSWERED BY THE HELPER AND NOT BY AN IMPORT
+  # THAT CANNOT BE MADE.  AND THE HELPER TAKES THE OP NAME, NOT THE UOP, WHICH IS WHY
   # THE ROW PASSES `dn` AND `bits` AND NOT `b`.
   if opname is not None:
     op = X86Ops[opname]

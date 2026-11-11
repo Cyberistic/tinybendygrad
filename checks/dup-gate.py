@@ -211,7 +211,7 @@ def selftest(port_text, oracle_text, pname, oname):
   lines = port_text.splitlines()
   olines = oracle_text.splitlines()
 
-  # ⚠ A ROW IS LOCATED BY ITS NAME **EXACTLY**, NEVER BY `startswith` AND NEVER BY LINE NUMBER.
+  # ⚠ A ROW IS LOCATED BY ITS NAME EXACTLY, NEVER BY `startswith` AND NEVER BY LINE NUMBER.
   # Two ways this bites, both measured on the first run of this selftest:
   #   * `startswith` on an F2 lane whose names are prefixes of each other (`ldt f32` vs
   #     `ldt f32x`) renames the WRONG row and the NAME plant becomes a no-op -- `dup` stayed 0
@@ -233,7 +233,7 @@ def selftest(port_text, oracle_text, pname, oname):
   def first(name):
     return idx_of(name, lines)
 
-  # ⚠ THE VALUE PLANT MUST MOVE THE **COMPARED** COLUMN AND NOT THE TRANSCRIPTION.
+  # ⚠ THE VALUE PLANT MUST MOVE THE COMPARED COLUMN AND NOT THE TRANSCRIPTION.
   # `rebase-gate.py:row()` returns `(name, left, right)` and its own docstring is explicit:
   # "`right` IS DELIBERATELY NOT THE COMPARED COLUMN" -- on an F2 lane `right` is the hand-copied
   # `py=` literal.  Appending a token to the END of a `name = [v]   py=[w]` line therefore
@@ -372,7 +372,7 @@ def main():
 # ⚠ THE PREVIOUS REVISION OF THIS COMMENT WAS FALSE IN BOTH HALVES, AND THE INSTRUMENT MEASURED
 # IT: it reported `UNPLANTED 0`, `UNPLANTED 1`, `UNPLANTED 2` and `MISPLANT 3 'REFUSED' -- plant []
 # produced 2`.  The old text claimed `PLANTS[3]` was "the only state argv can reach" because "no
-# argument of any shape gets past" the module-scope refusal.  **The refusal is CONDITIONAL** -- it
+# argument of any shape gets past" the module-scope refusal.  The refusal is CONDITIONAL -- it
 # fires when an input is ABSENT -- and `.agents/slop/eq/eq-census2.py` is RECOVERABLE (24 098 B at
 # `371cc64c9^`) and restored, so with the precondition satisfied the parser IS reached and every
 # code below is reachable.  `modulerefuse` proved the refusal must not MOVE; it did not prove it

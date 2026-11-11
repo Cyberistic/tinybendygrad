@@ -4,12 +4,12 @@
 # WHY THIS EXISTS, AND IT IS NOT A TASTE.  `AGENTS.md`'s rule is that the SUM of
 # concurrently running files' measured peak RSS must be under 60% of `hw.memsize` -- a rule
 # about a SUM, not about a COUNT.  But a machine that had 14 units running at once measured
-# `loadavg 193.85` ON 12 CORES, and one unit's `--plant` waited **289 s** for the compiler.
+# `loadavg 193.85` ON 12 CORES, and one unit's `--plant` waited 289 s for the compiler.
 # So the bend runs are SERIALISED, and a serialisation needs a lock that a DEAD PROCESS
 # cannot keep.
 #
-# THE HAZARD THIS FIXES, MEASURED 2026-10-22: a plain `mkdir` lock was found **HELD FOR
-# MINUTES WITH NO COMPILER ALIVE BEHIND IT**, and every unit waited on it.  A lock whose
+# THE HAZARD THIS FIXES, MEASURED 2026-10-22: a plain `mkdir` lock was found HELD FOR
+# MINUTES WITH NO COMPILER ALIVE BEHIND IT, and every unit waited on it.  A lock whose
 # owner is gone must be reclaimable -- and the reclamation must NOT steal a LIVE owner's
 # lock, or two compilers run at once and the memory precondition is what breaks.
 #
@@ -23,24 +23,24 @@
 #           BEND_LOCK_UNOWNED_S how old an UNOWNED lock may be before reclaim (default 30)
 #           BEND_LOCK_WARN_S    how long a LIVE owner's hold is worth NAMING (default 120)
 #
-# ⚠ **THE LOCK IS HELD FOR THE WHOLE COMMAND, AND A COMMAND THAT RUNS **MANY** BENDS
-# **MONOPOLISES IT.**  MEASURED 2026-10-22: `checks/bendlock.sh -- .venv/bin/python
-# gates/ew_activation-gate.py` HELD THE LOCK FOR **26 MINUTES** -- that gate runs **11** `bend`
-# compiles inside one process -- **AND EVERY OTHER UNIT WAITED FOR THE WHOLE TIME.**  **SO FOR A
-# GATE THAT RUNS MANY BENDS, **ACQUIRE THE LOCK **PER **INVOCATION**, NOT **ONCE **FOR **THE
-# **GATE** -- `gates/bendlock.py` **IS **THAT **LOCK** (it shares this path, so the two exclude
-# each other).**  **THIS **SCRIPT **IS **THE **WRAPPER **FOR **A **SINGLE **COMPILER **RUN.**
+# ⚠ THE LOCK IS HELD FOR THE WHOLE COMMAND, AND A COMMAND THAT RUNS MANY BENDS
+# MONOPOLISES IT.  MEASURED 2026-10-22: `checks/bendlock.sh -- .venv/bin/python
+# gates/ew_activation-gate.py` HELD THE LOCK FOR 26 MINUTES -- that gate runs 11 `bend`
+# compiles inside one process -- AND EVERY OTHER UNIT WAITED FOR THE WHOLE TIME.  SO FOR A
+# GATE THAT RUNS MANY BENDS, ACQUIRE THE LOCK PER INVOCATION, NOT ONCE FOR THE
+# GATE -- `gates/bendlock.py` IS THAT LOCK (it shares this path, so the two exclude
+# each other).  THIS SCRIPT IS THE WRAPPER FOR A SINGLE COMPILER RUN.
 #
-# AND A WAITER **NOW **HEARS **WHY **IT **IS **WAITING**: after `BEND_LOCK_WARN_S` a live owner's
+# AND A WAITER NOW HEARS WHY IT IS WAITING: after `BEND_LOCK_WARN_S` a live owner's
 # hold is NAMED, with its age and its command, so "the tree is busy" is distinguishable from
 # "the lock is stuck".
 #
 # THE DEFAULT LOCK PATH IS THE ONE THE UNITS WERE TOLD TO USE, AND THAT IS DELIBERATE.
 # MEASURED 2026-10-22: a script with a repo-named lock and an ad-hoc `mkdir` recipe with
-# a different path are **TWO LOCKS**, AND TWO LOCKS DO NOT EXCLUDE EACH OTHER -- the recipe
+# a different path are TWO LOCKS, AND TWO LOCKS DO NOT EXCLUDE EACH OTHER -- the recipe
 # would hold one while this script held the other, and two compilers would run at once,
-# which is the exact thing the lock is for.  **A LOCK IS ONLY A LOCK IF EVERY FORM SHARES
-# IT.**  When the ad-hoc recipe is retired, change this default and the recipe together.
+# which is the exact thing the lock is for.  A LOCK IS ONLY A LOCK IF EVERY FORM SHARES
+# IT.  When the ad-hoc recipe is retired, change this default and the recipe together.
 #
 # AN UNOWNED LOCK IS RECLAIMED FASTER THAN A DEAD-OWNED ONE.  A lock with no `owner` file
 # has nobody who can prove they own it, so waiting the full stale window for it is waiting

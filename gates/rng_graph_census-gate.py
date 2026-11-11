@@ -104,22 +104,22 @@ from gatekit import Gate, gate
 ROOT = Path(__file__).resolve().parents[1]
 RANGEIFY = ROOT / "tinybendygrad/schedule/rangeify.bend"
 
-# **THE COMMENT ABOVE THIS LINE USED TO CLAIM BOTH NUMBERS WERE DISCOVERED AND NEITHER WAS.**
+# THE COMMENT ABOVE THIS LINE USED TO CLAIM BOTH NUMBERS WERE DISCOVERED AND NEITHER WAS.
 # It read "THE TWO DISCOVERY RULES ... Eleven is `grep -c '^def [a-z]*_table' ...` (MEASURED) ...
 # Neither is typed from a table of rows", and then typed the eleven names out. Found by the
-# `shapecensus` unit 2026-10-15: **a comment that asserts a measurement its own code does not
-# perform is worse than no comment**, because a reader checks the claim and not the code.
+# `shapecensus` unit 2026-10-15: a comment that asserts a measurement its own code does not
+# perform is worse than no comment, because a reader checks the claim and not the code.
 #
 # The first of the two is now actually discovered, by the command the comment quoted. MEASURED
 # 2026-10-15: `re.findall` over `rangeify.bend` returns the same eleven names IN THE SAME ORDER as
 # the tuple it replaced, so this is a change of MECHANISM and not of population -- and a twelfth
 # `def <name>_table` now joins the census instead of being invisible.
 #
-# **AND A DISCOVERY THAT FINDS NOTHING MUST NOT BE A GREEN CENSUS.** If the pattern ever stops
+# AND A DISCOVERY THAT FINDS NOTHING MUST NOT BE A GREEN CENSUS. If the pattern ever stops
 # matching -- the file is renamed, the `def` shape changes, the path moves -- `TABLES` is empty,
 # `ROWS` is empty, and a census over zero rows agrees with everything. That is the
 # "0 disagreements over 0 comparisons" shape, so the empty case REFUSES instead.
-# **THE POPULATION IS THE RETURN TYPE AND NOT THE NAME SUFFIX.** MEASURED 2026-11-03: the
+# THE POPULATION IS THE RETURN TYPE AND NOT THE NAME SUFFIX. MEASURED 2026-11-03: the
 # regex was `^def ([a-z]+)_table`, which also matches `eng_table_n() -> U32` -- a COUNT row and
 # not a table -- so TABLES held TWELVE, `ROWS` held 792, the driver emitted 726 and this gate
 # had been DEAD (exit 5) with the message "726 of 792 rows in 25 tries", i.e. it called a
@@ -131,13 +131,13 @@ RANGEIFY = ROOT / "tinybendygrad/schedule/rangeify.bend"
 # `world()` BUILT A BUFFER AS `UOp(Ops.BUFFER, src=(sp,), arg=ps(slot, 4))` -- a SPECIAL d
 # src and the size in `ParamArg`. BOTH HALVES ARE STALE AGAINST THE CURRENT `_buffer`
 # (ops.py:831): `src=(shape_to_shape_arg((size,)),)+device_range_src(device)`, and
-# `device_range_src` (:829) is `()` for a SINGLE STRING device, so **the size is `src[0]`, ONE
-# CONST, and there is no SPECIAL** -- and the third `ParamArg` field is `vmin_vmax`, not `size`,
+# `device_range_src` (:829) is `()` for a SINGLE STRING device, so the size is `src[0]`, ONE
+# CONST, and there is no SPECIAL -- and the third `ParamArg` field is `vmin_vmax`, not `size`,
 # so `ps(slot, 4)` was setting a VALUE RANGE and the real shape came from a SPECIAL that
 # `prod()` cannot resolve. `bufferize_to_store`'s `assert size > 0 and isinstance(size, int)`
 # fired on exactly that, which is why ten rows recorded a REFUSAL instead of a table answer.
 #
-# MEASURED, AFTER: `src=(c4,)` on both sides and **ZERO undeclared disagreements out of 726**,
+# MEASURED, AFTER: `src=(c4,)` on both sides and ZERO undeclared disagreements out of 726,
 # and `raise=` rows fall from 10 to 5. The 44 `DIVERGES` pairs were then RE-TAKEN from the
 # rebuilt fixture -- both sides, not just `py` -- because a fixture is an INPUT and every
 # reading over it is new. THE DIVERGENCE COUNT DID NOT FALL: 0 rows became agreements, so the
@@ -187,8 +187,8 @@ if not TABLES:
     raise SystemExit(3)
 # 66 IS STILL TYPED. It is `rangeify.bend`'s own `G.ix` length, read off that file's `lay` row, and
 # unlike the table names there is no `def` to discover -- an integer constant in the subject has to
-# be PINS, not a walk. **A PIN AND A DISCOVERY ARE DIFFERENT INSTRUMENTS AND ONE MAY NOT
-# IMITATE THE OTHER.** Re-pin it if `G.ix` grows; `TABLES` will not notice.
+# be PINS, not a walk. A PIN AND A DISCOVERY ARE DIFFERENT INSTRUMENTS AND ONE MAY NOT
+# IMITATE THE OTHER. Re-pin it if `G.ix` grows; `TABLES` will not notice.
 NODES = 66
 ROWS = tuple(f"{t}_{n}" for t in TABLES for n in range(NODES))
 

@@ -75,8 +75,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # THE CPYTHON-SIDE BLOBS. Four, not three.
 #
-# **THE TWO `tinygrad/` SHAs BELOW MOVED WITH THE RE-VENDOR TO upstream `002630241`
-# (2026-10-16). THAT WAS DELIBERATE AND IT IS NOT DRIFT TO BE "FIXED" BACK.** `AGENTS.md`
+# THE TWO `tinygrad/` SHAs BELOW MOVED WITH THE RE-VENDOR TO upstream `002630241`
+# (2026-10-16). THAT WAS DELIBERATE AND IT IS NOT DRIFT TO BE "FIXED" BACK. `AGENTS.md`
 # warns that a drift which looks like an upstream fix is usually this project's own
 # re-vendor -- so the reader who finds these shas disagreeing with an old report must
 # re-vendor and move the pin, never "restore" it. `gates/rand_census-gate.py`,

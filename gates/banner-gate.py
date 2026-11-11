@@ -139,10 +139,10 @@ def repo_path(token: str) -> Path | None:
 # THE QUOTED LITERALS OF A SHELL LINE, AND NOTHING ELSE. `verdicts.py` reads the gate's own call-site
 # LITERALS (`CODE = re.compile(r'say\("== (\d+)')`), not its output, and this reads a lane's the same
 # way: matching a lane's SOURCE against `HEADER` would find nothing at all, because `say "== 6/6 …"`
-# is `HEADER`-shaped only in what it PRINTS. **WHAT THE CENSUS MATCHES IS THE OUTPUT, SO THE INPUT
-# HERE IS THE STRING THAT BECOMES THAT OUTPUT.**
+# is `HEADER`-shaped only in what it PRINTS. WHAT THE CENSUS MATCHES IS THE OUTPUT, SO THE INPUT
+# HERE IS THE STRING THAT BECOMES THAT OUTPUT.
 LITERAL = re.compile(r"""(['"])(.*?)\1""")
-# **THE HOLE, NAMED, AND IT IS NOT EMPTY.** A banner built by concatenation, out of a variable, or
+# THE HOLE, NAMED, AND IT IS NOT EMPTY. A banner built by concatenation, out of a variable, or
 # inside a heredoc body is invisible here, and no regex over source can see it. This tree HAS heredocs
 # in two of the three lanes -- `grep -n "<<'EOF'"` answers `run-port-mm.sh:252` and `run-f64.sh:226`,
 # both feeding Python on stdin. What it does NOT have is a `== n/m` inside one, and that is a

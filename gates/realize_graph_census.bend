@@ -17,11 +17,11 @@
 # `unwrap_multi`), and the three `*_table` defs (`grep -c '^def [a-z]*_table'` = 3).
 # FIFTEEN, and the gate re-measures that intersection on every run.
 #
-# **TWO OF THOSE EIGHT NAMES ARE NAMES THE PIN NO LONGER HAS, AND BOTH FACTS BELOW ARE
-# WHY THE LANE STILL RUNS.** `get_call_var_uops` WAS REPLACED BY `get_call_kernel_args`
+# TWO OF THOSE EIGHT NAMES ARE NAMES THE PIN NO LONGER HAS, AND BOTH FACTS BELOW ARE
+# WHY THE LANE STILL RUNS. `get_call_var_uops` WAS REPLACED BY `get_call_kernel_args`
 # (UPSTREAM `a6addc2d4`), AND `get_call_written_bufs` WAS DELETED (UPSTREAM `a26c50b01`).
-# THE PORT KEEPS BOTH: THE FIRST AS A NEW FUNCTION AND THE SECOND AS A **DECLARED
-# EXTENSION**, BECAUSE `tinybendygrad/engine/jit.bend` READS IT. THE ORACLE THEREFORE
+# THE PORT KEEPS BOTH: THE FIRST AS A NEW FUNCTION AND THE SECOND AS A DECLARED
+# EXTENSION, BECAUSE `tinybendygrad/engine/jit.bend` READS IT. THE ORACLE THEREFORE
 # CALLS THE PIN's `get_call_kernel_args` AND TRANSCRIBES THE DELETED
 # `get_call_written_bufs` -- THE ONLY TRANSCRIPTION IN EITHER LANE, AND IT IS DECLARED
 # AND PINNED BY THE GATE.
@@ -203,9 +203,9 @@ def rs_pay.var(f: Nat, +ar: O.Arena, xs: List<&2, U32>, +acc: String, first: Boo
 # `O.ProgramInfo.globals(pi)` after `O.ProgramInfo.params(pi)` is `consumed more than
 # once` -- MEASURED, that is the error. AND THE PATTERN NAMES EVERY FIELD, SO IT NAMES
 # THE FIELD COUNT: UPSTREAM `a6addc2d4` RENAMED `vars` TO `params` (`ops.py:1346` READS
-# `params`) AND `ProgramInfo` ALSO GREW A `target` FIELD. **THE CONSTRUCTION SIDE DOES
+# `params`) AND `ProgramInfo` ALSO GREW A `target` FIELD. THE CONSTRUCTION SIDE DOES
 # NOT HAVE TO: `rs_pi` CALLS THE PORT's OWN `pi`, SO A `ProgramInfo` THAT GROWS A FIELD
-# IS THE PORT's PROBLEM AND NOT THIS FILE's.**
+# IS THE PORT's PROBLEM AND NOT THIS FILE's.
 def rs_pay.pi(+ar: O.Arena, pi: O.ProgramInfo) -> String:
   match pi:
     case O.ProgramInfo{gs, ls, params, globals, outs, ins, target}:
@@ -258,7 +258,7 @@ def rs_pay.ki(ki: O.KernelInfo) -> String:
 
 # THE `arg` PAYLOAD, IN BRACKETS, ON EVERY NODE WHOSE ARG IS NOT `None`. THE HOLE IT FILLS
 # IS MEASURED, NOT ASSERTED: over this fixture's own 65 nodes the previous token spelled
-# **32 DISTINCT TOKENS FOR 65 NODES** -- 147 of the 2080 node pairs printed IDENTICALLY
+# 32 DISTINCT TOKENS FOR 65 NODES -- 147 of the 2080 node pairs printed IDENTICALLY
 # (fifteen CALLs as `CALL/3`, seven PROGRAMs as `PROGRAM/1`, `k1`/`k2`/the bodyless SINK as
 # `SINK/0`, a bound and an unbound var as `PARAM/0@2`); MEASURED after, 60 tokens and 8
 # pairs, and every one of the eight is a pair whose TWO ARGS ARE EQUAL
@@ -316,7 +316,7 @@ def rs_pay(a: O.Arg, ar: O.Arena) -> String:
     # `ADev{S.Dn{tags}}` (`ops.bend:7944` mints `ADev{dev}`) -- and CPYTHON HAS NO
     # `str -> int` DEVICE INDEX for a tag to be checked against a name
     # (`device_vocab_holds` measures that every run: `hasattr(Device,'tag')` is False), so
-    # THE NAME IS NOT COMPARABLE. **THE COUNT IS.** AND THE COUNT IS COMPLETE FOR THIS
+    # THE NAME IS NOT COMPARABLE. THE COUNT IS. AND THE COUNT IS COMPLETE FOR THIS
     # FIXTURE's DEVICE VOCABULARY, WHICH HAS EXACTLY TWO MEMBERS WHOSE COUNTS DIFFER:
     # `CPU` (ONE DEVICE) AND `("DISK","CPU")` (TWO). SO A CALL THAT PASSES THE WRONG
     # DEVICE NOW MOVES A ROW INSTEAD OF PRINTING ALIKE -- WHICH IS THE PLANT THAT
@@ -486,23 +486,23 @@ def rs_call(nm: String, +ar: O.Arena, src: List<&2, U32>) -> O.Found:
 #
 # THE SRC LISTS ARE THE INDEX MAP, AND THE MAP MOVED UNDER THIS FILE.
 #
-# **MEASURED 2026-10-22: 365 OF THE 1004 ROWS DIVERGED, AND THE CAUSE WAS ONE NODE.**
-# THE PORT's `main_arena` MINTS A **SIZE CONST** FOR EVERY PARAM AND BUFFER --
+# MEASURED 2026-10-22: 365 OF THE 1004 ROWS DIVERGED, AND THE CAUSE WAS ONE NODE.
+# THE PORT's `main_arena` MINTS A SIZE CONST FOR EVERY PARAM AND BUFFER --
 # `ops.bend:3075`'s `UOp.new.param` CALLS `shape_to_shape_arg.of`, WHICH IS
 # `UOp.const(made, CInt{k})` FOR A SCALAR SIZE -- SO `main_arena`'s ARENA HAS ONE MORE
 # NODE THAN IT HAD, AND EVERY INDEX FROM SLOT 3 ON MOVED BY ONE. THE ORACLE's FIXTURE DID
-# NOT MINT THE CONST, SO IT DID NOT MOVE. **THE SYMPTOM WAS THAT EVERY ROW AFTER THE
-# INSERTION POINT ANSWERED A DIFFERENT NODE'S ANSWER** (`arg_15` ANSWERED WITH THE
-# BUFFER `arg_14` WAS SUPPOSED TO ANSWER WITH), AND **ONE ROW SAID SO: `arena_n` READ 67
-# ON THE PORT AND 66 ON THE ORACLE.** THE GATE IS NOT IN ANY WORKFLOW, SO NOBODY RAN IT
+# NOT MINT THE CONST, SO IT DID NOT MOVE. THE SYMPTOM WAS THAT EVERY ROW AFTER THE
+# INSERTION POINT ANSWERED A DIFFERENT NODE'S ANSWER (`arg_15` ANSWERED WITH THE
+# BUFFER `arg_14` WAS SUPPOSED TO ANSWER WITH), AND ONE ROW SAID SO: `arena_n` READ 67
+# ON THE PORT AND 66 ON THE ORACLE. THE GATE IS NOT IN ANY WORKFLOW, SO NOBODY RAN IT
 # AND NOBODY SAW IT.
 #
-# **SO THE MAP IS HERE AGAIN, AND `arena_n` IS THE GUARD.** IT READS 67, AND A
+# SO THE MAP IS HERE AGAIN, AND `arena_n` IS THE GUARD. IT READS 67, AND A
 # HASH-CONSED NODE MAKES IT 66 AND TAKES THE LANE RED. THE MAP IS FRAGILE BY
 # CONSTRUCTION -- A HAND-KEPT INDEX MAP IS A LIST NOTHING READS BACK -- AND THE FRAGILITY
-# IS NOW MEASURED AND VISIBLE INSTEAD OF INVISIBLE. **THE PORT's OWN INDEX MAP IS IN
+# IS NOW MEASURED AND VISIBLE INSTEAD OF INVISIBLE. THE PORT's OWN INDEX MAP IS IN
 # `realize.bend:1826`'s `Land`, AND ASKING IT FOR THE NODES INSTEAD OF NAMING THEM IS
-# THE NEXT STEP; IT IS NOT DONE HERE BECAUSE `rs_inputs` HAS NO `Land` TO ASK.**
+# THE NEXT STEP; IT IS NOT DONE HERE BECAUSE `rs_inputs` HAS NO `Land` TO ASK.
 #
 # THE SRC LISTS ARE LITERAL INDICES, and that is the same invariant `main_arena` states
 # for itself: node k is at index k because the ORDER of the `UOp.new` calls IS the arena.
@@ -568,7 +568,7 @@ def rs_x60(+ar: O.Arena) -> O.Found:
 def rs_x61(+ar: O.Arena) -> O.Found:
   rs_call("vb", ar, [8, 3, 42])
 
-# THE GETADDR OVER A **PARAM**, AND IT IS THE POINT OF THE NODE. `ops.py:844` builds
+# THE GETADDR OVER A PARAM, AND IT IS THE POINT OF THE NODE. `ops.py:844` builds
 # `UOp(Ops.GETADDR, src=(self,), ...)` and `self` is a PARAM as often as a BUFFER. A
 # GETADDR over a BUFFER is INVISIBLE on this census: HEAD's `_resolve` recurses into
 # `src[0]`, `_resolve(BUFFER)` returns it unchanged, the rebuilt GETADDR is
@@ -601,7 +601,7 @@ def rs_x63(+ar: O.Arena) -> O.Found:
 # `('DISK','CPU')`. No device is OPENED: `ParamArg.device` is `str | tuple[str, ...]`, so a
 # name is data and not hardware.
 #
-# **AND THE TWO TAGS ARE DISTINCT ON PURPOSE.** `S.Dn{[6, 0]}` is DISK and "not DISK",
+# AND THE TWO TAGS ARE DISTINCT ON PURPOSE. `S.Dn{[6, 0]}` is DISK and "not DISK",
 # and `device.bend:344`'s `tag_of` gives DISK the tag 6 and everything else 0 -- so a bug
 # that emitted one device twice, or dropped one, moves the count, and the tags differ.
 # WHAT IT STILL CANNOT SEE IS STATED AT `rs_d_kern` AND MEASURED IN THE GATE.
@@ -723,7 +723,7 @@ def rs_d_flat(ar: O.Arena, +n: U32) -> String:
 # DOES fire. The body was already in the port: this arm reaches it through `rs_d_flat` ->
 # `flatten_rewrite` -> `fl_0`, because a `Verdict` alone cannot print a cone.
 #
-# IT DOES **NOT** GO THROUGH `va_1`, WHICH IS TAG 1'S OWN ENTRY, AND THAT IS A SEPARATE
+# IT DOES NOT GO THROUGH `va_1`, WHICH IS TAG 1'S OWN ENTRY, AND THAT IS A SEPARATE
 # FINDING: `va_1` and `va_0` are DEAD DEFS called by NOTHING. MEASURED -- replacing
 # `va_1`'s body with `VSkip` leaves the gate GREEN and moves ZERO of the 974 rows. This
 # fix does not revive them and does not pretend to: it needed the rewrite's NODE, and
@@ -748,7 +748,7 @@ def rs_d_val(ar: O.Arena, +n: U32) -> String:
   +a = ar
   rs_d_val.go(RZ.va_claim(a, n), a, n)
 
-# THE VERDICT IS THE JUDGE **AND** THE ANSWER'S INDEX, and the second half is new since
+# THE VERDICT IS THE JUDGE AND THE ANSWER'S INDEX, and the second half is new since
 # the `ret is not uop` fix. `RZ.beam_rewrite` is `realize.bend`'s JUDGE (it answers a
 # `Verdict`, never a node) and `RZ.bm_new` is the BODY; CPython's `PatternMatcher.rewrite`
 # returns the body's node or `None`, so a faithful driver asks BOTH: did the rule fire, and
@@ -758,7 +758,7 @@ def rs_d_val(ar: O.Arena, +n: U32) -> String:
 # both sides and the two lanes agree byte for byte; at ctx 0 every replacement is the
 # identity, the port now answers index 0 and so does CPython.
 #
-# **AND THE TWO ANSWERS ARE NOW TWO BITS, NOT ONE.** The single `"0"` this printer used to
+# AND THE TWO ANSWERS ARE NOW TWO BITS, NOT ONE. The single `"0"` this printer used to
 # emit for `Bool.and(not vskip, index != 0)` was TRUE OF TWO DIFFERENT WORLDS: "the rule
 # did not claim this node" and "the rule claimed it and every replacement was the
 # identity". MEASURED, both were printed `0`: `beam_1` (a CONST, `rz_claim` false) and
@@ -810,15 +810,15 @@ def rs_rl(+r: RZ.RList) -> String:
 
 # THE CALL's OWN DEVICE, AS THE PORT's ONE `S.Dev`.
 #
-# THE PIN TAKES A DEVICE **TUPLE** AND THE PORT TAKES ONE `S.Dev`, AND THAT IS THE
+# THE PIN TAKES A DEVICE TUPLE AND THE PORT TAKES ONE `S.Dev`, AND THAT IS THE
 # WHOLE MISMATCH. THE PIN's CALLERS PASS A TUPLE: `tinygrad/runtime/ops_{amd,nv,cl,
 # metal,cuda,qcom,null}.py` ALL PASS `self.devs`, THE RUNTIME's DEVICE RANGE. THE PIN's
 # OWN `get_call_kernels` READS THE CALL's DEVICES FROM `to_tuple(call.src[1].device)`
 # (`realize.py:41`), SO THE CALL's DEVICE IS THE SAME DEVICE THE PIN's RUNTIMES PASS
 # FOR A SINGLE-DEVICE KERNEL.
 #
-# **SO THE BRIDGE IS: THE CALL's DEVICE, READ THROUGH THE PORT's OWN `gk_dev.of` -- THE
-# READER `get_call_kernels` ITSELF USES.** NOT A CONSTANT: `rs_x64`/`rs_x65` ARE A
+# SO THE BRIDGE IS: THE CALL's DEVICE, READ THROUGH THE PORT's OWN `gk_dev.of` -- THE
+# READER `get_call_kernels` ITSELF USES. NOT A CONSTANT: `rs_x64`/`rs_x65` ARE A
 # TWO-DEVICE BUFFER (`S.Dn{[6, 0]}`), SO A CONSTANT `rs_cpu()` WOULD PASS THE WRONG
 # DEVICE ON THAT ROW, AND THE PORT's ANSWER WOULD CARRY IT IN THE GETADDR's PAYLOAD --
 # WHICH IS WHY THE PAYLOAD PRINTS THE DEVICE's COUNT (`rs_pay`'s `ADev` arm).
@@ -833,14 +833,14 @@ def rs_call_dev(+ar: O.Arena, call: U32) -> S.Dev:
 
 # `realize.py:17` AT THE PIN: `get_call_kernel_args(call, prg, devs)`.
 #
-# **THIS IS NOT THE `get_call_var_uops` IT REPLACED.** UPSTREAM `a6addc2d4` ("buffers and
+# THIS IS NOT THE `get_call_var_uops` IT REPLACED. UPSTREAM `a6addc2d4` ("buffers and
 # args in any input order", 2026-10-14) REPLACED `get_call_var_uops` -- ONE ENTRY PER
 # VARIABLE, OUT OF `ProgramInfo.vars` -- WITH `get_call_kernel_args` -- ONE ENTRY PER
 # KERNEL PARAM, IN SLOT ORDER, OUT OF `prg.kernel_params`, AND A PARAM MAY BE A BUFFER, IN
 # WHICH CASE THE ENTRY IS THE ADDRESS OF THE CALL's ARGUMENT AT THAT SLOT. THE PORT's
 # COPY IS `tinybendygrad/engine/realize.bend:750`.
 #
-# **AND THE FIXTURE CANNOT ANSWER THE PIN.** MEASURED: THE PIN's
+# AND THE FIXTURE CANNOT ANSWER THE PIN. MEASURED: THE PIN's
 # `get_call_kernel_args` READS `s.is_bound_var` OVER `call.src[1:]`, AND
 # `ops.py:1011`'s `is_variable` READS `self._shape`, WHICH FOR A PARAM IS
 # `self.src[0].as_shape` -- SO A PARAM WITH NO `src` RAISES IndexError. THIS FIXTURE's

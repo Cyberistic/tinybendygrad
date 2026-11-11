@@ -252,7 +252,7 @@ def record(verdict: str, rc: int, peak: float, ceiling: float, elapsed: float, c
           + (f"  said={said}" if said else ""), file=sys.stderr)
     if why := WHY.get(verdict):
         print(f"  {why}", file=sys.stderr)
-    # IT PRINTS ON **EVERY** RUN, INCLUDING A CLEAN ONE. It used to print only when a bound fired,
+    # IT PRINTS ON EVERY RUN, INCLUDING A CLEAN ONE. It used to print only when a bound fired,
     # on the reasoning that "a clean run is not the host's fault" -- which is true and is not the
     # question. MEASURED 2026-10-15: a caller asking whether the HOST could have produced this run
     # gets no answer at all on the run that passed, so "it passed" and "it would have passed anyway"

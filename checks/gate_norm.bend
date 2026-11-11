@@ -41,7 +41,7 @@ def main() -> IO(Unit):
       # and the seam's declared transport is `F32`, so f32 IS the row's width.
       row("f16_1p1", D.Dt.fp16(1.1)),
       row("f32_1p0", D.Dt.fp16(1.0)),
-      # `1.0 + 2**-40` is `0x3ff0000000001000` in f64 and EXACTLY 1.0 in f32
+      # `1.0 + 2-40` is `0x3ff0000000001000` in f64 and EXACTLY 1.0 in f32
       # (e2e.sh:215, "THE ROW f32 CANNOT HAVE"), so this row's verdict DEPENDS on
       # the width and nothing else does.  The carrier is f32, so `1.0` is what the
       # lane can be asked for, and CPython's f64 answer is what would disagree.

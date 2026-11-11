@@ -16,7 +16,7 @@ def flops_mem(uops, ignore_indexing=False):
   est = Estimates.from_uops(uops, ignore_indexing)
   return est.ops, est.lds
 
-# **************** new FlopCounter ****************
+# new FlopCounter
 
 def get_stats(x:Tensor):
   est = estimate_uop(compile_linear(x.schedule_linear()).src[-1])

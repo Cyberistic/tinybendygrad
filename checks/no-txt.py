@@ -311,7 +311,7 @@ def clean_plant() -> int:
 
 
 def main() -> int:
-    # THIS READER IS **NOT** GUARDED, AND THE REASON IS ITS SUBJECT. `declared_artifacts()` below
+    # THIS READER IS NOT GUARDED, AND THE REASON IS ITS SUBJECT. `declared_artifacts()` below
     # names `runs/graphcmp/D` to build the EXEMPT name set from `differ.declared()`, and
     # `live(...)` only `os.path.exists` each name; neither reads an artefact's CONTENT, so this
     # file's verdict -- how many HARD `.txt` the project owns -- is INVARIANT under the set being

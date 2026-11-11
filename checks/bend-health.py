@@ -335,9 +335,9 @@ def clause_recorded() -> int:
     # THREE POPULATIONS, THREE LABELS, NONE OF THEM "THE" POPULATION.
     #   `build_a_path`   constructs an argv path to the shim itself.
     #   `via_gatekit`    constructs a `Gate(...)` and runs the compiler through `gatekit.BEND`,
-    #                    constructing NOTHING. 66 of the 99. **A census that greps for the path
+    # constructing NOTHING. 66 of the 99. A census that greps for the path
     #                    finds 33 and therefore undercounts the tree's use of the compiler
-    #                    THREE-THIRDS** -- which is this instrument's own first draft's error,
+    # THREE-THIRDS -- which is this instrument's own first draft's error,
     #                    caught by asking the question the grep implied instead of the question
     #                    it was written for.
     #   `mention_only`   names `bin/bend` in prose and runs nothing. All 19 checked: none

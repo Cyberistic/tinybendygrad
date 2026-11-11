@@ -393,7 +393,7 @@ def files_of(rows):
 
 
 # ============================================================ the plant
-#: TWO SEEDS, AND EACH ONE DECLARES **THE CLASS IT MUST BE GIVEN**. `want` is the claim; the
+# : TWO SEEDS, AND EACH ONE DECLARES THE CLASS IT MUST BE GIVEN. `want` is the claim; the
 #: classifier is not asked whether it is "red" or "green" because a `../` one level too shallow and
 #: a by-design `.c` import are OPPOSITE findings and a shared polarity would test nothing. A plant
 #: that can only go red is a change-detector and `AGENTS.md` calls those harmful; a plant that CANNOT

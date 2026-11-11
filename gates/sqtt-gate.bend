@@ -1,12 +1,12 @@
 # gates/sqtt-gate.bend -- THE GATE DRIVER for `tinybendygrad/renderer/amd/sqtt.bend`.
 #
-# THE ROWS MOVED HERE FROM THE PORT FILE. **THE PORT FILE CARRIES THE PORT AND
-# THIS FILE CARRIES THE INSTRUMENT**, AND THE TREE's OWN CONVENTION SAYS SO:
+# THE ROWS MOVED HERE FROM THE PORT FILE. THE PORT FILE CARRIES THE PORT AND
+# THIS FILE CARRIES THE INSTRUMENT, AND THE TREE's OWN CONVENTION SAYS SO:
 # `gates/README.md:173` -- "a gate's `.bend` driver and its CPython oracle sit in
 # `gates/`, named by the gate that needs them."
 #
-# **AND THE ROWS ARE PURE CONSUMERS: THEY CALL THE PORT's DEFS AND DEFINE
-# NOTHING THAT THE PORT NEEDS.**
+# AND THE ROWS ARE PURE CONSUMERS: THEY CALL THE PORT's DEFS AND DEFINE
+# NOTHING THAT THE PORT NEEDS.
 
 import Base
 import ./../tinybendygrad/renderer/amd/sqtt.bend as P
@@ -183,7 +183,7 @@ def g_tables() -> IO(Unit):
     srow("tbl_CDNA_rev_LAYOUT_HEADER", P.u32_text(op_of("LAYOUT_HEADER", P.tbl_CDNA())))
     srow("tbl_CDNA_order", P.op_order_CDNA())
     srow("tbl_CDNA_spec_order", P.spec_order_CDNA())
-    # THE RDNA4 DELTA: `{**RDNA3, ...}` with eight overrides, so eight of the
+    # THE RDNA4 DELTA: `{RDNA3, ...}` with eight overrides, so eight of the
     # twenty-four rows DIFFER. A table ported as a copy of RDNA3 is wrong in
     # eight places and a count cannot see it.
     P.row("rdna4_same_1", True{})

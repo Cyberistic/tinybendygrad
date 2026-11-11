@@ -79,7 +79,7 @@ PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 
 # THE EDGE'S HOOK, DECLARED HERE AND READ BY THE EDGE (`gates/edge-runner.py:declares_edge_candidate`).
 #
-# **THE GATE THAT MEASURES REACHABILITY WAS ITSELF UNREACHABLE**, which is the sharpest instance
+# THE GATE THAT MEASURES REACHABILITY WAS ITSELF UNREACHABLE, which is the sharpest instance
 # of the class this tree keeps rediscovering: an instrument that is DISCOVERED and that nobody runs
 # measures nothing, and the instrument that says so was among the ones nobody ran. MEASURED
 # 2026-10-22: this file was in no `.github/workflows/`, held no pin the edge's selection rule could
@@ -88,7 +88,7 @@ PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 #
 # The tree's own mechanism is the fix, and it is the SAME one the compile-census gate and the
 # oracle-pin gate use: declare it, and let the runner write the cost row and the trace row.
-# **A HAND-WRITTEN ROW IN EITHER LEDGER WOULD BE A ROW THE RUNNER NEVER PRODUCED.** The cost is
+# A HAND-WRITTEN ROW IN EITHER LEDGER WOULD BE A ROW THE RUNNER NEVER PRODUCED. The cost is
 # MEASURED: this gate takes 12.6 s against the edge's 30 s budget, so the edge can afford it.
 EDGE_CANDIDATE = True
 
@@ -128,21 +128,21 @@ def instruments(root):
 # ---- the join -----------------------------------------------------------------------------
 # A PATH IS EVALUATED, NOT MATCHED. This is the whole instrument.
 #
-# **THE LEXICAL JOIN WAS WRONG THREE TIMES, AND EACH TIME IT WAS WRONG IN A DIRECTION THAT
-# ADDS UP.** MEASURED 2026-10-21 on this tree:
+# THE LEXICAL JOIN WAS WRONG THREE TIMES, AND EACH TIME IT WAS WRONG IN A DIRECTION THAT
+# ADDS UP. MEASURED 2026-10-21 on this tree:
 #   * a basename-substring join named `gates/runner.py` from the token `edge-runner.py`, and
 #     `checks/bend` from the token `get-bend.sh` -- the shape `checks/repro-paths.py` was
 #     retracted for, a PREFIX OF A PATH READ AS THE PATH;
 #   * a component-wise join then missed every SIBLING load -- `HERE / "pincensus-pop.py"` names
 #     `gates/pincensus-pop.py`, and a lexical rule cannot know that `HERE` is `gates/`;
-#   * and a bare-name rule named `checks/bend` from **19** files and `checks/differ.py` from
-#     **26**, every one of them a WORD: `bend` is a LANE NAME here, and a workflow's
+# * and a bare-name rule named `checks/bend` from 19 files and `checks/differ.py` from
+# 26, every one of them a WORD: `bend` is a LANE NAME here, and a workflow's
 #     `python sz.py` is the ROOT's `sz.py`, not `checks/sz.py`.
 #
 # So the path CONSTANTS of each file are EVALUATED -- `HERE`, `ROOT`, `REPO`, `GATES` and every
 # other name the file assigns -- and a path expression is resolved THROUGH them. That is the
 # same move `gates/gates-pop.py:resolve_root` makes for a root constant, and the same reason:
-# **a path a file computes is not a path a reader can see.**
+# a path a file computes is not a path a reader can see.
 FILE_HEAD = re.compile(r"^Path\(__file__\)\.resolve\(\)$")
 FILE_DIR_HEAD = re.compile(r"^Path\(__file__\)\.resolve\(\)\.parent$")
 PARENT = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\.parent$")
@@ -374,11 +374,11 @@ def census(root):
     # so a file that names nothing at all is never tokenized: the RAW text is swept for path
     # expressions first, and only a file that named something in prose is resolved precisely.
     #
-    # **A GATE NAMING ITSELF IS NOT A NAMING.** `gates/edge-runner.py` mentions its own path in
+    # A GATE NAMING ITSELF IS NOT A NAMING. `gates/edge-runner.py` mentions its own path in
     # a dozen places, and a self-reference cannot make a gate reachable -- it is a loop, and a
     # loop adds nothing to a closure that starts at the roots.
     #
-    # **WHAT THE ROOTS NAME THAT IS NOT A GATE** is collected in the same pass, because the
+    # WHAT THE ROOTS NAME THAT IS NOT A GATE is collected in the same pass, because the
     # question "does this gate exist?" has a sibling -- "what DOES the workflow run?" -- and
     # the two are not the same list. MEASURED 2026-10-21: `.github/workflows/szdiff.yml` and
     # `test.yml` run `python sz.py`, and the tree's `sz.py` is at the ROOT, not in `checks/` --

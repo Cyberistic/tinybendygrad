@@ -129,7 +129,7 @@ CONTAINERS = (ast.List, ast.Tuple, ast.Set, ast.Dict)
 # file produced: `checks/render-gate-oracle.py:164` is `("cast", g_cast), ("add", g_add), ...` inside
 # `for nm, f in (...)`, so VALID-DIFFERENT's rotation turned `("cast", g_cast)` into
 # `(g_cast, "cast")` -- `nm` became a FUNCTION OBJECT and `f` a string. The oracle then took its
-# exception path and printed **62 row NAMES containing a heap address** (`pyrender <function g_cast
+# exception path and printed 62 row NAMES containing a heap address (`pyrender <function g_cast
 # at 0x10ae2c680>`), which is why the table's sha MOVED under `PYTHONHASHSEED=3` while every other
 # row held. That is not a different input; it is a re-binding, and it broke the only byte-identity
 # this census claims. A container holding a literal AND a name/attribute/call is a BINDING, not a
@@ -317,8 +317,8 @@ def population():
         # GATES THAT DO NOT USE `gatekit` STILL NAME AN ORACLE BY LITERAL. `gates/tn_minimum-gate.py`
         # is the measured instance: no `Gate(...)` call, and its own header says the py lane "comes
         # from the interpreter via `tn_minimum-oracle.py`". THE NAME MUST CARRY `oracle`: the first
-        # version admitted every tracked `.py` constant a gate mentions and answered **55 absent on
-        # disk** -- `gatekit.py`, `coindep.py`, `checks/*.py` -- which is a gate naming its
+        # version admitted every tracked `.py` constant a gate mentions and answered 55 absent on
+        # disk -- `gatekit.py`, `coindep.py`, `checks/*.py` -- which is a gate naming its
         # collaborators, not naming oracles. Those are COUNTED in `dropped_literals`, not rows.
         for val in consts:
             if not val.endswith(".py") or "oracle" not in val.rsplit("/", 1)[-1].lower():
@@ -330,8 +330,8 @@ def population():
     # THE FOURTH BUCKET, USED AND NOT DROPPED. `gates-pop.py`'s own rule is "a gate is a file the
     # COMMIT TREE carries", and this census's SECOND read -- the directory walk -- is the one that
     # would otherwise admit a file the tree does NOT carry: another unit's in-flight scratch.
-    # MEASURED 2026-10-21 on the live tree: **1 of the 90 walked oracles is
-    # `checks/.tmp-tc_ptx_render-oracle.py`**, which `git ls-tree -r HEAD` does not name -- and a
+    # MEASURED 2026-10-21 on the live tree: 1 of the 90 walked oracles is
+    # `checks/.tmp-tc_ptx_render-oracle.py`, which `git ls-tree -r HEAD` does not name -- and a
     # census that admits it RUNS another unit's unvetted file as a subprocess and writes a row for
     # it into a committed table. So the walk is held to the SAME rule as the read that discovered
     # it, and the files it excludes are NAMED rather than dropped: a rule that excludes files
@@ -982,7 +982,7 @@ def census_one(rel, meta):
         try:
             got = invoke(sp, argv, env)
             # THE SEED RE-RUN GOES HERE, INSIDE THE WINDOW WHERE THE FILE EXISTS. MEASURED, and it
-            # marked **35 of 98 oracles SEED-UNSTABLE** including `gates/tn_sqrt-oracle.py`, whose
+            # marked 35 of 98 oracles SEED-UNSTABLE including `gates/tn_sqrt-oracle.py`, whose
             # output I verified byte-identical at three seeds BY HAND: the first version ran the
             # re-run AFTER the `finally: sp.unlink()`, so `invoke` found no file and compared the
             # sha of an EMPTY string against a real one. A stability check run against a deleted
@@ -1004,7 +1004,7 @@ def census_one(rel, meta):
     # A CRASH IS NOT MOVEMENT. MEASURED, and it is THIS FILE'S OWN DEFECT: with `bool` literals
     # admitted to the surface, `gates/oracle-census-gate.py`'s
     # `subprocess.run(..., capture_output=True, text=True)` had its flag flipped by
-    # VALID-DIFFERENT, the child inherited stdout, the census printed **7364 paths** instead of
+    # VALID-DIFFERENT, the child inherited stdout, the census printed 7364 paths instead of
     # 0 rows, and the verdict came back `SENSITIVE floor=7364 of 0 rows`. That is not an oracle
     # reading its input; it is a perturbation that broke the ORACLE'S OWN PLUMBING. The brief's
     # "an oracle that legitimately rejects garbage still moves" is true of a rejection OF THE
@@ -1046,14 +1046,14 @@ def census_one(rel, meta):
         + ([row["env_class"]["rows_moved"]] if env_moved else [])
     row["floor"] = min(floors) if floors else row["rows"]
     row["crashed_by"] = sorted(k for k, v in row["kinds"].items() if v.get("crashed"))
-    # THE DENOMINATOR OF THE DENOMINATOR, OVER **EVERY ARM**. `0 rows moved` over classes that all
+    # THE DENOMINATOR OF THE DENOMINATOR, OVER EVERY ARM. `0 rows moved` over classes that all
     # CRASHED is 0 comparisons, and `0 disagreements over 0 comparisons is not agreement`
     # (`.agents/slop/rebase-gate-selftest.py:1168-1180`). MEASURED twice on this file. First: 19 of
     # 98 oracles were reported as agreeing on the strength of zero completed comparisons --
     # `gates/state_census-oracle.py`, 85 sites, 85 rows, 0 of 3 classes completing. Second, and the
     # worse one: the count covered only the LITERAL classes, so `gates/autogen-oracle.py` -- whose
     # three literal classes all crash -- came back `CANNOT BE PERTURBED` while its ARGV arm had
-    # already measured **103 of 117 rows moving under three different input FILES**. A denominator
+    # already measured 103 of 117 rows moving under three different input FILES. A denominator
     # that omits the arm which found the answer is a denominator that hides the answer.
     row["comparisons"] = sum(1 for v in row["kinds"].values()
                              if v.get("applied") and not v.get("crashed")) + len(ap_moved) \
@@ -1529,8 +1529,8 @@ def main(argv):
     text = table(out)
     if a.only:
         # `--only` MUST NOT WRITE `REPORT`. MEASURED: a seed-stability check ran
-        # `--only wk-` three times and left `gates/oracleblind.rows` holding **4 lines** in place of
-        # the population's **99**, with no error and no exit change. A filter that narrows the
+        # `--only wk-` three times and left `gates/oracleblind.rows` holding 4 lines in place of
+        # the population's 99, with no error and no exit change. A filter that narrows the
         # answer and still overwrites the answer is a census that can be read wrong with no row to
         # notice, which is the whole defect this file exists to end. `--only` prints to stdout and
         # says the table was not written.

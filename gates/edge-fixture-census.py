@@ -148,8 +148,8 @@ WRITE_CALL = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\.\s*(?:write_text|write_
 # directory whose stem is X" -- names NO PATH AT ALL, so a scan of paths cannot see it.
 # `.agents/slop/opsbend_milestone_gate.py` declares `_EXPECTED_STEM = "ops_bend-milestone-
 # expected"` and finds `ops_bend-milestone-expected.md` BESIDE ITSELF, and that file is
-# 4 626 bytes of expectation stage 5 cannot run without. **THE CLOSURE MISSED IT, AND THAT
-# IS NOT A HYPOTHETICAL BLIND SPOT -- IT IS A FILE THE GATE NEEDS.** The declaration is the
+# 4 626 bytes of expectation stage 5 cannot run without. THE CLOSURE MISSED IT, AND THAT
+# IS NOT A HYPOTHETICAL BLIND SPOT -- IT IS A FILE THE GATE NEEDS. The declaration is the
 # tree's own idiom (doctrine 1: a generator's own declaration), so the census reads it.
 DISCOVERY = re.compile(r"""^\s*([A-Za-z_][A-Za-z0-9_]*_(?:STEM|PREFIX))\s*=\s*["']([^"']+)["']""")
 # THE WRITE ARM. A file a program WRITES is an OUTPUT, and an output that lives in a tracked

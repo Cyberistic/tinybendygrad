@@ -16,7 +16,7 @@ except ImportError as e:
   print(repr(e))
   exit(int(ASSERT_DIFF))
 
-# *** process replay settings
+# * process replay settings
 
 # internal
 PAGE_SIZE = getenv("PAGE_SIZE", 100)
@@ -39,7 +39,7 @@ SKIP_PROCESS_REPLAY = (k:="[skip_process_replay]") in os.getenv("COMMIT_MESSAGE"
 if REF == "master": SKIP_PROCESS_REPLAY = True
 class ProcessReplayWarning(Warning): pass
 
-# *** replay the function and convert return values to string
+# * replay the function and convert return values to string
 
 def replay_to_program(p:UOp, ast:UOp, renderer:Renderer) -> tuple[str, str, tuple[Any, ...]]:
   if ast.op is Ops.PROGRAM: input_ast = ast
@@ -61,7 +61,7 @@ def replay_to_program(p:UOp, ast:UOp, renderer:Renderer) -> tuple[str, str, tupl
 replayers: dict[str, Callable[..., tuple[str, str, tuple[Any, ...]]]] = {}
 replayers["do_to_program"] = replay_to_program
 
-# *** run replayers on captured rows and print diffs
+# * run replayers on captured rows and print diffs
 
 def diff(offset:int, fxns:dict[str, Callable[..., tuple|None]]) -> None:
   if ASSERT_DIFF: warnings.filterwarnings("error", category=ProcessReplayWarning)
@@ -96,7 +96,7 @@ def diff(offset:int, fxns:dict[str, Callable[..., tuple|None]]) -> None:
       warnings.warn(f"{name=} {loc=} {e=}", ProcessReplayWarning)
   cur.close()
 
-# *** generic runner to map rows of a table to a function in parallel
+# * generic runner to map rows of a table to a function in parallel
 
 def _pmap(fxns:dict[str, Callable]) -> None:
   conn = db_connection()
@@ -114,7 +114,7 @@ def _pmap(fxns:dict[str, Callable]) -> None:
     pool.join()
     pool.terminate()
 
-# *** main loop
+# * main loop
 
 if __name__ == "__main__":
   if SKIP_PROCESS_REPLAY:

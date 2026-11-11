@@ -11,7 +11,7 @@ ENVIRONMENT_NAME = 'CartPole-v1'
 #import examples.rl.lightupbutton
 #ENVIRONMENT_NAME = 'PressTheLightUpButton-v0'
 
-# *** hyperparameters ***
+# * hyperparameters *
 # https://github.com/llSourcell/Unity_ML_Agents/blob/master/docs/best-practices-ppo.md
 
 BATCH_SIZE = 256

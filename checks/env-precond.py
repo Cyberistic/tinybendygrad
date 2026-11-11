@@ -488,22 +488,22 @@ EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 2: "REFUSED"}  # VERDICTS: lega
 # `PLANTS[1]` IS THE `moved-only` PLANT, and it is a NEW KIND rather than a new expectation.
 # `gates/gate-surface.py` classifies a declared verdict by EXECUTING the declared plant and
 # requiring the observed rc to equal the declared one, so a gate that declares `1: "FAIL"` needs
-# an argv whose OWN EXIT is 1 -- and `--plant moved` exits **0**, because it is a REPORT on five
+# an argv whose OWN EXIT is 1 -- and `--plant moved` exits 0, because it is a REPORT on five
 # plants, every one of which behaved.  `moved-only` runs the SAME five plants with the SAME fixed
 # expectations and then EXITS WITH THE MOVED-SUMMARY PLANT'S OWN EXIT, which this file MEASURED
-# on a fabricated tree (`noopt=1` against a declaration of `noopt=0` -> exit 1).  **IT WEAKENS
-# NOTHING**: the expectation table is the same table and `--plant moved` still exits 0.
-# MEASURED 2026-10-29: `--plant moved-only` exits **1**; `--plant moved` still exits 0.
+# on a fabricated tree (`noopt=1` against a declaration of `noopt=0` -> exit 1).  IT WEAKENS
+# NOTHING: the expectation table is the same table and `--plant moved` still exits 0.
+# MEASURED 2026-10-29: `--plant moved-only` exits 1; `--plant moved` still exits 0.
 #
-# ⚠ `2: "REFUSED"` IS **NOT** `gatekit.py`'s `REFUSED` (3).  This file's own vocabulary spells
-# REFUSED as **2** -- its docstring says "EXIT: 0 declared-and-recorded · 1 a declared value
+# ⚠ `2: "REFUSED"` IS NOT `gatekit.py`'s `REFUSED` (3).  This file's own vocabulary spells
+# REFUSED as 2 -- its docstring says "EXIT: 0 declared-and-recorded · 1 a declared value
 # MOVED (FAIL) · 2 usage · 3 REFUSED" -- and `gates/gate-surface.py` clause V NAMES that as an
-# UNOWNED exit code and a RENAMED one.  **THAT IS A REAL FINDING AND IT IS NOT THIS UNIT'S TO
-# SILENCE**: `checks/env-precond.py`'s `refuse()` returns 3 and its `plant()` returns 2 for an
+# UNOWNED exit code and a RENAMED one.  THAT IS A REAL FINDING AND IT IS NOT THIS UNIT'S TO
+# SILENCE: `checks/env-precond.py`'s `refuse()` returns 3 and its `plant()` returns 2 for an
 # unknown kind, so its declared `2: "REFUSED"` names the USAGE code as a refusal.  The two
 # readings are left EXACTLY as they are -- the declaration is not narrowed to make a count go
 # down -- and the disagreement is named here instead.  `PLANTS[2]` is `--plant nonsense`, which
-# is the argv that reaches the **2** the declaration names, and it is the file's OWN usage exit.
+# is the argv that reaches the 2 the declaration names, and it is the file's OWN usage exit.
 RED_IS = "FINDING"
 PLANTS = {0: ["--plant", "satisfied"], 1: ["--plant", "moved-only"], 2: ["--plant", "nonsense"]}
 

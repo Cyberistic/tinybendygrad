@@ -948,7 +948,7 @@ def tn_cmpeq(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 #   `3 != a`  ->  `CMPEQ(CMPEQ(3, a), CONST(False))`
 #
 # THE PRE-PIN SPELLING WAS `self._binop(Ops.CMPNE, x, False)` -- ONE `CMPNE` NODE -- SO THE
-# NAME DID NOT CHANGE AND **THE NODE COUNT** DID.
+# NAME DID NOT CHANGE AND THE NODE COUNT DID.
 #
 # AND UPSTREAM's OWN `symbolic.py:349` KEYS ITS NEGATION TEST ON `CMPEQ` WITH A `CONST 0`
 # -- so a graph that says `CMPNE` is NOT upstream's graph. AND THE PORT's OWN
@@ -1155,15 +1155,15 @@ def tn_isfinite.cneginf(+ar: O.Arena) -> O.Found:
   O.UOp.const(ar, O.CFloat{F32.neg(F32.mul(1.0e30, 1.0e30))})
 def tn_isfinite.ct(+c: O.Found) -> Tensor:
   tn_new(O.Found.ar(c), O.Found.i(c))
-# `self.eq(inf)` -- **`eq` **IS **`_binop(Ops.CMPEQ, x, False)` (`mixin/elementwise.py:335-336`
-# **AT **THE **PIN **`f5ac54685074`)**, **SO **THE **NODE **IS **`CMPEQ(self, inf)`** --
-# **ONE **NODE**, **AND **NOT **`logical_not(CMPNE(self, inf))`**, **WHICH **IS **WHAT **THIS
-# **DEF **USED **TO **BUILD**.**
+# `self.eq(inf)` -- `eq` IS `_binop(Ops.CMPEQ, x, False)` (`mixin/elementwise.py:335-336`
+# AT THE PIN `f5ac54685074`), SO THE NODE IS `CMPEQ(self, inf)` --
+# ONE NODE, AND NOT `logical_not(CMPNE(self, inf))`, WHICH IS WHAT THIS
+# DEF USED TO BUILD.
 #
-# **AND **THE **OLD **COMMENT **"**`tn_eq` **IS **`logical_not(cmpne)`"** **WAS **A **CLAIM
-# **ABOUT **AN **OLDER **UPSTREAM** -- **AND **THE **SAME **DRIFT **ALREADY **HAD **THREE
-# **HALVES** (**`uop/symbolic.bend`'s **`mint_not`**, **`tensor.bend`'s **`tn_logical_not`**,
-# **AND **`mixin/op.bend`'s **`mo_eqc`**), **AND **THIS **WAS **THE **FOURth**.**
+# AND THE OLD COMMENT "`tn_eq` IS `logical_not(cmpne)`" WAS A CLAIM
+# ABOUT AN OLDER UPSTREAM -- AND THE SAME DRIFT ALREADY HAD THREE
+# HALVES (`uop/symbolic.bend`'s `mint_not`, `tensor.bend`'s `tn_logical_not`,
+# AND `mixin/op.bend`'s `mo_eqc`), AND THIS WAS THE FOURth.
 def tn_isfinite.eqarm(+t: Tensor, +c: Tensor) -> Tensor:
   tn_binop(t, c, O.OpsCMPEQ{})
 # `eq * detect_positive`, and `detect_positive` is the CONST `True`, which is interned in
@@ -1738,23 +1738,23 @@ def tn_mop.pairs(+ar: O.Arena, +self: U32, +op: O.Op, lo: List<&2, O.Const>, hi:
   +a = tn_shape_arg(tn_sarg.acc(lo, SArg{ar, Nil{}}))
   +b = tn_shape_arg(tn_sarg.acc(hi, SArg{O.Found.ar(a), Nil{}}))
   tn_mop.pairs2(O.Found.ar(b), self, op, [O.Found.i(a), O.Found.i(b)])
-# **THE **ORDER **IS **THE **SHAPE **ARG**, **AND **THE **SHAPE **ARG **IS **A **`src[1]`**,
-# **NOT **AN **`arg`** -- **AND **THIS **IS **UPSTREAM's **`_mop` (`ops.py:784-791`):
+# THE ORDER IS THE SHAPE ARG, AND THE SHAPE ARG IS A `src[1]`,
+# NOT AN `arg` -- AND THIS IS UPSTREAM's `_mop` (`ops.py:784-791`):
 #
 #   case Ops.PERMUTE: src_args = [arg]
 #   ...
 #   usrcs = [shape_to_shape_arg(arg) for arg in src_args]
 #   return UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)
 #
-# **AND **UPSTREAM's **`marg` (`ops.py:772`) **READS **IT **BACK **FROM **`src[1]`**:
+# AND UPSTREAM's `marg` (`ops.py:772`) READS IT BACK FROM `src[1]`:
 # `case Ops.PERMUTE: return self.src[1].as_shape`.
 #
-# **AND **THE **PORT's **`tn_shape_arg` (`tensor.bend:1614`) **IS **UPSTREAM's
-# **`shape_to_shape_arg` (`ops.py:108-112`) **ALREADY** -- **INCLUDING **THE **LENGTH-1 **IS
-# **A **BARE **CONST** **CASE** (`tn_shape_arg.k`'s `one` **ARM**)** -- **SO **THE **PORT
-# **HAD **THE **HELPER **AND **NOT **THE **STEP**, **AND **THE **PORT's **`G.permute`
-# **(`mixin/movement.bend:1000`) **AND **THIS **DEF** **BUILT **THE **ORDER **INTO **`arg`** --
-# **AND **THAT **IS **WHY **THE **CORPUS **DISAGREED **ON **7 **OF **38 **GRAPHS**.**
+# AND THE PORT's `tn_shape_arg` (`tensor.bend:1614`) IS UPSTREAM's
+# `shape_to_shape_arg` (`ops.py:108-112`) ALREADY -- INCLUDING THE LENGTH-1 IS
+# A BARE CONST CASE (`tn_shape_arg.k`'s `one` ARM) -- SO THE PORT
+# HAD THE HELPER AND NOT THE STEP, AND THE PORT's `G.permute`
+# (`mixin/movement.bend:1000`) AND THIS DEF BUILT THE ORDER INTO `arg` --
+# AND THAT IS WHY THE CORPUS DISAGREED ON 7 OF 38 GRAPHS.
 def tn_mop.order(+ar: O.Arena, +self: U32, +op: O.Op, ys: List<&2, U32>) -> O.Found:
   +a = tn_shape_arg.of(ys, ar)
   tn_mop.node(O.Found.ar(a), self, op, [O.Found.i(a)])

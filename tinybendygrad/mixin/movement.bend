@@ -961,8 +961,8 @@ def G.stk4(+ar: O.Arena, a: U32, b: U32, c: U32, d: U32) -> O.Found:
   +a3 = G.c1(O.Found.ar(a2), d)
   G.mstack(O.Found.ar(a3), [O.Found.i(a0), O.Found.i(a1), O.Found.i(a2), O.Found.i(a3)])
 
-# `shape_to_shape_arg` (ops.py:108-112) FOR **ANY **LENGTH**, WHICH IS **THE **PIECE
-# **UPSTREAM's **`_mop` **USES **AND **THE **PORT **WAS **MISSING**:
+# `shape_to_shape_arg` (ops.py:108-112) FOR ANY LENGTH, WHICH IS THE PIECE
+# UPSTREAM's `_mop` USES AND THE PORT WAS MISSING:
 #
 #   def shape_to_shape_arg(arg:tuple[sint, ...]) -> UOp:
 #     src = tuple(x if isinstance(x, UOp) else UOp.const(x) for x in arg)
@@ -970,27 +970,27 @@ def G.stk4(+ar: O.Arena, a: U32, b: U32, c: U32, d: U32) -> O.Found:
 #       if not dtypes.is_int(x.dtype): raise RuntimeError(...)
 #     return src[0] if len(src) == 1 else UOp(Ops.STACK, src=src)
 #
-# **SO **A **LENGTH-1 **SHAPE **IS **A **BARE **CONST** **AND **A **LONGER **ONE **IS **A
-# `STACK` **NODE** -- **AND **THE **PORT's **`G.stk4` **HARD-CODES **THE **LENGTH-4 **CASE**
-# **AND **THE **PERMUTE's **ORDER **IS **ARBITRARY-LENGTH**, **SO **THE **PERMUTE **HAD
-# **NOWHERE **TO **PUT **ITS **ORDER**.**
+# SO A LENGTH-1 SHAPE IS A BARE CONST AND A LONGER ONE IS A
+# `STACK` NODE -- AND THE PORT's `G.stk4` HARD-CODES THE LENGTH-4 CASE
+# AND THE PERMUTE's ORDER IS ARBITRARY-LENGTH, SO THE PERMUTE HAD
+# NOWHERE TO PUT ITS ORDER.
 #
-# **AND **THIS **IS **WHY **THE **PORT's **PERMUTE **CARRIED **ITS **ORDER **IN **`arg`**
-# **AND **NOT **IN **`src[1]`** -- **AND **THAT **IS **WHY **THE **CORPUS **DISAGREED**:
-# **UPSTREAM's **PERMUTE **IS **`(x, STACK(consts))` **WITH **`arg=None`**, **AND **THE
-# **PORT's **WAS **`(x)` **WITH **`arg=ATuple{ys}`** -- **AND **THE **SHAPE **IS **THE
-# **DIFFERENCE**, **AND **THE **OP **SET **IS **THE **SAME** (`OPS REACHED: py=6 bend=6`).**
-# **THE **RECURSIVE **CALL **IS **READ **LEFT **TO **RIGHT** **AND **EACH **PASSED
-# **ARGUMENT **MUST **BE **SMALLER **THAN **THE **MATCHED **EXPRESSION** ("a call smaller
-# than ...") -- **SO **THE **CONST **INTERNING **IS **IN **A **`push` **DEF** (**WHICH
-# **IS **A **SMALLER **EXPRESSION **THAN **THE **MATCH**) **AND **THE **RECURSION **CARRIES
-# **THE **TAIL **AND **THE **NEW **STATE** -- **EXACTLY **THE **IDIOM **THE **PORT
-# **ALREADY **USES **AT **`tn_sarg.acc` (`tensor.bend:1583`)**.**
+# AND THIS IS WHY THE PORT's PERMUTE CARRIED ITS ORDER IN `arg`
+# AND NOT IN `src[1]` -- AND THAT IS WHY THE CORPUS DISAGREED:
+# UPSTREAM's PERMUTE IS `(x, STACK(consts))` WITH `arg=None`, AND THE
+# PORT's WAS `(x)` WITH `arg=ATuple{ys}` -- AND THE SHAPE IS THE
+# DIFFERENCE, AND THE OP SET IS THE SAME (`OPS REACHED: py=6 bend=6`).
+# THE RECURSIVE CALL IS READ LEFT TO RIGHT AND EACH PASSED
+# ARGUMENT MUST BE SMALLER THAN THE MATCHED EXPRESSION ("a call smaller
+# than ...") -- SO THE CONST INTERNING IS IN A `push` DEF (WHICH
+# IS A SMALLER EXPRESSION THAN THE MATCH) AND THE RECURSION CARRIES
+# THE TAIL AND THE NEW STATE -- EXACTLY THE IDIOM THE PORT
+# ALREADY USES AT `tn_sarg.acc` (`tensor.bend:1583`).
 #
-# **AND **THE **STATE **IS **A **`Data` **RECORD** **BECAUSE **THE **ARENA **AND **THE
-# **INDEX **LIST **AND **THE **TAIL **ALL **HAVE **TO **CROSS **THE **RECURSION** **AND
-# **THREE **PARAMETERS **WOULD **NOT **BE **READ **LEFT **TO **RIGHT** **THE **WAY
-# **BEND **READS **THEM** -- ****ONE **RECORD**, **ONE **ARGUMENT**.**
+# AND THE STATE IS A `Data` RECORD BECAUSE THE ARENA AND THE
+# INDEX LIST AND THE TAIL ALL HAVE TO CROSS THE RECURSION AND
+# THREE PARAMETERS WOULD NOT BE READ LEFT TO RIGHT THE WAY
+# BEND READS THEM -- ONE RECORD, ONE ARGUMENT.
 type Stk is Data:
   Stk{ar: O.Arena, acc: List<&2, U32>}
 
@@ -1006,12 +1006,12 @@ def G.stk.push(+ar: O.Arena, acc: List<&2, U32>, v: U32) -> Stk:
   +c = G.c1(ar, v)
   Stk{O.Found.ar(c), List.append(&2, U32, acc, [O.Found.i(c)])}
 
-# **THE **MATCH **AND **THE **RECURSION **ARE **ONE **DEF**, **AND **THE **LIST **IS **A
-# **PLAIN **PARAMETER** **SO **THE **`match` **CAN **SCRUTINISE **IT** -- **AND **THE
-# **STATE **CROSSES **THE **RECURSION **IN **THE **SECOND **PARAMETER** -- **AND **BEND
-# **CHECKS **DEFS **IN **FILE **ORDER**, **SO **THE **SELF-CALL **IS **THE **SAME
-# **DEF** **AND **NOT **A **SECOND **ONE** (**A **SECOND **ONE **WOULD **BE **A **CYCLE
-# **AND **NEITHER **ORDER **IS **ACCEPTED**).**
+# THE MATCH AND THE RECURSION ARE ONE DEF, AND THE LIST IS A
+# PLAIN PARAMETER SO THE `match` CAN SCRUTINISE IT -- AND THE
+# STATE CROSSES THE RECURSION IN THE SECOND PARAMETER -- AND BEND
+# CHECKS DEFS IN FILE ORDER, SO THE SELF-CALL IS THE SAME
+# DEF AND NOT A SECOND ONE (A SECOND ONE WOULD BE A CYCLE
+# AND NEITHER ORDER IS ACCEPTED).
 def G.stk.go(ys: List<&2, U32>, +st: Stk) -> O.Found:
   match ys:
     case Nil{}:
@@ -1019,23 +1019,23 @@ def G.stk.go(ys: List<&2, U32>, +st: Stk) -> O.Found:
     case v <> t:
       G.stk.go(t, G.stk.push(G.Stk.ar(st), G.Stk.acc(st), v))
 
-# **THE **LENGTH-1 **CASE **IS **A **BARE **CONST** AND **NOT **A `STACK`** -- **AND **THE
-# **PORT's **`G.mstack` **ALWAYS **MAKES **A `STACK`**, **SO **THIS **IS **THE **ONE **PLACE
-# **THE **TWO **DISAGREE** -- **AND **`mxm_reshape1` **IS **THE **ROW **THAT **SEES **IT**.
+# THE LENGTH-1 CASE IS A BARE CONST AND NOT A `STACK` -- AND THE
+# PORT's `G.mstack` ALWAYS MAKES A `STACK`, SO THIS IS THE ONE PLACE
+# THE TWO DISAGREE -- AND `mxm_reshape1` IS THE ROW THAT SEES IT.
 def G.stk1(+ar: O.Arena, v: U32) -> O.Found:
   G.c1(ar, v)
 
-# **THE **ARBITRARY-LENGTH **SHAPE **ARG** -- **AND **THE **HELPER **IS **`ops.bend`'s
-# **`O.shape_arg`**, **WHICH **IS **UPSTREAM's **`shape_to_shape_arg` (`ops.py:108-112`)**
-# **IN **ITS **TUPLE **FORM** -- **AND **THE **LENGTH-1 **ARM **IS **A **BARE **CONST**
-# **AND **NOT **A `STACK`**, **EXACTLY **AS **UPSTREAM **DOES** (`ops.py:112`: `return src[0]
-# if len(src) == 1 else UOp(Ops.STACK, src=src)`)**.**
+# THE ARBITRARY-LENGTH SHAPE ARG -- AND THE HELPER IS `ops.bend`'s
+# `O.shape_arg`, WHICH IS UPSTREAM's `shape_to_shape_arg` (`ops.py:108-112`)
+# IN ITS TUPLE FORM -- AND THE LENGTH-1 ARM IS A BARE CONST
+# AND NOT A `STACK`, EXACTLY AS UPSTREAM DOES (`ops.py:112`: `return src[0]
+# if len(src) == 1 else UOp(Ops.STACK, src=src)`).
 #
-# **AND **THE **LOCAL **`G.stk.go`/`G.stk.push`/`G.Stk` **ARE **THE **PORT's **OWN
-# **VERSION **OF **THE **SAME **WALK** -- **AND **THEY **ARE **LEFT **FOR **`G.stk4`**
-# **AND **`G.mstack`**, **WHICH **ARE **HERE**, **AND **THE **DUPLICATION **IS **THE
-# **DEFECT**, **AND **`ops.bend` **IS **THE **ONE **FILE **EVERY **ONE **OF **THE **COPIES
-# **CAN **SEE**.**
+# AND THE LOCAL `G.stk.go`/`G.stk.push`/`G.Stk` ARE THE PORT's OWN
+# VERSION OF THE SAME WALK -- AND THEY ARE LEFT FOR `G.stk4`
+# AND `G.mstack`, WHICH ARE HERE, AND THE DUPLICATION IS THE
+# DEFECT, AND `ops.bend` IS THE ONE FILE EVERY ONE OF THE COPIES
+# CAN SEE.
 def G.stkN(+ar: O.Arena, ys: List<&2, U32>) -> O.Found:
   O.shape_arg_found(ar, ys)
 
@@ -1070,21 +1070,21 @@ def G.pad(+ar: O.Arena, +lo: List<&2, U32>, +hi: List<&2, U32>) -> O.Found:
   +a = G.mstack(O.Found.ar(b), lo)
   G.pad.of(b, a, G.mstack(O.Found.ar(a), hi))
 
-# A PERMUTE. **UPSTREAM's `marg` IS **`src[1].as_shape`** (`ops.py:772`: `case Ops.PERMUTE:
-# return self.src[1].as_shape`) **AND **UPSTREAM's **`_mop` (`ops.py:784,790-791`) **BUILDS **THE
-# NODE **AS **`UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`** -- **THE **ORDER
-# **IS **IN **`src[1]`** AND **THE **`arg` **IS **`None`**.
+# A PERMUTE. UPSTREAM's `marg` IS `src[1].as_shape` (`ops.py:772`: `case Ops.PERMUTE:
+# return self.src[1].as_shape`) AND UPSTREAM's `_mop` (`ops.py:784,790-791`) BUILDS THE
+# NODE AS `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)` -- THE ORDER
+# IS IN `src[1]` AND THE `arg` IS `None`.
 #
-# **THE **PORT **WAS **BUILDING **`PERMUTE(x)` **WITH **THE **ORDER **IN **`arg`**
-# (`ATuple{ys}`), **AND **THAT **IS **WHY **THE **CORPUS **DISAGREED** ON **7 **OF **38
-# **GRAPHS**: **MEASURED 2026-11-10 ON THE `reduce` GRAPH, **CPython's **PERMUTE **IS
-# `PERMUTE(x, STACK(consts))` **AND **THE **PORT's **IS `PERMUTE(x)` **WITH **THE **ORDER
-# **IN `arg`** -- **AND **THE **SAME **ORDER** **AND **THE **SAME **SHAPE
-# (`(l0:8,l0:4)`)**.**
+# THE PORT WAS BUILDING `PERMUTE(x)` WITH THE ORDER IN `arg`
+# (`ATuple{ys}`), AND THAT IS WHY THE CORPUS DISAGREED ON 7 OF 38
+# GRAPHS: MEASURED 2026-11-10 ON THE `reduce` GRAPH, CPython's PERMUTE IS
+# `PERMUTE(x, STACK(consts))` AND THE PORT's IS `PERMUTE(x)` WITH THE ORDER
+# IN `arg` -- AND THE SAME ORDER AND THE SAME SHAPE
+# (`(l0:8,l0:4)`).
 #
-# **AND **THE **OLD **CITATION **`(ops.py:815)` **WAS **WRONG** -- **MEASURED: `ops.py:815`
-# **AT **THE **PIN **IS **ABOUT **`Buffer` **CREATION**, **AND **THE **PERMUTE's **`marg` **IS
-# AT **`ops.py:772`**. **A CITATION IS **A **POSITION**, **AND **THIS **ONE **HAD **MOVED.**
+# AND THE OLD CITATION `(ops.py:815)` WAS WRONG -- MEASURED: `ops.py:815`
+# AT THE PIN IS ABOUT `Buffer` CREATION, AND THE PERMUTE's `marg` IS
+# AT `ops.py:772`. A CITATION IS A POSITION, AND THIS ONE HAD MOVED.
 def G.permute(+ar: O.Arena, +ys: List<&2, U32>) -> O.Found:
   +b = G.base(ar)
   +sk = G.stkN(O.Found.ar(b), ys)
@@ -1533,11 +1533,11 @@ def mxw_reshape(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor:
 # order_arg != tuple(range(self.ndim)) else self`: the identity test here is the arg
 # against `range(ndim)`, NOT a shape comparison, and that is why this wrapper needs no
 # fold at all.
-# **AND **THE **ORDER **IS **IN **`src[1]`** -- **UPSTREAM's **`_mop` (`ops.py:784,790-791`)
-# **BUILDS **THE **NODE **AS **`UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`**, **AND
-# **`marg` (`ops.py:772`) **READS **IT **BACK **FROM **`src[1].as_shape`** -- **AND **THE
-# **HELPER **IS **`G.stkN`**, **WHICH **IS **THE **PORT's **`shape_to_shape_arg`
-# (**`ops.py:108-112`**) **FOR **ANY **LENGTH**.**
+# AND THE ORDER IS IN `src[1]` -- UPSTREAM's `_mop` (`ops.py:784,790-791`)
+# BUILDS THE NODE AS `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`, AND
+# `marg` (`ops.py:772`) READS IT BACK FROM `src[1].as_shape` -- AND THE
+# HELPER IS `G.stkN`, WHICH IS THE PORT's `shape_to_shape_arg`
+# (`ops.py:108-112`) FOR ANY LENGTH.
 def mxw_perm_of(+t: T.Tensor, +n: O.Found) -> T.Tensor:
   T.tn_new(O.Found.ar(n), O.Found.i(n))
 

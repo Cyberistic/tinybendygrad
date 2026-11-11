@@ -70,20 +70,20 @@ ARMED = ("allred", "cdiv", "late")
 #   NOT A ROW    the bend side was never asked the question: its canonical file is
 #                byte-identical to another graph's.
 PIN = {
-  # *** PREDICTION, NOT A MEASUREMENT (2026-10-06). *** `allred` was SUBSTITUTED by the
+  # * PREDICTION, NOT A MEASUREMENT (2026-10-06). * `allred` was SUBSTITUTED by the
   # `g_matmul()` fallback and its old row 6 was matmul's CONST, not `allred`'s.  It now has
   # an arm, so the bend side IS asked -- but no `bend` run has rewritten
   # `runs/graphcmp/D/` for it.  `threegraphs` (§4) predicts the first disagreement is row 8,
   # the COPY row, on the device tuple's NORMAL FORM (`n(sCPU,sCPU)` vs `ssCPU,sCPU`, two
   # renderer spellings of one value, both sides the differ's own text).  Row 8, `arg`,
-  # `WRONG VALUE` are UNCONFIRMED until a fresh run exists: **A PIN TAKEN FROM A PREDICTION
+  # `WRONG VALUE` are UNCONFIRMED until a fresh run exists: A PIN TAKEN FROM A PREDICTION
   # IS A PIN THAT CANNOT FAIL, so this note is IN THE TABLE, where a reader of the pin
-  # lands, and not in a commit message.**
-  # *** `allred` LEFT THIS TABLE (2026-10-06), AND IT LEFT BECAUSE THE RUN FALSIFIED IT. *** It was
+  # lands, and not in a commit message.
+  # * `allred` LEFT THIS TABLE (2026-10-06), AND IT LEFT BECAUSE THE RUN FALSIFIED IT. * It was
   # pinned from a PREDICTION -- the COPY row on the device tuple's normal form -- and `adevfix`
   # fixed the normal form, so the CLEAN RE-RUN reads `VERDICT: AGREE` with `D2-cmp-allred.txt`
-  # BYTE-IDENTICAL. **A PIN TAKEN FROM A PREDICTION IS A PIN THAT CANNOT FAIL, which is why the
-  # prediction lived here where a reader of the pin lands -- and why its REFUTATION belongs here too.**
+  # BYTE-IDENTICAL. A PIN TAKEN FROM A PREDICTION IS A PIN THAT CANNOT FAIL, which is why the
+  # prediction lived here where a reader of the pin lands -- and why its REFUTATION belongs here too.
   # `cdiv` and `late` LEFT THIS TABLE (2026-10-06): they were NOT-A-ROW, i.e. never asked,
   # and once armed their atoms matched field for field (`threegraphs` §4, predicted AGREE).
   # They are not pinned-and-agreeing; they left, which is why `len(PIN)` is what
@@ -98,7 +98,7 @@ PIN = {
   # byte-identical on the live driver, and the field itself is CORRECT (`ops.bend:1057`
   # against `ops.py:1398`), so the row was a SPELLING and not a shape.
 }
-# *** THE TABLE IS EMPTY AND AN EMPTY TABLE IS A CLAIM, NOT A VACUITY. ***
+# * THE TABLE IS EMPTY AND AN EMPTY TABLE IS A CLAIM, NOT A VACUITY. *
 #
 # `flip` AND `unshard` LEFT ON 2026-10-18, and this is the FOURTH time this instrument has
 # had to do that (`allred`, `cdiv`, `late`, `lin`, `loop` before them).  MEASURED 2026-10-18
@@ -106,24 +106,24 @@ PIN = {
 # `c74f32ca629d` (a run whose two substrate rows differ is a MIXTURE and names nothing):
 # `.agents/slop/disagree/names.py --json` answers `disagree: []`, `substituted: []`,
 # `wire_shape_defect: null`, and `D0-run-summary.txt` reads `graphs-disagree=0`.  So the pin
-# on `['flip','unshard']` was recording "**THESE TWO GRAPHS DISAGREE**", that sentence is
-# FALSE, and **A PIN ON AN EMPTY SET IS A CLAIM THAT NOTHING DISAGREES.**
+# on `['flip','unshard']` was recording "THESE TWO GRAPHS DISAGREE", that sentence is
+# FALSE, and A PIN ON AN EMPTY SET IS A CLAIM THAT NOTHING DISAGREES.
 #
-# **WHY DELETION AND NOT A "MUST KEEP AGREEING" PIN.** `len(PIN)` IS the `graphs-disagree`
+# WHY DELETION AND NOT A "MUST KEEP AGREEING" PIN. `len(PIN)` IS the `graphs-disagree`
 # denominator -- this dict has four columns (`row`, `fields`, `shape`, `fault`) and NOT ONE of
 # them can spell "agrees", so a graph that agrees is not representable in this table and a
 # regression row added here would break the arithmetic `lane_pin` derives.  The claim is not
 # LOST by the deletion: `lane_pin` asserts the generator's OWN `graphs-disagree=0` row
-# directly, and MEASURED 2026-10-18 20:13Z `differ.PINS` has **NO `graphs-disagree` key** --
+# directly, and MEASURED 2026-10-18 20:13Z `differ.PINS` has NO `graphs-disagree` key --
 # so that row is asserted HERE and NOWHERE ELSE.  `PINS["graphs-agree"]="34"` over
 # `PINS["graphs"]="34"` implies it only ARITHMETICALLY, and only while nothing is REFUSED,
 # which is a weaker claim and is not what this lane checks.
 #
-# **AND THE LANE KEEPS FOUR TEETH WITH AN EMPTY TABLE**, so this is not a gate turned off:
+# AND THE LANE KEEPS FOUR TEETH WITH AN EMPTY TABLE, so this is not a gate turned off:
 # any disagreement reds it (`named != sorted(PIN)`), any dispatcher substitution reds it, a
 # malformed wire reds it, and a summary that stops reading `graphs-disagree=0` reds it.
 #
-# **`loop` IS DELIBERATELY NOT PINNED, AND IT IS NOT PINNED-AND-AGREEING.**  It AGREES, and
+# `loop` IS DELIBERATELY NOT PINNED, AND IT IS NOT PINNED-AND-AGREEING.  It AGREES, and
 # `lane_pin` below already asserts that twice -- `names.py`'s `disagree: []` and
 # `D0-run-summary.txt`'s `graphs-disagree=0` -- so nothing in this paragraph is load-bearing.
 # MEASURED 2026-10-19 03:37Z, `cat runs/graphcmp/D/D1-graph-loop.txt`, on the coherent run
@@ -137,9 +137,9 @@ PIN = {
 # AFTER passthrough (`ops.py:377`) off a bare `NOOP`, whose own arm is `ops.py:338`.
 # `f251d80d` gave that `None` arm (`fold.bend:716`) the `(dt, None)` pair that `nil_ds.shape`
 # (`fold.bend:1133`) already spelled beside `late()` (`fold.bend:1114`), so both `?=0` rows
-# are regression rows.  **NO `TODO` STANDS HERE: THE OLD ONE NAMED LINE NUMBERS `f251d80d`
+# are regression rows.  NO `TODO` STANDS HERE: THE OLD ONE NAMED LINE NUMBERS `f251d80d`
 # HAD ALREADY FIXED, AND A TODO THAT ASKS FOR A STATE THE TREE CORRECTLY REFUSES TO REACH IS
-# A CLAIM THAT CANNOT FAIL.**  WHEN A FIX MAKES A GRAPH DISAGREE, PIN IT FROM THE RUN, NOT
+# A CLAIM THAT CANNOT FAIL.  WHEN A FIX MAKES A GRAPH DISAGREE, PIN IT FROM THE RUN, NOT
 # FROM THIS NOTE.  The `PLANT+DISARM` lane's `[REFUSED]` on a green corpus is that lane's own
 # subject being absent, and it explains itself at `lane_plant`; it is not this paragraph's.
 # NO HAND LIST HERE.  `names.py` DERIVES the substituted set from `graphcmp.py`'s `GRAPHS`
@@ -152,7 +152,7 @@ PIN = {
 
 # Every claim above rests on a line.  Read it, or the pin is a rumour.
 #
-# *** A LINE NUMBER IS NOT STORED HERE, AND THAT IS THE WHOLE FIX. ***  This table used to
+# * A LINE NUMBER IS NOT STORED HERE, AND THAT IS THE WHOLE FIX. *  This table used to
 # be `(path, line, must-contain, why)` and two of its fourteen rows were already FAILing
 # (measured): `graphcmp.bend:1571` and `graphcmp.bend:777`, both by DRIFT -- the text was
 # still there at :1595 and :791.  A position is not a fact about a file, it is an accident
@@ -181,24 +181,24 @@ PIN = {
 # cannot distinguish "the code moved" from "the citation was wrong about the code", and
 # guessing is the thing this table is being removed for.
 #
-# *** ONE ROW OF THIS TABLE WAS A NEGATIVE CLAIM ABOUT A FIXTURE, AND IT ROTTED IN THE ONLY
-# DIRECTION A NEGATIVE CLAIM CAN. *** The row read "the bend fixture builds that GROUP by
+# * ONE ROW OF THIS TABLE WAS A NEGATIVE CLAIM ABOUT A FIXTURE, AND IT ROTTED IN THE ONLY
+# DIRECTION A NEGATIVE CLAIM CAN. * The row read "the bend fixture builds that GROUP by
 # hand, bypassing `UOp.group`" and it was TRUE on 2026-10-09. MEASURED 2026-10-18T19:06Z with
 # `checks/disagree-gate.py --lane citations`: `[REFUSED] .agents/slop/graphcmp.bend: no line
-# carries 'O.UOp.new(O.Found.ar(mul), O.OpsGROUP{}...'`. **AND IT IS **NOT** CAUSED BY ANY
+# carries 'O.UOp.new(O.Found.ar(mul), O.OpsGROUP{}...'`. AND IT IS NOT CAUSED BY ANY
 # RECENT COMMIT: `git log -S` puts the needle's last presence at `bbe246aca` (2026-10-09) and
 # its removal at `3001661a7` (2026-10-18), and `grep -c` on `git show HEAD~1..HEAD~5` reads 0
 # on every one of them -- so the lane was ALREADY RED before the units that are working now
 # touched it.
-# **THE DEFECT IT RECORDED WAS FIXED, WHICH IS A PIN FAILING BECAUSE THE TREE GOT BETTER** --
+# THE DEFECT IT RECORDED WAS FIXED, WHICH IS A PIN FAILING BECAUSE THE TREE GOT BETTER --
 # the same one-directional rot `arms_wired` was written to close, in the same table, nine lines
 # below it. `bbe246aca` proved `UOp.group` of ONE src RETURNS THE src (`ops.py:559`, still
 # `ops.py:537` today) so `g_flip` builds NO group node at all; `69bfc2ee9` then DELETED
 # `Ops.GROUP` from the port's enum (77 -> 75 ops), which makes a hand-built one-src GROUP not
-# merely wrong but **UNSPELLABLE** -- `bin/bend graphcmp.bend --check-only` rejects a declared
+# merely wrong but UNSPELLABLE -- `bin/bend graphcmp.bend --check-only` rejects a declared
 # constructor `ops.Op` does not declare.
-# **SO THE ROW IS RESTATED AS THE POSITIVE CLAIM, AND THE REPLACEMENT IS THE PORT's OWN
-# `mxw_flip`**: a transcription of CPython's PAD/SHRINK chain would stop testing the port and
+# SO THE ROW IS RESTATED AS THE POSITIVE CLAIM, AND THE REPLACEMENT IS THE PORT's OWN
+# `mxw_flip`: a transcription of CPython's PAD/SHRINK chain would stop testing the port and
 # start testing this fixture's typing, which is the `readerdecl` `2x2` rule applied to a
 # fixture. It goes red if `g_flip` is ever rewritten by hand, which is the direction that
 # matters.
@@ -436,8 +436,8 @@ def lane_plant(tree: Path) -> list[str]:
     # own diff record, which this plant deliberately does NOT touch, so it MUST stay.  The
     # two halves moving in OPPOSITE directions is the proof that they read different bytes.
     #
-    # **`recomputed` IS THE ROW INDEX, NOT AN ENDPOINT.** THIS PLANT USED TO EDIT `bend[-1]`,
-    # WHICH ONLY WORKED BECAUSE `lin`'s DISAGREEMENT WAS ITS **LAST** ROW (46 of 46). The
+    # `recomputed` IS THE ROW INDEX, NOT AN ENDPOINT. THIS PLANT USED TO EDIT `bend[-1]`,
+    # WHICH ONLY WORKED BECAUSE `lin`'s DISAGREEMENT WAS ITS LAST ROW (46 of 46). The
     # subject is chosen from whatever disagrees, so the edit has to follow the index it
     # reports -- otherwise the plant quietly depends on the last row being the broken one.
     row = before[2]
@@ -554,11 +554,11 @@ def main() -> int:
 
   if not NAMES.exists():
     print(f"FATAL: {NAMES} is missing; the pin has no reader.", file=sys.stderr)
-    # **REFUSED (3), NOT 2 -- AND THIS FILE SAYS SO ITSELF, 18 LINES ABOVE:** "ABSENT AND STALE ARE
+    # REFUSED (3), NOT 2 -- AND THIS FILE SAYS SO ITSELF, 18 LINES ABOVE: "ABSENT AND STALE ARE
     # BOTH REFUSED (3) AND ARE DISTINGUISHED BY TOKEN, NOT BY EXIT", and the same comment warns
     # that "2 IS NOT NEUTRAL HERE" because a caller reading `$?` could not tell "you passed a bad
-    # --tree" from "the corpus was never run". **RETURNING 2 HERE IS THAT CONFUSION, IN THE ONE FILE
-    # THAT NAMES IT.**
+    # --tree" from "the corpus was never run". RETURNING 2 HERE IS THAT CONFUSION, IN THE ONE FILE
+    # THAT NAMES IT.
     return 3
   bad = 0
   refused = False

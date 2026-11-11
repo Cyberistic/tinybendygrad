@@ -403,7 +403,7 @@ print(f"op_is_sqrt={int(r.op is Ops.SQRT)}")
 # A value axis that DOES move, so `V-LADDER-SENSITIVE` is reachable and the classifier can be
 # caught reporting `V-LADDER-STABLE` for an oracle that moved. THE CLASSIFIER IS THE SUBJECT, not
 # `tinygrad`: MEASURED, `UOp` arithmetic never folds at construction (4*{0,1,2,-1,-2,4} all emit
-# `MUL`; 4+{...} all `ADD`; 4**{0,1,2,3,-1,4} all `POW`), so a plant that waited for a fold in
+# `MUL`; 4+{...} all `ADD`; 4{0,1,2,3,-1,4} all `POW`), so a plant that waited for a fold in
 # `tinygrad/` would be a plant that can never fail -- and `tinygrad/` is READ-ONLY besides.
 PLANT_LOADED_SRC = '''from tinygrad.uop.ops import Ops, UOp
 c = UOp(Ops.CONST, src=(), arg=4)
@@ -549,7 +549,7 @@ def plant() -> int:
                    len({v for _, v in ladder(0)}) == 4 and len({v for _, v in ladder(-1)}) == 4,
                    f"ladder(0)={ladder(0)} ladder(-1)={ladder(-1)}"))
 
-    # THE CLASS THAT NEEDED A PLANT, AND IT IS ABOUT **THIS FILE**. The parent census admits every
+    # THE CLASS THAT NEEDED A PLANT, AND IT IS ABOUT THIS FILE. The parent census admits every
     # `.py` string constant carrying `oracle`, so this file naming one CHANGES THE PARENT'S
     # POPULATION -- measured, 98 -> 99, with a row keyed `-oracle.py`. A census that perturbs its
     # own denominator cannot be read, and no assertion about the oracles would have caught it:

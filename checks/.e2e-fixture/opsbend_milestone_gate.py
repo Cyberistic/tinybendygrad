@@ -26,8 +26,8 @@ same mistake.
 import pathlib
 import sys
 
-# THE FIXTURE IS DECLARED ONCE, BY ITS STEM, AND FOUND BY DISCOVERY. **NOT BY EXTENSION, AND NOT BY
-# A `.txt`-THEN-`.md` FALLBACK: TWO LITERALS IS A HAND LIST, WHICH IS NOT A POPULATION** -- it names
+# THE FIXTURE IS DECLARED ONCE, BY ITS STEM, AND FOUND BY DISCOVERY. NOT BY EXTENSION, AND NOT BY
+# A `.txt`-THEN-`.md` FALLBACK: TWO LITERALS IS A HAND LIST, WHICH IS NOT A POPULATION -- it names
 # two paths instead of one and both go stale at the next rename. What is named here is a STEM, the
 # part of the name that means something, and the extension is whatever the tree's file actually
 # carries. MEASURED 2026-10-18 19:11Z, this line was the whole of the bug:

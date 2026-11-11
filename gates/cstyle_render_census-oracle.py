@@ -147,14 +147,14 @@ def opt(dev, key):
 # ---- code_for_op / code_for_workitem -- the DISPATCH TABLES ----------------
 # (op, arity). Unary / binary / ternary, exactly the three shapes `code_for_op` stores.
 #
-# **AND THREE OP NAMES HERE WERE THE **PRE-RENAME** SPELLINGS AND DID NOT EXIST AT THE PIN
-# `f5ac54685074`**, SO THE ORACLE RAISED `AttributeError` AT IMPORT TIME AND THE GATE WAS
-# **`REFUSED`, NOT RED** (rc=3, "the oracle failed rc=1").  UPSTREAM RENAMED THEM IN `1427aac3b`
+# AND THREE OP NAMES HERE WERE THE PRE-RENAME SPELLINGS AND DID NOT EXIST AT THE PIN
+# `f5ac54685074`, SO THE ORACLE RAISED `AttributeError` AT IMPORT TIME AND THE GATE WAS
+# `REFUSED`, NOT RED (rc=3, "the oracle failed rc=1").  UPSTREAM RENAMED THEM IN `1427aac3b`
 # ("FLOORDIV/FLOORMOD -> DIV/MOD (#19047)", 2026-10-27): `Ops.RECIPROCAL` -> `Ops.RECIP`,
-# `Ops.CMOD` -> `Ops.TRUNCMOD`, `Ops.CDIV` -> `Ops.TRUNCDIV`.  **AND THE PIN's OWN
+# `Ops.CMOD` -> `Ops.TRUNCMOD`, `Ops.CDIV` -> `Ops.TRUNCDIV`.  AND THE PIN's OWN
 # `tinygrad/uop/__init__.py:57` READS `SQRT = auto(); RECIP = auto(); NEG = auto(); TRUNC =
-# auto()`**, **AND THE PORT's OWN `Op` ENUM USES THE SAME NEW NAMES** (`OpsRECIP`,
-# `OpsTRUNCMOD`, `OpsTRUNCDIV`), **SO THE ROWS ARE UNCHANGED BY THE REPOINT.**
+# auto()`, AND THE PORT's OWN `Op` ENUM USES THE SAME NEW NAMES (`OpsRECIP`,
+# `OpsTRUNCMOD`, `OpsTRUNCDIV`), SO THE ROWS ARE UNCHANGED BY THE REPOINT.
 OPS = [("sqrt", Ops.SQRT, 1), ("reciprocal", Ops.RECIP, 1), ("neg", Ops.NEG, 1),
        ("exp2", Ops.EXP2, 1), ("log2", Ops.LOG2, 1), ("sin", Ops.SIN, 1), ("trunc", Ops.TRUNC, 1),
        ("and", Ops.AND, 2), ("xor", Ops.XOR, 2), ("or", Ops.OR, 2), ("add", Ops.ADD, 2),

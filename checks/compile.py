@@ -28,8 +28,8 @@ from verdict import REFUSED, settle  # the five, from gates/gatekit.py BY PATH; 
 # THIS FILE CANNOT RUN ON A NON-ANDROID HOST AND NO PACKAGE MANAGER CAN CHANGE THAT. `adsprpc` and
 # `msm_ion` are HTTP 404 on PyPI and `ion`'s PyPI name belongs to an unrelated MVC framework, so
 # `pip install ion` installs the WRONG module -- MEASURED 2026-10-18, `ion` 0.6.4 "Ion is an MVC Web
-# Framework" -- and a refusal that names it invites exactly that. **The probe is therefore the three
-# UNSUPPLIED names and NOT the five**: probing all five made the guard vacuous the moment someone
+# Framework" -- and a refusal that names it invites exactly that. The probe is therefore the three
+# UNSUPPLIED names and NOT the five: probing all five made the guard vacuous the moment someone
 # installed the two real packages, which handed the traceback back and exited 1 = `FAIL`.
 _UNSUPPLIED = ("adsprpc", "ion", "msm_ion")
 if any(importlib.util.find_spec(m) is None for m in _UNSUPPLIED):

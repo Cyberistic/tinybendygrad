@@ -73,11 +73,11 @@ ORACLES = os.path.join(ROOT, "oracles")
 # `RESIDUE_ROOTS` IS NOT DERIVED, AND IT SHOULD NOT BE. MEASURED 2026-10-12, the obvious
 # derivation -- "every directory an instrument writes into that git cannot restore" -- is exactly
 # what `checks/runs-artifacts.py:unrecoverable_dirs()` computes, and it answers `{runs/, runs/graphcmp/,
-# bin/}`. IT DOES NOT ANSWER `.agents/slop`, WHICH IS CORRECT AND FATAL: `.agents/slop` holds **4,491**
+# bin/}`. IT DOES NOT ANSWER `.agents/slop`, WHICH IS CORRECT AND FATAL: `.agents/slop` holds 4,491
 # tracked files, so a rule keyed on "untracked" drops it, and dropping it stops the sweep cleaning
-# the one tree the sweep exists for. **THE ROOTS ANSWER "WHERE IS THERE RESIDUE"; THE DERIVATION
+# the one tree the sweep exists for. THE ROOTS ANSWER "WHERE IS THERE RESIDUE"; THE DERIVATION
 # ANSWERS "WHERE IS A DELETION IRREVERSIBLE". THEY ARE DIFFERENT QUESTIONS AND ONLY THE SECOND ONE
-# IS DERIVABLE, SO THE SECOND ONE IS THE ONE `verdict_for` ASKS, AT `GENERATED_READ_DIRS` BELOW.**
+# IS DERIVABLE, SO THE SECOND ONE IS THE ONE `verdict_for` ASKS, AT `GENERATED_READ_DIRS` BELOW.
 RESIDUE_ROOTS = (".agents/slop", "runs")
 
 @functools.cache
@@ -153,12 +153,12 @@ def generated_read_dirs(root: str = ROOT) -> dict[str, set[str]]:
 
 # `UNKNOWN` IS TAGGED, AND THE TAG IS THE POINT. `needs=` travels with the verdict instead of
 # travelling with a sentence in a report nobody reads, and the tag is why no `--apply` argument can
-# reach one of these rows: nothing equals `UNKNOWN:belts-disagree`. **AN UN-ACTIONABLE VERDICT IS SAFE
-# BY CONSTRUCTION, NOT BY THE AUTHOR REMEMBERING.**
+# reach one of these rows: nothing equals `UNKNOWN:belts-disagree`. AN UN-ACTIONABLE VERDICT IS SAFE
+# BY CONSTRUCTION, NOT BY THE AUTHOR REMEMBERING.
 UNKNOWN = "UNKNOWN"
 
 # A ROW THAT IS A TOOL IS A DIFFERENT KIND OF CLAIM FROM A ROW THAT IS AN OUTPUT. An output nobody
-# names is junk. **A TOOL nobody names is a question about a person**, and this classifier cannot
+# names is junk. A TOOL nobody names is a question about a person, and this classifier cannot
 # answer it, so it is `UNKNOWN` and not `DELETE` -- which is also the only thing standing between a
 # sweep and the four of this project's own incident reports written by people.
 TOOL_EXT = (".py", ".sh", ".mjs", ".c", ".js", ".ts", ".bend")
@@ -168,23 +168,23 @@ TOOL_EXT = (".py", ".sh", ".mjs", ".c", ".js", ".ts", ".bend")
 #
 # `:(glob)` IS LOAD-BEARING AND ITS ABSENCE WAS A 63% CORRUPTION. MEASURED 2026-10-05: git's
 # DEFAULT pathspec magic treats `*` as FNM_PATHNAME-OFF, so `*` CROSSES `/`. `.agents/slop/*.md`
-# therefore matched **195** files where `:(glob).agents/slop/*.md` matches **98** — and the extra 97
+# therefore matched 195 files where `:(glob).agents/slop/*.md` matches 98 — and the extra 97
 # were reports from INSIDE the shadow trees this script exists to delete, i.e. COPIES OF THE CORPUS
-# ITSELF. The citation blob was **3,736,092 chars of which 1,370,376 were real**: 63% of the
+# ITSELF. The citation blob was 3,736,092 chars of which 1,370,376 were real: 63% of the
 # evidence was a copy of the evidence, so any file named inside a shadow tree counted as "named" and
 # the KEEP set was inflated by exactly the files the sweep should have removed.
 #
-# **A CITATION INDEX BUILT FROM THE TREE BEING SWEPT IS NOT A CITATION INDEX.**
+# A CITATION INDEX BUILT FROM THE TREE BEING SWEPT IS NOT A CITATION INDEX.
 #
-# **`checks/*.py` AND `gates/*.py` WERE MISSING, AND THAT IS WHY THE e2e GATE DIED.** MEASURED
+# `checks/*.py` AND `gates/*.py` WERE MISSING, AND THAT IS WHY THE e2e GATE DIED. MEASURED
 # 2026-10-05: this list was byte-identical before and after the sweep that deleted `e2e_mm.py`,
 # `e2e_mm.bend` and `e2e_mm_run.mjs` — stage 1's driver, so `checks/e2e.py` exited 2 in stage 1 and
-# stages 2-8 NEVER RAN. The guard was not broken; **the gate was not in the corpus.** Both
+# stages 2-8 NEVER RAN. The guard was not broken; the gate was not in the corpus. Both
 # `checks/e2e.py` and `checks/sweep.py` name `e2e_mm.py`, and `checks/README.md` has named it
-# **0 times, then and now** — so the ONLY thing keeping the project's one artifact alive was
-# `.agents/slop/E2E-THROUGH-PORT.md`. **AN INSTRUMENT'S SURVIVAL DEPENDED ON A REPORT MENTIONING IT.**
+# 0 times, then and now — so the ONLY thing keeping the project's one artifact alive was
+# `.agents/slop/E2E-THROUGH-PORT.md`. AN INSTRUMENT'S SURVIVAL DEPENDED ON A REPORT MENTIONING IT.
 #
-# **A GATE NAMES ITS OWN INPUTS. THAT IS STRUCTURAL; A REPORT MENTIONING THEM IS A COINCIDENCE.**
+# A GATE NAMES ITS OWN INPUTS. THAT IS STRUCTURAL; A REPORT MENTIONING THEM IS A COINCIDENCE.
 NAMED_BY = [":(glob).agents/slop/*.md", "AGENTS.md", ":(glob)checks/*.md",
             ":(glob)gates/*.md", ":(glob).agents/*.md",
             ":(glob)checks/*.py", ":(glob)gates/*.py"]
@@ -197,36 +197,36 @@ SELF = ".agents/slop/slopfinal"
 
 # ---- THE PATH RESOLVER. DISCOVERED BY WALK, NEVER BY A LIST OF DIRECTORIES. --------------------
 #
-# **EVERY SPELLING A PATH IS ACTUALLY WRITTEN IN, AND EACH ONE IS MEASURED.** The previous
+# EVERY SPELLING A PATH IS ACTUALLY WRITTEN IN, AND EACH ONE IS MEASURED. The previous
 # resolver handled `Constant`, `Name` and `Call(join)` and MEASURED 2026-10-14 on 209
-# instruments it named **1** directory. Each addition below is here because a count of the tree
+# instruments it named 1 directory. Each addition below is here because a count of the tree
 # said it was load-bearing, not because it sounds right:
 #
-#   `BinOp(Div)`    MEASURED 2026-10-14: **854** `Div` sites in `checks/` + `gates/`, of which
-#                   **612** have a string literal or a string-bound name as an operand and so
+# `BinOp(Div)`    MEASURED 2026-10-14: 854 `Div` sites in `checks/` + `gates/`, of which
+# 612 have a string literal or a string-bound name as an operand and so
 #                   are provably PATH divisions; 1 is arithmetic and 241 are over computed
 #                   values. `Path.__truediv__` is the dominant path spelling in this tree --
-#                   **93 of 154 `write_text` receivers are a `BinOp`** -- and `Div` was not
+# 93 of 154 `write_text` receivers are a `BinOp` -- and `Div` was not
 #                   implemented at all.
 #   `BinOp(Add)`    40 `Add` sites; `SLOP + "/sub"` is the other spelling.
 #   the RECEIVER    MEASURED: `write_text` has 154 call sites and is a METHOD at every one of
 #                   them, so the path is the RECEIVER and the argument is the CONTENT. The old
 #                   resolver read `node.args`, so on 154 write sites it was reading file
-#                   contents for a path. MEASURED: **0** of those 154 content arguments carries
+# contents for a path. MEASURED: 0 of those 154 content arguments carries
 #                   a `.agents/slop` literal, so nothing was found -- and nothing found looks
 #                   exactly like nothing there.
-#   LOCAL SCOPES    MEASURED: **120 of 209** instruments bind a name inside a function that is
+# LOCAL SCOPES    MEASURED: 120 of 209 instruments bind a name inside a function that is
 #                   not bound at module level, and a module-level-only environment cannot see
 #                   the tree's write sites.
 #   SOURCE ORDER    `checks/slop-declare.py:90-92` is `ROOT = ...`, `SLOP = ".agents/slop"`,
 #                   `HERE = ROOT / SLOP / "declare"`. Resolving each binding against an EMPTY
 #                   environment lost `SLOP`, so `HERE` became `UNKNOWN/UNKNOWN/declare`, held no
-#                   `.agents/slop/` prefix, and **`.agents/slop/declare` disappeared from the
-#                   census while the census reported "0 invisible sites".** A resolver that
+# `.agents/slop/` prefix, and `.agents/slop/declare` disappeared from the
+# census while the census reported "0 invisible sites". A resolver that
 #                   resolves in the wrong order CANNOT SEE, and a resolver that cannot see
 #                   reports `0` instead of `I do not know`.
 #
-# **THE FAIL-SAFE IS FIXED AND IT IS NOT SYMMETRIC.** Everything here feeds `house_excluded`,
+# THE FAIL-SAFE IS FIXED AND IT IS NOT SYMMETRIC. Everything here feeds `house_excluded`,
 # which removes a tree from the citation corpus; removing evidence makes rows uncited and an
 # uncited row is one `DELETE` away. So an unresolvable part becomes the marker `UNKNOWN_MARK`,
 # a byte that cannot occur in a path, and `slop_dir()` REFUSES any directory whose first
@@ -236,7 +236,7 @@ SELF = ".agents/slop/slopfinal"
 #     os.path.join(ROOT, SLOP, "sub")             ->  ?/.agents/slop/sub      -> `sub`
 #     os.path.join(ROOT, SLOP, name)              ->  ?/.agents/slop/?        -> REFUSED
 #
-# **THE PREFIX IS REAL AND THE FIRST COMPONENT IS NOT, AND REFUSING IS THE ONLY HONEST ANSWER.**
+# THE PREFIX IS REAL AND THE FIRST COMPONENT IS NOT, AND REFUSING IS THE ONLY HONEST ANSWER.
 # A resolver that dropped the unknown argument and took the next component would name a
 # directory nobody writes to -- and a directory the sweep stops reading is a directory the
 # sweep may destroy.
@@ -245,15 +245,15 @@ MODULE_MARK = "\x01"          # "this name is an IMPORTED MODULE": not a path, a
                               # is not the module (`importlib.util` vs `util`). MEASURED
                               # 2026-10-14: omitting this hid `.agents/slop/oracletxt` from the
                               # READ census twice, for two different reasons.
-# THE FILESYSTEM VOCABULARY. **THIS IS A VOCABULARY OF THE LANGUAGE, NOT A POPULATION OF THIS
-# REPOSITORY** -- the directories are found by walking the ASTs, and nothing below names one.
+# THE FILESYSTEM VOCABULARY. THIS IS A VOCABULARY OF THE LANGUAGE, NOT A POPULATION OF THIS
+# REPOSITORY -- the directories are found by walking the ASTs, and nothing below names one.
 # It is keyed by `(module, function)` rather than by BARE CALLEE NAME for a measured reason:
-# **62 of the tree's 62 `replace` call sites are `str.replace`**, and
+# 62 of the tree's 62 `replace` call sites are `str.replace`, and
 # `checks/cl-port-gate.py:245`'s first argument is the literal
 # `'import "../../../.agents/slop/clangshim/libclang-ffi.c"'` -- so a bare-name table excludes
 # `.agents/slop/clangshim`, which `checks/cl-port-gate.py:51` reads as `SHIM / "libclang-ffi.c"`
-# and `:89` ASSERTS the shipped port still imports. **A STRING METHOD SHARES A NAME WITH A
-# FILESYSTEM ONE, AND THAT IS THE FALSE POSITIVE THAT MATTERS MOST.**
+# and `:89` ASSERTS the shipped port still imports. A STRING METHOD SHARES A NAME WITH A
+# FILESYSTEM ONE, AND THAT IS THE FALSE POSITIVE THAT MATTERS MOST.
 FS_WRITES = {("os", "makedirs"): (0,), ("os", "mkdir"): (0,), ("os", "open"): (0,),
              ("os", "link"): (0,), ("os", "symlink"): (0,),
              ("os", "rename"): (0, 1), ("os", "replace"): (0, 1),
@@ -261,31 +261,31 @@ FS_WRITES = {("os", "makedirs"): (0,), ("os", "mkdir"): (0,), ("os", "open"): (0
              ("shutil", "copyfile"): (1,), ("shutil", "copytree"): (1,), ("shutil", "move"): (1,),
              ("shutil", "copymode"): (1,), ("shutil", "copystat"): (1,),
              ("json", "dump"): (1,), ("pickle", "dump"): (1,)}
-# `open` IS A BUILTIN AND LIVES IN NO MODULE. **IT IS HERE ONLY BECAUSE A MODE DECIDES IT.**
+# `open` IS A BUILTIN AND LIVES IN NO MODULE. IT IS HERE ONLY BECAUSE A MODE DECIDES IT.
 BARE_WRITES = {"open": (0,)}
 # METHODS ON A `Path`. "R" the RECEIVER only -- the argument is CONTENT. "RA" receiver and
 # arguments: `rename`/`replace`/`symlink_to` create entries on both sides.
 FS_METHOD_WRITES = {"write_text": "R", "write_bytes": "R", "touch": "R", "mkdir": "R",
                     "open": "R", "symlink_to": "RA", "rename": "RA", "replace": "RA"}
-# **DEAD (5) -- NOTHING READS THIS TABLE, AND IT IS NOT A SUBSET OF ANYTHING.** `_table_lookup`
+# DEAD (5) -- NOTHING READS THIS TABLE, AND IT IS NOT A SUBSET OF ANYTHING. `_table_lookup`
 # selects `FS_WRITES` or `FS_READS`; `FS_DELETES` has ONE mention in the file, which is this
 # comment. `FS_WRITES` carries 15 entries and NONE of these four, so this is neither a duplicate
 # of the write vocabulary nor a wired-in refinement of it.
-# **KEPT, NOT DELETED, BECAUSE IT IS THE ONLY MACHINE-READABLE RECORD OF A DECISION.** The
+# KEPT, NOT DELETED, BECAUSE IT IS THE ONLY MACHINE-READABLE RECORD OF A DECISION. The
 # decision: destructive calls name a path an instrument wants GONE, so excluding a directory
 # something deletes would protect a directory that is already doomed. It is STATED AND UNBUILT.
-# **AND THE NUMBER THAT JUSTIFIED IT HAD DRIFTED INTO FICTION.** This read `MEASURED: 11 sites`.
-# MEASURED 2026-10-15 by AST over all 1,779 tracked .py (0 unparseable): **143** -- `shutil.rmtree`
+# AND THE NUMBER THAT JUSTIFIED IT HAD DRIFTED INTO FICTION. This read `MEASURED: 11 sites`.
+# MEASURED 2026-10-15 by AST over all 1,779 tracked .py (0 unparseable): 143 -- `shutil.rmtree`
 # 107, `os.unlink` 20, `os.remove` 13, `os.rmdir` 3 -- and no scope reproduces 11 (`checks/` +
 # `gates/` is 12; minus this file's own two, 10). A citation is a LOWER BOUND; this one had
 # stopped being one, and a fiction followed by a `{...}` reads as configuration.
-# **THE ONE MEASUREMENT THAT REVIVES IT: the directories `FS_WRITES` + `FS_DELETES` would mark as
-# written, diffed against what `FS_WRITES` marks today.** That changes a load-bearing exclusion
+# THE ONE MEASUREMENT THAT REVIVES IT: the directories `FS_WRITES` + `FS_DELETES` would mark as
+# written, diffed against what `FS_WRITES` marks today. That changes a load-bearing exclusion
 # set, so it is measured before it is built.
 FS_DELETES = {("os", "remove"): (0,), ("os", "rmdir"): (0,), ("os", "unlink"): (0,),
               ("shutil", "rmtree"): (0,)}
-# THE READ SIDE, WHICH IS WHAT MAKES `self_output_dirs` REFUSE A COLLISION. **A PATH HANDED TO
-# AN IMPORT MACHINE IS A READ**, and no `open` and no `read_text` sees it: MEASURED,
+# THE READ SIDE, WHICH IS WHAT MAKES `self_output_dirs` REFUSE A COLLISION. A PATH HANDED TO
+# AN IMPORT MACHINE IS A READ, and no `open` and no `read_text` sees it: MEASURED,
 # `checks/oracle-txt-census.py:215` is `importlib.util.spec_from_file_location("plant", ROOT /
 # ".agents/slop/oracletxt/plant.py")`, and it is the whole reason `.agents/slop/oracletxt` is
 # not excluded.
@@ -341,8 +341,8 @@ def _resolve(node, env) -> str:
     if isinstance(node, ast.Call):
         fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
         if fn in ("join", "joinpath"):
-            # `"".join([SLOP, "a"])` passes ONE argument that is a LIST. **This is the ONE
-            # spelling the previous resolver claimed to support**, and a form of it that does
+            # `"".join([SLOP, "a"])` passes ONE argument that is a LIST. This is the ONE
+            # spelling the previous resolver claimed to support, and a form of it that does
             # not resolve is a defect its own docstring cannot survive.
             args = list(node.args)
             if len(args) == 1 and isinstance(args[0], (ast.List, ast.Tuple)):
@@ -360,7 +360,7 @@ def _resolve(node, env) -> str:
     # NAMED. MEASURED 2026-10-14: `parents` is a PROPERTY, so the node is a `Subscript` whose
     # `.value` is a bare `ast.Attribute` and NOT an `ast.Call` -- which is why a branch requiring
     # the `Call` form could never reach it, and why it was DEAD CODE rather than a working one.
-    # **SEEING THE SHAPE IS NOT ANSWERING IT.** `parents[1]` names a directory this resolver
+    # SEEING THE SHAPE IS NOT ANSWERING IT. `parents[1]` names a directory this resolver
     # cannot name without executing the module, and guessing the repo root would exclude ALL of
     # `.agents/slop` from the citation corpus on the strength of a subscript.
     return UNKNOWN_MARK
@@ -707,10 +707,10 @@ def house_excluded(root: str, rel: str) -> bool:
 # A gate names itself with these words. `-gate`/`-check` decide; `probe`/`mutate`/`gen`/`fix` are
 # a thing that was run once. The distinction is the project's own vocabulary, not mine.
 #
-# **`GATE_WORD` IS GONE AND ITS BRANCH WAS DEAD CODE.** It was read in a branch that required
+# `GATE_WORD` IS GONE AND ITS BRANCH WAS DEAD CODE. It was read in a branch that required
 # `name in mentioned` to be true, and the line above it returned `KEEP-CITED` on exactly that
-# condition, so the branch had no input that could reach it. **AN UNREACHABLE RULE IS NOT A SAFETY
-# NET, IT IS A COMMENT THAT LOOKS LIKE ONE.** Its vocabulary is not lost: `differ.declared()` and the
+# condition, so the branch had no input that could reach it. AN UNREACHABLE RULE IS NOT A SAFETY
+# NET, IT IS A COMMENT THAT LOOKS LIKE ONE. Its vocabulary is not lost: `differ.declared()` and the
 # citation belts are what decide a gate now, and re-ordering that branch to be live would be a
 # separate decision because it would make `--apply GATE` MOVE files.
 ORACLE_WORD = re.compile(r"(^|[-_.])(oracle|rows|expect|pins|baseline)([-_.]|$)")
@@ -724,19 +724,19 @@ ORACLE_WORD = re.compile(r"(^|[-_.])(oracle|rows|expect|pins|baseline)([-_.]|$)"
 # could not run. It was recoverable only because every one of those files happened to be
 # committed -- WHICH IS NOT A PROPERTY OF THE SWEEP, IT IS A PROPERTY OF THE DAY.
 #
-# **`strays/` AND `strays-root/` WERE HERE AND WERE REMOVED, AND THE REASON IS THE THING THIS
-# COMMENT ALREADY SAYS ABOVE IN ONE PLACE.** MEASURED 2026-10-05: the marking was
+# `strays/` AND `strays-root/` WERE HERE AND WERE REMOVED, AND THE REASON IS THE THING THIS
+# COMMENT ALREADY SAYS ABOVE IN ONE PLACE. MEASURED 2026-10-05: the marking was
 # `"42 files restored from origin after regressing"` -- an INCIDENT, not a DEPENDENCY, which is
 # the same false-warrant shape as the six finished `LIVE_UNITS` that held 53% of `.slop`. Every
 # mention of either directory outside itself is PROSE: `checks/nvrows-deadrow-gate.py:69`,
 # `:205`, `checks/repro-paths.py:28`, `checks/wallcheck.py:101` name them in a docstring or a
 # `--file` help string, and no code position reads them. Parked both, re-ran the gates: `no-strays`
 # and `repro-paths` and `nvrows-deadrow-gate` produced BYTE-IDENTICAL output, `wallcheck` differed
-# only in the pin hash (a concurrent commit), and `no-txt` fell 342 -> 338. **ZERO DEPENDENCY.**
+# only in the pin hash (a concurrent commit), and `no-txt` fell 342 -> 338. ZERO DEPENDENCY.
 # The `origin` arm is 18 of 21 byte-identical to live; the other 3 are older revisions, two of them
 # reproduced by a named commit and `fold.bend` by none, which is why exactly one file was kept and
-# 25 were deleted against `.agents/slop/strays/MANIFEST.tsv`. **A PAST ACCIDENT IS NOT A REASON TO
-# KEEP A DIRECTORY FOREVER; THE TEST IS WHAT NAMES IT, AND THE ANSWER WAS NOTHING.**
+# 25 were deleted against `.agents/slop/strays/MANIFEST.tsv`. A PAST ACCIDENT IS NOT A REASON TO
+# KEEP A DIRECTORY FOREVER; THE TEST IS WHAT NAMES IT, AND THE ANSWER WAS NOTHING.
 PROTECTED = re.compile(
     r"(RECOVERY-0BYTE\.md$)"                           # the zero-byte incident
     r"|(^\.agents/slop/(e2e|e2e_port|f64|portexec)/)"  # the artifact's fixtures and stage drivers
@@ -753,27 +753,27 @@ DIFFER = {"graphcmp.py", "graphcmp.bend", "graphcmp-oracle.py",
 # A DIRECTORY WHOSE OWN NAME DECLARES ITS ROLE CLASSIFIES ITS WHOLE SUBTREE. MEASURED 2026-10-05:
 # `oracles/` (79 files, 520 KB, named by 4 reports) held 60 `.txt` of EXPECTED VALUES and was about to
 # be deleted, because the verdict is computed per FILE from its BASENAME — and a file called
-# `blob-bn.txt` inside a directory called `oracles` looks like a row dump. **THE ROLE IS A PROPERTY OF
-# THE DIRECTORY AND WAS BEING READ FROM THE FILE.** These are the four names this project uses to
+# `blob-bn.txt` inside a directory called `oracles` looks like a row dump. THE ROLE IS A PROPERTY OF
+# THE DIRECTORY AND WAS BEING READ FROM THE FILE. These are the four names this project uses to
 # mean a role, so a directory that is one of them is one.
 #
-# **`strays`/`strays-root` WERE IN THIS DICT AND ARE GONE.** A name in `ROLE_DIRS` is not a milder
+# `strays`/`strays-root` WERE IN THIS DICT AND ARE GONE. A name in `ROLE_DIRS` is not a milder
 # form of `PROTECTED`, it is a STRONGER one: `verdict_for` returns on the FIRST matching path part,
 # before the citation test runs at all, so listing a directory here exempted its whole subtree from
-# even being classified. **AN INCIDENT WAS ENCODED AS A NAME, WHICH MEANT NOBODY COULD EVER
-# DISCOVER THAT THE INCIDENT HAD STOPPED BEING TRUE.** The name outlived its reason exactly the way
+# even being classified. AN INCIDENT WAS ENCODED AS A NAME, WHICH MEANT NOBODY COULD EVER
+# DISCOVER THAT THE INCIDENT HAD STOPPED BEING TRUE. The name outlived its reason exactly the way
 # the six finished `LIVE_UNITS` below did.
 ROLE_DIRS = {"oracles": "ORACLE", "gates": "GATE", "checks": "GATE"}
 
 # LIVE_UNITS lived here, a tuple of 14 names. It is gone, and `live_units()` near
-# `live_set` is what answers the question now: **A GUARD THAT IS CORRECT EXCEPT FOR
-# THE LAST DISPATCH IS NOT A GUARD, IT IS A COINCIDENCE WITH THE DISPATCH ORDER.**
+# `live_set` is what answers the question now: A GUARD THAT IS CORRECT EXCEPT FOR
+# THE LAST DISPATCH IS NOT A GUARD, IT IS A COINCIDENCE WITH THE DISPATCH ORDER.
 # That sentence is why the tuple existed; the tuple kept being wrong in exactly the
 # way it described.
 
 # Four MUTATION ARMS, NOT A COPY. `dd-cone-wt/` is 43 MB and 572 files, and the shadowtrees unit
 # measured that its four arms differ in exactly TWO files and that `codegen/decomp/dtype.bend` is
-# FOUR DISTINCT STATES: **deleting three of the arms destroys three arms.** It is the record of what
+# FOUR DISTINCT STATES: deleting three of the arms destroys three arms. It is the record of what
 # four mutations did, and a mutation's value is its DIFFERENCE from the real file, so the evidence
 # is the four-way divergence rather than any one of the trees.
 PROTECTED_DIRS = ("dd-cone-wt",)
@@ -925,8 +925,8 @@ def mentioned_filenames(blob: str) -> set[str]:
 # see a stop its sibling belt stopped on, BECAUSE THE TWO SHARED THE REGEX'S ASSUMPTION, so the second
 # belt here is a `str.translate` TABLE and has no pattern in it at all. It also finds something belt A
 # provably cannot: `mentioned_filenames`'s pattern ends `\.[A-Za-z0-9]+`, so on `ops.staged-blob-24323`
-# it matches `ops.staged-blob` and NEVER THE FILE'S NAME -- **a corpus token ending in a hyphenated
-# segment is invisible to belt A, and there are files with those names.**
+# it matches `ops.staged-blob` and NEVER THE FILE'S NAME -- a corpus token ending in a hyphenated
+# segment is invisible to belt A, and there are files with those names.
 _WORD = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-./"
 
 
@@ -998,13 +998,13 @@ class Facts:
         self.cites: list[dict[str, set[str]]] = [{}, {}]
         # THE CORPUS IS READ ONCE. It was read TWICE with identical arguments -- the second read
         # existed only to recover the list of names, which the first read already held. MEASURED
-        # 2026-10-14 16:44: the corpus is **670 members** (327 named by `NAMED_BY` + 453 tracked
+        # 2026-10-14 16:44: the corpus is 670 members (327 named by `NAMED_BY` + 453 tracked
         # `.md` under `.agents/slop/`, 110 overlapping, deduped), and `committed_files` spends
-        # **one `git show` subprocess per member at 59.6 ms** on a three-agent host, so the duplicate
-        # read cost **40 s per call, 80 s per `--plan`, to produce a list the first read had already
-        # produced.** Same shape as the 974 calls above: a shared measurement, recomputed, for an
-        # answer already in hand. **THE SECOND CALL WAS NOT A CROSS-CHECK, BECAUSE IT COULD NOT BE:
-        # IT PASSED THE SAME TWO ARGUMENTS.**
+        # one `git show` subprocess per member at 59.6 ms on a three-agent host, so the duplicate
+        # read cost 40 s per call, 80 s per `--plan`, to produce a list the first read had already
+        # produced. Same shape as the 974 calls above: a shared measurement, recomputed, for an
+        # answer already in hand. THE SECOND CALL WAS NOT A CROSS-CHECK, BECAUSE IT COULD NOT BE:
+        # IT PASSED THE SAME TWO ARGUMENTS.
         self.corpus_names = []
         for nm, text in committed_files(root, self.copies):
             self.corpus_names.append(nm)
@@ -1225,8 +1225,8 @@ def verdict_for(rel: str, mentioned: set[str], f: Facts | None = None,
         return "GATE"
     # A NAMING AUTHORITY RENDERS THIS NAME, so it is an output contract between two drivers and not a
     # file somebody made once. MEASURED 2026-10-06: `differ.declared()` renders 136 of the rows this
-    # classifier used to call DELETE -- **100% of `runs/graphcmp/D` and 100% of `.agents/slop/spine/art-a`
-    # -- and the literal-token citation corpus sees ONE of those basenames.** The corpus indexes
+    # classifier used to call DELETE -- 100% of `runs/graphcmp/D` and 100% of `.agents/slop/spine/art-a`
+    # -- and the literal-token citation corpus sees ONE of those basenames. The corpus indexes
     # literal tokens; this project BUILDS its names. So `DELETE` was measuring "referenced by no
     # literal" and publishing it as "junk". One import, one call, and it is the whole of that group.
     if name in f.declared:
@@ -1250,38 +1250,38 @@ def verdict_for(rel: str, mentioned: set[str], f: Facts | None = None,
     # own report is the proof the question is real: 40 `UNNAMED` rows became `CITED` the moment the
     # report that NAMES every row was committed.
     #
-    # **SO THE DISCRIMINATOR WAS WRITTEN, AND IT DECIDES 0 ROWS, AND ITS DISARM DOES NOT MOVE THE
-    # NUMBER.** "Is the citer itself a byte-copy of a file outside the residue?" is the right question
+    # SO THE DISCRIMINATOR WAS WRITTEN, AND IT DECIDES 0 ROWS, AND ITS DISARM DOES NOT MOVE THE
+    # NUMBER. "Is the citer itself a byte-copy of a file outside the residue?" is the right question
     # and it is also a question `committed_files` has ALREADY ANSWERED FOR EVERY CORPUS MEMBER, so no
     # copy is ever a citer and the case never arises. Before the corpus was filtered the class held
-    # **79 rows**; after, **0**, and emptying the twin map G8 would have read changes it back to **0**.
-    # **A DISCRIMINATOR WHOSE ANSWER IS ALREADY GIVEN IS NOT A CLAUSE, IT IS A RESTATEMENT** -- so the
-    # rule that actually did the work is the corpus filter below, whose measured delta is **190 rows
-    # that stop being DELETE and 0 that become DELETE**. Writing G8 here as well would be a second
+    # 79 rows; after, 0, and emptying the twin map G8 would have read changes it back to 0.
+    # A DISCRIMINATOR WHOSE ANSWER IS ALREADY GIVEN IS NOT A CLAUSE, IT IS A RESTATEMENT -- so the
+    # rule that actually did the work is the corpus filter below, whose measured delta is 190 rows
+    # that stop being DELETE and 0 that become DELETE. Writing G8 here as well would be a second
     # answer to a settled question, and two answers to one question is how `LIVE_UNITS` happened.
     if belt_b and not {c for c in belt_b if not in_residue(c)}:
         return f"{UNKNOWN}:residue-internal-citer (named only from inside the residue by {sorted(belt_b)[0]})"
 
     # ORACLE IS NOT A WORD SHAPE. MEASURED 2026-10-05: this test was `ORACLE_WORD.search(name)` and
-    # nothing else, so **670 of 675 ORACLE files were classified by their FILENAME and were named by NO
-    # GATE AT ALL** — `gatecensus/` 167, `arith/` 51, `denom/` 50, `hermetic/` 49, `hdrbase/` 33, `eq/`
-    # 32, `name-census-lanes/` 31: **finished units' row dumps that matched `rows|oracle|pins|baseline`
-    # in a basename.** Only **5** are named by a live `checks/*.py` or `gates/*.py`.
+    # nothing else, so 670 of 675 ORACLE files were classified by their FILENAME and were named by NO
+    # GATE AT ALL — `gatecensus/` 167, `arith/` 51, `denom/` 50, `hermetic/` 49, `hdrbase/` 33, `eq/`
+    # 32, `name-census-lanes/` 31: finished units' row dumps that matched `rows|oracle|pins|baseline`
+    # in a basename. Only 5 are named by a live `checks/*.py` or `gates/*.py`.
     #
     # THIS IS THE SAME DEFECT AS `LIVE_UNITS`, ONE LEVEL UP, AND THE FILE ALREADY DIAGNOSED IT:
     # "the verdict is computed per FILE from its BASENAME — and a file called `blob-bn.txt` inside a
-    # directory called `oracles` looks like a row dump. **THE ROLE IS A PROPERTY OF THE DIRECTORY AND
-    # WAS BEING READ FROM THE FILE.**" `ROLE_DIRS` fixed it for four directory NAMES; the word shape
-    # reintroduced it for every basename. **A FILE THAT NOBODY NAMES IS NOT REFERENCE DATA.**
+    # directory called `oracles` looks like a row dump. THE ROLE IS A PROPERTY OF THE DIRECTORY AND
+    # WAS BEING READ FROM THE FILE." `ROLE_DIRS` fixed it for four directory NAMES; the word shape
+    # reintroduced it for every basename. A FILE THAT NOBODY NAMES IS NOT REFERENCE DATA.
     if name in mentioned and ORACLE_WORD.search(name) and not name.endswith((".sh", ".py")):
         return "ORACLE"
-    # A FILE A COMMITTED REPORT NAMES IS **NEVER** DELETE. MEASURED 2026-10-05: the first sweep
+    # A FILE A COMMITTED REPORT NAMES IS NEVER DELETE. MEASURED 2026-10-05: the first sweep
     # deleted 3,603 files and `checks/repro-paths.py` went from 24 dangling reproduction paths to
-    # **166** — because the GATE rule required a gate-shaped NAME *and* a citation, and everything
+    # 166 — because the GATE rule required a gate-shaped NAME *and* a citation, and everything
     # else fell through to DELETE. So a `.bend` fixture named by a report, and a `.py` an oracle
     # script needed, were both deletable while a report still pointed at them.
     #
-    # **THE CITATION IS A LOWER BOUND ON VALUE, NOT A SUFFICIENT CONDITION FOR KEEPING.**
+    # THE CITATION IS A LOWER BOUND ON VALUE, NOT A SUFFICIENT CONDITION FOR KEEPING.
     # Naming something proves SOMEBODY DEPENDS ON IT; the name only decides which bucket.
     if name in mentioned:
         return "KEEP-CITED"
@@ -1352,7 +1352,7 @@ def main() -> int:
           f"#   (a MENTION is not an output; a DEPTH is not a shadow tree; a COPY is excluded by a proof)")
     print(f"# own output excluded from the corpus: {', '.join(self_output_dirs(ROOT)) or 'NONE FOUND'}"
           f" + {SELF}  (write-targets, discovered; a MENTION is not an output)")
-    # **A REFUSAL, PRINTED, BECAUSE A SILENT REFUSAL IS INDISTINGUISHABLE FROM A MISS.** These
+    # A REFUSAL, PRINTED, BECAUSE A SILENT REFUSAL IS INDISTINGUISHABLE FROM A MISS. These
     # directories ARE written by a live instrument and are NOT excluded, because a live
     # instrument also READS them -- `.agents/slop/oracletxt` holds the plant generator
     # `checks/oracle-txt-census.py:215` loads BY PATH, and excluding it would re-break that gate
@@ -1405,8 +1405,8 @@ def main() -> int:
     # `walk_residue` walks `RESIDUE_ROOTS`, and the shipped `tinybendygrad/` tree is not one of them,
     # so every file there reaches NO verdict at all. It is REPORTED here and never acted on: the tree
     # ships, and a population a DELETE-capable pass can walk is a population it can destroy. It is
-    # not in `rows`, so no `--apply` argument can reach it. **A MISSING POPULATION AND AN
-    # UNCLASSIFIABLE ROW ARE THE SAME SILENCE, AND `UNKNOWN` IS WHAT BREAKS IT.**
+    # not in `rows`, so no `--apply` argument can reach it. A MISSING POPULATION AND AN
+    # UNCLASSIFIABLE ROW ARE THE SAME SILENCE, AND `UNKNOWN` IS WHAT BREAKS IT.
     pb, pn, ptot = port_report(f)
     print(f"\n# THE SHIPPED PORT, REPORT-ONLY (never a bucket `--apply` can reach): "
           f"{ptot} files under tinybendygrad/")

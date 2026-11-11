@@ -498,7 +498,7 @@ def main() -> IO(Unit):
 #     WEBGPU -- SIXTEEN, `NVME` AMONG THEM, AND `ops_nvme.py` DEFINES
 #     `NVMEDevice`, SO UPSTREAM'S `get_class('nvme')` SUCCEEDS. THE PORT HAD
 #     SIXTEEN ROWS TOO, WITH `BEND` WHERE `NVME` BELONGS, SO `stem_len` AND
-#     `reg_len` BOTH READ **16** AND **NO COUNT COULD SEE THE MISSING ONE** --
+# `reg_len` BOTH READ 16 AND NO COUNT COULD SEE THE MISSING ONE --
 #     A COUNT IS NOT A TABLE. THE FIX IS TWO ROWS AND A COUNT:
 #     `dcls_nvme=17` AND `dcls_nvme_lower=17` SAY THE CLAIM RESOLVES, AND
 #     `disk_nvme=1` / `disk_nvme_lower=1` / `disk_nvme_mixed=1` SAY
@@ -534,8 +534,8 @@ def main() -> IO(Unit):
 #   dcls_wg=16 / dcls_null=11 / dcls_bend=2 / dcls_nvme=17 / dcls_nvme_lower=17
 #                  -- `get_class` claims on the head at the first colon,
 #                  LOWERCASE, so `WEBGPU:2` and `webgpu:2` are one row and a
-#                  case-sensitive claim finds nothing. `dcls_nvme` IS **17**
-#                  BECAUSE THE `nvme` ROW IS THE **LAST** ONE: THE OTHER
+# case-sensitive claim finds nothing. `dcls_nvme` IS 17
+# BECAUSE THE `nvme` ROW IS THE LAST ONE: THE OTHER
 #                  INDICES ARE READ BY `tag_of` (6 DISK, 10 NPY, 13 PYTHON) AND
 #                  BY `go_dep`'s BITMASK SLOTS, SO A ROW INSERTED IN THE MIDDLE
 #                  WOULD MOVE THEM. `gates/devtag-gate.py` READS THOSE THREE
@@ -567,12 +567,12 @@ def main() -> IO(Unit):
 #   disk_nvme=1 / disk_nvme_lower=1 / disk_nvme_mixed=1
 #                  -- upstream's `is_disk_device` is
 #                  `any(d.split(":", 1)[0].upper() in ("DISK", "NVME") for d in to_tuple(device))`
-#                  and **TWO** names are in that tuple. The port had ONE, and
+# and TWO names are in that tuple. The port had ONE, and
 #                  `NVME` is not hypothetical: `tinygrad/runtime/ops_nvme.py`
 #                  exists at the pin, defines `NVMEDevice`, and the port ports
 #                  that file as `tinybendygrad/runtime/ops_nvme.bend`. MEASURED
 #                  2026-11-10, CPython's own `is_disk_device(("NVME:0",))`
-#                  answers **True** and the port answered **False**. The two
+# answers True and the port answered False. The two
 #                  spellings and the mixed tuple are three rows because a
 #                  single one of them cannot see BOTH a dropped name and a
 #                  dropped case fold.
@@ -674,14 +674,14 @@ def main() -> IO(Unit):
 # moves is a LOCALISED row; the rest are load-bearing together and this table is
 # not one-row-per-bug.
 #
-# THE THREE `NVME` ROWS ARE **MEASURED 2026-11-10** AND NOT ASSERTED, BY
+# THE THREE `NVME` ROWS ARE MEASURED 2026-11-10 AND NOT ASSERTED, BY
 # `.agents/slop/helpers-device-shrink/nvme-mutate.py` -- WHICH STAGES THE
-# MUTANT **OUTSIDE `tinybendygrad/`** SO A MUTATION NEVER MOVES THE SUBSTRATE
+# MUTANT OUTSIDE `tinybendygrad/` SO A MUTATION NEVER MOVES THE SUBSTRATE
 # DIGEST's POPULATION, AND WHICH READS THE ROWS OUT OF A LIVE RUN. AND THE
 # MEASUREMENT CORRECTED THE TABLE ONCE: THE CLAIM WAS THAT `stems` LOSING THE
-# `NVME` ROW MOVES `stem_len` **AND** `dcls_nvme` **AND** `dcls_nvme_lower`,
-# AND IT MOVES **`stem_len` ALONE** -- BECAUSE `dcls` READS `registry()` AND
-# NOT `stems()`, SO THE TWO TABLES ARE **SEPARATE CLAIMS** AND A ROW THAT
+# `NVME` ROW MOVES `stem_len` AND `dcls_nvme` AND `dcls_nvme_lower`,
+# AND IT MOVES `stem_len` ALONE -- BECAUSE `dcls` READS `registry()` AND
+# NOT `stems()`, SO THE TWO TABLES ARE SEPARATE CLAIMS AND A ROW THAT
 # COVERS ONE DOES NOT COVER THE OTHER. A TABLE ROW NOBODY MEASURED IS A LABEL.
 #
 # | mutation | rows moved | how many |

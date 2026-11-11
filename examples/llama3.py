@@ -43,7 +43,7 @@ class Tokenizer:
   def encode(self, text, allow_special=False):
     return self.model.encode(text, allowed_special="all" if allow_special else set(), disallowed_special=set())
 
-# **** helper functions ****
+# helper functions
 def concat_weights(models, device=None):
   def convert(name) -> Tensor:
     disk_tensors: List[Tensor] = [model[name] for model in models]
@@ -67,7 +67,7 @@ def load(fn:str):
   else:
     return torch_load(fn)
 
-# **** quantized linears ****
+# quantized linears
 class Int8Linear:
   def __init__(self, in_features, out_features, bias=False):
     assert bias == False

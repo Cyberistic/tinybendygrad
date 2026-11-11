@@ -60,14 +60,14 @@ BASELINE = Path(__file__).resolve().parent / "indexread-baseline.rows"
 # a hand list cannot notice a fourth directory, and a census from a suffix set cannot notice an
 # EXTENSIONLESS `#!/bin/sh` (`checks/bend`).
 #
-# **AND IT IS NOT `gates-pop.py`'s ROOT SET, AND THE REASON IS THE SUBJECT OF THE WHOLE CENSUS.**
+# AND IT IS NOT `gates-pop.py`'s ROOT SET, AND THE REASON IS THE SUBJECT OF THE WHOLE CENSUS.
 # `gates/gates-pop.py:HOMES` answers WHERE THE GATES ARE -- MEASURED, 2 of the commit tree's 14
 # top-level directories, by `gate_homes()`. This file answers WHERE THE SHIPPED INSTRUMENTS ARE,
-# and a shipped instrument need not be a gate: `.agents/slop/**` holds most of the offenders and
+# and a shipped instrument need not be a gate: `.agents/slop/` holds most of the offenders and
 # ZERO certified gate homes. Two questions, two named populations, ONE module, both loaded BY
-# PATH so neither can drift from its derivation. **A second copy of a list is a contract with no
+# PATH so neither can drift from its derivation. A second copy of a list is a contract with no
 # generator; a second copy of a DERIVATION under a different name is a DIFFERENT QUESTION
-# PRETENDING TO BE THE SAME ONE** -- which is what `.agents/slop/UNIVERSE-CENSUS.md` measured and
+# PRETENDING TO BE THE SAME ONE -- which is what `.agents/slop/UNIVERSE-CENSUS.md` measured and
 # could not name, and naming it is the whole of this line.
 def gates_pop():
   """`gates/gates-pop.py` BY PATH, never by name -- `gates/` is not a package, and putting it on
@@ -93,7 +93,7 @@ PRUNE = {".git", ".jj", "__pycache__", ".venv", "node_modules", "references"}
 # THE INDEX-READING SUBFORMS. A BARE STRING, matched against AST string CONSTANTS, because AST
 # gives two things a regex cannot: comments are not in the tree at all, and a docstring is a
 # `Constant` that is the whole of an `Expr` statement, which `bare_strings` excludes. The first
-# version of this census was a regex and it reported **183** offenders where the truth is 77,
+# version of this census was a regex and it reported 183 offenders where the truth is 77,
 # because `\.add\(` matched `seen.add(` on Python sets -- a classifier error of exactly the kind
 # doctrine 1 exists to catch. THIS IS WHY IT IS AST.
 FORMS = {
@@ -114,16 +114,16 @@ EXACT_FORMS = ("ls-files", "--cached", "read-tree", "--porcelain")
 # equality test classifies `checks/unowned.py` CLEAN while `:131` runs
 # `git("status", "--porcelain=v1", "-z")` through a `def git(*args)` wrapper at `:118` -- so a
 # file that reads index+worktree is in neither the offender set NOR `indexread-baseline.rows`.
-# **A CENSUS THAT MISSES ONE IS NOT A SMALLER CENSUS; IT IS A CENSUS THAT COMPARED NOTHING.** This
+# A CENSUS THAT MISSES ONE IS NOT A SMALLER CENSUS; IT IS A CENSUS THAT COMPARED NOTHING. This
 # is doctrine 2's "0 disagreements over 0 comparisons" and it was found by reading the classifier
 # rather than by being told. THE THREE CANDIDATE WIDENINGS, MEASURED OVER THE 1887-FILE
-# POPULATION: `s == f` finds 0. `s.startswith(f)` finds **5, of which 4 are PROSE** --
+# POPULATION: `s == f` finds 0. `s.startswith(f)` finds 5, of which 4 are PROSE --
 # `--cached makes a deletion while LEAVING the file on disk` (a capability DESCRIPTION in
 # `whyarms/armsites.py`'s own dict), `ls-files rc=` and `ls-files --debug rc=` (two ERROR
 # MESSAGES in `index-arm-gate.py`), `--cached|\bdiff-index\b` (a regex) -- so `startswith` buys
 # ONE true positive for FOUR false ones and is a net LOSS. `s.startswith(f + "=")` takes the one
 # and leaves the four, because PROSE continues with a SPACE and an ARGUMENT with `=`. THAT IS
-# THIS FUNCTION, AND IT IS **STRICTLY ADDITIVE**: it can only ADD offenders, never remove one, so
+# THIS FUNCTION, AND IT IS STRICTLY ADDITIVE: it can only ADD offenders, never remove one, so
 # it cannot be a weakening.
 def form_of(s: str) -> str | None:
   """The exact index form `s` spells, with its own argument attached, or None.

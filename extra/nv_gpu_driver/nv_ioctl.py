@@ -5,7 +5,7 @@ from tinygrad.runtime.support.c import init_c_struct_t
 from hexdump import hexdump
 start = time.perf_counter()
 
-# *** ioctl lib ***
+# * ioctl lib *
 libc = ctypes.CDLL(ctypes.util.find_library("c"))
 processor = platform.processor()
 IOCTL_SYSCALL = {"aarch64": 0x1d, "x86_64":16}[processor]
@@ -61,7 +61,7 @@ def install_hook(c_function, python_function):
   libc.memcpy(ioctl_address.contents, ctypes.create_string_buffer(tramp), len(tramp))
   return orig_func
 
-# *** ioctl lib end ***
+# * ioctl lib end *
 
 # PMA buffer tracking for raw PC sampling data (only when GRAB_PMA is enabled)
 pma_mem_handle = 0  # hMemPmaBuffer from ALLOC_PMA_STREAM

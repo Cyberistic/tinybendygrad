@@ -151,12 +151,12 @@ L2I = [
     ("lgk",  Ops.AND, dtypes.int32, dtypes.uint32, 9, 4),
     ("lgl",  Ops.WHERE, dtypes.int32, dtypes.uint32, 9, 5),
     ("lgm",  Ops.MAX, dtypes.int32, dtypes.uint32, 9, 4),
-    # THE OP SPELLINGS ARE UPSTREAM's **CURRENT** ONES.  UPSTREAM RENAMED THEM IN
+    # THE OP SPELLINGS ARE UPSTREAM's CURRENT ONES.  UPSTREAM RENAMED THEM IN
     # `1427aac3b` ("FLOORDIV/FLOORMOD -> DIV/MOD (#19047)", 2026-10-27), WHICH IS AN ANCESTOR
     # OF THE PIN `f5ac54685074`: `Ops.FLOORDIV` -> `Ops.DIV`, `Ops.FLOORMOD` -> `Ops.MOD`,
-    # `Ops.CDIV` -> `Ops.TRUNCDIV`, `Ops.CMOD` -> `Ops.TRUNCMOD`.  **THIS ORACLE STILL SPOKE THE
-    # PRE-RENAME SPELLINGS**, SO `Ops.FLOORDIV` RAISED `AttributeError` AT IMPORT TIME AND THE
-    # WHOLE GATE **REFUSED** (rc=3, "the oracle failed rc=1") -- A RE-VENDOR CASUALTY, NOT A RED.
+    # `Ops.CDIV` -> `Ops.TRUNCDIV`, `Ops.CMOD` -> `Ops.TRUNCMOD`.  THIS ORACLE STILL SPOKE THE
+    # PRE-RENAME SPELLINGS, SO `Ops.FLOORDIV` RAISED `AttributeError` AT IMPORT TIME AND THE
+    # WHOLE GATE REFUSED (rc=3, "the oracle failed rc=1") -- A RE-VENDOR CASUALTY, NOT A RED.
     # THE PORT's OWN DRIVER ALREADY SPOKE THE NEW SPELLINGS (`gates/decomp_graph_census.bend:156-161`:
     # `lgn` -> `O.OpsDIV{}`, `lgq`/`lgs` -> `O.OpsTRUNCDIV{}`, `lgr`/`lgt` -> `O.OpsTRUNCMOD{}`), WHICH
     # IS WHY THE MAP BELOW IS NOT A GUESS: IT IS THE PORT's OWN ARM FOR ARM.
@@ -178,7 +178,7 @@ L2I = [
     # SAME op, SAME source dtype, SAME two pool words as `lgu` (the f32 words at 19,20), and
     # the ONLY difference is `dt`'s WIDTH -- so the pair is the `de` shape in this file's own
     # vocabulary, and it is what separates `dd_cast_sel`'s answer from `l2i_dt`'s. MEASURED
-    # (`.agents/slop/l2ipool/probe65.bend`): `dd_cast_sel` reads **1 for BOTH** `lg5`
+    # (`.agents/slop/l2ipool/probe65.bend`): `dd_cast_sel` reads 1 for BOTH `lg5`
     # (i64 <- f32) and `lgz` (f64 <- f32), and `lg5` BUILDS while `lgz` REFUSES, so the
     # SELECTOR cannot be what decides and the refusal is `l2i_dt(dt) == None`. `lgu` reads
     # `sel == 2` and refuses for that same reason, so `lgz` is not a second shape of refusal.

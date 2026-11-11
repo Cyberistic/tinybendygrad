@@ -117,14 +117,14 @@ MEMBER = re.compile(r"\.[A-Z]")
 #      lesson" -- TWO files, neither of which is named.  A token whose FIRST segment already ends in
 #      a file extension is the author naming two things with one slash.
 #
-#      **AND THE FIRST VERSION OF THIS RULE WAS `\A[^/]*\.[A-Za-z0-9]+/`, WHICH DELETED 666 REAL
-#      ROWS.**  `[^/]*` matches the EMPTY string, so it matched `.agents/slop/dk-mutate.py` -- the
+# AND THE FIRST VERSION OF THIS RULE WAS `\A[^/]*\.[A-Za-z0-9]+/`, WHICH DELETED 666 REAL
+# ROWS.  `[^/]*` matches the EMPTY string, so it matched `.agents/slop/dk-mutate.py` -- the
 #      leading dot of a DOTFILE reads as an extension -- and every `.agents/` citation in the tree
 #      vanished from the census.  MEASURED: NEITHER went 886 -> 220 and 23 of the rows it removed
 #      were the dangling `.agents/slop/` instruments this census exists to find.  The leading `[^/.]`
-#      is the fix; it says a segment must have a first character before its dot.  **A REJECTION RULE
+# is the fix; it says a segment must have a first character before its dot.  A REJECTION RULE
 #      THAT IS WRONG DOES NOT ADD A FALSE ROW, IT DELETES A TRUE ONE, AND THE SECOND FAILURE IS THE
-#      DANGEROUS ONE** -- so `REJECTED` below TALLIES every rule that drops a token, and the tally
+# DANGEROUS ONE -- so `REJECTED` below TALLIES every rule that drops a token, and the tally
 #      prints.  An exclusion that cannot report its own size is an exclusion that can go blind.
 PAIR_SHORTHAND = re.compile(r"\A[^/.][^/]*\.[A-Za-z0-9]+/")
 #   3. A GIT REVISION.  `tinybendygrad/uop/ops.bend:1056` writes `6c3d401cf324:tinygrad/uop/ops.py` --
