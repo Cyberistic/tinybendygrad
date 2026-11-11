@@ -595,8 +595,8 @@ W-593	runtime/support/nv/ip.bend	191	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime
 W-594	runtime/support/nv/ip.bend	210	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:242	the tag appears MID-LINE; it cites a marker recorded elsewhere
 W-595	runtime/support/nv/ip.bend	211	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:253	the tag appears MID-LINE; it cites a marker recorded elsewhere
 W-596	runtime/support/nv/ip.bend	212	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:99	the tag appears MID-LINE; it cites a marker recorded elsewhere
-W-597	runtime/support/nv/ip.bend	1376	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:448	the tag appears MID-LINE; it cites a marker recorded elsewhere
-W-598	runtime/support/nv/ip.bend	1531	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:395	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-597	gates/ip-gate.bend	254	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:448	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-598	gates/ip-gate.bend	409	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:395	the tag appears MID-LINE; it cites a marker recorded elsewhere
 W-599	runtime/support/nv/nvdev.bend	10	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
 W-600	runtime/support/nv/nvdev.bend	12	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:353	subject unported or a residual arm of a ported def
 W-601	runtime/support/nv/nvdev.bend	13	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:385	subject unported or a residual arm of a ported def
