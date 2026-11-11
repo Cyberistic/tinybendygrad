@@ -29553,10 +29553,27 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       **⇒ AND **DELETED **2026-11-11**: **THE **DEF **IS **GONE** **AND **THE **HEADER's
       **UNREACHABLE-SET **LIST **IS **THREE**, **AND **`uop/symbolic.bend` **STILL **COMPILES**
       (**ALL **PROOFS **CHECK**)**.
-- [ ] **THE **CORPUS **MUST **BE **RE-RUN **ON **THE **WORKING **TREE** **ONCE **THE **OTHER
-      **AGENT's **`uop/ops.bend` **REWRITE **LANDS**, **BECAUSE **THE **RUN **I **REPORTED **WAS
-      **ON **A **CLEAN **`git archive HEAD`**, **AND **THE **WORKING **TREE's **`ops.bend` **IS
-      **CURRENTLY **BROKEN **(`unknown: Dq`)**.**
-      **AND **THE **SIX **`eq`/`ne` **GATES **AND **THE **CORPUS **MUST **BE **RE-RUN
-      **TOGETHER**, **BECAUSE **THE **GATES **WERE **VACUOUS **BEFORE **AND **THEIR **ROWS **ARE
-      **THE **ONLY **WAY **TO **KNOW **THEY **ARE **NOT **VACUOUS **NOW**.**
+- [x] THE CORPUS IS RE-RUN ON THE WORKING TREE, and it is green. Measured 2026-11-11 on
+      `5a0b942ad`, then again on the same commit after the comment pass:
+      `graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0 byte-identical=38`,
+      `controls=5 of 5`, `plants-disagree=8 of 8`, `selfcheck=# SELFCHECK: OK`,
+      `oracle-selfcheck=# ORACLE SELFCHECK: OK`, `census-rc=rc=0`, and
+      `substrate-start` equal to `substrate-end` on both runs -- so neither straddled an edit.
+      The seven disagreements (`binblob`, `bw`, `commute`, `flip`, `gral`, `matmul`, `reduce`)
+      were the PERMUTE shape spelling, and the reader now takes the order from `src[1]`.
+- [x] `demark.py` was broken by the arrow removal, and the break is the same class as
+      `ban-marks.py`'s. `fe413f5f1` took the `⇒` character out of the tree and took the
+      literal in `demark.py` with it, so the line read `b.replace(" ", "-")` and every space
+      in every comment became a dash. Fixed to `"\u21D2"`, the escape spelling.
+- [x] The emphasis markers and the arrows leave the comments: `**` 2,285 -> 7 comment lines,
+      `⇒` 14 -> 0, measured with `.agents/slop/loc/ban-marks.py` and committed as `b8d4a6f41`.
+      Every changed line in all 268 files starts with `#`; 182 `.py` files compile; the
+      corpus did not move.
+- [ ] The all-caps shout is still 4,745 comment lines, and a machine cannot lower it. Measured
+      on `uop/render.bend`: the block-level re-caser turned `pretty_print` into `Pretty_print`,
+      `lambda x:` into `Lambda x:`, `cache.setdefault` into `Cache.setdefault`, and capitalised
+      every continuation line -- case is meaning inside the Python samples these comments carry.
+      **The removal has to be a rewrite by a reader, file by file.**
+- [ ] The gate rows still inside `tinybendygrad/` are 831 in 41 files, measured with
+      `.agents/slop/loc/the-1to1.py`'s own rule (`row(`/`srow(`). The three largest are
+      `runtime/ops_nvme.bend` 168, `mixin/gradient.bend` 112 and `runtime/support/nv/ip.bend` 100.
