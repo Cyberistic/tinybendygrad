@@ -433,12 +433,12 @@ def population_digest(path=None) -> str:
 # DOES carry the shapes (`getaddr` a GETADDR, `binblob` a BINARY, and the gate prints both);
 # what is missing is a VERDICT LANE over it, and that is `gates/specreach-map.rows` (the map)
 # and `gates/specreach-gate.py` (the verdict).
-# **⇒ AND **THE **PIN **MOVED **ON **2026-11-11**, **BECAUSE **THE **`commute` **GRAPH's
+# **AND **THE **PIN **MOVED **ON **2026-11-11**, **BECAUSE **THE **`commute` **GRAPH's
 # **`a != b` **SPELLING **WAS **RE-MEASURED **ON **CPYTHON **AT **THE **PIN**: **IT **IS
-# **`CMPEQ(CMPEQ(a, b), CONST false)`** **AND **NOT **A **RAW **`CMPNE`** -- **⇒ AND **THE
+# **`CMPEQ(CMPEQ(a, b), CONST false)`** **AND **NOT **A **RAW **`CMPNE`** -- **AND **THE
 # **GRAPH **HAS **TWO **NODES **MORE, **AND **THE **POPULATION **IS **PINNED **BY
 # **CONTENT**, **SO **THE **PIN **HAS **TO **MOVE **IN **THE **SAME **COMMIT **AS **THE
-# **CHANGE**.  **⇒ THE **OLD **VALUE **WAS
+# **CHANGE**.  **THE **OLD **VALUE **WAS
 # **`d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31`.**
 POPULATION_PIN = "02e135dc48c3b12e07d4f212b292e8fbe18e48a3fef16949d1b9c023c5f2888f"
 
