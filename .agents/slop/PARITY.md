@@ -6962,11 +6962,18 @@ IS THE WHITESPACE THE ARROW WAS HOLDING.**
 **NEUTRAL** ON THE CORPUS** -- **MEASURED BOTH WAYS, ON THE SAME BASE COMMIT, WITH THE ONLY VARIABLE
 BEING WHETHER THE ARROWS ARE THERE.**
 
-**AND THE **CERTIFICATE** FOR **THIS** CHANGE WAS TAKEN **BEFORE** THE PERMUTE COMMIT LANDED, **IN A
-CLEAN WORKTREE** WITH `git status --porcelain -- tinybendygrad/` **EMPTY** AT RUN START:
-`substrate-start == substrate-end == live == 46c0b1e30fad123285e852aa871f47a48566c98948ce995a03e47a831113ace8`,
-**38 graphs / 38 answered / 31 agree / 0 refused**, **repro 339 of 339**, AND
-**`corpuswitness-gate` -> **PASS -- the claim is ESTABLISHED** (ALL SEVEN READINGS OK).
+**AND THE **CERTIFICATE** FOR **THIS** CHANGE, TAKEN **AT THE **FINAL** COMMIT IN A CLEAN WORKTREE WITH
+`git status --porcelain -- tinybendygrad/` **EMPTY** AT RUN START:**
+`substrate-start == substrate-end == live == 322970af45298bc41d16aab9d14ba9788ab553ad8d6978170d3708b81fa21d32`,
+**38 graphs / 38 answered / 38 agree / 0 disagree / 38 byte-identical / 0 refused**,
+`stable-pairs 5 of 5`, `plants-disagree 8 of 8`, `controls 5 of 5`, `conflations 4 of 4`, `cross 1 of 1`,
+`selfcheck OK`, `oracle-selfcheck OK`, `census-rc=rc=0`; **REPRO rc=0, 339 of 339 IDENTICAL**; AND
+**`corpuswitness-gate` -> rc=0, **PASS -- the claim is ESTABLISHED**, ALL SEVEN READINGS OK** (`control`,
+`verdict.current`, `witness.fresh`, `freshness.source`, `witness.substrate`, `verdict.reported`, `claim`).
+
+**AND THE PROOF GATE AT THE SAME COMMIT: `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` ->
+rc=0, "ALL PROOFS CHECK"**. AND THE COMPILE GATE READS **3 FINDING / 189 COMPILES / 8 COLD-BY-DESIGN**,
+**THE SAME READING AS CLEAN HEAD**.
 
 **AND THE COMMITS ARE BY PATH ONLY, AND **NEVER AMEND, NEVER REBASE**: `git commit --only -F <msgfile>
 -- <path>`, WITH **NO `git add -A`**, AND `git show --stat` **AND** `git fsck --no-progress` RUN AFTER

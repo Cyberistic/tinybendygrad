@@ -3901,10 +3901,19 @@ no-arrow         [#########] 1/1      **THE U+21D2 CHARACTER IS GONE FROM THE WH
                                         CERTIFICATE IS **GREEN AND CURRENT** (rc=0, 38 graphs, 0
                                         refused, `substrate-start == substrate-end == live`,
                                         repro 339 of 339, `corpuswitness-gate` **PASS**).
-                                        **AND A **LATER** CORPUS FAILURE IS **ISOLATED TO **NOT** THIS
-                                        CHANGE**: THE PERMUTE COMMIT `872be66fe` FAILS
-                                        **IDENTICALLY WITH THIS CHANGE REVERTED**, AND **THE COMMIT
-                                        BEFORE IT, WITH THIS CHANGE IN, IS GREEN.** SEE
+                                        **AND A **LATER** CORPUS FAILURE WAS **ISOLATED** TO **NOT**
+                                        THIS CHANGE: ON **THE SAME BASE COMMIT**, **WITH** THIS
+                                        CHANGE THE CORPUS IS **rc=0, 38 ANSWERED, 0 REFUSED,
+                                        SELFCHECK OK**, AND **WITHOUT** IT THE PERMUTE COMMIT
+                                        `872be66fe` FAILS **IDENTICALLY** (5 REFUSED, SELFCHECK
+                                        FAIL). **AND THE **FINAL** CERTIFICATE, AT THE **FINAL**
+                                        COMMIT: **38 graphs / 38 AGREE / 0 DISAGREE / 38
+                                        BYTE-IDENTICAL / 0 REFUSED**, `substrate-start == substrate-end
+                                        == live`, **REPRO 339 of 339**, AND
+                                        **`corpuswitness-gate` -> rc=0, PASS** (ALL SEVEN READINGS
+                                        OK); AND THE **PROOF GATE** IS **rc=0, "ALL PROOFS CHECK"**,
+                                        AND THE COMPILE GATE READS **3 FINDING / 189 COMPILES** --
+                                        **THE SAME READING AS CLEAN HEAD.** SEE
                                         `.agents/slop/PARITY.md` §139.
 upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE FILE AT A TIME,
                                         AND TWO FILES ARE DONE.**
