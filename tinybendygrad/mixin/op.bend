@@ -611,18 +611,49 @@ def mo_neg(+t: T.Tensor) -> T.Tensor: mo_bin_c(t, O.OpsMUL{}, mo_ki(4294967295))
 # MERGES the two operands' arenas (`O.Arena.merge`) and builds with an explicit `mo_alu2`,
 # so both orders are right by construction. A float CONST is the
 # other case where nothing is minted at all, so those two families are `mo_bin_c`.
-def mo_neq(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsCMPNE{}, y)
-def mo_neqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_bin_c(t, O.OpsCMPNE{}, v)
 def mo_or(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsOR{}, y)
 def mo_add(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsADD{}, y)
 def mo_mul(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsMUL{}, y)
 def mo_maxc(+t: T.Tensor, f: F32) -> T.Tensor: mo_bin_c(t, O.OpsMAX{}, O.CFloat{f})
 
-# `logical_not` -- elementwise.py:57 -- is `self.cast(dtypes.bool).ne(True)`, so it is a
-# CAST and a CMPNE and NOT an `Ops.NEG`, and `eq(x)` is `ne(x).logical_not()`
-# (elementwise.py:337).
-def mo_notb(+t: T.Tensor) -> T.Tensor: mo_neqc(mo_cast_t(t, S.boolean()), O.CBool{True{}})
-def mo_eqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_notb(mo_neqc(t, v))
+# **⇒ THE **`ne`/`eq`/`logical_not` **FAMILY, **AND **IT **IS **WRITTEN **AGAINST **AN
+# **OLDER **UPSTREAM.  MEASURED **AT **THE **PIN **`f5ac54685074`:**
+#
+#   **`tinygrad/mixin/elementwise.py:49-57`**   `logical_not` IS
+#     **`return self.cast(dtypes.bool).eq(False)`**
+#   **`tinygrad/mixin/elementwise.py:332-333`** `ne` IS
+#     **`return self.eq(x).logical_not()`**
+#   **`tinygrad/mixin/elementwise.py:335-336`** `eq` IS
+#     **`return self._binop(Ops.CMPEQ, x, False)`**
+#   **`tinygrad/mixin/elementwise.py:338-339`** `__ne__` IS `return self.ne(x)`
+#
+# **⇒ SO **THE **NODES **ARE**: **`eq` **IS **ONE **`CMPEQ(x, False)`**, **`ne` **IS
+# **`logical_not(CMPEQ(x, False))`**, **AND **`logical_not` **IS **`CMPEQ(cast(x, bool),
+# False)`** -- **⇒ AND **NO **OF **THEM **IS **A **`CMPNE`**.**
+#
+# **⇒ AND **THE **PORT's **SPELLING **WAS **`neq` **= `CMPNE(x, y)`**, **`logical_not` **=
+# **`CMPNE(cast(x, bool), True)`**, **AND **`eq` **= `not(not(CMPNE(x, y)))`** -- **⇒ THE
+# **OLD **`eq` **IS **A **DOUBLE **NEGATION** **AND **THE **OLD **`logical_not` **IS **THE
+# **WRONG **CONST** (**`True` **INSTEAD **OF **`False`**).**
+#
+# **⇒ AND **THIS **IS **THE **THIRD **HALF **OF **ONE **RULE **TO **DRIFT** -- **THE
+# **OTHERS **ARE **`uop/symbolic.bend`'s **`mint_not`** (**ALREADY **`CMPEQ(x, False)`**)
+# **AND **`tensor.bend`'s **`tn_logical_not`** (**ALREADY **`CMPEQ(x, False)`**) -- **⇒ AND
+# **THE **CORPUS **MEASURED **THE **DRIFT **ON **THE **`commute` **GRAPH** (**`CMPEQ 2/0`
+# **AND **`CMPNE 0/1`**).**
+# **`eq`** -- **`_binop(Ops.CMPEQ, x, False)`** (`elementwise.py:336`) -- **IS **ONE
+# **`CMPEQ`** **AND **NOT **A **NEGATION **OF **ONE**, **AND **THE **`False` **IS **THE
+# **CONST **THE **COMPARISON **RUNS **AGAINST**.
+def mo_eq(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsCMPEQ{}, y)
+def mo_eqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_bin_c(t, O.OpsCMPEQ{}, v)
+
+# **`logical_not`** -- **`self.cast(dtypes.bool).eq(False)`** (`elementwise.py:57`) -- **IS
+# **A **CAST **AND **A **`CMPEQ`** **AGAINST **`False`**, **AND **NOT **AN **`Ops.NEG`**
+# **AND **NOT **A **`CMPNE` **AGAINST **`True`**.
+def mo_notb(+t: T.Tensor) -> T.Tensor: mo_eqc(mo_cast_t(t, S.boolean()), O.CBool{False{}})
+
+def mo_neq(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_notb(mo_eq(t, y))
+def mo_neqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_notb(mo_eqc(t, v))
 
 # `sub` -- elementwise.py:121-123. `a, b = self._broadcasted(x, reverse)` and then
 # `return a.alu(Ops.ADD, -b)`, and the NOTE says "alu, not +: _broadcasted already

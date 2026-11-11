@@ -1155,10 +1155,17 @@ def tn_isfinite.cneginf(+ar: O.Arena) -> O.Found:
   O.UOp.const(ar, O.CFloat{F32.neg(F32.mul(1.0e30, 1.0e30))})
 def tn_isfinite.ct(+c: O.Found) -> Tensor:
   tn_new(O.Found.ar(c), O.Found.i(c))
-# `self.eq(inf)` -- `tn_eq` is `logical_not(cmpne)`, and `logical_not` builds in the arena
-# its CAST grew, so the CMPNE has to be built in `c`'s arena: `c` DESCENDS from `t`'s.
+# `self.eq(inf)` -- **`eq` **IS **`_binop(Ops.CMPEQ, x, False)` (`mixin/elementwise.py:335-336`
+# **AT **THE **PIN **`f5ac54685074`)**, **⇒ SO **THE **NODE **IS **`CMPEQ(self, inf)`** --
+# **ONE **NODE**, **AND **NOT **`logical_not(CMPNE(self, inf))`**, **WHICH **IS **WHAT **THIS
+# **DEF **USED **TO **BUILD**.**
+#
+# **⇒ AND **THE **OLD **COMMENT **"**`tn_eq` **IS **`logical_not(cmpne)`"** **WAS **A **CLAIM
+# **ABOUT **AN **OLDER **UPSTREAM** -- **AND **THE **SAME **DRIFT **ALREADY **HAD **THREE
+# **HALVES** (**`uop/symbolic.bend`'s **`mint_not`**, **`tensor.bend`'s **`tn_logical_not`**,
+# **AND **`mixin/op.bend`'s **`mo_eqc`**), **AND **THIS **WAS **THE **FOURth**.**
 def tn_isfinite.eqarm(+t: Tensor, +c: Tensor) -> Tensor:
-  tn_logical_not(tn_binop(t, c, O.OpsCMPNE{}))
+  tn_binop(t, c, O.OpsCMPEQ{})
 # `eq * detect_positive`, and `detect_positive` is the CONST `True`, which is interned in
 # `eq`'s own arena -- so the MUL is built in `tc.ar` and `eq.u` reads as an ancestor index.
 def tn_isfinite.armul(+eq: Tensor) -> Tensor:

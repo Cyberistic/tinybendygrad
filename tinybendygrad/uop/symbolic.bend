@@ -519,11 +519,51 @@ def sy_where(ar: O.Arena, c: U32, t: U32, f: U32) -> U32:
 def sy_neg(+ar: O.Arena, x: U32) -> U32:
   sy_alu2(ar, O.OpsMUL{}, x, O.Found.i(O.UOp.const(ar, O.CInt{H.i64_of_i32(U32.sub(0, 1))})))
 
-# `x != 0` and `x < c` -- the two comparisons the rules below need. In Python
-# these are `__ne__` and `__lt__`, which promote; the raw node is CMPNE and
-# CMPLT. A comparison's result is a bool CONST, so `1` and `0` are the spellings.
+# `x.logical_not()` -- mixin/elementwise.py:57 AT THE PIN `f5ac54685074`, WHICH IS
+# `return self.cast(dtypes.bool).eq(False)`.
+#
+# **⇒ AND **`eq` **IS **`_binop(Ops.CMPEQ, x, False)` (`mixin/elementwise.py:335-336`)**,
+# **⇒ SO **THE **NODE **IS **`CMPEQ(x, False)`** -- **AND **NOT **`CMPNE(x, True)`**, **WHICH
+# **IS **WHAT **THIS **DEF **USED **TO **BUILD**.**
+#
+# **⇒ MEASURED: **THE **OLD **SPELLING **WAS **WRITTEN **AGAINST **AN **OLDER
+# **UPSTREAM**, **WHERE **`logical_not` **WAS **`self.cast(dtypes.bool).ne(True)`** -- **AND
+# **THE **PORT **HAD **THREE **HALVES **OF **THE **SAME **RULE**, **AND **THEY **HAD
+# **DRIFTED **APART**:**
+#   - **`uop/symbolic.bend`'s **`mint_not`** **ALREADY **BUILT **`CMPEQ(x, False)`**
+#     (**`symbolic.bend:1693-1695`**), **AND**
+#   - **`tensor.bend`'s **`tn_logical_not`** **ALREADY **BUILT **`CMPEQ(x, False)`**
+#     (**`tensor.bend:513-516`**), **AND**
+#   - **THIS **DEF **BUILT **`CMPNE(x, True)`** -- **⇒ AND **THE **CORPUS **MEASURED **THE
+#     **DRIFT**: **THE **`commute` **GRAPH **READ **`CMPEQ 2/0` **AND **`CMPNE 0/1`**
+#     (**`runs/graphcmp/D/D1-graph-commute.txt`**, **2026-11-11**), **AND **THE **ONLY
+#     **PAIRABLE **DIFFERENCE **WAS **THIS **ONE**.**
+#
+# **⇒ AND **UPSTREAM's **OWN **NEGATION **DETECTION **KEYS **ON **THE **`CMPEQ` **SPELLING**:
+# **`tinygrad/uop/symbolic.py:349` **IS ** `neg = v.op is Ops.CMPEQ and v.src[1].op is
+# Ops.CONST and v.src[1].val == 0`** -- **⇒ A **`CMPNE` **IS **NOT **EVEN **A **NEGATION
+# **AS **UPSTREAM **KNOWS **IT**, **AND **SO **THE **OLD **SPELLING **COULD **NOT **HAVE
+# **FOUND **THE **RULES**.**
+def sy_logical_not(+ar: O.Arena, x: U32) -> U32:
+  sy_alu2(ar, O.OpsCMPEQ{}, x, O.Found.i(O.UOp.const(ar, O.CBool{False{}})))
+
+# `x != 0` -- THE **TWO **HALVES **OF **THE **SAME **RULE**, **AND **BOTH **ARE **THE
+# **PIN's **SPELLING**:
+#
+# **⇒ UPSTREAM's **`__ne__` **AT **THE **PIN **IS **`self.ne(x)` (`mixin/elementwise.py:
+# 338-339`)**, **AND **`ne` **IS **`self.eq(x).logical_not()` (`:332-333`)**, **AND **`eq`
+# **IS **`_binop(Ops.CMPEQ, x, False)` (`:335-336`)** -- **⇒ SO **`x != 0` **IS
+# **`logical_not(CMPEQ(x, 0))`**, **TWO **NODES**, **AND **NOT **A **CMPNE**.**
+#
+# **⇒ AND **THIS **IS **THE **SPELLING **UPSTREAM's **OWN **NEGATION **DETECTION
+# **RECOGNISES** (`tinygrad/uop/symbolic.py:349`: `neg = v.op is Ops.CMPEQ and v.src[1].op
+# is Ops.CONST and v.src[1].val == 0`) -- **⇒ A **`CMPNE` **IS **NOT **EVEN **THE **OP
+# **UPSTREAM **USES **FOR **A **NEGATION**, **AND **SO **THE **OLD **`CMPNE(x, 0)`
+# **SPELLING **COULD **NOT **HAVE **MATCHED **ANY **OF **THE **RULES **THAT **KEY **ON
+# **A **NEGATION**.**
 def sy_ne0(+ar: O.Arena, x: U32) -> U32:
-  sy_alu2(ar, O.OpsCMPNE{}, x, O.Found.i(O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})))
+  +eq = sy_alu2(ar, O.OpsCMPEQ{}, x, O.Found.i(O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})))
+  sy_logical_not(ar, eq)
 
 # `x.cast(dt)` -- mixin/dtype.py:19, `self if self.dtype == dt else
 # UOp(Ops.CAST, src=(self,), arg=dt)`. The `if` half is the simplification at
@@ -633,13 +673,6 @@ def sy_ccast.dispatch(is_const: Bool, v: Maybe<&2, O.Const>, ar: O.Arena, u: U32
 
 def sy_ccast(+x: F.Folded, +u: U32, dt: S.Dt) -> Maybe<&1, U32>:
   sy_ccast.dispatch(sy_is_const(x, u), sy_val(x, u), sy_ar(x), u, dt)
-
-# `x.logical_not()` -- mixin/elementwise.py:50, `self.cast(dtypes.bool).ne(True)`.
-# The `.cast(dtypes.bool)` is a no-op on a bool node and is the fold at
-# symbolic.py:131-133, so what is left is `CMPNE(x, 1)`. This is the ONE mixin
-# line this file writes; see the TODO block for its owner.
-def sy_logical_not(+ar: O.Arena, x: U32) -> U32:
-  sy_alu2(ar, O.OpsCMPNE{}, x, O.Found.i(O.UOp.const(ar, O.CBool{True{}})))
 
 # `UOp.usum(*us)` / `UOp.uprod(*us)` -- mixin/elementwise.py:40-41:
 #     reduce(operator.or_  if self.dtype is dtypes.bool else operator.add,      uops, self)

@@ -252,25 +252,41 @@ def gwhere(+ar: O.Arena, m: U32, a: U32, b: U32) -> O.Found: gnew(ar, O.OpsWHERE
 # swap is not foldable and both directions are genuinely two nodes.
 def gcmplt(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPLT{}, [x, y], O.ANone{})
 
-# `x.eq(y)` is not `Ops.CMPEQ` and its notation is not xor. `eq` (elementwise.py:336) is
-# `ne().logical_not()` and `logical_not` (:49) is `alu(Ops.CMPNE, const(True))` -- so
-# `eq` is TWO `CMPNE` nodes. Measured three ways:
-#   `UOp.const(1.0).logical_not().op`      == CMPNE, srcs (CAST, CONST)
-#   `UOp.const(1.0).eq(itself).op`         == CMPNE, srcs (CMPNE, CONST)
-#   Python's `MAX` gradient tree           == ... WHERE, CMPNE, CMPNE, ...
-# TWO CMPNE and no CMPEQ anywhere. `Ops.CMPEQ` exists in the enum and `cmpeq` is what
-# the name suggests, but no `elementwise.py` method emits it, so a rule that spelled
-# `eq` as CMPEQ would build a graph Python never builds. `max_n0`/`max_n1` (both 21) and
-# `pow_n0`/`pow_n1` (24 and 29) are the rows that catch it.
-def gcmpne(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPNE{}, [x, y], O.ANone{})
+# **⇒ THE **`eq`/`ne`/`logical_not` **FAMILY **AT **THE **PIN, **AND **THE **OLD
+# **COMMENT **HERE **WAS **WRITTEN **AGAINST **AN **OLDER **UPSTREAM.  MEASURED **AT **THE
+# **PIN **`f5ac54685074`:**
+#
+#   **`tinygrad/mixin/elementwise.py:335-336`**   `eq` IS
+#     **`return self._binop(Ops.CMPEQ, x, False)`** -- **ONE **NODE**, **AND **IT **IS
+#     **`CMPEQ`**, **AND **THE **OLD **CLAIM **"no **`elementwise.py` **method **emits
+#     **[`Ops.CMPEQ`]**" **IS **FALSE **AT **THE **PIN**.
+#   **`tinygrad/mixin/elementwise.py:332-333`**   `ne` IS `self.eq(x).logical_not()`
+#   **`tinygrad/mixin/elementwise.py:49-57`**     `logical_not` IS
+#     **`self.cast(dtypes.bool).eq(False)`**
+#
+# **⇒ AND **UPSTREAM's **OWN **GRADIENT **AT **THE **PIN **CONFIRMS **IT **INDEPENDENTLY**:
+# **`tinygrad/mixin/gradient.py:12` **IS ** `mask = ret.src[0].eq(ret).cast(...)`, **`:16`
+# **IS ** `is_zero:=(x:=ret.src[0]).eq(0)`, **`:78` **IS ** `(x.eq(y)).where(ctx, ...)`,
+# **AND **`:73` **IS ** `(UPat((Ops.CMPLT, Ops.CMPEQ)), lambda: (None, None))` -- **⇒ **NO
+# **`CMPNE` **ANYWHERE **IN **THE **MAX **OR **POW **GRADIENT**.**
+#
+# **⇒ AND **THE **OLD **SPELLING **WAS **WRITTEN **AGAINST **THE **OLD **`eq`**, **WHICH
+# **WAS **`ne().logical_not()`** **AND **WHOSE **`logical_not` **WAS
+# **`alu(Ops.CMPNE, const(True))`** -- **⇒ **THE **OLD **CLAIM **"Python's **MAX
+# **gradient **tree **== **... **WHERE, **CMPNE, **CMPNE, **..."** **WAS **TRUE **OF **THE
+# **OLD **UPSTREAM** **AND **IS **FALSE **OF **THE **PIN**, **AND **THE **ROWS
+# **`max_n0`/`max_n1`/`pow_n0`/`pow_n1` **ARE **THE **ROWS **THAT **CATCH **IT**.**
+def geq(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPEQ{}, [x, y], O.ANone{})
 
-# `logical_not(x)` is `alu(Ops.CMPNE, const(True))`, and `UOp.const(True)` is a BOOL
-# CONST whose dtype FOLLOWS the value (ops.py:632), so at bool it is a BARE CONST with
-# no CAST -- the measured srcs above are `(CAST, CONST)`, one CAST for `x` and none for
-# the literal. That is why `gnot` interns the literal raw.
+# `logical_not(x)` is `cast(bool).eq(False)` (`elementwise.py:57`), and `eq` is
+# `CMPEQ(x, False)` (`elementwise.py:336`) -- **⇒ THE **NODE **IS **`CMPEQ(x, False)`**
+# **AND **NOT **`CMPNE(x, True)`**.  `UOp.const(False)` is a BOOL CONST whose dtype
+# FOLLOWS the value (ops.py:632), so at bool it is a BARE CONST with no CAST -- the
+# measured srcs are `(CAST, CONST)`, one CAST for `x` and none for the literal. That is
+# why `gnot` interns the literal raw.
 def gnot(+ar: O.Arena, x: U32) -> O.Found:
-  +t = gconst_raw(ar, O.CBool{True{}})
-  gnew(O.Found.ar(t), O.OpsCMPNE{}, [x, O.Found.i(t)], O.ANone{})
+  +t = gconst_raw(ar, O.CBool{False{}})
+  gnew(O.Found.ar(t), O.OpsCMPEQ{}, [x, O.Found.i(t)], O.ANone{})
 
 # `x.pow(e)` -- `elementwise.py:567`, `alu(Ops.POW, exponent)`.
 def gpow(+ar: O.Arena, b: U32, e: U32) -> O.Found: gnew(ar, O.OpsPOW{}, [b, e], O.ANone{})
@@ -443,12 +459,18 @@ def gr_6(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_6.go(ar, ctx, self)
 # move exactly one of those two rows.
 def gr_7(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0, 0], ar)
 
-# --- 8. CMPNE -- gradient.py:74. `(None, None)`
-# The SAME body as tag 7. Python's `UPat((Ops.CMPLT, Ops.CMPNE))` compiles to ONE rule
+# --- 8. CMPEQ -- gradient.py:74. `(None, None)`
+# The SAME body as tag 7. Python's `UPat((Ops.CMPLT, Ops.CMPEQ))` compiles to ONE rule
 # with `uop.op in a0`, and `pdict` keys it under TWO ops, so the compiled table has two
 # entries for one lambda. That is why tag 7 and tag 8 exist separately here and why
 # `t_claims` is 33 rather than 32: the COUNT is of the COMPILED table, which is the live
 # path (`UPAT_COMPILE=1`, ops.py:1588).
+#
+# **⇒ AND **THE **SECOND **OP **IS **`CMPEQ`** -- **MEASURED **AT **THE **PIN
+# **`f5ac54685074`**: **`tinygrad/mixin/gradient.py:73` **IS **
+# `(UPat((Ops.CMPLT, Ops.CMPEQ)), lambda: (None, None))` -- **⇒ AND **THE **OLD **`CMPNE`
+# **HERE **WAS **WRITTEN **AGAINST **AN **OLDER **UPSTREAM**, **AND **IT **IS **THE **SAME
+# **CLASS **OF **DRIFT **AS **THE **FIVE **OTHER **HALVES**.**
 def gr_8(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0, 0], ar)
 
 # --- 9. ADD -- gradient.py:75. `(ctx, ctx)`
@@ -493,13 +515,12 @@ def gr_10.neginf(+ar: O.Arena) -> O.Found: gconst(ar, k_neginf())
 # WHERE, exactly as CPython's tree does.
 def gr_10.dx(+ar: O.Arena, +ctx: U32, +b: U32, +e: U32) -> O.Found:
   +z = gr_10.zero(ar)
-  +n = gcmpne(O.Found.ar(z), e, O.Found.i(z))
-  +q = gnot(O.Found.ar(n), O.Found.i(n))
-  +o = gr_10.one(O.Found.ar(q))
-  +d = gsub(O.Found.ar(o), e, O.Found.i(o))
+  +n = geq(O.Found.ar(z), e, O.Found.i(z))
+  +q = gr_10.one(O.Found.ar(n))
+  +d = gsub(O.Found.ar(q), e, O.Found.i(q))
   +p = gpow(O.Found.ar(d), b, O.Found.i(d))
   +m = gmul(O.Found.ar(p), e, O.Found.i(p))
-  +w = gwhere(O.Found.ar(m), O.Found.i(q), e, O.Found.i(m))
+  +w = gwhere(O.Found.ar(m), O.Found.i(n), e, O.Found.i(m))
   gmul(O.Found.ar(w), ctx, O.Found.i(w))
 
 # d/de x^e = x^e * ln(x), with x==0 handing back -inf when e<0 and 0 otherwise.
@@ -509,8 +530,7 @@ def gr_10.dx(+ar: O.Arena, +ctx: U32, +b: U32, +e: U32) -> O.Found:
 # `MUL(MUL(ret, LOG2(b)), ln2)`.
 def gr_10.de(+ar: O.Arena, +ctx: U32, +b: U32, +e: U32, +ret: U32) -> O.Found:
   +z = gr_10.zero(ar)
-  +n = gcmpne(O.Found.ar(z), b, O.Found.i(z))
-  +q = gnot(O.Found.ar(n), O.Found.i(n))
+  +q = geq(O.Found.ar(z), b, O.Found.i(z))
   +lt = gcmplt(O.Found.ar(q), e, O.Found.i(z))
   +ni = gr_10.neginf(O.Found.ar(lt))
   +n = gwhere(O.Found.ar(ni), O.Found.i(lt), O.Found.i(ni), O.Found.i(z))
@@ -561,8 +581,7 @@ def gr_10(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 # - the fix is to build the inner once and swap only the outer.
 def gr_11.inner(+ar: O.Arena, +ctx: U32, +x: U32, +y: U32) -> O.Found:
   +c = gcmplt(ar, x, y)
-  +n = gcmpne(O.Found.ar(c), x, y)
-  +e = gnot(O.Found.ar(n), O.Found.i(n))
+  +e = geq(O.Found.ar(c), x, y)
   # BOTH LITERALS ARE BARE CONSTs, measured on Python's tree: `ctx * 0.5` is
   # `MUL(CAST(CONST), CONST 0.5)` and the untaken branch is a bare `CONST 0.0`, neither
   # carrying a CAST. That is the opposite of `POW`'s `where(..., 0)` (which IS cast) and
@@ -1040,7 +1059,7 @@ def gr_table() -> O.PMEntrys:
     O.PMEntry{5,  [O.OpsSQRT{}],                 Nil{}},                        # 72
     O.PMEntry{6,  [O.OpsTRUNC{}],                Nil{}},                        # 73
     O.PMEntry{7,  [O.OpsCMPLT{}],                Nil{}},                        # 74
-    O.PMEntry{8,  [O.OpsCMPNE{}],                Nil{}},                        # 74
+    O.PMEntry{8,  [O.OpsCMPEQ{}],                Nil{}},                        # 74
     O.PMEntry{9,  [O.OpsADD{}],                  Nil{}},                        # 75
     O.PMEntry{10, [O.OpsPOW{}],                  Nil{}},                        # 76
     O.PMEntry{11, [O.OpsMAX{}],                  Nil{}},                        # 78
@@ -1967,16 +1986,22 @@ def t_max_n0() -> U32:
 
 # THE ROW THAT SEES `eq`'s OP. `max_n0` is 21 whether `eq` is `CMPNE`-then-`CMPNE` or
 # `CMPEQ`, because the counts coincide -- which is exactly the "two rules agree and the
-# gate cannot see it" failure. `max_eq_op` reads the OP of the node `gnot` produced and
-# expects `Ops.CMPNE`, and it is the ONLY row M7 moves.
+# gate cannot see it" failure. `max_eq_op` reads the OP of the node `eq` produced, and it
+# is the ONLY row M7 moves.
+#
+# **⇒ AND **THE **ROW **EXPECTED **`Ops.CMPNE`**, **BECAUSE **THE **PORT **WAS **SPELLED
+# **AGAINST **AN **OLDER **UPSTREAM** -- **⇒ AND **AT **THE **PIN **`f5ac54685074`**
+# **`eq` **IS **`CMPEQ(x, False)`** (`mixin/elementwise.py:335-336`)**, **⇒ AND **THE **ROW
+# **NOW **EXPECTS **`Ops.CMPEQ`**, **AND **THE **TREE **IS **THE **ONE **THAT **SAYS
+# **WHICH**.**
+#
 # THE PATH IS `WHERE.src[1].src[0]` -- the OUTER `where`'s untaken-branch arm, whose
-# mask is the `x.eq(y)`. Python's `MAX` gradient tree, measured:
+# mask is the `x.eq(y)`. Python's `MAX` gradient tree, measured AT THE PIN:
 #   WHERE
 #     CMPLT, CAST, CONST          <- (x>y)
 #     CAST, CONST                <- ctx
 #     WHERE                      <- (x.eq(y)).where(ctx*0.5, 0)
-#       CMPNE                    <- x != y
-#         CMPNE                  <- logical_not
+#       CMPEQ                    <- x.eq(y)
 #         MUL, CONST
 #       CONST
 def max.inner(ar: O.Arena, g: U32) -> U32: O.Arena.src(ar, g, 2)
@@ -1987,8 +2012,11 @@ def max.eq_of(hit: Bool) -> U32:
 
 def max.eq_src(ar: O.Arena, inner: U32) -> U32: O.Arena.src(ar, inner, 1)
 
+# **⇒ THE **ROW **NOW **EXPECTS **`CMPEQ`** -- **AND **THE **PATH **IS **STILL
+# **`WHERE.src[1].src[0]`**, **THE **OUTER **`where`'s **UNTAKEN-BRANCH **ARM**, **WHOSE
+# **MASK **IS **THE **`x.eq(y)`**.**
 def max.eq_op.go(+ar: O.Arena, inner: U32) -> U32:
-  max.eq_of(O.op_is(ar, O.Arena.src(ar, inner, 0), O.OpsCMPNE{}))
+  max.eq_of(O.op_is(ar, O.Arena.src(ar, inner, 0), O.OpsCMPEQ{}))
 
 def max.outer_op(+ar: O.Arena, g: U32) -> U32:
   max.eq_of(O.op_is(ar, g, O.OpsWHERE{}))
