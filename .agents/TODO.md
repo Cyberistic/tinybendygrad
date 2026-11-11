@@ -29176,7 +29176,7 @@ FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW
       `(cmpne xb bt)` RETURNS `None`.** SO A `CMPNE` NODE IS NOT AN UPSTREAM-REACHABLE INPUT.
       **THE PORT HAD THE OLD SHAPE IN FIVE PLACES AND ONE OF THEM WAS A **HELPER**:
       `sym_189`, `tx_lnot`, THE TRANSCENDENTAL LANE's **14** `CMPNE` SITES, `p_not_of` (WHICH
-      CARRIED **TWO** RULES, `sym_243` AND `sym_256`), AND `sym_132`.** **AND THE PORT's OWN
+      CARRIED **TWO** RULES, `sym_243` AND `sym_256`), AND `sym_132` (**DELETED 2026-11-11**).** **AND THE PORT's OWN
       `sym_134` COMMENT ALREADY RECORDED THE SWAP FOR `logical_not` -- "THE PRIMITIVE SWAPPED AT
       THE 2026-11-03 RE-VENDOR" -- AND NOBODY LOOKED AT THE OTHER FOUR BECAUSE THREE OF THEM
       ARE NOT RULES.**
@@ -29218,7 +29218,7 @@ FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW
       `sym_295` AND `sym_302` ARE KEPT UPSTREAM RULES THAT WERE REWORDED. **SO IT IS A
       CANDIDATE LIST AND NOT A VERDICT, AND ONLY THE BEHAVIOURAL TEST SETTLES IT.**
 - [x] **FOUR RULES ARE DEFINED AND NEVER CALLED**, MEASURED BY A DISPATCH-SCAN OF THE WHOLE FILE
-      (EVERY `case N: sym_M(x, u)` ARM, MINUS EVERY `def sym_NNN(`): **`sym_132` `sym_462`
+      (EVERY `case N: sym_M(x, u)` ARM, MINUS EVERY `def sym_NNN(`): **`sym_462`
       `sym_463` `sym_464`**. `sym_149` `sym_167` `sym_253` `sym_471` ARE CALLED FROM *OTHER
       RULES'* BODIES. **AND ALL FOUR WERE ALREADY UNDISPATCHED BEFORE THIS SESSION's COMMITS**
       (MEASURED AGAINST `4e0aac9f1^`), **SO IT IS PRE-EXISTING.** **AND `sym_462`/`sym_463`/
@@ -29499,15 +29499,35 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       **CROSS-FILE **CALLER**, **WHICH **CAN **READ **IT **AS **MANY **TIMES **AS **IT **LIKES**)
       -- **AND **A **SUB-NAMESPACE **(`shape_arg.of`) **IS **NOT **VISIBLE **FROM **ANOTHER
       **FILE**, **AND **THE **FLAT **NAME **IS **THE **SECOND **FORM**.**
-- [ ] **THE **`uop/symbolic.bend`'s **`sym_132` **IS **THE **SEVENTH **HALF**, **AND **IT **IS **A
+- [x] **THE **`uop/symbolic.bend`'s **`sym_132` **IS **THE **SEVENTH **HALF**, **AND **IT **IS **A
       **RULE **FOR **AN **UPSTREAM **THAT **NO **LONGER **HAS **IT`.**
-      **AT **THE **PIN **`tinygrad/uop/symbolic.py` **HAS **NO **`CMPNE` **AT **ALL**, **AND
+      **⇒ AT **THE **PIN **`tinygrad/uop/symbolic.py` **HAS **NO **`CMPNE` **AT **ALL**, **AND
       **UPSTREAM's **LINE **140 **IS ** `UPat.var("x", dtype=dtypes.bool).logical_not().
-      logical_not()`** -- **A **DOUBLE **`CMPEQ(x, False)`** -- **AND **`UPat` **AT **THE **PIN
-      **HAS **NO **`__ne__` **METHOD **AT **ALL**, **SO **THE **OLD **`!=` **RULE **IS **NOT **A
-      **SPELLING **DIFFERENCE **BUT **A **DIFFERENT **RULE**.**
-      **THIS **ONE **IS **LEFT **OPEN **BECAUSE **IT **IS **A **RULE **AND **NOT **A
-      **SPELLING**, **AND **A **RULE **REWRITE **NEEDS **ITS **OWN **INSTRUMENT**.**
+      logical_not()`** -- **⇒ A **DOUBLE **`CMPEQ(x, False)`** -- **AND **`UPat` **AT **THE
+      **PIN **HAS **NO **`__ne__` **METHOD **AT **ALL**, **⇒ SO **THE **OLD **`!=` **RULE **IS
+      **NOT **A **SPELLING **DIFFERENCE **BUT **A **DIFFERENT **RULE**.**
+      **⇒ AND **THE **DELETE **IS **THE **1:1 **ACTION**, **AND **NOT **A **REWRITE**:
+      **THE **PIN **HAS **NO **`CMPNE` **AT **ALL**, **⇒ AND **THE **PIN's **RULE **140
+      **(`logical_not().logical_not()`) **IS **ALREADY **PORTED **AS **`sym_134`** (**THE
+      **TABLE's **TAG **27**, **WHICH **IS **THE **PIN's **RULE-140 **SLOT**)**, **⇒ AND
+      **`sym_134` **ALREADY **USES **THE **`CMPEQ` **SPELLING**, **⇒ AND **SO **THE **RULE
+      **THIS **PORTED **HAS **A **REPLACEMENT **IN **THE **PORT **ALREADY**, **AND **THE
+      **REPLACEMENT **IS **THE **PIN's**.**
+      **⇒ AND **THE **DEF **WAS **UNREACHABLE **ANYWAY** -- **MEASURED: **A **DISPATCH-SCAN
+      **OF **EVERY **`case N: sym_M(x, u)` **ARM** (**131 **OF **THEM**) **MINUS **EVERY
+      **`def sym_NNN(`** **PUTS **`sym_132` **IN **THE **UNREACHABLE **SET**, **ALONGSIDE
+      **`sym_249`, `sym_296` **AND **`sym_469`** -- **⇒ AND **THE **FILE's **OWN **HEADER
+      **SAID **SO **ALREADY** (**`symbolic.bend:199`**), **⇒ AND **SO **THE **RECORD **AND
+      **THE **CODE **AGREED, **AND **THE **CODE **WAS **KEPT **ANYWAY**.**
+      **⇒ AND **THE **OTHER **THREE **UNREACHABLE **DEFS **(`sym_462`/`463`/`464`) **ARE
+      **KEPT **ON **PURPOSE** -- **THEY **ARE **"THE **PORT's **GUARDED **FORMS **OF
+      **UPSTREAM's **DELETED **ONES**"** -- **⇒ AND **THAT **IS **A **DIFFERENT **CLASS**:
+      **A **GUARDED **FORM **OF **A **DELETED **RULE **KEEPS **THE **RULE's **CONTENT**,
+      **AND **THIS **ONE **KEPT **A **RULE **THE **PIN **NEVER **HAD **IN **THE **FORM **IT
+      **WAS **WRITTEN **IN**.**
+      **⇒ AND **DELETED **2026-11-11**: **THE **DEF **IS **GONE** **AND **THE **HEADER's
+      **UNREACHABLE-SET **LIST **IS **THREE**, **AND **`uop/symbolic.bend` **STILL **COMPILES**
+      (**ALL **PROOFS **CHECK**)**.
 - [ ] **THE **CORPUS **MUST **BE **RE-RUN **ON **THE **WORKING **TREE** **ONCE **THE **OTHER
       **AGENT's **`uop/ops.bend` **REWRITE **LANDS**, **BECAUSE **THE **RUN **I **REPORTED **WAS
       **ON **A **CLEAN **`git archive HEAD`**, **AND **THE **WORKING **TREE's **`ops.bend` **IS

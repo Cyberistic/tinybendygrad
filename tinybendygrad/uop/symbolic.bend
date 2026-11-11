@@ -196,7 +196,13 @@
 # and the header used to say "four are here and all four are LOAD-bearing", and two of
 # them are not. measured 2026-11-07: `sym_462` and `sym_463` have no table entry and
 # no caller -- a dispatch-scan of every `case N: sym_M(x, u)` arm, minus every
-# `def sym_NNN(`, puts them in the unreachable set alongside `sym_132` and `sym_464`.
+# `def sym_NNN(`, puts them in the unreachable set alongside `sym_464`.
+#
+# and the fourth was `sym_132`, and **it **IS **DELETED **NOW** (2026-11-11) -- **⇒ AND **IT
+# **WAS **THE **SEVENTH **HALF **OF **THE **`eq`/`ne`/`logical_not` **DRIFT**, **AND **THE
+# **DELETE **IS **THE **1:1 **ACTION** **BECAUSE **THE **PIN **HAS **NO **`CMPNE` **AT **ALL**
+# **AND **THE **PIN's **RULE **140 **(`logical_not().logical_not()`) **IS **ALREADY **PORTED
+# **AS **`sym_134`**.**
 #
 # and that is correct, because upstream deleted the rule. measured: upstream's
 # `symbolic.py` AT THE PIN (`f5ac54685074`) MENTIONS `RECIP` ZERO TIMES
@@ -2800,17 +2806,39 @@ def sym_131(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   +p = p_const(x, u)
   sym_131.hit(sym_131.pat(x, u, p), sy_val_truthy(x, Sw.a(p)), p, x)
 
-# symbolic.py:132  (UPat.var("x", dtype=dtypes.bool) != UPat.const(False, dtypes.bool),
-#                    lambda x: x)
-# `!=` IS `ne` AND CMPNE IS COMMUTATIVE, so the CONST is at either side.  The NODE's
-# dtype is bool, and the CONST is the bool FALSE -- not the int 0.
-def sym_132.pat(+x: F.Folded, +u: U32, +p: Sw) -> Bool:
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsCMPNE{}), sy_nsrc_is(x, u, 2)),
-    Bool.and(Sw.ok(p), Bool.and(sy_dt_is(x, u, S.boolean()), p_is_const_false(x, Sw.a(p)))))
-
-def sym_132(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
-  +p = p_const(x, u)
-  sy_tri(sym_132.pat(x, u, p), Some{Sw.b(p)})
+# **⇒ THE **`!=`-AGAINST-`False` **RULE **IS **GONE**, **AND **THIS **IS **THE **SEVENTH
+# **HALF **OF **THE **`eq`/`ne`/`logical_not` **DRIFT**, **AND **THE **DELETE **IS **THE
+# **1:1 **ACTION**.**
+#
+# **⇒ MEASURED **AT **THE **PIN **`f5ac54685074`**: **`tinygrad/uop/symbolic.py` **HAS **NO
+# **`CMPNE` **AT **ALL** (`grep -c CMPNE` **IS **`0`**) **AND **NO **RULE **FOR **"x **!= **
+# **False`"** -- **⇒ AND **UPSTREAM's **LINE **140 **IS
+# **`UPat.var("x", dtype=dtypes.bool).logical_not().logical_not()`**, **⇒ AND **THAT **RULE
+# **IS **ALREADY **PORTED**, **AS **`sym_134`** (**`symbolic.bend`'s **TABLE **TAG **27**,
+# **WHICH **IS **THE **PIN's **RULE **140 **SLOT**) -- **⇒ AND **`sym_134` **ALREADY **USES
+# **THE **`CMPEQ` **SPELLING** (**`symbolic.bend:2852-2862`**) -- **⇒ AND **SO **THE **RULE
+# **THIS **DELETED **DEF **PORTED **HAS **A **REPLACEMENT **IN **THE **PORT **ALREADY**, **AND
+# **THE **REPLACEMENT **IS **THE **PIN's**.**
+#
+# **⇒ AND **`UPat` **AT **THE **PIN **HAS **NO **`__ne__` **METHOD **AT **ALL**, **⇒ AND **SO
+# **THE **OLD **`!=` **RULE **IS **NOT **A **SPELLING **DIFFERENCE **BUT **A **DIFFERENT
+# **RULE** -- **⇒ AND **THE **DIFFERENT **RULE **IS **GONE**, **AND **THE **DELETE **IS
+# **THE **1:1 **ACTION**, **AND **NOT **A **REWRITE**.**
+#
+# **⇒ AND **THE **DEF **WAS **UNREACHABLE **ANYWAY** -- **MEASURED: **A **DISPATCH-SCAN **OF
+# **EVERY **`case N: sym_M(x, u)` **ARM** (**131 **OF **THEM**) **MINUS **EVERY **`def
+# **sym_NNN(`** **PUTS **`sym_132` **IN **THE **UNREACHABLE **SET**, **ALONGSIDE **`sym_249`,
+# **`sym_296` **AND **`sym_469`** -- **⇒ AND **THE **FILE's **OWN **HEADER **SAID **SO
+# **ALREADY** (**`symbolic.bend:199`**: **"puts **them **in **the **unreachable **set
+# **alongside **`sym_132` **and **`sym_464`"**), **⇒ AND **SO **THE **RECORD **AND **THE
+# **CODE **AGREED, **AND **THE **CODE **WAS **KEPT **ANYWAY**.**
+#
+# **⇒ AND **THE **OTHER **THREE **UNREACHABLE **DEFS **(`sym_462`/`463`/`464`) **ARE **KEPT
+# **ON **PURPOSE** -- **THEY **ARE **"THE **PORT's **GUARDED **FORMS **OF **UPSTREAM's
+# **DELETED **ONES"** (`symbolic.bend:211`) -- **⇒ AND **THAT **IS **A **DIFFERENT
+# **CLASS**: **A **GUARDED **FORM **OF **A **DELETED **RULE **KEEPS **THE **RULE's
+# **CONTENT**, **AND **THIS **ONE **KEPT **A **RULE **THE **PIN **NEVER **HAD **IN **THE
+# **FORM **IT **WAS **WRITTEN **IN**.**
 
 # symbolic.py:133  (UPat(GroupOp.Idempotent, src=(UPat.var("x"), UPat.var("x"))), lambda x: x)
 # the name is bound twice, so the identity check is load-bearing: without it the
