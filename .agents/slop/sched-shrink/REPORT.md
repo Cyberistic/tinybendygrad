@@ -29,7 +29,7 @@
 EXCESS **IS **THE **PORT's **OWN **DECISION **LAYER** (`mu_*`, `rf_*`,
 `ix_*`, `pr_*`), **NOT **THE **INSTRUMENT**.
 
-**⇒ THE MOVE IS **THE **ROWS** OUT OF **THE **PORT**.**  **THE **ROWS** ARE
+**THE MOVE IS **THE **ROWS** OUT OF **THE **PORT**.**  **THE **ROWS** ARE
 **THE `name=value` PRODUCERS** **AND **THE **ROW-ONLY **HELPERS** **THEY
 CALL** -- **AND THEY ARE **THE **INSTRUMENT** -- **AND
 `gates/README.md:173` SAYS: *"a gate's `.bend` driver and its CPython
@@ -102,7 +102,7 @@ SAME **FILES** -- **AND **THE **PRE-MOVE **RUN **IS **KEPT** IN
     TOTAL            1182 rows   ALL IDENTICAL
 ```
 
-**⇒ THE PORT FILE EMITS **NO** ROWS OF ITS OWN** (it has no `main` any more),
+**THE PORT FILE EMITS **NO** ROWS OF ITS OWN** (it has no `main` any more),
 **AND **THE **DRIVER** EMITS **ALL** OF THEM** -- **AND **THE **UNION** IS
 **THE **ORIGINAL **SET** -- **AND **THE **PORT FILE **STILL **PRINTS
 `ALL PROOFS CHECK`** (it has no `main` and no rows to print).**
@@ -121,12 +121,12 @@ BEFORE   613 walls, 35 reason-stated-elsewhere, 8 BACKLOG
 AFTER    613 walls, 35 reason-stated-elsewhere, 8 BACKLOG
 ```
 
-**⇒ THE **FIRST **VERSION **OF **THE **MOVE **TOOK **25** `WALL(p3)`
+**THE **FIRST **VERSION **OF **THE **MOVE **TOOK **25** `WALL(p3)`
 **MARKERS **INTO `gates/rangeify-gate.bend`** -- **AND **THE **CENSUS
 **FELL **FROM **613** TO **591** -- **AND **THE **MARKERS **ARE **NOW
 **KEPT **IN **THE **PORT**.**
 
-**⇒ THE **MECHANISM **IS **WORTH **RECORDING**: **THE **PROVEN TOOL's
+**THE **MECHANISM **IS **WORTH **RECORDING**: **THE **PROVEN TOOL's
 **`def_blocks` **GIVES **A **DEF **THE **LINES **UP TO **THE **NEXT
 **DEF**, **AND SO **THE **PORT's **CONTIGUOUS **"THE WALLS" **FOOT **SECTION
 **WAS **INSIDE **`t_ranges_miss`'s BLOCK** (`2651` TO `2805`) -- **AND **THE
@@ -142,7 +142,7 @@ AFTER    613 walls, 35 reason-stated-elsewhere, 8 BACKLOG
 **THAT **JUDGES **EVERY `.bend` -> `.bend` **LINE **POINTER** -- **AND **THE
 POINTERS **ROT **WHEN **THE **LINES **MOVE** -- **AND **THEY **MOVED**.**
 
-**⇒ THE POINTERS WERE **RE-POINTED**, NOT DROPPED.**
+**THE POINTERS WERE **RE-POINTED**, NOT DROPPED.**
 
 ```
 BEFORE   439 of 1342 internal pointers do not hold
@@ -151,7 +151,7 @@ NEW FAILURES (a pointer that was fine before and is broken now):  0
 FIXED (a pointer that was broken before and holds now):          11
 ```
 
-**⇒ THE **RE-POINTED **POINTERS**: `schedule/prepare.bend:274` -> `:236`,
+**THE **RE-POINTED **POINTERS**: `schedule/prepare.bend:274` -> `:236`,
 `schedule/multi.bend:611` -> `:575`, `schedule/rangeify.bend:2810` ->
 `:2368` (`symbol=Stg`), `:2987` -> `:2577` (`symbol=eng_op_name`),
 `:3008` -> `:2605` (`symbol=eng_constkey`), `:3055` -> `:2664`
@@ -160,12 +160,12 @@ FIXED (a pointer that was broken before and holds now):          11
 *"THE DURABLE FORM IS `symbol=<name>`, AND THIS FILE IS THE CASE FOR IT.
 A LINE NUMBER rots and a NAME does not"*).**
 
-**⇒ THE **TWO **POINTERS **THIS **MOVE **BROKE** **AND **CANNOT **BE
+**THE **TWO **POINTERS **THIS **MOVE **BROKE** **AND **CANNOT **BE
 **CLOSED **FROM **HERE** -- **`schedule/prepare.bend:274`** **AND
 **`schedule/multi.bend:611`**, **BOTH **CITED **FROM
 `tinybendygrad/uop/ops.bend`** -- **ARE **THE **EXACT **TWO **LINES**:
 **`schedule/prepare.bend:236`** **AND **`schedule/multi.bend:575`**.
-**⇒ THE **EDITS **ARE **IN **THE **WORKING **TREE** **OF
+**THE **EDITS **ARE **IN **THE **WORKING **TREE** **OF
 `uop/ops.bend`**, **AND **THEY **WILL **BE **OVERWRITTEN** -- **BECAUSE
 **THAT **FILE **IS **A **LIVE **SHARED **PATH** (ANOTHER **UNIT **WAS
 **EDITING **IT **EVERY **TWENTY **SECONDS**, **AND **ITS **CURRENT
@@ -173,7 +173,7 @@ A LINE NUMBER rots and a NAME does not"*).**
 **IT **WOULD **BREAK **THE **TREE** -- **AND **AGENTS.md's **RULE **IS
 *"NEVER **A **COMMIT **THAT **CARRIES **ANOTHER **UNIT's **WIP**"**.**
 
-**⇒ SO **THE **COUNT **IS **STATED **BOTH **WAYS**, **AND **BOTH **ARE
+**SO **THE **COUNT **IS **STATED **BOTH **WAYS**, **AND **BOTH **ARE
 **MEASURED**:
 
 ```
@@ -189,7 +189,7 @@ WITH THE TWO `uop/ops.bend` LINES APPLIED (MEASURED, in the same tree):
     FIXED:        11
 ```
 
-**⇒ AND **THE **TWO **ARE **NOT **A **DEFECT **IN **THE **MOVE** -- **THEY
+**AND **THE **TWO **ARE **NOT **A **DEFECT **IN **THE **MOVE** -- **THEY
 **ARE **THE **POINTERS **INTO **THE **SCHEDULE **FILES** **WHOSE **LINES
 **THE **MOVE **MOVED** -- **AND **THE **FIX **IS **TWO **LINES** **IN **A
 **FILE **THIS **UNIT **DOES **NOT **OWN**.**
@@ -213,14 +213,14 @@ WITH THE TWO `uop/ops.bend` LINES APPLIED (MEASURED, in the same tree):
 
 ## 7. WHAT WAS **NOT** DONE, AND WHY
 
-**⇒ **`schedule/prepare.bend` **IS **AN **8-LINE **STUB** **IN **THE
+****`schedule/prepare.bend` **IS **AN **8-LINE **STUB** **IN **THE
 BRIEF** **AND **THE **BRIEF **SAYS **LEAVE **IT** -- **AND **LEAVING **IT
-**IS **NOT **A **LINE-COUNT **WIN** (IT **ADDS **LINES**).**  **⇒ **IT
+**IS **NOT **A **LINE-COUNT **WIN** (IT **ADDS **LINES**).**  ****IT
 **WAS **LEFT **ALONE** -- **AND **IT **IS **NOW **487 **LINES**, **BECAUSE
 **IT **HAD **ALREADY **BEEN **PORTED** **BY **ANOTHER **UNIT** **AND **THIS
 **MOVE **TOOK **ITS **ROWS **OUT**."
 
-**⇒ **`schedule/rangify.bend` **IS **NOT **A **SECOND **COPY **OF
+****`schedule/rangify.bend` **IS **NOT **A **SECOND **COPY **OF
 `schedule/rangeify.bend`.**  **THE BRIEF's **PREMISE **WAS **WRONG** ON
 **THIS **POINT**, **AND **THE **PORT's **OWN **HEADER **SAYS **SO**:
 `schedule/rangify.bend` **IS **THE **PORT's **OWN `run_rangeify` **DRIVER**,
@@ -228,14 +228,14 @@ BRIEF** **AND **THE **BRIEF **SAYS **LEAVE **IT** -- **AND **LEAVING **IT
 **MODULE **IS **ONE **FILE **PER **UPSTREAM **FILE** -- **AND **THE **PORT's
 **HEADER **MAPS **EACH **ONE**.**
 
-**⇒ **THE **DUPLICATED **PROSE** (LEVER 2) **WAS **NOT **THE **PROBLEM**:
+****THE **DUPLICATED **PROSE** (LEVER 2) **WAS **NOT **THE **PROBLEM**:
 **THE **DUPLICATE **IS **THE **HEADER**, **AND **THE **HEADER **IS **A
 **CITATION** **AND **A **CITATION **MAY **NOT **BE **DROPPED** -- **AND
 **THE **HEADERS **ARE **THE **PORT's **OWN **PROSE**, **WHICH **IS **THE
 **DEF's **PROSE**, **AND **A **DEF **WITHOUT **ITS **PROSE** IS **A
 **DIFFERENT **DEF**."**
 
-**⇒ **THE **REPEATED **RULE **SHAPE** (LEVER 3) **WAS **NOT **TOUCHED**:
+****THE **REPEATED **RULE **SHAPE** (LEVER 3) **WAS **NOT **TOUCHED**:
 **IT **IS **THE **PORT's **OWN **STRUCTURE** -- **ELEVEN **TABLES**, **ELEVEN
 **DISPATCHES**, **AND **NO **GENERIC **ONE** -- **AND `schedule/rangeify.bend`'s
 **OWN **HEADER **SAYS **WHY**: *"ELEVEN TABLES, ELEVEN DISPATCHES, and
@@ -248,7 +248,7 @@ rule table must be a top-level `Data` value (there are no closures)"* -- **AND
 
 ## 8. THE TOOLS, AND WHY THEY ARE UNDER `.agents/slop/sched-shrink/`
 
-**⇒ `.agents/slop/loc/extract-gate-rows-producers.py` **IS **THE **PROVEN
+**`.agents/slop/loc/extract-gate-rows-producers.py` **IS **THE **PROVEN
 **TOOL** -- **AND **IT **IS **LOADED **BY **PATH** **AND **NOT **REWRITTEN**,
 **AND **ALL **OF **ITS **PROVEN **MACHINERY** (THE **QUALIFICATION**, **THE
 **REBASE**, **THE **ORDERING**, **THE **EXTERNAL-USER **RULE**, **THE
@@ -258,7 +258,7 @@ rule table must be a top-level `Data` value (there are no closures)"* -- **AND
 **DEF **THAT **CALLS **IT **IS **ROW-SIDE**, **AND **THE **ROW-SIDE **SET
 **IS **THE **FIXPOINT** **THAT **BEGINS **AT **THE **PRINTERS**.
 
-**⇒ **THE **PROVEN **CLASSIFIER **REFUSED **FOUR **FILES** **OF **THE
+****THE **PROVEN **CLASSIFIER **REFUSED **FOUR **FILES** **OF **THE
 **NINE** -- **AND **THE **REFUSAL **WAS **TRUE **OF **THE **TOOL's
 **POPULATION** **AND **FALSE **OF **THE **FILE**: `schedule/indexing.bend` **HAS
 **NINE** **PRODUCERS** **THAT **PRINT **THROUGH **A **PRODUCER** **THEY
@@ -267,7 +267,7 @@ rule table must be a top-level `Data` value (there are no closures)"* -- **AND
 **CLASSIFIER **SEES **NONE **OF **THEM** -- **AND **THE **IMPLEMENTATION
 **NEVER **CALLS **THEM**, **AND **THEY **ARE **CALLED **ONLY **BY `main`**.**
 
-**⇒ `repoint-schedule-cites.py` **IS **THE **CITATION **RE-POINTER**, **AND
+**`repoint-schedule-cites.py` **IS **THE **CITATION **RE-POINTER**, **AND
 **ITS **POPULATION **IS **THE **INSTRUMENT's **OWN** (`gates/bendcite-gate.py`'s
 **ROWS**) -- **NOT **A **HAND **LIST** **AND **NOT **A **HEURISTIC** -- **AND
 **THE **RE-POINT **TARGET **IS **THE **CONSTRUCT **THE **INSTRUMENT's **OWN
@@ -280,7 +280,7 @@ rule table must be a top-level `Data` value (there are no closures)"* -- **AND
 
 ## 9. THE REPO-STATE HAZARDS MEASURED ON THE WAY
 
-**⇒ THE **TREE **MOVED **UNDER **THIS **UNIT **FOUR **TIMES** (HEAD
+**THE **TREE **MOVED **UNDER **THIS **UNIT **FOUR **TIMES** (HEAD
 `d4db21507` -> `4001723cb` -> `eeb4e7de9` -> `f212ce3a8` -> `56947db5f`),
 **AND **EVERY **BEFORE/AFTER **MEASUREMENT **IN **THIS **REPORT** IS **TAKEN
 **AT **A **NAMED **COMMIT** -- **AND **THE **ONE **READING **THAT **WAS
@@ -290,13 +290,13 @@ rule table must be a top-level `Data` value (there are no closures)"* -- **AND
 **FIVE **POINTERS **THAT **ARE **BROKEN**, **AND **THAT **IS **THE **REASON
 **THE **BASELINE **HAS **TO **BE **TAKEN **AT **THE **SAME **COMMIT**."
 
-**⇒ `git commit --only` **DROPPED **ONE **OF **THE **EIGHT **NEW **FILES**
+**`git commit --only` **DROPPED **ONE **OF **THE **EIGHT **NEW **FILES**
 (`gates/rangeify-gate.bend`) **AND **THE **DROP **COST **159 **ROWS** --
 **AND `git show --stat` **IS **THE **CHECK** **AND **IT **SAID **15
 **FILES** -- **AND **THE **FOLLOW-UP **COMMIT** (`56947db5f`) **CARRIES
 **IT**."
 
-**⇒ THE **VERIFICATION **TREE** IS `git archive HEAD` **INTO A **SCRATCH**,
+**THE **VERIFICATION **TREE** IS `git archive HEAD` **INTO A **SCRATCH**,
 **AND **THE **REASON** IS **THAT **THE **WORKING **TREE **HAD **ANOTHER
 **UNIT's **IN-FLIGHT **`uop/fold.bend` **EDIT** **WHICH **DID **NOT
 **COMPILE** -- **AND **THAT **IS **A **SHARED-PATH **HAZARD**, **NOT **A

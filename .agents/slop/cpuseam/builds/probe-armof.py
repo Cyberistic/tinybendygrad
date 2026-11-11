@@ -3,7 +3,7 @@
 
 **WHY:** THE `arg_of` PHASE READS **0.232 ms** AND THE **DISPATCH** IS **ONLY 0.002 ms**
 (MEASURED, `builds/probe-argof-cost.js`: THE CHAIN'S OWN COST ON THE REAL KIND SEQUENCE IS
-**0.0020 ms** -- **0.9% OF THE PHASE**). **⇒⇒⇒ SO THE COST IS IN **THE ARMS' BODIES**, AND
+**0.0020 ms** -- **0.9% OF THE PHASE**). **SO THE COST IS IN **THE ARMS' BODIES**, AND
 **WHICH ARM** IS **NOT** KNOWN BY INSPECTION -- IT MUST BE **MEASURED**.
 
 **AND EVERY PATCH SITE IS **COUNTED BEFORE IT IS APPLIED**, SO A MISS IS **AN ERROR** AND NOT
@@ -50,7 +50,7 @@ ARMS = [
 # MEANS **THE `const`/`param`/`index`/`sink`/`special` ARMS' EXPRESSIONS ARE EVALUATED
 # **AFTER** THE CLOCK'S START, WHICH IS **WHAT WE WANT**: THE CLOCK SHOULD MEASURE THE ARM.
 #
-# ⇒⇒⇒ SO: `return EXPR;` BECOMES `return (() => { const __t = performance.now(); const __v = EXPR;
+# SO: `return EXPR;` BECOMES `return (() => { const __t = performance.now(); const __v = EXPR;
 # globalThis.__M("key", __t); return __v; })();`
 ARROW = ('return (() => { const __t = performance.now(); const __v = ')
 

@@ -96,17 +96,17 @@ turn-cost       [#####...] 5/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangR
                                          `String.split` CALLS A TURN -> **113** (VERDICT
                                          **0.8698** AND **0.8736** ON TWO RUNS, **122/153** AND
                                          **116/163** PAIRED TURNS FASTER, `same C: True` BOTH).
-                                         **⇒⇒⇒ AND THE **DISPATCH** IS **NOT** THE COST**: THE
+                                         **AND THE **DISPATCH** IS **NOT** THE COST**: THE
                                          COMPILED `arg_of` CHAIN'S OWN COST IS **0.0020 ms**
                                          (0.9% OF THE PHASE) AND **A MAP LOOKUP IS NO FASTER**,
                                          SO **THE ARMS' BODIES** ARE THE COST -- MEASURED ONE
                                          ARM AT A TIME (`const` 0.1389 FOR 100 ROWS,
                                          `param` 0.0535, `none` 0.0174, `index` 0.0148).
-                                         **⇒⇒⇒ AND THE SUBSTRATE **MOVED** SINCE §137 (ANOTHER
+                                         **AND THE SUBSTRATE **MOVED** SINCE §137 (ANOTHER
                                          UNIT LANDED A REFACTOR), SO §138's NUMBERS ARE **RE-
                                          MEASURED**, AND THE MEASUREMENTS ARE TAKEN IN **A
                                          DEDICATED WORKTREE** (THE MAIN TREE CARRIES OTHER
-                                         UNITS' IN-FLIGHT EDITS). **⇒⇒⇒ AND `bin/bend` WAS
+                                         UNITS' IN-FLIGHT EDITS). **AND `bin/bend` WAS
                                          **BROKEN** AND IS FIXED: THE `references/` CLONE's
                                          `bend2/main.ts` HAD BEEN OVERWRITTEN WITH THE SHIM
                                          ITSELF, AND **THE COMPILER IS NOW BEND 2.0.40**.
