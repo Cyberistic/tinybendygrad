@@ -80,7 +80,7 @@ backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
                                         **STEPS 2 AND 3 (`grad_set`, the `bw` graph) ARE
                                         NOT DONE AND ARE NOT THIS UNIT.**
 proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
-turn-cost       [#####...] 5/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangRenderer`'s
+turn-cost       [######..] 6/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangRenderer`'s
                                          0.12-2.54 ms. **MEASURED ON THE 782-UOP WIRE, WITH
                                          CLOCKS **INSIDE** THE DAEMON** (`PARITY.md` §136):
                                          wall **3.97 ms** = read 0.73 (MOSTLY THE CALLER's WAIT)
@@ -90,41 +90,53 @@ turn-cost       [#####...] 5/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangR
                                          A 75-ARM CHAIN BECAME ONE COMPARISON PER LITERAL), AND
                                          THE **WHOLE TURN** IS **0.9432**. `same C: True`.
                                          **§138 CUT THE **DECODE** TWICE**: **(a)** THE WIRE WAS
-                                         SPLIT **TWICE** -- ONE EFFECT, ONE SPLIT, TWO LISTS IN A
+                                         SPLIT **TWICE** -> ONE EFFECT, ONE SPLIT, TWO LISTS IN A
                                          `Data` TYPE (VERDICT **0.8526**); **AND (b)** EVERY
                                          PAYLOAD FIELD RE-SPLIT THE PAYLOAD -- 258 PRELUDE
                                          `String.split` CALLS A TURN -> **113** (VERDICT
-                                         **0.8698** AND **0.8736** ON TWO RUNS, **122/153** AND
-                                         **116/163** PAIRED TURNS FASTER, `same C: True` BOTH).
-                                         **AND THE **DISPATCH** IS **NOT** THE COST**: THE
-                                         COMPILED `arg_of` CHAIN'S OWN COST IS **0.0020 ms**
-                                         (0.9% OF THE PHASE) AND **A MAP LOOKUP IS NO FASTER**,
-                                         SO **THE ARMS' BODIES** ARE THE COST -- MEASURED ONE
-                                         ARM AT A TIME (`const` 0.1389 FOR 100 ROWS,
-                                         `param` 0.0535, `none` 0.0174, `index` 0.0148).
-                                         **AND THE SUBSTRATE **MOVED** SINCE §137 (ANOTHER
-                                         UNIT LANDED A REFACTOR), SO §138's NUMBERS ARE **RE-
-                                         MEASURED**, AND THE MEASUREMENTS ARE TAKEN IN **A
-                                         DEDICATED WORKTREE** (THE MAIN TREE CARRIES OTHER
-                                         UNITS' IN-FLIGHT EDITS). **AND `bin/bend` WAS
-                                         **BROKEN** AND IS FIXED: THE `references/` CLONE's
-                                         `bend2/main.ts` HAD BEEN OVERWRITTEN WITH THE SHIM
-                                         ITSELF, AND **THE COMPILER IS NOW BEND 2.0.40**.
-                                         **THE NEXT PORT-SIDE TERMS ARE THE **ROW WALK**
-                                         (THE `kus_rows.go` WALK AND THE `ku_row` READERS) **AND
-                                         THE RENDER's REMAINING LEAVES** (`ku_text` 1.157,
-                                         `_render_decl` 0.523, `rd_base_*` 0.223).
+                                         **0.8698** AND **0.8736** ON TWO RUNS). **⇒⇒⇒ AND
+                                         **THE DECODE IS NOW **0.41 ms** (THE PAIRED MINIMUM)
+                                         AGAINST **THE 1.53 ms** IT WAS AT THE START OF §138.**
+                                         **⇒⇒⇒ AND **THE **HARNESS's** OWN DECODE WAS **O(n²)** --
+                                         THE `List.append` FOLD's DEEPEST CHAIN IS **741**
+                                         ELEMENTS **AT **THE HARNESS's `decode.go`** -- **AND
+                                         THAT COST WAS **INSIDE **THE MEASURED DECODE PHASE**,
+                                         **SO §138's DECODE NUMBERS **CONTAINED **THE HARNESS's
+                                         OWN BUG**; **THE FIX IS **A **MEASUREMENT
+                                         **CORRECTED**, NOT **THE PORT MADE FASTER** (VERDICT
+                                         **0.8436**, `same C: True`).**
+                                         **⇒⇒⇒ AND **THE RENDER IS **THE LARGEST TERM** AGAIN**
+                                         (**~1.03 ms** AGAINST **THE DECODE's 0.41 ms**), AND **IT
+                                         NOW HAS **ITS OWN SHAPE INSTRUMENT**
+                                         (`render-shape.py`, WITH **ITS OWN COST MEASURED**:
+                                         THE INFLATION FACTOR IS **1.2526**). **THE TRUE
+                                         PARTS: `named` 1.50-1.82 ms, `emit` 1.01-1.18 ms,
+                                         `stmt` 0.72-0.85 ms, `alu` 0.38-0.48 ms.**
+                                         **⇒⇒⇒ AND **THE DISPATCH IS **PRICED**: THE
+                                         `ku_text_go` CHAIN IS **16 `Ops` COMPARISONS**,
+                                         **432 OF 782 ROWS FALL THROUGH** TO THE `else`,
+                                         **10,088 COMPARISONS A TURN**, AND **ITS PRICE IS
+                                         **~0.041 ms** = **4.0% OF THE RENDER** -- **AND AN
+                                         INTEGER DISPATCH WOULD COST **1/6** OF IT** -- **BUT IT
+                                         IS **A LARGE CHANGE**, **SO IT IS **THE **SECOND**
+                                         PRIORITY** AND **THE ARMS' BODIES ARE **THE FIRST**.
+                                         **⇒⇒⇒ AND THE SUBSTRATE **MOVED** TWICE SINCE §137, SO
+                                         EVERY NUMBER IS **RE-MEASURED**, IN **A DEDICATED
+                                         WORKTREE**, AND `bin/bend` WAS **BROKEN** AND IS FIXED
+                                         (**BEND 2.0.40**).
                                          **THE INSTRUMENTS ARE IN `.agents/slop/cpuseam/builds/`
                                          (`paired2.py`, `verdict.py`, `noisefloor2.py`,
-                                         `decode-shape.py`, `probe-armof.py`, `probe-*-probe.js`,
-                                         `drive.py`, `instrument.py`, `abrender.py`, `cpuab2.py`),
-                                         AND A BUILD IS **A SECOND SOURCE OF TRUTH** (§136), SO
-                                         THE MEASUREMENT **BUILDS INSIDE** IT.
+                                         `decode-shape.py`, `render-shape.py`,
+                                         `probe-overhead.py`, `probe-hot-count.py`,
+                                         `probe-list-sites.py`, `probe-fold-in-daemon.py`,
+                                         `probe-dispatch-count.py`, `probe-*-probe.js`), AND A
+                                         BUILD IS **A SECOND SOURCE OF TRUTH** (§136), SO THE
+                                         MEASUREMENT **BUILDS INSIDE** IT.
                                          **AND THE CORPUS CERTIFICATE IS **GREEN** ON
-                                         **`aa736032b`** AND **`9d2ce4bef`** (`substrate-start ==
-                                         substrate-end == live`, 38 graphs / 31 agree / 7 RECORDED
-                                         exceptions, repro 339 of 339, `corpuswitness-gate` PASS)
-                                         **AND ON `64bc53f29`** (§137).
+                                         **`aa736032b`**, **`9d2ce4bef`** AND **`f0caca346`**
+                                         (**38 graphs / 38 agree / 0 EXCEPTIONS**, THE LAST PERMUTE
+                                         EXCEPTION CLOSED BY ANOTHER UNIT), AND **ON `64bc53f29`**
+                                         (§137).
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
                                         **324 bindings -> 308 laws -> 305 LINKED ->
@@ -20518,7 +20530,7 @@ NO `.agents/TODO.md` EDIT BY THE UNIT. PEAK 1 946 / 706 / 1 092 MB.**
       `gates/rd_graph_census-gate.py` -- **4 ROWS OVER 185 DEFS.**
 - [x] **`nn/onnx.bend` IS **DEAD CODE**, 218 DEFS, AND THE 0 HOLDS -- BUT ONLY AFTER A NAMED
       DISTINCTION.** THE CALLER'S WALK FINDS **7** FILES NAMING IT; **5 ARE PROSE AND **TWO ARE PORT
-      FILES** -- `tinybendygrad/helpers.bend:1716` AND `tinybendygrad/nn/datasets.bend:238` -- **BOTH IN
+      FILES** -- `tinybendygrad/helpers.bend:1682` AND `tinybendygrad/nn/datasets.bend:242` -- **BOTH IN
       COMMENTS, AND BOTH CITING **A NOTE INSIDE `onnx.bend`** -- CITATIONS OF CITATIONS, THE
       `realize.bend:881` SHAPE.** THE CLAIM IS ABOUT **REACHABILITY** (0 OF 218) AND REACHABILITY THROUGH
       A COMMENT **IS** 0. **THE CONTROL IS THAT THE SAME WALK YIELDS 1 AND 2 FOR THE OTHER TWO, SO IT IS
