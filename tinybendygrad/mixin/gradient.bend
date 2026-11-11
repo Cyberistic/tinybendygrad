@@ -203,6 +203,47 @@ def gcast(+ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
 # `gconst_raw` is the bare one and `t_const_raw` is the control that separates them.
 def gconst_raw(+ar: O.Arena, +v: O.Const) -> O.Found: O.UOp.const(ar, v)
 
+# **THE **ORDER **AS **A **`src[1]`** -- **UPSTREAM's **`_mop` (`ops.py:784,790-791`)
+# **BUILDS **A **PERMUTE **AS **`UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`**, **AND
+# **`usrcs` **IS **`[shape_to_shape_arg(order)]`** -- **AND **`shape_to_shape_arg`
+# (**`ops.py:108-112`**) **IS **A **`STACK` **OF **INTERNED **CONSTs** **OR, **FOR **A
+# **LENGTH-1 **ORDER**, **A **BARE **CONST**.**
+#
+# **AND **THIS **IS **A **LOCAL **COPY **OF **`mixin/movement.bend`'s **`G.stkN`**, **AND
+# **THE **COPY **IS **THE **POINT**: **`mixin/gradient.bend` **CANNOT **IMPORT
+# **`mixin/movement.bend`**, **BECAUSE **`mixin/movement.bend` **IMPORTS **`tensor.bend`
+# **AND **`tensor.bend` **IMPORTS **`mixin/gradient.bend`** -- ****AND **A **CIRCULAR
+# **IMPORT **IS **A **COMPILE **ERROR**, **SO **THE **HELPER **IS **HERE **AND **NOT
+# **SHARED**.**
+type GStk is Data:
+  GStk{ar: O.Arena, acc: List<&2, U32>}
+
+def GStk.ar(+s: GStk) -> O.Arena:
+  match s:
+    case GStk{ar, acc}: ar
+
+def GStk.acc(+s: GStk) -> List<&2, U32>:
+  match s:
+    case GStk{ar, acc}: acc
+
+def gstk.push(+ar: O.Arena, acc: List<&2, U32>, v: U32) -> GStk:
+  +c = O.UOp.const(ar, O.CInt{H.i64_of_i32(v)})
+  GStk{O.Found.ar(c), List.append(&2, U32, acc, [O.Found.i(c)])}
+
+def gstk.go(ys: List<&2, U32>, +s: GStk) -> O.Found:
+  match ys:
+    case Nil{}:
+      O.UOp.new(GStk.ar(s), O.OpsSTACK{}, GStk.acc(s), O.ANone{}, O.TNone{})
+    case v <> t:
+      gstk.go(t, gstk.push(GStk.ar(s), GStk.acc(s), v))
+
+# **AND **THE **LENGTH-1 **ARM **IS **A **BARE **CONST** -- **EXACTLY **AS
+# **`shape_to_shape_arg` **DOES** (`ops.py:112`: `return src[0] if len(src) == 1 else
+# `UOp(Ops.STACK, src=src)`)** -- **AND **THE **HELPER **IS **`ops.bend`'s
+# **`O.shape_arg`**, **WHICH **IS **THE **ONE **FILE **EVERY **COPY **CAN **SEE**.**
+def gstkN(+ar: O.Arena, ys: List<&2, U32>) -> O.Found:
+  O.shape_arg_found(ar, ys)
+
 def gconst.go(+ar: O.Arena, +v: O.Const) -> O.Found:
   +c = gconst_raw(ar, v)
   gcast(O.Found.ar(c), O.Found.i(c), S.single())
@@ -779,11 +820,15 @@ def gr_21_id.go(xs: List<&2, U32>, +i: U32, acc: Bool) -> Bool:
 def gr_21_is_id(xs: List<&2, U32>) -> Bool: gr_21_id.go(xs, 0, True{})
 
 # THE PERMUTE NODE: `ctx._mop(Ops.PERMUTE, arg=order_arg)` -- ops.py:799-815.  For a
-# PERMUTE `src_args = []`, so `len(usrcs) == 0` and the node is `UOp(op, src=(self,),
-# arg=arg)`: ONE src and the ORDER AS ITS ARG.  Here the arg is the `ATuple` the port
-# spells a `tuple[int, ...]` with (ops.bend:1171).
+# **THE **ORDER **IS **IN **`src[1]`**, **AS **UPSTREAM's **`_mop` (`ops.py:784,790-791`)
+# **BUILDS **IT** -- **AND **THE **OLD **COMMENT **("PERMUTE **`src_args = []`**, so
+# **`len(usrcs) == 0` **and **the **node **is **`UOp(op, src=(self,), arg=arg)`")** **WAS
+# **WRITTEN **AGAINST **AN **OLDER **UPSTREAM**: **AT **THE **PIN **`ops.py:784` **IS
+# **`case Ops.PERMUTE: src_args = [arg]`** -- ****THE **`src_args` **IS **NOT **EMPTY**,
+# ****THE **NODE **IS **`(self, STACK(order))`**, **AND **THE **`arg` **IS **`None`.**
 def gr_21.build(+ar: O.Arena, +ctx: U32, inv: List<&2, U32>) -> GRes:
-  +n = gnew(ar, O.OpsPERMUTE{}, [ctx], O.ATuple{inv})
+  +sk = gstkN(ar, inv)
+  +n = gnew(O.Found.ar(sk), O.OpsPERMUTE{}, [ctx, O.Found.i(sk)], O.ANone{})
   fired([O.Found.i(n)], O.Found.ar(n))
 
 def gr_21.pick(is_id: Bool, +ar: O.Arena, +ctx: U32, inv: List<&2, U32>) -> GRes:
@@ -2973,7 +3018,8 @@ def pm() -> Pm:
   +l2 = pm_leaf(O.Found.ar(l1), 2, 2)
   +s01 = gnew(O.Found.ar(l2), O.OpsSTACK{}, [O.Found.i(l0), O.Found.i(l1)], O.ANone{})
   +a = gnew(O.Found.ar(s01), O.OpsSTACK{}, [O.Found.i(s01), O.Found.i(l2)], O.ANone{})
-  +per = gnew(O.Found.ar(a), O.OpsPERMUTE{}, [O.Found.i(a)], O.ATuple{[1, 2, 0]})
+  +sk120 = gstkN(O.Found.ar(a), [1, 2, 0])
+  +per = gnew(O.Found.ar(sk120), O.OpsPERMUTE{}, [O.Found.i(a), O.Found.i(sk120)], O.ANone{})
   +m0 = pm_leaf(O.Found.ar(per), 3, 2)
   +m1 = pm_leaf(O.Found.ar(m0), 4, 2)
   +m2 = pm_leaf(O.Found.ar(m1), 5, 2)
@@ -3004,7 +3050,8 @@ type Pm1 is Data:
 
 def pm1() -> Pm1:
   +lf = pm_leaf(O.Arena.empty(), 0, 6)
-  +per = gnew(O.Found.ar(lf), O.OpsPERMUTE{}, [O.Found.i(lf)], O.ATuple{[0]})
+  +sk0 = gstkN(O.Found.ar(lf), [0])
+  +per = gnew(O.Found.ar(sk0), O.OpsPERMUTE{}, [O.Found.i(lf), O.Found.i(sk0)], O.ANone{})
   +g = pm_leaf(O.Found.ar(per), 1, 6)
   Pm1{O.Found.ar(g), O.Found.i(lf), O.Found.i(per), O.Found.i(g)}
 

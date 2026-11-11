@@ -573,12 +573,30 @@ def mp_perm.go(todo: List<&2, U32>, +p2: List<&2, U32>, acc: List<&2, U32>) -> L
 def mp_perm(p2: List<&2, U32>, xa: List<&2, U32>) -> List<&2, U32>:
   mp_perm.go(xa, p2, Nil{})
 
+# **AND **THE **MERGED **PERMUTE **CARRIES **THE **ORDER **IN **`src[1]`**, **AS
+# **UPSTREAM's **`_mop` **DOES** -- **AND **THE **OLD **COMMENT **QUOTED **UPSTREAM's
+# **OLD **RULE** (**`lambda x,x2: x2.replace(arg=tuple(x2.arg[i] for i in x.arg))`**) **AND
+# **THE **CURRENT **RULE **AT **THE **PIN **IS
+# **`lambda x,x2: x2.src[0].permute(tuple(x2.marg[i] for i in x.marg))`** -- **AND
+# **THE **CURRENT **ONE **GOES **THROUGH **`permute`**, **WHICH **GOES **THROUGH **`_mop`**,
+# **AND **SO **THE **MERGED **NODE **IS **`PERMUTE(x2.src[0], order-STACK)`.**
+# **⇒ THE **MERGED **PERMUTE's **SRCS** -- **THE **DATA (`src[0]`) **AND **THE **ORDER
+# **STACK** (`src[1]`) -- **AND **THE **ORDER **STACK **IS **BUILT **IN **THE **SAME
+# **ARENA** **AS **THE **NODE**, **BECAUSE **THE **NODE **IS **BUILT **THERE** -- **⇒ AND
+# **THE **HELPER **IS **A **DEF **OF **ITS **OWN** **BECAUSE **A **CROSS-FILE **`Found`
+# **CANNOT **BE **BOUND **AND **READ **TWICE** ("consumed more than once") **AND **BEND
+# **SPENDS **A **BINDER **WHEN **IT **READS **IT** -- **⇒ AND **THE **PORT's **OWN **IDiom
+# **IS **THE **`let` **AND **THE **ONE **READ**.**
+def mp_perm_srcs(ar: O.Arena, perm2: List<&2, U32>, x2: U32) -> List<&2, U32>:
+  [x2, O.shape_arg(ar, perm2)]
+
 def mp_3.of(pat: Bool, xa: Maybe<&2, List<&2, U32>>, x2a: Maybe<&2, List<&2, U32>>,
             +ar: O.Arena, +self: U32) -> Hop:
   match pat xa x2a:
     case True{} Some{perm} Some{p2}:
       +x2 = mp_src0(ar, self)
-      mp_replace(O.OpsPERMUTE{}, O.ATuple{mp_perm(p2, perm)}, ar, x2, mp_srcs(ar, x2))
+      +perm2 = mp_perm(p2, perm)
+      mp_replace(O.OpsPERMUTE{}, O.ANone{}, ar, x2, mp_perm_srcs(ar, perm2, x2))
     case _ _ _ : Hop{ar, 0}
 
 def mp_3(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
@@ -966,9 +984,12 @@ def g() -> G:
   +r1 = O.UOp.new(O.Found.ar(t4), O.OpsRESHAPE{}, [O.Found.i(b4), O.Found.i(c4)], O.ANone{}, O.TNone{})
   +r2 = O.UOp.new(O.Found.ar(r1), O.OpsRESHAPE{}, [O.Found.i(r1), O.Found.i(t4)], O.ANone{}, O.TNone{})
   +r3 = O.UOp.new(O.Found.ar(r2), O.OpsRESHAPE{}, [O.Found.i(b4), O.Found.i(t4)], O.ANone{}, O.TNone{})
-  +p1 = O.UOp.new(O.Found.ar(r3), O.OpsPERMUTE{}, [O.Found.i(b24)], O.ATuple{[1, 0]}, O.TNone{})
-  +p2 = O.UOp.new(O.Found.ar(p1), O.OpsPERMUTE{}, [O.Found.i(p1)], O.ATuple{[1, 0]}, O.TNone{})
-  +p3 = O.UOp.new(O.Found.ar(p2), O.OpsPERMUTE{}, [O.Found.i(b24)], O.ATuple{[0, 1]}, O.TNone{})
+  +o10 = O.shape_arg_found(O.Found.ar(r3), [1, 0])
+  +p1 = O.UOp.new(O.Found.ar(o10), O.OpsPERMUTE{}, [O.Found.i(b24), O.Found.i(o10)], O.ANone{}, O.TNone{})
+  +o10b = O.shape_arg_found(O.Found.ar(p1), [1, 0])
+  +p2 = O.UOp.new(O.Found.ar(o10b), O.OpsPERMUTE{}, [O.Found.i(p1), O.Found.i(o10b)], O.ANone{}, O.TNone{})
+  +o01 = O.shape_arg_found(O.Found.ar(p2), [0, 1])
+  +p3 = O.UOp.new(O.Found.ar(o01), O.OpsPERMUTE{}, [O.Found.i(b24), O.Found.i(o01)], O.ANone{}, O.TNone{})
   +ss = O.UOp.new(O.Found.ar(p3), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c1), O.Found.i(c2)], O.ANone{}, O.TNone{})
   +e0 = O.UOp.new(O.Found.ar(ss), O.OpsINDEX{}, [O.Found.i(big), O.Found.i(c0)], O.ANone{}, O.TNone{})
   +e1 = O.UOp.new(O.Found.ar(e0), O.OpsINDEX{}, [O.Found.i(big), O.Found.i(c1)], O.ANone{}, O.TNone{})

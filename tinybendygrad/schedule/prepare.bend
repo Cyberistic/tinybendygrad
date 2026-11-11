@@ -228,13 +228,18 @@ def pr_reshape(ar: O.Arena, +x: O.Found, +s: O.Found) -> O.Found:
 def pr_expand(ar: O.Arena, +x: O.Found, +s: O.Found) -> O.Found:
   O.UOp.new(ar, O.OpsEXPAND{}, [O.Found.i(x), O.Found.i(s)], O.ANone{}, O.TNone{})
 
-# PERMUTE and FLIP take their marg in the ARG (`ops.py:818`), not in srcs, and FLIP's
-# is a bool TUPLE (`ops.py:430` refuses anything else) while PERMUTE's is an int
-# tuple, and the arena now SPELLS the difference: `O.ABoolList` for FLIP,
-# `O.ATuple` for PERMUTE.  `pr_flip` takes the int axis pair its caller has and
-# converts, which is `movement.py:253`'s `i in axis_arg`.
+# **AND **THE **ORDER **IS **IN **`src[1]`** -- **UPSTREAM's **`_mop` (`ops.py:784,790-791`)
+# **BUILDS **THE **NODE **AS **`UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`**, **AND
+# **`marg` (`ops.py:772`) **READS **IT **BACK **FROM **`src[1].as_shape`** -- **AND **THE
+# **OLD **COMMENT **("PERMUTE **and **FLIP **take **their **marg **in **the **ARG
+# (**`ops.py:818`**)")** **WAS **WRITTEN **AGAINST **AN **OLDER **UPSTREAM**.**
+#
+# **AND **FLIP **IS **GONE **AT **THE **PIN** (`900880433`, **2026-10-11**), **AND **THE
+# **`O.ABoolList` **THE **OLD **COMMENT **SPOKE **OF **IS **THE **PORT's **OWN **SPELLING
+# **OF **A **`tuple[bool, ...]`** **FOR **A **NODE **THAT **NO **LONGER **EXISTS**.**
 def pr_perm(ar: O.Arena, +x: O.Found, +a: U32, b: U32) -> O.Found:
-  O.UOp.new(ar, O.OpsPERMUTE{}, [O.Found.i(x)], O.ATuple{[a, b]}, O.TNone{})
+  +sk = O.shape_arg_found(ar, [a, b])
+  O.UOp.new(O.Found.ar(sk), O.OpsPERMUTE{}, [O.Found.i(x), O.Found.i(sk)], O.ANone{}, O.TNone{})
 
 
 # REPORTED, NOT USED: `ops.bend`'s `UOp.after` (uop/ops.bend:2897 symbol=UOp.after) and `UOp.end`

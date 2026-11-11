@@ -1025,14 +1025,19 @@ def G.stk.go(ys: List<&2, U32>, +st: Stk) -> O.Found:
 def G.stk1(+ar: O.Arena, v: U32) -> O.Found:
   G.c1(ar, v)
 
-# **THE **ARBITRARY-LENGTH **SHAPE **ARG** -- **AND **THE **LENGTH-1 **ARM **IS **A
-# **BARE **CONST** **AND **NOT **A `STACK`**, **EXACTLY **AS **UPSTREAM's
-# **`shape_to_shape_arg` **DOES** (`ops.py:112`: `return src[0] if len(src) == 1 else
-# `UOp(Ops.STACK, src=src)`).**
+# **THE **ARBITRARY-LENGTH **SHAPE **ARG** -- **AND **THE **HELPER **IS **`ops.bend`'s
+# **`O.shape_arg`**, **WHICH **IS **UPSTREAM's **`shape_to_shape_arg` (`ops.py:108-112`)**
+# **IN **ITS **TUPLE **FORM** -- **AND **THE **LENGTH-1 **ARM **IS **A **BARE **CONST**
+# **AND **NOT **A `STACK`**, **EXACTLY **AS **UPSTREAM **DOES** (`ops.py:112`: `return src[0]
+# if len(src) == 1 else UOp(Ops.STACK, src=src)`)**.**
+#
+# **AND **THE **LOCAL **`G.stk.go`/`G.stk.push`/`G.Stk` **ARE **THE **PORT's **OWN
+# **VERSION **OF **THE **SAME **WALK** -- **AND **THEY **ARE **LEFT **FOR **`G.stk4`**
+# **AND **`G.mstack`**, **WHICH **ARE **HERE**, **AND **THE **DUPLICATION **IS **THE
+# **DEFECT**, **AND **`ops.bend` **IS **THE **ONE **FILE **EVERY **ONE **OF **THE **COPIES
+# **CAN **SEE**.**
 def G.stkN(+ar: O.Arena, ys: List<&2, U32>) -> O.Found:
-  match ys:
-    case v <> Nil{}: G.stk1(ar, v)
-    case _: G.stk.go(ys, Stk{ar, Nil{}})
+  O.shape_arg_found(ar, ys)
 
 def G.reshape.of(+b: O.Found, +sk: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(sk), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(sk)], O.ANone{}, O.TNone{})
@@ -1528,11 +1533,17 @@ def mxw_reshape(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor:
 # order_arg != tuple(range(self.ndim)) else self`: the identity test here is the arg
 # against `range(ndim)`, NOT a shape comparison, and that is why this wrapper needs no
 # fold at all.
+# **AND **THE **ORDER **IS **IN **`src[1]`** -- **UPSTREAM's **`_mop` (`ops.py:784,790-791`)
+# **BUILDS **THE **NODE **AS **`UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`**, **AND
+# **`marg` (`ops.py:772`) **READS **IT **BACK **FROM **`src[1].as_shape`** -- **AND **THE
+# **HELPER **IS **`G.stkN`**, **WHICH **IS **THE **PORT's **`shape_to_shape_arg`
+# (**`ops.py:108-112`**) **FOR **ANY **LENGTH**.**
 def mxw_perm_of(+t: T.Tensor, +n: O.Found) -> T.Tensor:
   T.tn_new(O.Found.ar(n), O.Found.i(n))
 
 def mxw_permute.go(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
-  mxw_perm_of(t, O.UOp.new(T.Tensor.ar(t), O.OpsPERMUTE{}, [T.Tensor.u(t)], O.ATuple{ys}, O.TNone{}))
+  +sk = G.stkN(T.Tensor.ar(t), ys)
+  mxw_perm_of(t, O.UOp.new(O.Found.ar(sk), O.OpsPERMUTE{}, [T.Tensor.u(t), O.Found.i(sk)], O.ANone{}, O.TNone{}))
 
 def mxw_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
   mxw_pick(O.eq_u32(ys, MO.mo_range(mxw_len_nat(mxw_dims_of(T.Tensor.ar(t), T.Tensor.u(t))))),

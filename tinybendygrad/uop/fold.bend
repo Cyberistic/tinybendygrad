@@ -2068,10 +2068,10 @@ def perm_ds.of_walk(+x: Perm, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 # **THE **ORDER **IS **A `Maybe` **NOW** -- **BECAUSE **`marg` **RETURNS **ONE** -- **AND
 # **THE **`None` **ARM **IS **THE **EMPTY **ORDER**, **WHICH **IS **WHAT **UPSTREAM's
 # **`as_shape` **ON **A **MISSING **SHAPE **ANSWERS**.**
-def perm_ds.of(ys: List<&2, U32>, ps: Maybe<&2, List<&2, O.Sint>>, q: Maybe<&2, List<&2, O.Sint>>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  match ps q:
-    case Some{p} Some{s}: perm_ds.of_walk(perm_init(ys, p), ss)
-    case _ _              : None{}
+def perm_ds.of(ys: List<&2, U32>, ps: Maybe<&2, List<&2, O.Sint>>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
+  match ps:
+    case Some{p}: perm_ds.of_walk(perm_init(ys, p), ss)
+    case None{}  : None{}
 
 # **THE **PERMUTE's **ORDER **IS **`src[1]`**, **AND **THAT **IS **THE **SAME **READER
 # **THE **RESHAPE **USES** -- **MEASURED 2026-11-10:**
@@ -2122,9 +2122,22 @@ def order_srcs.of(k: O.Op, +ar: O.Arena, s: U32) -> List<&2, U32>:
 
 # **THE **PERMUTE's **SHAPE **READER** -- **AND **IT **NEEDS **TWO **THINGS**: **THE
 # **CONCRETE **ORDER** (`src[1]`'s **STACK **CHILDREN**, **WHICH **IS **THE **PERMUTATION**) **AND
-# **THE **SYMBOLIC **DIMS** (**`marg`**, **WHICH **IS **THE **SOURCE's **SHAPE**) -- **AND
+# **THE **SOURCE's **DIMS** (**`src_shape(0, ss)`**, **WHICH **IS **`src[0]`'s **SHAPE**) -- **AND
 # **`perm_init` **TAKES **EXACTLY **THOSE **TWO** (`fold.bend:2058`: `def perm_init(ys:
 # List<&2, U32>, +ps: List<&2, O.Sint>)`).**
+#
+# **AND **THE **SOURCE's **DIMS **ARE **NOT **`marg`** -- **MEASURED 2026-11-11 ON **THE
+# **`matmul` **GRAPH: **AN **EARLIER **REVISION **OF **THIS **DEF **PASSED **`marg(ar, i)`
+# **AS **THE **`ps`**, **AND **`marg` **IS **`src[1].as_shape`** -- **WHICH **FOR **A
+# **PERMUTE **IS **THE **ORDER**, **NOT **THE **SOURCE's **SHAPE**.  **SO **THE **SHAPE
+# **CAME **OUT **AS **THE **ORDER **PERMUTED **BY **THE **ORDER**: **CPYTHON's **`matmul`
+# **PERMUTE **IS **`(l0:1,l0:5,l0:3)`** **AND **THE **PORT's **WAS **`(l0:0,l0:1,l0:2)`**
+# (**`runs/graphcmp/D/D2-cmp-matmul.txt`**, **2026-11-11**).**
+#
+# **AND **UPSTREAM's **`_shape` (`ops.py:394-396`) **IS **`tuple(ps[i] for i in
+# self.marg)`** -- ****THE **ORDER **IS **`marg`** **AND **THE **SOURCE's **DIMS **ARE
+# **`ps`**, **AND **THE **PORT's **`perm.go` **WALKS **THE **ORDER **AND **INDEXES **`ps`
+# **WITH **IT** -- ****WHICH **IS **EXACTLY **UPSTREAM's **FORM**.**
 #
 # **AND **BEND **SPENDS **A **BINDER **WHEN **IT **READS **IT** ("consumed more than
 # **once")**, **SO **THE **`src[1]`'s **INDEX **IS **READ **ONCE** **INTO **A **`let`** --
@@ -2133,7 +2146,7 @@ def order_srcs.of(k: O.Op, +ar: O.Arena, s: U32) -> List<&2, U32>:
 # **ONE **VALUE **THEY **BOTH **GET**.**
 def perm_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   +s = O.Arena.src(ar, i, 1)
-  perm_ds.of(order_srcs.of(O.Arena.op(ar, s), ar, s), marg.of(O.Arena.op(ar, s), ar, s), src_shape(0, ss), ss)
+  perm_ds.of(order_srcs.of(O.Arena.op(ar, s), ar, s), src_shape(0, ss), ss)
 
 
 # THERE IS NO FLIP ARM HERE, and there is no FLIP in upstream either: `900880433`
@@ -5987,11 +6000,20 @@ def g_mv_shrbad() -> O.Found:
   O.UOp.new(O.Found.ar(z), O.OpsSHRINK{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
 # PERMUTE(RESHAPE(6), (1, 0)) -- `n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE
-# shape=(3,2) dtype=int`. `marg` is `self.arg`, the arena's `ATuple`, so the node has
-# ONE src and the arg is not a src at all -- which is the fourth fact's whole job.
+# shape=(3,2) dtype=int`. **AND **THE **ORDER **IS **IN **`src[1]`**, **AND **THE **NODE
+# **HAS **TWO **SRCS** -- **UPSTREAM's **`_mop` (`ops.py:784,790-791`) **BUILDS **IT **AS
+# **`UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`**, **AND **`marg` (`ops.py:772`)
+# **READS **IT **BACK **FROM **`src[1].as_shape`**.  **AND **THE **OLD **COMMENT **("`marg`
+# **is **`self.arg`**, **the **arena's **`ATuple`**, **so **the **node **has **ONE **src
+# **and **the **arg **is **not **a **src **at **all**")** **WAS **WRITTEN **AGAINST **AN
+# **OLDER **UPSTREAM** -- **AND **IT **IS **THE **FOURTH **FACT's **WHOLE **JOB**, **AND
+# **THE **FACT **IS **STILL **TRUE**: **THE **ORDER **IS **NOT **A **DATA **SRC**, **IT **IS
+# **THE **ORDER**, **AND **IT **LIVES **IN **`src[1]`** -- **AND **THE **PORT's **`ATuple`
+# **ARG **IS **GONE **FROM **THE **NODE**, **AND **THAT **IS **THE **CHANGE**.**
 def g_mv_perm(ys: List<&2, U32>) -> O.Found:
   +r = g_mv_r23()
-  O.UOp.new(O.Found.ar(r), O.OpsPERMUTE{}, [O.Found.i(r)], O.ATuple{ys}, O.TNone{})
+  +sk = O.shape_arg_found(O.Found.ar(r), ys)
+  O.UOp.new(O.Found.ar(sk), O.OpsPERMUTE{}, [O.Found.i(r), O.Found.i(sk)], O.ANone{}, O.TNone{})
 
 def g_mv_perm10() -> O.Found: g_mv_perm([1, 0])
 
