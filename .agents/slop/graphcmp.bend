@@ -765,9 +765,26 @@ def matmul_of(+ar: O.Arena) -> O.Found:
   +r35 = O.UOp.new(O.Found.ar(s35), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s35)], O.ANone{}, O.TNone{})
   +s135 = O.UOp.new(O.Found.ar(r35), O.OpsSTACK{}, [O.Found.i(c1), O.Found.i(c3), O.Found.i(c5)], O.ANone{}, O.TNone{})
   +r135 = O.UOp.new(O.Found.ar(s135), O.OpsRESHAPE{}, [O.Found.i(r35), O.Found.i(s135)], O.ANone{}, O.TNone{})
-  +p021 = O.UOp.new(O.Found.ar(r135), O.OpsPERMUTE{}, [O.Found.i(r135)], O.ATuple{[0, 2, 1]}, O.TNone{})
+  +o021 = MX.G.stkN(O.Found.ar(r135), [0, 2, 1])
+  # **THE **PERMUTE **IS **`(data, order-STACK)`** -- **AND **THE **ORDER **IS **A
+  # **`STACK` **OF **INTERNED **CONSTs**, **AND **THE **PORT's **OWN
+  # **`shape_to_shape_arg` (`mixin/movement.bend`'s **`MX.G.stkN`) **IS **THE **HELPER** --
+  # **AND **THE **OLD **SPELLING **HERE **WAS **`PERMUTE(data)` **WITH **THE **ORDER
+  # **IN **`arg`** (`O.ATuple{[0, 2, 1]}`), **WHICH **IS **THE **SPELLING **UPSTREAM's
+  # **`_mop` (`ops.py:790-791`) **REPLACES** -- **AND **IT **IS **THE **SAME **DRIFT **AS
+  # **THE **`a != b` **ONE**, **AND **IN **THE **SAME **INSTRUMENT**, **AND **IT **IS **THE
+  # **REASON **THE **FIVE **GRAPHS **(`binblob`, `bw`, `flip`, `matmul`, `reduce`) **WERE
+  # **REFUSED **RATHER **THAN **DISAGREEING**: **THE **PORT's **GRAPH **HAD **ONE **FEWER
+  # **NODE **PER **PERMUTE**, **AND **THE **REFUSAL **SAID **"the **bend **side **models
+  # **8 **of **the **11 **nodes"** -- **AND **A **SHORTER **GRAPH **IS **A **DIFFERENT
+  # **CLASS **FROM **A **DIFFERENT **GRAPH**, **AND **THE **REFUSAL **NAMED **IT.**  **THE
+  # **PORT's **OWN **`G.permute` **AND **`tn_mop.order` **WERE **ALSO **FIXED **IN **THE
+  # **SAME **SESSION**, **AND **THE **DRIVER **WAS **THE **LAST **HOLDER **OF **THE **OLD
+  # **SPELLING**.**
+  +p021 = O.UOp.new(O.Found.ar(o021), O.OpsPERMUTE{}, [O.Found.i(r135), O.Found.i(o021)], O.ANone{}, O.TNone{})
   +mul = O.UOp.new(O.Found.ar(p021), O.OpsMUL{}, [O.Found.i(r413), O.Found.i(p021)], O.ANone{}, O.TNone{})
-  +p201 = O.UOp.new(O.Found.ar(mul), O.OpsPERMUTE{}, [O.Found.i(mul)], O.ATuple{[2, 0, 1]}, O.TNone{})
+  +o201 = MX.G.stkN(O.Found.ar(mul), [2, 0, 1])
+  +p201 = O.UOp.new(O.Found.ar(o201), O.OpsPERMUTE{}, [O.Found.i(mul), O.Found.i(o201)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(p201), O.OpsREDUCE{}, [O.Found.i(p201)], O.AReduce{O.OpsADD{}, 1}, O.TNone{})
 
 def g_matmul() -> O.Found:
@@ -831,7 +848,8 @@ def g_reduce() -> O.Found:
   +c8 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(8)})
   +s48 = O.UOp.new(O.Found.ar(c8), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c8)], O.ANone{}, O.TNone{})
   +r48 = O.UOp.new(O.Found.ar(s48), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s48)], O.ANone{}, O.TNone{})
-  +p10 = O.UOp.new(O.Found.ar(r48), O.OpsPERMUTE{}, [O.Found.i(r48)], O.ATuple{[1, 0]}, O.TNone{})
+  +o10 = MX.G.stkN(O.Found.ar(r48), [1, 0])
+  +p10 = O.UOp.new(O.Found.ar(o10), O.OpsPERMUTE{}, [O.Found.i(r48), O.Found.i(o10)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(p10), O.OpsREDUCE{}, [O.Found.i(p10)], O.AReduce{O.OpsADD{}, 1}, O.TNone{})
 
 # ONE BEND PROCESS, EVERY NODE. `Arena.next` is `len(nodes)` (ops.bend:1167) and index 0 is
@@ -1517,7 +1535,8 @@ def g_bw() -> O.Found:
   +c1 = O.UOp.const(O.Found.ar(r34), O.CInt{H.i64_of_i32(1)})
   +s134 = O.UOp.new(O.Found.ar(c1), O.OpsSTACK{}, [O.Found.i(c1), O.Found.i(c3), O.Found.i(c4)], O.ANone{}, O.TNone{})
   +r134 = O.UOp.new(O.Found.ar(s134), O.OpsRESHAPE{}, [O.Found.i(r34), O.Found.i(s134)], O.ANone{}, O.TNone{})
-  +p021b = O.UOp.new(O.Found.ar(r134), O.OpsPERMUTE{}, [O.Found.i(r134)], O.ATuple{[0, 2, 1]}, O.TNone{})
+  +o021b = MX.G.stkN(O.Found.ar(r134), [0, 2, 1])
+  +p021b = O.UOp.new(O.Found.ar(o021b), O.OpsPERMUTE{}, [O.Found.i(r134), O.Found.i(o021b)], O.ANone{}, O.TNone{})
   # 10-14  THE SEED: `weakfloat 1.0` -> CAST to f32 -> EXPAND to (4,4) -> EXPAND to (3,4,4).
   # `weakfloat` and not `f32` because `UOp.const(1.0)` defaults to it (MEASURED: the py row
   # reads `dtype=weakfloat`), and the CAST is what re-types it -- which is upstream's own
@@ -1535,9 +1554,11 @@ def g_bw() -> O.Found:
   # does not broadcast. **The `?` ledger is what caught it and the node count could not**: both
   # readings are 32 nodes with 11 distinct ops, so a count-based gate reads them as the same
   # graph. That is the argument for the ledger existing, in one measured instance.
-  +p012 = O.UOp.new(O.Found.ar(x34), O.OpsPERMUTE{}, [O.Found.i(x34)], O.ATuple{[1, 2, 0]}, O.TNone{})
+  +o012 = MX.G.stkN(O.Found.ar(x34), [1, 2, 0])
+  +p012 = O.UOp.new(O.Found.ar(o012), O.OpsPERMUTE{}, [O.Found.i(x34), O.Found.i(o012)], O.ANone{}, O.TNone{})
   +mb = O.UOp.new(O.Found.ar(p012), O.OpsMUL{}, [O.Found.i(p021b), O.Found.i(p012)], O.ANone{}, O.TNone{})
-  +p102 = O.UOp.new(O.Found.ar(mb), O.OpsPERMUTE{}, [O.Found.i(mb)], O.ATuple{[1, 0, 2]}, O.TNone{})
+  +o102 = MX.G.stkN(O.Found.ar(mb), [1, 0, 2])
+  +p102 = O.UOp.new(O.Found.ar(o102), O.OpsPERMUTE{}, [O.Found.i(mb), O.Found.i(o102)], O.ANone{}, O.TNone{})
   # MEASURED: this line took three passes and the error text named NEITHER the mistake NOR
   # what the line meant -- `expected : O.Tag / observed : O.Arg`, with the whole binder
   # context dumped and no location inside the expression. The other 24 `UOp.new` calls in
@@ -1560,7 +1581,8 @@ def g_bw() -> O.Found:
   +ra = O.UOp.new(O.Found.ar(ma), O.OpsREDUCE{}, [O.Found.i(ma)], O.AReduce{O.OpsADD{}, 1}, O.TNone{})
   +s143 = O.UOp.new(O.Found.ar(ra), O.OpsSTACK{}, [O.Found.i(c1), O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r143 = O.UOp.new(O.Found.ar(s143), O.OpsRESHAPE{}, [O.Found.i(ra), O.Found.i(s143)], O.ANone{}, O.TNone{})
-  +p021a = O.UOp.new(O.Found.ar(r143), O.OpsPERMUTE{}, [O.Found.i(r143)], O.ATuple{[0, 2, 1]}, O.TNone{})
+  +o021a = MX.G.stkN(O.Found.ar(r143), [0, 2, 1])
+  +p021a = O.UOp.new(O.Found.ar(o021a), O.OpsPERMUTE{}, [O.Found.i(r143), O.Found.i(o021a)], O.ANone{}, O.TNone{})
   +r34b = O.UOp.new(O.Found.ar(p021a), O.OpsRESHAPE{}, [O.Found.i(p021a), O.Found.i(s34)], O.ANone{}, O.TNone{})
   O.UOp.group(O.Found.ar(r34b), [O.Found.i(r43b), O.Found.i(r34b)])
 
