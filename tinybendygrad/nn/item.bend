@@ -40,7 +40,6 @@
 #   3. THE INDEX. `[(0,) * len(self.shape)]` -- the FIRST element, in a
 #      one-element tensor, which is the only element there is.
 #
-
 # what the port has, and what it does not.
 #
 # IT HAS THE DTYPE HALF. `S.Dt.itemsize` (`LAWS/spec.bend:174-179`) is
@@ -79,7 +78,6 @@
 #   * a multi-element tensor -- REFUSED, with upstream's own message.
 #   * anything else -- REFUSED, with the wall named.
 #
-
 # the orchestrator's three primitives, and what each one actually is. They
 # were briefed as "a buffer element read", "the dtype's byte width" and "a
 # tensor index", and TWO OF THE THREE ARE SOMETHING ELSE. The measurements:
@@ -104,7 +102,6 @@
 #     `i` -- NOT an index into a tensor. Its three call sites
 #     (`mixin/op.bend:685,779,874`) all pass a SHAPE list.
 #
-
 # THE RESULT IS A SUM TYPE, NOT A `Maybe`, because the three outcomes are
 # THREE different things and a `None` would flatten a refusal into a value.
 # `Itm` is the name (not `Item`: `viz/cli.bend:91` already owns that

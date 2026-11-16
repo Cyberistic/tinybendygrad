@@ -46,7 +46,6 @@
 # finding; it is not the same as agreement, and no row here is offered as
 # corroboration of anything in ops_nv.bend.
 #
-
 # THE shared contract with hcq2, AND why it is not settled yet.
 #
 # `hcq2.py` overlaps this file on exactly one thing: the GSP command queue this
@@ -76,7 +75,6 @@
 #      (the whole `send/qwrite/qwp/barrier/doorbell/wait` sequence as one
 #      string) and `ip_door_*` (the value and the two architecture bits).
 #
-
 # THE SPLIT, stated once and then obeyed: a def here EITHER builds the argument
 # of ONE call (pure, and the gate checks it) OR records that call in the trace
 # (and the gate checks the ORDER). There is no third kind. Every seam is a trace
@@ -153,7 +151,6 @@
 #       # TODO(p3) support/nv/ip.py:111  symbol=prep_ucode  the PCI expansion ROM walk
 #       # TODO(p3) support/nv/ip.py:123  assert bit_header.Signature == 0x00544942
 #
-
 # THE WALLS. Three, and each is named with the line that owns it.
 #
 # 1. THE 64-BIT WALL, in three separate places, and they are not the same place.
@@ -288,7 +285,6 @@
 #   the one 64-BIT CONSTANT that does not fit a U32
 #   `init_sw` and `init_hw` themselves, which are no-ops plus an include list --
 #     the include ORDER is ported as data and the includes are not
-
 # THE MUTATION TABLE, in prose, because the file itself is the thing under test.
 #
 # `python3 .agents/slop/nv_ip_mutate.py` applies ONE textual edit per rule to this
@@ -342,7 +338,6 @@
 # First-wins is not a policy in `const_name.go` -- it is a consequence of where
 # the self-call sits, and last-wins needs the recursion to move into the CALLER.
 # That is the substrate fact the whole file is built on.
-
 # THE FOUR GATE SECTIONS, and what each one can be wrong about.
 #   t_tables   the 54 layouts, the 64 constants both directions, the two
 #              dispatch tables. A transposed field, a wrong offset, a wrong
@@ -1323,7 +1318,6 @@ def tr.put_seq(+t: Tr, want: U32) -> Tr:
 # a header of 0x1001 consumes TWO elements and not one, and the modulo is by
 # `msgCount` and not by the ring length. `ip_rp_rx_*` walks six (rx, length)
 # pairs so the boundary, the modulo and the rounding each have a row.
-
 # `refused` is RECOMPUTED from the ordinal the emit was ABOUT, not read: `Tr.ncalls`
 # is evaluated before the emit is spliced in, so it counts the calls BEFORE this
 # one and `n + 1` is this call's ordinal. Reading `refused` out of the pattern AND

@@ -47,7 +47,6 @@
 # <nbuffers> counts the PARAMs of addrspace g or l -- one buffer line each, in
 # uop order, because ops_python pops pbufs in exactly that order.
 #
-
 # WHAT is ported, DEF BY DEF. THE port'S own defs are in `ops_bend.py` (REPO root; UPSTREAM has no `ops_bend.py` AT any revision) AND fork upstream's `tinygrad/runtime/ops_python.py`, SO every row below names the upstream construct it forks:
 #
 #   tinygrad/runtime/ops_python.py:186 `supported_dtypes`  LANES  PORTED  `lanes`, `lanes_sorted`
@@ -68,7 +67,6 @@
 #   tinygrad/runtime/ops_python.py:166 `PythonRenderer`  BendRenderer  PORTED  `render`, `has_local`
 #   tinygrad/runtime/ops_python.py:189 `__init__`  BendDevice.__init__  SEAM   HostAllocator + Compiled wiring
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of ONE launch (pure, and the gate checks it) OR records that step in the trace
 # (and the gate checks the ORDER). There is no third kind. That is what puts the
@@ -81,7 +79,6 @@
 # whole packet. Those rows are TEXT; the diff against CPython's packet is the
 # check, and it is line for line.
 #
-
 # THE THREE WALLS.
 #
 # 1. THE Op NUMBER is not ported, AND that is the point. Python writes
@@ -123,7 +120,6 @@
 # it is a VIEW over bytes the caller already owns. The port keeps the extent,
 # which is what `in_bufs` is, and drops the pointer.
 #
-
 # `has_local = False` (tinygrad/renderer/__init__.py:68 symbol=has_local) is a CONSTANT the scheduler consults
 # (opt/heuristic.py:163), so it is a `def` and not a field: a def nothing calls
 # is invisible to every other check, and `bend_has_local` is its only reader.
@@ -242,7 +238,6 @@ def wire_width(n: N) -> U32: N.numel(n)
 def N.bottom() -> N: N{"-", "-", 0, 1, "-", "", False{}, Nil{}, 0, 0, ""}
 
 # THE NODE LIST. `self.uops` -- the renderer's own list, already in post-order.
-
 # `i` is a WIRE POSITION -- 1-based, the number `encode` writes -- while a Bend
 # list is 0-based, so the two differ by one. MEASURED: with `U32.to_nat(i)` the
 # first read of every list landed on its second element.
@@ -279,7 +274,6 @@ def is_image_shape(ndim: U32, last: U32) -> Bool:
 # reaches :127, and an ALU-valued src[0] answers `k:idx:0` whatever its shape.
 # `bend_arg_bitcast_image` and `bend_arg_alu_first` are the rows that separate
 # the three.
-
 # Which arm owns an op. 0 is "no payload", and every op Python never names
 # answers "-". INDEX and SHRINK share 5, LOAD and STORE share 6, because Python
 # writes them `u.op in (...)`.
@@ -401,7 +395,6 @@ def buf_extent(arg: String) -> U32: Maybe.default(&2, U32, U32.read(field2(arg))
 #
 # `.rstrip()` at :144 is `rstrip1`: the only space it can ever remove is the one
 # between <arg> and an EMPTY src list, because every other field is non-empty.
-
 # `is_buf(wire_arg(u))` -- the test is on the ARG, not on the addrspace, because
 # :140 counts what ops_python's `pbufs.pop(0)` would pop and :200 filters the
 # same way. `a`, `r` and `-` all lose; `g` wins.
@@ -1013,11 +1006,9 @@ def chase.at(+ls: List<&2, Line>, +b: Nat) -> Nat:
 # MEASURED, both ways: with the subtraction in `chase.at` the walk started at 9 and
 # answered 10 (one line too far); with it in the entry it starts at 9 and answers 0,
 # which is CPython's own `out_bufs = [0]`.
-
 # AND `go_` IS "STILL WALKING", i.e. the op IS a chain op -- not its negation.
 # MEASURED: with `Bool.not(go_)` as the stop, the first call had `go_ = True` for a
 # chain op and stopped immediately, so every answer was the starting index.
-
 # THE FUEL LEADS, and it must: arguments are read left to right and every argument
 # BEFORE the shrinking one has to be passed UNCHANGED (MEASURED, twice -- with the
 # fuel third, the call is "expected a decreasing self-call", because
@@ -1193,7 +1184,6 @@ def prog.of(+us: List<&2, N>) -> Prog:
 # knows `len(out)`, so a launch that failed at :224 never evaluates :226. Here
 # every step's guard is a pure function of the launch facts, so they are all
 # EVALUATED and only the first refusal takes effect. The trace is identical.
-
 # The launch facts :211-213. `gx/gy/gz` are the global_size and are read only by
 # the seam, so they are not fields; `local_size` and `returncode` are the two
 # that a refusal tests.
@@ -1319,7 +1309,6 @@ def prog.steps(+p: Prog, +l: Launch) -> List<&2, Step>:
 # `bend_compiler_passthrough` is the row, and it is a tautology unless the two
 # sides are different strings, which is why it compares `compiler.of` against
 # `encode` rather than against a literal.
-
 # `BendDevice.__init__` :244 -- `super().__init__(device, HostAllocator(self),
 # [BendRenderer], BendProgram)`. The renderer list and the Program CLASS are the
 # two facts, and both are already in this file (`encode` and `prog.call`), so the
@@ -1336,9 +1325,7 @@ type Dev is Data:
 # and `raw_free` appear nowhere in this file, and `prog.call`'s six SEAM steps
 # were steps in a trace with nothing behind them.
 #
-
 # WHAT "BEND'S OWN MEMORY" IS HERE, and why the allocator is this shape
-
 # Bend has no `malloc` and no pointer. Its mutable memory is `Array`, and an
 # `Array` is AFFINE -- the rule `ops_python.bend` is built around: "A `Data`
 # record cannot hold a `List` or an `Array`; both are `Type`", so a store cannot
@@ -1355,9 +1342,7 @@ type Dev is Data:
 # different processes -- `executor()` is a `subprocess.run` at ops_bend.py:222 --
 # and they agree only through the packet's hex.
 #
-
 # THE ALLOCATOR'S HONEST LIMITS, named before the rows rather than after
-
 # `raw_alloc` BUMPS and `raw_free` is a NO-OP. That is not a shortcut, it is what
 # `HostAllocator._free` (device.py:307) IS: it touches storage only under
 # `if (remote:=getattr(self.dev, "remote", None)) is not None`, and BEND has no
@@ -1367,7 +1352,6 @@ type Dev is Data:
 # The one thing this CANNOT be is a real allocator with a free list, and that is
 # a property of the substrate rather than of the port: Bend's `Array` is affine,
 # so there is no second owner to hand a freed range to. Named, not hidden.
-
 # THE STORE. One flat byte list, one bump pointer, travelling together in one
 # record -- the shape `ops_python.bend`'s `Prog` uses for the same reason ("`Data`
 # FIELDS MUST BE `Data`... So a program table is NOT a field of a record: it is a

@@ -164,7 +164,6 @@ def with_storage.at(+f: O.Found, dt: S.Dt) -> O.Found:
 # (`tinygrad/uop/ops.py:26`); this port breaks it with a third file. What is
 # HERE is `Estimates.from_uops`, which reads `Ops` and so belongs beside its
 # consumers. THE RECORD, ITS ACCESSORS, `__add__` and `simplify` are THERE.
-
 # `Estimates.from_uops` -- __init__.py:26-61, over the LINEARIZED list.
 #
 # FOUR of the six op arms survive the linearization and the other two do not:
@@ -364,7 +363,6 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 # WALL(p3) __init__.py:83  render           (NotImplementedError -> a has-render flag) -- BLOCKED: needs the `NotImplementedError` DEFAULT arm, which the port spells as a `Bool` has-render flag; the header says exactly this at :405.
 # TODO(p3) __init__.py:84  asm              (NotImplementedError -> a has-asm flag)
 #
-
 # THE GATE. Every row is diffed against CPython on this `tinygrad/` tree with
 # `.venv/bin/python -c "..."`, and the `py=` text IS the oracle -- printed next
 # to the answer, never compared as a boolean, because the two things this file

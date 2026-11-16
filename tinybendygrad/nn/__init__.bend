@@ -124,9 +124,7 @@ import ./state.bend as ST
 # FIRST position, so the key order is unchanged -- but the VALUE is a different
 # tensor with a TRANSPOSED shape (`in, out//groups, *ks` at :150 against
 # `out, in//groups, *ks` at :106), and that is the row `nn_ct` pins.
-
 # THE PRIMITIVES, and they are the only things above the layers.
-
 # `Tensor|None` has no `Data` field and no `Maybe` in a record, so the conditional
 # ENTRY is a `Bool` beside the value at each `*_st` def. This is the one helper
 # for it and the `Bool.pick` at each site is the decision.
@@ -211,7 +209,6 @@ def nn_bound(n: F32) -> F32: F32.div(1.0, F32.sqrt(n))
 def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(fan_in, fan_out)))
 
 # THE WALLS. One TODO per Python line, and no prose pretending otherwise.
-
 # TODO(p3) mixin/rand.py:158  symbol=uniform  -- `Tensor.uniform` / `Tensor.glorot_uniform`
 #   (`mixin/rand.py:192` is `glorot_uniform`) -- `creation.py`'s `full` plus
 #   `randstate`. The CONST `low=-scale, high=scale` needs the F32 values above and
@@ -248,7 +245,6 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `Tensor.threefry` are also ported (all one-liners in elementwise.py at :68,
 # :474, :460, :457), gated at
 # `gates/tn_contiguous_backward-gate.py` and `gates/tn_trunc_reciprocal_threefry-gate.py`.
-
 # what `_broadcasted` is, and what the "broadcasting case" is actually walled on.
 # Every mention of `_broadcasted` in this tree used to say the broadcasting case was "walled on
 # `_broadcasted`". that names the wrong thing, and it did so in 110 places. measured:
@@ -286,7 +282,6 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # case is not "the easy half" of a broadcasting wall, it is the half that needs no shape
 # inference, and the dtype promotion it ALSO skips is a separate, largely-unblocked fold.
 # a unit that takes this wall should start with wall b.
-
 # `Tensor.where` (elementwise.py:426) is ported as `tn_where`
 # for the no-broadcasting case (`self.ufix(x)._broadcasted(y)` collapses to identity
 # when x and y are already Tensors of the same shape, and the body is then

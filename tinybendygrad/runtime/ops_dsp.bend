@@ -83,7 +83,6 @@
 #   :276-292 MockDSPProgram     PORTED  `mprog.stdin_bytes`, `mprog.stdout_len`, -- upstream runs the mock program `MockDSPProgram`
 #                                             `mprog.scale_ins`
 #
-
 # THE WALLS.
 #
 # 1. THE COMPILER INVOCATION (:118-123). `system(f"{getenv('CC','clang')}
@@ -136,7 +135,6 @@
 # `Dt.fp16`, ...) and importing it would drag that seam into this file for no gain
 # -- ops_dsp.py needs no dtype conversion, only dtype NAMES.
 #
-
 # THE heart of it: FOUR pure functions of a dtype.
 #
 # The brief named `to_scalar`/`from_scalar` as this file's centre. MEASURED:
@@ -168,7 +166,6 @@
 #                      spelled `int` whatever the buffer's dtype, because it holds
 #                      the byte SIZE and not the value.
 #
-
 # THE argument trace, :62-70. THE device contract six other units are porting.
 #
 # `DSPProgram.__call__` packs ONE 8-byte-aligned block for the whole call:
@@ -193,7 +190,6 @@
 # leaves the high word at ZERO and only an 8-byte fmt writes it. `vt_hi_written_*`
 # is that row family.
 #
-
 # THE BUFFER-OWNERSHIP RULES, consumed from device.bend rather than re-derived.
 #
 #   * a Buffer is a SLOT in an arena (`Bn` in device.bend) and `nbytes` is
@@ -217,7 +213,6 @@
 #     opposite answers at the SAME size, which is the only way a wrong eviction
 #     cannot pass by accident.
 #
-
 # THE kernel name, :143. A string row, NEVER a boolean about a string.
 #
 #   fp = "file:///tinylib?entry&_modver=1.0&_dom=cdsp\0"
@@ -229,7 +224,6 @@
 # drops; `dsp_openlib_len` pins the SUM at 44. `String.concat` drops a literal
 # silently, so `dsp_fp_*` and `dsp_link_script` diff the STRING itself.
 #
-
 # NO dsp and no ion in this env. `Device['DSP']` needs /dev/ion and
 # `/dsp/cdsp/fastrpc_shell_3` does not exist, so NOTHING here was measured against
 # a live DSP. Every constant and every `py=` expectation was produced by CALLING
@@ -250,7 +244,6 @@
 #     `dsp_rpc_greet_*` is that row family and it is the single most load-bearing
 #     constant in the file.
 #
-
 # WHAT device.bend AND ops_qcom.bend OWE THIS FILE.
 #
 # device.bend, CONSUMED and not re-derived: `recycled`, `alloc_take`, `freed`,
@@ -270,7 +263,6 @@ import ../LAWS/spec.bend as S
 
 # THE CONSTANTS. Every one read out of ops_dsp.py, its autogen bindings, or
 # helpers.py -- the three places a number in this file can come from.
-
 # the fastrpc selector's four one-byte fields (:48). MEASURED: `U32.shl` is a
 # ONE-bit shift and `U32.shln(a, n)` is the n-bit one, so the field POSITIONS are
 # `Nat` -- which is also why they are constants here rather than parameters.
@@ -543,7 +535,6 @@ def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
 
 # THE FOUR DTYPE TABLES. Plain functions of dtype.py's `name` field, so each is
 # gated over its whole domain rather than at a fixture.
-
 # `spec.bend` holds `Dt` and has no `nm` reader; dtype.bend has `dt_name` but is a
 # conversion seam and importing it would drag that seam in for nothing.
 # TODO(p3) LAWS/spec.bend:74 symbol=Dt  Dt.nm -- the name reader this file matches on.
@@ -768,7 +759,6 @@ def pra_fds(+ps: List<&2, Pra>, acc: List<&2, U32>) -> List<&2, U32>:
     case p <> t: pra_fds(t, List.append(&2, U32, acc, [Pra.fd(p)]))
 
 # var_vals_mv and off_mv, :65-69. THE 8-BYTE SLOT TABLE.
-
 # `memoryview(bytearray((len(bufs)+len(vals))*8))` (:65) and
 # `memoryview(bytearray(len(bufs)*4))` for the offsets (:65). The var_vals block is
 # 8 bytes per ARGUMENT -- buffer or val -- so a 4-byte fmt leaves the high word at

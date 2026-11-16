@@ -46,7 +46,6 @@
 #    is seventh, so with both openable the default is AMD. `first_amd` is that row
 #    and a last-wins fold prints CPU.
 #
-
 # THE LINK, and it is what REPLACED the rule table at the pin. That table is
 # GONE, from upstream and from this port.
 #
@@ -126,7 +125,6 @@
 # So the table was a corpse that was already a corpse upstream, and this removal
 # deletes it on both sides at once.
 #
-
 # two measured BEND constraints this file is built around. Both cost a compile
 # cycle each and neither is in bend2-constraints.md yet.
 #
@@ -825,7 +823,6 @@ def alloc_try(n: U32) -> U32:
 
 # COMPILERS. `Compiler` (device.py:336) with an empty `compile` -- the NOTE says
 # so, and it is the default every backend without a compiler relies on.
-
 # device.py:338, `def compile(self, src): return src.encode()`. The identity, on
 # bytes; `src` is already a `String` here so the answer is `src`.
 def compile(src: String) -> String:
@@ -844,7 +841,6 @@ def needs_compile(ck: Bool, hit: Bool) -> Bool:
 # dtype list alone.
 # TODO(p3) device.py:344  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
 #   effect behind `Compiler.compile_server` would hand one back.
-
 # `round_up` is `(n+a-1)//a*a` (helpers.py:69).
 # `(num+amt-1)//amt*amt` (helpers.py:69). The amount is read THREE times and
 # `U32` is affine, so it travels in a record and the `+` goes on the PATTERN
@@ -934,7 +930,6 @@ def timeline_bytes() -> U32:
 
 # `Compiled` (device.py:375). The composition, and the numbers every backend
 # inherits rather than sets.
-
 # device.py:397,
 #   `self.device_id = int(idx) if ":" in device and (idx:=device.split(":")[1]).isdigit() else 0`
 # The second colon field, and ONLY if it is all digits: "CPU:a" is device 0,
@@ -987,7 +982,6 @@ def dev_id(ix: String) -> U32:
 # that class attribute is GONE and `link_bufs`/`link_buffer` are what is there.
 # the table is gone from this port too, so this section is the whole of the
 # mechanism: there is no corpse left to carry, and no table below.
-
 # `to_name` (tinygrad/helpers.py:21) -- `"_".join(parts).replace(":", "_").lower()`.
 # The fold runs on the JOINED string, not on each part, so a part that is
 # already lower-case does not make the whole fold lower-case.

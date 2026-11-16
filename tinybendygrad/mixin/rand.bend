@@ -187,7 +187,6 @@ import ./creation.bend as CR
 # file with no buildable callee has no gate, and the gate is the only evidence this port
 # has. IT IS GATED (`arange3`, `arange5`), so it is a MEASURED implementation and not a
 # restatement of the code that calls it.
-
 # `self.shape[-len(k_):]`, which is the WHOLE shape for the 1-D `k_ = (k,)` that
 # `_cumalu` passes, and `mxw_dims_of` is `movement.bend`'s own merge point (the arg for a
 # movement node, the fold for anything else) so the dim read here is the fold's answer and

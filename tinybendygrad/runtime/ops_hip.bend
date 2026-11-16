@@ -178,7 +178,6 @@ def hp.fields(nf: Nat, +iszs: List<&2, U32>) -> U32:
 
 # `HIPDevice`, hp:12-24. THREE calls in `__init__` and one of them is the only
 # unchecked call in the whole file.
-
 # the HIP DEVICE, ops_hip.py:14-24. `didx` is hp:14's device id, `arch` hp:15's
 # `gcnArchName` -- a STRING straight out of the driver, with NO derivation at all,
 # unlike CL's `",".join(exts)` and CUDA's `f"sm_{a}{b}"` -- and `ev0`/`ev1` the two
@@ -240,7 +239,6 @@ def hp.init(device: String, arch: String, +t: CL.Tr) -> HpDev:
 
 # `HIPProgram`, hp:26-57. `__init__` is THREE calls and the FIRST is
 # `hipSetDevice`, which CUDA also does per-entry-point and CL does NOT do at all.
-
 # hp:29 `check(hip.hipSetDevice(self.dev.device_id))` -- in `__init__`.
 def hp.prog_init.dev(+t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_SET_DEVICE(), "0", t)
 
@@ -317,7 +315,6 @@ def hp.call.at(did: U32, cargs: U32, +want: Bool, built: Bool, +t: CL.Tr) -> CL.
   hp.elapsed.at(want, t3)
 
 # `HIPAllocator`, hp:59-71. Four methods, and `_offset` is the one that is WALL 6.
-
 # hp:61-62 `_alloc` -- `check(hip.hipSetDevice(self.dev.device_id))` then
 # `check(hip.hipMalloc(ctypes.byref(x), size))`. TWO calls, where CL's is ONE and
 # CUDA's is one call in each of its three branches.

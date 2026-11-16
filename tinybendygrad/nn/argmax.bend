@@ -55,7 +55,6 @@ import ./../mixin/rand.bend as RD
 import ./layers.bend as L
 
 # the list form -- the recipe as a formula on the values.
-
 # `idx[j]` -- `n - j` where `v[j]` is a maximum, `0` where it is not.
 def nn_argmax.pick(eq: Bool, j: U32, n: U32) -> U32: Bool.pick(U32, eq, U32.sub(n, j), 0)
 
@@ -107,7 +106,6 @@ def nn_argmax.row(nm: String, vals: List<&2, F32>, want: U32) -> IO(Unit):
 # THE `.reshape(self.shape[axis], *[1]*(self.ndim-axis-1))` OF NODE 2 IS A NO-OP FOR A
 # 1-d source -- `[n]` is already `[n]` -- so the 1-d form is the same recipe and the
 # reshape is not built. the widening is named in the scope paragraph above.
-
 # the `n` -- `self.shape[axis]` -- is carried in a record and not in a `U32`, because
 # a `U32` is consumed once and `n` is needed twice: once for the `arange` and once for
 # the subtraction. the tree's own spelling of this is `mixin/rand.bend`'s `U1`
@@ -174,7 +172,6 @@ def nn_argmax_g(+t: T.Tensor, +q: AN, +dev: S.Dev) -> T.Tensor:
 # pass on nothing. the reader below asks `F.fold.shape` (uop/fold.bend:4779 symbol=fold.shape), which
 # answers the double `Maybe`: the outer is "the node is in the FOLD's table" and the
 # inner is "the node has a shape", and the two are not the same question.
-
 # the shape as CPYTHON prints it: `()` for a 0-dim shape, `(4,)` for a 1-dim one and
 # `(1, 3)` for a 2-dim one. the count and the string are built in one walk, because a
 # `List` is consumed when it is read and the count and the elements are the same list.

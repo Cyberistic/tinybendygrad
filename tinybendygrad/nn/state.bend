@@ -130,7 +130,6 @@ import ./../uop/ops.bend as O
 # Nothing here builds a UOp for its own sake, so none of the arena rules apply:
 # the fixtures are CONSTs in a fresh arena and the only node read is `sd_cval`,
 # which exists so that `sd_dup` can see WHICH value survived the collapse.
-
 # THE DOT. `Char.from_u32(46)` and nothing else; the strip needs the character
 # and there is no `Char.dot`.
 
@@ -140,7 +139,6 @@ def sd_dot() -> Char: Char.from_u32(46)
 # but base's `split.fin` PUSHES the separator back onto the front of every
 # non-final piece, so `"a.b"` splits to three pieces and the empty ones are the
 # caller's problem. Walking the char list is the honest spelling.
-
 # caught it: a bare `case '.':` arm drops EVERY dot, so `a..b..` came back `ab`
 # where Python's `str.strip` keeps the interior run (`a..b`). Stripping a RUN at
 # the HEAD needs to know whether a non-dot has been seen yet, and that flag is
@@ -258,7 +256,6 @@ def sd_cval(+t: T.Tensor) -> U32:
 # document order, which is `dict` insertion order, which is the order
 # `get_parameters` hands to an optimizer and the order `load_state_dict` writes.
 # Order is not cosmetic here and the gate prints it.
-
 # `It` is the work item: a prefix and the object still to be walked under it.
 type It is Data:
   It{p: String, o: Obj}
@@ -318,7 +315,6 @@ def get_state_dict.pf(o: Obj, pf: String) -> List<&2, Ent>:
 # It is a REWRITE-IN-PLACE, not a filter: `put` walks the accumulator and
 # replaces the tensor of the matching key, so a later value lands at the earlier
 # position, which is what `dict.__setitem__` does and what a filter would not.
-
 # ONE def, and the self-call is an ARGUMENT of `Bool.pick` (tensor.bend's rule
 # 3): `pick` is a call, not a `match`, so the choice may scrutinise a computed
 # Bool, and hoisting that Bool into a second def would make the two defs
@@ -475,7 +471,6 @@ def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
   H.i64_text(sd_seek(len_, pos, off, whence))
 
 # THE WALLS. One TODO per Python line, and no prose pretending otherwise.
-
 # TODO(p3) state.py:8   TensorIO        -- `io.RawIOBase`; `readinto` (:17, symbol=readinto) needs
 #   `.data()` (REALIZATION, tensor.bend WALL 4) and `buffer[:n] = data` mutates a
 #   Python bytearray, which no `Data` record can express. `seek` is above.
@@ -505,9 +500,7 @@ def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
 # TODO(p3) state.py:207 torch_load       -- a `pickle.Unpickler` SUBCLASS with
 #   `find_class` and `persistent_load`, plus `zipfile.is_zipfile`,
 #   `tarfile.is_tarfile`, `struct.unpack` and `argsort`. A pickle VM.
-
 # THE GATE
-
 # `DEBUG >= 2` -- state.py:260, inside `TorchPickle.find_class`. `torch_load` itself
 # is a `TODO(p3)` above (state.py:207, "A pickle VM"), so what is ported here is the
 # ONE LINE this site gates and the two lines above it that decide whether it runs --
@@ -840,7 +833,6 @@ def main() -> IO(Unit):
 # `--check-only` reports "14 defs rely on unsafe or foreign code", all fourteen in
 # `dtype.bend` and all `@extern` F32 conversions that were there before this unit.
 # `optim.bend` reports the identical fourteen. It is not a property of this file.
-
 #
 # THE MUTATION TABLE, MEASURED, by `.agents/slop/state-mutate.py` (which mutates
 # the file in place, restores it, and reports the rows that MOVE).

@@ -42,7 +42,6 @@ import ./../helpers.bend as H
 #   * `(a, b) = f(x)` is REFUSED -- a destructuring let is a match, and a match
 #     may not scrutinise a call. So every read answers a record and its fields
 #     are projected by a def of their own (`Wd.v`, `Wd.rs`, ...).
-
 # one GGUF metadata value.
 #
 # `gguf_parse` answers a Python dict of `str`/`int`/`float`/`bool`/`bytes`/`list`,
@@ -312,7 +311,6 @@ def blk.bad(t: U32, +prev: U32) -> U32:
 #
 # A truncated file answers short here; CPython raises `struct.error`. The
 # alignment the parser computes is exact on any file that would have parsed.
-
 # `struct.unpack("<I")` and `"<Q"` are little-endian, so the LOW word of an
 # eight-byte field is bytes 0..3 and its HIGH word is bytes 4..7.
 def le4(a: U32, b: U32, c: U32, d: U32) -> U32:

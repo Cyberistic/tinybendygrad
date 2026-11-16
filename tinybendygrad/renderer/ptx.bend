@@ -195,7 +195,6 @@ def Wk.idx_ok(w: Wk) -> Bool:
 # `cs ++ [bumped]`, which keeps the head AND adds a copy, so the True arm builds
 # from the TAIL. `c`'s order is therefore FIRST-USE order, which is `c.items()`
 # and therefore the `.reg` order, and no sort reproduces it.
-
 # a record pattern binds, it does not test. measured: `case Cnt{key, ty, n}`
 # matches every entry, so these two took their FIRST arm for every key -- `c`
 # grew one entry per ALLOCATION (seven for three keys) and every register read
@@ -393,7 +392,6 @@ def arm.of(+op: O.Op, +addr: S.Addr, idx_ok: Bool) -> U32:
 # which is `r[u.src[i]]`; `List.get` over a `Data` list answers `Some` for every
 # in-range index (MEASURED -- the `List<&2, Bool>` note in agent-core.md is
 # about `Bool`, not about records).
-
 # the "this step allocated nothing" marker: an `Rg` with no parts. It is what
 # keeps `Wal.r` and the step list the same length, and `r_go` skips it.
 def none_rg() -> Rg: Rg{False{}, Nil{}}
@@ -453,7 +451,6 @@ def rg_pick(w: Wal, +s: Wk) -> Rg:
 # `ansistrip`, a regex ANSI strip: no fixture here carries an escape, so the
 # gate covers the KEEP/HEX branch and not the strip. `hex1`/`hexdig` are
 # tc_ptx.bend's (`P.hex1`) -- consumed, because a second hex table is the drift.
-
 # A RANGE IS `and(ge, le)`. MEASURED: writing `or(ge(c,48), le(c,57))` says
 # "c >= 48 OR c <= 57", which is EVERY c, so `fn_name` became the identity and
 # `to_function_name 'my kernel'` came back `my kernel` instead of `my20kernel`.
@@ -478,7 +475,6 @@ def fn_name(+s: String) -> String: fn_name.go(String.to_list(s), "")
 # itself (convention 9), so the arm tag is a PARAMETER of it -- a `match` may not
 # scrutinise a computed value, and `arm.of(...)` is one. Its arms are the
 # `A_*` TAGS, in tag order, so `A_ALIAS = 1` is `case 1`.
-
 # ptx.py:207 and 228 -- `r[u] = "%" + u.arg`, and the `.reg .u32` line is
 # PREPENDED (`kernel = [f".reg .u32 %{u.arg};"] + kernel`), so `f10_loads`
 # emits `%g2, %g1, %g0`. `List.append(acc, [x])` APPENDS and would print them
@@ -558,7 +554,6 @@ def reg_block(+w: Wal) -> List<&2, String>:
   List.concat(&2, String, [reg_go(Wal.c(w), Nil{}), Wal.kern(w)])
 
 # THE GATE ROWS.
-
 # A ROW IS (its suffix, the answer, the LITERAL). `Wt.want` is generated from
 # the oracle's rows by `.agents/slop/ptx-s3-gen.py` and is NEVER typed -- five
 # incidents in this repo where a typed oracle agreed with a swapped argument.
@@ -1264,7 +1259,6 @@ def main() -> IO(Unit):
 # `gates/ptx_render_census-mutate.py`, beside its own gate and its own `.bend` driver.
 #
 # WHAT THE TABLE SAYS
-
 # M29 is a theorem for this file, not a fixture gap. Dropping CONST from the skip
 # list routes it to `A_ALLOC`, and `pf.of` has no CONST arm -- so it takes
 # `no_pf()` and `wk_alloc.go` writes the SAME `none_rg()` the skip arm writes. A

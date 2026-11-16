@@ -43,7 +43,6 @@
 #  25  267-277   table   get_transcendental_patterns PORTED, 5 tables, <=7 rules
 #  26  helpers   fold    polyN                      PORTED IN FULL (helpers.py:153)
 #
-
 # the headline measurement: there is no 64-bit arithmetic in this file, and the
 # brief predicted there would be. The prediction is wrong for a structural reason
 # worth stating: transcendental.py BUILDS GRAPHS, it does not EVALUATE them.
@@ -61,7 +60,6 @@
 # reduction in the gate -- is reached with nothing but `UOp.alu` and
 # `H.i64_of_hi_lo`.
 #
-
 # six things that are easy to get wrong, and the row that holds each down.
 #
 # 1. `shr`/`shl` (lines 19-20) TAKE A `UOp` `y` AND CALL `y.simplify().val`.
@@ -95,7 +93,6 @@
 #    starts the Horner at `c[0]` builds five fewer nodes in `sin_poly` alone
 #    and `a_sp9` is the row.
 #
-
 # TWO DIVERGENCES, stated rather than hidden.
 #
 # A. NO PROMOTION CASTS and NO `UOp.const` FOLD. `mixin/elementwise.py`'s
@@ -125,7 +122,6 @@
 #    DIFFERENT constants, and `a_cw` is the float32 window only. The f16 and f64
 #    windows are P3, not claims.
 #
-
 # WHERE THE GATES COME FROM. `codegen/__init__.py:360` calls
 # `get_transcendental_patterns(supported_ops, TRANSCENDENTAL>=2)`, so `ops` and
 # `force` are PARAMETERS here -- `tx_tab` takes five Bools and returns a `Data`
@@ -485,7 +481,6 @@ def frexp.exponent(+ar: O.Arena, +bits: U32, +dt: S.Dt) -> O.Found:
 
 # `Frexp` needs both halves and the arena they were built in, and `(Arena, U32,
 # U32)` is not a Bend type, so the record is what carries all three.
-
 # `frexp`'s two masks -- lines 56-57. `m1` keeps the SIGN as well as the mantissa
 # (that is what makes `frexp` signed-correct) and `m2` is the half-way exponent
 # bias, so the two are not symmetric and cannot be derived from each other. For
@@ -605,7 +600,6 @@ def LOG264() -> List<&2, F32>:
 # `MUL(C(0.0), x)` and NOT a fold-away; header note 6. And each coefficient is
 # interned by `reduce` BETWEEN its `MUL` and its `ADD`, because `_binop` calls
 # `_broadcasted` on the right operand before it calls `alu`. `a_sp10` is the row.
-
 # the coefficient list is the fuel. It is first and it shrinks first, so the arena
 # and the accumulator -- which both CHANGE on every step -- ride after it, and a
 # self-call whose first argument is a computed arena is refused outright.
@@ -951,7 +945,6 @@ def payne_hanek_reduction(+ar: O.Arena, +d: U32, +dt: S.Dt, +same: Bool,
 # `qdh * -PI_A + x`, ... , `(qdh + q) * -PI_D + d`, and the float32 arm is the
 # SLEEF four-term chain; header note 2 says why they are two defs and not a
 # self-call.
-
 # LAST addend is `(qdh + q) * -PI_D`, i.e. the quadrant sum is formed ONCE.
 def tx_cw32.rest3(+ar: O.Arena, +q: U32, +s: O.Found) -> O.Found:
   +a = tx_cf(ar, F32.neg(0.00000000012154201256553420762))
@@ -1249,7 +1242,6 @@ def xexp2(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
 # re-mints it to a float CONST and both are slots; `a_xexp2 62` and `a_xexp2 68`
 # are the two rows and `tx_pintf` cannot express the SIGN, so the one negative
 # literal is written out here.
-
 # `xlog2` -- lines 219-255. Paper https://arxiv.org/pdf/2001.09258 5.5. ONE
 # LINEAR DEF: the function is a straight-line chain of 33 steps and Bend's only
 # loop is a self-call, so splitting it would mean threading `(Arena, U32)` pairs

@@ -202,7 +202,6 @@ def pk.offsets(+ks: List<&2, U32>) -> List<&2, U32>:
   cn_walk(List.length(&2, U32, ks), ks, 0, Nil{})
 
 # THE CPU CONSTANTS. Every one MEASURED out of CPython, not transcribed.
-
 # ops_cpu.py:16, `MAP_JIT = 0x0800`, with the NOTE that Python 3.13 adds it to
 # the mmap module. The value is the same either way.
 def cpu.map_jit() -> U32: 2048
@@ -376,7 +375,6 @@ def cpu.has_copy_queue() -> U32: 0
 # first mentions them. `arg` is the ONE argument the port can carry for that
 # call (a size, a flag, an address mask); everything else about the call is the
 # seam's, and the header says so rather than inventing fields for it.
-
 # :21 the two `_load` arms, :26 LOAD_PROG, :30-36 the win32 chain.
 def CALL_LOAD_RAW() -> U32: 1
 def CALL_LOAD_JIT() -> U32: 2
@@ -734,7 +732,6 @@ def prog.win.at(lvp: Bool, +p: Prog) -> Prog:
 
 # ops_cpu.py:23-56 -- `__init__` as the step list it is. The order IS the
 # source, and the two conditionals are the only branching.
-
 # THE POSIX HALF, as its own def, because `__init__` is an if/elif/else and
 # only ONE of the three arms runs. Writing the chain here and letting
 # `prog.posix.at` pick it is what makes that true in Bend: the chain GROWS the
@@ -769,7 +766,6 @@ def prog.posix.at(local: Bool, +p: Prog, +lvp: Bool, +elf: Bool, +osx: Bool, +rt
 # `data64_le` (helpers.py:81), then `(nbufs+nvals)*2` -- and the vals land at
 # 12 + the offset `iter_sig` computes from `len(bufs)*8`. Four facts and each is
 # its own row.
-
 # `args = [*bufs, *cast(tuple[int, ...], vals)]` is ONE list (:60), so every
 # count in `__call__` is `nbufs + nvals` and the two branches cannot disagree
 # about it. EVERY count below is this one def.
@@ -787,7 +783,6 @@ def lvp.size(nbufs: U32, nvals: U32) -> U32: U32.add(12, U32.mul(prog.nargs(nbuf
 # the row that says wait decides synchrony. `float(unwrap(prof.en) - prof.st) *
 # 1e-6 if wait else None` is the other: without `wait` the answer is None, and
 # that is a decision with no arithmetic in it.
-
 # :63, `(remote._rpc if wait else remote._post)(...)`.
 def prog.remote_tag(wait: Bool) -> U32:
   Bool.pick(U32, wait, CALL_RPC(), CALL_POST())
@@ -1012,7 +1007,6 @@ def rnames(+cs: List<&2, Cr>) -> String:
 # STEP 2 IS THE PORT's OWN `jit_loader`, SO IT IS NOT AN EFFECT: THE BEND SIDE
 # RELOCATES. STEPS 1 AND 3-7 ARE THE EFFECT (`runtime/ops_cpu.c`), AND THEY ARE
 # TWO EFFECTS BECAUSE UPSTREAM's ORDER HAS THE RELOCATION BETWEEN THEM.
-
 # THE ARGV. UPSTREAM'S `ClangCompiler.compile_argv` (support/compiler_cpu.py:21-22)
 # IS `[cc, '-c', '-x', 'c', '-O2', '-fPIC', '-ffreestanding', '-fno-math-errno',
 # '-nostdlib', '-fno-ident', '--target=<arch>-none-unknown-elf', *args, '-', '-o',

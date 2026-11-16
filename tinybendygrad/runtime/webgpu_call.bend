@@ -43,7 +43,6 @@
 #     Widening `Call` changes ~40 gate rows, and the trace was never the thing
 #     that was missing.
 #
-
 # WHAT IS AND IS NOT DUPLICATED. No argument is re-derived here: `bgl.of`,
 # `slots`, `dev.uniform_bytes`, `alloc.size`, `copy.write_len`, `alloc.usage`,
 # `dev.uniform_usage`, `copy.readable_usage`, `prog.wants_wait`, `backend_of` and
@@ -134,7 +133,6 @@ def RESOLVE_COUNT() -> U32: 2
 # created object is a `U32` the driver resolves. The object KIND is not a field:
 # the trace already carries it as `Call.arg`, so `Step.arg` and `Op` together say
 # it once and `wgc_kind_from_arg` checks the pairing.
-
 # ONE bind group entry (:96) -- `(binding, buffer, offset=0, size)`. `buf` is the
 # uniform THIS call creates for a `vals` slot and the caller's own for a `bufs`
 # slot, which is :96's `buf = x if isinstance(x, WGPUBuffer) else
@@ -615,7 +613,6 @@ def Cs.bind.go(n: Nat, +i: U32, +ss: List<&2, W.Slot>, +bs: List<&2, W.Buf>,
                               Cs.or0(List.get(&2, U32, vs, 0n))))
 
 # THE REST OF ONE PROGRAM CALL, :99-147.
-
 # :99-102 -- CreateBindGroup(device_res, WGPUBindGroupDescriptor(layout=
 # bind_layout, entryCount=len(bindings), entries=bindings)), same push/create/pop.
 # `Cs.bg` is the fold's answer and this is the only reader of it, which is what
@@ -1069,7 +1066,6 @@ def Cs.uniform_bytes(+c: Cs) -> List<&2, U32>:
 # cons into. `Cs.calls` already builds one of these for `Call`, and this is the
 # `U32` counterpart -- it exists so `uniform_bytes` does not hand `List.append` a
 # list of a different element type, which does not typecheck.
-
 # 0, 1, 2, ... in mint order. THE QUESTION NO OTHER ROW ASKS: is the counter
 # actually counting? A frozen counter hands out the same handle forever and every
 # other row in the file stays green, because nothing else reads `next`.

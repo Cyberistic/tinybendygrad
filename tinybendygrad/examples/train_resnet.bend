@@ -100,7 +100,6 @@ import ./../extra/datasets/__init__.bend as D
 #   two of the missing eight are the milestone itself: a loss and a backward
 #   pass. The eval path (`examples/test_pkl_imagenet.bend`) needs neither, which
 #   is exactly why it is the achievable first milestone and this one is not.
-
 # THE GATE MOVED TO `gates/train_resnet-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

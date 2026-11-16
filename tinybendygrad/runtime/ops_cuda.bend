@@ -209,7 +209,6 @@ def vend.trace(cs: List<&2, CL.Call>) -> String:
   String.join(vend.trace.go(cs, Nil{}), " ")
 
 # hp:10 has the same shape for HIP and lives in `ops_hip.bend`.
-
 # `autogen/cuda.py`, read out. These four are the ones ops_cuda.py names
 # explicitly; the rest of the enum is in `cu_err_code`.
 def CU_STREAM_NON_BLOCKING() -> U32: 1
@@ -349,12 +348,10 @@ def cu.init(+device: String, +maj: U32, +min: U32, +t: CL.Tr) -> CuDev:
 # `pm_bufferize` recognises by TAG, plus cu:114's `name="b"` rule which is keyed on
 # the NAME and a `b.tag[0] == "function"` test. Three rows and a three-way
 # dispatch, which is two Bool.picks and not a `U32` ladder.
-
 # `CUDAQueue` -- the COMMAND ENCODER, cu:28-66. `self.h` is the handle the last
 # `ccall` returned and every method stores it, so the trace records the CALL and
 # the queue's `h` is the id the trace minted -- `Tr.here` of the trace in front of
 # the call.
-
 # cu:36-37 `return self.rt_vars.after(self.h).index(2 if
 # self.queue.startswith("COPY") else 1).load()` -- the stream slot, and the
 # two-way choice on the queue NAME is the whole test. `cu.stream_slot` is that
@@ -455,7 +452,6 @@ def cu.exec(nbufs: U32, nvals: U32, +t: CL.Tr) -> CL.Tr:
 # `CUDAAllocator`, cu:71-95. `_alloc` has THREE branches and the third is the
 # only one that is not an early return: `external_ptr`, then `host or
 # cpu_access`, then device. Two of the three are `Bool.pick`s over one `Spec`.
-
 # cu:74 `if options.external_ptr: return BufferStorage(options.external_ptr)` --
 # NO CALL AT ALL, and that is the row: the external branch traces nothing.
 def cu.alloc.ext(ptr: U32, +t: CL.Tr) -> CL.Tr: t

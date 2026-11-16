@@ -488,7 +488,6 @@ def marg_add(+ar: O.Arena, +x: U32, +s: U32) -> Maybe<&1, List<&2, Marg>>:
 # THE NINE RULES, in movement.py's order. Each `match` is on BOOLS: the first is the
 # pattern's own tests, the rest are the LAMBDA's condition -- `upat.py`'s split exactly --
 # and every construction sits in a TAKEN arm, so a rule that does not fire interns nothing.
-
 # merge adjacent SHRINKs (movement.py:7-8)
 #   UPat(Ops.SHRINK, name="x").f(Ops.SHRINK, allow_any_len=True, name="s")
 #   lambda s,x: x.src[0]._mop(Ops.SHRINK, tuple((o+p, n) for (o,_),(p,n) in zip(x.marg, s.marg)))
@@ -794,7 +793,6 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
 # they test rather than by the def that computes them.
 #
 #   mutation                                                        rows moved
-
 #   M1  `hop_self.of`'s two arms swapped (the reported inversion)     14  ret_new, and every row that reads a
 #                                                                       FIRED rule's answer: shrink1_ns
 #                                                                       shrink1_marg reshape_pick permute_merge
@@ -870,7 +868,6 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
 # differently: `mop_len` and `idx_shaped` are the only rows in the 26 that can move. Delete
 # the COUNT rows and this mutation is invisible. (M13 is the same table with a wrong op set,
 # which is a different job and is a separate row.)
-
 # THE ONE RECURSIVE DEF. The fuel is the first parameter and every self-call passes a
 # list tail, so the decrease check reads left to right and stops at the first argument that
 # shrinks. `h` is read twice -- once for its arena, which the next rule builds in, and once

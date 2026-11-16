@@ -55,7 +55,6 @@
 #                                         PORTED  `q.slice_off` `q.slice_end` -- THE
 #                                         HEADLINE
 #
-
 # THE THREE WALLS, each with its Python line.
 #
 # WALL 1 -- `tinygrad.runtime.autogen.llvm_qcom` and the fetched rootfs.
@@ -277,7 +276,6 @@ def q.link_arg_n() -> U32: 6
 def q.binary_args() -> U32: 3
 
 # THE GATE.
-
 # a 0x110-byte library with a chosen u32 at 0xc0 and another at 0x100, built as
 # a LIST of byte values in ADDRESS order -- which is what makes `q.read`'s
 # endianness a decision the gate can see.

@@ -85,7 +85,6 @@ import ./../datasets/__init__.bend as D
 # FIRST MISSING SYMBOL: `nn.Embedding(self.relative_attention_num_buckets,
 # self.n_heads)` at t5.py:118, reached from `T5LayerSelfAttention` (:226) from
 # `T5Block` (:234) from `T5Stack.__init__` (:249).
-
 # THE GATE MOVED TO `gates/models-t5-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

@@ -42,7 +42,6 @@
 #                                                 `from e` chain, and the fact that
 #                                                 NOTHING AFTER IT HAPPENS
 #
-
 # THE THREE WALLS, and they are all `pathlib` / `sys` / the import machinery.
 #
 # 1. PATHLIB (device.py has the same wall, ops_*.py files take it for granted).
@@ -69,7 +68,6 @@
 #    TODO(p3) nn/torch.py:4  the import -- `import extra.torch_backend.backend` binds
 #      names in `sys.modules`, and the module search is the wall.
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER derives the argument
 # of one of the three calls (pure, and the gate checks it) OR records that call
 # in the trace (and the gate checks the ORDER). There is no third kind.
@@ -350,7 +348,6 @@ def shim.run(f: String, ok: Bool) -> Imp: shim.import(ok, shim.append(f, Imp.of(
 # THE GATE. Every row is a claim about nn/torch.py's TEXT or about a value
 # MEASURED by importing `tinygrad.nn.torch` in CPython. `1`/`0` are booleans,
 # other values are counts, indices and strings.
-
 # THE GATE MOVED TO `gates/torch-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

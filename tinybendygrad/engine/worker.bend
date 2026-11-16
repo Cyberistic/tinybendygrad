@@ -618,7 +618,6 @@ def main() -> IO(Unit):
 #   W12 sch_puts: the schedule REVERSED                         1  sched
 #   W13 eq_mstr: `None` equals a `Some`                         1  eq_mstr_one
 #
-
 # W6 DOES NOT CHECK, and the compiler's REASON is the finding. The mutation replaces the
 # `setattr` arm with `saved`, which removes the LAST USE of the parameter `now`, and
 # Bend refuses that (`rule 13`: "removing the last use of a parameter can be a compile
@@ -635,7 +634,6 @@ def main() -> IO(Unit):
 # what see it. This is `mixin/creation.bend` rule 23 turned around: two structures EQUAL
 # BY CONSTRUCTION are the same blindness as two structures equal in COUNT.
 #
-
 # THE CPYTHON LANE. `gates/worker-oracle.py worker` prints 15 rows, 9 of them shared
 # with this gate, all 9 GREEN (`SHARED=9 GREEN=9 RED=0`). The 47 BEND-ONLY rows are the
 # schedule, the `Pool` fields, the `Arg` readers, the pool-state machine's fixtures and

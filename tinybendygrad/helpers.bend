@@ -188,7 +188,6 @@ def getenv_str(k: String, d: String) -> IO(String):
 # of that equivalence down. A `U32` cannot hold `-1` and the alternative -- an
 # `I64` here and a comparison type change at each of the seven sites -- would buy a
 # distinction no site can observe.
-
 # PRE 0, MID 1, PEND 2, DEAD 3, and `v` is the digits so far.
 type Gi is Data:
   Gi{st: U32, v: U32}
@@ -885,7 +884,6 @@ def flatten_u32(l: List<&2, List<&2, U32>>) -> List<&2, U32>:
 # size_to_str, colorize_float) has no base equivalent either. `f32_fixed` walks
 # the decimal expansion of the f32 two digits at a time, which is printf's
 # `%.2f` on a value that came out of an f32.
-
 # 0x7F800000 is the f32 exponent field; all ones means inf or nan, and the
 # mantissa being non-zero distinguishes nan from inf
 def f32_exp_all_ones(+x: F32) -> Bool:
@@ -1199,7 +1197,6 @@ def size_to_str(+s: U32) -> String:
 # the row rather than hiding it. Closing it needs a nested three-state tracker for
 # `ESC` `[` `K` inside a body, which is 13 more table arms; that is a scoping
 # decision, not a proof that Bend cannot do it.
-
 # prepending emits LAST, so this puts the pending ESC immediately before whatever
 # follows it, and `List.drop` on the FRONT of `acc` removes the run's most recent
 # characters.
@@ -1504,7 +1501,6 @@ def floordiv_i32(+x: U32, +y: U32) -> U32:
 # `(num+amt-1)//amt*amt`, and BOTH are floors, so neither can be spelled with a
 # truncating division. Picking the wrong pair is a wrong answer, not a slower
 # right one.
-
 # cstyle div and mod: `abs(x)//abs(y)*(1,-1)[x*y<0] if y != 0 else 0`
 def cdiv_i32.put(neg: Bool, q: U32) -> U32:
   match neg:
@@ -1704,7 +1700,6 @@ def i64_sub(+a: I64, +b: I64) -> I64:
 # kept in step. `mixin/dtype.bend` records the same wall from the other side: its
 # `Dt.i64_floor_div` / `Dt.i64_cdiv` are `IO(..)` EFFECT SEAMS, so `_min_max`
 # cannot call them, and a pure pair operation is the only shape a fold has.
-
 # `a | b` and `a & b`, WORD-WISE, and that is exact rather than approximate: the
 # infinite-precision and the 64-bit two's complement readings of `&` and `|` agree
 # bit for bit, and `U32`'s wrap IS the 64-bit one. No sign fixup, ever.
@@ -2050,7 +2045,6 @@ def i64_div(a: I64, b: I64) -> I64:
 # down for the identical reason. Measured on the same 2106 rows: 236 cdiv, 204
 # cmod, 97 gcd disagreements before, 0 after, every one of them a row where
 # int64.min is an operand.
-
 # The zero divisor answers the DIVIDEND for the remainder, by the same
 # helpers.py:78 argument as `i64_divmod.of` above: the quotient is 0 and the
 # remainder is whatever was divided. Both callers already guard it, so this is
@@ -3001,7 +2995,6 @@ def Target.indices(+t: Target) -> String:
 # "CPU" while `Target.parse("CPU:0")` is the device "CPU" and the RENDERER
 # "0". One keeps a device name a STRING and the other splits a device name
 # into FIELDS.
-
 # The three characters the parser cuts on. `'+'` is 43, `':'` is 58, `';'` is 59.
 def Target.PLUS() -> Char: Char.from_u32(43)
 def Target.COLON() -> Char: Char.from_u32(58)

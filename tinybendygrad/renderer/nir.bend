@@ -200,7 +200,6 @@ def c.in_floats(d: S.Dt) -> Bool:
 # it, so a `bool` falls all the way through to `"b"`. The `and u` binds to the
 # FIRST arm only, so `u=False` turns a uint into `"i"` and leaves every other
 # class alone. Both are boundary cases with their own row.
-
 # the three arms, innermost first: a def may only call defs above it, so the
 # chain `arm1 -> arm2 -> arm3` is spelled bottom-up. Measured refusal otherwise.
 def c.arm3(d: S.Dt, is_float: Bool) -> String:
@@ -250,7 +249,6 @@ def c(+d: S.Dt, unsigned: Bool) -> String: c.arm1(d, Bool.and(c.in_uints(d), uns
 # in another), which is why the REVERSE direction is a per-table match and not
 # one shared inverse: `f_aop.rev("fadd") = "ADD"` and `u_aop.rev("iadd") =
 # "ADD"` are BOTH true and one shared inverse would have to pick.
-
 # THE MESA ENUM VALUES. Read by `getattr` on the live module, never transcribed,
 # and each one is gated so an entry moved into the wrong arm is a diff. The
 # authority for every one of these is the generated enum in
@@ -753,7 +751,6 @@ def glsl_call_row(+d: S.Dt) -> String: String.concat([dtn(d), "=", glsl_const(gl
 # recorder and calls the REAL `nir.ncast`, so each `py=` half is the symbol mesa
 # was asked for. A port that misreads the two-way condition disagrees on a large
 # part of the 17x17 grid, which is the point.
-
 # both prefixes are computed and passed in, rather than one computed per arm:
 # Bend counts a parameter read in each arm as read TWICE (measured at line 617,
 # `ot` in `ncast_mid.of`), so the arms must select between two values rather than
@@ -920,7 +917,6 @@ def store_nc() -> U32: 1
 # and `padded_idx(0, s) == s`. Both are rows, because `round_up + size` misread as
 # `round_up` is an off-by-a-whole-block, and `LVPRenderer.param_sz`
 # (nir.py:271) and `IR3Renderer.param_sz` (nir.py:309) both REDUCE over it.
-
 # `y` appears THREE times -- the `(y-1)`, the divisor and the multiplier -- so it
 # needs `+` and this is the only arithmetic in the file that does. Measured.
 def round_up(+x: U32, +y: U32) -> U32: U32.mul(U32.div(U32.add(x, U32.sub(y, 1)), y), y)
@@ -1023,7 +1019,6 @@ def Nir.row(+n: Nir) -> String:
 # it, `sm_120` -> 120 -> keeps it. `52` and `120` are the two boundary rows,
 # because a `>=` written as `>` drops `half` on 53 and a TWO-character slice
 # would raise on a bare `"86"` -- which is `arch_off` below.
-
 # No binder: `R.is_named` takes the dtype, so a `case S.Dt{...}` here bound four
 # names and read none of them -- and an unread binder still counts toward
 # affinity (refused as "nm (consumed more than once)" at line 884).
@@ -1460,11 +1455,9 @@ def main() -> IO(Unit):
 # tables (`mov`, `vec2`..`vec16`). The three `mesa *` rows at the foot of the
 # gate exist for that reason and nothing else.
 #
-
 # baseline: 102 rows
 #
 # ID    WHAT                                           ROWS MOVED (BY NAME)
-
 # M01   c: uint arm -> i                               c uint32 u=True, c uint8 u=True , ncast from uint8
 # M02   c: i arm -> f                                  c int32 u=True , c uint64 u=Fal, c uint8 u=Fals, ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from weaki
 # M03   c: f arm -> b (bool never reaches)             c bf16 u=True  , c double u=True, c fp8_e4m3 u=T , c half u=True  , ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
@@ -1501,13 +1494,10 @@ def main() -> IO(Unit):
 # M35   cfo: WHERE dropped from the op set             cfo ir3        , cfo lvp        , cfo nak        , cfo nir
 #
 # 37 mutations, 1 blind
-
 # THE CONSTANT SWEEP. `+1` on every constant arm, one at a time.
-
 # baseline: 102 rows
 #
 # ID     LINE   ARM                                ROWS MOVED
-
 # K01    255    case "iadd": 306                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu
 # K02    256    case "imul": 338                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu
 # K03    257    case "udiv": 427                   aop rev u      , aop u  table
@@ -1611,7 +1601,6 @@ def main() -> IO(Unit):
 # K101   1103   case "sm_120": 120                 arch_int sm_120
 #
 # constant sweep: 101 arms, 0 blind, 0 did-not-compile
-
 # what the gate does not cover, named rather than left implied.
 #
 # * `nir_instr`'s `index_map` SLOT for each `NIR_INTRINSIC_*` key (nir.py:50).
@@ -1648,7 +1637,6 @@ def main() -> IO(Unit):
 # * `IR3Renderer.postrender` (:312-319): `num_ubos` / `num_images` bookkeeping
 #   over `itertools.count`. `TODO(p3) nir.py:312 symbol=IR3Renderer.postrender`.
 #
-
 # the walls `nir_llvmir.bend` names, and which of them this port closes.
 #
 # Its header lists STAGE 3 as "`nir.py`: `glsl_type` (:14), `u_aop`/`s_aop`/

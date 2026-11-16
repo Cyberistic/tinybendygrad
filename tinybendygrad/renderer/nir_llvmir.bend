@@ -85,7 +85,6 @@
 # prints `ALL PROOFS CHECK`, and answers `KeyError` where CPython answers
 # `float`.
 #
-
 # THE STAGES, and what landed in each
 #
 #   STAGE 1  DONE, 205 rows, both lanes byte-identical to the oracle.
@@ -209,7 +208,6 @@ def named(+nm: String, +ds: List<&2, S.Dt>) -> Bool:
 # the same "make the flag a parameter and the work a leaf" shape rule 28 asks for,
 # reached from the other side: there is no second def of one recursion, there are
 # simply two defs and one of them is not recursive.
-
 # `"i" + str(bits)`, the integer arm -- NOT `bits // 8`. The map is
 # `int8: "i8", int16: "i16", int32: "i32", int64: "i64"`, so the number after the
 # `i` IS THE BIT COUNT. MEASURED: the first port wrote `U32.div(bits, 8)` on the

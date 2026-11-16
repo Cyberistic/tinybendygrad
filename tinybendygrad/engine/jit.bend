@@ -240,7 +240,6 @@ def ssort(xs: List<&2, String>) -> List<&2, String>:
 # `f"{self.captured.expected_names=}"` as the SOURCE TEXT
 # `self.captured.expected_names=[0, 1]`, so the source text is part of the message
 # a user sees.
-
 # jit.py:25 -- a literal, so it is a literal
 def m_disk() -> String:
   "cannot make an independent copy of a written DISK input"

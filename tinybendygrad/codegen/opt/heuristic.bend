@@ -92,7 +92,6 @@
 # need the set algebra, because each step only adds a predicate the previous one
 # already has.
 #
-
 # THE ORDER PROBLEM, STATED ONCE. `heuristic.py:6` does
 # `from tinygrad.codegen.opt.postrange import Scheduler`, so this file imports
 # `postrange.bend`. It could call `PR.Sched.group_for_reduces` today and be
@@ -103,7 +102,6 @@
 # Ops.CONST`, which is the arena and therefore `postrange.bend`'s `Sched` too --
 # so the import is not the blocker, `UOp.ranges` and `backward_slice` are.
 #
-
 # what is ported here, exactly, and what the rows below PIN.
 #
 # Two of the thirteen blocks are pure over `Sched` with nothing left over, and

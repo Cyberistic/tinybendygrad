@@ -43,7 +43,6 @@
 #     decimals and are NOT independently verified" -- they are now `cd_*` rows
 #     carrying CPython's own `repr`, plus `cx_*` rows carrying the 0x spelling.
 #
-
 # NO DIGIT IN THE GENERATED HALF IS MINE.  `sp.*` and `fx.*` are produced by
 # `.agents/slop/tc-gen.py bend` and `.agents/slop/tc-rows.py {fixtures,pairs}`,
 # which read `.agents/slop/tc-audit.txt` -- CPython's own output, 146 constants
@@ -63,7 +62,6 @@
 # as hex is not two independent readings on a transposed digit PAIR, so a gate
 # that only reads one of them is half-blind exactly where it matters.
 #
-
 # two defects this file found, both in other people's code, both left loud.
 #
 # 1. the reverse lookup was answering "not found" for everything, and it was one
@@ -96,7 +94,6 @@
 #    edited to make a row pass.  It turns GREEN by itself the moment the compiler
 #    is fixed, which is the shape a real regression row should have.
 #
-
 # WHY A VALUE LAYER IS POSSIBLE AT ALL.  Two measurements:
 #
 #   1. `base.bend`'s F32 arithmetic is BIT-EXACT with CPython/numpy.  Probe:
@@ -113,7 +110,6 @@
 # `F32.show` is lossy (seven digits) and appears in no gate; `F32.bits` is the
 # gate.
 #
-
 # NO float64 EVALUATION, and the float64 coefficients are still verified.  Bend
 # has no `F64` (MEASURED: `grep -n F64 references/bend/bend2/base.bend` is
 # empty).  A float64 coefficient cannot be a VALUE here, so it is a STRING
@@ -121,7 +117,6 @@
 # round-trips, gated by `cd_*` with `float.hex()` on the record in
 # `tc-audit.txt` col 3.
 #
-
 # THE TWO WALLS, both named, neither worked around in silence.
 #
 # W1. NO UINT64 ARITHMETIC, so `payne_hanek_reduction`'s product is NOT
@@ -160,7 +155,6 @@
 # the gate compares against the bitcast tinygrad performs.  `xf_pow2if_*`,
 # `xf_frexp_*` and `xf_ldexp3k_*` are those claims.
 #
-
 # THE INVENTORY, in upstream's order.  PORTED = the float32 lane is evaluated and
 # gated.  GATES = only the predicate is gated.  W1/W2 as above.
 #
@@ -206,7 +200,6 @@
 # (+ `tc-rows-coef.txt`), `tc-rows.py`, `tc-diff.py`, `tc-build.py`,
 # `tc-mutate.py`.
 #
-
 # THE GATE, AS IT STANDS: 834 oracle rows, 878 printed, 801 AGREE, 24 disagree,
 # 9 MISSING, 53 extra.  The 24 are not 24 findings; they are THREE, and the
 # expectations are CPython's in every case and are NOT edited.
@@ -237,7 +230,6 @@
 # `xpow` calls the NATIVE `Ops.LOG2`/`Ops.EXP2`.  Substituting this file's own
 # `xexp2` would be claiming a different function than the one `xpow` calls.
 #
-
 # THE MUTATION TABLE, RUN: 35 entries, 35 move rows, ZERO zeros.
 #
 # It is worth what it cost, because the zeros were the point and all five of the
@@ -431,7 +423,6 @@ def fx.xpowp() -> List<&2, String>:
 def fx.lazy() -> List<&2, String>:
   String.split("-0.0|-0.5|-1.0|-inf|0.0|0.5|1.0|inf|nan", '|')
 # THE ROW PRINTERS.
-
 # THE GATE MOVED TO `gates/transcendental_f32-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

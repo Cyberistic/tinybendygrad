@@ -46,7 +46,6 @@ import ./../extra/datasets/__init__.bend as D
 # all four are defs here. The part of `nn.BatchNorm` that is NOT a decomposition
 # is the running-statistics update, and it is REFUSED with the two symbols
 # named (`pool_bn_running_stats`).
-
 # --- the two list joins this file needs ------------------------------------
 def pool_sh(a: List<&2, U32>, b: List<&2, U32>) -> List<&2, U32>: List.concat(&2, U32, [a, b])
 
@@ -180,7 +179,6 @@ def W4.perm(+q: W4) -> List<&2, U32>: [0, 1, 3, 5, 2, 4]
 # ONE DEF PER LINE of the upstream expression, because `O.Arena` is affine --
 # `mixin/rand.bend:427 symbol=op_arange` carries R1's whole-file `+ar: O.Arena`
 # thread, so a def that BUILDS grows a copy and the chain must THREAD `+t`.
-
 # movement.py:624  x = self.repeat(noop ++ [ceildiv(k*(i*f+d), i)])
 def pool_rep.rp(+t: T.Tensor, +q: W4) -> T.Tensor:
   CR.cr_expand(MX.mxw_reshape(t, W4.lift(q)), W4.tiled(q))
@@ -440,7 +438,6 @@ def pool_wall_r1() -> D.Refused:
 # change-detector AGENTS.md forbids. The rows are SHAPES, and a shape is what a
 # caller consumes (`mixin/op.bend:1379-1380`), so they are the same measurement
 # `mo_shape` takes.
-
 # the rows, and what they are not.
 #
 # `main` PRINTS AND MEASURES. There are no expectations in this file because a

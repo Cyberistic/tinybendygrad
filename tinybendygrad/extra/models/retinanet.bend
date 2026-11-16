@@ -77,7 +77,6 @@ import ./../datasets/__init__.bend as D
 # `extra/models/resnet.py:7` (upstream has NO `extra/` AT THIS PIN) --
 # `BatchNorm = nn.BatchNorm2d` is upstream's `tinygrad/nn/__init__.py:60` -- and that wall text is
 # STALE: `nn/pool.bend:370 pool_bn` is a real batchnorm.
-
 # THE GATE MOVED TO `gates/models-retinanet-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

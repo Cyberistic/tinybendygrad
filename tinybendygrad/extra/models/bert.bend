@@ -84,7 +84,6 @@ import ./../datasets/__init__.bend as D
 # `gelu` (:235-236) and `gather` (:161-164) are module-level functions and both are
 # NOT PORTED: `gather` (:164) is `onehot @ prediction_logits` and `one_hot` is MISSING,
 # and the one-hot itself is built from `Tensor.arange` + `expand` + `==`.
-
 # THE GATE MOVED TO `gates/models-bert-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

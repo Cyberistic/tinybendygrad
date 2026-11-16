@@ -49,7 +49,6 @@ import Base
 #     symlink cycle this port spins until the fuel runs out and then SILENTLY
 #     TRUNCATES. The fix is stat -> lstat in runtime/sz.c; szfuzz generates
 #     symlink cases that pin it.
-
 # A row of either table: the path as os.path.relpath gives it, the lines, the
 # tokens, and -- in the diff table only -- how many lines and tenths of a ratio it
 # gained or lost. An F32 carries those two because they are signed and U32 is not,
@@ -110,7 +109,6 @@ def Dir.rel(d: Dir) -> String:
 # foreign: these two are the whole of it. bend 2.0.34's base.bend can ask neither,
 # so each is @unsafe -- a promise the checker reads and never checks, like a foreign
 # def -- and each TODO names the primitive it waits for.
-
 # TODO(p3) base.bend: File.list(path) -> List<String>  -- no opendir/readdir, so the
 # names of a directory in the order the host lists them are a foreign call, and
 # os.walk keeps that order: runtime/sz.c says why.

@@ -92,7 +92,6 @@
 # `data` is a `raise NotImplementedError` declaration and `item` reads host memory
 # through it, which is the same device-state seam `tensor.bend` records as WALL 2.
 #
-
 # W9 -- TWO MEASURED DEFECTS IN `mixin/elementwise.bend`, both in `promote`
 # (elementwise.py:24-34), and between them the reason this file spells its own
 # `_broadcasted`. `elementwise.bend` is not owned here, so both are REPORTED and
@@ -133,7 +132,6 @@
 #
 # `t_bin_promote` is the row that pins the ARENA half, and it is four-sided --
 #
-
 # FIVE BEND RULES THIS FILE LEARNS, in the order it learned them.
 #
 #   1. A def body is ONE EXPRESSION and a `let` is affine, so anything used twice is
@@ -168,7 +166,6 @@
 #      recipes need are live. REPORTED, not fixed: `tinybendygrad/tensor.bend`'s
 #      header carries the stale claim.
 #
-
 # THE GATE. `main` prints one row per claim, in Python's order, in the
 # `name=<count> OP/<nsrc> ...` format `tinybendygrad/tensor.bend` uses, so the
 # CPython oracle is a `toposort()` and the two lanes diff byte for byte. Nothing is
@@ -202,7 +199,6 @@
 # the claim that no arena can see: a DUPLICATED `_softmax` re-interns the same nodes,
 # because the arena is a hashcons.
 #
-
 # the mutation table -- what the gate sees and what it cannot. Seventeen one-token
 # edits, each applied, each run through BOTH lanes, each diffed against the
 # unmutated output and reverted from a byte snapshot:
@@ -244,7 +240,6 @@
   # (upstream's `isinf`, mixin/elementwise.py:611);
 # `mo_exp`'s cast ordering.
 #
-
 # the two halves share this file. side b must not re-declare any `mo_*` def, must
 # not re-declare `main`, and must not touch anything above this line. Its own
 # section goes below `main`, and its rows go in its own `mo2_*` printers.
@@ -404,14 +399,12 @@ def mo_neginf() -> F32: F32.neg(mo_inf())
 
 # `self.const_like(v)` (mixin/creation.py:14) is a bare CONST here for the same reason,
 # and it is only reached by `normalize`'s `p == 0` arm (W7).
-
 # THE DTYPE ARITHMETIC. `weak_dtype` (tinygrad/dtype.py:175) is `dtypes.weakfloat if
 # is_float else dtypes.weakint if is_int else dtype`, and `is_float`/`is_int` both
 # INCLUDE their weak member -- so the whole thing is a three-arm match on `Cls`
 # with `CVoid` as the identity. It is `uop/weak.bend`'s `W.weak_dtype` and this is
 # the CALL, not a second copy: the house rule is reuse, and elementwise.bend sets
 # the precedent by reading `W.weak_dtype` for the very same predicate.
-
 # `commit_dtype` -- tinygrad/dtype.py:16, read through `mixin/dtype.bend`'s own `commit_dtype`,
 # which is the same refusal `_min_max` (ops.py:1104) forces. The honest
 # totalisation is the node's OWN dtype, which makes the `cast` the identity; a
@@ -510,7 +503,6 @@ def mo_promote(+fx: F.Folded, +t: T.Tensor, +od: S.Dt) -> T.Tensor:
 #
 #   `y = self.ufix(y)`; `x, y = (self, y) if not reverse else (y, self)`
 #   `out_dtype = least_upper_dtype(x.dtype, y.dtype)`; `return promote(x), promote(y)`
-
 # `_binop`'s node, SPELLED rather than `T.tn_alu`d, and for the same reason `mo_const_t`
 # is spelled: `T.tn_alu(t, op, srcs)` takes its ARENA from `t` and its src ORDER from
 # `[t] ++ srcs`, and the two promotions of a binop make those two arenas DIFFERENT.
@@ -543,7 +535,6 @@ def mo_bin_out(+fx: F.Folded, +t: T.Tensor, +y: T.Tensor) -> S.Dt:
 # newer one), so no caller that already satisfied the old rule moves. The re-fold between
 # the two promotions is `elementwise.bend`'s `ew_promo2` restated where W9 forces a
 # re-implementation.
-
 # `lhs.alu(op, rhs)` is `UOp(op, src=(self, *src))` (tensor.py:116, ops.py:627), so
 # `lhs` is `src[0]` -- and `T.tn_alu` puts its FIRST argument there. `t_min0` printed
 # `CONST BUFFER MUL` where CPython prints `BUFFER CONST MUL` because of getting this
@@ -674,7 +665,6 @@ def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
 
 # `least_upper_dtype` is `F.least_upper.of` -- fold.bend's own lattice, the same one
 # `promote`'s sibling `_broadcasted` reads, so it is a CALL.
-
 # THE MOVEMENT DISPATCH, hoisted. `mixin/movement.py`'s `_mop` is `ops.py:821`, and
 # `tensor.bend` already hoisted it as `T.tn_mop` with its own notice -- so this file
 # does NOT re-hoist it. What `movement.py` adds on top of `_mop` is the IDENTITY TEST
@@ -689,7 +679,6 @@ def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
 # value and WILL disagree the moment anything between the two grows the arena. Every
 # one of the six bugs this file hit on the way to compiling was exactly that, and
 # every one of them printed `NOOP/0` or a plausible-looking small number.
-
 # THE `List<&2, O.Sint>` IMAGE OF A SHAPE ARG, and it is here for a MEASURED reason.
 # `mo_reshape`'s identity test is `ret.shape == self.shape` (movement.py:281), and the
 # obvious spelling asks the fold for `ret`'s shape -- which does NOT always answer.
@@ -794,7 +783,6 @@ def mo_resolve(neg: Bool, +dim: U32, total: U32) -> U32:
 # (op.py:519), where it is `range(ndim)` -- `mo_ax_all` spells that case, and it is
 # `t_meanN` that says the two agree on a 1-D source and `t_mean0_2d` that says they
 # do not on a 2-D one.
-
 # THE RESOLVED AXIS, and it is a LIST from here on because Python's `_reduce` makes it
 # a tuple on its second line (reduce.py:15) and everything downstream reads the tuple.
 # `zero` is `self.ndim == 0` (reduce.py:16) and is the one `Bool` the fold can compute.
@@ -886,7 +874,6 @@ def mo_max(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # THE RECIPES, in `mixin/op.py`'s order. Every one of them is its Python body with
 # the calls above in place of the `mixin/reduce.py` / `mixin/movement.py` /
 # `mixin/elementwise.py` methods it spells, and each carries the line it ports.
-
 # `reciprocal` -- elementwise.py:468. `self.alu(Ops.RECIP)`, and `E.ew_reciprocal`
 # IS that one line, so this is the CALL -- elementwise.bend's own export, reused.
 def mo_recip(+t: T.Tensor) -> T.Tensor: E.ew_reciprocal(t)
@@ -1211,7 +1198,6 @@ def mo_min(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # from here. The signature is a TOPOSORT with each node's op and src COUNT, and the
 # COUNT is the first field of the row so a dropped or duplicated node is visible in
 # the same place every time.
-
 # the value rows -- the row `0eee58d9d` named and no row printed.
 #
 # `mo_sig` prints each node's OP and its src COUNT, and a CONST's PAYLOAD lives in
@@ -1609,7 +1595,6 @@ def t_sh_sq0_123() -> IO(Unit):
   mo_shape("sh_sq0_123", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
 
 # --- the four BEND-ONLY rows.
-
 # `t_commit_weak` -- rule 4. `commit_dtype` (tinygrad/dtype.py:16) REFUSES a weakint node
 # because `UOp._min_max` (ops.py:1104) is not ported, so `mo_commit_dt` hands back the
 # node's OWN dtype and `_reduce`'s `cast` (reduce.py:14) is the identity. The row says

@@ -537,7 +537,6 @@ def rf_rtag(+ar: O.Arena, +self: U32, t: O.Tag) -> M.Hop:
 # build the next node in. `rf_rtag` answers a `Hop` because that is what a rule
 # answers, and a `Hop`'s index is not enough to build a node on; the two are one
 # line apart and the fixture is the only caller that needs the second.
-
 # `pm_add_param_range_tags` -- rangeify.py:330-333. FULLY PORTED.
 #
 #     # Scalar parameters keep their identity across the call boundary.
@@ -597,7 +596,6 @@ def rf_claimed(+ar: O.Arena, +self: U32, ops: List<&2, O.Op>, rej: List<&2, O.Op
 # is kept. `movement.bend:69-75` now carries the fix and names its own inversion. MEASURED by
 # running `movement.bend`'s own two rows for the def: `ret_new` reads 0, and that is the row
 # which read 1 while the bug was in place; `ret_self` reads 1.
-
 # TABLE 1: `pm_remove_bufferize` -- rangeify.py:131-138. THREE RULES, all three bodies
 # PORTED except `remove_bufferize` itself, which is the biggest wall in the file and is
 # discussed at the foot.
@@ -2195,7 +2193,6 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #      gate as it now stands. NOT closed with a row that encodes either behaviour.
 # M20 is the row the count rows exist for: it deletes the last `PMEntry`, so no tag
 # renumbers and `ct_len` is one of only six rows it can move.
-
 # THE WALLS. Every one is a Python fact rather than a choice, and every one is a
 # `# WALL(p3)` line, so `rg 'WALL\(p3\)'` is the whole outstanding list. `rg 'NOT PORTED'`
 # finds the site for each. - and this sentence used to name `# TODO(p3)` and
@@ -2265,7 +2262,6 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #  a wall in `codegen/kernel.bend`. so every value the port builds carries
 #  `estimates=None` and `optimized=False`, which is upstream's default and not
 #  A LIE.
-
 # `movement.bend`'s `hop_self` was inverted, and is not any more. It is kept here
 # because the note above `M.hop_self`'s use is only worth reading if the thing it
 # records is real. `hop_self.of` used to answer `r` on `True` (the answer IS self, or
@@ -2276,7 +2272,6 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
 # fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
 # a second copy -- see the note at the top of the `*_try` block.
-
 # THE ENGINE. `graph_rewrite` -- ops.py:1886 -- over the port's ARENA.
 #
 # WHAT UPSTREAM DOES, and the four lines that matter:
@@ -2312,7 +2307,6 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # drives the tables it owns. Stage 1 is `Stg{0, Nil{}}` -- an EMPTY table --
 # because `run_rangeify` is not ported, and an empty table is the honest
 # spelling of "this stage does nothing here".
-
 # THE MAP. An original node index -> the index it BECAME. It is APPENDED and
 # the scan keeps the LAST match, so the newest entry wins. EVERY visited node
 # is in it, so an absent key means "never visited" and a visited node that did

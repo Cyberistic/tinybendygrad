@@ -68,7 +68,6 @@ import ./../dtype.bend as DT
 # method that builds it has landed, and every row below is a graph SHAPE over the
 # ops I CAN build. `detach` in particular IS an `alu` with no srcs (elementwise.py:43
 # is `return self.alu(Ops.DETACH)`), so it is a real node here and not a name.
-
 # GATE FIXTURES. `Tensor([1.0, 2.0], device='PYTHON')` is `UOp.new_buffer`
 # (ops.py:853), which is tensor.bend's WALL 2: it builds a BUFFER node plus an
 # opaque allocation and only the node is a graph fact. So the node is built here
@@ -396,7 +395,6 @@ def op_ar(+t: T.Tensor) -> O.Arena:
 # operands' arenas are MERGED before either index is read. The old `op_sub` built a bare
 # `SUB` here; CPython's `sub` (elementwise.py:103) is `a.alu(Ops.ADD, -b)` and `Ops.SUB` is
 # never built by a Tensor method.
-
 # `Optimizer.__init__` -- optim.py:11-22, the constructor.
 #
 # The eleven `self.x = ...` assignments in Python's order, and the record is built
@@ -465,7 +463,6 @@ def op_group(xs: List<&2, Optim>) -> List<&2, U32>:
 # walk is over its OWN flattened params and needs no per-member dispatch. That is
 # the honest reading of `[o.zero_grad() for o in ...]`: every parameter of every
 # member, exactly once, in member order.
-
 # `Tensor.grad_set` only touches two of the record's four fields, and it rebuilds
 # the record around them, so the uop-index form needs no arena at all -- `Optim.ar`
 # passes it through and it is a no-op for this def.
@@ -491,7 +488,6 @@ def op_group.zero_grad(xs: List<&2, Optim>) -> List<&2, U32>:
 #
 # `return extra+self.params+self.buffers` (optim.py:57) is a THREE-way concat and
 # `H.flatten_u32` is helpers.bend's own two-level flatten, which is exactly it.
-
 # `extra + self.params + self.buffers` (optim.py:57) is a THREE-way concat, so it
 # is two `op_group.cat`s and the middle one needs `params` twice -- hence `+o` on
 # the def and the `.of` that takes the pieces already read.
@@ -561,7 +557,6 @@ def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
 # change -- `1 NOOP/0`, because index 0 is the BOTTOM sentinel -- and no `+` on `ar`
 # can fix it, because the grown arena is simply not in a `U32`. A `Tensor` is exactly
 # the pair (`Arena & U32`) that ops.bend's `Found` exists to spell.
-
 # the arena rule, in one place, and it is the whole of this file's hardest part.
 #
 # A node belongs in the arena as it stood AFTER the last node built before it, and in
@@ -577,7 +572,6 @@ def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
 # All three typecheck, all three print a plausible-looking number, and all three are
 # the SAME mistake. tensor.bend's rule 5 names it: the arena a build returns is not the
 # arena that went in.
-
 # `lhs + rhs` -- elementwise.py:267 `__add__`. both operands are `Tensor`s and the build
 # MERGES THEIR ARENAS. `Arena` is an immutable `Data` value, so `b`'s index is meaningful
 # only in `b`'s own arena; `tn_binop` re-mints it into a common descendant (`Arena.merge`,
@@ -682,7 +676,6 @@ def op_cast(+t: T.Tensor, dt: S.Dt) -> T.Tensor:
 # the order of the calls is the port: :117 before :119 before :121 before :122 before
 # :125 before :127. A port that hoisted the `classic` multiply would build the same
 # nodes in a different graph and every signature row would see it.
-
 # THE SUM HAS NO AXIS (reduce.py:20), so the axis list is EVERY axis, derived from the
 # ndim the fold reports. `op_sum` is the only `tn_rop` caller in this file and it is
 # here rather than at `tn_rop` because "every axis" is a CALLER's decision: `tn_rop`
@@ -842,7 +835,6 @@ def op_postwd(+ar: O.Arena, g: U32, t: U32, lr: U32, wd: F32) -> T.Tensor:
 #   :171 `up = (m_hat / (v_hat.sqrt() + self.eps)).shard_like(t) + self.wd * t.detach()`
 #        -- `shard_like` is tensor.py:401 and is a MULTI-DEVICE wall; the ADD half is not.
 #   :178 `ret.append((self.lr * r * up).cast(t.dtype))` -- TWO left-associated MULs.
-
 # `(1.0 - self.b1)` IS NOT A NODE. `op_1mb` is the trace-time fold, and the row that
 # would see a spurious SUB is `op_lamb`.
 def op_1mb(b: F32) -> F32:
@@ -901,9 +893,7 @@ def op_vhat(+ar: O.Arena, v: U32, b2_t: U32) -> T.Tensor:
 # print the same signature whichever way round they are swapped. The rows that pin
 # ORDER specifically are `op_lars0` (two CONSTs, so order-free by construction) and
 # `op_prewd`/`op_trust`, which have a BUFFER and a CONST in the same multiply.
-
 # --- the printers, and they are ABOVE every row that uses them ----------------
-
 # THE GATE MOVED TO `gates/optim-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

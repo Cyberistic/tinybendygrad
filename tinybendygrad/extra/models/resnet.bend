@@ -162,7 +162,6 @@ import ./../datasets/__init__.bend as D
 # out, and `__call__` is `rs_basic_block_call`. `self` does not survive: a Bend
 # `Data` record has no reflection (THE PORT's `nn/__init__.bend` HEADER), so the state a Python
 # `self` carries is the argument list here.
-
 # THE GATE MOVED TO `gates/models-resnet-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

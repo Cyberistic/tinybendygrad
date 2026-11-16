@@ -194,7 +194,6 @@ def mn_row.line(nm: String, got: String, want: String) -> IO(Unit):
   IO.print(String.concat([nm, " got=", got, " want=", want]))
 
 # THE ROWS.
-
 # THE MODEL's INPUT, and the shape the walk starts from.
 def mn_row_in() -> IO(Unit):
   mn_row.line("mnist_in_shape", mn_show([1, 1, MN_IN_H(), MN_IN_W()]), "1,1,28,28")

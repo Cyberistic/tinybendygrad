@@ -70,7 +70,6 @@
 # `lambda d,a,dt,name: f"rcp.approx.{name} {d}, {a};"` -- the DTYPE IS NOT READ.
 # MEASURED: three rows (`asm RECIP bool`, `u32`, `i32`).
 #
-
 # ptx.py. `PTXRenderer`'s class attributes are the OPTS of a device, so they are
 # a `Data` record and `ptx_of(ver)` is the inheritance (convention 1). Python
 # MUTATES `self.extra_matcher` in `__init__` when `int(arch[3:]) < 80`
@@ -439,7 +438,6 @@ def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: Stri
 # list of assembly lines is the quietest possible wrong answer. That is the same trade the
 # `void`/`weakint` arms above refused to make, and it was refused there because `pri` put
 # three dtypes on one entry; here the twenty-one put none.
-
 # :38-39 `supports_half` / `doesnt_support_half`. The first is a SEVEN-TUPLE
 # LITERAL, so its order is the LITERAL's -- EXP2,ADD,MUL,MAX,CMPLT,WHERE,TRUNC --
 # and NOT `asm_for_op`'s key order, which would put TRUNC second. The second is
@@ -540,7 +538,6 @@ def r_pmx_n() -> String: T.rd("ptx_matcher rules", U32.show(pm_n_rules()))
 #                       extra CAST when `y` was already uint.
 #   WALL(p3) ptx.py:56  SHR with a non-uint shift amount -> cast -- BLOCKED. same shape as
 #                       ptx.py:55.
-
 # `render_val` -- `F32.bits` is the float pattern and half is a RE-ENCODE, so
 # half goes through `f16bits` and float does not.
 def r_rv1(+dt: S.Dt, +vt: String, flt: Bool, half_: Bool, uns: Bool, +x: F32, +v: U32) -> String:
@@ -780,13 +777,11 @@ def r_ptx_tcs() -> String:
 # then WHERE's three forms), `asm_for_op` again over the real names, the half
 # tuples, `modifier`, `render_val`, the three tables, the constants, then
 # `supported_dtypes` and `tensor_cores`.
-
 # THE ESCAPE, because `PTXRenderer.barrier` contains a real TAB
 # ("bar.sync\t0;") and `render_kernel` contains real NEWLINES, and neither is
 # visible in a one-line row. CPython's `repr` escapes them and the oracle escapes
 # them, so the Bend side escapes them the same way -- which also means a DROPPED
 # tab is a diff rather than a shorter line.
-
 # `fmt` -- ptx.py:164, AT THE PIN.
 #
 #     def fmt(line): return "\t" + line.replace(" ", "\t" if len(line.split(" ")[0]) > 7 else "\t\t", 1)
@@ -804,7 +799,6 @@ def r_ptx_tcs() -> String:
 # kept it, and the two agreed until the 2026-10-16 re-vendor moved the tree
 # past that commit. a comment that argues for a behaviour upstream deleted is
 # A WRONG BEHAVIOUR WITH A DEFENCE, so this file's own `$` prose went with it.
-
 # `line.split(" ")[0]` -- the mnemonic, i.e. everything before the first space.
 def fmt_head(+cs: List<&2, Char>, +acc: List<&2, Char>) -> List<&2, Char>:
   match cs:
@@ -955,7 +949,6 @@ def render_wmma(n: U32, m: U32, k: U32, +di: S.Dt, +dou: S.Dt, +w: Wmr) -> List<
 # `launch_bounds = prod([d.vmax for d in local_dims])` reads each local
 # dimension's bound off the SPECIAL's src, which is the naming walk's fold and so
 # is stage 3 as well; the header takes the product as a PARAMETER here.
-
 # `.param .{'u64' if u.addrspace is GLOBAL else types[u.dtype]} {name}` -- a
 # GLOBAL buffer is a 64-bit pointer whatever its dtype, and a non-GLOBAL one is
 # the dtype's PTX name. `is_glob` is the Bool, because `S.Addr` would drag the

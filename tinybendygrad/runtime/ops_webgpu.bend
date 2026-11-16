@@ -66,7 +66,6 @@
 #   :206-219 _readable_buffer        ported  `copy.readable`
 #   :220-221 write_buffer            ported  `copy.write`
 #
-
 # the three walls.
 #
 # 1. string views (:13-14). `ctypes.string_at(sv.data, sv.length)` and
@@ -105,7 +104,6 @@
 # the array as a `List` and the chain as an explicit argument, which is the same
 # information without the ctypes shape.
 #
-
 # the payload, which is the whole async story and it is one line long.
 #
 # :34  status, (*payload, emsg) = s, [<args minus userdata1/2>] + ([] if has_emsg
@@ -131,7 +129,6 @@
 # are the six that must become `await`. `sync_*` names them, and every call_wait
 # entry in the trace is one of the six.
 #
-
 # what device.bend AND wgsl.bend owe this file. Named, because this file cannot
 # be checked without them and does not pretend otherwise.
 #
@@ -165,7 +162,6 @@
 #      from the wgsl attribute. `prog.call` takes `local_size`, records it in
 #      `Pass.ls`, and never dispatches on it, so the gate can pin that.
 #
-
 # the layout derivation, :74-78, which is the part of this file that is pure
 # logic and therefore the part worth checking:
 #
@@ -197,7 +193,6 @@
 # `pass.uniforms` binds layout entry k+1 to bufs[k]. that is the whole interface
 # between this file and wgsl.bend, and a divergence there is silent in both.
 #
-
 # no wgpu in this env. `Device['WEBGPU']` fails with "failed to load library
 # webgpu", so nothing here was measured against a live device. Every constant
 # below was read out of `tinygrad/runtime/autogen/webgpu.py`, every status name
@@ -293,7 +288,6 @@ def QUERY_COUNT() -> U32: 2
 def QUERY_BUF_SIZE() -> U32: 16
 
 # the types.
-
 # one ffi call and the object it acts on. `arg` is the object kind for create /
 # release / destroy, the sync_* id for a wait, the workgroup count for a
 # dispatch and the group index for a set_bind_group; unused elsewhere. There is
@@ -904,7 +898,6 @@ def copy.write(bytes: List<&2, U32>, t: Tr) -> Tr:
   Tr.emit(CALL_WRITE, U32.from_nat(List.length(&2, U32, bytes)), t)
 
 # ops_webgpu.py:150-163 -- the allocator.
-
 # :152-153 Storage|CopyDst|CopySrc. The three bits together say: a storage buffer
 # the host can upload into and read back out of.
 def alloc.usage() -> U32: U32.or(U32.or(USAGE_STORAGE(), USAGE_COPY_DST()), USAGE_COPY_SRC())
@@ -1071,7 +1064,6 @@ def slots(+bs: List<&2, Buf>, nvals: Nat) -> List<&2, Slot>:
 # no later step records anything, so these steps need no guard of their own and a
 # refusal shows up as a truncated trace -- which is exactly what the four
 # `wg_refuse_*` rows read.
-
 # :71, and the dispatch geometry :123 reads. `local_size` is recorded and never
 # dispatched on: ops_webgpu.py never reads it (see wgsl.bend owes, item 3).
 # the parameter is `local`, not `ls`: a pattern binder of the same name shadows it

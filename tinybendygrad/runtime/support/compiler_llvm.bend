@@ -46,7 +46,6 @@
 # not a single message.
 #   TODO(p3) compiler_llvm.py:36-42  symbol=__init__ -- the ctypes callback.
 #
-
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :6   cerr()                PORTED `cerr_depth` -- the pointer-to-pointer shape -- upstream builds the error pointer in `cerr`
@@ -70,7 +69,6 @@
 #   tinygrad/runtime/support/compiler_llvm.py:76-88 `disassemble` PORTED `CPULLVMCompiler.dis_row` symbol=disassemble
 #                                       `AMDLLVMCompiler.dis_row`
 #
-
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- `tinygrad.runtime.autogen.llvm`: `ctypes.CDLL`, ~70 entry points, a

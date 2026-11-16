@@ -44,7 +44,6 @@
 #
 # TODO(p3) elf.py:16 symbol=assemble_linear, :41-46 symbol=assemble_linear, :47 symbol=assemble_linear, :108-113 symbol=assemble_linear  the four blockers above.
 #
-
 # A MEASURED UPSTREAM FACT, because it looks like a bug and it is not one
 # to "fix". elf.py:52 is
 #
@@ -74,7 +73,6 @@ import ./dsl.bend as D
 # There is no hand-written Python definition of the shift amounts. The
 # citation is the generated binding, which is the definition site in this
 # repo. hsa.py:1104-1105 and libc.py are the same kind of generated binding.
-
 # amdgpu_kd.py, getattr. elf.py:67-80.
 def SHIFT_VGPR() -> U32: 0      # COMPUTE_PGM_RSRC1_GRANULATED_WORKITEM_VGPR_COUNT_SHIFT
 def SHIFT_SGPR() -> U32: 6      # COMPUTE_PGM_RSRC1_GRANULATED_WAVEFRONT_SGPR_COUNT_SHIFT

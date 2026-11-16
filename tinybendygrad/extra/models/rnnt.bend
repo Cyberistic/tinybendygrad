@@ -98,7 +98,6 @@ import ./../datasets/__init__.bend as D
 # call order even though `Embedding` is the first missing symbol of the file's
 # FIRST def. The honest statement is that RNN-T has ELEVEN missing symbols and the
 # recurrence is only one of them.
-
 # THE GATE MOVED TO `gates/models-rnnt-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

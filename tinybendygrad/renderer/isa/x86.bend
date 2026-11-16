@@ -74,9 +74,7 @@
 #   bytes and what text come out. The 398 not covered are the five `PatternMatcher`
 #   tables and the `ctx`-mutating rewrite helpers -- see NOT PORTED.
 #
-
 # not ported, with python lines and the reason for each
-
 #
 # * `extra_matcher` (py:92-132, 41 lines) -- NINETEEN `(UPat, lambda)` pairs. `UPat`
 #   is a PATTERN LANGUAGE with backreferences, `allow_any_len` and a compiled
@@ -170,7 +168,6 @@
 #   a Python `object`. The patch arithmetic is ported; the keying is a substrate
 #   change. `TODO(p3) x86.py:761 symbol=render`.
 #
-
 # THE GATE. `gates/x86_isa-oracle.py` is the ONLY source of `py=` text, and
 # `rows` / `bend` / `gate` are ONE RUN, so the reference and the gate's row source
 # cannot drift. EVERY expectation is CPython calling `tinygrad/renderer/isa/x86.py`
@@ -384,7 +381,6 @@ def Reg.xmm_list.go(+ixs: List<&2, Nat>, +acc: List<&2, Reg>) -> List<&2, Reg>:
 def Reg.xmm_list() -> List<&2, Reg>: Reg.xmm_list.go(List.range(16n), Nil{})
 
 # --- the derived classes --------------------------------------------------------
-
 # `tuple(r for r in GPR if r != RSP)` -- RSP is index 4, and comparing by INDEX is
 # comparing by identity here because `Register` is a frozen dataclass.
 #
@@ -485,7 +481,6 @@ def Reg.strs_lookup(+nm: String, +sz: U32) -> String:
 # (`Reg.strs_row` -- the same three names in SIZE order -- was a def nothing called,
 # superseded by `RegStrRow` in the gate helpers, and it is gone rather than left as a
 # second spelling of a row that already exists.)
-
 # STAGE 2 -- THE OP ENUM. x86.py:14-53.
 #
 # `FastEnum` + `auto()` assigns 0, 1, 2, ... IN DECLARATION ORDER, so the NAMES IN
@@ -566,7 +561,6 @@ def op_name_of(+want: U32) -> String: Op.rev(op_names(), want, 0)
 # entries compute it from the UOp (`x.src[1].dtype.itemsize == 8` for the two
 # VCVTSI2 and `x.dtype.itemsize == 8` for the two VCVTT). `we` only matters when
 # `sel != 0`, so the legacy entries carry 0 and print `-`.
-
 # the name is a field and not a position, because `x86.py` writes the table as a
 # dict literal and a positional lookup would make the port's answer depend on its
 # own row order rather than on what the row says.
@@ -1159,7 +1153,6 @@ def Enc.pp_of(+nm: String) -> U32: Enc.pp(enc_find(nm))
 # captures, and `nm` supplies the rest from the table. `sel != 0` IS the `if sel:`
 # fork -- a VEX-encoded opcode never emits a REX and a legacy one never emits a VEX, so
 # the two arms are disjoint and no byte is emitted twice.
-
 # `mod` needs only the MASKED rm: the `rm == 0b101` test is about rbp/r13, and both are
 # inside three bits already.
 
@@ -1731,7 +1724,6 @@ def enc_missing_names() -> String: String.join(Enc.missing(), ",")
 # The first cut gave them a row reading `NOT-ENCODABLE`, which was a string
 # concatenation: `HexBad` returned a literal for every input, so the row asserted nothing
 # and three of them were as unfalsifiable as the eighty `hex.*` rows. `HexBad` is GONE.
-
 # `Cls` -- `X86Renderer`'s own class attributes, tinygrad/renderer/isa/x86.py:701-709 and :770.
 
 def Cls.device() -> String: "CPU"
@@ -1862,7 +1854,6 @@ def Cls.supported_dtypes_n() -> U32:
 # asked about -- and it was the reason a stale row could sit here saying something the
 # port did not believe. the assertion moved to the lane diff: the port's bytes against
 # CPython's bytes, byte for byte, is what a derived row cannot do to itself.
-
 # THE ROW BUILDER. `r` is `renderer/tc.bend`'s, copied and not invented: it takes the
 # `py=` half as an ARGUMENT because `tc_ptx.bend` calls it too, and `rd` is the DERIVED
 # half of it -- `py=` is the port's own value, so a row cannot disagree with itself.

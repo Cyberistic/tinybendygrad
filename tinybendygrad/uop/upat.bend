@@ -125,7 +125,6 @@ type Lit is Data:
 # tag" (#18889) removed `UPat.match_tag` from `__slots__`, `__init__`,
 # `__reduce__`, `named` and `match`, and removed the clause from `_get_clause`
 # would be a constructor nothing can build.
-
 # `C{op, lit, ss}` is `UOp(Ops.X, src=..., arg=...)`. The tag is `None` on every
 # node this file builds and no rule here reads it, so it is not a field.
 
@@ -151,7 +150,6 @@ def lit.text(l: Lit) -> Maybe<&2, String>:
     case _ : None{}
 # `text_of`, and CONST's `.val`, which `_get_clause` writes as an int and the
 # INDEX rule reads back.
-
 # `y.arg[0]` for a src, the text of a CUSTOMI
 
 def text_of(m: Maybe<&2, String>) -> String:
@@ -563,7 +561,6 @@ def alts_of(u: O.UPat) -> List<&2, O.UpAlt>:
 # `LOps{ys}` and `LOps{[ys[0]]}` are the same value, so the singular arm costs
 # nothing to spell as the plural arm's list, and the only difference between the
 # two forms -- the FORMAT STRING -- is chosen by `ge2`.
-
 # `len(self.op) > 1`, the one test that picks a frozenset over a single value.
 # A `match` may not scrutinise `List.length(..)`, so the length is a parameter
 # and this is the whole of the test.
@@ -696,7 +693,6 @@ type Sp is Data:
 # `it` is the loop variable `ituop{depth}`, `first0` is `base.index(0)`, and the
 # `all([...])` predicate's three operands are the predicate AND, the loop
 # variable and the base -- in that order, because that is the format string's.
-
 # `for st in stores:` -- `pred.append(CUSTOM(st.src[1], first, "{0} is {1}"))`
 # then `and_clause.append(STORE(st.src[0], first))`, so the identity compares the
 # ORIGINAL and the SUBSTITUTED and the store keeps the substituted.
@@ -939,7 +935,6 @@ def get_clause.of(+u: O.UPat, +base: C, forked: Bool, +gs: List<&2, List<&2, C>>
   get_clause.assemble(O.UPat.is_any(u), forked, gs, pieces(u, base))
 # the base case. `nested` returns the groups untouched; `rep` runs the repeat's
 # store lifting, which is the one arm that does NOT just concatenate.
-
 # partition -- helpers.py:90, for `is_store`. `Rp` is the pair it returns: `pred`
 # is what the predicate keeps and `extra` is what is set aside.
 
@@ -953,7 +948,6 @@ def get_clause.done(+u: O.UPat, +base: C, depth: U32, f: Nat, forked: Bool, nest
 # ("this name is a def or a consumed binder"). Measured, and the least obvious
 # rule in `.agents/slop/notes/bend2-constraints.md` #5: the def works if the two
 # parameters are swapped, with the body untouched.
-
 # `len(self.src) == 1` is a single match -- `is_any` included, and both are
 # `and_clause += [clause(s), ...]` with the children SIBLINGS, so the groups go
 # in as they are. Anything longer is the fork, whose OR branch is the AND of one
@@ -964,7 +958,6 @@ def alt_group(one: Bool, +a: List<&2, List<&2, C>>) -> List<&2, List<&2, C>>:
     case True{}: a
     case False{}: [List.concat(&2, C, a)]
 # `if len(or_clause) > 1: or_clause = [OR(...)]`
-
 # A CHILD'S GROUPS GO IN AS THEY ARE: `get_clause.done` already answered
 # `[[clause]]` -- one group holding the clause node Python would have put in
 # `and_clause` directly -- so re-wrapping it is what put a second AND level
@@ -1570,9 +1563,7 @@ def group1(gs: List<&2, List<&2, C>>) -> C:
 # (see the `upat_compile` comment at the bottom). `Context(TRACK_MATCH_STATS=0)`
 # is not a def either: it is the profiler's, and ops.bend's NOT PORTED block
 # carries `TRACK_MATCH_STATS` with the P8 clock.
-
 # `\'\n\'.join([..., "def compiled_match(uop, ctx):"] + rendered + ["  return None"])`
-
 # `\n'.join([..., "def compiled_match(uop, ctx):"] + rendered + ["  return None"])`
 
 def code_of(rendered: Maybe<&2, List<&2, String>>, +dyn: List<&2, Bind>) -> Maybe<&2, Code>:

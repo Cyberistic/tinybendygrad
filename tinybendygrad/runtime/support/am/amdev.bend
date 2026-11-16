@@ -46,7 +46,6 @@
 # says ALL PROOFS CHECK with no foreign effect: the seam is `Tr.emit`, not a
 # `def ... -> IO(R)` over two `import "./x.c"` lines.
 #
-
 # every constant and every `py=` expectation below came from CPYTHON, never from
 # a header. The oracle is `.agents/slop/amdev_oracle.py` (1472 rows) with
 # `.agents/slop/amdev_fw.py` and `.agents/slop/amdev_drv.py`, and it is STRONG
@@ -76,7 +75,6 @@
 import ../../../helpers.bend as H
 
 # THE CONSTANTS, and where each one was read.
-
 # :162 `self.mmio[am.mmRCC_IOV_FUNC_IDENTIFIER] & 1` -- the VF bit.
 def MMIOV_FUNC_IDENTIFIER() -> U32: 3557
 # :163 the 2-byte mailbox view at the control register's byte offset.
@@ -390,7 +388,6 @@ def hwip.in_range() -> U32: 28
 # A version is THREE `U32`, never a packed word: `ops_amd`'s agent found
 # `dev_max_copy` comparing a three-part COMPONENTWISE where ops_amd.py:880
 # compares LEXICOGRAPHICALLY, and three of its eight fixtures disagreed.
-
 # THE TAIL. `(an,ax) >= (bn,bx)` is decided by the second components when the
 # first agree, so `ge3` never has to hold two triples at once and no parameter is
 # read twice.
@@ -666,7 +663,6 @@ def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # are the SEAM's, so the fixture supplies them as two parallel lists: `links` is
 # what `read_config(cap, 1)` says and `nexts` is what `read_config(cap + 1, 1)`
 # says. `Tr.count(OP_CFG_RD(), ...)` is what the trace reads back.
-
 # `:147-154` `_disable_aspm` -- THE PCI CAPABILITY WALK, and the one loop in
 # this file bounded by something other than a counter. `seen` exists because
 # "a dead link can return 0xff pointers forever" (:150), and it is the reason
@@ -682,7 +678,6 @@ def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # The values `read_config` answers are the SEAM's, so the fixture supplies them as
 # two parallel lists: `links` is what `read_config(cap, 1)` says and `nexts` is
 # what `read_config(cap + 1, 1)` says. The port walks those and emits the reads.
-
 # `seen` membership. A dead chain repeats a cap, and this is what stops it.
 def aspm.seen.go(n: Nat, +c: U32, cs: List<&2, U32>, hit: Bool) -> Bool:
   match n:
@@ -826,7 +821,6 @@ def aspm.walk(first: U32, +links: List<&2, U32>, +nexts: List<&2, U32>, raw: U32
 # Every one of the eleven (or nine) trace entries is a hardware store, and the
 # FOUR MSGBUF words are a `(req, 0, 0, 0)` tuple at consecutive addresses -- which
 # is why `mb_init` and `mb_norw` are both nine-plus-two and not the same length.
-
 # THE FOUR WORDS :272 writes, as ADDRESSES: `MAILBOX_MSGBUF_TRN_DW0 + i` for
 # i in 0..3. Walking the ADDRESS rather than the index is what lets the countdown
 # be read once, and it is the same four words.
@@ -982,7 +976,6 @@ def pc.rreg2(reg: U32, t: Tr) -> Tr:
 # The scratch word is 64 bits and `<< 32` is where a `U32` would wrap: for
 # addr 0x1234 read, the high word is 0x10001234 -- bit 28 set -- which is the whole
 # distinction between a read and a write.
-
 # :316 `if addr in {self.reg("regGRBM_GFX_CNTL").addr[inst],
 # self.reg("regGRBM_GFX_INDEX").addr[inst]}` -- the MEMBERSHIP is on the register's
 # BASE address, and the two have DIFFERENT bases (CNTL at 0, INDEX one 64KB page
@@ -1026,7 +1019,6 @@ def rlcg.access(addr: U32, val: U32, read: Bool, t: Tr) -> Tr:
 # three numbers {0xf, 0x3, 0xc} decide liveness: all four, the low pair, or the
 # outer pair. Everything else is harvested-and-still-present and must not be
 # touched. `0` goes in unconditionally, and it is NOT a mask -- it is AID 0.
-
 # `i & 3` is `i mod 4`, the instance's slot inside its AID's group of four.
 def aid.slot(i: U32) -> U32: U32.and(i, 3)
 def aid.of(i: U32) -> U32: U32.shrn(i, 2n)
@@ -1099,7 +1091,6 @@ def aid.keep(n: Nat, +aidn: U32, +maxa: U32, +flags: List<&2, U32>, +acc: List<&
         List.append(&2, U32, acc, [aidn]), acc))
 
 # `:405-407` the module ladder, and `:233` the palloc ladder.
-
 # :406 `"nbio" if self.ip_ver[am.GC_HWIP] < (12,0,0) else "nbif"` -- ONE
 # character decides which of the two register tables the device is built from.
 def MOD_NBIO() -> String: "nbio"
@@ -1205,7 +1196,6 @@ def aid.list4(+flags: List<&2, U32>) -> List<&2, U32>:
 # is `read_config(cap, 1)` and `nexts` is `read_config(cap + 1, 1)`, one entry per
 # PROBE, and the last entry FAILS the condition -- which is what makes Python's
 # `while` stop there rather than at the fuel.
-
 # `first` is what `read_config(0x34, 1)` answers -- the FIRST CAP, and it is a
 # DIFFERENT register from the chain: `links` is what `read_config(cap, 1)` says and
 # `nexts` is what `read_config(cap + 1, 1)` says. The first version reused
@@ -1307,7 +1297,6 @@ def am_dbg_final_of(dbg: U32, devfmt: String) -> String:
 # THE GATE PRINTERS. `IO.print` takes a `String`, so each printer CONCATENATES the
 # name and the value -- and a row's name says which claim it is, so a mutation's
 # effect is legible in the diff.
-
 # THE GATE MOVED TO `gates/amdev-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

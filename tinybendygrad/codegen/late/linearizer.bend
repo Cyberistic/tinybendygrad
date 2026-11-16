@@ -71,7 +71,6 @@
 #   gater.py:9-29         pm_move_gates_       gt_tbl, gt_ops           gt_tbl_len,
 #                         from_index                                     gt_ops0..5
 #
-
 # why this unit is the tail of the lowerer, and what that buys it. `linearizer`
 # folds the axis structure, `regalloc` assigns registers and `gater` decides
 # which branches survive. All three are pure functions of the kernel's uop list,
@@ -79,7 +78,6 @@
 # for row -- there is no device, no driver and no codegen cache in the way.
 # `regalloc`'s two renderer hooks are the exception and are named below.
 #
-
 # THE INTERFACE, CONSUMED NOT INVENTED. `codegen/kernel.bend` already owns
 # `pm_to_program`, whose table carries a PROGRAM gaining a LINEAR, a SOURCE and a
 # BINARY one `graph_rewrite` at a time (codegen/kernel.bend:804 symbol=pm_to_program), and whose stage
@@ -94,7 +92,6 @@
 # field below is read by a HAND-WRITTEN reader def (constraint 27), because there
 # is no `value.field` and no generated projection.
 #
-
 # THE FOUR WALLS, each at the file and line that owns it. W1 and W3 are the SAME
 # lowerer wall the coordinator named -- `itertools.product` over a shape plus
 # `permute`/`reshape`/`reduce`, which `uop/fold.bend` cannot answer for
@@ -143,7 +140,6 @@
 #     `Bool` PARAMETER, which is the shape the notes prescribe, and the predicate
 #     itself is W4.
 #
-
 # THE GATE. Every row is DERIVED FROM PYTHON by the oracle named at the foot; the
 # interpreted lane, the native lane and CPython must print the same rows in the
 # same order, so
@@ -399,7 +395,6 @@ def lt_rc(vmaxs: List<&2, U32>) -> U32:
 #
 # W4: the BUFFER/ALLOC arm's `u.addrspace == AddrSpace.LOCAL` is a PARAMETER. The
 # arm is `lt_po.w1(local, is_bufalloc)`; `lt_po_glob`/`lt_po_loc` are the two rows.
-
 # THE OP PREDICATES, LEAF FIRST. Seven arms of the ladder would be seven
 # two-armed `match`es if each were written out, and each gets ITS OWN row (`po_*`)
 # so that a mutation dropping one arm moves exactly that row -- the `k_alu_recip`
@@ -523,7 +518,6 @@ def lt_key(rc: U32, po: U32) -> U32:
 #
 # `reversed(lst)` is `List.reverse` -- the counts are order-independent, but
 # transcribing `reversed` is one call and keeps the diff against :17 readable.
-
 # `List.foldl` IS THE SRC LOOP. The inner `for s in u.src_without_body` is a
 # 2-ary fold with a top-level step, so it is ONE call and there is no mutual
 # recursion -- which is why the outer walk is one def and the inner is a builtin.
@@ -948,7 +942,6 @@ def lt_vm_call() -> List<&2, U32>:
 # shared printer is a shared FORMAT CONTRACT (the notes' rule 22) -- a mutation in
 # one invalidates a quarter of the suite, which is the right trade, and it is why
 # `lt_u32s` is written once and not three times.
-
 # THE GATE MOVED TO `gates/linearizer-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

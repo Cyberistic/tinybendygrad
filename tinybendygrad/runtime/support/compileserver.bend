@@ -50,7 +50,6 @@
 #   a spec "S:"        -> ModuleNotFoundError, exit 1
 #   argc 0, 1 or 2     -> the usage assert, exit 1
 #
-
 # THE WALL, and it is the only one, and it is not the framing.
 #
 # The server is a LONG-LIVED process holding a duplex pipe. `Process.run`
@@ -99,7 +98,6 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # `cs.pack` builds the four bytes IN ADDRESS ORDER -- which is the whole point:
 # if the byte order were a convention rather than a decision, `cs.unpack` would
 # answer the same number for both orders and the gate could not see the swap.
-
 # the nth byte of a FOUR element list. When the REMAINING index is zero the
 # HEAD is the answer; the first version had the two arms the other way round and
 # `cs.unpack_be_1` answered `00000100` for `00000001`, which is how the gate

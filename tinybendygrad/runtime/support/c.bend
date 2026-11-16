@@ -60,7 +60,6 @@
 #    (`runtime/autogen/io_uring.py:66`) and the `Literal[0]` form is exactly
 #    the zero-length array `Field._resolve` builds by hand.
 #
-
 # the boundaries of the arithmetic, measured not assumed
 #
 # * `mask = (1 << bit_width) - 1` is exact in a `U32` for `bit_width <= 32`,
@@ -172,7 +171,6 @@ def _do_ioctl.rc_msg(neg: Bool, mag: U32) -> String:
 # THE WALL is the `ctypes.Array` subclass: `key[0] * n` builds a ctypes array
 # TYPE, and `key[0]` is a ctypes type object rather than a width.
 # `TODO(p3) c.py:34  symbol=Array`.
-
 # `_type_, _length_ = ctypes.c_byte, 0`. The `_length_ = 0` is load-bearing
 # twice over: it is the `[str(i), ctypes.c_byte*0]` padding in `dummy*_lens`,
 # and it is why every `runtime/autogen/*.py` is full of `c.Array[ty, Literal[0]]`.
@@ -217,7 +215,6 @@ def Array_.getitem(typ: U32, n: U32, has_args: Bool) -> U32:
 # as `if self.bit_width` -- Python's truthiness test. `bit_width=0` is not None
 # and is still falsy, so `sname_bw0_entry_width=3` is a THREE-wide entry from a
 # field that was handed a bit width. `Field.entry` takes both answers.
-
 # A `Data` TYPE declares its CONSTRUCTORS, one per line, with the field names
 # and types inline -- there is no separate field list (convention 6: a record
 # literal and a record pattern both name every field, and the literal is
@@ -503,7 +500,6 @@ def Field.dummy_names_row(idx: U32) -> String:
 # `_fields_` is ONE entry, so `Struct.mem_name` and `Struct.mem_len` have no
 # index and no search: `_mem_` at `SIZE` bytes. `sizeof` is that length and
 # `SIZE` is the class attribute, which `init_c_struct_t` never sets.
-
 # `record(cls)`: `setattr(cls, "_fields_", [('_mem_', ctypes.c_byte * cls.SIZE)])`
 # -- the length comes FROM `SIZE`, so the two agree here and only here.
 def Struct.of(+size: U32, fields: List<&2, Field>) -> Struct:
@@ -587,7 +583,6 @@ def mem_hex.go(ms: List<&2, U32>, acc: String) -> String:
 # 5. `functools.cache` is process-wide memoisation: a WALL, since it is the
 # shape of `ics_cache_same_obj=1` / `ics_cache_diff_obj=0` and there is no
 # module-level mutable state to hold it. `TODO(p3) c.py:83  symbol=init_c_struct_t`.
-
 # `type("CStruct", (Struct,), {'_fields_': [('_mem_', ctypes.c_byte * sz)]})`
 # -- `SIZE` IS NOT IN THAT DICT, so `SIZE` stays the inherited `0` and only
 # `_fields_` carries `sz`. `Struct.of` (which is `record`) is the OTHER
@@ -602,7 +597,6 @@ def init_c_struct_t(+mem_len: U32, fields: List<&2, Field>) -> Struct:
 def init_c_var.val(ty_zero: U32, cb_ret: U32) -> U32: ty_zero
 
 # c.py:89-142  `DLL`
-
 # `nm.replace('-','_')`, then `.upper()`, then `+"_PATH"`. `'-'` is codepoint 45
 # and `'_'` is 95, so the fold needs no Char literal.
 # `nm.replace('-','_')`. `'-'` is codepoint 45 and `'_'` is 95, so the fold
@@ -824,7 +818,6 @@ def findlib.no_path_key(has_path: Bool) -> String:
 #   became a constructor (`record` -> `Struct.of`), and 6 are `typing`/`ctypes`
 #   declarations whose runtime value is an ADDRESS or a TYPE OBJECT and which are
 #   WALLS. Every one of the 6 has a `TODO(p3)` naming its `c.py` line.
-
 # THE GATE. 129 rows, one `name=value` line each, and the ORACLE IS
 # `.agents/slop/c-oracle.py`, which is `.agents/slop/c-gate.sh`.
 #
@@ -1208,7 +1201,6 @@ def main() -> IO(Unit):
 # name-comparing harness reported 0 for all 30 mutations in one unit of this project.
 #
 #   id     moved   the rule it breaks / the rows it moved
-
 #   M1     1       the no-struct arm IGNORES `__idir` -- fold the direction in
 #                 MOVED ioctl_none_idir3_same
 #   M2     ZERO    `__set_name__`'s SECOND arm: `idx` is 0 when the owner had no entries

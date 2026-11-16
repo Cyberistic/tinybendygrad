@@ -73,7 +73,6 @@ import ./../datasets/__init__.bend as D
 # ON `adam`: NOT USED BY THIS FILE. `extra/models/transformer.py` never constructs an
 # optimizer. The one that DOES is llama.py's sampling caller, and `nn/optim.bend`
 # already carries `op_mstep` :898 and `op_vstep` :903 -- see llama.bend's header.
-
 # THE GATE MOVED TO `gates/models-transformer-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

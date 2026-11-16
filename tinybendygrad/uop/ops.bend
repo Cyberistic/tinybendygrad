@@ -746,7 +746,6 @@ def axis_colors(a: AxisType) -> String:
 # `hasattr(ops, 'axis_to_pos')` is False, and `ops-gate.sh` additionally greps the Bend
 # source for the symbol and fails if it is still there -- because a def Bend cannot
 # print as "absent" is exactly the case where a claim in a comment is not a gate.
-
 # range_start -- ops.py:56. `range_start[self.op]` is a slice offset, so it is a
 # ladder and Python's KeyError is the `case _` arm.
 #
@@ -906,7 +905,6 @@ type Tag is Data:
 # ProgramInfo, OPAQUE_CALL_BODIES, CallInfo. The METHODS of ProgramInfo
 # (`launch_dims`, `vals`, `from_sink`) stay down at ops.py's position, because
 # they read UOps.
-
 # opt/__init__.py: `OptOps` and `Opt` (with its `arg`), MOVED DOWN from
 # `codegen/opt/postrange.bend` because `KernelInfo` below CARRIES them and
 # `postrange.bend` imports THIS file -- a file cannot import its own importer, so
@@ -973,7 +971,6 @@ def OPT.arg(x: OPT) -> OPTARG:
 # ProgramInfo, OPAQUE_CALL_BODIES, CallInfo. The METHODS of ProgramInfo
 # (`launch_dims`, `vals`, `from_sink`) stay down at ops.py's position, because
 # they read UOps.
-
 # KernelInfo -- ops.py:1339. six fields, upstream's six, in upstream's order:
 # `name, applied_opts, opts_to_apply, estimates, beam, optimized`.
 #
@@ -1032,7 +1029,6 @@ def KernelInfo.of() -> KernelInfo:
 # the nullary constructor `of`, as `ProgramInfo.of` and `VarVals.new` do -- so it
 # is `H.Target.of()`, and it is the ONLY one. This file's own `Target.of()` is
 # gone, so there is no second default to keep in step.
-
 # ProgramInfo -- ops.py:1343. SEVEN fields, and the SEVENTH is `target: Target`.
 #
 # `target` was ABSENT because the CONSTRUCTOR was: upstream's `from_sink`
@@ -1260,7 +1256,6 @@ def CallInfo.of() -> CallInfo:
 
 # `CallInfo.__repr__` (ops.py:1401) is at the end of the equality block, because it
 # compares against `S.void()` and `eq_dt` is what does the comparing.
-
 # THE ARENA.
 #
 # `Node` is `UOp`'s four fields and adds nothing: `op`, `src`, `arg`, `tag`. The
@@ -2504,7 +2499,6 @@ def intern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
 
 # the linear scan. `want` is `+` because the key comparison and the next
 # iteration both read it, and a Node is `Data` so the refcount is the only cost.
-
 # `depth` is `arg`'s tail shape. CPython's key is `(op, src, arg, tag, type(arg))`
 # (ops.py:201); both colliding args are tuples, so `type(arg)` does not split
 # them — the tuple structure does. `eq_node` cannot see it (`ARange` has no
@@ -2834,7 +2828,6 @@ def UOp.new.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, 
 # THE `-> Found` RETURN. Python returns the UOp; here the arena grows, so the
 # return is the arena and the index together. `Found` is a two-field record
 # because an `Arena & U32` pair is a `Type` and cannot carry a `+`.
-
 # sink -- ops.py:559. `UOp(Ops.SINK, src=tuple([x for x in srcs if x is not None]), kwargs)`
 def UOp.sink(ar: Arena, +srcs: List<&2, U32>) -> Found:
   UOp.new(ar, OpsSINK{}, srcs, ANone{}, TNone{})
@@ -3477,7 +3470,6 @@ def UOp.toposort_nocalls(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
 # whose graph has no CALL it is invisible -- the two walks return the same list.
 # So the `call` and `nest` rows are the ones that carry the fact, and a port that
 # reached for `toposort` here would agree on `chain` and on `backedge`.
-
 # `res.pop(self)`. Python pops BY KEY and the key is `self`, so this filters on
 # IDENTITY. The tempting one-liner is `List.drop(.., 1n)`, and it is wrong in a way
 # the toposort order hides until it is measured: the root is the LAST node to
@@ -3508,7 +3500,6 @@ def UOp.backward_slice_with_self(fuel: Nat, +ar: Arena, +self: U32) -> List<&2, 
 # TODO(p3): the visitor is a Callable. It is a P4 concern (every rewrite rule
 # and every `pm.rewrite` callback is one) and it needs the same Sel-tag shape
 # the master plan already prescribes for `PatternMatcher` rules.
-
 # `src` normalisation -- ops.py:1456-1461, the `permutations` line:
 #
 #   src is a list  -> all permutations, or one alternative if `all_same`
@@ -3629,7 +3620,6 @@ def early.alts(+pat: Pat, alts: List<&2, UpAlt>) -> List<&2, Op>:
 
 # the `pp.op is not None and len(pp.op) == 1` guard. Three defs, because a
 # `match` scrutinee must be a PARAMETER: `Maybe` first, then the `Nat` length.
-
 # The constructor -- ops.py:1449. `UPat(Ops.CAST, dtype, (self,))` becomes
 # `UPat.of(pat, Some{[OpsCAST{}]}, Some{[dt]}, None{}, STuple{[k]}, ...)`: Python's
 # positional and keyword arguments flattened into positional ones, which is the
@@ -3759,14 +3749,11 @@ def UPat.or_after(pat: Pat, k: U32, name: Maybe<&2, String>) -> PatFound:
 
 # three steps, each returning `(arena, index)`: pick self-or-named, wrap it, then
 # `UPat.any` over the two. The wrapper's `src` is always the ORIGINAL index.
-
 # three steps, each carrying the arena: pick self-or-named, wrap the ORIGINAL
 # index, then `UPat.any` over the two. The wrapper's `src=(self,)` is the
 # original pattern even when `any` receives the named copy -- an upstream
 # subtlety a "tidy" rewrite would lose.
-
 # `self if name is None else self.named(name)`
-
 # `var` / `cvar` / `const` -- ops.py:1495-1501. `@functools.cache` is the intern
 # inside `UPat.of`, so these three are also the interning demonstration: two calls
 # with the same name return the SAME index.
@@ -3863,7 +3850,6 @@ def UPat.cast(+pat: Pat, +k: U32, dt: Maybe<&2, S.Dt>) -> PatFound:
 
 # the short-circuit returns SELF, not a new pattern, so the arena is untouched
 # and the answer is the index it was handed.
-
 # `bitcast` is the tail of `cast`'s body, and is its own method upstream
 def UPat.bitcast.of(hit: Maybe<&2, UPat>, dt: Maybe<&2, S.Dt>, k: U32, pat: Pat) -> PatFound:
   match hit:
@@ -3960,17 +3946,13 @@ def UPat.alu(+pat: Pat, +k: U32, op: Op, other: U32) -> PatFound:
   UPat.alu.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), op, k, other, pat)
 
 # `boolean if op in {CMPLT, CMPNE} else asrc[-1].match_dtype`
-
 # `list(asrc) if op in GroupOp.Commutative else asrc`
-
 # ops.py:1474-1475: `custom_early_reject` overrides the computed set.
-
 # intern, then hand back the index. The MISS index is the arena's length BEFORE
 # the append -- so the two facts are read at different points on purpose, and
 # `UPat.of.hit` is where they are brought together. Reading the length AFTER the
 # append and subtracting one is the same number, and `UOp.of.intern.put` spells
 # it that way; the point is that it must be the pre-append count either way.
-
 # `PatternMatcher` -- ops.py:1587, in its COMPILED form.
 #
 # This is not the interpreter. `ops.py:1588` is
@@ -3999,7 +3981,6 @@ def UPat.alu(+pat: Pat, +k: U32, op: Op, other: U32) -> PatFound:
 #
 # The runnable model with the gate and the mutation table is
 # .agents/slop/notes/compiled-matcher-shape.bend.
-
 # One entry per pattern: the op set it claims (`pdict`'s key in Python),
 # `early_reject`, and the tag of the def that IS the compiled rule.
 type PMEntry is Data:
@@ -4168,7 +4149,6 @@ def pm_rewrite(+ts: PMEntrys, ar: Arena, self: U32) -> Verdict:
 # `walk_rewrite`; the engine threads it through the dispatch so the rule body
 # can read it. The codegen pipeline eventually passes a typed `CTX` record
 # and the `List<&2, U32>` becomes the new record's first projection.
-
 # the rule bodies. The default for every rule is "no rewrite" (`None{}`).
 # The no-op `pm_rewrite_m` body for a SINK is `Some(self)` so the engine
 # does not have to special-case SINK in the rebuild step.
@@ -4269,7 +4249,6 @@ def aa_has(+as: List<&2, Aa>, +b: U32) -> Bool:
 # ctx and the answer come back TOGETHER in `Cw`: Python's one-call-one-side-effect
 # signature cannot be spelled, and splitting it into two defs would let a caller
 # drop one of them.
-
 # `CTX` -- THE REWRITER'S CONTEXT, TYPED. Until now every one of the ~20 defs
 # from `pm_r_sink_m` to `graph_rewrite` carried `ctx: CTX`, which is
 # `upstream's `RewriteContext.ctx` FLATTENED TO A POSITIONAL LIST. That is enough
@@ -4417,7 +4396,6 @@ def pm_r_alloc_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # `ops.py:1604` symbol=PatternMatcher.rewrite's `if not early_reject.issubset(ler): continue`
 # therefore never skips any of them, and `PMEntry.rej` is `Nil{}` four times. A
 # non-empty reject set here would be an invention.
-
 # `tuple(Ops)` -- the claim of ops.py:1898 symbol=_substitute's
 # `UPat(tuple(Ops), name="x")` and of tinygrad/uop/spec.py:207 symbol=spec_program's
 # `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`. `GroupOp.All` IS `set(Ops)`
@@ -4558,7 +4536,6 @@ def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: CTX) -> Maybe<&2, 
 # so it gets a THREE-DEF family and no scan at all -- a one-entry scan is
 # `pm_try_m` with a different ctx type, and spelling that out is two lines worse
 # than reading the one entry.
-
 # TAG 41 -- tinygrad/uop/spec.py:207 symbol=spec_program. `remove_all_tags`:
 #     remove_all_tags = PatternMatcher([(UPat(GroupOp.All, name="x"), lambda x: x.replace(tag=None) if x.tag is not None else None)])
 #
@@ -4678,7 +4655,6 @@ def pm_rewrite_f(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: CTX) -> Maybe<&2, 
   pm_scan_f(ts, ar, self, PMEntrys.es(ts), None{}, ctx)
 
 # one rule: does it claim this op, and does `early_reject` pass?
-
 # --- `early_reject`, and THE NAME IS A MISLEADER ---------------------------
 #
 # ops.py:1609 is `if not early_reject.issubset(ler): continue`, so the rule FIRES
@@ -4690,16 +4666,11 @@ def pm_rewrite_f(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: CTX) -> Maybe<&2, 
 # `ler` is `uop.__dict__['_src_ops']`, CACHED ON THE UOP. There is no mutable uop
 # here, so it is recomputed per rule, and that cache is the one place this port is
 # slower than the thing it ports.
-
 # `ler`: the ops among the node's srcs
-
 # --- the op-set membership tests -------------------------------------------
-
 # `uop.op in self.op`
 # `uop.op in self.op`. `Arena.op` is ops.bend's own reader, so no Maybe here.
-
 # `uop.op is want`, which is `len(self.op) == 1` specialised
-
 # `uop.src[n].op is want` -- the read a capture replaces
 def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
   op_is(ar, Arena.src(ar, self, n), want)
@@ -4713,21 +4684,16 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 # location. There is no frame here, so a rule that cannot be compiled has no
 # representation at all: it is a missing `case` below, and the honest response is
 # a missing def rather than a runtime error.
-
 # --- the rules -------------------------------------------------------------
 #
 # `spec_shared`'s first two entries plus the CAST rule: a leaf, a leaf, and an
 # `is_any` disjunction. These are the three shapes that need nothing from a
 # store, because a compiled rule's captures are its own parameters.
-
 # `(UPat(Ops.SINK, dtypes.void), lambda: True{})`
-
 # `(UPat(Ops.NOOP), lambda: True{})` -- TODO: remove this
-
 # `is_any` is a DISJUNCTION, which is what upat.py:18 compiles it to. The
 # interpreter FLATTENED the alternatives and recursed over the pattern's own src;
 # this is straight-line code, so that recursion is not present.
-
 # THE BASE FAMILY -- ops.py:785 `base`, :792 `unsharded_base`, :801
 # `storage_base`, :623 `without_after`, :925 `buf_uop`, :952
 # `has_buffer_identity`. Six walks down `src[0]`, and they differ ONLY in the set
@@ -4795,7 +4761,6 @@ def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
 # and it is not the copy-paste the reviewer rules out: the copy-paste rule is
 # about logic that could be hoisted, and this cannot be, because the one thing
 # that differs is the thing a parameter would have to carry.
-
 # `base` -- ops.py:785. `if self.op in GroupOp.Movement: return self.src[0].base;
 # if self.op is Ops.DETACH: return self.src[0].base; return self`
 def UOp.base.peel(+ar: Arena, +self: U32) -> Bool:
@@ -4917,7 +4882,6 @@ def UOp.has_buffer_identity(fuel: Nat, +after_ok: Bool, +ar: Arena, +self: U32) 
 # they choose is a decision, not a forwarding: `bufferize` answers `ABad{}` where
 # `barrier` would answer `ANone{}`, and a row that prints the node's op and src
 # sequence is what holds both.
-
 # `bufferize` -- ops.py:679. `UOp(Ops.STAGE, src=(self,)+args, kwargs)`, and
 # the two fixtures differ ONLY in the extra src, so `s5_bufferize_arg` is the row
 # that sees `+args` at all and `s5_bufferize` is the row that sees the op is STAGE
@@ -5140,7 +5104,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # already has), and keep `graph_rewrite` out of that module, because nothing in
 # the rewrite engine may call back into the fold. That is a P3 design decision
 # and it is written down in spec/ops.md.
-
 # ops.py:1-500. WHERE EACH NAME ACTUALLY LIVES NOW.
 #
 # lies: the def was already written, in ANOTHER file, and the queue was the only
@@ -5157,7 +5120,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   STILL A WALL        a Bend rule no arrangement in THIS file beats. Kept in
 #                       the queue WITH the rule, so the next agent does not spend
 #                       an hour rediscovering it.
-
 # PORTED HERE, 2026-10-03. Four defs, above `pm_r_sink`:
 #     bsl.go, UOp.backward_slice (ops.py:280), UOp.backward_slice_with_self (:286)
 #     op_in_bsl.go, UOp.op_in_backward_slice_with_self (:289)
@@ -5166,7 +5128,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # `bsws_<tag>` over four fixtures plus six `bsop_<tag>_*` Booleans: 14 rows, three
 # lanes, byte-identical. The `call` and `nest` fixtures are the ones that carry
 # `enter_calls=False`; `bsl_chain` would agree with a plain `toposort`.
-
 # PORTED ELSEWHERE -- `uop/render.bend`, which IMPORTS this file, so nothing here
 # can call it and nothing here should re-implement it.
 #     ops.py:18  AxisType.__repr__   -> axis_repr        (render.bend:550)
@@ -5177,14 +5138,12 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # third IS `UOp.__repr__`'s whole body (`return pretty_print(self)`) and it carries
 # 25 CPython-compared rows of its own. `repr` is a rendering concern, so
 # render.bend is where it belongs.
-
 # PORTED ELSEWHERE -- `uop/fold.bend`, the Kahn worklist the block above this one
 # describes, and the reason the entries below are walls and not chores.
 #     ops.py:329 UOp._shape        -> fold.shape.of / dt_shape  (fold.bend:882)
 #     ops.py:456 UOp.shape         -> UOp.shape                (fold.bend:3994)
 #     ops.py:470 UOp.ended_ranges  -> UOp.ended_ranges         (fold.bend:3969)
 # `UOp.dtype` came with them, and `dtype` is what every remaining entry below reads.
-
 # STILL A WALL. Each names the rule, and each is ALSO in the NOT PORTED block at
 # the foot of this file, where the reason is longer.
 # TODO(p3) ops.py:76  def srender
@@ -5255,10 +5214,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
 #   ones the ended ranges close. The wall is named where it is HIT --
 #   `schedule/rangeify.bend:204 symbol=rf_in_ranges`, whose `rf_in_ranges` is the standing stub.
-
 # TODO(p3) ops.py:495  def simplify
 #   # * uop evaluation *
-
 # DONE(p3) ops.py:92 def ssimplify -- `ssimplify_of` and `UOp.ssimplify_val` /
 #   `UOp.ssimplify_is_val`, with `cval_arg` (written for `pop_const`) as the value reader. Gated at
 #   `gates/ops-core-gate.py` in SIX rows over THREE fixtures, and the third fixture is the one
@@ -5274,7 +5231,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   answers a node's dtype, so the value half is the whole of the discriminating claim.
 #   Planted: a reader that answers `none` for everything fails `ss_const_val` and
 #   `ss_cast_const_val` and nothing else.
-
 # done(p3) ops.py:521 def _eval -- and it was misfiled here, which is the finding. `_eval` needs
 #   the node's dtype AND its two bounds, and this file imports only `Base`, `helpers` and
 #   `LAWS/spec`, while `UOp.vmin`/`vmax` are in `fold.bend` and the node-level dtype reader is in
@@ -5289,18 +5245,13 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `int_on_range`).
 # TODO(p3) ops.py:513  def __float__  -- DONE, same gate (`float_weakfloat`,
 #   `float_on_i32`).
-
 # TODO(p3) ops.py:514  def substitute
-
 # TODO(p3) ops.py:521  def __index__
 #   # NOTE: this is not called by Tensor slice (Tensor handles UOps directly), but satisfies SupportsIndex for type checking
-
 # TODO(p3) ops.py:526  def trace_num
-
 # WALL(p3) ops.py:563  def __getitem__ -- BLOCKED. PYTHON'S SLICE PROTOCOL. The body calls `super(UOp, self).__getitem__(idx)`,
 #   `argfix`, `_normalize_indices`, `slice` objects and `self.shape[i]`. A slice is a Python
 #   runtime object with `start`/`stop`, and Bend has no slicing syntax to normalise.
-
 # done(p3) ops.py:597 def _uop -- and the honest answer is that there is nothing to
 #   WRITE. CPython's is `def _uop(self) -> UOp: return self`, which is the IDENTITY, and
 #   it is the identity because `Tensor` SUBCLASSES `UOp`. This port's
@@ -5311,7 +5262,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   names `Tensor.u` as `_uop -- tensor.py:118` and every graph-building method there
 #   reads that field in place of `self.uop`. So the NAME is done, from the side that has
 #   something to do.
-
 # done(p3) ops.py:599 def _wrap_uop -- same reason, and it is the stronger one.
 #   CPython's is `@classmethod def _wrap_uop(cls, u: UOp) -> UOp: return u`, so it returns
 #   its argument UNCHANGED. It exists at all because `Tensor` subclasses `UOp`: without the
@@ -5321,28 +5271,17 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   coercion to bridge and no def to write. a marker that asks for a function which is
 #   CORRECTLY ABSENT IS A WALL, NOT A GAP, and the reason it was a marker at all is that
 #   nobody had written down WHICH kind it was.
-
 # TODO(p3) ops.py:581  def const_like
-
 # TODO(p3) ops.py:587  def ufix
-
 # TODO(p3) ops.py:594  def store
-
 # TODO(p3) ops.py:603  def ins
-
 # TODO(p3) ops.py:604  def contract
-
 #   # cast, except for CONST, in which case rebuild a new CONST at the dtype
-
 # TODO(p3) ops.py:621  def cconst
-
 # TODO(p3) ops.py:630  def wmma
-
 # PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop`, which is
 # `tensor.bend:1822` symbol=tn_rop.
-
 # TODO(p3) ops.py:644  def invalid
-
 # DONE(p3) ops.py:664 def valid -- `UOp.where` and `UOp.valid_of` above, gated at
 #   `gates/ops-core-gate.py` in FOUR rows. `where` is `mixin/elementwise.py:426`'s
 #   `self.alu(Ops.WHERE, x, y)`, i.e. `UOp(Ops.WHERE, src=(cond, x, y))`, and it is the constructor
@@ -5360,11 +5299,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   needed neither: it was a bug in the CALLER's arena discipline, and the def was always writable
 #   here. "Cannot read it back" is not evidence that it cannot be written.
 #   PLANTED: swapping the two trailing srcs fails `valid_src1` and `valid_src2` together.
-
 # TODO(p3) ops.py:646  def get_idx
-
 # TODO(p3) ops.py:652  def reduce
-
 # TODO(p3) ops.py:661  def overflows
 #   `def overflows(self, dtype: DType) -> bool: return self.vmin < dtype.min or
 #   dtype.max < self.vmax`. Two comparisons and no minting, which is why it looks
@@ -5399,43 +5335,30 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `uint64.max` is `2**64-1` and `int64.max` is `2**63-1`, so borrowing the table
 #   here would make every `uint64` bound wrong by a factor of two. This needs `Bnd`.
 #   P3, with `vmin`/`vmax`.
-
 # WALL(p3) ops.py:670  def unshard -- BLOCKED. `def _shard` IS ABSENT -- checked as a definition, comments excluded. `unshard` builds a
 #   UNSHARD and `_shard` is the constructor it shares with `shard` below.
 #   # * multi-device helpers *
-
 # WALL(p3) ops.py:690  def bounds -- BLOCKED. `def max_numel` IS ABSENT, and `bounds` also reads `self.axis` and a device COUNT
 #   (`len(self.device)`, on the `Dev` tag). It is a `itertools.accumulate` + `pairwise`
 #   over per-axis shapes.
-
 # TODO(p3) ops.py:715  def axis
-
 # TODO(p3) ops.py:728  def _shard
-
 # WALL(p3) ops.py:734  def shard -- BLOCKED. `def _shard` IS ABSENT -- the same one `unshard` needs. `copy_to_device` IS present, so
 #   this is one missing constructor rather than a missing subsystem.
-
 #   `def param_like` IS ABSENT, and `store_call`'s body is two of them:
 # TODO(p3) ops.py:746  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
-
 #   a device is a `U32` tag here, not a string: `type Dev is Data: D1{tag: U32}`. So a device name has no prefix to test, and the two below are exactly a `startswith`:
 # TODO(p3) ops.py:755  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
 # TODO(p3) ops.py:756  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
 #   # little helpers
-
 # PORTED -- `ops.py:818 _mop` is `tensor.bend`'s `tn_mop`, which is
 # `tensor.bend:1685` symbol=tn_mop.
-
 # TODO(p3) ops.py:835  def new_buffer
-
 # TODO(p3) ops.py:843  def from_buffer
-
 #   `def canonicalize_device` and `def is_disk_device` ARE BOTH ABSENT, and both start with one:
 # TODO(p3) ops.py:849  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
 # TODO(p3) ops.py:867  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
-
 # TODO(p3) ops.py:855  def _frompy
-
 # DONE(p3) ops.py:902 def is_virtual -- `wk_is_virtual` in `weak.bend`, `no_dev` beside it.
 #   `device is None or dtype in weaks`, and the device half needs a node that CARRIES a `Dev`:
 #   `fold.bend`'s `mw_pa` hard-codes `ParamArg`'s device field to `None{}`.
@@ -5444,21 +5367,16 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `fold.bend`'s `device_of.param` reads `O.ParamArg.device(pa)`, so a node that CARRIES a
 #   device was reachable all along. The rows are `gates/wk-isvirt-gate.py` -- 5 rows, 3 lanes,
 #   0 divergences, and three mutations that each move the row they name.
-
 # TODO(p3) ops.py:931  def contiguous_view
-
 #   `def contiguous_view` IS ABSENT, and both of these ask it first:
 # TODO(p3) ops.py:941  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
 # TODO(p3) ops.py:957  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
-
 # wall(p3) -- storage, device and alloc. no live `Buffer` -- there is no `type Buffer is Data` anywhere in the port and zero `Buffer{` constructors. tinygrad's Buffer is an allocated object with a `realized` field and a `memory`
 # TODO(p3) ops.py:950  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
 # TODO(p3) ops.py:988  def realized  -- BLOCKED, and ANSWERS a Buffer.
 # TODO(p3) ops.py:999  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
 # TODO(p3) ops.py:757  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
-
 # TODO(p3) ops.py:974  def buffer
-
 # PORTED -- `ops.py:1015 UOp.variable` is `UOp.variable` (this file), four `vrn_*`
 # rows byte-identical to CPython on all three lanes via
 # `sh .agents/slop/ops-vrn-gate.sh`, with six mutations in
@@ -5475,7 +5393,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # fifth conjunct is `self._shape == ()` and `Node{op, src, arg, tag}` has no shape
 # field. The `vrn_*` rows print `nsrc` as the closest honest proxy and the `is_
 # variable` marker says why that is not the same question.
-
 #   ops.py:1020  def is_variable
 #     `self.op is Ops.PARAM and isinstance(self.arg, ParamArg) and self.arg.vmin_vmax
 #     is not None and self.arg.addrspace is AddrSpace.ALU and self._shape == ()`.
@@ -5494,12 +5411,10 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #     Unblocking it is a substrate change, not a port: `Node` needs a shape, or an
 #     accessor that derives one. P3, with the shape work `uop/fold.bend` already
 #     owns for the fold.
-
 #   ops.py:1025  def is_bound_var
 #     `self.is_variable and self.arg.val is not None`. The second conjunct is two
 #     fields of a `ParamArg` and both are readable; the first is `is_variable`
 #     above. Gated on it, not on anything of its own.
-
 #   ops.py:1032  def bind
 #     `assert self.is_variable and not self.is_bound_var; uval = UOp.const(val) ...
 #     return self.replace(arg=replace(self.arg, val=uval.val))`. THREE dependencies
@@ -5508,7 +5423,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #     the range table) and `uval.divides(self.arg.multiple_of)` (ops.py:1069, not
 #     ported). `self.replace` is `UOp.new` and needs no port -- the arena IS the
 #     intern table -- which is the one part of this def that is ready.
-
 #   ops.py:1039  def unbound
 #     `assert self.is_variable; return self.replace(arg=replace(self.arg, val=None),
 #     tag=None)`. The REWRITE is two field writes, both readable, and `replace` is
@@ -5516,36 +5430,30 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #     and the assert is `is_variable`: without that conjunct the def would clear
 #     `val` on nodes upstream refuses to touch, and a gate that cannot see the
 #     difference is not a gate.
-
 #   ops.py:1043  def unbind
 #     `assert self.is_bound_var; return self.unbound(), self.arg.val`. Both halves
 #     are the two defs above, including the assert.
-
 #   ops.py:1046  def unbind_all
 #     `{x: x.unbound() for x in self.backward_slice_with_self if x.is_bound_var}` and
 #     then `self.substitute(bound, walk=True)`. The slice and the dict build are
 #     `bsl.go`'s shape and readable; `substitute` (ops.py:514 symbol=UOp.substitute) is not ported, and
 #     the dict is keyed by a `UOp` in Python, which in this arena means keyed by an
 #     INDEX whose validity is a session property. P3, with `substitute`.
-
 #   ops.py:1049  def variables
 #     Walks the backward slice collecting `x.unbound() if x.is_variable else x` and
 #     an `_device_num` Variable per DEVICE RANGE, then `sorted(ret, key=lambda v:
 #     (v.arg.name or "", v.arg.slot))`. The sort key is `(Maybe<String>, U32)` and
 #     the `or ""` is Python's `None`-sorts-first, which this port has to state
 #     rather than inherit. Gated on `is_variable` and on the shape wall.
-
 # * uop symbolic stuff *
 # AND `const_factor` IS DONE -- MEASURED 2026-11-08: `def UOp.const_factor(fuel, ar, i) ->
 # H.I64` IS AT `:7752` AND `def UOp.divides(fuel, ar, v, i) -> Dv` IS AT `:7972`. THE `TODO`
 # that used to stand here was stale against a `DONE` NOTE eleven lines below it, and a `TODO`
 # beside a `DONE` for the same DEF is a ledger that disagrees with itself.
-
 # DONE(p3) ops.py:1048 def const_factor -- `UOp.const_factor` above, FLATTENED: the def and
 #   its fold are not mutually recursive once the arms are read (a STACK/ADD contributes the
 #   gcd identity and every other node is a leaf), so `cf.walk` is a FUEL-bounded worklist.
 #   The "Bend cannot express that" probe below was measuring the OBVIOUS spelling.
-
 # DONE(p3) ops.py:1082 def pop_const -- `UOp.pop_const_val` / `UOp.pop_const_hits` above, with
 #   `cval_arg`. Gated at `gates/ops-core-gate.py` in EIGHT rows over FOUR fixtures, and the
 #   fixtures are built so the def's TWO conditions fail SEPARATELY: a second src that is not a
@@ -5554,31 +5462,20 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   op is COMPARED rather than assumed. The value is a `Const` and not an `H.I64`: an I64-only
 #   reader recorded a divergence on the float fixture that was really just a narrow type, and
 #   `pop_const` returns whatever the CONST carries.
-
 # TODO(p3) ops.py:1073  def gcd
-
 # TODO(p3) ops.py:1079  def divide_exact
-
 # TODO(p3) ops.py:1090  def vmin
-
 # TODO(p3) ops.py:1092  def vmax
-
 # TODO(p3) ops.py:1106  def _min_max
-
 # TODO(p3) ops.py:1168  def _sym_fxn
-
 # TODO(p3) ops.py:1169  def sym_infer
-
 # TODO(p3) ops.py:1173  def render
-
 # TODO(p3) ops.py:1181  def render_uir  -- upstream's `pyrender` was DELETED before this pin.
-
 #   `def view_as` IS ABSENT, and the alloc family ends in one:
 # TODO(p3) ops.py:1188  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
 # TODO(p3) ops.py:1194  def alloc_like  -- BLOCKED, and delegates to `alloc`.
 # TODO(p3) ops.py:1206  def placeholder  -- BLOCKED, and ends `view_as`.
 # TODO(p3) ops.py:1208  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
-
 # PORTED -- `ops.py:1224 UOp.set` is `UOp.set` (this file). The def, its fixture,
 # its four rows and its gate landed inside a CONCURRENT agent's commit rather than
 # one of mine, so the history does not attribute them; the write-up is here and at
@@ -5619,7 +5516,6 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # had the shape under another name (`Rng.srcops.go`'s `+first` flag). Grep for
 # the IDIOM before writing the INSTANCE.
 #   # set is store+end+after
-
 # done(p3) ops.py:1229 def param -- the shape-less arm only, and it is in `weak.bend`. the third
 #   def to arrive downstream for a THIRD distinct reason: `ops.bend` cannot NAME `fold.bend`'s bounds
 #   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `THE PORT's `uop/ops.bend` HEADER` says so and it is TRUE, since
@@ -5633,11 +5529,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   the other two arms are not ported and the reason is the missing piece, named: a shaped param is
 #   `prod(to_max_shape(shape))` plus a `view_as` RESHAPE, and `view_as` IS ABSENT FROM THE PORT
 #   (so is `unique_num`). Checked, not assumed.
-
 # TODO(p3) ops.py:1228  def param_like
-
 # TODO(p3) ops.py:1236  def view_as
-
 # custom_function -- ops.py:1258 upstream. `UOp(Ops.CUSTOM_FUNCTION, src=src,
 # arg=CustomFunction(name, dtype))`. The pin's spelling was ops.py:1256 and took no
 # dtype, because there was no `CustomFunction` to hold one.
@@ -5649,26 +5542,19 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
   UOp.new(ar, OpsCUSTOM_FUNCTION{}, srcs, ACustom{CustomFunction{name, dt}}, TNone{})
 
 # TODO(p3) ops.py:1247  def call
-
 # WALL(p3) ops.py:1274  def call_with_outputs -- BLOCKED. ENDS IN THE `alloc` CHAIN: the body binds output ALLOCs through `mint` below, and `mint`
 #   calls `UOp.alloc`, which ends in `view_as` -- absent as a definition.
-
 # WALL(p3) ops.py:1280  def mint -- BLOCKED. CALLS `UOp.alloc` ("`buf = UOp.alloc(...)`"), and `alloc` ends in `ret.view_as(shape)`
 #   -- `view_as` is absent as a definition.
-
 # WALL(p3) ops.py:1298  def call_with_output -- BLOCKED. IS `UOp.call_with_outputs((self,), *srcs)`, one line over the marker above it, so it is
 #   blocked on the same `alloc` -> `view_as` chain.
 #   # one-line convenience for the single-output case: self is the value
-
 # wall(p3) ops.py:1299  def custom_kernel -- blocked. builds its placeholders with `UOp.placeholder_like`, and `placeholder_like` delegates to
 #   `placeholder`, which ends in `view_as` -- absent as a definition. NOTE the `fxn:Callable`
 #   is NOT the blocker: `bend guide:69` says functions are values that can be passed and
 #   called, affine, and this calls `fxn` once.
-
 # TODO(p3) ops.py:1312  def to_elf
-
 # TODO(p3) ops.py:1319  def uopfunc
-
 # done(p3) ops.py:1229 def param -- the shape-less arm only, and it is in `weak.bend`. the third
 #   def to arrive downstream for a THIRD distinct reason: `ops.bend` cannot NAME `fold.bend`'s bounds
 #   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `THE PORT's `uop/ops.bend` HEADER` says so and it is TRUE, since
@@ -5682,11 +5568,9 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 #   the other two arms are not ported and the reason is the missing piece, named: a shaped param is
 #   `prod(to_max_shape(shape))` plus a `view_as` RESHAPE, and `view_as` IS ABSENT FROM THE PORT
 #   (so is `unique_num`). Checked, not assumed.
-
 # WALL(p3) ops.py:1323  def outlined -- BLOCKED. PYTHON INTROSPECTION OF A CALLABLE: `inspect.signature(fn).bind(*args, kwargs)`,
 #   `bound.items()`, and the dict union `bound | {...}`. That is the runtime's own view of a
 #   function's parameters, which no compiled language exposes.
-
 # DONE(p3) ops.py:1352 def launch_dims -- `ProgramInfo.launch_dims` is
 # `ProgramInfo.launch_dims` (this file, the `from_sink` block below). It is the
 # IDENTITY on the port's launch sizes, because `sym_infer` (ops.py:95) is the
@@ -6184,7 +6068,6 @@ def dt_name(d: S.Dt) -> String:
 # `srow` answers the same integer CPython's `len(ucache)` does. The sentinel is
 # accounted for in the ROW rather than in a `#bend_only` filter, because a row that
 # needs a filter to line up with the oracle is a row that can drift from it silently.
-
 # the control that pins the other half, and it is the row that says the fix above is a
 # fix and not a widening: at the TOP level `type(arg)` IS in the key, so a bool CONST
 # and an int CONST of the same value are TWO nodes and must stay two. If this row ever
@@ -6256,7 +6139,6 @@ def ax_names_str.go(xs: List<&2, AxisType>) -> List<&2, String>:
 # --- THE AXIS CPYTHON LANE. Row order matches `.agents/slop/ops-oracle.py` EXACTLY and
 # --- the gate is a byte diff, so a row added on one side and not the other is a diff and
 # --- not a silent gap.
-
 # THE GATE for the ops.py:501-1928 block above. The CPython lane is
 # `.agents/slop/ops-501-oracle.py` and the diff is `.agents/slop/ops-501-gate.sh`.
 # Every row name starts `s5_` so the gate filters by PREFIX: a row that MOVED
@@ -6889,7 +6771,6 @@ def ctr_inter(+ls: List<&2, List<&2, Ctr>>) -> List<&2, Ctr>:
 # and two of the three read `False` on the first run and CPYTHON's read `True`, which is
 # the point: a compiling counter and a correct one are the same thing until a row says
 # OTHERWISE.
-
 # the counter of a list of nodes: the keys are 1, 2, 3 and the counts are 1, 2, 1.
 def t_ctr_bump() -> Bool:
   +c = ctr_of([1, 2, 3, 2])
@@ -7221,7 +7102,6 @@ def UOp.gcd.answer.mul2(+made: Found, +h: U32) -> Found:
 #   t_gcd_shared  the gcd of `x*z` and `x*z` is the shared factor `x` times the gcd of
 #                  the constants -- and the CONST is stripped by `pop_const`, which is
 #                  what makes the counter `{x:1}` and not `{x:1, 3:1}`.
-
 # `UOp.divide_exact` -- ops.py:1038-1047.
 #
 #     def divide_exact(self, v:UOp) -> UOp|None:
@@ -7252,7 +7132,6 @@ def UOp.gcd.answer.mul2(+made: Found, +h: U32) -> Found:
 #
 # and the answer is a `Maybe<&1, U32>` -- and `None{}` is upstream's `None`, which is the
 # "WE AREN'T SURE" ANSWER AND NOT AN ERROR.
-
 # the FOLD's state: the product so far and the "all counts non-negative" flag so far
 # -- and a record is positional -- measured 2026-11-08 -- so it is built in one place and
 # READ IN ONE PLACE.
@@ -7310,7 +7189,6 @@ def UOp.divide_exact.diff(n: U32, +d: U32, gt: Bool) -> U32:
 #
 # and `None{}` is upstream's `None`, which is the "we aren't sure" answer and not an
 # ERROR -- AND IT IS THE `ok: False` HALF OF THE RECORD.
-
 # the answer: the port's own `Dv` shape -- `ok` says whether it divides exactly and `f`
 # IS THE QUOTIENT's NODE.
 type Dq is Data:
@@ -7562,7 +7440,6 @@ def UOp.gcd(+ar: Arena, +uops: List<&2, U32>) -> Found:
 
 # and the two arms: the count is empty and it is not -- and the comparison is a
 # parameter and not a computed value (measured 2026-11-08).
-
 # `index` -- ops.py:578. `UOp(Ops.INDEX, src=(self,)+tuple(new_srcs))`, and above it
 # a guard: a STACK indexed by ONE CONST is not an INDEX at all, it is that element
 # of the STACK's own srcs. `st.index(1)` answers `st.src[1]`, and that is the row
@@ -7679,33 +7556,27 @@ def sg.ctor(arg: Arg) -> String:
 # above and this prints the op name of each in that order, so a miscount is a
 # visible row rather than a silent re-labelling of twenty-three rows. The
 # arithmetic being easy is exactly why it needs a row.
-
 # `ufix` -- ops.py:606. THREE rows and the third is the one the def exists for:
 # `sg_ufix_miss` is a CONST fixture, so a def that MINTED on the `CU` arm would
 # answer it with a fresh index and `False`. The other two are the arm names -- the
 # op for the `CU` arm and the arg for the `CV` arm -- because a two-arm def with one
 # fixture is a one-arm def with a comment.
-
 # `sg_store_gate` is the optional-gate row and `sg_store_nogate` is its
 # non-movement pair: the two differ in the THIRD src and in nothing else, so a def
 # that dropped the gate entirely would answer the first row with three srcs.
 # `sg_ins_tag` is `ta` and `sg_ins_none` is `bu`, and they differ ONLY in the tag,
 # which is what makes `UOp.ins`'s third default load-bearing: a port that
 # hardcoded `TNone` passes `sg_ins_none` and fails `sg_ins_tag`.
-
 # `sg_reduce_none` is the row the `AReduce` normalisation cannot be dropped from: a
 # def that always built `AReduce` would answer it `reduce:Ops.NOOP/0`, because the
 # `Maybe`'s `None` arm is the only thing that writes `ANone` here.
-
 # `sg_huo_src0` is the row the `1` in `src[1:]` exists for: `ca0`'s only ALLOC is
 # src[0], which is the CALL's BODY, so the answer is False and a def that walked
 # `src` instead of `src[1:]` answers True. `sg_huo_op` is the same separation on
 # the other side -- a non-CALL with an ALLOC src -- and `sg_huo_unshard` is the only
 # row that sees the `unsharded_base` peel, because `cun`'s ALLOC is two nodes down.
-
 # `sg_body_add` is the `case _` row: without a non-CALL the `None` arm of
 # `UOp.body.of` is dead code, and a dead arm cannot be mutated into moving anything.
-
 # `() if not isinstance(device, tuple) else (UOp.range(len(device), 0, DEVICE),)`.
 # `S.Dev` IS Python's `str | tuple[str, ...]` -- `D1` is the str and `Dn` the tuple
 # -- so the `isinstance` test is the `match` and there is nothing else to it.
@@ -7794,7 +7665,6 @@ def UOp.getaddr(fuel: Nat, +ar: Arena, +self: U32, +dev: S.Dev) -> Found:
 # is stated here rather than left to be discovered. The discarded GETADDR in the
 # `case False{}` arm grows the arena and is thrown away, which is what `UOp.after`
 # and `UOp.broadcast` above already do.
-
 # ==== ops.py:1030  `expr`, the one Variable-lattice def this arena can read ====
 #
 # A Variable is a scalar ALU PARAM carrying a name and a value RANGE; binding it
@@ -7872,21 +7742,18 @@ def UOp.expr(+ar: Arena, +self: U32) -> Maybe<&2, String>:
 # reader to build what is already there, and the reader who trusts it will either
 # duplicate the function or report the row as blocked. `divides` was listed as gated on
 # `const_like` while it sat ported and verified below the list.
-
 # TODO(p3) ops.py:1073  def gcd
 #   `zip(*[u.pop_const(Ops.MUL) for u in uops])`, a `Counter` intersection of
 #   `split_uop(Ops.MUL)` terms, and `math.gcd` over `const_factor`s. `const_factor`
 #   (:7855), `split_uop` (:5169) and `pop_const` (:7738) all exist, so what is missing
 #   is the MULTISET and not the walk: a `Counter` intersection is a fold over two node
 #   lists, and `math.prod(count.elements(), start=...)` is a MUL chain from a base.
-
 # TODO(p3) ops.py:1079  def divide_exact
 #   Recurses over ADD/MUL srcs and calls `divides` (DONE), `const_like` and
 #   `__floordiv__`. `const_like` is ops.py:572 and is NOT ported (:5441): it is
 #   `UOp.const(b, dtype or self.dtype)` plus `_mop(Ops.EXPAND, arg=self._shape)`, so the
 #   SHAPED half needs the shape field this arena does not carry. The scalar half already
 #   exists as `sy_const_like` (symbolic.bend:484).
-
 # ==== ops.py:1015  `UOp.variable` =========================================
 #
 # `return UOp(Ops.PARAM, arg=ParamArg(-1, dtype, name=name, vmin_vmax=(min_val,
@@ -7932,7 +7799,6 @@ def UOp.variable(+ar: Arena, nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt
 # the three `Map` readers in the tree disagree about that -- `Map.has` takes it
 # first, `Map.get` has NO linearity parameter. A stray `&2` lands in the next
 # parameter's slot and the error names a type rather than an arity.
-
 # `ProgramInfo.launch_dims` -- ops.py:1352 -- AND `ProgramInfo.from_sink`
 # -- ops.py:1358. the two methods upstream's `ProgramInfo` has at the PIN.
 #
@@ -7949,7 +7815,6 @@ def UOp.variable(+ar: Arena, nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt
 # def may only call defs written ABOVE it. That is why every `.of` def is
 # written before the def that calls it, and why the three arena readers are at
 # the top.
-
 # the three arena reads this block matchs on. a `match` may not scrutinise a
 # computed value ("give it its own def"), so each one gets its own DEF.
 def fs.arg(ar: Arena, u: U32) -> Arg:
@@ -8038,7 +7903,6 @@ type OI is Data:
 # DISPATCHED WITH `Bool.pick` RATHER THAN A `match`. That is why this block is
 # longer than upstream's twenty lines: Bend has no projection syntax, no
 # `for`, and no mutable list.
-
 # THE PARAM'S SLOT AND ITS ADDRSPACE. `ParamArg`'s pattern must name all
 # THIRTEEN fields, so the port's own accessors (`ParamArg.slot`,
 # `ParamArg.addrspace`) are used rather than a second copy of that pattern.
@@ -8414,7 +8278,6 @@ def t_gcd_shared() -> Bool:
 # types differ), `arg=True` vs `arg=False` is False, `arg=None` vs `arg=0` is False
 # (`NoneType` is not `int`), `arg=True` vs `arg=True` is True, `arg=1` vs `arg=1` is
 # True, `arg=None` vs `arg=None` is True.
-
 # the same `arg` on two nodes: one node (the two interned together).
 def arg_same(a1: Arg, a2: Arg) -> Bool:
   +u = UOp.new(Arena.empty(), OpsSINK{}, Nil{}, a1, TNone{})
@@ -8448,7 +8311,6 @@ def t_arg_int_same_interns() -> Bool:
 #   divide_exact(x*y, x)    = (mul 1 y)
 #   divide_exact(x*2, x)    = 2      (THE CONSTANT COMES OUT)
 #   divide_exact(x*2, 2)    = (mul x 1)
-
 # THE `self IS v` ANSWER IS 1 -- A CONST WITH NO SRCS.
 def t_de_same() -> Bool:
   +ar0 = Arena.empty()

@@ -137,9 +137,7 @@ import ./../uop/ops.bend as O
 # reports the IMPORT CLOSURE, so a file that never names a seam still goes red.
 # `nn/__init__.bend`, `nn/optim.bend` and `nn/state.bend` report the identical
 # fourteen. The two lanes printing identically is this project's gate.
-
 # STAGE 1. THE TABLES. Enums first, because everything else is keyed by them.
-
 # `WireType(enum.IntEnum)` -- onnx.py:13-18. Six members, contiguous 0..5.
 # `skip_field` (:112-119) is the only consumer and it is a WALL with
 # `PBBufferedReader`; the table itself is the ported part.
@@ -705,7 +703,6 @@ def AVal.at(a: AVal) -> U32:
 # (`to_field_name`, :27) to know which key the payload is under. So the tag
 # reader is ported and the payload readers are absent, with the measurement here
 # so the next reader does not spend a cycle re-deriving it.
-
 # `Att` is one entry of the `dict[str, Any]` that `OnnxNode.opts` is. It is a
 # LIST of these and not a `Map`: bend2-constraints' `renderer/cstyle` rule 1
 # measures that `Map.put` LOSES KEYS and `Map.get` answers a `Sigma`, and the
@@ -1076,7 +1073,6 @@ def onx_pc_has_neg() -> Bool: onx_pc_has(required_input_python_consts(), "Slice"
 # version ROUTER that decides which of `Softmax`'s two bodies a model gets, and
 # its two failure modes (`op not supported`, `not supported for domain D and
 # version V`) are what a real load hits when a model is newer than this tree.
-
 # THE OP NAME TABLE -- `onnx_ops` (:1308-1317), 171 keys.
 #
 # Python builds it in three pieces and the ORDER is a `dict` insertion order:
@@ -1332,7 +1328,6 @@ def onx_sel(+nm: String, +dom: Dom, +ver: U32) -> Maybe<&1, String>:
 # `eligible_ops[max(eligible_ops.keys())]`. A tie is impossible: Python's dict
 # keys are the `OpSetId`s and are unique per domain, so two rows cannot share a
 # version inside one domain.
-
 # THE PADDING ARITHMETIC. `_resolve_pool_pads` (:495-500) and the two helpers
 # it calls are the only pure-integer functions in `get_onnx_ops`, and they are
 # the ones that decide what `Conv`, `ConvTranspose`, `MaxPool`, `AveragePool`
@@ -1350,7 +1345,6 @@ def onx_sel(+nm: String, +dom: Dom, +ver: U32) -> Maybe<&1, String>:
 # so the pad is `3 - 8 = -5`. Python's `//` FLOORS, and the floor of a negative
 # is not `U32.div`. That is why `_auto_pad` runs on `H.I64` and why the file
 # carries its own `onx_halve`.
-
 # `AUTO_PAD_OPTIONS = Literal["NOTSET", "SAME_UPPER", "SAME_LOWER", "VALID"]`
 # -- :489. A `Data` sum rather than a string, because every arm of both helpers
 # is a comparison against one of the four and a `match` on a `Data` value is
@@ -1530,7 +1524,6 @@ def onx_half(+n: U32, +xs: List<&2, H.I64>) -> Hal:
 # second is a CONSTANT input, where the rearrangement is INVISIBLE, so a fixture
 # built from a constant pads tuple would pass with the halves in the wrong order.
 # `p2t((1,)) == ()` is the `n == 0` arm and it is a real answer.
-
 # BOTH HALVES ARE REVERSED, and getting that wrong was a real bug this gate
 # caught: reversing only the first half gives `(0,0,0,0,0,5)` where CPython gives
 # `(0,5,0,0,0,0)` for the input `(0,0,0,0,0,5)`. The reading is
@@ -1873,7 +1866,6 @@ def main() -> IO(Unit):
 # the walls, one `TODO(p3)` per python line group. No prose pretending to be
 # code: `nn/__init__.bend` says the same thing about its own `__call__`s and the
 # reason is the same -- a def with no body is a paragraph pretending to be a def.
-
 # TODO(p3) onnx.py:73   PBBufferedReader -- `io.BufferedReader(TensorIO(tensor))`,
 #   `decode_varint`'s 64-bit accumulate, `read_delimited`, `read_string`,
 #   `read_bytes`, `read_float`, `read_packed_floats`, `read_int64`,
@@ -1934,7 +1926,6 @@ def main() -> IO(Unit):
 #   and a `b1_t`/`b2_t` special case at `T == 0` (:1196-1201). The ROUTING
 #   (`___wrapper` for all three) is PORTED and GATED.
 # TODO(p3) onnx.py:1216 Gradient -- `intermediate_tensors[y].gradient(*inputs)`.
-
 # THE MUTATION TABLE, MEASURED by `.agents/slop/onnx-mutate.py`, which mutates
 # the file in place, re-runs the INTERPRETED lane, reports the rows that MOVE and
 # restores the file (it asserts the restore is byte identical). MEASURED

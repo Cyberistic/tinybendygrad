@@ -44,7 +44,6 @@
 #   `get_state_dict((args, kwargs))`     `Context(...)`    `time.perf_counter`
 #   `self.fxn(*args, kwargs)`          `__get__`         `functools.partial`
 #
-
 # THE LAZY BEHAVIOUR, STATED HONESTLY, because the brief asked for it and the
 # two answers are not the same.
 #
@@ -1097,7 +1096,6 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # 'itertools.count'` on the first ALLOC with `bind_on_realize=True`. The port
 # spells it as `Arena.next(ar) -> U32`, which cannot be got wrong, and the
 # fixture builders below say so.
-
 # SECTION J0 -- THE SEAM `examples/beautiful_mnist.ts` SHOULD CALL.
 #
 # That file's `@function_` decorator currently increments a global counter and
@@ -1126,7 +1124,6 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # `self.cnt` -- none of which is in `function.py` and none of which this port
 # touches. `@function_` is the seam; `@TinyJit` belongs to whatever unit owns
 # `engine/jit.py`.
-
 # SECTION J -- THE GATE.
 #
 # EVERY ROW IS DERIVED FROM CPython. The oracle is
@@ -1506,7 +1503,6 @@ def renum_gap() -> String:
 
 # `slots@positions`, so each row carries BOTH numbers and the difference between
 # them is in the output rather than in a comment.
-
 # and the wrapper takes the last built node's arena, not the first's: `b` is
 # interned before `v`, so `O.Found.ar(b)` does not CONTAIN `v` and the next node
 # lands at the index `v` already holds. Two builds from the same base are SIBLING

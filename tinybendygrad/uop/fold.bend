@@ -607,7 +607,6 @@ def bcast_dim.pair(ks: List<&2, O.Sint>) -> Maybe<&2, O.Sint>:
     case x <> t: bcast_dim.rest(x, t)
 
 # `num_axes` is a `U32` count, so the `< 0` test cannot fail
-
 # the `if ok then acc+[x] else acc` of this file, hoisted
 def add_if(a, -A: Kind(a), ok: Bool, x: A, acc: List<a, A>) -> List<a, A>:
   match ok:
@@ -1131,7 +1130,6 @@ def fold.ended.of(m: Maybe<&2, Derived>) -> Maybe<&2, List<&2, U32>>:
 # "derived from the value. order matters: bool is an int subclass, ConstFloat is a
 # float subclass", and the note that CMPLT, CMPNE, CMPEQ, WHERE, SHL and SHR are
 # handled above rather than by the GroupOp fallbacks.
-
 # `always void` in the dtype ladder and `late ops don't have shape` in `_shape`: the
 # same twelve ops in both rules, so one def answers both.
 def late() -> Maybe<&2, DtShape>:
@@ -1390,7 +1388,6 @@ def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 # `I64` that `H.i64_is_neg` can test and `H.lo32` can multiply, which is what the two
 # checks need, and a `SU` is the arena index of the node the dim IS, which is what
 # makes two different symbolic dims two different answers.
-
 # `self.val` for a CONST -- ops.py:259-262, `.val` reads `self.arg` and is only
 # for a CONST or a CAST of one. A `CFloat` is not a dim: `shape_to_shape_arg`
 # asserts `dtypes.is_int(x.dtype)`, and `True == 1` as dict keys, so a `CBool`
@@ -1437,7 +1434,6 @@ def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
 # range -- so a node whose width it cannot read is still `?`, and the node is not answered
 # with a guessed width.
 #
-
 # the chain, and it is the defect this reader had, measured 2026-10-28.
 #
 # - UPSTREAM'S RANGE ARM IS `0, (self.src[0]-1).vmax` (`ops.py:1147`), AND `vmax` OF A
@@ -1470,7 +1466,6 @@ def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
 # use it"*), and a self-call's arguments are read left to right, each passed unchanged
 # until one shrinks. the depth below is three: the chain is one pass-through deep
 # for a CAST and two for an after-of-a-CAST, and a CONST is the end.
-
 # the order of these is the order rule, not an accident: `end` is the match (a match may
 # not scrutinize a call, so the op arrives as a parameter), and it is written ABOVE the
 # walk that calls it. `references/bend/guide/GUIDE.md:113-121` -- only `@unsafe` may call
@@ -1626,7 +1621,6 @@ def stage_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape
 # SO: `SU{s}` is right for a PARAM or a SPECIAL whose interval is not a point, and
 # it is a DISTINCT answer per dim because `s` IS the node. That is what the
 # `U` shape column cannot carry and `dim_str` below now does.
-
 # A dim this file can answer `x >= 0` about (ops.py:408's `all(...)`), which is a
 # NON-NEGATIVE and NON-EMPTY interval. `lo > hi` is `vmin > vmax`: the value does
 # not exist, and then ops.py:410's `resolve(..., False)` is DECIDABLE and this
@@ -1797,7 +1791,6 @@ def expand_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape
 # symbolic offset; the fold cannot read one at all, so it refuses. That is the
 # uniform rule from the header -- a rule it cannot run is not a rule that passed --
 # and `mv_padsym` is the row that measures the difference.
-
 # A DIM AS A COUNT, or a refusal: an `O.SU` is an arena index and `resolve` needs a
 # number, and a negative dim is ops.py's `resolve(sz>=0)` failing. Both are `None`.
 def some_u32(ok: Bool, +x: U32) -> Maybe<&1, U32>:
@@ -1946,7 +1939,6 @@ def pair3.of(+pad: Bool, ps: Maybe<&2, List<&2, O.Sint>>, os: Maybe<&2, List<&2,
 # "every index is in range" and "no index repeats", and together they are exactly
 # "the multiset is {0..n-1}". `range(n)` also forces the LENGTH, which is why the
 # walk counts rather than merely bounding.
-
 # `sorted(self.marg) != list(range(len(ps)))`, over the walk that also builds the
 # answer. `seen` is the multiset-so-far, so "no repeat" is a membership test.
 type Perm is Data:
@@ -2191,7 +2183,6 @@ def shrink_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShap
 # `oracles/fold-mvt-rows.py` is the measured fixture: CPython raises
 # `bad reshape` and this fold answers. One input class, named, in place of the
 # whole class of symbolic margs that used to refuse.
-
 # `prod(xs)` over a `Maybe` shape, in ONE self-recursive def: the product of the
 # CONCRETE dims, whether any dim was provably negative (ops.py:408's raise), and
 # whether any dim was SYMBOLIC (`n` is MEANINGLESS when `sym` -- a `SU` contributes
@@ -3135,7 +3126,6 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
 # versus `()`. So `Some{Some{Nil{}}}` is `()`, `Some{None{}}` is a shape that is
 # not concrete, and anything else is not scalar. THE COUNT WOULD BE WRONG THREE
 # WAYS AT ONCE, and `cfun_shape_is` already measured that.
-
 # THE `_min_max` ARITHMETIC CORE -- the part of ops.py:1104 that is unsigned-64
 # magnitude arithmetic plus a sign bit, and the HALF OF THE WALL that
 # `mixin/dtype.bend` measured. See the full width argument at the foot of this file,
@@ -3539,7 +3529,6 @@ def mm_show(m: Maybe<&2, H.I64>) -> String:
 # bit too wide and therefore a DIFFERENT INTEGER, not a different shape -- which is
 # why `mm-bl-gate.py` gates the masking rows (`mk_*`) alongside the counts and not
 # only the latter.
-
 # `x >= 2**16` picks `x >> 16` and adds 16; the two halves of each stage are separate
 # defs only so the ladder reads as a table. `Bool.pick` CHOOSES an arm and both are
 # evaluated, which is harmless here: every arm is a total shift or a literal.
@@ -4486,7 +4475,6 @@ def mm.lift(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2:
 #                     the BACKEDGE must carry src[1:2] as its ended range.
 #   5. gap_ok      -- a node whose rules are deferred (a RESHAPE) is NOT answered,
 #                     and the fold still terminates and says so by leaving it out.
-
 # the folded arena and its table, as one `Data` value, for the same `Data` rule as
 # `Sized` and `Srcs`: every claim below reads the table two or three times.
 type Folded is Data:
@@ -4672,7 +4660,6 @@ def bl_row(nm: String, got: String) -> IO(Unit):
 # The dtype limits print as a PAIR on one line, so a transposed `min`/`max` and a dropped
 # sign are both visible in the same string. Two separate rows would let a swap hide in
 # either; one row cannot.
-
 # the `_min_max` op-table rows. `.agents/slop/mm-lift-gate.py` generates both the
 # FIXTURES AND THESE 123 LINES -- and it generates them from a fixture LIST, so there is
 # one copy of the inputs and not a transcription anywhere. Every src in a fixture is a
@@ -5113,7 +5100,6 @@ def folded(+ar: O.Arena) -> Folded:
 # not answered either. Python has no such limit. The refusal is a FLAG and not an
 # absence, so it rides through the union and the pops -- a fold that cannot say "I do not
 # know" is not a fold. `rg_absent` is the row that pins it.
-
 # The node index rides IN the set, because the table is a search and a `List` cannot
 # carry the key beside the value without a second record. `ok` is the "do not know".
 type Rng is Data:
@@ -5516,7 +5502,6 @@ def min_maxed(+ar: O.Arena) -> MMed:
 # graphs node for node and prints CPython's own `u.ranges`, so `diff` of the two lanes
 # IS the test. The label is a RANGE's axis, never an index: CPython's interning order
 # is not the arena's, so a number neither lane means the same thing by.
-
 # `UOp.range(end, (axis,), AxisType.LOOP)` -- one fixture, one axis per range, which is
 # what makes a range a NAME rather than a position.
 def rg_rng(ar: O.Arena, end: U32, axis: U32) -> O.Found:
@@ -5689,7 +5674,6 @@ def rng_of_row(nm: String, +f: O.Found) -> IO(Unit):
 # and the node count right: that mutation moved exactly TWO of seventy rows in
 # `mixin/movement.bend` and only because two rows happened to notice an identity
 # test. `n= op= nsrc= srcops=` is the spelling that closes it.
-
 # `ParamArg(slot=0, int32, size=size)` -- `g_buf` spells the size-4 one, and this
 # is the same record at an arbitrary size so the 2-D fixtures have a source.
 def g_mv_pa() -> O.ParamArg:
@@ -6007,7 +5991,6 @@ def sig4(+ar: O.Arena, +u: U32) -> String:
 # The `^mmk_` is what excludes the `mmkx_` rows from BOTH sides, which is the same
 # arrangement as `lf`/`lfx`: each lane prints its divergences in full and the diff covers
 # only the claims the two agree on.
-
 # THE `_min_max` WALK ROWS. `.agents/slop/mm-walk-gate.py` builds the same graphs node
 # for node and prints CPython's own `_min_max`, so `diff` of the two lanes IS the test.
 #
@@ -6062,7 +6045,6 @@ def sig4(+ar: O.Arena, +u: U32) -> String:
 # also why the START INDEX is not observable: shifting it by one leaves index 0 unrowed
 # and `Arena.empty()` spends index 0 on a bottom nothing ever names. What the gate pins is
 # the ORDER, and MW5 and MW7 measure that.
-
 # `ABSENT` is this file's "this fold cannot answer", the same word `rng_str` prints, so a
 # refused interval is not mistakable for a saturated one.
 def mmk_str(m: Maybe<&2, Bnd2>) -> String:
@@ -6580,7 +6562,6 @@ def t_cfun(+dt: S.Dt, empty: Bool) -> Bool:
 # values of `Dt`, because `eq_dt` compares all four fields. That is why the collision
 # has never been observable, and why the port keeps `pri 0` rather than inventing a
 # signed encoding `U32` cannot hold.
-
 # dtype.bend's `dtypes.all()` is SEVENTEEN -- `dtype.py:161` is
 # `floats + ints + (bool,)` -- so the two-lane dtype gate has never printed a void row,
 # which is the whole reason this went unnoticed. Measured: `len(dtypes.all) == 17` and
@@ -6671,7 +6652,6 @@ def t_bnd_void_is_bool() -> Bool:
 # fires -- and that is the negative witness, the one row that says the reader
 # can say False. A reader with no negative witness is two rows that are always
 # True, and a row that is always True cannot fail.
-
 # a BUFFER(int32) of shape (4,) ON A DEVICE. The device is what makes
 # `is_virtual` false; `mw_pa` below has none, and every node built with it is
 # virtual.
@@ -7197,7 +7177,6 @@ def main() -> IO(Unit):
     # THE `_min_max` ARITHMETIC ROWS. `.agents/slop/mm-gate.py` generates BOTH the
     # fixtures and these lines, so a row cannot be right on one lane and wrong on the
     # other; 72 rows, byte-identical to CPython on both the interpreted and `-o` lanes.
-
 # NOT PORTED, one line each, and the wall each one is behind. The Python line
 # numbers are ops.py's, so this list diffs against ops.py line for line and
 # `rg "TODO(p3)" tinybendygrad/uop/fold.bend` is the work queue.
@@ -7223,7 +7202,6 @@ def main() -> IO(Unit):
 # symbolic)`, and `graph_rewrite`'s rules call `dtype` and `shape`, which is what
 # makes tinygrad's version cyclic. So `simplify` is P3 and it is the reason the
 # movement shapes are deferred rather than ported.
-
 # TODO(p3) ops.py: 95  def sym_infer            -- `exec` of generated source; P3/P6.
 # TODO(p3) ops.py:199  __call__ (ucache key)   -- PORTED, as the `dtype_key` gate row:
 #   the key must separate nodes of different dtype, a CONST's dtype is the type of
@@ -7472,7 +7450,6 @@ def main() -> IO(Unit):
 #   the other reader.
 # TODO(p3) ops.py:1422 def exec_alu             -- its tuple operand case is a
 #   vectorised ALIKE branch. P3.
-
 #
 # what next, in the order the walls fall. reordered by this unit's measurement:
 # the old list put `simplify`/`ssimplify` first because it was "the ONE missing piece
@@ -7506,7 +7483,6 @@ def main() -> IO(Unit):
 # that measures them, is in .agents/slop/notes/bend2-constraints.md under
 # "Writing a Kahn worklist".
 #
-
 # THE MUTATION TABLE for the src ORDER fix, MEASURED, run both ways.
 #
 # | mutation | rows that MOVED | what it is testing |
@@ -7535,7 +7511,6 @@ def main() -> IO(Unit):
 # with no measurement behind it, and `sized` is a SHAPE list where the reversal might
 # be compensating for a second one. FIXING IT NEEDS A GATE ROW FIRST.
 #
-
 # THE MUTATION TABLE for the `sized` ORDER fix, MEASURED, run both ways.
 #
 # | mutation | rows that MOVED | what it is testing |
@@ -7562,9 +7537,7 @@ def main() -> IO(Unit):
 # `bitcast_dims`, the other order-sensitive consumer, does agree with CPython now --
 # `[2,6]` with itemsize 4 into 8 is `[2,3]`, and `[3]` into 8 is the `RuntimeError` the
 # fold reports by not answering.
-
 #
-
 # the mutation table for the five movement arms, measured, run in both lanes.
 # `oracles/fold-mut.py` applies each edit, re-runs both lanes and diffs the rows;
 # the table is its output and nothing here is transcribed by hand. RE-TAKEN 2026-10-25.
@@ -7610,7 +7583,6 @@ def main() -> IO(Unit):
 # ANSWERS where CPython raises (DISJOINT products) -- and both are in the oracle's
 # DIVERGES block with the interval arithmetic that decides them. A file with no
 # divergences left would be a file whose reader could not tell the two apart.
-
 # THE MUTATION TABLE for `_min_max`'s OP TABLE, MEASURED.
 # `.agents/slop/fold-lift-mutate.py` applies each edit, re-runs, and diffs whole
 # `name=value` lines against a baseline captured from the SAME file in the SAME state; the
@@ -7671,7 +7643,6 @@ def main() -> IO(Unit):
 # interval against the near end of the other, and that a monotone map trades them. An
 # all-CONST gate cannot see any of it, because on a CONST interval every one of those
 # properties is an identity.
-
 # the mutation table for the ranges FOLD and for the image-shape constant, measured.
 # `.agents/slop/fold-rng-mutate.py` applies each edit, re-runs, and diffs whole `name
 # value` lines against a baseline captured from the SAME file in the SAME state; the table

@@ -44,7 +44,6 @@
 #    matcher that reads src0 and src1 in one fixed order drops `l25` and `l26`
 #    and typechecks.
 #
-
 # FOUR DIVERGENCES, stated rather than hidden.
 #
 # A. NO PROMOTION CASTS. `mixin/elementwise.py`'s `_broadcasted` inserts
@@ -65,7 +64,6 @@
 #    that is, and it is a real fixture.
 # D. `_min_max` IS READ FOR A CONST AND A PARAM ONLY. See `dc_vmin`.
 #
-
 # THE PRINT-SHAPE. Two levels deep with CONST values printed, which is the whole
 # tree for every rule here, so it is not a shortcut. A bool CONST prints as
 # `C(1)` (the port has one integer Const type) and a float CONST through
@@ -832,7 +830,6 @@ def dc_l17(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 # weakint, so `Cls.is_int` is the wrong test here -- it admits `CWeakInt`. One
 # reader and a NAME, so a rule spells `dc_dt(fx, x, 0)`.
 #   0 ints  1 uints  2 bool  3 floats
-
 # A nested `match c:` in every arm of `match want:` makes `c` a binder matched
 # more than once, which Bend reads as a consumed binder. One def per class and
 # one `match want` over those is the same four lines and it compiles.
@@ -1013,14 +1010,12 @@ def dc_s3(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 #   The P3 phase that owns it is the one that adds `i64_mul`/`i64_div`/
 #   `i64_mod`/`i64_shl` to `helpers.bend`; nothing in `decomp.py` changes when
 #   they land, because this block is already the only caller.
-
 # `fast_idiv` -- op.py:20-34. THREE of the five guards are exact here and are
 # PORTED, because the two they need are both available: `d.val` is a `U32` and
 # `x.vmin`/`x.vmax` are readable for a CONST and a PARAM (see `dc_vmin`). The
 # FOURTH line is the wall, and `dc_idiv`'s `None` there is the same reading
 # `divandmod.bend` gives Python's `raise`: the condition is REPORTED and the
 # ladder treats it as a skip, which is the only total answer a pure def has.
-
 # `d <= 0` for a CONST `d`, which is `d.val` and a SIGNED compare. `x.vmin < 0`
 # is `not dc_vmin`.
 def dc_idiv.bad(+ar: O.Arena,+x: U32,+d: U32) -> Bool:

@@ -135,7 +135,6 @@ import ./linearizer.bend as LT
 #      arm is needed before the 1-element `case _ <> _` cover.
 # `ra0_*`, `ra1_*`, `ra2_*` and `rw_none` ARE in `main`, between `se_miss` and
 # `rw_tbl_len`, in the oracle's order.
-
 # `PSEUDO_OPS` AS A TABLE, so `ra_pseudo_n` COUNTS it. A literal `8` is a row that no
 # mutation of the predicate can move, and the mutation table says so: dropping
 # BARRIER or GROUP moved nothing until the count became a length.
@@ -202,7 +201,6 @@ def ra_tbl_ops() -> String:
 
 # `regalloc.py:10-97` -- the context, the MAIN LOOP, the rewrite. ported.
 #
-
 # W5 A REGISTER IS A `U32`, and it is not a shape dodge.
 #
 # `Register` (renderer/isa/__init__.py:9-18) is a FROZEN DATACLASS of
@@ -231,7 +229,6 @@ def ra_tbl_ops() -> String:
 # The rest of this file uses `ops.bend`'s readers; THIS pass does not, and that
 # is the exception the header above names.
 #
-
 # THE FIVE-FIELD STATE. `spills`, `reals`, `insert_before`, `live` and `live_ins`
 # are five dicts Python mutates in place; there is no mutable store, so they are
 # fields of one `Data` record and every step threads it. `RaSt` also carries the
@@ -257,7 +254,6 @@ def ra_tbl_ops() -> String:
 # what the oracle's `FakeCtx` does (`"slot:" + r.name`) and what the header above
 # says it does.
 #
-
 # `lr[v][-1]` IS A MAX FOLD, NOT A LAST-ELEMENT READ. The live-range walk is
 # BACKWARD (`reversed(list(enumerate(uops)))`, :22) and each index goes in with
 # `insert(0, idx)` (:26), so `lr[v]` comes out ASCENDING and `lr[v][-1]` is the
@@ -294,7 +290,6 @@ def ra_tbl_ops() -> String:
 # of its two arguments ONCE, which is all `List.sort`'s bare-parameter comparator
 # allows.
 #
-
 # `continue` AND `match`. A stage that must SKIP work that mutates the threaded
 # state cannot be a `Bool.pick` arm in the ARM position: `Bool.pick` evaluates
 # both arms, and a discarded `fill` is harmless only because this port is pure --
@@ -303,7 +298,6 @@ def ra_tbl_ops() -> String:
 # `ra_w.get`, `ra_alloc.done`, `ra_fill.slot`), which bend allows and which
 # evaluates one arm. Five drafted folds also had to be re-ordered so the SHRINKING
 # argument comes first in every self-call.
-
 # THE INTERN TABLE. `Regs` in the oracle is a growable LIST of `(name, index,
 # cons)` and an index into it, so it is a list here and not an assoc table: a
 # register's own intern index is its key. `Ru.nm` is `ra<t>_vregs`' name column
@@ -489,7 +483,6 @@ def Al.st(+a: Al) -> RaSt:
 
 # THE LIVE-RANGE PASS -- regalloc.py:22-29. BACKWARD, and the fuel is the
 # countdown so it is the first parameter of the self-call.
-
 # STEP 1, regalloc.py:26 -- `lr.setdefault(v, []).insert(0, idx)`. The prepend is
 # `tb_ins`' `pre` arm, and `u32_none()` is the "not a Register" filter: `rdef`
 # answered None for a CONST.
@@ -599,7 +592,6 @@ def ra_lr.go(rest: List<&2, RaUop>, +i: U32, s: RaSt) -> RaSt:
 
 # `alloc` -- regalloc.py:39-45. pick the register with the furthest next use,
 # FREE FIRST, `cons` ORDER BREAKING TIES.
-
 # `next((j-i for j in ([] if vreg is None else lr[vreg]) if j >= i), len(uops))`
 # -- the `[]` arm is `lr[None]` answering empty, which `tb_vs` does for free
 # because `u32_none()` is not a key.
@@ -728,7 +720,6 @@ def ra_cons(+un: List<&2, Ru>, v: U32) -> List<&2, U32>:
   Ra.cs(ra_uni(un, v))
 
 # THE MAIN LOOP -- regalloc.py:55-97.
-
 # `self.reals.setdefault(i, {})[v] = live[v]` -- :63 and :77, ONE def.
 def ra_set(+s: RaSt, i: U32, v: U32, r: U32) -> RaSt:
   ra_st.re(s, LT.tb_pset(RaSt.re(s), i, v, r))

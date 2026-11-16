@@ -43,14 +43,12 @@
 # CHECK. The seam is `Tr.emit`, the ORDER is the artefact, and `wgsl.bend`'s
 # green lane is the precedent. See `.agents/slop/amd_oracle.py`.
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one driver call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER and the IDENTITY). There is no third
 # kind. That is what puts every `raise` into the trace: a refusal records NOTHING
 # further, so it appears as a TRUNCATION and no step needs a guard of its own.
 #
-
 # THE HEADLINE, measured. `--check-only` says ALL PROOFS CHECK. Both lanes print
 # 520 IDENTICAL rows. All 520 are diffed against CPython by
 # `.agents/slop/amd_check.py` and there are ZERO mismatches; the 601 oracle rows
@@ -76,7 +74,6 @@
 # version computed it in `U32` and WRAPPED. It is an `H.I64` and an `i64row`,
 # which is what `ops_nv.bend` does for the same reason.
 #
-
 # WHAT IS PORTED, DEF BY DEF. `amd:NN` is ops_amd.py.
 #
 #   :31-34   SQTT / PMC ContextVars            PORTED  the two default pairs
@@ -152,7 +149,6 @@
 #   :1055-1069 collect_prof                    PARTIAL the window and the kinds
 #   :1071    on_device_hang                    WALL 5
 #
-
 # THE FIVE WALLS.
 #
 # 1. `/dev/kfd` (KFDIface, :579-735). `AMDKFD_IOC_*` on `/dev/kfd`, `/sys/
@@ -206,7 +202,6 @@
 # | wall(p3) runtime/ops_amd.py:714  the mmu-fault f-string. -- blocked: an mmu-fault f-string inside a signal-handler path the port does not have; the format is not the blocker.
 #    TODO(p3) runtime/ops_amd.py:685  symbol=on_device_hang  the HW-fault f-string.
 #
-
 # TWO things that are not in the port at all, and why.
 #
 #  * `_amd_program_image`'s ELF WALK (`tinygrad/runtime/ops_amd.py:515-519 symbol=_amd_program_image`). `elf_loader(lib)` returns the
@@ -227,7 +222,6 @@
 #    row about CPython, NOT about this file, which is said in the row's name.
 #    TODO(p3) runtime/ops_amd.py:515  symbol=_amd_program_image -- the md5 digest slice -- NOT IN upstream at this pin: upstream's `runtime/ops_amd.py` has NO `hashlib.md5` and the slice is CPython's `hashlib`, so it is a WALL.
 #
-
 # WHAT device.bend AND helpers.bend OW this file, and they OWN four things:
 #
 #  1. `D.iter_sig` IS `layout_args`' ENGINE, and THIS file uses its form and
@@ -257,7 +251,6 @@ import ../helpers.bend as H
 import ../device.bend as D
 
 # THE CONSTANTS, and where each one was read.
-
 # ops_amd.py:36, "based on a comment in nvd.h".
 def EVENT_INDEX_PARTIAL_FLUSH() -> U32: 4
 # :37-39. The three `WAIT_REG_MEM_FUNCTION_*`.
@@ -368,7 +361,6 @@ def MOD_NBIO() -> U32: 5
 def MOD_N() -> U32: 6
 
 # THE TYPES.
-
 # ONE driver call and the object it acts on. `arg` is the iface kind for a
 # SELECT, the module id for an IMPORT, and a plain number otherwise. There is
 # deliberately no field for the rest of the call's ARGUMENTS: those are what
@@ -574,7 +566,6 @@ def Tr.seq(t: Tr, pat: List<&2, Call>) -> Bool: Tr.has(Tr.calls(t), pat)
 #      where a slot does not continue the previous one, PREPENDS a zero blob of
 #      exactly the gap; then it appends one trailing blob of
 #      `kernargs_segment_size - end`, which is ZERO when the args fill it.
-
 # `(1)`: `8` per global, then the var widths. The fold APPENDS, so the order is
 # globals-then-vars, and the list of globals is a COUNT because
 # `prg.arg.globals` is a tuple of positions whose only property this reads is
@@ -662,7 +653,6 @@ def pack.tail(end: U32, size: U32) -> List<&2, E>:
 # the grid words -- which is why the split is at 24 and not at 28. The two
 # `UOp`s in the middle are 8 bytes each by default, and the three grid words are
 # `g * l` cast to uint32, `zip`ped over `global_size` and `local_size`.
-
 # the grid, `g * l` for the three zipped pairs, and the cast to uint32 is the
 # seam's because a UOp cast is a node. ONE fold over THREE pairs -- three
 # separate folds would be three transcriptions of `zip(global_size, local_size)`
@@ -809,7 +799,6 @@ def CKey.same(a: CKey, +b: CKey) -> Bool:
 # `BufferSpec(host=True, uncached=True, cpu_access=True)`, `nolru` FALSE, so
 # they ARE. That is the positive/negative pair, both real Python, and both
 # rows. `amd_recycled_*` is `D.recycled` called with this file's specs.
-
 # the two flags `Allocator.free` reads, as `D.Bspec.go` hands them over. A
 # `match` may not scrutinise a CALL (constraints line 640), so the record is
 # bound first.
@@ -833,7 +822,6 @@ def spec_scratch() -> D.Bspec: D.Bspec{False{}, False{}, False{}, True{}, False{
 # `"gfx%d%x%x" % target` -- where the two `%x` are UNPADDED, so a minor of 55
 # prints as `37` and the arch string is SEVEN characters. `amd_arch_115501` is
 # that row and it is the reason the formatting is a def and not a format.
-
 # shortest lowercase hex, no padding: `%x`. `0 -> "0"`, `4 -> "4"`, `55 -> "37"`.
 #
 # BOUNDED AT 256, and the bound is the CALLERS' not a coincidence: :858's minor
@@ -904,11 +892,9 @@ def is_am(+iface: U32) -> Bool:
 # directions, and `target[0] == 9` is the discriminator for THREE of the six.
 # `import_module` (:31) is the "greatest module with matching MAJOR that is
 # <= the target" ladder, and it is driven on real autogen names in the oracle.
-
 # OCCUPANCY. `tmpring_size` (:973-987) is FIVE steps and the last of them is a
 # THREE-WAY union dispatch, so it is the densest piece of pure arithmetic in the
 # file and it is gated end to end.
-
 # :977, `mem_alignment_size = 256 if self.target[0] != 9 else 1024`.
 def scr_align(t0: U32) -> U32:
   Bool.pick(U32, U32.is_eq(t0, 9), MEM_ALIGN_GFX9(), MEM_ALIGN_NEW())
@@ -955,7 +941,6 @@ def tmp_ring(nw: U32, msw: U32, wsc: U32) -> U32:
 # THE QUEUE SIZES, :948-959. Five numbers, each a different table, and
 # `compute_queue` is the only place `cu_cnt` and `wave_cnt` are USED rather than
 # derived -- so a wrong `wave_cnt` shows up here and nowhere else.
-
 # :952, `lds_size_per_cu = props["lds_size_in_kb"] << 10 if target[:2] == (9,5)
 # else 0x10000`. The check is on the first TWO components, so gfx9.4 takes the
 # 0x10000 branch and gfx9.5 takes the props branch.
@@ -1023,7 +1008,6 @@ def qb_split(tag: String) -> List<&2, U32>:
 
 # `sqtt_trace` (:1040-1048), which is the offset arithmetic and the ONE assert
 # in the file that a wrong pointer arithmetic trips at RUNTIME.
-
 # :1042, `wptr = (self.sqtt_wptrs[slot * sqtt_ses + se] & 0x1FFFFFFF) * 32`. The
 # 29-bit mask drops the two hardware status bits and the `*32` converts a DWORD
 # index to bytes.
@@ -1049,7 +1033,6 @@ def sq_masked(raw: U32) -> U32: U32.and(raw, 536870911)
 # // 2))}` -- four blocks, and only SQ reads the device, and only on the
 # non-gfx9 arm. The tuple is `(inst, se, sa, wgp)` and `prod` over it times
 # `xccs` times 8 is one counter's record size.
-
 # :256-260, `sa_mask = (1 << (cu_per_simd_array // 2)) - 1` and
 # `cu_mask = (1 << (cu_per_se + (1 if i == 0 else 0))) - 1` and
 # `lo32((cu_mask & sa_mask) | (cu_mask & (sa_mask << 16)) << 16)`. The
@@ -1093,7 +1076,6 @@ def sq_hi(+m: Mk) -> U32: U32.shln(U32.and(U32.shln(Mk.cm(m), 16n), Mk.sm(m)), 1
 #
 # So an empty list, a three-element list, a four-element list and a two-element
 # list are all reachable, and the first element carries the scratch flag bit.
-
 # THE INIT SEQUENCE, :852-884, in the order the source runs it. Fifteen steps,
 # and the ORDER is the claim: the two interface steps, then the FOUR KFD steps,
 # then the SIX module imports, then the four allocator/queue steps. A port that

@@ -93,7 +93,6 @@ import ./dsl.bend as D
 # print are the per-opcode `_special` tags, the `_lo_set`/`_mask_set` lists, the
 # `OTHER_` member names and the `other_*` source annotations -- all of which are
 # either derived from rows already gated or are annotations.
-
 # THE TYPES. `Nm` and `Fld` come from `dsl.bend`, so a `Nm` here and a `Nm` there
 # are the SAME type and a lookup is one function.
 
@@ -108,7 +107,6 @@ def u32_at.go(m: Maybe<&2, U32>, dflt: U32) -> U32:
 # a whole table as one row, comma separated. A 256-byte state table is 256
 # numbers, and printing it as ONE row means a transposed pair inside it is a
 # visible comma at a known position rather than 256 silent rows.
-
 # The DEFAULT for every table miss. No opcode is 4294967295 and no enum member is
 # either, so an absent binding is visible as the sentinel and not as a valid row.
 def DSLT() -> U32: 4294967295
@@ -122,7 +120,6 @@ def u32_list_text.go(xs: List<&2, U32>, +acc: String) -> String:
 # walk; these are the NAME-keyed and INDEX-keyed ones, and they are SEPARATE
 # functions on purpose: a table whose two directions are the same body agrees with
 # itself and tells you nothing.
-
 # THE LOOKUPS, and they are THIS FILE'S. `dsl.bend`'s walks are over ITS `Nm`
 # and Bend's `import X as Y` does not bring a `type` across, so the two tables
 # here carry their own `Pn`. That is a duplicate of a two-field record and NOT a
@@ -184,7 +181,6 @@ def di_text.go(xs: List<&2, U32>, +acc: String) -> String:
 # the per-arch delta MULTIPLIER set and SPECIAL set, as one string each. CDNA
 # multiplies by 4 and RDNA by 1 (:558), and that single number is why the same
 # 64-bit blob decodes to different timestamps on the two architectures.
-
 # the per-opcode sets, derived. `decode_info[opcode]` is the five-tuple
 # `decode()` unpacks at :611 -- nib_count, delta_lo, delta_mask, delta_mul,
 # special -- and the four SETS are folded out of the CONCATENATED tuples with a

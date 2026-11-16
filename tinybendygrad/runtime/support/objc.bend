@@ -55,7 +55,6 @@
 # `tinygrad/runtime/ops_cpu.py:18-19 symbol=CPUProgram` (upstream's `rt_lib` -- libobjc is missing from `CPUProgram.link_libs`), NOT in
 # `objc.py` and NOT in `tinygrad/runtime/ops_metal.py:86` (upstream's `objc_msgSend` binding). Reported, not fixed.
 #
-
 # WALLS, and they are four narrow ones.
 #
 # W1  THE LIBRARY LOADS, :25-32. Four `ctypes.CDLL`s and a
@@ -99,7 +98,6 @@
 #     function is named `f`, NOT the selector, because `returns_retained(f)`
 #     wraps the INNER `f` from tinygrad/runtime/support/objc.py:37 -- upstream's `sender` -- and not `msg`'s return.
 #
-
 # WHAT IS PORTED, DEF BY DEF.
 #
 #   :6-21  the ownership lattice      PORTED  Idr.{retained,own,release,finalize}
@@ -124,7 +122,6 @@
 #   :73    the clsmeth arm            PORTED  Meth.clsmeth
 #   :75-77 class Spec                 WALL 3
 #
-
 # THE ARGUMENT MANGLING, and it is TWO steps with an ORDER between them that
 # a one-step reading gets wrong. `nm = m[0].strip(':').replace(':', '_')`.
 #
@@ -302,7 +299,6 @@ def Sels.names(+t: Sels) -> List<&2, String>:
 
 # THE MESSAGE SPEC, :34. Five parameters: the selector, the return type, the
 # declared argument types, `retain`, and `clsmeth`.
-
 # `args` is the DECLARED argument list -- `m[2]`, after `subst_list` -- and
 # `Msg.argtypes` is what `:36` assigns to `sender`, which is NOT the same list:
 # `msg_argc` counts the DECLARED args and adds two for the receiver and the
@@ -572,7 +568,6 @@ def Meth.msg(+m: Meth) -> Msg:
 # bases would produce a DIFFERENT method set for a diamond, and there is no
 # fixture here that could tell the two apart -- `inh_diamond` records that as
 # a blind spot instead of pretending to close it.
-
 # "has this method already been added?", keyed on the MANGLED NAME -- which is
 # the attribute name, so two selectors that mangle alike are ONE attribute and
 # the second `setattr` wins. That collision is real (`::` and `:` both mangle
@@ -659,7 +654,6 @@ def Tr.syms(+t: Tr) -> List<&2, String>: syms.go(U32.to_nat(Tr.next(t)), Tr.call
 # and THAT is the point: the frozen `want` literal was rot waiting to happen, and
 # it is gone.  What catches a wrong VALUE now is the byte diff against CPython's
 # own rows, and that diff is the gate.
-
 # THE GATE MOVED TO `gates/objc-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

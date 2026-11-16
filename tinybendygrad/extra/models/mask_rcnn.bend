@@ -91,7 +91,6 @@ import ./../datasets/__init__.bend as D
 # THE INDEPENDENT FIRST MISSING SYMBOL -- the one that survives fixing resnet.bend
 # -- IS `Tensor.cat`, at mask_rcnn.py:175 in `BoxList._split_into_xyxy`, which is
 # the EIGHTEEN-HIT symbol with no `def` under `tinybendygrad/`.
-
 # THE GATE MOVED TO `gates/models-mask_rcnn-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

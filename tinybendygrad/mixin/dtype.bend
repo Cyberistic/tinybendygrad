@@ -301,7 +301,6 @@ def strong_dtype(+d: S.Dt, di: S.Dt, df: S.Dt) -> S.Dt:
 # whole wall and it is ONE def: `UOp._min_max` (ops.py:1104-1163). The refusal is a
 # `Maybe` rather than a sentinel dtype because a wrong dtype here is not a crash, it is
 # a silently wrong `commit_int` answer three rules downstream in weak.py.
-
 # A PARAM WITH NO `vmin_vmax` -- the `cd_none` row of `gates/wk-cd-gate.py`. The bound
 # reads as `Bnd{NInf}` / `Bnd{PInf}` (a saturation, since `weakint`'s bits == 800 has no
 # 64-bit magnitude), and `wk_bnd_i64` cannot convert infinity to an I64, so `m`/`m2` are

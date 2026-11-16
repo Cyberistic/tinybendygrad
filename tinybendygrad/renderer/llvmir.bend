@@ -71,7 +71,6 @@
 # twice. Deleting the repeat costs no coverage (the claim is identical); GUESSING what the
 # fourth entry was meant to be would invent a row, so it is REPORTED. `llvmir-gate.py --drop-dup`
 # shows what the lane reads like without it: 470 rows, 470 names, AGREE, rc=0.
-
 # the `py=` halves are derived, not transcribed. `rd` is the row builder's derived
 # half: the `py=` half IS the port's own value, re-read through the same code the
 # port prints, so a row cannot disagree with itself and there is no transcription
@@ -97,7 +96,6 @@
 # `N.lop.cell`'s CPython original and `L.render_wmma_amd`; this file calls the Bend
 # ports of the first three and names the last.
 #
-
 # a read-only neighbour is red, and it is not this file
 #
 # `nir_llvmir.bend:178-187` spells `ldt.fp` as EIGHT `case`s on the dtype NAME
@@ -129,7 +127,6 @@
 # `pri` gets away with not separating `fp8e4m3` from `fp8e4m3fnuz` (both 10)
 # precisely because those two answer the SAME string.
 #
-
 # THE TWELVE CONVENTIONS of `renderer/__init__.bend`'s header are obeyed. The five
 # that bite here:
 #   2. the gate is a string diff, never a boolean about strings. Every row is
@@ -150,7 +147,6 @@
 #      CPython raises, and each has a row that says so -- `lt weakfloat`,
 #      `br6 bitcast i8x1->f32x1`, `fp8_pos i32`.
 #
-
 # what is not ported, with python lines. Measured, not guessed.
 #
 #   * `_render_kernel`'s NAMING WALK (llvmir.py:161-202). This is the one
@@ -373,7 +369,6 @@ def r_lci(+nm: String, x: F32) -> String: rd(nm, lc.int(x))
 # the grammar is the port's. The `m` PREFIX is the load-bearing half: a reader
 # that drops it agrees on every non-negative id, which is why `range_str 0,-2`
 # and `range_str -3,4` are rows.
-
 # `'_'.join([str(x) if x >= 0 else "m"+str(-x) for x in u.axis_id])`.
 #
 # `axis_id` is `self.arg[1:]` (uop/ops.py:502) and its members are AXIS IDS, so
@@ -418,7 +413,6 @@ def r_rsn(+nm: String, v: U32) -> String: rd(nm, rstr.neg(v))
 # `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
-
 # `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
 # two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
 # the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
@@ -430,7 +424,6 @@ def r_rsn(+nm: String, v: U32) -> String: rd(nm, rstr.neg(v))
 # `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
-
 # `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
 # two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
 # the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
@@ -442,7 +435,6 @@ def r_rsn(+nm: String, v: U32) -> String: rd(nm, rstr.neg(v))
 # `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
-
 # `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
 # two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
 # the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
@@ -474,7 +466,6 @@ def r_pri(+nm: String, +d: S.Dt) -> String: rd(nm, U32.show(lt.pri(d)))
 # `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
-
 # `base_rewrite` -- llvmir.py:77-144. THE EIGHTEEN RULES' OUTPUTS.
 #
 # `brN` IS RULE N. `br_rules` is the COUNT and it is a row rather than a comment
@@ -482,7 +473,6 @@ def r_pri(+nm: String, +d: S.Dt) -> String: rd(nm, U32.show(lt.pri(d)))
 # of CPython's table and not of anybody's reading of it. `br_rules(2)` is AMD's
 # FIVE extra rules AHEAD of these (llvmir.py:232-242, `amd0`..`amd4` below),
 # which is why AMD's table is 23 and not 18.
-
 # A `U32` may be consumed ONCE, so the second test cannot live in a nested
 # `Bool.pick` arm -- it gets its own def. This is the shape every three-way
 # dispatch in this file takes and it is the reason there is no `k of 3` helper.
@@ -622,7 +612,6 @@ def r_br5(+nm: String, +xn: String, +sdts: List<&2, S.Dt>, +snames: List<&2, Str
 # the `RuntimeError` in the walk. `br9 binary u8 FDIV` is the wall and
 # `br9 binary f32 FDIV` is the row that says the wall is the TABLE and not the
 # op; `N.lop.has` is the membership test and `N.lop.cell` is the value.
-
 # the itemsize wall is not this emitter's. `UOp(Ops.BITCAST, ...)` asserts
 # `in_dtype.itemsize == out_dtype.itemsize` in ops.py BEFORE `base_rewrite` is
 # consulted, so `i8 -> float` is refused upstream and rule 6 never runs. Naming
@@ -827,7 +816,6 @@ def r_amd4(+nm: String, +fp8: S.Dt, +xn: String, +sn: String, i: U32) -> String:
   rd(nm, nth_s(String.lines(amd4.text(fp8i(fp8), xn, sn)), i))
 
 # `_render_fn` -- llvmir.py:156-160, the AMD barrier rule, and `_render_footer`.
-
 # `sargs`, ONE argument (llvmir.py:158-159):
 #
 #     f"{ldt(u.dtype, ptr=u.addrspace == AddrSpace.GLOBAL)}{' noalias' if u.addrspace == GLOBAL else ''} " + name
@@ -1101,7 +1089,6 @@ def main() -> IO(Unit):
 #   M77 ftr.cpu_part splits on nothing 9 ftr cpu part 0, ftr cpu part 1, ftr cpu p
 #   M78 CONTROL a comment-only edit 0
 #   M79 CONTROL a comment-only edit 0
-
 # WHAT THE TABLE SAYS.
 #
 # M3 IS THE LARGEST SINGLE MOVEMENT (70 rows) and it is `lt.ints` answering
@@ -1141,7 +1128,6 @@ def main() -> IO(Unit):
 # `int` arm, which needs a dtype that is both, and none exists. That is a THEOREM
 # over the dtype grid, not a missing fixture.
 #
-
 # THE CONSTANT SWEEP. `.agents/slop/li/li-mutate.py consts` does `+1` on every
 # 3-or-more-digit literal in the file. 58 swept, 6 moved a row, 52 blind -- and
 # THE MEASUREMENT IS THE ONE `x86` PRODUCED: a constants sweep finds none of the

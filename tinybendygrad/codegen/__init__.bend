@@ -66,7 +66,6 @@ import ./../LAWS/spec.bend as S
 #   wr.rebuild.found -- `O.Found` -> `(ar, repl)`, out of `O.UOp.new`
 #   wr.step.rebuild  -- `(ar, repl)` -> `(ar, rebuilt, repl)`
 #   wr.step.of       -- that triple -> `(ar, repl)` with the rule applied
-
 # Fold over a node's srcs, looking each up in `repl`. If absent, the
 # original `s` is its own replacement.
 #
@@ -268,7 +267,6 @@ def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, +w: Rewritten) -
 #   * The per-node `seen` set and `BottomUpGate`, which bound the BOTTOM-UP loop
 #     the port does not have.
 #
-
 # the stop is "the sink index did not move", and it is sound because the arena
 # INTERNS. `uop/ops.bend:2530 UOp.make` calls `intern.find` and a HIT returns the
 # arena UNTOUCHED, so two passes handing back the same sink INDEX handed back the
@@ -407,7 +405,6 @@ def UOp.substitute(+ar: O.Arena, +sink: U32, +dvars: Map<&2, U32>) -> (O.Arena &
 # `walk_rewrite` over it, and print the repl map (old_index ->
 # new_index). The CPython oracle at `.agents/slop/codegen-init-oracle.py`
 # prints the same shape for the same fixture; the diff is the gate.
-
 # The rule table. TWO entries, and TWO upstream: `pm_post_sched_cache` at
 # `tinygrad/schedule/__init__.py:96-101` is a `PatternMatcher` of exactly two
 # patterns, read off the objects and not off the text

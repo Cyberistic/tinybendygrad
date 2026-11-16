@@ -80,7 +80,6 @@ import ./__init__.bend as D
 import ../../sz.bend as SZ
 
 # THE ANSWER
-
 # `Has` is the answer and `Lacks` is the refusal. One type for both file lists
 # and the class map, so "the loader could not answer" is one shape.
 type Load<a, -A: Kind(a)> is Kind(a):
@@ -124,7 +123,6 @@ def read.text(path: String) -> IO(Maybe<&2, String>):
     read.go(f)
 
 # THE TWO-LEVEL EXPANSION: `<root>/<split>/*/*`
-
 # glob's `*` does not match a name that starts with a dot: CPython's
 # `glob.py::_ishidden` is `path[0] in ('.', b'.'[0])` and `_glob1` drops those
 # names, so a `.hidden` class directory is not in upstream's answer either.

@@ -39,7 +39,6 @@
 #      source order, and `f_CQE_TOGGLE_FIELD` / `f_CQE_STATUS_FIELD` name the
 #      two offsets bnxtdev.py reads BY HAND.
 #
-
 # WHAT IS PORTED, DEF BY DEF. Line numbers are bnxtdev.py.
 #
 #   :8-12 the five constant lines   PORTED  every value, both directions
@@ -127,7 +126,6 @@
 #   :232 the SQ doorbell           PORTED  in the same trace
 #   :234 `post_recv`               PORTED  `qp.post_recv`
 #
-
 # THE FFI SEAMS. Every one of these is NAMED with its Python line and is a
 # `CALL_*` tag in the trace; none of them is made here, and there is no
 # `import "./x.c"`. The trace IS the record of the call, which is why this file
@@ -153,7 +151,6 @@
 #   tinygrad/runtime/support/rdma/bnxtdev.py:77,131 the `getattr(bnxt, ...)` struct
 #         construction and `from_buffer_copy` WALL 1 -- see below
 #
-
 # THE WALLS.
 #
 #   1. the hwrm/rcfw struct construction and parsing (:77-89, :131-134).
@@ -203,7 +200,6 @@
 #      why the `bs_*` rows are `bs_count_of(typ, mne, sum_splits)` and not a
 #      closed table. TODO(p3) bnxtdev.py:95  symbol=setup_backing_store tuple(getattr(caps, ...) for j ...).
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of ONE device call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER and the IDENTITY). There is no third
@@ -223,7 +219,6 @@ import Base
 # `.agents/slop/bnxt_constmap.py`, which reads each authority with `getattr`
 # and cross-checks the hex-sourced ones a SECOND way (hex literal -> int),
 # because a transposed digit pair is invisible to a decimal eyeball.
-
 # bnxtdev.py:8-12 -- the module's own five lines.
 
 def BNXT_DEBUG() -> U32: 0
@@ -416,7 +411,6 @@ def db.lo(+index: U32, +epoch: U32) -> U32:
 # row that says what that costs, and it is the same measurement `ops_rdma.bend`
 # calls `rdma_db_hi_dropped` -- one file's gate and the other's, agreeing on
 # the same number from the same source line.
-
 # send_wqe / recv_wqe, :18-19.
 #
 #   send_wqe: struct.pack("<BBB5xI20xQII", 0, SQ_SEND_FLAGS_SIGNAL_COMP, 3,
@@ -694,7 +688,6 @@ def q.pbl_pages_of(alloc_bytes: U32) -> U32: ceildiv(alloc_bytes, PAGE())
 # print the same lines. A row is never a restatement of the def under test:
 # every expectation in the oracle is produced by CALLING CPYTHON, and where
 # Python can run the function the oracle calls it rather than transcribing it.
-
 # THE GATE MOVED TO `gates/bnxtdev-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

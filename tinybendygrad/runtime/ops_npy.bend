@@ -38,7 +38,6 @@
 #     kwarg at all: `({"arch": self.arch} if self.arch else {})`.
 #   * `NpyDevice.ifaces` is `[]`, inherited from `Compiled` (tinygrad/device.py:363 symbol=ifaces).
 #
-
 # THE PORTABLE END-TO-END DEVICE. The brief asked for a judgement here and the
 # answer is yes, with one correction to the premise.
 #
@@ -54,7 +53,6 @@
 # Every device below it in the tree -- disk, python, cpu -- inherits something
 # from it, and it is the only one that needs no `import "./x.c"`.
 #
-
 # WHAT IS PORTED, DEF BY DEF. The first block is `ops_npy.py` and the second is
 # `HostAllocator` (tinygrad/device.py:293 symbol=HostAllocator), which is the surface those four lines
 # expose and which nothing else in `runtime/` re-implements.
@@ -81,7 +79,6 @@
 #   :329 `BufferStorage(buf.host.addr)` PORTED  `npy.map`     ONE argument
 #   :330 `_offset`                      PORTED  `npy.offset`   `buf + offset`
 #
-
 # THE THREE WALLS.
 #
 # 1. MMAP (tinygrad/device.py:297 symbol=_alloc). `mmap.mmap(-1, size, access=ACCESS_WRITE)` is a
@@ -101,7 +98,6 @@
 #    so `device.bend`'s `map_ok` can be used as it is written.
 #    TODO(p3) device.py:315  `Device[buf.device]` -- the registry open.
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of ONE host call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER). There is no third kind, and there is
@@ -124,7 +120,6 @@ import ../LAWS/spec.bend as S
 
 # THE CONSTANTS. Every literal in the source and the four that come out of
 # running `NpyDevice('NPY')`.
-
 # the six host calls, in the order `HostAllocator` can make them.
 def CALL_SYNC() -> U32: 0
 def CALL_MMAP() -> U32: 1
@@ -165,7 +160,6 @@ def MSG_MAP_HEAD() -> String: "host memory is not on the node of "
 def FMT_B() -> U32: 1
 
 # THE TYPES.
-
 # ONE host call and the ONE number it is given. `arg` is the size for MMAP,
 # MVIEW and MVWRITE and 0 for SYNC, MUNMAP and REFUSE, where the refused
 # quantity rides on `Tr.refused` instead -- the same decision
@@ -368,7 +362,6 @@ def Npy.at(x: Npy, t: Tr) -> Npy:
 
 # THE ALLOCATOR SURFACE. Every def here is one line of `HostAllocator`, and
 # every one of them either builds one host call's argument or records it.
-
 # device.py:305 `super().__init__(dev, supports_copy_from_disk=False,
 # supports_transfer=False)` -- BOTH flags off, and they are the only allocator
 # in the tree that turns both off, which is what makes a host buffer

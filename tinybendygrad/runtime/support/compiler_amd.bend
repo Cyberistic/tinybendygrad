@@ -41,7 +41,6 @@
 # one thing `system()` has and `Process.run` does not is the MERGED stream
 # (`stderr=subprocess.STDOUT`); nothing in these four files needs it.
 #
-
 # THE SPLIT, stated once and obeyed. A def here EITHER builds the argument of
 # ONE comgr/hipcc call (pure, and the gate diffs it) OR records that call in
 # the trace (and the gate checks the ORDER and the IDENTITY). There is no
@@ -50,7 +49,6 @@
 # tag, so this file declares NO foreign effect and is `ALL PROOFS CHECK` on
 # both lanes -- the `ops_webgpu.bend` lane, not the `dtype.bend` one.
 #
-
 # the measurement that deleted a family of bugs, and it belongs at the top
 # because it changed what got written rather than only how.
 #
@@ -75,7 +73,6 @@
 # thirteen-element option list below splits into NINETEEN fields for exactly
 # this reason, and `h.opt_n` is the row that pins it.
 #
-
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :4-10  the comgr3 switch      PORTED  `Ad.version` `Ad.hip_lang` `Ad.hyp3`
@@ -108,7 +105,6 @@
 #   :103-104 argv 1               PORTED  `C.argv1`  (element COUNT pinned)
 #   :105-106 argv 2               PORTED  `C.argv2`  (element COUNT pinned)
 #
-
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- comgr. Twenty-eight calls into a shared library bend cannot dlopen.
@@ -147,7 +143,6 @@ import Base
 # THE TRACE. Which toolchain call the Python makes, in what order, with which
 # argument. `Tr.put` appends, so a REFUSAL is a trace that stops early -- which
 # is how `c.msg` is enforced: there is no `raise` in bend and no step guard.
-
 # `Tr` carries the recorded calls. The field is `items` and not `t`, because a
 # reader is spelled `Tr.items(tr)` and a field named `t` would collide with the
 # parameter of every def that reads it.

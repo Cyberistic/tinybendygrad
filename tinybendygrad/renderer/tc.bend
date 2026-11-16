@@ -60,7 +60,6 @@
 #      derived-property dispatch takes its `Bool`/`U32` as a parameter.
 #   6. a record literal and a record pattern both name every field.
 #
-
 # THE GATE. 623 rows: 289 from tc.py and 334 from ptx.py, plus the one
 # framing newline `IO.print` supplies at the end. The oracle's `rows`
 # is a plain concatenation of the two stages, so each half is ONE print --
@@ -100,7 +99,6 @@
 # THE MUTATION TABLE is at the foot of the file, measured with
 # `.agents/slop/tcptx-mutate.py`.
 #
-
 # THE STAGES, and what landed in each
 #
 #   STAGE 1  DONE, 289 rows. tc.py. `TensorCore`'s five fields as a `Data`
@@ -425,7 +423,6 @@ def Tc.relabel.b(+t: Tc) -> String: Kv.join(Kv.of_b(t))
 # scrutinise two CALLS (convention 4), and `kv_join` conses and reverses because
 # `zip` walks two lists that come out of ONE destructuring and so share a
 # binder (the "returning the tail instead of the input" rule).
-
 # :19 `frag_coords` -- `[operand][lane][element] -> tile coordinate`:
 #
 #   def coord(f, ax, lane, elem):
@@ -439,7 +436,6 @@ def Tc.relabel.b(+t: Tc) -> String: Kv.join(Kv.of_b(t))
 # THE AXIS ORDER is per operand: "mk" for A, "kn" for B, "mn" for C. So the
 # two numbers a cell prints are `ax0` then `ax1` and the caller names them,
 # rather than this def returning a fixed-order triple.
-
 # one bit list's contribution to one axis
 # one bit list's contribution to one axis. `Bool.pick(A, c, a, b)` answers `a`
 # WHEN `c` IS TRUE, so the MATCHING branch is the THIRD argument -- written the
@@ -611,7 +607,6 @@ def mma(+kk: U32, +di: S.Dt, dou: S.Dt) -> Tc:
 # `frag_c` for `mma` is FIXED -- `("n1","n2","m0","m1","m2")` / `("n0","m3")` --
 # because the accumulator layout depends on neither K nor the dtype, which is
 # why it is two literal defs and not a slice of `elem`.
-
 # :77 `mfma` -- AMD 16x16xK. "A[i,k] is item k%K_L of lane i + 16*(k//K_L),
 # K_L = K/4; fp8 K=128 is two K=64 halves, k//64 the high item (7.1.5.1)".
 #
@@ -736,7 +731,6 @@ def get_amd(nm: String) -> List<&2, Tc>:
 # mutation of one table moves only that table's rows, and a mutation of
 # `mma`/`mfma`/`rdna3_of`/`rdna4_of`/`metal_of` moves BOTH (the shape and the
 # table), which is the localisation the mutation table records.
-
 # the derived row. The `py=` half is the port's own value, read through the
 # same table the port prints, so a row cannot disagree with itself and a table
 # that grows a member grows a ROW rather than a second list of expectations to

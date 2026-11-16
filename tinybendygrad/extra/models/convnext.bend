@@ -75,7 +75,6 @@ import ./../datasets/__init__.bend as D
 # from a layer whose weights happen to be zero. `refuse` and the `Refused` type
 # are DECLARED ONCE at `extra/datasets/__init__.bend:40-46` and imported as `D`.
 # Each message names the upstream `path:line` of the FIRST MISSING SYMBOL.
-
 # THE GATE MOVED TO `gates/models-convnext-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

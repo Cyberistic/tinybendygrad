@@ -233,7 +233,6 @@ def kuconv.arg(+ar: O.Arena, +fx: F.Folded, a: U32, nm: U32, dt: S.Dt) -> C.KUAr
 # the srcs agree and the first SRC's dtype otherwise, which is the answer
 # for every node of the five measured kernels (their srcs agree) and is named
 # AS A LIMIT FOR THE OTHERS.
-
 # the completed SRC at a position.  `done` is in the same order as the `KU`
 # LIST, SO POSITION `p` IS POSITION `p`.
 def ku_c.src(+done: List<&2, C.KU>, p: U32) -> Maybe<&2, C.KU>:

@@ -332,7 +332,6 @@ def ew_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
 # a shape arg is at most a STACK of CONSTs, so four is two levels more than any
 # fixture needs -- and an OVER-provisioned bound costs nothing while an
 # under-provisioned one answers `None` for everything (uop/upat.bend's M2 lesson).
-
 # `+ar` is the arena the answer lives in, on every arm -- including the two that mint
 # nothing. That is the point. An arm that answers `t` unchanged hands back a tensor
 # carrying the arena as it was BEFORE the sibling promotion grew it, and the next
@@ -582,7 +581,6 @@ def ew_square(+t: T.Tensor) -> T.Tensor: ew_binop(O.OpsMUL{}, t, ETen{t}, False{
 
 # THE COMPOSED ARITHMETIC. `where` and `mod`/`fmod`/`div` are the three that build
 # their own src list rather than reusing `_binop`'s.
-
 # `where` -- elementwise.py:436-437. `x, y = self.ufix(x)._broadcasted(y)` and then
 # `self.alu(Ops.WHERE, x, y)` -- note the CONDITION is `self`, NOT the promoted
 # `ufix(x)`, so `ufix` only ever runs on the first operand here.
@@ -745,9 +743,7 @@ def ew_fmod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
 
 # THE WALLS. Each is a Python line and the thing that is missing, in the file's own
 # terms. `p3` is the phase that owns the method surface.
-
 # the F32 CONSTANTS, and the wall above them was FALSE
-
 #
 # The marker block that follows says "no float literal anywhere in the port, because
 # `F32` is `F32{data: Word(32n)}`, `Word` is not exported, and `U32.to_f32` is an unfilled
@@ -815,7 +811,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # THE `F32` CONST WALL WAS REFUTED. It read: "no float literal anywhere in the
 # port, because `F32` is `F32{data: Word(32n)}`, `Word` is not exported, and
 # `U32.to_f32` is an unfilled LAW which live code may not call".
-
 #
 # ALL THREE HALVES ARE FALSE, and the measurement is `.agents/slop/ew-consts-gate.sh`:
 # 21 constants, three lanes, byte-identical on the f32 BIT PATTERNS. What the gate
@@ -861,7 +856,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:709  hardswish  -- (1/6) is `F32.div(1.0, 6.0)`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:721  hardsigmoid  -- alpha=1/6 and beta=0.5 are both available, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:744  leaky_relu  -- neg_slope=0.01 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
-
 # TODO(p3) elementwise.py:854  atanh        -- .log()
 # TODO(p3) elementwise.py:866  asinh        -- .log()
 # TODO(p3) elementwise.py:878  acosh        -- .log()
@@ -882,7 +876,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # is portable as `tn_alu(sqrt, O.OpsRECIP{}, Nil{})` (the reciprocal's implicit
 # first src is the sqrt result, not the original input). Gated at
 # `gates/tn_sin_log2_exp2_rsqrt-gate.py` 11/11 rows.
-
 # PORTED. `isnan` is elementwise.py:603, `return self != self`, the single
 # `CMPNE` whose two srcs are the same tensor. NaN is the only float where
 # `x == x` is false, so `cmpne(t, t)` IS the NaN test. The port at
@@ -928,7 +921,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # four `int_input_*` ones -- the pre-existing four seeded the arena with
 # `CBool{True{}}` and `O.UOp.const` interns, so the const was already at slot 0
 # and the defect was invisible. A `CBool` input cannot see this bug.
-
 # WALLS THAT ARE NOT CONSTANTS.
 # `usum` / `uprod` -- elementwise.py:40-41 -- are `functools.reduce(op, argfix(*uops),
 # self)` over a VARIADIC, and `argfix` is helpers.py's. The reduce itself is a
@@ -963,7 +955,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # `weak.bend`'s promotion matters here rather than only downstream: a bool reduce
 # must answer an `Ops.OR` and an int reduce an `Ops.ADD`, and the two have different
 # `dtype_from_uop` arms.
-
 # THE GATE.
 #
 # EVERY ROW IS A GRAPH SHAPE, and the shape is the SIGNATURE of the toposort --
@@ -1378,7 +1369,6 @@ def ew_exp(+t: T.Tensor) -> T.Tensor:
 #      the arena it is handed and the arena it returns is the GROWN one, so a
 #      const minted off an OLD tensor is a SIBLING arena -- and `ew_join`'s
 #      `O.Arena.merge` is what keeps that from being a silent wrong answer.
-
 # `relu` -- elementwise.py:672. `(self > 0).where(self, 0)`.
 #
 # THE `>` IS REVERSED: `__gt__` is `self._binop(Ops.CMPLT, x, True)`, so the

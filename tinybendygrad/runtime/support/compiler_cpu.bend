@@ -50,7 +50,6 @@
 # refusals -- the match is case sensitive and there is no prefix matching.
 # `cpu.sparc.kind` and `cpu.X86.kind` are the rows.
 #
-
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers. Def names are
 # UPSTREAM names where upstream HAS one.
 #
@@ -70,7 +69,6 @@
 #                                          `X86Compiler.hex_n` `X86Compiler.bad_pos`
 #   :30  X86Compiler.disassemble   PORTED `X86Compiler.dis_row`
 #
-
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- bytes. `src.encode('utf-8')` and `bytes.fromhex(src)` are byte

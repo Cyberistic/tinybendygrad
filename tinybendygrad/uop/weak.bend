@@ -108,7 +108,6 @@ def wk_sealed(d: S.Dt) -> Bool:
 # structurally identical `CAST(..., weakfloat)` nodes fail to hash-cons. ops.bend is
 # READ-ONLY to this port, so this is a workaround: the one-line fix is a
 # `case S.CWeakFloat{}` arm in `eq_cls.sel`, and then `wk_eq_dt` becomes `O.eq_dt` -- AND that arm has since landed, so the copy below is KEPT because `ops.bend` was read-only when it was written, not because the wall is still there.
-
 # The class as a NUMBER, so the comparison is one `U32.is_eq`. The seven values are the
 # declaration order of `S.Cls`, and they are this file's own: `wk_eq_cls` is the only
 # place a `Cls` is given a number.
@@ -434,7 +433,6 @@ def wk_dtype_at(+fx: F.Folded, +self: U32, dss: List<&2, F.Derived>) -> Maybe<&2
 # int arm is `c_intN(x).value`, which RAISES on overflow in Python; a U32 cannot see that
 # difference for a value a weak CONST can hold, so `wk_dt_const` is total where Python is
 # not, and that is the only reading this file makes.
-
 # `(lo as f32) + (hi_signed as f32) * 2^32`: exact for every |v| <= 2^24 and monotone
 # above it, which is what `float(val)` needs for a CONST.
 # `float(val)`: `wk_dt_const.fpure` (below) is its only caller, and `wk_gate` in
@@ -670,7 +668,6 @@ def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 # `ew_src0_rev`/`ew_src0_fwd` names in `mixin/elementwise.bend` are ROW LABELS of an unrelated
 # `ew_opname_src` probe, `gates/ew_graph_census.bend` names `ew_remint` only in prose, and
 # `gates/ew-explog-gate.py:37`'s `ew_const_bare` is prose.
-
 # ops.py:637 says it: ".cast folds away at exactly the dtypes a CONST derives
 # (bool/weakint/weakfloat): bare there, the pair everywhere else". So a CONST rebuilt at a
 # weak dtype or at bool is ONE node, and everywhere else it is a CAST over a CONST. That is
@@ -1026,7 +1023,6 @@ def wk_store_cast(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
 # `UPat()` as the pattern's FIRST src or no src pattern at all, so every `rej` here is
 # empty and none of the three is ever decided by the subset test: `rej_all_empty` counts
 # them, and the mutation table records what flipping the test does.
-
 # GroupOp.Broadcastable == GroupOp.Binary | GroupOp.Ternary
 # (tinygrad/uop/__init__.py:110).
 def OP_BC() -> List<&2, O.Op>:
@@ -1049,7 +1045,6 @@ def wk_commit_table() -> O.PMEntrys:
 #   name="u"),), name="c"), cast_weak_srcs) -- `cast_weak_srcs` reads
 #   `u.commit_dtype(dtypes.i32)` and `s.commit_dtype(dtypes.i32)`, which is
 #   `commit_int(vmin, vmax)`, which is `UOp._min_max`. See the TODO on that def.
-
 # _lower_weak_ops -- weak.py:45, PORTED. It is a MODULE CONSTANT and the only
 # portable thing in this file's queue: `GroupOp.Binary | GroupOp.Unary | {WHERE,
 # RANGE, STACK, SPECIAL}`. `ops.bend`'s `GroupOp.binary` has NINETEEN members,

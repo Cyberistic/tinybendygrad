@@ -39,7 +39,6 @@
 #                                         `while`, with the device's answers
 #                                         taken as a `SCORE` table
 #
-
 # the one thing in `get_kernel_actions` that is its own, and it is LOAD-bearing.
 #
 #   search.py:89-90
@@ -98,7 +97,6 @@
 # is a top=True one, on both shapes. That is the measured form of `zero_variant`'s
 # `case True{}: False{}` arm -- not an inference from the amt list, an observation.
 #
-
 # THE BEAM GATE. The loop BODY and the counting are PORTED; the two device calls
 # are WALL #2, and the port takes their ANSWERS as a `SCORE` table. That is the
 # split this project makes everywhere a device call does not port, and it is what
@@ -273,7 +271,6 @@ def CFG.padto_on(c: CFG) -> Bool:
 # the wrong SET prints, so the gate prints `tgt_kinds`, the `tgt_*` per-target
 # totals and the `zero_n_*` amt-0 census as well. "A COUNT IS NOT A CENSUS" below
 # names, for each of those, the wrong set it catches and the count cannot.
-
 # the group sizes, one DEF each, so `main` can print them by name and a wrong
 # group is localised instead of surfacing only as a moved total. They are still
 # ADDED ONE AT A TIME, because a `U32` cannot be read twice in one expression and

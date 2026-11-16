@@ -79,7 +79,6 @@
 #   hcq2.py:535 `hcq_compile`            PORTED  `compile_seq` -- THE INIT ORDER symbol=hcq_compile
 #   hcq2.py:552 `hcq_link`               PORTED  `link_seq` symbol=hcq_link
 #
-
 # THE WALLS, named once each with the `hcq2.py` line that owns them.
 #
 # 1. THE uop arena -- THE reason that stood here was FALSE. MEASURED 2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:292`;
@@ -99,13 +98,11 @@
 #    have 0 defs here (`pkey` is `renderer/ptx.bend:226 symbol=pkey`, a different function).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:141   `pm_replace_buffers` symbol=pm_replace_buffers -- BLOCKED: needs the shaped `UOp.param` (`view_as` absent).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:148   `pm_unwrap_multi` symbol=pm_unwrap_multi -- BLOCKED: rule body unwritten here (`UOp.mselect`/`UOp.replace` are defs at `ops.bend`; no `def pm_unwrap_multi` in this file).
-
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:180   `pm_insert_copy_staging` symbol=pm_insert_copy_staging -- BLOCKED: needs `Buffer`/`_resolve`/`lower_and_compile`.
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:336   `q_rewrite` symbol=q_rewrite -- BLOCKED: needs the `HWQueue` device methods (`exec`/`copy`/`encdec`)..
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:458   `pm_encode` -- BLOCKED: `pm_hcq_encode` is GONE upstream at this pin (`ad189c030`) and the matcher is `Compiled.pm_encode`; it needs `hcq_fence` (the `UPat.custom_function` target), `unwrap_view`/`patch`/`timeline`/`timeline_value` (the body's helpers): MEASURED, zero defs of each across `tinybendygrad/`.
 #
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:423   `pm_lift_deps` symbol=pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
-
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and
 #    `UOp.substitute` (uop/ops.bend:514 symbol=GroupOp.commutative, open TODO) -- the row `pm_lift`.
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1157`) -- the row `pm_encode`.
@@ -188,9 +185,7 @@
 #    defer, so there is no wall here to state. `nbytes` itself is ported and is
 #    gated from `device.bend`'s `Bn`, not from here.
 #
-
 # CITATIONS -- what the NV path already assumes about this file.
-
 # THE port's OWN `ops_nv.bend` IS a header-ONLY file now: it has ZERO `def`
 # DECLARATIONS, so a pointer into its BODY names a line that does not exist.
 # What it DOES carry is its own STAGE header, and the STAGE header names the
@@ -236,7 +231,6 @@
 #   ends in exactly one `submit` call, which is the part of `encode` that is not
 #   the queue's own body.
 #
-
 # AGREEMENT WITH `runtime/support/nv/ip.bend`, answered from the PYTHON.
 #
 # That file asked three things to be agreed or contradicted (its own header,
@@ -273,7 +267,6 @@
 # DIFFERENT halves of one submission, and the gate rows for this file's half are
 # `hq2_b*_full`.
 #
-
 # STATUS: ALL three stages landed and checked.
 #
 #   PORTED: see the table above. NOT: the UOp-arena rewrites (wall 1), the
@@ -1010,7 +1003,6 @@ def elem.go(n: Nat, +bs: List<&2, E>, +k: U32, +got: E) -> E:
 
 # `qidx` -- `self.queues[devs[0]].index(queue)` (:238). `got` is index+1 so that
 # index 0 and "not found" do not collide.
-
 # ONE entry of a list by TAG, and a batch of size 0 has no entry -- the callers
 # never ask for one.
 def elem(+bs: List<&2, E>, k: U32) -> E: elem.go(List.length(&2, E, bs), bs, k, E{1, 1, 0, 0})
@@ -1248,7 +1240,6 @@ def start_ins(+dev: U32) -> List<&2, Ins>:
 # So every queue's stream is
 #   [BARRIER, TIMELINE waits...] ++ dependency waits ++ [pre-TIMESTAMP] ++ CALL
 #   ++ [post-TIMESTAMP] ++ [SIGNAL if this tag is the queue's LAST] ++ epilogue.
-
 # `_build_queues` (:258-283) -- THE ORDER, and it is the load-bearing part of the
 # whole file:
 #

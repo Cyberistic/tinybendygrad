@@ -298,7 +298,6 @@ def arg_dt.go(a: O.Arg) -> Bool:
 # different Python types, and `Arg` already names all eighteen, so each question
 # is one constructor arm and the wall is gone: there is no `isinstance`, only a
 # `match` the compiler checks against the full set.
-
 # `isinstance(x.arg, DType)` -- spec.py:79. `ADt` IS the DType arm.
 def arg_dt(a: O.Arg) -> Bool:
   arg_dt.go(a)
@@ -755,7 +754,6 @@ def const_or_casted(+fx: F.Folded, +s: U32) -> Bool:
 # `spec_shared` -- spec.py:49-138. Thirty-three rules, and the three every other
 # table ends with. The op set is `pdict`'s key and `rej` is `early_reject`; the
 # rule's own op/dtype/arity/src tests are the pattern and its body is the lambda.
-
 # spec.py:51  (UPat(Ops.SINK, dtypes.void), lambda: True) -- no `src`, so NO arity test.
 def sh_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsSINK{}), sp_dt_is(fx, self, S.void())), O.VTrue{})
@@ -1612,7 +1610,6 @@ def OP_FUN1() -> List<&2, O.Op>:
 # `PatternMatcher.__add__` is `functools.cache`d list concatenation (ops.py:1597),
 # so the table is this list FOLLOWED BY `shared_table()`'s, in that order, and the
 # tag space restarts at 0.
-
 # spec.py:144 (UPat((Ops.SIN, Ops.LOG2, Ops.EXP2, Ops.SQRT, Ops.RECIP), src=(UPat(),), name="u"),
 #              lambda u: dtypes.is_float(u.dtype) or u.src[0].base.is_invalid)
 def te_0(+fx: F.Folded, +self: U32) -> O.Verdict:
@@ -2019,7 +2016,6 @@ def bump(n: U32, ts: O.PMEntrys) -> O.PMEntrys:
 #
 # `spec-offsets.py` now checks all fourteen offsets against the table sizes AND checks that
 # every dispatch ladder reads `case N: _N` pairwise. Those three bugs are why it exists.
-
 # THE TABLE. `spec.py:199` is `])+spec_shared`, so this list is followed by
 # `shared_table()`'s, in that order. The `# NN` on each row is the spec.py line the rule
 # came from, DERIVED from spec.py's AST rather than transcribed.
@@ -2113,7 +2109,6 @@ def pr_0.body(+fx: F.Folded, +self: U32) -> Bool:
 
 # `spec_program` -- spec.py:205-228. Nine rules, then `+ spec_shared`.
 # "these ops can exist in programs but not the tensor spec. example: LOAD"
-
 # spec.py:204 (UPat(GroupOp.All-GroupOp.Defines, name="x"),
 #              lambda x: False if x.op is not Ops.CAST and any(s.op is Ops.CONST for s in x.src) else None)
 # A CONST under anything but a CAST is not allowed in a program: every width is
@@ -2286,7 +2281,6 @@ def hq_0.pat(+fx: F.Folded, +self: U32) -> Bool:
 
 # `spec_hcq` -- spec.py:230-235. Two rules, then `+ spec_shared`. The device
 # queues: a GETADDR takes a device and a PROGRAM takes the bound buffers.
-
 # spec.py:228 (UPat(Ops.GETADDR, dtypes.u64, name="x",
 #                    src=(UPat((BUFFER, alloc, PARAM, shrink, bitcast, mstack, mselect, linear))
 #                         .or_after(),)), lambda x: is_device(x.arg))
@@ -2361,7 +2355,6 @@ def hcq_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
 # first-wins -- a rule that skipped in the first block skips again in the second,
 # and a rule that answered has already stopped the fold. `full_len` in the gate is
 # the row that states the count.
-
 # spec.py:239 (UPat(Ops.REWRITE_ERROR, dtypes.void, name="x"), lambda x: isinstance(x.arg, str))
 def fu_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsREWRITE_ERROR{}), sp_dt_is(fx, self, S.void())),
@@ -2499,7 +2492,6 @@ def full_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
 # this is the only table with no `+ spec_shared`, and the gate row `noop_kg` is
 # what checks it. A NOOP is legal in every other table and is a `VSkip` here, so
 # the row moves the moment a `spec_shared` block is concatenated onto this one.
-
 # spec.py:256 (UPat(Ops.SINK, dtypes.void), lambda: True)
 def kg_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsSINK{}), sp_dt_is(fx, self, S.void())), O.VTrue{})
@@ -3180,7 +3172,6 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # `grep "TODO(p3)" tinybendygrad/uop/spec.bend` is the work queue.
 #
 # the four that are genuinely unavailable, and they are all P3 or later.
-
 # TODO(p3) upat.py:173  symbol=upat_compile  -- the pyrender GLOBALS: NOT IN
 #   upstream at this pin -- `grep -r pyrender tinygrad/` is EMPTY -- and the
 #   surviving construct is `upat_compile`, `@functools.cache`d, which builds the
@@ -3203,11 +3194,9 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #   and `tinygrad/device.py` is not ported: there is no device, so "is this device
 #   a DISK" has nothing to ask. The only reader is `te_9` (spec.py:177) and the
 #   wall is stated there. P6.
-
 #
 # the rest are not unavailable, they are behind a property FOLD, and each one names
 # the fold that owns it so the phase is unambiguous.
-
 # TODO(p3) spec.py:11  def validate_index -- the first two returns
 #   (`len(uidx.src) != 2` and `idx.is_invalid`) are PORTED and both are `True`.
 #   Everything past them needs `CHECK_OOB` (a `ContextVar`), `buf.max_numel()` (a
@@ -3239,7 +3228,6 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # TODO(p3) spec.py:151 lambda buf: `isinstance(buf.dtype, DType)` -- vacuous in this
 #   port, because `S.Dt` IS the DType. NO ACTION; recorded so the conjunct is not
 #   mistaken for a missing check.
-
 #
 # WHAT NEXT, in the order the walls fall.
 #   1. `_min_max` (ops.py:1104) unblocks `validate_index`'s body, `valid_device_range`
@@ -3253,7 +3241,6 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #      string-keyed. See the `is_device` note above for all six witnesses.
 #   4. `SPEC` / `test_pyrender` (P3/VIZ) close `type_verify` and give the pyrender
 #      round-trip a reason to exist at all.
-
 # THE GATE, and what each row is FOR. `1` is `VTrue`, `0` is `VFalse`, `9` is
 # `VSkip` -- and a `VSkip` is a real answer, not a failure: it is what a rule says
 # when the pattern does not apply, and `type_verify` rejects it exactly as it
@@ -3303,7 +3290,6 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #                `(src[0]-1).vmax`, so this is `2 == 2`.
 #   multidev_bad=0 the same BUFFER with the RANGE on the GLOBAL axis, so
 #                `rng.axis_type is DEVICE` fails and `te_1` STOPS the fold.
-
 #
 # MUTATIONS, all re-run 2026-09-30 against this file. A row that only one mutation
 # moves is a LOCALISED row; the rest are load-bearing together, and this table is
@@ -3408,7 +3394,6 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # unverified. `spec.py:31` and `:32` are safe by accident -- `len(src) == 0` and
 # `len(src) == 1`. `sp_ler` here folds over EVERY src, which is what Python's
 # `{u.op for u in uop.src}` does. REPORTED, NOT FIXED: `ops.bend` is not this file's.
-
 # THE GATE MOVED TO `gates/spec-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

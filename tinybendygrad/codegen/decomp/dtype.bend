@@ -41,7 +41,6 @@
 #  17  208-216   rewrite do_dtype_decomps          PORTED IN SHAPE
 #  18  218-224   table   pm_dtype_decomps           PORTED, 2 rules
 #
-
 # how the dtype questions are asked. a `match` arm on a dtype name is a silent
 # fall-through after a rename, so this file arms on `Cls` and `bits` and `pri`
 # everywhere it can, and on the NAME only where nothing else can work.
@@ -63,7 +62,6 @@
 #   `dt == dtypes.int`       `pri == 5`, and 5 is `int32` alone.
 #   `dt == dtypes.float64`   `pri == 15`, and 15 is `float64` alone.
 #
-
 # FIVE DIVERGENCES, stated rather than hidden.
 #
 # A. `UOp.const(v, dt)` IS A PAIR. `ops.py:630` is
@@ -107,7 +105,6 @@
 # type is `F32`. Its CPython value is in the oracle (`c7=F(ovf)`) and the
 # fixture is absent rather than gated wrong.
 #
-
 # THE `graph_rewrite` WALL. `split_l2i`, `l2i_rewrite_idx`, `f2f_load`,
 # `f2f_store`, `f2f_rewrite` and `do_dtype_decomps` all call `graph_rewrite`
 # (ops.py:1611), which no file here ports: a bottom-up rewrite to fixpoint over
@@ -120,7 +117,6 @@
 # table, the `UPat` compiler and `pm_rewrite`'s first-wins scan -- so WHAT THE
 # RULES MATCH is gated even though WHAT THEY REWRITE is not.
 #
-
 # CONTROL, dd-fix round 1 (2026-10-04): this comment block is a comment and nothing
 # else, and the gate is required to read the SAME 172 rows byte for byte. Recorded
 # because the THREE arena-aliasing defects fixed this round -- `l2i_shl.hi`
@@ -183,7 +179,6 @@
 # the 64-iteration `TRUNCDIV` loop can be its own def: Bend refuses MUTUAL recursion,
 # and this loop's body calls only arms that are themselves leaves.
 #
-
 # the order of this file is a topological sort, not an accident. bend 2.0.34
 # refuses a forward reference, and `.agents/slop/dd-sort.py` reads the call
 # graph off this file and rewrites it; run it after adding a def.
@@ -545,7 +540,6 @@ def reindex(+ar: O.Arena, +idx: U32, +off: U32, +mul: U32) -> Maybe<&2, O.Found>
 # The four `CAST` arms are Python's `case Ops.CAST if <guard>:` ladder, and a
 # failing guard FALLS THROUGH to the next one -- so `dd_cast_sel` is a four-way
 # selector over three Booleans and not three separate answers.
-
 # dtype.py:28-40 is four `case ... if` clauses and python takes the first that
 # MATCHES, so the selector is first-wins over three Booleans and NOT a priority
 # list. Guard 1 is `dt in (long,ulong) AND the source is NOT a float`, guard 2 is
@@ -640,7 +634,6 @@ def l2i_cast1(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt) -> W2:
 # arm is skipped and it becomes `MUL(x, RECIP(C(2**32)))`, after
 # `a.cast(default_float)` when `a` is a bool. `reciprocal()` is UNARY
 # (`elementwise.py:468`), not `FDIV(C(1), x)`.
-
 # `UOp.bitcast` FOLDS when the dtype already agrees (mixin/dtype.py:53), so on a
 # `uint32` source there is no BITCAST at all -- which is what makes `lg7` answer the
 # very node `lg2`/`lg6` already interned, with `n = 0`. `l2i` hands the port `xdt`
@@ -689,7 +682,6 @@ def l2i_bitcast(+ar: O.Arena, +dt: S.Dt, +ws: List<&2, U32>) -> W2:
   W2{O.Found.ar(hi), li, O.Found.i(hi)}
 
 # -- SHL (dtype.py:41-44)
-
 # dtype.py:42-43, `a0u, a1u, n = a0.bitcast(dtypes.uint), a1.bitcast(dtypes.uint),
 # (b0 & 31).cast(dtypes.uint)` then `lo, hi = (a0u << n).bitcast(dt),
 # ((a1u << n) | ((a0u >> 1) >> (31 - n))).bitcast(dt)`.
@@ -762,7 +754,6 @@ def l2i_shr.fill(+ar: O.Arena, +a1: U32, +zero: U32, signed: Bool) -> O.Found:
     case False{}: O.Found{ar, zero}
 
 # -- ADD (dtype.py:50)
-
 # dtype.py:47: `lo, hi = ((a0u >> n) | ((a1u << 1) << (31 - n))).bitcast(dt),
 # a1 >> (b0 & 31)`.
 #
@@ -799,7 +790,6 @@ def l2i_shr(+ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +zero: U32, +ws: List<&2, U32>)
 
 # `fill = a1 >> 31 if dt == dtypes.int else zero` -- the vacated high word, sign
 # bits when signed and 0 when not. `a1` and NOT `a1u` is the dtype.py spelling.
-
 # `low.bitcast(dtypes.uint) < a0.bitcast(dtypes.uint)` at dtype.py:50 and
 # `a0.bitcast(dtypes.uint) < b0.bitcast(dtypes.uint)` at dtype.py:51. `bitcast`
 # FOLDS when the dtype already agrees, and on the `pm_long_decomp` entry path the
@@ -845,7 +835,6 @@ def l2i_sub(+ar: O.Arena, +ad: S.Dt, +bd: S.Dt, +ws: List<&2, U32>) -> W2:
   W2{O.Found.ar(hi), O.Found.i(lo), O.Found.i(hi)}
 
 # -- MUL (dtype.py:52-55)
-
 # ONE product `x*y` yields BOTH halves of dtype.py:54, and `shr` READS THE RAW
 # PRODUCT. `shr(a00*b01, 16)` is the raw `a00*b01` floored, not the bitcast `shl`
 # of it -- `shl`/`shr` are transcendental.py:19-20 (`x * 2y`, `x // 2y`) and
@@ -916,7 +905,6 @@ def l2i_mul(+ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> W2:
   l2i_add(W2.ar(pw), dt, dt, ws4(ml, mh, W2.lo(pw), W2.hi(pw)))
 
 # -- comparisons (dtype.py:75-77)
-
 # dtype.py:75, `(a1 < b1) | ((a1.eq(b1)) & (a0.bitcast(dtypes.uint) <
 # b0.bitcast(dtypes.uint)))`. BOTH BITCASTS FOLD on a `u32` word pair, and the cone
 # says so: MEASURED (`dd-cone.py lgf`), the inner `CMPLT`'s srcs are `PARAM u320`
@@ -1406,7 +1394,6 @@ def l2i_define(+ar: O.Arena, +self: U32, +pa: O.ParamArg) -> Maybe<&2, O.Found>:
 # twice in this repo), so `(1 << (s-1)) - 1` is `T.tx_powi(s-1)` MINUS ONE as an
 # `I64`, and the `s = 42` fixture is the row that says so. `s = 0` is `1 << -1`,
 # which CPython REFUSES, so the port refuses too.
-
 # `shl(1, k) - 1`, the mask dtype.py writes four times. `P.dc_sub` is
 # `a - 1` = `ADD(a, MUL(C(1), C(-1)))`, and THAT IS THE BUG: `shl(1, k)` is
 # `1 * (2k)` and BOTH of its arguments are Python ints (transcendental.py:20), so
@@ -1595,7 +1582,6 @@ def f2f.qnan.c(+ar: O.Arena, +k: U32, +j: U32) -> O.Found:
   dd_wk(ar, H.i64_or(m, o))
 
 # `shl((v & shl(1, fs-1)).cast(f2f_dt[to]), ts - fs)`
-
 # `shl(shl(1, k) - 1, j)`, the `nan` pattern of dtype.py:106 and :120. `shl` is
 # `x * (2y)` (transcendental.py:20) with BOTH arguments Python ints, so the whole
 # expression is one Python int by the time a node exists: `(2k - 1) * 2j`. ONE
@@ -1747,7 +1733,6 @@ def f2f.down.nosign(+ar: O.Arena, +v: O.Found, +fs: U32) -> O.Found:
   dd_band(ar, O.Found.i(v), dd_mask1(U32.sub(fs, 1)))
 
 # `(rne(nosign, fm - tm) - shl(fb - tb, tm)).cast(f2f_dt[to])`
-
 # ⚠ `+k` interned `C(fb - tb)` and `tx_shl` multiplied `x` by `2tm` -- so the graph was
 # `(x - (fb - tb)) * 2tm`, which is not the function, and it cost a `CONST 2tm` and a
 # `MUL` that CPython does not have. `shl(fb - tb, tm)` is `x * (2y)` with BOTH
@@ -1789,7 +1774,6 @@ def f2f.down.uf(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +fr: S.Dt, +to: S
   dd_lt1(O.Found.ar(c), O.Found.i(b), O.Found.i(c))
 
 # `nan_mantissa = (shl(1, tm) - 1) if to == dtypes.fp8e4m3 else (shr(nosign, fm - tm) & (shl(1, tm) - 1))`
-
 # ⚠ the third dead mask graph. measured, `q2`: cpy[50] is `CONST C(524287)` and it is
 # OR'd straight into the `nan`; the port minted `CONST C(8388608)`, `CONST C(1)`,
 # `CONST C(-1)`, `MUL` and `ADD` for the same number.
@@ -1820,7 +1804,6 @@ def f2f.down.npat(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, 
 
 # `is_nan = (shr(v, fm) & (shl(1, fe) - 1)).eq(shl(1, fe) - 1)`. The AND is the
 # one `underflow` built, so it is interned; the `eq` is two CMPNEs.
-
 # ⚠ `+mc` minted `2fe - 1` as `ADD(C(2fe), MUL(C(1), C(-1)))` -- four nodes -- and
 # `dd_band`'s third parameter interned the SAME mask as a `CONST` two slots later, so the
 # graph and the constant were both in the arena. MEASURED, `q2`: cpy[50] `C(524287)` is
@@ -1883,7 +1866,6 @@ def f2f.narrow(+v: O.Found, +udt: S.Dt, +fe: U32, +fm: U32, +te: U32, +tm: U32, 
   f2f.down.tail(T.tx_is_fnuz(to), O.Found.ar(ii), sg, nr, uf, ii, nm, ts, to)
 
 # `shr(v, fs - ts) & shl(1, ts - 1)`
-
 # ⚠ neither DEF takes an `ar` any more, and that is the point. Both used to, and
 # `f2f.down.has` passed the SAME `ar` to `f2f_clamp` and to `f2f.clamped`, so `tx_bitcast`
 # and `f2f.narrow` rebuilt the whole clamp on top of itself. The arena now travels INSIDE
@@ -1930,7 +1912,6 @@ def f2f(+ar: O.Arena, +v: U32, +fr: S.Dt, +to: S.Dt, +sat: Bool) -> Maybe<&2, O.
 # `f2f_dt[to]` read four times, and the value is `Maybe` only so that a
 # non-float target is `None`; `f2f` never gets one, so the reader's `Maybe` is
 # unwrapped once and the `k` arm is the arena's BOTTOM dtype, which no arm uses.
-
 # The three op sets the tables name. `GroupOp.All` is every op, `GroupOp.ALU` is
 # Unary|Binary|Ternary, and `GroupOp.Comparison` is the three that yield bool.
 # They are spelled out because `uop/ops.bend` names each op and nothing owns the
@@ -2367,7 +2348,6 @@ def dd_eck(+ar: O.Arena, f: Nat, +xs: List<&2, U32>, +first: Bool, +acc: String)
           dd_eck(ar, q, t, nf, s)
 
 # ---- the four rows, and the mark that separates one fixture from the next
-
 # ---- THE MARK AND THE TEXT
 #
 # The arena in `ops.bend` is PERSISTENT: `intern.put` returns a NEW `Arena`, so
@@ -2433,7 +2413,6 @@ def Ga.acc(ga: Ga, ar: O.Arena, n: U32, s: String) -> Ga:
 # and `<nm>k=` its CONSTS. A tinygrad refusal names dtype.py's exception
 # (`NotImplementedError`, dtype.py:81). An arm this file does not build names
 # `unported` instead — the same string would be a false statement about tinygrad.
-
 # dtype.py:81, `case _: raise NotImplementedError`. This string is ONLY that raise.
 # An arm the port does not build is `dd_gap` (`unported`), never this name: printing
 # `NotImplementedError` for it would be a statement about tinygrad that is false.
@@ -2954,7 +2933,6 @@ def dd_cmx.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
 # ⚠ `f2f` is `Maybe`-returning here because the port's `f2f.sel` declines rather than
 # raising, so the port's answer for `x1` is `None` and CPython's is an exception. That is
 # a REAL divergence and it is why `x1` names `unported` and not `NotImplementedError`.
-
 # `+ar` IS THE ANSWER'S ARENA and `+i` its slot: `f2f` may intern into either, and a copy
 # of the arena is what makes the two disagree silently.
 type Fx is Data:

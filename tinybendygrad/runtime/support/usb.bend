@@ -65,7 +65,6 @@
 # NOT CLOSED, DELIBERATELY. `dma_view` (tinygrad/runtime/ops_amd.py:784-798 symbol=USBIface) is a `PCIDevice` method
 # that lives in ops_amd.bend's own wall 2 and is not usb.py's to answer.
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument of
 # ONE device call (pure; the gate checks it) OR records that call in the trace (the
 # gate checks ORDER and IDENTITY). There is no third kind. Every libusb, libc and
@@ -78,7 +77,6 @@
 # support/am/ip.bend: an `@extern` is permanently-red laws plus an import closure
 # that reaches the importer's every def. A trace is not.
 #
-
 # THE AUDIT. Every constant is generated from the live `autogen.libusb` or
 # confirmed against an AST POSITION in `usb.py` -- see THE GATE.
 
@@ -121,7 +119,6 @@ type Ent is Data:
 # stored two's-complement and PRINTED signed by `show_i32`: `usb.py` compares
 # against `LIBUSB_ERROR_INTERRUPTED` and the gate has to diff CPython's `-10` and
 # not 4294967286.
-
 # `autogen/libusb.py`'s `enum_libusb_class_code`
 # `enum_libusb_class_code` binds LIBUSB_CLASS_IMAGE to 6 and then
 # LIBUSB_CLASS_PTP to 6, so the TABLE has one name for 6 and the walrus
@@ -325,7 +322,6 @@ def E_SSCAP() -> List<&2, Ent>:
 
 # the two folds, one table each. `enum_nm` is the dict and `enum_val` is its
 # inverse, so both directions come off ONE walk over the same data.
-
 # value -> name, LAST match wins: `enum_libusb_class_code` gives 6 TWO names and
 # the generated dict keeps the LAST, so a first-wins fold is wrong and the differ
 # says so on `usb_classcode_6_name`.
@@ -500,7 +496,6 @@ def SIZ_TIMEVAL() -> U32: 16
 # THE FOUR OPAQUE STRUCTS -- `struct_libusb_context`, `struct_libusb_device`,
 # `struct_libusb_device_handle` and `dll` -- have `sizeof` 0 in the generated
 # binding, and that is WHY `usb.py` treats them as POINTERS (:32,:39,:44,:49).
-
 # THE CONSTANTS AND THE WINDOW. `usb.py:208-229` is the whole memory map: two
 # SRAM halves with a reserved sentinel block each, a host block, a vram pair, and
 # the bridge's three slices.
@@ -599,7 +594,6 @@ def TABLE_ROW_BYTES() -> U32: 16
 def TABLE_SIZE_OFF() -> U32: 8
 
 # THE TRANSFER ARITHMETIC.
-
 # :253 `usb_wire(size) = (size + 512 + SLOT - 1) // SLOT * SLOT`. The 512 is a
 # SECOND sentinel block (:207), not the one `CHUNK` subtracts, so a staged
 # payload is SLOT-aligned AND carries its own reserved block. `usb_wire(0)` is one
@@ -1820,7 +1814,6 @@ def usb_ctx(debug6: Bool, +t: Tr) -> Tr:
 # inside each other is a counting exercise with no compiler help, and a miscount is
 # a silent change to which call is recorded first; one def per call makes the
 # sequence read top-down and each def independently gateable.
-
 # :457 `libusb_alloc_transfer(0)` -- the xfer this chunk submits
 def usb_chunk.alloc(+t: Tr) -> Tr: Tr.emit(K_ALLOC_XFER(), 0, 0, 0, t)
 
@@ -2282,13 +2275,11 @@ def t_consts() -> IO(Unit):
 # `have_product` is a parameter of `usb_open` and the refusal is modelled at the
 # string read that precedes it. Those two facts are what `usb_open_refuse_4_product`
 # measures.
-
 # what is not in this file, named by its line. Each is an ffi seam or an
 # outside-the-arena owner, and each is a TODO(p3) with the line that owns it. An
 # honest "this is a seam" is a complete result; what is NOT acceptable is a row that
 # pretends to cover one. The full list of `TODO(p3)` lines is at the end of this
 # file.
-
 # THE MUTATION TABLE. One edit per RULE, applied to a scratch copy, and the
 # INTERPRETED lane re-run; the diff is over WHOLE `name=value` LINES and not over
 # row NAMES, because agent-core.md records a name-comparing harness that reported
@@ -2301,7 +2292,6 @@ def t_consts() -> IO(Unit):
 #
 # The counts below are MEASURED, not transcribed: `usb-mutate.py --md` writes this
 # table and the builder reads it back.
-
 # | # | rows moved | the edit | what it is testing |
 # | --- | --- | --- | --- |
 # | M1 | 11 | `usb_wire`: 512 -> 0 in the first add | :253's sentinel block. Eleven fixtures, and every one of them is below SLOT so the block is what rounds them UP to a whole slot. |
@@ -2349,7 +2339,6 @@ def t_consts() -> IO(Unit):
 # | M43 | 4 | `ep_dir`: `& 128` -> `& 127` | the `LIBUSB_ENDPOINT_IN` bit, which the oracle reads from the header as 128. |
 # | M44 | 3 | `pcie_cfg_addr`: drop the `fn << 16` term | :140's FUNCTION nibble. Only the fixtures with a non-zero fn move. |
 # | M45 | 2 | `SENTINEL_MASK`: 0xFFFFFF -> 0xFFFFFFFF | :254's mask width, and the row that says why 24 and not 32: the COLLISION fixture at 2^24 moves and the one at 2^23 does not. |
-
 # THE GATE. Seven scripts, all in `.agents/slop/`, and every number below is one
 # of their outputs rather than an estimate.
 #
@@ -2390,7 +2379,6 @@ def t_consts() -> IO(Unit):
 #   * `enum_rows` walked the REVERSED table, which builds the accumulator
 #     backwards, so all 478 enum rows came out in the opposite of the header's own
 #     order. A cons fold over a reversed walk is still a backwards fold.
-
 # THE ENTRY POINT. One line per row section, in the order the sections read.
 
 def main() -> IO(Unit):

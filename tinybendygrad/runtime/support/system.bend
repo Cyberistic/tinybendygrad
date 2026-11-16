@@ -58,7 +58,6 @@
 #                                               parser, the socket-option table
 #   :454   the MOCK swap          FFI     DEV.interface, a module rebind
 #
-
 # THE FOUR WALLS, each with its Python line.
 #
 # 1. THE u64 WALL, and it is three Python lines and one struct format.
@@ -149,7 +148,6 @@ import ../../helpers.bend as H
 # BEND HAS NO HEX LITERALS (bend2-constraints.md, position 6835), so every
 # constant below is decimal. The comment gives the hex so a reader can check it
 # against the source without a converter.
-
 # --- the mmap family, :50-51 -------------------------------------------------
 # `MAP_FIXED, MAP_FIXED_NOREPLACE = 0x10, 0x100000` -- spelled as LITERALS in
 # Python, not read from `mmap`, because `mmap.MAP_FIXED` is ABSENT on macOS.
@@ -246,7 +244,6 @@ def PAGE_4K() -> U32: 4096                         # 0x1000 -- the page-align re
 def IOMEM_SLOT() -> U32: 4096                      # 0x1000 -- the `(paddr, 0x1000)` pair
 
 # THE TYPES.
-
 # ONE OS call. `k` is the syscall, `arg` is the ONE argument this file's gate
 # reads for it, and `s` is the STRING the call was handed -- a path, a `sudo`
 # line, or "" for a call with no string. `s` exists because the strings in this

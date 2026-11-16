@@ -275,7 +275,6 @@ def Shape.drop(s: Shape, n: Nat) -> Shape:
 # right-align only at equal length: (3,) with (2,3) is (3,3) here and (2,3)
 # in tinygrad. The shorter list's remainder is kept, which is why (2,) with
 # (2,2) is (2,2) either way.
-
 # tinygrad `_broadcast_shape`: a 1 broadcasts to the other size, including 0.
 # `Nat.max(0n, 1n)` is 1, which is not that rule. Measured:
 # Tensor.ones(2, 0) + Tensor.ones(1, 1) has shape (2, 0), not (2, 1).

@@ -60,7 +60,6 @@ import ./base.bend as F
 # dtypes, and upstream spells them as tuples. They are counted apart from the
 # twenty because a grouping is a LIST and not a dtype.
 #
-
 # THE OMISSION DECLARATION. The port does not spell every name upstream's
 # `dtypes` spells, and the names it leaves out are a CLAIM, so they are declared
 # here -- next to the reason -- and read BY PATH by `gates/dtypeeven-gate.py`.
@@ -365,7 +364,6 @@ def sum_acc_dtype(+dt: S.Dt, sum: S.Dt) -> S.Dt:
 
 # finfo -- (exponent, mantissa) bit widths. dtype.py's is a dict lookup that
 # raises for a non-float; None is that raise.
-
 # A `Maybe` holds one field, so the answer is a record rather than a pair.
 type Finfo is Data:
   Finfo{e: U32, m: U32}
@@ -600,7 +598,6 @@ def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
 #
 # The `kind` argument is the fp8 id the C and the JS share, so the two lanes
 # cannot drift on which format is which.
-
 # dtype.py's float_to_bf16, in bits: round the f32 pattern to bf16 with
 # round-half-to-even. bf16 IS the top half of an f32 pattern, so there is no
 # rebias.
@@ -656,7 +653,6 @@ def Dt.bf16(+bits: U32) -> F32:
 #     happens to agree out here (half is 0 and rem cannot reach halfway), but
 #     only because `U32.shln(1, 126)` SATURATES to 0 and the mask then saturates
 #     too. Depending on that is depending on a cliff.
-
 # Round-half-to-even: the tie is `rem == halfway` and then the LOW bit of what
 # is being kept decides (`dtype.c:132`, `:137`). `half` may carry, so the
 # increment is added, not or-ed in -- `dtype.c:137`'s comment says so.
@@ -823,7 +819,6 @@ def fp8_is_fnuz(kind: U32) -> Bool:
 #                 mant=1 and mant=7 of e4m3 differ by three in the leading bit --
 #                 so this one DOES need `U32.log2`, exactly as `fp16_f32.norm`
 #                 does, and its exponent field is 129 - bias - sig + log2(mant).
-
 # The subnormal arm's `1.f` -> f32 pattern, shared with nothing: `bias` and
 # `sig` are read once each so the exponent reads as one expression.
 def fp8_decode.sub_pat(sgn: U32, +mant: U32, bias: U32, sig: U32) -> U32:
@@ -1171,7 +1166,6 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # (`uop/ops.bend:803`, `CFloat{f: F32}`) is where that would have to be fixed, and
 # that file is another unit's.
 #
-
 # the wall is wider than the value, and the wider part is the identity.  measured, and the
 # instrument is `gates/constid-gate.py` (three lanes, and a PLANT in `gates/constid-plant.py`):
 #
@@ -1192,7 +1186,6 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # so this is not a near miss on the value alone: it is a merge of two upstream constants
 # into one, and a merge is a hash collision in the port's constant identity.
 #
-
 # what the compiler actually offers, from its source, because "there is no F64" is a
 # claim about a file and the file is right here:
 #

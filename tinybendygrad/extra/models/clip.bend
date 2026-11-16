@@ -85,7 +85,6 @@ import ./../datasets/__init__.bend as D
 # FIRST MISSING SYMBOL: `Embedding(vocab_size, width)` at clip.py:319.
 # REACHED BEFORE IT, AND PORTED: `Tensor.empty(ctx_length, width)` at :320
 # (mixin/creation.bend:424 symbol=cr_empty) and `Tensor.empty(width, width)` at :323.
-
 # THE GATE MOVED TO `gates/models-clip-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

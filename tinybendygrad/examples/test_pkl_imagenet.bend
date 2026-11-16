@@ -131,7 +131,6 @@ import ./../extra/datasets/__init__.bend as D
 #        EMPTY HALF of a 1523-line file.
 #   WALL 2 IS THE SAME WALL `extra/models/resnet.bend` STOPS AT. That is the
 #   finding. Wall 1 is the only thing that is UNIQUELY the eval path's.
-
 # THE GATE MOVED TO `gates/test_pkl_imagenet-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

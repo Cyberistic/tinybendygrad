@@ -71,7 +71,6 @@
 # [b] realize.py:285  run_linear            -- perf_counter_us, the dispatch loop
 # [b] realize.py:287  time_call             -- invalidate_caches, Tensor.ones
 #
-
 # the four rule tables, and why there are four dispatches.
 #
 # `realize.py` builds FOUR `PatternMatcher`s -- `pm_flatten_linear`,
@@ -117,7 +116,6 @@
 # not: `def f.b(...)` must be declared BEFORE `def f.a(...)` that calls it, so
 # every dotted helper is above the dotted entry point that calls it. Python's
 # order is kept everywhere else.
-
 # * read this before writing a `Bool` selector in this file. *
 #
 # `case _:` is a wildcard and it does not discriminate. One arm answers for both
@@ -216,7 +214,6 @@ def bl_t(b: Bool, t: List<&2, U32>, f: List<&2, U32>) -> List<&2, U32>:
   bl_t.go(b, t, f)
 
 #  Helpers 
-
 # `call.body` -- ops.py:565, which realize.py reads on lines 22, 39, 48, 58, 76,
 # 82, 140, 163, 174 and 289. It is `src[0]` for a CALL and it RAISES otherwise,
 # so it is `src[0]` unconditionally here: every caller below already holds a
@@ -577,7 +574,6 @@ def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:
 # order the caller passed the arguments in. the old `exec_kernel` read `resolved[i]`
 # -- the `i`th entry of the filtered list -- WHERE `i` came from `arg.globals`, which
 # are slots, so a BUFFER behind a dropped argument was read at the wrong INDEX.
-
 # `self.src[1].src` -- the linear's children. the PIN raises IndexError on a program
 # with fewer than two srcs and the port answers with the `ProgramInfo` half alone:
 # WALL, and it is a REAL one, because the pin only ever calls this on a COMPILED
@@ -1147,7 +1143,6 @@ def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
 #   which ops.bend already lists as P3). The port's version of this call takes
 #   the runtime handle as a PARAMETER, which is what `rz_exec` below says about
 #   it. P6.
-
 #  run linear 
 #
 # TODO(p3) realize.py:114  capturing -- a module-level list of Python CLASSES
@@ -1156,7 +1151,6 @@ def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
 #   `Type` field, and a CLASS value has no representation whatsoever), no
 #   process-global mutable store, and the code that appends to it (the jit) is
 #   P6. P6.
-
 # `ExecContext` -- realize.py:118-126, the dataclass field for field, and the
 # thing this file's unit brief calls `ExecItem`. It is a `Type` and not a `Data`
 # because `var_vals` is a `dict[str,int]` and a `Map` is Bend's one mutable
@@ -1350,7 +1344,6 @@ def rz_res_fuel(ar: O.Arena) -> Nat:
   O.Arena.budget(ar)
 
 #  the four rule tables 
-
 # the tables are `ops.bend`'s shape, and the claim is `ops.bend`'s code. The four
 # tables below are `PMEntrys` LITERALS and the per-rule bodies are four `Verdict`
 # defs -- which is what makes this file shorter than the first draft of it by about
@@ -1381,7 +1374,6 @@ def rz_res_fuel(ar: O.Arena) -> Nat:
 # and that set is the WHOLE of the rule's claim beyond the op: a LINEAR with NO
 # LINEAR child is REJECTED and `rewrite` answers `None`, while a LINEAR with one
 # fires. `lin_none` and `lin_fired` are the two rows that pin it.
-
 # the scan is this file's, because the body is this file's. `O.pm_rewrite` cannot
 # be used here: `pm_rewrite` calls `pm_dispatch`, which is `ops.bend`'s OWN
 # tag-to-body table -- tag 0 is its SINK rule, tag 1 its NOOP rule, tag 2 its
@@ -1434,7 +1426,6 @@ def rz_fire(claim: Bool, v: O.Verdict) -> O.Verdict:
 #
 # The BODY is a fold over `lin.src` that SPLICES a LINEAR child's children in place
 # of the child. It is folded with the same `Nat`-countdown shape as everything else.
-
 # ONE CHILD'S CONTRIBUTION: `flatten(c.src if c.op is Ops.LINEAR else (c,) for c
 # in lin.src)`, realize.py:206. Both candidates are BUILT before the choice,
 # because Bend evaluates an argument before the callee branches and
@@ -2110,7 +2101,6 @@ def beam_rewrite(+ar: O.Arena, +self: U32) -> O.Verdict:
 # THE ROWS. Every value is DERIVABLE from `realize.py` on the arena above, and
 # the Python line that fixes each one is in the table at the foot of this file.
 # Bend has no assertion form, so the gate is that BOTH LANES print these.
-
 # `1 if b else 0` -- `uop/spec.bend` spells this `if_b`. Here the FALSE arm has to
 # be a separate def because the ladder is bottom-up, and `bl_u` is the same
 # function with its arms already at hand.
@@ -2486,7 +2476,6 @@ def t_beam_new(+l: Land) -> U32:
 #                                         The two rows were documented as `1` and
 #                                         `0` here, which was a MISPELLING of the
 #                                         same answer and is corrected above.
-
 # `get_call_name` answers a `Maybe<String>`, so its gate row prints the string
 # itself and answers `"None"` for the miss -- which is `str(None)` in Python, so
 # the row is comparable with what the oracle prints for a None answer.

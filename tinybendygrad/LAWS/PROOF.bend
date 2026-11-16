@@ -42,7 +42,6 @@ import ./spec.bend as S
 # because the `Sp.shape` arm IS the right-hand side -- `SpPermute`'s arm is
 # literally `Sp.shape(t)`. Those were mutation-tested: breaking each arm in turn
 # fails the law it belongs to. See spec/shape-laws.md.
-
 # Section VIII -- the shape algebra's own laws, and the Maybe-level lemmas the
 # section II and VI laws are built from.
 #
@@ -52,7 +51,6 @@ import ./spec.bend as S
 # proof is then one application. All three are stated as equations with an
 # explicit `-> {a == b : T}` rather than as `def name(...)` law proofs, because
 # a def with no return type is an attempt to fill a law of that name.
-
 # Base proves `Nat.max_ge_l` and `Nat.max_ge_r` but NOT `Nat.max(v, v) == v`, and
 # `Shape.max_dim`'s SN arm is exactly `SN{Nat.max(v, v)}`, so the leaf fact has to
 # be proved here. Induction on the Nat.
@@ -353,7 +351,6 @@ def stack_numel_go(k: Nat, m: Maybe<&2, S.Shape>) -> {S.dims_prod(S.Sp.shape.sta
           {==}
 
 # The law proofs.
-
 # tinyspec: "Reorder axes." The shape column is src[0].shape, and the arm is
 # `Sp.shape(t)`, so both sides are the same term.
 def L.permute_preserves_numel(t, order):

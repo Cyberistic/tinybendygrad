@@ -71,7 +71,6 @@
 # every row is CPython's printed answer -- and two of the eight were BROKEN when
 # their first row read them.
 #
-
 # WHAT the engine pass looks like here, since this file is its first consumer.
 #
 # `create_schedule` is NOT a rewrite. It is a WORKLIST over the arena's own
@@ -100,7 +99,6 @@
 #     is in that nocalls toposort" are the SAME predicate. That is why `sc_in_bs`
 #     below reads a toposort rather than a slice.
 #
-
 # FOUR things that are easy to get wrong, all measured against the Python.
 #
 # 1. `_split_after` KEEPS a kernel list and a dep list, and the second partition
@@ -125,7 +123,6 @@
 #    run after the kernel that reads the state Ka supersedes. A gate that only
 #    checked "the right kernels are present" would not see it.
 #
-
 # THREE properties this file needs from ops.py AND does not get for free.
 #
 # * `gate_kernel_sink` (ops.py:1915 symbol=gate_kernel_sink) is three lines and its `arg is KernelInfo`
@@ -187,7 +184,6 @@
 #   `z_pick` and `lk.put` say which end each operation is on, because getting
 #   either wrong still typechecks and still terminates.
 #
-
 # FOUR NEW BEND RULES, all measured here and written up in
 # `.agents/slop/notes/bend2-constraints.md`. Every one of them is a refusal.
 #
@@ -212,7 +208,6 @@
 #    declaration order makes one of them a forward reference; the parameter shape
 #    has no such cycle.
 #
-
 # THE GATE. 109 rows, and EVERY expectation is CPython's printed output: the
 # oracle is `.agents/slop/schedport/oracle.py`, which builds the SAME fixtures
 # here and runs the PIN's `tinygrad.schedule.create_schedule` on them.  It
@@ -238,7 +233,6 @@
 # (__init__.py:59-65) makes Ka run after the kernel that reads the state Ka
 # supersedes. A gate that only counted kernels would not see it.
 #
-
 # THE MUTATION TABLE. Fifteen mutations, run one at a time against this file, and
 # the rows each one moves. The driver is `.agents/slop/notes/`'s pattern list; the
 # rows are all of them.
@@ -429,7 +423,6 @@ def sc_buf_uop(+ar: O.Arena, +s: U32) -> U32:
 # match ARMS of one fold and not three defs. `todo` is a STACK, so the push is
 # `srcs ++ todo` and NOT reversed -- `ops.bend`'s `Arena.push_srcs` un-reverses
 # its own input the same way, and `st_push` is that def's twin.
-
 # THREE classes, TWO-SCRUTINEE, and NO NESTED MATCH. Both refusals measured in
 # bend 2.0.34 forced this shape: a `match` inside a `case h <> t:` LIST arm is
 # refused (for a Bool, a U32 and a List scrutinee alike), so the POP cannot live
@@ -527,7 +520,6 @@ def sc_split(+ar: O.Arena, +after: U32) -> Split:
 # `sc_topo` reuses ops.bend's `Topo` RECORD and `Arena.push_srcs`, so the only
 # thing it copies is the loop.
 #
-
 # TWO upstream rules this COPY DROPPED, BOTH measured against CPython's
 # `tinygrad.schedule.create_schedule` -- the oracle is
 # `.agents/slop/schedport/oracle.py`, built on the pin's `tinygrad/`.
@@ -1089,7 +1081,6 @@ def sc_states_of(+ar: O.Arena, ss: List<&2, U32>) -> List<&2, U32>:
 # PASS ONE, `__init__.py:39-56`. Five defs, one per Python scope, in Python's
 # order: the per-`t` RAW fold, the per-kernel body, the per-kernels fold, the
 # per-AFTER body and the toposort walk.
-
 # `for st in read_states + [st for s in after_deps for st in _states(s)]:
 #    if st.op is AFTER: for t in _split_after(st)[0]: ...` -- the `t` list.
 def ts_step.of(aft: Bool, +ar: O.Arena, +s: U32, acc: List<&2, U32>) -> List<&2, U32>:
@@ -1622,7 +1613,6 @@ def sv_binds(xs: List<&2, U32>, +r: SVar) -> SVar:
 #   * `assert_all_same_devices` DEDUPED the nodes and not the devices, so two
 #     PARAMS on ONE device counted as TWO and the `>= 2` threshold RAISED on a
 #     single-device kernel. The `ads_same_*` rows see it (2 of 50 move).
-
 # 1. `is_store_after` -- __init__.py:217-218. NO ctx, NO table, NO fold, and it
 # is the FIRST of the twelve with NO WALL AT ALL:
 #
@@ -2062,7 +2052,6 @@ def apply_binds(+ar: O.Arena, +si: U32) -> U32:
 # `Kahn.gather` threads an `ok` flag "because an early return from the middle of a
 # self-call would need mutual recursion").  A `Some{}` here would be a WRONG ANSWER
 # shaped like a success; `None{}` is a refusal the caller can see.
-
 # `resolve_linear_call(si, binds)` -- THE RECURSION -- and the port answered
 # `None{}` because upstream's shape is mutual recursion and Bend has none.
 #
@@ -2381,9 +2370,7 @@ def canonicalize_call_body(+ar: O.Arena, +c: U32) -> O.Found:
 #       `assert_all_same_devices`, and the PASS is a rewriter -- BLOCKED: needs the `pm_copy_from_store` PatternMatcher + `graph_rewrite` pass. The THREE rule bodies are ALL ported (`cks_*` :1407, `simplify_copy_kernel` :1466, `assert_all_same_devices` :1527); only the PASS is absent.
 #     TODO(p3) __init__.py:280  symbol=create_linear_with_vars  -- `used_vars` -- `UOp.variables`.
 #     TODO(p3) schedule/memory.py:19  symbol=memory_plan_rewrite  -- `memory_plan_rewrite` -- `schedule/memory.py`.
-
 # THE GATE.
-
 # THE GATE'S READERS. `gate.code` is `sched-truth.py`'s `code()` verbatim, plus
 # LINEAR=10 and MSTACK=11, which that script never needed. `gate.enc` is its
 # `enc()`, so a row like `fx1_marks=12` is the same string Python printed.

@@ -61,7 +61,6 @@
 #                                         `count * 4`
 #   tinygrad/runtime/support/compiler_mesa.py:133 `disassemble` PORTED  `ir3.dis_row` symbol=disassemble
 #
-
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- Mesa's ctypes surface. `mesa.*`, `llvm.*` and `libc.*` are a
@@ -334,7 +333,6 @@ def a3.read(s: String) -> Nat: a3.read.of(String.to_list(s))
 def a3.n(+arch: String) -> U32: U32.from_nat(a3.read(a3.drop3(arch)))
 
 # :59  `struct_nv_device_info(sm=int(arch[3:]), max_warps_per_mp=warps_per_sm(arch))`
-
 # `struct_nv_device_info(sm=..., max_warps_per_mp=...)` -- two named fields, so
 # two defs. There is no `U32.get` in base.bend (MEASURED), so a two-element
 # `U32` list could not be taken apart again and the fields are separate.

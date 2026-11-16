@@ -279,7 +279,6 @@ def sx.grid(+v: U32) -> U32:
 
 # IQ4_XS (:148-156), 256 elements per 136-byte block. Its LUT is `kvalues_iq4nl`, so it is
 # the grid-family member with no grid.
-
 # `(scales_l | (scales_h << 4)).bitcast(int8) - 32`: the byte is REINTERPRETED as int8
 # before the 32 is subtracted, so 0x80 is -160 and not 96.
 # `stack([sl & 0xF, sl >> 4], dim=2)` over `sl = blocks[:,4:8]`: the LOW nibbles and the

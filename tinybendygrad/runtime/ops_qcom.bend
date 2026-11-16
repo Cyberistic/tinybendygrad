@@ -63,14 +63,12 @@
 # (`Device["CPU"].renderer`, `prg.to_elf()`, `IR3Compiler.unpack_lib`),
 # and Hexagon-RPC (which this file does not use -- see the note above).
 #
-
 # NO qgpu IN THIS ENV. There is no Adreno here, so NOTHING below was measured
 # against a live device. Every constant and every table entry was read out of
 # `tinygrad/runtime/autogen/mesa.py` and `.../kgsl.py` BY CALLING THEM, and
 # every expectation in the gate is printed by `.agents/slop/qc_oracle.py`.
 # Nothing in this file is a number somebody typed.
 #
-
 # ONE thing the oracle got wrong first, recorded because it is the kind of
 # thing that ships: the first version keyed the qreg call sites by LINE
 # NUMBER, and lines :111, :189, :225, :257 and :258 each carry TWO or THREE
@@ -79,7 +77,6 @@
 # and NFIELDS=55 where the AST walk says 34 and 62. The tables below are the
 # SECOND run's, and `qc_nregs`/`qc_nfields` are the rows that would have
 # caught it.
-
 # WHAT IS PORTED, DEF BY DEF. The PORTED lines are what this file decides; the
 # SEAM lines are what it names and does not do; the WALL lines are what Bend
 # cannot express at all.
@@ -149,7 +146,6 @@
 #  4. SYSCALLS AND THE DRIVER. `FileIOInterface`, `IOCTL_KGSL_*`, `mmap`,
 #     `munmap`, `ctypes.memset`, `System.write_sysfs`. Named once, here.
 #
-
 # NO qgpu IN THIS ENV. There is no Adreno here, so NOTHING below was measured
 # against a live device. Every constant was read out of
 # `tinygrad/runtime/autogen/mesa.py` and `.../kgsl.py` BY CALLING THEM, and
@@ -183,7 +179,6 @@ import ../helpers.bend as H
 # them, and they are named WITHOUT a module prefix because the two C
 # namespaces do not collide -- the oracle asserts that, so a future collision
 # is an oracle failure rather than a silent shadow.
-
 # --- the packet-type tags, :49 and :51 -------------------------------------
 def CP_TYPE7_PKT() -> U32: 1879048192
 def CP_TYPE4_PKT() -> U32: 1073741824
@@ -661,7 +656,6 @@ def FLAG_CACHEMODE() -> String: "KGSL_CACHEMODE"
 # term counts `ibo_cnt` while the NIR branch's counts `tex_cnt`. The
 # `samp_off` agrees by reordering. `qc_off_swapped` is the row that says so: it
 # is the only way to notice a port that reads the two branches as one rule.
-
 # --- the fixed offsets ops_qcom.py reads out of the blob, with Python lines ---
 def OFF_REG_DESC() -> U32: 52       # 0x34, :282
 def OFF_HAS_CONSTS() -> U32: 176    # 0xb0, :274
@@ -845,7 +839,6 @@ def desc.count.of(want: U32, +bs: List<&2, Bi>) -> U32:
 # `is32` is a FLAG and `sz_bytes := 2 << is32` is 2 or 4 -- so a constant is
 # either a u16 pair or a u32, and the offset is in BYTES. `qc_const_stride` and
 # `qc_const_sz` are the two rows.
-
 # `bound` is the U32 the constant walk is bounded BY -- `image_offset`, not
 # `len(lib)`. It is a FIELD because :276 reads it out of the blob and the walk
 # starts at :275's `cdoff`, and getting the two the wrong way round is exactly
@@ -1133,7 +1126,6 @@ def ce.find(want: Ck, +es: List<&2, Ce>) -> U32:
 # and NONE of them on the hit path. `qc_ck_order` is the row that reads the
 # trace; `qc_ck_nbuild` counts PARSE and `qc_ck_npatch` counts PATCH, and the
 # pair is what says the miss path ran exactly once.
-
 # :289 `image = bytes(data.image).ljust(round_up(len(data.image), 4), b"\x00")`.
 # The image is padded to a multiple of FOUR with ZEROES, and the buffer's length
 # is the PADDED length -- `UOp.placeholder((len(image),), ...)` reads `len` of
@@ -1301,7 +1293,6 @@ def flush.of(+flags: List<&2, Bool>, +t: Tr) -> Tr:
 # `cmd` AND `reg`. ONE def each, because they differ in the HEADER and nothing
 # else: `cmd` builds `pkt7_hdr(opcode, cnt)` and `reg` builds
 # `pkt4_hdr(reg, cnt)`, and both append the header to the same `q`.
-
 # The COUNT is not in the trace -- it is in the HEADER, and `q.hdr7` builds it.
 # Keeping it out of the record is deliberate: one trace entry per CALL, and the
 # header is a separate pure builder with its own rows (`qc_pkt7_*`).

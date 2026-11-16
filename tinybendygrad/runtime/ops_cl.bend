@@ -66,7 +66,6 @@
 # greppable: the symbol name is a literal in `vend`, not an opaque body. The seam
 # that finally lands replaces `Tr.emit` and nothing else.
 #
-
 # WHAT IS PORTED, DEF BY DEF. `cl:NN` is ops_cl.py, `cu:NN` ops_cuda.py,
 # `hp:NN` ops_hip.py.
 #
@@ -134,7 +133,6 @@
 #   :68-70  _copyout               PORTED  `hp.copyout`
 #   :71     _offset                WALL 6  POINTER-ARITHMETIC
 #
-
 # THE WALLS, all of them FFI or 64-bit, and NONE of them is the interesting part.
 #
 # 1. `cl_mem`, `cl_program`, `cl_kernel`, `cl_context`, `CUdeviceptr` and
@@ -211,7 +209,6 @@
 #   entries, keyed int -> str, and cu:90's
 #   `status == CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED` is entry 712 of it.
 #
-
 # THE ERROR TABLES, `cl_errors` (`tinygrad/runtime/ops_cl.py:16 symbol=cl_errors`) and cu:18 and hp:10, which are the three `check`s.
 #
 # `cl_errors = {attr: k for k in dir(cl) if k.startswith("CL_") and isinstance(
@@ -240,7 +237,6 @@
 # no sign repair and that asymmetry between the two spellings is itself a row.
 # `hipGetErrorString` is WALL 7.
 #
-
 # WHAT device.bend AND cstyle.bend OWE THIS FILE. Named, because this file
 # cannot be checked without them and does not pretend otherwise.
 #
@@ -283,7 +279,6 @@
 #      `img.is_image` is that and the gate has a fixture whose image is 4 in the
 #      LAST dim beside one that is 4 in the FIRST dim.
 #
-
 # NO OpenCL, CUDA OR HIP IN THIS ENV. `Device['OPENCL']` needs a loader and no
 # HIP runtime is installed here, so NOTHING below was measured against a live
 # device. Every constant was READ OUT OF `tinygrad/runtime/autogen/*.py` -- and
@@ -359,7 +354,6 @@ import ../helpers.bend as H
 #               asserts `Prog.of`'s literal and not `V_CL`, and it did so
 #               before the split too. Deleting `V_CL` and `Prog.vendor` is a
 #               real simplification but it is NOT a split; it is the owner's.
-
 # PART 0 -- THE VENDOR TABLE. `vend.name(vendor, op)` is one of the three
 # spellings of `op`, and `""` means THIS VENDOR HAS NO SPELLING, which is itself
 # a gateable fact and the reason this file is worth having.
@@ -558,7 +552,6 @@ def u32s(+v: U32) -> String: u32s.at(Bool.not(U32.is_zero(U32.and(v, 2147483648)
 # THE ERROR TABLES. See THE ERROR TABLES in the header: the comprehension is
 # keyed by the CODE, 74 names collapse to 63, and the codes are stored as `U32`
 # two's complement because Bend has no signed integer.
-
 # MEASURED: 74 names carry a value <= 0, 63 distinct values, and the four shared
 # codes keep the alphabetically LAST name (CL_SUCCESS / CL_DEVICE_NOT_FOUND /
 # CL_DEVICE_NOT_AVAILABLE / CL_COMPILER_NOT_AVAILABLE).
@@ -632,7 +625,6 @@ def cl_err_of(+status: U32) -> String:
   cl_err_step(U32.to_nat(cl_err_n()), status, cl_err_code(), cl_err_name(), False{}, CL_UNKNOWN())
 
 # THE TYPES.
-
 # ONE vendor call and the ONE argument the trace records for it. `op` is the
 # table index above, so `vend.name(vendor, Call.op(c))` reads the trace BACK as
 # C symbols -- that is the reverse direction of the vendor table, and the gate
@@ -922,7 +914,6 @@ def vend.trace(cs: List<&2, Call>) -> String:
   String.join(vend.trace.go(cs, Nil{}), " ")
 
 # PART 1 -- OpenCL. `ops_cl.py`, all 130 lines.
-
 # `autogen/opencl.py`, read out. Every one of these is a value the three CL
 # functions pass and none of them is derived, so they are constants -- and every
 # one of the fourteen here is READ by the logic below, which is the only reason
@@ -1068,7 +1059,6 @@ def cl.has_img_ext(+exts: List<&2, String>) -> Bool: List.contains(~String, ~Str
 
 # cl:105-123 -- THE INIT SEQUENCE, in order. Eleven calls when the extension is
 # absent and twelve when it is there, and the ORDER is the whole of this def.
-
 # cl:105 `self.device_name = (clGetDeviceInfo(self.cl_dev, CL_DEVICE_NAME, 256,
 # buf, None), buf.value.decode())[1]` -- UNCHECKED (cl_info_checked). The `arg` is
 # the INFO PARAM, which is what distinguishes the five `clGetDeviceInfo` calls
@@ -1213,7 +1203,6 @@ def cl.init(+p: Prb, +device: String, +name: String, +drv: String,
 # cl:25-37 -- `CLCompiler.compile`. Five calls on the success path and FOUR on
 # the failure path, because the two build-log reads at :29-30 sit inside
 # `if build_status != 0:` and the raise at :32 stops everything else.
-
 # cl:26 `checked(cl.clCreateProgramWithSource(self.dev.context, 1,
 # to_char_p_p([src.encode()]), None, status), status)`.
 def comp.from_src(+t: Tr) -> Tr: Tr.checked(OP_PRG_FROM_SRC(), "0", t)
@@ -1248,7 +1237,6 @@ def CL_COMPILE_ERR() -> String: "OpenCL Compile Error\n\n"
 # names: cl:46's `clBuildProgram` "# NOTE: OSX requires this", i.e. a program
 # created from a BINARY must still be BUILT before `clCreateKernel`. Drop it and
 # OSX rejects the kernel.
-
 # ONE program call's state. `unit`/`ctx` are the device's handles (prog:52 reads
 # `self.dev.context` and :46 `device.cl_dev`), `prg`/`kernel` the two handles
 # `__init__` mints, `sig` the TinyELF signature, `args` the per-row argument
@@ -1383,7 +1371,6 @@ def prog.del.go(have_k: Bool, have_p: Bool, +t: Tr) -> Tr:
 # THE `raise` IS IN THE TRACE (see THE RAISE): `check` after every call, so once
 # a refusal lands nothing further records and a refusal shows up as a TRUNCATED
 # trace. `cl_refuse_*` reads that.
-
 # `Arg.kind`: 0 is a `cl_mem`, 1 is a `clCreateImage` result, 2 is the boxed
 # `c_int{bitsize}` scalar. The three are not decoration -- they select three
 # DIFFERENT `clSetKernelArg` argument types and the image one adds a
@@ -1523,7 +1510,6 @@ def prog.launch(+want: Bool, +p: Prog) -> Prog:
 # cl:78-89 -- `CLAllocator`. Four methods, and the ASYMMETRY between them is the
 # content: `_copyout` calls `self.dev.synchronize()` and `_copyin` does not, and
 # `_free` calls nothing at all.
-
 # cl:80 `BufferStorage(checked(clCreateBuffer(self.dev.context, CL_MEM_READ_WRITE,
 # size, None, status), status))` -- the `arg` is the SIZE, so `cl_alloc_args`
 # reads the size straight out of the trace rather than out of the record.
@@ -1557,7 +1543,6 @@ def copy.copyout(nbytes: U32, +t: Tr) -> Tr: cl.sync(Tr.emit(OP_COPY_OUT(), U32.
 # 3 and shape[-1] == 4`. The LAST dim is 4 and not the first, so `(4, 8, 8)` is a
 # plain buffer and `(8, 8, 4)` is an image. Two fixtures and the difference is
 # the whole of `img.is_image`.
-
 # cl:14 `OSX_TIMING_RATIO = (125/3) if OSX else 1.0` -- "it's in like GPU clocks or
 # something". An F32, and the only F32 in the three files besides hp:57's.
 def timing.ratio(osx: Bool) -> F32: Bool.pick(F32, osx, 41.666666666666664, 1.0)

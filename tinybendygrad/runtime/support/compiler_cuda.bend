@@ -47,7 +47,6 @@
 #         `st.global.f32` gives `global`; the FIRST dot-match wins.
 #   pat5  `(\.)(version|target|address_size|visible|entry)`.
 #
-
 # `colored` (helpers.py:39-44) is the other half of `pretty_ptx`, and it is
 # fully ported:
 #
@@ -63,7 +62,6 @@
 #   TODO(p3) compiler_cuda.py:29 -- `colored(...)` in each of the six lambdas.
 #   TODO(p3) helpers.py:39  symbol=colored -- `if NO_COLOR: return st`.
 #
-
 # `CUDA_PATH = getenv("CUDA_PATH", "")` IS A PROCESS-BOOT CONSTANT, and it is
 # read at IMPORT: `tinygrad/helpers.py:161 symbol=getenv` carries `@functools.cache` on upstream's `getenv`, so the module
 # constant is fixed before any caller can change the environment. Measured, in
@@ -74,7 +72,6 @@
 # (`CUDA_PATH=/my/cuda`) is the only way to observe the non-empty arm.
 #   TODO(p3) compiler_cuda.py:7 -- `CUDA_PATH = getenv("CUDA_PATH", "")`.
 #
-
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :7   CUDA_PATH              PORTED `CUDA_PATH.default` (the parameter)
@@ -98,7 +95,6 @@
 #   :86-99 NVPTXCompiler        PORTED `NVPTXCompiler.key` `.calls` `.calls_n`
 #                                       `.arch_opt` `.input_kind`
 #
-
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- `tinygrad.runtime.autogen.nvrtc` and `.nvjitlink`: two `ctypes.CDLL`
@@ -142,7 +138,6 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # `String` carrying a real newline inside this scan (MEASURED -- `cu.ptxc_*_out`
 # hangs and the file stops printing at the row before it), and the separator is
 # a fixture choice, not a ported decision: `str.replace` never looks at it.
-
 # `helpers.colored`. `colors.index(color.lower())` is the position in
 # `['black','red','green','yellow','blue','magenta','cyan','white']`, and
 # `60*(color.upper() == color)` adds 60 for an UPPER-case name -- so

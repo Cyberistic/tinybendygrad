@@ -48,14 +48,12 @@ import ./LAWS/alu.bend as A
 # None` for want of one. That is the whole point of dropping the fuel: every
 # claim here is a claim about a total function, and a law that holds only
 # because both sides are the same opaque constant is not a proof.
-
 # I. The spec's constraints become premises.
 #
 # tinyspec states validity conditions on ops -- "prod s_k = prod s'_k" for
 # Reshape, "buf.shape = val.shape" for Store -- as things a well-formed graph
 # must satisfy. A Bend law is universally quantified, so it cannot carry an
 # assumption inline; the condition enters as a premise carrying its own proof.
-
 # tinyspec Reshape: "Reinterpret in row-major order. prod s_k = prod s'_k."
 #
 # The premise is the spec's own constraint. The conclusion is the interesting
@@ -82,7 +80,6 @@ law reshape_numel_is_the_new_shape:
 # which have their own clause. The laws below are the ones that constrain the
 # ELEMENT COUNT, because that is the invariant the whole scheduler rests on: a
 # view may not change how many elements a tensor has.
-
 # Permute and Flip reorder and mirror; neither adds or removes an element.
 law permute_preserves_numel:
   for +t: S.Sp
@@ -354,7 +351,6 @@ law zip_max_idempotent:
 #
 # `dims_of` is gone: `S.drop_n` is spec.bend's, and the old `dims_of` existed
 # only to open a shape the laws never ask for by name.
-
 # The folds, total: a node in, a shape or a dtype out.
 def shape_of(s: S.Sp) -> Maybe<&2, S.Shape>:
   S.Sp.shape(s)

@@ -183,7 +183,6 @@ def gcast(+ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
 # `mask.cast(dtypes.bool)` from `partial_store_gradient` (gradient.py:63) is NOT reached by any
 # caller in this file. A `gbool` def once sat here and NOTHING called it (`grep -rn gbool` = this
 # file only), so a def claiming a CPython expression with no caller is a claim of unknown value.
-
 # `UOp.const(v)` -- ops.py:632. THE CAST IS NOT OPTIONAL, and this is MEASURED rather
 # than read off:
 #
@@ -1095,7 +1094,6 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 #   3. `uop/weak.bend`'s `_min_max` unblocks tag 25 (`UNSHARD`), tag 15
 #      (`has_buffer_identity`) and `mixin/dtype.bend`'s `commit_dtype`.
 #   4. `call_gradient` needs the five subsystems above and is the largest single item.
-
 # THE TABLE. 33 entries, `pm_gradient.pdict` order, and the `ops`/`rej` columns are
 # Python's OWN -- dumped from `upat_compile` and the `pdict` reject sets, not inferred.
 # The interesting column is `rej`, and it is non-empty at exactly FOUR tags: 27 rejects
@@ -1976,7 +1974,6 @@ def size1(+ar: O.Arena, n: U32) -> U32:
 # `size1(n)` counts `n` plus everything under it, and the ROOT's own `+1` is the `1`
 # seed. `size_const` (2) and `size_mul` (5) are the controls: `CAST(CONST)` is 2 and
 # `MUL(CAST(CONST), CAST(CONST))` is 5, both matching Python's `1 + sum(...)`.
-
 # THE CONTROL FOR `size`. A CONST is 2 nodes here (`CAST(CONST)`, measured) so this is 2,
 # and if it prints anything else then `size` is wrong and every `*_n` row above is wrong
 # with it. It is the smallest fixture the arena can hold and it pins the "+1 for the node

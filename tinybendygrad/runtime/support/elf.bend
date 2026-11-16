@@ -58,7 +58,6 @@
 # declares all three as `Quant` and then
 #   Error: - expected : Quant / - observed : String
 #
-
 # the two upstream defects. `tinygrad/` is read-only to this unit; both are
 # REPRODUCED against real files (`.agents/slop/elf/REPORT.md`) and the PORT
 # MATCHES THE CODE AS WRITTEN, because a 1:1 port that silently fixed them
@@ -75,7 +74,6 @@
 #    linker emits as a section. `r64.so` is that case, and the row
 #    `elf_refuse_r64so_trgt_dyn` names the target the derivation produces.
 #
-
 # THE WALLS.
 #
 #   1. 64-BIT VALUES. bend 2.0.34 has no 64-bit integer. `r_offset`, `st_value`,
@@ -107,7 +105,6 @@
 #      either. The section table is BUILT prepended and REVERSED ONCE, because its
 #      order is the answer; the row helpers are BUILT appended and never reversed.
 #
-
 # WHAT IS PORTED, DEF BY DEF. `libc` is `tinygrad/runtime/autogen/libc.py`,
 # generated and NOT in this unit's scope; its STRUCT LAYOUTS and its constants
 # are named here as the port's own tables and are gated against the oracle
@@ -320,7 +317,6 @@ def Blob.magic_hex(+h: String) -> String:
 
 # THE ELF CONSTANTS. Every value is MEASURED off `tinygrad/runtime/autogen/
 # libc.py` by the oracle, never transcribed. The rows `elf_c_*` carry them.
-
 # `libc.ELFMAG` IS A PYTHON STRING, `"\177ELF"`, and `blob[:4] == ELFMAG.encode()`
 # compares FOUR BYTES. As a U32 the bytes spell 0x7F454C46 = 2135247942, and
 # `Blob.le32(h, 0)` gives 0x464C457F = 1179403647 -- the SAME FOUR BYTES IN
@@ -364,7 +360,6 @@ def F_RELA() -> String: "r_offset,r_info,r_addend"
 def F_REL() -> String: "r_offset,r_info"
 
 # THE RECORDS. EVERY FIELD IS TYPED (measured: an untyped field is `Quant`).
-
 # `Elf64_Ehdr` / `Elf32_Ehdr`, libc.py:251/:233. The `e_ident` array is NOT a
 # field: it is the four magic bytes plus the class byte, and `magic_ok` and
 # `is64` read it directly -- a record field would be a 16-byte array, which Bend

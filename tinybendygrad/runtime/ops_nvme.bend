@@ -38,7 +38,6 @@ import ../helpers.bend as H
 # the upstream source is at the PIN `f5ac54685074`, and the citations below
 # are file + rule identity, not line numbers, because a line number rots and
 # A RULE IDENTITY DOES NOT.
-
 # the constants. every one measured out of `tinygrad/runtime/autogen/nvme.py`
 # -- they are not seams and they are not typed.
 #
@@ -318,7 +317,6 @@ def SQE_WORDS() -> U32: 16
 # `ceildiv(len(pages) + 1, 256) * 0x1000` AND THE TABLE IS
 # `round_up(16 * len(pages), 0x1000)`. THE `+ 1` IN THE LIST COUNT IS
 # why a single page still gets a list page.
-
 # the prp list's capacity: 256 entries per list page.
 def PRP_LIST_ENTRIES() -> U32: 256
 
@@ -523,7 +521,6 @@ def create_sq_cdw11(+qid: U32) -> U32:
 #      `((n + k * (q.entries - 1) + size) % q.entries)` -- THE SLOT AFTER
 #      the wave's last, because the doorbell is "the next slot to fill" and
 #      not "the last slot filled". a port that rings the last slot hangs.
-
 # the command count for a read of `nbytes` bytes.
 def cmds_for(nbytes: U32, +max_xfer: U32) -> U32:
   H.ceildiv_u32(nbytes, max_xfer)
@@ -840,7 +837,6 @@ def group_count(+n_calls: U32, +n_drives: U32) -> U32:
 #
 # And the rows are the pure rules. Every rule that needs a drive is not a row and
 # is named in the footer below with the seam that blocks it.
-
 # not ported, and the wall for each. this file is (b)-shaped and says so.
 #
 # THERE IS NO UPSTREAM NVMe MOCK. MEASURED: `test/mockgpu/` HAS `nv/`,

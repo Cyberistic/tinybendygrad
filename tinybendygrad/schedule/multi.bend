@@ -221,7 +221,6 @@ def mu_has_axis(a: Maybe<&2, U32>) -> Bool:
 # tables concatenated rather than one table with holes, and why
 # `mu_ra.of` renumbers: prepending `_early_allreduce` shifts all six
 # `replace_allreduce` tags by one.
-
 # `GroupOp.ALU` -- ops.py's twenty-eight members, in ops.bend's DECLARATION order
 # (which is `Ops.value` order, which is what the Python print above sorts to).
 # This is `alu_multi`'s pdict key and it is the largest op set in the file, and
@@ -1271,7 +1270,6 @@ def rs_prods(+shape: List<&2, U32>, +new_n: List<&2, U32>) -> Bool:
 # `local = multi.src[0].reshape(new_shape)` -- the builder, and `new_shape` is
 # `rs_local`'s answer. `rs_reshape` is the def that would carry it; the graph is
 # the wall named in the header.
-
 # `expand_multi` (multi.py:142-145) -- the shortest fully-portable body in the
 # file:
 #     shift = len(root.marg)
@@ -1310,7 +1308,6 @@ def ex_rngs(sh: List<&2, Sh>) -> List<&2, U32>:
 # gate is exactly `tuple.index`, so `pm_sw` (axis 0 under `(1,0)`) is 1 and
 # `pm_id` is 0. An axis not in the permutation is Python's ValueError and is
 # `None` here.
-
 # `tuple.index` as a FOLD over a RECORD, not a `Maybe` that the walk carries. The
 # reason is MEASURED and it is a bend2 rule and not a style choice: a step that
 # calls back into the walk (`.step` -> `.go`) is MUTUAL RECURSION and is refused,
@@ -1529,7 +1526,6 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 # `part_bounds` is `((i*shard_sz, shard_sz) for i in range(count))` -- the
 # PARTITION boundaries, and it is pure arithmetic over two integers, so it is
 # fully ported and gated: `pb_*` in the gate is CPython's own.
-
 # `shard_sz = multi.src[0].shape[ax]` (multi.py:165) -- the LOCAL shape, i.e.
 # `multi.src[0]`, NOT `multi.shape`. That distinction is the whole of the OWN test:
 # `l` is compared against the SHARD's extent and against `multi.shape[ax]` on the
@@ -1723,7 +1719,6 @@ def pd_nonshard.go2(marg: List<&2, Bd>, +sh: Sh, +ax: Nat, acc: List<&2, Bd>) ->
 
 # `shard_sz = multi.src[0].shape[ax]` for the ONE sharded axis, as a parameter of
 # this fold: it is `Sk` data and reading it per axis would be a walk per axis.
-
 # `stack_multi` (multi.py:188-200). STACK ADDS A LEADING AXIS, so the srcs are
 # sharded one axis BELOW the output and every sharded axis moves UP by one:
 #     multis = [m for m in root.src if m.op is Ops.UNSHARD]

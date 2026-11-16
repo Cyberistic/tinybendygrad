@@ -101,7 +101,6 @@ def Item.val(+i: Item) -> String:
 
 # `difflib.get_close_matches` -- NAMED, see above. It is the only part of `get`
 # that is not ported, and `get.miss` is the refusal both lanes answer.
-
 # `fmt_top` / `fmt_all` -- cli.py:83-91. Both are PADDED COLUMNS and the pads are
 # where the information is:
 #
@@ -119,17 +118,14 @@ def Item.val(+i: Item) -> String:
 # computation and the column join; the `time_to_str` and `colored` cells come
 # from `helpers.bend` (`H.time_to_str`, `H.colored`) which are ported and gated
 # there, and the `%.2f` cells are the `F32` wall named in the header.
-
 # `k['name']` is already `fmt_colored`'d by the CALLER, and `ansilen` strips
 # escapes, so the pad is computed on the STRIPPED length. MEASURED upstream's
 # `fmt_top` pads with `38 - ansilen(k['name'])` on a name that `render_event` has
 # already passed through `fmt_colored`, which is why a coloured name and a plain
 # name of the same visible width get the same pad.
-
 # `{"MARKER", "SOURCE"}` take the `---` arm and every other device the `*` arm,
 # and the two arms share NOTHING -- not the name, not the width, not whether a
 # timestamp follows. MEASURED upstream: `if k["device"] in {"MARKER", "SOURCE"}`
-
 # `k['device'][:7]` -- a SEVEN-CHARACTER SLICE, not a split, so `"GPU:0:1"` is
 # `"GPU:0:1"` truncated to `"GPU:0:"` and `dev7` is a `String.take`.
 

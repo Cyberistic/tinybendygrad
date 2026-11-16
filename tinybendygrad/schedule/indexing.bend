@@ -252,7 +252,6 @@ def IxCtx.rngm(x: IxCtx) -> IxRMap:
 # with the KEY and the rest, because a `Maybe` cannot be threaded through a
 # recursion (bend2-constraints.md rule 2 of the general set) and an early return
 # out of a fold needs mutual recursion, which is refused.
-
 # THE LIST IS THE FIRST PARAMETER because the fuel is a `Nat` INDEX that does not
 # shrink and the decrease check reads arguments left to right (bend2-constraints
 # rule 7 of the `divandmod.bend` set: "the countdown has to be the SECOND
@@ -262,9 +261,7 @@ def IxCtx.rngm(x: IxCtx) -> IxRMap:
 # `n == key` is a `Bool` PARAMETER, not a scrutinee: a `match` may not examine a
 # computed value (bend2-constraints rule 2), so the compare is computed in the
 # caller and the arm consumes a parameter. This is `spec.bend`'s `DevOpt` shape.
-
 #
-
 #
 
 def ixr_hit.of(hit: Bool, k: U32, +e: IxReal) -> IxReal:
@@ -304,7 +301,6 @@ def ix_hd(+xs: List<&2, O.Op>) -> O.Op: ix_hd.of(List.head(&2, O.Op, xs))
 # FALSE is a legal answer for a NEGATIVE row -- the recorded "ALL-TRUE tells you
 # the cases you covered and nothing about the rest" in its most embarrassing
 # form. Only the diff against the oracle saw it.
-
 # `out_shape[nleft+i]`, and `List.get` answers a `Maybe`
 # (bend2-constraints.md, `upat.bend` rule 4).
 
@@ -342,7 +338,6 @@ def ix_ac(w: O.Op) -> Bool: ix_mem1(w, ix_ac_ops())
 # `ix_resolve_miss()` is the named wall, the same shape `rangeify.bend`'s
 # `rf_ranges_miss()` takes: one constant, `rg "ix_resolve_miss"` lists every
 # dependent, and no caller can get a plausible wrong answer by accident.
-
 #
 #
 #
@@ -401,7 +396,6 @@ def ix_bax_neg(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> Bool:
 # recorded `mxw_stk` failure (movement.bend rule 15) exactly.
 # `out_shape[nleft+i]`, and `List.get` answers a `Maybe`
 # (bend2-constraints.md, `upat.bend` rule 4).
-
 #
 #
 
@@ -476,7 +470,6 @@ def ix_bax(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> List<&2, U32>:
 # The answer is a LENGTH for every arm -- `()`, `src[:1]`, `len(src)` -- and
 # `src[:1]` is empty when there is no src, so `ix_ds_take` handles that without
 # a separate case (movement.bend's `mxm_not_const` does the same).
-
 # `src[:1]` -- ONE arm, and it is the arm that has to know `src[:1]` of an empty
 # `src` is empty. The parameter is the `src[:1]` DECISION (`ix_ds_one`), so `True`
 # means "take one" and `False` means the `case _` arm, which is all of `src`.
@@ -501,7 +494,6 @@ def ix_ds_zero(op: O.Op) -> Bool:
 # `op in GroupOp.Movement|{INDEX, STAGE, REDUCE, AFTER, END, BACKEDGE, COPY}` --
 # indexing.py:70. The SIX movements come from `ops.bend` as `O.GroupOp.movement`
 # (the reuse the brief asks for) and the SEVEN extras are listed.
-
 # `+op` because the scan and the movement test each read it and `Op` is
 # Data-kinded (uop/ops.bend:170 symbol=Op).
 
@@ -511,7 +503,6 @@ def ix_ds_one(+op: O.Op) -> Bool:
 # THE ANSWER, as a length. `src[:1]` is `1` when there is a src and `0`
 # otherwise, so `ix_ds_n` is the whole of the function's observable behaviour and
 # the gate is 22 `ds_*_srcs` rows.
-
 # THE ANSWER, as a LENGTH, and it goes through `ix_ds_take` because `src[:1]` is
 # a LIST and `ix_ds_take` is the arm that builds it. A mutation of `ix_ds_take`
 # moved NOTHING before this, which is the blind spot the mutation table exists to
@@ -587,7 +578,6 @@ def ix_aslot(+ys: List<&2, U32>, +placed: List<&2, U32>) -> U32:
 
 # SET `placed[j]`, in place, by rebuilding -- a `List` has no update, and the tail
 # is the shrink the decrease checker wants.
-
 # `List.append(acc, [x])` is a TAIL append (`acc ++ [x]`), so building `[x] ++ t`
 # needs the append reversed -- the "every row came out reversed" trap of
 # `mxw_stk`, and the reason this walk cannot use `List.append` directly.
@@ -787,7 +777,6 @@ def ix_mv_reshape_same.go(+as: List<&2, U32>, +bs: List<&2, U32>, +aa: List<&2, 
 # is W3. What IS portable and gated is the REVERSE walk -- `axes_in` is built
 # from the zip read BACKWARDS, which is a fold with a reversed accumulator, and
 # `ix_ar_rev` is it -- plus the `acc` product, which is `ix_ar_acc`.
-
 #
 #
 
@@ -822,7 +811,6 @@ def ix_ar_acc0() -> U32: 1
 #     `nr_passthru`.
 # The last one is a `Bool` PARAMETER (`ix_nr_passthru`) rather than a `match` on
 # a computed op, because `O.eq_op` is a CALL (bend2-constraints rule 2).
-
 # `if isinstance(s, UOp) and s.op is Ops.RANGE: return s` -- indexing.py:19, the
 # PASS-THROUGH arm, and the one arm whose answer is a NODE rather than a dim.
 # `ix_nr_through` returns the input index unchanged and falls through to `ridx`
@@ -883,9 +871,7 @@ def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
 # keys it would insert, and `ix_m*` is the def a caller folds into `IxCtx.rmap`.
 #
 # `realize(ctx, tr)` (:28) inserts `(tr, None)` -- one key, no axis list.
-
 #
-
 #
 
 def realize(tr: U32) -> IxReal: IxReal{tr, False{}, Nil{}}
@@ -895,7 +881,6 @@ def realize(tr: U32) -> IxReal: IxReal{tr, False{}, Nil{}}
 # WALL the fold answers as a `Maybe`, and `Maybe.default(..., 0)` is the arena
 # bottom (movement.bend rule 16: a stale arena gives an EMPTY answer, not a
 # wrong one).
-
 # `UOp.base` (ops.py:785) is a KAHN WALK over the fold table and `fold.bend` is
 # the file that owns it, so `ix_base_idx` is a NAMED WALL: `realize_store_after_src`
 # (:34-36) asks `dest.base in src.toposort(...)` and this port answers the
@@ -910,7 +895,6 @@ def ix_base_op(+ar: O.Arena, s: U32) -> O.Op: O.Arena.op(ar, ix_base_idx(ar, s))
 # `realize_store_after_src(ctx, dest, src)` (:34-36) -- `dest.base in
 # src.toposort(enter_calls=False)`. The identity is `U32.is_eq` on two arena
 # indices, which is the recorded "a compiled arena makes a U32 a key" rule.
-
 # the `not in ALWAYS_CONTIGUOUS` test is `Bool.not(ix_ac(...))` and the base
 # read is `ix_base_op`. `ix_base_op` is the WALL reader and it is named here.
 
@@ -933,7 +917,6 @@ def ix_war_hit.go(+ss: List<&2, U32>, +b: U32, +sofar: Bool) -> Bool:
 # `realize_custom_kernel_srcs(ctx, c)` (:38-43) -- a `while` over
 # `c.src[1:]` that walks RESHAPEs down to a base, inserting into BOTH maps.
 # The descent is a fold; the two inserts are `IxReal` and `IxSet`.
-
 # `dest.base in src.toposort(enter_calls=False)`: both sides of Python's `in` are
 # UOps, and in an arena both are INDICES, so this compares base indices.
 
@@ -1107,7 +1090,6 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
 # because the two sets DIFFER: `ix_ds_zero` has RANGE/SPECIAL and this has
 # MSTACK/MSELECT/AFTER. Writing one of them in terms of the other would have
 # been the copy-paste the brief forbids.
-
 #
 #
 #
@@ -1171,7 +1153,6 @@ def ix_rmap_get(+rm: IxMap, k: U32) -> Maybe<&2, IxReal>:
 
 # THE THREE TABLES. Each needs its own table/dispatch/try/scan -- see the
 # header. `ix_early_*` is `early_reject`, a NECESSARY CONDITION.
-
 # the key of an `IxRngs` IS THE NODE -- `IxRngs.n` -- and the revision this
 # replaces read it "out of the `inp` list's own head by convention", which was
 # a convention about a list that holds the RANGES.
@@ -1228,7 +1209,6 @@ def grm_table() -> O.PMEntrys:
              O.PMEntry{3, [O.OpsSTORE{}], Nil{}}]}
 
 # --- pm_apply_rangeify -- indexing.py:136-147, FIVE rules ------------------
-
 # `GroupOp.All` is `set(Ops)` (tinygrad/uop/__init__.py:135), i.e. EVERY op INCLUDING
 # SINK. `par_3_all` is that fact, and it is a fact about the WHOLE op space, so
 # `par_all_n` is its count (79) and `par_3_all_sink` is the row that would catch
@@ -1331,7 +1311,6 @@ def ix_g3(op: O.Op) -> O.Found:
 # input and the whole of what a `*_ids` row prints. `n` is a `Nat` and it is the
 # FIRST parameter because the checker wants the shrink before the arena, and the
 # arena GROWS at every step (`O.Found.ar(r)`).
-
 # THE RANGE FIXTURE. `apply_movement_op` takes a tuple of ranges, so the fixture
 # is a LIST of `n` RANGEs with axis ids `base, base+1, ...` and the arena they
 # live in. `O.Found` carries one node, so the pair is an `IxRngs`. An earlier
@@ -1369,7 +1348,6 @@ def ix_rngs(n: U32, base: U32) -> IxFixture:
 # 1. `ALWAYS_CONTIGUOUS` -- indexing.py:24-26.  THREE POSITIVES would be a weak
 #    gate, so there are nine positives and SIX NEGATIVES; a set that gained one
 #    member moves a negative row.
-
 # the counter after two `new_range` calls, which is the whole of the mutability.
 
 def ix_ops_str.go(+ops: List<&2, O.Op>, +acc: List<&2, String>) -> List<&2, String>:
@@ -1465,7 +1443,6 @@ def ix_pad_k(offs: List<&2, U32>, szs: List<&2, U32>, shs: List<&2, U32>, +k: Na
 
 # PAD's flags are `not noop`, so `ix_mv_walk`'s "non-zero rebuilds" rule lines
 # up with it and the `WHERE` label is the op `valid()` builds.
-
 # THE LISTS DO NOT SHRINK, and that is the whole point: `ix_pad_k` addresses all
 # THREE by `k`, so peeling the head would make dim 1 read dim 0's tail. The
 # decrease is the counter, which is why it is the first parameter.

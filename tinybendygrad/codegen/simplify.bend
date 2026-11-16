@@ -59,7 +59,6 @@
 # the row that pins the wall: it is the ONLY fixture node for which the answer is
 # not `None`, and it is the one whose srcs are all RANGEs.
 #
-
 # four things that are easy to invert, all measured against the real tables.
 #
 # 1. `range_start` IS NOT ZERO FOR REDUCE OR END. ops.py:55 is
@@ -78,7 +77,6 @@
 # 4. `red.arg[0]` is `AReduce{rop, num_axes}`, so the `in {ADD, MAX, MUL}` guard
 #    reads `rop` and NOT `num_axes`. `ru_rop` is the row.
 #
-
 # THE NAME CORRESPONDENCE, because the tables are the whole of this file and they
 # now carry UPSTREAM names: `pm_flatten_range` (simplify.py:14), `flatten_range`
 # (simplify.py:58), `pm_simplify_ranges` (:58), `pm_split_ranges` (:71),
@@ -96,7 +94,6 @@
 # `ru_parts`, `Parts`, `ru_ret`, `ru_scale`, `ru_last`, `ru_go`, `ru_rule` are
 # `reduce_unparented`'s. Upstream each of those is ONE function.
 #
-
 # THE GATE. Every row is DERIVED FROM PYTHON. `python3 .agents/slop/notes/
 # rw-truth.py` prints these rows in THIS ORDER and with THIS SPELLING, so
 # `diff <(python3 rw-truth.py | grep '=') <(cat simplify late/coalesce gpudims)`
@@ -129,7 +126,6 @@ import ./rewriter.bend as RW
 # six top-level defs, and its summary counted 22 defs over a 32-row table. The
 #
 #   #  PY            KIND    STATE
-
 #   -- simplify.py ---------------------------------------------------------
 #   1  8-13   fold   flatten_range             PORTED, wall at `s.ranges`
 #   2  14-19  table  flatten_range          1 of 1, PORTED
@@ -150,7 +146,6 @@ import ./rewriter.bend as RW
 #  17  147-150 table pm_reduce_simplify        1 of 1, WALL
 #  18  151    fold   no_load                   PORTED (needs `ranges` wall)
 #  19  152-156 table pm_load_collapse          2 of 2, rule 1 WALL, rule 2 PORTED
-
 # 37 rows over 35 defs (rows 34 and 35 are the two RULES of `pm_device_to_var`,
 # gpudims.py:91-100, inventoried as one def). Of the 35: 9 are wholly PORTED, 18
 # wholly a WALL, 3 are MIXED (a ported rule beside a walled one: rows 19, 26, 27)
@@ -158,7 +153,6 @@ import ./rewriter.bend as RW
 # exact and gateable, and every `rej` SET is exact, so the dispatch tables below
 # are the real ones -- they are what `UPat` compiles to, whatever the rules
 # inside them can do.
-
 # four things that are easy to invert, all measured against the real tables.
 #
 # 1. `range_start` IS NOT ZERO FOR REDUCE OR END. ops.py:58 is
@@ -177,7 +171,6 @@ import ./rewriter.bend as RW
 # 4. `red.arg[0]` is `AReduce{rop, num_axes}`, so the `in {ADD, MAX, MUL}` guard
 #    reads `rop` and NOT `num_axes`. `ru_rop` is the row.
 #
-
 # `range_start` -- ops.py:58. `{STAGE: 1, REDUCE: 1, END: 1, CALL: 1, LINEAR: 0}`
 # and ops NOT in the dict have no offset, which `ops.py:474` never asks for: the
 # `if self.op in range_start` guard means an absent op is the `()` arm.
@@ -758,7 +751,6 @@ def ru_answer_is_c0(+gx: RW.G) -> U32:
 # property they test rather than by the def that computes them.
 #
 #   mutation                                    rows moved
-
 #   M1  `ru_ret.of`'s two arms swapped          ru_answer_c0
 #   M2  `ret * r.src[0]` read as `src[1:]`      (NONE -- see below)
 #   M3  LINEAR's `range_start` 0 -> 1           fr_off_linear

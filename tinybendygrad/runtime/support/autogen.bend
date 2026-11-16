@@ -80,7 +80,6 @@
 #   because the arm that turns that AST into emitted source is the one bend
 #   refuses. So closing the FFI does not make the generator able to emit.
 #
-
 # MEASURED bend 2.0.34 CONSTRAINTS that shape every def here. All three are
 # new to this file and all three are quoted at `.agents/slop/notes/
 # bend2-constraints.md` (appended, positions ~10240+).
@@ -101,7 +100,6 @@
 #     answer at the end, which is why no walk needs a Nat fuel: the list tail
 #     is the structural descent.
 #
-
 # WHAT IS PORTED, DEF BY DEF.
 #
 #   :77   attrs                 PORTED   kind in [400,500), both bounds
@@ -129,7 +127,6 @@
 #   :209  proto                 WALL 4   same
 #   :279  the exec/prune loop   WALL 3   needs CPython line numbers
 #
-
 # THE SCOPE QUESTION this unit was asked to MEASURE, not to decide by fiat:
 # `runtime/autogen/*` is 187,164 lines of OUTPUT from this 289-line generator.
 # The measurements are at the foot of this file and in `.agents/slop/ag-scope.txt`.
@@ -223,7 +220,6 @@ def tok_identifier() -> U32: 2
 
 # SECTION 1 -- the tables. One `Data` per table, so a table is a value the
 # gate can print and a mutation can move.
-
 # autogen.py:91 tmap -- a CXType kind and the ctypes spelling `tname` emits.
 type TE is Data: TE{kind: U32, cty: String}
 
@@ -313,7 +309,6 @@ def th_hit(+k: U32, xs: List<&2, TH>) -> Bool: Bool.not(String.eq(th_hint(th_at(
 # `Char16`(6) and `Char32`(7) are ABSENT: libclang has them, tmap has no entry
 # for them, and `tname`'s `case _: raise NotImplementedError` is what a C
 # `char16_t` would hit. Rows `tmap_miss_*` pin that absence.
-
 # DECLARED IN ASCENDING KIND ORDER, which is not the dict-literal order of
 # autogen.py:91 and does not need to be: bend cannot sort a list of `Data`
 # (`List.sort` takes a comparison CLOSURE and `+` cannot be spelled in a
@@ -375,7 +370,6 @@ def u32_in(+k: U32, xs: List<&2, U32>) -> Bool:
     case +x <> rest: Bool.pick(Bool, U32.is_eq(x, k), True{}, u32_in(k, rest))
 
 # SECTION 5 -- `arc_families`, autogen.py:98.
-
 # https://clang.llvm.org/docs/AutomaticReferenceCounting.html#arc-method-families
 def arc_families() -> List<&2, String>:
   ["alloc", "copy", "mutableCopy", "new"]
@@ -508,7 +502,6 @@ def typehint_table() -> List<&2, TH>:
 # what the rows that do port buy: meas2 counts 30,979 `register_fields([...])`
 # lines in the generated set. That is the size of the arm, stated as a number
 # rather than as a feeling.
-
 # MUTATION TABLE. 44 mutations, 42 move rows, 2 do not.
 #
 # HARNESS: `.agents/slop/ag-mutate.py`. It diffs whole `name=value` LINES keyed
@@ -633,7 +626,6 @@ def typehint_table() -> List<&2, TH>:
 #      `nm.pair2` uses `"a::b c::d"`, which contains BOTH patterns, and it
 #      still cannot move -- which is the proof rather than the excuse.
 #   | | _why it should move:_ | the SIZE line -- a lost SIZE makes every offset unverifiable |
-
 # SECTION 10 -- the AST. WALL 1's shape.
 #
 # One `Data` per libclang entity, and every field is a fact ONE `clang_*` call
@@ -646,7 +638,6 @@ def typehint_table() -> List<&2, TH>:
 # The sub-types are `List`s of at most one element rather than a `Maybe`,
 # because a `Data` record cannot hold a `Maybe` field. `0n` is never an index
 # here: a sub-list is empty or it is the one thing.
-
 # one field, as `all_fields` yields it: the name, the cursor's type, the BYTE
 # offset the anonymous-record flatten accumulated, and the bitfield pair.
 type Fld is Data: Fld{nm: String, ty: Ty, off: U32, bw: U32, isbf: Bool}
@@ -690,7 +681,6 @@ def g_ctr2(g: G) -> Nat:
     case G{lines, typs, anon, objc}: anon
 
 # SECTION 12 -- the generator's derivations, in the order `tname` uses them.
-
 # autogen.py:140 `_anon{struct|union}{anoncnt}` / :158 `_anonenum{anoncnt}` /
 # :187 `_anondynamic{anoncnt}` -- ONE counter, shared by all three.
 def anon_name(g: G, tag: String) -> String:
@@ -788,7 +778,6 @@ def record_nm(n: String) -> String: colons_to_underscores(spaces_to_underscores(
 # not merely tolerable: `Bool.pick` discards the arm it does not choose, and
 # `tname_arm` on a kind `tmap` already owns falls through to the refusal, so
 # the wasted branch emits nothing.
-
 # SECTION 14 -- the `types` dict. autogen.py:117 `nm(t) in types and
 # types[nm(t)][1]`, :135 the same for a Record after `re.sub("^const ", "")`,
 # and :211 the same for an ObjC protocol. All three are the same three
@@ -863,7 +852,6 @@ def gtn_is_reserved(n: String) -> Bool: String.starts_with(n, "__")
 #
 # NOTE what is NOT here: the loop that emits one of these per FIELD. That is
 # WALL 4, and it is the whole argument of `.agents/slop/ag-scope.txt`.
-
 # autogen.py:143 `lines.append(f"class {tnm}(c.Struct): pass")`
 def emit_record_pass(tnm: String) -> String: String.concat(["class ", tnm, "(c.Struct): pass"])
 
@@ -1104,11 +1092,9 @@ def types_fixture() -> List<&2, Gt>:
 # and read stdout. None of these rows is typed from memory, which is the rule
 # `runtime/ops_nv.bend` broke with 33 wrong constants behind 590 green rows.
 #
-
 # measured 2026-10-17. the paragraph this one replaced was wrong in three ways,
 # and two of them were FALSE claims rather than stale numbers, so it is quoted
 # and answered here instead of deleted.
-
 # IT SAID: `gates/autogen-oracle.py`, run from `gates/`, "answers rc=0, 51 rows",
 # and that "all 51 rows are IDENTICAL for the real header and for the string
 # `GARBAGE NOT C AT ALL`, so 43 of the 51 rows do not depend on the header at
@@ -1130,7 +1116,6 @@ def types_fixture() -> List<&2, Gt>:
 # autogen.py:273-276 hardcodes. Not one of the 36 table rows mentions a symbol
 # from the header, and not one of them CAN: they are module-level literals.
 #
-
 # IT SAID: "the TYPEHINT block above them does call libclang and does move."
 # FALSE, AND THE BLOCK WAS DEAD. `gates/autogen-oracle.py` counted kinds with
 # `re.finditer(r"^CXType_(\w+) = (\d+)$", <libclang.py>, re.M)`. libclang.py does
@@ -1144,7 +1129,6 @@ def types_fixture() -> List<&2, Gt>:
 # added to the population the repaired row answers 123 and the old one still
 # answered 0.
 #
-
 # the "6-row floor" is not a floor, and `gates/oracleblind.rows` should not be
 # READ AS ONE. The census's ARGV arm reports `EMPTY=54 GARBAGE=56
 # VALID-DIFFERENT=6` and takes `floor = 6 of 117 rows`. MEASURED, that 6 is the
@@ -1157,7 +1141,6 @@ def types_fixture() -> List<&2, Gt>:
 # property of the FIXTURE, not a blindness of the oracle and not a limit of the
 # instrument.
 #
-
 # this file compiles and prints its rows. It did not, until 2026-10-22, and the
 # reason it did not is the shape of the defect this project has catalogued most:
 # the instrument that audited it was auditing rows of a file that did not
@@ -1217,7 +1200,6 @@ def types_fixture() -> List<&2, Gt>:
 # block is here at all: a file that prints zero rows has no expectations to
 # fail.
 #
-
 # ten of the twelve paths cited by this header are gone, and the two that remain
 # are `.agents/slop/notes/bend2-constraints.md` (1,665,622 B) and
 # `gates/ag-fixture.h` (1,020 B). Absent: `ag-wall1-census.py`,
@@ -1227,7 +1209,6 @@ def types_fixture() -> List<&2, Gt>:
 # therefore NOT re-measured by this unit and are NOT withdrawn: an absent artifact
 # is not a refutation, and deleting a claim because its witness was swept is how a
 # wall becomes a guess.
-
 #
 # the abi ladder is gated, not left dead. Every constant in section 0 is a
 # number this project has been wrong about before -- `ops_nv`'s audit found 33

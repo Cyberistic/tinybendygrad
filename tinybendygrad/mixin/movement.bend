@@ -120,7 +120,6 @@ import ./op.bend as MO
 
 # SECTION A -- the shape algebra. Everything here is a `List<&2, U32>` of
 # CONCRETE dims, which is the whole domain `_pool`'s arithmetic lives in.
-
 # `xs + ys`. One call, and every concatenation in this file is it.
 def mx_cat(a: List<&2, U32>, b: List<&2, U32>) -> List<&2, U32>:
   List.append(&2, U32, a, b)
@@ -200,7 +199,6 @@ def mx_vec4s(a: List<&2, U32>, b: List<&2, U32>, c: List<&2, U32>, d: List<&2, U
 
 # SECTION B -- `_pool` (movement.py:598). Its TWELVE lines are four list-valued
 # comprehensions and seven shape calls, and all twelve are here.
-
 # `ndim - min(ndim, len(k_))`, which is BOTH `mx_nnoop` (the count of noop dims,
 # movement.py:602) and the offset of `mx_i_` (the same number, as a drop). One
 # def, two callers, and the reason it is not written twice is that the two uses
@@ -408,7 +406,6 @@ def mx_pool_perm(+nn: U32, +ni: U32) -> List<&2, U32>:
 # `uop/symbolic.bend`. `mxm_as_shape` below walks a STACK of CONSTs and returns
 # their values; a STACK element that is NOT a CONST answers `None{}`, and that is
 # the symbolic wall, named rather than guessed.
-
 # `self.val` for a CONST (ops.py:279) -- the `CInt` case, and the other three
 # `Const` constructors cannot be a shape dim because ops.py:109 raises
 # `shape must be int`. `CInt` holds an `H.I64` and `H.lo32` is exact on every
@@ -456,7 +453,6 @@ def mxm_nth_u(+srcs: List<&2, U32>, ix: U32) -> U32:
 # (`O.eq_op(O.Arena.op(ar, u), O.OpsCONST{})`). It is a `Bool` and not a
 # `Maybe<&1, U32>` because `Maybe` is a `Type` that cannot carry `+` and cannot
 # be read twice, and the walk reads the answer once per element.
-
 # IS THIS ELEMENT NOT A CONST -- the `bad` accumulator's step. It is the NEGATION of
 # `mxm_is_const` and it is a separate def because `Bool.not` of a call cannot be a
 # `match` scrutinee and this one is inlined into `Bool.or`, not matched.
@@ -478,7 +474,6 @@ def mxm_not_const(+ar: O.Arena, +srcs: List<&2, U32>, ix: U32) -> Bool:
 # `not is_const`. Reading it as "all concrete so far" and conjoining would be the
 # same computation, and it is the one that made the FALSE arm fire for a STACK of
 # all CONSTs in an earlier revision of this file.
-
 # THE ELEMENT, as a list, and it contributes NOTHING once `bad` is set: a STACK with
 # one symbolic element has no concrete shape, and a partial answer would be a lie
 # the fold cannot see.
@@ -525,7 +520,6 @@ def mxm_as_shape(+ar: O.Arena, +i: U32) -> List<&2, U32>:
 # PERMUTE/FLIP arm, which is the node's own `arg` (`ATuple{ys}`), already a list of
 # U32s. That is the whole reason the wall is closable, and it is why this section is
 # short: there is no arithmetic here at all, only three reads.
-
 # IS A MOVEMENT OP WHOSE `marg` IS AN `ATuple` -- PERMUTE and FLIP. `op_in` is
 # `ops.bend`'s membership test and an empty set is a subset of everything, so the
 # set is written out rather than left empty.
@@ -831,7 +825,6 @@ def mxm_shape(+m: MxMarg, ps: List<&2, U32>) -> List<&2, U32>:
 # them is now a call into Sections A-D. What is left is the CHAIN, and the chain
 # is what the gate reads: the OUTPUT shape and the PERMUTE order are what
 # `conv2d` and `max_pool2d` need, and CPython prints both.
-
 # THE OUTPUT SHAPE, which is the row `mx_pool_shape` and the whole of W1/W2's
 # answer.
 #
@@ -915,7 +908,6 @@ def mx_ulen(xs: List<&2, U32>) -> U32: mxm_len_u32(xs)
 # whole `_mop` dispatch, and it is `examples/beautiful_mnist.bend`'s job. What is
 # being gated here is the READER (`mxm_marg`) and the SHAPE ARMS (`mxm_shape`), and
 # `mxm_shape` takes the SOURCE's shape as a parameter for exactly that reason.
-
 # A CONST of an int, which is `UOp.const(x)` (ops.py:608) for a shape dim.
 def G.ci(v: U32) -> O.Const: O.CInt{H.i64_of_i32(v)}
 
@@ -1117,7 +1109,6 @@ def marg_tag(+m: MxMarg) -> U32: marg_tag.of(MxMarg.is_ord(m), MxMarg.is_dim(m),
 # first arm does not claim its successors. It is the one place in this file where a
 # `Nat` countdown doubles as a value, and it is why `mx_pool_perm`'s index had to be a
 # separate `U32` parameter instead.
-
 # THE PAD, and the node is built in the arena `hi` left -- `tn_mop.pairs`' rule, and
 # the reason `op.bend`'s `mo_arena` exists. Building it in the ORIGINAL arena would
 # intern the PAD at an index that arena does not have, and `mxm_marg` would then read a
@@ -1220,7 +1211,6 @@ def marg_permchk_row() -> IO(Unit):
 # section h -- the three rows that close the measured blind spots. Each of these
 # was added because the mutation table said a rule was untested, and each names the
 # mutation that found it. A row added for that reason is a row with a job.
-
 # M5'S ROW. `f_ = smax(1, ceildiv(o*s - d, i))` (movement.py:606) and the clamp is
 # load-bearing for exactly ONE family: `k=3, d=2, i=5, s=1`, where `o = 1` and
 # `o*s - d = -1`, so `ceildiv(-1, 5) == 0` and the clamp is the whole answer. Every
@@ -1283,9 +1273,7 @@ def pool_wide_row() -> IO(Unit):
 # project has been bitten by -- a movement that swaps two srcs has the right count and
 # the wrong graph. `mxw_sig` prints all four as one string so no row can quietly drop
 # one of them.
-
 # --- THE GRAPH INSPECTOR -----------------------------------------------------
-
 # THE PARAM ARG, in `ops.bend`'s field order. It is a COPY and not a call into
 # `op.bend` because `mo_buf4` hard-codes `size = 4` and the fixtures here need several
 # sizes; `mn_buf1` in `examples/beautiful_mnist.bend` is the same copy and the reason
@@ -1471,7 +1459,6 @@ def mxw_sig(+ar: O.Arena, +u: U32) -> String:
 # identity test AND by the `pick`, and a `let` is affine, so an unshared one is a
 # compile error and a re-CALL is a second node with a second arena. The rule is
 # `+x = ...` for a shared local, which is the notes' `+q = p` shape.
-
 # THE PICK, and `Bool.pick` is not used here because both arms are Tensors and the
 # `+` on two of them is noisier than a `match`. movement.py:185 is
 # `return self if ret.shape == self.shape else ret`, so `True` answers `t`.
@@ -1973,7 +1960,6 @@ def main() -> IO(Unit):
 # `shrink_to`/`reshape` calls, the `repeat`, or the permute that closes it. Nor does
 # anything here build a whole conv2d: `examples/beautiful_mnist.bend` is the consumer and its
 # W1/W2 rows are the ones that would catch it.
-
 # `_broadcast_to` (movement.py:128-146) -- THE CONCRETE HALF.
 #
 # The file's own header lists this as NOT PORTED: "`_broadcast_to` (:128) /
@@ -2002,7 +1988,6 @@ def main() -> IO(Unit):
 #
 # `broadcast_axes` (ops.py:93-97) is `resolve`d, so the SYMBOLIC shape is the wall;
 # a CONCRETE one is not, and every caller of `mxw_bcast` has one.
-
 # THE PREDICATE -- `self.shape[i] == 1 and new_shape[n_left+i] != 1`. This is
 # `broadcast_axes` (ops.py:93-97) with the `resolve` dropped, which is the whole
 # of the difference between the symbolic shape and a concrete one.

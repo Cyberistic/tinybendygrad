@@ -73,7 +73,6 @@ import ./../datasets/__init__.bend as D
 # every weight IS a bare Tensor and a zeroed Tensor is exactly what a failed
 # initialiser looks like. `refuse`/`Refused` are DECLARED ONCE at
 # `extra/datasets/__init__.bend:40-46` and imported as `D`.
-
 # THE GATE MOVED TO `gates/models-efficientnet-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

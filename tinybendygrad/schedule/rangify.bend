@@ -186,7 +186,6 @@ def rr_dump(+ar: O.Arena, +root: U32) -> String:
 # TAG, and the tag IS the rule index -- the same convention `rangeify.bend`'s
 # `aprt_table`/`aprt_dispatch` uses. - so the dispatch is: the tag picks the
 # body, and the op set picks the match.
-
 # RULE 3's TEST: `if dest.base in src.toposort()` (`indexing.py:34-36`). The
 # port's `ix_war_hit` (`indexing.bend:972` symbol=ix_war_hit) is that test.
 def rr_war(+ar: O.Arena, +u: U32) -> Bool:
@@ -463,7 +462,6 @@ def rr_ends_of(+rs: List<&2, U32>, +ends: List<&2, Bool>, +cs: List<&2, U32>) ->
 
 # 4d. THE RANGE TABLE. INDEX 0 IS THE CONST 0 -- `UOp.const(0)` AND
 # `r.const_like(0)` are the same node -- and every other INDEX is a RANGE.
-
 # the new RANGE: its INDEX, the indices so far, and the table with it appended.
 type RrRs is Data:
   RrRs{i: U32, rs: List<&2, U32>, tbl: List<&2, IX.IxRange>}
@@ -501,7 +499,6 @@ def rr_new.all(+ds: List<&2, U32>, +tbl: List<&2, IX.IxRange>, +acc: List<&2, U3
 
 # 4e. the op tests. a `match` may not scrutinize a computed value, so each
 # TEST IS ITS OWN DEF.
-
 # `rr_is_call`, `rr_is_store` AND `rr_is_mstack` ARE ALREADY HERE -- ABOVE, IN
 # the realize-map dispatch -- and are reused, not copied.
 def rr_is_after(+ar: O.Arena, +x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsAFTER{})
@@ -534,7 +531,6 @@ def rr_real(+ctx: IX.IxCtx, +x: U32, axes: List<&2, U32>) -> IX.IxCtx:
 
 # 4g. `ended` -- the ranges the consumers iterate that this node broadcasts
 # OVER (`indexing.py:212-213`).
-
 # ONE AXIS'S RANGE: `rctx.range_map[c][0][i]`.
 def rr_ended_pick.go(+axes: List<&2, U32>, +rngs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match axes:
@@ -585,7 +581,6 @@ def rr_any_range(+tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>) -> Bool:
 # the phases are separate defs because the RANGE table is append-only and a
 # `Bool.pick` evaluates both arms: a branch that creates a RANGE must not also
 # create one in the arm that is not taken. a `match` on a `Bool` is lazy.
-
 # THE CONSUMERS THAT HAVE RANGES: `for c in consumer_map[x] if c in rctx.range_map`
 def rr_cons_rngs.go(+cs: List<&2, U32>, +ctx: IX.IxCtx, +acc: List<&2, U32>) -> List<&2, U32>:
   match cs:
@@ -986,7 +981,6 @@ def rr_ap_ranges_only(+tbl: List<&2, IX.IxRange>, +closed: List<&2, U32>) -> Lis
 # if r.op is Ops.RANGE])`. => and "is a RANGE" is a table lookup: the table's entries are
 # `IxRange{kind, idx, ext}` AND KIND 0 IS A RANGE (`indexing.bend:152` `ix_rg_r`).
 # THE INDEXED CASE (`indexing.py:80-81`).
-
 # the apply driver. the rewrite is `bottom_up=True` (`indexing.py:308`), => so the
 # port walks the arena in reverse INDEX order -- => which is children first,
 # because the arena's INDEX order is topological (`ops.bend:2752`: *"UOp.new is only ever
@@ -1001,7 +995,6 @@ def rr_ap_ranges_only(+tbl: List<&2, IX.IxRange>, +closed: List<&2, U32>) -> Lis
 # `Rep{old, new}` (`rangeify.bend:2740`) IS THE SAME SHAPE -- => - - AND SO THE
 # apply's output is the same kind of thing the engine's `eng_*` produces, => which
 # IS WHAT MAKES THE TWO COMPOSE.
-
 # the rebuild map -- the (old node, rebuilt node) pairs, in walk order.
 #
 # => - - and the port's arena is append-only (`ops.bend:2752`: *"UOp.new is only ever
@@ -1081,7 +1074,6 @@ def ap_rep_get(+es: List<&2, ApRep>, k: U32) -> Maybe<&2, U32>:
 # map, - - - and that is why the port's own `Rep{old, new}` map exists
 # (`schedule/rangeify.bend:2740 symbol=Rep`) AND WHY THE ENGINE's `eng_put` EXISTS.
 #
-
 # THE ARENA IS A VALUE, NOT A MUTABLE STORE (`ops.bend:1314`: *"`Arena` is
 # `Data`"*), AND BEND's `+` IS A REUSABLE LET, NOT A REBINDING (`bend
 # guide`: *"`x = v  +x = v  -x = v` -- a let: affine, reusable, erased"*), - AND
@@ -1094,7 +1086,6 @@ def ap_rep_get(+es: List<&2, ApRep>, k: U32) -> Maybe<&2, U32>:
 # arena and makes the reads below it read the old arena's entry -- - and
 # that is a second instance of the class this tree names: a result
 # that nothing reads.  - and the port's own `rr_ap_node` had it too.
-
 # the two records that carry the arena alongside the list.
 type ApSrcs is Data:
   ApSrcs{ar: O.Arena, ss: List<&2, U32>}
@@ -1224,7 +1215,6 @@ def rr_ap_srcs(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.
   rr_ap_srcs.go(ss, ar, tb, tbl, ctx, x, rr_ap_dsrc_n(ar, x), 0, Nil{})
 
 # THE FIVE RULES, IN UPSTREAM's ORDER.
-
 # RULE 4 -- `GroupOp.All-{Ops.STAGE, Ops.INDEX}` (`indexing.py:138`):
 # `x.replace(src=tuple(create_bufferize_and_index_srcs(ctx, x)))`.
 def rr_ap_r4_skip(+ar: O.Arena, +x: U32) -> Bool:
@@ -1410,7 +1400,6 @@ def rr_ap_fix_val(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: 
 # when a fresh node's SRC has a different final, => and the one way that
 # happens is the `INDEX` over a `STAGE` (`rr_ap_stage_src` builds the `STAGE`
 # AND THEN THE `INDEX` THAT INDEXES IT).
-
 # the final form of a node: the map's answer IF it has one, => and the
 # NODE ITSELF IF IT DOES NOT.
 def rr_ap_final.of(+fin: List<&2, ApRep>, +x: U32) -> U32:

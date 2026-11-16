@@ -42,7 +42,6 @@
 #     even though both are `PatternMatcher`s in Python. A string rule returns a
 #     `String`; a matcher rule returns a UOp. Two concerns, two shapes.
 #
-
 # the four walls under this file. Three are the substrate's and one is device
 # FFI; each is a `TODO(p3)` with its line.
 #
@@ -91,7 +90,6 @@ import ./../uop/render.bend as U
 # tag is a closed enum and what the differential requires is only that a renderer
 # and its rows agree on it. `render.bend` makes the same argument for the device
 # NAME table and lands in the same place.
-
 # THE DEVICE TAGS. Six renderers plus the abstract `CStyleLanguage`, whose own
 # rows are what every subclass overrides and which the gate needs: cstyle.py's
 # base class is a real, instantiable renderer (`CStyleLanguage(Target())` works,
@@ -233,7 +231,6 @@ def dev_name(+dev: U32) -> String:
 # is not a loosening of the port -- it is the same move `_render_dtype(dtype, sz,
 # addrspace, mutable, override_ptr, shape)` already makes, one level up -- and it
 # is what keeps the six `render_kernel` OVERRIDES inside the gate.
-
 # `bufs` is `list[tuple[str, tuple[UOp, bool]]]`: a name, a uop and a mutability.
 # The uop contributes exactly six things to the emitted string, so those six are
 # the fields. `is_alu` is not one of them: it is `u.addrspace == AddrSpace.ALU`,
@@ -347,7 +344,6 @@ def emit_min() -> Emit_: emit_of(uses_off(), Nil{}, Nil{}, Nil{}, Nil{}, False{}
 # and `ClangRenderer.abi` is `""` on darwin and `"__attribute__((ms_abi)) "` on
 # win32 (cstyle.py:300-299, a `sys.platform` branch); the port does not take the
 # win32 branch and that is the `TODO(p3)` at the foot.
-
 # `kernel_typedef` -- tinygrad/renderer/cstyle.py:122, :285, :324, :363, :425, :530 -- IS A
 # HEAD/tail pair around the bound, not one string with a field in it.
 #
@@ -677,7 +673,6 @@ def type_map.of(+dev: U32) -> Map<&2, String>:
 # above says so. So the split is a `match` on five literals, and the `_` arm is `nm` UNCHANGED --
 # which is exact, because no other name in the set contains a space.
 #
-
 # the five, and the underscored form is a literal. `cstyle.py:189` is
 # `name.replace(" ", "_") if sz > 1 else name` -- the replace is UNCONDITIONAL on the `sz > 1` branch,
 # and there is NO "has a space" test upstream. The port had one (`has_space`) because the port's
@@ -951,7 +946,6 @@ def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String: rd_name_at(dev, d, vect)
 # no space renders the same either way -- which is exactly why the gate carries a
 # `signed char`-shaped row, and it is the same trap `render.bend` hit on
 # `acall_tail` and that `bend2-constraints.md` rule 7 already records.
-
 # THE `sz > 1` TEST IS A BRANCH, NOT A `Bool.pick`. `Bool.pick`'s arms are eager (see `rd_name_at`),
 # so the old line built the vector spelling AND the scalar spelling for EVERY body. MEASURED: `rd_body_at`
 # 100 calls and `rd_name_at` 200 -- twice the number of bodies. A `match` on the test runs one arm.
@@ -1235,7 +1229,6 @@ def is_f64(+d: S.Dt) -> Bool: O.eq_dt(d, S.double())
 # is `{half:16, double:64}.get(dtype, 32)` with 32 as the DEFAULT -- so `float`
 # reaches both by falling through, and a third predicate would be a fourth way to
 # spell "not one of those two".
-
 # CLANG: `SQRT` and `TRUNC` pick the `f64` spelling by dtype, `FDIV` is ADDED,
 # and `EXP2`/`SIN`/`LOG2`/`RECIP` are DELETED (cstyle.py:288-291). The
 # comprehension is `{k:v for k,v in base.items() if k not in [EXP2, SIN, LOG2,
@@ -2156,7 +2149,6 @@ def ku_range_name(+arg: KUArg) -> String:
 #
 # `r` is the name/text map and it is indexed by the uop's position, because the
 # uop list is POST-ORDER. `rt` READS IT.
-
 # one `rt` and one `strip_parens`, not two of each. The old spelling was
 # `Bool.pick(String, cond, strip_parens(rt(r, h)), rt(r, h))`: STRICT, so `rt` ran twice -- and `rt` is a
 # `List.get` by src-to-current distance -- and `strip_parens` scanned the source even when its result was
@@ -2371,14 +2363,12 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # `dedup` RETAINS LIST ORDER (helpers.py:23, `list(dict.fromkeys(x))`) and the
 # order is the gate, because the RESULT FEEDS `ClangRenderer._render_defines`
 # and the `typedef`s come out in it.
-
 # `uops_to_dtypes` ITSELF IS NOT HERE, and the two filters it applies are not
 # separate defs either: both are already one Bool each in the `Uses` record
 # above (`is_alu_addr` is the ALU filter and `is_void` is `dtype != dtypes.void`),
 # so a def per filter would be a second spelling of a field.
 #   TODO(p3) cstyle.py:110-113  `uops_to_dtypes`. Needs the fold (wall (a)); its
 #   result ORDER feeds `ClangRenderer._render_defines`, so it is not a set.
-
 # `render_kernel` -- cstyle.py:154-166. THE function that assembles a whole
 # kernel, and the only place in this file that reads nine options at once.
 #
@@ -2415,7 +2405,6 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 #     `format` in base.bend, so the `{launch_bounds}` FIELD is substituted by a
 #     split on the literal and a join -- `render.bend`'s shape for a Python
 #     f-string the port cannot evaluate.
-
 # `local_dims = [u.src[0] for u in uops if u.op is Ops.SPECIAL and u.arg[0]=="l"]`
 # and then `prod([d.vmax ...])`: `launch_bounds` is a `U32` PARAMETER above, and
 # this is where it would be computed. NEITHER HALF IS PORTED and the reason is
@@ -2426,11 +2415,9 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # gate's `kern lb 1` rows are the no-local case it has to agree with.
 #   TODO(p3) cstyle.py:162 symbol=render_kernel, :163 -- BLOCKED. needs `local_dims` (py:162) and `launch_bounds` (py:163) -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.bend` (comments excluded). They are the last two `TODO` markers left in this file's wall list.
 #
-
 # landed 2026-10-27. `_render` and `render_kernel` are here. what follows is
 # the port, and the two paragraphs that say what it is.
 #
-
 # WHAT `_render` DOES UPSTREAM -- `tinygrad/renderer/cstyle.py:208-266`.
 #
 #     def _render(self, uops:list[UOp]) -> tuple[str, list[str], list[tuple[str,tuple[UOp,bool]]]]:
@@ -2465,7 +2452,6 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # srcs sit at a lower index) -- which is the same property
 # `.agents/slop/cpuseam/`'s oracle relies on.
 #
-
 # WHAT `render_kernel` DOES UPSTREAM -- `tinygrad/renderer/cstyle.py:155-167`.
 #
 #     def render_kernel(self, function_name:str, kernel:list[str], bufs:list[tuple[str,tuple[UOp,bool]]], uops:list[UOp], prefix=None) -> str:
@@ -2489,7 +2475,6 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # (`dedup` is `list(dict.fromkeys(x))`, helpers.py:23) and the ORDER IS THE
 # GATE, because the typedefs come out in it.
 #
-
 # what they must do here. the same two functions, over the port's own uop
 # representation. and the derived facts travel with the uop, which is what
 # `BArg` ALREADY DOES FOR THE BUFFER ARGUMENTS (this file's :131-146: "they
@@ -2850,7 +2835,6 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, 
 # OTHERWISE -- cstyle.py:17-19.
 # `UPat(Ops.STACK, name="x")` -- cstyle.py:52-54:
 #   `f"{ctx.float4.replace('float4', ctx.render_type(x))}" + f"{ctx.float4_style[0]}{','.join([ctx[y] for y in x.src])}{ctx.float4_style[1]}"`
-
 # cstyle.py:47 -- `f"{ctx.code_for_workitem[x.arg[0]](x.arg[-1])}; /* {(x.src[0]).render()} */"`.
 # IT IS A STATEMENT, not an expression: the workitem id, a `;`, and a comment holding the
 # SPECIAL's SOURCE's rendered text (`/* 32 */`). `code_for_workitem.g` already answers the
@@ -3133,7 +3117,6 @@ def render(+dev: U32, cpu: Bool, +kus: List<&2, KU>) -> String:
   render_kernel(dev, cpu, St.name(st), List.reverse(&2, String, St.kernel(st)), St.bufs(st), kus, 1)
 
 # THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
-
 # THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
 def joins(+ps: List<&2, List<&2, String>>, +acc: List<&2, String>) -> List<&2, String>:
   match ps:

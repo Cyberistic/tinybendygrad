@@ -364,7 +364,6 @@ def Bf.b(x: Bf) -> U32:
 # collects it twice -- so `mem_bf_touch` is an UPSERT, not an append: `f` is set
 # once and `l` on every visit, which is exactly what the Python does with
 # `if b not in first_appearance` and the unconditional `last_appearance[b] = i`.
-
 # what the scan needs from the caller: the fold, the held set and the unplannable
 # device tags. One record because three of them ride through every step and the
 # step already has a fuel, a node index and a kernel index.
@@ -505,7 +504,6 @@ def mem_i_next(i: U32) -> U32:
 # `si.src[1:]` is the load-bearing slice: a kernel SINK's src[0] is its BODY, so
 # the STORE destination is never collected -- only the kernel ARGUMENTS are. That
 # is why the fixture's store destinations never reach `first_appearance`.
-
 # one touch per buffer in this kernel's arg list: record it, and add the buffer to
 # the distinct list the first time it is seen.
 # the touch list is PREPENDED, so it is built newest-first; `mem_scan_done` reverses

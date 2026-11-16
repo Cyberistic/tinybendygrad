@@ -51,7 +51,6 @@
 # `rs_rule`/`rs_new`/`rs_at`/`rs_ids`/`rs_claimed`/`rs_name`/`rs_idlast`: upstream
 # it is ONE lambda, so those are port-local and the naming rule does not apply.
 #
-
 # `t_se_len` IS LINEARIZER'S, and it is here anyway, because the ONLY rows that
 # read it are this file's: `pm_range_to_special` is `PatternMatcher([RANGE rule]) +
 # pm_split_ends`, and `pm_split_ends` is `late/linearizer.py`'s ONE `Ops.END` rule
@@ -61,12 +60,10 @@
 # therefore both know the number 1 and neither owns it -- REPORTED HERE so the
 # duplication is visible rather than silent.
 #
-
 # THE GATE. Every row is DERIVED FROM PYTHON by `.agents/slop/notes/rw-truth.py`,
 # which prints these rows in THIS ORDER and with THIS SPELLING. The other 30 rows
 # of the old merged file are `simplify.bend`'s and `late/coalesce.bend`'s.
 #
-
 # THREE REDS BELONG TO ANOTHER UNIT. `rs_claim_warp`, `rs_claim_loop`,
 # `rs_rewrite_warp` and `rs_rewrite_loop` were introduced by the rebase batch of
 # 2026-10-03 and are KNOWN RED against HEAD: `AxisType.UNROLL` and
@@ -94,7 +91,6 @@ import ./rewriter.bend as RW
 #  35  96     fold   -- (pm_device_to_var r2)  PORTED
 #  36  101-102 table pm_group_gpudims          1 of 1 (1 + pm_device_to_var)
 #  37  103-106 table pm_range_to_special       1 of 1 (+ pm_split_ends)
-
 # THE GPUDIMS TABLES, RE-DERIVED AT HEAD. `78d482262` RENAMED `add_gpudims` to
 # `group_gpudims`, renamed `pm_add_gpudims` to `pm_group_gpudims`, and ADDED a
 # second table `pm_range_to_special`. Two of the three are a RENAME and one is an
@@ -224,7 +220,6 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 # edits against the clean 54-row lane, each diffed by WHOLE `name=value` LINES.
 #
 #   mutation                                   rows moved (BY NAME)
-
 #   N-a  `rs_claimed` claims GLOBAL only              rs_arg_local, rs_claim_local,
 #                                                      rs_rewrite_local
 #   N-b  `rs_claimed` claims GLOBAL+LOCAL+WARP       rs_claim_warp, rs_op_warp,
@@ -251,7 +246,6 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 # `case _:` from `AXIS_LOOP` to `AXIS_GLOBAL` and N-e becomes live immediately. So
 # the op test stays -- it is what would catch that change -- and the zero is
 # reported with the argument rather than dressed up.
-
 # THE `pm_range_to_special` FIXTURE. The main fixture `g()` builds EVERY range with
 # `AXIS_LOOP`, which is a member the rule REFUSES -- so `rs_rule` would answer
 # "no rewrite" for all twenty-three of its nodes and every row would be `1`, which

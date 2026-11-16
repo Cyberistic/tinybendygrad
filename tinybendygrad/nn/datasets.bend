@@ -61,7 +61,6 @@
 # `from_url` would see, and a change to the upstream mirror would move every
 # `dst_*_rows` row at once.
 #
-
 # THE ONE FINDING, and it is about what is NOT here.
 #
 # tinygrad does not parse the IDX header. :7 slices at a hardcoded 0x10 -- upstream's
@@ -79,7 +78,6 @@
 # function contains, so it is what the gate checks -- against byte counts
 # CONSTRUCTED here from the published file sizes, never against a download.
 #
-
 # THE THREE WALLS.
 #
 # 1. THE DOWNLOAD. `Tensor.from_url(url, gunzip=True)` at :6 and :11: a socket,

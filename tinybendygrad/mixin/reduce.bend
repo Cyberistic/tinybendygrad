@@ -167,7 +167,6 @@ def rc_rop(+ar: O.Arena, self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
   T.tn_rop(ar, self, op, axis)
 
 # THE GATE. The printers first, because a def may only call defs above it.
-
 # The REDUCE's own identity, out of the arena. `AReduce{rop, num_axes}` is a
 # TWO-field record so the pattern names both, and every other `Arg` constructor
 # is covered by the catch-all LAST (rules: "an arm after `case _:` is dead code",

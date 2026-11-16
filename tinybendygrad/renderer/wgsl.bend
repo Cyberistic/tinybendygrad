@@ -369,7 +369,6 @@ def prw_of(+ar: O.Arena, +tb: F.Table, +u: U32) -> Bool:
   Bool.and(prw_is(ar, u), prw_cast(ar, tb, O.Arena.src0(ar, u)))
 
 # :53  WGSLRenderer. Every attribute, in Python's order.
-
 # `global_max = (65535, 65535, 65535)` and `local_max = (256, 256, 64)`. A
 # Python tuple of three ints is a `List<&2, U32>`: the ORDER is the whole
 # content and there is no name to read.
@@ -870,7 +869,6 @@ def sorted_names(go: List<&2, S.Dt>) -> String: String.join(dt_sort(dt_show(go, 
 # not a value. Both sides name it once so that a rule which stops firing and a
 # rule which starts rendering the empty string cannot print the same row, and
 # the empty string is the shape `type_map`'s arm used to have (FINDING 2).
-
 # THE SEVENTEEN `UPat`s, PORTED AS PREDICATES. wgsl.py:65-93's rule BODIES were
 # here first and their PATTERNS were not, and the consequence was measurable: a
 # rule body fired on every node it was handed, including the seventeen the
@@ -1365,7 +1363,6 @@ def r_rk_empty() -> String:
 #
 # `r` is render.bend's `py_row` with the IO dropped: a row is a value here, not
 # an effect, so a group of them is a `String` and the whole gate is one print.
-
 # `global_max` and `local_max` are three ints each and Python's `repr` of the
 # tuple is the gate's whole content, so the row needs them as decimal text. THE
 # CONSTRUCTOR MATTERS: this list is WALKED by `case h <> t` on the way to
@@ -1799,7 +1796,6 @@ def main() -> IO(Unit):
 # negative arm, so a weakint CONST of -1 is masked to `4294967295u` and the mask
 # is observable on it too.
 #
-
 # the PIN, and the three blind spots it opened.
 #
 # `tinygrad/renderer/wgsl.py` MOVED under this port, and TWO of its changes
@@ -1838,7 +1834,6 @@ def main() -> IO(Unit):
 # A PLANT THAT MOVES NOTHING IS A HOLE, so A and B are the two claims that the
 # pin's two changes are load-bearing, and they are the two the gate's lane diff
 # would otherwise have caught silently.
-
 #
 # WHAT THE TABLE SAYS, and the three things it caught that the rows did not.
 #

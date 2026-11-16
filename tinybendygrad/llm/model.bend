@@ -44,7 +44,6 @@ def YaRNConfig.of(+factor: F32, +orig_ctx_len: U32, +beta_fast: F32, +beta_slow:
 # model.py:68-77 -- `SSMConfig`. `kda` defaults False; `gate_lower_bound` is `float|None` and is
 # `Maybe<&1, F32>`, because "kda: bounded decay gate" is an ABSENT bound for every non-kda model and a
 # `0.0` sentinel would be a real value.
-
 # - and `float|None` cannot travel as a `Maybe` here, which is a language fact and not a simplification.
 # MEASURED with `bin/bend --check-only`: a record field typed `Maybe<&1, F32>` is REFUSED -- "expected :
 # Data, observed : Type" -- because `F32` is a `Type`, so a `Maybe` over it is not storable in a

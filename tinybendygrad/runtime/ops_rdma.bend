@@ -129,7 +129,6 @@
 #   tinygrad/runtime/ops_rdma.py:164 the zip                 PORTED  `psns_at` + `ops.n_of` symbol=rdma_submit
 #   tinygrad/runtime/ops_rdma.py:157 `rdma_submit`          PORTED  `encode_len` -- upstream's `pm_rdma_encode` is GONE (9ff6db7b0)
 #
-
 # THE FIVE WALLS.
 #
 # 1. MEMOISATION (:56, :77). `functools.cache` on `rdma_nic_for` and `rdma_qp`,
@@ -169,7 +168,6 @@
 #        24 bits wide and `slot` in the TOP 16. So `msn.hi(slot, next)` and
 #        `msn.lo(next, psn)` are exact halves and no shift is missing.
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of ONE device call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER). There is no third kind, and there is no
@@ -315,7 +313,6 @@ def CALL_REFUSE() -> U32: 15
 def OBJ_NONE() -> U32: 0
 
 # THE TYPES.
-
 # ONE device call and the ONE number it is given: a bar, an offset, a size, a
 # page count, or the ADDRESS of an instruction. There is deliberately no field
 # for the rest of the arguments -- those are what the defs around this record
@@ -588,7 +585,6 @@ def va_of(+t: Pdt, +key: U32) -> U32:
 #   * an address with a low bit set matches NOTHING, and `max()` of an empty
 #     generator is a `ValueError`. `NO_LOG_PAGE` is that, and `map.run` REFUSES
 #     rather than registering with a page size of zero.
-
 # one region `(paddr, size)` folded into the running alignment.
 def align_or.put(pa: U32, sz: U32, acc: U32) -> U32:
   U32.or(acc, U32.or(pa, sz))
@@ -771,7 +767,6 @@ def Iface.snooped(i: Iface) -> Bool:
 # is PORTED is that the interface OWNS a virtual-address window at all, which is
 # what makes `storage` allocate one per buffer instead of reusing a fixed
 # mapping -- and that `vram_bar` is the bar it comes from.
-
 # `MemoryManager.va_allocator.base` / `.size` -- WALL. What is PORTED is that the
 # interface OWNS a virtual-address window at all, which is what makes `storage`
 # allocate one per buffer instead of reusing a fixed mapping.

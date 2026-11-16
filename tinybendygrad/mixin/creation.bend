@@ -64,7 +64,6 @@
 #        0-dim. Note `const_like` is NOT one of them: it reads `self._shape`
 #        (`const_like`, tinygrad/uop/ops.py:581-583) directly and never goes through `_broadcast_to`.
 #
-
 # FIVE BEND FACTS THIS FILE LEARNS, each of which cost a cycle or a wrong answer.
 #
 #   1. the arena is the port's `UOpMetaClass.ucache`, and the interning gate is the
@@ -125,7 +124,6 @@
 #      this port and the "one or many args" split is gone; the reject has no Bend form
 #      and is a caller's problem, which is stated rather than faked.
 #
-
 # THE GATE. `main` prints one row per claim and NOTHING IS EXECUTED: every row is the
 # signature of the lazy graph, which needs no device. ONE COMMAND, THREE LANES, and it
 # runs `--check-only` first because that is the fastest way to find a proof failure:
@@ -196,7 +194,6 @@ import ./op.bend as MO
 import ./movement.bend as MX
 
 # THE CONST HELPERS -- `dtypes.from_py` (dtype.py:100) and `UOp.const` (ops.py:632).
-
 # `dtypes.from_py(x)` for the four py CONST values this file builds: `InvalidType` and
 # `bool` are bool, `float` is weakfloat, `int` is weakint -- "order matters: bool is an
 # int subclass" (ops.py:184). The list/tuple arm (dtype.py:106) is `UOp.stack`
@@ -266,7 +263,6 @@ def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 # the port would hold the f32 of 0.1 in BOTH, which is a DIFFERENT NUMBER IN THE GRAPH.
 # `f32` AND `weakfloat` ARE THE IDENTITY, so the rows that were already right do not move.
 #
-
 # the `weakfloat` arm is the identity on the port's F32, which is not upstream's identity on
 # a double, and the difference is reachable -- it is a merge of two upstream constants into
 # one, and a merge is a hash collision in the port's constant identity.  MEASURED, and the
@@ -351,7 +347,6 @@ def cr_after(+r: T.Tensor, +v: T.Tensor) -> T.Tensor:
 
 # creation.py:12 `const` is a `raise NotImplementedError` and is NOT a def here; see
 # the TODO in the header. creation.py:23 `empty` is the first body.
-
 # `ParamArg(next(UOp.unique_num), dt, prod(max_shape), device=dev,
 # bind_on_realize=True)` -- creation.py:41. The thirteen fields are `ops.bend`'s
 # `ParamArg` in ITS order (ops.bend:870-870), which is NOT the prose order: `addrspace`
@@ -426,7 +421,6 @@ def cr_empty(+ar: O.Arena, dt: Maybe<&1, S.Dt>, +ds: List<&2, U32>, dev: S.Dev) 
   cr_resh(cr_resh.same(ds, H.prod_u32(ds)), a, ds)
 
 # creation.py:14 `const_like`.
-
 # `self._wrap_uop(self._uop.const_like(b, dtype))` -- creation.py:14 -- which is
 # ops.py:603-605:
 #
@@ -451,7 +445,6 @@ def cr_const_like(nz: Bool, +ar: O.Arena, +v: O.Const, +dt: S.Dt, +ds: List<&2, 
   cr_const_like.of(nz, cr_const_of(ar, v, dt), ds)
 
 # creation.py:45 `empty_like`.
-
 # `self.commit_dtype() if dtype is None else dtype` -- ops.py:867 -- as a
 # `Maybe<&1, S.Dt>`, because that is Python's `None` and `commit_dtype` (dtype.py:16)
 # ANSWERS one. `commit_int`, `strong_dtype` and `commit_dtype` are `mixin/dtype.bend`'s
@@ -514,7 +507,6 @@ def cr_invalids(+ar: O.Arena, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
 # with `dtype or self.dtype` (creation.py:105) and `zeros`/`ones` are `full` with a
 # literal (creation.py:122/152), and both `*_like` are `full_like` with a literal
 # (creation.py:135/165).
-
 # `type(self).full(self.shape, fill_value, dtype=dtype or self.dtype, device=..., buffer=
 # buffer)` -- creation.py:105. The device-tuple arm is W2 and is a `TODO(p3)` in the
 # header.
@@ -574,7 +566,6 @@ def cr_ones_like(+ar: O.Arena, +self_dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -
   cr_full_like(ar, cr_cval1(ib, if_), self_dt, True{}, ds, dev)
 
 # THE GATE PRINTERS.
-
 # a node INDEX that is read more than once goes in a `Data` record. `cr_g.of` reads its
 # index four times and a `U32` is affine and cannot take a `+` as a parameter
 # (device.bend's rule 3: the operands of a two-read `U32` expression go in a record),
@@ -951,7 +942,6 @@ def main() -> IO(Unit):
 # than dropped.
 #
 #  #   mutation                                            rows moved   what moved
-
 #  M1  `cr_after`'s STORE srcs reversed                     1           `int_full_expand`
 #  M2  `cr_after`'s AFTER srcs reversed                    32           almost everything
 #  M3  `cr_const_of`'s cast fold guard dropped             12           the 10-node rows and more

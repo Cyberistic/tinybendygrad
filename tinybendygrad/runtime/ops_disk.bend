@@ -61,7 +61,6 @@
 # second way of saying the same thing. `--check-only` is GREEN here, so the
 # import-closure redness the brief predicted does not arise.
 #
-
 # WHAT IS PORTED, DEF BY DEF.
 #
 #   tinygrad/runtime/ops_disk.py:14  `synchronize`              PORTED  `dev_sync` -- it is `pass`
@@ -106,7 +105,6 @@
 #                                             calls and the segment arithmetic
 #   tinygrad/runtime/ops_disk.py:79 `_offset`                   PORTED  `alloc_offset`
 #
-
 # THE FOUR WALLS.
 #
 # 1. ADDRESSES. `mv_address(mv) = ctypes.addressof(ctypes.c_char.from_buffer(mv))`
@@ -137,7 +135,6 @@
 #    list; `dev_close_mems.at` records the unmap whether or not it succeeded,
 #    because :48 swallows the error.
 #
-
 # THE ASSERT/EXCEPT DISTINCTION, and it is the one structural thing this file has
 # that `ops_webgpu.bend` does not.
 #
@@ -159,7 +156,6 @@
 # on the same path, so it is not observable in this trace either. The flags DO
 # differ and both are recorded, which is what `dk_open_file_args` pins.
 #
-
 # FOUR facts that are easy to get wrong and that the gate pins by name.
 #
 # A. THE refcount is on the device, NOT on the BUFFER. `_alloc` calls
@@ -556,7 +552,6 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # `U32.min` destructures its arguments rather than reading them, so each one is
 # consumed ONCE; the `U32.is_le` spelling at the two sites below was a first
 # draft and read each term twice, which `U32` cannot express.
-
 # THE DEVICE. Sixteen fields and sixteen readers, and the readers are the floor
 # this port pays for a `Data` record with no field projections (rule 27).
 
@@ -700,7 +695,6 @@ def dev_is_shm(name: String, win: Bool) -> Bool:
   Bool.and(Bool.not(win), String.starts_with(dsk_filename(name), SHM_PREFIX()))
 
 # THE CLASS LIFECYCLE, :12-20 and :50-71.
-
 # :51 -- `DiskDevice._tried_io_uring_init = True`, set FIRST and before the
 # platform test, so a device on a non-linux host has still TRIED -- which is the
 # whole of :15's guard. The flag is a CLASS attribute, so it is on the `Dev`.
@@ -753,7 +747,6 @@ def dev_init.at(linux: Bool, ok: Bool, name: String) -> Dev:
           dev_ioring_setup(linux, ok, Dev.of(name)))
 
 # `_might_open`, :21-40. Two branches and six steps, and each is one Python line.
-
 # :22 -- `assert self.size is None or size <= self.size`. The message is the
 # f-string and `dev_reopen_msg` IS it, so the gate can diff the string.
 def dev_fits(+size: U32, +d: Dev) -> Bool:
@@ -764,7 +757,6 @@ def dev_fits(+size: U32, +d: Dev) -> Bool:
 # a `U32` and presence in `has_size`, so `None` is the `has_size == False` arm.
 # `dk_fresh_msg` is the row, and it is a row against a COLD fixture precisely
 # because that is the only way to reach the `None`.
-
 # :23 -- `self.size is not None and hasattr(self,"mem")`. TWO conjuncts and they are
 # not the same test: `size` is set at :37 and `mem` at :30/:36, and :49 clears ONLY
 # `size`. So a device just closed has `size is None` and still `hasattr(self,
@@ -1112,7 +1104,6 @@ def Rc.d(r: Rc) -> Dev:
 
 # `_copyout_sharded`, :101-116. THE RESULT-CAN-BE-CHECKED PART, and the header
 # says why. Read the gate's section 7 before changing anything here.
-
 # :103 -- `minor_offset := src.offset % mmap.PAGESIZE`, the page skew of the source.
 # `U32.mod` and Python's `%` agree for a positive dividend, which an offset is.
 def shard_minor(off: U32, osx: Bool) -> U32: U32.mod(off, pagesize(osx))

@@ -86,14 +86,12 @@
 #     is `srender`'s answer for every `sint` that is an int -- and the gate's
 #     fixtures are exactly those.
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one device call (pure; the gate checks it) OR records that call in the
 # trace (the gate checks ORDER). There is no third kind. THIS FILE IS THE FIRST
 # KIND ENTIRELY: no trace, no `@extern`, no `import "./x.c"`. viz emits no calls;
 # it encodes bytes.
 #
-
 # THE GATE, and its shape.
 #
 # viz answers are BYTES and STRINGS, so the gate compares them as text: one
@@ -373,14 +371,12 @@ def json_obj(+kvs: List<&2, Kv>) -> String:
 # through to whatever is next. So the two group tests are ARGS, computed by the
 # caller, and the gate carries all 75 ops -- a set of 75 rows cannot hide one op
 # quietly changing colour.
-
 # THE TWO EXPANSIONS, in the order the `` appear: Movement is written first and
 # ALU second, so an op in BOTH takes ALU's colour.
 # THE STEP-1 EXPLICIT ENTRIES: the earliest writers, so anything in a group
 # overwrote them, which is why they are tested LAST.
 # THE TWO EXPANSIONS, in the order the `` appear: Movement is written first and
 # ALU second, so an op in BOTH takes ALU's colour.
-
 # THE step-5 EXPLICIT entries and threefry: the writers with nothing after them.
 
 def uops_color.tail(mv: Bool, +al: Bool) -> String:
@@ -456,7 +452,6 @@ def wave_color_of.step(+name: String, ks: List<&2, String>, +vs: List<&2, String
 # it. So a step is an ORDERED `List<Kv>`, not a map, and `create_step` appends in
 # the source's order: `name`, `query`, `_data`, `depth`, then `kwargs` in the
 # order the caller passed them.
-
 # `Kv` is Section 3's pair -- it is the JSON object's item AND the step's item,
 # because Python's `json.dumps(fmt)` and Python's step dict are both the same
 # thing: an ordered str->value mapping.
@@ -511,12 +506,10 @@ def create_step(name: String, path: String, ctx: U32, st: U32, data: Maybe<&2, S
 # `(name, value)` pairs and `json.dumps` of a dict keeps that order -- so the row
 # is a byte-for-byte check on BOTH the order and the private-key filter, which is
 # the whole of `do_GET`'s `/ctxs` branch.
-
 # An int value is stored RENDERED, so the type is gone and this cannot tell `5`
 # from `"5"`. Upstream cannot either -- `json.dumps` sees the same thing -- and
 # MEASURED: `create_step(..., match_count=5)` and `code_line="5"` serialise
 # identically. That is a real property of the format and not a gap in the row.
-
 # `filter_keys` -- `{k:v for k,v in data.items() if not k.startswith("_")}`.
 def filter_keys.step(+h: Kv, +t: List<&2, Kv>) -> List<&2, Kv>:
   Bool.pick(List<&2, Kv>, Kv.is_private(h), t, List.append(&2, Kv, [h], t))
@@ -537,7 +530,6 @@ def filter_keys(kvs: List<&2, Kv>) -> List<&2, Kv>:
 # the `SI` arm -- which is `srender`'s answer for every `sint` that is an int,
 # and is every `sint` the gate builds -- and NAMES the `SU` arm as `srender`'s
 # job. `shape_to_str.sym` is that seam and it is not called by any row.
-
 # `srender` of an `SI` is the INTEGER, in decimal. `H.i64_text` is `hi:lo` --
 # helpers.bend:1278 says so and gives the reason -- so a decimal renderer is
 # needed and it is only honest for a value that FITS: `hi == 0` is checked and the
@@ -598,7 +590,6 @@ def canonicalize_ast_is(op: O.Op, is_ki: Bool) -> Bool:
 # The `.get`-with-`None`-default detail is load-bearing in the other direction
 # too: index 0 is a FALSY int, and `cret is not None` (not `if cret`) is what
 # makes index 0 come back as itself. MEASURED: `enum_str.seq=0,1,0,2,1,3,4`.
-
 # ONE FOLD, NO `Maybe`. A `match` may not scrutinise a CALL, so the usual
 # `match tbl_pos(...)` is refused; and `Maybe` is a Type, not a Data, so it
 # cannot ride in a record either. The position walk therefore RETURNS THE ANSWER
@@ -769,7 +760,6 @@ def ev_en(m: Maybe<&2, H.I64>, st: H.I64) -> H.I64:
 #      shape from every other def here and it would be untestable without one, so
 #      it is NAMED at `tl_fmt.str` and the `{"metadata": ret}` arm -- which needs
 #      no parse -- is ported and gated.
-
 # The accumulator. `scache` is the only thing `timeline_layout` mutates and it
 # mutates it THROUGH `enum_str` twice per kept event, so the table, the two
 # indices and the event count all ride in ONE record that every step returns.
@@ -781,7 +771,6 @@ type TlAcc is Data:
 # pattern") and `(a, b) = some_call(...)` is refused ("a match cannot
 # scrutinize a computed value"), but a Sigma AS A PARAMETER destructures with
 # `(a, b) = t`. Three defs and one idiom, applied everywhere below.
-
 # NO `value.field` SUGAR IN BEND 2.0.34 -- the brief records this as the thing
 # that killed `cstyle.bend` (43 reads, 22 hand-written readers), and it is
 # measured again here: `acc.bs` is "expected a defined name", so every field of
@@ -852,12 +841,10 @@ def tl_keep(dur: F32, e: Ev) -> Bool: Bool.not(Bool.or(U32.is_zero(F32.to_u32(du
 # `rel_ts` RAISES in Python and `timeline_layout` does NOT catch it, so a refusal
 # propagates out of the WHOLE function. Here it propagates as the accumulator
 # unchanged, which is the same "no answer" and emphatically not a zero event.
-
 # `enum_str(name, scache)` runs BEFORE `enum_str(json.dumps(fmt), scache)` in the
 # same statement list, so the table grows name, fmt, name, fmt ... and the SECOND
 # call must start from the table the FIRST one produced. Three nested `enum_at`s
 # and `enum_pos` is what makes that ordering visible in the source.
-
 # `<I` name, `<I` option(ref), `<I` option(key), `<I` rel_ts, [GAP float],
 # `<I` fmt. The two zeros are the un-ported `ref_map` branch and are 0 because
 # that branch's answer is `None`, which `option` maps to 0 -- see the header.
@@ -867,20 +854,16 @@ def tl_pack5(d: DevEv, st: U32, ni: U32, fi: U32, +acc: TlAcc) -> List<&2, U32>:
 # `name = e.name; ...; elif isinstance(e.name, TracingKey): name = display_name`.
 # A `str` name is used verbatim and the fmt is EMPTY; a `TracingKey` name takes
 # its `display_name` and one of THREE `ret` arms.
-
 # `ret: str -> json.loads(ret[4:]) if ret.startswith("JSON") else {"metadata": ret}`
 # `ret: int -> {"B/s": int(ret/(dur*1e-6)), "B": ret}`
 # `ret: tb   -> {"tb": tb}`
-
 # The `JSON`-prefixed arm is the `json.loads` WALL named in section 9; this is
 # the `{"metadata": ret}` arm, and it is a whole line of the gate.
-
 # `int(x / (dur*1e-6))`. `F32.to_u32` truncates toward zero, which is `int()`'s
 # rule for a non-negative quotient, and `<I` cannot hold 2^32 anyway, so U32 is
 # the right domain and not a narrowing. MEASURED: `ret=20000, dur=5.0` gives
 # `{"B/s": 4000000000, "B": 20000}`, which OVERFLOWS a signed 32-bit int and is
 # exactly why the format is `<I` and not `<i`.
-
 # `RInt` CARRIES BOTH FORMS because Python's `ret` is an int and the division
 # FLOATS it: `"B"` is the exact integer and `"B/s"` is computed from the float.
 # `H.I64` has no `to_f32` in this tree, so the float half is a parameter and the
@@ -993,7 +976,6 @@ def tl_row(+acc: TlAcc, ns: H.I64) -> String:
 # row from each other so a swapped `1` and `2` is a diff and not a coincidence.
 # `num` is the POSITION of the key in `arg["bufs"]`, so it is a 0-based index and
 # an off-by-one shows up as a wrong byte in the middle of a record.
-
 # `mode = 2 if (num in inputs and num in outputs) else 1 if (num in outputs) else 0`
 def in_list(xs: List<&2, U32>, +v: U32) -> Bool:
   match xs:
@@ -1047,7 +1029,6 @@ def Exec.nm(+u: Exec) -> String:
     case Exec{n, bufs, ins, outs, nm}: nm
 
 # ONE EXEC ROW. `<I` run id, `<I` name id, `<I` num, `<B` mode.
-
 # THE SAME NON-MUTUAL SHAPE AS `tl_go`: the tail is folded first and handed in,
 # because `Bool.pick` is eager and "skip this row" IS the tail fold.
 def memfree_row.pack(t: (List<&2, String> & U32), run: U32, num: U32, mode: U32) -> (List<&2, U32> & List<&2, String> & Bool):
@@ -1149,24 +1130,19 @@ def device_sort_fn.at(+k: String, +sp0: U32) -> String: ds_join(ds_k(k), sp0, de
 # `p = k.split(" ")[0].split(":")` and `dev_base = p[0] if len(p) < 2 or not
 # p[1].isdigit() else f"{p[0]}:{p[1]}"`. So `GPU:007` KEEPS its three digits
 # (`"007".isdigit()` is True) while `AMD:x` collapses to `AMD`. MEASURED, both.
-
 # `special = {"GC": 0, "USER": 1, "TINY": 2, "ALLDEVS": 100, "DISK": 999}` and
 # `special.get(p[0], special['ALLDEVS'])`. The DEFAULT is 100, which is also
 # `special["ALLDEVS"]` -- so a key that is not in the table and the key
 # `"ALLDEVS"` itself are indistinguishable, and the gate says so.
-
 # `return (is_memory, special.get(p[0], special['ALLDEVS']), dev_base, k)` -- a
 # FOUR-TUPLE and Python compares it elementwise, so the row prints all four in
 # order and a swapped second and third component is a diff.
-
 # `k.endswith(" Memory")`
-
 # `get_arch(target) = "rdna3" if target.startswith("gfx11") else "rdna4" if
 # target.startswith("gfx12") else "cdna"`. A chained conditional, so the SECOND
 # test is only reached when the first failed -- which is why `gfx11` is rdna3 and
 # `gfx12` is rdna4 and `gfx10` is cdna, and a port that tests them in the other
 # order answers rdna4 for `gfx1100`.
-
 # `parse_branch(inst)`: `if "branch" in getattr(inst, "op_name", "").lower(): x =
 # inst.simm16 & 0xffff; return (x - 0x10000 if x & 0x8000 else x) * 4`.
 # THE sign extension is the whole function and it is why the answer is an `H.I64`:
@@ -1175,9 +1151,7 @@ def device_sort_fn.at(+k: String, +sp0: U32) -> String: ds_join(ds_k(k), sp0, de
 # 2^32 and would silently pack as a huge positive. So the subtraction, the
 # multiply and the ROW are all 64-bit, and `simm16` stays a `U32` because
 # `& 0xffff` is what upstream does.
-
 # `x - 0x10000` where `x` is 0..65535, in 64-bit so the underflow is a negative.
-
 # `* 4` by doubling: `H.i64_mul` does not exist in helpers.bend, and a shift is a
 # multiply for a power of two -- but ONLY while it stays positive, which is why
 # this is the LAST step and the sign extension above it is not itself a shift.
@@ -1236,24 +1210,20 @@ def get_int_row(+qs: List<&2, Kv>, +k: String) -> String:
 # p[1].isdigit() else f"{p[0]}:{p[1]}"`. So `GPU:007` KEEPS its three digits
 # (`"007".isdigit()` is True) while `AMD:x` collapses to `AMD`. MEASURED, both,
 # and they sit one row apart in the fixture for exactly that reason.
-
 # `k.endswith(" Memory")` -- the FIRST component, and the only one that is a
 # Bool rather than a number. MEASURED: `"GPU Memory "` (trailing space) is
 # FALSE, and the fixture has it next to `"GPU Memory"` so a `trim` somewhere
 # upstream of this test would be a diff.
-
 # `special = {"GC": 0, "USER": 1, "TINY": 2, "ALLDEVS": 100, "DISK": 999}` and
 # `special.get(p[0], special['ALLDEVS'])`. The DEFAULT is 100, which is also
 # `special["ALLDEVS"]` -- so an absent key and the key `"ALLDEVS"` itself are
 # indistinguishable by the answer, and the fixture prints both rows side by side.
-
 # `return (is_memory, special.get(p[0], special['ALLDEVS']), dev_base, k)` -- a
 # FOUR-TUPLE and Python compares it elementwise, so the row prints all four in
 # order and a swapped second and third component is a diff.
 # The FOURTH component is `k` itself. `String.concat` reads `k` once here and
 # once inside `dev_base(k)`, so the two answers are named and joined -- the same
 # reason `wave_of` and `row_one` each get an `.at`.
-
 # `len(ss := x.split(":")) > 1` -- AT LEAST TWO parts, so `"plain"` (one part)
 # takes the `(999, 999)` arm and `"x:0:1"` (three) takes the pair arm and reads
 # only `ss[1]`. MEASURED: both are rows, and a `>= 1` test gets the first wrong.
@@ -1271,7 +1241,6 @@ def row_one.at(+ss: List<&2, String>) -> String:
 
 # THE WHOLE ANSWER IS A LIST, so it is bracketed even when it is empty:
 # MEASURED, `row_tuple('')` is `[]` and not the empty string.
-
 # SECTION 12 -- `row_tuple` -- serve.py:300-301. This is the sharpest function
 # in the file for a gate and the fixture is built for it:
 #
@@ -1285,7 +1254,5 @@ def row_one.at(+ss: List<&2, String>) -> String:
 # `GPC`), and `(999, 999)` for a token with no colon. MEASURED: `row_tuple.'x:0:1'`
 # is `[[120, 0]]` -- a THREE-part split still takes only `ss[1]`, so a port that
 # joined the rest would answer `0:1`.
-
 # `len(ss := x.split(":")) > 1`
-
 # SECTION 13 -- THE GATE.

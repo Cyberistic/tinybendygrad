@@ -38,7 +38,6 @@
 #   the same way it was wrong for autogen.py: a port of this generator is a
 #   port of 346 decisions.  The 22 emission lines are the easy 6%.
 #
-
 # THE FOUR WALLS. Stated once, here, rather than as a TODO per arm.
 #
 # WALL 1 -- the XML/PDF fetch and parse.  `parse_xml` is 25 ffi lines and
@@ -89,7 +88,6 @@
 #   CPython's own `extract_pcode` returns on the same pages fixture, so the seam
 #   is a value and a gate row rather than a claim.
 #
-
 # MEASURED bend 2.0.34 constraints that shape every def here.  Cite the
 # positions in `.agents/slop/notes/bend2-constraints.md`, not rule numbers:
 #
@@ -413,7 +411,6 @@ def str_at(xs: List<&2, String>, n: Nat) -> String:
 # two list literals below are the ONLY copy of the three filenames, and
 # `List.get` answers a `Maybe`, which would make every caller a two-def
 # reader for a table of constants.
-
 # `ARCHS[a]["xml"]`, as a walk over the arch list rather than `List.get`: the
 # two list literals below are the ONLY copy of the three filenames, and
 # `List.get` answers a `Maybe`, which would make every caller a two-def
@@ -430,7 +427,6 @@ def xml_url() -> String: "https://gpuopen.com/download/AMD_GPU_MR_ISA_XML_2025_0
 
 # SECTION 3 -- `_strip_enc` (:48), `_norm_field` (:56), `_map_flat` (:61).
 # PORTED.  16 of the 28 logic lines of these three functions.
-
 # There is no `List.eq`, so membership is its own walk and the NEEDLE LEADS,
 # because a self-call must shrink its first argument (pos 1922).
 
@@ -620,7 +616,6 @@ def ops_of(fmt: String, eos: List<&2, EO>) -> List<&2, OP>: sort_ops(eo_of_fmt(e
 # `next(op for op, n in enums[fmt].items() if n == nm)` -- the search by NAME.
 # A miss answers 0 and says so in the caller; no gate row can reach the miss
 # with the shipped FIXED_FIELDS table, and `fd.miss` says so out loud.
-
 # `Maybe<&2, String>` OR a miss value.  Three call sites need it -- an opcode
 # lookup, a field-def miss, and `write_pcode`'s `(name, opcode)` hit -- so it is
 # one def named for what it does rather than for its first caller.
@@ -631,7 +626,6 @@ def maybe_str(m: Maybe<&2, String>, miss: String) -> String:
     case Some{+g}: g
 
 # `op_enum.removesuffix("Op")` -- every `fmt_allowed` caller passes `<fmt>Op`.
-
 # `next(n for op, n in enums[base].items() if op == target)` -- the REVERSE
 # search.  A miss answers the empty string, and `fmt_allowed` then emits
 # `VOP1Op.` with nothing after the dot: visible, not silent.
@@ -659,7 +653,6 @@ def op_named(base: String, op: U32, eos: List<&2, EO>) -> String:
 # enum class name and the LOOKUP is the stripped format, which are two different
 # strings over one table.  The opcode set is SORTED first: `fmt_allowed` receives
 # a Python `set` and the emission order is the opcode order.
-
 # `fmt_allowed` takes an OPCODE SET, not a list of enum members: every caller
 # holds a set of opcodes (`all_ops`, `base_allowed`, `sdst_ops`,
 # `suffix_only_ops[sfx][base]`) and the NAME comes from the enum table by
@@ -722,7 +715,6 @@ def order.hit(o: List<&2, String>, nm: String) -> Bool: str_in(nm, o)
 
 # 999 is not a sentinel the port invented: it is the literal in generate.py:327,
 # and it is what puts a field this file has never heard of LAST.
-
 # `ORDER.index(nm)` -- the index of the first entry equal to `nm`.  ONE def, not
 # a `cmp` helper that calls back: two defs that call each other have no order in
 # bend.  `Bool.pick` CHOOSES and bend evaluates both arms, which is free here
@@ -795,7 +787,6 @@ def sort_fields(fs: List<&2, Fld>) -> List<&2, Fld>: List.sort(Fld, fld_le, fs)
 # `ctor_names` / `arg3_names` are INDEXED TABLES of eighteen strings rather than
 # eighteen-arm matches, because a `match` may not scrutinise a computed value
 # and an eighteen-deep `.of` chain would be thirty-six defs.
-
 # pk: 0 nm == pa | 1 starts_with(nm, pa) | 2 nm in pa(words)
 # pb: 0 any width | 1 width == pb
 # pc: 0 any format | 1 fmt not in (DPP,SDWA) | 2 base_fmt in (GLOBAL,SCRATCH)
@@ -900,7 +891,6 @@ def arg3(+kind: U32, base_fmt: String) -> String:
 # `f"{ctor}({hi}, {lo}{sep}{arg3})"` -- and an empty `arg3` must NOT leave a
 # trailing comma, which is the `String.concat`-drops-a-literal class of bug in
 # its most literal form.
-
 # THE ONLY PLACE `hi` IS NOT `hi`.  The inherited file defined this and never
 # called it, so the `BitField(12, {lo})` arm of generate.py:315 was DEAD in the
 # port and every GLOBAL/SCRATCH `offset` came out as `BitField(14, 0)`.
@@ -918,7 +908,6 @@ def field_def.hi(kind: U32, +hi: U32) -> U32:
 # zero-padded to the field width.  So the emitted `0b...` is a FUNCTION OF THE
 # OTHER TABLES, and it is where a mis-transcribed opcode would land; the
 # `cdna` `fd.emb` rows diff it against CPython's own emitted file.
-
 # `0b{fixed_bits}{opcode:0{bits-len(fixed_bits)}b}` -- `String.repeat` with a
 # NEGATIVE count is the failure, so the padding width is clamped and the clamp
 # is a named def rather than a hidden `max`.
@@ -1018,9 +1007,7 @@ def Fd2.k(x: Fd2) -> String:
 # is why the gate can diff the emission at all.
 #
 # `write_enum`, generate.py:273-287.
-
 # `suffix = "_E32" if name in ("VOP1","VOP2","VOPC") else "_E64" if name == "VOP3" else ""`
-
 # the five searches share one shape, and it is the shape bend forces: a walk
 # that RETURNS a `Maybe` cannot be `find` -> `hit` -> `find`, because two defs
 # that call each other have no order.  So the accumulator IS the recursion
@@ -1338,7 +1325,6 @@ def write_enum.aliases.go(os_: List<&2, OP>, +fmt: String, +acc: List<&2, String
 # LEXICOGRAPHIC sort of the keys with `sorted(all_fmts.items())` a second sort
 # over the pairs.  Both are emitted, in that order, which is why the two
 # `Fmt` blocks in common.py are in different orders for the same key set.
-
 # the alias pass is second and separate: `aliases` collects (mem, msuf) for
 # every op that GOT a suffix and is emitted after all the value cells, so
 # `V_CNPY = V_CNPY_E32` follows `V_CNPY_E32 = 0`.  Folding the two passes into
@@ -1353,7 +1339,6 @@ def write_enum.aliases(fmt: String, os_: List<&2, OP>) -> List<&2, String>:
 # `V_CNPY = V_CNPY_E32` follows `V_CNPY_E32 = 0`.  Folding the two passes into
 # one list puts the aliases before the values, which is legal Python and a
 # different file.
-
 # one class = header, value cells, alias cells, blank, in that order.  The
 # value walk (`enum_members.go`) and the alias walk (`write_enum.aliases.go`)
 # are separate folds over the SAME sorted opcode list, and the alias walk emits
@@ -1528,7 +1513,6 @@ def write_operands.tail(rows: List<&2, String>, head: List<&2, String>) -> List<
 # the closing brace is its own step, not a fourth nested `List.append`: four
 # opens with three closes parses as "a term with no value" and bend reports it
 # against the NEXT `def`, thirty lines away, with no mention of the paren.
-
 # ---- THE FIXTURE.  Built by `.agents/slop/ga_fix.py` from the SAME dicts
 # `ga-oracle.py` hands to `generate.write_ins`, so the port's fixture and
 # CPython's input cannot drift apart.
@@ -1633,7 +1617,6 @@ def write_operands(+tys: List<&2, TY>, +eos: List<&2, EO>, +arch: String) -> Lis
 # `F32` and no `F64` (`bend base | grep -c F64` is 0), and `extract_pdf_text`
 # accumulates PDF `Td` offsets into Python floats, so `round(y)`'s grouping and
 # every `55 < x < 65` window would be decided on 32-bit values.  See WALL 5.
-
 # `{code!r}` -- CPython's `repr` for a `str`: single-quoted unless the text
 # contains `'` and not `"`, and `\\`, `\t`, `\n`, `\r`, `\'` plus a `\xNN` for
 # every other code point `str.isprintable()` rejects.  A bend char literal
@@ -1710,12 +1693,10 @@ def pcode_enums.go(es: List<&2, PE>, +acc: List<&2, String>) -> List<&2, String>
 # `sorted(entries, key=lambda x: (x[0], x[2]))` -- by ENUM then OPCODE, never by
 # name: `V_MAD_F32` (512) precedes `V_ADD_F32` (300) only because their enums
 # differ.
-
 # `pcode` is walked TWICE -- once for the rows, once for the import list -- so
 # every parameter on this chain is BORROWED.  `List.sort`'s comparator takes
 # `@_` for the same reason and because a comparator that consumed its operands
 # would have to rebuild them.
-
 # `pcode` is walked TWICE -- once for the rows, once for the import list -- so
 # every parameter on this chain is BORROWED.  `List.sort`'s comparator takes
 # `@_`, and `PE.en` is a `match` rather than a projection, so the comparator
@@ -2219,7 +2200,6 @@ def base_classes(walk: List<&2, EC>, +encs: List<&2, EC>, +eos: List<&2, EO>, +t
       base_class(e, eos, tys, ss, fixed, encs, acc))
 
 # FOLD 2 -- THE VARIANT CLASSES.  `class {enc}({base})`, extra fields only.
-
 # `next((sfx for sfx in _VARIANT_SUFFIXES if enc_name.endswith(sfx)), None)` --
 # the FIRST matching suffix in TABLE order, not the longest.
 
@@ -2427,7 +2407,6 @@ def sdst_classes(eos: List<&2, EO>, tys: List<&2, TY>, vs: List<&2, EC>, fixed: 
 # than to restrict a set, and the only one that drops a row: `ADDTID` ops exist
 # in BOTH the FLAT and GLOBAL enums so the PDF has one pseudocode entry for
 # them, and only GLOBAL/VGLOBAL get a helper.
-
 # `fmt not in base_encodings and fmt not in ("GLOBAL","SCRATCH","VGLOBAL","VSCRATCH")`
 
 def not(b: Bool) -> Bool: Bool.not(b)
@@ -2502,7 +2481,6 @@ def write_ins.head.of(+encs: List<&2, EC>, +eos: List<&2, EO>, +arch: String,
 # oracle file.  That is the rule five files in this project broke by hand
 # (`cstyle` 17/215, `ops_nv` 33/219, `rdma` one hex digit, `amdev` 7/80,
 # `ops_qcom` one table entry).
-
 # ---- THE FIXTURE.  Built by `.agents/slop/ga_fix.py` from the SAME dicts
 # `ga-oracle.py` hands to `generate.write_ins`, so the port's fixture and
 # CPython's input cannot drift apart.

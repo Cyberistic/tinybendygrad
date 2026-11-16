@@ -59,7 +59,6 @@
 # block descriptor nor name its sixteenth byte. Hand the seam an already-compiled
 # MTLB and the submission path is complete; hand it a block and `compile` runs.
 #
-
 # THERE IS NO dtype-to-MTLPixelFormat TABLE IN ops_metal.py, and the brief asked
 # for one. `grep -n PixelFormat tinygrad/runtime/ops_metal.py` is empty and
 # `MTLPixelFormat` reaches this file only through `autogen/metal.py`, where it
@@ -72,12 +71,10 @@
 # slice are the two directions, gated by `mt_fam_*` and `mt_arch_*` with a
 # last-wins mutation (M30) because `reversed()` is what makes it last-wins.
 #
-
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one objc call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER). There is no third kind.
 #
-
 # WHAT IS PORTED, DEF BY DEF.
 #
 #   :15  REQUEST_TYPE_COMPILE       PORTED  a constant
@@ -143,7 +140,6 @@
 #   :42-71 compile                 CLOSED  all of it but the block pointer
 #   --    THE CONSTANTS            PORTED  65 with a CPython authority, all gated
 #
-
 # THREE defs were written and nothing reached them, and that is the finding this
 # session started from. `icb_keep` -- upstream's `icbs` (tinygrad/runtime/ops_metal.py:267 symbol=new_icb) --, `dev.sync_scan`'s list (`sync_starts`,
 # :276-281) and `cns_string` (:23, `to_ns_str`) each carried a comment saying a row checked it,
@@ -158,7 +154,6 @@
 # has -- `check_family` takes `f` as a PARAMETER, so a record bought nothing a
 # string does not already do.
 #
-
 # THE FIVE WALLS.
 #
 # 1. A DYNAMIC LIBRARY LOAD (:18, :35). `DLL("CoreGraphics", "CoreGraphics")`
@@ -203,7 +198,6 @@
 # the trace is the argument of the seam: what survives is the ORDER, the
 # SELECTOR, and the ARITHMETIC, which is all the structure there is.
 #
-
 # THE two numbers that are not in the port at all, and why.
 #
 #  * `int(cb.GPUStartTime() * 1e9)` at :281. `base.bend` has no F64, so the
@@ -216,7 +210,6 @@
 #    spelling for (a `bytes` repr). The gate diffs the PREFIX of each, beside
 #    CPython's own output, and says so in the row name.
 #
-
 # WHAT device.bend OWES this file, and it OWES it four things, all consumed:
 #
 #  1. `D.Bar` / `D.Bn` / `D.bnew` are the Buffer. `_alloc` (:179) and `new_icb`
@@ -236,7 +229,6 @@
 #     recycled, which is a decision this file does not have to make and gets
 #     from `D.Bspec` by naming it. `mt_nolru` is the row.
 #
-
 # NO PROOFS FAIL HERE, and the brief expected some. The Metal FFI calls are
 # `@extern` seams in `dtype.bend`'s sense -- a `def ... -> IO(R)` whose body is
 # two `import "./x.c"` lines -- and every one of them is expected to make its
@@ -258,7 +250,6 @@ import ../LAWS/spec.bend as S
 # for the selector order and opens a real `MetalDevice` for the arch, AND
 # `.agents/slop/mt_audit2.py`, which is the HAND MAP.
 #
-
 # WHY THE HAND MAP EXISTS, since `ops_nv.bend` shipped 606 green rows with 33 of
 # 219 constants WRONG. The gate tests GRAPHS; a constant answers to a generated
 # header, so no number of rows finds a wrong one. `const-audit.py` was written to
@@ -268,7 +259,6 @@ import ../LAWS/spec.bend as S
 # same name (`ADDR_SIZE` is `Ops.GETADDR`'s dtype, not a header field). Its
 # `0 likely-WRONG` is NOT a verdict and is never quoted as one.
 #
-
 # TODO(p1): NOT a phase claim -- a severity (.agents/TODO.md:11110). THIS file is a port of a superseded `ops_metal.py`, and its whole
 # selector/message layer has no referent in the tree any more. It was written
 # against `7b6766c2f`; the tree is `ad117c928`, which DELETED `SELECTORS`,
@@ -298,7 +288,6 @@ import ../LAWS/spec.bend as S
 # they are a port-internal tag space, and what can be wrong is the NAME -> meaning
 # map, so the audit checks that map -- every tag against the `ops_metal.py` line
 # that carries the selector the port claims, and the tag set for density.
-
 # ops_metal.py:15. "there aren't any docs or symbols" -- the port says so too.
 def REQUEST_TYPE_COMPILE() -> U32: 13
 
@@ -565,7 +554,6 @@ def CALL_MSGSEND() -> U32: 35
 def CALL_STORE() -> U32: 36
 
 # THE TYPES.
-
 # ONE call and the one argument the gate reads. Three fields, and each is
 # load-bearing: `k` for the direct calls (where the selector alone would not
 # separate the residency set's `commit` from the command buffer's), `sel` for
@@ -756,7 +744,6 @@ def str_eq.go(a: List<&2, String>, b: List<&2, String>, bad: Bool) -> Bool:
 # against CPython's own `f`/`RuntimeError` output. `String.concat` DROPS A
 # LITERAL SILENTLY, which is why the gate prints the string beside the boolean
 # and never gates on a boolean about a string.
-
 # :201, `raise RuntimeError("Cannot allocate a new command queue")`. The whole
 # message is a literal, so it must be a String and not a row about a Bool.
 def msg_noqueue() -> String: "Cannot allocate a new command queue"
@@ -777,15 +764,12 @@ def msg_noicb() -> String:
 # )).decode())`. The whole message is the seam's -- it is whatever the
 # Objective-C exception says -- so the port keeps the CALL and not the text.
 # TODO(p3) runtime/ops_metal.py:26  -- `localizedDescription` -> RuntimeError.
-
 # :69 `raise ret` and :52 `ret = CompileError(errorMessage.decode())` are both
 # the seam's own text.
 # TODO(p3) runtime/ops_metal.py:52  -- the callback's `errorMessage`.
-
 # ops_metal.py:29-71 -- MetalCompiler. The part of the Metal chain that produces
 # an MTLB, and the part that is NOT a ctypes call: the three tables below are
 # the whole of the request, and a C seam only has to hand over the bytes.
-
 # ops_metal.py:56,
 #   `metal_version = "metal4.0" if macos_major >= 26 else "metal3.1" if
 #                      macos_major >= 14 else "metal3.0" if macos_major >= 13
@@ -922,7 +906,6 @@ def cnew(t: Tr) -> Tr: Tr.emit(CALL_MSGSEND, sel_ix("new"), 0, t)
 # ops_metal.py:103-168 -- MetalQueue. Five accumulators at :107, the argument
 # layout at :111-113, the symbolic arm at :117-120, the ICB at :129-132, the
 # sizes loop at :135-136, `run` at :138-163 and the submit tail at :166-168.
-
 # ONE word of the argument block: its byte offset and its itemsize. :131's
 # `patch(buf, self.rows + ...)` is a list of `(offset, uop)` pairs and the
 # OFFSET plus the ITEMSIZE is everything the layout decides -- the uop itself is
@@ -1080,7 +1063,6 @@ def q.flat(rs: List<&2, Row>, acc: List<&2, U32>) -> List<&2, U32>:
 
 # THE THREE STEPS OF `exec`, :112-121, each its own def because each is one
 # numbered line range of the Python and each is a different KIND of update.
-
 # :112, `off := round_up(self.nbytes, 256)`. The 256 is the argument block's
 # alignment and it is the ONLY alignment in `exec`; the one at :118 is 8 and
 # `mt_off256` and `mt_at8` are the rows that keep the two apart.
@@ -1458,7 +1440,6 @@ def CALL_SELREG() -> U32: 37
 # thirty-eight `Tr.emit` calls. A count that no table can contradict is a comment
 # wearing a number's clothes. `mt_constmap.py` prints the tag set's density instead
 # (`0..37 n=38 DENSE=True`), which is the same claim and IS checkable.
-
 # :222-237 -- `sels` and `mark_resident`, the two halves of the selector
 # table's lifetime. THE FLAG IS THE MEMO: `@functools.cached_property` means the
 # table is built the first time anything READS it, and :237's `if "sels" in
@@ -1951,7 +1932,6 @@ def run.at(+d: Dev, +r: Run, nores: Bool, +a9: Bool, stamps: Bool) -> Tr:
 
 # :127-136 and :166-168 -- `submit`. THE ICB GEOMETRY FIRST, and the two
 # buffer sizes have to AGREE.
-
 # :129, `buf = UOp.placeholder((zero + 24 + 8 * (1 + n + len(pipes)),), dtypes.uint8,
 # device=self.devs, volatile=True, tag=("mtl_icb", tuple(self.cmds), zero + 24))`
 # and :253, `buf = Buffer(self.device, header + 8 * (1 + len(cmds) +
@@ -2043,7 +2023,6 @@ def q.submit.at(nostamps: Bool, many: Bool, +d: Dev, +n: U32, +np: U32, +zero: U
 # `newFunctionWithName(to_ns_str(name))` happens BEFORE
 # `setComputeFunction(library.newFunctionWithName(...))`, not after it.
 # `mt_pipe_order` is the row.
-
 # `checked`'s SECOND refusal, and the arm of `checked` that :249 is. The
 # compiler's `ccompile` magic check is a DIFFERENT function and reusing it here
 # was the first version's bug: it compares a library's head and tail against
@@ -2094,7 +2073,6 @@ def dev.pipeline(+lib_ok: Bool, pipe_ok: Bool, t: Tr) -> Tr:
 #   six global/local numbers                :264 MTLSize(*dims[:3]), MTLSize(*dims[3:])
 #   the entry point NAME                    :247 newFunctionWithName(to_ns_str(name))
 #
-
 # :256, `desc.setMaxKernelBufferBindCount(1)`. ONE. And :263,
 # `cmd.setKernelBuffer_offset_atIndex(buf.get_storage().meta, off, 0)`, puts it
 # at index 0 -- which is the index cstyle's `constant args_t& args
@@ -2229,7 +2207,6 @@ def icb_setup(+q: Q, lib_ok: Bool, pipe_ok: Bool, lo: Bool, t: Tr) -> Tr:
 # :174-185 -- MetalAllocator. FOUR methods and three of them are the interesting
 # ones, and they are all thin over `device.bend`: `_alloc` makes a Buffer in the
 # arena, `_offset` IS `D.host_offset`, and `_free` is a trace.
-
 # :175-176,
 #   `mtl = metal.MTLBuffer(options.external_ptr) if options.external_ptr else
 #          self.dev.sysdevice.newBufferWithLength_options(size, metal.MTLResourceStorageModeShared)`
@@ -2276,7 +2253,6 @@ def alloc.free(t: Tr) -> Tr: Tr.emit(CALL_RELEASE, sel_ix("release"), 0, t)
 def dev.sync(+t: Tr) -> Tr: t
 
 # :270-285 -- `_wait_signal` and `synchronize`.
-
 # :276-278, the profile scan,
 #   `for start in range(5, buf.size, 4)`
 # FIVE is where the scan starts and FOUR is its step, and both are load-bearing:

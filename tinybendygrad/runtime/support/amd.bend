@@ -41,7 +41,6 @@
 #      `amd_ip_*.key` is the row set, and a padded or uppercase formatter moves
 #      every one of them.
 #
-
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers. Def names are
 # UPSTREAM names: `AMDReg.encode`, `import_module.override`, `import_pmc.key`.
 #
@@ -62,7 +61,6 @@
 #   :41-44 import_pmc         PORTED `import_pmc.key` `import_pmc.hex2`
 #   :46-47 import_asic_regs   PORTED `import_asic_regs.n` `import_asic_regs.first`
 #
-
 # THE FOUR WALLS, each with its Python line.
 #
 # WALL 1 -- the autogen tables. `import_module` reads `mod.__all__`, and for
@@ -289,7 +287,6 @@ def hx2.oflist(+xs: List<&2, U32>) -> String: hx2.oflist.go(xs, "")
 # (`match` and `where`), so it cannot head a def and is not the reason for the
 # rename -- the rename is because there is nothing to match.
 #
-
 # `AMDIP.__getattr__`: `name.replace('reg', 'mm')` replaces EVERY occurrence,
 # not the first -- so `regregMM_A` becomes `mmmmMM_A` and is NOT found, which
 # is why `amd_ga_*_rewrite_regregMM_A` sits BESIDE `amd_ga_*_regregMM_A`. The

@@ -64,7 +64,6 @@ def nr.has_copy_queue() -> U32: 1
 # the words become bytes and it is a seam. What survives the crossing is the
 # SHAPE: how many words per command, what each position means, and which of the
 # five ops pads.
-
 # ops_null.py:22, `EXEC, COPY, WAIT, STORE, TIMESTAMP = range(5)`. Five tags,
 # zero-based, and the tag is word 0 of every command.
 def NEXEC() -> U32: 0
@@ -86,7 +85,6 @@ def NTIMESTAMP() -> U32: 4
 # (1) is `nr.pads` and (2) is `nr.words`, and they are separate because they are
 # separate facts: a port that padded correctly and emitted five words would pass
 # `nr_pads_*` and fail `nr_words`.
-
 # the arity of each `cmd` call site, as a `U32` literal ladder in descending
 # order (bend2-constraints.md, tc_ptx rule 4: an ascending ladder makes every
 # arm after `case 0:` dead code that still typechecks).
@@ -244,7 +242,6 @@ def Ev.put(+k: Nk, +evs: List<&2, Nk>) -> List<&2, Nk>:
 # is `size - end`. The interior count is zero for five of the seven MEASURED
 # layouts and ONE for `[4,8,4]`, because a 1-byte argument between two 4-byte
 # ones makes `layout_args` place the third at slot 8 rather than slot 5.
-
 # :29, `8 * max(len(args), 1)`. The `max` matters for the EMPTY call and only
 # for it -- a zero-argument kernel is the one case where `size` is not 0.
 def pk.size(+nargs: U32) -> U32: U32.mul(Bool.pick(U32, U32.is_zero(nargs), 1, nargs), 8)
@@ -302,7 +299,6 @@ def pk.pads(+ks: List<&2, U32>) -> U32: pk.pads.go(List.length(&2, U32, ks), ks,
 # is `st + done` where `done` is the running count of EXEC-or-COPY commands, and
 # the profile lane of an entry is its device's OWN ordinal. `st` is INJECTED --
 # `perf_counter_us` is a seam and a gate may not read a clock.
-
 # :38 -- one SIGNATURE ENTRY, and only the three fields the comprehension reads:
 # the index `i`, the name `n` and the shape product `prod(s)`. `prod(())` is 1,
 # so `nbytes` is never 0 for a real entry and 0 is free to mean "no stream".
@@ -514,7 +510,6 @@ def nprog.sig7() -> List<&2, Sg>:
 # class and every `_alloc` in the process draws from the SAME sequence. That is
 # why the addresses are monotone and not per-call, and MEASURED over three real
 # allocations: 1099511627776, 1103806595072, 1108101562368.
-
 # `1 << 40` AND `1 << 32` ARE NOT `Nat` LITERALS -- a `Nat` literal is capped at
 # 4294967295n (MEASURED) -- so each is a product of two halves that are under
 # the cap. 1024 * (1 << 30) and 2 * (1 << 31). The ANSWERS are the rows
@@ -602,7 +597,6 @@ def nr.asm_msg() -> String: "only amd supports assembly"
 # REPLACES the table with one, so `ndev_bufferize_n` is 1 where
 # `device.bend`'s `pmb_len` is 3 -- and the two rows together are the
 # cross-file fact.
-
 # :55-56 -- the two `to_name("submit", devs[0], queue)` results. MEASURED:
 # `to_name('submit','NULL','compute')` == 'submit_null_compute'.
 def ndev.encode_names() -> List<&2, String>: ["submit_null_compute", "submit_null_copy"]

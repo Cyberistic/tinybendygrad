@@ -345,7 +345,6 @@ import ../device.bend as D
 # every table here is the 570 one; :363-364 swaps in nv_580/nv_610 when the
 # driver is newer, which is a whole second set of constants and is the seam.
 # ===========================================================================
-
 # --- :403-415 setup_usermode, the class ladders. `next(c for c in [...] if c
 # in self.nvclasses)` is FIRST-WINS over these pairs and the ORDER of each pair
 # is the policy, so both directions are ported: `iface.want`/`iface.alt` (the
@@ -800,7 +799,6 @@ def win_lo(x: H.I64) -> U32: H.lo32(x)
 # choice. `iface.pick` answers the winner and `iface.want` names the FIRST
 # candidate of each ladder so a gate can pin the order rather than the answer.
 # ===========================================================================
-
 # A `U32` LITERAL arm ladder must be descending or carry a catch-ALL, because
 # `case 1:` is a PREFIX match that claims 1, 2, 3, ... (bend2-constraints.md,
 # "A `U32` LITERAL PATTERN IS A PREFIX MATCH"). All five ladders here are
@@ -1245,7 +1243,6 @@ def NVALS_THREE_INT() -> List<&2, U32>: [1, 1, 1]
 # THE raise is in the trace (see THE trace), so `cq.exec`'s two raises need no
 # guard of their own: a refusal truncates everything after it.
 # ===========================================================================
-
 # :107-108 `NVQueue.sem` -- `self.nvm(0, NVC56F_SEM_ADDR_LO, addr,
 # value.ccast(uint64), nv_flags(...))`.
 def q.sem(addr: U32, value: U32, fl: U32, t: Tr) -> Tr:

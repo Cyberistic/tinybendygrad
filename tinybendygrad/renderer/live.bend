@@ -309,7 +309,6 @@ def arg_of(kind0: U32, kind1: U32, +p: String) -> C.KUArg:
 # `ku_ws.r` takes the list newest-first (which is how `ku_all` collects it) and binds the nine fields in
 # ONE walk of nine conses. §110.2 measured the same shape in `cstyle.bend` at 0.9796 and reverted it; the
 # decoder is a different call site with 4x the count, so the shape is re-measured here.
-
 # the token path's op is a string and the effect path's is a number, and one reader serves both.
 # `ku_ws` reads the wire's NINE tokens, so its op is the enum index as a DECIMAL STRING; the effect path
 # reads a `U32` straight from the wire's numbers. `op_of` takes the NUMBER, so the token path parses the

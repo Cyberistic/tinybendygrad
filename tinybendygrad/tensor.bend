@@ -144,7 +144,6 @@ import ./mixin/dtype.bend as D
 # `.agents/slop/tools/reorder.py` is the driver that got the DECLARATION ORDER right
 # mechanically (rule 1), and `.agents/slop/tools/share.py` is the one that adds the `+`s
 # (rule 2). Both are drivers, neither invents a body, and the file re-runs both clean.
-
 # all_tensors -- tensor.py:17. See WALL 1 in the header.
 
 type Tensors is Data:
@@ -186,7 +185,6 @@ def Tensors.member(+u: U32, xs: List<&2, U32>) -> Bool:
 # It carries the ARENA as well, which Python gets for free: an arena index is only
 # meaningful in the arena that produced it and every op in this file grows it. So
 # `Tensor` is `Found` plus the two flags.
-
 # THE READERS -- tensor.py:143-149. `self.uop.device`, `self.uop.shape`,
 # `self.uop.dtype`. All three are fold properties, so all three are a `Maybe`: the
 # OUTER `None` is "this fold cannot answer this node" (fold.bend's rule, and the
@@ -341,7 +339,6 @@ def tn_where_srcs_are(+r: Tensor, +cond: Tensor, +x: Tensor, +y: Tensor) -> Bool
 #
 # `[c.u, d.u]`: `d.u` is an index in `d`'s OWN arena and the node lives in the merged one.
 # That comparison is `tn_srcs_are`, below, and it recomputes the merge rather than guessing.
-
 # the arena is the one the build returned, and that is the whole of the second rule
 # this file learns. `UOp.alu` RETURNS a `Found` because the arena grew, and the `Found`
 # carries the grown arena; passing the INCOMING `ar` on to `tn_new` builds a Tensor
@@ -922,7 +919,6 @@ def tn_rrshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # so no constructor is missing. Stays walled on the dtype-promotion seam: even
 # the no-broadcasting case branches on `least_upper_dtype(t.dtype, x.dtype)` and
 # builds `dt.const(dt.min+dt.max)`, and `tn_binop` does not promote.
-
 # `eq`'s ONE `CMPEQ` NODE. `tn_cmplt`'s SHAPE with `Ops.CMPEQ` instead of `Ops.CMPLT`.
 def tn_cmpeq.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
@@ -1241,7 +1237,6 @@ def tn_isfinite(+t: Tensor) -> Tensor:
 #
 # TODO(p3) tensor.py:104  _apply_uop's `fxn` -- no function values, so the twelve
 # `__i*__` and `__eq__` below each inline `O.UOp.alu` + `assign`.
-
 # `_wrap_uop` -- tensor.py:120. `cls(u)`: the UOp arm of `__init__` with no dtype and
 # no device postlude, which is all of it.
 def tn_wrap_uop(+ar: O.Arena, uop: U32) -> Tensor:
@@ -1275,7 +1270,6 @@ def tn_hash(+t: Tensor) -> U32:
 # exception form to defer to. A def that must NOT be called is not a def that can be
 # written; the refusal is the absence, and `tn_len` below is the shape of the same
 # refusal made expressible as a `Maybe`.
-
 # `__len__` -- tensor.py:138-140. `if not self.shape: raise TypeError; return
 # self.shape[0]`. The raise is `__bool__`'s wall, so the answer is a `Maybe` and
 # `None` is Python's `TypeError`.
@@ -1382,7 +1376,6 @@ type Data1 is Data:
                              # built, because the makers are WALL 2 (ops.py:870
                              # `_frompy`, tensor.py:38 `_fromnp`, ops.py:853
                              # `new_buffer`)
-
 # `data is None` -> `UOp.const(0.0, _dtype)`. The `0.0` is an `F32` and no `F32`
 # literal is constructible, so this def answers the `None` DATA only through a value
 # the caller supplies, and the `DNone` arm is the one row of `__init__` the gate
@@ -1508,7 +1501,6 @@ def tn_replace(+t: Tensor, +x: Tensor) -> Maybe<&2, Tensor>:
 # BLIND to a dropped or wrong `slot`, and `tn_asparam_slot` (the arg) is the row that
 # closes it. Neither is enough alone: the arg row cannot see a missing SRC and the
 # signature row cannot see a wrong SLOT. That pair is the gate.
-
 # arm 3's `ParamArg(slot, dtype, size=shape, device=device)`. Field names and order are
 # ops.bend's `ParamArg`, not a hand-written list, and the three facts are READ OFF THE
 # SOURCE'S OWN `ParamArg` rather than recomputed: for every node kind that can be
@@ -1631,7 +1623,6 @@ def tn_shape_arg(+a: SArg) -> O.Found:
 #
 # THE `Ops.STACK` ARM (ops.py:831-834) needs `dtype_from_uop` and `ccast`, both P3, so
 # `MopArg` has no `Ops.STACK` case and a STACK arg is a `TODO(p3)`.
-
 # `arg` is one of three shapes and `op` says which, which is exactly what
 # ops.py:827-830 decides after Python has already made `arg` a heterogeneous tuple.
 # `APairs` is the TRANSPOSE Python computes with `list(zip(*arg))`: `arg` is a tuple
@@ -1781,7 +1772,6 @@ def tn_mop(+ar: O.Arena, +self: U32, +op: O.Op, +arg: MopArg) -> O.Found:
 # multi-dimensional `_rop` fixtures -- which Python builds over a RESHAPE, because
 # `Tensor([[1,2],[3,4]])` IS one -- are on the wall list rather than in the gate. The
 # 1-D fixtures are BUFFER-rooted and their shape folds, so they are in.
-
 # ONE def and not a `.go`/`.of` split. The pair would call `ins` and be called by it,
 # and Bend refuses mutual recursion; a self-call must be IN the def that owns it, so
 # `Bool.pick` carries both branches and the self-call is the FALSE one. `Bool.pick` and
@@ -1903,7 +1893,6 @@ def tn_rop(+ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
 # `is_realized` (P3), `UOp.clone` (P3), `least_upper_dtype` on a weak dtype (P4's
 # dtype.bend) or `substitute` (WALL 3). So the SPINE is ported and the rest is one
 # `TODO(p3)`.
-
 # `UOp.after(self, *src)` is ops.py:599 and ops.bend HAS it (`O.UOp.after`); the
 # STORE it wraps is `UOp.store` (ops.py:594), `UOp(Ops.STORE, src=srcs, kwargs)`.
 # TODO(p3) ops.py:594  symbol=UOp.store  -- written here for `tn_mop`'s reason.
@@ -1928,7 +1917,6 @@ def tn_ib_walk(+ar: O.Arena, +self: U32) -> U32:
 # TODO(p3) tensor.py:236  assign's other eight arms -- WALL 2 (`_buffer`,
 # `on_disk`), P3 (`has_buffer_identity`, `is_realized`, `UOp.clone`), WALL 3
 # (`substitute`) and P4's dtype (`least_upper_dtype` on a weak dtype).
-
 # `backward` -- tensor.py:475-495. BOTH halves are ported. The SCOPE FILTER is the
 # first: `all_uops = self.uop.toposort()` and then
 # `t.uop in all_uops and t.is_floating_point() and t.device is not None`.
@@ -1985,7 +1973,6 @@ def tn_need_grad(+ar: O.Arena, self: U32, scope: Tensors) -> List<&2, U32>:
 # answer could not see it. And a port that walked the two lists in the other order produces
 # the SAME COUNT and a PERMUTED answer. Neither half sees the other's bug; the row is the
 # pair. Measured on the `t_bwd` fixture: see `.agents/slop/BACKWARD-WALK.md`.
-
 # `grads[x] if x in grads else x.const_like(0)` -- mixin/op.py:471, one slot per target.
 # `G.gslot` IS the `x in grads` half and `G.GSlot.v_of` the `grads[x]` half, so the ONLY
 # thing this def adds is the ELSE. `x.const_like(0)` (ops.py:600) is `CONST(0)._mop(EXPAND,
@@ -2062,7 +2049,6 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # `mixin/op.py:468`'s `const_like(1.0)` seed needs the float CONST MINTED HERE. The
 # PORT CAN: a literal is an `F32` and `nn/optim.bend` builds `CFloat{...}` nine
 # times, so this is a missing CALL and not a missing type.
-
 # THE `__i*__` TWELVE AND `__eq__` -- tensor.py:536-549. Twelve methods, each
 # `return self.assign(self.<op>(x))`, and the reason they are not here is NOT operator
 # overloading -- BEND HAS IT (`bend guide:630`: inside `(.. : T)` the operators call `T.add`
@@ -2153,7 +2139,6 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #   "Equality of values is a call, `T.is_eq(a, b)`; `==` is only the type." So `__eq__` has no
 #   operator to be, and the port names `T.is_eq` where it needs the comparison. This is NOT the
 #   `__i*__` blocker: there the operator exists and the assignment does not; here it is reversed.
-
 # the realize path -- tensor.py:167-225. the foreign seam, and the whole of it is
 # three `TODO(p3)`s. They are here, in Python's order and with the wall each CALL
 # names, because "the realize path is a wall" is only useful if the next reader can see
@@ -2193,11 +2178,9 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # TODO(p3) tensor.py:219  realize -- P3's `needs_storage` and `engine/realize.py`'s
 # `run_linear`. The `@disable_gc()` decorator is `contextlib`, a P6 effect, and is not
 # a def.
-
 # THE DEVICE HALF. Every one of these is WALL 2, and they are listed rather than left
 # out because THE LIST IS THE DELIVERABLE: this is the exact set of tensor.py's methods
 # that a Tensor-shaped port cannot have until there is a `Buffer`.
-
 # TODO(p3) tensor.py:38   _fromnp      -- `UOp.new_buffer` + `buffer.allocate`
 # TODO(p3) tensor.py:153  as_param     -- `UOp.param_like` is ops.py:1239, P3
 # TODO(p3) tensor.py:156  call         -- `UOp.call_with_output` + a `grad_fxn` kwarg
@@ -2240,7 +2223,6 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #                                             (`O.UOp.metadata`, uop/ops.bend:2748 symbol=UOp.metadata) and no
 #                                             writer, because the writer needs a scope
 #                                             threaded through `_apply_uop`
-
 # THE METADATA LANE -- tensor.py:567-589 AT THE PIN.
 #
 # the port's three markers named 570, 578 and 588, and all three are two lines
@@ -2302,7 +2284,6 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # them apart would DIVERGE. And an EMPTY NAME is a SET state, not an absent
 # one: `tn_meta_enter_empty` is the row that says so, and it is the row a
 # port with a sentinel default would fail.
-
 # THE CELL. `st` is the `Maybe<&2, O.Metadata>` of `_METADATA`, whose type at
 # the pin is `_ContextVar[Metadata|None]`.
 type MetaCell is Data:
@@ -2437,7 +2418,6 @@ def tn_meta_carries(tm: U32, c: MetaCell, +name: String) -> Maybe<&2, O.Metadata
 # The `tn_alu*` rows call `tn_alu` and not `O.UOp.alu`, and the `tn_mop*`/`tn_rop*` rows
 # call `tn_mop`/`tn_rop`, because a gate row that calls the SUBSTRATE is a row about
 # ops.bend and not about this file.
-
 # the fixture BUFFER. `UOp.new_buffer(device, size, dtype, num)` is ops.py:853 and is
 # WALL 2, but the NODE it builds is not device state -- it is `UOp(Ops.BUFFER,
 # src=UOp.device_range_src(device), arg=ParamArg(slot, dtype, size=size,
@@ -2717,7 +2697,6 @@ def t_assign() -> IO(Unit):
   tn_sig("tn_assign", O.Found.ar(f), O.Found.i(f))
 
 # --- 19-28: the Tensor-level rows, which are not graph shapes --------------------
-
 # `repr(Tensor(5))` and `repr(Tensor(True))`, EXACTLY, including the device column and
 # the grad column. Python's strings are the oracle.
 def t_repr5() -> IO(Unit):
@@ -2950,7 +2929,6 @@ def t_holds() -> IO(Unit):
 # the REAL `_ContextVar` and the REAL `_metadata_wrapper` and prints the same
 # string. The rows are the EDGES, and two of them are the ones a metadata lane
 # gets wrong: "set to an EMPTY value" and "a tensor that NEVER had it".
-
 # THE STATE AT REST. The cell has never been set and it reads ABSENT. This is
 # also the state a cell explicitly set to `None` is in: upstream's cell holds
 # `Metadata|None` and `None` IS its default, so "never set" and "set to None"

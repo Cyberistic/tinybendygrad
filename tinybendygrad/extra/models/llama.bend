@@ -83,7 +83,6 @@ import ./../datasets/__init__.bend as D
 # constructor, after four `linear(...)` calls that EXIST, and it is unconditional in
 # every configuration llama.py actually builds -- `Transformer.__init__` at extra/models/llama.py:195-196
 # passes `qk_norm` through at :199, and every public config in meta's llama sets it).
-
 # THE GATE MOVED TO `gates/models-llama-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the

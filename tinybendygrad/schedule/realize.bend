@@ -72,7 +72,6 @@ import ./../mixin/movement.bend as MX
 import ./__init__.bend as SCH
 
 # 1. THE PROGRAM -- the port's own `Tensor` graph.
-
 # `Tensor.empty(shape)` -- upstream `tinygrad/tensor.py:88`: a BUFFER of
 # `prod(shape)` RESHAPED to the shape. The port's `mxw_buf` is the BUFFER and
 # `mxw_reshape.go` is the RESHAPE, and `.go` rather than `mxw_reshape` because

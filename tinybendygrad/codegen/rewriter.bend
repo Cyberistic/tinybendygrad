@@ -38,7 +38,6 @@
 # TYPE MENTION needs the alias as well as a call -- an unqualified imported `type`
 # name is not in scope -- so it is `RW.Rew` and `RW.Rew.ar`, never `Rew.ar`.
 #
-
 # IT PRINTS NO ROWS AND HAS NO `main`. Running it is not a gate. The 54 rows the
 # merged file printed are `.agents/slop/codegen3-gate.sh`'s, from the three files,
 # CONCATENATED IN PYTHON'S ORDER, and diffed against
@@ -50,12 +49,10 @@
 # diffs it against the original, so "moved verbatim" is a checkable claim and not a
 # promise. The only edits it applies are call-site QUALIFIERS and thirteen
 # single-pass RENAMES to upstream names, and it prints both.
-
 # rewriter.bend -- tinygrad/codegen/simplify.py + codegen/late/coalesce.py +
 # codegen/gpudims.py: the REWRITE TABLES the lowerer runs, in the compiled form
 # `upat.py` emits.
 #
-
 # the unit was named `kernel.py` + `rewriter.py`. neither file exists in this
 # tinygrad. `codegen/` here is a PACKAGE -- there is no `kernel.py` and no
 # `rewriter.py`, and `find tinygrad -name kernel.py` finds only
@@ -75,7 +72,6 @@
 # than silent. `renderer/{cstyle,wgsl}.bend` are the siblings and they consume
 # `kernel.bend`'s output, not this file's.
 #
-
 # THE WALL, stated once and honestly, because it is ONE wall and it is not in
 # this file: `UOp.ranges` is not ported. fold.bend:5067 symbol=UOp.ranges marks
 # `ops.py:465 _ranges` and `ops.py:497 ranges` P3, and says why: `_ranges` is a
@@ -100,7 +96,6 @@
 # wall: it is the ONLY fixture node for which the answer is not `None`, and it is
 # the one whose srcs are all RANGEs.
 #
-
 # `_drop_valid_stmts` is `@functools.cache`d and `memory_coalescing` keeps a
 # `defaultdict` keyed by a 5-tuple. Neither is a set the tables here can hold, and
 # neither has a rule that would fire without it, so neither is a missing TABLE --
