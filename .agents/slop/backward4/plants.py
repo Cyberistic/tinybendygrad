@@ -75,15 +75,38 @@ MUTATIONS = [
   ("twograds", GRAD,
    "    case True{}: fired([ctx], ar)",
    "    case True{}: fired([ctx, ctx], ar)"),
+  # THE PERMUTE'S SRC, AT THE PIN'S SPELLING. The old target built the node with
+  # the order in its ARG, which is what upstream did BEFORE `d063e81f4`; at the pin
+  # the order is `src[1]` and the ARG is None. MEASURED 2026-11-11: the plant read
+  # `VACUOUS: 0 occurrence(s) of the target` -- a mutation that was never applied.
   ("nosrc", GRAD,
-   "  +n = gnew(ar, O.OpsPERMUTE{}, [ctx], O.ATuple{inv})",
-   "  +n = gnew(ar, O.OpsPERMUTE{}, Nil{}, O.ATuple{inv})"),
+   "  +n = gnew(O.Found.ar(sk), O.OpsPERMUTE{}, [ctx, O.Found.i(sk)], O.ANone{})",
+   "  +n = gnew(O.Found.ar(sk), O.OpsPERMUTE{}, [ctx], O.ANone{})"),
   ("emptytargets", GRAD,
    "def pm_targets.of(a: U32) -> List<&2, U32>: [a]",
    "def pm_targets.of(a: U32) -> List<&2, U32>: Nil{}"),
   ("targetsub", GRAD,
    "      +ts = pm_targets.of(a)",
    "      +ts = pm_targets.of(O.Arena.src(ar, a, 0))"),
+  # THE ANSWER's ARG. At the pin a PERMUTE's ARG is None, so `pm_rule_arg` is
+  # always `none` -- and a row that is always the same cannot go red. The plant
+  # gives the ANSWER an ARG, so the row MOVES when the answer is a node with one.
+  ("rulearg", GRAD,
+   "def pm_rule_arg.of(+r: PmRule) -> String:\n  match r:\n    case PmRule{ar, ans, n, ctx}: pm_arg_read(ar, ans)",
+   "def pm_rule_arg.of(+r: PmRule) -> String:\n  match r:\n    case PmRule{ar, ans, n, ctx}: \"PLANTED\""),
+  ("rulearg1", GRAD,
+   "def pm1_rule_arg.of(+r: PmRule1) -> String:\n  match r:\n    case PmRule1{ar, ans, n, ctx}: pm_arg_read(ar, ans)",
+   "def pm1_rule_arg.of(+r: PmRule1) -> String:\n  match r:\n    case PmRule1{ar, ans, n, ctx}: \"PLANTED\""),
+  # THE TUPLE's SECOND HALF -- the HOLE. upstream's rule answers `(node, hole)`,
+  # and the hole is `None` for the PERMUTE rule, so the tuple LENGTH is 2 for
+  # every rule that fires and a row that is always 2 cannot go red. The row is
+  # the SOLID count instead: how many halves are not None.
+  ("rulehole", GRAD,
+   "def pm_rule_tup_len() -> U32: 2",
+   "def pm_rule_tup_len() -> U32: 3"),
+  ("rulehole1", GRAD,
+   "def pm1_rule_tup_len() -> U32: 2",
+   "def pm1_rule_tup_len() -> U32: 3"),
   ("collide", GRAD,
    "  +m0 = pm_leaf(O.Found.ar(per), 3, 2)",
    "  +m0 = pm_leaf(O.Found.ar(per), 0, 2)"),

@@ -134,8 +134,8 @@ PY
     "$ROOT/.venv/bin/python" - "$O" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]); s = p.read_text()
-old = "  per = UOp(Ops.PERMUTE, src=(a,), arg=(1, 2, 0))"
-new = "  per = UOp(Ops.PERMUTE, src=(a,), arg=(2, 1, 0))"
+old = "UOp(Ops.STACK, src=tuple(UOp.const(x) for x in (1, 2, 0)))"
+new = "UOp(Ops.STACK, src=tuple(UOp.const(x) for x in (2, 1, 0)))"
 assert s.count(old) == 1, "the plant target did not land -- VACUOUS, NO VERDICT"
 p.write_text(s.replace(old, new))
 print("    oracleplant: the fixture's PERMUTE order (1,2,0) became (2,1,0)")
