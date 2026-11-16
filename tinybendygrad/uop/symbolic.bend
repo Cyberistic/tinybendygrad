@@ -820,6 +820,7 @@ def Popped.v(p: Popped) -> O.Const:
 # `fold_const_alu` calls it with `truncate_output=False`, so the truncate line is
 # DEAD on the one path symbolic.py uses. The RESULT dtype is truncated anyway,
 # because `DType.const` runs it in `const_like`; the two are separate.
+
 # THE INVALID POISON. ops.py:1432 is
 #     if op in GroupOp.Binary and Invalid in operands: return Invalid
 # and it is the whole of the Invalid story in `exec_alu`: a BINARY op with an
@@ -1661,6 +1662,7 @@ def fold_const_alu.at(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # because the arena is the only shared value and a closure cannot take one. The
 # captures are the same nodes either way, so the rule body still reads as the
 # lambda. EACH RULE IS TWO DEFS, and the split is load-bearing (header).
+
 # `INDEX(_, CONST(Invalid))`, and its `or_casted()` alternative
 # `UPat(Ops.CAST, src=(UPat(Ops.INDEX, ...)))`. `or_casted` is a DISJUNCTION --
 # `UPat.any(self, UPat(Ops.CAST, name=name, src=(self,)))` -- and it copies the
@@ -2572,6 +2574,7 @@ def sym_464(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # that upstream's pattern states, and `gates/symrules-oracle.py` is the CPython
 # oracle that says what upstream's rule answers on a graph that MUST fire and on a
 # graph that must NOT.
+
 # `GroupOp.Binary - GroupOp.Comparison` -- SIXTEEN ops, and it is a `pdict` KEY, so
 # a dropped op makes the rule unfireable and a spurious one makes it fire where
 # Python does not.  `GroupOp.Binary` is NINETEEN and `GroupOp.Comparison` is THREE.
@@ -2822,6 +2825,7 @@ def sym_131(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # CLASS: A GUARDED FORM OF A DELETED RULE KEEPS THE RULE's
 # CONTENT, AND THIS ONE KEPT A RULE THE PIN NEVER HAD IN THE
 # FORM IT WAS WRITTEN IN.
+
 # symbolic.py:133  (UPat(GroupOp.Idempotent, src=(UPat.var("x"), UPat.var("x"))), lambda x: x)
 # the name is bound twice, so the identity check is load-bearing: without it the
 # rule also fires on `x AND y` for two different nodes, and that is a wrong rewrite
@@ -6929,6 +6933,7 @@ def MINT_TAGS() -> List<&2, U32>: [0,2,3,4,6,8,9,10,11,17,19,22,29,30,32,33,34,3
 # - and the `k` is the MOD's divisor divided by `c` -- measured 2026-11-09: a probe
 # read `cval=4` in all three cases, because `sy_src1(x, u)` is the DIV's divisor and not
 # THE MOD's.
+
 # and the CONST's value out of a `Maybe<&2, O.Const>` -- and the `None` case is zero,
 # WHICH IS THE PORT's OWN CONVENTION (`divandmod.bend`'s `dm_ival`).
 def dm_nd_val.of(m: Maybe<&2, O.Const>) -> Maybe<&2, U32>:
@@ -7080,6 +7085,7 @@ def dm_nd.ans(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # read once -- measured 2026-11-09, the three failures were "expected : nd / observed : nd
 # (consumed more than once)", "expected : i / observed : i (consumed more than once)" AND "expected
 # : s0 / observed : s0 (consumed more than once)".
+
 # and the CONST's value is 4 (the divisor) and 2 (the `k`) -- and every value is
 # read, and not only every shape: measured 2026-11-09, a plant that replaced the dividend
 # with the MOD node did not go red when the row checked only the shape.
@@ -7216,6 +7222,7 @@ def t_nd_nodiv() -> Bool:
 # - and the `MOD` half is not ported: upstream's `return ret*gcd if d.op is Ops.MOD else
 # ret` multiplies the remainder by the gcd, and that is a second answer shape and a named
 # WALL (BELOW).
+
 # and "is this node the CONST 1" over an arena and an INDEX -- and the port's own
 # `p_is_const_1` takes a `Folded` and a rule-side INDEX, and the `gcd` is a node in the
 # rule's arena, so the CONST's value is read from the arena directly.
@@ -8314,6 +8321,7 @@ def t_rm_stack() -> U32: Bool.to_u32(eq_u(pm_remove_invalid(fx_of(fx_stack()), 3
 # sink-like, and they DISAGREE -- tag 11 answers the src, tag 12 a flattened
 # rebuild. (`sym_92` and `pm_remove_invalid`'s tag 0 look like a pair and are not:
 # their two shapes are mutually exclusive, so they can never both claim a node.)
+
 # ---- THE ROWS FOR TAGS 13..22, and the COUNT rows for the dtype sets. Every
 # ---- answer index below was read off a run, not assumed, and each negative row
 # ---- exists because its rule's GUARD is load-bearing rather than incidental.
@@ -8658,12 +8666,6 @@ def t_ig_src2() -> U32:
   +fx  = F.folded(O.Found.ar(t87))
   t_ig_src2.of(sym_87(fx, O.Found.i(t87)))
 
-# THE GATE MOVED TO `gates/symbolic-gate.bend`.
-#
-# The rows are consumers: each calls a def above through `P.`, and the
-# driver defines nothing this file needs, which is the line
-# `gates/README.md:173` draws.
-#
-# Its 59 rows are the symbolic tables' own census -- one question at one index
-# per row, over 40 hand-written `fx_*` arenas -- and `gates/symbolic-gate.bend`
-# is the driver that calls `fz.gate()` and prints them.
+def row(nm: String, v: U32) -> IO(Unit):
+  IO.print(String.concat([nm, "=", U32.show(v)]))
+

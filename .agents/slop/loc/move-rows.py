@@ -471,6 +471,43 @@ def move_defs(lines: list[str], start: int, end: int, want: set[str]) -> list[in
     return sorted(set(picked))
 
 
+def importers_need(port: Path, alias: str) -> set[str]:
+    """the def names ANOTHER PORT FILE reaches through this port's alias.
+
+    A PORT FILE THAT OTHER PORT FILES IMPORT is a LIBRARY, and a library's
+    defs are the PORT's -- the rows' own helpers move and the machinery stays.
+
+    MEASURED 2026-11-17: `codegen/late/linearizer.bend`'s move took 175 defs
+    with it -- including `lt_ops_name` and `cfg_entry` -- and
+    `codegen/late/gater.bend` and `codegen/late/regalloc.bend` import the port
+    as `LT` and USE both, so the port stopped compiling.  The rows are the
+    port's GATE, and the machinery is the port's CODE.
+
+    So the defs the importers reach are excluded from the region, and the
+    region is cut ABOVE them.
+    """
+    names: set[str] = set()
+    # THE PORT TREE AND NOT THE REPO.  MEASURED 2026-11-17: the first version
+    # scanned the whole repo and matched `.agents/slop/sym92/probe-dmfixture.bend`
+    # and the driver's own `import ... as P` -- so `divandmod.bend` "had
+    # importers" it does not have, and the region was cut to 6 lines.
+    # THE PORT ROOT, FOUND AND NOT ASSUMED: it is the ancestor whose name is
+    # `tinybendygrad`, so the scan cannot wander into `.agents/slop/`.
+    root = next(a for a in port.parents if a.name == "tinybendygrad")
+    for other in sorted(root.rglob("*.bend")):
+        if other == port:
+            continue
+        try:
+            text = other.read_text(errors="replace")
+        except OSError:
+            continue
+        m = re.search(rf"import [^\n]*{re.escape(port.stem)}\.bend as (\w+)", text)
+        if not m:
+            continue
+        names |= set(re.findall(rf"\b{m.group(1)}\.(\w+)", text))
+    return names
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("port")
@@ -492,6 +529,26 @@ def main() -> int:
     tail_start = next((i for i, l in enumerate(lines)
                         if re.match(r"^def\s+(gate|main)\(", l) and i >= start),
                        len(lines))
+    # A NAMESPACED GATE IS A GATE TOO: `def fz.gate()` is the rows' lane in
+    # `uop/symbolic.bend`, and that file has no `main` and no `gate`.
+    if tail_start >= len(lines):
+        tail_start = next((i for i, l in enumerate(lines)
+                           if re.match(r"^def\s+[\w.]*\.?gate\(", l) and i >= start),
+                          len(lines))
+    # AND A NAMESPACED GATE'S TAIL IS ITS OWN DEF, not the rest of the file.
+    # MEASURED 2026-11-17: `uop/symbolic.bend`'s `fz.gate` is at :8672 and the
+    # file's 143 IMPLEMENTATION defs follow it -- so a tail that ran to EOF
+    # took the implementation with it, and `type Tok` moved into the driver and
+    # the port's own `TClose{}`/`THead{}` lost their type.
+    tail_end = len(lines)
+    if tail_start < len(lines):
+        m = re.match(r"^def\s+([\w.]+)\(", lines[tail_start])
+        if m:
+            j = tail_start + 1
+            while j < len(lines) and not (lines[j] and not lines[j][0].isspace()
+                                          and not lines[j].startswith("#")):
+                j += 1
+            tail_end = j
     # A name the region DECLARES is the region's own, and gets no prefix even when
     # the port declares one too -- `type TFP` is in both, and prefixing its uses
     # while the declaration stays local is a type error at the first call.
@@ -508,6 +565,38 @@ def main() -> int:
     # the port.
     methods = {m.group(1) for m in METHOD.finditer("\n".join(lines[start:end]))}
     extended = {n for n in methods if n in pre}
+    # THE DEFS ANOTHER PORT FILE REACHES ARE THE PORT's.  A port file that
+    # other port files import is a LIBRARY, and the rows' own helpers move and
+    # the machinery stays.
+    #
+    # MEASURED 2026-11-17: `codegen/late/linearizer.bend`'s move took 175 defs
+    # with it -- including `lt_ops_name` and `cfg_entry` -- and
+    # `codegen/late/gater.bend` and `codegen/late/regalloc.bend` import the port
+    # as `LT` and USE both, so the port stopped compiling.  So the region is
+    # cut ABOVE the first def an importer reaches, and the machinery stays.
+    #
+    # THE ALIAS. The port's own header names the alias its importers use, and
+    # the importers' own `import ... as X` names it too -- so the alias is READ
+    # from the importers and not assumed.
+    need = importers_need(port, "")
+    # THE PRINTERS ARE NOT "THE PORT's" -- they are the GATE's, and the driver
+    # has its own.  MEASURED 2026-11-17: `codegen/late/gater.bend` calls
+    # `LT.row` and `LT.srow`, and the first cut put the PRINTER in the
+    # "must keep" set -- so the region became EMPTY and the driver printed
+    # nothing.  The printers are the SHARED service and the driver may have its
+    # own copy.
+    need -= {n for n in need if n in ("row", "rows", "urow", "srow", "brow", "lrow",
+                                      "strrow", "orow", "nrow", "jrow", "sfrow", "print")}
+    if need:
+        # the FIRST def in the region that an importer reaches
+        for i in range(start, end):
+            m = re.match(r"^def\s+([\w.]+)", lines[i])
+            if not m:
+                continue
+            top = m.group(1).split(".")[0]
+            if top in need:
+                end = i
+                break
     # THE NAMED-DEF MODE. `--defs` says WHICH defs move, and then the
     # namespace-extension cut does NOT apply: the defs that move are the
     # FIXTURES and the rows, and they extend no port namespace -- the
@@ -656,8 +745,6 @@ def main() -> int:
         # THE PRINTERS AND THE TAIL. The printers are the region START and the
         # tail is from `gate()` to the end -- and the implementation BETWEEN them
         # stays with the port, so the driver reaches it through `P.`.
-        tail_start = next(i for i, l in enumerate(lines)
-                          if re.match(r"^def\s+(gate|main)\(", l) and i >= start)
         # THE PRINTERS ARE THE PRINTER DEFS -- not everything between them and
         # the tail.  The printer defs are the ones that MATCH the printer
         # shape, and the implementation between them stays with the port.
@@ -665,7 +752,7 @@ def main() -> int:
         for first, last, name in def_extents(lines, start, tail_start):
             if PRINTER.match(lines[first]):
                 printers.extend(range(first, last))
-        idxs = sorted(set(printers) | set(range(tail_start, len(lines))))
+        idxs = sorted(set(printers) | set(range(tail_start, tail_end)))
         body_lines = [lines[i] for i in idxs]
         arms = arm_map(body_lines)
         blocks = block_map(body_lines)
@@ -678,11 +765,16 @@ def main() -> int:
         # the printers to the end of the file -- the printers, `gate()` and
         # `main()` -- and it is what PRINTS.
         picked = set(move_defs(lines, start, end, want))
-        tail_start = next(i for i, l in enumerate(lines)
-                          if re.match(r"^def\s+(gate|main)\(", l) and i >= start)
-        picked |= {i for i in range(tail_start, len(lines))
-                   if lines[i] and not lines[i][0].isspace() and not lines[i].startswith("#")}
-        picked |= set(range(tail_start, len(lines)))
+        # THE PRINTERS TRAVEL WITH THE ROWS.
+        for first, last, name in def_extents(lines, start, end):
+            if PRINTER.match(lines[first]):
+                picked.update(range(first, last))
+        # AND THE TAIL IS OPTIONAL.  MEASURED 2026-11-17: `uop/symbolic.bend`'s
+        # rows are in `fz.gate` and the file has NO `main` and NO `gate`, so the
+        # tail search raised StopIteration and the driver was written from the
+        # stale file.
+        if tail_start < len(lines):
+            picked |= set(range(tail_start, len(lines)))
         idxs = sorted(picked)
         body_lines = [lines[i] for i in idxs]
         arms = arm_map(body_lines)
@@ -710,13 +802,15 @@ def main() -> int:
         ]
         if args.printers:
             picked = set(printers)
-            # THE PRINTERS-AND-TAIL CUT: the printers and the tail go, and the
-            # implementation BETWEEN them stays with the port.
+            # THE PRINTERS-AND-TAIL CUT: the TAIL goes and the implementation
+            # BETWEEN the printers and the tail stays with the port.
+            #
+            # AND THE PRINTERS STAY IN THE PORT TOO.  MEASURED 2026-11-17:
+            # `codegen/late/gater.bend` and `codegen/late/regalloc.bend` call
+            # `LT.row` and `LT.srow`, so removing the printers from the port
+            # broke BOTH -- and the driver has its own copy anyway.
             keep = [l for i, l in enumerate(lines)
-                    if i not in picked and i < tail_start]
-            # the implementation stays; the tail goes; the printers go
-            keep = [l for i, l in enumerate(lines)
-                    if i < tail_start and i not in picked]
+                    if i < tail_start or i in picked]
             port.write_text("\n".join(keep).replace("\n\n\n\n", "\n\n") + "\n")
             print(f"  the port is now {len(keep)} lines")
         elif want:
