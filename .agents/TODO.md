@@ -29672,19 +29672,52 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       cannot be mapped because `movement.bend` and `dtype.bend` are ambiguous
       basenames -- two files each -- and a citation that does not say which file it
       means is not moved by a guess.
-- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-11 on `449f3ffac`: the port is 263,705
-      lines against upstream's 63,395 = **4.16x**; code-only 117,507 vs 56,436 =
-      **2.08x**; gate rows 447, comments 110,539 (42%), blank 35,212 (13%), code
-      117,507 (45%). It was 4.36x / 2.15x before this session's moves.
-- [x] THE CORPUS IS GREEN on `449f3ffac` after every move above:
+- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-16 on `4c6b5e9d8`: the port is 263,060
+      lines against upstream's 63,395 = **4.15x**; code-only 117,279 vs 56,436 =
+      **2.08x**; gate rows 215, comments 110,395 (42%), blank 35,171 (13%), code
+      117,279 (45%). It was 4.36x / 2.15x before this session's moves.
+- [x] THE CORPUS IS GREEN on `4c6b5e9d8` after every move above:
       `graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0
       byte-identical=38`, `controls=5 of 5`, `plants-disagree=8 of 8`,
       `selfcheck=# SELFCHECK: OK`, `oracle-selfcheck=# ORACLE SELFCHECK: OK`,
       `census-rc=rc=0`, and `substrate-start == substrate-end == live ==
-      8ec427b4fb0b9a0aeabffa8eb2950a18ca3a02e7b4c96ad00304a6a513616f52`.
-- [ ] The gate rows still inside `tinybendygrad/` are 447 in 41 files. The largest
-      are `mixin/gradient.bend` 112, `runtime/support/nv/ip.bend` 0 (the seam stays)
-      and `runtime/support/am/amdev.bend` 38. `codegen/decomp/op.bend`'s 36 rows
-      cannot be moved by the textual tool: its region EXTENDS a port namespace
-      (`def dc_l5.mul` where `dc_l5` is above), and a namespace cannot be reopened
-      across files -- measured, the driver answers `expected: a defined name`.
+      08a63770c11a45deca254ff68abe2bc964c87950839fff199fe81e4ffd005fff`.
+- [x] THE GRADIENT's PERMUTE RULE READ THE ORDER OFF THE WRONG PLACE, AND THE
+      ORACLE PROVED IT. The port's `gr_21_marg` read the node's ARG; at the pin
+      `ops.py:772` reads `self.src[1].as_shape`, so the order is the SECOND
+      SOURCE and the ARG is None. MEASURED: the reader answered an EMPTY list,
+      `argsort` of an empty list is empty, and the identity test on an empty list
+      is TRUE -- so the rule answered the CTX for a PERMUTE whose order is
+      (1,2,0), where upstream answers a PERMUTE node. The reader now takes
+      `src[1]`'s children (the order is a STACK of CONSTs, upstream's
+      `shape_to_shape_arg`), and the 40 `pm_*`/`pm1_*` rows agree with CPython's
+      own bytes.
+- [x] FOUR GATE ORACLES SPOKE THE PRE-RENAME ENUM AND DIED ON IT. `1427aac3b`
+      and `75955a97a` renamed five ops (`RECIPROCAL` -> `RECIP`, `CDIV` ->
+      `TRUNCDIV`, `CMOD` -> `TRUNCMOD`, `FLOORDIV` -> `DIV`, `FLOORMOD` -> `MOD`),
+      and `gates/gr_graph_census-oracle.py`, `gates/tc_ptx_render-oracle.py`,
+      `gates/tn_sin_log2_exp2_rsqrt-oracle.py` and
+      `gates/tn_trunc_reciprocal_threefry-oracle.py` still named the old ones --
+      so each raised `AttributeError` at import and its gate REFUSED. All four run
+      now and `gr_graph_census-gate` reads `32 rows, 3 lanes, NO divergences`.
+- [x] THE GRADIENT's ROWS MOVED TO `gates/` AND EVERY ONE OF THEM CAN GO RED.
+      `tinybendygrad/mixin/gradient.bend` was 3,453 lines and is 3,296; its 142
+      rows moved to `gates/gradient-gate.bend`. The rule's ORDER was INVISIBLE to
+      every row (the token rows SORT their srcs), so the `noargsort` plant moved
+      NOTHING -- and a mutation that no row can see is a missing row. The new
+      `pm_order` row reads the answer's `src[1]`'s children IN ORDER, and the
+      sweep reads `THE COVERAGE: 41 of 41 new row(s) are moved by some plant`.
+- [x] THE `ops_python` AND `webgpu_call` AND `torch` AND `datasets` ROWS MOVED TO
+      `gates/`, and each got a lane that can fail. `ops_python.bend` was 3,670
+      lines and is 3,473; `webgpu_call.bend` 1,302 -> 1,129; `torch.bend` 494 ->
+      352; `nn/datasets.bend` 665 -> 327. The datasets ORACLE was 31 ROWS SHORT
+      -- it had no `.npy` lane at all and its `CIFAR_LABEL_OFF` read the IMAGE's
+      offset under the LABEL's name -- and the port's `dst_cifar_split` was wrong
+      for the same reason. All four gates are green and all four go red on a plant.
+- [ ] The gate rows still inside `tinybendygrad/` are 215 in 33 files. The largest
+      are `runtime/support/am/amdev.bend` 38, `uop/symbolic.bend` 36,
+      `codegen/decomp/op.bend` 36 and `codegen/decomp/transcendental_f32.bend` 35.
+      `codegen/decomp/op.bend`'s rows cannot be moved by the textual tool: its
+      region EXTENDS a port namespace (`def dc_l5.mul` where `dc_l5` is above),
+      and a namespace cannot be reopened across files -- measured, the driver
+      answers `expected: a defined name`.
