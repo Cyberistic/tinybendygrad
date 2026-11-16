@@ -67,6 +67,34 @@ def region(lines: list[str]) -> tuple[int, int]:
     return start, end
 
 
+# A TYPE's CONSTRUCTORS. `type NewOpt is Data:` is followed by the
+# constructors as INDENTED lines: `  Nz{n: U32}`. MEASURED 2026-11-16: the
+# optim driver answered `a declared constructor (unknown: Nz)`, because the
+# port's type `NewOpt` and its three constructors moved out of the driver and
+# the driver's `case Nz{n}` had no `Nz` in scope. A constructor under the alias
+# IS reachable -- `P.Nz{}` compiles -- so the constructor is a port name and
+# the prefix goes on it.
+TYPE_CTOR = re.compile(r"^\s{2,}([A-Z][A-Za-z0-9_]*)\s*\{")
+
+
+def type_ctors(lines: list[str]) -> set[str]:
+    """the constructors of every `type ... is Data:` in the tree."""
+    out: set[str] = set()
+    cur: str | None = None
+    for l in lines:
+        m = TYPE.match(l)
+        if m:
+            cur = m.group(1)
+            continue
+        if cur is not None:
+            c = TYPE_CTOR.match(l)
+            if c:
+                out.add(c.group(1))
+            elif l.strip() and not l[0].isspace():
+                cur = None
+    return out
+
+
 def names_of(lines: list[str], end: int) -> set[str]:
     names = set()
     for l in lines[:end]:
@@ -242,6 +270,33 @@ def block_map(lines: list[str]) -> list[set[str]]:
     return out
 
 
+def pattern_binders(pat: str) -> set[str]:
+    """the names a `case` PATTERN binds: the bare names in its `<>` lists.
+
+    A CONSTRUCTOR is `Name{...}` and is not a binder, and a QUALIFIED name is
+    `A.b` and is not a binder either.  MEASURED 2026-11-16: the optim driver
+    answered `a declared constructor (unknown: Nz)` because the pattern check
+    treated every name in the pattern as a binder.
+    """
+    out: set[str] = set()
+    for arm in pat.split("|"):
+        m = re.search(r"\b([A-Za-z_]\w*)\s*<>", arm)
+        if not m:
+            continue
+        head = arm[: m.start()]
+        for nm in re.findall(r"\b([A-Za-z_]\w*)\b", head):
+            if nm in ("Some", "None", "Nil", "True", "False"):
+                continue
+            if re.search(rf"\b{re.escape(nm)}\{{", head):
+                continue
+            out.add(nm)
+        for nm in re.findall(r"\b([A-Za-z_]\w*)\b", arm[m.start():]):
+            if nm in ("Some", "None", "Nil", "True", "False"):
+                continue
+            out.add(nm)
+    return out
+
+
 def prefix(line: str, names: set[str], bound: set[str] | None = None,
             collided: set[str] | None = None,
             arm_binders: set[str] | None = None,
@@ -289,23 +344,20 @@ def prefix(line: str, names: set[str], bound: set[str] | None = None,
         # arm's body (`[Meth.name(mm)]`) was treated as a pattern and the
         # driver answered `expected: a defined name, observed: Meth.name`.
         pat = line.split(":")[0]
+        # THE TOKEN AT HAND IS A PATTERN BINDER, AND THAT IS THE QUESTION. The
+        # first version asked "is ANY name in this pattern a port name?" and
+        # answered for EVERY token on the line -- so `case Nz{n}: "zeros"` (a
+        # CONSTRUCTOR, and the port's own type's constructor) was left bare and
+        # the driver answered `a declared constructor (unknown: Nz)`.
+        #
+        # A BINDER IS A BARE NAME IN A `<>` LIST. So the binders of this pattern
+        # are the names in its `<>` arms, and a token is a binder when it is one
+        # of THEM.
         is_pattern = bool(CASE_ARM.match(line[:m.start()])) and m.start() < len(pat)
-        if is_pattern:
-            # A BINDER SHADOWS THE PORT'S NAME IN THIS PATTERN ONLY. So the
-            # pattern's binders are not prefixed, and the port's name IS
-            # prefixed everywhere else -- including the arm's BODY, which is on
-            # the next line and uses the binder.
-            for nm in re.findall(r"\b([A-Za-z_]\w*)\b", pat):
-                if nm in ("case", "Some", "None", "Nil", "True", "False"):
-                    continue
-                if re.search(rf"\b{re.escape(nm)}\{{", pat):
-                    continue
-                if nm in names:
-                    # the binder wins in the PATTERN -- so it is not prefixed
-                    # HERE. The arm's body is a different line and is handled
-                    # there.
-                    is_pattern = True
-                    break
+        if is_pattern and w in pattern_binders(pat):
+            is_pattern = True
+        elif is_pattern:
+            is_pattern = False
         if bound and w in bound and w not in names:
             is_pattern = True
         if bound and w in bound and w in names:
@@ -403,12 +455,18 @@ def main() -> int:
     # the region declares as `def N.m` EXTENDS the namespace `N` -- it does not
     # declare `N` -- so `N` stays the port's and the driver's `N.m` is `P.N.m`.
     # A name the region declares as `def N` or `type N` IS the region's.
+    # A TYPE's CONSTRUCTORS ARE PORT NAMES TOO, and the region's own type
+    # constructors are the region's -- so a constructor the region DECLARES is
+    # not prefixed and one it does not declare is.
+    region_ctors = type_ctors(lines[start:end])
     region_own = set()
     for l in lines[start:end]:
         m = re.match(r"^(?:def|type)\s+([A-Za-z_]\w*)\s*[( ]", l)
         if m:
             region_own.add(m.group(1))
+    region_own |= region_ctors
     names = names_of(lines, start) - region_own
+    names |= type_ctors(lines[:start])
     # THE NAMES THE REGION BINDS AND THE PORT ALSO DEFINES. A `case v <> t`
     # binds `v`, and the port has a NAMESPACE `v` (`v.fmt3`) -- so the driver's
     # `P.` prefix would turn the binder into `P.v`, which is not a pattern, and
