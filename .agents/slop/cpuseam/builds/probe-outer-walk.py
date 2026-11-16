@@ -60,6 +60,10 @@ def instrument(src: str) -> str:
            " let __l = 0, __x = $$_________tinybendygrad_renderer_cstyle_Rows_ts(_r_0);"
            " while (__x && __x.$ === \"Con\") { __l += 1; __x = __x.tail; }"
            " globalThis.__W.outer += __l;"
+           " globalThis.__W.bh = globalThis.__W.bh || {};"
+           " globalThis.__W.bh[__bi] = (globalThis.__W.bh[__bi] || 0) + 1;"
+           " globalThis.__W.h = globalThis.__W.h || {};"
+           " globalThis.__W.h[__l] = (globalThis.__W.h[__l] || 0) + 1;"
            " let __m = 0, __y = $$_________tinybendygrad_renderer_cstyle_Rows_blk(_r_0, __bi);"
            " while (__y && __y.$ === \"Con\") { __m += 1; __y = __y.tail; }"
            " globalThis.__W.inner += __m;"
@@ -100,6 +104,30 @@ if __name__ == "__main__":
   print(f"  THE INNER WALK (THE BLOCK):      {inner} ELEMENTS A TURN "
         f"({inner / max(calls, 1):.1f} A CALL)")
   print(f"  THE TOTAL: {outer + inner} ELEMENTS A TURN")
+  # **⇒⇒⇒ AND **THE **HISTOGRAM** IS **THE **MECHANISM**: **THE **OUTER WALK's **LENGTH** IS
+  # **THE **POSITION **OF **THE **BLOCK **IN **THE `ts` LIST**, **⇒⇒⇒ AND **ITS **SHAPE** SAYS
+  # **WHETHER **THE **REVERSE **ORDER **IS **THE **PROBLEM**.
+  h = W.get("h", {})
+  # **⇒⇒⇒ AND **THE **PAIR** (**THE **BLOCK INDEX** AND **THE **WALK LENGTH**) IS **WHAT
+  # **TELLS **THE **ORDER** -- **⇒⇒⇒ AND **THE **BLOCK's **POSITION **IN `ts`** IS **THE
+  # **WALK's LENGTH**, **⇒⇒⇒ AND **THE **PAIR **IS **THE **ORDER'S **SIGNATURE****.
+  bh = W.get("bh", {})
+  pairs = []
+  for l in sorted((int(x) for x in h), reverse=True)[:10]:
+    # **THE **BLOCK INDEX **FOR **THE **CALLS **WITH **THIS **WALK LENGTH**:** **THE **COUNT** IS
+    # **THE **SUM **OVER **THE **BLOCKS** THAT **PRODUCE **THIS **LENGTH** -- **⇒⇒⇒ AND **THE
+    # **HISTOGRAM **OF **THE **PAIR** IS **RECONSTRUCTED **FROM **THE **BLOCK INDICES**.
+    c = sum(v for k2, v in bh.items() if abs(int(k2) - l) <= 1)
+    pairs.append((l, c))
+  print(f"\n  THE **BLOCK INDEX** HISTOGRAM (THE **POSITION **IN `ts`**):")
+  for k2 in sorted((int(x) for x in bh), reverse=True)[:8]:
+    print(f"    bi {k2:4d} -> {bh[str(k2)]:6d} calls")
+  print(f"\n  THE OUTER WALK's LENGTH, AS A HISTOGRAM (ELEMENTS -> CALLS):")
+  for k in sorted((int(x) for x in h), reverse=True)[:12]:
+    print(f"    {k:4d} elements -> {h[str(k)]:6d} calls")
+  print(f"    ...")
+  for k in sorted((int(x) for x in h))[:6]:
+    print(f"    {k:4d} elements -> {h[str(k)]:6d} calls")
   print()
   print("**⇒⇒⇒ AND `List.get` IS **THE PRELUDE's **RECURSIVE** WALK** (ONE ELEMENT PER")
   print("CALL), **⇒⇒⇒ AND **THE PRELUDE's `List.get` IS **CALLED **12** PLACES **IN **THE COMPILED")

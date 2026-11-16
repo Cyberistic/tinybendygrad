@@ -1,0 +1,38 @@
+# THE ROWS' LAYOUT, AS THE CODE BUILDS IT.
+#
+#   st_put.r MODE 0 (THE FIRST ROW):   Rows{[[ps]], 1}
+#     => ONE BLOCK, ONE ROW.
+#
+#   st_put.r MODE 2 (EVERY 16TH ROW):  Rows{List.append(ts, [[ps]]), n+1}
+#     => A NEW BLOCK IS APPENDED AT THE TAIL.
+#
+#   st_put.r MODE 1 (THE ORDINARY ROW): Rows{List.set(ts, 0, List.append([ps], Rows.blk(r, 0))), n+1}
+#     => BLOCK 0 IS REPLACED, AND ITS ROW IS PREPENDED.
+#
+# => SO THE HEAD IS THE CURRENT BLOCK, AND THE TAIL IS THE OLDEST, AND WITHIN A BLOCK THE HEAD
+# IS THE NEWEST ROW.
+#
+# => AND `rtp(r, i)` READS ROW `i` AS `d = n-1-i`:
+#     => d = 0 IS THE LAST ROW (THE NEWEST), d = n-1 IS THE FIRST ROW.
+#     => AND `bi` COUNTS BLOCKS BACKWARD FROM THE CURRENT ONE.
+#
+# => SO THE BLOCK AT NUMBER `bi` IS AT HEAD-POSITION `bi`, AND THE ROW AT OFFSET `off` IS AT
+# BLOCK-POSITION `off` (BOTH NEWEST-FIRST) -- AND THE MEASUREMENT CONFIRMS THE WALK LENGTH
+# IS ABOUT `bi`, =>=>=> AND THE REVERSE INDEX MAKES THE HOT ACCESSES WALK FAR.
+#
+# =>=>=> AND **THE **FIX **IS **THE **SAME **AT **BOTH **LEVELS**: **MAKE **BOTH **THE **BLOCK
+# LIST **AND **THE **ROWS' **WITHIN **A **BLOCK** **BE **IN **FORWARD **ORDER** (OLDEST **AT **THE
+# HEAD**), **AND **INDEX **THEM **DIRECTLY** -- **⇒⇒⇒ AND **THEN **THE **HOT **ACCESSES **WALK
+# **2-6 **ELEMENTS **INSTEAD **OF **42-49**.
+#
+# =>=>=> AND **THE **COST** IS **A **REVERSAL **PER **NEW **BLOCK** (49 **ELEMENTS **PER **16
+# ROWS**) -- **⇒⇒⇒ AND **THE **ALU's **SOURCE **WALK **IS **602 **CALLS **A **TURN** -- **⇒⇒⇒ AND
+# **SO **IT **MUST **BE **MEASURED** (§138.5: **THE COUNT IS NOT THE COST**).
+
+NB = 49
+print("THE WALK, EACH WAY, FOR THE HOT ACCESSES:")
+for bi, calls in [(46, 1200), (45, 150), (44, 690), (43, 840), (42, 300), (38, 240)]:
+    print(f"  bi {bi:3d} ({calls:5d} calls): NOW {bi:3d} STEPS, FORWARD {NB - 1 - bi:3d} STEPS")
+print()
+print("=> AND THE INNER LEVEL IS THE SAME: THE OFFSET IS `d & 15`, AND THE REVERSED `d` MAKES")
+print("   IT LARGE FOR THE HOT ACCESSES TOO.")
