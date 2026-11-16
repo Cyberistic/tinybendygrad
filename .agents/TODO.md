@@ -101,40 +101,47 @@ turn-cost       [######..] 6/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangR
                                          MEASURED DECODE PHASE**, **SO §138's DECODE NUMBERS
                                          **CONTAINED **THE HARNESS's OWN BUG**; **THE FIX IS **A
                                          **MEASUREMENT **CORRECTED**, NOT **THE PORT MADE
-                                         FASTER** (VERDICT **0.8436**, `same C: True`).** **⇒⇒⇒ AND
-                                         **THE DECODE IS NOW **0.41 ms** AGAINST **THE 1.53 ms**
-                                         IT WAS AT THE START OF §138**, **AND **THE RENDER IS
-                                         **~1.03 ms** AND IS **BACK TO BEING **THE LARGEST
-                                         PORT-SIDE TERM**.**
-                                         **⇒⇒⇒ AND **THE RENDER HAS **ITS OWN SHAPE
-                                         INSTRUMENT** (`render-shape.py`, WITH **ITS OWN COST
-                                         MEASURED**: THE INFLATION FACTOR IS **~1.25**), **AND
-                                         **THE TRUE PARTS ARE: `named` **1.43 ms**, `emit`
-                                         **0.89**, `stmt` **0.62**, `alu` **0.41**, `decl`
-                                         **0.25** -- **⇒⇒⇒ AND **THEY **DO NOT SUM** (THEY ARE
-                                         **NESTED**) **AND **THERE IS **NO SINGLE DOMINANT
-                                         LEAF**: **THE RENDER IS **A TREE OF **MEDIUM-SIZED
-                                         COSTS**, NOT **A HOT SPOT**.**
+                                         FASTER** (VERDICT **0.8436**). **⇒⇒⇒ AND **THE DECODE IS
+                                         NOW **0.41 ms** AGAINST **THE 1.53 ms** IT WAS AT THE
+                                         START OF §138**, **AND **THE RENDER IS **~1.03 ms** AND
+                                         IS **BACK TO BEING **THE LARGEST PORT-SIDE TERM**.**
+                                         **⇒⇒⇒ AND **§138.7 **FOUND **THE **RENDER's **BIGGEST
+                                         **TERM**: **THE **PRELUDE's **RECURSIVE `List.get`**
+                                         (0.6414 ms **ACROSS **THE **WHOLE **TURN**) -- **AND
+                                         **`rtp` **RUNS **1,237** TIMES **AND **ITS **OUTER
+                                         **WALK **TOUCHES **33,360** ELEMENTS A TURN** (27.0 A
+                                         CALL) **AND **THE **TOTAL **IS **52,547** ELEMENT WALKS
+                                         A TURN** -- **⇒⇒⇒ AND **THE **ROOT **IS **THE
+                                         **REVERSE **INDEX** (`rtp(r, i)` READS ROW `i` AS
+                                         `d = n-1-i`, **AND **THE **ALU's **SOURCES **ARE
+                                         **EARLIER **UOPS**), **⇒⇒⇒ AND **THE **HOT
+                                         **ACCESSES **WALK **42-49** ELEMENTS **WHERE **THE
+                                         **FORWARD **ORDER **WOULD **WALK **2-6** -- **⇒⇒⇒ AND
+                                         **THREE **FIX **ATTEMPTS **FAILED** (READ **7.19x**,
+                                         **4.25x**, AND **`same C: False`**), **⇒⇒⇒ AND **ALL
+                                         **THREE **WERE **REVERTED** (THE **REVERTED **BUILDS
+                                         **ARE **BYTE-IDENTICAL **TO **THE **BASELINE**), **⇒⇒⇒
+                                         AND **THE **CHANGE **IS **NOT **LANDED** BECAUSE **THE
+                                         **RENDER's **STATE **STRUCTURE **IS **THE
+                                         **CORRECTNESS-SENSITIVE **PART** -- **⇒⇒⇒ AND **THE
+                                         **NEXT **ATTEMPT **MUST **REBUILD **BOTH **LEVELS **IN
+                                         **FORWARD **ORDER** **AND **IT **MUST **BE **MEASURED**
+                                         (§138.5: **THE COUNT IS NOT THE COST**)**.**
                                          **⇒⇒⇒ AND **THE `eq_op` REORDER **DOES NOT PAY** --
-                                         **84.6% FEWER COMPARISONS** (23,486 -> 3,628 A TURN) **AND
-                                         **THE RENDER DID NOT MOVE** (VERDICT **0.9967**, INSIDE
-                                         **THE NOISE**), **⇒⇒⇒ AND **THE REASON IS **THE
-                                         TREE's OWN RULE, LEARNED THREE TIMES NOW**: **THE COUNT
-                                         IS NOT THE COST** -- **AND **THE STANDALONE COST IS NOT
-                                         THE COST EITHER** (THE CHAIN COMPARES **INTERNED
-                                         STRINGS**, **SO **JS COMPARES **POINTERS**). **⇒⇒⇒ AND
-                                         **THE O(n) `List.append` FORMS ARE **NO LONGER **A
-                                         CANDIDATE** (THE DEEPEST ACCUMULATOR IS **15**).**
-                                         **⇒⇒⇒ AND **THE NEXT MOVE MUST **BE FOUND **BY **A
-                                         DIFFERENT MOVE** -- **THE INSTRUMENTS ARE
+                                         **84.6% FEWER COMPARISONS** AND **THE RENDER DID NOT
+                                         MOVE** (VERDICT **0.9967**), **⇒⇒⇒ AND **THE REASON
+                                         IS **THAT **THE **STANDALONE **COST **IS NOT **THE
+                                         **COST **EITHER** (THE CHAIN COMPARES **INTERNED
+                                         STRINGS**, **SO **JS COMPARES **POINTERS**).**
+                                         **⇒⇒⇒ AND **THE INSTRUMENTS ARE
                                          `.agents/slop/cpuseam/builds/` (`paired2.py`,
                                          `verdict.py`, `render-shape.py`, `probe-overhead.py`,
-                                         `probe-hot-count.py`, `probe-named-parts.py`,
-                                         `probe-text-arms.py`, `probe-eqop*.py/js`,
-                                         `probe-list-sites.py`, `probe-fold-in-daemon.py`,
-                                         `decode-shape.py`, `probe-*-probe.js`), AND A BUILD IS
-                                         **A SECOND SOURCE OF TRUTH** (§136), SO THE MEASUREMENT
-                                         **BUILDS INSIDE** IT.**
+                                         `probe-text-body.py`, `probe-alu-parts.py`,
+                                         `probe-rtp*.py`, `probe-outer-walk.py`,
+                                         `probe-list-get-sites.py`, `probe-clock-overhead.py`,
+                                         `decode-shape.py`, `probe-*-probe.js`, `model-*.py`), AND A
+                                         BUILD IS **A SECOND SOURCE OF TRUTH** (§136), SO THE
+                                         MEASUREMENT **BUILDS INSIDE** IT.**
                                          **AND THE CORPUS CERTIFICATE IS **GREEN** ON
                                          **`619c40215`** -- **38 graphs / 38 agree / 0 EXCEPTIONS
                                          / 38 BYTE-IDENTICAL**, `substrate-start == substrate-end
