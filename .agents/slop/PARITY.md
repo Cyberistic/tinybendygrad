@@ -7240,3 +7240,93 @@ LONGER **A CANDIDATE**, AND **THE NEXT ONE MUST **BE FOUND **BY **A DIFFERENT MO
 AND `9d2ce4bef`'s SINGLE PAYLOAD SPLIT), **AND **THE PORT's CODE IS **UNCHANGED SINCE** --
 **⇒⇒⇒ AND **THE 38/38 IS **THE FIRST **FULL-COVERAGE CERTIFICATE** IN **THIS SESSION****.
 
+### 138.7 THE **RENDER's BIGGEST TERM** IS **THE PRELUDE's `List.get`**, AND **THE ROWS' OUTER
+#### WALK IS **42-49 ELEMENTS** FOR **THE HOT ACCESSES**
+
+**§138.6's CONCLUSION** (THE RENDER's COST IS **SPREAD**, **NO SINGLE DOMINANT LEAF**) **WAS
+**ABOUT **THE **SHAPE**; **⇒⇒⇒ AND **THE **LEAVES **HAVE **THEIR **OWN **SHAPE**, AND **THIS
+SECTION **FINDS **IT****.
+
+**THE `text` FAMILY's ARM BODIES** (MEASURED, `probe-text-body.py`, **IN THE DAEMON**, 40
+TURNS): **`alu_srcs` 0.4709 ms** -- **THE LARGEST SINGLE ARM BODY** -- **`clang` 0.2935** ·
+**`base` 0.1242** · **`src_pieces` 0.0523** · **`strip_pieces` 0.0254**. **⇒⇒⇒ AND §138.5's
+LESSON IS CONFIRMED **A SECOND TIME**: **THE ARM THAT DOMINATES **THE COUNTS** (`ku_text_alu`,
+294 CALLS) IS **NOT **THE ARM THAT DOMINATES **THE TIME** (`ku_alu_srcs`)**.
+
+**THE ALU's SOURCE WALK, SPLIT** (MEASURED, `probe-alu-parts.py`): **`rtp` 0.4787 ms** -- **THE
+LARGEST SINGLE THING MEASURED IN THE RENDER** -- **`op_at` 0.1048** · **`eq_op` 0.0990** ·
+**`src_pieces` 0.0677**.
+
+**AND `rtp`'s FOUR SUB-CALLS** (MEASURED, `probe-rtp-subs.py`): **`list_get` 0.6414 ms** (THE
+LARGEST, ACROSS **THE WHOLE TURN**) · **`rows_blk` 0.2559** · **`rows_n` 0.1688** · **`rows_off`
+0.1471** · **`rows_bi` 0.1415**.
+
+**⇒⇒⇒ AND `List.get` IS **THE PRELUDE's RECURSIVE, ONE-ELEMENT-AT-A-TIME WALK** (MEASURED,
+**THE COMPILED FORM**: `if (_n_0 == 0) ... else { $0 = _t_0; $1 = _p_0; continue; }`) -- **⇒⇒⇒ AND
+**THAT IS **THE **SAME SHAPE **§125 MOVED TO JS** FOR `String.split` (WHICH WAS **92.6% OF A
+TURN** THEN)****.
+
+**AND THE WALKS, COUNTED** (MEASURED, `probe-outer-walk.py`, **IN THE DAEMON**): **`rtp` RUNS
+**1,237** TIMES A TURN** AND **ITS **OUTER **WALK (OVER **THE 49-BLOCK **LIST**) **TOUCHES
+**33,360** ELEMENTS** (27.0 A CALL) **AND **ITS **INNER **WALK (OVER **THE 16-ELEMENT **BLOCK**)**
+**TOUCHES **19,187** (15.5 A CALL) -- **⇒⇒⇒ AND **THE **TOTAL **IS **52,547** ELEMENT WALKS
+A TURN**, **EVERY **ONE **OF **WHICH **IS **A **RECURSIVE **PRELUDE `List.get` **STEP****.
+
+**AND THE **HISTOGRAM **IS **THE **MECHANISM**: **THE **OUTER **WALK's **LENGTH **IS **44-49
+ELEMENTS FOR **~5,000** OF **THE 1,237** CALLS, **⇒⇒⇒ AND **THE **`bi` **HISTOGRAM** (42-46 FOR
+**~4,300**) **IS **THE **SAME **DISTRIBUTION** -- **⇒⇒⇒ AND **SO **THE **WALK **LENGTH **IS
+**THE **BLOCK's **POSITION**, **AND **THE **BLOCK's **POSITION **IS **LARGE** FOR **THE **HOT
+ACCESSES**.
+
+**⇒⇒⇒ AND **THE **ROOT **IS **THE **REVERSE **INDEX**: `rtp(r, i)` READS ROW `i` AS `d = n-1-i`,
+**⇒⇒⇒ AND **THE **ALU's **SOURCES **ARE **EARLIER **UOPS** (SMALL `i`), **⇒⇒⇒ AND **THAT
+**MAKES **`d` **LARGE**, **⇒⇒⇒ AND **THAT **MAKES **`bi` **LARGE**, **⇒⇒⇒ AND **THAT **MAKES
+**THE **WALK **LONG** -- **⇒⇒⇒ AND **THE **SAME **IS **TRUE **OF **THE **INNER **OFFSET**
+(`d & 15`)****.
+
+**AND `List.get` IS CALLED **12,332** TIMES A TURN** (MEASURED, `probe-list-get-sites.py`), **BY
+SITE**: **`ku_at` 2,378** · **`Rows_blk` 2,211** · **`KU_src0` 2,021** · **`Rows_get` 1,237** ·
+**`pfx_count` 631** · **`xs_at` 602** · **`st_c` 407** · **`fld` 258** · **`KU_src1` 193**.
+
+**⇒⇒⇒ AND **THE **CLOCK's OWN OVERHEAD** IS **WITHIN NOISE** (MEASURED,
+`probe-clock-overhead.py`: **THE SAME FUNCTION CLOCKED AND UNCLOCKED**, **-0.0121 ms**) -- **⇒⇒⇒
+AND **THE **ISOLATED** COST OF **52,547 RECURSIVE STEPS** IS **0.0426 ms**
+(`probe-rtp-cost-probe.js`) **AGAINST **THE IN-DAEMON **0.4787 ms** -- **⇒⇒⇒ AND **THAT **11x
+GAP** IS **§138.5's LESSON **IN **THE **OTHER **DIRECTION**: **THE ISOLATED COST IS NOT THE COST
+EITHER**, **⇒⇒⇒ AND **THE IN-RENDER CONTEXT (CACHE) IS **THE **DIFFERENCE****.
+
+#### ⇒⇒⇒ AND THREE **FIX ATTEMPTS** FAILED, AND **THE FAILURES ARE **THE RECORD
+
+**ATTEMPT 1 (THE **TAIL **WALK**):** `Rows.blk` WALKED **FROM **THE **TAIL** -- **⇒⇒⇒ AND **THE
+**COUNTER **WAS **NEVER **DECREMENTED** (SO **THE **WALK **RAN **TO **THE **END **EVERY TIME**)
+**AND **THE **ACCUMULATOR **WAS **BUILT **WITH **THE O(n) FORM** (`List.append(acc, [h])` **COPIES
+**THE **ACCUMULATOR**) -- **⇒⇒⇒ AND **THE **RENDER **READ **7.19x SLOWER** AND **`same C:
+False`**.
+
+**ATTEMPT 2 (THE **COUNTER **FIXED, **THE **O(1) **PREPEND**):** **⇒⇒⇒ AND **PREPENDING
+**REVERSES **THE **VISIT **ORDER**, **AND **THE **BLOCK **THE **CALLER **WANTS **IS **THE **ONE
+**VISITED **LAST** -- **⇒⇒⇒ AND **SO **THE **RENDER **READ **4.25x SLOWER** AND **`same C:
+False`**.
+
+**ATTEMPT 3 (NO **ACCUMULATOR **AT **ALL** -- **THE **WALK **CARRIES **THE **BLOCK **AND **THE
+**COUNTER**):** **⇒⇒⇒ AND **IT **GAVE **A **REAL **WIN** (**RATIO-OF-MINIMA **0.9675**) **BUT
+**STILL **`same C: False`**, **⇒⇒⇒ AND **BECAUSE **THE **WALK **STILL **STARTED **AT **THE
+**HEAD** -- **⇒⇒⇒ AND **SO **IT **FOUND **THE **HEAD-SIDE **BLOCK**, **AND **THE **INDEX **HAD
+**TO **BE **REVERSED** TOO**.
+
+**⇒⇒⇒ AND **ALL THREE **WERE **REVERTED** (AND **THE **REVERTED **BUILDS **ARE
+**BYTE-IDENTICAL **TO **THE **BASELINE**), **⇒⇒⇒ AND **THE **CHANGE **IS **NOT **LANDED**
+**BECAUSE **THE **RENDER's **STATE **STRUCTURE **IS **THE **CORRECTNESS-SENSITIVE **PART**, **⇒⇒⇒
+AND **A **HALF-DONE **CHANGE **TO **IT **IS **WORSE **THAN **NO **CHANGE****.
+
+**⇒⇒⇒ AND **THE **NEXT **ATTEMPT **MUST **REBUILD **BOTH **LEVELS **IN **FORWARD **ORDER**
+(`st_put.r`'s MODE 1 **AND **MODE 2**, **PLUS **THE **ROW **WITHIN **A **BLOCK**), **⇒⇒⇒ AND **THE
+**REVERSAL's COST **IS **ONE **PASS **PER **16 **ROWS** (49 **ELEMENTS**), **⇒⇒⇒ AND **THE
+**ALU's **SOURCE **WALK **IS **602 **CALLS A TURN** -- **⇒⇒⇒ AND **SO **IT **MUST **BE
+**MEASURED** (§138.5: **THE COUNT IS NOT THE COST**)****.
+
+**⇒⇒⇒ AND **THE **PREDICTED **SAVING**, IF **IT **PAYS** (`model-layout.py`): **THE **HOT
+**ACCESSES **GO **FROM **42-49 **ELEMENTS **TO **2-6** -- **⇒⇒⇒ AND **THE **MODEL **AND **THE
+**MEASUREMENT **AGREE** ON **THE **WALK's **LENGTH**, **⇒⇒⇒ AND **THE **HISTOGRAM **IS **THE
+**MECHANISM****.
+
