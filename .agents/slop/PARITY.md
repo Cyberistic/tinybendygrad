@@ -7194,3 +7194,49 @@ PORT-SIDE O(n) FORM **THE INSTRUMENTS HAVE FOUND**, AND **IT IS **THE **NEXT** C
 **ITS SHAPE IS **KNOWN**: **PREPEND EACH ELEMENT, AND REVERSE ONCE AT **THE ONE READER** (THE
 TREE's OWN PATTERN, `live.bend`'s `kus_bytes`)**.
 
+### 138.6 THE RENDER's TRUE SHAPE, AND **THE CERTIFICATE AT `619c40215`**
+
+**THE RENDER's TRUE PARTS** (MEASURED, `render-shape.py` **WITH `probe-overhead.py`'s
+**PAIRED** INFLATION FACTOR** -- **1.2483** ON THIS RUN, AND **1.2526 / 1.2162 / 1.2518** ON
+§138.3's THREE):
+
+| part | shaped | ESTIMATED TRUE |
+|---|---|---|
+| **named** | 1.7817 | **1.43 ms** |
+| **emit** | 1.1140 | **0.89 ms** |
+| **stmt** | 0.7753 | **0.62 ms** |
+| **alu** | 0.5098 | **0.41 ms** |
+| **decl** | 0.3157 | **0.25 ms** |
+| `strip` | 0.0212 | **0.017 ms** |
+
+**⇒⇒⇒ AND **THE PARTS **DO NOT SUM** (THEY ARE **NESTED**), **AND **THERE IS **NO SINGLE
+DOMINANT LEAF** -- **THE RENDER's COST IS **SPREAD**, **⇒⇒⇒ AND **THAT IS **THE HONEST
+CONCLUSION OF **THE MEASUREMENT**, AND **IT IS **WHAT §138.5's NEGATIVE RESULT POINTS AT**:
+**THE RENDER IS **A TREE OF **MEDIUM-SIZED COSTS**, **NOT **A HOT SPOT**.
+
+**AND THE FOLDS, AFTER §138.4's HARNESS FIX** (MEASURED, `probe-fold-in-daemon.py`, IN THE
+DAEMON): **`List_append` 18,276 LEVELS A TURN, DEEPEST **49** (WAS **741** BEFORE THE FIX)**,
+AND **`String_concat` 13,389 LEVELS, DEEPEST **12** -- **⇒⇒⇒ AND **THE PER-LEVEL PRICE
+(~0.17 us) IS **THE CLOCK's OWN OVERHEAD**, **⇒⇒⇒ SO **THE FOLDS ARE **NOT **A COST** (THE
+`List_append`'s DEEPEST CHAIN IS **49**, AND **THE O(n) SITES' DEEPEST ACCUMULATOR IS **15** --
+`ku_args_go` -- **AND **THE ALU's IS **2**)****.
+
+**⇒⇒⇒ AND **THE REMAINING O(n) FORMS ARE **SMALL**: `ku_args_go` (16 CALLS, DEEPEST 15) ·
+`i64_dec_go` (47, 3) · `ku_stack_srcs_go` (8, 3) · `uops_to_dtypes_put` (782, 2) ·
+**`ku_alu_srcs_go` (602, 2)**. **⇒⇒⇒ AND **THE TOTAL ELEMENTS COPIED A TURN IS **~3,182**
+(AGAINST **17,825** BEFORE §138.4's HARNESS FIX)** -- **⇒⇒⇒ SO **THE O(n) FORMS ARE **NO
+LONGER **A CANDIDATE**, AND **THE NEXT ONE MUST **BE FOUND **BY **A DIFFERENT MOVE**.
+
+**AND THE CERTIFICATE** (TAKEN IN A CLEAN WORKTREE, ON `619c40215`):
+`substrate-start == substrate-end == live` (**40c2799334e582f9**), **38 graphs / 38 answered /
+38 AGREE / 0 DISAGREE / 38 BYTE-IDENTICAL / 0 REFUSED**, `expect-moved=0`,
+`stable-pairs 5 of 5`, `plants-disagree 8 of 8`, `cross 1 of 1`, `conflations 4 of 4`,
+`controls 5 of 5`, `selfcheck OK`, `oracle-selfcheck OK`, `census-rc=rc=0`,
+**`repro`: 339 of 339 FILES IDENTICAL ACROSS TWO CLEAN RUNS**, AND
+**`gates/corpuswitness-gate.py` -> `PASS -- the claim is ESTABLISHED`** (ALL SEVEN READINGS OK).
+**AND THE PROOF GATE: `ALL PROOFS CHECK`, rc=0.**
+
+**⇒⇒⇒ AND THE TWO §138 PORT CHANGES ARE **IN **THIS CERTIFICATE** (`cb2ebd665`'s SINGLE SPLIT
+AND `9d2ce4bef`'s SINGLE PAYLOAD SPLIT), **AND **THE PORT's CODE IS **UNCHANGED SINCE** --
+**⇒⇒⇒ AND **THE 38/38 IS **THE FIRST **FULL-COVERAGE CERTIFICATE** IN **THIS SESSION****.
+
