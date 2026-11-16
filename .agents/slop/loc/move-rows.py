@@ -236,9 +236,15 @@ def prefix(line: str, names: set[str], bound: set[str] | None = None,
         # the pattern's binders are the arm's own -- so a name inside the
         # pattern is not a reference. The arm's body may be on the NEXT line,
         # so the decision has to be made per PATTERN, not per line.
-        is_pattern = bool(CASE_ARM.match(line[:m.start()]))
+        # THE PATTERN IS UP TO THE `:` -- and the arm's BODY is after it. So a
+        # token is in the PATTERN only if it is BEFORE the colon. MEASURED
+        # 2026-11-11: the check was `CASE_ARM.match(line[:m.start()])`, and on a
+        # line that BEGINS with `case` that is true for EVERY token -- so the
+        # arm's body (`[Meth.name(mm)]`) was treated as a pattern and the
+        # driver answered `expected: a defined name, observed: Meth.name`.
+        pat = line.split(":")[0]
+        is_pattern = bool(CASE_ARM.match(line[:m.start()])) and m.start() < len(pat)
         if is_pattern:
-            pat = line.split(":")[0]
             # A BINDER SHADOWS THE PORT'S NAME IN THIS PATTERN ONLY. So the
             # pattern's binders are not prefixed, and the port's name IS
             # prefixed everywhere else -- including the arm's BODY, which is on

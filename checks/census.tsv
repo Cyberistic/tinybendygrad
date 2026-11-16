@@ -602,9 +602,8 @@ W-603	runtime/support/objc.bend	65	TODO(p3)	claim	STILL-A-WALL		runtime/support/
 W-604	runtime/support/objc.bend	79	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:13	subject unported or a residual arm of a ported def
 W-605	runtime/support/objc.bend	88	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:49	subject unported or a residual arm of a ported def
 W-606	runtime/support/objc.bend	89	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:71	subject unported or a residual arm of a ported def
-W-607	runtime/support/objc.bend	1060	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:25	subject unported or a residual arm of a ported def
-W-608	runtime/support/objc.bend	1061	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:30	subject unported or a residual arm of a ported def
-W-609	runtime/support/objc.bend	1062	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cpu.py:19	subject unported or a residual arm of a ported def
+W-607	gates/objc-gate.bend	406	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:25	subject unported or a residual arm of a ported def
+W-608	gates/objc-gate.bend	407	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:30	subject unported or a residual arm of a ported def
 W-610	runtime/support/rdma/bnxtdev.bend	166	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:77	subject unported or a residual arm of a ported def
 W-611	runtime/support/rdma/bnxtdev.bend	167	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:87	subject unported or a residual arm of a ported def
 W-612	runtime/support/rdma/bnxtdev.bend	168	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:131	subject unported or a residual arm of a ported def

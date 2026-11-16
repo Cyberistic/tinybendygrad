@@ -153,6 +153,16 @@ LANES = [
 
 # --------------------------------------------------------------------------- runners
 
+# THE LANE'S DRIVER, WHERE THE ROWS MOVED. A lane's rows are a GATE's rows, and
+# `gates/README.md:173` puts a gate's `.bend` driver in `gates/` -- so a lane
+# whose rows have moved runs the DRIVER, not the port. MEASURED 2026-11-11: the
+# objc lane ran `tinybendygrad/runtime/support/objc.bend` and the port printed
+# nothing, because its 123 rows had moved to `gates/objc-gate.bend`.
+DRIVERS = {
+  "runtime/support/objc.bend": "gates/objc-gate.bend",
+}
+
+
 def port_rows(rel: str) -> tuple[list | None, str]:
     """the PORT's lane, through the lock and the watchdog.  `(rows, why)`.
 
@@ -162,7 +172,7 @@ def port_rows(rel: str) -> tuple[list | None, str]:
     census answered "the driver is absent" for all THIRTEEN lanes: it looked for
     `<repo>/renderer/isa/x86.bend`, which is not a path in this tree.)
     """
-    src = PORT_ROOT / rel
+    src = ROOT / DRIVERS[rel] if rel in DRIVERS else PORT_ROOT / rel
     if not src.is_file():
         return None, f"the driver is absent: {src}"
     cmd = [str(LOCK), "--", str(PY), str(BOUNDED), "--seconds", "300", "--mb", "2048",
