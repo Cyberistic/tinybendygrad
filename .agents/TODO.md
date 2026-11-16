@@ -94,49 +94,56 @@ turn-cost       [######..] 6/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangR
                                          `Data` TYPE (VERDICT **0.8526**); **AND (b)** EVERY
                                          PAYLOAD FIELD RE-SPLIT THE PAYLOAD -- 258 PRELUDE
                                          `String.split` CALLS A TURN -> **113** (VERDICT
-                                         **0.8698** AND **0.8736** ON TWO RUNS). **⇒⇒⇒ AND
-                                         **THE DECODE IS NOW **0.41 ms** (THE PAIRED MINIMUM)
-                                         AGAINST **THE 1.53 ms** IT WAS AT THE START OF §138.**
-                                         **⇒⇒⇒ AND **THE **HARNESS's** OWN DECODE WAS **O(n²)** --
-                                         THE `List.append` FOLD's DEEPEST CHAIN IS **741**
-                                         ELEMENTS **AT **THE HARNESS's `decode.go`** -- **AND
-                                         THAT COST WAS **INSIDE **THE MEASURED DECODE PHASE**,
-                                         **SO §138's DECODE NUMBERS **CONTAINED **THE HARNESS's
-                                         OWN BUG**; **THE FIX IS **A **MEASUREMENT
-                                         **CORRECTED**, NOT **THE PORT MADE FASTER** (VERDICT
-                                         **0.8436**, `same C: True`).**
-                                         **⇒⇒⇒ AND **THE RENDER IS **THE LARGEST TERM** AGAIN**
-                                         (**~1.03 ms** AGAINST **THE DECODE's 0.41 ms**), AND **IT
-                                         NOW HAS **ITS OWN SHAPE INSTRUMENT**
-                                         (`render-shape.py`, WITH **ITS OWN COST MEASURED**:
-                                         THE INFLATION FACTOR IS **1.2526**). **THE TRUE
-                                         PARTS: `named` 1.50-1.82 ms, `emit` 1.01-1.18 ms,
-                                         `stmt` 0.72-0.85 ms, `alu` 0.38-0.48 ms.**
-                                         **⇒⇒⇒ AND **THE DISPATCH IS **PRICED**: THE
-                                         `ku_text_go` CHAIN IS **16 `Ops` COMPARISONS**,
-                                         **432 OF 782 ROWS FALL THROUGH** TO THE `else`,
-                                         **10,088 COMPARISONS A TURN**, AND **ITS PRICE IS
-                                         **~0.041 ms** = **4.0% OF THE RENDER** -- **AND AN
-                                         INTEGER DISPATCH WOULD COST **1/6** OF IT** -- **BUT IT
-                                         IS **A LARGE CHANGE**, **SO IT IS **THE **SECOND**
-                                         PRIORITY** AND **THE ARMS' BODIES ARE **THE FIRST**.
-                                         **⇒⇒⇒ AND THE SUBSTRATE **MOVED** TWICE SINCE §137, SO
-                                         EVERY NUMBER IS **RE-MEASURED**, IN **A DEDICATED
-                                         WORKTREE**, AND `bin/bend` WAS **BROKEN** AND IS FIXED
-                                         (**BEND 2.0.40**).
-                                         **THE INSTRUMENTS ARE IN `.agents/slop/cpuseam/builds/`
-                                         (`paired2.py`, `verdict.py`, `noisefloor2.py`,
-                                         `decode-shape.py`, `render-shape.py`,
-                                         `probe-overhead.py`, `probe-hot-count.py`,
+                                         **0.8698** AND **0.8736**). **⇒⇒⇒ AND **THE **HARNESS's**
+                                         OWN DECODE WAS **O(n²)** (THE `List.append` FOLD's DEEPEST
+                                         CHAIN IS **741** ELEMENTS **AT **THE HARNESS's
+                                         `decode.go`**) -- **AND THAT COST WAS **INSIDE **THE
+                                         MEASURED DECODE PHASE**, **SO §138's DECODE NUMBERS
+                                         **CONTAINED **THE HARNESS's OWN BUG**; **THE FIX IS **A
+                                         **MEASUREMENT **CORRECTED**, NOT **THE PORT MADE
+                                         FASTER** (VERDICT **0.8436**, `same C: True`).** **⇒⇒⇒ AND
+                                         **THE DECODE IS NOW **0.41 ms** AGAINST **THE 1.53 ms**
+                                         IT WAS AT THE START OF §138**, **AND **THE RENDER IS
+                                         **~1.03 ms** AND IS **BACK TO BEING **THE LARGEST
+                                         PORT-SIDE TERM**.**
+                                         **⇒⇒⇒ AND **THE RENDER HAS **ITS OWN SHAPE
+                                         INSTRUMENT** (`render-shape.py`, WITH **ITS OWN COST
+                                         MEASURED**: THE INFLATION FACTOR IS **~1.25**), **AND
+                                         **THE TRUE PARTS ARE: `named` **1.43 ms**, `emit`
+                                         **0.89**, `stmt` **0.62**, `alu` **0.41**, `decl`
+                                         **0.25** -- **⇒⇒⇒ AND **THEY **DO NOT SUM** (THEY ARE
+                                         **NESTED**) **AND **THERE IS **NO SINGLE DOMINANT
+                                         LEAF**: **THE RENDER IS **A TREE OF **MEDIUM-SIZED
+                                         COSTS**, NOT **A HOT SPOT**.**
+                                         **⇒⇒⇒ AND **THE `eq_op` REORDER **DOES NOT PAY** --
+                                         **84.6% FEWER COMPARISONS** (23,486 -> 3,628 A TURN) **AND
+                                         **THE RENDER DID NOT MOVE** (VERDICT **0.9967**, INSIDE
+                                         **THE NOISE**), **⇒⇒⇒ AND **THE REASON IS **THE
+                                         TREE's OWN RULE, LEARNED THREE TIMES NOW**: **THE COUNT
+                                         IS NOT THE COST** -- **AND **THE STANDALONE COST IS NOT
+                                         THE COST EITHER** (THE CHAIN COMPARES **INTERNED
+                                         STRINGS**, **SO **JS COMPARES **POINTERS**). **⇒⇒⇒ AND
+                                         **THE O(n) `List.append` FORMS ARE **NO LONGER **A
+                                         CANDIDATE** (THE DEEPEST ACCUMULATOR IS **15**).**
+                                         **⇒⇒⇒ AND **THE NEXT MOVE MUST **BE FOUND **BY **A
+                                         DIFFERENT MOVE** -- **THE INSTRUMENTS ARE
+                                         `.agents/slop/cpuseam/builds/` (`paired2.py`,
+                                         `verdict.py`, `render-shape.py`, `probe-overhead.py`,
+                                         `probe-hot-count.py`, `probe-named-parts.py`,
+                                         `probe-text-arms.py`, `probe-eqop*.py/js`,
                                          `probe-list-sites.py`, `probe-fold-in-daemon.py`,
-                                         `probe-dispatch-count.py`, `probe-*-probe.js`), AND A
-                                         BUILD IS **A SECOND SOURCE OF TRUTH** (§136), SO THE
-                                         MEASUREMENT **BUILDS INSIDE** IT.
+                                         `decode-shape.py`, `probe-*-probe.js`), AND A BUILD IS
+                                         **A SECOND SOURCE OF TRUTH** (§136), SO THE MEASUREMENT
+                                         **BUILDS INSIDE** IT.**
                                          **AND THE CORPUS CERTIFICATE IS **GREEN** ON
-                                         **`aa736032b`**, **`9d2ce4bef`** AND **`f0caca346`**
-                                         (**38 graphs / 38 agree / 0 EXCEPTIONS**, THE LAST PERMUTE
-                                         EXCEPTION CLOSED BY ANOTHER UNIT), AND **ON `64bc53f29`**
-                                         (§137).
+                                         **`619c40215`** -- **38 graphs / 38 agree / 0 EXCEPTIONS
+                                         / 38 BYTE-IDENTICAL**, `substrate-start == substrate-end
+                                         == live`, repro 339 of 339, `corpuswitness-gate` PASS --
+                                         **AND IT IS **THE FIRST **FULL-COVERAGE (38/38)
+                                         CERTIFICATE IN **THIS SESSION** AND **IT INCLUDES **BOTH
+                                         §138 PORT CHANGES**; **AND **ON `aa736032b`**,
+                                         **`9d2ce4bef`**, **`f0caca346`**, AND **`64bc53f29`**
+                                         (§137).**
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
                                         **324 bindings -> 308 laws -> 305 LINKED ->
