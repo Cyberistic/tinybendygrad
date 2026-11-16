@@ -29679,10 +29679,30 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       cannot be mapped because `movement.bend` and `dtype.bend` are ambiguous
       basenames -- two files each -- and a citation that does not say which file it
       means is not moved by a guess.
-- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-16 on `4c6b5e9d8`: the port is 263,060
-      lines against upstream's 63,395 = **4.15x**; code-only 117,279 vs 56,436 =
-      **2.08x**; gate rows 215, comments 110,395 (42%), blank 35,171 (13%), code
-      117,279 (45%). It was 4.36x / 2.15x before this session's moves.
+- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-17 on `bd7a2d14c`: the port is 251,376
+      lines against upstream's 63,395 = **3.97x**; code-only 111,863 vs 56,436 =
+      **1.98x**; gate rows **0**, comments 107,185 (43%), blank 32,328 (13%), code
+      111,863 (45%). It was 4.36x / 2.15x before this session's moves, and the
+      code-only ratio is under 2x for the FIRST TIME.
+- [x] THE GATE ROWS ARE ALL OUT OF THE PORT. MEASURED: the port's 201 `.bend`
+      files carry **ZERO** `row(`/`srow(` lines, against 991 at the start of this
+      session. Every one moved to a driver in `gates/`, and every driver's output
+      is BYTE-IDENTICAL to its port's before the move -- thirty-one `diff`s, all
+      silent. The last file, `codegen/decomp/op.bend`, needed a new mode: its
+      region was 1,845 lines of which 212 defs are the IMPLEMENTATION and the
+      rest are the printers and the rows, and the implementation is the PORT's
+      (the port's own defs call it 40 times each). So the printers and the tail
+      move and the implementation does NOT, and the driver reaches the
+      implementation through `P.`.
+- [x] THE BLANK LINE BETWEEN TWO COMMENT BLOCKS GOES, AND THE HEADER DOES NOT.
+      MEASURED: 1,138 blank lines in 142 files, and the port is 1,138 lines
+      shorter. But the 1:1 METRIC reads the port's FIRST 40 LINES for its
+      upstream mapping, so a blank line removed from a header MERGES two header
+      blocks and a NEW upstream file enters the mapping -- the first version of
+      this pass moved the metric's upstream population from 63,395 to 89,546
+      lines and the RATIO fell from 3.97x to 2.83x, and the port did not
+      change. So the first 40 lines of every port file are left alone, and the
+      mapping is now byte-identical to HEAD for all 201 files.
 - [x] THE CORPUS IS GREEN on `4c6b5e9d8` after every move above:
       `graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0
       byte-identical=38`, `controls=5 of 5`, `plants-disagree=8 of 8`,
@@ -29721,10 +29741,10 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       -- it had no `.npy` lane at all and its `CIFAR_LABEL_OFF` read the IMAGE's
       offset under the LABEL's name -- and the port's `dst_cifar_split` was wrong
       for the same reason. All four gates are green and all four go red on a plant.
-- [ ] The gate rows still inside `tinybendygrad/` are 215 in 33 files. The largest
-      are `runtime/support/am/amdev.bend` 38, `uop/symbolic.bend` 36,
-      `codegen/decomp/op.bend` 36 and `codegen/decomp/transcendental_f32.bend` 35.
-      `codegen/decomp/op.bend`'s rows cannot be moved by the textual tool: its
-      region EXTENDS a port namespace (`def dc_l5.mul` where `dc_l5` is above),
-      and a namespace cannot be reopened across files -- measured, the driver
-      answers `expected: a defined name`.
+- [x] The gate rows still inside `tinybendygrad/` are **ZERO**. The blocker that
+      stopped `codegen/decomp/op.bend` -- "its region EXTENDS a port namespace
+      (`def dc_l5.mul` where `dc_l5` is above), and a namespace cannot be
+      reopened across files" -- was REAL and it is now BYPASSED: the printers
+      and the tail move and the implementation does not, so the driver never
+      reopens a namespace. MEASURED: the driver answers `expected: a defined
+      name` only when it tries, and it does not try any more.
