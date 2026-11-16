@@ -57,7 +57,7 @@ row-maker is a function **the port defines** whose **first parameter is the row 
 MEASURED, the port's own definitions: `def r_lt(+nm: String, +d: S.Dt) -> String:` at
 `tinybendygrad/renderer/llvmir.bend:462`, `def lf_row(nm: String, b: Bnd2) -> IO(Unit):` at
 `tinybendygrad/uop/fold.bend:4614`, `def srow(nm: String, v: String) -> IO(Unit):` and
-`def urow(nm: String, v: U32) -> IO(Unit):` at `tinybendygrad/examples/train_resnet.bend:104,108`,
+`def urow(nm: String, v: U32) -> IO(Unit):` at `gates/train_resnet-gate.bend:25,27`,
 and `def u1(nm: String, v: U32) -> String:` at `tinybendygrad/runtime/support/usb.bend:96`. The
 gate PRINTS the set it discovered and WHERE each definition is, so a reader can re-run the grep
 and see that the set is not a list somebody typed. The port's def names are DOTTED

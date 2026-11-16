@@ -3409,33 +3409,11 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # `len(src) == 1`. `sp_ler` here folds over EVERY src, which is what Python's
 # `{u.op for u in uop.src}` does. REPORTED, NOT FIXED: `ops.bend` is not this file's.
 
-def row(nm: String, v: U32) -> IO(Unit):
-  IO.print(String.concat([nm, "=", U32.show(v)]))
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    a : Unit <- row("sh_len", t_sh_len())
-    b : Unit <- row("te_len", t_te_len())
-    c : Unit <- row("pr_len", t_pr_len())
-    d : Unit <- row("hq_len", t_hq_len())
-    e : Unit <- row("fu_len", t_fu_len())
-    f : Unit <- row("kg_len", t_kg_len())
-    g : Unit <- row("tag_const", t_tag_const())
-    h : Unit <- row("tag_rej", t_tag_rej())
-    i : Unit <- row("sink_ok", t_sink_ok())
-    j : Unit <- row("noop_ok", t_noop_ok())
-    k : Unit <- row("noop_kg", t_noop_kg())
-    l : Unit <- row("const_ok", t_const_ok())
-    m : Unit <- row("stack_dt", t_stack_dt())
-    n : Unit <- row("shl_wins", t_shl_wins())
-    o : Unit <- row("shl_ok", t_shl_ok())
-    p : Unit <- row("cf_arg_ok", t_cf_arg_ok())
-    q : Unit <- row("cf_arg_str", t_cf_arg_str())
-    r : Unit <- row("cf_arg_after", t_cf_arg_after())
-    r2 : Unit <- row("cf_arg_noop", t_cf_arg_noop())
-    r3 : Unit <- row("backedge_ok", t_backedge_ok())
-    s : Unit <- row("prog4_ok", t_prog4_ok())
-    t : Unit <- row("hcq_plain", t_hcq_plain())
-    u : Unit <- row("hcq_after", t_hcq_after())
-    row("multidev_ok", t_multidev_ok())
-    row("multidev_bad", t_multidev_bad())
+# THE GATE MOVED TO `gates/spec-gate.bend`.
+#
+# The rows are consumers: each calls a def above through `P.`, and the
+# driver defines nothing this file needs, which is the line
+# `gates/README.md:173` draws.
+#
+# Its rows are the census this file prints, and `gates/<name>-gate.bend` is the
+# driver that prints them.

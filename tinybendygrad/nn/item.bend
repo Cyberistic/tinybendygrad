@@ -2,7 +2,7 @@
 #
 # THE LAST STEP OF AN EVAL. Forward pass -> logits on device -> argmax -> `item`
 # -> compare with the label. Without it there is NO eval output at all, and
-# `examples/test_pkl_imagenet.bend:176 symbol=pkl_predict` names it as the wall in front of the
+# `gates/test_pkl_imagenet-gate.bend:60 symbol=pkl_predict` names it as the wall in front of the
 # ImageNet milestone ("`p.to('cpu').argmax().item()`").
 #
 

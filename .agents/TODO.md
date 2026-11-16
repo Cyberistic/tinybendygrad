@@ -922,7 +922,7 @@ lin-DIVERGENCE [#########] 3/3  **`lin` DIVERGES BY EXACTLY ONE NODE, NOT ~42** 
                                        census differs by exactly one: **`AFTER` 1/0.** CPython wraps the
                                        bound in an `AFTER`; the port hangs the ordering dependency off
                                        the RANGE as a second src. **SAME RE-VENDOR DRIFT AS `gate`**:
-                                       `tinybendygrad/codegen/late/linearizer.bend:1617` does
+                                       `gates/linearizer-gate.bend:681` does
                                        `List.append(srcs, [edge])` where
                                        `tinygrad/codegen/late/linearizer.py:85` now does
                                        `x.src[0].after(y)` -- `git show a79832b01` proves the port
@@ -1003,7 +1003,7 @@ corpus-GREEN [##########] 2/2  **VERIFIED BY ME AT 2026-10-18T21:22:18Z: `graphs
                                        READ `AGREE` AND ARE BYTE-IDENTICAL; the two re-vendor-pin
                                        prescriptions landed **in the fixture** (`g_gate` mints and
                                        names the shape const, `g_lin` has the `AFTER`). **BUT
-                                       `tinybendygrad/codegen/late/linearizer.bend:1617` STILL
+                                       `gates/linearizer-gate.bend:681` STILL
                                        `List.append`s WHERE UPSTREAM WRAPS IN `AFTER` (0
                                        `O.OpsAFTER{` in the file), SO `lin`'s GREEN ROW MEASURES THE
                                        HAND-WRITTEN FIXTURE, NOT THE PORT** -- the trap `dg-lin`
@@ -26537,7 +26537,7 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **PORT** — **MEASURED: **`def r_lt(+nm: String, +d: S.Dt) -> String:`** **AT
       **`tinybendygrad/renderer/llvmir.bend:481`**, **`def lf_row(nm: String, b: Bnd2) -> IO(Unit):`**
       **AT **`tinybendygrad/uop/fold.bend:4661`**, **`def srow(...)`** **AND **`def urow(...)`** **AT
-      **`tinybendygrad/examples/train_resnet.bend:106,108`**, **AND **`def u1(nm: String, v: U32) ->
+      **`gates/train_resnet-gate.bend:25,27`**, **AND **`def u1(nm: String, v: U32) ->
       String:`** **AT **`tinybendygrad/runtime/support/usb.bend:98`** — **EVERY **ONE'S **FIRST
       **PARAMETER **IS **THE **ROW **NAME.**
       ****THE **RULE **IS: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **IS **THE **FIRST

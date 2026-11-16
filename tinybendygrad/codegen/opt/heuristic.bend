@@ -181,18 +181,11 @@ def group_for(x: PR.Sched) -> U32:
 def b2u(b: Bool) -> U32:
   Bool.pick(U32, b, 1, 0)
 
-def row(nm: String, v: U32) -> IO(Unit):
-  IO.print(String.concat([nm, "=", U32.show(v)]))
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    a : Unit <- row("group_up_plus", group_up(plus_k()))
-    b : Unit <- row("group_up_red", group_up(reduce_k()))
-    c : Unit <- row("group_up_mmm", group_up(matmul_k()))
-    d : Unit <- row("group_max_py", group_max(plus_k()))
-    e : Unit <- row("group_max_red", group_max(reduce_k()))
-    f : Unit <- row("group_max_mmm", group_max(matmul_k()))
-    g : Unit <- row("gfr_plus", group_for(plus_k()))
-    h : Unit <- row("gfr_red", group_for(reduce_k()))
-    i : Unit <- row("gfr_mmm", group_for(matmul_k()))
-    row("shape_len_red", PR.Sched.shape_len(reduce_k()))
+# THE GATE MOVED TO `gates/heuristic-gate.bend`.
+#
+# The rows are consumers: each calls a def above through `P.`, and the
+# driver defines nothing this file needs, which is the line
+# `gates/README.md:173` draws.
+#
+# Its rows are the census this file prints, and `gates/<name>-gate.bend` is the
+# driver that prints them.

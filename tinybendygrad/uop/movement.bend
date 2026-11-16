@@ -1191,34 +1191,11 @@ def t_ret_self() -> U32:
 def t_ret_new() -> U32:
   b2u(O.UOp.is_none(hop_ix(hop_self(Hop{O.Arena.empty(), 3}, 2))))
 
-def row(nm: String, v: U32) -> IO(Unit):
-  IO.print(String.concat([nm, "=", U32.show(v)]))
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    a : Unit <- row("mop_len", t_mop_len())
-    b : Unit <- row("shrink1_ns", t_shrink1_ns())
-    c : Unit <- row("shrink1_marg", t_shrink1_marg())
-    d : Unit <- row("shrink2", t_shrink2())
-    e : Unit <- row("shrink2_marg", t_shrink2_marg())
-    f : Unit <- row("marg_n1", t_marg_n1())
-    h : Unit <- row("marg_n2", t_marg_n2())
-    i : Unit <- row("reshape_pick", t_reshape_pick())
-    j : Unit <- row("reshape_noop", t_reshape_noop())
-    k : Unit <- row("permute_merge", t_permute_merge())
-    l : Unit <- row("permute_noop", t_permute_noop())
-    m : Unit <- row("stack_idx", t_stack_idx())
-    n : Unit <- row("const_idx2", t_const_idx2())
-    o : Unit <- row("const_idx3", t_const_idx3())
-    p : Unit <- row("const_idx5", t_const_idx5())
-    q : Unit <- row("idx_idx", t_idx_idx())
-    r : Unit <- row("idx_pick", t_idx_pick())
-    s : Unit <- row("idx_shaped", t_idx_shaped())
-    t : Unit <- row("idx_shaped_bad", t_idx_shaped_bad())
-    u : Unit <- row("unclaimed", t_unclaimed())
-    v : Unit <- row("rej_pair", t_rej_pair())
-    w : Unit <- row("grow_new", t_grow_new())
-    x : Unit <- row("grow_same", t_grow_same())
-    y : Unit <- row("twice", t_twice())
-    row("ret_self", t_ret_self())
-    row("ret_new", t_ret_new())
+# THE GATE MOVED TO `gates/movement-gate.bend`.
+#
+# The rows are consumers: each calls a def above through `P.`, and the
+# driver defines nothing this file needs, which is the line
+# `gates/README.md:173` draws.
+#
+# Its rows are the census this file prints, and `gates/<name>-gate.bend` is the
+# driver that prints them.
