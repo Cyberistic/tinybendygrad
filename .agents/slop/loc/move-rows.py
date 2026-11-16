@@ -271,14 +271,31 @@ def block_map(lines: list[str]) -> list[set[str]]:
 
 
 def pattern_binders(pat: str) -> set[str]:
-    """the names a `case` PATTERN binds: the bare names in its `<>` lists.
+    """the names a `case` PATTERN binds: the bare names in its `<>` lists AND the
+    FIELD BINDERS inside a constructor's braces.
 
     A CONSTRUCTOR is `Name{...}` and is not a binder, and a QUALIFIED name is
     `A.b` and is not a binder either.  MEASURED 2026-11-16: the optim driver
     answered `a declared constructor (unknown: Nz)` because the pattern check
     treated every name in the pattern as a binder.
+
+    AND THE FIELD BINDERS ARE BINDERS.  MEASURED 2026-11-16: the linearizer
+    driver answered `expected: a pattern (a binder or a constructor), observed:
+    ../tinybendygrad/codegen/late/linearizer.at`, because
+    `case O.ARange{ids, at}` binds `at` -- and the port has a def `at`
+    (`def at(xs, n)`), so the prefixer wrote `P.at` and the pattern broke.  A
+    name inside a constructor's braces is a FIELD BINDER unless it is a
+    constructor itself (`Some{+x}` binds `x`).
     """
     out: set[str] = set()
+    for braces in re.findall(r"\{([^}]*)\}", pat):
+        for part in braces.split(","):
+            nm = part.strip().lstrip("+").strip()
+            if not re.fullmatch(r"[A-Za-z_]\w*", nm):
+                continue
+            if nm in ("Some", "None", "Nil", "True", "False"):
+                continue
+            out.add(nm)
     for arm in pat.split("|"):
         m = re.search(r"\b([A-Za-z_]\w*)\s*<>", arm)
         if not m:
@@ -414,17 +431,67 @@ def prefix(line: str, names: set[str], bound: set[str] | None = None,
     return "".join(out)
 
 
+def def_extents(lines: list[str], start: int, end: int) -> list[tuple[int, int, str]]:
+    """`(first, last, name)` for every column-0 def in a range.
+
+    A def's extent is its own line up to the next column-0 def, and the
+    COMMENT BLOCK ABOVE it belongs to it -- so a def that is moved takes its
+    own prose with it.
+    """
+    out: list[tuple[int, int, str]] = []
+    marks: list[int] = []
+    for i in range(start, end):
+        if lines[i] and not lines[i][0].isspace() and re.match(r"^(def|type)\s", lines[i]):
+            marks.append(i)
+    for k, i in enumerate(marks):
+        j = marks[k + 1] if k + 1 < len(marks) else end
+        m = re.match(r"^(?:def|type)\s+([\w.]+)", lines[i])
+        out.append((i, j, m.group(1) if m else ""))
+    return out
+
+
+def move_defs(lines: list[str], start: int, end: int, want: set[str]) -> list[int]:
+    """the line numbers of the defs NAMED by `want`, with their comment blocks.
+
+    A FILE WHOSE ROWS ARE INTERLEAVED WITH ITS IMPLEMENTATION cannot move as a
+    contiguous slice.  MEASURED 2026-11-16: `codegen/decomp/op.bend`'s region is
+    1,578 lines of which 212 defs are IMPLEMENTATION and 16 are FIXTURES, and
+    the fixtures are scattered across the region.  So the defs are named and
+    moved BY NAME, and the implementation stays.
+    """
+    picked: list[int] = []
+    for first, last, name in def_extents(lines, start, end):
+        if name.split(".")[0] not in want:
+            continue
+        # the comment block above the def, if any
+        head = first
+        while head - 1 >= start and lines[head - 1].strip().startswith("#"):
+            head -= 1
+        picked.extend(range(head, last))
+    return sorted(set(picked))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("port")
     ap.add_argument("driver")
     ap.add_argument("--cut", action="store_true")
+    ap.add_argument("--defs", default="",
+                    help="a comma-separated list of the def names to move, for a "
+                         "file whose rows are interleaved with its implementation")
+    ap.add_argument("--printers", action="store_true",
+                    help="move the printers and the tail (gate()/main()) and leave "
+                         "the implementation between them with the port")
     args = ap.parse_args()
 
     port = Path(args.port)
     driver = Path(args.driver)
     lines = port.read_text().split("\n")
     start, end = region(lines)
+    # THE TAIL, and it is where the rows live in the PRINTERS-AND-TAIL mode.
+    tail_start = next((i for i, l in enumerate(lines)
+                        if re.match(r"^def\s+(gate|main)\(", l) and i >= start),
+                       len(lines))
     # A name the region DECLARES is the region's own, and gets no prefix even when
     # the port declares one too -- `type TFP` is in both, and prefixing its uses
     # while the declaration stays local is a type error at the first call.
@@ -441,6 +508,28 @@ def main() -> int:
     # the port.
     methods = {m.group(1) for m in METHOD.finditer("\n".join(lines[start:end]))}
     extended = {n for n in methods if n in pre}
+    # THE NAMED-DEF MODE. `--defs` says WHICH defs move, and then the
+    # namespace-extension cut does NOT apply: the defs that move are the
+    # FIXTURES and the rows, and they extend no port namespace -- the
+    # implementation they call stays with the port.
+    #
+    # MEASURED 2026-11-16: `codegen/decomp/op.bend`'s region is 1,578 lines of
+    # which 212 defs are implementation and 16 are fixtures, and the fixtures
+    # are SCATTERED across the region -- so a contiguous slice cannot move them
+    # and the whole region cannot move either, because the driver's own
+    # `def dc_l5.mul` would shadow the port's `dc_l5`.
+    want = {n.strip() for n in args.defs.split(",") if n.strip()}
+    if want:
+        extended = set()
+    elif args.printers:
+        # THE PRINTERS-AND-TAIL MODE. The file's IMPLEMENTATION sits BETWEEN
+        # the printers and the rows -- MEASURED 2026-11-16:
+        # `codegen/decomp/op.bend` has its printers at :576, its implementation
+        # at :580..:2153 and its `gate()` at :2154 -- and the implementation is
+        # the PORT's, because the port's own defs call it 40 times each.  So
+        # only the PRINTERS and the TAIL move, and the driver reaches the
+        # implementation through `P.`.
+        extended = set()
     if extended:
         for i, line in enumerate(lines[start:end], start):
             m = re.match(r"^(?:def|type)\s+([A-Za-z_]\w*)(?:\s|\(|$)", line)
@@ -458,15 +547,48 @@ def main() -> int:
     # A TYPE's CONSTRUCTORS ARE PORT NAMES TOO, and the region's own type
     # constructors are the region's -- so a constructor the region DECLARES is
     # not prefixed and one it does not declare is.
-    region_ctors = type_ctors(lines[start:end])
+    # THE REGION'S OWN DECLARATIONS. In the PRINTERS-AND-TAIL mode the region
+    # is the printers and the tail, and the IMPLEMENTATION between them is the
+    # PORT's -- so the implementation's declarations (`type Gate` at :1299) are
+    # NOT the region's own, and the driver reaches them through `P.`.
+    region_scan = lines[start:end] if not args.printers else (
+        lines[start:tail_start] + lines[tail_start:])
+    region_ctors = type_ctors(region_scan)
     region_own = set()
-    for l in lines[start:end]:
+    for l in region_scan:
         m = re.match(r"^(?:def|type)\s+([A-Za-z_]\w*)\s*[( ]", l)
         if m:
             region_own.add(m.group(1))
     region_own |= region_ctors
-    names = names_of(lines, start) - region_own
-    names |= type_ctors(lines[:start])
+    if args.printers:
+        # ONLY THE PRINTERS ARE THE REGION'S OWN.
+        region_own = set()
+        for first, _last, name in def_extents(lines, start, tail_start):
+            if PRINTER.match(lines[first]):
+                region_own.add(name.split("(")[0].strip())
+    if want:
+        # THE NAMED DEFS ARE THE REGION'S OWN, and the port's IMPLEMENTATION is
+        # not -- so the named mode's own names are excluded and everything else
+        # in the port is reachable.
+        region_own = set(want)
+        region_own |= {n for n in want if "." in n}
+    elif args.printers:
+        # THE PRINTERS-AND-TAIL MODE MOVES NOTHING BUT THE PRINTERS, and the
+        # printers' own names are the region's -- so `row` and `rows` stay bare
+        # and everything else in the port is reachable through `P.`.
+        region_own = set()
+        for first, _last, name in def_extents(lines, start, tail_start):
+            if PRINTER.match(lines[first]):
+                region_own.add(name.split("(")[0].strip())
+    # THE NAMED-DEF MODE SEES THE WHOLE PORT. The named defs are the FIXTURES
+    # and the rows, and they call the port's IMPLEMENTATION -- which is
+    # anywhere in the file, including inside the region the named mode does not
+    # move.  MEASURED 2026-11-16: the decomp driver answered `expected: a
+    # defined name, observed: dc_s_tab`, because `dc_s_tab` is at :1239 and the
+    # named mode's region starts at the first fixture, :1254.
+    scan = lines if (want or args.printers) else lines[:start]
+    names = names_of(scan, len(scan)) - region_own
+    names |= type_ctors(scan)
     # THE NAMES THE REGION BINDS AND THE PORT ALSO DEFINES. A `case v <> t`
     # binds `v`, and the port has a NAMESPACE `v` (`v.fmt3`) -- so the driver's
     # `P.` prefix would turn the binder into `P.v`, which is not a pattern, and
@@ -483,8 +605,16 @@ def main() -> int:
     # is BOTH -- the region's `def aspm.index_str` extends `aspm` and the port
     # has `aspm.at` -- so the driver has to say WHICH one it means, and the
     # second alias (`Q`) is the port's.
-    extended = {n for n in names
-                if re.search(rf"^def\s+{re.escape(n)}\.", "\n".join(lines[start:end]), re.M)}
+    # THE NAMED-DEF MODE EXTENDS NOTHING. The implementation stays with the
+    # port, and a namespace the implementation extends (`def Hit.tg` where
+    # `type Hit` is at :84) is the PORT's -- so the driver spells it `P.Hit` and
+    # not `Q.Hit`.  MEASURED 2026-11-16: the decomp driver answered `expected:
+    # a defined name, observed: Hit.ar`.
+    if want or args.printers:
+        extended = set()
+    else:
+        extended = {n for n in names
+                    if re.search(rf"^def\s+{re.escape(n)}\.", "\n".join(lines[start:end]), re.M)}
     collided = sorted((names & bound_names(lines[start:end])) | extended)
     header = HEADER.format(
         path=args.driver,
@@ -522,8 +652,48 @@ def main() -> int:
     region_members = {mm.group(1) for l in lines[start:end]
                       for mm in re.finditer(r"^def\s+\w+\.(\w+)", l, re.M)}
     blocks = block_map(lines[start:end])
-    body = [prefix(l, names, bound, collided, a, region_members, b)
-            for l, a, b in zip(lines[start:end], arms, blocks)]
+    if args.printers:
+        # THE PRINTERS AND THE TAIL. The printers are the region START and the
+        # tail is from `gate()` to the end -- and the implementation BETWEEN them
+        # stays with the port, so the driver reaches it through `P.`.
+        tail_start = next(i for i, l in enumerate(lines)
+                          if re.match(r"^def\s+(gate|main)\(", l) and i >= start)
+        # THE PRINTERS ARE THE PRINTER DEFS -- not everything between them and
+        # the tail.  The printer defs are the ones that MATCH the printer
+        # shape, and the implementation between them stays with the port.
+        printers = []
+        for first, last, name in def_extents(lines, start, tail_start):
+            if PRINTER.match(lines[first]):
+                printers.extend(range(first, last))
+        idxs = sorted(set(printers) | set(range(tail_start, len(lines))))
+        body_lines = [lines[i] for i in idxs]
+        arms = arm_map(body_lines)
+        blocks = block_map(body_lines)
+        region_ctors = type_ctors(body_lines)
+        body = [prefix(l, names, bound, collided, a, region_members, b)
+                for l, a, b in zip(body_lines, arms, blocks)]
+        start, end = idxs[0], idxs[-1] + 1
+    elif want:
+        # THE NAMED DEFS, PLUS THE ROWS' OWN TAIL. The tail is everything from
+        # the printers to the end of the file -- the printers, `gate()` and
+        # `main()` -- and it is what PRINTS.
+        picked = set(move_defs(lines, start, end, want))
+        tail_start = next(i for i, l in enumerate(lines)
+                          if re.match(r"^def\s+(gate|main)\(", l) and i >= start)
+        picked |= {i for i in range(tail_start, len(lines))
+                   if lines[i] and not lines[i][0].isspace() and not lines[i].startswith("#")}
+        picked |= set(range(tail_start, len(lines)))
+        idxs = sorted(picked)
+        body_lines = [lines[i] for i in idxs]
+        arms = arm_map(body_lines)
+        blocks = block_map(body_lines)
+        region_ctors = type_ctors(body_lines)
+        body = [prefix(l, names, bound, collided, a, region_members, b)
+                for l, a, b in zip(body_lines, arms, blocks)]
+        start, end = idxs[0], idxs[-1] + 1
+    else:
+        body = [prefix(l, names, bound, collided, a, region_members, b)
+                for l, a, b in zip(lines[start:end], arms, blocks)]
     driver.parent.mkdir(parents=True, exist_ok=True)
     driver.write_text("\n".join(header + body).rstrip("\n") + "\n")
 
@@ -538,8 +708,26 @@ def main() -> int:
             "# Every expectation in the driver is generated by calling CPython, so no row",
             "# there is typed by hand.",
         ]
-        port.write_text("\n".join(lines[:start] + note + lines[end:]).replace("\n\n\n\n", "\n\n") + "\n")
-        print(f"  the port is now {len(lines[:start]) + len(note) + len(lines[end:])} lines")
+        if args.printers:
+            picked = set(printers)
+            # THE PRINTERS-AND-TAIL CUT: the printers and the tail go, and the
+            # implementation BETWEEN them stays with the port.
+            keep = [l for i, l in enumerate(lines)
+                    if i not in picked and i < tail_start]
+            # the implementation stays; the tail goes; the printers go
+            keep = [l for i, l in enumerate(lines)
+                    if i < tail_start and i not in picked]
+            port.write_text("\n".join(keep).replace("\n\n\n\n", "\n\n") + "\n")
+            print(f"  the port is now {len(keep)} lines")
+        elif want:
+            # THE NAMED-DEF CUT: only the picked lines go, and the port keeps
+            # its IMPLEMENTATION -- which is the whole point of the mode.
+            keep = [l for i, l in enumerate(lines) if i not in picked]
+            port.write_text("\n".join(keep[:start] + note + keep[start:]).replace("\n\n\n\n", "\n\n") + "\n")
+            print(f"  the port is now {len(keep[:start]) + len(note) + len(keep[start:])} lines")
+        else:
+            port.write_text("\n".join(lines[:start] + note + lines[end:]).replace("\n\n\n\n", "\n\n") + "\n")
+            print(f"  the port is now {len(lines[:start]) + len(note) + len(lines[end:])} lines")
 
     print(f"{args.port}: {len(lines)} lines, region {start + 1}..{end} ({end - start})")
     print(f"{args.driver}: written, {len(header) + end - start} lines")

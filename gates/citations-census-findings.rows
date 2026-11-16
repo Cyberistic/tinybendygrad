@@ -234,8 +234,8 @@ DANGLING-FILE		tinybendygrad/base.bend:39	comp.ts:391	absent		no file in the wal
 DANGLING-FILE		tinybendygrad/base.bend:43	comp.ts:539	absent		no file in the walk or in HEAD is 'comp.ts'
 ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/dtype.bend:384	mixin/dtype.py:36	suffix	dd_bcast	'dd_bcast' is NOWHERE in tinygrad/mixin/dtype.py (142 lines)
 ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/dtype.bend:2813	mixin/dtype.py:36	suffix	l2i_dt[ulong]	'l2i_dt[ulong]' is NOWHERE in tinygrad/mixin/dtype.py (142 lines)
-DANGLING-LINE	NOT-MOVED	tinybendygrad/codegen/decomp/op.bend:1145	base.bend:1542	suffix	i % 2	tinybendygrad/base.bend has 56 lines, cited at :1542
-ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/op.bend:1607	tinygrad/uop/divandmod.py:68	exact	dc_ival	'dc_ival' is NOWHERE in tinygrad/uop/divandmod.py (109 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/codegen/decomp/op.bend:1134	base.bend:1542	suffix	i % 2	tinybendygrad/base.bend has 56 lines, cited at :1542
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/op.bend:1596	tinygrad/uop/divandmod.py:68	exact	dc_ival	'dc_ival' is NOWHERE in tinygrad/uop/divandmod.py (109 lines)
 ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/transcendental.bend:1340	elementwise.py:426	suffix	neg_base	'neg_base' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
 DANGLING-LINE	NOT-MOVED	tinybendygrad/codegen/decomp/transcendental_f32.bend:85	base.bend:1705	suffix		tinybendygrad/base.bend has 56 lines, cited at :1705
 DANGLING-LINE	NOT-MOVED	tinybendygrad/codegen/decomp/transcendental_f32.bend:108	base.bend:1705	suffix		tinybendygrad/base.bend has 56 lines, cited at :1705
