@@ -232,6 +232,18 @@ def emit(prefix, fx, root, root_grad, target):
     # the ctx, whose arg is a PARAM and not a tuple), and an empty expectation is the
     # gate's VACUITY class -- `UNCHECKABLE`, which is RED.
     print("%s_rule_arg=%s" % (prefix, ",".join(str(x) for x in arg) if arg else "none"))
+    # THE ORDER THE RULE BUILT, IN ORDER. Upstream's rule answers
+    # `ctx.permute(argsort(ret.marg))`, so the answer's `src[1]` holds the order.
+    # MEASURED 2026-11-11: the port's token rows SORT their srcs, so the order was
+    # invisible to every one of them and the `noargsort` plant moved nothing.
+    # THE ORDER, FOR THE 2-D ARM ONLY. The 1-D arm's answer is the CTX (or the
+    # SUBSTITUTE) and has no `src[1]` at all, so there is no order to read --
+    # MEASURED 2026-11-11: the row read `none` on both arms and could not go
+    # red, and a row that cannot go red is a label.
+    if ans.op is Ops.PERMUTE:
+        order = ans.src[1].src
+        print("%s_order=%s" % (prefix, ",".join(str(x.val) for x in order) if order else "none"))
+
 
   grads = compute_gradient(root, root_grad, targets)
   print("%s_grads_n=%d" % (prefix, len(grads)))

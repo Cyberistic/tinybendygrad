@@ -8,6 +8,7 @@ oracle_pm_rule_is_ctx=0
 oracle_pm_rule_tok=PERMUTE/2 [STACK/2 STACK/3]
 oracle_pm_rule_op=PERMUTE/2
 oracle_pm_rule_arg=none
+oracle_pm_order=2,0,1
 oracle_pm_grads_n=2
 oracle_pm_keys=PERMUTE/2 STACK/2
 oracle_pm_zero_n=0

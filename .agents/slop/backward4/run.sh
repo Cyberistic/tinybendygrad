@@ -57,13 +57,13 @@ esac
 
 case "$ARM" in
   base)
-    run_port "$ROOT/tinybendygrad/mixin/gradient.bend" "$W/base.rows"
+    run_port "$ROOT/gates/gradient-gate.bend" "$W/base.rows"
     cp "$W/base.rows" "$BASE"
     echo "    (this IS the base; persisted at $BASE)"
     exit 0 ;;
 
   check)
-    run_port "$ROOT/tinybendygrad/mixin/gradient.bend" "$W/live.rows"
+    run_port "$ROOT/gates/gradient-gate.bend" "$W/live.rows"
     echo "=== THE GATE (a): this unit's pm_*/pm1_* rows against perm.rows -- CPython's own bytes"
     "$ROOT/.venv/bin/python" "$ROOT/.agents/slop/backward3/gate.py" \
       "$W/live.rows" "$ROOT/$OUT/perm.rows"
@@ -82,8 +82,17 @@ case "$ARM" in
   head)
     env -u GIT_INDEX_FILE git show HEAD:tinybendygrad/mixin/gradient.bend > "$F" || exit 3
     echo "    HEAD's gradient.bend installed: $(shasum -a 256 "$F" | cut -d' ' -f1)"
-    run_port "$F" "$W/head.rows"
-    run_port "$ROOT/tinybendygrad/mixin/gradient.bend" "$W/live.rows"
+    # THE LANE IS THE DRIVER, and the driver imports the port by its path, so
+    # HEAD's driver and HEAD's port are BOTH installed and the driver's import
+    # resolves to the copy. MEASURED 2026-11-11: the arm ran the port alone and
+    # every row came back MISSING.
+    env -u GIT_INDEX_FILE git show HEAD:gates/gradient-gate.bend > "$W/head-driver.bend" 2>/dev/null || {
+      echo "    (HEAD has no gates/gradient-gate.bend -- the rows were in the port then)"
+      cp "$ROOT/gates/gradient-gate.bend" "$W/head-driver.bend"
+      cp "$F" "$W/tinybendygrad/mixin/gradient.bend"
+    }
+    run_port "$W/head-driver.bend" "$W/head.rows"
+    run_port "$ROOT/gates/gradient-gate.bend" "$W/live.rows"
     echo "=== HEAD vs LIVE: rows head=$(wc -l < "$W/head.rows" | tr -d ' ') live=$(wc -l < "$W/live.rows" | tr -d ' ')"
     "$ROOT/.venv/bin/python" - "$W/head.rows" "$W/live.rows" "$ROOT/$OUT/perm.rows" <<'PY'
 import sys
@@ -121,7 +130,7 @@ PY
     exit $? ;;
 
   ctl)
-    run_port "$ROOT/tinybendygrad/mixin/gradient.bend" "$W/live.rows"
+    run_port "$ROOT/gates/gradient-gate.bend" "$W/live.rows"
     echo "=== THE CONTROLS (the prior art's ctl-rows.py, called BY PATH)"
     "$ROOT/.venv/bin/python" "$ROOT/.agents/slop/backward3/ctl-rows.py" \
       "$W/live.rows" "$ROOT/$OUT/perm.rows"
@@ -148,7 +157,7 @@ PY
     echo "=== the EXPECTATIONS moved (the oracle moved, the port did NOT):"
     diff "$ROOT/$OUT/perm.rows" "$W/perm-planted.rows" | grep -E '^[<>]' | sed 's/^/    /'
     echo "=== the PORT's rows did NOT move (this arm never touched it):"
-    run_port "$ROOT/tinybendygrad/mixin/gradient.bend" "$W/live.rows"
+    run_port "$ROOT/gates/gradient-gate.bend" "$W/live.rows"
     if [ -f "$BASE" ]; then
       diff "$BASE" "$W/live.rows" > "$W/portdiff.out" 2>&1 \
         && echo "    the port's output is byte-identical to the base -- NOTHING MOVED" \
@@ -159,7 +168,7 @@ PY
     exit 0 ;;
 
   plants)
-    run_port "$ROOT/tinybendygrad/mixin/gradient.bend" "$W/live.rows"
+    run_port "$ROOT/gates/gradient-gate.bend" "$W/live.rows"
     "$ROOT/.venv/bin/python" "$ROOT/$OUT/plants.py" "$W/live.rows" "$ROOT/$OUT/perm.rows"
     exit $? ;;
 esac

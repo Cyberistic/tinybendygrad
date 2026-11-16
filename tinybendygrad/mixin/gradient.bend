@@ -110,8 +110,6 @@ def gs_solid(r: GRes) -> U32:
     case GSkip{}: 0
     case GFired{gs, ar}: gs_solid.go(gs, 0)
 
-
-
 # `math.pi/2` -- gradient.py:69 `(math.pi/2 - ret.src[0]).sin() * ctx`.
 def k_pi_2() -> O.Const: O.CFloat{1.5707963267948966}
 # `math.log(2)` -- gradient.py:70, :71, :77.
@@ -1020,8 +1018,6 @@ def gr_30(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0, ctx], ar)
 # twin of tag 7's two holes and the smallest possible answer.
 def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 
-
-
 # THE DRIVER -- `reduce_gradient` (gradient.py:8-18) and `call_gradient` (:20-50) are
 # STILL WALLS, and `_deepwalk` / `compute_gradient` are NOT (they landed above this
 # block). The three notes are kept separate because the reasons are different, and the
@@ -1099,8 +1095,6 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 #   3. `uop/weak.bend`'s `_min_max` unblocks tag 25 (`UNSHARD`), tag 15
 #      (`has_buffer_identity`) and `mixin/dtype.bend`'s `commit_dtype`.
 #   4. `call_gradient` needs the five subsystems above and is the largest single item.
-
-
 
 # THE TABLE. 33 entries, `pm_gradient.pdict` order, and the `ops`/`rej` columns are
 # Python's OWN -- dumped from `upat_compile` and the `pdict` reject sets, not inferred.
@@ -3108,6 +3102,8 @@ def pm_rule.of(+fx: Pm) -> PmRule:
 
 def pm_rule() -> PmRule: pm_rule.of(pm())
 
+
+
 type PmRule1 is Data:
   PmRule1{ar: O.Arena, ans: U32, n: U32, ctx: U32}
 
@@ -3129,6 +3125,77 @@ def pm_join.go(xs: List<&2, U32>, first: Bool, acc: String) -> String:
     case Nil{}: Bool.pick(String, first, "none", acc)
     case h <> t: pm_join.go(t, False{}, String.concat([acc, Bool.pick(String, first, "", ","), U32.show(h)]))
 
+# THE ORDER THE RULE BUILT, IN ORDER. Upstream's rule is
+# `ctx.permute(argsort(ret.marg))`, so the answer is `PERMUTE(ctx, STACK(order))`
+# and the STACK's children ARE the order. Every other token row SORTS its srcs
+# (`bw_sig` sorts with `gs_str_le`), so a permutation is INVISIBLE to them --
+# MEASURED 2026-11-11: the `noargsort` plant changed the rule's argsort and not
+# one of the 142 rows moved. This row is the one that can see it.
+# THE ORDER STACK's OWN srcs, and the match must scrutinise a PARAMETER (Bend
+# refuses to match a computed value), so the read and the match are two defs.
+# THE ORDER STACK -- `src[1]`'s own srcs. A length-2 or longer order is a STACK
+# (upstream's `shape_to_shape_arg`, ops.py:105-109), so its children ARE the
+# order's elements.
+def pm_order.srcs(+ar: O.Arena, +n: U32) -> List<&2, U32>:
+  O.Arena.srcs(ar, O.Arena.src(ar, n, 1))
+
+def pm_order.go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}   : acc
+    case s <> t  : pm_order.go(ar, t, List.append(&2, U32, acc, [gr_21_marg.const(ar, s)]))
+
+# AND THE LENGTH-1 ORDER IS A BARE CONST, so the reader needs the other arm: the
+# answer's `src[1]` IS the element. MEASURED 2026-11-11: without it the 1-D
+# fixture's row read `none` on both the identity arm and the built arm, so it
+# could not go red.
+def pm_order.src1(+ar: O.Arena, +n: U32) -> U32:
+  O.Arena.src(ar, n, 1)
+
+# IS `src[1]` A CONST? The port's own `O.op_is` is the way to ask -- a `match`
+# cannot scrutinise a computed value, and the op is one.
+def pm_order.is_const(+ar: O.Arena, +n: U32) -> Bool:
+  O.op_is(ar, pm_order.src1(ar, n), O.OpsCONST{})
+
+# THE LENGTH-1 ORDER, and `Bool.pick` is the way to branch on a computed Bool
+# (a `match` cannot scrutinise a computed value).
+def pm_order.one_of(+ar: O.Arena, +n: U32) -> List<&2, U32>:
+  [gr_21_marg.const(ar, pm_order.src1(ar, n))]
+
+def pm_order.one(+ar: O.Arena, +n: U32) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, pm_order.is_const(ar, n), pm_order.one_of(ar, n), Nil{})
+
+# THE ORDER, AND IT HAS TWO SHAPES. A length-2-or-longer order is a STACK of
+# CONSTs (upstream's `shape_to_shape_arg`, ops.py:105-109) and its CHILDREN are
+# the elements; a length-1 order is a BARE CONST and the CONST is the element.
+# The reader takes the STACK's children when there are any and the CONST's value
+# when there are not -- and "there are none" is the length-1 case, not an absent
+# order.
+def pm_order.of2(+ar: O.Arena, ss: List<&2, U32>, +ans: U32) -> List<&2, U32>:
+  match ss:
+    case Nil{}   : pm_order.one(ar, ans)
+    case s <> t  : s <> t
+
+def pm_order.of3(+ar: O.Arena, +ans: U32) -> String:
+  pm_join.go(pm_order.go(ar, pm_order.of2(ar, pm_order.srcs(ar, ans), ans), Nil{}), True{}, "")
+
+def pm_order.of1(+ar: O.Arena, +ans: U32) -> String:
+  pm_order.of3(ar, ans)
+
+def pm_order.of(+r: PmRule) -> String:
+  match r:
+    case PmRule{ar, ans, n, ctx}: pm_order.of1(ar, ans)
+
+def pm_order() -> String:
+  pm_order.of(pm_rule())
+
+# THE 1-D ARM HAS NO ORDER ROW, AND THAT IS A DECISION. Upstream's `permute()`
+# answers the CTX ITSELF when the order is the identity, so the 1-D answer has no
+# `src[1]` at all -- and when the identity early-return is forced OFF (the
+# `neverid1` plant) the answer is the SUBSTITUTE, which also has no `src[1]`.
+# MEASURED 2026-11-11: the row read `none` on both arms, so it could not go red
+# -- and a row that cannot go red is a LABEL, which the tree's rule says is worse
+# than no row. The identity fact is already a row that DOES move:
+# `pm1_rule_is_ctx`.
 # the order, or the WORD `none`.  never an empty string: an empty expectation is
 # the gate's VACUITY class -- `UNCHECKABLE`, which is RED -- and "there is no order
 # here" is a REAL, MEASURED value (the answer IS the ctx, and the ctx's arg is a
@@ -3292,161 +3359,14 @@ def pm1_bw_sig() -> String: bw_sig.of(pm1_run())
 def pm1_bw_distinct() -> U32: bw_distinct.of(pm1_run())
 
 # ---- the gate ----------------------------------------------------------------
-def row(nm: String, v: U32) -> IO(Unit):
-  IO.print(String.concat([nm, "=", U32.show(v)]))
-
-# A STRING ROW, because the walk's SIGNATURE is text and CPython's is text too: a
-# signature packed into a `U32` would need an op-code table, and one invented here would
-# be a table the oracle cannot check. These rows are `name=<the oracle's own bytes>` and
-# the differ is a `diff`, not an interpretation.
-def srow(nm: String, v: String) -> IO(Unit):
-  IO.print(String.concat([nm, "=", v]))
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    a : Unit <- row("claims", t_claims())
-    b : Unit <- row("const_cast", t_const_cast())
-    row("size_const", t_size_const())
-    row("size_mul", t_size_mul())
-    row("one_n", t_one_n())
-    row("seven_n", t_seven_n())
-    row("const_raw", t_const_raw())
-    row("neginf", t_neginf())
-    row("recip_n", t_recip_n())
-    row("sin_n", t_sin_n())
-    row("log2_n", t_log2_n())
-    row("exp2_n", t_exp2_n())
-    row("sqrt_n", t_sqrt_n())
-    row("trunc_n", t_trunc_n())
-    row("pow_n0", t_pow_n0())
-    row("pow_n1", t_pow_n1())
-    row("max_n0", t_max_n0())
-    row("max_n1", t_max_n1())
-    row("mul_n", t_mul_n())
-    row("where_n", t_where_n())
-    row("add_n", t_add_n())
-    row("stage_n", t_stage_n())
-    row("rebind_n", t_rebind_n())
-    row("rej29", t_rej29())
-    c : Unit <- row("rebind_solid", t_rebind_solid())
-    d : Unit <- row("rebind_len", t_rebind_len())
-    e : Unit <- row("rebind_0_hole", t_rebind_0_hole())
-    f : Unit <- row("rebind_1_ctx", t_rebind_1_ctx())
-    g : Unit <- row("rebind_off", t_rebind_off())
-    h : Unit <- row("claim29", t_claim29())
-    i : Unit <- row("claim29_off", t_claim29_off())
-    j : Unit <- row("recip_len", t_recip_len())
-    k : Unit <- row("sin_len", t_sin_len())
-    l : Unit <- row("log2_len", t_log2_len())
-    m : Unit <- row("exp2_len", t_exp2_len())
-    n : Unit <- row("sqrt_len", t_sqrt_len())
-    o : Unit <- row("trunc_len", t_trunc_len())
-    p : Unit <- row("cmplt_len", t_cmplt_len())
-    q : Unit <- row("cmplt_solid", t_cmplt_solid())
-    r : Unit <- row("add_len", t_add_len())
-    s : Unit <- row("add_solid", t_add_solid())
-    t : Unit <- row("add_same", t_add_same())
-    u : Unit <- row("pow_len", t_pow_len())
-    v : Unit <- row("pow_solid", t_pow_solid())
-    w : Unit <- row("max_len", t_max_len())
-    x : Unit <- row("max_solid", t_max_solid())
-    y : Unit <- row("mul_len", t_mul_len())
-    z : Unit <- row("mul_same", t_mul_same())
-    row("where_len", t_where_len())
-    row("where_0_hole", t_where_0_hole())
-    row("stage_len", t_stage_len())
-    row("stage_ctx", t_stage_ctx())
-    row("expand_len", t_expand_len())
-    row("reshape_len", t_reshape_len())
-    row("sink_len", t_sink_len())
-    row("sink_srcs", t_sink_srcs())
-    row("first_wins", t_first_wins())
-    row("keep_pair", t_keep_pair())
-    row("keep_skip", t_keep_skip())
-    row("max_eq_op", t_max_eq_op())
-    row("max_outer", t_max_outer())
-    row("rej_len", t_rej_len())
-    row("rej_gate", t_rej_gate())
-    row("rej_len27", t_rej_len27())
-    row("store_len", t_store_len())
-    row("store_0_hole", t_store_0_hole())
-    row("store_1_ctx", t_store_1_ctx())
-    row("t0_is_cast", t_t0_is_cast())
-    row("cast_len", t_cast_len())
-    row("cast_solid", t_cast_solid())
-    row("bitcast_len", t_bitcast_len())
-    row("bitcast_solid", t_bitcast_solid())
-    srow("walk_row", dag_row())
-    srow("walk_sig", dag_walk_sig())
-    srow("walk_inpath", dag_inpath())
-    srow("walk_keys", dag_keys())
-    srow("walk_grad_a", dag_grad_a(walk_dag()))
-    srow("walk_grad_b", dag_grad_b(walk_dag()))
-    srow("walk_grad_c", dag_grad_c(walk_dag()))
-    srow("walk_grad_p", dag_grad_p(walk_dag()))
-    srow("walk_grad_q", dag_grad_q(walk_dag()))
-    srow("walk_grad_r", dag_grad_r(walk_dag()))
-    row("walk_n_toposort", dag_n_topo())
-    row("walk_walk_n", dag_walk_n())
-    row("walk_n_inpath", dag_n_inpath())
-    row("walk_grads_n", dag_grads_n())
-    row("walk_skip_n", dag_skip_n())
-    row("walk_hole_n", dag_hole_n())
-    srow("gs_walk", gs_walk())
-    row("gs_walk_n", gs_walk_n())
-    srow("gs_inpath", gs_inpath())
-    row("gs_n_inpath", gs_n_inpath())
-    row("gs_grads_n", gs_grads_n())
-    srow("gs_keys", gs_keys())
-    row("gs_skip_n", gs_skip_n())
-    row("gs_hole_n", gs_hole_n())
-    row("gs_set_n", gs_set_n())
-    row("gs_zero_n", gs_zero_n())
-    srow("gs_set_sig", gs_set_sig())
-    row("bw_nodes", bw_nodes())
-    srow("bw_sig", bw_sig())
-    row("bw_distinct", bw_distinct())
-    srow("pm_walk", pm_walk())
-    row("pm_walk_n", pm_walk_n())
-    # THE TUPLE LENGTH, NOT THE NODE COUNT: upstream's rule answers
-    # `(node, hole)` and the tuple is always two long for a rule that fires.
-    # `pm_rule_len` is the ANSWER's node count -- a different quantity under the
-    # same name, and the two rows disagreed about the NAME (1 against 2).
-    row("pm_rule_tup_len", pm_rule_tup_len())
-    row("pm_rule_n_grads", pm_rule_n_grads())
-    row("pm_rule_n_nodes", pm_rule_n_nodes())
-    row("pm_rule_is_ctx", pm_rule_is_ctx())
-    srow("pm_rule_tok", pm_rule_tok())
-    srow("pm_rule_op", pm_rule_op())
-    srow("pm_rule_arg", pm_rule_arg())
-    row("pm_grads_n", pm_grads_n())
-    srow("pm_keys", pm_keys())
-    row("pm_set_n", pm_set_n())
-    row("pm_zero_n", pm_zero_n())
-    srow("pm_set_sig", pm_set_sig())
-    row("pm_bw_nodes", pm_bw_nodes())
-    srow("pm_bw_sig", pm_bw_sig())
-    row("pm_bw_distinct", pm_bw_distinct())
-    srow("pm1_walk", pm1_walk())
-    row("pm1_walk_n", pm1_walk_n())
-    row("pm1_rule_tup_len", pm1_rule_tup_len())
-    row("pm1_rule_n_grads", pm1_rule_n_grads())
-    row("pm1_rule_n_nodes", pm1_rule_n_nodes())
-    row("pm1_rule_is_ctx", pm1_rule_is_ctx())
-    srow("pm1_rule_tok", pm1_rule_tok())
-    srow("pm1_rule_op", pm1_rule_op())
-    srow("pm1_rule_arg", pm1_rule_arg())
-    row("pm1_grads_n", pm1_grads_n())
-    srow("pm1_keys", pm1_keys())
-    row("pm1_set_n", pm1_set_n())
-    row("pm1_zero_n", pm1_zero_n())
-    srow("pm1_set_sig", pm1_set_sig())
-    row("pm1_bw_nodes", pm1_bw_nodes())
-    srow("pm1_bw_sig", pm1_bw_sig())
-    row("pm1_bw_distinct", pm1_bw_distinct())
-    srow("pm_argsort_0_2_1", pm_argsort_0_2_1())
-    srow("pm_argsort_1_2_0", pm_argsort_1_2_0())
-    srow("pm_argsort_2_1_0", pm_argsort_2_1_0())
-    srow("pm_argsort_1_0_2", pm_argsort_1_0_2())
-    srow("pm_argsort_2_0_1", pm_argsort_2_0_1())
-    srow("pm_argsort_1_0", pm_argsort_1_0())
+# THE GATE MOVED TO `gates/gradient-gate.bend`.
+#
+# The rows are consumers: each calls a def above through `P.`, and the driver
+# defines nothing this file needs, which is the line `gates/README.md:173` draws.
+#
+# Their 142 expectations are CPython's own bytes, and the harness that compares
+# them is `.agents/slop/backward4/run.sh check`: the `pm_*`/`pm1_*` rows against
+# `perm.rows`, the `walk_*` rows against `backward3/walk.rows` and the
+# `gs_*`/`bw_*` rows against `backward2/rows.rows`. Every expectation is
+# transcribed BY SCRIPT from an oracle that calls upstream, and the plant sweep
+# proves every row can go red.

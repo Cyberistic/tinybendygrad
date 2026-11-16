@@ -57,6 +57,10 @@ HELP = ROOT / "tinybendygrad" / "helpers.bend"
 
 # (label, file, old, new)
 MUTATIONS = [
+  # THE ORDER. The token rows SORT their srcs, so the rule's order was invisible
+  # to all of them -- MEASURED 2026-11-11: this plant moved 0 rows. The `pm_order`
+  # row reads the answer's `src[1]`'s children IN ORDER, so it is the row that
+  # can see the difference.
   ("noargsort", GRAD,
    "  +inv = H.argsort_u32(gr_21_marg(ar, self))",
    "  +inv = gr_21_marg(ar, self)"),
@@ -107,6 +111,12 @@ MUTATIONS = [
   ("rulehole1", GRAD,
    "def pm1_rule_tup_len() -> U32: 2",
    "def pm1_rule_tup_len() -> U32: 3"),
+  # THE 1-D ARM'S ORDER. It is `none` on the identity arm -- the answer IS the
+  # ctx -- so a plant that forces the IDENTITY early-return OFF gives the 1-D
+  # fixture an order stack and the row moves.
+  ("neverid1", GRAD,
+   "  gr_21.pick(gr_21_is_id(inv), ar, ctx, inv)",
+   "  gr_21.pick(False{}, ar, ctx, inv)"),
   ("collide", GRAD,
    "  +m0 = pm_leaf(O.Found.ar(per), 3, 2)",
    "  +m0 = pm_leaf(O.Found.ar(per), 0, 2)"),
@@ -134,8 +144,14 @@ def run_port(workdir: pathlib.Path):
     """Run the port in a COPY of the tree and return its rows, or None if it failed."""
     out = workdir / "rows.out"
     err = workdir / "rows.err"
+    # THE LANE IS THE DRIVER: the rows moved to `gates/gradient-gate.bend`, which
+    # imports the port by its path. So the driver is copied into the work tree
+    # and runs there, and its import resolves to the work tree's port.
+    driver = workdir / "gates" / "gradient-gate.bend"
+    driver.parent.mkdir(parents=True, exist_ok=True)
+    driver.write_text((ROOT / "gates" / "gradient-gate.bend").read_text())
     with open(out, "w") as fh:
-        proc = subprocess.run([str(BEND), str(workdir / "tinybendygrad" / "mixin" / "gradient.bend")],
+        proc = subprocess.run([str(BEND), str(driver)],
                               stdout=fh, stderr=err.open("w"),
                               env={**os.environ, "BEND_NO_TELEMETRY": "1"})
     if proc.returncode != 0:
