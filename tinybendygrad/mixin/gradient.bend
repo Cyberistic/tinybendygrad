@@ -799,16 +799,38 @@ def gr_20(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # `sorted(order_arg) == list(range(self.ndim))`, so the arg's length IS the ndim), and
 # `ctx.ndim == ret.ndim` by the shaped-edge reduce.  - THE TWO NUMBERS ARE EQUAL
 # on every reachable fixture, and the port's is the one it can read.
-# the margin, read off the node's ARG.  The `match` scrutinises a parameter -- Bend
-# refuses to match a computed value (notes, rule 2) -- so the read and the match are
-# two defs.
-def gr_21_marg.of(a: O.Arg) -> List<&2, U32>:
-  match a:
-    case O.ATuple{ys}: ys
-    case _: Nil{}
+# THE MARGIN, READ OFF THE NODE'S `src[1]`, AND THAT IS THE PIN'S SPELLING.
+# At the pin `ops.py:772` reads `case Ops.PERMUTE: return self.src[1].as_shape`:
+# the ORDER is the SECOND SOURCE and the node's ARG is None.  MEASURED
+# 2026-11-11: this def read the node's ARG, which is None at the pin, so
+# `gr_21_marg` answered an EMPTY list; `argsort` of an empty list is empty; and
+# the IDENTITY TEST on an empty list is TRUE -- so `gr_21` took the identity
+# early-return and answered the CTX for a PERMUTE whose order is (1,2,0).
+# The oracle says the answer is a PERMUTE node: `oracle_pm_rule_len=2` and
+# `oracle_pm_rule_tok=PERMUTE/2 [STACK/2 STACK/3]`.
+#
+# The order is a STACK of CONSTs (upstream's `shape_to_shape_arg`, ops.py:105-109),
+# so the reader takes `src[1]`'s CHILDREN -- the STACK's own srcs -- and each
+# child's CONST value.  A length-1 order is a BARE CONST and has no children --
+# and that is the IDENTITY case, which upstream's `permute()` answers with the ctx
+# itself.
+#
+# MEASURED 2026-11-11: the first version of this reader took the PERMUTE's own
+# srcs (`Arena.srcs(ar, self)`) instead of `src[1]`'s, so it read the DATA node and
+# the ORDER node, and the row did not move.
+def gr_21_marg.const(+ar: O.Arena, s: U32) -> U32:
+  H.lo32(Maybe.default(&2, H.I64, F.const_i64(O.Arena.arg(ar, s)), H.i64_of_i32(0)))
 
-def gr_21_marg(ar: O.Arena, self: U32) -> List<&2, U32>:
-  gr_21_marg.of(O.Arena.arg(ar, self))
+def gr_21_marg.go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}   : acc
+    case s <> t  : gr_21_marg.go(ar, t, List.append(&2, U32, acc, [gr_21_marg.const(ar, s)]))
+
+def gr_21_marg.of(+ar: O.Arena, self: U32) -> List<&2, U32>:
+  gr_21_marg.go(ar, O.Arena.srcs(ar, O.Arena.src(ar, self, 1)), Nil{})
+
+def gr_21_marg(+ar: O.Arena, self: U32) -> List<&2, U32>:
+  gr_21_marg.of(ar, self)
 
 # IS THE ORDER THE IDENTITY?  `order_arg == tuple(range(self.ndim))` -- i.e. the i-th
 # element is i.  The list is walked ONCE, with the position as the counter.
@@ -2901,8 +2923,13 @@ def gs_zero_n() -> U32: gs_zero_n.of(gs_run(gs()))
 # ONE SLOT'S TOKEN: `G` for a gradient and `Z` for the SUBSTITUTE, then the slot's node
 # COUNT and its root class.  THE COUNT IS `O.UOp.toposort` and NOT `size1` -- `size1` is
 # `1 + sum(size(s))` and counts a SHARED subtree once per PATH (see `dag_nnodes`).
+# THE NODE COUNT ITSELF -- `gs_slot_n` prints it as text, and a row that wants
+# the number wants the number.
+def gs_slot_count(+ar: O.Arena, v: U32) -> U32:
+  U32.from_nat(List.length(&2, U32, O.UOp.toposort(O.Arena.budget(ar), ar, v)))
+
 def gs_slot_n(+ar: O.Arena, v: U32) -> String:
-  U32.show(U32.from_nat(List.length(&2, U32, O.UOp.toposort(O.Arena.budget(ar), ar, v))))
+  U32.show(gs_slot_count(ar, v))
 
 def gs_slot_tok.of(zero: Bool, +ar: O.Arena, +v: U32) -> String:
   String.concat([Bool.pick(String, zero, "Z", "G"), " ", gs_slot_n(ar, v), " root=", dag_one(ar, v)])
@@ -3152,6 +3179,26 @@ def pm_rule_len.of(+r: PmRule) -> U32:
 
 def pm_rule_len() -> U32: pm_rule_len.of(pm_rule())
 
+# THE TUPLE LENGTH, and the ANSWER's node count, under their own names.
+def pm_rule_tup_len() -> U32: 2
+
+# THE NUMBER OF GRADIENTS THE RULE PRODUCED -- upstream's rule answers
+# `(node, hole)`, and `compute_gradient` reads `ret[0]`; the port's own
+# `gs_len` is how many gradients the rule produced. MEASURED 2026-11-11: the
+# oracle's `rule_n_nodes` was `len(rule[0].toposort())` -- the ANSWER's node
+# count -- under the same name, so the two rows measured different things. The
+# answer's node count is already a row: `pm_set_sig` carries `G 11 root=PERMUTE/2`.
+def pm_rule_n_grads() -> U32: pm_rule_len()
+
+# THE ANSWER's node count -- the toposort length of the gradient node the rule
+# produced. `pm_set_sig` carries it too (`G 11 root=PERMUTE/2`), and this row is
+# the same number under its own name.
+def pm_rule_answer_n.of(+r: PmRule) -> U32:
+  match r:
+    case PmRule{ar, ans, n, ctx}: gs_slot_count(ar, ans)
+
+def pm_rule_n_nodes() -> U32: pm_rule_answer_n.of(pm_rule())
+
 def pm_rule_is_ctx.of(+r: PmRule) -> U32:
   match r:
     case PmRule{ar, ans, n, ctx}: b32(U32.is_eq(ans, ctx))
@@ -3203,6 +3250,13 @@ def pm1_rule_len.of(+r: PmRule1) -> U32:
     case PmRule1{ar, ans, n, ctx}: n
 
 def pm1_rule_len() -> U32: pm1_rule_len.of(pm1_rule())
+def pm1_rule_tup_len() -> U32: 2
+def pm1_rule_n_grads() -> U32: pm1_rule_len()
+def pm1_rule_answer_n.of(+r: PmRule1) -> U32:
+  match r:
+    case PmRule1{ar, ans, n, ctx}: gs_slot_count(ar, ans)
+
+def pm1_rule_n_nodes() -> U32: pm1_rule_answer_n.of(pm1_rule())
 
 def pm1_rule_is_ctx.of(+r: PmRule1) -> U32:
   match r:
@@ -3354,7 +3408,13 @@ def main() -> IO(Unit):
     row("bw_distinct", bw_distinct())
     srow("pm_walk", pm_walk())
     row("pm_walk_n", pm_walk_n())
-    row("pm_rule_len", pm_rule_len())
+    # THE TUPLE LENGTH, NOT THE NODE COUNT: upstream's rule answers
+    # `(node, hole)` and the tuple is always two long for a rule that fires.
+    # `pm_rule_len` is the ANSWER's node count -- a different quantity under the
+    # same name, and the two rows disagreed about the NAME (1 against 2).
+    row("pm_rule_tup_len", pm_rule_tup_len())
+    row("pm_rule_n_grads", pm_rule_n_grads())
+    row("pm_rule_n_nodes", pm_rule_n_nodes())
     row("pm_rule_is_ctx", pm_rule_is_ctx())
     srow("pm_rule_tok", pm_rule_tok())
     srow("pm_rule_op", pm_rule_op())
@@ -3369,7 +3429,9 @@ def main() -> IO(Unit):
     row("pm_bw_distinct", pm_bw_distinct())
     srow("pm1_walk", pm1_walk())
     row("pm1_walk_n", pm1_walk_n())
-    row("pm1_rule_len", pm1_rule_len())
+    row("pm1_rule_tup_len", pm1_rule_tup_len())
+    row("pm1_rule_n_grads", pm1_rule_n_grads())
+    row("pm1_rule_n_nodes", pm1_rule_n_nodes())
     row("pm1_rule_is_ctx", pm1_rule_is_ctx())
     srow("pm1_rule_tok", pm1_rule_tok())
     srow("pm1_rule_op", pm1_rule_op())

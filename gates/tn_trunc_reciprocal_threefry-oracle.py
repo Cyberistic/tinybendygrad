@@ -33,8 +33,8 @@ print(f"trunc_op_is_trunc={int(r1.uop.op is Ops.TRUNC)}")
 print(f"trunc_does_not_mutate_input={int(c.op is Ops.CONST and r1.uop.op is Ops.TRUNC)}")
 
 r2 = t.reciprocal()
-print(f"reciprocal_op_is_reciprocal={int(r2.uop.op is Ops.RECIPROCAL)}")
-print(f"reciprocal_does_not_mutate_input={int(c.op is Ops.CONST and r2.uop.op is Ops.RECIPROCAL)}")
+print(f"reciprocal_op_is_reciprocal={int(r2.uop.op is Ops.RECIP)}")
+print(f"reciprocal_does_not_mutate_input={int(c.op is Ops.CONST and r2.uop.op is Ops.RECIP)}")
 
 seed = UOp(Ops.CONST, src=(), arg=0)
 s = Tensor(seed, device="PYTHON")

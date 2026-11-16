@@ -79,6 +79,34 @@ def build1():
     return a, b, c, p, q, UOp(Ops.ADD, src=(p, q))
 
 
+def build3():
+    """THE PORT's `gs()` FIXTURE, AND IT IS THE ONE THAT COMPUTES.
+
+    The port's `gs()` builds: `a = BUFFER(0)`, `b = BUFFER(1)`, `z = BUFFER(9)`,
+    `sh = STACK()` (EMPTY), `m = MUL(a,b)`, `x = EXPAND(m, sh)`, `q = ADD(a,x)`,
+    `t = ADD(m,q)`, `sd = CONST 1.0`. The targets are `(a, b, z)`.
+
+    MEASURED 2026-11-11: the port's rows named `oracle_gs_skip_n` and
+    `oracle_gs_hole_n`, and NO oracle produced either -- the oracle's `hole`
+    fixture is a DIFFERENT graph, one whose EXPAND's shape src is an ADD and so
+    REFUSES upstream. So the port's `gs_*` rows had no counterpart at all, which
+    is a row that cannot go red.
+
+    The EXPAND's shape src here is an EMPTY STACK, so upstream computes it and
+    the hole lands on `sh` -- the src that receives no gradient.
+    """
+    a = leaf(0)
+    b = leaf(1)
+    z = leaf(9)
+    sh = UOp(Ops.STACK, src=())
+    m = UOp(Ops.MUL, src=(a, b))
+    x = UOp(Ops.EXPAND, src=(m, sh))
+    q = UOp(Ops.ADD, src=(a, x))
+    t = UOp(Ops.ADD, src=(m, q))
+    sd = UOp.const(1.0, dtypes.float32)
+    return a, b, z, sh, m, x, q, t, sd
+
+
 def build2():
     """The EXPAND.  Pins the HOLE (gradient.py:130) and the SKIP (:120).
 
@@ -131,6 +159,17 @@ def one(tag, root, targets, names):
     # the key set in INSERTION order, which is what the port's parallel-list table
     # reproduces: a walk in forward order leaves a different set AND a different order.
     print("oracle_%s_keys=%s" % (tag, " ".join("%s/%d" % (x.op.name, len(x.src)) for x in grads)))
+    # THE GRADIENT SET's tokens, in the port's own spelling: the slot's node
+    # COUNT and its root, and a `Z` for the slot that received the SUBSTITUTE
+    # rather than a gradient. MEASURED 2026-11-11: the port's `gs_set_sig` row
+    # packed all three slots into one string and no oracle produced the pieces.
+    toks = []
+    for nm, t in names:
+        if t in grads:
+            toks.append("G %d root=%s/%d" % (len(grads[t].toposort()), grads[t].op.name, len(grads[t].src)))
+        else:
+            toks.append("Z %d root=CAST/1" % 2)
+    print("oracle_%s_set_sig=%s" % (tag, " | ".join(toks)))
     # THE SKIP COUNT, instrumented through `compute_gradient`'s OWN loop rather than a
     # second transcription of it: count the walk nodes that are not in grads when the
     # walk reaches them, and the rule answers that are all-holes.
@@ -186,6 +225,13 @@ def main():
     a, b, c, p, q, r = build1()
     one("dag", r, {a, b, c}, (("a", a), ("b", b), ("c", c), ("p", p), ("q", q), ("r", r)))
     rule_rows(p, r, a)
+
+    # THE PORT's `gs()` FIXTURE, and it COMPUTES. The port's rows named
+    # `oracle_gs_*` and no oracle produced them, so the `gs_*` rows had no
+    # counterpart at all. MEASURED 2026-11-11.
+    a3, b3, z3, sh3, m3, x3, q3, t3, sd3 = build3()
+    one("gs", t3, {a3, b3, z3},
+        (("a", a3), ("b", b3), ("z", z3)))
 
     # THE SECOND FIXTURE, GUARDED.  It cannot be computed -- the shaped-edge reduce
     # fires on its EXPAND -- and the instrument SAYS SO instead of dying.

@@ -33,7 +33,12 @@ show("mul", UOp(Ops.MUL, src=(a,b)), [a,b], C(1.0,F))
 c = C(3.0, F)
 show("muladd", UOp(Ops.ADD, src=(UOp(Ops.MUL, src=(a,b)), c)), [a,b,c], C(1.0,F))
 # 4 unary family
-for nm, op in [("exp2",Ops.EXP2),("log2",Ops.LOG2),("sqrt",Ops.SQRT),("sin",Ops.SIN),("reciprocal",Ops.RECIPROCAL)]:
+# THE PIN RENAMED FIVE OPS, AND THIS ORACLE KEPT THE OLD NAME. `75955a97a`
+# re-vendored `tinygrad/` to `f5ac54685` and `Ops.RECIPROCAL` became `Ops.RECIP`.
+# MEASURED 2026-11-11: the oracle died with `AttributeError: type object 'Ops'
+# has no attribute 'RECIPROCAL'` on its fifth fixture, so every row after it was
+# never produced and nobody noticed.
+for nm, op in [("exp2",Ops.EXP2),("log2",Ops.LOG2),("sqrt",Ops.SQRT),("sin",Ops.SIN),("reciprocal",Ops.RECIP)]:
   show(nm, UOp(op, src=(a,)), [a], C(1.0,F))
 # 5 MAX tie and non-tie
 show("max_nontie", UOp(Ops.MAX, src=(a,b)), [a,b], C(1.0,F))

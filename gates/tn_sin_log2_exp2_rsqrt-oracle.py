@@ -38,7 +38,7 @@ r3 = t.exp2()
 print(f"exp2_op_is_exp2={int(r3.uop.op is Ops.EXP2)}")
 
 r4 = t.rsqrt()
-print(f"rsqrt_op_is_reciprocal={int(r4.uop.op is Ops.RECIPROCAL)}")
+print(f"rsqrt_op_is_reciprocal={int(r4.uop.op is Ops.RECIP)}")
 print(f"rsqrt_arg_is_anone={int(r4.uop.arg is None)}")
 print(f"rsqrt_has_one_src={int(len(r4.uop.src) == 1)}")
 

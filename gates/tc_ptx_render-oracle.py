@@ -232,9 +232,9 @@ def asm_rows():
   out = ""
   # a fixed (d,a,b,c,dt,name) tuple; the dtype only matters for the arms that read it.
   for dt in (dtypes.f32, dtypes.f16, dtypes.bool, dtypes.u32, dtypes.i32):
-    for op in (Ops.RECIPROCAL, Ops.EXP2, Ops.LOG2, Ops.SIN, Ops.SQRT, Ops.TRUNC,
+    for op in (Ops.RECIP, Ops.EXP2, Ops.LOG2, Ops.SIN, Ops.SQRT, Ops.TRUNC,
                Ops.SHR, Ops.SHL, Ops.ADD, Ops.MUL, Ops.XOR, Ops.AND, Ops.OR,
-               Ops.CDIV, Ops.CMOD, Ops.MAX, Ops.CMPEQ, Ops.CMPLT, Ops.CMPNE, Ops.MULACC):
+               Ops.TRUNCDIV, Ops.TRUNCMOD, Ops.MAX, Ops.CMPEQ, Ops.CMPLT, Ops.CMPNE, Ops.MULACC):
       f = ptxmod.asm_for_op[op]
       n = f.__code__.co_argcount
       if n == 4:   s = f("%d", "%a", dt, "s32")

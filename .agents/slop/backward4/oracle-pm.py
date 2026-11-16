@@ -162,7 +162,19 @@ def fixture_p2():
   l0, l1, l2 = leaf(0, 2), leaf(1, 2), leaf(2, 2)
   s01 = UOp(Ops.STACK, src=(l0, l1))
   a = UOp(Ops.STACK, src=(s01, l2))
-  per = UOp(Ops.PERMUTE, src=(a,), arg=(1, 2, 0))
+  # THE ORDER IS IN `src[1]`, NOT IN THE ARG. At the pin `ops.py:772` reads
+  # `case Ops.PERMUTE: return self.src[1].as_shape` -- the order is the SECOND
+  # SOURCE, and `arg` is None. MEASURED 2026-11-11: this fixture built
+  # `PERMUTE(a, arg=(1,2,0))` and the oracle died with `IndexError: tuple index
+  # out of range` on `self.src[1].as_shape`, so every row after the first was
+  # never produced.
+  # THE ORDER IS A STACK OF CONSTs IN `src[1]`, NOT A CONST TUPLE. Upstream's
+  # `_mop` builds it with `shape_to_shape_arg` (ops.py:105-109): each element
+  # becomes `UOp.const(x)` and a LENGTH-1 order is a BARE CONST while a longer
+  # one is `UOp(Ops.STACK, src=src)`. MEASURED 2026-11-11: a CONST tuple in
+  # `src[1]` made `src[1].as_shape` answer `((1,2,0),)` -- a one-element shape --
+  # and the rule's arity came out 1 instead of 3.
+  per = UOp(Ops.PERMUTE, src=(a, UOp(Ops.STACK, src=tuple(UOp.const(x) for x in (1, 2, 0)))))
   m0, m1, m2 = leaf(3, 2), leaf(4, 2), leaf(5, 2)
   n01 = UOp(Ops.STACK, src=(m0, m1))
   ctx = UOp(Ops.STACK, src=(n01, m2))
@@ -180,7 +192,8 @@ def fixture_p1():
   THE `bw` GRAPH IS `g`'s NODE SET AND NOTHING ELSE.**
   """
   leaf0 = leaf(0, 6)
-  per = UOp(Ops.PERMUTE, src=(leaf0,), arg=(0,))
+  # A LENGTH-1 ORDER IS A BARE CONST (ops.py:109), not a STACK of one.
+  per = UOp(Ops.PERMUTE, src=(leaf0, UOp.const(0)))
   g = leaf(1, 6)
   return {"leaf": leaf0, "per": per, "g": g}
 
@@ -195,7 +208,17 @@ def emit(prefix, fx, root, root_grad, target):
   # THE RULE, MEASURED DIRECTLY: upstream's OWN table, on the SAME node, with the
   # SAME ctx.  This is the question the port's `rw` answers.
   rule = pm_gradient.rewrite(root, ctx=root_grad)
-  print("%s_rule_len=%d" % (prefix, 0 if rule is None else len(rule)))
+  # TWO COUNTS, AND THE OLD ROW NAME WAS ONE OF THEM. `len(rule)` is upstream's
+  # TUPLE length -- `(node, hole)` -- and the port's `pm_rule_len` is the ANSWER's
+  # NODE count. MEASURED 2026-11-11: the two rows had one name and different
+  # meanings (1 against 2), which is a disagreement about the NAME and not about
+  # either side. The tuple length is now `rule_tup_len` and the node count is
+  # `rule_n_nodes`, and `rule_len` is the TUPLE length under its own name.
+  print("%s_rule_tup_len=%d" % (prefix, 0 if rule is None else len(rule)))
+  # THE NUMBER OF GRADIENTS THE RULE PRODUCED, and the ANSWER's node count
+  # under its own name. The port's `pm_rule_n_nodes` is the former.
+  print("%s_rule_n_grads=%d" % (prefix, 0 if rule is None else 1))
+  print("%s_rule_n_nodes=%d" % (prefix, 0 if rule is None else len(rule[0].toposort())))
   if rule is not None:
     ans = rule[0]
     print("%s_rule_is_ctx=%d" % (prefix, 1 if ans is root_grad else 0))

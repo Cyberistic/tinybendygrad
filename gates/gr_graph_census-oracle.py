@@ -46,7 +46,7 @@ c4 = UOp.const(4.0, dtypes.float32)          # POW exponent
 ci = UOp.const(4)                            # a BARE weakint CONST
 t_cast = UOp(Ops.CAST, src=(c1,), arg=dtypes.int32)      # src f32 == ctx -> IDENTITY
 t_cast_r = UOp(Ops.CAST, src=(ci,), arg=dtypes.int32)    # src weakint -> REAL cast
-t_recip = UOp(Ops.RECIPROCAL, src=(c3,))
+t_recip = UOp(Ops.RECIP, src=(c3,))
 t_sin = UOp(Ops.SIN, src=(c3,))
 t_log2 = UOp(Ops.LOG2, src=(c3,))
 t_exp2 = UOp(Ops.EXP2, src=(c3,))
