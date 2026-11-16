@@ -22,7 +22,7 @@
 # missing file and an empty one for an empty file, and only the second is a
 # verdict.
 #
-# tinygrad/runtime/ops_python.py blob at HEAD: 5e704b90. The subject.
+# tinygrad/runtime/ops_python.py blob at HEAD: 656fc517. The subject.
 # tinygrad/renderer/tc.py blob at HEAD: 52b59046. Read by 29 of the
 # 85 rows through `PythonRenderer.__init__` -- ops_python.py:170
 # `tc.metal`, :173 `tc.get_cuda`, :171 `tc.get_amd` -- and by 14 more
@@ -35,7 +35,7 @@
 # since the re-vendor of `tinygrad/` to upstream `002630241` (2026-10-16) moved
 # theirs. It is NOT a git revision: a revision names a COMMIT, and the file the
 # oracle opens is the one ON DISK.
-# tinygrad/runtime/ops_python.py: 62decc9aa674b47a578e06bec68d46695920524da27b10fb63da75d420df8d7b
+# tinygrad/runtime/ops_python.py: 656fc517175b0dbf1c51a1a5eb02ac18e6e0e267d4638edbaff3c2444adab0ed
 # tinygrad/renderer/tc.py: f8836d7fa6dee7f0f84f6adf29c192a29ffae62ca40e0372f74b128cde4e6654
 # `pin_drift_hold()` re-measures both on every run.
 

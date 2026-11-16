@@ -249,6 +249,12 @@ ROOT = HERE.parent
 PINS = HERE / "ops_python_census-pins.rows"
 ART = HERE / "artifacts" / "ops_python_census-gate"
 PORT = ROOT / "tinybendygrad" / "runtime" / "ops_python.bend"
+# THE LANE. The port's rows moved to `gates/ops_python-gate.bend` (the gate's own
+# convention, `gates/README.md:173`), and the two entry points SEPARATE with
+# them: the PORT is the EXECUTOR and the DRIVER is the FIXTURE LANE. MEASURED
+# 2026-11-11: the gate ran the port, the port printed the executor's refusal
+# (`executor: no PACKET on the command line`) and every row came back MISSING.
+DRIVER = HERE / "ops_python-gate.bend"
 ORACLE = HERE / "ops_python_census-oracle.py"
 
 ROWS = 85
@@ -267,9 +273,15 @@ VENDORED = ("tinygrad/runtime/ops_python.py", "tinygrad/renderer/tc.py")
 # the ORACLE IMPORTS, and `gates/gatekit.py:oracle_drift` re-measures them on every
 # run: a WORKING TREE whose bytes differ is what `import tinygrad` opens, and a
 # revision comparison cannot see it.
+# THE PIN, AND IT MOVED WITH THE RE-VENDOR. `75955a97a` re-vendored `tinygrad/`
+# to `f5ac54685074` (2026-11-03) and `tinygrad/runtime/ops_python.py` came with
+# it -- MEASURED 2026-11-11: the pin said `62decc9a...` and the file on disk
+# hashes to `656fc517...`, so `pin_drift_hold` had been RED for thirteen days
+# and the header still said the files had not drifted. `tinygrad/renderer/tc.py`
+# did not change and its pin still holds.
 DRIFT_PIN = {
   "tinygrad/runtime/ops_python.py":
-    "62decc9aa674b47a578e06bec68d46695920524da27b10fb63da75d420df8d7b",
+    "656fc517175b0dbf1c51a1a5eb02ac18e6e0e267d4638edbaff3c2444adab0ed",
   "tinygrad/renderer/tc.py":
     "f8836d7fa6dee7f0f84f6adf29c192a29ffae62ca40e0372f74b128cde4e6654",
 }
@@ -297,7 +309,7 @@ def report(name, bad):
 def port_groups():
     """The `t_*` groups `gate()` calls, IN ORDER, by `re.findall` over `main()`'s
     body -- the same rule `amd_dsl_census-gate.py:groups_hold` uses."""
-    src = PORT.read_text()
+    src = DRIVER.read_text()
     body = src[src.index("def gate() -> IO(Unit):"):]
     return tuple(re.findall(r"<-\s+(t_[a-z0-9]+)\(\)", body))
 
@@ -305,7 +317,7 @@ def port_groups():
 def port_rows():
     """The port's own printed row NAMES, in order, by `re.findall` over the whole
     file, plus the `py-done=1` completion marker `gate()` prints last."""
-    names = re.findall(r'^\s+(?:srow|urow|row)\("([^"]+)"', PORT.read_text(), re.M)
+    names = re.findall(r'^\s+(?:srow|urow|row)\("([^"]+)"', DRIVER.read_text(), re.M)
     return names + ["py-done=1"]
 
 
@@ -328,7 +340,7 @@ def groups_hold() -> bool:
     """The DRIVER axis is `gate()`'s calls, and the `t_*` defs must BE those calls:
     a group nothing calls is a population of zero rows that still looks like a gate,
     and a def nothing calls is dead code in the middle of a census."""
-    src = PORT.read_text()
+    src = DRIVER.read_text()
     called = port_groups()
     declared = tuple(re.findall(GROUP_DEF, src, re.M))
     bad = []
@@ -417,8 +429,14 @@ def tid_axis_hold() -> bool:
         m = _oracle_module()
     except Exception as e:                                          # noqa: BLE001
         return report("tid_axis_hold", [f"the oracle would not import: {e}"])
-    src = PORT.read_text()
-    const = [(n, int(v)) for n, v in re.findall(r"^def CORES_(\w+)\(\) -> U32: (\d+)$", src, re.M)]
+    # THE TWO POPULATIONS, FROM THEIR OWN FILES: the `CORES_*` constants are the
+    # PORT's and the ROWS are the DRIVER's. MEASURED 2026-11-11: reading the
+    # constants out of the driver found none (they stayed with the port) and the
+    # check said `the port's CORES_* names []`.
+    port_src = PORT.read_text()
+    src = DRIVER.read_text()
+    const = [(n, int(v)) for n, v in
+              re.findall(r"^def CORES_(\w+)\(\) -> U32: (\d+)$", port_src, re.M)]
     bad = []
     if sorted(v for _, v in const) != list(range(len(const))):
         bad.append(f"the port's CORES_* values are {sorted(v for _, v in const)}, "
@@ -659,10 +677,12 @@ def pyc_rows_hold() -> bool:
     and what each one is. Both halves are re-measured here: the disclaimer must be
     GONE (its return is a stale finding, not a new one) and the two rows must still
     be the two that are printed."""
-    src = PORT.read_text()
+    # THE ROWS ARE IN THE DRIVER and the DISCLAIMER is in the PORT's header, so
+    # the two are read from their own files.
+    src = DRIVER.read_text()
     got = sorted(set(re.findall(r'row\("(pyc_[a-z0-9_]+)"', src)))
     bad = []
-    if "`pyc_*` rows here at all" in src:
+    if "`pyc_*` rows here at all" in PORT.read_text():
         bad.append("the header disclaims the pyc_* rows AGAIN -- finding B is back")
     if got != ["pyc_is_b64decode", "pyc_refused"]:
         bad.append(f"the pyc_* rows are {got}, expected ['pyc_is_b64decode', 'pyc_refused']")
@@ -710,7 +730,11 @@ def interpreter_hold() -> bool:
     for op in ("BINARY", "CALL", "WMMA", "CUSTOM_FUNCTION"):
         if f'case "{op}"' in body:
             bad.append(f'op_of now has a "{op}" arm, and Prog.dispatch has no case for it')
-    if 'case _: Prog.alu(p, u)' not in src:
+    # THE CATCH-ALL, AND ITS SPELLING MOVED. MEASURED 2026-11-11: the check
+    # looked for `case _: Prog.alu(p, u)` and the port spells it
+    # `case _: Prog.alu(p, a, u)` -- the dispatch gained the arena -- so the
+    # check was RED at HEAD for a spelling and not for a missing arm.
+    if not re.search(r"case _: Prog\.alu\(p, (?:a, )?u\)", src):
         bad.append("Prog.dispatch's catch-all is gone -- FINDING E is stale")
     if "def Uop.refused(+u: Uop) -> Bool: U32.is_ge(Uop.kind(u), 14)" not in src:
         bad.append("Uop.refused is no longer `kind >= 14` -- the parse-time refusal "
@@ -806,7 +830,7 @@ def refresh() -> int:
     It does not go through `run()`, because a refresh is exactly what a run cannot
     do when the pins are wrong."""
     lanes = {}
-    for tag, argv in (("py", [str(PY), str(ORACLE)]), ("bd", [str(BEND), str(PORT)])):
+    for tag, argv in (("py", [str(PY), str(ORACLE)]), ("bd", [str(BEND), str(DRIVER)])):
         r = subprocess.run(argv, capture_output=True, text=True, cwd=str(ROOT))
         if r.returncode != 0:
             print(f"--refresh: lane {tag} failed rc={r.returncode}: "
@@ -943,7 +967,7 @@ def warm():
     """`--check-only`'s FIRST LINE, never its exit status: an EMPTY file
     typechecks (gatekit's `_warm`, and the reason it is there)."""
     for _ in range(25):
-        r = subprocess.run([str(BEND), str(PORT), "--check-only"],
+        r = subprocess.run([str(BEND), str(DRIVER), "--check-only"],
                            capture_output=True, text=True, cwd=str(ROOT))
         first = (r.stdout or "").splitlines()[:1]
         if first and first[0].strip() == WARM:
@@ -971,10 +995,12 @@ def run():
             return REFUSED
         if not lane([str(PY), str(ORACLE)], "py.rows"):
             return REFUSED
-        if not lane([str(BEND), str(PORT)], "bd.out"):
+        if not lane([str(BEND), str(DRIVER)], "bd.out"):
             return DEAD
+        # THE NATIVE LANE COMPILES THE DRIVER now -- the PORT is the executor and
+        # its rows live in the driver, so the driver is what has rows to print.
         binp = _staged("gate.bin")
-        c = subprocess.run([str(BEND), str(PORT), "-o", str(binp)],
+        c = subprocess.run([str(BEND), str(DRIVER), "-o", str(binp)],
                            capture_output=True, text=True, cwd=str(ROOT))
         if c.returncode != 0:
             print(f"  the native compile failed: {(c.stderr or '').strip()[:200]}",
