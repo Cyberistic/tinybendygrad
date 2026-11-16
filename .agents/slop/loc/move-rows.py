@@ -106,6 +106,12 @@ def declared_in(lines: list[str]) -> set[str]:
 CASE_BIND = re.compile(r"^\s*case\s+(?:[^:]*?\b)?([A-Za-z_]\w*)\s*<>", re.M)
 
 
+# A `do`-BLOCK's binding: `+q : Unit <- t_ops()` or `q : Unit <- t_ops()`. The
+# binder shadows the port's name for the block's extent, and a textual tool
+# cannot see the block's extent from the line alone.
+DO_BIND = re.compile(r"^\s*\+?([A-Za-z_]\w*)\s*:")
+
+
 def bound_names(lines: list[str]) -> set[str]:
     """The names a `case` pattern BINDS, over the whole region.
 
@@ -153,6 +159,15 @@ def bound_names(lines: list[str]) -> set[str]:
                 if nm in ("Some", "None", "Nil", "True", "False"):
                     continue
                 out.add(nm)
+    # A `do`-BLOCK'S BINDERS SHADOW THE PORT'S NAMES TOO. MEASURED 2026-11-11:
+    # the bnxtdev region's `main` binds `q` (`+q : Unit <- t_ops()`) and the port
+    # has a namespace `q` (`q.write_off`), so the driver's `P.q` was not a
+    # binding at all and the answer was `expected: a quantified datatype after
+    # +, observed: '+'`.
+    for line in lines:
+        m = DO_BIND.match(line)
+        if m:
+            out.add(m.group(1))
     return out
 
 
@@ -197,10 +212,41 @@ def arm_map(lines: list[str]) -> list[set[str]]:
     return out
 
 
+def block_map(lines: list[str]) -> list[set[str]]:
+    """For each line, the names a `do`-BLOCK'S BINDING shadows.
+
+    A `do`-block binds its names with `+name : T <- expr` and the binding is
+    live for the REST OF THE BLOCK. So the binder must keep its own spelling on
+    the binding line AND on the lines that follow it, and the port's namespace
+    of the same name must be reached by the second alias everywhere else.
+
+    MEASURED 2026-11-11: the bnxtdev region's `main` binds `q`
+    (`+q : Unit <- t_ops()`) and the port has a namespace `q` (`q.write_off`),
+    so the driver wrote `+Q.q : Unit <- t_ops()` and the answer was `expected: a
+    quantified datatype after +, observed: '+'`.
+    """
+    out: list[set[str]] = []
+    live: set[str] = set()
+    for line in lines:
+        stripped = line.strip()
+        if line and not line[0].isspace() and not stripped.startswith("#"):
+            # A COLUMN-0 LINE ENDS THE BLOCK -- except the `def` that OPENS it.
+            if not stripped.startswith("def ") and not stripped.startswith("do "):
+                live = set()
+        m = DO_BIND.match(line)
+        if m:
+            live.add(m.group(1))
+            out.append(set(live))
+            continue
+        out.append(set(live))
+    return out
+
+
 def prefix(line: str, names: set[str], bound: set[str] | None = None,
             collided: set[str] | None = None,
             arm_binders: set[str] | None = None,
-            region_members: set[str] | None = None) -> str:
+            region_members: set[str] | None = None,
+            block_binders: set[str] | None = None) -> str:
     """Prefix the port's names in one line.
 
     `names` are the port's top-level names (a namespace's first component), and
@@ -304,7 +350,7 @@ def prefix(line: str, names: set[str], bound: set[str] | None = None,
                 # none (the region's own `def aspm.index_str` moved out with
                 # the rows), so the answer was `expected: a defined name`.
                 out.append(w)
-            elif arm_binders and w in arm_binders:
+            elif (arm_binders and w in arm_binders) or (block_binders and w in block_binders):
                 out.append(w)
             else:
                 out.append(f"Q.{w}")
@@ -417,8 +463,9 @@ def main() -> int:
     arms = arm_map(lines[start:end])
     region_members = {mm.group(1) for l in lines[start:end]
                       for mm in re.finditer(r"^def\s+\w+\.(\w+)", l, re.M)}
-    body = [prefix(l, names, bound, collided, a, region_members)
-            for l, a in zip(lines[start:end], arms)]
+    blocks = block_map(lines[start:end])
+    body = [prefix(l, names, bound, collided, a, region_members, b)
+            for l, a, b in zip(lines[start:end], arms, blocks)]
     driver.parent.mkdir(parents=True, exist_ok=True)
     driver.write_text("\n".join(header + body).rstrip("\n") + "\n")
 

@@ -144,8 +144,31 @@ PORT_ONLY = [
     "sym_metal_handle_reaches_msgsend", "sym_metal_handle_reaches_selname",
 ]
 
+# A LANE WHOSE ORACLE ANSWERS SOME OF ITS ROWS AND NOT ALL OF THEM. The bnxtdev
+# lane's oracle answers 612 of the port's 882 rows, and the other 270 are the
+# PORT'S OWN BIT-LAYOUT ARITHMETIC: `pbl.entry_hi`, `bs.init_npos`,
+# `bs.count_of` and their kin are a port-local layer over the bnxt PBL and
+# bitmap layouts, and upstream's `build_pbl` returns `(addr, size)` -- the
+# individual entry words are not in upstream at all, so the oracle CANNOT
+# answer them and does not pretend to.
+#
+# THE DECLARATION IS A COUNT AND NOT A LIST, and a list is what this file's own
+# `PORT_ONLY` above is -- nineteen names, hand-written. A count is a FACT about
+# the two lanes, and it goes RED when a row is added or removed on either side,
+# which is the property a hand list cannot have. MEASURED 2026-11-16: the
+# bnxtdev port prints 882 rows and its oracle answers 612, so the port-only
+# count is 270.
+#
+# AND THE COUNT IS CHECKED AGAINST THE LANES, NOT TRUSTED: if the oracle starts
+# answering one of the port-only rows the count moves and the declaration is
+# STALE, so the gate REFUSES rather than excluding a row it no longer measures.
+PORT_ONLY_COUNT = {
+  "runtime/support/rdma/bnxtdev.bend": 270,
+}
+
 LANES = [
     ("runtime/support/objc.bend", "gates/objc-oracle.py"),
+    ("runtime/support/rdma/bnxtdev.bend", "gates/bnxtdev-oracle.py"),
     ("renderer/amd/generate.bend", "gates/ga-oracle.py"),
     ("renderer/__init__.bend", "gates/renderer_init-oracle.py"),
 ]
@@ -160,6 +183,7 @@ LANES = [
 # nothing, because its 123 rows had moved to `gates/objc-gate.bend`.
 DRIVERS = {
   "runtime/support/objc.bend": "gates/objc-gate.bend",
+  "runtime/support/rdma/bnxtdev.bend": "gates/bnxtdev-gate.bend",
 }
 
 
@@ -224,6 +248,18 @@ def lane_verdict(rel: str, oracle: Path) -> tuple[int, str]:
     c = compare(prows, orows)
     diverges = DIVERGES if "objc" in rel else {}
     port_only = set(PORT_ONLY if "objc" in rel else [])
+    # THE COUNTED PORT-ONLY CLASS. The names are NOT declared, so the class is
+    # the SET of names the oracle does not answer -- and the COUNT is the
+    # declaration, checked against the lanes on every run.
+    want_count = PORT_ONLY_COUNT.get(rel)
+    if want_count is not None:
+        port_only |= {n for n, _ in c["unanswered"]}
+        got = len([n for n, _ in c["unanswered"]])
+        if got != want_count:
+            return FAIL, (f"the port-only class is {got} rows and the declaration "
+                          f"says {want_count}: a row was added or removed on one "
+                          f"side; if the oracle now answers one of them, drop the "
+                          f"declaration")
 
     # THE DECLARED DIVERGENCES ARE CHECKED AGAINST THE LANES, NOT TRUSTED.  A
     # declaration says "the two sides DIFFER here", so if they are the SAME the
