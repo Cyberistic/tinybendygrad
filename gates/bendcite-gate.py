@@ -498,7 +498,7 @@ class Judge:
     docstring and implements the OPPOSITE: it keeps a name for citation `i` when the
     name is within 40 characters of some OTHER citation, so on a line with two
     citations the name goes to the FARTHER one. MEASURED:
-    `tinybendygrad/extra/models/clip.bend:101` reads
+    `gates/models-clip-gate.bend:39` reads
     `"mixin/elementwise.bend:754 has the CONSTANT ew_k.gelu and :1217 has
     `def ew_quick_gelu`"` -- and the shared rule gave `ew_quick_gelu` to `:772`, which
     is TRUE of neither, and the pointer read as stale. The rule is NOT copied here

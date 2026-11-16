@@ -266,7 +266,7 @@ and the code kept a name for citation `i` when the name was within 40 characters
 some OTHER citation -- so on a line with two citations the name went to the FARTHER one
 and was DROPPED from the nearest.
 
-THE MEASURED INSTANCE: `tinybendygrad/extra/models/clip.bend:101` reads
+THE MEASURED INSTANCE: `gates/models-clip-gate.bend:39` reads
 `"mixin/elementwise.bend:754 has the CONSTANT ew_k.gelu and :1217 has `def
 ew_quick_gelu`"`. The name is 5 characters from `:1217` and 42 from `:772`, and the
 shipped rule gave it to `:772` -- which holds NEITHER the name NOR the claim, and
@@ -553,7 +553,7 @@ def window_tokens(line: str, spans: list[tuple[int, int]], i: int) -> list[str]:
   THE SHIPPED RULE WAS THE INVERSE OF THIS ONE, AND IT IS NOT A LINE-NUMBER BUG: it kept
   a name for citation `i` when the name was within 40 characters of some OTHER citation,
   so on a line with two citations the name went to the FARTHER one and was DROPPED from
-  the nearest. MEASURED, `tinybendygrad/extra/models/clip.bend:101`: the name is 5
+  the nearest. MEASURED, `gates/models-clip-gate.bend:39`: the name is 5
   characters from `:1217` and 42 from `:772`, and the shipped rule gave
   `ew_quick_gelu` to `:772`, which holds NEITHER the name NOR the claim. **A TOKEN ON
   THE WRONG ROW IS A ROW WHOSE VERDICT IS ABOUT THE WRONG CLAIM**, and every class

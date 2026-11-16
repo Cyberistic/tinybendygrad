@@ -485,7 +485,7 @@ def W4.out(+q: W4) -> List<&2, U32>:
 def A.out(+q: AP) -> List<&2, U32>:
   [A.b0(q), A.b1(q), A.o0(q), A.o1(q)]
 
-# the `Refused` accessor, in `extra/models/resnet.bend:266-266`'s shape, so `main`
+# the `Refused` accessor, in `gates/models-resnet-gate.bend:28`'s shape, so `main`
 # can print the address a refusal carries rather than discarding it.
 def pool_ref_at(r: D.Refused) -> String:
   match r:
