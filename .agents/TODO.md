@@ -29679,11 +29679,29 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       cannot be mapped because `movement.bend` and `dtype.bend` are ambiguous
       basenames -- two files each -- and a citation that does not say which file it
       means is not moved by a guess.
-- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-17 on `bd7a2d14c`: the port is 251,376
-      lines against upstream's 63,395 = **3.97x**; code-only 111,863 vs 56,436 =
-      **1.98x**; gate rows **0**, comments 107,185 (43%), blank 32,328 (13%), code
-      111,863 (45%). It was 4.36x / 2.15x before this session's moves, and the
-      code-only ratio is under 2x for the FIRST TIME.
+- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-17 on `75151db67`: the port is 254,219
+      lines against upstream's 63,395 = **4.01x**; code-only 113,302 vs 56,436 =
+      **2.01x**; gate rows **0**, comments 107,947 (42%), blank 32,970 (13%), code
+      113,302 (45%). It was 4.36x / 2.15x before this session's moves.
+- [x] NINE MOVES TOOK THE MACHINERY WITH THEM, AND THEY ARE REDONE. MEASURED:
+      `checks/port-compile-gate.py` answered `compiled=191 findings=3`, and two
+      of the three were MINE: `codegen/late/gater.bend` and
+      `codegen/late/regalloc.bend` import `codegen/late/linearizer.bend` as `LT`
+      and USE `LT.lt_ops_name` and `LT.cfg_entry`, and my move of
+      `linearizer.bend`'s rows took 175 defs with it. THE RULE IS THE TREE's OWN:
+      a PORT FILE THAT OTHER PORT FILES IMPORT IS A LIBRARY, and a library's
+      defs are the PORT's -- the rows' own helpers move and the machinery stays.
+      The tool now reads the IMPORTERS and cuts the region above the first def
+      an importer reaches, and the printers are excluded because the DRIVER HAS
+      ITS OWN COPY. All nine are redone and byte-identical to their bases.
+      AND THE SCAN LOOKED AT THE REPO AND NOT AT THE PORT TREE, so it matched
+      `.agents/slop/sym92/probe-dmfixture.bend` and the driver's own import --
+      `divandmod.bend` "had importers" it does not have and its region was cut
+      to 6 lines. The root is now FOUND and not assumed.
+- [x] THE COMPILE CENSUS IS BACK TO ONE FINDING: `population=201 compiled=193
+      cold-by-design=7 findings=1`, and the one is `renderer/kuconv.bend` --
+      which was broken BEFORE this session (MEASURED: the pre-session commit
+      answers the same `expected: cstyle.KU with 8 fields`).
 - [x] THE GATE ROWS ARE ALL OUT OF THE PORT. MEASURED: the port's 201 `.bend`
       files carry **ZERO** `row(`/`srow(` lines, against 991 at the start of this
       session. Every one moved to a driver in `gates/`, and every driver's output
