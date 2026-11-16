@@ -436,10 +436,7 @@ W-434	runtime/ops_webgpu.bend	80	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu
 W-435	runtime/ops_webgpu.bend	91	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu.py:37	subject unported or a residual arm of a ported def
 W-436	runtime/ops_webgpu.bend	92	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu.py:141	subject unported or a residual arm of a ported def
 W-437	runtime/ops_webgpu.bend	100	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu.py:204	subject unported or a residual arm of a ported def
-W-438	runtime/support/am/amdev.bend	2157	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:112	subject unported or a residual arm of a ported def
-W-439	runtime/support/am/amdev.bend	2161	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:377	subject unported or a residual arm of a ported def
-W-440	runtime/support/am/amdev.bend	2166	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:20	subject unported or a residual arm of a ported def
-W-441	runtime/support/am/amdev.bend	2174	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:73	subject unported or a residual arm of a ported def
+W-441	gates/amdev-gate.bend	829	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:73	subject unported or a residual arm of a ported def
 W-442	runtime/support/am/ip.bend	68	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
 W-443	runtime/support/am/ip.bend	1803	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:411	subject unported or a residual arm of a ported def
 W-444	runtime/support/am/ip.bend	1804	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:367	subject unported or a residual arm of a ported def
