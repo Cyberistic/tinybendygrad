@@ -29714,6 +29714,19 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       headers put the shape half in I, II, III, VI, VII and VIII and the
       ALU/dtype half in IV and V, and the two census gates now read the SECTION
       rather than the book.
+- [x] THE LAW SET IS NOW **98 LAWS**, ALL PROVED, AND THE PORT STATES FOUR OF THE
+      SPEC'S FIVE DERIVED PROPERTIES. MEASURED 2026-11-17: the port had `dtype`
+      and `shape` and NO device fold, NO min_max fold, and the spec's
+      `SpCmpEq`/`SpTruncdiv`/`SpTruncmod` constructors at all. Now: a `Sp.device`
+      fold (the spec's device column), a `Sp.min_max` fold (the value-free half
+      of the min_max column), `SpCmpEq`/`SpTruncdiv`/`SpTruncmod` as primitives
+      with the SPEC's decompositions, and the ALU ops' dtype, the source ops'
+      shape and the passthrough ops' dtype and shape. The census reads
+      `0/98/98` and the shape census's UNPINNED arms fall from 37 to 8.
+      AND TWO CENSUSES HAD A DEFECT: each asked "do the laws in MY half pin this
+      arm" and the question is "does ANY law read THIS FOLD at this op" -- so
+      nine shape arms and thirteen dtype arms were called unpinned that a law
+      DID read. Both now take every law.
 - [x] SIXTEEN LAWS ADDED, AND EVERY ONE IS A CLAIM THE PIN's SPEC MAKES AND THE
       BOOK DID NOT SAY (MEASURED against `f5ac54685074:spec/tinyspec.tex`, not a
       newer clone). **THE COMPARISON FAMILY WAS BACKWARDS**: the spec says

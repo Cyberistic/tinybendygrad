@@ -121,13 +121,22 @@ the shape half alone reported 18 TODOs and the ALU/dtype half 16, and the
 aggregate `PROOF-ALL.bend` existed to import both. MEASURED 2026-11-17: the two
 halves' sixty defs have NO NAME IN COMMON and neither calls a def declared
 later in its own file, so ONE file holds both halves and the aggregate is not
-needed. The proof file is now `LAWS/PROOF.bend` and it holds all seventy-four
+needed. The proof file is now `LAWS/PROOF.bend` and it holds all ninety-eight
 laws.
 
 The port states **four of the spec's five derived properties** now — `dtype`,
 `shape`, `device` and the value-free half of `min_max`. The fifth, `addrspace`,
 has no column in the spec's derived-properties table (only the `ParamArg`
 prose), so there is nothing to state.
+
+Two places where the port is **narrower than the spec**, and both say so:
+
+- **Broadcast right-alignment.** The spec says "right-align shapes,
+  element-wise max". The port zips from the head, which coincides with
+  right-alignment only at equal rank — so the port's broadcast law requires
+  `SameLen`.
+- **Unshard's shape.** The spec says "src[0], each a_k × n_k" — the source's
+  shape with each sharded axis split. The port answers `src[0]` whole.
 
 ## Files
 
