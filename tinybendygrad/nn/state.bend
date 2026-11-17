@@ -19,7 +19,7 @@ import ./../uop/ops.bend as O
 # (state.py:103-112):
 #
 #     if isinstance(obj, tensor_type):        return {prefix.strip('.'): obj}
-#     if hasattr(obj, '_asdat'):               return get_state_dict(obj._asdat(), prefix)   # namedtuple
+#     if hasattr(obj, '_asdict'):              return get_state_dict(obj._asdict(), prefix)  # namedtuple
 #     if isinstance(obj, OrderedDict):         return get_state_dict(dict(obj), prefix)
 #     if hasattr(obj, '__dict__'):             return get_state_dict(obj.__dict__, prefix)
 #     state_dict = {}

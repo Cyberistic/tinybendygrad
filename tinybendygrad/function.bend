@@ -728,6 +728,26 @@ def fn_try(claimed: Bool, tag: U32, +ar: O.Arena, +c: FnCtx, +g: O.Found) -> Fir
 # rule reads a node's own subgraph, so a node is judged after its srcs are. The
 # rules are FIRST-WINS (Python's `PatternMatcher.rewrite` returns the first
 # non-None), and `fn_scan.keep` is the fold that makes it so.
+#
+# function.py:78 -- "caller-owned storage left in the graph becomes implicit
+# inputs". THIS IS THE STEP THAT MAKES THE CALL'S INPUT LIST LONGER THAN ITS
+# ARGUMENT LIST, and it is a rewrite rather than a scan because the nodes it
+# captures are the ones the traced body did NOT name -- a buffer the body read
+# out of a closure, or a global. The rule fires on `GroupOp.Defines` (function.py:21)
+# and on an AFTER/STAGE whose backward slice has no positive-slot PARAM (function.py:22),
+# and the predicate is `is_implicit_storage`: VARIABLES with slot -1, BUFFERs, and
+# ALLOCs bound on realize with a slot below `alloc_start`. So "implicit" means
+# "caller-owned", and the rewrite turns each such node into a PARAM and APPENDS it
+# to `call_uops`. That append is why `num_explicit` (the length BEFORE the
+# rewrite) is the boundary the refusal at function.py:84 slices at.
+#
+# The upstream line immediately above it, function.py:74 -- "replace the known
+# inputs with params (using deduplicated slots)" -- is the OTHER half, and it runs
+# FIRST: `subs = {x: x.param_like(i) for i,x in enumerate(call_uops)}` replaces the
+# ARGUMENTS' own uops with PARAMs numbered by their slot in the DEDUPLICATED list,
+# and `uret.substitute(subs)` walks the whole graph doing it. The order is
+# load-bearing: the arguments must be PARAMs BEFORE the implicit-input scan runs,
+# or the scan would capture the arguments themselves as implicit storage.
 def fn_scan.keep(+c: FnCtx, +f: Fired) -> FnCtx:
   Bool.pick(FnCtx, Fired.ok(f), Fired.ctx(f), c)
 
@@ -759,6 +779,17 @@ def fn_pm_ctx(+f: O.Found, +c: FnCtx) -> FnCtx:
 #     depth = 0
 #     def __init__(self, fxn, *, precompile, precompile_backward, allow_implicit, grad_fxn):
 #     def __get__(self, obj, objtype=None): return functools.partial(self.__call__, obj) if obj is not None else self
+#
+# function.py:100 -- "overload signatures support both @function and
+# @function(precompile=True) syntax". The decorator has TWO SPELLINGS and the
+# overloads are what make both type-check: bare `@function` passes the function
+# as the first positional argument, while `@function(precompile=True)` passes
+# `fxn=None` and a keyword, and the body then returns a LAMBDA that wraps the
+# real function (function.py:109-111). So the decorator is a function that
+# sometimes returns a decorator, and the `fxn is None` test is the branch that
+# distinguishes the two. `__get__` (function.py:48) is the third form: on a
+# CLASS attribute, `obj` is the instance and `functools.partial` binds it --
+# which is why `_function` works as a method decorator too.
 #
 # `depth` is CLASS-level, so it is SHARED across instances, and it is the reason
 # the DEBUG print at function.py:93 indents by it. Bend has no class-level
@@ -793,6 +824,19 @@ def fn_enter.of(+f: Fn, d: U32) -> Fn:
 # `_function.depth -= 1` in the `finally`. The row that says the counter is
 # RESTORED and not merely incremented is `dep_exit` -- a port that leaked the
 # depth would still pass `dep_enter`.
+#
+# function.py:58-59 -- "disable realize/schedule while this is running" and "run it
+# and do surgery later". The traced body is run with REALIZE AND SCHEDULE OFF,
+# because the decorator's whole job is to capture the GRAPH and nothing may
+# realize it behind the decorator's back: a realized buffer is not a graph fact
+# and cannot be turned into a PARAM. The two lines are upstream's own explanation
+# of the SAME fact -- the surgery (the substitution at function.py:76 and the
+# rewrite at :80) happens AFTER the body has run, on a graph that is still a
+# graph. The `alloc_start = next(UOp.unique_num)` on the line above (function.py:60)
+# is the other half of "do surgery later": it records the counter's value BEFORE
+# the body runs, so that an ALLOC the body created is distinguishable from an
+# ALLOC that already existed. `is_implicit_storage` compares a slot against that
+# number (function.py:17).
 def fn_exit.of(+f: Fn, d: U32) -> Fn:
   match f:
     case Fn{precompile, precompile_backward, allow_implicit, depth}:
@@ -872,6 +916,16 @@ def Dedup.of(+g: O.Found, +d: Dedup) -> Dedup:
 # RECURSION. `x` is read once here (it is handed to `put`) and once inside `put`,
 # and the accumulator is a `Data` record because a fold that must answer both a
 # list and a fact about it rides in the STATE.
+#
+# function.py:55 -- "deduplicate input_uops, keeping the first occurrence index for
+# each unique uop". THE FIRST OCCURRENCE IS THE SLOT, and that is the whole reason
+# the dedup is not merely a set: `subs = {x: x.param_like(i) for i,x in
+# enumerate(call_uops)}` (function.py:75) NUMBERS the list, so a uop that appears
+# twice gets the slot of its FIRST appearance, and the second appearance is the
+# one that becomes the PARAM. Keeping the LAST occurrence instead would renumber
+# every slot after the first repeat, and the numbering is also what
+# `is_implicit_storage` compares against `alloc_start` -- so a last-wins dedup
+# would move an implicit-storage test across the boundary.
 def fn_call_uops.put(x: U32, +d: Dedup) -> Dedup:
   Dedup.of(O.Found{O.Arena.empty(), x}, d)
 

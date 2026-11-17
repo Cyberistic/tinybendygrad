@@ -185,6 +185,13 @@ def Tensors.member(+u: U32, xs: List<&2, U32>) -> Bool:
 # It carries the ARENA as well, which Python gets for free: an arena index is only
 # meaningful in the arena that produced it and every op in this file grows it. So
 # `Tensor` is `Found` plus the two flags.
+#
+# tensor.py:65 -- "tensors can have gradients if you have called .backward". The
+# `grad` field is `Tensor|None` in Python and it is None until a backward pass
+# FILLS IT, so the flag is not "this tensor is differentiable" -- it is "a
+# gradient has been computed for this tensor". That is why `backward`'s scope
+# filter (tensor.py:459) asks about FLOATING POINT and DEVICE rather than about
+# `grad`: a tensor is a candidate for a gradient long before it has one.
 # THE READERS -- tensor.py:143-149. `self.uop.device`, `self.uop.shape`,
 # `self.uop.dtype`. All three are fold properties, so all three are a `Maybe`: the
 # OUTER `None` is "this fold cannot answer this node" (fold.bend's rule, and the
@@ -1262,6 +1269,15 @@ def tn_is_param_(+t: Tensor, is_param: Bool) -> Tensor:
 # node's identity in this port, so `__hash__` is the uop. THE DIFFERENCE, and it is
 # why `_tensor_holds` reads the uop rather than a hash: Python's `id` separates two
 # Tensor OBJECTS over one uop and this does not.
+#
+# tensor.py:131 -- "Python has a non moving GC, so this should be okay". The
+# comment is about `id(self)` being a STABLE identity: `id()` is the object's
+# address, and an address can be REUSED once the object is collected, so a
+# hash keyed on `id` would be wrong if the GC MOVED objects. CPython's GC does
+# not move objects, so `id` is stable for as long as the object lives. The
+# statement is therefore a claim about the RUNTIME, not about the algorithm, and
+# it is why the port's `tn_hash` may key on a graph node: an arena index is not
+# an address and is not reused.
 def tn_hash(+t: Tensor) -> U32:
   Tensor.u(t)
 
@@ -1893,6 +1909,41 @@ def tn_rop(+ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
 # `is_realized` (P3), `UOp.clone` (P3), `least_upper_dtype` on a weak dtype (P4's
 # dtype.bend) or `substitute` (WALL 3). So the SPINE is ported and the rest is one
 # `TODO(p3)`.
+#
+# THE UPSTREAM WHY-S OF THE ARMS AROUND THE SPINE, kept because the SPINE is the
+# SIMPLE case and every other arm exists to avoid it:
+#   tensor.py:253 -- "assigning to a pending value that views no other live
+#   tensor is initialization, not a write: the whole tensor is overwritten, so
+#   the pending value is dead." A PENDING value is one with no storage yet, and
+#   if nothing else views it then the write does not need a STORE AT ALL: the
+#   whole tensor is replaced, so the new value BECOMES the tensor and the old
+#   one is discarded. The parenthetical is the subtle half: a broadcast const
+#   like `const_like` is `EXPAND(CONST)` and it LOOKS like a view but it views
+#   NOTHING, so it is not an "other live tensor" and the arm still fires.
+#   tensor.py:258 -- "STORE+AFTER: STORE is the write effect (void), AFTER wraps
+#   the view for correct shape/ranging". The pair is not redundant. The STORE
+#   is the write itself and it carries no shape -- it is a void effect on a
+#   buffer. The AFTER is what carries the SHAPE and the RANGE: it says "this
+#   view of the buffer, after the store". Removing either half changes what the
+#   graph means: without the AFTER the shape is lost, and without the STORE
+#   nothing is written.
+#   tensor.py:261 -- "a partial write needs storage to land in: a pending value
+#   gets explicit storage (a clone)". A PARTIAL write -- one into a view, not
+#   the whole tensor -- has to land in a real buffer, so a pending target is
+#   given one by CLONING it. The clone is the storage; the original stays a
+#   graph fact.
+#   tensor.py:264 -- "view assign: the base reads 'after the store into the view'
+#   (one AFTER level). replace the node under the views (e.g. RESHAPE(BUFFER))
+#   so @function's substitution catches it". EVERY live tensor whose storage is
+#   the assigned one has its uop rewritten, and the rewrite replaces the node
+#   UNDER the views -- so a `RESHAPE(BUFFER)` becomes `RESHAPE(BUFFER.after(store))`
+#   and not `RESHAPE(BUFFER).after(store)`. The reason is the shape: the AFTER
+#   has to be under the RESHAPE so the RESHAPE's shape is still the view's
+#   shape, and so `@function`'s later substitution (which matches on the node
+#   under the view) actually catches it. ONE AFTER level, because the store is
+#   into one view.
+#   tensor.py:269 -- "simple assign". The arm that needs none of the above: the
+#   target IS the tensor, so the store and its AFTER are the whole story.
 # `UOp.after(self, *src)` is ops.py:599 and ops.bend HAS it (`O.UOp.after`); the
 # STORE it wraps is `UOp.store` (ops.py:594), `UOp(Ops.STORE, src=srcs, kwargs)`.
 # TODO(p3) ops.py:594  symbol=UOp.store  -- written here for `tn_mop`'s reason.
@@ -2162,6 +2213,35 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #   :204 `graph_rewrite(u.src[0], pm_drop_after)`            P3, WALL 3
 #   :207 `UOp.sink(...).substitute(becomes_map, walk=True)`  P3, WALL 3
 #   :210 `create_linear_with_vars(sink)`                     SCHEDULE
+#
+# THE FOUR UPSTREAM WHY-S OF THIS BODY, kept because they are the only statements
+# about what the fourty-four lines are FOR, and none of them is visible in the
+# calls list above:
+#   tensor.py:170 -- "weakness ends where storage begins". A WEAK dtype (half,
+#   bfloat16, an fp8) has no bytes to store, so `u.device is not None` together
+#   with a weak dtype is the refusal "cannot realize a weak dtype; cast to a
+#   concrete dtype first". The phrase is a boundary statement: weakness is fine
+#   right up to the point where a BUFFER would have to exist.
+#   tensor.py:173 -- "The outputs and the ALLOCs beneath their wrappers get bound
+#   storage, so all aliases share storage and call dependencies." The `bases`
+#   SET is built from the outputs' bases plus, for each, the ALLOC under its
+#   STAGE/DETACH/CONTIGUOUS_BACKWARD wrappers. The consequence is an ALIASING
+#   invariant: two tensors that view the same base must land in the same
+#   storage, or a write through one would not be seen by the other. That is why
+#   it is a SET and not a per-output list.
+#   tensor.py:179 -- "Rebuild in dependency order: replacement values already
+#   reference the other outputs' storage." The walk is over `sink.toposort()`
+#   and the `tensor_map` accumulates REPLACEMENTS, so a node is replaced by a
+#   version whose srcs are already the replaced versions. That is why the map is
+#   consulted for the srcs (`tensor_map.get(s, s)`) rather than the originals.
+#   tensor.py:200 -- "Realized outputs become the storage their AFTER sequenced
+#   a store into. Compose with tensor_map before updating Tensors so map values
+#   reference final storage." The final pass (`pm_drop_after`) rewrites each
+#   output to the BUFFER it was stored into, and the composition order matters:
+#   `becomes_map` is substituted INTO `tensor_map` FIRST, so a map value that
+#   mentions another output refers to that output's FINAL storage rather than
+#   its pre-drop form. Doing it the other way round leaves a map value pointing
+#   at an AFTER node whose buffer has been dropped.
 # TODO(p3) tensor.py:167  linear_with_vars -- SCHEDULE (`create_linear_with_vars`,
 # `contiguous_mops_to_view`, `is_store_after`) + WALL 3 + WALL 2 + P3's
 # `storage_base`, `needs_storage`, `is_virtual`, `on_disk`, `has_buffer_identity`,
@@ -2200,7 +2280,18 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #                                         `empty_like`, `clone`, `copy_to_device`
 # TODO(p3) tensor.py:369  to_          -- `to` + `replace`
 # TODO(p3) tensor.py:377  shard        -- `UOp.shard` is ops.py:757 and `_resolve_dim`
-#                                         is mixin/movement.py
+#                                         is mixin/movement.py. Upstream's own
+#                                         comment at tensor.py:366 is the reason the
+#                                         CLONE is not optional: "a shard of a load
+#                                         from a creation device (disk/npy/python)
+#                                         wants the copy to persist, so it inserts a
+#                                         clone". A CREATION DEVICE is one that
+#                                         materialises on demand -- a file, an
+#                                         in-memory blob -- and its contents are
+#                                         GONE once the load is consumed, so a
+#                                         shard of one has to COPY rather than
+#                                         view. `self.uop.on_creation_device()`
+#                                         is the test and `UOp.clone` is the copy.
 # TODO(p3) tensor.py:395  shard_       -- `shard` + `replace`
 # TODO(p3) tensor.py:401  shard_like   -- `shard` + `to`
 # TODO(p3) tensor.py:412  from_blob    -- an external pointer

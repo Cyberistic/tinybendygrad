@@ -689,6 +689,29 @@ def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
 # and is `uop/symbolic.py`'s `resolve`, not ops.bend's. And `_broadcast_to` needs
 # `broadcast_axes` (ops.py:89), which is also symbolic (`resolve(s == 1)`).
 #
+# THE TWO UPSTREAM WHY-S COMMENTS OF `reduce_gradient`, kept because they are the
+# only place the ACCUMULATION DTYPE is not an arbitrary choice:
+#
+#   gradient.py:11 -- `mask = ret.src[0].eq(ret).cast(sum_acc_dtype(ctx.dtype))`.
+#     THE TIES ARE COUNTED IN THE ACC DTYPE, and the reason is that the COUNT can
+#     OVERFLOW THE GRADIENT DTYPE. `ctx.dtype` is the dtype of the incoming gradient,
+#     which for a float32 upstream tensor is float32, and a float32 holds 2**24
+#     exactly: a reduction over more than 16M elements ties more than 2**24 times and
+#     the COUNT is wrong in float32 while it is right in float64. `sum_acc_dtype`
+#     (tinygrad/dtype.py:217) is what picks the wider type, and the CAST back to
+#     `ctx.dtype` happens AFTER the divide. So the ORDER is load-bearing: cast to the
+#     acc dtype, count, divide, cast back.
+#   gradient.py:15 -- `d(prod x)/dx_j = prod_{i!=j} x_i`: `ret/x_j` whenever
+#     `x_j != 0`, and THE PRODUCT OF THE OTHERS otherwise. The reason `ret/x_j` is
+#     not enough on its own is that ANY ZERO MAKES ret 0, and `0/0` is not the
+#     derivative of a product with a zero factor -- it is the derivative of the
+#     product of the OTHER factors, which `ret/x_j` cannot recover once `ret` has
+#     already been zeroed. So upstream computes BOTH: `safe_x` replaces the zeros
+#     with 1 so `safe_x._rop(MUL)` is the product of the others, and `zero_count`
+#     says HOW MANY zeros there are, so the `zero_count == 1` arm (exactly one zero,
+#     so the other factors' product is the right derivative) and the `> 1` arm (the
+#     derivative is 0) are separable.
+#
 # TODO(p3) mixin/gradient.py:8  reduce_gradient -- `_rop`'s `resolve(self.shape[x]!=1)`
 #   and `_broadcast_to`'s `broadcast_axes` are both `resolve` on a `Sint`, and
 #   `symbolic.py`'s `resolve` is not ported. Phase P3 owns `symbolic`.
@@ -1003,6 +1026,19 @@ def gr_28(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_28.go(ar, ctx, self)
 #   gradient.py:61), so `gr_29` and `gr_rewrite` would be mutually
 #   recursive and Bend refuses that. It also needs `mop.replace(src=(grad,)+mop.src[1:])`
 #   (a src rewrite with an `Arg` preserved) and `grad.const_like(1)`.
+#
+# THE UPSTREAM WHY ON THIS HELPER, kept because it is the ONE place the rule
+# answers with something other than `ctx`:
+#   gradient.py:53 -- "A write through a non-overlapping view replaces only that
+#   region of the returned state." The rule's answer is a PAIR -- a MASK and a
+#   GRADIENT -- and the mask is the part that is not a gradient at all: it is
+#   `mask.cast(dtypes.bool).where(0, ctx)`, which ZEROES the gradient everywhere
+#   OUTSIDE the written region and leaves it alone inside. So the returned state
+#   keeps its old values where the write did not land. That is why the helper is
+#   named "partial_store" and not "store": the write is partial and the state is
+#   MERGED, not replaced. `compute_gradient(view, grad.const_like(1), {dest})`
+#   is what produces the mask -- the mask is the gradient of a CONSTANT 1 over
+#   the view, which is 1 on the view and 0 outside it.
 def gr_29(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 31. STORE -- gradient.py:104. `(None, ctx)`
@@ -1064,6 +1100,17 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 #   gradient.py:127's refusal instead. STATED so nobody reads a short `walk_grads_n` as
 #   "the walk ran on a graph with a CALL".
 #
+# THE UPSTREAM WHY ON THAT BRANCH, kept because the CALL path is the one place the
+# walk asks for information rather than computing it:
+#   gradient.py:119 -- "CALL: pass needed param set so backward only computes required
+#   gradients". The `needed` SET is the set of argument INDICES whose value is a
+#   target or reaches one, and it is passed DOWN into `call_gradient` so that the
+#   backward body computes ONLY those gradients. The consequence is a WORKED
+#   EXAMPLE rather than a style: a CALL whose body computes ten gradients and
+#   whose caller asks for one pays for one. It is also why `call_gradient` reads
+#   `needed - outputs.keys()` (gradient.py:34) -- the outputs' own gradients are
+#   already in `ctx.src` and must not be recomputed (gradient.py:34-35).
+#
 # `call_gradient` -- gradient.py:20-50, and this is the BIGGEST of what is left. It reads
 # `k.arg.grad_fxn` (a CALLBACK on a `CallArg`), `fxn.src[0].unsharded_base.arg.slot`
 # (an axis-normalised slot), `st.src[1].param_like(len(args)+i)`, `params` from
@@ -1073,6 +1120,25 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 # `CallArg`/`CallInfo` is `ops.bend`'s, `renumber_invalid_outputs` is `function.py`'s,
 # `view_as`/`shard_shape` are `mixin/op.py`'s, and the `substitute` walks are a graph
 # rewrite over a PATH SET.
+#
+# THE TWO UPSTREAM WHY-S ON THIS FUNCTION, kept because they are the only two
+# statements about what the backward body IS rather than what it computes:
+#   gradient.py:37 -- "Reuse the output PARAMs for saved forward values instead of
+#   recomputing them." The forward pass SAVED the values it needed as PARAMs of
+#   the CALL's body; the backward pass SUBSTITUTES those saved values back in
+#   (`bwd_body.substitute({st.src[1]:st.src[0] for st in outputs.values()},
+#   walk=True)`) instead of recomputing them. So a precompiled CALL's backward
+#   does not re-run the forward -- it reads the forward's own PARAMs. The
+#   `walk=True` is what makes the substitution reach EVERY occurrence, not just
+#   the top one.
+#   gradient.py:43 -- "Compact this scope's PARAMs, capturing free Variables as
+#   inputs." After the substitution the body holds PARAMs it no longer needs
+#   (`used` is the SORTED list of the PARAMs actually reachable), and the body is
+#   RENUMBERED so that the PARAMs it keeps are consecutive from 0. A PARAM with
+#   a negative slot is a FREE VARIABLE, and those are captured as the function's
+#   inputs rather than dropped -- that is the "capturing free Variables as
+#   inputs" half. The SORT is by slot and it is what makes the renumbering
+#   deterministic.
 # TODO(p3) mixin/gradient.py:20  call_gradient -- needs `CallArg.grad_fxn` (a callback
 #   in a dataclass field, `ops.py`), `renumber_invalid_outputs` (`function.py`),
 #   `view_as`/`shard_shape`/`sharding` (`mixin/op.py`, ops.py:707/461/1248) and two
@@ -1381,6 +1447,20 @@ def dw_walk.put(test: Bool, acc: List<&2, U32>, +x: U32) -> List<&2, U32>:
 # THE WALK, a FILTER over the pair. `_ _` is the cover and it covers BOTH ragged arms
 # (notes, rule 4 at position 1260) -- a `Nil` on one side with a `h <> t` on the other is
 # a ragged list, which `flags` can never be because `dw_flags` pushes both together.
+#
+# THE TWO UPSTREAM WHY-S, kept because the FILTER is not a simplification of the
+# walk -- it is the second half of it, and the first half is upstream's own comment:
+#   gradient.py:108 -- "compute the target path (top down)". The path is computed
+#     TOP DOWN, from the root, and `in_target_path[x]` is TRUE when x is a target OR
+#     when any of x's srcs is on the path. That is the closure of "reaches a target",
+#     and computing it top-down is what makes it one pass: a node's flag reads only
+#     its SRCS' flags, and a src is always EARLIER in a toposort.
+#   gradient.py:111 -- "don't flow through DETACH or anything not in target path".
+#     TWO exclusions, and the DETACH one is a semantic choice rather than a
+#     bookkeeping one: a DETACH is a gradient STOP, so a gradient must not flow
+#     THROUGH one. The second exclusion is the flag itself.
+# So the pair `Itp{nodes, flags}` IS `in_target_path` -- one flag per node -- and
+# `dw_walk` is upstream's second comprehension, verbatim.
 def dw_walk.go(+ar: O.Arena, ns: List<&2, U32>, fs: List<&2, Bool>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ns fs:
     case +x <> t f <> u: dw_walk.go(ar, t, u, dw_walk.put(dw_keep_test(ar, x, f), acc, x))
@@ -1570,6 +1650,24 @@ def cg_hole.of(is_hole: Bool, hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U3
 
 # THE INNER LOOP, gradient.py:129-139: `for k, v in zip(t0.src, lgrads)`. ONE
 # self-recursive def and the two lists shrink together.
+#
+# THE UPSTREAM WHY-S ON THIS LOOP, kept because the loop's shape is not obvious
+# from its body:
+#   gradient.py:129 -- "a shaped edge's gradient is summed to its source's shape".
+#     The gradient of an edge whose SHAPE differs from its source's shape is not
+#     the gradient itself but a REDUCE of it, back down to the source's shape.
+#     Without this, a broadcast edge's gradient would carry the broadcast's shape
+#     and the next node up would be summing against a mismatched shape. The
+#     condition is `k._shape is not None and v._shape is not None and
+#     k._shape != v._shape` -- TWO `is not None` conjuncts, so a node with an
+#     UNKNOWN shape is left alone rather than reduced. That is the third clause
+#     and it is the one the port's gate exercises: the whole fixture is SCALAR
+#     (`_shape` is `()`), so the branch is never taken.
+#   gradient.py:130 -- `if v is None: continue`. A HOLE in the rule's answer is
+#     not a zero gradient; it is "this rule says nothing about this src", and
+#     the walk must leave the existing gradient alone rather than overwrite it.
+#     `gs` HOLES are index 0, which is the arena's bottom node and therefore
+#     tinygrad's own `None` (see this file's header).
 #
 # the shape is the point and it cost four edges to find. The obvious spelling -- `cg_puts`
 # calls a `cg_hole` that calls `cg_puts` back -- is a MUTUAL RECURSION and this compiler

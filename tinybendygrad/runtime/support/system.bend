@@ -88,6 +88,25 @@
 #    TODO(p3) runtime/support/system.py:58  symbol=write_sysfs  -- `os.system(cmd)`.
 #    TODO(p3) runtime/support/system.py:74  symbol=vfio  -- `os.system("sudo modprobe ...")`.
 #    TODO(p3) runtime/support/system.py:195  symbol=flock_acquire -- `os.system("sudo lsof ...")`, in a message.
+#
+#    THE TWO UPSTREAM WHY-S OF `flock_acquire`, kept because the LOCK is the one
+#    thing in this file that is about SAFETY rather than about plumbing, and
+#    both are about the OPEN and not about the `flock`:
+#      system.py:199 -- `os.umask(0)`: "Set umask to 0 to allow creating files
+#        with 0666 permissions". The umask is the process's default permission
+#        mask, and the lock file is created with mode 0666 -- so without the
+#        umask the file would be created with the umask applied and would NOT
+#        be world-readable-and-writable, and the second process (running as a
+#        different user) could not open it.
+#      system.py:201 -- "Avoid O_CREAT because we don't want to re-create/replace
+#        an existing file (triggers extra perms checks) when opening as
+#        non-owner". THE OPEN IS SPLIT IN TWO: if the file EXISTS it is opened
+#        `O_RDWR` alone, and only if it does NOT exist is `O_CREAT` added. So
+#        the create is never combined with an open of an existing file -- which
+#        is what would trigger the extra permission check on a file the caller
+#        does not own. So the port's lock is not "create if missing"; it is
+#        "open if present, create only when absent", and the ORDER of the
+#        existence test and the open is the claim.
 #    TODO(p3) runtime/support/system.py:244  symbol=reset -- `os.system(...)`, in `PCIDevice.reset`.
 #
 # 3. THE CTYPES LIBRARY GATE, tinygrad/runtime/support/system.py:61-65 and tinygrad/runtime/support/system.py:88. `atomic_lib` is
@@ -820,6 +839,16 @@ def sysfs.apply(+path: String, +value: String, expected: String, ok1: Bool, ok2:
 # `functools.cached_property` / `functools.cache` rules and one refusal, and the
 # ONE thing worth porting in all of them is the CACHING, because each of them runs
 # exactly once and a port that ran it twice would write to a device twice.
+#
+# system.py:75 -- "cached, runs only once per range. used to not collide with
+# other mappings". THE RESERVATION IS A MAPPING AT A FIXED ADDRESS, and it is
+# cached PER RANGE (`@functools.cache` on a method taking `va_start, va_size`),
+# so the same range is reserved ONCE. The reason is COLLISION: `MAP_FIXED` at
+# an address that is already mapped would REPLACE the existing mapping, so a
+# second reservation of the same range would destroy whatever was there.
+# The port's `sys.reserve_va.put` carries the `seen` flag for exactly this: the
+# mapping is emitted once per `va_start`, and a second request for the same
+# start emits nothing.
 
 def PAGEMAP_SYSFS() -> String: "/proc/sys/vm/compact_unevictable_allowed"
 def PAGEMAP_VALUE() -> String: "0"
@@ -1016,6 +1045,16 @@ def Cfg.is_write(c: Cfg) -> Bool:
 # fields are written as zero. MEASURED: bus=0 -> 0x40100, bus=1 -> 0x40200,
 # bus=2 -> 0x40300, bus=3 -> 0x40400. So the bus number lands in bits 8..15 and
 # `gpu_bus` in bits 16..23.
+#
+# system.py:150 -- "All 3 values must be written at the same time". THREE FIELDS
+# IN ONE 32-BIT REGISTER: the secondary bus number, the subordinate bus number
+# and the subordinate bus number of the GPU -- the PCI bus NUMBERS of the three
+# levels of the hierarchy. They must be written TOGETHER because they are ONE
+# register and the hardware reads it as one value: the bus numbers are a
+# CHAIN, and a chain written a field at a time would transiently name a bus
+# that does not exist. The `0 << 0` term is the second-bus field being
+# explicitly zero, and the port's `bars.buses.pick` drops it because OR-ing
+# with zero is a no-op -- the CLAIM is the same value, not the same expression.
 def bars.buses.pick(+bus1: U32, +gpu: U32) -> U32: U32.or(U32.shln(bus1, 8n), U32.shln(gpu, 16n))
 
 def bars.buses(bus: U32, gpu_bus: U32) -> U32: bars.buses.pick(U32.add(bus, 1), gpu_bus)
@@ -1157,6 +1196,15 @@ def pci.probe.vfio(+pcibus: String, +t: Tr) -> Tr:
 # `driver` exists (and REFUSE if it does), remove the seven sibling functions, then
 # either the VFIO sequence or the plain `enable` write, then open `config`.
 #
+# system.py:226 -- "remove sibling functions of the gpu, if any". A PCI DEVICE
+# IS A FUNCTION of a bus, and a GPU's siblings are the OTHER functions of the
+# same device -- the audio controller, the USB controller, the copy engine. They
+# are removed so that the GPU is the ONLY function left on its bus and the
+# device's resources are not shared with a driver that was never asked for. The
+# loop is over function numbers 1..7 (the device itself is function 0), and the
+# path is built by replacing the LAST character of the device's bus id with the
+# function number.
+#
 # THE SECOND `driver` CHECK IS THE CLAIM. :214 asks, :215 unbinds, :216 asks again and
 # raises -- so an UNBIND that did not take is a refusal, and it is a TRUNCATION
 # rather than a flag. `pci.probe` threads `bound` into BOTH the unbind and the second
@@ -1239,6 +1287,17 @@ def face.devmem_align(+size: U32) -> U32:
 # `mmap.PAGESIZE if should_use_sysmem else <the ladder>`, as ONE function, because
 # the sysmem arm is a different ALIGNMENT and not a different branch of the same one.
 # MEASURED on the Linux page size (4096).
+#
+# system.py:320 -- "Align size to huge pages for large allocations, otherwise the
+# unaligned tail falls back to 4KB pages, increasing TLB pressure". THE SIZE IS
+# ROUNDED UP TO THE ALLOCATION GRANULE, and the granule DEPENDS ON THE SIZE:
+# a sysmem allocation is rounded to the PAGE size, and a DEVICE allocation is
+# rounded to 4KB below 8MB and to 2MB at or above it. The reason is TLB
+# PRESSURE: an allocation that is not a multiple of the granule has an
+# UNALIGNED TAIL, and that tail falls back to the SMALLER page size, so the
+# allocation ends up occupying SMALLER PAGES than it could. So the rounding is
+# not cosmetic alignment -- it is a page-size decision made by rounding the
+# length.
 def face.align.pick(+sysmem_align: U32, +dev_align: U32, +sysmem: Bool) -> U32:
   Bool.pick(U32, sysmem, sysmem_align, dev_align)
 
@@ -1371,6 +1430,17 @@ def elemsize.maybe(m: Maybe<&2, U32>) -> U32:
 
 def rmm.st.pick(+start: U32, +el: U32) -> U32: Bool.pick(U32, U32.is_zero(start), 0, U32.mul(start, el))
 
+# system.py:382 -- "memory of the node at its address: reads are round trips,
+# writes are posted in order". THE ASYMMETRY IS THE WHOLE OF THE REMOTE
+# PROTOCOL'S COST MODEL, and it is a property of the TRANSPORT rather than of
+# the memory: a READ has to come back with the data, so it is a ROUND TRIP and
+# the caller blocks on it, while a WRITE only has to be ORDERED, so it can be
+# POSTED -- sent and not waited for -- as long as the posts keep their order.
+# So the port's `rmm.st`/`rmm.en` (the SLICE BOUNDS, in elements) are the
+# arithmetic half of that, and the read/write asymmetry is the reason the
+# protocol has FOUR commands rather than two: `MMIO_READ`/`MMIO_WRITE` and
+# `SYSMEM_READ`/`SYSMEM_WRITE`, the first pair for device BAR memory and the
+# second for host system memory.
 def rmm.en.pick(+stop: U32, +nbytes: U32, +el: U32) -> U32:
   Bool.pick(U32, U32.is_zero(stop), U32.mul(nbytes, el), U32.mul(stop, el))
 

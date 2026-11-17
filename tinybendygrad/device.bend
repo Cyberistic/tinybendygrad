@@ -228,6 +228,15 @@ def strip0(+r: String) -> String:
 
 # `re.sub(r":0$", "", (d:=device.split(":", 1)[0].upper()) + device[len(d):])`
 # -- device.py:26.
+#
+# device.py:29 -- "you can't cache canonicalize in case Device.DEFAULT changes".
+# `_canonicalize` IS cached (`@functools.cache` on the line above) but the
+# PUBLIC `canonicalize` is NOT, and the reason is that `canonicalize(None)`
+# reads `Device.DEFAULT` -- a mutable class attribute -- so a cache on the
+# public entry point would freeze the DEFAULT at the first call. The private
+# one is safe because its argument is ALWAYS a string. So the two-method split
+# is not redundancy: it is the difference between a pure function of its
+# argument and a function of a mutable global.
 def canon(+s: String) -> String:
   strip0(canon.go(s, String.split(s, ':')))
 
@@ -729,6 +738,14 @@ def dev_name(d: U32) -> String:
 # MAX_BUFFER_SIZE > 0 and self.options.external_ptr is None: raise`. Three
 # conjuncts: the null device is exempt, the cap is the middle one, and an
 # external pointer the buffer did not ask for is exempt.
+#
+# device.py:168 -- "MAX_BUFFER_SIZE limits raw storage bytes (not logical
+# elements)". THE UNIT IS BYTES, and it is the STORAGE's bytes, not the tensor's
+# element count: `self.nbytes` is the allocation's size. A tensor of a billion
+# int8 elements is a billion bytes, but a tensor of a billion float32 elements
+# is four billion bytes and it is the SECOND number the cap compares against.
+# Reading the cap as an element limit would let a float32 tensor through at four
+# times the intended size.
 # `cap` is read twice in that expression and `U32` is affine, so the shared
 # number travels in a record and the `+` goes on the PATTERN BINDER -- which is
 # the one place a `+` may be spelled on a value that is not a parameter.
@@ -753,6 +770,26 @@ def mem_used(+ar: Bar, ixs: List<&2, U32>, +dev: U32, acc: U32) -> U32:
 # policy: `free` recycles a storage when it is reusable and drops it otherwise,
 # and `alloc` hands back the MOST RECENTLY freed. That is LIFO, and getting it
 # wrong is invisible until it matters, which is why `alloc_take` is a fold.
+#
+# THE TWO UPSTREAM WHY-S OF THE CACHE, kept because the cache's SAFETY property
+# is not visible in its data structure:
+#   device.py:259 -- "check if old most is free". The cached storage is only
+#   reusable once EVERY device that could still be READING it has passed the
+#   point it was freed at: `all(dev.timeline.host.view(fmt='Q')[0] >= freed_at
+#   for dev, freed_at in c[0][1].items())`. The `freed_at` map is per-DEVICE and
+#   it is read from the device's own TIMELINE, so the check is "has every
+#   reader's timeline moved past this point". A cache that handed back a
+#   storage still being read would be a data race, and the cache's correctness
+#   rests entirely on this conjunct.
+#   device.py:274 -- "add that buf to cache". The entry stores the storage AND
+#   the `freed_at` map, and the map's keys are the USERS -- the device itself
+#   plus every device in `storage.maps` -- but only for a HOST storage
+#   (`if storage.host is not None`). A non-host storage has no host timeline to
+#   compare against, so it is not cached on that criterion.
+# device.py:248 -- "TODO: size, dest, src are the same type. can we enforce
+# this?" The allocator's three size-like arguments are all `int` in Python and
+# the port keeps them `U32`; upstream's own note says the types SHOULD be
+# unified and they are not.
 
 type Flags is Data:
   Flags{nolru: Bool, ext: Bool}
@@ -839,6 +876,16 @@ def needs_compile(ck: Bool, hit: Bool) -> Bool:
 # `Target`, and `signature` a tuple of `(name, slot, dtype, shape)`. Only the
 # dtypes are read by anything and only by `iter_sig`, so the port carries the
 # dtype list alone.
+#
+# device.py:354 -- "tuple of (name, addrspace, dtype, shape), one per arg in the
+# kernel's order. an ALU arg is a value, the rest are buffers". THE ORDER IS THE
+# CLAIM: the signature is the kernel's argument list, in the kernel's order, and
+# `iter_sig` lays the arguments out in THAT order. The second half is why the
+# port keeps only the dtypes and can still be right: an ALU (scalar) argument
+# occupies a REGISTER and a buffer argument occupies MEMORY, and the port's
+# `iter_sig` is a pure ADDRESS ARITHMETIC over itemsizes with no address space
+# in it -- because the address space decides the SLOT, not the SIZE, and the
+# slot is assigned by the caller that knows the kernel's ABI.
 # TODO(p3) device.py:344  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
 #   effect behind `Compiler.compile_server` would hand one back.
 # `round_up` is `(n+a-1)//a*a` (helpers.py:69).

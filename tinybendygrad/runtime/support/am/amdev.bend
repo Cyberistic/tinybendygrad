@@ -105,6 +105,23 @@ def DISCOVERY_TABLE_SIGNATURE() -> U32: 1396985929
 def HARVEST_TABLE_SIGNATURE() -> U32: 1448231240
 # :379 `for hw_ip in range(1, am.MAX_HWIP)` -- the UPPER bound, exclusive.
 def MAX_HWIP() -> U32: 35
+#
+# amdev.py:387 -- "HARV(EST) table: harvested instances must be excluded (like
+# amdgpu_discovery_harvest_ip)". A HARVESTED INSTANCE IS ONE THE SILICON DOES
+# NOT HAVE: the manufacturer disabled it, and the discovery table still
+# DESCRIBES it. So the harvest table's presence in the blob is what says which
+# described instances are real, and anything the table names must be EXCLUDED
+# from the live set. Upstream's parenthetical names the equivalent in the
+# kernel driver -- `amdgpu_discovery_harvest_ip` -- so this is the same
+# convention as the kernel's, not a tinygrad invention.
+# amdev.py:388 -- "layout: u32 signature, u16 version, u16 size, then 32 entries
+# of {hw_id:u16, inst:u8, rsv:u8}". THE ENTRY IS A PACKED WORD and the port's
+# `HARVEST_BYTES` (136 = 8 + 32*4) is that layout: an eight-byte header (the
+# signature and the version/size pair) and THIRTY-TWO four-byte entries. Each
+# entry carries the HARDWARE ID in its low sixteen bits and the INSTANCE in the
+# next eight, and the hw_id is looked up in the INVERSE of `hw_id_map` -- so
+# the harvest table names instances by hw_id and the discovery names them by
+# hw_ip, and the inverse is what joins them.
 # the HWIP ids :380 indexes `hw_id_map` with, and :405-407 names modules by.
 def MP0_HWIP() -> U32: 15
 def MP1_HWIP() -> U32: 16
@@ -121,6 +138,17 @@ def PCI_COMMAND_MASTER() -> U32: 4
 def AMDEV_VERSION() -> U32: 2684354573
 # :359 the one FIXED discovery register -- "query memory size without known ip
 # bases", :357. It is a local, not a `am` constant.
+#
+# amdev.py:358 -- "NOTE: Fixed register to query memory size without known ip
+# bases to find the discovery table." THE CHICKEN-AND-EGG IS EXPLICIT: the
+# discovery table's LOCATION depends on the memory size, and the memory size
+# has to be read from a register whose ADDRESS would normally come from the
+# discovery table. So one register is FIXED -- a constant address, not one
+# computed from a base -- and it breaks the cycle. The port's
+# `MMRCC_CONFIG_MEMSIZE` is that constant, and the fact that it is a LOCAL
+# (`mmRCC_CONFIG_MEMSIZE = 0xde3`, a local in `_run_discovery`) rather than an
+# `am` enum member is upstream's own statement that it is not part of the IP
+# discovery tables.
 def MMRCC_CONFIG_MEMSIZE() -> U32: 3555
 # :362 `tmr_offset, tmr_size = self.vram_size - (64 << 10), (10 << 10)`.
 def TMR_OFF_KB() -> U32: 64
@@ -657,6 +685,22 @@ def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # file that is bounded by something other than a counter: `seen` exists because
 # "a dead link can return 0xff pointers forever" (:150).
 #
+# THE UPSTREAM WHY OF THE WHOLE ROUTINE, kept because the routine's NAME says
+# what it does and the comment says WHY IT IS SAFE TO DO AT ALL:
+#   amdev.py:148 -- "L1 across retimers makes reads oscillate to 0xffffffff;
+#   power on defaults it enabled." ASPM is a POWER STATE, and the specific
+#   failure is a RETIMER: a retimer is a redriver on the PCIe link and its L1
+#   (link idle) handling makes READS OSCILLATE -- a read comes back as
+#   0xffffffff some of the time and the right value other times. That is a
+#   DATA CORRUPTION failure, not a power failure, so ASPM is disabled for a
+#   correctness reason and not for a battery reason.
+#   amdev.py:149 -- "Clearing the GPU endpoint alone suffices: L1 only engages
+#   when both ends of the link enable it." THE WALK IS SYMMETRIC AND THE WRITE
+#   IS NOT: the hardware only enters L1 when BOTH ends enable it, so clearing
+#   the GPU's side is ENOUGH and the peer's side need not be touched. That is
+#   why the routine walks the capability chain on the GPU side only and writes
+#   once, at the end.
+#
 # The walk is `cap, seen = read_config(0x34, 1) & 0xfc, set()` then
 # `while cap and cap not in seen and read_config(cap, 1) != 0x10`, whose body
 # sets `cap = read_config(cap + 1, 1) & 0xfc`. The values `read_config` answers
@@ -875,6 +919,17 @@ def mb.request(+req: U32, wait_ready: Bool, +t: Tr) -> Tr:
 
 # :281 `return req + 1` -- the LEASE ID, and the value `release_vf_access`
 # (:265) hands back so the PF recognises which window to close.
+#
+# amdev.py:254 -- "a VF may only touch the engines inside an access window, take
+# one so the host does not have to FLR the VF later". THE ACCESS WINDOW IS A
+# LEASE AND THE ALTERNATIVE IS A RESET. A Virtual Function may only touch the
+# engines the PHYSICAL FUNCTION has handed it, and the PF hands out those
+# engines as an ACCESS WINDOW -- a bounded set of engines the VF may drive.
+# The alternative to taking a window is an FLR (Function Level Reset), which
+# resets the WHOLE function and is the PF's way of taking the engines back
+# when a VF misbehaves. So the window is taken UP FRONT: it is cheaper than
+# resetting the VF later, and it is the reason `release_vf_access` exists to
+# hand the lease back.
 def mb.lease(req: U32) -> U32: U32.add(req, 1)
 
 # `:347-354` `_read_vram`. The window protocol is a fixed 3-call sequence per
@@ -981,6 +1036,17 @@ def pc.rreg2(reg: U32, t: Tr) -> Tr:
 # BASE address, and the two have DIFFERENT bases (CNTL at 0, INDEX one 64KB page
 # up), so the enum ids cannot be the addresses. `rlcg.base_cntl`/`rlcg.base_index`
 # are those bases and the rows below pin them against the oracle.
+#
+# amdev.py:316 -- "the rlc gateway takes the grbm selection through its own
+# scratch registers". THE GRBM SELECTION IS A SEPARATE CONNECTION: the GRBM
+# (Graphics Register Base Master) chooses WHICH graphics block a register
+# access names, and on a VF that selection cannot go through the MMIO window --
+# it goes through the RLC gateway's OWN scratch registers. So the two addresses
+# in the membership test are the two GRBM CONTROL registers themselves
+# (`regGRBM_GFX_CNTL` selects the block, `regGRBM_GFX_INDEX` selects the
+# instance), and for those two the gateway writes the value STRAIGHT to
+# `regSCRATCH_REG2`/`regSCRATCH_REG3` instead of going through the
+# address/value pair.
 def rlcg.base_cntl() -> U32: 0
 def rlcg.base_index() -> U32: 65536
 
@@ -1236,6 +1302,42 @@ def aspm_fx.lnkctl() -> U32: 65535
 # sets `self.devfmt = pci_dev.pcibus` -- a STRING ALREADY IN HAND, with no device
 # call behind it. So one `am_dbg_text` and four gates is the whole of it, and it is
 # honest about being the prefix rather than pretending to be `boot`.
+#
+# THE THREE STATES THE BOOT DECIDES BETWEEN, kept because the whole of `boot` is
+# this decision and the port ports none of the body:
+#   amdev.py:171 -- "The GPU being passed can be in one of several states:
+#   1. Not initialized. 2. Initialized by amdgpu. 3. Initialized by AM." THE
+#   THREE STATES HAVE THREE DIFFERENT COSTS. State 1 (nothing has touched it)
+#   and state 2 (the amdgpu driver initialised it) both need a FULL setup
+#   because their state is UNKNOWN -- and state 2 additionally needs a MODE1
+#   RESET, because the amdgpu driver left the hardware in a configuration the
+#   AM boot sequence does not know how to resume from.
+#   amdev.py:175 -- "The 3rd state can be set up partially to optimize boot
+#   time. In this case, only the GFX and SDMA IPs need to be initialized." THE
+#   PARTIAL BOOT IS AN OPTIMISATION AND IT IS POSSIBLE ONLY BECAUSE OF A
+#   RESERVED REGION: "AM uses a separate boot memory that is guaranteed not to
+#   be overwritten", and that memory holds "all blocks that are initialized only
+#   during the initial AM boot". So the third state skips re-initialising the
+#   blocks whose initialisation state PERSISTED in a region nobody overwrote.
+#   amdev.py:178 -- "To determine if the GPU is in the third state, AM uses
+#   regSCRATCH_REG7 as a flag. To determine if the previous AM session
+#   finalized correctly, AM uses regSCRATCH_REG6 as a flag." TWO SCRATCH
+#   REGISTERS, TWO DIFFERENT QUESTIONS, and they are SCRATCH registers
+#   precisely because they survive across sessions and across resets of the
+#   things they describe. `regSCRATCH_REG7` holds the AM VERSION, so "it
+#   equals AMDev.Version" is the third-state test, and `regSCRATCH_REG6` being
+#   non-zero is the "the last session did not finish" test.
+#   amdev.py:188 -- "aqua (gc 9.5.0): full boot over live state can kill the
+#   fabric (power cycle recovers); partial boot+reset_mec is the deepest safe
+#   reset". THE HARDWARE-SPECIFIC EXCEPTION, and it is a warning rather than a
+#   rule: on that specific part, a FULL boot over LIVE state can kill the
+#   fabric, and only a power cycle recovers it. So the deepest reset that is
+#   still safe there is a partial boot plus a `reset_mec`.
+#   amdev.py:198 -- "Quiesce first: mode1 reset over live engines can wedge the
+#   GPU until power cycled." THE RESET NEEDS THE ENGINES STOPPED FIRST, for
+#   the same reason: a mode1 reset issued while engines are live can WEDGE the
+#   GPU. So `fini_hw` and `halt_engines` come BEFORE the reset, and a port
+#   that reordered them would produce a wedged GPU rather than a wrong answer.
 #
 # the threshold is 2 for all four, measured rather than read off the pattern: the
 # oracle's LANE B pulls the right-hand side out of each cited line with

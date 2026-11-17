@@ -955,6 +955,27 @@ def nq(+bs: List<&2, E>, dev: U32) -> U32: U32.from_nat(List.length(&2, U32, qli
 # THE DISTINCT (device, queue) PAIRS, in first-use order. That is the key order
 # of the `queues` dict `_build_queues` returns, so it is the order the gate prints
 # the per-queue sequences in. THE SAME HEAD-EXPLICIT SHAPE as `qlist`.
+#
+# hcq2.py:222 -- "queues and devices in first-use order, a call's own device then
+# the peers it touches". THE ORDER IS FIRST-USE, not sorted and not numeric,
+# and it is not the order the devices were mentioned in either: a call's OWN
+# device comes FIRST and then the peers it touches, SORTED. So the device list
+# is `dedup([x for (d,_), t in zip(keys, touched) for x in [d, *sorted(t)]])` --
+# a call's device, then its peers in sorted order, then the next call's device
+# and peers, with the whole thing deduplicated. The port keeps ONE first-use
+# fold (`qlist`) and derives `pairs` from it, and this comment is WHY the two
+# must agree: the peer's SORTED order and the queue's FIRST-USE order are
+# different orders, and a port that used one for both would put a queue's
+# signal slot in the wrong place.
+#
+# hcq2.py:217 -- "the other devices whose memory a call touches: a usb gpu can't
+# reach host memory". THE REACH SET IS PER DEVICE: a USB-attached GPU cannot
+# address host memory, so its `reach` is `HCQ_DEVS` alone, while an ordinary
+# device's is `HCQ_DEVS | HOST_DEVS`. A call on a USB device therefore cannot
+# touch a host buffer AT ALL, and the touched set is computed against the
+# REACH SET rather than against the device list. The port has no USB device, so
+# its reach set is the whole world -- and that is stated here rather than left
+# to be discovered by a reader who assumes the port implements the USB rule.
 def pseen.go(n: Nat, +ps: List<&2, E>, +x: E, hit: Bool) -> Bool:
   match n:
     case 0n: hit
@@ -1022,6 +1043,23 @@ def qidx(+qs: List<&2, U32>, q: U32) -> U32: U32.sub(qidx1(qs, q), 1)
 
 # `qsig` (:238) and `slot` (:237): a signal slot is at `2 * index` and TWO u64
 # wide. `hq2_geom_slotw` is the width and `hq2_b*_qsig*` the index.
+#
+# hcq2.py:231 -- "a slot is [signal][timestamp], 16 bytes: the queue signals, the
+# timeline, then two per call if profiling". THE LAYOUT IS THREE KINDS OF ENTRY
+# IN ONE ARRAY, and the order is the queue's own: the first `len(qs)` slots are
+# the QUEUE SIGNALS, the next is the TIMELINE, and then TWO slots per call for
+# the timestamps. `slot_words` below is that count, and `stamp_n` is the offset
+# of a call's first stamp -- `len(queues[dev]) + 1 + 2*tag`, which is exactly
+# "after the queues and the timeline, two per call so far". So the SIGNAL of a
+# queue and the TIMESTAMPS of a call live in ONE allocation and a WAIT on a
+# queue's signal slot is a WAIT on a u64 the queue itself wrote.
+#
+# hcq2.py:235 -- "not a slice: 10x the cost". `slot` is
+# `self.slots[dev].shrink(((2*i, 2*i+2),))` -- a SHRINK, and the comment says
+# why it is a shrink and not a slice: slicing a UOp costs TEN TIMES as much.
+# The shrink is a graph fact and the slice would be a copy, so the shrink is
+# both the cheap spelling and the correct one -- a shrink keeps the buffer and
+# narrows the VIEW, and a slice would have to produce new bytes.
 def qsig(+bs: List<&2, E>, dev: U32, q: U32) -> U32: U32.mul(2, qidx(qlist(bs, dev), q))
 
 def stamp_n(+bs: List<&2, E>, +tag: U32, +profile: Bool) -> U32:
@@ -1135,6 +1173,34 @@ def member(+xs: List<&2, U32>, x: U32) -> Bool: member.go(List.length(&2, U32, x
 # overlaps it -- a write must follow a prior read of the same buffer. With two
 # whole buffers per call and no suballocation:
 #   overlap(i, t) = (r(i) == w(t)) or (w(i) == w(t)) or (w(i) == r(t))
+#
+# THE TWO UPSTREAM WHY-S OF `access_resources`, kept because the REDUCTION above
+# keeps the ANSWER and loses the REASON, and the reason is what says whether the
+# reduction is safe:
+#   hcq2.py:195 -- "a write waits for the overlapping reads and writes, a read
+#   for the overlapping writes". THE DEPENDENCY IS DIRECTIONAL and it is not
+#   symmetric: a WRITE must be ordered after every earlier access that touches
+#   the same bytes, but a READ only has to be ordered after earlier WRITES. The
+#   asymmetry is the whole of the hazard model -- read-read is free, everything
+#   else is a RAW dependency. So the answer is not "which accesses overlap" but
+#   "which accesses overlap AND at least one of the two is a write", which is
+#   the `(is_write or was_write)` conjunct of upstream's comprehension.
+#   hcq2.py:199 -- "a write owns its span: the earlier accesses keep only the
+#   parts outside it." This is the part the reduction DROPS and it is the part
+#   that makes the tracker correct for SUBALLOCATED buffers: when a write
+#   covers a span, every earlier access that OVERLAPS that span is TRUNCATED
+#   to the parts outside it, rather than kept whole. An earlier access that
+#   overlaps a later write by even one byte therefore does not have to be
+#   waited for over its whole range -- only over the part the write did not
+#   touch. The port's reduction is valid only because its fixtures are WHOLE
+#   BUFFERS with no suballocation, where the truncation is a no-op; the
+#   upstream tracker is the general one and the port's is the special case.
+#   hcq2.py:196 -- the earlier-READ removal: `else: self.ranges[key] = [r for r
+#   in self.ranges[key] if r[:3] != (start, end, False) or self.queue_of[r[3]]
+#   != self.queue_of[tag]]`. A READ that is superseded by a LATER write on the
+#   SAME queue is dropped from the tracker -- because a queue is FIFO, so the
+#   later write already implies the earlier read. The `queue_of` comparison is
+#   what makes it "same queue" rather than "any queue".
 
 def overlaps(+bs: List<&2, E>, +i: U32, +t: U32) -> Bool:
   Bool.or(Bool.or(U32.is_eq(E.r(elem(bs, i)), E.w(elem(bs, t))),
@@ -1237,6 +1303,57 @@ def start_ins(+dev: U32) -> List<&2, Ins>:
 #   :278  BUMPS the device timeline -- and :281 adds `_start_ins` first if the
 #         epilogue queue is one with no calls of its own.
 #
+# THE UPSTREAM WHY-S OF THE STEPS, kept because the STEPS are arithmetic and the
+# WHY-S are the reasons a reader cannot re-derive:
+#   hcq2.py:248 -- "calc deps for each tag". The tracker is built ONCE, over the
+#   WHOLE batch, and queried once per tag: the tracker is STATEFUL and the
+#   second query sees the first one's records. So the deps of tag 5 include what
+#   tag 3 wrote, and computing each tag independently would produce a graph
+#   with no ordering between calls that share a buffer.
+#   hcq2.py:253 -- "add barriers when a call deps on another call of its queue".
+#   A SAME-QUEUE dependency is not a WAIT -- a queue is FIFO, so the order is
+#   already guaranteed -- but it still needs a BARRIER, because the two calls
+#   may touch the SAME MEMORY and the queue's ordering does not order their
+#   memory operations. `last_barrier` keeps one barrier per queue rather than
+#   one per call, so the barrier is emitted ONCE for a run of dependent calls.
+#   hcq2.py:260 -- "keep only latest tags to wait for each queue". WAITING ON A
+#   QUEUE IS WAITING ON ITS SIGNAL SLOT, and the signal slot holds the LATEST
+#   tag that queue has reached. So a call that waits on a queue waits on the
+#   queue's LATEST tag, not on the specific tag it actually depends on -- one
+#   wait per queue, at `latest + 1`, and the queue's own ordering guarantees
+#   that is sufficient.
+#   hcq2.py:263 -- "NV waits break QMD chaining, so a call on an NV compute
+#   queue that waits also waits for the previous launch there". THE EXCEPTION,
+#   and it is a hardware one: on NVIDIA a wait inside a compute queue BREAKS
+#   the queue's command chaining, so the queue's implicit ordering is lost and
+#   the wait must be made EXPLICIT against the previous launch on that queue.
+#   Upstream's own TODO ("can we handle that better for nv?") says this is a
+#   workaround rather than a model. The port has no NV device, so it has no
+#   NV rule -- and that is stated rather than left as a silent gap.
+#   hcq2.py:269 -- "for each device collect what queues it depends on (i.e.
+#   which queues touch its memory)". THE DEPENDENCY IS ON MEMORY, NOT ON THE
+#   CALLS: a device depends on every queue that touched ITS memory, which
+#   includes queues on OTHER devices (the peers). That is why `dev_users` is
+#   built from `ctx.peers` and not from `ctx.calls`.
+#   hcq2.py:272 -- "to finalize device, closer waits for other users to
+#   complete". EXACTLY ONE QUEUE PER DEVICE IS THE "CLOSER" -- the queue that
+#   finalises the device -- and it waits for every OTHER queue that touched
+#   the device's memory. For a HOST device the closer is the FIRST of the
+#   device's queues; for a device of its own it is `COMPUTE:0` when the device
+#   has more than one queue and the only queue otherwise.
+#   hcq2.py:277 -- "all tags that should signal". THE SET OF TAGS THAT WRITE
+#   THEIR QUEUE'S SIGNAL SLOT is computed ONCE, from both the call waits and
+#   the close waits, because a tag that anything waits for has to signal. So
+#   the signal is not "the last tag of the queue" -- it is "the last tag of the
+#   queue AMONG THE TAGS SOMETHING WAITS FOR".
+#   hcq2.py:286 -- "closers advance device timelines". The closer's job is to
+#   BUMP the device's timeline, and the timeline is what a peer device waits on
+#   to know that the device's work is done.
+#   hcq2.py:289 -- "wait for timeline accessing devices for the first time". A
+#   device that a queue's work touches has to be WAITED ON at the queue's start,
+#   once, so that the queue's work is ordered after whatever that other device
+#   already did to the same memory.
+#
 # So every queue's stream is
 #   [BARRIER, TIMELINE waits...] ++ dependency waits ++ [pre-TIMESTAMP] ++ CALL
 #   ++ [post-TIMESTAMP] ++ [SIGNAL if this tag is the queue's LAST] ++ epilogue.
@@ -1286,6 +1403,17 @@ def call_block(+bs: List<&2, E>, +tag: U32, +profile: Bool) -> List<&2, Ins>:
                   [Ins{I_CALL(), tag, 0, 0}])))
 
 # THE TAGS OF ONE PAIR, ascending -- `two` and `revis` have two and three.
+#
+# hcq2.py:227 -- "the tags of a queue in order, and the devices its calls touch".
+# TWO DICTS, AND THEY ARE BUILT FROM THE SAME GROUPING: `ctx.calls` maps a
+# (device, queue) key to the tags of its calls IN ORDER, and `ctx.peers` maps
+# the same key to the devices those calls touched. Upstream groups
+# `sorted((key, tag) for tag, key in enumerate(keys))` by key, so the tags come
+# out ASCENDING within a key -- and ascending tag order IS the submission order,
+# which is why a queue's program is the blocks of its calls in tag order.
+# The port's `pair_tags` walks the batch in order and collects the matching
+# tags, which is the same list by the same rule, and the `dev`/`q` of the pair
+# is what identifies the key.
 def pair_tags.go(n: Nat, +bs: List<&2, E>, +p: E, +t: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: acc
