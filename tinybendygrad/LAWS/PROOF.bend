@@ -432,6 +432,79 @@ def L.broadcast_is_elementwise_max(a, b, sa, sb, pa, pb, same, ca, cb):
   c1 = Equal.cong(List<&2, S.Sdim>, S.Shape, of_shape, S.zip_max(S.Shape.to_dims(sa), S.Shape.to_dims(sb)), S.elem_pick(S.Shape.to_dims(sa), S.Shape.to_dims(sb)), ih)
   Equal.cong(S.Shape, Maybe<&2, S.Shape>, some_shape, S.Shape.of(S.zip_max(S.Shape.to_dims(sa), S.Shape.to_dims(sb))), S.Shape.of(S.elem_pick(S.Shape.to_dims(sa), S.Shape.to_dims(sb))), c1)
 
+# V-ter. THE DEVICE COLUMN, and the spec's THIRD derived property.
+#
+# tinyspec: "Each UOp has five derived properties -- dtype, shape, device,
+# addrspace, and min_max".  MEASURED 2026-11-17: the port had the dtype
+# column and the shape column and NO device column.
+def L.movement_preserves_device(a):
+  {==}
+
+def L.alu_preserves_device(a, b):
+  {==}
+
+def L.source_op_device_is_from_arg(size, dt, dev, addr):
+  {==}
+
+def L.copy_device_is_from_arg(buf, dev):
+  {==}
+
+def L.const_has_no_device(v, dt):
+  {==}
+
+def L.range_has_no_device(bound):
+  {==}
+
+def L.after_preserves_device(buf, deps):
+  {==}
+
+# AND THE CALL's device, which the spec gives as "first non-null src device".
+def L.call_device_is_the_body_device(body, args):
+  {==}
+
+# AND THE STACK's device, which the spec's op table gives as "All shapes must
+# match".
+def L.stack_device_is_the_first_element_device(a, b):
+  {==}
+
+# AND THE MOVEMENT OPS' DTYPE, which the spec's table gives as one row for the
+# whole family.
+def L.reshape_preserves_dtype(t, src, dst):
+  {==}
+
+def L.permute_preserves_dtype(t, order):
+  {==}
+
+def L.expand_preserves_dtype(t, pre, total):
+  {==}
+
+def L.pad_preserves_dtype(t, off, size):
+  {==}
+
+def L.shrink_preserves_dtype(t, off, size):
+  {==}
+
+# AND THE TWO THAT ARE "from arg" AND NOT src[0]'s.
+def L.bitcast_takes_the_target_dtype(t, dt):
+  {==}
+
+def L.cast_takes_the_target_dtype(t, dt):
+  {==}
+
+# AND THE TWO THE ALU CENSUS MEASURED AS UNPINNED.
+def L.index_preserves_device(t, a):
+  {==}
+
+# AND THEIR DTYPE, which the spec's table gives as src[0].dtype for both.
+def L.index_preserves_dtype(t, a):
+  {==}
+
+def L.reduce_preserves_dtype(t, ranges, op, n):
+  {==}
+
+def L.reduce_preserves_device(t, ranges, op, n):
+  {==}
+
 # tinyspec's elementwise column: "all inputs same shape, output same shape".
 #
 # Each of the three is the SAME two steps -- rewrite `b`'s shape into `a`'s with

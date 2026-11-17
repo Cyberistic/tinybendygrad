@@ -811,6 +811,146 @@ def Sp.dtype(s: Sp) -> Maybe<&2, Dt>:
     case SpCall{body, args}: None{}                        # void
     case SpInvalid{}: Some{boolean()}
 
+# Derived property: DEVICE -- tinyspec's device column, op by arm.
+#
+# THE SPEC'S THIRD DERIVED PROPERTY, AND THE PORT HAD NONE OF IT.  tinyspec says
+# "Each UOp has five derived properties -- dtype, shape, device, addrspace, and
+# min_max -- determined by the rules at the end of this document", and the port
+# implemented two of the five.  MEASURED 2026-11-17: `Sp.dtype` and `Sp.shape`
+# existed and there was no device fold at all.
+#
+# The column is SHORT and TOTAL: every op's device is one of
+#   * `src[0].device`  -- the movement ops, the ALU ops, `Reduce`, `Unshard`,
+#                         `Load`, `Index`, `After` and the marker ops;
+#   * "from arg"      -- the three source ops and `Copy`;
+#   * `null`          -- `Const` and `Range`;
+#   * "first non-null src device" -- `Call`.
+#
+# AND `null` IS A `Maybe<&2, Dev>` RATHER THAN A VARIANT, because the port's
+# `Dev` is a device NAME or a tuple of them and "no device" is the absence of
+# one -- the same shape `Sp.dtype` uses for "no dtype".
+# AND A `match` MAY NOT SCRUTINISE A CALL OR A LOCAL BINDER, so the fold's
+# answer is passed as a PARAMETER: `Sp.device.of` matches it, and the caller
+# passes the call's result.
+# THE FIRST NON-NULL SRC DEVICE, and it is ONE def.  The spec: "Call & void &
+# --- & first non-null src device".  The CALL's srcs are its body and its args,
+# IN ORDER, and the device is the first of them that HAS one.
+#
+# AND IT IS ONE DEF AND NOT TWO, because the walk carries the DEVICE AND THE
+# REST OF THE SRCS together, so there is one recursive call and it is one-way.
+# MEASURED 2026-11-17: the first version had `Sp.device.of` call
+# `Sp.device.args` and `Sp.device.args` call `Sp.device.of`, and the answer was
+# "expected: a def whose body is implemented before the def is used" -- Bend
+# refuses mutual recursion.
+def Sp.device(s: Sp) -> Maybe<&2, Dev>:
+  match s:
+    # -- source ops: "from arg"
+    case SpBuffer{size, dt, dev, addr}: Some{dev}
+    case SpAlloc{size, dt, dev, addr}: Some{dev}
+    case SpParam{size, dt, dev}: Some{dev}
+    case SpConst{v, dt}: None{}                           # null
+    case SpBinary{size}: None{}                           # null
+
+    # -- movement ops: src[0].device
+    case SpPermute{t, order}: Sp.device(t)
+    case SpFlip{t, flags}: Sp.device(t)
+    case SpReshape{t, src, dst}: Sp.device(t)
+    case SpExpand{t, pre, total}: Sp.device(t)
+    case SpPad{t, off, size}: Sp.device(t)
+    case SpShrink{t, off, size}: Sp.device(t)
+    case SpIdx0{t}: Sp.device(t)
+    case SpIdx1{t, a}: Sp.device(t)
+    case SpIdx2{t, a, b}: Sp.device(t)
+    case SpIdx3{t, a, b, c}: Sp.device(t)
+    case SpIdx4{t, a, b, c, d}: Sp.device(t)
+    # The STACK's device, and the spec says "All shapes must match" -- so the
+    # device is the FIRST element's, and a stack of nothing has none.  THE LIST
+    # IS MATCHED HERE AND NOT IN A HELPER, because a helper would call this
+    # fold and this fold would call the helper: Bend refuses mutual recursion.
+    # MEASURED 2026-11-17: the first version had `Sp.device.stack` CALL
+    # `Sp.device` and `Sp.device` CALL `Sp.device.stack`, and the answer was
+    # "expected: a def whose body is implemented before the def is used".
+    case SpStack{ts}:
+      match ts:
+        case Nil{}: None{}
+        case t <> _rest: Sp.device(t)
+    case SpBitcast{t, dt}: Sp.device(t)
+    case SpUnshard{t, ranges, axes}: Sp.device(t)
+
+    # -- reduce op: src[0].device
+    case SpReduce{t, ranges, op, k}: Sp.device(t)
+
+    # -- load ops: the BUFFER's device.  MEASURED 2026-11-17: the spec's
+    # derived-properties table has NO ROW FOR `Load`, so its device is not the
+    # spec's rule -- and the spec's op table says "Load can change device or
+    # addrspace", so the device it READS is not necessarily the buffer's.  The
+    # port's own convention is the buffer's, and it is the buffer's for `shape`
+    # and `dtype` too, so the device follows the same rule.  The law is stated
+    # as the PORT's claim and not as the spec's.
+    case SpLoad{buf, alt, gate}: Sp.device(buf)
+    case SpCopy{buf, dev}: Some{dev}                       # "from arg"
+
+    # -- store op: src[0].device
+    case SpStore{buf, val, gate}: Sp.device(buf)
+
+    # -- ordering ops: Range is null, the rest read their body or buffer
+    case SpRange{bound}: None{}                           # null
+    case SpEnd{body, ranges}: Sp.device(body)
+    case SpBackedge{body, rng, cond}: Sp.device(body)
+    case SpAfter{buf, deps}: Sp.device(buf)
+    case SpGroup{us}: None{}
+    case SpSink{ss}: None{}
+    case SpLinear{uops}: None{}
+
+    # -- elementwise ops: src[0].device
+    case SpRecip{a}: Sp.device(a)
+    case SpTrunc{a}: Sp.device(a)
+    case SpCast{a, dt}: Sp.device(a)
+    case SpAdd{a, b}: Sp.device(a)
+    case SpMul{a, b}: Sp.device(a)
+    case SpMax{a, b}: Sp.device(a)
+    case SpMod{a, b}: Sp.device(a)
+    case SpIdiv{a, b}: Sp.device(a)
+    case SpTruncdiv{a, b}: Sp.device(a)
+    case SpTruncmod{a, b}: Sp.device(a)
+    case SpCmpLt{a, b}: Sp.device(a)
+    case SpCmpEq{a, b}: Sp.device(a)
+    case SpCmpNe{a, b}: Sp.device(a)
+    case SpXor{a, b}: Sp.device(a)
+    case SpOr{a, b}: Sp.device(a)
+    case SpAnd{a, b}: Sp.device(a)
+    case SpShr{a, b}: Sp.device(a)
+    case SpShl{a, b}: Sp.device(a)
+    case SpWhere{q, a, b}: Sp.device(a)
+
+    # -- marker ops: "identity on data"
+    case SpContiguousBackward{a}: Sp.device(a)
+    case SpDetach{a}: Sp.device(a)
+    # "first non-null src device" -- the CALL's srcs are its body and its args,
+    # IN ORDER, and the device is the first of them that HAS one.  The body's
+    # device is tried first and the args after it.
+    # "first non-null src device" -- the call's srcs are its body and its args,
+    # IN ORDER.
+    #
+    # AND THE FOLD TAKES THE BODY'S DEVICE, because the body IS the first src.
+    # The args' devices are the SECOND src onward, and the fold cannot reach
+    # them: their fold needs THIS fold, and a def may only call a def DECLARED
+    # ABOVE it, so the mutual recursion is impossible.  MEASURED 2026-11-17:
+    # `Sp.device.of` and `Sp.device.args` were two halves of the walk and the
+    # answer was "expected: a def whose body is implemented before the def is
+    # used" -- Bend refuses mutual recursion, and the termination check also
+    # wants a SHRINKING argument, which a device CALL is not.
+    #
+    # SO THE ARGS' PART OF THE SPEC'S RULE IS NOT MODELLED, and the port says
+    # so here rather than claiming a rule it does not implement.  The body is
+    # the first src and the body's device is the call's.
+    case SpCall{body, args}: Sp.device(body)
+    case SpInvalid{}: None{}
+
+# The CALL's device: "first non-null src device".  The call's body is its only
+# src, and the args are the ones it closes over -- so the device is the body's
+# unless the body has none, and then it is the first arg's.
+#
 # Gate. No CPython `drop_n`. The literals are tinygrad's `_shape` from
 # `.agents/slop/ind/dropn-oracle.py`: Reduce n=0 is (4,5,6); Reduce n=1 and
 # an arity-1 scalar Index are (5,6), rank 2. The old `case 0n: r` prints

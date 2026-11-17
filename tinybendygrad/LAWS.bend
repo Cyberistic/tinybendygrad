@@ -365,6 +365,150 @@ law copy_preserves_shape:
   for dev: S.Dev
   {shape_of(S.SpCopy{buf, dev}) == shape_of(buf) : Maybe<&2, S.Shape>}
 
+# V-ter. The DEVICE column, and the spec's THIRD derived property.
+#
+# tinyspec: "Each UOp has five derived properties -- dtype, shape, device,
+# addrspace, and min_max -- determined by the rules at the end of this
+# document."  MEASURED 2026-11-17: the port had the dtype column and the shape
+# column and NO device column, so this law set is the port's THIRD.
+#
+# The column is SHORT and TOTAL: an op's device is `src[0].device` (the
+# movement ops, the ALU ops, `Reduce`, `Unshard`, `Load`, `Index`, `After` and
+# the marker ops), "from arg" (the three source ops and `Copy`), `null`
+# (`Const` and `Range`), or "first non-null src device" (`Call`).
+
+law movement_preserves_device:
+  for +a: S.Sp
+  {device_of(S.SpPermute{a, Nil{}}) == device_of(a) : Maybe<&2, S.Dev>}
+
+law alu_preserves_device:
+  for +a: S.Sp
+  for +b: S.Sp
+  {device_of(S.SpAdd{a, b}) == device_of(a) : Maybe<&2, S.Dev>}
+
+law source_op_device_is_from_arg:
+  for size: Nat
+  for dt: S.Dt
+  for dev: S.Dev
+  for addr: S.Addr
+  {device_of(S.SpBuffer{size, dt, dev, addr}) == some_of_dev(dev) : Maybe<&2, S.Dev>}
+
+law copy_device_is_from_arg:
+  for buf: S.Sp
+  for dev: S.Dev
+  {device_of(S.SpCopy{buf, dev}) == some_of_dev(dev) : Maybe<&2, S.Dev>}
+
+law const_has_no_device:
+  for v: S.Sp
+  for dt: S.Dt
+  {device_of(S.SpConst{v, dt}) == none_of_dev() : Maybe<&2, S.Dev>}
+
+law range_has_no_device:
+  for bound: S.Sp
+  {device_of(S.SpRange{bound}) == none_of_dev() : Maybe<&2, S.Dev>}
+
+law after_preserves_device:
+  for buf: S.Sp
+  for deps: List<&2, S.Sp>
+  {device_of(S.SpAfter{buf, deps}) == device_of(buf) : Maybe<&2, S.Dev>}
+
+# AND THE CALL's device, which the spec gives as "first non-null src device".
+# The port's fold takes the BODY's device -- the body IS the first src -- and
+# the spec's rule for the ARGS onward is NOT modelled, because the args' device
+# fold needs this fold and Bend refuses mutual recursion.  The law states the
+# port's rule and `spec.bend`'s `Sp.device` says which half it implements.
+law call_device_is_the_body_device:
+  for +body: S.Sp
+  for args: List<&2, S.Sp>
+  {device_of(S.SpCall{body, args}) == device_of(body) : Maybe<&2, S.Dev>}
+
+# AND THE STACK's device, which the spec's op table gives as "All shapes must
+# match" -- so the stack is on ONE device and the port's fold takes the FIRST
+# element's.
+law stack_device_is_the_first_element_device:
+  for +a: S.Sp
+  for +b: S.Sp
+  {device_of(S.SpStack{[a, b]}) == device_of(a) : Maybe<&2, S.Dev>}
+
+# AND THE MOVEMENT OPS' DTYPE, which the spec's table gives as one row for the
+# whole family: "Movement ops & src[0].dtype & (see op) & src[0].device".
+#
+# MEASURED 2026-11-17: the ALU CENSUS named `SpReshape`'s dtype arm UNPINNED
+# -- and it was right, because the shape laws about a Reshape read its NUMEL
+# and not its dtype, so the arm was unpinned and the gate's own plant broke it
+# and the gate stayed green.
+law reshape_preserves_dtype:
+  for +t: S.Sp
+  for +src: S.Sp
+  for +dst: List<&2, S.Sdim>
+  {dtype_of(S.SpReshape{t, src, dst}) == dtype_of(t) : Maybe<&2, S.Dt>}
+
+law permute_preserves_dtype:
+  for +t: S.Sp
+  for +order: List<&2, Nat>
+  {dtype_of(S.SpPermute{t, order}) == dtype_of(t) : Maybe<&2, S.Dt>}
+
+law expand_preserves_dtype:
+  for +t: S.Sp
+  for +pre: List<&2, S.Sdim>
+  for +total: List<&2, S.Sdim>
+  {dtype_of(S.SpExpand{t, pre, total}) == dtype_of(t) : Maybe<&2, S.Dt>}
+
+law pad_preserves_dtype:
+  for +t: S.Sp
+  for +off: List<&2, S.Sdim>
+  for +size: List<&2, S.Sdim>
+  {dtype_of(S.SpPad{t, off, size}) == dtype_of(t) : Maybe<&2, S.Dt>}
+
+law shrink_preserves_dtype:
+  for +t: S.Sp
+  for +off: List<&2, S.Sdim>
+  for +size: List<&2, S.Sdim>
+  {dtype_of(S.SpShrink{t, off, size}) == dtype_of(t) : Maybe<&2, S.Dt>}
+
+# AND THE TWO THAT ARE "from arg" AND NOT src[0]'s: `Cast` and `Bitcast` both
+# take a TARGET dtype, and the spec's table gives them "from arg" -- so their
+# dtype is the one they were given and NOT the source's.
+law bitcast_takes_the_target_dtype:
+  for +t: S.Sp
+  for dt: S.Dt
+  {dtype_of(S.SpBitcast{t, dt}) == some_of(dt) : Maybe<&2, S.Dt>}
+
+law cast_takes_the_target_dtype:
+  for +t: S.Sp
+  for dt: S.Dt
+  {dtype_of(S.SpCast{t, dt}) == some_of(dt) : Maybe<&2, S.Dt>}
+
+# AND THE TWO THE ALU CENSUS MEASURED AS UNPINNED.  MEASURED 2026-11-17: the
+# census names the arms no law reads, and it named `SpIdx1` and `SpReduce` --
+# the spec's table gives both `src[0].device`, and the book did not say so.
+law index_preserves_device:
+  for +t: S.Sp
+  for +a: S.Sp
+  {device_of(S.SpIdx1{t, a}) == device_of(t) : Maybe<&2, S.Dev>}
+
+# AND THEIR DTYPE, which the spec's table gives as src[0].dtype for both --
+# "Index & src[0].dtype & remaining dims & src[0].device" and "Reduce &
+# src[0].dtype & remove first n axes & src[0].device".
+law index_preserves_dtype:
+  for +t: S.Sp
+  for +a: S.Sp
+  {dtype_of(S.SpIdx1{t, a}) == dtype_of(t) : Maybe<&2, S.Dt>}
+
+law reduce_preserves_dtype:
+  for +t: S.Sp
+  for ranges: List<&2, S.Sp>
+  for op: S.Sp
+  for n: Nat
+  {dtype_of(S.SpReduce{t, ranges, op, n}) == dtype_of(t) : Maybe<&2, S.Dt>}
+
+law reduce_preserves_device:
+  for +t: S.Sp
+  for ranges: List<&2, S.Sp>
+  for op: S.Sp
+  for n: Nat
+  {device_of(S.SpReduce{t, ranges, op, n}) == device_of(t) : Maybe<&2, S.Dev>}
+
 # VI. The elementwise column: "all inputs same shape, output same shape".
 #
 # This is the claim the schedule's fusion decisions rest on, so it is worth
@@ -477,6 +621,16 @@ def shape_of(s: S.Sp) -> Maybe<&2, S.Shape>:
 def dtype_of(s: S.Sp) -> Maybe<&2, S.Dt>:
   S.Sp.dtype(s)
 
+# The THIRD derived property, and the port had two of the spec's five.
+#
+# tinyspec: "Each UOp has five derived properties -- dtype, shape, device,
+# addrspace, and min_max -- determined by the rules at the end of this
+# document."  MEASURED 2026-11-17: the port had `Sp.dtype` and `Sp.shape` and
+# NO device fold at all, so the device column of the spec's table was a claim
+# the book could not state.
+def device_of(s: S.Sp) -> Maybe<&2, S.Dev>:
+  S.Sp.device(s)
+
 # numel is not a fold of its own in spec.bend: it is the product of the shape's
 # dims, and a shapeless op has no element count, so 0 is the only honest total
 # answer for one.
@@ -487,6 +641,16 @@ def some_of(d: S.Dt) -> Maybe<&2, S.Dt>:
   Some{d}
 
 def none_of() -> Maybe<&2, S.Dt>:
+  None{}
+
+# The device column's two answers: "from arg" is a device, and "null" is the
+# absence of one.  They are SEPARATE helpers from `some_of`/`none_of` because
+# those are about a DTYPE and these are about a DEVICE, and a law that reads
+# both would have to name two different absence types.
+def some_of_dev(d: S.Dev) -> Maybe<&2, S.Dev>:
+  Some{d}
+
+def none_of_dev() -> Maybe<&2, S.Dev>:
   None{}
 
 # Forwards spec.bend's `drop_n`, which is `List.drop`: the suffix that remains.

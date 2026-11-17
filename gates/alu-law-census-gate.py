@@ -669,12 +669,20 @@ def dtype_arms(root: Path) -> list[tuple[str, list[str]]]:
     dtype fold, restricted to the ALU ops above.
 
     A law PINS an arm when it READS THE FOLD AT THAT OP -- that is,
-    `dtype_of(S.Sp<X>{...})` or `numel_of(S.Sp<X>{...})`.  NAMING the op is
-    NOT enough, and the difference is a measured one: `div_is_mul_by_recip`
-    names `SpRecip` in its right-hand side, and breaking `SpRecip`'s dtype arm
-    does NOT redden the gate, because that law is about the STRUCTURE
-    (`Mul(a, Recip(b))`) and never reads the dtype.  So the census asks the
-    law's own text whether the FOLD is applied to that op.
+    `dtype_of(S.Sp<X>{...})`.  NAMING the op is NOT enough, and the difference
+    is a measured one: `div_is_mul_by_recip` names `SpRecip` in its right-hand
+    side, and breaking `SpRecip`'s dtype arm does NOT redden the gate, because
+    that law is about the STRUCTURE (`Mul(a, Recip(b))`) and never reads the
+    dtype.  So the census asks the law's own text whether the FOLD is applied
+    to that op.
+
+    AND ONLY THE FOLD ITSELF PINS ITS OWN ARM.  MEASURED 2026-11-17: the rule
+    also accepted `numel_of(S.Sp<X>{...})`, which reads the SHAPE fold -- so
+    `SpReshape`'s DTYPE arm counted as pinned by `reshape_preserves_numel`,
+    which never reads a dtype.  The gate's own plant then broke that arm and
+    the gate stayed GREEN: "breaking the PINNED arm SpReshape did not redden the
+    gate".  So the rule is `dtype_of` and only `dtype_of` here -- the shape
+    census has the mirror rule, and the two are the same rule twice.
     """
     spec = (root / "LAWS" / "spec.bend").read_text(errors="replace")
     laws_text = (root / "LAWS.bend").read_text(errors="replace")
@@ -693,7 +701,7 @@ def dtype_arms(root: Path) -> list[tuple[str, list[str]]]:
         pinning = []
         for n in law_names(root / "LAWS.bend"):
             block = law_block(laws_text, n)
-            if re.search(rf"(?:dtype_of|numel_of)\(S\.{re.escape(arm)}\{{", block):
+            if re.search(rf"dtype_of\(S\.{re.escape(arm)}\{{", block):
                 pinning.append(n)
         out.append((arm, pinning))
     return out
