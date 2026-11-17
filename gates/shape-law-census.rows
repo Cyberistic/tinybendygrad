@@ -16,4 +16,4 @@
 
 vacuous	store_matches_its_buffer
 masked	add_is_elementwise,pad_shrink_round_trip,reshape_numel_is_the_new_shape
-unpinned-arms	SpAnd,SpBackedge,SpContiguousBackward,SpEnd,SpGroup,SpIdiv,SpIdx0,SpIdx2,SpIdx3,SpIdx4,SpLinear,SpMod,SpOr,SpParam,SpShl,SpShr,SpSink,SpTrunc,SpUnshard,SpXor
+unpinned-arms	SpBackedge,SpEnd,SpGroup,SpIdx2,SpIdx3,SpIdx4,SpLinear,SpSink

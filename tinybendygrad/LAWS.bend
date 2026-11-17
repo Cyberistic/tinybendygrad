@@ -626,6 +626,48 @@ law bitcast_takes_the_dtype_range:
   for dt: S.Dt
   {min_max_of(S.SpBitcast{a, dt}) == min_max_of(S.SpBuffer{1n, dt, S.D1{0}, S.AGlobal{}}) : Maybe<&2, S.Iv>}
 
+# AND THE PARAM's SHAPE, which the spec's column gives as "$(n)$ from src, or
+# $()$" -- the size, the same as a Buffer's.
+law param_shape_is_its_size:
+  for size: Nat
+  for dt: S.Dt
+  for dev: S.Dev
+  {shape_of(S.SpParam{size, dt, dev}) == some_of_shape(S.Shape.of([S.SN{size}])) : Maybe<&2, S.Shape>}
+
+# AND THE UNSHARD's SHAPE, WHICH IS NOT THE SPEC'S.  The spec's column is
+# "src[0], each a_k x n_k" -- the source's shape with EACH SHARDED AXIS SPLIT
+# into its axis and its length.  MEASURED 2026-11-17: the port's fold answers
+# `src[0]` WHOLE, so the split is not modelled, and the law says what the port
+# does rather than what the spec says.
+#
+# AND THE DIVERGENCE IS NOTED BECAUSE THE SPEC'S RULE IS NOT THE SAME THING.
+# It is the one place where the port's shape column is NARROWER than the spec's,
+# and a reader of the spec would expect the split.
+law unshard_preserves_the_source_shape:
+  for +t: S.Sp
+  for ranges: List<&2, S.Sp>
+  for axes: List<&2, Nat>
+  {shape_of(S.SpUnshard{t, ranges, axes}) == shape_of(t) : Maybe<&2, S.Shape>}
+
+# AND THE INDEX FAMILY'S SHAPE, WHICH THE SPEC'S COLUMN GIVES AS "remaining
+# dims": the base's trailing dims, after the index shapes.
+#
+# MEASURED 2026-11-17: the shape census named `SpIdx0`, `SpIdx2`, `SpIdx3` and
+# `SpIdx4` UNPINNED -- and they are the four arities the spec's one row covers,
+# so the row was pinned only for `SpIdx1`.
+law index_of_no_operands_keeps_the_base_shape:
+  for +t: S.Sp
+  {shape_of(S.SpIdx0{t}) == shape_of(t) : Maybe<&2, S.Shape>}
+
+# AND THE SHAPE IS NOT THE BASE'S WHOLE: an index of k operands DROPS k of
+# the base's dims and keeps the rest -- "remaining dims".
+#
+# THE OTHER ARITIES ARE NOT STATED, and the reason is the PROOF and not the
+# claim: the shape of an `Idx2` is the zip of the two index shapes with the
+# base's dims after dropping two, and proving that needs the same induction the
+# broadcast law needs -- the zip's shape and the drop's shape together.  That is
+# a piece of work and not a piece of prose, so it is not claimed here.
+
 # VI. The elementwise column: "all inputs same shape, output same shape".
 #
 # AND THE SHAPE COLUMN for the ops the spec pins it on -- the same section,

@@ -586,6 +586,21 @@ def L.bitcast_preserves_shape(t, dt):
 def L.range_shape_is_empty(bound):
   {==}
 
+# AND THE PARAM's SHAPE, which the spec's column gives as "$(n)$ from src, or
+# $()$".
+def L.param_shape_is_its_size(size, dt, dev):
+  {==}
+
+# AND THE UNSHARD's SHAPE, WHICH IS NOT THE SPEC's -- the port answers
+# "src[0]" WHOLE and the spec says "each a_k x n_k".
+def L.unshard_preserves_the_source_shape(t, ranges, axes):
+  {==}
+
+# AND THE INDEX FAMILY'S SHAPE, which the spec's column gives as "remaining
+# dims".
+def L.index_of_no_operands_keeps_the_base_shape(t):
+  {==}
+
 # tinyspec's elementwise column: "all inputs same shape, output same shape".
 #
 # Each of the three is the SAME two steps -- rewrite `b`'s shape into `a`'s with
