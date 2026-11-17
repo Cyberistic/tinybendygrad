@@ -85,6 +85,19 @@ was convenient.
 DETERMINISM. Every walk is `sorted`, every set is iterated in sorted order,
 and no step consults the clock, the network, or the environment. Two runs on
 the same tree produce the same bytes.
+
+AND THE TREE MOVES. MEASURED 2026-11-17 23:46: two runs of this script, one
+minute apart, produced DIFFERENT BYTES -- because another unit was editing
+`tinybendygrad/uop/spec.bend` while the first run read it, and the ledger
+records PORT LINE NUMBERS. The verdict for `uop/spec.py:206` moved from
+GAP-DIFFERENT-REASONING to PORTED across the two runs, because the port's own
+comment about that upstream line had been extended in between.
+
+**A LEDGER THAT RECORDS A LINE NUMBER IN A TREE THAT IS MOVING IS A LEDGER
+THAT RECORDS WHEN IT WAS TAKEN.** So `--substrate` prints the sha256 of every
+port file the ledger read, and two ledgers taken of DIFFERENT substrates can
+be told apart without guessing. A ledger and its substrate belong together,
+and the substrate is one `sha256sum` away.
 """
 
 from __future__ import annotations
@@ -92,6 +105,7 @@ from __future__ import annotations
 import argparse
 import collections
 import difflib
+import hashlib
 import os
 import re
 import sys
@@ -693,8 +707,24 @@ def build_rows(skip_scratch: bool = True) -> tuple[list[list[str]], dict]:
         "citations": len(cites),
         "port_blocks": len(pblocks),
         "upstream_files": len(upfiles),
+        "substrate": substrate(),
     }
     return rows, stats
+
+
+def substrate() -> str:
+    """THE SHA256 OF EVERY PORT FILE THE LEDGER READ, and of every upstream
+    file. A ledger and the substrate it was taken of belong together: the
+    ledger records PORT LINE NUMBERS, so two ledgers of DIFFERENT substrates
+    are different ledgers, and a reader must be able to tell them apart
+    without guessing."""
+    h = hashlib.sha256()
+    for p in sorted(_walk(PORT, ".bend")) + sorted(_walk(UP, ".py")):
+        h.update(os.path.relpath(p, REPO).encode())
+        h.update(b"\0")
+        h.update(open(p, "rb").read())
+        h.update(b"\0")
+    return h.hexdigest()
 
 
 def render(rows: list[list[str]]) -> str:
@@ -717,6 +747,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--legacy-resolver", action="store_true",
                     help="do NOT strip the `tinygrad/` prefix before the exact-path "
                          "test (the predecessor's resolver; ONE row of 2406 differs)")
+    ap.add_argument("--substrate", action="store_true",
+                    help="print the sha256 of every file the ledger read")
     args = ap.parse_args(argv)
 
     global LEGACY_RESOLVER
@@ -724,6 +756,9 @@ def main(argv: list[str]) -> int:
 
     rows, stats = build_rows(skip_scratch=not args.include_scratch)
     text = render(rows)
+
+    if args.substrate:
+        print(f"SUBSTRATE  : {stats['substrate']}")
 
     if args.check:
         old = open(args.out, encoding="utf-8").read() if os.path.exists(args.out) else ""
@@ -748,6 +783,7 @@ def main(argv: list[str]) -> int:
             print(f"  {k}: {n}")
         print(f"citations: {stats['citations']}  port blocks: {stats['port_blocks']}")
         print(f"ambiguous-basename citations: {stats['ambiguous_total']}")
+        print(f"substrate: {stats['substrate']}")
     if args.ambiguity:
         for k, n in stats["ambiguous_citations"].items():
             print(f"  {n:5d}  {k}")
