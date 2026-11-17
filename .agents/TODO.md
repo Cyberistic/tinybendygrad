@@ -151,22 +151,23 @@ turn-cost       [######..] 6/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangR
                                          §138 PORT CHANGES**; **AND **ON `aa736032b`**,
                                          **`9d2ce4bef`**, **`f0caca346`**, AND **`64bc53f29`**
                                          (§137).**
-                                         **⇒⇒⇒ AND **§138.8 **CHARACTERIZED **THE **NEXT
-                                         **ATTEMPT** AND **DID **NOT **LAND **IT**: **THE
-                                         **FORWARD-ORDER **REBUILD **OF **THE **ROWS' **STATE**
-                                         **WOULD **CUT **THE **OUTER **WALK **FROM **42-49**
-                                         **ELEMENTS **TO **2-6**, **⇒⇒⇒ AND **THE **EXACT
-                                         **INDEX **ARITHMETIC **AND **THE **LAYOUT **ARE **IN
-                                         **`PARITY.md` §138.8** (WITH **THE **PROBES **AND **THE
-                                         **MODELS **TRACKED** IN **`.agents/slop/cpuseam/builds/`**),
-                                         **⇒⇒⇒ AND **FIVE **ATTEMPTS **FAILED** (7.19x, 4.25x,
-                                         **0.9675 **BUT `same C: False`**, **THE **OUTPUT
-                                         **CHANGED**, **AND **THE **BLOCK **LENGTHS **MATCHED
-                                         **BUT **THE **OUTPUT **STILL **DIFFERED**)** -- **⇒⇒⇒
-                                         **AND **THE **CHANGE **IS **NOT **LANDED** BECAUSE **IT
-                                         **COULD **NOT **BE **SHOWN **CORRECT**, **⇒⇒⇒ AND **A
-                                         **CHANGE **THAT **CANNOT **BE **SHOWN **CORRECT **IS
-                                         **WORSE **THAN **NO **CHANGE****.
+                                         **⇒⇒⇒ AND **§138.9 **REBUILT **THE **ROWS' **STATE **IN
+                                         **THE **FORWARD **ORDER **AND **GOT **IT **RIGHT** (THE **OUTPUT **IS
+                                         **BYTE-IDENTICAL**, 15,242 **BYTES**) **⇒⇒⇒ AND **THE **PAIRED **A/B **READS
+                                         **1.0037 **AND **1.0007** ON **TWO **INDEPENDENT **RUNS** (same C: True, THE **NOISE
+                                         **FLOOR **READ **1.0249** **FIRST**) **⇒⇒⇒ AND **THE **CHANGE **IS **NOT **LANDED**
+                                         (THE **TREE's OWN RULE: **REVERT **ANY **CHANGE **WHOSE **MEASURED **RATIO **IS
+                                         **NEUTRAL**)** -- **⇒⇒⇒ AND **THE **WHY **IS **THE **POINT**: **THE **OUTER **WALK
+                                         **FELL **FROM **22,314 **TO **9,809** **CONS **A **TURN** (**-56%**) **⇒⇒⇒ AND **THE
+                                         **RENDER's **WALL **MOVED **0.4%** **⇒⇒⇒ AND **THE **WRITES' **CELLS **ROSE **720**
+                                         **⇒⇒⇒ AND **`rtp` **IS **0.1521 **ms **A **TURN** **OUT **OF **A **~0.95 ms
+                                         **RENDER** **⇒⇒⇒ AND **SO **THE **INDEXED **ACCESS **IS **A **FRACTION **OF **THE
+                                         **RENDER** **⇒⇒⇒ AND **THIS **IS **THE **FOURTH **TIME **THE **COUNT **HAS **BEEN
+                                         **DISPROVED** (§138.5) -- **⇒⇒⇒ AND **THIS **TIME **THE **COUNT **WAS **THE **WALK**
+                                         -- **⇒⇒⇒ AND **THE **RENDER's **BIGGEST **ARMS **ARE **THE **TEXT **ASSEMBLY **AND
+                                         **THE **STRING **JOINS** -- **⇒⇒⇒ AND **THE **NEXT **TARGET **IS **THOSE**, **NOT
+                                         **THE **INDEX** (`PARITY.md` §138.9, **AND **THE **PROBES **ARE **TRACKED **IN
+                                         **`.agents/slop/cpuseam/builds/`**)****.
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
                                         **324 bindings -> 308 laws -> 305 LINKED ->
