@@ -540,8 +540,14 @@ def tn_logical_not(+t: Tensor) -> Tensor:
 # threaded but a READ of the arena the tensor already carries, so the fold handed in is
 # `F.folded(Tensor.ar(t))` -- the very call `mixin/elementwise.bend`'s `ew_fx` makes. What was
 #
-# tn_bitwise_not.bend:40` builds the bool-arm graph inline through it, so deleting it would
-# redden that gate over a refactor rather than over a behaviour.
+# `tn_bitwise_not.cast` (tensor.bend:545) builds the bool-arm graph inline through it, so
+# deleting it would redden that gate over a refactor rather than over a behaviour.
+#
+# =>=>=> AND **THE **CITATION **WAS **A **FILE **THAT **DOES **NOT **EXIST** -- **=>=>=> AND **THE
+# **DEF **IS **A **GROUP **INSIDE **THIS **FILE** (`tn_bitwise_not.cast` **AT **tensor.bend:545**),
+# **=>=>=> AND **SO **A **`.bend` **SUFFIX **ON **A **DEF **NAME **IS **NOT **A **PATH** -- **=>=>=> AND
+# **THE **RULE**: **A **POINTER **A **READER **CANNOT **RESOLVE **IS **A **POINTER **THAT **COSTS
+# **THE **READER **THE **RESOLUTION**.
 def tn_bitwise_not.cast(+ar: O.Arena, +u: U32) -> O.Found:
   O.UOp.new(ar, O.OpsCAST{}, [u], O.ADt{S.boolean()}, O.TNone{})
 
