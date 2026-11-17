@@ -7550,3 +7550,65 @@ orphan-census.py`** -- **⇒⇒† AND **ITS **POPULATION **IS **DISCOVERED** (*
 **DRIVER** -- **⇒⇒† AND **UPSTREAM **PUTS **THAT **FUNCTION **IN **`indexing.py:183`**, **⇒⇒⇒ AND **SO
 **THE **CENSUS **CANNOT **SEE **THE **RELATION** -- **⇒⇒† AND **A **CENSUS **THAT **CANNOT **SEE **A
 **RENAME **IS **A **CENSUS **OF **NAMES** (DOCTRINE 1)**.
+
+### 138.12 UPSTREAM's **COMMENTS **ARE **PORTED**, **⇒⇒† AND **THE **PORT **DOES **NOT **STOP **AT **A
+**TRANSCRIPT** -- **⇒⇒† AND **THE **CITATION **IS **THE **JOIN**
+
+**⇒⇒† AND **THE **REQUEST**: *"someone familiar with the tinygrad codebase should feel right at home
+when reading ours, and we want their comments ported as well"* -- **⇒⇒† AND **THE **PORT's **OWN
+**COMMENTS **ALREADY **CITE **THE **UPSTREAM **LINE** (`# cstyle.py:257 -- it is the test for "is this a
+declaration"`) **⇒⇒† AND **SO **THE **CITATION **IS **THE **JOIN **KEY **BETWEEN **THE **TWO **TREES**.
+
+**⇒⇒† AND **FIVE **AGENTS **PORTED **THE **COMMENTS**, **ON **DISJOINT **FILE **SETS** (⇒⇒† AND **THE
+**RULE **THAT **THEY **MUST **NOT **OVERLAP**, **⇒⇒† AND **THE **RULE **THAT **A **WRONG **LINE **NUMBER
+**IS **WORSE **THAN **NO **COMMENT**):
+
+| AGENT | THE **FILES** | THE **COMMENTS **PORTED** | THE **COMMENTS **REFUSED** |
+|---|---|---|---|
+| `uop` | `uop/{ops,weak,render,validate,upat,movement}.bend` | **25** | 79 |
+| `renderer` | `renderer/{cstyle,tc,llvmir,wgsl,ptx,nir,amd/dsl,amd/generate,__init__}.bend` | **33** | 141 |
+| `schedule`+`codegen` | `schedule/*`, `codegen/**` | **THE **SCHEDULE **COMMIT** | -- |
+| `core`+`mixin`+`nn`+`runtime` | `mixin/gradient`, `nn/onnx`, `function`, `tensor`, `device`, `runtime/support/{hcq2,system,am/amdev}` | **46** | ~334 |
+| `enum` (code, not comments) | `uop/ops.bend`'s **`GroupOp` SETS** | -- | -- |
+
+**⇒⇒† AND **THE **VERDICTS **ARE **MEASURED**: **THE **PROOF **GATE **ON **EVERY **TOUCHED **FILE**
+**READS **ALL **PROOFS **CHECK** -- **⇒⇒† AND **THE **CORPUS **AFTER **THE **COMMENT **COMMITS**: **38
+graphs / **38 **answered / **38 **agree** / **0 **disagree** / **38 **byte-identical** / **0 **refused**,
+**expect-moved=0**, **`substrate-start == substrate-end == live`** (**`17f7ec72…`**), **repro **339/339**,
+**`corpuswitness-gate` **PASS** -- **⇒⇒† AND **THE **COMMENT **COMMITS **CHANGE **NO **CODE** (THE
+**DIFF **IS **COMMENT **LINES **ONLY**, **MEASURED **PER **COMMIT**)**.
+
+**⇒⇒† AND **THE **CITATIONS **WERE **VERIFIED **BY **A **SCRIPT**, **AND **THEY **FOUND **DEFECTS**:
+**⇒⇒† AND **THE **`uop` **AGENT's **`movement.py:16`** **CITED **A **LINE **THAT **THE **CURRENT
+**UPSTREAM **DOES **NOT **HAVE** -- **⇒⇒† AND **THE **RULE **WAS **REMOVED **UPSTREAM **IN
+**`9fa22cc4f`** **⇒⇒† AND **THE **FIX **NAMES **THE **COMMIT** -- **⇒⇒† AND **THE **`core` **AGENT **FOUND
+**AND **REPAIRED **ELEVEN **PRE-EXISTING **CITATIONS **IN **`nn/onnx.bend`** **THAT **POINTED **AT
+**UNRELATED **CODE** -- **⇒⇒† AND **AND **THE **`renderer` **AGENT **FOUND **THAT **THE **PORT's **OWN
+**`llvmir.bend` **HEADER's **LINE **MAP **IS **STALE **AGAINST **THE **LIVE **UPSTREAM** (**29
+**CITATIONS**, **⇒⇒† AND **THE **RE-VENDOR **`75955a97a`** **MOVED **THE **UPSTREAM's **LINES**) -- **⇒⇒† AND
+**A **STALE **CITATION **IS **A **COMMENT **THAT **A **READER **CANNOT **CHECK** -- **⇒⇒† AND **THE
+**RULE **APPLIES **TO **THE **PORT's **OWN **CITATIONS **AS **MUCH **AS **TO **THE **PORTED **ONES**.
+
+**⇒⇒† AND **THE **RENDERER **AGENT's **FINDING **IS **A **REAL **PORT **DEFECT**, **NOT **A **COMMENT**:
+**THE **PORT's **`ku_align`** (`renderer/cstyle.bend:2210`) **ANSWERS **A **CONSTANT **`4`** **OFF-CPU,
+**WHERE **UPSTREAM **ANSWERS **`2**int(math.log2(dt.itemsize * count))`** -- **⇒⇒† AND **SO **FOR **A
+**`float4`** (**itemsize 4, **count 4**) **UPSTREAM **ANSWERS **16** **AND **THE **PORT **ANSWERS **4**,
+**⇒⇒† AND **THE **PORT's **ALIGNMENT **IS **TOO **SMALL **FOR **EVERY **VECTOR **WIDER **THAN **ONE
+**ELEMENT** **AND **TOO **LARGE **FOR **A **bool** -- **⇒⇒† AND **THE **PORT's **OWN **COMMENT **SAYS **ALL
+**OF **THIS** (**lines **2196-2209**: *"⚠ AND THE PORT DOES NOT DO THIS"*) **⇒⇒† AND **AND **THE **DEFECT
+**IS **LATENT**: **THE **`aligned(` **CLAUSE **DOES **NOT **APPEAR **IN **ANY **OF **THE **38 **CORPUS's
+**OUTPUTS** (MEASURED), **⇒⇒† AND **SO **NO **GATE **COMPARES **THE **PORT's **`ku_align` **AGAINST
+**CPython's** -- **⇒⇒† AND **A **DEFECT **THAT **NO **GATE **CAN **SEE **IS **A **DEFECT **THAT **THE
+**NEXT **ONE **WILL **RE-DISCOVER**.
+
+**⇒⇒† AND **AND **THE **`enum` **AGENT's **CODE **WORK **FOUND **TWO **REAL **PORT **DEFECTS** **BY
+**COMPARING **AGAINST **THE **VENDORED **UPSTREAM**: **THE **PORT's **`GroupOp.associative`** **WAS
+**MISSING **`Ops.XOR`**, **THE **PORT's **`GroupOp.defines`** **WAS **MISSING **`Ops.BINARY`**, **⇒⇒† AND
+**THE **PORT **HAD **NO **`GroupOp.effect`** **AT **ALL** (UPSTREAM's **`Effect` **= **{STORE, CUSTOM,
+CALL, BARRIER}**) **⇒⇒† AND **BOTH **MISSING **MEMBERS **ARE **LOAD-BEARING **UPSTREAM**
+**(`uop/spec.py:207`, `schedule/indexing.py:24`, `codegen/decomp/dtype.py:146,168`; `uop/symbolic.py:173`)
+**⇒⇒† AND **THE **`GroupOp` **SETS **ARE **NOW **A **GENERATED **REGION** (144 **lines**, **byte-identical**
+**to **the **generator's **output**, **MEASURED**), **⇒⇒† AND **AND **THE **`Ops` **TABLES **ARE **NOT
+**GENERATED** **BECAUSE **A **GATE **ALREADY **GUARDS **THEM** (`gates/opseven-gate.py`'s
+**`ops_value_is_declaration_order()`) **⇒⇒† AND **A **SECOND **INSTRUMENT **FOR **ONE **PROPERTY **IS
+**A **SECOND **SOURCE **OF **TRUTH**.
