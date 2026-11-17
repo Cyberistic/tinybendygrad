@@ -151,6 +151,22 @@ turn-cost       [######..] 6/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangR
                                          §138 PORT CHANGES**; **AND **ON `aa736032b`**,
                                          **`9d2ce4bef`**, **`f0caca346`**, AND **`64bc53f29`**
                                          (§137).**
+                                         **⇒⇒⇒ AND **§138.8 **CHARACTERIZED **THE **NEXT
+                                         **ATTEMPT** AND **DID **NOT **LAND **IT**: **THE
+                                         **FORWARD-ORDER **REBUILD **OF **THE **ROWS' **STATE**
+                                         **WOULD **CUT **THE **OUTER **WALK **FROM **42-49**
+                                         **ELEMENTS **TO **2-6**, **⇒⇒⇒ AND **THE **EXACT
+                                         **INDEX **ARITHMETIC **AND **THE **LAYOUT **ARE **IN
+                                         **`PARITY.md` §138.8** (WITH **THE **PROBES **AND **THE
+                                         **MODELS **TRACKED** IN **`.agents/slop/cpuseam/builds/`**),
+                                         **⇒⇒⇒ AND **FIVE **ATTEMPTS **FAILED** (7.19x, 4.25x,
+                                         **0.9675 **BUT `same C: False`**, **THE **OUTPUT
+                                         **CHANGED**, **AND **THE **BLOCK **LENGTHS **MATCHED
+                                         **BUT **THE **OUTPUT **STILL **DIFFERED**)** -- **⇒⇒⇒
+                                         **AND **THE **CHANGE **IS **NOT **LANDED** BECAUSE **IT
+                                         **COULD **NOT **BE **SHOWN **CORRECT**, **⇒⇒⇒ AND **A
+                                         **CHANGE **THAT **CANNOT **BE **SHOWN **CORRECT **IS
+                                         **WORSE **THAN **NO **CHANGE****.
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
                                         **324 bindings -> 308 laws -> 305 LINKED ->
