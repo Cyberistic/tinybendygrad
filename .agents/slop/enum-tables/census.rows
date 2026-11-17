@@ -1,0 +1,17 @@
+metric	value	source
+upstream_github_master_ops_members	76	raw.githubusercontent.com/tinygrad/tinygrad/master/tinygrad/uop/__init__.py 2026-11-17
+vendored_tree_ops_members	76	tinygrad/uop/__init__.py in the working tree
+port_ops_members	76	tinybendygrad/uop/ops.bend type Op is Data:
+port_equals_vendored_order	True	
+upstream_minus_vendored	ASM,EXTERN	
+vendored_minus_upstream	CUSTOM,CUSTOMI	
+Ops.name.of_arms	76	
+Ops.name.of_keys_equal_declared	True	
+Ops.value_arms	76	
+Ops.value_keys_equal_declared	True	
+all_ops_entries	76	
+ops_tables_total_case_arms	216	
+ops_tables_region_lines	272	lines 291-562 of tinybendygrad/uop/ops.bend
+groupop_region_lines	124	lines 455-578
+groupop_true_arms	66	
+groupop_groups_in_port	12	unary binary ternary defines irreducible movement commutative associative idempotent reduce comparison + 3 derived

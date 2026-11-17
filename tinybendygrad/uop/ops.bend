@@ -60,6 +60,22 @@
 #      `Ops.name` and `Ops.value` are ported. A datatype carries the name and
 #      the declaration order below IS the number, because `__init__.py` says
 #      "the order of these Ops controls the order of the toposort".
+#   7. THE `GroupOp` SETS ARE GENERATED, AND THE `Ops` TABLES ARE NOT, AND
+#      THE DIFFERENCE IS MEASURED. `Ops.name.of`, `Ops.value` and `all_ops` are
+#      DERIVABLE from this file's own `type Op is Data:` block -- the member
+#      list, the name, and the position -- and `gates/opseven-gate.py`'s
+#      `ops_value_is_declaration_order()` already HOLDS all three against it,
+#      in declaration order, with `Ops.value` numbering them `1..N`. A
+#      generator there would be a SECOND instrument for one property.
+#      `GroupOp`'s twelve set-membership functions are NOT derivable: upstream
+#      SPELLS them, as a class of sets over `Ops` members, and the port has to
+#      spell each set as a `match` because Bend has no set literal over a
+#      datatype. So they were a TRANSCRIPTION, and a transcription rots:
+#      MEASURED, the port's `associative` was MISSING `XOR` and `defines` was
+#      MISSING `BINARY` while `uop/spec.bend` still quoted the PRE-RE-VENDOR
+#      `Defines = {Ops.PARAM, Ops.BUFFER, Ops.ALLOC}`. Nothing saw it. They are
+#      now a GENERATED REGION (the marker below names its generator by path),
+#      and upstream's `class GroupOp` is the source, READ BY PATH.
 #
 # WHERE DEFS WERE REORDERED, and why. Bend has no forward references: a def may
 # only call defs written above it, and mutual recursion is refused outright.
@@ -452,6 +468,19 @@ def Ops.value(op: Op) -> U32:
     case OpsALLREDUCE{}: 75
     case OpsPYLITERAL{}: 76
 
+# ==== BEGIN GENERATED GroupOp SETS
+# GENERATOR .agents/slop/enum-tables/groupop-gen.py --write
+# FROM upstream's `class GroupOp` in tinygrad/uop/__init__.py, READ BY PATH.
+# THE PORT'S SET-MEMBERSHIP FUNCTIONS ARE A TRANSCRIPTION OF THAT CLASS, AND A
+# TRANSCRIPTION ROTTS: MEASURED, THE PORT'S `associative` WAS MISSING `XOR` AND
+# `defines` WAS MISSING `BINARY` WHILE `uop/spec.bend` STILL QUOTED THE
+# PRE-RE-VENDOR `Defines`.  DO NOT HAND-EDIT BELOW.
+#
+# `set.union(Unary, Binary, Ternary)` and `set.union(Binary, Ternary)` ARE
+# WRITTEN AS THE UNION THEY ARE AND NOT AS A FOURTH TABLE, SO A DERIVED SET
+# CANNOT DRIFT FROM THE SETS IT IS BUILT OUT OF.  # TODO: is BITCAST always
+# Elementwise if it's shape changing?
+
 def GroupOp.unary(op: Op) -> Bool:
   match op:
     case OpsEXP2{}: True{}
@@ -498,6 +527,7 @@ def GroupOp.defines(op: Op) -> Bool:
     case OpsREFPARAM{}: True{}
     case OpsBUFFER{}: True{}
     case OpsALLOC{}: True{}
+    case OpsBINARY{}: True{}
     case _: False{}
 
 def GroupOp.irreducible(op: Op) -> Bool:
@@ -537,6 +567,7 @@ def GroupOp.associative(op: Op) -> Bool:
     case OpsAND{}: True{}
     case OpsOR{}: True{}
     case OpsMAX{}: True{}
+    case OpsXOR{}: True{}
     case _: False{}
 
 def GroupOp.idempotent(op: Op) -> Bool:
@@ -560,10 +591,14 @@ def GroupOp.comparison(op: Op) -> Bool:
     case OpsCMPEQ{}: True{}
     case _: False{}
 
-# set.union(Unary, Binary, Ternary) and set.union(Binary, Ternary) are written as
-# the union they are and not as a fourth table, so a derived set cannot drift
-# from the sets it is built out of.  # TODO: is BITCAST always Elementwise
-# if it's shape changing?
+def GroupOp.effect(op: Op) -> Bool:
+  match op:
+    case OpsSTORE{}: True{}
+    case OpsCUSTOM{}: True{}
+    case OpsCALL{}: True{}
+    case OpsBARRIER{}: True{}
+    case _: False{}
+
 def GroupOp.alu(+op: Op) -> Bool:
   Bool.or(GroupOp.unary(op), Bool.or(GroupOp.binary(op), GroupOp.ternary(op)))
 
@@ -575,6 +610,8 @@ def GroupOp.elementwise(op: Op) -> Bool:
     case OpsCAST{}: True{}
     case OpsBITCAST{}: True{}
     case _: GroupOp.alu(op)
+
+# ==== END GENERATED GroupOp SETS
 
 # AxisType -- tinygrad/uop/ops.py:17
 #
