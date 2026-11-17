@@ -372,6 +372,29 @@ def lt_rc(vmaxs: List<&2, U32>) -> U32:
 
 # THE PRIORITY LADDER, linearizer.py:24-32. PORTED IN FULL, all eight arms.
 #
+# UPSTREAM'S FIVE COMMENTS ON IT ARE THE DOCSTRING OF THE WHOLE SCHEDULING
+# DECISION, and they are kept because the numbers alone do not say why:
+#
+#   "get consumers and assign priorities" (14)
+#   "NOTE: this requires the lst be locally toposorted" (15)
+#       the priorities are assigned in a REVERSED toposort walk, so a node's
+#       consumers are all known before it is numbered -- but that only works
+#       if the list is toposorted to begin with.
+#   "we place UOps with higher run_counts later" (19)
+#       so the primary key is the RUN COUNT -- how many times the node's body
+#       executes -- and a node that runs MORE is placed LATER. A node inside a
+#       big loop is deferred; a node outside it is hoisted. That is the
+#       "innermost last" shape of a generated kernel.
+#   "simple priority override. this is all bottom up now, smaller numbers will
+#    be closer to the top" (22)
+#       the priority is an OVERRIDE on the run-count order, and it is read
+#       bottom-up: a SMALLER priority number means CLOSER TO THE TOP. So the
+#       negative numbers are the ones that get hoisted.
+#   "the order and placement of these defines is important" (25)
+#       and this is a warning about the ARM ORDER, not about the values: the
+#       ladder is a `match` on the op and the arms are not interchangeable.
+#       `PARAM` is first and it is the only one with an `extra`.
+#
 #     match u.op:
 #       case Ops.PARAM: priority, extra = -20, u.arg.slot
 #       case Ops.BUFFER | Ops.ALLOC: priority = -17 if u.addrspace == AddrSpace.LOCAL else -18
@@ -380,6 +403,12 @@ def lt_rc(vmaxs: List<&2, U32>) -> U32:
 #       case Ops.RANGE: priority = 5    # placing RANGE is good
 #       case Ops.END | Ops.BACKEDGE: priority = -5     # placing loop exits is bad
 #       case _: priority = 0            # everything else has priority 0
+#
+# AND THE THREE ARMS THAT CARRY THEIR OWN REASON INLINE -- upstream's own
+# comments on the ladder's arms -- are the whole of what the numbers mean:
+# "place loads early" (-1), "place stores late" (1), "placing RANGE is good"
+# (5), and "placing loop exits is bad" (-5). A LOOP EXIT is bad because it
+# ends a loop: hoisting it above the loop body would close the loop early.
 #
 # EVERY PRIORITY IS NEGATIVE and Bend has no signed `U32`, so this returns
 # `priority + 20`: the OFFSET, on 0..25, order-isomorphic to the priority. The
@@ -601,6 +630,25 @@ def LtKey.rc(x: LtKey) -> U32:
 # THE IDEAL ORDER -- `nkey = {u: i for i, u in enumerate(sorted(lst, key=...))}`,
 # linearizer.py:36. So `nkey` IS the POSITION in the sorted list and the whole
 # table is the sorted list: `lt_nkey` searches it.
+#
+# UPSTREAM'S TWO COMMENTS NAME THE TWO PHASES OF THE ALGORITHM, and they are
+# the whole of it:
+#
+#   "this is a toposort with priority" (9)
+#       so `linearize` is NOT a toposort -- it is a toposort that TRIES to
+#       honour a priority order. A plain toposort would be free to emit the
+#       nodes in any order consistent with the dependencies; this one emits
+#       the order that is as close to the IDEAL order as the dependencies
+#       allow.
+#   "number the uops in 'ideal' order" (35)
+#   "then force them to be toposorted in as close to the ideal order as
+#    possible" (38)
+#       so the algorithm is TWO PHASES. First the uops are NUMBERED by their
+#       ideal position -- that is the `nkey` table and it is a pure sort. Then
+#       the numbers are used as a PRIORITY in a heap that pops only nodes
+#       whose dependencies have all been emitted. So the ideal order is a
+#       suggestion and the dependencies are the constraint, and the heap is
+#       where the compromise is made.
 #
 # THE SORT KEY IS ONE `U32` (`lt_key`), which is what makes the comparator legal:
 # `List.sort`'s comparator type is `A -> A -> Bool` with `+` REFUSED on its
@@ -1373,6 +1421,28 @@ def cfg_cat(ys: List<&2, U32>, +xs: List<&2, U32>) -> List<&2, U32>:
     case +y <> +r : cfg_cat(r, cfg_cat.a(xs, y))
 
 # `for s in u.src: deps[u] |= deps[s]` -- :65, ONE fold over the node's srcs.
+#
+# UPSTREAM'S COMMENTS ON THE CFG CONTEXT ARE ITS DEFINITION, and the three
+# RELATIONSHIPS between ranges are the whole of what the edges mean:
+#
+#   "there are 3 relationships between ranges:" (55)
+#   "nested, meaning endrange y is a dependency of endrange x and range x is a
+#    dependency of endrange y" (56)
+#   "dependent, meaning endrange y is a dependency of endrange x and range x is
+#    not a dependency of endrange y" (57)
+#   "independent, endrange y is not a dependency of endrange x" (58)
+#   "everything is nested inside the sink" (59)
+#
+# so a pair of ranges is NESTED (mutually dependent -- the outer loop's exit
+# depends on the inner one and vice versa), DEPENDENT (one-directional), or
+# INDEPENDENT. The control-flow edges are built from the DEPENDENT and NESTED
+# cases only: an independent pair needs no edge and a nested pair is ordered
+# by nesting. The port's `Cfg{dp, ns}` is the DEPS table and the NESTING table.
+#
+# AND UPSTREAM'S COMMENT ON THE DEPENDENCY WALK: "get the deps from the src"
+# (63). So `deps[u]` is the TRANSITIVE closure over the srcs -- the union of
+# every src's own deps -- and it is computed in toposort order so a src's deps
+# are already final when the node is reached.
 def cfg_deps(ss: List<&2, U32>, +deps: RaTb, +acc: List<&2, U32>) -> List<&2, U32>:
   match ss:
     case Nil{}   : acc
@@ -1479,6 +1549,14 @@ def cfg_sib(+ns: RaTb) -> RaTb:
 # `lt_sorted` is for the linearizer's keys. `Sb` is therefore the SECOND
 # composite key in this file and it exists for the same reason as the first:
 # `List.sort` wants `A -> A -> Bool` and a count is not a field of the element.
+#
+# UPSTREAM'S COMMENT IS WHY THE SORT IS BY COUNT AND NOT BY ANY OTHER KEY:
+# "ranges that have dependencies on other siblings need to be scheduled after
+# them" (75). So the ORDER of two siblings is decided by how many of the
+# siblings each one depends on: the one that depends on MORE of them comes
+# LAST. That is a topological order computed by a COUNT rather than by a
+# comparison, and it is why the sort key is `len([u for u in v if u in
+# deps[x]])` and not the deps themselves.
 type Sb is Data:
   Sb{ks: U32, i: U32}
 
@@ -1536,6 +1614,14 @@ def cfg_order(+vs: List<&2, U32>, +deps: RaTb) -> List<&2, U32>:
 # has no such reader; :79's own comment says the assert "can happen" on
 # shufflenet, so it is a live guard, not a dead one. The claim that dropping it is
 # safe ON THIS FIXTURE is `cfg_edges_n` and the shape of `cfg_hits`.
+#
+# UPSTREAM'S OWN COMMENT ON THAT ASSERT IS WHY IT IS NOT DEAD CODE:
+# "TODO: this can happen! it causes infinite loop in shufflenet" (79). So the
+# assert guards a case that REALLY OCCURS -- two siblings whose ranges depend on
+# each other in a way the count-based order cannot express -- and the failure
+# mode is an INFINITE LOOP in the generated kernel, not a wrong answer. That is
+# why the port records it as W3 and does not pretend the port's edge set is
+# safe without it.
 def cfg_edge.put(+ed: RaTb, +ar: O.Arena, x: U32, y: U32) -> RaTb:
   tb_put(ed, O.Arena.src(ar, y, 1), x, Nil{})
 
@@ -1570,6 +1656,16 @@ def cfg_ed(ar: O.Arena, +c: Cfg) -> RaTb:
 # `pm_add_control_flow` -- linearizer.py:83-85. ONE rule, ONE op, and the whole
 # rewrite is `x.src + (edges[x],)`, so the table is two rows and the answer is
 # either the new node's src list or `-`.
+#
+# UPSTREAM'S COMMENT IS WHY THE EDGE GOES WHERE IT GOES, and it is a SHAPE
+# CONSTRAINT rather than a description: "the ordering dep goes on the bound
+# wrapped in AFTER, so a RANGE always has exactly one src" (84). A RANGE's
+# bound is where the loop's ORDER comes from, so the edge is attached to the
+# BOUND -- wrapped in an AFTER, so the dependency is expressed as a node -- and
+# a RANGE therefore always has EXACTLY ONE src. That is why the rewrite
+# APPENDS to the src list rather than replacing it: the RANGE's own bound stays
+# src[0] and the edge becomes src[1]. A port that put the edge first would
+# break every reader that assumes `src[0]` is the bound.
 
 def cfg_tbl() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsRANGE{}], Nil{}}]
@@ -1693,6 +1789,14 @@ def cfg_tbl_ops() -> String:
 # closed one. `se_rngs` is the row that would move if the arm were filled in for
 # a fixture that had a non-RANGE src, and `se_len` counts the END nodes actually
 # BUILT, so a stub that built one END instead of three would be caught.
+#
+# UPSTREAM'S COMMENT FOR THE RULE IS ONE WORD AND IT IS THE WHOLE THING:
+# "split the ends" (95). So a MULTI-range END -- one END over several ranges --
+# is SPLIT into one END per range, and the split is driven by the ranges'
+# own argument order (`sorted(rngs, key=lambda x: x.arg, reverse=True)`), so
+# the ranges come out in DESCENDING argument order. The port's `se_key`/`sb_ge`
+# is that sort, and the reverse is a FLIPPED COMPARISON over a stable merge and
+# not a reversal of the output.
 
 def se_dup1(+acc: List<&2, U32>, +s: U32) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, List.contains(U32, U32.is_eq, acc, s),

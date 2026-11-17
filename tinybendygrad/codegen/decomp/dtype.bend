@@ -565,6 +565,13 @@ def dd_cast_sel(lng: Bool, srcfl: Bool, flt: Bool) -> U32:
 # for `l2i_dt[ulong]` = `u32` exactly as it is for `int`. MEASURED: the `u32`
 # fixture `lg6` answers `CAST(u32)` over `CONST arg=-1`. A `U32`-typed parameter
 # cannot spell `-1`, which is the reason `dd_clike` takes an `H.I64`.
+#
+# UPSTREAM'S COMMENT ON THAT ARM IS THE RULE IT IS: "the high word is the sign
+# extension, and unsigned and bool sources zero extend" (28). So the HIGH WORD
+# of a widened value is either the SIGN EXTENSION of the low word or ZERO --
+# and which one it is depends on the SOURCE's signedness, with bool counting as
+# unsigned. That is why the arm is keyed on `x.dtype is dtypes.bool or
+# x.dtype in dtypes.uints` and not on the TARGET.
 
 def l2i_cast0.sgn(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt) -> O.Found:
   +x0 = dd_clike(ar, H.i64_of_i32(0), xdt)
@@ -1023,7 +1030,13 @@ def Cd.bn(x: Cd) -> U32:
 
 # `l2i(Ops.NEG, dtypes.uint, ua0, ua1)` -- the NEG arm, which is
 # `l2i(SUB, dt, zero, zero, *uops)` and so is two SUBTRACTs from `zero`.
-
+#
+# UPSTREAM'S COMMENT ON THE WHOLE DIVISION ARM IS WHY IT IS A LOOP AND NOT A
+# FORMULA: "TAOCP Algorithm 4.3.1D could be faster here, but must be
+# parameterized over the width of b" (56). So the RESTORING division is used
+# because it can be PARAMETERIZED over the divisor's width -- the loop runs 64
+# times because the operands are 64 bits -- while the faster TAOCP algorithm
+# would have to be written per width. The port's `l2i_cdiv` is that loop.
 def l2i_cdiv.neg(+ar: O.Arena, +z: U32, +a0: U32, +a1: U32) -> W2:
   l2i_sub(ar, S.uint32(), S.uint32(), ws4(z, z, a0, a1))
 
@@ -1341,6 +1354,13 @@ def l2i(+ar: O.Arena, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> M
   # 23-25. A one-word CAST does not fail: arms 0 and 1 read `uops[0]`, not `a0`.
   # An arm that reads `a0` (`:39`, the float-target arm) raises `UnboundLocalError`
   # on one word. That is not `NotImplementedError`.
+  #
+  # UPSTREAM'S COMMENT ON THE WHOLE FUNCTION IS A CITATION AND IT IS THE
+  # REASON THE ARITHMETIC LOOKS THE WAY IT DOES: "4.3.1 is the relevant section
+  # in TAOCP" (20). So the 64-bit arithmetic here is TAOCP's Algorithm 4.3.1
+  # -- the multiword division -- and a reader who wants to know why a multiply
+  # is expanded into four partial products wants THAT section and not this
+  # file.
   +zero = dd_const.int(ar, H.i64_of_i32(0), dt)
   l2i.go(O.Found.ar(zero), O.Found.i(zero), op, dt, xdt, ws)
 
@@ -1349,7 +1369,12 @@ def l2i(+ar: O.Arena, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> M
 # `arg` is a `ParamArg` and `dataclasses.replace` is a full rebuild, so all
 # thirteen of its fields are read and handed back -- only `dtype` and `size`
 # change. `src` is empty, which is what `UOp(x.op, arg=...)` builds.
-
+#
+# UPSTREAM'S COMMENT IS WHY THE RULE REFUSES AN ALU PARAM: "cannot decomp a
+# Variable" (83). A VARIABLE is a symbolic scalar bound by the enclosing
+# scope -- it has no storage and no width to split -- so a long variable
+# cannot be decomposed into two 32-bit words. Upstream RAISES there and the
+# port answers "no node", which is the same direction.
 def l2i_define.size2(m: Maybe<&2, U32>) -> Maybe<&2, U32>:
   match m:
     case Some{n}: Some{U32.mul(n, 2)}
@@ -1688,7 +1713,26 @@ def f2f.isnan(+ar: O.Arena, +ns: O.Found, +ex: O.Found, +fe: U32, +fm: U32, e4m3
       dd_eq1(O.Found.ar(m), O.Found.i(ex), O.Found.i(m))
 
 # ---- NARROWING
-
+#
+# UPSTREAM'S THREE COMMENTS ON THE NARROWING BRANCH ARE THE OTHER THREE
+# FLOATING-POINT SURPRISES, AND EACH IS A RULE:
+#
+#   "denormals are zero, but within half a denormal ulp of the smallest normal
+#    rounds up to it" (114)
+#       so a NARROWING is not symmetric with a widening: the denormals go to
+#       zero, but a value within HALF a denormal ulp of the smallest normal
+#       rounds UP to the smallest normal instead. That is the round-to-nearest
+#       boundary and it is the reason the `underflow` test compares against
+#       `min_norm - shl(1, fm - tm)` and not against zero.
+#   "top is one past the largest finite, inf or the nan of formats without inf"
+#       (118)
+#       so the clamp ceiling is a value ONE PAST the largest finite number --
+#       the place where the infinity goes -- and for the formats that have no
+#       infinity the ceiling is the NaN instead.
+#   "fnuz has one nan and no -0" (122)
+#       so the FNUZ formats have their own tail: one NaN and no negative zero.
+#       A negative zero would be flushed to zero, which is why the fnuz arm is
+#       separate rather than a flag on the ordinary one.
 def f2f.ocp(e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32) -> O.Found:
   +i = f2f.isnan(ar, ns, ex, fe, fm, e4m3)
   +z = dd_wk(O.Found.ar(i), H.i64_of_i32(0))
@@ -1705,6 +1749,18 @@ def f2f.up.tail(fnuz: Bool, e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found
     case False{}: f2f.ocp(e4m3, ar, ns, sg, ex, nm, nn, fe, fm)
 
 def f2f.up(+fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S.Dt, +to: S.Dt) -> O.Found:
+  #
+  # UPSTREAM'S COMMENT ON THE WIDENING BRANCH IS THE FIRST OF THE FOUR
+  # FLOATING-POINT SURPRISES AND IT IS A CORRECTNESS RULE, NOT A NICETY:
+  # "NB: denormals are zero!" (100). A DENORMAL -- a value too small to have
+  # the normal exponent -- is flushed to zero in the widening direction. The
+  # widening branch is the `fe <= te and fm < tm` one, and upstream marks the
+  # whole comment with `NB`.
+  #
+  # AND THE fp8e4m3 EXCEPTION IS ITS OWN LINE: "fp8e4m3 has only one nan"
+  # (109). So the NaN test differs between the formats -- the e4m3 format has
+  # ONE NaN pattern and the others have several -- and the port's
+  # `f2f.isnan` is the two-armed test that carries it.
   +udt = f2f.udt(to)
   +fs = S.Dt.bits(fr)
   +ts = S.Dt.bits(to)
@@ -1949,11 +2005,43 @@ def dd_ops.all() -> List<&2, O.Op>:
    O.OpsSPECIAL{}, O.OpsSQRT{}, O.OpsSTACK{}, O.OpsSTAGE{}, O.OpsSTORE{}, O.OpsSUB{}, O.OpsTHREEFRY{},
    O.OpsTRUNC{}, O.OpsUNSHARD{}, O.OpsWHERE{}, O.OpsWMMA{}, O.OpsXOR{}]
 
+# UPSTREAM'S RULE COMMENTS ARE THE TABLE'S DOCSTRING, AND EACH ONE IS A
+# PRECONDITION OR A GOTCHA:
+#
+#   "the decomp's own bottom-up rewrite can mint bare consts mid-flight: word
+#    splitting commits them at the long sibling's dtype" (144)
+#       so rule 0 is EVERY op, and it exists to catch the bare consts the
+#       decomp's own bottom-up rewrite produces. The const is committed at the
+#       dtype of the LONG SIBLING -- the word it is a word of -- and not at
+#       its own default.
+#   "long stores, comparisons and casts out of long consume the words of their
+#    long srcs, a stored word is no longer long" (147)
+#       so a STORE of a long is a store of two 32-bit WORDS, and the word is
+#       no longer a long -- which is why the rule consumes the words rather
+#       than keeping the long.
+#   "a pair becomes the STACK of the long's two words" (153)
+#       so a long's "pair" -- the long bitcast to two words -- is a STACK of
+#       two words, and indexing into it selects a word.
+#
+# AND UPSTREAM DEFINES THE PAIR ITSELF: "the pair of a long is the long bitcast
+# to two words, its words are the pair's lanes" (88). So the PAIR is a VIEW --
+# the long seen as two 32-bit words -- and the pair's LANES are the words. The
+# words are not a separate value; they are the pair's lanes, which is why
+# `l2i_words` is a LIST of the pair's two lanes and not a pair of lists.
+#   "a const splits by value, the general CAST below would drop its high word"
+#       (155)
+#       and THIS is a gotcha: a CONST cast to a long is split BY VALUE into
+#       its low and high words, because the general CAST rule would take the
+#       low word and DROP the high one.
+#   "a cast between long dtypes reinterprets the words, a bare const src
+#    commits at the long dtype" (160)
+#       so a cast BETWEEN two long dtypes is a REINTERPRETATION of the words
+#       and not a conversion.
+#
 def pm_long_decomp() -> O.PMEntrys:
   O.PMEntrys{[
     # 150  GroupOp.All, any dtype
-    O.PMEntry{0,  dd_ops.all(), Nil{}},
-    # 151  GroupOp.Defines at a long dtype
+    O.PMEntry{0,  dd_ops.all(), Nil{}},    # 151  GroupOp.Defines at a long dtype
     O.PMEntry{1,  [O.OpsALLOC{}, O.OpsBUFFER{}, O.OpsPARAM{}], Nil{}},
     # 152  INDEX at a long dtype
     O.PMEntry{2,  [O.OpsINDEX{}], Nil{}},
@@ -1978,6 +2066,23 @@ def pm_long_decomp() -> O.PMEntrys:
     # 176  LOAD at a long dtype
     O.PMEntry{12, [O.OpsLOAD{}], Nil{}}]}
 
+# UPSTREAM'S RULE COMMENTS FOR THE FLOAT TABLE, AND EACH ONE IS A PRECONDITION
+# OR A GOTCHA:
+#
+#   "INDEX into a LOAD/STACK selects a lane of an already converted value, the
+#    load rules below own those" (170)
+#       so the INDEX rule does NOT convert -- it converts the thing the INDEX
+#       reads and lets the LOAD rule do the work. The two rules are ORDERED and
+#       the INDEX one defers.
+#   "bitcasted load should just replace load" (174)
+#       so a BITCAST over a LOAD is handled by rewriting the LOAD itself
+#       rather than by casting the loaded value.
+#   "bitcast from" (177)
+#   "bitcast to" (180)
+#       the two directions, and they are NOT symmetric: the "from" direction
+#       converts the SOURCE's bits and the "to" direction converts the
+#       INTERPRETATION.
+#
 def pm_float_decomp() -> O.PMEntrys:
   O.PMEntrys{[
     # 182  GroupOp.Defines at a float dtype
@@ -2054,6 +2159,19 @@ def f2f_rewrite(ctx: U32, x: U32) -> Maybe<&2, U32>:
 # wall is the TABLE CHOICE: `pm = pm_float_decomp if fr in dtypes.floats else
 # pm_long_decomp`, which is the difference between decomposing a long and
 # decomposing a float, so it is a `Bool` the gate reads.
+#
+# UPSTREAM'S TWO RULE COMMENTS NAME THE TWO PHASES OF THE TABLE:
+#
+#   "detect dtypes to decompose" (209)
+#       so the FIRST rule does not decompose -- it DETECTS. It walks every
+#       node and records the dtype that has to be emulated, and the SECOND
+#       rule does the actual work. That is why the detection is a `set` in
+#       the context and why the decomposition loop runs once per dtype.
+#   "do the rewrites" (212)
+#       and the decomposition is per-dtype and BOTTOM-UP: `fr in dtypes.floats`
+#       picks the float table and everything else picks the long one, and the
+#       dtype is decomposed into `int` for a long and into `float` for a
+#       float.
 
 def do_dtype_decomps.pmf(isfl: Bool, fr: S.Dt, c: U32) -> O.PMEntrys:
   match isfl:

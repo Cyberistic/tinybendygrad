@@ -377,6 +377,13 @@ def tx_int_dt(dt: S.Dt) -> S.Dt:
 # pre-converts double-converts: `tx_int_dt(S.int32())` is not `S.int32()` but
 # `S.int64()` (pri 5 is neither 12 nor 14), and the rintk CAST comes out `long`
 # where the oracle says `int` -- `a_cw 23`, `a_xsinf 39`, `a_xsin 143`.
+#
+# UPSTREAM'S DOCSTRING IS THE CONTRACT AND "AWAY FROM 0" IS THE PART THAT
+# MATTERS: "round d:float to int away from 0" (22-23). So it is NOT a
+# round-half-to-even and NOT a round-half-away -- the HALF is added AWAY from
+# zero, so a negative half rounds DOWN and a positive half rounds UP. The
+# port's `rintk` adds `-0.5` for a negative value and `+0.5` for a positive
+# one and then truncates, and that is exactly it.
 def rintk(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +z = tx_cf(ar, 0.0)
   +c = tx_alu2(O.Found.ar(z), O.OpsCMPLT{}, d, O.Found.i(z))
@@ -422,6 +429,11 @@ def tx_sub(+ar: O.Arena, +x: U32, +y: U32, pf: Bool) -> O.Found:
 # `pow2if` -- lines 27-30. `q.dtype` picks `out_dtype`; the port takes it as a
 # parameter, because a CONST has no dtype to read (divergence B) and `qexp2if`'s
 # three callers all pass the same width as `d`.
+#
+# UPSTREAM'S DOCSTRING IS THE PRECONDITION: "cast(2^q, float_dtype) where q is
+# any integer in the range of [-126, 127]" (28). So the answer is the FLOAT
+# whose value is 2^q and the q has to be in the range a float's exponent can
+# hold -- outside that range the bit trick does not produce a float at all.
 def pow2if(+ar: O.Arena, +q: U32, +out: S.Dt) -> O.Found:
   +b = tx_ci(ar, exponent_bias(out))
   +s = tx_alu2(O.Found.ar(b), O.OpsADD{}, q, O.Found.i(b))
@@ -430,6 +442,19 @@ def pow2if(+ar: O.Arena, +q: U32, +out: S.Dt) -> O.Found:
 
 # `ilogb2k` -- lines 32-37. A BITCAST down, a shift, a mask, and a subtraction
 # written `ADD(x, MUL(bias, C(-1)))` because that is what `-` is (divergence B).
+#
+# UPSTREAM'S COMMENT IS THE RESULT'S RANGE AND IT IS WHY THE BIAS IS
+# SUBTRACTED: "-1 <= ilog2bk(d) <= 128" (36). So the answer is the LOGARITHM
+# of a NORMALISED value and it is allowed to be negative -- a value below 1 has
+# a negative logarithm -- and it never exceeds 128 because the widest float's
+# exponent field is that wide. The bias subtraction is what makes the answer
+# an exponent rather than a biased field value.
+#
+# AND UPSTREAM'S DOCSTRING SAYS WHAT THE INPUT MUST BE: "calculate the integer
+# part of log2(d), where d is normalized fp value in the range of [0, +inf)"
+# (33). So the INPUT is a NORMALISED float -- not a denormal and not a
+# negative one -- and the caller is what guarantees it. The port's `xlog2`
+# scales the denormals up before this call for exactly that reason.
 def ilogb2k(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +b = tx_bitcast(ar, d, tx_int_dt(dt))
   +f = tx_shr(O.Found.ar(b), O.Found.i(b), mantissa_bits(dt))
@@ -441,6 +466,13 @@ def ilogb2k(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   tx_alu2(O.Found.ar(x), O.OpsADD{}, O.Found.i(a), O.Found.i(x))
 
 # `ldexp3k` -- lines 39-45.
+#
+# UPSTREAM'S DOCSTRING IS THE EXACT CONTRACT AND THE "3k" IN THE NAME IS THE
+# THREE-WORD FORM: "d*2^e. e is a number obtained by casting an integer in the
+# range [-127, 127] to a float. d is any float number." (40). So the
+# exponent arrives as a FLOAT and the range is the float's exponent range --
+# and the "3k" says the answer is built by ADDING a shifted exponent to the
+# mantissa, which is THREE operations on the bit level.
 def ldexp3k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
   +m1 = tx_bitcast(ar, d, tx_int_dt(dt))
   +ec = tx_cast(O.Found.ar(m1), e, tx_int_dt(dt))
@@ -450,6 +482,13 @@ def ldexp3k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
 
 # `ldexp2k` -- lines 47-50. `shr(e, 1)` is `e // 2` and the WHOLE of this
 # function's use of the dead UOp arm of `shr` is that `1`.
+#
+# AND UPSTREAM'S DOCSTRING IS A WARNING, NOT A DESCRIPTION: "d*2^e. much
+# faster than ldexp3k but risky. d > 0 and d is not denormal." (48). So the
+# "2k" form splits the exponent in half and uses two `pow2if`s -- which is
+# faster because it avoids the bit-level add -- and it is RISKY because it
+# requires a POSITIVE, NON-DENORMAL `d`. A caller that does not guarantee that
+# gets a wrong answer rather than an error.
 def ldexp2k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
   +h = tx_shr(ar, e, 1)
   +a = pow2if(O.Found.ar(h), O.Found.i(h), dt)
@@ -461,6 +500,11 @@ def ldexp2k(+ar: O.Arena, +d: U32, +e: U32, +dt: S.Dt) -> O.Found:
 # `frexp` -- lines 52-63. It returns a TUPLE and Bend has no tuple, so the pair
 # rides in a `Data` record with the arena beside it: `(Arena, U32, U32)` is not a
 # Bend type and `tx_ph` needs all three at once.
+#
+# AND UPSTREAM'S DOCSTRING IS THE PRECONDITION: "frexp(v) -> (mantissa,
+# exponent) assuming v != 0" (53). So the ZERO case is excluded -- the
+# mantissa of zero is not a mantissa and the exponent is not defined -- and
+# the caller is what guarantees `v != 0`.
 type Frexp is Data:
   Frexp{ar: O.Arena, m: U32, e: U32}
 
@@ -491,6 +535,18 @@ def frexp.exponent(+ar: O.Arena, +bits: U32, +dt: S.Dt) -> O.Found:
 # bias, so the two are not symmetric and cannot be derived from each other. For
 # float64 they are 64-bit, which is the other place this file needs a word wider
 # than `U32` -- and it is a CONSTANT again.
+#
+# UPSTREAM'S COMMENT NAMES THE TWO MASKS' JOBS, WHICH ARE DIFFERENT ROLES AND
+# NOT TWO KINDS OF THE SAME MASK: "m1 = masks for mantissa, m2 = masks to
+# normalize the mantissa" (55). `m1` KEEPS the mantissa's bits and `m2` SETS
+# the exponent to the halfway value -- so the two are used in different
+# places and a reader who thinks of them as a pair will get one of them wrong.
+#
+# AND THE SECOND HALF IS WHAT THE NORMALISATION IS FOR: "Set the exponent bits
+# appropriately to normalize the mantissa into the range of [0.5, 1.0)" (60).
+# So `frexp` returns a mantissa in `[0.5, 1.0)` -- NOT in `[1, 2)` -- and the
+# exponent it returns is therefore one MORE than the raw biased exponent. The
+# port's `frexp.exponent` is the raw one and the `+1` is in the caller.
 def frexp.m1(dt: S.Dt) -> H.I64:
   match dt:
     case S.Dt{pri, bits, cls, nm}:
@@ -644,6 +700,12 @@ def trig_poly(+ar: O.Arena, +d: U32, cs: List<&2, F32>) -> O.Found:
   tx_alu2(O.Found.ar(p), O.OpsMUL{}, d, O.Found.i(p))
 
 # `sin_poly` -- approximate sine on [-pi/2, pi/2].
+#
+# UPSTREAM'S COMMENT IS THE POLYNOMIAL'S DOMAIN AND IT IS THE WHOLE REASON
+# THE ARGUMENT IS REDUCED FIRST: "approximate sine on [-pi/2, pi/2]" (151). So
+# the polynomial is only correct on that interval, and the argument reduction
+# is what puts it there. The port's `sin_poly` is that polynomial and the
+# reduction is `cody_waite_reduction` / `payne_hanek_reduction`.
 def sin_poly(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
   trig_poly(ar, d, trig_coeffs(d64))
 
@@ -711,6 +773,13 @@ def Red.q(+x: Red) -> U32:
 # 190 bits of 2/pi for Payne-Hanek style argument reduction -- line 77. The
 # `1 << n` ARE REAL SHIFTS in Python because the literals are hex ints; here they
 # are the already-shifted values, and `a_ph44` is the row.
+#
+# UPSTREAM'S COMMENT ON THE TABLE IS ITS SIZE AND WHY THAT SIZE: "190 bits of
+# 2/pi for Payne-Hanek style argument reduction" (76). So the table is a
+# FIXED-PRECISION APPROXIMATION of 2/pi and its precision is what bounds the
+# argument the reduction can handle -- the method needs enough bits of 2/pi to
+# cover the whole magnitude of the argument.
+#
 # Only `two_over_pi_f[0..5]` is EVER read -- `count+offset < len-1` caps the index
 # at 5 -- so index 6 is dead. It is spelled right anyway (`0x4f10e410`), because a
 # wrong constant in a table is a lie the gate cannot see.
@@ -777,6 +846,12 @@ def hp_mul(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
 # `a = [_take(UOp.const(0, dtypes.u32), k) for k in range(4)]` -- line 96.
 # FOUR CALLS, NOT A FOLD: the comprehension's `k` is a Python int, so the four
 # fuel depths are 6, 5, 4 and 3 AT COMPILE TIME and a `range` is four literals.
+#
+# AND THE FOUR ARE THE "96 relevant bits" UPSTREAM NAMES: "extract 96 relevant
+# bits of 2/pi based on magnitude of argument" (83). The FOUR slices are 24
+# bits each and the window into the table is chosen by the argument's
+# MAGNITUDE -- a bigger argument needs a different part of the 2/pi table,
+# because the reduction has to keep a fixed number of SIGNIFICANT bits.
 def tx_pa0(+ar: O.Arena, +i: U32, +an: O.Found) -> O.Found: ph_take(6n, 0, ar, i, an, 0)
 def tx_pa1(+ar: O.Arena, +i: U32, +an: O.Found) -> O.Found: ph_take(5n, 0, ar, i, an, 1)
 def tx_pa2(+ar: O.Arena, +i: U32, +an: O.Found) -> O.Found: ph_take(4n, 0, ar, i, an, 2)
@@ -829,6 +904,14 @@ def tx_pas(+ar: O.Arena, +i: U32) -> As:
 # `hi = _shl_lazy(a[0], e) | _shr_lazy(a[1], offset)`, `mi` from (1,2) and `lo`
 # from (2,3) -- lines 99-101. `offset` is the `nbits - e`, a UOp, so the shift
 # AMOUNT is a node's src1 and not a CONST. `a_ph67` is the row.
+#
+# UPSTREAM'S COMMENT GIVES THE FORMULA AND THEN ASSUMES SOMETHING, AND THE
+# ASSUMPTION IS THE GOTCHA: " (two_over_pi_f[Int(i) + n] << e) | (two_over_pi_f[Int(i)
+# + n+1] >> (nbits - e))" (97) and "Note: e >= 1 for all numbers d >= 1.0.
+# assume e != 0" (98). So the exponent `e` is ASSUMED NON-ZERO -- a zero
+# exponent would make the left shift a no-op and the whole slice would be
+# wrong. The assumption holds because `d >= 1.0` implies a non-zero exponent,
+# and the CALLER is what guarantees `d >= 1.0`.
 def ph_mix(+ar: O.Arena, +az: As, +e: U32, +off: U32, +k: U32) -> O.Found:
   +s = shl_lazy(ar, As.at(az, k), e)
   +t = shr_lazy(O.Found.ar(s), As.at(az, U32.add(k, 1)), off)
@@ -847,6 +930,13 @@ def ph_lo(+ar: O.Arena, +az: As, +e: U32, +off: U32) -> O.Found:
 # -- line 105. Three 64-bit products and three CONSTs, and `2**32` is interned ONCE
 # because `shl` and `shr` both mint it and the arena interns it. `a_ph88` is the
 # row and `n_ph` is the count that says how big this is.
+#
+# UPSTREAM'S COMMENT IS THE WHOLE POINT OF THE STEP: "compute x * 2/pi" (104).
+# So `ia` is the ARGUMENT scaled to an integer and `p` is the argument TIMES
+# 2/pi -- which is the number whose INTEGER PART is the quadrant and whose
+# FRACTION is the remainder. Everything after this line is reading those two
+# parts out of one number.
+#
 # every step takes the previous step's arena. Written as `hp_mul(ar, ...)` then
 # `tx_ci64(ar, ...)`, the compiler is free to evaluate them in either order and
 # it chose the const first, which put `ci1:0` at `a_ph88` instead of `a_ph90` and
@@ -865,6 +955,19 @@ def ph_p(+ar: O.Arena, +ia: O.Found, +hi: O.Found, +mi: O.Found, +lo: O.Found) -
 # Lines 108-113: the quotient, the masked remainder, the scaled remainder, and
 # the `f < 0.5` quadrant correction. The `2**62` and the 62-bit mask are the two
 # 64-bit CONSTANTS of the whole file and `H.i64_of_hi_lo` mints both.
+#
+# UPSTREAM'S TWO COMMENTS HERE ARE THE QUOTIENT'S TWO STEPS AND THE LAST ONE
+# IS THE CORRECTION:
+#
+#   "round quotient to nearest" (107)
+#       so the quotient is ROUNDED -- `p >> 62` -- and not truncated. The
+#       remainder is then the bits BELOW the rounding point, masked off.
+#   "if fraction >= 0.5, r -= pi/2, q += 1" (112)
+#       and that is the carry into the NEXT QUADRANT: a fraction of half a
+#       quadrant or more means the remainder is past the end of this one, so
+#       pi/2 is subtracted and the quadrant counter is incremented. The
+#       condition is `f < 0.5` -- the OTHER half -- because the mantissa's
+#       fraction is what says which side of the boundary the argument is on.
 #
 # `p.cast(intermediate_dtype)` IS uint64 -> float32 and is therefore a REAL CAST
 # (`a_ph104`); only the SECOND cast, `.cast(d.dtype)`, is the one `same` answers,
@@ -933,6 +1036,20 @@ def ph_off(+ar: O.Arena, +ec: O.Found) -> O.Found:
 # what keeps a step alive; the arena IS the side effect.
 def payne_hanek_reduction(+ar: O.Arena, +d: U32, +dt: S.Dt, +same: Bool,
                            +inter: S.Dt) -> Red:
+  #
+  # UPSTREAM'S DOCSTRING IS THE FUNCTION'S DOMAIN AND IT IS EXACTLY WHERE
+  # THE OTHER METHOD STOPS: "Performs Payne-Hanek Reduction: computes the
+  # remainder of `d` modulo pi/2 for the values `d` where 39800.0 <= d <=
+  # +Inf" (67-69). So the payne-hanek method is the one for the LARGE
+  # arguments -- 39800 and up -- and cody-waite is the one below that. The
+  # two boundaries meet and `xsin` switches on the threshold.
+  #
+  # AND THE RETURN IS TWO NUMBERS WITH DIFFERENT TYPES, WHICH IS THE POINT:
+  # "`r`[d.dtype] is the reminder value corresponding to `round_to_nearest(x %
+  # pi/2)`. `q`[int32] is an integer, and q % 4 is corresponding to the
+  # quadrant of the original angle `d`" (70-72). So the remainder is a FLOAT
+  # and the quadrant is an INT32 and the quadrant is only MEANINGFUL MODULO
+  # 4 -- the sine and cosine polynomials need the two low bits.
   +fx = frexp(ar, d, dt, S.uint32())
   +f = Frexp.m(fx)
   +e = Frexp.e(fx)
@@ -1014,6 +1131,15 @@ def cw_quadrant(+ar: O.Arena, +d: U32, +dt: S.Dt, +qdh: U32, d64: Bool) -> O.Fou
 # unconditionally (header note 4), then `quadrant`, then `_reduce_d`, and
 # `quadrant.cast(dtypes.i32)` LAST AND ELIDED because the quadrant is already
 # int32 -- which is why the port's second return value needs no node.
+#
+# UPSTREAM'S DOCSTRING IS THE FUNCTION'S DOMAIN AND IT IS THE REASON THE TWO
+# REDUCTIONS ARE BOTH HERE: "Performs Cody-Waite Reduction: computes the
+# reminder of `d` modulo pi/2 for the values `d` where 0 <= abs(d) <= 39800.0"
+# (117-118), and "Returns a tuple of `(r, q)`, where the output format is the
+# same as that of `payne_hanek_reduction`" (119). So the two methods have the
+# SAME OUTPUT SHAPE and DIFFERENT DOMAINS, and `xsin` picks between them on
+# the magnitude of the argument. The port's `Red{r, q}` is that shared shape.
+#
 # The float64 arm of `_reduce_d` -- lines 123-132, sleefdp.c. Six MULs and six
 # ADDs and the LAST addend is `(qdh + q) * -PI_D`, so the quadrant sum is
 # formed ONCE. Header note 2 is why this is a def and not a self-call.
@@ -1052,6 +1178,13 @@ def tx_cw64.chain(+ar: O.Arena, +x: U32, +q: U32, +qdh: U32) -> O.Found:
 # arm, which is why the unroll is `tx_cw32`/`tx_cw64` for the other two and a
 # THIRD def here. Header note 2 says the unroll is not a convenience; this arm is
 # why the unroll has a boundary at all. NOT GATED -- the oracle's fixture is
+#
+# AND UPSTREAM'S OWN COMMENT ON THAT ARM IS AN OPEN FIXME AND IT IS ABOUT
+# PRECISION, NOT ABOUT CORRECTNESS: "[FIXME] when reducing `d`, FP16 needs FP32
+# precision to achieve 1.0 ULP precision" (134). So the float16 reduction is
+# done in float32 and cast back -- which is what the recursion does -- and the
+# FIXME says the result still does not reach 1.0 ULP. Upstream says so and the
+# port carries the arm as it stands.
 # float32 -- and it is written rather than stubbed because a float16 that built
 # the float32 chain would be a WRONG TREE rather than a missing one.
 def tx_cw16.chain(+ar: O.Arena, +x: U32, +q: U32, +dt: S.Dt) -> O.Found:
@@ -1114,6 +1247,13 @@ def tx_nan() -> F32: F32.div(0.0, 0.0)
 # innermost `x.ne(-inf).where(ratio, _inf)` is the FIRST node after the three
 # CMPNEs; `a_xexp2 15` is the row.
 #
+# AND UPSTREAM'S DOCSTRING IS THE FOUR-WAY MAP AND IT IS EXACTLY FOUR CASES:
+# "replace inf -> inf, -inf -> _inf, nan -> nan, otherwise -> ratio" (10). So
+# the three SPECIAL values are passed through to three different constants and
+# everything else takes the ratio. That is what lets a caller say "the
+# infinities and the NaN become zero for the computation and are restored at
+# the end" without the computation ever seeing a special value.
+#
 # `math.inf` and `-math.inf` are literals in the body and are not the `inf` and
 # `_inf` PARAMETERS -- `inf` is the caller's `d.const_like(...)` and it only
 # appears in the OUTERMOST `where`. So this def mints the two itself: for
@@ -1136,6 +1276,11 @@ def tx_lazy_map(+ar: O.Arena, +x: U32, +inf: U32, +_inf: U32, +nan: U32,
 # x.const_like(0))` -- line 180. `0` is an INT literal and `x` is a float, so
 # `_broadcasted` mints the weakint CONST and then re-mints it, and BOTH are arena
 # slots: `a_xsin18` is the one nothing reads.
+#
+# UPSTREAM'S COMMENT NAMES WHAT THE VALUE IS AND IT IS NOT THE SIGN BIT:
+# "x_sign = sign(x)" (179). So it is the SIGN AS A NUMBER -- minus one, plus
+# one, or zero -- and not a bit and not a mask. The port's `xsin.sign` is that
+# three-way value, and it is what the ABSOLUTE VALUE is computed from.
 def xsin.sign(+ar: O.Arena, +x: U32) -> O.Found:
   +z = tx_pintf(ar, 0)
   +n1 = tx_ne(O.Found.ar(z), x, O.Found.i(z))
@@ -1148,6 +1293,34 @@ def xsin.sign(+ar: O.Arena, +x: U32) -> O.Found:
 # `xsin` -- lines 170-191. `fast` and `switch_over` are PARAMETERS because they
 # are PARAMETERS in Python (`fast:bool=False, switch_over:float=30.0`), and
 # `Config` does not exist in Bend.
+#
+# AND UPSTREAM'S DOCSTRING IS THE PRECISION CLAIM AND THE TWO PARAMETERS'
+# MEANING: "Implements a 1.0 ULP approximation for Ops.SIN. fast=True assumes x
+# <= switch_over. switch_over is the threshold for switching to
+# payne_hanek_reduction." (171-174). So `fast` is the ASSUMPTION that the
+# argument is small enough for cody-waite, and `switch_over` is where the
+# switch happens -- and the caller has to honour the assumption when `fast`
+# is set.
+#
+# UPSTREAM'S THREE COMMENTS ON IT ARE THE THREE THINGS THE FUNCTION DOES THAT
+# A READER WOULD NOT GUESS:
+#
+#   "mask +-inf/nan as zero" (177)
+#       so the infinities and the NaN are REPLACED BY ZERO before anything
+#       else happens -- the argument is made finite, and the special values
+#       are restored at the very end. That is why the reduction never sees
+#       them.
+#   "Payne Hanek Reduction assumes abs(x) >= pi/4, so for smaller values, use
+#    cody_waite_reduction." (185)
+#       and THIS is the reason the slow arm computes BOTH reductions: the
+#       payne-hanek one is only valid for a large enough argument, so the
+#       small-argument case uses cody-waite and the two are SELECTED on the
+#       switch-over threshold. The port's `xsin.slow` builds both and the
+#       WHERE picks between them.
+#   "adjusts the sign for abs(x)" (188)
+#       so the polynomial is evaluated on the ABSOLUTE VALUE and the sign is
+#       put back afterwards -- and the sign is put back by MULTIPLICATION by
+#       the `x_sign` value, which is why a zero argument stays zero.
 #
 # THE ORDER of the non-fast arm is NOT the order of the source lines and that is
 # the whole point of the `a_xsin` window. Python evaluates
@@ -1208,7 +1381,35 @@ def exp_coeffs(d64: Bool) -> List<&2, F32>:
     case False{}: EXP232()
 
 # `xexp2` -- lines 193-217. Paper https://arxiv.org/pdf/2001.09258.
-
+#
+# AND UPSTREAM'S DOCSTRING IS THE PRECISION CLAIM: "Implements a 1.0 ULP
+# approximation for Ops.EXP2" (194-195). So the whole expansion is a claim
+# about the ACCURACY, and the polynomial's 13 terms are what buy it.
+#
+# UPSTREAM'S FIVE COMMENTS ON IT ARE THE ALGORITHM'S STEPS AND TWO OF THEM
+# ARE CORRECTNESS RULES AT THE ENDS:
+#
+#   "mask +=inf/nan as zero." (199)
+#       so the infinities and the NaN are made ZERO first and restored at the
+#       end -- the polynomial is only ever evaluated on a finite value.
+#   "s = d - round(d)" (202)
+#       so the argument is SPLIT into an integer part and a fraction, and only
+#       the fraction is approximated.
+#   "a polynomial approximation with 13 non-zero terms in the range of
+#    [−(log 2)/2,(log 2)/2]" (204)
+#       and the range is the polynomial's DOMAIN -- the fraction is always
+#       within half a logarithm of an integer, so the polynomial only has to
+#       be right on that half-interval.
+#   "Replace x >= upper with +inf" (212)
+#   "Replace x < lower with zero." (214)
+#       so the two OVERFLOW clamps are applied to the RESULT and they are
+#       applied to the ORIGINAL argument `d` and not to the polynomial's
+#       output -- the overflow of exp2 is a property of the argument's
+#       magnitude, not of the approximation's error.
+#   "exp2(NaN) = NaN" (216)
+#       and the NaN check comes LAST, after the clamps, because a NaN
+#       argument was masked to zero and would otherwise come out as one.
+#
 def xexp2.tail.nan(+ar: O.Arena, +u: U32, +d: U32) -> O.Found:
   +nn = tx_ne(ar, d, d)
   +nan = tx_cf(O.Found.ar(nn), tx_nan())
@@ -1254,6 +1455,35 @@ def xexp2(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
 # LINEAR DEF: the function is a straight-line chain of 33 steps and Bend's only
 # loop is a self-call, so splitting it would mean threading `(Arena, U32)` pairs
 # through four carriers for no gain.
+#
+# AND UPSTREAM'S DOCSTRING IS THE PRECISION CLAIM: "Implements a 1.0 ULP
+# approximation for Ops.LOG2" (220-221).
+#
+# UPSTREAM'S SIX COMMENTS ON IT ARE THE SPECIAL-CASE RULES AND THE ORDER THEY
+# ARE APPLIED IN, AND THE ORDER IS THE POINT:
+#
+#   "float16 uses 2^10 for denormal scaling (2^64 overflows), float32/64 use
+#    2^64" (225)
+#       so a DENORMAL is scaled UP by a power of two before the logarithm is
+#       taken -- and the power is different per dtype because 2**64 OVERFLOWS
+#       a float16.
+#   "s_lo term (x*3.27e-08) only for float32 - underflows in float16" (243)
+#       so the float32-only correction term is dropped in float16 because it
+#       UNDERFLOWS there -- the term is not wrong, it is not representable.
+#   "log2(Inf) = Inf" (246)
+#   "log2(0) = -Inf (handle both +0.0 and -0.0)" (248)
+#   "log2(x) = NaN for x < 0" (250)
+#   "log2(-0.0) = -Inf. In certain devices like PTX, x == -0.0 won't be true.
+#    so making reciprocal." (252)
+#       and THAT is the sharpest one: on a device where `x == -0.0` is not
+#       true -- PTX is the named one -- the negative zero has to be detected
+#       by its RECIPROCAL being -infinity, because the equality test would
+#       not fire.
+#   "Check NaN last: comparisons of its reciprocal are not reliable on every
+#    backend." (254)
+#       and the NaN check is LAST for the same reason: the reciprocal-based
+#       test used for the negative zero is not reliable on every backend, so
+#       the NaN case has to be settled after it rather than before.
 #
 # `x = (m - 1.0) / (m + 1.0)` is `MUL(m-1, RECIP(m+1))` because `div`
 # builds the reciprocal FIRST -- `a_xlog2 42` is the row -- and `denormal_exp`'s
@@ -1349,6 +1579,24 @@ def xlog2(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
 # is what keeps the node ORDER the oracle's: `a_xpow` is the order Python
 # EVALUATES in, and `where` builds its receiver, then `x`, then `y`
 # (elementwise.py:426), so `neg_base`'s two inner WHEREs precede its outer one.
+#
+# UPSTREAM'S THREE COMMENTS ARE THE THREE CASES THE FUNCTION HAS TO GET RIGHT
+# AND EACH ONE IS A CORRECTNESS RULE:
+#
+#   "start with b ** e = exp2(e * log2(b))" (258)
+#       so the WHOLE thing is computed through exp2 and log2 -- there is no
+#       separate power routine -- and the base is made POSITIVE first, so the
+#       logarithm has an argument it can take.
+#   "negative base: nan for non-integer exponent, negate for odd integer
+#    exponent. -inf is never nan, it stays |base| ** exponent" (260)
+#       and THIS is the sharp one: a NEGATIVE base is NaN unless the exponent
+#       is an INTEGER, and an odd integer exponent means the result is the
+#       NEGATION of the positive-base answer. The exception is -infinity,
+#       which is never NaN -- it stays |base| ** exponent -- because the
+#       negative-base path is only taken when the base is FINITE.
+#   "x ** 0 = 1, including 0 ** 0 and inf ** 0" (264)
+#       so the zero-exponent case is ONE and it covers 0**0 and inf**0 as
+#       well -- the two that a naive implementation would get wrong.
 #
 # `base` is the fixture's PARAM `d` and `exponent` is its `C(2.0)`.
 #
@@ -1540,6 +1788,24 @@ def tx_tab.at(+t: O.PMEntrys, +i: U32) -> O.PMEntry:
 # `decomp.bend` reads the entry's op and hands it here; that is the whole of the
 # duplicated scan. The SQRT rule's body is `lambda d: xpow(d, d.const_like(0.5))`
 # -- line 276 -- so the half is minted first.
+#
+# UPSTREAM'S COMMENT ON THE SQRT RULE IS THAT IT IS NOT A SQRT: "rewrite SQRT
+# to xpow 0.5" (292). So a backend without a native SQRT gets a POWER instead
+# -- and the power goes through exp2 and log2, which is why the SQRT rule is
+# in the TRANSCENDENTAL table and not in the ordinary one.
+#
+# AND UPSTREAM'S `xpow_int` (267-282) IS NOT IN THE PORT, so its two comments
+# are recorded here rather than on a def that does not exist:
+#   "square and multiply over the exponent bits in unsigned, masking so
+#    products wrap instead of growing" (269)
+#       so an INTEGER power is computed by squaring and multiplying over the
+#       exponent's bits, in UNSIGNED arithmetic, and every product is MASKED
+#       to the unsigned width so the intermediate products WRAP instead of
+#       growing without bound.
+#   "negative exponent truncates to 0, except for 1 and -1" (279)
+#       so a negative integer exponent is not a reciprocal -- it TRUNCATES to
+#       zero -- with the two exceptions of 1 and -1, which are their own
+#       reciprocals.
 def tx_t_apply.sqrt(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +h = tx_cf(ar, 0.5)
   xpow(O.Found.ar(h), d, O.Found.i(h), dt)

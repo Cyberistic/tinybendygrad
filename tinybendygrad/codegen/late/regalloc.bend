@@ -483,6 +483,17 @@ def Al.st(+a: Al) -> RaSt:
 
 # THE LIVE-RANGE PASS -- regalloc.py:22-29. BACKWARD, and the fuel is the
 # countdown so it is the first parameter of the self-call.
+#
+# UPSTREAM'S COMMENT NAMES WHAT THE PASS IS FOR AND WHY IT IS BACKWARD:
+# "compute live ranges" (18). A live range is the INTERVAL of a virtual
+# register's uses, and it is computed by walking the uops BACKWARDS so that
+# when a uop is reached, every LATER use has already been seen -- which is
+# what lets the range's END be the last use rather than the first.
+#
+# AND THE `vdef` DOCSTRING IS THE ONE THAT SAYS WHY THE TABLE IS INDEXED BY
+# POSITION: "returns the uop that defines the virtual register" (11). So the
+# live range's FIRST index is the DEFINING uop and the rest are the uses, and
+# `vdef(v)` is `uops[live_range[v][0]]` -- the head of the range.
 # STEP 1, regalloc.py:26 -- `lr.setdefault(v, []).insert(0, idx)`. The prepend is
 # `tb_ins`' `pre` arm, and `u32_none()` is the "not a Register" filter: `rdef`
 # answered None for a CONST.
@@ -623,6 +634,24 @@ def ra_linv(+es: List<&2, LT.RaEn>, r: U32) -> U32:
 
 # THE `max(...)` FOLD'S INCUMBENT. `RaBd{d, r, v}` is the `(r, live_inv.get(r))`
 # pair of :43 with its key, and `ra_alloc.keep` is first-wins on a tie.
+#
+# UPSTREAM'S COMMENT IS THE REGISTER-CHOICE HEURISTIC AND IT IS TWO CLAUSES:
+# "allocate the best register. Registers not in live or not used again are free
+# and have priority, otherwise pick the one with the furthest next use. Regs that
+# appear first in cons have priority in case of a tie" (40-41).
+#
+# So there are THREE rules, in order:
+#   1. a register that is NOT LIVE, or that is live but NEVER USED AGAIN, is
+#      FREE and wins outright -- its distance to the next use is `len(uops)`,
+#      which is the largest possible, so it wins the `max`.
+#   2. otherwise the register whose NEXT USE IS FURTHEST AWAY wins -- that is
+#      the one that can stay allocated longest.
+#   3. on a TIE, the one that appears FIRST in `cons` wins -- and `cons` is the
+#      register CONSTRAINT LIST, so this is a PREFERENCE ORDER the hardware
+#      gave us.
+#
+# AND UPSTREAM'S SECTION HEADING IS "allocate registers" (31) -- the whole
+# section is the allocation, and the five dicts under it are its state.
 type RaBd is Data:
   RaBd{d: U32, r: U32, v: U32, f: Bool}
 
@@ -720,6 +749,15 @@ def ra_cons(+un: List<&2, Ru>, v: U32) -> List<&2, U32>:
   Ra.cs(ra_uni(un, v))
 
 # THE MAIN LOOP -- regalloc.py:55-97.
+#
+# UPSTREAM'S COMMENT ON `fill` SAYS WHAT IT DOES IN THREE CLAUSES AND THE
+# THIRD IS THE ONE THAT IS EASY TO MISS: "assign register to spilled virtual
+# and record load to be emitted before current uop, also assign it a stack slot"
+# (46). So a SPILL is not one thing -- it is THREE: a real register is chosen
+# for the virtual, a LOAD is recorded to be emitted BEFORE the current uop,
+# and a STACK SLOT is assigned. The load is what makes the spill work and the
+# slot is what the load reads from.
+#
 # `self.reals.setdefault(i, {})[v] = live[v]` -- :63 and :77, ONE def.
 def ra_set(+s: RaSt, i: U32, v: U32, r: U32) -> RaSt:
   ra_st.re(s, LT.tb_pset(RaSt.re(s), i, v, r))
@@ -735,6 +773,10 @@ def ra_put(+a: Al, i: U32, +v: U32) -> RaSt:
 
 # THE USES -- :58-63. `live.get(rdef(s))` (:73) is None when the src is not a
 # Register OR the vreg is not live, and both collapse into "the table says 0".
+#
+# UPSTREAM'S SECTION HEADING IS "allocate uses" (56) and it is the FIRST half
+# of the per-uop work: a uop's READS must be in registers before it runs, so
+# every read that is not already live is FILLED here.
 def ra_lg(+lv: LT.RaTb, +v: U32) -> U32:
   Bool.pick(U32, Bool.not(LT.tb_has(lv, v)), LT.u32_none(), LT.tb_get(lv, v))
 
@@ -772,6 +814,10 @@ def ra_uses.ex(ex: Bool, +s: RaSt, +i: U32, ss: List<&2, U32>, +ops: List<&2, Ra
 
 # THE DEFS -- :66-77. `alloc(cons, i+1 if u.op is not Ops.RANGE else i)` (:76)
 # is `ra_k`, and it is the ONE place the two differ.
+#
+# UPSTREAM'S SECTION HEADING IS "allocate defs" (62), and it is the SECOND half
+# of the per-uop work: a uop's WRITES must be in registers too, and a def that
+# is not yet live has to be allocated a register of its own.
 def ra_k(op: O.Op, +i: U32) -> U32:
   Bool.pick(U32, LT.lt_is_range(op), i, U32.add(i, 1))
 
@@ -784,6 +830,16 @@ def ra_def(cs: List<&2, U32>, +s: RaSt, +i: U32, +op: O.Op, v: U32) -> RaSt:
 # THE TWO-ADDRESS REORDER -- :72-74. `uses[0]` goes first so it wins a tie, and
 # the rest of `cons` follows with every register `uses` holds removed -- so a
 # register reused from TWO srcs is not offered twice.
+#
+# UPSTREAM'S COMMENT SAYS WHY THE REORDER EXISTS AND WHY IT IS ONLY FOR THE
+# FIRST SRC: "two address instructions (src is reused by def) can only coalesce
+# reused src. reused src goes first to get priority in case of a tiebreak"
+# (67-68). So on a TWO-ADDRESS instruction the destination IS the source, and
+# the register that already holds the reused src is the only one the
+# instruction can use for the def -- it cannot be coalesced with anything else.
+# Putting it FIRST in `cons` gives it the priority in `alloc`'s tie-break.
+# And it is only the FIRST src: `uses[0]`, because a two-address instruction
+# reuses exactly one src.
 def ra_tw.go(+us: List<&2, U32>, cs: List<&2, U32>, +pre: List<&2, U32>) -> List<&2, U32>:
   match cs:
     case Nil{}    : pre
@@ -826,6 +882,19 @@ def ra_defs(+s: RaSt, +i: U32, +op: O.Op, +ss: List<&2, U32>, ds: List<&2, U32>)
 
 # THE LOOP PROLOGUE -- :80-90. Move into registers the vars used in the loop,
 # sorted by next use, skipping any var whose constraints are already spoken for.
+#
+# UPSTREAM'S COMMENT IS THE REASON THE PROLOGUE EXISTS AT ALL: "loop
+# prologue, avoid loading inside the loop" (75). So a variable that is live
+# ACROSS a loop is loaded ONCE before the loop rather than on every iteration
+# -- the loop body must not contain a spill reload, because the reload would
+# be inside the hot path.
+#
+# AND THE PROLOGUE'S OWN COMMENT SAYS WHAT IS MOVED AND IN WHAT ORDER: "we move
+# to registers vars used in the loop sorted by next use, vars not used in the
+# loop will not be reloaded in the epilogue" (77). So the SORT is by NEXT USE
+# -- the var needed soonest is given a register first, so the ones that fit
+# are the ones needed soonest. And a var NOT used in the loop is not moved, so
+# the epilogue does not have to reload it.
 def ra_inloop.go(+ls: List<&2, U32>, +i: U32, +e: U32, +acc: Bool) -> Bool:
   match ls:
     case Nil{}    : acc
@@ -909,6 +978,13 @@ def ra_srt(+vs: List<&2, U32>, +i: U32, +lr: LT.RaTb, +un: List<&2, Ru>) -> List
 
 # `set(v.cons).issubset(live_in.values())` -- :87. Every CONSTRAINT is already
 # taken, so there is no space for this var and it is skipped.
+#
+# UPSTREAM'S COMMENT IS THE REFUSAL AND ITS REASON: "if all the possible
+# registers are already in live_in there's no space for this var" (82). So the
+# prologue does NOT insist: a var whose every candidate register is already
+# held by another prologue var is simply not moved, and it will be spilled
+# inside the loop instead. The check is a SUBSET test over the var's
+# CONSTRAINT LIST, so it is about REGISTERS and not about vars.
 def ra_invals(+es: List<&2, LT.RaEn>, +r: U32) -> Bool:
   match es:
     case Nil{}   : False{}
@@ -989,6 +1065,27 @@ def ra_pro.rn(rng: Bool, +s: RaSt, +i: U32) -> RaSt:
 # THE LOOP EPILOGUE -- :93-97. Reload what was live at loop entry, into the
 # register it was in, and only where it is not already there. `live_ins.pop()`
 # is the head, because the stack was pushed with a prepend.
+#
+# UPSTREAM'S COMMENT SAYS WHERE THE EPILOGUE GOES, AND IT IS NOT AT THE END OF
+# THE LOOP BUT AT ITS LAST READER: "loop epilogue at the loop's last reader,
+# reload registers that were live at loop entry" (88). So the reload is
+# emitted at the point in the program where the loop's last reader is -- not
+# after the loop -- because a value that is dead after the loop needs no
+# reload at all, and one that is live after it needs the reload as early as
+# the hardware allows.
+#
+# AND UPSTREAM'S TWO TODOs ARE THE IMPROVEMENTS THIS PASS DOES NOT MAKE:
+# "TODO: if a uop is in a different reg in live out vs live in move between
+# registers instead of loading" (90) and "TODO: don't reload if first use in
+# loop is a load" (91). Both are OPTIMISATIONS of the reload, not corrections:
+# the reload is always CORRECT here and merely wasteful.
+#
+# AND THE LAST LINE IS A CORRECTNESS FIX, NOT AN OPTIMISATION: "a spilled var
+# that only got a register inside the loop must be forced to reload from spill
+# slot" (95). A var that was spilled OUTSIDE the loop and only got a register
+# INSIDE it is not live at loop entry -- so the epilogue has no entry for it --
+# and it must be forced back to its stack slot rather than left holding the
+# register it happened to get inside the loop.
 def ra_head(+ns: List<&2, LT.RaTb>) -> LT.RaTb:
   Maybe.default(&2, LT.RaTb, List.head(&2, LT.RaTb, ns), LT.tb_new())
 
@@ -1123,6 +1220,14 @@ def ra_reg(+un: List<&2, Ru>, r: U32) -> String:
 # THE REWRITTEN SOURCES. `i in reals and (v:=rdef(uops[i].src[j])) in spills`
 # (:105) -- `reals` is keyed by uop index, so a uop with no `reals` entry has no
 # rewritten src at all.
+#
+# UPSTREAM'S COMMENT ON THAT LINE IS A TRAP THAT THE PORT HAS TO AVOID:
+# "v here is the virtual defined by the original s as s is the rewritten
+# version" (106). So `s` in the rewritten src list is the NEW node, and the
+# virtual register it refers to is looked up from the ORIGINAL uop -- not from
+# the rewritten one. The `reals` table is keyed by uop INDEX, and the src
+# index `j` selects the ORIGINAL src, so the port's `rw_vreg` reads
+# `RaSt.ops(s)` -- the ORIGINAL uops list -- and not the rewritten srcs.
 def rw_vreg(+s: RaSt, i: U32, +u: RaUop, j: U32) -> U32:
   ra_rdef(RaUop.ds(ra_at(RaSt.ops(s), j)))
 
@@ -1144,6 +1249,15 @@ def rw_nsrc(+s: RaSt, +i: U32, +u: RaUop, rest: List<&2, U32>) -> List<&2, Em>:
     case j <> +r : List.append(&2, Em, rw_nsrc(s, i, u, r), [rw_src(s, i, u, j)])
 
 # THE FILLS TO INSERT BEFORE -- :111, over `insert_before[i]`'s pair list.
+#
+# UPSTREAM'S COMMENT ON THE SPILLED-SRC REWRITE IS A CASE THE PORT'S `rw_src`
+# DOES NOT DISTINGUISH: "an AFTER-wrapped value (e.g. a RANGE bound) keeps its
+# ordering deps around the fill" (111). So when the src is an AFTER -- a
+# RANGE's bound, which carries the control-flow edge -- the FILL is inserted
+# INSIDE the AFTER, keeping the AFTER's own ordering dependency around it. A
+# fill outside the AFTER would drop the ordering. The port's `rw_src` answers
+# the FILL-SPILL pair without the AFTER case, so this is a LIMITATION OF THE
+# PORT'S ANSWER and it is recorded here rather than pretended away.
 def rw_bef.go(+s: RaSt, +i: U32, rest: List<&2, U32>, +acc: List<&2, Em>) -> List<&2, Em>:
   match rest:
     case Nil{}         : acc

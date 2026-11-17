@@ -46,6 +46,141 @@
 # A rule that fires (`Some{}`) overwrites `u` in `repl`; a rule that misses
 # (`None{}`) leaves the rebuilt node there instead.
 #
+# UPSTREAM'S PIPELINE, AND WHY THE ORDER IS WHAT IT IS. This file is the
+# ENGINE that upstream's `full_rewrite_to_sink` (codegen/__init__.py:254-378)
+# drives, and the engine is only half the story -- the ORDER of the rewrites is
+# the other half, and upstream's comments on it are the reason a reader needs
+# them. The port drives one table, so the pipeline is recorded here as the
+# shape the engine is being pointed at:
+#
+#   "resolve UNSHARDs (multi-device UNSHARDs are already resolved by the
+#    scheduler; this handles in-kernel shards, e.g. fragments)" (258)
+#       so the FIRST rewrite is the multi-device one, and upstream says WHY it
+#       is still here: the scheduler's UNSHARDs are gone, but an IN-KERNEL
+#       shard -- a fragment -- has not been resolved yet.
+#   "symbolic (NOTE: this is a requirement for pm_simplify_ranges to be
+#    correct)" (272)
+#       a DEPENDENCY, not a preference: the range simplifier's correctness
+#       assumes the graph is already symbolic.
+#   "reduce_unparented: a REDUCE whose src folded to a CONST (e.g. x*0) has no
+#    parented ranges, collapse it before the expander" (282)
+#       the ORDER is load-bearing: a REDUCE whose source folded away has no
+#       ranges left, and the expander would choke on it.
+#   "group GPU dimensions early so their index arithmetic goes through normal
+#    lowering" (296)
+#       so the GPU dims are grouped BEFORE the devectorizer, so the index
+#       arithmetic is lowered the same way as everything else.
+#   "some coalescing misses without this" (306)
+#       upstream's own admission that a pass exists to fix a miss.
+#   "an image is read_only or write_only, so a PARAM that is both loaded and
+#    stored stays a buffer" (311)
+#       the reason the image rule is applied AFTER the coalescing: a PARAM that
+#       is BOTH read and written cannot become an image, because an image is
+#       read-only OR write-only.
+#   "extra symbolic before decomp. crashes without this?" (315)
+#   "NOTE: also run indexing_simplify here, while the index is still weakint and
+#    (x+y)*c -> x*c+y*c applies" (316)
+#   "commit widths minted in this fixpoint before lowering inspects INDEX
+#    shapes" (317)
+#       three comments on ONE pass, and they say the pass has to be EARLY:
+#       the index is still WEAK here, and the distributivity rewrite only
+#       applies while it is.
+#   "the boundary: required compute dtypes settle here; derivable const edges
+#    may stay bare" (320)
+#   "NOTE: we need indexing_simplify to remove the cast to long using the
+#    Invalid" (321)
+#   "NOTE: symbolic must NOT be composed here -- pm_data_invalid pushes the
+#    weak result CAST into a gated WHERE, remaking the weak node, and it cycles"
+#    (322)
+#       the LAST one is the sharpest: composing `symbolic` into the weak-lowering
+#       pass makes the pass CYCLE, because the weak result's CAST is pushed
+#       into a gated WHERE and the weak node is thereby REMADE. So this pass is
+#       `pm_lower_weak + indexing_simplify` and NOT `symbolic + ...`.
+#   "Transcendental decompositions can introduce unsupported dtypes, e.g.
+#    uint64 in Payne-Hanek reduction." (342)
+#       so the dtype decomps run AFTER the transcendental ones.
+#   "commit every const still bare so no renderer reads one" (351)
+#       the const commit is the LAST thing before the barriers, so no renderer
+#       ever sees a bare const.
+#   "hardware ranges are no longer loops; preserve their already lowered bounds"
+#    (357)
+#       so the ranges-to-special rewrite comes after the control flow.
+#   "register definitions (INS without srcs) move to the top so regalloc sees
+#    their live ranges span the whole program (callee saved regs)" (437)
+#       and this is a SORT, not a rewrite, and the reason is that a register
+#       DEFINITION has no use, so a live-range computation that saw it in the
+#       middle would end its range early.
+#
+# AND TWO UPSTREAM COMMENTS THAT NAME A HARDWARE CONSTRAINT:
+#
+#   "float ALUs need a float operand" (221)
+#   "make that cast explicit before the decomps, which expand SIN/LOG2/EXP2 into
+#    float polynomials and assert a float operand" (222)
+#       the cast has to come BEFORE the decomps, because the decomps ASSERT
+#       their operand is a float and a half operand would fail the assert.
+#   "loads from a LOCAL buffer that depend (via AFTER) on stores to LOCAL memory
+#    need a workgroup barrier" (231)
+#   "a LOCAL buffer stored and loaded in the same loop needs a barrier at the
+#    end of the loop body" (239)
+#       the two barrier rules, and the SECOND is the loop-carried one: the
+#       barrier goes at the END of the loop body, not at the load.
+#
+# UPSTREAM'S RULE-TABLE COMMENTS, which are the DOCSTRINGS of the tables the
+# engine drives. Each names a PRECONDITION or a refusal, and each is the reason
+# a rule is in the table at all:
+#
+#   devectorizer2 (136-147):
+#     "unpack broadcasting" (137)
+#     "broadcasting needs to be already unpacked, Invalid matches any dtype and
+#      shape" (118)
+#       so the broadcast is unpacked into an EXPLICIT index per element, and
+#       the Invalid value is the one that may have ANY dtype and ANY shape --
+#       it is the "no value" and it must not stop the unpack.
+#     "INDEX without src is nothing (TODO: this should be in mop_cleanup)" (139)
+#     "unpack WMMA" (141)
+#     "reshape of a single element shaped value to scalar is an index" (143)
+#     "a scalar index into a one-lane STACK is its lane, 0 is the only in-bounds
+#      index" (145)
+#       and the LAST one is a REFUSAL with a reason: a one-lane STACK has one
+#       element, so the only in-bounds index into it is 0, and a scalar index
+#       IS that lane.
+#   expander (77-83):
+#     "permute so new_axes come to front, then reduce" (59)
+#       so a REDUCE over axes that are not leading is rewritten into a
+#       PERMUTE that brings them to the front -- and the permute is part of
+#       the answer, not a separate pass.
+#   pm_wmma_add (101-109):
+#     "push permute/reshape to the other side of the add" (104)
+#       so a permute or a reshape of a WMMA is pushed OUT of the add, which
+#       is what lets the WMMA keep its own shape requirement.
+#   pm_reduce_local (196-202):
+#     "fix group for reduce" (197)
+#     "remove reduces" (199)
+#     "do only the non grouped reduces early" (154)
+#     "do the final reduce (if/barrier are added in gpudims step)" (159)
+#     "NOTE: we remove all horizontal reduces here, they remain in the first
+#      reduce" (160)
+#       so the GROUPED reduces -- the ones over WARP and LOCAL threads -- are
+#       turned into a local buffer and a second reduce, and the HORIZONTAL
+#       reduces are NOT removed by this pass: they stay in the FIRST reduce.
+#   merge_reduce_ends (163-181):
+#     "merge ENDs that share the same range and nesting context" (164)
+#     "ENDs at different nesting depths get cloned RANGEs so each RANGE maps to
+#      one END" (165)
+#       so two ENDs over the same ranges at DIFFERENT nesting depths cannot be
+#       merged -- the ranges are CLONED so that each RANGE maps to exactly one
+#       END. That is the invariant the clone exists to preserve.
+#   lower_reduce (183-194):
+#     "horizontal: int, how many leading axes of inp are reduced in place, the
+#      rest of the reduce is over the ranges in src[1:]" (184)
+#       so a REDUCE's arg is a PAIR and the first member is the HORIZONTAL
+#       count -- how many leading axes are reduced IN PLACE rather than over
+#       ranges.
+#   do_devectorize (116-123):
+#     "broadcasting needs to be already unpacked, Invalid matches any dtype and
+#      shape" (118)
+#       the same Invalid rule as above.
+#
 # BEND NAMING RULE, observed (and appended to bend2-constraints.md as R-3):
 # a sub-namespace def (`name.subname`) must be declared BEFORE the parent
 # `def name` that calls it. The order below obeys this rule (leaves first,
@@ -405,6 +540,22 @@ def UOp.substitute(+ar: O.Arena, +sink: U32, +dvars: Map<&2, U32>) -> (O.Arena &
 # `walk_rewrite` over it, and print the repl map (old_index ->
 # new_index). The CPython oracle at `.agents/slop/codegen-init-oracle.py`
 # prints the same shape for the same fixture; the diff is the gate.
+#
+# UPSTREAM'S COMMENT FOR THE ENGINE ITSELF IS THE ONE THAT NAMES WHAT THE
+# ENGINE IS: "requires lst be toposorted. like graph rewrite, but for lines"
+# (391). `line_rewrite` is `graph_rewrite` over a LIST OF LINES rather than
+# over a graph -- so it inherits the same PRECONDITION, a toposorted input --
+# and the same shape: rebuild each node's srcs from the replaced map, try the
+# rule, and splice the rule's answer (which may be SEVERAL nodes) into the
+# output. A rule that returns a LIST is the difference, and that is what makes
+# a gated STORE able to become IF-STORE-ENDIF.
+#
+# AND THE IF/ENDIF COMMENT IS WHY THAT LIST EXISTS: "inject IF/ENDIF. only
+# needed if device doesn't support gated stores" (380), with the two rules
+# "if statements are not allowed in the graph" (382) and "gated STORE becomes
+# IF-STORE-ENDIF. this is the only use of IF-ENDIF" (384). So the IF is not
+# part of the graph -- it is INJECTED at linearization time by a device that
+# cannot do a gated store, and the graph itself must not contain one.
 # The rule table. TWO entries, and TWO upstream: `pm_post_sched_cache` at
 # `tinygrad/schedule/__init__.py:96-101` is a `PatternMatcher` of exactly two
 # patterns, read off the objects and not off the text

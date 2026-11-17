@@ -341,6 +341,49 @@ def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
 # are measured: `nrules_l=18` and `nrules_l_noidiv=16`, and the reject sets
 # `rejl0..rejl17` come from the eighteen-rule build.
 #
+# UPSTREAM'S RULE COMMENTS ARE THE TABLE'S DOCSTRING AND EACH ONE NAMES A
+# CORRECTNESS CONDITION:
+#
+#   "MAX can be rewritten as CMPLT + WHERE (max function is annoying on many
+#    cstyle backends). late: WHERE loses the bound MAX carries" (83)
+#       so the MAX rewrite is LATE, and the reason it is late is that the
+#       WHERE form LOSES the bound that the MAX carries -- the comparison is
+#       `<` and the equality case has to be handled by the WHERE.
+#   "rewrite MUL/TRUNCDIV to SHL+SHR: x*(2**y) -> shl(x,y) and x//(2**y) ->
+#    shr(x,y)" (87)
+#       so the SHL and the SHR forms exist because the hardware has them and
+#       the MUL and the DIV do not.
+#   "uint TRUNCDIV by 2**v -> x >> v (DIV is lowered to TRUNCDIV by the rule
+#    above before reaching here)" (90)
+#       and the parenthetical is the ORDERING: the DIV rule fires FIRST and
+#       lowers DIV to TRUNCDIV, so this rule only ever sees a TRUNCDIV.
+#   "signed TRUNCDIV by 2**v -> (x + (x<0 ? c-1 : 0)) >> v" (93)
+#       so the SIGNED case needs the rounding correction and the unsigned one
+#       does not -- an arithmetic shift is a floor division for a non-negative
+#       value and a truncation for a negative one.
+#   "fast_idiv handles non-pow2 divisors on non-negative inputs" (98)
+#       so the magic-multiply path is only for NON-NEGATIVE inputs; a signed
+#       value has to go through the general path.
+#   "rewrite raw TRUNCMOD -> x - d*fast_idiv(x,d), only when fast_idiv can
+#    actually divide; avoids disturbing floormod_to_mod's general-path output
+#    (which uses Ops.TRUNCMOD as an implementation detail)" (100-101)
+#       and THAT is the gotcha: `floormod_to_mod`'s general path USES
+#       `Ops.TRUNCMOD` as an IMPLEMENTATION DETAIL, so rewriting a TRUNCMOD
+#       here would rewrite the general path's own output and the two rules
+#       would fight. The rule therefore fires only where `fast_idiv` can
+#       actually divide.
+#   "These are late rewrites because simplex expects equalities to be a certain
+#    format" (108)
+#       so the comparison rewrites are LATE because the simplifier's equality
+#       format is a precondition for them.
+#   "also fuse (x << n) + c -> MULACC(x, 2^n, c) since MUL->SHL may run first"
+#       (118)
+#       and the reason is an ORDERING: the MUL-to-SHL rewrite may have already
+#       fired, so the MULACC rule has to recognise the SHL form too.
+#   "some backends emit FDIV for RECIP, in that case: a*(1/b) -> a/b" (120)
+#       so the FDIV rewrite is CONDITIONAL on the backend: a backend that has
+#       RECIP does not want a*(1/b) turned into a/b.
+#
 # `0`  !x & !y      -> !(x|y)              op.py:85-86   AND    [CMPNE]
 # `1`  x * 2y     -> x << y              op.py:88      MUL    [CONST]
 # `2`  u // 2y    -> u >> y              op.py:91-92   TRUNCDIV   [CONST]
@@ -920,6 +963,13 @@ def dc_both_nonneg(+ar: O.Arena,+a: U32,+b: U32) -> Bool:
 # b)` and `out_s7` is its row; the general arm is
 # `a.alu(TRUNCDIV,b) - (a.alu(TRUNCMOD,b).ne(0) & (a<0).ne(b<0))`, and because `&` on
 # bools is `AND` and `-` is `dc_sub` the tree is `ADD(TRUNCDIV, MUL(AND, C(-1)))`.
+#
+# THE SHORT ARM IS A CORRECTNESS CONDITION AND NOT AN OPTIMISATION: when both
+# operands are known non-negative (or both known non-positive) the hardware's
+# TRUNCDIV is already the FLOOR division and the general arm's correction is
+# unnecessary. The general arm subtracts one when the remainder is non-zero
+# AND the signs differ -- that is exactly the case where the truncation is not
+# the floor.
 
 def dc_fd.gen(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
   +q = dc_alu2(ar, O.OpsTRUNCDIV{}, a, b)
@@ -979,6 +1029,13 @@ def dc_s3(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 # `magicgu` -- op.py:9-18. Hacker's Delight chapter 10: the smallest `s` with
 # `2s > nc*(d-1-(2s-1)%d)`, and then `m = (2s + d-1-(2s-1)%d)//d`.
 #
+# UPSTREAM'S COMMENT IS THE CONTRACT AND IT IS TWO CLAUSES: "calculate m,s
+# such that x//d == (x*m) >> s for all 0 <= x <= vmax, d>0; adapted from
+# Hacker's Delight, Chapter 10" (11). So the pair `(m, s)` is not "some
+# multiplier and some shift" -- it is the pair that makes the MAGIC MULTIPLY
+# identity hold for EVERY input in `[0, vmax]`, which is why `vmax` is an
+# ARGUMENT and not a constant. The `d > 0` is also part of the contract.
+#
 # PORTED IN SHAPE: the `nc`, the `nbits`, the `2*nbits+1` bound and the test are
 # all here, as VALUES on a `U32`/`Nat` pair, so the loop shape is readable and
 # the ONE thing missing is named rather than approximated.
@@ -1026,6 +1083,14 @@ def dc_idiv.bad(+ar: O.Arena,+x: U32,+d: U32) -> Bool:
 # `ren.supported_dtypes()` and there is no `Renderer` in the port at all.
 # `x.vmax < 0` is answered by `dc_vmin` for a CONST and a PARAM, which is what
 # makes `l27`/`l28`/`l29` ported rows rather than stubs.
+#
+# UPSTREAM'S COMMENT ON THE WIDEN STEP IS WHY THE STEP IS LAST AND WHY IT IS
+# OPTIONAL: "before we try casting to a larger dtype (slow), we see if there
+# are powers of two in d we can shift to make x smaller" (25). So the ladder is
+# ordered BY COST: the SHIFT is free, the WIDEN is slow, so the shift is tried
+# FIRST and the widen is the LAST resort. And the widen's comment says what it
+# buys: "the next integer width that holds x*m" (29) -- the width is chosen so
+# the PRODUCT fits, which is why it is `x*m` and not `x`.
 def dc_idiv(+ar: O.Arena,+x: U32,+d: U32,+small: Bool) -> Maybe<&2, O.Found>:
   dc_idiv.go(ar, x, d, dc_idiv.bad(ar, x, d), small)
 
@@ -1033,6 +1098,12 @@ def dc_idiv(+ar: O.Arena,+x: U32,+d: U32,+small: Bool) -> Maybe<&2, O.Found>:
 # the only 64-bit step is the final `(xr[1] << 32) | xr[0]`, which is
 # `H.i64_of_hi_lo` and NOT arithmetic. PORTED IN FULL, and it is the largest
 # single piece of arithmetic in the file.
+#
+# UPSTREAM'S COMMENT IS THE FIRST STEP AND IT IS THE WHOLE TRICK: "split x and
+# key from uint64 to two uint32" (39). The cipher is a 64-bit one and no
+# hardware has it, so the 64-bit values are SPLIT into two 32-bit halves and
+# the rounds run on 32-bit words -- which is why the whole body is 32-bit
+# arithmetic and the 64-bit-ness appears only at the end.
 #
 # the two loops are one recursion because they interleave in Python: the round
 # loop is INNER and the `ks` update is the loop body's last line. `i` is not
@@ -1211,6 +1282,27 @@ def tf_split_str(+ar: O.Arena,+x: U32) -> String:
 # FUNCTION of a Bool and the two variants are two `Data` values built by one
 # `match`. That is `spec.bend`'s `+` composition in its smallest form: the tag
 # means "(this table, index in THIS list)".
+#
+# UPSTREAM'S FOUR RULE COMMENTS ARE THE TABLE'S DOCSTRING:
+#
+#   "these are rewrites that make things simpler" (67)
+#       so the table's defining property is SIMPLICITY, not completeness: a
+#       rewrite belongs here if it makes the graph easier, and the general
+#       path is elsewhere.
+#   "DIV by 2**y -> x >> y (an arithmetic shift is exactly floor division for
+#    any sign); fires before floordiv_to_idiv" (69)
+#       and the parenthetical is the CORRECTNESS: an arithmetic shift is a
+#       FLOOR division, not a truncation, so it is right for negative values
+#       too. And "fires before" is the ORDERING: the power-of-two case must be
+#       taken before the general `floordiv_to_idiv`.
+#   "MOD by 2**y -> x & (2**y-1) (correct floor mod for any sign in two's
+#    complement); fires before floormod_to_mod" (73)
+#       same shape: the mask is a correct floor MOD in two's complement for
+#       any sign, and it must fire before the general path.
+#   "no real hardware supports THREEFRY, but NullRenderer does" (76)
+#       so the THREEFRY rule exists ONLY when the renderer does NOT have the
+#       op -- and the NullRenderer is the exception because it emulates
+#       everything.
 #
 # `0` DIV(x:ints, c) -> x >> v if v            op.py:70-71
 # `1` DIV(a, b)     -> floordiv_to_idiv        op.py:72
