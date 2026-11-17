@@ -805,6 +805,11 @@ def zwhy(+a: ZAt, +b: ZAt) -> String:
 
 # `z3_cdiv(a,b) = If(a<0, If(0<b, (a+(b-1))/b, (a-(b+1))/b), a/b)`
 #
+# IDIV IS TRUNCATED, Z3 IS EUCLIDEAN. validate.py:11 -- z3 floors when the
+# divisor is positive and ceils otherwise, while an integer DIV truncates toward
+# zero. This helper is the correction; using z3 division directly would change
+# negative operands.
+#
 # `0 < b` IS `ZGt{b, 0}`: the `0` is a Python `int` on the left, so Python REFLECTS and calls
 # `ArithRef.__gt__(0)`. MEASURED: `str(0 < i)` is `i > 0` and `str(IntVal(0) < i)` is
 # `0 < i` -- opposite answers, and only the first is what validate.py evaluates.
@@ -1209,6 +1214,9 @@ def bv_max4(+p: MM, +q: MM) -> U32:
   bv_max(bv_max(bv_one(MM.hi(p)), bv_one(MM.hi(q))), bv_max(bv_one(MM.lo(p)), bv_one(MM.lo(q))))
 
 # `z3_bv(x, op, a, b) = BV2Int(op(Int2BV(a,w), Int2BV(b,w)), is_signed=True)`.
+# validate.py:14 -- THE WIDTH IS THE NARROWEST ONE THAT FITS BOTH SIDES IN
+# TWO'S COMPLEMENT, because bit-vector solving gets exponentially slower as the
+# width grows.
 # A `Maybe` because the width needs `_min_max`, and a node whose bounds are
 # unknown is a VIOLATION rather than a guessed width.
 def z3_bv(k: U32, w: Maybe<&1, U32>, a: Z, b: Z) -> Maybe<&1, Z>:
@@ -1233,12 +1241,19 @@ def z3_xor.wb(k: U32, w: U32, a: Z, b: Z) -> Maybe<&1, Z>:
 def z3_xor.wv(+w: Wv, +a: Z, +b: Z, k: U32) -> Maybe<&1, Z>:
   Bool.pick(Maybe<&1, Z>, Wv.got(w), z3_xor.wb(k, Wv.w(w), a, b), None{})
 
+# `x ^ -1 = -(x+1)` IS BITWISE NOT. validate.py:20 -- the constant `-1` case
+# is why an XOR over a variable and -1 avoids the general bit-blast.
+#
 # `z3_or`: a Bool OR wins, else the bit-blast. There is NO constant case in
 # Python either, which is why `r | (r << 1)` in test_validate_oob.py:113 is a
 # BV expression and not a simplification.
 def z3_or(w: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:
   Bool.pick(Maybe<&1, Z>, Z.is_b(a), Some{ZOr{a, b}}, z3_bv(bv_or(), w, a, b))
 
+# FACTOR OUT THE MINIMUM COUNT, THEN THE VARYING BITS. validate.py:35 -- a
+# constant shift count needs no bit stages; only the varying bits do. The port's
+# `steps` count is that varying-bit width.
+#
 # `a = z3.If(((b-lo) / (1 << i)) % 2 == 1, a / factor if SHR else a * factor, a)`
 # -- a LEAF, and the whole reason the step is not a second def: `go` and `step`
 # would be MUTUAL RECURSION, which Bend refuses outright (the notes' rule 1).
@@ -1584,6 +1599,9 @@ def ren_3(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   create_var(s, vz_mm(ar, s, self), S.Dt.is_bool(vz_dt(fx, self)),
              ren_3_name(ar, self, Sol.n(s)), "rule 3 create_var: unknown bounds")
 
+# A BITCAST BETWEEN INTS WRAPS. validate.py:72 -- z3 integers are unbounded, so
+# the target width is applied explicitly modulo `2**(8*itemsize)`.
+#
 # rule 5 -- a BITCAST between INT dtypes wraps into the target range. The
 # modulo is `2(8*itemsize)`, which for every integer dtype is `2**32` or
 # more, and Bend's `U32` is ALREADY mod `2**32`: `z3_pow(32) = 0` and
@@ -1737,6 +1755,10 @@ def z3_and.sw(na: Bool, +nb: Bool, +w: Wv, +a: Z, +b: Z) -> Maybe<&1, Z>:
 def z3_and.of(ab: Bool, na: Bool, nb: Bool, m: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:
   Bool.pick(Maybe<&1, Z>, ab, Some{ZAnd{a, b}}, z3_and.sw(na, nb, wv(m), a, b))
 
+# MASKING IS ARITHMETIC WHEN THE MASK IS A POWER OF TWO. validate.py:28 --
+# `x & (2^k-1) = x % 2^k` and `x & -(2^k) = x - x % 2^k` for two's-complement x;
+# this avoids the general bit-vector path.
+#
 # `z3_and`: a Bool AND wins, then SWAP so that `b` is the literal, then
 # `x & (2^k-1) = x % 2^k` and `x & -(2^k) = x - x % 2^k`.
 def z3_and(m: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:

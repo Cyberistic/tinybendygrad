@@ -792,6 +792,10 @@ def wk_bare_const(+fx: F.Folded, +s: U32, +dt: S.Dt) -> O.Found:
 
 # commit_srcs_at -- weak.py:16-20.
 #
+# THE ROOT RE-DERIVES. weak.py:18 -- a shift's dtype is its lhs's dtype, so
+# committing the lhs also commits the node. The port asks `derived_dtypes` on the
+# root's own srcs for the same reason.
+#
 #   bare = derived_dtypes(u, u.src) is not None
 #   src = tuple(s if s.dtype not in dtypes.weaks else
 #               UOp.const(dt.const(s.val)) if bare and s.op is Ops.CONST else

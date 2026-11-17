@@ -2367,6 +2367,12 @@ def eq_node(x: Node, y: Node) -> Bool:
 
 # UOpMetaClass.__call__ -- ops.py:193 symbol=UOpMetaClass.__call__. THE CONSTRUCTOR.
 #
+# THE KEY MUST SEPARATE DTYPES. ops.py:193 -- a CONST's dtype comes from the
+# TYPE of its arg, and Python says `True == 1`, so a bool CONST and an int CONST
+# would share a dict key without the arg type in it. The port's `Node` carries
+# the dtype indirectly through `Arg`, so `eq_arg` compares the payload variants
+# and the payload values: a bool CONST and an int CONST are different arms.
+#
 # `ucache.get(key) or super().__call__(...)` is one lookup and one append, and
 # in an arena the lookup IS a scan for a node with the same key, because the
 # arena IS the cache. That is the whole of `intern`. The difference from Python
@@ -2994,6 +3000,10 @@ def UOp.replicate(+self: U32, n: U32) -> List<&2, U32>:
 # broadcast -- ops.py:612. `if count == 1: return self`; else `UOp(Ops.STACK,
 # src=(self,)*count)`. NOTE it always builds a STACK, "even if they are all the
 # same" -- that is `UOp.const`'s comment, and the same rule.
+#
+# THE STACK IS DELIBERATE, NOT A COLLAPSE. ops.py:604 -- a repeated value stays
+# a STACK even when every element is equal, so downstream code can distinguish
+# one value from a sequence without consulting the element count.
 def UOp.broadcast.go(isone: Bool, ar: Arena, +self: U32, made: Found) -> Found:
   match isone:
     case True{}: Found{ar, self}
@@ -3028,6 +3038,11 @@ def UOp.const(ar: Arena, +v: Const) -> Found:
 #     def shape_to_shape_arg(arg:tuple[sint, ...]) -> UOp:
 #       src = tuple(x if isinstance(x, UOp) else UOp.const(x) for x in arg)
 #       return src[0] if len(src) == 1 else UOp(Ops.STACK, src=src)
+#
+# THE INT CHECK IS THE POINT. ops.py:108 -- every element must have an integer
+# dtype; a shape carrying a float is rejected before it can become a graph
+# shape. The port's reachable arm takes an integer literal, so the check is
+# represented by the arm's type rather than by a second runtime predicate.
 #
 # It is called with a SHAPE and every call site this port reaches passes a 1-tuple or
 # the empty tuple -- `alloc` and `_buffer` pass `(prod(...),)`, `param` passes
@@ -5278,7 +5293,11 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # TODO(p3) ops.py:604  def contract
 #   # cast, except for CONST, in which case rebuild a new CONST at the dtype
 # TODO(p3) ops.py:621  def cconst
+#   ops.py:610 -- a FORCED CAST is needed for bool because the ordinary cast
+#   folds at bool, so `UOp.const` cannot state that width.
 # TODO(p3) ops.py:630  def wmma
+#   ops.py:622 -- the input dtype lives in the arg, not in `src[0].dtype`,
+#   because a BITCAST rewrite changes the src dtype.
 # PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop`, which is
 # `tensor.bend:1822` symbol=tn_rop.
 # TODO(p3) ops.py:644  def invalid
@@ -5337,6 +5356,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   P3, with `vmin`/`vmax`.
 # WALL(p3) ops.py:670  def unshard -- BLOCKED. `def _shard` IS ABSENT -- checked as a definition, comments excluded. `unshard` builds a
 #   UNSHARD and `_shard` is the constructor it shares with `shard` below.
+#   ops.py:663-665 -- an UNSHARD carries one sharding RANGE per sharded axis;
+#   the range need not be DEVICE, so a LOCAL range may shard a tile.
 #   # * multi-device helpers *
 # WALL(p3) ops.py:690  def bounds -- BLOCKED. `def max_numel` IS ABSENT, and `bounds` also reads `self.axis` and a device COUNT
 #   (`len(self.device)`, on the `Dev` tag). It is a `itertools.accumulate` + `pairwise`
@@ -5355,6 +5376,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # `tensor.bend:1685` symbol=tn_mop.
 # TODO(p3) ops.py:835  def new_buffer
 # TODO(p3) ops.py:843  def from_buffer
+#   ops.py:821 -- both the storage identity and the dtype interpretation are
+#   part of the UOp key; a buffer reused under another dtype is another node.
 #   `def canonicalize_device` and `def is_disk_device` ARE BOTH ABSENT, and both start with one:
 # TODO(p3) ops.py:849  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
 # TODO(p3) ops.py:867  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.

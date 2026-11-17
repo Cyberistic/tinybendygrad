@@ -776,6 +776,10 @@ def tagstr(+t: O.Tag) -> String:
 # it is a `dict` Python never adds to. Eleven arms and a `_`, and the `_` is
 # `KeyError` in Python -- but both readers only ever reach it for an op the
 # `UPat(set(syms.keys()))` rules matched, so it is unreachable and answers "".
+#
+# COMPARISONS ARE NOT IN THIS TABLE. render.py:82 -- Python chains comparisons
+# instead of treating them as left-associative binary operators, so `CMPEQ` is
+# absent from `syms` even though the arithmetic table has it.
 
 def syms_of(op: O.Op) -> String:
   match op:
@@ -1684,7 +1688,8 @@ def rws_dep(+dep: Map<&2, U32>, u: U32, d: U32, intr: Bool) -> Map<&2, U32>:
 
 # `if op_depth > split_depth: to_render.add(u)` -- render.py's default is 100 and
 # its comment ("limit inline depth to avoid 'too many nested parentheses' in
-# Python parser") is why it is not infinity.
+# Python parser") is why it is not infinity. render.py:140 -- the split keeps
+# the generated source inside Python's parser nesting limit.
 def rws_trn.of(write: Bool, +tr: Map<&2, U32>, u: U32) -> Map<&2, U32>:
   Bool.pick(Map<&2, U32>, write, tr_set(tr, u), tr)
 

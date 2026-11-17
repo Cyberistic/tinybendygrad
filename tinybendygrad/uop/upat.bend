@@ -361,6 +361,8 @@ def ge2(n: Nat) -> Bool:
     case 2n+p: True{}
     case _ : False{}
 # `if len(or_clause) >= 4: raise UPatCompileError("too big to compile")`
+# upat.py:79 -- the compiler refuses a clause with four OR branches, because
+# expanding their product would make the generated predicate too large.
 
 def ge4(n: Nat) -> Bool:
   match n:
@@ -542,6 +544,9 @@ def alts_of(u: O.UPat) -> List<&2, O.UpAlt>:
   O.UPat.src(u)
 
 # _get_clause -- upat.py:15. `UPat` -> the predicate tree.
+#
+# THE AND CLAUSE IS THE ACCEPTANCE TEST. upat.py:21 -- the clause collects
+# every predicate the pattern must satisfy; the port keeps that order.
 #
 # THE `and_clause` CLAUSES ARE DEFS HERE, because a `Bool` match IS an `if` and
 # there is no other spelling. Each returns an empty list or a one-element list,
@@ -793,6 +798,10 @@ def push.go(+xs: List<&2, C>, +stores: List<&2, C>, acc: List<&2, C>) -> List<&2
     case Nil{}: acc
     case C{op, lit, k} <> t:
       push.go(t, stores, List.append(&2, C, acc, [C{op, lit, List.append(&2, C, k, stores)}]))
+# A DUPLICATE STORE IS AN IDENTITY CHECK. upat.py:101 -- the first store of a
+# name wins, and a later store of that name must bind the same value, so the
+# duplicate becomes `{0} is {1}` rather than silently rebinding it.
+#
 # `dict_stores`: the first STORE of a name wins, and a repeat of it becomes the
 # identity `CUSTOM(first, second, "{0} is {1}")` with `found = True`.
 
@@ -990,6 +999,9 @@ def get_clause(pat: O.Pat, +u: O.UPat, base: C, depth: U32, f: Nat) -> List<&2, 
   get_clause.go(f, u, pat, base, depth, 0, alts_of(u), Nil{}, O.UPat.is_any(u),
     forked_of(O.UPat.src(u)), one_alt(O.UPat.src(u)), False{}, False{}, Nil{})
 
+# ONE OR CLAUSE MAX. upat.py:82 -- several OR clauses are replaced by the
+# product of their alternatives, so the generated matcher has one top-level OR.
+#
 # do_process_and -- upat.py:51. The `pm_proc` rule: one rewrite per AND node,
 # applied bottom up, which flattens the nested ANDs `_get_clause` builds and
 # hoists the stores above the OR. `found` is Python's flag and it is spelled as
@@ -1229,6 +1241,8 @@ def args(+r: Rend, +has_ctx: Bool) -> String:
   String.join(args_list(r, has_ctx), ", ")
 
 # `f"(_ret:=_fxn({store_clause})) is not None"`
+# upat.py:153 -- without an OR, this is the final return: the function's answer
+# is returned only when its result is not None.
 
 def ret_clause(+r: Rend, +has_ctx: Bool) -> String:
   String.join(List.append(&2, String, Rend.cond(r),
@@ -1242,7 +1256,8 @@ def final_return(+r: Rend, +has_ctx: Bool, depth: U32) -> String:
 def if_line(+r: Rend, depth: U32) -> String:
   String.concat([indent(depth), "if ", conds(Rend.cond(r)), ":"])
 
-# if we have an or, render it
+# IF WE HAVE AN OR, RENDER IT. upat.py:148 -- the OR becomes nested `if`
+# branches; without one, the clause is the final return.
 
 def final_shape(no_or: Bool, +orp: List<&2, String>, +r: Rend, +has_ctx: Bool, depth: U32) -> Maybe<&2, List<&2, String>>:
   match no_or:

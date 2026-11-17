@@ -530,6 +530,9 @@ def mp_0(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
 #   UPat(Ops.RESHAPE, src=(UPat(Ops.RESHAPE, name="x2"), UPat()), name="x")
 #   lambda x,x2: x.replace(src=(x2.src[0], x.src[1]))
 # A two-tuple src with no `allow_any_len` sets `strict_length`, so the arity test is `== 2`.
+# THE TWO SHAPES COMPOSE BY TAKING THE INNER DATA AND THE OUTER ARGUMENT.
+# movement.py:10 -- this is why the second src is kept verbatim: it is the
+# requested shape, not the inner RESHAPE's own shape.
 def mp_1.of(pat: Bool, +ar: O.Arena, +self: U32) -> Hop:
   match pat:
     case True{}: mp_replace(O.OpsRESHAPE{}, mp_arg(ar, self), ar, self, [mp_src0(ar, mp_src0(ar, self)), mp_src(ar, self, 1)])
@@ -605,6 +608,8 @@ def mp_3(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
 #   UPat(Ops.PERMUTE, name="x")
 #   lambda x: x.src[0] if list(x.arg) == list(range(len(x.arg))) else None
 # No srcs in the pattern, so no arity test, and `x.src[0]`'s IndexError is the bottom.
+# THE IDENTITY PERMUTATION IS THE WHOLE TEST. movement.py:16 -- the rule is
+# removed exactly when the argument is `0, 1, ..., n-1`.
 def mp_4.of(ok: Bool, +ar: O.Arena, +self: U32) -> Hop:
   match ok:
     case True{} : Hop{ar, mp_src0(ar, self)}
@@ -716,6 +721,10 @@ def mp_7(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
           shp_each(tb, ar, mp_src_from(ar, self, 1)),
           shp_each(tb, ar, mp_src_from(ar, mp_src0(ar, self), 1)), tb, ar, self)
 
+# INDEX ON SHAPED INDEX IS STILL SPECIALIZED. movement.py:25 -- upstream marks
+# this rule as potentially more generic; the port keeps the same two-level shape
+# because its inner INDEX is explicitly a two-src pattern.
+#
 # INDEX on shaped INDEX (TODO: this can be more generic) -- movement.py:27-28
 #   UPat(Ops.INDEX, src=(UPat(Ops.INDEX, src=(UPat.var("buf"), UPat.var("idx1_arg"))),), allow_any_len=True, name="idx2")
 #   lambda buf,idx1_arg,idx2: buf.index(idx1_arg.index(*idx2.src[1:])) if len(idx1_arg.shape) == len(idx2.src[1:]) else None
