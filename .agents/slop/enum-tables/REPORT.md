@@ -104,3 +104,33 @@ change.**
 `Defines = {Ops.PARAM, Ops.BUFFER, Ops.ALLOC}`.  It is now wrong twice over:
 upstream's set has five members including `BINARY`.  `spec.bend` is another
 unit's file and was not touched.
+
+## (f) THE VERIFICATIONS, AND WHAT THEY SAID
+
+Run in a CLEAN `git worktree` at `69fa871c6` with `bin/bend`, `.venv` and
+`references/` symlinked in.
+
+| check | verdict |
+|---|---|
+| `bin/bend tinybendygrad/uop/ops.bend --check-only` | **`ALL PROOFS CHECK`** (rc=0) |
+| generator re-run | **`REGION IS CURRENT: 144 lines, byte-identical`** (idempotent) |
+| `checks/differ.py run` | **`graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0 byte-identical=38 graphs-refused=0`** |
+| substrate digests | **`substrate-start == substrate-end == live == repro-substrate == 8158ceb3e012e470458fee808deaee15610c543d88eceac1cb06e9806983217f`**, `substrate-head=69fa871c6` |
+| `checks/differ.py repro` | **`REPRO: 339 of 339 files identical across two clean runs`** |
+| `differ.unhealthy()` / `artefacts_ok()` / `repro_bad()` | **`[]` / `[]` / `[]`** |
+| `gates/corpuswitness-gate.py` | **`PASS -- the claim is ESTABLISHED`**, all seven readings OK, `claim=REPRODUCIBLE` |
+| `gates/opseven-gate.py` `spec_program_holds` | **OK**, 12 of 12 agree -- IDENTICAL before and after |
+| `gates/opseven-gate.py` `ops_value_holds` | **FAIL, PRE-EXISTING** (see (d)) |
+| `git fsck --no-progress` | 790 dangling objects, and **2 malformed trees** -- `d83cf685`, `3a60f33f`, the SAME two AGENTS.md names as PRE-EXISTING ORPHANS; neither is an ancestor of HEAD |
+
+The BASELINE, at `c7f0f1cc6` in a clean worktree, was the same 38/38/38/0/38/0
+with `substrate == 17f7ec725c1fbe173c8df8f252087087d9290112edf283e2e85bda24ddf8bff3`
+and the same `339 of 339` repro.  **The digest moved because a `.bend` file
+moved, and the verdict did not.**
+
+## (g) THE OPS TABLES WERE NOT TOUCHED, AND THAT IS MEASURED
+
+`Ops.name.of`'s 76 arms, `Ops.value`'s 76 arms and `all_ops`'s 76 entries are
+**byte-identical** before and after the change.  MEASURED by re-parsing both
+revisions of the file.
+
