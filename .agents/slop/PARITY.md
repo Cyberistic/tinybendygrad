@@ -7392,3 +7392,62 @@ trace.py` (THE **INDEX**, **THE **BLOCK's **LENGTH**, **THE **OFFSET** **AND **T
 **THE **ROW **COUNT** -- **THE **SIGNATURE **OF **A **LOST **WRITE**), **AND** `model-*.py` (THE
 **INDEX **ARITHMETIC**, **THE **LAYOUT**, **THE **COST **MODEL** **AND **THE **CHECKLIST**)**.
 
+
+### 138.9 THE **FORWARD-ORDER **REBUILD **IS **CORRECT **AND **NEUTRAL** -- **⇒⇒⇒ AND **THE **WALK **IS **NOT **THE **COST**
+
+**⇒⇒⇒ AND **THE **CHANGE **IS **NOT **LANDED**, **⇒⇒⇒ AND **THIS **IS **THE **FOURTH **TIME
+**THE **COUNT **HAS **BEEN **DISPROVED** (§138.5), **⇒⇒⇒ AND **THE **COUNT **THIS **TIME **WAS
+**THE **WALK** -- **⇒⇒⇒ AND **THE **WALK **WENT **DOWN **56% **AND **THE **RENDER **DID **NOT
+**MOVE**.
+
+**⇒⇒⇒ AND **THE **FIRST **RESULT**: **THE **REBUILD **REACHED **BYTE-IDENTICAL **OUTPUT** -- **AND
+**THAT **TOOK **FIVE **ATTEMPTS** **⇒⇒⇒ AND **EVERY **ONE **OF **THEM **IS **A **MEASURED **FACT**:
+
+| # | THE **ATTEMPT** | THE **VERDICT** | THE **CAUSE** |
+|---|---|---|---|
+| 1 | **THE **REVERSED **BLOCK **LIST + **THE **FORWARD **INDEX** | **THE **OUTPUT **DIFFERED **AT **ONE **ROW** | **THE **REVERSAL **WAS **APPLIED **TO **THE **WHOLE **LIST **ON **EVERY **NEW **BLOCK** -- **⇒⇒⇒ AND **SO **IT **FLIPPED **THE **ALREADY-CORRECT **PREFIX **EVERY **TIME** (MEASURED, `model-forward.py`: **AT **`i = 32`** **THE **BLOCKS **WERE **[r16, r0, r32]** **AND **NOT **[r0, r16, r32]**) |
+| 2 | **THE **REVERSAL **DELETED** | **THE **BLOCKS **WERE **[1, 1, ..., 1, 733]** | **`List.append(xs, ys)` **COPIES **`xs` **AND **PUTS **`ys` **AT **THE **END** (MEASURED, `references/bend/bend2/base.bend:992`), **⇒⇒⇒ AND **THE **ARGUMENTS **WERE **SWAPPED** -- **⇒⇒⇒ AND **THE **NEW **BLOCK **LANDED **IN **THE **MIDDLE **OF **THE **LIST** |
+| 3 | **THE **SEPARATE **CURRENT **BLOCK** (`Rows{ts, cur, nc, n}`) | **THE **OUTPUT **DIFFERED **AT **33 **ROWS** | **THE **OFFSET **WAS **COMPUTED **FROM **THE **BLOCK's **LENGTH** -- **⇒⇒⇒ AND **THE **PREPEND **SHIFTS **THE **EARLIER **ROWS' **OFFSETS**, **⇒⇒⇒ AND **THE **BASE **AVOIDED **IT **BY **COMPUTING **THE **OFFSET **FROM `n`** |
+| 4 | **THE **OFFSET **FROM `n`** | **THE **OUTPUT **STILL **DIFFERED **AT **33 **ROWS** | **`Rows.ncomp` **WAS **`Bool.pick(nc == 16, 1 + (n >> 4), n >> 4)`** -- **⇒⇒⇒ AND **THAT **IS **WRONG **AT **`n = 16, 32, 48`** (MEASURED: **IT **ANSWERED **2, 3, 4** **WHERE **THE **TRUTH **IS **1, 2, 3**) **⇒⇒⇒ AND **THE **RIGHT **FORM **IS **`(n - nc) >> 4`** (**`n = ncomp*16 + nc`**) |
+| 5 | **ALL **FOUR **TOGETHER** | **THE **OUTPUT **IS **BYTE-IDENTICAL** (15,242 **BYTES**) | -- |
+
+**⇒⇒⇒ AND **THE **VERDICT**, **MEASURED **WITH **THE **PAIRED **A/B** (`builds/paired2.py`,
+**ALTERNATED **TURN **BY **TURN**, **AND **THE **NOISE **FLOOR **WAS **READ **FIRST**):
+
+```
+THE NOISE FLOOR (THE **SAME **BUILD **AGAINST **ITSELF**): ratio-of-minima 1.0249  (123 PAIRED TURNS)
+THE REBUILD:  ratio-of-minima 1.0037  (203 PAIRED TURNS)   median-of-paired-ratios 1.0215
+THE REBUILD:  ratio-of-minima 1.0007  (163 PAIRED TURNS)   median-of-paired-ratios 1.0196
+```
+
+**⇒⇒⇒ AND **`same C: True`** **ON **BOTH **RUNS** (THE **OUTPUT **IS **BYTE-IDENTICAL**) **⇒⇒⇒ AND
+**THE **VERDICT **IS **NEUTRAL** **⇒⇒⇒ AND **THE **CHANGE **IS **NOT **LANDED** (THE **TREE's OWN
+RULE: **REVERT **ANY **CHANGE **WHOSE **MEASURED **RATIO **IS **NEUTRAL**)**.
+
+**⇒⇒⇒ AND **THE **WHY**, **AND **IT **IS **THE **POINT**:
+
+| THE **MEASUREMENT** | base | the **REBUILD** | THE **DELTA** |
+|---|---|---|---|
+| **THE **OUTER **WALK** (`List.get(ts, bi)`) | 22,314 cons/turn | **9,809** | **−12,505** |
+| **THE **INNER **WALK** (the block) | 19,187 | 19,187 | 0 |
+| **THE **CELLS **ALLOCATED **BY **THE **WRITES** | 1,908 | 2,628 | **+720** |
+| **THE **RENDER's **WALL** (the **A/B's **MINIMUM**) | 0.9515 ms | 0.9550 ms | **+0.4%** |
+
+**⇒⇒⇒ AND **`rtp` **IS **0.1521 ms** **A **TURN** (MEASURED, `probe-alu-parts.py`) **⇒⇒⇒ AND **THE
+**RENDER's **WHOLE **WALL **IS **~0.95 ms** **⇒⇒⇒ AND **SO **EVEN **DELETING **`rtp` **ENTIRELY**
+**WOULD **SAVE **AT **MOST **16%** **⇒⇒⇒ AND **THE **WALK **IS **A **FRACTION **OF **IT**.
+
+**⇒⇒⇒ AND **THE **PROBES **THAT **SETTLED **IT**, **AND **THEY **ARE **TRACKED**:
+`probe-rows-diff.py` (THE **FLAT **ROW **SEQUENCE**, **DIFFED** -- **THE **DIRECT **COMPARATOR**),
+`probe-rows-cmp.py` (THE **SAME**, **FOR **THE **TWO **LAYOUTS' **DIFFERENT **STORAGES**),
+`probe-outer-walk2.py` (**THE **WALK **AS **THE **DISTANCE **TO **THE **ELEMENT**, **AND **FOR
+**ANY **BUILD** -- **⇒⇒⇒ AND **THE **FIRST **VERSION **COUNTED **THE **WHOLE **LIST **AND **SO **IT
+**COULD **NOT **SEE **THE **DIFFERENCE**), `probe-stset-walk.py` (THE **`st_set.p` **WALK**),
+`probe-cons-cells.py` (THE **CELLS **ALLOCATED**).
+
+**⇒⇒⇒ AND **THE **LESSON**, **WRITTEN **DOWN **SO **THE **NEXT **AGENT **DOES **NOT **RE-ATTEMPT
+**IT**: **A **WALK **IS **A **COUNT**, **⇒⇒⇒ AND **A **COUNT **IS **NOT **A **COST** -- **⇒⇒⇒ AND
+**THE **RENDER's **BIGGEST **ARMS **ARE **THE **TEXT **ASSEMBLY **AND **THE **STRING **JOINS**, **⇒⇒⇒
+**AND **THE **INDEXED **ACCESS **IS **A **FRACTION **OF **THE **RENDER** (§138.3: **named 1.43 ms,
+**emit 0.89, **stmt 0.62, **alu 0.41, **decl 0.25** -- **⇒⇒⇒ AND **NONE **OF **THOSE **IS **THE
+**INDEX**)****.
