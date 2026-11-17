@@ -7330,3 +7330,65 @@ AND **A **HALF-DONE **CHANGE **TO **IT **IS **WORSE **THAN **NO **CHANGE****.
 **MEASUREMENT **AGREE** ON **THE **WALK's **LENGTH**, **⇒⇒⇒ AND **THE **HISTOGRAM **IS **THE
 **MECHANISM****.
 
+### 138.8 THE **FORWARD-ORDER** CHANGE IS **CHARACTERIZED** (AND **NOT **LANDED**)
+
+**§138.7's **NEXT **ATTEMPT** NEEDS **NO **RE-DERIVATION**, **AND **THIS **SECTION **IS **THE
+RECORD **THAT **MAKES **THAT **TRUE**.
+
+#### THE PROBLEM, **EXACTLY** (MEASURED, `probe-block-count.py` AND `probe-outer-walk.py`, **IN
+THE DAEMON**)
+
+· **THE `ts` LIST **IS **IN **REVERSE **CHRONOLOGICAL **ORDER** (THE **CURRENT **BLOCK **AT **THE
+**HEAD**, **AND `st_put.r`'s MODE 2 **APPENDS **A NEW **BLOCK **AT **THE **TAIL**), **AND **THE
+**BLOCK's **ROWS **ARE **NEWEST-FIRST** (MODE 1 **PREPENDS**);
+· **THE `bi` **COUNTS **BLOCKS **BACKWARD **FROM **THE **CURRENT **ONE** (0 = CURRENT), **AND **THE
+`off` **COUNTS **FROM **THE **BLOCK's **HEAD** (THE **NEWEST **ROW**);
+· **`rtp` **READS **ROW `i`** AS **`d = n-1-i`** (THE **REVERSE **ROW **INDEX**), **AND **THE
+**ALU's **SOURCES **ARE **EARLIER **UOPS** (SMALL `i`)** ⇒⇒⇒ **THAT **PUT **THE **HOT
+**ACCESSES **AT **THE **FAR **END** -- **AND **THE **OUTER **WALK **TOUCHED **33,360** ELEMENTS A
+TURN** (27.0 A CALL) **AND **THE **HISTOGRAM **SHOWED **44-49** ELEMENTS FOR **~5,000** OF **THE
+1,237** CALLS**.
+
+#### THE FORWARD LAYOUT's INDEX, **DERIVED FROM THE CODE** (NOT FROM A MODEL)
+
+· **THE **BLOCK LIST **IS **IN **FORWARD **CHRONOLOGICAL **ORDER** (THE **OLDEST **AT **THE
+**HEAD** **AND **THE **CURRENT **ONE **AT **THE **TAIL**), **⇒⇒⇒ AND **THE **PARTIAL **BLOCK**
+(`b0` **ROWS**) **IS **THE **LAST **ONE** -- **⇒⇒⇒ AND **THAT **IS **THE **DIFFERENCE **FROM
+**THE **OLD **LAYOUT** (WHERE **THE **PARTIAL **ONE **WAS **AT **THE **HEAD**)**;
+· **`bi(i)`** = **THE **FORWARD **BLOCK **NUMBER** = `0 IF i < b0 ELSE 1 + (i-b0)/16`;
+· **`off(i)`** = **THE **OFFSET **FROM **THE **BLOCK's **HEAD** = `b0-1-i` FOR **THE **FIRST
+**BLOCK** **AND **15-((i-b0)&15)`** FOR **THE **OTHERS** -- **⇒⇒⇒ AND **THE **REVERSAL **WITHIN
+**THE **BLOCK** IS **REQUIRED** (THE **BLOCK's **ROWS **ARE **NEWEST-FIRST**)**;
+· **⇒⇒⇒ AND **THE **PREDICTED **WALK**: **THE **HOT **ACCESSES **GO **FROM **42-49** ELEMENTS
+**TO **2-6** (THE **HOT `bi` **IS **42-46** **AND **`nblocks-1-bi`** **IS **2-6**)**.
+
+#### THE FIVE ATTEMPTS, AND WHY EACH FAILED -- **THEY ARE THE REASONS THE NEXT ONE WILL SUCCEED**
+
+1. **THE **TAIL **WALK**: **THE **COUNTER **NEVER **DECREMENTED** **AND **THE **O(n)
+   **ACCUMULATOR** ⇒⇒⇒ **7.19x SLOWER**, `same C: False`.
+2. **THE **COUNTER **FIXED, **THE **O(1) **PREPEND**: **PREPENDING **REVERSES **THE **VISIT
+   **ORDER** ⇒⇒⇒ **4.25x SLOWER**, `same C: False`.
+3. **NO **ACCUMULATOR** (THE **WALK **CARRIES **THE **BLOCK **AND **THE **COUNTER**): **A **REAL
+   **WIN** (**0.9675**) **BUT `same C: False`** -- **THE **WALK **STILL **STARTED **AT **THE
+   **HEAD**).
+4. **THE **FULL **FORWARD **REBUILD**: **THE **OUTPUT **CHANGED** (15,242 → 12,222 **BYTES**) **AND
+   **THE **ROWS **CAME **BACK **WITH **EMPTY **NAMES** -- **⇒⇒⇒ AND **THE **BLOCK-LENGTH **TRACE
+   **SHOWED **[1, 1, ..., 1, 733]** (SUM 456, NOT 781) -- **⇒⇒⇒ AND **THAT **IS **THE
+   **SIGNATURE **OF **A **SET **AT **THE **WRONG **POSITION** (THE **ROWS **ARE **LOST**)****.
+5. **THE **REVERSED **BLOCK LIST **PER **NEW **BLOCK** + **THE **FORWARD **INDEX**: **THE **BLOCK
+   **LENGTHS **MATCHED **THE **FORWARD **ORDER **EXACTLY** (**[16, ..., 16, 13]**) **BUT **THE
+   **OUTPUT **STILL **DIFFERED** -- **⇒⇒⇒ AND **THE **REMAINING **PIECE **IS **THE **OFFSET
+   **REVERSAL **INSIDE **THE **BLOCK**, **AND **THE **`ln`** (THE **BLOCK's **LENGTH**) **MUST
+   **BE **`b0`** FOR **THE **FIRST **BLOCK** **AND **16** FOR **THE **OTHERS**.
+
+**⇒⇒⇒ AND **THE **CHANGE **IS **NOT **LANDED**, BECAUSE **IT **COULD **NOT **BE **SHOWN
+**CORRECT**, **⇒⇒⇒ AND **A **CHANGE **THAT **CANNOT **BE **SHOWN **CORRECT **IS **WORSE **THAN
+**NO **CHANGE** (THE TREE's OWN RULE, AND **§138.5's: **THE COUNT IS NOT THE COST**)**.
+
+**⇒⇒⇒ AND **THE **PROBES **AND **THE **MODELS **ARE **TRACKED**, BECAUSE **THE **EVIDENCE **WAS
+**IN A **PLACE **THAT **ROTS**: `probe-rows-data.py` (THE **PIECES **OF **THE **ROWS**), `probe-rows-
+trace.py` (THE **INDEX**, **THE **BLOCK's **LENGTH**, **THE **OFFSET** **AND **THE **RESULT**),
+`probe-block-lens.py` **AND** `probe-block-count.py` (THE **BLOCK **LENGTHS**, **THE **SUM** **AND
+**THE **ROW **COUNT** -- **THE **SIGNATURE **OF **A **LOST **WRITE**), **AND** `model-*.py` (THE
+**INDEX **ARITHMETIC**, **THE **LAYOUT**, **THE **COST **MODEL** **AND **THE **CHECKLIST**)**.
+
