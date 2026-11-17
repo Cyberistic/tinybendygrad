@@ -7678,3 +7678,93 @@ Ops.ALLOC}`** **QUOTE **IN **`uop/spec.bend`** (⇒⇒⇒ AND **UPSTREAM's **OWN
 **NOT **HOLD**, **⇒⇒† AND **THE **NEW **ONES **ARE **PRECEDINGLY **THE **POINTERS **INTO **CODE **THE
 **PORT **DOES **NOT **HAVE** (⇒⇒† AND **THE **`OUT-OF-CORPUS` **ONE**, **`tn_bitwise_not.bend`**, **WAS **THE
 **ONLY **ONE **THE **COMMENT **WORK **INTRODUCED**)**.
+
+### 138.14 THE **`ku_align` **DEFECT **IS **FIXED **AND **GUARDED** -- **⇒⇒† AND **A **DEFECT **THAT **NO
+**GATE **COULD **SEE **IS **NOW **A **ROW**
+
+**⇒⇒† AND **§138.12's **RENDERER **AGENT **FOUND **A **REAL **PORT **DEFECT**: **THE **PORT's
+**`ku_align`** (`renderer/cstyle.bend`) **ANSWERED **A **CONSTANT **`4`** **OFF-CPU **AND **`4`** **FOR **A
+**`bool` **VECTOR**, **WHERE **UPSTREAM **ANSWERS **`2**int(math.log2(dt.itemsize * count))`** **AND **`1`**
+-- **⇒⇒† AND **SO **FOR **A **`float4`** (itemsize 4, count 4) **UPSTREAM **ANSWERS **16** **AND **THE
+**PORT **ANSWERED **4**, **⇒⇒† AND **THE **PORT's **ALIGNMENT **WAS **TOO **SMALL **FOR **EVERY **VECTOR
+**WIDER **THAN **ONE **ELEMENT** **AND **TOO **LARGE **FOR **A **bool**.
+
+**⇒⇒† AND **THE **FIX**: **`ku_align` **TAKES **THE **`count`** **AND **THE **`is_bool` **TEST**, **⇒⇒† AND
+**THE **FORM **IS **UPSTREAM's**, **⇒⇒† AND **BEND's **`U32.log2` **IS **THE **FLOOR** (THE **INDEX **OF
+**THE **HIGHEST **SET **BIT**), **⇒⇒† AND **SO **`1 << log2(n)` **IS **THE **GREATEST **POWER **OF **TWO
+**`<= n`** -- **⇒⇒† AND **THAT **IS **ALSO **THE **PORT's **OWN **IDIOM** (`runtime/support/memory.bend`'s
+**`shl1`**/**`frag_sz_max`**)**.
+
+**⇒⇒† AND **THE **EDGE **CASES **ARE **MEASURED **AGAINST **CPython**, **NOT **INFERRED**: **`3 → 2`**,
+**`5 → 4`**, **`6 → 4`**, **`12 → 8`** -- **⇒⇒† AND **A **`log2` **WITHOUT **A **FLOOR **WOULD **ANSWER **4**,
+**8**, **8**, **16**, **⇒⇒† AND **THE **64 `rvp_*` **ROWS **HOLD **THE **WHOLE **TABLE** (`.agents/slop/
+kualign/alignment-table.rows`, **0 disagreements**)**.
+
+**⇒⇒† AND **AND **THE **DEFECT **IS **NOW **GUARDED**: **THE **`cstyle_render_census`** **GAINED **64
+**ROWS **THAT **COMPARE **THE **PORT's **`render_vector_prefix`** **AGAINST **CPython's **REAL
+**`ClangRenderer.render_vector_prefix`** (MEASURED: **THE **ORACLE **IS **THE **CLANG **RENDERER**, **AND
+**CUDA **AND **HIP **OVERRIDE **THE **METHOD**, **⇒⇒† AND **SO **THE **ORACLE **IS **NOT **THE **PORT's
+**DEVICE**)**, **⇒⇒† AND **THE **PLANT **IS **`M12`** (**PUTS **THE **CONSTANT **`4`** **BACK**): **MEASURED,
+**`rc=1`, **26 **ROWS **MOVED** -- **⇒⇒† AND **THE **38 **THAT **DO **NOT **MOVE **ARE **THE **32 **CPU
+**ROWS** (THE **`dt.itemsize` **ARM **M12 **KEEPS**) **AND **THE **SIX **OFF-CPU **ROWS **WHOSE **ANSWER
+**WAS **ALREADY **4`**)**.
+
+**⇒⇒† AND **THE **CORPUS **IS **UNAFFECTED **AND **THAT **IS **THE **POINT**: **339 **of **340 **ARTIFACTS
+**BYTE-IDENTICAL **TO **THE **PRE-FIX **RUN** (⇒⇒† AND **THE **ONE **EXCEPTION **IS **`D0-ops-probe.txt`**,
+**WHICH **DIFFERS **ONLY **IN **THE **ABSOLUTE **WORKTREE **PATH **INSIDE **A **TRACEBACK**)** -- **⇒⇒† AND
+**THE **`aligned(` **CLAUSE **IS **ABSENT **FROM **ALL **38 **GRAPH's **OUTPUTS**, **⇒⇒† AND **SO **A **FIX
+**THAT **IS **RIGHT **AND **INVISIBLE **IS **A **FIX **THAT **ONLY **A **NEW **GATE **CAN **CERTIFY**.
+
+**⇒⇒† AND **AND **THE **VERDICTS**: **PROOF **ALL **PROOFS **CHECK** -- **⇒⇒† AND **CORPUS **38/38
+**AGREE**, **38/38 **BYTE-IDENTICAL**, **0 **REFUSED**, **⇒⇒† AND **REPRO **339/339** -- **⇒⇒† AND
+**`corpuswitness-gate` **PASS** (7/7) -- **⇒⇒† AND **THE **GATE **rc=0** (425 **rows**) -- **⇒⇒† AND **THE
+**GATE **IS **NOW **AN **EDGE **CANDIDATE** (**29 **candidates**, **`RUN
+gates/cstyle_render_census-gate.py`**) -- **⇒⇒† AND **THE **GATE's **OWN **POPULATION **RULE **WAS
+**FALSE** (**IT **CLAIMED **`render_vector_prefix` **HAD **"NO **PORT **DEF"**, **AND **IT **DOES**, **AT
+**`cstyle.bend:3089`**) **⇒⇒† AND **THE **DISCOVERY **COMMAND **NOW **RETURNS **13 **NAMES**, **NOT **8**.
+
+### 138.15 THE **CITATIONS **ARE **NOW **A **GATE**, **AND **THE **LEDGER **IS **NOW **GENERATED**
+
+**⇒⇒† AND **§138.13's **AUDIT **FOUND **THE **PORT's **OWN **CITATIONS **BROKEN** (⇒⇒† AND **THE **PORT
+**CARRIES **6,978 **OF **THEM**), **⇒⇒† AND **A **FINDING **WITHOUT **AN **INSTRUMENT **IS **A **FINDING
+**THAT **ROT** -- **⇒⇒† AND **SO **TWO **INSTRUMENTS **LANDED**:
+
+**⇒⇒† AND **THE **GATE** (`gates/cite-line-gate.py`): **⇒⇒† AND **IT **FOLLOWS **`gates/gatekit.py`'s
+**FIVE **EXITS** (**PASS 0, FAIL 1, REFUSED 3, SKIP 4, DEAD 5**), **⇒⇒† AND **ITS **OUTPUT **GOES **TO
+**`gates/artifacts/`**, **⇒⇒† AND **AND **IT **IS **RED**: **109 **of **6,984 **UPSTREAM **CITATIONS **DO
+**NOT **HOLD** -- **⇒⇒† AND **87 **OUT-OF-RANGE**, **20 **NO-SUCH-FILE**, **2 **QUOTE-MISMATCH**, **⇒⇒† AND
+**10 **ARE **THE **PORT's **OWN **TOOLS** (**`ops_bend.py`**, **`test_validate_oob.py`**,
+**`nvdriver.py`**), **⇒⇒† AND **AND **THE **2 **QUOTE **MISMATCHES **ARE **THE **TWO **THE **AUDIT **FOUND
+**INDEPENDENTLY**: **`mixin/movement.bend:325`** (QUOTES *"permute to move reduce to the end"* **AT
+**`movement.py:616`**) **⇒⇒† AND **`extra/models/vit.bend:43`** (QUOTES **A **TODO **AT
+**`mixin/op.py:1661`**) -- **⇒⇒† AND **THAT **TWO **INDEPENDENT **INSTRUMENTS **AGREEING **IS **THE
+**STRONGEST **FORM **OF **THE **FINDING**.
+
+**⇒⇒† AND **THE **PLANT**, **MEASURED**: **ARM **ONE** (**A **CITED **LINE **THAT **IS **OUT **OF
+**RANGE**): **`OK → OUT-OF-RANGE`** **⇒⇒† AND **ARM **TWO** (**THE **PORT's **QUOTED **WORDS **CHANGE**):
+**`OK → QUOTE-MISMATCH`** **⇒⇒† AND **THE **TWIN **CONTROL** (**A **BYTE-IDENTICAL **COPY**) **REPRODUCES
+**THE **CONTROL **EXACTLY**.
+
+**⇒⇒† AND **THE **LEDGER** (`gap.rows`): **⇒⇒† AND **IT **IS **NOW **GENERATED **BY
+**`.agents/slop/commentgap/gap-gen.py`**, **⇒⇒† AND **SO **IT **CANNOT **ROT** -- **⇒⇒† AND **AND **IT
+**RECORDS **ITS **OWN **SUBSTRATE** (sha256 **OF **EVERY **FILE **IT **READ**), **⇒⇒† AND **BECAUSE **TWO
+**RUNS **ONE **MINUTE **APART **PRODUCED **DIFFERENT **BYTES** -- **⇒⇒† AND **ANOTHER **UNIT **WAS **EDITING
+**`tinybendygrad/uop/spec.bend`** **WHILE **THE **FIRST **RUN **READ **IT**, **⇒⇒† AND **THE **VERDICT **FOR
+**`uop/spec.py:206`** **MOVED **FROM **`GAP-DIFFERENT-REASONING` **TO **`PORTED`** **ACROSS **THE **TWO
+**RUNS**) **⇒⇒† AND **THE **TREE's **OWN **RULE**: **A **CENSUS **WHOSE **POPULATION **IS **THE **WORKING
+**COPY **HAS **NO **REPRODUCIBLE **DENOMINATOR** (`.gitignore:58`)**.
+
+**⇒⇒† AND **THE **FRESH **LEDGER**, **TAKEN **ON **A **CLEAN **TREE**
+(**`substrate: 30cfa2900582636772af98e9b2587f816268382daaf40789f59a71824b73dea5`)**): **1619
+**`GAP-NO-CITATION`**, **495 **`PORTED`**, **127 **`GAP-DIFFERENT-REASONING`**, **98
+**`GAP-CITED-NO-REASONING`**, **67 **`N/A-PYTHON-ONLY`** -- **⇒⇒† AND **THE **CENSUS's **OWN **NUMBERS**:
+**6,978 **CITATIONS**, **10,373 **PORT **COMMENT **BLOCKS**, **969 **AMBIGUOUS-BASENAME **CITATIONS**.
+
+**⇒⇒† AND **THE **GENERATOR's **THREE **DELIBERATE **DEVIATIONS **FROM **THE **PREDECESSOR**, **EACH
+**DOCUMENTED **IN **THE **SCRIPT**: **SCRATCH **FILES **EXCLUDED** (**THE **TREE's **OWN **RULE**, **LOADED **BY
+**PATH **FROM **`gates/header-census-gate.py:is_scratch`**) **⇒⇒† AND **THE **`tinygrad/` **PREFIX **STRIPPED
+**BEFORE **THE **EXACT-PATH **TEST** (**WHICH **FIXES **ONE **ROW **OF **2,406**) **⇒⇒† AND **AND **THE
+**TIE-BREAK **STATED** (**THE **EARLIEST **BLOCK **IN **THE **WALK**) **⇒⇒† AND **AND **THE **PREDECESSOR's
+**OWN **THROWAWAY **`cg_join.json`** (23:13) **ALREADY **DISAGREES **WITH **THE **LEDGER **IT **WROTE** -- **⇒⇒†
+**AND **THE **VERDICTS **WERE **RIGHT **ALL **THE **SAME** (**0 **DIFFERENCES **IN **2,406 **ROWS**)**, **⇒⇒†
+**AND **NO **COMMITTED **TREE **REPRODUCES **THOSE **LINE **NUMBERS**.
