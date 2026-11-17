@@ -2193,22 +2193,43 @@ def uops_to_dtypes.has(+x: DtN, +acc: List<&2, DtN>) -> Bool:
 #     `float4` LOAD ACTUALLY NEEDS. THE ATTRIBUTE IS AN OVERRIDE OF A
 #     DEFAULT THAT IS ALREADY RIGHT, NOT A FIX FOR A BROKEN ONE.
 #
-# ⚠ AND THE PORT DOES NOT DO THIS. `ku_align` BELOW TAKES NO `count` AND
-# ANSWERS A CONSTANT `4` OFF-CPU, WHERE UPSTREAM ANSWERS
-# `2**int(math.log2(dt.itemsize * count))`. FOR A `float4` -- `itemsize` 4,
-# `count` 4 -- UPSTREAM ANSWERS **16** AND THE PORT ANSWERS **4**. THE
-# PORT'S ALIGNMENT IS THEREFORE TOO SMALL FOR EVERY VECTOR WIDER THAN ONE
+# ⚠ AND THIS USED TO BE A PORT DEFECT, AND IT IS FIXED. `ku_align` BELOW
+# TOOK NO `count` AND ANSWERED A CONSTANT `4` OFF-CPU, WHERE UPSTREAM
+# ANSWERS `2**int(math.log2(dt.itemsize * count))`. FOR A `float4` --
+# `itemsize` 4, `count` 4 -- UPSTREAM ANSWERS **16** AND THE PORT ANSWERED
+# **4**, SO THE ALIGNMENT WAS TOO SMALL FOR EVERY VECTOR WIDER THAN ONE
 # ELEMENT, AND TOO LARGE FOR A `bool` VECTOR (UPSTREAM ANSWERS `1` FOR
-# `dtypes.is_bool`, THE PORT ANSWERS `4`).
+# `dtypes.is_bool`, THE PORT ANSWERED `4`). THE DEFECT WAS LATENT: THE
+# `aligned(...)` CLAUSE APPEARS IN **NONE** OF THE CORPUS's 38 OUTPUTS
+# (MEASURED: `grep -rho "aligned([0-9]*)" runs/graphcmp/D/` IS EMPTY), SO
+# THE CORPUS COULD NOT SEE IT AND NO GRAPH's OUTPUT MOVED WHEN IT WAS
+# FIXED. THE GATE THAT SEES IT IS `gates/cstyle_render_census-gate.py`'s
+# `rvp_*` ROWS, WHICH DRIVE THE PORT's OWN `render_vector_prefix` AGAINST
+# CPython's REAL `render_vector_prefix`.
 #
-# THE `count` IS AVAILABLE AT THE CALL SITE -- `render_vector_prefix` TAKES
-# IT -- SO THE FIX IS TO GIVE `ku_align` THE COUNT AND THE `is_bool` TEST.
-# IT IS NOT APPLIED HERE BECAUSE THIS UNIT IS COMMENTS-ONLY, AND IT IS
-# REPORTED RATHER THAN QUIETLY PAPERED OVER BECAUSE A GATE ROW THAT
-# COMPARED THE PORT'S ANSWER AGAINST ITS OWN WOULD NOT SEE IT: THE
-# PORT'S `ku_align` IS NOT AN ORACLE-COMPARED ROW TODAY.
-def ku_align(cpu: Bool, +dt: S.Dt) -> U32:
-  Bool.pick(U32, cpu, S.Dt.itemsize(dt), 4)
+# THE TWO ARMS, AND WHY EACH IS WHAT IT IS:
+#   * CPU -> `dt.itemsize`. UPSTREAM'S `self.target.device == "CPU"` IS A
+#     WHOLE-VECTOR RULE THAT DOES NOT APPLY ON THE CPU, WHERE THE ELEMENT
+#     ALIGNMENT IS THE ONLY ONE THAT MATTERS. THE PORT's `cpu` FLAG IS THE
+#     SAME PREDICATE, THREADED IN.
+#   * OTHERWISE -> `1` FOR A `bool`, ELSE THE GREATEST POWER OF TWO THAT IS
+#     `<= dt.itemsize * count`. THE `bool` ARM IS UPSTREAM'S `dtypes.is_bool`
+#     TEST AND ANSWERS `1` REGARDLESS OF `count`, BECAUSE A `_Bool` VECTOR
+#     IS A BIT VECTOR AND ITS ALIGNMENT IS ONE BYTE.
+#
+# THE POWER OF TWO IS `U32.shln(1, U32.log2(n))`. `U32.log2` IS THE FLOOR
+# OF `log2` -- IT IS THE INDEX OF THE HIGHEST SET BIT -- SO `1 << log2(n)`
+# IS THE GREATEST POWER OF TWO `<= n`, WHICH IS EXACTLY WHAT UPSTREAM'S
+# `2**int(math.log2(n))` ANSWERS. MEASURED AGAINST CPython ON THE WHOLE
+# TABLE: `12 -> 8`, `3 -> 2`, `5 -> 4`, `6 -> 4`, `24 -> 16`, `28 -> 16`,
+# `20 -> 16`, `1 -> 1`, `2 -> 2`, `4 -> 4`, `16 -> 16`, `32 -> 32`. THE
+# PORT's OWN IDIOM FOR THIS IS `runtime/support/memory.bend`'s `shl1`
+# (`U32.shln(1, U32.to_nat(x))` THERE, BECAUSE THAT CALL SITE ALREADY HAD
+# A `U32` IN HAND), AND `frag_sz_max` THERE IS THE SAME FUNCTION UNDER A
+# DIFFERENT NAME: "THE BIGGEST POWER OF TWO `<= sz`".
+def ku_align(cpu: Bool, +dt: S.Dt, +count: U32) -> U32:
+  Bool.pick(U32, cpu, S.Dt.itemsize(dt),
+    Bool.pick(U32, S.Dt.is_bool(dt), 1, U32.shln(1, U32.log2(U32.mul(S.Dt.itemsize(dt), count)))))
 
 # `_render_defines` -- cstyle.py:308.
 def axis_letter(a: O.AxisType) -> String:
@@ -3089,7 +3110,7 @@ def uops_to_dtypes(kus: List<&2, KU>) -> List<&2, DtN>:
 def render_vector_prefix(+dev: U32, cpu: Bool, +dt: S.Dt, +count: U32) -> String:
   String.concat(["typedef ", render_dtype(dev, dt, 1, S.Aalu{}, True{}, False{}, False{}), " ",
     render_dtype(dev, dt, count, S.AReg{}, True{}, False{}, False{}),
-    " __attribute__((aligned(", U32.show(ku_align(cpu, dt)), "),ext_vector_type(", U32.show(count), ")));"])
+    " __attribute__((aligned(", U32.show(ku_align(cpu, dt, count)), "),ext_vector_type(", U32.show(count), ")));"])
 
 def _render_defines.go(+xs: List<&2, DtN>, +dev: U32, +cpu: Bool, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
