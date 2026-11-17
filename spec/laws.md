@@ -87,9 +87,17 @@ stay pinned by tinygrad's own pytest suite.
 specification and are subject to change." We left them out on the spec's own
 instruction.
 
-**`min_max`.** It is interval arithmetic over the same ops and is exact only
-where tinygrad says it is. Pinned by `test/null/test_uop_vmin_vmax.py` instead —
-55 tests that run on CPU.
+**`min_max`, IN PART.** It is interval arithmetic over the same ops and is
+exact only where tinygrad says it is. The ARITHMETIC cells (`[a+b, A+B]` and
+the rest) need the values, and the port's IR is structural — `one()` and
+`zero()` are placeholder consts with no number — so those cells are not stated.
+
+It was **not pinned elsewhere either**, and this file claimed it was: "Pinned by
+`test/null/test_uop_vmin_vmax.py` instead — 55 tests that run on CPU." MEASURED
+2026-11-17: `tinygrad/test/` is **not vendored** at the pin —
+`git ls-tree f5ac54685074 --name-only tinygrad/test` answers 0 — so the column
+was pinned by nothing. The two cells that need no number are stated now: the
+`"src[0]"` cells and the `"dtype range"` cells.
 
 **The compilation IR.** `tinygrad/uop/ops.py` is a cyclic hash-consed graph in
 an arena, because the range graph has back-edges and the test suite depends on
@@ -113,7 +121,13 @@ the shape half alone reported 18 TODOs and the ALU/dtype half 16, and the
 aggregate `PROOF-ALL.bend` existed to import both. MEASURED 2026-11-17: the two
 halves' sixty defs have NO NAME IN COMMON and neither calls a def declared
 later in its own file, so ONE file holds both halves and the aggregate is not
-needed. The proof file is now `LAWS/PROOF.bend` and it holds all fifty laws.
+needed. The proof file is now `LAWS/PROOF.bend` and it holds all seventy-four
+laws.
+
+The port states **four of the spec's five derived properties** now — `dtype`,
+`shape`, `device` and the value-free half of `min_max`. The fifth, `addrspace`,
+has no column in the spec's derived-properties table (only the `ParamArg`
+prose), so there is nothing to state.
 
 ## Files
 

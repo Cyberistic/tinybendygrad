@@ -505,6 +505,21 @@ def L.reduce_preserves_dtype(t, ranges, op, n):
 def L.reduce_preserves_device(t, ranges, op, n):
   {==}
 
+# V-quater. THE MIN_MAX COLUMN, and the spec's FOURTH derived property.
+#
+# The two cells that need no NUMBER: "src[0]" and "dtype range".
+def L.movement_preserves_min_max(a):
+  {==}
+
+def L.copy_preserves_min_max(buf, dev):
+  {==}
+
+def L.after_preserves_min_max(buf, deps):
+  {==}
+
+def L.bitcast_takes_the_dtype_range(a, dt):
+  {==}
+
 # tinyspec's elementwise column: "all inputs same shape, output same shape".
 #
 # Each of the three is the SAME two steps -- rewrite `b`'s shape into `a`'s with

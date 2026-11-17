@@ -30,10 +30,18 @@
 #   * The 20 Codegen Ops. tinyspec says of them: "these ops are not part of the
 #     core specification and are subject to change."
 #
-#   * The `min_max` column. It is interval arithmetic over the same ops, and it
-#     is exact only where tinygrad says it is; proving it would need the float
-#     machinery above. It is pinned by test/null/test_uop_vmin_vmax.py (55
-#     tests) instead.
+#   * The `min_max` column, IN PART. It is interval arithmetic over the same
+#     ops, and it is exact only where tinygrad says it is; the ARITHMETIC cells
+#     ("[a+b, A+B]" and the rest) would need the float machinery above, and
+#     the port's IR is STRUCTURAL -- its `one()` and `zero()` are placeholder
+#     consts with no number. So the arithmetic is not stated.
+#
+#     IT WAS NOT PINNED ELSEWHERE EITHER, and this line claimed it was: "pinned
+#     by test/null/test_uop_vmin_vmax.py (55 tests) instead". MEASURED
+#     2026-11-17: `tinygrad/test/` is NOT VENDORED at the pin --
+#     `git ls-tree f5ac54685074 --name-only tinygrad/test` answers 0 -- so the
+#     column was pinned by NOTHING. The two cells that need no NUMBER are
+#     stated now: "src[0]" and "dtype range".
 #
 # A law here is not decoration. If the port changes a shape rule, a broadcast
 # rule or a decomposition, the checker catches it here rather than a reviewer
@@ -509,6 +517,46 @@ law reduce_preserves_device:
   for n: Nat
   {device_of(S.SpReduce{t, ranges, op, n}) == device_of(t) : Maybe<&2, S.Dev>}
 
+# V-quater. The MIN_MAX column, and the spec's FOURTH derived property.
+#
+# The column has THREE kinds of cell, and this law set states the TWO that need
+# no NUMBER:
+#
+#   * "src[0]"      -- the movement ops, `Unshard`, `Copy`, `Index` and `After`.
+#                      The interval is the SOURCE'S.
+#   * "dtype range" -- `Buffer`, `Reduce` and `Bitcast`.  The interval is the
+#                      DTYPE'S RANGE, and `Dt.min`/`Dt.max` are the port's.
+#
+# The third kind -- "[a+b, A+B]" and the other arithmetic cells -- needs the
+# VALUES, and the port's IR is STRUCTURAL: its `one()` and `zero()` are
+# placeholder consts with no number.  So those cells are NOT stated, and
+# `spec.bend`'s fold says so at each arm.
+#
+# AND THE HEADER'S CLAIM THAT THE COLUMN IS PINNED BY A TEST FILE WAS STALE --
+# the file is not in this tree -- so the column was pinned by NOTHING before this.
+
+law movement_preserves_min_max:
+  for +a: S.Sp
+  {min_max_of(S.SpPermute{a, Nil{}}) == min_max_of(a) : Maybe<&2, S.Iv>}
+
+law copy_preserves_min_max:
+  for buf: S.Sp
+  for dev: S.Dev
+  {min_max_of(S.SpCopy{buf, dev}) == min_max_of(buf) : Maybe<&2, S.Iv>}
+
+law after_preserves_min_max:
+  for buf: S.Sp
+  for deps: List<&2, S.Sp>
+  {min_max_of(S.SpAfter{buf, deps}) == min_max_of(buf) : Maybe<&2, S.Iv>}
+
+# AND THE "dtype range" CELL, WHICH IS THE INTERVAL OF THE DTYPE'S RANGE.  The
+# bounds are `Maybe`s, so the law says the interval IS the range rather than
+# spelling the numbers -- and the two helpers below are the port's.
+law bitcast_takes_the_dtype_range:
+  for +a: S.Sp
+  for dt: S.Dt
+  {min_max_of(S.SpBitcast{a, dt}) == min_max_of(S.SpBuffer{1n, dt, S.D1{0}, S.AGlobal{}}) : Maybe<&2, S.Iv>}
+
 # VI. The elementwise column: "all inputs same shape, output same shape".
 #
 # This is the claim the schedule's fusion decisions rest on, so it is worth
@@ -631,6 +679,23 @@ def dtype_of(s: S.Sp) -> Maybe<&2, S.Dt>:
 def device_of(s: S.Sp) -> Maybe<&2, S.Dev>:
   S.Sp.device(s)
 
+# The FOURTH derived property, and the part of it that is STATEABLE WITHOUT A
+# VALUE.
+#
+# tinyspec: "Each UOp has five derived properties -- dtype, shape, device,
+# addrspace, and min_max -- determined by the rules at the end of this
+# document."  MEASURED 2026-11-17: the port had the dtype column, the shape
+# column and the device column, and NO min_max fold.
+#
+# AND THE HEADER'S CLAIM THAT THE COLUMN IS PINNED ELSEWHERE WAS STALE: it says
+# "pinned by test/null/test_uop_vmin_vmax.py (55 tests) instead", and
+# `tinygrad/test/` is NOT VENDORED at the pin -- MEASURED,
+# `git ls-tree f5ac54685074 --name-only tinygrad/test` answers 0.  So the
+# column was pinned by NOTHING, and the two cells that need no number are
+# stated here.
+def min_max_of(s: S.Sp) -> Maybe<&2, S.Iv>:
+  S.Sp.min_max(s)
+
 # numel is not a fold of its own in spec.bend: it is the product of the shape's
 # dims, and a shapeless op has no element count, so 0 is the only honest total
 # answer for one.
@@ -652,6 +717,10 @@ def some_of_dev(d: S.Dev) -> Maybe<&2, S.Dev>:
 
 def none_of_dev() -> Maybe<&2, S.Dev>:
   None{}
+
+# And the interval column's "there is one" -- the shape `Sp.min_max` answers.
+def some_of_iv(i: S.Iv) -> Maybe<&2, S.Iv>:
+  Some{i}
 
 # Forwards spec.bend's `drop_n`, which is `List.drop`: the suffix that remains.
 # The reduce law does not call this. Its multiplier is the removed prefix.

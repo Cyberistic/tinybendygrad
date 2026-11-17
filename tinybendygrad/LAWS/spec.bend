@@ -84,6 +84,31 @@ type Dev is Data:       # a device name, or a tuple of them for a multi-device t
   D1{tag: U32}
   Dn{tags: List<&2, U32>}
 
+# The VALUE INTERVAL, and it is the spec's `min_max` column's type: an op's
+# min_max is a pair of bounds, and the pair may be a CONSTANT, a DTYPE'S RANGE
+# or the SOURCE'S interval.
+#
+# THE SPEC'S COLUMN IS "min_max", and a pair of bounds is what it means.  The
+# three shapes are the three things the column's cells say:
+#
+#   IvConst{lo, hi}   a known interval -- "[v, v]" for a Const, "[0, n-1]" for
+#                     a Range, and the arithmetic on Add, Mul, Max and Where;
+#   IvRange{lo, hi}   a DTYPE'S RANGE -- "dtype range" for a Buffer, a Reduce
+#                     and a Bitcast, and "clamped to dtype" for a Cast;
+#   IvSrc{}           the SOURCE'S interval -- "src[0]" for the movement ops,
+#                     `Unshard`, `Copy`, `Index` and `After`.
+#
+# AND THE ARITHMETIC ON THE CONSTANTS IS NOT HERE YET, and that is said at the
+# fold rather than hidden: the port's IR is STRUCTURAL -- its `one()` and
+# `zero()` are placeholder consts with no NUMBER -- so an interval's bounds
+# cannot be added and multiplied here.  What IS here is the SHAPE of the column:
+# which op has which KIND of interval, and that the "src[0]" cells really do
+# read the source's interval.
+type Iv is Data:
+  IvConst{lo: U32, hi: U32}
+  IvRange{lo: U32, hi: U32}
+  IvSrc{}
+
 # The integer limits of a width: one def per limit, each taking the width as a
 # Nat PARAMETER. A `match` may not scrutinise a computed value and `U32.to_nat`
 # is a call, so `match U32.to_nat(bits):` is refused and the conversion happens
@@ -951,6 +976,146 @@ def Sp.device(s: Sp) -> Maybe<&2, Dev>:
 # src, and the args are the ones it closes over -- so the device is the body's
 # unless the body has none, and then it is the first arg's.
 #
+# Derived property: MIN_MAX -- tinyspec's min_max column, op by arm.
+#
+# THE SPEC'S FOURTH DERIVED PROPERTY, AND THE PART OF IT THAT IS STATEABLE
+# WITHOUT A VALUE.  tinyspec: "Each UOp has five derived properties -- dtype,
+# shape, device, addrspace, and min_max -- determined by the rules at the end
+# of this document."  MEASURED 2026-11-17: the port had the dtype column, the
+# shape column and (by this session) the device column, and NO min_max fold.
+#
+# THE COLUMN HAS THREE KINDS OF CELL, AND THE PORT STATES THE TWO THAT NEED NO
+# NUMBER:
+#
+#   * "src[0]"              -- the movement ops, `Unshard`, `Copy`, `Index` and
+#                              `After`.  The interval is the SOURCE's.
+#   * "dtype range"         -- `Buffer`, `Reduce` and `Bitcast`.  The interval
+#                              is the DTYPE'S RANGE, and `Dt.min`/`Dt.max` are
+#                              the port's.
+#   * "[a+b, A+B]" and the
+#     other arithmetic cells -- `Add`, `Mul`, `Max`, `CmpLt`, `Where`, `Const`
+#                              and `Range`.  These need the VALUES, and the
+#                              port's IR is STRUCTURAL -- its `one()` and
+#                              `zero()` are placeholder consts with no number
+#                              -- so the arithmetic is NOT stated here and the
+#                              fold says so at the arm.
+#
+# AND `LAWS.bend`'s header says the min_max column is "pinned by
+# test/null/test_uop_vmin_vmax.py (55 tests) instead" -- AND THAT FILE IS NOT IN
+# THIS TREE: MEASURED, `tinygrad/test/` is NOT VENDORED at the pin
+# (`git ls-tree f5ac54685074 --name-only tinygrad/test` answers 0).  So the
+# pinning claim was stale and the column was pinned by NOTHING -- which is why
+# the two stateable classes are stated here.
+# And the bounds, and they make an interval only when BOTH are there.
+def Sp.min_max.bounds(lo: Maybe<&2, U32>, hi: Maybe<&2, U32>) -> Maybe<&2, Iv>:
+  match lo:
+    case Some{a}:
+      match hi:
+        case Some{b}: Some{IvRange{a, b}}
+        case None{}: None{}
+    case None{}: None{}
+
+# The interval of a DTYPE, and it is the dtype's RANGE: `Dt.min` and `Dt.max`
+# are the port's, and the spec says "dtype range".
+def Sp.min_max.range(+dt: Dt) -> Maybe<&2, Iv>:
+  # A `match` may not scrutinise a CALL, so the two bounds are passed in.
+  Sp.min_max.bounds(Dt.min(dt), Dt.max(dt))
+
+# And a DTYPE that MAY NOT BE THERE, and then there is no interval.
+def Sp.min_max.of_dtype(dt: Maybe<&2, Dt>) -> Maybe<&2, Iv>:
+  match dt:
+    case Some{d}: Sp.min_max.range(d)
+    case None{}: None{}
+
+# And the source's interval when there is one, and the dtype's range otherwise.
+def Sp.min_max.of_or(i: Maybe<&2, Iv>, fallback: Maybe<&2, Iv>) -> Maybe<&2, Iv>:
+  match i:
+    case Some{x}: Some{x}
+    case None{}: fallback
+
+def Sp.min_max(s: Sp) -> Maybe<&2, Iv>:
+  match s:
+    # -- source ops
+    case SpBuffer{size, dt, dev, addr}: Sp.min_max.range(dt)
+    case SpAlloc{size, dt, dev, addr}: Sp.min_max.range(dt)
+    # "from src or dtype range" -- and a PARAM's src is its SIZE `n`, not
+    # another node, so there is no source interval to read and the answer is
+    # the DTYPE'S RANGE.
+    case SpParam{size, dt, dev}: Sp.min_max.range(dt)
+    case SpConst{v, dt}: None{}                           # "[v, v]" needs the VALUE
+    case SpBinary{size}: Sp.min_max.range(uint8())
+
+    # -- movement ops: "src[0]"
+    case SpPermute{t, order}: Sp.min_max(t)
+    case SpFlip{t, flags}: Sp.min_max(t)
+    case SpReshape{t, src, dst}: Sp.min_max(t)
+    case SpExpand{t, pre, total}: Sp.min_max(t)
+    case SpPad{t, off, size}: Sp.min_max(t)
+    case SpShrink{t, off, size}: Sp.min_max(t)
+    case SpIdx0{t}: Sp.min_max(t)
+    case SpIdx1{t, a}: Sp.min_max(t)
+    case SpIdx2{t, a, b}: Sp.min_max(t)
+    case SpIdx3{t, a, b, c}: Sp.min_max(t)
+    case SpIdx4{t, a, b, c, d}: Sp.min_max(t)
+    # The STACK's interval, and it is the FIRST element's -- the spec says "All
+    # shapes must match".  The list is matched HERE and not in a helper,
+    # because a helper would call this fold and this fold would call the helper.
+    case SpStack{ts}:
+      match ts:
+        case Nil{}: None{}
+        case t <> _rest: Sp.min_max(t)
+    case SpBitcast{t, dt}: Sp.min_max.range(dt)
+    case SpUnshard{t, ranges, axes}: Sp.min_max(t)
+
+    # -- reduce op: "dtype range"
+    case SpReduce{t, ranges, op, k}: Sp.min_max.of_dtype(Sp.dtype(t))
+
+    # -- load ops: the buffer's
+    case SpLoad{buf, alt, gate}: Sp.min_max(buf)
+    case SpCopy{buf, dev}: Sp.min_max(buf)
+
+    # -- store op: "---"
+    case SpStore{buf, val, gate}: None{}
+
+    # -- ordering ops
+    case SpRange{bound}: None{}                           # "[0, n-1]" needs the VALUE
+    case SpEnd{body, ranges}: None{}
+    case SpBackedge{body, rng, cond}: None{}
+    case SpAfter{buf, deps}: Sp.min_max(buf)
+    case SpGroup{us}: None{}
+    case SpSink{ss}: None{}
+    case SpLinear{uops}: None{}
+
+    # -- elementwise ops: the ARITHMETIC cells
+    case SpRecip{a}: None{}
+    case SpTrunc{a}: Sp.min_max(a)
+    case SpCast{a, dt}: Sp.min_max.range(dt)              # "clamped to dtype"
+    case SpAdd{a, b}: None{}                              # "[a+b, A+B]" needs the VALUES
+    case SpMul{a, b}: None{}
+    case SpMax{a, b}: None{}
+    case SpMod{a, b}: None{}
+    case SpIdiv{a, b}: None{}
+    case SpTruncdiv{a, b}: None{}
+    case SpTruncmod{a, b}: None{}
+    case SpCmpLt{a, b}: None{}
+    case SpCmpEq{a, b}: None{}
+    case SpCmpNe{a, b}: None{}
+    case SpXor{a, b}: None{}
+    case SpOr{a, b}: None{}
+    case SpAnd{a, b}: None{}
+    case SpShr{a, b}: None{}
+    case SpShl{a, b}: None{}
+    case SpWhere{q, a, b}: None{}
+
+    # -- marker ops: "identity on data"
+    case SpContiguousBackward{a}: Sp.min_max(a)
+    case SpDetach{a}: Sp.min_max(a)
+    case SpCall{body, args}: None{}
+    case SpInvalid{}: None{}
+
+# The interval of a source, and the spec's cell for a Param is "from src or
+# dtype range" -- so it is the SOURCE's when the source has one and the dtype's
+# range otherwise.
 # Gate. No CPython `drop_n`. The literals are tinygrad's `_shape` from
 # `.agents/slop/ind/dropn-oracle.py`: Reduce n=0 is (4,5,6); Reduce n=1 and
 # an arity-1 scalar Index are (5,6), rank 2. The old `case 0n: r` prints
