@@ -373,6 +373,75 @@ law copy_preserves_shape:
   for dev: S.Dev
   {shape_of(S.SpCopy{buf, dev}) == shape_of(buf) : Maybe<&2, S.Shape>}
 
+# V-ter-bis. The ALU OPS' DTYPE, which the spec's table gives as one row for
+# the family: "ALU unary & src[0].dtype" and "Other binary & src[0].dtype".
+#
+# MEASURED 2026-11-17: the ALU census named THIRTEEN dtype arms unpinned --
+# `SpAdd`, `SpAnd`, `SpIdiv`, `SpMod`, `SpMul`, `SpOr`, `SpRecip`, `SpShl`,
+# `SpShr`, `SpTrunc`, `SpXor` and `SpContiguousBackward` -- and every one of
+# them is the spec's "src[0].dtype".
+law recip_takes_the_source_dtype:
+  for +a: S.Sp
+  {dtype_of(S.SpRecip{a}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law trunc_takes_the_source_dtype:
+  for +a: S.Sp
+  {dtype_of(S.SpTrunc{a}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law add_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpAdd{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law mul_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpMul{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law max_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpMax{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law mod_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpMod{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law idiv_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpIdiv{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law xor_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpXor{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law or_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpOr{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law and_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpAnd{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law shr_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpShr{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law shl_takes_the_source_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpShl{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law contiguous_backward_takes_the_source_dtype:
+  for +a: S.Sp
+  {dtype_of(S.SpContiguousBackward{a}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
 # V-ter. The DEVICE column, and the spec's THIRD derived property.
 #
 # tinyspec: "Each UOp has five derived properties -- dtype, shape, device,
@@ -559,6 +628,68 @@ law bitcast_takes_the_dtype_range:
 
 # VI. The elementwise column: "all inputs same shape, output same shape".
 #
+# AND THE SHAPE COLUMN for the ops the spec pins it on -- the same section,
+# because it is the SHAPE column and the shape census counts this section's
+# laws.
+# V-quinquies. The SHAPE column for the ops the spec pins it on.
+#
+# MEASURED 2026-11-17: the shape census names the shape fold's arms that no
+# law reads -- THIRTY-SEVEN of them -- and an arm no law reads "may be wrong
+# and the book says nothing".  These are the ones the spec's table pins.
+#
+# THE SOURCE OPS' SHAPE IS THEIR SIZE: the spec's column is "$(n)$ from src,
+# or $()$" -- so a Buffer of n elements has the shape (n,).
+law buffer_shape_is_its_size:
+  for size: Nat
+  for dt: S.Dt
+  for dev: S.Dev
+  for addr: S.Addr
+  {shape_of(S.SpBuffer{size, dt, dev, addr}) == some_of_shape(S.Shape.of([S.SN{size}])) : Maybe<&2, S.Shape>}
+
+law alloc_shape_is_its_size:
+  for size: Nat
+  for dt: S.Dt
+  for dev: S.Dev
+  for addr: S.Addr
+  {shape_of(S.SpAlloc{size, dt, dev, addr}) == some_of_shape(S.Shape.of([S.SN{size}])) : Maybe<&2, S.Shape>}
+
+# AND A CONSTANT IS A SCALAR: the spec's column is "$()$" for a Const, and the
+# port's fold says the same.
+law const_shape_is_empty:
+  for v: S.Sp
+  for dt: S.Dt
+  {shape_of(S.SpConst{v, dt}) == some_of_shape(S.Shape.empty()) : Maybe<&2, S.Shape>}
+
+# AND THE PASSTHROUGH OPS' SHAPE IS THE BUFFER'S: the spec's column gives
+# `Load` and `Copy` the shape "src[0].shape".
+law load_shape_is_the_buffer_shape:
+  for buf: S.Sp
+  for alt: Maybe<&2, S.Sp>
+  for gate: Maybe<&2, S.Sp>
+  {shape_of(S.SpLoad{buf, alt, gate}) == shape_of(buf) : Maybe<&2, S.Shape>}
+
+law copy_shape_is_the_buffer_shape:
+  for buf: S.Sp
+  for dev: S.Dev
+  {shape_of(S.SpCopy{buf, dev}) == shape_of(buf) : Maybe<&2, S.Shape>}
+
+# AND A CAST AND A BITCAST KEEP THE SOURCE'S SHAPE, and a Range is a scalar.
+law cast_preserves_shape:
+  for +t: S.Sp
+  for dt: S.Dt
+  {shape_of(S.SpCast{t, dt}) == shape_of(t) : Maybe<&2, S.Shape>}
+
+law bitcast_preserves_shape:
+  for +t: S.Sp
+  for dt: S.Dt
+  {shape_of(S.SpBitcast{t, dt}) == shape_of(t) : Maybe<&2, S.Shape>}
+
+law range_shape_is_empty:
+  for bound: S.Sp
+  {shape_of(S.SpRange{bound}) == some_of_shape(S.Shape.empty()) : Maybe<&2, S.Shape>}
+
+
+#
 # This is the claim the schedule's fusion decisions rest on, so it is worth
 # stating rather than leaving in a table caption.
 
@@ -701,6 +832,9 @@ def min_max_of(s: S.Sp) -> Maybe<&2, S.Iv>:
 # answer for one.
 def numel_of(s: S.Sp) -> Nat:
   S.dims_prod(S.Sp.shape(s))
+
+def some_of_shape(sh: S.Shape) -> Maybe<&2, S.Shape>:
+  Some{sh}
 
 def some_of(d: S.Dt) -> Maybe<&2, S.Dt>:
   Some{d}

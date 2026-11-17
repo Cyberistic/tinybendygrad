@@ -432,6 +432,47 @@ def L.broadcast_is_elementwise_max(a, b, sa, sb, pa, pb, same, ca, cb):
   c1 = Equal.cong(List<&2, S.Sdim>, S.Shape, of_shape, S.zip_max(S.Shape.to_dims(sa), S.Shape.to_dims(sb)), S.elem_pick(S.Shape.to_dims(sa), S.Shape.to_dims(sb)), ih)
   Equal.cong(S.Shape, Maybe<&2, S.Shape>, some_shape, S.Shape.of(S.zip_max(S.Shape.to_dims(sa), S.Shape.to_dims(sb))), S.Shape.of(S.elem_pick(S.Shape.to_dims(sa), S.Shape.to_dims(sb))), c1)
 
+# V-ter-bis. The ALU OPS' DTYPE, which the spec's table gives as one row for
+# the family: "ALU unary & src[0].dtype" and "Other binary & src[0].dtype".
+def L.recip_takes_the_source_dtype(a):
+  {==}
+
+def L.trunc_takes_the_source_dtype(a):
+  {==}
+
+def L.add_takes_the_source_dtype(a, b):
+  {==}
+
+def L.mul_takes_the_source_dtype(a, b):
+  {==}
+
+def L.max_takes_the_source_dtype(a, b):
+  {==}
+
+def L.mod_takes_the_source_dtype(a, b):
+  {==}
+
+def L.idiv_takes_the_source_dtype(a, b):
+  {==}
+
+def L.xor_takes_the_source_dtype(a, b):
+  {==}
+
+def L.or_takes_the_source_dtype(a, b):
+  {==}
+
+def L.and_takes_the_source_dtype(a, b):
+  {==}
+
+def L.shr_takes_the_source_dtype(a, b):
+  {==}
+
+def L.shl_takes_the_source_dtype(a, b):
+  {==}
+
+def L.contiguous_backward_takes_the_source_dtype(a):
+  {==}
+
 # V-ter. THE DEVICE COLUMN, and the spec's THIRD derived property.
 #
 # tinyspec: "Each UOp has five derived properties -- dtype, shape, device,
@@ -518,6 +559,31 @@ def L.after_preserves_min_max(buf, deps):
   {==}
 
 def L.bitcast_takes_the_dtype_range(a, dt):
+  {==}
+
+# V-quinquies. The SHAPE column for the ops the spec pins it on.
+def L.buffer_shape_is_its_size(size, dt, dev, addr):
+  {==}
+
+def L.alloc_shape_is_its_size(size, dt, dev, addr):
+  {==}
+
+def L.const_shape_is_empty(v, dt):
+  {==}
+
+def L.load_shape_is_the_buffer_shape(buf, alt, gate):
+  {==}
+
+def L.copy_shape_is_the_buffer_shape(buf, dev):
+  {==}
+
+def L.cast_preserves_shape(t, dt):
+  {==}
+
+def L.bitcast_preserves_shape(t, dt):
+  {==}
+
+def L.range_shape_is_empty(bound):
   {==}
 
 # tinyspec's elementwise column: "all inputs same shape, output same shape".

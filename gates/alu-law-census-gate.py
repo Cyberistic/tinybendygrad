@@ -476,7 +476,13 @@ def run_gate(args) -> int:
                 vacuous_mask.append(law)
 
         # --- THE COVERAGE: every dtype-fold arm, and whether a law reads it.
-        arms = dtype_arms(control_root)
+        # EVERY LAW, AND NOT THE ALU HALF'S LAWS.  The question is "does a law
+        # read the DTYPE FOLD at this op", and a law in the shape section can
+        # read the dtype fold -- `reshape_preserves_dtype` and the other
+        # movement laws are in section VI.  MEASURED 2026-11-17: the census
+        # took only the ALU half's laws, so the arms those laws pin were
+        # called UNPINNED.
+        arms = dtype_arms(control_root, law_names(control_root / "LAWS.bend"))
         for arm, laws_naming in arms:
             rows.append((f"ARM:{arm}", "UNPINNED" if not laws_naming else "PINNED",
                          f"laws naming it: {', '.join(laws_naming) or 'NONE'}"))
@@ -662,7 +668,37 @@ def alu_ops(root: Path) -> list[str]:
     return ops
 
 
-def dtype_arms(root: Path) -> list[tuple[str, list[str]]]:
+def shape_arms_of(root: Path) -> list[tuple[str, list[str]]]:
+    """the SHAPE fold's arms, and the laws that PIN each -- for the control.
+
+    The shape fold's arms are read the way the shape census reads them: every
+    `case Sp<X>{` line in the shape fold, and a law pins an arm when its
+    CONCLUSION reads the op.
+    """
+    spec = (root / "LAWS" / "spec.bend").read_text(errors="replace")
+    laws_text = (root / "LAWS.bend").read_text(errors="replace")
+    fb = fold_body(spec, "Sp.shape")
+    if fb is None:
+        return []
+    arms = re.findall(r"^    case (Sp\w+)\{", spec[fb[0]:fb[1]], re.M)
+    out = []
+    for arm in arms:
+        pinning = []
+        for n in law_names(root / "LAWS.bend"):
+            body = law_block(laws_text, n)
+            goal = ""
+            for line in reversed(body.splitlines()):
+                st = line.strip()
+                if st.startswith("{") and st.endswith("}"):
+                    goal = st
+                    break
+            if goal and re.search(rf"\bS\.{re.escape(arm)}\{{", goal):
+                pinning.append(n)
+        out.append((arm, pinning))
+    return out
+
+
+def dtype_arms(root: Path, laws: list[str] | None = None) -> list[tuple[str, list[str]]]:
     """The ALU ops' dtype arms, and the laws that PIN each.
 
     THE ARMS ARE DISCOVERED: every `case Sp<X>{...}: Sp.dtype(...)` line in the
@@ -699,7 +735,7 @@ def dtype_arms(root: Path) -> list[tuple[str, list[str]]]:
     for arm in arms:
         # the fold applied AT that op: `dtype_of(S.SpXor{...})`
         pinning = []
-        for n in law_names(root / "LAWS.bend"):
+        for n in (laws if laws is not None else law_names(root / "LAWS.bend")):
             block = law_block(laws_text, n)
             if re.search(rf"dtype_of\(S\.{re.escape(arm)}\{{", block):
                 pinning.append(n)
@@ -763,7 +799,13 @@ def run_plant(args) -> int:
                            f"(rc={rc}, named={named})")
 
         # 3 -- a PINNED arm, which must redden
-        arms = dtype_arms(control_root)
+        # EVERY LAW, AND NOT THE ALU HALF'S LAWS.  The question is "does a law
+        # read the DTYPE FOLD at this op", and a law in the shape section can
+        # read the dtype fold -- `reshape_preserves_dtype` and the other
+        # movement laws are in section VI.  MEASURED 2026-11-17: the census
+        # took only the ALU half's laws, so the arms those laws pin were
+        # called UNPINNED.
+        arms = dtype_arms(control_root, law_names(control_root / "LAWS.bend"))
         pinned = [a for a, naming in arms if naming]
         if not pinned:
             bad.append("no PINNED arm was found, so case 3 could not run")
@@ -786,7 +828,21 @@ def run_plant(args) -> int:
                     bad.append(f"breaking the PINNED arm {arm} did not redden the gate")
 
         # 4 -- an UNPINNED arm, which must NOT redden, or the census is wrong
+        #
+        # AND THE FALLBACK IS THE OTHER FOLD'S UNPINNED ARMS.  MEASURED
+        # 2026-11-17: the ALU dtype fold has NO unpinned arm left -- every one of
+        # its arms is read by a law -- so the control had nothing to break and
+        # the plant said "no UNPINNED arm was found, so case 4 could not run".
+        # The control's POINT is that breaking an arm NO LAW READS leaves the
+        # gate green, and the shape fold still has such arms -- so the control
+        # breaks one of those, which is the same claim about the same book.
         unpinned = [a for a, naming in arms if not naming]
+        if not unpinned:
+            shape_arms = shape_arms_of(control_root)
+            unpinned = [a for a, naming in shape_arms if not naming]
+            if unpinned:
+                print(f"  (the dtype fold is FULLY PINNED; the control breaks the "
+                      f"shape fold's {unpinned[0]})")
         if not unpinned:
             bad.append("no UNPINNED arm was found, so case 4 could not run")
             print("  4 unpinned arm     NO UNPINNED ARM")

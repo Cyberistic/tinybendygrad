@@ -16,4 +16,4 @@
 
 vacuous	store_matches_its_buffer
 masked	add_is_elementwise,pad_shrink_round_trip,reshape_numel_is_the_new_shape
-unpinned-arms	SpAfter,SpAlloc,SpAnd,SpBackedge,SpBinary,SpBitcast,SpBuffer,SpCall,SpCast,SpConst,SpContiguousBackward,SpCopy,SpDetach,SpEnd,SpExpand,SpGroup,SpIdiv,SpIdx0,SpIdx1,SpIdx2,SpIdx3,SpIdx4,SpLinear,SpLoad,SpMod,SpOr,SpParam,SpRange,SpRecip,SpShl,SpShr,SpSink,SpStore,SpTrunc,SpUnshard,SpWhere,SpXor
+unpinned-arms	SpAnd,SpBackedge,SpContiguousBackward,SpEnd,SpGroup,SpIdiv,SpIdx0,SpIdx2,SpIdx3,SpIdx4,SpLinear,SpMod,SpOr,SpParam,SpShl,SpShr,SpSink,SpTrunc,SpUnshard,SpXor

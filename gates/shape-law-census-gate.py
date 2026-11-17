@@ -663,7 +663,16 @@ def run_gate(args) -> int:
                 bad.append(f"{law}: VACUOUS -- {why}")
 
         # --- THE COVERAGE: every shape-fold arm, and whether a law reads it.
-        for arm, laws_naming in shape_arms(control_root, laws):
+        # EVERY LAW, AND NOT THE SHAPE HALF'S LAWS.  The question is "does a
+        # law read the SHAPE FOLD at this op", and a law in the dtype column
+        # can read the shape fold -- `after_preserves_shape` and
+        # `load_preserves_shape` are both in section V.  MEASURED 2026-11-17:
+        # the census took only the shape half's laws, so the arms those laws
+        # pin were called UNPINNED -- and the census's own docstring says an arm
+        # no law reads "may be wrong and the book says nothing", which was
+        # false of nine arms that a law DID read.
+        every_law = law_names(control_root / "LAWS.bend")
+        for arm, laws_naming in shape_arms(control_root, every_law):
             rows.append((f"ARM:{arm}", "UNPINNED" if not laws_naming else "PINNED",
                          f"laws naming it: {', '.join(laws_naming) or 'NONE'}"))
 

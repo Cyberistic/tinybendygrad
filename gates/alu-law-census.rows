@@ -12,4 +12,4 @@
 
 vacuous	
 vacuous-on-mask	cmp_ge_is_eq_of_cmp_lt,cmp_le_is_eq_of_cmp_lt_swapped,cmp_ne_is_eq_of_double_eq,neg_is_mul_by_minus_one,not_is_eq_zero
-unpinned-arms	SpAdd,SpAnd,SpContiguousBackward,SpIdiv,SpMax,SpMod,SpMul,SpOr,SpRecip,SpShl,SpShr,SpTrunc,SpXor
+unpinned-arms	
