@@ -7451,3 +7451,50 @@ RULE: **REVERT **ANY **CHANGE **WHOSE **MEASURED **RATIO **IS **NEUTRAL**)**.
 **AND **THE **INDEXED **ACCESS **IS **A **FRACTION **OF **THE **RENDER** (§138.3: **named 1.43 ms,
 **emit 0.89, **stmt 0.62, **alu 0.41, **decl 0.25** -- **⇒⇒⇒ AND **NONE **OF **THOSE **IS **THE
 **INDEX**)****.
+
+### 138.10 THE **OP **CHAIN's **REORDER** **IS **NEUTRAL **TOO** -- **⇒⇒⇒ AND **THE **COUNT **IS **NOT **THE **COST**, **FOR **THE **SECOND **CHAIN**
+
+**⇒⇒⇒ AND **§138.5 **MEASURED **THE **`eq_op` **REORDER **TO **BE **WORTHLESS** (84.6% **FEWER
+**COMPARISONS**, **VERDICT 0.9967**), **⇒⇒⇒ AND **THE **CLAIM **WAS **THAT **THE **COMPARISONS **ARE
+**INTERNED **STRINGS**, **⇒⇒⇒ AND **SO **THE **`===` **IS **POINTER **EQUALITY** **⇒⇒⇒ AND **THE
+**COUNT **IS **NOT **THE **COST**.
+
+**⇒⇒⇒ AND **THE **CLAIM **WAS **ONLY **EVER **TESTED **ON **ONE **CHAIN**, **⇒⇒⇒ AND **SO **THE
+**SECOND **CHAIN **WAS **MEASURED**: **`code_for_base_of`** -- **THE **21-ARM **`Ops` **DISPATCH
+**THAT **BUILDS **THE **ALU's **TEXT** (**4,399 **BYTES **OF **COMPILED **CODE**, **THE **BIGGEST
+**BODY **IN **THE **RENDER**)**.
+
+**⇒⇒⇒ AND **THE **HOT **OPS **SIT **DEEP**: **MEASURED **FROM **THE **WIRE** (`uops_repr.out`):
+**ADD 156 **AT **ARM **11**, **MUL 89 **AT **ARM **13**, **CMPLT 22 **AT **ARM **19**, **WHERE 14 **AT
+**ARM **20** -- **⇒⇒⇒ AND **EVERY **ALU's **OP **PAYS **THE **CLANG **CHAIN **FIRST** (**7 **ARMS**,
+**⇒⇒⇒ AND **THE **HOT **OPS **FALL **THROUGH **ALL **SEVEN**)**.
+
+**⇒⇒⇒ AND **THE **CHANGE**: **THE **HOT **OPS **MOVED **TO **THE **FRONT** (ADD, MUL, CMPLT, WHERE,
+CMPEQ, **THEN **THE **REST**) **⇒⇒⇒ AND **THE **OUTPUT **IS **BYTE-IDENTICAL** (15,242 **BYTES**,
+**MEASURED**) **⇒⇒⇒ AND **THE **COMPILED **ARM **ORDER **MOVED **WITH **IT** (MEASURED:
+`['OpsADD', 'OpsMUL', 'OpsCMPLT', 'OpsWHERE', 'OpsCMPEQ', 'OpsSUB', ...]`) **⇒⇒⇒ AND **THE **21
+**ARMS **ARE **ALL **STILL **THERE** (21 **IN, 21 **OUT**)**.
+
+**⇒⇒⇒ AND **THE **VERDICT**, **ON **A **QUIET **MACHINE** (**THE **NOISE **FLOOR **WAS **READ
+**FIRST**, **AND **IT **READ **1.0000** -- **⇒⇒⇒ AND **THE **LOADED **READING **OF **THE **SAME
+**MACHINE **WAS **1.0249**, **⇒⇒⇒ AND **THE **FIRST **HOT-FIRST **RUN **READ **0.9731** **ON **THE
+**LOADED **MACHINE** **AND **1.0016 **ON **THE **QUIET **ONE**)**:
+
+| | THE **READING** |
+|---|---|
+| **THE **NOISE **FLOOR** (the **same **build **against **itself**) | **1.0000** (153 paired turns) |
+| **THE **HOT-FIRST **REORDER** (the **loaded **machine**) | **0.9731** (153 paired turns) |
+| **THE **HOT-FIRST **REORDER** (the **quiet **machine**) | **1.0016** (183 paired turns) |
+
+**⇒⇒⇒ AND **THE **CHANGE **IS **NOT **LANDED** (THE **VERDICT **IS **NEUTRAL**)**.
+
+**⇒⇒⇒ AND **THE **FINDING **IS **BIGGER **THAN **THE **REORDER**: **THE **VERDICT **MOVED **FROM
+**0.9731 **TO **1.0016** **ON **THE **SAME **PAIR **OF **BUILDS** **⇒⇒⇒ AND **THE **ONLY **THING
+**THAT **CHANGED **WAS **THE **MACHINE's **LOAD** (25.66 -> 8.29) **⇒⇒⇒ AND **SO **A **RATIO **MEASURED
+**ON **A **LOADED **MACHINE **IS **A **MEASUREMENT **OF **THE **LOAD**, **⇒⇒⇒ AND **THE **NOISE
+**FLOOR **MUST **BE **READ **IMMEDIATELY **BEFORE **THE **VERDICT**, **⇒⇒⇒ AND **THE **TREE's **OWN
+**RULE**: **THE **NOISE **FLOOR **OF **0.9957 **IS **FOR **THE **LOADED **MACHINE** -- **⇒⇒⇒ AND **ON
+**A **QUIET **ONE **IT **IS **1.0000**).
+
+**⇒⇒⇒ AND **THE **REVERTS **ARE **VERIFIED**: **THE **REVERTED **BUILD **IS **BYTE-IDENTICAL **TO
+**THE **BASELINE** (**sha256**, MEASURED)**.
