@@ -74,18 +74,20 @@ When using bend:
   `Error: 34 TODOs found. The code is incomplete, and not a valid proof yet.` — **AND **THAT **COUNT
   **IS **AN **ARTIFACT **OF **CHECKING **THE **WRONG **FILE**, **AND **THE **FILE **THIS **SECTION
   **NAMED **NEXT **IS **THE **ONE **THAT **IS **WRONG:**
-- **run `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` before committing** — **AND **THE
-  **AGGREGATE **IS **THE **ONLY **CORRECT **ENTRY **POINT**, **AND **THE **PER-FILE **COUNTS **ARE **A
-  **TRAP.**  **MEASURED 2026-10-30: **THE **AGGREGATE **REPORTS **`ALL PROOFS CHECK`** (**rc=0**, **31
-  **MB**, **`WITHIN-LIMITS`**), **AND **`tinybendygrad/LAWS/PROOF.bend` **REPORTS **`Error: 18 TODOs found.`**
-  **AND **`tinybendygrad/LAWS/PROOF2.bend` **REPORTS **`Error: 16 TODOs found.`** — **AND **ALL **34
-  **LAWS **ARE **PROVED, **AND **THE **REASON **THE **HALVES **ARE **RED **IS **THAT **THEY **ARE
-  **HALF-BOOKS**: **`PROOF-ALL.bend`'s **OWN **HEADER **SAYS **IT — **"bend **discharges **a **law **by **a
-  **def **of **the **same **name **ANYWHERE **IN **THE **BOOK**, **so **the **two **halves **simply **have
-  **to **meet **in **one **book"**, **AND **`LAWS/PROOF-ALL.bend` **IS **THAT **ONE **BOOK.**
-  **AND **THE **DISCOVERY **CENSUS **CONFIRMS **IT**: **`.agents/slop/laws17/laws.py` **READS
-  **`LAWS/PROOF-ALL.bend` **AS **`0/34/34`** **(ALL **PROVED**), **AND **`PROOF.bend` **AS **`18/16/34`**
-  **AND **`PROOF2.bend` **AS **`16/18/34`** — **EACH **HALF **SEES **THE **OTHER's **LAWS **AS **OPEN.**
+- **run `bin/bend tinybendygrad/LAWS/PROOF.bend --check-only` before committing** — **AND **THERE **IS
+  **NOW **ONE **PROOF **FILE, **AND **IT **IS **THE **ONLY **CORRECT **ENTRY **POINT.**
+  **MEASURED 2026-11-17: **`LAWS/PROOF.bend` **REPORTS **`ALL PROOFS CHECK`** (**rc=0**) **AND **THE
+  **DISCOVERY **CENSUS **CONFIRMS **IT**: **`.agents/slop/laws17/laws.py` **READS **`LAWS/PROOF.bend` **AS
+  **`0/50/50`** — **ALL **PROVED.**  **AND **IT **IS **ONE **FILE **FOR **A **REASON **AND **NOT **BY
+  **COINCIDENCE:** **THE **TWO **HALVES **WERE **TWO **BOOKS **BECAUSE **`bend` **ALLOWS **ONE **`def`
+  **OF **A **LAW's **NAME **PER **BOOK**, **SO **A **HALF-BOOK **REPORTS **THE **OTHER **HALF's **LAWS
+  **AS **OPEN** — **AND **THE **AGGREGATE **`PROOF-ALL.bend` **EXISTED **ONLY **TO **JOIN **THE
+  **TWO.**  **MEASURED: **THE **TWO **HALVES' **SIXTY **DEFS **HAVE **NO **NAME **IN **COMMON** **AND
+  **NEITHER **CALLS **A **DEF **DECLARED **LATER **IN **ITS **OWN **FILE**, **SO **ONE **FILE **HOLDS
+  **BOTH **AND **THE **AGGREGATE **IS **GONE.**  **AND **THE **SPLIT **THE **LAWS **MAKE **IS **THE
+  **SECTIONS**: **`LAWS.bend`'s **OWN **`# <ROMAN>.` **HEADERS **PUT **THE **SHAPE **HALF **IN **I, **II,
+  **III, **VI, **VII **AND **VIII **AND **THE **ALU/DTYPE **HALF **IN **IV **AND **V**, **AND **THE
+  **GATES **THAT **COUNT **THE **HALVES **READ **THE **SECTION **RATHER **THAN **THE **BOOK.**
   **AND **AND **THIS **LINE **IS **A **CORRECTION, **NOT **A **SOFTENING**: **THE **PREVIOUS
   **REVISION **OF **THIS **SECTION **SAID **"THE **GATE **IS **RED **AT **REST"** **AND **QUOTED **18
   **TODOs**, **AND **THAT **WAS **A **MEASUREMENT **OF **A **HALF-BOOK**, **NOT **OF **THE **PROOF** —
@@ -355,7 +357,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
 
   ***AND ***THERE **IS **NOW **A **COMPILE-LEVEL **CHECK **OVER **THE **WHOLE **PORT**: `checks/port-compile-gate.py`
   **COMPILES **EVERY **FILE **AND **READS **THE **VERDICT **TOKEN** -- **165 of 169 COMPILE, 4 ARE **COLD
-  **BY **DESIGN** (`LAWS.bend`, `PROOF.bend`, `PROOF2.bend` -- EACH **DECLARES **IT **IS **NOT **A **PROOF
+  **BY **DESIGN** (`LAWS.bend`, `PROOF.bend` -- EACH **DECLARES **IT **IS **NOT **A **PROOF
   **YET** -- **AND `sz.bend`, **WHOSE **COLDNESS **IS **A **MEMORY **CEILING**, **NOT **A **VERDICT**:
   **MEASURED `KILLED-ON-MEMORY` **AT **2100 MB **UNDER **A **2048 **CEILING **AND **4197 MB **UNDER **A
   **4096 **ONE**).  **AND **A **ROW-LEVEL **INSTRUMENT **CANNOT **NOTICE **THAT **ITS **SUBJECT **DOES **NOT

@@ -207,24 +207,34 @@ law cmp_gt_is_cmp_lt_swapped:
   for +b: S.Sp
   {A.cmp_gt(a, b) == S.SpCmpLt{b, a} : S.Sp}
 
-law cmp_ge_is_ne_of_cmp_lt:
+law cmp_ge_is_eq_of_cmp_lt:
   for +a: S.Sp
   for +b: S.Sp
-  {A.cmp_ge(a, b) == S.SpCmpNe{S.SpCmpLt{a, b}, A.one()} : S.Sp}
+  {A.cmp_ge(a, b) == S.SpCmpEq{S.SpCmpLt{a, b}, A.zero()} : S.Sp}
 
-law cmp_le_is_ne_of_cmp_lt_swapped:
+law cmp_le_is_eq_of_cmp_lt_swapped:
   for +a: S.Sp
   for +b: S.Sp
-  {A.cmp_le(a, b) == S.SpCmpNe{S.SpCmpLt{b, a}, A.one()} : S.Sp}
+  {A.cmp_le(a, b) == S.SpCmpEq{S.SpCmpLt{b, a}, A.zero()} : S.Sp}
 
-law cmp_eq_is_double_neg:
+law cmp_ne_is_eq_of_double_eq:
   for +a: S.Sp
   for +b: S.Sp
-  {A.cmp_eq(a, b) == S.SpCmpNe{S.SpCmpNe{a, b}, A.one()} : S.Sp}
+  {A.cmp_ne(a, b) == S.SpCmpEq{S.SpCmpEq{a, b}, A.zero()} : S.Sp}
 
-law not_is_ne_one:
+law cmp_eq_is_primitive:
   for +a: S.Sp
-  {A.logical_not(a) == S.SpCmpNe{a, A.one()} : S.Sp}
+  for +b: S.Sp
+  {A.cmp_eq(a, b) == S.SpCmpEq{a, b} : S.Sp}
+
+law not_is_eq_zero:
+  for +a: S.Sp
+  {A.logical_not(a) == S.SpCmpEq{a, A.zero()} : S.Sp}
+
+law truncmod_is_a_minus_b_times_truncdiv:
+  for +a: S.Sp
+  for +b: S.Sp
+  {A.truncmod(a, b) == A.sub(a, S.SpMul{b, S.SpTruncdiv{a, b}}) : S.Sp}
 
 law mulacc_is_add_of_mul:
   for +a: S.Sp
@@ -249,6 +259,17 @@ law comparison_ne_is_bool:
   for a: S.Sp
   for b: S.Sp
   {dtype_of(S.SpCmpNe{a, b}) == some_of(S.boolean()) : Maybe<&2, S.Dt>}
+
+# THE COMPARISON THAT WAS MISSING.  MEASURED 2026-11-17: the spec IR had no
+# `CmpEq` arm at all, so the spec's own primitive comparison -- the one
+# tinyspec calls "primitive elementwise equality, returning bool (as do CmpLt
+# and CmpNe)" -- could not be stated.  The port had `CmpNe` as the constructor
+# and derived `CmpEq` from it, which is BACKWARDS: the spec says `CmpNe` is
+# `CmpEq`'s complement.
+law comparison_eq_is_bool:
+  for a: S.Sp
+  for b: S.Sp
+  {dtype_of(S.SpCmpEq{a, b}) == some_of(S.boolean()) : Maybe<&2, S.Dt>}
 
 law where_takes_the_second_operand_dtype:
   for p: S.Sp
@@ -280,9 +301,69 @@ law detach_preserves_dtype:
   for +a: S.Sp
   {dtype_of(S.SpDetach{a}) == dtype_of(a) : Maybe<&2, S.Dt>}
 
+# THE PASSTHROUGH OPS, WHOSE DTYPE THE SPEC'S TABLE GIVES AS src[0]'s.  The
+# spec's derived-properties table says so for `Load` ("from src[0]"), `Copy`
+# ("from src[0]"), `After` ("src[0].dtype") and `Bitcast` ("from arg" -- so
+# Bitcast is NOT a passthrough and has no law here), and the marker ops
+# ("identity on data").
+#
+# MEASURED 2026-11-17: none of these was stated, and each is a single arm of
+# `Sp.dtype` -- so each is a fact the port already knows and the book did not
+# say.
+law load_preserves_dtype:
+  for buf: S.Sp
+  for alt: Maybe<&2, S.Sp>
+  for gate: Maybe<&2, S.Sp>
+  {dtype_of(S.SpLoad{buf, alt, gate}) == dtype_of(buf) : Maybe<&2, S.Dt>}
+
+law copy_preserves_dtype:
+  for buf: S.Sp
+  for dev: S.Dev
+  {dtype_of(S.SpCopy{buf, dev}) == dtype_of(buf) : Maybe<&2, S.Dt>}
+
+law after_preserves_dtype:
+  for buf: S.Sp
+  for deps: List<&2, S.Sp>
+  {dtype_of(S.SpAfter{buf, deps}) == dtype_of(buf) : Maybe<&2, S.Dt>}
+
+# AND THE TWO OPS THAT CAME WITH THE SPEC'S OWN DECOMPOSITIONS.
+law truncdiv_preserves_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpTruncdiv{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
+law truncmod_preserves_dtype:
+  for +a: S.Sp
+  for +b: S.Sp
+  {dtype_of(S.SpTruncmod{a, b}) == dtype_of(a) : Maybe<&2, S.Dt>}
+
 law detach_preserves_numel:
   for +a: S.Sp
   {numel_of(S.SpDetach{a}) == numel_of(a) : Nat}
+
+# V-bis. THE PASSTHROUGH OPS' SHAPE, and the spec says so in words.
+#
+# "After & (buf, deps...) & --- & Passthrough of buf; guarantees deps execute
+# first."  So `After`'s shape IS its buffer's -- and the same holds for `Load`
+# and `Copy`, whose shapes the spec's table gives as src[0]'s.
+#
+# MEASURED 2026-11-17: these were not stated.  They are single arms of
+# `Sp.shape`, so each is a fact the port already knew and the book did not say.
+law after_preserves_shape:
+  for buf: S.Sp
+  for deps: List<&2, S.Sp>
+  {shape_of(S.SpAfter{buf, deps}) == shape_of(buf) : Maybe<&2, S.Shape>}
+
+law load_preserves_shape:
+  for buf: S.Sp
+  for alt: Maybe<&2, S.Sp>
+  for gate: Maybe<&2, S.Sp>
+  {shape_of(S.SpLoad{buf, alt, gate}) == shape_of(buf) : Maybe<&2, S.Shape>}
+
+law copy_preserves_shape:
+  for buf: S.Sp
+  for dev: S.Dev
+  {shape_of(S.SpCopy{buf, dev}) == shape_of(buf) : Maybe<&2, S.Shape>}
 
 # VI. The elementwise column: "all inputs same shape, output same shape".
 #
@@ -306,6 +387,44 @@ law max_is_elementwise:
   for +b: S.Sp
   for +premise: {shape_of(a) == shape_of(b) : Maybe<&2, S.Shape>}
   {shape_of(S.SpMax{a, b}) == shape_of(a) : Maybe<&2, S.Shape>}
+
+# AND THE COMPARISONS, WHICH THE SPEC'S TABLE PUTS IN THE SAME TABLE: "CmpLt,
+# CmpEq" are Binary ops with "all inputs same shape, output same shape".
+#
+# MEASURED 2026-11-17: `CmpLt` and `CmpNe` had no elementwise law, and the
+# shape fold's arms for them were UNPINNED -- the census said so and named them.
+law cmp_lt_is_elementwise:
+  for +a: S.Sp
+  for +b: S.Sp
+  for +premise: {shape_of(a) == shape_of(b) : Maybe<&2, S.Shape>}
+  {shape_of(S.SpCmpLt{a, b}) == shape_of(a) : Maybe<&2, S.Shape>}
+
+law cmp_eq_is_elementwise:
+  for +a: S.Sp
+  for +b: S.Sp
+  for +premise: {shape_of(a) == shape_of(b) : Maybe<&2, S.Shape>}
+  {shape_of(S.SpCmpEq{a, b}) == shape_of(a) : Maybe<&2, S.Shape>}
+
+law cmp_ne_is_elementwise:
+  for +a: S.Sp
+  for +b: S.Sp
+  for +premise: {shape_of(a) == shape_of(b) : Maybe<&2, S.Shape>}
+  {shape_of(S.SpCmpNe{a, b}) == shape_of(a) : Maybe<&2, S.Shape>}
+
+# AND THE INTEGER DIVISION PAIR, which the spec's derived-properties table
+# covers as "Other binary" -- src[0].dtype, BROADCAST, src[0].device.  So they
+# broadcast like every other binary ALU op.
+law truncdiv_is_elementwise:
+  for +a: S.Sp
+  for +b: S.Sp
+  for +premise: {shape_of(a) == shape_of(b) : Maybe<&2, S.Shape>}
+  {shape_of(S.SpTruncdiv{a, b}) == shape_of(a) : Maybe<&2, S.Shape>}
+
+law truncmod_is_elementwise:
+  for +a: S.Sp
+  for +b: S.Sp
+  for +premise: {shape_of(a) == shape_of(b) : Maybe<&2, S.Shape>}
+  {shape_of(S.SpTruncmod{a, b}) == shape_of(a) : Maybe<&2, S.Shape>}
 
 # VII. The Store invariant -- tinyspec: "buf.shape = val.shape".
 #

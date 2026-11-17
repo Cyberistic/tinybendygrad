@@ -57,32 +57,63 @@ def div(a: S.Sp, b: S.Sp) -> S.Sp:
   S.SpMul{a, recip(b)}
 
 # tinyspec: CmpGt(a,b) = CmpLt(b, a)      -- the operands swap
-#           CmpGe(a,b) = CmpNe(CmpLt(a, b), 1)
-#           CmpLe(a,b) = CmpNe(CmpLt(b, a), 1)
-#           CmpEq(a,b) = CmpNe(CmpNe(a, b), 1)
-#           Not(a)     = CmpNe(a, 1)
+#           CmpGe(a,b) = CmpEq(CmpLt(a, b), 0)
+#           CmpLe(a,b) = CmpEq(CmpLt(b, a), 0)
+#           CmpNe(a,b) = CmpEq(CmpEq(a, b), 0)
+#           Not(a)     = CmpEq(a, 0)
 #
-# Every comparison is CmpLt or CmpNe followed by a NOT against 1: the hardware
-# has one less-than and one not-equal, and >= is < negated. That is the whole
-# reason the spec has a Not at all.
+# AND `CmpEq` IS THE PRIMITIVE, NOT A DERIVATION.  MEASURED 2026-11-17: the
+# port had `CmpNe` as the constructor and derived `CmpEq` from it -- and
+# tinyspec says the opposite: "CmpEq is primitive elementwise equality,
+# returning bool (as do CmpLt and CmpNe).  CmpNe is its logical complement".
+# The pin's own `tinygrad/uop/ops.py` has all three (`CMPLT`, `CMPNE`, `CMPEQ`)
+# and `spec.bend` had NO `CmpEq` arm at all -- so the spec IR could not express
+# a primitive the spec names, and every comparison was built from the wrong
+# one.  The three are now all primitives and the decompositions are the spec's.
 
 def cmp_gt(a: S.Sp, b: S.Sp) -> S.Sp:
   S.SpCmpLt{b, a}
 
 def cmp_ge(a: S.Sp, b: S.Sp) -> S.Sp:
-  S.SpCmpNe{S.SpCmpLt{a, b}, one()}
+  S.SpCmpEq{S.SpCmpLt{a, b}, zero()}
 
 def cmp_le(a: S.Sp, b: S.Sp) -> S.Sp:
-  S.SpCmpNe{S.SpCmpLt{b, a}, one()}
+  S.SpCmpEq{S.SpCmpLt{b, a}, zero()}
 
 def cmp_ne(a: S.Sp, b: S.Sp) -> S.Sp:
-  S.SpCmpNe{a, b}
+  S.SpCmpEq{S.SpCmpEq{a, b}, zero()}
 
 def cmp_eq(a: S.Sp, b: S.Sp) -> S.Sp:
-  S.SpCmpNe{S.SpCmpNe{a, b}, one()}
+  S.SpCmpEq{a, b}
 
 def logical_not(a: S.Sp) -> S.Sp:
-  S.SpCmpNe{a, one()}
+  S.SpCmpEq{a, zero()}
+
+# tinyspec: Truncmod(a,b) = a - b * Truncdiv(a,b)
+#
+# AND NOT THE OTHER ONE ROUND.  MEASURED 2026-11-17: the spec's table says
+# `Truncmod(a,b) = a - b * Truncdiv(a,b)` -- the dividend's sign -- and the
+# table's `Mod` row says `a - b*floor(a/b)`, which is the FLOOR's sign.  The
+# two are different functions and the spec says so: "Remainder with dividend's
+# sign (or zero)".
+#
+# `Truncdiv` ITSELF is not derived here: the spec gives it as
+# `sgn(a)sgn(b)*floor(|a|/|b|)`, and the spec IR has no `Abs` and no `Sign`
+# to build it from -- so it is a PRIMITIVE of the spec IR, the way the pin's own
+# `tinygrad/uop/ops.py` has `Ops.TRUNCDIV` with a `cdiv` implementation.
+def truncmod(+a: S.Sp, b: S.Sp) -> S.Sp:
+  # `Sub` IS DECOMPOSED (tinyspec: Sub = Add(A, Neg(B))), so the table's own
+  # `sub` builds it and `SpSub` does not exist.
+  #
+  # AND THE READS ARE MARKED, because Bend spends a value that is read more
+  # than once: `a` and `b` are each read TWICE here, and a value read twice is
+  # marked `+` (a parameter, a binding, or a pattern field) --
+  # `tinybendygrad/helpers.bend:3074` records the rule, and the `+` binding
+  # needs its TYPE annotated because a Many value cannot be inferred.
+  +bb : S.Sp = b
+  q : S.Sp = S.SpTruncdiv{a, bb}
+  r : S.Sp = S.SpMul{bb, q}
+  sub(a, r)
 
 # tinyspec: Sqrt(A) = Exp2(0.5 * Log2(A))
 #           Pow(A,B) = Exp2(Log2(A) * B)

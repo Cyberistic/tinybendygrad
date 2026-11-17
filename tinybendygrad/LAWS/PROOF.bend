@@ -2,11 +2,25 @@ import Base
 import ../LAWS.bend as L
 import ./spec.bend as S
 
-# PROOF.bend -- the shape half of the proof set (LAWS.bend sections I, II, III,
-# VI, VII and VIII).
+# PROOF.bend -- THE PROOF SET, all thirty-four laws in ONE book.
 #
 # A proof is a def of the law's name whose parameters are that law's `for`
 # binders IN ORDER.
+#
+# ONE FILE, AND IT WAS TWO BECAUSE OF A CONSTRAINT AND NOT A PLAN.  `bend`
+# discharges a law by a `def` of the same name ANYWHERE IN THE BOOK, and allows
+# ONE such def per book (`references/bend/bend2/bend.ts:2437` takes the law's
+# own qualified name only while the law has no body), so a half-book reports the
+# OTHER half's laws as open: the shape half alone reported 18 TODOs and the
+# ALU/dtype half 16, and every one of those was a law the other half proved.
+# The aggregate `PROOF-ALL.bend` imported both halves and was the one book whose
+# closure held all thirty-four.
+#
+# MEASURED 2026-11-17: the two halves' sixty defs have NO NAME IN COMMON --
+# forty-two here and eighteen there -- and NEITHER CALLS A DEF DECLARED LATER IN
+# ITS OWN FILE, so ONE FILE holds both halves and the concatenation is
+# ORDER-SAFE.  This file reports `ALL PROOFS CHECK` and the law census reads it
+# `0 open / 34 filled`.
 #
 # ORDER is the whole file, because a def may only call a def DECLARED above it.
 # The shape algebra -- section VIII's two laws, and the Maybe-level lemmas the
@@ -14,10 +28,11 @@ import ./spec.bend as S
 # proofs follow it. Nothing else in the repo is order-sensitive in this way,
 # because nothing else here is a helper.
 #
-# Every law this file owns is filled. Reduce is `reduced * prod(take(dims, n))
-# == numel`, proved by `reduce_numel_go`. Broadcast is restated: equal-length
-# concrete shapes, each axis the non-1 size (`pick_dim`). The induction is
-# `bcast_axes`.
+# THE SHAPE HALF (sections I, II, III, VI, VII and VIII) comes first, and the
+# ALU/dtype half (IV and V) after it -- and the boundary is marked.  Every law
+# this file owns is filled. Reduce is `reduced * prod(take(dims, n)) == numel`,
+# proved by `reduce_numel_go`. Broadcast is restated: equal-length concrete
+# shapes, each axis the non-1 size (`pick_dim`). The induction is `bcast_axes`.
 #
 #   `Sp.shape` can only reduce a node whose arm READS ITS OWN FIELDS. An arm that
 #   has to case-split on ANOTHER node's shape -- Reduce's `Shape.drop`,
@@ -42,26 +57,11 @@ import ./spec.bend as S
 # because the `Sp.shape` arm IS the right-hand side -- `SpPermute`'s arm is
 # literally `Sp.shape(t)`. Those were mutation-tested: breaking each arm in turn
 # fails the law it belongs to. See spec/shape-laws.md.
-# Section VIII -- the shape algebra's own laws, and the Maybe-level lemmas the
-# section II and VI laws are built from.
 #
-# A law's shape binder is SYMBOLIC, and `match` may not scrutinise a call, so
-# neither `zip_max` nor `on_shape` can be opened inside a law body. Each helper
-# below takes the shape as a PARAMETER and does the induction there; the law
-# proof is then one application. All three are stated as equations with an
-# explicit `-> {a == b : T}` rather than as `def name(...)` law proofs, because
-# a def with no return type is an attempt to fill a law of that name.
-# Base proves `Nat.max_ge_l` and `Nat.max_ge_r` but NOT `Nat.max(v, v) == v`, and
-# `Shape.max_dim`'s SN arm is exactly `SN{Nat.max(v, v)}`, so the leaf fact has to
-# be proved here. Induction on the Nat.
-#
-# Two syntax rules cost time and are worth writing down:
-#   * a def with NO return type is a law proof, so a helper like this needs an
-#     explicit `-> {Nat.max(v, v) == Nat}`, and `+v` so the binder is reusable
-#     across the two occurrences;
-#   * the `%proof : P` motive is written against the goal AFTER the match. In the
-#     step case the goal is `1n+Nat.max(p, p) == 1n+p`, so P is
-#     `{1n+Nat.max(p, p) == 1n+_ : Nat}` -- NOT the pre-match goal.
+# AND THE ALU/DTYPE HALF IS EASY WHERE THE SHAPE HALF WAS HARD. `Sp.dtype` reads
+# at most one operand per arm, so no arm has to case-split on another node's
+# result -- the shape half's one remaining obstacle does not arise here.  That is
+# why the dtype half went green and the shape half needed the helpers above.
 def nat_max_idem(+v: Nat) -> {Nat.max(v, v) == v : Nat}:
   match v:
     case 0n:
@@ -460,6 +460,41 @@ def L.max_is_elementwise(a, b, premise):
   %ih : {S.dims_zip_max(S.Sp.shape(a), S.Sp.shape(a)) == _ : Maybe<&2, S.Shape>}
   {==}
 
+# AND THE COMPARISONS, WHICH THE SPEC'S TABLE PUTS IN THE SAME TABLE.  The
+# shape fold's arms for `CmpLt`, `CmpEq` and `CmpNe` were UNPINNED -- the
+# census named them -- and this is what pins them.
+def L.cmp_lt_is_elementwise(a, b, premise):
+  %premise : {S.dims_zip_max(S.Sp.shape(a), _) == S.Sp.shape(a) : Maybe<&2, S.Shape>}
+  ih = zip_maybe_idem(S.Sp.shape(a))
+  %ih : {S.dims_zip_max(S.Sp.shape(a), S.Sp.shape(a)) == _ : Maybe<&2, S.Shape>}
+  {==}
+
+def L.cmp_eq_is_elementwise(a, b, premise):
+  %premise : {S.dims_zip_max(S.Sp.shape(a), _) == S.Sp.shape(a) : Maybe<&2, S.Shape>}
+  ih = zip_maybe_idem(S.Sp.shape(a))
+  %ih : {S.dims_zip_max(S.Sp.shape(a), S.Sp.shape(a)) == _ : Maybe<&2, S.Shape>}
+  {==}
+
+def L.cmp_ne_is_elementwise(a, b, premise):
+  %premise : {S.dims_zip_max(S.Sp.shape(a), _) == S.Sp.shape(a) : Maybe<&2, S.Shape>}
+  ih = zip_maybe_idem(S.Sp.shape(a))
+  %ih : {S.dims_zip_max(S.Sp.shape(a), S.Sp.shape(a)) == _ : Maybe<&2, S.Shape>}
+  {==}
+
+# AND THE INTEGER DIVISION PAIR, which the spec's derived-properties table
+# covers as "Other binary" -- BROADCAST.
+def L.truncdiv_is_elementwise(a, b, premise):
+  %premise : {S.dims_zip_max(S.Sp.shape(a), _) == S.Sp.shape(a) : Maybe<&2, S.Shape>}
+  ih = zip_maybe_idem(S.Sp.shape(a))
+  %ih : {S.dims_zip_max(S.Sp.shape(a), S.Sp.shape(a)) == _ : Maybe<&2, S.Shape>}
+  {==}
+
+def L.truncmod_is_elementwise(a, b, premise):
+  %premise : {S.dims_zip_max(S.Sp.shape(a), _) == S.Sp.shape(a) : Maybe<&2, S.Shape>}
+  ih = zip_maybe_idem(S.Sp.shape(a))
+  %ih : {S.dims_zip_max(S.Sp.shape(a), S.Sp.shape(a)) == _ : Maybe<&2, S.Shape>}
+  {==}
+
 # PROVEN, BUT VACUOUS BY CONSTRUCTION, and it was before the folds were fuelled:
 # the conclusion restates the premise verbatim, so the premise IS the proof and
 # the law cannot fail whatever the fold says. It is kept and proven because the
@@ -480,3 +515,134 @@ def L.store_matches_its_buffer(buf, val, gate, premise):
 # (5,0)+(3,) is 3==0; shapeless+(3,3) is 9==0. tinygrad (2,0)+(1,1) is a
 # valid broadcast of shape (2, 0), so the count inequality is false there
 # too. The axis rule on equal-length concrete shapes is what both do.
+
+# ---------------------------------------------------------------------------
+# THE ALU/DTYPE HALF (sections IV and V) -- the eighteen laws that the
+# shape half above does not hold.  It comes AFTER the shape algebra
+# because a def may only call a def DECLARED ABOVE it, and these
+# proofs call no helper of their own.
+#
+# IV. tinyspec.tex "Decomposed elementwise ops" (lines 188-208): each op is
+# DEFINED in terms of the primitives above it, so each is reflexive. No depth
+# binder, then or now: none of these laws mentions shape_of, dtype_of or
+# numel_of.
+# tinyspec.tex:192  Neg = Mul(A, -1)
+def L.neg_is_mul_by_minus_one(a):
+  {==}
+
+# tinyspec.tex:193  Sub = Add(A, Neg(B))
+def L.sub_is_add_of_neg(a, b):
+  {==}
+
+# tinyspec.tex:194  Div = Mul(A, Recip(B))
+def L.div_is_mul_by_recip(a, b):
+  {==}
+
+# tinyspec.tex:195  CmpGt = CmpLt(B, A)
+def L.cmp_gt_is_cmp_lt_swapped(a, b):
+  {==}
+
+# tinyspec.tex:204  CmpGe = CmpEq(CmpLt(A, B), 0)
+def L.cmp_ge_is_eq_of_cmp_lt(a, b):
+  {==}
+
+# tinyspec.tex:205  CmpLe = CmpEq(CmpLt(B, A), 0)
+def L.cmp_le_is_eq_of_cmp_lt_swapped(a, b):
+  {==}
+
+# tinyspec.tex:206  CmpNe = CmpEq(CmpEq(A, B), 0)
+def L.cmp_ne_is_eq_of_double_eq(a, b):
+  {==}
+
+# tinyspec.tex:173  CmpEq is PRIMITIVE elementwise equality
+def L.cmp_eq_is_primitive(a, b):
+  {==}
+
+# tinyspec.tex:207  Not = CmpEq(A, 0)
+def L.not_is_eq_zero(a):
+  {==}
+
+# tinyspec.tex:202  Truncmod = a - b * Truncdiv(a, b)
+def L.truncmod_is_a_minus_b_times_truncdiv(a, b):
+  {==}
+
+# tinyspec.tex:205  Mulacc = Add(Mul(A, B), C)
+def L.mulacc_is_add_of_mul(a, b, c):
+  {==}
+
+# V. tinyspec.tex "Derived Properties" dtype column: the arms of Sp.dtype that
+# do not simply read src[0].
+#
+# All eight were OPEN and all eight are REFLEXIVE now. Before, the fold matched
+# on a fuel it had computed as `2*depth+1` and its `case 2n+p:` arm was dead
+# behind `case 1n+p:`, so every one of these compared None with Some{bool} or
+# with None. The fold now reaches its own arm on the first call.
+# tinyspec.tex:269  CmpLt, CmpNe: bool
+def L.comparison_is_bool(a, b):
+  {==}
+
+def L.comparison_ne_is_bool(a, b):
+  {==}
+
+# THE COMPARISON THAT WAS MISSING.  MEASURED 2026-11-17: the spec IR had no
+# `CmpEq` arm at all, so the spec's own primitive comparison -- the one
+# tinyspec calls "primitive elementwise equality, returning bool (as do CmpLt
+# and CmpNe)" -- could not be stated.
+def L.comparison_eq_is_bool(a, b):
+  {==}
+
+# tinyspec.tex:271  Where: src[1].dtype. The arm is `Sp.dtype(b)`, so both
+# sides are literally the same term.
+def L.where_takes_the_second_operand_dtype(p, a, b):
+  {==}
+
+# tinyspec.tex:274  Store: void. "Output is void" is the arm `None{}`.
+def L.store_is_void(buf, val, gate):
+  {==}
+
+# tinyspec.tex "A value Call is void" -- the arm is `None{}` again.
+def L.call_is_void(body, args):
+  {==}
+
+# tinyspec.tex:275  Range: index
+def L.range_is_index(bound):
+  {==}
+
+# tinyspec.tex "Binary: has dtype uint8"
+def L.binary_is_uint8(size):
+  {==}
+
+# The marker ops are "identity on data": the arm is a tail call on the operand,
+# so the subject and the premise normalise to one term.
+def L.detach_preserves_dtype(a):
+  {==}
+
+# THE PASSTHROUGH OPS, WHOSE DTYPE THE SPEC'S TABLE GIVES AS src[0]'s.
+def L.load_preserves_dtype(buf, alt, gate):
+  {==}
+
+def L.copy_preserves_dtype(buf, dev):
+  {==}
+
+def L.after_preserves_dtype(buf, deps):
+  {==}
+
+# AND THE TWO OPS THAT CAME WITH THE SPEC'S OWN DECOMPOSITIONS.
+def L.truncdiv_preserves_dtype(a, b):
+  {==}
+
+def L.truncmod_preserves_dtype(a, b):
+  {==}
+
+# THE PASSTHROUGH OPS' SHAPE, and the spec says so in words.
+def L.after_preserves_shape(buf, deps):
+  {==}
+
+def L.load_preserves_shape(buf, alt, gate):
+  {==}
+
+def L.copy_preserves_shape(buf, dev):
+  {==}
+
+def L.detach_preserves_numel(a):
+  {==}

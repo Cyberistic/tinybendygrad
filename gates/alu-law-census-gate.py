@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """alu-law-census-gate.py -- CAN THE ALU/DTYPE LAWS GO RED?
 
-THE CLAIM. `LAWS/PROOF-ALL.bend` reports `ALL PROOFS CHECK`, and `LAWS.bend`'s 34
+THE CLAIM. `LAWS/PROOF.bend` reports `ALL PROOFS CHECK`, and `LAWS.bend`'s 34
 laws are the port's specification.  A green gate over a law that CANNOT FAIL is
 a label, not a law: `differ.py`'s own plant 3 says "if it does not go red, the
 row is a label", and `AGENTS.md` doctrine 2 names DEAD as the verdict nobody
@@ -10,12 +10,20 @@ writes down.
 So this gate asks the question the aggregate gate cannot: for EVERY law of the
 ALU/dtype half, does breaking its subject make the gate go RED, NAMING THAT LAW?
 
-THE POPULATION IS DISCOVERED, NOT LISTED.  The proof set is SPLIT IN TWO --
-`PROOF.bend` holds the shape half and `PROOF2.bend` the ALU/dtype half -- and
-the two are told apart by CONTENT: the ALU/dtype half is the one whose law
-bodies name the DECOMPOSITION TABLE (`A.<fn>`) or the DTYPE COLUMN
-(`dtype_of`/`numel_of`).  So a law that moves from one half to the other moves
-this gate's population with it, and neither half is named here.
+THE POPULATION IS DISCOVERED, NOT LISTED.  The proof set is SPLIT IN TWO -- the
+shape half and the ALU/dtype half -- and the two are told apart by CONTENT:
+the ALU/dtype half is the one whose laws `LAWS.bend` puts in SECTIONS IV and
+V, and the shape half is sections I, II, III, VI, VII and VIII.  So a law that
+moves from one half to the other moves this gate's population with it, and
+neither half is named here.
+
+AND THE TWO HALVES ARE ONE BOOK NOW.  MEASURED 2026-11-17: the shape half was
+`PROOF.bend` and the ALU/dtype half `PROOF2.bend`, and `PROOF-ALL.bend`
+imported both -- because `bend` discharges a law by a `def` of the same name
+anywhere in the book and allows ONE such def per book, so a half-book reports
+the OTHER half's laws as open.  The two halves' sixty defs have NO NAME IN
+COMMON and neither calls a def declared later in its own file, so ONE book holds
+both, and the SECTION is where the split already was.
 
 AND THE MASK IS A SECOND, SEPARATE QUESTION.  A decomposition law's subject
 is `A.neg` and the law's right-hand side is `SpMul{a, A.one()}` -- the SAME
@@ -73,10 +81,11 @@ ROOT = gatekit.ROOT
 PORT = ROOT / "tinybendygrad"
 BEND = gatekit.BEND
 
-# THE BOOK THAT MUST STAY GREEN.  The aggregate, because a half-book is not a
-# verdict: `LAWS.bend` alone declares 34 and fills 0, `PROOF.bend` alone fills
-# 16 and `PROOF2.bend` alone fills 18, and only the aggregate joins them.
-AGGREGATE = PORT / "LAWS" / "PROOF-ALL.bend"
+# THE BOOK THAT MUST STAY GREEN.  The ONE book, because a half-book is not a
+# verdict: `LAWS.bend` alone declares 34 and fills 0, and `PROOF.bend` alone
+# fills all thirty-four.  MEASURED 2026-11-17: the halves were two books and
+# the aggregate joined them; one book holds both now.
+AGGREGATE = PORT / "LAWS" / "PROOF.bend"
 
 # THE BASELINE.  The defects that exist TODAY, declared, so the gate is green
 # at rest and goes red on a REGRESSION.  It lives BESIDE THE GATE and in git,
@@ -116,31 +125,49 @@ def proof_books(port: Path) -> list[Path]:
     return out
 
 
+def law_section(laws_text: str, name: str) -> str:
+    """the SECTION of `LAWS.bend` a law is in -- read from its own headers.
+
+    `LAWS.bend` numbers its sections with `# <ROMAN>. ` headers, and the
+    sections ARE the two halves: IV and V are the ALU/dtype half and I, II,
+    III, VI, VII and VIII are the shape half.  MEASURED 2026-11-17: the halves
+    were TWO books and the gate told them apart by the book's text; ONE book
+    holds both halves now, and the section is where the split already was.
+    """
+    sec = ""
+    for line in laws_text.split("\n"):
+        m = re.match(r"^# ([IVX]+)\. ", line)
+        if m:
+            sec = m.group(1)
+        if re.match(rf"^law {re.escape(name)}:", line):
+            return sec
+    return ""
+
+
 def alu_half(port: Path) -> tuple[Path, list[str]]:
     """`(the book that holds the ALU/dtype half, its law names)`.
 
-    THE HALF IS THE ONE THAT DOES NOT HOLD THE OTHER'S LAWS.  Both halves prove
-    laws; they are told apart by which half's law set is DISJOINT from the
-    other's, and the ALU/dtype half is the one whose laws are the ones the
-    spec's DECOMPOSITION TABLE and DTYPE COLUMN state.  That is a RULE over the
-    law TEXTS (`A.<fn>` for a decomposition, `dtype_of`/`numel_of` for a
-    derived-property law), so a law that moves from one half to the other
-    moves this gate with it.
+    AND THE RULE IS NOW THE LAW's SECTION, because `LAWS.bend` SAYS which half
+    a law is in: sections IV and V are the ALU/dtype half and I, II, III, VI,
+    VII and VIII are the shape half -- and the port's own header says the same
+    ("the elementwise-decomposition half (IV) and the dtype half (V)").
+
+    MEASURED 2026-11-17: the two halves were TWO books and this rule picked
+    the one whose text named the decomposition table; ONE book holds both halves
+    now, and the section is where the split already was.  The section is READ
+    from `LAWS.bend`'s own `# <ROMAN>.` headers, so a law that moves between
+    sections moves this gate with it, and no half is named here.
     """
     books = proof_books(port)
-    if len(books) != 2:
-        return (books[0] if books else Path(""), [])
-    alu_book = None
-    for b in books:
-        text = b.read_text(errors="replace")
-        # the ALU/dtype half names the decomposition table or the dtype fold
-        if re.search(r"\bA\.\w+\(", text) or "dtype_of" in text:
-            alu_book = b
-    if alu_book is None:
+    if not books:
         return (Path(""), [])
+    book = books[0]
+    laws_text = (port / "LAWS.bend").read_text(errors="replace")
+    alu_sections = {"IV", "V"}
     laws_declared = set(law_names(port / "LAWS.bend"))
-    own = [n for n in proved_names(alu_book) if n in laws_declared]
-    return (alu_book, own)
+    own = [n for n in proved_names(book)
+           if n in laws_declared and law_section(laws_text, n) in alu_sections]
+    return (book, own)
 
 
 # --------------------------------------------------------------------------- the mutation
@@ -328,7 +355,7 @@ def run_gate(args) -> int:
         # --- THE CONTROL: the un-mutated copy must be green, or every case
         # below is measuring a broken copy rather than a broken law.
         control_root = fresh_copy(Path(td) / "control")
-        rc, out = check(control_root / "LAWS" / "PROOF-ALL.bend")
+        rc, out = check(control_root / "LAWS" / "PROOF.bend")
         if rc != 0 or WARM not in out:
             print("REFUSED, NOT A VERDICT: the control copy is not green, so a case "
                   "below would be measuring the copy and not the law")
@@ -374,7 +401,7 @@ def run_gate(args) -> int:
             case_root = fresh_copy(Path(td) / f"case-{law}")
             rel = target.relative_to(control_root)
             (case_root / rel).write_text(mutated)
-            rc, out = check(case_root / "LAWS" / "PROOF-ALL.bend")
+            rc, out = check(case_root / "LAWS" / "PROOF.bend")
             named = named_law(out)
             if rc != 0 and named == law:
                 rows.append((law, "RED", f"the gate names {law}"))
@@ -430,7 +457,7 @@ def run_gate(args) -> int:
                 continue
             case_root = fresh_copy(Path(td) / f"case-mask-{law}")
             (case_root / "LAWS" / ALU.name).write_text(mutated)
-            rc, out = check(case_root / "LAWS" / "PROOF-ALL.bend")
+            rc, out = check(case_root / "LAWS" / "PROOF.bend")
             named = named_law(out)
             if rc != 0 and named == law:
                 rows.append((law + ":MASK", "RED", f"the gate names {law}"))
@@ -704,7 +731,7 @@ def run_plant(args) -> int:
     bad = []
     with tempfile.TemporaryDirectory(prefix="alu-law-census-plant-") as td:
         control_root = fresh_copy(Path(td) / "control")
-        rc, out = check(control_root / "LAWS" / "PROOF-ALL.bend")
+        rc, out = check(control_root / "LAWS" / "PROOF.bend")
         ok_green = (rc == 0 and WARM in out)
         print(f"  1 control          {'GREEN' if ok_green else 'NOT GREEN'}")
         if not ok_green:
@@ -718,7 +745,7 @@ def run_plant(args) -> int:
         else:
             case_root = fresh_copy(Path(td) / "case2")
             (case_root / "LAWS" / ALU.name).write_text(mutated)
-            rc, out = check(case_root / "LAWS" / "PROOF-ALL.bend")
+            rc, out = check(case_root / "LAWS" / "PROOF.bend")
             named = named_law(out)
             ok_red = (rc != 0 and named == "neg_is_mul_by_minus_one")
             print(f"  2 neg mutated      {'RED' if ok_red else 'NOT RED'}"
@@ -743,7 +770,7 @@ def run_plant(args) -> int:
             else:
                 case_root = fresh_copy(Path(td) / "case3")
                 (case_root / "LAWS" / SPEC.name).write_text(mutated)
-                rc, out = check(case_root / "LAWS" / "PROOF-ALL.bend")
+                rc, out = check(case_root / "LAWS" / "PROOF.bend")
                 ok_red = rc != 0
                 print(f"  3 pinned arm       {'RED' if ok_red else 'NOT RED'}"
                       f"  ({arm} -> {gatekit._said(out, lines=1)})")
@@ -765,7 +792,7 @@ def run_plant(args) -> int:
             else:
                 case_root = fresh_copy(Path(td) / "case4")
                 (case_root / "LAWS" / SPEC.name).write_text(mutated)
-                rc, out = check(case_root / "LAWS" / "PROOF-ALL.bend")
+                rc, out = check(case_root / "LAWS" / "PROOF.bend")
                 ok_green = (rc == 0)
                 print(f"  4 unpinned arm     {'GREEN' if ok_green else 'NOT GREEN'}"
                       f"  ({arm})")

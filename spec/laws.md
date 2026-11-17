@@ -100,17 +100,20 @@ they pin is the semantics every IR must agree on, which is exactly what
 ## The gate
 
 ```
-$ ./bin/bend tinybendygrad/LAWS/PROOF-ALL.bend
+$ ./bin/bend tinybendygrad/LAWS/PROOF.bend
 ALL PROOFS CHECK
 ```
 
 Red while any law is open. It names the law, not a line number.
 
-**The aggregate is the gate, and the two halves are NOT.** Bend discharges a law
-by a `def` of the same name ANYWHERE IN THE BOOK, so a half-book reports the
-other half's laws as open: `LAWS/PROOF.bend` alone reports 18 TODOs and
-`LAWS/PROOF2.bend` alone 16, and every one of those is a law the other half
-proves. `LAWS/PROOF-ALL.bend` is the one book whose closure holds all thirty-four.
+**ONE FILE, AND IT WAS THREE BECAUSE OF A CONSTRAINT AND NOT A PLAN.** Bend
+discharges a law by a `def` of the same name ANYWHERE IN THE BOOK, and allows
+ONE such def per book, so a half-book reports the OTHER half's laws as open:
+the shape half alone reported 18 TODOs and the ALU/dtype half 16, and the
+aggregate `PROOF-ALL.bend` existed to import both. MEASURED 2026-11-17: the two
+halves' sixty defs have NO NAME IN COMMON and neither calls a def declared
+later in its own file, so ONE file holds both halves and the aggregate is not
+needed. The proof file is now `LAWS/PROOF.bend` and it holds all fifty laws.
 
 ## Files
 
@@ -119,9 +122,7 @@ proves. `LAWS/PROOF-ALL.bend` is the one book whose closure holds all thirty-fou
 | `tinybendygrad/LAWS/spec.bend` | ops as a datatype; dtype/shape as functions |
 | `tinybendygrad/LAWS/alu.bend` | the decomposition table, as defs |
 | `tinybendygrad/LAWS.bend` | the laws |
-| `tinybendygrad/LAWS/PROOF.bend` | shape half |
-| `tinybendygrad/LAWS/PROOF2.bend` | ALU/dtype half |
-| `tinybendygrad/LAWS/PROOF-ALL.bend` | the aggregate: both halves, and the gate |
+| `tinybendygrad/LAWS/PROOF.bend` | the proofs: all of them, and the gate |
 | `spec/shape-laws.md` | what pinning the element count bought |
 | `.agents/slop/notes/bend2-constraints.md` | the Bend rules that shaped all of it |
 

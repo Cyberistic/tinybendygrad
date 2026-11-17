@@ -1,5 +1,5 @@
 # port-compile: one `bin/bend --check-only` per .bend under tinybendygrad/, ONE AT A TIME, under checks/bounded.py.
-# taken=2026-11-11T06:15:15Z  population=201  ceiling 2048 MB, 300 s each.
+# taken=2026-11-17T04:37:30Z  population=199  ceiling 2048 MB, 300 s each.
 # state= COMPILES | COMPILES-AS-C | COLD-BY-DESIGN | FINDING | NO-MEASUREMENT
 # COMPILES       `--check-only` says `ALL PROOFS CHECK`.
 # COMPILES-AS-C  the checker refuses for a PROMISE (the file binds foreign or
@@ -9,7 +9,7 @@
 #   or foreign code:` (the file PARSES AND TYPE-CHECKS; the SAFETY verdict is
 #   what fails).  Only FINDING is a defect.
 state	file	detail
-COLD-BY-DESIGN	tinybendygrad/LAWS.bend	Error: 34 TODOs found. -- and the compiler does NOT emit C
+COLD-BY-DESIGN	tinybendygrad/LAWS.bend	Error: 50 TODOs found. -- and the compiler does NOT emit C
 COMPILES	tinybendygrad/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/base.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/device.bend	ALL PROOFS CHECK
@@ -18,9 +18,7 @@ COMPILES	tinybendygrad/function.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/helpers.bend	ALL PROOFS CHECK
 COLD-BY-DESIGN	tinybendygrad/sz.bend	Error: 7 defs rely on unsafe or foreign code: -- and the EMIT lane was NOT-MEASURED (KILLED-ON-MEMORY), so the EMIT is NOT a verdict about this file
 COMPILES	tinybendygrad/tensor.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/LAWS/PROOF-ALL.bend	ALL PROOFS CHECK
-COLD-BY-DESIGN	tinybendygrad/LAWS/PROOF.bend	Error: 18 TODOs found. -- and the compiler does NOT emit C
-COLD-BY-DESIGN	tinybendygrad/LAWS/PROOF2.bend	Error: 16 TODOs found. -- and the compiler does NOT emit C
+COMPILES	tinybendygrad/LAWS/PROOF.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/alu.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/spec-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/spec.bend	ALL PROOFS CHECK

@@ -1,11 +1,9 @@
 36 examples/beautiful_mnist.bend
 1 langs/core.bend
 0 tinybendygrad/LAWS.bend
-0 tinybendygrad/LAWS/PROOF-ALL.bend
 0 tinybendygrad/LAWS/alu.bend
 0 tinybendygrad/LAWS/spec.bend
 0 tinybendygrad/LAWS/PROOF.bend
-0 tinybendygrad/LAWS/PROOF2.bend
 146 tinybendygrad/codegen/decomp.bend
 38 tinybendygrad/codegen/kernel.bend
 128 tinybendygrad/codegen/late.bend

@@ -289,7 +289,7 @@ LANES = (WRITER, "checks/devpin.py", "checks/substrate-manifest.py")
 STUBS = ("bin/bend", ".agents/slop/graphcmp.py", ".agents/slop/graphcmp.bend",
          ".agents/slop/graphcmp-oracle.py", ".agents/slop/graphcmp-dbg-oracle.py",
          ".agents/slop/graphcmp-p13-ops.py", "tinybendygrad/a.bend", "tinybendygrad/b.bend",
-         "tinybendygrad/LAWS.bend", "tinybendygrad/LAWS/PROOF-ALL.bend")
+         "tinybendygrad/LAWS.bend", "tinybendygrad/LAWS/PROOF.bend")
 MEMBER = "tinybendygrad/b.bend"
 MOVED, MEMBER_BYTES = "// moved\n", "// tinybendygrad/b.bend\n"
 

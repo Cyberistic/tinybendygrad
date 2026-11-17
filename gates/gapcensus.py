@@ -93,7 +93,7 @@ def unit_modules() -> tuple[dict, str]:
     # mutation drivers, 5 are LAWS/PROOF, 4 are probes, 11 are real port modules the upstream
     # has no file for. Declared as classes so the two cannot be confused when counting.
     scaffolding = [n for n in (set(pon) - set(upn)) if n.endswith(("-mut", "_mut")) or n.startswith(".")]
-    laws = sorted({"LAWS", "PROOF", "PROOF2", "PROOF-ALL"} & (set(pon) - set(upn)))
+    laws = sorted({"LAWS", "PROOF"} & (set(pon) - set(upn)))
     probes = sorted(n for n in (set(pon) - set(upn)) if n.startswith(("zz", "probe", "v5", "dtype_oracle")))
     rows = {
         "modules.upstream_files": len(u_files),

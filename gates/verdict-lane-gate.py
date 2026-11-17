@@ -153,9 +153,9 @@ from gatekit import (  # noqa: E402
 # constants for the source as it stands, and they move in the SAME commit as the
 # source they describe.
 PIN_LEAN_VERSION = "4.34.0"
-PIN_SRC_SHA256 = "cc78aa9ff3491ff1b788797bdcab4cb98107dcb1730ed99834f6933b11d88335"
-PIN_KERNEL_SHA256 = "7e7a4899bfd6b793fae3253cfee1f297ae9239f0e858795985dab6a5e990905b"
-PIN_KERNEL_BYTES = 3307264
+PIN_SRC_SHA256 = "776bfba6f08e9cbebb26fb3d43fa892b80d1d74b0a57698db4bc5d6b5db5b567"
+PIN_KERNEL_SHA256 = "7742fd5db4799db967e784df997263e9df673122608c3fdacd375dd55c4a325a"
+PIN_KERNEL_BYTES = 3307552
 
 # THE COMPILER'S TWO VERDICT TOKENS, read from the compiler's own source
 # (`references/bend/bend2/main.ts:81` and `:83`) rather than re-typed from
@@ -246,11 +246,21 @@ def proof_population(root):
     `import` lines and the laws are bend2's own `law` keyword, so neither is a
     hand list and neither can rot without the population moving with it.
 
-    MEASURED on this revision: TWO roots -- `LAWS/PROOF-ALL.bend` (the aggregate
-    the port itself calls "the aggregate gate") and
-    `runtime/autogen/libclang.bend` (the FFI file, which declares 335 laws of its
-    own and is imported by nothing).  The aggregate's closure is the six proof
-    files and libclang's is itself, so the population is SEVEN files.
+    MEASURED on this revision: TWO roots -- `LAWS/PROOF.bend` (the ONE book that
+    holds all thirty-four laws) and `runtime/autogen/libclang.bend` (the FFI
+    file, which declares 335 laws of its own and is imported by nothing).  The
+    book's closure is the four proof files and libclang's is itself, so the
+    population is FIVE files.
+
+    IT WAS SEVEN, AND THE MERGE IS WHY.  `LAWS/PROOF.bend` and
+    `LAWS/PROOF2.bend` held the shape half and the ALU/dtype half, and
+    `LAWS/PROOF-ALL.bend` imported both -- because `bend` discharges a law by a
+    `def` of the same name anywhere in the book and allows ONE such def per
+    book, so a half-book reports the OTHER half's laws as open.  MEASURED
+    2026-11-17: the two halves' sixty defs have NO NAME IN COMMON and neither
+    calls a def declared later in its own file, so ONE file holds both halves.
+    The population fell from seven files to five, and the root's name is now
+    the book the port itself calls the gate.
     """
     files = port_files(root)
     known = set(files)
@@ -830,10 +840,11 @@ def plant_main(args):
     t_code, _ = decide(t_rows)
     disagree = sorted(r["file"] for r in t_rows if r["agreement"] == "DISAGREE")
     agree = sorted(r["file"] for r in t_rows if r["agreement"] == f"AGREE-{C_VERIFIED}")
-    # THE MARKER IS IN `LAWS/alu.bend`, AND THE AGGREGATE `LAWS/PROOF-ALL.bend`
-    # IMPORTS IT, SO BOTH MUST DISAGREE -- AND `LAWS/spec.bend`, WHICH DOES NOT
-    # CARRY THE MARKER, MUST NOT.  THE SET IS THE CLAIM; THE VERDICT ALONE IS
-    # NOT, BECAUSE A BLANKET KERNEL WOULD ALSO PRODUCE `FAIL`.
+    # THE MARKER IS IN `LAWS/alu.bend`, AND `LAWS/PROOF.bend` -- THE ONE BOOK
+    # THAT HOLDS ALL THIRTY-FOUR LAWS -- CARRIES THE MARKER'S ELABORATION, SO
+    # BOTH MUST DISAGREE -- AND `LAWS/spec.bend`, WHICH DOES NOT, MUST NOT.  THE
+    # SET IS THE CLAIM; THE VERDICT ALONE IS NOT, BECAUSE A BLANKET KERNEL
+    # WOULD ALSO PRODUCE `FAIL`.
     #
     # AND THE SET IS AN ANCHOR, NOT A CONSTANT: if the port's proof family
     # moves, this case reports NOT AS EXPECTED and says so -- which is the
@@ -841,7 +852,12 @@ def plant_main(args):
     # stop proving anything (`gates/mixin-op-plant.py`: "the anchor is not in
     # the file as it stands ... re-anchored -- NOT that it should fall back to
     # reading git").
-    want_disagree = {"tinybendygrad/LAWS/alu.bend", "tinybendygrad/LAWS/PROOF-ALL.bend"}
+    #
+    # MEASURED 2026-11-17: the anchor was `{alu.bend, PROOF-ALL.bend}` and the
+    # two halves were TWO books.  ONE book now holds all thirty-four laws, and
+    # the merged `PROOF.bend` carries the marker -- so the anchor's second
+    # member is `PROOF.bend` and `PROOF-ALL.bend` is gone.
+    want_disagree = {"tinybendygrad/LAWS/alu.bend", "tinybendygrad/LAWS/PROOF.bend"}
     record("PLANT-TARGETED-KERNEL", VERDICT[FAIL], VERDICT.get(t_code, str(t_code)),
            f"disagree={disagree} agree-verified={agree}",
            ok=(t_code == FAIL and set(disagree) == want_disagree

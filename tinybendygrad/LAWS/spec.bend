@@ -494,7 +494,10 @@ type Sp is Data:
   SpMax{a: Sp, b: Sp}
   SpMod{a: Sp, b: Sp}
   SpIdiv{a: Sp, b: Sp}
+  SpTruncdiv{a: Sp, b: Sp}
+  SpTruncmod{a: Sp, b: Sp}
   SpCmpLt{a: Sp, b: Sp}
+  SpCmpEq{a: Sp, b: Sp}
   SpCmpNe{a: Sp, b: Sp}
   SpXor{a: Sp, b: Sp}
   SpOr{a: Sp, b: Sp}
@@ -640,7 +643,19 @@ def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
       sa = Sp.shape(a)
       sb = Sp.shape(b)
       dims_zip_max(sa, sb)
+    case SpTruncdiv{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpTruncmod{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
     case SpCmpLt{a, b}:
+      sa = Sp.shape(a)
+      sb = Sp.shape(b)
+      dims_zip_max(sa, sb)
+    case SpCmpEq{a, b}:
       sa = Sp.shape(a)
       sb = Sp.shape(b)
       dims_zip_max(sa, sb)
@@ -779,7 +794,10 @@ def Sp.dtype(s: Sp) -> Maybe<&2, Dt>:
     case SpMax{a, b}: Sp.dtype(a)
     case SpMod{a, b}: Sp.dtype(a)
     case SpIdiv{a, b}: Sp.dtype(a)
+    case SpTruncdiv{a, b}: Sp.dtype(a)
+    case SpTruncmod{a, b}: Sp.dtype(a)
     case SpCmpLt{a, b}: Some{boolean()}                   # bool
+    case SpCmpEq{a, b}: Some{boolean()}                   # bool
     case SpCmpNe{a, b}: Some{boolean()}
     case SpXor{a, b}: Sp.dtype(a)
     case SpOr{a, b}: Sp.dtype(a)
