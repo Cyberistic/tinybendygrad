@@ -604,17 +604,14 @@ def mp_3(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_3.of(Bool.and(mp_nsrc_is(ar, self, 1), mp_is(ar, mp_src0(ar, self), O.OpsPERMUTE{})),
           arg_tuple(mp_arg(ar, self)), arg_tuple(mp_arg(ar, mp_src0(ar, self))), ar, self)
 
-# remove noop PERMUTEs
+# remove noop PERMUTEs -- WAS movement.py:16-17, REMOVED UPSTREAM in 9fa22cc4f
 #   UPat(Ops.PERMUTE, name="x")
 #   lambda x: x.src[0] if list(x.arg) == list(range(len(x.arg))) else None
 # No srcs in the pattern, so no arity test, and `x.src[0]`'s IndexError is the bottom.
 # THE IDENTITY PERMUTATION IS THE WHOLE TEST -- the rule is removed exactly when the
 # argument is `0, 1, ..., n-1`.
-# ⇒⇒⇒ AND **THE **RULE **IS **NO **LONGER **IN **UPSTREAM** -- **⇒⇒⇒ AND **IT **WAS **REMOVED **IN
-# **`9fa22cc4f` ("simpler unsharded_base [PR] (#19089)")**, **⇒⇒⇒ AND **IT **WAS **AT
-# **`movement.py:16-17`** **BEFORE **THAT **COMMIT** -- **⇒⇒⇒ AND **THE **CITATION **CANNOT **BE **A
-# **LINE **IN **THE **CURRENT **UPSTREAM** (WHOSE **LINE **16 **IS **"# STACK ON INDEX CONST"**) **⇒⇒⇒
-# **AND **SO **THE **COMMIT **IS **NAMED **INSTEAD**.
+# ⇒⇒⇒ AND **THE **CITATION **CANNOT **BE **A **LINE **IN **THE **CURRENT **UPSTREAM** (WHOSE **LINE
+# **16 **IS **"# STACK ON INDEX CONST"**) **⇒⇒⇒ AND **SO **THE **COMMIT **IS **NAMED **INSTEAD**.
 def mp_4.of(ok: Bool, +ar: O.Arena, +self: U32) -> Hop:
   match ok:
     case True{} : Hop{ar, mp_src0(ar, self)}
@@ -898,7 +895,7 @@ def mop_table() -> List<&2, O.PMEntry>:
    O.PMEntry{1, [O.OpsRESHAPE{}], [O.OpsRESHAPE{}]},  # movement.py:10  x(RESHAPE(x2), _)
    O.PMEntry{2, [O.OpsRESHAPE{}], Nil{}},              # movement.py:12  x(x2, _)   first src a bare UPat()
    O.PMEntry{3, [O.OpsPERMUTE{}], [O.OpsPERMUTE{}]},  # movement.py:14  x(PERMUTE(x2))
-   O.PMEntry{4, [O.OpsPERMUTE{}], Nil{}},              # movement.py:16  x          no srcs
+   O.PMEntry{4, [O.OpsPERMUTE{}], Nil{}},              # was movement.py:16-17, REMOVED UPSTREAM in 9fa22cc4f  x  no srcs
    O.PMEntry{5, [O.OpsSTACK{}],   [O.OpsINDEX{}]},    # movement.py:18  x(INDEX(src, CONST))
    O.PMEntry{6, [O.OpsINDEX{}],   [O.OpsSTACK{}, O.OpsCONST{}]},  # movement.py:21 cvar carries CONST
    O.PMEntry{7, [O.OpsINDEX{}],   [O.OpsINDEX{}]},    # movement.py:24  x(INDEX(idx1))
