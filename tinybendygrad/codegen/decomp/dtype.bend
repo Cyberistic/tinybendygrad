@@ -2041,7 +2041,8 @@ def dd_ops.all() -> List<&2, O.Op>:
 def pm_long_decomp() -> O.PMEntrys:
   O.PMEntrys{[
     # 150  GroupOp.All, any dtype
-    O.PMEntry{0,  dd_ops.all(), Nil{}},    # 151  GroupOp.Defines at a long dtype
+    O.PMEntry{0,  dd_ops.all(), Nil{}},
+    # 151  GroupOp.Defines at a long dtype
     O.PMEntry{1,  [O.OpsALLOC{}, O.OpsBUFFER{}, O.OpsPARAM{}], Nil{}},
     # 152  INDEX at a long dtype
     O.PMEntry{2,  [O.OpsINDEX{}], Nil{}},
