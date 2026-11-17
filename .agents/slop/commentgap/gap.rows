@@ -78,8 +78,8 @@ codegen/decomp/dtype.py	153	a pair becomes the STACK of the long's	yes	codegen/d
 codegen/decomp/dtype.py	155	a const splits by value, the general CAST	yes	codegen/decomp/dtype.bend:2008	PORTED	carried via block:phrase5 at codegen/decomp/dtype.bend:2008
 codegen/decomp/dtype.py	160	a cast between long dtypes reinterprets the words,	yes	codegen/decomp/dtype.bend:2008	PORTED	carried via block:phrase5 at codegen/decomp/dtype.bend:2008
 codegen/decomp/dtype.py	166	float decomposition patterns	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/dtype.py	170	INDEX into a LOAD/STACK selects a lane of	yes	codegen/decomp/dtype.bend:2069	PORTED	carried via block:phrase5 at codegen/decomp/dtype.bend:2069
-codegen/decomp/dtype.py	174	bitcasted load should just replace load	yes	codegen/decomp/dtype.bend:2069	PORTED	carried via block:phrase4 at codegen/decomp/dtype.bend:2069
+codegen/decomp/dtype.py	170	INDEX into a LOAD/STACK selects a lane of	yes	codegen/decomp/dtype.bend:2070	PORTED	carried via block:phrase5 at codegen/decomp/dtype.bend:2070
+codegen/decomp/dtype.py	174	bitcasted load should just replace load	yes	codegen/decomp/dtype.bend:2070	PORTED	carried via block:phrase4 at codegen/decomp/dtype.bend:2070
 codegen/decomp/dtype.py	177	bitcast from	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/dtype.py	180	bitcast to	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/dtype.py	209	detect dtypes to decompose	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -108,44 +108,44 @@ codegen/decomp/op.py	120	some backends emit FDIV for RECIP, in that	yes	codegen/
 codegen/decomp/transcendental.py	13	*** helper functions for bit manipulation ***	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/transcendental.py	18	**** utils ****	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/transcendental.py	36	-1 <= ilog2bk(d) <= 128	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	55	m1 = masks for mantissa, m2 = masks	yes	codegen/decomp/transcendental.bend:503	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:503
-codegen/decomp/transcendental.py	60	Set the exponent bits appropriately to normalize the	yes	codegen/decomp/transcendental.bend:503	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:503
+codegen/decomp/transcendental.py	55	m1 = masks for mantissa, m2 = masks	yes	codegen/decomp/transcendental.bend:533	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:533
+codegen/decomp/transcendental.py	60	Set the exponent bits appropriately to normalize the	yes	codegen/decomp/transcendental.bend:533	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:533
 codegen/decomp/transcendental.py	65	*** reduction algorithms for sine ***	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	75	https://stackoverflow.com/questions/30463616/payne-hanek-algorithm-implementation-in-c/304	yes	codegen/decomp/transcendental.bend:743	PORTED	carried via line2:phrase5 at codegen/decomp/transcendental.bend:743
-codegen/decomp/transcendental.py	83	extract 96 relevant bits of 2/pi based on	yes	codegen/decomp/transcendental.bend:816	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:816
-codegen/decomp/transcendental.py	97	(two_over_pi_f[Int(i) + n] << e) | (two_over_pi_f[Int(i) +	yes	codegen/decomp/transcendental.bend:874	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:874
+codegen/decomp/transcendental.py	75	https://stackoverflow.com/questions/30463616/payne-hanek-algorithm-implementation-in-c/304	yes	codegen/decomp/transcendental.bend:773	PORTED	carried via line2:phrase5 at codegen/decomp/transcendental.bend:773
+codegen/decomp/transcendental.py	83	extract 96 relevant bits of 2/pi based on	yes	codegen/decomp/transcendental.bend:846	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:846
+codegen/decomp/transcendental.py	97	(two_over_pi_f[Int(i) + n] << e) | (two_over_pi_f[Int(i) +	yes	codegen/decomp/transcendental.bend:904	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:904
 codegen/decomp/transcendental.py	104	compute x * 2/pi	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	107	round quotient to nearest	yes	codegen/decomp/transcendental.bend:925	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:925
+codegen/decomp/transcendental.py	107	round quotient to nearest	yes	codegen/decomp/transcendental.bend:955	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:955
 codegen/decomp/transcendental.py	112	if fraction >= 0.5, r -= pi/2, q	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/transcendental.py	122	https://github.com/shibatch/sleef/blob/4e08851f59fc2b545f9c393c6a23dfd311a26308/src/libm/s	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/transcendental.py	124	https://github.com/shibatch/sleef/blob/f6d8a841fbfddd26ce712834d4da220cd76048fb/src/common	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	134	[FIXME] when reducing `d`, FP16 needs FP32 precision	yes	codegen/decomp/transcendental.bend:1122	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1122
+codegen/decomp/transcendental.py	134	[FIXME] when reducing `d`, FP16 needs FP32 precision	yes	codegen/decomp/transcendental.bend:1175	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1175
 codegen/decomp/transcendental.py	137	https://github.com/shibatch/sleef/blob/4e08851f59fc2b545f9c393c6a23dfd311a26308/src/libm/s	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/transcendental.py	149	*** approximate sine on small angle. ***	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/transcendental.py	151	approximate sine on [-pi/2, pi/2]	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/transcendental.py	168	*** toplevel functions for xsin/xlog2/xexp2 ***	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	177	mask +-inf/nan as zero	yes	codegen/decomp/transcendental.bend:1233	PORTED	carried via block:phrase4 at codegen/decomp/transcendental.bend:1233
+codegen/decomp/transcendental.py	177	mask +-inf/nan as zero	yes	codegen/decomp/transcendental.bend:1293	PORTED	carried via block:phrase4 at codegen/decomp/transcendental.bend:1293
 codegen/decomp/transcendental.py	179	x_sign = sign(x)	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	185	Payne Hanek Reduction assumes abs(x) >= pi/4, so	yes	codegen/decomp/transcendental.bend:1233	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1233
-codegen/decomp/transcendental.py	188	adjusts the sign for abs(x)	yes	codegen/decomp/transcendental.bend:1233	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1233
-codegen/decomp/transcendental.py	190	sin(Inf) = NaN, sin(-Inf) = NaN, sin(NaN) =	yes	codegen/decomp/transcendental.bend:1293	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1293
-codegen/decomp/transcendental.py	199	mask +=inf/nan as zero.	yes	codegen/decomp/transcendental.bend:1233	PORTED	carried via block:phrase4 at codegen/decomp/transcendental.bend:1233
+codegen/decomp/transcendental.py	185	Payne Hanek Reduction assumes abs(x) >= pi/4, so	yes	codegen/decomp/transcendental.bend:1293	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1293
+codegen/decomp/transcendental.py	188	adjusts the sign for abs(x)	yes	codegen/decomp/transcendental.bend:1293	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1293
+codegen/decomp/transcendental.py	190	sin(Inf) = NaN, sin(-Inf) = NaN, sin(NaN) =	yes	codegen/decomp/transcendental.bend:1361	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1361
+codegen/decomp/transcendental.py	199	mask +=inf/nan as zero.	yes	codegen/decomp/transcendental.bend:1293	PORTED	carried via block:phrase4 at codegen/decomp/transcendental.bend:1293
 codegen/decomp/transcendental.py	202	s = d - round(d)	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	204	a polynomial approximation with 13 non-zero terms in	yes	codegen/decomp/transcendental.bend:1315	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1315
-codegen/decomp/transcendental.py	212	Replace x >= upper with +inf	yes	codegen/decomp/transcendental.bend:1315	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1315
+codegen/decomp/transcendental.py	204	a polynomial approximation with 13 non-zero terms in	yes	codegen/decomp/transcendental.bend:1383	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1383
+codegen/decomp/transcendental.py	212	Replace x >= upper with +inf	yes	codegen/decomp/transcendental.bend:1383	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1383
 codegen/decomp/transcendental.py	214	Replace x < lower with zero.	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	216	exp2(NaN) = NaN	yes	codegen/decomp/transcendental.bend:1315	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1315
-codegen/decomp/transcendental.py	225	float16 uses 2^10 for denormal scaling (2^64 overflows),	yes	codegen/decomp/transcendental.bend:1382	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1382
-codegen/decomp/transcendental.py	243	s_lo term (x*3.27e-08) only for float32 - underflows	yes	codegen/decomp/transcendental.bend:1382	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1382
-codegen/decomp/transcendental.py	246	log2(Inf) = Inf	yes	codegen/decomp/transcendental.bend:1382	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1382
-codegen/decomp/transcendental.py	248	log2(0) = -Inf (handle both +0.0 and -0.0)	yes	codegen/decomp/transcendental.bend:1382	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1382
+codegen/decomp/transcendental.py	216	exp2(NaN) = NaN	yes	codegen/decomp/transcendental.bend:1383	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1383
+codegen/decomp/transcendental.py	225	float16 uses 2^10 for denormal scaling (2^64 overflows),	yes	codegen/decomp/transcendental.bend:1454	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1454
+codegen/decomp/transcendental.py	243	s_lo term (x*3.27e-08) only for float32 - underflows	yes	codegen/decomp/transcendental.bend:1454	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1454
+codegen/decomp/transcendental.py	246	log2(Inf) = Inf	yes	codegen/decomp/transcendental.bend:1454	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1454
+codegen/decomp/transcendental.py	248	log2(0) = -Inf (handle both +0.0 and -0.0)	yes	codegen/decomp/transcendental.bend:1454	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1454
 codegen/decomp/transcendental.py	250	log2(x) = NaN for x < 0	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	252	log2(-0.0) = -Inf. In certain devices like PTX,	yes	codegen/decomp/transcendental.bend:1382	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1382
-codegen/decomp/transcendental.py	254	Check NaN last: comparisons of its reciprocal are	yes	codegen/decomp/transcendental.bend:1382	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1382
-codegen/decomp/transcendental.py	258	start with b ** e = exp2(e *	yes	codegen/decomp/transcendental.bend:1501	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1501
+codegen/decomp/transcendental.py	252	log2(-0.0) = -Inf. In certain devices like PTX,	yes	codegen/decomp/transcendental.bend:1454	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1454
+codegen/decomp/transcendental.py	254	Check NaN last: comparisons of its reciprocal are	yes	codegen/decomp/transcendental.bend:1454	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1454
+codegen/decomp/transcendental.py	258	start with b ** e = exp2(e *	yes	codegen/decomp/transcendental.bend:1576	PORTED	carried via seq3 at codegen/decomp/transcendental.bend:1576
 codegen/decomp/transcendental.py	260	negative base: nan for non-integer exponent, negate for	no	uop/symbolic.bend:5675 -> transcendental.py:260	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 codegen/decomp/transcendental.py	264	x ** 0 = 1, including 0 **	no		GAP-NO-CITATION	no citation anywhere in the port
-codegen/decomp/transcendental.py	269	square and multiply over the exponent bits in	yes	codegen/decomp/transcendental.bend:1711	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1711
+codegen/decomp/transcendental.py	269	square and multiply over the exponent bits in	yes	codegen/decomp/transcendental.bend:1786	PORTED	carried via block:phrase5 at codegen/decomp/transcendental.bend:1786
 codegen/decomp/transcendental.py	279	negative exponent truncates to 0, except for 1	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/decomp/transcendental.py	292	rewrite SQRT to xpow 0.5	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/gpudims.py	32	try to group first: (a, b, c, d)	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -197,7 +197,7 @@ codegen/late/linearizer.py	38	then force them to be toposorted in as	yes	codegen
 codegen/late/linearizer.py	55	there are 3 relationships between ranges: nested, meaning	yes	codegen/late/linearizer.bend:1423	PORTED	carried via line4:phrase4 at codegen/late/linearizer.bend:1423
 codegen/late/linearizer.py	63	get the deps from the src	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/late/linearizer.py	75	ranges that have dependencies on other siblings need	yes	codegen/late/linearizer.bend:1546	PORTED	carried via block:phrase5 at codegen/late/linearizer.bend:1546
-codegen/late/linearizer.py	79	TODO: this can happen! it causes infinite loop	yes	codegen/late/.linearizer-mut.bend:1	PORTED	carried via block:phrase5 at codegen/late/.linearizer-mut.bend:1
+codegen/late/linearizer.py	79	TODO: this can happen! it causes infinite loop	yes	codegen/late/linearizer.bend:98	PORTED	carried via block:phrase5 at codegen/late/linearizer.bend:98
 codegen/late/linearizer.py	84	the ordering dep goes on the bound wrapped	yes	codegen/late/linearizer.bend:1656	PORTED	carried via block:phrase5 at codegen/late/linearizer.bend:1656
 codegen/late/linearizer.py	95	split the ends	no		GAP-NO-CITATION	no citation anywhere in the port
 codegen/late/regalloc.py	11	returns the uop that defines the virtual register	yes	codegen/late/regalloc.bend:484	PORTED	carried via block:phrase5 at codegen/late/regalloc.bend:484
@@ -306,9 +306,9 @@ dtype.py	43	all DTypes should only be created once	no		GAP-NO-CITATION	no citati
 dtype.py	76	e4m3 and the fnuz fp8s have no inf:	yes	dtype.bend:453	PORTED	carried via seq4 at dtype.bend:453
 dtype.py	84	NOTE: float('nan') != float('nan'), so we canonicalize here	no	dtype.bend:1149 -> dtype.py:84	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 dtype.py	86	int is the default. wrap floats in ConstFloat	no		GAP-NO-CITATION	no citation anywhere in the port
-dtype.py	104	NOTE: isinstance(True, int) is True, so bool must	no	codegen/decomp/dtype.bend:3013 -> dtype.py:104	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+dtype.py	104	NOTE: isinstance(True, int) is True, so bool must	no	codegen/decomp/dtype.bend:3014 -> dtype.py:104	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 dtype.py	108	put this in the last is faster because	no	codegen/decomp/dtype.bend:1595 -> dtype.py:108	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
-dtype.py	142	legacy dtype aliases	no	codegen/decomp/dtype.bend:2821 -> tinygrad/dtype.py:142	GAP-CITED-NO-REASONING	cited, reasoning not carried
+dtype.py	142	legacy dtype aliases	no	codegen/decomp/dtype.bend:2822 -> tinygrad/dtype.py:142	GAP-CITED-NO-REASONING	cited, reasoning not carried
 dtype.py	182	https://jax.readthedocs.io/en/latest/jep/9407-type-promotion.html we don't support complex	no		GAP-NO-CITATION	no citation anywhere in the port
 dtype.py	206	return if dt1 preserves value of dt0 similar	no		GAP-NO-CITATION	no citation anywhere in the port
 dtype.py	218	default acc dtype for sum	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -589,7 +589,7 @@ mixin/op.py	156	sum reduce the extra dims introduced in create	no		GAP-NO-CITATI
 mixin/op.py	160	special permute case	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	165	advanced setitem: resolve tensor dims in collapsed space,	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	171	basic setitem: broadcast v, reshape to self.ndim (unsqueeze	no		GAP-NO-CITATION	no citation anywhere in the port
-mixin/op.py	215	NOTE: this matches numpy, torch raises RuntimeError if	no	mixin/creation-mut.bend:11 -> tinygrad/mixin/op.py:215	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+mixin/op.py	215	NOTE: this matches numpy, torch raises RuntimeError if	no	mixin/creation.bend:11 -> tinygrad/mixin/op.py:215	GAP-CITED-NO-REASONING	cited, reasoning not carried
 mixin/op.py	306	shrink first for negative pads, then pad with	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	316	same mask trick as _pad_constant so the fill	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	322	shrink first for negative pads, then wrap the	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -600,7 +600,7 @@ mixin/op.py	449	implicit output is the ellipsis, then the letters	no		GAP-NO-CIT
 mixin/op.py	454	expand each ellipsis to a suffix of the	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	458	check sizes	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	461	trace: take diagonal when letter repeats in single	no		GAP-NO-CITATION	no citation anywhere in the port
-mixin/op.py	468	align all tensors to output letters then summed	no	tensor.bend:2087 -> mixin/op.py:468	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+mixin/op.py	468	align all tensors to output letters then summed	no	tensor.bend:2093 -> mixin/op.py:468	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 mixin/op.py	784	TODO: someday the optimizer will find this on	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	956	pad to power of 2	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	960	https://en.wikipedia.org/wiki/Bitonic_sorter#/media/File:BitonicSort1.svg	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -615,10 +615,10 @@ mixin/op.py	1194	reduce such that if mask contains repeated indices	no		GAP-NO-C
 mixin/op.py	1197	remove extra dims from reduce	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	1199	select from values for each True element in	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	1264	***** functional nn ops *****	no		GAP-NO-CITATION	no citation anywhere in the port
-mixin/op.py	1297	https://arxiv.org/pdf/1603.07285 section 5.1, relationship 15.	yes	codegen/decomp/transcendental.bend:1315	PORTED	carried via block:phrase4 at codegen/decomp/transcendental.bend:1315
+mixin/op.py	1297	https://arxiv.org/pdf/1603.07285 section 5.1, relationship 15.	yes	codegen/decomp/transcendental.bend:1383	PORTED	carried via block:phrase4 at codegen/decomp/transcendental.bend:1383
 mixin/op.py	1300	we have to do additional padding before `_pool`	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	1307	NOTE: these work for more than 2D	no		GAP-NO-CITATION	no citation anywhere in the port
-mixin/op.py	1427	https://arxiv.org/pdf/1603.07285 inverse of relationship 15 in section 5.1.	yes	codegen/decomp/transcendental.bend:1315	PORTED	carried via seq4 at codegen/decomp/transcendental.bend:1315
+mixin/op.py	1427	https://arxiv.org/pdf/1603.07285 inverse of relationship 15 in section 5.1.	yes	codegen/decomp/transcendental.bend:1383	PORTED	carried via seq4 at codegen/decomp/transcendental.bend:1383
 mixin/op.py	1433	winograd conv 3 kernel f(4x4,3x3) see: http://arxiv.org/abs/1509.09308	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	1435	apply mat along each of the first `dims`	no		GAP-NO-CITATION	no citation anywhere in the port
 mixin/op.py	1446	TODO: winograd can be a rewrite rule like	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -926,10 +926,10 @@ renderer/cstyle.py	16	range/loop/if/endif	no		GAP-NO-CITATION	no citation anywhe
 renderer/cstyle.py	24	const	no	renderer/wgsl_walk.bend:153 -> cstyle.py:24	GAP-CITED-NO-REASONING	cited, reasoning not carried
 renderer/cstyle.py	32	consts are rendered to larger type and casted	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/cstyle.py	36	default const render	no		GAP-NO-CITATION	no citation anywhere in the port
-renderer/cstyle.py	39	casting	no	renderer/cstyle.bend:2695 -> cstyle.py:39	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+renderer/cstyle.py	39	casting	no	renderer/cstyle.bend:2716 -> cstyle.py:39	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 renderer/cstyle.py	46	GPU stuff	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/cstyle.py	50	SHRINK/INDEX	no		GAP-NO-CITATION	no citation anywhere in the port
-renderer/cstyle.py	57	load/store	no	renderer/cstyle.bend:2855 -> cstyle.py:57	GAP-CITED-NO-REASONING	cited, reasoning not carried
+renderer/cstyle.py	57	load/store	no	renderer/cstyle.bend:2876 -> cstyle.py:57	GAP-CITED-NO-REASONING	cited, reasoning not carried
 renderer/cstyle.py	63	alu/gep	no	renderer/cstyle.bend:1952 -> cstyle.py:63	GAP-CITED-NO-REASONING	cited, reasoning not carried
 renderer/cstyle.py	68	call an external function by symbol: the CUSTOM_FUNCTION	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/cstyle.py	73	call to PROGRAM links BINARY at runtime	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -942,9 +942,9 @@ renderer/cstyle.py	111	manual bfloat16 casting patterns (shared between LLVM, Cl
 renderer/cstyle.py	117	a bfloat16 stored as ushort renders its const	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/cstyle.py	126	(name, dims, dtype_in, dtype_out, upcast_sizes)	no	renderer/cstyle.bend:407 -> tinygrad/renderer/cstyle.py:126	GAP-CITED-NO-REASONING	cited, reasoning not carried
 renderer/cstyle.py	181	this is lane access in C	no		GAP-NO-CITATION	no citation anywhere in the port
-renderer/cstyle.py	206	the address of an access, vector-cast if the	yes	renderer/cstyle.bend:2400 -> cstyle.py:206	PORTED	carried via block:phrase5 at renderer/cstyle.bend:2391
+renderer/cstyle.py	206	the address of an access, vector-cast if the	yes	renderer/cstyle.bend:2421 -> cstyle.py:206	PORTED	carried via block:phrase5 at renderer/cstyle.bend:2412
 renderer/cstyle.py	213	LEGACY	no		GAP-NO-CITATION	no citation anywhere in the port
-renderer/cstyle.py	223	find which PARAMs are stored to with a	yes	renderer/cstyle.bend:2958 -> cstyle.py:223	PORTED	carried via block:phrase5 at renderer/cstyle.bend:2953
+renderer/cstyle.py	223	find which PARAMs are stored to with a	yes	renderer/cstyle.bend:2979 -> cstyle.py:223	PORTED	carried via block:phrase5 at renderer/cstyle.bend:2974
 renderer/cstyle.py	247	naming	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/cstyle.py	275	NOTE: this relies on bufs dict preserving order	yes	renderer/cstyle.bend:2053 -> cstyle.py:275	PORTED	carried via block:phrase4 at renderer/cstyle.bend:2053
 renderer/cstyle.py	297	language options	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -952,7 +952,7 @@ renderer/cstyle.py	306	LLVM legalizes double => half cast on systems	no		GAP-NO-
 renderer/cstyle.py	311	round (down) to power of two (this is	yes	renderer/cstyle.bend:2181 -> cstyle.py:311	PORTED	carried via block:phrase5 at renderer/cstyle.bend:2175
 renderer/cstyle.py	333	language options	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/cstyle.py	348	load/store image (OpenCL)	no		GAP-NO-CITATION	no citation anywhere in the port
-renderer/cstyle.py	372	language options	no	renderer/cstyle.bend:2500 -> cstyle.py:372	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+renderer/cstyle.py	372	language options	no	renderer/cstyle.bend:2521 -> cstyle.py:372	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 renderer/cstyle.py	380	uint3 used for gid/lid - TODO: this should	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/cstyle.py	384	precise::sin	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/cstyle.py	387	upcast to float32 all the ops that don't	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -975,7 +975,7 @@ renderer/llvmir.py	82	memory load/store	no	renderer/llvmir.bend:508 -> llvmir.py
 renderer/llvmir.py	85	register index	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/llvmir.py	89	load/store	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/llvmir.py	105	GEP/VECTORIZE/CAST for float4 support	no		GAP-NO-CITATION	no citation anywhere in the port
-renderer/llvmir.py	110	unary/binary/ternary ops	yes	uop/ops.bend:471	PORTED	carried via seq3 at uop/ops.bend:471
+renderer/llvmir.py	110	unary/binary/ternary ops	yes	codegen/decomp/dtype.bend:1968	PORTED	carried via seq3 at codegen/decomp/dtype.bend:1968
 renderer/llvmir.py	124	loop (a void RANGE is an unbounded loop	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/llvmir.py	129	range	no		GAP-NO-CITATION	no citation anywhere in the port
 renderer/llvmir.py	146	if	no	renderer/nir_llvmir.bend:527 -> llvmir.py:146	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
@@ -1487,7 +1487,7 @@ runtime/support/compiler_amd.py	28	TODO: this type should be correct in the	no		
 runtime/support/compiler_amd.py	33	AMD_COMGR_SAVE_TEMPS=1 AMD_COMGR_REDIRECT_LOGS=stdout AMD_COMGR_EMIT_VERBOSE_LOGS=1	no		GAP-NO-CITATION	no citation anywhere in the port
 runtime/support/compiler_amd.py	58	-include hiprtc_runtime.h was removed	no		GAP-NO-CITATION	no citation anywhere in the port
 runtime/support/compiler_cpu.py	11	on arm march means "runs on this arch	yes	runtime/support/compiler_cpu.bend:26	PORTED	carried via line2:phrase5 at runtime/support/compiler_cpu.bend:26
-runtime/support/compiler_cpu.py	20	-fno-math-errno is required for __builtin_sqrt to become an	yes	runtime/support/compiler_cpu.bend:4	PORTED	carried via seq3 at runtime/support/compiler_cpu.bend:4
+runtime/support/compiler_cpu.py	20	-fno-math-errno is required for __builtin_sqrt to become an	yes	runtime/ops_cpu.bend:993	PORTED	carried via seq3 at runtime/ops_cpu.bend:993
 runtime/support/compiler_cuda.py	27	all expressions match `<valid_before><expr><valid_after>` and replace it with	no		GAP-NO-CITATION	no citation anywhere in the port
 runtime/support/compiler_llvm.py	33	Create a per-instance context instead of using the	no		GAP-NO-CITATION	no citation anywhere in the port
 runtime/support/compiler_llvm.py	76	+reserve-x18 here does the same thing as -ffixed-x18	no	runtime/support/compiler_llvm.bend:69 -> tinygrad/runtime/support/compiler_llvm.py:76	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
@@ -1728,7 +1728,7 @@ schedule/indexing.py	306	assign to the range map. rngs are the	no	schedule/rangi
 schedule/indexing.py	309	NOTE: SPEC=3 is broken here with shape	no		GAP-NO-CITATION	no citation anywhere in the port
 schedule/indexing.py	312	if a deviceless value must materialize, place it	yes	schedule/indexing.bend:1	PORTED	carried via block:phrase5 at schedule/indexing.bend:1
 schedule/memory.py	14	CL and WEBGPU do not support views, see	no	runtime/support/memory.bend:429 -> memory.py:14	GAP-CITED-NO-REASONING	cited, reasoning not carried
-schedule/memory.py	23	compute lifetimes for all plannable internal buffers	no	schedule/memory.bend:16 -> tinygrad/runtime/support/memory.py:23	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+schedule/memory.py	23	compute lifetimes for all plannable internal buffers	no		GAP-NO-CITATION	no citation anywhere in the port
 schedule/memory.py	35	separate copy and compute buffers into different lanes	yes	schedule/memory.bend:293	PORTED	carried via block:phrase5 at schedule/memory.bend:293
 schedule/memory.py	39	suballocation: build sorted open/close events, then alloc/free in	no		GAP-NO-CITATION	no citation anywhere in the port
 schedule/memory.py	54	build replace_map: each buffer becomes a SHRINK/BITCAST into	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -1871,27 +1871,27 @@ tensor.py	65	tensors can have gradients if you have called	yes	tensor.bend:189 -
 tensor.py	70	create a UOp from the different types of	no		GAP-NO-CITATION	no citation anywhere in the port
 tensor.py	89	by this point, it has to be a	no		GAP-NO-CITATION	no citation anywhere in the port
 tensor.py	92	data might be on a different device	no		GAP-NO-CITATION	no citation anywhere in the port
-tensor.py	94	cast on the target device, the source may	no	tensor.bend:1452 -> tensor.py:94	GAP-CITED-NO-REASONING	cited, reasoning not carried
+tensor.py	94	cast on the target device, the source may	no	tensor.bend:1458 -> tensor.py:94	GAP-CITED-NO-REASONING	cited, reasoning not carried
 tensor.py	97	add to all_tensors after construction succeeds	no		GAP-NO-CITATION	no citation anywhere in the port
-tensor.py	106	directly create the Tensor	no	tensor.bend:2312 -> tensor.py:106	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+tensor.py	106	directly create the Tensor	no	tensor.bend:2318 -> tensor.py:106	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 tensor.py	109	add to all_tensors after construction succeeds	no		GAP-NO-CITATION	no citation anywhere in the port
 tensor.py	113	alu, _uop, _wrap_uop and const are used by	no		GAP-NO-CITATION	no citation anywhere in the port
-tensor.py	131	Python has a non moving GC, so this	yes	tensor.bend:1273 -> tensor.py:131	PORTED	carried via block:phrase4 at tensor.bend:1268
+tensor.py	131	Python has a non moving GC, so this	yes	tensor.bend:1279 -> tensor.py:131	PORTED	carried via block:phrase4 at tensor.bend:1274
 tensor.py	149	***** data handlers ****	no		GAP-NO-CITATION	no citation anywhere in the port
-tensor.py	170	weakness ends where storage begins	yes	tensor.bend:2220 -> tensor.py:170	PORTED	carried via block:phrase4 at tensor.bend:2098
-tensor.py	173	The outputs and the ALLOCs beneath their wrappers	yes	tensor.bend:2225 -> tensor.py:173	PORTED	carried via block:phrase5 at tensor.bend:2098
-tensor.py	179	Rebuild in dependency order: replacement values already reference	yes	tensor.bend:2232 -> tensor.py:179	PORTED	carried via block:phrase5 at tensor.bend:2098
+tensor.py	170	weakness ends where storage begins	yes	tensor.bend:2226 -> tensor.py:170	PORTED	carried via block:phrase4 at tensor.bend:2104
+tensor.py	173	The outputs and the ALLOCs beneath their wrappers	yes	tensor.bend:2231 -> tensor.py:173	PORTED	carried via block:phrase5 at tensor.bend:2104
+tensor.py	179	Rebuild in dependency order: replacement values already reference	yes	tensor.bend:2238 -> tensor.py:179	PORTED	carried via block:phrase5 at tensor.bend:2104
 tensor.py	185	unwrap the rebuilt output to the compute; a	no		GAP-NO-CITATION	no citation anywhere in the port
-tensor.py	200	Realized outputs become the storage their AFTER sequenced	yes	tensor.bend:2237 -> tensor.py:200	PORTED	carried via line2:phrase5 at tensor.bend:2098
+tensor.py	200	Realized outputs become the storage their AFTER sequenced	yes	tensor.bend:2243 -> tensor.py:200	PORTED	carried via line2:phrase5 at tensor.bend:2104
 tensor.py	229	used for replacing a Tensor with a new	no		GAP-NO-CITATION	no citation anywhere in the port
 tensor.py	239	broadcast x (shape only, dtype must match)	no		GAP-NO-CITATION	no citation anywhere in the port
 tensor.py	246	TODO: this is a hack for writing to	no		GAP-NO-CITATION	no citation anywhere in the port
-tensor.py	253	assigning to a pending value that views no	yes	tensor.bend:1915 -> tensor.py:253	PORTED	carried via line1:phrase5 at tensor.bend:1900
-tensor.py	258	STORE+AFTER: STORE is the write effect (void), AFTER	yes	tensor.bend:1923 -> tensor.py:258	PORTED	carried via block:phrase5 at tensor.bend:1900
-tensor.py	261	a partial write needs storage to land in:	yes	tensor.bend:1930 -> tensor.py:261	PORTED	carried via block:phrase5 at tensor.bend:1900
-tensor.py	264	view assign: the base reads "after the store	yes	tensor.bend:1935 -> tensor.py:264	PORTED	carried via line2:phrase5 at tensor.bend:1900
-tensor.py	269	simple assign	no	tensor.bend:1945 -> tensor.py:269	GAP-CITED-NO-REASONING	cited, reasoning not carried
-tensor.py	366	a shard of a load from a creation	yes	tensor.bend:2284 -> tensor.py:366	PORTED	carried via block:phrase5 at tensor.bend:2098
+tensor.py	253	assigning to a pending value that views no	yes	tensor.bend:1921 -> tensor.py:253	PORTED	carried via line1:phrase5 at tensor.bend:1906
+tensor.py	258	STORE+AFTER: STORE is the write effect (void), AFTER	yes	tensor.bend:1929 -> tensor.py:258	PORTED	carried via block:phrase5 at tensor.bend:1906
+tensor.py	261	a partial write needs storage to land in:	yes	tensor.bend:1936 -> tensor.py:261	PORTED	carried via block:phrase5 at tensor.bend:1906
+tensor.py	264	view assign: the base reads "after the store	yes	tensor.bend:1941 -> tensor.py:264	PORTED	carried via line2:phrase5 at tensor.bend:1906
+tensor.py	269	simple assign	no	tensor.bend:1951 -> tensor.py:269	GAP-CITED-NO-REASONING	cited, reasoning not carried
+tensor.py	366	a shard of a load from a creation	yes	tensor.bend:2290 -> tensor.py:366	PORTED	carried via block:phrase5 at tensor.bend:2104
 tensor.py	385	***** creation entrypoint *****	no		GAP-NO-CITATION	no citation anywhere in the port
 tensor.py	445	***** toposort and backward pass *****	no		GAP-NO-CITATION	no citation anywhere in the port
 tensor.py	458	backward fills .grad for every in-scope float tensor	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -1969,14 +1969,14 @@ uop/ops.py	20	Nesting order: RANGE args sort by axis type,	yes	uop/ops.bend:616	
 uop/ops.py	33	(h, w) if this is an image2d buffer,	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	35	the device Buffer for a realized BUFFER. the	yes	uop/ops.bend:915	PORTED	carried via block:phrase5 at uop/ops.bend:915
 uop/ops.py	38	the bound value of a Variable (an ALU	yes	uop/ops.bend:918	PORTED	carried via block:phrase5 at uop/ops.bend:918
-uop/ops.py	40	the memory the linker gives an ALLOC	no	mixin/creation-mut.bend:42 -> ops.py:40	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+uop/ops.py	40	the memory the linker gives an ALLOC	no	mixin/creation.bend:42 -> ops.py:40	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	56	https://en.wikipedia.org/wiki/Identity_element	no	uop/ops.bend:786 -> ops.py:56	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	58	unsigned arithmetic wraps mod 2^n, so its interval	no	mixin/op.bend:77 -> ops.py:58	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	62	With True as the default, this matches the	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	66	NOTE: generating the text for the exception is	no	uop/fold.bend:2180 -> ops.py:66	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	69	smax/smin are replacements for max/min that preserve symbolic	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	81	per right-aligned dim: sizes of 1 broadcast to	no	uop/ops.bend:6991 -> ops.py:81	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
-uop/ops.py	89	out axes that are added or expanded	yes	tensor.bend:2539 -> ops.py:89	PORTED	carried via seq3 at schedule/multi.bend:472
+uop/ops.py	89	out axes that are added or expanded	yes	tensor.bend:2545 -> ops.py:89	PORTED	carried via seq3 at schedule/multi.bend:472
 uop/ops.py	116	here are the dtype production rules, total over	no	mixin/rand.bend:60 -> ops.py:116	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	121	always void	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	124	a call has the dtype of its body,	no	uop/fold.bend:1119 -> ops.py:124	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
@@ -1986,7 +1986,7 @@ uop/ops.py	137	an image access is always float, no matter	yes	uop/fold.bend:1282
 uop/ops.py	144	pass through first	no	uop/fold.bend:1332 -> ops.py:144	GAP-CITED-NO-REASONING	cited, reasoning not carried
 uop/ops.py	157	WMMA output dtype is the accumulator dtype (src[2])	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	178	derived from the value. order matters: bool is	yes	uop/fold.bend:1119	PORTED	carried via block:phrase5 at uop/fold.bend:1119
-uop/ops.py	185	NOTE: CMPLT, CMPNE, CMPEQ, WHERE, SHL, SHR are	no	mixin/creation-mut.bend:242 -> ops.py:185	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+uop/ops.py	185	NOTE: CMPLT, CMPNE, CMPEQ, WHERE, SHL, SHR are	no	mixin/creation.bend:236 -> ops.py:185	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	193	NOTE: the key must separate nodes of different	no	uop/ops.bend:2405 -> ops.py:193	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	199	SPEC=3 checks the shape	no	uop/fold.bend:7206 -> ops.py:199	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	205	recursive_property replaces functools.cached_property in recursive UOp functions to	yes	uop/fold.bend:1	PORTED	carried via block:phrase5 at uop/fold.bend:1
@@ -2001,11 +2001,11 @@ uop/ops.py	296	NOTE: this shares a lot of code with	yes	uop/ops.bend:3547	PORTED
 uop/ops.py	309	arg goes through repr: args of different types	no	uop/ops.bend:3547 -> ops.py:309	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	312	*** uop shape stuff ***	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	317	late ops don't have shape	yes	uop/fold.bend:1119	PORTED	carried via block:phrase4 at uop/fold.bend:1119
-uop/ops.py	322	INS shape is always scalar, vector width is	no	codegen/late/.linearizer-mut.bend:118 -> ops.py:322	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+uop/ops.py	322	INS shape is always scalar, vector width is	no	codegen/late/linearizer.bend:118 -> ops.py:322	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	327	special (terrible) case for RESHAPE on NOOP	yes	uop/fold.bend:2254	PORTED	carried via block:phrase4 at uop/fold.bend:2254
 uop/ops.py	331	hacks for NOOP	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	346	some ops init the shape	no	uop/fold.bend:2254 -> ops.py:346	GAP-CITED-NO-REASONING	cited, reasoning not carried
-uop/ops.py	361	STAGE adds the existing shape to the front,	no	mixin/creation-mut.bend:422 -> ops.py:361	GAP-CITED-NO-REASONING	cited, reasoning not carried
+uop/ops.py	361	STAGE adds the existing shape to the front,	no	mixin/creation.bend:430 -> ops.py:361	GAP-CITED-NO-REASONING	cited, reasoning not carried
 uop/ops.py	364	wmma output shape = accumulator shape (src[2])	yes	uop/fold.bend:1363	PORTED	carried via block:phrase5 at uop/fold.bend:1363
 uop/ops.py	369	passthrough ops	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	382	movement ops change the shape	yes	uop/fold.bend:2712	PORTED	carried via block:phrase4 at uop/fold.bend:2712
@@ -2031,11 +2031,11 @@ uop/ops.py	576	for use after movement ops have been removed	no		GAP-NO-CITATION	
 uop/ops.py	604	NOTE: it always has to be STACK now,	no	uop/ops.bend:3041 -> ops.py:604	GAP-CITED-NO-REASONING	cited, reasoning not carried
 uop/ops.py	606	.cast folds away at exactly the dtypes a	yes	mixin/op.bend:910 -> ops.py:606	PORTED	carried via block:phrase5 at uop/ops.bend:3053
 uop/ops.py	608	cast, except for CONST, in which case rebuild	no	mixin/movement.bend:911 -> ops.py:608	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
-uop/ops.py	610	a forced CAST for bool: .cast(bool) folds, so	yes	tensor.bend:1399 -> ops.py:610	PORTED	carried via block:phrase5 at uop/ops.bend:5125
+uop/ops.py	610	a forced CAST for bool: .cast(bool) folds, so	yes	tensor.bend:1405 -> ops.py:610	PORTED	carried via block:phrase5 at uop/ops.bend:5125
 uop/ops.py	622	dtype_in is stored in the arg (not derived	yes	schedule/__init__.bend:338 -> ops.py:622	PORTED	carried via block:phrase5 at uop/ops.bend:7586
 uop/ops.py	625	NOTE: we don't allow reduce on 1s axis	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	630	permute so reduced axes are at the front	yes	tensor.bend:263 -> ops.py:630	PORTED	carried via block:phrase4 at nn/layers.bend:118
-uop/ops.py	659	*** multi-device helpers ***	no	tensor.bend:3230 -> ops.py:659	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+uop/ops.py	659	*** multi-device helpers ***	no	tensor.bend:3236 -> ops.py:659	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	663	an UNSHARD carries the value and one sharding	yes	uop/ops.bend:5396 -> ops.py:663	PORTED	carried via line1:phrase5 at uop/ops.bend:5125
 uop/ops.py	682	COPY removes axis. TODO: add more tests for	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	687	NOTE: they all have to share an axis,	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -2044,14 +2044,14 @@ uop/ops.py	727	multi-device COPYs carry the DEVICE range as src[1]	no		GAP-NO-CI
 uop/ops.py	735	little helpers	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	740	*** uop movement ops ***	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	748	base with UNSHARD	no	schedule/multi.bend:135 -> ops.py:748	GAP-CITED-NO-REASONING	cited, reasoning not carried
-uop/ops.py	752	the storage this uop ultimately targets: base with	no	tensor.bend:2479 -> ops.py:752	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+uop/ops.py	752	the storage this uop ultimately targets: base with	no	tensor.bend:2485 -> ops.py:752	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	760	cached property here makes external_uop_gc fail, why?	yes	uop/fold.bend:7177	PORTED	carried via block:phrase4 at uop/fold.bend:7177
 uop/ops.py	776	early NOOP	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	793	*** uop Buffer stuff ***	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	802	BUFFER/ALLOC/COPY carry a DEVICE range when targeting multiple	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	821	Both storage identity and interpretation are part of	yes	mixin/op.bend:668 -> ops.py:821	PORTED	carried via block:phrase4 at uop/ops.bend:5125
-uop/ops.py	832	bfloat16 and fp8 have no struct format, so	no	tensor.bend:1706 -> ops.py:832	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
-uop/ops.py	866	NOTE: no device means no place to store,	no	mixin/creation-mut.bend:36 -> ops.py:867	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+uop/ops.py	832	bfloat16 and fp8 have no struct format, so	no	tensor.bend:1712 -> ops.py:832	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
+uop/ops.py	866	NOTE: no device means no place to store,	no	mixin/creation.bend:36 -> ops.py:867	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	871	anything that has dtype void has no memory	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	899	WEBGPU and CL do not support views. WEBGPU	no	renderer/kuconv.bend:115 -> ops.py:899	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	920	TODO: this is confusing because UOp.variable('v', 0, 1,	no		GAP-NO-CITATION	no citation anywhere in the port
@@ -2082,7 +2082,7 @@ uop/ops.py	1151	*** uop high level syntactic sugar ***	no		GAP-NO-CITATION	no ci
 uop/ops.py	1177	set is store+end+after	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	1181	TODO: this should replace placeholder	no	uop/ops.bend:5533 -> ops.py:1181	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
 uop/ops.py	1194	Scalar arguments bind by slot; names and values	no	uop/ops.bend:5536 -> ops.py:1194	GAP-DIFFERENT-REASONING	port cites it and reasons differently, saying so
-uop/ops.py	1197	multi-device values become a per-shard sized param wrapped	yes	tensor.bend:1495	PORTED	carried via block:phrase5 at tensor.bend:1495
+uop/ops.py	1197	multi-device values become a per-shard sized param wrapped	yes	tensor.bend:1501	PORTED	carried via block:phrase5 at tensor.bend:1501
 uop/ops.py	1217	calls are launched per device, so an open	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	1220	an external C call is a CALL on	no		GAP-NO-CITATION	no citation anywhere in the port
 uop/ops.py	1234	the device defaults to the first device in	no		GAP-NO-CITATION	no citation anywhere in the port
