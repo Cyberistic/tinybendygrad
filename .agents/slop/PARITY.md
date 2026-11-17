@@ -7498,3 +7498,55 @@ CMPEQ, **THEN **THE **REST**) **⇒⇒⇒ AND **THE **OUTPUT **IS **BYTE-IDENTIC
 
 **⇒⇒⇒ AND **THE **REVERTS **ARE **VERIFIED**: **THE **REVERTED **BUILD **IS **BYTE-IDENTICAL **TO
 **THE **BASELINE** (**sha256**, MEASURED)**.
+
+### 138.11 THE **NEGATIVE **DIFF's **ESTIMATES **ARE **MEASURED **AND **THEY **ARE **10x **TOO **HIGH** -- **⇒⇒† AND **THE **SHAREABLE **LOC **IS **71**, **NOT **900**
+
+**⇒⇒† AND **A **SUBAGENT **COUNTED **THE **PORT's **CODE **VOLUME **AGAINST **UPSTREAM** **AND
+**REPORTED **THAT **THE **BIGGEST **RECOVERABLE **ITEM **WAS **THE **PATTERN-MATCHER **DRIVER
+**DUPLICATION** -- **⇒⇒† AND **IT **ESTIMATED **~700-900 **LOC **RECOVERABLE**, **⇒⇒† AND **THE
+**ESTIMATE **WAS **NOT **MEASURED**, **⇒⇒† AND **IT **WAS **10x **TOO **HIGH**.
+
+**⇒⇒† AND **THE **DRIVERS **ARE **PER-TABLE **COPIES** -- **⇒⇒† AND **THAT **IS **TRUE** (MEASURED,
+`grep -cE "^def [a-z_]*_(dispatch|try|scan|rewrite|verify)"`: **61 **IN **`schedule/rangeify.bend`**,
+**55 **IN **`uop/spec.bend`**) **⇒⇒† AND **AND **THE **BODIES **ARE **IDENTICAL **MODULO **THE **PREFIX**
+(MEASURED: **THE **`scan` **DRIVER **HAS **ONE **DISTINCT **NORMALISED **BODY **FOR **ALL **6 **TABLES **OF
+**`uop/spec.bend`**, **⇒⇒† AND **3 **FOR **THE **11 **OF **`schedule/rangeify.bend`**) **⇒⇒† AND **BUT **THE
+**SHAREABLE **PART **IS **ONLY **THE **`scan`/`try`/`rewrite` **TRIO** -- **⇒⇒† AND **THE **`dispatch`
+**ARMS **ARE **THE **RULES** (MEASURED: **84 **ARMS **IN **`uop/spec.bend`**, **35 **IN
+**`schedule/rangeify.bend`**), **⇒⇒† AND **THE **ARMS **CANNOT **BE **SHARED** -- **⇒⇒† AND **A `match`
+**ON **A **COMPUTED **VALUE **IS **REFUSED** **⇒⇒† AND **A **FUNCTION **VALUE **DOES **NOT **EXIST**.
+
+**⇒⇒† AND **SO **THE **RECOVERABLE **LOC **IS **MEASURED**: **30 **IN **`uop/spec.bend`** **+ **41 **IN
+**`schedule/rangeify.bend`** **= **71** -- **⇒⇒† AND **NOT **900**.
+
+**⇒⇒† AND **THE **OTHER **BIG **CLAIMS, **MEASURED**:
+  · **THE **RECORD-PROJECTION **ACCESSOR **LAYER** (F4): **64 **ACCESSOR **DEFS **/ **142 **LOC **IN
+    **`renderer/cstyle.bend`**, **262 **/ **652 **IN **`uop/ops.bend`**, **56 **/ **136 **IN
+    **`helpers.bend`** -- **⇒⇒† AND **930 **LOC **IN **THREE **FILES** -- **⇒⇒† AND **BUT **IT **IS **A
+    **SUBSTRATE **LIMITATION**, **NOT **A **PORT **INEFFICIENCY**: **THE **PORT's **OWN **WORDS**
+    (`uop/validate.bend:319`): *"a locally-declared record has no projection syntax at all -- neither
+    `m.lo` nor `MM.lo(m)` is a compiler feature"* -- **⇒⇒† AND **AND **THE **BEND **COMPILER **HAS **NO
+    **PROJECTION** (MEASURED, `references/bend/bend2/*.ts`: **NO **PROJECTION **IN **THE **COMPILER**) --
+    **⇒⇒† AND **AND **"**A **DEF **MAY **ONLY **CALL **DEFS **ABOVE **IT**"** (**THE **PORT's **OWN
+    **RULE**, `uop/validate.bend:603`) **⇒⇒† AND **SO **THE **ACCESSORS **CANNOT **BE **MOVED **BELOW
+    **THEIR **USERS** -- **⇒⇒† AND **THE **ONLY **FIX **IS **A **COMPILER **FEATURE**.
+  · **THE **HAND-ROLLED **z3** (F2): **1,241 **CODE **LOC **IN **`uop/validate.bend`**, **⇒⇒† AND **THE
+    **PORT **ALREADY **DOCUMENTS **THE **WALL** (**"THE SOLVER IS NOT PORTED"**, `validate.bend:42`) --
+    **⇒⇒† AND **AND **IT **IS **A **TOTAL **FUNCTION** (THE **CONSTRAINT **TEXT **IS **THE **USEFUL
+    **PART**) -- **⇒⇒† AND **SO **IT **IS **NOT **DEAD **CODE**.
+  · **THE **ENUM **TABLES** (F6): **`uop/ops.bend`'s **`Ops.name`/`Ops.value`** -- **⇒⇒† AND **A
+    **MECHANICALLY **DERIVABLE **TABLE **IS **A **CODE-GENERATOR's **JOB**, **NOT **A **PORT **FIX**.
+
+**⇒⇒† AND **THE **INSTRUMENT **THAT **MEASURED **ALL **OF **IT**: **`.agents/slop/orphans/
+orphan-census.py`** -- **⇒⇒† AND **ITS **POPULATION **IS **DISCOVERED** (**A **WALK **OVER
+**`tinybendygrad/` **FOR **THE **`.bend` **FILES**, **AND **A **REGEX **OVER **THE **TREE's **OWN
+**`import` **WRITE **SITES **FOR **THE **IMPORTERS** -- **⇒⇒† AND **NOT **A **HAND **LIST**, DOCTRINE 1)**.
+
+**⇒⇒† AND **THE **CENSUS's **OWN **LIMITS, **STATED**: **IT **REPORTS **48 **MODULES **THAT **NOTHING
+**IMPORTS** -- **⇒⇒† AND **BUT **THEY **ARE **MOSTLY **LEGITIMATE** (**THE **`__init__.bend` **FILES,
+**THE **`extra/` **MODELS **AND **DATASETS**, **THE **`runtime/support/` **BACKENDS **LOADED **AT
+**RUNTIME**, **THE **`examples/`**), **⇒⇒† AND **AND **ONE **CANDIDATE **IS **A **RENAME**:
+**`schedule/rangify.bend`** (1,597 **LINES**, **TRACKED**) **IS **THE **PORT's **OWN `run_rangeify`
+**DRIVER** -- **⇒⇒† AND **UPSTREAM **PUTS **THAT **FUNCTION **IN **`indexing.py:183`**, **⇒⇒⇒ AND **SO
+**THE **CENSUS **CANNOT **SEE **THE **RELATION** -- **⇒⇒† AND **A **CENSUS **THAT **CANNOT **SEE **A
+**RENAME **IS **A **CENSUS **OF **NAMES** (DOCTRINE 1)**.
