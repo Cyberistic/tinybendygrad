@@ -18,6 +18,133 @@
 # `GroupOp.Broadcastable`, which `ops.bend` already has as
 # `O.GroupOp.broadcastable`.
 #
+# UPSTREAM'S TWO HEADLINE COMMENTS ARE THE ALGORITHM, and they are the two
+# rules a reader of this file needs because everything else in it is a lookup.
+# They are at `run_rangeify` (indexing.py:182-314), which is the ONE thing
+# this file does NOT port -- the decision loop is upstream's and the port has
+# the CONTEXT it produces, not the loop.
+#
+# THE RANGES ON THE OUTPUT (indexing.py:217-220):
+#
+#   "*** the ranges on the output are
+#    1. new if this op is realized
+#    2. from the single consumer if this op only has one consumer
+#    3. potentially new if this op has 2+ consumers"
+#
+# so a node's output ranges are INHERITED from its consumer whenever there is
+# exactly one, and are FRESH whenever the node is realized or has two or more
+# consumers. Case 3 is the interesting one: two consumers may iterate the same
+# axis DIFFERENTLY, and then the node has to produce the axis itself.
+#
+# THE RANGES ON THE INPUT (indexing.py:275-278):
+#
+#   "*** the ranges on the inputs are
+#    1. swizzled for MovementOps
+#    2. newly created for REDUCE (tensor graph form with axis)
+#    3. passed through for everything else"
+#
+# so the INPUT ranges are the OUTPUT ranges swizzled by a movement op, freshly
+# created for a REDUCE's reduced axes, and otherwise the same tuple. The
+# pairing of the two lists is what `IxRngs` -- `(input ranges, output ranges)` --
+# holds.
+#
+# AND UPSTREAM'S FOUR SKIPS IN THE LOOP ARE THE ONES THAT KEEP THE LOOP
+# TERMINATE, so they are decisions and not omissions:
+#
+#   "no ranges on kernels, they are internal" (200)
+#   "AFTER doesn't have range" (203)
+#   "treat MSTACK/MSELECT like SINK" (206)
+#   "if no consumers have ranges and this isn't realized, this doesn't have
+#    ranges either." (232)
+#
+# the last one is the range map's most load-bearing REFUSAL: a node with no
+# consumer that has ranges is not itself ranged, because there is nothing to
+# iterate. Everything else follows from the node being ranged by its consumer.
+#
+# THE THREE PASSES `run_rangeify` MAKES, and upstream names each of them:
+#
+#   "get ops to realize" (186)      -- fills `realize_map`.
+#   "get the consumer map" (189)    -- who reads what.
+#   "explicit rangeify" (197)       -- the loop above, in reverse toposort order.
+#
+# THE FUSION DECISION IS NAMED TOO, and it is a DECISION rather than a
+# consequence: "fusion decision: REDUCE before the broadcast" (214). A REDUCE
+# that a broadcast consumer iterates over is FUSED -- the broadcast is pushed
+# ABOVE the reduce -- so the reduction happens once per output rather than once
+# per broadcast element. That is the whole reason `ending_ranges[x] +=
+# broadcast_ending_ranges` is added for a REDUCE and not for anything else.
+#
+# TWO MORE UPSTREAM COMMENTS THAT NAME A GOTCHA:
+#
+#   "we compare the ranges without their valids" (249)
+#       two consumers' ranges are compared by their INDEX part; the VALID part
+#       is merged separately, because two consumers may validly disagree about
+#       when an element is in range and the answer has to cover BOTH.
+#   "the new valid is the OR of all the children valids" (251)
+#       so the merged range is valid wherever ANY consumer says it is -- the
+#       union, not the intersection. A consumer that would have read an
+#       out-of-range element still has to be able to, or the other consumer
+#       loses data.
+#
+# THE FOUR INPUT-RANGE SPECIAL CASES, and each is a case where "passed through"
+# would be WRONG:
+#
+#   "STACK: the leading range selects the src, srcs get the trailing ranges" (284)
+#       a STACK's srcs are all the same shape, so the LEADING range is the
+#       selector and the srcs get the ranges that follow it.
+#   "when the index srcs and output ranges of INDEX address every axis of its
+#    src, the index srcs select the leading axes" (286)
+#       an INDEX whose srcs and output ranges together cover every axis of its
+#       src is a FULL index -- there is no output range left, so the srcs'
+#       own index args take the leading axes.
+#   "if the EXPAND is used to inject a range, we don't mark it as ending_ranges.
+#    otherwise we do." (288)
+#   "NOTE: this doesn't actually always end a range, but this is why convs are
+#    realized, so for now we need it" (289)
+#       an EXPAND INJECTING a range does not end one -- it adds an axis -- and
+#       upstream admits the rule is a blunt instrument kept because it is what
+#       forces convolutions to be realized.
+#   "REDUCE creates ranges for the axes it is reducing" (293)
+#       the reduced axes are FRESH ranges on the input, taken from the input's
+#       shape rather than from the output's.
+#
+# AND TWO UPSTREAM COMMENTS ABOUT THE WRITE-OUT, which is where the port's
+# `IxRngs` record is finally filled:
+#
+#   "assign to the range map. rngs are the input ranges, out_rngs are the output
+#    ranges, from the x op." (306)
+#       so the map holds BOTH, per node, and the port's `IxRngs` is exactly
+#       that pair -- `IxRngs.inp` and `IxRngs.outp`.
+#   "NOTE: SPEC=3 is broken here with shape" (309)
+#       and upstream's own note says the strictest spec check does not pass at
+#       this point of the pipeline; the shape is not yet the final shape.
+#   "if a deviceless value must materialize, place it on the sink device" (312)
+#       a value with no device of its own is placed on the sink's device when
+#       it has to be materialized -- which is what `pm_fix_deviceless` is.
+#
+# AND THE THREE RANGE-REALIZATION COMMENTS, WHICH ARE THE OTHER HALF OF THE
+# ALGORITHM:
+#
+#   "ranges the consumers iterate that this node broadcasts over" (210)
+#       a broadcast consumer iterates axes the node does not have, and those
+#       axes are the broadcast's ENDING ranges.
+#   "if this is in the realize_map, we create new ranges (at the output)" (224)
+#   "all ranges are ended now" (226)
+#   "mark all ranges as ended" (228)
+#       so a REALIZED node gets brand-new output ranges and the ranges it was
+#       carrying are all ended -- it is a kernel boundary, so nothing carries
+#       into it.
+#   "if this has one consumer, it inherits the ranges from it" (235)
+#   "if this has two consumers, we have to merge the ranges and might create
+#    new ones" (238)
+#       and "we have to (partially) realize here if there's new ranges" (259)
+#       -- a node whose two consumers cannot share an axis is PARTIALLY
+#       realized: only the axes that had to be split are realized.
+#   "if this element is a reduce and there's ended ranges, we might have to end
+#    some other ranges" (262)
+#       a REDUCE whose input ranges are being ended cannot keep the same
+#       output ranges either, so it is realized too.
+#
 
 # THE THREE WALLS, stated where they bite. Two of the three were named for me:
 # `mixin/creation.bend` and `mixin/rand.bend` name `resolve` and `UOp._min_max`
@@ -616,6 +743,11 @@ def ix_asort(+ys: List<&2, U32>) -> List<&2, U32>:
 
 # `apply_movement_op` -- indexing.py:170-187. THE ARITHMETIC, AND THE GATE.
 #
+# UPSTREAM'S OWN HEADLINE FOR IT IS "this is the definition of the movement ops"
+# (162), and that is the right way to read the arms: a movement op here is not
+# a node rewrite, it is a REWRITING OF THE RANGE TUPLE. Everything downstream
+# works on ranges, so this is where a SHAPE VIEW becomes a range swizzle.
+#
 #   SHRINK:  tuple(a if off == 0 else a+off for a,(off,_) in zip(rngs, arg))
 #   PERMUTE: tuple(rngs[p] for p in argsort(arg))
 #   FLIP:    tuple(((s-1)-a) if f else a for a,s,f in zip(rngs, in_shape, arg))
@@ -623,6 +755,18 @@ def ix_asort(+ys: List<&2, U32>) -> List<&2, U32>:
 #   PAD:     tuple(r if (sz == sh and off == 0) else (r-off).valid(...) ...)
 #   RESHAPE: _apply_reshape(...)                      # THE WALL
 #   case _: raise RuntimeError(f"{op} is not a MovementOp")
+#
+# AND UPSTREAM'S PAD COMMENT IS A PLACEMENT CONSTRAINT, not a description:
+#
+#   "NOTE: the .where(r-s, i) is not inside the graph_rewrite so that
+#    `convert_pad_to_where_to_keep_behavior_local` wraps the pad with only the
+#    newly added valid" (170-171)
+#
+# the PAD's validity is NOT simplified together with the rest of the range
+# expression. If it were, the simplifier would fold the validity against the
+# OTHER valids already in the graph and the pad would end up guarded by
+# conditions that belong to other axes. Keeping it OUTSIDE means the pad's
+# WHERE gets EXACTLY the one new valid the pad introduced -- no more.
 #
 # WHAT IS PORTED AND WHAT IS NOT, arm by arm:
 #
@@ -778,6 +922,15 @@ def ix_mv_reshape_same.go(+as: List<&2, U32>, +bs: List<&2, U32>, +aa: List<&2, 
 # from the zip read BACKWARDS, which is a fold with a reversed accumulator, and
 # `ix_ar_rev` is it -- plus the `acc` product, which is `ix_ar_acc`.
 #
+# UPSTREAM'S COMMENT SAYS WHAT THE SIMPLIFY IS FOR AND IT IS NOT OBVIOUS:
+# "this simplify is doing a lot of heavy lifting. this is the replacement for
+# the reshape view merging code" (159). A RESHAPE between two shapes that are
+# not compatible as views needs a real INDEX ARITHMETIC -- decompose both
+# shapes into a flat index and recompose -- and upstream does that with the
+# symbolic simplifier rather than with a separate view-merging pass. So the
+# `graph_rewrite` at the end is LOAD-BEARING, not a cleanup, and the port's
+# wall on it is a wall on the whole RESHAPE arm.
+#
 #
 
 def ix_mv_reshape_same(+arg: List<&2, U32>, +src: List<&2, U32>) -> Bool:
@@ -797,6 +950,13 @@ def ix_ar_acc0() -> U32: 1
 
 # `IndexingContext.new_range` -- indexing.py:18-21. FULLY PORTED on the
 # CONCRETE arm, and the counter is the parameter that `IxCtx.ridx` is.
+#
+# UPSTREAM'S COMMENT ON THE CONST-0 ARM IS WHY THE ARM EXISTS: "if a range has
+# a 1 src, it's the same as UOp.const(0)" (20). A RANGE OF EXTENT 1 has only
+# one value, so a range over one and the constant zero are the SAME THING, and
+# the range machinery must not create a RANGE for it. That is why the counter
+# does not advance on this arm and why TABLE INDEX 0 is the CONST 0 -- the
+# range table and the const table are ONE TABLE.
 #
 #   def new_range(self, s, axistype=AxisType.WEAK) -> UOp:
 #     if isinstance(s, UOp) and s.op is Ops.RANGE: return s
@@ -1045,6 +1205,12 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
 # `_stack_select` -- indexing.py:115-122. THE RECURSION, and the `<= 8`
 # cutoff is the whole of it:
 #
+# UPSTREAM'S COMMENT ON THE SELECT SHAPE IS "MSB-first bit tree" (114) -- the
+# selector is a RANGE and the tree compares it against the MIDPOINTS, so the
+# src is chosen by the HIGH BITS of the range first. That is why the recursion
+# splits at `mid` rather than comparing every src: the tree is over the range
+# value, not over the src index.
+#
 #   if hi-lo <= 8:
 #     ret = srcs[hi-1]
 #     for k in range(hi-2, lo-1, -1): ret = r0.eq(k).where(srcs[k], ret)
@@ -1065,6 +1231,22 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
 # `create_bufferize_and_index_srcs` -- indexing.py:73-95. THE DECISION PORT,
 # and it is the largest single thing in the file:
 #
+# UPSTREAM'S OWN COMMENT ON THE BOUNDARY IS A KNOWN CONFUSION, and it is the
+# thing a reader has to hold in their head:
+#
+#   "TODO: srcs contain (real data srcs, something else, ranges) and the
+#    boundary is confusing. see range_start" (65)
+#
+# so a node's srcs are NOT all data. `data_srcs` (indexing.py:68-71) is the
+# function that says which ones are, and the count it returns is what
+# `i < data_src_count` tests. The comment below the rule spells the rule:
+#
+#   "shape/bound/index args that are not data src should not be indexed" (73)
+#
+# so a shape, a bound or an index argument is NOT indexed by the node's ranges
+# even though it sits in the same src tuple. The port's `ix_ds_zero` is the
+# count and `ix_cbis_idx` is the `i < data_src_count` conjunct.
+#
 #   data_src_count = len(data_srcs(x.op, x.src))
 #   for i, s in enumerate(x.src):
 #     src_rngs = broadcast_rngs(x, s, range_map[x][0]) if x in range_map else ()
@@ -1078,6 +1260,13 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
 #         new_src = UOp(Ops.STAGE, src=(new_src,)+closed_ranges, arg=opts)
 #         if x in range_map: new_src = new_src.index(*src_rngs)
 #     new_srcs.append(new_src)
+#
+# AND THE STORE BRANCH IS A REALIZATION, not an index: "add the ends if this is
+# a store" (84). A STORE that is realized is turned into an END over its
+# closed ranges -- that is what carries the store's dependency to whoever reads
+# the buffer -- and the STORE IS THEN REMOVED FROM THE REALIZE MAP, because it
+# has been consumed. The port's `ix_cbis_store` is that branch and the
+# `del realize_map[s]` is the MUTATION this file cannot express.
 #
 # WHAT IS PORTED: `data_src_count` (`ix_ds_n`, already above), the SIX-member
 # buffer-op set (`ix_cbis_one`), `s in realize_map` (`ix_rmap_has`), the STORE
@@ -1201,7 +1390,26 @@ def ix_early_step(hit: Bool, +rej: List<&2, O.Op>, have: List<&2, O.Op>) -> Bool
   Bool.pick(Bool, hit, ix_early_rest(rej, have), True{})
 
 # --- pm_generate_realize_map -- indexing.py:45-54, FOUR rules --------------
-
+#
+# UPSTREAM'S FOUR RULE COMMENTS ARE THE TABLE'S DOCSTRING, and each names a
+# DIFFERENT REASON to realize, so they are kept here:
+#
+#   "realize the inputs of custom kernel calls" (44)
+#       a CALL's arguments are read by the callee, which the scheduler cannot
+#       see into, so anything the callee might read has to be materialized
+#       BEFORE the call.
+#   "always realize" (46)
+#       a STORE is the one thing that must be its own kernel boundary.
+#   "realize srcs of these" (48)
+#       MSELECT and MSTACK pick between values, so their srcs are read by
+#       something the range map cannot describe.
+#   "sometimes we need to realize the src of STORE if there's a self-access, or
+#    if it's a cross device store" (50)
+#       and upstream says WHY it is only SOMETIMES: "you don't usually have to
+#       do this for assign unless there's a WAR hazard like
+#       TestAssign.test_assign_double_diamond_reduce" (33). A store that reads
+#       the buffer it writes is a write-after-read hazard, and the range map
+#       cannot express that the read must happen before the write.
 def grm_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsCALL{}], Nil{}},
              O.PMEntry{1, [O.OpsSTORE{}], Nil{}},
@@ -1236,6 +1444,55 @@ def par_table() -> O.PMEntrys:
              O.PMEntry{2, [O.OpsSTACK{}], Nil{}},
              O.PMEntry{3, Nil{}, Nil{}},
              O.PMEntry{4, ix_mv_ops(), Nil{}}]}
+
+# UPSTREAM'S FIVE RULE COMMENTS ARE THE TABLE'S DOCSTRING AND THEY ARE THE
+# TABLE'S ORDER -- the order is LOAD-BEARING, because each rule rewrites the
+# node the next one expects:
+#
+#   "REDUCE(op, axis) -> REDUCE(op) with ranges" (130)
+#       a REDUCE carries the axis it reduces as an ARG; in rangeified form the
+#       axis is a RANGE among the srcs.
+#   "PAD -> WHERE" (132)
+#       a PAD's validity becomes a WHERE, so the padded-out elements are the
+#       ones the WHERE does not select.
+#   "STACK -> WHERE select on the leading range" (134)
+#       a STACK's srcs are selected by a range rather than indexed, and the
+#       LEADING range is the selector.
+#   "finally, apply_rangeify" (136)
+#       and THIS is the rule the whole table exists for: it is the one that
+#       turns a node's ranges into the bufferize/index srcs.
+#   "remove movement op" (138)
+#       and it is LAST because the movement op is now encoded in the ranges,
+#       so the op itself is redundant. Removing it before the ranges were
+#       rewritten would lose the swizzle.
+#
+# THE PORT'S TAGS ARE THE SAME FIVE, in the same order, and rule 4's claim is
+# `ix_mv_ops()` -- `GroupOp.Movement`, the six ops -- because rule 5 removes
+# the movement op and rule 4 is what is left.
+#
+# TWO MORE UPSTREAM COMMENTS, ON THE STACK RULE, THAT ARE EASY TO MISS BECAUSE
+# THEY EXPLAIN A REFUSAL RATHER THAN A REWRITE:
+#
+#   "only data STACKs: shape tuple STACKs aren't in range_map" (120)
+#       a STACK can hold a SHAPE -- a tuple of dims -- and such a STACK is not
+#       a value, so it is not in the range map and the rule does not fire on
+#       it. The port's rule 2 is a STACK op set, so the distinction upstream
+#       draws with "is it in range_map" is the port's W3 (`range_map` is a
+#       lookup this file can make, but the PORT's STACK rule is a table entry
+#       and the port has no shape-carrying STACK).
+#   "use the src list directly, a transient STACK of mid-rangeify srcs violates
+#    the spec shape rule" (122)
+#       the rule must NOT build a temporary STACK of the already-rangeified
+#       srcs and then index into it. A STACK's shape rule says its srcs have
+#       the same shape, and the mid-rangeify srcs do not, so the transient
+#       STACK would be an ill-shaped node. Using the src LIST directly keeps
+#       the rule from ever materialising one.
+#
+# AND THE REDUCE'S OWN COMMENT: "input ranges" (109) names the slice
+# `ctx.range_map[x][0][:x.arg[1]]` -- the ranges of the axes the REDUCE
+# reduces, taken from the node's INPUT ranges and not from its output ones.
+# A REDUCE's reduced axes are ranges on the INPUT and the surviving axes are
+# ranges on the OUTPUT, and the rule splits them accordingly.
 
 def pfd_table() -> O.PMEntrys: O.PMEntrys{[O.PMEntry{0, [O.OpsSTAGE{}], Nil{}}]}
 

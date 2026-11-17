@@ -256,6 +256,35 @@ def mu_rej_nil() -> List<&2, O.Op>: Nil{}
 
 # `multi_pm` (multi.py:281-311), NINETEEN own rules, tags 0..18. The line comment
 # on each is Python's own.
+#
+# UPSTREAM'S EXPLANATORY COMMENTS ON THE TABLE, and each one is a DECISION
+# about WHEN a rule applies rather than a description of what it does:
+#
+#   "rewrite value-producing calls explicitly for UNSHARD" (290)
+#   "NOTE: lambda for late binding, rewrite_into_function references multi_pm"
+#       (291)
+#       a VALUE-PRODUCING CALL has a body, and the body has to be rewritten by
+#       the SAME table -- so the rule cannot be a named function, it has to be
+#       a lambda that reads `multi_pm` at CALL time rather than at DEF time.
+#       Upstream says so and the port's tag 12 is the entry.
+#   "just strip the UNSHARD from non-value-producing CALLs (custom kernels,
+#    etc.) -- value-producing CALLs are handled by rewrite_into_function" (294)
+#       so a VOID CALL -- a custom kernel -- only needs the UNSHARD removed and
+#       nothing else, and the two CALL rules do NOT overlap.
+#   "STORE of a sharded value into an unsharded dest (e.g. a fragment into a
+#    full output tile)" (299)
+#   "STORE into a sharded dest (e.g. the fragment init): every shard stores
+#    into its own shard" (301)
+#       the two STORE rules are DISTINCT and the examples are upstream's own:
+#       one is a fragment being written into a whole tile, the other is the
+#       fragment's own initialisation.
+#   "a COPY of a sharded value copies every shard to the target device" (285)
+#       so a COPY of a sharded value is a COPY PER SHARD, not a copy of the
+#       whole.
+#   "NOTE: this is the same pattern as unrolled ranges" (273)
+#       upstream's note on the TABLE ITSELF, and it is the reason the rules
+#       exist in this shape: an UNSHARD is a range that was unrolled over the
+#       devices, so the same machinery serves both.
 
 def mu_own() -> List<&2, O.PMEntry>:
   [O.PMEntry{0,  mu_alu_ops(),                       mu_rej_uns()},  # 282  ALU -> alu_multi
@@ -279,6 +308,25 @@ def mu_own() -> List<&2, O.PMEntry>:
 
 # `replace_allreduce` (multi.py:29-45), SIX rules. Its tags in `multi_pm` are
 # 19..24, and 19..25 when `LATE_ALLREDUCE` is off.
+#
+# UPSTREAM'S FIVE RULE COMMENTS ARE THE TABLE'S DOCSTRING:
+#
+#   "BROADCAST: explicitly expand broadcast copies and combine with MSTACK" (30)
+#       a copy to a MULTI-device target is a BROADCAST: every device needs the
+#       whole value, and the MSTACK is how a multi-device value is spelled.
+#   "COPY_TO_ONE: if copying from multidevice to one, MSELECT the first (TODO:
+#    a little from each?)" (32)
+#       and upstream's TODO IS STILL OPEN: copying from many devices to one
+#       currently takes the FIRST device's copy and throws the rest away. The
+#       port carries the MSELECT, not the TODO's answer.
+#   "MSELECT on MSTACK is replaced with nothing" (36)
+#       so selecting from a stack of devices is just the selected piece -- the
+#       MSELECT disappears and the MSTACK's src is the answer.
+#   "move shrink before MSTACK" (38)
+#   "move MSELECT before movement/ALU ops" (40)
+#       the two MOVES, and they are the reason this table exists at all: a
+#       selection must be applied to the LEAF of an expression, not in the
+#       middle of it.
 
 def mu_ra0() -> O.PMEntry: O.PMEntry{0, [O.OpsCOPY{}],    mu_rej_nil()}   # 31  BROADCAST copy -> MSTACK
 def mu_ra1() -> O.PMEntry: O.PMEntry{1, [O.OpsCOPY{}],    mu_rej_nil()}   # 33  multidev -> one: MSELECT 0
@@ -621,6 +669,13 @@ def mu_mstack_branch(is_copy: Bool, same_dev: Bool) -> U32:
 # `shard_srcs` (multi.py:54-76). THE CENTRAL DECISION, and the function three resharding
 # fallbacks call (`alu_multi` :104, `stack_multi` :200). It is the most arithmetically dense
 # body in multi.py and none of it is a builder, so all of it is here:
+#
+# UPSTREAM'S FIRST COMMENT IS THE FUNCTION'S PRECONDITION: "normalize srcs to
+# local shards on axis" (55). Every src is NORMALISED to the same axis first --
+# a src with fewer axes is offset by the broadcast -- and only then is the
+# per-axis decision made. The `assert all_same(devices)` on the next line is
+# the other half: all the srcs must be on the same device.
+#
 #     devices = [x.device for x in msrcs if x.device is not None]
 #     assert all_same(devices)
 #     if len(devices): sharding_rng = UOp.range(len(devices[0]), -1, DEVICE)
@@ -726,6 +781,19 @@ def mu_ss_same(devs: List<&2, U32>) -> Bool:
   H.all_same_u32(devs)
 
 # THE PER-SRC BRANCH (multi.py:68-75), and it is the densest decision in the file.
+#
+# UPSTREAM'S TWO COMMENTS ON IT NAME THE TWO OUTCOMES THAT ARE NOT OBVIOUS:
+#
+#   "same axis, just copy through" (70)
+#       the src is ALREADY on the axis being sharded, so there is nothing to
+#       do to it -- it is the shard of that axis.
+#   "otherwise every shard gets the full copy, sharded iff this src has the
+#    axis (broadcast srcs stay whole)" (73)
+#       and the parenthetical is the point: a src that does NOT have the axis
+#       is a BROADCAST src, and a broadcast src must stay WHOLE on every
+#       shard. Sharding it would give each shard only the slice it needed and
+#       the other shards would have nothing.
+#
 # `src_axis = axis - (len(out_shape) - len(mlb.shape))`, then either
 # `srcs.append(mlb.src[0])` when `mlb.axis == src_axis`, or
 # `full = mlb if mlb.axis is None else copy_multi(mlb, mlb.device)` and then
@@ -935,6 +1003,16 @@ def al_none(n: Nat) -> Bool:
 # a sharding of length n gives `len(reduced) + len(remaining) == n` ALWAYS; `rd_*_n` and
 # `rd_sum_n` are that row, and it is the one that would catch a partition that dropped or
 # duplicated an axis.
+#
+# UPSTREAM'S TWO COMMENTS NAME THE TWO OUTCOMES, and they are the difference
+# between an ALLREDUCE and a LOCAL REDUCE:
+#
+#   "all sharded axes are reduced: full allreduce" (114)
+#       every sharded axis is consumed by the reduce, so the partial sums live
+#       on different devices and have to be COMBINED -- an allreduce.
+#   "no sharded axes reduced: piecewise, keep all remaining sharding" (119)
+#       and the opposite: the reduce is entirely within one shard, so it is a
+#       LOCAL reduce and the remaining sharding is kept untouched.
 # `op` and `num_axes` are `root.arg`, which is `AReduce{rop, num_axes}` (ops.py:752) and
 # already split in `ops.bend`, so both are direct reads. The `remaining` AXES ARE REBASED by
 # `num_axes` (multi.py:121) and that is the arithmetic `off` carries -- it is why a REDUCE
@@ -1041,6 +1119,14 @@ def rd_cast(cfg: Cfg, src0_op: O.Op, inner_dt: S.Dt) -> Bool:
 # `Rs` carries all three as ONE `ok`, because Python raises on the FIRST and the three are
 # alternatives, so a port that answered all three independently would have to invent an
 # order it does not have. `rs_*_ok` are the rows.
+#
+# UPSTREAM'S COMMENT IS THE CONDITION THAT MAKES THOSE TWO RAISES THE SAME
+# FAILURE: "map every sharded axis through the reshape: the axis boundary must
+# survive intact and stay divisible by its shard count" (126). So a reshape is
+# legal across a shard boundary only if the boundary is a boundary in the new
+# shape too AND the new axis divides evenly by the shard count. Both raises
+# say the same thing -- IT MOVED ITEMS BETWEEN SHARDS -- and they are two
+# checks because the first can fail before the second is even meaningful.
 # `new_ax = len(arg_acc) - arg_acc[::-1].index(target) - 1` is the LAST index whose running
 # product is `target`, and the REVERSE is load-bearing: two entries of `arg_acc` can be equal
 # (when a dim of `new_shape` is 1) and `.index` on the REVERSED list takes the LAST one,
@@ -1493,6 +1579,23 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 # `shrink_multi` (multi.py:159-181) -- THE LONGEST BODY IN THE FILE and the one
 # with the most DECISION in it. Written out first, because the port needs all of
 # it and the three outcomes are not a single expression:
+#
+# UPSTREAM'S COMMENT IS THE RULE'S FIRST ARM AND IT IS THE INTERESTING ONE:
+# "resolve each sharded axis independently: a shrink to exactly this range's own
+# shard resolves the UNSHARD along that axis (e.g. a fragment indexed by its
+# LOCAL thread range becomes that thread's REG shard, no copy needed)" (159-160).
+# So the shrink is checked PER AXIS, and a shrink that lands exactly on one
+# shard's own range DISSOLVES the unshard on that axis -- the shard is the
+# thread's own register and no copy is needed. That is why the loop's
+# `remaining.remove((ax, rng))` is there: the axis stops being sharded.
+#
+# AND THE SECOND ARM IS THE LEGACY PATH, and upstream says so:
+# "NOTE: otherwise a shrink on the shard axis is only allowed on the legacy
+# device path, selecting a single partition (which is copied to all the devices
+# and optimized out later)" (173-174). So the fallback COPIES one partition to
+# every device and the later optimisation removes the copy. The port refuses
+# here rather than pretending the copy is free.
+#
 #     local_marg, remaining = list(root.marg), list(multi.sharding)
 #     for ax, rng in multi.sharding:
 #       shard_sz = multi.src[0].shape[ax]
@@ -1734,6 +1837,11 @@ def pd_nonshard.go2(marg: List<&2, Bd>, +sh: Sh, +ax: Nat, acc: List<&2, Bd>) ->
 # output has one more axis than its srcs. `st_*` in the gate are the shifted axes
 # and `st_off_*` is the fallback axis, and `st_off` reuses `ex_shift` on a `0n`
 # because the shift is the only arithmetic in both.
+#
+# UPSTREAM'S COMMENT IS THE AXIS SHIFT ITSELF: "STACK adds a leading axis:
+# srcs are sharded one axis below the output" (183). And the fallback is named
+# "resharding: single-axis fallback" (190) -- SINGLE-AXIS, because the srcs'
+# sharding has to be reconciled along ONE axis for the stack to be well formed.
 
 def st_shift.go(sh: List<&2, Sh>, acc: List<&2, U32>) -> List<&2, U32>:
   List.foldl(~&2, ~Sh, ~List<&2, U32>, (a: List<&2, U32>) => (s: Sh) => List.append(&2, U32, a, [U32.add(Sh.ax(s), 1)]), sh, acc)
@@ -1771,6 +1879,14 @@ def st_none(n: Nat) -> Bool:
 # So the same `vmin`/`vmax` window `[0, shard_sz)` is tested TWICE, once per pattern, and the
 # two differ in what is subtracted and in what is divided. That is the whole decision and it
 # is two windows and a modulus. `ix_*` in the gate is CPython's own arithmetic for both.
+#
+# UPSTREAM'S COMMENT ON THE SECOND PATTERN IS THE INSIDE-OF-THE-SHARD FORMULA
+# AND IT IS NOT THE SAME ARITHMETIC AS THE FIRST: "strided ownership: idx = rng
+# (mod shard_sz), intra-shard position is (idx - rng) // shard_sz" (207). So the
+# first pattern SUBTRACTS the shard's base and the second SUBTRACTS the shard
+# index and then DIVIDES -- the two are different formulas over the same index
+# and a port that used one formula for both would answer the wrong shard for
+# one of them.
 # `vmin`/`vmax` are `UOp._min_max` (ops.py:1100-1104) and that is the wall; with a CONCRETE
 # index the window is `0 <= x < shard_sz` and the port answers that. `x` is a `U32` so the
 # `vmin >= 0` half is TRUE BY CONSTRUCTION and only the upper bound survives. THAT is the one
@@ -1837,6 +1953,18 @@ def sx_idx(has_dev: Bool, dev_idx: U32) -> U32:
 # list built from `(tuple(_shard_idx(r, i) for _, r in sharding),
 # multi.src[0].mselect(i).copy_to_device(device))` per device. The fold counts DOWN over the
 # sharding axes, so this file has no mutable counter and the counter `j` rides last.
+#
+# UPSTREAM'S TWO COMMENTS NAME THE TWO TARGET KINDS, and they are the two
+# branches of this one function:
+#
+#   "reconstruct by concatenating along each axis from last to first" (224)
+#       a SINGLE-device target is rebuilt by concatenating the pieces back
+#       together, and the axes are folded LAST TO FIRST so the outermost axis
+#       is the last thing concatenated.
+#   "multi-device target: unshard all axes and allreduce" (240)
+#       a MULTI-device target is the OTHER thing entirely: the value is padded
+#       out to every shard's slice and then ALLREDUCEd, because a copy cannot
+#       assemble a multi-device value -- the combination has to happen.
 def cx_put.go(xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   List.foldl(~&2, ~U32, ~List<&2, U32>, (a: List<&2, U32>) => (x: U32) => List.append(&2, U32, a, [x]), xs, acc)
 
@@ -1937,12 +2065,33 @@ def st_pick(is_unshard: Bool, full: Bool) -> U32:
 
 # `store_value_multi`'s two srcs are `shard_subview(dest, multi)` and
 # `multi.src[0]` -- a fixed pair, and the decision is `sv_expand`'s.
+#
+# UPSTREAM'S COMMENT ON IT IS THE WHOLE IDEA: "storing a sharded value into an
+# unsharded dest: every shard stores into its own sub-view of the dest" (250).
+# So the dest is WHOLE and the value is SHARDED, and each shard writes into the
+# slice of the dest that is its own -- which is what `shard_subview(dest,
+# multi)` is for.
+#
+# AND THE OTHER STORE'S COMMENT NAMES ITS CASE: "STORE with a sharded dest:
+# every shard stores into its own shard of the dest" (254). So the dest is
+# SHARDED and each shard writes into its own shard -- and the VALUE is then
+# handled by the same rule as in `alu_multi`, which is what makes the two
+# stores symmetric rather than two different ideas.
 # `rewrite_into_function` (multi.py:272-278) is NOT PORTED and it is the deepest
 # wall in the file: it is `graph_rewrite(call.body, multi_pm, name="subcall")`, a
 # RECURSIVE call into the very matcher that is calling it. `ops.bend` cannot call
 # into this file and bend2 refuses mutual recursion outright (brief-port.md,
 # rule 5), so the sub-call would have to be a def that calls back into the pass.
 # `rw_miss()` is the named wall and `rw_none` is its row.
+#
+# UPSTREAM'S COMMENT SAYS WHY THE BODY IS REWRITTEN AND NOT JUST CALLED:
+# "the call body is a plain parametric program: multi rewrites it like anything
+# else (the output PARAM dests sub-view per shard through the normal store
+# rules), and all srcs (args and RETURNEDs) become their per-shard views"
+# (267-268). So the body is a PROGRAM and it goes through the SAME multi
+# rewrites as the outer graph -- the output PARAMs are sharded destinations and
+# the args and the RETURNEDs become per-shard views. That is why the rule
+# cannot be a "call the body" rule.
 def rw_miss() -> Bool: True{}
 def rw_none() -> Bool: rw_miss()
 

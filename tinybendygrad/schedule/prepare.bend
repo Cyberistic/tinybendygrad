@@ -19,6 +19,139 @@
 # `pm_inline_calls` (184-187), `pm_disk_copy` (189-197), `earliest_rewrites`
 # (199-269) and `prepare_rangeify` (271-278).
 #
+# UPSTREAM'S EXPLANATORY COMMENTS, BY THE DEF THEY BELONG TO.  The port has the
+# TABLES and the DECISIONS and not most of the bodies, so these are the notes a
+# reader needs in order to read the TABLES -- each one says WHY a rule exists
+# and what it refuses to do.
+#
+# `forward_call_outputs` (11-38):
+#   "Forward the allocation, not just one view of it, so saved values and other
+#    aliases follow the same placement." (25)
+#       so the thing that gets MOVED is the ALLOCATION, not the view that
+#       happens to be in the sink. A second view of the same allocation must
+#       follow the first one to the same place, or the two views would disagree
+#       about where the data lives.
+#
+# `pm_fold_moved_after` (56-62):
+#   "*** fold moved AFTERs (hack for openpilot) ***" (55)
+#       the name says HACK and upstream says so. An AFTER that has been moved
+#       past a movement op no longer describes the same memory, so the fold
+#       rewrites the ALU's srcs to the AFTER that matches them.
+#   "contiguous is also a materialization point (it bufferizes in the
+#    scheduler)" (58)
+#       so a STAGE is treated like an AFTER here: a contiguous IS a
+#       materialization, because the scheduler will bufferize it.
+#   "replace ALU sources with AFTER versions found above" (60)
+#       the ALU rule is the one that USES the folded map.
+#
+# `pm_mops` (76-83):
+#   "handle movement ops on INDEX" (76)
+#       a movement op ON an INDEX -- a reshape of an index -- is applied to the
+#       index's args rather than to the buffer.
+#   "A store through a padded view gates the destination index, not its loaded
+#    value." (78)
+#       and this is the gotcha: the padding's validity belongs to the
+#       DESTINATION -- where the store lands -- not to the value being
+#       stored. Gating the value instead would let the store happen at an
+#       out-of-range destination.
+#   "move movement ops and INDEX after AFTER" (83)
+#       a movement op or an index that sits AFTER an AFTER is pushed THROUGH
+#       it, so the AFTER's own src stays the thing the ordering depends on.
+#
+# `split_reduceop` (103-125):
+#   "if there are few globals, make some reduces into globals by splitting into
+#    two kernels" (95)
+#       a reduction over few global outputs is cheap to split: the first kernel
+#       computes partial sums and the second reduces them.
+#   "cap output buffer to 2**22: heuristic number of global outputs to achieve
+#    max occupancy with enough locals+upcasts for gemm" (96)
+#       the cap is a HEURISTIC and upstream says so -- it is an occupancy
+#       number, not a correctness condition.
+#   "256 split maximum should be 'negligible reduce' for low prod(reduce.shape),
+#    8 split minimum." (98)
+#       so the search space is bounded at BOTH ends.
+#   "split is moved to the end to provide maximum locality for the second phase
+#    reduce." (99)
+#       the unflatten+permute is moved to the END of the axis list so that the
+#       second phase's reduce reads contiguous memory.
+#   "an axis is expanded if its range does not reach the index into the base"
+#       (101)
+#       so an expanded axis cannot be split: splitting it would split an axis
+#       that is not really there.
+#
+# `resolve_function` (127-150):
+#   "Input and output PARAMs both bind to explicit arguments by slot; unused
+#    arguments are allowed." (119)
+#   "params have a flat storage size in the arg, the logical shape is a view
+#    (RESHAPE/SHRINK/UNSHARD) on top of it." (122)
+#   "substitute args by their flat max-shaped storage view so the movement views
+#    on the params stay valid" (123)
+#       so the ARGUMENT is substituted at its FLAT MAX-SHAPED STORAGE and the
+#       param's own movement views are kept -- the views are what make the
+#       argument's shape agree with the param's.
+#   "Inlining removes the call scope, so its local allocations need fresh
+#    identities." (137)
+#       the inlined body's ALLOCs get new slots, because the call's scope is
+#       gone and its slot numbers now collide with the caller's.
+#
+# `expand_bitcast` (153-162):
+#   "shape-changing bitcast" (141)
+#       so this is the bitcast that CHANGES the shape, not the one that reinterprets
+#       the bits at the same width.
+#
+# the three materialisers (164-182):
+#   "copies are always cross device: pad to the max shape so the copy reads a
+#    whole buffer (SDMA can't do offset copies)" (154)
+#   "the buffer takes the DEVICE range from the copy (no-op for single device
+#    copies)" (156)
+#   "the buffer created here is inside the call and is not persisted, like the
+#    buffers created for copies" (162)
+#   "cross-device copies must read a whole buffer (SDMA can't do offset
+#    copies)" (168)
+#       so THE REASON for all three is the same and it is a HARDWARE one: an
+#       SDMA copy has no offset form, so a copy either reads a WHOLE buffer or
+#       it does not happen. That is why the value is padded to its max shape.
+#
+# `pm_disk_copy` (189-197):
+#   "remove contiguous on movement ops before a copy on disk" (178)
+#   "push all movement ops to the destination: views exposed here are no longer
+#    normalized into input PARAMs, so leaving SHRINK/RESHAPE behind can cause
+#    materialize_cross_device_src to allocate a temporary on disk" (181)
+#       and THAT is the gotcha: a view left on the SOURCE side is no longer
+#       normalised into the copy's input PARAMs, so the cross-device
+#       materialiser would allocate a TEMPORARY ON DISK to hold it.
+#
+# `earliest_rewrites` (199-269):
+#   "resolve allreduce (must be bottom up)" (188)
+#   "remove DETACH/CONTIGUOUS_BACKWARD (TODO: this is copied in allocations)" (194)
+#   "a copy to the same device as the source is not allowed: it is a no-op, STAGE
+#    materializes on the same device" (199)
+#   "a COPY in src[1] of a plain STORE can just be removed: a STORE to a buffer on
+#    a different device is a COPY" (202)
+#   "a bare COPY is an anonymous store: realize it as a STORE into a fresh
+#    call-local buffer on the copy device" (206)
+#   "a STAGE of an already materialized value (or of a COPY, which materializes
+#    itself) is a no-op" (211)
+#   "a bare STAGE is an anonymous same-device materialization: realize it as a
+#    STORE into a fresh call-local buffer" (215)
+#   "reshaping on STORE can be a NOOP" (218)
+#   "materialize the src of a cross device STORE on its own device first: the
+#    STORE itself is the copy" (225)
+#   "remove two STOREs that store the same thing to the same place:
+#    TestSchedule.test_dedup_Assign" (228)
+#   "store a buffer's own current contents back into itself:
+#    TestAssign.test_assign_from_alias" (231)
+#   "move bitcast from store dest to source: TestAssign.test_assign_bitcast" (234)
+#   "reduce of size 0 is the identity element" (242)
+#   "handle size 0" (245)
+#   "remove movement ops from SINK/AFTER. TODO: should be generic" (248)
+#
+# `prepare_rangeify` (271-278):
+#   "prepare for rangeify" (255)
+#       and the ORDER is the port's own claim: the multi rewrite, then the
+#       inline/copy rewrites, then the openpilot fold, then the earliest
+#       rewrites -- the LAST of which runs BOTTOM-UP.
+#
 
 # THE SPLIT. Every rule body here is a DECISION: it answers "which arm, and
 # with what arithmetic", and the node it would build is named at the call site.

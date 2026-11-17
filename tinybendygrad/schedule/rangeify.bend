@@ -619,6 +619,7 @@ def rb_self_store(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_nsrc_is(ar, self, 2), rb_ident(ar, self))
 
 # rb_1: `lambda x: UOp(Ops.NOOP)` -- a NOOP with no srcs and no arg.
+# UPSTREAM'S COMMENT IS THE RULE'S NAME: "STORE to self is NOOP" (129).
 def rb_1.of(same: Bool, +ar: O.Arena) -> M.Hop:
   match same:
     case True{} : M.mp_hit(O.UOp.new(ar, O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{}))
@@ -632,6 +633,9 @@ def rb_1(+ar: O.Arena, self: U32) -> M.Hop:
 # bound name, and `x` is the src, not the node under examination, so `ret is not
 # uop` holds. This is the second place a rewrite returns a node it did not build
 # and the reason `rb_e_n0` is a POSITIVE row.
+# UPSTREAM'S COMMENT IS THE RULE'S NAME: "END on NOOP is NOOP" (131). It is the
+# cleanup half of `rb_1`: a STORE that turned into a NOOP must not leave an END
+# pointing at it.
 def rb_2.of(noop: Bool, +ar: O.Arena, self: U32) -> M.Hop:
   match noop:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
@@ -643,6 +647,43 @@ def rb_2(+ar: O.Arena, +self: U32) -> M.Hop:
 # rb_0: `remove_bufferize` -- rangeify.py:48-102, and it is NOT PORTED. The wall
 # is spelled out at the foot; what is here is the CLAIM, so the table length and
 # the claim count are right even though the body is absent.
+#
+# UPSTREAM'S TWO COMMENTS ARE THE RULE'S REASON, and they are kept here because
+# the port's answer is "no node" and a reader needs to know what the rule would
+# have decided:
+#
+#   "if a buffer is being stored just for permutes or something, remove it" (46)
+#   "we want to reexpress the indexes of idx2 in terms of the implied b1" (47)
+#
+# so `remove_bufferize` is not a simplification -- it REMOVES A BUFFERIZE by
+# rewriting the INDEX that reads it into an index into the buffer the bufferize
+# was standing in for. That is why the rule is `src.f(STAGE).f(INDEX)` and not
+# the other way round: the STAGE is the bufferize to remove and the INDEX is
+# the reader whose index gets reexpressed.
+#
+# AND THE COST IS THE POINT. Upstream computes it and the port does not:
+#
+#   "*** here is where we compute the cost ***" (56)
+#   "if we return None, the bufferize is kept" (57)
+#
+# so `remove_bufferize` is a COST-FUNCTION rule, not a pattern rule: it walks
+# the src and answers `None` -- KEEP the bufferize -- unless the cost says the
+# bufferize is free to drop. The cost is the number of buffers the src touches,
+# and the three cutoffs are upstream's and each has a reason:
+#
+#   "don't look inside stores, this doesn't count toward buffer accesses" (69)
+#       a STORE's own payload is not an ACCESS OF A BUFFER by the kernel; only
+#       the STORE's destination counts.
+#   "if this is generated from multiple buffers, don't remove this buffer" (80)
+#       more than three accessed buffers and the bufferize is load-bearing.
+#   "if any reduces access a buffer, don't remove this buffer" (82)
+#       a REDUCE that reads a buffer cannot have that buffer's index reexpressed.
+#
+# THE PORT HAS NONE OF THIS, and that is the wall rather than an omission: the
+# cost function needs a `toposort` with a GATE (a `red_gate` that answers
+# whether to descend into a node) and a mutable `accessed_buffers` list, and
+# `rb_0` is the rule whose body is absent. `rb_0` therefore INTERNS NOTHING and
+# the arena does not grow -- `rb_arena` is the row that says so.
 def rb_0(+ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 def rb_dispatch.go(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
@@ -674,6 +715,11 @@ def rb_scan(rs: List<&2, O.PMEntry>, +self: U32, +h: M.Hop) -> M.Hop:
     case e <> t: rb_scan(t, self, M.hop_next(h, rb_try(M.hop_ar(h), self, e)))
 
 # THE TABLE. Three entries, in rangeify.py's order, so tag N is (line, N).
+# Tag 0's upstream comment is the rule's kind and it is the one that separates
+# this table from every other one in the file: "remove reindexing with cost
+# function" (127). Every other rule here fires on a PATTERN; this one fires on a
+# pattern and then DECIDES with a cost. That is why `rb_0`'s body is a wall and
+# not a simplification.
 def rb_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsINDEX{}],         [O.OpsSTAGE{}]},   # 133  src.f(STAGE).f(INDEX)
    O.PMEntry{1, [O.OpsSTORE{}],         Nil{}},            # 135  x.store(x) -> NOOP
@@ -826,6 +872,23 @@ def aprt_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 # calls `graph_rewrite(x, to_define_global+pm_flatten_range, ctx=lctx, name="kernel split",
 # bottom_up=True)` -- a MUTABLE `lctx` threaded through a nested pass, which the no-`ctx`
 # wall is the other half of.
+#
+# UPSTREAM'S TWO COMMENTS INSIDE `split_store` ARE THE TWO GATES, and they are
+# both about WHEN A KERNEL MAY BE CUT:
+#
+#   "if we have any open ranges here, we don't split. open DEVICE ranges are
+#    fine, they are bound per device at launch" (322)
+#       a range that is still OPEN -- a non-DEVICE range -- means the kernel is
+#       not finished: something outside is still iterating over it, so cutting
+#       here would produce a kernel whose range nobody binds. A DEVICE range is
+#       different: it is bound when the kernel is LAUNCHED, one per device, so
+#       it does not block the split.
+#   "create the Kernel. NOTE: buffers can be on different devices here now,
+#    they are compiled to SDMA copies later by schedule" (331)
+#       the kernel's PARAMs may live on DIFFERENT devices. That is deliberate:
+#       the split is about the range structure, not about the memory, and the
+#       cross-device part is settled LATER by the scheduler as an SDMA copy.
+#       Doing it here would mean the split pass knew about devices.
 def sk_0(+ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 def sk_dispatch.go(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
@@ -963,6 +1026,11 @@ def rf_mops_en(ar: O.Arena) -> M.Hop: rf_foreign("prepare.py:82", ar, 0)
 # `is_any` of two alternatives, so there are TWO arms and `c` is bound in each; they never
 # meet, so no identity check is emitted.
 #
+# UPSTREAM'S COMMENT IS THE RULE'S WHOLE BODY: "indexing a const is the const" (116). A
+# CONST is a value, not a buffer, so there is nothing to index into: the INDEX and its
+# src are the same value and the INDEX collapses. That is why this rule needs no
+# movement op and no builder -- it answers a node ALREADY IN THE ARENA.
+#
 # THE PATTERN IS THE CLAIM, and giving the body an ELSE arm makes the rule a catch-all.
 # MEASURED: with an else arm the answer's src op sequence was ".58.58" (the MSTACK) and
 # `ct8d_srcops` was 0; with the claim in place it is ".58" and `ct8d_srcops` is 1.
@@ -1001,6 +1069,12 @@ def ct_6(+ar: O.Arena, +self: U32) -> M.Hop:
 # pattern with the STAGE at the ROOT and the INDEX as its src[0], so the node under
 # examination IS `b2`, `idx` is `self.src[0]`, and the first line is `eq_u32` on two
 # `src_from(1)` lists -- one on the STAGE and one on the INDEX.
+#
+# UPSTREAM'S COMMENT SAYS WHY THE RULE IS NOT JUST "AN INDEX IS A NOOP": "remove
+# noop buffers. if we look at the next index we can remove even more of these"
+# (112). The FIRST index into a bufferize is a no-op -- the bufferize has no
+# offset of its own -- and once THAT index is gone the NEXT index into the same
+# bufferize may also be a no-op, so the rule is written to run more than once.
 #
 # MEASURED, LIVE, and this is the rule the table used to make unfireable:
 # `STAGE(INDEX(b4,r0), r0)` has `claim_n = 2` (tags 3 and 4) and answers the BUFFER,
@@ -1045,6 +1119,29 @@ def ct_4(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
 # `b.expand`, which are movement ops over `b.shape`. MEASURED: it DOES fire on a
 # STAGE with a removable `BufferizeOpts`, so this is a wall and not a liveness
 # question -- see the note in `.agents/slop/rf-ct-oracle.txt` section 1.
+#
+# UPSTREAM'S THREE COMMENTS ARE WHY THE RULE IS BOTTOM-UP-SENSITIVE, and they
+# are kept because the port's answer is "no node":
+#
+#   "you don't know in the first pass if axes are going to die, this happens if
+#    there's an EXPAND to the left" (21)
+#       so the rule CANNOT run on the first pass: an EXPAND to the left is a
+#       consumer that has not been seen yet, and it keeps an axis alive that
+#       looks dead. The port's engine runs the table bottom-up inside a stage,
+#       which is the same order upstream's `get_kernel_graph` uses, and the
+#       port's answer is the SAFE one -- it never removes an axis.
+#   "don't optimize AFTER (AFTER is a buffer identity -- ranges define consumer
+#    access, not computation)" (24)
+#       an AFTER is a BUFFER IDENTITY, so the ranges hanging off it describe who
+#       reads the buffer, not what is computed on it. Optimizing it would
+#       change which consumer sees which range.
+#   "CONSTs are already dead axes" (33)
+#       a CONST range has no extent to keep alive, so it is dead BY
+#       CONSTRUCTION and the rule rewrites the shape to 1 there.
+#
+# The rule's answer is a RESHAPE to a shape with 1s in the dead positions and
+# then an EXPAND back to the original shape -- "the axis is dead but the value
+# still has the old shape" -- and that pair is the movement-op wall.
 def ct_3(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ct_5: `b.const_like(c.val)` -- rangeify.py:120. The CLAIM is ported here (it was
@@ -1055,6 +1152,13 @@ def ct_3(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 # `_mop`/`apply_movement_op` -- two of the three walls at once.
 # MEASURED, LIVE, on BOTH arms: `STAGE(c4, r0)` and `STAGE(CAST(c4,half), r0)` each
 # answer an `EXPAND` of two CONSTs, and `STAGE(b4, r0)` binds `c` zero times.
+#
+# UPSTREAM'S COMMENT IS WHY THE PATTERN HAS TWO ARMS: "no buffers for a const, in
+# either spelling" (114). A CONST needs no buffer at all -- it is a value, not a
+# memory -- and the two spellings are the two ways a CONST reaches a STAGE: bare
+# (`UPat.cvar`) and CASTED (`or_casted`). So the rule REPLACES the bufferize with
+# the const itself, in either spelling, rather than materialising a buffer for a
+# value that was never in memory.
 def ct_5_claim(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_is(ar, self, O.OpsSTAGE{}),
            Bool.and(M.mp_nsrc_ge(ar, self, 1),
@@ -1069,6 +1173,17 @@ def ct_5(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 # that is `_min_max` (ops.py:1104) plus `UOp.numel` (a product over `max_shape`, which is
 # `to_max_shape`, ops.py:1886). `ended_ranges` and `is_invalid` ARE ported, which is why
 # `rf_ended` and `rf_invalid` are readers with no caller yet rather than omitted.
+#
+# UPSTREAM'S TWO COMMENTS ARE THE RULE'S TWO HALVES:
+#
+#   "check all ranges are used (no expand), and same size (no pad and shrink)" (105)
+#       the AFTER is invalid only if EVERY range it ends was actually written
+#       and the write covered the whole range. An expand means a range was
+#       touched that the AFTER does not cover; a pad or a shrink means the
+#       write was smaller than the range.
+#   "indexing an after with all fully invalid stores is invalid" (118)
+#       so reading such an AFTER is the Invalid value -- the load is DEAD, not
+#       merely undefined.
 #
 # measured defect in CPYTHON, reported and not fixed, because it is a fact about
 # rangeify.py and not about this file. With an END that ends no RANGE, `ended_ranges` is
@@ -1099,6 +1214,14 @@ def ct_7_claim(+ar: O.Arena, +self: U32) -> Bool:
 #   INDEX(MSTACK(bufdev))      claim_n 1  ->  None     <- the device refusal
 # and the rebuild keeps the INDEX's OWN arg, which is the `ct8r_arg`/`ct8r0_arg` row pair
 # and is the arg gate the old fixture could not express.
+#
+# UPSTREAM'S COMMENT IS THE RULE'S PRECONDITION AND IT IS NOT OPTIONAL: "a deviceless
+# MSTACK src is the same value on every device, so indexing the stack is just indexing
+# that value" (121). An MSTACK holds the SAME value on every device of a
+# multi-device group, so an INDEX of a deviceless MSTACK is an INDEX of the
+# value itself -- there is nothing to select. A DEVICE-BEARING MSTACK is a
+# DIFFERENT value per device and must not be unwrapped, which is why
+# `rf_dev_is_none` is a real gate and not a formality.
 def ct_8_claim(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_is(ar, self, O.OpsINDEX{}),
            Bool.and(M.mp_nsrc_ge(ar, self, 1),
@@ -1192,6 +1315,13 @@ def ct_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 
 # TABLE 8: `pm_flatten_bufferize` -- rangeify.py:235-244. ONE RULE, the SMALLEST table in
 # the file AND the only one whose body is a cross-file movement op.
+#
+# UPSTREAM'S COMMENT IS THE RULE'S NAME: "collapse any BUFFERIZE to single input
+# BUFFERIZE" (231). A bufferize may close SEVERAL ranges, and each one makes the
+# bufferize a different shape; collapsing them to ONE input means one range
+# and one shape, and that is what makes the later STORE a plain store. The
+# rule's early return is `len(x.src) == 2` -- already collapsed -- so the rule
+# is idempotent by construction.
 #
 # THE WALL IS `apply_movement_op` -- schedule/indexing.py:171, ANOTHER FILE -- and its
 # RESHAPE arm is the worst of it: `UOp.sink(*rngs).simplify()` then two `substitute`
@@ -1292,6 +1422,13 @@ def dg_3(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
 # dg_6: `renumber_range` -- rangeify.py:297, ported above. The dispatch threads
 # the counter as a PARAMETER, which is the `ctx.range` wall; the gate feeds it
 # CPython's value, and `ren7_*` is the row for a non-zero start.
+#
+# UPSTREAM'S COMMENT IS WHY THE RULE EXISTS AT ALL: "renumber the ranges starting
+# with 0 so that kernel deduping works" (318). Two kernels that do the same work
+# must have the SAME range ids for the deduper to recognise them, and the range
+# ids come from a global counter that has already been advanced by whatever else
+# ran. So the ranges are renumbered from 0 INSIDE the kernel, and the kernel's
+# identity stops depending on the order things happened to be scheduled in.
 def dg_6_of(n: U32) -> U32: n
 
 def dg_6(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
@@ -1314,6 +1451,13 @@ def dg_0(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 # `UOp.to_max_shape` (ops.py:1886), `ParamArg(ctx.dg, ...)` needs the mutable
 # `dg` counter, and `param.reshape(buf.max_shape)` is a movement op over a
 # `max_shape` that does not exist in this port.
+#
+# UPSTREAM'S COMMENT IS THE ONE STEP THAT IS NOT A MECHANICAL COPY: "if the
+# buffer has symbolic shape, shrink the max-sized view to the actual shape"
+# (286). A PARAM is created at the buffer's MAX shape -- the largest the buffer
+# could ever be -- but the value in it has a possibly SYMBOLIC shape. So the
+# max-sized view is SHRUNK to the actual shape, and that is the one step that
+# makes the two shapes agree.
 def dg_1(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # dg_2: the PARAM rule -- rangeify.py:315-316. The CONDITION is fully ported and
@@ -1353,7 +1497,15 @@ def dg_2(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
 # dg_4: `handle_after` -- rangeify.py:290-297. NOT PORTED: the guard
 # `after.addrspace == AddrSpace.LOCAL` IS ported, and `after.buf_uop` is the
 # wall. The comment is kept -- "NOTE: this is bottom up, so we only add it once"
-# -- and it is about the mutable `ctx.map`, the other half of the same wall.
+# (293) -- and it is about the mutable `ctx.map`, the other half of the same wall.
+#
+# THE "ONCE" IS THE POINT. `handle_after` puts the AFTER into `ctx.map` under
+# its BUFFER, and the map is what `split_store` later turns into the kernel's
+# PARAM list. An AFTER may be reached from several places in the graph, and
+# the map is keyed by BUFFER, so the rule would otherwise add the same buffer
+# once per AFTER that mentions it -- and the kernel would then take the same
+# PARAM twice. The rewrite runs BOTTOM-UP, so the FIRST AFTER for a buffer is
+# the one that gets in and the later ones see the key already present.
 def dg_4(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # `after.addrspace == AddrSpace.LOCAL` -- the one conjunct of `handle_after`
@@ -1439,6 +1591,19 @@ def rf_bufset(ar: O.Arena, self: U32) -> List<&2, U32>: Nil{}
 # `len(bufs) > MAX_BUFS - 1` -- the ONLY line of the rule that this port can
 # evaluate, and it evaluates it on an empty set, so the rule does not fire. The
 # `-1` is the output buffer and upstream says so.
+#
+# UPSTREAM SAYS SO AT rangeify.py:187: "NOTE: this -1 is for the output buffer".
+# The kernel writes one buffer and it is not counted in the input set, so the
+# limit on INPUT buffers is one lower than the limit on total buffers. That is
+# the whole of the `-1` and it is not a fudge.
+#
+# AND UPSTREAM'S COMMENT ON `stage` IS THE REASON THE REWRITE INSERTS A
+# BUFFERIZE AT ALL: "Insert bufferize: use fresh WEAK ranges, while the DEVICE
+# range stays a launched axis" (172). A kernel that touches too many buffers
+# is split by INSERTING A BUFFERIZE, and the bufferize's ranges are FRESH --
+# new WEAK ranges with new ids -- so the inserted boundary does not collide with
+# the ranges already in flight. The DEVICE range is NOT replaced: it is bound
+# per device at launch and must survive the insertion unchanged.
 def Nat.to_bool(n: Nat) -> Bool:
   match n:
     case 0n: False{}
@@ -1503,6 +1668,12 @@ def lb_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 # NOT PORTED: `bufferize_to_store` (208-232) needs `x.commit_dtype()`,
 # `sorted(idx.ranges, key=x.arg)` (the `ranges` wall plus a sort), `UOp.device_range_src`,
 # a fresh `ParamArg` from `next(ctx)`, and a `buf.after(...)`/`store`/`end` chain.
+#
+# UPSTREAM'S COMMENT FOR `ab_7` IS THE RULE'S NAME: "remove any RESHAPEs on KERNEL"
+# (263). A KERNEL's srcs are ARGUMENTS, and a RESHAPE on an argument is a view
+# the kernel does not need -- the kernel takes the storage. So the rule strips
+# the RESHAPE and keeps the src underneath it. The port's `ab_7_src` is that
+# strip: a RESHAPE answers `src[0]`, everything else answers itself.
 def ab_7_src.go(is_rs: Bool, ar: O.Arena, x: U32) -> U32:
   match is_rs:
     case True{} : M.mp_src0(ar, x)
@@ -1562,6 +1733,28 @@ def ab_8(+fx: F.Folded, +ar: O.Arena, self: U32) -> M.Hop:
 # `UOp.device_range_src` (230) is P6; and `next(ctx)` is the mutable `itertools.count`.
 # Its CLAIM -- a two-src STAGE -- is ported and it is the claim half of the
 # two-rules-one-node fixture.
+#
+# UPSTREAM'S TWO MORE COMMENTS ARE THE RULE'S TWO HALVES, and they are the reason
+# the port's body is absent rather than merely unwritten:
+#
+#   "a BUFFER is never weak: store at the committed dtype, the .cast(x.dtype) on the
+#    result keeps readers unchanged" (207)
+#       a weak dtype is a dtype whose width is not yet settled, and a BUFFER
+#       cannot have one -- a buffer's width is a property of the memory it
+#       holds. So the STORE is made at the COMMITTED dtype and the RESULT is
+#       cast back, which is what leaves every reader of the buffer unchanged.
+#       The port cannot read `commit_dtype` at all, so this half is unreachable.
+#   "AFTER: add END to the existing STORE, return buffer with kernel dependency"
+#       (211)
+#       when the bufferize is over a buffer that ALREADY has stores, the
+#       bufferize does not allocate -- it turns the existing stores into
+#       ENDs, which is what carries the kernel dependency. That is why the
+#       answer is `buf.after(*ended_stores)` and not a fresh allocation.
+#   "BUFFERIZE(INDEX(...)); store through the underlying global index instead."
+#       (215)
+#       the store's own destination may itself be a bufferize over an INDEX;
+#       upstream writes through the UNDERLYING index, so the store lands on
+#       the global buffer rather than on a view of it.
 def ab_4(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ab_4's CLAIM: `UPat(Ops.STAGE, src=(UPat(), UPat(name="idx")), name="x")` is a
@@ -1578,6 +1771,25 @@ def ab_4_claim(+ar: O.Arena, +self: U32) -> Bool:
 # binding is `UPat.var` INSIDE a CAST and the value is `u.src[0].src[0]`, which
 # is the same shape as `ct_6` and does work). What is ported is the CLAIM: a
 # one-src CAST of a weak dtype under an INDEX.
+#
+# UPSTREAM'S TWO COMMENTS ARE AN ORDERING CONSTRAINT, and they are the reason this
+# rule is NOT a simplification but a CORRECTNESS rule:
+#
+#   "INDEX of a buffer through the weak cast added above: index the buffer
+#    directly and cast the loaded value instead." (254)
+#       the weak cast is a CAST ON THE BUFFER, so an INDEX under it would
+#       index a CAST rather than the buffer. The rule reaches THROUGH the cast
+#       and casts the LOADED VALUE instead.
+#   "this must run in the same rewrite that adds the cast, or the expander
+#    expands the whole casted buffer into one big VECTORIZE" (255)
+#       and THIS is the gotcha. If the cast is added by one rewrite and this
+#       rule runs by another, the expander sees a casted BUFFER and expands
+#       the entire buffer into one vector -- a graph blow-up that is silent.
+#       So the rule is bound to the rewrite that adds the cast, not to a
+#       later pass.
+#
+# The port's `ab_5` is a wall and the CLAIM is the whole of what is here, so
+# the ordering constraint is a note for the reader and not a row.
 def ab_5_cast(+fx: F.Folded, +ar: O.Arena, +c: U32) -> Bool:
   Bool.and(M.mp_is(ar, c, O.OpsCAST{}),
            Bool.and(M.mp_nsrc_is(ar, c, 1), rf_weak_dt(fx, c)))
