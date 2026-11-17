@@ -29707,8 +29707,9 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       headers put the shape half in I, II, III, VI, VII and VIII and the
       ALU/dtype half in IV and V, and the two census gates now read the SECTION
       rather than the book.
-- [x] THE LAW SET IS NOW **98 LAWS**, ALL PROVED, AND THE PORT STATES FOUR OF THE
-      SPEC'S FIVE DERIVED PROPERTIES. MEASURED 2026-11-17: the port had `dtype`
+- [x] THE LAW SET WAS **98 LAWS** (AND IS NOW 99 -- SEE THE ENTRY BELOW), ALL
+      PROVED, AND THE PORT STATES FOUR OF THE SPEC'S FIVE DERIVED PROPERTIES.
+      MEASURED 2026-11-17: the port had `dtype`
       and `shape` and NO device fold, NO min_max fold, and the spec's
       `SpCmpEq`/`SpTruncdiv`/`SpTruncmod` constructors at all. Now: a `Sp.device`
       fold (the spec's device column), a `Sp.min_max` fold (the value-free half
@@ -29720,6 +29721,42 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       arm" and the question is "does ANY law read THIS FOLD at this op" -- so
       nine shape arms and thirteen dtype arms were called unpinned that a law
       DID read. Both now take every law.
+- [x] THE LAW SET IS NOW **99 LAWS**, AND THE NEW ONE IS THE SPEC's OWN
+      COMPOSITION -- the gemm. MEASURED 2026-11-17 against
+      `f5ac54685074:spec/tinyspec.tex`: the port stated the COMPONENTS (the
+      reshape law, the elementwise law, the reduce law) and not the
+      COMPOSITION, and the composition is what the spec's readers care about
+      because it is the shape the schedule's fusion decisions read. THE CLAIM
+      IS THE SHARPEST PART: the two reshapes broadcast, and the broadcast of
+      `(M,K,1)` and `(1,K,N)` is `(M,K,N)`. The proof is a chain of congruences,
+      ONE PER AXIS, and each congruence's function fixes everything EXCEPT the
+      axis it rewrites -- so the port's `cons_tail` (which fixes a tail) serves
+      the first axis and TWO were added for the rest: `cons_mid` (fixes a head
+      AND a tail) and `cons_at` (a general position). The census reads
+      `0/99/99`.
+- [x] **AND THE ORDER OF THE PROOF BOOK IS PART OF THE SPEC, MEASURED.** `bend`
+      names the FIRST failing proof, so an instrument that asks "which law goes
+      red" reads the book's order. THE GEMM LAW SAT BEFORE THE ELEMENTWISE
+      LAWS and that made `mul_is_elementwise` **MASKED** -- the shape census's
+      word for a law that can fail but is never the failure `bend` names --
+      because BOTH laws read `SpMul`, so a broken `SpMul` named the gemm law.
+      The gemm proof now comes AFTER the elementwise proofs and the census is
+      green with the SAME three masked laws it had before. AND THE REORDER IS
+      PURE: the two laws are independent -- one is about the broadcast of two
+      RESHAPES, the other about two operands of the SAME shape.
+- [x] **THE NEW LAW IS LOAD-BEARING, MEASURED NOT ASSUMED** -- a law that
+      cannot go red is worse than no row. `.agents/slop/loc/gemm-mutate.py`
+      builds a book holding ONE law (the gemm law, its proof, the port's own
+      helpers), breaks the broadcast's per-axis fold, and reads the verdict.
+      THE ISOLATION WAS NEEDED, AND THE REASON IS GENERAL: **the checker
+      reports the FIRST failing proof, not all of them**, so mutating a SHARED
+      fold arm is named by whichever law is checked first and "the suite went
+      red" is NOT "this law is load-bearing". THREE READINGS ESTABLISHED IT:
+      mutating `Shape.max_dim`'s concrete arm named `L.max_dim_idempotent` (a
+      NEIGHBOUR), mutating `pick_dim`'s `a == 1` arm named `pick_dim_one_left`
+      (a HELPER), and mutating a helper's own STATEMENT named the helper (the
+      claim itself was changed, so nothing was tested). The isolated book
+      removes the neighbours and the law names itself.
 - [x] SIXTEEN LAWS ADDED, AND EVERY ONE IS A CLAIM THE PIN's SPEC MAKES AND THE
       BOOK DID NOT SAY (MEASURED against `f5ac54685074:spec/tinyspec.tex`, not a
       newer clone). **THE COMPARISON FAMILY WAS BACKWARDS**: the spec says

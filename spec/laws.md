@@ -75,6 +75,62 @@ also rejected. Hence bounded arity for `Index`. All of it is in
 not mean the code does what you meant.** Six laws were refuted or found vacuous
 during this work, and two of those were bugs in code a type checker had approved.
 
+## The spec's own compositions
+
+`tinyspec.tex` writes five common ops as compositions of the primitives:
+
+```python
+def gemm(A, B):
+  M,K = A.shape; _,N = B.shape
+  return (A.reshape(M,K,1) * B.reshape(1,K,N)).sum(1)
+```
+
+The port stated the COMPONENTS — the reshape law, the elementwise law and the
+reduce law — and not the COMPOSITION. The composition is what the spec's
+readers care about, because it is the shape the schedule's fusion decisions
+read.
+
+MEASURED 2026-11-17: the gemm's shape claim is now a law, and the claim is
+the sharpest part — the two reshapes broadcast, and the broadcast of `(M,K,1)`
+and `(1,K,N)` is `(M,K,N)`:
+
+```
+law gemm_broadcasts_to_the_three_axis_shape:
+  for +m: S.Sdim
+  for +k: S.Sdim
+  for +n: S.Sdim
+  for ma: S.AllSN([m, k, S.SN{1n}])
+  for mb: S.AllSN([S.SN{1n}, k, n])
+  for same: S.SameLen([m, k, S.SN{1n}], [S.SN{1n}, k, n])
+  {shape_of(S.SpMul{S.SpReshape{...}, S.SpReshape{...}})
+   == some_of_shape(S.Shape.of([m, k, n])) : Maybe<&2, S.Shape>}
+```
+
+**THE PROOF IS A CHAIN OF CONGRUENCES, ONE PER AXIS**, and each congruence's
+function fixes everything EXCEPT the axis it rewrites. The port's `cons_tail`
+appends a fixed tail, so its argument is the head; the port had no cons that
+fixes a head AND a tail, so two were added — `cons_mid` for the middle axis
+and `cons_at` for a general position. The three are chained with two
+`Equal.trans` steps, and the whole list is then lifted through `Shape.of` and
+`Some`.
+
+**AND IT IS LOAD-BEARING, MEASURED NOT ASSUMED.** A law that cannot go red is
+worse than no row, so the mutation test is in
+`.agents/slop/loc/gemm-mutate.py`: it builds a book holding ONE law — the gemm
+law, its proof, and the port's own helpers — and breaks the broadcast's
+per-axis fold. The book goes red, and the failing def is inside the book, so
+the failure is the gemm law's own proof and not a neighbour's.
+
+That isolation was needed, and the reason is general: **the checker reports
+the FIRST failing proof, not all of them.** Mutating a shared fold arm is
+named by whichever law happens to be checked first, so "the suite went red"
+is not "this law is load-bearing". Three readings established it — mutating
+`Shape.max_dim`'s concrete arm named `L.max_dim_idempotent` (a neighbour),
+mutating `pick_dim`'s `a == 1` arm named `pick_dim_one_left` (a helper), and
+mutating a helper's own statement named the helper (the claim itself was
+changed, so nothing was tested). The isolated book removes the neighbours, and
+then the law names itself.
+
 ## What we do not gain, and why
 
 **Float arithmetic.** Bend's guide is blunt: `F32` is axiomatic, nothing about
@@ -121,8 +177,19 @@ the shape half alone reported 18 TODOs and the ALU/dtype half 16, and the
 aggregate `PROOF-ALL.bend` existed to import both. MEASURED 2026-11-17: the two
 halves' sixty defs have NO NAME IN COMMON and neither calls a def declared
 later in its own file, so ONE file holds both halves and the aggregate is not
-needed. The proof file is now `LAWS/PROOF.bend` and it holds all ninety-eight
+needed. The proof file is now `LAWS/PROOF.bend` and it holds all ninety-nine
 laws.
+
+**THE ORDER OF THE BOOK IS PART OF THE SPEC, AND MEASURED 2026-11-17.** `bend`
+names the FIRST proof that fails, so an instrument that asks "which law goes
+red" reads the book's order. The gemm law -- the spec's own "Common Ops as
+Compositions" -- sat BEFORE the elementwise laws, and that made
+`mul_is_elementwise` **masked**: both laws read `SpMul`, so a broken `SpMul`
+named the gemm law and the elementwise law was never the failure reported.
+The gemm proof now comes AFTER the elementwise proofs, the shape census is
+green with the same three masked laws it had before, and the reorder is a pure
+one -- the two laws are independent, one is about the broadcast of two
+reshapes and the other about two operands of the same shape.
 
 The port states **four of the spec's five derived properties** now — `dtype`,
 `shape`, `device` and the value-free half of `min_max`. The fifth, `addrspace`,

@@ -116,6 +116,24 @@ def cons_head(h: S.Sdim) -> (List<&2, S.Sdim> -> List<&2, S.Sdim>):
 def cons_tail(t: List<&2, S.Sdim>) -> (S.Sdim -> List<&2, S.Sdim>):
   h => h <> t
 
+# Append two lists.
+def append(a: List<&2, S.Sdim>, b: List<&2, S.Sdim>) -> List<&2, S.Sdim>:
+  match a:
+    case Nil{}: b
+    case x <> xs: snoc(x, append(xs, b))
+
+# A cons in the MIDDLE: the head and the tail are FIXED and the element is the
+# ARGUMENT.  `cons_head` fixes the head and `cons_tail` fixes the tail, so
+# neither can rewrite an element in the middle of a list -- and a law about a
+# three-axis shape needs exactly that.
+def cons_mid(h: S.Sdim, t: List<&2, S.Sdim>) -> (S.Sdim -> List<&2, S.Sdim>):
+  m => snoc(h, snoc(m, t))
+
+# A cons at an ARBITRARY POSITION: the PREFIX is fixed, the element is the
+# ARGUMENT and the SUFFIX is fixed.
+def cons_at(prefix: List<&2, S.Sdim>, suffix: List<&2, S.Sdim>) -> (S.Sdim -> List<&2, S.Sdim>):
+  x => append(prefix, snoc(x, suffix))
+
 def L.zip_max_idempotent(s):
   match s:
     case Nil{}:
@@ -363,6 +381,172 @@ def L.flip_preserves_numel(t, flags):
 # tinyspec Reshape: "prod s_k = prod s'_k". The arm is `Some{Shape.of(dst)}`, so
 # the subject's count is `prod dst` -- which is the premise, verbatim. There is
 # no derivation to add: the spec's constraint IS the goal once the fold runs.
+# THE PICK of two concrete dims, which is the BROADCAST's per-axis rule: the
+# spec says "each axis must be equal or 1", and `pick_dim` is the port's rule for
+# it -- `pick_dim(a, 1)` is `a`, `pick_dim(1, b)` is `b`, and `pick_dim(a, a)` is
+# `a`.
+#
+# AND THESE ARE THE THREE CASES OF `pick_dim` ITSELF, read as a MATCH on the
+# count -- so the proof is the reduction and not a derivation.
+def pick_dim_one_right(a: Nat) -> {S.pick_dim(a, 1n) == a : Nat}:
+  match a:
+    case 0n:
+      {==}
+    case 1n:
+      {==}
+    case 1n+1n+p:
+      {==}
+
+def pick_dim_one_left(b: Nat) -> {S.pick_dim(1n, b) == b : Nat}:
+  {==}
+
+def pick_dim_same(a: Nat) -> {S.pick_dim(a, a) == a : Nat}:
+  match a:
+    case 0n:
+      {==}
+    case 1n:
+      {==}
+    case 1n+1n+p:
+      {==}
+
+# THE BROADCAST'S PER-AXIS VALUE, and it is the fact the spec's compositions
+# need: the broadcast of `(M,K,1)` and `(1,K,N)` is `(M,K,N)`.
+#
+# AND THE PROOF IS AN INDUCTION on the two lists, with the THREE `pick_dim`
+# CASES as its steps -- `pick_dim(M,1)` is `M`, `pick_dim(K,K)` is `K` and
+# `pick_dim(1,N)` is `N`.
+def elem_pick_gemm(m: Nat, k: Nat, n: Nat) -> {S.elem_pick([S.SN{m}, S.SN{k}, S.SN{1n}], [S.SN{1n}, S.SN{k}, S.SN{n}]) == [S.SN{m}, S.SN{k}, S.SN{n}] : List<&2, S.Sdim>}:
+  # THE THREE AXES, ONE AT A TIME, AND THE MATCH IS ON THE COUNT SO THE
+  # REDUCTION CAN HAPPEN.  `elem_pick` reads `pick_dim(va, vb)` per axis, and
+  # `pick_dim` reduces only when the compiler can see the SHAPE of its two
+  # arguments -- so each count is matched to a constructor first.
+  #
+  # AND THE MATCH ORDER IS THE ORDER OF FIRST USE -- m, then k, then n -- because
+  # a binder cannot be matched after a LATER binder has been matched, and the
+  # `pick_dim_same` HINT is LAST in every branch because a binder cannot be
+  # matched after a local statement.
+  match m:
+    case 0n:
+      match k:
+        case 0n:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+        case 1n:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+        case 1n+1n+q:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+    case 1n:
+      match k:
+        case 0n:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+        case 1n:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+        case 1n+1n+q:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+    case 1n+1n+p:
+      match k:
+        case 0n:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+        case 1n:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+        case 1n+1n+q:
+          match n:
+            case 0n:
+              {==}
+            case 1n:
+              {==}
+            case 1n+1n+r:
+              {==}
+
+# AND THE `max_dim` VERSION OF THE THREE CASES, and they are what the
+# COMPOSITION's goal needs: the broadcast's shape is built from `Shape.max_dim`,
+# and `max_dim` IS `pick_dim` for two concrete dims.
+def max_dim_one_right(a: S.Sdim) -> {S.Shape.max_dim(a, S.SN{1n}) == a : S.Sdim}:
+  match a:
+    case S.SN{v}:
+      match v:
+        case 0n:
+          {==}
+        case 1n:
+          {==}
+        case 1n+1n+p:
+          {==}
+    case S.SS{_}:
+      {==}
+
+def max_dim_one_left(b: S.Sdim) -> {S.Shape.max_dim(S.SN{1n}, b) == b : S.Sdim}:
+  match b:
+    case S.SN{v}:
+      match v:
+        case 0n:
+          {==}
+        case 1n:
+          {==}
+        case 1n+1n+p:
+          {==}
+    case S.SS{_}:
+      {==}
+
+def max_dim_same(a: S.Sdim) -> {S.Shape.max_dim(a, a) == a : S.Sdim}:
+  match a:
+    case S.SN{v}:
+      match v:
+        case 0n:
+          {==}
+        case 1n:
+          {==}
+        case 1n+1n+p:
+          {==}
+    case S.SS{_}:
+      {==}
+
 def L.reshape_preserves_numel(t, dst, premise):
   premise
 
@@ -601,16 +785,6 @@ def L.unshard_preserves_the_source_shape(t, ranges, axes):
 def L.index_of_no_operands_keeps_the_base_shape(t):
   {==}
 
-# tinyspec's elementwise column: "all inputs same shape, output same shape".
-#
-# Each of the three is the SAME two steps -- rewrite `b`'s shape into `a`'s with
-# the premise, then `zip_max(s, s) == s` lifted through `Shape.of` and `Some` --
-# so the algebra is done once, in `zip_maybe_idem` above, and these three are one
-# call each.
-#
-# NOT VACUOUS. The conclusion is not the premise: the subject is a broadcast of
-# two INDEPENDENT shapes that happen to be equal, and it is wrong when they are
-# not -- which is what `zip_max_idempotent` being a real theorem buys.
 def L.add_is_elementwise(a, b, premise):
   %premise : {S.dims_zip_max(S.Sp.shape(a), _) == S.Sp.shape(a) : Maybe<&2, S.Shape>}
   ih = zip_maybe_idem(S.Sp.shape(a))
@@ -669,6 +843,83 @@ def L.truncmod_is_elementwise(a, b, premise):
 # the law cannot fail whatever the fold says. It is kept and proven because the
 # spec states the constraint, but it pins no behaviour. Making it bite would
 # need a law about the Store's own shape, not a restatement of its hypothesis.
+# tinyspec's elementwise column: "all inputs same shape, output same shape".
+#
+# Each of the three is the SAME two steps -- rewrite `b`'s shape into `a`'s with
+# the premise, then `zip_max(s, s) == s` lifted through `Shape.of` and `Some` --
+# so the algebra is done once, in `zip_maybe_idem` above, and these three are one
+# call each.
+#
+# NOT VACUOUS. The conclusion is not the premise: the subject is a broadcast of
+# two INDEPENDENT shapes that happen to be equal, and it is wrong when they are
+# not -- which is what `zip_max_idempotent` being a real theorem buys.
+# VI-bis. THE SPEC'S OWN COMPOSITION, and the shape it claims.
+#
+# tinyspec's "Common Ops as Compositions": "def gemm(A, B): M,K = A.shape; _,N =
+# B.shape; return (A.reshape(M,K,1) * B.reshape(1,K,N)).sum(1)".
+def L.gemm_broadcasts_to_the_three_axis_shape(m, k, n, ma, mb, same):
+  # THE GOAL IS ABOUT THE BROADCAST'S SHAPE, and the broadcast's shape is
+  # `zip_max` of the two dims lists -- and `zip_max` builds its head with
+  # `Shape.max_dim` while `elem_pick` builds its head with `pick_dim`, and for
+  # two CONCRETE dims those are the same function.  So the three axes are three
+  # `max_dim` facts, and each is one of the port's `max_dim` lemmas.
+  #
+  # AND EACH AXIS IS ONE CONGRUENCE, and each congruence's FUNCTION fixes
+  # everything EXCEPT the axis it rewrites:
+  #   * the FIRST axis -- `cons_tail` appends a fixed tail, so the ARGUMENT is
+  #     the head and the tail is the last two axes;
+  #   * the MIDDLE axis -- `cons_mid` fixes the head and the tail, so the
+  #     argument is the middle;
+  #   * the LAST axis -- `cons_at` fixes a prefix and a suffix, so the argument
+  #     is the last.
+  # AND THE THREE ARE CHAINED with two `Equal.trans` steps, and the whole list
+  # is then lifted through `Shape.of` and `Some`.
+  #
+  # AND THE THREE DIMS ARE BOUND WITH `+`, because each is READ MORE THAN ONCE
+  # -- once in the goal, once in its lemma and once in the lists -- and a value
+  # that is read twice must be bound with `+`.
+  +mm = m
+  +kk = k
+  +nn = n
+  +d1 = S.Shape.max_dim(mm, S.SN{1n})
+  +d2 = S.Shape.max_dim(kk, kk)
+  +d3 = S.Shape.max_dim(S.SN{1n}, nn)
+  a1 = max_dim_one_right(mm)
+  a2 = max_dim_same(kk)
+  a3 = max_dim_one_left(nn)
+  # AND THE EMPTY LIST IS BOUND ONCE, because a `Nil{}` INSIDE A CALL ARGUMENT
+  # is a parse error -- the constructor's braces are read as a call's -- and
+  # because the operator needs its type spelled out.
+  +e : List<&2, S.Sdim> = Nil{}
+  # THE LAST AXIS: the tail is EMPTY and the prefix is the first two axes.
+  +t3 = e
+  +pre3 = snoc(mm, snoc(kk, e))
+  f3 = cons_at(pre3, t3)
+  c3 = Equal.cong(S.Sdim, List<&2, S.Sdim>, f3, d3, nn, a3)
+  # THE MIDDLE AXIS: the tail is the LAST axis and the head is the FIRST.
+  +t2 = snoc(d3, e)
+  f2 = cons_mid(mm, t2)
+  c2 = Equal.cong(S.Sdim, List<&2, S.Sdim>, f2, d2, kk, a2)
+  # AND THE FIRST AXIS: the tail is the last TWO axes.
+  +t1 = snoc(d2, snoc(d3, e))
+  f1 = cons_tail(t1)
+  c1 = Equal.cong(S.Sdim, List<&2, S.Sdim>, f1, d1, mm, a1)
+  # AND THE THREE ARE CHAINED: `c1` concludes `p1 == q1` (the head rewritten),
+  # `c2` concludes `q1 == q2` (the middle rewritten) and `c3` concludes
+  # `q2 == p4` (the last rewritten).  `Equal.trans` chains two facts at a time,
+  # so the whole equality is `c1` and then `q1 == p4`.
+  +p1 = snoc(d1, snoc(d2, snoc(d3, e)))
+  +q1 = snoc(mm, snoc(d2, snoc(d3, e)))
+  +q2 = snoc(mm, snoc(kk, snoc(d3, e)))
+  +p4 = snoc(mm, snoc(kk, snoc(nn, e)))
+  e2 = Equal.trans(List<&2, S.Sdim>, q1, q2, p4, c2, c3)
+  e3 = Equal.trans(List<&2, S.Sdim>, p1, q1, p4, c1, e2)
+  # AND THE WHOLE LIST, by congruence under `of_shape` and then under
+  # `some_shape` -- the two wrappers the goal has on either side.
+  c4 = Equal.cong(List<&2, S.Sdim>, S.Shape, of_shape, p1, p4, e3)
+  c5 = Equal.cong(S.Shape, Maybe<&2, S.Shape>, some_shape, S.Shape.of(p1), S.Shape.of(p4), c4)
+  c5
+
 def L.store_matches_its_buffer(buf, val, gate, premise):
   premise
 

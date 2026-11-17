@@ -735,6 +735,33 @@ law range_shape_is_empty:
 # This is the claim the schedule's fusion decisions rest on, so it is worth
 # stating rather than leaving in a table caption.
 
+# VI-bis. THE SPEC'S OWN COMPOSITIONS, and the shape each one claims.
+#
+# tinyspec's "Common Ops as Compositions" writes five of them in Python, and
+# each is a SHAPE claim about a composition of the primitives.  THE FIRST IS:
+#
+#   def gemm(A, B):
+#     M,K = A.shape; _,N = B.shape
+#     return (A.reshape(M,K,1) * B.reshape(1,K,N)).sum(1)
+#
+# MEASURED 2026-11-17: the port stated the COMPONENTS -- the reshape law, the
+# elementwise law and the reduce law -- and not the COMPOSITION.  And the
+# composition is what the spec's readers care about, because it is the shape
+# the schedule's fusion decisions read.
+#
+# AND THE CLAIM IS THE PRODUCT'S SHAPE, which is the sharpest part: the two
+# reshapes broadcast, and the broadcast of `(M,K,1)` and `(1,K,N)` is `(M,K,N)`.
+law gemm_broadcasts_to_the_three_axis_shape:
+  for +m: S.Sdim
+  for +k: S.Sdim
+  for +n: S.Sdim
+  for ma: S.AllSN([m, k, S.SN{1n}])
+  for mb: S.AllSN([S.SN{1n}, k, n])
+  for same: S.SameLen([m, k, S.SN{1n}], [S.SN{1n}, k, n])
+  {shape_of(S.SpMul{S.SpReshape{S.SpInvalid{}, S.SpInvalid{}, [m, k, S.SN{1n}]},
+                              S.SpReshape{S.SpInvalid{}, S.SpInvalid{}, [S.SN{1n}, k, n]}})
+   == some_of_shape(S.Shape.of([m, k, n])) : Maybe<&2, S.Shape>}
+
 law add_is_elementwise:
   for +a: S.Sp
   for +b: S.Sp
