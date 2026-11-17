@@ -35,25 +35,42 @@ amd-dsl-census  [#########] 9/9      9 census CLASSES retired, 3 left: `MSG_TEXT
                                          `modmask_hi_hi`). **TWO OF dsl.py's THREE FLAGS ARE
                                          UNGATED**: deleting `mod_hit.ab` or `mod_hit.opsel`
                                          moves ZERO rows.
-cstyle-census   [#########] 9/9      361 rows, 3 lanes, rc=0. **WAS 358 rows / 16 pins and NEVER
-                                        WORKED ONCE.** The 6 `rdx_*` are PIN-VS-HEAD and THE PORT
-                                        IS RIGHT (`cstyle.py:190-191` reads `type_map[dtype]`,
-                                        `ad117c928^` reads `.get(dtype, dtype.name)`) -- left
-                                        alone. The other 10 were `""` where CPython raises;
-                                        9 of them are now `UNHANDLED(...)` (wgsl's spelling, the
-                                        same KeyError on the same 20 arms) and the 10th
-                                        (`opt_float4_0`, an ABSENT value not a raise) ANSWERS
-                                        `None` per `dsl.bend:2066-2069` and its PIN IS DROPPED.
-                                        16 -> 15 pins, 343 -> 346 compared. **`strip_parens` is
-                                        NOT duplicated** -- `cstyle.bend:963` calls `H.strip_parens`
-                                        and no local copy exists. All 9 refusals MEASURED as real
-                                        dict misses (`args=(Ops.FDIV,)`, `('g',)`). **THE GATE HAD
-                                        NO MUTATION HARNESS**; `cstyle_render_census-mutate.py`
-                                        now has 11, and **M8 MOVED ZERO ROWS** -- `ri_add_*`
-                                        drives `arg=(Ops.ADD,0)`, where BOTH lanes decline to
-                                        strip, so the branch the `ri_add` finding was ABOUT had
-                                        no row at all. `ri_lit_*` (3 rows) drives `AOpLit`, and
-                                        M8 now moves 3. 10 of 11 mutations move rows.
+cstyle-census   [#########] 9/9      425 rows, 3 lanes, rc=0 (WAS 361, AND 358 BEFORE THAT).
+                                        **THE 64 `rvp_*` ROWS CLOSE A REAL PORT DEFECT THAT WAS INVISIBLE TO BOTH THE
+                                        CORPUS AND THIS GATE.** `render_vector_prefix`'s `aligned(...)` NUMBER WAS A CONSTANT
+                                        `4` OFF-CPU AND `4` FOR A `bool` VECTOR WHERE UPSTREAM ANSWERS
+                                        `2**int(math.log2(dt.itemsize*count))` AND `1` -- so A `float4` GOT `aligned(4)` WHERE
+                                        UPSTREAM EMITS `aligned(16)`. **IT WAS LATENT**: THE CLAUSE IS IN NONE OF THE
+                                        CORPUS's 38 OUTPUTS (`grep -rho "aligned([0-9]*)" runs/graphcmp/D/` IS EMPTY), SO NO
+                                        GRAPH MOVED WHEN IT WAS FIXED (MEASURED: 339 OF 340 ARTIFACTS BYTE-IDENTICAL). AND IT
+                                        HAD **NO ROW ANYWHERE**, BECAUSE THIS CENSUS's OWN POPULATION RULE SAID, IN ITS HEADER,
+                                        THAT `render_vector_prefix` HAS "NO PORT DEF" -- **WHICH WAS FALSE**
+                                        (`cstyle.bend:3089` DEFINES IT); THE DISCOVERY COMMAND NOW RETURNS 13 NAMES, NOT 8.
+                                        THE `rvp_*` ROWS CALL CPython's REAL `ClangRenderer.render_vector_prefix` OVER ALL
+                                        THREE OF ITS ARMS -- THE `target.device == "CPU"` FLAG, THE `dtypes.is_bool` ARM, AND
+                                        THE PRODUCT -- INCLUDING THE NON-POWER-OF-TWO PRODUCTS (12 -> 8, 20 -> 16, 24 -> 16) A
+                                        `log2` WITHOUT A FLOOR ANSWERS WRONG. **THE PLANT IS M12**: IT PUTS THE CONSTANT `4`
+                                        BACK AND THE GATE GOES rc=1 WITH 26 OF THE 64 ROWS MOVED. **AND THE GATE IS NOW
+                                        REACHABLE BY THE EDGE**, WHICH IT WAS NOT: `edge-runner.py --plan` PRINTED 28
+                                        CANDIDATES AND THIS ONE WAS NOT AMONG THEM (A CANDIDATE HOLDS A CAN-FAIL PIN WITH A
+                                        **HEX** RHS AND THIS GATE HAD NONE); THE `DRIFT_PIN` PINS THE FIVE UPSTREAM FILES THE
+                                        ORACLE READS -> 29 CANDIDATES AND `RUN`. The harness's lane-row count is now DERIVED
+                                        from the gate's `ROWS` (the literal `722` was stale and READ LIKE A BROKEN TREE).
+                                        The 6 `rdx_*` are PIN-VS-HEAD and THE PORT IS RIGHT (`cstyle.py:190-191` reads
+                                        `type_map[dtype]`, `ad117c928^` reads `.get(dtype, dtype.name)`) -- left alone. The other
+                                        10 were `""` where CPython raises; 9 of them are now `UNHANDLED(...)` (wgsl's spelling,
+                                        the same KeyError on the same 20 arms) and the 10th (`opt_float4_0`, an ABSENT value not
+                                        a raise) ANSWERS `None` per `dsl.bend:2066-2069` and its PIN IS DROPPED. 16 -> 15 pins,
+                                        346 -> 410 compared. **`strip_parens` is NOT duplicated** -- `cstyle.bend:963` calls
+                                        `H.strip_parens` and no local copy exists. All 9 refusals MEASURED as real dict misses
+                                        (`args=(Ops.FDIV,)`, `('g',)`). **THE GATE HAD NO MUTATION HARNESS**;
+                                        `cstyle_render_census-mutate.py` now has 12, and **M8 MOVED ZERO ROWS** -- `ri_add_*`
+                                        drives `arg=(Ops.ADD,0)`, where BOTH lanes decline to strip, so the branch the `ri_add`
+                                        finding was ABOUT had no row at all. `ri_lit_*` (3 rows) drives `AOpLit`, and M8 now
+                                        moves 3. **M2, M5, M9 AND M10 HAVE STALE ANCHORS** (THE PORT's `cfo_*` HELPERS WERE
+                                        REFACTORED TO `List<&2, String>` BY ANOTHER UNIT) -- MEASURED AS ALREADY 0 OCCURRENCES
+                                        AT `98a1d7f47^`, SO NOT CAUSED HERE AND NOT RE-ANCHORED HERE.
+                                        `.agents/slop/kualign/REPORT.md`.
                                         superseded `oracles259/plants.py`" is REFUSED (3) over an
                                         EMPTY `git diff-tree --diff-filter=D`, the file present at
                                         blob `e6e31707`. `range --since=2026-10-06T12:00 HEAD` =
