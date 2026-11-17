@@ -309,10 +309,11 @@ def instrument(src: str):
 
 
 if __name__ == "__main__":
-  base = BUILD / "serve_base.js"
-  out = BUILD / "serve_render.js"
+  import sys as _s
+  base = BUILD / (_s.argv[1] if len(_s.argv) > 1 else "serve_base.js")
+  out = BUILD / f"serve_render_{base.stem}.js"
   out.write_text(instrument(base.read_text()))
-  d = noisefloor.Daemon(out, "render")
+  d = noisefloor.Daemon(out, f"render{base.stem}")
   d.start()
   time.sleep(0.8)
   for _ in range(60):
@@ -322,7 +323,7 @@ if __name__ == "__main__":
   # RENDER's OWN WALL, PER TURN). **AND READING IT AS A FLAT DICT IS **A SILENT ZERO** -- THE
   # PARTS' NAMES ARE NOT AT THE TOP LEVEL, SO EVERY KEY MISSES AND **THE REPORT PRINTS
   # NOTHING** (MEASURED: THE FIRST RUN PRINTED **"1 turns"** AND **NO PARTS**).
-  RAW = json.loads((BUILD.parent / "nf-render/cpu.json.d").read_text())
+  RAW = json.loads((BUILD.parent / f"nf-render{base.stem}/cpu.json.d").read_text())
   D = RAW.get("R", {})
   W = RAW.get("W", [])
   n = max(D.get("n", 1), 1)

@@ -84,5 +84,5 @@ for js, out in [("now.js", "probe_old.js"), ("now_fwd.js", "probe_new.js")]:
         else:
             ps = []
         print(f"  i={scalar(r.get('i'))} bi={scalar(r.get('bi'))} off={scalar(r.get('off'))} "
-              f"THE BLOCK's LENGTH={scalar(r.get('blen'))} FIRST PIECE={ps}")
+              f"THE BLOCK's LENGTH={scalar(r.get('blen'))} THE RESULT={ps}")
     print()
