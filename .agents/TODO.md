@@ -151,23 +151,16 @@ turn-cost       [######..] 6/7      **THE SHIPPED DAEMON TURN**, AGAINST `ClangR
                                          §138 PORT CHANGES**; **AND **ON `aa736032b`**,
                                          **`9d2ce4bef`**, **`f0caca346`**, AND **`64bc53f29`**
                                          (§137).**
-                                         **⇒⇒⇒ AND **§138.9 **REBUILT **THE **ROWS' **STATE **IN
-                                         **THE **FORWARD **ORDER **AND **GOT **IT **RIGHT** (THE **OUTPUT **IS
-                                         **BYTE-IDENTICAL**, 15,242 **BYTES**) **⇒⇒⇒ AND **THE **PAIRED **A/B **READS
-                                         **1.0037 **AND **1.0007** ON **TWO **INDEPENDENT **RUNS** (same C: True, THE **NOISE
-                                         **FLOOR **READ **1.0249** **FIRST**) **⇒⇒⇒ AND **THE **CHANGE **IS **NOT **LANDED**
-                                         (THE **TREE's OWN RULE: **REVERT **ANY **CHANGE **WHOSE **MEASURED **RATIO **IS
-                                         **NEUTRAL**)** -- **⇒⇒⇒ AND **THE **WHY **IS **THE **POINT**: **THE **OUTER **WALK
-                                         **FELL **FROM **22,314 **TO **9,809** **CONS **A **TURN** (**-56%**) **⇒⇒⇒ AND **THE
-                                         **RENDER's **WALL **MOVED **0.4%** **⇒⇒⇒ AND **THE **WRITES' **CELLS **ROSE **720**
-                                         **⇒⇒⇒ AND **`rtp` **IS **0.1521 **ms **A **TURN** **OUT **OF **A **~0.95 ms
-                                         **RENDER** **⇒⇒⇒ AND **SO **THE **INDEXED **ACCESS **IS **A **FRACTION **OF **THE
-                                         **RENDER** **⇒⇒⇒ AND **THIS **IS **THE **FOURTH **TIME **THE **COUNT **HAS **BEEN
-                                         **DISPROVED** (§138.5) -- **⇒⇒⇒ AND **THIS **TIME **THE **COUNT **WAS **THE **WALK**
-                                         -- **⇒⇒⇒ AND **THE **RENDER's **BIGGEST **ARMS **ARE **THE **TEXT **ASSEMBLY **AND
-                                         **THE **STRING **JOINS** -- **⇒⇒⇒ AND **THE **NEXT **TARGET **IS **THOSE**, **NOT
-                                         **THE **INDEX** (`PARITY.md` §138.9, **AND **THE **PROBES **ARE **TRACKED **IN
-                                         **`.agents/slop/cpuseam/builds/`**)****.
+                                         **⇒⇒⇒ AND **§138.10 **MEASURED **THE **SECOND **CHAIN** -- **⇒⇒⇒ AND **THE **OP
+                                         **CHAIN's **REORDER** (`code_for_base_of`, THE **21-ARM **DISPATCH **THAT **BUILDS **THE
+                                         **ALU's **TEXT**, **4,399 **BYTES **OF **COMPILED **CODE**) **IS **NEUTRAL** **TOO**: **THE
+                                         **OUTPUT **IS **BYTE-IDENTICAL** (15,242 **BYTES**) **⇒⇒⇒ AND **THE **VERDICT **READ
+                                         **0.9731 **ON **A **LOADED **MACHINE **AND **1.0016 **ON **A **QUIET **ONE** **⇒⇒⇒ AND **THE
+                                         **NOISE **FLOOR **WAS **1.0249 **ON **THE **LOADED **MACHINE **AND **1.0000 **ON **THE **QUIET
+                                         **ONE** **⇒⇒⇒ AND **SO **A **RATIO **MEASURED **ON **A **LOADED **MACHINE **IS **A
+                                         **MEASUREMENT **OF **THE **LOAD**, **⇒⇒⇒ AND **THE **NOISE **FLOOR **MUST **BE **READ
+                                         **IMMEDIATELY **BEFORE **THE **VERDICT** **⇒⇒⇒ AND **THE **CHANGE **IS **NOT **LANDED**
+                                         (`PARITY.md` §138.10)****.
 walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
 clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
                                         **324 bindings -> 308 laws -> 305 LINKED ->
