@@ -295,7 +295,44 @@ def n0123() -> List<&2, U32>: cd4(nk(0), nk(1), nk(2), nk(3))
 # worse). The lane list comes first in every constructor because tc.py's
 # `f[0] + f[1]` order is load-bearing for `relabel`, `base_upcast_axes` and
 # `frag_coords`.
-
+#
+# WHAT THE TWO HALVES MEAN -- "A, B and C fragments as (lane bits, element
+# bits), least significant bit first, in tile bits m<i>/n<i>/k<i>. C lanes are
+# locals, elements upcasts / a foreign lane bit is broadcast. the k bits may be
+# permuted, identically in A and B" -- tc.py:10-11, upstream's comment ON THE
+# FRAGMENT PAIR. IT IS THE WHOLE MODEL AND IT IS FOUR FACTS:
+#   * A FRAGMENT'S BITS ARE **TILE** BITS, NAMED `m<i>`/`n<i>`/`k<i>`. THE
+#     LANE LIST IS THE LIST OF TILE BITS A LANE'S INDEX SELECTS AND THE
+#     ELEMENT LIST IS THE LIST A *VALUE* SELECTS. SO A FRAGMENT IS A PAIR OF
+#     **MASKS OVER THE TILE**, NOT A PAIR OF INDICES.
+#   * **LEAST SIGNIFICANT BIT FIRST.** THE ORDER OF THE LIST IS THE ORDER OF
+#     THE BITS, AND `frag_coords` WALKS IT WITH `for j,c in
+#     enumerate(bits)`, SHIFTING BY `j`. SO THE FIRST NAME IN A LANE LIST IS
+#     THE LOWEST BIT OF THE LANE INDEX AND THE LAST IS THE HIGHEST. THIS IS
+#     WHY THE PORT CANNOT SORT A FRAGMENT: THE LIST IS A BIT ORDER.
+#   * "C LANES ARE LOCALS, ELEMENTS UPCASTS." C IS THE ACCUMULATOR, AND ITS
+#     LANE BITS ARE **PER-LANE** (EVERY THREAD OWNS ITS OWN) WHILE ITS
+#     ELEMENT BITS ARE **SHARED** (THE WHOLE TILE SEES ONE VALUE) -- WHICH
+#     IS WHY `Tc.threads` IS `2**len(frag_c[0])` AND NOT A FUNCTION OF THE
+#     ELEMENT LIST. AN "UPCAST" IS WHAT THE ELEMENT LIST MEANS: THE VALUE
+#     IS REPLICATED ACROSS THE LANES.
+#   * "A FOREIGN LANE BIT IS BROADCAST." A LANE BIT THAT IS **NOT** ON THE
+#     OPERAND'S OWN AXES (`mk` for A, `kn` for B) IS BROADCAST: EVERY LANE
+#     READS THE SAME BIT OF THE SAME VALUE. RDNA3's A FRAGMENT CARRIES `n0`
+#     IN ITS LANE LIST FOR EXACTLY THIS REASON, AND THE POST-INIT ASSERTION
+#     IS WHAT PERMITS IT (`own <= set(f[0]+f[1]) <= own | mn-coords`).
+#   * "THE K BITS MAY BE PERMUTED, IDENTICALLY IN A AND B." THE `k` AXIS MAY
+#     BE **REORDERED** -- A's `k` LIST AND B's `k` LIST ARE NOT THE SAME
+#     ORDER -- BUT THEY MUST BE THE *SAME PERMUTATION*, BECAUSE BOTH
+#     OPERANDS INDEX THE SAME K AXIS OF THE SAME TILE. THAT IS WHY
+#     `__post_init__` ASSERTS `ka == kb` AND WHY THE ASSERTION IS ON THE
+#     **k SUBSETS** RATHER THAN ON THE WHOLE LISTS: THE LANE LISTS MAY
+#     DIFFER (A HAS `m0`, B HAS `n0`) WHILE THE k BITS MUST NOT.
+#
+# "D = A * B + C, A is (M x K), B is (K x N), C and D are (M x N)" -- tc.py:7,
+# upstream's comment ON THE CLASS. THE ACCUMULATOR IS THE **ADDEND** AND NOT
+# A THIRD MULTIPLICAND, WHICH IS WHY `frag_c` IS CHECKED ON `mn` AND NOT ON
+# `mk` OR `kn`.
 type Tc is Data:
   Tc{di: S.Dt, dou: S.Dt, la: List<&2, U32>, ea: List<&2, U32>, lb: List<&2, U32>, eb: List<&2, U32>, lc: List<&2, U32>, ec: List<&2, U32>}
 
@@ -516,7 +553,32 @@ def dgst(+s: String) -> String: String.concat(["len=", U32.show(U32.from_nat(Str
 # so FOUR clauses, and the chain is `set(f[1]) <= own`, `own <= set(f[0]+f[1])`
 # and `set(f[0]+f[1]) <= own | mn-coords`. The last one is a union so testing
 # against `own ++ mn-coords` as a LIST is the same statement.
-
+#
+# "each own bit appears once, only lane bits may be foreign and k never is"
+# -- tc.py:39, upstream's comment ON THE ASSERTION BLOCK, AND IT IS THE
+# ONE-LINE VERSION OF THE THREE CLAUSES THAT ARE NOT OBVIOUS:
+#   * "EACH OWN BIT APPEARS ONCE." THE `nodup` CLAUSE. A FRAGMENT MAY NOT USE
+#     THE SAME TILE BIT TWICE, BECAUSE TWO BITS THAT SELECTED THE SAME BIT
+#     OF THE TILE WOULD MAKE THE FRAGMENT'S ADDRESSING AMBIGUOUS -- TWO
+#     DIFFERENT LANE INDICES WOULD MAP TO THE SAME TILE COORDINATE.
+#   * "ONLY LANE BITS MAY BE FOREIGN." THE `own <= set(f[0]+f[1])` AND
+#     `set(f[0]+f[1]) <= own | mn-coords` CLAUSES. A FOREIGN BIT IS ONE THAT
+#     IS NOT ON THE OPERAND'S OWN AXES, AND THE ONLY AXES A FOREIGN BIT MAY
+#     COME FROM ARE `m` AND `n` -- THE `mn-coords` -- BECAUSE THE `k` AXIS IS
+#     SHARED BY A AND B AND A FOREIGN `k` BIT WOULD PUT THE SAME TILE BIT IN
+#     TWO DIFFERENT PLACES.
+#   * "AND K NEVER IS." THE `k` AXIS IS NEVER FOREIGN. THE PORT SAYS THIS
+#     TWICE: `Tc.used` IS A'S LANE + A'S ELEMENT + C'S LANE + C'S ELEMENT
+#     AND **NOT** B'S, AND THE REASON IS GIVEN AT `Tc.used` BELOW --
+#     "`k` never is a foreign bit and the post-init assertion checks it".
+#
+# SO THE ASSERTION IS NOT A SANITY CHECK ON THE TABLES; IT IS THE STATEMENT
+# OF WHICH BITS MAY BE SHARED, AND IT IS WHY `Tc.used` MAY LEAVE B OUT.
+#
+# AND THE `own` SET IS `coords` FILTERED TO THE OPERAND'S TWO AXES: FOR A IT
+# IS THE `m` AND `k` COORDS, FOR B THE `k` AND `n`, FOR C THE `m` AND `n`.
+# WHICH IS WHY `Tc.own` TAKES TWO AXES AND WHY THE PORT'S `cover` TAKES
+# `ax0, ax1` RATHER THAN A LETTER.
 def mem(+xs: List<&2, U32>, +x: U32) -> Bool:
   match xs:
     case Nil{}   : False{}
@@ -592,6 +654,30 @@ def Tc.kab_eq(+t: Tc) -> Bool: eq_cs(Tc.kab_a(t), Tc.kab_b(t))
 # g=0. `elem[:g] + ("m3",) + elem[g:]` is where m3 -- "A row+8" -- is spliced
 # in, and it is a SPLICE not an append, which is the whole reason a fragment
 # shape is not just a suffix of `k`.
+#
+# THE LANE LIST'S OWN ORDER, WHICH UPSTREAM NAMES AND WHICH IS NOT DERIVABLE
+# FROM THE ARITHMETIC: "lane is threadID_in_group (2 k bits) then groupID
+# (m0-m2)" -- tc.py:54. THE LANE INDEX IS THE CONCATENATION OF TWO
+# INDEPENDENT INDICES, AND THE LIST IS THE BIT PLAN FOR THAT CONCATENATION:
+#   * THE **LOW** TWO LANE BITS ARE THE **k** BITS -- `lane = tuple(k[g:g+2])`
+#     -- AND THEY ARE THE THREAD'S POSITION **WITHIN** ITS GROUP OF FOUR. SO
+#     THE THREAD ID IS SPLIT: THE LOW BITS SELECT WITHIN THE GROUP AND THE
+#     HIGH BITS SELECT THE GROUP.
+#   * THE **HIGH** THREE LANE BITS ARE THE GROUP ID -- `m0`, `m1`, `m2` FOR A
+#     AND `n0`, `n1`, `n2` FOR B -- AND THEY ARE WHAT SELECT THE ROW OF THE
+#     TILE.
+#
+# AND THE ORDER IS **k FIRST**: `lane + ("m0","m1","m2")`, NOT THE OTHER WAY
+# ROUND. WHICH IS THE WHOLE OF WHY THE FRAGMENT IS NOT A SUFFIX OF `k`:
+# THE LANE INDEX IS `k` IN THE LOW BITS AND `m` IN THE HIGH BITS, SO THE
+# LANE LIST IS A **CONCATENATION IN THAT ORDER** AND THE `m` BITS ARE NOT
+# CONTIGUOUS WITH THE `k` ONES.
+#
+# WHICH IS ALSO WHY `Tc.la` AND `Tc.lb` ARE **DIFFERENT LISTS** WITH THE SAME
+# FIRST TWO ENTRIES: A'S LANE IS `k,k,m,m,m` AND B'S IS `k,k,n,n,n`, AND THE
+# TWO `k` BITS ARE AT THE SAME POSITIONS BECAUSE A AND B INDEX THE SAME k
+# AXIS OF THE SAME TILE -- WHICH IS EXACTLY WHAT tc.py:46's "A and B must
+# relabel k identically" ASSERTION IS ABOUT.
 
 def c_mma_lane() -> List<&2, U32>: cd5(nk(1), nk(2), mk(0), mk(1), mk(2))
 def c_mma_elem() -> List<&2, U32>: cd2(nk(0), mk(3))

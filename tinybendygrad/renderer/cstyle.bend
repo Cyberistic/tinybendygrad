@@ -1218,6 +1218,35 @@ def code_for_base.of(op: O.Op, +xs: List<&2, List<&2, String>>) -> List<&2, Stri
 # on Clang, and the FIVE THAT ARE DROPPED. `is_half` is the `dtype in (half,
 # bfloat16)` test, and it is a `Bool` PARAMETER rather than a dtype so the
 # override tables do not each re-derive it.
+#
+# WHY SIX OF THE ARMS ABOVE ARE SPECIAL, AND IT IS NOT ABOUT THE ALU:
+# "C promotes uchar and ushort to int, WGSL holds them in u32 and PTX holds
+# uchar in u16, so the ops that wrap compute in uint and narrow after"
+# -- cstyle.py:85, upstream's comment ON `pm_narrow_uint`. THE THREE
+# TARGETS DISAGREE ABOUT WHAT A NARROW INTEGER **IS**, AND THE DISAGREEMENT
+# IS ABOUT **PROMOTION**:
+#   * C PROMOTES `uchar` AND `ushort` TO `int` IN EVERY EXPRESSION. SO
+#     `(uchar)a + (uchar)b` IS AN `int` ADD AND THE RESULT IS TRUNCATED BACK
+#     TO `uchar` ONLY BY THE ASSIGNMENT. A `uchar` ADD THAT WRAPPED IN 8
+#     BITS WOULD BE A DIFFERENT ANSWER.
+#   * WGSL HOLDS THEM IN `u32` -- SO A `u8` ADD IS A `u32` ADD THAT IS
+#     NARROWED AT THE END, WITH NO PROMOTION HAPPENING AT ALL.
+#   * PTX HOLDS `uchar` IN `u16` -- A THIRD WIDTH, AGAIN.
+#
+# SO THE SIX OPS THAT WRAP -- `ADD`, `SUB`, `MUL`, `NEG`, `SHL`, `MULACC` --
+# MUST COMPUTE IN THE **WIDER** TYPE AND NARROW AFTERWARDS, AND THE SIX
+# ARMS ABOVE ARE WHAT THEY COMPUTE. THE REWRITE IS NOT IN THOSE ARMS: IT IS
+# IN `pm_narrow_uint`, WHICH IS A `PatternMatcher` -- A WALL, NAMED IN THE
+# HEADER OF THIS FILE ("`extra_matcher` is a `PatternMatcher` over UOps ...
+# not strings"). SO THE PORT EMITS `a + b` FOR A `u8` ADD, WHICH IS CORRECT
+# FOR EVERY WIDTH THE PORT EMITS AND IS NOT THE SAME SHAPE AS UPSTREAM'S
+# POST-REWRITE GRAPH.
+#
+# THE CONSEQUENCE, AND IT IS THE GOTCHA: THE PORT'S `u8` ADD IS AN `int` ADD
+# IN C (BY C'S OWN PROMOTION) AND A `u32` ADD IN WGSL (BY WGSL'S OWN), SO
+# THE PORT'S OUTPUT IS RIGHT FOR BOTH -- BUT ONLY BECAUSE BOTH LANGUAGES
+# PROMOTE, NOT BECAUSE THE PORT DID ANYTHING. A TARGET THAT DID NOT PROMOTE
+# WOULD NEED THE REWRITE, AND THE PORT HAS NO WAY TO ASK.
 
 def is_half(+d: S.Dt) -> Bool:
   Bool.or(O.eq_dt(d, S.half()), O.eq_dt(d, S.bfloat16()))
@@ -2021,6 +2050,31 @@ def st_kernel(+st: St, x: String) -> St:
 def st_bufs(+st: St, x: BArg) -> St:
   St.of(St.r(st), St.kernel(st), List.append(&2, BArg, St.bufs(st), [x]), St.c(st), St.depth(st), St.name(st))
 
+# "NOTE: this relies on bufs dict preserving order" -- cstyle.py:275,
+# upstream's comment ON THE `bufs` HAND-BACK, AND IT IS A GOTCHA ABOUT
+# PYTHON'S DICT THAT THE PORT DOES NOT HAVE AND MUST NOT INHERIT BLINDLY.
+#
+# UPSTREAM'S `bufs` IS A `dict[UOp, tuple[str, tuple[UOp, bool]]]` AND
+# `_render` RETURNS `list(bufs.values())` -- AND THE ORDER OF THAT LIST IS
+# THE ORDER THE KERNEL'S ARGUMENTS ARE DECLARED IN. PYTHON 3.7+ DICTS
+# PRESERVE INSERTION ORDER, SO THE ORDER IS THE ORDER THE `Ops.PARAM` NODES
+# APPEAR IN THE WALK, AND THE WALK IS TOPOLOGICAL. UPSTREAM'S NOTE IS
+# SAYING: THIS ORDER IS NOT AN ACCIDENT AND NOT A SORT -- IT IS THE
+# INSERTION ORDER, AND THE EMITTED FUNCTION SIGNATURE DEPENDS ON IT.
+#
+# THE PORT'S `st_bufs` APPENDS, SO IT HAS THE SAME PROPERTY AND IT HAS IT
+# FOR THE SAME REASON: `List.append` PUTS THE NEW `BArg` AT THE END, SO THE
+# PORT'S `St.bufs` IS IN THE ORDER THE PARAMS WERE SEEN. THE PORT SAYS SO
+# HERE BECAUSE THE PROPERTY IS INVISIBLE IN A SINGLE-BUFFER KERNEL AND A
+# REVERSED ORDER WOULD STILL COMPILE.
+#
+# AND THE PORT'S ORDER IS NOT QUITE UPSTREAM'S, WHICH IS STATED RATHER THAN
+# PAPERED OVER: UPSTREAM'S LIST IS IN WALK ORDER, AND THE PORT'S WALK IS
+# ALSO TOPOLOGICAL, BUT THE PORT'S `_render` VISITS A `Params` ARM THROUGH
+# `_render.go`'s CHUNKED WALK, AND THE PARAM ARM IS REACHED IN WALK ORDER --
+# SO THE TWO AGREE, AND THE ROW THAT WOULD SEE IT IS THE KERNEL SIGNATURE
+# ROW, WHICH IS A STRING AND NOT A COUNT.
+
 def st_c(+st: St, +ix: U32) -> St:
   St.of(St.r(st), St.kernel(st), St.bufs(st),
     List.set(&2, U32, St.c(st), U32.to_nat(ix),
@@ -2122,6 +2176,37 @@ def uops_to_dtypes.has(+x: DtN, +acc: List<&2, DtN>) -> Bool:
 #   `alignment = dt.itemsize if self.target.device == "CPU" else (...)`
 #   `vec = self._render_dtype(dt, count, AddrSpace.REG)`
 #   `return f"typedef {self.render_dtype(dt)} {vec} __attribute__((aligned({alignment}),ext_vector_type({count})));"`
+#
+# "round (down) to power of two (this is actually the default clang behavior)"
+# -- cstyle.py:311, upstream's comment ON THE ALIGNMENT. TWO FACTS IN IT AND
+# THE SECOND IS THE SURPRISE:
+#   * THE ALIGNMENT IS THE **PRODUCT** `dt.itemsize * count` ROUNDED **DOWN**
+#     TO A POWER OF TWO: `2**int(math.log2(dt.itemsize * count))`. THE ROUND
+#     IS DOWN AND NOT UP BECAUSE THE ATTRIBUTE IS A **MINIMUM** ALIGNMENT: A
+#     VECTOR OF 3 FLOATS IS 12 BYTES AND 8 IS THE LARGEST POWER OF TWO THAT
+#     DIVIDES 12, SO `aligned(8)` IS HONEST AND `aligned(16)` WOULD BE A
+#     LIE. A `log2` WITHOUT A FLOOR WOULD GIVE 16.
+#   * "THIS IS ACTUALLY THE DEFAULT CLANG BEHAVIOR" -- SO THE `aligned(...)`
+#     IS NOT THERE TO ASK FOR SOMETHING CLANG WOULD NOT DO. IT IS THERE
+#     BECAUSE CLANG'S DEFAULT IS THE **VECTOR'S OWN** ELEMENT ALIGNMENT AND
+#     NOT THE WHOLE-VECTOR ALIGNMENT, AND THE WHOLE-VECTOR ONE IS WHAT A
+#     `float4` LOAD ACTUALLY NEEDS. THE ATTRIBUTE IS AN OVERRIDE OF A
+#     DEFAULT THAT IS ALREADY RIGHT, NOT A FIX FOR A BROKEN ONE.
+#
+# ⚠ AND THE PORT DOES NOT DO THIS. `ku_align` BELOW TAKES NO `count` AND
+# ANSWERS A CONSTANT `4` OFF-CPU, WHERE UPSTREAM ANSWERS
+# `2**int(math.log2(dt.itemsize * count))`. FOR A `float4` -- `itemsize` 4,
+# `count` 4 -- UPSTREAM ANSWERS **16** AND THE PORT ANSWERS **4**. THE
+# PORT'S ALIGNMENT IS THEREFORE TOO SMALL FOR EVERY VECTOR WIDER THAN ONE
+# ELEMENT, AND TOO LARGE FOR A `bool` VECTOR (UPSTREAM ANSWERS `1` FOR
+# `dtypes.is_bool`, THE PORT ANSWERS `4`).
+#
+# THE `count` IS AVAILABLE AT THE CALL SITE -- `render_vector_prefix` TAKES
+# IT -- SO THE FIX IS TO GIVE `ku_align` THE COUNT AND THE `is_bool` TEST.
+# IT IS NOT APPLIED HERE BECAUSE THIS UNIT IS COMMENTS-ONLY, AND IT IS
+# REPORTED RATHER THAN QUIETLY PAPERED OVER BECAUSE A GATE ROW THAT
+# COMPARED THE PORT'S ANSWER AGAINST ITS OWN WOULD NOT SEE IT: THE
+# PORT'S `ku_align` IS NOT AN ORACLE-COMPARED ROW TODAY.
 def ku_align(cpu: Bool, +dt: S.Dt) -> U32:
   Bool.pick(U32, cpu, S.Dt.itemsize(dt), 4)
 
@@ -2309,6 +2394,25 @@ def render_type(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, op: O.Op, img: Boo
 # `((float4*)(buf))` and a `float` read of the same buffer is `buf`. `vec` is the
 # `max_numel() > 1` half and `diff` the dtype half, kept apart so the gate can
 # pin each: `ptr stack4` is the `vec` arm and `ptr bitcast` the `diff` arm.
+#
+# UPSTREAM'S ONE-LINE FRAMING OF THE SAME THING -- "the address of an access,
+# vector-cast if the access reads/writes more lanes than the pointer's scalar
+# type" (cstyle.py:206) -- IS WORTH THE PORT'S ATTENTION BECAUSE IT SAYS
+# WHY THE FUNCTION EXISTS AT ALL. `render_ptr` IS NOT A CAST HELPER: IT IS
+# THE **ADDRESS** OF AN ACCESS, AND THE CAST IS THERE ONLY BECAUSE THE
+# ACCESS'S WIDTH AND THE POINTER'S WIDTH CAN DISAGREE.
+#
+# THE DISAGREEMENT HAS TWO SOURCES AND UPSTREAM'S SENTENCE NAMES ONE OF
+# THEM ("MORE LANES THAN THE POINTER'S SCALAR TYPE" -- THE `max_numel() > 1`
+# HALF) AND NOT THE OTHER (THE DTYPE HALF). THE PORT KEEPS BOTH AND NAMES
+# THEM `vec` AND `diff` ABOVE, WHICH IS WHY THE PORT'S ARM NAMES ARE
+# DIFFERENT FROM UPSTREAM'S SENTENCE.
+#
+# AND THE POINT OF THE WHOLE THING: A CAST POINTER IS NOT FREE, SO THE CAST
+# IS ONLY EMITTED WHEN IT IS NEEDED. A PORT THAT ALWAYS CAST WOULD BE RIGHT
+# ON EVERY WIDE ACCESS AND RIGHT ON EVERY WIDE ACCESS THAT IS **NOT** AN
+# ACCESS -- AND IT WOULD PUT A `((float*)(buf))` IN EVERY SINGLE-SCALAR LOAD
+# OF EVERY KERNEL. THAT IS WHY THE `else` ARM IS THE BARE NAME.
 def render_ptr(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, sdt: S.Dt, +name: String, op: O.Op, img: Bool) -> String:
   Bool.pick(String, Bool.or(U32.is_gt(numel, 1), Bool.not(O.eq_dt(d, sdt))),
     String.concat(["((", render_dtype(dev, d, numel, a, True{}, True{}, img), ")(", name, "))"]), name)
@@ -2850,6 +2954,33 @@ def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) ->
 #   `writable_params = {u for u in UOp.sink(*[u.src[0] for u in uops if u.op is Ops.STORE]).toposort(...) if u.op is Ops.PARAM}`
 # i.e. the params a STORE reaches. the port walks backward from each STORE's
 # BUFFER through the indexing ops, which is the same set.
+#
+# "find which PARAMs are stored to with a single toposort" -- cstyle.py:223,
+# upstream's comment ON THIS LINE, AND THE ADJECTIVE IS THE POINT: **A
+# SINGLE** TOPOSORT. THE OBVIOUS READING IS "ONE TOPOSORT PER STORE", AND
+# THAT IS NOT WHAT UPSTREAM DOES: IT SOCKETS ALL THE STORES' ADDRESSES INTO
+# ONE `UOp.sink(...)` AND TOPOSORTS THAT ONCE.
+#
+# WHY IT MATTERS AND IT IS NOT A MICRO-OPTIMISATION: A TOPOSORT IS NOT A
+# SET OPERATION, IT IS A WALK, AND A WALK HAS A **FUEL BOUND**. SOCKETS ALL
+# THE STORES INTO ONE SINK AND THE WALK IS O(SIZE OF THE WHOLE GRAPH); WALK
+# EACH STORE SEPARATELY AND IT IS O(SIZE OF THE GRAPH) **PER STORE**, SO A
+# KERNEL WITH k STORES IS k TIMES THE WORK. UPSTREAM'S SINGLE SINK IS THE
+# CHEAP FORM.
+#
+# AND THE FILTER IS NOT A FILTER ON THE RESULT BUT ON THE **WALK**: THE
+# `toposort` PREDICATE IS `lambda u: u.op not in {Ops.END, Ops.BACKEDGE}`,
+# SO THE WALK IS PRUNED AT THE LOOP STRUCTURE AND THE RESULT IS A SET OF
+# NODES THAT CANNOT REACH A PARAM THROUGH A LOOP. WHICH IS WHY A PARAM
+# WRITTEN ONLY INSIDE A LOOP IS NOT IN THE SET -- AND WHY THE PRUNE IS NOT
+# COSMETIC: WITHOUT IT THE WALK WOULD LOOP FOREVER ON A BACKEDGE.
+#
+# THE PORT DOES NOT DO THIS AT ALL: `ku_is_writable` BELOW ANSWERS `False{}`
+# UNCONDITIONALLY, AND THE COMMENT BELOW SAYS WHY -- THE FLAG IS READ ONLY BY
+# `_render_dtype` FOR AN **IMAGE**, AND NO CPU KERNEL IS AN IMAGE. SO THE
+# PORT'S ANSWER IS CORRECT FOR WHAT IT EMITS AND THE COST IS THAT THE
+# PORT CANNOT EMIT AN IMAGE'S `write_only`/`read_only`. THAT IS THE GAP,
+# AND IT IS STATED HERE RATHER THAN INHERITED AS A SILENT `False`.
 def ku_is_writable(kus: List<&2, List<&2, KU>>, k: KU) -> Bool: False{}
 def _render.param(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, st: St) -> St:
   +nm = ku_param_name(k)

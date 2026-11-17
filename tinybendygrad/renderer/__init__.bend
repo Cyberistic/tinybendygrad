@@ -173,6 +173,35 @@ def with_storage.at(+f: O.Found, dt: S.Dt) -> O.Found:
 #   ALU             -> flops += (2 if MULACC else 1) * max_numel
 #   LOAD/STORE      -> mem[(buf, op)] capped at buf.max_numel * itemsize
 # and RANGE / END / BACKEDGE / SPECIAL -- the four `mults` arms -- never appear.
+#
+# WHY THE `mem` COUNT IS CAPPED, and it is the ONE LINE OF `from_uops` THAT
+# IS NOT A SUM: "u.src[0] is INDEX, cap at buffer size for re-reads (e.g.
+# matmul)" -- __init__.py:42, upstream's comment ON THE CAP. THE `mem` COUNT
+# IS "**TOTAL** BYTES ACCESSED, COUNTING ONLY ONCE FOR BYTES THAT ARE ACCESSED
+# MULTIPLE TIMES" (upstream's own comment on the field, __init__.py:21), SO
+# A BUFFER READ TEN TIMES COUNTS ITS SIZE ONCE. BUT THE RAW SUM WOULD COUNT
+# IT TEN TIMES, AND THE CAP IS WHAT MAKES IT ONCE: `smin(accessed,
+# buf.max_numel() * buf.dtype.itemsize)`.
+#
+# SO THE CAP IS NOT A CEILING ON A SINGLE ACCESS -- IT IS THE POINT WHERE
+# THE COUNT STOPS GROWING. AND IT IS ONLY CORRECT BECAUSE THE ACCESS IS
+# AN INDEX: `u.src[0]` IS AN INDEX INTO THE BUFFER, SO
+# `u.src[0].max_numel()` IS HOW MANY ELEMENTS *THIS* ACCESS TOUCHES, AND A
+# RE-READ OF THE WHOLE BUFFER ADDS THE WHOLE BUFFER'S SIZE TO A COUNT THAT
+# IS ALREADY CAPPED AT THE WHOLE BUFFER'S SIZE.
+#
+# THE MATMUL IN UPSTREAM'S PARENTHESIS IS THE CASE THAT MAKES IT VISIBLE:
+# A MATMUL READS ITS B MATRIX ONCE PER OUTPUT ROW, SO THE NAIVE COUNT IS
+# `rows` TIMES THE B MATRIX AND THE CAPPED COUNT IS ONE TIMES IT. WHICH IS
+# WHY THE CAP IS AT THE BUFFER AND NOT AT THE ACCESS.
+#
+# AND THE PORT'S DEPARTURE IS STATED ELSEWHERE (the `mem` DICT is keyed by
+# the BUFFER ALONE, not by `(buffer, op)`, so a buffer both READ and WRITTEN
+# contributes ONE count where CPython contributes TWO). THAT DEPARTURE IS
+# A DIFFERENT HALF OF THE SAME LINE: THE PORT DROPS THE `op` FROM THE KEY,
+# WHICH IS WHY THE PORT'S `mem` IS A SUM OVER BUFFERS AND WHY THE CAP, WHICH
+# IS PER-`(buffer, op)`, IS NOT THE PORT'S CAP.
+#
 # `ignore_indexing` additionally removes the INDEX/SHRINK subtrees from `flops`,
 # and that needs a MULTI-ROOT toposort, which `UOp.toposort` (one root) does not
 # provide; the two INDEX arms of `from_uops` are therefore the `TODO(p3)` below
@@ -332,6 +361,29 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 #   list) and wrong for an unlinearized one -- and `ignore_indexing` is a no-op
 #   because the multi-root toposort its `excluded` set needs is not in the
 #   substrate. `TODO(p3) __init__.py:26 symbol=from_uops`.
+#
+#   THE `mults` ARMS ARE WORTH ONE MORE WORD, BECAUSE UPSTREAM'S NOTE ON
+#   THEM IS A **WARNING AGAINST DOUBLE-COUNTING** AND NOT A DESCRIPTION:
+#   "SPECIAL are already counted in mults" -- __init__.py:50. `mults` IS THE
+#   **TRIP COUNT** -- HOW MANY TIMES THE CURRENT LOOP BODY RUNS -- AND IT IS
+#   BUILT BY MULTIPLYING THE `RANGE` BOUNDS. A `SPECIAL` (A GLOBAL OR LOCAL
+#   THREAD ID) IS *ALSO* A MULTIPLIER OF THE TRIP COUNT, BECAUSE EVERY
+#   ITERATION OF THE INNER LOOP RUNS ONCE PER SPECIAL VALUE. SO UPSTREAM
+#   MULTIPLIES `mults` BY THE SPECIAL'S VALUE **AND SAYS SO**, BECAUSE THE
+#   OBVIOUS ALTERNATIVE -- COUNTING THE SPECIAL AS AN ALU OP OR A LOAD --
+#   WOULD DOUBLE-COUNT IT.
+#
+#   THE SAME COMMENT BLOCK SAYS THE OTHER HALF: "NOTE: we don't push to the
+#   mult_stack here, you can't end these" (__init__.py:53). A `SPECIAL` IS
+#   NOT A LOOP, SO IT DOES NOT PUSH ON THE `mult_stack` -- IT MULTIPLIES AND
+#   LEAVES. THE TWO HALVES ARE ONE RULE: `mult_stack` IS FOR THINGS THAT
+#   HAVE AN END, AND `mults` IS FOR THINGS THAT DO NOT.
+#
+#   THE PORT DOES NOT REACH EITHER: ITS `mults` IS THE IDENTITY, EXACTLY
+#   BECAUSE THE ONLY CALL SITE IS A LINEARIZED LIST WITH NO `RANGE`, NO
+#   `END`, NO `BACKEDGE` AND NO `SPECIAL` IN IT. SO THE PORT'S `mults` IS
+#   RIGHT FOR WHAT IT IS FED AND WRONG FOR ANYTHING ELSE, AND BOTH HALVES
+#   OF UPSTREAM'S NOTE ARE ABOUT A CASE THE PORT DOES NOT HAVE.
 # * `Estimates.__add__` / `.simplify` (:23, :24) -- PORTED, with `simplify` the
 #   identity and the reason said out loud.
 # * `Renderer.__init__` / `__reduce__` (:81, :82) -- the target is a
@@ -349,6 +401,41 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 # * `Renderer.extra_matcher` (:76) -- a `PatternMatcher` of UOps, which is
 #   `cstyle.bend`'s tables (`create_non_native_float_pats`,
 #   `pm_manual_bf16_cast`, and each device's own). A `Bool` has-matcher here.
+# * THE FIVE **LIMITS** -- `supports_float4` (:69), `has_local` (:70),
+#   `has_shared` (:71), `global_max` (:73), `local_max` (:74),
+#   `global_prod_max` (:75), `shared_max` (:76) and `packed_args` (:79).
+#   NONE OF THEM IS IN THE PORT'S RENDERER RECORD, AND THE REASON IS THE
+#   SAME AS THE ONE ABOVE: EVERY DEVICE OVERRIDE OF THEM LIVES IN
+#   `cstyle.py` OR `nir.py` AND IS READ BY THE SCHEDULER, NOT BY ANY
+#   RENDERER TEXT. THE PORT'S RENDERER EMITS TEXT AND THE PORT'S SCHEDULER
+#   IS ANOTHER UNIT'S FILE, SO A LIMIT THE PORT CANNOT ENFORCE IS NOT
+#   RECORDED HERE AS A `Bool` IT WOULD IGNORE.
+#
+#   UPSTREAM SAYS TWO THINGS ABOUT THEM THAT ARE WORTH THE NAMES, BECAUSE
+#   BOTH ARE **ORDER** CLAIMS AND AN ORDER CLAIM IS THE KIND THAT BREAKS
+#   SILENTLY:
+#   * "NOTE: these two should be in (x,y,z) order to match the max_sizes
+#     argument in get_grouped_dims" -- __init__.py:72, on `global_max` and
+#     `local_max`. THE TUPLES ARE **POSITIONAL** AND THE POSITIONS ARE
+#     (x, y, z). A READER THAT TREATS THEM AS AN UNORDERED SET, OR THAT
+#     BUILDS ONE FROM A DICT, LOSES THE AXIS. THE PORT'S `S.Addr` AND THE
+#     DEVICE TAG CARRY NO SUCH TUPLE AT ALL, SO THE PORT HAS NO WAY TO GET
+#     IT WRONG -- WHICH IS NOT THE SAME AS HAVING IT RIGHT, AND IT IS
+#     WHY THE LIMIT IS A WALL AND NOT A FIELD.
+#   * "TODO: Ops.SPECIAL int32 indexes right now" -- __init__.py:73, on
+#     BOTH. THE DEFAULT `0x8FFFFFFF` IS NOT A REAL LIMIT: IT IS A
+#     PLACEHOLDER THAT SAYS "AS BIG AS AN int32 INDEX CAN BE", AND THE
+#     TODO SAYS THE INDEX IS NOT ACTUALLY int32 YET. SO THE NUMBER IS
+#     WRONG BY CONSTRUCTION AND THE TODO IS THE HONEST PART. A PORT THAT
+#     COPIED `0x8FFFFFFF` AS A LIMIT WOULD BE COPYING A KNOWN-WRONG
+#     VALUE; A PORT THAT USED `U32`'S MAX WOULD BE COPYING A DIFFERENT
+#     KNOWN-WRONG VALUE. NEITHER IS BETTER, AND THE PORT CARRIES NEITHER.
+#   * "TODO: make this generic with a list of supported types" --
+#     __init__.py:68, on `supports_float4`. IT IS A `Bool` NAMED FOR ONE
+#     SPECIFIC WIDTH, AND THE TODO SAYS IT SHOULD BE A LIST. THE PORT
+#     DOES NOT HAVE THE FIELD, SO IT DOES NOT HAVE THE `Bool` EITHER --
+#     AND `cstyle.bend`'s `float4` OPTION IS A `String|None` ON THE DEVICE
+#     TAG, WHICH IS THE SAME FACT IN A DIFFERENT SHAPE.
 # * `Renderer.code_for_op` (:77) -- `dict[Ops, Callable]`. The tag plus the
 #   `match` is `cstyle.bend`'s `code_for_op.of`. `TODO(p3) __init__.py:77 symbol=code_for_op`.
 # * `Renderer.tensor_cores` (:75) -- `list[TensorCore]` from `renderer/tc.py`,

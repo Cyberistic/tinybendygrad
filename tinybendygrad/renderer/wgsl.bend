@@ -118,6 +118,14 @@ import ./../helpers.bend as H
 
 # :7  sign_extend -- `(val << (32-width)).bitcast(dtypes.i32) >> (32-width)`.
 #
+# "a field of `width` bits sitting in the low bits of val: shift it up to the
+# sign bit, then let the arithmetic shift fill" -- wgsl.py:6, upstream's
+# comment ON IT. THE MOVE IS **TWO** SHIFTS AND NOT ONE, AND THE SECOND ONE
+# IS AN **ARITHMETIC** SHIFT: SHIFT THE FIELD UP BY `32 - width` SO ITS TOP
+# BIT LANDS ON THE SIGN BIT, THEN SHIFT IT BACK DOWN WITH `>>`, WHICH
+# SIGN-EXTENDS BECAUSE THE TOP BIT IS NOW THE SIGN BIT. A LOGICAL SHIFT
+# THERE WOULD ZERO-FILL AND A SIGNED FIELD WOULD COME BACK WRONG.
+#
 # The GRAPH is the wall above. The SHIFT is not, and it reaches the text: the
 # packed-char load renders as `bitcast<i32>((((val4>>alu7)&255u)<<24u))>>24u)`
 # and 24 is exactly this number for width 8. So the one integer is ported and
@@ -127,6 +135,38 @@ def se_shift(width: U32) -> U32: U32.sub(32, width)
 
 # :10  packed_field -- `elems, width = 4//dt.itemsize, 8*dt.itemsize` and the
 # caller's `(1 << width)-1`. Three ints, all three in the output.
+#
+# "a packed field of dt: the word it lives in, its offset in that word, and
+# its mask. width is 8*itemsize, bool is one bit in a byte" -- wgsl.py:9,
+# upstream's comment ON IT. THE THREE RETURNS ARE THREE DIFFERENT THINGS AND
+# THE MASK IS THE ONE THAT IS EASY TO GET WRONG:
+#   * THE **WORD** -- WHICH 32-BIT SLOT THE FIELD IS IN. `elems = 4 //
+#     itemsize` IS HOW MANY OF THESE FIELDS FIT IN A WORD: FOUR `u8`, TWO
+#     `u16`, ONE `u32`. SO THE WORD INDEX IS `bidx // elems` AND THE
+#     ELEMENT INDEX IS `bidx % elems`.
+#   * THE **OFFSET** -- THE FIELD'S BIT POSITION IN THAT WORD, AND IT IS
+#     `((bidx % elems) * width)`, IN **BITS**, NOT IN ELEMENTS. SO A `u8`
+#     AT ELEMENT 3 IS AT BIT 24 AND NOT AT BIT 3. THE PORT'S `shift_am` IS
+#     THAT PRODUCT.
+#   * THE **MASK** -- `(1 << width) - 1`, THE FIELD'S OWN BITS. AND THE
+#     LAST CLAUSE OF UPSTREAM'S COMMENT IS THE GOTCHA: "bool is one bit in
+#     a byte". A `bool` IS **ONE BIT** AND NOT EIGHT, SO `width = 8 *
+#     itemsize` IS **WRONG** FOR A `bool` -- WHICH IS WHY `packed_field` IS
+#     NEVER CALLED WITH ONE: `is_packed` EXCLUDES `dtypes.half` (itemsize
+#     2) BUT **NOT** `dtypes.bool` (itemsize 1), SO A `bool` BUFFER *IS*
+#     PACKED, AND THE `bool` CASE IS HANDLED SOMEWHERE ELSE.
+#
+# WHERE IT IS HANDLED IS UPSTREAM'S `string_rewrite` (wgsl.py:77-84), WHICH
+# HAS FIVE **BARE** BITCAST RULES -- ONE FOR `half`, ONE FOR `uchar`, ONE
+# FOR `char`, ONE FOR `ushort` AND ONE FOR `short` -- AND EVERY ONE OF THEM
+# SPELLS THE **MASK** OUT IN THE TEXT: `&0xFF`, `<<24)>>24`, `&0xFFFF`,
+# `<<16)>>16`. SO A `bool` BUFFER'S ELEMENT IS READ AS A `u32` WORD AND
+# THEN NARROWED BY HAND, NOT BY `packed_field`'s MASK.
+#
+# AND THE `elems` DIVISION IS WHAT MAKES THE WHOLE THING WORK: WGSL HAS NO
+# SUB-WORD LOADS, SO A `u8` BUFFER IS NOT A `u8` ARRAY BUT A `u32` ARRAY
+# WITH FOUR FIELDS PER WORD, AND EVERY ACCESS IS A WORD ACCESS PLUS A
+# SHIFT AND A MASK.
 
 def pf_elems(+dt: S.Dt) -> U32: U32.div(4, S.Dt.itemsize(dt))
 
@@ -136,11 +176,22 @@ def pf_mask(+dt: S.Dt) -> U32: U32.sub(U32.shln(1, U32.to_nat(pf_width(dt))), 1)
 
 # :15  packed_store -- `wmask = ((mask << shift_am) ^ 0xFFFFFFFF)`.
 #
+# "store for char: buf[idx/4] <- (var << (idx%4)*8))" -- wgsl.py:14, upstream's
+# comment ON THE WHOLE FUNCTION. IT IS THE **INVERSE** OF THE LOAD'S, AND
+# THE WORD `buf[idx/4]` IS THE POINT: THE STORE ADDRESSES THE **WORD**, NOT
+# THE ELEMENT. `idx/4` IS `idx // elems` AND `(idx%4)*8` IS THE BIT SHIFT.
+#
 # `shift_am` is a UOp in Python, so this is a graph expression there and the
 # string `((255u<<alu7)^4294967295u)` is what base_rewrite's SHL and XOR arms
 # make of it. With a CONSTANT shift it collapses to an integer, and those are
 # the values a folded kernel stores (`atomicAnd(&data0_4[0],4294967040u)` for
 # shift 0). So the int is ported; the UOp form is the wall above.
+#
+# AND THE `^ 0xFFFFFFFF` IS A **CLEAR**, NOT A MASK: `wmask` IS THE
+# COMPLEMENT OF THE FIELD, SO `(buf & wmask) | new_v` CLEARS THE FIELD'S
+# BITS AND SETS THE NEW ONES. THE XOR WITH ALL-ONES IS HOW YOU GET A
+# COMPLEMENT WHEN YOU HAVE ONLY XOR -- `~x` IS NOT SPELLABLE IN THE PORT'S
+# BIT ARITHMETIC, AND `x ^ 0xFFFFFFFF` IS.
 
 def ps_wmask(mask: U32, shift: U32) -> U32: U32.xor(U32.shln(mask, U32.to_nat(shift)), 4294967295)
 
@@ -261,6 +312,32 @@ def is_packed_of(+ar: O.Arena, +tb: F.Table, +u: U32) -> Bool:
 # FIVE INTEGERS are not, and they are the whole rule: the mask is the sign bit
 # cleared and the threshold is the largest finite magnitude.
 #
+# WHY THE RULE EXISTS AT ALL, AND IT IS TWO DIFFERENT RULES WITH THE SAME
+# HELPER:
+#   * "fix nan checks after decomp, which can emit either comparison"
+#     -- wgsl.py:49. A DECOMPOSITION -- `xexp2`, `xlog2`, THE SIN APPROXIMATION
+#     -- CAN PRODUCE A **NaN CHECK** IN EITHER OF TWO SHAPES: `a != a` (WHICH
+#     IS TRUE ONLY FOR NaN, BECAUSE NaN != NaN) OR `a == a` (WHICH IS FALSE
+#     ONLY FOR NaN). SO THE MATCHER HAS **TWO** RULES, ONE PER SHAPE, AND
+#     THEY ANSWER OPPOSITE THINGS: THE FIRST IS `is_nan` AND THE SECOND IS
+#     `is_nan(...).logical_not()`. WHICH MEANS THE SHAPE IS NOT A DETAIL --
+#     IT DECIDES THE POLARITY OF THE ANSWER.
+#   * "WGSL float != can be ordered: explicitly include unordered (NaN)
+#     operands" -- wgsl.py:52. THIS IS THE ONE THAT IS A **SURPRISE**, AND IT
+#     IS ABOUT WGSL'S COMPARISON SEMANTICS: WGSL's `!=` ON FLOATS CAN BE
+#     **ORDERED**, WHICH MEANS IT MAY BE FALSE FOR A NaN PAIR WHERE IEEE's
+#     `!=` IS TRUE. SO A PLAIN `a != b` IS NOT "a is not b" ON FLOATS. THE
+#     FIX IS TO SPELL IT OUT: `(a<b) | (b<a) | is_nan(a) | is_nan(b)`. THE
+#     FIRST TWO TERMS ARE THE **ORDERED** PART (ONE OF THEM IS TRUE WHEN THE
+#     VALUES DIFFER AND ARE COMPARABLE) AND THE LAST TWO ARE THE
+#     **UNORDERED** PART (NAN IS NOT LESS THAN, NOT GREATER THAN, AND NOT
+#     EQUAL TO ANYTHING, INCLUDING ITSELF).
+#
+# AND `b.cast(a.dtype)` IN UPSTREAM'S RULE IS NOT COSMETIC: `is_nan` READS
+# THE DTYPE'S OWN `finfo`, SO `b` MUST BE IN `a`'s WIDTH OR THE TWO `is_nan`
+# CALLS WOULD HAVE DIFFERENT EXPONENT AND MANTISSA TABLES AND COULD DISAGREE
+# ABOUT A NaN.
+#
 # `dtypes.finfo` -- tinygrad/dtype.py:114, `(exponent, mantissa)`. A TABLE, not a
 # formula, and the table is spelled here rather than imported from dtype.bend for
 # the reason codegen/transcendental.bend gives at its own `tx_finfo_e`: the
@@ -348,6 +425,22 @@ def nan_uint(+dt: S.Dt) -> S.Dt: nan_uint.of(nan_bs(dt))
 # :39  packed_rmw -- the read-modify-write a packed_store emits:
 # `UPat(Ops.LOAD, src=(UPat(Ops.CAST, dtype=uint32, src=(UPat.var("b"),)),),
 # allow_any_len=True) & UPat.var("wmask")`.
+#
+# "the read-modify-write packed_store emits: a load of the very index being
+# stored to, masked (a gated store loads with 3 srcs)" -- wgsl.py:39,
+# upstream's comment ON IT. TWO FACTS AND THE SECOND IS A GOTCHA:
+#   * THE RMW LOADS **THE VERY INDEX BEING STORED TO**. IT IS NOT A LOAD OF
+#     THE WHOLE BUFFER AND NOT A LOAD OF SOMETHING ELSE: THE READ-MODIFY-
+#     WRITE IS OF ONE **WORD**, AND THE WORD IS THE ONE THE STORE HITS.
+#     SO THE PATTERN IS Pinned TO THE `Ops.LOAD` THAT `packed_store` ITSELF
+#     EMITTED, AND THE `& UPat.var("wmask")` BINDS THE MASK THAT COMES WITH
+#     IT.
+#   * "A GATED STORE LOADS WITH 3 SRCS." A GATED LOAD -- ONE WITH AN `alt`
+#     AND A `gate` -- HAS **THREE** SRCS WHERE AN UNGATED ONE HAS ONE. SO
+#     THE PATTERN'S `allow_any_len=True` IS NOT COSMETIC: WITHOUT IT THE
+#     PATTERN WOULD MATCH ONLY THE UNGATED SHAPE AND EVERY GATED PACKED
+#     STORE WOULD FALL THROUGH TO THE PLAIN STORE RULE AND LOSE THE
+#     ATOMIC.
 #
 # `allow_any_len` is a LENGTH CLAUSE, not a repetition: the LOAD may carry any
 # number of srcs and only src[0] is constrained, and the CAST is exact-length-1
@@ -499,6 +592,26 @@ def code_for_op.of(+op: O.Op, +a: String, +b: String, +c: String) -> String:
 # forms. `u` is a UOp in Python and only `u.dtype` is read, so `dt` is the
 # parameter. The `&{m}u` and `^{h}` are UNSIGNED CONSTANTS in WGSL and the
 # `-{h}` is not, which is why the third form subtracts a bare integer.
+#
+# WHY THERE ARE TWO NARROW FORMS AT ALL: "Small integers use 32-bit WGSL
+# values, so casts must truncate before subsequent arithmetic" -- wgsl.py:99,
+# upstream's comment ON `render_cast`. WGSL HAS **NO** 8- OR 16-BIT
+# ARITHMETIC TYPES: A `u8` IN WGSL IS A `u32` WITH A NAME, NOT A NARROW
+# VALUE. SO A CAST TO `u8` PRODUCES A `u32` THAT IS **NOT YET** NARROWED,
+# AND IF THE TRUNCATION IS NOT DONE HERE THEN EVERY SUBSEQUENT ARITHMETIC
+# ON THAT VALUE HAPPENS AT 32 BITS AND THE ANSWER IS WRONG.
+#
+# WHICH MEANS THE TRUNCATION IS NOT COSMETIC AND ITS POSITION MATTERS: THE
+# CAST IS THE LAST POINT WHERE THE WIDTH IS KNOWN. `u8(x)` MUST NARROW
+# **THERE** AND NOT AT THE POINT OF USE.
+#
+# AND THE TWO FORMS ARE NOT THE SAME EXPRESSION BECAUSE THE SIGNED ONE IS
+# NOT A MASK: A SIGNED `i8` IS NOT `x & 0xFF` -- THAT WOULD BE A `u8`. IT
+# IS `((x & 0xFF) ^ 0x80) - 0x80`, WHICH IS "RE-INTERPRET THE 8 BITS AS
+# SIGNED". THE PORT'S `render_cast.cls` SPELLS THAT AS `((ret & M) ^ H) - H`
+# WITH `H = 2^(bits-1)`, AND THE SUBTRACTION IS BY A **BARE INTEGER** AND
+# NOT BY `Hu` BECAUSE WGSL'S `i32` AND `u32` ARE DISTINCT TYPES AND THE
+# EXPRESSION IS A SIGNED ONE.
 def rc_mask(+bits: U32) -> U32: U32.sub(U32.shln(1, U32.to_nat(bits)), 1)
 
 def rc_half(+bits: U32) -> U32: U32.shln(1, U32.to_nat(U32.sub(bits, 1)))
@@ -1024,6 +1137,24 @@ def sr_cuint(+dt: S.Dt, +v: H.I64) -> String:
 
 def sr_ci32.trunc(+v: H.I64) -> H.I64: H.i64_of_i32(H.lo32(v))
 
+# WHY A NEGATIVE CONST IS SPELLED `i32(...)` AND NOT A BARE NUMBER:
+# "a negative const must state its type: contextual conversion of a bare
+# abstract int rejects it in a u32 position" -- wgsl.py:73, upstream's
+# comment ON RULE 4.
+#
+# WGSL HAS **ABSTRACT INTEGER** LITERALS -- A NUMBER WITH NO TYPE -- AND A
+# CONTEXTUAL CONVERSION: THE LITERAL TAKES ITS TYPE FROM WHERE IT IS USED.
+# SO A BARE `-1` IN A `u32` POSITION IS REJECTED: THE ABSTRACT INT `-1`
+# CANNOT BE A `u32`. WHICH MEANS THE PORT'S OTHER ARM -- THE BARE
+# `H.i64_dec(sr_ci32.trunc(v))` WITH NO `i32(...)` WRAPPER -- IS ONLY LEGAL
+# BECAUSE THE VALUE IS **NON-NEGATIVE**, AND A NON-NEGATIVE ABSTRACT INT
+# CONVERTS TO `i32` FINE.
+#
+# SO THE TWO ARMS ARE NOT TWO SPELLINGS OF ONE THING: THE NEGATIVE ARM
+# STATES THE TYPE BECAUSE IT MUST AND THE POSITIVE ARM DOES NOT BECAUSE IT
+# NEEDS NOT. A PORT THAT WRAPPED BOTH IN `i32(...)` WOULD BE RIGHT AND
+# WOULD ALSO BE EMITTING A DIFFERENT STRING FOR EVERY POSITIVE CONST --
+# WHICH IS WHY THIS IS A GATED ROW AND NOT A STYLE CHOICE.
 def sr_ci32(+dt: S.Dt, +v: H.I64) -> String:
   Bool.pick(String, O.eq_dt(dt, S.int32()),
     Bool.pick(String, H.i64_is_neg(sr_ci32.trunc(v)),
@@ -1114,6 +1245,36 @@ def sr_load(ns: U32, +x: String, +n: U32, +dt: S.Dt, a: S.Addr) -> String:
 def sr_rmw.add(hasnv: Bool, +b: String, +nv: String) -> String:
   Bool.pick(String, hasnv, String.concat(["\n  atomicAdd(&", b, ",", nv, ");"]), "")
 
+# WHY TWO ATOMICS AND NOT ONE WRITE, AND WHY THE SECOND ONE IS OPTIONAL:
+# "packed_store writes (load & wmask) | new_v: atomicAnd clears the field,
+# atomicAdd sets it. new_v is gone when it is 0" -- wgsl.py:89, upstream's
+# comment ON RULE 14.
+#
+# THE PACKED FIELD IS **SUB-WORD**, SO WGSL CANNOT WRITE IT WITH A PLAIN
+# STORE: A STORE WRITES A WHOLE `u32` WORD AND WOULD CLOBBER THE THREE
+# NEIGHBOURING FIELDS IN IT. SO THE WRITE IS SPLIT INTO TWO ATOMIC
+# OPERATIONS ON THE WORD:
+#   * `atomicAnd(&b, wmask)` -- CLEARS THE FIELD'S OWN BITS. `wmask` IS THE
+#     **COMPLEMENT** OF THE FIELD (see `ps_wmask`), SO THE AND LEAVES THE
+#     NEIGHBOURS ALONE AND ZEROES THE FIELD.
+#   * `atomicAdd(&b, new_v)` -- **SETS** THE FIELD BY ADDING THE NEW VALUE
+#     IN. AND ADDING IS HOW YOU SET BITS WHEN THE SURROUNDING BITS MUST
+#     SURVIVE: THE NEW VALUE IS ALREADY MASKED AND SHIFTED INTO PLACE BY
+#     `packed_store` (`(var & mask) << shift_am`), SO ADDING IT SETS EXACTLY
+#     THE FIELD'S BITS AND TOUCHES NOTHING ELSE.
+#
+# AND "NEW_V IS GONE WHEN IT IS 0" IS THE WHOLE OF THE OPTIONAL SECOND
+# ATOMIC: A CLEAR WITH NOTHING TO SET IS JUST A CLEAR, SO THE `atomicAdd` IS
+# EMITTED **ONLY** WHEN THE PATTERN BOUND A SECOND VALUE. THE PORT'S
+# `sr_rmw.add` IS EXACTLY THAT: A `Bool` AND TWO ARMS, AND THE `False` ARM
+# IS THE EMPTY STRING. A PORT THAT ALWAYS EMITTED THE `atomicAdd` WOULD
+# WRITE A ZERO TO A FIELD THAT WAS MEANT TO BE UNTOUCHED -- WHICH IS NOT A
+# NO-OP, BECAUSE `atomicAdd` OF ZERO STILL IS AN ATOMIC WRITE.
+#
+# WHICH IS WHY THE PORT'S `sr_rmw` HAS A `hasnv` PARAMETER AND NOT A
+# STRING: THE SECOND ATOMIC IS A **LINE**, AND IT IS THE LINE THAT IS
+# OPTIONAL. THE PORT EMITS IT AS A SEPARATE STRING WITH A LEADING NEWLINE
+# SO THAT THE JOINED RULE IS ONE LINE FOR THE CLEAR AND TWO FOR THE SET.
 def sr_rmw(+vop: O.Op, +bop: O.Op, pk: Bool, hasnv: Bool, +b: String, +w: String, +nv: String) -> String:
   Bool.pick(String, Bool.and(Bool.and(O.eq_op(vop, O.OpsAND{}), sr_rmw_cast(bop)), pk),
     String.concat(["atomicAnd(&", b, ",", w, ");", sr_rmw.add(hasnv, b, nv)]), "NOMATCH")

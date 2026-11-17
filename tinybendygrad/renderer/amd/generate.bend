@@ -425,6 +425,24 @@ def arch_xml(i: Nat) -> String: str_at(archs(), i)
 
 def xml_url() -> String: "https://gpuopen.com/download/AMD_GPU_MR_ISA_XML_2025_09_05.zip"
 
+# "Pin the September 2025 XML bundle because newer `latest` changed WMMA format
+# bit sizes across archs and breaks generation." -- generate.py:16, upstream's
+# comment ON THE PIN ITSELF. THE URL IS NOT `.../latest/` AND THAT IS THE
+# WHOLE POINT: `latest` IS A MOVING TARGET, AND WHEN AMD CHANGED THE WMMA
+# FORMAT'S BIT SIZES THE GENERATOR'S OUTPUT CHANGED SHAPE WITH IT -- THE
+# ENCODING TABLES STOPPED MATCHING THE PINNED ONES.
+#
+# SO THE PIN IS A REPRODUCIBILITY INSTRUMENT AND NOT A VERSION PREFERENCE: THE
+# GENERATOR IS ONLY COMPARABLE TO ITSELF IF THE INPUT IS FIXED. AND THE PORT
+# INHERITS THE PIN VERBATIM -- `xml_url` above is upstream's `XML_URL` and
+# not a re-derivation of it -- so a port that "updated" the pin would produce
+# a DIFFERENT `enum.py` from the SAME source and no test would notice, because
+# the only witness is the emitted file itself.
+#
+# THE PORT DOES NOT FETCH IT (WALL 1), so the pin is here as a CONSTANT and
+# as a RULE: if the URL ever moves, the fix is to move the STRING and to
+# re-emit every generated file, and not to change anything else.
+
 # SECTION 3 -- `_strip_enc` (:48), `_norm_field` (:56), `_map_flat` (:61).
 # PORTED.  16 of the 28 logic lines of these three functions.
 # There is no `List.eq`, so membership is its own walk and the NEEDLE LEADS,
@@ -519,6 +537,21 @@ def variant_suffixes() -> List<&2, String>: ["_LIT", "_DPP16", "_DPP8", "_SDWA_S
 # `for sfx in _VARIANT_SUFFIXES: fmt = fmt.replace(sfx, "")` -- the TABLE LEADS
 # because `repl` GROWS the string, and generate.py's loop carries no counter,
 # so neither does this.
+#
+# WHY THE SUFFIX IS STRIPPED AT ALL, and it is not cosmetic:
+# "Encoding variants use the same Op enum as the base format" -- generate.py:132,
+# upstream's comment ON `base_enum`. A VARIANT ENCODING -- `VOP1_DPP8`,
+# `VOP1_SDWA`, `VOP1_LIT` -- IS A DIFFERENT ENCODING OF THE SAME
+# INSTRUCTIONS, SO THE OPCODES ARE THE BASE'S OPCODES AND THE `Op` ENUM IS
+# THE BASE'S ENUM. WITHOUT THE STRIP, EVERY VARIANT WOULD EMIT ITS OWN `Op`
+# ENUM AND THE OPCODE NUMBERS WOULD BE DECLARED TWICE, IN TWO ENUMS, WITH
+# THE SAME VALUES -- AND EVERY `from ins import *` DOWNSTREAM WOULD SEE TWO
+# ENUMS WHERE THE HARDWARE HAS ONE SET OF OPCODES.
+#
+# SO `get_base_fmt` IS NOT A NAME COSMETIC: IT IS WHAT MAKES THE OPCODE
+# SPACE SINGLE. AND IT IS WHY THE PORT'S `variant_class` (FOLD 3) READS THE
+# BASE'S `Op` ENUM THROUGH `get_base_fmt(EC.name(e)) ++ "Op"` RATHER THAN
+# OFF THE VARIANT'S OWN NAME.
 
 def get_base_fmt.go(sfx: List<&2, String>, fmt: String) -> String:
   match sfx:
@@ -920,6 +953,22 @@ def ctor_text(+kind: U32, +hi: U32, +lo: U32, +base_fmt: String) -> String:
 
 # `BitField(12, {lo})` -- the offset field of GLOBAL/SCRATCH is a SIGNED 13-bit
 # field [12:0] whatever the XML says, and the XML says 12 bits for all three.
+#
+# "GLOBAL/SCRATCH: offset is 13-bit signed [12:0], FLAT: 12-bit unsigned (XML
+# has 12-bit for all)" -- generate.py:315, upstream's comment ON THIS FIELD.
+# THE TWO HALVES ARE A SIGNEDNESS DIFF AND A WIDTH DIFF AT ONCE, AND THEY
+# DIFFER BECAUSE THE THREE ADDRESS SPACES MEAN DIFFERENT THINGS:
+#   * GLOBAL and SCRATCH offsets are RELATIVE to a 64-BASE (a global address
+#     or a scratch base), so they can be NEGATIVE -- hence SIGNED, and hence
+#     13 bits, one more than the XML's 12.
+#   * a FLAT offset is ABSOLUTE within the 48-BIT ADDRESS SPACE, so it cannot
+#     be negative and 12 unsigned bits suffice.
+# SO THE XML IS WRONG FOR TWO OF THE THREE FORMATS AND THE FIX IS IN THE
+# GENERATOR, NOT IN THE XML -- and the port's `ctor_text` above writes the
+# 13-bit SIGNED form for GLOBAL/SCRATCH and leaves FLAT at the XML's 12.
+# A reader that took the XML's width for all three would produce a GLOBAL
+# offset that cannot express the most negative displacement, and a FLAT offset
+# that is one bit too wide.
 
 def pad_n(+n: Nat) -> Nat: Bool.pick(Nat, Nat.is_lt(0n, n), n, 0n)
 
@@ -1246,6 +1295,29 @@ def field_def.enc.of(k0: Bool, +nm: String, hi: U32, lo: U32, +bits: String, +fm
   match k0:
     case True{}: "FixedBitField(" ++ U32.show(hi) ++ ", " ++ U32.show(lo) ++ ", 0b" ++ bits ++ ")"
     case False{}: field_def.fix(nm, hi, lo, fmt, fixed, encs, enums)
+
+# WHERE `bits` COMES FROM, and the one arithmetic in it.
+#
+# "For multi-dword formats, encoding field may be in higher dword but
+# identifier is always in dword0; use % 32" -- generate.py:114, upstream's
+# comment ON THE `enc_bits` SLICE. THE XML GIVES AN ENCODING FIELD'S BIT
+# RANGE AND AN ENCODING IDENTIFIER'S BIT STRING, AND FOR A MULTI-DWORD
+# FORMAT THE TWO LIVES IN DIFFERENT PLACES: THE IDENTIFIER IS ALWAYS THE
+# FIRST DWORD, BUT THE FIELD'S RANGE MAY BE IN A HIGHER ONE. SO THE SLICE
+# TAKES THE IDENTIFIER'S BITS AT THE FIELD'S POSITION -- AND THE POSITION IS
+# TAKEN `% 32`, BECAUSE THE IDENTIFIER STRING IS ONE DWORD LONG AND A
+# FIELD IN DWORD 1 WOULD INDEX PAST ITS END.
+#
+# THE `% 32` IS THE WHOLE TRICK AND IT IS A TRAP: WITHOUT IT A MULTI-DWORD
+# FORMAT'S `encoding` FIELD WOULD SLICE OUT OF RANGE OR WRAP TO THE WRONG
+# BITS, AND THE WRONG BITS ARE A VALID-LOOKING `FixedBitField` LITERAL --
+# SO THE ERROR IS AN EMITTED CLASS WITH THE WRONG ENCODING CONSTANT, NOT A
+# CRASH.
+#
+# THE PORT'S `bits` IS A FIXTURE (WALL 1: the XML is not fetched), so the
+# `% 32` IS NOT RE-DERIVED HERE. WHAT IS HERE IS THE CONSUMER: the
+# `encoding` field is the ONLY field that gets a `FixedBitField` literal at
+# all, and `field_def.enc.of`'s `True{}` arm is the whole of that.
 
 def field_def.enc(+nm: String, hi: U32, lo: U32, +fmt: String, +bits: String, has_bits: Bool,
                   +fixed: List<&2, Fd2>, +encs: List<&2, EC>, +enums: List<&2, EO>) -> String:
@@ -1989,6 +2061,29 @@ def skip_cls(+nm: String) -> Bool:
 def is_flat_split(+nm: String, has_seg: Bool) -> Bool:
   Bool.and(has_seg, Bool.or(String.eq(nm, "FLAT"), String.eq(nm, "VFLAT")))
 
+# WHY THE `seg` FIELD IS THE WHOLE OF THE SPLIT, and why it is not on RDNA4.
+#
+# "RDNA3 FLAT/GLOBAL/SCRATCH share encoding bits, differentiated by seg field"
+# / "RDNA4 VFLAT/VGLOBAL/VSCRATCH have distinct encoding bits, no seg field
+# needed" -- generate.py:374-375, upstream's comment ON THIS EXACT DECISION.
+# ON RDNA3 THE THREE FORMATS ARE ONE ENCODING WITH A `seg` DISCRIMINATOR:
+# THE SAME BITS MEAN "GLOBAL", "SCRATCH" OR "FLAT" DEPENDING ON `seg`, SO ONE
+# XML ENCODING YIELDS THREE CLASSES AND THE `seg` FIELD IS WHAT SEPARATES
+# THEM. `is_flat_split` IS THE PORT'S TEST FOR EXACTLY THAT -- A FORMAT WITH A
+# `seg` FIELD AND A FLAT NAME.
+#
+# ON RDNA4 THE THREE ARE THREE ENCODINGS WITH DISTINCT BITS, SO `seg` DOES NOT
+# EXIST AND THE THREE CLASSES COME FROM THE XML DIRECTLY. WHICH IS WHY THE
+# TEST IS `has_seg AND (FLAT or VFLAT)` AND NOT "THE NAME IS FLAT": a
+# RDNA4 FLAT HAS NO `seg` AND IS NOT SPLIT. THE PORT'S `seg_hit` IS THE
+# `has_seg` HALF, AND IT IS A SEARCH OVER THE FIELD LIST BECAUSE `seg` IS
+# NOT ALWAYS THE FIRST FIELD.
+#
+# THE CONSEQUENCE, AND IT IS A GOTCHA: A PORT THAT SPLIT ON THE NAME ALONE
+# WOULD MAKE THREE CLASSES OUT OF A RDNA4 FLAT THAT ARE NOT DISTINCT, AND A
+# PORT THAT SPLIT ON `seg` ALONE WOULD MAKE ONE CLASS OUT OF THREE RDNA3
+# FORMATS THAT MUST BE THREE.
+
 # `prefix = "V" if enc_name == "VFLAT" else ""`
 
 def flat_prefix(nm: String) -> String:
@@ -2096,6 +2191,19 @@ def dsl_reexport(+encs: List<&2, EC>, fixed: List<&2, Fd2>, eos: List<&2, EO>) -
 # `VOP1_SDST`/`VOP3_SDST`.  The fixture has one op that is BOTH (VOP1 op 0 is
 # `_LIT`-only AND VOP1 op 4 writes an SREG), which is what makes the order of the
 # two subtractions unobservable here and therefore worth stating.
+#
+# "Exclude SDST ops from base class (they need VOP1_SDST/VOP3_SDST/VOP3B)"
+# -- generate.py:372, upstream's comment ON THE SECOND SUBTRACTION. THE REASON
+# IS NOT COSMETIC: AN SDST OP WRITES AN SGPR, AND THE BASE CLASS'S `vdst` IS A
+# VGPR, SO AN SDST OP IN A BASE CLASS WOULD HAVE NO FIELD TO WRITE ITS
+# DESTINATION TO. THE FIX IS NOT TO DROP THE OP BUT TO MOVE IT TO A CLASS
+# WHOSE DESTINATION FIELD IS AN SGPR -- `VOP1_SDST`, `VOP3_SDST`, or
+# `VOP3B` -- AND THOSE CLASSES ARE EMITTED LATER (FOLD 3, below).
+#
+# SO THE EXCLUSION IS A ROUTING DECISION AND NOT A LOSS: EVERY SDST OP IS
+# EMITTED, IN A DIFFERENT CLASS. A PORT THAT READ THE SUBTRACTION AS A DROP
+# WOULD LOSE THE OP ENTIRELY, AND ONE THAT LEFT IT IN THE BASE WOULD EMIT A
+# CLASS WHOSE `vdst` FIELD IS THE WRONG WIDTH.
 
 def all_ops.of(os_: List<&2, OP>, +acc: List<&2, U32>) -> List<&2, U32>:
   match os_:
@@ -2407,6 +2515,20 @@ def sdst_classes(eos: List<&2, EO>, tys: List<&2, TY>, vs: List<&2, EC>, fixed: 
 # than to restrict a set, and the only one that drops a row: `ADDTID` ops exist
 # in BOTH the FLAT and GLOBAL enums so the PDF has one pseudocode entry for
 # them, and only GLOBAL/VGLOBAL get a helper.
+#
+# THE UPSTREAM HALF OF THAT SENTENCE, WHICH THE PORT NEEDS AND DID NOT HAVE:
+# "ADDTID instructions go in both FLAT and GLOBAL enums (pcode uses FLATOp for
+# these)" -- generate.py:138. THE ADDTID OPCODES ARE PUT IN *TWO* ENUMS BY THE
+# XML PARSER -- `FLAT` AND `GLOBAL` (AND `VFLAT` AND `VGLOBAL` FOR THE V
+# FORMS) -- BECAUSE THE PDF's PSEUDOCODE FOR AN ADDTID NAMES `FLATOp` EVEN
+# THOUGH THE INSTRUCTION IS A GLOBAL ONE. SO THE DUPLICATION IS NOT AN ERROR
+# IN THE XML BUT A MISMATCH BETWEEN TWO SOURCES: THE OPCODE TABLE SAYS GLOBAL
+# AND THE PSEUDOCODE SAYS FLAT.
+#
+# WHICH IS WHY THE PORT'S `drop_addtid` DROPS THE FLAT SIDE: THE PSEUDOCODE
+# HELPER MUST BE EMITTED ONCE, AND THE PORT KEEPS THE GLOBAL ONE. A PORT THAT
+# EMITTED BOTH WOULD HAVE TWO HELPERS FOR ONE INSTRUCTION, AND THE PDF's
+# SINGLE pseudocode entry would be matched by whichever came FIRST.
 # `fmt not in base_encodings and fmt not in ("GLOBAL","SCRATCH","VGLOBAL","VSCRATCH")`
 
 def not(b: Bool) -> Bool: Bool.not(b)

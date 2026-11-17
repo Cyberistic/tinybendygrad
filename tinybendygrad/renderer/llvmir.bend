@@ -176,6 +176,20 @@
 #     `tc_ptx.bend`'s. `li-oracle.py` keeps `wmma_rows()` and it runs.
 #   * `AMDLLVMRenderer.asm` (llvmir.py:248-250) is `renderer/amd/elf.py`'s
 #     `assemble_linear` -- FFI plus a linker. One Python line, no rows.
+#   * `pm_widen_uidx` (llvmir.py:157-161). "GEP sign-extends indices to pointer
+#     width, so unsigned indices must be widened first." -- upstream's comment
+#     ON IT, and it is a GOTCHA ABOUT LLVM'S `getelementptr` AND NOT ABOUT
+#     LLVM IR: a GEP's index is sign-extended to the POINTER width, so an
+#     `i8`/`i16`/`i32` UNSIGNED index would be read as a NEGATIVE offset and
+#     address the wrong memory. UPSTREAM'S FIX IS TO CAST THE INDEX TO
+#     `i64` FIRST, IN A `PatternMatcher`, SO IT HAPPENS BEFORE ISEL.
+#     THE GEP LINE ITSELF IS `nir_llvmir.bend`'s -- AND THE PORT'S GEP ROWS
+#     READ THE INDEX'S OWN DTYPE (`gep %v0 f32x4 i64`, `gep %v9 bf16x8 u64`),
+#     SO A `u32` INDEX STAYS `u32` IN THE EMITTED LINE. THAT IS CORRECT FOR
+#     THE LINE AND IS NOT THE SAME AS UPSTREAM'S POST-REWRITE SHAPE: the
+#     rewrite turns a `u32` INDEX into an `i64` ONE, so upstream's emitted
+#     GEP READS `i64` WHERE THE PORT'S READS `u32`.
+#     `TODO(p3) llvmir.py:157 symbol=pm_widen_uidx`.
 #   * `__init__` (llvmir.py:169-172 symbol=__init__, :169-179 symbol=__init__) binds `CPULLVMCompiler` /
 #     `AMDLLVMCompiler` / `tc.get_amd` -- `runtime/support/compiler_llvm.py` and
 #     `renderer/tc.py`, both other units' work.
@@ -795,6 +809,23 @@ def amd0.text(+is_l: Bool, +x: U32, +xn: String) -> String:
 def amd1.line(+op: O.Op, +d: S.Dt, +od: S.Dt, +xn: String, +s: String) -> String:
   String.concat(["  ", xn, " = call ", lt.of(od), " @llvm.", N.intr_of(op), ".", lt.of(od), "(", lt.of(d), " ", s, ")"])
 
+# "amd llvm intrinsics llvm.log2/llvm.exp2 don't support double" -- llvmir.py:300,
+# upstream's comment ON AMD's `extra_matcher`. IT IS A LIMITATION OF THE
+# TARGET'S INTRINSIC, NOT OF THE RENDERER: `@llvm.log2.f64` and
+# `@llvm.exp2.f64` are not in the AMDGPU intrinsic set, so a double LOG2 or
+# EXP2 that reached isel would EMIT a call the AMD backend cannot lower.
+# UPSTREAM'S FIX IS A REWRITE -- `xlog2` / `xexp2`, the SOFTWARE
+# DECOMPOSITIONS FROM `codegen/decomp/transcendental.py` -- AND IT RUNS IN
+# `extra_matcher`, WHICH IS BEFORE ISEL. SO A DOUBLE LOG2 NEVER REACHES THIS
+# EMITTER ON AN AMD TARGET.
+#
+# WHICH IS WHY THE PORT'S `amd1 log2 f64->f64` AND `amd1 exp2 f64->f64` ROWS
+# ARE NOT A CLAIM THAT A DOUBLE LOG2 WORKS ON AMD. THEY ARE THE EMITTER'S
+# SHAPE -- `llvm_intrinsics` (llvmir.py:79) MAPS LOG2 AND EXP2 FOR EVERY
+# DTYPE, AND `lt.of(od)` IS THE OUTPUT TYPE -- SO THE ROWS ARE ABOUT THE
+# SPELLING AND NOT ABOUT WHAT THE AMD BACKEND ACCEPTS. THE REWRITE THAT
+# MAKES THE DOUBLE CASE REAL IS `extra_matcher`'s, AND `extra_matcher` IS A
+# `PatternMatcher` -- A WALL, NAMED AT THE TOP OF THIS FILE.
 def amd3.line(+xn: String, +s: String, +bf8: U32) -> String:
   String.concat(["  ", xn, " = call i8 @f32_to_fp8(float  ", s, ", i1 ", U32.show(bf8), ")"])
 
@@ -827,6 +858,20 @@ def r_amd4(+nm: String, +fp8: S.Dt, +xn: String, +sn: String, i: U32) -> String:
 # identical and only the SUFFIX differs. The join is `", "` and its empty answer
 # is `""` -- `rfn sargs empty` is the row that says a zero-argument kernel reads
 # `define void @f()` with NO space before the paren.
+#
+# "Buffer views may start at an offset from the aligned allocation"
+# -- llvmir.py:173, upstream's comment ON `_render_fn`. IT EXPLAINS WHY THE
+# ARGUMENT'S TYPE IS THE BUFFER'S OWN ELEMENT TYPE AND NOT THE ALLOCATION'S:
+# the kernel receives a VIEW that may begin part-way into an aligned
+# allocation, so the pointer must be typed by the buffer's dtype and not by
+# the alignment of what it points into. That is why upstream reads
+# `ldt(u.dtype, ...)` -- the BUFFER's dtype -- and never the allocation's.
+# `noalias` is the other half of the same fact and it is why `noalias` is
+# GLOBAL-only: an aliasing view of one allocation would make `noalias` a
+# lie. THE PORT HAS NO OFFSET TO LOSE -- `sargs.one` takes the dtype and the
+# addrspace and nothing else -- so the property upstream is protecting is
+# upstream's, and what survives here is the RULE: the type follows the
+# buffer, and `noalias` follows GLOBAL.
 def sargs.one(+is_glob: Bool, +d: S.Dt, +nm: String) -> String:
   String.concat([lt.t(d, 1, is_glob), Bool.pick(String, is_glob, " noalias", ""), " ", nm])
 
@@ -894,6 +939,21 @@ def ftr.cpu_part(+i: U32) -> String:
 #
 # `d.vmax` is `uop/ops.bend`'s `nc`/Variable machinery, so the WIDTHS are
 # parameters here and the filter plus the product are this file's.
+#
+# "TODO: this is copied from cstyle" -- llvmir.py:283, upstream's comment ON
+# THIS FOOTER. IT IS A WARNING AND IT IS THE POINT: the work-group size is
+# DERIVED FROM THE SAME `local_dims` SHAPE cstyle.py derives it from, so the
+# two renderers AGREE BY CONSTRUCTION and not by a shared table. WHICH MEANS
+# THE DUPLICATION IS LOAD-BEARING AS LONG AS THE TWO FILES AGREE, AND IT IS
+# A DRIFT BUG THE MOMENT ONE OF THEM CHANGES. cstyle.py's own copy is at
+# cstyle.py:536-537, where it carries the reason the number is a FIXED
+# `1,` prefix and not a bare count.
+#
+# the port's copy is the `prod` BELOW, and the port states the same thing the
+# upstream TODO states: the WIDTHS are parameters (upstream reads them off
+# `d.vmax`, which is `uop/ops.bend`'s) and the FILTER and the PRODUCT are
+# this file's. So the port's copy is of the LOGIC and not of the DATA, which
+# is the one thing upstream's TODO does not tell you.
 def prod.go(+ws: List<&2, U32>, +acc: U32) -> U32:
   match ws:
     case Nil{}   : acc

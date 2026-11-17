@@ -24,15 +24,96 @@
 #   * `string_rewrite` (ptx.py:81-135) -- twenty-three graph-pattern rules whose BODY
 #     is an f-string over `ctx.r[x]`. It is CONSUMABLE exactly once the walk
 #     below supplies `ctx.r`, so it is the natural NEXT file and not a wall.
+#
+#     ONE OF THOSE RULES IS THE **ADDRESS ARITHMETIC** AND IT IS THE ONE
+#     THAT IS NOT A SPELLING: "address computation: addr = buf + idx*itemsize"
+#     -- ptx.py:87, upstream's comment ON THE `Ops.INDEX`/`Ops.SHRINK` RULE.
+#     IT EMITS **TWO** LINES AND NOT ONE:
+#       * `cvt.s64.{TYPE} {x}, {idx};` -- THE INDEX IS **CONVERTED** TO A
+#         64-BIT SIGNED INTEGER, AND `{TYPE}` IS THE **INDEX'S OWN** DTYPE
+#         (`ctx.types[idx.dtype]`), SO THE CONVERSION'S WIDTH IS CHOSEN BY
+#         THE INDEX AND NOT BY THE BUFFER. PTX'S ADDRESS ARITHMETIC IS
+#         64-BIT, SO A 32-BIT INDEX MUST BE WIDENED, AND THE `s64` MEANS
+#         **SIGNED** -- A NEGATIVE INDEX IS A LEGAL WAY TO ADDRESS (AN
+#         OFFSET FROM THE END).
+#       * `mad.lo.s64 {x}, {x}, {itemsize}, {buf};` -- AND THEN THE SCALE IS
+#         FOLDED INTO A MULTIPLY-ADD: THE ADDRESS IS `buf + idx *
+#         ITEMSIZE`. SO THE **ITEM SIZE** IS THE BUFFER'S ELEMENT WIDTH,
+#         NOT A CONSTANT, AND IT IS THE THIRD OPERAND OF THE `mad`.
+#     WHICH IS THE POINT OF THE TWO LINES: THE INDEX IS IN **ELEMENTS** AND
+#     THE ADDRESS IS IN **BYTES**, AND THE CONVERSION IS NOT A NO-OP
+#     COSMETIC BUT A SIGN CHANGE: A `u32` INDEX SIGN-EXTENDED TO 64 BITS IS
+#     A DIFFERENT NUMBER, AND WHICH ONE IS RIGHT DEPENDS ON WHETHER THE
+#     INDEX WAS SIGNED TO BEGIN WITH.
 #   * `ptx_matcher` (ptx.py:40-57) -- eight graph REWRITES, and tc_ptx.bend's
 #     `DONE(p3)`/`WALL(p3)` block over ptx.py:40-57 `ptx_matcher` is where each
 #     of the eight is recorded -- upstream's `ptx_matcher` IS that PatternMatcher
 #     and it opens at :40.
 #     `TODO(p3) ptx.py:40 symbol=ptx_matcher`.
-#   * `to_function_name`'s `ansistrip` (tinygrad/helpers.py:157) -- a regex ANSI strip.
+#
+#     THE **REASONS** FOR THE EIGHT ARE WORTH NAMING HERE, BECAUSE A WALL
+#     WITH NO REASON IS A WALL A READER CANNOT SIZE, AND THREE OF THE EIGHT
+#     ARE **TARGET CONSTRAINTS** THAT ANY READER OF THE EMITTED PTX NEEDS:
+#       * "bool CMPNE is XOR, bool CMPLT is XOR+AND (universal makes this
+#         slow, this is for renderer only)" -- ptx.py:41. THE PARENTHESIS
+#         IS THE REASON AND IT IS A **SCOPE** CLAIM: A `bool` COMPARE HAS A
+#         GENERAL SPELLING SOMEWHERE UPSTREAM -- THE "UNIVERSAL" ONE -- AND
+#         THAT ONE IS SLOW, SO THE RENDERER MAY USE A CHEAPER SPELLING: A
+#         `bool` CMPNE IS AN **XOR** (TWO BOOLEANS ARE DIFFERENT EXACTLY
+#         WHEN THEIR BITS DIFFER) AND A `bool` CMPLT IS **XOR+AND** (XOR
+#         FOR "DIFFERENT" AND AND FOR "THE LARGER ONE'S BIT").
+#         "THIS IS FOR RENDERER ONLY" IS SAYING THAT THIS REWRITE IS A
+#         **RENDERER-LOCAL** SPELLING AND NOT A CHANGE TO WHAT A `bool`
+#         COMPARE MEANS. THE SAME REWRITE APPEARS IN `x86.py:143` FOR THE
+#         SAME REASON AND WITH THE SAME `bool`-ONLY MATCH, SO THE TWO
+#         RENDERERS AGREE WITHOUT A SHARED TABLE.
+#       * "a bool is a predicate register in PTX but a byte in memory, so a
+#         bool buffer is accessed through a uint8 view of it" -- ptx.py:48.
+#         PTX HAS A **DEDICATED PREDICATE REGISTER TYPE** FOR BOOLEANS AND
+#         MEMORY HOLDS A **BYTE**. SO A `bool` BUFFER IS ADDRESSED AS
+#         `uint8` AND THE PREDICATE IS PRODUCED BY A COMPARISON, NOT READ.
+#         THE SAME RULE IS IN `nir.py` (nir.py:124) WITH A DIFFERENT BECAUSE:
+#         NIR'S `bool` IS A **ONE-BIT VALUE**, NOT A PREDICATE REGISTER.
+#       * "ptx shr and shl instructions require y to be uint" -- ptx.py:54.
+#         THE SHIFT **AMOUNT** MUST BE UNSIGNED, SO A SIGNED COUNT IS CAST
+#         TO `uint` FIRST. NIR'S RULE (nir.py:130) IS THE SAME CAST FOR A
+#         DIFFERENT REASON -- NIR WANTS A **32-BIT** AMOUNT, PTX WANTS AN
+#         **UNSIGNED** ONE -- AND THE TWO WOULD DISAGREE ABOUT A `u16`
+#         COUNT, SO THE TWO RENDERERS MUST NOT SHARE ONE RULE.
+##   * `to_function_name`'s `ansistrip` (tinygrad/helpers.py:157) -- a regex ANSI strip.
 #     The KEEP/HEX branch is ported and gated; the strip is the wall.
 #   * `Ops.WMMA`'s `wmma_r` (ptx.py:211-216) -- it needs the three fragment
 #     tables, which are tc_ptx.bend's `Tc`, and it is named in its ARM.
+#
+#     UPSTREAM'S COMMENT ON IT IS "registers for packing/unpacking input and
+#     acc" (ptx.py:212), AND THE THREE TABLES ARE NOT INTERCHANGEABLE --
+#     THE COMMENT'S THREE WORDS ARE THREE DIFFERENT JOBS:
+#       * `wmma_in` -- the **PACKING** REGISTERS. A AND B ARE COPIED INTO
+#         32-BIT REGISTERS BEFORE THE `mma` INSTRUCTION, AND THE NUMBER OF
+#         THEM IS `len(r[src]) / (4 // src.dtype.itemsize)`: FOUR `f16`
+#         ELEMENTS PER 32-BIT REGISTER, EIGHT `f8` ELEMENTS. SO THE COUNT
+#         DEPENDS ON THE **INPUT** DTYPE AND NOT ON K.
+#       * `wmma_acc` -- the **ACCUMULATOR** REGISTERS. THESE ARE THE `mma`'S
+#         OWN DESTINATION, SO THEIR COUNT IS `len(r[src[2]]) /
+#         (4 // OUTPUT.dtype.itemsize)` -- THE OUTPUT dtype, WHICH IS NOT
+#         THE INPUT dtype.
+#       * `wmma` -- the **UNPACKING** REGISTERS. THE RESULT IS COPIED OUT OF
+#         THE ACCUMULATOR REGISTERS INTO ONE REGISTER PER RESULT ELEMENT.
+#     SO THE THREE TABLES ARE COUNTED BY **THREE DIFFERENT DTYPES** -- TWO
+#     INPUTS AND ONE OUTPUT -- AND THE PORT NAMES THE WALL RATHER THAN
+#     GUESSING AT THE COUNTS, BECAUSE A COUNT THAT IS RIGHT FOR ONE OF THE
+#     THREE IS WRONG FOR THE OTHERS.
+#
+#     ⚠ AND UPSTREAM'S OWN B COUNT USES **A's** DTYPE, NOT B's:
+#     `range(0, len(r[u.src[1]]), 4 // u.src[0].dtype.itemsize)` -- THE
+#     DIVISOR READS `src[0]` IN **BOTH** LISTS (ptx.py:213-214). WHICH IS
+#     CORRECT BECAUSE A AND B MUST HAVE THE SAME ELEMENT WIDTH FOR THE
+#     `mma` AT ALL -- A `f16` A WITH AN `f8` B IS NOT A LEGAL MMA -- SO
+#     READING A's DTYPE TWICE IS A WAY OF SAYING "THEY ARE THE SAME" AND
+#     NOT A TYPO. BUT IT IS A **COUNT** THAT DEPENDS ON A DIFFERENT NODE
+#     THAN THE COUNT IT SAYS, AND A PORT THAT READ `src[1]`'S DTYPE FOR
+#     THE SECOND LIST WOULD AGREE WITH UPSTREAM ON EVERY LEGAL GRAPH AND
+#     DISAGREE ON AN ILLEGAL ONE.
 #
 
 # THE GATE. 281 rows, all STRINGS, and `py=` is a LITERAL, never an expression:
@@ -374,6 +455,28 @@ def A_ALLOC() -> U32: 7
 
 # ptx.py:203-205. `LOAD` copies the whole register; `INDEX`/`SHRINK` SUBSCRIPT
 # it, and a subscript that is not a CONST-of-CAST is the refusal.
+#
+# UPSTREAM'S ONE-LINE FRAMING OF THE SAME THREE CASES -- "on REG,
+# INDEX/SHRINK pick the register (must be CONST) and LOAD is a noop"
+# (ptx.py:202) -- SAYS THE TWO THINGS THE PORT'S TABLE SAYS IN ITS OWN
+# WORDS, AND THE SECOND ONE IS THE GOTCHA:
+#   * "PICK THE REGISTER" -- AN INDEX ON A REGISTER IS A **COMPILE-TIME**
+#     SUBSCRIPT, NOT A RUNTIME ONE. SO THE INDEX'S VALUE MUST BE KNOWN AT
+#     EMIT TIME, AND IT IS NOT A CONST BUT A **CONST-OF-A-CAST**: THE GRAPH
+#     SPELLS A CONSTANT INDEX AS `CAST(CONST(n))` BECAUSE THE INDEX AND THE
+#     VALUE HAVE DIFFERENT ADDRESS SPACES AND THE CAST IS WHAT MAKES THE
+#     INDEX AN INTEGER. WHICH IS WHY THE PORT'S TEST IS "IS IT A CONST
+#     UNDER A CAST" AND NOT "IS IT A CONST".
+#   * "LOAD IS A NOOP" -- A LOAD **OUT OF** A REGISTER IS NOT A LOAD. THE
+#     REGISTER IS ALREADY THE VALUE, SO THE LOAD'S RESULT **IS** THE
+#     REGISTER. WHICH IS WHY THE PORT'S `arm.regsrc` GIVES `Ops.LOAD` THE
+#     `A_ALIAS` ARM (COPY THE WHOLE REGISTER) AND NOT THE `A_PICK` ARM:
+#     A PICK WOULD SUBSCRIPT IT.
+#   * AND "MUST BE CONST" IS WHERE THE REFUSAL COMES FROM: A DYNAMIC
+#     REGISTER INDEX IS NOT EXPRESSIBLE IN PTX, SO UPSTREAM **RAISES**
+#     (ptx.py:204) AND THE PORT ANSWERS `A_REFUSE` INSTEAD, BECAUSE A BEND
+#     FOLD CANNOT RAISE. THE PORT'S REFUSAL IS A ROW (a TRUNCATED trace of
+#     the message) AND THE PORT'S OWN HEADER SAYS IT IS A TRUNCATION.
 def arm.regsrc(+op: O.Op, idx_ok: Bool) -> U32:
   Bool.pick(U32, is_op(op, O.OpsLOAD{}), A_ALIAS(),
   Bool.pick(U32, idx_ok, A_PICK(), A_REFUSE()))

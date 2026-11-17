@@ -1614,6 +1614,54 @@ def main() -> IO(Unit):
 #   (:290-296). These are `PatternMatcher` lists of UOp patterns; the matcher's
 #   machinery is `cstyle.bend`'s and the rewriting needs the ctypes builder.
 #   `TODO(p3) nir.py:121 symbol=extra_matcher`, `:145 symbol=def_rewrite`, `:290 symbol=IR3Renderer.def_rewrite`.
+#
+#   THE WALL IS THE SHAPE; THE **REASONS** ARE THE SUBSTANCE, AND A WALL
+#   WITH NO REASON IS A WALL A READER CANNOT SIZE. UPSTREAM'S FIVE
+#   `extra_matcher` RULES EACH CARRY ONE, AND THEY ARE ALL **TARGET
+#   CONSTRAINTS** -- NIR'S RULES ABOUT WHAT A LEGAL NIR SHADER MAY CONTAIN --
+#   AND NOT ABOUT NIR'S SPELLING:
+#   * "a bool is one bit in NIR but a byte in memory, so every access to a
+#     bool buffer goes through a uint8 view of it" (nir.py:124). NIR'S `bool`
+#     IS A ONE-BIT VALUE WHILE A BUFFER'S ELEMENT IS A BYTE, SO THE BUFFER
+#     IS ADDRESSED AS `uint8` AND THE LOAD IS CAST BACK. THE SAME RULE IS IN
+#     `ptx.py` (ptx.py:48) FOR PTX, AND NEITHER IS THE SAME AS THE OTHER:
+#     PTX'S `bool` IS A **PREDICATE REGISTER**, NIR'S IS A **ONE-BIT
+#     VALUE**.
+#   * "NIR requires shift amount to be 32 bit" (nir.py:130, with the Mesa
+#     doc link). A NARROW SHIFT AMOUNT IS ILLEGAL IN NIR, SO A `u8` SHIFT
+#     COUNT IS CAST TO `uint` FIRST. THIS IS A **WIDTH REQUIREMENT** AND NOT
+#     A SIGN ONE, WHICH IS WHY THE CAST IS TO **UNSIGNED** -- AND IT IS
+#     ALSO WHY `ptx.py`'S RULE (ptx.py:54, "ptx shr and shl instructions
+#     require y to be uint") IS THE SAME CAST FOR A DIFFERENT REASON.
+#   * "OpConvertFToU is undefined if Result Type is not wide enough, cast
+#     through int32" (nir.py:132-133, with the SPIR-V spec link). A FLOAT TO
+#     AN 8- OR 16-BIT UNSIGNED CAST IS **UNDEFINED** IN NIR WHEN THE RESULT
+#     TYPE IS TOO NARROW, SO THE CAST GOES THROUGH `int32` -- WHICH IS WIDE
+#     ENOUGH TO BE DEFINED -- AND THEN NARROWS.
+#   * "load/store use pointer arithmetic, and the cast does nothing. NOTE:
+#     this doesn't apply to image indexing cause it's 1-D nor to REG/ALU
+#     register picks, which keep their own index dtype" (nir.py:135-136).
+#     A MEMORY ACCESS'S INDEX IS A **POINTER ARITHMETIC** SCALE AND NOT A
+#     VALUE, SO THE INDEX'S DTYPE IS IRRELEVANT AND THE CAST IS DROPPED. THE
+#     TWO EXCEPTIONS ARE BOTH REAL AND BOTH EARN THEIR PLACE: AN IMAGE
+#     INDEX IS A **COORDINATE** (AND AN IMAGE IS 1-D IN THIS SENSE), AND A
+#     REGISTER PICK IS A **VALUE** (AND THE REGISTER KEEPS ITS OWN INDEX
+#     DTYPE).
+#   * "images need index to be int for nir (coordinates only: the INDEX
+#     keeps its access dtype)" (nir.py:140). AN IMAGE COORDINATE MUST BE AN
+#     `int` WHILE THE INDEX NODE KEEPS THE ACCESS'S OWN DTYPE -- WHICH IS
+#     THE SAME SPLIT AS THE PREVIOUS RULE AND THE SAME REASON: THE
+#     COORDINATE IS NOT THE ACCESS.
+#   THE POINT FOR A READER OF THE PORT: EVERY ONE OF THESE IS A REWRITE
+#   THAT HAPPENS **BEFORE** ISEL, SO THE PORT'S `def_rewrite` EMITTERS
+#   (WHICH ARE PORTED) NEVER SEE THE REWRITTEN GRAPH. THE PORT'S `aop`
+#   TABLES AND ITS `ncast` ARE THE **POST-REWRITE** SHAPE -- AND THE ONE
+#   PLACE THAT SHOWS IS `ncast`'s THIRD ARM, `c(ot, ot == dtypes.bool)`:
+#   THE DESTINATION'S `bool` SPELLING IS `"b"` ONLY WHEN THE DESTINATION IS
+#   `bool`, AND UPSTREAM WRITES THAT AS A SPECIAL CASE *INSIDE* THE SPELLING
+#   RATHER THAN AS A SEPARATE RULE. SO A `bool` CAST SURVIVES IN THE
+#   POST-REWRITE GRAPH AND `ncast`'s `from bool` ROW IS A REAL ROW AND NOT
+#   A LEFTOVER.
 # * `__init__` (:169-174), `__del__` (:176-177), `param` (:179), `prerender`
 #   (:180), `postrender` (:182), `render` (:184-242). Every one is mesa FFI.
 #   `render`'s control flow over a uop list is `nir_llvmir.bend`'s lane and its
@@ -1623,6 +1671,21 @@ def main() -> IO(Unit):
 #   builder stack operations. `nidx`'s REG arm builds a deref and its other arm
 #   spells `iadd`/`imul` with an `nimm` of the itemsize -- those two op names
 #   ARE gated (`mesa alu`), the control flow is not.
+#   ONE OF THOSE `nif`s IS A **KNOWN-REDUNDANT** ONE, AND UPSTREAM SAYS SO:
+#   "TODO: this nif should be removable ... but
+#   TestMultiTensor.test_double_matmul_shard_W_0 segfaults with it gone"
+#   -- nir.py:223, on the `Ops.END` ARM'S `nif`. IT LOOKS REDUNDANT BECAUSE
+#   THE `Ops.BACKEDGE` ARM (nir.py:217) ALREADY EMITS THE SAME
+#   `ilt`-THEN-BREAK TEST AND THE LOOP'S OWN STRUCTURE SUPERSEDES IT. BUT
+#   REMOVING IT SEGFAULTS ONE UPSTREAM TEST, AND THE TODO IS THE RECORD OF
+#   THAT FACT.
+#   WHICH IS A CLASS OF ITS OWN AND IT IS WORTH NAMING: A COMMENT THAT SAYS
+#   "THIS IS REDUNDANT" WITH A TEST NAME NEXT TO IT IS A **KNOWN-WRONG**
+#   PIECE OF CODE, NOT A REFUSAL. THE PORT DOES NOT HAVE THE ARM -- THE
+#   CONTROL FLOW IS THE WALL ABOVE -- BUT THE PORT'S `nir_jump_break` ROW
+#   (the `mesa intr` group) IS THE CONSTANT THAT ARM WOULD USE, AND A
+#   READER WHO SEES THE CONSTANT SHOULD KNOW AN UPSTREAM ARM EMITS IT AND
+#   THAT UPSTREAM COULD NOT DELETE IT.
 # * `nimm_set` (:69-71): a `struct.pack_into` of `truncate[dtype](x)`. The dtype
 #   fmt strings live in `dtype.bend`, which fails its own `--check-only` (see
 #   `renderer/__init__.bend`'s convention 11 note). `TODO(p3) nir.py:69 symbol=nimm_set`.
