@@ -79,6 +79,36 @@ cstyle-census   [#########] 9/9      425 rows, 3 lanes, rc=0 (WAS 361, AND 358 B
                                         measurement in an immutable message); the PROSE layer is a
                                         different population. `gates/msgdiff-gate.py`,
                                         `.agents/slop/msgdiff/REPORT.md`.
+
+upstream-comments [######....] 6/10      **UPSTREAM'S **COMMENTS **PORTED**, **⇒⇒† AND **THE **AUDIT **SAYS
+                                         **HOW **MUCH **OF **UPSTREAM'S **REASONING **THE **PORT **CARRIES**:**
+                                         **2,406 **UPSTREAM **COMMENT **BLOCKS**, **⇒⇒† AND **495 **PORTED**
+                                         **(21.2% **OF **THE **2,339 **SCORED**)**, **⇒⇒† AND **1,618
+                                         **`GAP-NO-CITATION`**, **97 **`GAP-CITED-NO-REASONING`** (A **STAMP**),
+                                         **129 **`GAP-DIFFERENT-REASONING`**, **⇒⇒† AND **AND **THE **PORT
+                                         **CARRIES **1,557 **COMMENT **BLOCKS **OF **ITS **OWN** (⇒⇒† AND **IT **IS
+                                         **NOT **A **TRANSCRIPT**)**. **⇒⇒† AND **THE **RATE **IS **WILDLY
+                                         **UNEVEN**: `schedule/multi.py` 30/36, `schedule/rangeify.py` 30/49,
+                                         **⇒⇒† AND **`mixin/op.py` 2/99, `renderer/x86.py` 1/126 (⇒⇒† AND **THE
+                                         **PORT **CITES **`x86.py` **62 **TIMES **BY **`symbol=`** **AND **CARRIES
+                                         **1 **OF **ITS **126 **COMMENT **BLOCKS**)**.
+                                         **⇒⇒† AND **THE **BIGGER **FINDING **IS **THE **PORT'S **OWN
+                                         **CITATIONS**: **THE **AUDIT **FOUND **103 **BAD** (72 **OUT-OF-RANGE**),
+                                         **⇒⇒† AND **MY **OWN **CHECKER **FOUND **252** (⇒⇒† AND **THE
+                                         **AMBIGUOUS **BARE **BASENAMES** **ARE **1,002 **OF **6,124**),
+                                         **⇒⇒† AND **THE **ROOT **CAUSE **IS **MEASURED**: **AT **THE **PRIOR
+                                         **VENDOR **THE **CLAIMED **LINE **HELD **THE **CLAIM **59.8%**, **⇒⇒† AND
+                                         **AT **THE **CURRENT **PIN **ONLY **29.7%**. **⇒⇒† AND **THE
+                                         **CITATION-GAP **WORK **THAT **IS **OPEN**: **THE **1,844 **GAPS**
+                                         **(⇒⇒† AND **THE **TOP-20 **TABLE **IS **IN
+                                         **`.agents/slop/commentgap/REPORT.md`**)**. **⇒⇒† AND **THE
+                                         **BAD-CITATION **GATE **IS **BEING **WRITTEN**.
+                                         **⇒⇒† AND **THE **PORTED **COMMENTS' **OWN **DEFECTS **ARE
+                                         **FIXED**: **`movement.py:16`** (⇒⇒† AND **THE **RULE **WAS
+                                         **REMOVED **UPSTREAM **IN **`9fa22cc4f`**), **⇒⇒† AND **ELEVEN
+                                         **PRE-EXISTING **`nn/onnx.bend` **CITATIONS**, **⇒⇒† AND **THE
+                                         **STALE **`Defines` **QUOTE **IN **`uop/spec.bend`**, **⇒⇒† AND **THE
+                                         **`tn_bitwise_not.bend:40`** **POINTER.**
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
 backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
                                         `mixin/gradient.bend`. **15/15 rows AGREE with
