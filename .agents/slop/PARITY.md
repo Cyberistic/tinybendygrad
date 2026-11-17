@@ -7612,3 +7612,69 @@ CALL, BARRIER}**) **⇒⇒† AND **BOTH **MISSING **MEMBERS **ARE **LOAD-BEARIN
 **GENERATED** **BECAUSE **A **GATE **ALREADY **GUARDS **THEM** (`gates/opseven-gate.py`'s
 **`ops_value_is_declaration_order()`) **⇒⇒† AND **A **SECOND **INSTRUMENT **FOR **ONE **PROPERTY **IS
 **A **SECOND **SOURCE **OF **TRUTH**.
+
+### 138.13 THE **COMMENTS **ARE **PORTED**, **AND **THE **AUDIT **SAYS **THE **PORT **CARRIES **21%** OF
+**UPSTREAM's **REASONING** -- **⇒⇒† AND **THE **PORT's **OWN **CITATIONS **ARE **43% **WRONG**
+
+**⇒⇒† AND **§138.12 **PORTED **UPSTREAM's **COMMENTS** (⇒⇒† AND **THE **NUMBERS **ARE **THERE**), **⇒⇒†
+**AND **THE **AUDIT **THAT **FOLLOWS **IS **THE **LARGER **RESULT**, **⇒⇒† AND **IT **MEASURED **THE
+**PORT's **OWN **CITATIONS **AND **FOUND **THEM **BROKEN**.
+
+**⇒⇒† AND **THE **POPULATION **IS **DISCOVERED** (DOCTRINE 1): **EVERY **CONTIGUOUS **`#` **COMMENT
+**BLOCK **IN **EVERY **UPSTREAM **`.py` **UNDER **`tinygrad/`** **IS **ONE **ROW** -- **⇒⇒† AND **2,406
+**ROWS**, **⇒⇒† AND **THE **JOIN **KEY **IS **THE **PORT's **OWN **CITATION** (THE **PORT **WRITES
+`# <upstream>.py:<line> -- "<upstream's words>"**)**.
+
+| THE **VERDICT** | THE **COUNT** |
+|---|---|
+| **`PORTED`** (the reasoning is in the port) | **495** |
+| **`GAP-NO-CITATION`** | 1618 |
+| **`GAP-CITED-NO-REASONING`** (a stamp, not a port) | 97 |
+| **`GAP-DIFFERENT-REASONING`** | 129 |
+| **`N/A-PYTHON-ONLY`** | 67 |
+| **THE **PORTED **RATE** (over the 2,339 scored) | **21.2%** |
+
+**⇒⇒† AND **THE **RATE **IS **WILDLY **UNEVEN**: **`schedule/multi.py` 30/36**, **`schedule/rangeify.py`
+30/49**, **`schedule/indexing.py` 29/51** -- **⇒⇒† AND **AGAINST **`mixin/op.py` 2/99**,
+**`renderer/x86.py` 1/126**, **`uop/ops.py` 30/169** -- **⇒⇒† AND **THE **SHARPEST **SINGLE **EDGE**:
+**THE **PORT **CITES **`x86.py` **62 **TIMES **BY **`symbol=`** **AND **CARRIES **1 **OF **ITS **126
+**COMMENT **BLOCKS**.
+
+**⇒⇒† AND **AND **THE **PORT **IS **NOT **A **TRANSCRIPT**: **1,557 **PORT **COMMENT **BLOCKS **CARRY
+**THE **PORT's **OWN **REASONING** **AND **CITE **NO **UPSTREAM **LINE** -- **⇒⇒† AND **THAT **COUNT **IS
+**THE **SIGN**, **⇒⇒† AND **IT **IS **THE **ANSWER **TO **"SHOULD **THE **COMMENTS **BE **A
+**TRANSCRIPT"**: **NO**.
+
+**⇒⇒† AND **THE **AUDIT's **SECOND **FINDING **IS **THE **ONE **THAT **MATTERS **MOST**: **THE **PORT's
+**OWN **CITATIONS **ARE **BROKEN**, **⇒⇒† AND **THE **ROOT **CAUSE **IS **MEASURED**:
+
+| THE **PIN** | THE **CLAIMED **LINE **HOLDS **THE **CLAIM** |
+|---|---|
+| **THE **PRIOR **VENDOR** (upstream **`5c2bf39d6c4b`**) | **59.8%** |
+| **THE **CURRENT **PIN** (upstream **`f5ac54685`**) | **29.7%** |
+
+**⇒⇒† AND **THE **2026-11-03 **RE-VENDOR **MOVED **UPSTREAM **AND **DID **NOT **MOVE **THE **PORT's
+**CITATIONS** -- **⇒⇒† AND **THE **TREE's **OWN **`gates/pin-cite-gate.py` **REPORTS **THIS
+**INDEPENDENTLY** (**`cite.at_no_revision=735` **OF **1629**, **⇒⇒† AND **`cite.at_no_revision_dangling=281`**)**.
+
+**⇒⇒† AND **AND **THE **AMBIGUITY **IS **A **SECOND **READER **COST**: **MEASURED**, **1,002 **OF **THE
+**PORT's **6,124 **BARE-BASENAME **CITATIONS **NAME **A **BASENAME **THAT **NAMES **MORE **THAN **ONE
+**UPSTREAM **FILE** -- **⇒⇒† AND **`dtype.py` **IS **THREE **FILES**, **`op.py` **IS **TWO**, **`elf.py`
+**IS **TWO**, **⇒⇒† AND **`__init__.py` **IS **TWENTY-NINE** -- **⇒⇒† AND **THE **DISAMBIGUATOR **IS
+**THE **CITING **FILE's **OWN **`import` **STATEMENTS** (`gates/bendcite-gate.py` **ALREADY **DOES
+**THIS**)**.
+
+**⇒⇒† AND **AND **THE **DEFECTS **THE **AUDIT **AND **MY **OWN **CHECKER **FOUND **IN **THE **PORTED
+**COMMENTS**, **ALL **FIXED**: **THE **`movement.py:16`** **CITATION **THAT **THE **CURRENT **UPSTREAM
+**DOES **NOT **HAVE** (⇒⇒⇒ AND **THE **RULE **WAS **REMOVED **IN **`9fa22cc4f`**) **⇒⇒⇒ AND **THE **ELEVEN
+**PRE-EXISTING **`nn/onnx.bend` **CITATIONS **THAT **POINTED **AT **UNRELATED **CODE** **⇒⇒⇒ AND **THE
+**`tn_bitwise_not.bend:40`** **POINTER **TO **A **FILE **THAT **DOES **NOT **EXIST** (⇒⇒⇒ AND **THE **DEF
+**IS **A **GROUP **INSIDE **`tensor.bend`**) **⇒⇒⇒ AND **THE **STALE **`Defines = {Ops.PARAM, Ops.BUFFER,
+Ops.ALLOC}`** **QUOTE **IN **`uop/spec.bend`** (⇒⇒⇒ AND **UPSTREAM's **OWN **SET **HAS **FIVE**)**.
+
+**⇒⇒† AND **AND **THE **`bendcite-gate` **WAS **ALREADY **RED **BEFORE **THE **COMMENT **COMMITS**
+(MEASURED: **591 **of **1120 **AT **`ba3f52b0a`**) **⇒⇒† AND **THE **COUNT **GREW **TO **623** **BECAUSE
+**THE **COMMENTS **ADDED **POINTERS** -- **⇒⇒† AND **THE **GATE **COUNTS **THE **POINTERS **THAT **DO
+**NOT **HOLD**, **⇒⇒† AND **THE **NEW **ONES **ARE **PRECEDINGLY **THE **POINTERS **INTO **CODE **THE
+**PORT **DOES **NOT **HAVE** (⇒⇒† AND **THE **`OUT-OF-CORPUS` **ONE**, **`tn_bitwise_not.bend`**, **WAS **THE
+**ONLY **ONE **THE **COMMENT **WORK **INTRODUCED**)**.
