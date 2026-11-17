@@ -29695,10 +29695,36 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       cannot be mapped because `movement.bend` and `dtype.bend` are ambiguous
       basenames -- two files each -- and a citation that does not say which file it
       means is not moved by a guess.
-- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-17 on `75151db67`: the port is 254,219
-      lines against upstream's 63,395 = **4.01x**; code-only 113,302 vs 56,436 =
+- [x] THE 1:1 METRIC, RE-MEASURED 2026-11-17 on `74eb478f7`: the port is 254,237
+      lines against upstream's 63,395 = **4.01x**; code-only 113,320 vs 56,436 =
       **2.01x**; gate rows **0**, comments 107,947 (42%), blank 32,970 (13%), code
-      113,302 (45%). It was 4.36x / 2.15x before this session's moves.
+      113,320 (45%). It was 4.36x / 2.15x before this session's moves.
+- [x] THE PROOF SET IS ONE FILE, AND IT PROVES SIXTEEN MORE LAWS.
+      `tinybendygrad/LAWS/PROOF.bend` holds ALL FIFTY laws; `PROOF2.bend` and
+      `PROOF-ALL.bend` are GONE, and the port's gate command is now
+      `./bin/bend tinybendygrad/LAWS/PROOF.bend --check-only` ->
+      `ALL PROOFS CHECK`. MEASURED: the census reads it `0/50/50`.
+      THE TWO HALVES WERE TWO BOOKS BECAUSE OF A CONSTRAINT AND NOT A PLAN --
+      `bend` allows ONE `def` of a law's name PER BOOK, so a half-book reports
+      the OTHER half's laws as open, and the aggregate existed only to join
+      them. The two halves' sixty defs have NO NAME IN COMMON and neither calls
+      a def declared later in its own file, so ONE file holds both. AND THE
+      SPLIT THE LAWS MAKE IS THE SECTIONS: `LAWS.bend`'s own `# <ROMAN>.`
+      headers put the shape half in I, II, III, VI, VII and VIII and the
+      ALU/dtype half in IV and V, and the two census gates now read the SECTION
+      rather than the book.
+- [x] SIXTEEN LAWS ADDED, AND EVERY ONE IS A CLAIM THE PIN's SPEC MAKES AND THE
+      BOOK DID NOT SAY (MEASURED against `f5ac54685074:spec/tinyspec.tex`, not a
+      newer clone). **THE COMPARISON FAMILY WAS BACKWARDS**: the spec says
+      "CmpEq is primitive elementwise equality ... CmpNe is its logical
+      complement", and the port had `CmpNe` as the CONSTRUCTOR and derived
+      `CmpEq` from it -- so `spec.bend` had NO `CmpEq` arm at all. **THE INTEGER
+      DIVISION PAIR WAS MISSING**: the pin's spec has `Truncdiv`/`Truncmod` and
+      its `ops.py` has `Ops.TRUNCDIV`, and the port's spec IR had NEITHER. AND
+      THE PASSTHROUGH OPS' dtype and shape (`Load`, `Copy`, `After`), the two
+      new ops' dtype column, and the elementwise shape of the three comparisons
+      and the two division ops -- the last of which the shape census MEASURED as
+      three unpinned arms.
 - [x] NINE MOVES TOOK THE MACHINERY WITH THEM, AND THEY ARE REDONE. MEASURED:
       `checks/port-compile-gate.py` answered `compiled=191 findings=3`, and two
       of the three were MINE: `codegen/late/gater.bend` and
