@@ -11,15 +11,34 @@
 #       | sed 's/^_*//' | sort -u > /tmp/BD.txt
 #     grep -oE '^[[:space:]]*def [A-Za-z_0-9]+' tinygrad/renderer/cstyle.py | sed -E 's/^[[:space:]]*def //' \
 #       | sed 's/^_*//' | sort -u > /tmp/PY.txt
-#     grep -Fxf /tmp/PY.txt /tmp/BD.txt        # 8 names
+#     grep -Fxf /tmp/PY.txt /tmp/BD.txt        # 13 names
 #
-# EIGHT names survive: render_dtype (CPython's `_render_dtype` AND the LEGACY `render_dtype`),
-# render_type, render_ptr, render_access, render_cast, render_index, render_buffer, wmma_name
-# (`_wmma_name`). `render_kernel` and `uops_to_dtypes` are CPython methods/functions the port
-# does NOT define -- both are the fold wall (`cstyle.bend`'s TODO(p3)s) -- so they fall out, and
-# so does every `render_vector_prefix`/`_render`/`render`/`__getitem__`/`supported_dtypes`/
-# `__init__`/`asm`/`is_cdna*`/`wmma_args`/`fp8_index`/`_ocml`/`create_non_native_float_pats`/
-# `cast_float_to_bf16`, none of which has a port def.
+# THIRTEEN names survive, NOT EIGHT. The census was WRONG about ONE of them and
+# the wrongness is WHY A REAL DEFECT SURVIVED:
+#   render_dtype (CPython's `_render_dtype` AND the LEGACY `render_dtype`),
+#   render_type, render_ptr, render_access, render_cast, render_index,
+#   render_buffer, wmma_name (`_wmma_name`), render_vector_prefix,
+#   render_kernel, render, render_defines (`_render_defines`), uops_to_dtypes.
+#
+# THE HEADER USED TO SAY "render_vector_prefix ... none of which has a port
+# def", AND THAT WAS **FALSE**: `tinybendygrad/renderer/cstyle.bend:3089`
+# DEFINES `render_vector_prefix`, AND IT HAS SINCE BEFORE THIS SESSION. The
+# census therefore left the PORT's `aligned(...)` NUMBER -- THE WHOLE OF
+# `render_vector_prefix` -- WITH **NO ROW ANYWHERE**, AND THE PORT's
+# `ku_align` WAS WRONG (A CONSTANT `4` OFF-CPU WHERE UPSTREAM ANSWERS
+# `2**int(math.log2(dt.itemsize * count))`, AND `4` FOR A `bool` WHERE
+# UPSTREAM ANSWERS `1`). The defect was INVISIBLE TO THE CORPUS TOO: the
+# `aligned(...)` CLAUSE APPEARS IN **NONE** OF THE CORPUS's 38 OUTPUTS
+# (MEASURED: `grep -rho "aligned([0-9]*)" runs/graphcmp/D/` IS EMPTY).
+#
+# `render_kernel`, `render` and `uops_to_dtypes` ARE ported but their
+# PORT-SIDE SHAPES NEED THE FOLD (the `TODO(p3)` walls), so they are reached
+# THROUGH the eight functions above rather than driven directly, and
+# `render_defines` (`_render_defines`) IS the function the `rvp_*` ROWS
+# REACH THROUGH `render_vector_prefix`. The rest (`supported_dtypes`,
+# `__init__`, `asm`, `is_cdna*`, `wmma_args`, `fp8_index`, `_ocml`,
+# `create_non_native_float_pats`, `cast_float_to_bf16`) still have no port
+# def.
 #
 # THE dispatch and option tables are not names. `code_for_op`, `code_for_workitem` and the
 # option attributes (`kernel_typedef`, `type_map`, `barrier`, ...) are CPython CLASS ATTRIBUTES,
@@ -445,6 +464,71 @@ def wn_rows() -> IO(Unit):
     c : Unit <- wn_row("wn_c", [16, 16, 128], 14, 12)
     return Unit{}
 
+# ---- render_vector_prefix: THE ALIGNMENT ------------------------------------
+# `render_vector_prefix(dt, count)` -- `cstyle.py:310-313` (the CLANG one; CUDA
+# :455 and HIP :554 OVERRIDE IT with a different body, and the port's def emits
+# the CLANG form for every device tag, so the ORACLE is `ClangRenderer` and the
+# device tag is `1`).
+#
+# THE CLAIM IS THE `aligned(...)` NUMBER, AND IT IS THE WHOLE OF THE FUNCTION:
+#   `alignment = dt.itemsize if self.target.device == "CPU" else
+#                (2**int(math.log2(dt.itemsize * count)) if not dtypes.is_bool(dt) else 1)`
+# Three arms, and the fixture varies all three: the CPU FLAG, the `is_bool`
+# TEST and the PRODUCT `dt.itemsize * count`.
+#
+# THE COUNTS ARE CHOSEN TO HIT THE NON-POWER-OF-TWO PRODUCT, because that is
+# where a `log2` WITHOUT A FLOOR WOULD ANSWER WRONG. MEASURED AGAINST CPython:
+# `f32 x 3` -> 12 bytes -> upstream 8 (NOT 16); `f32 x 5` -> 20 -> 16 (NOT 32);
+# `f32 x 6` -> 24 -> 16 (NOT 32); `i8 x 3` -> 3 -> 2 (NOT 4); `i8 x 5` -> 5 -> 4
+# (NOT 8); `i8 x 6` -> 6 -> 4 (NOT 8). A ROUNDING `log2` answers 16, 32, 32,
+# 4, 8, 8 and disagrees with upstream on all six.
+#
+# THE `bool` ARM IS ITS OWN ROW BECAUSE IT IS A DIFFERENT RULE, NOT A SPECIAL
+# CASE OF THE POWER OF TWO: a `_Bool` VECTOR IS A BIT VECTOR AND ITS ALIGNMENT
+# IS ONE BYTE WHATEVER THE COUNT IS. `bool x 4` -> upstream 1; the port used to
+# answer 4.
+#
+# THE CPU ARM IS ITS OWN ROWS BECAUSE IT IGNORES THE COUNT ENTIRELY: upstream
+# answers `dt.itemsize` on the CPU, so `f32 x 4` is 4 there and 16 off it. A
+# COUNT-BLIND CONSTANT PASSES EVERY OFF-CPU ROW THAT IS NOT A VECTOR AND FAILS
+# EVERY ONE THAT IS -- WHICH IS WHY THE FIXTURE HAS BOTH.
+def rvp_row(+cpu: Bool, +dti: U32, +count: U32) -> IO(Unit):
+  go(String.concat(["rvp_", Bool.pick(String, cpu, "cpu_", "gpu_"), U32.show(dti), "_",
+                     U32.show(count)]),
+     C.render_vector_prefix(1, cpu, dt_of(dti), count))
+
+# (dti, count) pairs. THE `dti` VALUES ARE THE CENSUS's OWN `dt_of` TABLE:
+# 1 = bool, 2 = int8, 3 = uint8, 6 = int32, 10 = half, 12 = single,
+# 13 = double. THE COUNT LIST IS 2, 3, 4, 5, 6, 8, 16 -- EVERY ONE OF THEM IS
+# A COUNT THE PORT's OWN `uops_to_dtypes` CAN BUILD, AND 3, 5 AND 6 ARE THE
+# NON-POWER-OF-TWO PRODUCTS.
+def rvp_fixtures() -> List<&2, List<&2, U32>>:
+  [[1, 2], [1, 4], [1, 16], [2, 3], [2, 5], [2, 6], [2, 8], [2, 16],
+   [3, 3], [3, 5], [3, 6], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 8],
+   [10, 2], [10, 3], [10, 8], [12, 2], [12, 3], [12, 4], [12, 5], [12, 6],
+   [12, 8], [12, 16], [13, 2], [13, 3], [13, 4], [13, 6], [13, 8]]
+
+def for_rvp_pair(+cpu: Bool, +p: List<&2, U32>) -> IO(Unit):
+  match p:
+    case Nil{}: nil()
+    case Con{d, Nil{}}: rvp_row(cpu, d, 1)
+    case Con{d, Con{c, Nil{}}}: rvp_row(cpu, d, c)
+    case _: nil()
+
+def for_rvp_fx(+cpu: Bool, +fx: List<&2, List<&2, U32>>) -> IO(Unit):
+  match fx:
+    case Nil{}: nil()
+    case p <> t:
+      do IO<Unit>:
+        r : Unit <- for_rvp_pair(cpu, p)
+        for_rvp_fx(cpu, t)
+
+def rvp_rows() -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- for_rvp_fx(False{}, rvp_fixtures())
+    b : Unit <- for_rvp_fx(True{}, rvp_fixtures())
+    return Unit{}
+
 # ---- main: THE ROW SEQUENCE, in the oracle's order -------------------------
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -462,6 +546,7 @@ def main() -> IO(Unit):
     l : Unit <- rt_rows()
     m : Unit <- for_ri(ri_devs())
     n : Unit <- wn_rows()
+    n2 : Unit <- rvp_rows()
     o : Unit <- for_ops("cfo_", 0, cfo_ops(), 12)
     p : Unit <- for_ops("cfo_", 1, cfo_clang(), 12)
     q : Unit <- for_ops("cfo_", 3, cfo_sin(), 12)

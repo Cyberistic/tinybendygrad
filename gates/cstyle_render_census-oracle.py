@@ -14,19 +14,25 @@ reimplements the thing it checks agrees with itself.
 THE POPULATION IS DISCOVERED, NOT LISTED. `gates/cstyle_render_census.bend`'s header states the
 rule; the short form is: a name is a ROW iff `tinygrad/renderer/cstyle.py` defines a method or
 function of that name (leading underscores stripped) AND the port's def emits a String (or a
-value) from a UOp. EIGHT names survive:
+value) from a UOp. The header used to say EIGHT names survive and that
+`render_vector_prefix` has "no port def" -- AND **THAT WAS FALSE**:
+`tinybendygrad/renderer/cstyle.bend:3089` DEFINES IT. So the `aligned(...)` NUMBER had NO ROW
+ANYWHERE and the port's `ku_align` was wrong (a constant `4` off-CPU where upstream answers
+`2**int(math.log2(dt.itemsize * count))`, and `4` for a `bool` vector where upstream answers
+`1`). THIRTEEN names survive now, and the `rvp_*` ROWS ARE THE MISSING ONES. The ones this lane
+DRIVES are:
 
     render_dtype    <- `_render_dtype` (the workhorse) AND the LEGACY `render_dtype`
     render_type render_ptr render_access render_cast render_index render_buffer
     wmma_name       <- `_wmma_name`
+    render_vector_prefix
 
-`render_kernel` and `uops_to_dtypes` are CPython methods/functions the port DOES NOT define
-(both are the fold wall, `cstyle.bend`'s TODO(p3)s), so they fall out. `render_vector_prefix`,
-`_render`, `render`, `__getitem__`, `supported_dtypes`, `__init__`, `asm`, `is_cdna*`,
-`wmma_args`, `fp8_index`, `_ocml`, `create_non_native_float_pats`, `cast_float_to_bf16` have no
-port def either. The renderer's DISPATCH and OPTION TABLES (`code_for_op`, `code_for_workitem`,
+`render_kernel`, `render` and `uops_to_dtypes` ARE ported but their PORT-SIDE SHAPES NEED THE
+FOLD (the `TODO(p3)` walls), so they are reached THROUGH the functions above rather than driven
+directly, and `render_defines` (`_render_defines`) IS reached through `render_vector_prefix`.
+The renderer's DISPATCH and OPTION TABLES (`code_for_op`, `code_for_workitem`,
 `type_map`, `kernel_typedef`, ...) are CPython CLASS ATTRIBUTES, not methods, so they are not
-names in the population -- the census reaches them THROUGH the eight functions and, for the ones
+names in the population -- the census reaches them THROUGH the functions above and, for the ones
 no ported function reads, drives the port's own table def directly. Those rows are marked `opt_`
 and `cfo_`/`cfw_` below.
 
@@ -85,6 +91,19 @@ DTS = [dtypes.void, dtypes.bool, dtypes.int8, dtypes.uint8, dtypes.int16, dtypes
        dtypes.int32, dtypes.uint32, dtypes.int64, dtypes.uint64, dtypes.half, dtypes.bfloat16,
        dtypes.float, dtypes.double, dtypes.fp8e4m3, dtypes.fp8e5m2, dtypes.fp8e4m3fnuz,
        dtypes.fp8e5m2fnuz]
+# THE `render_vector_prefix` FIXTURE, IN THE SAME ORDER AS THE DRIVER's
+# `gates/cstyle_render_census.bend`'s `rvp_fixtures()`. THE TWO LISTS MUST
+# AGREE ROW FOR ROW AND THE ORDER IS THE CLAIM: the gate's diff is
+# POSITIONAL, so a row that MOVED is a disagreement, not a rename.
+#
+# THE `dti` VALUES ARE INDICES INTO `DTS` ABOVE: 1 = bool, 2 = int8,
+# 3 = uint8, 6 = int32, 10 = half, 12 = float, 13 = double. THE COUNTS ARE
+# 2, 3, 4, 5, 6, 8 AND 16, AND 3, 5 AND 6 ARE CHOSEN BECAUSE THEIR PRODUCTS
+# WITH THE ITEMSIZE ARE NOT POWERS OF TWO.
+RVP_FIXTURES = [(1, 2), (1, 4), (1, 16), (2, 3), (2, 5), (2, 6), (2, 8), (2, 16),
+                (3, 3), (3, 5), (3, 6), (6, 2), (6, 3), (6, 4), (6, 5), (6, 6), (6, 8),
+                (10, 2), (10, 3), (10, 8), (12, 2), (12, 3), (12, 4), (12, 5), (12, 6),
+                (12, 8), (12, 16), (13, 2), (13, 3), (13, 4), (13, 6), (13, 8)]
 DEVS = [CStyleLanguage, ClangRenderer, OpenCLRenderer, MetalRenderer, CUDARenderer, HIPRenderer]
 R = [object.__new__(c) for c in DEVS]          # the methods under test read only class attrs + self.r
 for x in R: x.r = {}
@@ -307,6 +326,35 @@ def main():
     row("wn_a", wmma((16, 16, 16), 2, 12))
     row("wn_b", wmma((16, 8, 32), 10, 10))
     row("wn_c", wmma((16, 16, 128), 14, 12))
+    # rvp_ -- render_vector_prefix, THE ALIGNMENT.
+    #
+    # `ClangRenderer.render_vector_prefix` (cstyle.py:310-313) is THE REAL
+    # METHOD, NOT A REIMPLEMENTATION: it reads `dt.itemsize`, `dtypes.is_bool`,
+    # `self.target.device` and `self._render_dtype`/`self.render_dtype`, so
+    # asking it is asking upstream. CUDA (:455) and HIP (:554) OVERRIDE the
+    # method with a DIFFERENT body (a `struct __align__(...)` and a typedef
+    # with NO alignment attribute), and the PORT's `render_vector_prefix` emits
+    # the CLANG form for every device tag -- so the oracle is the CLANG
+    # renderer and the port's device tag is 1.
+    #
+    # THE FIXTURE VARIES ALL THREE ARMS OF UPSTREAM's ONE-LINE FORM:
+    #     alignment = dt.itemsize if self.target.device == "CPU" else
+    #                  (2**int(math.log2(dt.itemsize * count)) if not dtypes.is_bool(dt) else 1)
+    # THE CPU FLAG (the `target.device` half), THE `is_bool` TEST (the `bool`
+    # rows), AND THE PRODUCT `dt.itemsize * count` (the counts 3, 5 and 6,
+    # whose products are 12, 20 and 24 -- NOT powers of two, so a `log2`
+    # WITHOUT A FLOOR answers 16, 32 and 32 where upstream answers 8, 16
+    # and 16).
+    #
+    # `R[1].target` IS SET PER ROW, NOT ONCE: `self.target.device` is read
+    # INSIDE the method, so a single `target` would make every row one arm.
+    # THE `Target` OBJECT IS UPSTREAM's OWN (`tinygrad/helpers.py`), and
+    # `Target(device="CPU")` IS HOW UPSTREAM SPELLS THE CPU DEVICE.
+    for cpu in (False, True):
+        R[1].target = Target(device="CPU" if cpu else "X")
+        for dti, count in RVP_FIXTURES:
+            row(f"rvp_{'cpu' if cpu else 'gpu'}_{dti}_{count}",
+                safe(lambda: R[1].render_vector_prefix(DTS[dti], count)))
     # cfo_ -- the ALU dispatch table
     for n, _, _ in OPS:
         row(f"cfo_0_{n}", cfo(0, n, dtypes.float))

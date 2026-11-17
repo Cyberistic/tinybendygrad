@@ -26,6 +26,7 @@ KIND is what the mutation is FOR, and the two are reported apart because they fa
   VALUE    a rendering, not a refusal.
   MARKER   the oracle's `REFUSE:` prefix, which is this lane's own vocabulary.
 """
+import importlib.util
 import subprocess
 import sys
 
@@ -133,6 +134,21 @@ def rows_moved(base, now):
     return {k for k in set(base) | set(now) if base.get(k) != now.get(k)}
 
 
+def _gate_rows():
+    """The gate's OWN row count, read out of the gate file by IMPORTING it.
+
+    NOT a literal here, and NOT a second copy of `ROWS`: the number lives in
+    `gates/cstyle_render_census-gate.py` and this reads it from there, so a
+    census that grows a row group does not silently make this harness REFUSE.
+    MEASURED: it did exactly that -- the literal `722` was wrong the moment the
+    `rvp_*` rows landed, and the refusal read as a broken tree.
+    """
+    spec = importlib.util.spec_from_file_location("cstyle_census_gate", GATE)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.ROWS
+
+
 # (label, kind, file, old, new). `old` must be a UNIQUE substring: an anchor that appears
 # twice would mutate an unrelated arm and the reading would name the wrong row.
 MUTATIONS = [
@@ -175,6 +191,31 @@ MUTATIONS = [
     # `amd_dsl_census-oracle.py:120` are the two precedents for it.
     ("M11 the oracle drops the REFUSE marker", "MARKER", "oracle",
      'return f"REFUSE:{type(e).__name__}"', "return type(e).__name__"),
+    # -- ALIGNMENT. M12 IS THE PLANT FOR THE DEFECT THIS SESSION FIXED, AND IT IS
+    # THE ONE THAT PROVES THE `rvp_*` ROWS ARE NOT A LABEL.
+    #
+    # THE ANCHOR IS THE PORT's OWN `ku_align` BODY, AND THE MUTATION IS THE
+    # DEFECT ITSELF: THE CONSTANT `4` OFF-CPU, WITH NO `count` AND NO `is_bool`
+    # TEST -- EXACTLY WHAT THE PORT DID BEFORE THE FIX. IT IS THE PLANT, NOT A
+    # HYPOTHETICAL: THE `rvp_*` ROWS HAVE TO MOVE WHEN THE PORT's ANSWER MOVES
+    # BACK, OR THEY ARE DECORATIVE AND THE FIX IS UNCHECKED.
+    #
+    # A MUTATION THAT MOVED ZERO ROWS WOULD BE THE CLASS `M8` IS ABOUT: A ROW
+    # THAT LOOKS LIKE IT CHECKS THE ALIGNMENT AND CHECKS NONE OF IT.
+    #
+    # MEASURED: M12 MOVES **26** OF THE 64 `rvp_*` ROWS AND THE GATE GOES rc=1.
+    # THE 26 ARE EVERY OFF-CPU ROW WHOSE ANSWER IS NOT 4 -- WHICH INCLUDES THE
+    # THREE `bool` ROWS (1 -> 4), THE NON-POWER-OF-TWO PRODUCTS (`f32 x 3`:
+    # 8 -> 4; `f32 x 5`: 16 -> 4; `i8 x 3`: 2 -> 4) AND EVERY WIDER VECTOR.
+    # THE 38 THAT DO NOT MOVE ARE THE 32 CPU ROWS (WHICH TAKE THE
+    # `dt.itemsize` ARM, WHICH M12 KEEPS) AND THE SIX OFF-CPU ROWS WHOSE
+    # ANSWER WAS ALREADY 4 (`f16 x 2`, `f16 x 3`, `i8 x 5`, `i8 x 6`, `u8 x 5`,
+    # `u8 x 6` -- ALL OF THEM A 4-BYTE PRODUCT, WHICH IS THE ONE CASE WHERE
+    # THE DEFECT AND THE FIX AGREE).
+    ("M12 the alignment is the constant 4 again", "VALUE", "port",
+     "  Bool.pick(U32, cpu, S.Dt.itemsize(dt),\n"
+     "    Bool.pick(U32, S.Dt.is_bool(dt), 1, U32.shln(1, U32.log2(U32.mul(S.Dt.itemsize(dt), count)))))",
+     "  Bool.pick(U32, cpu, S.Dt.itemsize(dt), 4)"),
 ]
 
 # M8 IS THE ONE THAT ANSWERED NOTHING, and it is why this file exists rather than a list of
@@ -199,8 +240,15 @@ def main():
     base, rc0 = capture_lanes(), run_gate()[0]
     unstage()
     print(f"-- unmutated: rc={rc0}, {len(base)} lane rows")
-    if rc0 != 0 or len(base) != 722:      # 361 py + 361 bd
-        print("-- the unmutated tree does not reproduce; nothing below would mean anything")
+    # THE LANE-ROW COUNT IS DERIVED FROM THE GATE's OWN `ROWS`, NOT TYPED IN. It was
+    # the literal `722` (361 py + 361 bd) and the `rvp_*` rows made it 850, so the
+    # harness REFUSED to run and said "the unmutated tree does not reproduce" -- which
+    # READS LIKE A BROKEN TREE and IS ACTUALLY A STALE NUMBER. A SECOND COPY OF A
+    # COUNT IS A CONTRACT WITH NO GENERATOR; the generator is `ROWS` in the gate file.
+    want_lane_rows = 2 * _gate_rows()
+    if rc0 != 0 or len(base) != want_lane_rows:
+        print(f"-- the unmutated tree does not reproduce ({len(base)} lane rows, expected "
+              f"{want_lane_rows}); nothing below would mean anything")
         return 1
     moved, still_green = [], []
     for label, kind, target, old, new in MUTATIONS:
