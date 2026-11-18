@@ -18,9 +18,6 @@
 # ELEVEN TABLES, ELEVEN DISPATCHES, and deliberately no generic one: `ops.bend` cannot call into
 # this file and a rule table must be a top-level `Data` value (there are no closures), so every
 # table gets its own `rf_<x>_table`/`_dispatch`/`_try`/`_scan`. The duplication IS the port.
-# `pm_mops`/`pm_flatten_range` are OTHER files' tables; their foreign tags stay IN the table
-# because the length and the tag space are Python facts the gate checks, and each dispatches to
-# `rf_foreign`, which answers "no node" and names the owning file.
 #
 # wall: the root, not the child. `.f()` rebuilds the pattern with the op passed to `f` at the
 # ROOT and the receiver as the CHILD, and `pdict` is keyed on `p.op` (ops.py:1587, 1607) -- so a

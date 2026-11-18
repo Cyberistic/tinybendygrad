@@ -1040,7 +1040,7 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # f32 IS THE IDENTITY, because Bend's F32 IS the f32: a Bend float LITERAL is already
 # the f32 rounding of the decimal (bend.ts:2204-2210 makes `Lit("F32",
 # f32_to_bits(v))`), and upstream's `truncate[float32]` is `ctypes.c_float(x).value`,
-# which is the same rounding. weakfloat IS THE IDENTITY TOO, and upstream AGREES:
+# which is the same rounding. weakfloat IS THE IDENTITY TOO: upstream's
 # `truncate.get(self, float)` is `float` for a dtype the dict does not name.
 #
 # f64 IS A WALL AND NOT A NEAR MISS. Upstream's `truncate[float64]` is

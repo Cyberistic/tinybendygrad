@@ -134,9 +134,6 @@
 #
 # so the rows are small and that is the point: `group_up_*` is 1 on all three
 # fixtures and `gfr_*` is 0 on all three, and both are derived from CPython.
-# `gfr_red` in particular is 0 because `group_for_reduces` counts WARP and LOCAL
-# axes and a base reduce kernel has a REDUCE, not a LOCAL -- which is what makes
-# heuristic.py's `while` loop reachable at all.
 
 import Base
 import ./postrange.bend as PR

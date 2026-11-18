@@ -17,14 +17,9 @@
 #     >>> import tinygrad.nn.torch
 #     ImportError: torch frontend not in release
 #     To fix, install tinygrad from a git checkout with pip install -e .
-#     >>> type(e.__cause__).__name__
-#     'ModuleNotFoundError'      # "No module named 'torch'"
 #
 # So the four lines are a PATH DERIVATION, a sys.path MUTATION, a guarded import
 # and a refusal that KEEPS ITS CAUSE (`from e`). Those four things are the port.
-# There is no Bend `torch` here and inventing one would be a fiction: the whole
-# content of the file is the guard, so the guard is what is ported, and the gate
-# checks the guard.
 #
 # WHAT IS PORTED, DEF BY DEF.
 #
