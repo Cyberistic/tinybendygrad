@@ -626,6 +626,69 @@ def xw_lk() -> String:
   String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
     String.join(fw_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
 
+# THE TWO-KERNEL FORWARD CHAIN, BUILT IN STAGES SO EACH TYPE IS CHECKED BEFORE THE NEXT: a
+# window sum into a hidden buffer, then a linear layer that reads that buffer. `h`'s node
+# index stays valid in the after-chain's arena because an augmented arena is a superset.
+def fwd_prog() -> RZ.RZProg:
+  +h = RZ.rz_input(O.Arena.empty(), 0, 784, [1, 1, 28, 28])
+  +x = RZ.rz_input(T.Tensor.ar(h), 1, 784, [1, 1, 28, 28])
+  +e = MX.mxw_expand(x, [3, 3])
+  +f1 = T.tn_rop(T.Tensor.ar(e), T.Tensor.u(e), O.OpsADD{}, [0, 1])
+  +a1 = RZ.rz_after(h, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
+  +o = RZ.rz_input(O.Found.ar(a1), 2, 10, [1, 10])
+  # THE AFTER IS THE READABLE HANDLE: `AFTER(buf, stores...)` means "buf, valid after those
+  # stores", so kernel B reads `a1` and not the bare buffer -- that edge is what orders the two.
+  +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
+  +w = RZ.rz_input(T.Tensor.ar(hf), 3, 7840, [784, 10])
+  +lhs = MX.mxw_reshape.go(hf, [1, 1, 784])
+  +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w, [1, 784, 10]), [0, 2, 1])
+  +m = T.tn_mul(lhs, rhs)
+  +f2 = T.tn_rop(T.Tensor.ar(m), T.Tensor.u(m), O.OpsADD{}, [2])
+  +a2 = RZ.rz_after(o, T.tn_new(O.Found.ar(f2), O.Found.i(f2)))
+  +snk = O.UOp.sink(O.Found.ar(a2), [O.Found.i(a1), O.Found.i(a2)])
+  RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
+
+# EVERY KERNEL the LINEAR holds, rendered -- not just `sc_src0`. Three shapes forced by the
+# language: the accumulator is a PAIR bound only to a PARAMETER (a `+` local must be `Data`),
+# the match on `ks` must come BEFORE any local unpack, and the helper that unpacks `p` must NOT
+# recurse (a helper that calls back is mutual recursion, which is refused).
+def mk_emit(p: (O.Arena & List<&2, C.KU>), +i: U32, +acc: List<&2, String>) -> (O.Arena & List<&2, String>):
+  (ar, +kus) = p
+  (ar, List.append(&2, String, acc,
+        [String.concat(["--k", U32.show(i), ":", DEV.Prog.src(DEV.program("k", kus))])]))
+
+def mk_step(p: (O.Arena & List<&2, String>), +k: U32, +i: U32) -> (O.Arena & List<&2, String>):
+  (+ar, +acc) = p
+  mk_emit(DEV.body_kus(ar, k), i, acc)
+
+def mk_one.go(+ks: List<&2, U32>, p: (O.Arena & List<&2, String>), +i: U32) -> (O.Arena & List<&2, String>):
+  match ks:
+    case Nil{}: p
+    case k <> t: mk_one.go(t, mk_step(p, k, i), U32.add(i, 1))
+
+def mk_fin(p: (O.Arena & List<&2, String>)) -> String:
+  (ar, acc) = p
+  String.join(acc, "\n")
+
+def fwd_c() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  mk_fin(mk_one.go(SCH.lin_kernels(lin), (SCH.lin_ar(lin), Nil{}), 0))
+
+def fwd_lk() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ks = SCH.lin_kernels(lin)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
+    String.join(fw_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
+
+def fwd_kg() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  RR.rr_dump(O.Found.ar(kg), O.Found.i(kg))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -653,6 +716,9 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["fwd_lk=", fwd_lk()]))
+    _ : Unit <- IO.print(String.concat(["fwd_kg=", fwd_kg()]))
+    _ : Unit <- IO.print(String.concat(["fwd_c=", fwd_c()]))
     _ : Unit <- IO.print(String.concat(["xw_lk=", xw_lk()]))
     _ : Unit <- IO.print(String.concat(["xw_c=", xw_c()]))
     _ : Unit <- IO.print(String.concat(["xw_row=", xw_row()]))
