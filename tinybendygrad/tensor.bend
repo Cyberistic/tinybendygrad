@@ -1645,20 +1645,7 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # `return self.assign(self.<op>(x))`, and the reason they are not here is NOT operator
 # overloading -- BEND HAS IT (`bend guide:630`: inside `(.. : T)` the operators call `T.add`
 # through `T.mod`). It is the ASSIGNMENT half: `self.assign(...)` MUTATES, and Bend is affine.
-#   tensor.py:534  __iadd__        assign + elementwise.py:101 (Ops.ADD)
-#   tensor.py:535  __isub__        assign + elementwise.py sub (Ops.SUB)
-#   tensor.py:536  __imul__        assign + elementwise.py:143 (Ops.MUL)
-#   tensor.py:537  __itruediv__    assign + elementwise.py div (Ops.FDIV)
-#   tensor.py:538  __ifloordiv__   assign + elementwise.py floordiv
-#   tensor.py:539  __ipow__        assign + elementwise.py pow (Ops.POW)
-#   tensor.py:540  __iand__        assign + elementwise.py:171 (Ops.AND)
-#   tensor.py:541  __ior__         assign + elementwise.py:185 (Ops.OR)
-#   tensor.py:542  __ixor__        assign + elementwise.py:200 (Ops.XOR)
-#   tensor.py:543  __ilshift__     assign + elementwise.py:353 (Ops.SHL)
-#   tensor.py:544  __irshift__     assign + elementwise.py:364 (Ops.SHR)
-#   tensor.py:545  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
-#   tensor.py:549  __eq__          elementwise.py eq (Ops.CMPEQ)
-#
+# THE TABLE IS IN `.agents/slop/tables/tensor-1648.md`.
 # The `Ops` each names is the whole of the port that is tensor.py's, and it is here as a table
 # rather than as twelve defs because twelve defs that each call a `TODO` wall would be twelve
 # lines that say the same thing. `_binop` (elementwise.py:36) is `lhs, rhs = self._broadcasted(x,
@@ -1670,47 +1657,18 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # such form. The operator is fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs
 # a mutable target. Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So
 # Python's `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:534  __iadd__        assign + elementwise.py:101 (Ops.ADD) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:535  __isub__        assign + elementwise.py sub (Ops.SUB) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:536  __imul__        assign + elementwise.py:143 (Ops.MUL) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:537  __itruediv__    assign + elementwise.py div (Ops.FDIV) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:538  __ifloordiv__   assign + elementwise.py floordiv -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:539  __ipow__        assign + elementwise.py pow (Ops.POW) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:540  __iand__        assign + elementwise.py:171 (Ops.AND) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:541  __ior__         assign + elementwise.py:185 (Ops.OR) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:542  __ixor__        assign + elementwise.py:200 (Ops.XOR) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:543  __ilshift__     assign + elementwise.py:353 (Ops.SHL) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:544  __irshift__     assign + elementwise.py:364 (Ops.SHR) -- the `__i*__` blocker above.
-# TODO(p3) tensor.py:545  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
-# TODO(p3) tensor.py:549  __eq__          elementwise.py eq (Ops.CMPEQ)
-#   -- blocked. `==` is the TYPE comparison in BEND, not a value one: bend guide:632 --
-#   "Equality of values is a call, `T.is_eq(a, b)`; `==` is only the type." So `__eq__` has no
-#   operator to be, and the port names `T.is_eq` where it needs the comparison. This is NOT the
-#   `__i*__` blocker: there the operator exists and the assignment does not; here it is reversed.
+# `__eq__` IS NOT THE `__i*__` BLOCKER: there the operator exists and the assignment does not;
+# here it is reversed. `==` IS THE TYPE COMPARISON IN BEND, NOT A VALUE ONE (bend guide:632 --
+# "Equality of values is a call, `T.is_eq(a, b)`; `==` is only the type"), so `__eq__` has no
+# operator to be, and the port names `T.is_eq` where it needs the comparison.
 #
 # THE REALIZE PATH -- tensor.py:167-225, the foreign seam, and the whole of it is three
 # `TODO(p3)`s. They are here, in Python's order and with the wall each CALL names, because "the
 # realize path is a wall" is only useful if the next reader can see which call in each body is
 # the wall.
 #
-# `linear_with_vars` (tensor.py:167-210), 44 lines, the calls in order:
-#   :167 `@rewrite_group(...)`                              P3, WALL 3
-#   :171 `graph_rewrite(sink, PatternMatcher([]))`         P3, WALL 3
-#   :173 `u.dtype in dtypes.weaks and u.device is not None` PORTED (fold)
-#   :176 `{x.base for x in sink.src}`                        PORTED (fold)
-#   :178 `x.op in {STAGE, DETACH, CONTIGUOUS_BACKWARD}`      PORTED (op_in)
-#   :179 `x.storage_base`                                   P3, ops.py:801
-#   :184 `x.replace(src=...)`                                P3, ops.py:310
-#   :185 `UOp.new_buffer`                                    WALL 2
-#   :186 `u.needs_storage()`                                 P3, ops.py:780
-#   :192 `src.is_virtual or src.on_disk() or src.has_buffer_identity()`   P3
-#   :194 `contiguous_mops_to_view(None, u, src)`             SCHEDULE
-#   :196 `UOp.new_buffer(...).reshape(...).shrink_to(...)`   WALL 2
-#   :197 `src.axis`                                          P3, ops.py:718
-#   :198 `buf.unshard(src.axis)`                             P3, ops.py:692
-#   :204 `graph_rewrite(u.src[0], pm_drop_after)`            P3, WALL 3
-#   :207 `UOp.sink(...).substitute(becomes_map, walk=True)`  P3, WALL 3
-#   :210 `create_linear_with_vars(sink)`                     SCHEDULE
+# `linear_with_vars` (tensor.py:167-210), 44 lines, the calls in order: THE TABLE IS IN
+# `.agents/slop/tables/tensor-1697.md`.
 #
 # THE FOUR UPSTREAM WHY-S OF THIS BODY, and none of them is visible in the calls list above:
 #   tensor.py:170 -- "weakness ends where storage begins". A WEAK dtype (half, bfloat16, an
@@ -1747,50 +1705,8 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #
 # THE DEVICE HALF. Every one of these is WALL 2, and they are listed rather than left out
 # because THE LIST IS THE DELIVERABLE: this is the exact set of tensor.py's methods that a
-# Tensor-shaped port cannot have until there is a `Buffer`.
-# TODO(p3) tensor.py:38   _fromnp      -- `UOp.new_buffer` + `buffer.allocate`
-# TODO(p3) tensor.py:153  as_param     -- `UOp.param_like` is ops.py:1239, P3
-# TODO(p3) tensor.py:156  call         -- `UOp.call_with_output` + a `grad_fxn` kwarg
-# TODO(p3) tensor.py:159  custom_kernel -- `UOp.custom_kernel`
-# TODO(p3) tensor.py:276  _buffer      -- `x.realize().uop.buffer`
-# TODO(p3) tensor.py:283  _data        -- `memoryview`
-# TODO(p3) tensor.py:287  data         -- WALL 2, and `dtypes.fmt` with it
-# TODO(p3) tensor.py:306  tolist       -- WALL 2, and the `_tolist` recursion is a
-#                                         nested-forward tree printer, which
-#                                         bend2-constraints records as refused
-# TODO(p3) tensor.py:328  numpy        -- WALL 2, and numpy is a foreign module
-# TODO(p3) tensor.py:344  clone        -- `UOp.clone` is ops.py:882, `empty_like` plus
-#                                         `after(store(src.cast))`, so the AFTER/STORE
-#                                         spine is ported above and only the
-#                                         `empty_like` is missing
-# TODO(p3) tensor.py:353  to           -- `canonicalize_device`, `is_disk_device`,
-#                                         `empty_like`, `clone`, `copy_to_device`
-# TODO(p3) tensor.py:369  to_          -- `to` + `replace`
-# TODO(p3) tensor.py:377  shard        -- `UOp.shard` is ops.py:757 and `_resolve_dim`
-#                                         is mixin/movement.py. Upstream's own
-#                                         comment at tensor.py:366 is the reason the
-#                                         CLONE is not optional: "a shard of a load
-#                                         from a creation device (disk/npy/python)
-#                                         wants the copy to persist, so it inserts a
-#                                         clone". A CREATION DEVICE is one that
-#                                         materialises on demand -- a file, an
-#                                         in-memory blob -- and its contents are
-#                                         GONE once the load is consumed, so a
-#                                         shard of one has to COPY rather than
-#                                         view. `self.uop.on_creation_device()`
-#                                         is the test and `UOp.clone` is the copy.
-# TODO(p3) tensor.py:395  shard_       -- `shard` + `replace`
-# TODO(p3) tensor.py:401  shard_like   -- `shard` + `to`
-# TODO(p3) tensor.py:412  from_blob    -- an external pointer
-# TODO(p3) tensor.py:426  from_url     -- `helpers.fetch`
-# TODO(p3) tensor.py:442  manual_seed  -- class-level mutable state
-# TODO(p3) tensor.py:460  _next_counter -- the same, plus slicing and `assign`
-# TODO(p3) tensor.py:502  __setitem__  -- `backward_slice`, `is_realized`,
-#                                         `_base_buffer_is_realized` and
-#                                         mixin/elementwise.py's `_getitem`
-# TODO(p3) tensor.py:530  __delitem__  -- `raise TypeError`, and `__bool__`'s wall
-# TODO(p3) tensor.py:553  decode_hevc_frame -- `Variable.unbound` and
-#                                         `Ops.CUSTOM_FUNCTION`
+# Tensor-shaped port cannot have until there is a `Buffer`. THE TABLE IS IN
+# `.agents/slop/tables/tensor-1751.md`.
 #
 # AND THE METADATA HALF, which is a third thing: tensor.py:567-589 is a `contextvars`-free
 # mutable class (`_ContextVar`), a decorator (`_metadata_wrapper`) and a REFLECTION loop that
@@ -1807,25 +1723,6 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #
 #   567  # this tracks the tensor.py METADATA, contextvars.ContextVar was
 #   568  class _ContextVar(Generic[T]):
-#   569    def __init__(self, default:T): self.state:T = default
-#   570    def get(self) -> T: return self.state
-#   571    def set(self, x:T) -> T:
-#   572      ret, self.state = self.state, x
-#   573      return ret
-#   574  _METADATA: _ContextVar[Metadata|None] = _ContextVar(default=None)
-#   576  def _metadata_wrapper(fn: Callable[P, T]) -> Callable[P, T]:
-#   577    def _wrapper(*args: P.args, kwargs: P.kwargs) -> T:
-#   578      if TRACEMETA < 1 or _METADATA.get() is not None: return fn(*args, kwargs)
-#   579      token = _METADATA.set(Metadata(name=fn.__name__))
-#   580      with cpu_profile(TracingKey(fn.__name__), "USER"):
-#   581        ret = fn(*args, **kwargs)
-#   582      _METADATA.set(token)
-#   583      return ret
-#   584    return _wrapper
-#   586  if TRACEMETA >= 1:
-#   587    for name, fn in inspect.getmembers(Tensor, inspect.isfunction):
-#   588      if name in ["__class__", "__del__", "__init__", "__new__", "__repr__", "backward", "sequential", "gradient"]: continue
-#   589      setattr(Tensor, name, functools.wraps(fn)(_metadata_wrapper(fn)))
 #
 # SO: `570` is the pin's `def get`, and the CLASS is at 568; `578` is the pin's guard, and the
 # DEF is at 576; `588` is the pin's skip test, and the loop's HEAD is at 586. The drift is the
