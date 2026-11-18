@@ -1,15 +1,7 @@
 # mixin/gradient.bend -- tinygrad/mixin/gradient.py. `pm_gradient` (the reverse-mode rule
 # table) and `compute_gradient` (the walk that drives it).
 #
-# WHAT IS IN HERE. `gradient.py` is 145 lines: three helpers (`reduce_gradient`,
-# `call_gradient`, `partial_store_gradient`), the `pm_gradient` table, `_deepwalk`, and
-# `compute_gradient`. The table is 33 entries and it is the centre of this file: every entry
-# is a top-level def `gr_N`, the table is copyable `Data`, and dispatch is the ~15-line
-# duplicated scan `spec.bend` writes six times. See the header of `uop/spec.bend` for why
-# there is no generic dispatcher: a rule is a def, not a value, so `ops.bend` cannot call
-# into this file and each table owns its driver.
-#
-# the one measured fact in this header, and it is the reason the file exists in this shape:
+# THE ONE MEASURED FACT IN THIS HEADER, and it is the reason the file exists in this shape:
 # `mixin/gradient.py:101` binds the name `dest` TWICE.
 #     (UPat(Ops.AFTER, src=(UPat(name="dest"), UPat(Ops.STORE, src=(UPat(name="dest"), UPat())))),
 #      lambda ctx,dest: (None, ctx)),
@@ -23,20 +15,17 @@
 # insertion order, which is the compiled form (`UPAT_COMPILE=1` is the default, ops.py:1583).
 # Tag 29 is the rebind, tags 27/28/30 are its AFTER siblings, and `t_claims` pins the COUNT.
 #
-# THE SHAPE OF A RULE'S ANSWER, the one design decision here. Python's rule bodies return
-# `tuple[UOp|None, ...]` and `rewrite` returns the FIRST non-`None`. Two facts follow, and
-# both shape the type: a rule that does not match returns `None` and the scan CONTINUES --
-# that is `O.Verdict`'s `VSkip`, a first-wins fold exactly as in `spec.bend`; and a rule that
-# matches returns a list with `None` HOLES (`CMPLT` is `(None,None)`, `STORE` is `(None, ctx)`,
-# `BITCAST` is `(None,)`), and a hole is not a skip. So the answer is a `Data` record with a
-# `List` field, not a `Maybe` of a list (a `Data` record cannot hold a `Maybe` -- see the
-# notes, rule 15). `GFired{gs, ar}` is "matched, here are the per-src gradients" and `GSkip{}`
-# is "no opinion, keep scanning". The `ar` field is the arena AFTER the rule grew it, because
-# a gradient rule BUILDS nodes: `RECIP` is `(-ctx * ret * ret)`, three new nodes. `gs`
-# uses index 0 for a hole: index 0 is the arena's bottom node (`Arena.empty` spends it,
-# ops.bend:1377 symbol=Arena.empty) and `UOp.is_none(u) = U32.is_zero(u)`
-# (ops.bend:1376 symbol=UOp.is_none), so 0 IS tinygrad's own "no uop" and
-# the encoding is not an invention.
+# THE SHAPE OF A RULE'S ANSWER. Python's rule bodies return `tuple[UOp|None, ...]` and
+# `rewrite` returns the FIRST non-`None`. Two facts follow: a rule that does not match
+# returns `None` and the scan CONTINUES -- that is `O.Verdict`'s `VSkip`, a first-wins fold
+# exactly as in `spec.bend`; and a rule that matches returns a list with `None` HOLES (`CMPLT`
+# is `(None,None)`, `STORE` is `(None, ctx)`), and a hole is not a skip. So the answer is a
+# `Data` record with a `List` field, not a `Maybe` of a list. `GFired{gs, ar}` is "matched,
+# here are the per-src gradients" and `GSkip{}` is "no opinion, keep scanning". The `ar` field
+# is the arena AFTER the rule grew it, because a gradient rule BUILDS nodes. `gs` uses index 0
+# for a hole: index 0 is the arena's bottom node (`Arena.empty` spends it, ops.bend:1377
+# symbol=Arena.empty) and `UOp.is_none(u) = U32.is_zero(u)` (ops.bend:1376 symbol=UOp.is_none),
+# so 0 IS tinygrad's own "no uop" and the encoding is not an invention.
 
 import Base
 import ./../LAWS/spec.bend as S
@@ -115,30 +104,28 @@ def k_pi_2() -> O.Const: O.CFloat{1.5707963267948966}
 # `math.log(2)` -- gradient.py:70, :71, :77.
 def k_ln2() -> O.Const: O.CFloat{0.6931471805599453}
 # the folded literals are bare CONSTs and that is not an omission. `UOp.const(v)` with
-# NO dtype is `CFloat{v}` -> weakfloat and the `.cast(dtype)` at ops.py:632 is against
-# `None`, so no CAST is built. Measured: `(math.pi/2 - c)` is `ADD(CONST, MUL(...))`
-# where the CONST's dtype is `weakfloat` and the MUL's is `float` -- the promotion
-# happens at the BINARY, not at the literal. `gconst` (which adds the CAST) is for
-# `const_like`, which passes ctx's dtype EXPLICITLY; `k_pi_2`/`k_ln2`/`k_fzero` etc. are
-# built with `gconst_raw` for the same reason. `sin_n` (10) and `log2_n` (8) are the rows.
-# `-math.inf` -- gradient.py:77 `ret.const_like(-math.inf)`. There is no `inf` LITERAL
-# in Bend (`-1.0e400` is a parse error, "expected : a term, observed : '-'"), and an f32
-# OVERFLOW is the honest way to spell it: `1e30 * 1e30` is `0x7F800000`, which IS f32
-# `+inf` (helpers.bend's `f32_exp_all_ones` reads exactly that bit pattern), and the
-# negation is `-inf`. Measured, and `k_neginf_bits` below is the row that says so.
+# NO dtype is `CFloat{v}` -> weakfloat and the `.cast(dtype)` at ops.py:632 is against `None`,
+# so no CAST is built. Measured: `(math.pi/2 - c)` is `ADD(CONST, MUL(...))` where the CONST's
+# dtype is `weakfloat` and the MUL's is `float` -- the promotion happens at the BINARY, not at
+# the literal. `gconst` (which adds the CAST) is for `const_like`, which passes ctx's dtype
+# EXPLICITLY. `sin_n` (10) and `log2_n` (8) are the rows.
+# `-math.inf` -- gradient.py:77 `ret.const_like(-math.inf)`. There is no `inf` LITERAL in Bend
+# (`-1.0e400` is a parse error, "expected : a term, observed : '-'"), and an f32 OVERFLOW is
+# the honest way to spell it: `1e30 * 1e30` is `0x7F800000`, which IS f32 `+inf`
+# (helpers.bend's `f32_exp_all_ones` reads exactly that bit pattern), and the negation is
+# `-inf`. Measured, and `k_neginf_bits` below is the row that says so.
 def k_inf() -> F32: F32.mul(1.0e30, 1.0e30)
 def k_neginf() -> O.Const: O.CFloat{F32.neg(k_inf())}
 def k_neginf_bits() -> U32: F32.bits(F32.neg(k_inf()))
 
 # the ints and the floats are different nodes, and this is load-bearing rather than
-# pedantic. A CONST's dtype FOLLOWS its value (ops.py:632 `dtype or dtypes.from_py(b)`),
-# so `UOp.const(0)` is `CInt{0}` -> weakint and `UOp.const(0.0)` is `CFloat{0.0}` ->
-# float32. `least_upper(weakint, float32)` is float32 and not weakint, so a rule that
-# folds the wrong one produces a gradient whose dtype -- and therefore whose value at
-# the next node -- differs. Python's fold is dtype-INDEPENDENT (`const_like(0)` at a
-# float ctx is `CFloat{0.0}`; `where(0, ctx)` at a float ctx is the same node), and the
-# rules that need a genuine INT 0 are `TRUNC`'s and `MAX`'s `const_like(0)`, which are
-# ctx-dtype CONSTs. `grad.py`'s `partial_store_gradient` `where(0, ctx)` is the same.
+# pedantic. A CONST's dtype FOLLOWS its value (ops.py:632 `dtype or dtypes.from_py(b)`), so
+# `UOp.const(0)` is `CInt{0}` -> weakint and `UOp.const(0.0)` is `CFloat{0.0}` -> float32.
+# `least_upper(weakint, float32)` is float32 and not weakint, so a rule that folds the wrong
+# one produces a gradient whose dtype -- and therefore whose value at the next node -- differs.
+# Python's fold is dtype-INDEPENDENT (`const_like(0)` at a float ctx is `CFloat{0.0}`;
+# `where(0, ctx)` at a float ctx is the same node), and the rules that need a genuine INT 0 are
+# `TRUNC`'s and `MAX`'s `const_like(0)`, which are ctx-dtype CONSTs.
 def k_fzero() -> O.Const: O.CFloat{0.0}
 def k_fone() -> O.Const: O.CFloat{1.0}
 def k_fhalf() -> O.Const: O.CFloat{0.5}
@@ -180,37 +167,31 @@ def gcast(+ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
   +fx = F.folded(ar)
   gcast.of(gcast.same(gcast.dt(fx, x), dt), ar, x, dt)
 
-# `mask.cast(dtypes.bool)` from `partial_store_gradient` (gradient.py:63) is NOT reached by any
-# caller in this file. A `gbool` def once sat here and NOTHING called it (`grep -rn gbool` = this
-# file only), so a def claiming a CPython expression with no caller is a claim of unknown value.
-# `UOp.const(v)` -- ops.py:632. THE CAST IS NOT OPTIONAL, and this is MEASURED rather
-# than read off:
+# `mask.cast(dtypes.bool)` from `partial_store_gradient` (gradient.py:63) is NOT reached by
+# any caller in this file. A `gbool` def once sat here and NOTHING called it (`grep -rn gbool`
+# = this file only), so a def claiming a CPython expression with no caller is a claim of
+# unknown value.
+# `UOp.const(v)` -- ops.py:632. THE CAST IS NOT OPTIONAL, and this is MEASURED rather than
+# read off:
 #
 #     return UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)
 #
-# so a CONST at a CONCRETE dtype is the TWO nodes `CAST(CONST)`, and only the three
-# dtypes a CONST derives (bool/weakint/weakfloat) fold the cast away -- which is
-# ops.py's own comment on that line. Measured: `UOp.const(0.0, dtypes.f32)` has
-# `op=CAST, nsrc=1` while `UOp.const(0.0, dtypes.weakfloat)` has `op=CONST, nsrc=0`.
-#
-# Every `const_like` in a rule body folds at `ctx.dtype`, which for the ALU rules is a
-# CONCRETE float32, so every one emits a CAST pair. That is why `trunc_n` is 2 and not 1,
-# and why a port that emitted a bare CONST would build a SHORTER tree with the SAME
-# value -- a divergence `t_const_cast` catches and the values would not.
+# so a CONST at a CONCRETE dtype is the TWO nodes `CAST(CONST)`, and only the three dtypes a
+# CONST derives (bool/weakint/weakfloat) fold the cast away. Measured: `UOp.const(0.0,
+# dtypes.f32)` has `op=CAST, nsrc=1` while `UOp.const(0.0, dtypes.weakfloat)` has `op=CONST,
+# nsrc=0`. Every `const_like` in a rule body folds at `ctx.dtype`, which for the ALU rules is
+# a CONCRETE float32, so every one emits a CAST pair -- which is why `trunc_n` is 2 and not 1.
 def gconst_raw(+ar: O.Arena, +v: O.Const) -> O.Found: O.UOp.const(ar, v)
 
-# **THE **ORDER **AS **A **`src[1]`** -- **UPSTREAM's **`_mop` (`ops.py:784,790-791`)
-# **BUILDS **A **PERMUTE **AS **`UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`**, **AND
-# **`usrcs` **IS **`[shape_to_shape_arg(order)]`** -- **AND **`shape_to_shape_arg`
-# (**`ops.py:108-112`**) **IS **A **`STACK` **OF **INTERNED **CONSTs** **OR, **FOR **A
-# **LENGTH-1 **ORDER**, **A **BARE **CONST**.**
+# THE ORDER AS A `src[1]` -- UPSTREAM's `_mop` (ops.py:784,790-791) BUILDS A PERMUTE AS
+# `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)`, AND `usrcs` IS
+# `[shape_to_shape_arg(order)]` -- AND `shape_to_shape_arg` (ops.py:108-112) IS A `STACK` OF
+# INTERNED CONSTs OR, FOR A LENGTH-1 ORDER, A BARE CONST.
 #
-# **AND **THIS **IS **A **LOCAL **COPY **OF **`mixin/movement.bend`'s **`G.stkN`**, **AND
-# **THE **COPY **IS **THE **POINT**: **`mixin/gradient.bend` **CANNOT **IMPORT
-# **`mixin/movement.bend`**, **BECAUSE **`mixin/movement.bend` **IMPORTS **`tensor.bend`
-# **AND **`tensor.bend` **IMPORTS **`mixin/gradient.bend`** -- ****AND **A **CIRCULAR
-# **IMPORT **IS **A **COMPILE **ERROR**, **SO **THE **HELPER **IS **HERE **AND **NOT
-# **SHARED**.**
+# AND THIS IS A LOCAL COPY OF `mixin/movement.bend`'s `G.stkN`, AND THE COPY IS THE POINT:
+# `mixin/gradient.bend` CANNOT IMPORT `mixin/movement.bend`, BECAUSE `mixin/movement.bend`
+# IMPORTS `tensor.bend` AND `tensor.bend` IMPORTS `mixin/gradient.bend` -- AND A CIRCULAR
+# IMPORT IS A COMPILE ERROR, SO THE HELPER IS HERE AND NOT SHARED.
 type GStk is Data:
   GStk{ar: O.Arena, acc: List<&2, U32>}
 
@@ -256,12 +237,12 @@ def gadd(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsADD{}, [x, y], 
 def gmul(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsMUL{}, [x, y], O.ANone{})
 
 # `neg` IS NOT `Ops.NEG`, and this is measured against the tree rather than read off.
-# `elementwise.py:74-76` defines `neg` as `alu(Ops.NEG)`, but by the time a gradient rule
-# sees the node the symbolic rules have rewritten NEG away: `UOp.const(1.0).neg()` has
-# `op=MUL` with srcs `(CONST(1.0), CONST(-1.0))`, and Python's tree for the `RECIP`
-# gradient (gradient.py:68 `-ctx * ret * ret`) shows exactly that -- MULs and two
-# `CONST(-1.0)`, no NEG anywhere. `Ops.NEG` exists in the enum and `schedule/` lowers it;
-# emitting it here would build a graph Python never builds.
+# `elementwise.py:74-76` defines `neg` as `alu(Ops.NEG)`, but by the time a gradient rule sees
+# the node the symbolic rules have rewritten NEG away: `UOp.const(1.0).neg()` has `op=MUL` with
+# srcs `(CONST(1.0), CONST(-1.0))`, and Python's tree for the `RECIP` gradient (gradient.py:68
+# `-ctx * ret * ret`) shows exactly that -- MULs and two `CONST(-1.0)`, no NEG anywhere.
+# `Ops.NEG` exists in the enum and `schedule/` lowers it; emitting it here would build a graph
+# Python never builds.
 def gneg.go(+ar: O.Arena, x: U32) -> O.Found:
   +m = gconst_raw(ar, k_fmone())
   gmul(O.Found.ar(m), x, O.Found.i(m))
@@ -289,30 +270,20 @@ def gwhere(+ar: O.Arena, m: U32, a: U32, b: U32) -> O.Found: gnew(ar, O.OpsWHERE
 # swap is not foldable and both directions are genuinely two nodes.
 def gcmplt(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPLT{}, [x, y], O.ANone{})
 
-# **THE **`eq`/`ne`/`logical_not` **FAMILY **AT **THE **PIN, **AND **THE **OLD
-# **COMMENT **HERE **WAS **WRITTEN **AGAINST **AN **OLDER **UPSTREAM.  MEASURED **AT **THE
-# **PIN **`f5ac54685074`:**
+# THE `eq`/`ne`/`logical_not` FAMILY AT THE PIN, AND THE OLD COMMENT HERE WAS WRITTEN
+# AGAINST AN OLDER UPSTREAM. MEASURED AT THE PIN `f5ac54685074`:
 #
-#   **`tinygrad/mixin/elementwise.py:335-336`**   `eq` IS
-#     **`return self._binop(Ops.CMPEQ, x, False)`** -- **ONE **NODE**, **AND **IT **IS
-#     **`CMPEQ`**, **AND **THE **OLD **CLAIM **"no **`elementwise.py` **method **emits
-#     **[`Ops.CMPEQ`]**" **IS **FALSE **AT **THE **PIN**.
-#   **`tinygrad/mixin/elementwise.py:332-333`**   `ne` IS `self.eq(x).logical_not()`
-#   **`tinygrad/mixin/elementwise.py:49-57`**     `logical_not` IS
-#     **`self.cast(dtypes.bool).eq(False)`**
+#   `tinygrad/mixin/elementwise.py:335-336`  `eq` IS `return self._binop(Ops.CMPEQ, x, False)`
+#     -- ONE NODE, AND IT IS `CMPEQ`, AND THE OLD CLAIM "no elementwise.py method emits
+#     [Ops.CMPEQ]" IS FALSE AT THE PIN.
+#   `tinygrad/mixin/elementwise.py:332-333`  `ne` IS `self.eq(x).logical_not()`
+#   `tinygrad/mixin/elementwise.py:49-57`    `logical_not` IS `self.cast(dtypes.bool).eq(False)`
 #
-# **AND **UPSTREAM's **OWN **GRADIENT **AT **THE **PIN **CONFIRMS **IT **INDEPENDENTLY**:
-# **`tinygrad/mixin/gradient.py:12` **IS ** `mask = ret.src[0].eq(ret).cast(...)`, **`:16`
-# **IS ** `is_zero:=(x:=ret.src[0]).eq(0)`, **`:78` **IS ** `(x.eq(y)).where(ctx, ...)`,
-# **AND **`:73` **IS ** `(UPat((Ops.CMPLT, Ops.CMPEQ)), lambda: (None, None))` -- ****NO
-# **`CMPNE` **ANYWHERE **IN **THE **MAX **OR **POW **GRADIENT**.**
-#
-# **AND **THE **OLD **SPELLING **WAS **WRITTEN **AGAINST **THE **OLD **`eq`**, **WHICH
-# **WAS **`ne().logical_not()`** **AND **WHOSE **`logical_not` **WAS
-# **`alu(Ops.CMPNE, const(True))`** -- ****THE **OLD **CLAIM **"Python's **MAX
-# **gradient **tree **== **... **WHERE, **CMPNE, **CMPNE, **..."** **WAS **TRUE **OF **THE
-# **OLD **UPSTREAM** **AND **IS **FALSE **OF **THE **PIN**, **AND **THE **ROWS
-# **`max_n0`/`max_n1`/`pow_n0`/`pow_n1` **ARE **THE **ROWS **THAT **CATCH **IT**.**
+# AND UPSTREAM's OWN GRADIENT AT THE PIN CONFIRMS IT INDEPENDENTLY:
+# `tinygrad/mixin/gradient.py:12` IS `mask = ret.src[0].eq(ret).cast(...)`, `:16` IS
+# `is_zero:=(x:=ret.src[0]).eq(0)`, `:78` IS `(x.eq(y)).where(ctx, ...)`, AND `:73` IS
+# `(UPat((Ops.CMPLT, Ops.CMPEQ)), lambda: (None, None))` -- NO `CMPNE` ANYWHERE IN THE MAX OR
+# POW GRADIENT.
 def geq(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsCMPEQ{}, [x, y], O.ANone{})
 
 # `logical_not(x)` is `cast(bool).eq(False)` (`elementwise.py:57`), and `eq` is
@@ -339,17 +310,16 @@ def gsqrt(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsSQRT{}, [x], O.ANone{}
 def grecip(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsRECIP{}, [x], O.ANone{})
 def gtrunc(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsTRUNC{}, [x], O.ANone{})
 
-# `x / y` IS NOT AN `FDIV` NODE, and this is the most surprising fact in the arithmetic
-# of this file. `div` (elementwise.py:229-259) is
+# `x / y` IS NOT AN `FDIV` NODE, and this is the most surprising fact in the arithmetic of
+# this file. `div` (elementwise.py:229-259) is
 #
 #     if is_int(a) and is_int(b): ...TRUNCDIV / DIV...
 #     if is_int(a.dtype) or a.dtype is bool: a = a.cast(dtypes.default_float)
 #     d = a.alu(Ops.MUL, b.reciprocal())
 #
-# so for two FLOATS it is `MUL(x, RECIP(y))` -- TWO nodes -- and `Ops.FDIV` is never
-# emitted by `div` at all. Measured against Python: the `LOG2` gradient is
-# `MUL, RECIP, MUL, CONST, CONST` and the `SQRT` gradient is
-# `MUL, RECIP, MUL, SQRT, CONST, CONST`; neither contains an FDIV.
+# so for two FLOATS it is `MUL(x, RECIP(y))` -- TWO nodes -- and `Ops.FDIV` is never emitted by
+# `div` at all. Measured against Python: the `LOG2` gradient is `MUL, RECIP, MUL, CONST, CONST`
+# and the `SQRT` gradient is `MUL, RECIP, MUL, SQRT, CONST, CONST`; neither contains an FDIV.
 # `gradient.py:70` (`ctx / (...)`) and `:72` (`ctx / (ret*2)`) are the only `/` users.
 def gdiv(+ar: O.Arena, x: U32, y: U32) -> O.Found:
   +r = grecip(ar, y)
@@ -361,27 +331,26 @@ def gdiv(+ar: O.Arena, x: U32, y: U32) -> O.Found:
 # gradient -- `gradient.py:65` "ctx is grad_output") and `self` (the node being
 # differentiated), and answers a `GRes`.
 #
-# A rule that does not match its pattern answers `GSkip{}`, and `rewrite` keeps
-# scanning. Which tests belong to the PATTERN (and therefore to `gr_try`) and which
-# belong to the BODY is Python's own division and it is preserved exactly: the compiled
-# form puts every pattern conjunct in the `if`, and `_get_clause` (upat.py:158) emits
-# `(_ret:=_fxn(...)) is not None` last. So `nsrc` tests and op tests are PATTERN tests,
-# and a `const_like` or a shape computation is BODY work that happens after a match.
+# A rule that does not match its pattern answers `GSkip{}`, and `rewrite` keeps scanning.
+# Which tests belong to the PATTERN (and therefore to `gr_try`) and which belong to the BODY is
+# Python's own division and it is preserved exactly: the compiled form puts every pattern
+# conjunct in the `if`, and `_get_clause` (upat.py:158) emits `(_ret:=_fxn(...)) is not None`
+# last. So `nsrc` tests and op tests are PATTERN tests, and a `const_like` or a shape
+# computation is BODY work that happens after a match.
 
 
 # --- 0. CAST -- gradient.py:67. `(ctx.cast(ret.src[0].dtype),)`
 #
-# `ret.src[0].dtype` is a FOLD read (`UOp.dtype` is `recursive_property`, ops.py:225),
-# so this is the ONE rule in the table that needs the fold rather than just the arena.
-# `mixin/dtype.bend`'s `md_dt` is that reader and it is exactly what Python asks, so it
-# is IMPORTED, not recopied -- and importing it costs this file nothing, because
-# `mixin/dtype.bend` prints no foreign-code notice (`md_dt_imported` in ITS gate is the
-# row, and it says so). `A CONST`'s dtype follows its value, so `ret.src[0].dtype` on a
-# CONST src is that CONST's own natural dtype and NOT `ret.arg`.
-# The `ADt` arg is `ret.src[0].dtype` -- `ret` is the CAST, so this is the dtype of the
-# node BELOW it, which for a CONST is that CONST's own natural dtype and NOT `ret.arg`.
-# `F.fold.dt` is that read; ops.py:225 makes `dtype` a `recursive_property`, and
-# fold.bend is the well-founded way to answer it here (its header says exactly this).
+# `ret.src[0].dtype` is a FOLD read (`UOp.dtype` is `recursive_property`, ops.py:225), so this
+# is the ONE rule in the table that needs the fold rather than just the arena.
+# `mixin/dtype.bend`'s `md_dt` is that reader and it is exactly what Python asks, so it is
+# IMPORTED, not recopied -- and importing it costs this file nothing, because
+# `mixin/dtype.bend` prints no foreign-code notice (`md_dt_imported` in ITS gate is the row,
+# and it says so).
+# The `ADt` arg is `ret.src[0].dtype` -- `ret` is the CAST, so this is the dtype of the node
+# BELOW it, which for a CONST is that CONST's own natural dtype and NOT `ret.arg`.
+# `F.fold.dt` is that read; ops.py:225 makes `dtype` a `recursive_property`, and fold.bend is
+# the well-founded way to answer it here.
 def dt_of(m: Maybe<&2, S.Dt>) -> Maybe<&2, S.Dt>: m
 
 def gr_0.src(ar: O.Arena, self: U32) -> U32: O.Arena.src(ar, self, 0)
@@ -516,21 +485,20 @@ def gr_9(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: fired([ctx, ctx], ar)
 #   (ctx * e.eq(0).where(e, e*b.pow(e-1)),
 #    ctx * b.eq(0).where((e<0).where(ret.const_like(-math.inf), 0), ret*b.log2()*math.log(2.0)))
 #
-# The most complex rule in the table, and the one with the most nodes. Both halves are
-# the standard f'(x^e) with the DEGENERATE cases pinned: d/dx x^0 = 0 needs the `e.eq(0)`
-# branch to hand back `e` itself (which is 0), and d/de x^0 = x^0 * ln(x) needs the
-# `b.eq(0)` branch to answer `-inf` when `e<0` and `0` otherwise. The `0` there is
-# `k_fzero` and the `-inf` is `k_neginf`.
+# The most complex rule in the table, and the one with the most nodes. Both halves are the
+# standard f'(x^e) with the DEGENERATE cases pinned: d/dx x^0 = 0 needs the `e.eq(0)` branch
+# to hand back `e` itself (which is 0), and d/de x^0 = x^0 * ln(x) needs the `b.eq(0)` branch
+# to answer `-inf` when `e<0` and `0` otherwise. The `0` there is `k_fzero` and the `-inf` is
+# `k_neginf`.
 #
-# `pow_n0`/`pow_n1` pin the tree SIZE -- 24 for `dx` and 29 for `de`, CPython's own
-# numbers -- because a rule that dropped a factor or a guard would still answer a VALUE
-# (wrongly) and only the count would move.
-# the zeros are all one bare node. `e.eq(0)`, `e < 0` and `where`'s untaken `0` all
-# take the WEAK literal that `UOp.const(0)` derives (ops.py:632), so all three are the
-# SAME interned `CONST/0` at `weakfloat` -- NOT a `CAST(CONST)`. MEASURED against
-# CPython's own `pm_gradient` tree. An earlier revision split them into `zero` (cast),
-# `zcast` (cast) and `zbare` (bare); Python makes no such distinction, and `pow_n0`/
-# `pow_n1` are the rows that said so.
+# `pow_n0`/`pow_n1` pin the tree SIZE -- 24 for `dx` and 29 for `de`, CPython's own numbers --
+# because a rule that dropped a factor or a guard would still answer a VALUE (wrongly) and
+# only the count would move.
+# the zeros are all one bare node. `e.eq(0)`, `e < 0` and `where`'s untaken `0` all take the
+# WEAK literal that `UOp.const(0)` derives (ops.py:632), so all three are the SAME interned
+# `CONST/0` at `weakfloat` -- NOT a `CAST(CONST)`. MEASURED against CPython's own
+# `pm_gradient` tree. An earlier revision split them into `zero` (cast), `zcast` (cast) and
+# `zbare` (bare); Python makes no such distinction.
 def gr_10.zero(+ar: O.Arena) -> O.Found: gconst_raw(ar, k_fzero())
 # `e - 1` IS `ADD(e, MUL(CONST 1.0, CONST(-1.0)))` -- the `1` is a BARE weakfloat
 # `CONST 1.0`, not a `CAST`, and `-1.0` is the bare literal `neg` builds. MEASURED on
@@ -584,30 +552,28 @@ def gr_10(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 #   ((x>y).where(ctx, (x.eq(y)).where(ctx * 0.5, 0)),
 #    (x<y).where(ctx, (x.eq(y)).where(ctx * 0.5, 0)))
 #
-# The gradient of a max goes to the larger argument; a TIE splits it evenly, which is
-# the `ctx * 0.5` and is why `max_tie` is a separate gate row from `max_gt`.
+# The gradient of a max goes to the larger argument; a TIE splits it evenly, which is the
+# `ctx * 0.5` and is why `max_tie` is a separate gate row from `max_gt`.
 #
-# * `(x>y)` and `(x<y)` are the same op with the operands swapped, and only the outer
-# ONE IS SWAPPED. *  `_binop(Ops.CMPLT, y, reverse=True)` (elementwise.py:323) puts
-# `y` on the LEFT, so `(x>y)` is `CMPLT(y, x)` and `(x<y)` is `CMPLT(x, y)` --
-# MEASURED on CPython's own tree, both slots, 2026-10-31.
+# * `(x>y)` and `(x<y)` are the same op with the operands swapped, and only the outer ONE IS
+# SWAPPED. *  `_binop(Ops.CMPLT, y, reverse=True)` (elementwise.py:323) puts `y` on the LEFT,
+# so `(x>y)` is `CMPLT(y, x)` and `(x<y)` is `CMPLT(x, y)` -- MEASURED on CPython's own tree,
+# both slots, 2026-10-31.
 #
-# * and the inner `(x.eq(y))` is the same node in both slots. *  upstream's rule body
-# binds `x` and `y` ONCE and writes `(x.eq(y)).where(ctx * 0.5, 0)` in both arms, and
-# `UOp` is hash-consed, so the second arm's `(x.eq(y))` IS the first arm's node.
-# MEASURED on CPython's own tree, 2026-10-31: the two slots' inner WHEREs are the SAME
-# `id()`, so the MAX gradient is 15 nodes and 3 WHEREs.
+# * and the inner `(x.eq(y))` is the same node in both slots. *  upstream's rule body binds `x`
+# and `y` ONCE and writes `(x.eq(y)).where(ctx * 0.5, 0)` in both arms, and `UOp` is
+# hash-consed, so the second arm's `(x.eq(y))` IS the first arm's node. MEASURED on CPython's
+# own tree, 2026-10-31: the two slots' inner WHEREs are the SAME `id()`, so the MAX gradient is
+# 15 nodes and 3 WHEREs.
 #
-# - the port built four WHEREs and three CMPNEs, and `max_n0`/`max_n1` did not see
-# IT.  The port computed slot 1 from `(y.eq(x))` -- the operands SWAPPED -- which is a
-# DIFFERENT node (CMPNE is not commutative), so the port built a SECOND inner WHERE.
-# and the port's own count rows are blind to it: `size1` counts a shared subtree once
-# PER PATH, so a duplicated inner WHERE costs exactly what a shared one costs, and
-# `max_n0`/`max_n1` read 21 on both sides -- MEASURED, on the defect and on the fix.
-# A COUNT that is right and a STRUCTURE that is wrong is the failure the header of this
-# file names ("the counts coincide -- which is exactly the 'two rules agree and the gate
-# cannot see it' failure"), and `gates/gr_graph_census-gate.py` reads `max_eq_op`, which
-# asks whether the mask's op is `CMPNE` -- TRUE for both spellings.
+# - the port built four WHEREs and three CMPNEs, and `max_n0`/`max_n1` did not see IT. The
+# port computed slot 1 from `(y.eq(x))` -- the operands SWAPPED -- which is a DIFFERENT node
+# (CMPNE is not commutative), so the port built a SECOND inner WHERE. And the port's own count
+# rows are blind to it: `size1` counts a shared subtree once PER PATH, so a duplicated inner
+# WHERE costs exactly what a shared one costs, and `max_n0`/`max_n1` read 21 on both sides --
+# MEASURED, on the defect and on the fix. A COUNT that is right and a STRUCTURE that is wrong
+# is the failure a count cannot see, and `gates/gr_graph_census-gate.py` reads `max_eq_op`,
+# which asks whether the mask's op is `CMPNE` -- TRUE for both spellings.
 #
 # - the fix is to build the inner once and swap only the outer.
 def gr_11.inner(+ar: O.Arena, +ctx: U32, +x: U32, +y: U32) -> O.Found:
@@ -672,51 +638,47 @@ def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
 
 # --- 14. REDUCE -- gradient.py:82. `reduce_gradient(ctx, ret, ret.arg[0])`
 #
-# DISPATCHED, not inlined: the body is `reduce_gradient`, a top-level Python function
-# with three arms keyed on the REDUCE's op (`gradient.py:8-18`). Three nodes' worth of
-# shape work each, and all three need `_min_max` or `broadcast_axes`:
+# DISPATCHED, not inlined: the body is `reduce_gradient`, a top-level Python function with
+# three arms keyed on the REDUCE's op (`gradient.py:8-18`), and all three need `_min_max` or
+# `broadcast_axes`:
 #   ADD (:9)  `ctx._broadcast_to(ret.src[0].shape)`  -- movement.py:128
 #   MAX (:12) `mask/mask._rop(ADD, ...)`             -- `_rop` needs `resolve(shape[x]!=1)`
 #   MUL (:18) `ret/safe_x` and a second `_rop`        -- same
-# `_rop` (ops.py:655) reads `resolve(self.shape[x] != 1)`, which is a SYMBOLIC comparison
-# and is `uop/symbolic.py`'s `resolve`, not ops.bend's. And `_broadcast_to` needs
-# `broadcast_axes` (ops.py:89), which is also symbolic (`resolve(s == 1)`).
+# `_rop` (ops.py:655) reads `resolve(self.shape[x] != 1)`, which is a SYMBOLIC comparison and
+# is `uop/symbolic.py`'s `resolve`, not ops.bend's. And `_broadcast_to` needs `broadcast_axes`
+# (ops.py:89), which is also symbolic (`resolve(s == 1)`).
 #
-# THE TWO UPSTREAM WHY-S COMMENTS OF `reduce_gradient`, kept because they are the
-# only place the ACCUMULATION DTYPE is not an arbitrary choice:
+# THE TWO UPSTREAM WHY-S COMMENTS OF `reduce_gradient`, and they are the only place the
+# ACCUMULATION DTYPE is not an arbitrary choice:
 #
-#   gradient.py:11 -- `mask = ret.src[0].eq(ret).cast(sum_acc_dtype(ctx.dtype))`.
-#     THE TIES ARE COUNTED IN THE ACC DTYPE, and the reason is that the COUNT can
-#     OVERFLOW THE GRADIENT DTYPE. `ctx.dtype` is the dtype of the incoming gradient,
-#     which for a float32 upstream tensor is float32, and a float32 holds 2**24
-#     exactly: a reduction over more than 16M elements ties more than 2**24 times and
-#     the COUNT is wrong in float32 while it is right in float64. `sum_acc_dtype`
-#     (tinygrad/dtype.py:217) is what picks the wider type, and the CAST back to
-#     `ctx.dtype` happens AFTER the divide. So the ORDER is load-bearing: cast to the
+#   gradient.py:11 -- `mask = ret.src[0].eq(ret).cast(sum_acc_dtype(ctx.dtype))`. THE TIES ARE
+#     COUNTED IN THE ACC DTYPE, and the reason is that the COUNT can OVERFLOW THE GRADIENT
+#     DTYPE. `ctx.dtype` is the dtype of the incoming gradient, which for a float32 upstream
+#     tensor is float32, and a float32 holds 2**24 exactly: a reduction over more than 16M
+#     elements ties more than 2**24 times and the COUNT is wrong in float32 while it is right
+#     in float64. `sum_acc_dtype` (tinygrad/dtype.py:217) picks the wider type, and the CAST
+#     back to `ctx.dtype` happens AFTER the divide. So the ORDER is load-bearing: cast to the
 #     acc dtype, count, divide, cast back.
-#   gradient.py:15 -- `d(prod x)/dx_j = prod_{i!=j} x_i`: `ret/x_j` whenever
-#     `x_j != 0`, and THE PRODUCT OF THE OTHERS otherwise. The reason `ret/x_j` is
-#     not enough on its own is that ANY ZERO MAKES ret 0, and `0/0` is not the
-#     derivative of a product with a zero factor -- it is the derivative of the
-#     product of the OTHER factors, which `ret/x_j` cannot recover once `ret` has
-#     already been zeroed. So upstream computes BOTH: `safe_x` replaces the zeros
-#     with 1 so `safe_x._rop(MUL)` is the product of the others, and `zero_count`
-#     says HOW MANY zeros there are, so the `zero_count == 1` arm (exactly one zero,
-#     so the other factors' product is the right derivative) and the `> 1` arm (the
+#   gradient.py:15 -- `d(prod x)/dx_j = prod_{i!=j} x_i`: `ret/x_j` whenever `x_j != 0`, and
+#     THE PRODUCT OF THE OTHERS otherwise. The reason `ret/x_j` is not enough on its own is
+#     that ANY ZERO MAKES ret 0, and `0/0` is not the derivative of a product with a zero
+#     factor -- it is the derivative of the product of the OTHER factors, which `ret/x_j`
+#     cannot recover once `ret` has already been zeroed. So upstream computes BOTH: `safe_x`
+#     replaces the zeros with 1 so `safe_x._rop(MUL)` is the product of the others, and
+#     `zero_count` says HOW MANY zeros there are, so the `zero_count == 1` arm (exactly one
+#     zero, so the other factors' product is the right derivative) and the `> 1` arm (the
 #     derivative is 0) are separable.
-#
-# TODO(p3) mixin/gradient.py:8  reduce_gradient -- `_rop`'s `resolve(self.shape[x]!=1)`
-#   and `_broadcast_to`'s `broadcast_axes` are both `resolve` on a `Sint`, and
-#   `symbolic.py`'s `resolve` is not ported. Phase P3 owns `symbolic`.
+# TODO(p3) mixin/gradient.py:8  reduce_gradient -- `_rop`'s `resolve(self.shape[x]!=1)` and
+#   `_broadcast_to`'s `broadcast_axes` are both `resolve` on a `Sint`, and `symbolic.py`'s
+#   `resolve` is not ported. Phase P3 owns `symbolic`.
 def gr_14(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 15. CONTIGUOUS_BACKWARD -- gradient.py:82. `(ctx.contiguous(),)`
 #
 # `contiguous` (elementwise.py:59) is a real body, not an alias: it returns `self` for a
-# weak dtype, for a STAGE, for `device is None` or for `has_buffer_identity()`, and
-# otherwise `uop.alu(Ops.STAGE)`. `has_buffer_identity` (ops.py:943) walks BASE and is a
-# fold read plus a walk.
-#
+# weak dtype, for a STAGE, for `device is None` or for `has_buffer_identity()`, and otherwise
+# `uop.alu(Ops.STAGE)`. `has_buffer_identity` (ops.py:943) walks BASE and is a fold read plus
+# a walk.
 # TODO(p3) mixin/gradient.py:82  symbol=pm_gradient  -- ctx.contiguous -- needs `has_buffer_identity`
 #   (ops.py:943), a BASE walk with an `after_ok` argument that fold.bend does not carry.
 #   The rule's OBSERVABLE effect for a non-weak, device-bearing, non-identity node is
@@ -731,16 +693,16 @@ def gr_16(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([ctx], ar)
 
 # --- 17. RESHAPE -- gradient.py:85. `(ctx.reshape(ret.src[0].shape), None)`
 #
-# two slots for a one-SRC node, and that is a real python bug, measured: `pm_gradient`
-# is a per-OP table with no arity check, so this rule answers 2 gradients for a node
-# whose `src` has length 1, and `compute_gradient`'s own assert (gradient.py:128
-# `assert len(lgrads) == len(t0.src)`) FIRES. Verified: `pm_gradient.rewrite(RESHAPE)`
-# returns 2 for a 1-src RESHAPE and `compute_gradient` on the same node raises
-# `AssertionError: got 2 gradient, expected 1`. The port REPRODUCES the arity, because
-# reproducing it is what lets the gate row `reshape_arity` be 2 and say so.
+# two slots for a one-SRC node, and that is a real python bug, measured: `pm_gradient` is a
+# per-OP table with no arity check, so this rule answers 2 gradients for a node whose `src` has
+# length 1, and `compute_gradient`'s own assert (gradient.py:128 `assert len(lgrads) ==
+# len(t0.src)`) FIRES. Verified: `pm_gradient.rewrite(RESHAPE)` returns 2 for a 1-src RESHAPE
+# and `compute_gradient` on the same node raises `AssertionError: got 2 gradient, expected 1`.
+# The port REPRODUCES the arity, because reproducing it is what lets the gate row
+# `reshape_arity` be 2 and say so.
 #
-# `ctx.reshape(shape)` is `_mop(Ops.RESHAPE, arg=shape)` (movement.py:164), and the
-# shape is `ret.src[0].shape` -- a FOLD read, plus `prod` for the `-1` arm.
+# `ctx.reshape(shape)` is `_mop(Ops.RESHAPE, arg=shape)` (movement.py:164), and the shape is
+# `ret.src[0].shape` -- a FOLD read, plus `prod` for the `-1` arm.
 def gr_17(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 18. EXPAND -- gradient.py:86. `(ctx, None)`
@@ -753,10 +715,9 @@ def gr_18(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([ctx, 0], ar)
 #   (ctx.shrink(tuple([(p[0], s+p[0]) for s,p in zip(ret.src[0].shape, ret.marg)])), None, None)
 #
 # THREE slots: a PAD has srcs (value, lo_shape, hi_shape) -- measured, a 1-D pad has
-# `len(src) == 3`. `ret.marg` is `zip(src[1].as_shape, src[2].as_shape)` (ops.py:817), so
-# both margins are CONST nodes read back as shapes, and `s + p[0]` is SINT ADDITION on
-# the derived shape.
-#
+# `len(src) == 3`. `ret.marg` is `zip(src[1].as_shape, src[2].as_shape)` (ops.py:817), so both
+# margins are CONST nodes read back as shapes, and `s + p[0]` is SINT ADDITION on the derived
+# shape.
 # TODO(p3) mixin/gradient.py:87  PAD -- `ret.marg` is `zip(src[1].as_shape,
 #   src[2].as_shape)` and `s+p[0]` is `Sint` arithmetic. ops.bend's `Sint` is
 #   `SI{i64} | SU{u32}` with an equality (`F.eq_sint`) but NO addition and NO `as_shape`
@@ -831,14 +792,13 @@ def gr_22(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 #   (ctx.copy_to_device(ret.src[0].device),) + (None,)*(len(ret.src)-1)
 #
 # `copy_to_device` (ops.py:738) raises for a DISK device, asserts `arg is None or
-# isinstance(self.device, tuple)`, wraps in an MSELECT when `arg` is set, and RAISES for
-# a weak dtype. `ret.src[0].device` is a FOLD read.
+# isinstance(self.device, tuple)`, wraps in an MSELECT when `arg` is set, and RAISES for a weak
+# dtype. `ret.src[0].device` is a FOLD read.
 #
 # It also RAISES in the gate: measured, `pm_gradient.rewrite` on a 1-src COPY raises
-# `TypeError: 'NoneType' object is not iterable`, because `copy_to_device` returns a
-# UOp whose `*` is not what the tuple concat expects at that arity. So this rule is a
-# measured Python failure, and the port records it rather than reproducing a crash.
-#
+# `TypeError: 'NoneType' object is not iterable`, because `copy_to_device` returns a UOp whose
+# `*` is not what the tuple concat expects at that arity. So this rule is a measured Python
+# failure, and the port records it rather than reproducing a crash.
 # TODO(p3) mixin/gradient.py:90  symbol=pm_gradient  -- COPY -- `copy_to_device` (ops.py:738) needs a device
 #   fold plus the DISK and weak-dtype refusals; and the rule RAISES at 1 src in
 #   Python (measured, `t_copy_raises`).
@@ -878,12 +838,10 @@ def gr_26(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # --- 28. AFTER, ordering-only -- gradient.py:96-97.
 #   lambda ctx, dest, t: (ctx, None) if t.buf_uop is not dest.buf_uop else None
 #
-# This is a rule that MATCHES the pattern and then RETURNS `None`, so the scan
-# continues -- a fourth state beyond `GSkip`/`GFired` from the pattern's side, and it is
-# why `GSkip` means "no answer from this def" rather than "this pattern did not match".
-# `t.buf_uop` is ops.py:911, a walk to the BUFFER/ALLOC/PARAM (or STAGE/MSTACK)
-# underneath.
-#
+# This is a rule that MATCHES the pattern and then RETURNS `None`, so the scan continues -- a
+# fourth state beyond `GSkip`/`GFired` from the pattern's side, and it is why `GSkip` means "no
+# answer from this def" rather than "this pattern did not match". `t.buf_uop` is ops.py:911, a
+# walk to the BUFFER/ALLOC/PARAM (or STAGE/MSTACK) underneath.
 # TODO(p3) mixin/gradient.py:96  symbol=pm_gradient  -- ordering-only AFTER -- `buf_uop` (ops.py:911) walks
 #   through `base` and stops at BUFFER/ALLOC/PARAM/STAGE/MSTACK, and `base` needs the
 #   fold plus a second walk. fold.bend carries `fold.base` but not `buf_uop`.
@@ -891,27 +849,19 @@ def gr_27(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 29. AFTER, clone/assign -- gradient.py:101. `(None, ctx)`
 #
-# * THE NAME REBIND. * `dest` is bound at `AFTER.src[0]` AND at
-# `AFTER.src[1].src[0]`. The rule fires ONLY when those are the SAME node, and the
-# compiled form states that as an explicit `is` (upat.py:100-105). Without the check
-# the rule claims every `AFTER(_, STORE(_,_))` -- including the ordering-only shape of
-# tag 28 and the partial-store shape of tag 30 -- and it still typechecks.
+# * THE NAME REBIND. * `dest` is bound at `AFTER.src[0]` AND at `AFTER.src[1].src[0]`. The
+# rule fires ONLY when those are the SAME node, and the compiled form states that as an
+# explicit `is` (upat.py:100-105). Without the check the rule claims every
+# `AFTER(_, STORE(_,_))` -- including the ordering-only shape of tag 28 and the partial-store
+# shape of tag 30 -- and it still typechecks.
 #
-# `gr_28` is therefore SPLIT: the identity test is a separate def, `gr_29_same`, and the
-# rule answers `GSkip{}` when it fails. That is the honest port -- not "the rule claims
-# and then declines", but "the pattern does not match", because in the compiled form
-# the `is` is part of the MATCH. The two-sided gate is `rebind` (same node -> fires) and
-# `rebind_off` (different node -> does not), and the mutation is `gr_29_same`'s `U32.is_eq`
-# replaced by `True{}`, which is the exact divergence the notes warn about.
-# THE IDENTITY CHECK, and it is a def of its own so the mutation is a one-word edit and
-# so the header's claim is checkable rather than asserted. `upat.py:100-105` builds it as
-# an ordinary clause in the emitted `if` (`"{0} is {1}"`), which is why it is part of the
-# MATCH and not part of the body: a rule that matched and then declined would be a
-# different rule with a different effect on the scan.
-#
+# `gr_28` is therefore SPLIT: the identity test is a separate def, `gr_29_same`, and the rule
+# answers `GSkip{}` when it fails. That is the honest port -- not "the rule claims and then
+# declines", but "the pattern does not match", because in the compiled form the `is` is part of
+# the MATCH. The two-sided gate is `rebind` (same node -> fires) and `rebind_off` (different
+# node -> does not), and the mutation is `gr_29_same`'s `U32.is_eq` replaced by `True{}`.
 # `U32.is_eq` on two arena indices IS `store.setdefault(...).same`, which is what the
-# interpreter does (notes, "THE NAME-REBIND QUESTION, SETTLED"), and it is the same
-# question `dest is dest` asks in Python. Nothing else in the file needs this.
+# interpreter does (notes, "THE NAME-REBIND QUESTION, SETTLED").
 def gr_29_dest(ar: O.Arena, self: U32) -> U32: O.Arena.src(ar, self, 0)
 def gr_29_call(ar: O.Arena, self: U32) -> U32: O.Arena.src(ar, self, 1)
 def gr_29_stored(ar: O.Arena, k: U32) -> U32: O.Arena.src(ar, k, 0)
@@ -941,34 +891,31 @@ def gr_28(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_28.go(ar, ctx, self)
 
 # --- 30. AFTER, partial store -- gradient.py:100-101. `partial_store_gradient(ctx, dest, view)`
 #
-# the helper is a `while` LOOP plus a re-entry into the matcher, and both halves are
-# walls here. `gradient.py:54-58` walks `base` up through
-# `{RESHAPE, SHRINK, PERMUTE, PAD}` accumulating a `path`, and returns `None` if it
-# never reaches `dest`; `gradient.py:61` then calls `compute_gradient`, whose own
-# `pm_gradient.rewrite` (gradient.py:124) is THE MATCHER CALLING ITSELF. That is
-# mutual recursion between `gr_29` and
-# `gr_rewrite`, and Bend refuses mutual recursion outright (notes, "There is no mutual
-# recursion"). The loop itself is a `while` with a mutable list, which Bend expresses as
-# a self-call on the tail, but it cannot be entered FROM the rewrite.
-#
+# the helper is a `while` LOOP plus a re-entry into the matcher, and both halves are walls
+# here. `gradient.py:54-58` walks `base` up through `{RESHAPE, SHRINK, PERMUTE, PAD}`
+# accumulating a `path`, and returns `None` if it never reaches `dest`; `gradient.py:61` then
+# calls `compute_gradient`, whose own `pm_gradient.rewrite` (gradient.py:124) is THE MATCHER
+# CALLING ITSELF. That is mutual recursion between `gr_29` and `gr_rewrite`, and Bend refuses
+# mutual recursion outright (notes, "There is no mutual recursion"). The loop itself is a
+# `while` with a mutable list, which Bend expresses as a self-call on the tail, but it cannot
+# be entered FROM the rewrite.
 # TODO(p3) mixin/gradient.py:52  partial_store_gradient -- the body RE-ENTERS
 #   `pm_gradient.rewrite` (gradient.py:124, reached through `compute_gradient` at
 #   gradient.py:61), so `gr_29` and `gr_rewrite` would be mutually
 #   recursive and Bend refuses that. It also needs `mop.replace(src=(grad,)+mop.src[1:])`
 #   (a src rewrite with an `Arg` preserved) and `grad.const_like(1)`.
 #
-# THE UPSTREAM WHY ON THIS HELPER, kept because it is the ONE place the rule
-# answers with something other than `ctx`:
-#   gradient.py:53 -- "A write through a non-overlapping view replaces only that
-#   region of the returned state." The rule's answer is a PAIR -- a MASK and a
-#   GRADIENT -- and the mask is the part that is not a gradient at all: it is
-#   `mask.cast(dtypes.bool).where(0, ctx)`, which ZEROES the gradient everywhere
-#   OUTSIDE the written region and leaves it alone inside. So the returned state
-#   keeps its old values where the write did not land. That is why the helper is
-#   named "partial_store" and not "store": the write is partial and the state is
-#   MERGED, not replaced. `compute_gradient(view, grad.const_like(1), {dest})`
-#   is what produces the mask -- the mask is the gradient of a CONSTANT 1 over
-#   the view, which is 1 on the view and 0 outside it.
+# THE UPSTREAM WHY ON THIS HELPER, and it is the ONE place the rule answers with something
+# other than `ctx`:
+#   gradient.py:53 -- "A write through a non-overlapping view replaces only that region of
+#   the returned state." The rule's answer is a PAIR -- a MASK and a GRADIENT -- and the mask
+#   is the part that is not a gradient at all: it is `mask.cast(dtypes.bool).where(0, ctx)`,
+#   which ZEROES the gradient everywhere OUTSIDE the written region and leaves it alone inside.
+#   So the returned state keeps its old values where the write did not land. That is why the
+#   helper is named "partial_store" and not "store": the write is partial and the state is
+#   MERGED, not replaced. `compute_gradient(view, grad.const_like(1), {dest})` is what produces
+#   the mask -- the mask is the gradient of a CONSTANT 1 over the view, which is 1 on the view
+#   and 0 outside it.
 def gr_29(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 31. STORE -- gradient.py:104. `(None, ctx)`
@@ -1124,40 +1071,36 @@ def gr_rewrite(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 
 # THE WALK -- `compute_gradient` (gradient.py:116-145) and `_deepwalk` (:109-114).
 #
-# what landed and what did not, and the split is the one upstream's own source
-# dictates rather than one chosen here. THREE of upstream's five pieces ported:
+# THREE of upstream's five pieces ported:
 #
 #   (a) `_deepwalk`'s `in_target_path` LATTICE (:112) -- ported as a forward pass over
-#       `O.UOp.toposort`, which is sound for the reason `fold.bend`'s Kahn is: a node's
-#       flag reads only its SRCS' flags, and a src is always EARLIER in a toposort, so
-#       one pass in post-order IS the fixpoint. `topovisit`'s VISITOR is a Python lambda
-#       and Bend has no closures in a datatype field, so the lambda becomes the fold and
-#       the dict becomes a `Data` pair of parallel lists (notes, T-6).
-#   (b) THE WALK (:114) -- `[node for node in in_target_path if node.op is not
-#       Ops.DETACH and in_target_path[node]]`, i.e. a FILTER over the same pair. PORTED.
-#   (c) `grads` AND THE ACCUMULATION (:118, :129-139) -- a `Data` pair of parallel
-#       lists with an IN-PLACE update, which is what makes it dict-shaped: append is
-#       last-wins, and Python's `grads[k] = grads[k] + v` overwrites while keeping
-#       `k`'s INSERTION position. Both are stated where they are written.
+#       `O.UOp.toposort`, which is sound for the reason `fold.bend`'s Kahn is: a node's flag
+#       reads only its SRCS' flags, and a src is always EARLIER in a toposort, so one pass in
+#       post-order IS the fixpoint. `topovisit`'s VISITOR is a Python lambda and Bend has no
+#       closures in a datatype field, so the lambda becomes the fold and the dict becomes a
+#       `Data` pair of parallel lists (notes, T-6).
+#   (b) THE WALK (:114) -- `[node for node in in_target_path if node.op is not Ops.DETACH and
+#       in_target_path[node]]`, i.e. a FILTER over the same pair. PORTED.
+#   (c) `grads` AND THE ACCUMULATION (:118, :129-139) -- a `Data` pair of parallel lists with
+#       an IN-PLACE update, which is what makes it dict-shaped: append is last-wins, and
+#       Python's `grads[k] = grads[k] + v` overwrites while keeping `k`'s INSERTION position.
 #
-# TWO THINGS DID NOT LAND, and both are the walls already recorded in the header of this
-# file (see the `TODO(p3) mixin/gradient.py:132 compute_gradient` note below, which is RETAINED):
-#   * the SHAPED-EDGE REDUCE (:132-133), which needs `broadcast_axes` and
-#     `sum_acc_dtype`. It is not merely deferred here -- MEASURED, it is a place where
-#     CPython ITSELF raises: `oracle-cg.py`'s second fixture drives `compute_gradient`
-#     into `RuntimeError: cannot broadcast ... into ()` at gradient.py:133, so the
-#     fixture cannot gate a port of that line either. The walk is gated on the fixture
-#     that does NOT reach it, and every node in that fixture is a SCALAR -- the leaves
-#     are `BUFFER(STACK())`, whose `_shape` is `()` (ops.py:359, :789) -- so the guard
-#     `k._shape is not None and v._shape is not None and k._shape != v._shape` is FALSE
-#     throughout -- the port omits a branch that is not taken, which is stated rather
-#     than hidden.
-#   * the BACKWARD-METADATA pass (:140-144), which reads `all_metadata` (ops.py's
-#     module-level dict). It has no observable effect on `grads`, so omitting it changes
-#     no row in this gate; that is a NAMED OMISSION, not a silent one.
-# `call_gradient` (:20-50) stays a wall under `grad_30`'s block and is NOT called here:
-# a CALL in the walk is the one node shape whose gradient this port cannot produce, and
-# `cg_run` states that rather than pretending.
+# TWO THINGS DID NOT LAND, and both are the walls already recorded in the header of this file:
+#   * the SHAPED-EDGE REDUCE (:132-133), which needs `broadcast_axes` and `sum_acc_dtype`. It
+#     is not merely deferred here -- MEASURED, it is a place where CPython ITSELF raises:
+#     `oracle-cg.py`'s second fixture drives `compute_gradient` into `RuntimeError: cannot
+#     broadcast ... into ()` at gradient.py:133, so the fixture cannot gate a port of that
+#     line either. The walk is gated on the fixture that does NOT reach it, and every node in
+#     that fixture is a SCALAR -- the leaves are `BUFFER(STACK())`, whose `_shape` is `()`
+#     (ops.py:359, :789) -- so the guard `k._shape is not None and v._shape is not None and
+#     k._shape != v._shape` is FALSE throughout -- the port omits a branch that is not taken,
+#     which is stated rather than hidden.
+#   * the BACKWARD-METADATA pass (:140-144), which reads `all_metadata` (ops.py's module-level
+#     dict). It has no observable effect on `grads`, so omitting it changes no row in this
+#     gate; that is a NAMED OMISSION, not a silent one.
+# `call_gradient` (:20-50) stays a wall under `grad_30`'s block and is NOT called here: a CALL
+# in the walk is the one node shape whose gradient this port cannot produce, and `cg_run` states
+# that rather than pretending.
 
 
 # `in_target_path: dict[UOp, bool]` (gradient.py:111), as a `Data` pair of PARALLEL
@@ -1186,15 +1129,14 @@ def dw_read.of(hit: Bool, f: Bool, rest: Maybe<&2, Bool>) -> Maybe<&2, Bool>:
     case _: rest
 
 # THE FLAG IS THE HEAD, not `flags[i]`. The two lists are in LOCKSTEP, so walking them
-# together makes the position implicit -- and that is the whole reason a `Data` pair beats
-# a list of pairs here (notes, T-6: a tuple field must be `Data`, so a
+# together makes the position implicit -- and that is the whole reason a `Data` pair beats a
+# list of pairs here (notes, T-6: a tuple field must be `Data`, so a
 # `List<&2, (U32, Bool)>` is refused outright).
 #
-# TWO SCRUTINEES because the two lists shrink TOGETHER and a self-call must shrink an
-# argument (notes, position 612), and the parameter order must be the scrutinee order --
-# MEASURED here: `match ns fs:` over `(fs, ns, ...)` is refused with "a match on a
-# parameter or field (this name is a def or a consumed binder)", which names the SECOND
-# scrutinee and not the mismatch.
+# TWO SCRUTINEES because the two lists shrink TOGETHER and a self-call must shrink an argument
+# (notes, position 612), and the parameter order must be the scrutinee order -- MEASURED here:
+# `match ns fs:` over `(fs, ns, ...)` is refused with "a match on a parameter or field (this
+# name is a def or a consumed binder)", which names the SECOND scrutinee and not the mismatch.
 def dw_read.go(ns: List<&2, U32>, fs: List<&2, Bool>, +x: U32) -> Maybe<&2, Bool>:
   match ns fs:
     case h <> t f <> u: dw_read.of(U32.is_eq(h, x), f, dw_read.go(t, u, x))
@@ -1233,14 +1175,13 @@ def dw_push(+p: Itp, +x: U32, +f: Bool) -> Itp:
   Itp{List.append(&2, U32, Itp.nodes_of(p), [x]), List.append(&2, Bool, Itp.flags_of(p), [f])}
 
 # the flag pass. one forward pass over the toposort, and the flag is computed on the
-# evaluated before `dw_push` branches, which is notes rule 5 ("BEND IS STRICT: AN
-# argument is evaluated before the callee branches") and is what makes the one-line arm
-# legal.
+# evaluated before `dw_push` branches, which is notes rule 5 ("BEND IS STRICT: AN argument is
+# evaluated before the callee branches") and is what makes the one-line arm legal.
 #
 # THE ACCUMULATOR IS THE LAST PARAMETER, and that is not taste. `dw_flags(ar, targets,
-# dw_push(...), t)` is REFUSED with "expected : a decreasing self-call (arguments are
-# read left to right: each passed unchanged until one shrinks)": a third argument that
-# CHANGED reads as consumed, and the list only shrinks in the fourth.
+# dw_push(...), t)` is REFUSED with "expected : a decreasing self-call (arguments are read left
+# to right: each passed unchanged until one shrinks)": a third argument that CHANGED reads as
+# consumed, and the list only shrinks in the fourth.
 def dw_flags(+ar: O.Arena, +targets: List<&2, U32>, todo: List<&2, U32>, +p: Itp) -> Itp:
   match todo:
     case Nil{}: p
@@ -1256,22 +1197,19 @@ def dw_walk.put(test: Bool, acc: List<&2, U32>, +x: U32) -> List<&2, U32>:
     case _: acc
 
 # THE WALK, a FILTER over the pair. `_ _` is the cover and it covers BOTH ragged arms
-# (notes, rule 4 at position 1260) -- a `Nil` on one side with a `h <> t` on the other is
-# a ragged list, which `flags` can never be because `dw_flags` pushes both together.
+# (notes, rule 4 at position 1260) -- a `Nil` on one side with a `h <> t` on the other is a
+# ragged list, which `flags` can never be because `dw_flags` pushes both together.
 #
-# THE TWO UPSTREAM WHY-S, kept because the FILTER is not a simplification of the
-# walk -- it is the second half of it, and the first half is upstream's own comment:
-#   gradient.py:108 -- "compute the target path (top down)". The path is computed
-#     TOP DOWN, from the root, and `in_target_path[x]` is TRUE when x is a target OR
-#     when any of x's srcs is on the path. That is the closure of "reaches a target",
-#     and computing it top-down is what makes it one pass: a node's flag reads only
-#     its SRCS' flags, and a src is always EARLIER in a toposort.
-#   gradient.py:111 -- "don't flow through DETACH or anything not in target path".
-#     TWO exclusions, and the DETACH one is a semantic choice rather than a
-#     bookkeeping one: a DETACH is a gradient STOP, so a gradient must not flow
-#     THROUGH one. The second exclusion is the flag itself.
-# So the pair `Itp{nodes, flags}` IS `in_target_path` -- one flag per node -- and
-# `dw_walk` is upstream's second comprehension, verbatim.
+# THE TWO UPSTREAM WHY-S, and the FILTER is not a simplification of the walk -- it is the
+# second half of it:
+#   gradient.py:108 -- "compute the target path (top down)". The path is computed TOP DOWN,
+#     from the root, and `in_target_path[x]` is TRUE when x is a target OR when any of x's srcs
+#     is on the path. That is the closure of "reaches a target", and computing it top-down is
+#     what makes it one pass: a node's flag reads only its SRCS' flags, and a src is always
+#     EARLIER in a toposort.
+#   gradient.py:111 -- "don't flow through DETACH or anything not in target path". TWO
+#     exclusions, and the DETACH one is a semantic choice rather than a bookkeeping one: a
+#     DETACH is a gradient STOP, so a gradient must not flow THROUGH one.
 def dw_walk.go(+ar: O.Arena, ns: List<&2, U32>, fs: List<&2, Bool>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ns fs:
     case +x <> t f <> u: dw_walk.go(ar, t, u, dw_walk.put(dw_keep_test(ar, x, f), acc, x))
@@ -1437,16 +1375,15 @@ def cg_sum.add(+sl: GSlot, +s: CState, +v: U32) -> CState:
   cg_sum.noop(O.op_is(CState.ar_of(s), GSlot.v_of(sl), O.OpsNOOP{}), sl, s, v)
 
 # `if k in grads and grads[k].op is not Ops.NOOP: grads[k] = grads[k] + v
-#  else: grads[k] = v` -- gradient.py:134-139. THE ACCUMULATE IS THE `Some{}` ARM and it
-# is the only reason the fixture is a DAG: a node with two parents is written twice, and
+#  else: grads[k] = v` -- gradient.py:134-139. THE ACCUMULATE IS THE `Some{}` ARM and it is the
+# only reason the fixture is a DAG: a node with two parents is written twice, and
 # `oracle_dag_grad_a` answers `root=ADD/2` where a fresh insert would answer the MUL.
 #
-# * the order of this chain is not cosmetic. * `done -> grow -> noop -> add -> put`
-# is the only order that compiles: a `case Some{sl}:` binder cannot call a def declared
-# LATER in the file. MEASURED in six lines -- a `put.of` whose `Some{sl}` arm calls a
-# following `add` is refused with "expected : a filled definition (an unfilled law is a
-# dead claim: live code cannot use it)", which names the CALLER'S condition and not a
-# recursion. Moving `add` above `put.of` makes the identical program `ALL PROOFS CHECK`.
+# * the order of this chain is not cosmetic. * `done -> grow -> noop -> add -> put` is the only
+# order that compiles: a `case Some{sl}:` binder cannot call a def declared LATER in the file.
+# MEASURED in six lines -- a `put.of` whose `Some{sl}` arm calls a following `add` is refused
+# with "expected : a filled definition (an unfilled law is a dead claim: live code cannot use
+# it)", which names the CALLER'S condition and not a recursion.
 def cg_sum.put(hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U32) -> CState:
   match hit:
     case Some{sl}: cg_sum.add(sl, s, v)
@@ -1462,29 +1399,26 @@ def cg_hole.of(is_hole: Bool, hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U3
 # THE INNER LOOP, gradient.py:129-139: `for k, v in zip(t0.src, lgrads)`. ONE
 # self-recursive def and the two lists shrink together.
 #
-# THE UPSTREAM WHY-S ON THIS LOOP, kept because the loop's shape is not obvious
-# from its body:
-#   gradient.py:129 -- "a shaped edge's gradient is summed to its source's shape".
-#     The gradient of an edge whose SHAPE differs from its source's shape is not
-#     the gradient itself but a REDUCE of it, back down to the source's shape.
-#     Without this, a broadcast edge's gradient would carry the broadcast's shape
-#     and the next node up would be summing against a mismatched shape. The
-#     condition is `k._shape is not None and v._shape is not None and
-#     k._shape != v._shape` -- TWO `is not None` conjuncts, so a node with an
-#     UNKNOWN shape is left alone rather than reduced. That is the third clause
-#     and it is the one the port's gate exercises: the whole fixture is SCALAR
-#     (`_shape` is `()`), so the branch is never taken.
-#   gradient.py:130 -- `if v is None: continue`. A HOLE in the rule's answer is
-#     not a zero gradient; it is "this rule says nothing about this src", and
-#     the walk must leave the existing gradient alone rather than overwrite it.
-#     `gs` HOLES are index 0, which is the arena's bottom node and therefore
-#     tinygrad's own `None` (see this file's header).
+# THE UPSTREAM WHY-S ON THIS LOOP, and the loop's shape is not obvious from its body:
+#   gradient.py:129 -- "a shaped edge's gradient is summed to its source's shape". The
+#     gradient of an edge whose SHAPE differs from its source's shape is not the gradient
+#     itself but a REDUCE of it, back down to the source's shape. Without this, a broadcast
+#     edge's gradient would carry the broadcast's shape and the next node up would be summing
+#     against a mismatched shape. The condition is `k._shape is not None and v._shape is not
+#     None and k._shape != v._shape` -- TWO `is not None` conjuncts, so a node with an UNKNOWN
+#     shape is left alone rather than reduced. That is the third clause and it is the one the
+#     port's gate exercises: the whole fixture is SCALAR (`_shape` is `()`), so the branch is
+#     never taken.
+#   gradient.py:130 -- `if v is None: continue`. A HOLE in the rule's answer is not a zero
+#     gradient; it is "this rule says nothing about this src", and the walk must leave the
+#     existing gradient alone rather than overwrite it. `gs` HOLES are index 0, which is the
+#     arena's bottom node and therefore tinygrad's own `None` (see this file's header).
 #
 # the shape is the point and it cost four edges to find. The obvious spelling -- `cg_puts`
 # calls a `cg_hole` that calls `cg_puts` back -- is a MUTUAL RECURSION and this compiler
-# refuses the pair with "expected : a filled definition". Lifting the recursion OUT of
-# the branch is what works: `step` answers the state after ONE (k, v) pair and `go` owns
-# the descent over the tails. `fold.bend`'s `Kahn.gather.go` is the same arrangement.
+# refuses the pair with "expected : a filled definition". Lifting the recursion OUT of the
+# branch is what works: `step` answers the state after ONE (k, v) pair and `go` owns the
+# descent over the tails. `fold.bend`'s `Kahn.gather.go` is the same arrangement.
 def cg_puts.step(+s: CState, +k: U32, +v: U32) -> CState:
   cg_hole.of(U32.is_zero(v), gslot(CState.g_of(s), k), s, k, v)
 
@@ -1515,17 +1449,16 @@ def cg_ctx.of(hit: Maybe<&2, GSlot>, ar: O.Arena) -> U32:
     case None{}: 0
 
 # `pm_gradient.rewrite(t0, ctx=grads[t0])` -- gradient.py:126. THE ARENA IS HANDED ON
-# TWICE: the rules GROW it and the `GRes` carries the grown one, which is the only way a
-# rule that mints three nodes can be followed by one that reads them.
+# TWICE: the rules GROW it and the `GRes` carries the grown one, which is the only way a rule
+# that mints three nodes can be followed by one that reads them.
 #
-# * the one place the port diverges from upstream, and it is named. *
-# gradient.py:127 is `if lgrads is None: raise RuntimeError(...)`. The port CANNOT
-# raise, so a node no rule claims STOPS the walk: `cg_step` is not re-entered and the
-# grads built so far stand. "No answer after this point" is the honest reading of both,
-# and the alternative -- inserting nothing and carrying on -- would be a DIFFERENT
-# function that silently under-counts. The fixtures below claim every node they walk, so
-# no row here depends on which of the two it is; the divergence is recorded so nobody
-# reads a short `walk_grads_n` as "the walk ran".
+# * the one place the port diverges from upstream, and it is named. * gradient.py:127 is `if
+# lgrads is None: raise RuntimeError(...)`. The port CANNOT raise, so a node no rule claims
+# STOPS the walk: `cg_step` is not re-entered and the grads built so far stand. "No answer
+# after this point" is the honest reading of both, and the alternative -- inserting nothing and
+# carrying on -- would be a DIFFERENT function that silently under-counts. The fixtures below
+# claim every node they walk, so no row here depends on which of the two it is; the divergence
+# is recorded so nobody reads a short `walk_grads_n` as "the walk ran".
 def cg_fire.pick(skipped: Bool, +r: GRes, +s: CState, +t0: U32) -> CState:
   match skipped:
     case True{}: s
@@ -1549,13 +1482,13 @@ def cg_outer.of(gone: Bool, +t0: U32, +s: CState) -> CState:
 def cg_turn(+t0: U32, +s: CState) -> CState:
   cg_outer.of(U32.is_zero(cg_ctx.of(gslot(CState.g_of(s), t0), CState.ar_of(s))), t0, s)
 
-# `for t0 in reversed(walk)` -- gradient.py:119. The REVERSAL IS NOT AN OPTIMISATION: it
-# is what makes `gput`'s append-and-replace table behave like a dict, because upstream
-# writes each key once per parent and the LAST write must be the one a later read sees
-# (notes, T-6). `grads` is SEEDED AT THE ROOT -- gradient.py:118 -- and the root is the
-# LAST node the toposort completes, so `reversed` reaches it first and a walk in forward
-# order would skip every other node (`oracle_fwdwalk_n` is CPython's own number for the
-# counterfactual, though the committed oracle dies before printing it).
+# `for t0 in reversed(walk)` -- gradient.py:119. The REVERSAL IS NOT AN OPTIMISATION: it is
+# what makes `gput`'s append-and-replace table behave like a dict, because upstream writes each
+# key once per parent and the LAST write must be the one a later read sees (notes, T-6).
+# `grads` is SEEDED AT THE ROOT -- gradient.py:118 -- and the root is the LAST node the
+# toposort completes, so `reversed` reaches it first and a walk in forward order would skip
+# every other node (`oracle_fwdwalk_n` is CPython's own number for the counterfactual, though
+# the committed oracle dies before printing it).
 def cg_step(srcs: List<&2, U32>, +s: CState) -> CState:
   match srcs:
     case Nil{}: s
