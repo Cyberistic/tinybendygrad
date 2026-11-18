@@ -31,6 +31,7 @@ import ./../../../tinybendygrad/renderer/kuconv.bend as KC
 import ./../../../tinybendygrad/renderer/cstyle.bend as C
 import ./../../../tinybendygrad/uop/ops.bend as O
 import ./../../../tinybendygrad/uop/fold.bend as F
+import ./../../../tinybendygrad/uop/weak.bend as WK
 
 # THE SCHEDULED KERNEL, in the port's own two names: the arena and the kernel.
 type Chain is Data:
@@ -93,17 +94,23 @@ def chain_kudump(+ks: List<&2, C.KU>) -> String: String.join(chain_nums.go(ks, N
 def chain_rows(+cc: Chain) -> List<&2, String>:
   +ar = chain_ar(cc)
   +k = chain_k(cc)
-  +lst = chain_lst(ar, k)
-  +lin = LIN.linearize(ar, lst, Nil{}, chain_body(ar, k))
-  +kus = KC.kuconv.convert(F.folded(ar), lin)
+  # `full_rewrite_to_sink`'s weak rounds FIRST: a renderer cannot print a `weakint`, and
+  # it cannot print a range bound that is a weak CONST either -- the bound is `src0`'s
+  # text, so an uncommitted bound renders as the empty string.
+  +wc = WK.wk_commit(ar, chain_body(ar, k))
+  +war = O.Found.ar(wc)
+  +wb = O.Found.i(wc)
+  +lst = O.UOp.toposort(O.Arena.budget(war), war, wb)
+  +lin = LIN.linearize(war, lst, Nil{}, wb)
+  +kus = KC.kuconv.convert(F.folded(war), lin)
   +src = C.render(C.dev_clang(), True{}, kus)
   [String.concat(["chain_kernel_op=", U32.show(SCH.gate.code(SCH.sc_op(ar, k)))]),
    String.concat(["chain_kernel_nsrc=", U32.show(SCH.sc_nsrc(ar, k))]),
+   String.concat(["chain_body=", U32.show(chain_body(ar, k)), " committed=", U32.show(wb)]),
    String.concat(["chain_lst_n=", U32.show(U32.from_nat(List.length(&2, U32, lst)))]),
    String.concat(["chain_linear_n=", U32.show(U32.from_nat(List.length(&2, U32, lin)))]),
    String.concat(["chain_ku_n=", U32.show(U32.from_nat(List.length(&2, C.KU, kus)))]),
    String.concat(["chain_c_nbytes=", U32.show(U32.from_nat(String.length(src)))]),
-   String.concat(["chain_ku_s0nm=", chain_kudump(kus)]),
    String.concat(["chain_c=", src])]
 
 def chain_emit.go(+xs: List<&2, String>) -> IO(Unit):

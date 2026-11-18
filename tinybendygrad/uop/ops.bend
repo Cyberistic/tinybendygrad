@@ -2094,8 +2094,27 @@ def ParamArg.size.node(op: Op, arg: Arg) -> Maybe<&2, U32>:
     case OpsCONST{}: ParamArg.size.const(arg)
     case _: None{}
 
+# `max_numel()` AT THE PIN READS THROUGH A CAST: MEASURED on CPython,
+# `UOp(Ops.PARAM, src=(UOp.const(4).cast(dtypes.int),)).max_numel()` is 4, and a committed
+# const at this pin IS `CAST(CONST)` (a typed CONST is not one node). A reader that only
+# looked at `src[0]`'s own arg answered `None` the moment `pm_cast_const` committed the
+# shape arg -- MEASURED, every buffer rendered as `data0_` with no shape. One CAST level is
+# what the population has; a deeper chain would need a fuel walk and is refused here.
+def ParamArg.size.cast.op(op: Op, arg: Arg) -> Maybe<&2, U32>:
+  match op:
+    case OpsCONST{}: ParamArg.size.const(arg)
+    case _: None{}
+
+def ParamArg.size.cast(+ar: Arena, +n: U32) -> Maybe<&2, U32>:
+  ParamArg.size.cast.op(Node.op(Arena.node(ar, Arena.src0(ar, n))), Arena.arg(ar, Arena.src0(ar, n)))
+
+def ParamArg.size.alt(m: Maybe<&2, U32>, +ar: Arena, +n: U32) -> Maybe<&2, U32>:
+  match m:
+    case Some{k}: Some{k}
+    case None{} : ParamArg.size.cast(ar, n)
+
 def ParamArg.size.of(+ar: Arena, self: U32, +n: U32) -> Maybe<&2, U32>:
-  ParamArg.size.node(Node.op(Arena.node(ar, n)), Arena.arg(ar, n))
+  ParamArg.size.alt(ParamArg.size.node(Node.op(Arena.node(ar, n)), Arena.arg(ar, n)), ar, n)
 
 def ParamArg.size(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
   ParamArg.size.of(ar, self, Arena.src0(ar, self))

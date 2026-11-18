@@ -1,15 +1,15 @@
 chain_kernel_op=4
 chain_kernel_nsrc=4
-chain_lst_n=20
-chain_linear_n=20
-chain_ku_n=20
-chain_c_nbytes=326
-chain_ku_s0nm=0/1/0 0/20/1 0/1/0 2/12/1 0/1/0 4/15/1 0/1/0 0/1/0 6/1/1 7/1/1 1/1/3 3/12/1 5/15/1 11/1/2 0/1/0 14/1/1 13/1/2 10/1/2 17/1/3 18/1/1
+chain_body=80 committed=103
+chain_lst_n=26
+chain_linear_n=26
+chain_ku_n=26
+chain_c_nbytes=317
 chain_c=
 void test(float* restrict data0_20, float* restrict data1_12, float* restrict data2_15) {
-  for (weakint Lidx0 = 0; Lidx0 < ; Lidx0++) {
-    for (weakint Lidx1 = 0; Lidx1 < ; Lidx1++) {
-      for (weakint Lidx2 = 0; Lidx2 < ; Lidx2++) {
+  for (int Lidx0 = 0; Lidx0 < 4; Lidx0++) {
+    for (int Lidx1 = 0; Lidx1 < 5; Lidx1++) {
+      for (int Lidx2 = 0; Lidx2 < 3; Lidx2++) {
         float* alu0 = UNHANDLED(Ops.REDUCE);
         *(data0_20+Lidx0) = alu0;
       }

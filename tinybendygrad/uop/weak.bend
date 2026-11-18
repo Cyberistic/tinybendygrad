@@ -745,3 +745,180 @@ def pm_go(ready: Bool, m: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match ready:
     case True{}: m
     case False{}: None{}
+
+# `pm_cast_const` -- weak.py:89-96. THE RULE THAT COMMITS A BARE CONST KEYED ON ITS CONSUMER,
+# and the one this file was missing. `pm_commit_weak` only touches `GroupOp.Broadcastable`,
+# and a RANGE is not one -- so a RANGE's bound stayed a weak CONST and the renderer, whose
+# loop is `for (... < {ctx[x.src[0]]})`, printed an EMPTY bound. MEASURED before this: 20 KUs,
+# 326 bytes, `for (weakint Lidx0 = 0; Lidx0 < ; Lidx0++)`.
+#
+# `commit_dtype(dtypes.int)` with no bounds is the DEFAULT width (`dtypes.weakint` -> int32,
+# `weakfloat` -> float32), which is what `wk_cdt` answers; a bound-driven width would need
+# `_min_max`, and no weak const in this population has a bound that widens it.
+def wk_cdt.of(c: S.Cls, d: S.Dt) -> S.Dt:
+  match c:
+    case S.CWeakInt{}  : S.int32()
+    case S.CWeakFloat{}: S.single()
+    case _: d
+
+def wk_cdt(+d: S.Dt) -> S.Dt: wk_cdt.of(S.Dt.cls(d), d)
+
+def wk_cc.one(bare: Bool, +s: U32, +fx: F.Folded, +ar: O.Arena) -> O.Found:
+  match bare:
+    case True{} : O.UOp.cconst(ar, wk_ccast.val(fx, s), wk_cdt(wk_dt(fx, s)))
+    case False{}: O.Found{ar, s}
+
+def wk_cc.go(+ss: List<&2, U32>, +fx: F.Folded, acc: (O.Arena & List<&2, U32>)) -> (O.Arena & List<&2, U32>):
+  match ss:
+    case Nil{}: acc
+    case s <> t:
+      (+ar, +done) = acc
+      +bare = Bool.and(wk_op_is(fx, s, O.OpsCONST{}), Bool.not(F.is_invalid(ar, s)))
+      +f = wk_cc.one(bare, s, fx, ar)
+      wk_cc.go(t, fx, (O.Found.ar(f), List.append(&2, U32, done, [O.Found.i(f)])))
+
+def wk_cast_out(p: (O.Arena & List<&2, U32>), +u: U32) -> Maybe<&2, O.Found>:
+  (ar, srcs) = p
+  Some{replace_in(ar, u, srcs)}
+
+def wk_cast_body(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
+  +ss = wk_srcs(fx, self)
+  +d = derived_dtypes(fx, self, ss)
+  +f0 = commit_weak_consts.walked(Dts.some(d), ODt{Dts.some(d), Dts.meet(d)}, fx, self, ss)
+  +ar0 = O.Found.ar(f0)
+  +u0 = O.Found.i(f0)
+  +fx2 = F.folded(ar0)
+  wk_cast_out(wk_cc.go(wk_srcs(fx2, u0), fx2, (ar0, Nil{})), u0)
+
+# `if u.op is CAST and u.src[0].op is CONST: return None`
+def wk_cast_skip(skip: Bool, +fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
+  match skip:
+    case True{} : None{}
+    case False{}: wk_cast_body(fx, self)
+
+def wk_cast_consts(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
+  wk_cast_skip(Bool.and(wk_op_is(fx, self, O.OpsCAST{}), wk_op_is(fx, wk_src0(fx, self), O.OpsCONST{})), fx, self)
+
+# The table is ONE rule over `GroupOp.All-GroupOp.Defines`. `wk_once` calls the body for
+# every node (a node with no CONST src answers the same node and `wk_norm` drops it), so the
+# entry carries no op list and the table is here for the ledger's shape, not for matching.
+def wk_cast_table() -> O.PMEntrys:
+  O.PMEntrys{[O.PMEntry{0, Nil{}, Nil{}}]}
+
+# THE DRIVER. `weak.bend` was 700 lines of rule bodies with NO IMPORTER -- every
+# `pm_commit_weak` body was `ALL PROOFS CHECK` and nothing ran it, so a render built
+# `for (weakint Lidx0 = 0; Lidx0 < ; Lidx0++)` with no committed dtype and no loop bound.
+# This is the engine `graph_rewrite` gives upstream for free: a toposort sweep, a
+# per-node fixpoint, and a replace map. The map is a LIST of `WRep` and not a
+# `Map<&2, U32>` because `Map.put` loses every key after the first (MEASURED: three
+# `Map.put`s leave `Map.size = 1`), which is why the scheduler's engine carries `List<Rep>`.
+type WRep is Data:
+  WRep{old: U32, new: U32}
+
+def wk_pickb(eq: Bool, new: U32, alt: U32) -> U32:
+  match eq:
+    case True{} : new
+    case False{}: alt
+
+# a lookup for a node NOT in the map answers the node itself, which is `replaced.get(x, x)`
+def wrep_get(+rs: List<&2, WRep>, +k: U32) -> U32:
+  match rs:
+    case Nil{}: k
+    case WRep{old, new} <> t: wk_pickb(U32.is_eq(old, k), new, wrep_get(t, k))
+
+def wrep.srcs.go(ss: List<&2, U32>, +rep: List<&2, WRep>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case s <> t: wrep.srcs.go(t, rep, List.append(&2, U32, acc, [wrep_get(rep, s)]))
+
+# the fold is rebuilt per round because a rule mints nodes and the fold is a table over
+# the arena: `eng_fix` in `schedule/rangeify.bend` rebuilds for the same reason.
+# an answer that is the SAME node is not a firing: upstream's engine drops `ret is not uop`,
+# and `pm_cast_const` answers `u.replace(...)` unconditionally. Without this filter the
+# fixpoint would run its fuel out on a rule that agrees with itself.
+def wk_norm.hit(same: Bool, f: O.Found) -> Maybe<&2, O.Found>:
+  match same:
+    case True{} : None{}
+    case False{}: Some{f}
+
+def wk_norm(m: Maybe<&2, O.Found>, u: U32) -> Maybe<&2, O.Found>:
+  match m:
+    case Some{+f}: wk_norm.hit(U32.is_eq(O.Found.i(f), u), f)
+    case None{} : None{}
+
+# `which`: 0 = `pm_commit_weak`, 1 = `pm_uncast_const`, 2 = `pm_cast_const`.
+def wk_once(+ts: O.PMEntrys, which: U32, +ar: O.Arena, +u: U32) -> Maybe<&2, O.Found>:
+  match which:
+    case 2: wk_norm(wk_cast_consts(F.folded(ar), u), u)
+    case _: wk_norm(wk_scan(ts, U32.is_zero(which), F.folded(ar), u, O.PMEntrys.es(ts), None{}), u)
+
+def wk_has(m: Maybe<&2, O.Found>) -> Bool:
+  match m:
+    case Some{_}: True{}
+    case None{} : False{}
+
+def wk_ix(m: Maybe<&2, O.Found>) -> Maybe<&2, U32>:
+  match m:
+    case Some{f}: Some{O.Found.i(f)}
+    case None{} : None{}
+
+def wk_get(m: Maybe<&2, O.Found>, d: O.Found) -> O.Found:
+  match m:
+    case Some{f}: f
+    case None{} : d
+
+# a round that fired NOTHING answers the LAST firing, never `None` -- the fixpoint's
+# terminating round is the one that did not move, and returning it would throw the
+# rewrite away (the same shape as `eng_fix`'s `last`). "Stop" is fuel 0 on the ONE
+# self-call, because a helper that decided it would have to call back into this loop.
+def wk_last(hit: Bool, f: O.Found, last: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
+  match hit:
+    case True{} : Some{f}
+    case False{}: last
+
+# a round that fired NOTHING answers the LAST firing, never `None` -- the fixpoint's
+# terminating round is the one that did not move, and returning it would throw the
+# rewrite away (the same shape as `eng_fix`'s `last`). `stop` is a CARRIED flag and not
+# a branch, because the self-call's first argument must be `p`, a subterm of `1n+p`:
+# the termination checker reads arguments left to right and a computed fuel is not a
+# smaller term.
+def wk_fix.go(fuel: Nat, +ts: O.PMEntrys, +which: U32, +ar: O.Arena, +u: U32,
+              last: Maybe<&2, O.Found>, stop: Bool) -> Maybe<&2, O.Found>:
+  match fuel:
+    case 0n: last
+    case 1n+p:
+      match stop:
+        case True{}: last
+        case False{}:
+          +m = wk_once(ts, which, ar, u)
+          +hit = wk_has(m)
+          +f = wk_get(m, O.Found{ar, u})
+          wk_fix.go(p, ts, which, O.Found.ar(f), O.Found.i(f), wk_last(hit, f, last), Bool.not(hit))
+
+# ONE SWEEP, in the arena's topological order -- `toposort_nocalls`, so a CALL's body is
+# not entered, which is `enter_calls=False` and is what `full_rewrite_to_sink` sees.
+def wk_sweep.go(+ts: O.PMEntrys, +which: U32, +ns: List<&2, U32>, +ar: O.Arena, +root: U32,
+                +rep: List<&2, WRep>) -> O.Found:
+  match ns:
+    case Nil{}: O.Found{ar, wrep_get(rep, root)}
+    case n <> t:
+      +srcs = wrep.srcs.go(O.Arena.srcs(ar, n), rep, Nil{})
+      +f = O.UOp.new(ar, O.Arena.op(ar, n), srcs, O.Arena.arg(ar, n), O.Arena.tag(ar, n))
+      +m = wk_fix.go(O.Arena.budget(ar), ts, which, O.Found.ar(f), O.Found.i(f), None{}, False{})
+      # THE ARENA AFTER THE RULE, not the rebuild's. A rule mints into the arena it was
+      # handed, so threading `Found.ar(f)` here builds the NEXT node in a SHORTER arena
+      # and its index collides with one the rule already minted. MEASURED: that produced a
+      # three-node CYCLE (85 -> 86 -> 87 -> 85) and `toposort` returned 0 nodes.
+      +g = wk_get(m, f)
+      wk_sweep.go(ts, which, t, O.Found.ar(g), root, WRep{n, Maybe.default(&2, U32, wk_ix(m), O.Found.i(f))} <> rep)
+
+def wk_sweep(+ts: O.PMEntrys, +which: U32, +ar: O.Arena, +root: U32) -> O.Found:
+  wk_sweep.go(ts, which, O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, root), ar, root, Nil{})
+
+# `full_rewrite_to_sink`'s two weak rounds, in upstream's order: `pm_commit_weak` rides
+# every round that can mint a weak const, and `pm_uncast_const` drops the CAST off a
+# committed const afterwards (`weak.py:35`, `:89`).
+def wk_commit(+ar: O.Arena, +root: U32) -> O.Found:
+  +c = wk_sweep(wk_commit_table(), 0, ar, root)
+  +u = wk_sweep(wk_cast_table(), 2, O.Found.ar(c), O.Found.i(c))
+  wk_sweep(wk_uncast_table(), 1, O.Found.ar(u), O.Found.i(u))
