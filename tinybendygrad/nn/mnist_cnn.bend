@@ -6,10 +6,6 @@
 # expectations are transcribed by script and never typed: every `want=` below
 # is computed, not written.
 #
-# WHAT THIS FILE IS. The port's own copy of the MNIST model that the end-to-end
-# run uses, in the port's own idiom: the SHAPE ARITHMETIC of every layer, and
-# the GRAPH of the layers the substrate can build.
-#
 # THE MODEL. It is `.agents/slop/mnist/model.py`'s, and that file is what the
 # trained weights belong to:
 #

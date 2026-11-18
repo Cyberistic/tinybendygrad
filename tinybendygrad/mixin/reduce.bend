@@ -1,7 +1,5 @@
 # mixin/reduce.bend -- tinygrad/mixin/reduce.py.
 #
-# WHAT IS HERE vs ALREADY PORTED. Do not re-declare a def that exists elsewhere;
-# duplicating one is the one failure mode that makes this file a net negative.
 #   HERE     `rc_rop` (the abstract `_rop`, reduce.py:10), `rc_sum_dt`/`rc_prod_dt`
 #            (the `dtype is not None` arm), `rc_any`/`rc_all`, `rc_axs` (reduce.py:15's
 #            `Sequence[int]` arm), the gate.

@@ -1,11 +1,5 @@
 # search.bend -- tinygrad/codegen/opt/search.py.
 #
-# THIS IS THE BEAM FILE. `search.py` is 173 lines: the `actions` candidate
-# table, `get_kernel_actions`, the beam loop, and the estimate-vs-real scoring.
-# `postrange.bend` owns `Opt`, `Sched` and `opt_ok`; this file CONSUMES them and
-# adds the three things that are its own -- the candidate table, the DEDUP guard
-# that table feeds, and the loop.
-#
 
 # a checking file, not a complete one, and the brief asks for that. Four of the
 # nine defs are one-line device calls and a wall; the two that carry the search's

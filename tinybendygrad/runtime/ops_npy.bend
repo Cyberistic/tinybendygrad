@@ -7,6 +7,7 @@
 # So the class INHERITS EVERYTHING and overrides ONE METHOD, and the whole
 # content of the port is FOUR ARGUMENTS and what each of them becomes:
 #
+#
 #     device   -> self.device                                  device.py:396
 #     HostAllocator(self) -> self.allocator                    device.py:396
 #     []       -> self.renderers                               device.py:396

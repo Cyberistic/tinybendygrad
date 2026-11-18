@@ -3,14 +3,6 @@
 # which node, plus `apply_movement_op`, which is the one place a movement op
 # turns RANGES into other RANGES.
 #
-# WHAT THIS FILE IS, IN ONE PARAGRAPH. `indexing.py` is 328 lines and it is
-# almost entirely DECISION and LOOKUP. What it computes is a MAP -- node to
-# (input ranges, output ranges) and node to realized-or-not -- and the one piece
-# of real arithmetic in it is `apply_movement_op`, whose six arms each rewrite a
-# tuple of ranges by a movement op's own semantics. What it BUILDS is a STAGE
-# node (`create_bufferize_and_index_srcs`) and a WHERE chain (`_stack_select`),
-# and those builders are the walls named below.
-#
 # the order of the file is python's order, and one piece of it is load-bearing:
 # `ALWAYS_CONTIGUOUS` (indexing.py:24) is named at the TOP of the file because
 # `create_bufferize_and_index_srcs` (indexing.py:73 symbol=create_bufferize_and_index_srcs) and `realize_srcs`

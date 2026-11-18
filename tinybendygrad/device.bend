@@ -3,17 +3,6 @@
 # `Compiled`, the composition of an allocator, a renderer, a compiler and a
 # program.
 #
-# The pure half of this file is DECISION code, and decision code ports: which
-# device string resolves to which class, which of two available devices is the
-# default, how many bytes a buffer is, where a view's offset lands, whether a
-# freed storage is recycled or dropped, what a renderer's environment variable
-# is called. The impure half is the SEAM, and the seam is one line long: a
-# Buffer's bytes live in device memory and every way of reaching them is a C
-# call -- `mmap`, `cudaMalloc`, `MTLDevice.newBuffer`, `navigator.gpu`, `pickle`.
-# tinygrad reaches them with ctypes and `subprocess`; this port reaches them
-# with `import "./<x>.c"`. So `allocate` / `_copyin` / `_copyout` /
-# `as_memoryview` / `numpy` are WALLS, marked `# TODO(p3) device.py:<line>`.
-#
 # BUFFERS ARE (nbytes, content-address) PARAMETERS. Python's `Buffer` is an object
 # whose IDENTITY `_base_storage is base._storage` depends on (device.py:111), so a
 # Bend `Buffer` is a slot in a `Bar` arena rather than a value: `Bn` carries the
