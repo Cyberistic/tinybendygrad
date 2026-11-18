@@ -1180,6 +1180,80 @@ comment-decay-restored [######...] 3/3  **A SWEEP THAT DELETES A FILE MAKES A LA
                                        editing it would make the guard lie about itself, which is
                                        the same defect one line up.
 
+comment-cut        [#####....] 5/8      **THE **PORT's **COMMENT **MASS **IS **CUT **BY **THE
+                                         **RULE **AND **THE **RULE **HAS **FOUR **DEFECTS **THAT
+                                         **THE **CUT **FOUND**, **AND **EVERY **ONE **OF **THEM
+                                         **IS **A **CLASS **ANOTHER **UNIT **ALSO **FOUND** **AND
+                                         **REPAIRED**.
+                                         **THE **RULE** (`AGENTS.md:16`, **`.agents/slop/comments/RULE.md`**):
+                                         **A **COMMENT **EARNS **ITS **PLACE **IN **ONE **OF
+                                         **THREE **WAYS** -- **DIFFERENCE** (**WHAT **THE **PORT
+                                         **DOES **THAT **UPSTREAM **DOES **NOT**, **NAMING **THE
+                                         **UPSTREAM **LINE**), **WEIRD** (**WHY **SOMETHING **LOOKS
+                                         **WRONG **BUT **IS **NOT**), **MEASURED** (**THE **NUMBER
+                                         **THAT **JUSTIFIES **THE **CODE**). **EVERYTHING **ELSE
+                                         **IS **NARRATION** **AND **NARRATION **IS **WHAT **GETS
+                                         **CUT**.
+                                         **THE **INSTRUMENTS**, **UNDER **`.agents/slop/comments/`**:
+                                         `comment-census.py` (**THE **PER-FILE **MASS**, **THE
+                                         **FOUR **CLASSES**), `comment-budget.py` (**THE **RATCHET**),
+                                         `trim-plan.py` (**A **POINTER** -- **IT **PRINTS **WHAT **IT
+                                         **WOULD **DO** **AND **NEVER **WRITES**), **AND
+                                         `trim-apply.py` (**THE **HAND** -- **AND **IT **SHARES **THE
+                                         **PLAN's **OWN **`keep_count`** **AND **`blocks`**, **SO
+                                         **THE **VERDICT **CANNOT **DRIFT **BETWEEN **THE **PLAN
+                                         **AND **THE **EDIT**).
+                                         **THE **FOUR **DEFECTS**, **EACH **MEASURED**:
+                                         **(1)** **A **RUN **OF **`#` **LINES **IS **ONE **BLOCK**,
+                                         **AND **A **FILE's **HEADER **IS **ONE **RUN **OF **170+
+                                         **LINES**, **AND **THE **PLAN **KEPT **THE **FIRST
+                                         **MARKER's **PARAGRAPH **AND **CUT **THE **OTHER **150
+                                         **LINES**, **AND **THOSE **150 **LINES **WERE **A **LIST
+                                         **OF **SEVEN **SEPARATE **DIFFERENCES**, **EACH **WITH
+                                         **ITS **OWN **UPSTREAM **CITATION**. **(2)** **A **MARKER
+                                         **LINE **IS **OFTEN **THE **CITATION **ON **THE **SECOND
+                                         **LINE **OF **A **SENTENCE**, **AND **SO **CUTTING **AT
+                                         **THE **MARKER **CUTS **MID-SENTENCE**. **(3)** **A
+                                         **SECTION **WITH **NO **MARKER **WAS **KEPT **THROUGH
+                                         **ITS **FIRST **LINE**, **AND **THE **FIRST **LINE **IS
+                                         **OFTEN **THE **MIDDLE **OF **A **SENTENCE**, **AND **SO
+                                         **THE **CUT **LEFT **427 **NEW **COMMENT **RUNS **ENDING
+                                         **MID-SENTENCE** -- **AND **427 **IS **0 **AFTER **THE
+                                         **FIX**. **(4)** **THE **CUT **DELETED **FOUR **REAL **BUG
+                                         **RECORDS**, **AND **`8e3596ac8`'s **RULE **IS **"NEVER
+                                         **DELETE **A **COMMENT **THAT **RECORDS **A **BUG **THAT
+                                         **WAS **FOUND"**, **AND **THE **PORT's **HISTORY **IS
+                                         **LOAD-BEARING**.
+                                         **THE **OTHER **UNITS **WHO **FOUND **THE **SAME
+                                         **CLASSES**: `04c695e0f` **"REPAIR **94 **DANGLING
+                                         **COMMENT **BLOCKS"**, `f28ba8c7e` **"REPAIR **57
+                                         **DANGLING **COMMENT **BLOCKS"**, `525e7c5d1` **"THE **37
+                                         **TRUNCATIONS **ARE **REPAIRED"**, `8e3596ac8` **"REPAIR
+                                         **elf.bend"**, `5b224f558` **"THE **TRUNCATED **`kuconv.bend`
+                                         **BLOCK **IS **RESTORED"**, `e1eb04322` **"REPAIR **3
+                                         **TRUNCATED **COMMENT **BLOCKS"**.
+                                         **THE **CUTS **LANDED**: **`0a73428fe`** (**THE
+                                         **`runtime/` **LANE**, **35 **FILES**, **1,867
+                                         **LINES**), **`58cb205a3`** (**44 **FILES**, **1,064
+                                         **LINES**), **`798199dec`** (**10 **FILES**, **111
+                                         **LINES**), **AND **`51ec4940b`** (**THE **APPLIER**).
+                                         **THE **THREE **SAFETY **CHECKS**, **AND **ALL **THREE
+                                         **ARE **ZERO **ON **EVERY **COMMIT**: **THE **DIFF's
+                                         **NON-COMMENT **LINES**, **THE **NEW **COMMENT **RUNS
+                                         **THAT **END **MID-SENTENCE**, **AND **THE **DELETED
+                                         **LINES **THAT **NAME **A **BUG**, **A **WALL**, **A
+                                         **WRONG **ANSWER **OR **A **REGRESSION**.
+                                         **WHAT **IS **LEFT**: **THE **`uop/`**, **`renderer/`**,
+                                         **`runtime/support/`** **AND **`extra/`** **LANES **ARE
+                                         **BEING **CUT **BY **OTHER **UNITS **CONCURRENTLY**, **AND
+                                         **THE **TREE's **OWN **CENSUS **IS **THE **VERDICT**.
+                                         **THE **REMAINING **WORK **IS **THREE **PARTS**: **(A)**
+                                         **THE **REST **OF **THE **TREE** (**THE **`uop/`** **AND
+                                         **`renderer/`** **LANES**), **(B)** **A **PER-FILE
+                                         **BUDGET **THAT **CANNOT **BE **RAISED **WITHOUT **A
+                                         **REASON**, **AND **(C)** **THE **CORPUS**, **ONCE**, **ON
+                                         **A **CLEAN **WORKTREE **OF **THE **FINAL **COMMIT**.
+
 substrate-head [##########] 3/3  **A DIGEST WITH NO COMMIT IN IT CANNOT BE COMPARED TO A TREE.**
                                        MEASURED 2026-10-18 by a dispatched unit over **18 readings / 3
                                        distinct digests / 5 distinct HEADs**: `substrate_digest()` is a
