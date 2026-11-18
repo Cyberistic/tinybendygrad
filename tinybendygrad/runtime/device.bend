@@ -1,8 +1,6 @@
 # tinybendygrad/runtime/device.bend -- THE PORT's OWN `Device` LANE.
 #
 
-# what this file is, and why it exists.
-#
 # The port has EVERY STAGE of the device lane and NOTHING drives them:
 #
 #   * `schedule/__init__.bend:1124` `schedule(+ar, +sink) -> Lin` IS upstream's

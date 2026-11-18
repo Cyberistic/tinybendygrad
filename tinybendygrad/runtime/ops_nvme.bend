@@ -4,8 +4,6 @@ import ../helpers.bend as H
 # tinybendygrad/runtime/ops_nvme.bend -- port of tinygrad/runtime/ops_nvme.py
 #
 
-# what this file is, and what it is not.
-#
 # UPSTREAM'S `ops_nvme.py` IS 167 LINES WITH SIX CLASSES: `NVMEQueue`,
 # `NVMEDev`, `NVMEIface`, `NVMEAllocator`, `NVMEDevice`, AND THE THREE
 # FUNCTIONS `nvme_queue`, `loop`, `nvme_copies` PLUS `prp_table` AND
