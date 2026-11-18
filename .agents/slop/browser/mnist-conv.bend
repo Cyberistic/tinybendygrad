@@ -639,7 +639,10 @@ def fwd_prog() -> RZ.RZProg:
   # THE AFTER IS THE READABLE HANDLE: `AFTER(buf, stores...)` means "buf, valid after those
   # stores", so kernel B reads `a1` and not the bare buffer -- that edge is what orders the two.
   +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
-  +w = RZ.rz_input(T.Tensor.ar(hf), 3, 7840, [784, 10])
+  # THE ARENA MUST BE CHAINED, NOT FORKED: `o` was built on `a1`'s arena and returned a GROWN one,
+  # and building `w` on `a1`'s again made the two SIBLING copies -- `o`'s nodes and `w`'s nodes then
+  # occupied the same indices, and the MUL mixed them (MEASURED: the weight folded to a lone CONST).
+  +w = RZ.rz_input(T.Tensor.ar(o), 3, 7840, [784, 10])
   +lhs = MX.mxw_reshape.go(hf, [1, 1, 784])
   +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w, [1, 784, 10]), [0, 2, 1])
   +m = T.tn_mul(lhs, rhs)
@@ -826,7 +829,10 @@ def fwd_ids() -> String:
   +a1 = RZ.rz_after(h, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
   +o = RZ.rz_input(O.Found.ar(a1), 2, 10, [1, 10])
   +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
-  +w = RZ.rz_input(T.Tensor.ar(hf), 3, 7840, [784, 10])
+  # THE ARENA MUST BE CHAINED, NOT FORKED: `o` was built on `a1`'s arena and returned a GROWN one,
+  # and building `w` on `a1`'s again made the two SIBLING copies -- `o`'s nodes and `w`'s nodes then
+  # occupied the same indices, and the MUL mixed them (MEASURED: the weight folded to a lone CONST).
+  +w = RZ.rz_input(T.Tensor.ar(o), 3, 7840, [784, 10])
   +lhs = MX.mxw_reshape.go(hf, [1, 1, 784])
   +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w, [1, 784, 10]), [0, 2, 1])
   +m = T.tn_mul(lhs, rhs)
@@ -841,6 +847,16 @@ def fwd_ids() -> String:
                  " st.src0=", RR.rr_node_str(ar, O.Arena.src0(ar, st)),
                  " | w_sub=", RR.rr_dump(ar, T.Tensor.u(w)),
                  " | o_sub=", RR.rr_dump(ar, T.Tensor.u(o))])
+
+# `mxw_buf` AND `mxw_reshape.go`, EACH ON ITS OWN, for the weight's slot and size.
+def mb_row() -> String:
+  +ar = O.Arena.empty()
+  +b = MX.mxw_buf(ar, 3, 7840)
+  +r = MX.mxw_reshape.go(b, [784, 10])
+  String.concat(["buf_u=", U32.show(T.Tensor.u(b)), " buf=", RR.rr_node_str(T.Tensor.ar(b), T.Tensor.u(b)),
+                 " buf_dump=", RR.rr_dump(T.Tensor.ar(b), T.Tensor.u(b)),
+                 " | res_u=", U32.show(T.Tensor.u(r)), " res=", RR.rr_node_str(T.Tensor.ar(r), T.Tensor.u(r)),
+                 " res_dump=", RR.rr_dump(T.Tensor.ar(r), T.Tensor.u(r))])
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -869,6 +885,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["mb_row=", mb_row()]))
     _ : Unit <- IO.print(String.concat(["fwd_ids=", fwd_ids()]))
     _ : Unit <- IO.print(String.concat(["buf_row=", buf_row()]))
     _ : Unit <- IO.print(String.concat(["sk_row=", sk_row()]))
