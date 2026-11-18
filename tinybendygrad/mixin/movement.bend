@@ -4,19 +4,8 @@
 # THE SPLIT IN THIS FILE IS PYTHON'S. `mixin/movement.py` is a `MovementMixin` over `Tensor` AND
 # over `UOp` (ops.py:233 symbol=UOp), and the two halves are not the same.
 #
-# WHAT IS PORTED HERE, gated against CPython:
-#   1. `_pool` in full as SHAPE ARITHMETIC (movement.py:614-632 symbol=_pool): `noop`, `i_`, `o_`
-#      (movement.py:618), `f_` (movement.py:622), the dilation window `k*(i*f+d)`
-#      (movement.py:624-626), the permute order (movement.py:632).
-#   2. `marg` (ops.py:792 symbol=marg) in all THREE arms, and `as_shape` on its CONCRETE arm
-#      (`as_shape`, ops.py:786 symbol=as_shape). This is the W1/W2 answer.
-#   3. `_shape`'s movement arms (ops.py:395-414 symbol=_shape) for RESHAPE, EXPAND, PERMUTE, PAD,
-#      SHRINK and FLIP -- FIVE arms upstream: `Ops.FLIP` is NOT IN upstream at this pin.
-#   4. The `PERMUTE` validity check (ops.py:402-404 symbol=_shape), as `mxm_perm_lt` + `mxm_dup`.
-#   5. The WRITE half (Section I): `reshape` (:164), `permute` (:214), `pad` (:186), `shrink`
-#      (:192), `flip` (:233), plus `mxw_dims_of` (the shape of ANY node, the merge point that
-#      makes the identity test answerable) and `mxw_sig` (node count + root op + src count + SRC
-#      OP SEQUENCE).
+# WHAT IS PORTED HERE, gated against CPython, IS IN
+# `.agents/slop/tables/mixin-movement-7.md`.
 #
 # NOT PORTED, each with the reason, IS IN `.agents/slop/tables/mixin-movement-1.md`. THE THREE
 # FACTS THAT ARE NOT A LIST STAY HERE: `_broadcast_to` (:128) / `expand` (:149) are DONE FOR A
@@ -52,19 +41,7 @@
 # unit.
 #
 # THE EXACT INTERFACE `examples/beautiful_mnist.bend` SHOULD CALL -- three defs, and nothing else
-# in this file is on the path:
-#   import ../tinybendygrad/mixin/movement.bend as MX
-#   MX.mxm_shape(MX.mxm_marg(ar, i), src_shape) -> List<&2, U32>   # the SHAPE of a movement
-#       node, given the source's shape: the `fold.bend:1606-1612` replacement
-#   MX.mx_pool_shape(shp, k, stride, dilation) -> List<&2, U32>   # `_pool`'s OUTPUT shape.
-#       This is W1/W2 and it needs no arena at all -- it is pure integer arithmetic
-#   MX.mx_pool_perm(nn: U32, ni: U32)                             # `_pool`'s PERMUTE order.
-#       EXISTS AND IS GATED (four rows against CPython), with BOTH arguments already
-#       `U32`-converted: `nn` is `U32.from_nat(ndim - len(k))` and `ni` is
-#       `U32.from_nat(List.length(&2, U32, k))`. It answers the ORDER, not a node: building the
-#       PERMUTE is `mxw_permute(t, MX.mx_pool_perm(nn, ni))`, which is the gate row `pool_perm`,
-#       NOT written.
-# `mxm_marg` needs `+ar: O.Arena` and a node index.
+# in this file is on the path: THE TABLE IS IN `.agents/slop/tables/mixin-movement-54.md`.
 #
 # what is measured rather than assumed in the arithmetic. `H.ceildiv_u32` is overflow-free but
 # TRUNCATES toward zero, and `o*s - d` on movement.py:606 CAN BE NEGATIVE. CPython, measured:
@@ -214,9 +191,6 @@ def mx_pool_out(i: List<&2, U32>, d: List<&2, U32>, k: List<&2, U32>, s: List<&2
 # THE ACCUMULATOR IS APPENDED TO AT THE TAIL: `List.append(a, A, acc, [x])`. This def used to
 # PREPEND on the reasoning that a walk which descends and accumulates on the way back up must cons
 # at the head "to build forward order". That is the head/tail swap `agent-core.md` records:
-# `List.append` is `xs ++ ys`, so prepending builds the list BACKWARDS, and the comment was the
-# rationalisation rather than the defence. `mx_pool_out.go` and `mx_pool_kid.go`, twelve lines
-# away, both write `acc, [x]`.
 #
 # `f_` is not cosmetic: it is an input to `mx_pool_kid` and `mx_pool_rep` ZIPPED against `i_`, so
 # a reversed `f_` makes every per-axis repeat count wrong rather than merely reordered. MEASURED:
