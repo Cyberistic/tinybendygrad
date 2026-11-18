@@ -816,6 +816,30 @@ def buf_row() -> String:
                  " buf_nsrc=", U32.show(O.Arena.nsrc(T.Tensor.ar(t1), b1)),
                  " | b7840 buf_nsrc=", U32.show(O.Arena.nsrc(T.Tensor.ar(t2), b2))])
 
+# `T.Tensor.u(o)` AGAINST `Arena.src0(the second store)` -- the two numbers the last commit named.
+# This REPEATS the fixture's tail, because the ids are what is in question.
+def fwd_ids() -> String:
+  +h = RZ.rz_input(O.Arena.empty(), 0, 784, [1, 1, 28, 28])
+  +x = RZ.rz_input(T.Tensor.ar(h), 1, 784, [1, 1, 28, 28])
+  +e = MX.mxw_expand(x, [3, 3])
+  +f1 = T.tn_rop(T.Tensor.ar(e), T.Tensor.u(e), O.OpsADD{}, [0, 1])
+  +a1 = RZ.rz_after(h, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
+  +o = RZ.rz_input(O.Found.ar(a1), 2, 10, [1, 10])
+  +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
+  +w = RZ.rz_input(T.Tensor.ar(hf), 3, 7840, [784, 10])
+  +lhs = MX.mxw_reshape.go(hf, [1, 1, 784])
+  +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w, [1, 784, 10]), [0, 2, 1])
+  +m = T.tn_mul(lhs, rhs)
+  +f2 = T.tn_rop(T.Tensor.ar(m), T.Tensor.u(m), O.OpsADD{}, [2])
+  +a2 = RZ.rz_after(o, T.tn_new(O.Found.ar(f2), O.Found.i(f2)))
+  +ar = O.Found.ar(a2)
+  +st = O.Arena.src(ar, O.Found.i(a2), 1)
+  String.concat(["o_u=", U32.show(T.Tensor.u(o)), " o=", RR.rr_node_str(ar, T.Tensor.u(o)),
+                 " | w_u=", U32.show(T.Tensor.u(w)), " w=", RR.rr_node_str(ar, T.Tensor.u(w)),
+                 " | st=", RR.rr_node_str(ar, st),
+                 " st.src0_u=", U32.show(O.Arena.src0(ar, st)),
+                 " st.src0=", RR.rr_node_str(ar, O.Arena.src0(ar, st))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -843,6 +867,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["fwd_ids=", fwd_ids()]))
     _ : Unit <- IO.print(String.concat(["buf_row=", buf_row()]))
     _ : Unit <- IO.print(String.concat(["sk_row=", sk_row()]))
     _ : Unit <- IO.print(String.concat(["st_rows=", String.join(st_rows(), " | ")]))
