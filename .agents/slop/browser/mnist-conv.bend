@@ -689,6 +689,25 @@ def fwd_kg() -> String:
   +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
   RR.rr_dump(O.Found.ar(kg), O.Found.i(kg))
 
+# WHY `flatten_bufferize` DOES NOT FIRE: the guard, the counts, and the reshape's own answer,
+# measured on the PRE-ENGINE graph (the engine runs after it).
+def fbd_find.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      fbd_find.go(ar, t, Bool.pick(U32, Bool.and(U32.is_zero(acc), O.eq_op(O.Arena.op(ar, x), O.OpsSTAGE{})), x, acc))
+
+def fbd_row() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +kb = RR.rr_run_rangeify(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +ar = O.Found.ar(kb)
+  +tb = F.Folded.t(F.folded(ar))
+  +st = fbd_find.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(kb)), 0)
+  String.concat(["st=", RR.rr_node_str(ar, st),
+                 " closed=", U32.show(RF.fb_closed(ar, st)),
+                 " vdims=", U32.show(U32.from_nat(List.length(&2, U32, RF.fb_vdims(ar, tb, st)))),
+                 " guard=", Bool.show(RF.fb_ok.guard(ar, tb, st))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -716,6 +735,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["fbd_row=", fbd_row()]))
     _ : Unit <- IO.print(String.concat(["fwd_lk=", fwd_lk()]))
     _ : Unit <- IO.print(String.concat(["fwd_kg=", fwd_kg()]))
     _ : Unit <- IO.print(String.concat(["fwd_c=", fwd_c()]))

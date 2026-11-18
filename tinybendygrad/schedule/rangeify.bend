@@ -55,6 +55,7 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../uop/movement.bend as M
 import ./../codegen/__init__.bend as CG
+import ./indexing.bend as IX
 
 # THE READERS. `movement.bend`'s `mp_*` are reused, not copied: they are the
 # same six reads of the same arena and a second copy would be pure weight. What
@@ -1520,10 +1521,79 @@ def ct_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 # discriminator in this file lives on it. The `any(...)` is ported EXACTLY because it reads
 # no derived property -- two ops -- and it is the only part of `flatten_bufferize` that
 # does.
-def rf_fb_collapse(two: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
+# `flatten_bufferize`'s BODY -- rangeify.py:233-245. Upstream:
+#
+#   if len(x.src) == 2: return None
+#   ret = x.replace(src=(x.src[0], get_single_element(apply_movement_op(Ops.RESHAPE,
+#         (prod(x.shape),), x.shape, x.src[1:]))))
+#   ret = ret.reshape(x.shape)
+#
+# i.e. the STAGE's N closed ranges become ONE index expression by reshaping a 1-D total back
+# to the stage's shape, and the stage is wrapped in a RESHAPE. WITHOUT IT `bufferize_to_store`
+# CANNOT MATCH: its pattern is a STRICT TWO-SRC stage and the staged node carries one src per
+# closed range -- MEASURED, `STAGE:none:REDUCE,CONST,RANGE` in the two-kernel chain.
+#
+# THE PRECONDITION IS CHECKED, NOT ASSUMED: `_apply_reshape` zips `out_shape` with the closed
+# srcs, so a list that is not one-per-dim would TRUNCATE (CPython's `zip` does exactly that)
+# and produce a wrong index. `IX.rr_reshape.ok` refuses a length mismatch; so does this.
+#
+# THE SHAPE IS READ THROUGH `IX.rr_dims` and the reshape is `IX.rr_reshape` -- both hoisted
+# into `indexing.bend` for this rule, because `rangify.bend` imports THIS file.
+def fb_pos.go(fuel: Nat, +n: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match fuel:
+    case 0n: acc
+    case 1n++p:
+      +v = U32.sub(U32.sub(n, U32.from_nat(p)), 1)
+      fb_pos.go(p, n, List.append(&2, U32, acc, [v]))
+
+def fb_pos(+n: U32) -> List<&2, U32>: fb_pos.go(U32.to_nat(n), n, Nil{})
+
+def fb_tbl.go(+ns: List<&2, U32>, +acc: List<&2, IX.IxRange>) -> List<&2, IX.IxRange>:
+  match ns:
+    case Nil{}: acc
+    case n <> t: fb_tbl.go(t, List.append(&2, IX.IxRange, acc, [IX.ix_rg_n(n)]))
+
+# THE SHAPE IS THE VALUE'S, NOT THE STAGE'S. `ops.py:360-362` gives a STAGE
+# `closed_extents ++ src0.shape`, so `len(x.shape)` counts the closed ranges TOO and a
+# one-per-dim test against it can never hold. The reshape is over the CLOSED ranges producing
+# an index into the VALUE's shape, so the value's dims are the ones that must match them.
+def fb_vdims(+ar: O.Arena, +tb: F.Table, +self: U32) -> List<&2, U32>:
+  IX.rr_dims(ar, tb, O.Arena.src0(ar, self))
+
+def fb_closed(+ar: O.Arena, +self: U32) -> U32:
+  U32.from_nat(List.length(&2, U32, O.Arena.src_from(ar, self, 1)))
+
+def fb_ok.guard.eq(same: Bool, +ar: O.Arena, +self: U32) -> Bool:
+  match same:
+    case True{}: Bool.not(U32.is_zero(fb_closed(ar, self)))
+    case False{}: False{}
+
+def fb_ok.guard(+ar: O.Arena, +tb: F.Table, +self: U32) -> Bool:
+  fb_ok.guard.eq(U32.is_eq(fb_closed(ar, self), U32.from_nat(List.length(&2, U32, fb_vdims(ar, tb, self)))), ar, self)
+
+# THE ANSWER: `RESHAPE(STAGE(value, expr), shape)`.
+def fb_mk.fin(p: (O.Arena & List<&2, IX.IxRange>), +self: U32, +dims: List<&2, U32>) -> M.Hop:
+  (+ar, +es) = p
+  +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_tbl_at(es, 0))
+  +st = O.UOp.new(O.Found.ar(f), O.OpsSTAGE{}, [O.Arena.src0(ar, self), O.Found.i(f)], O.ANone{}, O.TNone{})
+  +sh = O.shape_arg_found(O.Found.ar(st), dims)
+  M.mp_hit(O.UOp.new(O.Found.ar(sh), O.OpsRESHAPE{}, [O.Found.i(st), O.Found.i(sh)], O.ANone{}, O.TNone{}))
+
+def fb_mk.build(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
+  +tb = F.Folded.t(fx)
+  +dims = fb_vdims(ar, tb, self)
+  +cl = O.Arena.src_from(ar, self, 1)
+  fb_mk.fin(IX.rr_reshape(ar, [H.prod_u32(dims)], dims, fb_pos(fb_closed(ar, self)), fb_tbl.go(cl, Nil{})), self, dims)
+
+def fb_mk.pick(ok: Bool, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
+  match ok:
+    case True{} : fb_mk.build(fx, ar, self)
+    case False{}: M.Hop{ar, 0}
+
+def rf_fb_collapse(two: Bool, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   match two:
     case True{} : M.Hop{ar, 0}
-    case False{}: M.Hop{ar, 0}
+    case False{}: fb_mk.pick(fb_ok.guard(ar, F.Folded.t(fx), self), fx, ar, self)
 
 # `len(x.src) == 2` -- the early return. `U32.is_eq` on the arity, not a `Nat`
 # comparison, because `mp_nsrc` is a `U32`.
@@ -1546,7 +1616,7 @@ def rf_fb_sym(+ar: O.Arena, self: U32) -> Bool:
   rf_fb_sym.go(ar, O.Arena.src_from(ar, self, 1), False{})
 
 def fb_0(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
-  rf_fb_collapse(rf_fb_two(ar, self), ar, self)
+  rf_fb_collapse(rf_fb_two(ar, self), fx, ar, self)
 
 def fb_dispatch.go(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   match tag:
