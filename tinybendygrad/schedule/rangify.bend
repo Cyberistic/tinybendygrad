@@ -955,8 +955,32 @@ def rr_p2(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -
   rr_p2.pick(Bool.and(RrMap.e(m), rr_is_elemwise(ar, x)), ar, tb, RrMap.ctx(m), m, x)
 
 # THE P3 PHASE: `ending_ranges[x] += broadcast_ending_ranges` (`indexing.py:270`).
-def rr_p3(+m: RrMap) -> RrMap:
-  RrMap.put(m, RrMap.out(m), RrMap.inp(m), Bool.or(RrMap.e(m), RrMap.b(m)), RrMap.b(m), RrMap.ne(m))
+# `indexing.py:288`: `if x.op is Ops.EXPAND and all(isinstance(y, int) or y.op is not
+# Ops.RANGE for y in x.shape): ending_ranges[x] += list(UOp.sink(*out_rngs[:len(x.marg)])
+# .ranges.keys())`. THE CLAUSE THE PORT DID NOT HAVE, and it is where upstream's realize
+# points COME FROM on a conv/pool chain: an EXPAND whose shape is all constants adds the
+# ranges it broadcasts over, so its PRODUCER inherits a non-empty `ending_ranges`, `rr_p2`
+# fires on the producer, and the graph gains a realize point. MEASURED WITHOUT IT: the
+# apply's realize map holds ONLY the store, on both the pool and the fused stack
+# (`pool_rm = 32:STORE`, `fw_rm = 49:STORE`), so no STAGE is ever built and every
+# bufferize rule downstream is unreachable.
+#
+# `all(isinstance(y, int) ...)` is `rr_dims(x)` non-empty: every dim the shape fold answers
+# is a number by the time it answers.
+def rr_p3.exp.go(isexp: Bool, +ar: O.Arena, +tbl: List<&2, IX.IxRange>, +out: List<&2, U32>, +x: U32) -> Bool:
+  match isexp:
+    case True{}:
+      +n = U32.from_nat(List.length(&2, U32, rr_marg(ar, x)))
+      rr_any_range(tbl, List.take(&2, U32, out, U32.to_nat(n)))
+    case False{}: False{}
+
+def rr_p3.exp(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +m: RrMap, +x: U32) -> Bool:
+  rr_p3.exp.go(O.eq_op(O.Arena.op(ar, x), O.OpsEXPAND{}), ar, tbl, RrMap.out(m), x)
+
+def rr_p3(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +m: RrMap, +x: U32) -> RrMap:
+  RrMap.put(m, RrMap.out(m), RrMap.inp(m),
+            Bool.or(Bool.or(RrMap.e(m), RrMap.b(m)), rr_p3.exp(ar, tb, tbl, m, x)),
+            RrMap.b(m), RrMap.ne(m))
 
 # THE P4 PHASE: THE INPUT RANGES (`indexing.py:281-294`).
 def rr_p4.stack(isstack: Bool, +m: RrMap, +out: List<&2, U32>, +rngs: List<&2, U32>) -> RrMap:
@@ -1028,7 +1052,7 @@ def rr_step.fin(p: (O.Arena & RrMap), +tb: F.Table, +rev: List<&2, U32>, +x: U32
   (ar, rr_p6(rr_p5(ar, tb, rev, m, x)))
 
 def rr_step(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -> (O.Arena & RrMap):
-  rr_step.fin(rr_p4(ar, tb, rev, rr_p3(rr_p2(ar, tb, rev, rr_p1(ar, tb, rev, rr_p0(ar, tb, rev, m, x), x), x)), x), tb, rev, x)
+  rr_step.fin(rr_p4(ar, tb, rev, rr_p3(ar, tb, RrMap.tbl(m), rr_p2(ar, tb, rev, rr_p1(ar, tb, rev, rr_p0(ar, tb, rev, m, x), x), x), x), x), tb, rev, x)
 
 # THE FOLD, OVER THE REVERSED TOPOSORT (`indexing.py:200`).
 def rr_step2(acc: (O.Arena & RrMap), +tb: F.Table, +rev: List<&2, U32>, +x: U32) -> (O.Arena & RrMap):

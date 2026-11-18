@@ -496,6 +496,30 @@ def rm_row(+pr: RZ.RZProg) -> String:
   +ar = RZ.RZProg.ar(pr)
   RR.rr_rmap_row(ar, RZ.RZProg.sink(pr))
 
+# DOES THE EXPAND-REALIZE CLAUSE (`indexing.py:288`) FIRE? `rr_p3.exp` adds the ranges an
+# all-int-shape EXPAND broadcasts over, so its PRODUCER inherits a non-empty ending_ranges and
+# `rr_p2` realizes the producer. The pool output has a unit axis, so broadcasting it is a legal
+# EXPAND and it is the smallest graph that exercises the clause.
+def xp_prog() -> RZ.RZProg:
+  +dst = RZ.rz_input(O.Arena.empty(), 0, 392, [2, 1, 14, 14])
+  +x = RZ.rz_input(T.Tensor.ar(dst), 1, 784, [1, 1, 28, 28])
+  +aft = RZ.rz_after(dst, MX.mxw_expand(cn_pool(x), [2, 1, 14, 14]))
+  +snk = RZ.rz_sink(O.Found.ar(aft), O.Found.i(aft))
+  RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
+
+def xp_lk() -> String:
+  +q = RZ.rz_rebuild(xp_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ks = SCH.lin_kernels(lin)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
+    String.join(fw_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
+
+def xp_kg() -> String:
+  +q = RZ.rz_rebuild(xp_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  RR.rr_dump(O.Found.ar(kg), O.Found.i(kg))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -522,6 +546,9 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["fw_sd=", sd_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["xp_lk=", xp_lk()]))
+    _ : Unit <- IO.print(String.concat(["xp_kg=", xp_kg()]))
     _ : Unit <- IO.print(String.concat(["pool_rm=", rm_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rm=", rm_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["pool_st=", st_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
