@@ -1,5 +1,10 @@
 # renderer/tc.bend -- the tensor-core TABLE from `tinygrad/renderer/tc.py` AT THE
-# PIN `5c2bf39d6c4b` (149 LINES): the `TensorCore` dataclass (FIVE fields,
+# PIN `5c2bf39d6c4b` (149 LINES).  IT IS THE `TensorCore` DATACLASS (FIVE
+# fields, tc.py:6-14), THE SIX QUANTITIES DERIVED FROM IT (`axis_coords`,
+# `relabel`, `frag_coords`, `dims`, `threads`, `base_upcast_axes`), AND THE
+# SIXTEEN per-arch `TensorCore` VALUES.  Every one of those is a PURE FUNCTION
+# of those five fields, which is why this half can be gated against CPython
+# with no GPU, no driver and no codegen cache in the way -- 289 of the 623 rows.
 
 import Base
 import ./../LAWS/spec.bend as S
@@ -93,6 +98,14 @@ def cc4(a: List<&2, U32>, b: List<&2, U32>, +c: List<&2, U32>, +d: List<&2, U32>
 # `list(range(n))` for `n <= 8`.
 #
 # MEASURED (`.agents/slop/probe-ur.bend`): `List.append(&2, U32, ur(m),
+# [f(k)])` is REFUSED with `expected : m / observed : m (consumed more than
+# once)`, and so is `U32.from_nat(k)` anywhere in the arm -- the arm may not so
+# much as READ the fuel it is descending. The working shape threads the
+# element as a `+U32` that GROWS from 0 and CONSES it
+# (`List.append(a, A, [i], xs)` is `[i] ++ xs`), so `i` is the value and `m` is
+# the fuel. And the direction matters: APPENDING here gives `2,1,0`, because
+# the recursion builds the TAIL first. Every fragment table in this file hangs
+# off this one def, so both facts are load-bearing.
 def ur(k: Nat, +ax: U32, +i: U32) -> List<&2, U32>:
   match k:
     case 0n : Nil{}
@@ -229,6 +242,10 @@ def Tc.relabel.a(+t: Tc) -> String: Kv.join(Kv.of_a(t))
 def Tc.relabel.b(+t: Tc) -> String: Kv.join(Kv.of_b(t))
 
 # `"{c}={y}"` PER PAIR, IN KEY ORDER, COMMA-JOINED.  `Kv.join` DESTRUCTURES AND
+# HANDS THE TWO LISTS TO `kv_join`, BECAUSE A TWO-SCRUTINEE `match` CANNOT
+# SCRUTINIZE TWO CALLS (CONVENTION 4), AND `kv_join` CONSES AND REVERSES
+# BECAUSE `zip` WALKS TWO LISTS THAT COME OUT OF ONE DESTRUCTURING AND SO SHARE
+# ONE BINDER.
 def cacc.go(+bs: List<&2, U32>, +v: U32, +j: U32, +d: U32, +acc: U32) -> U32:
   match bs:
     case Nil{}   : acc
@@ -289,6 +306,29 @@ def dgst(+s: String) -> String: String.concat(["len=", U32.show(U32.from_nat(Str
 #
 # "each own bit appears once, only lane bits may be foreign and k never is"
 # -- tc.py:39, upstream's comment ON THE ASSERTION BLOCK, AND IT IS THE
+# ONE-LINE VERSION OF THE THREE CLAUSES THAT ARE NOT OBVIOUS:
+#   * "EACH OWN BIT APPEARS ONCE." THE `nodup` CLAUSE. A FRAGMENT MAY NOT USE
+#     THE SAME TILE BIT TWICE, BECAUSE TWO BITS THAT SELECTED THE SAME BIT
+#     OF THE TILE WOULD MAKE THE FRAGMENT'S ADDRESSING AMBIGUOUS -- TWO
+#     DIFFERENT LANE INDICES WOULD MAP TO THE SAME TILE COORDINATE.
+#   * "ONLY LANE BITS MAY BE FOREIGN." THE `own <= set(f[0]+f[1])` AND
+#     `set(f[0]+f[1]) <= own | mn-coords` CLAUSES. A FOREIGN BIT IS ONE THAT
+#     IS NOT ON THE OPERAND'S OWN AXES, AND THE ONLY AXES A FOREIGN BIT MAY
+#     COME FROM ARE `m` AND `n` -- THE `mn-coords` -- BECAUSE THE `k` AXIS IS
+#     SHARED BY A AND B AND A FOREIGN `k` BIT WOULD PUT THE SAME TILE BIT IN
+#     TWO DIFFERENT PLACES.
+#   * "AND K NEVER IS." THE `k` AXIS IS NEVER FOREIGN. THE PORT SAYS THIS
+#     TWICE: `Tc.used` IS A'S LANE + A'S ELEMENT + C'S LANE + C'S ELEMENT
+#     AND **NOT** B'S, AND THE REASON IS GIVEN AT `Tc.used` BELOW --
+#     "`k` never is a foreign bit and the post-init assertion checks it".
+#
+# SO THE ASSERTION IS NOT A SANITY CHECK ON THE TABLES; IT IS THE STATEMENT
+# OF WHICH BITS MAY BE SHARED, AND IT IS WHY `Tc.used` MAY LEAVE B OUT.
+#
+# AND THE `own` SET IS `coords` FILTERED TO THE OPERAND'S TWO AXES: FOR A IT
+# IS THE `m` AND `k` COORDS, FOR B THE `k` AND `n`, FOR C THE `m` AND `n`.
+# WHICH IS WHY `Tc.own` TAKES TWO AXES AND WHY THE PORT'S `cover` TAKES
+# `ax0, ax1` RATHER THAN A LETTER.
 def mem(+xs: List<&2, U32>, +x: U32) -> Bool:
   match xs:
     case Nil{}   : False{}
@@ -394,6 +434,10 @@ def cuda_sm80() -> List<&2, Tc>: List.concat(&2, Tc, [cuda_81616(), cuda_8168_f1
 def cuda_sm89() -> List<&2, Tc>: List.concat(&2, Tc, [cuda_sm80(), cuda_81632_f8()])
 
 # (16,16,16) rdna3 -- `frag_a=(("m0","m1","m2","m3","n0"), ("k0","k1","k2","k3"))`,
+# `frag_b=(("n0","n1","n2","n3","m0"), ("k0","k1","k2","k3"))`,
+# `frag_c=(("n0","n1","n2","n3","m0"), ("m1","m2","m3"))` -- a FOREIGN lane bit
+# (n0 in A, m0 in B) and every k bit in the element list. Four (di,do) pairs, so
+# the fragments are written ONCE and the four records differ only in dtypes.
 def rdna3_of(di: S.Dt, dou: S.Dt) -> Tc:
   Tc{di, dou, cd5(m0(), m1(), m2(), m3(), nk(0)), cd4(kkb(0), kkb(1), kkb(2), kkb(3)),
     cd5(nk(0), nk(1), nk(2), nk(3), m0()), cd4(kkb(0), kkb(1), kkb(2), kkb(3)), cd5(nk(0), nk(1), nk(2), nk(3), m0()), cd3(m1(), m2(), m3())}

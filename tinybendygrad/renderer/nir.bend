@@ -126,6 +126,12 @@ def c.in_floats(d: S.Dt) -> Bool:
     case S.Dt{pri, bits, cls, nm}: c.cls_float(cls)
 
 # `c(t, u)` -- nir.py:26. FOUR arms, and the fourth is the reach for `bool`,
+# which is in NEITHER set: `dtypes.floats` excludes it and `dtypes.ints` excludes
+# it, so a `bool` falls all the way through to `"b"`. The `and u` binds to the
+# FIRST arm only, so `u=False` turns a uint into `"i"` and leaves every other
+# class alone. Both are boundary cases with their own row.
+# the three arms, innermost first: a def may only call defs above it, so the
+# chain `arm1 -> arm2 -> arm3` is spelled bottom-up. Measured refusal otherwise.
 def c.arm3(d: S.Dt, is_float: Bool) -> String:
   match is_float:
     case True{}: "f"
@@ -450,6 +456,19 @@ def f_aop.rev(nm: String) -> String:
     case _: ""
 
 # `aop` -- nir.py:24. `{{x:u_aop for x in (dtypes.bool,)+dtypes.uints},
+# {x:s_aop for x in dtypes.sints}, {x:f_aop for x in dtypes.floats}}`.
+#
+# The INSERTION ORDER is bool, uints, sints, floats -- NOT `dtypes.all`'s
+# floats-first order, and that is a real diff rather than a cosmetic one: it is
+# why `aop keys` is a joined STRING and not a count. THREE classes, so the table
+# is a `U32` TAG -- `0` unsigned/bool, `1` signed, `2` float -- which keeps
+# `aop_of` total on all seventeen and makes an unreachable class a `3` no row
+# can hide.
+# `(dtypes.bool,) + dtypes.uints` (nir.py:24), so `bool` is in the SAME class as
+# the uints and not a fourth class of its own. The first run answered `1` for
+# `bool` -- `bool`'s CLASS is `CBool`, which is neither `CUint` nor `CSint`, so
+# the unsigned test alone fell through to the signed arm. CAUGHT BY THE
+# `aop kind bool` ROW.
 def aop_kind.u(is_unsigned: Bool) -> U32:
   match is_unsigned:
     case True{}: 0

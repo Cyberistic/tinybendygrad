@@ -140,6 +140,29 @@ def FMT_RNG_HI() -> U32: 256
 #
 # "128: 0, 129-192: integers 1-64, 193-208: integers -1 to -16 / 240-248: float
 # constants (0.5, -0.5, 1.0, -1.0, 2.0, -2.0, 4.0, -4.0, 1/(2*PI))" -- dsl.py:79-80,
+# upstream's comment ON THE SLICES.
+#
+# THE THREE FACTS IN IT, AND EACH ONE IS A GOTCHA:
+#   * 128 IS **0**, NOT 1. THE RANGE IS 128..192, WHICH IS 65 SLOTS, AND IT
+#     ENCODES 0 THROUGH 64 -- SO `FMT_INT_LO` IS 128 AND `FMT_INT_BASE` IS 128
+#     AND THE OFFSET 128 IS **NOT** SUBTRACTED TO GET THE VALUE. The
+#     subtraction happens only because 0 has no slot of its own: 129 is 1.
+#     A reader that computes `o - 128` for offset 128 gets 0, which is RIGHT,
+#     and a reader that treats 128 as "1" gets every constant wrong by one.
+#   * 193..208 IS **NEGATIVE** 1 THROUGH -16, AND THE SIGN IS IN THE RANGE
+#     ITSELF: `str(-(o - 192))` -- 193 IS -1. SO THE NEGATIVE REGION IS
+#     16 SLOTS AND IT IS SEPARATE FROM THE POSITIVE ONE, NOT A SIGN BIT ON
+#     IT. `FMT_NEG_BASE` IS 192 FOR THAT REASON.
+#   * 240..248 IS NINE **FLOAT** CONSTANTS AND 248 IS `1/(2*PI)` -- WHICH IS
+#     NOT IN `_FLOAT_ENC` AT ALL. `_FLOAT_ENC` (dsl.py:151) HAS EIGHT ENTRIES,
+#     240..247, AND 248 IS THE NINTH, `INV_2PI`, WHICH IS IN `_NAMES` BUT NOT
+#     ENCODABLE AS A FIELD VALUE. SO `FMT_RNG_LO`/`FMT_RNG_HI` SPAN NINE
+#     OFFSETS AND `float_enc` SPANS EIGHT, AND THE DIFFERENCE IS 248.
+#
+# WHICH IS WHY THE PORT CARRIES BOTH: `FMT_RNG_LO`/`FMT_RNG_HI` ARE THE
+# PRINTED REGION AND `float_enc` BELOW IS THE ENCODABLE SUBSET, AND A READER
+# THAT ASSUMED THEY WERE THE SAME RANGE WOULD ENCODE `INV_2PI` AS A FIELD
+# VALUE IT CANNOT HOLD.
 
 def BRACKET_MULTI() -> U32: 1   # sz > 1
 
@@ -883,6 +906,34 @@ def typed_encode(k: Nat, +vf: Vf) -> Res:
 # "Resize register based on operand info (skip non-resizable special
 # registers) / VCC/EXEC pairs (106, 126), NULL (124), M0 (125), float constants
 # (240-255)" -- dsl.py:178-179, upstream's comment ON THE SKIP. THE RESIZE IS
+# NOT COSMETIC: A FIELD'S VALUE IS A REGISTER *OFFSET*, BUT THE INSTRUCTION
+# NEEDS A REGISTER *OF A GIVEN WIDTH*, AND THE WIDTH COMES FROM THE XML'S
+# OPERAND INFO, NOT FROM THE OFFSET. SO A `src0` THAT THE XML SAYS IS TWO
+# VGPRS WIDE MUST READ BACK AS A TWO-REGISTER `Reg`, AND THE ENCODER THEN
+# EMITS `v[0:1]`.
+#
+# AND THE SKIP IS THE PART THAT IS EASY TO GET WRONG: A RESIZE IS NOT ALWAYS
+# POSSIBLE. THE VCC AND EXEC PAIRS (106, 126) ARE TWO REGISTERS BY
+# CONSTRUCTION, NULL (124) AND M0 (125) ARE SINGLE REGISTERS THAT HAPPEN TO
+# HAVE A NAME, AND THE FLOAT CONSTANTS (240..255) ARE **VALUES** AND NOT
+# REGISTERS AT ALL -- RESIZING A FLOAT CONSTANT WOULD PRODUCE A `Reg` THAT
+# PRINTS AS A REGISTER NAME IT IS NOT. SO THE SKIP LIST IS A LIST OF
+# "THIS OFFSET IS NOT A RESIZABLE REGISTER" AND IT IS NOT A LIST OF "THIS
+# OFFSET IS SPECIAL" IN GENERAL: 233 (`DPP8`) AND 236..238 (`SHARED_BASE`
+# AND FRIENDS) ARE SPECIAL AND ARE **NOT** IN THE LIST, BECAUSE THEY *ARE*
+# RESIZABLE.
+#
+# "Map variant field names (vsrc0->src0, vsrc1->src1, etc.) for DPP/SDWA
+# classes" -- dsl.py:181, upstream's comment ON THE NAME HALF OF THE SAME
+# STATEMENT. A DPP OR SDWA CLASS NAMES ITS SOURCE FIELD `vsrc0` WHERE THE
+# ORDINARY CLASS NAMES IT `src0`, AND THE OPERAND INFO IS KEYED BY THE
+# ORDINARY NAME. SO THE LOOKUP STRIPS A LEADING `v` -- BUT ONLY IF WHAT
+# FOLWS IS A NAME THE OPERAND INFO ACTUALLY HAS, BECAUSE A FIELD GENUINELY
+# NAMED `vdst` OR `vdata` MUST NOT BECOME `dst` OR `data`. THE PORT'S
+# `canon_fwd` / `canon_in` TABLES (THE EVEN FOLD AT dsl.py:261-268) ARE THE
+# SAME IDEA WRITTEN ONCE: `src0`/`vsrc0`/`ssrc0` ALL FOLD TO `s0`, `vdst`/
+# `sdst`/`sdata` ALL FOLD TO `d`, AND `data`/`vdata`/`data0`/`vsrc` ALL FOLD
+# TO `data`.
 
 def fld_encode.k(k: Nat, +vf: Vf) -> Res:
   match k:
@@ -977,6 +1028,12 @@ def mfma_b_of(cbsz: U32) -> U32: mfma_regs(cbsz)
 def num_srcs.a0(+has_s0: Bool) -> U32: Bool.pick(U32, has_s0, NSRC_ONE(), NSRC_ZERO())
 
 # `_variant_suffix` (:423-437). 255 -> _LIT, 249 -> _SDWA or _DPP8 by arch,
+# 250 -> _DPP16, anything else None -- and the FIRST SrcField with one of those
+# offsets wins, so the walk is a scan and not a test of the last field.
+# The suffix is a STRING or nothing, and "nothing" is `None{}` -- one `Maybe`
+# over `Maybe<&2, String>` rather than a new type. An EMPTY string is not the
+# same as None and the gate pins both, because a caller that prints the suffix
+# would print "" for a variant and nothing for a plain instruction.
 
 def num_srcs.a1(+has_s1: Bool, +has_s0: Bool) -> U32:
   match has_s1:

@@ -10,7 +10,6 @@
 # 2. the gate is a string diff, never a boolean about strings. `String.concat`
 #    drops a literal silently, so `render(..) == "..."` is not a claim. Every row
 #    prints its answer BESIDE the CPython string, so a dropped ", " is a DIFF.
-#    A count row is necessary and nowhere near sufficient.
 #
 # 3. A `Data` RECORD MAY NOT HOLD A `Maybe` FIELD. Flatten to a `Bool` plus the
 #    payload and let the `False` arm be the `None`. `Renderer.global_max` is
@@ -94,6 +93,58 @@ def with_storage.at(+f: O.Found, dt: S.Dt) -> O.Found:
   with_storage(with_storage.fuel(f), O.Found.ar(f), dt, O.Found.i(f), with_storage.is_store(O.Arena.op(O.Found.ar(f), O.Found.i(f))))
 
 # `Estimates` -- __init__.py:15-61. THE RECORD IS IN `./estimates.bend`, WHICH
+# IS A LEAF, because `tinygrad/uop/ops.py` CARRIES IT AS A FIELD and Bend
+# REFUSES AN IMPORT CYCLE. Upstream breaks that cycle under `TYPE_CHECKING`
+# (`tinygrad/uop/ops.py:26`); this port breaks it with a third file. What is
+# HERE is `Estimates.from_uops`, which reads `Ops` and so belongs beside its
+# consumers. THE RECORD, ITS ACCESSORS, `__add__` and `simplify` are THERE.
+# `Estimates.from_uops` -- __init__.py:26-61, over the LINEARIZED list.
+#
+# FOUR of the six op arms survive the linearization and the other two do not:
+#   LOAD  (non-REG)  -> lds += max_numel * itemsize * mults      [mults == 1]
+#   STORE (non-REG)  -> lds += max_numel * itemsize * mults      [src[1] is void,
+#                                                             so it is the BUFFER]
+#   ALU             -> flops += (2 if MULACC else 1) * max_numel
+#   LOAD/STORE      -> mem[(buf, op)] capped at buf.max_numel * itemsize
+# and RANGE / END / BACKEDGE / SPECIAL -- the four `mults` arms -- never appear.
+#
+# WHY THE `mem` COUNT IS CAPPED, and it is the ONE LINE OF `from_uops` THAT
+# IS NOT A SUM: "u.src[0] is INDEX, cap at buffer size for re-reads (e.g.
+# matmul)" -- __init__.py:42, upstream's comment ON THE CAP. THE `mem` COUNT
+# IS "**TOTAL** BYTES ACCESSED, COUNTING ONLY ONCE FOR BYTES THAT ARE ACCESSED
+# MULTIPLE TIMES" (upstream's own comment on the field, __init__.py:21), SO
+# A BUFFER READ TEN TIMES COUNTS ITS SIZE ONCE. BUT THE RAW SUM WOULD COUNT
+# IT TEN TIMES, AND THE CAP IS WHAT MAKES IT ONCE: `smin(accessed,
+# buf.max_numel() * buf.dtype.itemsize)`.
+#
+# SO THE CAP IS NOT A CEILING ON A SINGLE ACCESS -- IT IS THE POINT WHERE
+# THE COUNT STOPS GROWING. AND IT IS ONLY CORRECT BECAUSE THE ACCESS IS
+# AN INDEX: `u.src[0]` IS AN INDEX INTO THE BUFFER, SO
+# `u.src[0].max_numel()` IS HOW MANY ELEMENTS *THIS* ACCESS TOUCHES, AND A
+# RE-READ OF THE WHOLE BUFFER ADDS THE WHOLE BUFFER'S SIZE TO A COUNT THAT
+# IS ALREADY CAPPED AT THE WHOLE BUFFER'S SIZE.
+#
+# THE MATMUL IN UPSTREAM'S PARENTHESIS IS THE CASE THAT MAKES IT VISIBLE:
+# A MATMUL READS ITS B MATRIX ONCE PER OUTPUT ROW, SO THE NAIVE COUNT IS
+# `rows` TIMES THE B MATRIX AND THE CAPPED COUNT IS ONE TIMES IT. WHICH IS
+# WHY THE CAP IS AT THE BUFFER AND NOT AT THE ACCESS.
+#
+# AND THE PORT'S DEPARTURE IS STATED ELSEWHERE (the `mem` DICT is keyed by
+# the BUFFER ALONE, not by `(buffer, op)`, so a buffer both READ and WRITTEN
+# contributes ONE count where CPython contributes TWO). THAT DEPARTURE IS
+# A DIFFERENT HALF OF THE SAME LINE: THE PORT DROPS THE `op` FROM THE KEY,
+# WHICH IS WHY THE PORT'S `mem` IS A SUM OVER BUFFERS AND WHY THE CAP, WHICH
+# IS PER-`(buffer, op)`, IS NOT THE PORT'S CAP.
+#
+# `ignore_indexing` additionally removes the INDEX/SHRINK subtrees from `flops`,
+# and that needs a MULTI-ROOT toposort, which `UOp.toposort` (one root) does not
+# provide; the two INDEX arms of `from_uops` are therefore the `TODO(p3)` below
+# and `ignore_indexing` is a NO-OP here, which is visible: a kernel with INDEX
+# nodes over ALU nodes reports the ALU flops CPython would exclude.
+#
+# `is_alu` is `GroupOp.ALU`, which in ops.bend is a set of EIGHTEEN constructors.
+# It is spelled as the match rather than a membership test because `GroupOp` is
+# not a value here.
 def is_alu(op: O.Op) -> Bool:
   match op:
     case O.OpsADD{}: True{}

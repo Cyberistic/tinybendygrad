@@ -11,6 +11,168 @@
 #     `X86Ops`'s eighty-eight names with their `auto()` numbers in BOTH directions,
 #     the seven `X86GroupOp` / module-level op sets, and `GPR_DEST_OPS` /
 #     `XMM_OPS`. 105 rows. `Rm1st` is a FORMULA in the source (x86.py:86,
+#     `... | (Rm2nd & TwoAddress)`) and `XMM_OPS` is a FILTER
+#     (`{op for op in X86Ops if op.name.startswith('V')} - GPR_DEST_OPS`), so
+#     porting the FORMULA and diffing its twenty-six- and forty-four-member results
+#     against CPython's sets tests arithmetic rather than restating a lookup.
+#
+#   STAGE 3  THE OPERAND RULES                      py:281-289,  9 lines   DONE
+#     `_xmm_sz` / `_xmm_sz_m`, which pick the MOV spelling from
+#     `max_numel * itemsize`, over a (dtype, numel) grid chosen to straddle BOTH
+#     thresholds. 105 rows (three per fixture: spelling, memory spelling, bits).
+#
+#   STAGE 4  THE ENCODING TABLE                     py:616-679, 64 lines   DONE
+#     `encodings`: every op's `encode(opc, reg=, pp=, sel=, we=)` parameters as
+#     data, plus the eight entries that build BYTES DIRECTLY (`MOVABS`'s
+#     `REX.W+B8+r` and the six jumps and `RET`). 88 rows.
+#
+#   STAGE 5  THE ENCODER                              py:520-610, 91 lines   DONE
+#     `encode`'s prefix / REX / VEX, MODRM, SIB, displacement and immediate bytes.
+#     GATED ON REAL MACHINE BYTES: the `hex.*` rows are CPython's own `encode()`
+#     output for a fixed fixture and the `enc.*` rows are its `encode()` PARAMETERS
+#     read out of the source with CPython's `ast`; the port re-derives both from the
+#     table and its own arithmetic. A wrong opcode cannot produce the same bytes.
+#     74 + 12 rows.
+#
+#   STAGE 7  THE ASSEMBLY TEXT                        py:737-758, 22 lines   DONE
+#     `asm_str`'s `_format_op` / `_format` / `_mem_adress` / the three-arm operand
+#     split / the skip / the join, as one `Bool` row per line of CPython's own
+#     output plus a count. 13 rows. `Asm.line` is the whole formatter; the UOp graph
+#     is the gate's input and not this file's type.
+#
+#   stage 6  the renderer's own constants           py:709-726, 18 lines   done
+#            + py:779, 1 line
+#     `device`, `has_local`, `global_max`, `code_for_op`, and `supported_dtypes` as
+#     the SET DIFFERENCE it is: `Cls.base_dtypes` walked and filtered by
+#     `Cls.dropped`, with a row per name on both sides. 27 rows.
+#
+#   STAGE 8  JUMP PATCHING                          py:760-777, 18 lines   PART
+#     `render`'s label table, jump backpatch table and the little-endian signed
+#     four-byte patch. The BYTES ARE PORTED and gated; the `targets`/`jumps`
+#     DICTS are keyed by UOp and by a Python object, which is a substrate gap (see
+#     NOT PORTED). `TODO(p3) x86.py:761 symbol=render`.
+#
+#   STAGE 3b `to_int` and `is_two_address`           py:199, 725           DONE
+#     20 + 88 rows. `to_int` is asked with a DTYPE OBJECT -- `S.half()`, `S.single()`,
+#     `S.double()`, all TWENTY of them -- and answers DTYPE `name`s, `i16`/`i32`/`i64`.
+#     which made the seven rows below incapable of failing; see `Op.to_int` itself.
+#
+#   COVERED: 372 of 770 Python lines, and the 372 are the lines that DECIDE WHAT
+#   bytes and what text come out. The 398 not covered are the five `PatternMatcher`
+#   tables and the `ctx`-mutating rewrite helpers -- see NOT PORTED.
+#
+# not ported, with python lines and the reason for each
+#
+# * `extra_matcher` (py:92-132, 41 lines) -- NINETEEN `(UPat, lambda)` pairs. `UPat`
+#   is a PATTERN LANGUAGE with backreferences, `allow_any_len` and a compiled
+#   matcher (`tinygrad/uop/ops.py:1789`); a `List<&2, Pattern>` needs a pattern
+#   AST and an interpreter, which is `ops.bend`'s substrate, not this file. The
+#   *rewrites* these lambdas express (`bool CMPNE is XOR`, `-x -> 0 - x`,
+#   `x % y -> x - y*floor(x/y)`) are pure and are recorded as a TODO rather than
+#   half-built, because a matcher that cannot match is not a partial port, it is a
+#   different program. `TODO(p3) x86.py:92 symbol=extra_matcher`.
+#
+# * `pre_isel_matcher` (py:156-170, 15 lines) -- same wall. `TODO(p3) x86.py:156 symbol=pre_isel_matcher`.
+# * `isel_matcher` (py:312-450, 139 lines) -- THE BULK OF THE FILE, and it is
+#   EIGHTY-FIVE `PatternMatcher` entries. Same wall; this is why 350 and not 700.
+#   `TODO(p3) x86.py:312 symbol=isel_matcher`.
+# * `pre_regalloc_matcher` (py:469-472) and `post_regalloc_matcher`
+#   (py:502-516) -- patterns again, and their rewrites
+#   (`flag_rematerialize`, `alloc_buffer`, `lower_range`, `lower_end`,
+#   `lower_loop`) all take a `LinearContext` and MUTATE it
+#   (`ctx.lock`, `ctx.stack_size`, `ctx.stack_allocated`, `ctx.loop_label`), which
+#   is a `Ref`-per-field context record. `alloc_stack` is NOT IN upstream at this
+#   pin: the stack allocation is `alloc_buffer` and `ctx.stack_size`.
+#   `TODO(p3) x86.py:456 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
+#
+# * `scratch_buffer` (py:135) -- `UOp.placeholder` and `AddrSpace.LOCAL`; it
+#   builds an arena node, so it needs the UOp arena and `AddrSpace` in `spec.bend`.
+#   `TODO(p3) x86.py:135 symbol=scratch_buffer`.
+# * `gated_load` (py:137-143) and `gated_store` (py:144-146) -- both build a
+#   FOUR-node `AFTER` subtree and read `ctx` for a slot number. The DECISION they
+#   make -- which index is selected by the gate -- is a pure function and is not
+#   ported, because without the arena the "answer" is a string with no referent.
+#   `TODO(p3) x86.py:137 symbol=gated_load, :144 symbol=gated_store`.
+# * `flag_gate` (py:152-153) -- ONE LINE and it is pure: `None` unless the op is a
+#   comparison on a non-float, else `m != const(0, int)`. It needs `Ops`' comparison
+#   set and `dtypes.floats`, both of which ARE in the substrate; the port keeps it
+#   out because its only two callers are inside the two matchers above. Carrying a
+#   def nothing calls is invisible to every check (`bend2-constraints.md` line
+#   1502 records three such defs in `schedule/indexing.bend`).
+#   TODO(p3) x86.py:152 symbol=flag_gate -- upstream's `flag_gate` is that one line.
+# * `def_reg` (py:162) and `undef` (py:164) -- NOT IN upstream at this pin: upstream
+#   DELETED both (the `DEFINE` placeholder went with it, and `undef()` became an
+#   inline `UOp(Ops.NOOP)`), and `stack_pointer` is now
+#   `UOp.placeholder((1,), dtypes.uint64, slot=-1, addrspace=AddrSpace.REG).replace(
+#   tag=(RSP,))` (py:192). So this hole is GONE, not carried: there is no `def_reg` to
+#   port, and the gate's `reg.stackptr` row asks the register and not the node.
+#   `TODO(p3) x86.py:192 symbol=stack_pointer`.
+# * `base` / `lane` (py:197-198) -- both read `x.src[i]`'s src1.src0.val through
+#   `Ops.INDEX`. Arena reads. `TODO(p3) x86.py:197 symbol=base`.
+# * `asm_str` is DONE (py:737-758, STAGE 7) and so is `_format` / `_mem_adress`. One
+#   limit inside it is a WALL and not an omission: `AsmMem.disp` is a `U32` and
+#   CPython's displacement is a signed `int`, so `f" + {-3}"` has no Bend spelling.
+#   MEASURED, and it is the only reason the `rm1stnoidx` fixture displaces by `3`.
+#
+# * `imm` (py:200) / `to_imm` (py:201-205) -- `truncate[dt](v)` is
+#   `dtype.bend`'s table and the answer is a `.rtag()`'d arena node; `to_imm`'s int64
+#   branch needs `DType.overflows`, which is `dtype.bend`'s too, and `dtype.bend`
+#   fails its own gate on 14 permanently unfilled laws. `to_imm`'s DECISION
+#   (CAST-of-CONST, then int64-overflow, then int-or-bool) is pure and is recorded
+#   rather than ported alone. MEASURED while writing STAGE 7: `imm`'s `.rtag()` is
+#   load-bearing for the assembler -- `rdef` of a bare CAST is None and `_format`
+#   DROPS such an operand, while `rdef` of an `imm` is `True` and it is kept. The two
+#   differ only in the tag. `TODO(p3) x86.py:200 symbol=imm`.
+# * `cmp` (py:208-210) / `mask` (py:212-214) -- build `x.ins(...)` nodes; `cmp`
+#   also RAISES on a float src[0], which is a wall, not a return.
+#   `TODO(p3) x86.py:208 symbol=cmp`.
+# * `vinsertps` (py:219-223) / `vpins` (py:227-229) / `idiv` (py:231-241) /
+#   `shift` (py:244-247) -- all `functools.reduce` chains over `x.ins(...)`.
+#   `TODO(p3) x86.py:219 symbol=vinsertps`.
+# * `fold_address` (py:250-261) / `lea` (py:264) / `_is_vec_xmm` (py:278-279) --
+#   pure DECISIONS over `x.op`, `x.src`, `base.dtype` and `x.vmin`; every input is an
+#   arena read. `is_address` (py:261-265 in the old upstream) is GONE -- upstream
+#   deleted it -- so this hole is one function smaller than it was.
+#   `TODO(p3) x86.py:250 symbol=fold_address`.
+# * `abi` (py:265-273) -- `_stack_arg` builds nodes and reads
+#   `ctx.func_args`, which is a `sorted(...)` over `sink.toposort()`.
+#   `TODO(p3) x86.py:265 symbol=abi`.
+# * `alloc_vregs` (py:293-307) -- reads `ctx.reg_n`, calls `ctx.vreg`, which
+#   MINTS a `Register` with `itertools.count()`. `alloc_vregs` -- `TODO(p3) x86.py:293 symbol=alloc_vregs`.
+# * `X86LinearContext` (py:681-707) and `assign_spill_slot` (py:703-707) -- the
+#   `lock` / `stack_allocated` / `stack_size` state above -- `X86LinearContext`. `TODO(p3) x86.py:681-707 symbol=X86LinearContext`.
+# * `X86Renderer.__init__` (py:720-724) -- the arch check is `arch.split(",")[0]
+#   != "x86_64"` (one `String.split`, P3) and then `from
+#   tinygrad.runtime.support.compiler_cpu import X86Compiler`, which is a Clang
+#   PROCESS SPAWN. FFI. `TODO(p3) x86.py:720 symbol=X86Renderer.__init__`.
+# * `is_two_address` (py:725) / `copy` (py:726) -- `is_two_address` IS ported
+#   (88 rows). `copy` is `x.ins(MOV, src=(x,), tag=reg)`: one node.
+#   `TODO(p3) x86.py:726 symbol=copy`.
+# * `spill` (py:728-731) / `fill` (py:733-735) -- build nodes from `fold_address`
+#   and read `rdef(x).cons[0] in XMM`, which IS a membership test against the XMM
+#   class the gate ports. The node build is not. `TODO(p3) x86.py:728 symbol=spill`.
+# * `render`'s `targets` / `jumps` DICT (py:761-762, 776) -- keyed by a UOp and by
+#   a Python `object`. The patch arithmetic is ported; the keying is a substrate
+#   change. `TODO(p3) x86.py:761 symbol=render`.
+#
+# THE GATE. `gates/x86_isa-oracle.py` is the ONLY source of `py=` text, and
+# `rows` / `bend` / `gate` are ONE RUN, so the reference and the gate's row source
+# cannot drift. EVERY expectation is CPython calling `tinygrad/renderer/isa/x86.py`
+# on THIS tree -- including the `hex.*` rows, which are CPython's own `encode()`
+# bytes for a fixed fixture and not a transcription of them, and the `asm.*` rows,
+# which are CPython's own `asm_str` output.
+#
+#   .venv/bin/python gates/x86_isa-oracle.py rows > /tmp/py.rows
+#   ./bin/bend tinybendygrad/renderer/isa/x86.bend > /tmp/port.rows
+#   diff /tmp/port.rows /tmp/py.rows && echo GATE GREEN
+#
+# 769 rows, and no `py=` half in this file is a literal any more. Every row is
+# `rd(NAME, EXPR)`, and `rd` puts the PORT'S OWN VALUE in both halves, so a row
+# cannot disagree with itself and a stale row cannot sit here saying something the
+# port does not believe. THE ASSERTION IS THE LANE DIFF: the port's bytes against
+# CPython's bytes, byte for byte. THE ROWS THEMSELVES ARE WRITTEN BY
+# `gates/x86_isa-oracle.py`, which replaces the `Gate.rowsN()` blocks wholesale, so
+# there is no hand-edited copy of a generated table to fall out of date.
 
 import Base
 import ./../../LAWS/spec.bend as S
@@ -364,6 +526,10 @@ def Op.in_.go(+nm: String, +which: U32, +i: U32) -> Bool:
 def Op.in_(+nm: String, +which: U32) -> Bool: Op.in_.go(nm, which, 0)
 
 # which: 0 Copy, 1 TwoAddress, 2 Rm2nd, 3 WriteMem, 4 ReadFlags, 5 WriteFlags,
+#        6 gpr_dest_ops. the two formula sets are not here -- `Rm1st` and `XMM_OPS`
+#        are computed from the sets above, and a dispatcher that both consulted and
+#        provided them would be a cycle. `Op.member` below is the nine-way
+#        dispatcher; `Op.in_` is the seven-way literal one.
 
 def Op.is_x.of(m: Maybe<&2, Char>) -> Bool:
   match m:
@@ -445,6 +611,24 @@ def Op.xmm_sz_m.of(+arm: U32) -> String:
 def Op.xmm_sz_m(+bits: U32) -> String: Op.xmm_sz_m.of(Op.sz_arm(bits))
 
 # `to_int` (x86.py:199) -- `{dtypes.float16: dtypes.int16, dtypes.float32: dtypes.int32,
+# dtypes.float64: dtypes.int64}[dt]`. THE MISSING ARM IS A `KeyError` IN PYTHON, and it is a
+# row rather than a hole: `to_int(dtypes.int32)` has no answer, and a port that answered one
+# would be answering a question nobody asked. Every one of the TWENTY dtypes is a row.
+#
+# re-armed on `cls` / `bits` / `pri`, never on a name. this is the fix and it is not a
+# REWORDING: the earlier ladder matched the strings "float16"/"float32"/"float64", and
+# tinygrad 793abbb ("modernize tinygrad's dtype to match rust") renamed `DType.name` to
+# `f16`/`f32`/`f64` (measured: `dtypes.float16.name == "f16"`), keeping the old attribute
+# names as aliases only. So the arms compiled, matched NOTHING, and answered `KeyError` for
+# every real dtype while 761 rows printed green -- and the seven `toint` rows could not see
+# it, because three of them fed the ladder the very key its own arm matched, and four
+# expected `KeyError`, which is what a DEAD ladder also answers. A name-keyed arm is a
+# fall-through, never a compile error (`agent-core.md`'s dtype-rename section).
+#
+# the key is the whole triple, and `bits` alone is not enough: `f16` and `bf16` are both
+# `bits == 16`, and only `pri` separates them (12 from 13), exactly as `renderer/llvmir.bend`'s
+# `lt.of` separates `half` from `bfloat`. `cls` is what excludes the EIGHTEEN non-floats, and
+# `bits` is what excludes the four fp8s and the two weak dtypes.
 def Op.to_int.fp(bits: U32, pri: U32) -> String:
   match bits:
     case 16: Bool.pick(String, U32.is_eq(pri, 12), "i16", "KeyError")
@@ -769,6 +953,10 @@ def Enc.legacy_head(+nm: String, +r: U32, +x: U32, +b: U32, +sz: U32, +rm: U32, 
 def Enc.pp_of(+nm: String) -> U32: Enc.pp(enc_find(nm))
 
 # the whole encoder, in the order x86.py emits it: vex or prefix+rex, the opcode,
+# MODRM, SIB, DISPLACEMENT, IMMEDIATE. Fourteen numbers are what `_encode`'s closure
+# captures, and `nm` supplies the rest from the table. `sel != 0` IS the `if sel:`
+# fork -- a VEX-encoded opcode never emits a REX and a legacy one never emits a VEX, so
+# the two arms are disjoint and no byte is emitted twice.
 
 def mod_of(+nm: String, +rm: U32, +has_disp: Bool, +disp_val: U32, +disp_sz: U32) -> U32:
   Enc.modrm_of(disp_val, disp_sz, has_disp, U32.and(rm, 7))

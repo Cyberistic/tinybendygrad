@@ -50,6 +50,9 @@ def kuconv.dt(+fx: F.Folded, a: U32) -> S.Dt:
 # the addrspace.  the FOLD answers `Maybe<Maybe<S.Addr>>`: the outer one is
 # "the FOLD knows this node" and the inner one is "the node has an
 # ADDRSPACE" (`ops.py:896` ANSWERS `None` FOR A SINK).  `S.Aalu{}` IS THE
+# default because upstream's `Ops.CONST`/`Ops.RANGE`/`Ops.SPECIAL` are alu
+# (`ops.py:899`) and a sink's `None` is spelled `ALU` in the renderer's own
+# FIXTURE (`gen_kus.py`'s `ADDRS` TABLE MAPS `NONE` TO `S.Aalu{}`).
 def kuconv.addr.go(m: Maybe<&2, Maybe<&2, S.Addr>>) -> S.Addr:
   match m:
     case Some{x}: Maybe.default(&2, S.Addr, x, S.Aalu{})

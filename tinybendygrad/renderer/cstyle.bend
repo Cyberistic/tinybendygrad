@@ -292,6 +292,14 @@ def buffer_suffix.of(+dev: U32) -> String:
     case _: ""
 
 # `var_prefix` / `var_suffix` -- tinygrad/renderer/cstyle.py:128-129. THE BASE'S PAIR IS
+# every device's pair: `const ` and `""`. metal does not override either --
+# `MetalRenderer` (cstyle.py:366-372) sets `buffer_prefix`, `extra_args`, the workitem
+# table and the type map, and NOTHING ELSE.
+# - and this used to answer `constant ` and `&` for metal, which was a plausible
+# INVENTION AND A WRONG ONE. MEASURED: the census gate's `opt_varpre_3`/`opt_varsuf_3`
+# rows were RED on exactly this (3 of 346 rows, `const `/`""` upstream vs
+# `constant `/`&` here), so `constant float& alu0 = ...` was text no kernel in this
+# tree ever had.
 def var_prefix.of(+dev: U32) -> String: "const "
 
 def var_suffix.of(+dev: U32) -> String: ""
@@ -410,6 +418,15 @@ def type_map.metal() -> Map<&2, String>:
   type_map_over(Kv{"u32", "uint", Kv{"bf16", "bfloat", KvEnd{}}})
 
 # cstyle.py:441. FOUR entries -- and the two FNUZ fp8 dtypes are NOT among them,
+# so on CUDA `fp8e4m3fnuz` prints as itself while `fp8e4m3` does not.
+# the chain is backwards and that is deliberate. `Kv` is a cons list folded into
+# a `Map`, so entry order is not observable -- `Map.set` is order free and
+# `type_map.get` reads by key. MEASURED on Bend 2.0.34: this table spelled in
+# the source order (`u32`, `bf16`, `fp8e4m3`, `fp8e5m2`) is REFUSED by the parser
+# with "expected : a term, observed ')'" pointing at this line, one line or two,
+# and the identical table spelled innermost-first parses. It is a compiler
+# hazard and not a data one, and the only thing it costs is that the table does
+# not read like cstyle.py's dict literal.
 def type_map.cuda() -> Map<&2, String>:
   type_map_over(Kv{"fp8e5m2", "__nv_fp8_e5m2", Kv{"fp8e4m3", "__nv_fp8_e4m3", Kv{"bf16", "nv_bfloat16", Kv{"u32", "uint", KvEnd{}}}}})
 
@@ -710,7 +727,9 @@ def render_index.alu2(ok: Bool, +ar: O.Arena, +dev: U32, +bname: String, +iname:
 # -- IT IS IN THE SIGNATURE SO THE `base_rewrite` ARM CAN PASS `kwargs` -- AND
 # IT READS `buf` FOR ITS ADDRESS SPACE, ITS NAME AND ITS ELEMENT COUNT, ALL
 # THREE OF WHICH THE PORT TAKES AS PARAMETERS.  WHAT IS LEFT OF THE SIGNATURE
-# IS THE INDEX NODE ALONE -- WHICH IS WHY THE THIRD PARAMETER IS `idx` AND NOT
+# IS THE INDEX NODE ALONE, WHICH IS WHY THE THIRD PARAMETER IS `idx` AND NOT
+# `bidx`: THE NAME `bidx` CLAIMED TO BE THE BUFFER INDEX, AND THE BUFFER IS NOT
+# IN THIS DEF AT ALL.
 def render_index(+ar: O.Arena, +dev: U32, idx: U32, baddr: S.Addr, bname: String, iname: String, bnumel: U32, lane: Bool) -> String:
   render_index.alu2(is_alu_addr(baddr), ar, dev, bname, iname, idx, bnumel, lane)
 
@@ -727,6 +746,25 @@ def render_buffer(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, name: String) -> 
   String.concat([rb_prefix(dev, a), rd_base_name(dev, d), " ", name, "[", U32.show(numel), "];"])
 
 # `code_for_op` -- cstyle.py:142-150, and the per-device overrides at :288-291,
+# :376, :432-438 and :532-533. `dict[Ops, Callable]`, so the ARM is a match on the
+# op and the DEVICE is the tag -- there is no closure to store.
+#
+# two shapes in the python and both matter:
+#   * UNARY (`x, dtype`) and BINARY (`a, b, dtype`) and TERNARY (`a, b, c,
+#     dtype`). `Ops.WHERE` is the only ternary, and it is the only arm whose
+#     arity differs, so a reader that threaded one argument list would emit
+#     `(a?b)` for WHERE. The `xs` parameter is the whole src list and the arms
+#     pick from it, so the arity is visible in the arm.
+#   * the `dtype` argument is READ by exactly six ops on CUDA (`h`/`htrunc`/
+#     `hsin`/`hlog2`/`hexp2`/`hsqrt`/`hrcp` for half and bfloat16) and by Clang's
+#     `SQRT`/`TRUNC`/`FDIV` (the `f64` variants). Everywhere else it is ignored,
+#     so it is a parameter of the def rather than a per-arm read.
+#
+# the device split is measured and it is small: Clang drops `EXP2`, `SIN`, `LOG2`
+# and `RECIP` entirely (they become libcalls the compiler lowers, cstyle.py:
+# :288) and adds `FDIV`; CUDA and HIP keep all twenty-one and override six; Metal
+# overrides one (`SIN` -> `precise::sin`); OpenCL and QCOM change nothing. A
+# dropped op is a `KeyError` in Python, so the dropped arm is a gate row.
 
 def cfo_unary(nm: String, +x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [[nm, "("], x, [")"]])
 
@@ -1493,6 +1531,29 @@ def st_bufs(+st: St, x: BArg) -> St:
   St.of(St.r(st), St.kernel(st), List.append(&2, BArg, St.bufs(st), [x]), St.c(st), St.depth(st), St.name(st))
 
 # "NOTE: this relies on bufs dict preserving order" -- cstyle.py:275,
+# upstream's comment ON THE `bufs` HAND-BACK, AND IT IS A GOTCHA ABOUT
+# PYTHON'S DICT THAT THE PORT DOES NOT HAVE AND MUST NOT INHERIT BLINDLY.
+#
+# UPSTREAM'S `bufs` IS A `dict[UOp, tuple[str, tuple[UOp, bool]]]` AND
+# `_render` RETURNS `list(bufs.values())` -- AND THE ORDER OF THAT LIST IS
+# THE ORDER THE KERNEL'S ARGUMENTS ARE DECLARED IN. PYTHON 3.7+ DICTS
+# PRESERVE INSERTION ORDER, SO THE ORDER IS THE ORDER THE `Ops.PARAM` NODES
+# APPEAR IN THE WALK, AND THE WALK IS TOPOLOGICAL. UPSTREAM'S NOTE IS
+# SAYING: THIS ORDER IS NOT AN ACCIDENT AND NOT A SORT -- IT IS THE
+# INSERTION ORDER, AND THE EMITTED FUNCTION SIGNATURE DEPENDS ON IT.
+#
+# THE PORT'S `st_bufs` APPENDS, SO IT HAS THE SAME PROPERTY AND IT HAS IT
+# FOR THE SAME REASON: `List.append` PUTS THE NEW `BArg` AT THE END, SO THE
+# PORT'S `St.bufs` IS IN THE ORDER THE PARAMS WERE SEEN. THE PORT SAYS SO
+# HERE BECAUSE THE PROPERTY IS INVISIBLE IN A SINGLE-BUFFER KERNEL AND A
+# REVERSED ORDER WOULD STILL COMPILE.
+#
+# AND THE PORT'S ORDER IS NOT QUITE UPSTREAM'S, WHICH IS STATED RATHER THAN
+# PAPERED OVER: UPSTREAM'S LIST IS IN WALK ORDER, AND THE PORT'S WALK IS
+# ALSO TOPOLOGICAL, BUT THE PORT'S `_render` VISITS A `Params` ARM THROUGH
+# `_render.go`'s CHUNKED WALK, AND THE PARAM ARM IS REACHED IN WALK ORDER --
+# SO THE TWO AGREE, AND THE ROW THAT WOULD SEE IT IS THE KERNEL SIGNATURE
+# ROW, WHICH IS A STRING AND NOT A COUNT.
 
 def st_c(+st: St, +ix: U32) -> St:
   St.of(St.r(st), St.kernel(st), St.bufs(st),
@@ -1686,6 +1747,23 @@ def barrier.of(+dev: U32) -> String:
     case _: ""
 
 # `float4` -- cstyle.py:136, :276, :329, :369, :429, :538. THE BASE IS `None`,
+# AND `""` IS NOT `None`: the `Ops.STACK` rule (cstyle.py:55-56) does
+# `self.float4.replace('float4', render_type(x))`, so `None` there is an
+# `AttributeError` and `""` would emit a bare `float4{...}` with no constructor.
+# THE ANSWER IS THE STRING `"None"`, and that is `dsl.bend`'s standing rule for an
+# ABSENT value rather than a refusal -- `_variant_suffix` answers a suffix or `None`,
+# and `dsl.bend:1553-1555` records that "an empty string is NOT the same answer, so the
+# port prints `None`". CPython prints `None` too (`str(None)`), so this row now AGREES
+# instead of being a declared divergence.
+#
+# what it still does not buy: the stack arm is not ported, so nothing reads it yet, and
+# `"None"` is still a string rather than an absence -- `.replace` on it is a no-op where
+# CPython raises `AttributeError`. That gap is named rather than papered over with a
+# `has_float4` Bool that nothing reads.
+#   TODO(p3) cstyle.py:55-56  `base_rewrite`'s `Ops.STACK` arm. It needs
+#   `float4` to be `None`-distinguishable, which is the one place a `Data` cannot
+#   carry the answer and a device TAG cannot either: the base is the only `None`
+#   and the tag already says it. Unblocked when the arena rewrite lands.
 def render_dtype(+dev: U32, +d: S.Dt, sz: U32, +a: S.Addr, mutable: Bool, override_ptr: Bool, img: Bool) -> String:
   Bool.pick(String, img, rd_image(mutable),
     String.concat([rd_prefix(dev, a), rd_body(dev, d, sz), rd_suffix(a, override_ptr)]))
@@ -1704,11 +1782,6 @@ def render_dtype_legacy(+dev: U32, +d: S.Dt) -> String:
 #     def render_type(self, u): return self._render_dtype(u.dtype, u.max_numel(), u.addrspace,
 #         shape=u._shape, override_ptr=u.op is Ops.INDEX and u.addrspace is AddrSpace.REG)
 #     def render_ptr(self, u):
-#       if u.max_numel() > 1 or u.dtype != u.src[0].dtype:
-#         return f"(({self._render_dtype(u.dtype, u.max_numel(), u.addrspace, override_ptr=True, shape=u._shape)})({self[u]}))"
-#       else: return f"{self[u]}"
-#     def render_access(self, u): return f"*{self.render_ptr(u)}"
-#     def render_cast(self, u, val): return f"({self.render_type(u)})({val})"
 #
 # `render_type` IS THE ONE THAT NEEDS THE FOLD (dtype, addrspace, shape, op) AND
 # SO IT IS WHERE WALL (a) BITES; IT IS PORTED WITH THOSE AS PARAMETERS, WHICH IS
@@ -1767,6 +1840,12 @@ def ku_const_val(+kus: List<&2, List<&2, KU>>, i: U32) -> U32: ku_const_val.go(k
 #  10. EVERYTHING ELSE -> `{val}`
 # ARM 1 IS A `None` FOR A FINITE FLOAT, so arm 2 takes it, and arm 10 takes
 # every INTEGER: THAT is why the port's `i32` const renders as `56` AND NOT
+# `(int)(56)`, and it is the FIRST thing a port gets wrong.
+#
+# measured 2026-10-27: the five upstream CPU kernels have no FLOAT CONST at
+# ALL (the census is over `.agents/slop/cpuseam/uops/*.rows`: 100 `const`
+# rows, 0 with a `.` in the value), so the FLOAT ARMS ARE NOT EXERCISED BY
+# the oracle and are named as a gap rather than claimed.
 def ku_cast_wrapped(dev: U32, d: S.Dt, v: String) -> String:
   String.concat(["(", render_cast(dev, d, 1, S.Aalu{}, O.OpsCAST{}, False{}, v), ")"])
 
@@ -1993,6 +2072,15 @@ def ku_stack_srcs(+k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, St
   ku_stack_srcs.go(KU.srcs(k), kus, r, Nil{})
 
 # cstyle.py:52-54 -- `f"{ctx.float4.replace('float4', ctx.render_type(x))}"`. THE REPLACE IS
+# the whole point and it was missing: the device's maker is spelled with the literal
+# `float4`, and the STACK's OWN type replaces it, so a two-lane STACK is `float2(...)` and
+# NOT `float4(...)`. MEASURED: without it the port's WMMA call read
+# `__WMMA_8_8_8_f32_f32(val0, val4, float4(...))` against upstream's `float2(...)` -- one
+# token, sixteen lines, the last difference in the kernel.
+# `String.replace` is a wall here (`String.split` splits on ONE CHAR), so the five device
+# spellings in `float4.of` are answered directly; each contains exactly one `float4`
+# token, in the position below, which is why this is the same answer and not a rewriting
+# of it. The `_` arm is `float4.of`'s `"None"`, which holds no token to replace.
 def float4_with(+dev: U32, +t: String) -> String:
   match dev:
     case 1: String.concat(["(", t, ")"])
@@ -2046,6 +2134,10 @@ def _render.param(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, st: St) -> St:
     KUArg.param_volatile(KU.arg(k)), False{}})
 
 # `mutable` IS `u in writable_params` UPSTREAM (cstyle.py:214-215), AND
+# `mutable` IS READ BY `_render_dtype` FOR AN IMAGE ONLY (cstyle.py:182:
+# `if is_image_shape(shape): return f"{'write_only' if mutable else 'read_only'} image2d_t"`).
+# no CPU kernel is an image, so the flag is not read by the c the port emits --
+# and the port says so instead of guessing a backward walk.
 def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, List<&2, KU>>,
                  +st: St, +l: List<&2, String>, nm: String, ix: U32, +semi: Bool) -> St:
   +st0 = _render.pop(st, k)
@@ -2155,6 +2247,10 @@ def _render_defines.go(+xs: List<&2, DtN>, +dev: U32, +cpu: Bool, +acc: List<&2,
         _render_defines.go(t, dev, cpu, acc))
 
 # `render_kernel` -- cstyle.py:155-167 (THE BODY) AND cstyle.py:312-314 (THE
+# clang override). two functions, because upstream has two.
+#
+# THE BODY: the buffer TYPES, the function SIGNATURE, and the braces.
+# the clang override: the vector typedefs before it and the entry after it.
 
 def _render_defines(dev: U32, cpu: Bool, +kus: List<&2, KU>) -> List<&2, String>:
   _render_defines.go(uops_to_dtypes(kus), dev, cpu, Nil{})

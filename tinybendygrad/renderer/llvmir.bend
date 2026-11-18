@@ -87,6 +87,10 @@ def lt.pri(+d: S.Dt) -> U32:
 def ivol(is_param: Bool, vol: Bool) -> Bool: Bool.and(is_param, vol)
 
 # `volatile ` with a TRAILING space and nothing when False: llvmir.py:90, :95,
+# :98 all spell `{'volatile ' if ... else ''}` inside a longer literal, so the
+# space belongs to the FRAGMENT, and the one space before the comma in a load
+# line is the fragment's, not the literal's. `br3 load vol True` and
+# `br3 load vol False` are the pair that pins it.
 def volsp(vol: Bool) -> String: Bool.pick(String, vol, "volatile ", "")
 
 def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
@@ -378,6 +382,22 @@ def amd1.line(+op: O.Op, +d: S.Dt, +od: S.Dt, +xn: String, +s: String) -> String
   String.concat(["  ", xn, " = call ", lt.of(od), " @llvm.", N.intr_of(op), ".", lt.of(od), "(", lt.of(d), " ", s, ")"])
 
 # "amd llvm intrinsics llvm.log2/llvm.exp2 don't support double" -- llvmir.py:300,
+# upstream's comment ON AMD's `extra_matcher`. IT IS A LIMITATION OF THE
+# TARGET'S INTRINSIC, NOT OF THE RENDERER: `@llvm.log2.f64` and
+# `@llvm.exp2.f64` are not in the AMDGPU intrinsic set, so a double LOG2 or
+# EXP2 that reached isel would EMIT a call the AMD backend cannot lower.
+# UPSTREAM'S FIX IS A REWRITE -- `xlog2` / `xexp2`, the SOFTWARE
+# DECOMPOSITIONS FROM `codegen/decomp/transcendental.py` -- AND IT RUNS IN
+# `extra_matcher`, WHICH IS BEFORE ISEL. SO A DOUBLE LOG2 NEVER REACHES THIS
+# EMITTER ON AN AMD TARGET.
+#
+# WHICH IS WHY THE PORT'S `amd1 log2 f64->f64` AND `amd1 exp2 f64->f64` ROWS
+# ARE NOT A CLAIM THAT A DOUBLE LOG2 WORKS ON AMD. THEY ARE THE EMITTER'S
+# SHAPE -- `llvm_intrinsics` (llvmir.py:79) MAPS LOG2 AND EXP2 FOR EVERY
+# DTYPE, AND `lt.of(od)` IS THE OUTPUT TYPE -- SO THE ROWS ARE ABOUT THE
+# SPELLING AND NOT ABOUT WHAT THE AMD BACKEND ACCEPTS. THE REWRITE THAT
+# MAKES THE DOUBLE CASE REAL IS `extra_matcher`'s, AND `extra_matcher` IS A
+# `PatternMatcher` -- A WALL, NAMED AT THE TOP OF THIS FILE.
 def amd3.line(+xn: String, +s: String, +bf8: U32) -> String:
   String.concat(["  ", xn, " = call i8 @f32_to_fp8(float  ", s, ", i1 ", U32.show(bf8), ")"])
 
@@ -449,6 +469,11 @@ def prod.go(+ws: List<&2, U32>, +acc: U32) -> U32:
 def prod(+ws: List<&2, U32>) -> U32: prod.go(ws, 1)
 
 # `ftr amd prod <lab>` is the DERIVED work-group size on its own -- the arithmetic,
+# nine rows -- and `ftr amd <lab>` is the JOINED ATTRIBUTE STRING it is
+# interpolated into. Both exist because a reader can get the NUMBER right while
+# dropping one of the five attributes, and that reader moves the second and NONE
+# of the nine. M69 in the mutation table is the shape of that bug: dropping the
+# leading `1,` moves the joined rows alone.
 def ftr.amd(+wg: U32) -> String:
   String.concat(["attributes #0 = { alwaysinline nounwind \"no-builtins\" \"amdgpu-flat-work-group-size\"=\"1,",
     U32.show(wg), "\" \"no-trapping-math\"=\"true\" }"])
@@ -464,6 +489,10 @@ def r_ftrp(+i: U32) -> String:
   rd(String.concat(["ftr cpu part ", U32.show(i)]), ftr.cpu_part(i))
 
 # `AMDLLVMRenderer.is_rdna4` -- llvmir.py:279: `arch.split(':')[0] in {'gfx1200',
+# 'gfx1201'}`. The `:` matters and so does the `split`: `gfx1200:xnack-` is True
+# and `gfx1200x` is False, and a `starts_with("gfx1200")` reader gets the second
+# right and the third WRONG -- which is why `is_rdna4 gfx12001` and
+# `is_rdna4 gfx1200x` are rows and not one.
 def rd4.split(+arch: String) -> String: nth_s(String.split(arch, Char.from_u32(58)), 0)
 
 def rd4.is_g1(+a: String) -> Bool: String.eq(a, "gfx1200")
@@ -546,79 +575,6 @@ def main() -> IO(Unit):
 #   M5 lt.v's count arm is >= 1 33 br2 load vol False f32 [4], br2 load vol False
 #   M6 lt.v's count arm is dropped 19 br1 extractelement alu, br1 extractelement a
 #   M7 lt.fp's 8-bit arm is 9 4 lt fp8e4m3, lt fp8e4m3fnuz, lt fp8e5m2 ...
-#   M8 lt.fp's catch-all is float 12 amd1 exp2 f64->f64, amd1 log2 f64->f64, amd1
-#   M9 lt.of weak-class catch-all is void 2 lt weakfloat, lt weakint
-#   M10 ivol ORs instead of ANDs 5 is_volatile AFTER vol False, is_volatile BUFFER
-#   M11 ivol ignores is_param 2 is_volatile BUFFER vol True, is_volatile CONST vol
-#   M12 ivol ignores vol 3 is_volatile AFTER vol False, is_volatile CAST vol False
-#   M13 volsp's volatile arm has no space 9 br2 load vol True f32 [4], br2 load vo
-#   M14 lconst_b0 is 7F/87 (the OR reading) 2 lconst special -inf, lconst special
-#   M15 lconst_b0 swaps its arms 4 lconst special +inf, lconst special +nan, lcons
-#   M16 lconst_b1 drops the nan quiet bit 2 lconst special +nan, lconst special -n
-#   M17 lconst_hex tail is 10 zeros 4 lconst special +inf, lconst special +nan, lc
-#   M18 lconst_hex drops the 0x 4 lconst special +inf, lconst special +nan, lconst
-#   M19 lc.arm's fp8 arm is truncate 4 lconst branch fp8e4m3, lconst branch fp8e4m
-#   M20 lc.int FLOORS instead of truncating 4 lconst int -1.9, lconst int -2.5, lc
-#   M21 lc.int prints the untruncated value 9 lconst int -1.9, lconst int -2.5, lc
-#   M22 lc.arm floats answer int 8 lconst branch bf16, lconst branch f16, lconst b
-#   M23 lab keeps the % 35 br11 rangevoid [0], br11 rangevoid [1], br12 backedge [
-#   M24 rstr.id drops the leading digit 4 range_str 0,1, range_str 2,0,1, range_st
-#   M25 rstr.neg drops the m 3 range_str neg 0, range_str neg 12, range_str neg 3
-#   M26 rstr.go's separator is a dot 3 range_str 0,1, range_str 2,0,1, range_str 7
-#   M27 br_rules's first arm is 19 1 base_rewrite.rules
-#   M28 br_rules.b's 23 becomes 22 1 amd.string_rewrite.rules
-#   M29 br_rules.b's third arm is 6 1 base_rewrite.after_amd
-#   M30 br1 answers None for ALU 2 br1 extractelement alu, br1 extractelement alu
-#   M31 br1 answers a line for every addrspace 3 br1 extractelement global, br1 ex
-#   M32 br1's index type is i64 2 br1 extractelement alu, br1 extractelement alu i
-#   M33 br1 drops the extractelement 2 br1 extractelement alu, br1 extractelement
-#   M34 br2 drops volatile 3 br2 load vol True f32 [4], br2 load vol True i32 [4],
-#   M35 br2 phi drops the alt 6 br2 load vol False f32 [7], br2 load vol False i32
-#   M36 br2's phi is a bare name 6 br2 load vol False f32 [7], br2 load vol False
-#   M37 br2 swaps _load and _exit 6 br2 load vol False f32 [2], br2 load vol False
-#   M38 br2's entry label keeps the % 6 br2 load vol False f32 [1], br2 load vol F
-#   M39 br2 branches on the node not the mask 6 br2 load vol False f32 [2], br2 lo
-#   M40 br4 swaps value and index 6 br4 store vol False f32, br4 store vol False i
-#   M41 br3 drops the volatile fragment 3 br3 load vol True f32, br3 load vol True
-#   M42 br5.name indexes every line 4 br5 stack n 1 f32 [0], br5 stack n 2 f32 [1]
-#   M43 br5.pred is poison at every i 4 br5 stack n 1 f32 [0], br5 stack n 2 f32 [
-#   M44 br5.pred indexes the CURRENT line 6 br5 stack n 2 f32 [1], br5 stack n 3 b
-#   M45 br5's element count is len(srcs) 10 br5 stack n 1 f32 [0], br5 stack n 2 f
-#   M46 br6.same is always True 1 br6 bitcast i8x1->f32x1
-#   M47 br8 types the RESULT od 3 br8 trunc f32->i32, br8 trunc f64->f32, br8 trun
-#   M48 br9 never walls 20 br9 binary bf16 TRUNCDIV, br9 binary bf16 TRUNCMOD, br9 binary
-#   M49 br10 reuses d0 three times 1 br10 where mixed
-#   M50 br11's loop label is bare 1 br11 rangevoid [0]
-#   M51 br13 labels from the NAME not the axis id 2 br13 range [5], br13 range neg
-#   M52 br13's icmp bound is a literal 2 br13 range [6], br13 range neg [6]
-#   M53 br14 drops the latch label 4 br14 end neg [2], br14 end neg [3], br14 end
-#   M54 br16 labels from the ENDIF own name 4 br16 endif bool [0], br16 endif bool
-#   M55 br17 drops the leading two spaces 1 br17 barrier
-#   M56 amd2 drops the barrier's quotes 4 amd2 barrier [0], amd2 barrier [1], amd2
-#   M57 amd0 drops the trailing space 5 amd0 special g0, amd0 special g2, amd0 spe
-#   M58 amd3 drops the DOUBLE space 4 amd3 cast f32->fp8e4m3, amd3 cast f32->fp8e4
-#   M59 amd3 spells the i1 as 0 for bf8 4 amd3 cast f32->fp8e4m3, amd3 cast f32->f
-#   M60 amd4 swaps bf8 and fp8 4 amd4 cast fp8e4m3->f32 [1], amd4 cast fp8e4m3fnuz
-#   M61 amd4 drops the synthesized _i32 4 amd4 cast fp8e4m3->f32 [0], amd4 cast fp
-#   M62 fp8i is f8pos without the mod 5 amd3 cast f32->fp8e4m3fnuz, amd3 cast f32-
-#   M63 fp8i tests is_fnuz instead of the position 6 amd3 cast f32->fp8e4m3fnuz, a
-#   M64 f8pos.go starts at 1 16 amd3 cast f32->fp8e4m3, amd3 cast f32->fp8e4m3fnuz
-#   M65 f8pos.go's miss is 0 not the sentinel 4 fp8_index f16, fp8_index i32, fp8_
-#   M66 f8pos.miss's sentinel is 0 5 fp8_index f16, fp8_index i32, fp8_pos f16 ...
-#   M67 f8names emits no commas 1 fp8s.order
-#   M68 rfn.slot's space is outside the conditional 5 rfn abi None alu [0], rfn ab
-#   M69 rfn.define drops the #0 14 rfn abi None alu [0], rfn abi None empty [0], r
-#   M70 sargs one's noalias keys on REG 8 rfn sargs alu, rfn sargs global, rfn sar
-#   M71 sargs drops the ptr star 2 rfn sargs global, rfn sargs2 global
-#   M72 rfn.all's tail is one string 28 rfn abi None alu [4], rfn abi None alu [5]
-#   M73 rfn.cat is a prefix not an append 84 rfn abi None alu [0], rfn abi None al
-#   M74 ftr.amd prefixes the group size with a 0 9 ftr amd none, ftr amd w3, ftr a
-#   M75 ftr.amd halves the size 9 ftr amd none, ftr amd w3, ftr amd w64 ...
-#   M76 prod seeds with 0 not 1 18 ftr amd none, ftr amd prod none, ftr amd prod w
-#   M77 ftr.cpu_part splits on nothing 9 ftr cpu part 0, ftr cpu part 1, ftr cpu p
-#   M78 CONTROL a comment-only edit 0
-#   M79 CONTROL a comment-only edit 0
-# WHAT THE TABLE SAYS.
 #
 # M3 IS THE LARGEST SINGLE MOVEMENT (70 rows) and it is `lt.ints` answering
 # `bits // 8`. That is the same bug `nir_llvmir.bend`'s own header records as
