@@ -1,10 +1,8 @@
 # render.bend -- tinygrad/uop/render.py.
 #
-# the first string-building unit in the port. Everything ported so far was data:
-# an arena of U32 indices, a fold of derived properties, six rule tables. This
-# file turns a UOp back into PYTHON SOURCE TEXT, and it is the first place where
-# a dropped literal produces plausible wrong output instead of a type error.
-#
+# the first string-building unit in the port: this file turns a UOp back into PYTHON
+# SOURCE TEXT, and it is the first place where a dropped literal produces plausible wrong
+# output instead of a type error.
 
 # WHAT base.bend HAS, MEASURED 2026-09-30 against bend 2.0.34
 # (`./bin/bend` on a probe file). This list is the whole substrate, and the
@@ -247,8 +245,8 @@ def i64_fits_i32(+x: H.I64) -> Bool:
 def sint_i64(+x: H.I64) -> String:
   sint_i64.of(i64_fits_i32(x), x)
 
-# `ConstFloat.__repr__` / `ConstFloat.__str__` are both
-# `float.__repr__(self)`, and `InvalidType.__repr__` is "Invalid".
+# `ConstFloat.__repr__` / `ConstFloat.__str__` are both `float.__repr__(self)`, and
+# `InvalidType.__repr__` is "Invalid".
 def const_repr.cfloat(+f: F32) -> String:
   String.concat(["ConstFloat(", f32_repr(f), ")"])
 
@@ -279,8 +277,8 @@ def dt_attr(d: S.Dt) -> String:
 def dt_repr(d: S.Dt) -> String:
   String.append("dtypes.", dt_attr(d))
 
-# `AddrSpace.__repr__` -- `f"{cls.__name__}.{self.name}"`, and `__str__` is
-# `repr(self)`. So the `addrspace` column of a ParamArg prints qualified.
+# `AddrSpace.__repr__` -- `f"{cls.__name__}.{self.name}"`, and `__str__` is `repr(self)`. So
+# the `addrspace` column of a ParamArg prints qualified.
 def addr_name(a: S.Addr) -> String:
   match a:
     case S.AGlobal{}: "GLOBAL"
@@ -402,7 +400,6 @@ def pa_name(m: Maybe<&2, String>) -> String:
     case Some{s}: comma(True{}, String.concat(["name='", s, "'"]))
     case None{}: ""
 
-# the default is GLOBAL, so GLOBAL is the one value that is NOT printed.
 def pa_addrspace.is_global(a: S.Addr) -> Bool:
   match a:
     case S.AGlobal{}: True{}
@@ -527,7 +524,6 @@ def bool_tuple_repr(+xs: List<&2, Bool>) -> String:
 def peek_str(xs: List<&2, U32>) -> String:
   U32.show(Maybe.default(&2, U32, List.head(&2, U32, xs), 0))
 
-# `AxisType.__repr__` is `str(self)` and `Enum.__str__` is "ClassName.MEMBER".
 def axis_repr(a: O.AxisType) -> String:
   String.concat(["AxisType.", O.AxisType.name(a)])
 
@@ -647,7 +643,6 @@ def akernel_applied(xs: List<&2, O.OPT>) -> String:
 def akernel_repr(+ki: O.KernelInfo) -> String:
   String.concat(["KernelInfo(name='", O.KernelInfo.name(ki), "', applied_opts=", akernel_applied(O.KernelInfo.applied_opts(ki)), ", opts_to_apply=None, estimates=", akernel_estimates(O.KernelInfo.estimates(ki)), ", beam=", U32.show(O.KernelInfo.beam(ki)), ", optimized=", Bool.show(O.KernelInfo.optimized(ki)), ")"])
 
-# `repr(tuple(int|float, ...))`; ops.bend types both halves `H.I64`.
 def i64_tuple_repr.go(xs: List<&2, H.I64>) -> List<&2, String>:
   match xs:
     case Nil{}: Nil{}
@@ -1352,51 +1347,38 @@ def pmp.special.of(one: Bool, isconst: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -
 def pmp.special(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.special.of(Nat.is_eq(List.length(&2, U32, O.Arena.srcs(ar, u)), 1n), is_const(ar, O.Arena.src0(ar, u)), ar, ctx, u)
 
-# RULE 4 IS GONE. `78d482262` DELETED the `Ops.BUFFER` pyrender rule:
+# RULE 4 IS GONE. `78d482262` DELETED the `Ops.BUFFER` pyrender rule, and it was the
+# only reason `render.py` still imported `AddrSpace` -- head's line 1 is
+# `from tinygrad.dtype import dtypes`, the pin's is
+# `from tinygrad.dtype import AddrSpace, dtypes`. So the rule's deletion is also visible
+# as an IMPORT disappearing, and that import was the tell that no other rule in the file
+# needed it.
 #
-#   # NOTE: multi-device buffers carry the DEVICE range in src, new_buffer recreates it
-#   (UPat(Ops.BUFFER, name="x"), lambda x:
-#     f"UOp.new_buffer({repr(x.arg.device)}, {x.max_numel()}, {x.dtype}, {x.arg.slot})"
-#     if isinstance(x.arg, ParamArg) and x.addrspace is AddrSpace.GLOBAL else None),
-#
-# and it is the only reason `render.py` still imported `AddrSpace` -- head's
-# line 1 is `from tinygrad.dtype import dtypes`, the pin's is
-# `from tinygrad.dtype import AddrSpace, dtypes`. So the rule's deletion is also
-# visible as an IMPORT disappearing, and that import was the tell that no other
-# rule in the file needed it.
-#
-# what a deletion does to a first-wins dispatch, and it is not "the answer
-# changes": a BUFFER now reaches NO pyrender rule and lands on rule 15, which is
-# `f"UOp({u.op}, {srcs(ctx,u.src)}" + (f", {repr(u.arg)})" if u.arg is not None
-# else ")")`. So the printed form stops being a `UOp.new_buffer(...)` CALL and
-# becomes a constructor with the ParamArg inline. MEASURED, and the two halves
-# are different failures:
+# what a deletion does to a first-wins dispatch, and it is not "the answer changes": a
+# BUFFER now reaches NO pyrender rule and lands on rule 15, which is
+# `f"UOp({u.op}, {srcs(ctx,u.src)}" + (f", {repr(u.arg)})" if u.arg is not None else ")")`.
+# So the printed form stops being a `UOp.new_buffer(...)` CALL and becomes a constructor
+# with the ParamArg inline. MEASURED, and the two halves are different failures:
 #
 #   pin:  ast = UOp.new_buffer('CPU', 4, dtypes.int, 0)
 #   head: ast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU'))
-#     -- the `4` is `ParamArg.size`, and it is there only BEFORE `72f98ffe0` moved
-#     `size` OUT: the ORACLE's subject `ccae837c703` (= `81157efb0^`) PREDATES the
-#     migration and still prints it; `5c2bf39d6c4b` has NO `size` term and prints NO `4`.
+#     -- the `4` is `ParamArg.size`, and it is there only BEFORE `72f98ffe0` moved `size`
+#     OUT: the ORACLE's subject `ccae837c703` (= `81157efb0^`) PREDATES the migration and
+#     still prints it; `5c2bf39d6c4b` has NO `size` term and prints NO `4`.
 #
-# The `UOp.new_buffer` SPELLING is what a `UOp` constructor cannot parse, so
-# this is not cosmetic: `test_pyrender`'s `eval_pyrender` would have built a
-# BUFFER instead of calling the constructor.
+# The `UOp.new_buffer` SPELLING is what a `UOp` constructor cannot parse, so this is not
+# cosmetic: `test_pyrender`'s `eval_pyrender` would have built a BUFFER instead of calling
+# the constructor.
 #
-# the three dead defs below went with it, and each one is named here because a
-# def that outlives its only caller is the `hcq2.bend` `slots_of` shape:
-# `paramarg_of`, `arg_addr` and `addr_is_global` existed ONLY to build rule 4's
-# guard, and `max_numel` only to build its payload. Nothing else in the file
-# reads them and nothing outside the file calls them (`rg` over every `.bend`),
-# so deleting the rule without deleting them would leave four defs that compile,
-# are named in no header row, and reach no row. That is the header claim
-# outliving the code, which `.agents/slop/notes/bend2-constraints.md` records
-# as the `hcq2.bend` sixteen-symbol finding.
+# the three dead defs below went with it, and each one is named here because a def that
+# outlives its only caller is the `hcq2.bend` `slots_of` shape: `paramarg_of`, `arg_addr`
+# and `addr_is_global` existed ONLY to build rule 4's guard, and `max_numel` only to build
+# its payload. Nothing else in the file reads them and nothing outside the file calls them
+# (`rg` over every `.bend`), so deleting the rule without deleting them would leave four
+# defs that compile, are named in no header row, and reach no row.
 #
-# `addr_is_global` also died with `AddrSpace.GLOBAL`, which upstream's `dtype.py`
-# still has -- so its absence is a DELETION here and not a substrate gap.
-# RULE 5: `UPat(Ops.COPY, src=(UPat(name="x"),), allow_any_len=True, name="copy")`
-#   -> `f"{ctx[x]}.copy_to_device({repr(copy.arg)})"`. `allow_any_len` means the
-# ONE src pattern matches any non-empty src list, so the guard is nsrc >= 1.
+# `addr_is_global` also died with `AddrSpace.GLOBAL`, which upstream's `dtype.py` still has
+# -- so its absence is a DELETION here and not a substrate gap.
 def pmp.copy.of(any: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
   Bool.pick(String, Bool.not(any), pmp.fb(ar, ctx, u),
     String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".copy_to_device(", arg_repr(ar, u, O.Arena.arg(ar, u)), ")"]))
@@ -2102,25 +2084,7 @@ def pa3() -> O.ParamArg:
   O.ParamArg{3, S.single(), None{}, None{}, None{}, S.ALocal{}, None{},
     True{}, Some{O.Img{2, 2}}, None{}, False{}, None{}}
 
-# the arena fixtures that drive `pyrender`. render.py:143 is the whole repr
-# port's reason to exist and until these rows landed NOTHING called it, so the
-# three `pa` fixtures above -- which pin `arg_repr` -- were pinning a formatter
-# whose caller was untested.
-#
-# every fixture is a CPython `UOp` tree rebuilt node for node, and the `py=` text
-# is what `pyrender` prints for THAT tree on this `tinygrad/`. Nothing here is a
-# transcription: each row's oracle was measured, and the numbering matters -- a
-# `cN` label is the toposort INDEX, so the Bend arena has to reach the same
-# toposort ORDER CPython does, not merely hold the same nodes.
-#
-# THE `cN` NUMBERS ALSO PIN THE `to_render` PASS, which is where a lot of
-# render.py's behaviour lives: `shared` forces one node onto its own line
-# because it has two consumers, `sink`/`store`/`reduce2` force one because the
-# SINK/STORE/REDUCE arms add srcs unconditionally, and `buffer`/`copy`/`index`
-# show the inverse (BUFFER/RANGE/SPECIAL are `always_rendered`, so they get a
-# line even with exactly one consumer).
-# `UOp.const(n)` -- CONST(3) is a weakint CONST here and in CPython, so `dt_of`
-# agrees and no CAST is involved.
+# THE TABLE IS IN `.agents/slop/tables/uop-render-2105.md` -- the arena fixtures that drive `pyrender`. render.py:143 is the whole repr
 def f_const(+ar: O.Arena, n: U32) -> O.Found: O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})
 
 # `UOp(Ops.RANGE, src=(CONST(end),), arg=(axis_id, at))` -- ops.py:644.
@@ -2979,55 +2943,7 @@ def pu_ar() -> O.Arena:
     O.Node{O.OpsADD{}, [3, 1], O.ANone{}, O.TNone{}},
     O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}},
     O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(8)}}, O.TNone{}}], [0]}
-# `pu_range`   one BUFFER with a RANGE: the baseline, and the `--` src arm.
-# `pu_missing` an ADD whose CONST src is NOT in the list: `--` and not its value.
-#              A def that dropped the OUTER membership test answers `4` here.
-# `pu_const`   the same ADD with the CONST IN THE LIST: its VALUE, and not its index.
-#              A def that dropped the INNER op test answers `1`.
-# `pu_index`   BOTH srcs in the list: the INDEX arm, which only this row exercises.
-# `pu_constarg` two CONSTs: the last column is a PyConst and not a ParamArg.
-# ONE RECURSIVE DEF, and the shape is the point. The first draft was THREE --
-# pu_row -> pu_row.go -> pu_row.line -> pu_row.go -- which is MUTUALLY recursive,
-# and Bend refuses that: `bend-toposort` reported the cycle and declined to write,
-# the fourth time this session that refusal has caught a real defect rather than an
-# inconvenience.
-#
-# The way out is the file's own: recurse into YOURSELF and let a PURE helper take
-# the head. `pu_row.tail` and `pu_row.one` never call back, so there is no cycle,
-# and the print is a `do IO<Unit>` arm rather than a sibling def.
-# `s5.seps.go`'s EXACT shape (ops.bend): one `+` arg, then the LIST as a plain
-# binder, then the shrinking tail. The first attempt had `line: String` between
-# them, and a String is not a list so the binder was read as "nothing shrinks" --
-# "expected : a decreasing self-call", not a type error, which is the unhelpful way
-# to say it.
-# ONE DEF. There were three -- `step` -> `line` -> `head` -- and every arrangement
-# of them was either MUTUALLY recursive (Bend refuses) or an R-3 ordering problem
-# (whichever called the other had to be declared first). This is `s5.seps.go`'s
-# shape verbatim (ops.bend): one `+` arg, the list as a plain binder, the shrinking
-# tail, and the accumulator threaded through.
-# ONE FOLD AND ONE EMITTER, in that order because the fold CALLS the emitter and
-# R-3 wants the callee first. There were three defs before this and every
-# arrangement was either mutually recursive (Bend refuses) or an ordering problem.
-# The shape is `s5.seps.go` (ops.bend) with the print lifted into its own def only
-# because a `do IO<Unit>` block cannot be an expression.
-# the FOLD returns a string and the print happens once, which is `Bsl.row`'s shape
-# (ops.bend) and the reason none of the previous four arrangements worked.
-#
-# A printing fold cannot be written as one def here. `s5.seps.go` recurses fine
-# because it RETURNS a String; putting `IO.print` in the match arm needs a `do
-# IO<Unit>` block, and the recursion then has to leave that block for a def that
-# returns IO, and THAT def has no shrinking argument left. Five attempts:
-# three mutually-recursive defs, one self-call with nothing shrinking, and one with
-# a String where the binder had to be a list.
-#
-# So: fold to a String, join, print once. The fold is `s5.seps.go` with a newline
-# instead of a space, and `IO.print` is one call at the end.
-# the row name goes on every line, not once on the first. It went on the first as a
-# `String.concat([nm, "|", ...])` wrapped around the WHOLE fold, which reads the same for
-# a one-node row and is wrong for every row after it: `pu_constarg` printed its first
-# CONST named and its second CONST bare, so the diff had one line to compare and one it
-# could not name. The prefix is inside the fold for that reason, and `nm` is a `+`
-# parameter because the fold reads it once per line.
+# THE TABLE IS IN `.agents/slop/tables/uop-render-2982.md` -- `pu_range`   one BUFFER with a RANGE: the baseline, and the `--` src arm.
 def pu_row.go(+nm: String, +ar: O.Arena, xs: List<&2, String>, +acc: String) -> String:
   match xs:
     case Nil{}: acc

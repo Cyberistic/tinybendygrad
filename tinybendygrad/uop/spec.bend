@@ -1,40 +1,33 @@
-# spec.bend -- tinygrad/uop/spec.py. The graph VALIDATOR: six rule tables, three
-# helpers, and `type_verify`.
+# spec.bend -- tinygrad/uop/spec.py. The graph VALIDATOR: six rule tables, three helpers,
+# and `type_verify`.
 #
-# WHAT THIS FILE IS. `spec.py` is not a rewriter. It answers, for ONE node, "is
-# this node legal in the graph I am validating", and it does that with the SAME
-# machinery `ops.py` uses to rewrite a graph: a `PatternMatcher` is a table of
-# `(UPat, lambda)` pairs and `rewrite` returns the FIRST non-`None`. So every rule
-# here is a top-level def and every table is a list of tags, which is the compiled
-# form `upat.py` emits -- see `ops.bend`'s `pm_rewrite`.
+# `spec.py` is not a rewriter. It answers, for ONE node, "is this node legal in the graph
+# I am validating", and it does that with the SAME machinery `ops.py` uses to rewrite a
+# graph: a `PatternMatcher` is a table of `(UPat, lambda)` pairs and `rewrite` returns the
+# FIRST non-`None`. So every rule here is a top-level def and every table is a list of tags,
+# which is the compiled form `upat.py` emits -- see `ops.bend`'s `pm_rewrite`.
 #
-# THE ANSWER IS THREE-VALUED. Python's rule bodies return `True`, `False`, or
-# `None`, and `None` means "this rule has no opinion, keep scanning":
+# THE ANSWER IS THREE-VALUED. Python's rule bodies return `True`, `False`, or `None`, and
+# `None` means "this rule has no opinion, keep scanning":
 #
 #     ret = check_spec.rewrite(uop)          # spec.py:42
 #     if ret is not True: raise RuntimeError
 #
-# so `VTrue` is the only passing answer and BOTH `VFalse` and `VSkip` fail. They are
-# not the same: the fold is FIRST-WINS, so a `VFalse` stops the scan and a `VSkip`
-# lets the next rule try, and getting it backwards refuses the node for the wrong
-# reason without the accepting rule ever running.
+# so `VTrue` is the only passing answer and BOTH `VFalse` and `VSkip` fail. They are not
+# the same: the fold is FIRST-WINS, so a `VFalse` stops the scan and a `VSkip` lets the next
+# rule try, and getting it backwards refuses the node for the wrong reason without the
+# accepting rule ever running.
 #
 # WHY SIX DISPATCHES. `spec.py` has six tables, each its own `PatternMatcher`, and
-# `ops.bend` cannot call a def in this file, so each gets its own dispatch and its
-# own scan: `sh_*`, `te_*`, `pr_*`, `hq_*`, `fu_*`, `kg_*`. A generic dispatch needs
-# a closure, and a closure cannot be a `Data` field, so the ~5 lines of driver per
-# table are duplicated six times rather than abstracted.
+# `ops.bend` cannot call a def in this file, so each gets its own dispatch and its own scan:
+# `sh_*`, `te_*`, `pr_*`, `hq_*`, `fu_*`, `kg_*`. A generic dispatch needs a closure, and a
+# closure cannot be a `Data` field, so the ~5 lines of driver per table are duplicated six
+# times rather than abstracted.
 #
-# WHAT IS SHARED AND WHAT IS NOT. Shared: the property readers (`sp_*`), the
-# `early_reject` subset test, the op-set membership test, and the `ler` fold --
-# none dispatch on a tag, so one copy is right. Duplicated per table: `try`, `go`,
-# `scan`, `rewrite`, `dispatch`, the table, and the verifier fold.
-#
-# the tag spaces are per table, starting at 0, and each rule carries its `spec.py`
-# line. `spec_tensor` and friends are `PatternMatcher(...) + spec_shared`, so a tag
-# means "(table, index in THAT table's own list)" -- see the `+` composition note on
-# `fu_table`.
-#
+# WHAT IS SHARED AND WHAT IS NOT. Shared: the property readers (`sp_*`), the `early_reject`
+# subset test, the op-set membership test, and the `ler` fold -- none dispatch on a tag, so
+# one copy is right. Duplicated per table: `try`, `go`, `scan`, `rewrite`, `dispatch`, the
+# table, and the verifier fold.
 
 # two facts that are easy to invert, both measured against `spec.py`.
 #
@@ -284,8 +277,8 @@ def sp_nsrc(+fx: F.Folded, self: U32) -> U32:
 def nsrc_is(+fx: F.Folded, self: U32, n: U32) -> Bool:
   U32.is_eq(sp_nsrc(fx, self), n)
 
-# `sp_arg` exists so the eighteen-way `Arg` match below is one def per question
-# rather than a match inside every rule that asks one.
+# `sp_arg` exists so the eighteen-way `Arg` match below is one def per question rather
+# than a match inside every rule that asks one.
 def sp_arg(+fx: F.Folded, self: U32) -> O.Arg:
   O.Arena.arg(sp_ar(fx), self)
 
@@ -523,7 +516,6 @@ def any_const(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
     case Nil{}: acc
     case s <> t: any_const(t, fx, Bool.or(acc, O.op_is(sp_ar(fx), s, O.OpsCONST{})))
 
-# `O.op_is` generalised to an op SET, for the two rules that ask `x.op in (...)`.
 def sp_op_in(+fx: F.Folded, s: U32, ops: List<&2, O.Op>) -> Bool:
   O.op_in(ops, O.Arena.op(sp_ar(fx), s))
 
@@ -643,9 +635,9 @@ def sp_early(ar: O.Arena, self: U32, rej: List<&2, O.Op>) -> Bool:
 def sp_claimed(ops: List<&2, O.Op>, ar: O.Arena, self: U32) -> Bool:
   O.op_in(ops, O.Arena.op(ar, self))
 
-# the folds and readers the rules share. a rule body is Python's lambda with
-# `self` spelled out, and these are the pieces it reaches for. `sp_src0` is
-# `sp_src(.., 0)` because `src[0]` is written most.
+# the folds and readers the rules share. a rule body is Python's lambda with `self`
+# spelled out, and these are the pieces it reaches for. `sp_src0` is `sp_src(.., 0)`
+# because `src[0]` is written most.
 
 def sp_src(fx: F.Folded, self: U32, n: U32) -> U32:
   O.Arena.src(sp_ar(fx), self, n)
@@ -734,7 +726,6 @@ def IDX() -> List<&2, O.Op>: [O.OpsINDEX{}, O.OpsSHRINK{}]
 def uidx_or_casted(+fx: F.Folded, +s: U32) -> Bool:
   alt_of(sp_op_in(fx, s, IDX()), sp_op(fx, s, O.OpsCAST{}), sp_op_in(fx, sp_src0(fx, s), IDX()))
 
-# `UPat(...).or_after()` -- the wrap is `UPat(Ops.AFTER, src=(X,), allow_any_len=True)`.
 def after_or(+fx: F.Folded, +s: U32, +ops: List<&2, O.Op>) -> Bool:
   alt_of(sp_op_in(fx, s, ops), sp_op(fx, s, O.OpsAFTER{}), sp_op_in(fx, sp_src0(fx, s), ops))
 
@@ -762,7 +753,6 @@ def sh_0(+fx: F.Folded, +self: U32) -> O.Verdict:
 def sh_1(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsNOOP{}), O.VTrue{})
 
-# "not a float and not a bool", which is exactly the `else int(val)` arm's reach.
 def c_holds_int(+c: S.Cls) -> Bool:
   Bool.and(Bool.not(S.Cls.is_float(c)), Bool.not(S.Cls.is_bool(c)))
 
@@ -837,8 +827,8 @@ def sh_6.body(+fx: F.Folded, +self: U32) -> Bool:
   sh_6.body.of(sp_mdw(fx, sp_src(fx, self, 0), sp_dt_v(fx, sp_src(fx, self, 1))),
                sp_mdw(fx, sp_src(fx, self, 1), sp_dt_v(fx, sp_src(fx, self, 0))))
 
-# `GroupOp.Comparison` as an op SET: `GroupOp.comparison` is a Bool over one op, so
-# the set is the three members and this is its `any`.
+# `GroupOp.Comparison` as an op SET: `GroupOp.comparison` is a Bool over one op, so the
+# set is the three members and this is its `any`.
 def sh_6.pat.ops(fx: F.Folded, self: U32) -> Bool:
   sp_op_in(fx, self, [O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}])
 
@@ -1165,7 +1155,6 @@ def sh_27.body.go(+t: U32, +v: U32, +fx: F.Folded) -> Bool:
 def sh_27.body(+fx: F.Folded, +self: U32) -> Bool:
   sh_27.body.go(sp_src(fx, self, 0), sp_src(fx, self, 1), fx)
 
-# `None if C else False` -- and `None` is `VSkip`, which lets the rules below run.
 def sh_27.verdict(b: Bool) -> O.Verdict:
   match b:
     case True{}: O.VSkip{}
@@ -1336,7 +1325,6 @@ def shared_table() -> O.PMEntrys:
     O.PMEntry{32, [O.OpsSTORE{}],              Nil{}},   # 133
     O.PMEntry{33, [O.OpsWMMA{}],               Nil{}}]}  # 137
 
-# THE DRIVER, and it is duplicated five more times. See the header for why.
 
 def sh_dispatch.go(tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
   match tag:
@@ -1439,8 +1427,8 @@ def valid_device_range.go(d: DevOpt, srcs: List<&2, U32>, +fx: F.Folded) -> Mayb
 def valid_device_range(d: DevOpt, srcs: List<&2, U32>, +fx: F.Folded) -> Maybe<&1, Bool>:
   valid_device_range.go(d, srcs, fx)
 
-# `ok` is the `isinstance(x.arg, ParamArg)`; the rest are the fields, already
-# reduced to the question each rule asks of them.
+# `ok` is the `isinstance(x.arg, ParamArg)`; the rest are the fields, already reduced
+# to the question each rule asks of them.
 type Pa is Data:
   Pa{ok: Bool, size: Bool, dev: DevOpt, buf: Bool, vrange: Bool}
 
@@ -1793,8 +1781,8 @@ def te_10.body.pick(rop: Maybe<&1, O.Op>, dev: Bool) -> Bool:
 def te_10.body.of(rop: Maybe<&1, O.Op>, dev: Bool) -> Bool:
   te_10.body.pick(rop, dev)
 
-# `AAllred` is `(Ops, str|tuple)` and `AReduce` is `(Ops, int)`, and an ALLREDUCE's
-# arg is the `AAllred`, so its `arg[0]` needs its own reader.
+# `AAllred` is `(Ops, str|tuple)` and `AReduce` is `(Ops, int)`, and an ALLREDUCE's arg
+# is the `AAllred`, so its `arg[0]` needs its own reader.
 def arg_reduce_op_of_allred.go(a: O.Arg) -> Maybe<&1, O.Op>:
   match a:
     case O.AAllred{rop, dev}: Some{rop}
@@ -2113,10 +2101,21 @@ def pr_0.body(+fx: F.Folded, +self: U32) -> Bool:
 #              lambda x: False if x.op is not Ops.CAST and any(s.op is Ops.CONST for s in x.src) else None)
 # A CONST under anything but a CAST is not allowed in a program: every width is
 # stated by the CAST, and a bare CONST is a vconst that survived lowering. BOTH
-# halves are load-bearing: the op set is the CLAIM, and PARAM/BUFFER/ALLOC are the
-# three ops whose src is a size that is meant to be a bare CONST
-# (tinygrad/uop/__init__.py:114, `Defines = {Ops.PARAM, Ops.BUFFER, Ops.ALLOC}`),
-# so claiming them would reject upstream's own legal nodes.
+# halves are load-bearing: the op set is the CLAIM, and the ops whose src is a
+# size that is meant to be a bare CONST would be rejected by claiming them.
+#
+# ⇒⇒⇒ AND **UPSTREAM's **OWN **COMMENT **NAMES **ONLY **THE **THREE** ("a bare CONST only
+# appears under its width CAST or as a PARAM/BUFFER/ALLOC size", `spec.py:207`) **⇒⇒⇒ AND **AND
+# **UPSTREAM's **OWN **SET **HAS **FIVE** (`Defines = {Ops.PARAM, Ops.REFPARAM, Ops.BUFFER,
+# Ops.ALLOC, Ops.BINARY}`, `tinygrad/uop/__init__.py:114`) **⇒⇒⇒ AND **SO **THE **PROSE **AND **THE
+# **SET **DISAGREE **UPSTREAM** -- **⇒⇒⇒ AND **THE **SET **IS **WHAT **THE **CODE **USES**
+# (`GroupOp.defines`, **WHICH **NOW **HAS **THE **FIVE**), **⇒⇒⇒ AND **AND **THE **COMMENT **BELOW
+# **NAMES **THE **THREE **BECAUSE **THOSE **ARE **THE **THREE **WHOSE **SRC **IS **A **SIZE**.
+#
+# ⇒⇒⇒ AND **THE **STALE **QUOTE **THAT **WAS **HERE** ("`Defines = {Ops.PARAM, Ops.BUFFER,
+# Ops.ALLOC}`", **WHICH **IS **NOT **UPSTREAM's **SET **AT **THE **PIN**) **IS **GONE**, **⇒⇒⇒ AND
+# **THE **RULE **IS **THE **TREE's OWN**: **A **QUOTE **THAT **IS **NOT **WHAT **THE **SOURCE
+# **SAYS **IS **A **QUOTE **THAT **A **READER **CANNOT **CHECK**.
 def pr_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_0.claims(fx, self), sp_vd(sp_tri(pr_0.body(fx, self), False{})))
 
@@ -2535,7 +2534,6 @@ def kg_5.holder.pin(is_global: Bool, small: Bool, buf: Bool) -> Bool:
 def kg_5.holder.pick(is_global: Bool, small: Bool, buf: Bool) -> Bool:
   kg_5.holder.pin(is_global, small, buf)
 
-# the ternary again: GLOBAL wants a buffer, LOCAL and REG do not.
 def kg_5.holder(+a: Maybe<&2, S.Addr>, p: Pa) -> Bool:
   kg_5.holder.pick(addr_eq.go(a, S.AGlobal{}), is_reg_or_local.go(a), Pa.buf(p))
 
@@ -2791,7 +2789,6 @@ def kg_verify.go(+ts: O.PMEntrys, +fx: F.Folded, rest: List<&2, U32>, bad: Maybe
 def kg_verify(ts: O.PMEntrys, fx: F.Folded, rest: List<&2, U32>) -> Maybe<&2, U32>:
   kg_verify.go(ts, fx, rest, None{})
 
-# THE SIX ENTRY POINTS Python gets from passing a different `check_spec`.
 def verify_shared(+fx: F.Folded, sink: U32) -> Maybe<&2, U32>:
   sh_verify(shared_table(), fx, O.UOp.toposort(topo_budget(fx), sp_ar(fx), sink))
 
@@ -2810,8 +2807,8 @@ def verify_full(+fx: F.Folded, sink: U32) -> Maybe<&2, U32>:
 def verify_kernel_graph(+fx: F.Folded, sink: U32) -> Maybe<&2, U32>:
   kg_verify(kernel_graph_table(), fx, O.UOp.toposort(topo_budget(fx), sp_ar(fx), sink))
 
-# `ParamArg` for a GLOBAL BUFFER of `int32` with a size and a device. `ops.bend`
-# lays the thirteen fields out in declaration order and this is that order.
+# `ParamArg` for a GLOBAL BUFFER of `int32` with a size and a device. `ops.bend` lays the
+# thirteen fields out in declaration order and this is that order.
 def buf_param() -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
              False{}, None{}, Some{0}, False{}, None{}}

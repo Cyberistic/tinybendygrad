@@ -1,127 +1,107 @@
 # ops.bend -- tinygrad/uop/ops.py.
 #
 # THIS FILE IS THE GATE. .agents/TODO.md: "if the arena does not work here, the
-# 30k-line plan changes and we say so rather than limping along". So the first
-# thing to report is what the arena turned out to be:
+# 30k-line plan changes and we say so rather than limping along". So the first thing to
+# report is what the arena turned out to be:
 #
-#   A UOp is a U32 index into an append-only `List<Node>`, threaded through
-#   every function that touches the graph and returned by every function that
-#   grows it.   -> THE ARENA WORKS. No @unsafe, no stub, both lanes green.
+#   A UOp is a U32 index into an append-only `List<Node>`, threaded through every function
+#   that touches the graph and returned by every function that grows it. -> THE ARENA WORKS.
+#   No @unsafe, no stub, both lanes green.
 #
-# WHY AN INDEX AND NOT A TREE. tinygrad hash-conses UOps in
-# `UOpMetaClass.ucache` and the range graph has back-edges -- a SPECIAL whose
-# end is a symbolic uop, an END whose src[0] is the body it closes over -- so
-# the graph is CYCLIC. `UOp.__eq__` is deliberately identity (it is not
-# overridden: `UOpMetaClass.__call__` hands back the cached object) and tinygrad
-# `test/` leans on that with `assertIs`. Bend's datatypes are inductive trees:
-# they cannot hold a cycle, and Bend's only loop is a structurally decreasing
-# self-call, so a cyclic graph cannot even be WALKED without a worklist. An
-# index into a store can point anywhere, including backwards, and gives O(1)
-# identity for free. That is the one place this representation is better than
-# Python's.
+# WHY AN INDEX AND NOT A TREE. tinygrad hash-conses UOps in `UOpMetaClass.ucache` and the
+# range graph has back-edges -- a SPECIAL whose end is a symbolic uop, an END whose src[0]
+# is the body it closes over -- so the graph is CYCLIC. `UOp.__eq__` is deliberately
+# identity (it is not overridden: `UOpMetaClass.__call__` hands back the cached object) and
+# tinygrad `test/` leans on that with `assertIs`. Bend's datatypes are inductive trees: they
+# cannot hold a cycle, and Bend's only loop is a structurally decreasing self-call, so a
+# cyclic graph cannot even be WALKED without a worklist. An index into a store can point
+# anywhere, including backwards, and gives O(1) identity for free. That is the one place
+# this representation is better than Python's.
 #
 # WHAT THE ARENA COST. This is the list a reviewer should check first.
 #
-#   1. NO GLOBAL STATE. `Array<T>` masks its index (`Array.get` computes
-#      `i & (n-1)`), so `Array.set` cannot grow a table; `Array.fork` and
-#      `Array.atomic.*` are `@unsafe` or unfilled laws. So the store is a
-#      `List`, which is affine and has exactly one owner, and that owner is
-#      threaded as `ar: Arena`, the first parameter of every UOp-taking def.
-#   2. READS ARE O(n) FOLDS. So hash-consing is a linear scan of the arena
-#      rather than a dict lookup, and `self.src[0]` is a fold rather than a
-#      tuple index. Same information as Python's ucache, computed the slow way.
-#      `intern` carries the whole argument.
-#   3. GRAPH WALKS TAKE A FUEL `Nat`. tinygrad's `toposort`, `topovisit`,
-#      `walk_rewrite` and `unified_rewrite` are `while stack:` loops over a
-#      mutable list. Bend has no loop, only a self-call, and a self-call must
-#      pass a subterm of its own parameter: a worklist is not a subterm, and
-#      neither is a U32 read back out of the store. So those four and the
-#      bottom-up fixed point take `fuel: Nat` FIRST and `case 0n:` answers
-#      None -- "past this depth, unknown", never a wrong value.
-#      This is NOT the retracted fuel from
-#      .agents/slop/notes/bend2-constraints.md. That one leaned on a
-#      `case 2n+p:` sibling, which numeric patterns made dead code, so a fold
-#      over it answered None for every operand. This one is a plain
-#      `case 1n+p:` countdown, which is exact.
-#   4. `arg: Any` AND `tag: Any` BECAME DATATYPES. `Any` is what Python spells
-#      when one field holds nineteen unrelated things. `Arg` and `Tag` below
-#      name all nineteen. Nothing is lost and the arms are compiler-checked.
-#   5. THE `recursive_property` MEMO IS DROPPED. Python memoises dtype, shape,
-#      device, _ranges, key, _min_max and the rest on `node.__dict__`, which is
-#      both a cache and a cycle guard: without it a diamond DAG is walked
-#      exponentially often. Reproducing it needs a second store threaded beside
-#      the arena and a pair return on every property read, so all ~20 memoised
-#      properties would stop matching the Python return shape. This port keeps
-#      the shapes and recomputes. The cost is exponential in DAG depth and it
-#      is real; the memo is the first thing to put back if a walk gets slow.
-#      `UOp.dtype` carries the whole argument.
-#   6. `Ops` IS NOT AN IntEnum HERE. Python's is (`FastEnum`), and
-#      `UOp.tuplize` uses the NUMBER where `repr` uses the NAME, so both
-#      `Ops.name` and `Ops.value` are ported. A datatype carries the name and
-#      the declaration order below IS the number, because `__init__.py` says
-#      "the order of these Ops controls the order of the toposort".
-#   7. THE `GroupOp` SETS ARE GENERATED, AND THE `Ops` TABLES ARE NOT, AND
-#      THE DIFFERENCE IS MEASURED. `Ops.name.of`, `Ops.value` and `all_ops` are
-#      DERIVABLE from this file's own `type Op is Data:` block -- the member
-#      list, the name, and the position -- and `gates/opseven-gate.py`'s
-#      `ops_value_is_declaration_order()` already HOLDS all three against it,
-#      in declaration order, with `Ops.value` numbering them `1..N`. A
-#      generator there would be a SECOND instrument for one property.
-#      `GroupOp`'s twelve set-membership functions are NOT derivable: upstream
-#      SPELLS them, as a class of sets over `Ops` members, and the port has to
-#      spell each set as a `match` because Bend has no set literal over a
-#      datatype. So they were a TRANSCRIPTION, and a transcription rots:
-#      MEASURED, the port's `associative` was MISSING `XOR` and `defines` was
-#      MISSING `BINARY` while `uop/spec.bend` still quoted the PRE-RE-VENDOR
-#      `Defines = {Ops.PARAM, Ops.BUFFER, Ops.ALLOC}`. Nothing saw it. They are
-#      now a GENERATED REGION (the marker below names its generator by path),
-#      and upstream's `class GroupOp` is the source, READ BY PATH.
+#   1. NO GLOBAL STATE. `Array<T>` masks its index (`Array.get` computes `i & (n-1)`), so
+#      `Array.set` cannot grow a table; `Array.fork` and `Array.atomic.*` are `@unsafe` or
+#      unfilled laws. So the store is a `List`, which is affine and has exactly one owner,
+#      and that owner is threaded as `ar: Arena`, the first parameter of every UOp-taking
+#      def.
+#   2. READS ARE O(n) FOLDS. So hash-consing is a linear scan of the arena rather than a
+#      dict lookup, and `self.src[0]` is a fold rather than a tuple index.
+#   3. GRAPH WALKS TAKE A FUEL `Nat`. tinygrad's `toposort`, `topovisit`, `walk_rewrite`
+#      and `unified_rewrite` are `while stack:` loops over a mutable list. Bend has no loop,
+#      only a self-call, and a self-call must pass a subterm of its own parameter: a
+#      worklist is not a subterm, and neither is a U32 read back out of the store. So those
+#      four and the bottom-up fixed point take `fuel: Nat` FIRST and `case 0n:` answers None
+#      -- "past this depth, unknown", never a wrong value.
+#      This is NOT the retracted fuel from .agents/slop/notes/bend2-constraints.md. That one
+#      leaned on a `case 2n+p:` sibling, which numeric patterns made dead code, so a fold
+#      over it answered None for every operand. This one is a plain `case 1n+p:` countdown,
+#      which is exact.
+#   4. `arg: Any` AND `tag: Any` BECAME DATATYPES. `Any` is what Python spells when one
+#      field holds nineteen unrelated things. `Arg` and `Tag` below name all nineteen.
+#   5. THE `recursive_property` MEMO IS DROPPED. Python memoises dtype, shape, device,
+#      _ranges, key, _min_max and the rest on `node.__dict__`, which is both a cache and a
+#      cycle guard: without it a diamond DAG is walked exponentially often. Reproducing it
+#      needs a second store threaded beside the arena and a pair return on every property
+#      read, so all ~20 memoised properties would stop matching the Python return shape.
+#      This port keeps the shapes and recomputes. The cost is exponential in DAG depth and
+#      it is real; the memo is the first thing to put back if a walk gets slow.
+#   6. `Ops` IS NOT AN IntEnum HERE. Python's is (`FastEnum`), and `UOp.tuplize` uses the
+#      NUMBER where `repr` uses the NAME, so both `Ops.name` and `Ops.value` are ported. A
+#      datatype carries the name and the declaration order below IS the number, because
+#      `__init__.py` says "the order of these Ops controls the order of the toposort".
+#   7. THE `GroupOp` SETS ARE GENERATED, AND THE `Ops` TABLES ARE NOT, AND THE DIFFERENCE
+#      IS MEASURED. `Ops.name.of`, `Ops.value` and `all_ops` are DERIVABLE from this file's
+#      own `type Op is Data:` block -- the member list, the name, and the position -- and
+#      `gates/opseven-gate.py`'s `ops_value_is_declaration_order()` already HOLDS all three
+#      against it, in declaration order, with `Ops.value` numbering them `1..N`. A generator
+#      there would be a SECOND instrument for one property.
+#      `GroupOp`'s twelve set-membership functions are NOT derivable: upstream SPELLS them,
+#      as a class of sets over `Ops` members, and the port has to spell each set as a `match`
+#      because Bend has no set literal over a datatype. So they were a TRANSCRIPTION, and a
+#      transcription rots: MEASURED, the port's `associative` was MISSING `XOR` and `defines`
+#      was MISSING `BINARY` while `uop/spec.bend` still quoted the PRE-RE-VENDOR
+#      `Defines = {Ops.PARAM, Ops.BUFFER, Ops.ALLOC}`. Nothing saw it. They are now a
+#      GENERATED REGION (the marker below names its generator by path), and upstream's
+#      `class GroupOp` is the source, READ BY PATH.
 #
-# WHERE DEFS WERE REORDERED, and why. Bend has no forward references: a def may
-# only call defs written above it, and mutual recursion is refused outright.
-# Python's order is kept wherever the dependency graph allows. Four moves, each
-# marked where it happens:
-#   * `Ops` and `GroupOp` are at the top. They come from
-#     `tinygrad/uop/__init__.py` and ops.py IMPORTS them, so they have to be
-#     written before the first `match op`. They move to `uop/init.bend` when
-#     that file is ported; they are here because this file is the gate.
-#   * The arena types, `intern` and `dtype_from_uop` come before the UOp
-#     methods, because `dtype_from_uop` reads `src[0].dtype` and the property
-#     reader reads the arena.
-#   * `UPat`, `PatternMatcher`, `RewriteContext` and `graph_rewrite` sit ABOVE
-#     the UOp method block, because `simplify`, `substitute` and
-#     `contiguous_view` all call `graph_rewrite`. In Python they come after and
-#     that is fine there -- they are lambdas and module names resolved at call
-#     time; in Bend a call is resolved at compile time. Their order among
-#     themselves is unchanged.
-#   * `sint_to_uop`, `to_max_shape`, `_substitute`, `_pm_resolve_params` and the
-#     trailing helpers come last, as in Python.
+# WHERE DEFS WERE REORDERED, and why. Bend has no forward references: a def may only call
+# defs written above it, and mutual recursion is refused outright. Python's order is kept
+# wherever the dependency graph allows. Four moves, each marked where it happens:
+#   * `Ops` and `GroupOp` are at the top. They come from `tinygrad/uop/__init__.py` and
+#     ops.py IMPORTS them, so they have to be written before the first `match op`. They move
+#     to `uop/init.bend` when that file is ported; they are here because this file is the
+#     gate.
+#   * The arena types, `intern` and `dtype_from_uop` come before the UOp methods, because
+#     `dtype_from_uop` reads `src[0].dtype` and the property reader reads the arena.
+#   * `UPat`, `PatternMatcher`, `RewriteContext` and `graph_rewrite` sit ABOVE the UOp method
+#     block, because `simplify`, `substitute` and `contiguous_view` all call `graph_rewrite`.
+#     In Python they come after and that is fine there -- they are lambdas and module names
+#     resolved at call time; in Bend a call is resolved at compile time.
+#   * `sint_to_uop`, `to_max_shape`, `_substitute`, `_pm_resolve_params` and the trailing
+#     helpers come last, as in Python.
 #
-# NOT PORTED, one line each, with the reason. The block at the bottom is the
-# same shape helpers.bend and dtype.bend use.
-#
-# `./../dtype.bend` IS NOT IMPORTED, and that is worth a line. The gate says
-# "must reach zero errors", and importing dtype.bend makes that impossible for
-# ANY file: its fp16/bf16/fp8/i64 C effects are foreign code, so the checker
-# prints "14 defs rely on unsafe or foreign code" and exits 1 whatever the
-# importer does. A two-line file that imports dtype.bend and does nothing else
-# prints the same fourteen lines. So this file takes `Dt` from
-# `./LAWS/spec.bend` -- the ONE datatype, which is what dtype.bend itself does --
-# and the two dtype.py functions ops.py needs and dtype.bend has
-# (`least_upper_dtype`, `dt.min`/`dt.max`) are NOT PORTED with the folds that
-# call them. When they land, so does the import, and the notice comes back.
+# `./../dtype.bend` IS NOT IMPORTED, and that is worth a line. The gate says "must reach
+# zero errors", and importing dtype.bend makes that impossible for ANY file: its
+# fp16/bf16/fp8/i64 C effects are foreign code, so the checker prints "14 defs rely on
+# unsafe or foreign code" and exits 1 whatever the importer does. A two-line file that
+# imports dtype.bend and does nothing else prints the same fourteen lines. So this file
+# takes `Dt` from `./LAWS/spec.bend` -- the ONE datatype, which is what dtype.bend itself
+# does -- and the two dtype.py functions ops.py needs and dtype.bend has
+# (`least_upper_dtype`, `dt.min`/`dt.max`) are NOT PORTED with the folds that call them.
+# When they land, so does the import, and the notice comes back.
 #
 # THE REBASE DEPENDENCY LIST -- what `78d482262` needs from the OTHER files.
 #
-# `78d482262` ("range AxisType is first / delete REDUCE/UNROLL") is 53 files and
-# it is the pin's hard blocker: `tinygrad/codegen/opt/postrange.py` at the pin
-# imports `axis_to_pos`, so re-vendoring upstream without re-porting the AxisType
-# consumers fails at import. This file was the first candidate and it turned out
-# to be a CROSS-FILE change, so here is the list an agent can sequence. Every
-# line was read out of that commit's tree, not guessed from the diff.
+# `78d482262` ("range AxisType is first / delete REDUCE/UNROLL") is 53 files and it is the
+# pin's hard blocker: `tinygrad/codegen/opt/postrange.py` at the pin imports `axis_to_pos`,
+# so re-vendoring upstream without re-porting the AxisType consumers fails at import. This
+# file was the first candidate and it turned out to be a CROSS-FILE change, so here is the
+# list an agent can sequence. Every line was read out of that commit's tree, not guessed
+# from the diff.
 #
-# 16 of the 53 are under `tinygrad/`; one is this one. Of the other 15, ELEVEN read
-# a symbol `78d482262` changed:
+# 16 of the 53 are under `tinygrad/`; one is this one. Of the other 15, ELEVEN read a symbol
+# `78d482262` changed:
 #
 #   #  file                     needs from ops.py                        lines
 #   1  codegen/__init__.py      axis_type, axis_id, `arg=(at, id, ...)`  45,162,166,170,184,190
@@ -140,91 +120,68 @@
 #  14  nn/__init__.py           AxisType.WEAK                           340
 #  15  llm/kernels/amd.py       contiguous_view                         82
 #
-# `tinygrad/uop/__init__.py` (`Ops`, `GroupOp`) is NOT among the 53 at all, so
-# this file's other import surface is unmoved and nothing here waits on that half
-# of the commit. The remaining 37 files in the 53 are `test/`, `extra/`,
-# `docs/`, `spec/` and `llm/` kernels, which are out of scope for the port.
+# `tinygrad/uop/__init__.py` (`Ops`, `GroupOp`) is NOT among the 53 at all, so this file's
+# other import surface is unmoved and nothing here waits on that half of the commit. The
+# remaining 37 files in the 53 are `test/`, `extra/`, `docs/`, `spec/` and `llm/` kernels,
+# which are out of scope for the port.
 #
 # three things the list says that a diff would not.
 #
 #   * `uop/spec.py`'s RANGE-arg predicate MOVED with the flip. Pin:
 #     `all(isinstance(ra, int) for ra in rng.arg[0:-1]) and isinstance(rng.arg[-1], AxisType)`.
 #     Upstream: `isinstance(rng.arg[0], AxisType) and all(isinstance(ra, int) for ra in rng.arg[1:])`.
-#     MEASURED: the pin REJECTS the three-element arg and upstream ACCEPTS it.
-#     `spec.py` is P3 here, so this is a row the CPython lane prints and the port
-#     cannot -- `rngspec_*`, bend-only, reason in the oracle.
+#     MEASURED: the pin REJECTS the three-element arg and upstream ACCEPTS it. `spec.py` is
+#     P3 here, so this is a row the CPython lane prints and the port cannot -- `rngspec_*`,
+#     bend-only, reason in the oracle.
 #   * `codegen/__init__.py:190` writes
-#     `rr.replace(arg=(rr.axis_type, next_axis + j, *rr.axis_id[1:]))`. The SPLAT is
-#     the load-bearing part: it only concatenates if `axis_id` is a TUPLE OF INTS,
-#     i.e. the flat `(AxisType, int, ...)` arg. So `UOp.axis_id`'s RETURN TYPE is
-#     forced by a file six levels away, and a port that returned the axis type with
-#     the ids would break there. That is why the accessors above return two things.
-#   * `runtime/support/hcq2.py:68,87` is `UOp.custom_function(name).call(...)` with
-#     and without `dtype=`. Upstream that is `UOp(Ops.CUSTOM_FUNCTION, src=srcs,
-#     arg=CustomFunction(name, dtype))`, and `CallInfo` LOST its `dtype` field
-#     because the return dtype moved into the CUSTOM_FUNCTION's arg. The rebase
-#     therefore also needs a `CustomFunction` datatype here and `CallInfo` re-cut.
-#     HALF DONE 2026-10-03: the `CustomFunction` datatype landed, at ops.py's own
-#     position, with `Arg`'s `ACustom` arm, `eq_customfunction` and
-#     `UOp.custom_function` -- none of which needed the P6 hcq2 caller, since
-#     `uop/spec.py:110`'s `isinstance(x.arg, CustomFunction)` needs the TYPE and
-#     `uop/spec.bend`'s `sh_22` is stale without it. `CallInfo` re-cut is STILL
-#     OPEN and is NOT a field delete: `spec.bend`'s `sh_23` reads `CallInfo.dtype`.
-#     Both are in the NOT PORTED block at the foot of this file.
+#     `rr.replace(arg=(rr.axis_type, next_axis + j, *rr.axis_id[1:]))`. The SPLAT is the
+#     load-bearing part: it only concatenates if `axis_id` is a TUPLE OF INTS, i.e. the flat
+#     `(AxisType, int, ...)` arg. So `UOp.axis_id`'s RETURN TYPE is forced by a file six
+#     levels away, and a port that returned the axis type with the ids would break there.
+#   * `runtime/support/hcq2.py:68,87` is `UOp.custom_function(name).call(...)` with and
+#     without `dtype=`. Upstream that is `UOp(Ops.CUSTOM_FUNCTION, src=srcs,
+#     arg=CustomFunction(name, dtype))`, and `CallInfo` LOST its `dtype` field because the
+#     return dtype moved into the CUSTOM_FUNCTION's arg. The rebase therefore also needs a
+#     `CustomFunction` datatype here and `CallInfo` re-cut. HALF DONE 2026-10-03: the
+#     `CustomFunction` datatype landed, at ops.py's own position, with `Arg`'s `ACustom` arm,
+#     `eq_customfunction` and `UOp.custom_function`. `CallInfo` re-cut is STILL OPEN and is
+#     NOT a field delete: `spec.bend`'s `sh_23` reads `CallInfo.dtype`.
 #
-# THE REVERSE LIST -- who needs THIS file -- is the one that is not obvious, and
-# it is the one that makes this a two-file change at minimum. `ARange`'s FIELD
-# ORDER is read and written positionally by ELEVEN committed `.bend` files, listed
-# at `UOp.range_end` below, and `AXIS_REDUCE`/`AXIS_UNROLL` are still constructed
-# by SIX. Neither can move inside this file alone.
+# THE REVERSE LIST -- who needs THIS file -- is the one that is not obvious, and it is the
+# one that makes this a two-file change at minimum. `ARange`'s FIELD ORDER is read and
+# written positionally by ELEVEN committed `.bend` files, listed at `UOp.range_end` below,
+# and `AXIS_REDUCE`/`AXIS_UNROLL` are still constructed by SIX. Neither can move inside this
+# file alone.
 
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./../renderer/estimates.bend as E
 type Op is Data:
-  #  1 -- defines/special 
-  # this is a RANGE for GPU dimensions, similar to symbolic shapes but not exactly
   OpsSPECIAL{}
-  # BUFFER references bound storage; ALLOC declares unbound global storage
   OpsBUFFER{}
   OpsALLOC{}
-  #  2 -- non op uops 
-  # uops that aren't rendered
   OpsNOOP{}
   OpsREWRITE_ERROR{}
-  # CALL is a kernel invocation; value-producing calls write to ALLOC arguments
   OpsPARAM{}
   # REFERENCE A PARAM -- upstream `codegen/__init__.py:426` builds one when a param's addrspace is not ALU,
   # and every generic predicate that lists PARAM lists it too (`uop/__init__.py:114`'s `Defines`,
   # `ops.py:169`, `ops.py:350`, `ops.py:873`, `render.py:40`).
   OpsREFPARAM{}
   OpsCALL{}
-  # renderer
-  # LINEAR is a list of UOps, SOURCE has a str arg that's human readable, BINARY has bytes arg that's compiled
   OpsPROGRAM{}
   OpsLINEAR{}
   OpsSOURCE{}
   OpsBINARY{}
-  # AFTER passes src[0] through and promises in the toposort that any consumers of the AFTER run after src[1:]
-  # GROUP is a NOOP that just merges things together
   OpsSINK{}
   OpsAFTER{}
-  # vector creation / item selection
   OpsSTACK{}
-  # hcq specific
   OpsGETADDR{}
-  #  3 -- load/store 
-  # INDEX is a BinaryOp similar to ADD, but it operates on pointers
   OpsINDEX{}
   OpsSHRINK{}
-  # load/store before math
   OpsLOAD{}
   OpsSTORE{}
-  #  4 -- math 
-  # tensor core math op, not elementwise
   OpsWMMA{}
-  # UnaryOps
   OpsCAST{}
   OpsBITCAST{}
   OpsEXP2{}
@@ -234,7 +191,6 @@ type Op is Data:
   OpsRECIP{}
   OpsNEG{}
   OpsTRUNC{}
-  # BinaryOps
   OpsADD{}
   OpsMUL{}
   OpsSHL{}
@@ -254,47 +210,33 @@ type Op is Data:
   OpsPOW{}
   OpsDIV{}
   OpsMOD{}
-  # TernaryOps
   OpsWHERE{}
   OpsMULACC{}
-  #  5 -- control flow / consts / custom 
-  # control flow ops
   OpsBARRIER{}
   OpsRANGE{}
   OpsIF{}
   OpsEND{}
   OpsENDIF{}
-  # (body, unbounded RANGE, condition): repeat while condition is true
   OpsBACKEDGE{}
-  # const.
   OpsCONST{}
-  # CUSTOM/CUSTOMI are used to output strings into codegen. the I makes the string inline
   OpsCUSTOM{}
   OpsCUSTOMI{}
-  # INS is a machine instruction
   OpsINS{}
-  #  6 -- ops that don't exist in programs 
-  # ops that adjust the behavior of the scheduler
   OpsCONTIGUOUS_BACKWARD{}
   OpsDETACH{}
-  # buffer ops
   OpsSTAGE{}
   OpsCOPY{}
   OpsMSELECT{}
   OpsMSTACK{}
   OpsCUSTOM_FUNCTION{}
-  # the core 6 movement ops! these only exist in the tensor graph
   OpsRESHAPE{}
   OpsPERMUTE{}
   OpsEXPAND{}
   OpsPAD{}
-  # UNSHARD is really a movement op
   OpsUNSHARD{}
   # reduce
   OpsREDUCE{}
   OpsALLREDUCE{}
-  #  7 -- pattern compiler IR (used in upat.py) 
-  # PYLITERAL carries a Python literal as an arg for CUSTOM predicates
   OpsPYLITERAL{}
 
 # FastEnum.__str__ and FastEnum.__repr__ are both `str(self)`, so one table --
@@ -611,7 +553,6 @@ def GroupOp.elementwise(op: Op) -> Bool:
     case OpsBITCAST{}: True{}
     case _: GroupOp.alu(op)
 
-# ==== END GENERATED GroupOp SETS
 
 # AxisType -- tinygrad/uop/ops.py:17
 #
@@ -910,12 +851,9 @@ type ParamArg is Data:
     addrspace: S.Addr,
     device: Maybe<&2, S.Dev>,
     volatile: Bool,
-    # (h, w) if this is an image2d buffer, then size == h*w*4
     image: Maybe<&2, Img>,
-    # the device Buffer for a realized BUFFER. the UOp is the owner of the Buffer: they live and die together (1:1)
     buffer: Maybe<&2, U32>,
     bind_on_realize: Bool,
-    # the bound value of a Variable (an ALU PARAM with a value range); None means unbound
     val: Maybe<&2, Const>}
 
 # Tag is `Any` too, and a much smaller one: ops.py reads it in `rtag` (True, a
@@ -1035,7 +973,6 @@ type KernelInfo is Data:
     estimates: Maybe<&2, E.Estimates>, beam: U32, optimized: Bool}
 
 def KernelInfo.of() -> KernelInfo:
-  # name: str = "test"            # name of the kernel
   KernelInfo{"test", Nil{}, None{}, None{}, 0, False{}}
 
 # `Target` -- tinygrad/helpers.py:198. `device, renderer, arch, interface, indices`,
@@ -1291,26 +1228,7 @@ type Arg is Data:
 def CallInfo.of() -> CallInfo:
   CallInfo{None{}, False{}, False{}, S.void()}
 
-# `CallInfo.__repr__` (ops.py:1401) is at the end of the equality block, because it
-# compares against `S.void()` and `eq_dt` is what does the comparing.
-# THE ARENA.
-#
-# `Node` is `UOp`'s four fields and adds nothing: `op`, `src`, `arg`, `tag`. The
-# arena IS the ucache and the node table at once, because in Bend they are the
-# same thing -- a UOp is an index into a list of nodes, and a hash-cons hit is
-# "a node with this key is already in the list".
-#
-# INDEX 0 IS RESERVED. `Arena.empty` starts with one node in it, the bottom, so
-# every U32 is a valid index and 0 is this port's spelling of both Python's
-# `None` UOp and the IndexError that `self.src[0]` on an empty src raises.
-# `UOp.is_none` is the test, and it is the only place a UOp index is compared
-# against a constant.
-#
-# The `Metadata` side table (`all_metadata`, ops.py:215) is NOT a second store.
-# Python keeps it in a `WeakKeyDictionary` beside the arena so that replacing a
-# UOp drops its metadata; the arena is monotone and has no weakrefs, so metadata
-# is a field of the node and `UOp.replace` does not carry it over, which is the
-# behaviour Python gets from the weakref dying.
+# THE TABLE IS IN `.agents/slop/tables/uop-ops-1294.md` -- `CallInfo.__repr__` (ops.py:1401) is at the end of the equality block, because it
 
 type Node is Data:
   Node{op: Op, src: List<&2, U32>, arg: Arg, tag: Tag}
@@ -4186,24 +4104,7 @@ def pm_scan(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, acc:
 def pm_rewrite(+ts: PMEntrys, ar: Arena, self: U32) -> Verdict:
   pm_scan(ts, ar, self, PMEntrys.es(ts), VSkip{})
 
-# THE ENGINE FAMILY (`_m`). PARALLEL to the `pm_rewrite` family above; this
-# one returns the REPLACEMENT NODE, not just the verdict. `pm_rewrite` is the
-# scan and decides which rule WANTS the node; `pm_rewrite_m` is the scan and
-# the rule body's answer, which is the new U32 (or `None{}` to mean "no
-# rewrite, rebuild with rewritten srcs").
-#
-# WHY A PARALLEL FAMILY. `uop/spec.bend` is the only consumer of `pm_rewrite`
-# and reads the Verdict. The codegen rewrite engine is a NEW consumer and
-# reads `Maybe<&2, U32>`. The two families co-exist until spec.bend moves
-# off Verdict (it won't, in this unit). Each rule's `_m` body takes
-# `(ctx: CTX, ar: Arena, self: U32)` and returns `Maybe<&2, U32>`.
-# `ctx` is a `List<&2, U32>` here, which is the wall-passing shape from
-# `walk_rewrite`; the engine threads it through the dispatch so the rule body
-# can read it. The codegen pipeline eventually passes a typed `CTX` record
-# and the `List<&2, U32>` becomes the new record's first projection.
-# the rule bodies. The default for every rule is "no rewrite" (`None{}`).
-# The no-op `pm_rewrite_m` body for a SINK is `Some(self)` so the engine
-# does not have to special-case SINK in the rebuild step.
+# THE TABLE IS IN `.agents/slop/tables/uop-ops-4189.md` -- THE ENGINE FAMILY (`_m`). PARALLEL to the `pm_rewrite` family above; this
 
 type Aa is Data:
   Aa{b: U32, v: U32}
@@ -5122,482 +5023,7 @@ def gate_kernel_sink.of(op: Op, +arg: Arg) -> Bool:
 def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
   gate_kernel_sink.of(Arena.op(ar, x), Arena.arg(ar, x))
 
-# THE INVENTORY: every ops.py def that is NOT yet a Bend def, with the reason.
-#
-# THESE ARE NOT DEFS, ON PURPOSE. A def whose body answers a placeholder would be
-# a stub, and the brief for this file rules stubs out: a stub hides the wall, and
-# the wall is the thing this unit exists to find. So each entry is the Python
-# name, its line, and the constraint that stops it being written today.
-# `rg "TODO(p3)" tinybendygrad/uop/ops.bend` is the work queue and the line
-# numbers are the Python's, so the queue diffs against ops.py line for line.
-#
-# THE TWO CONSTRAINTS, and both are Bend rules rather than choices.
-#
-#   A. A self-call must pass a FIELD of its own parameter. The arena's "field" is
-#      a U32 read back out of a store, which the checker cannot see as a subterm.
-#      Measured: `def f(u: U32): case _: f(U32.sub(u, 1))` is refused with
-#      "expected : a decreasing self-call". So every property fold over the graph
-#      -- dtype, _shape, device, addrspace, _ranges, _min_max, key, axis, marg,
-#      ended_ranges, bool_slice, backward_slice, trace_num, tuplize, vmin, vmax --
-#      has no legal recursion as written. `toposort` above DOES work, because its
-#      recursion is on a WORKLIST: a list tail of its own parameter, with the node
-#      being visited as a payload. The property folds have no such payload.
-#
-#   B. Mutual recursion is refused, and tinygrad's folds are a cycle.
-#      `dtype_from_uop` reads `src[0]._shape` (the INDEX arm's image test) and
-#      `_shape` reads `src[0].dtype` (the BITCAST arm's itemsize ratio); and
-#      `simplify()` calls `graph_rewrite`, whose rules call `dtype` and `shape`.
-#      Python breaks that cycle with `recursive_property`'s memo on
-#      `node.__dict__`, which this port does not have -- see the header, point 5.
-#
-# so the folds do not fit in one BEND module as the python is written. The fix is
-# known and it is not a hack: fold dtype and shape together into ONE def that
-# answers the pair, drive it with a Kahn worklist (the shape `toposort` above
-# already has), and keep `graph_rewrite` out of that module, because nothing in
-# the rewrite engine may call back into the fold. That is a P3 design decision
-# and it is written down in spec/ops.md.
-# ops.py:1-500. WHERE EACH NAME ACTUALLY LIVES NOW.
-#
-# lies: the def was already written, in ANOTHER file, and the queue was the only
-# thing that did not know it. `rg "TODO(p3)"` is the work queue, so a stale entry
-# is not a note -- it is work that gets done twice, or a name the next agent
-# re-derives from scratch. So every ops.py line in [1, 500] is now in exactly one
-# of three buckets, and the two that are PORTED have no queue line at all:
-#
-#   PORTED HERE         a real def in this file, with its rows.
-#   PORTED ELSEWHERE    a real def in the named file, with its rows. The queue
-#                       entry is DELETED, not deferred: the wall is not this
-#                       file's to clear, and writing it here would be a second
-#                       implementation of a thing that already has one.
-#   STILL A WALL        a Bend rule no arrangement in THIS file beats. Kept in
-#                       the queue WITH the rule, so the next agent does not spend
-#                       an hour rediscovering it.
-# PORTED HERE, 2026-10-03. Four defs, above `pm_r_sink`:
-#     bsl.go, UOp.backward_slice (ops.py:280), UOp.backward_slice_with_self (:286)
-#     op_in_bsl.go, UOp.op_in_backward_slice_with_self (:289)
-# They are BELOW the toposort they are written in terms of, and Python has them
-# above it, because Bend has no forward references. Gated by `bsl_<tag>` and
-# `bsws_<tag>` over four fixtures plus six `bsop_<tag>_*` Booleans: 14 rows, three
-# lanes, byte-identical. The `call` and `nest` fixtures are the ones that carry
-# `enter_calls=False`; `bsl_chain` would agree with a plain `toposort`.
-# PORTED ELSEWHERE -- `uop/render.bend`, which IMPORTS this file, so nothing here
-# can call it and nothing here should re-implement it.
-#     ops.py:18  AxisType.__repr__   -> axis_repr        (render.bend:550)
-#     ops.py:41  ParamArg.__repr__   -> paramarg_repr    (render.bend:501)
-#     ops.py:269 UOp.__repr__        -> pretty_print, render.bend's `pyrender`
-# The first two are reached by `arg_repr`'s `ARange` and `AParam` arms, which is
-# where the mutation table's `arg_repr ARng` / `arg_repr AParam` labels point; the
-# third IS `UOp.__repr__`'s whole body (`return pretty_print(self)`) and it carries
-# 25 CPython-compared rows of its own. `repr` is a rendering concern, so
-# render.bend is where it belongs.
-# PORTED ELSEWHERE -- `uop/fold.bend`, the Kahn worklist the block above this one
-# describes, and the reason the entries below are walls and not chores.
-#     ops.py:329 UOp._shape        -> fold.shape.of / dt_shape  (fold.bend:882)
-#     ops.py:456 UOp.shape         -> UOp.shape                (fold.bend:3994)
-#     ops.py:470 UOp.ended_ranges  -> UOp.ended_ranges         (fold.bend:3969)
-# `UOp.dtype` came with them, and `dtype` is what every remaining entry below reads.
-# STILL A WALL. Each names the rule, and each is ALSO in the NOT PORTED block at
-# the foot of this file, where the reason is longer.
-# TODO(p3) ops.py:76  def srender
-#   `x.render()` is render.bend's and `str(x)` is its `const_repr`. Both live in
-#   the file that imports this one, so the two-arm dispatch cannot be written here.
-# TODO(p3) ops.py:1169  def sym_infer
-#   `exec` in `_sym_fxn` builds Python source from the graph and runs it in a
-#   namespace of `max/cdiv/cmod/floordiv/floormod/bitcast/dtypes`. Bend has no
-#   `eval`, so this needs a C effect that compiles a lambda or a tree-walking
-#   interpreter. P3/P6.
-# WALL(p3) ops.py:212  def __init__ -- BLOCKED. STORE A FUNCTION IN A DATA FIELD -- `recursive_property.__init__` keeps `self.fxn`. The
-#   port's own note at the `t_*` block says a function value in a FIELD forces `Type`, not
-#   `Data`, MEASURED. (A function as a PARAMETER is fine -- `bend guide:69` says functions may
-#   be stored, passed and returned, and `Maybe.map` already takes one.)
-# TODO(p3) ops.py:216  def __get__
-#   `recursive_property` stores a FUNCTION in a record field (`self.fxn = fxn`),
-#   and a function value in a field forces `Type`, not `Data` -- measured, and the
-#   reason the rule tables in this file are linear. The `__get__` half is the memo
-#   the header's point 5 drops, and its GATE is `self.nm not in node.__dict__`:
-#   a memo-less port cannot answer that, because the predicate is vacuously true
-#   for every node and the "gate" would visit the whole slice unconditionally.
-# WALL(p3) ops.py:240  def __del__ -- BLOCKED. NO GARBAGE COLLECTOR TO CALL IT. `bend guide:646` -- "values are affine, a `match` frees
-#   the node it opens" -- so there is no `__del__` hook and nothing for it to remove itself
-#   from. The `ucache` it deletes from is Python's, and this port's interner is
-#   `intern.find`'s direct comparison, not a table a node has to leave.
-#   Refcount-driven eviction from `ucache`. The arena is monotone, so nothing is
-#   ever evicted and there is nothing to port.
-# WALL(p3) ops.py:244  def __reduce__ -- BLOCKED. THE PICKLE PROTOCOL. `return UOp, (op, src, arg, tag, metadata)` is a `__reduce__`: an
-#   instruction to Python's `pickle`. Nothing in the port serialises a live UOp, so there is
-#   no protocol to implement.
-#   Pickling. A `U32` index and an `Arena` are not picklable objects, and this
-#   file has no process boundary to pickle across.
-# TODO(p3) ops.py:261  def key
-#   `hashlib.sha256` over `str((op, dtype, arg))` and the srcs' keys concatenated.
-#   Two walls: the digest is a C effect (`tinygrad/runtime/`'s), and the string
-#   half reads `dtype`, which is `fold.bend`'s -- so neither half is writable here.
-# wall(p3) ops.py:284  def _bool_slice -- blocked. needs `fold`'s walk and a dtype predicate, so it lives downstream of this file like
-#   `_eval`, `param_noshape` and `wk_is_virtual` do -- `dt_is_bool` is in `mixin/dtype.bend`
-#   and this file cannot import it (`ops.bend:87`). Its only consumer is a marker of its own:
-#   `uop/symbolic.bend:3045 symbol=fx_ne0` records that `fold_where_closure` needs `bool_slice` AND
-#   `substitute`, so porting this alone closes nothing downstream. THE INTERNING DOES MAKE
-#   IT CHEAPER THAN CPYTHON'S: two structurally equal nodes share an arena index, so the
-#   `frozenset[UOp]` is a deduped index list and needs no hash.
-# TODO(p3) ops.py:287  def bool_slice
-#   A `recursive_property` over the srcs, gated on `self.dtype is dtypes.bool`.
-#   `dtype` is `fold.bend`'s, so both halves belong to the worklist beside it; and
-#   `bool_slice`'s `| {self}` is a self-reference the fold has to add OUTSIDE its
-#   own memo, which is what Python's comment above the property says.
-# wall(p3) ops.py:316  def tuplize -- blocked. the mechanism is replaced, not missing. `tuplize` builds `(op.value, repr(arg), dtype, *(src
-#   tuplize))` to KEY CPython's `ucache`; this port's interner is `intern.find`, a direct
-#   comparison over `Arena.nodes`, so there is no hash table for a key to serve. Its two
-#   consumers are outside ops.py anyway -- `codegen/late/linearizer.py:36` (a sort) and
-#   `uop/symbolic.py:225` (a rewrite rule) -- and neither is ported.
-#   `_UOpTuple((op.value, repr(arg), self.dtype) plus every src's tuplize)`:
-#   `dtype` again, plus a `recursive_property` over the srcs, plus the sort it
-#   feeds. `repr(arg)` is render.bend's `arg_repr`, so this is three files deep.
-# TODO(p3) ops.py:444  def shard_shape
-# TODO(p3) ops.py:450  def max_shard_shape
-#   `shard_shape` reads `self.device` (fold), `self.axis` (fold) and `self.shape`
-#   (fold), and `max_shard_shape` is `to_max_shape(shard_shape)`, a fold over a
-#   `Sint` list. Every input is the worklist's, so these are fold.bend's rows;
-#   `schedule/multi.bend` is the caller and it inlines what it can today.
-# PORTED -- `ops.py:481 _ranges` and `ops.py:495 ranges` are `fold.bend`'s
-# `Ranged` / `UOp.ranges` (fold.bend:5067 symbol=UOp.ranges), 12 `rg_*` rows byte-identical to
-# CPython. The reason these two carried for a month -- "Dict set algebra over the
-# with a membership test, and `ended_ranges` is ported too (uop/fold.bend:2837 symbol=ended_of).
-# TODO(p3) ops.py:479  def ranges
-#   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
-#   ones the ended ranges close. The wall is named where it is HIT --
-#   `schedule/rangeify.bend:204 symbol=rf_in_ranges`, whose `rf_in_ranges` is the standing stub.
-# TODO(p3) ops.py:495  def simplify
-#   # * uop evaluation *
-# DONE(p3) ops.py:92 def ssimplify -- `ssimplify_of` and `UOp.ssimplify_val` /
-#   `UOp.ssimplify_is_val`, with `cval_arg` (written for `pop_const`) as the value reader. Gated at
-#   `gates/ops-core-gate.py` in SIX rows over THREE fixtures, and the third fixture is the one
-#   that makes the other two mean something: a CAST of a PARAM satisfies neither of CPython's
-#   conditions, so CPython hands the NODE back -- a THIRD answer, neither a value nor an absence.
-#
-#   IT DOES NOT NEED `simplify`, which is the finding rather than a convenience. `simplify` is a
-#   documented wall in this file (`ops.py:511`, "* uop evaluation *") and 3,679 lines of
-#   partial symbolic work sit behind it, so anything that truly required a rewriter would be
-#   stuck on the largest subsystem here. But a CONST is already reduced, so `simplify` is the
-#   IDENTITY on it, and the CAST arm's test is a SHAPE test on the node rather than a rewrite.
-#   What is left out is `ret.dtype.const(...)` -- the dtype round trip -- and `wk_dt` already
-#   answers a node's dtype, so the value half is the whole of the discriminating claim.
-#   Planted: a reader that answers `none` for everything fails `ss_const_val` and
-#   `ss_cast_const_val` and nothing else.
-# done(p3) ops.py:521 def _eval -- and it was misfiled here, which is the finding. `_eval` needs
-#   the node's dtype AND its two bounds, and this file imports only `Base`, `helpers` and
-#   `LAWS/spec`, while `UOp.vmin`/`vmax` are in `fold.bend` and the node-level dtype reader is in
-#   `weak.bend` -- and BOTH of those import `ops.bend`. So the def sits DOWNSTREAM of the file
-#   that wanted it: an import edge, not a language limit, and the same relocation
-#   `wk_commit_dtype` already got. It is now `wk_eval_int` / `wk_eval_float` / `wk_eval_bool` in
-#   `weak.bend`, gated at `gates/wk-eval-gate.py`: 16 rows, 3 lanes, 15 identical to CPython and
-#   ONE documented divergence.
-# TODO(p3) ops.py:511  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
-#   `bool_on_i32`).
-# TODO(p3) ops.py:512  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
-#   `int_on_range`).
-# TODO(p3) ops.py:513  def __float__  -- DONE, same gate (`float_weakfloat`,
-#   `float_on_i32`).
-# TODO(p3) ops.py:514  def substitute
-# TODO(p3) ops.py:521  def __index__
-#   # NOTE: this is not called by Tensor slice (Tensor handles UOps directly), but satisfies SupportsIndex for type checking
-# TODO(p3) ops.py:526  def trace_num
-# WALL(p3) ops.py:563  def __getitem__ -- BLOCKED. PYTHON'S SLICE PROTOCOL. The body calls `super(UOp, self).__getitem__(idx)`,
-#   `argfix`, `_normalize_indices`, `slice` objects and `self.shape[i]`. A slice is a Python
-#   runtime object with `start`/`stop`, and Bend has no slicing syntax to normalise.
-# done(p3) ops.py:597 def _uop -- and the honest answer is that there is nothing to
-#   WRITE. CPython's is `def _uop(self) -> UOp: return self`, which is the IDENTITY, and
-#   it is the identity because `Tensor` SUBCLASSES `UOp`. This port's
-#   `type Tensor is Data: Tensor{ar, uop, is_param, grad}` (`tensor.bend:186`) is a RECORD
-#   WRAPPING a U32 index, so it is not a UOp -- and the port's node reference is already a
-#   `Found`, which IS the UOp reference. There is no unwrap on this side to perform.
-#   the tensor side of the same name is ported and gated elsewhere: `tensor.bend:192-195`
-#   names `Tensor.u` as `_uop -- tensor.py:118` and every graph-building method there
-#   reads that field in place of `self.uop`. So the NAME is done, from the side that has
-#   something to do.
-# done(p3) ops.py:599 def _wrap_uop -- same reason, and it is the stronger one.
-#   CPython's is `@classmethod def _wrap_uop(cls, u: UOp) -> UOp: return u`, so it returns
-#   its argument UNCHANGED. It exists at all because `Tensor` subclasses `UOp`: without the
-#   subclassing, a `UOp` passed where a `Tensor` is expected would not be one, and this
-#   would have to convert rather than hand back. The port has no such gap -- `Tensor` is a
-#   record wrapping a `U32` and a `Found` is a `U32` plus an arena -- so there is no
-#   coercion to bridge and no def to write. a marker that asks for a function which is
-#   CORRECTLY ABSENT IS A WALL, NOT A GAP, and the reason it was a marker at all is that
-#   nobody had written down WHICH kind it was.
-# TODO(p3) ops.py:581  def const_like
-# TODO(p3) ops.py:587  def ufix
-# TODO(p3) ops.py:594  def store
-# TODO(p3) ops.py:603  def ins
-# TODO(p3) ops.py:604  def contract
-#   # cast, except for CONST, in which case rebuild a new CONST at the dtype
-# TODO(p3) ops.py:621  def cconst
-#   ops.py:610 -- a FORCED CAST is needed for bool because the ordinary cast
-#   folds at bool, so `UOp.const` cannot state that width.
-# TODO(p3) ops.py:630  def wmma
-#   ops.py:622 -- the input dtype lives in the arg, not in `src[0].dtype`,
-#   because a BITCAST rewrite changes the src dtype.
-# PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop`, which is
-# `tensor.bend:1822` symbol=tn_rop.
-# TODO(p3) ops.py:644  def invalid
-# DONE(p3) ops.py:664 def valid -- `UOp.where` and `UOp.valid_of` above, gated at
-#   `gates/ops-core-gate.py` in FOUR rows. `where` is `mixin/elementwise.py:426`'s
-#   `self.alu(Ops.WHERE, x, y)`, i.e. `UOp(Ops.WHERE, src=(cond, x, y))`, and it is the constructor
-#   `UOp.valid_of` is one line on top of.
-#
-#   defs, could not read their own src fields back, and reverted them as "an unverifiable
-#   constructor". The truth is the arena rule this project already records: each `UOp.const` grows
-#   the arena and answers a node in the GROWN one, so reading an index against the original `ar0`
-#   finds a different node -- I read `ANone{}` out of three srcs that were there all along. MEASURED
-#   with a probe: threaded wrongly, all three read `ANone{}`; threaded right,
-#   `cbool:True|cbool:True|cinvalid`.
-#
-#   so the rule for this whole file is narrower than i wrote it last time. Three defs moved
-#   downstream because `ops.bend` cannot name `fold.bend`'s bounds or import `dtype.bend`. THIS one
-#   needed neither: it was a bug in the CALLER's arena discipline, and the def was always writable
-#   here. "Cannot read it back" is not evidence that it cannot be written.
-#   PLANTED: swapping the two trailing srcs fails `valid_src1` and `valid_src2` together.
-# TODO(p3) ops.py:646  def get_idx
-# TODO(p3) ops.py:652  def reduce
-# TODO(p3) ops.py:661  def overflows
-#   `def overflows(self, dtype: DType) -> bool: return self.vmin < dtype.min or
-#   dtype.max < self.vmax`. Two comparisons and no minting, which is why it looks
-#   like the cheapest def on this list. It is not, and the reason is a QUESTION
-#   rather than a wall:
-#
-#   CPython's `vmin`/`vmax` are concrete ints. This port's are
-#   `Maybe<&2, Bnd>` (`uop/fold.bend`:4498), and `Bnd` is
-#   `Bnd{inf} | BndInt{neg, mag} | BndFlt{v}` -- an INTEGER OR A FLOAT OR AN
-#   INFINITY, symbolically. So `vmin < dtype.min` is not one comparison, it is a
-#   comparison over that union, and the honest answer to "is `vmin` below the dtype
-#   minimum" when `vmin` is SYMBOLIC is neither True nor False: it may be undecidable
-#   until the range table resolves it.
-#
-#   `Bool` has no third value, and defaulting unknown to False makes the port assert
-#   a range is SAFE when it has not been shown to be. That is the one failure mode a
-#   dtype fold must not have, and it is why this is not ported as a one-liner with
-#   `Bool.or(lt(...), lt(...))`.
-#
-#   The shape it needs: a THREE-valued predicate over `Bnd` (below / provably not
-#   below / unresolved), and a decision about what the two-valued public answer does
-#   with the third -- almost certainly "not overflowing is a MAYBE, and every caller
-#   that needs certainty has to say so".
-#
-#   `bnd.lt` DOES exist -- `fold.bend:3266`, with `bnd.eq` at `:3317` -- and an
-#   narrower and stranger than "add an ordering": `bnd.lt` is a TWO-valued TOTAL
-#   answer over `BndInt`, and what is missing is the third.
-#
-#   AND `dt_max` IS NOT A SUBSTITUTE FOR IT. `dtype.bend`'s `dt_max` answers
-#   `int64.max` for `uint64` -- the `i64_max_u` fallthrough, `dtype.bend:366-375` --
-#   which is documented as safe only because that bound is read as `hi <= max`.
-#   `uint64.max` is `2**64-1` and `int64.max` is `2**63-1`, so borrowing the table
-#   here would make every `uint64` bound wrong by a factor of two. This needs `Bnd`.
-#   P3, with `vmin`/`vmax`.
-# WALL(p3) ops.py:670  def unshard -- BLOCKED. `def _shard` IS ABSENT -- checked as a definition, comments excluded. `unshard` builds a
-#   UNSHARD and `_shard` is the constructor it shares with `shard` below.
-#   ops.py:663-665 -- an UNSHARD carries one sharding RANGE per sharded axis;
-#   the range need not be DEVICE, so a LOCAL range may shard a tile.
-#   # * multi-device helpers *
-# WALL(p3) ops.py:690  def bounds -- BLOCKED. `def max_numel` IS ABSENT, and `bounds` also reads `self.axis` and a device COUNT
-#   (`len(self.device)`, on the `Dev` tag). It is a `itertools.accumulate` + `pairwise`
-#   over per-axis shapes.
-# TODO(p3) ops.py:715  def axis
-# TODO(p3) ops.py:728  def _shard
-# WALL(p3) ops.py:734  def shard -- BLOCKED. `def _shard` IS ABSENT -- the same one `unshard` needs. `copy_to_device` IS present, so
-#   this is one missing constructor rather than a missing subsystem.
-#   `def param_like` IS ABSENT, and `store_call`'s body is two of them:
-# TODO(p3) ops.py:746  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
-#   a device is a `U32` tag here, not a string: `type Dev is Data: D1{tag: U32}`. So a device name has no prefix to test, and the two below are exactly a `startswith`:
-# TODO(p3) ops.py:755  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
-# TODO(p3) ops.py:756  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
-#   # little helpers
-# PORTED -- `ops.py:818 _mop` is `tensor.bend`'s `tn_mop`, which is
-# `tensor.bend:1685` symbol=tn_mop.
-# TODO(p3) ops.py:835  def new_buffer
-# TODO(p3) ops.py:843  def from_buffer
-#   ops.py:821 -- both the storage identity and the dtype interpretation are
-#   part of the UOp key; a buffer reused under another dtype is another node.
-#   `def canonicalize_device` and `def is_disk_device` ARE BOTH ABSENT, and both start with one:
-# TODO(p3) ops.py:849  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
-# TODO(p3) ops.py:867  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
-# TODO(p3) ops.py:855  def _frompy
-# DONE(p3) ops.py:902 def is_virtual -- `wk_is_virtual` in `weak.bend`, `no_dev` beside it.
-#   `device is None or dtype in weaks`, and the device half needs a node that CARRIES a `Dev`:
-#   `fold.bend`'s `mw_pa` hard-codes `ParamArg`'s device field to `None{}`.
-#   the claim that no DEF in the port sets it was FALSE. measured 2026-10-30:
-#   `renderer/__init__.bend:441` builds a `ParamArg` with `device = Some{S.D1{0}}`, and
-#   `fold.bend`'s `device_of.param` reads `O.ParamArg.device(pa)`, so a node that CARRIES a
-#   device was reachable all along. The rows are `gates/wk-isvirt-gate.py` -- 5 rows, 3 lanes,
-#   0 divergences, and three mutations that each move the row they name.
-# TODO(p3) ops.py:931  def contiguous_view
-#   `def contiguous_view` IS ABSENT, and both of these ask it first:
-# TODO(p3) ops.py:941  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
-# TODO(p3) ops.py:957  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
-# wall(p3) -- storage, device and alloc. no live `Buffer` -- there is no `type Buffer is Data` anywhere in the port and zero `Buffer{` constructors. tinygrad's Buffer is an allocated object with a `realized` field and a `memory`
-# TODO(p3) ops.py:950  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
-# TODO(p3) ops.py:988  def realized  -- BLOCKED, and ANSWERS a Buffer.
-# TODO(p3) ops.py:999  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
-# TODO(p3) ops.py:757  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
-# TODO(p3) ops.py:974  def buffer
-# PORTED -- `ops.py:1015 UOp.variable` is `UOp.variable` (this file), four `vrn_*`
-# rows byte-identical to CPython on all three lanes via
-# `sh .agents/slop/ops-vrn-gate.sh`, with six mutations in
-# `.agents/slop/ops-vrn-mutate.py` each moving EXACTLY the rows it names.
-#
-# IT WAS BLOCKED ON A NAME, NOT ON A SUBSTRATE. CPython writes `slot=-1` and this
-# file's `ParamArg.slot` is a `U32`, so the def needed a name for "no POSITIONAL
-# slot" and the file that OWNS the field had none -- while `function.bend`,
-# `codegen/kernel.bend`, `codegen/late/linearizer.bend` and `uop/symbolic.bend` had
-# each invented one. `ParamArg.no_slot()` (this file) is the single name, landed the
-# commit before, and this def is the first thing it unblocked.
-#
-# `is_variable` (ops.py:1020) is STILL BLOCKED and this does not change that: its
-# fifth conjunct is `self._shape == ()` and `Node{op, src, arg, tag}` has no shape
-# field. The `vrn_*` rows print `nsrc` as the closest honest proxy and the `is_
-# variable` marker says why that is not the same question.
-#   ops.py:1020  def is_variable
-#     `self.op is Ops.PARAM and isinstance(self.arg, ParamArg) and self.arg.vmin_vmax
-#     is not None and self.arg.addrspace is AddrSpace.ALU and self._shape == ()`.
-#     FOUR of the five conjuncts are functions of `Node{op, src, arg, tag}`. The
-#     fifth is not, and that is the whole of the wall: this arena's Node has NO
-#     SHAPE FIELD. `Arena{nodes, shp}`'s `shp` is the arena's own table, not a
-#     per-node shape, so `self._shape` has nowhere to be read from.
-#
-#     A four-of-five port is not a partial port, it is a WRONG ANSWER: it returns
-#     True for a PARAM with a src, which is not a scalar, which upstream says is
-#     not a Variable. Every caller of `is_bound_var`, `unbound` and `bind` would
-#     then take the Variable path on a non-Variable. So the four readable
-#     conjuncts are NOT landed, and `expr` -- the one def of the lattice whose
-#     answer is a function of the ARG ALONE -- is landed instead.
-#
-#     Unblocking it is a substrate change, not a port: `Node` needs a shape, or an
-#     accessor that derives one. P3, with the shape work `uop/fold.bend` already
-#     owns for the fold.
-#   ops.py:1025  def is_bound_var
-#     `self.is_variable and self.arg.val is not None`. The second conjunct is two
-#     fields of a `ParamArg` and both are readable; the first is `is_variable`
-#     above. Gated on it, not on anything of its own.
-#   ops.py:1032  def bind
-#     `assert self.is_variable and not self.is_bound_var; uval = UOp.const(val) ...
-#     return self.replace(arg=replace(self.arg, val=uval.val))`. THREE dependencies
-#     and none of them is this def: `is_variable` (the shape wall), `self.vmin <=
-#     uval.vmin and uval.vmax <= self.vmax` (`uop/fold.bend`'s `vmin`/`vmax` over
-#     the range table) and `uval.divides(self.arg.multiple_of)` (ops.py:1069, not
-#     ported). `self.replace` is `UOp.new` and needs no port -- the arena IS the
-#     intern table -- which is the one part of this def that is ready.
-#   ops.py:1039  def unbound
-#     `assert self.is_variable; return self.replace(arg=replace(self.arg, val=None),
-#     tag=None)`. The REWRITE is two field writes, both readable, and `replace` is
-#     `UOp.new`, so the def itself is nearly free. It is gated on the assert only,
-#     and the assert is `is_variable`: without that conjunct the def would clear
-#     `val` on nodes upstream refuses to touch, and a gate that cannot see the
-#     difference is not a gate.
-#   ops.py:1043  def unbind
-#     `assert self.is_bound_var; return self.unbound(), self.arg.val`. Both halves
-#     are the two defs above, including the assert.
-#   ops.py:1046  def unbind_all
-#     `{x: x.unbound() for x in self.backward_slice_with_self if x.is_bound_var}` and
-#     then `self.substitute(bound, walk=True)`. The slice and the dict build are
-#     `bsl.go`'s shape and readable; `substitute` (ops.py:514 symbol=UOp.substitute) is not ported, and
-#     the dict is keyed by a `UOp` in Python, which in this arena means keyed by an
-#     INDEX whose validity is a session property. P3, with `substitute`.
-#   ops.py:1049  def variables
-#     Walks the backward slice collecting `x.unbound() if x.is_variable else x` and
-#     an `_device_num` Variable per DEVICE RANGE, then `sorted(ret, key=lambda v:
-#     (v.arg.name or "", v.arg.slot))`. The sort key is `(Maybe<String>, U32)` and
-#     the `or ""` is Python's `None`-sorts-first, which this port has to state
-#     rather than inherit. Gated on `is_variable` and on the shape wall.
-# * uop symbolic stuff *
-# AND `const_factor` IS DONE -- MEASURED 2026-11-08: `def UOp.const_factor(fuel, ar, i) ->
-# H.I64` IS AT `:7752` AND `def UOp.divides(fuel, ar, v, i) -> Dv` IS AT `:7972`. THE `TODO`
-# that used to stand here was stale against a `DONE` NOTE eleven lines below it, and a `TODO`
-# beside a `DONE` for the same DEF is a ledger that disagrees with itself.
-# DONE(p3) ops.py:1048 def const_factor -- `UOp.const_factor` above, FLATTENED: the def and
-#   its fold are not mutually recursive once the arms are read (a STACK/ADD contributes the
-#   gcd identity and every other node is a leaf), so `cf.walk` is a FUEL-bounded worklist.
-#   The "Bend cannot express that" probe below was measuring the OBVIOUS spelling.
-# DONE(p3) ops.py:1082 def pop_const -- `UOp.pop_const_val` / `UOp.pop_const_hits` above, with
-#   `cval_arg`. Gated at `gates/ops-core-gate.py` in EIGHT rows over FOUR fixtures, and the
-#   fixtures are built so the def's TWO conditions fail SEPARATELY: a second src that is not a
-#   CONST, and a `MUL` popped as an `ADD`. Planted -- dropping the `op` comparison from
-#   `pop_const_hits` fails exactly `pop_mul_const_hits` and nothing else, which is what says the
-#   op is COMPARED rather than assumed. The value is a `Const` and not an `H.I64`: an I64-only
-#   reader recorded a divergence on the float fixture that was really just a narrow type, and
-#   `pop_const` returns whatever the CONST carries.
-# TODO(p3) ops.py:1073  def gcd
-# TODO(p3) ops.py:1079  def divide_exact
-# TODO(p3) ops.py:1090  def vmin
-# TODO(p3) ops.py:1092  def vmax
-# TODO(p3) ops.py:1106  def _min_max
-# TODO(p3) ops.py:1168  def _sym_fxn
-# TODO(p3) ops.py:1169  def sym_infer
-# TODO(p3) ops.py:1173  def render
-# TODO(p3) ops.py:1181  def render_uir  -- upstream's `pyrender` was DELETED before this pin.
-#   `def view_as` IS ABSENT, and the alloc family ends in one:
-# TODO(p3) ops.py:1188  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
-# TODO(p3) ops.py:1194  def alloc_like  -- BLOCKED, and delegates to `alloc`.
-# TODO(p3) ops.py:1206  def placeholder  -- BLOCKED, and ends `view_as`.
-# TODO(p3) ops.py:1208  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
-# PORTED -- `ops.py:1224 UOp.set` is `UOp.set` (this file). The def, its fixture,
-# its four rows and its gate landed inside a CONCURRENT agent's commit rather than
-# one of mine, so the history does not attribute them; the write-up is here and at
-# the gate, which is where a reader lands anyway. Four `set_*` rows
-# byte-identical to CPython on all three lanes via `sh .agents/slop/ops-set-gate.sh`,
-# with TWO negative controls that are the two bugs below.
-#
-#   # set is store+end+after
-#   def set(self:UOp, val:UOp|ConstType, end:UOp|tuple[UOp, ...]|list[UOp]=()) -> UOp:
-#     return self.src[0].after(self.store(val).end(*argfix(end)))
-#
-# Upstream's own comment says the whole of it, so the def has no logic: it is a
-# COMPOSITION, and the only things a row can test are that the three pieces are
-# wired in this ORDER and that `argfix`'s empty arm is honoured. The number of
-# `end` operands is the only input that varies, so it is the only thing the family
-# varies. `argfix` is already ported as `argfix1`/`argfix2`/`argfix_seq`
-# (helpers.bend:536-543), so `end` is a `Maybe<&2, List<&2, U32>>` and not a node.
-#
-# TWO BUGS, AND BOTH COMPILED.
-#
-#   THE STALE ARENA. The first draft was
-#       +e = UOp.end(ar, Found.i(s), ...)          -- `ar`, the CALLER's
-#   and `UOp.store` MINTS, so `s` lives in a GROWN arena and `Found.i(s)` read out
-#   of `ar` indexes the wrong arena. It typechecked and answered
-#   `Ops.AFTER(Ops.BUFFER Ops.AFTER)` where CPython answers
-#   `Ops.AFTER(Ops.BUFFER Ops.STORE)`. That is the failure mode bend2-constraints
-#   names, and `UOp.copy_to_device` above is the fix in one line: thread the
-#   previous step's `Found.ar`. The first negative control reintroduces it.
-#
-#   THE SUBJECT IS A STORE. The first fixture was a BUFFER and CPython raised
-#   `IndexError: tuple index out of range`, because `set` is called ON a store and
-#   `src[0]` is the store's target. A fixture that does not reach the code is a
-#   fixture that cannot fail, and this one looked like a red gate.
-#
-# and a printer that was three drafts worse than it needed to be: a recursive
-# `deep` needing a closer that knows its own depth, a `Bool.pick` for the first
-# separator, and a fold that opened a paren in the accumulator. The file already
-# had the shape under another name (`Rng.srcops.go`'s `+first` flag). Grep for
-# the IDIOM before writing the INSTANCE.
-#   # set is store+end+after
-# done(p3) ops.py:1229 def param -- the shape-less arm only, and it is in `weak.bend`. the third
-#   def to arrive downstream for a THIRD distinct reason: `ops.bend` cannot NAME `fold.bend`'s bounds
-#   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `THE PORT's `uop/ops.bend` HEADER` says so and it is TRUE, since
-#   dtype.bend's fp16/bf16/i64 C effects make the checker exit 1 for ANY importer. So the weaks guard
-#   `md_weak` is unreachable from this file, and `wk_param_noshape` lives in `uop/weak.bend` beside the
-#   other two. the rule is not "those three were misfiled" but "a DEF needing a dtype predicate or a
-#   BOUND LIVES DOWNSTREAM OF `ops.bend`."
-#   Gated at `gates/wk-eval-gate.py`: 22 rows, 3 lanes, 21 identical and the ONE documented
-#   `simplify` divergence. Planted -- removing the guard fails BOTH `_built` rows.
-#
-#   the other two arms are not ported and the reason is the missing piece, named: a shaped param is
-#   `prod(to_max_shape(shape))` plus a `view_as` RESHAPE, and `view_as` IS ABSENT FROM THE PORT
-#   (so is `unique_num`). Checked, not assumed.
-# TODO(p3) ops.py:1228  def param_like
-# TODO(p3) ops.py:1236  def view_as
-# custom_function -- ops.py:1258 upstream. `UOp(Ops.CUSTOM_FUNCTION, src=src,
-# arg=CustomFunction(name, dtype))`. The pin's spelling was ops.py:1256 and took no
-# dtype, because there was no `CustomFunction` to hold one.
-# `dtype=dtypes.void` is upstream's DEFAULT and Bend has no default argument, so `dt`
-# is required here and `CustomFunction.of(name)` builds the void-dtype value.
-# `UOp.call` below is NOT PORTED, so nothing in this file consumes the dtype yet:
-# `dtype_from_uop` is not ported either (the folds do not fit, see the header).
+# THE TABLE IS IN `.agents/slop/tables/uop-ops-5125.md` -- THE INVENTORY: every ops.py def that is NOT yet a Bend def, with the reason.
 def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt) -> Found:
   UOp.new(ar, OpsCUSTOM_FUNCTION{}, srcs, ACustom{CustomFunction{name, dt}}, TNone{})
 
@@ -6589,54 +6015,7 @@ def cf.top(keep: Bool, fuel: Nat, +ar: Arena, i: U32) -> H.I64:
 def UOp.const_factor(fuel: Nat, +ar: Arena, +i: U32) -> H.I64:
   cf.top(cf.keep(Arena.op(ar, i)), fuel, ar, i)
 
-# the counter -- `collections.Counter` over node lists, as a list of pairs.
-#
-# ops.py:1073-1079 -- `UOp.gcd` and `UOp.divide_exact`.
-#
-# and the port has no integer-keyed map. measured 2026-11-08: `helpers.bend:494` says
-# "Bend's `Map` is string-keyed only, so the set is a linear scan", and there is no
-# `HashMap` and no `HashSet` in the port. but the port has the honest spelling already,
-# TWICE: `dedup_u32` (`helpers.bend:500`) AND `merge_dicts` (`helpers.bend:2412`) ARE BOTH "A
-# list of pairs with a linear scan", and `merge_dicts`'s own NOTE says exactly that: "a list
-# of pairs is the honest representation". so the claim "the port has no multiset" was a
-# claim about a container and not about a capability.
-#
-# and upstream's counter's keys are nodes, because a `UOp` is hashable by identity
-# (`ops.py:219-220`: `__hash__ = tuple.__hash__` AND `__eq__` IS `self is other`). SO THE
-# key is the arena's `U32` INDEX -- which is the node's identity in this port.
-#
-# and the count is a `U32` and not a `Nat`: a count of occurrences is a `U32`, and
-# `Nat`'s ARITHMETIC IS A PRELUDE-LEVEL DETAIL (`Nat.add`/`Nat.mul` IN bend2's `safe.ts`)
-# that the port uses only for fuel. and a `U32` literal is a plain number
-# (`bend.ts:70`: "U32 | NUMBER").
-#
-# the four spelling rules, all measured 2026-11-08 against bend2's compiler.
-#
-# 1. a plain parameter may be consumed once and a `+`-binder may be consumed twice. two
-#    PROBES: `def use2(x: U32) -> U32: U32.add(x, x)` REFUSES WITH "x (consumed more than
-#    once)" and `def use2(+x: U32) -> U32: U32.add(x, x)` compiles and answers 6. and the
-#    port's own `split_uop.pop` uses `+ar` and `+sep` twice each, so this is the tree's
-#    CONVENTION AND NOT A NEW ONE.
-# 2. a DEF's helper must come before its user -- "defs are checked in file order, and an
-#    unfilled law has none". so the order below is the dependency order and not the
-#    READING ORDER.
-# 3. a `match` heads a DEF body and not a term, and a `match` may not scrutinize a
-#    COMPUTED VALUE -- "a match cannot scrutinize a computed value: give it its own def".
-#    so every comparison is a parameter and every branch is a DEF.
-# 4. arguments are read left to right and each is passed unchanged until used, so a list's
-#    tail may not be passed to two calls. and the port's own `Merge.go` is the pattern
-#    -- `ops.bend:2843`: `Merge.go(t, Found.ar(f), List.append(&2, U32, map, [Found.i(f)]))`
-#    -- the tail is the recursion's first argument and the accumulator is the third.
-#
-# THE ALGORITHM, AND IT IS UPSTREAM's.
-#
-# `collections.Counter` OVER NODE LISTS: `Counter(term.split_uop(Ops.MUL))` COUNTS THE
-# MUL-factors of a term, and `functools.reduce(operator.and_, ...)` intersects the counters,
-# and `operator.and_` on two counters is "the keys in both, with the minimum count".
-#
-# so the counter is a list of `(KEY, COUNT)` pairs, the intersection is the keys of the first
-# counter with the minimum count across all of them, and the product is a FOLD over the pairs
-# WITH `count` COPIES OF THE KEY.
+# THE TABLE IS IN `.agents/slop/tables/uop-ops-6592.md` -- the counter -- `collections.Counter` over node lists, as a list of pairs.
 type Ctr is Data:
   Ctr{k: U32, n: U32}
 
@@ -6969,45 +6348,7 @@ def UOp.divides.one(one: Bool, +fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv
 def UOp.divides(fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
   UOp.divides.one(dv.is1(v), fuel, ar, v, i)
 
-# `UOp.gcd` AND `UOp.divide_exact` -- ops.py:1073-1079.
-#
-# and both are built on the counter (above), and the counter is a list of pairs
-# because the port has no integer-keyed map -- measured 2026-11-08, `helpers.bend:494`:
-# "Bend's `Map` is string-keyed only, so the set is a linear scan".
-#
-# `UOp.gcd(*uops)` -- ops.py:1073:
-#
-#     terms, factors = zip(*[u.pop_const(Ops.MUL) for u in uops])
-#     count = functools.reduce(operator.and_, [Counter(t.split_uop(Ops.MUL)) for t in terms])
-#     if not count: factors = tuple(u.const_factor() for u in uops)
-#     return math.prod(count.elements(), start=uops[0].const_like(math.gcd(*factors)))
-#
-# and the port's spelling follows it step for step, with three measured substitutions:
-#
-#   * `pop_const(Ops.MUL)` returns `(NODE, CONST)` upstream, and the port has only the
-#     CONST half (`pop_const_val`/`pop_const_hits`). so the port spells the node half
-#     DIRECTLY: A `MUL` WHOSE SECOND SRC IS A CONST IS `(src[0], that const)` AND ANYTHING
-#     ELSE IS `(self, identity)`, AND `identity_element(MUL, dt)` IS 1 UPSTREAM
-#     (`ops.py:81`: `{Ops.ADD:0, Ops.MUL:1, Ops.MAX:dt.min}[op]`).
-#   * `const_like` is not ported (`ops.py:581`, a bare `TODO(p3)` with no wall named),
-#     and the port's arena has no shape field -- so the shaped half cannot be spelled.
-#     but measured 2026-11-07 on CPYTHON: for the `(x*y)/y` case, `x` is a variable and
-#     has no shape, so `x.const_like(1)` takes the unshaped branch and is
-#     `UOp.const(1, dtype)`. so the port spells the unshaped `const_like`, which is
-#     `UOp.const(b, dt)`, and the shaped half is a separate matter.
-#   * `math.gcd(*factors)` is a FOLD over a list of I64s, and the port has `H.gcd` for
-#     TWO OF THEM (`helpers.bend:2249`) -- SO THE VARIADIC FORM IS A FOLD.
-#
-# and `Counter.elements()` -- which repeats each key by its count -- is the port's own
-# `H.make_tuple_rep` (`helpers.bend:1282`: `make_tuple_rep(x, cnt) -> List<&2, U32>`), SO
-# the product is a concatenation of those and not a hand-unrolled recursion.
-#
-# and every comparison is a parameter and not a computed value -- measured 2026-11-08:
-# "a match cannot scrutinize a computed value: give it its own def" -- AND A `match` OVER A
-# call is also a computed value, so the comparison is done in a helper and its result is
-# PASSED IN.
-#
-# THE NODE HALF OF `pop_const(Ops.MUL)`.
+# THE TABLE IS IN `.agents/slop/tables/uop-ops-6972.md` -- `UOp.gcd` AND `UOp.divide_exact` -- ops.py:1073-1079.
 def UOp.pop_const_node.isconst(+ar: Arena, +i: U32) -> Bool:
   eq_op(Arena.op(ar, Arena.src(ar, i, 1)), OpsCONST{})
 
@@ -7232,25 +6573,7 @@ def UOp.divide_exact.diff(n: U32, +d: U32, gt: Bool) -> U32:
     case True{}: 0
     case False{}: U32.sub(n, d)
 
-# THE FOUR ARMS OF `divide_exact`, IN UPSTREAM's ORDER.
-#
-# and every comparison is a parameter and not a computed value -- measured 2026-11-08:
-# "a match cannot scrutinize a computed value: give it its own def" -- AND A `match` OVER A
-# call is also a computed value, so the op is read into a parameter first.
-#
-# and the answer is a `Dq` and not a `Maybe` -- and that is because the two srcs' answers
-# must be bound and a `Maybe` is a TYPE and not a `Data`, and a `+` binder's TYPE
-# MUST BE `Data` -- MEASURED 2026-11-08: "Note: +m can be used many times, so its type must be
-# Data". and the port's own `UOp.divides.op` is the pattern that works (`ops.bend:7887`):
-# one DEF, a `match` on the op, two direct self-calls bound with `+` in the ADD's arm, and
-# the results combined by a helper. and a `Dq{ok: Bool, f: Found}` is exactly the port's own
-# `Dv{ok: Bool, f: Found}` shape (`ops.bend:8050`) -- so the answer's TYPE is the port's own
-# ANSWER TYPE AND NOT A NEW ONE.
-#
-# and `None{}` is upstream's `None`, which is the "we aren't sure" answer and not an
-# ERROR -- AND IT IS THE `ok: False` HALF OF THE RECORD.
-# the answer: the port's own `Dv` shape -- `ok` says whether it divides exactly and `f`
-# IS THE QUOTIENT's NODE.
+# THE TABLE IS IN `.agents/slop/tables/uop-ops-7235.md` -- THE FOUR ARMS OF `divide_exact`, IN UPSTREAM's ORDER.
 type Dq is Data:
   Dq{ok: Bool, f: Found}
 
@@ -8424,118 +7747,4 @@ def t_de_const_out() -> Bool:
            Bool.and(eq_op(Arena.op(ga, Found.i(Dq.f(d))), OpsCONST{}),
                     Cmp.is_eq(H.i64_cmp(UOp.divide_exact.constval(ga, Found.i(Dq.f(d))), H.i64_of_i32(2)))))
 
-# NOT PORTED -- tinygrad/uop/ops.py, and why. One line each, the same shape
-# helpers.bend and dtype.bend use, and each with the phase that owns it.
-#
-# The Python-object machinery, all of which needs a runtime Bend does not have:
-#   `UOpMetaClass.ucache` and its `weakref` eviction -- replaced by the arena
-#     itself (`intern`), so this is not a loss but the mechanism is different.
-#   `UOp.__del__`, `UOp.__reduce__`, `CallInfo.__reduce__`, `UPat.__reduce__` --
-#     pickling and refcount-driven cache eviction. The arena is monotone and has
-#     no destruction, so nothing is evicted and nothing needs pickling.
-#   `_UOpTuple` -- a tuple subclass whose `__eq__` is identity, "so that tuple <
-#     doesn't rescan deep equal prefixes with O(n) value equality at every level
-#     of the walk". A `List` of `U32` arena indices has that property for free,
-#     which is `UOp.tuplize`'s return type here (P3, with the sort it feeds).
-#   `hashlib.sha256` in `UOp.key` -- a digest over the render. `key` is P3 with
-#     the cache it keys; the C effect would be `tinygrad/runtime/`'s.
-#   `pickle` in `deconstruct_function` and `PatternMatcher.__reduce__` -- Bend
-#     has no code objects to pickle, and the rules become top-level defs
-#     dispatched by a tag, which is what the master plan already prescribes.
-#   `exec` in `_sym_fxn` -- it builds Python source from the graph and runs it
-#     with a namespace of `max/cdiv/cmod/floordiv/floormod/bitcast/dtypes`.
-#     Bend has no `eval` and no generated code, so `sym_infer` needs either a C
-#     effect that compiles a lambda or a tree-walking interpreter. P3/P6.
-#   `sys._getframe` in `get_location` and in `rewrite_group` -- a pattern's
-#     source location. That is CPython's frame stack, and every `UPat` carries
-#     a `location` that the viz and `print_match_stats` read. Rebuilt in P8 on
-#     the `IO.now` clock, the same answer helpers.bend gives for the profiler.
-#   `time.perf_counter` in `TrackedPatternMatcher.rewrite` -- the per-rule
-#     timing. Same clock story as `cpu_profile` in helpers.bend; P8.
-#   `atexit` + `diskcache_put` in `save_to_diskcache` and `print_match_stats` --
-#     a pickled `RewriteTrace` on disk for the viz. The sqlite/pickle cache is
-#     P6, and the viz is P8.
-#   `os.execv` in `launch_viz` -- re-exec into `viz/serve.py`. P8.
-#   `collections.Counter` in `gcd` and `divide_exact`, and `itertools` in
-#     `split_uop`, `contract`, `broadcast_axes`, `argfix` and `_align_left` --
-#     folds over Python iterables. Each becomes a Bend fold; P3, with the
-#     symbolic helpers they serve.
-#   `functools.reduce(operator.and_, ...)` in `gcd` -- the same.
-#   `operator.neg/add/sub/mul/ne/lt/xor/or_/and_/rshift/lshift/max` in
-#     `python_alu`, and `math.*` in `safe_exp2`/`safe_pow` -- the `python_alu`
-#     table. F32 arithmetic is native in Bend and `F32.is_eq`/`is_lt` exist, so
-#     this table is a match ladder; P3, with `exec_alu` (whose `tuple` operand
-#     case is a vectorised ALIKE branch).
-#   `math.inf` in `identity_element` and `_min_max` -- Bend cannot name an
-#     infinity in a U32, so it is `F32.div(1, 0)`; the ONE place dtype.py's
-#     `dt.min` for a float needs the seam, and `identity_element` above spells
-#     it out.
-#   `Buffer`/`MultiBuffer` in `UOp.buffer`, `UOp.realized`, `UOp._buffer_view`,
-#     `new_buffer`, `from_buffer`, `_frompy`, `to_elf`, `TinyELF` and
-#     `canonicalize_device` -- the device memory layer. P6, and `ParamArg.buffer`
-#     is the slot they all read.
-#   `Estimates` in `KernelInfo` -- PORTED 2026-10-30 as a FIELD, in
-#     `renderer/estimates.bend`. What is NOT PORTED is the VALUE: upstream's
-#     only writer is `codegen/__init__.py:446` and `do_estimates` is a WALL in
-#     `codegen/kernel.bend`, so every `KernelInfo` the port builds carries
-#     `estimates=None`.
-#   `CustomFunction` -- PORTED 2026-10-03, at ops.py's own position (between
-#     `OPAQUE_CALL_BODIES` and `CallInfo`), together with `Arg`'s `ACustom` arm,
-#     `eq_customfunction` and `UOp.custom_function`. The old text here said it was
-#     PORTABLE but unreachable and so would "land with" the P6 hcq2 work; it landed
-#     without it, because `uop/spec.py:110`'s `isinstance(x.arg, CustomFunction)`
-#     needs the datatype and `spec.bend`'s `sh_22` is stale until it has one. Being
-#     P6 only ever described the CALLERS, never the type.
-#     what is still open is the other half, and it is not optional: upstream moved
-#     `CallInfo.dtype` into `CustomFunction.dtype`, so a CALL's return dtype now
-#     lives on its CUSTOM_FUNCTION body (`dtype_from_uop`'s CALL arm is
-#     `return src[0].dtype`). `CallInfo` here STILL HAS `dtype`, and it is still
-#     read by `eq_callinfo` and by `uop/spec.bend`'s `arg_call`/`sh_23`. So the
-#     re-cut is a SEPARATE change with its own blast radius, not a field delete:
-#     `sh_23` compares a DECLARED dtype against the node's own, and under HEAD
-#     there is no declared dtype to compare -- the CALL's dtype IS its body's. P3,
-#     with `dtype_from_uop`.
-#     MEASURED 2026-10-06, so the next reader does not have to re-derive it: the
-#     eleven-site, seven-file delete is APPLIED AND GREEN in a scratch copy of this
-#     tree, it moves `--graph loop`'s `arg` chunk to CPython's bytes, and it closes
-#     HALF the row -- `dtype` and `shape` stay `?` because `fold.bend` never settles
-#     that node, which is a second defect. See the `CallInfo` block above for the
-#     `git log -S` pin, and `spec.bend`'s own `arg_call` comment for its stale half.
-#   `UPat.custom_function(fn, kwargs)` -- ops.py:1509 upstream, still NOT PORTED. A
-#     `PatternMatcher` rule constructor, so it lands with `uop/upat.py`.
-#   `UOp.param_like(slot, name=None)` -- ops.py:1241 upstream. `name` was added so a
-#     scalar argument can be bound by NAME while its slot and value stay out of the
-#     schedule cache key. P6, with the hcq call sites that use it.
-#   `UOp.contiguous_view()`'s new tail -- upstream now returns a BITCAST SLICE
-#     (`b.src[0].flatten()[...]`) where the pin returned `(b.rtag(None), offset)`, and
-#     it computes the offset with `strides_for_shape` instead of a
-#     `pm_contiguous_view_offset` matcher. P3 with `symbolic.bend`; the matcher form is
-#     NOT PORTED for the reason the pattern compiler is, below.
-#   `grad_fxn` in `CallInfo` and `uopfunc` -- a Python function object; a Bend
-#     closure is single-use and is a `Type`, so it cannot be a `Data` field.
-#     The reverse-mode plumbing is `tinygrad/nn/gradient.py`, P7.
-#   `aux` in `CallInfo` and `trace_num` -- the per-call side channel, written by
-#     the hcq paths in `tinygrad/runtime/ops_*.py`, which are out of scope.
-#   `uopfunc`'s `inspect.signature(fn).bind(...)` -- Python reflection over a
-#     function object, used to turn uop arguments into params. P7 with the mixin.
-#   `is_any`, `custom_early_reject`, `allow_any_len`, `permutations` and
-#     `functools.repeat` in `UPat.__init__`, and `upat_compile` -- the pattern
-#     COMPILER (`tinygrad/uop/upat.py`). `UPat` is PORTED (see ops.py:1447, with
-#     a pattern arena of its own); the COMPILER is a separate file whose output is
-#     a def per rule, so the machinery here dispatches a tag rather than calling
-#     a compiled function pointer. `permutations` at arity >= 3 is the one part
-#     of `__init__` not ported, and it is unreachable from ops.py.
-#   `upat_interpret`'s `types.FunctionType(*deconstruct_function(fxn))` and
-#     `inspect.signature(real_fxn).parameters` -- rebuilding a Python function
-#     from its code object. Same answer as above: rules are top-level defs.
-#   `REWRITE_STACK_LIMIT` and the `BottomUpGate` exception in
-#     `RewriteContext.unified_rewrite` -- the stack limit is a fuel budget here
-#     (the same `case 0n:` the walks use) and the gate is a value, because a
-#     Bend def cannot raise. `BottomUpGate` therefore becomes a `Maybe` result
-#     the driver inspects; P3, with the engine.
-#   `ops.py`'s `SPEC > 1` block in `UOpMetaClass.__call__` -- `spec_full.rewrite`,
-#     `created._shape` and `test_pyrender`. That is `tinygrad/uop/spec.py`, P3,
-#     and `dtype_from_uop`'s `None` is the check in the form this port states.
-#   `Ops` reverse lookup (`Ops("ADD")`) and `AxisType` reverse lookup -- not
-#     called by ops.py; `AxisType.of` is here anyway because `range_str` needs
-#     a name and a test needs a name.
+# THE TABLE IS IN `.agents/slop/tables/uop-ops-8427.md` -- NOT PORTED -- tinygrad/uop/ops.py, and why. One line each, the same shape
