@@ -9,14 +9,15 @@ pool_id=end=80 srcs=[79,55,63] ended=[55,63] open=[]
 pool_rn=True/0/
 pool_sk=open=True bufs=0 rngs=0 bad=True
 pool_lk=1/CALL>SINK
-pool_low=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,AFTER;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,STORE;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;BUFFER:other:CONST;STORE:none:AFTER,OTHER;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;CONST:cother:;AFTER:none:BUFFER,STORE;OTHER:none:AFTER,INDEX;OTHER:other:RANGE;ADD:none:MUL,ADD;STORE:none:AFTER,BUFFER;INDEX:none:PARAM,OTHER,OTHER,RANGE,RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;AFTER:none:BUFFER,RANGE,RANGE;PARAM:other:OTHER;OTHER:other:CONST;OTHER:other:RANGE;MUL:none:OTHER,OTHER;OTHER:other:CONST;CONST:cother:;CONST:cother:
+pool_low=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,AFTER;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,STORE;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;BUFFER:other:CONST;STORE:none:AFTER,WHERE;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;CONST:cother:;AFTER:none:BUFFER,STORE;WHERE:none:OTHER,INDEX,AFTER;OTHER:other:RANGE;ADD:none:MUL,ADD;STORE:none:AFTER,BUFFER;OTHER:none:AFTER,INDEX;INDEX:none:PARAM,OTHER,OTHER,RANGE,RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;AFTER:none:BUFFER,RANGE,RANGE;PARAM:other:OTHER;OTHER:other:CONST;OTHER:other:RANGE;MUL:none:OTHER,OTHER;OTHER:other:CONST;CONST:cother:;CONST:cother:
 pool_c=
 void test(float* restrict data0_196, float* restrict data1_784) {
   float buf0[1];
   for (int Lidx0 = 0; Lidx0 < 14; Lidx0++) {
     for (int Lidx1 = 0; Lidx1 < 14; Lidx1++) {
       *buf0 = buf0;
-      *buf0 = UNHANDLED(Ops.MAX);
+      float alu1 = ((buf0<(data1_784+0))?(data1_784+0):buf0);
+      *buf0 = alu1;
       *(data0_196+((((int)(Lidx0))+(14*((int)(Lidx1)))+(196*0)+(196*0))%196)) = buf0;
     }
 }

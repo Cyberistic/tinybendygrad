@@ -231,10 +231,25 @@ def pool_war() -> String:
 # IS THE REDUCE IN THE RANGE MAP? `rr_ap_red_hit` needs the node in `rngm` and a
 # non-zero `num_axes`; the conversion that turns the leading axes into RANGE srcs
 # (`indexing.py:131`) is `rr_ap_red_new`, and it never fired.
+# THE REDUCE's CONSUMERS, and its `num_axes`: `rr_p1` needs one consumer WITH RANGES for the
+# node to enter the range map at all, and `rr_ap_red_hit` needs it there.
+def pool_cons() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +ar = RZ.RZProg.ar(q)
+  +sk = RZ.RZProg.sink(q)
+  +aft = SCH.sc_src0(ar, sk)
+  +st = SCH.sc_src(ar, aft, 1)
+  +red = SCH.sc_src(ar, st, 1)
+  +topo = O.UOp.toposort(O.Arena.budget(ar), ar, sk)
+  String.concat(["num=", U32.show(RR.rr_ap_red_num(ar, red)),
+                 " cons=", pool_ids(RR.rr_cons(ar, topo, red)),
+                 " rdop=", RR.rr_node_str(ar, red)])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
     _ : Unit <- IO.print(String.concat(["pool_kg=", pool_kg()]))
+    _ : Unit <- IO.print(String.concat(["pool_cons=", pool_cons()]))
     _ : Unit <- IO.print(String.concat(["pool_war=", pool_war()]))
     _ : Unit <- IO.print(String.concat(["pool_side=", pool_side()]))
     _ : Unit <- IO.print(String.concat(["pool_ax=", pool_ax()]))

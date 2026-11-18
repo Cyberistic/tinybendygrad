@@ -87,6 +87,7 @@ import ./../codegen/late/linearizer.bend as LIN
 import ./../renderer/kuconv.bend as KC
 import ./../uop/weak.bend as WK
 import ./../codegen/kernel.bend as KR
+import ./../codegen/decomp/op.bend as DC
 
 # THE PROGRAM. Upstream's `Compiled.runtime(obj)` (`tinygrad/device.py:402`)
 # takes the compiled OBJECT; the port's `Program` is the C SOURCE, because the
@@ -191,10 +192,146 @@ def exec(img: String, bufs: String, sizes: String) -> IO(String):
 # driver printed. `wk_commit` is `pm_commit_weak`+`pm_cast_const`+`pm_uncast_const`;
 # `lower_reduce_all` is `lower_reduce` (the small-range unroll, bounded by `LR_MAX`) and
 # `alloc_to_buf_all` is `pm_alloc_to_buf`.
+# THE LATE DECOMP TABLE, APPLIED -- `codegen/__init__.py:339-341`. Upstream runs
+# `get_late_rewrite_patterns(supported_ops, DISABLE_FAST_IDIV)` under `graph_rewrite`
+# AFTER `pm_reduce_local` and BEFORE the renderer, and the port had the TABLE
+# (`codegen/decomp/op.bend`, nineteen rules) and NO STAGE -- so a MAX reached the
+# renderer and printed `UNHANDLED(Ops.MAX)`. MEASURED: that is what max_pool2d rendered.
+#
+# THE WALK IS BOTTOM-UP over the body's toposort, ONE LEVEL of substitution per node
+# (upstream's `self.replace.get(x, x)` final pass), and repeated to a fixpoint because
+# one late rule feeds another. A node the table does not CLAIM is interned back
+# unchanged, which `UOp.new` makes free: the arena internes.
+type LateRep is Data:
+  LateRep{old: U32, new: U32}
+
+# THE LOOP STATE IS A RECORD AND NOT A TUPLE. `rangify.bend` records the reason for the
+# same choice on the same shape: a three-element `Pair` whose middle Kind is a `List`
+# "fails kind inference in Base" (`(_ => Bool)`), so the state is a record and the
+# accessors are the fields.
+type Lt is Data:
+  Lt{ar: O.Arena, rs: List<&2, LateRep>, fired: Bool}
+
+def Lt.ar(x: Lt) -> O.Arena: match x: case Lt{ar, rs, fired}: ar
+def Lt.rs(x: Lt) -> List<&2, LateRep>: match x: case Lt{ar, rs, fired}: rs
+def Lt.fired(x: Lt) -> Bool: match x: case Lt{ar, rs, fired}: fired
+
+type LtR is Data:
+  LtR{ar: O.Arena, i: U32, fired: Bool}
+
+def LtR.ar(x: LtR) -> O.Arena: match x: case LtR{ar, i, fired}: ar
+def LtR.i(x: LtR) -> U32: match x: case LtR{ar, i, fired}: i
+def LtR.fired(x: LtR) -> Bool: match x: case LtR{ar, i, fired}: fired
+
+def lt_get.go(+k: U32, +rs: List<&2, LateRep>) -> U32:
+  match rs:
+    case Nil{}: k
+    case LateRep{old, new} <> t: Bool.pick(U32, U32.is_eq(old, k), new, lt_get.go(k, t))
+
+def lt_get(+rs: List<&2, LateRep>, +k: U32) -> U32: lt_get.go(k, rs)
+
+def lt_srcs.go(+ss: List<&2, U32>, +rs: List<&2, LateRep>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case s <> t: lt_srcs.go(t, rs, List.append(&2, U32, acc, [lt_get(rs, s)]))
+
+def lt_rebuild(+ar: O.Arena, +u: U32, +rs: List<&2, LateRep>) -> O.Found:
+  O.UOp.new(ar, O.Arena.op(ar, u), lt_srcs.go(O.Arena.srcs(ar, u), rs, Nil{}),
+            O.Arena.arg(ar, u), O.Arena.tag(ar, u))
+
+# THE TABLE FOR THIS TARGET, WHICH IS UPSTREAM's OWN CONDITION AND NOT A TASTE:
+# `decomp/op.py:116` adds the two `ADD -> MULACC` rules only `if Ops.MULACC in ops`,
+# and the C renderer's `code_for_op` has no MULACC (`cstyle.py:142-150`) -- its MULACC
+# is expanded later in the pipeline, which the port has not ported. Applying them
+# anyway is what put `UNHANDLED(Ops.MULACC)` in the max_pool2d store's index.
+# The port's `dc_l_tab` is the nineteen-rule union, so the target condition is a
+# filter HERE, by tag, and the two tags are named with the upstream line that adds them.
+def lt_is_mulacc(+tg: U32) -> Bool: Bool.or(U32.is_eq(tg, 14), U32.is_eq(tg, 15))
+
+def lt_tab.go(+es: List<&2, O.PMEntry>, +acc: List<&2, O.PMEntry>) -> List<&2, O.PMEntry>:
+  match es:
+    case Nil{}: acc
+    case e <> t:
+      lt_tab.go(t, Bool.pick(List<&2, O.PMEntry>, lt_is_mulacc(O.PMEntry.tag(e)), acc,
+                             List.append(&2, O.PMEntry, acc, [e])))
+
+def lt_tab() -> List<&2, O.PMEntry>: lt_tab.go(O.PMEntrys.es(DC.dc_l_tab(False{})), Nil{})
+
+# THE SCAN IS THE TABLE's OWN (`dc_l_scan`), so a rule fires exactly where upstream's
+# `PatternMatcher` would and the answer is built by the rule's own body.
+def lt_rule(+ar: O.Arena, +u: U32) -> DC.Hit:
+  DC.dc_l_scan(lt_tab(), F.folded(ar), u, DC.miss(ar))
+
+# THE CLAIM IS THE TABLE'S OWN OP SETS, FOLDED -- not a hand list, so a rule added to
+# `dc_l_tab` is claimed here the day it lands. It also SAVES THE FOLD: the rule needs
+# `F.folded(ar)`, which sweeps the arena, and an unclaimed node never asks for it.
+def lt_claimed.go(+op: O.Op, +es: List<&2, O.PMEntry>) -> Bool:
+  match es:
+    case Nil{}: False{}
+    case e <> t:
+      Bool.pick(Bool, O.op_in(O.PMEntry.ops(e), op), True{}, lt_claimed.go(op, t))
+
+def lt_claimed(op: O.Op) -> Bool: lt_claimed.go(op, lt_tab())
+
+def lt_put(+ar: O.Arena, +u: U32, +i: U32, +rs: List<&2, LateRep>, fired: Bool) -> Lt:
+  Lt{ar, List.append(&2, LateRep, rs, [LateRep{u, i}]), fired}
+
+def lt_take(+h: DC.Hit, +u: U32, +rs: List<&2, LateRep>) -> Lt:
+  +f = lt_rebuild(DC.Hit.ar(h), DC.Hit.i(h), rs)
+  lt_put(O.Found.ar(f), u, O.Found.i(f), rs, True{})
+
+def lt_keep(+u: U32, +ar: O.Arena, +rs: List<&2, LateRep>, fired: Bool) -> Lt:
+  +f = lt_rebuild(ar, u, rs)
+  lt_put(O.Found.ar(f), u, O.Found.i(f), rs, fired)
+
+def lt_hit(on: U32, +h: DC.Hit, +u: U32, +ar: O.Arena, +rs: List<&2, LateRep>, fired: Bool) -> Lt:
+  match on:
+    case 1: lt_take(h, u, rs)
+    case _: lt_keep(u, ar, rs, fired)
+
+def lt_pick(c: Bool, +u: U32, +ar: O.Arena, +rs: List<&2, LateRep>, fired: Bool) -> Lt:
+  match c:
+    case True{}:
+      +h = lt_rule(ar, u)
+      lt_hit(DC.Hit.on(h), h, u, ar, rs, fired)
+    case False{}: lt_keep(u, ar, rs, fired)
+
+def lt_step(+u: U32, +st: Lt) -> Lt:
+  lt_pick(lt_claimed(O.Arena.op(Lt.ar(st), u)), u, Lt.ar(st), Lt.rs(st), Lt.fired(st))
+
+def lt_pass.go(+us: List<&2, U32>, st: Lt) -> Lt:
+  match us:
+    case Nil{}: st
+    case u <> t: lt_pass.go(t, lt_step(u, st))
+
+def lt_round.fin(root: U32, +st: Lt) -> LtR:
+  +f = lt_rebuild(Lt.ar(st), root, Lt.rs(st))
+  LtR{O.Found.ar(f), O.Found.i(f), Lt.fired(st)}
+
+def lt_round(+ar: O.Arena, +root: U32) -> LtR:
+  lt_round.fin(root, lt_pass.go(O.UOp.toposort(O.Arena.budget(ar), ar, root), Lt{ar, Nil{}, False{}}))
+
+# FOUR ROUNDS, AND A ROUND THAT FIRED NOTHING STOPS THE CHAIN. The late table's longest
+# known chain is three (`MUL(1/b) -> FDIV`, then the FDIV forms), and a bound here LOSES
+# rewrites rather than correctness: a body that needs a fifth round keeps the first four,
+# which is what the fixpoint would have had at that point anyway.
+def lt_r2.on(fired: Bool, +q: LtR) -> LtR:
+  match fired:
+    case True{}: lt_round(LtR.ar(q), LtR.i(q))
+    case False{}: q
+
+def lt_r2(+q: LtR) -> LtR:
+  lt_r2.on(LtR.fired(q), q)
+
+def late_apply(+ar: O.Arena, +root: U32) -> O.Found:
+  +q = lt_r2(lt_r2(lt_r2(lt_round(ar, root))))
+  O.Found{LtR.ar(q), LtR.i(q)}
+
 def body_low(+ar: O.Arena, +b: U32) -> O.Found:
   +w = WK.wk_commit(ar, b)
   +r = KR.lower_reduce_all(O.Found.ar(w), O.Found.i(w))
-  KR.alloc_to_buf_all(O.Found.ar(r), O.Found.i(r))
+  +l = late_apply(O.Found.ar(r), O.Found.i(r))
+  KR.alloc_to_buf_all(O.Found.ar(l), O.Found.i(l))
 
 def body_kus(+ar: O.Arena, +k: U32) -> (O.Arena & List<&2, C.KU>):
   +l = body_low(ar, SCH.sc_src0(ar, k))
