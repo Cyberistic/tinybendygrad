@@ -82,6 +82,11 @@ import ./../renderer/cstyle.bend as C
 import ./../schedule/__init__.bend as SCH
 import ./ops_cpu.bend as CPU
 import ./support/elf.bend as E
+import ./../uop/fold.bend as F
+import ./../codegen/late/linearizer.bend as LIN
+import ./../renderer/kuconv.bend as KC
+import ./../uop/weak.bend as WK
+import ./../codegen/kernel.bend as KR
 
 # THE PROGRAM. Upstream's `Compiled.runtime(obj)` (`tinygrad/device.py:402`)
 # takes the compiled OBJECT; the port's `Program` is the C SOURCE, because the
@@ -170,3 +175,40 @@ def exec(img: String, bufs: String, sizes: String) -> IO(String):
   do IO<String>:
     +out : String <- IO.try(String, CPU.Cpu.exec(img, bufs, sizes))
     IO.pure(String, out)
+
+# THE DRIVER THE LANE NEVER HAD: from the port's OWN arena to C source, the four links
+# `full_rewrite_to_sink` calls `linearize` -> `kuconv` -> `render` on (a `.agents/slop`
+# probe has run this chain since 2026-10-31; THIS is the port's own copy of it, and
+# MEASURED 2026-11-18 it renders the fullchain kernel -- 661 bytes, no UNHANDLED node).
+#
+# `linear` (`schedule`) answers `LINEAR(call, ...)`, and a kernel's BODY is the CALL's
+# `src[0]` -- upstream's `do_to_program` linearizes THE SINK (`codegen/__init__.py:456`),
+# not the CALL, and the port's `linearize` takes the toposort the caller owes it
+# (`linearizer.py:7` does `list(sink.toposort())` itself).
+# THE LOWERING PASSES ARE PART OF THE LANE: `full_rewrite_to_sink` runs the weak rounds
+# and `pm_reduce_local` before `linearize`, and without them a kernel renders `weakint`
+# and `UNHANDLED(Ops.REDUCE)` -- MEASURED, that is exactly what the first run of this
+# driver printed. `wk_commit` is `pm_commit_weak`+`pm_cast_const`+`pm_uncast_const`;
+# `lower_reduce_all` is `lower_reduce` (the small-range unroll, bounded by `LR_MAX`) and
+# `alloc_to_buf_all` is `pm_alloc_to_buf`.
+def body_low(+ar: O.Arena, +b: U32) -> O.Found:
+  +w = WK.wk_commit(ar, b)
+  +r = KR.lower_reduce_all(O.Found.ar(w), O.Found.i(w))
+  KR.alloc_to_buf_all(O.Found.ar(r), O.Found.i(r))
+
+def body_kus(+ar: O.Arena, +k: U32) -> (O.Arena & List<&2, C.KU>):
+  +l = body_low(ar, SCH.sc_src0(ar, k))
+  +a2 = O.Found.ar(l)
+  +b2 = O.Found.i(l)
+  +lst = O.UOp.toposort(O.Arena.budget(a2), a2, b2)
+  +lin = LIN.linearize(a2, lst, Nil{}, b2)
+  (a2, KC.kuconv.convert(F.folded(a2), lin))
+
+def program.of(p: (O.Arena & List<&2, C.KU>), name: String) -> Prog:
+  (ar, kus) = p
+  program(name, kus)
+
+def compile_sink(+ar: O.Arena, sink: U32) -> Prog:
+  +lin = schedule(ar, sink)
+  +ar2 = O.Found.ar(lin)
+  program.of(body_kus(ar2, SCH.sc_src0(ar2, O.Found.i(lin))), "test")
