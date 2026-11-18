@@ -389,7 +389,8 @@ def dc_l_tab(+fast: Bool) -> O.PMEntrys:
                            O.PMEntry{14, [O.OpsADD{}],        [O.OpsMUL{}]},                    # 119
                            O.PMEntry{15, [O.OpsADD{}],        [O.OpsSHL{}]},                    # 121
                            O.PMEntry{16, [O.OpsRECIP{}], Nil{}},                           # 124
-                           O.PMEntry{17, [O.OpsMUL{}],        [O.OpsFDIV{}]}]}                  # 125
+                           O.PMEntry{17, [O.OpsMUL{}],        [O.OpsFDIV{}]},                   # 125
+                           O.PMEntry{18, [O.OpsMAX{}],        Nil{}}]}                         # 83
     case False{}: O.PMEntrys{[O.PMEntry{0,  [O.OpsAND{}],        [O.OpsCMPNE{}]},                 # 85
                             O.PMEntry{1,  [O.OpsMUL{}],        [O.OpsCONST{}]},                 # 88
                             O.PMEntry{2,  [O.OpsTRUNCDIV{}],       [O.OpsCONST{}]},                 # 91
@@ -407,7 +408,8 @@ def dc_l_tab(+fast: Bool) -> O.PMEntrys:
                             O.PMEntry{14, [O.OpsADD{}],        [O.OpsMUL{}]},                   # 119
                             O.PMEntry{15, [O.OpsADD{}],        [O.OpsSHL{}]},                   # 121
                             O.PMEntry{16, [O.OpsRECIP{}], Nil{}},                          # 124
-                            O.PMEntry{17, [O.OpsMUL{}],        [O.OpsFDIV{}]}]}                 # 125
+                            O.PMEntry{17, [O.OpsMUL{}],        [O.OpsFDIV{}]},                  # 125
+                            O.PMEntry{18, [O.OpsMAX{}],        Nil{}}]}                        # 83
 
 def dc_one(+which: U32) -> Bool:
   U32.is_lt(which, 2)
@@ -1962,6 +1964,39 @@ def dc_l3.go(+ar: O.Arena,+fx: F.Folded,+self: U32,+ok: Bool) -> Maybe<&2, O.Fou
 def dc_l3(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
   dc_l3.go(F.Folded.ar(fx), fx, self, dc_l3.pat(F.Folded.ar(fx), fx, self))
 
+# ---- rule 18 -- op.py:83. `MAX(a, b) -> (a < b).where(b, a)`. THE RULE THIS TABLE
+# DID NOT HAVE, and it is the FIRST one upstream builds:
+#
+#   "MAX can be rewritten as CMPLT + WHERE (max function is annoying on many cstyle
+#    backends). late: WHERE loses the bound MAX carries"
+#
+# `MAX` is not in the C renderer's `code_for_op` -- `cstyle.py:142-150` is TWENTY-ONE
+# keys and MAX is not one of them, and neither is it in `runtime/ops_null.py`'s
+# extension -- so a MAX that survives to the renderer is `UNHANDLED(Ops.MAX)`.
+# MEASURED: that is exactly what the max_pool2d kernel printed before this rule.
+#
+# THE TAG IS LAST AND THE ORDER IS STILL UPSTREAM's: no other rule claims `Ops.MAX`,
+# so moving it to the end of the table cannot change which rule fires on any node --
+# and it keeps every existing tag (and every gate row that names one) where it is.
+# THE CLAIM is upstream's `Ops.MAX not in ops and Ops.CMPLT in ops`, and both hold
+# for the C target: the renderer has CMPLT and has no MAX.
+def dc_l18.pat(+ar: O.Arena, +self: U32) -> Bool:
+  Bool.and(O.eq_op(O.Arena.op(ar, self), O.OpsMAX{}), dc_isn2(ar, self))
+
+def dc_l18.body(+ar: O.Arena, +self: U32) -> O.Found:
+  +a = O.Arena.src0(ar, self)
+  +b = O.Arena.src(ar, self, 1)
+  +c = dc_alu2(ar, O.OpsCMPLT{}, a, b)
+  O.UOp.where(O.Found.ar(c), O.Found.i(c), b, a)
+
+def dc_l18.go(+ar: O.Arena, +self: U32, ok: Bool) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}: Some{dc_l18.body(ar, self)}
+    case False{}: None{}
+
+def dc_l18(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
+  dc_l18.go(F.Folded.ar(fx), self, dc_l18.pat(F.Folded.ar(fx), self))
+
 def dc_l_apply.pick(+tag: U32, +fx: F.Folded, +self: U32, +acc: Hit) -> Hit:
   match tag:
     case 0: dc_l_fold(acc, 0, dc_l0(fx, self))
@@ -1982,6 +2017,7 @@ def dc_l_apply.pick(+tag: U32, +fx: F.Folded, +self: U32, +acc: Hit) -> Hit:
     case 15: dc_l_fold(acc, 15, dc_l15(fx, self))
     case 16: dc_l_fold(acc, 16, dc_l16(fx, self))
     case 17: dc_l_fold(acc, 17, dc_l17(fx, self))
+    case 18: dc_l_fold(acc, 18, dc_l18(fx, self))
     case _: acc
 
 def dc_l_apply(+tag: U32, +fx: F.Folded, +self: U32, +acc: Hit) -> Hit:

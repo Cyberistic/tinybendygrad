@@ -1,0 +1,2 @@
+mx=on=1 tg=18 ans=WHERE:none:OTHER,OTHER,OTHER srcs=OTHER:none:OTHER,OTHER,OTHER:other:CONST in=OTHER:other:CONST
+shape=is_where=True c0_is_cmplt=True cmp_is(a,b)=True where_is(b,a)=True
