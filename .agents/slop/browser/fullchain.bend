@@ -142,6 +142,9 @@ def chain_rows(+cc: Chain) -> List<&2, String>:
    String.concat(["chain_ku_n=", U32.show(U32.from_nat(List.length(&2, C.KU, kus)))]),
    String.concat(["chain_lin_ops=", chain_codes(lar, lst)]),
    String.concat(["chain_ku_sig=", chain_ksig(kus)]),
+   String.concat(["chain_dump_sched=", RR.rr_dump(ar, chain_body(ar, k))]),
+   String.concat(["chain_dump_committed=", RR.rr_dump(war, wb)]),
+   String.concat(["chain_dump_reduced=", RR.rr_dump(lar, lb)]),
    String.concat(["chain_c_nbytes=", U32.show(U32.from_nat(String.length(src)))]),
    String.concat(["chain_c=", src])]
 
