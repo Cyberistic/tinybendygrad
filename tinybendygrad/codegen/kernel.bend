@@ -1335,7 +1335,16 @@ def lr_go(idm: Maybe<&2, O.Found>, rop: O.Op, +inp: U32, +rs: List<&2, U32>, +ar
 # port has no `pm_split_ends`/`pm_add_control_flow` to order an END -- so every
 # accumulator kernel is wrong today. The unroll is bounded (`LR_MAX`) so a real MNIST
 # conv (extent 25) still takes the accumulator path and is NOT claimed to work.
-def LR_MAX() -> U32: 8
+# 32, and the number is a MEASUREMENT. 512 was tried first and `bend` died with
+# `memory fault (machine stack overflow?)` on the 392-extent fc: `lr_sweep.go` is a plain
+# recursion over the arena's toposort and a 392-term unroll puts ~150k nodes in it. So the
+# bound is the CONV WINDOW (9/25 fit), not the fc.
+#
+# AND A BOUND IS NEEDED AT ALL because the accumulator form's END ordering does not render
+# here -- the store lands after the `}`, the body is empty, and the braces do not balance --
+# since the port has no `pm_split_ends`/`pm_add_control_flow`. The unroll is correct for any
+# static extent and only costs text.
+def LR_MAX() -> U32: 32
 
 # THE RANGE'S EXTENT MAY BE A COMMITTED CONST -- `ADt` on `src0` -- and the raw const arm
 # then answers `None`. MEASURED: `chain_red=212 nax=0 nsrc=2 ext=none`, so the unroll never
