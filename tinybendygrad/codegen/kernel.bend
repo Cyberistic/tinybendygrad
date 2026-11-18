@@ -1337,8 +1337,18 @@ def lr_go(idm: Maybe<&2, O.Found>, rop: O.Op, +inp: U32, +rs: List<&2, U32>, +ar
 # conv (extent 25) still takes the accumulator path and is NOT claimed to work.
 def LR_MAX() -> U32: 8
 
+# THE RANGE'S EXTENT MAY BE A COMMITTED CONST -- `ADt` on `src0` -- and the raw const arm
+# then answers `None`. MEASURED: `chain_red=212 nax=0 nsrc=2 ext=none`, so the unroll never
+# fired: the extent node's arg kind is `dt`, i.e. a CAST. Read through ONE cast, as
+# `ParamArg.size` already does for a PARAM's shape arg.
+def lr_extent.alt(m: Maybe<&2, U32>, +ar: O.Arena, +n: U32) -> Maybe<&2, U32>:
+  match m:
+    case Some{v}: Some{v}
+    case None{} : O.ParamArg.size.const(O.Arena.arg(ar, O.Arena.src0(ar, n)))
+
 def lr_extent(+ar: O.Arena, +r: U32) -> Maybe<&2, U32>:
-  O.ParamArg.size.const(O.Arena.arg(ar, O.Arena.src0(ar, r)))
+  +n = O.Arena.src0(ar, r)
+  lr_extent.alt(O.ParamArg.size.const(O.Arena.arg(ar, n)), ar, n)
 
 # A ONE-ENTRY SUBSTITUTE. `CG.UOp.substitute` is in `codegen/__init__.bend`, which
 # IMPORTS this file, so the cycle forbids it; this is the same postorder rebuild over

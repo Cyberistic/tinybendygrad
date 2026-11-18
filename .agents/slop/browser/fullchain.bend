@@ -140,6 +140,47 @@ def chain_tm.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, String>) -> Lis
 def chain_tm(+ar: O.Arena, +root: U32) -> String:
   String.join(chain_tm.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, root), Nil{}), " ")
 
+def chain_mb(m: Maybe<&2, U32>) -> String:
+  match m:
+    case Some{v}: U32.show(v)
+    case None{} : "none"
+
+def chain_ax(a: O.Arg) -> String:
+  match a:
+    case O.AReduce{rop, num_axes}: String.concat(["nax=", U32.show(num_axes)])
+    case _: "not-reduce"
+
+def chain_red.put(hit: Bool, n: U32, acc: U32) -> U32:
+  match hit:
+    case True{} : n
+    case False{}: acc
+
+def chain_red.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case n <> t: chain_red.go(ar, t, chain_red.put(Bool.and(U32.is_zero(acc), O.eq_op(O.Arena.op(ar, n), O.OpsREDUCE{})), n, acc))
+
+# THE REDUCE IS IN THE PRE-LOWER GRAPH (`war`/`wb`); `lar`/`lb` are AFTER `lower_reduce`,
+# which is why the first version of this row answered `0 not-reduce`.
+def chain_kind(a: O.Arg) -> String:
+  match a:
+    case O.APy{v}: "py"
+    case O.AParam{pa}: "param"
+    case O.ARange{ids, at}: "range"
+    case O.ANone{}: "none"
+    case O.ADt{dt}: "dt"
+    case _: "other"
+
+def chain_red_row(+ar: O.Arena, +root: U32) -> String:
+  +rd = chain_red.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, root), 0)
+  String.concat(["chain_red=", U32.show(rd), " ", chain_ax(O.Arena.arg(ar, rd)), " nsrc=",
+    U32.show(U32.from_nat(List.length(&2, U32, O.Arena.srcs(ar, rd)))),
+    " ext=", chain_mb(KR.lr_extent(ar, O.Arena.src(ar, rd, 1))),
+    " small=", chain_mb(KR.lr_small(ar, rd)), " max=", U32.show(KR.LR_MAX()),
+    " rg=", RF.eng_op_name(O.Arena.op(ar, O.Arena.src(ar, rd, 1))),
+    "/", U32.show(U32.from_nat(List.length(&2, U32, O.Arena.srcs(ar, O.Arena.src(ar, rd, 1))))),
+    "/", chain_kind(O.Arena.arg(ar, O.Arena.src0(ar, O.Arena.src(ar, rd, 1))))])
+
 def chain_rows(+cc: Chain) -> List<&2, String>:
   +ar = chain_ar(cc)
   +k = chain_k(cc)
@@ -167,6 +208,7 @@ def chain_rows(+cc: Chain) -> List<&2, String>:
    String.concat(["chain_ku_n=", U32.show(U32.from_nat(List.length(&2, C.KU, kus)))]),
    String.concat(["chain_lin_ops=", chain_codes(lar, lst)]),
    String.concat(["chain_ku_sig=", chain_ksig(kus)]),
+   chain_red_row(war, wb),
    String.concat(["chain_tm_reduced=", chain_tm(lar, lb)]),
    String.concat(["chain_tm_sched=", chain_tm(war, wb)]),
    String.concat(["chain_dump_sched=", RR.rr_dump(ar, chain_body(ar, k))]),
