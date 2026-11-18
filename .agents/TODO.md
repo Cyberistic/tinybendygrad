@@ -1219,6 +1219,58 @@ driver-coverage [##########] 3/3  **TWO DRIVERS THE RUN EXECUTES WERE NOT IN THE
                                        silently unbound `SLOP`/`BEND`/`BEND_DBG` together and
                                        yielded ZERO hits in `graphcmp.py`; and a bare `Path(...)` was
                                        scored as an invocation.
+comment-cut-runtime-nn-mixin [#########] 9/9  **THE **COMMENT **CUT** **ON **THE **runtime/ **nn/ **mixin/**
+                                         AND **THE **SIX **TOP-LEVEL **FILES**, **AND **THE **CUT
+                                         **LEFT **A **CLASS **OF **DEFECT **THAT **THE **CUT **MADE.**
+                                         **⇒⇒† AND **THE **RULE** (`AGENTS.md:16`): **A **COMMENT
+                                         **EARNS **ITS **PLACE **IN **ONE **OF **THREE **WAYS** --
+                                         **DIFFERENCE** (**WHAT **THE **PORT **DOES **THAT
+                                         **UPSTREAM **DOES **NOT**, **NAMING **THE **UPSTREAM
+                                         **LINE**), **WEIRD** (**WHY **SOMETHING **LOOKS **WRONG
+                                         **BUT **IS **NOT**), **MEASURED** (**THE **NUMBER **THAT
+                                         **JUSTIFIES **THE **CODE**). **⇒⇒† AND **EVERYTHING **ELSE
+                                         **IS **NARRATION, **AND **NARRATION **IS **WHAT **GETS
+                                         **CUT**.**
+                                         **⇒⇒† AND **CUT**: **THE **PORTING **PROCESS** (`function.bend`'s
+                                         **22-LINE **"THE **BRIEF **DESCRIBES **A **DIFFERENT
+                                         **FILE**"**, `tensor.bend`'s **11-LINE **HAND-OFF**),
+                                         **STATUS **REPORTS** (`ops_python.bend`, `hcq2.bend`),
+                                         **STALE **GENERATED-FILE **BANNERS** (**`elfbuild.py`,
+                                         **`usb-build.py`'s **PIECES **AND **`nv_nvdev_gen.py` **ARE
+                                         **ALL **ABSENT **FROM **THE **TREE**), **AND **THE **UPSTREAM
+                                         **HEADER **RESTATED**.**
+                                         **⇒⇒† AND **THE **DEFECT **THE **CUT **MADE**, **AND **IT
+                                         **IS **THE **BIGGER **FINDING**: **A **TRIM **THAT **CUTS **A
+                                         **COMMENT **BLOCK'S **TAIL **LEAVES **A **SENTENCE **WITH
+                                         **NO **END** -- **"# **`struct_libusb_transfer` **shipped
+                                         **with **transposed **fields **and **a **count-based
+                                         **gate**" **AND **NOTHING **AFTER **IT. **THAT **IS **NOT
+                                         **A **SHORTER **COMMENT**, **IT **IS **A **COMMENT **THAT
+                                         **SAYS **SOMETHING **FALSE **BY **OMISSION**, **AND **IT
+                                         **IS **WORSE **THAN **THE **PARAGRAPH **IT **REMOVED.**
+                                         **⇒⇒† AND **TWO **OF **THOSE **TRIMS **ALSO **DELETED **THE
+                                         **RECORD **OF **A **REAL **PORT **BUG** (`elf.bend`'s
+                                         **"A **COUNT **SAW **NOTHING**" **AND **the **`sh_link`
+                                         **filled **with **the **OFFSET **instead **of **the
+                                         **VALUE**"). **⇒⇒† AND **159 **DANGLING **BLOCKS **REPAIRED
+                                         **FROM **THE **FILES' **OWN **PRE-TRIM **STATE**
+                                         (**`5de8a84f8`**), **AND **THE **REPAIRS **ARE **THE
+                                         **SUBJECT **OF **THE **COMMIT **MESSAGES**.**
+                                         **⇒⇒† AND **MEASURED**: **THE **19 **FILES **THIS **UNIT
+                                         **EDITED** WENT **14,622 **-> **11,926 **COMMENT **LINES**
+                                         (**-2,696**, **-18.4%**); **THE **79-FILE **GROUP
+                                         **34,093 **-> **30,328**. **THE **CORPUS **AT
+                                         **`f9c22fb70`**: **38 **graphs**, **38 **agree**, **0
+                                         **disagree**, **38 **byte-identical**, **0 **refused**,
+                                         **`selfcheck=# **SELFCHECK: **OK`**, **`substrate-start
+                                         **== **substrate-end **== **repro-substrate`**, **AND
+                                         **`repro: **339 **of **339 **files **identical **across
+                                         **two **clean **runs**.**
+                                         **⇒⇒† AND **THE **DETECTOR** **IS **A **SCRIPT**, **NOT
+                                         **A **HAND **LIST**: **A **COMMENT **BLOCK **WHOSE **LAST
+                                         **LINE **ENDS **IN **A **COMMA**, **A **CONJUNCTION
+                                         **OR **AN **ARTICLE**, **WITH **NO **`.`/`!`/`?`/`:`**
+                                         **TERMINATOR**, **IS **A **CUT **SENTENCE**.**
 comment-decay-restored [######...] 3/3  **A SWEEP THAT DELETES A FILE MAKES A LATER RESTORE INVISIBLE TO
                                        EVERY SENTENCE THAT REMEMBERS THE DELETE.** `differ.py:888`
                                        asserted *"THAT PROBE NO LONGER EXISTS ... deleted in sweep
