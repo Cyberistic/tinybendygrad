@@ -775,34 +775,48 @@ def rr_marg(+ar: O.Arena, +x: U32) -> List<&2, U32>:
 # a,(off,_) in zip(rngs, arg))` (indexing.py:166). ONE ADD, and it needs no `valid` --
 # which is why SHRINK lands and PAD does not yet (`PAD`'s arm is `(r-off).valid(gate)` and
 # `valid` + `pm_simplify_valid` are the other half of W3).
-def rr_shr.one.zero(z: Bool, +off: U32, +r: U32, +ar: O.Arena) -> O.Found:
-  match z:
-    case True{} : O.Found{ar, r}
-    case False{}:
-      +c = O.UOp.cconst(ar, O.CInt{H.i64_of_i32(off)}, S.int32())
-      O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [r, O.Found.i(c)])
-
-def rr_shr.one(+off: U32, +r: U32, +ar: O.Arena) -> O.Found:
-  rr_shr.one.zero(U32.is_zero(off), off, r, ar)
-
-def rr_shr.go(+rs: List<&2, U32>, +offs: List<&2, U32>, +ar: O.Arena, acc: (O.Arena & List<&2, U32>)) -> (O.Arena & List<&2, U32>):
-  match rs:
+#
+# `a` IS A NODE UPSTREAM AND A TABLE POSITION HERE, AND THAT IS THE WHOLE OF THIS ARM:
+# `off == 0` answers the SAME ENTRY, because the END's closed ranges and the index math
+# must name the SAME node for `_ranges` to pop it -- MEASURED, minting a fresh entry moved
+# the END and the index math onto different RANGE nodes, so `_ranges` saw two open ranges
+# and `split_store`'s `any(r.axis_type is not DEVICE)` gate refused, and no kernel was
+# ever built. `off != 0` holds the ADD as a KIND-2 entry (`indexing.bend`'s `ix_rg_n`).
+#
+# The zero tests are a LIST because `a match cannot scrutinize a computed value`: a branch
+# on `U32.is_zero(o)` inside the loop is refused, so the flags are computed first by a
+# def that does not grow the arena.
+def rr_shr.zs.go(+offs: List<&2, U32>, +acc: List<&2, Bool>) -> List<&2, Bool>:
+  match offs:
     case Nil{}: acc
-    case r <> rt:
+    case o <> ot: rr_shr.zs.go(ot, List.append(&2, Bool, acc, [U32.is_zero(o)]))
+
+def rr_shr.zs(+offs: List<&2, U32>) -> List<&2, Bool>: rr_shr.zs.go(offs, Nil{})
+
+def rr_shr.go(+ps: List<&2, U32>, +offs: List<&2, U32>, +zs: List<&2, Bool>, +ar: O.Arena,
+              +tbl: List<&2, IX.IxRange>, +acc: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+  match ps:
+    case Nil{}: (ar, acc)
+    case pos <> pt:
       match offs:
-        case Nil{}: acc
+        case Nil{}: (ar, acc)
         case o <> ot:
-          (+a0, +xs) = acc
-          +f = rr_shr.one(o, r, a0)
-          rr_shr.go(rt, ot, O.Found.ar(f), (O.Found.ar(f), List.append(&2, U32, xs, [O.Found.i(f)])))
+          match zs:
+            case Nil{}: (ar, acc)
+            case z <> zt:
+              match z:
+                case True{} : rr_shr.go(pt, ot, zt, ar, tbl,
+                                        List.append(&2, IX.IxRange, acc, [IX.ix_tbl_at(tbl, pos)]))
+                case False{}:
+                  +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_tbl_at(tbl, pos))
+                  +c = O.UOp.cconst(O.Found.ar(f), O.CInt{H.i64_of_i32(o)}, S.int32())
+                  +d = O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(f), O.Found.i(c)])
+                  rr_shr.go(pt, ot, zt, O.Found.ar(d), tbl,
+                            List.append(&2, IX.IxRange, acc, [IX.ix_rg_n(O.Found.i(d))]))
 
-def rr_shr.fin(p: (O.Arena & List<&2, U32>)) -> (O.Arena & List<&2, IX.IxRange>):
-  (ar, ns) = p
-  (ar, rr_wrap.go(ns, Nil{}))
-
-def rr_shrink(+ar: O.Arena, +x: U32, +out: List<&2, U32>) -> (O.Arena & List<&2, IX.IxRange>):
-  rr_shr.fin(rr_shr.go(out, rr_marg(ar, x), ar, (ar, Nil{})))
-
+def rr_shrink(+ar: O.Arena, +x: U32, +out: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+  +offs = rr_marg(ar, x)
+  rr_shr.go(out, offs, rr_shr.zs(offs), ar, tbl, Nil{})
 
 # `apply_movement_op`'s FOUR arms, with the arena they grow and the ENTRIES they answer.
 def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
@@ -810,7 +824,7 @@ def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +
     case O.OpsPERMUTE{}: (ar, rr_ents.go(IX.ix_mv_permute(arg, out), tbl, Nil{}))
     case O.OpsEXPAND{} : (ar, rr_ents.go(IX.ix_mv_expand(arg, out), tbl, Nil{}))
     case O.OpsRESHAPE{}: rr_reshape(ar, rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out, tbl)
-    case O.OpsSHRINK{} : rr_shrink(ar, x, out)
+    case O.OpsSHRINK{} : rr_shrink(ar, x, out, tbl)
     case _: (ar, rr_ents.go(out, tbl, Nil{}))
 
 # append each entry to the table, answering its POSITION. The table is the map, so the
