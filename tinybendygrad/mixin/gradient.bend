@@ -1556,38 +1556,7 @@ def fix.put(fx: F.Folded, t1: U32, t4: U32, t5: U32, t6: U32, t7: U32, t8: U32, 
   Fix{fx, t1, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t26,
        t32, t31, af29, af28, one, bufA, bufB, t0, store29, store28}
 
-# THE NODE LIST, in binding order. The comment on each line says what the node is and
-# WHICH TAG claims it -- and for three of them, what ELSE claims it.
-#   0 bottom          the arena's spent slot, and tinygrad's `None`
-#   1 CONST 1.0       the seed ctx of every rule call
-#   2 CONST 0.5       POW's base
-#   3 CAST(1.0,int)   CAST's ret.src[0], whose dtype the rule reads
-#   4 RECIP(1)   tag 1
-#   5 SIN(1)          tag 2
-#   6 LOG2(1)         tag 3
-#   7 EXP2(1)         tag 4
-#   8 SQRT(1)         tag 5
-#   9 TRUNC(1)        tag 6
-#  10 CMPLT(1,1)      tag 7 -- the ALL-HOLES answer
-#  11 ADD(1,1)        tag 9 -- ctx in BOTH slots
-#  12 POW(.5,1)       tag 10
-#  13 MAX(1,1)        tag 11 -- a TIE, so the ctx*0.5 branch is live
-#  14 MUL(1,1)        tag 12 -- a SQUARE, so interning makes both slots one node
-#  15 WHERE(1,1,1)    tag 13
-#  16 STAGE(1)        tag 16
-#  17 EXPAND(1)       tag 18
-#  18 RESHAPE(1,3)    tag 17 -- TWO srcs, so its 2-slot answer is EXACT here
-#  19 SINK(1,.5)      tag 26 -- ctx.src is the answer
-#  20 CAST(1,int)     tag 0 -- INT, not float: an identity cast FOLDS in `gcast`
-#  21 BITCAST(3,float) tag 32 -- ONE hole for a ONE-src node
-#  22 STORE(1,.5)     tag 31
-#  23 BUFFER slot 0   no rule claims a BUFFER
-#  24 BUFFER slot 1
-#  25 STORE(A,1)      tag 29's STORE: dest is bufA, and so is the AFTER's src[0]
-#  26 AFTER(A, 25)    tag 29 FIRES -- the identity holds. tag 28 and 30 also CLAIM it.
-#  27 STORE(A,.5)     tag 29's STORE again, for the ordering-only AFTER
-#  28 AFTER(B, 27)    tag 28's shape: dest is bufB, stored into bufA, so the identity
-#                     FAILS and tag 29 must NOT fire.
+# THE NODE LIST, in binding order, IS IN `.agents/slop/tables/mixin-gradient-1559.md`.
 def fix() -> Fix:
   +n1 = gconst(O.Arena.empty(), k_fone())
   +n2 = gconst(O.Found.ar(n1), k_fhalf())
@@ -1733,25 +1702,18 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 # INTERNING (ops.bend:1777), so an existing node contributes 0 and the difference is
 # exactly the number of NEW nodes the rule created.
 #
-# These numbers are Python's, dumped by `.agents/slop/notes/grad_oracle.py`:
-#   recip 12   sin 10   log2 8    exp2 8    sqrt 9    trunc 2
-#   pow   24 (slot 0) and 29 (slot 1) -- the SAME rule, and they differ because slot 1
-#         builds the `b.eq(0)` / `e<0` / `-inf` branch that slot 0 does not.
-#
-# A rule's gradient is a NODE TREE, and its SIZE is the one fact no amount of
-# value-agreement can hide. A port that folded the `CAST` away from a CONST would build
-# a strictly shorter tree with the strictly same value, and every boolean row in this
-# gate would still pass. The size is arena-INDEPENDENT, which matters: `Arena.next`
-# growth is not comparable to Python's counts, because Python's intern pool is fresh per
-# process and this fixture's arena already holds every folded constant, so the growth
-# here is 3 for `recip` where Python's tree has 12 nodes. The two numbers are about
-# different things and the tree size is the one with an oracle.
-#
 # Python's expectation, from `.agents/slop/notes/grad_oracle.py`:
 #   recip 12   sin 10   log2 8    exp2 8    sqrt 9    trunc 2    add 12
 #   pow   24 (slot 0) and 29 (slot 1) -- the SAME RULE, and they DIFFER because slot 1
 #         builds the `b.eq(0)` / `e<0` / `-inf` branch that slot 0 does not. A gate that
 #         only read slot 0 would never notice half of the rule being missing.
+#
+# A rule's gradient is a NODE TREE, and its SIZE is the one fact no amount of
+# value-agreement can hide. The size is arena-INDEPENDENT, which matters: `Arena.next`
+# growth is not comparable to Python's counts, because Python's intern pool is fresh per
+# process and this fixture's arena already holds every folded constant, so the growth
+# here is 3 for `recip` where Python's tree has 12 nodes. The two numbers are about
+# different things and the tree size is the one with an oracle.
 #
 # ONE def, no helper, and the reason is worth recording because it cost four attempts.
 # ANY split into "count this node" and "count this node's srcs" is MUTUALLY RECURSIVE,
@@ -1762,17 +1724,6 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 #     size(fuel, ar, todo, acc) = acc                                    if todo is empty
 #                                 1 + size(fuel-1, ar, srcs(head), 0) + size(fuel, ar, tail, 0)
 #
-# FUEL FIRST (rule 5). TWO self-calls in one arm is rule 7 -- but rule 7 says "the same
-# FUEL may not feed two self-calls", and here the two calls get DIFFERENT fuel: the
-# head's srcs get `fuel - 1` and the tail gets `fuel` unchanged. That is what makes the
-# arm legal, and it is the same shape `gs_solid.go` above uses (tail only, fuel free)
-# and `fold.bend`'s Kahn uses (fuel decrements, list separate). Both descents are
-# visible: the fuel shrinks on one branch, the list tail shrinks on the other.
-#
-# The fuel is `Arena.budget(ar)` (ops.bend:3400 symbol=Arena.budget) = `next(ar) + edges`,
-# the exact number of
-# pops a walk over the whole arena makes. A gradient tree is a subgraph of the grown
-# arena, so the walk cannot be cut short, and the DAG makes the bound finite.
 # THE ARM SHAPE, and it took five attempts, so the reasons are recorded because the
 # obvious spelling does not compile.
 #
@@ -1792,6 +1743,11 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 # into the tail -- and that is what makes the arm legal under rule 7 ("the same fuel may
 # not feed two self-calls in ONE arm"). Both descents are visible: the fuel shrinks on
 # one branch, the list tail on the other.
+#
+# The fuel is `Arena.budget(ar)` (ops.bend:3400 symbol=Arena.budget) = `next(ar) + edges`,
+# the exact number of pops a walk over the whole arena makes. A gradient tree is a
+# subgraph of the grown arena, so the walk cannot be cut short, and the DAG makes the
+# bound finite.
 def size(+fuel: Nat, +ar: O.Arena, todo: List<&2, U32>, acc: U32) -> U32:
   match fuel todo:
     case 1n+p s <> t: U32.add(U32.add(acc, U32.add(1, size(p, ar, O.Arena.srcs(ar, s), 0))), size(fuel, ar, t, 0))
