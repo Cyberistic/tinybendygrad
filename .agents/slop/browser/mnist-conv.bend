@@ -82,10 +82,47 @@ def pool_low() -> String:
   +l = DEV.body_low(ar2, b)
   RR.rr_dump(O.Found.ar(l), O.Found.i(l))
 
+# THE LINEAR'S KERNELS: each entry's op, then its body root's op. This is the row the
+# selection needs -- \`sc_src0(LINEAR)\` is a body only when the first entry IS a kernel.
+def pool_lk.go(+ar: O.Arena, +xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: pool_lk.go(ar, t, List.append(&2, String, acc,
+      [String.concat([RF.eng_op_name(O.Arena.op(ar, x)), ">",
+        RF.eng_op_name(O.Arena.op(ar, SCH.sc_src0(ar, x)))])]))
+
+def pool_lk() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ks = SCH.lin_kernels(lin)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
+    String.join(pool_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
+
+# WHY NO CALL: \`sk_0\` answers no-rewrite when the open-range gate fails or the walk
+# refuses something. Both are readable from the END that the split would wrap.
+def pool_sk.take(p: (O.Arena & List<&2, U32> & List<&2, U32> & List<&2, U32> & Bool)) -> String:
+  (ar, bs, rs, sn, bad) = p
+  String.concat(["bufs=", U32.show(U32.from_nat(List.length(&2, U32, bs))),
+                 " rngs=", U32.show(U32.from_nat(List.length(&2, U32, rs))),
+                 " bad=", Bool.show(bad)])
+
+def pool_sk() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +ar = O.Found.ar(kg)
+  +sink = O.Found.i(kg)
+  +aft = SCH.sc_src0(ar, sink)
+  +end = SCH.sc_src(ar, aft, 1)
+  String.concat(["open=", Bool.show(RF.sk_open(ar, end)), " ",
+    pool_sk.take(RF.sk_walk(O.Arena.budget(ar), [end], (ar, Nil{}, Nil{}, Nil{}, False{})))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
     _ : Unit <- IO.print(String.concat(["pool_kg=", pool_kg()]))
+    _ : Unit <- IO.print(String.concat(["pool_sk=", pool_sk()]))
+    _ : Unit <- IO.print(String.concat(["pool_lk=", pool_lk()]))
     _ : Unit <- IO.print(String.concat(["pool_low=", pool_low()]))
     _ : Unit <- IO.print(String.concat(["pool_c=", cn_src(pool_prog())]))
     IO.print(String.concat(["conv_c=", cn_src(conv_prog())]))
