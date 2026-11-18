@@ -7901,3 +7901,61 @@ gates/cstyle_render_census-gate.py`**) -- **⇒⇒† AND **THE **GATE's **OWN *
 **MASS **PER **FILE** (198 **FILES**, **9,218 **BLOCKS**, **55,320 **LINES**), **⇒⇒† AND **AND **NO **FILE's
 **COMMENT **MASS **MAY **GROW **PAST **IT** **WITHOUT **THE **BUDGET **BEING **REGENERATED**, **⇒⇒† AND
 **AND **A **BUDGET **THAT **CAN **BE **RAISED **WITHOUT **A **REASON **IS **NOT **A **BUDGET**.
+
+### 138.17 THE **RENDER's **BIGGEST **TERM **IS **THE **STRING **JOIN**, **AND **IT **COPIES **THE **TEXT
+**128x** -- **⇒⇒† AND **THE **PRELUDE's **RIGHT-NESTING **IS **WHY**
+
+**⇒⇒† AND **§138.9's **FINDING **WAS **THAT **THE **RENDER's **BIGGEST **ARMS **ARE **THE **TEXT
+**ASSEMBLY **AND **THE **STRING **JOINS** -- **⇒⇒† AND **THIS **IS **THE **MEASUREMENT **OF **THAT**.
+
+**⇒⇒† AND **THE **PRELUDE's **TWO **FUNCTIONS** (MEASURED, `references/bend/bend2/base.bend`)**:
+```
+def String.append(a: String, b: String) -> String:      # COPIES `a`, PUTS `b` AT THE END
+  match a:
+    case SNil{}: b
+    case SCon{h, t}: SCon{h, String.append(t, b)}
+
+def String.join.go(xs: List<&2, String>, h: String, +sep: String) -> String:   # RIGHT-NESTED
+  match xs:
+    case Nil{}: h
+    case h2 <> t: String.append(h, String.append(sep, String.join.go(t, h2, sep)))
+```
+
+**⇒⇒† AND **THE **COST **OF **THE **RIGHT-NESTING**: **THE **COPIES **ARE **THE **SUM **OF **THE
+**PREFIX **SUMS** -- **⇒⇒† AND **FOR **`n` **EQUAL-LENGTH **PIECES **OF **`l` **CHARS **THAT **IS
+**`l * n * (n+1) / 2`**, **⇒⇒† AND **SO **THE **AMPLIFICATION **OVER **THE **TEXT **IS **`(n+1)/2`**.
+
+**⇒⇒† AND **AND **THE **STATEMENT **COPIES **THE **TEXT **A **SECOND **TIME**: **`_render.plain`** **AND
+**`_render.decl`** **BOTH **DO **`String.concat([..., String.join(l, ""), ...])`**, **⇒⇒† AND **THE
+**JOINED **STRING **IS **THEN **COPIED **INTO **THE **CONCAT**.
+
+**⇒⇒† AND **THE **MEASURED **NUMBER** (THE **PROBE **IS **`.agents/slop/cpuseam/builds/
+probe-join-pieces.py`**, **⇒⇒† AND **IT **PATCHES **THE **COMPILED **`$String_join`** **AND **COUNTS **THE
+**LIST **AND **SUMS **THE **PREFIX **SUMS**):
+
+| | |
+|---|---|
+| **`String.join` **CALLS **A **TURN** | **693** |
+| **PIECES **A **TURN** | **3,384** |
+| **PIECES **PER **CALL** | **4.9** |
+| **CHARS **OF **TEXT **A **TURN** | **22,983** |
+| **CHARS **COPIED **BY **THE **JOIN **A **TURN** | **2,955,749** |
+| **THE **AMPLIFICATION** | **128.6x** |
+
+**⇒⇒† AND **THE **AMPLIFICATION **IS **NOT **A **CONSTANT** -- **⇒⇒† AND **IT **GROWS **WITH **THE
+**PIECE **COUNT** (**⇒⇒† AND **A **16-PIECE **STATEMENT **COPIES **ITS **TEXT **9.5x**)**.
+
+**⇒⇒† AND **THE **ONLY **O(n) **FORM **NEEDS **A **MUTABLE **STRING**, **⇒⇒† AND **BEND's **STRINGS **ARE
+**IMMUTABLE** -- **⇒⇒† AND **SO **THIS **IS **A **LANGUAGE **LIMIT**, **NOT **A **PORT **INEFFICIENCY** --
+**⇒⇒† AND **THE **PORT's **ANSWER **MUST **BE **A **DIFFERENT **DATA **SHAPE** (⇒⇒† AND **THE **STATEMENT's
+**TEXT **IS **ALREADY **A **LIST **OF **PIECES**, **⇒⇒† AND **AND **THE **JOIN **IS **THE **ONLY **PLACE
+**IT **BECOMES **A **STRING**)**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **INSTRUMENT **HAD **A **BUG **AND **THE **BUG **WAS **IN **THE **FORMULA**,
+**⇒⇒† AND **THAT **IS **THE **CLASS **THE **TREE **NAMES** (§138.5: **THE COUNT IS NOT THE COST**) **⇒⇒†
+**AND **THE **FIRST **VERSION **OF **THE **PROBE **REPORTED **1,171,871,186 **COPIED **CHARS** -- **⇒⇒† AND
+**THAT **IS **A **NUMBER **THE **PROBE **COULD **NOT **JUSTIFY** -- **⇒⇒† AND **THE **SECOND **VERSION
+**MULTIPLIED **THE **TOTAL **BY **THE **PIECE **COUNT **AGAIN** (**2,924,970**), **⇒⇒† AND **THE **THIRD
+**SUMS **THE **PREFIX **SUMS **DIRECTLY**, **⇒⇒† AND **WHICH **IS **THE **RIGHT **NUMBER** (⇒⇒† AND **AND
+**IT **IS **THE **SMALLEST **OF **THE **THREE**, **⇒⇒† AND **WHICH **IS **WHAT **SHOULD **HAVE **BEEN
+**THE **FIRST**)**.
