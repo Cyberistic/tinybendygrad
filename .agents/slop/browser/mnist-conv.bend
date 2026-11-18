@@ -932,6 +932,30 @@ def fchain_dump() -> String:
   +q = RZ.rz_rebuild(fchain_prog(), False{}, False{})
   RR.rr_dump(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
 
+def fchain_kg() -> String:
+  +q = RZ.rz_rebuild(fchain_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  RR.rr_dump(O.Found.ar(kg), O.Found.i(kg))
+
+# EVERY END IN THE CHAIN'S KERNEL GRAPH: the ranges it ENDS against the ones `_ranges` still sees
+# open through its srcs. An END whose `open` is not empty is a store `split_store` refuses.
+# (`F.Ranged`/`F.RTable` cannot be PARAMETER types from another module -- only accessor calls on a
+# value the module itself built -- so the range table is rebuilt per node; n is ~30.)
+def end_rows.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      end_rows.go(ar, tb, t, Bool.pick(List<&2, String>, O.eq_op(O.Arena.op(ar, x), O.OpsEND{}),
+        List.append(&2, String, acc,
+          [String.concat(["ended=", pool_ids(Maybe.default(&2, List<&2, U32>, F.UOp.ended_ranges(ar, tb, x), Nil{})),
+                          " open=", pool_ids(F.Rng.rs(F.UOp.ranges(ar, F.rng_sweep(ar, tb), x)))])]), acc))
+
+def end_rows() -> List<&2, String>:
+  +q = RZ.rz_rebuild(fchain_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +ar = O.Found.ar(kg)
+  end_rows.go(ar, F.Folded.t(F.folded(ar)), O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(kg)), Nil{})
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -972,6 +996,8 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["sw_row=", String.join(sw_row(), " | ")]))
     _ : Unit <- IO.print(String.concat(["fbd_row=", fbd_row()]))
     _ : Unit <- IO.print(String.concat(["fchain_dump=", fchain_dump()]))
+    _ : Unit <- IO.print(String.concat(["end_rows=", String.join(end_rows(), " | ")]))
+    _ : Unit <- IO.print(String.concat(["fchain_kg=", fchain_kg()]))
     _ : Unit <- IO.print(String.concat(["fc_lk=", fc_lk()]))
     _ : Unit <- IO.print(String.concat(["fc_c=", fc_c()]))
     _ : Unit <- IO.print(String.concat(["fwd_lk=", fwd_lk()]))
