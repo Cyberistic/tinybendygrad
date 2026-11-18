@@ -80,10 +80,31 @@ def texts() -> String:
                  " finite=", C.ku_const_repr(O.CFloat{B.F32.from_bits(1065353216)}),
                  " int=", C.ku_const_repr(O.CInt{H.i64_of_i32(7)})])
 
+def cv_dims.m(m: Maybe<&2, List<&2, O.Sint>>) -> String:
+  match m:
+    case Some{ds}: U32.show(U32.from_nat(List.length(&2, O.Sint, ds)))
+    case _: "none"
+
+def cv_dims(+t: T.Tensor) -> String: cv_dims.m(T.tn_dims(t))
+
+# THE CONV CHAIN: does the reduce survive the MUL?
+def cv_chain() -> String:
+  +dst = RZ.rz_input(O.Arena.empty(), 0, 676, [1, 1, 26, 26])
+  +x = RZ.rz_input(T.Tensor.ar(dst), 1, 784, [1, 1, 28, 28])
+  +w = RZ.rz_input(T.Tensor.ar(x), 2, 9, [1, 1, 3, 3])
+  +r = MX.mxw_reshape.go(x, [1, 1, 26, 3, 26, 3])
+  +wr = MX.mxw_reshape.go(w, [1, 1, 1, 3, 1, 3])
+  +m = T.tn_mul(r, wr)
+  +f = T.tn_rop(T.Tensor.ar(m), T.Tensor.u(m), O.OpsADD{}, [3, 5])
+  String.concat(["mul=", RF.rr_node_str(T.Tensor.ar(m), T.Tensor.u(m)),
+                 " out=", RF.rr_node_str(O.Found.ar(f), O.Found.i(f)),
+                 " dims=", cv_dims(m), " dr=", cv_dims(r), " dw=", cv_dims(wr)])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(String.concat(["texts=", texts()]))
     IO.print(String.concat(["ident=", ident()]))
+    IO.print(String.concat(["cv_chain=", cv_chain()]))
     IO.print(String.concat(["rop=", rop()]))
     IO.print(String.concat(["raw=", rop_raw()]))
     IO.print(String.concat(["rebuild=", rop_dbg()]))

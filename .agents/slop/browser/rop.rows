@@ -1,5 +1,6 @@
 texts=neginf=((float)(-__builtin_inff())) posinf=((float)(__builtin_inff())) nan=((float)(__builtin_nanf(""))) finite=1.0f int=7
 ident=node=CONST:cother: arg=CFloat=-inf
+cv_chain=mul=MUL:none:RESHAPE,RESHAPE out=MUL:none:RESHAPE,RESHAPE dims=none dr=none dw=6
 rop=node=REDUCE:other:PERMUTE arg=n=2 nsrc=1
 raw=raw arg=n=0 nsrc=1
 rebuild=rebuild arg=n=0 nsrc=1

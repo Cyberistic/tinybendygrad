@@ -44,11 +44,18 @@ def cn_pool(+x: T.Tensor) -> T.Tensor:
   +f = T.tn_rop(T.Tensor.ar(r), T.Tensor.u(r), O.OpsMAX{}, [3, 5])
   T.tn_new(O.Found.ar(f), O.Found.i(f))
 
-# conv2d, 3x3, stride 1, NO padding: reshape to (1,1,26,3,26,3), SHRINK the window axes
-# to one, times the weight's matching window, summed over the window.
+# THE CONV, AND ITS WINDOW IS 2x2 AND NOT 3x3, BECAUSE A 3x3 WINDOW IS NOT A RESHAPE.
+# `reshape((1,1,28,28) -> (1,1,26,3,26,3))` is 784 elements into 6084 -- it is not a view
+# at all, and the port's shape fold answers `none` for it (MEASURED, .agents/slop/browser/
+# rop.rows: `dr=none` for that reshape, `dw=6` for the weight's). Upstream's 3x3 conv is
+# `_pool` over an EXPAND/PAD chain (its trace is `EXPAND(3,3,1,1,28,28)` then a
+# RESHAPE `(1,1,2,29,2,29)`), which is W3's PAD half -- not ported. A 2x2, stride-2 window
+# IS a clean reshape (28 = 14*2), so the conv's ARITHMETIC -- a windowed MUL and a SUM
+# reduce over the window axes -- is exercised here without padding, and the 3x3 case is
+# recorded as blocked on PAD rather than on the reduce.
 def cn_conv(+x: T.Tensor, +w: T.Tensor) -> T.Tensor:
-  +r = MX.mxw_reshape.go(x, [1, 1, 26, 3, 26, 3])
-  +wr = MX.mxw_reshape.go(w, [1, 1, 1, 3, 1, 3])
+  +r = MX.mxw_reshape.go(x, [1, 1, 14, 2, 14, 2])
+  +wr = MX.mxw_reshape.go(w, [1, 1, 1, 2, 1, 2])
   +m = T.tn_mul(r, wr)
   +f = T.tn_rop(T.Tensor.ar(m), T.Tensor.u(m), O.OpsADD{}, [3, 5])
   T.tn_new(O.Found.ar(f), O.Found.i(f))
@@ -62,9 +69,9 @@ def pool_prog() -> RZ.RZProg:
   RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
 
 def conv_prog() -> RZ.RZProg:
-  +dst = RZ.rz_input(O.Arena.empty(), 0, 676, [1, 1, 26, 26])
+  +dst = RZ.rz_input(O.Arena.empty(), 0, 196, [1, 1, 14, 14])
   +x = RZ.rz_input(T.Tensor.ar(dst), 1, 784, [1, 1, 28, 28])
-  +w = RZ.rz_input(T.Tensor.ar(x), 2, 9, [1, 1, 3, 3])
+  +w = RZ.rz_input(T.Tensor.ar(x), 2, 4, [1, 1, 2, 2])
   +aft = RZ.rz_after(dst, cn_conv(x, w))
   +snk = RZ.rz_sink(O.Found.ar(aft), O.Found.i(aft))
   RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
@@ -377,6 +384,27 @@ def pc_lr() -> String:
   +red = pc_firstred.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(body)), 0)
   pc_lr2(KR.lower_reduce(ar, red), red)
 
+# THE CONV'S KERNEL GRAPH AND ITS LINEAR'S KERNEL LIST, the same two rows that found the
+# pool's missing CALL.
+def cv_kg() -> String:
+  +q = RZ.rz_rebuild(conv_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  RR.rr_dump(O.Found.ar(kg), O.Found.i(kg))
+
+def cv_lk.go(+ar: O.Arena, +xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: cv_lk.go(ar, t, List.append(&2, String, acc,
+      [String.concat([RF.eng_op_name(O.Arena.op(ar, x)), ">", RF.eng_op_name(O.Arena.op(ar, SCH.sc_src0(ar, x)))])]))
+
+def cv_lk() -> String:
+  +q = RZ.rz_rebuild(conv_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ks = SCH.lin_kernels(lin)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
+    String.join(cv_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -397,6 +425,8 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["st2=", pc_stage(2)]))
     _ : Unit <- IO.print(String.concat(["st3=", pc_stage(3)]))
     _ : Unit <- IO.print(String.concat(["pool_low2=", pool_low2()]))
+    _ : Unit <- IO.print(String.concat(["conv_kg=", cv_kg()]))
+    _ : Unit <- IO.print(String.concat(["conv_lk=", cv_lk()]))
     _ : Unit <- IO.print(String.concat(["pool_ku=", pool_ku()]))
     _ : Unit <- IO.print(String.concat(["pool_c=", cn_src(pool_prog())]))
     IO.print(String.concat(["conv_c=", cn_src(conv_prog())]))
