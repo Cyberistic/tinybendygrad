@@ -23,37 +23,8 @@
 # exhaustion, which is also the "stay turing-incomplete" answer since a RANGE-driven kernel has
 # no static step bound.
 #
-#   ops_python.py:15-31   _load/_store/_step        PORTED (the v1 lanes)
-#   ops_python.py:33-44   wmma                      WALL  (tensor cores)
-#   ops_python.py:52-157  PythonProgram.__call__    arm by arm, below
-#
-# THE DISPATCH, in ops_python.py's order, each arm with its line:
-#
-#   :67  BACKEDGE       PORTED  the loop head
-#   :70  END            PORTED
-#   :73  IF             PORTED  exec_masks, one Bool per work item at warp 1
-#   :77  ENDIF          PORTED
-#   :81  barrier/sink/noop/group/custom_function, RANGE(void)  ported (no-ops)
-#   :85  STORE          PORTED  gated, vector, stepped
-#   :93  AFTER, BITCAST@GLOBAL/LOCAL    PORTED (pass-through)
-#   tinygrad/runtime/ops_python.py:97 PARAM@ALU      PORTED  reads a `vals` entry -- upstream's `pargs.pop(0)` symbol=__call__
-#   :95  PARAM, BUFFER  PORTED  binds a buffer, or allocates zeros
-#   :106 BINARY         WALL  ops_python.py:106 -- `memoryview(u.arg)` is raw
-#                              bytes carried inside the UOp, with no wire spelling
-#   :107 SPECIAL        PORTED  'g' from the grid; 'l' is 0 at warp 1
-#   :110 CONST          PORTED
-#   :111 INDEX, SHRINK  PORTED for the ALU and buffer arms; WALL for the
-#                              is_image_shape arm, which needs `_shape`
-#   :123 RANGE          PORTED  the counter lives in its own arena slot
-#   :132 STACK          PORTED
-#   :133 BITCAST        PORTED  v1 lanes only (Python asserts equal itemsize)
-#   :134 CAST           PORTED  v1 lanes only, see THE WIDE DTYPES
-#   :136 LOAD           PORTED  scalar, vector, and the gated arm
-#   :143 CALL           WALL  ops_python.py:143 -- a ctypes FFI call into a
-#                              loaded shared object; not a uop the emulator
-#                              can answer without the library
-#   :150 WMMA           WALL  ops_python.py:150, as briefed
-#   :151 GroupOp.ALU    PORTED, by REUSING symbolic.bend's two lanes
+# THE DISPATCH, in ops_python.py's order, each arm with its line, IS IN
+# `.agents/slop/tables/runtime-ops_python-30.md`.
 #
 # MEASURED FACTS. Eighteen kernels: elementwise add, sum, matmul, an int-to-float cast, a
 # 64-wide grid, div, cmp, and, 2-d sum, rowsum, max, prod, slice, reshape, contiguous, permute,
@@ -219,7 +190,6 @@
 # KNOWN-FAIL so it cannot be mistaken for a pass. `op_is_mathy` sends SQRT to the float lane and
 # `f_of` reads the 16 as 16.0, so the fault is inside the lane input, not the lane choice.
 # TODO(p3) runtime/ops_python.py:138  symbol=__call__ -- the float lane's input for an int dtype.
-
 import Base
 import ../base.bend as F
 import ../helpers.bend as H
