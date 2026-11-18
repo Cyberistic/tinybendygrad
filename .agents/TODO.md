@@ -1405,6 +1405,51 @@ comment-cut        [######...] 6/8      **THE **PORT's **COMMENT **MASS **IS **C
                                          **GRAPHS**; **IT **IS **NOT **A **MEASUREMENT **OF
                                          **THIS **TREE**, **BECAUSE **THE **TREE **MOVED
                                          **UNDER **IT**.
+                                         **THE **`uop/` **LANE **LANDED** (**`9b651d532`**, **12
+                                         **FILES**, **+436/-1268**, **COMMENTS **ONLY**): **THE
+                                         **WHOLE **LAYER **IS **16663 -> 1984 **COMMENT **LINES**
+                                         (**THE **CUT **IS **88.1%**), **⇒⇒† AND **THE **CENSUS
+                                         **READS **THE **DIFFERENCE **/ **WEIRD **/ **MEASURED
+                                         **SET **AS **921 **BLOCKS **OF **997** (**92.4%**), **⇒⇒†
+                                         **AND **THE **NARRATION **IS **9.3% **OF **THE **LINES**.
+                                         **AND **THE **EVIDENCE **COMES **BACK**: **THE **PREVIOUS
+                                         **CUT **OF **THIS **LANE **HAD **DROPPED **281
+                                         **CITATIONS **AND **32 **MEASUREMENTS **AND **29
+                                         **DIFFERENCE-MARKER **LINES** **AGAINST **THE **BASE
+                                         **`5de8a84f8`**, **⇒⇒† AND **AND **THIS **CUT **LOSES
+                                         **39 **AND **8 **AND **4**, **⇒⇒† AND **AND **THE
+                                         **REASON **IS **THE **ALIGNMENT**: **THE **BASE **BLOCK
+                                         **AND **THE **CUT **BLOCK **ARE **MATCHED **BY **A
+                                         **SEQUENCE **ALIGNMENT**, **⇒⇒† AND **AND **A **BLOCK
+                                         **THE **HEAD **DROPPED **WHOLE **IS **AN **ORPHAN**
+                                         **WHOSE **KEPT **LINES **GO **BACK **WHERE **THE **BASE
+                                         **HAD **THEM**.
+                                         **AND **THE **BLANK **LINES **WERE **THE **HARD **PART**,
+                                         **⇒⇒† AND **A **BLANK **LINE **IS **NOT **A **COMMENT**
+                                         **AND **GIT's **DIFF **IS **LINE-BASED**, **⇒⇒† AND **AND
+                                         **A **BLOCK **THAT **SHRINKS **LEAVES **THE **BLANK
+                                         **LINES **AROUND **IT **IN **A **DIFFERENT **PLACE**,
+                                         **⇒⇒† AND **AND **THE **FIX **IS **THE **TOOL**:
+                                         **`.agents/slop/comments/reapply.py` **REBUILDS **THE
+                                         **HEAD's **FILE **IN **PLACE**, **⇒⇒† AND **SO **THE
+                                         **HEAD's **BLOCK **BOUNDARIES **DO **NOT **MOVE**, **⇒⇒†
+                                         **AND **AND **THE **DIFF **IS **COMMENTS **ONLY**
+                                         (**MEASURED**: **0 **NON-COMMENT **LINES**, **AND **THE
+                                         **NON-COMMENT **LINES **OF **EVERY **FILE **ARE
+                                         **BYTE-IDENTICAL **TO **THE **HEAD's**).
+                                         **AND **THE **CORPUS **ON **THE **FINAL **COMMIT**
+                                         (**`f9c22fb70`**, **WHICH **HAS **`9b651d532` **AS **AN
+                                         **ANCESTOR**, **RUN **ONCE **ON **A **CLEAN **WORKTREE**):
+                                         **`graphs=38 graphs-answered=38 graphs-agree=38
+                                         graphs-disagree=0 byte-identical=38 graphs-refused=0`**,
+                                         **AND **`substrate-start == substrate-end == 4707e46e`**
+                                         (**⇒⇒† AND **THE **TREE **DID **NOT **MOVE **UNDER **THE
+                                         **RUN**), **AND **`substrate-head=f9c22fb70`**, **AND
+                                         **`stable-pairs=5 of 5 stable-failed=0 of 5`**, **AND
+                                         **`plants-disagree=8 of 8`**, **AND **`controls=5 of 5`**, **AND
+                                         **`conflations=4 of 4`**, **AND **`selfcheck=# SELFCHECK: OK`**
+                                         **AND **`oracle-selfcheck=# ORACLE SELFCHECK: OK`**, **AND
+                                         **`census-rc=rc=0`**.
 
 substrate-head [##########] 3/3  **A DIGEST WITH NO COMMIT IN IT CANNOT BE COMPARED TO A TREE.**
                                        MEASURED 2026-10-18 by a dispatched unit over **18 readings / 3
