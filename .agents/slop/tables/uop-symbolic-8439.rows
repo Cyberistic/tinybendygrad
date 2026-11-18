@@ -1,4 +1,56 @@
 # FROM: tinybendygrad/uop/symbolic.bend:8439
+# | mutation | rows that moved | how many |
+# | --- | --- | --- |
+# | M1 `sy_keep.go` first-wins -> last-wins | `first` | 1 |
+# | M2 `sy_novel.hit` drops the `ret is not uop` test | NOTHING | 0 |
+# | M3 `sym_123.pat` drops the `x // x` REBIND identity check | `rebind0` | 1 |
+# | M4 `sym_try`'s `claimed and early` -> `or` | `rebind0` | 1 |
+# | M5 `rm_try`'s `claimed and early` -> `or` | NOTHING | 0 |
+# | M6 `const_i64`'s `is_eq` -> `not is_eq` | `selfadd`, `xorb`, `xorb0` | 3 |
+# | M7 `exec_alu.pick`'s Invalid poison `and` -> `not` | `alu_big` | 1 |
+# | M8 `i32_fdiv.step` drops the `r != 0` half of its guard | `fdiv_i` | 1 |
+# | M9 `sym_table` tag 3's reject set -> `Nil{}` | `rej` | 1 |
+# | M10 `sym_dispatch.go` tag 0 -> tag 1 (a MIS-SPELLED tag) | `bcast` | 1 |
+# | M11 `p_rebind2` drops the REBIND identity check -- ONE edit, and it is the
+# |    reason `sym_126` and `sym_127` share the def | `xorb0`, `modb0` | 2 |
+# | M12 `i64_fits_i32`'s `Bool.not(i64_big(i))` -> `i64_big(i)` | `alu` | 1 |
+# | M13 `p_mul3.ok` drops the `MUL(MUL(v,v),v)` SIBLING identity check (`sym_463`)
+# |    | `recip3x` | 1 |
+# | M14 `sym_464.pat`'s `Sw.ok(p)` -> `True{}` -- the cvar test of `:465` | NOTHING,
+# |    and it is a REAL GAP: with the test gone, `recipc0`'s fixture has BOTH srcs
+# |    CONST and `sw.a`'s "first permutation wins" pick is all that is left, so the
+# |    answer is the same index and nothing moves. `recipc`/`recipc0` are therefore
+# |    a claim about the ANSWER and NOT about the guard. The guard's own row would be
+# |    one over a `MUL(var, var)` fixture, which `:465` must not match |
+# | M15 `sym_147.gate`'s `U32.is_le(Mc.k(c), 31)` -> `U32.is_le(Mc.k(c), 63)` |
+# |    NOTHING on these fixtures, because `U32.shln` saturates at 31 and `k = 4` is
+# |    inside both ranges. The row that would see it needs a `k = 32` fixture, so
+# |    the honest statement is that the guard is UNTESTED and not that it works |
+# | M16 `mint_bin`'s arena read `O.Found.ar(f)` -> a re-read of `sy_ar(x)`, i.e. the
+# |    un-threaded mint `sym_93` and `sym_462` still use | NOTHING HERE, and the
+# |    measurement is the point: with the FIXTURES also un-threaded (`f_alu2`'s
+# |    `Found.ar(f)`) three of them answered a node one short and `Arena.next` came
+# |    out LOW. A node count is the ONLY thing that sees a stale arena, and every
+# |    index in the gate above is therefore a claim about a threaded mint |
+# | M17 `sym_444.hit`'s flattened src list -> `List.tail`, so the FIRST src is dropped
+# |    and the rule still fires | `sinkgrp` | 1 | AND `sink` DID NOT MOVE. This
+# |    is the row the pair was added for: `sink` reads a SLOT (`eq_u(..., 6)`), a
+# |    wrong src list mints a fresh node and still lands on 6, and `sinkgrp` answers
+# |    the PRE-INTERNED `SINK(a, b)` so a wrong list cannot hit it |
+# | M18 `sink_srcs.of`'s `Bool.pick` -> `[s]`, the flatten removed | `sink`,
+# |    `sinkgrp` | 2 |
+# | M21 `sink_srcs.of` always flattens | `sinkgrp` | 1 | one half of M22, and `sink`
+# |    does not move for the reason M17 gives |
+# | M20 `sym_444.pat` drops `any_sink_like` alone | NOTHING | 0 | AN HONEST NEGATIVE
+# |    AND THE INTERESTING ONE: the rebuild of a sink-like-free SINK is
+# |    byte-identical to its input, `UOp.new` interns it back onto the same slot and
+# |    `sy_novel` swallows it, so that half of the test is REDUNDANT rather than
+# |    merely untested. CPython's `if any(...) else None` is redundant the same way,
+# |    because `rewrite` also tests `ret is not uop`. No fixture can move it |
+# | M22 M20 AND M21 together, both halves of the sink-like test | `sinkgrp`,
+# |    `sinkgrp0` | 2 | so `sinkgrp0` is not vacuous -- but it takes TWO edits, which
+# |    is the price of a guard that shares a test with the body |
+
 # BLOCK:
 # NOT PORTED, one line each, and the WALL each one is behind. The Python line
 # numbers are `symbolic.py`'s, so this list diffs against it line for line and
@@ -211,54 +263,3 @@
 # THAT MAKES IT IS NOT A MEASUREMENT, so this builds `(cond ? x : Invalid) + y`, rewrites it, and
 # asks whether the ANSWER's third src is the invalid const.
 # END BLOCK
-# | mutation | rows that moved | how many |
-# | --- | --- | --- |
-# | M1 `sy_keep.go` first-wins -> last-wins | `first` | 1 |
-# | M2 `sy_novel.hit` drops the `ret is not uop` test | NOTHING | 0 |
-# | M3 `sym_123.pat` drops the `x // x` REBIND identity check | `rebind0` | 1 |
-# | M4 `sym_try`'s `claimed and early` -> `or` | `rebind0` | 1 |
-# | M5 `rm_try`'s `claimed and early` -> `or` | NOTHING | 0 |
-# | M6 `const_i64`'s `is_eq` -> `not is_eq` | `selfadd`, `xorb`, `xorb0` | 3 |
-# | M7 `exec_alu.pick`'s Invalid poison `and` -> `not` | `alu_big` | 1 |
-# | M8 `i32_fdiv.step` drops the `r != 0` half of its guard | `fdiv_i` | 1 |
-# | M9 `sym_table` tag 3's reject set -> `Nil{}` | `rej` | 1 |
-# | M10 `sym_dispatch.go` tag 0 -> tag 1 (a MIS-SPELLED tag) | `bcast` | 1 |
-# | M11 `p_rebind2` drops the REBIND identity check -- ONE edit, and it is the
-# |    reason `sym_126` and `sym_127` share the def | `xorb0`, `modb0` | 2 |
-# | M12 `i64_fits_i32`'s `Bool.not(i64_big(i))` -> `i64_big(i)` | `alu` | 1 |
-# | M13 `p_mul3.ok` drops the `MUL(MUL(v,v),v)` SIBLING identity check (`sym_463`)
-# |    | `recip3x` | 1 |
-# | M14 `sym_464.pat`'s `Sw.ok(p)` -> `True{}` -- the cvar test of `:465` | NOTHING,
-# |    and it is a REAL GAP: with the test gone, `recipc0`'s fixture has BOTH srcs
-# |    CONST and `sw.a`'s "first permutation wins" pick is all that is left, so the
-# |    answer is the same index and nothing moves. `recipc`/`recipc0` are therefore
-# |    a claim about the ANSWER and NOT about the guard. The guard's own row would be
-# |    one over a `MUL(var, var)` fixture, which `:465` must not match |
-# | M15 `sym_147.gate`'s `U32.is_le(Mc.k(c), 31)` -> `U32.is_le(Mc.k(c), 63)` |
-# |    NOTHING on these fixtures, because `U32.shln` saturates at 31 and `k = 4` is
-# |    inside both ranges. The row that would see it needs a `k = 32` fixture, so
-# |    the honest statement is that the guard is UNTESTED and not that it works |
-# | M16 `mint_bin`'s arena read `O.Found.ar(f)` -> a re-read of `sy_ar(x)`, i.e. the
-# |    un-threaded mint `sym_93` and `sym_462` still use | NOTHING HERE, and the
-# |    measurement is the point: with the FIXTURES also un-threaded (`f_alu2`'s
-# |    `Found.ar(f)`) three of them answered a node one short and `Arena.next` came
-# |    out LOW. A node count is the ONLY thing that sees a stale arena, and every
-# |    index in the gate above is therefore a claim about a threaded mint |
-# | M17 `sym_444.hit`'s flattened src list -> `List.tail`, so the FIRST src is dropped
-# |    and the rule still fires | `sinkgrp` | 1 | AND `sink` DID NOT MOVE. This
-# |    is the row the pair was added for: `sink` reads a SLOT (`eq_u(..., 6)`), a
-# |    wrong src list mints a fresh node and still lands on 6, and `sinkgrp` answers
-# |    the PRE-INTERNED `SINK(a, b)` so a wrong list cannot hit it |
-# | M18 `sink_srcs.of`'s `Bool.pick` -> `[s]`, the flatten removed | `sink`,
-# |    `sinkgrp` | 2 |
-# | M21 `sink_srcs.of` always flattens | `sinkgrp` | 1 | one half of M22, and `sink`
-# |    does not move for the reason M17 gives |
-# | M20 `sym_444.pat` drops `any_sink_like` alone | NOTHING | 0 | AN HONEST NEGATIVE
-# |    AND THE INTERESTING ONE: the rebuild of a sink-like-free SINK is
-# |    byte-identical to its input, `UOp.new` interns it back onto the same slot and
-# |    `sy_novel` swallows it, so that half of the test is REDUNDANT rather than
-# |    merely untested. CPython's `if any(...) else None` is redundant the same way,
-# |    because `rewrite` also tests `ret is not uop`. No fixture can move it |
-# | M22 M20 AND M21 together, both halves of the sink-like test | `sinkgrp`,
-# |    `sinkgrp0` | 2 | so `sinkgrp0` is not vacuous -- but it takes TWO edits, which
-# |    is the price of a guard that shares a test with the body |

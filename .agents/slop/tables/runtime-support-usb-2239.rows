@@ -1,4 +1,33 @@
 # FROM: tinybendygrad/runtime/support/usb.bend:2239
+# | call | usb.py | checked? | what `a`, `b`, `c` carry |
+# | --- | --- | --- | --- |
+# | `libusb_init` | :24 | yes | all zero: the argument is a `POINTER(context)` |
+# | `libusb_set_option` | :25 | yes | `LIBUSB_OPTION_LOG_LEVEL` (0) and level 4 |
+# | `libusb_get_device_list` | :32 | yes | all zero: the list is the SEAM's |
+# | `libusb_get_device_descriptor` | :33, :49 | yes | all zero: the struct is the SEAM's |
+# | `libusb_ref_device` | :35 | NO | all zero: a pointer in, a pointer out |
+# | `libusb_get_bus_number` | :35 | yes | the bus number -- the label's first field |
+# | `libusb_get_device_address` | :35 | yes | the device address -- the label's second |
+# | `libusb_free_device_list` | :36 | NO | `1`, `usb_unref_devices` |
+# | `libusb_open` | :44 | yes | all zero: the handle is the SEAM's |
+# | `libusb_get_device` | :49 | NO | all zero: a pointer in, a pointer out |
+# | `libusb_get_string_descriptor_ascii` | :50 | yes | 256, `_buf` |
+# | `libusb_kernel_driver_active` | :55 | yes | 0, the interface |
+# | `libusb_detach_kernel_driver` | :56 | yes | 0, the interface |
+# | `libusb_reset_device` | :57 | yes | all zero |
+# | `libusb_set_configuration` | :60 | yes | 1, the configuration |
+# | `libusb_claim_interface` | :61 | yes | 0, the interface |
+# | `libusb_set_interface_alt_setting` | :62 | yes | 0, 0: interface and alt-setting |
+# | `libusb_control_transfer` | :67, :71 | yes | rtype 0x40/0xC0, request, n |
+# | `libusb_bulk_transfer` | :78, :83 | yes | 0x02/0x81, n |
+# | `libusb_alloc_transfer` | :457 | yes | all zero: `libusb_alloc_transfer(0)` |
+# | `libusb_handle_events_timeout` | :326 | yes | all zero: the timeout is 0 |
+# | `libusb_submit_transfer` | :352 | yes | all zero: the xfer is the SEAM's |
+# | `memcpy` | :343 | NO | the byte count |
+# | `libusb_strerror` | :16 | NO | NO EMIT SITE: `checked` calls it inside the |
+# |   |   |   | exception it is raising, and a trace that has refused records |
+# |   |   |   | nothing further. `usb_inventory_strerror` names it. |
+
 # BLOCK:
 # THE FFI SEAM SPLIT. Every `libusb`/`libc`/`ctypes` binding in `usb.py` is one
 # `Call{k, a, b, c}` in `Tr` and nothing else. The table below is the whole
@@ -145,31 +174,3 @@
 #     order. A cons fold over a reversed walk is still a backwards fold.
 # THE ENTRY POINT. One line per row section, in the order the sections read.
 # END BLOCK
-# | call | usb.py | checked? | what `a`, `b`, `c` carry |
-# | --- | --- | --- | --- |
-# | `libusb_init` | :24 | yes | all zero: the argument is a `POINTER(context)` |
-# | `libusb_set_option` | :25 | yes | `LIBUSB_OPTION_LOG_LEVEL` (0) and level 4 |
-# | `libusb_get_device_list` | :32 | yes | all zero: the list is the SEAM's |
-# | `libusb_get_device_descriptor` | :33, :49 | yes | all zero: the struct is the SEAM's |
-# | `libusb_ref_device` | :35 | NO | all zero: a pointer in, a pointer out |
-# | `libusb_get_bus_number` | :35 | yes | the bus number -- the label's first field |
-# | `libusb_get_device_address` | :35 | yes | the device address -- the label's second |
-# | `libusb_free_device_list` | :36 | NO | `1`, `usb_unref_devices` |
-# | `libusb_open` | :44 | yes | all zero: the handle is the SEAM's |
-# | `libusb_get_device` | :49 | NO | all zero: a pointer in, a pointer out |
-# | `libusb_get_string_descriptor_ascii` | :50 | yes | 256, `_buf` |
-# | `libusb_kernel_driver_active` | :55 | yes | 0, the interface |
-# | `libusb_detach_kernel_driver` | :56 | yes | 0, the interface |
-# | `libusb_reset_device` | :57 | yes | all zero |
-# | `libusb_set_configuration` | :60 | yes | 1, the configuration |
-# | `libusb_claim_interface` | :61 | yes | 0, the interface |
-# | `libusb_set_interface_alt_setting` | :62 | yes | 0, 0: interface and alt-setting |
-# | `libusb_control_transfer` | :67, :71 | yes | rtype 0x40/0xC0, request, n |
-# | `libusb_bulk_transfer` | :78, :83 | yes | 0x02/0x81, n |
-# | `libusb_alloc_transfer` | :457 | yes | all zero: `libusb_alloc_transfer(0)` |
-# | `libusb_handle_events_timeout` | :326 | yes | all zero: the timeout is 0 |
-# | `libusb_submit_transfer` | :352 | yes | all zero: the xfer is the SEAM's |
-# | `memcpy` | :343 | NO | the byte count |
-# | `libusb_strerror` | :16 | NO | NO EMIT SITE: `checked` calls it inside the |
-# |   |   |   | exception it is raising, and a trace that has refused records |
-# |   |   |   | nothing further. `usb_inventory_strerror` names it. |

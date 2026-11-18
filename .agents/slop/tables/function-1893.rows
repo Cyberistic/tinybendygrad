@@ -1,4 +1,27 @@
 # FROM: tinybendygrad/function.bend:1893
+# | id | mutation | rows moved |
+# | --- | --- | --- |
+# | M1 | `add_to_ctx` refuses on `ctx[0]` instead of `ctx[1]` | 2 `add_first` `add_refused` |
+# | M2 | the ALLOC arm drops `bind_on_realize` | 1 `iis_alloc_nobor` |
+# | M3 | the ALLOC arm uses `<=` not `<` | 1 `iis_alloc_ge` |
+# | M4 | `is_variable` drops `_shape == ()` | 1 `iis_var_1d` |
+# | M5 | `is_variable` drops `addrspace is ALU` | 1 `iis_var_reg` |
+# | M6 | `is_variable` drops `vmin_vmax is not None` | 1 `iis_var_novmin` |
+# | M7 | `renumber` counts the WHOLE toposort | 2 `renum_two` `renum_gap` |
+# | M8 | `add_to_ctx` appends on the REFUSAL arm | 6 `add_first` `add_refused` `imp_tail` `pctx_buf` `pctx_aft_buf` `pctx_aft_slot0` |
+# | M9 | the `num_explicit:` slice becomes a whole-list filter | 1 `imp_tail` |
+# | M10 | `dedup` PREPENDS instead of appending | 1 `callu_ops` |
+# | M11 | `invalid_outputs` drops `not is_realized` | 1 `inv_real` |
+# | M12 | `invalid_outputs` drops `op is STORE` | 1 `inv_notstore` |
+# | M13 | rule 0's op TUPLE loses `PARAM` | 1 `pctx_table` |
+# | M14 | rule 1 tests `slot == -1` not `slot >= 0` | 1 `pctx_aft_slot0` |
+# | M15 | `fn_exit` does not restore the depth | 2 `dep_exit` `dep_shared` |
+# | M16 | `fac_same` compares by CONJUNCTION | 1 `fac_diff` |
+# | M17 | the DEBUG trace drops the depth indent | 1 `trace2` |
+# | M18 | the `__qualname__` fallback is dropped | 1 `fn_name` |
+# | M19 | the refusal message drops the `dtypes.` prefix | 2 (`imp_one` `imp_two`) |
+# | M20 | the per-buffer line drops its index | 2 (`imp_one` `imp_two`) |
+
 # BLOCK:
 # SECTION L -- THE MEASURED MUTATION TABLE.
 #
@@ -65,25 +88,3 @@
 # predicate behind them, and they are labelled as such rather than counted as
 # coverage.
 # END BLOCK
-# | id | mutation | rows moved |
-# | --- | --- | --- |
-# | M1 | `add_to_ctx` refuses on `ctx[0]` instead of `ctx[1]` | 2 `add_first` `add_refused` |
-# | M2 | the ALLOC arm drops `bind_on_realize` | 1 `iis_alloc_nobor` |
-# | M3 | the ALLOC arm uses `<=` not `<` | 1 `iis_alloc_ge` |
-# | M4 | `is_variable` drops `_shape == ()` | 1 `iis_var_1d` |
-# | M5 | `is_variable` drops `addrspace is ALU` | 1 `iis_var_reg` |
-# | M6 | `is_variable` drops `vmin_vmax is not None` | 1 `iis_var_novmin` |
-# | M7 | `renumber` counts the WHOLE toposort | 2 `renum_two` `renum_gap` |
-# | M8 | `add_to_ctx` appends on the REFUSAL arm | 6 `add_first` `add_refused` `imp_tail` `pctx_buf` `pctx_aft_buf` `pctx_aft_slot0` |
-# | M9 | the `num_explicit:` slice becomes a whole-list filter | 1 `imp_tail` |
-# | M10 | `dedup` PREPENDS instead of appending | 1 `callu_ops` |
-# | M11 | `invalid_outputs` drops `not is_realized` | 1 `inv_real` |
-# | M12 | `invalid_outputs` drops `op is STORE` | 1 `inv_notstore` |
-# | M13 | rule 0's op TUPLE loses `PARAM` | 1 `pctx_table` |
-# | M14 | rule 1 tests `slot == -1` not `slot >= 0` | 1 `pctx_aft_slot0` |
-# | M15 | `fn_exit` does not restore the depth | 2 `dep_exit` `dep_shared` |
-# | M16 | `fac_same` compares by CONJUNCTION | 1 `fac_diff` |
-# | M17 | the DEBUG trace drops the depth indent | 1 `trace2` |
-# | M18 | the `__qualname__` fallback is dropped | 1 `fn_name` |
-# | M19 | the refusal message drops the `dtypes.` prefix | 2 (`imp_one` `imp_two`) |
-# | M20 | the per-buffer line drops its index | 2 (`imp_one` `imp_two`) |

@@ -1,4 +1,22 @@
 # FROM: tinybendygrad/mixin/elementwise.bend:1856
+# | mutation | the edit | rows MOVED | what it is testing |
+# | --- | --- | --- | --- |
+# | M1 | `ew_alu2`: `[T.Tensor.u(Tw.b(j))]` -> `[T.Tensor.u(Tw.a(j))]` | 40 | `lhs.alu(op, rhs)`'s operand order -- name `lhs` twice instead of `rhs`. |
+# | M2 | `ew_promote`: `W.dt_weak(dt)` -> `True{}` | 35 | `promote`'s FIRST conjunct, `t.dtype in dtypes.weaks`. |
+# | M3 | `ew_promote`: `ew_is_invalid(fx, b)` -> `False{}` | 1 (`ew_promo_invalid`) | `promote`'s `base.is_invalid` arm. ZERO until `ew_promo_invalid` was added: no fixture held an `Invalid` CONST, so the arm was dead code. |
+# | M4 | `ew_promote`: `O.eq_dt(dt, wd)` -> `False{}` | 0 -- AN EQUIVALENCE | `t.dtype == weak_dtype(out_dtype)`. `remint` at the dtype a CONST already has rebuilds an IDENTICAL node (CPython agrees: `c.ccast(dtypes.weakint) is c`), so forcing the remint arm is not observable in any graph. Not a gap; a fact about `remint`. |
+# | M5 | `ew_remint.put`: `[head] ++ src_from(...,1)` -> `src_from(...,1) ++ [head]` | 0 -- AN EQUIVALENCE | the `+u.src[1:]` order. `remint` only reaches nodes `base` descends into, and every one of those in this gate has ONE src, so `src[1:]` is empty and the two orders are the same list. Closing it needs a `Movement` node with a shape arg; measured that CPython takes the weak arm there and this port takes the CAST arm, which makes it a `uop/fold.bend` dtype question. Left open and named. |
+# | M5b | `ew_remint.put`: `Arena.src_from(ar, u, 1)` -> `Arena.src_to(ar, u, 1)` | 1 (`ew_remint_recurse`) | that `u.src[1:]` is `src_from` (drop the first k) and NOT `src_to` (keep the first k). Zero until `ew_remint_recurse` was added: `remint.put` was unreachable. |
+# | M6 | `ew_ccast_at`: `ew_const_bare(dt)` -> `False{}` | 6 | ops.py:637's ".cast folds away at exactly bool/weakint/weakfloat". |
+# | M7 | `ew_neg`: `S.Dt.is_bool(...)` -> `False{}` | 1 (`ew_neg_bool`) | `neg`'s bool arm. Two-sided on purpose. |
+# | M7b | `ew_neg`: `S.Dt.is_bool(...)` -> `True{}` | 5 | the other direction, so neither arm can be satisfied by the other's graph. |
+# | M8 | `ew_pair`: swap the two arms | 34 | `x, y = (self, y) if not reverse else (y, self)`. |
+# | M9 | `ew_promo2`: second promote builds in the FIRST's pre-growth arena | 2 (`ew_sub_no_promo2`, `ew_sub_n`) | the re-fold BETWEEN the two promotions -- the sibling-arena bug, which is this file's one structural defect. |
+# | M10 | `ew_logical_not`: drop the `cast(bool)` | 1 (`ew_lnot_i`) | `self.cast(dtypes.bool).ne(True)`'s CAST. |
+# | M11 | `ew_sub.of`: `O.OpsADD{}` -> `O.OpsSUB{}` | 3 | `sub` is an ADD over a negated rhs and NOT an `Ops.SUB`. |
+# | M12 | a comment-only edit | 0 -- THE CONTROL | a mutation table with no row that CANNOT move is a table of coincidences. |
+# | M13 | `ew_promote`: `Bool.and(W.dt_weak(dt), ew_is_const(fx, b))` -> `W.dt_weak(dt)` | 2 (`ew_dt_promo_nc`, `ew_op_promo_nc`) + the `ew_promo_nc` count 5->4 | `elementwise.py:31`'s SECOND conjunct, `t._uop.base.op is Ops.CONST`. This one was a REAL DEFECT, not a coverage hole: the port tested `t.dtype in dtypes.weaks` alone, and every other fixture in this file holds a weak CONST, so the conjunct was true wherever it was read and the gate could not see it. `weak_dtype(out_dtype)` is weak whenever `out_dtype` is strong, so the missing conjunct keeps a weakint ADD weakint against int32, and the root then adds weakint to int32 -- a promotion the lattice forbids. CPython: `Tensor(3)+Tensor(5)` is weakint with base op ADD, and after `+ Tensor(7, dtype=dtypes.i32)` its src0 is `int`/`Ops.CAST`. `g_promo_nonconst` is the first fixture in this file whose weak tensor is NOT a CONST. |
+
 # BLOCK:
 # THE MUTATION TABLE. See .agents/slop/ew-mutate.py, which applies each edit to a
 # scratch copy, runs the interpreted lane and diffs. Every number below is that
@@ -29,20 +47,3 @@
 # invisible everywhere the two promotions happen to agree, and the whole signature
 # surface of this file is blind to it except through `sub`.
 # END BLOCK
-# | mutation | the edit | rows MOVED | what it is testing |
-# | --- | --- | --- | --- |
-# | M1 | `ew_alu2`: `[T.Tensor.u(Tw.b(j))]` -> `[T.Tensor.u(Tw.a(j))]` | 40 | `lhs.alu(op, rhs)`'s operand order -- name `lhs` twice instead of `rhs`. |
-# | M2 | `ew_promote`: `W.dt_weak(dt)` -> `True{}` | 35 | `promote`'s FIRST conjunct, `t.dtype in dtypes.weaks`. |
-# | M3 | `ew_promote`: `ew_is_invalid(fx, b)` -> `False{}` | 1 (`ew_promo_invalid`) | `promote`'s `base.is_invalid` arm. ZERO until `ew_promo_invalid` was added: no fixture held an `Invalid` CONST, so the arm was dead code. |
-# | M4 | `ew_promote`: `O.eq_dt(dt, wd)` -> `False{}` | 0 -- AN EQUIVALENCE | `t.dtype == weak_dtype(out_dtype)`. `remint` at the dtype a CONST already has rebuilds an IDENTICAL node (CPython agrees: `c.ccast(dtypes.weakint) is c`), so forcing the remint arm is not observable in any graph. Not a gap; a fact about `remint`. |
-# | M5 | `ew_remint.put`: `[head] ++ src_from(...,1)` -> `src_from(...,1) ++ [head]` | 0 -- AN EQUIVALENCE | the `+u.src[1:]` order. `remint` only reaches nodes `base` descends into, and every one of those in this gate has ONE src, so `src[1:]` is empty and the two orders are the same list. Closing it needs a `Movement` node with a shape arg; measured that CPython takes the weak arm there and this port takes the CAST arm, which makes it a `uop/fold.bend` dtype question. Left open and named. |
-# | M5b | `ew_remint.put`: `Arena.src_from(ar, u, 1)` -> `Arena.src_to(ar, u, 1)` | 1 (`ew_remint_recurse`) | that `u.src[1:]` is `src_from` (drop the first k) and NOT `src_to` (keep the first k). Zero until `ew_remint_recurse` was added: `remint.put` was unreachable. |
-# | M6 | `ew_ccast_at`: `ew_const_bare(dt)` -> `False{}` | 6 | ops.py:637's ".cast folds away at exactly bool/weakint/weakfloat". |
-# | M7 | `ew_neg`: `S.Dt.is_bool(...)` -> `False{}` | 1 (`ew_neg_bool`) | `neg`'s bool arm. Two-sided on purpose. |
-# | M7b | `ew_neg`: `S.Dt.is_bool(...)` -> `True{}` | 5 | the other direction, so neither arm can be satisfied by the other's graph. |
-# | M8 | `ew_pair`: swap the two arms | 34 | `x, y = (self, y) if not reverse else (y, self)`. |
-# | M9 | `ew_promo2`: second promote builds in the FIRST's pre-growth arena | 2 (`ew_sub_no_promo2`, `ew_sub_n`) | the re-fold BETWEEN the two promotions -- the sibling-arena bug, which is this file's one structural defect. |
-# | M10 | `ew_logical_not`: drop the `cast(bool)` | 1 (`ew_lnot_i`) | `self.cast(dtypes.bool).ne(True)`'s CAST. |
-# | M11 | `ew_sub.of`: `O.OpsADD{}` -> `O.OpsSUB{}` | 3 | `sub` is an ADD over a negated rhs and NOT an `Ops.SUB`. |
-# | M12 | a comment-only edit | 0 -- THE CONTROL | a mutation table with no row that CANNOT move is a table of coincidences. |
-# | M13 | `ew_promote`: `Bool.and(W.dt_weak(dt), ew_is_const(fx, b))` -> `W.dt_weak(dt)` | 2 (`ew_dt_promo_nc`, `ew_op_promo_nc`) + the `ew_promo_nc` count 5->4 | `elementwise.py:31`'s SECOND conjunct, `t._uop.base.op is Ops.CONST`. This one was a REAL DEFECT, not a coverage hole: the port tested `t.dtype in dtypes.weaks` alone, and every other fixture in this file holds a weak CONST, so the conjunct was true wherever it was read and the gate could not see it. `weak_dtype(out_dtype)` is weak whenever `out_dtype` is strong, so the missing conjunct keeps a weakint ADD weakint against int32, and the root then adds weakint to int32 -- a promotion the lattice forbids. CPython: `Tensor(3)+Tensor(5)` is weakint with base op ADD, and after `+ Tensor(7, dtype=dtypes.i32)` its src0 is `int`/`Ops.CAST`. `g_promo_nonconst` is the first fixture in this file whose weak tensor is NOT a CONST. |
