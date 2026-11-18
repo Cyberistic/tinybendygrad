@@ -7,15 +7,12 @@
 import Base
 import ./../helpers.bend as H
 
-# 64-bit exponents. Base has U32, Nat and F32; an exponent needs a sign, and helpers.bend
 
 def i64u(+x: U32) -> H.I64: H.i64_of_i32(x)
 def i64n(+n: U32) -> H.I64: H.i64_neg(True{}, H.i64_of_i32(n))
 
-# the magnitude of a known-non-negative I64, which is the only way this file reads one
 def nat_of64(+x: H.I64) -> Nat: U32.to_nat(H.lo32(x))
 
-# decimal digits, MOST significant first, each 0..9
 
 def ds_of.go(s: String, +acc: List<&2, U32>) -> List<&2, U32>:
   match s:
@@ -32,7 +29,6 @@ def ds_str.go(ds: List<&2, U32>, +acc: List<&2, Char>) -> List<&2, Char>:
 def ds_str(+ds: List<&2, U32>) -> String:
   String.from_list(List.reverse(&2, Char, ds_str.go(ds, Nil{})))
 
-# the bignum: multiply by a small constant, add or subtract one, and count bits.
 
 def big_mul.put(z: Bool, +c: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match z:
@@ -54,7 +50,6 @@ def big_n(+k: U32, +f: Nat, +ds: List<&2, U32>) -> List<&2, U32>:
     case 0n: ds
     case 1n+g: big_n(k, g, big_mul(k, ds))
 
-# ADD ONE / SUBTRACT ONE. Least significant first, so the carry or borrow walks toward the most
 def add1.end(z: Bool) -> List<&2, U32>:
   match z:
     case True{}: Nil{}
@@ -70,7 +65,6 @@ def add1.go(ds: List<&2, U32>, +carry: U32) -> List<&2, U32>:
 def big_add1(+ds: List<&2, U32>) -> List<&2, U32>:
   List.reverse(&2, U32, add1.go(List.reverse(&2, U32, ds), 1))
 
-# `h + 10 - borrow` then `mod 10` is `(h - borrow)` mod 10, and the borrow survives exactly when
 def sub1.go(ds: List<&2, U32>, +brw: U32) -> List<&2, U32>:
   match ds:
     case Nil{}: Nil{}
@@ -81,7 +75,6 @@ def sub1.go(ds: List<&2, U32>, +brw: U32) -> List<&2, U32>:
 def big_sub1(+ds: List<&2, U32>) -> List<&2, U32>:
   List.reverse(&2, U32, sub1.go(List.reverse(&2, U32, ds), 1))
 
-# `m.bit_length()` -- how many bits the significand needs, which is what places its least
 def blen.go(f: Nat, +x: U32, +n: U32) -> U32:
   match f:
     case 0n: n
@@ -89,11 +82,9 @@ def blen.go(f: Nat, +x: U32, +n: U32) -> U32:
 
 def blen(+x: U32) -> U32: blen.go(32n, x, 0)
 
-# "the one-sided power-of-two test" -- m == 2^(b-1)
 def is_pow2(+m: U32) -> Bool:
   U32.is_eq(m, U32.shln(1, Nat.sub(U32.to_nat(blen(m)), 1n)))
 
-# EXACT EXPANSION. `scale` is the one primitive: digits times a power of two, answered as digits
 
 type Scaled is Data:
   Scaled{+dg: List<&2, U32>, +ex: H.I64}
@@ -106,11 +97,9 @@ def scale.go(neg: Bool, +ds: List<&2, U32>, +t: H.I64) -> Scaled:
 def scale(+ds: List<&2, U32>, +t: H.I64) -> Scaled:
   scale.go(H.i64_is_neg(t), ds, t)
 
-# x = m * 2^e
 def dec2(+m: U32, +e: H.I64) -> Scaled:
   scale(ds_of(U32.show(m)), e)
 
-# THE ROUNDING BOUNDS. x + s*half_ulp = (m * 2^(step-b) + s) * 2^(e+b-step); `plus` says whether
 
 def bound.num(+plus: Bool, +num: List<&2, U32>) -> List<&2, U32>:
   match plus:
@@ -132,7 +121,6 @@ def bound(+m: U32, +e: H.I64, +plus: Bool, +step: U32) -> Scaled:
   +num = big_n(2, U32.to_nat(U32.sub(step, b)), ds_of(U32.show(m)))
   bound.scale(plus, bound.num(plus, num), H.i64_sub(H.i64_add(e, i64u(b)), i64u(step)))
 
-# an unsigned decimal with the point moved: value = digits * 10^exp, digits most significant
 
 def shead(+s: String) -> Char:
   match s:
@@ -151,7 +139,6 @@ def all0.go(+s: String, +acc: Bool) -> Bool:
 
 def all0(+s: String) -> Bool: all0.go(s, True{})
 
-# the 0..9 value of the LAST digit, whose parity breaks a half-even tie
 def last_dig.go(+s: String, +acc: U32) -> U32:
   match s:
     case SNil{}: acc
@@ -166,7 +153,6 @@ def pad_a(lt: Bool, +a: String, +b: String) -> String:
     case True{}: pad_n(a, Nat.sub(String.length(b), String.length(a)))
     case False{}: a
 
-# once a digit differs, every later digit is irrelevant: `keep` holds whichever answer came first
 def keep(+acc: Cmp, c: Cmp) -> Cmp:
   match acc:
     case EQ{}: c
@@ -182,11 +168,9 @@ def str_cmp.go(+a: String, +b: String, +acc: Cmp) -> Cmp:
 
 def str_cmp(+a: String, +b: String) -> Cmp: str_cmp.go(a, b, EQ{})
 
-# where the most significant digit sits, as an exponent: `len + exp` is negative for a value
 def dec_pos(+s: String, +e: H.I64) -> H.I64:
   H.i64_add(i64u(U32.from_nat(String.length(s))), e)
 
-# the two most significant positions decide first; equal ones are compared digit by digit, and a
 def dec_cmp.ord(h: Cmp, +a: String, +b: String) -> Cmp:
   match h:
     case LT{}: LT{}
@@ -197,7 +181,6 @@ def dec_cmp.ord(h: Cmp, +a: String, +b: String) -> Cmp:
 def dec_cmp(+a: String, +ae: H.I64, +b: String, +be: H.I64) -> Cmp:
   dec_cmp.ord(H.i64_cmp(dec_pos(a, ae), dec_pos(b, be)), a, b)
 
-# FORMATTING. `dp` is the position of the decimal point: value = 0.<digits> * 10^dp, so
 
 def dp_of(+d: String, +e: H.I64) -> H.I64:
   H.i64_add(e, i64u(U32.from_nat(String.length(d))))
@@ -205,7 +188,6 @@ def dp_of(+d: String, +e: H.I64) -> H.I64:
 def fmt.fixed(+dp: H.I64) -> Bool:
   Bool.and(H.i64_le(i64n(3), dp), H.i64_le(dp, i64u(16)))
 
-# CPython pads the exponent to at least two digits (`1e-07`) and does not truncate a longer one
 def fmt.sci.exp.put(pad: Bool, +s: String) -> String:
   match pad:
     case True{}: String.concat(["0", s])
@@ -228,7 +210,6 @@ def fmt.sci(+d: String, +dp: H.I64) -> String:
   String.concat([String.take(d, 1n), fmt.sci.dot(Nat.is_le(2n, String.length(d)), d),
     "e", fmt.sci.sign(H.i64_is_neg(ex)), fmt.sci.exp(nat_of64(H.i64_abs(ex)))])
 
-# three shapes: 0.00digits (dp <= 0), digits00.0 (dp >= len), dig.its
 def fmt_fix.ge(ge: Bool, +d: String, +dp: H.I64) -> String:
   match ge:
     case True{}: String.concat([d, String.repeat("0", Nat.sub(nat_of64(dp), String.length(d))), ".0"])
@@ -248,7 +229,6 @@ def fmt(+d: String, +e: H.I64) -> String:
   +dp = dp_of(d, e)
   fmt.go(fmt.fixed(dp), d, dp)
 
-# the candidate search
 
 type Ctx is Data:
   Ctx{+d: String, +e: H.I64, +lo: String, +le: H.I64, +hi: String, +he: H.I64, +neg: Bool}
@@ -310,7 +290,6 @@ def pick_one.go(ok: Bool, +d: String, +e: H.I64, +c: Ctx) -> Maybe<&2, String>:
 def pick_one(+d: String, +e: H.I64, +c: Ctx) -> Maybe<&2, String>:
   pick_one.go(inside(d, e, c), d, e, c)
 
-# add one to a decimal string: a carry out of the top digit makes it "100..0", which is one
 def inc_head(+h: String) -> String: ds_str(big_add1(ds_of(h)))
 
 def cut(+up: String, +p: Nat) -> String: String.take(up, p)
@@ -320,7 +299,6 @@ def cut_e(carried: Bool, +ce: H.I64) -> H.I64:
     case True{}: H.i64_add(ce, i64u(1))
     case False{}: ce
 
-# WHICH NEIGHBOUR IS CLOSER: the digit just past the cut decides, and an exact half is a
 def pref.eq(tie: Bool, +last: U32) -> Bool:
   match tie:
     case False{}: True{}
@@ -366,14 +344,12 @@ def step.go(short: Bool, +p: Nat, +c: Ctx) -> Maybe<&2, String>:
 def step(+p: Nat, +c: Ctx) -> Maybe<&2, String>:
   step.go(Nat.is_le(String.length(Ctx.d(c)), p), p, c)
 
-# the fuel is the termination argument, so the digit count is derived from it: p = 18 - f walks
 def search(+f: Nat, +m: Maybe<&2, String>, +c: Ctx) -> String:
   match f m:
     case f0 Some{x}: x
     case 0n None{}: String.concat([sign_of(c), fmt(Ctx.d(c), Ctx.e(c))])
     case 1n+g None{}: search(g, step(Nat.sub(18n, f), c), c)
 
-# THE ENTRY POINT
 
 def sign_of2(neg: Bool) -> String:
   match neg:
@@ -385,7 +361,6 @@ def repr.special(isinf: Bool, +neg: Bool) -> String:
     case True{}: String.concat([sign_of2(neg), "inf"])
     case False{}: "nan"
 
-# a subnormal has no implicit bit and a fixed exponent of -149
 def repr.mant.go(sub: Bool, +frac: U32) -> U32:
   match sub:
     case True{}: frac
@@ -400,11 +375,9 @@ def repr.exp.go(sub: Bool, +be: U32) -> H.I64:
 
 def repr.exp(+be: U32) -> H.I64: repr.exp.go(U32.is_zero(be), be)
 
-# the trailing zero BITS of the significand are stripped first, and not for tidiness: they are
 type ME is Data:
   ME{+m: U32, +e: H.I64}
 
-# `m & -m` IS the lowest set bit, so its bit length minus one is the number of trailing zeros --
 def tz(+m: U32) -> Nat: Nat.sub(U32.to_nat(blen(U32.and(m, U32.sub(0, m)))), 1n)
 
 def strip(+m: U32, +e: H.I64) -> ME:

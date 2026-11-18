@@ -1,5 +1,12 @@
-#     MATCH UPSTREAM'S ON FIVE MEASURED CASES.
-#    over BOTH ORDERS -- `UPat.alu` (ops.py:1533) passes `list(asrc)` for an op in
+# divandmod.bend -- tinygrad/uop/divandmod.py.
+# `div_and_mod_symbolic` is a three-entry `PatternMatcher`: two fast inline rules
+# the walls are half stale, and measured (2026-11-06). the header used to say "the one
+#   * `divides` -- the port has it (`ops.bend:7656`), a full recursion over ADD/MUL/CONST
+# what is actually left is scope and three shape problems, not missing primitives:
+# `fold_divmod_general` also RECURSES at :61 (`nest_by_factor` calls it on
+# FOUR DIVERGENCES, stated rather than hidden.
+# two things about the patterns that are easy to invert, both measured against the
+# 1. `Ops.ADD` IS COMMUTATIVE, so `UPat.cvar("c") + UPat.cvar("a")` is an `is_any`
 
 import Base
 import ./../helpers.bend as H
@@ -26,7 +33,6 @@ def Hit.on(x: Hit) -> U32:
 def miss(ar: O.Arena) -> Hit:
   Hit{ar, 0, 0}
 
-# `y.val` for an INTEGER CONST. A `Maybe` because `Arg` is the eighteen-armed
 def dm_val.go(v: O.Const) -> Maybe<&2, U32>:
   match v:
     case O.CInt{i}: Some{H.lo32(i)}
@@ -40,7 +46,6 @@ def dm_val.arg(arg: O.Arg) -> Maybe<&2, U32>:
 def dm_val(ar: O.Arena, u: U32) -> Maybe<&2, U32>:
   dm_val.arg(O.Arena.arg(ar, u))
 
-# `Some -> True`, and the value with a 0 for the `None` case. Two leaves, so the
 def dm_has.go(v: U32) -> Bool:
   match v:
     case _: True{}
@@ -58,13 +63,11 @@ def dm_ival.go(m: Maybe<&2, U32>, k: U32) -> U32:
 def dm_ival(m: Maybe<&2, U32>) -> U32:
   dm_ival.go(m, 0)
 
-# `dm_floordiv` / `dm_floormod` ARE NOT `H.`: `H.floordiv_i32`/`H.floormod_i32` add
 def dm_floordiv.exact(exact: Bool, q: U32) -> U32:
   match exact:
     case True{}: q
     case False{}: U32.add(q, 1)
 
-# truncate toward zero, then step down one more ONLY when the signs differ and
 def dm_floordiv.trunc(neg: Bool, exact: Bool, q: U32) -> U32:
   match neg:
     case True{}: H.i32_neg(dm_floordiv.exact(exact, q))
@@ -77,7 +80,6 @@ def dm_floordiv.put(zero: Bool, neg: Bool, exact: Bool, ax: U32, ay: U32) -> U32
 
 def dm_floordiv.exact2(ax: U32, ay: U32) -> Bool:
   U32.is_zero(U32.mod(ax, ay))
-# The division is over the MAGNITUDES -- `U32.div` is unsigned and `U32.mod` of a
 def dm_floordiv(+x: U32, +y: U32) -> U32:
   dm_floordiv.put(U32.is_zero(y), H.cdiv_sign(x, y),
                   dm_floordiv.exact2(H.i32_abs(H.i32_is_neg(x), x), H.i32_abs(H.i32_is_neg(y), y)),
@@ -86,19 +88,15 @@ def dm_floordiv(+x: U32, +y: U32) -> U32:
 def dm_floormod(+x: U32, +y: U32) -> U32:
   U32.sub(x, U32.mul(dm_floordiv(x, y), y))
 
-# `v > 0` for a SIGNED 32-bit constant. `U32.is_gt(v, 0)` is the UNSIGNED reading
 def dm_pos(+v: U32) -> Bool:
   Bool.and(Bool.not(H.i32_is_neg(v)), Bool.not(U32.is_zero(v)))
 
-# `len(u.src) == 2` -- the `strict_length` conjunct rules 0 and 1 carry.
 def dm_isn2(ar: O.Arena, u: U32) -> Bool:
   U32.is_eq(O.Arena.nsrc(ar, u), 2)
 
-# `x//c` as a SHAPE: a DIV whose divisor is a CONST. Rule 0's
 def dm_is_quot(+ar: O.Arena, +s: U32) -> Bool:
   Bool.and(O.op_is(ar, s, O.OpsDIV{}), dm_has(dm_val(ar, O.Arena.src(ar, s, 1))))
 
-# WHICH side of the commutative ADD is the quotient: 0 = src0, 1 = src1,
 def dm_which.go(s0: Bool, s1: Bool) -> U32:
   match s0 s1:
     case True{} False{}: 0
@@ -141,7 +139,6 @@ def dm_zero.op(op: O.Op, arg: O.Arg) -> Bool:
     case O.OpsPARAM{}: dm_zero.param(arg)
     case _: False{}
 
-# The DIVISOR. Python's message even names which of the two ops it was.
 def dm_zero(+ar: O.Arena, +d: U32) -> Bool:
   dm_zero.op(O.Arena.op(ar, O.Arena.src(ar, d, 1)), O.Arena.arg(ar, O.Arena.src(ar, d, 1)))
 
@@ -152,7 +149,6 @@ def dm_point.sub(ar: O.Arena, x: U32, y: U32, q: U32) -> O.Found:
   +m = O.UOp.alu(O.Found.ar(qc), O.OpsMUL{}, [O.Found.i(qc), y])
   O.UOp.alu(O.Found.ar(m), O.OpsSUB{}, [x, O.Found.i(m)])
 
-# `xdiv.const_like(xdiv.vmin)`, the DIV half.
 def dm_point.body(ar: O.Arena, op: O.Op, x: U32, y: U32, q: U32) -> O.Found:
   match op:
     case O.OpsDIV{}: O.UOp.const(ar, O.CInt{H.i64_of_i32(q)})
@@ -190,7 +186,6 @@ def dm_multiple_of.go(op: O.Op, arg: O.Arg, y: U32) -> Bool:
     case O.OpsPARAM{}: dm_multiple_of.param(arg, y)
     case _: False{}
 
-# Python has already RAISED by this line, so the lambda has no `d.val == 0` guard;
 def dm_multiple_of(+ar: O.Arena, +d: U32) -> Bool:
   dm_multiple_of.go(O.Arena.op(ar, O.Arena.src0(ar, d)), O.Arena.arg(ar, O.Arena.src0(ar, d)),
                     dm_ival(dm_val(ar, O.Arena.src(ar, d, 1))))
@@ -209,7 +204,6 @@ def dm_multiple_of.arm.go(+ar: O.Arena, d: U32, hit: Bool) -> Maybe<&2, O.Found>
 def dm_multiple_of.arm(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   dm_multiple_of.arm.go(ar, d, dm_multiple_of(ar, d))
 
-# Python's `if ...: return A` twice. A `Maybe<&2, T>` is a `Type`, so it cannot
 def dm_first2.go(b: Maybe<&2, O.Found>, c: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match b:
     case Some{f}: Some{f}
@@ -231,7 +225,6 @@ def dm_0.build(+ar: O.Arena, q: U32, a: U32, +c: U32, d: U32) -> O.Found:
   +cd = O.UOp.alu(O.Found.ar(s), O.OpsMUL{}, [c, d])
   O.UOp.alu(O.Found.ar(cd), O.OpsDIV{}, [O.Found.i(s), O.Found.i(cd)])
 
-# the two `is_any` alternatives, resolved: `which` names the `x//c` side and the
 def dm_0.make.go(+ar: O.Arena, d: U32, +s0: U32, +s1: U32, which: U32) -> O.Found:
   match which:
     case 0: dm_0.build(ar, s0, s1, O.Arena.src(ar, s0, 1), d)
@@ -282,15 +275,12 @@ def dm_1.pick(s0: U32, s1: U32, which: U32) -> U32:
     case 1: s0
     case _: s1
 
-# `c.val` -- the CONST side is the OTHER side from `x`, so the two sides are
 def dm_cval(+ar: O.Arena, +add: U32, which: U32) -> U32:
   dm_ival(dm_val(ar, dm_1.pick(O.Arena.src(ar, add, 1), O.Arena.src0(ar, add), which)))
 
-# the two `is_any` alternatives, resolved: `which` names the CONST side `c` and the
 def dm_1.make(+ar: O.Arena, op: O.Op, d: U32, +add: U32, which: U32, cm: U32, cq: U32) -> O.Found:
   dm_1.finish(ar, op, dm_1.pick(O.Arena.src0(ar, add), O.Arena.src(ar, add, 1), which), d, cm, cq)
 
-# WHICH side of the commutative ADD is the `cvar("c")` CONST. The MIRROR of
 def dm_cside.go(s0: Bool, s1: Bool) -> U32:
   match s0 s1:
     case True{} False{}: 0
@@ -304,7 +294,6 @@ def dm_1.pat.put(+ar: O.Arena, +d: U32, +add: U32, which: U32, weak: Bool, self:
   Bool.and(dm_isn2(ar, self), Bool.and(dm_has(dm_val(ar, d)),
     Bool.and(O.op_is(ar, add, O.OpsADD{}), Bool.and(dm_isn2(ar, add), Bool.and(U32.is_lt(which, 2), weak)))))
 
-# `None if d.val==0 or c.val%d.val==c.val else <the rewrite>`. The first arm of
 def dm_1.armed(ar: O.Arena, op: O.Op, d: U32, add: U32, which: U32, cm: U32, cq: U32, ok: Bool) -> Maybe<&2, O.Found>:
   match ok:
     case True{}: Some{dm_1.make(ar, op, d, add, which, cm, cq)}
@@ -318,7 +307,6 @@ def dm_1.go2(+ar: O.Arena, op: O.Op, +d: U32, +add: U32, +which: U32, weak: Bool
 def dm_1.go(+ar: O.Arena, op: O.Op, +d: U32, +add: U32, +which: U32, weak: Bool, self: U32) -> Maybe<&2, O.Found>:
   dm_1.go2(ar, op, d, add, which, weak, self, dm_ival(dm_val(ar, d)), dm_cval(ar, add, which))
 
-# `UPat.var("x", dtypes.weakint)`: the side of the commutative ADD that is NOT the
 def dm_weak_side(u: U32, ar: O.Arena, tb: F.Table) -> Bool:
   dm_weak.dt(F.fold.dt(ar, tb, u))
 
@@ -343,13 +331,11 @@ def dm_2.put(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
 def dm_2(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   dm_2.put(fx, self)
 
-# the table, the dispatch and the scan -- `spec.bend`'s shape, once. `ops.bend`
 def dm_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsDIV{}], [O.OpsADD{}, O.OpsCONST{}]},                       # 101
              O.PMEntry{1, [O.OpsDIV{}, O.OpsMOD{}], [O.OpsADD{}, O.OpsCONST{}]},         # 103
              O.PMEntry{2, [O.OpsDIV{}, O.OpsMOD{}], Nil{}}]}                           # 108
 
-# The first non-None wins, so `dm_fold` keys on the ACCUMULATOR; keying on the new
 def dm_fold.put(ar: O.Arena, +f: O.Found) -> Hit:
   Hit{O.Found.ar(f), O.Found.i(f), 1}
 
@@ -406,7 +392,6 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #   out_r21=none   `Px%4`: past divandmod.py:15, i.e. behind the wall. Python
 #    ops.py:1013 is load-bearing in a place no code comment mentions.
 
-# THE GATE'S PRINTER. `dm_sh2` prints a node TWO levels deep, and that is not a
 def dm_show.go(neg: Bool, v: U32) -> String:
   match neg:
     case True{}: String.concat(["-", U32.show(H.i32_neg(v))])
@@ -436,20 +421,17 @@ def dm_lab.go(op: O.Op, arg: O.Arg, k: String) -> String:
 def dm_lab(+ar: O.Arena, +u: U32) -> String:
   dm_lab.go(O.Arena.op(ar, u), O.Arena.arg(ar, u), O.Ops.name(O.Arena.op(ar, u)))
 
-# one level: `NAME(src0label,src1label)`
 def dm_sh1.go(+ar: O.Arena, u: U32, s0: U32, s1: U32, leaf: Bool) -> String:
   match leaf:
     case True{}: dm_lab(ar, u)
     case _: String.concat([dm_lab(ar, u), "(", dm_lab(ar, s0), ",", dm_lab(ar, s1), ")"])
 
-# a leaf is a node with no srcs -- a CONST, a PARAM, a SPECIAL. Printing its srcs
 def dm_sh1.put(+ar: O.Arena, +u: U32, s0: U32, s1: U32) -> String:
   dm_sh1.go(ar, u, s0, s1, U32.is_zero(O.Arena.nsrc(ar, u)))
 
 def dm_sh1(+ar: O.Arena, +u: U32) -> String:
   dm_sh1.put(ar, u, O.Arena.src0(ar, u), O.Arena.src(ar, u, 1))
 
-# two levels: the row
 def dm_sh2.go(+ar: O.Arena, u: U32, s0: U32, s1: U32, leaf: Bool) -> String:
   match leaf:
     case True{}: dm_lab(ar, u)
@@ -493,7 +475,6 @@ def dm_param.range(dt: S.Dt, mult: U32, nm: String, lo: U32, vmax: U32) -> O.Par
 def dm_param(dt: S.Dt, mult: U32, nm: String) -> O.ParamArg:
   dm_param.range(dt, mult, nm, 0, 100)
 
-# `vmax` is a parameter because the ZERO DIVISOR arm needs a PARAM whose declared
 
 #  r21 t2_var MOD(Px,C(4))       -> None: past divandmod.py:15
 def trees() -> Gate:
@@ -524,7 +505,6 @@ def trees() -> Gate:
   +c10x = O.UOp.alu(O.Found.ar(x10), O.OpsADD{}, [O.Found.i(c10), O.Found.i(px)])
   +x3 = O.UOp.alu(O.Found.ar(c10x), O.OpsADD{}, [O.Found.i(px), O.Found.i(c3)])
   +i10 = O.UOp.alu(O.Found.ar(x3), O.OpsADD{}, [O.Found.i(pi), O.Found.i(c10)])
-  # the eight MOD/DIV roots of the two Fast Inline Rules
   +r00 = O.UOp.alu(O.Found.ar(i10), O.OpsDIV{}, [O.Found.i(a5), O.Found.i(c7)])
   +r01 = O.UOp.alu(O.Found.ar(r00), O.OpsDIV{}, [O.Found.i(b5), O.Found.i(c7)])
   +r02 = O.UOp.alu(O.Found.ar(r01), O.OpsDIV{}, [O.Found.i(a10), O.Found.i(c7)])
@@ -538,7 +518,6 @@ def trees() -> Gate:
   +r10 = O.UOp.alu(O.Found.ar(r09), O.OpsDIV{}, [O.Found.i(x10), O.Found.i(cm7)])
   +r11 = O.UOp.alu(O.Found.ar(r10), O.OpsDIV{}, [O.Found.i(x10), O.Found.i(c0)])
   +r12 = O.UOp.alu(O.Found.ar(r11), O.OpsDIV{}, [O.Found.i(i10), O.Found.i(c7)])
-  # the nine `fold_divmod_general` roots
   +r13 = O.UOp.alu(O.Found.ar(r12), O.OpsDIV{}, [O.Found.i(c6), O.Found.i(c4)])
   +r14 = O.UOp.alu(O.Found.ar(r13), O.OpsMOD{}, [O.Found.i(c6), O.Found.i(c4)])
   +r15 = O.UOp.alu(O.Found.ar(r14), O.OpsDIV{}, [O.Found.i(cm7), O.Found.i(c4)])
@@ -548,7 +527,28 @@ def trees() -> Gate:
   +r19 = O.UOp.alu(O.Found.ar(r18), O.OpsDIV{}, [O.Found.i(pp), O.Found.i(c4)])
   +r20 = O.UOp.alu(O.Found.ar(r19), O.OpsMOD{}, [O.Found.i(pq), O.Found.i(c4)])
   +r21 = O.UOp.alu(O.Found.ar(r20), O.OpsMOD{}, [O.Found.i(px), O.Found.i(c4)])
-  # the arity row and the two zero-divisor rows
+# TODO(p3) divandmod.py:13  symbol=fold_divmod_general  the RANGE HALF of `x//y` being a point -- PORTED for
+#   CONST/CONST only, where `_min_max` (ops.py:1127) is four identical `a//b` and
+#   MEASURED FALSE (2026-11-06): THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax`
+# TODO(p3) divandmod.py:17-19 `# split uops for the rest of the processing` --
+# TODO(p3) divandmod.py:13-15  symbol=fold_divmod_general  a FLOAT CONST -- `_min_max` returns PyConst and
+#  Constant Denominator Rules  -- divandmod.py:21-70. These rules strictly
+# TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
+#   `x.src[1].divides(c)`. THE WALL THIS NAMED IS MEASURED FALSE (2026-11-06): `divides` IS
+#   MEASURED CASES -- `(x*4).divides(4)` IS `MUL(x, 1)`, `(x*4+8).divides(4)` IS
+# TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
+# TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
+# TODO(p3) divandmod.py:50-55  symbol=fold_divmod_general  `gcd_with_remainder: factor out common gcd from
+# TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
+#  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
+# TODO(p3) divandmod.py:77-81  symbol=fold_divmod_general  `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
+# TODO(p3) divandmod.py:11  symbol=fold_divmod_general  the `raise` itself -- Python's
+#   * `_min_max` (ops.py:1104) IS `fold.bend:7306` ("DONE(p3) ops.py:1094 def _min_max"), AND
+#     the header above already said "the `_min_max` wall is measured FALSE (2026-11-06)".
+#   1. `UOp.gcd` (ops.py:1073) AND `UOp.divide_exact` (ops.py:1079) -- AND THEY ARE ONE
+#      HASHABLE BY IDENTITY (`ops.py:219-220`: `__hash__ = tuple.__hash__` AND
+#      CONTAINER AND NOT ABOUT A CAPABILITY.
+#   2. `simplify` / `ssimplify` (ops.py:513/520) IS WHAT `fold_divmod_general` LINE 78
   +r22 = O.UOp.alu(O.Found.ar(r21), O.OpsDIV{}, [O.Found.i(x10), O.Found.i(c7), O.Found.i(c1)])
   +r23 = O.UOp.alu(O.Found.ar(r22), O.OpsDIV{}, [O.Found.i(px), O.Found.i(py)])
   +r24 = O.UOp.alu(O.Found.ar(r23), O.OpsMOD{}, [O.Found.i(px), O.Found.i(py)])
@@ -564,7 +564,6 @@ def rw(+g: Gate, n: U32) -> Hit:
 
 def t_on(g: Gate, n: U32) -> U32: Hit.on(rw(g, n))
 
-# `none` is Python's `None`. Otherwise the tree, TWO levels deep -- which is
 def t_out.go(on: U32, +h: Hit) -> String:
   match on:
     case 0: "none"
@@ -575,7 +574,6 @@ def t_out.put(+h: Hit) -> String:
 
 def t_out(g: Gate, n: U32) -> String: t_out.put(rw(g, n))
 
-# how many nodes the rewrite ADDED. PORT-INTERNAL, because Python's count is one
 def t_grown.put(+h: Hit, g: Gate) -> U32:
   U32.sub(O.Arena.next(Hit.ar(h)), O.Arena.next(Gate.ar(g)))
 
@@ -595,4 +593,3 @@ def t_nrules() -> U32:
 
 def t_nroots() -> U32: nroots(trees())
 
-# THE GATE MOVED TO `gates/divandmod-gate.bend`.

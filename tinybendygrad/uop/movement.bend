@@ -1,10 +1,9 @@
-# so no rule emits the identity check `upat.py:100-105` builds for one.
-# negative `v` became a huge `U32` and the answer was the FIRST element. MEASURED
 # movement.bend -- tinygrad/uop/movement.py. `mop_cleanup`: the pattern matchers
 # # TODO: pm_mops from rangeify belongs here. this is all pattern matchers that
 # A rule here answers a NEW UOP or `None`, not a verdict, so a rewrite carries the
 # `early_reject` IS A NECESSARY CONDITION, not a veto: a rule FIRES when the op set
-# IS a subset of `ler` (ops.py:1701). Rule 6's `{STACK, CONST}`, from `UPat.cvar`,
+# DEFERRED: `mp_0` at rank >= 2 (`UOp.sink(...).simplify()` would reach
+# from the END when `v` is negative, and the port read every index as a `U32`, so a
 
 import Base
 import ./../helpers.bend as H
@@ -12,7 +11,6 @@ import ./../LAWS/spec.bend as S
 import ./ops.bend as O
 import ./fold.bend as F
 
-# THE RESULT. A rule's answer: the arena as it stands after that rule, and WHICH
 type Hop is Data:
   Hop{ar: O.Arena, at: U32}
 
@@ -27,7 +25,6 @@ def hop_ix(h: Hop) -> U32:
 def mp_hit(+f: O.Found) -> Hop:
   Hop{O.Found.ar(f), O.Found.i(f)}
 
-# `PatternMatcher.rewrite` returns the FIRST non-None, so this is a fold with
 def hop_first.of(b: Bool, +hold: U32, r: U32) -> U32:
   match b:
     case True{}: r
@@ -36,14 +33,13 @@ def hop_first.of(b: Bool, +hold: U32, r: U32) -> U32:
 def hop_first(+hold: U32, r: U32) -> U32:
   hop_first.of(O.UOp.is_none(hold), hold, r)
 
-# THE FOLD, and the arena threading. A later rule builds in the arena an earlier rule
 def hop_next(h: Hop, r: Hop) -> Hop:
   match h r:
     case Hop{ha, hn} Hop{ra, rn}: Hop{ra, hop_first(hn, rn)}
 
+# `ret is not uop` -- ops.py:1611. The arena KEEPS whatever the rule built and only the
 # ops.py:1610 reads `if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret`,
 # genuinely new node -- which is the inverse of ops.py:1610 AND of the comment above it.
-# `ret is not uop` -- ops.py:1611. The arena KEEPS whatever the rule built and only the
 def hop_self.of(drop: Bool, +r: Hop) -> Hop:
   match drop:
     case True{}: Hop{hop_ar(r), 0}
@@ -52,7 +48,6 @@ def hop_self.of(drop: Bool, +r: Hop) -> Hop:
 def hop_self(+r: Hop, self: U32) -> Hop:
   hop_self.of(Bool.or(U32.is_eq(hop_ix(r), self), O.UOp.is_none(hop_ix(r))), r)
 
-# THE READERS. `spec.bend`'s `sp_*`, renamed `mp_*` because these read the CURRENT
 def mp_op(ar: O.Arena, i: U32) -> O.Op:
   O.Arena.op(ar, i)
 
@@ -83,7 +78,6 @@ def mp_is(ar: O.Arena, i: U32, want: O.Op) -> Bool:
 def mp_nsrc_is(ar: O.Arena, i: U32, n: U32) -> Bool:
   U32.is_eq(mp_nsrc(ar, i), n)
 
-# `len(x.src) >= n` -- `allow_any_len=True`'s "at least n srcs". `U32.is_ge`, NOT
 def mp_nsrc_ge(ar: O.Arena, i: U32, n: U32) -> Bool:
   U32.is_ge(mp_nsrc(ar, i), n)
 
@@ -165,7 +159,6 @@ def const_i64.go(a: O.Arg) -> Maybe<&2, H.I64>:
 def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
   const_i64.go(a)
 
-# The same value as a `U32`, for the two places it is a src INDEX. Python's `a.src[-1]`
 def i64_u32.of(b: Bool, lo: U32) -> U32:
   match b:
     case True{}: lo
@@ -174,9 +167,9 @@ def i64_u32.of(b: Bool, lo: U32) -> U32:
 def i64_u32(+x: H.I64) -> U32:
   i64_u32.of(U32.is_zero(H.hi32(x)), H.lo32(x))
 
+# PYTHON'S LIST INDEX, and it is the fix for a MEASURED parity gap. `lst[v]` for a
 # MEASURED 2026-10-30 against CPython at the pin, on `UOp(Ops.INDEX, src=(STACK(3,5,7),
 # `UOp.index` -- `return self.src[new_srcs[0].val]` -- tinygrad/uop/ops.py:561 -- whose
-# PYTHON'S LIST INDEX, and it is the fix for a MEASURED parity gap. `lst[v]` for a
 def mp_py_index.tail(sumneg: Bool, +v: H.I64, +n: H.I64) -> Maybe<&1, U32>:
   match sumneg:
     case True{}: None{}
@@ -204,14 +197,13 @@ def mp_py_index(v: H.I64, n: Nat) -> Maybe<&1, U32>:
 def list_at(xs: List<&2, U32>, n: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, xs, U32.to_nat(n)), 0)
 
-# `x.src[1].val == k`, the `list(range(len(stk.src))) == [x.src[1].val ...]` half. A
 def const_is(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
   match m:
     case Some{v}: Cmp.is_eq(H.i64_cmp(v, H.i64_of_i32(U32.from_nat(n))))
     case None{}: False{}
 
-# the next time that file is edited (`# TODO(p3) ops.py:559  def index`).
 # `UOp.index` -- ops.py:559. Three of these nine rules call it and it belongs in ops.bend
+# the next time that file is edited (`# TODO(p3) ops.py:559  def index`).
 def mp_index.pick(sel: Maybe<&1, U32>, ar: O.Arena, self: U32) -> U32:
   match sel:
     case Some{v}: mp_src(ar, self, v)
@@ -260,13 +252,6 @@ def mp_const(ar: O.Arena, i: U32) -> Maybe<&2, H.I64>:
   const_i64(mp_arg(ar, i))
 
 # `UOp.replace` -- ops.py:252. `new_args = (kwargs.pop("op", self.op), kwargs.pop("src",
-# self.src), kwargs.pop("arg", self.arg), kwargs.pop("tag", self.tag))`, so `arg` is a
-# PARAMETER and not something read off `self`: rule 1 replaces only `src` and passes
-# `self`'s own arg, rule 3 replaces only `arg` and keeps `x2`'s src and tag. Reading the
-# arg off `self` answers `x2` for rule 3, which is the node the rule was folding away.
-# `if (self.op, self.src, self.arg, self.tag) == new_args: return self` needs no code
-# here: the arena hash-conses and hands back the same index, and `hop_self` turns "the
-# answer is the node itself" into no answer.
 def mp_replace(op: O.Op, arg: O.Arg, +ar: O.Arena, +self: U32, src: List<&2, U32>) -> Hop:
   mp_hit(O.UOp.new(ar, op, src, arg, mp_tag(ar, self)))
 
@@ -307,11 +292,9 @@ def as_shape.of_op(c: Bool, s: Bool, +ar: O.Arena, +i: U32) -> Maybe<&1, List<&2
 def as_shape(+ar: O.Arena, +i: U32) -> Maybe<&1, List<&2, H.I64>>:
   as_shape.of_op(mp_is(ar, i, O.OpsCONST{}), mp_is(ar, i, O.OpsSTACK{}), ar, i)
 
-# `Marg` is Python's `(o, n)` pair, and a `Data` RECORD rather than a tuple because a
 type Marg is Data:
   Marg{o: H.I64, n: H.I64}
 
-# Bend has no `x.field`, so a record costs two accessors. Everywhere a `Marg` is already
 def Marg.o(x: Marg) -> H.I64:
   match x:
     case Marg{o, n}: o
@@ -326,7 +309,6 @@ def marg.step(x: Marg, y: Marg, acc: List<&2, Marg>) -> List<&2, Marg>:
   match x y:
     case Marg{xo, xn} Marg{yo, yn}: List.append(&2, Marg, acc, [Marg{H.i64_add(xo, yo), yn}])
 
-# `zip(x.marg, s.marg)`, which TRUNCATES to the shorter, so an empty side gives an empty
 def marg.go(ys: List<&2, Marg>, xs: List<&2, Marg>, acc: List<&2, Marg>) -> List<&2, Marg>:
   match ys xs:
     case Nil{} _        : acc
@@ -356,31 +338,26 @@ def marg_add(+ar: O.Arena, +x: U32, +s: U32) -> Maybe<&1, List<&2, Marg>>:
   marg_add.of(as_shape(ar, mp_src(ar, x, 1)), as_shape(ar, mp_src(ar, x, 2)),
               as_shape(ar, mp_src(ar, s, 1)), as_shape(ar, mp_src(ar, s, 2)))
 
+# merge adjacent SHRINKs (movement.py:7-8)
 # element shape is a bare CONST (ops.py:106).
 # TODO(p3) movement.py:7  symbol=mop_cleanup  rank >= 2: `UOp.sink(*usrcs).simplify()` there sees a
-# THE NINE RULES, in movement.py's order. Each `match` is on BOOLS: the first is the
-# pattern's own tests, the rest are the LAMBDA's condition -- `upat.py`'s split exactly --
-# and every construction sits in a TAKEN arm, so a rule that does not fire interns nothing.
-# merge adjacent SHRINKs (movement.py:7-8)
 def mp_0.shrink(+ar: O.Arena, +self: U32, +m: Marg) -> Hop:
   +o = O.UOp.const(ar, O.CInt{Marg.o(m)})
   +s = O.UOp.const(O.Found.ar(o), O.CInt{Marg.n(m)})
   mp_hit(O.UOp.new(O.Found.ar(s), O.OpsSHRINK{}, [mp_src0(ar, self), O.Found.i(o), O.Found.i(s)], O.ANone{}, O.TNone{}))
 
-# CONST (ops.py:106). A merged margin of length 2 is the `simplify()` that reaches
-# THE RANK TEST, and it is the whole of the `_mop` deferral. `_mop`'s node is
 # buildable exactly when `UOp.sink(*usrcs).simplify()` is ops.py:515's EARLY
+# CONST (ops.py:106). A merged margin of length 2 is the `simplify()` that reaches
 def mp_0.of(pat: Bool, m: Maybe<&1, List<&2, Marg>>, +ar: O.Arena, +self: U32) -> Hop:
   match pat m:
     case True{} Some{m <> Nil{}}   : mp_0.shrink(ar, self, m)
-    # TWO Margs, or none: a merged margin of length 1 is the ONE axis per side that
     case _ _                        : Hop{ar, 0}
 
 def mp_0(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_0.of(mp_is(ar, mp_src0(ar, self), O.OpsSHRINK{}), marg_add(ar, self, mp_src0(ar, self)), ar, self)
 
-# movement.py:10 -- this is why the second src is kept verbatim: it is the
 # merge adjacent RESHAPEs (movement.py:10)
+# movement.py:10 -- this is why the second src is kept verbatim: it is the
 def mp_1.of(pat: Bool, +ar: O.Arena, +self: U32) -> Hop:
   match pat:
     case True{}: mp_replace(O.OpsRESHAPE{}, mp_arg(ar, self), ar, self, [mp_src0(ar, mp_src0(ar, self)), mp_src(ar, self, 1)])
@@ -408,7 +385,6 @@ def mp_perm(p2: List<&2, U32>, xa: List<&2, U32>) -> List<&2, U32>:
   mp_perm.go(xa, p2, Nil{})
 
 # SPENDS A BINDER WHEN IT READS IT -- AND THE PORT's OWN IDiom
-# AND THE MERGED PERMUTE CARRIES THE ORDER IN `src[1]`, AS
 def mp_perm_srcs(ar: O.Arena, perm2: List<&2, U32>, x2: U32) -> List<&2, U32>:
   [x2, O.shape_arg(ar, perm2)]
 
@@ -431,7 +407,6 @@ def mp_4.of(ok: Bool, +ar: O.Arena, +self: U32) -> Hop:
     case True{} : Hop{ar, mp_src0(ar, self)}
     case False{}: Hop{ar, 0}
 
-# `list(x.arg) == list(range(len(x.arg)))`, as `arg[k] == k` for every k. ONE DEF, with
 def mp_ident.at(todo: Maybe<&2, List<&2, U32>>, k: Nat, ok: Bool) -> Bool:
   match todo ok:
     case _ False{}        : False{}
@@ -450,7 +425,6 @@ def mp_5.of(pat: Bool, ok: Bool, elems: Bool, +tb: F.Table, +ar: O.Arena, +self:
     case True{} True{} True{}: Hop{ar, mp_src0(ar, mp_src0(ar, self))}
     case _ _ _                : Hop{ar, 0}
 
-# `[x.src[1].val for x in stk.src] == list(range(len(stk.src)))`, as
 def mp_5.one(+ar: O.Arena, +x: U32, k: Nat) -> Bool:
   Bool.and(mp_is(ar, x, O.OpsINDEX{}),
            Bool.and(mp_nsrc_is(ar, x, 2), const_is(mp_const(ar, mp_src(ar, x, 1)), k)))
@@ -468,8 +442,8 @@ def mp_5(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_5.of(mp_nsrc_ge(ar, self, 1), shp_same(tb, ar, mp_src0(ar, mp_src0(ar, self)), self),
           mp_5.each(mp_srcs(ar, self), ar, 0n), tb, ar, self)
 
-# `i.val` reads from the END. MEASURED 2026-10-30: upstream's rule 6 answers `CONST 7`
 # const INDEX into STACK is src (movement.py:21-22)
+# `i.val` reads from the END. MEASURED 2026-10-30: upstream's rule 6 answers `CONST 7`
 def mp_stack_src.of(k: Maybe<&1, U32>, ar: O.Arena, stk: U32) -> Maybe<&1, U32>:
   match k:
     case Some{v}: Some{mp_src(ar, stk, v)}
@@ -532,7 +506,6 @@ def mp_early.go(+have: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
 def mp_early(ar: O.Arena, self: U32, rej: List<&2, O.Op>) -> Bool:
   mp_early.go(O.pm_ler(ar, self), rej)
 
-# THE DISPATCH. `upat.py` emits a closure; Bend has no first-class functions, so the tag
 def mp_dispatch.go(tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   match tag:
     case 0: mp_0(tb, ar, self)
@@ -549,7 +522,6 @@ def mp_dispatch.go(tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
 def mp_dispatch(tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_dispatch.go(tag, tb, ar, self)
 
-# THE TRY. Three things in Python's `PatternMatcher.rewrite`: the op the rule claims
 def mp_try.go(ok: Bool, tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   match ok:
     case True{} : hop_self(mp_dispatch(tag, tb, ar, self), self)
@@ -559,10 +531,10 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
   mp_try.go(Bool.and(O.pm_claimed(O.PMEntry.ops(e), ar, self), mp_early(ar, self, O.PMEntry.rej(e))),
            O.PMEntry.tag(e), tb, ar, self)
 
+# THE MEASURED MUTATION TABLE. Fifteen textual edits, one at a time, each re-checked
 # (0) M7'S ROW IS `shrink2_marg` AND NOT `shrink1_marg`, which reads 31 either way, and the
 #     `x` at the END of `r` is MEASURED, reproducer `.agents/slop/notes/probe-append.bend`.
 #     only other reading of `issubset`. Those are DIFFERENT functions in general and the
-# THE MEASURED MUTATION TABLE. Fifteen textual edits, one at a time, each re-checked
 def mp_scan(rs: List<&2, O.PMEntry>, +tb: F.Table, +ler: List<&2, O.Op>, +self: U32, +h: Hop) -> Hop:
   match rs:
     case Nil{}: h
@@ -584,6 +556,7 @@ def mop_table() -> List<&2, O.PMEntry>:
 # `mop_cleanup.rewrite` -- ops.py:1611. The `tb` is the fold of the arena as it stands on
 def mop_cleanup(+fx: F.Folded, +self: U32) -> Hop:
   mp_scan(mop_table(), F.Folded.t(fx), O.pm_ler(F.Folded.ar(fx), self), self, Hop{F.Folded.ar(fx), 0})
+# WRONG rather than merely restate this file. `mop-truth.py` is the earlier, partial
 
 
 type G is Data:
@@ -608,7 +581,6 @@ def b2u(b: Bool) -> U32:
     case True{} : 1
     case False{}: 0
 
-# `ParamArg(0, int32, size=..., image=...)`, the only thing that makes a BUFFER's shape
 def psize(n: Maybe<&2, U32>) -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
              None{}, False{}, None{}}
@@ -617,7 +589,6 @@ def pimage(h: U32, w: U32) -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{},
              Some{O.Img{h, w}}, None{}, False{}, None{}}
 
-# THE FIXTURE. Built in the order above, one `+` per node, because Bend has no mutable
 def g() -> G:
   +c0 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(0)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(1)})
@@ -696,11 +667,9 @@ def marg_un.go(m: Maybe<&1, List<&2, Marg>>) -> List<&2, Marg>:
     case Some{ms}: ms
     case None{}   : Nil{}
 
-# `enc` packs a margin as `(((o0*10+n0)*100 + o1*10+n1) ...)`, so the Python `((3,1),)` is
 def marg_pair(+o: H.I64, n: H.I64) -> U32:
   U32.add(U32.mul(i64_u32(o), 10), i64_u32(n))
 
-# ONE READ of the pair: a `Marg` taken out of a `List` is a binder, and a binder read
 def marg_pair.of(+m: Marg) -> U32:
   marg_pair(Marg.o(m), Marg.n(m))
 
@@ -710,7 +679,6 @@ def marg_enc.go(ms: List<&2, Marg>, acc: U32) -> U32:
 def t_mop_len() -> U32:
   U32.from_nat(List.length(&2, O.PMEntry, mop_table()))
 
-# SHRINK over SHRINK at rank 1. Python answers `SHRINK(b4, CONST(3), CONST(1))`: three
 def t_shrink1_ns() -> U32:
   +h = rw(g(), 13n)
   mp_nsrc(hop_ar(h), hop_ix(h))
@@ -725,11 +693,9 @@ def t_shrink1_marg() -> U32:
   +h = rw(g(), 13n)
   marg_pair(shr_o(hop_ar(h), hop_ix(h)), shr_n(hop_ar(h), hop_ix(h)))
 
-# the first of the two deferred walls, and the row that says so. CPython answers a 3-src
 def t_shrink2() -> U32:
   b2u(O.UOp.is_none(hop_ix(rw(g(), 17n))))
 
-# The rank-2 merged margin, `((1,1),(2,1))` == 1121. The GENERATOR is ported even though
 def t_shrink2_marg() -> U32:
   marg_enc.go(marg_un.go(g_marg(17n)), 0)
 
@@ -739,16 +705,13 @@ def t_marg_n1() -> U32:
 def t_marg_n2() -> U32:
   U32.from_nat(marg_n.go(g_marg(17n)))
 
-# FIRST WINS, and the fixture is built so `mp_1` and `mp_2` BOTH claim R2 and DISAGREE.
 def t_reshape_pick() -> U32:
   +h = rw(g(), 20n)
   b2u(mp_is(hop_ar(h), mp_src(hop_ar(h), hop_ix(h), 1), O.OpsSTACK{}))
 
-# THE SECOND DEFERRED WALL. CPython answers `b4` (index 6) for R3; the port answers none,
 def t_reshape_noop() -> U32:
   hop_ix(rw(g(), 21n))
 
-# `P2 -> P3`, i.e. the permutes COMPOSE and the answer is a different arg node. Reading
 def t_permute_merge() -> U32:
   hop_ix(rw(g(), 23n))
 
@@ -758,7 +721,6 @@ def t_permute_noop() -> U32:
 def t_stack_idx() -> U32:
   hop_ix(rw(g(), 28n))
 
-# `IX2 -> C1` (index 2). Rule 6's answer is a node the fixture ALREADY HOLDS, which is
 def t_const_idx2() -> U32:
   hop_ix(rw(g(), 29n))
 
@@ -788,11 +750,9 @@ def t_idx_shaped_bad() -> U32:
 def t_unclaimed() -> U32:
   b2u(O.UOp.is_none(hop_ix(rw(g(), 38n))))
 
-# Rule 6's TWO-element reject set, over a THREE-src INDEX (IX3): `ler` folds over every
 def t_rej_pair() -> U32:
   hop_ix(rw(g(), 30n))
 
-# A rule that interns a node GROWS the arena, and a rule that does not does not. These two
 def t_grow_new() -> U32:
   +gx = g()
   +h = mop_cleanup(G.fx(gx), G.at(gx, 33n))
@@ -803,7 +763,6 @@ def t_grow_same() -> U32:
   +h = mop_cleanup(G.fx(gx), G.at(gx, 29n))
   U32.sub(O.Arena.next(hop_ar(h)), O.Arena.next(F.Folded.ar(G.fx(gx))))
 
-# THE SAME TABLE VALUE, TWICE: the `Data` table has none of the linear-table cost a
 def t_twice() -> U32:
   +gx = g()
   +ts = mop_table()
@@ -822,4 +781,3 @@ def t_ret_self() -> U32:
 def t_ret_new() -> U32:
   b2u(O.UOp.is_none(hop_ix(hop_self(Hop{O.Arena.empty(), 3}, 2))))
 
-# THE GATE MOVED TO `gates/movement-gate.bend`.

@@ -1,3 +1,21 @@
+# fold.bend -- the derived properties of tinygrad/uop/ops.py, as ONE topological
+# WHAT THIS FILE IS. `ops.bend` builds the arena: a UOp is a `U32` index into an
+# THE FIX is the shape `toposort` already has in `ops.bend`: ONE def that walks
+# dtype and shape are answered TOGETHER, as one `DtShape`, because they read each
+# TODO list recorded for it. The old list said expand, permute and flip wait on
+# pad and shrink are one walk with a `Bool`, not two arms, because their checks differ
+# THE `ssimplify` WALL IS CLOSED, and it was TWO defects and not one. `as_shape`'s
+# WHAT IS LEFT, NAMED, because a closed wall with an unnamed remainder is a lie: a
+# THE ARENA IS A DAG BY CONSTRUCTION -- `UOp.make` only ever names src indices
+# WHAT A PYTHON `raise` BECOMES, uniformly: the node is NOT answered. One rule at
+# THE COST, accepted rather than worked around:
+# `_min_max` has moved, and it moved in the order the table decides.
+#   1. `int(x).bit_length()` (ops.py:1111) -- SOLVED, NOT ROUTED AROUND. The previous unit
+# what the walk's price is, measured rather than assumed. Its dtype comes from the MAIN
+# the order was right and the payoff is measurable: because the table is pure, its 127 rows
+# THE LATTICE IS HOISTED, with a notice. `promo_dtype` needs `least_upper_dtype`
+# `ranges` need "one set algebra over a `List`", as though the algebra were the wall. It is
+# `is_image_shape` IS FIXED, and the fix is a CONSTANT. It compared the last dim against
 # fold.bend -- the derived properties of tinygrad/uop/ops.py, as ONE topological fold over
 # `ops.bend` builds the arena: a UOp is a `U32` index into an append-only `List<Node>`, so
 # THE FIX is the shape `toposort` already has in `ops.bend`: ONE def that walks the graph in
@@ -24,7 +42,6 @@ def promo_mask(d: S.Dt) -> U32:
     case S.Dt{7, 64, S.CSint{}, _}: 523520
     case S.Dt{8, 64, S.CUint{}, _}: 523776
     case S.Dt{9, 800, S.CWeakFloat{}, _}: 523264
-    # the three FP8 names are `Dt`'s fourth field and not its priority: `fp8e4m3` and
     case S.Dt{10, 8, S.CFloat{}, "fp8e4m3"}: 493568
     case S.Dt{10, 8, S.CFloat{}, "fp8e4m3fnuz"}: 495616
     case S.Dt{11, 8, S.CFloat{}, "fp8e5m2"}: 499712
@@ -81,7 +98,6 @@ def least_upper_dtypes.go(ds: List<&2, S.Dt>, a: S.Dt) -> S.Dt:
 
 def least_upper_dtypes(ds: List<&2, S.Dt>) -> S.Dt:
   match ds:
-    # dtype.py's `set.intersection()` of nothing is a TypeError. The one
     case Nil{}: S.void()
     case h <> t: least_upper_dtypes.go(t, h)
 
@@ -147,7 +163,6 @@ def sized.go(s: List<&2, O.Sint>, n: Nat, acc: List<&2, O.Sint>) -> Sized:
 def sized(s: List<&2, O.Sint>) -> Sized:
   sized.go(s, 0n, Nil{})
 
-# `(1,)*(max_dim-len(s))+s`
 def ones.go(+n: Nat, acc: List<&2, O.Sint>) -> List<&2, O.Sint>:
   match n:
     case 0n: acc
@@ -346,7 +361,6 @@ def bcast.go(als: List<&2, Sized>, acc: List<&2, O.Sint>) -> Maybe<&2, List<&2, 
       Maybe.bind(&2, List<&2, O.Sint>, List<&2, O.Sint>, bcast.pair(acc, a, Nil{}),
         acc2 => bcast.go(t, acc2))
 
-# the zip of the per-dim loop. `acc` is the dims answered so far, so pairing it with
 def bcast.first(als: List<&2, Sized>) -> Maybe<&2, List<&2, O.Sint>>:
   match als:
     case Nil{}: None{}
@@ -393,7 +407,6 @@ def param_ds.pick(m: Maybe<&1, S.Dt>, arg: O.Arg, size: Maybe<&2, U32>) -> Maybe
 def bitcast_ds.shape(dt: S.Dt, out: U32, inp: U32, m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, DtShape>:
   Maybe.bind(&2, List<&2, O.Sint>, DtShape, bitcast_dims(m, out, inp), ds => dt_of(dt, Some{ds}))
 
-# a `raise` on `ok` guarding the same pair, so the guard is a whole extra answer and
 def dt_of_if(ok: Bool, dt: S.Dt, m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, DtShape>:
   match ok:
     case True{}: dt_of(dt, m)
@@ -449,7 +462,6 @@ def Kahn.gather.done(acc: List<&2, Derived>, ok: Bool) -> Maybe<&2, List<&2, Der
     case True{}: Some{acc}
     case False{}: None{}
 
-# The dead default for a src lookup. `Kahn.gather` has already refused every node
 def Derived.unknown() -> Derived:
   Derived{S.void(), None{}, None{}, None{}, 0, 0, 0, Nil{}}
 
@@ -531,7 +543,6 @@ def stack_ds.of(+x: Srcs) -> Maybe<&2, DtShape>:
 def stack_ds(ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   stack_ds.of(srcs(ss))
 
-# `return self.src[0].dtype` and `return self.src[0]._shape`, which is REDUCE's
 def reduce_dims.put(+x: Sized, +n: U32) -> Maybe<&2, List<&2, O.Sint>>:
   some_if(&2, List<&2, O.Sint>, Bool.not(U32.is_gt(n, U32.from_nat(Sized.n(x)))),
     drop_n(Sized.s(x), U32.to_nat(n)))
@@ -540,7 +551,6 @@ def reduce_dims(ss: List<&2, Derived>, +n: U32) -> Maybe<&2, List<&2, O.Sint>>:
   Maybe.bind(&2, List<&2, O.Sint>, List<&2, O.Sint>, src_shape(0, ss),
     ps => reduce_dims.put(sized(ps), n))
 
-# `return self.src[0].dtype` and `return self.src[0]._shape`: the LOAD / UNSHARD /
 def thru0(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   dt_of(src_dt(0, ss), src_shape(0, ss))
 
@@ -567,7 +577,6 @@ def all_shaped.go(ss: List<&2, Derived>, ok: Bool) -> Bool:
 def all_shaped(ss: List<&2, Derived>) -> Bool:
   all_shaped.go(ss, True{})
 
-# `[x.shape for x in src]` -- the `input_shapes` the Broadcastable arm and WMMA's
 def shape_of(d: Derived) -> List<&2, O.Sint>:
   Maybe.default(&2, List<&2, O.Sint>, Derived.shape(d), Nil{})
 
@@ -618,7 +627,6 @@ def where_ds.of(+x: Srcs) -> Maybe<&2, DtShape>:
 def where_ds(ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   where_ds.of(srcs(ss))
 
-# The Broadcastable arm: "elementwise ops keep the shape the same. all inputs with
 def alu_ds(dt: S.Dt, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   dt_of(dt, bcast_shape(all_shapes(ss)))
 
@@ -830,7 +838,6 @@ def adt_dt(arg: O.Arg) -> Maybe<&1, S.Dt>:
     case O.ADt{dt}: Some{dt}
     case _: None{}      # `assert isinstance(arg, DType), f"CAST/BITCAST arg must be DType"`
 
-# BITCAST: the dtype is `return arg`; the shape rescales the LAST dim by the
 def bitcast_ds(arg: O.Arg, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   bitcast_ds.pick(adt_dt(arg), ss)
 
@@ -865,7 +872,6 @@ def index_ds.of(+ar: O.Arena, +i: U32, +x: Srcs) -> Maybe<&2, DtShape>:
 def index_ds(ar: O.Arena, i: U32, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   index_ds.of(ar, i, srcs(ss))
 
-# `a.shape[:-1]` for each of the three operands. The foldl walks `ds` with `acc` as
 def wmma_shapes.put.step(+a: Shapes, +d: Sized) -> Shapes:
   Shapes{List.append(&2, Sized, Shapes.ds(a), [d]), Nat.max(Shapes.m(a), Sized.n(d))}
 
@@ -874,14 +880,12 @@ def wmma_shapes.put(ds: List<&2, Sized>, acc: Shapes) -> Shapes:
     (a: Shapes) => (d: Sized) => wmma_shapes.put.step(a, d),
     ds, acc)
 
-# `a.shape[:-1]` per operand, AS A `Shapes` -- NOT as the full shapes. The broadcast
 def wmma_shapes.of(sh: Shapes) -> Shapes:
   wmma_shapes.put(wmma_shapes.go(Shapes.ds(sh), Nil{}), Shapes{Nil{}, 0n})
 
 def wmma_ds.go(dt: S.Dt, ws: Maybe<&2, Shapes>, last: Maybe<&2, O.Sint>) -> Maybe<&2, DtShape>:
   wmma_ds.of(dt, bcast_shape(Maybe.map(&2, Shapes, Shapes, wmma_shapes.of, ws)), last)
 
-# WMMA: "wmma output shape = accumulator shape (src[2])", and the dtype is the
 def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   wmma_ds.go(src_dt(2, ss), all_shapes(List.take(&2, Derived, ss, 3n)), src_last(2, ss))
 
@@ -953,7 +957,6 @@ def rng_width.of(+ar: O.Arena, +r: U32) -> Maybe<&2, H.I64>:
 def rng_width(+ar: O.Arena, r: U32) -> Maybe<&2, H.I64>:
   rng_width.of(ar, r)
 
-# `arg.index(a)`: the index of the FIRST `a`. ONE walk and not two -- the "stop at the
 def idx_u32.hit(acc: Maybe<&2, U32>, x: U32, y: U32, k: U32) -> Maybe<&2, U32>:
   match acc:
     case Some{z}: Some{z}
@@ -979,7 +982,6 @@ def stage_shape.put(w: Maybe<&2, H.I64>, acc: Maybe<&2, List<&2, O.Sint>>) -> Ma
     case Some{c}: stage_shape.one(c, acc)
     case None{}: None{}
 
-# the list is the first argument and that is the termination, not a style choice: bend
 def stage_widths.go(tail: List<&2, U32>, +ar: O.Arena, +i: U32, +k: U32,
     +acc: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
   match tail:
@@ -990,7 +992,6 @@ def stage_widths.go(tail: List<&2, U32>, +ar: O.Arena, +i: U32, +k: U32,
 def stage_widths(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, O.Sint>>:
   stage_widths.go(O.Arena.src_from(ar, i, 1), ar, i, 1, Some{Nil{}})
 
-# `pre + tail`, and `tail` is the `Maybe<&2, ...>` `src_shape` answers, so a src[0] with no
 def pre_all.go(tail: List<&2, O.Sint>, +pre: List<&2, O.Sint>) -> List<&2, O.Sint>:
   match tail:
     case Nil{}: pre
@@ -1037,7 +1038,6 @@ def sym_dim.range(r: Maybe<&2, O.PyRange>, s: U32) -> Maybe<&1, O.Sint>:
 def sym_dim.pa(pa: O.ParamArg, s: U32) -> Maybe<&1, O.Sint>:
   sym_dim.range(O.ParamArg.vmin_vmax(pa), s)
 
-# A SPECIAL's interval is `[0, end-1]`, so `vmin == vmax` is `end == 1` and
 def sym_dim.spec(e: Maybe<&2, H.I64>, s: U32) -> Maybe<&1, O.Sint>:
   match e:
     case Some{+v}: Bool.pick(Maybe<&1, O.Sint>, O.eq_i64(v, H.i64_of_i32(1)),
@@ -1045,19 +1045,16 @@ def sym_dim.spec(e: Maybe<&2, H.I64>, s: U32) -> Maybe<&1, O.Sint>:
                 None{}, Some{O.SU{s}}))
     case None{} : None{}
 
-# `O.UOp.special` always names its end in src[0] and every caller builds it a CONST,
 def sym_dim.end(+ss: List<&2, U32>, +ar: O.Arena, i: U32) -> Maybe<&1, O.Sint>:
   match ss:
     case e <> _: sym_dim.spec(const_i64(O.Arena.arg(ar, e)), i)
     case Nil{}  : None{}
 
-# `s.val` for a CONST and nothing else, and `const_i64.go`'s answer is the whole of
 def sym_dim.val(i: Maybe<&2, H.I64>) -> Maybe<&1, O.Sint>:
   match i:
     case Some{v}: Some{O.SI{v}}
     case None{}  : None{}
 
-# The `APy` arm is `s.val` and the other two are `ssimplify(s)`, so the CONST and
 def sym_dim.of(a: O.Arg, +i: U32, +ar: O.Arena) -> Maybe<&1, O.Sint>:
   match a:
     case O.APy{v}    : sym_dim.val(const_i64.go(v))
@@ -1068,7 +1065,6 @@ def sym_dim.of(a: O.Arg, +i: U32, +ar: O.Arena) -> Maybe<&1, O.Sint>:
 def sym_dim(+ar: O.Arena, +i: U32) -> Maybe<&1, O.Sint>:
   sym_dim.of(O.Arena.arg(ar, i), i, ar)
 
-# `return tuple(s.val if s.op is Ops.CONST else ssimplify(s) for s in self.src)` --
 type Marg is Data:
   Marg{ds: List<&2, O.Sint>, ok: Bool}
 
@@ -1080,23 +1076,19 @@ def Marg.ok(x: Marg) -> Bool:
   match x:
     case Marg{ds, ok}: ok
 
-# `marg.done`, so the `Some`/`None` answer has one spelling
 def marg.done(+x: Marg) -> Maybe<&2, List<&2, O.Sint>>:
   some_if(&2, List<&2, O.Sint>, Marg.ok(x), Marg.ds(x))
 
-# ONE READ of the element's node, which is why the DIM and the flag travel
 def marg.step(d: Maybe<&1, O.Sint>, +x: Marg) -> Marg:
   match d:
     case Some{v}: Marg{List.append(&2, O.Sint, Marg.ds(x), [v]), Marg.ok(x)}
     case None{}  : Marg{Marg.ds(x), False{}}
 
-# `marg.step(sym_dim(ar, s))` -- a CONST element reads `s.val` and a symbolic one
 def marg.stack.go(ss: List<&2, U32>, +ar: O.Arena, +x: Marg) -> Maybe<&2, List<&2, O.Sint>>:
   match ss:
     case Nil{}   : marg.done(x)
     case s <> t  : marg.stack.go(t, ar, marg.step(sym_dim(ar, s), x))
 
-# `if self.op is Ops.CONST: return (self.val,)`, the one-element shape
 def marg.one(+ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
   marg.done(marg.step(sym_dim(ar, i), Marg{Nil{}, True{}}))
 
@@ -1107,12 +1099,10 @@ def marg.of(k: O.Op, +ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
     case O.OpsSTACK{}: marg.stack.go(O.Arena.srcs(ar, i), ar, Marg{Nil{}, True{}})
     case _           : marg.one(ar, i)
 
-# `self.src[1]`, the arg `shape_to_shape_arg` built, and the two arms above. `+s`
 def marg(+ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
   +s = O.Arena.src(ar, i, 1)
   marg.of(O.Arena.op(ar, s), ar, s)
 
-# `xs + ys` for two shape answers, or `None` if either is `None`. The two-`Maybe`
 def both(m: Maybe<&2, List<&2, O.Sint>>, n: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
   match m n:
     case Some{g} Some{h}: Some{List.append(&2, O.Sint, g, h)}
@@ -1144,7 +1134,6 @@ def count_of(d: O.Sint) -> Maybe<&1, U32>:
     case O.SU{u}: None{}
     case O.SI{i}: count_of.of(i)
 
-# THE THREE HEADS OF ONE DIM -- the source dim `s`, the offset `o`, the size `z` --
 type Tri is Data:
   Tri{s: U32, o: U32, z: U32}
 
@@ -1172,7 +1161,6 @@ def Tri.of1(s: Maybe<&1, U32>, o: O.Sint, z: O.Sint) -> Maybe<&1, Tri>:
 def Tri.of(s: O.Sint, o: O.Sint, z: O.Sint) -> Maybe<&1, Tri>:
   Tri.of1(count_of(s), o, z)
 
-# `resolve(sz>=0) and resolve(0<=o) and resolve(o+s<=sz)`, whose `sz>=0` and `0<=o`
 def Tri.le(t: Tri, +pad: Bool) -> Bool:
   match t:
     case Tri{+s, +o, +z}: Bool.pick(Bool, pad, U32.is_le(U32.add(o, s), z), U32.is_le(U32.add(o, z), s))
@@ -1182,7 +1170,6 @@ def tri_ok(t: Maybe<&1, Tri>, +pad: Bool, good: Bool) -> Bool:
     case Some{v}: Bool.and(good, Tri.le(v, pad))
     case None{}  : False{}
 
-# THE ANSWER AND THE FLAG, one value, for the reason `Prod` exists.
 type Pairs is Data:
   Pairs{szs: List<&2, O.Sint>, ok: Bool}
 
@@ -1203,7 +1190,6 @@ def pad_shrink.go(ps: List<&2, O.Sint>, os: List<&2, O.Sint>, szs: List<&2, O.Si
     case Nil{} Nil{} Nil{}          : x
     case _ _ _                      : Pairs{Pairs.szs(x), False{}}
 
-# THE TWO `as_shape` ANSWERS AS LISTS, and a `None` on either is `marg`'s own
 def pair3.oz(+pad: Bool, ps: List<&2, O.Sint>, os: List<&2, O.Sint>, szs: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&1, Pairs>:
   match szs:
     case Some{z}: Some{pad_shrink.go(ps, os, z, pad, Pairs{Nil{}, True{}})}
@@ -1246,11 +1232,9 @@ def mem_u32(xs: List<&2, U32>, +y: U32) -> Bool:
 type Step is Data:
   Step{d: Maybe<&2, O.Sint>, y: U32, t: List<&2, U32>}
 
-# THE INDEX READ. `List.get` answers a `Maybe` and a `Maybe` cannot be `+`, so it
 def perm_step(+y: U32, +t: List<&2, U32>, +ps: List<&2, O.Sint>) -> Step:
   Step{List.get(&2, O.Sint, ps, U32.to_nat(y)), y, t}
 
-# AND THE TEST. `sorted(marg) != list(range(len(ps)))` is "every index in range AND
 def perm_add.go(d: Maybe<&2, O.Sint>, +y: U32, +t: List<&2, U32>, +x: Perm) -> Perm:
   match d:
     case Some{v}: Perm{List.append(&2, O.Sint, Perm.ds(x), [v]),
@@ -1262,21 +1246,17 @@ def perm_add(st: Step, +x: Perm) -> Perm:
   match st:
     case Step{+d, +y, +t}: perm_add.go(d, y, t, x)
 
-# THE WALK, and `n = len(ps)` IS GONE. It was there to test "every index is in
 def perm.go(ys: List<&2, U32>, +ps: List<&2, O.Sint>, +x: Perm) -> Perm:
   match ys:
     case Nil{}  : Perm{Perm.ds(x), Perm.seen(x), Perm.ok(x)}
     case y <> +t : perm.go(t, ps, perm_add(perm_step(y, t, ps), x))
 
-# THE SEED, and `ps` IS THE SHAPE -- measured, not reasoned: the first version
 def perm_init(ys: List<&2, U32>, +ps: List<&2, O.Sint>) -> Perm:
   perm.go(ys, ps, Perm{Nil{}, Nil{}, True{}})
 
-# the walk and the answer, and `Perm.ok`/`Perm.ds` read the record once each by
 def perm_ds.of_walk(+x: Perm, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   dt_of_if(Perm.ok(x), src_dt(0, ss), Some{Perm.ds(x)})
 
-# THE ORDER IS A `Maybe` NOW -- BECAUSE `marg` RETURNS ONE -- AND
 def perm_ds.of(ys: List<&2, U32>, ps: Maybe<&2, List<&2, O.Sint>>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match ps:
     case Some{p}: perm_ds.of_walk(perm_init(ys, p), ss)
@@ -1296,11 +1276,9 @@ def order_srcs.go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, U32>) -> List<&
     case Nil{}   : acc
     case s <> t  : order_srcs.go(ar, t, List.append(&2, U32, acc, [order_srcs.const(ar, s)]))
 
-# THE `srcs` ARE READ IN A DEF THAT COMES FIRST, BECAUSE
 def order_srcs.srcs(+ar: O.Arena, s: U32) -> List<&2, U32>:
   order_srcs.go(ar, O.Arena.srcs(ar, s), Nil{})
 
-# THE OP IS TAKEN AS A VALUE AND THE INDEX IS TAKEN AS
 def order_srcs.op(k: O.Op, +ar: O.Arena, s: U32) -> List<&2, U32>:
   match k:
     case O.OpsSTACK{}: order_srcs.srcs(ar, s)
@@ -1330,7 +1308,6 @@ def pair_ds.put(+pad: Bool, x: Maybe<&1, Pairs>, +ss: List<&2, Derived>) -> Mayb
 def pair_ds.of(+pad: Bool, x: Maybe<&1, Pairs>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   pair_ds.put(pad, x, ss)
 
-# the two arms' entry points, and the only difference between them is the `Bool`:
 def pad_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   pair_ds.of(True{}, pair3.of(True{}, src_shape(0, ss), marg.at(1, ar, i), marg.at(2, ar, i)), ss)
 
@@ -1378,7 +1355,6 @@ def marg_prod1() -> Prod:
 def marg_prod(+m: Maybe<&2, List<&2, O.Sint>>) -> Prod:
   marg_prod.go(Maybe.default(&2, List<&2, O.Sint>, m, Nil{}), marg_prod1())
 
-# `if not all(x >= 0 for x in self.marg)` and `if resolve(prod(ps) !=
 def reshape_ok(+ps: Prod, +m: Prod) -> Bool:
   Bool.and(Bool.not(Prod.neg(m)),
     Bool.pick(Bool, Bool.or(Prod.sym(ps), Prod.sym(m)), True{},
@@ -1394,7 +1370,6 @@ def reshape_ds.go(noop: Bool, m: Maybe<&2, List<&2, O.Sint>>, ok: Bool, dt: S.Dt
     case True{} : dt_of(dt, m)
     case False{}: dt_of_if(ok, dt, m)
 
-# `marg` is read TWICE because Bend spends a list when it reads it, and this file
 def reshape_ds.of(noop: Bool, +ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   reshape_ds.go(noop, marg(ar, i), reshape_ok(marg_prod(reshape_ps(ss)), marg_prod(marg(ar, i))), src_dt(0, ss))
 
@@ -1411,7 +1386,6 @@ def num_axes(arg: O.Arg) -> U32:
     case O.AReduce{rop, num_axes}: num_axes
     case _: 0
 
-# REDUCE: in `GroupOp.Movement.union({Ops.UNSHARD, Ops.REDUCE})` the dtype is the
 def reduce_ds(arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   reduce_ds.go(src_dt(0, ss), reduce_dims(ss, num_axes(arg)))
 
@@ -1427,7 +1401,6 @@ def cconst_dt(arg: O.Arg) -> Maybe<&1, S.Dt>:
     case O.APy{v}: cconst_dt.val(v)
     case _: None{}
 
-# CONST: the dtype is derived from the value -- `if isinstance(arg, InvalidType):
 def const_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
   const_ds.pick(cconst_dt(arg))
 
@@ -1456,7 +1429,6 @@ def msel_dev.pick(d: Maybe<&2, S.Dev>, k: U32) -> Maybe<&2, S.Dev>:
     case Some{S.Dn{tags}}: msel_dev.hit(List.get(&2, U32, tags, U32.to_nat(k)))
     case _: None{}
 
-# `assert isinstance(self.src[0].device, tuple), f"mselect must be on tuple device,
 def device_of.msel(d: Maybe<&2, S.Dev>, arg: O.Arg) -> Maybe<&2, S.Dev>:
   match arg:
     case O.ATuple{ys}:
@@ -1470,17 +1442,14 @@ def mstack_dev.tag.of(acc: Maybe<&2, List<&2, U32>>, tag: U32) -> Maybe<&2, List
     case Some{ts}: Some{List.append(&2, U32, ts, [tag])}
     case None{}: None{}
 
-# One operand of the tuple: `cast(str, x.device)` waves a tuple device through, so
 def mstack_dev.acc.of(acc: Maybe<&2, List<&2, U32>>, dv: Maybe<&2, S.Dev>) -> Maybe<&2, List<&2, U32>>:
   match dv:
     case Some{S.D1{tag}}: mstack_dev.tag.of(acc, tag)
     case _: None{}
 
-# all four states of (the tags so far, this operand's device), written out
 def mstack_dev.acc(d: Derived, acc: Maybe<&2, List<&2, U32>>) -> Maybe<&2, List<&2, U32>>:
   mstack_dev.acc.of(acc, Derived.dev(d))
 
-# `return tuple(cast(str, x.device) for x in self.src)`. `S.Dn` is that tuple of
 def mstack_dev.go(ss: List<&2, Derived>, acc: Maybe<&2, List<&2, U32>>) -> Maybe<&2, List<&2, U32>>:
   match ss:
     case Nil{}: acc
@@ -1501,23 +1470,19 @@ def device_of(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, ss: List<&2, Derived>) 
     case O.OpsPARAM{}: device_of.param(arg)
     case O.OpsBUFFER{}: device_of.param(arg)
     case O.OpsALLOC{}: device_of.param(arg)
-    # `self.src[0].device if self.arg is None else self.arg.device`, and a STAGE's
     case O.OpsSTAGE{}: src_dev(0, ss)
     case O.OpsAFTER{}: src_dev(0, ss)
     case O.OpsMSELECT{}: device_of.msel(src_dev(0, ss), arg)
     case O.OpsMSTACK{}: mstack_dev(ss)
     case O.OpsCOPY{}: device_of.copy(arg)
     case O.OpsALLREDUCE{}: device_of.allred(arg)
-    # `for x in self.src:` / `if x.device is not None: return x.device` / `return None`
     case _: first_dev(ss)
 
-# `if self.op is Ops.PARAM: return self.arg.addrspace` and the same for BUFFER and
 def addrspace_of.param(arg: O.Arg) -> Maybe<&2, S.Addr>:
   match arg:
     case O.AParam{pa}: Some{O.ParamArg.addrspace(pa)}
     case _: None{}
 
-# `ad = [x.addrspace for x in self.src if x.addrspace is not None]` / `if not
 type Uniq is Data:
   Uniq{ad: Maybe<&2, S.Addr>, ok: Bool}
 
@@ -1573,13 +1538,10 @@ def addrspace_of(arg: O.Arg, op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Add
     case O.OpsBUFFER{}: addrspace_of.param(arg)
     case O.OpsALLOC{}: addrspace_of.param(arg)
     case O.OpsBINARY{}: Some{S.AGlobal{}}
-    # LOAD brings things into the ALU
     case O.OpsLOAD{}: Some{S.Aalu{}}
-    # `if self.op in {Ops.SPECIAL, Ops.RANGE, Ops.CONST}: return AddrSpace.ALU`
     case O.OpsSPECIAL{}: Some{S.Aalu{}}
     case O.OpsRANGE{}: Some{S.Aalu{}}
     case O.OpsCONST{}: Some{S.Aalu{}}
-    # `if self.op in {Ops.INDEX, Ops.CAST, Ops.AFTER, Ops.REDUCE, Ops.STORE,
     case O.OpsINDEX{}: src_addr(0, ss)
     case O.OpsCAST{}: src_addr(0, ss)
     case O.OpsAFTER{}: src_addr(0, ss)
@@ -1591,7 +1553,6 @@ def addrspace_of(arg: O.Arg, op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Add
     case O.OpsUNSHARD{}: src_addr(0, ss)
     case O.OpsSTACK{}: one_addr(ss)
     case O.OpsWMMA{}: one_addr(ss)
-    # `if self.op in GroupOp.Movement` and `or GroupOp.Elementwise`
     case _: addrspace_of.rest(op, ss)
 
 def base_of.is_detach(op: O.Op) -> Bool:
@@ -1623,14 +1584,12 @@ def base_of.is_after(op: O.Op) -> Bool:
     case O.OpsAFTER{}: True{}
     case _: False{}
 
-# `unsharded_base`'s step set is `base`'s PLUS UNSHARD, and the step reads the
 def unbase_of.steps(+op: O.Op) -> Bool:
   Bool.or(base_of.steps(op), base_of.is_unshard(op))
 
 def unbase_of(i: U32, op: O.Op, ss: List<&2, Derived>) -> U32:
   base_of.go(ss, i, unbase_of.steps(op))
 
-# `storage_base`'s step set is `unsharded_base`'s PLUS BITCAST and AFTER, and the
 def sbase_of.steps(+op: O.Op) -> Bool:
   Bool.or(Bool.or(unbase_of.steps(op), base_of.is_bitcast(op)), base_of.is_after(op))
 
@@ -1660,14 +1619,12 @@ def is_invalid.go(op: O.Op, arg: O.Arg) -> Bool:
 def is_invalid.of(op: O.Op, arg: O.Arg) -> Bool:
   is_invalid.go(op, arg)
 
-# `self.op is Ops.CONST and self.val is Invalid`, on the node's OWN arg, so this
 def is_invalid(+ar: O.Arena, +u: U32) -> Bool:
   is_invalid.of(O.Arena.op(ar, u), O.Arena.arg(ar, u))
 
 def unary_dt(ar: O.Arena, +ss: List<&2, Derived>) -> S.Dt:
   unary_dt.go(is_invalid(ar, src_base(0, ss)), src_dt(0, ss))
 
-# SIN | LOG2 | EXP2 | SQRT | RECIP: `return dtypes.bool if
 def unary_ds(ar: O.Arena, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   dt_of(unary_dt(ar, ss), src_shape(0, ss))
 
@@ -1685,7 +1642,6 @@ def all_int_or_invalid(ar: O.Arena, ss: List<&2, Derived>) -> Bool:
 def shift_ds.of(ar: O.Arena, +x: Srcs) -> Maybe<&2, DtShape>:
   dt_of_if(all_int_or_invalid(ar, Srcs.ss(x)), src_dt(0, Srcs.ss(x)), bcast_shape(all_shapes(Srcs.ss(x))))
 
-# SHL | SHR: the int check, then `return src[0].dtype`; the shape is the
 def shift_ds(ar: O.Arena, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   shift_ds.of(ar, srcs(ss))
 
@@ -1714,7 +1670,6 @@ def unshard_dim.put(mem: Bool, w: Maybe<&2, H.I64>, s: O.Sint) -> Maybe<&2, O.Si
 def unshard_dim.of(mem: Bool, w: Maybe<&2, H.I64>, s: O.Sint) -> Maybe<&2, O.Sint>:
   unshard_dim.put(mem, w, s)
 
-# `rng_width` for axis `a`, which is `src[1:][arg.index(a)]` -- `Arena.src` is
 def unshard_w.at(m: Maybe<&2, U32>, +ar: O.Arena, +i: U32) -> Maybe<&2, H.I64>:
   match m:
     case Some{p}: rng_width(ar, O.Arena.src(ar, i, U32.add(1, p)))
@@ -1784,11 +1739,9 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # SPELLING AND IT IS WHAT THE CORPUS's 7 DISAGREEMENTS MEASURED.
     case O.OpsPERMUTE{}: perm_ds(ar, i, ss)
 
-    # RANGE | SPECIAL: pass through first, then `return ()`
     case O.OpsRANGE{}: rlike(ss)
     case O.OpsSPECIAL{}: rlike(ss)
 
-    # always void, and late ops don't have shape: the same twelve ops in both ladders
     case O.OpsREWRITE_ERROR{}: late()
     case O.OpsPROGRAM{}: late()
     case O.OpsLINEAR{}: late()
@@ -1803,7 +1756,6 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsCUSTOM_FUNCTION{}: cfun_ds(arg)
     case O.OpsPYLITERAL{}: late()
 
-    # pass through first, then the passthrough ops' `return self.src[0]._shape`
     case O.OpsLOAD{}: thru0(ss)
     case O.OpsAFTER{}: thru0(ss)
     case O.OpsEND{}: thru0(ss)
@@ -1815,31 +1767,23 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsALLREDUCE{}: thru0(ss)
     case O.OpsNEG{}: thru0(ss)
     case O.OpsTRUNC{}: thru0(ss)
-    # `always void` in the dtype ladder, passthrough in `_shape`
     case O.OpsSTORE{}: store_ds(ss)
 
-    # `return dtypes.bool if src[0].base.is_invalid else least_upper_float(src[0].dtype)`
     case O.OpsEXP2{}: unary_ds(ar, ss)
     case O.OpsLOG2{}: unary_ds(ar, ss)
     case O.OpsSIN{}: unary_ds(ar, ss)
     case O.OpsSQRT{}: unary_ds(ar, ss)
     case O.OpsRECIP{}: unary_ds(ar, ss)
 
-    # `return dtypes.bool`, then the Broadcastable arm. NOTE: CMPLT, CMPNE, CMPEQ,
     case O.OpsCMPLT{}: alu_ds(S.boolean(), ss)
     case O.OpsCMPNE{}: alu_ds(S.boolean(), ss)
     case O.OpsCMPEQ{}: alu_ds(S.boolean(), ss)
-    # `least_upper_float(promo_dtype(src))` then the Broadcastable shape arm
     case O.OpsFDIV{}: alu_ds(least_upper_float(promo_dtype(dts_of.go(ss, Nil{}))), ss)
-    # `return dtypes.uint64` then the Broadcastable shape arm
     case O.OpsTHREEFRY{}: alu_ds(S.uint64(), ss)
-    # the shift int check, then `return src[0].dtype` and the Broadcastable shape
     case O.OpsSHL{}: shift_ds(ar, ss)
     case O.OpsSHR{}: shift_ds(ar, ss)
-    # `if src[0].dtype != dtypes.bool: raise` then `promo_dtype(src[1:])`
     case O.OpsWHERE{}: where_ds(ss)
 
-    # `if op in GroupOp.Broadcastable: return promo_dtype(src)` and the
     case O.OpsADD{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsMUL{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsTRUNCDIV{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
@@ -1881,7 +1825,6 @@ def is_custom_function(ar: O.Arena, b: U32) -> Bool:
 def ended_of.call(+ar: O.Arena, +i: U32) -> List<&2, U32>:
   ended_of.go(is_custom_function(ar, O.Arena.src0(ar, i)), O.Arena.src_from(ar, i, 1))
 
-# `self.src[1:2]`, which is the one-element list holding src[1]
 def ended_of.one(ar: O.Arena, i: U32) -> List<&2, U32>:
   [O.Arena.src(ar, i, 1)]
 
@@ -1893,7 +1836,6 @@ def is_range.of(op: O.Op) -> Bool:
 def is_range(ar: O.Arena, +s: U32, acc: List<&2, U32>) -> List<&2, U32>:
   add_if(&2, U32, is_range.of(O.Arena.op(ar, s)), s, acc)
 
-# `tuple(r for r in srcs if r.op is Ops.RANGE)`
 def ranges_only(+ar: O.Arena, srcs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match srcs:
     case Nil{}: acc
@@ -1905,19 +1847,13 @@ def ended_of(+ar: O.Arena, i: U32, op: O.Op, ss: List<&2, Derived>) -> List<&2, 
   match op:
     # where `body` is `self.src[0]` (ops.py:565). A CALL that is not that falls
     case O.OpsCALL{}: ended_of.call(ar, i)
-    # `if self.op is Ops.END: return tuple(r for r in self.src[1:] if r.op is Ops.RANGE)`
     case O.OpsEND{}: ranges_only(ar, O.Arena.src_from(ar, i, 1), Nil{})
-    # `if self.op is Ops.BACKEDGE: return self.src[1:2]  # the condition's other ranges remain live`
     case O.OpsBACKEDGE{}: ended_of.one(ar, i)
-    # `if self.op in range_start: return self.src[range_start[self.op]:]`
     case O.OpsSTAGE{}: O.Arena.src_from(ar, i, O.range_start(op))
     case O.OpsREDUCE{}: O.Arena.src_from(ar, i, O.range_start(op))
     case O.OpsLINEAR{}: O.Arena.src_from(ar, i, O.range_start(op))
-    # `if self.op is Ops.AFTER: return tuple(flatten([x.ended_ranges for x in self.src[1:]]))`
     case O.OpsAFTER{}: ended_of.flat(ss, 1n)
-    # `if self.op is Ops.BARRIER: return tuple(flatten([x.ended_ranges for x in self.src]))`
     case O.OpsBARRIER{}: ended_of.flat(ss, 0n)
-    # "UNSHARD ends the DEVICE range: its src is per-device index math, the device
     case O.OpsUNSHARD{}: O.Arena.src_from(ar, i, 1)
     case _: Nil{}
 
@@ -1935,21 +1871,17 @@ def derived.of(+ar: O.Arena, +i: U32, nd: O.Node, +x: Srcs) -> Maybe<&2, Derived
     case O.Node{+op, src, +arg, tag}:
       derived.put(dt_shape(ar, i, op, arg, Srcs.ss(x)), ar, i, op, arg, x)
 
-# THE ASSEMBLY. The one place that knows all six properties, and the one def the
 
 def derived(ar: O.Arena, i: U32, nd: O.Node, ss: List<&2, Derived>) -> Maybe<&2, Derived>:
   derived.of(ar, i, nd, srcs(ss))
 
-# THE FOLD: a Kahn worklist over the arena.
 
 type Kahn is Data:
   Kahn{pend: List<&2, U32>, work: List<&2, U32>, out: Table}
 
-# the resolved table's entry: a node index and its six properties
 type Resolved is Data:
   Resolved{i: U32, d: Derived}
 
-# THE TABLE AS A `Data` VALUE. The fold reads the table once per SRC of every node
 type Table is Data:
   Table{es: List<&2, Resolved>}
 
@@ -1972,7 +1904,6 @@ def Res_d(r: Resolved) -> Derived:
   match r:
     case Resolved{i, d}: d
 
-# `Kahn.pop`'s visited test puts at most one entry per index in the table, so "the
 def Kahn.get.step(i: U32, +r: Resolved, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
   Kahn.get.hit(U32.is_eq(i, Res_i(r)), Res_d(r), acc)
 
@@ -1999,7 +1930,6 @@ def Kahn.seed.work(ns: List<&2, O.Node>, +k: U32, acc: List<&2, U32>) -> List<&2
     case Nil{}: acc
     case nd <> t: Kahn.seed.work(t, U32.add(k, 1), Kahn.seed.keep(Kahn.degree(nd), k, acc))
 
-# THE SEED. `pend[i] = len(srcs(i))` for every node, and the worklist is every node
 def Kahn.seed.pend(ns: List<&2, O.Node>, acc: List<&2, U32>) -> List<&2, U32>:
   match ns:
     case Nil{}: acc
@@ -2014,11 +1944,9 @@ def Kahn.edges.f(e: U32, nd: O.Node) -> U32:
 def Kahn.edges(ar: O.Arena) -> U32:
   List.foldl(&2, O.Node, U32, Kahn.edges.f, O.Arena.nodes(ar), 0)
 
-# `Arena.next(ar) + edges`: one pop per queued entry, and there is one entry per
 def Kahn.budget(+ar: O.Arena) -> Nat:
   U32.to_nat(U32.add(O.Arena.next(ar), Kahn.edges(ar)))
 
-# THE DECREMENT AT POSITION `k`, which rebuilds the list. The countdown reads the
 def Kahn.dec.go(ps: List<&2, U32>, k: Nat) -> List<&2, U32>:
   match ps k:
     case Nil{} _: Nil{}
@@ -2033,7 +1961,6 @@ def Kahn.zero(m: Maybe<&2, U32>) -> Bool:
     case Some{0}: True{}
     case _: False{}
 
-# one count down
 def Kahn.dec_k(+k: Kahn, s: U32) -> Kahn:
   Kahn{Kahn.dec(Kahn.pend(k), s), Kahn.work(k), Kahn.out_of(k)}
 
@@ -2042,11 +1969,9 @@ def Kahn.reached.of(zero: Bool, +k: Kahn, s: U32) -> Kahn:
     case True{}: Kahn{Kahn.pend(k), List.append(&2, U32, Kahn.work(k), [s]), Kahn.out_of(k)}
     case _: k
 
-# a src whose count reached zero joins the worklist. A src index past the end of
 def Kahn.reached(+k: Kahn, +s: U32) -> Kahn:
   Kahn.reached.of(Kahn.zero(List.get(&2, U32, Kahn.pend(k), U32.to_nat(s))), k, s)
 
-# how many TIMES `u` is named by `srcs`, which is the edge count the walk below
 def Kahn.src_count.add(same: Bool, n: U32) -> U32:
   match same:
     case True{}: U32.add(n, 1)
@@ -2063,11 +1988,9 @@ def Kahn.src_count.go(srcs: List<&2, U32>, +u: U32, n: U32) -> U32:
 def Kahn.src_count(nd: O.Node, u: U32) -> U32:
   Kahn.src_count.go(O.Node.src(nd), u, 0)
 
-# one count down, and the push when it reaches zero. BOTH LISTS CHANGE IN THE SAME
 def Kahn.consumers.dec(+v: U32, +k: Kahn) -> Kahn:
   Kahn.reached(Kahn.dec_k(k, v), v)
 
-# EVERY NODE ANSWERED, which is what "the fold is complete" means.
 def Kahn.settled(ar: O.Arena, tb: Table) -> Bool:
   Nat.is_eq(Table.len(tb), U32.to_nat(O.Arena.next(ar)))
 
@@ -2088,7 +2011,11 @@ def UOp.axis_type.of(arg: O.Arg, op: O.Op) -> Maybe<&2, O.AxisType>:
 def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
   UOp.axis_type.of(O.Arena.arg(ar, i), O.Arena.op(ar, i))
 
+# `UOp.is_variable` / `UOp.variables` -- ops.py:1009 and :1037, AND THE TWO NAMES
+# not concrete, and anything else is not scalar. THE COUNT WOULD BE WRONG THREE
 # THE `_min_max` ARITHMETIC CORE -- the part of ops.py:1104 that is unsigned-64
+# THE NOTICE'S OWN PROMISE WAS FALSE, which is why it was never executed. "The callers do
+# DUPLICATED LOGIC AND NOT A MOVE. What `helpers.bend` lacks is a CHECKED unsigned 64-bit
 
 def mm.u64.of(ok: Bool, +hi: U32, +lo: U32) -> Maybe<&2, H.I64>:
   match ok:
@@ -2104,14 +2031,12 @@ def mm.u64.le(+eh: U32, el: U32, +fh: U32, fl: U32) -> Bool:
 def mm.u64.eq(+eh: U32, el: U32, fh: U32, fl: U32) -> Bool:
   Bool.and(U32.is_eq(eh, fh), U32.is_eq(el, fl))
 
-# "this pair is zero", which is what every overflow test asks. IT IS `and`: `or`
 def mm.u64.is_zero(+hi: U32, lo: U32) -> Bool:
   Bool.and(U32.is_zero(lo), U32.is_zero(hi))
 
 def mm.u64.is_one(+hi: U32, lo: U32) -> Bool:
   Bool.and(U32.is_zero(hi), U32.is_eq(lo, 1))
 
-# the carry out of `U32.add`, which is its own overflow test
 def mm.u32c(+a: U32, b: U32) -> U32:
   Bool.pick(U32, U32.is_lt(U32.add(a, b), a), 1, 0)
 
@@ -2120,22 +2045,18 @@ def mm.u64.add(+ah: U32, +al: U32, bh: U32, +bl: U32) -> Maybe<&2, H.I64>:
   +hi = U32.add(U32.add(ah, bh), mm.u32c(al, bl))
   mm.u64.of(Bool.not(mm.u64.lt(hi, lo, ah, al)), hi, lo)
 
-# WRAPPING, because restoring division needs `r - d` mod 2**64 and the borrow there
 def mm.u64w.sub(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> H.I64:
   H.i64_of_hi_lo(U32.sub(ah, U32.add(bh, mm.u32c(bl, U32.sub(al, bl)))), U32.sub(al, bl))
 
-# The underflow test is `a < b`, NOT `result < a`. The second is what an ADD
 def mm.u64.sub(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> Maybe<&2, H.I64>:
   +lo = U32.sub(al, bl)
   +hi = U32.sub(ah, U32.add(bh, mm.u32c(bl, U32.sub(al, bl))))
   mm.u64.of(Bool.not(mm.u64.lt(ah, al, bh, bl)), hi, lo)
 
-# ---- MUL ---------------------------------------------------------------------
 def mm.u32x16(+x: U32) -> U32: U32.shrn(x, 16n)
 
 def mm.u32lo16(+x: U32) -> U32: U32.and(x, 65535)
 
-# a*b = p0 + (p1+p2)*2**16 + p3*2**32 over 16-bit halves, which is the statement
 def mm.u32m.wide(+p0: U32, +p1: U32, +p2: U32, +p3: U32) -> H.I64:
   +n1 = U32.add(U32.add(mm.u32lo16(p1), mm.u32lo16(p2)), mm.u32x16(p0))
   +n2 = U32.add(U32.add(U32.add(mm.u32x16(p1), mm.u32x16(p2)), mm.u32lo16(p3)), mm.u32x16(n1))
@@ -2147,11 +2068,9 @@ def mm.u32m(+a: U32, +b: U32) -> H.I64:
   mm.u32m.wide(U32.mul(mm.u32lo16(a), mm.u32lo16(b)), U32.mul(mm.u32lo16(a), mm.u32x16(b)),
     U32.mul(mm.u32x16(a), mm.u32lo16(b)), U32.mul(mm.u32x16(a), mm.u32x16(b)))
 
-# The 64x64 combination is THREE columns wide, so each is under 2**34 and cannot
 def mm.u64.join(+t0: H.I64, +t1: H.I64, +t2: H.I64, +t3: H.I64) -> Maybe<&2, H.I64>:
   +s = U32.add(U32.add(H.hi32(t0), H.lo32(t1)), H.lo32(t2))
   +u = U32.add(U32.add(U32.add(H.hi32(t1), H.hi32(t2)), H.lo32(t3)), U32.shrn(s, 32n))
-  # `s` IS LIMB 1 and `u` IS LIMB 2 -- the WORDS, not partial words -- so every bit
   mm.u64.of(Bool.and(mm.u64.is_zero(H.hi32(t3), 0), mm.u64.is_zero(u, 0)),
     U32.or(U32.and(s, 4294967295), U32.shln(U32.and(u, 4294967295), 32n)),
     H.lo32(t0))
@@ -2163,7 +2082,6 @@ def mm.u64.mul(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> Maybe<&2, H.I64>:
 def mm.u64.shl.lo(+ah: U32, +al: U32, +k: Nat) -> H.I64:
   H.i64_of_hi_lo(U32.or(U32.shln(ah, k), U32.shrn(al, Nat.sub(32n, k))), U32.shln(al, k))
 
-# for `k >= 32` the high WORD comes from `al` and only from `al`: `a * 2k` has
 def mm.u64.shl.hi(+ah: U32, +al: U32, +k: Nat) -> H.I64:
   H.i64_of_hi_lo(U32.shln(al, Nat.sub(k, 32n)), 0)
 
@@ -2187,7 +2105,6 @@ def mm.u64.shl.ok32(+ah: U32, al: U32, +k: Nat) -> Bool:
   Bool.pick(Bool, U32.is_zero(U32.from_nat(k)), True{},
     U32.is_zero(U32.shrn(ah, mm.u64.shl.lost(k))))
 
-# `and`, NOT `or`: overflow is `ah != 0 OR al's tail is nonzero`, so the FIT test is
 def mm.u64.shl.okhi(+ah: U32, al: U32, +k: Nat) -> Bool:
   Bool.and(U32.is_zero(ah), U32.is_zero(U32.shrn(al, mm.u64.shl.lost(k))))
 
@@ -2210,7 +2127,6 @@ def mm.u64.shr.go(+k: Nat, +ah: U32, +al: U32) -> H.I64:
 def mm.u64.shr(+ah: U32, +al: U32, +k: Nat) -> H.I64:
   mm.u64.shr.go(k, ah, al)
 
-# ---- BITWISE, on the two halves ------------------------------------------------
 
 def mm.u64.and(ah: U32, al: U32, bh: U32, bl: U32) -> H.I64:
   H.i64_of_hi_lo(U32.and(ah, bh), U32.and(al, bl))
@@ -2223,7 +2139,6 @@ def mm.u64.xor(ah: U32, al: U32, bh: U32, bl: U32) -> H.I64:
 
 def mm.u64.not(ah: U32, al: U32) -> H.I64:
   H.i64_of_hi_lo(U32.not(ah), U32.not(al))
-# ---- RESTORING DIVISION --------------------------------------------------------
 type mm.MMSt is Data:
   mm.MMSt{qh: U32, ql: U32, rh: U32, rl: U32, up: Bool, qb: Bool}
 
@@ -2251,11 +2166,9 @@ def mm.MMSt.qb(x: mm.MMSt) -> Bool:
   match x:
     case mm.MMSt{qh, ql, rh, rl, up, qb}: qb
 
-# `k < 32` puts bit `k` in the LOW word, so this flag names the LOW half. Both picks
 def mm.dm.low_half(k: Nat) -> Bool:
   U32.is_lt(U32.from_nat(k), 32)
 
-# step `k` reads dividend bit `k` and writes quotient bit `k` -- the same index on
 def mm.dm.bit.hi(+bh: U32, +bl: U32, +k: Nat) -> U32:
   U32.and(U32.shrn(bh, Nat.sub(k, 32n)), 1)
 
@@ -2272,7 +2185,6 @@ def mm.dm.put(qh: U32, ql: U32, +r: H.I64) -> mm.MMSt:
   match r:
     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
 
-# `r = 2r + bit`, WITH the 65th bit kept rather than lost: a U32 shift of 1 by 1
 def mm.dm.shift(+s: mm.MMSt, bit: U32) -> mm.MMSt:
   mm.MMSt{mm.MMSt.qh(s), mm.MMSt.ql(s), U32.or(U32.shln(mm.MMSt.rh(s), 1n), U32.shrn(mm.MMSt.rl(s), 31n)),
     U32.or(U32.shln(mm.MMSt.rl(s), 1n), bit), U32.is_eq(U32.shrn(mm.MMSt.rh(s), 31n), 1), False{}}
@@ -2280,7 +2192,6 @@ def mm.dm.shift(+s: mm.MMSt, bit: U32) -> mm.MMSt:
 def mm.dm.drop(+s: mm.MMSt, +dh: U32, +dl: U32) -> mm.MMSt:
   mm.dm.put(mm.MMSt.qh(s), mm.MMSt.ql(s), mm.u64w.sub(mm.MMSt.rh(s), mm.MMSt.rl(s), dh, dl))
 
-# `(up, r) >= d`: ONE subtract is enough, because the invariant is `r < d` before
 def mm.dm.same(+s: mm.MMSt) -> mm.MMSt:
   mm.MMSt{mm.MMSt.qh(s), mm.MMSt.ql(s), mm.MMSt.rh(s), mm.MMSt.rl(s), mm.MMSt.up(s), False{}}
 
@@ -2292,7 +2203,6 @@ def mm.dm.cmp(ge: Bool, s: mm.MMSt, +dh: U32, +dl: U32) -> mm.MMSt:
 def mm.dm.fit(+s: mm.MMSt, +dh: U32, +dl: U32) -> mm.MMSt:
   mm.dm.cmp(Bool.or(mm.MMSt.up(s), Bool.not(mm.u64.lt(mm.MMSt.rh(s), mm.MMSt.rl(s), dh, dl))), s, dh, dl)
 
-# the quotient bit is at position `k`, the same INDEX the dividend bit came from, so
 def mm.dm.qbit.hi(+k: Nat, +s: mm.MMSt) -> mm.MMSt:
   mm.MMSt{U32.or(mm.MMSt.qh(s), U32.shln(1, Nat.sub(k, 32n))), mm.MMSt.ql(s), mm.MMSt.rh(s), mm.MMSt.rl(s), False{}, False{}}
 
@@ -2306,7 +2216,6 @@ def mm.dm.step(+k: Nat, +s: mm.MMSt, +bh: U32, +bl: U32, +dh: U32, +dl: U32) -> 
   +f = mm.dm.fit(mm.dm.shift(s, mm.dm.get_bit(bh, bl, k)), dh, dl)
   mm.dm.qbit.at(mm.dm.low_half(k), k, mm.MMSt.qb(f), f)
 
-# THE COUNTER IS A PARAMETER WITH `+`, not a field of the state: `case 1n+p:` SPENDS
 def mm.dm.loop(+k: Nat, +bh: U32, +bl: U32, +dh: U32, +dl: U32, +s: mm.MMSt) -> mm.MMSt:
   match k:
     case 0n: s
@@ -2336,10 +2245,8 @@ def mm.bl32.b2(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 4), 2, 0)
 def mm.bl32.p1(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 2), U32.shrn(x, 1n), x)
 def mm.bl32.b1(+x: U32) -> U32: Bool.pick(U32, U32.is_ge(x, 2), 1, 0)
 
-# The tail is `e != 0`, i.e. ONE more bit. It is `Bool.pick` and NOT a `match`, which
 def mm.bl32.tail(+e: U32) -> U32: Bool.pick(U32, U32.is_zero(e), 0, 1)
 
-# `bit_length(0) == 0` AND `bit_length(1) == 1` fall out of the tail alone: for 0 every
 def mm.bl32(+x: U32) -> U32:
   +a = mm.bl32.p16(x)
   +b = mm.bl32.p8(a)
@@ -2352,7 +2259,6 @@ def mm.bl32(+x: U32) -> U32:
   +s3 = U32.add(s2, mm.bl32.b1(d))
   U32.add(s3, mm.bl32.tail(e))
 
-# THE 64-BIT PICK IS `hi == 0`, NOT `lo != 0`. These two disagree only when `hi == 0` and
 def mm.bl64(+hi: U32, +lo: U32) -> U32:
   Bool.pick(U32, U32.is_zero(hi), mm.bl32(lo), U32.add(32, mm.bl32(hi)))
 
@@ -2378,34 +2284,28 @@ type Bnd is Data:
   BndInt{neg: Bool, mag: H.I64}
   BndFlt{v: F32}
 
-# `NInf` and `PInf` as ONE `inf` tag rather than two variants, because the only
 def bnd_ninf() -> Bnd: Bnd{0}
 
 def bnd_pinf() -> Bnd: Bnd{1}
 
 def bnd_i(neg: Bool, mag: H.I64) -> Bnd: BndInt{neg, mag}
 
-# THE ZERO IS SIGNED POSITIVE, and the constant rather than a computed 0: `+0` and `-0`
 def bnd_zero() -> Bnd: BndInt{False{}, H.i64_of_hi_lo(0, 0)}
 
 def bnd_f(v: F32) -> Bnd: BndFlt{v}
 
-# ---- THE DTYPE LIMITS, hoisted out of dtype.bend under the same notice as
 def bnd_show(b: Bnd) -> String:
   match b:
     case Bnd{i}: Bool.pick(String, U32.is_zero(i), "NInf", "PInf")
     case BndInt{neg, mag}: String.concat([Bool.pick(String, neg, "-", "+"), H.i64_text(mag)])
     case BndFlt{v}: String.concat(["F", F32.show(v)])
 
-# THE SATURATING PAIR. Every float dtype's limits are `-inf`/`inf` except the three fp8s,
 def bnd_flt(top: Bool) -> Bnd: Bool.pick(Bnd, top, bnd_pinf(), bnd_ninf())
 
-# ---- THE EIGHT INTEGER LIMITS, COMPUTED. `2bits - 1` is `mm.mask64(bits)` -- the same
 def bnd.umax(+bits: U32) -> Bnd: BndInt{False{}, mm.mask64(bits)}
 
 def bnd.pw2(+bits: U32) -> Maybe<&2, H.I64>: mm.u64.shl(0, 1, U32.to_nat(U32.sub(bits, 1)))
 
-# THE `Maybe` HAS TO BE A PARAMETER, not a computed value: a `match` cannot scrutinize a
 def bnd.pw2.got(m: Maybe<&2, H.I64>) -> Bnd:
   match m:
     case Some{mag}: BndInt{True{}, mag}
@@ -2415,21 +2315,17 @@ def bnd.smag(+bits: U32) -> Bnd: bnd.pw2.got(bnd.pw2(bits))
 
 def bnd.smax(+bits: U32) -> Bnd: BndInt{False{}, mm.mask64(U32.sub(bits, 1))}
 
-# the width guard is on both sides and not just the minimum, and that is a real trap the
 def bnd_int(+top: Bool, +sgn: Bool, +bits: U32) -> Bnd:
   Bool.pick(Bnd, U32.is_gt(bits, 64), bnd_flt(top),
     Bool.pick(Bnd, top, Bool.pick(Bnd, sgn, bnd.smax(bits), bnd.umax(bits)),
       Bool.pick(Bnd, sgn, bnd.smag(bits), bnd_zero())))
 
-# THE THREE FP8 MAXIMA, and they are the ONLY finite float bounds in tinygrad: the other
 def bnd_fmax(+top: Bool, +m: Nat) -> Bnd:
   Bool.pick(Bnd, top, bnd_f(F32.from_nat(m)), bnd_f(F32.neg(F32.from_nat(m))))
 
-# `bool` AND `void` ANSWER PYTHON'S `False` AND `True`, not a 1-bit integer's limits --
 def bnd_bool(+top: Bool) -> Bnd:
   bnd_i(False{}, Bool.pick(H.I64, top, H.i64_of_hi_lo(0, 1), H.i64_of_hi_lo(0, 0)))
 
-# the hundred-and-eighty-bit width is why `weakint` saturates, and nothing names
 def bnd_lim(+d: S.Dt, top: Bool) -> Bnd:
   match d:
     case S.Dt{0, 1, S.CBool{}, _}: bnd_bool(top)
@@ -2444,7 +2340,6 @@ def bnd_lim(+d: S.Dt, top: Bool) -> Bnd:
     case S.Dt{7, 64, S.CSint{}, _}: bnd_int(top, True{}, 64)
     case S.Dt{8, 64, S.CUint{}, _}: bnd_int(top, False{}, 64)
     case S.Dt{9, 800, S.CWeakFloat{}, _}: bnd_flt(top)
-    # the three FP8 names are `Dt`'s fourth field and not its priority: `fp8e4m3` and
     case S.Dt{10, 8, S.CFloat{}, "fp8e4m3"}: bnd_fmax(top, 448n)
     case S.Dt{10, 8, S.CFloat{}, "fp8e4m3fnuz"}: bnd_fmax(top, 240n)
     case S.Dt{11, 8, S.CFloat{}, "fp8e5m2"}: bnd_flt(top)
@@ -2462,7 +2357,6 @@ def bnd_lim(+d: S.Dt, top: Bool) -> Bnd:
 type Bnd2 is Data:
   Bnd2{lo: Bnd, hi: Bnd}
 
-# THE TWO READERS, and they exist only because the gate has to print a bound pair as one
 def Bnd2.lo(b: Bnd2) -> Bnd:
   match b:
     case Bnd2{lo, hi}: lo
@@ -2473,23 +2367,19 @@ def Bnd2.hi(b: Bnd2) -> Bnd:
 
 def bnd2_show(+b: Bnd2) -> String:
   String.concat(["lo=", bnd_show(Bnd2.lo(b)), " hi=", bnd_show(Bnd2.hi(b))])
-# `Maybe` OUT OF THE BINARY BLOCK, and the only place one is consumed for the fall-through.
 def mm.MM2.get(m: Maybe<&2, Bnd2>, fb: Bnd2) -> Bnd2:
   match m:
     case Some{x}: x
     case None{}: fb
 
-# THE SIGNED INTEGER, as a record rather than a `(Bool, H.I64)` pair: Bend has no tuple,
 type SInt2 is Data:
   SNok{neg: Bool, mag: H.I64}
   SNsat{neg: Bool}
 
 def bnd.sn.zero() -> SInt2: SNok{False{}, H.i64_of_hi_lo(0, 0)}
 
-# `Bool` HAS NO `is_eq` IN BEND 2.0.34, and equality of two `Bool`s is the negation of
 def bnd.same(a: Bool, b: Bool) -> Bool: Bool.not(Bool.xor(a, b))
 
-# A FLOAT BOUND IS A SIGNED SATURATION, deliberately. `Int` against `Flt` has no exact
 def bnd.sn.of(b: Bnd) -> SInt2:
   match b:
     case Bnd{i}: SNsat{Bool.pick(Bool, U32.is_zero(i), False{}, True{})}
@@ -2510,13 +2400,11 @@ def bnd.sn.put(neg: Bool, m: Maybe<&2, H.I64>) -> SInt2:
     case Some{+g}: SNok{bnd.sn.put.sign(neg, g), g}
     case None{}: SNsat{neg}
 
-# `x - y` over unsigned magnitudes. A difference never leaves the window, so this is the
 def bnd.sn.diff(+xh: U32, +xl: U32, +yh: U32, +yl: U32) -> SInt2:
   Bool.pick(SInt2, mm.u64.lt(xh, xl, yh, yl),
     SNok{True{}, mm.u64w.sub(yh, yl, xh, xl)},
     SNok{False{}, mm.u64w.sub(xh, xl, yh, yl)})
 
-# THE SUM. Same signs: the magnitudes add and the overflow becomes THAT sign's infinity,
 def bnd.sn.add.go(+na: Bool, +ma: H.I64, nb: Bool, +mb: H.I64) -> SInt2:
   Bool.pick(SInt2, bnd.same(na, nb),
     bnd.sn.put(na, mm.u64.add(H.hi32(ma), H.lo32(ma), H.hi32(mb), H.lo32(mb))),
@@ -2530,7 +2418,6 @@ def bnd.sn.add(+a: SInt2, +b: SInt2) -> SInt2:
     case _ SNsat{nb}: SNsat{nb}
     case SNok{na, ma} SNok{nb, mb}: bnd.sn.add.go(na, ma, nb, mb)
 
-# A NEGATION IS THE SIGN AND NOTHING ELSE -- the magnitude is `|x|` already. The `- 1` that
 def bnd.sn.neg(s: SInt2) -> SInt2:
   match s:
     case SNsat{neg}: SNsat{Bool.not(neg)}
@@ -2553,13 +2440,10 @@ def bnd.mul(a: Bnd, b: Bnd) -> Bnd: bnd.sn.out(bnd.sn.mul(bnd.sn.of(a), bnd.sn.o
 def bnd.not(a: Bnd) -> Bnd:
   bnd.add(bnd.sn.out(bnd.sn.neg(bnd.sn.of(a))), bnd_i(True{}, H.i64_of_hi_lo(0, 1)))
 
-# A MAGNITUDE NARROWED TO A `U32`, for the two callers whose bound is already at most 64 (a
 def mm.narrow(+mag: H.I64) -> U32: mm.bl64(H.hi32(mag), H.lo32(mag))
 
-# THE SHIFT AMOUNT IS THE LOW WORD, and that is only the amount because
 def mm.shamt.lo32(+mag: H.I64) -> U32: H.lo32(mag)
 
-# THE SHIFT AMOUNT, and the two reasons it is a `Maybe`. Python's `x << k` raises on a
 def bnd.shamt.put(bad: Bool, +mag: H.I64) -> Maybe<&2, Nat>:
   match bad:
     case True{}: None{}
@@ -2632,10 +2516,8 @@ def bnd.min(+a: Bnd, +b: Bnd) -> Bnd: Bool.pick(Bnd, bnd.lt(a, b), a, b)
 
 def bnd.max(+a: Bnd, +b: Bnd) -> Bnd: Bool.pick(Bnd, bnd.lt(a, b), b, a)
 
-# `bool(v)` AS A BOUND. Python's comparison arms answer `True`/`False`, which are the
 def bnd_tf(c: Bool) -> Bnd: Bool.pick(Bnd, c, bnd_i(False{}, H.i64_of_hi_lo(0, 1)), bnd_i(False{}, H.i64_of_hi_lo(0, 0)))
 
-# ---- an `H.I64` as a `Bnd` ------------------------------------------------------
 def mm.i64.is_neg(+i: H.I64) -> Bool: U32.is_eq(U32.shrn(H.hi32(i), 31n), 1)
 
 def mm.i64.mag(+i: H.I64) -> H.I64:
@@ -2645,7 +2527,6 @@ def mm.i64.mag(+i: H.I64) -> H.I64:
 def mm.i64.to_bnd(+i: H.I64) -> Bnd:
   Bool.pick(Bnd, mm.i64.is_neg(i), bnd_i(True{}, mm.i64.mag(i)), bnd_i(False{}, i))
 
-# ---- the table's own inputs -----------------------------------------------------
 def mm.unbound() -> Bnd2: Bnd2{bnd_ninf(), bnd_pinf()}
 
 def mm.src2(+xs: List<&2, Bnd2>, k: U32) -> Bnd2:
@@ -2659,7 +2540,6 @@ def mm.s2(+xs: List<&2, Bnd2>) -> Bnd2: mm.src2(xs, 2)
 
 def mm.default(+d: S.Dt) -> Bnd2: Bnd2{bnd_lim(d, False{}), bnd_lim(d, True{})}
 
-# ---- the sixteen binary arms ----------------------------------------------------
 def dt_is.not_float(+d: S.Dt) -> Bool:
   match d:
     case S.Dt{_, _, S.CFloat{}, _}: False{}
@@ -2691,7 +2571,6 @@ def dt_is.is_void(+d: S.Dt) -> Bool:
 def mm.bin.enter(op: O.Op, +d: S.Dt) -> Bool:
   Bool.and(O.GroupOp.binary(op), dt_is.not_float(d))
 
-# `is_int(dtype) and s1_vmin == s1_vmax >= 0`. The `>= 0` is `not s1_vmin.neg`, and the
 def bnd_bin.nonneg(b: Bnd) -> Bool:
   match b:
     case BndInt{neg, mag}: Bool.not(neg)
@@ -2700,15 +2579,12 @@ def bnd_bin.nonneg(b: Bnd) -> Bool:
 def bnd_bin.and_gate(+s1: Bnd2, d: S.Dt) -> Bool:
   Bool.and(dt_is.is_int(d), Bool.and(bnd.eq(Bnd2.lo(s1), Bnd2.hi(s1)), bnd_bin.nonneg(Bnd2.lo(s1))))
 
-# `&` OF TWO IN-WINDOW PAIRS IS IN-WINDOW, so this is `mm.u64.and` and NOT the
 def mm.and64(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> H.I64: mm.u64.and(ah, al, bh, bl)
 
-# the mask width comes from `s0` and the masked value is `s1` -- they are different srcs, and
 def mm.bin.and_int.mask.go(+ma: H.I64, nc: Bool, +mc: H.I64) -> Bnd:
   +mk = mm.mask64(mm.narrow(ma))
   bnd_i(nc, mm.and64(H.hi32(mk), H.lo32(mk), H.hi32(mc), H.lo32(mc)))
 
-# A `Bnd` HAS NO PROJECTION, so the pair is destructured here rather than read. The
 def mm.bin.and_int.mask(a: Bnd, c: Bnd) -> Bnd:
   match a c:
     case BndInt{_, +ma} BndInt{nc, +mc}: mm.bin.and_int.mask.go(ma, nc, mc)
@@ -2719,7 +2595,6 @@ def mm.bin.and_int.go(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
   Bool.pick(Bnd2, bnd.lt(Bnd2.lo(s0), bnd_zero()), Bnd2{bnd_zero(), Bnd2.hi(s1)},
     Bnd2{bnd_zero(), bnd.min(Bnd2.hi(s0), mm.bin.and_int.mask(Bnd2.hi(s0), Bnd2.hi(s1)))})
 
-# Python's `or`/`and` ON INTS, which is NOT `Bool.or`/`Bool.and` (neither of those
 def bnd.nz(b: Bnd) -> Bool:
   match b:
     case BndInt{neg, +mag}: Bool.or(neg, Bool.not(mm.u64.is_zero(H.hi32(mag), H.lo32(mag))))
@@ -2729,7 +2604,6 @@ def bnd.and(+a: Bnd, b: Bnd) -> Bnd: Bool.pick(Bnd, bnd.nz(a), b, a)
 def mm.bin.and_bool.go(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
   Bnd2{bnd.and(Bnd2.lo(s0), Bnd2.lo(s1)), bnd.and(Bnd2.hi(s0), Bnd2.hi(s1))}
 
-# `Ops.AND` has two arms and the second is reached exactly when the first is not: the
 def mm.bin.and_int(gate: Bool, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Bnd2>:
   match gate:
     case True{}: Some{mm.bin.and_int.go(s0, s1)}
@@ -2747,7 +2621,6 @@ def mm.bin.or_bool(bl: Bool, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Bnd2>:
     case True{}: Some{Bnd2{bnd.or(Bnd2.lo(s0), Bnd2.lo(s1)), bnd.or(Bnd2.hi(s0), Bnd2.hi(s1))}}
     case False{}: None{}
 
-# MUL: four products, the smallest and the largest. `min(vals)` over a keyword-argument
 def mm.bin.mul(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
   +p0 = bnd.mul(Bnd2.lo(s0), Bnd2.lo(s1))
   +p1 = bnd.mul(Bnd2.lo(s0), Bnd2.hi(s1))
@@ -2759,7 +2632,6 @@ def mm.bin.mul(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
   +d = bnd.max(p2, p3)
   Bnd2{bnd.min(a, b), bnd.max(c, d)}
 
-# SHL/SHR ON CONSTS ONLY, and the gate is Python's `all_int(t := (s0_vmin, s0_vmax,
 def bnd.is_int(b: Bnd) -> Bool:
   match b:
     case BndInt{neg, mag}: True{}
@@ -2783,7 +2655,6 @@ def mm.bin.sh.ok(+s0: Bnd2, +s1: Bnd2) -> Bool:
   Bool.and(Bool.and(bnd.eq(Bnd2.lo(s1), Bnd2.hi(s1)), bnd.is_int(Bnd2.lo(s0))),
     Bool.and(bnd.is_int(Bnd2.hi(s0)), bnd.is_int(Bnd2.lo(s1))))
 
-# xor by an all-ones constant is the only bitwise arm, and it is `~vmax, ~vmin` -- the
 def mm.bin.xor(gate: Bool, +s0: Bnd2, +s1: Bnd2) -> Maybe<&2, Bnd2>:
   match gate:
     case True{}: Some{Bnd2{bnd.not(Bnd2.hi(s0)), bnd.not(Bnd2.lo(s0))}}
@@ -2809,11 +2680,9 @@ def mm.bin.cmpne(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
 def mm.bin.add(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
   Bnd2{bnd.add(Bnd2.lo(s0), Bnd2.lo(s1)), bnd.add(Bnd2.hi(s0), Bnd2.hi(s1))}
 
-# SUB's two halves cross: the lower bound subtracts the other's upper and the upper
 def mm.bin.sub(+s0: Bnd2, +s1: Bnd2) -> Bnd2:
   Bnd2{bnd.sub(Bnd2.lo(s0), Bnd2.hi(s1)), bnd.sub(Bnd2.hi(s0), Bnd2.lo(s1))}
 
-# ---- THE ARM DISPATCH, one match over the op, in Python's order ------------------
 def mm.bin.arm(+op: O.Op, +srcs: List<&2, Bnd2>, +d: S.Dt) -> Maybe<&2, Bnd2>:
   match op:
     case O.OpsADD{}: Some{mm.bin.add(mm.s0(srcs), mm.s1(srcs))}
@@ -2834,7 +2703,6 @@ def mm.lift.bin(enter: Bool, +op: O.Op, +srcs: List<&2, Bnd2>, d: S.Dt) -> Maybe
     case True{}: mm.bin.arm(op, srcs, d)
     case False{}: None{}
 
-# ---- the arms OUTSIDE the binary block, in Python's order -----------------------
 def mm.where(+srcs: List<&2, Bnd2>) -> Bnd2:
   +a = mm.s1(srcs)
   +b = mm.s2(srcs)
@@ -2849,7 +2717,6 @@ def mm.defines.range(r: Maybe<&2, O.PyRange>, +d: S.Dt) -> Bnd2:
     case Some{pr}: mm.defines.got(pr)
     case None{}: mm.default(d)
 
-# `Defines and arg.vmin_vmax is not None`. A PARAM/BUFFER/ALLOC with no range falls
 def mm.defines.pa(pa: O.ParamArg, +d: S.Dt) -> Bnd2:
   match pa:
     case O.ParamArg{_, _, vmin_vmax, _, _, _, _, _, _, _, _, _}: mm.defines.range(vmin_vmax, d)
@@ -2861,17 +2728,14 @@ def mm.defines(arg: O.Arg, +d: S.Dt) -> Bnd2:
 
 def bnd_one() -> Bnd: bnd_i(False{}, H.i64_of_hi_lo(0, 1))
 
-# `RANGE`/`SPECIAL` ANSWER `0, (src[0] - 1).vmax`, and the `(src[0] - 1)` is a REAL UOp:
 def mm.range(vd: Bool, +srcs: List<&2, Bnd2>, +d: S.Dt) -> Bnd2:
   match vd:
     case True{}: mm.default(d)
     case False{}: Bnd2{bnd_zero(), bnd.sub(Bnd2.hi(mm.s0(srcs)), bnd_one())}
 
-# STACK IS A FOLD OVER AN ARBITRARY NUMBER OF SRCS, and `min()`/`max()` over a generator
 def mm.stack.step.go(+acc: Bnd2, +x: Bnd2) -> Bnd2:
   Bnd2{bnd.min(Bnd2.lo(acc), Bnd2.lo(x)), bnd.max(Bnd2.hi(acc), Bnd2.hi(x))}
 
-# the `+` s are not spellable in the closure's TYPE, which is the recorded closure-shared-
 def mm.stack.step(acc: Bnd2, x: Bnd2) -> Bnd2: mm.stack.step.go(acc, x)
 
 def mm.stack(+srcs: List<&2, Bnd2>) -> Bnd2:
@@ -2889,7 +2753,6 @@ def mm.i64.same(+i: H.I64) -> Bnd2:
   +b = mm.i64.to_bnd(i)
   Bnd2{b, b}
 
-# A CONST IS `(val, val)` UNLESS it is Invalid or a NaN. The NaN test is IEEE and needs
 def mm.const.b(b: Bool) -> Maybe<&2, Bnd2>:
   Bool.pick(Maybe<&2, Bnd2>, b, Some{Bnd2{bnd_tf(True{}), bnd_tf(True{})}}, Some{Bnd2{bnd_tf(False{}), bnd_tf(False{})}})
 
@@ -2920,22 +2783,18 @@ def mm.pad.flt.pick(+f: F32, +hi: Bnd) -> Bnd2:
   Bool.pick(Bnd2, F32.is_lt(f, 0.0), Bnd2{bnd_f(f), bnd_zero()},
     Bnd2{bnd_zero(), mm.pad.flt.hi(f)})
 
-# `PAD ADDS ZEROS` IN `F32`, because a float src bound against the INTEGER zero is the
 def mm.pad.flt(lo: Bnd, hi: Bnd) -> Bnd2:
   match lo:
     case BndFlt{f}: mm.pad.flt.pick(f, hi)
     case _: Bnd2{bnd.min(lo, bnd_zero()), bnd.max(hi, bnd_zero())}
 
-# `PAD ADDS ZEROS`. The zero is compared in `F32` when the source bound is a float,
 def mm.pad(+srcs: List<&2, Bnd2>) -> Bnd2:
   +s = mm.s0(srcs)
   Bool.pick(Bnd2, bnd.is_flt(Bnd2.lo(s)), mm.pad.flt(Bnd2.lo(s), Bnd2.hi(s)),
     Bnd2{bnd.min(Bnd2.lo(s), bnd_zero()), bnd.max(Bnd2.hi(s), bnd_zero())})
 
-# THE PASSTHROUGH. `GroupOp.Movement | {INDEX, STAGE, AFTER, DETACH, COPY,
 def mm.lift.mv(+srcs: List<&2, Bnd2>) -> Bnd2: mm.s0(srcs)
 
-# ---- THE TABLE -------------------------------------------------------------------
 def mm.lift.rest(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2:
   match op:
     case O.OpsWHERE{}: mm.where(srcs)
@@ -2963,7 +2822,6 @@ def mm.lift.rest(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2
 def mm.lift(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2:
   mm.MM2.get(mm.lift.bin(mm.bin.enter(op, d), op, srcs, d), mm.lift.rest(op, srcs, arg, d))
 
-# THE GATE. `main` builds small arenas with `ops.bend`'s own `g_*` constructors and
 type Folded is Data:
   Folded{ar: O.Arena, tb: Table}
 
@@ -2975,17 +2833,14 @@ def Folded.t(x: Folded) -> Table:
   match x:
     case Folded{ar, t}: t
 
-# CONST(3) and CONST(True) in one arena: "a CONST's dtype is the type of its arg,
 def g_keys() -> O.Found:
   +c3 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(3)})
   O.UOp.const(O.Found.ar(c3), O.CBool{True{}})
 
-# `ParamArg(slot, dtype, size, ...)` for an int32 BUFFER of four elements on device
 def g_buf() -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
-# BUFFER(int32, size=4) <- SPECIAL("4", 1) <- CONST(0), then ADD(buffer, CONST(3)).
 def g_add() -> O.Found:
   +z = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(0)})
   +s = O.UOp.special(O.Found.ar(z), O.Found.i(z), "4")
@@ -2993,13 +2848,11 @@ def g_add() -> O.Found:
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(3)})
   O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(b), O.Found.i(c)])
 
-# `shape_to_shape_arg((2, 2))` -- `UOp(Ops.STACK, src=(CONST(2), CONST(2)))`. The
 def g_marg22(ar: O.Arena) -> O.Found:
   +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(2)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(2)})
   O.UOp.new(O.Found.ar(c1), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})
 
-# `shape_to_shape_arg((2, 3))` -- the marg whose product 6 is not the src's 4
 def g_marg23(ar: O.Arena) -> O.Found:
   +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(2)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(3)})
@@ -3101,17 +2954,14 @@ def gap_count.pick(hit: Bool) -> Bool:
     case True{}: False{}
     case False{}: True{}
 
-# CONST(0) <- RESHAPE(ATuple[4]) <- STORE. The STORE's src[0] is the RESHAPE, so
 def g_gap() -> O.Found:
   +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(0)})
   +m = O.UOp.new(O.Found.ar(c), O.OpsRESHAPE{}, [O.Found.i(c)], O.ATuple{[4]}, O.TNone{})
   O.UOp.new(O.Found.ar(m), O.OpsSTORE{}, [O.Found.i(m)], O.ANone{}, O.TNone{})
 
-# `_min_max`'s row is a STRING ANSWER and not a Bool, so `row` cannot print it and
 def mm_row(nm: String, got: String) -> IO(Unit):
   IO.print(String.concat(["mm_", nm, " ", got]))
 
-# `bit_length`'s rows print under `bl_` rather than `mm_`, because the oracle's two
 def bl_row(nm: String, got: String) -> IO(Unit):
   IO.print(String.concat(["bl_", nm, " ", got]))
 
@@ -3120,7 +2970,6 @@ def bl_row(nm: String, got: String) -> IO(Unit):
 def lf_row(nm: String, b: Bnd2) -> IO(Unit):
   IO.print(String.concat(["lf_", nm, " ", bnd2_show(b)]))
 
-# THE SRC LIST BUILDERS, and they exist because a `List<Bnd2>` is the table's input type
 def lf_c0() -> List<&2, Bnd2>: Nil{}
 
 def lf_c1(+a: Bnd) -> List<&2, Bnd2>: [Bnd2{a, a}]
@@ -3129,11 +2978,9 @@ def lf_c2(+a: Bnd, +b: Bnd) -> List<&2, Bnd2>: [Bnd2{a, a}, Bnd2{b, b}]
 
 def lf_c3(+a: Bnd, +b: Bnd, +c: Bnd) -> List<&2, Bnd2>: [Bnd2{a, a}, Bnd2{b, b}, Bnd2{c, c}]
 
-# a stack's srcs are not all the same value, and it is the one family that needs more than
 def lf_c4(+a: Bnd, +b: Bnd, +c: Bnd, +d: Bnd) -> List<&2, Bnd2>:
   [Bnd2{a, a}, Bnd2{b, b}, Bnd2{c, c}, Bnd2{d, d}]
 
-# A PARAM's `vmin_vmax`, and the field is a `Maybe<&2, PyRange>` of a SIGNED pair, which is
 def lf_pa(lo: H.I64, hi: H.I64) -> O.Arg:
   O.AParam{O.ParamArg{0, S.int32(), Some{O.PyRange{lo, hi}}, None{}, None{}, S.AGlobal{}, None{},
     False{}, None{}, None{}, False{}, None{}}}
@@ -3144,27 +2991,22 @@ def dt_row(nm: String, lo: Bnd, hi: Bnd) -> IO(Unit):
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
 
-# ONE DECREMENT PER OCCURRENCE, one turn each. `c` is a `Nat` because the descent
 def Kahn.consumers.times(c: Nat, +v: U32, +k: Kahn) -> Kahn:
   match c:
     case 0n: k
     case 1n+p: Kahn.consumers.times(p, v, Kahn.consumers.dec(v, k))
 
-# the node under examination, lowered once per edge into it
 def Kahn.consumers.step(nd: O.Node, +u: U32, +v: U32, +k: Kahn) -> Kahn:
   Kahn.consumers.times(U32.to_nat(Kahn.src_count(nd, u)), v, k)
 
-# ONE self-call, so the edge count is a MATCH ARM rather than a second def
 def Kahn.consumers.go(ns: List<&2, O.Node>, +u: U32, +v: U32, +k: Kahn) -> Kahn:
   match ns:
     case Nil{}: k
     case +nd <> t: Kahn.consumers.go(t, u, U32.add(v, 1), Kahn.consumers.step(nd, u, v, k))
 
-# the edges out of the node just answered, which is what Kahn's algorithm actually
 def Kahn.consumers(+ar: O.Arena, +u: U32, +k: Kahn) -> Kahn:
   Kahn.consumers.go(O.Arena.nodes(ar), u, 0, k)
 
-# the node the fold CANNOT answer is not in the table, and it propagates nothing:
 def Kahn.ans.of(r: Maybe<&2, Derived>, ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, tb: Table) -> Kahn:
   match r:
     case Some{d}: Kahn.consumers(ar, i, Kahn{pend, rest, Table.put(tb, Resolved{i, d})})
@@ -3173,7 +3015,6 @@ def Kahn.ans.of(r: Maybe<&2, Derived>, ar: O.Arena, +i: U32, rest: List<&2, U32>
 def Kahn.ans(+ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, tb: Table, ss: List<&2, Derived>) -> Kahn:
   Kahn.ans.of(derived(ar, i, O.Arena.node(ar, i), ss), ar, i, rest, pend, tb)
 
-# a src the fold has not answered leaves the node unanswerable
 def Kahn.go.of(gs: Maybe<&2, List<&2, Derived>>, ar: O.Arena, i: U32, rest: List<&2, U32>, pend: List<&2, U32>, tb: Table) -> Kahn:
   match gs:
     case Some{ss}: Kahn.ans(ar, i, rest, pend, tb, ss)
@@ -3184,18 +3025,15 @@ def Kahn.get.go(+i: U32, es: List<&2, Resolved>, acc: Maybe<&2, Derived>) -> May
     case Nil{}: acc
     case r <> t: Kahn.get.go(i, t, Kahn.get.step(i, r, acc))
 
-# THE TABLE LOOKUP, which is an O(n) SEARCH because the table is a `List` AND is in
 def Kahn.get(i: U32, tb: Table) -> Maybe<&2, Derived>:
   Kahn.get.go(i, Table.es(tb), None{})
 
-# the RESHAPE is NOT in the table, and neither is the STORE over it
 def gap_count(+x: Folded, i: U32) -> Bool:
   gap_count.pick(Maybe.is_some(&2, Derived, Kahn.get(i, Folded.t(x))))
 
 def fold.ended(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, List<&2, U32>>:
   fold.ended.of(Kahn.get(i, tb))
 
-# `ended_ranges` on a BACKEDGE is `src[1:2]`, so the one range it holds is `src[1]`
 def ended_is.go(m: Maybe<&2, List<&2, U32>>, want: U32) -> Bool:
   match m:
     case Some{w <> Nil{}}: U32.is_eq(w, want)
@@ -3284,7 +3122,6 @@ def UOp.is_variable.of(+arg: O.Arg, +op: O.Op, +sh: Maybe<&2, Maybe<&2, List<&2,
     case O.AParam{pa} O.OpsPARAM{}: isvar_pa(pa, sh)
     case _ _: False{}
 
-# two defs, and not for tidiness: a `match` may not scrutinise a computed value
 def UOp.is_variable(+ar: O.Arena, +tb: Table, +i: U32) -> Bool:
   UOp.is_variable.of(O.Arena.arg(ar, i), O.Arena.op(ar, i), fold.shape(ar, tb, i))
 
@@ -3363,7 +3200,6 @@ def UOp.variables.step.of(+acc: Maybe<&2, VarR>, +op: O.Op, +arg: O.Arg, +tb: Ta
     case Some{r} O.OpsRANGE{} O.ARange{ids, at}: UOp.variables.at(tb, x, at, r)
     case Some{_} _ _: acc
 
-# `xs` LEADS the parameters because the termination checker reads arguments left
 def UOp.variables.go(+xs: List<&2, U32>, fuel: Nat, +tb: Table, +acc: Maybe<&2, VarR>) -> Maybe<&2, VarR>:
   match xs acc:
     case Nil{} _: acc
@@ -3373,7 +3209,6 @@ def UOp.variables.go(+xs: List<&2, U32>, fuel: Nat, +tb: Table, +acc: Maybe<&2, 
 def UOp.variables(+ar: O.Arena, +tb: Table, +i: U32, +fuel: Nat) -> Maybe<&2, VarR>:
   UOp.variables.go(O.UOp.backward_slice_with_self(fuel, ar, i), fuel, tb, Some{VarR{ar, Nil{}}})
 
-# `self.src`, read back out of the RESOLVED TABLE by index. A src the fold has not
 def Kahn.gather.step(hit: Maybe<&2, Derived>, +g: Gathered) -> Gathered:
   match hit:
     case Some{d}: Gathered{List.append(&2, Derived, Gathered.acc(g), [d]), Gathered.ok(g)}
@@ -3393,7 +3228,6 @@ def shape_is(+x: Folded, i: U32, want: List<&2, O.Sint>) -> Bool:
 def Kahn.go(+ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, +tb: Table) -> Kahn:
   Kahn.go.of(Kahn.gather(ar, i, tb), ar, i, rest, pend, tb)
 
-# `if i in out: continue` -- a node is queued once per edge into it, so the queue
 def Kahn.pop.of(ar: O.Arena, hit: Maybe<&2, Derived>, i: U32, rest: List<&2, U32>, pend: List<&2, U32>, tb: Table) -> Kahn:
   match hit:
     case Some{d}: Kahn{pend, rest, tb}
@@ -3402,7 +3236,6 @@ def Kahn.pop.of(ar: O.Arena, hit: Maybe<&2, Derived>, i: U32, rest: List<&2, U32
 def Kahn.pop(ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, +tb: Table) -> Kahn:
   Kahn.pop.of(ar, Kahn.get(i, tb), i, rest, pend, tb)
 
-# ONE TURN. `i in out` is the visited test; otherwise the node's srcs' pairs are
 def Kahn.step(ar: O.Arena, k: Kahn) -> Kahn:
   match k:
     case Kahn{pend, work, out}:
@@ -3410,15 +3243,14 @@ def Kahn.step(ar: O.Arena, k: Kahn) -> Kahn:
         case Nil{}: k
         case i <> rest: Kahn.pop(ar, i, rest, pend, out)
 
-# THE WHILE LOOP, as a fuel countdown. The worklist drains because it is finite
 def Kahn.run(fuel: Nat, +ar: O.Arena, k: Kahn) -> Table:
   match fuel:
     case 0n: Kahn.out_of(k)
     case 1n+p: Kahn.run(p, ar, Kahn.step(ar, k))
 
-# `UOp.fold(ar)` -- the whole arena, once. A caller builds its arena, folds it, and
 def UOp.fold(+ar: O.Arena) -> Table:
   Kahn.run(Kahn.budget(ar), ar, Kahn.seed(ar))
+# THE RANGES FOLD -- ops.py:483 `UOp._ranges` and ops.py:497 `UOp.ranges`. This is
 
 def folded(+ar: O.Arena) -> Folded:
   Folded{ar, UOp.fold(ar)}
@@ -3439,7 +3271,6 @@ def Rng.ok(r: Rng) -> Bool:
   match r:
     case Rng{i, rs, ok}: ok
 
-# `ret.update(other)`: the elements of `ys` that `acc` does not already hold, APPENDED, so
 def set_union.go(ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ys:
     case Nil{}: acc
@@ -3448,7 +3279,6 @@ def set_union.go(ys: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
 def set_union(+xs: List<&2, U32>, ys: List<&2, U32>) -> List<&2, U32>:
   set_union.go(ys, xs)
 
-# `ret.pop(s, None)` for every `s` in `ds`, which KEEPS the order of what survives --
 def set_del(xs: List<&2, U32>, +ds: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{}: acc
@@ -3468,13 +3298,11 @@ def RTable.put(t: RTable, r: Rng) -> RTable:
 def RTable.get.step(i: U32, +r: Rng, acc: Rng) -> Rng:
   Bool.pick(Rng, U32.is_eq(i, Rng.i(r)), r, acc)
 
-# The same O(n) SEARCH `Kahn.get` is, and for the same reason: the table is in
 def RTable.get.go(+i: U32, rs: List<&2, Rng>, acc: Rng) -> Rng:
   match rs:
     case Nil{}: acc
     case r <> t: RTable.get.go(i, t, RTable.get.step(i, r, acc))
 
-# "no row yet" and "the fold does not know" are the SAME row, which is why the default
 def RTable.get(t: RTable, +i: U32) -> Rng:
   RTable.get.go(i, RTable.es(t), Rng{i, Nil{}, False{}})
 
@@ -3485,7 +3313,6 @@ def rng_of.put(i: U32, pre: Bool, +r: Rng) -> Rng:
 def rng_of(+ar: O.Arena, t: RTable, +i: U32) -> Rng:
   rng_of.put(i, is_range.of(O.Arena.op(ar, i)), RTable.get(t, i))
 
-# `for s in self.src: ret.update(s.ranges)` -- the union, in src order, and the flag
 def rng_union.put(+acc: Rng, +s: Rng) -> Rng:
   Rng{Rng.i(acc), Bool.pick(List<&2, U32>, Rng.ok(s), set_union(Rng.rs(acc), Rng.rs(s)), Rng.rs(acc)),
       Bool.and(Rng.ok(acc), Rng.ok(s))}
@@ -3498,7 +3325,6 @@ def rng_union.go(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, +acc: Rng) -> Rng:
 def rng_union(+ar: O.Arena, +t: RTable, ss: List<&2, U32>, i: U32) -> Rng:
   rng_union.go(ar, t, ss, Rng{i, Nil{}, True{}})
 
-# the `for er in self.ended_ranges` pops, as ONE delete set: a pop is idempotent, so
 type Del is Data:
   Del{ds: List<&2, U32>, ok: Bool}
 
@@ -3513,11 +3339,9 @@ def Del.ok(d: Del) -> Bool:
 def del_un(+a: Del, +b: Del) -> Del:
   Del{set_union(Del.ds(a), Del.ds(b)), Bool.and(Del.ok(a), Del.ok(b))}
 
-# `er`'s own live set, as a delete set. `RTable.get` already answers `ok: False{}` for
 def del_of.row(+r: Rng) -> Del:
   Del{Rng.rs(r), Rng.ok(r)}
 
-# THE ONE CONDITIONAL, and it is the whole `if er.op is Ops.RANGE ... else ...`: a RANGE
 def del_of.er(+ar: O.Arena, +t: RTable, +er: U32) -> Del:
   Bool.pick(Del, is_range.of(O.Arena.op(ar, er)), Del{[er], True{}}, del_of.row(RTable.get(t, er)))
 
@@ -3526,7 +3350,6 @@ def rng_dels.go(+ar: O.Arena, +t: RTable, ers: List<&2, U32>, +acc: Del) -> Del:
     case Nil{}: acc
     case +er <> tl: rng_dels.go(ar, t, tl, del_un(acc, del_of.er(ar, t, er)))
 
-# "no `ended` list" and "an empty one" are the same delete set and differ only in the
 def rng_dels.m(ar: O.Arena, t: RTable, m: Maybe<&2, List<&2, U32>>) -> Del:
   match m:
     case Some{ers}: rng_dels.go(ar, t, ers, Del{Nil{}, True{}})
@@ -3538,14 +3361,12 @@ def rng_dels(+ar: O.Arena, +t: RTable, m: Maybe<&2, List<&2, U32>>) -> Del:
 def rng_del.put(+acc: Rng, +d: Del) -> Rng:
   Rng{Rng.i(acc), set_del(Rng.rs(acc), Del.ds(d), Nil{}), Bool.and(Rng.ok(acc), Del.ok(d))}
 
-# ONE NODE, and it is `_ranges` and not `ranges`: the union, then the pops, and the
 def rng_of.got(+ar: O.Arena, +t: RTable, +i: U32, d: Del) -> Rng:
   rng_del.put(rng_union(ar, t, O.Arena.srcs(ar, i), i), d)
 
 def rng_of.node(+ar: O.Arena, +main: Table, +t: RTable, +i: U32) -> Rng:
   rng_of.got(ar, t, i, rng_dels(ar, t, fold.ended(ar, main, i)))
 
-# THE SWEEP. `k` is the arena INDEX and it is a parameter rather than `List.length`,
 def rng_sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, +k: U32, +t: RTable) -> RTable:
   match ns:
     case Nil{}: t
@@ -3554,11 +3375,9 @@ def rng_sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, +k: U32, +t: 
 def rng_sweep(+ar: O.Arena, +main: Table) -> RTable:
   rng_sweep.go(ar, main, O.Arena.nodes(ar), 0, RTable{Nil{}})
 
-# THE READER. `UOp.ranges(ar, rt, i)` is a sweep read, and there is no
 def UOp.ranges(ar: O.Arena, rt: RTable, i: U32) -> Rng:
   rng_of(ar, rt, i)
 
-# The main fold ONCE, then the sweep over the FINISHED table. That order is the whole
 type Ranged is Data:
   Ranged{ar: O.Arena, rt: RTable}
 
@@ -3603,7 +3422,6 @@ def MBr.b(r: MBr) -> Maybe<&2, Bnd2>:
 def BTable.get.step(i: U32, +r: MBr, acc: MBr) -> MBr:
   Bool.pick(MBr, U32.is_eq(i, MBr.i(r)), r, acc)
 
-# THE SAME O(n) SEARCH `Kahn.get` IS, and the default is a REFUSAL rather than an
 def BTable.get.go(+i: U32, es: List<&2, MBr>, acc: MBr) -> MBr:
   match es:
     case Nil{}: acc
@@ -3612,7 +3430,6 @@ def BTable.get.go(+i: U32, es: List<&2, MBr>, acc: MBr) -> MBr:
 def BTable.get(t: BTable, +i: U32) -> MBr:
   BTable.get.go(i, BTable.es(t), MBr{i, None{}})
 
-# THE SRCS' INTERVALS, IN SRC ORDER, and the order is the whole of `SUB`'s arm: a walk
 def mm.gather.step(hit: Maybe<&2, Bnd2>, acc: Maybe<&2, List<&2, Bnd2>>) -> Maybe<&2, List<&2, Bnd2>>:
   Maybe.bind(&2, Bnd2, List<&2, Bnd2>, hit,
     b => Maybe.bind(&2, List<&2, Bnd2>, List<&2, Bnd2>, acc, xs => Some{List.append(&2, Bnd2, xs, [b])}))
@@ -3625,7 +3442,6 @@ def mm.gather.go(+t: BTable, ss: List<&2, U32>, acc: Maybe<&2, List<&2, Bnd2>>) 
 def mm.gather(+t: BTable, ss: List<&2, U32>) -> Maybe<&2, List<&2, Bnd2>>:
   mm.gather.go(t, ss, Some{Nil{}})
 
-# ONE NODE. A src this sweep could not answer, or a dtype the main fold could not, leaves
 def mm.node.of(d: Maybe<&2, S.Dt>, +ar: O.Arena, +i: U32, ss: Maybe<&2, List<&2, Bnd2>>) -> MBr:
   match d ss:
     case Some{dt} Some{xs}: MBr{i, Some{mm.lift(O.Arena.op(ar, i), xs, O.Arena.arg(ar, i), dt)}}
@@ -3634,7 +3450,6 @@ def mm.node.of(d: Maybe<&2, S.Dt>, +ar: O.Arena, +i: U32, ss: Maybe<&2, List<&2,
 def mm.node(+ar: O.Arena, +main: Table, +t: BTable, +i: U32) -> MBr:
   mm.node.of(fold.dt(ar, main, i), ar, i, mm.gather(t, O.Arena.srcs(ar, i)))
 
-# THE SWEEP. `k` is the arena INDEX and a parameter rather than `List.length`, for
 def mm.sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, +k: U32, +t: BTable) -> BTable:
   match ns:
     case Nil{}: t
@@ -3643,7 +3458,6 @@ def mm.sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, +k: U32, +t: B
 def mm.sweep(+ar: O.Arena, +main: Table) -> BTable:
   mm.sweep.go(ar, main, O.Arena.nodes(ar), 0, BTable{Nil{}})
 
-# THE READERS. `UOp.min_max(ar, bt, i)` and not `UOp.min_max(ar, i)`, for the reason the
 def UOp.min_max(ar: O.Arena, bt: BTable, i: U32) -> Maybe<&2, Bnd2>:
   MBr.b(BTable.get(bt, i))
 
@@ -3723,7 +3537,6 @@ def UOp.bs_reach(fuel: Nat, +ar: O.Arena, todo: List<&2, U32>, +want: U32) -> Bo
 def UOp.bool_slice_has(fuel: Nat, +ar: O.Arena, +bt: BTable, root: U32, +want: U32) -> Bool:
   Bool.and(bs.dt(ar, bt, want), UOp.bs_reach(fuel, ar, [root], want))
 
-# The main fold ONCE, then the sweep over the FINISHED table, for `Ranged`'s reason: the
 type MMed is Data:
   MMed{ar: O.Arena, bt: BTable}
 
@@ -3741,7 +3554,6 @@ def MMed.of(+ar: O.Arena, +tb: Table) -> MMed:
 def min_maxed(+ar: O.Arena) -> MMed:
   MMed.of(ar, UOp.fold(ar))
 
-# THE RANGES ROWS. `oracles/fold-rng-oracle.py` builds the same twelve
 def rg_rng(ar: O.Arena, end: U32, axis: U32) -> O.Found:
   O.UOp.range_end(ar, end, [axis], O.AXIS_LOOP{})
 
@@ -3754,16 +3566,13 @@ def rg_st(ar: O.Arena, a: O.Found, b: O.Found) -> O.Found:
 def rg_cf(ar: O.Arena) -> O.Found:
   O.UOp.new(ar, O.OpsCUSTOM_FUNCTION{}, Nil{}, O.ACustom{O.CustomFunction{"myext", S.void()}}, O.TNone{})
 
-# NO RANGE ANYWHERE: the empty set, and the same `Nil` the union's seed carries.
 def rg_f_none() -> O.Found:
   rg_c(O.Arena.empty(), 4)
 
-# A RANGE AS THE ROOT: the `{self:None} | _ranges` PREPEND, and a prepend is invisible
 def rg_f_self() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   rg_rng(O.Found.ar(c), O.Found.i(c), 0)
 
-# THE UNION, BOTH SRC ORDERS. `dict.update` keeps a key's FIRST position, so these two
 def rg_f_two() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
@@ -3776,13 +3585,11 @@ def rg_f_rev() -> O.Found:
   +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
   rg_st(O.Found.ar(r1), r1, r0)
 
-# THE SAME RANGE TWICE. `ADD(r0, r0)` names it twice, so a MULTISET answer prints it
 def rg_f_dup() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
   O.UOp.new(O.Found.ar(r0), O.OpsADD{}, [O.Found.i(r0), O.Found.i(r0)], O.ANone{}, O.TNone{})
 
-# `END`'s OWN ARM -- `tuple(r for r in src[1:] if r.op is Ops.RANGE)`, and NOT
 def rg_f_end() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
@@ -3790,7 +3597,6 @@ def rg_f_end() -> O.Found:
   +r2 = rg_rng(O.Found.ar(r1), O.Found.i(c), 2)
   O.UOp.end(O.Found.ar(r2), O.Found.i(r0), [O.Found.i(r1), O.Found.i(r2)])
 
-# `AFTER`'s arm is the flatten of its srcs' ended lists, not `src[1:]`: the end at
 def rg_f_after() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
@@ -3798,7 +3604,6 @@ def rg_f_after() -> O.Found:
   +e = O.UOp.end(O.Found.ar(r1), O.Found.i(r0), [O.Found.i(r1)])
   O.UOp.after(O.Found.ar(e), O.Found.i(c), [O.Found.i(e)])
 
-# `BARRIER` flattens over ALL ITS SRCS, so `r1` arrives twice -- once under the END and
 def rg_f_barrier() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
@@ -3807,7 +3612,6 @@ def rg_f_barrier() -> O.Found:
   +e = O.UOp.end(O.Found.ar(r2), O.Found.i(r0), [O.Found.i(r1)])
   O.UOp.new(O.Found.ar(e), O.OpsBARRIER{}, [O.Found.i(e), O.Found.i(r2)], O.ANone{}, O.TNone{})
 
-# THE `else` BRANCH, and the one that needs `er.ranges`. `BACKEDGE`'s ended list is
 def rg_f_er() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
@@ -3836,7 +3640,6 @@ def rg_f_call_c() -> O.Found:
   +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
   rg_call(O.Found.ar(r1), O.Found.i(c), O.Found.i(r0), O.Found.i(r1), S.weakint())
 
-# THE REFUSAL, and it is the divergence the header names: `STAGE` is a DEFERRED op in
 def rg_f_absent() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
@@ -3860,7 +3663,6 @@ def rng_lab.go(+ar: O.Arena, rs: List<&2, U32>, acc: List<&2, String>) -> List<&
     case Nil{}: acc
     case x <> t: rng_lab.go(ar, t, List.append(&2, String, acc, [rng_lab.of(ar, x)]))
 
-# `ABSENT` is this file's "this fold cannot answer", and it is the same word the other
 def rng_str(+ar: O.Arena, r: Rng) -> String:
   match r:
     case Rng{i, rs, True{}}: String.concat(["[", String.join(rng_lab.go(ar, rs, Nil{}), ","), "]"])
@@ -3876,13 +3678,11 @@ def g_mv_pa() -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
-# `shape_to_shape_arg((2, 3))` at a given base arena. The two CONSTs HASH-CONS onto
 def g_mv_st23(ar: O.Arena) -> O.Found:
   +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(2)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(3)})
   O.UOp.new(O.Found.ar(c1), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})
 
-# RESHAPE(BUFFER(12), STACK(2, 3)), taking the BUFFER's `O.Found` so both indices are
 def g_mv_r23_of(+b: O.Found) -> O.Found:
   +k = g_mv_st23(O.Found.ar(b))
   O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
@@ -3898,7 +3698,6 @@ def g_mv_exp1() -> O.Found:
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(2)})
   O.UOp.new(O.Found.ar(c), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# EXPAND(BUFFER(4), STACK(2, 3)) -- `shape=(2,3,4)`, the two-element marg and the
 def g_mv_exp23() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +k = g_mv_st23(O.Found.ar(b))
@@ -3948,7 +3747,6 @@ def g_mv_reshsym_pt() -> O.Found:
   +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(p), O.Found.i(c)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
 
-# EXPAND(BUFFER(4), STACK(2, SPECIAL 'N' end 99)) -- `g_mv_expsym`'s op with a REAL
 def g_mv_expsym_pos() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +e = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(99)})
@@ -3963,7 +3761,6 @@ def g_mv_reshbare_n() -> O.Found:
   +n = g_mv_var_n(O.Found.ar(b), "n")
   O.UOp.new(O.Found.ar(n), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(n)], O.ANone{}, O.TNone{})
 
-# the same third arm with a point: `q = variable("q", 4, 4)` folds to the int 4, the
 def g_mv_reshbare_q() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +q = g_mv_var(O.Found.ar(b), H.i64_of_i32(4), H.i64_of_i32(4), "q")
@@ -3979,7 +3776,6 @@ def g_mv_reshbare_w() -> O.Found:
 def g_mv_cst(ar: O.Arena, n: U32) -> O.Found:
   O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})
 
-# `shape_to_shape_arg` of a TWO-element tuple whose values are NOT the (2, 3) above.
 def g_mv_st01(ar: O.Arena) -> O.Found:
   +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(1)})
@@ -3995,7 +3791,6 @@ def g_mv_st21(ar: O.Arena) -> O.Found:
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(1)})
   O.UOp.new(O.Found.ar(c1), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})
 
-# SHRINK over the same (2, 3) source with offsets (0,1) and sizes (2,1) --
 def g_mv_shr23() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{6}, O.AParam{g_mv_pa()}, O.TNone{})
   +r = g_mv_r23_of(b)
@@ -4003,21 +3798,18 @@ def g_mv_shr23() -> O.Found:
   +z = g_mv_st21(O.Found.ar(o))
   O.UOp.new(O.Found.ar(z), O.OpsSHRINK{}, [O.Found.i(r), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
-# PAD(BUFFER(4), CONST(0), CONST(6)) -- `n=4 op=Ops.PAD nsrc=3
 def g_mv_pad1() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_cst(O.Found.ar(b), 0)
   +z = g_mv_cst(O.Found.ar(o), 6)
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
-# SHRINK(BUFFER(4), CONST(1), CONST(2)) -- `shape=(2)`: `o + sz <= s` is `1+2 <= 4`.
 def g_mv_shr1() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_cst(O.Found.ar(b), 1)
   +z = g_mv_cst(O.Found.ar(o), 2)
   O.UOp.new(O.Found.ar(z), O.OpsSHRINK{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
-# PAD with offsets (0,1) and sizes (6,5) over the (2,3) RESHAPE -- `shape=(6,5)`.
 def g_mv_pad23() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{6}, O.AParam{g_mv_pa()}, O.TNone{})
   +r = g_mv_r23_of(b)
@@ -4032,14 +3824,12 @@ def g_mv_padr() -> O.Found:
   +z = g_mv_st65(O.Found.ar(o))
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
-# PAD whose sum fails on ONE dim -- offset 1, size 3 over a source dim of 4:
 def g_mv_padr2() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_cst(O.Found.ar(b), 1)
   +z = g_mv_cst(O.Found.ar(o), 3)
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
-# SHRINK whose sum fails -- offset 1, size 4 over a source dim of 4: `o+sz<=s` is
 def g_mv_shrbad() -> O.Found:
   +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_cst(O.Found.ar(b), 1)
@@ -4059,7 +3849,6 @@ def g_mv_perm10() -> O.Found: g_mv_perm([1, 0])
 # PERMUTE with a REPEATED index -- `sorted((0, 0)) != list(range(2))`, ops.py:417.
 def g_mv_permrep() -> O.Found: g_mv_perm([0, 0])
 
-# PERMUTE with a LONGER arg than the shape -- `sorted((1, 0, 2)) != range(2)`. This
 def g_mv_permlen() -> O.Found: g_mv_perm([1, 0, 2])
 
 def sig_srcops.go(+ar: O.Arena, +ss: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
@@ -4073,7 +3862,6 @@ def sig_srcops(+ar: O.Arena, +ss: List<&2, U32>) -> List<&2, String>:
 def sig_count(+ar: O.Arena, +u: U32) -> U32:
   U32.from_nat(List.length(&2, U32, O.UOp.toposort(O.Arena.budget(ar), ar, u)))
 
-# `n=<count> op=<root> nsrc=<n> srcops=<seq>` -- `mxm_sig`'s spelling, reused here
 def sig4(+ar: O.Arena, +u: U32) -> String:
   String.concat(["n=", U32.show(sig_count(ar, u)),
                   " op=", O.Ops.name(O.Arena.op(ar, u)),
@@ -4098,11 +3886,9 @@ def mmk_row(pfx: String, nm: String, +x: MMed, +u: U32) -> IO(Unit):
 def mmk_of(pfx: String, nm: String, +f: O.Found) -> IO(Unit):
   mmk_row(pfx, nm, min_maxed(O.Found.ar(f)), O.Found.i(f))
 
-# ---- the fixtures -----------------------------------------------------------------
 def mw_c(ar: O.Arena, n: U32) -> O.Found:
   O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})
 
-# THE `ParamArg` BUILDER, for all three uses -- the plain int32 BUFFER, the int64 one and
 def mw_pa(dt: S.Dt, vmm: Maybe<&2, O.PyRange>) -> O.ParamArg:
   O.ParamArg{0, dt, vmm, None{}, None{}, S.AGlobal{}, None{},
     False{}, None{}, None{}, False{}, None{}}
@@ -4110,13 +3896,11 @@ def mw_pa(dt: S.Dt, vmm: Maybe<&2, O.PyRange>) -> O.ParamArg:
 def mw_b(+ar: O.Arena) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{4}, O.AParam{mw_pa(S.int32(), None{})}, O.TNone{})
 
-# A BINARY OP OVER TWO CONSTs, as ONE builder for the order pair. `SUB(3,4)` is `(-1,-1)`
 def mw_bin(op: O.Op, a: U32, b: U32) -> O.Found:
   +x = mw_c(O.Arena.empty(), a)
   +y = mw_c(O.Found.ar(x), b)
   O.UOp.new(O.Found.ar(y), op, [O.Found.i(x), O.Found.i(y)], O.ANone{}, O.TNone{})
 
-# THE TRANSITIVE ROW. `MUL` is at depth 1 and `SUB` at depth 2 under the `ADD`, so a
 def mw_nested() -> O.Found:
   +a = mw_c(O.Arena.empty(), 3)
   +b = mw_c(O.Found.ar(a), 4)
@@ -4126,7 +3910,6 @@ def mw_nested() -> O.Found:
   +s = O.UOp.new(O.Found.ar(e), O.OpsSUB{}, [O.Found.i(d), O.Found.i(e)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(s), O.OpsADD{}, [O.Found.i(m), O.Found.i(s)], O.ANone{}, O.TNone{})
 
-# RANGE AND SPECIAL, one builder each, because `UOp.range_end` and `UOp.special` are
 def mw_rng(end: U32) -> O.Found:
   +c = mw_c(O.Arena.empty(), end)
   O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [0], O.AXIS_LOOP{})
@@ -4142,7 +3925,6 @@ def mw_stack() -> O.Found:
   +c = mw_c(O.Found.ar(b), 5)
   O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(a), O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# pad is in `GroupOp.Movement` and does not pass through, and the row that separates those
 def mw_pad() -> O.Found:
   +p = O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, Some{4}, O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(5), H.i64_of_i32(9)}})}, O.TNone{})
 
@@ -4150,11 +3932,9 @@ def mw_pad() -> O.Found:
   +z = mw_c(O.Found.ar(o), 11)
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(p), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
-# A PARAM WITH `vmin_vmax`, so the Defines arm is reached with NO SRCS at all and the
 def mw_param() -> O.Found:
   O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, Some{4}, O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(4294967293), H.i64_of_i32(7)}})}, O.TNone{})
 
-# THE TWO WINDOW ROWS, and the reason `weak.bend` waits on this def: `2**64-1` does not
 def mw_threefry() -> O.Found:
   +a = mw_c(O.Arena.empty(), 0)
   +b = mw_c(O.Found.ar(a), 0)
@@ -4164,23 +3944,19 @@ def mw_threefry() -> O.Found:
 def mw_buf_i64() -> O.Found:
   O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{mw_pa(S.int64(), None{})}, O.TNone{})
 
-# a void dtype's default arm, so `bnd_lim`'s one void arm is reached through the sweep and
 def mw_noop() -> O.Found:
   +b = mw_b(O.Arena.empty())
   O.UOp.new(O.Found.ar(b), O.OpsNOOP{}, [O.Found.i(b)], O.ANone{}, O.TNone{})
 
-# A STAGE over a CONST, with NO range src. `dt_shape`'s arm passes the dtype through
 def mw_stage() -> O.Found:
   +a = mw_c(O.Arena.empty(), 0)
   O.UOp.new(O.Found.ar(a), O.OpsSTAGE{}, [O.Found.i(a)], O.ANone{}, O.TNone{})
 
-# THE PER-NODE ROW, and the one a whole-sweep flag cannot pass. This `ADD` is built ON TOP
 def mw_sibling(st: O.Found) -> O.Found:
   +b = mw_c(O.Found.ar(st), 2)
   +c = mw_c(O.Found.ar(b), 5)
   O.UOp.new(O.Found.ar(c), O.OpsADD{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# THE BACKEDGE, three rows from ONE arena, and the ORDERING CLAIM. `src[0]` is the node
 def mw_backedge() -> O.Found:
   +c4 = mw_c(O.Arena.empty(), 4)
   +sp = O.UOp.special(O.Found.ar(c4), O.Found.i(c4), "N")
@@ -4188,14 +3964,12 @@ def mw_backedge() -> O.Found:
   +rg = O.UOp.range_end(O.Found.ar(c5), O.Found.i(c5), [0], O.AXIS_LOOP{})
   O.UOp.backedge(O.Found.ar(rg), O.Found.i(sp), O.Found.i(rg), O.Found.i(sp))
 
-# A RESHAPE OVER A SYMBOLIC MARG, which is `mv_expsym`'s own wall seen from this side: the
 def mw_reshape() -> O.Found:
   +b = mw_b(O.Arena.empty())
   +c = mw_c(O.Found.ar(b), 4)
   +sp = O.UOp.special(O.Found.ar(c), O.Found.i(c), "N")
   O.UOp.new(O.Found.ar(sp), O.OpsRESHAPE{}, [O.Found.i(b)], O.ATuple{[O.Found.i(sp)]}, O.TNone{})
 
-# `vmin` AND `vmax` AS TWO ROWS on the ONE node whose bounds are 63 bits apart. A pair in
 def mw_vmin() -> IO(Unit):
   +x = min_maxed(O.Found.ar(mw_buf_i64()))
   IO.print(String.concat(["mmk_vmin ", sig4(MMed.ar(x), 1), " ",
@@ -4206,7 +3980,6 @@ def mw_vmax() -> IO(Unit):
   IO.print(String.concat(["mmk_vmax ", sig4(MMed.ar(x), 1), " ",
                           mmk_end(UOp.vmax(MMed.ar(x), MMed.bt(x), 1))]))
 
-# TWO ROWS OUT OF ONE SWEEP, which is what makes the ordering claim a claim at all. A
 def mmk_backedge() -> IO(Unit):
   +f = mw_backedge()
   +x = min_maxed(O.Found.ar(f))
@@ -4216,7 +3989,6 @@ def mmk_backedge() -> IO(Unit):
     mmk_row("mmk_", "backedge_sp", x, O.Arena.src(MMed.ar(x), be, 0))
     mmk_row("mmk_", "backedge_rg", x, O.Arena.src(MMed.ar(x), be, 1))
 
-# THE SIBLING, and both nodes come out of ONE sweep with the STAGE at the lower index, so
 def mmk_sibling() -> IO(Unit):
   +st = mw_stage()
   +f = mw_sibling(st)
@@ -4261,7 +4033,6 @@ def shape_str(+ar: O.Arena, m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String
     case Some{g}: shape_str.go(ar, g)
     case None{}  : "ABSENT"
 
-# `S.Dt`'s FOURTH FIELD is tinygrad's own `DType.name`; `spec.bend` has no reader for
 def dt_nm(d: S.Dt) -> String:
   match d:
     case S.Dt{pri, bits, cls, nm}: nm
@@ -4271,7 +4042,6 @@ def dt_str(m: Maybe<&2, S.Dt>) -> String:
     case Some{d}: dt_nm(d)
     case None{}  : "ABSENT"
 
-# ONE FOLD PER ROW, read three times: `+x` and `+u` are what pay for it, and folding
 def mv_row(nm: String, +x: Folded, +u: U32) -> IO(Unit):
   IO.print(String.concat(["mv_", nm, " ", sig4(Folded.ar(x), u),
                           " shape=", shape_str(Folded.ar(x), UOp.shape(Folded.ar(x), Folded.t(x), u)),
@@ -4296,28 +4066,23 @@ def t_rng_after() -> Bool:
   +u = Maybe.default(&2, U32, Maybe.map(&2, H.I64, U32, H.lo32, w), 0)
   U32.is_eq(u, 5)
 
-# the ucache NOTE, read out of the fold: CONST(3) is weakint and CONST(True) is
 def t_dtype_key() -> Bool:
   +x = folded(O.Found.ar(g_keys()))
-  # 0 bottom, 1 CONST(3), 2 CONST(True)
   Bool.and(Bool.and(dt_is(x, 1, S.weakint()), dt_is(x, 2, S.boolean())),
     U32.is_eq(O.Found.i(g_keys()), 2))
 
-# `Add(Buffer, Const)` end to end. The dtype claim is the interesting one: the
 def t_shape_ok() -> Bool:
   +x = folded(O.Found.ar(g_add()))
   # one. The layout above is the MEASURED one, not the recalled one: see
   Bool.and(Bool.and(shape_is(x, 6, [sint_of(4)]), shape_is(x, 4, [sint_of(4)])),
     Bool.and(shape_is(x, 5, Nil{}), dt_is(x, 6, S.int32())))
 
-# the BUFFER's device and addrspace come from its ParamArg, the ADD's from "the
 def t_device_ok() -> Bool:
   +x = folded(O.Found.ar(g_add()))
   Bool.and(Bool.and(Bool.and(dev_is(UOp.device(Folded.ar(x), Folded.t(x), 4), 0), dev_is(UOp.device(Folded.ar(x), Folded.t(x), 6), 0)),
     addr_is(UOp.addrspace(Folded.ar(x), Folded.t(x), 4), Some{S.AGlobal{}})),
     addr_is(UOp.addrspace(Folded.ar(x), Folded.t(x), 6), None{}))
 
-# THE CYCLE. `g_cycle` in ops.bend is a BACKEDGE over a SPECIAL and a RANGE, which is
 def t_cycle_safe() -> Bool:
   +f = O.g_cycle()
   +x = folded(O.Found.ar(f))
@@ -4326,13 +4091,10 @@ def t_cycle_safe() -> Bool:
   Bool.and(Bool.and(Kahn.settled(Folded.ar(x), Folded.t(x)), dt_is(x, be, S.void())),
     Bool.and(ended_is(x, be, r), axis_at(x, r, O.AXIS_DEVICE{})))
 
-# THE DEFERRED ARM, which is the other way the fold is incomplete. `g_gap` is a RESHAPE
 def t_gap_ok() -> Bool:
   +x = folded(O.Found.ar(g_gap()))
-  # 1 CONST(0), 2 RESHAPE (deferred), 3 STORE over it (unanswered in turn)
   Bool.and(Bool.not(Kahn.settled(Folded.ar(x), Folded.t(x))), gap_count(x, 2))
 
-# THE 2-D FIXTURE end to end. `g_resh22`'s arena is 1 CONST(4), 2 BUFFER,
 def t_resh_2d() -> Bool:
   +x = folded(O.Found.ar(g_resh22()))
   Bool.and(shape_is(x, 5, [sint_of(2), sint_of(2)]),
@@ -4341,29 +4103,22 @@ def t_resh_2d() -> Bool:
 # THE IDENTITY TEST of movement.py:184, `return self if ret.shape == self.shape
 def t_resh_1d() -> Bool:
   +x = folded(O.Found.ar(g_resh4()))
-  # 1 CONST(4) (the size node), 2 BUFFER, 3 RESHAPE -- CONST(4) hash-conses to 1
   Bool.and(shape_is(x, 3, [sint_of(4)]), shape_is(x, 2, [sint_of(4)]))
 
-# the noop arm, the one that must not check: `STACK(2, 3)` over a noop whose shape
 def t_resh_noop() -> Bool:
   +x = folded(O.Found.ar(g_reshnoop()))
-  # 1 CONST(4) (the size node), 2 BUFFER, 3 NOOP, 4 CONST(2), 5 CONST(3),
   Bool.and(shape_is(x, 7, [sint_of(2), sint_of(3)]), dt_is(x, 7, S.void()))
 
-# ALL THREE `raise`s, as three nodes the fold does NOT answer. `gap_count` is the
 def t_resh_reject() -> Bool:
   +a = folded(O.Found.ar(g_resh23()))
   +b = folded(O.Found.ar(g_reshneg()))
   +c = folded(O.Found.ar(g_reshsym()))
-  # the RESHAPE of each: 6 for the product mismatch, 4 for the negative dim, 7 for
   Bool.and(gap_count(a, 6), Bool.and(gap_count(b, 4), gap_count(c, 7)))
 
-# THE WHOLE TABLE SETTLES, so the 2-D answer is the ARM's answer and not a lucky
 def t_resh_settle() -> Bool:
   +x = folded(O.Found.ar(g_resh22()))
   Kahn.settled(Folded.ar(x), Folded.t(x))
 
-# sized/pad_to walk a shape in ops.py's order, and `pad_to` PREPENDS the ones,
 def t_sized_order() -> Bool:
   Bool.and(eq_sints(Sized.s(sized([sint_of(2), sint_of(3)])), [sint_of(2), sint_of(3)]),
     eq_sints(Sized.s(pad_to(sized([sint_of(2), sint_of(3)]), 3n)),
@@ -4386,7 +4141,6 @@ def t_img() -> Bool:
             img_case(None{}, False{}),
             img_case(Some{[O.SU{0}, sint_of(4), sint_of(4)]}, True{}))))))
 
-# THE WIDTH IS NOT HARD-CODED TO `weakint`. `bnd_int` is a general statement about the
 def dt_w(nm: String, +bits: U32, top: Bool) -> IO(Unit):
   dt_row(nm, bnd_int(False{}, True{}, bits), bnd_int(True{}, False{}, bits))
 
@@ -4421,7 +4175,6 @@ def dts_all() -> List<&2, S.Dt>:
    S.fp8e5m2(), S.fp8e4m3fnuz(), S.fp8e5m2fnuz(), S.half(), S.bfloat16(),
    S.single(), S.double()]
 
-# three distinct `Dt`s that all carry `pri 0`, so the collision is NOT an equality
 def t_pri_three_way() -> Bool:
   Bool.and(Bool.and(Bool.not(O.eq_dt(S.void(), S.weakint())),
       Bool.not(O.eq_dt(S.void(), S.boolean()))),
@@ -4429,7 +4182,6 @@ def t_pri_three_way() -> Bool:
         U32.is_eq(S.Dt.pri(S.weakint()), 0)),
       U32.is_eq(S.Dt.pri(S.boolean()), 0)))
 
-# the totalisation: dtype.py REFUSES any pair naming void (a KeyError on 39 of 400)
 def promo_is_bottom.of(+x: S.Dt, left: Bool) -> Bool:
   match left:
     case True{}: O.eq_dt(least_upper.of(S.void(), x), S.void())
@@ -4443,12 +4195,10 @@ def promo_is_bottom.go(ds: List<&2, S.Dt>, ok: Bool, +left: Bool) -> Bool:
 def t_promo_void_left() -> Bool: promo_is_bottom.go(dts_all(), True{}, True{})
 def t_promo_void_right() -> Bool: promo_is_bottom.go(dts_all(), True{}, False{})
 
-# M7's FIXTURE. `least_upper` ANDs the two masks; replacing `ma & mb` with `ma` alone
 def t_meet_and() -> Bool:
   Bool.and(O.eq_dt(least_upper.of(S.boolean(), S.weakint()), S.weakint()),
     O.eq_dt(least_upper.of(S.weakint(), S.boolean()), S.weakint()))
 
-# `bnd_lim`'s ONE void arm is `case S.Dt{0, 0, S.CVoid{}, _}: bnd_bool(top)`, and
 def t_bnd_void_is_bool() -> Bool:
   Bool.and(Bool.and(String.eq(bnd_show(bnd_lim(S.void(), False{})),
       bnd_show(bnd_lim(S.boolean(), False{}))),
@@ -4463,51 +4213,42 @@ def vb_pa() -> O.ParamArg:
 def vb_buf() -> O.Found:
   O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{vb_pa()}, O.TNone{})
 
-# ADD(BUFFER, CONST(3)) -- the root is NOT a step op for any of the three, so
 def vb_add() -> O.Found:
   +b = vb_buf()
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(3)})
   O.UOp.new(O.Found.ar(c), O.OpsADD{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# EXPAND(BUFFER, CONST(2)) -- a movement op, so all three step to the BUFFER.
 def vb_mv() -> O.Found:
   +b = vb_buf()
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(2)})
   O.UOp.new(O.Found.ar(c), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# UNSHARD(BUFFER, RANGE(4, DEVICE)) -- the arg is the tuple of SHARDED AXES
 def vb_us() -> O.Found:
   +b = vb_buf()
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(4)})
   +r = O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [0], O.AXIS_DEVICE{})
   O.UOp.new(O.Found.ar(r), O.OpsUNSHARD{}, [O.Found.i(b), O.Found.i(r)], O.ATuple{[0]}, O.TNone{})
 
-# AFTER(BITCAST(BUFFER)) -- BITCAST is in the storage set and NOT in the
 def vb_abc() -> O.Found:
   +b = vb_buf()
   +c = O.UOp.new(O.Found.ar(b), O.OpsBITCAST{}, [O.Found.i(b)], O.ADt{S.int32()}, O.TNone{})
   O.UOp.new(O.Found.ar(c), O.OpsAFTER{}, [O.Found.i(c)], O.ANone{}, O.TNone{})
 
-# CONST(3) -- weakint, so the WEAK half of `is_virtual` fires.
 def vb_cst() -> O.Found:
   O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(3)})
 
-# CAST(CONST(3), int32) -- a STRONG dtype and NO device, so the DEVICE half
 def vb_cast() -> O.Found:
   +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(3)})
   O.UOp.new(O.Found.ar(c), O.OpsCAST{}, [O.Found.i(c)], O.ADt{S.int32()}, O.TNone{})
 
-# CAST(BUFFER, weakint) -- a WEAK dtype ON A DEVICE, so the WEAK half fires on
 def vb_wc() -> O.Found:
   +b = vb_buf()
   O.UOp.new(O.Found.ar(b), O.OpsCAST{}, [O.Found.i(b)], O.ADt{S.weakint()}, O.TNone{})
 
-# CAST(BUFFER, weakfloat) -- the OTHER weak dtype, so a `weaks` test that
 def vb_wf() -> O.Found:
   +b = vb_buf()
   O.UOp.new(O.Found.ar(b), O.OpsCAST{}, [O.Found.i(b)], O.ADt{S.weakfloat()}, O.TNone{})
 
-# EXPAND(UNSHARD(BUFFER, RANGE), CONST(2)) -- a movement op OVER an UNSHARD, and
 def vb_eus() -> O.Found:
   +b = vb_buf()
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(4)})
@@ -4516,7 +4257,6 @@ def vb_eus() -> O.Found:
   +e = O.UOp.const(O.Found.ar(u), O.CInt{H.i64_of_i32(2)})
   O.UOp.new(O.Found.ar(e), O.OpsEXPAND{}, [O.Found.i(u), O.Found.i(e)], O.ANone{}, O.TNone{})
 
-# the answer's op name, and WHETHER THE ANSWER IS THE NODE -- the pair, because
 def vb_name(m: Maybe<&1, U32>, +ar: O.Arena) -> String:
   match m:
     case Some{u}: O.Ops.name(O.Arena.op(ar, u))
@@ -4532,7 +4272,6 @@ def vb_virt(m: Maybe<&1, Bool>) -> String:
     case Some{b}: Bool.show(b)
     case None{}: "ABSENT"
 
-# ONE ROW PER FIXTURE, and the row carries the graph it is about (`op=` and
 def vb_row(nm: String, +f: O.Found) -> IO(Unit):
   +x = folded(O.Found.ar(f))
   +u = O.Found.i(f)
@@ -4566,16 +4305,13 @@ def main() -> IO(Unit):
     j : Unit <- row("resh_settle", t_resh_settle())
     k : Unit <- row("sized_order", t_sized_order())
     im : Unit <- row("img_shape", t_img())
-    # THE TWO CustomFunction ROWS, which DISAGREE with each other on purpose.
     cu : Unit <- row("cfun_void", t_cfun(S.void(), False{}))
     cv : Unit <- row("cfun_u64", t_cfun(S.uint64(), True{}))
-    # `void`'s priority: the representation, the collision, the totalisation that
     pw : Unit <- row("pri_three_way", t_pri_three_way())
     pb : Unit <- row("promo_void_left", t_promo_void_left())
     pc : Unit <- row("promo_void_right", t_promo_void_right())
     me : Unit <- row("meet_and", t_meet_and())
     bv : Unit <- row("bnd_void_is_bool", t_bnd_void_is_bool())
-    # THE `vb_` ROWS -- `unsharded_base`, `storage_base` and `is_virtual`. The
     vb_row("add", vb_add())
     vb_row("mv", vb_mv())
     vb_row("us", vb_us())
@@ -4585,7 +4321,6 @@ def main() -> IO(Unit):
     vb_row("cast", vb_cast())
     vb_row("wc", vb_wc())
     vb_row("wf", vb_wf())
-    # THE MOVEMENT ROWS. Four facts plus the answer, one string each, and the
     mv_of("exp1", g_mv_exp1())
     mv_of("exp23", g_mv_exp23())
     mv_of("expnoop", g_mv_expnoop())
@@ -4596,7 +4331,6 @@ def main() -> IO(Unit):
     mv_of("expsym_pos", g_mv_expsym_pos())
     mv_of("reshbare", g_mv_reshbare_n())
     mv_of("reshbare_pt", g_mv_reshbare_q())
-    # THE PLANNED DIVERGE, printed on this lane so the file says which way it is
     mv_of("reshbare_dis", g_mv_reshbare_w())
     mv_of("pad1", g_mv_pad1())
     mv_of("pad23", g_mv_pad23())
@@ -4608,7 +4342,6 @@ def main() -> IO(Unit):
     mv_of("perm", g_mv_perm10())
     mv_of("permrep", g_mv_permrep())
     mv_of("permlen", g_mv_permlen())
-    # THE RANGES ROWS, in the oracle's order: `diff` of the two lanes is the test.
     rng_of_row("none", rg_f_none())
     rng_of_row("self", rg_f_self())
     rng_of_row("two", rg_f_two())
@@ -4621,7 +4354,6 @@ def main() -> IO(Unit):
     rng_of_row("call_cf", rg_f_call_cf())
     rng_of_row("call_c", rg_f_call_c())
     rng_of_row("absent", rg_f_absent())
-    # THE `_min_max` WALK ROWS. The exact gate command is in the section header; the
     mmk_of("mmk_", "sub34", mw_bin(O.OpsSUB{}, 3, 4))
     mmk_of("mmk_", "sub43", mw_bin(O.OpsSUB{}, 4, 3))
     mmk_of("mmk_", "nested", mw_nested())
@@ -4766,7 +4498,6 @@ def main() -> IO(Unit):
     lf_row("sat_mul", mm.lift(O.OpsMUL{}, lf_c2(BndInt{False{}, H.i64_of_hi_lo(2147483648, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 2)}), O.ANone{}, S.int32()))
     lf_row("sat_addneg", mm.lift(O.OpsADD{}, lf_c2(BndInt{True{}, H.i64_of_hi_lo(2147483648, 0)}, BndInt{True{}, H.i64_of_hi_lo(2147483648, 0)}), O.ANone{}, S.int32()))
 
-    # the `_min_max` arithmetic rows. `.agents/slop/mm-gate.py` generates both the
     mm_row("add_zero", mm_show(mm.u64.add(0, 0, 0, 0)))
     mm_row("add_small", mm_show(mm.u64.add(0, 5, 0, 7)))
     mm_row("add_carrylo", mm_show(mm.u64.add(0, 4294967295, 0, 1)))
@@ -4839,7 +4570,6 @@ def main() -> IO(Unit):
     mm_row("div_1_2", mm.dm_show(mm.dm_run(0, 1, 0, 2)))
     mm_row("div_2p63_max", mm.dm_show(mm.dm_run(2147483648, 0, 4294967295, 4294967295)))
     mm_row("div_2p63_2p62", mm.dm_show(mm.dm_run(2147483648, 0, 1073741824, 0)))
-    # the `bit_length` rows. `.agents/slop/mm-bl-gate.py` generates both the fixtures
     bl_row("bl_0", U32.show(mm.bl64(0, 0)))
     bl_row("bl_1", U32.show(mm.bl64(0, 1)))
     bl_row("bl_2", U32.show(mm.bl64(0, 2)))
@@ -4878,7 +4608,79 @@ def main() -> IO(Unit):
     bl_row("mk_m1_m1", mm_show(mm_mask64(4294967295, 4294967295, 4294967295, 4294967295)))
     bl_row("mk_m1_2p32", mm_show(mm_mask64(4294967295, 4294967295, 1, 0)))
     bl_row("mk_7_2p63", mm_show(mm_mask64(0, 7, 2147483648, 0)))
-    # THE TWENTY DTYPE LIMITS. `.agents/slop/mm-dt-gate.py` reads CPython's own
+# MEASURED. The claim above -- "diffs against ops.py line for line" -- was FALSE
+# on EVERY entry, and one entry (`ops.py:1013 def variable`) named a function
+# the one line that covers many: `simplify` (ops.py:495) is `graph_rewrite(self,
+# TODO(p3) ops.py:199  __call__ (ucache key)   -- PORTED, as the `dtype_key` gate row:
+# TODO(p3) ops.py:211  class recursive_property -- PORTED as the fold itself.
+# TODO(p3) ops.py:239  def dtype                -- PORTED, as `UOp.dtype` over a table.
+# TODO(p3) ops.py:261  def key                  -- `hashlib.sha256`. Bend has no rotate
+# TODO(p3) ops.py:272  def backward_slice       -- a `toposort(enter_calls=False)` plus
+# TODO(p3) ops.py:284  def _bool_slice          -- a `frozenset` union down the srcs. It
+# TODO(p3) ops.py:316  def tuplize              -- `repr(self.arg)` for the sort, and
+# TODO(p3) ops.py:323  def _shape               -- PORTED, with `UOp.shape` over a table.
+# TODO(p3) ops.py:439  def shape                -- `if (ret:=self._shape) is None: raise`,
+# TODO(p3) ops.py:444  def shard_shape          -- `self.device`, `self.axis` and
+# TODO(p3) ops.py:453  def ended_ranges         -- PORTED, as `UOp.ended_ranges`.
+# TODO(p3) ops.py:465  def _ranges              -- PORTED, and the set algebra is NOT the
+# TODO(p3) ops.py:479  def ranges               -- PORTED with it, as the reader
+# TODO(p3) ops.py:484  def axis_id              -- PORTED, and NOT a fold property:
+# TODO(p3) ops.py:489  def axis_type            -- PORTED, same reason. `UOp.axis_type`.
+# TODO(p3) ops.py:495  def simplify             -- `graph_rewrite`. STILL NOT PORTED, and
+# TODO(p3) ops.py:502  def ssimplify            -- PARTIAL, and the partial is measured.
+#   PARAM/SPECIAL (symbolic.py:269 is the only `symbolic` rule naming either, and
+#   MEASURED, `ssimplify` moves an `AFTER` to its `PARAM` and re-associates an `ADD`,
+# TODO(p3) ops.py:503                        -- the body is the line above.
+# TODO(p3) ops.py:526  def trace_num            -- replaces the UOps in a tag tuple with
+# TODO(p3) ops.py:543  def body                 -- PORTED, inlined into `ended_of.call`:
+# PORTED -- `ops.py:646 get_idx` is ported as `UOp.get_idx`. The reason this line
+# TODO(p3) ops.py:696  def axis                 -- `self.arg` for a movement op, so it is
+# TODO(p3) ops.py:762  def base                 -- PORTED, as `UOp.base` over the table.
+# DONE(p3) ops.py:769  def unsharded_base        -- PORTED, and PORTED TWICE, and the
+#   {Movement, DETACH, UNSHARD} goes PAST it. MEASURED on
+# TODO(p3) ops.py:782  def storage_base         -- PORTED, as `Derived.sbase`, the
+# PORTED -- ops.py:786 `as_shape`, all three arms, through `sym_dim`. `shape_to_shape_arg`
+#   (ops.py:106-110) hands a `UOp` dim over verbatim, so the third arm is a live arm and
+# PORTED -- ops.py:792 `marg`, all three arms, and the `as_shape` under it is what the
+# DONE(p3) ops.py:875  def device               -- PORTED, as `UOp.device`.
+# DONE(p3) ops.py:891  def is_virtual           -- PORTED, as `UOp.is_virtual`, and
+#   `dtypes.weaks` is `(weakint, weakfloat)` (dtype.py:160) and `S.Cls` names
+# DONE(p3) ops.py:896  def addrspace            -- PORTED, as `UOp.addrspace`.
+# TODO(p3) ops.py:999 def is_realized          -- `has_buffer_identity`, a graph walk
+# TODO(p3) ops.py:1009 def is_variable        -- `self.op is Ops.PARAM and
+#   said `ops.py:1013 def variable`; the body it quotes is the `is_variable`
+#   DIFFERENT function with a different body. A marker whose name and whose
+# TODO(p3) ops.py:1037 def variables            -- the `unbind`/`unbind_all` set walk.
+# TODO(p3) ops.py:1048 def const_factor         -- `divides` on a symbolic factor list,
+# DONE(p3) ops.py:1090 def vmin                 -- LANDED as `UOp.vmin`, a reader over the
+# DONE(p3) ops.py:1092 def vmax                 -- same, and the same two rows.
+# DONE(p3) ops.py:1094 def _min_max             -- THE BOUND, THE OP TABLE,
+#     * `Ops.CAST` -- `truncate` (dtype.py:297) is half a C-effect seam in `dtype.bend` and
+#       refused as mutual recursion). It is SOLVED AND NOT ROUTED AROUND, by a
+#     * `mm.lift`, the OP TABLE for ops.py:1094-1156 -- PURE over
+#       and the paragraph's claim was FALSE, which is the part worth keeping. It said
+#       dtype with it and the default arm has nothing to compute from. MEASURED, not
+#     3. `Ops.CAST` -- `truncate` (dtype.py:297) is half a C-effect seam in `dtype.bend`
+# TODO(p3) ops.py:1158 def _sym_fxn             -- `exec` of generated source. P3/P6.
+# TODO(p3) ops.py:1188 def alloc                -- `new_buffer`, which is P6's device
+# TODO(p3) ops.py:1218 def param                -- P6, same reason.
+# TODO(p3) ops.py:1395 def __reduce__           -- pickling; the arena is monotone and
+# DONE(p3) ops.py:1402 def safe_exp2            -- PORTED, and NOT HERE: it is
+#   `symbolic.bend`'s `f32_exp2` (`F32.pow(2.0, x)`), and `ops.py:1402` is what
+# DONE(p3) ops.py:1406 def safe_pow             -- the same, as `symbolic.bend`'s
+# TODO(p3) ops.py:1422 def exec_alu             -- its tuple operand case is a
+#      op, and MEASURED that refusal is right (`AFTER` and `ADD` are the counter-examples).
+# THE MUTATION TABLE for the src ORDER fix, MEASURED, run both ways.
+# with a `List.reverse` -- and it is a real defect, MEASURED by
+# THE MUTATION TABLE for the `sized` ORDER fix, MEASURED, run both ways.
+# answered False for `(32,32,4)`, and helpers.py:37 says True. `is_image_shape.four` is
+# MEASURED by `.agents/slop/notes/probe-sized-consumers.bend`, and REPORTED NOT FIXED by
+# | M9 | `count_of`: `case O.SU{u}: None{}` -> `Some{0}` | nothing (0) | a fixture gap, and its old reason is dead. This entry used to read "an unreachable state: nothing in this tree can mint an `O.SU`", which was true until `sym_dim` landed and made `SInt.uop` (ops.bend:816) its first caller. The state is reachable now and the mutation still moves nothing, because no pad/shrink/bitcast fixture carries a symbolic dim -- and the wall that stops one is a different one: upstream's `resolve` defaults TRUE over the sums (ops.py:64) while `Tri.of`'s `count_of` refuses a `SU`. `mv_padsym` is that row and `mv_padsym_pos` is the fixture this entry asks for. a `0` is a request for a fixture and this is one. |
+# | M12 | `order_arg`: answer `Nil{}` instead of the `ATuple` | `mv_perm` `mv_permrep` `mv_permlen` (3) | `marg` for PERMUTE is `self.arg` (ops.py:796 symbol=marg), so reading anything else empties the arg. It moves THREE rows; the two FLIP rows it used to move are gone with the op, and what is left is the half of `GroupOp.Movement` that is about the ARG and not the srcs. |
+# | M14 | `sym_dim.range`: the point arm answers `SU` instead of `SI{lo}` | `mv_reshsym_pt` `mv_reshbare_pt` (2) | the "just return su" fix, and it is wrong. a PARAM whose interval is a point is folded to a CONST by symbolic.py:269, so `ssimplify` hands back the int; answering `SU` instead leaves `(3,1)` as `(U(Ops.PARAM:p),1)`. Two rows, and they are the only two with no `U` in the correct answer -- which is the point: a fixture whose dims are all symbolic cannot tell this mutation from a correct simplifier. |
+# | M16 | `reshape_ok`: `sym` read as `False` -- the OLD wall back | `mv_reshsym_nm` `mv_reshbare` `mv_reshbare_dis` (3) | `resolve(..., False)` is a DEFAULT, so an unprovable product does not raise (ops.py:409-410). Reading it as an inequality is what made every symbolic marg a refusal; three rows go from a named shape to `ABSENT`. This is the mutation that says the fix is in `reshape_ok` and not only in `sym_dim`. |
+# THE MUTATION TABLE for `_min_max`'s OP TABLE, MEASURED.
+# | L12 | the canonical zero tests only the HIGH word | 15 | `0 * -5` builds `SNok{True, 0}` -- `-0`, the same Python int as `0` and a DIFFERENT `Bnd`, so the gate string differs. The `2**31` and `-2**31` addends are in the list because that is where a wide negative magnitude first appears. |
     dt_row("boolean", bnd_lim(S.boolean(), False{}), bnd_lim(S.boolean(), True{}))
     dt_row("weakint", bnd_lim(S.weakint(), False{}), bnd_lim(S.weakint(), True{}))
     dt_row("int8", bnd_lim(S.int8(), False{}), bnd_lim(S.int8(), True{}))

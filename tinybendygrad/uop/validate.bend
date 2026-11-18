@@ -1,4 +1,5 @@
-# index checker, entered from `spec.py:27` as the LAST step of
+# validate.bend -- tinygrad/uop/validate.py.
+# The brief called `validate.py` "the SPEC gate: it is what turns 'the graph is
 
 # answer is a LIST, and it is not a preference -- it is three MEASURED facts
 #     (validate.py:97-100). The two branches print DIFFERENT text --
@@ -16,6 +17,18 @@ import ./../LAWS/spec.bend as S
 
 type Z is Data:
   ZSym{nm: String, is_b: Bool}      # z3.Int(name) / z3.Bool(name)
+# `buf.index(r & -4)` is in tinygrad's own test, test_validate_oob.py:97.
+#     port 155 rows, oracle 364 rows, SHARED 138, agree 123, disagree 15   (MEASURED)
+# ⚠ THE PRIOR PREMISE WAS FALSE. This header used to record, as the reason `dv_and*` could not be
+#   `solver.add(z3_mask)` -- validate.py:95 -- now happens (`vz_add_mask`).
+#   `create_bounded` built `Le(vmin, sym)`. With `vmin` a Python `int`, validate.py:51 REFLECTS
+#   `Ops.TRUNCDIV` was `k = 2`, i.e. `z3_floordiv`, and those are DIFFERENT FUNCTIONS. Two `z3_alu`
+#     THOSE ARE DIFFERENT FUNCTIONS. The rule is 60 measured cases and it is in `Z.par`.
+#                           `ops.py:302`'s THIRD branch (`if node in cache: continue`) was
+# THE `dv_bad_dtype_bitcast` FIXTURE IS NOW ADJUDICABLE, and the stated requirement was FALSE.
+# and the "dtype-carrying Arg" the brief asked for already existed. MEASURED: the port's
+# the first `.dtype` READ -- `ops.py:122` is `dtype_from_uop(op, src, arg)` and `UOp.__init__`
+# defect | rows | what the port prints | what CPython prints (MEASURED)
   ZLit{v: U32, is_b: Bool}          # z3.IntVal(v) / z3.BoolVal(v)
   ZAdd{a: Z, b: Z}                  # a + b
   ZSub{a: Z, b: Z}                  # a - b
@@ -44,17 +57,14 @@ type MRng is Data: MRng{u: U32, lo: U32, hi: U32}
 type Sol is Data:
   Sol{cs: List<&2, Z>, es: List<&2, Bind>, ms: List<&2, MRng>}
 
-# `x.vmin` / `x.vmax`, two's complement, as a `Data` pair because a `U32` read
 type MM is Data: MM{lo: U32, hi: U32}
 
 type ZAt is Data: ZAt{hit: Bool, t: Z, v: String}
 
 type Ren is Data: Ren{s: Sol, a: ZAt}
 
-# `S.Dt.min` is a `Maybe` (no U32 limit past 32 bits) and `itemsize` is a
 type DtMin is Data: DtMin{got: Bool, v: U32, isz: U32}
 
-# THE TABLE, IN RULE ORDER. First-wins IS the list order, so the order is
 type RTag is Data: RTag{hit: Bool, tag: U32}
 
 type VFr is Data: VFr{n: U32, seen: Bool}
@@ -68,23 +78,19 @@ type Wv is Data: Wv{got: Bool, w: U32}
 
 type Rep is Data: Rep{sz: U32, vs: List<&2, String>, cs: String, term: String}
 
-# `k` in `ZBv` is which of the three bit-blasted ops it is. Python passes a
 def bv_xor() -> U32: 2
 
 def bv_and() -> U32: 0
 
 def bv_or() -> U32: 1
 
-# `int.bit_length()` of a two's-complement value, i.e. of its ABSOLUTE value.
 def bit_len(+v: U32) -> U32:
   Bool.pick(U32, U32.is_eq(v, 0), 0, U32.from_nat(Nat.add(U32.log2(v), 1n)))
 
-# a signed decimal, because a z3 literal prints signed and a `U32` row that
 def z_i(+v: U32) -> String:
   Bool.pick(String, U32.is_eq(U32.and(v, 2147483648), 0), U32.show(v),
             String.concat(["-", U32.show(U32.sub(0, v))]))
 
-# `x.dtype == dtypes.bool` -- whether a node's value is a Bool rather than an
 def Z.is_b(t: Z) -> Bool:
   match t:
     case ZSym{nm, b}: b
@@ -102,13 +108,11 @@ def Z.is_b(t: Z) -> Bool:
     case ZNeZ{a}: True{}
     case _: False{}
 
-# `isinstance(t, z3.IntNumRef)`, and `t.as_long()`. `Maybe` because a `Data`
 def Z.num(t: Z) -> Maybe<&1, U32>:
   match t:
     case ZLit{v, b}: Some{v}
     case _: None{}
 
-# `isinstance(t, z3.IntNumRef)`, as the Bool the three `z3_*` helpers branch on.
 def Z.is_num(t: Z) -> Bool:
   match t:
     case ZLit{v, b}: Bool.not(b)
@@ -152,28 +156,23 @@ def Z.cls(t: Z) -> U32:
     case ZMod{a, b}: 5
     case _: 0
 
-# `ZNeg` IS CLASS 0, and that is what makes `Neg(Neg(a))` print `--a`: a prefix minus is not a
 def Z.par.loose(c: U32) -> Bool:
   Bool.not(U32.is_zero(c))
 
-# `+c` is the answer and it is not the arena trap: `+` on a `U32` parameter buys a second read,
 def Z.par.addsub(+c: U32) -> Bool:
   Bool.or(U32.is_eq(c, 1), U32.is_eq(c, 4))
 
 def Z.par.sub(pc: U32, right: Bool, addsub: Bool) -> Bool:
   Bool.and(right, addsub)
 
-# three arms and not five, because `*`, `/` and `%` all ask the same question -- "is the child
 def Z.par(+pc: U32, right: Bool, loose: Bool, addsub: Bool) -> Bool:
   Bool.pick(Bool, U32.is_eq(pc, 1), False{},
     Bool.pick(Bool, U32.is_eq(pc, 4), Z.par.sub(pc, right, addsub), loose))
 
-# `Z.ch` takes the child's already-printed text, not the child, and that is forced and not a
 def Z.ch(+s: String, +c: U32, pc: U32, right: Bool) -> String:
   Bool.pick(String, Z.par(pc, right, Z.par.loose(c), Z.par.addsub(c)),
             String.concat(["(", s, ")"]), s)
 
-# THE PRINTER. `str(z3_expr)`, which is what `solver`'s own `__str__` and validate.py's
 def Z.str(t: Z) -> String:
   match t:
     case ZSym{nm, b}: nm
@@ -183,7 +182,6 @@ def Z.str(t: Z) -> String:
     case ZMul{+a, +b}: String.concat([Z.ch(Z.str(a), Z.cls(a), 2, False{}), "*", Z.ch(Z.str(b), Z.cls(b), 2, True{})])
     case ZDiv{+a, +b}: String.concat([Z.ch(Z.str(a), Z.cls(a), 3, False{}), "/", Z.ch(Z.str(b), Z.cls(b), 3, True{})])
     case ZMod{+a, +b}: String.concat([Z.ch(Z.str(a), Z.cls(a), 5, False{}), "%", Z.ch(Z.str(b), Z.cls(b), 5, True{})])
-    # unary minus is inlined for the same reason as `Z.ch`: a def would have to call `Z.str`
     case ZNeg{+a}:
       Bool.pick(String, U32.is_gt(Z.cls(a), 0), String.concat(["-(", Z.str(a), ")"]),
                                          String.concat(["-", Z.str(a)]))
@@ -221,7 +219,6 @@ def cs_str(cs: List<&2, Z>) -> String:
 def Sol.empty() -> Sol:
   Sol{Nil{}, Nil{}, Nil{}}
 
-# the three field readers come first. Rule 27: a field is read
 def Sol.es(+s: Sol) -> List<&2, Bind>:
   match s:
     case Sol{cs, es, ms}: es
@@ -239,7 +236,6 @@ def Sol.ms(+s: Sol) -> List<&2, MRng>:
 def Sol.n(+s: Sol) -> U32:
   U32.from_nat(List.length(&2, Bind, Sol.es(s)))
 
-# the parameter is `k` and not `u` because a pattern binder may not shadow it --
 def Sol.find.go(+es: List<&2, Bind>, +k: U32) -> Maybe<&1, Z>:
   match es:
     case Nil{}: None{}
@@ -307,11 +303,9 @@ def vz_cval.go(a: O.Arg) -> Maybe<&1, U32>:
     case O.APy{v}: vz_cint(v)
     case _: None{}
 
-# `x.val` for `Ops.CONST` -- `z3.IntVal(x.val)`. `APy` is the only Arg that
 def vz_cval(ar: O.Arena, i: U32) -> Maybe<&1, U32>:
   vz_cval.go(O.Arena.arg(ar, i))
 
-# `vmin`/`vmax` of a CONST is `(x.val, x.val)` and that needs NO fold, so this
 def vz_mm.put(cval: Maybe<&1, U32>, m: Maybe<&1, MRng>) -> Maybe<&1, MM>:
   match cval:
     case Some{+v}: Some{MM{v, v}}
@@ -341,7 +335,6 @@ def rs_ids.go(+ids: List<&2, U32>, +acc: String, sep: String) -> String:
     case h <> t: rs_ids.go(t, String.concat([acc, sep, rs_one(h)]), "_")
 
 def zat.miss(v: String) -> ZAt:
-  # a `Some{v}` with an unused binder is REFUSED, so a miss carries `ZLit` zero
   ZAt{False{}, ZLit{0, False{}}, v}
 
 def zat.hit(t: Z) -> ZAt:
@@ -369,7 +362,6 @@ def ZAt.v(a: ZAt) -> String:
   match a:
     case ZAt{hit, t, v}: v
 
-# `x.src[n]`, WITH A RANK CHECK. `Arena.src` on an out-of-range `n` does not
 def zat.rank(+ar: O.Arena, +self: U32, n: U32, rule: String) -> String:
   String.concat([rule, ": ", O.Ops.name(O.Arena.op(ar, self)), " has ",
                  U32.show(O.Arena.nsrc(ar, self)), " srcs, needs ", U32.show(U32.add(n, 1))])
@@ -398,7 +390,6 @@ def z3_cdiv(+a: Z, +b: Z) -> Z:
 def z3_floordiv(+a: Z, +b: Z) -> Z:
   ZIf{ZGt{b, ZLit{0, False{}}}, ZDiv{a, b}, ZDiv{ZNeg{a}, ZNeg{b}}}
 
-# `m > 0 and m & (m-1) == 0` -- "m is a power of two", the test `z3_and` uses twice.
 def pow2(+m: U32) -> Bool:
   Bool.and(Bool.not(U32.is_zero(m)), U32.is_eq(U32.and(m, U32.sub(m, 1)), 0))
 
@@ -436,11 +427,9 @@ def z3_shift.cond(b: Z, lo: U32, i: U32) -> Z:
 def z3_shift.factor(i: U32) -> U32:
   z3_pow(z3_pow(i))
 
-# `z3.If(b < 0, z3.FreshInt("invalid_shift", ctx), a)` -- the tail does not
 def z3_shift.fin(a: Z, b: Z) -> Z:
   ZIf{ZLt{b, ZLit{0, False{}}}, ZFresh{"invalid_shift"}, a}
 
-# `range(max(0, int(vmax) - lo).bit_length())`
 def z3_shift.steps(+hi: U32, +lo: U32) -> U32:
   Bool.pick(U32, U32.is_le(hi, lo), 0, bit_len(U32.sub(hi, lo)))
 
@@ -471,7 +460,6 @@ def create_var.bound(+s: Sol, m: Maybe<&1, MM>, nm: String, miss: String) -> Ren
     case Some{+r}: create_bounded(s, nm, ZLit{MM.lo(r), False{}}, ZLit{MM.hi(r), False{}})
     case None{}: Ren{s, zat.miss(miss)}
 
-# `f"{x.op.name.lower()}{len(ctx[1])}"`. `O.Ops.name.of` is the BARE member name
 def cv_name(op: O.Op, n: U32) -> String:
   String.concat([String.to_lower(O.Ops.name.of(op)), U32.show(n)])
 
@@ -509,7 +497,6 @@ def ren_5.dmin.go(m: Maybe<&2, U32>, +isz: U32) -> DtMin:
     case Some{v}: DtMin{Bool.not(U32.is_gt(isz, 4)), v, isz}
     case None{}: DtMin{False{}, 0, isz}
 
-# `m.v` and `m.isz` are READERS, not projections -- rule 27, and this is the
 def DtMin.v(m: DtMin) -> U32:
   match m:
     case DtMin{got, v, isz}: v
@@ -532,7 +519,6 @@ def ren_5.why.str(+m: DtMin, +xv: String) -> String:
     String.concat(["rule 5: a ", U32.show(DtMin.isz(m)), "-byte dtype wraps mod 2^64, U32 cannot; ", xv]),
     String.concat(["rule 5: a ", U32.show(DtMin.isz(m)), "-byte dtype has no U32 min; ", xv]))
 
-# rule 6 -- `UPat(Ops.CONST, arg=Invalid)` -> `z3.Int("Invalid")`. A FREE symbol
 def ren_6(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   Ren{s, zat.hit(ZSym{"Invalid", False{}})}
 
@@ -555,7 +541,6 @@ def ren_9.b2.mk(+k: U32, +a: Z, +b: Z) -> Z:
 def ren_9.mx.mk(+a: Z, +b: Z) -> Z:
   ZIf{z3_lt(a, b), b, a}
 
-# ⚠ AND THE LESSON, since the shape is tempting to share: `ren_9.b2`, `ren_9.mx` and
 
 def z3why(+a: ZAt, w: String) -> String:
   Bool.pick(String, ZAt.hit(a), w, ZAt.v(a))
@@ -576,11 +561,9 @@ def ren_t4_op(+op: O.Op) -> Bool:
           Bool.or(O.eq_op(op, O.OpsCMPLT{}),
                   Bool.or(O.eq_op(op, O.OpsCMPNE{}), O.eq_op(op, O.OpsCMPEQ{}))))
 
-# rule 7 -- `UPat(Ops.CONST, name="x")`
 def ren_t7(+ar: O.Arena, +self: U32) -> Bool:
   O.eq_op(O.Arena.op(ar, self), O.OpsCONST{})
 
-# rule 8 -- `UPat(Ops.CAST, src=(UPat.var("x"),), name="c")`
 def ren_t8(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(O.eq_op(O.Arena.op(ar, self), O.OpsCAST{}), U32.is_eq(O.Arena.nsrc(ar, self), 1))
 
@@ -614,7 +597,6 @@ def ren_10.why(op: String) -> String:
 
 def rt(hit: Bool, tag: U32) -> RTag: RTag{hit, tag}
 
-# ONE self-recursive def. A `rt_pick` helper for the `Bool.pick` would be a
 def ren_t10(+ar: O.Arena, +self: U32) -> Bool:
   O.GroupOp.alu(O.Arena.op(ar, self))
 
@@ -623,7 +605,6 @@ def rt_first(+ts: List<&2, RTag>) -> U32:
     case Nil{}: 10
     case RTag{+hit, tag} <> rest: Bool.pick(U32, hit, tag, rt_first(rest))
 
-# `NotImplementedError(f"{u.op} is not supported by z3")` -- the ONE place
 def ren_unsup(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   Ren{s, zat.miss(String.concat([O.Ops.name(O.Arena.op(ar, self)), " is not supported by z3"]))}
 
@@ -679,7 +660,6 @@ def vz_term.of(m: Maybe<&1, Z>) -> String:
     case Some{t}: Z.str(t)
     case None{}: ""
 
-# `Maybe<&1, Z>` -> `Z`, and a MISS IS NOT A SYNTHESISED `True`. The gate node is in the
 def vz_zat(m: Maybe<&1, Z>, i: U32, n: U32) -> Z:
   match m:
     case Some{t}: t
@@ -742,12 +722,10 @@ def dt_in_ints(d: S.Dt) -> Bool:
 def dt_in_floats(d: S.Dt) -> Bool:
   dt_in_floats.go(S.Dt.cls(d))
 
-# `x.dtype` through the fold. `S.void()` for an unanswerable node, whose class
 def vz_dt(fx: F.Folded, i: U32) -> S.Dt:
   match fx:
     case F.Folded{ar, tb}: vz_dt.of(F.fold.dt(ar, tb, i))
 
-# `z3.Bool(name)` is NOT added to the solver: a bool is unconstrained.
 def create_var.of(is_bool: Bool, +s: Sol, m: Maybe<&1, MM>, +nm: String, miss: String) -> Ren:
   Bool.pick(Ren, is_bool, Ren{s, zat.hit(ZSym{nm, True{}})}, create_var.bound(s, m, nm, miss))
 
@@ -758,26 +736,21 @@ def cv_arg_name.of(a: O.Arg) -> String:
 def ren_1(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_1.put(zat.src(ar, s, self, 0, "rule 1 cond"), zat.src(ar, s, self, 1, "rule 1 x"), s)
 
-# `x.op in {Ops.PARAM, Ops.BUFFER, Ops.ALLOC}` -- the OP half of the name test.
 def ren_3_defines(op: O.Op) -> Bool:
   ren_3_defines.go(op)
 
 def ren_5.dmin(m: Maybe<&2, U32>, isz: U32) -> DtMin:
   ren_5.dmin.go(m, isz)
 
-# `(ctx[1][x] - c.dtype.min) % 2(8*c.dtype.itemsize) + c.dtype.min`
 def ren_5.ok(+x: ZAt, m: DtMin, +s: Sol) -> Ren:
   Ren{s, zat.hit(ren_5.mod(x, m))}
 
-# the two failure messages are different FACTS -- no U32 min at all, or a
 def ren_5.why(+x: ZAt, m: DtMin, +s: Sol) -> Ren:
   Ren{s, zat.miss(ren_5.why.str(m, ZAt.v(x)))}
 
-# rule 7 -- `z3.BoolVal(x.val)` if the dtype is bool else `z3.IntVal(x.val)`.
 def ren_7(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   ren_7.put(vz_cval(ar, self), S.Dt.is_bool(vz_dt(fx, self)), s)
 
-# rule 8 -- a one-src CAST. `z3_cast` collapses to the identity unless the
 def ren_8(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   ren_8.put(zat.src(ar, s, self, 0, "rule 8 x"),
             S.Dt.is_bool(vz_dt(fx, O.Arena.src(ar, self, 0))), S.Dt.is_bool(vz_dt(fx, self)), s)
@@ -785,7 +758,6 @@ def ren_8(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
 def ren_9.b2.put(+k: U32, +a: ZAt, +b: ZAt, +s: Sol) -> Ren:
   Bool.pick(Ren, zall(a, b), Ren{s, zat.hit(ren_9.b2.mk(k, ZAt.t(a), ZAt.t(b)))}, Ren{s, zat.miss(zwhy(a, b))})
 
-# `z3.If(a<b, b, a)`
 def ren_9.mx(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   Bool.pick(Ren, zall(zat.src(ar, s, self, 0, "rule 9 src0"), zat.src(ar, s, self, 1, "rule 9 src1")),
             Ren{s, zat.hit(ren_9.mx.mk(ZAt.t(zat.src(ar, s, self, 0, "rule 9 src0")),
@@ -801,7 +773,6 @@ def t_invalid.arg(a: O.Arg) -> Bool:
     case O.APy{v}: t_invalid.c(v)
     case _: False{}
 
-# rule 2 -- `UPat((Ops.SPECIAL, Ops.RANGE), name="x")`
 def ren_t2(+ar: O.Arena, +self: U32) -> Bool:
   ren_t2.put(O.Arena.op(ar, self))
 
@@ -817,7 +788,6 @@ def ren_t5_x(+ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
 def t_invalid_arg(a: O.Arg) -> Bool:
   t_invalid.arg(a)
 
-# rule 9 -- `UPat(tuple(z3_alu), name="x")`. `z3_alu` is a `dict[Ops,
 def ren_t9(+ar: O.Arena, +self: U32) -> Bool:
   List.contains(O.Op, O.eq_op, z3_alu_ops(), O.Arena.op(ar, self))
 
@@ -827,7 +797,6 @@ def ren_10.b2(k: U32, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
 def ren_10.b1(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_10.b1.put(zat.src(ar, s, self, 0, "rule 10 src0"), s)
 
-# `lambda x,y,z: (x*y)+z`
 def ren_10.b3(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_10.b3.put(zat.src(ar, s, self, 0, "rule 10 src0"), zat.src(ar, s, self, 1, "rule 10 src1"),
                 zat.src(ar, s, self, 2, "rule 10 src2"), s)
@@ -835,7 +804,6 @@ def ren_10.b3(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
 def vz_not_mem(op: O.Op) -> Bool:
   vz_not_mem.go(op)
 
-# THE STACK IS LIFO: `reversed` and consed, so the pop-head visits src[0] first.
 def vz_push_srcs(+srcs: List<&2, U32>, st: List<&2, VFr>) -> List<&2, VFr>:
   vz_push_srcs.go(List.reverse(&2, U32, srcs), st)
 
@@ -857,7 +825,6 @@ def vz_cs(acc: Vz) -> List<&2, Z>:
 def vz_s(acc: Vz) -> Sol:
   vz_s.go(acc)
 
-# `z3map[idx]` -- the root's own term, which is the second half of the gate: the
 def vz_term(+acc: Vz, i: U32) -> String:
   vz_term.of(Sol.find(vz_s(acc), i))
 
@@ -878,13 +845,11 @@ def bv_w.put(a: Maybe<&1, MM>, b: Maybe<&1, MM>) -> Maybe<&1, U32>:
 def bv_w(+ar: O.Arena, +s: Sol, +self: U32) -> Maybe<&1, U32>:
   bv_w.put(vz_mm(ar, s, O.Arena.src(ar, self, 0)), vz_mm(ar, s, O.Arena.src(ar, self, 1)))
 
-# ONE self-call, fuel FIRST, and the term AFTER everything that shrinks.
 def z3_shift.go(k: Nat, +is_shr: Bool, +a: Z, +b: Z, +lo: U32, +i: U32) -> Z:
   match k:
     case 0n: z3_shift.fin(a, b)
     case 1n+p: z3_shift.go(p, is_shr, z3_shift.armed(is_shr, a, b, lo, i), b, lo, U32.add(i, 1))
 
-# `create_var` -- line 53. The name is `x.arg.name` for a PARAM/BUFFER/ALLOC and
 def create_var(+s: Sol, m: Maybe<&1, MM>, is_bool: Bool, nm: String, miss: String) -> Ren:
   create_var.of(is_bool, s, m, nm, miss)
 
@@ -896,7 +861,6 @@ def ren_3_name(+ar: O.Arena, +self: U32, n: U32) -> String:
   Bool.pick(String, ren_3_defines(O.Arena.op(ar, self)), cv_arg_name(ar, self),
             cv_name(O.Arena.op(ar, self), n))
 
-# rule 4 -- `(CAST, BITCAST) + Comparison` with a FLOAT `src[0]`, "unknown
 def ren_4(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   create_var(s, vz_mm(ar, s, self), S.Dt.is_bool(vz_dt(fx, self)),
              cv_name(O.Arena.op(ar, self), Sol.n(s)), "rule 4 create_var: unknown bounds")
@@ -904,7 +868,6 @@ def ren_4(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
 def ren_5.put(+x: ZAt, +m: DtMin, +s: Sol) -> Ren:
   Bool.pick(Ren, Bool.and(DtMin.got(m), ZAt.hit(x)), ren_5.ok(x, m, s), ren_5.why(x, m, s))
 
-# `k` is 1 for `a - cdiv(a,b)*b`, 2 for `floordiv(a,b)`, 3 for
 def ren_9.b2(+k: U32, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_9.b2.put(k, zat.src(ar, s, self, 0, "rule 9 src0"), zat.src(ar, s, self, 1, "rule 9 src1"), s)
 
@@ -922,11 +885,9 @@ def ren_t3.put(+op: O.Op) -> Bool:
 def ren_t4.put(is_op: Bool, nsrc: U32, +ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
   ren_t4.put2(is_op, U32.is_ge(nsrc, 1), ar, fx, self)
 
-# BOTH ends must be int dtypes, and they are two questions, so they are two defs
 def ren_t5.put(is_op: Bool, nsrc: U32, +ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Bool.and(Bool.and(is_op, U32.is_eq(nsrc, 1)), dt_in_ints(vz_dt(fx, self))), ren_t5_x(ar, fx, self))
 
-# rule 6 -- `UPat(Ops.CONST, arg=Invalid)`
 def ren_t6(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(O.eq_op(O.Arena.op(ar, self), O.OpsCONST{}), t_invalid_arg(O.Arena.arg(ar, self)))
 
@@ -942,14 +903,12 @@ def ren_10.go(op: O.Op, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
     case O.OpsMULACC{}: ren_10.b3(ar, s, self)
     case _: Ren{s, zat.miss(ren_10.why(O.Ops.name(O.Arena.op(ar, self))))}
 
-# `x.op not in {AFTER, SHRINK, ALLOC, BUFFER} and (x.dtype in dtypes.ints +
 def vz_keep(+op: O.Op, dt: S.Dt) -> Bool:
   vz_keep.put(vz_not_mem(op), dt_kept(dt), op)
 
 def vz_step.fresh(+ar: O.Arena, +fx: F.Folded, +n: U32, rest: List<&2, VFr>, +cache: List<&2, U32>) -> VTopo:
   vz_step.keep(vz_keep(O.Arena.op(ar, n), vz_dt(fx, n)), ar, n, rest, cache)
 
-# `if node in cache: continue`, AS A BRANCH. It is `List.contains` in TAIL position because that
 def vz_step.seen(cache: List<&2, U32>, +n: U32, ar: O.Arena, +fx: F.Folded, +rest: List<&2, VFr>, +c: List<&2, U32>) -> VTopo:
   Bool.pick(VTopo, List.contains(U32, U32.is_eq, cache, n), VTopo{c, rest}, vz_step.fresh(ar, fx, n, rest, c))
 
@@ -985,11 +944,9 @@ def vz_add_mask(+acc: Vz, +m: U32) -> Vz:
 def validate_index_with_z3(sz: U32, +acc: Vz, idx: U32) -> Rep:
   Rep{sz, vz_vs(acc), cs_str(vz_cs(acc)), vz_term(acc, idx)}
 
-# `z3_shift`. `lo = max(0, src[1].vmin)`; divide or multiply by `1<<lo`; then
 def z3_shift(+is_shr: Bool, a: Z, b: Z, +lo: U32, steps: U32) -> Z:
   z3_shift.go(U32.to_nat(steps), is_shr, z3_scale(is_shr, a, z3_pow(lo)), b, lo, 0)
 
-# rule 3 -- `(PARAM, BUFFER, ALLOC, LOAD, INDEX)` -> `create_var`.
 def ren_3(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   create_var(s, vz_mm(ar, s, self), S.Dt.is_bool(vz_dt(fx, self)),
              ren_3_name(ar, self, Sol.n(s)), "rule 3 create_var: unknown bounds")
@@ -999,7 +956,6 @@ def ren_5(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   ren_5.put(zat.src(ar, s, self, 0, "rule 5 x"),
             ren_5.dmin(S.Dt.min(vz_dt(fx, self)), S.Dt.itemsize(vz_dt(fx, self))), s)
 
-# `z3.If(c, a, b)` -- three srcs, in `(cond, a, b)` order.
 def ren_9.w3(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_9.w3.put(zat.src(ar, s, self, 0, "rule 9 cond"), zat.src(ar, s, self, 1, "rule 9 a"),
                zat.src(ar, s, self, 2, "rule 9 b"), s)
@@ -1007,19 +963,15 @@ def ren_9.w3(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
 def ren_9.sh.z(is_shr: Bool, a: ZAt, b: ZAt, +r: MM) -> Z:
   z3_shift(is_shr, ZAt.t(a), ZAt.t(b), vz_max0(MM.lo(r)), z3_shift.steps(MM.hi(r), vz_max0(MM.lo(r))))
 
-# `arg=Invalid` -- `O.CInvalid` inside `O.APy`.
 def t_invalid(+ar: O.Arena, +i: U32) -> Bool:
   t_invalid.go(O.Arena.op(ar, i), O.Arena.arg(ar, i))
 
-# rule 3 -- `UPat((Ops.PARAM, Ops.BUFFER, Ops.ALLOC, Ops.LOAD, Ops.INDEX), name="x")`
 def ren_t3(+ar: O.Arena, +self: U32) -> Bool:
   ren_t3.put(O.Arena.op(ar, self))
 
-# rule 4 -- `UPat((Ops.CAST, Ops.BITCAST) + tuple(GroupOp.Comparison),
 def ren_t4(+ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
   ren_t4.put(ren_t4_op(O.Arena.op(ar, self)), O.Arena.nsrc(ar, self), ar, fx, self)
 
-# rule 5 -- `UPat(Ops.BITCAST, dtypes.ints, src=(UPat.var("x", dtypes.ints),), name="c")`
 def ren_t5(+ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
   ren_t5.put(ren_t4_op(O.Arena.op(ar, self)), O.Arena.nsrc(ar, self), ar, fx, self)
 
@@ -1043,7 +995,6 @@ def ren_9.sh.hit(is_shr: Bool, +a: ZAt, +b: ZAt, r: MM, +s: Sol) -> Ren:
 def ren_t1.put2(is_where: Bool, nsrc: U32, +ar: O.Arena, +self: U32) -> Bool:
   Bool.and(is_where, Bool.and(U32.is_eq(nsrc, 3), t_invalid(ar, O.Arena.src(ar, self, 2))))
 
-# `lo = max(0, int(vmax_of(src[1]).vmin))` and `steps = bit_len(vmax - lo)`.
 def ren_9.sh.term(is_shr: Bool, ok: Bool, +a: ZAt, +b: ZAt, r: MM, +s: Sol) -> Ren:
   Bool.pick(Ren, ok, ren_9.sh.hit(is_shr, a, b, r, s), Ren{s, zat.miss(zwhy(a, b))})
 
@@ -1053,7 +1004,6 @@ def ren_t1.put(op: O.Op, nsrc: U32, +ar: O.Arena, +self: U32) -> Bool:
 def ren_9.sh.ok2(is_shr: Bool, +a: ZAt, +b: ZAt, r: MM, +s: Sol) -> Ren:
   ren_9.sh.term(is_shr, zall(a, b), a, b, r, s)
 
-# rule 1's shape -- `UPat.var("cond").where(UPat.var("x"), UPat(Ops.CONST,
 def ren_t1(+ar: O.Arena, +self: U32) -> Bool:
   ren_t1.put(O.Arena.op(ar, self), O.Arena.nsrc(ar, self), ar, self)
 
@@ -1066,7 +1016,6 @@ def ren_tag(+ar: O.Arena, +fx: F.Folded, +self: U32) -> U32:
 def ren_9.sh.ok(is_shr: Bool, +a: ZAt, +b: ZAt, r: MM, +s: Sol) -> Ren:
   ren_9.sh.ok2(is_shr, a, b, r, s)
 
-# `lo` and the loop count both come from `src[1]`, so the `Maybe` is matched
 def ren_9.sh.go(is_shr: Bool, +a: ZAt, +b: ZAt, m: Maybe<&1, MM>, +s: Sol) -> Ren:
   match m:
     case Some{+r}: ren_9.sh.ok(is_shr, a, b, r, s)
@@ -1075,17 +1024,14 @@ def ren_9.sh.go(is_shr: Bool, +a: ZAt, +b: ZAt, m: Maybe<&1, MM>, +s: Sol) -> Re
 def ren_9.sh.put(is_shr: Bool, +a: ZAt, +b: ZAt, m: Maybe<&1, MM>, +s: Sol) -> Ren:
   ren_9.sh.go(is_shr, a, b, m, s)
 
-# `z3_shift`: `lo` and the loop count both come from `src[1]`, and one missing
 def ren_9.sh(is_shr: Bool, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_9.sh.put(is_shr, zat.src(ar, s, self, 0, "rule 9 a"), zat.src(ar, s, self, 1, "rule 9 b"),
                vz_mm(ar, s, O.Arena.src(ar, self, 1)), s)
 
-# Two bit-blast attempts, so two reads of the one `Maybe` -- hence the `Wv`
 def z3_xor(+k: U32, +w: Wv, +a: Z, +b: Z) -> Maybe<&1, Z>:
   z3_xor.m2(Z.is_b(a), z3_xor.m1(Z.num(b), a, z3_xor.wv(w, a, b, k)),
             Z.num(a), z3_xor.wv(w, a, b, k), a, b, w)
 
-# the bit-blast arm is a LEAF so the one `Maybe` read it needs is its own.
 def z3_and.bv(+w: Wv, +a: Z, +b: Z) -> Maybe<&1, Z>:
   Bool.pick(Maybe<&1, Z>, Wv.got(w), z3_and.bv2(Wv.w(w), a, b), None{})
 
@@ -1099,7 +1045,6 @@ def z3_and.pw8(+v: U32, +w: Wv, +a: Z) -> Maybe<&1, Z>:
             Some{ZSub{a, ZMod{a, ZLit{U32.sub(0, v), False{}}}}},
             z3_and.bv(w, a, ZLit{v, False{}}))
 
-# `(m := b+1) > 0 and m&(m-1) == 0` then `(m := -b) > 0 and ...`. `b+1 > 0` is
 def z3_and.pw7(+v: U32, +w: Wv, +a: Z) -> Maybe<&1, Z>:
   Bool.pick(Maybe<&1, Z>, pow2(U32.add(v, 1)),
             Some{ZMod{a, ZLit{U32.add(v, 1), False{}}}}, z3_and.pw8(v, w, a))
@@ -1115,7 +1060,6 @@ def z3_and.pw5(nb: Bool, +w: Wv, n: Maybe<&1, U32>, +a: Z) -> Maybe<&1, Z>:
 def z3_and.pw9(nb: Bool, m: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:
   z3_and.pw5(nb, wv(m), Z.num(b), a)
 
-# `if isinstance(a, z3.IntNumRef): a, b = b, a` -- then `b` is the literal.
 def wv0(w: Wv) -> Maybe<&1, U32>:
   wv0.go(w)
 
@@ -1129,7 +1073,6 @@ def z3_and.of(ab: Bool, na: Bool, nb: Bool, m: Maybe<&1, U32>, +a: Z, +b: Z) -> 
 def z3_and(m: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:
   z3_and.of(Z.is_b(a), Z.is_num(a), Z.is_num(b), m, a, b)
 
-# `w` is read in BOTH arms of the `Bool.pick` and `+` is REFUSED on a `Maybe`,
 def z3_and.pw4(nb: Bool, +w: Wv, +a: Z, +b: Z) -> Maybe<&1, Z>:
   z3_and.pw5(nb, w, Z.num(a), ZLit{0, False{}})
 
@@ -1142,7 +1085,6 @@ def ren_9.bv.aa(a: ZAt, b: ZAt, w: Wv) -> Maybe<&1, Z>:
 def ren_9.bv.oo(a: ZAt, b: ZAt, w: Wv) -> Maybe<&1, Z>:
   z3_or(wv0(w), ZAt.t(a), ZAt.t(b))
 
-# THE WIDTH IS A `Wv` HERE -- a Bool plus the value -- and each arm reads it
 def ren_9.bv.z(zero: Bool, one: Bool, +a: ZAt, +b: ZAt, +w: Wv) -> Maybe<&1, Z>:
   Bool.pick(Maybe<&1, Z>, zero, ren_9.bv.aa(a, b, w),
     Bool.pick(Maybe<&1, Z>, one, ren_9.bv.oo(a, b, w), ren_9.bv.xq(a, b, w)))
@@ -1150,7 +1092,6 @@ def ren_9.bv.z(zero: Bool, one: Bool, +a: ZAt, +b: ZAt, +w: Wv) -> Maybe<&1, Z>:
 def ren_9.bv.y(zero: Bool, one: Bool, a: ZAt, b: ZAt, m: Maybe<&1, U32>) -> Maybe<&1, Z>:
   ren_9.bv.z(zero, one, a, b, wv(m))
 
-# the three arms each read the ONE `Maybe` width, so each is its own def; the
 def ren_9.bv.k(+k: U32, a: ZAt, b: ZAt, m: Maybe<&1, U32>) -> Maybe<&1, Z>:
   ren_9.bv.y(U32.is_eq(k, bv_and()), U32.is_eq(k, bv_or()), a, b, m)
 
@@ -1160,7 +1101,6 @@ def ren_9.bv.ok(k: U32, +a: ZAt, +b: ZAt, w: Maybe<&1, U32>, +s: Sol) -> Ren:
 def ren_9.bv.put(k: U32, +a: ZAt, +b: ZAt, w: Maybe<&1, U32>, +s: Sol) -> Ren:
   Bool.pick(Ren, zall(a, b), ren_9.bv.ok(k, a, b, w, s), Ren{s, zat.miss(zwhy(a, b))})
 
-# `z3_and` / `z3_or` / `z3_xor`: a `Maybe`, because the bit-blast needs the width.
 def ren_9.bv(k: U32, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_9.bv.put(k, zat.src(ar, s, self, 0, "rule 9 src0"), zat.src(ar, s, self, 1, "rule 9 src1"),
                bv_w(ar, s, self), s)
@@ -1178,10 +1118,8 @@ def ren_9.go(op: O.Op, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
     case O.OpsXOR{}: ren_9.bv(bv_xor(), ar, s, self)
     case O.OpsSHL{}: ren_9.sh(False{}, ar, s, self)
     case O.OpsSHR{}: ren_9.sh(True{}, ar, s, self)
-    # the arm is reachable only for an op the tag ladder sent to rule 9, and a
     case _: ren_9.w3(ar, s, self)
 
-# rule 9 -- `z3_alu[x.op]`, the eleven bound-aware ops. ONE `match` on the op
 def ren_9(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_9.go(O.Arena.op(ar, self), ar, s, self)
 
@@ -1201,7 +1139,6 @@ def Rep.term(r: Rep) -> String:
   match r:
     case Rep{sz, vs, cs, term}: term
 
-# THE VIOLATION TEXT, joined by `; `. Same separator discipline as `cs_str.go`, and for the
 def vs_str.go(+vs: List<&2, String>, +acc: String, sep: String) -> String:
   match vs:
     case Nil{}: acc
@@ -1218,7 +1155,6 @@ def row(+r: Rep) -> String:
   String.concat([Rep.cs(r), " | ", Rep.term(r), " | ", vs_str(Rep.vs(r)), " | ",
                  U32.show(n_vs(Rep.vs(r)))])
 
-# the three per-field rows, and the row name is threaded through rather than repeated six times
 def dv.of.cs(+nm: String, +r: Rep) -> String:
   String.concat([nm, "_cs = ", Rep.cs(r), "\n"])
 
@@ -1241,7 +1177,6 @@ def dv.of(+nm: String, +acc: Vz, idx: U32) -> String:
 def fx_var(+ar: O.Arena, slot: U32, nm: String, dtype: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{O.ParamArg{slot, dtype, None{}, None{}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 
-# the `_min_max` entry for a fixture variable
 def mm_i(n: U32, lo: U32, hi: U32) -> List<&2, MRng>:
   [MRng{n, lo, hi}]
 
@@ -1259,7 +1194,6 @@ def fx_range(+ar: O.Arena, n: U32, ids: List<&2, U32>, at: O.AxisType) -> O.Foun
   +e = fx_const(ar, n)
   O.UOp.range_end(O.Found.ar(e), O.Found.i(e), ids, at)
 
-# --- "a RANGE(hi) `op` CONST(k)", the builder every ALU row shares.
 def dv_bin(+ar: O.Arena, op: O.Op, hi: U32, k: U32) -> O.Found:
   +r = fx_range(ar, hi, [0], O.AXIS_GLOBAL{})
   +c = fx_const(O.Found.ar(r), k)
@@ -1268,11 +1202,9 @@ def dv_bin(+ar: O.Arena, op: O.Op, hi: U32, k: U32) -> O.Found:
 def dv_and.mm2(+ar: O.Arena, +t: O.Found) -> List<&2, MRng>:
   mm_i(O.Arena.src(ar, O.Found.i(t), 0), 0, 99)
 
-# --- `n_z3_alu`: the ELEVEN keys of `z3_alu`, which is `tuple(z3_alu)`'s whole
 def n_z3_alu() -> U32:
   U32.from_nat(List.length(&2, O.Op, z3_alu_ops()))
 
-# the RANGE's `_min_max` is `(0, hi - 1)` -- `range_str`'s bound is
 def dv_and.mm(+ar: O.Arena, +t: O.Found) -> List<&2, MRng>:
   dv_and.mm2(ar, t)
 
@@ -1295,7 +1227,6 @@ def ren_2_name.go(op: O.Op, +ar: O.Arena, i: U32) -> String:
 def ren_2_name(+ar: O.Arena, +i: U32) -> String:
   ren_2_name.go(O.Arena.op(ar, i), ar, i)
 
-# rule 2 -- `(SPECIAL, RANGE)`: `x.arg` for a SPECIAL, `f"r{range_str(x)}"` for a
 def ren_2(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_2.put(zat.src(ar, s, self, 0, "rule 2 vmax"), ren_2_name(ar, self), s)
 
@@ -1327,7 +1258,6 @@ def vz_walk(todo: List<&2, U32>, +ar: O.Arena, +fx: F.Folded, +acc: Vz) -> Vz:
     case Nil{}: acc
     case u <> t: vz_walk(t, ar, fx, vz_one(ar, fx, acc, u))
 
-# `Sol{Nil{}, Nil{}, ms}` -- the min/max table is FIXTURE INPUT (upstream `UOp._min_max`,
 def vz_seed(ms: List<&2, MRng>) -> Vz:
   Vz{Sol{Nil{}, Nil{}, ms}, Nil{}}
 
@@ -1381,13 +1311,11 @@ def vz_walk_ops(nm: String, +ar: O.Arena, idx: U32, gate: U32) -> String:
   +snk: O.Found = O.UOp.sink(ar, [idx, gate])
   +a: O.Arena = O.Found.ar(snk)
   +b: String = nm
-  # LEADING newline, because `dv.of.msg` is the last field row and carries no trailing one --
   String.concat(["\n", b, "_walk = ",
                  vz_ops.go(vz_drop_sink(vz_topo(O.Arena.budget(a), a, F.folded(a),
                                                 VTopo{Nil{}, [VFr{O.Found.i(snk), False{}}]}), a, Nil{}), a, "")])
 
 def dv_where.of(+ar: O.Arena, nm: String) -> String:
-  # `+b` is a LET because the two `String.concat` arguments both read `nm` and a parameter may
   +b: String = nm
   +v = fx_var(ar, 0, "v", S.int32())
   +c8 = fx_const(O.Found.ar(v), 8)
@@ -1436,7 +1364,6 @@ def dv_bad_dtype_bitcast.of(+ar: O.Arena, nm: String) -> String:
   +g = fx_const_bool(O.Found.ar(t), True{})
   String.concat([dv2(b, t, g, Nil{}), vz_walk_ops(b, O.Found.ar(g), O.Found.i(t), O.Found.i(g))])
 
-# --- THE POSITIVE ROW, and the shortest legal index there is: `UOp.const(15)`
 def dv_const_ok() -> String:
   dv_const_ok.of(O.Arena.empty(), "dv_const_ok")
 
@@ -1451,11 +1378,9 @@ def dv_var_neg() -> String:
 def dv_range(at: O.AxisType, ids: List<&2, U32>, nm: String) -> String:
   dv_range.of(O.Arena.empty(), at, ids, nm)
 
-# --- `z3_shift` with a CONSTANT count. `lo = max(0, vmin(src[1])) = 2`, the loop
 def dv_shr2() -> String:
   dv_shr2.of(O.Arena.empty(), "dv_shr2")
 
-# --- THE CONSTRAINT ROW. `r.valid(r < 16)` is a three-src WHERE whose third src
 def dv_where() -> String:
   dv_where.of(O.Arena.empty(), "dv_where")
 
@@ -1472,7 +1397,6 @@ def dv_unsup_stack() -> String:
 def dv_unsup_two() -> String:
   dv_unsup_two.of(O.Arena.empty(), "dv_unsup_two")
 
-# --- A MISSING ARG. `Ops.SHL` with ONE src: `z3_shift` reads `x.src[1]` and
 def dv_rank_shr1() -> String:
   dv_rank_shr1.of(O.Arena.empty(), "dv_rank_shr1")
 
@@ -1509,7 +1433,6 @@ def dv_alu.of(op: O.Op, k: U32, nm: String) -> String:
 def dv_cdiv4() -> String:
   dv_alu.of(O.OpsTRUNCDIV{}, 4, "dv_cdiv4")
 
-# --- `Ops.TRUNCMOD`: `a - z3_cdiv(a,b)*b`, so its text CONTAINS `z3_cdiv`'s whole `If` plus `* b`.
 def dv_cmod4() -> String:
   dv_alu.of(O.OpsTRUNCMOD{}, 4, "dv_cmod4")
 
@@ -1517,7 +1440,6 @@ def dv_cmod4() -> String:
 def dv_floordiv4() -> String:
   dv_alu.of(O.OpsDIV{}, 4, "dv_floordiv4")
 
-# --- `Ops.MOD`: `a - z3_floordiv(a,b)*b`. This is the `k = 3` arm `Ops.MAX` was silently
 def dv_floormod4() -> String:
   dv_alu.of(O.OpsMOD{}, 4, "dv_floormod4")
 
@@ -1525,7 +1447,6 @@ def dv_floormod4() -> String:
 def dv_or21() -> String:
   dv_alu.of(O.OpsOR{}, 21, "dv_or21")
 
-# --- `z3_xor`'s BIT-BLAST arm, and the second `z3_bv` caller.
 def dv_xor21() -> String:
   dv_alu.of(O.OpsXOR{}, 21, "dv_xor21")
 
@@ -1533,24 +1454,20 @@ def dv_xor21() -> String:
 def dv_xor_m1() -> String:
   dv_alu.of(O.OpsXOR{}, 4294967295, "dv_xor_m1")
 
-# --- `Ops.SHL` with a CONSTANT count, so `z3_shift`'s `a * (1 << lo)` arm fires. It is the mirror
 def dv_shl2() -> String:
   dv_alu.of(O.OpsSHL{}, 2, "dv_shl2")
 
 def dv_max() -> String:
   dv_max.of(O.Arena.empty(), "dv_max")
 
-# `bv_w` ANSWERS `Maybe`, so the width row reads it as a `Maybe` and names the absence
 def dv_w.got(w: Maybe<&1, U32>) -> U32:
   match w:
     case Some{n}: n
     case None{}: 0
 
-# ⚠ `dv_w2` calls `dv_and.mm` rather than building its own table, so the width and the row share
 def dv_w2(+ar: O.Arena, +t: O.Found, +g: O.Found) -> U32:
   dv_w.got(bv_w(ar, Sol{Nil{}, Nil{}, dv_and.mm(O.Found.ar(g), t)}, O.Found.i(t)))
 
-# `bv_w` on a fixture-shaped arena, so the width rows and the `dv_*` rows are the SAME graph.
 def dv_w(op: O.Op, ar: O.Arena, hi: U32, k: U32) -> U32:
   +t = dv_bin(ar, op, hi, k)
   +g = fx_const_bool(O.Found.ar(t), True{})
@@ -1560,7 +1477,6 @@ def dv_w(op: O.Op, ar: O.Arena, hi: U32, k: U32) -> U32:
 def dv_and15() -> String:
   dv_and.of(O.Arena.empty(), "dv_and15", 15)
 
-# --- `z3_and`'s SECOND constant case, `x & -(2^k) = x - x % 2^k`, which is the
 def dv_and_neg4() -> String:
   dv_and.of(O.Arena.empty(), "dv_and_neg4", 4294967292)
 
@@ -1589,7 +1505,6 @@ def bv_w.ofneg() -> U32:
 #   * `arg=0` REFUSES on a scalar device, so ops.py:761 tests `is None` and not truth. The
 def c2d_pa(slot: U32, dt: S.Dt) -> O.ParamArg: O.ParamArg.of(slot, dt)
 
-# THE TUPLE-DEVICE SPELLING, `ParamArg(1, dtypes.int32, None, None, None, None, None, ('CPU',
 def c2d_pat(slot: U32, dt: S.Dt) -> O.ParamArg:
   O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{O.s5.d1(0)},
              False{}, None{}, None{}, False{}, None{}}
@@ -1600,18 +1515,19 @@ def c2d_buf(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
 def c2d_buft(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
 
-# node 4 of `s5.ga.arena()` -- uop/ops.bend:7034 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
 def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
   O.UOp.new(ar, O.OpsSHRINK{}, [src], O.ATuple{Nil{}}, O.TNone{})
 
 # `assert` is a DIFFERENT upstream behaviour from `RuntimeError` from a `raise`, and a row that
 def c2d_sig(+f: O.Found) -> String: O.s5.minted.go(O.Found.ar(f), f)
 
+# `O.ParamArg.slot` on node 4's src0 -- `s5.pa(1)`, uop/ops.bend:1480 symbol=ParamArg.slot. `ops-501-oracle.py:164`'s
 def c2d_built(+f: O.Found) -> String: String.concat(["BUILT ", c2d_sig(f)])
+# `ops-501-oracle.py:61` sets 9. The second of the four differences. `sp0` IS the
 
 def c2d_row(nm: String, v: String) -> String: String.concat([nm, " = ", v, "\n"])
+# `ParamArg.device is None` on node 4's src0. `UOp.device` (ops.py:887-899) has no SHRINK arm,
 
-# ---------------------------------------------------------------- THE IDENTITY ROWS (12)
 def c2d_arg_is_tuple(a: O.Arg) -> Bool:
   match a:
     case O.ATuple{ys}: True{}
@@ -1661,7 +1577,6 @@ def c2d_selrow_src0() -> String:
   c2d_row("c2d_selrow_src0",
           O.Ops.name(O.Arena.op(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0))))
 
-# `isinstance(node.arg, tuple)` -- ops.bend:1249's `ATuple{Nil{}}` against the `AParam` a
 def c2d_selrow_arg_is_tuple() -> String:
   c2d_row("c2d_selrow_arg_is_tuple", Bool.show(c2d_arg_is_tuple(O.Arena.arg(O.s5.ga.arena(), 4))))
 
@@ -1682,7 +1597,6 @@ def c2d_selrow_src0_device_is_none() -> String:
           Bool.show(c2d_arg_device_is_none(
             O.Arena.arg(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0)))))
 
-# node 2 -- `Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}}`, ops.bend:1295 -- so a reader sees that
 def c2d_node2_op() -> String: c2d_row("c2d_node2_op", O.Ops.name(O.Arena.op(O.s5.ga.arena(), 2)))
 
 def c2d_node2_arg_is_param() -> String:
@@ -1707,24 +1621,20 @@ def c2d_761_selrow() -> String:
   +f = O.UOp.copy_to_device(O.s5.ga.arena(), 4, Some{1}, O.s5.dn(2))
   c2d_row("c2d_761 selrow", c2d_built(f))
 
-# POSITIVE CONTROL one step away in the `arg` coordinate: the SAME node, `arg=None`. The `None`
 def c2d_761_argnone() -> String:
   +f = O.UOp.copy_to_device(O.s5.ga.arena(), 4, None{}, O.s5.dn(2))
   c2d_row("c2d_761 argnone", c2d_built(f))
 
-# POSITIVE CONTROL one step away in the `device` coordinate: the SAME op, slot, size and arg,
 def c2d_761_tupledev() -> String:
   +b = c2d_buft(O.Arena.empty(), 1, S.int32())
   +s = c2d_shr(O.Found.ar(b), O.Found.i(b))
   +f = O.UOp.copy_to_device(O.Found.ar(s), O.Found.i(s), Some{1}, O.s5.dn(2))
   c2d_row("c2d_761 tupledev", c2d_built(f))
 
-# `Some{0}` REFUSES: `arg is None` is an IDENTITY test, so a falsy index is still an index.
 def c2d_761_argzero() -> String:
   +f = O.UOp.copy_to_device(O.s5.ga.arena(), 4, Some{0}, O.s5.dn(2))
   c2d_row("c2d_761 argzero", c2d_built(f))
 
-# The fourth quadrant on the BUFFER rather than the SHRINK, so a guard that keys on the OP as
 def c2d_761_scalardevargone() -> String:
   +b = c2d_buf(O.Arena.empty(), 1, S.int32())
   +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), Some{1}, O.s5.dn(2))
@@ -1799,7 +1709,6 @@ def c2d_892_construct() -> String:
   +m = O.UOp.mselect(O.Found.ar(s), O.Found.i(s), 1)
   c2d_row("c2d_892 construct", c2d_built(m))
 
-# ---------------------------------------------------------------- THE COUNTS, WITH THEIR LOAD
 def c2d_counts() -> String:
   String.concat([
     c2d_row("c2d_fixture_n", "24"),

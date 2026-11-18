@@ -1,9 +1,10 @@
-# `UOp._min_max` (ops.py:1104-1158) IS LANDED, and the reader that joins it to
-# THE SECOND WALL is `DType.const` (tinygrad/dtype.py:79-84) for
 # weak.bend -- tinygrad/uop/weak.py: the four `PatternMatcher` tables that commit
-# `dtype.bend` is unreachable to any importer (it prints a foreign-code notice for
-# `dtype_from_uop` over a chosen src list is NOT a wall: `F.dt_shape` is `dtype_from_uop`
-# `DType.const` (tinygrad/dtype.py:79-84) is a wall for the fp8s, whose `truncate` entry
+# TWO DEPENDENCIES, measured. `dtype.bend` is unreachable to any importer (it prints a
+# `UOp._min_max` (ops.py:1104-1158) IS LANDED, and the reader that joins it to
+# SO the nine markers below that say "`commit_dtype` IS missing" ARE out of date, and the
+# AND THE FIVE READERS BELOW -- `wk_eval_int` / `wk_eval_float` / `wk_eval_bool` /
+# WHAT THE GATE HAS TO CONTAIN, because the obvious fixture proves nothing: a PARAM whose
+# THE SECOND WALL is `DType.const` (tinygrad/dtype.py:79-84) for
 
 import Base
 import ./../LAWS/spec.bend as S
@@ -18,21 +19,20 @@ def weak_cls(c: S.Cls) -> Bool:
   match c:
     case S.CWeakInt{}: True{}
     case S.CWeakFloat{}: True{}
+# `dtypes.weaks` (dtype.py:160) is `(weakint, weakfloat)`, the two members of `S.Cls`
     case _: False{}
 
 def dt_weak(d: S.Dt) -> Bool:
   weak_cls(S.Dt.cls(d))
 
-# strong_dtype -- dtype.py:169-170. weak.py calls dtype.bend's version with no defaults,
-# so they are `S.int32()`/`S.single()` here.
+# strong_dtype -- dtype.py:169-170, `{weakint: default_int, weakfloat:
 def strong_dtype.cls(cls: S.Cls, di: S.Dt, df: S.Dt, d: S.Dt) -> S.Dt:
   match cls:
     case S.CWeakInt{}: di
     case S.CWeakFloat{}: df
     case _: d
 
-# weak_dtype -- dtype.py:175-176. The predicate is load-bearing: `is_float`/`is_int` cover
-# EVERY concrete width as well, so a concrete float really does become weakfloat.
+# weak_dtype -- dtype.py:175-176, `weakfloat if is_float(dtype) else weakint if
 def weak_dtype.int(dt: S.Dt, isint: Bool) -> S.Dt:
   match isint:
     case True{}: S.weakint()
@@ -59,7 +59,6 @@ def wk_sealed(d: S.Dt) -> Bool:
     case S.Dt{11, 8, S.CFloat{}, _}: True{}     # fp8 e5m2, e5m2fnuz
     case _: False{}
 
-# `ops.bend:1895 symbol=eq_cls.sel` HAD SIX arms and was missing `CWeakFloat`, so
 def wk_eq_cls(c: S.Cls) -> U32:
   match c:
     case S.CVoid{}: 0
@@ -84,13 +83,12 @@ def wk_eq_dt.go(p: Bool, b: Bool, +x: S.Dt, +y: S.Dt) -> Bool:
 def wk_eq_dt(+x: S.Dt, +y: S.Dt) -> Bool:
   wk_eq_dt.go(U32.is_eq(S.Dt.pri(x), S.Dt.pri(y)), U32.is_eq(S.Dt.bits(x), S.Dt.bits(y)), x, y)
 
-# THE READERS. Every dtype read is a read of the FOLD, because a node's dtype is a
 
 def wk_dt(+fx: F.Folded, i: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), i), S.void())
 
-# MEASURED, the edge this file adds -- `weak.bend -> mixin/dtype.bend` -- closes NO cycle:
 # `commit_dtype` (dtype.py:16) -- `commit_int(self._uop.vmin, self._uop.vmax, default_int)
+# MEASURED, the edge this file adds -- `weak.bend -> mixin/dtype.bend` -- closes NO cycle:
 def wk_bnd_i64.of(b: F.Bnd) -> Maybe<&1, H.I64>:
   match b:
     case F.BndInt{neg, mag}: Some{H.i64_neg(neg, mag)}
@@ -129,6 +127,7 @@ def wk_eval_int(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, H.I64>:
   Bool.pick(Maybe<&1, H.I64>,
             Bool.and(D.dt_is_int(wk_dt(fx, i)),
                      wk_same(wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
+# MEASURED, because the rule is the opposite of the obvious reading of `+`: a def with a PLAIN
                              wk_bnd_i64(F.UOp.vmax(F.Folded.ar(fx), bt, i)))),
             wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
             None{})
@@ -148,8 +147,7 @@ def wk_eval_bool(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, H.I64>:
                              wk_bnd_i64(F.UOp.vmax(F.Folded.ar(fx), bt, i)))),
             wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
             None{})
-# `UOp.is_virtual` -- ops.py:902. `self.device is None or self.dtype in dtypes.weaks`, which
-# THE NESTED Maybe IS NOT A TYPO. `F.fold.device` answers `Maybe<Maybe<Dev>>` -- the outer is
+# `UOp.is_virtual` -- ops.py:902. `self.device is None or self.dtype in dtypes.weaks`, which is
 def no_dev(m: Maybe<&2, Maybe<&2, S.Dev>>) -> Bool:
   match m:
     case Some{s}:
@@ -158,6 +156,7 @@ def no_dev(m: Maybe<&2, Maybe<&2, S.Dev>>) -> Bool:
         case _: True{}
     case _: True{}
 
+# `UOp.param` -- ops.py:1229, THE SHAPE-LESS ARM. The THIRD def to arrive here rather than in
 def wk_is_virtual(+fx: F.Folded, +i: U32) -> Bool:
   Bool.or(no_dev(F.fold.device(F.Folded.ar(fx), F.Folded.t(fx), i)),
           D.md_weak(wk_dt(fx, i)))
@@ -167,7 +166,6 @@ def wk_is_virtual(+fx: F.Folded, +i: U32) -> Bool:
 def wk_param_noshape(+ar: O.Arena, slot: U32, +dt: S.Dt, vmm: Maybe<&2, O.PyRange>) -> Maybe<&1, O.Found>:
   Bool.pick(Maybe<&1, O.Found>, Bool.not(D.md_weak(dt)),            Some{O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{O.ParamArg{slot, dt, vmm, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})},            None{})
 
-# `S.int32()` IS CPython'S `default_int=None` SET TO int32, which is what
 def wk_commit_dtype(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, S.Dt>:
   D.commit_dtype(wk_dt(fx, i),
     wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
@@ -207,12 +205,11 @@ def wk_dt_list.go(+fx: F.Folded, ss: List<&2, U32>, acc: List<&2, S.Dt>) -> List
 def wk_dt_list(+fx: F.Folded, ss: List<&2, U32>) -> List<&2, S.Dt>:
   wk_dt_list.go(fx, ss, Nil{})
 
-# AGAINST UPSTREAM's `promo_dtype` INSTEAD OF THE PORT's.
 # promo_dtype -- ops.py:120, which the port hoisted into `fold.bend`.
+# AGAINST UPSTREAM's `promo_dtype` INSTEAD OF THE PORT's.
 def wk_meet(+fx: F.Folded, ss: List<&2, U32>) -> S.Dt:
   F.promo_dtype(wk_dt_list(fx, ss))
 
-# `any(...)` over the srcs, as a fold with the answer THREADED, so the walk stays one
 def wk_any_weak.go(+fx: F.Folded, ss: List<&2, U32>, acc: Bool) -> Bool:
   match ss:
     case Nil{}: acc
@@ -229,7 +226,6 @@ def wk_any_weak_const.go(+fx: F.Folded, ss: List<&2, U32>, acc: Bool) -> Bool:
 def wk_any_weak_const(+fx: F.Folded, ss: List<&2, U32>) -> Bool:
   wk_any_weak_const.go(fx, ss, False{})
 
-# `wk_ready`: "the fold has answered this node and every src a rule would read". One
 def wk_ready.go(+fx: F.Folded, ss: List<&2, U32>, acc: Bool) -> Bool:
   match ss:
     case Nil{}: acc
@@ -238,7 +234,6 @@ def wk_ready.go(+fx: F.Folded, ss: List<&2, U32>, acc: Bool) -> Bool:
 def wk_ready(+fx: F.Folded, +self: U32) -> Bool:
   wk_ready.go(fx, wk_srcs(fx, self), wk_known(fx, self))
 
-# `dtype_from_uop` OVER A CHOSEN src LIST. `F.fold.shape`/`device`/`addr` answer
 
 def wk_shape_of(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Maybe<&2, List<&2, O.Sint>>:
   match m:
@@ -266,6 +261,8 @@ def wk_derived(+fx: F.Folded, +i: U32) -> F.Derived:
     Maybe.default(&1, U32, F.fold.base(F.Folded.ar(fx), F.Folded.t(fx), i), 0),
     Maybe.default(&1, U32, F.fold.unbase(F.Folded.ar(fx), F.Folded.t(fx), i), 0),
     Maybe.default(&1, U32, F.fold.sbase(F.Folded.ar(fx), F.Folded.t(fx), i), 0),
+# `DType.const` -- dtype.py:79-84.
+# term collapsed to 0 and the answer became `U32.to_f32(lo)` alone. MEASURED: -1 and -2 BOTH
     wk_ended_of(F.fold.ended(F.Folded.ar(fx), F.Folded.t(fx), i))}
 
 def wk_deriveds.go(+fx: F.Folded, ss: List<&2, U32>, acc: List<&2, F.Derived>) -> List<&2, F.Derived>:
@@ -290,11 +287,9 @@ def wk_dtype_at(+fx: F.Folded, +self: U32, dss: List<&2, F.Derived>) -> Maybe<&2
 def wk_i64_to_f32.c0(lo: U32) -> F32: U32.to_f32(U32.and(lo, 16777215))
 
 def wk_i64_to_f32.c1(hi: U32, lo: U32) -> F32:
-# bits 24..47: the low 8 from `lo`'s top byte and the high 16 from `hi`'s bottom half.
   U32.to_f32(U32.or(U32.and(U32.shrn(lo, 24n), 255), U32.shln(U32.and(hi, 65535), 8n)))
 
 def wk_i64_to_f32.c2(hi: U32) -> F32:
-# bits 48..63: the top half of `hi`, 16 bits.
   U32.to_f32(U32.and(U32.shrn(hi, 16n), 65535))
 
 def wk_i64_to_f32.hi(+hi: U32, +lo: U32) -> F32:
@@ -313,7 +308,6 @@ def wk_i64_to_f32.go(+neg: Bool, +x: H.I64) -> F32:
 def wk_i64_to_f32(+x: H.I64) -> F32:
   wk_i64_to_f32.go(H.i64_is_neg(x), x)
 
-# `float(val)`: the identity `truncate.get(self, float)` for every unsealed float.
 def wk_dt_const.fpure(v: O.Const) -> O.Const:
   match v:
     case O.CInvalid{}: O.CInvalid{}
@@ -335,7 +329,6 @@ def wk_dt_const.int(v: O.Const) -> Maybe<&1, O.Const>:
     case O.CInt{i}: Some{O.CInt{i}}
     case O.CFloat{f}: Some{O.CInt{H.i64_of_i32(F32.to_u32(F32.trunc(f)))}}
 
-# `ConstFloat(truncate...) if is_float else bool(val) if is_bool else int(val)`.
 def wk_dt_const.sealed_pick.go(sealed: Bool, v: O.Const) -> Maybe<&1, O.Const>:
   match sealed:
     case True{}: None{}
@@ -354,7 +347,6 @@ def wk_dt_const.cls(cls: S.Cls, dt: S.Dt, v: O.Const) -> Maybe<&1, O.Const>:
 def wk_dt_const(+dt: S.Dt, v: O.Const) -> Maybe<&1, O.Const>:
   wk_dt_const.cls(S.Dt.cls(dt), dt, v)
 
-# `wk_blocked`: this rule wants a `dt.const` at a sealed dtype. `bare` is
 def wk_blocked.of(sealed: Bool, bare: Bool, ss: List<&2, U32>, +fx: F.Folded) -> Bool:
   match sealed:
     case True{}: Bool.or(Bool.not(bare), wk_any_weak_const(fx, ss))
@@ -363,7 +355,6 @@ def wk_blocked.of(sealed: Bool, bare: Bool, ss: List<&2, U32>, +fx: F.Folded) ->
 def wk_blocked(+fx: F.Folded, dt: S.Dt, bare: Bool, ss: List<&2, U32>) -> Bool:
   wk_blocked.of(wk_sealed(dt), bare, ss, fx)
 
-# THE walks that grow the arena. `Walk` is a `Data` record because a rule may read the
 
 type Walk is Data:
   Walk{ar: O.Arena, srcs: List<&2, U32>}
@@ -385,18 +376,15 @@ def walk_step(w: Walk, +hit: O.Found) -> Walk:
 def walk_keep(+w: Walk, s: U32) -> Walk:
   Walk{Walk.ar(w), List.append(&2, U32, Walk.srcs(w), [s])}
 
-# THE NODE BUILDERS. `UOp.replace` IS the hash-consing constructor `UOp(op, src=..., kwargs)`,
 def replace_in(+ar: O.Arena, +self: U32, +src: List<&2, U32>) -> O.Found:
   O.UOp.new(ar, O.Arena.op(ar, self), src, O.Arena.arg(ar, self), O.Arena.tag(ar, self))
 
-# TWO spellings, AND the difference is LOAD-BEARING. A walk that made nodes carries a GROWN
 def wk_replace(+fx: F.Folded, +self: U32, +src: List<&2, U32>) -> O.Found:
   replace_in(F.Folded.ar(fx), self, src)
 
 def replace_walk(+w: Walk, +fx: F.Folded, +self: U32) -> O.Found:
   replace_in(Walk.ar(w), self, Walk.srcs(w))
 
-# A `Maybe` this file can answer, because `wk_blocked` has already refused the sealed
 def wk_const_of.pick(m: Maybe<&1, O.Const>) -> O.Const:
   match m:
     case Some{c}: c
@@ -412,6 +400,7 @@ def wk_cast_at.of(same: Bool, +fx: F.Folded, self: U32, +dt: S.Dt) -> O.Found:
     case False{}: O.UOp.new(F.Folded.ar(fx), O.OpsCAST{}, [self], O.ADt{dt}, O.TNone{})
 
 def wk_cast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
+# ops.py:632-638 `UOp.const`: `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`
   wk_cast_at.of(wk_eq_dt(wk_dt(fx, self), dt), fx, self, dt)
 
 # ops.py:632-638 `UOp.const`: `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)` -- the
@@ -435,9 +424,12 @@ def wk_ccast.of(isconst: Bool, +fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   wk_ccast.of(O.eq_op(O.Arena.op(F.Folded.ar(fx), self), O.OpsCONST{}), fx, self, dt)
 
-# WHY it lives here and not in `mixin/elementwise.bend`. `tensor.bend` NEEDS it, and that is
-# not a preference. CPython's `self.eq(inf)` runs `_broadcasted`'s `promote`
-# (elementwise.py:29-31), whose weak-CONST arm IS `remint`. So `self.eq(+inf)` REMINTS
+# `remint` -- elementwise.py:12.
+# (elementwise.py:29-31), whose weak-CONST arm IS `remint` -- "keep weak CONST weak, might
+# MEASURED, `.venv/bin/python` on `Tensor(UOp(Ops.CONST, arg=4)).isfinite()`: 15 nodes, five
+# this move does not otherwise touch. MEASURED with `grep -rn
+# `gates/ew-explog-gate.py:37`'s `ew_const_bare` is prose.
+# ops.py:637 says it: ".cast folds away at exactly the dtypes a CONST derives
 def wk_remint.folds(dt: S.Dt) -> Bool:
   match dt:
     case S.Dt{pri, bits, S.CWeakInt{}, nm}: True{}
@@ -455,18 +447,14 @@ def wk_remint.cast(+ar: O.Arena, u: U32, +dt: S.Dt) -> O.Found:
   v = wk_const_of(wk_dt_const(dt, wk_ccast.val(F.folded(ar), u)))
   wk_remint.mkconst(wk_remint.folds(dt), dt, O.UOp.new(ar, O.OpsCONST{}, Nil{}, O.APy{v}, O.TNone{}))
 
-# what put a four-deep `replace` chain in `tn_isfinite`'s graph (MEASURED: 18 nodes, four
-# `u.op is Ops.CONST` -- the leaf test, and THE TOP-LEVEL ONE ONLY. The recursive arm tests
 # `u.src[0]`'s op and that is a DIFFERENT question: merging the two into one predicate is
+# what put a four-deep `replace` chain in `tn_isfinite`'s graph (MEASURED: 18 nodes, four
 def wk_remint.isc(+ar: O.Arena, u: U32) -> Bool:
   O.eq_op(O.Arena.op(ar, u), O.OpsCONST{})
 
-# `u.replace(src=(...)+u.src[1:])`. The tail is `O.Arena.src_from(ar, u, 1)`, NOT
-# AND THE STORE IS `child`'s, NOT `ar`'s. The recursive call that produced `child` may have
 def wk_remint.put(+child: O.Found, +ar: O.Arena, +u: U32) -> O.Found:
   replace_in(O.Found.ar(child), u, List.append(&2, U32, [O.Found.i(child)], O.Arena.src_from(ar, u, 1)))
 
-# It recurses on `u.src[0]` and it GROWS the arena, so it is one self-recursive def with the
 def wk_remint.go(fuel: Nat, isc: Bool, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
   match fuel isc:
     case 0n _        : O.Found{ar, u}
@@ -476,7 +464,6 @@ def wk_remint.go(fuel: Nat, isc: Bool, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Fo
 def wk_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
   wk_remint.go(fuel, wk_remint.isc(ar, u), ar, u, dt)
 
-# THE PYTHON, in weak.py's order. Every rule body here is `(Folded, U32) ->
 
 type Dts is Data:
   Dts{dts_some: Bool, meet: S.Dt, result: S.Dt}
@@ -508,12 +495,11 @@ def derived_dtypes(+fx: F.Folded, +self: U32, +ss: List<&2, U32>) -> Dts:
     wk_meet(fx, ss),
     wk_dtype_at(fx, self, wk_deriveds(fx, ss)))
 
-# `UOp.const(dt.const(s.val))` -- the bare CONST with NO dtype, so no CAST on top.
 def wk_bare_const(+fx: F.Folded, +s: U32, +dt: S.Dt) -> O.Found:
   O.UOp.const(F.Folded.ar(fx), wk_const_of(wk_dt_const(dt, wk_ccast.val(fx, s))))
 
-# THE ROOT RE-DERIVES. weak.py:18 -- a shift's dtype is its lhs's dtype, so committing the
-#   bare = derived_dtypes(u, u.src) is not None
+# commit_srcs_at -- weak.py:16-20.
+# THE ROOT RE-DERIVES. weak.py:18 -- a shift's dtype is its lhs's dtype, so
 
 def commit_srcs_at.bare(isbare: Bool, w: Walk, +s: U32, +fx: F.Folded, +dt: S.Dt) -> Walk:
   match isbare:
@@ -556,8 +542,9 @@ def commit_srcs_at.ans(+dts: Dts, +fx: F.Folded, +self: U32, +ss: List<&2, U32>,
 def commit_srcs_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> Maybe<&2, O.Found>:
   commit_srcs_at.ans(derived_dtypes(fx, self, wk_srcs(fx, self)), fx, self, wk_srcs(fx, self), dt)
 
+# commit_weak_srcs -- weak.py:22-24.
 # The meet is `promo_dtype(src)` verbatim (ops.py:120 is `least_upper_dtype` over the
-#   if not any(s.dtype in dtypes.weaks for s in u.src) or
+# operand dtypes), so `wk_meet` is dtype.py:193 through `fold.bend`.
 
 def commit_weak_srcs.bad(+fx: F.Folded, +ss: List<&2, U32>) -> Bool:
   Bool.or(Bool.not(wk_any_weak(fx, ss)), dt_weak(wk_meet(fx, ss)))
@@ -570,9 +557,6 @@ def commit_weak_srcs.ans(bad: Bool, +fx: F.Folded, +self: U32, +ss: List<&2, U32
 def commit_weak_srcs(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
   commit_weak_srcs.ans(commit_weak_srcs.bad(fx, wk_srcs(fx, self)), fx, self, wk_srcs(fx, self))
 
-# A PURE walk: dropping a CAST names `s.src[0]`, which is already in the arena, so no node
-# is made and no accumulator is needed. And the predicate a weak CAST over a const is not
-# a commit, it is still resolving -- so the drop is allowed.
 # uncast_const -- weak.py:80-87.
 
 def uncast_const.hit(+fx: F.Folded, +s: U32) -> Bool:
@@ -613,8 +597,8 @@ def uncast_const(+src: List<&2, U32>, +fx: F.Folded, +self: U32, +ss: List<&2, U
 def uncast_const_fx(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
   uncast_const(uncast_const.walk(fx, wk_srcs(fx, self)), fx, self, wk_srcs(fx, self))
 
-# caller (`cast_consts`, weak.py:94) is behind `_min_max`, so it has no caller in this
 # commit_weak_consts -- weak.py:7-8. The FIRST def in weak.py, and the only one whose
+# caller (`cast_consts`, weak.py:94) is behind `_min_max`, so it has no caller in this
 
 type ODt is Data:
   ODt{od_some: Bool, od_dt: S.Dt}
@@ -655,10 +639,6 @@ def commit_weak_consts.walked(some: Bool, dt: ODt, +fx: F.Folded, +self: U32, +s
     case True{}: replace_walk(commit_weak_consts.go(ss, walk_seed(F.Folded.ar(fx)), fx, ODt.dt(dt)), fx, self)
     case False{}: O.Found{F.Folded.ar(fx), self}
 
-# NOTE the pattern is `src=(UPat(), UPat(dtype=dtypes.weaks), ...)`, so the pattern REQUIRES
-# the src to be weak; the body then commits it at src[0]'s dtype, and a weak CONST src that
-# is already there is the no-op Python's own hash-consing produces. The pattern's first src
-# is a bare `UPat`, so `early_reject` is empty.
 # THE pm_commit_weak RULE 1 LAMBDA -- weak.py:37-38, the one rule here with no def of its
 
 def wk_store_cast.bad.of(sealed: Bool, isconst: Bool) -> Bool:
@@ -682,6 +662,8 @@ def wk_store_cast.hit(bad: Bool, +hit: O.Found, +fx: F.Folded, +self: U32, +dt: 
 # grew and not in the fold's own.
 def wk_store_cast.ans(bad: Bool, +fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
   wk_store_cast.hit(bad, wk_ccast(fx, wk_src1(fx, self), wk_dt(fx, wk_src0(fx, self))),
+# `early_reject`, which ops.py:1609 reads as `if not rej.issubset(ler): continue` -- a
+# (tinygrad/uop/__init__.py:110).
     fx, self, wk_dt(fx, wk_src0(fx, self)))
 
 def wk_store_cast(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
@@ -694,18 +676,13 @@ def OP_BC() -> List<&2, O.Op>:
    O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsDIV{},
    O.OpsMOD{}, O.OpsWHERE{}, O.OpsMULACC{}]
 
-# no CONST arm: a concrete CAST over a weak CONST is already committed, minted that way by
-# UOp.const
 # pm_commit_weak -- weak.py:35-41. THREE rules in Python; TWO here. It rides every round
 def wk_commit_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, OP_BC(),        Nil{}},   # 36  commit_weak_srcs
     O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]}  # 38  the STORE lambda
-# _lower_weak_ops -- weak.py:45, PORTED. It is a MODULE CONSTANT and the only
 # TODO(p3) weak.py:40  pm_commit_weak rule 2 -- (UPat(Ops.CAST, src=(UPat(GroupOp.ALU, dtype=dtypes.weaks,
-#   name="u"),), name="c"), cast_weak_srcs) -- `cast_weak_srcs` reads
-#   `u.commit_dtype(dtypes.i32)` and `s.commit_dtype(dtypes.i32)`, which is
-#   `commit_int(vmin, vmax)`, which is `UOp._min_max`. See the TODO on that def.
+# _lower_weak_ops -- weak.py:45, PORTED. It is a MODULE CONSTANT and the only
 def LOWER_OPS() -> List<&2, O.Op>:
   [O.OpsADD{}, O.OpsMUL{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{},
    O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsOR{},
@@ -717,7 +694,6 @@ def LOWER_OPS() -> List<&2, O.Op>:
 def wk_uncast_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, OP_BC(), Nil{}}]}   # 89
 
-# THE DRIVER. A rule answers `Maybe<&2, Found>`, and `Found` is ops.bend's arena-and-index
 
 def wk_keep.take(acc: Maybe<&2, O.Found>, v: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match acc:
@@ -765,7 +741,6 @@ def wk_scan(+ts: O.PMEntrys, +which: Bool, +fx: F.Folded, +self: U32, todo: List
     case Nil{}: acc
     case e <> t: wk_scan(ts, which, fx, self, t, wk_keep(acc, wk_try(ts, which, fx, self, e)))
 
-# `pm_<name>.rewrite`. `wk_ready` is Python's `None` for a node the fold could not answer,
 def pm_go(ready: Bool, m: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match ready:
     case True{}: m

@@ -1,17 +1,18 @@
-# symbolic.bend -- tinygrad/uop/symbolic.py. The REWRITER: four rule tables, the
-# THE INVENTORY, def by def, against upstream's 475 Python lines. The state column is a
+# symbolic.bend -- tinygrad/uop/symbolic.py. The REWRITER: four rule tables,
+# THE INVENTORY, def by def: 475 Python lines, and the honest question is not
 #   #  PY      KIND                  STATE
-#   1  16      fold  simplify_pow        PARTIAL  (the int arms; the half exponent needs
-#                                            an F32<->I64 compare helpers.bend cannot
-#                                            express)
-#   2  23      fold  fold_bitcast        PORTED   (truncate reaches only the six dtypes
-#                                            Bend can state -- see below)
-#   3  29      fold  fold_const_alu      PORTED   (exec_alu over U32 and F32)
-#   4  31      fold  _quotient_base      PORTED   (index arithmetic + pop_const)
-#   5  43      fold  fold_add_divmod_recombine  MISSING. This line said PORTED and there is
-#                                             NO `def fold_add_divmod_recombine`: the census
-#                                             lists it MISSING and `symclosure-gate` counts it
-#                                             among `bodies.absent`. MEASURED 2026-11-03.
+# three lines above used to say `DEFERRED` about work that is done, and this inventory is the map
+# what the last pass found, and two of the three are not walls.
+# THE THREE WALLS, measured against the substrate rather than guessed.
+# 1. `exec_alu` over a closed alu tree: yes, for `U32` and `F32`, and the overflow
+# the first-wins FOLD and the `ret is not uop` test. ops.py:1605 is
+# `early_reject` IS A NECESSARY CONDITION, not a veto: ops.py:1604 is
+# the name-rebind rule. a pattern that binds one name twice within a single SRC
+# and the header used to say "four are here and all four are LOAD-bearing", and two of
+# and the fourth was `sym_132`, and it IS DELETED NOW (2026-11-11) -- - AND IT
+# and that is correct, because upstream deleted the rule. measured: upstream's
+# and a dead rule cannot go red, which is the limit this lane has to state plainly: the
+# the `UPat.any` case is safe and stays a disjunction. symbolic.py:183 -- upstream's
 
 import Base
 import ./../helpers.bend as H
@@ -24,7 +25,6 @@ import ./weak.bend as W
 import ./movement.bend as M
 import ./../codegen/decomp/transcendental.bend as T
 
-# THE PRELUDE. Everything symbolic.py GETS FROM ELSEWHERE, in dependency order,
 def sy_ar(x: F.Folded) -> O.Arena: F.Folded.ar(x)
 
 def sy_tb(x: F.Folded) -> F.Table: F.Folded.t(x)
@@ -88,7 +88,6 @@ def sy_src_is_op(+x: F.Folded, +u: U32, n: U32, want: O.Op) -> Bool:
 
 # the two-scrutinee group tests, as op sets. `GroupOp.Unary - {CAST, BITCAST}` and
 def OP_CASTS() -> List<&2, O.Op>: [O.OpsCAST{}, O.OpsBITCAST{}]
-# `GroupOp.Unary` -- NINE ops, and `GroupOp.Unary|{Ops.CAST, Ops.BITCAST}` IS
 def OP_UNARY() -> List<&2, O.Op>:
   [O.OpsCAST{}, O.OpsBITCAST{}, O.OpsNEG{}, O.OpsRECIP{}, O.OpsEXP2{},
    O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsTRUNC{}]
@@ -180,7 +179,6 @@ def sy_val_truthy.go(m: Maybe<&2, O.Const>) -> Bool:
 
 def sy_val_truthy(+x: F.Folded, +u: U32) -> Bool: sy_val_truthy.go(sy_val(x, u))
 
-# THE DEFAULT VALUE OF A `Maybe<&1, O.Const>`, used where a `Data` record cannot
 def sy_maybe_c2(m: Maybe<&2, O.Const>) -> O.Const:
   match m:
     case Some{v}: v
@@ -191,7 +189,6 @@ def sy_maybe_c(m: Maybe<&1, O.Const>) -> O.Const:
     case Some{v}: v
     case None{}: O.CInt{H.i64_of_i32(0)}
 
-# THE I64 -> U32 BIT PATTERN, and back. `H.i64_of_i32` sign-extends, so for a
 def i64_bits(i: H.I64) -> U32: H.lo32(i)
 
 # `truncate` -- dtype.py:297, and the table is where `exec_alu` and `const_like`
@@ -222,7 +219,6 @@ def sy_trunc(dt: S.Dt, v: O.Const) -> Maybe<&1, O.Const>:
     case S.Dt{_, 64, S.CUint{}, _}: Some{v}
     case _: None{}
 
-# THE DTYPE A CONST'S VALUE DERIVES, which is `fold.bend`'s `cconst_dt` and is
 def sy_needs_cast(dt: S.Dt, v: O.Const) -> Bool:
   match v:
     case O.CInvalid{}: Bool.not(O.eq_dt(dt, S.boolean()))
@@ -230,7 +226,6 @@ def sy_needs_cast(dt: S.Dt, v: O.Const) -> Bool:
     case O.CInt{i}: Bool.not(O.eq_dt(dt, S.weakint()))
     case O.CFloat{f}: Bool.not(O.eq_dt(dt, S.weakfloat()))
 
-# THE UOP SUGAR, and this is where the operator-layer wall lands. What is missing
 def sy_alu1(ar: O.Arena, op: O.Op, x: U32) -> U32:
   O.Found.i(O.UOp.alu(ar, op, [x]))
 
@@ -474,7 +469,6 @@ def sy_const_arg.go(fuel: Nat, is_stack: Bool, m: Maybe<&2, O.Const>) -> Maybe<&
 def sy_const_arg(+x: F.Folded, +u: U32) -> Maybe<&2, O.Const>:
   sy_const_arg.go(U32.to_nat(O.Arena.next(sy_ar(x))), sy_is_op(x, u, O.OpsSTACK{}), sy_val(x, u))
 
-# THE TWO LANES, and each is a `Data` record because Bend has no tuple and no
 type I3 is Data:
   I3{n: U32, a: U32, b: U32, c: U32}
 
@@ -485,7 +479,6 @@ def I3.a(+o: I3) -> U32:
 type F3 is Data:
   F3{n: U32, a: F32, b: F32, c: F32}
 
-# THE INT LANE. `U32.add/sub/mul` wrap mod 2^32, which IS int32 and uint32 wrap;
 def i32_lt(uns: Bool, +x: U32, +y: U32) -> Bool:
   Bool.pick(Bool, uns, U32.is_lt(x, y), Cmp.is_lt(H.i64_cmp(H.i64_of_i32(x), H.i64_of_i32(y))))
 
@@ -512,7 +505,6 @@ def i32_cdiv(uns: Bool, +x: U32, +y: U32) -> U32:
 def i32_cmod(uns: Bool, +x: U32, +y: U32) -> U32:
   Bool.pick(U32, uns, H.cmod_u32(x, y), H.cmod_i32(x, y))
 
-# `operator.rshift` is an ARITHMETIC shift for a negative int and Bend's two
 def i32_shr(uns: Bool, +x: U32, +n: U32) -> U32:
   Bool.pick(U32, uns, U32.shrn(x, U32.to_nat(n)), H.asr(x, U32.to_nat(n)))
 
@@ -525,16 +517,13 @@ def i32_shl.big(big: Bool) -> Maybe<&1, U32>:
 def i32_shl(+big: Bool, x: U32, n: U32) -> Maybe<&1, U32>:
   Bool.pick(Maybe<&1, U32>, big, i32_shl.big(big), Some{U32.shln(x, U32.to_nat(n))})
 
-# THE ANSWER OF THE INTEGER LANE. `O.Const` and its `CInt` live in `O`, so a
 def i32_const.of(i: H.I64) -> O.Const: O.CInt{i}
 
 def i32_const(v: U32) -> O.Const: i32_const.of(H.i64_of_i32(v))
 
-# THE ZERO-EXTENSION, and it is the one that matters: `H.i64_of_hi_lo(0, v)` is a
 def i64_of_c(uns: Bool, +v: U32) -> O.Const:
   Bool.pick(O.Const, uns, i32_const.of(H.i64_of_hi_lo(0, v)), i32_const(v))
 
-# A COMPARISON answers a Python `bool`, and with `truncate_output=False` that
 def sy_bool_c(b: Bool) -> O.Const: O.CBool{b}
 
 def sy_trunc_i(uns: Bool, m: Maybe<&1, U32>) -> Maybe<&1, O.Const>:
@@ -596,7 +585,6 @@ def op_is_div(op: O.Op) -> Bool:
 def op_is_bit(op: O.Op) -> Bool:
   O.op_in([O.OpsAND{}, O.OpsOR{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}], op)
 
-# THE INTEGER LADDER, and it is a chain of `Bool.pick` rather than a `match` on
 def exec_alu_i32(+uns: Bool, +op: O.Op, +o: I3) -> Maybe<&1, O.Const>:
   Bool.pick(Maybe<&1, O.Const>, O.eq_op(op, O.OpsNEG{}), exec_alu_i32.neg(uns, o),
     Bool.pick(Maybe<&1, O.Const>, O.eq_op(op, O.OpsWHERE{}), exec_alu_i32.where(uns, o),
@@ -606,23 +594,18 @@ def exec_alu_i32(+uns: Bool, +op: O.Op, +o: I3) -> Maybe<&1, O.Const>:
             Bool.pick(Maybe<&1, O.Const>, op_is_bit(op), exec_alu_i32.bit(uns, op, o),
               exec_alu_i32.arith(uns, op, o)))))))
 
-# THE FLOAT LANE, over `F32`. F32 arithmetic is a native intrinsic in Bend, so
 def f32_inf() -> F32: F32.div(1.0, 0.0)
 
 def f32_nan() -> F32: F32.sub(f32_inf(), f32_inf())
 
-# `1/x if x != 0 else math.copysign(math.inf, x)` IS `F32.div(1.0, x)`: IEEE gives
 def f32_recip(x: F32) -> F32: F32.div(1.0, x)
 
-# `math.log2(x) if x > 0 else -inf if x == 0 else nan`, kept in Python's reading
 def f32_log2(+x: F32) -> F32:
   Bool.pick(F32, F32.is_gt(x, 0.0), F32.log2(x),
     Bool.pick(F32, F32.is_eq(x, 0.0), F32.neg(f32_inf()), f32_nan()))
 
-# `safe_exp2(x) = 2  x`, and the `except OverflowError: math.inf` is what
 def f32_exp2(x: F32) -> F32: F32.pow(2.0, x)
 
-# `safe_pow`, and THE DIVERGENCE: Python raises ValueError for a negative base with
 def f32_pow(x: F32, y: F32) -> F32: F32.pow(x, y)
 
 def f32_sin(+x: F32) -> F32: Bool.pick(F32, H.f32_is_finite(x), F32.sin(x), f32_nan())
@@ -687,7 +670,6 @@ def exec_alu_f32(+op: O.Op, +n: U32, +a: F32, +b: F32, c: F32) -> Maybe<&1, O.Co
       exec_alu_f32.tern(op, a, b, c),
       exec_alu_f32.arith(op, a, b)))
 
-# THE LANE SELECTOR. `python_alu[op](*operands)` is a PYTHON-NUMBER operation, so
 def i64_big(+i: H.I64) -> Bool:
   Bool.or(H.i64_is_neg(i), Cmp.is_ge(H.i64_cmp(i, H.i64_of_i32(2147483647))))
 
@@ -744,7 +726,6 @@ def exec_alu.poison2(op: O.Op, a: O.Const, b: O.Const) -> Bool:
 def exec_alu.poison3(op: O.Op, a: O.Const, b: O.Const, c: O.Const) -> Bool:
   Bool.and(O.GroupOp.binary(op), Bool.or(sy_is_invalid_c(a), Bool.or(sy_is_invalid_c(b), sy_is_invalid_c(c))))
 
-# the three facts one operand carries, as a `Data` record because a `Maybe<F32>` is
 type Opr is Data:
   Opr{fits: Bool, bits: U32, f: F32}
 
@@ -798,7 +779,6 @@ def exec_alu3(+op: O.Op, +dt: S.Dt, +a: O.Const, +b: O.Const, +c: O.Const, trunc
 # symbolic.py:63-68 spells out. Invalid poisons the value: ops move inside the gate
 def p_invalid(+x: F.Folded, +u: U32) -> Bool: sy_is_invalid_const(x, u)
 
-# `invalid_gate` -- `UPat.var("cond").where(UPat.var("x"), invalid_pat)`, which is
 def p_gate(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)), sy_is_invalid(x, sy_src2(x, u)))
 
@@ -817,7 +797,6 @@ def all_const.go(srcs: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
 
 def all_const(+x: F.Folded, srcs: List<&2, U32>) -> Bool: all_const.go(srcs, x, True{})
 
-# the two const spellings: Invalid carries no width, so it rides bare inside either.
 def p_bare_const(+x: F.Folded, +u: U32) -> Bool:
   Bool.or(sy_is_op(x, u, O.OpsCONST{}), Bool.and(sy_is_op(x, u, O.OpsSTACK{}), all_const(x, sy_srcs(x, u))))
 
@@ -836,7 +815,6 @@ def all_cast_or_bad.go(srcs: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
 def all_cast_or_bad(+x: F.Folded, srcs: List<&2, U32>) -> Bool:
   all_cast_or_bad.go(srcs, x, True{})
 
-# `casted_const` -- `UPat.any(p:=UPat(Ops.CAST, src=(UPat(Ops.CONST),)),
 def p_casted_const(+x: F.Folded, +u: U32) -> Bool:
   Bool.or(is_cast_const(x, u), Bool.and(sy_is_op(x, u, O.OpsSTACK{}), all_cast_or_bad(x, sy_srcs(x, u))))
 
@@ -851,7 +829,6 @@ def p_all_casted(+x: F.Folded, u: U32) -> Bool: p_all_casted.go(sy_srcs(x, u), x
 # is the rebind check and it is LOAD-BEARING (header).
 def p_same(a: U32, b: U32) -> Bool: U32.is_eq(a, b)
 
-# THE SRC THAT IS NOT THE CONST, which is what every self-folding rule returns.
 def p_nconst(+x: F.Folded, u: U32) -> U32:
   Bool.pick(U32, sy_is_op(x, sy_src0(x, u), O.OpsCONST{}), 1, 0)
 
@@ -965,7 +942,6 @@ def p_is_const_1(x: F.Folded, u: U32) -> Bool: p_is_const_i(x, u, H.i64_of_i32(1
 
 def p_is_const_neg1(x: F.Folded, u: U32) -> Bool: p_is_const_i(x, u, H.i64_of_i32(4294967295))
 
-# THE FAITHFUL `U32` BIT PATTERN OF A CONST, and `None{}` for a value that has
 def I32_MIN() -> H.I64: H.i64_of_hi_lo(2147483648, 0)
 
 def I32_MAX() -> H.I64: H.i64_of_i32(2147483647)
@@ -1091,7 +1067,6 @@ def fold_const_alu.at(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 
 # the rules. a rule's captures are `src[k]` of the node it matched -- Python's compiled
 
-# `INDEX(_, CONST(Invalid))`, and its `or_casted()` alternative
 def p_index_bad(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsINDEX{}), sy_nsrc_ge(x, u, 2)), p_invalid(x, sy_src1(x, u)))
 
@@ -1142,7 +1117,6 @@ def mint_recip(+f: O.Found, v: U32) -> O.Found: mint_un(f, O.OpsRECIP{}, v)
 # DIFFERENT var per operand -- Python's UPat cache interns by NAME, so the two are
 def sym_462.pat(+x: F.Folded, +u: U32) -> Bool:
   sy_pat_is(x, u, O.OpsRECIP{}, 1, Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsMUL{}), Bool.and(sy_nsrc_is(x, sy_src0(x, u), 2), Bool.and(p_same(sy_src0(x, sy_src0(x, u)), sy_src1(x, sy_src0(x, u))), p_weakint(x, u)))))
-  # and the weakint guard, because upstream deleted this rule in `1b892575c` ("remove unsafe
 
 def sym_462.put(+f: O.Found, v: U32) -> O.Found:
   +r = mint_recip(f, v)
@@ -1162,7 +1136,6 @@ def p_sink_like(x: F.Folded, s: U32) -> Bool:
 def sink_srcs.of(+x: F.Folded, +s: U32) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, p_sink_like(x, s), sy_srcs(x, s), [s])
 
-# `x.src if x.op in REMOVE_FROM_SINK_LIKE else (x,)` -- the LISTS stay unflattened
 def any_sink_like(srcs: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
@@ -1210,12 +1183,10 @@ def sw.b(t1: Bool, s0: U32, s1: U32) -> U32: Bool.pick(U32, t1, s0, s1)
 def sw.of(t0: Bool, +t1: Bool, +s0: U32, +s1: U32) -> Sw:
   Sw{Bool.or(t0, t1), sw.a(t1, s0, s1), sw.b(t1, s0, s1)}
 
-# `-x`, `x.const_like(v)`, `const_like(False, dt)` and `x.where(t, e)` — the four ANSWERS
 def mint_neg(+f: O.Found, v: U32) -> O.Found:
   +m1 = O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(U32.sub(0, 1))})
   mint_bin(m1, O.OpsMUL{}, v, O.Found.i(m1))
 
-# THE SCRUTINEE IS A PARAMETER, not a call: Bend refuses a `match` on a computed value.
 def mint_const_like.go(tv: Maybe<&1, O.Const>, +f: O.Found, dt: S.Dt) -> Maybe<&1, O.Found>:
   match tv:
     case Some{+w}: Some{mint_const(O.UOp.const(O.Found.ar(f), w), w, dt)}
@@ -1269,7 +1240,6 @@ def all_invalid.go(srcs: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
 def sym_82.pat(+x: F.Folded, +u: U32) -> Bool:
   sy_pat_ge(x, u, O.OpsSTACK{}, 1, all_invalid.go(sy_srcs(x, u), x, True{}))
 
-# the shape CONST, and it is a plain INT CONST and not a tuple. measured 2026-11-07 on
 def sym_82.shape(+f: O.Found, n: U32) -> O.Found:
   O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(n)})
 
@@ -1306,7 +1276,6 @@ def sym_93.gi(x: F.Folded, u: U32) -> U32: sy_src2(x, u)
 
 def sym_93.pick(cond: Bool, t: U32, f: U32) -> U32: Bool.pick(U32, cond, t, f)
 
-# two wheres and both are new, so this rule is Found-family: `cond.where(x.where(a,b), i)`
 def sym_93.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match hit:
     case True{}:
@@ -1350,7 +1319,6 @@ def sym_120.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_op_in(x, u, OP_SELF()), sy_nsrc_is(x, u, 2)),
     Bool.or(p_is_const_0(x, sy_src0(x, u)), p_is_const_0(x, sy_src1(x, u))))
 
-# `c0` says src[0] is the CONST, so the answer is src[1]; the two spellings of
 def sym_120.pick(c0: Bool, a: U32, b: U32) -> Maybe<&1, U32>: Some{Bool.pick(U32, c0, a, b)}
 
 def sym_120(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -1402,7 +1370,6 @@ def sym_161.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 def sym_161(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_161.hit(sym_161.pat(x, u), x, u)
 
-# `UOp.const_like(v)` carrying the arena, for a body that has the VALUE and not a `Const`:
 def mint_const_v(m: Maybe<&2, O.Const>, +f: O.Found, +dt: S.Dt) -> Maybe<&1, O.Found>:
   match m:
     case Some{v}: mint_const_like.go(sy_trunc(dt, v), f, dt)
@@ -1433,7 +1400,6 @@ def sym_162.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 def sym_162(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_162.hit(sym_162.pat(x, u), x, u)
 
-# THE THREE TESTS, one per discriminating shape. `p_const` for a cvar against a
 def p_const(+x: F.Folded, +u: U32) -> Sw:
   sw.of(sy_is_const(x, sy_src0(x, u)), sy_is_const(x, sy_src1(x, u)), sy_src0(x, u), sy_src1(x, u))
 
@@ -1475,7 +1441,6 @@ def sym_144c.pat(+x: F.Folded, +u: U32, +p: Sw) -> Bool:
     Bool.and(Sw.ok(p), Bool.and(p_cast_to(x, Sw.a(p), DTS_INTWEAK()),
       sy_dt_is(x, sy_src0(x, Sw.a(p)), S.boolean()))))
 
-# THE THREE ARMS AS INDICES, and each is ONE `Found` chain: `logical_not(x)`, then `x`, then the
 def sym_144c.arm(+c3: U32, +b: U32, +f: O.Found) -> O.Found:
   Bool.pick(O.Found, U32.is_eq(c3, 0), mint_not(f, b),
     Bool.pick(O.Found, U32.is_eq(c3, 1), O.Found{O.Found.ar(f), b},
@@ -1514,7 +1479,6 @@ def Mc.k(c: Mc) -> U32:
   match c:
     case Mc{ok, m, k}: k
 
-# A `Maybe` is a `Type` with no `+` spelling, so "does it fit" and "what are its
 def mc32.put(ok: Bool, m: Maybe<&1, U32>, k: Maybe<&1, U32>) -> Mc:
   Mc{ok, Maybe.default(&1, U32, m, 0), Maybe.default(&1, U32, k, 0)}
 
@@ -1528,7 +1492,6 @@ def mc32.of(mo: Maybe<&2, O.Const>, ko: Maybe<&2, O.Const>) -> Mc:
     case Some{v}: mc32.mask(mo, const_i32(v))
     case None{}: mc32.mask(mo, None{})
 
-# The mask is the `&`'s `a` and its `x` the `&`'s `b`, and the amount is the
 def p_mask(+x: F.Folded, +u: U32, +op: O.Op, +p: Sw) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, op), sy_nsrc_is(x, u, 2)),
     Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsAND{}),
@@ -1593,7 +1556,6 @@ def sym_163.pat(+x: F.Folded, +u: U32) -> Bool:
     Bool.and(Bool.not(O.eq_op(sy_op(x, u), O.OpsTHREEFRY{})),
       Bool.or(sym_163.pat.left(x, u), sym_163.pat.right(x, u))))
 
-# A weak src is `ccast`ed at `dt` and a strong one is left alone. `sy_ccast`
 def trunc_m.of(dt: S.Dt, v: O.Const) -> Maybe<&1, O.Const>: sy_trunc(dt, v)
 
 def trunc_m(dt: S.Dt, m: Maybe<&2, O.Const>) -> Maybe<&1, O.Const>:
@@ -1629,7 +1591,6 @@ def sym_163.one(weak: Bool, v: Maybe<&2, O.Const>, is_const: Bool, s: U32, +f: O
 def sym_163.at(+s: U32, +x: F.Folded, +f: O.Found, +dt: S.Dt) -> Maybe<&1, O.Found>:
   sym_163.one(dt_weak_of(sy_dt1(x, s)), sy_val(x, s), sy_is_const(x, s), s, f, dt)
 
-# THE WHOLE REWRITE, and it is ONE def because the two srcs share an arena and a
 def sym_163.put(a: U32, m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match m:
     case Some{+b}: Some{mint_replace(b, x, u, [a, O.Found.i(b)])}
@@ -1700,24 +1661,20 @@ def p_mul3.a(+x: F.Folded, +s: U32) -> Bool:
   Bool.and(sy_is_op(x, s, O.OpsMUL{}),
     Bool.and(sy_nsrc_is(x, s, 2), p_same(sy_src0(x, s), sy_src1(x, s))))
 
-# `a` is the inner `MUL(v,v)` and `b` is the SIBLING, which is the leaf `v` and not
 def p_mul3.ok(ok: Bool, +x: F.Folded, a: U32, b: U32) -> Bool: Bool.and(ok, p_same(sy_src0(x, a), b))
 
 def p_mul3(+x: F.Folded, +u: U32) -> Sw:
   +i = sw.of(p_mul3.a(x, sy_src0(x, u)), p_mul3.a(x, sy_src1(x, u)), sy_src0(x, u), sy_src1(x, u))
   Sw{p_mul3.ok(Sw.ok(i), x, Sw.a(i), Sw.b(i)), Sw.a(i), Sw.b(i)}
 
-# THE SHARED ENTRY TEST, and there is only ONE because the two rules' patterns
 def p_recip1(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(sy_is_op(x, u, O.OpsRECIP{}),
     Bool.and(sy_nsrc_is(x, u, 1), Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsMUL{}),
       sy_nsrc_is(x, sy_src0(x, u), 2))))
 
-# the shared entry for `:463` (`1/(x*x*x)`) and `:464` (`1/(x*c)`), and the weakint guard is
 def p_recip2(+x: F.Folded, +u: U32, +p: Sw) -> Bool:
   Bool.and(Bool.and(p_recip1(x, u), Sw.ok(p)), p_weakint(x, u))
 
-# THE TWO ANSWERS, both threaded. `:464`'s is `x.reciprocal()*x.reciprocal()*
 def sym_463.put(v: U32, +f: O.Found) -> O.Found:
   +r = mint_recip(f, v)
   +m = mint_bin(r, O.OpsMUL{}, O.Found.i(r), O.Found.i(r))
@@ -1748,22 +1705,17 @@ def sym_464(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +p = p_const(x, sy_src0(x, u))
   sym_464.hit(p_recip2(x, u, p), p, x, u)
 
-# ---- the rules that were missing, in upstream's order ----
 
-# `GroupOp.Binary - GroupOp.Comparison` -- SIXTEEN ops, and it is a `pdict` KEY, so
 def OP_BINARY_NC() -> List<&2, O.Op>:
   [O.OpsADD{}, O.OpsMUL{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsXOR{},
    O.OpsSHL{}, O.OpsSHR{}, O.OpsOR{}, O.OpsAND{}, O.OpsSUB{}, O.OpsFDIV{},
    O.OpsPOW{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsTHREEFRY{}]
 
-# `GroupOp.Idempotent` -- {AND, MAX, OR}, the three ops where `x op x` is `x`.
 def OP_IDEMPOTENT() -> List<&2, O.Op>: [O.OpsAND{}, O.OpsMAX{}, O.OpsOR{}]
 
-# THE CONST -1, and `p_is_const_neg1` is NOT it: that one compares the I64 to
 def p_is_const_m1(x: F.Folded, u: U32) -> Bool:
   p_is_const_i(x, u, H.i64_sub(H.i64_of_i32(0), H.i64_of_i32(1)))
 
-# THE SRC THAT IS THE CONST 1, and the OTHER one.  `p_const` picks "a src that is a
 def p_one(+x: F.Folded, +u: U32) -> Sw:
   sw.of(p_is_const_1(x, sy_src0(x, u)), p_is_const_1(x, sy_src1(x, u)),
     sy_src0(x, u), sy_src1(x, u))
@@ -1772,11 +1724,9 @@ def p_one(+x: F.Folded, +u: U32) -> Sw:
 def sym_84.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_op_in(x, u, OP_UNARY()), sy_nsrc_is(x, u, 1)), p_where_gate(x, u, 0))
 
-# `mint_bitcast`, which is `mint_cast`'s sibling: the BITCAST node at an explicit
 def mint_bitcast(+f: O.Found, a: U32, dt: S.Dt) -> O.Found:
   O.UOp.new(O.Found.ar(f), O.OpsBITCAST{}, [a], O.ADt{dt}, O.TNone{})
 
-# the scrutinee is a parameter and not a computed value: Bend refuses a `match` on
 def sym_84.is_cast(+x: F.Folded, +u: U32) -> Bool: O.eq_op(sy_op(x, u), O.OpsCAST{})
 
 def sym_84.inner(+f: O.Found, +a: U32, +dt: S.Dt, +is_cast: Bool) -> O.Found:
@@ -2182,7 +2132,6 @@ def sym_271.inner(+x: F.Folded, +i: U32, +u: U32) -> Bool:
 def sym_271.pat(+x: F.Folded, +u: U32) -> Bool:
   sy_pat_is(x, u, O.OpsCMPEQ{}, 2, Bool.and(p_is_const_false(x, sy_src1(x, u)), sym_271.inner(x, sy_src0(x, u), u)))
 
-# THE MATCH IS THE FIRST STATEMENT: Bend refuses a `match` whose scrutinee is a parameter
 def sym_271.build(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match m:
     case Some{+z}:
@@ -2198,7 +2147,6 @@ def sym_271(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_271.pat(x, u),
     sym_271.build(mint_const_like(mint_ar(sy_ar(x)), x, sy_src1(x, sy_src0(x, u)), O.CInt{H.i64_of_i32(0)}), x, u))
 
-# `x * CONST(c)` with the const at either side, which is `p_const`'s `Sw`.
 def p_mul_c(+x: F.Folded, +m: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, m, O.OpsMUL{}), sy_nsrc_is(x, m, 2)), Sw.ok(p_const(x, m)))
 
@@ -2220,7 +2168,6 @@ def sym_245.put(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +s = mint_bin(mint_ar(sy_ar(x)), O.OpsADD{}, sym_245.cside(x, m0), sym_245.cside(x, sy_src1(x, u)))
   Some{mint_bin(s, O.OpsMUL{}, sym_245.vside(x, m0), O.Found.i(s))}
 
-# THE GUARD IS `fits(x, c0.vmin+c1.vmin)`, AND IT WAS MISSING. The coefficient sum is minted at
 def sym_245.iv(m: Maybe<&2, O.Const>) -> Maybe<&1, H.I64>:
   match m:
     case Some{O.CInt{i}}: Some{i}
@@ -2273,7 +2220,6 @@ def sym_247.mk(m: Maybe<&1, O.Found>, +x: F.Folded, +p: U32, +v: U32) -> Maybe<&
       Some{mint_bin(s, O.OpsMUL{}, v, O.Found.i(s))}
     case None{}: None{}
 
-# the guard `:256`/`:258` carry and this body did not:
 def sym_247.iv(m: Maybe<&2, O.Const>, +dt: S.Dt) -> Bool:
   match m:
     case Some{O.CInt{i}}: fits(dt, H.i64_add(i, H.i64_of_i32(1)))
@@ -2301,7 +2247,6 @@ def sym_247(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def p_add2(+x: F.Folded, +s: U32) -> Bool:
   Bool.and(sy_is_op(x, s, O.OpsADD{}), sy_nsrc_is(x, s, 2))
 
-# `(y + x) + x -> y + x*2` (:251) and `(y + x) + x*c -> y + x*(c+1)` (:248) and
 def sym_251.inner(+x: F.Folded, +u: U32) -> U32:
   Bool.pick(U32, p_add2(x, sy_src0(x, u)), sy_src0(x, u), sy_src1(x, u))
 
@@ -2315,7 +2260,6 @@ def sym_251.pat(+x: F.Folded, +u: U32) -> Bool:
     Bool.or(Bool.and(p_add2(x, a), Bool.or(p_same(sy_src0(x, a), b), p_same(sy_src1(x, a), b))),
             Bool.and(p_add2(x, b), Bool.or(p_same(sy_src0(x, b), a), p_same(sy_src1(x, b), a)))))
 
-# `y` -- the inner ADD's OTHER operand, read against the shared node.
 def sym_251.y(+x: F.Folded, +u: U32) -> U32:
   +s = sym_251.inner(x, u)
   +z = sym_251.z(x, u)
@@ -2329,7 +2273,6 @@ def sym_251.mk(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Foun
       Some{mint_bin(d, O.OpsADD{}, sym_251.y(x, u), O.Found.i(d))}
     case None{}: None{}
 
-# the guard `:263` carries and this body did not: `fits(a, 2*x.vmin) and fits(a, 2*x.vmax)`.
 def sym_251.fb(b: F.Bnd, +dt: S.Dt) -> Bool:
   match b:
     case F.BndInt{neg, mag}: fits(dt, H.i64_mul(H.i64_neg(neg, mag), H.i64_of_i32(2)))
@@ -2380,7 +2323,6 @@ def sym_248.k(+x: F.Folded, +u: U32) -> U32: sym_245.cside(x, sym_248.prod(x, u)
 def sym_248.has_src(+x: F.Folded, +s: U32, +v: U32) -> Bool:
   Bool.or(p_same(sy_src0(x, s), v), p_same(sy_src1(x, s), v))
 
-# `y` -- the INNER add's src that is neither the shared operand nor the product.
 def sym_248.y(+x: F.Folded, +u: U32) -> U32:
   +i = sym_251.inner(x, u)
   +v = sym_248.v(x, u)
@@ -2398,7 +2340,6 @@ def sym_248.pat(+x: F.Folded, +u: U32) -> Bool:
                 Bool.or(Bool.and(p_mul_c(x, sy_src0(x, i)), p_same(sym_245.vside(x, sy_src0(x, i)), z)),
                         Bool.and(p_mul_c(x, sy_src1(x, i)), p_same(sym_245.vside(x, sy_src1(x, i)), z)))))))
 
-# the guard `:259`/`:261` carry and this body did not:
 def sym_248.iv(m: Maybe<&2, O.Const>, +dt: S.Dt) -> Bool:
   match m:
     case Some{O.CInt{i}}: fits(dt, H.i64_add(i, H.i64_of_i32(1)))
@@ -2459,7 +2400,6 @@ def sym_248(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sym_248.hit(Bool.and(sym_248.pat(x, u),
     sym_248.iv(sy_val(x, sym_248.k(x, u)), sy_dt1(x, sym_248.v(x, u)))), x, u)
 
-# two names and one body, because the census resolves a rule by the line its table row cites.
 def sym_249(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_248(x, u)
 
 # symbolic.py:246  ((UPat.var("y") + UPat.var("x") * UPat.cvar("c0")) + UPat.var("x") * UPat.cvar("c1"),
@@ -2480,7 +2420,6 @@ def sym_246.pat(+x: F.Folded, +u: U32) -> Bool:
       Bool.and(p_mul_c(x, z), Bool.and(p_mul_c(x, p2),
         p_same(sym_245.vside(x, z), sym_245.vside(x, p2))))))
 
-# the guard `:255` carries and this body did not:
 def sym_246.cv(m: Maybe<&2, O.Const>) -> Maybe<&1, H.I64>:
   match m:
     case Some{O.CInt{i}}: Some{i}
@@ -2559,7 +2498,6 @@ def sym_266.pat(+x: F.Folded, +u: U32) -> Bool:
     Bool.and(Bool.and(p_where3(x, a), p_where3(x, b)),
       Bool.and(p_same(sy_src0(x, a), sy_src0(x, b)), sym_266.guard(x, a, b))))
 
-# the guard `:283` carries and this body did not: `no_overflow(m:=c.where(t+tt, f+ff))`.
 def sym_266.done(ok: Bool, +w: O.Found) -> Maybe<&1, O.Found>:
   match ok:
     case True{}: Some{w}
@@ -2583,7 +2521,6 @@ def sym_269.inner(+x: F.Folded, +u: U32) -> U32:
 def sym_269.w2(+x: F.Folded, +u: U32) -> U32:
   Bool.pick(U32, p_add2(x, sy_src0(x, u)), sy_src1(x, u), sy_src0(x, u))
 
-# `w1` -- the where INSIDE the add, and `y` the src beside it.
 def sym_269.w1(+x: F.Folded, +u: U32) -> U32:
   +i = sym_269.inner(x, u)
   Bool.pick(U32, p_where3(x, sy_src0(x, i)), sy_src0(x, i), sy_src1(x, i))
@@ -2648,11 +2585,9 @@ def sym_284.v(+x: F.Folded, +u: U32) -> U32: Sw.b(p_const(x, u))
 
 def sym_284.c(+x: F.Folded, +u: U32) -> U32: Sw.a(p_const(x, u))
 
-# `x.alu(op, c1)` -- AN ALU OF THE SAME OP WITH A CONST SIDE.
 def sym_284.alu2c(+x: F.Folded, +s: U32, op: O.Op) -> Bool:
   Bool.and(Bool.and(O.eq_op(sy_op(x, s), op), sy_nsrc_is(x, s, 2)), Sw.ok(p_const(x, s)))
 
-# the inner alu is the root's non-CONST side, and it is found by asking which side is an
 def sym_284.inner(+x: F.Folded, +u: U32, op: O.Op) -> U32:
   Bool.pick(U32, sym_284.alu2c(x, sy_src0(x, u), op), sy_src0(x, u), sy_src1(x, u))
 
@@ -2667,7 +2602,6 @@ def sym_284.pat(+x: F.Folded, +u: U32) -> Bool:
 
 def sym_284.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +i = sym_284.inner(x, u, sy_op(x, u))
-  # the root's other side is the constant itself: `outer` already answers the node, and
   +k = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.c(x, i), sym_284.outer(x, u))
   Some{mint_bin(k, sy_op(x, u), sym_284.v(x, i), O.Found.i(k))}
 
@@ -2712,7 +2646,6 @@ def pc_cv.some(m: Maybe<&1, O.Const>) -> Maybe<&1, H.I64>:
     case Some{O.CInt{i}}: Some{i}
     case _: None{}
 
-# the value of a CONST node itself. `pop_const_val` reads the second SRC of an alu, so on a
 def cval.go(m: Maybe<&1, O.Const>) -> H.I64:
   match m:
     case Some{O.CInt{i}}: i
@@ -2785,7 +2718,6 @@ def qb.go(+x: F.Folded, +q: U32, +base: U32, +div: H.I64) -> Maybe<&1, O.Found>:
   +q0 = pc_n(ar, q, O.OpsADD{})
   qb.mqv(pc_cv(ar, q0, O.OpsDIV{}), ar, q0, base, div, pc_v(ar, q, O.OpsADD{}), x)
 
-# `(b*mul).usum(*rest)` folds ADD left to right over the answer and the surviving terms.
 def sym_129.rest(ts: List<&2, U32>, +it: U32, +v: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match ts:
     case Nil{}: acc
@@ -2990,7 +2922,6 @@ def sym_253.neg(+x: F.Folded, +u: U32) -> U32:
 
 def sym_253.pat(+x: F.Folded, +u: U32) -> Bool:
   +i = sym_253.inner(x, u)
-  # the -1 is a requirement and not a side-check: the first version only said the inner side
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsMUL{}), sy_nsrc_is(x, u, 2)),
     Bool.and(p_is_const_neg1(x, sym_253.neg(x, u)),
       Bool.and(Bool.and(sy_is_op(x, i, O.OpsADD{}), sy_nsrc_is(x, i, 2)), Sw.ok(p_const(x, i)))))
@@ -3094,11 +3025,9 @@ def sym_473.pat(+x: F.Folded, +u: U32) -> Bool:
       Bool.and(Bool.and(sy_is_op(x, i, O.OpsADD{}), sy_nsrc_is(x, i, 2)),
         p_weakint(x, sy_src0(x, i)))))
 
-# the guard `:485` carries and this body did not:
 def sym_473.fb(b: F.Bnd, +dt: S.Dt, +cv: H.I64) -> Bool:
   match b:
     case F.BndInt{neg, mag}: fits(dt, H.i64_mul(H.i64_neg(neg, mag), cv))
-    # an INFINITE or floating bound: `fits` is `dtype not in sints or min <= v <= max`, so it holds
     case _: Bool.not(dt_in(DTS_SINTS(), dt))
 
 def sym_473.g1(m: Maybe<&2, F.Bnd>, +dt: S.Dt, +cv: H.I64) -> Bool:
@@ -3144,7 +3073,6 @@ def sym_453.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTORE{}), sy_nsrc_is(x, u, 2)),
     Bool.and(sy_is_op(x, k, O.OpsINDEX{}), p_load_of(x, sy_src1(x, u), k)))
 
-# the answer is `AFTER(NOOP, index)` -- the INDEX and not the STORE's srcs. the old PIN's rule
 def sym_453.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +n = O.UOp.new(sy_ar(x), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
   Some{O.UOp.new(O.Found.ar(n), O.OpsAFTER{},
@@ -3209,7 +3137,6 @@ def sym_280.first(+x: F.Folded, +u: U32, +bt: F.BTable) -> Bool:
   +ar = F.Folded.ar(x)
   sym_280.ge(F.UOp.vmin(ar, bt, sy_src0(x, u)), F.UOp.vmax(ar, bt, sy_src1(x, u)))
 
-# `a <= b` IS `NOT (b < a)`: the second guard is `x.vmax <= y.vmin`, and spelling it as
 def sym_280.le(a: Maybe<&2, F.Bnd>, b: Maybe<&2, F.Bnd>) -> Bool:
   match a:
     case Some{+av}:
@@ -3234,7 +3161,6 @@ def sym_280.pat(+x: F.Folded, +u: U32) -> Bool:
 def sym_280(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sy_tri_u(sym_280.pat(x, u), sym_280.pick(x, u, sym_280.bt(x)))
 
-# A BOUND AS A CONST, `None{}` at infinity: a collapsed bound is a value and an infinite one is
 def bnd_const(b: F.Bnd) -> Maybe<&2, O.Const>:
   match b:
     case F.BndInt{neg, +mag}: Some{O.CInt{Bool.pick(H.I64, neg, H.i64_sub(H.i64_of_i32(0), mag), mag)}}
@@ -3244,7 +3170,6 @@ def bnd_const(b: F.Bnd) -> Maybe<&2, O.Const>:
 def p_const_or_cast(+x: F.Folded, +s: U32) -> Bool:
   Bool.or(sy_is_const(x, s), is_cast_const(x, s))
 
-# each match is on its own parameter: Bend refuses a `match` whose scrutinee is a call, so the
 def sym_276.same2(m: Maybe<&2, F.Bnd>, +a: F.Bnd) -> Bool:
   match m:
     case Some{+b}: F.bnd.eq(a, b)
@@ -3351,7 +3276,6 @@ def dm_103.byop(is_mod: Bool, +s1: O.Found, +c: H.I64, +j: H.I64, +x: F.Folded, 
 def dm_103.put(m: Maybe<&1, O.Found>, +c: H.I64, +j: H.I64, +x: F.Folded, +u: U32, +n: U32) -> Maybe<&1, O.Found>:
   match m:
     case Some{+r}:
-      # A MATCH CANNOT SCRUTINIZE A CALL: the op test is read into a `Bool` parameter first.
       dm_103.byop(sy_is_op(x, u, O.OpsMOD{}),
         mint_bin(r, O.OpsADD{}, dm_103.n(x, u), O.Found.i(r)), c, j, x, u)
     case None{}: None{}
@@ -3387,7 +3311,6 @@ def sym_458.pat(+x: F.Folded, +u: U32) -> Bool:
 
 def sym_458.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +n = O.UOp.new(sy_ar(x), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
-  # `NOOP.after(*srcs)` IS `AFTER(noop, *srcs)`: the NOOP is the FIRST SOURCE and the store's
   Some{O.UOp.new(O.Found.ar(n), O.OpsAFTER{},
     List.append(&2, U32, [O.Found.i(n)], O.Arena.srcs(O.Found.ar(n), u)), O.ANone{}, O.TNone{})}
 
@@ -3410,7 +3333,6 @@ def fence_op(op: O.Op) -> Bool:
 def sym_318.part(+x: F.Folded, +y: U32) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, fence_op(sy_op(x, y)), [y], O.Arena.srcs(sy_ar(x), y))
 
-# `List.concat` takes a LIST OF LISTS, so two flat lists join one element at a time. `push` is
 def sym_318.push(ps: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match ps:
     case Nil{}: acc
@@ -3449,7 +3371,6 @@ def sym_302.irr(op: O.Op) -> Bool:
     case O.OpsSPECIAL{}: True{}
     case _             : False{}
 
-# `u.op is MUL and u.src[1].op is CONST and u.src[1].val > 0`
 def sym_302.posmul(+x: F.Folded, +u: U32) -> Bool:
   +ar = F.Folded.ar(x)
   Bool.and(Bool.and(O.eq_op(O.Arena.op(ar, u), O.OpsMUL{}),
@@ -3459,7 +3380,6 @@ def sym_302.posmul(+x: F.Folded, +u: U32) -> Bool:
 def sym_302.strip(+x: F.Folded, +u: U32) -> U32:
   Bool.pick(U32, sym_302.posmul(x, u), O.Arena.src0(F.Folded.ar(x), u), u)
 
-# `u.vmin >= 0` is `not (vmin < 0)`.
 def sym_302.ge0(m: Maybe<&2, F.Bnd>) -> Bool:
   match m:
     case Some{+b}: Bool.not(F.bnd.lt(b, F.bnd_zero()))
@@ -3470,7 +3390,6 @@ def sym_302.ok(u: U32, +x: F.Folded, +bt: F.BTable) -> Bool:
   Bool.and(sym_302.irr(O.Arena.op(F.Folded.ar(x), v)),
            sym_302.ge0(F.UOp.vmin(F.Folded.ar(x), bt, v)))
 
-# the empty accumulator is a list and not a failure: `None{}` means "no terms yet", so the first
 def sym_302.push2(acc: Maybe<&2, List<&2, U32>>, v: U32) -> Maybe<&2, List<&2, U32>>:
   match acc:
     case Some{+l}: Some{List.append(&2, U32, l, [v])}
@@ -3487,7 +3406,6 @@ def sym_302.vals(ts: List<&2, U32>, +x: F.Folded, +bt: F.BTable, acc: Maybe<&2, 
     case +u <> rest:
       sym_302.vals(rest, x, bt, sym_302.push(sym_302.ok(u, x, bt), sym_302.strip(x, u), acc))
 
-# `changed` -- at least ONE term was a positive constant multiple.
 def sym_302.chg(ts: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
   match ts:
     case Nil{}: acc
@@ -3503,7 +3421,6 @@ def sym_302.adds(ts: List<&2, U32>, +f: O.Found, acc: Maybe<&1, O.Found>) -> May
     case Nil{}: acc
     case t <> rest: sym_302.adds(rest, f, sym_302.onestep(acc, f, t))
 
-# `(newx < 1).ne(True)` is THREE nodes: the CONST 1, the CMPLT, and the CONST True under CMPNE.
 def dt_or_weak(+x: F.Folded, +u: U32) -> S.Dt:
   Bool.pick(S.Dt, O.eq_dt(sy_dt1(x, u), S.void()), S.weakint(), sy_dt1(x, u))
 
@@ -3570,7 +3487,6 @@ def uc.srcs(ss: List<&2, U32>, +ar: O.Arena, +x: F.Folded, +acc: List<&2, U32>) 
     case Nil{}: acc
     case +s <> rest: uc.srcs(rest, ar, x, uc.step(p_uncastable(x, s), s, ar, acc))
 
-# `src != u.src` IS "AT LEAST ONE SRC WAS UNCASTABLE": the map only changes the entries that
 def uc.any(ss: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
   match ss:
     case Nil{}: acc
@@ -3586,7 +3502,6 @@ def uncast.fin(ok: Bool, +new: List<&2, U32>, +x: F.Folded, +u: U32) -> Maybe<&1
     case True{} : Some{mint_replace(mint_ar(F.Folded.ar(x)), x, u, new)}
     case False{}: None{}
 
-# EVERY MATCH IS ON ITS OWN PARAMETER: a `match` after a local binder is refused, so the `Dts`
 def uncast.check2(ok: Bool, +d: W.Dts, +new: List<&2, U32>, +old: List<&2, U32>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match ok:
     case True{}:
@@ -3648,7 +3563,6 @@ def rm469.has(us: List<&2, U32>, +k: U32) -> Bool:
     case Nil{}: False{}
     case h <> t: Bool.or(U32.is_eq(h, k), rm469.has(t, k))
 
-# `all(r not in m_parents for r in r.src[1:])` -- no axis is below the factor.
 def rm469.none_in(axes: List<&2, U32>, +ps: List<&2, U32>, acc: Bool) -> Bool:
   match axes:
     case Nil{}: acc
@@ -3659,7 +3573,6 @@ def rm469.ge0(m: Maybe<&2, F.Bnd>) -> Bool:
     case Some{+b}: Bool.not(F.bnd.lt(b, F.bnd_zero()))
     case None{}: False{}
 
-# `m not in r.src[1:] and all(r not in m_parents ...) and (r.arg[0] != MAX or m.vmin >= 0)`
 def rm469.outside(rop: O.Op, +axes: List<&2, U32>, +x: F.Folded, +m: U32) -> Bool:
   +ar = F.Folded.ar(x)
   Bool.and(Bool.not(rm469.has(axes, m)),
@@ -3692,7 +3605,6 @@ def rm469.empty(xs: List<&2, U32>) -> Bool:
     case Nil{}: True{}
     case _: False{}
 
-# `functools.reduce(operator.mul, xs, 1)`: the accumulator is ALREADY the CONST 1.
 def rm469.prod(xs: List<&2, U32>, +f: O.Found, acc: U32) -> O.Found:
   match xs:
     case Nil{}: f
@@ -3700,7 +3612,6 @@ def rm469.prod(xs: List<&2, U32>, +f: O.Found, acc: U32) -> O.Found:
       +f2 = mint_bin(f, O.OpsMUL{}, acc, h)
       rm469.prod(t, f2, O.Found.i(f2))
 
-# `prod(inside) if len(inside) else r.src[0].const_like(1)` -- `const_like` is the SRC's
 def rm469.first(+x: F.Folded, +u: U32, +ins: List<&2, U32>, +f: O.Found) -> Maybe<&1, O.Found>:
   match ins:
     case Nil{}: mint_cst_dt(f, sy_dt1(x, sy_src0(x, u)), O.CInt{H.i64_of_i32(1)})
@@ -3756,7 +3667,6 @@ def c_f1(m: Maybe<&2, O.Const>) -> Bool:
 
 def p_is_const_f1(x: F.Folded, u: U32) -> Bool: c_f1(sy_val(x, u))
 
-# `1 + x` carries whichever 1 the graph has. `UPat.const(1)` matches the value, so a weakint
 def p_c1(+x: F.Folded, +u: U32) -> Bool:
   Bool.or(p_is_const_i(x, u, H.i64_of_i32(1)), p_is_const_f1(x, u))
 
@@ -3777,7 +3687,6 @@ def p_recip1p(+x: F.Folded, +d: U32, +v: U32) -> Bool:
     Bool.and(sy_is_op(x, a, O.OpsADD{}), Bool.and(sy_nsrc_is(x, a, 2),
       Bool.and(p_c1(x, sy_src0(x, a)), p_same(sy_src1(x, a), v)))))
 
-# every mint reads the arena its last operand opened: `neg` is minted in `one`'s arena, so
 def mint_one_sub(+f: O.Found, d: U32) -> O.Found:
   +one = O.UOp.const(O.Found.ar(f), O.CFloat{1.0})
   +neg = O.UOp.const(O.Found.ar(one), O.CFloat{F32.neg(1.0)})
@@ -3793,7 +3702,6 @@ def sym_465.put(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_465(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_465.pat(x, u), sym_465.put(x, u))
 
-# `d * UPat.var("y")` is MUL(d, y) -- the reciprocal is SRC0 of the inner MUL.
 def sym_466.pat(+x: F.Folded, +u: U32) -> Bool:
   +inner = sy_src1(x, u)
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsMUL{}), sy_nsrc_is(x, u, 2)),
@@ -3808,7 +3716,6 @@ def sym_466.put(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_466(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_466.pat(x, u), sym_466.put(x, u))
 
-# `d + UPat.var("y")` is ADD(d, y).
 def sym_467.pat(+x: F.Folded, +u: U32) -> Bool:
   +inner = sy_src1(x, u)
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsMUL{}), sy_nsrc_is(x, u, 2)),
@@ -3839,7 +3746,6 @@ def mint_ccast.go(is_const: Bool, ar: O.Arena, u: U32, m: Maybe<&2, O.Const>, dt
     case True{} : mint_ccast.c(ar, m, dt)
     case False{}: Some{O.UOp.cast(ar, u, dt)}
 
-# `x.ccast(b.dtype)`, with `x` the INNER src and `b` the OUTER cast.
 def mint_ccast(+x: F.Folded, +v: U32, u: U32) -> Maybe<&1, O.Found>:
   mint_ccast.go(sy_is_const(x, v), sy_ar(x), v, sy_val(x, v), Maybe.default(&1, S.Dt, sy_arg_dt(x, u), S.void()))
 
@@ -3918,13 +3824,11 @@ def vmin_i64(+ar: O.Arena, +bt: F.BTable, t: U32) -> H.I64:
 def vmax_i64(+ar: O.Arena, +bt: F.BTable, t: U32) -> H.I64:
   bnd_i64(Maybe.default(&2, F.Bnd, F.UOp.vmax(ar, bt, t), F.bnd_zero()))
 
-# a bound the sweep does not answer makes the FOLD unknown: reading an unknown bound as 0 would
 def has_b(m: Maybe<&2, F.Bnd>) -> Bool:
   match m:
     case Some{+b}: True{}
     case None{}  : False{}
 
-# `ceildiv(a, d)` on a signed `I64` with only a TRUNCATING divide. `(a+d-1)/d` is right for
 def ceil_i64.go(neg: Bool, +a: H.I64, +d: H.I64) -> H.I64:
   match neg:
     case True{} : H.i64_neg(True{}, H.i64_div(H.i64_neg(True{}, a), d))
@@ -3989,7 +3893,6 @@ def lt299.scan(ts: List<&2, U32>, +ar: O.Arena, +bt: F.BTable, +l: Lt) -> Lt:
         lt299.step(is_1(f), f, t, u, vmin_i64(ar, bt, u), vmax_i64(ar, bt, u),
           Bool.and(has_b(F.UOp.vmin(ar, bt, u)), has_b(F.UOp.vmax(ar, bt, u))), l))
 
-# `u*(f//d)` -- the const is the SECOND src, which is why `_binop(MUL)` builds `MUL(u, k)` and not
 def lt299.mul(+d: H.I64, +t: U32, +ar: O.Arena) -> O.Found:
   +k = O.UOp.const(ar, O.CInt{H.i64_div(pc_v(ar, t, O.OpsMUL{}), d)})
   O.UOp.alu(O.Found.ar(k), O.OpsMUL{}, [pc_n(ar, t, O.OpsMUL{}), O.Found.i(k)])
@@ -4012,7 +3915,6 @@ def lt299.bu(ts: List<&2, U32>, +d: H.I64, +ar: O.Arena, +b: Bu) -> Bu:
       +m = lt299.mul(d, t, O.Found.ar(Bu.f(b)))
       lt299.bu(rest, d, ar, Bu{List.append(&2, U32, Bu.us(b), [O.Found.i(m)]), m})
 
-# `UOp.usum(*xs)` -- a fold with ADD where the FIRST element starts it, so `has` is the emptiness.
 type Ad is Data:
   Ad{has: Bool, i: U32, f: O.Found}
 
@@ -4107,7 +4009,6 @@ def sym_193.go2(p: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case True{} : sym_193.go3(sym_193.flt(x, u), x, u)
     case False{}: None{}
 
-# the entry is the constant's positiveness and the exponent's floatness -- and not "is the
 def sym_193.go1(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sym_193.go2(sym_193.pos(sy_maybe_c2(sy_val(x, sy_src0(x, u)))), x, u)
 
@@ -4148,7 +4049,6 @@ def xi.cond(+f: O.Found, ex: U32, i: U32) -> O.Found:
   +z = O.UOp.const(O.Found.ar(an), O.CInt{H.i64_of_i32(0)})
   mint_ne(z, O.Found.i(an), O.Found.i(z))
 
-# ONE DEF, because the stop test and the step would otherwise call each other and Bend refuses
 def xi.bitlen.n(n: Nat, +v: H.I64, +acc: U32) -> U32:
   match n:
     case 0n: acc
@@ -4208,12 +4108,10 @@ def xi.hi(ofl: Bool, +x: F.Folded, +u: U32) -> H.I64:
                                  S.Dt.bits(sy_dt1(x, sy_src1(x, u)))))
     case False{}: vmax_i64(F.Folded.ar(x), sym_280.bt(x), sy_src1(x, u))
 
-# `sb.eq(v)` AT THE PIN IS ONE NODE: `CMPEQ(x, v)`.
 def xi.eq2(+f: O.Found, x: U32, v: H.I64) -> O.Found:
   +c = O.UOp.const(O.Found.ar(f), O.CInt{v})
   mint_bin(c, O.OpsCMPEQ{}, x, O.Found.i(c))
 
-# `ret.const_like(1)` -- the node's OWN dtype, which for an i32 ret is `CAST(CONST 1)`.
 def xi.one_like(+f: O.Found, dt: S.Dt) -> O.Found:
   +c = O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(1)})
   O.UOp.cast(O.Found.ar(c), O.Found.i(c), dt)
@@ -4221,7 +4119,6 @@ def xi.one_like(+f: O.Found, dt: S.Dt) -> O.Found:
 def xi.bitcast(+f: O.Found, v: U32, dt: S.Dt) -> O.Found:
   O.UOp.new(O.Found.ar(f), O.OpsBITCAST{}, [v], O.ADt{dt}, O.TNone{})
 
-# `(exponent < 0).where(neg, ret)`, and `neg` is the `eq(-1)/eq(1)` pair over the SIGNED bitcast
 def xi.tail(+r: O.Found, +x: F.Folded, +u: U32, +dt: S.Dt, +b: O.Found) -> Maybe<&1, O.Found>:
   +ex = sy_src1(x, u)
   +sb = xi.bitcast(r, O.Found.i(b), dt)
@@ -4278,7 +4175,6 @@ def xi.go(ok: Bool, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, O.Found>:
     case True{} : xi.udt3(xi.udt.sleep(S.Dt.is_unsigned(dt), dt, S.Dt.bits(dt)), x, u, dt)
     case False{}: None{}
 
-# `xpow_int(base, exponent, dt)` -- `dt not in dtypes.ints` is the whole guard.
 def xpow_int(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +dt = sy_dt1(x, u)
   xi.go(dt_in(DTS_INTS(), dt), x, u, dt)
@@ -4334,7 +4230,6 @@ def S1s.ch(x: S1s) -> Bool:
   match x:
     case S1s{l, ch}: ch
 
-# A MISSING ENTRY MEANS UNCHANGED, because every src is answered BEFORE its parent in the
 def s1.get(tbl: List<&2, Ky>, +k: U32) -> U32:
   match tbl:
     case Nil{}: k
@@ -4348,11 +4243,9 @@ def s1.ss(ss: List<&2, U32>, +tbl: List<&2, Ky>, acc: S1s) -> S1s:
     case Nil{}: acc
     case +s <> t: s1.ss(t, tbl, s1.ss.add(s1.get(tbl, s), s, acc))
 
-# the table comes in and the ARENA comes in separately, because a minted node's arena is the grown
 def s1.put.t(tbl: List<&2, Ky>, +i: U32, +n: U32, +f: O.Found) -> S1:
   S1{List.append(&2, Ky, tbl, [Ky{i, n}]), f}
 
-# op, arg and tag are PROPERTIES OF THE ORIGINAL and are read out of the fold's arena, which is what
 def s1.one.mint(+i: U32, +s: S1s, +st: S1) -> S1:
   +ar = O.Found.ar(S1.f(st))
   +m = O.UOp.new(ar, O.Arena.op(ar, i), S1s.l(s), O.Arena.arg(ar, i), O.Arena.tag(ar, i))
@@ -4363,7 +4256,6 @@ def s1.one.ch(ch: Bool, +i: U32, +s: S1s, +st: S1) -> S1:
     case False{}: s1.put.t(S1.t(st), i, i, S1.f(st))
     case True{} : s1.one.mint(i, s, st)
 
-# the KEY ITSELF is answered by `val` and never descended into.
 def s1.one.eq(eq: Bool, +i: U32, +val: U32, +s: S1s, +st: S1) -> S1:
   match eq:
     case True{} : s1.put.t(S1.t(st), i, val, S1.f(st))
@@ -4381,7 +4273,6 @@ def s1.sub(+ar: O.Arena, +sink: U32, +key: U32, +val: U32) -> O.Found:
   +n = s1.get(S1.t(st), sink)
   O.Found{O.Found.ar(S1.f(st)), n}
 
-# the multi-entry form, and it is the first step to `:450`/`:451`. `s1.sub` takes one
 def s1.find(tbl: List<&2, Ky>, +k: U32) -> Maybe<&2, U32>:
   match tbl:
     case Nil{}: None{}
@@ -4392,7 +4283,6 @@ def s1.multi.one(found: Maybe<&2, U32>, +i: U32, +s: S1s, +st: S1) -> S1:
     case Some{+n}: s1.one.eq(True{}, i, n, s, st)
     case None{}: s1.one.eq(False{}, i, i, s, st)
 
-# the replacement for a key, or the key itself -- the default `s1.get` gives, and it is what the
 def s1.multi.val(tbl: List<&2, Ky>, +k: U32) -> U32:
   s1.get(tbl, k)
 
@@ -4403,10 +4293,8 @@ def s1.multi.fold(ts: List<&2, U32>, +st: S1, +tbl: List<&2, Ky>) -> S1:
       +s = s1.ss(O.Arena.srcs(O.Found.ar(S1.f(st)), i), S1.t(st), S1s{Nil{}, False{}})
       s1.multi.fold(rest, s1.multi.one(s1.find(tbl, i), i, s, st), tbl)
 
-# THE ENTRY: ONE walk, EVERY pair. `s1.sub` is this with a one-pair table, so it is KEPT as the
 def s1.multi(+ar: O.Arena, +sink: U32, +tbl: List<&2, Ky>) -> O.Found:
   +st = s1.multi.fold(O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, sink), S1{Nil{}, mint_ar(ar)}, tbl)
-  # THE ROOT'S OWN REPLACEMENT: if the sink IS a key, the answer is that key's replacement and the
   +n = Bool.pick(U32, Maybe.is_some(&2, U32, s1.find(tbl, sink)), s1.get(S1.t(st), sink), s1.get(S1.t(st), sink))
   O.Found{O.Found.ar(S1.f(st)), n}
 
@@ -4416,7 +4304,6 @@ def sym_259.ix(bs: List<&2, U32>, +ar: O.Arena, acc: Bool) -> Bool:
     case Nil{}: acc
     case h <> t: sym_259.ix(t, ar, Bool.or(acc, O.eq_op(O.Arena.op(ar, h), O.OpsINDEX{})))
 
-# `u.op_in_backward_slice_with_self(Ops.INDEX)` -- the node ITSELF included, which is why the
 def sym_259.ixs(+x: F.Folded, +u: U32) -> Bool:
   +ar = F.Folded.ar(x)
   +fu = O.Arena.budget(ar)
@@ -4549,7 +4436,6 @@ def sym_316c.pat(+x: F.Folded, +u: U32) -> Bool:
 def sym_316c(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sym_316c.mk(Bool.pick(Maybe<&1, H.I64>, sym_316c.pat(x, u), sym_316c.iv(sy_val(x, sy_src1(x, u))), None{}), x, u)
 
-# `UPat(Ops.RANGE, src=UPat.var("end"), name="r")` -- a RANGE whose source is the node the other
 def p_range_of(+x: F.Folded, +r: U32, +e: U32) -> Bool:
   Bool.or(Bool.and(sy_is_op(x, r, O.OpsRANGE{}), sy_nsrc_ge(x, r, 1)),
     False{})
@@ -4581,7 +4467,6 @@ def sym_305(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_295.inner(+x: F.Folded, +u: U32) -> U32:
   Bool.pick(U32, sym_284.alu2c(x, sy_src0(x, u), sy_op(x, u)), sy_src0(x, u), sy_src1(x, u))
 
-# the other side is the non-CONST part, and it is the side that is not the inner.
 def sym_295.outer(+x: F.Folded, +u: U32, +i: U32) -> U32:
   Bool.pick(U32, U32.is_eq(i, sy_src0(x, u)), sy_src1(x, u), sy_src0(x, u))
 
@@ -4590,7 +4475,6 @@ def sym_295.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_nsrc_is(x, u, 2), sym_284.alu2c(x, i, sy_op(x, u))),
     Bool.not(sy_is_const(x, sym_295.outer(x, u, i))))
 
-# the guard `:309`/`:311` carry and this body did not: `no_overflow(m:=x op y)`, plus, for `*`,
 def sym_295.fitc(c: O.Const, +dt: S.Dt) -> Bool:
   match c:
     case O.CInt{i}: fits(dt, i)
@@ -4618,14 +4502,12 @@ def sym_295.hit(ok: Bool, +s: O.Found, +x: F.Folded, +u: U32, +i: U32) -> Maybe<
 
 def sym_295.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +i = sym_295.inner(x, u)
-  # the other side is the non-CONST part, and it is the side that is not the inner -- so the
   +s = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.v(x, i), sym_295.outer(x, u, i))
   sym_295.hit(Bool.and(sym_295.opok(x, u, i), sym_295.no_ov(s, O.Found.i(s))), s, x, u, i)
 
 def sym_295(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_295.pat(x, u), sym_295.mk(x, u))
 
-# ONE BODY, TWO NAMES: `:296` is the same rule on `*`, and the op comes off the node.
 def sym_296(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_295(x, u)
 
 # symbolic.py:290  ((UPat.cvar("c0") + UPat.var("x", dtype=dtypes.sints+(dtypes.weakint,)))
@@ -4644,7 +4526,6 @@ def sym_290.put(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32, +a: U32) -> Maybe<
       Some{mint_bin(s, O.OpsCMPLT{}, sy_src1(x, a), O.Found.i(s))}
     case None{}: None{}
 
-# the guard `:304` carries and this body did not: `fits(x, c1.vmin-c0.vmin)`.
 def sym_290.cv(m: Maybe<&2, O.Const>) -> Maybe<&1, H.I64>:
   match m:
     case Some{O.CInt{i}}: Some{i}
@@ -4678,7 +4559,6 @@ def sym_290.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_290(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_290.pat(x, u), sym_290.mk(x, u))
 
-# two constants with the same value, and the join of two `Maybe`s is a nested match because a
 def p_consteq.b(a: O.Const, mb: Maybe<&2, O.Const>) -> Bool:
   match mb:
     case Some{b}: O.eq_const(a, b)
@@ -4758,7 +4638,6 @@ def sy_novel.go(self: U32, m: Maybe<&1, U32>) -> Maybe<&1, U32>:
 def sy_novel(self: U32, m: Maybe<&1, U32>) -> Maybe<&1, U32>:
   sy_novel.go(self, m)
 
-# FIRST-WINS. Keying on the ACCUMULATOR is what makes it first-wins: keying on the
 def sy_keep.go(acc: Maybe<&1, U32>, v: Maybe<&1, U32>) -> Maybe<&1, U32>:
   match acc:
     case Some{i}: Some{i}
@@ -4808,7 +4687,6 @@ def sym_174.deep(+x: F.Folded, +a: U32, +b: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, a, O.OpsMUL{}), sy_nsrc_is(x, a, 2)),
     Bool.and(sy_is_op(x, b, O.OpsRECIP{}),
       Bool.and(U32.is_eq(sy_src0(x, b), sy_src1(x, a)),
-        # the zero guard: `x2` is the divisor, and `(x * 0) / 0` is `0 / 0` and not `x`.
         Bool.not(p_is_const_0(x, sy_src1(x, a))))))
 
 def sym_174.pat(+x: F.Folded, +u: U32) -> Bool:
@@ -4964,7 +4842,6 @@ def rm_table() -> O.PMEntrys:
     O.PMEntry{0, [O.OpsWHERE{}], OP_INVALID()},                            # 115
     O.PMEntry{1, [O.OpsSTACK{}], Nil{}}]}                                 # 116
 
-# THE DECLARED LENGTHS, and they are a sum of unit counts so that a DROPPED table
 def nats.go(xs: List<&2, Nat>, n: Nat) -> Nat:
   match xs:
     case Nil{}: n
@@ -4981,7 +4858,6 @@ def sym_table_len() -> Nat:
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
 
-# THE DRIVER, twice. `sym_*` for the `sym` composition and `rm_*` for
 def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   match tag:
     case 1: sym_83(x, u)
@@ -5047,7 +4923,6 @@ def sy_lift(m: Maybe<&1, U32>, +ar: O.Arena) -> Maybe<&1, O.Found>:
     case None{} : None{}
     case Some{i}: Some{O.Found{ar, i}}
 
-# `UOp.const(v, dt)` AT AN EXPLICIT ARENA, carrying the arena `O.UOp.const` grew.
 def sy_cconst_f.mk(+f: O.Found, dt: S.Dt) -> Maybe<&1, O.Found>:
   Some{mint_cast(f, O.Found.i(f), dt)}
 
@@ -5059,7 +4934,6 @@ def sy_cconst_f.go(tv: Maybe<&1, O.Const>, +ar: O.Arena, dt: S.Dt) -> Maybe<&1, 
 def sy_cconst_f(+ar: O.Arena, +dt: S.Dt, v: O.Const) -> Maybe<&1, O.Found>:
   sy_cconst_f.go(sy_trunc(dt, v), ar, dt)
 
-# `UOp.ccast(dtype)` -- the CONST branch mints a const, the other branch casts the node. Both
 def sy_ccast_f.of(is_const: Bool, v: Maybe<&2, O.Const>, +ar: O.Arena, +u: U32, +dt: S.Dt) -> Maybe<&1, O.Found>:
   match is_const:
     case True{} : sy_cconst_f(ar, dt, sy_maybe_c2(v))
@@ -5106,11 +4980,9 @@ def sy_uprod_f(xs: List<&2, U32>, +f: O.Found, +op: O.Op, acc: U32) -> O.Found:
       +f2 = mint_alu(op, f, [acc, x])
       sy_uprod_f(t, f2, op, O.Found.i(f2))
 
-# The entry. `self` is the RECEIVER, so the op is read off ITS dtype and `rest` is `*uops`.
 def sy_uprod(+x: F.Folded, +self: U32, rest: List<&2, U32>) -> Maybe<&1, O.Found>:
   Some{sy_uprod_f(rest, O.Found{sy_ar(x), self}, sy_uprod_op(sy_dt1(x, self)), self)}
 
-# `invalid_gate` -- `WHERE(cond, x, Invalid)` and nothing looser.
 def p_ig3(+x: F.Folded, +a: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, a, O.OpsWHERE{}), sy_nsrc_is(x, a, 3)),
            sy_is_invalid_const(x, sy_src2(x, a)))
@@ -5123,7 +4995,6 @@ def sym_88.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(O.GroupOp.binary(sy_op(x, u)), sy_nsrc_is(x, u, 2)),
            p_ig3(x, sy_src1(x, u)))
 
-# ONE BODY FOR THE PAIR: `(g, y)` in that order, the gate's `x` first inside the op for :87 and
 def sym_87.mk(+f: O.Found, +op: O.Op, +g: U32, +y: U32) -> Maybe<&1, O.Found>:
   +ar = O.Found.ar(f)
   +f1 = mint_alu(op, f, [O.Arena.src(ar, g, 1), y])
@@ -5203,7 +5074,6 @@ def sym_90.out(lift: List<&2, U32>, +f: O.Found, +op: O.Op, +ar: O.Arena, +red: 
       # mint -- is the arena-threading trap, and MEASURED it printed `WHERE<CONST,WHERE,CONST>`
       Some{mint_where(fr, O.Found.i(fl), O.Found.i(fr), inv)}
 
-# `match` MAY NOT SCRUTINISE A CALL, so the arg crosses as a parameter -- the same shape as
 def sym_90.zero.of(a: O.Arg) -> Bool:
   match a:
     case O.AReduce{rop, n}: U32.is_zero(n)
@@ -5234,14 +5104,12 @@ def sym_90.go(ok: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sym_90.go(sym_90.pat(x, u), x, u)
 
-# the tags with a minting body. a list and not a predicate, because the dispatch below is a
 def MINT_TAGS() -> List<&2, U32>: [0,2,3,4,6,8,9,10,11,17,19,22,29,30,32,33,34,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,58,59,60,61,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,98,99,100,101,102,103,104,105,106,108,109,110,111,112,113,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130]
 
 # `nested_div` -- divandmod.py:23. AND IT IS THE NEXT UNPORTED ARM OF
 # AND IT IS INSIDE THE " Constant Denominator Rules " BLOCK (`divandmod.py:19-21`), SO
 # constant-denominator rules first (`divandmod.py:19-21`) and the `divide_by_gcd` arm is in
 
-# and the CONST's value out of a `Maybe<&2, O.Const>` -- and the `None` case is zero,
 def dm_nd_val.of(m: Maybe<&2, O.Const>) -> Maybe<&2, U32>:
   match m:
     case Some{O.CInt{i}}: Some{H.lo32(i)}
@@ -5255,7 +5123,6 @@ def dm_nd_val.go(v: Maybe<&2, U32>) -> U32:
 def dm_nd_val(+x: F.Folded, +u: U32) -> U32:
   dm_nd_val.go(dm_nd_val.of(sy_val(x, u)))
 
-# and the CONST's value as an `H.I64` -- and the port's own `UOp.divides` takes an `H.I64`
 def dm_nd_val64.go(v: Maybe<&2, U32>) -> H.I64:
   match v:
     case Some{n}: H.i64_of_i32(n)
@@ -5264,11 +5131,9 @@ def dm_nd_val64.go(v: Maybe<&2, U32>) -> H.I64:
 def dm_nd_val64(+x: F.Folded, +u: U32) -> H.I64:
   dm_nd_val64.go(dm_nd_val.of(sy_val(x, u)))
 
-# and the `k.vmin > 0` guard -- and it is an I64 comparison (measured 2026-11-09: the
 def dm_nd_positive.go(v: H.I64) -> Bool:
   Cmp.is_le(H.i64_cmp(H.i64_of_i32(0), v))
 
-# and the MOD's divisor: the MOD node is `d.src[0]` and its own SRC 1 is the MOD's
 def dm_nd.moddiv(+x: F.Folded, +u: U32) -> U32:
   sy_src1(x, sy_src0(x, u))
 
@@ -5282,7 +5147,6 @@ def dm_nd_k(+x: F.Folded, +u: U32, c: H.I64) -> Maybe<&1, O.Found>:
   +d = O.UOp.divides(U32.to_nat(O.Arena.next(sy_ar(x))), sy_ar(x), c, dm_nd.moddiv(x, u))
   dm_nd_k.go(d, O.Dv.ok(d))
 
-# and the `k`'s positiveness, read off the `k`'s own node -- and the value is an `H.I64`,
 def dm_nd_val_of.go(arg: O.Arg) -> H.I64:
   match arg:
     case O.APy{O.CInt{i}}: i
@@ -5296,16 +5160,13 @@ def dm_nd_k.pos.go(k: Maybe<&1, O.Found>) -> Bool:
     case Some{kk}: dm_nd_positive.go(dm_nd_val_of(kk))
     case None{}: False{}
 
-# and the dividend: `x.src[0]` WHERE `x` is the MOD node (measured 2026-11-09: the
 def dm_nd.dividend(+x: F.Folded, +u: U32) -> U32:
   sy_src0(x, sy_src0(x, u))
 
-# and the answer: `x.src[0] // y % k` -- and it is the port's own `mint_bin` twice:
 def dm_nd_answer(+x: F.Folded, +u: U32, +k: O.Found) -> O.Found:
   +q = mint_bin(mint_ar(O.Found.ar(k)), O.OpsDIV{}, dm_nd.dividend(x, u), sy_src1(x, u))
   mint_bin(q, O.OpsMOD{}, O.Found.i(q), O.Found.i(k))
 
-# and the arm's guards: `d.op is Ops.DIV` and `x.op is Ops.MOD` -- and `x` is `d.src[0]`
 def dm_nd.pat.go(isdiv: Bool, ismod: Bool) -> Bool:
   Bool.and(isdiv, ismod)
 
@@ -5313,7 +5174,6 @@ def dm_nd.pat(+x: F.Folded, +u: U32) -> Bool:
   dm_nd.pat.go(sy_is_op(x, u, O.OpsDIV{}),
               sy_is_op(x, sy_src0(x, u), O.OpsMOD{}))
 
-# and the constant denominator guard: `y.op is Ops.CONST and y.val > 0` -- and `c` is
 def dm_nd.cst.go(isconst: Bool, c: U32) -> Bool:
   Bool.and(isconst, U32.is_gt(c, 0))
 
@@ -5342,7 +5202,6 @@ def dm_nd.mk2(+x: F.Folded, +u: U32, k: Maybe<&1, O.Found>) -> Maybe<&1, O.Found
 def dm_nd.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   dm_nd.mk2(x, u, dm_nd.k(x, u))
 
-# and the rule -- and the constant denominator guard is the port's own
 def dm_nd.pat2(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(dm_nd.pat(x, u),
            dm_nd.cst(x, u, dm_nd_val(x, sy_src1(x, u))))
@@ -5350,13 +5209,16 @@ def dm_nd.pat2(+x: F.Folded, +u: U32) -> Bool:
 def dm_nd(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(dm_nd.pat2(x, u), dm_nd.mk(x, u))
 
-# and the arm's answer without the matcher's dispatch, so a row can ask the arm directly --
+# (THIS WAS A STACK OF 12 IDENTICAL SEPARATOR LINES -- MEASURED 2026-11-10 -- AND ONE
+# the `nested_div` rows -- divandmod.py:23. and they are CPYTHON-confirmed against
+# AND NOT JUST "SOMETHING FIRED".
+# AND THE MEASURED UPSTREAM ANSWERS (2026-11-09, ON CPYTHON AT `f5ac54685074`, BY
+# EVALUATING UPSTREAM's OWN ARM TEXT `divandmod.py:23`):
 def dm_nd.ans(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   dm_nd.mk(x, u)
 
 # THE TABLE IS IN `.agents/slop/tables/uop-symbolic-7069.md` -- (THIS WAS A STACK OF 12 IDENTICAL SEPARATOR LINES -- MEASURED 2026-11-10 -- AND ONE
 
-# and the CONST's value is 4 (the divisor) and 2 (the `k`) -- and every value is
 def t_nd.isconst4.go(isconst: Bool, arg: O.Arg) -> Bool:
   match arg:
     case O.APy{O.CInt{i}}: Bool.and(isconst, Cmp.is_eq(H.i64_cmp(i, H.i64_of_i32(4))))
@@ -5373,7 +5235,6 @@ def t_nd.isconst2.go(isconst: Bool, arg: O.Arg) -> Bool:
 def t_nd.isconst2(+ar: O.Arena, +i: U32) -> Bool:
   t_nd.isconst2.go(O.eq_op(O.Arena.op(ar, i), O.OpsCONST{}), O.Arena.arg(ar, i))
 
-# and the answer's node is read once -- and its op and its srcs come off it
 def t_nd.shape8(+f: O.Found, +ans: O.Node, a1: U32, d0: U32, d1: U32) -> Bool:
   +ar = O.Found.ar(f)
   Bool.and(Bool.and(O.eq_op(O.Node.op(ans), O.OpsMOD{}),
@@ -5410,7 +5271,6 @@ def t_nd.shape.go(m: Maybe<&1, O.Found>) -> Bool:
     case Some{f}: t_nd.shape.go2(f)
     case None{}: False{}
 
-# and "did the arm fire" -- and `Maybe` has no `is_some` in the prelude (measured 2026-11-09:
 def t_nd.some(m: Maybe<&1, O.Found>) -> Bool:
   match m:
     case Some{f}: True{}
@@ -5428,21 +5288,18 @@ def t_nd.graph(+k: H.I64, +c: H.I64) -> O.Found:
   +ar4 = O.Found.ar(m)
   O.UOp.alu(ar4, O.OpsDIV{}, [O.Found.i(m), O.Found.i(cc)])
 
-# and the `(x % 8) // 4` rewrite: a MOD of a DIV of `x` by the CONST `4`, modulo the CONST
 def t_nd_rewrite() -> Bool:
   +f = t_nd.graph(H.i64_of_i32(8), H.i64_of_i32(4))
   +x = F.folded(O.Found.ar(f))
   +u = O.Found.i(f)
   t_nd.shape.go(dm_nd.ans(x, u))
 
-# and the negative guard: `(x % -4) // 4` is not rewritten -- and the `k` is -1
 def t_nd_neg() -> Bool:
   +f = t_nd.graph(H.i64_neg(True{}, H.i64_of_i32(4)), H.i64_of_i32(4))
   +x = F.folded(O.Found.ar(f))
   +u = O.Found.i(f)
   Bool.not(t_nd.some(dm_nd.ans(x, u)))
 
-# and the no-divide guard: `(x % 2) // 4` is not rewritten -- and `2` does not
 def t_nd_nodiv() -> Bool:
   +f = t_nd.graph(H.i64_of_i32(2), H.i64_of_i32(4))
   +x = F.folded(O.Found.ar(f))
@@ -5455,7 +5312,6 @@ def t_nd_nodiv() -> Bool:
 # ANSWERS IT IS `divide_by_gcd` (LINE 66) ... MEASURED, `UOp.gcd(x, y)` ANSWERS THE PARAM
 # MEASURED 2026-11-09 ON CPYTHON: `UOp.gcd(x*y, y)` IS `(mul 1 y)` AND `.simplify()` IS `y`,
 
-# and "is this node the CONST 1" over an arena and an INDEX -- and the port's own
 def p_is_const_1_of.arg(arg: O.Arg) -> Bool:
   match arg:
     case O.APy{O.CInt{i}}: Cmp.is_eq(H.i64_cmp(i, H.i64_of_i32(1)))
@@ -5469,7 +5325,6 @@ def p_is_const_1_of.go(isconst: Bool, arg: O.Arg) -> Bool:
 def p_is_const_1_of(+ar: O.Arena, +u: U32) -> Bool:
   p_is_const_1_of.go(O.eq_op(O.Arena.op(ar, u), O.OpsCONST{}), O.Arena.arg(ar, u))
 
-# and the MUL by the identity FOLD -- and it is the `simplify` of the `gcd` -- and it
 def dm_gcd_fold.pick3(+ar: O.Arena, +u: U32, r: Bool) -> U32:
   match r:
     case True{}: O.Arena.src(ar, u, 0)
@@ -5480,11 +5335,9 @@ def dm_gcd_fold.pick2(+ar: O.Arena, +u: U32, l: Bool, r: Bool) -> U32:
     case True{}: O.Arena.src(ar, u, 1)
     case False{}: dm_gcd_fold.pick3(ar, u, r)
 
-# and the FOLD's pick: the CONST 1 at `src[0]` leaves `src[1]` and vice versa -- and MUL is
 def dm_gcd_fold.pick(+ar: O.Arena, +u: U32, l: Bool, r: Bool) -> U32:
   dm_gcd_fold.pick2(ar, u, l, r)
 
-# and the FOLD: a MUL with two srcs and a CONST 1 at either one folds to the other,
 def dm_gcd_fold.two(+ar: O.Arena, +u: U32, two: Bool, l: Bool, r: Bool) -> U32:
   match two:
     case True{}: dm_gcd_fold.pick(ar, u, l, r)
@@ -5501,7 +5354,6 @@ def dm_gcd_fold(+ar: O.Arena, +u: U32) -> U32:
                  p_is_const_1_of(ar, O.Arena.src(ar, u, 0)),
                  p_is_const_1_of(ar, O.Arena.src(ar, u, 1)))
 
-# and the `all_uops`: `list(x.split_uop(Ops.ADD))` plus the denominator -- and
 def dm_gcd_uops.go(+l: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match l:
     case Nil{}: acc
@@ -5510,12 +5362,10 @@ def dm_gcd_uops.go(+l: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
 def dm_gcd_uops(+ar: O.Arena, +num: U32, +den: U32) -> List<&2, U32>:
   dm_gcd_uops.go(sy_split(ar, num, O.OpsADD{}), List.append(&2, U32, Nil{}, [den]))
 
-# and the `gcd`: `UOp.gcd(*all_uops, y).simplify()` -- and the port's `UOp.gcd` answers
 def dm_gcd(+ar: O.Arena, +num: U32, +den: U32) -> U32:
   +g = O.UOp.gcd(ar, dm_gcd_uops(ar, num, den))
   dm_gcd_fold(O.Found.ar(g), O.Found.i(g))
 
-# AND THE GUARD: `not (gcd.op is Ops.CONST and gcd.val==1)` -- AND A `gcd` OF 1 MEANS
 def dm_gcd_is_one(+ar: O.Arena, +g: U32) -> Bool:
   p_is_const_1_of(ar, g)
 
@@ -5547,7 +5397,6 @@ def dm_gcd_ret.go(a: Maybe<&1, O.Found>, b: Maybe<&1, O.Found>) -> Maybe<&1, O.F
 def dm_gcd_ret(+ar: O.Arena, +num: U32, +den: U32, +g: U32) -> Maybe<&1, O.Found>:
   dm_gcd_ret.go(dm_gcd_quo(ar, num, g), dm_gcd_quo(ar, den, g))
 
-# and the arm: the guard and the answer -- and the `gcd` is computed once and passed
 def dm_gcd_arm.go(+ar: O.Arena, +d: U32, +g: U32, isone: Bool) -> Maybe<&1, O.Found>:
   match isone:
     case True{}: None{}
@@ -5557,7 +5406,6 @@ def dm_gcd_arm(+ar: O.Arena, +d: U32) -> Maybe<&1, O.Found>:
   +g = dm_gcd(ar, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1))
   dm_gcd_arm.go(ar, d, g, dm_gcd_is_one(ar, g))
 
-# and the rule: the slow rule -- and its pattern is any DIV or MOD node, and the
 def dm_103b.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.or(sy_is_op(x, u, O.OpsDIV{}), sy_is_op(x, u, O.OpsMOD{})),
            Bool.and(sy_nsrc_is(x, u, 2), p_weakint(x, u)))
@@ -5727,7 +5575,6 @@ def sym_f(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def rm_108.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)), p_invalid(x, sy_src2(x, u)))
 
-# `Maybe` is a `Type`, so it is read ONCE: the two facts `w.const_like(0)` needs --
 def rm_108.ok(hit: Bool, ok: Bool, +x: F.Folded, +u: U32, z: U32) -> Maybe<&1, U32>:
   Bool.pick(Maybe<&1, U32>, Bool.and(hit, ok),
     Some{sy_replace_src(sy_ar(x), u, [sy_src0(x, u), sy_src1(x, u), z])}, None{})
@@ -5795,7 +5642,6 @@ def rm_rewrite(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 
 def pm_remove_invalid(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   rm_rewrite(rm_table(), x, u)
-# THE FIXTURES, and the ONE thing that had to be got right: EVERY construction
 def f_new(+ar: O.Arena, op: O.Op, srcs: List<&2, U32>, a: O.Arg) -> O.Found:
   O.UOp.new(ar, op, srcs, a, O.TNone{})
 
@@ -5815,13 +5661,11 @@ def f_c(v: H.I64) -> O.Found: O.UOp.const(O.Arena.empty(), O.CInt{v})
 def f_where(+ar: O.Arena, a: U32, b: U32, c: U32) -> O.Found:
   O.UOp.new(ar, O.OpsWHERE{}, [a, b, c], O.ANone{}, O.TNone{})
 
-# `x + 0` with `x = CONST(7)`: 0 is `CONST(7)`, 1 is `CONST(0)`, 2 is the ADD.
 def fx_add0() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(0)})
   f_alu2(b, O.OpsADD{}, f_i(a))
 
-# `x // x` with `x = CONST(7)`: 0 is `CONST(7)`, 1 is the DIV. The two srcs
 def fx_samediv() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   f_alu2(a, O.OpsDIV{}, f_i(a))
@@ -5832,26 +5676,22 @@ def fx_diffdiv() -> O.Found:
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(2)})
   f_alu2(b, O.OpsDIV{}, f_i(a))
 
-# `CAST(bool, CONST(Invalid))`: 0 is the Invalid CONST, 1 is the CAST.
 def fx_castbad() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInvalid{})
   f_cast(a, S.boolean())
 
-# `CAST(bool, WHERE(c, x, CONST(Invalid)))`: 0 is `CONST(True)`, 1 is
 def fx_gatecast() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CBool{True{}})
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(7)})
   +c = O.UOp.const(O.Found.ar(b), O.CInvalid{})
   f_cast(f_where(O.Found.ar(c), f_i(a), f_i(b), f_i(c)), S.boolean())
 
-# `WHERE(cond, x, CONST(Invalid))`, the node `sym`'s tag 2 AND `pm_remove_invalid`'s
 def fx_where() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CBool{True{}})
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(7)})
   +c = O.UOp.const(O.Found.ar(b), O.CInvalid{})
   f_where(O.Found.ar(c), f_i(a), f_i(b), f_i(c))
 
-# `STORE(INDEX(b, CONST(Invalid)), v)`: 0 is `CONST(2)`, 1 is the Invalid CONST,
 def fx_store() -> O.Found:
   +a = f_c(H.i64_of_i32(2))
   +b = O.UOp.const(O.Found.ar(a), O.CInvalid{})
@@ -5865,13 +5705,11 @@ def fx_alu() -> O.Found:
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(6)})
   f_alu2(b, O.OpsADD{}, f_i(a))
 
-# `STACK(CONST(7), CONST(Invalid))`: 0 is `CONST(7)`, 1 is the Invalid CONST, 2 is
 def fx_stack() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInvalid{})
   f_new(O.Found.ar(b), O.OpsSTACK{}, [f_i(a), f_i(b)], O.ANone{})
 
-# `GROUP(CONST(7))`: 0 is `CONST(7)`, 1 is the GROUP, and tag 11 answers 0.
 def fx_sink() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(2)})
@@ -5879,7 +5717,6 @@ def fx_sink() -> O.Found:
   +d = O.UOp.const(O.Found.ar(c), O.CInt{H.i64_of_i32(3)})
   f_new(O.Found.ar(d), O.OpsSINK{}, [f_i(c), f_i(d)], O.ANone{})
 
-# `SINK(AFTER(a), b)` -- THE SHAPE `fx_sink` IS NOT, and the fixture that makes
 def fx_sinkgrp() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(2)})
@@ -5887,13 +5724,11 @@ def fx_sinkgrp() -> O.Found:
   +d = f_new(O.Found.ar(c), O.OpsAFTER{}, [f_i(a)], O.ANone{})
   f_new(O.Found.ar(d), O.OpsSINK{}, [f_i(d), f_i(b)], O.ANone{})
 
-# THE NEGATIVE SIDE, and it is a real row rather than a compliment to the positive
 def fx_sinkgrp0() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(2)})
   f_new(O.Found.ar(b), O.OpsSINK{}, [f_i(a), f_i(b)], O.ANone{})
 
-# `ADD(CONST(1), CONST(2**31))` at int32: the top ADD WRAPS to -2147483647.
 def fx_i32() -> O.Found:
   +a = f_c(H.i64_of_i32(1))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_hi_lo(1, 0)})
@@ -5904,14 +5739,12 @@ def fx_i32() -> O.Found:
 def f_bin(+ar: O.Arena, op: O.Op, a: U32, b: U32) -> O.Found:
   O.UOp.alu(ar, op, [a, b])
 
-# `MOD(MOD(x, y), y)` over the SAME `y`: 1 is `CONST(7)`, 2 is `CONST(3)`,
 def fx_mod() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(3)})
   +c = f_bin(O.Found.ar(b), O.OpsMOD{}, f_i(a), f_i(b))
   f_bin(O.Found.ar(c), O.OpsMOD{}, f_i(c), f_i(b))
 
-# THE NEGATIVE, and it is the ONLY witness for the rebind check: 1, 2 and 3 are
 def fx_mod2() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(3)})
@@ -5935,7 +5768,6 @@ def fx_ne1() -> O.Found: fx_ne.of(O.Arena.empty(), H.i64_of_i32(1))
 
 def fx_ne2() -> O.Found: fx_ne.of(O.Arena.empty(), H.i64_of_i32(2))
 
-# THE PERMUTED SIDE, and it is the row for the `Sw`: the CONST is at src[0] and the
 def fx_ne0r() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CBool{True{}})
   +b = O.UOp.const(O.Found.ar(a), O.CBool{False{}})
@@ -5944,18 +5776,15 @@ def fx_ne0r() -> O.Found:
   +f = O.UOp.const(O.Found.ar(e), O.CInt{H.i64_of_i32(0)})
   f_bin(O.Found.ar(f), O.OpsCMPNE{}, f_i(f), f_i(e))
 
-# `TRUNC(CAST(CONST(7), int32))`: 1 is the CONST, 2 the CAST and 3 the TRUNC, and
 def fx_trunc() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = f_cast(a, S.int32())
   f_new(O.Found.ar(b), O.OpsTRUNC{}, [f_i(b)], O.ANone{})
 
-# THE NEGATIVE, and the dtype set is the whole claim: the same TRUNC over a
 def fx_truncf() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CFloat{2.75})
   f_new(O.Found.ar(a), O.OpsTRUNC{}, [f_i(a)], O.ANone{})
 
-# `(x & mask) >> k` with `k = 4` and `mask = -16`, so `mask | ((1 << 4) - 1)` is
 def fx_shr() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(4294967280)})
@@ -5963,7 +5792,6 @@ def fx_shr() -> O.Found:
   +d = O.UOp.const(O.Found.ar(c), O.CInt{H.i64_of_i32(4)})
   f_bin(O.Found.ar(d), O.OpsSHR{}, f_i(c), f_i(d))
 
-# THE NEGATIVE, and it is the GUARD: the same shape with `mask = 0`, so
 def fx_shr0() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(0)})
@@ -5971,7 +5799,6 @@ def fx_shr0() -> O.Found:
   +d = O.UOp.const(O.Found.ar(c), O.CInt{H.i64_of_i32(4)})
   f_bin(O.Found.ar(d), O.OpsSHR{}, f_i(c), f_i(d))
 
-# `(x & mask) // c` with `c = 16`, which is a power of two, and `mask = -16`. The
 def fx_fdivm() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(4294967280)})
@@ -5979,7 +5806,6 @@ def fx_fdivm() -> O.Found:
   +d = O.UOp.const(O.Found.ar(c), O.CInt{H.i64_of_i32(16)})
   f_bin(O.Found.ar(d), O.OpsDIV{}, f_i(c), f_i(d))
 
-# THE NEGATIVE, and it is the POWER-OF-TWO half: `c = 15` is not one, so the rule
 def fx_fdivm0() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(4294967280)})
@@ -5987,7 +5813,6 @@ def fx_fdivm0() -> O.Found:
   +d = O.UOp.const(O.Found.ar(c), O.CInt{H.i64_of_i32(15)})
   f_bin(O.Found.ar(d), O.OpsDIV{}, f_i(c), f_i(d))
 
-# THE PROMOTION, and it is a TWO-SRC fold over `[casted_const, bare_const]`: 1 is
 def fx_prom() -> O.Found:
   +a = f_c(H.i64_of_i32(3))
   +b = f_cast(a, S.int32())
@@ -6001,7 +5826,6 @@ def fx_prom0() -> O.Found:
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(0)})
   f_bin(O.Found.ar(c), O.OpsMUL{}, f_i(b), f_i(c))
 
-# the threefry unpack, low half: `CAST(SHL(z, 32) | CAST(y, uint64), uint32)` with
 def fx_tflo() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = f_cast(a, S.uint32())
@@ -6013,7 +5837,6 @@ def fx_tflo() -> O.Found:
   +h = f_bin(O.Found.ar(g), O.OpsOR{}, f_i(f), f_i(g))
   f_cast(h, S.uint32())
 
-# the threefry unpack, high half: `shr(shl(CAST(x, uint64), 32) | CAST(z, uint64),
 def fx_tfhi() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = f_cast(a, S.uint32())
@@ -6026,14 +5849,12 @@ def fx_tfhi() -> O.Found:
   +i = f_bin(O.Found.ar(h), O.OpsOR{}, f_i(e), f_i(h))
   f_bin(O.Found.ar(i), O.OpsSHR{}, f_i(i), f_i(d))
 
-# `1/(x*x*x)`: 1 is `CONST(7)`, 2 is `MUL(1,1)`, 3 is `MUL(2,1)` and 4 the
 def fx_recip3() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = f_bin(O.Found.ar(a), O.OpsMUL{}, f_i(a), f_i(a))
   +c = f_bin(O.Found.ar(b), O.OpsMUL{}, f_i(b), f_i(a))
   f_new(O.Found.ar(c), O.OpsRECIP{}, [f_i(c)], O.ANone{})
 
-# THE NEGATIVE, and it is the SIBLING identity check: the inner MUL's two srcs are
 def fx_recip3x() -> O.Found:
   +a = f_c(H.i64_of_i32(7))
   +b = O.UOp.new(O.Found.ar(a), O.OpsADD{}, [f_i(a), f_i(a)], O.ANone{}, O.TNone{})
@@ -6041,14 +5862,24 @@ def fx_recip3x() -> O.Found:
   +d = f_bin(O.Found.ar(c), O.OpsMUL{}, f_i(c), f_i(b))
   f_new(O.Found.ar(d), O.OpsRECIP{}, [f_i(d)], O.ANone{})
 
-# `1/(x*c)` with a NON-CONST `x`, so the rule's own two names are distinguishable:
 def fx_recipc() -> O.Found:
   +a = f_c(H.i64_of_i32(9))
   +b = O.UOp.new(O.Found.ar(a), O.OpsADD{}, [f_i(a), f_i(a)], O.ANone{}, O.TNone{})
   +c = f_bin(O.Found.ar(b), O.OpsMUL{}, f_i(b), f_i(a))
   f_new(O.Found.ar(c), O.OpsRECIP{}, [f_i(c)], O.ANone{})
 
-# THE SAME, WITH THE CONST AT src[0] -- the SECOND permutation, and the row that
+#                which is `symbolic.py:82`'s `op.replace(src=(x,))`.
+#   rebind0=0    the SAME rule on `x // y` for two DIFFERENT nodes. ONLY THE PAIR
+#   modb/modb0   tag 13, symbolic.py:124. `(x%y)%y -> x%y` over the SAME `y`, and
+#   ne0/ne1/ne2  tag 14, symbolic.py:135-136. The THREE arms, and they answer THREE
+#   /ne0r        DIFFERENT NODES (3, 7 and 1) because `x` is a bool-dtype node that
+#   trunc/trunc0 tag 15, symbolic.py:137. `x.trunc() -> x` at an int, and the SAME
+#   shr/shr0     tag 16, symbolic.py:144. `(x & mask) >> k` -> `x >> k` when
+#   promo_c/_0   tag 18, symbolic.py:160. The weak src is committed at the meet and
+#   tflo/tfhi    tags 19/20, symbolic.py:192/194. BOTH answer a node that was
+#   recip3/      tag 21, symbolic.py:464. `1/(x*x*x)` -> `MUL(MUL(R,R),R)`, three new
+#   recipc/      tag 22, symbolic.py:465. `1/(x*c)` -> `MUL(R(x), R(c))`, and BOTH
+#                is now a sentence rather than a shrug. `mixin/elementwise.py:50
 def fx_recipc0() -> O.Found:
   +a = f_c(H.i64_of_i32(9))
   +b = O.UOp.new(O.Found.ar(a), O.OpsADD{}, [f_i(a), f_i(a)], O.ANone{}, O.TNone{})
@@ -6097,7 +5928,6 @@ def t_rej() -> U32: U32.from_nat(rej_go(O.PMEntrys.es(sym_table()), 0n))
 
 def t_lay() -> U32: O.Arena.next(O.Found.ar(fx_add0()))
 
-# A WALL THE GATE ITSELF STANDS ON, and it is the affine arena one more time.
 def alu_eq(m: Maybe<&1, O.Const>) -> Bool: i32_is(m, H.i64_of_i32(11))
 
 def alu_eq.go() -> Bool: alu_eq(exec_alu2(O.OpsADD{}, S.weakint(),
@@ -6107,7 +5937,6 @@ def t_alu() -> U32: Bool.to_u32(alu_eq.go())
 
 def t_alu_rule() -> U32: Bool.to_u32(Maybe.is_some(&1, U32, fold_const_alu.at(fx_of(fx_alu()), 3)))
 
-# THE CONCRETE-DTYPE ROW. The same addition at int32, where `const_like` cannot
 def f_cast_cast() -> Bool: sy_is_op(fx_of(fx_i32()), 4, O.OpsCAST{})
 
 def t_alu_i32() -> U32: Bool.to_u32(f_cast_cast())
@@ -6123,7 +5952,6 @@ def t_fdiv_i() -> U32: Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsDIV{}, I3{2
 
 def t_cdiv_i() -> U32: Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsTRUNCDIV{}, I3{2, 7, 2, 0}), H.i64_of_i32(3)))
 
-# the integer lane's `max`, which was a `min` (see `i32_max`). the row is
 def t_max_i() -> U32:
   Bool.to_u32(Bool.and(
     i32_is(exec_alu_i32(False{}, O.OpsMAX{}, I3{2, 3, 7, 0}), H.i64_of_i32(7)),
@@ -6145,7 +5973,6 @@ def t_selfadd() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_add0()), 3), 1))
 
 def t_rebind() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_samediv()), 2), 3))
 
-# `rebind0` asks for ABSENCE, not for a particular index: `x // y` must not be
 def t_rebind0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_diffdiv()), 3)))
 
 # the second rebind, `(x^y)^y -> x` -- symbolic.py:123 -- with a fixture per side.
@@ -6165,7 +5992,6 @@ def fx_xor2() -> O.Found:
   f_alu2(d, O.OpsXOR{}, f_i(c))
 
 def t_xorb0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_xor2()), 5)))
-# THE TAG-0 FIXTURE. `sym_82` is `STACK(CONST(Invalid), ...) -> the Invalid`, and
 def fx_bcast() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInvalid{})
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(7)})
@@ -6175,7 +6001,6 @@ def t_bcast() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_bcast()), 3), 1))
 
 def t_sink() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_sink()), 5), 6))
 
-# the same rule at a sink root, and the answer is a node that was already there,
 def t_sinkgrp() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_sinkgrp()), 5), 3))
 
 def t_sinkgrp0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_sinkgrp0()), 3)))
@@ -6184,28 +6009,23 @@ def t_rm_where() -> U32: Bool.to_u32(eq_u(pm_remove_invalid(fx_of(fx_where()), 4
 
 def t_rm_stack() -> U32: Bool.to_u32(eq_u(pm_remove_invalid(fx_of(fx_stack()), 3), 4))
 
-# THE FIRST-WINS FIXTURE. The overlapping pair is `sym_444` (`GROUP(x)` -> x) and
 
-# ---- THE ROWS FOR TAGS 13..22, and the COUNT rows for the dtype sets. Every
 def t_modb() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_mod()), 4), 3))
 
 def t_modb0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_mod2()), 5)))
 
-# the three arms of `sym_138`, and they answer three different nodes because `x` is
 def t_ne0() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_ne0()), 6), 3))
 
 def t_ne1() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_ne1()), 6), 7))
 
 def t_ne2() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_ne2()), 6), 1))
 
-# THE PERMUTED SIDE. `ne0r` asks for the SAME answer as `ne0` from a fixture whose
 def t_ne0r() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_ne0r()), 6), 3))
 
 def t_trunc() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_trunc()), 3), 2))
 
 def t_trunc0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_truncf()), 2)))
 
-# `shr` answers `SHR(x, CONST(4))` at 6 and NOT 5, which is the whole claim: the
 def t_shr() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_shr()), 5), 6))
 
 def t_shr0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_shr0()), 5)))
@@ -6214,13 +6034,11 @@ def t_fdivm() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_fdivm()), 5), 6))
 
 def t_fdivm0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_fdivm0()), 5)))
 
-# `promo_c` answers `MUL(CAST(3, int32), CAST(0, int32))` at 6: the weak src is
 def t_promo_c() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_prom()), 4), 6))
 
 # CONTINUES and upstream's `:178` (`x * 0` -> 0) answers a CONST 0.  MEASURED
 def t_promo_c0() -> U32: Bool.to_u32(Maybe.is_some(&1, U32, sym(fx_of(fx_prom0()), 4)))
 
-# `tflo` answers node 2 -- `y`, the node the CAST already sits over -- so the
 def t_tflo() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_tflo()), 9), 2))
 
 # under, because `mixin/dtype.py:19`'s `cast` is `self if self.dtype == dt else
@@ -6232,12 +6050,10 @@ def t_recip3() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_recip3()), 4), 7))
 
 def t_recip3x() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_recip3x()), 5)))
 
-# `recipc` AND `recipc0` ASK FOR THE SAME INDEX, and that is the claim: the answer
 def t_recipc() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_recipc()), 4), 7))
 
 def t_recipc0() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_recipc0()), 4), 7))
 
-# THE THREE DTYPE-SET COUNTS, against CPython's own `len(dtypes.ints)`, which is
 def dt_count.go(ds: List<&2, S.Dt>, n: Nat) -> Nat:
   match ds:
     case Nil{}: n
@@ -6249,12 +6065,33 @@ def t_intish_n() -> U32: U32.from_nat(dt_count.go(DTS_INTISH(), 0n))
 
 def t_intweak_n() -> U32: U32.from_nat(dt_count.go(DTS_INTWEAK(), 0n))
 
-# THE DECLARED-LENGTH ROWS, and they are what makes `sym_table_len` and
 def t_len_dec() -> U32: Bool.to_u32(U32.is_eq(U32.from_nat(sym_table_len()), t_len_sym()))
 
 def t_len_dec_rm() -> U32: Bool.to_u32(U32.is_eq(U32.from_nat(rm_table_len()), t_len_rm()))
 
-# THE OP-SET COUNT for `sym_163`, and it is EIGHTEEN: `ops.bend`'s `GroupOp.binary`
+#   :194's `x.cast(uint64)` IS the node `x` sits under, because `mixin/dtype.py:19`'s
+# TODO(p3) symbolic.py:207 def lt_folding -- `u.const_factor()` (-> `divides` ->
+#   three are `_min_max` (ops.py:1104, the largest single piece `fold.bend`
+# TODO(p3) symbolic.py:214 def canonicalize_simplex -- `u.vmin >= 0` and
+# TODO(p3) symbolic.py:233 def fold_where_closure -- `bool_slice`
+#   (ops.py:290, a frozenset union down the srcs), `op_in_backward_slice_with_self`
+# TODO(p3) symbolic.py:240-325  symbol=symbolic  -- ALL 47. Every one of the 47
+# TODO(p3) symbolic.py:328-386 parse_valid / uop_given_valid / _valid_priority /
+#   `UOp.variable` (ops.py:1013) for the fake variables. Four functions, none
+# TODO(p3) symbolic.py:390 def reduce_mul_chain -- `backward_slice` and `vmin`.
+# TODO(p3) symbolic.py:400-403 def drop_and_clauses + pm_drop_and_clauses --
+# TODO(p3) symbolic.py:427 def gated_given_valid -- `IMAGE.value`, a
+# TODO(p3) symbolic.py:451  symbol=sym  the `xpow` rule -- `xpow` is
+#   `tinygrad/codegen/decomp/transcendental.py`, a foreign import (symbolic.py:12
+# TODO(p3) symbolic.py:454-462 the four load/store folding rules -- `UOp.index`,
+# TODO(p3) symbolic.py:465-467  symbol=sym  the three `1 - d` reciprocal rules -- and the wall is
+# TODO(p3) symbolic.py:472-474 `-(x+y)` and `(x+y)*c -> x*c+y*c` -- after this pass
+# TODO(p3) symbolic.py:306-313 the two long/cast folding rules -- `x.overflows(a)`
+#   (ops.py:683, `self.vmin < dtype.min or dtype.max < self.vmax`) and `cast`, so
+# TODO(p3) mixin/elementwise.py:50 def logical_not -- BORROWED, not this file's.
+#   symbolic.py:131-133 asserts. The owner is the elementwise unit; when it lands,
+#   1. `_min_max` (ops.py:1104) unblocks `lt_folding`, `canonicalize_simplex`,
+# THE MUTATION TABLE, MEASURED. All twelve were applied, run, and reverted, with a
 def op_count.go(os: List<&2, O.Op>, n: Nat) -> Nat:
   match os:
     case Nil{}: n

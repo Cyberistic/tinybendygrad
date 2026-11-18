@@ -1,7 +1,11 @@
-# spec.bend -- tinygrad/uop/spec.py. The graph VALIDATOR: six rule tables, three helpers,
-# `spec.py` is not a rewriter. It answers, for ONE node, "is this node legal in the graph
-# THE ANSWER IS THREE-VALUED. Python's rule bodies return `True`, `False`, or `None`, and
+# spec.bend -- tinygrad/uop/spec.py. The graph VALIDATOR: six rule tables, three
+# WHAT THIS FILE IS. `spec.py` is not a rewriter. It answers, for ONE node, "is
+# THE ANSWER IS THREE-VALUED. Python's rule bodies return `True`, `False`, or
 #     ret = check_spec.rewrite(uop)          # spec.py:42
+# so `VTrue` is the only passing answer and BOTH `VFalse` and `VSkip` fail. They are
+# WHY SIX DISPATCHES. `spec.py` has six tables, each its own `PatternMatcher`, and
+# WHAT IS SHARED AND WHAT IS NOT. Shared: the property readers (`sp_*`), the
+# the tag spaces are per table, starting at 0, and each rule carries its `spec.py`
 
 #    `ops.py:1701` is `if not early_reject.issubset(ler): continue`, so the rule
 #    the pattern's FIRST src (`ops.py:1483`), and for a pattern whose first src is
@@ -15,7 +19,6 @@ import ./../LAWS/spec.bend as S
 import ./ops.bend as O
 import ./fold.bend as F
 
-# THE TWO-ARM TURNING WHEEL.
 
 def sp_tri.of(b: Bool, v: Bool) -> Maybe<&1, Bool>:
   match b:
@@ -377,7 +380,6 @@ def arg_const_int.of(a: O.Arg) -> Maybe<&2, H.I64>:
 def arg_const_int(a: O.Arg) -> Maybe<&2, H.I64>:
   arg_const_int.of(a)
 
-# THE FOLDS OVER A NODE'S SRCS. One def each, threaded `Bool` accumulator, self-call
 
 def all_void(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
   match srcs:
@@ -437,7 +439,6 @@ def all_const_or_param(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
     case Nil{}: acc
     case s <> t: all_const_or_param(t, fx, Bool.and(acc, sp_const_or_param(fx, s)))
 
-# `all_same(x.src)` -- helpers.py, on NODE INDICES. tinygrad compares UOp objects
 def all_same(srcs: List<&2, U32>, +head: U32, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
@@ -546,7 +547,6 @@ def sp_src_dt(+fx: F.Folded, self: U32, n: U32, want: S.Dt) -> Bool:
 def nsrc_ge(fx: F.Folded, self: U32, n: U32) -> Bool:
   Bool.not(U32.is_lt(sp_nsrc(fx, self), n))
 
-# A node's own dtype, as a VALUE, for the rules that compare two NODES' dtypes with
 def sp_dt_v.go(m: Maybe<&2, S.Dt>) -> S.Dt:
   match m:
     case Some{d}: d
@@ -1039,7 +1039,6 @@ def OP_ALU.go() -> List<&2, O.Op>:
 def OP_ALU() -> List<&2, O.Op>:
   OP_ALU.go()
 
-# THE TABLE. One entry per rule, in `spec.py`'s order, so tag N is `(spec.py
 
 def shared_table() -> O.PMEntrys:
   O.PMEntrys{[
@@ -1141,7 +1140,6 @@ def sh_rewrite(+ts: O.PMEntrys, fx: F.Folded, self: U32) -> O.Verdict:
 def shared_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
   sh_rewrite(shared_table(), fx, self)
 
-# THE PARAMARG FACTS, GATHERED ONCE. A `Maybe` is a `Type` -- Bend's affine
 
 type DevOpt is Data:
   DNo{}
@@ -1247,7 +1245,6 @@ def pa_of.go(m: Maybe<&1, O.ParamArg>, size: Maybe<&2, U32>) -> Pa:
 def pa_of(+fx: F.Folded, +self: U32) -> Pa:
   pa_of.go(arg_param(sp_arg(fx, self)), O.ParamArg.size(F.Folded.ar(fx), self))
 
-# `is_device` over the three states: `DNo` is Python's `None`, and
 def dopt_is.go(d: DevOpt) -> Bool:
   match d:
     case DNo{}: False{}
@@ -1294,7 +1291,6 @@ def some_list.go(a: Maybe<&2, List<&2, U32>>) -> Bool:
 def some_list(a: Maybe<&2, List<&2, U32>>) -> Bool:
   some_list.go(a)
 
-# `facts and valid_device_range(...)`, and the `None` when the range is
 def sp_and_vdr.go(facts: Bool, vdr: Maybe<&1, Bool>) -> Maybe<&1, Bool>:
   match vdr:
     case Some{v}: Some{Bool.and(facts, v)}
@@ -1333,7 +1329,6 @@ def te_1(+fx: F.Folded, +self: U32) -> O.Verdict:
 def te_2.size_ok(+present: Bool) -> Bool:
   Bool.or(Bool.not(present), present)
 
-# `isinstance(x.arg, ParamArg)`, `x.arg.buffer is None` and
 def te_2.facts(+p: Pa) -> Bool:
   Bool.and(Pa.ok(p), Bool.and(Bool.not(Pa.buf(p)), te_2.size_ok(Pa.size(p))))
 
@@ -1346,7 +1341,6 @@ def is_global_or_local_or_reg.go(+a: Maybe<&2, S.Addr>) -> Bool:
 def is_global_or_local_or_reg(a: Maybe<&2, S.Addr>) -> Bool:
   is_global_or_local_or_reg.go(a)
 
-# `buf.addrspace in (GLOBAL, LOCAL, REG)` and
 def te_2.addr(+a: Maybe<&2, S.Addr>, +p: Pa) -> Bool:
   te_2.addr.pick(addr_eq.go(a, S.AGlobal{}), is_global_or_local_or_reg(a), dopt_none(Pa.dev(p)), dopt_is(Pa.dev(p)))
 
@@ -1388,7 +1382,6 @@ def te_4(+fx: F.Folded, +self: U32) -> O.Verdict:
 def OP_REEXP() -> List<&2, O.Op>:
   [O.OpsRESHAPE{}, O.OpsEXPAND{}]
 
-# `dtypes.ints+(dtypes.weakint, dtypes.void)` -- the ints, the weak int and the void.
 def te_5.dtype(+fx: F.Folded, +s: U32) -> Bool:
   Bool.or(sp_is_int(fx, s), sp_dt_is(fx, s, S.void()))
 
@@ -1421,7 +1414,6 @@ def te_8.body.pick(rop: Maybe<&1, O.Op>, widths: Bool) -> Bool:
 def te_8.body.of(rop: Maybe<&1, O.Op>, widths: Bool) -> Bool:
   te_8.body.pick(rop, widths)
 
-# `dtypes.ints` is `uints + sints` and `dtypes.weakint` is the weak sibling, so
 def sp_int_or_weak(fx: F.Folded, s: U32) -> Bool:
   sp_is_int(fx, s)
 
@@ -1548,7 +1540,6 @@ def te_16(+fx: F.Folded, +self: U32) -> O.Verdict:
 def te_17(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(Bool.and(sp_op(fx, self, O.OpsSOURCE{}), sp_dt_is(fx, self, S.void())), nsrc_is(fx, self, 0)), O.VTrue{})
 
-# the pipeline PREFIX, and it is cumulative: a 2-src PROGRAM has SINK and LINEAR, a
 def prog1(fx: F.Folded, self: U32) -> Bool:
   sp_src_op(fx, self, 0, O.OpsSINK{})
 
@@ -1683,7 +1674,6 @@ def te_rewrite(+ts: O.PMEntrys, fx: F.Folded, self: U32) -> O.Verdict:
 def tensor_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
   te_rewrite(tensor_table(), fx, self)
 
-# `GroupOp.All` is every op, so `GroupOp.All-GroupOp.Defines` is "there is an op
 def pr_0.claims(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Bool.not(O.UOp.is_none(self)), Bool.not(O.GroupOp.defines(O.Arena.op(sp_ar(fx), self))))
 
@@ -1762,7 +1752,6 @@ def pr_8(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(Bool.and(sp_op(fx, self, O.OpsSPECIAL{}), sp_src_dt(fx, self, 0, S.int32())), nsrc_is(fx, self, 1)),
             sp_vb(arg_str(sp_arg(fx, self))))
 
-# `GroupOp.All` is the whole enum, and `Arena.op` answers `Op`, so the set is
 def OP_ALL() -> List<&2, O.Op>:
   [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{},
    O.OpsPARAM{}, O.OpsREFPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{},
@@ -2205,7 +2194,6 @@ def topo_budget.f(xs: List<&2, O.Node>, acc: U32) -> U32:
 def topo_budget(+fx: F.Folded) -> Nat:
   U32.to_nat(U32.add(1, U32.add(O.Arena.next(sp_ar(fx)), topo_budget.f(O.Arena.nodes(sp_ar(fx)), 0))))
 
-# ONE FOLD PER TABLE, and the duplication is the same one as the dispatch: the step
 def bad.pick(v: O.Verdict, i: U32) -> Maybe<&2, U32>:
   match v:
     case O.VTrue{}: None{}
@@ -2318,7 +2306,6 @@ def land.put(fx: F.Folded, k: U32, noop: U32, sink: U32, fsub: U32, isub: U32, s
              shl_f: U32, shl_i: U32, backedge: U32, prog: U32, ga_plain: U32, ga_after: U32) -> Land:
   Land{fx, k, noop, sink, fsub, isub, stack, shl_f, shl_i, backedge, prog, ga_plain, ga_after}
 
-# the node list, in binding order, and the comment above says what each one is.
 def main_arena() -> Land:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(3)})
   +n2 = O.UOp.new(O.Found.ar(n1), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
@@ -2448,14 +2435,12 @@ def mdev_param() -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.Dn{[0, 1]}},
              False{}, None{}, Some{0}, False{}, None{}}
 
-# THE TWO MULTI-DEVICE ARENAS, and they are separate on purpose: the rows they feed
 def main_mdev(ax: O.AxisType) -> Mdev:
   +d1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(2)})
   +d2 = O.UOp.range_end(O.Found.ar(d1), O.Found.i(d1), [0], ax)
   +d3 = O.UOp.new.param(O.Found.ar(d2), O.OpsBUFFER{}, Some{4}, O.AParam{mdev_param()}, O.TNone{})
   Mdev{F.folded(O.Found.ar(d3)), O.Found.i(d3)}
 
-# THE ROWS. `1` is `VTrue`, `0` is `VFalse`, `9` is `VSkip` -- a real answer and
 
 def tbl_len(ts: O.PMEntrys) -> U32:
   U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(ts)))
@@ -2505,7 +2490,6 @@ def t_tag_const() -> U32:
   t_tag_const.of(O.op_in(O.PMEntry.ops(entry_at(shared_table(), 2)), O.OpsCONST{}),
                  O.PMEntry.rej(entry_at(shared_table(), 2)))
 
-# the reject sets that NAME A SOURCE OP, and the one that names ALL of a four-src
 def t_tag_rej.of(a: Bool, b: U32) -> U32:
   if_b(Bool.and(a, U32.is_eq(b, 4)))
 
@@ -2530,7 +2514,6 @@ def t_stack_dt() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.stack
 # spec.py:70 vs :71. BOTH claim a SHL and they DISAGREE: `sh_7` says `False` for a
 def t_shl_wins() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_f(main_arena())))
 
-# the control: the int shift, where `sh_7` SKIPS because no src is a float, so
 def t_shl_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_i(main_arena())))
 
 # spec.py:110 -- `sh_22`, and the row that COULD NOT BE WRITTEN while `sh_22` was the
@@ -2566,7 +2549,6 @@ def t_hcq_after() -> U32: show_v(hcq_rewrite(Land.fx(main_arena()), Land.ga_afte
 # spec.py:34 -- `int(rng.vmax)+1 == len(device)`, with `device` a two-name tuple and
 def t_multidev_ok() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_DEVICE{})), Mdev.buf(main_mdev(O.AXIS_DEVICE{}))))
 
-# the same BUFFER with the RANGE on the GLOBAL axis: `rng.axis_type is DEVICE`
 def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOBAL{})), Mdev.buf(main_mdev(O.AXIS_GLOBAL{}))))
 
 # TODO(p3) upat.py:173  symbol=upat_compile  -- the pyrender GLOBALS: NOT IN
