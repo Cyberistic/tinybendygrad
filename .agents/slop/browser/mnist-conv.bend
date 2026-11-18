@@ -441,6 +441,57 @@ def fw_lk() -> String:
   String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
     String.join(fw_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
 
+# THE STORE's RANGE-MAP ENTRY, for the pool (WORKS) and for the fused stack (does not). The
+# value's entry is printed beside it: in the pool it is a REDUCE, in fw a WHERE over one.
+def st_row(+pr: RZ.RZProg) -> String:
+  +ar = RZ.RZProg.ar(pr)
+  +sk = RZ.RZProg.sink(pr)
+  +st = SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1)
+  +v = SCH.sc_src(ar, st, 1)
+  String.concat(["st(", RR.rr_node_str(ar, st), ": ", RR.rr_rngm_row(ar, sk, st),
+                 ") v(", RR.rr_node_str(ar, v), ": ", RR.rr_rngm_row(ar, sk, v), ")"])
+
+# THE REALIZE MAP ITSELF: a STORE not in it takes `rr_p1.none` and its entry is empty.
+def rl_row(+pr: RZ.RZProg) -> String:
+  +ar = RZ.RZProg.ar(pr)
+  +sk = RZ.RZProg.sink(pr)
+  String.join(RR.rr_real_row.go(IX.IxMap.es(RR.rr_realize(ar, sk)), ar, Nil{}), " ")
+
+# THE STORE's FOLD SHAPE -- `rr_p1.real` mints one range per dim of it, so an empty answer
+# means an empty OUT and therefore no END.
+def sd_row(+pr: RZ.RZProg) -> String:
+  +ar = RZ.RZProg.ar(pr)
+  +sk = RZ.RZProg.sink(pr)
+  +st = SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1)
+  +dst = SCH.sc_src0(ar, st)
+  +tb = F.Folded.t(F.folded(ar))
+  String.concat(["dst=", RR.rr_node_str(ar, dst),
+                 " dst_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, dst)),
+                 " st_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, st))])
+
+# DOES THE FOLD TRUNCATE? `Kahn.run` returns a PARTIAL table when its fuel runs out, and the
+# fuel is `next + edges` -- so a graph with more work than that leaves a suffix UNKNOWN.
+def fd_shape.m(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Bool:
+  match m:
+    case Some{Some{ds}}: True{}
+    case _: False{}
+
+def fd_shape(+ar: O.Arena, +tb: F.Table, +n: U32) -> Bool: fd_shape.m(F.fold.shape(ar, tb, n))
+
+def fd_cnt.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case x <> t: fd_cnt.go(ar, tb, t, Bool.pick(U32, fd_shape(ar, tb, x), U32.add(acc, 1), acc))
+
+def fd_row(+pr: RZ.RZProg) -> String:
+  +ar = RZ.RZProg.ar(pr)
+  +sk = RZ.RZProg.sink(pr)
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sk)
+  +tb = F.folded(ar)
+  String.concat(["nodes=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
+                 " shaped=", U32.show(fd_cnt.go(F.Folded.ar(tb), F.Folded.t(tb), ns, 0)),
+                 " next=", U32.show(O.Arena.next(ar)), " edges=", U32.show(O.Arena.edges(ar))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -461,6 +512,14 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["st2=", pc_stage(2)]))
     _ : Unit <- IO.print(String.concat(["st3=", pc_stage(3)]))
     _ : Unit <- IO.print(String.concat(["pool_low2=", pool_low2()]))
+    _ : Unit <- IO.print(String.concat(["pool_fd=", fd_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["fw_fd=", fd_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["pool_sd=", sd_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["fw_sd=", sd_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["pool_st=", st_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["fw_st=", st_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_c=", fw_c()]))
     _ : Unit <- IO.print(String.concat(["fw_lk=", fw_lk()]))
     _ : Unit <- IO.print(String.concat(["fw_kg=", fw_kg()]))

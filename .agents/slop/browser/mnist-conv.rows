@@ -17,6 +17,14 @@ st1=STORE(INDEX,AFTER)
 st2=STORE(INDEX,REDUCE)
 st3=STORE(INDEX,REDUCE)
 pool_low2=END:none:STORE,RANGE,RANGE;STORE:none:INDEX,AFTER;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,END;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;BUFFER:other:CONST;END:none:END,RANGE;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;CONST:cother:;END:none:STORE,RANGE;RANGE:other:OTHER;OTHER:other:RANGE;ADD:none:MUL,ADD;STORE:none:AFTER,WHERE;RANGE:other:OTHER;OTHER:other:CONST;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;AFTER:none:BUFFER,STORE,RANGE,RANGE;WHERE:none:OTHER,INDEX,AFTER;CONST:cother:;OTHER:other:RANGE;MUL:none:OTHER,OTHER;STORE:none:AFTER,CONST;OTHER:none:AFTER,INDEX;INDEX:none:PARAM,OTHER;OTHER:other:CONST;AFTER:none:BUFFER,RANGE,RANGE;CONST:cother:;PARAM:other:OTHER;OTHER:none:ADD,CONST;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;OTHER:other:RANGE;ADD:none:OTHER,ADD;OTHER:none:OTHER,CONST;ADD:none:MUL,ADD;MUL:none:CONST,OTHER;ADD:none:MUL,ADD;CONST:cother:;OTHER:other:RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;CONST:cother:;MUL:none:OTHER,OTHER
+pool_fd=nodes=21 shaped=20 next=35 edges=52
+fw_fd=nodes=29 shaped=25 next=52 edges=90
+pool_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,14,14 st_dims=1,1,14,14
+fw_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,7,7 st_dims=
+pool_rl=STORE:none:RESHAPE,REDUCE:none
+fw_rl=STORE:none:RESHAPE,RESHAPE:none
+pool_st=st(STORE:none:RESHAPE,REDUCE: True in=3,4,5,6 out=0,0,1,2 tbl=19) v(REDUCE:other:PERMUTE: True in=7,8,3,4,5,6 out=3,4,5,6 tbl=19)
+fw_st=st(STORE:none:RESHAPE,RESHAPE: True in= out= tbl=21) v(RESHAPE:none:WHERE,STACK: True in= out= tbl=21)
 fw_c=
 void test() {
 
