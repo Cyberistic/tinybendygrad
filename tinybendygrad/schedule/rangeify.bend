@@ -908,10 +908,44 @@ def sk_axs.go(+ar: O.Arena, +rs: List<&2, U32>, ok: Bool) -> Bool:
     case Nil{}: ok
     case r <> t: sk_axs.go(ar, t, Bool.and(ok, sk_ax(rf_axis(ar, r))))
 
+# `x.ranges` WITH `handle_after` ALREADY SUBSTITUTED. Upstream's `to_define_global` fires on the
+# AFTER before `split_store` reads the END (the rewrite is bottom-up), returns the BUFFER, and
+# `graph_rewrite` REPLACES the node -- so `x.ranges` never descends into the producing stores and
+# a consumer's END sees no producer ranges. The port substitutes afterwards, so its gate read the
+# graph that still held the AFTER.
+#
+# MEASURED: the four-kernel chain's three consumer ENDs all left the SAME producer pair (299,300)
+# open -- relu, pool and linear -- and no consumer kernel split, while the conv's END (which reads
+# no AFTER) reported `open=` and split.
+#
+# So the union is walked here with an AFTER as a LEAF: it contributes nothing, which is what the
+# substituted graph says. `Rng.ok` is kept beside it, because it is the fold's own "the set is
+# computable" answer and dropping it would turn a refusal into a guess.
+# `handle_after` SUBTRACTS: everything an AFTER's srcs contribute is dropped from the union,
+# because upstream has already replaced the AFTER with its buffer by the time `split_store` reads
+# `x.ranges`. Two list folds and a set difference -- no state machine, and each fold has ONE
+# accumulator, which is the shape this file already uses (`sk_axs.go`, `sk_addl`).
+def sk_aft.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      +u = Bool.pick(List<&2, U32>, O.eq_op(O.Arena.op(ar, x), O.OpsAFTER{}),
+                     F.set_union(acc, F.Rng.rs(F.UOp.ranges(ar, F.rng_sweep(ar, tb), x))), acc)
+      sk_aft.go(ar, tb, t, u)
+
+def sk_rg_del.go(+xs: List<&2, U32>, +ds: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: sk_rg_del.go(t, ds, Bool.pick(List<&2, U32>, F.mem_u32(ds, x), acc, List.append(&2, U32, acc, [x])))
+
 def sk_open(+ar: O.Arena, +self: U32) -> Bool:
   +g = F.ranged(ar)
   +r = F.UOp.ranges(F.Ranged.ar(g), F.Ranged.rt(g), self)
-  Bool.and(F.Rng.ok(r), sk_axs.go(ar, F.Rng.rs(r), True{}))
+  +tb = F.Folded.t(F.folded(ar))
+  +ended = Maybe.default(&2, List<&2, U32>, F.UOp.ended_ranges(ar, tb, self), Nil{})
+  +afts = sk_aft.go(ar, tb, O.UOp.toposort(O.Arena.budget(ar), ar, self), Nil{})
+  Bool.and(F.Rng.ok(r),
+           sk_axs.go(ar, sk_rg_del.go(sk_rg_del.go(F.Rng.rs(r), ended, Nil{}), afts, Nil{}), True{}))
 
 def sk_mem.go(+xs: List<&2, U32>, +n: U32, seen: Bool) -> Bool:
   match xs:
