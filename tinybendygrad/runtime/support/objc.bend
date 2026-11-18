@@ -1,14 +1,5 @@
 # tinybendygrad/runtime/support/objc.bend -- port of tinygrad/runtime/support/objc.py
 #
-# WHAT THIS FILE IS. 77 lines of Python, and 5 of them are the interesting
-# ones. `objc.py` binds five symbols out of two shared libraries and then does
-# STRING LOGIC with them: the selector-name mangling that turns an Objective-C
-# selector into a Python attribute name, the `functools.cache` that makes one
-# selector name mean one SEL forever, the `msg` shape that prepends a receiver
-# and a selector to every call, and the `retain` / `returns_retained` /
-# `own` ownership lattice that decides who calls `release`. The ctypes loads are
-# the seam. This file ports the logic and leaves the loads to the trace.
-#
 
 #
 

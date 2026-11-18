@@ -1,10 +1,6 @@
 # tinybendygrad/runtime/ops_qcom.bend -- port of tinygrad/runtime/ops_qcom.py
 #
 
-# WHAT this file is. `ops_qcom.py` is the ADRENO/KGSL gpu backend, 396 lines,
-# and its portable half is pure name tables and pure string emission over kernel
-# uops.
-# plan is unchanged.)
 #
 
 #
