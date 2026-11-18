@@ -122,7 +122,10 @@ def dest_name(rel, line, ext):
   stem = pathlib.Path(rel).stem
   parts = pathlib.Path(rel).with_suffix("").parts
   slug = "-".join(p for p in parts if p != "tinybendygrad")
-  slug = slug.replace(".linearizer-mut", "linearizer-mut")
+  # **⇒⇒† AND **THE **SLUG **CARRIES **NO **DOT**, **⇒⇒† AND **BECAUSE **THE **NAME **IS
+  # **A **PATH's **FLAT **SPELLING** -- **⇒⇒† AND **`runtime/support/usb.bend` **⇒⇒† AND
+  # **`runtime-support-usb`** -- **⇒⇒† AND **AND **THE **EXTENSION **IS **THE **ONLY **DOT**.
+  slug = slug.replace(".linearizer-mut", "linearizer-mut").replace(".", "-")
   return f"{slug}-{line}.{ext}"
 
 
