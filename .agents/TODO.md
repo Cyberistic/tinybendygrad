@@ -30252,6 +30252,29 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       never picks a fact for you.  THE RULES ARE IN
       `.agents/slop/loc/bend-proof-rules.md`, BECAUSE A PROOF IS WRITTEN BY HAND
       AND THE SYNTAX IS NOT GUESSABLE.
+- [x] **THE LAW SET IS NOW **101 LAWS**, AND THE THIRD COMPOSITION IS THE
+      SCATTER_ADD.** MEASURED 2026-11-17 against the pin's spec
+      (`f5ac54685074:spec/tinyspec.tex`): the spec writes FIVE ops as
+      compositions of the primitives -- `gemm`, `prefix_sum`, `arange`,
+      `gather`, `scatter_add` -- and the port now states THREE of them (the
+      census reads `0/101/101`).  THE SCATTER_ADD's CLAIM IS THE BROADCAST's
+      SHAPE, `(K, D)`, AND IT IS **THE SAME SHAPE FACT AS THE GATHER's MASK**,
+      BECAUSE THE TWO MASKS ARE THE SAME PAIR OF SHAPES.
+      **AND ALL THREE CLAIMS ARE ABOUT THE BROADCAST AND NOT ABOUT THE REDUCE,
+      AND THAT IS A MEASURED CONSTRAINT RATHER THAN A CHOICE.** MEASURED: the
+      spec's `gemm` reduces axis 1 of a THREE-axis shape, `prefix_sum` reduces
+      axis -1, `arange` goes through `prefix_sum`, `gather` reduces axis 0 and
+      `scatter_add` reduces axis 1 -- **SO ONLY THE GATHER REDUCES THE FIRST
+      AXIS, AND THE PORT's `SpReduce` DROPS THE FIRST `k` AXES.**  THE
+      REDUCE's AXIS IS THEREFORE A SEPARATE MATTER FROM THE BROADCAST's SHAPE,
+      AND THE BROADCAST's SHAPE IS THE PART BOTH AGREE ON.
+      AND ALL THREE ARE LOAD-BEARING, MEASURED NOT ASSUMED:
+      `.agents/slop/loc/comp-mutate.py` builds a book holding ONE law and breaks
+      the broadcast's per-axis fold, and each law goes red in its own book.
+      **AND THE TOOL's BOOK IS A POPULATION, SO ITS DEFS ARE PER-CASE** -- MEASURED:
+      ONE SHARED LIST OF DEFS BROKE THE OTHER TWO CASES WITH "duplicate
+      declaration", AND A DEF MUST BE IMPLEMENTED BEFORE IT IS USED, SO THE
+      LIST IS IN ORDER OF DEPENDENCE.
 - [x] **AND THE CORPUS's VERDICT IS LOAD-SENSITIVE, MEASURED 2026-11-18, AND
       THE TOOL SAYS SO ITSELF.** MEASURED: `graphcmp.py`'s `BEND_TIMEOUT` is
       SIXTY SECONDS (`TRIES, BEND_TIMEOUT = 3, 60`), and at a MACHINE LOAD OF

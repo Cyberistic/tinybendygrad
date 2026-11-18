@@ -59,7 +59,7 @@ FOLD_NEW = "        case SN{vb}: SN{va}"
 # THE DEFS THE ISOLATED BOOK NEEDS: the port's typed cons, the three cons
 # helpers (two of them added for the gemm law), the three `max_dim` lemmas,
 # and the two shape helpers the law's conclusion names.
-PROOF_DEFS = [
+COMMON_DEFS = [
     "def snoc(h: S.Sdim, t: List<&2, S.Sdim>) -> List<&2, S.Sdim>:",
     "def cons_head(h: S.Sdim) -> (List<&2, S.Sdim> -> List<&2, S.Sdim>):",
     "def cons_tail(t: List<&2, S.Sdim>) -> (S.Sdim -> List<&2, S.Sdim>):",
@@ -80,6 +80,25 @@ PROOF_DEFS = [
     "def bcast_axes(a: List<&2, S.Sdim>, b: List<&2, S.Sdim>, ca: S.AllSN(a), cb: S.AllSN(b), same: S.SameLen(a, b)) -> {S.zip_max(a, b) == S.elem_pick(a, b) : List<&2, S.Sdim>}:",
 ]
 
+# AND THE SCATTER_ADD's OWN HELPERS.
+SCATTER_DEFS = [
+    "def elem_pick_of(l: List<&2, S.Sdim>) -> List<&2, S.Sdim>:",
+    "def sh_of(l: List<&2, S.Sdim>) -> S.Shape:",
+    "def some_of_sh(sh: S.Shape) -> Maybe<&2, S.Shape>:",
+    "def some_of_maybe(m: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:",
+    "def sn_of(n: Nat) -> S.Sdim:",
+    "def sn_eq(a: Nat, b: Nat, e: {a == b : Nat}) -> {S.SN{a} == S.SN{b} : S.Sdim}:",
+    "def one_eq(a: S.Sdim, b: S.Sdim, e: {a == b : S.Sdim}) -> {snoc(a, Nil{}) == snoc(b, Nil{}) : List<&2, S.Sdim>}:",
+    "def fold_of(a: Maybe<&2, S.Shape>) -> (Maybe<&2, S.Shape> -> Maybe<&2, S.Shape>):",
+    "def fold_first(b: Maybe<&2, S.Shape>) -> (Maybe<&2, S.Shape> -> Maybe<&2, S.Shape>):",
+    "def zip_max_to_elem(a: List<&2, S.Sdim>, b: List<&2, S.Sdim>, e: {S.zip_max(a, b) == S.elem_pick(a, b) : List<&2, S.Sdim>}) -> {S.dims_zip_max(Some{S.Shape.of(a)}, Some{S.Shape.of(b)}) == Some{S.Shape.of(S.elem_pick(a, b))} : Maybe<&2, S.Shape>}:",
+    # AND THE TWO ONE-AXIS FACTS THE LEMMA USES, AND THEY COME FIRST BECAUSE A
+    # DEF MUST BE IMPLEMENTED BEFORE IT IS USED (`bend.ts:3422`).
+    "def pick_dim_one_right(a: Nat) -> {S.pick_dim(a, 1n) == a : Nat}:",
+    "def pick_dim_same(a: Nat) -> {S.pick_dim(a, a) == a : Nat}:",
+    "def elem_pick_prod_mask(+k: Nat, +d: Nat) -> {S.elem_pick(snoc(S.SN{k}, snoc(S.SN{d}, Nil{})), snoc(S.SN{1n}, snoc(S.SN{d}, Nil{}))) == snoc(S.SN{k}, snoc(S.SN{d}, Nil{})) : List<&2, S.Sdim>}:",
+]
+
 LAWS_DEFS = [
     "def shape_of(s: S.Sp) -> Maybe<&2, S.Shape>:",
     "def some_of_shape(sh: S.Shape) -> Maybe<&2, S.Shape>:",
@@ -94,6 +113,10 @@ CASES = {
     "gather_composition_has_the_gather_axis_shape": {
         "proof_defs": [],
         "note": "the broadcast's per-axis fold, reached through the reduce",
+    },
+    "scatter_add_composition_broadcasts_to_the_key_shape": {
+        "proof_defs": "scatter",
+        "note": "the broadcast's per-axis fold, reached through the product",
     },
 }
 
@@ -119,7 +142,7 @@ def block_of(text: str, header: str) -> str:
     return text[i:end].rstrip() + "\n"
 
 
-def build_book(law: str, proof_text: str, laws_text: str) -> tuple[str, str]:
+def build_book(law: str, case: dict, proof_text: str, laws_text: str) -> tuple[str, str]:
     """THE LAW FILE (one law) and THE BOOK (the law's proof)."""
     law_src = [
         "import Base\n",
@@ -136,7 +159,12 @@ def build_book(law: str, proof_text: str, laws_text: str) -> tuple[str, str]:
         "import ./LAWS/spec.bend as S\n",
         "import ./gemm-mut-laws.bend as L\n\n",
     ]
-    for header in PROOF_DEFS:
+    defs = list(COMMON_DEFS)
+    if case.get("proof_defs") == "scatter":
+        defs += SCATTER_DEFS
+    for header in defs:
+        if header not in proof_text:
+            continue
         book_src.append(block_of(proof_text, header))
         book_src.append("\n\n")
     book_src.append(block_of(proof_text, f"def L.{law}("))
@@ -158,7 +186,7 @@ def main() -> int:
     failures = []
     try:
         for law, case in CASES.items():
-            law_src, book_src = build_book(law, PROOF.read_text(), LAWS_FILE.read_text())
+            law_src, book_src = build_book(law, case, PROOF.read_text(), LAWS_FILE.read_text())
             LAW_FILE.write_text(law_src)
             BOOK.write_text(book_src)
 

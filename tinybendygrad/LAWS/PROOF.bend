@@ -858,6 +858,128 @@ def drop_zero(l: List<&2, S.Sdim>) -> {List.drop(&2, S.Sdim, l, 0n) == l : List<
 def reduce_two(k: Nat, d: Nat) -> {S.Sp.shape.reduce(Some{S.Shape.of([S.SN{k}, S.SN{d}])}, 1n) == Some{S.Shape.of([S.SN{d}])} : Maybe<&2, S.Shape>}:
   {==}
 
+
+# AND THE THIRD BROADCAST LEMMA: `(K, D)` WITH `(1, D)` IS `(K, D)` -- THE
+# PRODUCT's BROADCAST, WHERE THE MASK IS THE LEFT OPERAND.  AND THE TWO AXES
+# ARE `pick_dim(k, 1)` (WHICH IS `k`) AND `pick_dim(d, d)` (WHICH IS `d`).
+
+# The `SN` constructor, as a FUNCTION, so `Equal.cong` can use it.
+def sn_of(n: Nat) -> S.Sdim:
+  S.SN{n}
+
+
+# A ONE-ELEMENT LIST EQUALITY FROM A DIM EQUALITY, and it is a congruence
+# under the cons with a fixed head.
+def one_eq(a: S.Sdim, b: S.Sdim, e: {a == b : S.Sdim}) -> {snoc(a, Nil{}) == snoc(b, Nil{}) : List<&2, S.Sdim>}:
+  +nil : List<&2, S.Sdim> = Nil{}
+  f = cons_tail(nil)
+  Equal.cong(S.Sdim, List<&2, S.Sdim>, f, a, b, e)
+
+# A `Nat` EQUALITY LIFTED TO A DIM EQUALITY, because the BROADCAST's AXES ARE
+# DIMs AND THE `pick_dim` FACTS ARE ABOUT COUNTS.  AND IT IS A CONGRUENCE UNDER
+# THE `SN` CONSTRUCTOR, because `SN{a}` AND `SN{b}` ARE NOT DEFINITIONALLY
+# EQUAL UNLESS `a` AND `b` ARE.
+def sn_eq(a: Nat, b: Nat, e: {a == b : Nat}) -> {S.SN{a} == S.SN{b} : S.Sdim}:
+  f = sn_of
+  Equal.cong(Nat, S.Sdim, f, a, b, e)
+def elem_pick_prod_mask(+k: Nat, +d: Nat) -> {S.elem_pick(snoc(S.SN{k}, snoc(S.SN{d}, Nil{})), snoc(S.SN{1n}, snoc(S.SN{d}, Nil{}))) == snoc(S.SN{k}, snoc(S.SN{d}, Nil{})) : List<&2, S.Sdim>}:
+  # AND THE TWO AXES ARE TWO CONGRUENCES: THE FIRST UNDER A CONS WITH A FIXED
+  # TAIL (`pick_dim(k, 1)` IS `k`) AND THE SECOND UNDER A CONS WITH A FIXED
+  # HEAD (`pick_dim(d, d)` IS `d`).
+  pr = pick_dim_one_right(k)
+  ps = pick_dim_same(d)
+  # AND THE WHOLE LIST, BY CONGRUENCE UNDER THE CONS WITH THE FIXED TAIL.
+  +e : List<&2, S.Sdim> = Nil{}
+  +t = snoc(S.SN{d}, e)
+  pr1 = sn_eq(S.pick_dim(k, 1n), k, pr)
+  ps1 = sn_eq(S.pick_dim(d, d), d, ps)
+  # AND THE TWO AXES ARE REWRITTEN ONE AT A TIME, AND EACH REWRITE'S FUNCTION
+  # FIXES THE OTHER AXIS -- SO THE FIRST REWRITE FIXES THE TAIL AND THE SECOND
+  # FIXES THE HEAD.
+  #
+  # AND THE FIRST REWRITE IS UNDER A CONS WITH A FIXED TAIL, SO ITS TWO LISTS
+  # ARE THE TWO WITH THE REWRITTEN TAIL.
+  +tl = snoc(S.SN{d}, e)
+  f1 = cons_tail(tl)
+  c1 = Equal.cong(S.Sdim, List<&2, S.Sdim>, f1, S.SN{S.pick_dim(k, 1n)}, S.SN{k}, pr1)
+  # AND THE CHAIN, AND IT IS TWO STEPS: THE TAIL'S REWRITE RELATES THE FULLY
+  # UNREWRITTEN LIST TO THE ONE WITH THE REWRITTEN TAIL, AND `c1` RELATES THAT
+  # ONE TO THE ANSWER.
+  +l0 = snoc(S.SN{S.pick_dim(k, 1n)}, snoc(S.SN{S.pick_dim(d, d)}, e))
+  +l1 = snoc(S.SN{S.pick_dim(k, 1n)}, snoc(S.SN{d}, e))
+  +l3 = snoc(S.SN{k}, snoc(S.SN{d}, e))
+  # AND THE TAIL's REWRITE IS A CONGRUENCE UNDER THE PORT's `cons_at` -- WHICH
+  # FIXES A PREFIX AND A SUFFIX AND TAKES THE ELEMENT AS ITS ARGUMENT -- SO ITS
+  # ARGUMENT IS THE TAIL AND THE PREFIX IS THE HEAD.
+  +pre = snoc(S.SN{S.pick_dim(k, 1n)}, e)
+  f3 = cons_at(pre, e)
+  c3 = Equal.cong(S.Sdim, List<&2, S.Sdim>, f3, S.SN{S.pick_dim(d, d)}, S.SN{d}, ps1)
+  Equal.trans(List<&2, S.Sdim>, l0, l1, l3, c3, c1)
+
+
+
+# THE BROADCAST FOLD's UNFOLDING FOR TWO CONCRETE DIM LISTS: the fold of two
+# `Some` shapes is `Some{Shape.of(zip_max(...))}`.
+def zip_max_unfold(a: List<&2, S.Sdim>, b: List<&2, S.Sdim>) -> {S.dims_zip_max(Some{S.Shape.of(a)}, Some{S.Shape.of(b)}) == Some{S.Shape.of(S.zip_max(a, b))} : Maybe<&2, S.Shape>}:
+  {==}
+
+
+# THE FOLD's ANSWER, LIFTED FROM THE `zip_max` FORM TO THE `elem_pick` FORM, and
+# it is a CONGRUENCE under the fold with the two concrete shapes as its
+# arguments.
+def zip_max_to_elem(a: List<&2, S.Sdim>, b: List<&2, S.Sdim>, e: {S.zip_max(a, b) == S.elem_pick(a, b) : List<&2, S.Sdim>}) -> {S.dims_zip_max(Some{S.Shape.of(a)}, Some{S.Shape.of(b)}) == Some{S.Shape.of(S.elem_pick(a, b))} : Maybe<&2, S.Shape>}:
+  # AND THE LIST EQUALITY IS LIFTED INTO THE SHAPE AND THEN INTO THE `Maybe`.
+  c1 = Equal.cong(List<&2, S.Sdim>, S.Shape, of_shape, S.zip_max(a, b), S.elem_pick(a, b), e)
+  c2 = Equal.cong(S.Shape, Maybe<&2, S.Shape>, some_shape, S.Shape.of(S.zip_max(a, b)), S.Shape.of(S.elem_pick(a, b)), c1)
+  c2
+
+
+# THE BROADCAST FOLD OF A SHAPE WITH A CONCRETE ONE, and of TWO SHAPES, as
+# FUNCTIONS, so `Equal.cong` can relate the fold over the law's PREMISES to the
+# fold over the CONCRETE shapes.
+def fold_of_two(a: Maybe<&2, S.Shape>, b: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:
+  S.dims_zip_max(a, b)
+
+def fold_two(a: Maybe<&2, S.Shape>, b: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:
+  S.dims_zip_max(a, b)
+
+
+# THE BROADCAST FOLD, CURRIED: the first operand is fixed and the second is
+# the argument, so `Equal.cong` can use it.
+def fold_of(a: Maybe<&2, S.Shape>) -> (Maybe<&2, S.Shape> -> Maybe<&2, S.Shape>):
+  b => S.dims_zip_max(a, b)
+
+
+# THE BROADCAST FOLD WITH ITS SECOND OPERAND FIXED, so the ARGUMENT is the
+# FIRST operand -- the mask's shape.
+def fold_first(b: Maybe<&2, S.Shape>) -> (Maybe<&2, S.Shape> -> Maybe<&2, S.Shape>):
+  a => S.dims_zip_max(a, b)
+
+
+# The shape whose dims are a given list, named so `Equal.cong` can use it as
+# a function.
+def sh_of(l: List<&2, S.Sdim>) -> S.Shape:
+  S.Sh{l}
+
+# The `Some` of a shape, as a FUNCTION, so `Equal.cong` can use it: the port's
+# `some_shape` is a `def` and a `def` does not unfold inside a congruence's
+# conclusion -- MEASURED, the congruence then concludes `some_shape(a) ==
+# some_shape(b)` where the goal says `Some{a} == Some{b}`.
+def some_of_sh(sh: S.Shape) -> Maybe<&2, S.Shape>:
+  Some{sh}
+
+
+# THE `Maybe` VERSION OF `some_of_sh`, so `Equal.cong` CAN USE IT: THE SHAPE
+# INSIDE THE `Some` IS THE ARGUMENT.
+def some_of_maybe(m: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:
+  match m:
+    case Some{sh}: Some{sh}
+    case None{}: None{}
+
+# The identity on a dim list, so `Equal.cong` can rewrite a list in place.
+def elem_pick_of(l: List<&2, S.Sdim>) -> List<&2, S.Sdim>:
+  l
+
 # The reduce of a shape, as a FUNCTION, so `Equal.cong` can relate two
 # reductions: the product's shape is `Some{Sh{[K, D]}}` by the law's premise,
 # so the reduce of the product's shape is the reduce of that.
@@ -910,6 +1032,57 @@ def L.gather_composition_has_the_gather_axis_shape(t, idx, k, d, pos, idxr, mask
   %c5 : {S.Sp.shape(out) == _ : Maybe<&2, S.Shape>}
   {==}
 
+# VI-quater. THE SPEC's SCATTER_ADD COMPOSITION, and the claim is the
+# BROADCAST's shape.
+#
+# AND THE PROOF IS THE GATHER's PROOF WITH ONE OPERAND CHANGED: the mask's
+# broadcast is `(K, 1)` with `(1, D)` and the product's is `(K, D)` with
+# `(1, D)`.
+def L.scatter_add_composition_broadcasts_to_the_key_shape(pos, idxr, valr, mask, prod, k, d, pa, pb, pv, pm, pp, cmask, cprod, ca, cb, cb2, cc, same1, same2):
+  # AND THE SHAPES' DIM LISTS, and the law's premises NAME them.
+  +dp = snoc(S.SN{k}, snoc(S.SN{1n}, Nil{}))
+  +di = snoc(S.SN{1n}, snoc(S.SN{d}, Nil{}))
+  +dm = snoc(S.SN{k}, snoc(S.SN{d}, Nil{}))
+  # THE MASK's SHAPE: the comparison's answer is the `zip_max` of its two
+  # operands' shapes, and `bcast_axes` says `zip_max` is `elem_pick`.
+  ih = bcast_axes(dp, di, ca, cb, same1)
+  c1 = Equal.cong(List<&2, S.Sdim>, S.Shape, of_shape, S.zip_max(dp, di), S.elem_pick(dp, di), ih)
+  c2 = Equal.cong(S.Shape, Maybe<&2, S.Shape>, some_shape, S.Shape.of(S.zip_max(dp, di)), S.Shape.of(S.elem_pick(dp, di)), c1)
+  # AND THE PRODUCT's SHAPE: the same fold, with the MASK and `(1, D)`.
+  ih2 = bcast_axes(dm, di, cc, cb2, same2)
+  # AND THE FOLD IS HEAD-ZIP, SO THE MASK IS ITS FIRST OPERAND -- AND A
+  # CONGRUENCE THAT REPLACES AN OPERAND FIXES THE OTHERS.  SO THE ORDER IS:
+  # `val`'s SHAPE IS REPLACED FIRST, AND THEN THE MASK's.
+  #
+  # AND EACH CONGRUENCE NEEDS ITS OWN PREMISE, BECAUSE A FACT CAN BE CONSUMED
+  # ONLY ONCE.
+  fv = fold_of(S.Sp.shape(mask))
+  c4e = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, fv, S.Sp.shape(valr), Some{S.Shape.of(di)}, pv)
+  fm = fold_first(Some{S.Shape.of(di)})
+  c4f = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, fm, S.Sp.shape(mask), Some{S.Shape.of(dm)}, pm)
+  # AND THE PRODUCT's SHAPE IS THE FOLD (BY THE CONSTRUCTION), AND THE FOLD
+  # OVER THE CONCRETE SHAPES IS THE ELEM_PICK FORM (BY THE BROADCAST's LEMMA),
+  # AND THAT IS THE CONCRETE ANSWER (BY THE LEMMA).
+  #
+  # AND THE LEMMA IS THE THIRD BROADCAST LEMMA: `(K, D)` WITH `(1, D)` IS
+  # `(K, D)` -- THE PRODUCT's BROADCAST, WHERE THE MASK IS THE LEFT OPERAND.
+  em = elem_pick_prod_mask(k, d)
+  c5 = Equal.cong(List<&2, S.Sdim>, List<&2, S.Sdim>, elem_pick_of, S.elem_pick(dm, di), dm, em)
+  c6b = Equal.cong(List<&2, S.Sdim>, S.Shape, of_shape, S.elem_pick(dm, di), dm, c5)
+  +ans = S.Shape.of([S.SN{k}, S.SN{d}])
+  c6d = Equal.cong(S.Shape, Maybe<&2, S.Shape>, some_of_sh, S.Sh{S.elem_pick(dm, di)}, ans, c6b)
+  c4d2 = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, some_of_maybe, Some{S.Sh{S.elem_pick(dm, di)}}, Some{ans}, c6d)
+  # AND THE FOLD OVER THE CONCRETE SHAPES IS THE ELEM_PICK FORM.
+  c4d = zip_max_to_elem(dm, di, ih2)
+  # AND THE CHAIN.
+  cp = Equal.cong(S.Sp, Maybe<&2, S.Shape>, S.Sp.shape, prod, S.SpMul{mask, valr}, cprod)
+  ev = Equal.trans(Maybe<&2, S.Shape>, S.Sp.shape(prod), S.dims_zip_max(S.Sp.shape(mask), S.Sp.shape(valr)), S.dims_zip_max(S.Sp.shape(mask), Some{S.Shape.of(di)}), cp, c4e)
+  ev2 = Equal.trans(Maybe<&2, S.Shape>, S.Sp.shape(prod), S.dims_zip_max(S.Sp.shape(mask), Some{S.Shape.of(di)}), S.dims_zip_max(Some{S.Shape.of(dm)}, Some{S.Shape.of(di)}), ev, c4f)
+  ev4 = Equal.trans(Maybe<&2, S.Shape>, S.Sp.shape(prod), S.dims_zip_max(Some{S.Shape.of(dm)}, Some{S.Shape.of(di)}), Some{ans}, ev2, c4d2)
+  %ev4 : {S.Sp.shape(prod) == _ : Maybe<&2, S.Shape>}
+  # AND THE BODY IS `{==}`: THE USE's NEW GOAL IS REFLEXIVE, BECAUSE THE
+  # EVIDENCE's LEFT ENDPOINT IS `shape(prod)` ITSELF.
+  {==}
 # VI-bis. THE SPEC'S OWN COMPOSITION, and the shape it claims.
 #
 # tinyspec's "Common Ops as Compositions": "def gemm(A, B): M,K = A.shape; _,N =

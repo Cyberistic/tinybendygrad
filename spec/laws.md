@@ -134,6 +134,28 @@ product's shape; its right endpoint is the goal's right-hand side, so the use's
 fit check passes; and its left endpoint becomes the new goal, which the
 construction's congruence closes.
 
+**AND THE THIRD ONE IS THE SCATTER_ADD**, and its claim is the broadcast's
+shape — `(K, D)` — which is *the same shape fact as the gather's mask*,
+because the two masks are the same pair of shapes:
+
+```
+# scatter_add: T[idx[i]] += val[i]
+def scatter_add(T, idx, val):
+  K, D = T.shape[0], idx.shape[0]
+  pos = arange(K).reshape(K, 1)                     # (K, 1)
+  mask = (pos == idx.reshape(1, D)).cast(T.dtype)   # (K, D)
+  return T + (mask * val.reshape(1, D)).sum(1)      # (K,)
+```
+
+**AND ALL THREE CLAIMS ARE ABOUT THE BROADCAST AND NOT ABOUT THE REDUCE, AND
+THAT IS A MEASURED CONSTRAINT RATHER THAN A CHOICE.** Reading the pin's spec:
+`gemm` reduces axis 1 of a *three*-axis shape, `prefix_sum` reduces axis −1,
+`arange` goes through `prefix_sum`, `gather` reduces axis 0, and `scatter_add`
+reduces axis 1. **So ONLY the gather reduces the FIRST axis — and the port's
+`SpReduce` drops the first `k` axes.** The reduce's axis is therefore a
+separate matter from the broadcast's shape, and the broadcast's shape is the
+part both agree on.
+
 **AND BOTH ARE LOAD-BEARING, MEASURED NOT ASSUMED.** A law that cannot go red
 is worse than no row, so the mutation test is in
 `.agents/slop/loc/comp-mutate.py`: it builds a book holding ONE law — the

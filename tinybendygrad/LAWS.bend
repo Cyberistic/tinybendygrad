@@ -804,6 +804,53 @@ law gather_composition_has_the_gather_axis_shape:
   for same2: S.SameLen([S.SN{k}, S.SN{1n}], [S.SN{k}, S.SN{d}])
   {shape_of(out) == Some{S.Shape.of([S.SN{d}])} : Maybe<&2, S.Shape>}
 
+# The SCATTER_ADD composition, and the claim is the BROADCAST's shape:
+# `(K, D)` -- and it is the SAME shape fact as the gather's mask, because the
+# two masks are the same pair of shapes.
+#
+# tinyspec's "Common Ops as Compositions":
+#
+#   # scatter_add: T[idx[i]] += val[i]
+#   def scatter_add(T, idx, val):
+#     K, D = T.shape[0], idx.shape[0]
+#     pos = arange(K).reshape(K, 1)                     # (K, 1)
+#     mask = (pos == idx.reshape(1, D)).cast(T.dtype)   # (K, D)
+#     return T + (mask * val.reshape(1, D)).sum(1)      # (K,)
+#
+# AND THE CLAIM IS ABOUT THE BROADCAST AND NOT ABOUT THE REDUCE, FOR THE REASON
+# THE GEMM's LAW IS TOO: THE SPEC's FOUR OTHER COMPOSITIONS REDUCE THE LAST
+# AXIS AND THE PORT's `SpReduce` DROPS THE FIRST `k` AXES -- SO THE REDUCE's
+# AXIS IS A SEPARATE MATTER, AND THE BROADCAST's SHAPE IS THE PART BOTH AGREE
+# ON.
+law scatter_add_composition_broadcasts_to_the_key_shape:
+  for +pos: S.Sp
+  for +idxr: S.Sp
+  for +valr: S.Sp
+  for +mask: S.Sp
+  for +prod: S.Sp
+  for +k: Nat
+  for +d: Nat
+  for +pa: {shape_of(pos) == Some{S.Shape.of([S.SN{k}, S.SN{1n}])} : Maybe<&2, S.Shape>}
+  for +pb: {shape_of(idxr) == Some{S.Shape.of([S.SN{1n}, S.SN{d}])} : Maybe<&2, S.Shape>}
+  for +pv: {shape_of(valr) == Some{S.Shape.of([S.SN{1n}, S.SN{d}])} : Maybe<&2, S.Shape>}
+  for +pm: {shape_of(mask) == Some{S.Shape.of([S.SN{k}, S.SN{d}])} : Maybe<&2, S.Shape>}
+  for +pp: {shape_of(prod) == Some{S.Shape.of([S.SN{k}, S.SN{d}])} : Maybe<&2, S.Shape>}
+  # AND THE CONSTRUCTION, so the law is about the SPEC's scatter_add and not
+  # about five unrelated nodes: the mask compares `pos` with `idx` reshaped, and
+  # the product is the mask times `val` reshaped.
+  for +cmask: {mask == S.SpCmpEq{pos, idxr} : S.Sp}
+  for +cprod: {prod == S.SpMul{mask, valr} : S.Sp}
+  # AND THE "EVERY DIM IS CONCRETE" AND "SAME LENGTH" PROOFS, because the
+  # broadcast lemma needs them.  AND THEY COME LAST, because a `Type` binder
+  # is not a `Data` one.
+  for ca: S.AllSN([S.SN{k}, S.SN{1n}])
+  for cb: S.AllSN([S.SN{1n}, S.SN{d}])
+  for cb2: S.AllSN([S.SN{1n}, S.SN{d}])
+  for cc: S.AllSN([S.SN{k}, S.SN{d}])
+  for same1: S.SameLen([S.SN{k}, S.SN{1n}], [S.SN{1n}, S.SN{d}])
+  for same2: S.SameLen([S.SN{k}, S.SN{1n}], [S.SN{1n}, S.SN{d}])
+  {shape_of(prod) == Some{S.Shape.of([S.SN{k}, S.SN{d}])} : Maybe<&2, S.Shape>}
+
 law add_is_elementwise:
   for +a: S.Sp
   for +b: S.Sp
