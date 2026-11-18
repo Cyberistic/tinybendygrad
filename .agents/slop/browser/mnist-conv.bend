@@ -644,6 +644,9 @@ def fwd_prog() -> RZ.RZProg:
   +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w, [1, 784, 10]), [0, 2, 1])
   +m = T.tn_mul(lhs, rhs)
   +f2 = T.tn_rop(T.Tensor.ar(m), T.Tensor.u(m), O.OpsADD{}, [2])
+  # A FRESH DST AT SLOT 4 MADE THE SECOND STORE VANISH ENTIRELY (`fwd_lk` went 2 -> 1 and the
+  # pre-apply sink lost the after), so the original `o` is kept: the two-store shape is the one
+  # that must be explained, not papered over.
   +a2 = RZ.rz_after(o, T.tn_new(O.Found.ar(f2), O.Found.i(f2)))
   +snk = O.UOp.sink(O.Found.ar(a2), [O.Found.i(a1), O.Found.i(a2)])
   RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
@@ -776,6 +779,29 @@ def pm_row() -> String:
                  " v2.src0[", RR.rr_rngm_row(ar, sk, m), "]",
                  " v2.src0.src0[", RR.rr_rngm_row(ar, sk, SCH.sc_src0(ar, m)), "]"])
 
+# EVERY STORE IN THE PRE-APPLY GRAPH, identified BY ITS DST rather than by sink position:
+# dst dims, its range-map entry, and the value's dims.
+def st_rows.go(+ar: O.Arena, +tb: F.Table, +sk: U32, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      st_rows.go(ar, tb, sk, t, Bool.pick(List<&2, String>, O.eq_op(O.Arena.op(ar, x), O.OpsSTORE{}),
+        List.append(&2, String, acc,
+          [String.concat(["dst=", RR.rr_dims_str(IX.rr_dims(ar, tb, O.Arena.src0(ar, x))),
+                          " val=", RR.rr_dims_str(IX.rr_dims(ar, tb, O.Arena.src(ar, x, 1))),
+                          "[", RR.rr_rngm_row(ar, sk, x), "]"])]), acc))
+
+def st_rows() -> List<&2, String>:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +ar = RZ.RZProg.ar(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +sk = RZ.RZProg.sink(q)
+  st_rows.go(ar, tb, sk, O.UOp.toposort(O.Arena.budget(ar), ar, sk), Nil{})
+
+def sk_row() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  RR.rr_dump(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -803,6 +829,8 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["sk_row=", sk_row()]))
+    _ : Unit <- IO.print(String.concat(["st_rows=", String.join(st_rows(), " | ")]))
     _ : Unit <- IO.print(String.concat(["pm_row=", pm_row()]))
     _ : Unit <- IO.print(String.concat(["pv_row=", pv_row()]))
     _ : Unit <- IO.print(String.concat(["sh_row=", sh_row()]))

@@ -24,6 +24,8 @@ fw_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,7,7 st_dims=
 pool_rl=STORE:none:RESHAPE,REDUCE:none
 fw_rl=STORE:none:RESHAPE,RESHAPE:none
 xp_rm=33:REDUCE:other:PERMUTE,35:STORE:none:RESHAPE,EXPAND
+sk_row=SINK:none:AFTER,AFTER;AFTER:none:PARAM,STORE;AFTER:none:PARAM,STORE;PARAM:other:CONST;STORE:none:RESHAPE,REDUCE;PARAM:other:CONST;STORE:none:PARAM,REDUCE;CONST:cother:;RESHAPE:none:PARAM,STACK;REDUCE:other:EXPAND;CONST:cother:;REDUCE:other:PERMUTE;STACK:none:CONST,CONST,CONST,CONST;EXPAND:none:RESHAPE,STACK;PERMUTE:none:MUL,STACK;CONST:cother:;CONST:cother:;RESHAPE:none:PARAM,STACK;STACK:none:CONST,CONST;MUL:none:RESHAPE,PERMUTE;STACK:none:CONST,CONST,CONST;PARAM:other:CONST;CONST:cother:;RESHAPE:none:AFTER,STACK;PERMUTE:none:RESHAPE,STACK;CONST:cother:;CONST:cother:;STACK:none:CONST,CONST,CONST;RESHAPE:none:PARAM,STACK;STACK:none:CONST,CONST,CONST;STACK:none:CONST,CONST,CONST;CONST:cother:
+st_rows=dst=1,1,28,28 val=1,1,28,28[rm=True True in=21,22,23,24 out=0,0,19,20 tbl=35] | dst=7840 val=1,10[rm=True True in=2 out=1 tbl=35]
 pm_row=st2[rm=True True in=2 out=1 tbl=35] v2[rm=True True in=4,0,3 out=0,3 tbl=35] v2.src0[rm=False True in=5,6,7 out=4,0,3 tbl=35] v2.src0.src0[rm=False True in=8,9,10 out=5,6,7 tbl=35]
 pv_row=aft2=AFTER:none:PARAM,STORE dims=7840 | st2=STORE:none:PARAM,REDUCE dims=7840 | v2=REDUCE:other:PERMUTE dims=1,10
 sh_row=v=REDUCE:other:MUL,RANGE dims=0[rm=False True in= out= tbl=3] | RED=MUL:none:INDEX,INDEX dims=0[rm=False True in= out= tbl=3] | RD.src0=INDEX:none:AFTER,OTHER dims=0[rm=False True in= out= tbl=3]
