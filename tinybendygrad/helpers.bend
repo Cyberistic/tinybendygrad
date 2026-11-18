@@ -1,56 +1,47 @@
 # helpers.bend -- tinygrad/helpers.py, the pure and I/O-reachable half.
 #
-# SCOPE. tinygrad/helpers.py is 646 lines and four of them are this port:
-#   - the pure list/string/number helpers (prod, dedup, argsort, ceildiv, ...)
-#   - the ContextVar/Context flag machinery, as an immutable `Flags` record, plus
-#     `Context` itself as a snapshot that is threaded rather than pushed
-#   - `GlobalCounters`, as a threaded `Counters` record: six fields and `reset`
-#   - the two things that need the host: `lines` (a file) and `Timing` (a clock)
-# The rest is I/O or dynamic Python and is listed, with a one-line reason each,
-# in the NOT PORTED block at the end of this file.
+# SCOPE. Four of helpers.py's 646 lines' worth of it is here: the pure list/string/number
+# helpers (prod, dedup, argsort, ceildiv, ...); the ContextVar/Context flag machinery, as an
+# immutable `Flags` record, plus `Context` itself as a snapshot that is threaded rather than
+# pushed; `GlobalCounters`, as a threaded `Counters` record; and the two things that need the
+# host, `lines` and `Timing`. The rest is I/O or dynamic Python and is listed, with a one-line
+# reason each, in the NOT PORTED block at the end of this file.
 #
 # GATE. This file has no `main` -- it is imported by 88 others -- so its rows live in
-# `.agents/slop/helpers-tc.bend` and are compared against `.agents/slop/helpers-oracle.py`
-# by `sh .agents/slop/helpers-tc-gate.sh`, which runs CPython and both Bend lanes.
+# `.agents/slop/helpers-tc.bend` and are compared against `.agents/slop/helpers-oracle.py` by
+# `sh .agents/slop/helpers-tc-gate.sh`, which runs CPython and both Bend lanes.
 #
-# `truncate` is not one of helpers.py's: it is dtype.py:289, it needs `dtypes`,
-# and it lives in ./dtype.bend. See dtype.bend `def truncate_float` -- THE FLOAT ARM,
-# which is the one `DType.const` (dtype.py:79 ) takes for a float dtype. The int arm
-# is still P3 and dtype.bend says so.
+# `truncate` is not one of helpers.py's: it is dtype.py:289, it needs `dtypes`, and it lives in
+# ./dtype.bend. The int arm is still P3 and dtype.bend says so.
 
 import Base
 
 # Flags -- the pure port of ContextVar / Context
 #
-# helpers.py's ContextVar is a mutable cell keyed by string, and Context is a
-# context manager that swaps a group of them and restores on exit. Bend has no
-# global mutable state, so the cell becomes a field of an immutable record and
-# the manager becomes "thread a different record through" -- which is what
-# `Context(DEFAULT_FLOAT=...)` means. `Flags.defaults` is the module import;
-# `Flags.from_env` is the `ContextVar.__init__` `getenv(key, default)`.
+# helpers.py's ContextVar is a mutable cell keyed by string, and Context is a context manager
+# that swaps a group of them and restores on exit. Bend has no global mutable state, so the
+# cell becomes a field of an immutable record and the manager becomes "thread a different record
+# through" -- which is what `Context(DEFAULT_FLOAT=...)` means. `Flags.defaults` is the module
+# import; `Flags.from_env` is the `ContextVar.__init__` `getenv(key, default)`.
 #
-# The values stay `String` because that is what the ContextVars hold:
-# `ContextVar("DEFAULT_FLOAT", "float32")` stores the string "float32" and
-# `dtypes.default_float` calls `to_dtype` on it, so the dependency direction is
-# the same as Python's (dtype imports helpers).
+# The values stay `String` because that is what the ContextVars hold: `ContextVar("DEFAULT_FLOAT",
+# "float32")` stores the string "float32" and `dtypes.default_float` calls `to_dtype` on it, so
+# the dependency direction is the same as Python's (dtype imports helpers).
 #
-# The variable list is the subset these two files read, and it is 4 flags out of
-# 146. COUNTED, not estimated: upstream declares 61 `ContextVar`s (helpers.py:236-290
-# plus device.py:18, uop/ops.py:1623-1624, hcq2.py:18, ops_nv.py:27, ops_amd.py:31-34)
-# and 85 more read through a bare `getenv("KEY", ...)`, and `Flags` implements THREE
-# of the 61 ContextVars -- NO_COLOR, DEFAULT_FLOAT, DEFAULT_INT -- plus SUM_DTYPE,
-# which is a bare getenv (dtype.py:223) and not a ContextVar at all. So P6 is not
-# a garbage-collection job: every one of the other 57 ContextVars is CONSUMED --
-# `DEBUG` has 119 reads and the lowest is `HCQ_CACHE_THRESH` with 1.
+# The variable list is the subset these two files read, and it is 4 flags out of 146. COUNTED,
+# not estimated: upstream declares 61 `ContextVar`s and 85 more read through a bare
+# `getenv("KEY", ...)`, and `Flags` implements THREE of the 61 ContextVars -- NO_COLOR,
+# DEFAULT_FLOAT, DEFAULT_INT -- plus SUM_DTYPE, which is a bare getenv (dtype.py:223) and not a
+# ContextVar at all. So P6 is not a garbage-collection job: every one of the other 57 ContextVars
+# is CONSUMED -- `DEBUG` has 119 reads and the lowest is `HCQ_CACHE_THRESH` with 1.
 #
-# P6 replaces this one record with the full list, and every def that takes a
-# `Flags` keeps its shape -- but the SEMANTICS have to be settled first, because
-# `getenv` is `type(default)(os.getenv(key, default))` (helpers.py:162), so the
-# coercion is `int` for 51 of the 61, `str` for the rest, and `bool` for exactly
-# three: PMA (ops_nv.py:27), SQTT and PMC (ops_amd.py:31,34), whose defaults are
-# `abs(VIZ.value) >= 2`. The `bool` case is the one that reads as "any non-empty
-# string is true"; the `int` case, which NO_COLOR is, reads an int-zero string as
-# False, and that is the bug the old comment below was written on.
+# P6 replaces this one record with the full list, and every def that takes a `Flags` keeps its
+# shape -- but the SEMANTICS have to be settled first, because `getenv` is
+# `type(default)(os.getenv(key, default))` (helpers.py:162), so the coercion is `int` for 51 of
+# the 61, `str` for the rest, and `bool` for exactly three: PMA (ops_nv.py:27), SQTT and PMC
+# (ops_amd.py:31,34), whose defaults are `abs(VIZ.value) >= 2`. The `bool` case is the one that
+# reads as "any non-empty string is true"; the `int` case, which NO_COLOR is, reads an
+# int-zero string as False, and that is the bug the old comment below was written on.
 
 type Flags is Data:
   Flags{no_color: Bool, default_float: String, default_int: String, sum_dtype: String}
@@ -58,26 +49,25 @@ type Flags is Data:
 def Flags.defaults() -> Flags:
   Flags{False{}, "float32", "int32", "float32"}
 
-# `NO_COLOR` is `ContextVar("NO_COLOR", 0)` (helpers.py:239), so `type(default)`
-# is `int` and getenv coerces through `int`, NOT through `bool`. `bool(NO_COLOR)`
-# is then `bool(int(...))`. MEASURED, 31 probes, live CPython
-# (oracles/nocolor-oracle.rows vs the Bend lane):
+# `NO_COLOR` is `ContextVar("NO_COLOR", 0)` (helpers.py:239), so `type(default)` is `int`
+# and getenv coerces through `int`, NOT through `bool`. `bool(NO_COLOR)` is then
+# `bool(int(...))`. MEASURED, 31 probes, live CPython (oracles/nocolor-oracle.rows vs the Bend
+# lane):
 #   "0", "00", "-0", "+0", "0 " and " 0" all read as 0 and leave COLOUR ON, and
 #   "1", "2", "007", "+1", "-1", "1_0", " 1 ", "\t2" and "2\n" all read non-zero
-#   and switch it OFF. So the rule is not "any text is truthy": that INVERTS
-#   every one of those six zeros, and a default-environment gate cannot see an
-#   inversion because the default is the only environment it ever runs.
-# The Bend side of that comparison was never preserved: `.agents/slop/nocolor-bend.txt`
-# has no successor at any path on any ref (its basename is absent from all 18110
-# paths `git rev-list --all --objects` names). Named here rather than quietly dropped.
-# So: trim, drop one leading sign, and require what is left to be `[0-9_]` with
-# at least one character other than '0'.
-# `int()` REFUSES "", "0.0", "1e3", "false" and the rest -- tinygrad does not
-# import -- and a refusal is not a value in a total language, so every refused
-# string answers False. False is the DEFAULT reading (colour on), so the port
-# never invents colour CPython would not have printed. The one measured gap is
-# `Char.is_digit`, which is ASCII, so CPython's other decimal digits ("٣") read
-# False here and True there.
+#   and switch it OFF. So the rule is not "any text is truthy": that INVERTS every one of those
+#   six zeros, and a default-environment gate cannot see an inversion because the default is the
+#   only environment it ever runs.
+# The Bend side of that comparison was never preserved: `.agents/slop/nocolor-bend.txt` has no
+# successor at any path on any ref (its basename is absent from all 18110 paths
+# `git rev-list --all --objects` names). Named here rather than quietly dropped.
+# So: trim, drop one leading sign, and require what is left to be `[0-9_]` with at least one
+# character other than '0'.
+# `int()` REFUSES "", "0.0", "1e3", "false" and the rest -- tinygrad does not import -- and a
+# refusal is not a value in a total language, so every refused string answers False. False is
+# the DEFAULT reading (colour on), so the port never invents colour CPython would not have
+# printed. The one measured gap is `Char.is_digit`, which is ASCII, so CPython's other decimal
+# digits ("٣") read False here and True there.
 def nc_sign(+s: String) -> Bool:
   Bool.or(String.starts_with(s, "+"), String.starts_with(s, "-"))
 
@@ -137,46 +127,42 @@ def getenv_str(k: String, d: String) -> IO(String):
     v : Result<&1, &1, U32 & String, String> <- IO.get_env(k)
     return getenv_str.go(v, d)
 
-# `getenv_int` -- the other arm of the same `getenv`. This is not a second
-# environment mechanism: `IO.get_env` (references/bend/bend2/base.bend:185
-# symbol=IO.get_env) is the only reader and both
-# arms call it. helpers.py:163 is the whole of `getenv`:
+# `getenv_int` -- the other arm of the same `getenv`. This is not a second environment
+# mechanism: `IO.get_env` (references/bend/bend2/base.bend:185 symbol=IO.get_env) is the only
+# reader and both arms call it. helpers.py:163 is the whole of `getenv`:
 #
 #     @functools.cache
 #     def getenv(key:str, default:Any=0): return type(default)(os.getenv(key, default))
 #
-# so `default` CHOOSES THE COERCION and a default of `""` gives `str` (`getenv_str`
-# above) while a default of `0` gives `int` (here). `DEBUG` is the ContextVar that
-# needs the int arm -- `DEBUG = ContextVar("DEBUG", 0)`, helpers.py:237 -- and
-# `DEBUG >= 2` is a COMPARISON, so a `String` cell cannot carry it. Measured: with
-# `DEBUG="2"` the live object is `<class 'int'> 2`, and `int(DEBUG >= 2)` is 1;
-# `DEBUG=""` and `DEBUG="abc"` both make the IMPORT raise
-# `ValueError: invalid literal for int() with base 10`, which tinygrad does not
-# catch (`.agents/slop/debug_oracle.py`, `dbg_value_*` / `dbg_int_getenv_*` rows).
+# so `default` CHOOSES THE COERCION and a default of `""` gives `str` (`getenv_str` above)
+# while a default of `0` gives `int` (here). `DEBUG` is the ContextVar that needs the int arm --
+# `DEBUG = ContextVar("DEBUG", 0)`, helpers.py:237 -- and `DEBUG >= 2` is a COMPARISON, so a
+# `String` cell cannot carry it. Measured: with `DEBUG="2"` the live object is `<class 'int'> 2`,
+# and `int(DEBUG >= 2)` is 1; `DEBUG=""` and `DEBUG="abc"` both make the IMPORT raise
+# `ValueError: invalid literal for int() with base 10`, which tinygrad does not catch
+# (`.agents/slop/debug_oracle.py`, `dbg_value_*` / `dbg_int_getenv_*` rows).
 #
 # `int()` IS NOT A REGEX. MEASURED, live CPython, 24 probes:
 #   "0" 0   "1" 1   "2" 2   "3" 3   "00" 0   "007" 7   "1_0" 10   "2_0_0" 200
 #   " 2 " 2   "\t2\n" 2   "+2" 2   "-1" -1
 #   "" "_" "1_" "_1" "1__0" "abc" "2.0" "1e3" "0x2"  ALL ValueError
-# So: trim, drop ONE leading `+`/`-`, and require what is left to be digits with
-# `_` STRICTLY BETWEEN them and at least one digit present. `gi_of_text` is that
-# rule as a three-state walk -- PRE (no digit yet), MID (a digit just ended), PEND
-# (a `_` just ended, so the next char MUST be a digit) -- and DEAD once refused,
-# which is what stops a later digit from resurrecting a prefix that already failed.
+# So: trim, drop ONE leading `+`/`-`, and require what is left to be digits with `_` STRICTLY
+# BETWEEN them and at least one digit present. `gi_of_text` is that rule as a three-state walk --
+# PRE (no digit yet), MID (a digit just ended), PEND (a `_` just ended, so the next char MUST
+# be a digit) -- and DEAD once refused, which is what stops a later digit from resurrecting a
+# prefix that already failed.
 #
-# THE ONE MEASURED GAP IS `Char.is_digit`, which is ASCII: CPython's `int("٣")` is
-# 3 and `gi_of_text("٣")` refuses. That is the SAME gap `no_color_of` above already
-# documents for `nc_digits`, and it is left as it is rather than fixed twice.
+# THE ONE MEASURED GAP IS `Char.is_digit`, which is ASCII: CPython's `int("٣")` is 3 and
+# `gi_of_text("٣")` refuses. That is the SAME gap `no_color_of` above already documents for
+# `nc_digits`, and it is left as it is rather than fixed twice.
 #
-# A LEADING `-` REFUSES rather than yielding a negative, and `getenv_int` then
-# answers the DEFAULT. That is a real narrowing of CPython's `int`, so it is
-# measured rather than argued: CPython's `int("-1")` is `-1` and every threshold in
-# tinygrad is `DEBUG >= N` with `N >= 0`, so `-1 >= 2` and the default `0 >= 2` are
-# both False. `debug_ge_neg` in `.agents/slop/debug-gate.bend` holds the two sides
-# of that equivalence down. A `U32` cannot hold `-1` and the alternative -- an
-# `I64` here and a comparison type change at each of the seven sites -- would buy a
-# distinction no site can observe.
-# PRE 0, MID 1, PEND 2, DEAD 3, and `v` is the digits so far.
+# A LEADING `-` REFUSES rather than yielding a negative, and `getenv_int` then answers the
+# DEFAULT. That is a real narrowing of CPython's `int`, so it is measured rather than argued:
+# CPython's `int("-1")` is `-1` and every threshold in tinygrad is `DEBUG >= N` with `N >= 0`,
+# so `-1 >= 2` and the default `0 >= 2` are both False. `debug_ge_neg` in
+# `.agents/slop/debug-gate.bend` holds the two sides of that equivalence down. A `U32` cannot
+# hold `-1` and the alternative -- an `I64` here and a comparison type change at each of the
+# seven sites -- would buy a distinction no site can observe.
 type Gi is Data:
   Gi{st: U32, v: U32}
 
@@ -337,41 +323,37 @@ def Flags.from_env() -> IO(Flags):
 #   __init__      self.kwargs = kwargs                                   (:171)
 #   __enter__     snapshot every named cell, then overwrite it           (:175-176)
 #   __exit__      write the snapshot back                                 (:178)
-# `ContextVar._cache` (:181) is a class-level dict of cells, so "overwrite a cell"
-# is a mutation of a module global and a `with` block is the scope that bounds it.
-# Bend has neither, so the block becomes two calls and the snapshot is the VALUE
-# the first one returns: `Context.__enter__` answers `Ctx`, which carries BOTH the
-# snapshot and the record now in force, and `Context.__exit__` needs the snapshot and
-# the current record to write it back. A caller cannot "enter" without doing both
-# halves, because there is no separate enter step to forget.
+# `ContextVar._cache` (:181) is a class-level dict of cells, so "overwrite a cell" is a mutation
+# of a module global and a `with` block is the scope that bounds it. Bend has neither, so the
+# block becomes two calls and the snapshot is the VALUE the first one returns: `Context.__enter__`
+# answers `Ctx`, which carries BOTH the snapshot and the record now in force, and
+# `Context.__exit__` needs the snapshot and the current record to write it back. A caller cannot
+# "enter" without doing both halves, because there is no separate enter step to forget.
 #
-# `old_context` IS A SNAPSHOT, NOT A STACK, and that is the load-bearing fact.
-# `__exit__` (:178) replays `self.old_context` onto whatever is CURRENT; it does not
-# pop. Two contexts on the SAME key, entered in order A then B and exited in the
-# order A then B, leave the value A wrote, not the original -- measured, and it is
-# the `ctx_ooo_df` row in `.agents/slop/helpers-oracle.py`. A port that pushed and
-# popped a stack would answer the original value and be wrong. The gate nests the
-# pair twice, once in order and once out of order, precisely to tell those two
-# readings apart, and a third fixture with DISJOINT keys pins that `__exit__` writes
-# back only its OWN kwargs.
+# `old_context` IS A SNAPSHOT, NOT A STACK, and that is the load-bearing fact. `__exit__` (:178)
+# replays `self.old_context` onto whatever is CURRENT; it does not pop. Two contexts on the SAME
+# key, entered in order A then B and exited in the order A then B, leave the value A wrote, not
+# the original -- measured, and it is the `ctx_ooo_df` row in `.agents/slop/helpers-oracle.py`. A
+# port that pushed and popped a stack would answer the original value and be wrong. The gate
+# nests the pair twice, once in order and once out of order, precisely to tell those two
+# readings apart, and a third fixture with DISJOINT keys pins that `__exit__` writes back only
+# its OWN kwargs.
 #
-# `CV` mirrors `Flags` field for field rather than holding one value, and the reason
-# is a measurement: `__enter__` assigns the RAW kwarg into the cell and does NOT go
-# back through getenv's `type(default)(...)` (:163). So `Context(NO_COLOR="0")` puts
-# the STRING "0" in the cell, and `ContextVar.__bool__` (:188) is `bool(self.value)`,
-# where `bool("0")` is True. At boot `no_color` is the COERCION of the env string and
-# "0" reads False; inside a `Context` the same text reads True. One `String` slot
-# could not carry both, so `CV` keeps the coerced bool AND the raw text and
-# `Context.arg` (:171, the kwargs entry) is where the coercion happens ONCE, on the
-# way IN. The snapshot (`Flags.snap1`, :175) therefore restores the boot bool and
+# `CV` mirrors `Flags` field for field rather than holding one value, and the reason is a
+# measurement: `__enter__` assigns the RAW kwarg into the cell and does NOT go back through
+# getenv's `type(default)(...)` (:163). So `Context(NO_COLOR="0")` puts the STRING "0" in the
+# cell, and `ContextVar.__bool__` (:188) is `bool(self.value)`, where `bool("0")` is True. At
+# boot `no_color` is the COERCION of the env string and "0" reads False; inside a `Context` the
+# same text reads True. One `String` slot could not carry both, so `CV` keeps the coerced bool
+# AND the raw text and `Context.arg` (:171, the kwargs entry) is where the coercion happens ONCE,
+# on the way IN. The snapshot (`Flags.snap1`, :175) therefore restores the boot bool and
 # `ctx_nc_exit` is 0 where `ctx_nc_enter` is 1.
 #
 # `_recreate_cm` (:173) is NOT PORTED and there is nothing to port: it exists because
-# `ContextDecorator` reuses `self`, so a RECURSIVE use of one instance would
-# overwrite `self.old_context` with the inner call's snapshot. Here the snapshot is
-# returned as a value instead of being written into the manager, so the hazard has
-# no representation -- two nested uses of the same kwargs are two `Ctx` values and
-# neither can reach the other.
+# `ContextDecorator` reuses `self`, so a RECURSIVE use of one instance would overwrite
+# `self.old_context` with the inner call's snapshot. Here the snapshot is returned as a value
+# instead of being written into the manager, so the hazard has no representation -- two nested
+# uses of the same kwargs are two `Ctx` values and neither can reach the other.
 
 type CV is Data:
   CV{k: String, nc: Bool, v: String}
@@ -588,17 +570,15 @@ def all_same_str(xs: List<&2, String>) -> Bool:
 
 # get_shape -- `def get_shape(x) -> tuple[int, ...]`
 #
-# DEVIATION, stated: Python walks any object with `__len__` and `__getitem__`,
-# and NOTE `str` is special because iterating it still yields strs. Bend has no
-# duck typing, so the input is the `Nest` tree below: `Ns` is a scalar, `Nl` is
-# a sequence -- the same information Python reads off the object, made explicit
-# at the boundary.
+# DEVIATION, stated: Python walks any object with `__len__` and `__getitem__`, and NOTE `str` is
+# special because iterating it still yields strs. Bend has no duck typing, so the input is the
+# `Nest` tree below: `Ns` is a scalar, `Nl` is a sequence -- the same information Python reads
+# off the object, made explicit at the boundary.
 #
-# Python returns () for a scalar, for a string, and for an object whose `.shape`
-# is (); it raises ValueError for an inhomogeneous shape. Those are three
-# outcomes, so they are three constructors and none of them is a silent None. A
-# sequence of scalars is NOT (): get_shape([1,2]) is (2,) and get_shape([]) is
-# (0,).
+# Python returns () for a scalar, for a string, and for an object whose `.shape` is (); it
+# raises ValueError for an inhomogeneous shape. Those are three outcomes, so they are three
+# constructors and none of them is a silent None. A sequence of scalars is NOT (): get_shape([1,2])
+# is (2,) and get_shape([]) is (0,).
 
 type ShapeRes is Data:
   SNoShape{}                      # Python: ()
@@ -1082,61 +1062,53 @@ def size_to_str(+s: U32) -> String:
 
 # ansistrip -- `re.sub('\x1b\[(K|.*?m)', '', s)` (helpers.py:48).
 #
-# the regex matches a run of arbitrary length, so nothing may decide before the
-# RUN'S END IS SEEN. `.*?m` is non-greedy and unbounded: a walker that emits as it
-# goes has already emitted too much by the time it learns whether the sequence was
-# `K` or `31m`. Bend 2.0.34 offers no way to look ahead, and all three of these
-# are MEASURED:
+# the regex matches a run of arbitrary length, so nothing may decide before the RUN'S END IS
+# SEEN. `.*?m` is non-greedy and unbounded: a walker that emits as it goes has already emitted
+# too much by the time it learns whether the sequence was `K` or `31m`. Bend 2.0.34 offers no
+# way to look ahead, and all three of these are MEASURED:
 #
-#   * forward references are rejected outright -- "expected : a filled definition
-#     (an unfilled law is a dead claim: live code cannot use it)". So a state
-#     machine may NOT be split into a driver and a stepper: that is mutual
-#     recursion and it does not compile. ONE def, ONE recursion, ONE table.
-#   * a `case`-bound list TAIL IS LINEAR -- "expected : t, observed : t (consumed
-#     more than once)" -- so a look-ahead over the rest of the input and a walk
-#     over the rest of the input cannot both live in one arm.
-#   * a self-call argument must be a SYNTACTIC TAIL -- "expected : a decreasing
-#     self-call" -- so neither `String.drop(s, n)` nor `List.append(t, [h])` may
-#     step the cursor by more than one character.
+#   * forward references are rejected outright -- "expected : a filled definition (an unfilled
+#     law is a dead claim: live code cannot use it)". So a state machine may NOT be split into
+#     a driver and a stepper: that is mutual recursion and it does not compile. ONE def, ONE
+#     recursion, ONE table.
+#   * a `case`-bound list TAIL IS LINEAR -- "expected : t, observed : t (consumed more than
+#     once)" -- so a look-ahead over the rest of the input and a walk over the rest of the input
+#     cannot both live in one arm.
+#   * a self-call argument must be a SYNTACTIC TAIL -- "expected : a decreasing self-call" --
+#     so neither `String.drop(s, n)` nor `List.append(t, [h])` may step the cursor by more than
+#     one character.
 #
-# so the run is emitted optimistically and un-emitted on a match. `acc` is
-# REVERSED, so prepending is O(1) and a run's characters are already on TOP of
-# `acc` when its terminator arrives: dropping the run is `List.drop(acc, n)` for
-# the count `n` of characters put there. One pass, no look-ahead, no flush, no
-# re-scan, no rollback.
+# so the run is emitted optimistically and un-emitted on a match. `acc` is REVERSED, so
+# prepending is O(1) and a run's characters are already on TOP of `acc` when its terminator
+# arrives: dropping the run is `List.drop(acc, n)` for the count `n` of characters put there.
+# One pass, no look-ahead, no flush, no re-scan, no rollback.
 #
-# The state is two def PARAMETERS and not a record, because `Nat` and `List` are
-# both linear and a `case`-bound name may be used ONCE: a record pattern that
-# binds `n` cannot also name `n` in the arm ("expected : n, observed : n (consumed
-# more than once)"). So `acc`, `n` and `q` are passed through and never matched:
+# The state is two def PARAMETERS and not a record, because `Nat` and `List` are both linear and
+# a `case`-bound name may be used ONCE: a record pattern that binds `n` cannot also name `n` in
+# the arm ("expected : n, observed : n (consumed more than once)"). So `acc`, `n` and `q` are
+# passed through and never matched:
 #
 #   q = 0n  normal
 #   q = 1n  an ESC is pending and has emitted nothing yet
 #   q = 2n  inside a run whose body is still empty
 #   q = 3n  inside a run with at least one body character
 #
-# `q` is a match position, and the char code is folded into the LIST pattern as
-# `Chr{27}`, because a Bend `match` may only scrutinise a def parameter or a
-# record FIELD -- never `Char.to_u32(h)` ("a match cannot scrutinize a computed
-# value") and never a `case`-bound binder ("this name is a def or a consumed
-# binder"). A `Nat` in a multi-scrutinee position is also checked for
-# exhaustiveness while a `Nat` inside a record pattern is not, which is the whole
-# of why the state is parameters.
+# `q` is a match position, and the char code is folded into the LIST pattern as `Chr{27}`,
+# because a Bend `match` may only scrutinise a def parameter or a record FIELD -- never
+# `Char.to_u32(h)` ("a match cannot scrutinize a computed value") and never a `case`-bound
+# binder ("this name is a def or a consumed binder"). A `Nat` in a multi-scrutinee position is
+# also checked for exhaustiveness while a `Nat` inside a record pattern is not, which is the
+# whole of why the state is parameters.
 #
-# The three ways a run ends:
-#   * 'm'  -- `.*?` of length ZERO, so `ESC[m` is a whole run. Reachable from 2n
-#             and 3n.
+# MEASURED against CPython on a 43-fixture corpus (`.agents/slop/ansi_oracle.py` vs
+# `.agents/slop/ansi_probe.bend`, gate `.agents/slop/ansi_gate.py`): 28 of 43 rows were red
+# before this rewrite.
 #
-# MEASURED against CPython on a 43-fixture corpus (`.agents/slop/ansi_oracle.py`
-# vs `.agents/slop/ansi_probe.bend`, gate `.agents/slop/ansi_gate.py`): 28 of 43
-# rows were red before this rewrite.
-#
-# THE ONE RESIDUAL DIVERGENCE, and it is a wall rather than an oversight. A run
-# that FAILS (newline before the terminator, or end of input) must be re-read by
-# `re.sub` from its '[' -- and a body can itself contain a complete `ESC[K`,
-# which that re-read strips. This walk cannot re-read: the body has already been
-# emitted and would have to be read a second time, and a list tail is linear. So
-# the body is emitted verbatim. Row `ansi_29` ("\x1b[\x1b[K\n") is the witness:
+# THE ONE RESIDUAL DIVERGENCE, and it is a wall rather than an oversight. A run that FAILS
+# (newline before the terminator, or end of input) must be re-read by `re.sub` from its '[' --
+# and a body can itself contain a complete `ESC[K`, which that re-read strips. This walk
+# cannot re-read: the body has already been emitted and would have to be read a second time,
+# and a list tail is linear. So the body is emitted verbatim.
 def ansistrip.esc(acc: List<&2, Char>) -> List<&2, Char>:
   List.append(&2, Char, [Char.from_u32(27)], acc)
 
@@ -1710,12 +1682,12 @@ def i64_shl(+x: I64, +k: Nat) -> I64:
 
 # the right shift, and it is arithmetic. `tinygrad/uop/ops.py:1429` binds `Ops.SHR` to
 # `operator.rshift`, which on a CPython int IS the sign-extending (floor) shift, and
-# `tinygrad/codegen/decomp/dtype.py:48` says it twice -- "vacated high word: sign bits
-# when signed, else 0" and `fill = a1 >> 31 if dt == dtypes.int else zero`. So SHR of an
-# `int64` extends the sign and SHR of a `uint64` does not, and the two differ on exactly
-# one bit pattern: the sign. `i64_shr` IS the arithmetic one, because the pair is signed
-# (`i64_is_neg` reads bit 63 of the high word) -- a logical `int64` shift does not exist
-# upstream, and the unsigned reading is a `BITCAST` away rather than a second def.
+# `tinygrad/codegen/decomp/dtype.py:48` says it twice -- "vacated high word: sign bits when
+# signed, else 0" and `fill = a1 >> 31 if dt == dtypes.int else zero`. So SHR of an `int64`
+# extends the sign and SHR of a `uint64` does not, and the two differ on exactly one bit
+# pattern: the sign. `i64_shr` IS the arithmetic one, because the pair is signed (`i64_is_neg`
+# reads bit 63 of the high word) -- a logical `int64` shift does not exist upstream, and the
+# unsigned reading is a `BITCAST` away rather than a second def.
 #
 # THE FOUR TERMS, for `k <= 32`, and each one is necessary:
 #     lo' = (lo >> k) | (hi << (32-k))    the low word keeps lo's top bits and receives
@@ -1726,48 +1698,47 @@ def i64_shl(+x: I64, +k: Nat) -> I64:
 #                                         arithmetic
 #
 # the fill is invisible on every non-negative value, which is half the fixture set and the
-# reason half of it cannot see a deleted fill: the fill is `0` when the high word's bit 31
-# is clear, so dropping it changes nothing for `zero`, `one` or `max` and everything for
-# `neg1`, `signmin` or `spill`. Planted and MEASURED: 18 of 301 rows move, all six on
-# those three values, `.agents/slop/ishr/plant.py` P1. `spill` is what makes the remaining
-# four terms load-bearing -- its high word is negative AND not all ones AND its bit 0 is
-# set, so at `k = 1` all four terms are individually necessary.
+# reason half of it cannot see a deleted fill: the fill is `0` when the high word's bit 31 is
+# clear, so dropping it changes nothing for `zero`, `one` or `max` and everything for `neg1`,
+# `signmin` or `spill`. Planted and MEASURED: 18 of 301 rows move, all six on those three
+# values, `.agents/slop/ishr/plant.py` P1. `spill` is what makes the remaining four terms
+# load-bearing -- its high word is negative AND not all ones AND its bit 0 is set, so at
+# `k = 1` all four terms are individually necessary.
 #
-# the sign fill is needed in both words for `k > 32`, and omitted for `k <= 32`. This
-# is the whole asymmetry with `i64_shl` and it is a property of the BIT INDEXES, not a
-# choice. Bit `j` of the result is bit `j+k` of `x` while `j+k <= 63`, and the sign after
-# that. The HIGH word is bits 32..63, so for every `k` it is past the top of `x` and is
-# ALL fill. The LOW word is bits 0..31: for `k <= 32` all of `j+k` is at most 63, so the
-# low word holds REAL bits and no fill at all; for `k > 32` its top `k-32` bits are past
-# the top of `x` and are fill too. Writing the fill into the high word only is the
-# plausible version and it is WRONG for every amount above 32 -- `i64_shr(-1, 33)` comes
-# out `0xFFFFFFFF:0x00000000` where the answer is `0xFFFFFFFF:0xFFFFFFFF`. Gate row
-# `sr_neg1_3`, amount 33; planted as P2, and 36 of 301 rows move, NOT ONE of them at an
-# amount at or below 32 -- which is the 60 cells that implementation still gets right.
+# the sign fill is needed in both words for `k > 32`, and omitted for `k <= 32`. This is the
+# whole asymmetry with `i64_shl` and it is a property of the BIT INDEXES, not a choice. Bit `j`
+# of the result is bit `j+k` of `x` while `j+k <= 63`, and the sign after that. The HIGH word
+# is bits 32..63, so for every `k` it is past the top of `x` and is ALL fill. The LOW word is
+# bits 0..31: for `k <= 32` all of `j+k` is at most 63, so the low word holds REAL bits and no
+# fill at all; for `k > 32` its top `k-32` bits are past the top of `x` and are fill too.
+# Writing the fill into the high word only is the plausible version and it is WRONG for every
+# amount above 32 -- `i64_shr(-1, 33)` comes out `0xFFFFFFFF:0x00000000` where the answer is
+# `0xFFFFFFFF:0xFFFFFFFF`. Gate row `sr_neg1_3`, amount 33; planted as P2, and 36 of 301 rows
+# move, NOT ONE of them at an amount at or below 32 -- which is the 60 cells that
+# implementation still gets right.
 #
-# `k == 0` and `k == 32` are the two amounts WHERE the two forms meet, and both are
-# answered by the SAME arm, so the test is `k <= 32` and not `k < 32`: at 32 the low word
-# is `hi >> 0 | hi << 0 = hi` and the high word is the fill alone.
+# `k == 0` and `k == 32` are the two amounts WHERE the two forms meet, and both are answered by
+# the SAME arm, so the test is `k <= 32` and not `k < 32`: at 32 the low word is `hi >> 0 |
+# hi << 0 = hi` and the high word is the fill alone.
 #
-# FOR `k > 32` NOTHING OF `lo` SURVIVES -- `lo` supplies only the bits that land in the
-# high word's bottom `k-32` positions -- so this is the mirror of `i64_shl`'s "FOR
-# `k >= 32` the high WORD comes from `lo` and only from `lo`", and, as there, `Nat.sub`
-# TRUNCATES so the eagerly-evaluated other arm of the `Bool.pick` is harmless.
+# FOR `k > 32` NOTHING OF `lo` SURVIVES -- `lo` supplies only the bits that land in the high
+# word's bottom `k-32` positions -- so this is the mirror of `i64_shl`'s "FOR `k >= 32` the
+# high WORD comes from `lo` and only from `lo`", and, as there, `Nat.sub` TRUNCATES so the
+# eagerly-evaluated other arm of the `Bool.pick` is harmless.
 #
-# the fill amount past 64 is `Nat.sub` truncation, not a clamp, and it is right by the
-# WIDTH LAW: for every `k >= 64` the answer is the fill, and `Nat.sub(32n, k-32)` is 0
-# there, so `U32.shln(fill, 0n)` is the fill -- the saturation `U32.shln` would have done
-# is never reached, and both agree anyway.
+# the fill amount past 64 is `Nat.sub` truncation, not a clamp, and it is right by the WIDTH
+# LAW: for every `k >= 64` the answer is the fill, and `Nat.sub(32n, k-32)` is 0 there, so
+# `U32.shln(fill, 0n)` is the fill -- the saturation `U32.shln` would have done is never
+# reached, and both agree anyway.
 #
 # there is no width boundary, which is WHERE this differs from `i64_shl`. `x >> k` is
-# `floor(x / 2k)`, so `|x >> k| <= |x| <= 2**63` for every `k <= 63` and for every
-# `k >= 64` it is `-1` (x < 0) or `0` (x >= 0) -- ALL IN RANGE. So this def is EXACT AT
-# EVERY `Nat` AMOUNT for every `int64`, the answer is always representable as the pair,
-# and there is nothing to check: no `Maybe`, no wider carrier, no `u1`. `i64_shl` grows in
-# magnitude and loses the top bit past `k + bit_length(x) <= 63`; a right shift cannot.
-# `U32.shrn` SATURATES to 0 past 31, which is what supplies the `0` in `lo' >= 64` and
-# the whole of the `k >= 64` answer for a non-negative `x`, and `match_hi` supplies the
-# `-1`.
+# `floor(x / 2k)`, so `|x >> k| <= |x| <= 2**63` for every `k <= 63` and for every `k >= 64` it
+# is `-1` (x < 0) or `0` (x >= 0) -- ALL IN RANGE. So this def is EXACT AT EVERY `Nat` AMOUNT
+# for every `int64`, the answer is always representable as the pair, and there is nothing to
+# check: no `Maybe`, no wider carrier, no `u1`. `i64_shl` grows in magnitude and loses the top
+# bit past `k + bit_length(x) <= 63`; a right shift cannot. `U32.shrn` SATURATES to 0 past 31,
+# which is what supplies the `0` in `lo' >= 64` and the whole of the `k >= 64` answer for a
+# non-negative `x`, and `match_hi` supplies the `-1`.
 def i64_shr.lo(+neg: Bool, +hi: U32, +lo: U32, +k: Nat) -> I64:
   i64_of_hi_lo(U32.or(U32.shrn(hi, k), U32.shln(match_hi(neg), Nat.sub(32n, k))),
     U32.or(U32.shrn(lo, k), U32.shln(hi, Nat.sub(32n, k))))
@@ -2568,33 +2539,30 @@ def Timing.report(enabled: Bool, prefix: String, st: Nat, en: Nat) -> IO(Unit):
 
 # trange -- `def trange(n:int, kwargs) -> tqdm[int]`, helpers.py:619
 #
-# The entire body is `return tqdm(range(n), total=n, kwargs)`, so a `trange` IS its
-# `range(n)` with a total attached, and there are no `kwargs` to pass: every call
-# site in tinygrad is a bare `trange(k)` (`examples/beautiful_mnist.py:39` is the one
-# this block was added for). `Tqdm` therefore holds exactly what `trange` supplies:
-# the sequence and the total.
+# The entire body is `return tqdm(range(n), total=n, kwargs)`, so a `trange` IS its `range(n)`
+# with a total attached, and there are no `kwargs` to pass: every call site in tinygrad is a
+# bare `trange(k)` (`examples/beautiful_mnist.py:39` is the one this block was added for).
+# `Tqdm` therefore holds exactly what `trange` supplies: the sequence and the total.
 #
-# `Tqdm.t` IS THE TOTAL, and the name is upstream's: `tqdm.__init__` (:587) does
-# `self.st, self.i, self.n, self.skip, self.t = ..., total`. There is no `total`
-# ATTRIBUTE -- the first draft of the oracle hand-typed `t.total` and CPython answered
-# `AttributeError: 'tqdm' object has no attribute 'total'`, which is why every row
-# here is generated by calling the def instead of by reading it.
+# `Tqdm.t` IS THE TOTAL, and the name is upstream's: `tqdm.__init__` (:587) does `self.st,
+# self.i, self.n, self.skip, self.t = ..., total`. There is no `total` ATTRIBUTE -- the first
+# draft of the oracle hand-typed `t.total` and CPython answered `AttributeError: 'tqdm' object
+# has no attribute 'total'`, which is why every row here is generated by calling the def
+# instead of by reading it.
 #
-# The parameter is `U32`, which is the wall. CPython's `n` is an `int` and
-# `trange(-3)` answers `t.t == -3` with an EMPTY sequence, because `range(-3)` is
-# empty while `total=-3` is a real, negative integer; `base.bend` declares `Nat`,
-# `U32` and `F32` and no signed type, so the port does not have a way to hold that and
-# `trange(-3)` is a TYPE ERROR rather than a silent 4294967293. Strengthening the
-# argument is the same answer `head :: NonEmpty a -> a` gives, and the cost is that
-# one upstream input is unrepresentable rather than wrong.
+# The parameter is `U32`, which is the wall. CPython's `n` is an `int` and `trange(-3)` answers
+# `t.t == -3` with an EMPTY sequence, because `range(-3)` is empty while `total=-3` is a real,
+# negative integer; `base.bend` declares `Nat`, `U32` and `F32` and no signed type, so the port
+# does not have a way to hold that and `trange(-3)` is a TYPE ERROR rather than a silent
+# 4294967293. Strengthening the argument is the same answer `head :: NonEmpty a -> a` gives,
+# and the cost is that one upstream input is unrepresentable rather than wrong.
 #
-# `tqdm`'s presentation state -- `disable`, `desc`, `unit`, `rate`, `n`, `i` and the
-# bar itself -- is NOT PORTED, as the NOT PORTED block at the foot of this file says,
-# and `trange` does not invent it. One measured consequence is worth recording because
-# it is counter-intuitive: `tqdm.__init__`'s `disable` DEFAULT is `False`, not `None`
-# (:585), so the `sys.stderr.isatty()` arm is never taken by `trange` and the bar IS
-# drawn into a pipe. That is why `.agents/slop/helpers-tc-gate.sh` compares stdout
-# only, and why the oracle's `disable` / `desc` / `unit` / `rate` rows go to stderr.
+# `tqdm`'s presentation state -- `disable`, `desc`, `unit`, `rate`, `n`, `i` and the bar itself
+# -- is NOT PORTED, and `trange` does not invent it. One measured consequence is worth
+# recording because it is counter-intuitive: `tqdm.__init__`'s `disable` DEFAULT is `False`,
+# not `None` (:585), so the `sys.stderr.isatty()` arm is never taken by `trange` and the bar IS
+# drawn into a pipe. That is why `.agents/slop/helpers-tc-gate.sh` compares stdout only, and why
+# the oracle's `disable` / `desc` / `unit` / `rate` rows go to stderr.
 
 type Tqdm is Data:
   Tqdm{t: U32, seq: List<&2, Nat>}
@@ -2645,46 +2613,39 @@ def printable.pick(line: U32, ls: IO(List<&2, String>)) -> IO(String):
 def printable(path: String, line: U32) -> IO(String):
   printable.pick(line, lines(path))
 
-# `Target` -- tinygrad/helpers.py:197-220. the dev target, and upstream puts
-# IT HERE.
+# `Target` -- tinygrad/helpers.py:197-220. the dev target, and upstream puts IT HERE.
 #
-# why this file, and not the two that wanted it. the import graph decides, and
-# IT IS A CYCLE, AND IT IS MEASURED:
+# why this file, and not the two that wanted it. the import graph decides, and IT IS A CYCLE,
+# AND IT IS MEASURED:
 #
-#   * upstream's `helpers.py:198` DEFINES `Target`, and upstream's
-#     `uop/ops.py:13` and `runtime/ops_python.py:9` both IMPORT it from
-#     there. The port mirrors upstream's directory layout, so the port's
-#     `helpers.bend` is the mirror of the file upstream defines it in, and
-#     `uop/ops.bend` and `runtime/ops_python.bend` -- which BOTH already
-#     import this file as `H` -- are the two consumers.
-#   * `runtime/ops_python.bend` imports `../uop/ops.bend`, so `uop/ops.bend`
-#     CANNOT import `runtime/ops_python.bend`: the edge would close a cycle
-#     and the compiler refuses it. MEASURED, not remembered --
-#     `.agents/slop/programinfo/a.bend` imports `b.bend` and `b.bend` imports
-#     `a.bend`, and the compiler answers "an import cycle through ...".
-#   * THIS FILE IS A LEAF -- it imports `Base` and nothing else -- so both
-#     consumers can import it without closing an edge. THAT IS THE WHOLE
-#     reason it is here and not in either of them.
+#   * upstream's `helpers.py:198` DEFINES `Target`, and upstream's `uop/ops.py:13` and
+#     `runtime/ops_python.py:9` both IMPORT it from there. The port mirrors upstream's
+#     directory layout, so the port's `helpers.bend` is the mirror of the file upstream defines
+#     it in, and `uop/ops.bend` and `runtime/ops_python.bend` -- which BOTH already import this
+#     file as `H` -- are the two consumers.
+#   * `runtime/ops_python.bend` imports `../uop/ops.bend`, so `uop/ops.bend` CANNOT import
+#     `runtime/ops_python.bend`: the edge would close a cycle and the compiler refuses it.
+#     MEASURED, not remembered -- `.agents/slop/programinfo/a.bend` imports `b.bend` and
+#     `b.bend` imports `a.bend`, and the compiler answers "an import cycle through ...".
+#   * THIS FILE IS A LEAF -- it imports `Base` and nothing else -- so both consumers can
+#     import it without closing an edge. THAT IS THE WHOLE reason it is here and not in either
+#     of them.
 #
-# two copies is the defect this file closes. `runtime/ops_python.bend` held
-# one `Target` (the record, its accessors and the DEV parser) and
-# `uop/ops.bend` held another (the record and `Target.of()`), and the two were
-# DIFFERENT TYPES with the same five fields: a parsed target could not go into
-# a `ProgramInfo`, and the two could drift apart with nothing noticing. There
-# is ONE record now, and there is NO CONVERSION between them, because there is
-# nothing to convert: upstream's order is `device, renderer, arch, interface,
-# indices` and the port's is `device, renderer, arch, iface, indices` -- ONE
-# NAME differs (`interface` is spelled `iface` here) and the ORDER IS
-# UPSTREAM'S. A conversion between two records with the same field names in
-# the same order is a no-op that can only ever be wrong SILENTLY, so there is
-# not one.
+# two copies is the defect this file closes. `runtime/ops_python.bend` held one `Target` (the
+# record, its accessors and the DEV parser) and `uop/ops.bend` held another (the record and
+# `Target.of()`), and the two were DIFFERENT TYPES with the same five fields: a parsed target
+# could not go into a `ProgramInfo`, and the two could drift apart with nothing noticing. There
+# is ONE record now, and there is NO CONVERSION between them, because there is nothing to
+# convert: upstream's order is `device, renderer, arch, interface, indices` and the port's is
+# `device, renderer, arch, iface, indices` -- ONE NAME differs (`interface` is spelled `iface`
+# here) and the ORDER IS UPSTREAM'S. A conversion between two records with the same field names
+# in the same order is a no-op that can only ever be wrong SILENTLY, so there is not one.
 #
-# the order is the arm that matters, and it is a silent one. Two records with
-# the same five field NAMES in a different order are not interchangeable: a
-# positional construction puts the values in the wrong slots, a positional
-# pattern (`eq_target`, `uop/ops.bend`) compares the wrong pairs, and nothing
-# complains. The order is therefore stated once, HERE, and every construction
-# and every pattern in the port uses this one.
+# the order is the arm that matters, and it is a silent one. Two records with the same five
+# field NAMES in a different order are not interchangeable: a positional construction puts the
+# values in the wrong slots, a positional pattern (`eq_target`, `uop/ops.bend`) compares the
+# wrong pairs, and nothing complains. The order is therefore stated once, HERE, and every
+# construction and every pattern in the port uses this one.
 
 type Target is Data:
   Target{device: String, renderer: String, arch: String, iface: String, indices: String}
@@ -2711,147 +2672,83 @@ def Target.indices(+t: Target) -> String:
 
 # `Target.parse` -- tinygrad/helpers.py:206-214. THE DEV STRING PARSER.
 #
-# `Target` is upstream's record (helpers.py:198-203) and this is the one
-# function that FILLS it from a string, so it is the only thing in the port that
-# turns the `DEV=` environment variable into anything. Upstream, verbatim:
+# `Target` is upstream's record (helpers.py:198-203) and this is the one function that FILLS it
+# from a string, so it is the only thing in the port that turns the `DEV=` environment variable
+# into anything. Upstream, verbatim:
 #
 #     @staticmethod
 #     def parse(s:str) -> Target:
 #
-# SIX FACTS, and a port that misses any one of them is wrong in a way a
-# "looks about right" reading will not catch.
+# SIX FACTS, and a port that misses any one of them is wrong in a way a "looks about right"
+# reading will not catch.
 #
-# 1. the `+` cut is not the middle of the string. `s.split('+')` gives the
-#    interface half first and the device half second, so `DEV=USB+AMD` is the
-#    interface "USB" and the device "AMD" -- the OPPOSITE of the order the two
-#    are written in. A string with NO '+' is all device and the interface is
-#    empty; a string with a '+' is the interface half and the device half.
-# 2. the interface half may carry its own ':'. `split[0].rsplit(":", 1)` cuts
-#    that half at its LAST ':' -- before the cut is the interface, after it is
-#    the indices -- and `rsplit` with a maxsplit of ONE means "A:B:C" is the
-#    interface "A:B" and the indices "C", NOT the interface "A" and the
-#    indices "B:C".
-# 3. the device half is split on ':' and its first two fields are uppercased.
-#    The arch is NOT: `DEV=AMD:LLVM:gfx1100` keeps "gfx1100" as it is written,
-#    and `render.of` (runtime/ops_python.bend) matches the arch with
-#    `String.starts_with(arch, "gfx")`, so an uppercased arch would stop being
-#    an AMD arch at all. The interface and the indices are not uppercased either.
-# 4. two refusals, and they are not the same refusal. a third '+' is "too
-#    many '+'"; a fourth ':' IN THE DEVICE HALF is "too many ':'". Upstream
-#    raises `RuntimeError`; the port's `None` IS that RuntimeError
-#    (helpers.bend:3002 symbol=Target.parse), so `Target.parse` answers a `Maybe`. The port cannot
-#    carry upstream's MESSAGE -- `None` is a value with no room for one -- but
-#    the BOUNDARY, which strings are refused and which are not, is the fact
-#    that matters and it is carried exactly.
-# 5. the colons of the interface half are not the device half's budget. The
-#    ':' count that refuses is the count of the DEVICE half ALONE, so
-#    "A:B:C+D" parses (the device half "D" has one field) and "A+B:C:D" parses
-#    too (the device half "B:C:D" has three, which is the most there is).
-#    Upstream's own error message is narrower still: it rebinds `s` to
-#    `split[1]` BEFORE the ':' split, so the "too many ':'" message names the
-#    DEVICE half and not the whole string.
-# 6. the empty string is not a malformed string. `Target.parse("")` is
-#    `Target("", "", "", "", "")`: the device half is "" and the interface is
-#    "". A port that treats "" as malformed refuses a string upstream accepts.
+# 1. the `+` cut is not the middle of the string. `s.split('+')` gives the interface half first
+#    and the device half second, so `DEV=USB+AMD` is the interface "USB" and the device "AMD" --
+#    the OPPOSITE of the order the two are written in. A string with NO '+' is all device and
+#    the interface is empty; a string with a '+' is the interface half and the device half.
+# 2. the interface half may carry its own ':'. `split[0].rsplit(":", 1)` cuts that half at its
+#    LAST ':' -- before the cut is the interface, after it is the indices -- and `rsplit` with a
+#    maxsplit of ONE means "A:B:C" is the interface "A:B" and the indices "C", NOT the interface
+#    "A" and the indices "B:C".
+# 3. the device half is split on ':' and its first two fields are uppercased. The arch is NOT:
+#    `DEV=AMD:LLVM:gfx1100` keeps "gfx1100" as it is written, and `render.of`
+#    (runtime/ops_python.bend) matches the arch with `String.starts_with(arch, "gfx")`, so an
+#    uppercased arch would stop being an AMD arch at all. The interface and the indices are not
+#    uppercased either.
+# 4. two refusals, and they are not the same refusal. a third '+' is "too many '+'"; a fourth
+#    ':' IN THE DEVICE HALF is "too many ':'". Upstream raises `RuntimeError`; the port's `None`
+#    IS that RuntimeError (helpers.bend:3002 symbol=Target.parse), so `Target.parse` answers a
+#    `Maybe`. The port cannot carry upstream's MESSAGE -- `None` is a value with no room for one
+#    -- but the BOUNDARY, which strings are refused and which are not, is the fact that matters
+#    and it is carried exactly.
+# 5. the colons of the interface half are not the device half's budget. The ':' count that
+#    refuses is the count of the DEVICE half ALONE, so "A:B:C+D" parses (the device half "D" has
+#    one field) and "A+B:C:D" parses too (the device half "B:C:D" has three, which is the most
+#    there is). Upstream's own error message is narrower still: it rebinds `s` to `split[1]`
+#    BEFORE the ':' split, so the "too many ':'" message names the DEVICE half and not the whole
+#    string.
+# 6. the empty string is not a malformed string. `Target.parse("")` is `Target("", "", "", "",
+#    "")`: the device half is "" and the interface is "". A port that treats "" as malformed
+#    refuses a string upstream accepts.
 #
-# the port's own name for the fields. Upstream's record is
-# `Target{device, renderer, arch, interface, indices}` and the port's is
-# `Target{device, renderer, arch, iface, indices}` -- ONE name differs and it
-# is the port's SHORT one: `interface` is `iface` here and NOTHING ELSE. Every
-# field upstream's `parse` fills is a field the port has, so the port's
-# `Target` is NOT missing one; `iface` IS upstream's `interface`, filled from
-# the same place in the same order, and `render.of` (runtime/ops_python.bend)
-# reads the arch and the device only, so no field of the record is unread.
+# the port's own name for the fields. Upstream's record is `Target{device, renderer, arch,
+# interface, indices}` and the port's is `Target{device, renderer, arch, iface, indices}` -- ONE
+# name differs and it is the port's SHORT one: `interface` is `iface` here and NOTHING ELSE.
+# Every field upstream's `parse` fills is a field the port has, so the port's `Target` is NOT
+# missing one; `iface` IS upstream's `interface`, filled from the same place in the same order,
+# and `render.of` (runtime/ops_python.bend) reads the arch and the device only, so no field of
+# the record is unread.
 #
-# MEASURED, 2026-10-22, AGAINST CPython'S OWN `Target.parse` AND `ProgramInfo`.
-# The oracle is the vendored `tinygrad/helpers.py` and `tinygrad/uop/ops.py` at the pin,
-# CALLED, never re-implemented, and the port's answer is read out of the port by the
-# round trip's two lanes (`gates/target-roundtrip.bend` and `gates/target-oracle.py`).
-# THE DIFF IS EMPTY on all TWENTY rows: the five fields, in upstream's order, come back
-# out of the `ProgramInfo` EXACTLY as they went in, and `eq_target` says so too.
+# MEASURED, 2026-10-22, AGAINST CPython'S OWN `Target.parse` AND `ProgramInfo`. The oracle is
+# the vendored `tinygrad/helpers.py` and `tinygrad/uop/ops.py` at the pin, CALLED, never
+# re-implemented, and the port's answer is read out of the port by the round trip's two lanes
+# (`gates/target-roundtrip.bend` and `gates/target-oracle.py`). THE DIFF IS EMPTY on all TWENTY
+# rows: the five fields, in upstream's order, come back out of the `ProgramInfo` EXACTLY as they
+# went in, and `eq_target` says so too. THE TWENTY ROWS, THE PLANT LIST AND THE LIST-LEVEL
+# ROWS ARE IN `.agents/slop/tables/helpers-2694.md`.
 #
-#   ""                    => ||||
-#   CPU                   => CPU||||
-#   CPU:CLANG             => CPU|CLANG|||
-#   AMD:LLVM:gfx1100      => AMD|LLVM|gfx1100||
-#   AMD:LLVM:GFX1100      => AMD|LLVM|GFX1100||
-#   cpu:clang             => CPU|CLANG|||
-#   USB+AMD               => AMD|||USB|
-#   USB:1+AMD             => AMD|||USB|1
-#   AMD+CPU:CLANG         => CPU|CLANG||AMD|
-#   A:B:C+AMD             => AMD|||A:B|C
-#   usb:1+amd:llvm:gfx1100 => AMD|LLVM|gfx1100|usb|1
-#   A:B:C:D               => REFUSED      (upstream: too many ':' in target string: 'A:B:C:D')
-#   A+B+C                 => REFUSED      (upstream: too many '+' in target string: 'A+B+C')
-#   A:B:C+D               => D|||A:B|C
-#   A+B:C:D               => B|C|D|A|
-#   A+B:C:D:E             => REFUSED      (upstream: too many ':' in target string: 'B:C:D:E')
-#   ":"                   => ||||
-#   "A:"                  => A||||
-#   "::"                  => ||||
-#   "A::B"                => A||B||
+# The five fields are printed as `device|renderer|arch|interface|indices`, in upstream's order,
+# with upstream's `interface` spelled `iface`. THE REFUSALS agree on the boundary and not on the
+# message: upstream raises `RuntimeError("too many ':' in target string: 'B:C:D:E'")` and the port
+# answers `None`, which IS that RuntimeError in this tree's vocabulary (helpers.bend:2329) and
+# cannot carry its text, because `None` is a value with no room for one.
 #
-# The five fields are printed as `device|renderer|arch|interface|indices`, in
-# upstream's order, with upstream's `interface` spelled `iface`. THE REFUSALS
-# agree on the boundary and not on the message: upstream raises
-# `RuntimeError("too many ':' in target string: 'B:C:D:E'")` and the port
-# answers `None`, which IS that RuntimeError in this tree's vocabulary
-# (helpers.bend:2329) and cannot carry its text, because `None` is a value
-# with no room for one.
+# THE PRECEDENCE IS UPSTREAM'S `_DEV.target(dev)` (helpers.py:216-218) AND NOT `Target.parse`: the
+# parse is per string, and the choice among the parsed targets is the LIST's. Upstream's rule is
+# `next((t for t in self._value if not t.device or t.device == dev), Target(device=dev))` -- the
+# FIRST target whose device is empty or is `dev`, and the answer's device is `dev` whatever the
+# winner said -- and the port's `Target.select` is that, and the oracle called upstream's own
+# `DEV.target(dev)` on upstream's own parsed list, so neither side is a re-implementation.
 #
-# the plant, and WHERE each planted case lands. The ways this could be wrong,
-# and the row that catches each:
-#
-#   * A COMPONENT IN THE WRONG ORDER -- the `+` cut puts the interface half
-#     FIRST. Caught by "USB+AMD" (device AMD, interface USB) and by
-#     "AMD+CPU:CLANG" (device CPU, renderer CLANG, interface AMD).
-#   * A DEFAULT OVERRIDING A GIVEN VALUE -- the unset fields must be "" and
-#     the given ones must survive. Caught by "CPU:CLANG" (renderer CLANG,
-#     arch ""), by "AMD:LLVM:gfx1100" (the arch is NOT uppercased) and by
-#     "A::B" (an EMPTY middle field is not shifted: arch B, renderer "").
-#   * A MALFORMED STRING SILENTLY ACCEPTED -- caught by "A+B+C" (too many
-#     '+') and by "A:B:C:D" and "A+B:C:D:E" (too many ':'), and NOT by
-#     "A:B:C+D" and "A+B:C:D", which upstream ACCEPTS and so must the port.
-#   * A DEVICE NAME THAT IS A PREFIX OF ANOTHER -- `Target.parse` matches no
-#     names at all, so the plant is at the LIST level, and it is planted there:
-#     ";CPU" parses to a target with an EMPTY device and one with "CPU", and
-#     the EMPTY one wins for EVERY device, which is upstream's rule
-#     (`not t.device or t.device == dev`) and not a prefix match.
-#   * THE EMPTY STRING IS NOT MALFORMED -- caught by the "" row.
-#
-# THE LIST LEVEL, the same comparison, five more rows plus five selections
-# plus two `replacedefault` rows, all identical:
-#
-#   CPU:CLANG;CPU:LLVM => LIST [CPU|CLANG|||] [CPU|LLVM|||]
-#   ;CPU               => LIST [||||] [CPU||||]
-#   A;B+C              => LIST [A||||] [C|||B|]
-#   CPU:CLANG;CPU:LLVM + CPU => CPU|CLANG|||     (the FIRST wins)
-#   CPU:CLANG;CPU:LLVM + GPU => GPU||||           (no match: a blank target)
-#   CPU:CLANG;AMD:LLVM + AMD => AMD|LLVM|||       (the second, matched)
-#   ;CPU + CPU => CPU||||                         (the EMPTY device wins)
-#   ;CPU + GPU => GPU||||
-#
-# THE PRECEDENCE IS UPSTREAM'S `_DEV.target(dev)` (helpers.py:216-218) AND NOT
-# `Target.parse`: the parse is per string, and the choice among the parsed
-# targets is the LIST's. Upstream's rule is `next((t for t in self._value if
-# not t.device or t.device == dev), Target(device=dev))` -- the FIRST target
-# whose device is empty or is `dev`, and the answer's device is `dev` whatever
-# the winner said -- and the port's `Target.select` is that, and the oracle
-# called upstream's own `DEV.target(dev)` on upstream's own parsed list, so
-# neither side is a re-implementation.
-#
-# WHAT CALLS IT IN THE PORT: `ProgramInfo.target` (`uop/ops.bend`), and that is
-# the WHOLE POINT of the record being here. The port has no DEV plumbing --
-# `helpers.bend` holds 4 of the 61 ContextVars and DEV is not one of them --
-# so there is no `DEV` string for anything to parse; but `ProgramInfo` carries
-# a `Target` and the two were DIFFERENT TYPES, so a parsed target could not go
-# into one. `device.bend`'s `canon` (device.py:26's `_canonicalize`)
-# is NOT this parser and must not become it: it splits on the FIRST ':' only,
-# uppercases the head, and strips a trailing ":0", so `canon("CPU:0")` is
-# "CPU" while `Target.parse("CPU:0")` is the device "CPU" and the RENDERER
-# "0". One keeps a device name a STRING and the other splits a device name
-# into FIELDS.
-# The three characters the parser cuts on. `'+'` is 43, `':'` is 58, `';'` is 59.
+# WHAT CALLS IT IN THE PORT: `ProgramInfo.target` (`uop/ops.bend`), and that is the WHOLE POINT
+# of the record being here. The port has no DEV plumbing -- `helpers.bend` holds 4 of the 61
+# ContextVars and DEV is not one of them -- so there is no `DEV` string for anything to parse;
+# but `ProgramInfo` carries a `Target` and the two were DIFFERENT TYPES, so a parsed target
+# could not go into one. `device.bend`'s `canon` (device.py:26's `_canonicalize`) is NOT this
+# parser and must not become it: it splits on the FIRST ':' only, uppercases the head, and
+# strips a trailing ":0", so `canon("CPU:0")` is "CPU" while `Target.parse("CPU:0")` is the
+# device "CPU" and the RENDERER "0". One keeps a device name a STRING and the other splits a
+# device name into FIELDS.
 def Target.PLUS() -> Char: Char.from_u32(43)
 def Target.COLON() -> Char: Char.from_u32(58)
 def Target.SEMI() -> Char: Char.from_u32(59)
