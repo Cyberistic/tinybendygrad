@@ -1312,10 +1312,21 @@ def lr_acc(rop: O.Op, +inp: U32, +rs: List<&2, U32>, idc: O.Found, +ar: O.Arena,
   +a = O.Found.ar(a0)
   +acc = O.Found.i(a0)
   +ir = lr_drop(lr_rngrs(a, inp), rs)
+  # ONE END OVER THE REDUCE RANGE, AND THE RESET OUTSIDE IT. Upstream builds TWO END
+  # chains over the SAME range (`acc_init.end(*rs)` and `acc_out.end(*rs)`), and this
+  # port's renderer prints one `for (...) {` per RANGE NODE and one `}` per END -- so two
+  # ENDs over one range give TWO braces and ONE opener. MEASURED, that is the unbalanced
+  # `}` in mnist-fc.rows. The serial reduction wants the reset per OUTPUT ELEMENT and the
+  # accumulate per reduce step, which is one END:
+  #
+  #   *buf0 = 0;                <- inside the OUTPUT loops, outside the reduce loop
+  #   for (r) { *buf0 += f(r); } <- one END, one range, balanced
   +i1 = O.UOp.after(a, acc, ir)
   +s1 = O.UOp.store(O.Found.ar(i1), O.Found.i(i1), O.Found.i(idc), None{})
-  +e1 = O.UOp.end(O.Found.ar(s1), O.Found.i(s1), rs)
-  +i2 = O.UOp.after(O.Found.ar(e1), acc, List.concat(&2, U32, [[O.Found.i(e1)], rs]))
+  # AND THE UPDATE STILL DEPENDS ON THE RESET, or the reset becomes DEAD and is not
+  # rendered at all -- MEASURED: dropping it left a loop accumulating into an
+  # UNINITIALISED `buf0`.
+  +i2 = O.UOp.after(O.Found.ar(s1), acc, List.concat(&2, U32, [[O.Found.i(s1)], rs]))
   +n1 = O.UOp.alu(O.Found.ar(i2), rop, [O.Found.i(i2), inp])
   +s2 = O.UOp.store(O.Found.ar(n1), O.Found.i(i2), O.Found.i(n1), None{})
   +e2 = O.UOp.end(O.Found.ar(s2), O.Found.i(s2), rs)
