@@ -520,6 +520,18 @@ def xp_kg() -> String:
   +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
   RR.rr_dump(O.Found.ar(kg), O.Found.i(kg))
 
+# THE STAGED NODE's OWN ENTRY: `rr_ap_stage_src` builds `STAGE(s, *closed)` from the value's
+# OUT positions, so an empty `out` is a one-src STAGE -- and `bufferize_to_store`'s pattern is a
+# STRICT TWO-SRC stage.
+def xp_val_row() -> String:
+  +ar = RZ.RZProg.ar(RZ.rz_rebuild(xp_prog(), False{}, False{}))
+  +sk = RZ.RZProg.sink(RZ.rz_rebuild(xp_prog(), False{}, False{}))
+  +st = SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1)
+  +v = SCH.sc_src(ar, st, 1)
+  +o = SCH.sc_src0(ar, v)
+  String.concat(["v=", RR.rr_node_str(ar, v), " [", RR.rr_rngm_row(ar, sk, v), "]",
+                 " src0=", RR.rr_node_str(ar, o), " [", RR.rr_rngm_row(ar, sk, o), "]"])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -547,6 +559,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["xp_val=", xp_val_row()]))
     _ : Unit <- IO.print(String.concat(["xp_lk=", xp_lk()]))
     _ : Unit <- IO.print(String.concat(["xp_kg=", xp_kg()]))
     _ : Unit <- IO.print(String.concat(["pool_rm=", rm_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
