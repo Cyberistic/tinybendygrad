@@ -60,7 +60,6 @@ def wk_sealed(d: S.Dt) -> Bool:
     case _: False{}
 
 # `ops.bend:1895 symbol=eq_cls.sel` HAD SIX arms and was missing `CWeakFloat`, so
-# The class as a NUMBER, so the comparison is one `U32.is_eq`. The seven values are the
 def wk_eq_cls(c: S.Cls) -> U32:
   match c:
     case S.CVoid{}: 0
@@ -169,7 +168,6 @@ def wk_param_noshape(+ar: O.Arena, slot: U32, +dt: S.Dt, vmm: Maybe<&2, O.PyRang
   Bool.pick(Maybe<&1, O.Found>, Bool.not(D.md_weak(dt)),            Some{O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{O.ParamArg{slot, dt, vmm, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})},            None{})
 
 # `S.int32()` IS CPython'S `default_int=None` SET TO int32, which is what
-# `absorb_weak_src` and `lower_weak_node` pass (`s.commit_dtype(dtypes.i32)`).
 def wk_commit_dtype(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, S.Dt>:
   D.commit_dtype(wk_dt(fx, i),
     wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
@@ -232,7 +230,6 @@ def wk_any_weak_const(+fx: F.Folded, ss: List<&2, U32>) -> Bool:
   wk_any_weak_const.go(fx, ss, False{})
 
 # `wk_ready`: "the fold has answered this node and every src a rule would read". One
-# place, called by the driver, so no individual rule repeats the check.
 def wk_ready.go(+fx: F.Folded, ss: List<&2, U32>, acc: Bool) -> Bool:
   match ss:
     case Nil{}: acc
@@ -339,7 +336,6 @@ def wk_dt_const.int(v: O.Const) -> Maybe<&1, O.Const>:
     case O.CFloat{f}: Some{O.CInt{H.i64_of_i32(F32.to_u32(F32.trunc(f)))}}
 
 # `ConstFloat(truncate...) if is_float else bool(val) if is_bool else int(val)`.
-# a `match` may only scrutinise a PARAMETER or a binder, and the seal test is a call, so it
 def wk_dt_const.sealed_pick.go(sealed: Bool, v: O.Const) -> Maybe<&1, O.Const>:
   match sealed:
     case True{}: None{}
@@ -401,7 +397,6 @@ def replace_walk(+w: Walk, +fx: F.Folded, +self: U32) -> O.Found:
   replace_in(Walk.ar(w), self, Walk.srcs(w))
 
 # A `Maybe` this file can answer, because `wk_blocked` has already refused the sealed
-# case. The `None` arm is unreachable on every path that gets here.
 def wk_const_of.pick(m: Maybe<&1, O.Const>) -> O.Const:
   match m:
     case Some{c}: c
@@ -424,7 +419,6 @@ def wk_const_at(+fx: F.Folded, +dt: S.Dt, cv: Maybe<&1, O.Const>) -> O.Found:
   wk_cast_at.of(False{}, fx, O.Found.i(O.UOp.const(F.Folded.ar(fx), wk_const_of(cv))), dt)
 
 # ops.py:640 `ccast`: `UOp.const(self.val, dtype) if self.op is Ops.CONST else
-# self.cast(dtype)` -- "cast, EXCEPT for CONST, in which case rebuild a new CONST".
 def cconst_val(arg: O.Arg) -> Maybe<&1, O.Const>:
   match arg:
     case O.APy{v}: Some{v}
@@ -508,7 +502,6 @@ def derived_dtypes.put(ok: Bool, meet: S.Dt, result: Maybe<&2, S.Dt>) -> Dts:
   derived_dtypes.hold(ok, meet, Maybe.default(&2, S.Dt, result, S.void()))
 
 # derived_dtypes -- weak.py:11-14.
-#   if u.op not in GroupOp.Broadcastable or (meet:=promo_dtype(src)) in
 def derived_dtypes(+fx: F.Folded, +self: U32, +ss: List<&2, U32>) -> Dts:
   derived_dtypes.put(Bool.and(O.GroupOp.broadcastable(O.Arena.op(F.Folded.ar(fx), self)),
       Bool.not(dt_weak(wk_meet(fx, ss)))),
@@ -710,6 +703,9 @@ def wk_commit_table() -> O.PMEntrys:
     O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]}  # 38  the STORE lambda
 # _lower_weak_ops -- weak.py:45, PORTED. It is a MODULE CONSTANT and the only
 # TODO(p3) weak.py:40  pm_commit_weak rule 2 -- (UPat(Ops.CAST, src=(UPat(GroupOp.ALU, dtype=dtypes.weaks,
+#   name="u"),), name="c"), cast_weak_srcs) -- `cast_weak_srcs` reads
+#   `u.commit_dtype(dtypes.i32)` and `s.commit_dtype(dtypes.i32)`, which is
+#   `commit_int(vmin, vmax)`, which is `UOp._min_max`. See the TODO on that def.
 def LOWER_OPS() -> List<&2, O.Op>:
   [O.OpsADD{}, O.OpsMUL{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{},
    O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsOR{},
@@ -722,7 +718,6 @@ def wk_uncast_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, OP_BC(), Nil{}}]}   # 89
 
 # THE DRIVER. A rule answers `Maybe<&2, Found>`, and `Found` is ops.bend's arena-and-index
-# `wk_keep` is first-wins, the same shape as ops.bend:4017 `pm_keep`.
 
 def wk_keep.take(acc: Maybe<&2, O.Found>, v: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match acc:
@@ -771,7 +766,6 @@ def wk_scan(+ts: O.PMEntrys, +which: Bool, +fx: F.Folded, +self: U32, todo: List
     case e <> t: wk_scan(ts, which, fx, self, t, wk_keep(acc, wk_try(ts, which, fx, self, e)))
 
 # `pm_<name>.rewrite`. `wk_ready` is Python's `None` for a node the fold could not answer,
-# and it is HERE rather than in each rule so no rule repeats the check.
 def pm_go(ready: Bool, m: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match ready:
     case True{}: m

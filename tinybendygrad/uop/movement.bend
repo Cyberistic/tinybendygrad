@@ -13,7 +13,6 @@ import ./ops.bend as O
 import ./fold.bend as F
 
 # THE RESULT. A rule's answer: the arena as it stands after that rule, and WHICH
-# node it produced. `at == 0` is Python's `None`.
 type Hop is Data:
   Hop{ar: O.Arena, at: U32}
 
@@ -29,7 +28,6 @@ def mp_hit(+f: O.Found) -> Hop:
   Hop{O.Found.ar(f), O.Found.i(f)}
 
 # `PatternMatcher.rewrite` returns the FIRST non-None, so this is a fold with
-# first-wins: keying on the ACCUMULATOR is what makes it first-wins.
 def hop_first.of(b: Bool, +hold: U32, r: U32) -> U32:
   match b:
     case True{}: r
@@ -39,7 +37,6 @@ def hop_first(+hold: U32, r: U32) -> U32:
   hop_first.of(O.UOp.is_none(hold), hold, r)
 
 # THE FOLD, and the arena threading. A later rule builds in the arena an earlier rule
-# produced, so the next arm reads `hop_ar(h)` and not the arena it was handed.
 def hop_next(h: Hop, r: Hop) -> Hop:
   match h r:
     case Hop{ha, hn} Hop{ra, rn}: Hop{ra, hop_first(hn, rn)}
@@ -56,7 +53,6 @@ def hop_self(+r: Hop, self: U32) -> Hop:
   hop_self.of(Bool.or(U32.is_eq(hop_ix(r), self), O.UOp.is_none(hop_ix(r))), r)
 
 # THE READERS. `spec.bend`'s `sp_*`, renamed `mp_*` because these read the CURRENT
-# arena rather than a `Folded`. `O.Arena`'s readers return BARE values, not `Maybe`.
 def mp_op(ar: O.Arena, i: U32) -> O.Op:
   O.Arena.op(ar, i)
 
@@ -134,7 +130,6 @@ def shp_each(+tb: F.Table, ar: O.Arena, +xs: List<&2, U32>) -> Bool:
   shp_each.go(xs, xs, tb, ar)
 
 # `len(idx1_arg.shape) == len(idx2.src[1:])` -- `movement.py:28`. Python's `len` of
-# `shape` RAISES when `_shape` is None, so `None` is the answer that does not fire.
 def shp_n.go(m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&1, Nat>:
   match m:
     case Some{ds}: Some{List.length(&2, O.Sint, ds)}
@@ -238,9 +233,6 @@ def mp_const_val.of(m: Maybe<&2, H.I64>) -> H.I64:
 def mp_const_val(ar: O.Arena, i: U32) -> H.I64:
   mp_const_val.of(const_i64(mp_arg(ar, i)))
 
-# `new_srcs[0].val` -- the CONST's VALUE, not a node. `mp_index.pick` is what uses it as
-# THE INDEX IS PYTHON'S, so `mp_py_index` resolves it against the STACK's OWN src count:
-# a negative `v` reads from the END and an out-of-range `v` is Python's `IndexError`,
 # which is the `None` here. `self` is the STACK, because `tinygrad/uop/ops.py:561` indexes
 def mp_stack_val.pos(k: Maybe<&1, U32>) -> Maybe<&1, U32>:
   match k:
@@ -263,12 +255,18 @@ def mp_stack_val(+ar: O.Arena, self: U32, extra: List<&2, U32>) -> Maybe<&1, U32
 def mp_index(+ar: O.Arena, +self: U32, +extra: List<&2, U32>) -> Hop:
   mp_index.of(mp_stack_val(ar, self, extra), Nat.is_eq(mp_nat(extra), 1n), mp_is(ar, self, O.OpsSTACK{}), ar, self, extra)
 
-# `x.src[1].val`, which is an `I64` and a `Maybe` because `.val` is only for a CONST or a
 # CAST of one (ops.py:259-262).
 def mp_const(ar: O.Arena, i: U32) -> Maybe<&2, H.I64>:
   const_i64(mp_arg(ar, i))
 
 # `UOp.replace` -- ops.py:252. `new_args = (kwargs.pop("op", self.op), kwargs.pop("src",
+# self.src), kwargs.pop("arg", self.arg), kwargs.pop("tag", self.tag))`, so `arg` is a
+# PARAMETER and not something read off `self`: rule 1 replaces only `src` and passes
+# `self`'s own arg, rule 3 replaces only `arg` and keeps `x2`'s src and tag. Reading the
+# arg off `self` answers `x2` for rule 3, which is the node the rule was folding away.
+# `if (self.op, self.src, self.arg, self.tag) == new_args: return self` needs no code
+# here: the arena hash-conses and hands back the same index, and `hop_self` turns "the
+# answer is the node itself" into no answer.
 def mp_replace(op: O.Op, arg: O.Arg, +ar: O.Arena, +self: U32, src: List<&2, U32>) -> Hop:
   mp_hit(O.UOp.new(ar, op, src, arg, mp_tag(ar, self)))
 
@@ -281,8 +279,6 @@ def as_shape.one.of(v: Maybe<&2, H.I64>) -> Maybe<&1, List<&2, H.I64>>:
 def as_shape.one(+ar: O.Arena, +i: U32) -> Maybe<&1, List<&2, H.I64>>:
   as_shape.one.of(mp_const(ar, i))
 
-# `tuple(s.val if s.op is CONST else ssimplify(s) for s in self.src)`, split in two
-# because a `Maybe` cannot be an accumulator. `mp_const_val`'s 0 default is unreachable:
 # `shape_to_shape_arg` (ops.py:104) raises unless every element is an int.
 def as_shape.allc.go(ss: List<&2, U32>, +ar: O.Arena) -> Bool:
   match ss:
@@ -312,12 +308,10 @@ def as_shape(+ar: O.Arena, +i: U32) -> Maybe<&1, List<&2, H.I64>>:
   as_shape.of_op(mp_is(ar, i, O.OpsCONST{}), mp_is(ar, i, O.OpsSTACK{}), ar, i)
 
 # `Marg` is Python's `(o, n)` pair, and a `Data` RECORD rather than a tuple because a
-# pair is a `Type` and Bend's affine handler, and a `Type` cannot be a list element.
 type Marg is Data:
   Marg{o: H.I64, n: H.I64}
 
 # Bend has no `x.field`, so a record costs two accessors. Everywhere a `Marg` is already
-# destructured by a `match` these are not used.
 def Marg.o(x: Marg) -> H.I64:
   match x:
     case Marg{o, n}: o
@@ -333,7 +327,6 @@ def marg.step(x: Marg, y: Marg, acc: List<&2, Marg>) -> List<&2, Marg>:
     case Marg{xo, xn} Marg{yo, yn}: List.append(&2, Marg, acc, [Marg{H.i64_add(xo, yo), yn}])
 
 # `zip(x.marg, s.marg)`, which TRUNCATES to the shorter, so an empty side gives an empty
-# margin and `mp_0` then lands on `_mop`'s `len(arg) == 0` early return.
 def marg.go(ys: List<&2, Marg>, xs: List<&2, Marg>, acc: List<&2, Marg>) -> List<&2, Marg>:
   match ys xs:
     case Nil{} _        : acc
@@ -352,8 +345,6 @@ def marg_zip.go(ys: List<&2, H.I64>, xs: List<&2, H.I64>, acc: List<&2, Marg>) -
 def marg_zip(ys: List<&2, H.I64>, xs: List<&2, H.I64>) -> List<&2, Marg>:
   marg_zip.go(ys, xs, Nil{})
 
-# `tuple((o+p, n) for (o,_),(p,n) in zip(x.marg, s.marg))`, with the four `None`s folded
-# THE ARGUMENT ORDER IS THE WHOLE OF `(o + p, n)`, and it is a naming trap:
 # `UPat.f` (ops.py:1504) is `UPat(op, src=(self,))`, so in
 def marg_add.of(ox: Maybe<&1, List<&2, H.I64>>, nx: Maybe<&1, List<&2, H.I64>>,
                 os: Maybe<&1, List<&2, H.I64>>, ns: Maybe<&1, List<&2, H.I64>>) -> Maybe<&1, List<&2, Marg>>:
@@ -559,7 +550,6 @@ def mp_dispatch(tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_dispatch.go(tag, tb, ar, self)
 
 # THE TRY. Three things in Python's `PatternMatcher.rewrite`: the op the rule claims
-# (`pdict.get(uop.op, [])`), the subset test, and `ret is not uop`.
 def mp_try.go(ok: Bool, tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   match ok:
     case True{} : hop_self(mp_dispatch(tag, tb, ar, self), self)
@@ -619,7 +609,6 @@ def b2u(b: Bool) -> U32:
     case False{}: 0
 
 # `ParamArg(0, int32, size=..., image=...)`, the only thing that makes a BUFFER's shape
-# `(size,)` or `(h, w, 4)`.
 def psize(n: Maybe<&2, U32>) -> O.ParamArg:
   O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
              None{}, False{}, None{}}
@@ -629,7 +618,6 @@ def pimage(h: U32, w: U32) -> O.ParamArg:
              Some{O.Img{h, w}}, None{}, False{}, None{}}
 
 # THE FIXTURE. Built in the order above, one `+` per node, because Bend has no mutable
-# store and each intermediate arena is a value.
 def g() -> G:
   +c0 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(0)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(1)})
@@ -686,7 +674,6 @@ def rw(+gx: G, n: Nat) -> Hop:
   mop_cleanup(G.fx(gx), G.at(gx, n))
 
 # The merged margin of `self` over its own src[0] -- `movement.py:8`'s generator for both
-# halves of rule 0. GATE-ONLY: the rule does not use it.
 def g_fx() -> F.Folded:
   G.fx(g())
 
@@ -710,12 +697,10 @@ def marg_un.go(m: Maybe<&1, List<&2, Marg>>) -> List<&2, Marg>:
     case None{}   : Nil{}
 
 # `enc` packs a margin as `(((o0*10+n0)*100 + o1*10+n1) ...)`, so the Python `((3,1),)` is
-# 31 and `((1,1),(2,1))` is 1121. Both are printed by mop-truth3.py.
 def marg_pair(+o: H.I64, n: H.I64) -> U32:
   U32.add(U32.mul(i64_u32(o), 10), i64_u32(n))
 
 # ONE READ of the pair: a `Marg` taken out of a `List` is a binder, and a binder read
-# twice is refused exactly like a parameter.
 def marg_pair.of(+m: Marg) -> U32:
   marg_pair(Marg.o(m), Marg.n(m))
 
@@ -726,7 +711,6 @@ def t_mop_len() -> U32:
   U32.from_nat(List.length(&2, O.PMEntry, mop_table()))
 
 # SHRINK over SHRINK at rank 1. Python answers `SHRINK(b4, CONST(3), CONST(1))`: three
-# srcs, offsets 2+1 and size 1. `mop-truth3.py`: `at(13) = S2 -> FRESH nsrc=3`.
 def t_shrink1_ns() -> U32:
   +h = rw(g(), 13n)
   mp_nsrc(hop_ar(h), hop_ix(h))
@@ -765,7 +749,6 @@ def t_reshape_noop() -> U32:
   hop_ix(rw(g(), 21n))
 
 # `P2 -> P3`, i.e. the permutes COMPOSE and the answer is a different arg node. Reading
-# 24 rather than 22 is what distinguishes the composed arg from `x2`'s own.
 def t_permute_merge() -> U32:
   hop_ix(rw(g(), 23n))
 
@@ -776,7 +759,6 @@ def t_stack_idx() -> U32:
   hop_ix(rw(g(), 28n))
 
 # `IX2 -> C1` (index 2). Rule 6's answer is a node the fixture ALREADY HOLDS, which is
-# `a.src[i.val]` with no `index()` call: two srcs, so `mp_6` takes the `True True` arm.
 def t_const_idx2() -> U32:
   hop_ix(rw(g(), 29n))
 
@@ -792,8 +774,6 @@ def t_idx_idx() -> U32:
   +h = rw(g(), 33n)
   mp_nsrc(hop_ar(h), hop_ix(h))
 
-# `UOp.index`'s STACK special case: rule 7's answer is a node it did NOT build. `J3` has one
-# src, so the `zip` of `idx1.src[1:]` and `idx2.src[1:]` is empty and the offset list is just
 # `C1` -- one src, a CONST, on a STACK buffer, which is ops.py:223's early return. Reading 2
 def t_idx_pick() -> U32:
   hop_ix(rw(g(), 34n))
@@ -813,7 +793,6 @@ def t_rej_pair() -> U32:
   hop_ix(rw(g(), 30n))
 
 # A rule that interns a node GROWS the arena, and a rule that does not does not. These two
-# are the `Hop`'s ARENA half: `J2 -> INDEX(b4, C0, C1)` is a new node, `IX2 -> C1` is not.
 def t_grow_new() -> U32:
   +gx = g()
   +h = mop_cleanup(G.fx(gx), G.at(gx, 33n))
@@ -825,7 +804,6 @@ def t_grow_same() -> U32:
   U32.sub(O.Arena.next(hop_ar(h)), O.Arena.next(F.Folded.ar(G.fx(gx))))
 
 # THE SAME TABLE VALUE, TWICE: the `Data` table has none of the linear-table cost a
-# closure table pays.
 def t_twice() -> U32:
   +gx = g()
   +ts = mop_table()
