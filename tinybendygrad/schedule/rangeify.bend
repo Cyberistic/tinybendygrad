@@ -2769,7 +2769,7 @@ def eng_op_name(op: O.Op) -> String:
     # `OTHER` meant "an op outside the fixture's ten", and the engine's output on a real
     # program is full of them -- PARAM, RANGE, MUL, INDEX, ADD, reduce -- - and the
     # dump was saying "other" WHERE upstream says the real name.
-    case _: String.concat(["OTHER(", O.Ops.name.of(op), ")"])
+    case _: O.Ops.name.of(op)
 
 # THE ARG KEY. Four keys, because the fixture uses four: `none`, a CONST's
 # value, the Invalid CONST, and `other`. The oracle rebuilds the graph from
