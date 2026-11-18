@@ -1,0 +1,20 @@
+execgate-gate: THE PORT's OWN RENDERED KERNEL, EXECUTED
+  lane      .agents/slop/execgap/execgate.bend
+  bounded   WITHIN-LIMITS
+
+  THE PLANTS -- each must move the answer, and a green plant fails this gate
+  plant=data   RED          changed=20  out=8 2 5 4 7 4 1 2 2 4 6 1 6 2 3 6 0 5 0 4
+  plant=swap   RED          changed=20  out=1 4 5 0 5 2 3 1 0 2 1 4 5 0 5 4 6 2 0 4
+  plant=nocall RED          changed=0 (the kernel did not run, so the buffer is the sentinel)
+  mode             AGREE    
+  sig              AGREE    
+  in12             AGREE    
+  in15             AGREE    
+  changed          AGREE    
+  out              AGREE    
+  wrote-every-cell AGREE    
+  plant=data       RED      
+  plant=swap       RED      
+  plant=nocall     RED      
+  c_len            546 (the port's rendered text, for the record)
+PASS -- 10 row(s) agreed, and the kernel the port rendered computed the matmul

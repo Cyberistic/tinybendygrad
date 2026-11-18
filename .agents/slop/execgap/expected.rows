@@ -1,0 +1,35 @@
+# THE PINS FOR `.agents/slop/execgap/execgate-gate.py` -- THE ONE PLACE THE EXPECTED NUMBERS LIVE.
+#
+# THE OUTPUT IS DERIVED BY HAND AND BY NOTHING ELSE. The kernel under test is a `(4x3)@(3x5)`
+# matmul, the inputs are small integers, and every product is exact in binary32, so the expected
+# cells are integer arithmetic done on paper -- not by CPython, not by tinygrad, and not by the
+# port. THE DERIVATION, cell by cell, so this file can be checked without running anything:
+#
+#   A (4x3, the kernel's `data1_12`, row-major)      B (3x5, `data2_15`, row-major)
+#     1  2  3                                          1  0  2  0  1
+#     0  1  2                                          0  1  0  2  0
+#     3  1  0                                          2  0  1  0  2
+#     2  0  1
+#
+#   C[i][j] = sum_k A[i][k]*B[k][j]
+#   C[0] = 1*[1,0,2,0,1] + 2*[0,1,0,2,0] + 3*[2,0,1,0,2] = [7, 2, 5, 4, 7]
+#   C[1] = 0*  .        + 1*[0,1,0,2,0] + 2*[2,0,1,0,2] = [4, 1, 2, 2, 4]
+#   C[2] = 3*[1,0,2,0,1] + 1*[0,1,0,2,0] + 0*  .        = [3, 1, 6, 2, 3]
+#   C[3] = 2*[1,0,2,0,1] + 0*  .        + 1*[2,0,1,0,2] = [4, 0, 5, 0, 4]
+#
+#   TWO OF THESE ARE ZERO, WHICH IS WHY THE DRIVER'S SENTINEL IS -99 AND `changed` MUST BE 20:
+#   an unwritten buffer of the right length and a correct answer that happens to be zero cannot
+#   look alike. AND THE DATA IS DELIBERATELY NOT RANK-1 AND THE RIGHT MATRIX IS NOT ITS OWN
+#   TRANSPOSE, so an operand swap, or an index walked the wrong way round, CANNOT land here.
+
+expect_sig=r_4_5_3(data0_20,data1_12,data2_15)
+expect_in12=1, 2, 3, 0, 1, 2, 3, 1, 0, 2, 0, 1
+expect_in15=1, 0, 2, 0, 1, 0, 1, 0, 2, 0, 2, 0, 1, 0, 2
+expect_changed=20
+expect_out=7 2 5 4 7 4 1 2 2 4 3 1 6 2 3 4 0 5 0 4
+
+# THE PLANTED LANES MUST MOVE THE ANSWER. `nocall` is a different shape of MUST: it must leave
+# `changed` at 0, which is the control that a seam that executed nothing cannot pass.
+expect_plant_data_differs=1
+expect_plant_swap_differs=1
+expect_plant_nocall_changed=0

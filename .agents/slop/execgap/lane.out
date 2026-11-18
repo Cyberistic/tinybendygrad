@@ -1,0 +1,12 @@
+mode=real
+sig=r_4_5_3(data0_20,data1_12,data2_15)
+c_len=546
+in12=1, 2, 3, 0, 1, 2, 3, 1, 0, 2, 0, 1
+in15=1, 0, 2, 0, 1, 0, 1, 0, 2, 0, 2, 0, 1, 0, 2
+cc_status=0
+cc_err<>
+
+run_status=0
+run_err<>
+changed=20
+out=7 2 5 4 7 4 1 2 2 4 3 1 6 2 3 4 0 5 0 4
