@@ -24,7 +24,8 @@ fw_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,7,7 st_dims=
 pool_rl=STORE:none:RESHAPE,REDUCE:none
 fw_rl=STORE:none:RESHAPE,RESHAPE:none
 xp_rm=33:REDUCE:other:PERMUTE,35:STORE:none:RESHAPE,EXPAND
-sh_row=v=REDUCE:other:MUL,RANGE dims=0 | RED=MUL:none:INDEX,INDEX dims=0 | RD.src0=INDEX:none:AFTER,OTHER dims=0
+pv_row=aft2=AFTER:none:PARAM,STORE dims=7840 | st2=STORE:none:PARAM,REDUCE dims=7840 | v2=REDUCE:other:PERMUTE dims=1,10
+sh_row=v=REDUCE:other:MUL,RANGE dims=0[rm=False True in= out= tbl=3] | RED=MUL:none:INDEX,INDEX dims=0[rm=False True in= out= tbl=3] | RD.src0=INDEX:none:AFTER,OTHER dims=0[rm=False True in= out= tbl=3]
 sw_row=CONST:cother: dims= | PARAM:other:CONST dims=784 | CONST:cother: dims= | RANGE:other:CONST dims= | OTHER:other:CONST dims= | RANGE:other:CONST dims= | MUL:none:OTHER,RANGE dims= | OTHER:other:CONST dims= | CONST:cother: dims= | MUL:none:OTHER,CONST dims= | ADD:none:MUL,MUL dims= | ADD:none:MUL,ADD dims= | ADD:none:RANGE,ADD dims= | OTHER:none:ADD,OTHER dims= | INDEX:none:PARAM,OTHER dims= | PARAM:other:CONST dims=784 | INDEX:none:PARAM,OTHER dims= | CONST:cother: dims= | RANGE:other:CONST dims= | RANGE:other:CONST dims= | REDUCE:other:INDEX,RANGE,RANGE dims= | STORE:none:INDEX,REDUCE dims= | END:none:STORE,RANGE,RANGE dims= | AFTER:none:PARAM,END dims=784 | RANGE:other:CONST dims= | ADD:none:RANGE,ADD dims= | OTHER:none:ADD,OTHER dims= | INDEX:none:AFTER,OTHER dims= | CONST:cother: dims= | PARAM:other:CONST dims=7840 | CONST:cother: dims= | RANGE:other:CONST dims= | OTHER:other:CONST dims= | MUL:none:OTHER,RANGE dims= | OTHER:other:CONST dims= | MUL:none:OTHER,CONST dims= | ADD:none:MUL,MUL dims= | ADD:none:RANGE,ADD dims= | OTHER:none:ADD,OTHER dims= | INDEX:none:PARAM,OTHER dims= | MUL:none:INDEX,INDEX dims= | REDUCE:other:MUL,RANGE dims=
 fbd_row=st=STAGE:none:REDUCE,CONST,RANGE closed=2 vdims=0 guard=False
 fwd_lk=2/CALL>SINK STORE>INDEX

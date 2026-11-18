@@ -61,7 +61,22 @@ def mn_ku() -> String:
   +ar2 = O.Found.ar(lin)
   mn_sig(DEV.body_kus(ar2, SCH.sc_src0(ar2, O.Found.i(lin))))
 
+# THE SAME ENTRY ON THE STANDALONE FC's GRAPH: how many ranges does its MUL carry, and how many
+# index srcs does its INDEX get? (`INDEX:none:PARAM,CONST,CONST,RANGE,RANGE` is the rendered C's
+# shape, so `in=` should be FOUR positions for the fc and ONE for the chained kernel.)
+def fci_row() -> String:
+  +q = mn_built()
+  +ar = RZ.RZProg.ar(q)
+  +sk = RZ.RZProg.sink(q)
+  +st = SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1)
+  +v = SCH.sc_src(ar, st, 1)
+  +m = SCH.sc_src0(ar, v)
+  String.concat(["st=", RR.rr_node_str(ar, st), "[", RR.rr_rngm_row(ar, sk, st), "]",
+                 " v=", RR.rr_node_str(ar, v), "[", RR.rr_rngm_row(ar, sk, v), "]",
+                 " v.src0=", RR.rr_node_str(ar, m), "[", RR.rr_rngm_row(ar, sk, m), "]"])
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    _ : Unit <- IO.print(String.concat(["fci_row=", fci_row()]))
     _ : Unit <- IO.print(String.concat(["mn_ku=", mn_ku()]))
     IO.print(String.concat(["mn_c=", mn_src()]))

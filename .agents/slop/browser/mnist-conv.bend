@@ -741,9 +741,25 @@ def sh_row() -> String:
   +st = fbd_find.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(kb)), 0)
   +v = O.Arena.src0(ar, st)
   +rd = O.Arena.src0(ar, v)
-  String.concat(["v=", RR.rr_node_str(ar, v), " ", sh_kind.m(F.fold.shape(ar, tb, v)),
-                 " | RED=", RR.rr_node_str(ar, rd), " ", sh_kind.m(F.fold.shape(ar, tb, rd)),
-                 " | RD.src0=", RR.rr_node_str(ar, O.Arena.src0(ar, rd)), " ", sh_kind.m(F.fold.shape(ar, tb, O.Arena.src0(ar, rd)))])
+  +sk = O.Found.i(kb)
+  String.concat(["v=", RR.rr_node_str(ar, v), " ", sh_kind.m(F.fold.shape(ar, tb, v)), "[", RR.rr_rngm_row(ar, sk, v), "]",
+                 " | RED=", RR.rr_node_str(ar, rd), " ", sh_kind.m(F.fold.shape(ar, tb, rd)), "[", RR.rr_rngm_row(ar, sk, rd), "]",
+                 " | RD.src0=", RR.rr_node_str(ar, O.Arena.src0(ar, rd)), " ", sh_kind.m(F.fold.shape(ar, tb, O.Arena.src0(ar, rd))), "[", RR.rr_rngm_row(ar, sk, O.Arena.src0(ar, rd)), "]"])
+
+# THE PRE-APPLY value of the SECOND store: is it already scalar BEFORE rangeify touches it?
+# (The rngm rows above were measured against the POST-apply root -- `tbl=3` says so -- and are
+# therefore junk; this row reads the tensor graph only.)
+def pv_row() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +ar = RZ.RZProg.ar(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +sk = RZ.RZProg.sink(q)
+  +aft2 = SCH.sc_src(ar, sk, 1)
+  +st2 = SCH.sc_src(ar, aft2, 1)
+  +v2 = SCH.sc_src(ar, st2, 1)
+  String.concat(["aft2=", RR.rr_node_str(ar, aft2), " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, aft2)),
+                 " | st2=", RR.rr_node_str(ar, st2), " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, st2)),
+                 " | v2=", RR.rr_node_str(ar, v2), " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, v2))])
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -772,6 +788,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["pv_row=", pv_row()]))
     _ : Unit <- IO.print(String.concat(["sh_row=", sh_row()]))
     _ : Unit <- IO.print(String.concat(["sw_row=", String.join(sw_row(), " | ")]))
     _ : Unit <- IO.print(String.concat(["fbd_row=", fbd_row()]))
