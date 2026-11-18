@@ -2,31 +2,12 @@
 #
 
 # WHY THIS FILE EXISTS.
-#
 # `F32.show` is the shortest decimal that reads back as the same F32, and CPython's `repr` of the
 # f64 an F32 widens to is a LONGER string for every value that is not exactly a short decimal.
 # cstyle.py:27 is `f"{c.val}f"`, i.e. `repr`, so the two disagree on the bytes of a rendered
-# constant. MEASURED on `exp(x)`, whose multiplier is log2e:
-#
 #   F32.show                 1.442695
-#   repr(float(f32(log2e)))  1.4426950216293335
-#
 # render.bend:209 recorded that gap and called it a WALL ("no def can print the 17-significant-
-# is a NAMED number (significand times a power of two), so its decimal expansion is finite and
-# computable with exact integer arithmetic. This file does that, in three steps:
-#
 #   1. EXACT EXPANSION.  x = m * 2^e with m a 24-bit integer, so x = m * 5^|e| * 10^-|e| for
-#      e < 0 and x = m * 2^e for e >= 0. Both are integer multiplications by 2 or by 5, whose
-#      digits are kept as a decimal bignum.
-#   2. THE ROUNDING INTERVAL.  `float64(D) == x` iff D is within half an f64 ulp of x. Both
-#      bounds are (m * 2^(step-b) +- 1) * 2^(e+b-step), so they are exact decimals too -- and
-#      the low bound is only a QUARTER ulp away when x is a power of two, because the f64 grid is
-#      twice as fine just below a binade.
-#   3. THE SHORTEST CANDIDATE.  For p = 1..17, the two p-digit neighbours of x are tested against
-#      those bounds, closest first, and the first one inside wins. THE SECOND NEIGHBOUR IS NOT
-#      DECORATION: for 2^-97 the nearest 16-digit candidate is BELOW the lower bound while the
-#      next one along is inside and is the string CPython prints.
-#
 # the pair that went wrong twice while the algorithm was being worked out, recorded because both
 # are easy to re-introduce:
 #   * a trailing zero is ABSORBED into the exponent and never dropped: "43431769050439315619840"
@@ -35,12 +16,7 @@
 #     neighbour, and round-half-even breaks it toward the EVEN mantissa -- which for an F32
 #     widened to an f64 is always x, since the 24-bit significand leaves 29 zero bits at the
 #     bottom of the f64's 52. MEASURED: 3.598600411231027e16 is exactly the bound and CPython
-#     keeps it.
-#
 # THE ORACLE. `.agents/slop/perf/f32_repr_proto.py` carries the same algorithm in Python, where
-# bignums are built in. That prototype reproduces `repr(float(f32))` on 128 457 values -- 120 000
-# random bit patterns plus every power of two, its negation, the denormals and the edges -- with
-# 0 mismatches, and `.agents/slop/perf/f32_repr.rows` re-checks THIS file on the same population.
 
 import Base
 import ./../helpers.bend as H
@@ -72,11 +48,7 @@ def ds_str(+ds: List<&2, U32>) -> String:
   String.from_list(List.reverse(&2, Char, ds_str.go(ds, Nil{})))
 
 # the bignum: multiply by a small constant, add or subtract one, and count bits.
-#
 # the carry of a multiplication travels toward the most significant end, so the digits are
-# visited least-significant first: the input is reversed, each result digit is PREPENDED (which
-# un-reverses it), and whatever carry is left becomes the new leading digit. That is one pass,
-# not one pass per digit, and it is why `big_mul` does not use `List.append`.
 
 def big_mul.put(z: Bool, +c: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match z:

@@ -1,59 +1,16 @@
 # divandmod.bend -- tinygrad/uop/divandmod.py.
-#
 # `div_and_mod_symbolic` is a three-entry `PatternMatcher`: two fast inline rules
-# and `fold_divmod_general`. Upstream, four of the 109 lines are the matcher and
-# eighty-nine are the big rule, so this file ports the matcher in full and THREE
-# arms of `fold_divmod_general` -- :8, :61 and :108 -- and the TODO block names
-# every line of the rest with the wall behind it.
-#
 # the walls are half stale, and measured (2026-11-06). the header used to say "the one
-# wall is `UOp._min_max`", and two of the three walls the TODO block named are gone:
-#
 #   * `divides` -- the port has it (`ops.bend:7656`), a full recursion over ADD/MUL/CONST
 #     carrying a `Dv`, and it answers the same as upstream's on four measured cases.
 #   * `_min_max` -- THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax` (`fold.bend:5344`/`5402`) AND THEY
 #     MATCH UPSTREAM'S ON FIVE MEASURED CASES.
-#   * `const_factor` -- THE PORT HAS IT (`ops.bend:7545`) AS A FULL GCD FOLD.
-#
 # what is actually left is scope and three shape problems, not missing primitives:
-# `UOp.divide_exact` (which needs a multiset over `split_uop(MUL)` factors, and the port has
-# no multiset and no `Map`), the cartesian product in `fold_divmod_congruence`, and the mutual
-# recursion in `nest_by_factor`. the bodies are `F.Bnd` intervals rather than upstream's
-# `PyConst`, so the arms' comparisons are over a `Maybe` bound.
-#
 # `fold_divmod_general` also RECURSES at :61 (`nest_by_factor` calls it on
-# `x//div`), and Bend refuses mutual recursion, so even the shape of that rule is
-# P3 and not only its arithmetic.
-#
 # FOUR DIVERGENCES, stated rather than hidden.
-#   A. NO PROMOTION CASTs. Python's `UOp.__init__` runs `dtype_from_uop` and
-#      `ops.bend`'s `UOp.new` does not, so the trees here are the ones Python
-#      prints with CASTs erased. Same algebra, different node count -- which is
-#      why no Python node count is a gate row and the `grown` rows are
-#      PORT-INTERNAL.
-#   B. NO SUB CANONICALISATION: `x - q*y` is `SUB` here and
-#      `ADD(x, MUL(MUL(q,y), C(-1)))` in Python, because `symbolic.py`'s
-#      `canonicalize` rewrites SUB. `out_r14`/`out_r16` are checked by VALUE.
-#   C. NO CONSTANT FOLDING: `C(5)*C(3)` survives as a MUL here and `simplify()`
-#      folds it in Python, so a folded MUL moves the `grown` count by one.
-#   D. A NON-INT CONST IS NOT A `vmin`: `dm_val` reads `CInt` only, so rules 0 and
-#      1 SKIP on a `CFloat` divisor where Python rewrites.
-#
 # two things about the patterns that are easy to invert, both measured against the
-# real `div_and_mod_symbolic`:
-#
 # 1. `Ops.ADD` IS COMMUTATIVE, so `UPat.cvar("c") + UPat.cvar("a")` is an `is_any`
 #    over BOTH ORDERS -- `UPat.alu` (ops.py:1533) passes `list(asrc)` for an op in
-#    `GroupOp.Commutative`. Both numerators are a TWO-WAY DISJUNCTION, and writing
-#    one as a conjunction drops `r01` and `r08` and typechecks. `dm_which` is the
-#    disjunction and `r01`/`r08` are its two-sided rows. Exactly one alternative
-#    can ever match -- both sides cannot be a CONST and a `DIV(_, CONST)` at
-#    once -- so no name is bound twice and there is not one identity check here.
-# 2. the reject sets are not empty: `[ADD, CONST]`, `[ADD, CONST]`, `[]`, measured.
-#    Rules 0 and 1 are `strict_length=True, required_len=2` and rule 2 is not, so a
-#    THREE-src DIV falls to rule 2 and Python raises `ValueError` on
-#    `x, y = d.src`. `r22` is that row: rule 2 still CLAIMS it, which is what
-#    Python does before it raises.
 
 import Base
 import ./../helpers.bend as H
@@ -64,9 +21,6 @@ import ./fold.bend as F
 # THE ACCUMULATOR. These rules GROW the arena, so the answer is the arena AND a
 # node index AND whether anything fired. A `Maybe` cannot be a FOLD'S ACCUMULATOR (it is
 # affine), and it is NOT true that it cannot be a `Data` field -- MEASURED, 20 in-tree
-# `Data` records carry 38 `Maybe` fields. So the flag being a `U32` is NOT this reason; the
-# independent one is below. The index is meaningless when the flag is 0, and
-# 0 is the arena's BOTTOM node so it cannot serve as the sentinel either.
 type Hit is Data:
   Hit{ar: O.Arena, i: U32, on: U32}
 
@@ -121,10 +75,6 @@ def dm_ival(m: Maybe<&2, U32>) -> U32:
   dm_ival.go(m, 0)
 
 # `dm_floordiv` / `dm_floormod` ARE NOT `H.`: `H.floordiv_i32`/`H.floormod_i32` add
-# one on every INEXACT division and ignore the sign, so `6 // 4` answers 2 where
-# Python says 1 (`helpers.bend:1494`; bend2-constraints, "floor IS NOT AVAILABLE").
-# The step belongs to the opposite-sign case alone. DELETE BOTH AND CALL THE `H.`
-# versions when that one-line fix lands; nothing else in this file changes.
 def dm_floordiv.exact(exact: Bool, q: U32) -> U32:
   match exact:
     case True{}: q
@@ -257,10 +207,6 @@ def dm_point(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   dm_point.go(ar, d, O.Arena.op(ar, d), dm_val(ar, O.Arena.src0(ar, d)), dm_val(ar, O.Arena.src(ar, d, 1)))
 
 # PARAM // c is irreducible -- divandmod.py:15, and it is the last of the three
-# ported arms. `x.arg.multiple_of % y.val == 0`. No range at all, so PORTED IN
-# FULL, and the DEFAULT is load-bearing: `UOp.variable`'s `multiple_of` defaults to
-# 1 (ops.py:1013) and `1 % 1 == 0`, so `MOD(param, CONST(1))` rewrites to
-# `CONST(0)`. `out_r18` is that row and it is the row a wrong default moves.
 def dm_multiple_of.mod(mult: Maybe<&2, U32>, y: U32) -> Bool:
   match mult:
     case Some{k}: U32.is_zero(dm_floormod(k, y))
@@ -355,12 +301,6 @@ def dm_0(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   dm_0.put(F.Folded.ar(fx), self)
 
 #  1. Fast Inline Rules , rule 1 -- divandmod.py:103-105.
-# `(x+c)//d -> (x+c%d)//d + c//d ; (x+c)%d -> (x+c%d)%d`. The `x` there is
-# `UPat.var("x", dtypes.weakint)`, so the weakint conjunct is on the NUMERATOR and
-# the ROOT is unconstrained: load-bearing, and `r12` is the row (the same tree with
-# an int32 numerator is not rewritten at all). The guard is a two-armed `or`:
-# `d.val==0` OR `c.val%d.val==c.val` -- the first arm is the ZERO DIVISOR, which
-# Python reports by raising in rule 2 and this file reports as `dm_zero`.
 def dm_1.fd(ar: O.Arena, x: U32, d: U32, cm: U32, cq: U32) -> O.Found:
   +cmc = O.UOp.const(ar, O.CInt{H.i64_of_i32(cm)})
   +s = O.UOp.alu(O.Found.ar(cmc), O.OpsADD{}, [x, O.Found.i(cmc)])
@@ -514,118 +454,10 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
   dm_scan(O.PMEntrys.es(dm_table()), fx, self, miss(F.Folded.ar(fx)))
 
 # THE GATE, and what each row is FOR. `1`/`0` is "a rule fired" / "the scan found
-# nothing", and `0` IS Python's `None`. An `out_*` row is the rewritten tree TWO
-# LEVELS DEEP with CONST VALUES printed, and `.agents/slop/dm-oracle.py` prints
-# Python's answer in the same shape, so a row is a before/after a reviewer can
-# diff by eye against a real interpreter run.
-#
 #   nrules=3       divandmod.py:98-109 is three entries. A COUNT.
-#   rej0=2 rej1=2 rej2=0   the `early_reject` sets, MEASURED against Python:
-#                  `[ADD, CONST]`, `[ADD, CONST]`, `[]`. Only a MISSPELLED set
-#                  shows up here and nowhere else.
-#   nroots=26      how many roots the fixture arena holds. THE COUNT ROW: a
-#                  fixture added or dropped moves it, and every `r*` row is
-#                  addressed THROUGH it, so a stale index cannot hide.
-#   zero_r04=1     divandmod.py:11 on a `CONST(0)` divisor. Python RAISES.
-#   zero_r11=1     the same, and the `or` in rule 1's guard is why rule 1 SKIPS.
-#   zero_r23=1     a PARAM whose declared range is the POINT 0. Python RAISES.
-#   zero_r25=0     a PARAM whose range is (0,5): `vmin==0` but `vmax!=0`, so
-#                  Python does NOT raise. THE ROW for `y.vmin==y.vmax==0` being a
-#                  CONJUNCTION -- the mutation table shows the `vmax` half being
-#                  dropped moves this row and NOTHING else.
-#   zero_r05=0 zero_r15=0   the control for the three above: an ordinary divisor
-#                  of 7 and of 4 is not a zero divisor.
-#   on_r00=1       rule 0 fires: `(Px//3 + 5)//7`.
-#   out_r00        `DIV(ADD(Px,MUL),MUL(CONST(3),CONST(7)))` -- rule 0's
-#                  answer, and `MUL(C(3),C(7))` is the `(c*d)` term.
-#   on_r01=1 out_r01   the SWAPPED add, `(5 + Px//3)//7`. THE ROW for `ADD` being
-#                  commutative: a conjunction here drops r01 and r08 and
-#                  typechecks.
-#   on_r02=1 grown_r02=4 out_r02   THREE rules claim this node -- rule 0, rule 1
-#                  (its `x` is a `DIV`, which `UPat.var` allows) and rule 2
-#                  (the root is weakint) -- and rules 0 and 1 answer DIFFERENTLY.
-#                  FIRST-WINS, and `grown_r02` is the numeric witness: rule 0 adds
-#                  four nodes and rule 1 adds three, so last-wins reads 3 and a
-#                  conjunction reads 7. This is the row the brief's "build the
-#                  fixture so two rules both claim the same node" asks for.
-#   on_r03=1 out_r03   `(Px//3 + 5)//-7`. Rule 0 SKIPS because `d.vmin > 0` fails
-#                  and rule 1 answers with `C(-2)` and `C(-1)`: `5 % -7 == -2`
-#                  and `5 // -7 == -1`, FLOOR on a negative divisor. This and
-#                  `out_r10` are the FLOOR rows.
-#   on_r04=0       `//0`. Rule 0 skips on `d.vmin>0`, rule 1 skips on `d.val==0`,
-#                  and rule 2 REPORTS the zero divisor. Python RAISES.
-#   on_r05=1 out_r05 grown_r05=1   `(Px+10)//7` -> `ADD(DIV(ADD(Px,C(3)),
-#                  C(7)),C(1))`. `grown_r05` is 1 and not 4 because the fixture
-#                  already contains `ADD(Px,C(3))` and `DIV(...,C(7))` as
-#                  r07, so `UOp.make` interns both: the count is PORT-INTERNAL and
-#                  the low number is the interning working.
-#   on_r06=1 out_r06 grown_r06=1   `(Px+10)%7` -> `MOD(ADD(Px,C(3)),C(7))`,
-#                  EXACTLY Python's tree, and with NO `+ C(0)` because Python's
-#                  ternary omits the `+ c//d` term in the MOD arm.
-#   on_r07=0 out_r07=none   `(Px+3)//7`: `c.val%d.val == c.val`, so rule 1 SKIPS
-#                  and rule 2 skips. THE ROW for the second arm of that `or`.
-#   on_r08=1 out_r08   `(10 + Px)//7` gives r05's answer: the commutative rewrite
-#                  puts `x` FIRST whatever the input order.
-#   on_r09=1 out_r09   `(Px+10)//1` -> `ADD(DIV(...,C(1)),C(10))`: `10%1=0`
-#                  and `10//1=10`.
-#   on_r10=1 out_r10   `(Px+10)//-7` -> `C(-4)` and `C(-2)`. THE FLOOR ROW: a
-#                  truncating port prints 3 and -1.
-#   on_r11=0       `(Px+10)//0`. Python RAISES.
-#   on_r12=0 out_r12=none   THE WEAKINT-CONJUNCT ROW: the same tree with an int32
-#                  numerator. Rule 1's `UPat.var("x", dtypes.weakint)` is on the
-#                  NUMERATOR, not on the root.
-#   on_r13=1 out_r13=CONST(1)          `6//4`, divandmod.py:13's CONST/CONST arm.
-#   out_r14=SUB(CONST(6),MUL(CONST(1),CONST(4)))   `6%4`. Python writes
-#                  `ADD(C(6),MUL(MUL(C(1),C(4)),C(-1)))` -- divergence B, the same
-#                  algebra with SUB not canonicalised.
-#   out_r15=CONST(-2)  `-7//4`. FLOOR again.
-#   out_r16=SUB(CONST(-7),MUL(CONST(-2),CONST(4)))  `-7%4 == 1`.
-#   out_r17=CONST(0)   divandmod.py:15: `Pp.multiple_of == 4` and `4 % 4 == 0`,
-#                  so `Pp % 4` folds to `CONST(0)`.
-#   out_r18=CONST(0)   THE DEFAULT ROW: `Pz.multiple_of` is 1 (ops.py:1013) and
-#                  `1 % 1 == 0`, so `Pz % 1` folds to `CONST(0)`. A port that
-#                  reads `multiple_of` as `None` misses this entirely, and the
-#                  mutation table shows it moving five rows.
-#   out_r19=none   `Pp//4`: divandmod.py:15 returns `None` for DIV.
-#   out_r20=none   `Pq%4`: `3 % 4 != 0`.
-#   out_r21=none   `Px%4`: past divandmod.py:15, i.e. behind the wall. Python
-#                  returns `None` too, so this row cannot tell the two apart --
-#                  `on_r13` is the row that CAN, and the mutation table shows why.
-#   on_r22=0       a THREE-src DIV. Rules 0 and 1 are `strict_length` so
-#                  they skip; rule 2 claims it and Python then raises
-#                  `ValueError: too many values to unpack` on `x, y = d.src`.
-#   on_r23=0 on_r24=0   the two zero-divisor roots, which Python raises on.
-#   on_r25=0 out_r25=none   the (0,5)-range divisor.
-#   grown_r00=4 grown_r01=4   rule 0's shape: MUL, ADD, MUL, DIV, all new.
-#
 # MUTATIONS, measured by `.agents/slop/tools/mutate-dm.py`, which applies one edit,
-# runs the INTERPRETED lane, diffs the rows against this baseline and restores. A
-# row only ONE mutation moves is a LOCALISED row; the rest are load-bearing
-# together, so this table is not one-row-per-bug and should not read as one.
-#
 # | mutation | rows moved | how many |
-# | --- | --- | --- |
-# | `dm_fold.go` first-wins -> last-wins | `grown_r02`, `on_r00`, `on_r01`, `on_r02`, `on_r03`, `on_r05`, `on_r06`, `on_r08`, `on_r09`, `on_r10`, `out_r00`, `out_r01`, `out_r02`, `out_r03`, ... | 19 |
-# | `dm_which.go`'s disjunction -> always src0 | `grown_r05`, `grown_r06`, `on_r03`, `on_r06`, `on_r07`, `on_r10`, `on_r12`, `out_r01`, `out_r03`, `out_r05`, `out_r06`, `out_r07`, `out_r08`, `out_r09`, ... | 16 |
-# | `dm_cside.go`'s disjunction -> always src0 | the SAME sixteen | 16 |
-# | `dm_floordiv.trunc`: re-introduce the `helpers.bend` bug (+1 when not neg) | `grown_r05`, `grown_r06`, `on_r07`, `out_r05`, `out_r06`, `out_r07`, `out_r08`, `out_r13`, `out_r14` | 9 |
-# | `dm_floordiv.exact`: drop the +1 (floor toward zero) | `on_r03`, `out_r03`, `out_r10`, `out_r15`, `out_r16` | 5 |
-# | `dm_0.pat.put`: arity conjunct on the divisor, not the root | `grown_r00`, `grown_r01`, `grown_r02`, `on_r00`, `on_r01`, `out_r00`, `out_r01`, `out_r02` | 8 |
-# | `dm_1.pat.put`: arity conjunct on the divisor, not the root | 23 rows, incl. every `out_r0x` | 23 |
-# | `dm_1.pat.put`: drop the weakint conjunct | `on_r12`, `out_r12` | 2 |
-# | `dm_weak.cls`: `CWeakFloat` instead of `CWeakInt` | 21 rows | 21 |
-# | `dm_pos`: unsigned reading of `d.vmin > 0` | `out_r03` | 1 |
-# | `dm_1.finish`: DIV and MOD branches swapped | `out_r03`, `out_r05`, `out_r06`, `out_r08`, `out_r09`, `out_r10` | 6 |
-# | `dm_zero.range`: `vmin == 0` only, the `vmax` half dropped | `zero_r25` | 1 |
-# | `dm_multiple_of.mod`: an unset `multiple_of` read as 1 | `grown_r05`, `grown_r06`, `on_r07`, `on_r22`, `on_r25`, `out_r03`, `out_r05`, `out_r06`, `out_r07`, `out_r08`, `out_r09`, `out_r10`, `out_r17`, `out_r18`, ... | 18 |
-# | `dm_table`: rule 2 given a reject set | `rej2`, `on_r13`, `out_r13`, `out_r14`, `out_r15`, `out_r16`, `out_r17`, `out_r18` | 8 |
-# | `dm_table`: rule 2 given DIV only | `out_r14`, `out_r16`, `out_r17`, `out_r18` | 4 |
-# | `dm_point`: truncating instead of floor | `out_r15`, `out_r16` | 2 |
-# | `dm_multiple_of.hit`: answer DIV as well | `out_r19` | 1 |
-# | `dm_cval`: read the `x` side instead of the `c` side | 14 rows | 14 |
-#
 # FOUR THINGS WORTH READING TWICE.
-#
 # 1. `dm_which.go` AND `dm_cside.go` MOVE THE SAME SIXTEEN ROWS, and the gate
 #    CANNOT TELL THEM APART: from outside, "which side is the CONST" and "which
 #    side is the quotient" are the same question. Two rules, one disjunction each,
@@ -642,12 +474,6 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #    ops.py:1013 is load-bearing in a place no code comment mentions.
 
 # THE GATE'S PRINTER. `dm_sh2` prints a node TWO levels deep, and that is not a
-# shortcut: two levels with CONST VALUES printed reproduces Python's trees exactly
-# for every rewriting row here, so `out_r10`'s `-4` and `-2` ARE the floor-semantics
-# rows and a truncating port prints 3 and -1. A real recursive printer is a mutual
-# recursion Bend refuses, and a `Nat` fuel does not rescue it (a binop spends one
-# fuel on TWO self-calls), so the DEPTH is a parameter of the printer. A PARAM
-# prints as `P<name>` from `ParamArg.name`, not an interning counter.
 def dm_show.go(neg: Bool, v: U32) -> String:
   match neg:
     case True{}: String.concat(["-", U32.show(H.i32_neg(v))])
@@ -709,7 +535,6 @@ def dm_sh2(+ar: O.Arena, +u: U32) -> String:
 # shows up as a moved row rather than as a silently shorter table. `ParamArg` has
 # thirteen fields in `ops.bend`'s declaration order, so `dm_param` spells them out
 # against ops.py:1015's `ParamArg(-1, dtype, name=name,
-# vmin_vmax=(min_val,max_val), multiple_of=multiple_of, addrspace=AddrSpace.ALU)`.
 type Gate is Data:
   Gate{ar: O.Arena, rs: List<&2, U32>}
 
@@ -746,21 +571,6 @@ def dm_param(dt: S.Dt, mult: U32, nm: String) -> O.ParamArg:
 # `y.vmin == y.vmax == 0` holds for a non-CONST divisor.
 
 # THE NODE LIST, IN BINDING ORDER. 1-11 are the CONSTs, 12-18 the PARAMs, 19 on
-# are the intermediates and then the roots. the last arena threaded is the thing
-# TO RE-READ: an index is only meaningful in the arena that produced it, and `+`
-# does not enforce that (bend2-constraints, rule 4 of the 2026-09-30 set).
-#  0 bottom NOOP (Arena.empty)
-#  1 CONST 0    2 CONST 1    3 CONST 3    4 CONST 4    5 CONST 5    6 CONST 6
-#  7 CONST 7    8 CONST 10   9 CONST -2  10 CONST -4  11 CONST -7
-# 12 PARAM "x" weakint multiple_of 1     13 PARAM "p" weakint multiple_of 4
-# 14 PARAM "q" weakint multiple_of 3     15 PARAM "z" weakint multiple_of 1
-# 16 PARAM "i" int32   multiple_of 1     17 PARAM "y" weakint range (0,0)
-# 18 PARAM "u" weakint range (0,5)
-# 19 DIV(Px,C(3))                     the `x//c`
-# 20 ADD(19,C(5))  21 ADD(C(5),19)  22 ADD(19,C(10))  23 ADD(Px,C(10))  24 ADD(Px,C(3))
-# 25 ADD(C(10),Px)  26 ADD(Pi,C(10))
-# 27..52 the twenty-six roots, in `dm_root` order
-#
 # ROOTS, in the order `dm_root` indexes them, with the oracle's tree:
 #  r00 t0_a   DIV(ADD(DIV(Px,C(3)),C(5)),C(7))
 #             -> DIV(ADD(Px,MUL(C(5),C(3))),MUL(C(3),C(7)))
@@ -786,16 +596,6 @@ def dm_param(dt: S.Dt, mult: U32, nm: String) -> O.ParamArg:
 #  r19 t2_pd  DIV(Pp,C(4))       -> None: the lambda returns None for DIV
 #  r20 t2_p3  MOD(Pq,C(4))       -> None: 3 % 4 != 0
 #  r21 t2_var MOD(Px,C(4))       -> None: past divandmod.py:15
-#  r22 n_3src DIV(ADD(Px,C(10)),C(7),C(1)) -> rule 2 CLAIMS it; Python then
-#             RAISES ValueError on `x, y = d.src`
-#  r23 y0_fd  DIV(Px,Py0)         -> rule 2's zero test on a PARAM range (0,0).
-#             Python RAISES ZeroDivisionError.
-#  r24 y0_fm  MOD(Px,Py0)         -> the same, modulo
-#  r25 y05    DIV(Px,Pu) where Pu's range is (0,5) -- `vmin == 0` but `vmax`
-#             is not, so Python does NOT raise and `zero_r25` is 0. THE ROW for
-#             `y.vmin==y.vmax==0` being a CONJUNCTION and not `vmin==0`: with the
-#             vmax half dropped, the mutation table shows this row moving and
-#             nothing else.
 def trees() -> Gate:
   +a = O.Arena.empty()
   +c0 = O.UOp.const(a, O.CInt{H.i64_of_i32(0)})
@@ -855,132 +655,7 @@ def trees() -> Gate:
   +r25 = O.UOp.alu(O.Found.ar(r24), O.OpsDIV{}, [O.Found.i(px), O.Found.i(py05)])
   Gate{O.Found.ar(r25), [O.Found.i(r00), O.Found.i(r01), O.Found.i(r02), O.Found.i(r03), O.Found.i(r04), O.Found.i(r05), O.Found.i(r06), O.Found.i(r07), O.Found.i(r08), O.Found.i(r09), O.Found.i(r10), O.Found.i(r11), O.Found.i(r12), O.Found.i(r13), O.Found.i(r14), O.Found.i(r15), O.Found.i(r16), O.Found.i(r17), O.Found.i(r18), O.Found.i(r19), O.Found.i(r20), O.Found.i(r21), O.Found.i(r22), O.Found.i(r23), O.Found.i(r24), O.Found.i(r25)]}
 
-# NOT PORTED, one line each, with the WALL and the phase that owns it. The block
-# is the same shape `ops.bend` and `fold.bend` use.
-# TODO(p3) divandmod.py:13  symbol=fold_divmod_general  the RANGE HALF of `x//y` being a point -- PORTED for
-#   CONST/CONST only, where `_min_max` (ops.py:1127) is four identical `a//b` and
-#   the test is always true. Outside CONST/CONST it needs `_min_max`. THE `_min_max` WALL IS
-#   MEASURED FALSE (2026-11-06): THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax`
-#   (`fold.bend:5344`/`5402`) and they match upstream's `_min_max` on all five measured cases
-#   -- `x[0..10]`, `y[-5..5]`, `x*4[0..40]`, `x+y[-5..15]`, `x*4+8[8..48]` (PAIRED PROBES:
-#   `.agents/slop/sym92/probe-vminmax.bend` AND `probe-vminmax.py`, AND THE TWO PRINT
-#   BYTE-identical output). what is left is scope, not a wall: the port's bounds are a
-#   `F.Bnd` (an interval with an infinity tag) rather than upstream's `PyConst`, so the
-#   comparisons the arms need are over a `Maybe` bound and not over a constant.
-# TODO(p3) divandmod.py:17-19 `# split uops for the rest of the processing` --
-#   `x.pop_const()` and `split_uop(Ops.ADD)`, both op-shape walks over a fuel-bound
-#   src list. Neither has a caller once line 23 is gone, so neither is written.
-#   WALL: none -- these ARE expressible; they are P3 for SCOPE, not for
-#   impossibility, and they land with line 23.
-# TODO(p3) divandmod.py:13-15  symbol=fold_divmod_general  a FLOAT CONST -- `_min_max` returns PyConst and
-#   `dm_val` reads `CInt` only, so rules 0 and 1 SKIP on a `CFloat` divisor where
-#   Python rewrites. WALL: PyConst (float | bool | Invalid), P3.
-#
-#  Constant Denominator Rules  -- divandmod.py:21-70. These rules strictly
-# require y to be a scalar constant > 0, and every one is behind a wall:
-# TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
-#   the mod case is handled by remove_nested_mod below` -- needs
-#   `x.src[1].divides(c)`. THE WALL THIS NAMED IS MEASURED FALSE (2026-11-06): `divides` IS
-#   not the blocker. the port's `UOp.divides` (`ops.bend:7656`) is a full recursion over
-#   ADD/MUL/CONST carrying a `Dv` record, and it answers the same as upstream's on all four
-#   MEASURED CASES -- `(x*4).divides(4)` IS `MUL(x, 1)`, `(x*4+8).divides(4)` IS
-#   `ADD(MUL(x, 1), 2)`, AND `(x*6).divides(4)` AND `x.divides(4)` ARE BOTH `none` (PAIRED
-#   probes: `.agents/slop/sym92/probe-divides.bend` and `probe-divides.py`). the old wall said
-#   "`divides` needs `gcd` needs a `Counter` FOLD", but the file it named -- `ops.bend` -- has
-#   that implementation already. what is left is scope, not a wall: the stack arm of
-#   `divides` is not ported (seen at `ops.bend:7645`'s own NOTE), so a stack operand declines
-#   WHERE UPSTREAM REBUILDS IT.
-# TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
-#   `divides`, and the same measurement applies: the wall is gone and what is left is the
-#   stack arm and the `usum` over the rewritten list.
-# TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
-#   `fold_divmod_congruence: fold if a is congruent to an expression whose range is
-#   between 0 and c` -- the WORST one. `itertools.product` over per-term sign
-#   choices (`try both signs of the remainder for a lone term ... otherwise pick
-#   the smaller to keep the product over terms small`), then
-#   `sum(r*v for r,v in zip(...)).vmin//c == rem.vmax//c`. It is interval
-#   arithmetic over a symbolic SUM, so it needs `_min_max` on a node the fold has
-#   never built, AND a cartesian product, AND `min(r, r-c, key=abs)`. WALL:
-#   `_min_max`; the product is a fold over a `List<List<U32>>` and Bend has no
-#   cartesian product and no `min` over three with a key function. P3.
-# TODO(p3) divandmod.py:50-55  symbol=fold_divmod_general  `gcd_with_remainder: factor out common gcd from
-#   numerator` -- `math.gcd(*factors, c)`, `divides`, `.simplify()` and
-#   `new_x.vmin >= 0`. WALL: `gcd`, `_min_max`, `simplify`. `math.gcd` over a
-#   VARIADIC fold is a fold over a list, which is expressible; the rest is not.
-#   measured 2026-11-06: `divides` and `_min_max` are no longer walls (see the two pairs
-#   above). `gcd` is half a wall: the port has `H.gcd` (`helpers.bend:2249`) for two I64s and
-#   `UOp.const_factor` (`ops.bend:7545`) as a full gcd FOLD over the MUL factors, but not the
-#   variadic `math.gcd(*factors, c)` over a list of factors -- which is a FOLD over a list and
-#   THEREFORE EXPRESSIBLE. WHAT IS LEFT IS SCOPE.
-# TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
-#   x%c -> (x//f%(c//f))*f + b where b=x%f` and `DIV identity holds for any
-#   sign of x; MOD reconstruction needs x.vmin>=0` -- the set comprehension
-#   `{abs(f) for u, f in zip(...) if ...}` is a set (an ORDERED fold with a dedup
-#   step), then a RECURSIVE call to `fold_divmod_general(x//div)` (mutual
-#   recursion, refused), then `backward_slice` twice for the `min(results, key=
-#   len(slice))`. WALL: mutual recursion, `backward_slice` (a set walk,
-#   uop/fold.bend:2167 symbol=marg_prod.step), and `_min_max`. P3, and the largest single omission here.
-#
-#  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
-# apply to variables OR constants that failed the checks above, and reconstruct all
-# uops including const for these checks. Both are behind the same walls:
-# TODO(p3) divandmod.py:77-81  symbol=fold_divmod_general  `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
-#   `factor_remainder: (d*x+y)//d -> x+y//d` -- `UOp.gcd(*all_uops, y)`,
-#   `.simplify()`, `divide_exact` (which needs `divides`), `const_factor` (a
-#   `Counter` fold), `u.divides(c)*(c%y.val)` and `y.vmin<0` / `x.vmin<0`. WALL:
-#   `gcd`, `const_factor`, `simplify`, `_min_max`. P3.
-# TODO(p3) divandmod.py:11  symbol=fold_divmod_general  the `raise` itself -- Python's
-#   `ZeroDivisionError(f"{'Division' if d.op is Ops.DIV else 'Mod'} by zero
-#   trying to rewrite {x.alu(d.op, y)}")` needs a `raise` and an f-string over a
-#   UOp. `dm_zero` REPORTS the condition and `zero_r04`/`zero_r11`/`zero_r23` are
-#   the rows; rendering the message is the caller's job, exactly as `fold.bend`
-#   does for `UOp.shape`'s `if (ret:=self._shape) is None: raise`. NO ACTION
-#   beyond P3 at the call site.
-#
-# WHAT NEXT, in the order the walls fall.
-#
-# and this list was stale by two items and it was measured 2026-11-08. the items 1 and 2
-# below are done and have been done:
-#   * `_min_max` (ops.py:1104) IS `fold.bend:7306` ("DONE(p3) ops.py:1094 def _min_max"), AND
-#     the header above already said "the `_min_max` wall is measured FALSE (2026-11-06)".
-#   * `const_factor` IS `ops.bend:7545` (`def UOp.const_factor(fuel, ar, i) -> H.I64`) AND
-#     `divides` IS `ops.bend:7656` (`def UOp.divides(fuel, ar, v, i) -> Dv`).
-#
-# SO THE TWO THAT REMAIN ARE:
-#   1. `UOp.gcd` (ops.py:1073) AND `UOp.divide_exact` (ops.py:1079) -- AND THEY ARE ONE
-#      shape, not two: both need a counter over node lists, and upstream's `UOp` is
-#      HASHABLE BY IDENTITY (`ops.py:219-220`: `__hash__ = tuple.__hash__` AND
-#      `__eq__` IS `self is other`), SO THE COUNTER's KEYS ARE NODES.
-#      and the port has no integer-keyed map at all -- measured, `helpers.bend:494` says
-#      "Bend's `Map` is string-keyed only, so the set is a linear scan", and the port has no
-#      `HashMap` AND NO `HashSet`.
-#      but the port has the honest spelling already, twice: `dedup_u32` (`helpers.bend:500`)
-#      and `merge_dicts` (`helpers.bend:2412`) are both "a list of pairs with a linear scan",
-#      so a counter over `U32` keys is a list of `(U32, Nat)` pairs and a FOLD -- and the
-#      port's own `merge_dicts` NOTE says exactly that: "a list of pairs is the honest
-#      representation". so the claim "the port has no multiset" is a claim about a
-#      CONTAINER AND NOT ABOUT A CAPABILITY.
-#   2. `simplify` / `ssimplify` (ops.py:513/520) IS WHAT `fold_divmod_general` LINE 78
-#      calls on `UOp.gcd(...)`, and `ops.bend` records it as the largest single unlock in its
-#      HALF TOO.
-#
-# and measured 2026-11-08: the missing row is not dead. `.agents/slop/sym92/
-# deadrules-sweep.sh` READS `24 cases 23 agree 1 diverge` and the one divergence is
-# `(x*y)/y`, whose upstream answer is `(div (mul c1 x) c1)` and whose rule is this one --
-# measured by asking the matcher which pattern fired: pattern 117 is `UPat({DIV, MOD},
-# dtype=weakint, name="d")` WITH `src=None`, AND ITS FUNCTION IS
-# `tinygrad.uop.divandmod.fold_divmod_general`. SO THE PORT DECLINES A REWRITE UPSTREAM
-# performs, on a graph as ordinary as `(x*y)/y` -- so this row is a real gap and not a
-# COSMETIC ONE.
-# and the arm that answers it is `divide_by_gcd` (line 66), because upstream's
-# `UOp.gcd(x, y)` is `y` and not a constant 1 -- measured, `UOp.gcd(x, y)` answers the PARAM
-# `y`.
-#   4. Only after those three does `fold_divmod_congruence` become a question, and
-#      only after THAT does the cartesian product need a shape.
-#
-# THE ROWS. Every one is a claim PYTHON FIXES: a table count, a reject-set length,
-# a `vmin == vmax == 0` flag, a rewritten tree, an arena-growth count, or a
-# fired/skipped flag. Nothing here restates the code.
+# THE TABLE IS IN `.agents/slop/tables/uop-divandmod-858.md` -- NOT PORTED, one line each, with the WALL and the phase that owns it. The block
 def fx(g: Gate) -> F.Folded:
   F.folded(Gate.ar(g))
 
@@ -1002,11 +677,6 @@ def t_out.put(+h: Hit) -> String:
 def t_out(g: Gate, n: U32) -> String: t_out.put(rw(g, n))
 
 # how many nodes the rewrite ADDED. PORT-INTERNAL, because Python's count is one
-# lower per folded CONST MUL (divergence C), and it is here because it is the
-# only NUMERIC discriminator between first-wins and last-wins on `r02`: rule 0
-# adds four (MUL, ADD, MUL, DIV) and rule 1 adds three (ADD, DIV, ADD
-# -- its two CONSTs are already interned). So `r02` reads 4 under first-wins and
-# 3 under last-wins, and a conjunction would give 7.
 def t_grown.put(+h: Hit, g: Gate) -> U32:
   U32.sub(O.Arena.next(Hit.ar(h)), O.Arena.next(Gate.ar(g)))
 
@@ -1027,10 +697,5 @@ def t_nrules() -> U32:
 def t_nroots() -> U32: nroots(trees())
 
 # THE GATE MOVED TO `gates/divandmod-gate.bend`.
-#
 # The rows are consumers: each calls a def above through `P.`, and the
-# driver defines nothing this file needs, which is the line
-# `gates/README.md:173` draws.
-#
 # Every expectation in the driver is generated by calling CPython, so no row
-# there is typed by hand.
