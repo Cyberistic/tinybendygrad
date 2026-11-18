@@ -1878,3 +1878,22 @@ def rr_rngm_row(+ar: O.Arena, +sink: U32, +n: U32) -> String:
   +tb = F.Folded.t(F.folded(ar))
   rr_rngm_row.of(rr_range_map(ar, tb, sink), n)
 
+# WHICH NODES THE APPLY'S REALIZE MAP HOLDS -- the list `rr_ap_src.of`'s `real` branch reads,
+# and therefore the only nodes that can ever become a STAGE (and so the only ones
+# `bufferize_to_store` can turn into a store). Printed as `id:op,` in toposort order.
+def rr_rmap_row.go(+ar: O.Arena, +rm: IX.IxMap, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      rr_rmap_row.go(ar, rm, t,
+        Bool.pick(List<&2, String>, IX.ix_rmap_has(rm, x),
+          List.append(&2, String, acc, [String.concat([U32.show(x), ":", rr_node_str(ar, x)])]), acc))
+
+def rr_rmap_row.of(p: (O.Arena & RrMap), +ns: List<&2, U32>) -> String:
+  (+a, +m) = p
+  String.join(rr_rmap_row.go(a, IX.IxCtx.rmap(RrMap.ctx(m)), ns, Nil{}), ",")
+
+def rr_rmap_row(+ar: O.Arena, +sink: U32) -> String:
+  +tb = F.Folded.t(F.folded(ar))
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
+  rr_rmap_row.of(rr_range_map(ar, tb, sink), ns)

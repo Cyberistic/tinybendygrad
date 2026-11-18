@@ -492,6 +492,10 @@ def fd_row(+pr: RZ.RZProg) -> String:
                  " shaped=", U32.show(fd_cnt.go(F.Folded.ar(tb), F.Folded.t(tb), ns, 0)),
                  " next=", U32.show(O.Arena.next(ar)), " edges=", U32.show(O.Arena.edges(ar))])
 
+def rm_row(+pr: RZ.RZProg) -> String:
+  +ar = RZ.RZProg.ar(pr)
+  RR.rr_rmap_row(ar, RZ.RZProg.sink(pr))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -518,6 +522,8 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["fw_sd=", sd_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["pool_rm=", rm_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["fw_rm=", rm_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["pool_st=", st_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_st=", st_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_c=", fw_c()]))

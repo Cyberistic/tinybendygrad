@@ -23,6 +23,8 @@ pool_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,14,14 st_dims=1,1,14,14
 fw_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,7,7 st_dims=
 pool_rl=STORE:none:RESHAPE,REDUCE:none
 fw_rl=STORE:none:RESHAPE,RESHAPE:none
+pool_rm=32:STORE:none:RESHAPE,REDUCE
+fw_rm=49:STORE:none:RESHAPE,RESHAPE
 pool_st=st(STORE:none:RESHAPE,REDUCE: rm=True True in=3,4,5,6 out=0,0,1,2 tbl=19) v(REDUCE:other:PERMUTE: rm=False True in=7,8,3,4,5,6 out=3,4,5,6 tbl=19)
 fw_st=st(STORE:none:RESHAPE,RESHAPE: rm=True True in=3,4,5,6 out=0,0,1,2 tbl=41) v(RESHAPE:none:WHERE,STACK: rm=False True in=7,8,9,10 out=3,4,5,6 tbl=41)
 fw_c=
