@@ -25,7 +25,6 @@
 # dtype.max` test are all here and all reachable, and every one of them reports
 # `None` from the ONE arithmetic primitive the substrate does not have. The
 # measurement is in the `fast_idiv` block below and it is the whole of the wall:
-# it is not a missing `mulhi64`, it is `_min_max` and a 65-bit `//`.
 #
 
 # two things that are easy to invert, both measured against the real tables.

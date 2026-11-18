@@ -860,8 +860,6 @@ def gr_27(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # declines", but "the pattern does not match", because in the compiled form the `is` is part of
 # the MATCH. The two-sided gate is `rebind` (same node -> fires) and `rebind_off` (different
 # node -> does not), and the mutation is `gr_29_same`'s `U32.is_eq` replaced by `True{}`.
-# `U32.is_eq` on two arena indices IS `store.setdefault(...).same`, which is what the
-# interpreter does (notes, "THE NAME-REBIND QUESTION, SETTLED").
 def gr_29_dest(ar: O.Arena, self: U32) -> U32: O.Arena.src(ar, self, 0)
 def gr_29_call(ar: O.Arena, self: U32) -> U32: O.Arena.src(ar, self, 1)
 def gr_29_stored(ar: O.Arena, k: U32) -> U32: O.Arena.src(ar, k, 0)

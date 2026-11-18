@@ -87,7 +87,28 @@ BUG = re.compile(
   r"THE BUG|THAT BUG|THIS BUG|A REAL BUG|BUGS GOT THIS FILE|"
   r"ANSWERED WRONG|ANSWERED `None`|ANSWERS THE WRONG|WRONG ANSWER|"
   r"WAS WRONG ON|GETS WRONG|DID NOT RUN|DID NOT MATCH|REGRESSION|"
-  r"THE WALL|WALL, NOT A|WAS THE CAUSE|ROOT CAUSE|CAUSE OF)\b", re.IGNORECASE)
+  r"WALL, NOT A|WAS THE CAUSE|ROOT CAUSE|CAUSE OF|"
+  r"THE FIRST REVISION|THE FIRST VERSION|THE FIRST ATTEMPT|THE ORIGINAL|THE FIRST BUG|"
+  r"IN ITSELF|FIND IN ITSELF|FOUND IN ITSELF|"
+  r"IS MUTUAL RECURSION|MUTUAL RECURSION|"
+  r"AN EARLIER|A PREVIOUS (VERSION|REVISION|ATTEMPT)|"
+  r"FELL OFF THE END|ANSWERED 8|IS WHAT CAUGHT IT|WHAT CAUGHT IT|"
+  r"IS WRONG AT THE PIN|WAS WRONG AT THE PIN|"
+  r"THE BOTTOM VALUE|IS A REAL PYTHON BUG|"
+  r"THE OLD CLAIM|IS FALSE AT THE PIN)\b", re.IGNORECASE)
+
+# **AND **THE **QUOTED **UPSTREAM **LINE** -- **AND **THE **PORT **QUOTES **UPSTREAM's
+# **OWN **COMMENT **AS **THE **RULE's **NAME**, **AND **THE **QUOTE **IS **THE
+# **DIFFERENCE** (**WHAT **UPSTREAM **SAYS **AT **THAT **LINE**), **AND **AND **A **QUOTE
+# **LOOKS **LIKE **A **NARRATION **SECTION** **AND **SO **THE **CUT **TOOK **THE **QUOTE
+# **AND **LEFT **THE **EXPLANATION**, **AND **AND **THE **EXPLANATION **IS **THE **REASON
+# **THE **RULE **IS **WHAT **IT **IS**.
+QUOTED = re.compile(r"^\s*#\s*\"")
+# **AND **A **QUOTE **MAY **SPAN **TWO **LINES** ("the quote opens on one line and
+# **closes **on **the **next**, **AND **THEN **THE **LINE **NUMBER **IS **ON **THE
+# **CLOSING **LINE**), **AND **SO **THE **CLOSING **LINE **IS **THE **ONE **THAT
+# **CARRIES **THE **UPSTREAM **LINE **NUMBER**.
+QUOTED_CLOSE = re.compile(r"^\s*#\s*[^\"]*\"\s*\(\d+")
 
 SUBSTRATE = re.compile(
   r"\b(MUST BE|MUST ONLY|ONLY\s+\S+\s+MAY|IS REFUSED|ARE REFUSED|REFUSES|REFUSED|"
@@ -109,7 +130,8 @@ ITEM = re.compile(r"^\s*#\s*(?:[-*+]\s+|\d+[.)]\s+|[`\"']?[A-Za-z_][\w]*`?\s\s)"
 
 def is_marker(line: str) -> bool:
   return bool(DIFFERENCE.search(line) or CITE.search(line) or MEASURED.search(line)
-              or WEIRD.search(line) or SUBSTRATE.search(line) or BUG.search(line))
+              or WEIRD.search(line) or SUBSTRATE.search(line) or BUG.search(line)
+              or QUOTED.search(line) or QUOTED_CLOSE.search(line))
 
 
 def sections(blk):

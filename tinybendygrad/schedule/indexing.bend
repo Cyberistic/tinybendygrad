@@ -844,11 +844,6 @@ def ix_mv_reshape_same.go(+as: List<&2, U32>, +bs: List<&2, U32>, +aa: List<&2, 
 #
 #   acc = 1
 #   for s,src in list(zip(out_shape, urngs.src))[::-1]:
-#     axes_in.append(acc*src); acc *= s
-#   combined_axes = UOp.const(0).usum(axes_in)
-#   for s in in_shape[::-1]:
-#     axes_out.append(combined_axes % s); combined_axes //= s
-#   return graph_rewrite(UOp.sink(*axes_out[::-1]), symbolic+..., name="reshape")
 #
 # `usum` is W3, `%` and `//` are W2 (the `DIV`/`MOD` arms of
 # `_min_max` are the ones the 64-bit-product wall blocks), and the `graph_rewrite`

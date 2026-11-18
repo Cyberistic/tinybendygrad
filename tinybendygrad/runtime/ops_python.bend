@@ -2375,8 +2375,6 @@ def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +nrun: U32, a: Array<Elem>
 # `Prog.ld1` reached the 11-field record about FIFTEEN times per LOAD -- `Prog.step.vs`, then
 # `Prog.flush` (four), `Prog.ms`, `Prog.ld.sb` (which re-took `Prog.buf` and `Prog.lane`), and
 # `Prog.ld.happens` + `Prog.oob` (each of which re-took `Prog.buf`, i.e. `Prog.fs` + `Prog.src`).
-# Every one is a full `match` over the record. ONE bind now feeds all of it, and each piece has a
-# field-taking form that does no record match at all.
 
 def Prog.dt.f(+us: List<&2, Uop>, +u: Uop, +k: Nat) -> S.Dt:
   Uop.dt(Uop.at(us, Uop.nth(Uop.srcs(u), k)))

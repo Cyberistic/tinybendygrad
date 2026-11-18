@@ -703,8 +703,6 @@ def mem_total_memory(+fx: F.Folded, +bs: List<&2, U32>) -> U32:
 # So the split is drawn where the wall is: `mem_offs` carries the allocator's
 # ANSWERS, and everything the planner derives from them is here and gated -- the
 # lane of every event, the high-water mark, the block rounding, the lane COUNT.
-# `mem_total_memory` above is the other half of the seam: the budget this file
-# asks the allocator for. The gate feeds it CPython's own `TLSFAllocator`.
 
 def Off.b(d: Off) -> U32:
   match d:

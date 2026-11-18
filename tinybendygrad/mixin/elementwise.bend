@@ -752,10 +752,6 @@ def ew_fmod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
 # where it is used -- `0.5`, `1.0`, `2.0`, `-1.0`, `0.01`, `1e-05`, `1e-08`, and `pi/2` are
 # all exact in decimal and a named def for each would be a name to keep in sync with
 # nothing. An IRRATIONAL is named because a transcription is a silent-typo surface:
-# `0.6931472` for log(2) and `0.044715` for gelu's cubic are both wrong in the ninth
-# decimal place and both still round to the right f32, so nothing but the gate catches a
-# typo. That is the whole criterion, and it is why this block is eight defs and not
-# seventeen.
 def ew_k.log2() -> F32: 0.6931472
 
 def ew_k.log10_2() -> F32: 0.30103

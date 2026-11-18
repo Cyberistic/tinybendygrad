@@ -201,9 +201,6 @@ def dd_put(+ys: List<&2, U32>, +x: U32) -> List<&2, U32>:
 # contributes the node itself, the other arm contributes `s.ranges`, which is
 # the deferred reader. `None` from `rw_ranges` propagates: the whole rule does
 # not fire.
-# `Maybe` cannot be an accumulator (constraint 15), so the union threads a LIST
-# whose element is `Maybe`-free: `Nil{}` means "the wall", which is unambiguous
-# because `rw_ranges` never answers `Some{Nil{}}`.
 def maybe2.of(m: Maybe<&2, List<&2, U32>>, +acc: List<&2, U32>) -> List<&2, U32>:
   match m:
     case Some{xs}: xs
