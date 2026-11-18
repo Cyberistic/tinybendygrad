@@ -1,3 +1,5 @@
+# `UOp._min_max` (ops.py:1104-1158) IS LANDED, and the reader that joins it to
+# THE SECOND WALL is `DType.const` (tinygrad/dtype.py:79-84) for
 # weak.bend -- tinygrad/uop/weak.py: the four `PatternMatcher` tables that commit
 # `dtype.bend` is unreachable to any importer (it prints a foreign-code notice for
 # `dtype_from_uop` over a chosen src list is NOT a wall: `F.dt_shape` is `dtype_from_uop`
@@ -88,6 +90,7 @@ def wk_eq_dt(+x: S.Dt, +y: S.Dt) -> Bool:
 def wk_dt(+fx: F.Folded, i: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), i), S.void())
 
+# MEASURED, the edge this file adds -- `weak.bend -> mixin/dtype.bend` -- closes NO cycle:
 # `commit_dtype` (dtype.py:16) -- `commit_int(self._uop.vmin, self._uop.vmax, default_int)
 def wk_bnd_i64.of(b: F.Bnd) -> Maybe<&1, H.I64>:
   match b:
@@ -206,6 +209,7 @@ def wk_dt_list.go(+fx: F.Folded, ss: List<&2, U32>, acc: List<&2, S.Dt>) -> List
 def wk_dt_list(+fx: F.Folded, ss: List<&2, U32>) -> List<&2, S.Dt>:
   wk_dt_list.go(fx, ss, Nil{})
 
+# AGAINST UPSTREAM's `promo_dtype` INSTEAD OF THE PORT's.
 # promo_dtype -- ops.py:120, which the port hoisted into `fold.bend`.
 def wk_meet(+fx: F.Folded, ss: List<&2, U32>) -> S.Dt:
   F.promo_dtype(wk_dt_list(fx, ss))
@@ -457,6 +461,7 @@ def wk_remint.cast(+ar: O.Arena, u: U32, +dt: S.Dt) -> O.Found:
   v = wk_const_of(wk_dt_const(dt, wk_ccast.val(F.folded(ar), u)))
   wk_remint.mkconst(wk_remint.folds(dt), dt, O.UOp.new(ar, O.OpsCONST{}, Nil{}, O.APy{v}, O.TNone{}))
 
+# what put a four-deep `replace` chain in `tn_isfinite`'s graph (MEASURED: 18 nodes, four
 # `u.op is Ops.CONST` -- the leaf test, and THE TOP-LEVEL ONE ONLY. The recursive arm tests
 # `u.src[0]`'s op and that is a DIFFERENT question: merging the two into one predicate is
 def wk_remint.isc(+ar: O.Arena, u: U32) -> Bool:
@@ -615,6 +620,7 @@ def uncast_const(+src: List<&2, U32>, +fx: F.Folded, +self: U32, +ss: List<&2, U
 def uncast_const_fx(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
   uncast_const(uncast_const.walk(fx, wk_srcs(fx, self)), fx, self, wk_srcs(fx, self))
 
+# caller (`cast_consts`, weak.py:94) is behind `_min_max`, so it has no caller in this
 # commit_weak_consts -- weak.py:7-8. The FIRST def in weak.py, and the only one whose
 
 type ODt is Data:
@@ -702,6 +708,7 @@ def wk_commit_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, OP_BC(),        Nil{}},   # 36  commit_weak_srcs
     O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]}  # 38  the STORE lambda
+# _lower_weak_ops -- weak.py:45, PORTED. It is a MODULE CONSTANT and the only
 # TODO(p3) weak.py:40  pm_commit_weak rule 2 -- (UPat(Ops.CAST, src=(UPat(GroupOp.ALU, dtype=dtypes.weaks,
 def LOWER_OPS() -> List<&2, O.Op>:
   [O.OpsADD{}, O.OpsMUL{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{},

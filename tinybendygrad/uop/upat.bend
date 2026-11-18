@@ -1,3 +1,4 @@
+# (`itertools.permutations`, ops.py:1461) visits the same sub-pattern once per
 # upat.bend -- tinygrad/uop/upat.py.
 
 import Base
@@ -86,6 +87,11 @@ def head1c(gs: List<&2, C>) -> C:
     case Nil{}: marker()
     case c <> _: c
 
+#   * `wrap` (upat.py:121-126) is a `graph_rewrite` RULE, and a rule runs at most
+#     (ops.py:1815), and ops.py:1774 says so in a comment. So one `a{n}` per
+#     (upat.py:168-169) and the number is `len(ctx)` at first visit, so the scope
+#   * UOps are HASH-CONSED on `(op, src, arg, tag, type(arg))` (ops.py:200;
+#     ops.py:228-233: "structurally identical UOps are the same object and
 # `==` on a literal, which is what `dedup` and the duplicate-store test ask.
 # the dedup key is the `arg`, and the `arg` of a multi-element op/dtype is a
 # `frozenset` -- upat.py:25 and 36 both build `UOp(Ops.PYLITERAL,
@@ -151,6 +157,7 @@ def flatands.go(f: Nat, t: Maybe<&2, C>, +rest: List<&2, C>, acc: List<&2, C>) -
 def flatands(t: C, f: Nat) -> List<&2, C>:
   flatands.go(f, Some{t}, Nil{}, Nil{})
 
+# rest is rebuilt. `ops.py:532` is NOT PORTED as a UOp method (it is a
 # substitute -- ops.py:532 `UOp.substitute`, the one call in this file, in
 
 def substitute.put(hit: Bool, op: O.Op, lit: Lit, ss: List<&2, C>, rep: C) -> C:
@@ -316,6 +323,8 @@ def more_alts(alts: List<&2, O.UpAlt>) -> List<&2, O.UpAlt>:
 def alts_of(u: O.UPat) -> List<&2, O.UpAlt>:
   O.UPat.src(u)
 
+# THE AND CLAUSE IS THE ACCEPTANCE TEST. upat.py:21 -- the clause collects
+# `_get_clause` therefore lost one `if` of its EIGHT -- MEASURED, the count of
 # _get_clause -- upat.py:15. `UPat` -> the predicate tree.
 
 def one_alt(alts: List<&2, O.UpAlt>) -> Bool:
@@ -690,6 +699,7 @@ def get_clause(pat: O.Pat, +u: O.UPat, base: C, depth: U32, f: Nat) -> List<&2, 
   get_clause.go(f, u, pat, base, depth, 0, alts_of(u), Nil{}, O.UPat.is_any(u),
     forked_of(O.UPat.src(u)), one_alt(O.UPat.src(u)), False{}, False{}, Nil{})
 
+# do_process_and -- upat.py:51. The `pm_proc` rule: one rewrite per AND node,
 # ONE OR CLAUSE MAX. upat.py:82 -- several OR clauses are replaced by the
 
 def ors_of(two: Bool, ors: List<&2, C>) -> List<&2, C>:
@@ -708,6 +718,12 @@ def do_process_and.of5(+all: List<&2, C>, found: Bool) -> Maybe<&2, C>:
     U32.is_ne(U32.from_nat(List.length(&2, C, dedup.go(all, Nil{}))), U32.from_nat(List.length(&2, C, all)))))
 
 # `stores, new_src = partition(new_src, ...)` LEAVES the stores OUT of `new_src`,
+# so `pred` is `Rp.pred` and not the whole child list: keeping them and leaning on
+# `dedup` happens to agree while every store survives the round trip, and it stops
+# agreeing the moment a duplicate store drops one of them. `Ds.out` is
+# `new_src.append(CUSTOM(dict_stores[k], store.src[1], "{0} is {1}"))`, and it goes
+# between `pred` and `stores_of` because Python appends it inside the store loop
+# and the stores after it.
 def do_process_and.of4(ors: List<&2, C>, flat: Bool, found: Bool, pred: List<&2, C>, +r: Rec) -> Maybe<&2, C>:
   do_process_and.of5(List.concat(&2, C, [pred, Ds.out(Rec.d(r)),
     stores_of(Ds.ks(Rec.d(r)), Ds.vs(Rec.d(r)), Nil{}), Rec.ors(r)]),
@@ -1107,6 +1123,10 @@ def proc.put(c: C, hit: Maybe<&2, C>) -> C:
     case Some{x}: x
     case None{}: c
 
+# loop before it (ops.py:1843) is what makes the pass bottom-up-to-a-FIXPOINT
+# a.src` (upat.py:76-81) splices an AND's children into `new_src` WITHOUT
+# the store takes the `else` at upat.py:100-111 -- the duplicate path -- instead
+# of the push at upat.py:95-99. The rebuilt node is re-queued, and on THAT
 # THE WAITLIST. `unified_rewrite` runs a node's rule at ops.py:1852, and the
 
 type Pg is Data:
@@ -1207,6 +1227,9 @@ def get_code.broken(bad: Bool, +pat: O.Pat, +u: O.UPat, has_ctx: Bool, f: Nat) -
 def get_code(+pat: O.Pat, +u: O.UPat, has_ctx: Bool) -> Maybe<&2, Code>:
   get_code.broken(broken_of(u), pat, u, has_ctx, fuel(pat))
 
+# TODO(p3) ops.py:1561 def upat_interpret -- `types.FunctionType(
+# TODO(p3) ops.py:1433 def get_location -- `sys._getframe`, the
+# TODO(p3) upat.py:181  upat_compile -- exec -- `namespace["compiled_match"]`. The rendered `Code`
 # upat_compile -- upat.py:173. `@functools.cache` and the `exec` are the wall.
 
 def upat_compile(+pat: O.Pat, i: U32, has_ctx: Bool) -> Maybe<&2, Code>:
@@ -1400,6 +1423,7 @@ def want_set_ord() -> String:
     "  if (uop.op in a0 and len(uop.src) == 1 and uop.dtype in a1 and uop.src[0].op in a0 and uop.src[0].dtype in a1) and (_ret:=_fxn(ctx=ctx)) is not None: return _ret",
     "  return None"
   ], "\n")
+# unresolved (ops.py:1843-1846), so p3 pushes `x` into the branches FIRST and p4's
 # a bind one level above a fork, and a bind above that. This is the row that
 #   p0 = UPat()                        -- arena 0
 # p1 CARRIES A PREDICATE, and it has to: the row's assertion is that the two

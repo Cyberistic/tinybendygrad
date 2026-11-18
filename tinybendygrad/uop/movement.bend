@@ -1,3 +1,5 @@
+# so no rule emits the identity check `upat.py:100-105` builds for one.
+# negative `v` became a huge `U32` and the answer was the FIRST element. MEASURED
 # movement.bend -- tinygrad/uop/movement.py. `mop_cleanup`: the pattern matchers
 # # TODO: pm_mops from rangeify belongs here. this is all pattern matchers that
 # A rule here answers a NEW UOP or `None`, not a verdict, so a rewrite carries the
@@ -42,6 +44,8 @@ def hop_next(h: Hop, r: Hop) -> Hop:
   match h r:
     case Hop{ha, hn} Hop{ra, rn}: Hop{ra, hop_first(hn, rn)}
 
+# ops.py:1610 reads `if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret`,
+# genuinely new node -- which is the inverse of ops.py:1610 AND of the comment above it.
 # `ret is not uop` -- ops.py:1611. The arena KEEPS whatever the rule built and only the
 def hop_self.of(drop: Bool, +r: Hop) -> Hop:
   match drop:
@@ -175,6 +179,8 @@ def i64_u32.of(b: Bool, lo: U32) -> U32:
 def i64_u32(+x: H.I64) -> U32:
   i64_u32.of(U32.is_zero(H.hi32(x)), H.lo32(x))
 
+# MEASURED 2026-10-30 against CPython at the pin, on `UOp(Ops.INDEX, src=(STACK(3,5,7),
+# `UOp.index` -- `return self.src[new_srcs[0].val]` -- tinygrad/uop/ops.py:561 -- whose
 # PYTHON'S LIST INDEX, and it is the fix for a MEASURED parity gap. `lst[v]` for a
 def mp_py_index.tail(sumneg: Bool, +v: H.I64, +n: H.I64) -> Maybe<&1, U32>:
   match sumneg:
@@ -209,6 +215,7 @@ def const_is(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
     case Some{v}: Cmp.is_eq(H.i64_cmp(v, H.i64_of_i32(U32.from_nat(n))))
     case None{}: False{}
 
+# the next time that file is edited (`# TODO(p3) ops.py:559  def index`).
 # `UOp.index` -- ops.py:559. Three of these nine rules call it and it belongs in ops.bend
 def mp_index.pick(sel: Maybe<&1, U32>, ar: O.Arena, self: U32) -> U32:
   match sel:
@@ -358,6 +365,8 @@ def marg_add(+ar: O.Arena, +x: U32, +s: U32) -> Maybe<&1, List<&2, Marg>>:
   marg_add.of(as_shape(ar, mp_src(ar, x, 1)), as_shape(ar, mp_src(ar, x, 2)),
               as_shape(ar, mp_src(ar, s, 1)), as_shape(ar, mp_src(ar, s, 2)))
 
+# element shape is a bare CONST (ops.py:106).
+# TODO(p3) movement.py:7  symbol=mop_cleanup  rank >= 2: `UOp.sink(*usrcs).simplify()` there sees a
 # THE NINE RULES, in movement.py's order. Each `match` is on BOOLS: the first is the
 # pattern's own tests, the rest are the LAMBDA's condition -- `upat.py`'s split exactly --
 # and every construction sits in a TAKEN arm, so a rule that does not fire interns nothing.
@@ -367,6 +376,7 @@ def mp_0.shrink(+ar: O.Arena, +self: U32, +m: Marg) -> Hop:
   +s = O.UOp.const(O.Found.ar(o), O.CInt{Marg.n(m)})
   mp_hit(O.UOp.new(O.Found.ar(s), O.OpsSHRINK{}, [mp_src0(ar, self), O.Found.i(o), O.Found.i(s)], O.ANone{}, O.TNone{}))
 
+# CONST (ops.py:106). A merged margin of length 2 is the `simplify()` that reaches
 # THE RANK TEST, and it is the whole of the `_mop` deferral. `_mop`'s node is
 # buildable exactly when `UOp.sink(*usrcs).simplify()` is ops.py:515's EARLY
 def mp_0.of(pat: Bool, m: Maybe<&1, List<&2, Marg>>, +ar: O.Arena, +self: U32) -> Hop:
@@ -378,6 +388,7 @@ def mp_0.of(pat: Bool, m: Maybe<&1, List<&2, Marg>>, +ar: O.Arena, +self: U32) -
 def mp_0(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_0.of(mp_is(ar, mp_src0(ar, self), O.OpsSHRINK{}), marg_add(ar, self, mp_src0(ar, self)), ar, self)
 
+# movement.py:10 -- this is why the second src is kept verbatim: it is the
 # merge adjacent RESHAPEs (movement.py:10)
 def mp_1.of(pat: Bool, +ar: O.Arena, +self: U32) -> Hop:
   match pat:
@@ -405,6 +416,7 @@ def mp_perm.go(todo: List<&2, U32>, +p2: List<&2, U32>, acc: List<&2, U32>) -> L
 def mp_perm(p2: List<&2, U32>, xa: List<&2, U32>) -> List<&2, U32>:
   mp_perm.go(xa, p2, Nil{})
 
+# SPENDS A BINDER WHEN IT READS IT -- AND THE PORT's OWN IDiom
 # AND THE MERGED PERMUTE CARRIES THE ORDER IN `src[1]`, AS
 def mp_perm_srcs(ar: O.Arena, perm2: List<&2, U32>, x2: U32) -> List<&2, U32>:
   [x2, O.shape_arg(ar, perm2)]
@@ -465,6 +477,7 @@ def mp_5(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_5.of(mp_nsrc_ge(ar, self, 1), shp_same(tb, ar, mp_src0(ar, mp_src0(ar, self)), self),
           mp_5.each(mp_srcs(ar, self), ar, 0n), tb, ar, self)
 
+# `i.val` reads from the END. MEASURED 2026-10-30: upstream's rule 6 answers `CONST 7`
 # const INDEX into STACK is src (movement.py:21-22)
 def mp_stack_src.of(k: Maybe<&1, U32>, ar: O.Arena, stk: U32) -> Maybe<&1, U32>:
   match k:
@@ -556,6 +569,9 @@ def mp_try(+tb: F.Table, +ar: O.Arena, +self: U32, +ler: List<&2, O.Op>, +e: O.P
   mp_try.go(Bool.and(O.pm_claimed(O.PMEntry.ops(e), ar, self), mp_early(ar, self, O.PMEntry.rej(e))),
            O.PMEntry.tag(e), tb, ar, self)
 
+# (0) M7'S ROW IS `shrink2_marg` AND NOT `shrink1_marg`, which reads 31 either way, and the
+#     `x` at the END of `r` is MEASURED, reproducer `.agents/slop/notes/probe-append.bend`.
+#     only other reading of `issubset`. Those are DIFFERENT functions in general and the
 # THE MEASURED MUTATION TABLE. Fifteen textual edits, one at a time, each re-checked
 def mp_scan(rs: List<&2, O.PMEntry>, +tb: F.Table, +ler: List<&2, O.Op>, +self: U32, +h: Hop) -> Hop:
   match rs:
