@@ -640,10 +640,9 @@ def fwd_prog() -> RZ.RZProg:
   +e = MX.mxw_expand(x, [3, 3])
   +f1 = T.tn_rop(T.Tensor.ar(e), T.Tensor.u(e), O.OpsADD{}, [0, 1])
   +a1 = RZ.rz_after(h, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
-  # THE POSITIVE CONTROL: read the hidden numbers through a PARAM-shaped view instead of through
-  # the AFTER. If kernel B then SPLITS, the defect is `INDEX` over an `AFTER`; if it does not, it
-  # is not the AFTER at all. (The view is on its own slot, so this is a control and not the fix.)
-  +hf = RZ.rz_input(O.Found.ar(a1), 5, 784, [1, 1, 28, 28])
+  # THE REAL READ: the hidden buffer through its AFTER. The control (a PARAM-shaped view on slot 5)
+  # is what proved the AFTER was the blocker; with `handle_after` ported this must split too.
+  +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
   +lhs = MX.mxw_reshape.go(hf, [1, 1, 784])
   +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w, [1, 784, 10]), [0, 2, 1])
   +m = T.tn_mul(lhs, rhs)
@@ -822,10 +821,9 @@ def fwd_ids() -> String:
   +f1 = T.tn_rop(T.Tensor.ar(e), T.Tensor.u(e), O.OpsADD{}, [0, 1])
   +a1 = RZ.rz_after(h, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
   +o = RZ.rz_input(O.Found.ar(a1), 2, 10, [1, 10])
-  # THE POSITIVE CONTROL: read the hidden numbers through a PARAM-shaped view instead of through
-  # the AFTER. If kernel B then SPLITS, the defect is `INDEX` over an `AFTER`; if it does not, it
-  # is not the AFTER at all. (The view is on its own slot, so this is a control and not the fix.)
-  +hf = RZ.rz_input(O.Found.ar(a1), 5, 784, [1, 1, 28, 28])
+  # THE REAL READ: the hidden buffer through its AFTER. The control (a PARAM-shaped view on slot 5)
+  # is what proved the AFTER was the blocker; with `handle_after` ported this must split too.
+  +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
   # THE ARENA MUST BE CHAINED, NOT FORKED: `o` was built on `a1`'s arena and returned a GROWN one,
   # and building `w` on `a1`'s again made the two SIBLING copies -- `o`'s nodes and `w`'s nodes then
   # occupied the same indices, and the MUL mixed them (MEASURED: the weight folded to a lone CONST).
@@ -882,6 +880,58 @@ def rd_row() -> String:
                  " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, rd)),
                  " [", RR.rr_rngm_row(ar, sk, rd), "]"])
 
+# THE FULL FORWARD CHAIN, as FOUR stores chained through AFTERs on the intermediate buffers --
+# the path `handle_after` now supports:
+#
+#   h1(196) <- conv2x2(x 28x28, w1 2x2)      h2(196) <- relu(h1)
+#   h3(49)  <- pool2x2(h2 14x14)             y(10)   <- linear(h3 49, w2 49x10)
+#
+# Every `rz_input` takes the PREVIOUS tensor's arena (a fork makes sibling copies whose indices
+# collide), and each `rz_after` feeds the next.
+def fchain_prog() -> RZ.RZProg:
+  # THE ARENA RULE at every step: a node minted on arena X is readable only in an arena that
+  # CONTAINS X, so each dst is created FIRST and everything after it runs on `T.Tensor.ar(dst)`.
+  +h1 = RZ.rz_input(O.Arena.empty(), 0, 196, [1, 1, 14, 14])
+  +x = RZ.rz_input(T.Tensor.ar(h1), 1, 784, [1, 1, 28, 28])
+  +w1 = RZ.rz_input(T.Tensor.ar(x), 2, 4, [1, 1, 2, 2])
+  +c1 = T.tn_mul(MX.mxw_reshape.go(x, [1, 1, 14, 2, 14, 2]), MX.mxw_reshape.go(w1, [1, 1, 1, 2, 1, 2]))
+  +f1 = T.tn_rop(T.Tensor.ar(c1), T.Tensor.u(c1), O.OpsADD{}, [3, 5])
+  +a1 = RZ.rz_after(h1, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
+  +h2 = RZ.rz_input(O.Found.ar(a1), 3, 196, [1, 1, 14, 14])
+  +v1 = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(h2), O.Found.i(a1)), [1, 1, 14, 14])
+  +a2 = RZ.rz_after(h2, T.tn_relu(v1))
+  +h3 = RZ.rz_input(O.Found.ar(a2), 4, 49, [1, 1, 7, 7])
+  +v2 = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(h3), O.Found.i(a2)), [1, 1, 7, 2, 7, 2])
+  +f3 = T.tn_rop(T.Tensor.ar(v2), T.Tensor.u(v2), O.OpsMAX{}, [3, 5])
+  +a3 = RZ.rz_after(h3, T.tn_new(O.Found.ar(f3), O.Found.i(f3)))
+  +y = RZ.rz_input(O.Found.ar(a3), 5, 10, [1, 10])
+  +w2 = RZ.rz_input(T.Tensor.ar(y), 6, 490, [49, 10])
+  +lhs = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(w2), O.Found.i(a3)), [1, 1, 49])
+  +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w2, [1, 49, 10]), [0, 2, 1])
+  +c4 = T.tn_mul(lhs, rhs)
+  +f4 = T.tn_rop(T.Tensor.ar(c4), T.Tensor.u(c4), O.OpsADD{}, [2])
+  +a4 = RZ.rz_after(y, T.tn_new(O.Found.ar(f4), O.Found.i(f4)))
+  +snk = O.UOp.sink(O.Found.ar(a4), [O.Found.i(a1), O.Found.i(a2), O.Found.i(a3), O.Found.i(a4)])
+  RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
+
+def fc_lk() -> String:
+  +q = RZ.rz_rebuild(fchain_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ks = SCH.lin_kernels(lin)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
+    String.join(fw_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
+
+def fc_c() -> String:
+  +q = RZ.rz_rebuild(fchain_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  mk_fin(mk_one.go(SCH.lin_kernels(lin), (SCH.lin_ar(lin), Nil{}), 0))
+
+def fchain_dump() -> String:
+  +q = RZ.rz_rebuild(fchain_prog(), False{}, False{})
+  RR.rr_dump(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -921,6 +971,9 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["sh_row=", sh_row()]))
     _ : Unit <- IO.print(String.concat(["sw_row=", String.join(sw_row(), " | ")]))
     _ : Unit <- IO.print(String.concat(["fbd_row=", fbd_row()]))
+    _ : Unit <- IO.print(String.concat(["fchain_dump=", fchain_dump()]))
+    _ : Unit <- IO.print(String.concat(["fc_lk=", fc_lk()]))
+    _ : Unit <- IO.print(String.concat(["fc_c=", fc_c()]))
     _ : Unit <- IO.print(String.concat(["fwd_lk=", fwd_lk()]))
     _ : Unit <- IO.print(String.concat(["fwd_kg=", fwd_kg()]))
     _ : Unit <- IO.print(String.concat(["fwd_c=", fwd_c()]))

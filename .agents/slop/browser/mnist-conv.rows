@@ -36,6 +36,42 @@ pv_row=aft2=AFTER:none:PARAM,STORE dims=10 | st2=STORE:none:RESHAPE,REDUCE dims=
 sh_row=v=OTHER:other: SHAPE-NONE[rm=False False in= out= tbl=1] | RED=OTHER:other: SHAPE-NONE[rm=False False in= out= tbl=1] | RD.src0=OTHER:other: SHAPE-NONE[rm=False False in= out= tbl=1]
 sw_row=OTHER:other: dims=
 fbd_row=st=OTHER:other: closed=0 vdims=0 guard=False
+fchain_dump=SINK:none:AFTER,AFTER,AFTER,AFTER;AFTER:none:PARAM,STORE;AFTER:none:PARAM,STORE;AFTER:none:PARAM,STORE;AFTER:none:PARAM,STORE;PARAM:other:CONST;STORE:none:RESHAPE,REDUCE;PARAM:other:CONST;STORE:none:RESHAPE,WHERE;PARAM:other:CONST;STORE:none:RESHAPE,REDUCE;PARAM:other:CONST;STORE:none:RESHAPE,REDUCE;CONST:cother:;RESHAPE:none:PARAM,STACK;REDUCE:other:PERMUTE;RESHAPE:none:PARAM,STACK;WHERE:none:OTHER,RESHAPE,CONST;CONST:cother:;RESHAPE:none:PARAM,STACK;REDUCE:other:PERMUTE;CONST:cother:;RESHAPE:none:PARAM,STACK;REDUCE:other:PERMUTE;STACK:none:CONST,CONST,CONST,CONST;PERMUTE:none:MUL,STACK;OTHER:none:CONST,RESHAPE;RESHAPE:none:AFTER,STACK;CONST:cother:;STACK:none:CONST,CONST,CONST,CONST;PERMUTE:none:RESHAPE,STACK;STACK:none:CONST,CONST;PERMUTE:none:MUL,STACK;CONST:cother:;CONST:cother:;MUL:none:RESHAPE,RESHAPE;STACK:none:CONST,CONST,CONST,CONST,CONST,CONST;CONST:cother:;RESHAPE:none:AFTER,STACK;MUL:none:RESHAPE,PERMUTE;STACK:none:CONST,CONST,CONST;RESHAPE:none:PARAM,STACK;RESHAPE:none:PARAM,STACK;CONST:cother:;CONST:cother:;CONST:cother:;CONST:cother:;STACK:none:CONST,CONST,CONST,CONST,CONST,CONST;RESHAPE:none:AFTER,STACK;PERMUTE:none:RESHAPE,STACK;PARAM:other:CONST;STACK:none:CONST,CONST,CONST,CONST,CONST,CONST;PARAM:other:CONST;STACK:none:CONST,CONST,CONST,CONST,CONST,CONST;STACK:none:CONST,CONST,CONST;RESHAPE:none:PARAM,STACK;STACK:none:CONST,CONST,CONST;CONST:cother:;PARAM:other:CONST;STACK:none:CONST,CONST,CONST;CONST:cother:
+fc_lk=4/CALL>SINK STORE>INDEX STORE>INDEX STORE>INDEX
+fc_c=--k0:
+void test(float* restrict data0_196, float* restrict data1_784, float* restrict data2_4) {
+  float buf0[1];
+  for (int Lidx0 = 0; Lidx0 < 14; Lidx0++) {
+    int cast0 = ((int)(Lidx0));
+    for (int Lidx1 = 0; Lidx1 < 14; Lidx1++) {
+      int cast1 = ((int)(Lidx1));
+      *buf0 = 0;
+      for (int Lidx3 = 0; Lidx3 < 2; Lidx3++) {
+        for (int Lidx2 = 0; Lidx2 < 2; Lidx2++) {
+          int cast2 = ((int)(Lidx2));
+          int cast3 = ((int)(Lidx3));
+          int alu1 = (4*0);
+          *buf0 = (buf0+((data1_784+((cast2+(cast0<<1)+(28*cast3)+(56*cast1)+(784*0)+(784*0))%784))*(data2_4+((cast2+(2*0)+(cast3<<1)+alu1+alu1+alu1)%4))));
+        }
+      }
+      *(data0_196+((cast0+(14*cast1)+(196*0)+(196*0))%196)) = buf0;
+    }
+  }
+}
+--k1:
+void test(float* restrict data3_196) {
+  for (int Lidx38 = 0; Lidx38 < 14; Lidx38++) {
+    for (int Lidx37 = 0; Lidx37 < 14; Lidx37++) {
+}
+--k2:
+void test(float* restrict data4_49) {
+  for (int Lidx20 = 0; Lidx20 < 7; Lidx20++) {
+    for (int Lidx19 = 0; Lidx19 < 7; Lidx19++) {
+}
+--k3:
+void test(float* restrict data5_10) {
+  for (int Lidx0 = 0; Lidx0 < 10; Lidx0++) {
+}
 fwd_lk=2/CALL>SINK CALL>SINK
 fwd_kg=SINK:none:AFTER,AFTER;AFTER:none:PARAM,CALL;AFTER:none:PARAM,CALL;PARAM:other:CONST;CALL:none:SINK,PARAM,PARAM;PARAM:other:CONST;CALL:none:SINK,PARAM,AFTER,PARAM;CONST:cother:;SINK:other:END;PARAM:other:CONST;CONST:cother:;SINK:other:END;PARAM:other:CONST;END:none:STORE,RANGE,RANGE;END:none:STORE,RANGE;CONST:cother:;STORE:none:INDEX,REDUCE;RANGE:other:CONST;RANGE:other:CONST;STORE:none:INDEX,REDUCE;RANGE:other:CONST;INDEX:none:PARAM,OTHER;REDUCE:other:INDEX,RANGE,RANGE;CONST:cother:;INDEX:none:PARAM,OTHER;REDUCE:other:MUL,RANGE;PARAM:other:CONST;OTHER:none:ADD,OTHER;INDEX:none:PARAM,OTHER;RANGE:other:CONST;RANGE:other:CONST;PARAM:other:CONST;OTHER:none:ADD,OTHER;MUL:none:INDEX,INDEX;RANGE:other:CONST;ADD:none:RANGE,ADD;OTHER:other:CONST;PARAM:other:CONST;CONST:cother:;ADD:none:RANGE,MUL;OTHER:other:CONST;INDEX:none:PARAM,OTHER;INDEX:none:PARAM,OTHER;ADD:none:MUL,ADD;MUL:none:OTHER,CONST;OTHER:none:ADD,OTHER;PARAM:other:CONST;OTHER:none:ADD,OTHER;MUL:none:OTHER,RANGE;ADD:none:MUL,MUL;CONST:cother:;ADD:none:RANGE,ADD;ADD:none:RANGE,ADD;OTHER:other:CONST;OTHER:other:CONST;MUL:none:OTHER,CONST;ADD:none:MUL,MUL;MUL:none:OTHER,RANGE;MUL:none:OTHER,CONST
 fwd_c=--k0:
