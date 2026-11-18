@@ -26,6 +26,7 @@ import Base
 import ./../../../tinybendygrad/schedule/__init__.bend as SCH
 import ./../../../tinybendygrad/schedule/rangify.bend as RR
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
+import ./../../../tinybendygrad/schedule/rangeify.bend as RF
 import ./../../../tinybendygrad/codegen/late/linearizer.bend as LIN
 import ./../../../tinybendygrad/renderer/kuconv.bend as KC
 import ./../../../tinybendygrad/renderer/cstyle.bend as C
@@ -108,7 +109,7 @@ def chain_ksig.go(+ks: List<&2, C.KU>, acc: List<&2, String>) -> List<&2, String
   match ks:
     case Nil{}: acc
     case k <> t:
-      +opc = U32.show(SCH.gate.code(C.KU.op(k)))
+      +opc = RF.eng_op_name(C.KU.op(k))
       chain_ksig.go(t, List.append(&2, String, acc,
         [String.concat([opc, ":", String.join(chain_u32s.go(C.KU.srcs(k), Nil{}), ",")])]))
 
