@@ -9,9 +9,6 @@
 # nothing -- the lowerer is split three ways -- and what this file was is all
 # three of them at once.
 #
-# WHAT IT WAS. One file for three, and the 1:1 ruling (one `.bend` per upstream
-# `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory)
-# made it three:
 #
 #   tinygrad/codegen/simplify.py            156 lines   -> codegen/simplify.bend
 #   tinygrad/codegen/late/coalesce.py       168 lines   -> codegen/late/coalesce.bend
@@ -239,9 +236,6 @@ def rw_ranges(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, U32>>:
 #
 # the two composite numbers are worth the trouble, because a table built with `+`
 # hides how much of it is the author's and how much is inherited:
-# `pm_reduce_collapse` is `pm_reduce_unparented + 6 rules + symbolic`, so its own
-# count is 7 and its LENGTH is 130 with `symbolic`'s 123. Reading 130 as "130
-# rules in simplify.py" is the obvious mistake and `rc_own` is the row for it.
 
 type G is Data:
   G{fx: F.Folded, ix: List<&2, U32>}
