@@ -915,12 +915,7 @@ def tl_step.put.at(st: Maybe<&2, U32>, +d: DevEv, +acc: TlAcc) -> TlAcc:
 
 def tl_step.put(+d: DevEv, +acc: TlAcc) -> TlAcc: tl_step.put.at(rel_ts(St.t(d), TlAcc.start(acc)), d, acc)
 
-# NO MUTUAL RECURSION. `Bool.pick` is EAGER, so "skip or emit" wants the tail
-# fold on one arm and `continue` on the other -- and `continue` IS the tail fold,
-# which is exactly the cycle Bend refuses. So the tail is folded FIRST and handed
-# in as a parameter, and the decision is a `Bool` PARAMETER rather than a
-# recomputation. The fold is pure and total, so evaluating a skipped event's tail
-# eagerly changes nothing observable.
+# `Bool.pick` is eager, so the tail is folded first and the skip decision is a parameter.
 def keep_of(+d: DevEv) -> Bool: tl_keep(Dur.dev(d), Ev.of(d))
 
 def tl_step(keep: Bool, +d: DevEv, tail: TlAcc, +acc: TlAcc) -> TlAcc:

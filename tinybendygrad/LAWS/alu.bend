@@ -1,21 +1,6 @@
-# alu.bend -- tinyspec.tex's "Decomposed elementwise ops" table, as Bend.
+# Decomposed elementwise operations from tinyspec.tex.
 #
-# The tinyspec.tex table at :192-206 has FIFTEEN rows, of which TWELVE are
-# decomposed in terms of the primitives above them -- Neg, Sub, Div, CmpGt,
-# CmpGe, CmpLe, CmpEq, Not, Sqrt, Pow, Mulacc and Threefry -- and THREE
-# (Exp2, Log2, Sin) are only DESCRIBED, by polynomial approximation. This
-# file writes those definitions as Bend functions over the primitive
-# constructors of spec.bend, and LAWS.bend then states each decomposition as a
-# law the checker proves by reflexivity.
-#
-# That is the point of the exercise: the spec's ALU table stops being a comment
-# somebody might typo, and becomes something the compiler checks against the
-# code that emits it.
-#
-# The `-1` and the `1` of CmpGe/CmpLe/CmpEq/Not are scalars whose VALUE depends
-# on the dtype, so they are written here as `k`/`one`/`zero` and the dtype's
-# bit pattern is supplied at emit time by the C runtime. The laws are about op
-# STRUCTURE, which is what the spec's table is about.
+# CmpGe/CmpLe/CmpEq/Not use dtype-dependent scalars supplied at emit time.
 
 import Base
 import ./spec.bend as S

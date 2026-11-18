@@ -134,11 +134,7 @@ def k_fmone() -> O.Const: O.CFloat{F32.neg(1.0)}
 def k_izero() -> O.Const: O.CInt{H.i64_of_i32(0)}
 def k_ione() -> O.Const: O.CInt{H.i64_of_i32(1)}
 
-# THE NODE BUILDERS. Every one is a `UOp(...)` call in Python's rule bodies, and every
-# one GROWS the arena, so each takes `+ar` and returns a `Found`. `UOp.alu` exists in
-# ops.bend and is the same call with the arena unprefixed; `gnew` is the spelling that
-# makes the arena threading explicit, because a rule that builds two nodes has to hand
-# `Found.ar` forward by hand either way.
+# `gnew` threads the grown arena explicitly; `UOp.alu` in ops.bend has the same effect.
 
 def gnew(+ar: O.Arena, +op: O.Op, +srcs: List<&2, U32>, +arg: O.Arg) -> O.Found:
   O.UOp.new(ar, op, srcs, arg, O.TNone{})
@@ -1500,20 +1496,7 @@ def compute_gradient(+root: U32, +root_grad: U32, targets: List<&2, U32>, +ar: O
           CState{ar, gput.new(Grads{Nil{}, Nil{}}, root, root_grad), 0, 0})
 
 
-# THE GATE. Rows print `name=1|0` and Bend has no assertion form, so the gate is that
-# both lanes print the SAME rows. Expectations come from
-# `python3 -m tinygrad.mixin.gradient` drivers under `.agents/slop/notes/`, run against
-# the repo's own tinygrad.
-#
-# WHAT MAKES A ROW WORTH PRINTING, and the two traps from the brief:
-#   * `t_claims` pins the COUNT (33), not a boolean. An all-True gate says which cases
-#     were covered and nothing about the rest.
-#   * `rebind` / `rebind_off` / `rebind_claim29` are a THREE-ROW family on ONE node
-#     shape, and they are the rows for the name-rebind. `rebind_off` is the control: if
-#     `gr_29_same` were dropped, `rebind` would still be True and only `rebind_off`
-#     would move. A one-row family could not tell the rule from its own absence.
-#   * `norebind_mut` is the MUTATION, not a claim: it is the count of rows that move when
-#     `gr_29_same` is replaced by `True{}`, recorded in the table at the foot.
+# Bend has no assertion form, so the gate compares identical `name=1|0` rows.
 
 
 # ---- the fixture arena ------------------------------------------------------

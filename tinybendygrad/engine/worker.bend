@@ -342,13 +342,7 @@ def mod_restore_file(+x: Mod, s: Mod) -> Mod:
 def mod_restore_spec(+x: Mod, s: Mod) -> Mod:
   Mod{Mod.nm(x), Mod.file(x), mod_restore(Mod.spec(s), Mod.spec(x))}
 
-# THE WHOLE OF `_without_main`, and it is four statements because Python's is:
-#   main = sys.modules.get("__main__")  -> the Mod PARAMETER
-#   if main is None: yield; return      -> `main_is_none`, and the caller skips the rest
-#   with _spawn_lock:                   -> the sequential port, no lock
-#     saved = {...}                     -> mod_saved
-#     try: setattr x2; yield            -> mod_cleared
-#     finally: restore                  -> mod_restore_file then mod_restore_spec
+# `_without_main` preserves Python's main-module save, clear, and restore order.
 def mod_main(+s: Mod) -> Mod:
   mod_restore_spec(mod_restore_file(mod_cleared(s), s), s)
 

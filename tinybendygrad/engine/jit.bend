@@ -103,15 +103,6 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./realize.bend as RZ
 
-# section 0 -- the node handle and the two primitives the file uses everywhere.
-#
-# `U32` is affine and `+` is refused on it, so every `(arena, index)` pair read
-# twice in one expression is an `O.Found`: `Found` is `Data`, its readers are
-# non-consuming, and `+f: O.Found` is a refcount. And `Bool.to_u32` EXISTS in
-# base 2.0.34 (base.bend:620 symbol=Bool.to_u32), which `mixin/rand.bend` rule 3
-# records as missing;
-# it is not missing and every `Bool` -> `U32` in this tree should be this call
-# rather than a `Bool.pick` per site.
 def j_n(xs: List<&2, U32>) -> U32:
   U32.from_nat(List.length(&2, U32, xs))
 
