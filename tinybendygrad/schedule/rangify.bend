@@ -881,8 +881,23 @@ def rr_p0(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -
 
 # the P1 phases: the output ranges. the realize branch, the single-consumer
 # branch, the merge, and the `continue` (no consumer with ranges).
+# A STORE'S SHAPE IS ITS DST'S SHAPE, AND THE FOLD'S ENTRY FOR THE STORE CAN BE UNKNOWN WHILE
+# THE DST'S IS NOT. MEASURED on the fused conv+relu+pool stack: `dst_dims=1,1,7,7` and
+# `st_dims=` (empty) off the SAME table, so `rr_p1.real` minted ZERO out ranges, the END closed
+# nothing, `split_store`'s gate saw the output ranges still open and built no CALL
+# (`fw_lk=0/`). Upstream reads `x.shape`, and for a STORE that IS `src[0].shape`
+# (`ops.py:118-121` is the DTYPE group; the shape arm is the dst's) -- so reading the dst's own
+# entry is the same answer by the direct route, not a workaround.
+def rr_p1.shape.go(isstore: Bool, +ar: O.Arena, +tb: F.Table, +x: U32) -> List<&2, U32>:
+  match isstore:
+    case True{}: rr_dims(ar, tb, O.Arena.src0(ar, x))
+    case False{}: rr_dims(ar, tb, x)
+
+def rr_p1.shape(+ar: O.Arena, +tb: F.Table, +x: U32) -> List<&2, U32>:
+  rr_p1.shape.go(O.eq_op(O.Arena.op(ar, x), O.OpsSTORE{}), ar, tb, x)
+
 def rr_p1.real(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
-  +shape = rr_dims(ar, tb, x)
+  +shape = rr_p1.shape(ar, tb, x)
   +n = rr_new.all(shape, RrMap.tbl(m), Nil{})
   RrMap{rr_real(ctx, x, rr_axes(U32.from_nat(List.length(&2, U32, shape)))),
         RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), Nil{}, False{}, RrMap.b(m), RrMap.ne(m)}
