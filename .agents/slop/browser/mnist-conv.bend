@@ -802,6 +802,20 @@ def sk_row() -> String:
   +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
   RR.rr_dump(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
 
+# THE BUFFER NODE ITSELF: `mxw_buf` mints it as `O.UOp.new.param(ar, BUFFER, Some{size}, ...)`
+# (`movement.bend:1109`) with NO srcs supplied. If that `Some{size}` is the ARITY, every buffer is
+# a node whose src list is longer than what the arena holds.
+def buf_row() -> String:
+  +t1 = RZ.rz_input(O.Arena.empty(), 2, 10, [1, 10])
+  +b1 = SCH.sc_src0(T.Tensor.ar(t1), T.Tensor.u(t1))
+  +t2 = RZ.rz_input(T.Tensor.ar(t1), 3, 7840, [784, 10])
+  +b2 = SCH.sc_src0(T.Tensor.ar(t2), T.Tensor.u(t2))
+  String.concat(["b10=", RR.rr_node_str(T.Tensor.ar(t1), T.Tensor.u(t1)),
+                 " nsrc=", U32.show(O.Arena.nsrc(T.Tensor.ar(t1), T.Tensor.u(t1))),
+                 " buf=", RR.rr_node_str(T.Tensor.ar(t1), b1),
+                 " buf_nsrc=", U32.show(O.Arena.nsrc(T.Tensor.ar(t1), b1)),
+                 " | b7840 buf_nsrc=", U32.show(O.Arena.nsrc(T.Tensor.ar(t2), b2))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -829,6 +843,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["buf_row=", buf_row()]))
     _ : Unit <- IO.print(String.concat(["sk_row=", sk_row()]))
     _ : Unit <- IO.print(String.concat(["st_rows=", String.join(st_rows(), " | ")]))
     _ : Unit <- IO.print(String.concat(["pm_row=", pm_row()]))
