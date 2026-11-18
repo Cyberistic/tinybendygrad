@@ -44,8 +44,26 @@ def kuconv.srcs(ix: List<&2, U32>, ss: List<&2, U32>) -> List<&2, U32>:
 #
 # `S.void()` is the default because that is what upstream's `Ops.SINK` and
 # `Ops.END` answer (`ops.py:247`'s ladder), and a void dtype is what makes
+# A NODE THE FOLD CANNOT TYPE INHERITS ITS FIRST SRC'S DTYPE. `void` is upstream's answer
+# for SINK and END, and for an ALU node it is WRONG: a `void`-dtyped ADD renders through
+# the access path (`*(x)`) instead of as an integer. MEASURED on the affine index the
+# RESHAPE builds: `(*cast1)` in the C is a `void` dtype, and the modulus's `%` had no
+# divisor because its CONST inherited the same void.
+def kuconv.mb_some(m: Maybe<&2, S.Dt>) -> Bool:
+  match m:
+    case Some{_}: True{}
+    case None{} : False{}
+
+def kuconv.dt.go(fuel: Nat, +ar: O.Arena, +tb: F.Table, +a: U32) -> S.Dt:
+  match fuel:
+    case 0n: S.void()
+    case 1n+p:
+      +m = F.fold.dt(ar, tb, a)
+      Bool.pick(S.Dt, kuconv.mb_some(m), Maybe.default(&2, S.Dt, m, S.void()),
+                kuconv.dt.go(p, ar, tb, O.Arena.src0(ar, a)))
+
 def kuconv.dt(+fx: F.Folded, a: U32) -> S.Dt:
-  Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), a), S.void())
+  kuconv.dt.go(O.Arena.budget(F.Folded.ar(fx)), F.Folded.ar(fx), F.Folded.t(fx), a)
 
 # the addrspace.  the FOLD answers `Maybe<Maybe<S.Addr>>`: the outer one is
 # "the FOLD knows this node" and the inner one is "the node has an
