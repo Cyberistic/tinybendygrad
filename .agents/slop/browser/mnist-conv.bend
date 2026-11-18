@@ -30,19 +30,23 @@ import ./../../../tinybendygrad/mixin/movement.bend as MX
 # mul and a SUM). The difference is not cosmetic: N siblings of one input give the input
 # N consumers, which is `indexing.py:249`'s MERGE branch (`_realize_axis`), and that is a
 # different lane from the chain upstream actually produces.
+# NO SHRINK, AND THAT IS THE WHOLE OF IT: `_rop` drops an axis whose extent is 1
+# (`ops.py:627`: `reduce_axis = tuple(x for x in axis if resolve(self.shape[x] != 1))`), so
+# a shrink-to-1 followed by a reduce over those axes is NOT a reduce -- MEASURED, the
+# port's `tn_rop` then answers `AReduce{MAX, 0}` with no range srcs, which lowers to ONE
+# accumulate and an input read at a constant address (`data1_784+0`). Upstream's `_pool`
+# keeps the window axes at their real extent and reduces over THEM.
 def cn_pool(+x: T.Tensor) -> T.Tensor:
   +r = MX.mxw_reshape.go(x, [1, 1, 14, 2, 14, 2])
-  +s = MX.mxw_shrink(r, [0, 0, 0, 0, 0, 0], [1, 1, 14, 1, 14, 1])
-  +f = T.tn_rop(T.Tensor.ar(s), T.Tensor.u(s), O.OpsMAX{}, [3, 5])
+  +f = T.tn_rop(T.Tensor.ar(r), T.Tensor.u(r), O.OpsMAX{}, [3, 5])
   T.tn_new(O.Found.ar(f), O.Found.i(f))
 
 # conv2d, 3x3, stride 1, NO padding: reshape to (1,1,26,3,26,3), SHRINK the window axes
 # to one, times the weight's matching window, summed over the window.
 def cn_conv(+x: T.Tensor, +w: T.Tensor) -> T.Tensor:
   +r = MX.mxw_reshape.go(x, [1, 1, 26, 3, 26, 3])
-  +s = MX.mxw_shrink(r, [0, 0, 0, 0, 0, 0], [1, 1, 26, 1, 26, 1])
   +wr = MX.mxw_reshape.go(w, [1, 1, 1, 3, 1, 3])
-  +m = T.tn_mul(s, wr)
+  +m = T.tn_mul(r, wr)
   +f = T.tn_rop(T.Tensor.ar(m), T.Tensor.u(m), O.OpsADD{}, [3, 5])
   T.tn_new(O.Found.ar(f), O.Found.i(f))
 
