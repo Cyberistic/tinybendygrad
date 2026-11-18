@@ -17,6 +17,9 @@ import ./../../../tinybendygrad/schedule/realize.bend as RZ
 import ./../../../tinybendygrad/uop/ops.bend as O
 import ./../../../tinybendygrad/tensor.bend as T
 import ./../../../tinybendygrad/mixin/movement.bend as MX
+import ./../../../tinybendygrad/schedule/__init__.bend as SCH
+import ./../../../tinybendygrad/renderer/cstyle.bend as C
+import ./../../../tinybendygrad/schedule/rangeify.bend as RF
 
 def mn_dot_x(+lhs: T.Tensor) -> T.Tensor: MX.mxw_reshape.go(lhs, [1, 1, 392])
 def mn_dot_w(+rhs: T.Tensor) -> T.Tensor: MX.mxw_permute.go(MX.mxw_reshape.go(rhs, [1, 392, 10]), [0, 2, 1])
@@ -38,5 +41,27 @@ def mn_src() -> String:
   +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
   DEV.Prog.src(DEV.compile_sink(O.Found.ar(kg), O.Found.i(kg)))
 
+# THE LINEARISED ORDER, one KU per position -- the row that says where the two RANGEs and
+# the three ENDs sit relative to the two accumulator stores.
+def mn_op(+k: C.KU) -> String: RF.eng_op_name(C.KU.op(k))
+
+def mn_sig.go(+ks: List<&2, C.KU>, +i: U32, +acc: List<&2, String>) -> List<&2, String>:
+  match ks:
+    case Nil{}: acc
+    case k <> t: mn_sig.go(t, U32.add(i, 1), List.append(&2, String, acc, [String.concat([U32.show(i), ":", mn_op(k)])]))
+
+def mn_sig(p: (O.Arena & List<&2, C.KU>)) -> String:
+  (ar, kus) = p
+  String.join(mn_sig.go(kus, 0, Nil{}), " ")
+
+def mn_ku() -> String:
+  +q = mn_built()
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = DEV.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ar2 = O.Found.ar(lin)
+  mn_sig(DEV.body_kus(ar2, SCH.sc_src0(ar2, O.Found.i(lin))))
+
 def main() -> IO(Unit):
-  IO.print(String.concat(["mn_c=", mn_src()]))
+  do IO<Unit>:
+    _ : Unit <- IO.print(String.concat(["mn_ku=", mn_ku()]))
+    IO.print(String.concat(["mn_c=", mn_src()]))
