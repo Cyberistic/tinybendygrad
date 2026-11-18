@@ -457,6 +457,9 @@ def Tr.args(k: U32, +cs: List<&2, Call>) -> List<&2, U32>:
 # binder, and a descent may not use that binder twice.
 #
 # both fields are compared, so a pattern pins the identity of each call and not
+# only its kind. That is what makes `wg_init_order` and `wg_call_order` worth
+# printing: they say the instance is created, then the adapter is requested, then
+# the features are read -- and which six.
 def Tr.has.step.same2(k1: U32, k2: U32, a1: U32, a2: U32) -> Bool:
   Bool.and(U32.is_eq(k1, k2), U32.is_eq(a1, a2))
 

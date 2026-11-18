@@ -462,6 +462,10 @@ def Ehdr.v_shnum(+h: String, +x: Bool) -> U32:
 def Ehdr.v_shstrndx(+h: String, +x: Bool) -> U32:
   Bool.pick(U32, x, Blob.le16(h, 62), Blob.le16(h, 50))
 # `Ehdr.at13` IS THE CONSTRUCTOR LITERAL: every value arrives as a parameter, so
+# the record is built ONCE. The chain below it feeds those parameters one per
+# step, reading the blob once per step -- which is the `sig.go` shape again, and
+# it is why `x` is a parameter of every step instead of being re-derived from the
+# blob thirteen times.
 def Ehdr.at13(a_type: U32, a_machine: U32, a_version: U32, a_entry: W64,
               a_phoff: W64, a_shoff: W64, a_flags: U32, a_ehsize: U32,
               a_phentsize: U32, a_phnum: U32, a_shentsize: U32, a_shnum: U32,
@@ -1295,6 +1299,14 @@ def Built.one_sec(s: ElfSection) -> List<&2, ElfSection>: [s]
 def Built.keep(+st: Step, +acc: List<&2, ElfSection>) -> List<&2, ElfSection>:
   List.append(&2, ElfSection, Built.one_sec(Step.sec(st)), acc)
 # `Built.step` IS EVALUATED TWICE, once for the image and once for the section,
+# because there is no `let` in bend and a helper whose parameter is the computed
+# value is the only way to name it twice. The cost is a second image splice; the
+# fixtures are kilobytes.
+# THE FOLD CARRIES A `Step`, NOT AN `Img`, because the image and the section that
+# produced it have to travel TOGETHER -- the section is the one `Built.landed`
+# rewrote, and separating them is how two independent `Built.step` calls end up
+# naming different sections. The initial `Step.sec` is never read: `Built.keep`
+# only ever sees a step `Built.step` has already rewritten.
 def Built.go(xs: List<&2, ElfSection>, +st: Step, +force: U32,
              +acc: List<&2, ElfSection>) -> Built:
   match xs:
@@ -1676,6 +1688,11 @@ def Jit.instr(+i: Img, ploc: U32) -> U32: Blob.unpack4(Img.body(i), ploc)
 def Jit.pack(w: U32) -> String: Hex.pair(w)
 
 # THE TEN-WAY DISPATCH. `Bool.pick` on the TYPE, so the two far arms -- which
+# APPEND to the image and so cannot be expressed as a pure word -- are reached
+# through a def that takes the image and returns the pair. The nesting is two
+# levels because `Bool.pick` needs a scrutinee and the arm needs the new image,
+# and a helper whose parameter is the computed value is bend's only way to name
+# one twice.
 def Reloc.a_plt32_far_pair(+j: Img, ploc: U32, addend: U32) -> Rloc:
   Rloc.of(Sdiff.i2u32(Sdiff.of(Tramp.x86_ret(Img.len(j), addend, ploc), 0)), Tramp.x86(0))
 def Reloc.a_call26_far_pair(+j: Img, instr: U32, ploc: U32) -> Rloc:
@@ -1779,6 +1796,10 @@ def jit_loader(+e: ElfImage, +base: U32) -> Img:
 def row(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def urow(nm: String, v: U32) -> IO(Unit): row(nm, U32.show(v))
 # `brow` PRINTS 1/0, NOT `True`/`False`. Every other row in this file is numeric,
+# and a Bool row in one file's alphabet and a U32 row in another's makes the
+# whole-line diff useless for exactly the rows that matter most -- the fifteen
+# `magic_ok` calls, which is the FIRST assert in `elf_loader` and the one a
+# corrupt blob trips.
 def b01(v: Bool) -> U32: Bool.to_u32(v)
 # --- list of element as one comma-joined row.
 #

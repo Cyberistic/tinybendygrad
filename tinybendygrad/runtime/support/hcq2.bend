@@ -606,6 +606,11 @@ def Pk.n(x: Pk) -> U32:
     case Pk{k, n}: n
 
 # `words += [BINARY(bytes(offset - end)), arg] if offset != end else [arg]` --
+# one arm emits two words and the other emits one. `gap_zero` is the COMPARISON
+# and not `gap`, because a Bool from a leaf call may not be `match`ed and
+# `Bool.pick` would need `gap` twice. See THE `+` ALIASES BETWEEN TWO ARGUMENTS
+# for why the two shapes are not interchangeable here: the `Bool.pick` version
+# answered `W8 P0 W8 P0 W8 P0 P0` where CPython answers `W8 W8 W8 P0`.
 def pack.pad(n: U32) -> Pk: Pk{PK_PAD(), n}
 
 def pack.word(+k: U32) -> Pk: Pk{PK_WORD(), k}
@@ -857,6 +862,12 @@ def seenq.go(n: Nat, +bs: List<&2, E>, +dev: U32, +q: U32, hit: Bool) -> Bool:
 def seenq(+bs: List<&2, E>, dev: U32, +q: U32) -> Bool: seenq.go(List.length(&2, E, bs), bs, dev, q, False{})
 
 # ONE SELF-CALL PER ARM, which is what Bend allows: the arm is a `match` on a
+# Bool PARAMETER and each arm makes one recursive call. The obvious
+# `Bool.pick(..., qlist.go(...), qlist.go(...))` is a mutual two-call in one
+# THE HEAD OF A LIST, as an `E`. The folds below carry the head EXPLICITLY and
+# recurse on the tail, because computing the NEXT entry's flag from the CURRENT
+# head answers the flag about the wrong element -- a bug that made `three`'s three
+# queues read as two, and it is the kind of bug no boolean row sees.
 def ehd.at(m: Maybe<&2, E>) -> E:
   match m:
     case Some{g}: g
@@ -1308,6 +1319,9 @@ def start_ins(+dev: U32) -> List<&2, Ins>:
 #         epilogue queue is one with no calls of its own.
 #
 # So one CALL's block is
+#   dependency waits ++ [pre-TIMESTAMP] ++ CALL ++ [post-TIMESTAMP] ++ [SIGNAL]
+# and one QUEUE's stream is its `_start_ins` ++ the blocks of every call on it
+# ++ the epilogue tail IF it is the device's epilogue queue.
 
 def cat2(+a: List<&2, Ins>, +b: List<&2, Ins>) -> List<&2, Ins>: List.concat(&2, Ins, [a, b])
 

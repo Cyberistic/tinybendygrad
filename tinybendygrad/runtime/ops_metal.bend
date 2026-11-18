@@ -207,6 +207,15 @@
 #     from `D.Bspec` by naming it. `mt_nolru` is the row.
 #
 # NO PROOFS FAIL HERE, and the brief expected some. The Metal FFI calls are
+# `@extern` seams in `dtype.bend`'s sense -- a `def ... -> IO(R)` whose body is
+# two `import "./x.c"` lines -- and every one of them is expected to make its
+# importer print PROOFS FAIL (constraint line 1868: the foreign notice is a
+# "who names whom" closure, and `@unsafe` does not shrink it). This file does
+# NOT take that route, because the WebGPU template does not: a Metal call is
+# recorded in a `Tr` trace, so there is no foreign effect to declare and
+# `--check-only` says ALL PROOFS CHECK. The seam is `Tr.emit`, the ORDER is the
+# artefact, and `wgsl.bend`'s green lane is the precedent, not `dtype.bend`'s
+# fourteen.
 import Base
 import ../helpers.bend as H
 import ../device.bend as D
@@ -506,6 +515,11 @@ def Call.arg(c: Call) -> U32:
     case Call{k, sel, arg}: arg
 
 # The trace. `next` mints the handle ids, so 0 is reserved for `None` -- which
+# is what lets `Dev.resid` be a plain `U32` and `residency.value is not None`
+# be `resid != 0` without a `Maybe` field (a `Data` record may not hold one).
+# `refused` is THE RAISE: once a refusal has happened `Tr.emit` records
+# nothing, so a refusal shows up in the trace as a TRUNCATION and no step below
+# needs a guard of its own.
 type Tr is Data:
   Tr{calls: List<&2, Call>, next: U32, refused: Bool}
 
@@ -1134,6 +1148,10 @@ def fam_scan.go(n: Nat, +sup: List<&2, U32>, +f: String, es: List<&2, D.AEnt>, g
                                 ix, got))
 
 # `sup` is the list of SUPPORTED family ids rather than a bitmask, because the
+# ids are sparse (1001..1010, 2001, 2002, 3001..3003, 4001, 4002, 5001, 5002)
+# and a mask would spend seventeen bits on seventeen rows that are ten wide.
+# There are at most ten supported families, so the membership test is ten
+# comparisons and it happens once per init.
 def check_family(sup: List<&2, U32>, f: String) -> U32:
   fam_scan.go(List.length(&2, D.AEnt, families()), sup, f, families(), 0)
 
@@ -1571,6 +1589,9 @@ def mtl_size.at(+i: U32, +ds: List<&2, U32>) -> MtlSize:
 # thirteen calls of `run` are the whole of the submission.
 #
 # `run` is a nested def with FOUR conditional arms -- no residency set, the
+# apple9 pair, the stamps pair and `last` -- and the first row of the gate
+# pins the thirteen-STATEMENT shape the source has, arms tagged, because an
+# order claim with no fixture for each arm is decorative.
 
 def SLOT_PENDING() -> U32: 7
 def SLOT_CBUF() -> U32: 5
@@ -1851,6 +1872,9 @@ def q.many(q: Q, n: U32) -> Bool: Bool.and(q.syms(q), U32.is_gt(n, 1))
 #   :168 `return run(h, n - 1, 1, True)`                    -- the LAST one
 #
 # so with stamps and n > 1 there are TWO `run`s and the first is NOT `last`, and
+# the last call in the whole trace is the second `run`'s `commit`. `mt_submit_two`
+# and `mt_submit_one` are the two rows and a mutation that made the first run
+# `last` moves only the first.
 def Run.of.t(n: U32, np: U32, zero: U32, val: U32, first: U32, count: U32,
              last: Bool, t: Tr) -> Run:
   Run{first, count, last, n, np, zero, 0, val, t}
@@ -1957,6 +1981,10 @@ def KERNEL_BUF_IX() -> U32: 0
 def icb_spec() -> D.Bspec: D.Bspec{False{}, False{}, False{}, True{}, False{}}
 
 # `preallocate=True` is a BufferSpec flag device.bend does not model -- it is
+# about WHEN the device memory is reserved, not whether it is recycled -- so the
+# port carries the three flags `D.Bspec` has and the one it does not is a
+# comment. `D.recycled` reads only `nolru` and `ext_ptr`, so the decision is
+# unchanged and `mt_nolru` is unaffected.
 def dev.new_icb(ar: D.Bar, dev: U32, +q: Q, header: U32) -> Made:
   made.of(ar, dev, icb_size(header, Q.ncmds(q), Q.npipes(q)), S.uint8(), 0,
           icb_spec(), Tr.of())
@@ -2140,6 +2168,13 @@ def sync_count(+size: U32) -> U32:
             ceildiv(U32.sub(size, SYNC_START()), SYNC_STEP()))
 
 # `range(5, size, 4)` as a LIST, so the gate can diff the actual indices and not
+# only their count. `mt_sync_idx` is that row.
+# NO REVERSE AT THE END, and that is worth a comment because every other fold in
+# this file conses: `List.append(a, A, xs, ys)` is `xs ++ ys`, so an appending
+# fold is already in order and a `List.reverse` reverses it. `mt_sync_idx17` is
+# the row -- a fold that conses and reverses, and a fold that appends, disagree
+# ONLY on lists of two or more, and `mt_sync_idx5` is the one-element fixture
+# that is blind to it.
 def sync_range.go(nat: Nat, +at: U32, acc: List<&2, U32>) -> List<&2, U32>:
   match nat:
     case 0n: acc

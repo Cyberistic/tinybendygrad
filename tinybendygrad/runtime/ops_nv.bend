@@ -447,6 +447,14 @@ def CALL_MUNMAP() -> U32: 8
 def CALL_PROF() -> U32: 9
 
 # THE esc and uvm words are port-INTERNAL ordinals, not nv_570 values. They are
+# the `arg` a `Tr` records so a fixture can say "the UVM peer-access ENABLE, at
+# this point in the trace"; nv_570's real NV_ESC_* and UVM_* codes are 200, 201,
+# 41, 42, 43, 7 and 805306369, 75, 37, 25, 73, 33, 29, 34, 27 respectively. A
+# `uvm(cmd, ...)` call passes its code straight through to the ioctl, so the
+# NUMBER is load-bearing at the seam and INVISIBLE to the trace, which is the
+# one thing in this file a wrong ordinal can do that a wrong class id cannot:
+# it sends a well-formed word the driver does not accept. The seam owns the
+# translation and `nv_uvm_wire` is where it would be checked.
 def ESC_RM_ALLOC() -> U32: 2
 def ESC_RM_CONTROL() -> U32: 3
 def ESC_RM_FREE() -> U32: 5
@@ -991,6 +999,10 @@ def dev.init(sm: U32, iface: U32, peer: Bool, pma: Bool) -> Dev:
   dev.init.at(sm, iface, peer, pma, Tr.of())
 
 # the mock's init, right here, because BEND requires definition-before-use and
+# `dev.init` IS the subject. `MOCK_INIT_SM` IS the sm version the mock
+# REPORTS: `test/mockgpu/nv/nvgpu.py`'s GPU ANSWERS `NV0000_CTRL_CMD_GPU_GET_
+# ID_INFO_V2`, AND THE PORT'S `dev.init` TAKES the sm version as a parameter
+# BECAUSE `arch_of`/`sass_of` ARE FUNCTIONS OF IT.
 def dev.mock_init(sm: U32) -> Dev:
   dev.init(sm, IFACE_MOCK(), False{}, False{})
 
@@ -1593,6 +1605,10 @@ def pc.same(+a: PKey, +b: PKey) -> Bool:
   Bool.and(U32.is_eq(PKey.src3(a), PKey.src3(b)), U32.is_eq(PKey.dev0(a), PKey.dev0(b)))
 
 # THE MISS SENTINEL IS `len(keys)`, NOT 0. The first version answered 0 on a
+# miss and the hit test `found < len(keys)` read that as a HIT AT INDEX 0, so
+# `nv_pc_grow_3` answered 1 where CPython's dict holds three entries. `got` is
+# seeded with `len(ks)` and `at` is the index, so a match KEEPS its index (the
+# scan is first-wins) and a miss answers the length.
 def pc.find.go(+k: PKey, ks: List<&2, PKey>, +at: U32, got: U32) -> U32:
   match ks:
     case Nil{}: got

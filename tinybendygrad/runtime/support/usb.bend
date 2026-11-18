@@ -98,6 +98,15 @@ type Ent is Data:
 # THE libusb CONSTANT TABLES, GENERATED FROM `autogen.libusb` -- see
 #
 # `val` is the C bit pattern in a U32, so the six negative libusb error codes are
+# stored two's-complement and PRINTED signed by `show_i32`: `usb.py` compares
+# against `LIBUSB_ERROR_INTERRUPTED` and the gate has to diff CPython's `-10` and
+# not 4294967286.
+# `autogen/libusb.py`'s `enum_libusb_class_code`
+# `enum_libusb_class_code` binds LIBUSB_CLASS_IMAGE to 6 and then
+# LIBUSB_CLASS_PTP to 6, so the TABLE has one name for 6 and the walrus
+# leaves `LIBUSB_CLASS_IMAGE` a module global that is not a dict value
+# at all. The constant, the table length and the membership test are
+# three separate rows because they are three separate facts.
 def E_CLASSCODE() -> List<&2, Ent>:
   [   Ent{0, "LIBUSB_CLASS_PER_INTERFACE"},
        Ent{1, "LIBUSB_CLASS_AUDIO"},
@@ -294,6 +303,10 @@ def E_SSCAP() -> List<&2, Ent>:
   [   Ent{2, "LIBUSB_BM_LTM_SUPPORT"}]
 
 # the two folds, one table each. `enum_nm` is the dict and `enum_val` is its
+# inverse, so both directions come off ONE walk over the same data.
+# value -> name, LAST match wins: `enum_libusb_class_code` gives 6 TWO names and
+# the generated dict keeps the LAST, so a first-wins fold is wrong and the differ
+# says so on `usb_classcode_6_name`.
 def enum_nm.go(n: Nat, +v: U32, es: List<&2, Ent>, hit: String) -> String:
   match n:
     case 0n: hit
@@ -306,6 +319,10 @@ def enum_nm(+v: U32, +es: List<&2, Ent>) -> String:
   enum_nm.go(List.length(&2, Ent, es), v, es, "LIBUSB_ENUM_NONE")
 
 # name -> value, LAST match wins for the same reason. A NAME no entry has is
+# `NOT_FOUND` and never 0: 0 is LIBUSB_SUCCESS's and LIBUSB_REQUEST_TYPE_STANDARD's
+# and LIBUSB_TRANSFER_COMPLETED's value, so a silent 0 would be indistinguishable
+# from a real constant. 4294967295 is LIBUSB_ERROR_IO's bit pattern, and
+# `usb_enumval_absent_not_found` is the row that says which one it is.
 def enum_val.go(n: Nat, +nm: String, es: List<&2, Ent>, hit: U32) -> U32:
   match n:
     case 0n: hit
@@ -1471,6 +1488,9 @@ def t_packets() -> IO(Unit):
 # THE TRACE. Every libusb / libc / ctypes binding in `usb.py` is ONE
 #
 # `a`, `b`, `c` are the call's arguments that are ARITHMETIC -- an endpoint, a
+# wValue, a byte count, a request type. A call whose arguments are all POINTERS
+# (`libusb_open(dev, handle)`, `libusb_alloc_transfer(0)`) records zeros, and that
+# is not a gap in the port: the pointer is the SEAM's.
 
 type Call is Data:
   Call{k: U32, a: U32, b: U32, c: U32}
@@ -1930,6 +1950,10 @@ def t_trace() -> IO(Unit):
      u1("usb_inventory_len", U32.from_nat(List.length(&2, String, SYMS()))),
      s1("usb_inventory_past_end", sym_at(24n, SYMS())),
      # THE SEAM'S INVENTORY IN libusb's OWN NAMES, which is the other direction of
+     # the same table. `memcpy` has NO row here and that is the fact: it is the one
+     # entry of `SYMS()` that is not an `autogen.libusb` export, so a port that
+     # named a `libusb_` symbol which does not exist would print
+     # `NOT-A-LIBUSB-SYMBOL` against this row.
      s1("usb_sym_libusb_init", call_sym(K_INIT())),
      s1("usb_sym_libusb_set_option", call_sym(K_SET_OPTION())),
      s1("usb_sym_libusb_get_device_list", call_sym(K_GET_DEVLIST())),
@@ -1979,6 +2003,12 @@ def t_select() -> IO(Unit):
 # shows up as a different string rather than as a missing row.
 #
 # THE ORDINALS. `Tr.raise` records the failing call and THEN sets `refused`, so a
+# refusal at `bad_at = k` leaves a k-call trace. The no-detach open emits 1 OPEN,
+# 2 get_device, 3 get_desc, 4 str_ascii, 5 set_config, 6 claim, 7 set_alt; the
+# detach branch adds 5 KDRV_ACTIVE, 6 DETACH, 7 RESET and shifts the rest by three.
+# A RAW ordinal -- 2 GET_DEVICE in the open, 6 FREE_DEVLIST in the enumeration --
+# cannot refuse at all, so its truncation row is the FULL trace and that is the row
+# that would look like a gate and is not one.
 def t_refuse() -> IO(Unit):
   IO.print(lines_of(
     [s1("usb_open_refuse_1_open", Tr.sym(usb_open(True{}, False{}, Tr.fail_at(Tr.of(), 1)))),

@@ -621,6 +621,10 @@ def alu2f(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem) -> Elem:
 # CPython-ALU evaluator with its `Maybe` boxing and its twenty-arm match.
 #
 # => the fast path is not a second semantics. It calls the same `F32.mul`,
+# `F32.add`, `F32.sub` and `F32.max` that `exec_alu_f32` calls, and the SAME `got`
+# and `cf_of`, so a value cannot differ; what it skips is the dispatch. => AND A
+# DP `exec_alu_f32` ON ONE ELEMENT ANSWERS `None` (it refuses a single lane), so
+# the fast path is exactly the non-DP case.
 def alu2.by(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, f: Bool) -> Elem:
   match f:
     case True{}: alu2f(op, dt, a, b)
@@ -1220,6 +1224,10 @@ def Prog.hdr(l: String, +b: Build) -> Build: Prog.hdr.of(words(l), b)
 def Uop.refused(+u: Uop) -> Bool: U32.is_ge(Uop.kind(u), 14)
 
 # `slot` is the slot THIS uop owns, and the Build's next-free slot is
+# `slot + Uop.run(u)` -- a uop that owns a RUN of cells (a vector LOAD, a STACK, or
+# a RANGE with its visited flag) has to advance the counter by its whole run.
+# Storing `slot` instead is right only while every run is 1, and it silently makes
+# the next uop's first cell the current uop's second.
 def Prog.one.put(+b: Build, +slot: U32, +u: Uop, +ok: Bool) -> Build:
   Build{u <> Build.us(b), Build.sp(b), Build.ss(b), Build.bp(b), Build.nu(b), Build.nb(b), Build.nbp(b), Build.sbn(b), U32.add(Build.pn(b), 1),
         U32.add(slot, Uop.run(u)), Bool.and(Build.ok(b), ok)}
@@ -1569,6 +1577,13 @@ def Prog.parse(s: String) -> Maybe<&2, Load>:
   Prog.load(Prog.parse.go(String.lines(s), 0, Build.blank()))
 
 # A BUFFER LINE, `<nbytes> <hex-bytes>`. Its bytes are consed onto `bp` in
+# packet order and the whole run is reversed once at the end -- `List.set` per
+# byte would be quadratic on a 2 KiB buffer.
+# the split that makes a step cheap. `Prog` is rebuilt once per instruction and carried 21 fields,
+# TWELVE of which never change during a work item: the program, the pristine arena, the buffers,
+# `vals`, the uop count and the grid dimensions. Those move into `St`; the work-item counters into
+# `Gd`. A per-step rebuild then constructs 11 fields instead of 21, and a Bend record is a chain of
+# two-child nodes, so that is ~10 malloc-and-refcount pairs per step off the hot path.
 
 type St is Data:
   St{us: List<&2, Uop>, fs: List<&2, Buf>, vals: List<&2, U32>,
@@ -2433,6 +2448,10 @@ def Prog.store.go(ms: List<&2, List<&2, U32>>, done: List<&2, List<&2, U32>>,
   Bool.pick(List<&2, List<&2, U32>>, open, done, ms)
 
 # A LOAD PROJECTED `Uop` ABOUT TWENTY TIMES. `Prog.ld.sb.f` took `dt` twice, `slot`, `nsrc` and
+# four `Prog.src.f`; `Prog.ld.happens.f` another `nsrc` and a source; `Prog.oob.f` a source and `run`;
+# and `Prog.ldator` `run` again -- every one a full `match` over the nine-field record, on a packet
+# with 40 LOADs of 510 uops. The sampler had `Prog_ld_sb_f` third among this file's own symbols.
+# ONE destructure now feeds the whole LOAD, and the sources come off the bound `sslot`.
 def Prog.store.elem(a: Array<Elem>, +p: Prog, +u: Uop, +j: U32) -> Array<Elem> & Elem:
   Prog.vat(a, U32.add(Prog.slot(p, u, 1n), j))
 
@@ -2457,6 +2476,10 @@ def Prog.store.elem(a: Array<Elem>, +p: Prog, +u: Uop, +j: U32) -> Array<Elem> &
 # the STORE's per-lane invariants, looked up once.
 #
 # The old lane loop called `Prog.buf(p, u)` eight times per lane -- twice inside `store.bits`,
+# twice in `store.addr`, again in `store.open`, and `store.i` re-reads it -- and every one of those
+# is `Prog.src`: an arena read with its `Maybe`. A four-lane store made ~32 arena reads to write 4
+# elements, and `Prog_store_lane_at` is in the executor's own profile. Everything except the VALUE
+# is the same for every lane, so it is bound once in `Sb`.
 
 type Sb is Data:
   Sb{w: U32, dt: S.Dt, e: U32, base: U32, off: U32, step: U32, slot: U32, open: Bool}
@@ -2542,6 +2565,10 @@ def Prog.store.open(+s: Sb, +j: U32) -> Bool:
   Bool.and(Sb.open(s), U32.is_lt(Sb.i(s, j), Sb.e(s)))
 
 # `_store(m, o + j*_step, v, src_dtypes[1])` -- `to_storage_scalar` is the
+# identity for the three 4-byte lanes and `bool(x)` for bool, AND THE WRITE
+# itself is `m[i] = v` into the BUFFER's memoryview, which is the conversion
+# `Prog.store.bits` MAKES.
+# ONE arena read per lane, for the value and nothing else
 def Prog.store.lane.s(+ms: List<&2, List<&2, U32>>, +s: Sb, +j: U32,
   av: Array<Elem> & Elem) -> Array<Elem> & List<&2, List<&2, U32>>:
   match av:
@@ -2830,6 +2857,11 @@ def grid(+n: Nat, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
         case (+pr, a): grid(k, Prog.tick.av(run(FUEL(), (pr, a))))
 
 # THE COMMAND LINE. `IO.args()` is affine, so it is read ONCE, in order, and the
+# whole answer is one record: argv[0] is the program (skipped), argv[1] the
+# packet, argv[2..4] the grid, and everything after is `vals`. `pv` starts at 3
+# because the first three numbers are the grid.
+# THE ENTRY POINT: `bend-executor PACKET gx gy gz vals...`, which reads PACKET,
+# runs every work item, and writes PACKET.out beside it.
 
 def SLASH() -> Char: Char.from_u32(47)
 
@@ -2882,6 +2914,11 @@ def Prog.line.put(acc: List<&2, Char>, +b: U32) -> List<&2, Char>:
   Prog.line.put2(Prog.line.dig(U32.div(b, 16)) <> acc, U32.mod(b, 16))
 
 # A CONS WALK over the store, not `Mem.byte(ms, at)` per byte: `Mem.byte` is
+# `List.get(ms, at)`, O(at), and `at` climbs from `base` to `base + w*e`, so the
+# output was O(bytes^2) too. `Prog.line` drops `base` once (O(base)) and this walk
+# takes `n` consecutive cons cells. A short store pads with the 0 `Mem.byte`
+# defaulted to, which keeps the old behaviour when a buffer named more bytes than
+# the arena holds.
 def Prog.line.go(+ms: List<&2, U32>, +n: Nat, acc: List<&2, Char>) -> List<&2, Char>:
   match ms n:
     case _ 0n: acc

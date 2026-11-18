@@ -295,6 +295,9 @@ def qreg_mesa_at(ix: U32) -> String: mesa_of(qreg_name_at(ix))
 # `type(v) is bool` -- NOT `isinstance`, and NOT "the value is 0 or 1". A field
 #
 # `nm` is the full mesa attribute the port would `getattr`. It is a field of
+# the row so the gate can diff it against CPython, because a wrong `nm` with a
+# right `v` still produces a right-looking u32 in the port and a wrong one on
+# the device.
 
 type Qf is Data:
   Qf{r: String, f: String, nm: String, v: U32, isb: Bool}
@@ -434,10 +437,20 @@ def qreg.flag(r: String, f: String) -> U32: qfield_v(r, f)
 def CTZ_BITS() -> Nat: 32n
 
 # `(v & -v).bit_length() - 1` is the INDEX of the lowest set bit, so the walk has
+# to STOP at the first one and not merely stop counting -- and those are two
+# different bugs. Two versions of this failed here, both caught by the gate:
+# the arms the other way round (which counts trailing ONES) and then an arm that
+# merely declines to increment (which answers 31 for `ctz(1)`, because the bits
+# ABOVE the lowest set bit go on incrementing). So `done` is a FIELD, not an
+# early exit: Bend has no `break` and a `Bool.pick` cannot gate a self-call.
 type Cz is Data:
   Cz{got: U32, done: Bool}
 
 # A SET bit STOPS the walk without counting -- the bit itself is not a zero --
+# and a CLEAR bit counts one and moves on. Three versions of this got it wrong
+# (see the note above); this is the one the gate accepts, and `qc_ctz_0000003f`
+# is the row that pins it: 0x3f has SIX set bits, so a version that keeps
+# counting past the first answers something other than 0.
 def ctz.step.at(bit: Bool, +got: U32, done: Bool) -> Cz:
   Bool.pick(Cz, done, Cz{got, True{}},
     Bool.pick(Cz, bit, Cz{got, True{}}, Cz{U32.add(got, 1), False{}}))
@@ -473,6 +486,12 @@ def parity(+v: U32) -> U32: parity.bit(parity.folded(v))
 #     pkt7_hdr(opcode, cnt) = CP_TYPE7_PKT | cnt & 0x3FFF | parity(cnt) << 15
 #
 # THE precedence is the whole trap: `|` binds LOOSER than both `&` and `<<` in
+# Python, so this is five independent contributions OR-ed together and NOT a
+# left-to-right chain in which `cnt & 0x3FFF | parity(cnt)` is parenthesised
+# wrongly. It also means `CP_TYPE7_PKT` (0x70000000) and `CP_TYPE4_PKT`
+# (0x40000000) are already in the HIGH bit, and `parity << 23` / `<< 27` sit
+# above them -- so these are genuinely u32 and not i32, which is why the port
+# can hold them at all. `qc_pkt7_*` and `qc_pkt4_*` are diffed against CPython.
 
 def PKT7_CNT_MASK() -> U32: 16383
 def PKT7_OP_MASK() -> U32: 127
@@ -497,6 +516,9 @@ def pkt4_hdr(+reg: U32, +cnt: U32) -> U32:
 #                                 else 1 for x in vals)), *vals)
 #
 # So a UOp argument counts `itemsize // 4` WORDS and a bare int counts ONE,
+# and the header's count is the sum. `qwords` is that sum over the two kinds,
+# and it is the second half of what makes a cmd header correct -- `qc_qwords_*`
+# is the row that says a `dtypes.u32` buffer is ONE word and not zero.
 
 def ITEMSIZE_TO_WORDS() -> U32: 4
 
@@ -708,6 +730,10 @@ def Wb.bins(w: Wb) -> List<&2, Bi>:
 def Wb.of() -> Wb: Wb{0, 0, True{}, Nil{}}
 
 # THE THREE EXITS, and `desc.alive` is where two of them live. `length == 0` is
+# the TERMINATOR and `off + 32 > len(lib)` is the BOUND; a walk that honours
+# only the bound reads the zeroed tail of the blob as a descriptor with
+# `length == 0`, `offset_words == 0`, `typ == 0` -- i.e. a `BUFTYPE_BUF` at
+# offset 0 -- and inflates `buf_offs` by one. `qc_bin_terminator` is the row.
 def desc.alive(+off: U32, +bs: List<&2, U32>, +st: Wb) -> Bool:
   Bool.and(U32.is_le(U32.add(off, DESC_BYTES()), U32.from_nat(List.length(&2, U32, bs))),
            Bool.not(U32.is_eq(read_lib(bs, off), 0)))
@@ -1098,6 +1124,10 @@ def ce.push(+e: Ce, +es: List<&2, Ce>) -> List<&2, Ce>:
   List.append(&2, Ce, es, [e])
 
 # `_qcom_program_cache[key] = value` IS a MAP ASSIGNMENT, so storing a key that
+# is already there REPLACES it and the LENGTH DOES NOT GROW. A list append is not
+# a map assignment and the difference is measurable: pushing the six gate entries
+# unconditionally gives six slots for four programs. `ce.put` is the assignment;
+# `ce.push` stays for the case that genuinely grows. `qc_ck_len` is the row.
 def ce.put.at(fresh: Bool, e: Ce, +es: List<&2, Ce>) -> List<&2, Ce>:
   Bool.pick(List<&2, Ce>, fresh, ce.push(e, es), es)
 

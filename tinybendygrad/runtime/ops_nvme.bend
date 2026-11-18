@@ -76,6 +76,11 @@ def NVME_CC_IOSQES() -> U32: 393216
 def NVME_CC_IOCQES() -> U32: 4194304
 
 # the admin commands and the nvm command. `nvme_admin_identify = 6`,
+# `nvme_admin_set_features = 9`, `nvme_admin_create_cq = 5`,
+# `nvme_admin_create_sq = 1`, `nvme_cmd_read = 2`. THE OPCODE IS THE LOW
+# BYTE of the command WORD and the sqe's first WORD is
+# `opcode | slot << 16` -- so the opcode and the slot share one WORD and a
+# port that puts the slot somewhere ELSE writes a different command.
 def nvme_admin_identify() -> U32: 6
 def nvme_admin_set_features() -> U32: 9
 def nvme_admin_create_cq() -> U32: 5
@@ -243,6 +248,10 @@ def SQE_WORDS() -> U32: 16
 #   1. A PRP LIST HOLDS 256 ENTRIES, NOT 512. `pages[256 * j:256 * j +
 #
 # and the allocation sizes: the list pages are
+# `ceildiv(len(pages) + 1, 256) * 0x1000` AND THE TABLE IS
+# `round_up(16 * len(pages), 0x1000)`. THE `+ 1` IN THE LIST COUNT IS
+# why a single page still gets a list page.
+# the prp list's capacity: 256 entries per list page.
 def PRP_LIST_ENTRIES() -> U32: 256
 
 # the list pages' count. the `+ 1` is LOAD-bearing: a single page still gets
@@ -356,6 +365,17 @@ def dev_size(+nsb: U32, +nsb_hi: U32, +lba: U32) -> U32:
 # THREE RULES.
 #
 #   1. the qid is `len(self.queues) + 1`. the admin queue is qid 0 and
+#      the first IO queue is qid 1, so the doorbells of the first IO
+#      QUEUE ARE AT `2 * 1` AND `2 * 1 + 1` -- NOT AT 0 AND 1.
+#   2. BOTH CREATES PASS `(q.entries - 1) << 16 | q.qid`. THE QUEUE SIZE
+#      field is the entry count minus one and it is shifted left by
+#      sixteen, and the qid is in the low sixteen. the `- 1` is the
+#      zero-based SIZE and a port that passes the entry count creates a
+#      queue one entry shorter than the device offers.
+#   3. THE CREATE-SQ'S CDW11 IS `q.qid << 16 | 1` AND THE CREATE-CQ'S
+#      CDW11 is `1`. the square bracket is the physical queue number and
+#      the `1` is the "enable" flag. so the two creates differ in their
+#      CDW11 and the difference is the queue's own identity.
 
 def new_qid(+nqueues: U32) -> U32:
   U32.add(nqueues, 1)
@@ -523,6 +543,10 @@ def last_wave_size(+full: U32, +rem: U32, +entries: U32) -> U32:
 #       UOp.unique_num), dtype=dtypes.uint64)))).end(r)] if n else []
 #
 # the `if n else []` is the whole function. a LOOP of zero iterations is
+# no instructions at all -- not an empty LOOP, not a LOOP that runs once.
+# AND THE COMMENT SAYS WHY: "loops in the cmdbuf, so the host program doesn't
+# grow with the read size". a port that emits a zero-iteration LOOP emits a
+# LOOP object and the host program grows with the read SIZE anyway.
 
 def loop_n(+n: U32) -> U32:
   Bool.pick(U32, U32.is_zero(n), 0, 1)
@@ -563,6 +587,10 @@ def fits_device(+soff: U32, +nbytes: U32, size: U32) -> Bool:
 #   1. `lru = False` -- AN NVMe BUFFER IS NOT CACHED. EVERY `_alloc`
 #
 # AND THE PAGE LIST. `[p + off for p, size in paddrs for off in range(0, size,
+# 0x1000)]` -- the page list is expanded from the physical addresses and
+# their sizes: each physical page becomes as many page numbers as its SIZE
+# divides by 4096. a port that passes the physical addresses straight
+# through builds a prp table with the wrong number of entries.
 
 def ALLOCATOR_LRU() -> Bool: False{}
 
@@ -618,6 +646,10 @@ def dev.iface_count() -> U32: 1
 def dev.ifaces() -> List<&2, U32>: [IFACE_NVME()]
 
 # the in-use assertion. `mounted` is the set of mounted device names and
+# `holders` is whether the block device has holders. both must be empty
+# and the port spells it as a conjunction because the python is a conjunction
+# and a port that checked one of them would take a drive out from under the
+# FILESYSTEM.
 def in_use(mounted: Bool, has_holders: Bool) -> Bool:
   Bool.or(mounted, has_holders)
 
@@ -626,6 +658,10 @@ def in_use(mounted: Bool, has_holders: Bool) -> Bool:
 #   ifaces = [NVMEIface]
 #
 # THERE IS NO RENDERER -- THE THIRD ARGUMENT OF `super().__init__` IS `[]`,
+# an empty list. an NVMe device executes no kernels; it is a storage
+# device the gpu reads from. and `synchronize` is `pass` -- an NVMe device
+# has nothing to synchronize, because the completion wait is inside the
+# COMMAND STREAM.
 
 def dev.renderers() -> U32: 0
 def dev.synchronize_is_noop() -> Bool: True{}
@@ -635,6 +671,11 @@ def dev.synchronize_is_noop() -> Bool: True{}
 #   lin, queue = s.without_after.body, s.without_after.src[1]
 #
 # the rule is the drive filter: a call is an NVMe read only IF it is a
+# call whose first source is a STORE and whose device's name starts with
+# "nvme". and the function returns `None` when there is no such call --
+# it is a transform that may not apply, not a transform that always applies.
+# the port carries both halves, and the second half is the one that matters:
+# a transform that always applies would rewrite every non-NVMe call.
 
 def is_nvme_device(name: String) -> Bool:
   String.starts_with(name, "NVME")

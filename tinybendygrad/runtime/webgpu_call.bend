@@ -268,6 +268,10 @@ def Cs.bg(c: Cs) -> List<&2, Bind>:
 def Cs.hand(n: U32) -> U32: U32.sub(n, 1)
 
 # THE BIND GROUP, as the two LISTS the gate reads: the sizes and the handles, in
+# binding order. `Pass.sizes` answers the first on the trace side and these answer
+# it on the seam side, which is what makes `wgc_bg_sizes` a comparison rather than
+# a restatement. The handle list is the thing NO reader had: `Pass` records the
+# size of each entry and not which buffer it is.
 def Cs.bg_sizes.go(n: Nat, bs: List<&2, Bind>, acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: acc
@@ -936,6 +940,10 @@ def fx_real(+want: Bool) -> W.Pass:
 # a repeated slot is two live objects in one map entry.
 #
 # `Cs.mints` and `Cs.slot` have one arm per constructor that HAS a `slot`, and a
+# final `case _` because `Bool.pick` evaluates both arms and so cannot skip the
+# append. The two are the SAME arm list written twice, and that is deliberate: one
+# answers "does this op mint?" and the other "which slot?", and a single def
+# returning a `Maybe` would allocate on every op of the walk.
 def Cs.mints(op: Op) -> Bool:
   match op:
     case ShaderModule{code, slot}: True{}
@@ -1015,6 +1023,12 @@ def Cs.uniform_bytes(+c: Cs) -> List<&2, U32>:
   Cs.uniform_bytes.go(List.length(&2, Step, Cs.ops(c)), Cs.ops(c), Nil{})
 
 # A Bend `List<&2, U32>` as the gate's own list type, for `uniform_bytes`'s fold to
+# cons into. `Cs.calls` already builds one of these for `Call`, and this is the
+# `U32` counterpart -- it exists so `uniform_bytes` does not hand `List.append` a
+# list of a different element type, which does not typecheck.
+# 0, 1, 2, ... in mint order. THE QUESTION NO OTHER ROW ASKS: is the counter
+# actually counting? A frozen counter hands out the same handle forever and every
+# other row in the file stays green, because nothing else reads `next`.
 def Cs.dupe_of.go(n: Nat, xs: List<&2, U32>, +seen: List<&2, U32>, +got: U32) -> U32:
   match n:
     case 0n: got

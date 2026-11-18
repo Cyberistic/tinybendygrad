@@ -393,6 +393,11 @@ def dt_cname_dt(d: S.Dt) -> String:
 # or a VALUE out of the same 8-byte slot.
 #
 # IT carries the dtype, NOT its name. It carried `cn: String` -- a dtype NAME -- and
+# every consumer fed it straight to `dt_cname` / `dt_itemsize`, both of which were
+# ladders keyed on that name. So a dtype rename made eleven `dt_fmt` rows print the
+# EMPTY STRING where CPython prints `b`/`e`/`f`/`d`, and it was invisible: the gate
+# carried the expectation in a `# py=` COMMENT, so nothing compared. A `S.Dt` cannot
+# be misspelled, and a ladder keyed on it cannot be renamed out from under itself.
 type Param is Data:
   Param{is_alu: Bool, dt: S.Dt, numel: U32}
 
@@ -905,6 +910,10 @@ def link_line(+n: String) -> String:
   String.concat([".", n, " : ALIGN(4096) { *(.", n, ") }"])
 
 # `acc + "\n" + line` keeps the ORDER, at the price of a LEADING separator, and
+# `String.drop(.., 1n)` takes it. The other arrangement -- `"\n" + line + acc` --
+# is also a prepend but puts the LAST section first; `dsp_link_script` caught both
+# arrangements on its first two runs, which is why this row is a whole-string diff
+# against CPython rather than a list of lines.
 def link_lines(+ns: List<&2, String>, +acc: String) -> String:
   match ns:
     case Nil{}: acc
@@ -1004,6 +1013,10 @@ def ARM_STAT() -> U32: 6
 def ARM_MMAP() -> U32: 7
 
 # The chain's ORDER is not the numeric order -- it is greeting, open, close, seek,
+# read, stat, mmap -- so `rpc.arm` is a table in the chain's order and `rpc.arm_ids`
+# is the same order as a list. The scrutinees are the LITERAL values because a
+# `case` arm takes a pattern and a def call is not one; the `SC_*` constants below
+# are those literals and `dsp_rpc_scs` pins them.
 def rpc.arm_open(sc: U32) -> U32:
   match sc:
     case 131584: ARM_HELLO()

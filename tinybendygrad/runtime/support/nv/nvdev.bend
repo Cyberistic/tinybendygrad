@@ -3,70 +3,29 @@
 #   port of tinygrad/runtime/support/nv/nvdev.py (163 lines)
 #
 
-# WHAT THIS FILE IS, AND WHAT IT IS NOT. `nvdev.py` has NO ctypes and NO
-# ioctl -- MEASURED, `rg -c 'ioctl|nvidiactl|NVOS21|NVOS54'
-# tinygrad/runtime/support/nv/nvdev.py` answers 0. What it is: the MMIO REGISTER
-# file (tinygrad/runtime/support/nv/nvdev.py:12-19 symbol=NVReg) `NVReg`, the PAGE TABLE entry codec
-# (`NVPageTableEntry`, tinygrad/runtime/support/nv/nvdev.py:33-67), the device's early
-# MMIO/MMU bring-up (`NVDev._early_ip_init` :97-121 and `_early_mmu_init` :123-147),
-# a boot-memory allocator (`_alloc_boot_mem` and the generated-register loader
-# (`include`, tinygrad/runtime/support/nv/nvdev.py:158 symbol=include)).
+# WHAT THIS FILE IS. The MMIO REGISTER file (`NVReg`,
+# tinygrad/runtime/support/nv/nvdev.py:12-19), the PAGE TABLE entry codec
+# (`NVPageTableEntry`, :33-67), the device's early MMIO/MMU bring-up
+# (`NVDev._early_ip_init` :97-121, `_early_mmu_init` :123-147) and a boot-memory
+# allocator (`_alloc_boot_mem`, the generated-register loader `include` :158).
 #
+# WHAT IT IS NOT. `nvdev.py` has NO ctypes and NO ioctl -- MEASURED, `rg -c
+# 'ioctl|nvidiactl|NVOS21|NVOS54' tinygrad/runtime/support/nv/nvdev.py` answers 0.
 # The ioctl layer is `ops_nv.py`'s `NVKIface` (:337-399), a different `.py` in a
 # different directory, so this port closes NEITHER of `ops_nv.bend`'s two live
-# `TODO(p3)` walls -- they are not about this file, and nothing in nvdev.py
-# appears in either.
+# `TODO(p3)` walls.
 #
-# WHAT IT DOES CLOSE is `nv/ip.bend`'s nvdev walls, which are real and which nobody
-# had counted. `ip.bend:111-118` lists four of its own TODOs naming
-# `self.nvdev.*`, and `ip.bend` cites `nvdev` twelve times:
-#     ip.bend:115  self.nvdev.include("dev_gsp", "ga102")        -> nv.include (:161-163)
-#     ip.bend:116  self.nvdev.mmio[0x300000//4:...]               -> nv.wreg/rreg (:92-95)
-#     ip.bend:117  self.nvdev._alloc_boot_mem(...)                -> nv.alloc_boot_mem (:149-159)
-#     ip.bend:118  self.nvdev.NV_PGSP_FALCON_MAILBOX0.write(...)  -> nv.NVReg.write (:23)
-# plus `nvdev.vram_size` (runtime/support/nv/ip.bend:1800 symbol=rp.hdr_len), `nvdev.chip_name` (runtime/support/nv/ip.bend:2435 symbol=rpc.minted),
-# `nvdev.flcn.frts_offset` (runtime/support/nv/ip.bend:2683 symbol=ref.mbx), `nvdev._alloc_boot_mem`
-# (the port's `runtime/support/nv/ip.bend` TODO WALL BLOCK, which has no `def _alloc_boot_mem` and no address table) and `NV_PFB_PRI_MMU_WPR2_ADDR_HI` (runtime/support/nv/ip.bend:2662 symbol=t_gsp).
-# The ARITHMETIC of the first four is ported and gated here. The device memory they
-# touch is the seam, and it was the seam before this file too.
-# the ffi seam, measured, and the answer is "NONE, and NONE is needed".
+# THE FFI SEAM, measured, and the answer is "NONE, and NONE is needed".
+# `find tinybendygrad -name '*.c' -o -name '*.js'` returns FOUR files:
+# `runtime/dtype.{c,js}` and `runtime/sz.{c,js}`, and every one is a NUMERIC
+# CONVERSION -- not a syscall, an `mmap`, an `open`, or an `ioctl`.
+# `runtime/support/system.bend:475` HAS an `ioctl`, but `rg 'def sys.ioctl'
+# tinybendygrad/runtime/support/system.bend` returns ZERO hits: it is a NAME IN A
+# TABLE, i.e. a trace tag, not a binding.
 #
-# The brief warned that "`we have an FFI seam` is not a safe assumption" and
-# pointed at `ops_metal.py:86` binding `metal.dll.sel_registerName`. MEASURED:
-#
-#   1. `find tinybendygrad -name '*.c' -o -name '*.js'` returns FOUR files:
-#      `runtime/dtype.{c,js}` and `runtime/sz.{c,js}`. Those are the only FFI
-#      seams in the tree. `dtype.bend`'s fourteen laws are `runtime/dtype.c`
-#      (bf16, fp16, fp8 x2, i64 x7, float_to_* x4) and its `.js` twin; they
-#      RESOLVE -- real `io_eff(CID(...), run, need)` registrations and real C.
-#      But every one is a NUMERIC CONVERSION. Not one is a syscall, an `mmap`,
-#      an `open`, or an `ioctl`.
-#   2. `system.bend` HAS an `ioctl`: `runtime/support/system.bend:475 symbol=CALL_IOCTL def CALL_IOCTL() -> U32: 21`,
-#      `system.bend:489` symbol=sys.call_names lists "ioctl" among `sys.call_names()`,
-#      and `system.bend:498` symbol=sys.call_of dispatches it. But
-#      `rg 'def sys.ioctl' tinybendygrad/runtime/support/system.bend` returns ZERO
-#      hits and there is no `system.c` under `tinybendygrad/`. It is a NAME IN A
-#      TABLE, i.e. a trace tag, not a binding. `system.bend:123` says so itself:
-#   3. The `ops_metal` analogy does not hold: `ops_metal.py:86`'s
-#      `MSGSEND, SELNAME = [metal.dll.bind(...)(f) for f in
-#      (metal.dll.objc_msgSend, metal.dll.sel_registerName)]` is ctypes inside
-#      PYTHON. `ops_metal.bend` carries no `.c` import and no `-> IO(R)` foreign
-#      effect, so `sel_registerName` there is a trace tag exactly like ip.bend's
-#      `C_BARRIER`.
-#
-# SO nvdev.py's seams are `pci_dev.map_bar` (an `mmap`), `read_config` /
-#
-# the trace is the seam, reused not copied. `Cx`, `Tr`, `Tr.emit`, `Tr.fail_at`
-#
-# THE SPLIT, stated once and obeyed: a def here EITHER builds the argument of ONE
-#
-# NO `struct.calcsize` ROWS, STATED RATHER THAN HIDDEN.
-#
-# The brief asked for "every constant and struct offset ported, with row counts
-#
-# THE FIELD-ORDER GATE, and this is the point of the whole file. A register's
-# field table is an ORDERED `dict[str, (start, end)]`, and `decode` (:31) walks it
-# in insertion order. `NV_PMC_BOOT_0`'s order is
+# THE FIELD-ORDER GATE. A register's field table is an ORDERED
+# `dict[str, (start, end)]`, and `decode` (:31) walks it in insertion order.
+# `NV_PMC_BOOT_0`'s order is
 #     minor_revision, major_revision, architecture_1, implementation, architecture_0
 # which is NOT sorted by bit position: `architecture_1` sits at bit 8 between
 # `major_revision` (4:7) and `implementation` (20:23). A port that SORTS the
@@ -74,12 +33,13 @@
 # see it. So `nv_reg_*_names` and `nv_reg_*_ranges` are rows, and `nv_dec_*` is
 # the ordered `name=value,...` string.
 #
-# and the alias that makes it worth gating. On `NV_PMC_BOOT_42`,
-# `implementation` is bits 20:23, `architecture` is 24:29, and `chip_id` is
-# 20:29 -- it SPANS BOTH. So `mask("implementation","architecture")` and
-# `mask("chip_id")` are the SAME NUMBER (1072693248, measured) and differ only in
-# the names. Two different `update()` calls with different names write the same
-# bits. A gate on masks alone cannot tell them apart; a gate on names can.
+# On `NV_PMC_BOOT_42`, `implementation` is bits 20:23, `architecture` is 24:29,
+# and `chip_id` is 20:29 -- it SPANS BOTH. So `mask("implementation",
+# "architecture")` and `mask("chip_id")` are the SAME NUMBER (1072693248,
+# measured) and differ only in the names. Two different `update()` calls with
+# different names write the same bits. A gate on masks alone cannot tell them
+# apart; a gate on names can.
+#
 # THE WALLS. Four, each one named with the thing that does not fit and the row
 # that measures it. A wall that is not written down is a bug waiting for a reader.
 #
@@ -102,22 +62,22 @@
 #      bend2-constraints.md.
 #
 # W2. THE 128-BIT PAGE-TABLE ENTRY. `NV_MMU_VER2_DUAL_PDE.address_small_sys` is
-#     and `entry()` (tinygrad/runtime/support/nv/nvdev.py:51 symbol=entry) recombines two
-#     64-bit halves as `(entries[2e+1] << 64) | entries[2e]`. Bend has no 64-bit
-#     integer, so `nv.pte_idx` ports the INDEX (`2e+1` for a dual level, `e`
-#     otherwise) and NOT the value. MEASURED: 10 of the 86 fields across the eleven
-#     registers are WIDER THAN 32 BITS, and every one of them is an `address*`
-#     field -- `nv_reg_*_wide` and `nv_reg_*_wide_names` name all ten. THE NAMES
-#     MATTER MORE THAN THE COUNT: `address_sys` is 46 bits, `address_big_sys` is
-#     50, `address_small` is 40, and a port that transposed two of them would have
-#     the right count.
+#     64 bits and `entry()` (tinygrad/runtime/support/nv/nvdev.py:51 symbol=entry)
+#     recombines two 64-bit halves as `(entries[2e+1] << 64) | entries[2e]`. Bend
+#     has no 64-bit integer, so `nv.pte_idx` ports the INDEX (`2e+1` for a dual
+#     level, `e` otherwise) and NOT the value. MEASURED: 10 of the 86 fields
+#     across the eleven registers are WIDER THAN 32 BITS, and every one of them is
+#     an `address*` field -- `nv_reg_*_wide` and `nv_reg_*_wide_names` name all
+#     ten. THE NAMES MATTER MORE THAN THE COUNT: `address_sys` is 46 bits,
+#     `address_big_sys` is 50, `address_small` is 40, and a port that transposed
+#     two of them would have the right count.
 #
-# W3. THE DEVICE MEMORY. Everything `nvdev.py` READS or WRITES is behind a seam:
+# W3. THE DEVICE MEMORY. Everything `nvdev.py` READS or WRITES is behind a seam.
 #
 # W4. `time.sleep(0.1)` at :109. A time gap, not a call, so it has no trace tag and
 #     no tag claims to be it. Reported here rather than left as a missing row.
 #
-# and one thing that is not a wall, because it looks like one: the six mmu_ver
+# ONE THING THAT IS NOT A WALL, because it looks like one: the six mmu_ver
 # descriptors have NO REGISTER ADDRESS. They are `(None, None, {fields})` in
 # dev_mmu.py, and nvdev.py never reads them -- :128 hands them to
 # `NVPageTableEntry`, which uses them only for `.encode`/`.decode`/`.mask`. So
@@ -799,6 +759,11 @@ def nv.at(fuel: Nat, +xs: List<&2, U32>, +i: U32) -> U32:
 def nv.cover_at(+v: U32, lv: U32) -> U32: nv.at(nv.shifts_nat(v), nv.covers(v), lv)
 
 # the `i`th element of a U32 list. The list is `+`, so the walk may read it again
+# after the head; the decrement is on the Nat fuel, never on the index.
+# `mm.pte_covers[self.lv]` -- and at `lv == level_cnt` the REAL nvdev.py raises
+# IndexError, because `pte_covers` has `level_cnt` entries. The port answers the
+# SENTINEL 4294967295, which is a distinct value from any real cover, so the
+# out-of-range level is visible rather than silently reading cover[0].
 
 def nv.huge_cover(+v: U32, +lv: U32) -> U32:
   Bool.pick(U32, U32.is_ge(lv, nv.level_cnt(v)), 4294967295, nv.cover_at(v, lv))
@@ -1343,6 +1308,9 @@ def nv.fld_of(+r: Rgv, nm: String, which: U32) -> U32: nv.fo.go(Rgv.nat(r), Rgv.
 # --- per-field rows. the order-inside-a-pair check, per site.
 #
 # `Se` is `(start, end)` as a VALUE rather than two lookups, and it exists for a
+# linearity reason, not a taste one: a `String` in Bend 2 is consumed by its one
+# use, so a helper that needed the field name twice to read two elements could
+# not exist. One fold, one use of the name, both elements out.
 type Se is Data:
   Se{s: U32, e: U32}
 
@@ -1399,6 +1367,11 @@ def nv.fld_max(r: Rgv, nm: String) -> U32: nv.se_max(nv.fld_se(r, nm))
 # transposition exists there -- see t_mmu's comment for the one shape that IS invisible.)
 #
 # the row names are literals and so is the lookup key, because a `String` is
+# consumed by its one use: a def that built `"nv_fld_" ++ nm` and then looked the
+# field up by `nm` could not exist. Twenty-six literal rows is cheaper than the
+# alternatives, and it has the property that matters -- a mutation has to be written
+# out per field to be seen, rather than hiding inside a name that a fold rebuilds
+# identically either way.
 def t_flds_b42() -> IO(Unit):
   do IO<Unit>:
     IP.srow("nv_fld_minor_extended_revision", nv.fld_abw(nv.reg_boot42(), "minor_extended_revision"))
@@ -2106,6 +2079,11 @@ def nv.revs.go(n: Nat, +xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>
 def nv.rev_shifts(+v: U32) -> List<&2, U32>: nv.revs.go(nv.shifts_nat(v), nv.va_shifts(v), Nil{})
 
 # `nv.revs` -- `va_shifts[::-1]` and NOTHING ELSE. `nv.rev.go` is the SAME fold with
+# `pw_of` on each element, because it was written for `pte_covers`; reusing it here
+# gave `shift_at(v, 0) == 2^47` instead of `47`, so `cover_fits` was the complement
+# of the truth at EVERY level and the gate caught all fourteen. Two folds that
+# differ only in a per-element map are two defs, not one parameter -- a Bool
+# parameter would have been a runtime branch in a hot walk for nothing.
 
 def nv.shift_at(+v: U32, lv: U32) -> U32: nv.at(nv.shifts_nat(v), nv.rev_shifts(v), lv)
 
