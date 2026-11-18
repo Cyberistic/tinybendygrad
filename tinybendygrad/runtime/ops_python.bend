@@ -2967,9 +2967,8 @@ def Prog.launch() -> IO(Unit):
 # Bend and none can: a dynamic value is precisely what a statically typed language refuses.
 #
 # So the port does not represent one and does not fake one. It gives the same information a
-# different, total, byte-exact spelling:
-#
-#   CPython                    this port
+# different, total, byte-exact spelling: THE TABLE IS IN
+# `.agents/slop/tables/runtime-ops_python-2972.md`.
 #
 # The last row is the load-bearing one. A Python `bytes` and a Bend `List<&2, Char>` carry the
 # SAME total information about the SAME program; the port chose the spelling a total language
