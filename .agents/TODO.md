@@ -1257,6 +1257,20 @@ comment-cut        [######...] 6/8      **THE **PORT's **COMMENT **MASS **IS **C
                                          **+628/-1552**, **COMMENTS **ONLY**, **AND **THE
                                          **PER-FILE **NON-COMMENT **CHECK **IS **EMPTY **FOR
                                          **ALL **46**): **THE **RENDERER **AND **RUNTIME **LANES**.
+                                         **BATCH **3 **LANDED** (**`1d6399af3`**, **THE **RENDERER's **FOURTEEN **FILES**, **+107/-6026**,
+                                         **COMMENTS **ONLY**, **AND **THE **NON-COMMENT, **NON-BLANK **DIFF **IS **EMPTY **FOR **ALL
+                                         **FOURTEEN**): **THE **CENSUS **OF **THOSE **FOURTEEN **FILES**, **BEFORE **AND **AFTER**
+                                         (**`.agents/slop/comments/comment-census.py`**): **BEFORE 911 **BLOCKS **/ **8477 **LINES**,
+                                         **NARRATION 744 **BLOCKS **/ **3925 **LINES**; **AFTER 811 **BLOCKS **/ **3183 **LINES**,
+                                         **NARRATION 445 **BLOCKS **/ **977 **LINES**.  **AND **THE **THREE **REPAIR **COMMITS**:
+                                         **`5b224f558`** (**THE **`kuconv.bend` **BLOCK**), **`525e7c5d1`** (**THE **37 **TRUNCATIONS**),
+                                         **AND **THE **STALE **`ops.py:1896` **CITATION **FIXED **TO **`ops.py:1861`** -- **AND **`cite-line-gate.py`
+                                         **NOW **REPORTS **0 **NON-OK **CITATIONS **IN **ALL **FOURTEEN **FILES**, **WHERE **IT **REPORTED **5
+                                         **BEFORE**).  **THE **CORPUS **ON **THE **FINAL **COMMIT **(`525e7c5d1`)**: **`graphs=38`**
+                                         **`graphs-agree=38`** **`graphs-disagree=0`** **`byte-identical=38`** **`graphs-refused=0`** **AND
+                                         **`substrate-start == substrate-end == live == 58c088328839b592`**, **AND **`repro`: **339 **OF
+                                         **339 **FILES **IDENTICAL**, **AND **`gates/corpuswitness-gate.py`** **ANSWERS **`PASS -- **THE
+                                         **CLAIM **IS **ESTABLISHED`**.
                                          **THE **COMPILE **GATE **OVER **THE **WHOLE **TREE**
                                          (**`checks/port-compile-gate.py`**, **198 **FILES**,
                                          **336.5 s**) **ANSWERS **`COMPILES=189`
