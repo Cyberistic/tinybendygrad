@@ -123,6 +123,9 @@ def PCI_COMMAND_MASTER() -> U32: 4
 #
 # the phase starts at one, not zero. that is the NVMe completion queue's
 # phase bit and it is the one bit that makes a stale completion look like a
+# fresh one: a completion is valid when its phase bit equals the queue's
+# current phase. a port that started the phase at zero would accept the
+# first completion and then reject every one after it.
 
 type Q is Data:
   Q{qid: U32, tail: U32, phase: U32, entries: U32, sq_addr: U32, cq_addr: U32,
@@ -630,6 +633,7 @@ def page_list.expand(paddrs: List<&2, U32>, sizes: List<&2, U32>) -> List<&2, U3
 # the assertion is the whole point: an NVMe drive that the operating system
 # has mounted, or that lvm/md has taken, must not be used. the port carries
 # the rule and names the two reads that decide it, and the reads are the
+# SEAM.
 
 def IFACE_NVME() -> U32: 1
 def dev.iface_names() -> List<&2, String>: ["NVMEIface"]

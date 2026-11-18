@@ -298,6 +298,7 @@ type Slot is Data:
 # `depth` is the open wgpuDevicePushErrorScope count and `bad_at` is the pop
 # against; it is not reset by `Tr.reset`, so one fixture numbering covers a whole
 # one program call's state: the shader module (:63), the entry point (:54), the
+# program lifetime.
 type Tr is Data:
   Tr{calls: List<&2, Call>, next: U32, depth: U32, bad_at: U32, popn: U32,
      refused: Bool}
@@ -332,6 +333,11 @@ type Pass is Data:
 # The failing pop is still recorded, and that is not a special case: it sets
 # an empty trace that keeps `bad_at` and `popn`, so a gate can read one program
 # the id the next emit mints, i.e. what the seam's call returns. Read before the
+# `refused` in the same breath, so on entry its own `refused` is still False.
+# Guarding two of the three was the first bug this gate found in itself (four
+# pops and one create survived a refusal at pop 1, which is not what Python
+# does); guarding all three is the fix, and `wg_refuse_*_pops` is the row that
+# pins it.
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 0, 0, False{}}
 

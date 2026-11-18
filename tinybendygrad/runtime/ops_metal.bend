@@ -1,13 +1,5 @@
 # tinybendygrad/runtime/ops_metal.bend -- port of tinygrad/runtime/ops_metal.py
 #
-# THE half of the metal chain that submits. `renderer/cstyle.bend` already emits
-# Metal kernel TEXT and its `kern2 METAL` rows are committed and green, so the
-# shader half of this chain exists (`renderer/cstyle.bend`, 2314 lines, 228 rows).
-# This file is the other half: the 287 lines of `tinygrad/runtime/ops_metal.py`
-# that turn a compiled program and a list of buffers into an
-# `MTLComputePipelineState`, an indirect command buffer, and a committed
-# command buffer.
-#
 
 # DOES it compose with cstyle.bend? YES, AND the seam is one binding.
 #
@@ -459,6 +451,8 @@ def PLACEHOLDER_IX() -> U32: 0
 # against: commandBuffer 0, computeCommandEncoder 0, waitForFence: the fence
 # handle, useResources:count:usage: the buffer COUNT, executeCommandsInBuffer-
 # withRange: the range LENGTH, the dispatch pair the `zero` word index, the
+# set/dispatch pair the word index, encodeSignalEvent:value: the signalled
+# value, commit 0, setComputePipelineState: the word index of the pipeline.
 
 def CALL_CGS_CREATE() -> U32: 0
 def CALL_CGS_BUILD() -> U32: 1

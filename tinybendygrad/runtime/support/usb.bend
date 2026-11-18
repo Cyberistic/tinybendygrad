@@ -340,6 +340,10 @@ def enum_val(+nm: String, +es: List<&2, Ent>) -> U32:
 # the ordinal of a field name in a list, and `NOT_FOUND` when absent. :350's
 # the 64-bit address is a pair, on purpose. `struct.pack('<iii', address &
 # the integer arm and the slice arm are separate functions, because :180-182 is
+# its `_n_` row before its `_v_` row, so the accumulator is already in order and
+# needs no `List.reverse` anywhere. Walking the REVERSED table instead does not
+# help -- a cons fold over a reversed walk builds the accumulator backwards, and
+# every `usb_*_n_`/`_v_` pair is a whole-value string in the wrong sequence.
 def enum_rows.go(+tag: String, +es: List<&2, Ent>, r: List<&2, Ent>,
                  +acc: List<&2, String>) -> List<&2, String>:
   match r:

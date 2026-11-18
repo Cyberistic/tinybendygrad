@@ -380,6 +380,9 @@ def hex_str2(+v: U32) -> String:
 # It is ONE self-recursive def -- Bend refuses mutual recursion -- so the fold
 # carries the half-byte itself: `pend` is the high nibble waiting for its low one
 # and `live` says there is one. A bad nibble clears `ok` and the walk keeps going,
+# since it is a fixed number of characters either way. The accumulator prepends,
+# so the characters are walked in REVERSE (`String.reverse`) and the bytes come
+# out in order.
 def bytes.fin(+ok: Bool, +live: Bool, acc: List<U32>) -> (Bool & List<U32>):
   match live:
     case True{}: (False{}, acc)
@@ -1564,6 +1567,7 @@ def Prog.one(l: String, +b: Build) -> Build: Prog.one.of(Uop.line(l, Build.slot(
 # line, so an empty line must not move it -- hence the counter is a SEPARATE def
 # rather than `U32.add(k, 1)` inline. It has to be separate because `h` is needed
 # both for the counter and for the parse, and a `Bool.pick` holding both plus the
+# recursion would be mutual recursion with `Prog.parse.go`, which Bend refuses.
 def Prog.parse.k(+h: String, +k: U32) -> U32:
   Bool.pick(U32, String.is_empty(h), k, U32.add(k, 1))
 
@@ -2370,6 +2374,9 @@ def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +nrun: U32, a: Array<Elem>
 #
 # `Prog.ld1` reached the 11-field record about FIFTEEN times per LOAD -- `Prog.step.vs`, then
 # `Prog.flush` (four), `Prog.ms`, `Prog.ld.sb` (which re-took `Prog.buf` and `Prog.lane`), and
+# `Prog.ld.happens` + `Prog.oob` (each of which re-took `Prog.buf`, i.e. `Prog.fs` + `Prog.src`).
+# Every one is a full `match` over the record. ONE bind now feeds all of it, and each piece has a
+# field-taking form that does no record match at all.
 
 def Prog.dt.f(+us: List<&2, Uop>, +u: Uop, +k: Nat) -> S.Dt:
   Uop.dt(Uop.at(us, Uop.nth(Uop.srcs(u), k)))

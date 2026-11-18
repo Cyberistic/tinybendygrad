@@ -1132,6 +1132,10 @@ def tr.put(+t: Tr, +calls: List<&2, Cx>, n: U32) -> Tr:
 #
 # `elemCount` is at [10] and not [11]. `ip_rp_0_w10` is 1 for the seven requests
 # and `ip_rp_0_w11` is 0, read off CPython's `bytes(phdr)`; this comment said the
+# other way round for the whole life of the file, which no gate could see because
+# a comment is not a row. The FOUR ZERO slots ([8], [11], [18], [19]) have no
+# `rp.w_*` constant because `rp.word2` has no arm for them -- the arm would answer
+# `0`, and a branch whose only answer is a literal is a comment with a runtime.
 def tr.go(+xs: List<&2, Cx>, +first: Bool) -> String:
   match xs:
     case Nil{}: ""
