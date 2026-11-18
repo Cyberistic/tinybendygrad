@@ -1,17 +1,4 @@
 # wgsl_walk.bend -- THE UOP -> BODY WALK: `_render`'s equivalent (cstyle.py:208-266) for WGSL.
-#
-# it lives in its own file and not in `wgsl.bend`, and that is a decision the census gate
-# FORCED: `gates/wgsl_render_census-gate.py`'s `never_folding_cast_hold` PINs the bytes of
-# every `OpsCAST` site in `wgsl.bend`, so that a new cast site cannot appear without someone
-# re-deciding its ROLE. MEASURED: adding this walk inside `wgsl.bend` moved that pin
-# (`258c37970b354a3d` against the pinned `4ad7ca714528448a`) and the gate went red -- which is
-# the gate working, not complaining. The walk needs a `case O.OpsCAST{}` MATCH arm (it does
-# not mint a CAST), and the honest way to add one is to put the walk where the pin does not
-# govern, rather than to re-pin a tripwire around code that is not a renderer table.
-#
-# `wgsl.bend` IS UNTOUCHED by this file: every renderer it calls (`render_cast`,
-# `render_load`, `render_kernel`, `code_for_op`, `code_for_workitem`) and both of its records
-# (`Buf`, `Scan`) are used as they stand.
 import Base
 import ./wgsl.bend as W
 import ./../uop/f32_repr.bend as FR
@@ -20,23 +7,6 @@ import ../uop/ops.bend as O
 import ../LAWS/spec.bend as S
 
 # THE UOP -> BODY WALK -- the `_render` equivalent (cstyle.py:208-266), which this
-# file did not have: `render_kernel` takes the body as STRINGS and `kern_alu()` /
-# `kern_mixed()` above are LITERALS, so the census's whole-kernel rows are rows
-# about the ASSEMBLER and none of them walks a uop list.
-#
-# THE INPUT IS A FLAT RECORD, `R`, because the walk is driven from a generated
-# module (`.agents/slop/perf/gen_wgsl/`) built out of a captured uop list, and a
-# nested arg union would be three more matches for two fields. The fields are
-# upstream's: `op`, `dtype`, `addrspace`, `max_numel`, the arg's STRING form
-# (`SPECIAL`'s name, `SINK`'s function name), the arg's NUMBER (`SPECIAL`'s
-# workitem index, `CONST`'s value), the `PARAM` slot and its shape, and the srcs.
-#
-# WHAT IT REPRODUCES, in upstream's order: NOOP/CONST/CUSTOM_FUNCTION skipped; a
-# zero-src STACK skipped; SINK names the kernel; PARAM becomes `data{slot}_{shape}`
-# and a `Buf`; SPECIAL takes its name from the arg and its text is
-# `{code_for_workitem}; /* {src} */`; and everything else takes `prefix{n}` from
-# the six-counter table, is INLINED when upstream's rule says so, and is otherwise
-# declared as `var {name} = {text};` (`_render_dtype` answers `var` here, :103).
 
 type R is Data:
   R{op: O.Op, dt: S.Dt, addr: S.Addr, numel: U32, str: String, idx: U32, slot: U32,
@@ -150,19 +120,10 @@ def R.src0(r: R) -> U32: Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 0n)
 
 # => and a constant's value is materialised at its use, which is WHERE upstream puts it.
 # `_render` SKIPS every CONST (`cstyle.py:222`), so `r[const]` is never bound, and the value
-# reaches the text because `base_rewrite`'s `cvar.cast(...)` rules (`cstyle.py:24-30`) rewrite a
-# CAST OF A CONST into the literal: `f"{c.val}f"` for `dtypes.float`, `f"{val}u"` for u32, the
-# plain digits otherwise. MEASURED BEFORE THIS EXISTED: `relu` rendered `select(f32(),alu0,...)`
-# -- a CONST with no value -- and it was INVISIBLE because `f32()` is a valid WGSL zero and the
-# fixture's constant was 0.0. A non-zero constant would have compiled and been WRONG.
 def is_float_dt(+d: S.Dt) -> Bool: Bool.pick(Bool, S.Dt.is_float(d), True{}, False{})
 def is_u32_dt(+d: S.Dt) -> Bool: Bool.pick(Bool, U32.is_eq(S.Dt.pri(d), 6), True{}, False{})
 def is_con_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsCONST{}), True{}, False{})
 # `axis_letters` -- tinygrad/uop/ops.py:50, quoted in cstyle.bend: `{DEVICE:"d", GLOBAL:"g",
-# LOCAL:"l", WARP:"w", WEAK:"L", UPCAST:"u", ...}`. The axis arrives as its NAME because
-# `dump_uops` writes a RANGE's payload as `<axis>~<ids...>`.
-# rules 6..11, in `sr_pick_bitcast`'s own numbering. A `match` on the RULE PARAMETER, so a
-# bitcast costs one call and not six, and so nothing here recurses.
 def bit_text(+rule: U32, +op: O.Op, +dt: S.Dt, +s0: S.Dt, +s: String) -> String:
   match rule:
     case 6: W.sr_bhalf(dt, s0, s)
@@ -188,11 +149,6 @@ def axis_letter(+nm: String) -> String:
 def is_where_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsWHERE{}), True{}, False{})
 
 # the literal is computed, not carried. `R.f` is the const's f32 value and `FR.repr` is
-# CPython's own `repr(float)` algorithm (uop/f32_repr.bend, 1044 of 1044 values identical), so the
-# digits now come from the port's arithmetic. They used to come from `R.str`, which is CPython's
-# repr TRANSCRIBED into the `.rows` dump -- a comparison of two copies of CPython's string rather
-# than of the port's computation. For a non-float const the value IS its text (an integer), so that
-# arm still reads `R.str` and there is nothing to compute.
 def con_text(+dt: S.Dt, +r: R) -> String:
   String.concat([Bool.pick(String, is_float_dt(dt), FR.repr(R.f(r)), R.str(r)),
     Bool.pick(String, is_float_dt(dt), "f", Bool.pick(String, is_u32_dt(dt), "u", ""))])
@@ -210,10 +166,6 @@ def tx(+all: List<&2, R>, +names: List<&2, String>, +k: U32, +dt: S.Dt) -> Strin
   tx0(R.op(r), r, dt, wt(names, k))
 
 # the CONST value behind a CAST chain: upstream's `x.src[0].render()` in the SPECIAL
-# arm answers the VALUE (`/* 1024 */`), not the cast's own text (`i32(1024)`).
-# TWO LEVELS, ONE PER DEF, because a recursion and its helper are MUTUAL recursion and
-# Bend refuses that; both captured kernels are `CONST` under one `CAST`, and a longer
-# chain answers "" rather than a plausible wrong comment.
 def const_at(+op: O.Op, +r: R) -> Maybe<&2, String>:
   match op:
     case O.OpsCONST{}: Some{U32.show(R.idx(r))}
@@ -372,10 +324,6 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
         tx(all, Wk.names(acc), R.src0(r), R.dt(r)), "; ", rnm, "++) {"])), Wk.c(acc), acc)
     case O.OpsBITCAST{}:
       # cstyle.py:269's `string_rewrite` CONSULTS SIX RULES FOR A BITCAST, and
-      # `wgsl.bend` already has all six (`sr_bhalf`, `sr_buchar`, `sr_bchar`, `sr_bushort`,
-      # `sr_bshort`, `sr_bany`) plus the picker (`sr_pick_bitcast`). The walk had no arm, so
-      # a real kernel rendered `UNHANDLED(Ops.BITCAST)`; MEASURED on `bitcast(a)+1`:
-      # CPython `bitcast<f32>((bitcast<u32>(val0)+1u))`, port `UNHANDLED(Ops.BITCAST)`.
       +bix = pfx_ix(op)
       +bnm = String.concat([pfx(bix), U32.show(c_at(Wk.c(acc), bix))])
       +s0 = R.at(all, R.src0(r))
@@ -395,9 +343,6 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
         tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 2n), 0), R.dt(r)))
       # AND A `WHERE` IS NEVER INLINED. Upstream's set is
       # `{Ops.STACK, *(GroupOp.ALU - {Ops.WHERE}), Ops.CAST, Ops.BITCAST}` (cstyle.py:253), and
-      # the SUBTRACTION is load-bearing: MEASURED, `relu`/`maximum` rendered the same
-      # `select(...)` expression on both sides but CPython DECLARED it (`var alu1 = select(...)`)
-      # while the port inlined it into the STORE -- one line versus two, 656 B against 637.
       +inl = Bool.and(Bool.pick(Bool, U32.is_eq(uses(all, i), 1), True{}, False{}),
         Bool.not(is_where_op(op2)))
       wk.add(Bool.pick(String, inl, txt, nm),

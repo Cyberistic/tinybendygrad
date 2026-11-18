@@ -3,39 +3,6 @@
 # WHY THIS EXISTS. `cstyle.bend`'s `render` takes a `List<KU>` -- a Bend VALUE -- so `.agents/slop/cpuseam/
 # portc.py` used to compile the kernel INTO the driver as a literal, one `bin/bend` build per kernel. What
 # that build pays for is the TYPECHECK OF THE CLOSURE, not the kernel: MEASURED 2026-11-03, a driver holding
-# ONE kernel builds in 941 ms and a driver holding SIX in 967 ms. So a caller that renders K distinct
-# kernels paid ~1 s x K, and an actual program does exactly that -- it asks for one kernel at a time, in the
-# order the scheduler needs them.
-#
-# WITH THIS FILE the renderer is built ONCE (its JS output is cached by `portc.py` against the sources that
-# can change the C) and every later kernel is a `bun` RUN: `~40 ms` of start-up plus the parse below,
-# instead of a second of typechecking.
-#
-# the division of labour is the whole design: python decodes, BEND constructs.
-#   * a CONST's value arrives as EXACT BITS -- `hi~lo` for an integer, the f32 bit pattern for a float,
-#     `0`/`1` for a bool -- because parsing `1e999`, `inf`, `-0.0` and `-1.44` out of TEXT is where this
-#     renderer's predecessor had four separate defects (`gen_kus.py`'s `const_arg` records each one).
-#     `F32.from_bits` cannot disagree with `struct.pack('<f', ...)` about a value, and `i64_of_hi_lo`
-#     cannot truncate a 64-bit constant the way `i64_of_i32` did.
-#   * the ARG's own tag rides in the `kind` field (`range_GLOBAL`, `wmma_f32`, ...), so this file never has
-#     to SLICE a payload: Bend refuses `match` on a computed value and on a value bound after a parameter,
-#     and every slicing design ended in one of those two.
-#   * so every field below is a NAME matched by `match`, or an unsigned decimal read by `U32.read`. There
-#     is no float parser, no sign parser, and no substring surgery here.
-#
-# THE OP TABLE IS NOT RETYPED: `runtime/ops_python.bend`'s `op_of(String)` is the executor's own name ->
-# `Op` mapping, and it is IMPORTED, so a name the executor runs and a name this file renders cannot drift
-# apart. It covers 46 of the enum's 75 members because the EXECUTOR only runs what it ports; the other 29
-# are added in `extra_op` below, and `P.op_of` still answers first.
-#
-# THE WIRE, one kernel = newline-separated uop lines, each EIGHT space-separated fields:
-#
-#   op dt addr shape numel kind payload srcs
-#
-#   shape    `-` or `4~4`
-#   kind     one of the tags listed in `arg_of` below
-#   payload  `~`-separated; `-` when the op carries nothing
-#   srcs     `-` or `0~1~2`   (ZERO-based: the decoder has already done the `- 1`)
 import Base
 import ./cstyle.bend as C
 import ./../uop/ops.bend as O
@@ -53,22 +20,6 @@ def u32(s: String) -> U32: Maybe.default(&2, U32, U32.read(s), 0)
 def ysplit(s: String) -> List<&2, String>: String.split(s, '~')
 
 # THE PAYLOAD'S FIELDS, AND THE SPLIT IS ONCE PER ROW. MEASURED (`PARITY.md` §138):
-# `field(p, i)` WAS `fld(ysplit(p), i)` -- SO EVERY FIELD RE-SPLIT THE WHOLE PAYLOAD, AND
-# THE PRELUDE's `String.split` IS ONE RECURSION PER CHARACTER (TWO `slice`s AND A
-# `char_len` PER CHARACTER). THE `i` ARM READ TWO FIELDS AND THE `p` ARM FOUR, SO
-# 258 `String.split` CALLS A TURN -- AND THE `const` ARM ALONE WAS 0.1389 ms OF
-# `arg_of`'s 0.2320 ms (MEASURED, `builds/probe-armof.py`, EACH ARM CLOCKED
-# SEPARATELY, IN THE DAEMON).
-#
-# SO THE SPLIT IS DONE ONCE, AND EACH FIELD IS READ FROM THE SPLIT LIST.
-# AND `field` ITSELF IS GONE -- IT HAD NO CALLER AFTER THIS CHANGE, AND A DEF WITH
-# NO CALLER IS DEAD CODE.
-# AND THE READERS ARE THEIR OWN `def`s WITH A BARE PARAMETER, BECAUSE A `match` CANNOT
-# SCRUTINIZE A COMPUTED VALUE (THE TREE's OWN RULE) -- AND THE `match`es BELOW ARE ON THE
-# LIST, WHICH IS A PARAMETER, SO THEY ARE LEGAL.
-#
-# AND THE ARMS THAT NEED TWO OR FOUR FIELDS CALL ONE SPLIT AND PASS THE LIST,
-# NOT THE PAYLOAD -- SO THE SPLIT COUNT A TURN IS 13 + 97 + 16 + 0 = 126, NOT 258.
 
 def flag(s: String) -> Bool: String.eq(s, "1")
 
@@ -132,17 +83,6 @@ def addr_of(nm: U32) -> S.Addr:
 # the arms are ordered by measured frequency, not by the enum. `match` is a linear chain of string
 # comparisons, so an arm costs (its position) compares -- at enum order that averages ~38 per uop over 75
 # members. MEASURED over the 5 fixture kernels (782 uops): eight op names cover
-# 86% of every uop rendered. The MAPPING is unchanged -- only the order of the comparisons -- so the C
-# cannot move, and `ksweep` and the corpus are the proof.
-#
-# and the arm key is a `U32`, not a string, and that is the third measured change. The key used to be
-# the enum index as a DECIMAL STRING, and a `match` on a String in Bend COMPILES TO A CHARACTER TRIE --
-# MEASURED on the 642-uop wire: `op_by_idx` compiled to 84 `slice`s and 84 `char_len` calls, and
-# cost 2,560 `char_len` calls a render, the largest single term left in the turn. a `match` on a
-# `U32` COMPILES TO INTEGER COMPARES (`PARITY.md` §133) and a runtime `U32` IS A PLAIN JS NUMBER, so the
-# arm costs one integer compare and no slice at all. - so the op INDEX rides in the wire's numbers
-# (`wire.js`'s `wire_numbers`), where the JS side has it as a number for free, and the strings row is
-# FOUR fields wide (dt, addr, kind, payload).
 def op_by_idx(nm: U32) -> O.Op:
   match nm:
     case 30: O.OpsADD{}
@@ -246,15 +186,6 @@ def nums(s: String) -> List<&2, U32>:
 # - and the kind is two numbers, and the match is on the first. Eleven of the nineteen kinds are
 # TWO CHARACTERS ("RW", "M1") and eight are one, so the first character's code separates the two
 # groups and the second picks inside the two-character group. MEASURED: the port's `match` on the
-# kind's STRING cost 898 `char_len` calls a render (two slices and two `char_len` per call), and
-# this is an INTEGER COMPARE (see `dt_of`'s comment).
-#
-# - and the two-character group is one arm with a second match, not eleven arms. The first
-# character's code is `82` ("R") for the eight ranges and `77` ("M") for the three wmma's, so those two
-# arms hold the second match. - AND THE `W` IN "RW" IS THE SECOND CHARACTER, so `kindC1` IS 87
-# for "rw" and 0 for a one-character kind -- which is why the one-character arms do not test it.
-# the eight ranges: "rw" "rg" "rl" "rd" "ru" "rr" "ro" "rp" -- and the second character is the one
-# THAT SEPARATES THEM.
 def arg_of.range(kind1: U32, +p: String) -> C.KUArg:
   match kind1:
     case 87: C.KARange{O.AXIS_WEAK{}, nums(p)}         # "RW"
@@ -305,22 +236,9 @@ def arg_of(kind0: U32, kind1: U32, +p: String) -> C.KUArg:
 # ---------------------------------------------------------------- one uop line -> one KU
 # the nine fields are bound by nine names, not read by INDEX. `fld` is `List.get`, so it walks `i+1`
 # conses: nine reads of a nine-element list cost 45 steps, and MEASURED (`PARITY.md` §121) the decoder makes
-# 5,870 `fld` calls a render -- the single largest group in the decode, and every one of them walks.
-# `ku_ws.r` takes the list newest-first (which is how `ku_all` collects it) and binds the nine fields in
-# ONE walk of nine conses. §110.2 measured the same shape in `cstyle.bend` at 0.9796 and reverted it; the
-# decoder is a different call site with 4x the count, so the shape is re-measured here.
-# the token path's op is a string and the effect path's is a number, and one reader serves both.
-# `ku_ws` reads the wire's NINE tokens, so its op is the enum index as a DECIMAL STRING; the effect path
-# reads a `U32` straight from the wire's numbers. `op_of` takes the NUMBER, so the token path parses the
-# string here -- and `U32.read` is the prelude's character-at-a-time fold, which is why the effect path
-# exists at all (`PARITY.md` §131/§132).
 def op_of_str(+nm: String) -> U32: Maybe.default(&2, U32, U32.read(nm), 0)
 
 # - and the token path's three codes are strings and the effect path's are numbers, for the same
-# REASON. `dt_of` / `addr_of` / `arg_of` match on the CHAR CODES (see their own comments), so the
-# token path converts. - and the conversion is the first character's code, and 0 for an empty
-# STRING -- so an absent code is 0, which is NOT one of the tables' keys and so falls to the `_` arm.
-# - and the kind's second character is 0 for a one-character kind, exactly as the wire's js says.
 def code_of.get(nm: String) -> Maybe<&2, Char>: String.get(nm, 0n)
 def code_of.at(nm: String, n: Nat) -> Maybe<&2, Char>: String.get(nm, n)
 
@@ -386,15 +304,6 @@ def ku_of(l: String) -> C.KU: ku_ws(String.split(l, ' '))
 # non-tail one builds a frame per element (`$List$append$`). So the accumulator is PREPENDED
 # (`List.append([h], acc)`, which recurses over the ONE-element list) and the recursive call is the last
 # thing in the arm. MEASURED on this parser: with one frame per uop, 900 lines decoded and 1500 did not,
-# while the LITERAL path rendered 1500 KUs fine -- the ceiling was this walk, not the renderer.
-# the wire is one flat space-separated token stream and nine tokens are one uop, because a second
-# once on '\n' (8 700 characters) and again per line on ' ' (8 526) -- MEASURED in `PARITY.md` §78, that first
-# pass alone is 0.89 ms of a 2.17 ms decode. Nine tokens per row is the same shape, one separator, one
-# pass. `take9` peels them with a counter and a CONS (O(1) each) rather than `fld`'s `List.get` per field.
-# nine tokens are one uop and the state lives in this one DEF, because BEND refuses mutual recursion.
-# `skip` is how many fields the row still needs (1 = the token arriving now completes it); `fields` holds
-# the ones already collected, REVERSED, so each costs a CONS. `take9`/`drop` would need a second recursive
-# def calling back into this one, which the compiler refuses ("expected a filled definition").
 def ku_all(+xs: List<&2, String>, skip: Nat, +fields: List<&2, String>, +acc: List<&2, C.KU>) -> List<&2, C.KU>:
   match xs:
     case Nil{}:
@@ -416,9 +325,6 @@ def ku_all(+xs: List<&2, String>, skip: Nat, +fields: List<&2, String>, +acc: Li
 #
 # `Wire.split` calls JS's native `String.prototype.split` -- ONE call -- and the JS half builds the list
 # in JS. MEASURED (`PARITY.md` §126): 0.136 ms a turn.
-#
-# and the pure part stays pure: `kus_bytes` is the decoder over a token list and never touches the
-# effect, so the LITERAL path (`gen_kus.py`'s generated `kus()`, which builds the KUs in bend) is unaffected.
 @unsafe
 def Wire.split(s: String) -> IO(List<&2, String>):
   import "./wire.c"
@@ -434,18 +340,6 @@ def Wire.split(s: String) -> IO(List<&2, String>):
 # WHY THE NUMBERS AT ALL: the port's `U32.read` is the PRELUDE's character-at-a-time fold, and at runtime a
 # string is a JS string, so the compiler emits `slice(0, char_len(s))` AND `slice(char_len(s))` PER CHARACTER.
 # MEASURED (`PARITY.md` §131): the wire's 2,814 numbers cost 21,294 `char_len` calls and ~42,000 string
-# allocations a render, where the SAME ALGORITHM IN JS IS 0.015-0.025 ms -- forty times faster.
-#
-# AND THE TWO EFFECTS ARE ONE EFFECT NOW, AND THE REASON IS THE SPLIT (MEASURED,
-# `PARITY.md` §138): THE TWO HALVES DID `s.split(" ")` OVER THE SAME 18 KB STRING, AND THE SECOND
-# SPLIT COST 0.063 ms A TURN -- 14% OF THE DECODE -- FOR THE SAME ROWS. THE OBSTACLE
-# WAS BEND's MONOMORPHIC LISTS, AND THE ANSWER IS A `Data` TYPE WITH TWO LIST FIELDS, WHICH
-# THE RUNTIME ACCEPTS (MEASURED, `builds/probe/both*.bend`: THE ROW COUNT IS RIGHT AND THE
-# NUMBERS CROSS AND ARE READABLE AS `U32`).
-#
-# SO `Wire.both` SPLITS ONCE AND `kus.io` USES IT. AND THE TWO EFFECTS IT REPLACED
-# ARE GONE, BECAUSE THEY HAD NO OTHER CALLER -- THE TOKEN PATH IS `ku_ws`, WHICH READS A
-# TOKEN LIST AND NEVER TOUCHED THEM, AND A DEF WITH NO CALLER IS DEAD CODE.
 type Wire.Both is Data:
   Wire.Both{ss: List<&2, List<&2, String>>, ns: List<&2, List<&2, U32>>}
 
@@ -464,11 +358,6 @@ def skip(n: U32, xs: List<&2, U32>) -> List<&2, U32>:
   List.drop(&2, U32, xs, U32.to_nat(n))
 
 # the row is one string and everything ELSE is a number. The effect's strings row is just the
-# payload -- the op index and the three codes left the strings because a `match` on a String is a
-# character trie and a `match` on a `U32` is an integer compare (see `op_by_idx`, `dt_of`, `addr_of`
-# and `arg_of`). So the numbers row is
-# [opIndex, dtCode, addrCode, kindC0, kindC1, numel, cc, shapeCount, srcsCount, shape..., srcs...]
-# and `ku_row.n` binds them IN THAT ORDER.
 def ku_row.of(op: U32, dt: U32, addr: U32, k0: U32, k1: U32, numel: U32, cc: U32,
               +sc: U32, +gc: U32, +rest: List<&2, U32>, +payload: String) -> C.KU:
   +sh = take(sc, rest)
@@ -511,10 +400,6 @@ def ku_row.n(+nums: List<&2, U32>, +payload: String) -> C.KU:
     case Nil{}: ku_ws.bad()
 
 # the row is exactly one string, and that is measured. The effect's row is the payload and nothing
-# ELSE, so its tail is Nil -- and the second arm (`case _ <> _`) is the MALFORMED case, not the good one.
-# (`ku_ws.r`, the token path's reader, binds NINE fields and wants a tenth, because the token path's row
-# is nine tokens plus the next row's first token; the two readers are NOT the same shape and must not be
-# copied from one another.)
 def ku_row.s(+strs: List<&2, String>, +nums: List<&2, U32>) -> C.KU:
   match strs:
     case payload <> s1:
@@ -539,8 +424,6 @@ def kus_rows.go(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>, +
 # produces (`ku_all` reads the tokens in reverse and `ku_ws` reverses each row back). So the walk here
 # PREPENDS each KU (which is O(1): `List.append(xs, ys)` COPIES `xs`, so `List.append([x], acc)` is the
 # cheap form and `List.append(acc, [x])` is the O(n) one -- MEASURED: the O(n) form cost +91,096
-# `List.append` calls a render and was a REGRESSION) and the list is REVERSED ONCE at the end, which is
-# O(n).
 def kus_rows(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>) -> List<&2, C.KU>:
   List.reverse(&2, C.KU, kus_rows.go(ss, ns, Nil{}))
 
@@ -553,7 +436,6 @@ def kus_rows.io(+ss: List<&2, List<&2, String>>, +ns: List<&2, List<&2, U32>>) -
 # AND THE READER IS ITS OWN `def` WITH A BARE PARAMETER (`wire_rows`), BECAUSE A `match`
 # CANNOT SCRUTINIZE A COMPUTED VALUE AND CANNOT SCRUTINIZE A BOUND BINDER INSIDE THE
 # CONTINUATION (MEASURED: "`b` can't be matched in this position"), AND THAT IS THE TREE's
-# OWN RULE FOR EVERY SUCH READER.
 def wire_rows(b: Wire.Both) -> List<&2, C.KU>:
   match b:
     case Wire.Both{ss, ns}: kus_rows(ss, ns)
@@ -566,15 +448,6 @@ def kus(+text: String) -> IO(List<&2, C.KU>):
   kus.io(text)
 
 # ---------------------------------------------------------------- the runtime entry point
-# `IO.args()`'s INDEX 0 is the program, not the first argument -- measured with two probes under
-# `bun out.js WIRE`: index 0 answered `/private/tmp/p0.js` and index 1 answered `WIRE`. `runtime/ops_bend.bend`
-# reads its lane from index 1 for the same reason, so this is the tree's convention and not a new one.
-#
-# and the kernel arrives in chunks, because `String.split` is recursive per character. measured against
-# the runtime's own JS (`langs/js/core.js:357`, `$String$split$` recursing on `_t_0`): one call handles
-# ~28 KB and then answers `RangeError` -> "the machine stack overflowed". A 1063-uop kernel is 31 KB, which
-# is ORDINARY, so the caller splits the wire at LINE boundaries into pieces well under the cliff and passes
-# them as successive arguments. Each chunk is split on its own, so no single call sees more than ~20 KB.
 def skip_first(as: List<&1, String>) -> List<&1, String>:
   match as:
     case Nil{}: Nil{}

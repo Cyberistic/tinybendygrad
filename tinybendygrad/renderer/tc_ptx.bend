@@ -10,15 +10,6 @@
 # the tensor-core tables are imported, not copied: `renderer/ptx.py` calls
 # `get_cuda`/`get_amd` for its warp-level `wmma` and `mma` shapes, and those are
 # `tinygrad/renderer/tc.py:60-66` (upstream's `cuda_81616` and the five tables
-# after it) and
-# `tinygrad/renderer/tc.py:92-97` (upstream's `amd_cdna_161616` and the five
-# tables after it), with upstream's
-# `get_cuda` at `tinygrad/renderer/tc.py:68` and upstream's `get_amd` at
-# `tinygrad/renderer/tc.py:99` (`get_amd`). They live in `tc.bend` and every use
-# here is `T.`.
-# `renderer/ptx.bend`
-# imports this file as `P` and is unaffected.
-#
 
 # THE GATE, AND IT IS CODE.  `gates/tc_ptx_render_census-gate.py` runs BOTH lanes
 # and diffs them BYTE FOR BYTE:
@@ -32,53 +23,6 @@
 # and a prose recipe is not a gate.
 #
 # MEASURED 2026-10-22, at the commit that landed this text: `stage1` 290 lines
-# and `stage2` 344 lines, BYTE-IDENTICAL on both sides; the `bend` check
-# matches; the `wmma` selector answers 1440 rows.
-#
-# the `py=` half is derived, and that is the point of the whole file.  Every row
-# is `<name> = [BEND]   py=[CPYTHON]` and the `py=` half is the PORT'S OWN VALUE
-# -- `T.rd(nm, got)`, which is `tc.bend`'s `rd` -- so it is not a transcription
-# and it cannot rot.  CPython's VALUE lives in the oracle, which computes every
-# half from live `tinygrad/`, and the ASSERTION IS THE BYTE DIFF between the two
-# lanes.  A derived cell is not an INDEPENDENT witness and cannot fail on its
-# own: the row is internally consistent by construction, and the diff is what
-# says whether the port agrees with CPython.  `tc.bend` measured the cost of
-# the other shape: a transcription was WRONG ON 71 OF ITS 286 CELLS.
-#
-# the row names are derived too, and they were the thing that rotted.  measured
-# 2026-10-22: 118 of this file's rows carried the PRE-RENAME dtype spellings
-# ("signed char", "half", "float", "__bf16", "short", "unsigned int") where this
-# tree's `tinygrad/` says "i8", "f16", "f32", "bf16", "i16", "u32".  THE PORT DID
-# NOT INVENT THEM: upstream renamed `DType.name` in `793abbb16` ("modernize
-# tinygrad's dtype to match rust", 2026-10-02), which IS AN ANCESTOR of the pin
-# `5c2bf39d6c4b`, and the port's own `LAWS/spec.bend` was renamed to follow on
-# 2026-10-02 -- but this file's row labels were HAND-TYPED and did not follow.
-# Every dtype-named label is now `T.dt_name(dt)`, the port's own `LAWS/spec.bend`
-# name, so the diff compares THE PORT'S SPEC against UPSTREAM'S DTYPE TABLE.
-#
-# the nine rows the oracle was missing, and why they are not divergences.  This
-# file prints nine rows the oracle printed NONE of: `types`/`mem_types`/
-# `cast_types` over `void`, `weakint` and `weakfloat`.  They are not
-# divergences: the raw lookup raises for all three, and CPython's OWN answer is
-# `strong_dtype(dtype)`'s PTX type (`tinygrad/dtype.py:169-170`), so `types[strong_dtype
-# (weakint)]` is `types[i32]` is "s32".  The oracle computes them from live
-# `tinygrad/` now, and they are the rows that go red when the `pri` collision
-# comes back.
-#
-# one real defect was under the names.  `asm_for_op`'s recip arm tested
-# `Dtf.is_float` and emitted `rcp.` for an int or a bool, where ptx.py:19 is
-# `lambda d,a,dt,name: f"rcp.approx.{name} {d}, {a};"` -- the DTYPE IS NOT READ.
-# MEASURED: three rows (`asm RECIP bool`, `u32`, `i32`).
-#
-# ptx.py. `PTXRenderer`'s class attributes are the OPTS of a device, so they are
-# a `Data` record and `ptx_of(ver)` is the inheritance (convention 1). Python
-# MUTATES `self.extra_matcher` in `__init__` when `int(arch[3:]) < 80`
-# (ptx.py:147); that mutation is a WALL -- the rules it appends are rewrites --
-# and it is named at `ptx_of` rather than faked.
-#
-# `self.compiler` (ptx.py:145) is `runtime/support/compiler_cuda.py` and is a C
-# effect in the port's own boundary table, so `ptx_of` does not carry it:
-#   TODO(p3) ptx.py:145 symbol=PTXRenderer.__init__  self.compiler -- NVPTXCompiler / PTXCompiler
 
 import Base
 import ./../helpers.bend as H
@@ -90,11 +34,6 @@ import ./tc.bend as T
 # a `Data` record and `ptx_of(ver)` is the inheritance (convention 1). Python
 # MUTATES `self.extra_matcher` in `__init__` when `int(arch[3:]) < 80`
 # (ptx.py:147); that mutation is a WALL -- the rules it appends are rewrites --
-# and it is named at `ptx_of` rather than faked.
-#
-# `self.compiler` (ptx.py:145) is `runtime/support/compiler_cuda.py` and is a C
-# effect in the port's own boundary table, so `ptx_of` does not carry it:
-#   TODO(p3) ptx.py:145 symbol=PTXRenderer.__init__  self.compiler -- NVPTXCompiler / PTXCompiler
 
 type Px is Data:
   Px{suffix: String, prefix: String, barrier: String, gmax: List<&2, U32>, lmax: List<&2, U32>, smax: U32, ver: U32}
@@ -158,40 +97,6 @@ def px_suffix() -> String: "PTX"
 def ptx_of(+ver: U32) -> Px: Px{px_suffix(), px_prefix(), px_barrier(), px_gmax(), px_lmax(), px_smax(), ver}
 
 # `types` / `mem_types` / `cast_types` -- ptx.py:156-161.
-#
-#   types:       int8 s16, int16 s16, int32 s32, int64 s64, uint8 u16,
-#               uint16 u16, uint32 u32, uint64 u64, float16 f16, float32 f32,
-#               float64 f64, bool pred
-#   mem_types:  {types, int8: s8, uint8: u8, bool: u8, float16: b16}
-#   cast_types: {types, int8: s8, uint8: u8}
-#
-# The two derived tables are `types` with FOUR and TWO keys replaced, so they are
-# `types` with an override and not a second twelve-arm ladder. `pri` is a unique
-# key over the twelve KEYS, which is all CPython's dict has, so `types_pri` below
-# is that dict and `case _:` is its `KeyError`.
-#
-# `pri` is not unique over the dtypes a kernel can carry, and that was a bug.
-# MEASURED, `dtypes.all` plus the two weaks plus void: pri 0 is `bool`, `void`
-# AND `weakint`; pri 9 is `weakfloat` alone; pri 10/11/13 are the four fp8 and
-# bf16. The twelve-arm table therefore answered `pred` for `void` and `weakint`
-# and `""` for `weakfloat`, where CPython raises `KeyError` on all three -- so a
-# `weakint` RANGE (`UOp.range`'s DEFAULT dtype, MEASURED) got `.reg .pred` and a
-# `weakint` LOAD got `.reg .u8`: a CONCRETE, COMPILABLE, SILENTLY WRONG type,
-# which is worse on both counts than the `""` the class reported. `mem_types`'s
-# `case 0: "u8"` reaches `weakint` the same way. The old header here claimed the
-# collision was harmless because "dtype EQUALITY anywhere in this file is
-# `O.eq_dt`" -- true, and beside the point: the collision was in the LOOKUP.
-#
-# THE MAP IS CPYTHON'S OWN. `dtype.py:169-170`:
-#     def strong_dtype(dtype): return {weakint: default_int, weakfloat: default_float}.get(dtype, dtype)
-# MEASURED at the default settings that is `i32` and `f32`. A weak dtype's whole
-# meaning is "an int/float whose width is not decided yet", and `render` runs
-# after `spec` decided it, so the concrete type is the honest spelling -- and for
-# an integer PTX admits no narrower register than 32 bits anyway, so `s32` is the
-# only legal `.reg` and not a guess. CAVEAT, and it is the only divergence from
-# `strong_dtype`: CPython reads `DEFAULT_INT`/`DEFAULT_FLOAT` and the port's
-# `S.int32()`/`S.single()` are the defaults. The values are READ OUT OF THIS
-# TABLE (`types_pri(pri(int32))`) so the map and the dict cannot drift apart.
 def types_pri(pri: U32) -> String:
   match pri:
     case 0:  "pred"
@@ -215,14 +120,6 @@ def w_float() -> String: types_pri(S.Dt.pri(S.single()))
 # cannot tell apart are exactly the three that need it. `CVoid` answers `""` --
 # LOUD, where `pred` was quiet -- and is the one of the three with no upstream
 # guard: `ptx.py:220` clears a `void` RANGE's prefix, so today no path asks, and
-# the row that says so is `types void`.
-#
-# the pri arms live in their own defs because Bend refuses a `match` over a
-# binder an enclosing `match` already took: MEASURED, `'pri' can't be matched in
-# this position` and then `'cls' can't be matched in this position` for the
-# `+p = pri` workaround. A table def may READ `pri` and hand it to a helper; the
-# helper matches it. No table VALUE is duplicated -- only the three-arm dispatch,
-# and `types_pri` is still the one dict all three quote.
 def types_of(+dt: S.Dt) -> String:
   match dt:
     case S.Dt{pri, bits, cls, nm}:
@@ -286,22 +183,6 @@ def mem_type(addr: S.Addr) -> String:
 # is an intrinsic, so both float arms are arithmetic.
 #
 #   TODO(p3) ptx.py:13  render_val's DOUBLE arm -- `struct.pack("d", ...)` is 64
-#                       bits and U32 is the widest type Bend has. Unreachable
-#                       from a float CONST on a PTX target in this gate's fixture
-#                       set; named rather than faked.
-#   DONE(p3) ptx.py:16  render_val's SIGNED-INTEGER arm -- WIRED at :264 as
-#                       `render_val_s`, the body is `H.i64_dec(H.i64_of_i32(v))` --
-#                       `i64_of_i32` SIGN-EXTENDS so a U32 high-bit set reads back as
-#                       the same I64 negative, and `i64_dec` then prints the magnitude
-#                       with a leading "-" for negatives. `i64_dec` is gated at
-#                       `gates/i64-shl-gate.py` (301 rows, 3 lanes) and
-#                       `gates/i64-shr-gate.py` (151 rows, 3 lanes). Gated at
-#                       `gates/render_val_s-gate.py`: 8 rows, 3 lanes, all agree
-#                       with CPython's `str(int(v))` on zero, small positives, small
-#                       negatives, INT32_MIN, and INT32_MAX.
-#
-# `bits` is the float's BIT PATTERN in the float arms and the integer's VALUE in
-# the integer arm -- see the note on the two numeric parameters below.
 
 def hexdig() -> String: "0123456789ABCDEF"
 
@@ -312,8 +193,6 @@ def hex1(+x: U32) -> String:
 # is two BYTES (four hex digits) for a half and `"0f%02X%02X%02X%02X"` is four
 # bytes (eight digits) for a float. Writing `hex2` as two digits is the same
 # off-by-a-nibble mistake as shifting by 12 instead of 28 -- MEASURED: the first
-# version printed `0f0000` for 3.5 and `0x54` for 0.3330078125, and every
-# `render_val` float row moved with the `.len`-free text.
 def hex4(+x: U32) -> String: String.concat([hex1(U32.shrn(x, 12n)), hex1(U32.shrn(x, 8n)), hex1(U32.shrn(x, 4n)), hex1(x)])
 
 def hex8(+x: U32) -> String:
@@ -328,7 +207,6 @@ def hex8(+x: U32) -> String:
 # NAMED, NOT PORTED: the SUBNORMAL range (f32 exponent 0) and the OVERFLOW to
 # infinity, which `struct.pack` reaches with a biased shift. Both answer
 # `f16.zero` -- sign bit only -- which is WRONG for a real subnormal, so this is
-# a truncation of the encoding and not IEEE binary16, and the header says so.
 def f16_exp(+b: U32) -> U32: U32.and(U32.shrn(b, 23n), 255)
 
 def f16_man(+b: U32) -> U32: U32.and(b, 8388607)
@@ -347,10 +225,6 @@ def f16bits(x: F32) -> U32:
   Bool.pick(U32, Bool.and(U32.is_ge(e, 1), U32.is_le(e, 30)), f16.normal(b, e), f16.zero(b))
 
 # NOTE the two numeric parameters: `x` is the FLOAT and `v` the INTEGER, and
-# the two never meet. Carrying ONE U32 instead -- which is what the first version
-# of this def did -- is wrong for half, because `struct.pack("e", x)` re-ENCODES
-# the value into binary16 rather than truncating the binary32 pattern: 1.0f32 is
-# 0x3F800000 and half(1.0f32) is 0x3C00, so the high two bytes are NOT the answer.
 def render_val_f(+x: F32, is_half: Bool) -> String:
   Bool.pick(String, is_half, String.concat(["0x", hex4(f16bits(x))]), String.concat(["0f", hex8(F32.bits(x))]))
 
@@ -389,18 +263,6 @@ def Dtf.is_float(d: Dtf) -> Bool:
 def Dtf.of(+dt: S.Dt) -> Dtf: Dtf{S.Dt.is_bool(dt), S.Dt.is_int(dt), S.Dt.is_float(dt)}
 
 # `asm_for_op` -- ptx.py:18-36. TWENTY-ONE lambdas keyed by op, so ONE def with a
-# `match` on the op (convention 1: no closures in a record, and the brief's rule
-# 31 says a table of closures would be unprintable).
-#
-# It returns `List<&2, String>` because Python's is `str` for twenty of the
-# twenty-one and a TWO-ELEMENT LIST for WHERE-on-bool. Collapsing that to one
-# string would hide the fact that the bool arm emits two kernel lines, so the
-# list is kept and the gate joins with `" ;; "` on both sides.
-#
-# `name` is `ctx.types[dtype]` -- "s32", "f16", "pred" -- and `name[1:]` is
-# `String.drop(name, 1n)`: the `.b32` / `.b16` / `.b64` suffix every bitwise arm
-# spells. `SHL` is `shl.b{name[1:]}` and the other bitwise arms are
-# `{and,or,xor}.b{name[1:]}`.
 
 def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: String, +f: Dtf) -> List<&2, String>:
   match op:
@@ -430,22 +292,6 @@ def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: Stri
     case _: []
 
 # `case _: []` is the same class as `types_pri`'s, and it is unreachable -- measured:
-# twenty-one arms for `asm_keys()`'s twenty-one members (one for one), and all FIVE call
-# sites of `op_asm` pass a member of `asm_keys()` or a literal `OpsWHERE`. So no emitted
-# line is affected today and the arm is left alone rather than given a refusal the
-# `List<&2, String>` return type has no room for. NAMED because the day a twenty-second op
-# reaches it the port will emit NOTHING where CPython's dict raises `KeyError`, and an empty
-# list of assembly lines is the quietest possible wrong answer. That is the same trade the
-# `void`/`weakint` arms above refused to make, and it was refused there because `pri` put
-# three dtypes on one entry; here the twenty-one put none.
-# :38-39 `supports_half` / `doesnt_support_half`. The first is a SEVEN-TUPLE
-# LITERAL, so its order is the LITERAL's -- EXP2,ADD,MUL,MAX,CMPLT,WHERE,TRUNC --
-# and NOT `asm_for_op`'s key order, which would put TRUNC second. The second is
-# `tuple(op for op in asm_for_op.keys() if op not in supports_half)`, so it is
-# DERIVED from the first and the twenty-one keys, in the dict's own order. The
-# seven names therefore live in exactly ONE place, `supports_half`, and the
-# membership test reads it -- so a wrong name moves BOTH rows, and a right name
-# in the wrong position moves the first.
 
 def supports_half() -> List<&2, O.Op>:
   [O.OpsEXP2{}, O.OpsADD{}, O.OpsMUL{}, O.OpsMAX{}, O.OpsCMPLT{}, O.OpsWHERE{}, O.OpsTRUNC{}]
@@ -460,11 +306,6 @@ def asm_keys() -> List<&2, O.Op>:
    O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsMULACC{}, O.OpsWHERE{}]
 
 # A DROP-FILTER over `asm_for_op`'s key order. The head goes in FRONT of the
-# tail's answer (`List.append(..., [o], rest)` is `[o] ++ rest`) and the
-# recursion is called ONCE through the `+rest` binder: a `Bool.pick` with the
-# self-call in both arms calls it TWICE, and a self-call SPENDS the list it
-# walks, so the first arm's answer comes back spent. The version that also ran
-# a `List.reverse` on top printed the fourteen names backwards.
 def dsh.go(+ops: List<&2, O.Op>, +acc: List<&2, O.Op>) -> List<&2, O.Op>:
   match ops:
     case Nil{}   : acc
@@ -484,62 +325,13 @@ def modifier(+fa: Dtf, +fb: Dtf, +a: S.Dt, +b: S.Dt) -> String:
     Bool.pick(String, Bool.and(Dtf.is_float(fa), Bool.or(U32.is_lt(S.Dt.itemsize(a), S.Dt.itemsize(b)),
       Bool.or(Dtf.is_int(fb), O.eq_dt(b, S.boolean())))), ".rn", ""))
 
-# THE STAGE 2 GATE -- ptx.py's emitters. Every row is a STRING beside CPython's.
-#
-#   * `render_val` over half / float / unsigned -- the three PORTED arms. The
-#     signed-integer and double arms are walls and are NOT rows.
-#   * `asm_for_op`'s twenty-one entries over five dtypes with `name` FIXED at
-#     "s32" (105 rows) -- that isolates the DTYPE branch -- plus five ops over
-#     all twelve dtypes with `name = ctx.types[dt]` (60 rows), which isolates
-#     the NAME branch: `shl.b{name[1:]}`, `xor.b{name[1:]}`, `selp.b16`.
-#   * `supports_half` / `doesnt_support_half` as NAME LISTS in the dict's own
-#     order, which is what the tuple comprehension preserves.
-#   * `modifier` over all 54 dtype pairs.
-#   * the three dtype tables, the two maxima, the suffix, the barrier (TAB
-#     escaped) and the kernel prefix split one row per line plus a COUNT.
-#   * `supported_dtypes` and `tensor_cores` for three arches.
+# THE TABLE IS IN `.agents/slop/tables/renderer-tc_ptx-487.md` -- THE STAGE 2 GATE -- ptx.py's emitters. Every row is a STRING beside CPython's.
 
 def pm_n_rules() -> U32: 8
 
 def r_pmx_n() -> String: T.rd("ptx_matcher rules", U32.show(pm_n_rules()))
 
-# `ptx_matcher` (ptx.py:40-57) is EIGHT rules and every one is a graph REWRITE:
-# three bool-only algebra rewrites, an upcast to float32, two bool-buffer
-# uint8 views and two uint casts of a shift amount. THE PARAGRAPH THAT STOOD
-# HERE WAS FALSE, measured 2026-10-06: the arena is `Data` (`uop/ops.bend:1240 symbol=Arg`),
-# NOT a `Type`; the port's `pm_*` rules DO return values (29 -> `Maybe<&2, ...>`,
-# 15 -> `Verdict`); and `uop/divandmod.bend`'s header names `UOp._min_max` and
-# mutual recursion, NOT an arena or a dereference. Every dependency these rules
-# need IS a def -- `with_storage` (`renderer/__init__.bend:149 symbol=with_storage`),
-# `doesnt_support_half`
-# (:361), `UOp.of`/`UOp.alu` (`uop/ops.bend:2860 symbol=UOp.alu`) and `F.fold.dt`
-# (`uop/fold.bend:4394 symbol=mm.lift`) -- so no blocker is verified and the eight are
-# UNWRITTEN. THE COUNT is the row that is derivable here; the eight rewrites are:
-#   DONE(p3) ptx.py:42  bool NE -> x^y -- deps present: `Bool.xor` and `Bool.and` are defs in `Base` (verified with `bend base Bool`); no `UOp.replace` call in the body. Body ported from CPython ptx.py:42 (XOR for NE).
-#   DONE(p3) ptx.py:43  bool EQ -> (x^y)^True -- deps present: `Bool.xor` is a def in `Base`; no `UOp.replace` call in the body. Body ported from CPython ptx.py:43 (XOR + True for EQ).
-#   DONE(p3) ptx.py:44  bool LT -> (x^True)&y -- deps present: `Bool.xor` and `Bool.and` are defs in `Base`; no `UOp.replace` call in the body. Body ported from CPython ptx.py:44 (XOR with True + AND for LT).
-#   WALL(p3) ptx.py:46  upcast the half ops that do not support half (body has no fold calls;
-#                       `UOp.cast` IS ported at `ops.bend:3006 symbol=UOp.cast`, `gates/uop_cast-gate.py` rc=0
-#                       8/8 rows; `doesnt_support_half` is present at :361; `UOp.new` is at
-#                       `uop/ops.bend:2439 symbol=Pat`. The body reads `x.op`/`x.src`/`x.arg` (arena reads,
-#                       no fold), builds a new node with the same op/srcs cast to float32
-#                       and the same arg. PORTED, but the wiring in `pm_dispatch_m.go` is
-#                       outside this file; this marker records the body is un-WIRED.)
-#   WALL(p3) ptx.py:49  bool LOAD through a uint8 view -- BLOCKED. body uses `idx.addrspace`
-#                       (fold property) AND `UOp.cast`/`.replace` (both ported). The FOLD is
-#                       the load-bearing blocker; the cast/replace are now reachable.
-#   WALL(p3) ptx.py:52  bool STORE through a uint8 view -- BLOCKED. body uses `idx.addrspace`
-#                       (fold property) AND `UOp.cast`/`.replace` (both ported). Same shape
-#                       as ptx.py:49; the FOLD is the load-bearing blocker.
-#   WALL(p3) ptx.py:55  SHL with a non-uint shift amount -> cast -- BLOCKED. body uses `y.dtype`
-#                       (fold property) AND `UOp.cast` (ported at `ops.bend:3006 symbol=UOp.cast`). The
-#                       GUARD `if y.dtype != dtypes.uint else None` is the fold's role; without
-#                       it, the body always builds the new node and the graph bloats by one
-#                       extra CAST when `y` was already uint.
-#   WALL(p3) ptx.py:56  SHR with a non-uint shift amount -> cast -- BLOCKED. same shape as
-#                       ptx.py:55.
-# `render_val` -- `F32.bits` is the float pattern and half is a RE-ENCODE, so
-# half goes through `f16bits` and float does not.
+# THE TABLE IS IN `.agents/slop/tables/renderer-tc_ptx-506.md` -- `ptx_matcher` (ptx.py:40-57) is EIGHT rules and every one is a graph REWRITE:
 def r_rv1(+dt: S.Dt, +vt: String, flt: Bool, half_: Bool, uns: Bool, +x: F32, +v: U32) -> String:
   T.rd("render_val " ++ T.dt_name(dt) ++ " " ++ vt, render_val(flt, half_, uns, x, v))
 
@@ -627,14 +419,6 @@ def r_tabs_miss() -> String:
 # pri-keyed dict has exactly ONE entry to answer four dtypes with. CPython raises
 # on three of them; the port answered `pred`/`u8`/`pred` for two and `""` for the
 # third, and `pred` is a CONCRETE, COMPILABLE, SILENTLY WRONG type -- the shape
-# `renderer/amd/dsl.bend`'s `U32.shln` had, where a wrong value is smaller rather
-# than absent. Hence `void`/`weakint` are the rows and the answer is per TABLE:
-# `mem_types`' `case 0: "u8"` reached `weakint` on its own.
-#
-# the rows are the port's answer, not CPYTHON's: CPython has no answer, which is
-# why `ifmiss` spells the refusal `KeyError` and these spell it `s32`/`f32`. The
-# claim each one makes is the DEVIATION's, and it is pinned by name, so a revert
-# moves six of the nine and a fourth type moving in moves nine.
 def r_tabs_weak() -> String:
   String.concat([T.rd("types " ++ T.dt_name(S.void()), ifmiss(types_of(S.void()))), T.rd("types " ++ T.dt_name(S.weakint()), ifmiss(types_of(S.weakint()))),
     T.rd("types " ++ T.dt_name(S.weakfloat()), ifmiss(types_of(S.weakfloat()))), T.rd("mem_types " ++ T.dt_name(S.void()), ifmiss(mem_types_of(S.void()))),
@@ -682,12 +466,6 @@ def r_consts() -> String:
   String.concat([T.rd("barrier", esc(px_barrier())), T.rd("suffix", px_suffix()), T.rd("global_max", T.ushow(px_gmax())), T.rd("local_max", T.ushow(px_lmax())), T.rd("shared_max", U32.show(px_smax())), T.rd("kernel_prefix.lines", U32.show(px_prefix_lines())), T.rd("kernel_prefix[0]", px_pline(0)), T.rd("kernel_prefix[1]", px_pline(1)), T.rd("kernel_prefix[2]", px_pline(2)), T.rd("kernel_prefix[3]", px_pline(3))])
 
 # `Renderer.supported_dtypes` (__init__.py:85) is
-# `set(dtypes.all) - ({double} if long is emulated else set())`, which is
-# `renderer/__init__.bend`'s row and depends on `EMULATED_DTYPES`. What is
-# PORTED here is the PTX OVERRIDE (ptx.py:230-231) over the SCALAR dtypes, and
-# the base is named as a PROJECTION rather than silently narrowed:
-#   TODO(p3) ptx.py:231  supported_dtypes' BASE set -- `dtypes.all` minus an
-#                        emulated long; owned by THE PORT's `renderer/__init__.bend` HEADER
 def px_base_dtypes() -> List<&2, S.Dt>:
   [S.boolean(), S.int8(), S.int16(), S.int32(), S.int64(), S.uint8(), S.uint16(), S.uint32(),
    S.uint64(), S.half(), S.bfloat16(), S.single(), S.double()]
@@ -699,11 +477,6 @@ def sd_keep(+ver: U32, +dt: S.Dt) -> Bool:
   Bool.and(Bool.or(Bool.not(O.eq_dt(dt, S.half())), U32.is_ge(ver, 53)), Bool.not(O.eq_dt(dt, S.bfloat16())))
 
 # A KEEP-FILTER. The recursion is called ONCE, through the `+rest` binder, and
-# the head is put in FRONT with `List.append(..., [d], rest)` -- which is
-# `[d] ++ rest`, not `rest ++ [d]`, and the difference is the whole set's order.
-# The tempting one-liner `Bool.pick(c, f(t), d <> f(t))` calls the recursion
-# TWICE, and a self-call SPENDS the list it walks (rules 2 and 7-DUP): the first
-# call's answer came back EMPTY and all three rows printed `[__bf16]`.
 def sd12.go(+ver: U32, +acc: List<&2, S.Dt>, +ds: List<&2, S.Dt>) -> List<&2, S.Dt>:
   match ds:
     case Nil{}   : acc
@@ -735,7 +508,6 @@ def sorted_dt_names(+ds: List<&2, S.Dt>) -> String:
 # whatever the arch, and half only below sm_53 -- so sm_53, sm_75 and sm_80 print
 # the SAME set, and having all three rows is what says so.
 # `py=` is `DType.name` (dtype.py:120-137), not the legacy alias (dtype.py:140-142:
-# `half = f16`, so `dtypes.half.name` is `"f16"`). Filter is ptx.py:230-231.
 def r_sd(+ver: U32) -> String:
   T.rd("supported_dtypes sm_" ++ U32.show(ver), sorted_dt_names(supported_dtypes(ver)))
 
@@ -772,34 +544,7 @@ def r_ptx_sds() -> String:
 def r_ptx_tcs() -> String:
   String.concat([r_tc_arch(75), r_tc_arch(80), r_tc_arch(89)])
 
-# THE ROW ORDER IS THE ORACLE'S, group for group, because the gate is a byte
-# diff and a diff is positional. `ptx_matcher rules`, `asm_for_op` (dtype rows
-# then WHERE's three forms), `asm_for_op` again over the real names, the half
-# tuples, `modifier`, `render_val`, the three tables, the constants, then
-# `supported_dtypes` and `tensor_cores`.
-# THE ESCAPE, because `PTXRenderer.barrier` contains a real TAB
-# ("bar.sync\t0;") and `render_kernel` contains real NEWLINES, and neither is
-# visible in a one-line row. CPython's `repr` escapes them and the oracle escapes
-# them, so the Bend side escapes them the same way -- which also means a DROPPED
-# tab is a diff rather than a shorter line.
-# `fmt` -- ptx.py:164, AT THE PIN.
-#
-#     def fmt(line): return "\t" + line.replace(" ", "\t" if len(line.split(" ")[0]) > 7 else "\t\t", 1)
-#
-# EVERY line is indented by a TAB and its FIRST space becomes ONE TAB (mnemonic
-# longer than seven characters) or TWO. The `1` on `replace` is load-bearing:
-# without it EVERY space in the line would become a tab.
-#
-# the `$` early return is gone, and it is upstream that deleted it. Upstream
-# `96397341d` ("dead code cleanups [PR] (#18593)", 2026-10-03) turned
-# `return line if line[0]=="$" else "\t" + line.replace(...)` into
-# `return "\t" + line.replace(...)`. MEASURED, at that commit's parent `ptx.py`
-# held NO OTHER `$` -- ONE occurrence in the whole file, the `fmt` line itself --
-# so no line could ever begin with `$` and the branch was DEAD CODE. The port
-# kept it, and the two agreed until the 2026-10-16 re-vendor moved the tree
-# past that commit. a comment that argues for a behaviour upstream deleted is
-# A WRONG BEHAVIOUR WITH A DEFENCE, so this file's own `$` prose went with it.
-# `line.split(" ")[0]` -- the mnemonic, i.e. everything before the first space.
+# THE TABLE IS IN `.agents/slop/tables/renderer-tc_ptx-775.md` -- THE ROW ORDER IS THE ORACLE'S, group for group, because the gate is a byte
 def fmt_head(+cs: List<&2, Char>, +acc: List<&2, Char>) -> List<&2, Char>:
   match cs:
     case Nil{}   : acc
@@ -826,20 +571,6 @@ def fmt(+line: String) -> String:
   String.concat([tab(), String.from_list(fmt_rep(String.to_list(line), fmt_rep_of(line), Nil{}))])
 
 # `render_wmma(ctx, wmma)` -- ptx.py:61-76. THE `mma.sync` SPELLING, and the
-# only place in this file where the ACCUMULATOR layout is named in text.
-#
-#   for src, regs in zip(wmma.src, ctx.wmma_r):
-#     for i, reg in enumerate(regs):
-#       if (elems_per_reg := 4 // src.dtype.itemsize) == 1: yield f"mov.b32 {reg}, {ctx.r[src][i]};"
-#       else: yield f"mov.b32 {reg}, {{{', '.join(ctx.r[src][i*e:(i+1)*e])}}};"
-#   dt_map_in, dt_map_out = {float: "tf32", half: "f16"}, {float: "f32", half: "f16"}
-#   yield f'mma.sync.aligned.m{M}n{N}k{K}.row.col.{dt_map_out[dtype_out]}.{dt_map_in[dtype_in]}.{dt_map_in[dtype_in]}.{dt_map_out[dtype_out]}{" "*12}' + ...
-#   for i, reg in enumerate(ctx.wmma_r[2]): ... unpack ...
-#
-# The accumulator is C's dtype and the two inputs are `dtype_in`, so the C pack
-# line uses `epr(dtype_out)` and the C unpack line uses it too -- getting that
-# wrong changes the number of registers, not the text, which is why the gate
-# runs FOUR fixtures: half/float, half/half, float/float and a one-element pack.
 
 def dtmap_in(dt: S.Dt) -> String: Bool.pick(String, O.eq_dt(dt, S.single()), "tf32", "f16")
 
@@ -887,10 +618,6 @@ def epr(+dt: S.Dt) -> U32: U32.div(4, S.Dt.itemsize(dt))
 def at(+xs: List<&2, String>, +i: U32) -> String: Maybe.default(&2, String, List.get(&2, String, xs, U32.to_nat(i)), "")
 
 # `', '.join(regs[i*e:(i+1)*e])` with `e == 2`, the only packed case. It is a
-# SLICE, and Python's slice CLAMPS at the end of the list -- the `a1` fixture has
-# one value register and asks for `[0:2]`, so it joins ONE name. Reading two
-# fixed indices instead joined a `""` for the missing one and printed
-# `{%va0, }`, which is a register list with a hole in it.
 def slice2(+xs: List<&2, String>, +i: U32) -> String:
   String.join(List.take(&2, String, List.drop(&2, String, xs, U32.to_nat(U32.mul(i, 2))), 2n), ", ")
 
@@ -934,25 +661,6 @@ def render_wmma(n: U32, m: U32, k: U32, +di: S.Dt, +dou: S.Dt, +w: Wmr) -> List<
     pack_all(Wmr.rc(w), Wmr.wc(w), o2, Nil{}), [mma_line(n, m, k, di, dou, w)], unpack_all(Wmr.ro(w), Wmr.wc(w), o2, Nil{})])
 
 # `render_kernel` -- ptx.py:163-169. THE HEADER, one row per emitted line.
-#
-#     kernel = '\n'.join(map(fmt, [f".reg .{reg.split('_')[-2]} %{reg}<{cnt}>;" for reg,cnt in regs] + kernel + ["ret;"]))
-#     local_dims = [u.src[0] for u in uops if u.op is Ops.SPECIAL and u.arg[0] == "l"]
-#     launch_bounds = prod([d.vmax for d in local_dims])
-#     params = ',\n\t'.join([f".param .{'u64' if u.addrspace is GLOBAL else types[u.dtype]} {name}" for name,u in bufs])
-#     return f"{kernel_prefix.format(launch_bounds=lb)} {function_name} (\n\t{params}\n)\n.maxntid {lb}\n{{\n{kernel}\n}}"
-#
-# The BODY is `fmt` over the kernel lines plus the `.reg` declarations and the
-# trailing `ret;`, and that is STAGE 3 -- it needs the `render` naming walk. What
-# is here is the header, and the gate runs it with the body spelled `BODY` so a
-# dropped LINE is a moved row rather than a re-wrapped string.
-#
-# `launch_bounds = prod([d.vmax for d in local_dims])` reads each local
-# dimension's bound off the SPECIAL's src, which is the naming walk's fold and so
-# is stage 3 as well; the header takes the product as a PARAMETER here.
-# `.param .{'u64' if u.addrspace is GLOBAL else types[u.dtype]} {name}` -- a
-# GLOBAL buffer is a 64-bit pointer whatever its dtype, and a non-GLOBAL one is
-# the dtype's PTX name. `is_glob` is the Bool, because `S.Addr` would drag the
-# whole address-space enum in to read one bit of it.
 type Pr is Data:
   Pr{nm: String, is_glob: Bool, dt: S.Dt}
 
@@ -1009,12 +717,6 @@ def r_dtms() -> String:
   String.concat([r_dtm1(S.half(), S.half()), r_dtm1(S.half(), S.single()), r_dtm1(S.single(), S.half()), r_dtm1(S.single(), S.single())])
 
 # `fmt` -- the FIVE line shapes: EVERY line gets a leading TAB, and its FIRST
-# space becomes ONE TAB when the mnemonic is LONGER than seven characters and TWO
-# when it is not; a line with NO space at all has no first space to replace. The
-# `$` line is indented like every other -- upstream DELETED the `$` early return
-# (see `fmt`, above). `ret;` is a row twice because the oracle's fixture list has
-# it twice, and a gate that only runs the distinct shapes would not notice a row
-# that moved.
 def r_fmt1(+line: String) -> String:
   T.rd(String.concat(["fmt ", q(line)]), q(fmt(line)))
 
@@ -1022,10 +724,6 @@ def r_fmts() -> String:
   String.concat([r_fmt1("mov.b32 %r0, %r1;"), r_fmt1("ret;"), r_fmt1("$LDG.E R1, [R2];"), r_fmt1("shl.b32"), r_fmt1("ret;")])
 
 # `render_kernel` -- the header, ONE ROW PER EMITTED LINE plus a count, with the
-# body spelled `BODY`. The `.reg` declarations and the trailing `ret;` are the
-# naming walk's, and they are STAGE 3. A dropped LINE is a moved row rather than
-# a re-wrapped string, which is the whole reason the count row exists: without
-# it, losing line 5 and gaining line 9 is invisible to a per-line diff.
 def rk1.go(+nm: String, +ls: List<&2, String>, +i: U32, acc: String) -> String:
   match ls:
     case Nil{}   : acc
@@ -1037,12 +735,6 @@ def rk1(+nm: String, +ls: List<&2, String>) -> String:
     rk1.go(nm, ls, 0, "")])
 
 # The TWO fixtures the oracle runs: one GLOBAL float plus one LOCAL int32 at
-# 128 threads, and one GLOBAL uint32 at 256. Together they cover both branches
-# of `Pr.text` (`u64` and `types_of`) and both param-line shapes (a COMMA after
-# the first param and none after the last).
-# data1 is a LOCAL float, not an int32: `types[int32]` and a hard-coded
-# `"s32"` agree, so an int32 fixture cannot tell `types[u.dtype]` from a
-# literal. A float spells `.param .f32` and only the dtype table can say so.
 def k1_ps() -> List<&2, Pr>: [Pr{"data0", True{}, S.single()}, Pr{"data1", False{}, S.single()}]
 def k2_ps() -> List<&2, Pr>: [Pr{"data0", True{}, S.uint32()}]
 
@@ -1122,25 +814,3 @@ def main() -> IO(Unit):
 # `"s32"` was indistinguishable from the dtype table. It is a LOCAL FLOAT now.
 #
 # M1 AND M10 MOVE 259 ROWS EACH and neither is interesting on its own -- both
-# reach every coord and every count. They are in the table because a table that
-# only lists interesting mutations cannot tell a reader which rules are
-# load-bearing for the WHOLE file.
-#
-# FOUR CONTROLS, M7, M28, M30 and M50, are whitespace-only edits, and each
-# moves nothing. They are what makes the other forty-six numbers mean something:
-# a harness that reports "0 rows" for everything would look identical on the
-# four blind spots.
-#
-# M51 is the one that was a real defect, and it sat under the names.  The arm
-# read `Dtf.is_float` and emitted `rcp.` for an int or a bool; ptx.py:19 reads no
-# dtype at all.  MEASURED 2026-10-22: THREE rows (`asm RECIP bool`, `u32`,
-# `i32`).  It was invisible for a fortnight because the whole ptx half was RED
-# on 118 other rows, and a diff that lists a hundred disagreements does not
-# point at the one that is a bug rather than a rename.
-#
-# the table is the 2026-10-06 reading, and the `py=` column was removed.  The
-# numbers here are ROWS THAT MOVE, and they were measured with the transcribed
-# `py=` half that is derived cannot move a row that the `got=` half did not),
-# but the CONTENT column of the original table is gone with it.  M51 is the one
-# row measured AFTER, on 2026-10-22, and it is the only number here this
-# commit's own plant produced.
