@@ -2,15 +2,10 @@
 # pattern tables the lowerer runs over a SINK's ranges.
 #
 
-# ONE OF THREE. `codegen/rewriter.bend` was ONE file for `simplify.py` +
-# `late/coalesce.py` + `gpudims.py`; the 1:1 ruling -- one `.bend` per upstream
-# `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory
-# -- made it three, and this is `simplify.py`'s. The 54 rows the merged file
-# printed CONCATENATE IN PYTHON'S ORDER (this file, then `late/coalesce.bend`,
-# then `gpudims.bend`) to exactly those 54, and
+# The 54 rows the merged file printed CONCATENATE IN PYTHON'S ORDER (this file,
+# then `late/coalesce.bend`, then `gpudims.bend`) to exactly those 54, and
 # `.agents/slop/codegen3-gate.sh` is that invariant against the pre-split
-# snapshot. The cut itself is `.agents/slop/split-codegen3.py`, which moved every
-# body by LINE RANGE, so "moved verbatim" is a checkable claim and not a promise.
+# snapshot.
 #
 # the shared substrate is imported, not copied. `Rew` (the rule's answer), the
 # `rw_*` node readers, `rw_ranges`, `G` (the fixture's index map), `n_of` and the
