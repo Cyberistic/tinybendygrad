@@ -1868,7 +1868,8 @@ def rr_rngm_row.of(p: (O.Arena & RrMap), +n: U32) -> String:
   (+a, +m) = p
   +rngm = IX.IxCtx.rngm(RrMap.ctx(m))
   +e = IX.ix_rngm_get(rngm, n)
-  String.concat([Bool.show(IX.ix_rngm_has(rngm, n)),
+  String.concat(["rm=", Bool.show(IX.ix_rmap_has(IX.IxCtx.rmap(RrMap.ctx(m)), n)),
+                 " ", Bool.show(IX.ix_rngm_has(rngm, n)),
                  " in=", rr_dims_str(rr_ap_inp.of(e)),
                  " out=", rr_dims_str(rr_ap_out.of(e)),
                  " tbl=", U32.show(U32.from_nat(List.length(&2, IX.IxRange, RrMap.tbl(m))))])
