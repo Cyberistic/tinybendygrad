@@ -7845,3 +7845,59 @@ gates/cstyle_render_census-gate.py`**) -- **⇒⇒† AND **THE **GATE's **OWN *
 **byte-identical / **0 **refused**, **expect-moved=0**, **controls 5 of 5**, **plants-disagree 8 of 8**,
 **conflations 4 of 4**, **`substrate-start == substrate-end == live`**, **repro **339/339**, **⇒⇒† AND
 **`corpuswitness-gate` **PASS** -- **⇒⇒† AND **AND **THE **PROOF **GATE **READS **ALL **PROOFS **CHECK**.
+
+**⇒⇒† AND **THE **CUT's **FINAL **NUMBERS**, **⇒⇒† AND **THE **CENSUS **IS **THE **SAME
+**INSTRUMENT **FOR **EVERY **ROW**:
+**85,815 -> 55,320 **COMMENT **LINES** (**-35.5%**), **⇒⇒† AND **10,549 -> 9,218 **BLOCKS** (-12.6%),
+**⇒⇒† AND **THE **BLOCK **COUNT **FELL **LESS **THAN **THE **LINE **COUNT** **⇒⇒† AND **AND **THAT **IS
+**THE **SHAPE **OF **THE **CUT**: **THE **ESSAYS **WERE **CUT **AND **THE **ONE-LINE **NOTES **SURVIVED**
+(⇒⇒† AND **THE **RULE **KEEPS **THE **FACT**, **⇒⇒† AND **AND **A **FACT **IS **USUALLY **ONE **LINE**).
+
+**⇒⇒† AND **THE **PER-LAYER **CUTS**, **FROM **THE **AGENTS' **OWN **FIGURES** (⇒⇒† AND **EVERY **ONE
+**MEASURED **WITH **THE **SAME **CENSUS**)**:
+
+| the **layer** | the **before** | the **after** | the **cut** |
+|---|---|---|---|
+| **`uop/`** (NINE **FILES**) | 16,663 **LINES** | **1,984** | **-88.1%** |
+| **`renderer/`** (FOURTEEN **FILES**) | 8,477 | **3,183** | **-62.5%** |
+| **`runtime/` + **`nn/`** + **`mixin/`** + **THE **TOP-LEVEL **FILES** (79 **FILES**) | 34,093 | **30,328** | -11.1% |
+| **`codegen/`** + **`schedule/`** + **`engine/`** + **`viz/`** + **`llm/`** (86 **FILES**) | 28,365 | **27,151** | -4.3% |
+| **THE **TABLES** | 114 **BLOCKS**, 7,313 **LINES** | **29**, 3,222 | **-56%** **AND **MOVED **TO **`.agents/slop/tables/`** |
+
+**⇒⇒† AND **THE **TABLE **MOVE **IS **A **SEPARATE **CLASS**, **⇒⇒† AND **IT **IS **THE **MECHANICAL
+**ONE**: **109 **TABLES**, **40 **SOURCE **FILES**, **⇒⇒† AND **THE **MANIFEST **IS
+**`.agents/slop/tables/MANIFEST.rows`**, **⇒⇒† AND **AND **IT **IS **GENERATED **FROM **THE **FILES' **OWN
+**`FROM:` **LINES** (⇒⇒† AND **NOT **HAND-WRITTEN**)**.
+
+**⇒⇒† AND **AND **THE **CUT'S **OWN **DEFECT**, **⇒⇒† AND **IT **IS **THE **FINDING **THAT **MATTERED
+**MOST**: **A **TRIM **THAT **CUTS **A **COMMENT **BLOCK's **TAIL **LEAVES **A **SENTENCE **WITH **NO **END**
+-- **⇒⇒† AND **THAT **IS **NOT **A **SHORTER **COMMENT**, **⇒⇒† AND **IT **IS **A **COMMENT **THAT **SAYS
+**SOMETHING **FALSE **BY **OMISSION**, **⇒⇒† AND **IT **IS **WORSE **THAN **THE **PARAGRAPH **IT
+**REMOVED**, **⇒⇒† AND **BECAUSE **THE **REMOVED **PARAGRAPH **WAS **AT **LEAST **TRUE** -- **⇒⇒† AND
+**THE **TREE **NOW **HAS **NINE **REPAIR **COMMITS** (**`04c695e0f`** (94), **`f28ba8c7e`** (57),
+**`8e3596ac8`**, **`525e7c5d1`** (37), **`e1eb04322`** (3), **`9442ba954`** (4), **`5b224f558`**,
+**`f9c22fb70`** (8), **`2fad6e556`** (the **quoted **upstream **rule**)), **⇒⇒† AND **AND **THE **DETECTOR
+**IS **A **SCRIPT**: **A **COMMENT **BLOCK **WHOSE **LAST **LINE **ENDS **IN **A **COMMA**, **A **CONJUNCTION
+**OR **AN **ARTICLE**, **WITH **NO **`.`/`!`/`?`/`:` **TERMINATOR**, **IS **A **CUT **SENTENCE** -- **⇒⇒† AND
+**THE **RUNTIME **AGENT's **COUNT: **173 **BEFORE **-> **116 **AFTER** (⇒⇒† AND **THE **REMAINDER **ARE
+**SECTION **BANNERS **AND **COMPLETE **CLAUSES**)**.
+
+**⇒⇒† AND **THE **CUT **IS **PROVEN **COMMENT-ONLY **BY **THE **TREE's **OWN **GATE**, **⇒⇒† AND **ON **THE
+**COMMENT-STRIPPED **BYTES** (⇒⇒† AND **NOT **ON **THE **COMPILER's **VERDICT**): **`gates/comment-only-gate.py
+--base 0bb21b9a0`** **READS **PASS: 51 file(s), 0 not comment-only** -- **⇒⇒† AND **THE **ONLY **TWO **FILES
+**IN **THE **TREE **THAT **ARE **NOT **COMMENT-ONLY **ARE **`LAWS.bend` **AND **`LAWS/PROOF.bend`**, **⇒⇒† AND
+**AND **THOSE **ARE **ANOTHER **UNIT's **LAW **WORK** (THE **GATHER **COMPOSITION), **⇒⇒† AND **NOT **THE
+**CUT**.
+
+**⇒⇒† AND **THE **CERTIFICATE **ON **THE **CUT's **FINAL **COMMIT** (`2a221c434`), **TAKEN **IN **A **CLEAN
+**WORKTREE**: **38 **graphs / **38 **answered / **38 **agree / **0 **disagree / **38 **byte-identical / **0
+**refused**, **expect-moved=0**, **controls 5 of 5**, **plants-disagree 8 of 8**, **conflations 4 of 4**,
+**stable-pairs 5 of 5**, **`selfcheck: OK`**, **`oracle-selfcheck: OK`**, **census-rc=rc=0** -- **⇒⇒† AND
+**`substrate-start == substrate-end == 74bc773cd2ab8d5a`** -- **⇒⇒† AND **REPRO **339/339** -- **⇒⇒† AND
+**`corpuswitness-gate` **PASS** (seven readings OK, **`claim=REPRODUCIBLE`**) -- **⇒⇒† AND **AND **THE
+**PROOF **GATE **READS **ALL **PROOFS **CHECK**.
+
+**⇒⇒† AND **THE **RATCHET **IS **ARMED**: **`.agents/slop/comments/budget.rows`** **HOLDS **THE **CURRENT
+**MASS **PER **FILE** (198 **FILES**, **9,218 **BLOCKS**, **55,320 **LINES**), **⇒⇒† AND **AND **NO **FILE's
+**COMMENT **MASS **MAY **GROW **PAST **IT** **WITHOUT **THE **BUDGET **BEING **REGENERATED**, **⇒⇒† AND
+**AND **A **BUDGET **THAT **CAN **BE **RAISED **WITHOUT **A **REASON **IS **NOT **A **BUDGET**.
