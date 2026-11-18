@@ -1,3 +1,3 @@
-rop=node=REDUCE:other:RESHAPE arg=n=2 nsrc=1
+rop=node=REDUCE:other:PERMUTE arg=n=2 nsrc=1
 raw=raw arg=n=0 nsrc=1
 rebuild=rebuild arg=n=0 nsrc=1

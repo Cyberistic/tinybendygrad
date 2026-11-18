@@ -1420,21 +1420,77 @@ def tn_rop.ne1.of(ds: Maybe<&2, List<&2, O.Sint>>, +axis: List<&2, U32>) -> Mayb
 def tn_rop.red2.of(src: U32, +ar: O.Arena, op: O.Op, +rn: List<&2, U32>) -> O.Found:
   O.UOp.new(ar, O.OpsREDUCE{}, [src], O.AReduce{op, U32.from_nat(tn_rop.len(rn))}, O.TNone{})
 
-# `self.permute(perm)` where `perm = reduce_axis + the axes not in reduce_axis`, and
-# mixin/movement.py:229's identity test `sorted(order_arg) != list(range(self.ndim))`
-# hoisted. It is the
-# test that decides whether a PERMUTE node exists at all, so both arms answer `self`:
-# the hoist is the TEST, and building the PERMUTE is `tn_mop.order` above.
-def tn_rop.perm.of(is_id: Bool, +self: U32) -> U32:
-  match is_id:
-    case True{}: self
-    case _: self
+# `self.permute(perm)` where `perm = reduce_axis + the axes not in reduce_axis`
+# (ops.py:631), and mixin/movement.py:229's identity test hoisted. THE PERMUTE IS THE
+# RULE, NOT A TIDY-UP: `arg=(op, len(reduce_axis))` (ops.py:632) says the LEADING axes are
+# the reduced ones, so a reduce over axes 3 and 5 of a 6-D shape that is NOT permuted
+# claims axes 0 and 1 -- and rangeify then allocates the reduced ranges from the WRONG
+# dimensions. MEASURED: a 1x1x14x2x14x2 max_pool reduce reached rangeify as
+# `REDUCE(MAX, 2)` over a shape whose first two axes are 1, so the reduced ranges were
+# `CONST 0`s, `lower_reduce` found no ranges, and the kernel accumulated ONCE with the
+# input read at a constant address (`data1_784+0`). This arm answered `self` in BOTH cases
+# and the permute was never built.
+def tn_rop.cnt.of(m: Maybe<&2, List<&2, O.Sint>>) -> U32:
+  match m:
+    case Some{ds}: U32.from_nat(List.length(&2, O.Sint, ds))
+    case _: 0
 
-def tn_rop.perm(+ar: O.Arena, +self: U32, +axis: List<&2, U32>, +rn: List<&2, U32>) -> U32:
-  tn_rop.perm.of(O.eq_u32(rn, axis), self)
+def tn_rop.cnt(m: Maybe<&2, List<&2, O.Sint>>) -> U32: tn_rop.cnt.of(m)
+
+def tn_rop.nd(ar: O.Arena, +self: U32) -> U32:
+  tn_rop.cnt(tn_dims(tn_new(ar, self)))
+
+# the complement of the reduce axes, in order: `i for i in range(ndim) if i not in rn`.
+def tn_rop.has(+xs: List<&2, U32>, +k: U32) -> Bool:
+  match xs:
+    case Nil{}: False{}
+    case +x <> t: Bool.or(U32.is_eq(x, k), tn_rop.has(t, k))
+
+def tn_rop.others.go(+ks: List<&2, U32>, +rn: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ks:
+    case Nil{}: acc
+    case +k <> t:
+      tn_rop.others.go(t, rn,
+        Bool.pick(List<&2, U32>, tn_rop.has(rn, k), acc, List.append(&2, U32, acc, [k])))
+
+# `list(range(ndim))`, built from a NAT fuel because a `U32` counter is a COMPUTED
+# shrinking argument and Bend refuses it ("a call smaller than ..."). The appended value is
+# `n - fuel` with `fuel` the remaining count, so the list comes out ASCENDING.
+def tn_rop.range.go(fuel: Nat, +n: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match fuel:
+    case 0n: acc
+    case 1n++p:
+      +v = U32.sub(U32.sub(n, U32.from_nat(p)), 1)
+      tn_rop.range.go(p, n, List.append(&2, U32, acc, [v]))
+
+def tn_rop.perm.list(+ar: O.Arena, +self: U32, +rn: List<&2, U32>) -> List<&2, U32>:
+  +nd = tn_rop.nd(ar, self)
+  List.concat(&2, U32, [rn, tn_rop.others.go(tn_rop.range.go(U32.to_nat(nd), nd, Nil{}), rn, Nil{})])
+
+def tn_rop.perm.of(is_id: Bool, +ar: O.Arena, +self: U32, +pn: List<&2, U32>) -> O.Found:
+  match is_id:
+    case True{}: O.Found{ar, self}
+    case _:
+      # the node `mxw_permute.go` builds, spelled here because `mixin/movement.bend`
+      # imports THIS file and the edge cannot point back.
+      +sk = O.shape_arg_found(ar, pn)
+      O.UOp.new(O.Found.ar(sk), O.OpsPERMUTE{}, [self, O.Found.i(sk)], O.ANone{}, O.TNone{})
+
+# `perm` IS THE IDENTITY IFF THE REDUCE AXES ARE ALREADY THE LEADING ONES -- which is a
+# walk over `rn` alone, so no range list is needed for the TEST (`pd_identity`).
+def tn_rop.lead.go(+rn: List<&2, U32>, +i: U32, ok: Bool) -> Bool:
+  match rn:
+    case Nil{}: ok
+    case +x <> t: tn_rop.lead.go(t, U32.add(i, 1), Bool.and(ok, U32.is_eq(x, i)))
+
+def tn_rop.lead(+rn: List<&2, U32>) -> Bool: tn_rop.lead.go(rn, 0, True{})
+
+def tn_rop.perm(+ar: O.Arena, +self: U32, +axis: List<&2, U32>, +rn: List<&2, U32>) -> O.Found:
+  tn_rop.perm.of(tn_rop.lead(rn), ar, self, tn_rop.perm.list(ar, self, rn))
 
 def tn_rop.red2(+ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>, +rn: List<&2, U32>) -> O.Found:
-  tn_rop.red2.of(tn_rop.perm(ar, self, axis, rn), ar, op, rn)
+  +p = tn_rop.perm(ar, self, axis, rn)
+  tn_rop.red2.of(O.Found.i(p), O.Found.ar(p), op, rn)
 
 def tn_rop.reduce.of(r: Maybe<&2, List<&2, U32>>, +ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
   match r:

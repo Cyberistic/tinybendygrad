@@ -1034,16 +1034,26 @@ def sk_build(+ar: O.Arena, +body: U32, +bufs: List<&2, U32>) -> O.Found:
   +sk = O.UOp.new(ar, O.OpsSINK{}, [body], O.AKernel{O.KernelInfo.of()}, O.TNone{})
   O.UOp.new(O.Found.ar(sk), O.OpsCALL{}, List.concat(&2, U32, [[O.Found.i(sk)], bufs]), O.ANone{}, O.TNone{})
 
-def sk_out(p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>), +bufs: List<&2, U32>) -> M.Hop:
+# THE CALL IS BUILT UNCONDITIONALLY. Upstream's `split_store` ends with
+# `return ret.sink(arg=KernelInfo()).call(*lctx.map.values())` and `ret` is the
+# substituted graph OR the graph itself when nothing needed substituting -- a
+# `graph_rewrite` with no match is not a refusal there. MEASURED: the port's
+# `UOp.substitute` answers `None` when the replace map does not reach the sink, so
+# `sk_out` read "nothing to substitute" as "do not split", and the pool's graph -- whose
+# END closes ALL of its ranges and whose walk collects two buffers and refuses nothing
+# (`pool_sk = open=True bufs=2 rngs=2 bad=False`, `pool_id ... open=[]`) -- produced NO
+# CALL at all. The sink is in the map whenever anything BELOW it changed (`wr.rebuild`
+# records every visited node), so `None` here means exactly "identity".
+def sk_out(p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>), +bufs: List<&2, U32>, +self: U32) -> M.Hop:
   (ar, mi, dv) = p
   match mi:
     case Some{b}: M.mp_hit(sk_build(ar, b, bufs))
-    case None{} : M.Hop{ar, 0}
+    case None{} : M.mp_hit(sk_build(ar, self, bufs))
 
 def sk_bad2(bad2: Bool, +a1: O.Arena, +dv: Map<&2, U32>, +bs: List<&2, U32>, +self: U32) -> M.Hop:
   match bad2:
     case True{} : M.Hop{a1, 0}
-    case False{}: sk_out(CG.UOp.substitute(a1, self, dv), bs)
+    case False{}: sk_out(CG.UOp.substitute(a1, self, dv), bs, self)
 
 # A destructure is legal only on a PARAMETER, so a helper carries each computed tuple.
 def sk_fin2(p: (O.Arena & Map<&2, U32> & Bool), +bs: List<&2, U32>, +self: U32) -> M.Hop:
