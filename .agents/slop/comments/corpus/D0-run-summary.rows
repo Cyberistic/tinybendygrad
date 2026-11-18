@@ -1,0 +1,26 @@
+graphs=38
+graphs-answered=38
+population=02e135dc48c3b12e07d4f212b292e8fbe18e48a3fef16949d1b9c023c5f2888f
+expect-moved=0
+graphs-refused=0
+graphs-agree=38
+graphs-disagree=0
+byte-identical=38
+not-comparable=0
+stable-pairs=5 of 5
+stable-failed=0 of 5
+stable-differ=0 of 5
+plants-disagree=8 of 8
+cross=1 of 1
+selfcheck=# SELFCHECK: OK
+conflations=4 of 4
+controls=5 of 5
+oracle-selfcheck=# ORACLE SELFCHECK: OK
+census-rc=rc=0
+dev=DISPUTED headers=[] fields=['CPU']
+lc_all=C
+noopt=0
+pythonhashseed=0
+substrate-start=97096fa95744c92cd5961c24a186a12f1fc3054f65c8043a4b95f5ac66d3ad4c
+substrate-end=97096fa95744c92cd5961c24a186a12f1fc3054f65c8043a4b95f5ac66d3ad4c
+substrate-head=51ec4940b711c227da8f2e8d26877e4ddb830c47
