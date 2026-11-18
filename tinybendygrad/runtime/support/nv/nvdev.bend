@@ -3,57 +3,32 @@
 #   port of tinygrad/runtime/support/nv/nvdev.py (163 lines)
 #
 
-# a disagreement with the task brief, reported not reconciled.
-#
-# The brief said this file is "an ioctl layer: `fcntl.ioctl` on /dev/nvidiactl
-# with NVOS21/NVOS54 command numbers", and that porting it "unblocks a
-# documented wall" -- namely `ops_nv.bend`'s two live `TODO(p3)` entries:
-#
-#     TODO(p3) ops_nv.py:349-380  NVKIface.__init__      WALL: /dev/nvidiactl,
-#     TODO(p3) ops_nv.py:385-401  rm_alloc/rm_control/uvm -- NVOS21/NVOS54/
-#
-# NEITHER IS ABOUT nvdev.py. MEASURED:
-#
-#     $ rg -c 'ioctl|nvidiactl|NVOS21|NVOS54' tinygrad/runtime/support/nv/nvdev.py
-#     0
-#     $ rg -n 'NVOS21|NVOS54|nvidiactl' tinygrad/runtime/support/nv/nvdev.py
-#     (no output)
-#
-# `nvdev.py` imports are `time`, `functools`, `tinygrad.runtime.autogen.
-# nv_regs`, `tinygrad.helpers`, `tinygrad.runtime.autogen.pci` and the support
-# modules. It has NO ctypes and NO ioctl. What it is: the MMIO REGISTER file
-# (tinygrad/runtime/support/nv/nvdev.py:12-19 symbol=NVReg) `NVReg`, the PAGE TABLE entry codec
-# (`NVPageTableEntry`, tinygrad/runtime/support/nv/nvdev.py:33-67), the
-# device's early MMIO/MMU bring-up (`NVDev._early_ip_init` :97-121 and
-# `_early_mmu_init` :123-147), a boot-memory allocator (`_alloc_boot_mem`
-# and the generated-register loader (`include`, tinygrad/runtime/support/nv/nvdev.py:158 symbol=include).
+# WHAT THIS FILE IS, AND WHAT IT IS NOT. `nvdev.py` has NO ctypes and NO
+# ioctl -- MEASURED, `rg -c 'ioctl|nvidiactl|NVOS21|NVOS54'
+# tinygrad/runtime/support/nv/nvdev.py` answers 0. What it is: the MMIO REGISTER
+# file (tinygrad/runtime/support/nv/nvdev.py:12-19 symbol=NVReg) `NVReg`, the PAGE TABLE entry codec
+# (`NVPageTableEntry`, tinygrad/runtime/support/nv/nvdev.py:33-67), the device's early
+# MMIO/MMU bring-up (`NVDev._early_ip_init` :97-121 and `_early_mmu_init` :123-147),
+# a boot-memory allocator (`_alloc_boot_mem` and the generated-register loader
+# (`include`, tinygrad/runtime/support/nv/nvdev.py:158 symbol=include)).
 #
 # The ioctl layer is `ops_nv.py`'s `NVKIface` (:337-399), a different `.py` in a
-# different directory, and both walls above name `ops_nv.py` lines. SO:
+# different directory, so this port closes NEITHER of `ops_nv.bend`'s two live
+# `TODO(p3)` walls -- they are not about this file, and nothing in nvdev.py
+# appears in either.
 #
-#   * this port closes neither of the two `ops_nv` walls. It cannot; they are
-#     not about this file. `NVKIface.__init__` opens two device nodes and issues
-#     three `rm_control`s, and `rm_alloc`/`rm_control`/`uvm` marshal NVOS21 /
-#     NVOS54 / UVM_* ctypes structs. Nothing in nvdev.py appears in either.
-#   * what this port does close is `nv/ip.bend`'s nvdev walls, which are real and
-#     which nobody had counted. `ip.bend:111-118` lists four of its own TODOs
-#     naming `self.nvdev.*`, and `ip.bend` cites `nvdev` twelve times:
-#         ip.bend:115  self.nvdev.include("dev_gsp", "ga102")        -> nv.include (:161-163)
-#         ip.bend:116  self.nvdev.mmio[0x300000//4:...]               -> nv.wreg/rreg (:92-95)
-#         ip.bend:117  self.nvdev._alloc_boot_mem(...)                -> nv.alloc_boot_mem (:149-159)
-#         ip.bend:118  self.nvdev.NV_PGSP_FALCON_MAILBOX0.write(...)  -> nv.NVReg.write (:23)
-#     plus `nvdev.vram_size` (runtime/support/nv/ip.bend:1800 symbol=rp.hdr_len), `nvdev.chip_name` (runtime/support/nv/ip.bend:2435 symbol=rpc.minted),
-#     `nvdev.flcn.frts_offset` (runtime/support/nv/ip.bend:2683 symbol=ref.mbx), `nvdev._alloc_boot_mem`
-#     (the port's `runtime/support/nv/ip.bend` TODO WALL BLOCK, which has no `def _alloc_boot_mem` and no address table) and `NV_PFB_PRI_MMU_WPR2_ADDR_HI` (runtime/support/nv/ip.bend:2662 symbol=t_gsp).
-#     The ARITHMETIC of the first four is ported and gated here. The device
-#     memory they touch is the seam, and it was the seam before this file too.
-#
-# The brief's second claim -- "nvdev.py is cited zero times" -- is true of the
-# literal string `nvdev.py` and misleading about the substance: `ip.bend` names
-# twelve `nvdev` ENTRY POINTS, and every one of them is a hole this file fills or
-# bounds. The precedent for reporting rather than reconciling is `ip.bend`'s own
-# header, which recorded the same class of disagreement about `ip.py`.
-#
+# WHAT IT DOES CLOSE is `nv/ip.bend`'s nvdev walls, which are real and which nobody
+# had counted. `ip.bend:111-118` lists four of its own TODOs naming
+# `self.nvdev.*`, and `ip.bend` cites `nvdev` twelve times:
+#     ip.bend:115  self.nvdev.include("dev_gsp", "ga102")        -> nv.include (:161-163)
+#     ip.bend:116  self.nvdev.mmio[0x300000//4:...]               -> nv.wreg/rreg (:92-95)
+#     ip.bend:117  self.nvdev._alloc_boot_mem(...)                -> nv.alloc_boot_mem (:149-159)
+#     ip.bend:118  self.nvdev.NV_PGSP_FALCON_MAILBOX0.write(...)  -> nv.NVReg.write (:23)
+# plus `nvdev.vram_size` (runtime/support/nv/ip.bend:1800 symbol=rp.hdr_len), `nvdev.chip_name` (runtime/support/nv/ip.bend:2435 symbol=rpc.minted),
+# `nvdev.flcn.frts_offset` (runtime/support/nv/ip.bend:2683 symbol=ref.mbx), `nvdev._alloc_boot_mem`
+# (the port's `runtime/support/nv/ip.bend` TODO WALL BLOCK, which has no `def _alloc_boot_mem` and no address table) and `NV_PFB_PRI_MMU_WPR2_ADDR_HI` (runtime/support/nv/ip.bend:2662 symbol=t_gsp).
+# The ARITHMETIC of the first four is ported and gated here. The device memory they
+# touch is the seam, and it was the seam before this file too.
 # the ffi seam, measured, and the answer is "NONE, and NONE is needed".
 #
 # The brief warned that "`we have an FFI seam` is not a safe assumption" and
@@ -72,15 +47,12 @@
 #      `rg 'def sys.ioctl' tinybendygrad/runtime/support/system.bend` returns ZERO
 #      hits and there is no `system.c` under `tinybendygrad/`. It is a NAME IN A
 #      TABLE, i.e. a trace tag, not a binding. `system.bend:123` says so itself:
-#      "`os.eventfd` (:48) and `fcntl.ioctl` (:24) are one call each".
-#   3. The `ops_metal` analogy does not hold, and reporting it costs nothing:
-#      `ops_metal.py:86`'s `MSGSEND, SELNAME = [metal.dll.bind(...)(f) for f in
+#   3. The `ops_metal` analogy does not hold: `ops_metal.py:86`'s
+#      `MSGSEND, SELNAME = [metal.dll.bind(...)(f) for f in
 #      (metal.dll.objc_msgSend, metal.dll.sel_registerName)]` is ctypes inside
 #      PYTHON. `ops_metal.bend` carries no `.c` import and no `-> IO(R)` foreign
 #      effect, so `sel_registerName` there is a trace tag exactly like ip.bend's
-#      `C_BARRIER`. The brief's "makes the whole Metal path unrunnable" is a
-#      statement about the PYTHON lane, and it is not evidence about this tree's
-#      Bend lanes.
+#      `C_BARRIER`.
 #
 # SO nvdev.py's seams are `pci_dev.map_bar` (an `mmap`), `read_config` /
 # `write_config_flush`, `alloc_sysmem`, `bar_info`, `reset`, `mm.palloc` and the
@@ -494,18 +466,7 @@ def nv.pte_dual(+v: U32, lv: U32) -> Bool: U32.is_eq(lv, U32.sub(nv.level_cnt(v)
 
 def nv.dual_lv(+v: U32) -> U32: U32.sub(nv.level_cnt(v), 2)
 
-# :58 `(self.entry(entry_id) & 1 == 1) if self.lv < level_cnt - 1 else True`.
-# The `else True` is not a default: at and above the top level EVERY entry is a
-# page, and getting the comparison the wrong way round makes the top level a
-# directory.
-# the stored WORD is injected, and it is a parameter rather than a constant.
-# :58 `return (self.entry(entry_id) & 1 == 1) if self.lv < level_cnt - 1 else True`
-# reads DEVICE MEMORY for the test, and at every level below the top the answer
-# therefore DEPENDS ON WHAT WAS WRITTEN. `nv.stored_word` returning a literal 0
-# made the port answer False at every such level regardless of the store, which is
-# a claim about the device rather than a port of the predicate. The word is a
-# parameter of `nv.pte_ispage` now, and the gate passes both 0 and 1 so the branch
-# is exercised in BOTH directions.
+# THE TABLE IS IN `.agents/slop/tables/runtime-support-nv-nvdev-497.md` -- :58 `(self.entry(entry_id) & 1 == 1) if self.lv < level_cnt - 1 else True`.
 
 def nv.stored_word(word: U32, lv: U32) -> U32: word
 
@@ -792,7 +753,6 @@ def nv.ones(w: U32) -> U32: U32.sub(nv.pw_of(w), 1)
 # NO register address, because nvdev.py never reads them -- :128 hands them to
 # NVPageTableEntry, which uses them only for `.encode`/`.decode`/`.mask`. So
 # "has no address" is a PROPERTY of the port, not a gap in it.
-# GENERATED by .agents/slop/nv_nvdev_gen.py from the CPython oracle. DO NOT HAND-EDIT.
 
 def nv.getb(v: U32, +s: U32, e: U32) -> U32: U32.and(U32.shrn(v, U32.to_nat(s)), nv.ones(nv.wid(s, e)))
 

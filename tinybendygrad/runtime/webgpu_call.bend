@@ -1,17 +1,13 @@
 # tinybendygrad/runtime/webgpu_call.bend -- THE CALL LAYER for ops_webgpu.bend.
 #
 # `ops_webgpu.bend` ports the STRUCTURE of the browser target and records every
-# wgpu call in a trace. Its own header says every actual wgpu call is a
+# wgpu call in a trace. Every actual wgpu call there is a
 # `# TODO(p3) runtime/ops_webgpu.py:<line>` naming the JS import it becomes, and
-# that "nothing here calls wgpu". this file is that missing half: the ffi seam
-# that header names and `ops_webgpu.bend` does not have.
-#
-# It is also what that file's own "what this gate still does not see" list asks
-# for, in its own words:
-#
-#   "nothing checks that the RIGHT [usage bitmask] is passed to the RIGHT call"
-#   "NOTHING checks that pass.pipeline's entryPoint is the entry point Pass.of
-#    was given: the only reader would be the ffi seam"
+# "nothing here calls wgpu". THIS FILE IS THAT MISSING HALF: the ffi seam that
+# header names and `ops_webgpu.bend` does not have -- so it is the only reader
+# that can check that the RIGHT usage bitmask reaches the RIGHT call, and the
+# only one that can check that `pass.pipeline`'s entryPoint is the entry point
+# `Pass.of` was given.
 #
 
 # THE BOUNDARY, and why it is THIS one. Measured, not chosen by taste.

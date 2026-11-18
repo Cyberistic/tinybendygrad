@@ -2,8 +2,7 @@
 #
 # THE HARDWARE COMMAND QUEUE v2 SUBSTRATE. This is the queue model that the
 # committed device ports already lean on: ops_nv.bend cites hcq2.py line numbers
-# in its own header comments and PROOF rows, so those citations point at nothing
-# until this file exists. See the "CITATIONS" section once the port lands.
+# in its own header comments and PROOF rows. See the "CITATIONS" section below.
 #
 
 # THE SPLIT, stated once and then obeyed: a def here EITHER builds the argument
@@ -267,22 +266,14 @@
 # DIFFERENT halves of one submission, and the gate rows for this file's half are
 # `hq2_b*_full`.
 #
-# STATUS: ALL three stages landed and checked.
-#
-#   PORTED: see the table above. NOT: the UOp-arena rewrites (wall 1), the
-#   ctypes/FFI seam (wall 2) and the u64 arithmetic (wall 4).
-#   PYTHON: tinygrad/runtime/support/hcq2.py:1-646
-#   SIZE:   360 gate rows, 0 disagreements against CPython on the 240 rows both
-#           sides compute, and the interpreted and native lanes print BYTE-IDENTICAL
-#           output.
-#   ORACLE: `.agents/slop/hcq2-oracle.py` (constants, `to_name`, `all_devices_in`,
-#           `layout_args`, `pack_args`, the ctypes field tables) and
-#           `.agents/slop/hcq2-oracle2.py` (`BatchCtx`, `_wait_ins`,
-#           `_start_ins`, `_build_queues`, `_finalize_batch`), both run with
-#           DEV=NULL so NO DEVICE IS PRESENT. `.agents/slop/hcq2-probe.py` and
-#           `-probe2.py` are the exploratory probes those two were derived from.
-#   DIFF:   `.agents/slop/hcq2-diff.py`
-#   MUTATE: `.agents/slop/hcq2-mutate.py`, table at the FOOT.
+# STATUS: all three stages landed and checked. 360 gate rows, 0 disagreements
+# against CPython on the 240 rows both sides compute, and the interpreted and native
+# lanes print BYTE-IDENTICAL output. The ORACLE is
+# `.agents/slop/hcq2-oracle.py` (constants, `to_name`, `all_devices_in`,
+# `layout_args`, `pack_args`, the ctypes field tables) and
+# `.agents/slop/hcq2-oracle2.py` (`BatchCtx`, `_wait_ins`, `_start_ins`,
+# `_build_queues`, `_finalize_batch`), both run with DEV=NULL so NO DEVICE IS
+# PRESENT.
 #
 # THE 120 ROWS CPYTHON HAS and this port does not are not coverage and not
 # IGNORED. They are the per-queue STREAMS (`hq2_b*_q_NULL0_COMPUTE0` and

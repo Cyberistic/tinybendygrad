@@ -1,12 +1,9 @@
 # tinybendygrad/runtime/ops_qcom.bend -- port of tinygrad/runtime/ops_qcom.py
 #
 
-# WHAT this file is. `ops_qcom.py` is the ADRENO/KGSL gpu backend, 396 lines.
-# (The unit brief called it a Hexagon/QNN DSP backend with `qnn`/`htp` tables.
-# It is not. `qnn`, `htp` and `cdsp` appear nowhere in this repo; the DSP
-# backend is `ops_dsp.py`. What is here is what the named 396-line file
-# actually contains, and it turns out to be the same SHAPE the brief asked
-# for -- pure name tables and pure string emission over kernel uops -- so the
+# WHAT this file is. `ops_qcom.py` is the ADRENO/KGSL gpu backend, 396 lines,
+# and its portable half is pure name tables and pure string emission over kernel
+# uops.
 # plan is unchanged.)
 #
 # The three pure tables, and they are the whole of the portable half:

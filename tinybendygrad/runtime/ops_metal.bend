@@ -39,9 +39,8 @@
 # the NUL, the 16-byte `<QQ` request header, the two blob lengths, the callback's
 # `error == 0` arm AND its other arm, the header sum, the slice, and both refusals.
 #
-# What the gate could not say before this session was ANYTHING about a real reply,
-# and the three numbers that turned out to matter were all un-gated:
-#
+# THE THREE NUMBERS THE GATE READS OFF A REAL REPLY, all of them un-gated
+# before:
 #   * `reply[8:16]` is `(104, 0)` HERE, so `:50`'s slice starts at byte 104 of a
 #     4580-byte reply and the MTLB is 4476 bytes. `mt_liboff42` and `mt_liboff00`
 #     were the only fixtures and both are synthetic.
@@ -60,17 +59,17 @@
 # MTLB and the submission path is complete; hand it a block and `compile` runs.
 #
 # THERE IS NO dtype-to-MTLPixelFormat TABLE IN ops_metal.py, and the brief asked
-# for one. `grep -n PixelFormat tinygrad/runtime/ops_metal.py` is empty and
-# `MTLPixelFormat` reaches this file only through `autogen/metal.py`, where it
-# describes TEXTURES. A Metal buffer here is `newBufferWithLength_options(size,
-# MTLResourceStorageModeShared)` -- a byte range, and a dtype changes how MANY
-# bytes it covers (device.bend's `nbytes = size * itemsize`) and never how
-# anything is named. So the two-directional table this file actually HAS is
-# `enum_MTLGPUFamily` -- nineteen members, a name to an id and an id to an arch
-# string -- and `check_family`'s REVERSED `next(filter(...))` and the `[12:]`
-# slice are the two directions, gated by `mt_fam_*` and `mt_arch_*` with a
-# last-wins mutation (M30) because `reversed()` is what makes it last-wins.
-#
+# THERE IS NO dtype-to-MTLPixelFormat TABLE IN ops_metal.py. `grep -n
+# PixelFormat tinygrad/runtime/ops_metal.py` is empty and `MTLPixelFormat` reaches
+# this file only through `autogen/metal.py`, where it describes TEXTURES. A Metal
+# buffer here is `newBufferWithLength_options(size,
+# MTLResourceStorageModeShared)` -- a byte range, and a dtype changes how MANY bytes
+# it covers (device.bend's `nbytes = size * itemsize`) and never how anything is
+# named. So the two-directional table this file actually HAS is `enum_MTLGPUFamily`
+# -- nineteen members, a name to an id and an id to an arch string -- and
+# `check_family`'s REVERSED `next(filter(...))` and the `[12:]` slice are the two
+# directions, gated by `mt_fam_*` and `mt_arch_*` with a last-wins mutation (M30)
+# because `reversed()` is what makes it last-wins.
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one objc call (pure, and the gate checks it) OR records that call in the
 # trace (and the gate checks the ORDER). There is no third kind.

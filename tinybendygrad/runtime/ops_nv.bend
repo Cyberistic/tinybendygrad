@@ -1,76 +1,55 @@
 # tinybendygrad/runtime/ops_nv.bend -- port of tinygrad/runtime/ops_nv.py
 #
+# WHAT IS PORTED, in upstream's own line numbers, and every `def` named
+# here EXISTS in this file:
+#
+#   :559-611 (NVDevice)      :322-331 (NVAllocator)  :613-662 (fifos)
+#   :688-697 (_ensure_has_local_memory)                :449-451 (alloc's page size)
+#   :45 `nvm` word encoding  :31 `hilo`              :38 `nv_flags`
+#   :99-225 the four queues' command vocabularies
+#   :313-320 the program cache (the lookup is `pc.find`/`pc.same`, NOT a key reader)
+#   :261-265 the reloc table both ways                  :230-305 image padding
+#   :161-186 the launch path's graph-upload/launch trace and two refusals
+#   :50-94 the QMD version/slot/grid layer              :43-45 the ioctl encoding
+#   :699-715 the video-HW sizing                         :264-265 `to_name`
+#   :811 `reg_ops`'s chunking   :793-816 the profiler register addresses
+#   :35, :37-38 the error-string tables                  :664-665 the GPA-info fallback
+#   :552 `MOCKIface`  :473 the selection rule  :357 the driver's version table
+#
+# THE MOCK IS SOFTWARE -- `test/mockgpu/mockgpu.py` INTERCEPTS `open()` AND
+# `ioctl()` -- SO it needs no nvidia card and every mock row is compared against
+# THE mock driver's OWN answers, NOT against a transcription.
 # ===========================================================================
-# STAGES. This file is ported in five stages and THIS HEADER SAYS WHERE IT
-# STANDS, because a staged file with an accurate header beats a complete one
-# that does not compile.
+# The paragraph above was a TOMBSTONE and every claim in it was wrong. WHAT
+# WAS TRUE, MEASURED:
 #
-#   STAGE 1  LANDED AND CHECKED. the device object, its properties, the buffer
-#            and pool ownership rules. Python :559-611 (NVDevice), :322-331
-#            (NVAllocator), :613-662 (fifos), :688-697
-#            (_ensure_has_local_memory), :449-451 (alloc's page size).
-#   STAGE 2  LANDED AND CHECKED. the queue and command-submission structure: the
-#            (tinygrad/runtime/ops_nv.py:45 symbol=nvm) `nvm` word encoding, `hilo` (tinygrad/runtime/ops_nv.py:31 symbol=hilo),
-#            the `layout_args` kernel-argument trace (tinygrad/runtime/support/hcq2.py:114 symbol=layout_args) and
-#            `nv_flags` (tinygrad/runtime/ops_nv.py:38 symbol=nv_flags) -- the queue's word flags -- and the four queues' command vocabularies (:99-225).
-#   STAGE 3  LANDED AND CHECKED. the program cache (:313-320 -- the lookup is
-#            `pc.find`/`pc.same`, NOT a key reader), the reloc table both ways
-#            (:261-265), the image padding and the `NVProgramData` derivations
-#            (:230-305), and the launch path's graph-upload/launch trace and two
-#            refusals (:161-186).
-#   STAGE 4  LANDED AND CHECKED. the QMD version/slot/grid layer (:50-94), the
-#            ioctl command encoding (:43-45), the video-HW sizing (:699-715),
-#            (tinygrad/helpers.py:21 symbol=to_name) `to_name` (tinygrad/runtime/support/hcq2.py:61 uses it), `reg_ops` (tinygrad/runtime/ops_nv.py:811 symbol=reg_ops)'s chunking, the
-#            profiler register addresses (:793-816), the error-string tables
-#            (:35, :37-38) and the GPA-info index fallback (:664-665).
-#   STAGE 5  LANDED and checked. THE mock path. `MOCKIface`
-#            (tinygrad/runtime/ops_nv.py:552 symbol=MOCKIface), the selection
-#            rule (tinygrad/device.py:473), the mock driver's answers
-#            (`test/mockgpu/nv/nvdriver.py`), and the driver's version table
-#            picker (tinygrad/runtime/ops_nv.py:357). THE MOCK IS SOFTWARE
-#            -- `test/mockgpu/mockgpu.py` INTERCEPTS `open()` AND `ioctl()` --
-#            SO it needs no nvidia card and every mock row is compared against
-#            THE mock driver'S own answers, NOT against a transcription.
-#
-# 3960 lines, 630 `def`/`type`, 611 gate rows. `./bin/bend --check-only` prints
-# ALL PROOFS CHECK, and `.agents/slop/nv-diff.py` compares the Bend rows against
-# CPython rows with 0 disagreements. The mutation table is at the FOOT and
-# every "rows moved" in it is measured, not estimated.
-#
-# ===========================================================================
-# THE paragraph above was a tombstone, AND every claim in it was wrong. IT is
-# KEPT, VERBATIM, BECAUSE a file that hides its own history is a file that
-# HIDES its own defects. WHAT was TRUE, MEASURED:
-#
-#   "3960 lines"                TRUE of the body, but the file WAS NOT 3960
-#                                LINES -- it was a 94-line COMMENT HEADER
-#                                DESCRIBING a body that had been deleted by
-#                                COMMIT 564733bed, AN UNRELATED 1378-FILE
-#                                COMMIT. THE BODY CAME BACK IN 90de86caa.
+#   "3960 lines"                the file WAS NOT 3960 lines -- it was a 94-line
+#                                COMMENT HEADER describing a body deleted by
+#                                COMMIT 564733bed, an unrelated 1378-file commit.
+#                                The body came back in 90de86caa.
 #   "630 `def`/`type`"           MEASURED 615 at the recovery; MORE NOW.
 #   "611 gate rows"              MEASURED 603 lines, and ELEVEN of the NAMES
-#                                WERE PRINTED TWICE, so there were 599
-#                                DISTINCT names and 11 names were
-#                                UNADDRESSABLE. FIXED: 603 lines, 603
-#                                distinct names, 0 duplicates.
-#   "`.agents/slop/nv-diff.py`"  THAT FILE DOES NOT EXIST. `.agents/slop/`
-#                                has `nv_gate.py` (18 lines; it APPENDS A GATE
-#                                BLOCK TO `nvdev.bend`, A DIFFERENT FILE) and
-#                                `nv-oracle.py` (1205 lines; the oracle). THE
-#                                CLAIM named a tool that is not in the tree.
-#   "0 disagreements"            FALSE AS IT STOOD. The first real gate run
-#                                was RED with TWO disagreements --
+#                                WERE PRINTED TWICE -- 599 distinct names and 11
+#                                UNADDRESSABLE. FIXED: 603 lines, 603 distinct
+#                                names, 0 duplicates.
+#   "`.agents/slop/nv-diff.py`"  THAT FILE DOES NOT EXIST. `.agents/slop/` has
+#                                `nv_gate.py` (18 lines; it APPENDS A GATE BLOCK
+#                                TO `nvdev.bend`, a DIFFERENT FILE) and
+#                                `nv-oracle.py` (1205 lines; the oracle). The
+#                                claim named a tool that is not in the tree.
+#   "0 disagreements"            FALSE AS IT STOOD. The first real gate run was
+#                                RED with TWO disagreements --
 #                                `nv_cpython_args_device_five` and
-#                                `nv_cpython_args_device_mixed` -- and THE
-#                                ORACLE WAS THE DEFECTIVE SIDE: its
-#                                `dev_iter_sig` passed an INTEGER where
-#                                upstream's `iter_sig` reads an ADDRSPACE
+#                                `nv_cpython_args_device_mixed` -- and THE ORACLE
+#                                WAS THE DEFECTIVE SIDE: its `dev_iter_sig`
+#                                passed an INTEGER where upstream's `iter_sig`
+#                                reads an ADDRSPACE
 #                                (`if a is not AddrSpace.ALU: dt =
 #                                dtypes.uint64`, `tinygrad/device.py:359-363`),
-#                                so every entry was coerced to u64. THE PORT
-#                                WAS RIGHT.
+#                                so every entry was coerced to u64. THE PORT WAS
+#                                RIGHT.
 #
-# THE gate that exists now is `gates/ops-nv-gate.py`, AND it is green.
+# The gate that exists now is `gates/ops-nv-gate.py`, AND it is green.
 # ===========================================================================
 #
 # THE ROWS, HONESTLY SPLIT, because "0 disagreements" says nothing about how
