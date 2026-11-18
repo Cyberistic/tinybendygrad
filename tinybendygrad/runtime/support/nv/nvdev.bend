@@ -55,33 +55,14 @@
 #      `C_BARRIER`.
 #
 # SO nvdev.py's seams are `pci_dev.map_bar` (an `mmap`), `read_config` /
-# `write_config_flush`, `alloc_sysmem`, `bar_info`, `reset`, `mm.palloc` and the
-# `mmio[...]` element access -- ALL of which `system.bend` already models as
-# trace calls with real call ids. So this file DECLARES NO FOREIGN EFFECT and
-# imports no `dtype.bend`: it prints `ALL PROOFS CHECK`, not `SOME PROOFS FAIL`.
-# The 14 unfilled dtype laws are not inherited here.
 #
 # the trace is the seam, reused not copied. `Cx`, `Tr`, `Tr.emit`, `Tr.fail_at`
-# and `tr.show` are IMPORTED from the committed `ip.bend` (`import ./ip.bend as
-# IP`), which is the nv package's other file and already owns ids 0..10
-# (`C_RPC_SEND` .. `C_FSP_HEAD`). This file's ids therefore start at 11 and go
-# up. `IP.tr.tagname` answers "?" for any id >= 11, so `nv.tagname` below DELEGATES
-# to it and only supplies the names for 11.. -- an extension, not a fork.
 #
 # THE SPLIT, stated once and obeyed: a def here EITHER builds the argument of ONE
-# call (pure, gated) OR records that call in the trace (gated on ORDER and
-# IDENTITY). There is no third kind. The raise is in the trace, so a refusal is a
-# TRUNCATED trace and no step needs a guard of its own.
 #
 # NO `struct.calcsize` ROWS, STATED RATHER THAN HIDDEN.
 #
 # The brief asked for "every constant and struct offset ported, with row counts
-# from `struct.calcsize`". `nvdev.py` imports NO ctypes, so it contains no ctypes
-# struct and `struct.calcsize` has nothing to measure in it. Its "offsets" are
-# BIT FIELDS -- `(start, end)` pairs out of `tinygrad/runtime/autogen/nv_regs/` --
-# and the oracle `.agents/slop/nv_nvdev_oracle.py` generates those by CALLING
-# CPython on the real `NVReg`/`NVPageTableEntry` classes. `struct.calcsize` is
-# the oracle for `ops_nv.py`'s NVOS21/NVOS54, which is the other wall.
 #
 # THE FIELD-ORDER GATE, and this is the point of the whole file. A register's
 # field table is an ORDERED `dict[str, (start, end)]`, and `decode` (:31) walks it
@@ -132,13 +113,6 @@
 #     the right count.
 #
 # W3. THE DEVICE MEMORY. Everything `nvdev.py` READS or WRITES is behind a seam:
-#     `pci_dev.map_bar` (an `mmap`), `read_config`/`write_config_flush`,
-#     `alloc_sysmem`, `bar_info`, `reset`, `mm.palloc`, and `mmio[addr // 4]`. The
-#     port declares NO foreign effect for any of it -- `Tr.emit` is the record -- so
-#     this file prints `ALL PROOFS CHECK` and inherits none of `dtype.bend`'s
-#     fourteen unfilled laws. What is NOT gated is the CONTENT of a register: the
-#     rows gate the ADDRESS, the mask, the encode and the ORDER, never a value the
-#     hardware chose.
 #
 # W4. `time.sleep(0.1)` at :109. A time gap, not a call, so it has no trace tag and
 #     no tag claims to be it. Reported here rather than left as a missing row.
@@ -825,11 +799,6 @@ def nv.at(fuel: Nat, +xs: List<&2, U32>, +i: U32) -> U32:
 def nv.cover_at(+v: U32, lv: U32) -> U32: nv.at(nv.shifts_nat(v), nv.covers(v), lv)
 
 # the `i`th element of a U32 list. The list is `+`, so the walk may read it again
-# after the head; the decrement is on the Nat fuel, never on the index.
-# `mm.pte_covers[self.lv]` -- and at `lv == level_cnt` the REAL nvdev.py raises
-# IndexError, because `pte_covers` has `level_cnt` entries. The port answers the
-# SENTINEL 4294967295, which is a distinct value from any real cover, so the
-# out-of-range level is visible rather than silently reading cover[0].
 
 def nv.huge_cover(+v: U32, +lv: U32) -> U32:
   Bool.pick(U32, U32.is_ge(lv, nv.level_cnt(v)), 4294967295, nv.cover_at(v, lv))
@@ -838,13 +807,6 @@ def nv.huge_cover(+v: U32, +lv: U32) -> U32:
 # live in that one line and each needs its own fixture:
 #
 #  * the `lv >= level_cnt - 3` BOUND, which is `lvmin` -- ver 2 answers 2 over five
-#    levels and ver 3 answers 3 over six, so the SAME level index is a huge-page
-#    level on one and not on the other. A port that hard-coded the bound would be
-#    right for ver 2 and wrong for ver 3 at lv 2 and 3.
-#  * the `% pte_covers[lv]` DIVISIBILITY, which needs a paddr that divides and one
-#    that does not AT THE SAME LEVEL. The fixtures are paddr 0 (always divides),
-#    0x200000 (divides cover 2MiB and 512MiB... and nothing larger), 0x200001 (the
-#    one-off, which divides NOTHING) and 0x12345000.
 #
 # AND THE ORDER MATTERS: nvdev.py evaluates `lv >= level_cnt - 3` FIRST, so at
 # `lv == level_cnt` the `and` short-circuits and `pte_covers[lv]` is NEVER
@@ -870,13 +832,6 @@ def nv.huge_at(+v: U32, lv: U32) -> Bool: U32.is_lt(lv, nv.level_cnt(v))
 def nv.ispage_top(+v: U32, lv: U32) -> Bool: Bool.not(U32.is_lt(lv, nv.is_page_lvmax_x(v)))
 
 # "fits" is `sh <= 32`, and `sh` is read out of the shift list the same way every
-# other row reads it.
-# `nv.huge_str` -- `supports_huge_page` as TEXT, because at `lv == level_cnt` the
-# REAL nvdev.py raises IndexError and the row has to be able to say so. The
-# U32-encoded form (`nv.huge_bit`) was dropped rather than kept as a second
-# spelling: a def nothing calls is invisible to every other check, which is how
-# three functions at `schedule/indexing.bend` were found written, commented and
-# never exercised.
 
 def nv.huge_str(+v: U32, +lv: U32, +paddr: U32) -> String:
   Bool.pick(String, nv.huge_at(v, lv), Bool.pick(String, nv.pte_huge_ok(v, lv, paddr), "1", "0"),
@@ -1250,11 +1205,6 @@ def Rgv.addr(+r: Rgv) -> U32: U32.add(Rgv.base(r), Rgv.off(r))
 def nv.reg_boot0() -> Rgv: Rgv.of(0, 0, [Fld.of("minor_revision", 0, 3), Fld.of("major_revision", 4, 7), Fld.of("architecture_1", 8, 8), Fld.of("implementation", 20, 23), Fld.of("architecture_0", 24, 28)])
 
 # `emit` -- ip.bend's own row printer, one `IO.print` for a whole list. A `do
-# IO<Unit>:` block can ONLY BIND AN `IO` (bend2-constraints.md, rule at line 1419),
-# so a PURE value like `nv.reg_boot0()` may not be `<-`-bound: the shape that
-# works is a PURE def returning a LIST OF ROW STRINGS, printed by `emit`. Every
-# `t_*` group below is that shape, and it is why the rows are built by `go` folds
-# rather than assigned to locals.
 
 def nv.reg_boot42() -> Rgv: Rgv.of(0, 2560, [Fld.of("minor_extended_revision", 8, 11), Fld.of("minor_revision", 12, 15), Fld.of("major_revision", 16, 19), Fld.of("implementation", 20, 23), Fld.of("architecture", 24, 29), Fld.of("chip_id", 20, 29)])
 
@@ -1393,9 +1343,6 @@ def nv.fld_of(+r: Rgv, nm: String, which: U32) -> U32: nv.fo.go(Rgv.nat(r), Rgv.
 # --- per-field rows. the order-inside-a-pair check, per site.
 #
 # `Se` is `(start, end)` as a VALUE rather than two lookups, and it exists for a
-# linearity reason, not a taste one: a `String` in Bend 2 is consumed by its one
-# use, so a helper that needed the field name twice to read two elements could
-# not exist. One fold, one use of the name, both elements out.
 type Se is Data:
   Se{s: U32, e: U32}
 
@@ -1452,11 +1399,6 @@ def nv.fld_max(r: Rgv, nm: String) -> U32: nv.se_max(nv.fld_se(r, nm))
 # transposition exists there -- see t_mmu's comment for the one shape that IS invisible.)
 #
 # the row names are literals and so is the lookup key, because a `String` is
-# consumed by its one use: a def that built `"nv_fld_" ++ nm` and then looked the
-# field up by `nm` could not exist. Twenty-six literal rows is cheaper than the
-# alternatives, and it has the property that matters -- a mutation has to be written
-# out per field to be seen, rather than hiding inside a name that a fold rebuilds
-# identically either way.
 def t_flds_b42() -> IO(Unit):
   do IO<Unit>:
     IP.srow("nv_fld_minor_extended_revision", nv.fld_abw(nv.reg_boot42(), "minor_extended_revision"))
@@ -1484,10 +1426,6 @@ def t_flds_b42() -> IO(Unit):
     IP.urow("nv_fldwidth_chip_id", nv.fld_w(nv.reg_boot42(), "chip_id"))
     IP.urow("nv_fldmax_chip_id", nv.fld_max(nv.reg_boot42(), "chip_id"))
     # THE SPLIT, for the one field the split rows had skipped. `arch`/`impl`/
-    # `chipid` have lo/hi rows because they were transcribed second; the field
-    # with the defect has none, which IS why no row could name it. `_lo` and
-    # `_hi` are separate rows so that a row that SWAPS them is caught even
-    # though the pair as a joined string would be unchanged.
     IP.urow("nv_boot42_merext_lo", nv.fld_of(nv.reg_boot42(), "minor_extended_revision", 0))
     IP.urow("nv_boot42_merext_hi", nv.fld_of(nv.reg_boot42(), "minor_extended_revision", 1))
     t_end()
@@ -1500,10 +1438,6 @@ def nv.at_field(+r: Rgv, b: U32) -> String:
   String.join(nv.af.go(Rgv.nat(r), Rgv.fs(r), b, Nil{}), ",")
 
 # `t_end` -- the bare term that closes every `do IO<Unit>:` whose last statement
-# is a `<-` bind. A Bend `do IO<Unit>:` body must END WITH A BARE TERM
-# (bend2-constraints.md, rule at line 3298) and this is the cheapest thing in the
-# file that can be that, and it prints nothing so the byte-diff against the
-# oracle stays exact.
 
 def nv.trace.go(+xs: List<&2, IP.Cx>, +first: Bool) -> String:
   match xs:
@@ -2157,10 +2091,6 @@ def t_update() -> IO(Unit):
     IP.srow("nv_upd_u4_tr", nv.trace(nv.update(nv.reg_boot42(), [Kv.of("architecture", 27), Kv.of("implementation", 1)], 2560, IP.Tr.of())))
 
 # `nv.cover_fits` -- does this level's page size fit a U32? `1 << 38`, `1 << 47`
-# and `1 << 56` do NOT, and they wrap to 0 in `nv.covers`, which makes
-# `supports_huge_page` a `% 0` -- the zero-divisor branch -- at lv 0 and 1 on ver 3.
-# That is the wall as a CONSEQUENCE rather than as a number, and the oracle's
-# `nv_d_*_cover_exact` carries the value that does not fit.
 #
 # The check is on the SHIFT (`sh <= 32`), read from the REVERSED shift list, so it
 # agrees with `nv.covers` by construction rather than by being a second ladder.
@@ -2176,19 +2106,10 @@ def nv.revs.go(n: Nat, +xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>
 def nv.rev_shifts(+v: U32) -> List<&2, U32>: nv.revs.go(nv.shifts_nat(v), nv.va_shifts(v), Nil{})
 
 # `nv.revs` -- `va_shifts[::-1]` and NOTHING ELSE. `nv.rev.go` is the SAME fold with
-# `pw_of` on each element, because it was written for `pte_covers`; reusing it here
-# gave `shift_at(v, 0) == 2^47` instead of `47`, so `cover_fits` was the complement
-# of the truth at EVERY level and the gate caught all fourteen. Two folds that
-# differ only in a per-element map are two defs, not one parameter -- a Bool
-# parameter would have been a runtime branch in a hot walk for nothing.
 
 def nv.shift_at(+v: U32, lv: U32) -> U32: nv.at(nv.shifts_nat(v), nv.rev_shifts(v), lv)
 
 # `va_shifts` REVERSED, so index 0 is the largest shift and index n-1 the page
-# size -- the same order `nv.covers` has.
-# The level bound is part of the answer: at lv == level_cnt there is no page size,
-# and `nv.at` answers 0 out of range, and `0 <= 32` is TRUE -- so without the bound
-# an out-of-range level claims to FIT.
 
 def nv.cover_fits(+v: U32, +lv: U32) -> Bool:
   Bool.and(U32.is_lt(lv, nv.level_cnt(v)), U32.is_le(nv.shift_at(v, lv), 32))

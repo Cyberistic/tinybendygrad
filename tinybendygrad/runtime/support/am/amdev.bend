@@ -7,9 +7,6 @@
 # :737-804), and the four TODOs it lists for it are answered at the foot below.
 #
 # AND IT IS NOT MOSTLY FFI. 421 Python lines, of which the genuinely opaque part is
-# `fetch_fw` (a download), the ctypes `from_address`/`from_buffer` marshalling, the
-# `mmio`/`pci_dev` accesses and `wait_cond` -- all of which is a SEAM. What is left is
-# the part that decides what the device is told, and that is what this file ports:
 #
 #   * the FIRMWARE DESCRIPTOR LADDER (:30-109) -- which ucode blocks are handed to the
 #     PSP, at what OFFSET and what SIZE, in what ORDER, with which `GFX_FW_TYPE_*` id,
@@ -36,11 +33,6 @@
 #
 
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
-# of one device call (pure, and the gate checks it) OR records that call in the
-# trace (and the gate checks the ORDER and the IDENTITY). There is no third
-# kind. That is what puts every `raise` and every `assert` into the trace: a
-# refusal records NOTHING further, so it appears as a TRUNCATION and no step
-# needs a guard of its own.
 #
 # This is the `ops_webgpu.bend` / `ip.bend` lane and the reason `--check-only`
 # says ALL PROOFS CHECK with no foreign effect: the seam is `Tr.emit`, not a
@@ -463,16 +455,8 @@ def v.reserved(maj: U32, min: U32, rev: U32) -> U32:
 # trace is the ordered list of hardware the seam will perform.
 #
 # FOUR FIELDS, not ip.bend's two. A `read_config` is (op, addr, WIDTH) and a
-# `write_config` is (op, addr, WIDTH, VALUE); with two fields the width is lost
-# and the ASPM walk's `read_config(cap + 0x10, 2)` becomes indistinguishable from
-# the 1-byte reads it is surrounded by, which is the whole difference between the
-# three-read walk and the four-event one. `ip.bend` has no config reads and no
-# widths, so `b` could be 0 there -- the shapes are compatible, not competing.
 #
 # THE RAISE. `Tr.emit` records NOTHING once a refusal has fired, so a refusal
-# shows up in the trace as a TRUNCATION and no step below needs a guard of its
-# own. `Tr.refuse` is idempotent after the first, and `nth`/`at` let one fixture
-# numbering reach EVERY refusal site in turn.
 
 type Call is Data:
   Call{k: U32, a: U32, b: U32, c: U32}
@@ -713,16 +697,8 @@ def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # the walk has a STATE rather than a count.
 #
 #   cap, seen = self.pci_dev.read_config(0x34, 1) & 0xfc, set()
-#   while cap and cap not in seen and self.pci_dev.read_config(cap, 1) != 0x10:
-#     seen.add(cap)
-#     cap = self.pci_dev.read_config(cap + 1, 1) & 0xfc
-#   if cap and cap not in seen:
-#     self.pci_dev.write_config_flush(cap + 0x10, self.pci_dev.read_config(cap + 0x10, 2) & ~3, 2)
 #
 # The values `read_config` answers are the SEAM's, so the fixture supplies them as
-# two parallel lists: `links` is what `read_config(cap, 1)` says and `nexts` is
-# what `read_config(cap + 1, 1)` says. The port walks those and emits the reads.
-# `seen` membership. A dead chain repeats a cap, and this is what stops it.
 def aspm.seen.go(n: Nat, +c: U32, cs: List<&2, U32>, hit: Bool) -> Bool:
   match n:
     case 0n: hit
@@ -748,11 +724,6 @@ def aspm.more(+links: List<&2, U32>, +seen: List<&2, U32>, +cap: U32, i: Nat) ->
     U32.is_ne(aspm.at(links, i), ASPM_LINK_CAP()))
 
 # the three things the body does, each gated by the condition. a `Bool.pick`
-# selects a VALUE and both arms are evaluated, which is exactly right here: the
-# trace IS a value, so `rd_cfg(cap,1, rd_cfg(cap+1,1,t))` costs nothing when the
-# walk is over -- the branch is not taken, the extra `Tr` is simply discarded.
-# `cap` is the decreasing argument, so `advance` must leave it alone when the walk
-# stops, and that is the whole difference between the two fixtures.
 def aspm.take(+seen: List<&2, U32>, more: Bool, +cap: U32) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, more, aspm.seen_add(seen, cap), seen)
 
@@ -760,25 +731,11 @@ def aspm.advance(+nexts: List<&2, U32>, more: Bool, +cap: U32, i: Nat) -> U32:
   Bool.pick(U32, more, U32.and(aspm.at(nexts, i), ASPM_MASK()), cap)
 
 # PYTHON SHORT-CIRCUITS. `while cap and cap not in seen and
-# read_config(cap, 1) != 0x10` -- the read is the THIRD conjunct, so when `cap` is
-# zero or already seen the register is NEVER read. The first version emitted the
-# probe unconditionally and answered four reads where CPython answers three; the
-# gate caught it on `ama_aspm_chain_n`. So the two tests that guard the read are
-# SEPARATE from the test that guards the body.
 def aspm.pre(+links: List<&2, U32>, +seen: List<&2, U32>, +cap: U32, i: Nat) -> Bool:
   Bool.and(U32.is_ne(cap, 0), Bool.not(aspm.seen(cap, seen)))
 
 def aspm.probe(+nexts: List<&2, U32>, pre: Bool, more: Bool, +cap: U32, i: Nat, +t: Tr) -> Tr:
   # THE ORDER IS cap THEN cap + 1, and `Bool.pick`'s arm is a VALUE, so the
-  # `cap + 1` read is built first and lands LAST in the trace. Getting that
-  # backwards is invisible whenever `more` is false -- `ama_aspm_link` reads one
-  # address per probe -- and shows up only on `ama_aspm_chain`, which is exactly
-  # the fixture that has two reads in one step.
-  # `List.append(xs, [x])` is `xs ++ [x]`, and the INNER call is evaluated first, so
-  # the argument that reads LAST must be the OUTER one. `cap` is therefore the
-  # inner read and `cap + 1` the outer, which is the reverse of the obvious
-  # spelling and is why `ama_aspm_chain` -- the only fixture with two reads in one
-  # step -- is the only row that sees it.
   Bool.pick(Tr, pre, Bool.pick(Tr, more,
     Tr.rd_cfg(U32.add(cap, 1), 1, Tr.rd_cfg(cap, 1, t)),
     Tr.rd_cfg(cap, 1, t)), t)
@@ -788,10 +745,6 @@ def aspm.probe(+nexts: List<&2, U32>, pre: Bool, more: Bool, +cap: U32, i: Nat, 
 # decrease check accepts (bend2-constraints "1922").
 #
 # THE FUEL IS THE PROBE COUNT, and that is a fact about the fixture rather than an
-# approximation: `links`/`nexts` are the seam's answers, so the fixture supplies
-# one entry per probe and the last one FAILS the condition -- which is what makes
-# Python's `while` stop there. Running out of fuel mid-walk is the seam giving up,
-# and `Go` below records the cap at which it did.
 def aspm.go(fuel: Nat, +links: List<&2, U32>, +nexts: List<&2, U32>, +seen: List<&2, U32>,
             +cap: U32, +i: Nat, +t: Tr) -> Go:
   match fuel:
@@ -852,15 +805,6 @@ def aspm.walk(first: U32, +links: List<&2, U32>, +nexts: List<&2, U32>, raw: U32
 # window (:255), so the sequence IS the contract:
 #
 #   vf_mailbox[0] = 0                                    # drop TRN_MSG_VALID
-#   wait_cond(vf_mailbox[0] & 2, value=0, timeout_ms=1000, msg=...)
-#   for i, val in enumerate((req, 0, 0, 0)): mmio[TRN_DW0 + i] = val
-#   vf_mailbox[0] = 1                                    # set TRN_MSG_VALID
-#   wait_cond(vf_mailbox[0] & 2, value=2, timeout_ms=NV_MAILBOX_POLL_ACK_TIMEDOUT, ...)
-#   vf_mailbox[0] = 0
-#   if wait_ready:
-#     wait_cond(mmio[RCV_DW0], value=IDH_READY_TO_ACCESS_GPU, timeout_ms=NV_MAILBOX_POLL_MSG_TIMEDOUT, ...)
-#     vf_mailbox[1] = 2                                 # ack
-#   return req + 1
 #
 # Every one of the eleven (or nine) trace entries is a hardware store, and the
 # FOUR MSGBUF words are a `(req, 0, 0, 0)` tuple at consecutive addresses -- which
@@ -966,10 +910,6 @@ def rv.read(+addr: U32, +size: U32, +t: Tr) -> Tr:
 #   reg_addr = reg * 4 + ((((aid & 0b11) << 32) | (1 << 34)) if aid > 0 else 0)
 #
 # which for aid 2 is `0x4000_0006_48d0` -- above 2^32, so it is an `I64` and NOT a
-# `U32`. `ops_amd`'s agent found exactly this class of bug in that file: the SQTT
-# write pointer is `(raw & 0x1FFFFFFF) * 32`, up to 2^34, and the first version
-# computed it in `U32` and WRAPPED. This one is the second instance of the same
-# shape, and it is why the constant above is named.
 
 def pc.has_aid(aid: U32) -> Bool: U32.is_gt(aid, 0)
 
@@ -1020,13 +960,6 @@ def pc.rreg2(reg: U32, t: Tr) -> Tr:
 # through scratch registers instead of the MMIO window, and there are TWO paths:
 #
 #   if addr in {regGRBM_GFX_CNTL.addr[inst], regGRBM_GFX_INDEX.addr[inst]}:
-#     reg(regSCRATCH_REG2 if CNTL else regSCRATCH_REG3).write(val, inst, direct=True)
-#     return val
-#   self.wreg_pair("regSCRATCH_REG", "0", "1",
-#                  (addr | (0x1 << 28 if read else 0)) << 32 | val, inst, direct=True)
-#   self.reg("regRLC_SPARE_INT").write(1, inst, direct=True)
-#   wait_cond(regSCRATCH_REG1.read() & 0xFFFFF == 0, ...)
-#   return regSCRATCH_REG0.read()
 #
 # The scratch word is 64 bits and `<< 32` is where a `U32` would wrap: for
 # addr 0x1234 read, the high word is 0x10001234 -- bit 28 set -- which is the whole
@@ -1077,15 +1010,8 @@ def rlcg.access(addr: U32, val: U32, read: Bool, t: Tr) -> Tr:
 # be touched via the indirect window: writes poison the whole fabric" (:417-418).
 #
 #   live_sdma = {k for k in regs_offset[SDMA0_HWIP] if k not in harvested[SDMA0_HWIP]}
-#   max_aid = max((k >> 2 for k in regs_offset[SDMA0_HWIP]), default=0)
-#   self.aids = [0] + [aid for aid in range(1, max_aid+1)
-#                     if sum(1 << (i & 3) for i in live_sdma if i >> 2 == aid) in {0xf,0x3,0xc}]
 #
 # The mask is a SUM of `1 << (i & 3)` over the LIVE instances in the group, so
-# three numbers {0xf, 0x3, 0xc} decide liveness: all four, the low pair, or the
-# outer pair. Everything else is harvested-and-still-present and must not be
-# touched. `0` goes in unconditionally, and it is NOT a mask -- it is AID 0.
-# `i & 3` is `i mod 4`, the instance's slot inside its AID's group of four.
 def aid.slot(i: U32) -> U32: U32.and(i, 3)
 def aid.of(i: U32) -> U32: U32.shrn(i, 2n)
 

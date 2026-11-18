@@ -39,11 +39,6 @@
 # `xcrun dyld_info -exports` (see `.agents/slop/objc/symtab_oracle.txt`):
 #
 #   Metal.framework exports 1457 symbols and `sel_registerName` is NOT one of
-#   them. Neither is `objc_msgSend`. They are LIBOBJC symbols and libobjc
-#   exports them. So `metal.dll.sel_registerName` RESOLVES -- to libobjc's own
-#   address, reached through Metal's dependency edge -- and that is the trap:
-#   a binding that resolves at declaration time is not a binding that resolves
-#   at relocation time.
 #
 # The failure is NOT a failed dlsym. `hcq2.py:84` names a DEVICE symbol after
 # `fn.__name__`, so `ccall(SELNAME, sel)` becomes `custom_function
@@ -131,12 +126,6 @@
 #   (`mangle_3`, `mangle_trailing_colon_keeps_underscore`).
 #
 #   `replace(':','_')` then maps every REMAINING colon. `dispatchThreadgroups:
-#   threadsPerThreadgroup:` has one colon between two labels and a trailing
-#   one, so it is `dispatchThreadgroups_threadsPerThreadgroup`
-#   (`mangle_4`). And a name that is nothing but colons mangles to the EMPTY
-#   string (`mangle_6`, `mangle_7`, `mangle_2` on `:init:`), which is a real
-#   collision two different selectors can make and which no row here can call a
-#   bug because it is what Python does.
 #
 # The two steps commute on the INTERIOR but NOT on the ends, so the gate runs
 # both orders: `mangle_order_swap` asserts the two spellings agree, and it
@@ -177,16 +166,6 @@ def mangle.ltrim(+cs: List<&2, Char>) -> List<&2, Char>:
     case c <> t: Bool.pick(List<&2, Char>, is_colon(c), mangle.ltrim(t), cs)
 
 # `+cs` is read twice in ONE expression, so both copies are spelled. The guard is
-# a CONJUNCTION and needs to be: drop the head only when it is a colon AND the
-# tail is empty. Testing the tail alone folded EVERY input to Nil -- so every
-# mangled name came out "" and `mangle_0` said so. A gate row on an EMPTY string
-# for a fixture that is not empty is a bug that cannot hide: `mangle_0` wanted
-# `init`.
-# The answer is `c <> rtrim(t)` and NOT `cs`: `cs` still carries the UNTRIMMED
-# tail, so returning it kept every interior colon and turned `b:` into `b:`.
-# Two gate rows caught it (`mangle_1` wanted `initWithCoder` and got
-# `initWithCoder_`, `mangle_5` wanted `allocWithZone` and got `allocWithZone_`),
-# and the trailing-underscore row is what it is FOR.
 def mangle.rtrim.go(+c: Char, +t: List<&2, Char>, +r: List<&2, Char>) -> List<&2, Char>:
   Bool.pick(List<&2, Char>, Bool.and(is_colon(c), List.is_empty(&2, Char, t)), Nil{}, c <> r)
 
@@ -275,14 +254,6 @@ def Sels.count(t: Sels) -> U32: Sels.next(t)
 def getsel(s: String, +t: Sels) -> Sels: sel.put(Sels.ix(t), s, Sels.next(t), Sels.miss(t), Sels.hit(t))
 
 # the SEL id, which is this port's own REGISTRY INDEX (see the Sels header).
-# It is the index PLUS ONE, so 0 is unambiguous: index 0 is a real entry and
-# `functools.cache` can hand it back, and an index-valued miss arm would read
-# as a silent rewrite of entry 0. `sel.found` keeps the raw index and
-# `getsel_ix` is the one a caller should use.
-# FOUND first, so a miss folds to 0 instead of to 1. Caught by the gate:
-# `sel_ix_absent_is_0` answered 1, because `found` answers 0 on a miss and
-# 0 is also the first real index. The two are not separable by the index alone,
-# which is why the MISS arm has to be `sel.hit`.
 def getsel_ix(+s: String, +t: Sels) -> U32:
   Bool.pick(U32, sel.hit(Sels.ix(t), s), U32.add(sel.found(Sels.ix(t), s, 0), 1), 0)
 
@@ -375,9 +346,6 @@ def msg_argc(declared: List<&2, U32>) -> U32:
 # `shape_receivers_differ`):
 #
 #   shape_instance_argc=2     a no-argument message passes receiver + selector
-#   shape_extra_arg_argc=3    and each declared argument is one more slot
-#   shape_instance_receiver_is_the_pointer=True
-#   shape_clsmeth_receiver_is_the_class=True
 #
 # And the ORDER, :37 is TWO C calls and the first one is not the message:
 #
@@ -590,10 +558,6 @@ def inh.go(n: Nat, +ms: List<&2, Meth>, +out: List<&2, Meth>) -> List<&2, Meth>:
                                  out, List.append(&2, Meth, out, [Meth{sel, ret, args, retain, clsmeth}])))
 
 # READING THE TRACE. Three readers and a subsequence-free index, which is all
-# the two-call order needs. `Tr.at` answers `Maybe`, and a `Maybe` index cannot
-# be a `U32` row, so every order row goes through `Tr.at_u` which folds the miss
-# to a SENTINEL -- and the sentinel is checked by its own row rather than
-# assumed, because a sentinel that no row reads is a row that cannot fail.
 
 def Call.sym(c: Call) -> String:
   match c:
@@ -609,13 +573,6 @@ def Call.a2(c: Call) -> U32:
     case Call{sym, a0, a1, a2}: a2
 
 # `Tr.at` answers a `Maybe`, because an index past the end is not a slot and a
-# U32 sentinel would have to be checked by a row that nothing else reads.
-# `Maybe.default` is what turns it back into a printable, and `MISS` is printed
-# rather than hidden.
-# `Tr.at` answers a `Maybe`, because an index past the end is not a slot and a
-# U32 sentinel would have to be checked by a row nothing else reads. So there is
-# no sentinel: `MISSING` is printed, and `t_shape_miss_index` is the row that
-# says a past-the-end read MISSES rather than answering 0.
 def Tr.at(t: Tr, k: U32) -> Maybe<&2, Call>:
   List.get(&2, Call, Tr.calls(t), U32.to_nat(k))
 
@@ -646,15 +603,8 @@ def Tr.syms(+t: Tr) -> List<&2, String>: syms.go(U32.to_nat(Tr.next(t)), Tr.call
 # absence.
 #
 # the derived row.  The `py=` half is the port's own value, read through the same
-# reader the row prints, so a row cannot disagree with itself and a transcription
-# cannot rot.  `rd` is `r` with the `py=` half FILLED BY THE PORT'S OWN VALUE,
-# which is the shape `renderer/tc.bend` and `renderer/llvmir.bend` use.
 #
 # the teeth MOVE, and WHERE they MOVE is the point.  a derived row's two halves
-# and THAT is the point: the frozen `want` literal was rot waiting to happen, and
-# it is gone.  What catches a wrong VALUE now is the byte diff against CPython's
-# own rows, and that diff is the gate.
-# THE GATE MOVED TO `gates/objc-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the
 # driver defines nothing this file needs, which is the line

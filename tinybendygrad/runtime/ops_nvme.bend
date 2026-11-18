@@ -20,17 +20,8 @@ import ../helpers.bend as H
 # what is pure and what is the seam, and the line is not arbitrary.
 #
 #   the pure functions are the arithmetic. and the arithmetic is WHERE the
-#   BUGS ARE: the PRP table's page/list interleaving, the doorbell addresses'
-#   `2 * qid` stride, the SQE's 64-BYTE LAYOUT AND ITS `slot << 16` COMMAND
-#   WORD, the completion queue's PHASE BIT, the wave's `(q.entries - 1)`
-#   STRIDE, the `lba_shift` DERIVATION, AND THE `ceildiv(nb, 0x1000) == 2`
-#   case that adds a third prp entry. every one of those is a function of its
-#   arguments alone, and every one of them is what a wrong port gets wrong.
 #
 #   THE SEAM IS THE DEVICE. `pci_dev.map_bar`, `pci_dev.alloc_sysmem`,
-#   `self.regs[...]`, `wait_cond`, `System.memory_barrier`, THE `/proc/mounts`
-#   read and the `/sys/class/block` walk. NONE of those can run without a
-#   DRIVE, AND NONE OF THEM IS ARITHMETIC.
 #
 # so the port is: every rule that is arithmetic, ported and gated; every rule
 # that needs a drive, named with the seam and with the reason it is a seam.
@@ -85,11 +76,6 @@ def NVME_CC_IOSQES() -> U32: 393216
 def NVME_CC_IOCQES() -> U32: 4194304
 
 # the admin commands and the nvm command. `nvme_admin_identify = 6`,
-# `nvme_admin_set_features = 9`, `nvme_admin_create_cq = 5`,
-# `nvme_admin_create_sq = 1`, `nvme_cmd_read = 2`. THE OPCODE IS THE LOW
-# BYTE of the command WORD and the sqe's first WORD is
-# `opcode | slot << 16` -- so the opcode and the slot share one WORD and a
-# port that puts the slot somewhere ELSE writes a different command.
 def nvme_admin_identify() -> U32: 6
 def nvme_admin_set_features() -> U32: 9
 def nvme_admin_create_cq() -> U32: 5
@@ -125,22 +111,12 @@ def PCI_COMMAND_MASTER() -> U32: 4
 # `NVMEQueue.__init__`, `ops_nvme.py:22-25`. THE QUEUE'S GEOMETRY.
 #
 #   self.dev, self.qid, self.tail, self.phase, self.entries =
-#     dev, qid, 0, 1, 0x1000 // SQE
-#   (self.sq, (self.sq_addr,)), (self.cq, (self.cq_addr,)) =
-#     dev.pci_dev.alloc_sysmem(0x1000), dev.pci_dev.alloc_sysmem(0x1000)
-#   self.sq_db, self.cq_db =
-#     nvme.NVME_REG_DBS + 2 * qid * dev.db_stride,
-#     nvme.NVME_REG_DBS + (2 * qid + 1) * dev.db_stride
 #
 # five things and all five are ported: the tail starts at zero, the phase
 # starts at one, the entries are 64, and the two doorbells are the `2 * qid`
 # PAIR.
 #
 # the phase starts at one, not zero. that is the NVMe completion queue's
-# phase bit and it is the one bit that makes a stale completion look like a
-# fresh one: a completion is valid when its phase bit equals the queue's
-# current phase. a port that started the phase at zero would accept the
-# first completion and then reject every one after it.
 
 type Q is Data:
   Q{qid: U32, tail: U32, phase: U32, entries: U32, sq_addr: U32, cq_addr: U32,
@@ -211,10 +187,6 @@ def cap_timeout_ms(+lo: U32) -> U32:
 # `NVMEQueue.submit`, `ops_nvme.py:27-35`. THE COMMAND WORD AND THE PHASE.
 #
 #   slot, self.tail = self.tail, (self.tail + 1) % self.entries
-#   self.sq[slot * SQE:(slot + 1) * SQE] = struct.pack("<IIQQQQII16x",
-#     opcode | slot << 16, nsid, 0, 0, prp1, 0, cdw10, cdw11)
-#   ...
-#   self.phase ^= int(self.tail == 0)
 #
 # three rules and the third is the subtle one.
 #
@@ -249,23 +221,11 @@ def q.next_phase(+phase: U32, new_tail: U32) -> U32:
 # SIXTEEN PADDING BYTES. The four 64-bit words OCCUPY WORDS 2 THROUGH 9:
 #
 #   [0] opcode|slot<<16   [1] nsid
-#   [2] 0  [3] 0          -- the first 64-bit field
-#   [4] prp1_lo [5] prp1_hi  -- THE PRP ADDRESS, LITTLE-ENDIAN
-#   [6] 0  [7] 0          -- the third 64-bit field
-#   [8] 0  [9] 0          -- the fourth 64-bit field
-#   [10] cdw10  [11] cdw11
-#   [12..15] the padding
 #
 # The port keeps the 64-bit words as two 32-bit halves, because the prp address
 # is a physical address and is wider than 32 BITS.
 #
 # TWO BUGS THE FIRST GATE RUN CAUGHT, and the oracle is upstream's own
-# `struct.pack` read back out:
-#   * the first draft had the prp halves the other way round -- high then low.
-#     `<IIQQQQII16x` packs `prp1` as a sixtyty-four-bit little-endian value, so
-#     its low WORD is WORD 4 and its high WORD is WORD 5.
-#   * the first draft put cdw10 and cdw11 at words 8 and 9 -- which is WHERE
-#     the fourth 64-bit field is.
 def sqe_words(opcode: U32, slot: U32, nsid: U32, prp1_hi: U32, prp1_lo: U32,
               cdw10: U32, cdw11: U32) -> List<&2, U32>:
   [cmd_word(opcode, slot), nsid, 0, 0, 0, 0, prp1_lo, prp1_hi,
@@ -277,37 +237,12 @@ def SQE_WORDS() -> U32: 16
 # `prp_table`, `ops_nvme.py:54-63`. THE PAGE TABLE.
 #
 #   lists, list_addrs = dev.pci_dev.alloc_sysmem(ceildiv(len(pages) + 1, 256) * 0x1000)
-#   for j in range(len(list_addrs)):
-#     chunk = pages[256 * j:256 * j + 512]
-#     lists[j * 0x1000:j * 0x1000 + 8 * len(chunk)] = struct.pack(f"<{len(chunk)}Q", *chunk)
-#   table, table_addrs = dev.pci_dev.alloc_sysmem(round_up(16 * len(pages), 0x1000))
-#   entries = flatten((page, list_addrs[(p + 1) // 256] + (p + 1) % 256 * 8)
-#                     for p, page in enumerate(pages))
-#   table[:8 * len(entries)] = struct.pack(f"<{len(entries)}Q", *entries)
 #
 # three rules and all three are LOAD-bearing.
 #
 #   1. A PRP LIST HOLDS 256 ENTRIES, NOT 512. `pages[256 * j:256 * j +
-#      512]` takes 512 pages per chunk but the list's own address is
-#      `list_addrs[(p + 1) // 256]` -- SO A LIST PAGE COVERS 256 PRP
-#      entries, and the chunk's 512 pages span two list pages. the
-#      `512` and the `256` are different numbers and the comment says why:
-#      "list pages overlap, so a prp list never crosses a page and needs no
-#      chaining".
-#   2. the prp entries are (page, pointer) pairs, interleaved. the
-#      table is not a list of pages; it is a list of prp entries, and each
-#      entry is a page followed by a pointer to the list of the pages after
-#      it. so the table's length is twice the page count.
-#   3. THE POINTER IS `list_addrs[(p + 1) // 256] + (p + 1) % 256 * 8`.
-#      the `+ 1` is the pointer to the next page's list and the `% 256`
-#      is the BYTE OFFSET inside that list page. so the pointer for page `p`
-#      IS THE LIST SLOT OF PAGE `p + 1`.
 #
 # and the allocation sizes: the list pages are
-# `ceildiv(len(pages) + 1, 256) * 0x1000` AND THE TABLE IS
-# `round_up(16 * len(pages), 0x1000)`. THE `+ 1` IN THE LIST COUNT IS
-# why a single page still gets a list page.
-# the prp list's capacity: 256 entries per list page.
 def PRP_LIST_ENTRIES() -> U32: 256
 
 # the list pages' count. the `+ 1` is LOAD-bearing: a single page still gets
@@ -361,24 +296,10 @@ def prp_entries(pages: List<&2, U32>, list_addr: U32) -> List<&2, U32>:
 # `NVMEDev.__init__`, `ops_nvme.py:34-56`. THE DEVICE'S IDENTIFY.
 #
 #   self.max_xfer = 0x1000 << min(ident[77] or 8, 8)
-#   self.admin_q.submit(nvme.nvme_admin_identify, 1, ident_addr, 0)
-#   self.lba_shift = ident[128 + 4 * (ident[26] & 0xf) + 2]
-#   self.size = struct.unpack_from("<Q", bytes(ident[0:8]))[0] << self.lba_shift
 #
 # THREE RULES.
 #
 #   1. `max_xfer` IS `0x1000 << min(ident[77] or 8, 8)`. THE `or 8` IS THE
-#      python truthiness of a zero BYTE -- a zero in `ident[77]` means "not
-#      reported" and the SPEC says the default is 8. the `min(..., 8)` is
-#      the cap: a drive that reports a larger mpsz is clamped, because the
-#      prp list is built for at most 8 pages.
-#   2. `lba_shift` IS `ident[128 + 4 * (ident[26] & 0xf) + 2]`. THE INDEX
-#      is the lba format descriptor at `ident[26]`, and the entry is
-#      four bytes wide -- so the INDEX is `128 + 4 * n + 2` and the `+ 2` is
-#      the low BYTE of the four-BYTE entry. a port that read
-#      `ident[128 + 4 * n]` reads the high BYTE and gets the wrong shift.
-#   3. `size` is the low eight bytes of the identify, shifted left by the
-#      lba shift. the number of logical blocks times the block SIZE.
 
 def MPSZ_DEFAULT() -> U32: 8
 def MPSZ_MAX() -> U32: 8
@@ -431,25 +352,10 @@ def dev_size(+nsb: U32, +nsb_hi: U32, +lba: U32) -> U32:
 # `NVMEDev.new_queue`, `ops_nvme.py:58-62`. THE QUEUE CREATION.
 #
 #   self.queues.append(q := NVMEQueue(self, len(self.queues) + 1))
-#   self.admin_q.submit(nvme.nvme_admin_create_cq, 0, q.cq_addr,
-#                       (q.entries - 1) << 16 | q.qid, 1)
-#   self.admin_q.submit(nvme.nvme_admin_create_sq, 0, q.sq_addr,
-#                       (q.entries - 1) << 16 | q.qid, q.qid << 16 | 1)
 #
 # THREE RULES.
 #
 #   1. the qid is `len(self.queues) + 1`. the admin queue is qid 0 and
-#      the first IO queue is qid 1, so the doorbells of the first IO
-#      QUEUE ARE AT `2 * 1` AND `2 * 1 + 1` -- NOT AT 0 AND 1.
-#   2. BOTH CREATES PASS `(q.entries - 1) << 16 | q.qid`. THE QUEUE SIZE
-#      field is the entry count minus one and it is shifted left by
-#      sixteen, and the qid is in the low sixteen. the `- 1` is the
-#      zero-based SIZE and a port that passes the entry count creates a
-#      queue one entry shorter than the device offers.
-#   3. THE CREATE-SQ'S CDW11 IS `q.qid << 16 | 1` AND THE CREATE-CQ'S
-#      CDW11 is `1`. the square bracket is the physical queue number and
-#      the `1` is the "enable" flag. so the two creates differ in their
-#      CDW11 and the difference is the queue's own identity.
 
 def new_qid(+nqueues: U32) -> U32:
   U32.add(nqueues, 1)
@@ -467,11 +373,6 @@ def create_sq_cdw11(+qid: U32) -> U32:
 # and most important function in the file.
 #
 # the whole point of an NVMe read is: the gpu cannot dma into device memory,
-# so the read is turned into a program on the gpu that writes the command
-# into the submission queue, copies the prp table in, rings the doorbell and
-# waits for the completion. the program is a list of instructions and the
-# INSTRUCTION VOCABULARY IS FOUR: `write`, `copy`, `wait` AND
-# `memory_barrier`.
 #
 # the rules that matter, and they are all arithmetic.
 #
@@ -605,10 +506,6 @@ def cqe_failed(+cqe_word: U32) -> Bool:
   Bool.not(U32.is_zero(cqe_status(cqe_word)))
 
 # THE WAVES. `waves, last = full // (q.entries - 1), full % (q.entries - 1)
-# + (rem > 0)` -- the number of full waves and the SIZE of the last one. the
-# last wave is `full % (q.entries - 1)` plus one IF there is a remainder, so
-# a read that is exactly `full` commands long has a last wave of
-# `full % (q.entries - 1)` AND NO EXTRA WAVE.
 def wave_count(+full: U32, +entries: U32) -> U32:
   U32.div(full, wave_stride(entries))
 
@@ -626,10 +523,6 @@ def last_wave_size(+full: U32, +rem: U32, +entries: U32) -> U32:
 #       UOp.unique_num), dtype=dtypes.uint64)))).end(r)] if n else []
 #
 # the `if n else []` is the whole function. a LOOP of zero iterations is
-# no instructions at all -- not an empty LOOP, not a LOOP that runs once.
-# AND THE COMMENT SAYS WHY: "loops in the cmdbuf, so the host program doesn't
-# grow with the read size". a port that emits a zero-iteration LOOP emits a
-# LOOP object and the host program grows with the read SIZE anyway.
 
 def loop_n(+n: U32) -> U32:
   Bool.pick(U32, U32.is_zero(n), 0, 1)
@@ -664,33 +557,12 @@ def fits_device(+soff: U32, +nbytes: U32, size: U32) -> Bool:
 # `NVMEAllocator`, `ops_nvme.py:73-82`. THE ALLOCATOR.
 #
 #   lru = False
-#   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage:
-#     return BufferStorage(0)
-#   def _offset(self, buf:int, size:int, offset:int) -> int: return buf + offset
-#   def _map(self, buf:Buffer) -> BufferStorage:
-#     ...
-#     paddrs = mapping.paddrs if mapping.aspace is AddrSpace.SYS else
-#              PCIIfaceBase.p2p_paddrs(iface, mapping.paddrs)[0]
-#     table = self.dev.iface.buffer(*prp_table(self.dev.nvme,
-#              [p + off for p, size in paddrs for off in range(0, size, 0x1000)]))
 #
 # THREE RULES.
 #
 #   1. `lru = False` -- AN NVMe BUFFER IS NOT CACHED. EVERY `_alloc`
-#      is a fresh device allocation and nothing is reused. a port that
-#      caches an NVMe BUFFER reuses a device address that the device has
-#      ALREADY HANDED TO SOMEBODY ELSE.
-#   2. `_alloc` RETURNS `BufferStorage(0)` -- THE ALLOCATION IS A ZERO
-#      handle, not a real one. the real allocation happens in `_map`, WHERE
-#      the prp table is built. the SIZE is ignored and the port says so.
-#   3. `_offset` IS `buf + offset` -- A PLAIN ADD, AND THE PORT CARRIES
-#      it because the OFFSET is what the prps are built from.
 #
 # AND THE PAGE LIST. `[p + off for p, size in paddrs for off in range(0, size,
-# 0x1000)]` -- the page list is expanded from the physical addresses and
-# their sizes: each physical page becomes as many page numbers as its SIZE
-# divides by 4096. a port that passes the physical addresses straight
-# through builds a prp table with the wrong number of entries.
 
 def ALLOCATOR_LRU() -> Bool: False{}
 
@@ -737,14 +609,8 @@ def page_list.expand(paddrs: List<&2, U32>, sizes: List<&2, U32>) -> List<&2, U3
 # `NVMEIface`, `ops_nvme.py:66-71`. THE INTERFACE.
 #
 #   pcibus = filter_visible_devices(System.list_devices(*NVME_IDS), "NVME")[index][1]
-#   mounted = {line.split()[0] for line in pathlib.Path("/proc/mounts").read_text().splitlines()}
-#   for b in [b for b in glob.glob("/sys/class/block/*") if f"/{pcibus}/" in os.path.realpath(b)]:
-#     assert f"/dev/{os.path.basename(b)}" not in mounted and not os.listdir(f"{b}/holders"), ...
 #
 # the assertion is the whole point: an NVMe drive that the operating system
-# has mounted, or that lvm/md has taken, must not be used. the port carries
-# the rule and names the two reads that decide it, and the reads are the
-# SEAM.
 
 def IFACE_NVME() -> U32: 1
 def dev.iface_names() -> List<&2, String>: ["NVMEIface"]
@@ -752,27 +618,14 @@ def dev.iface_count() -> U32: 1
 def dev.ifaces() -> List<&2, U32>: [IFACE_NVME()]
 
 # the in-use assertion. `mounted` is the set of mounted device names and
-# `holders` is whether the block device has holders. both must be empty
-# and the port spells it as a conjunction because the python is a conjunction
-# and a port that checked one of them would take a drive out from under the
-# FILESYSTEM.
 def in_use(mounted: Bool, has_holders: Bool) -> Bool:
   Bool.or(mounted, has_holders)
 
 # `NVMEDevice`, `ops_nvme.py:85-90`. THE DEVICE.
 #
 #   ifaces = [NVMEIface]
-#   def __init__(self, device:str):
-#     self.iface = self._select_iface(device)
-#     self.nvme = cast(NVMEDev, self.iface.dev_impl)
-#     super().__init__(device, NVMEAllocator(self), [], None)
-#   def synchronize(self, timeout:int|None=None): pass
 #
 # THERE IS NO RENDERER -- THE THIRD ARGUMENT OF `super().__init__` IS `[]`,
-# an empty list. an NVMe device executes no kernels; it is a storage
-# device the gpu reads from. and `synchronize` is `pass` -- an NVMe device
-# has nothing to synchronize, because the completion wait is inside the
-# COMMAND STREAM.
 
 def dev.renderers() -> U32: 0
 def dev.synchronize_is_noop() -> Bool: True{}
@@ -780,23 +633,8 @@ def dev.synchronize_is_noop() -> Bool: True{}
 # `nvme_submit`, `ops_nvme.py:154-163`. THE DISPATCH.
 #
 #   lin, queue = s.without_after.body, s.without_after.src[1]
-#   if not (drives := {i: d for i, u in enumerate(lin.src) if u.op is Ops.CALL
-#        and u.src[0].op is Ops.STORE and (d := to_tuple(
-#        get_call_arg_uops(u)[1].device)[0]).startswith("NVME")}): return None
-#   ops = [[u] for u in lin.src]
-#   for d in dict.fromkeys(drives.values()):
-#     positions = [i for i in drives if drives[i] == d]
-#     for i, copy_ops in zip(positions, nvme_copies(queue, [lin.src[i]
-#        for i in positions])): ops[i] = copy_ops
-#   return s.without_after.replace(src=(lin.replace(src=tuple(flatten(ops))),
-#     queue)).after(*s.src[1:])
 #
 # the rule is the drive filter: a call is an NVMe read only IF it is a
-# call whose first source is a STORE and whose device's name starts with
-# "nvme". and the function returns `None` when there is no such call --
-# it is a transform that may not apply, not a transform that always applies.
-# the port carries both halves, and the second half is the one that matters:
-# a transform that always applies would rewrite every non-NVMe call.
 
 def is_nvme_device(name: String) -> Bool:
   String.starts_with(name, "NVME")

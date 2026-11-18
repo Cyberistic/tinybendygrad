@@ -275,14 +275,6 @@ def Mv.fmt(m: Mv) -> U32:
 # `to_mv` call returned, which is what `Tr.here` read BEFORE the emit.
 def mmio_of(h: U32, addr: U32, nbytes: U32, fmt: U32) -> Mv: Mv{h, addr, nbytes, fmt}
 # :7 -- `to_mv(addr, nbytes).cast(fmt)` is TWO calls in that order, and the
-# handle the second one acts on is the first one's return. The handle is read
-# by `Tr.here` BEFORE the first emit, because in Python it is the first call's
-# return value and `Tr.next` is monotone in issue order.
-# LEAF-FIRST, because there are no forward references. The five defs below are
-# one def per link of the chain: the leaf takes the already-emitted trace, then
-# `.cast`, then `to_mv`, then the `.go` that reads the handle first, then the
-# entry point. `mmio_cast2`'s `+t` is DROPPED and unused on purpose (rule at
-# `bend2-constraints.md` position 4914): the call is recorded by its caller.
 type MvT is Data:
   MvT{m: Mv, t: Tr}
 def MvT.m(x: MvT) -> Mv:
@@ -311,12 +303,6 @@ def mmio_make_t(+t: Tr, addr: U32, nbytes: U32, fmt: U32) -> MvT:
 def mmio_make(+t: Tr, addr: U32, nbytes: U32, fmt: U32) -> Mv:
   MvT.m(mmio_make_t(t, addr, nbytes, fmt))
 # `struct.calcsize` as a table, BOTH directions. `size -> fmt` is a SEARCH and
-# `fmt -> size` is the INDEX, and they disagree wherever two formats share a
-# size -- so `mem_calcsize_*` gates the fmt->size direction and
-# `mem_calcsize_rev_*` gates size->fmt, which is a LOOKUP and may be absent.
-# `Csz` is `calcsize(fmt) -> (size, fmt)`: the SIZE Python answers, and the
-# fmt it answered it for, so the reverse direction is the FIRST row with that
-# size and `mem_calcsize_rev_*` gates which one that is.
 type Csz is Data:
   Csz{sz: U32, fmt: String}
 def csz_of(sz: U32, fmt: String) -> Csz: Csz{sz, fmt}
@@ -348,11 +334,6 @@ def cfmt.go(+cs: List<&2, Csz>, +acc: List<&2, String>) -> List<&2, String>:
     case c <> t: cfmt.go(t, List.append(&2, String, acc, [Csz.fmt(c)]))
 def calcsizes_sizes() -> List<&2, U32>: csz.go(calcsizes(), Nil{})
 # the 0 a lookup miss answers, named so it cannot be confused with a fmt of
-# index 0 -- and it IS indistinguishable from one, because 'B' IS index 0.
-# That is a real hazard and the honest mitigation is that every reader of the
-# answer is a `Maybe` first: `sz_ix` is the only collapse and `fmt_absent` is
-# the only witness, so `mmio_fmt_absent` and `mem_calcsize_rev_*` are the rows
-# that notice.
 def fmt_absent() -> U32: 0
 # `Mv.fmt` holds the table INDEX of the format, so `struct.calcsize` is
 # `sizes[fmt]` -- the FORWARD direction, and the row is the whole list so a
@@ -525,11 +506,6 @@ def bump_try.go(over: Bool, +b: Bump, size: U32, align: U32) -> BumpR:
 def bump_try(+b: Bump, +size: U32, +align: U32) -> BumpR:
   bump_try.go(bump_overflow(b, size, align), b, size, align)
 # the returned address is not the END, and `mem_bump_ptr_end_*` is the row that
-# says so: `ptr` is `res + size` and the address is `base + res`.
-# THE CLAIM: the state's `ptr` after an allocation is `res + size` and the
-# RETURNED ADDRESS is `base + res`, so they are not the same number. `b` is read
-# three times -- once for `res` before, once inside the alloc, once for the end
-# -- so every `U32` argument is `+`.
 def bump_ptr_of(+r: BumpR) -> U32: Bump.ptr(BumpR.b(r))
 def bump_ptr_end(got: U32, want: U32) -> Bool: U32.is_eq(got, want)
 
@@ -742,22 +718,11 @@ def cnts_raw(msb: List<&2, U32>) -> List<&2, U32>:
 def cnts_of(shifts: List<&2, U32>, va_bits: U32) -> List<&2, U32>:
   rev.u32(cnts_raw(lvl_msb(shifts, va_bits)))
 # THE INVARIANT: `pte_cnt[lv] * pte_covers[lv] == pte_covers[lv-1]`. It is the
-# claim a mis-reversed table cannot fake, because it RELATES the two lists and
-# a reversal applied to only one of them breaks it at the root. `mem_pte_ladder_*`
-# is this row.
-# lv 0 is the ROOT, and `pte_covers[-1]` does not exist -- so the invariant
-# starts at lv 1 and the root is gated by the ORDER claim instead
-# (`mem_pte_cover_order_*`: `pte_covers[0]` is the LARGEST).
 def sz_of(m: Maybe<&2, U32>) -> U32:
   match m:
     case None{}: fmt_absent()
     case Some{+x}: x
 # THE THREE NUMBERS AND NOTHING ELSE. A `Maybe` cannot be `+`, so "test it and
-# use it" is a record (rule at `bend2-constraints.md` position 1517) -- and the
-# PRESENCE is derived from the VALUE rather than carried, because
-# `sz_of(None) == fmt_absent() == 0` and NO legal `pte_covers` or `pte_cnt`
-# entry is 0 (`pte_covers >= 1` and `pte_cnt >= 2` for any two adjacent shifts).
-# So `has_sz` is a `U32` test and `Lad` needs three `U32`s and no `Bool`s.
 type Lad is Data:
   Lad{c: U32, n: U32, u: U32}
 def has_sz(x: U32) -> Bool: Bool.not(U32.is_eq(x, fmt_absent()))

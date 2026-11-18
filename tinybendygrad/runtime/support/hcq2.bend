@@ -6,10 +6,6 @@
 #
 
 # THE SPLIT, stated once and then obeyed: a def here EITHER builds the argument
-# of one device call (pure, and the gate checks it) OR records that call in the
-# trace (and the gate checks the ORDER). There is no third kind. Every seam is
-# a trace tag and nothing else, so ORDER and IDENTITY are gateable even though
-# none of them is made here.
 #
 
 # WHAT IS PORTED, DEF BY DEF. `hcq2.py` is 646 lines and most of it is a
@@ -53,10 +49,6 @@
 #   the queues are built by `_build_queues` at :244), and `sched_tl`/`staging_chunk`,
 #
 # EVERY line number in both tables is a PIN NUMBER -- the upstream revision this
-# tree vendors (`5c2bf39d6c4b`, whose `tinygrad/runtime/support/hcq2.py` is 563
-# LINES). THE header was first written against a 646-LINE revision, SO NONE OF its
-# NUMBERS survived the MOVE, AND mixing the two silently is what makes a citation
-# UNRESOLVABLE, WHICH is the whole subject of the next block.
 #
 #   hcq2.py:73 `hcq_fence`               PORTED  `fence` + `Tr` FENCE symbol=hcq_fence -- `encode_fence` IS GONE upstream at this pin (`dc9af790e`)
 #   hcq2.py:387 `encode`                 PORTED  `Tr` SUBMIT -- this is what the old
@@ -167,29 +159,10 @@
 #    the only one this file ever needed, and it is `size * itemsize` in `U32`.
 #
 #    THIS wall used to name a DEF THAT does not exist. It said "`slots_of`
-#    carries the `round_up` in u32 and `hc2_lo_slots_wide` states the wall in a
-#    row", and NEITHER NAME IS A DEF IN THIS FILE: `slots_of` had 2 occurrences
-#    (this wall and the `lower_call` row above) and 0 defs, and `hc2_lo_slots_wide`
-#    had 1 and 0. So the wall was carried by a claim rather than by a row, which
-#    is the `ops_webgpu` shape -- three names written down, each reachable from
-#    nothing, and the write-down is what kept them alive.
 #
 #    It is now DELETED rather than written, for the second and better reason:
-#    upstream `cff94ae88` ("hcq2: drop input table", #18577) removed the ONLY
-#    thing `slots_of` could have computed. It ported
-#    `round_up(u.nbytes(), 128) // u.dtype.itemsize` from the 128-byte PARAM
-#    merge in `lower_call`, and that merge -- the `offs`/`merged`/`views` triple
-#    that existed to substitute several PARAMs into one 128-aligned buffer -- is
-#    gone, replaced by `pm_lift`. There is no u64 divide left in `lower_call` to
-#    defer, so there is no wall here to state. `nbytes` itself is ported and is
-#    gated from `device.bend`'s `Bn`, not from here.
 #
 # CITATIONS -- what the NV path already assumes about this file.
-# THE port's OWN `ops_nv.bend` IS a header-ONLY file now: it has ZERO `def`
-# DECLARATIONS, so a pointer into its BODY names a line that does not exist.
-# What it DOES carry is its own STAGE header, and the STAGE header names the
-# UPSTREAM construct each stage was ported from. So the citations below are
-# UPSTREAM citations, and the PORT's own `ops_nv.bend` is named as the PORT's own.
 #
 # upstream's `layout_args` (tinygrad/runtime/support/hcq2.py:114 symbol=layout_args)
 #   is called from upstream's `ops_nv.py` -- upstream's `layout_args` IS the
@@ -239,10 +212,6 @@
 # MEASURED, not assumed:
 #
 #   $ grep -n "msgqTxHeader\|ring_len\|queue_mv\|doorbell\|cmd_q\|stat_q\
-#               q_size\|MAX_BUFS" tinygrad/runtime/support/hcq2.py
-#   (no output)
-#   $ grep -n "msgqTxHeader\|ring_len\|doorbell" tinygrad/runtime/support/nv/ip.py
-#   22, 23, 26, 47, 51, 64, 384, 385
 #
 # So `q_size`/pack factors, the front-end sizes, the completion-ring geometry and
 # the MAX_BUFS/fence counts the brief grouped under "per-queue constants" ARE NOT
@@ -637,11 +606,6 @@ def Pk.n(x: Pk) -> U32:
     case Pk{k, n}: n
 
 # `words += [BINARY(bytes(offset - end)), arg] if offset != end else [arg]` --
-# one arm emits two words and the other emits one. `gap_zero` is the COMPARISON
-# and not `gap`, because a Bool from a leaf call may not be `match`ed and
-# `Bool.pick` would need `gap` twice. See THE `+` ALIASES BETWEEN TWO ARGUMENTS
-# for why the two shapes are not interchangeable here: the `Bool.pick` version
-# answered `W8 P0 W8 P0 W8 P0 P0` where CPython answers `W8 W8 W8 P0`.
 def pack.pad(n: U32) -> Pk: Pk{PK_PAD(), n}
 
 def pack.word(+k: U32) -> Pk: Pk{PK_WORD(), k}
@@ -893,12 +857,6 @@ def seenq.go(n: Nat, +bs: List<&2, E>, +dev: U32, +q: U32, hit: Bool) -> Bool:
 def seenq(+bs: List<&2, E>, dev: U32, +q: U32) -> Bool: seenq.go(List.length(&2, E, bs), bs, dev, q, False{})
 
 # ONE SELF-CALL PER ARM, which is what Bend allows: the arm is a `match` on a
-# Bool PARAMETER and each arm makes one recursive call. The obvious
-# `Bool.pick(..., qlist.go(...), qlist.go(...))` is a mutual two-call in one
-# THE HEAD OF A LIST, as an `E`. The folds below carry the head EXPLICITLY and
-# recurse on the tail, because computing the NEXT entry's flag from the CURRENT
-# head answers the flag about the wrong element -- a bug that made `three`'s three
-# queues read as two, and it is the kind of bug no boolean row sees.
 def ehd.at(m: Maybe<&2, E>) -> E:
   match m:
     case Some{g}: g
@@ -929,12 +887,6 @@ def qlist.go(n: Nat, +rest: List<&2, E>, +dev: U32, +is_new: Bool,
                                qlist.next(List.tail(&2, E, rest), dev), acc)
 
 # THE FLAG OF THE HEAD OF `rest`, which is `qlist.new` against `rest`'s TAIL. The
-# two places that compute it -- here and in `qlist` -- MUST both drop the head, or
-# a queue answers "already seen" against itself and the fold stops after one
-# element. That is what made `three` read as one queue.
-# `seenq` MUST see the tail and not the list: the head is the candidate, so
-# asking the WHOLE list answers "this queue has been seen" about the head itself
-# and `qlist` answers 0 for a batch that has queues in it.
 def qlist(+bs: List<&2, E>, +dev: U32) -> List<&2, U32>:
   qlist.go(List.length(&2, E, bs), bs, dev,
            qlist.new(ehd(bs), List.tail(&2, E, bs), dev), Nil{})
@@ -1108,12 +1060,6 @@ def qfirst(+qs: List<&2, U32>) -> U32: qfirst.go(List.length(&2, U32, qs), qs, 0
 # no single-queue fixture with one call could ever see it.
 #
 # THE second disjunct is vacuous in every fixture and the gate says so.
-# `(dev, q) in peers` is True for every queue that runs a call on a device whose
-# `Device.canonicalize` differs from the enqueue device, which under DEV=NULL is
-# every batch (`canonicalize('NULL:0')` is `'NULL'`). A fixture that made it
-# False needs a device with no peers, and no NULL batch has one. So the gate
-# cannot separate `q != epi` from `or (dev, q) in peers`, and `hq2_b*_sig_*` are
-# rows about the LAST-WINS half alone. That is a reported blind spot.
 
 def epi(+bs: List<&2, E>, +dev: U32) -> U32:
   Bool.pick(U32, U32.is_eq(nq(bs, dev), 1), qfirst(qlist(bs, dev)), Q_COMPUTE())
@@ -1362,9 +1308,6 @@ def start_ins(+dev: U32) -> List<&2, Ins>:
 #         epilogue queue is one with no calls of its own.
 #
 # So one CALL's block is
-#   dependency waits ++ [pre-TIMESTAMP] ++ CALL ++ [post-TIMESTAMP] ++ [SIGNAL]
-# and one QUEUE's stream is its `_start_ins` ++ the blocks of every call on it
-# ++ the epilogue tail IF it is the device's epilogue queue.
 
 def cat2(+a: List<&2, Ins>, +b: List<&2, Ins>) -> List<&2, Ins>: List.concat(&2, Ins, [a, b])
 

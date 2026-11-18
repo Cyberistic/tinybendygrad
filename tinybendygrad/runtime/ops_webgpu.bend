@@ -1,12 +1,6 @@
 # tinybendygrad/runtime/ops_webgpu.bend -- port of tinygrad/runtime/ops_webgpu.py
 #
 # the run side of the browser target. ops_webgpu.py is wgpu-py: every call is a
-# ctypes call into `tinygrad/runtime/autogen/webgpu.py`. In a browser those calls
-# become js-glue ffi, and what survives the crossing is the structure -- device
-# init, buffer upload/download, the per-call object graph, dispatch geometry,
-# and the future-to-synchronous protocol. Every actual wgpu call is a
-# `# TODO(p3) runtime/ops_webgpu.py:<line>` naming the js import it becomes;
-# nothing here calls wgpu.
 #
 # the split, stated once and then obeyed. a def here either builds the argument
 # of one wgpu call (pure, and the gate checks it) OR records that call in the
@@ -124,10 +118,6 @@
 #     anyway, because the branch structure is the thing.
 #
 # the sync calls are also WHERE the browser differs, and the port says so:
-# `wgpuInstanceWaitAny` blocks the thread. In a browser the seam returns a
-# Promise and `WaitAnyOnly` has no meaning; the six `synchronous`-wrapped calls
-# are the six that must become `await`. `sync_*` names them, and every call_wait
-# entry in the trace is one of the six.
 #
 # what device.bend AND wgsl.bend owe this file. Named, because this file cannot
 # be checked without them and does not pretend otherwise.
@@ -179,13 +169,6 @@
 # three global buffers emits, verbatim:
 #
 #   fn nan() -> f32 { let bits = 0xffffffffu; return bitcast<f32>(bits); }
-#   @group(0) @binding(0)
-#   var<uniform> infinity : f32;
-#   @group(0) @binding(1)var<storage,read_write>a:array<f32>;
-#   @group(0) @binding(2)var<storage,read_write>b:array<f32>;
-#   @group(0) @binding(3)var<storage,read_write>c:array<i32>;
-#   @compute @workgroup_size(1) fn k(@builtin(workgroup_id) gindex: vec3<u32>,
-#       @builtin(local_invocation_id) lindex: vec3<u32>) {
 #
 # so the shader declares 1+len(bufs) bindings, in the order `bufs` was handed to
 # it (cstyle.py:264 "this relies on bufs dict preserving order"), and
@@ -288,12 +271,6 @@ def QUERY_COUNT() -> U32: 2
 def QUERY_BUF_SIZE() -> U32: 16
 
 # the types.
-# one ffi call and the object it acts on. `arg` is the object kind for create /
-# release / destroy, the sync_* id for a wait, the workgroup count for a
-# dispatch and the group index for a set_bind_group; unused elsewhere. There is
-# deliberately no field for the rest of the call's arguments: those are what the
-# defs around this record build, and the gate reads them from the record a def
-# returns, not from the trace.
 type Call is Data:
   Call{k: U32, arg: U32}
 
@@ -319,11 +296,6 @@ type Slot is Data:
 # and the right number of times, which is the part the structure owns.
 #
 # `depth` is the open wgpuDevicePushErrorScope count and `bad_at` is the pop
-# ordinal at which the seam should report an error (0 = never), so one fixture
-# drives the `if err := self.dev.pop_error(): raise` arm at each of the four
-# sites in turn. `popn` counts the pops so far and is what `bad_at` is compared
-# against; it is not reset by `Tr.reset`, so one fixture numbering covers a whole
-# program lifetime.
 type Tr is Data:
   Tr{calls: List<&2, Call>, next: U32, depth: U32, bad_at: U32, popn: U32,
      refused: Bool}
@@ -354,17 +326,8 @@ type Pass is Data:
 # so the trace is the ordered list of js imports the browser will make.
 #
 # the raise. `Tr.emit`, `Tr.push` AND `Tr.pop` all record nothing once a pop has
-# reported an error. That is the port of `if err := self.dev.pop_error(): raise`:
-# everything after the raise does not happen, including the next PushErrorScope
-# and its matching pop. It is why no step below needs a guard of its own, and why
-# a refusal shows up in the trace as a truncation rather than as a flag alone.
 #
 # The failing pop is still recorded, and that is not a special case: it sets
-# `refused` in the same breath, so on entry its own `refused` is still False.
-# Guarding two of the three was the first bug this gate found in itself (four
-# pops and one create survived a refusal at pop 1, which is not what Python
-# does); guarding all three is the fix, and `wg_refuse_*_pops` is the row that
-# pins it.
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 0, 0, False{}}
 
@@ -494,9 +457,6 @@ def Tr.args(k: U32, +cs: List<&2, Call>) -> List<&2, U32>:
 # binder, and a descent may not use that binder twice.
 #
 # both fields are compared, so a pattern pins the identity of each call and not
-# only its kind. That is what makes `wg_init_order` and `wg_call_order` worth
-# printing: they say the instance is created, then the adapter is requested, then
-# the features are read -- and which six.
 def Tr.has.step.same2(k1: U32, k2: U32, a1: U32, a2: U32) -> Bool:
   Bool.and(U32.is_eq(k1, k2), U32.is_eq(a1, a2))
 
@@ -846,12 +806,6 @@ def dev.free(map_state: U32, id: U32, t: Tr) -> Tr:
 def dev.uniform_usage() -> U32: U32.or(USAGE_UNIFORM(), USAGE_COPY_DST())
 
 # `val.to_bytes(4, "little", signed=val < 0)` for an int: two's complement, low
-# byte first. That is the whole int arm and it is portable. The FLOAT arm needs
-# an f32 bit pattern, which is wall 3.
-# `U32.shrn(v, 1n)` shifts by one bit, not by one byte. `shrn` composes the
-# one-bit `U32.shr` n times, so the amount must be the bit count -- 8 -- and not a
-# byte count. `U32.shr` is also the one-bit shift, so `shrn(v, 8n)` is the byte
-# shift and has no shorter name.
 #
 # measured, AND no row in this file could see it. With `1n` the value was divided by
 # two per byte, so 7 came out `7,3,1,0` instead of CPython's `7,0,0,0` -- but the

@@ -10,10 +10,6 @@ import ./ops_cl.bend as CL
 # `Tr`, `Tr.*`, `vend.argname`, `u32s`, `one_s`, the row printers -- is imported
 # from `ops_cl.bend` as `CL.`, which is the DAG's only edge in one direction.
 #
-# WHAT IS HERE: `CU_*` (autogen/cuda.py), the CUDA column of the vendor table
-# `vend.cu`, `cu_unchecked` (cu:17-18, `check`), `cu_err_*` (cu:18, `check`), `Spec` (tinygrad/device.py:89, `BufferSpec`)
-# and `CUDA_HOST_REGISTERED` (cu:90), `cu_handle_words`/`cu_handles_tail`/
-# `cu_nstreams` (cu:119/109/120), `cu.*` and `CuDev`.
 #
 # PART 2 -- CUDA. `ops_cuda.py`. STALE-LINE NOTE: the pre-split header said
 # "all 136 lines" and cited `cu:132` and `cu:134-136`; MEASURED against this
@@ -23,11 +19,6 @@ import ./ops_cl.bend as CL
 # (the pre-split header's `cu:132` and `cu:134-136` are the SAME two lines, renumbered.)
 #
 # the only one of the three that is not a sequence of driver calls. `CUDAQueue`
-# is a COMMAND ENCODER: its six methods do not talk to the GPU, they append to a
-# command buffer and remember the LAST handle they wrote in `self.h`. The index
-# arithmetic on `rt_vars` -- `index(1)` for compute and `index(2)` for a COPY
-# queue, `index(3)` for the status, `signal[1:2]` for the timestamp -- is the
-# portable content, and it is a table.
 
 # --- the CUDA vendor vocabulary, read straight off ops_cuda.py -----------
 #
@@ -345,17 +336,6 @@ def cu.init(+device: String, +maj: U32, +min: U32, +t: CL.Tr) -> CuDev:
         cu.arch_of(maj, min), CU_TAG_CUDA(), t6}
 
 # cu:112 `UPat(Ops.PARAM, tag="cuda")` and cu:113 `tag="stamp"` -- the two tags
-# `pm_bufferize` recognises by TAG, plus cu:114's `name="b"` rule which is keyed on
-# the NAME and a `b.tag[0] == "function"` test. Three rows and a three-way
-# dispatch, which is two Bool.picks and not a `U32` ladder.
-# `CUDAQueue` -- the COMMAND ENCODER, cu:28-66. `self.h` is the handle the last
-# `ccall` returned and every method stores it, so the trace records the CALL and
-# the queue's `h` is the id the trace minted -- `Tr.here` of the trace in front of
-# the call.
-# cu:36-37 `return self.rt_vars.after(self.h).index(2 if
-# self.queue.startswith("COPY") else 1).load()` -- the stream slot, and the
-# two-way choice on the queue NAME is the whole test. `cu.stream_slot` is that
-# choice and `cu_stream_compute`/`cu_stream_copy` are its rows.
 def cu.stream_slot.at(is_copy: Bool) -> U32: Bool.pick(U32, is_copy, CU_IDX_COPY(), CU_IDX_COMPUTE())
 
 def cu.stream_slot(queue: String) -> U32:
@@ -367,21 +347,12 @@ def cu.q_init(+t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_CTX_SET(), U32.show(CU_IDX_C
 # cu:40-47 `launch`. The portable content is the FOUR numbers:
 #
 #   rows  = layout_args(args, 8)                      # offset/word pairs, base 8
-#   size  = max([o + w.dtype.itemsize for o, w in rows], default=8) - 8
-#   extra = self.q(1, addr+8, 2, addr, 0) - 40
-#   self.h = ccall(cuLaunchKernel, func, *gs, *ls, 0, stream, const(0), kernargs[extra])
 #
 # and the `default=8` is the answer when `args` is EMPTY, so `size` is 0 for an
 # empty argument list and the kernargs blob is one word long.
 def CU_KERNARGS_BASE() -> U32: 8
 
 # `size = max([o + w.dtype.itemsize ...], default=8) - 8` -- the END of the last
-# argument minus the base, and `default=8` makes it 0 when there are none. The
-# fold is a MAX so it is a running best and NOT a sum: the accumulated value is
-# never smaller than `CU_KERNARGS_BASE`. The base comes off ONCE, at the end --
-# subtracting inside the fold would make the running best `max - 8`, and then
-# `max - 8` would be compared against the next end instead of `max`, which walks
-# `[40, 12, 24]` down to 16.
 def cu.launch_size.at(+end: U32, +best: U32) -> U32:
   Bool.pick(U32, U32.is_lt(best, end), end, best)
 
@@ -441,19 +412,10 @@ def cu.timestamp(+t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_HOST_FUNC(), U32.show(CU_
 def cu.submit(+t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_SIGNAL(), U32.show(CU_IDX_STATUS()), t)
 
 # cu:49-52 `exec` -- `obj, bufs, vals = prg.to_elf(), get_call_arg_uops(call),
-# get_call_var_uops(call, prg)` then the launch. `prg.arg.globals` and
-# `prg.arg.vars` are the two SIZES the kernel-arg layout needs, and the address
-# list is `[bufs[i].getaddr for i in prg.arg.globals] + [v.ccast(v.dtype) for v,
-# var in zip(vals, prg.arg.vars)]` -- buffers THEN values, which is the same order
-# as the CL signature walk.
 def cu.exec(nbufs: U32, nvals: U32, +t: CL.Tr) -> CL.Tr:
   cu.launch(0, t)
 
 # `CUDAAllocator`, cu:71-95. `_alloc` has THREE branches and the third is the
-# only one that is not an early return: `external_ptr`, then `host or
-# cpu_access`, then device. Two of the three are `Bool.pick`s over one `Spec`.
-# cu:74 `if options.external_ptr: return BufferStorage(options.external_ptr)` --
-# NO CALL AT ALL, and that is the row: the external branch traces nothing.
 def cu.alloc.ext(ptr: U32, +t: CL.Tr) -> CL.Tr: t
 
 # cu:75-76 `if options.host or options.cpu_access: ptr = init_c_var(
@@ -494,12 +456,6 @@ def cu.free(+s: Spec, +buf: U32, +t: CL.Tr) -> CL.Tr:
   cu.free.at(spec.is_host(s), buf, buf, cu.sync(t))
 
 # cu:84-92 `_map` -- the branch that matters is `buf.device.startswith("CUDA")`
-# and NOT the presence of a host: a CUDA device with a host interface RETURNS
-# without asking about the page alignment (cu:87), while a NON-CUDA device
-# refuses on a missing host just as it refuses on a misaligned one (cu:88's `or`).
-# So `has_host` alone cannot pick the message -- the six cases are `is_cuda` x
-# {no host, misaligned, aligned} and TWO of them refuse. Empty is the answer for
-# "no refusal", which is the only way the port can state a third outcome.
 def cu.map_err_ctx() -> String: " device memory is only reachable through the host"
 def cu.map_err_align() -> String: " memory is not page aligned host memory"
 def NO_REFUSAL() -> String: ""
@@ -711,11 +667,6 @@ def t_cualloc() -> IO(Unit):
     CL.srow("cu_unmap_ours", vend.trace(CL.Tr.calls(cu.unmap.at(True{}, 7, CL.Tr.of()))))
     CL.srow("cu_unmap_theirs", vend.trace(CL.Tr.calls(cu.unmap.at(False{}, 7, CL.Tr.of()))))
     # PAGE_SIZE())`, and that asserted nothing: the expected value was a def of
-    # the thing it was checking, so no edit to the constant could move the row --
-    # the shape `device.bend` shipped as `sig=0 4 5`. 4096 is a JUDGEMENT and not
-    # a port of a Python number (see cu:88 above: this very machine answers
-    # 16384), so it belongs in the row, where a diff shows it. See the comment
-    # there for why the def that used to hold it is gone.
     CL.urow("cu_page_size", 4096)
     CL.srow("cu_map_err_other_nohost", cu.map_err(CUDEV1(), False{}, False{}, False{}))
     CL.srow("cu_map_err_other_unaligned", cu.map_err(CUDEV1(), False{}, True{}, False{}))
@@ -734,10 +685,6 @@ def main() -> IO(Unit):
     d : Unit <- t_cuinit()
     e : Unit <- t_cuqueue()
     # NO trailing print: the pre-split file emitted ONE `cl-done=1` sentinel and
-    # the pre-split snapshot has exactly one, so `ops_cl.bend` still owns it.
-    # A `do IO<Unit>` block's last line is the block's RESULT, so the last test
-    # is CALLED there rather than bound (bend2-constraints: `ops_cpu.bend` does
-    # the same).
     t_cualloc()
 
 # THE SPLIT, MEASURED. 120 of the pre-split file's 445 rows are here, and every

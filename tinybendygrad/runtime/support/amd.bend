@@ -2,21 +2,10 @@
 #
 
 # forty-seven lines, and the whole file is pure. No ffi, no process spawn, no
-# environment read -- which makes it the cleanest instrument in this unit:
-# everything below is arithmetic and set membership, and every row is a number
-# the oracle computed by CALLING the real Python against the real
-# `tinygrad.runtime.autogen.am` package.
 #
 # The four things that are load bearing, in the order they bite:
 #
 #   1. `AMDReg.__post_init__` SHADOWS ITS OWN FIELD.
-#        self.addr = { inst: bases[self.segment] + self.offset
-#                      for inst, bases in self.bases.items() }
-#      `bases` is the comprehension's LOOP VARIABLE, so the right hand side is
-#      `instance_tuple[segment] + offset`, NOT `self.bases[segment] + offset`.
-#      It reads as if the field won and it does not. `AMDReg.addr` indexes the
-#      INSTANCE tuple; `amd_asic_*.addr_0` is the row, and `addr_ok_1` is the
-#      IndexError when `segment` is past the end of that tuple.
 #
 #   2. `import_module` returns `children[-1]` -- the LAST of `mod.__all__`, in
 #      `__all__` ORDER. Not the greatest version, not sorted. So the answer is a
@@ -36,10 +25,6 @@
 #      changes the answer; the rows are `amd_ovr_*` and `amd_mod_*_13_0_10`.
 #
 #   4. `import_pmc` formats the gfx key with `{ip[1]:x}` and `{ip[2]:x}` --
-#      lowercase hex, NO ZERO PADDING, NO SEPARATOR. So `(9,4,3)` is `gfx943`
-#      and `(9,15,255)` is `gfx9fff`, while `(11,0,0)` is `gfx11`.
-#      `amd_ip_*.key` is the row set, and a padded or uppercase formatter moves
-#      every one of them.
 #
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers. Def names are
 # UPSTREAM names: `AMDReg.encode`, `import_module.override`, `import_pmc.key`.
@@ -128,10 +113,6 @@ def hd(+xs: List<&2, U32>) -> U32: Maybe.default(&2, U32, List.head(&2, U32, xs)
 def tl(+xs: List<&2, U32>) -> List<&2, U32>: List.tail(&2, U32, xs)
 
 # `AMDReg.encode(kwargs)`: `functools.reduce(int.__or__, (value <<
-# fields[name][0] for name, value in kwargs.items()), 0)`. The fold is over the
-# KWARGUMENT ORDER, which Python preserves, so two OVERLAPPING fields would
-# depend on it. `amd_enc_rev` is the row for the reordering and
-# `amd_enc_same` for the disjoint-fields case where the order cannot show.
 
 def enc.go(+vals: List<&2, U32>, +starts: List<&2, U32>, +acc: U32) -> U32:
   match vals:
@@ -197,10 +178,6 @@ def AMDReg.fields(+names: List<&2, String>, +starts: List<&2, U32>, +ends: List<
   String.join(fld.go(names, starts, ends, []), ",")
 
 # `__post_init__`. `AMDReg.addr` is `instance_tuple[segment] + offset` -- the
-# comprehension's loop variable shadowing the field -- so it takes the instance
-# TUPLES, not the field. `jget` answers 0 out of range, which is why
-# `AMDReg.addr_ok` exists: the Python raises IndexError there, and a port that
-# answered a number instead would look fine and be wrong.
 
 def jget(+xs: List<&2, U32>, +j: U32) -> U32:
   match xs:
@@ -282,16 +259,8 @@ def hx2.oflist.go(+xs: List<&2, U32>, +acc: String) -> String:
 def hx2.oflist(+xs: List<&2, U32>) -> String: hx2.oflist.go(xs, "")
 
 # NOTE ON A NAME. `import_module.pick_last` and `SRT.greatest` are NOT upstream
-# names because upstream has NO name for either: `children[-1]` and
-# `sorted(...)[-1]` are EXPRESSIONS. `last` is also one of the TWO bend keywords
-# (`match` and `where`), so it cannot head a def and is not the reason for the
-# rename -- the rename is because there is nothing to match.
 #
 # `AMDIP.__getattr__`: `name.replace('reg', 'mm')` replaces EVERY occurrence,
-# not the first -- so `regregMM_A` becomes `mmmmMM_A` and is NOT found, which
-# is why `amd_ga_*_rewrite_regregMM_A` sits BESIDE `amd_ga_*_regregMM_A`. The
-# arm position is load bearing: `rep.at` is checked at the HEAD of the remaining
-# string, and a scan that checked at the TAIL would replace differently.
 
 def hc(+cs: List<&2, Char>) -> Char: Maybe.default(&2, Char, List.head(&2, Char, cs), ' ')
 
@@ -372,12 +341,6 @@ def import_module.vers(+c: String) -> List<&2, U32>: vv.go2(import_module.tail(c
 def import_module.vfirst_ok(+v: List<&2, U32>) -> Bool: Bool.not(List.is_empty(&2, U32, v))
 
 # the fuel is a `Nat` COUNTDOWN beside the two lists, which is
-# `Nat.show.go`'s shape again: bend's check is structural, so `U32.sub(n, 1)`
-# in a `U32` slot and `List.tail` behind a `def` are both invisible to it.
-# Python's tuple comparison: element-wise over the SHORTER length, and when one
-# is a PREFIX of the other the SHORTER is the smaller. That tiebreak is load
-# bearing and its absence is a silent over-match: without it (9,4,3,1) `<=`
-# (9,4,3), and `amd.fake_gc_9_4_3.kids` answers FOUR children instead of three.
 def vle.go(+k: Nat, +a: List<&2, U32>, +b: List<&2, U32>, +la: Nat, +lb: Nat) -> Bool:
   match k:
     case 0n: Nat.is_le(la, lb)

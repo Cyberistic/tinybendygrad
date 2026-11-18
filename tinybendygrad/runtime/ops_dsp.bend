@@ -8,10 +8,6 @@
 # SHAPE of every one of those, and the shape is what this file ports.
 #
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument of
-# ONE device call (pure, and the gate checks it) OR records that call in the trace
-# (and the gate checks the ORDER). There is no third kind, which is what puts the
-# `raise` in the trace so a refusal appears as a TRUNCATED trace needing no guard
-# of its own.
 #
 
 # WHAT IS PORTED, DEF BY DEF.
@@ -129,11 +125,6 @@
 #    TODO(p3) runtime/ops_dsp.py:292  symbol=__call__ -- the u32 inscount read and the /1e9.
 #
 # THERE IS NO FOREIGN EFFECT IN THIS FILE. No `import "./x.c"`, no `-> IO(R)`. A
-# template-following device records its calls in a `Tr` and declares nothing, which
-# is the `ops_metal.bend` precedent and the reason that file prints no SOME PROOFS
-# FAIL. `dtype.bend` is NOT imported: it is a conversion seam (`Dt.bf16`,
-# `Dt.fp16`, ...) and importing it would drag that seam into this file for no gain
-# -- ops_dsp.py needs no dtype conversion, only dtype NAMES.
 #
 # THE heart of it: FOUR pure functions of a dtype.
 #
@@ -402,11 +393,6 @@ def dt_cname_dt(d: S.Dt) -> String:
 # or a VALUE out of the same 8-byte slot.
 #
 # IT carries the dtype, NOT its name. It carried `cn: String` -- a dtype NAME -- and
-# every consumer fed it straight to `dt_cname` / `dt_itemsize`, both of which were
-# ladders keyed on that name. So a dtype rename made eleven `dt_fmt` rows print the
-# EMPTY STRING where CPython prints `b`/`e`/`f`/`d`, and it was invisible: the gate
-# carried the expectation in a `# py=` COMMENT, so nothing compared. A `S.Dt` cannot
-# be misspelled, and a ladder keyed on it cannot be renamed out from under itself.
 type Param is Data:
   Param{is_alu: Bool, dt: S.Dt, numel: U32}
 
@@ -558,10 +544,6 @@ def sc_method(sc: U32) -> U32: U32.shrn(sc, SC_METHOD())
 def dt_fmt_none() -> String: ""
 
 # KEYED on `cls` AND `bits` -- A `Data` TAG and a number -- NEVER on a name. This ladder
-# WAS keyed on names, and 793abbb renamed them: eleven `dt_fmt` rows printed the EMPTY
-# STRING where CPython prints `b`/`e`/`f`/`d`, and nothing noticed, because the gate
-# carried the expectation in a COMMENT. A name-keyed arm is a silent fall-through
-# (`agent-core.md`, dtype-rename section), and this file is the worked example.
 #
 # `pri` is load-bearing for the ONE pair `bits` cannot separate: `f16` is `bits 16` and
 # `fmt` `e`, `bf16` is `bits 16` and `fmt` None. Same split as
@@ -923,10 +905,6 @@ def link_line(+n: String) -> String:
   String.concat([".", n, " : ALIGN(4096) { *(.", n, ") }"])
 
 # `acc + "\n" + line` keeps the ORDER, at the price of a LEADING separator, and
-# `String.drop(.., 1n)` takes it. The other arrangement -- `"\n" + line + acc` --
-# is also a prepend but puts the LAST section first; `dsp_link_script` caught both
-# arrangements on its first two runs, which is why this row is a whole-string diff
-# against CPython rather than a list of lines.
 def link_lines(+ns: List<&2, String>, +acc: String) -> String:
   match ns:
     case Nil{}: acc
@@ -1026,10 +1004,6 @@ def ARM_STAT() -> U32: 6
 def ARM_MMAP() -> U32: 7
 
 # The chain's ORDER is not the numeric order -- it is greeting, open, close, seek,
-# read, stat, mmap -- so `rpc.arm` is a table in the chain's order and `rpc.arm_ids`
-# is the same order as a list. The scrutinees are the LITERAL values because a
-# `case` arm takes a pattern and a def call is not one; the `SC_*` constants below
-# are those literals and `dsp_rpc_scs` pins them.
 def rpc.arm_open(sc: U32) -> U32:
   match sc:
     case 131584: ARM_HELLO()

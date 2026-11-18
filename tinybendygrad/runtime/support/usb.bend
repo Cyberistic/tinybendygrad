@@ -59,12 +59,6 @@
 # that lives in ops_amd.bend's own wall 2 and is not usb.py's to answer.
 #
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument of
-# ONE device call (pure; the gate checks it) OR records that call in the trace (the
-# gate checks ORDER and IDENTITY). There is no third kind. Every libusb, libc and
-# ctypes binding is a `Call{k, a, b, c}` entry in `Tr` and nothing else, so no
-# foreign effect is declared and `--check-only` stays green in both lanes. The
-# symbol names live in `SYMS()` and `vend`-style rows name each kind, so the seam is
-# greppable: `grep -n libusb_ this_file` finds the C symbol as a LITERAL.
 #
 # NO @extern SEAMS. Same reason and same result as hcq2.bend and
 # support/am/ip.bend: an `@extern` is permanently-red laws plus an import closure
@@ -102,22 +96,8 @@ type Ent is Data:
   Ent{val: U32, name: String}
 
 # THE libusb CONSTANT TABLES, GENERATED FROM `autogen.libusb` -- see
-# `usb-gen-tables.py`. Both directions come from ONE list and two folds, because
-# that is how the header has them: `enum_libusb_class_code` is a `dict[int, str]`,
-# so `enum_nm` is the dict and `enum_val` is its inverse. Keeping them as ONE list
-# and two folds is what makes both directions testable over the same data -- a
-# table written twice is two tables and one of them is wrong.
 #
 # `val` is the C bit pattern in a U32, so the six negative libusb error codes are
-# stored two's-complement and PRINTED signed by `show_i32`: `usb.py` compares
-# against `LIBUSB_ERROR_INTERRUPTED` and the gate has to diff CPython's `-10` and
-# not 4294967286.
-# `autogen/libusb.py`'s `enum_libusb_class_code`
-# `enum_libusb_class_code` binds LIBUSB_CLASS_IMAGE to 6 and then
-# LIBUSB_CLASS_PTP to 6, so the TABLE has one name for 6 and the walrus
-# leaves `LIBUSB_CLASS_IMAGE` a module global that is not a dict value
-# at all. The constant, the table length and the membership test are
-# three separate rows because they are three separate facts.
 def E_CLASSCODE() -> List<&2, Ent>:
   [   Ent{0, "LIBUSB_CLASS_PER_INTERFACE"},
        Ent{1, "LIBUSB_CLASS_AUDIO"},
@@ -314,10 +294,6 @@ def E_SSCAP() -> List<&2, Ent>:
   [   Ent{2, "LIBUSB_BM_LTM_SUPPORT"}]
 
 # the two folds, one table each. `enum_nm` is the dict and `enum_val` is its
-# inverse, so both directions come off ONE walk over the same data.
-# value -> name, LAST match wins: `enum_libusb_class_code` gives 6 TWO names and
-# the generated dict keeps the LAST, so a first-wins fold is wrong and the differ
-# says so on `usb_classcode_6_name`.
 def enum_nm.go(n: Nat, +v: U32, es: List<&2, Ent>, hit: String) -> String:
   match n:
     case 0n: hit
@@ -330,10 +306,6 @@ def enum_nm(+v: U32, +es: List<&2, Ent>) -> String:
   enum_nm.go(List.length(&2, Ent, es), v, es, "LIBUSB_ENUM_NONE")
 
 # name -> value, LAST match wins for the same reason. A NAME no entry has is
-# `NOT_FOUND` and never 0: 0 is LIBUSB_SUCCESS's and LIBUSB_REQUEST_TYPE_STANDARD's
-# and LIBUSB_TRANSFER_COMPLETED's value, so a silent 0 would be indistinguishable
-# from a real constant. 4294967295 is LIBUSB_ERROR_IO's bit pattern, and
-# `usb_enumval_absent_not_found` is the row that says which one it is.
 def enum_val.go(n: Nat, +nm: String, es: List<&2, Ent>, hit: U32) -> U32:
   match n:
     case 0n: hit
@@ -354,17 +326,8 @@ def enum_val(+nm: String, +es: List<&2, Ent>) -> U32:
 # ONE entry, BOTH rows, from ONE walk.
 #
 # TWO LISTS, ON PURPOSE. `enum_rows.go` MATCHES `r` (the walk) and folds over `es`
-# (the whole table), so `es` is never matched and so is never consumed -- the
-# version that matched the table and kept SEEN SETS instead handed each `+` slot to
-# `List.contains`, which MOVES it, and the cons after it built an empty list. That
-# is the whole bug the differ found: zero `_n_` rows and every seen set already
-# full.
 #
 # the cons order is the header's own: the walk goes forward and each entry conses
-# its `_n_` row before its `_v_` row, so the accumulator is already in order and
-# needs no `List.reverse` anywhere. Walking the REVERSED table instead does not
-# help -- a cons fold over a reversed walk builds the accumulator backwards, and
-# every `usb_*_n_`/`_v_` pair is a whole-value string in the wrong sequence.
 def enum_rows.go(+tag: String, +es: List<&2, Ent>, r: List<&2, Ent>,
                  +acc: List<&2, String>) -> List<&2, String>:
   match r:
@@ -387,11 +350,6 @@ def enum_rows(+tag: String, +es: List<&2, Ent>) -> List<&2, String>:
 # they are the arguments.
 #
 # Each struct is ONE space-separated String in DECLARATION ORDER, which is what
-# `__annotations__` preserves and what `register_fields` writes out in the same
-# order. A String and not a list of records because a list of records is N
-# constructions whose ORDER a diff of `name=value` lines cannot see, while
-# `String.concat` drops a literal silently -- so the gate diffs these Strings
-# WHOLE against the header's field names, through `String.split` and back.
 
 type Fld is Data:
   Fld{ix: U32, name: String}
@@ -1274,10 +1232,6 @@ def t_remote() -> IO(Unit):
   ]))
 
 # THE STRING TABLE. `usb.py` has twenty-one user-visible strings and every one
-# of them is either a LITERAL or an f-string whose literal parts are load-bearing.
-# They are diffed AS STRINGS, not as a boolean about a string, because
-# `String.concat` drops a literal silently and a row that said "the message is
-# not empty" would stay green with the prefix removed.
 #
 # FOUR of them cannot be rendered here and are named as the seam: `{address:#x}`
 # and `{ltssm:02X}` need hex (Bend 2.0.34 has `U32.show` and no radix), and
@@ -1515,15 +1469,8 @@ def t_packets() -> IO(Unit):
      u1("usb3_log_level_debug", USB3_LOG_LEVEL_DEBUG())]))
 
 # THE TRACE. Every libusb / libc / ctypes binding in `usb.py` is ONE
-# `Call{k, a, b, c}` entry in `Tr` and nothing else, so no foreign effect is
-# declared and `--check-only` stays green in both lanes. `SYMS()` maps each `k`
-# back to the C symbol, which is what keeps the seam greppable: `grep -n
-# libusb_ this_file` finds the symbol as a LITERAL, not inside an opaque body.
 #
 # `a`, `b`, `c` are the call's arguments that are ARITHMETIC -- an endpoint, a
-# wValue, a byte count, a request type. A call whose arguments are all POINTERS
-# (`libusb_open(dev, handle)`, `libusb_alloc_transfer(0)`) records zeros, and that
-# is not a gap in the port: the pointer is the SEAM's.
 
 type Call is Data:
   Call{k: U32, a: U32, b: U32, c: U32}
@@ -1559,10 +1506,6 @@ def SYMS() -> List<&2, String>:
    "libusb_submit_transfer", "memcpy", "libusb_strerror"]
 
 # The tail's head. It is here so `M31`'s off-by-one edit COMPILES -- answering
-# `head_name(t2, "")`, the NEXT symbol, instead of `h0` -- and it is NOT on the
-# live path. It is declared BEFORE `sym_at_head` because Bend refuses a def USED
-# before it is written ("an unfilled law is a dead claim"), which is also why
-# `sym_at_head` is declared before `sym_at.go`.
 def head_name(xs: List<&2, String>, dflt: String) -> String:
   match xs:
     case Nil{}: dflt
@@ -1716,11 +1659,6 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices`.
 #
 # THE SELECTION IS A PURE PREDICATE and the trace is the walk: the port compares
-# `(idVendor, idProduct) == (vendor, dev)` from the descriptor fields it has
-# already parsed BY NAME, and only appends REF_DEVICE + BUS_NUMBER +
-# DEV_ADDRESS on a match. `usb_list_match` is that predicate and `usb_enum_order_*`
-# is the walk, so the negative case -- a descriptor whose ids do not pair -- is one
-# row from its positive.
 
 def list_match(+idVendor: U32, +idProduct: U32, +vendor: U32, +dev: U32) -> Bool:
   Bool.and(U32.is_eq(idVendor, vendor), U32.is_eq(idProduct, dev))
@@ -1965,10 +1903,6 @@ def t_trace() -> IO(Unit):
      b1("usb_open_alt_checked", Tr.refused(usb_open(True{}, False{}, Tr.fail_at(Tr.of(), 7)))),
      b1("usb_open_kdrv_checked", Tr.refused(usb_open(True{}, True{}, Tr.fail_at(Tr.of(), 5)))),
      # the seam's inventory in the port's own vocabulary: each `K_*` and the symbol
-     # it names. `usb-symmap.py` proves the mapping is a BIJECTION onto `SYMS()`
-     # and that every symbol is a real libusb export; these rows are what a
-     # transposed `K_*` ladder would move. `usb_inventory_past_end` is the
-     # negative case, one row past the last kind.
      s1("usb_inventory_init", call_sym(K_INIT())),
      s1("usb_inventory_set_option", call_sym(K_SET_OPTION())),
      s1("usb_inventory_get_devlist", call_sym(K_GET_DEVLIST())),
@@ -1996,10 +1930,6 @@ def t_trace() -> IO(Unit):
      u1("usb_inventory_len", U32.from_nat(List.length(&2, String, SYMS()))),
      s1("usb_inventory_past_end", sym_at(24n, SYMS())),
      # THE SEAM'S INVENTORY IN libusb's OWN NAMES, which is the other direction of
-     # the same table. `memcpy` has NO row here and that is the fact: it is the one
-     # entry of `SYMS()` that is not an `autogen.libusb` export, so a port that
-     # named a `libusb_` symbol which does not exist would print
-     # `NOT-A-LIBUSB-SYMBOL` against this row.
      s1("usb_sym_libusb_init", call_sym(K_INIT())),
      s1("usb_sym_libusb_set_option", call_sym(K_SET_OPTION())),
      s1("usb_sym_libusb_get_device_list", call_sym(K_GET_DEVLIST())),
@@ -2049,12 +1979,6 @@ def t_select() -> IO(Unit):
 # shows up as a different string rather than as a missing row.
 #
 # THE ORDINALS. `Tr.raise` records the failing call and THEN sets `refused`, so a
-# refusal at `bad_at = k` leaves a k-call trace. The no-detach open emits 1 OPEN,
-# 2 get_device, 3 get_desc, 4 str_ascii, 5 set_config, 6 claim, 7 set_alt; the
-# detach branch adds 5 KDRV_ACTIVE, 6 DETACH, 7 RESET and shifts the rest by three.
-# A RAW ordinal -- 2 GET_DEVICE in the open, 6 FREE_DEVLIST in the enumeration --
-# cannot refuse at all, so its truncation row is the FULL trace and that is the row
-# that would look like a gate and is not one.
 def t_refuse() -> IO(Unit):
   IO.print(lines_of(
     [s1("usb_open_refuse_1_open", Tr.sym(usb_open(True{}, False{}, Tr.fail_at(Tr.of(), 1)))),
@@ -2103,12 +2027,6 @@ def LIBUSB_CLASS_IMAGE() -> U32: 6
 def LIBUSB_CLASS_PTP() -> U32: 6
 
 # THE STRUCT ROWS. The field lists are printed as the ROUND TRIP of the literal
-# through `String.split` and back, so a dropped field, a transposed pair or a split
-# that eats the separator all change the line -- where a row that printed the
-# literal would be a tautology. `Fld.find` / `Fld.at` are the by-NAME lookups
-# `usb_chunk` and `list_devices` actually perform, and they are rows too: a lookup
-# answering the wrong ordinal is a wrong transfer, and an ordinal COUNT is not a
-# gate.
 
 def t_structs() -> IO(Unit):
   IO.print(lines_of(
@@ -2230,10 +2148,6 @@ def t_consts() -> IO(Unit):
      [u1("usb_synth_v_absent", enum_val("SYNTH_NOPE", E_SYNTH()))]])))
 
 # THE FFI SEAM SPLIT. Every `libusb`/`libc`/`ctypes` binding in `usb.py` is one
-# `Call{k, a, b, c}` in `Tr` and nothing else. The table below is the whole
-# inventory: what is a trace tag, and the `usb.py` line that becomes it. An
-# `@extern` seam would have to be exactly these calls and nothing else, and
-# replacing `Tr.emit` is the entire change.
 #
 # | call | usb.py | checked? | what `a`, `b`, `c` carry |
 # | --- | --- | --- | --- |
@@ -2265,23 +2179,8 @@ def t_consts() -> IO(Unit):
 # |   |   |   | nothing further. `usb_inventory_strerror` names it. |
 #
 # `checked` IS A REFUSAL SITE and `usb.py`'s OWN `assert` is not a call at all, so
-# `have_product` is a parameter of `usb_open` and the refusal is modelled at the
-# string read that precedes it. Those two facts are what `usb_open_refuse_4_product`
-# measures.
-# what is not in this file, named by its line. Each is an ffi seam or an
-# outside-the-arena owner, and each is a TODO(p3) with the line that owns it. An
-# honest "this is a seam" is a complete result; what is NOT acceptable is a row that
-# pretends to cover one. The full list of `TODO(p3)` lines is at the end of this
-# file.
-# THE MUTATION TABLE. One edit per RULE, applied to a scratch copy, and the
-# INTERPRETED lane re-run; the diff is over WHOLE `name=value` LINES and not over
-# row NAMES, because agent-core.md records a name-comparing harness that reported
-# 0 for all 30 mutations in one unit and 0 for all 68 in another.
 #
 # a mutation that moves nothing is a blind spot and is reported with its reason,
-# not closed with a row that encodes the bug. One zero here is a THEOREM: `M6`
-# swaps the two operands of a two-term SUM, which no fixture in any file could
-# separate.
 #
 # The counts below are MEASURED, not transcribed: `usb-mutate.py --md` writes this
 # table and the builder reads it back.

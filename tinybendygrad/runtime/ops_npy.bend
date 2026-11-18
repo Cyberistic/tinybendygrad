@@ -3,9 +3,6 @@
 # FOUR LINES:
 #
 #     1  from tinygrad.device import Compiled, HostAllocator
-#     2
-#     3  class NpyDevice(Compiled):
-#     4    def __init__(self, device:str): super().__init__(device, HostAllocator(self), [], None)
 #
 # So the class INHERITS EVERYTHING and overrides ONE METHOD, and the whole
 # content of the port is FOUR ARGUMENTS and what each of them becomes:
@@ -99,12 +96,6 @@
 #    TODO(p3) device.py:315  `Device[buf.device]` -- the registry open.
 #
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
-# of ONE host call (pure, and the gate checks it) OR records that call in the
-# trace (and the gate checks the ORDER). There is no third kind, and there is
-# no `import "./x.c"` in this file: the syscall trace IS the record of the
-# call, so a foreign effect would be a second way of saying the same thing.
-# `ops_webgpu.bend` needed one because its calls are ctypes STRUCTS; these are
-# `(size, addr)` pairs.
 #
 # THE RAISES ARE IN THE TRACE, both of them, and they are the device's two
 # refusals: `Allocator.alloc`'s `assert size > 0` (tinygrad/device.py:257-258 symbol=alloc) and
@@ -201,11 +192,6 @@ def Tr.emit(k: U32, arg: U32, t: Tr) -> Tr:
     case Tr{calls, refused}: Tr.emit.go(refused, k, arg, calls)
 
 # a refusal is recorded and is also the thing that truncates. `calls` and
-# `refused` are both read twice and both take `+`, and the `+refused` on the
-# parameter is what makes the entry survive on a trace that is already
-# refused -- which is the case ops_webgpu.bend found in itself and this file
-# does not have, because no refusal in `HostAllocator` is ever nested inside
-# another. `npy_refuse_nested` says so rather than leaving it to be assumed.
 def Tr.refuse.at(which: U32, t: Tr) -> Tr:
   match t:
     case Tr{+calls, +refused}:

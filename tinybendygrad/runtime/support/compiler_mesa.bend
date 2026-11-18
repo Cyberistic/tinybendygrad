@@ -14,11 +14,6 @@
 # module, so `tinygrad.runtime.autogen.mesa` cannot be opened.
 #
 # So the shape of this file is the OTHER shape from compiler_amd.bend: there is
-# ONE external command and a great deal of pure logic around it, and the pure
-# logic is where the gate lives. The ONE command ports onto `base.bend`'s
-# `Process.run` (see compiler_amd.bend's header for the nine-row measurement of
-# that seam) -- and `helpers.system` is `subprocess.check_output(cmd.split(),
-# stderr=STDOUT)`, i.e. an ARGV list and not a shell, so the port is 1:1.
 #
 
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
@@ -158,9 +153,6 @@ def hx.u32_8(+v: U32) -> String:
 # `U32.show` are separate rows: one is the digits, one is the padding.
 #
 # The unpadded decimal is base's `U32.show`, not a hand-rolled divide-by-ten
-# loop, because a `U32` self-call on `U32.div(n, 10)` is not a decreasing call
-# (there is no subterm relation on a number) and a `Nat` fuel for ten digits
-# would be a promise instead of a proof.
 def dc.zeros(k: Nat) -> String:
   match k:
     case 0n: ""
@@ -419,11 +411,6 @@ def ir3.ret_total(+variant: U32, +const_state: U32, +count: U32, +info_size: U32
   U32.add(U32.add(U32.add(variant, const_state), U32.mul(count, 4)), info_size)
 
 # `ir3.ret_parts_str` DERIVES from `ir3.ret_parts`. The first version spelled the
-# four lengths a SECOND time, and mutation M29 -- which changed `ret_parts` to
-# `count * 8` -- moved NOTHING: two transcriptions of one list, so neither was
-# localised. This is the "a count row and the table it counts are two
-# independent transcriptions" note (bend2-constraints.md POSITION 5128) inside
-# one file.
 def ir3.ret_parts_str.of(xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: acc
@@ -439,10 +426,6 @@ def ir3.ret_parts_str(+variant: U32, +const_state: U32, +count: U32, +info_size:
 #     return v, cs, shifted[:v.imm_state.count*4], shifted[v.imm_state.count*4:]
 #
 # TWO successive offsets -- drop `variant` bytes, then drop `const_state` bytes
-# from what is left -- and THEN one split at `count * 4`. The order is the
-# content: a port that split first would answer `count*4` bytes off the front
-# of the ORIGINAL buffer, and the two agree exactly when
-# `sizeof(const_state) == 0`, which is never.
 #
 # `ul.head` and `ul.imm` take the LENGTHS (the sizes and the count are WALL 1
 # and WALL 1 respectively), and `ul.tail` the total, so the two-stage slicing is
@@ -506,10 +489,6 @@ def t_fmt() -> IO(Unit):
     t : Unit <- srow("dc.fixed4_65536", dc.fixed(4, 65536))
     u : Unit <- srow("dc.fixed4_999", dc.fixed(4, 999))
     # THE BOUNDARY FIXTURES, and mutation M09 found they were missing: widening
-    # the WIDTH in `dc.fixed`'s condition moved NOTHING until a fixture with
-    # `len(n) == w` existed, because every value above has fewer than four
-    # digits and so answers the padded arm under both widths. `1000` is the
-    # smallest four-digit value and `9999` the largest.
     v : Unit <- srow("dc.fixed4_1000", dc.fixed(4, 1000))
     w : Unit <- srow("dc.fixed4_9999", dc.fixed(4, 9999))
     x : Unit <- srow("dc.fixed4_100", dc.fixed(4, 100))

@@ -26,11 +26,6 @@
 #
 
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
-# of ONE device call (pure, and the gate checks it) OR records that call in
-# the trace -- and stage 1 records nothing, so every def here is a builder and
-# the whole table set is pure. There is no third kind, which is what puts the
-# `raise` in the trace once stage 3 adds it, so a refusal appears as a
-# TRUNCATED trace needing no guard of its own.
 #
 
 # WHAT is ported so far, AND what is not.
@@ -56,9 +51,6 @@
 #   :305-396 QCOMDevice           STAGE 3 the init order and the ioctls
 #
 # THE SEAMS, named once: the CDSP/kgsl DRIVER (`FileIOInterface`,
-# `IOCTL_KGSL_*`, `mmap`), the compiler invocation
-# (`Device["CPU"].renderer`, `prg.to_elf()`, `IR3Compiler.unpack_lib`),
-# and Hexagon-RPC (which this file does not use -- see the note above).
 #
 # NO qgpu IN THIS ENV. There is no Adreno here, so NOTHING below was measured
 # against a live device. Every constant and every table entry was read out of
@@ -301,17 +293,8 @@ def qreg_mesa_at(ix: U32) -> String: mesa_of(qreg_name_at(ix))
 #             else (v << getattr(mesa, f'{reg_name}__SHIFT'))
 #
 # `type(v) is bool` -- NOT `isinstance`, and NOT "the value is 0 or 1". A field
-# whose mesa attribute exists WITHOUT the `__SHIFT` suffix is a bit flag whose
-# Python value is always the literal `True`; a field whose attribute exists
-# only WITH the suffix takes an arbitrary integer and is shifted into place.
-# The oracle ASSERTS that for all sixty-two fields exactly one of the two names
-# exists (`assert isb != ish`), so `isb` below is not a guess about the call
-# site: it is READ OUT OF THE NAMESPACE, and the namespace is the authority.
 #
 # `nm` is the full mesa attribute the port would `getattr`. It is a field of
-# the row so the gate can diff it against CPython, because a wrong `nm` with a
-# right `v` still produces a right-looking u32 in the port and a wrong one on
-# the device.
 
 type Qf is Data:
   Qf{r: String, f: String, nm: String, v: U32, isb: Bool}
@@ -435,10 +418,6 @@ def qreg.one(+row: Qf, +v: U32) -> U32:
   Bool.pick(U32, Qf.isb(row), qreg.bit_of(v, row), U32.shln(v, U32.to_nat(Qf.v(row))))
 
 # the ordered keyword list. A Python `kwargs` is a DICT and its iteration
-# order is insertion order, and `_qreg_exec` ORs in that order; OR is
-# commutative so the order does not change the ANSWER, but it does change the
-# SEQUENCE the trace would show, and the trace shows one def per field, so the
-# order is kept and `qc_reg_order` pins it.
 type Fv is Data:
   Fv{f: String, v: U32}
 
@@ -455,20 +434,10 @@ def qreg.flag(r: String, f: String) -> U32: qfield_v(r, f)
 def CTZ_BITS() -> Nat: 32n
 
 # `(v & -v).bit_length() - 1` is the INDEX of the lowest set bit, so the walk has
-# to STOP at the first one and not merely stop counting -- and those are two
-# different bugs. Two versions of this failed here, both caught by the gate:
-# the arms the other way round (which counts trailing ONES) and then an arm that
-# merely declines to increment (which answers 31 for `ctz(1)`, because the bits
-# ABOVE the lowest set bit go on incrementing). So `done` is a FIELD, not an
-# early exit: Bend has no `break` and a `Bool.pick` cannot gate a self-call.
 type Cz is Data:
   Cz{got: U32, done: Bool}
 
 # A SET bit STOPS the walk without counting -- the bit itself is not a zero --
-# and a CLEAR bit counts one and moves on. Three versions of this got it wrong
-# (see the note above); this is the one the gate accepts, and `qc_ctz_0000003f`
-# is the row that pins it: 0x3f has SIX set bits, so a version that keeps
-# counting past the first answers something other than 0.
 def ctz.step.at(bit: Bool, +got: U32, done: Bool) -> Cz:
   Bool.pick(Cz, done, Cz{got, True{}},
     Bool.pick(Cz, bit, Cz{got, True{}}, Cz{U32.add(got, 1), False{}}))
@@ -502,17 +471,8 @@ def parity(+v: U32) -> U32: parity.bit(parity.folded(v))
 # ops_qcom.py:49 and :51 -- THE PACKET HEADERS.
 #
 #     pkt7_hdr(opcode, cnt) = CP_TYPE7_PKT | cnt & 0x3FFF | parity(cnt) << 15
-#                            | (opcode & 0x7F) << 16 | parity(opcode) << 23
-#     pkt4_hdr(reg, cnt)    = CP_TYPE4_PKT | cnt & 0x7F | parity(cnt) << 7
-#                            | (reg & 0x3FFFF) << 8 | parity(reg) << 27
 #
 # THE precedence is the whole trap: `|` binds LOOSER than both `&` and `<<` in
-# Python, so this is five independent contributions OR-ed together and NOT a
-# left-to-right chain in which `cnt & 0x3FFF | parity(cnt)` is parenthesised
-# wrongly. It also means `CP_TYPE7_PKT` (0x70000000) and `CP_TYPE4_PKT`
-# (0x40000000) are already in the HIGH bit, and `parity << 23` / `<< 27` sit
-# above them -- so these are genuinely u32 and not i32, which is why the port
-# can hold them at all. `qc_pkt7_*` and `qc_pkt4_*` are diffed against CPython.
 
 def PKT7_CNT_MASK() -> U32: 16383
 def PKT7_OP_MASK() -> U32: 127
@@ -537,9 +497,6 @@ def pkt4_hdr(+reg: U32, +cnt: U32) -> U32:
 #                                 else 1 for x in vals)), *vals)
 #
 # So a UOp argument counts `itemsize // 4` WORDS and a bare int counts ONE,
-# and the header's count is the sum. `qwords` is that sum over the two kinds,
-# and it is the second half of what makes a cmd header correct -- `qc_qwords_*`
-# is the row that says a `dtypes.u32` buffer is ONE word and not zero.
 
 def ITEMSIZE_TO_WORDS() -> U32: 4
 
@@ -638,11 +595,6 @@ def FLAG_CACHEMODE() -> String: "KGSL_CACHEMODE"
 # STAGE 2 -- `QCOMProgramData` (:206-283) and `qcom_build_program` (:285-292).
 #
 # WHY this half gates. `_parse_lib` is a BINARY walk over the shader blob, and
-# the walks have THREE exits each: a length bound, a zero-length terminator, and
-# -- for the constants -- a different bound (`image_offset`, not `len(lib)`). A
-# port that honours only the first invents buffer descriptors and mis-sizes the
-# constant upload. All three are in `walk.alive` and `cwalk.alive` and all three
-# have a row.
 #
 # The second thing worth saying out loud: THE TWO BRANCHES DISAGREE.
 #
@@ -650,10 +602,6 @@ def FLAG_CACHEMODE() -> String: "KGSL_CACHEMODE"
 #   :272 (CL)    ibo_off, tex_off, samp_off = 2048, 2048 + 0x40*ibo_cnt, 2048 + 0x40*tex_cnt + 0x40*ibo_cnt
 #
 # `tex_off` and `ibo_off` are SWAPPED between them, and the CL branch's middle
-# term counts `ibo_cnt` while the NIR branch's counts `tex_cnt`. The
-# `samp_off` agrees by reordering. `qc_off_swapped` is the row that says so: it
-# is the only way to notice a port that reads the two branches as one rule.
-# --- the fixed offsets ops_qcom.py reads out of the blob, with Python lines ---
 def OFF_REG_DESC() -> U32: 52       # 0x34, :282
 def OFF_HAS_CONSTS() -> U32: 176    # 0xb0, :274
 def OFF_CONST_TAB() -> U32: 172     # 0xac, :275
@@ -760,10 +708,6 @@ def Wb.bins(w: Wb) -> List<&2, Bi>:
 def Wb.of() -> Wb: Wb{0, 0, True{}, Nil{}}
 
 # THE THREE EXITS, and `desc.alive` is where two of them live. `length == 0` is
-# the TERMINATOR and `off + 32 > len(lib)` is the BOUND; a walk that honours
-# only the bound reads the zeroed tail of the blob as a descriptor with
-# `length == 0`, `offset_words == 0`, `typ == 0` -- i.e. a `BUFTYPE_BUF` at
-# offset 0 -- and inflates `buf_offs` by one. `qc_bin_terminator` is the row.
 def desc.alive(+off: U32, +bs: List<&2, U32>, +st: Wb) -> Bool:
   Bool.and(U32.is_le(U32.add(off, DESC_BYTES()), U32.from_nat(List.length(&2, U32, bs))),
            Bool.not(U32.is_eq(read_lib(bs, off), 0)))
@@ -980,13 +924,6 @@ def pd.parse_full(+bs: List<&2, U32>, +name_len: U32) -> Pd:
 # STAGE 2b -- `qcom_build_program` (:285-292) AND THE PROGRAM CACHE.
 #
 #     _qcom_program_cache: dict[tuple[bytes, tuple[str, ...]], tuple[QCOMProgramData, UOp]] = {}
-#     def qcom_build_program(dev, prg, devs):
-#       if (cached := _qcom_program_cache.get(key := (prg.src[3].arg, devs))) is None:
-#         data = QCOMProgramData(dev, prg.to_elf())
-#         image = bytes(data.image).ljust(round_up(len(data.image), 4), b"\x00")
-#         buf = UOp.placeholder((len(image),), dtypes.u8, ..., tag="program")
-#         cached = _qcom_program_cache[key] = (data, patch(buf, [], image))
-#       return cached
 #
 # THE KEY IS A PAIR: `prg.src[3].arg` -- the COMPILER'S HASH of the shader --
 # and `devs`, the tuple of device indices the image must live on. Two programs
@@ -995,17 +932,8 @@ def pd.parse_full(+bs: List<&2, U32>, +name_len: U32) -> Pd:
 # is the row for that, and it is the reason the cache is not a string set.
 #
 # THERE IS NO EVICTION. Python's `_qcom_program_cache` is a module-level dict
-# that grows for the life of the process and is never pruned. So the "entry that
-# must NOT be evicted" the brief asks for is not a special case I invented: it
-# is what the code does. `qc_ck_older_survives` builds A, then B, then asks for
-# A AGAIN and requires that it is a HIT -- an implementation with an LRU, a
-# size cap, or a "rebuild if the cache is full" arm fails that row, and one that
-# simply never checks the cache before building fails `qc_ck_second_is_hit`.
 #
 # THE OTHER NEGATIVE: a cache that reports a hit without a build is only honest
-# if the build is RECORDED. `Tr` exists so that "did this parse the blob again"
-# is a question with an answer, and `qc_ck_nobuild_after_hit` reads the trace
-# rather than the cache's own flag.
 
 def CALL_PARSE() -> U32: 0     # QCOMProgramData(dev, prg.to_elf())   :288
 def CALL_PATCH() -> U32: 1      # patch(buf, [], image)                :291
@@ -1170,10 +1098,6 @@ def ce.push(+e: Ce, +es: List<&2, Ce>) -> List<&2, Ce>:
   List.append(&2, Ce, es, [e])
 
 # `_qcom_program_cache[key] = value` IS a MAP ASSIGNMENT, so storing a key that
-# is already there REPLACES it and the LENGTH DOES NOT GROW. A list append is not
-# a map assignment and the difference is measurable: pushing the six gate entries
-# unconditionally gives six slots for four programs. `ce.put` is the assignment;
-# `ce.push` stays for the case that genuinely grows. `qc_ck_len` is the row.
 def ce.put.at(fresh: Bool, e: Ce, +es: List<&2, Ce>) -> List<&2, Ce>:
   Bool.pick(List<&2, Ce>, fresh, ce.push(e, es), es)
 
@@ -1225,9 +1149,6 @@ def CALL_SYSFS() -> U32: 15      # System.write_sysfs                :335
 # row that says the difference is three and not four.
 #
 #     if write_back: self.cmd(CP_EVENT_WRITE, CACHE_FLUSH_TS, dummy, 0)
-#     if invalidate: self.cmd(CP_EVENT_WRITE, CACHE_INVALIDATE)
-#     if memsync:    self.cmd(CP_WAIT_MEM_WRITES)
-#     if sync:       self.cmd(CP_WAIT_FOR_IDLE)
 #
 # THE order is not the parameter order: Python tests write_back, invalidate,
 # sync, memsync and issues memsync BEFORE sync. `flush.go` is a fold over the
@@ -1267,10 +1188,6 @@ def flush.step(which: U32, on: Bool, +t: Tr) -> Tr:
   Bool.pick(Tr, on, Tr.emit(CALL_CMD7(), flush.op(which), t), t)
 
 # THE INDEX LIST IS WALKED IN PARALLEL with the flag list, and that is the only
-# way this goes in Bend: a countdown arm may not read its own fuel twice (see
-# bend2-constraints.md, the "+U32 that grows" rule), and `at_of(at, m)` is
-# exactly such a second read. `ISSUE_AT()` is in ISSUE order, so the head of the
-# parallel list IS the resolved `which`.
 def flush.go(n: Nat, flags: List<&2, Bool>, +at: List<&2, U32>, +t: Tr) -> Tr:
   match n:
     case 0n: t
@@ -1405,10 +1322,6 @@ def MID_AT() -> List<&2, U32>: [0, 1, 2, 3, 4, 5, 6]
 def exec.mid() -> Tr: exec.mid.go(7n, MID_AT(), exec.pre())
 
 # THE THREE CONDITIONAL BLOCKS. Each is a LOAD_STATE6_FRAG followed by a BASE
-# register, in that order, and the counts are 2 and 1. `qc_exec_ibo_is_two`
-# is the row that says the IBO block loads TWO words (the header plus the
-# address) where the sampler block also loads two -- and that the block is
-# emitted only when its count is non-zero.
 def exec.base.at(which: Nat) -> U32:
   match which:
     case 0n: REG_A6XX_SP_CS_SAMPLER_BASE()
@@ -1495,10 +1408,6 @@ def FLUSH_WRITE_BACK_ONLY() -> List<&2, Bool>: [True{}, False{}, False{}, False{
 def FLUSH_INVALIDATE_ONLY() -> List<&2, Bool>: [False{}, True{}, False{}, False{}]
 
 # READING AN EXEC TRACE. `seen` is the LENGTH -- a count row, because a gate
-# whose only claims are booleans cannot see a dropped call -- and `seq` is the
-# SUBSEQUENCE test, whose fuel is the TRACE length and whose answer is
-# `at == patlen`. Getting either half wrong makes it answer True to everything,
-# and a subsequence test that always says True is the row that cannot fail.
 
 def seq.has.put(+c: Call, +want: Call, +at: Nat) -> Nat:
   Bool.pick(Nat, Bool.and(U32.is_eq(Call.k(c), Call.k(want)),
@@ -1585,16 +1494,6 @@ def pack_args.put(n: Nat, size: U32, end: U32, +acc: List<&2, U32>) -> List<&2, 
   pack_args.at(List.length(&2, U32, acc), acc, size, end, Nil{})
 
 # THE SORT, and it is the reason `qc_pa_unsorted` exists: `pack_args` does
-# `sorted(args, key=lambda x: x[0])`, so [2064, 2048] is walked as [2048, 2064]
-# and the FIRST pad is 2048 rather than 2064. An insertion sort on the offsets
-# is the whole of it, and a port that walks the list as given gets every pad
-# length wrong for an unsorted kernel-argument block -- which is a thing that
-# happens, because `kernargs` builds the block by APPENDING.
-# THE INSERTION CARRIES THE PREFIX. `Bool.pick` is strict and an insertion has
-# to rebuild `prefix ++ [o] ++ suffix`, which one `List.append` cannot do -- the
-# first version appended at the tail in BOTH arms and answered
-# `2052,4294967288,4294967288,504` for a tight block where CPython answers
-# `2048,504`. `carried` is the prefix and `qc_pa_tight` is the row.
 def pack_args.cat(+a: List<&2, U32>, b: List<&2, U32>) -> List<&2, U32>:
   List.append(&2, U32, a, b)
 

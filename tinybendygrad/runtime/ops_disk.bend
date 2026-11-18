@@ -4,19 +4,8 @@
 # WHY this file is not the small one it looks like.
 #
 # Every other backend in `tinygrad/runtime/` is a wrapper around a driver, and a
-# wrapper around a driver has nothing to port: the calls are calls. `DISK` is the
-# one backend whose storage is FILES, which makes it the cheapest end-to-end
-# device a test can actually run against -- and it exercises the parts of the
-# device contract the GPU backends hide:
 #
 #   - a Buffer is a WINDOW onto a mapping, not a name, so `size`/`offset` are
-#     arithmetic a gate can check;
-#   - the open is a PATH CONSTRUCTION with two spellings (`disk:` and `shm:`)
-#     and three normalisations, which is a naming table in both directions;
-#   - the writes are PARTIAL -- page-aligned reads, sub-page copies -- and the
-#     segment arithmetic is the whole content of `_copyout_sharded`;
-#   - and a `DiskDevice` buffer is a REAL FILE, so `_buf`'s window is a range of
-#     bytes that exists on the host and could be read back.
 #
 # THE place a result can be checked rather than a trace, and it is
 # `_copyout_sharded` -- GONE at this pin: upstream 4e4f6b9fb ("hcq2 fast disk") REPLACED
@@ -27,11 +16,6 @@
 # consecutive `copied_in`s must be contiguous -- statements about the DATA, not about the spelling of a call. `dk_shard_cover_*` and `dk_shard_contig_*` assert them. Everything else in this file is a trace.
 #
 # And the sharper version of the same fact, which is a RESULT a trace cannot see:
-# a wrong `minor_offset` leaves the total CORRECT. The skew is subtracted from
-# exactly ONE segment (it is zeroed by the GONE upstream `_copyout_sharded`) and the LAST segment is truncated by
-# `size - copied_in` anyway, so dropping it moves the destination of every byte
-# without changing the sum. The `cin` column is the only thing that sees it, and
-# `dk_shard_b` is the row that carries it. See the gate's section 7.
 #
 
 # THE SPLIT, stated once and then obeyed, and it is `ops_webgpu.bend`'s.
@@ -41,10 +25,6 @@
 # re-derives every one of them from `ops_disk.py`:
 #
 #     ./bin/bend tinybendygrad/runtime/ops_disk.bend --check-only         # ALL CHECK
-#     ./bin/bend tinybendygrad/runtime/ops_disk.bend                      # interpreted
-#     ./bin/bend tinybendygrad/runtime/ops_disk.bend -o /tmp/d && /tmp/d  # native
-#     python3 -c "import sys; sys.path.insert(0,'.'); \
-#                exec(open('.agents/slop/dk-oracle.py').read())"           # CPython
 #
 # All four agree byte for byte, and the mutation table at the foot is MEASURED: 43
 # mutations here plus 13 in `datasets.bend`, one comment-only control that moves
@@ -54,12 +34,6 @@
 # two-platform claim is measured rather than asserted.
 #
 # A def here EITHER builds the argument of ONE host call (pure, and the gate
-# checks it) OR records that call in the trace (and the gate checks the ORDER).
-# There is no third kind. NO `@extern` seam and no `import "./x.c"` anywhere in
-# this file, and that is a DIFFERENCE from `dtype.bend` rather than an omission:
-# the syscall trace IS the record of the call, so a foreign effect would be a
-# second way of saying the same thing. `--check-only` is GREEN here, so the
-# import-closure redness the brief predicted does not arise.
 #
 # WHAT IS PORTED, DEF BY DEF.
 #
@@ -186,13 +160,6 @@
 #    the row that pins both numbers.
 #
 # E. THERE is no dtype-TO-SUFFIX table in this file, and the gate should not look
-#    for one. `DiskBuffer` is a raw `mmap` window: a `disk:/tmp/x` file holds the
-#    buffer's bytes and nothing else, so a dtype changes how many BYTES the window
-#    covers and never how the file is named. `nbytes` is `size * itemsize`
-#    (`device.bend`) and that product is the whole of a dtype's reach into this
-#    file. The naming table that IS here is the two PREFIXES, and it is gated in
-#    both directions: device string -> path (`dk_file_*`) and path -> scheme
-#    (`dk_is_shm_*`).
 
 import Base
 import ./../helpers.bend as H
@@ -328,9 +295,6 @@ type Tr is Data:
 # ops_disk.py:9 DiskDevice, only the fields ops_disk.py reads or writes.
 #
 # `has_size`/`size` is Python's `self.size: int|None`, `has_fd`/`fd` is
-# `self.fd: int|None` and `has_mem` is `hasattr(self,"mem")`. A `Data` record may
-# not hold a `Maybe` field, so each absence is a `Bool` BESIDE its value --
-# `device.bend`'s `external_ptr` escaping.
 #
 # The next six are facts the HOST supplies and the code branches on, so they ride
 # here rather than being threaded through every arm:
@@ -463,9 +427,6 @@ def Call.arg(c: Call) -> U32:
 # `Tr.has` is "contains this (tag, arg) sequence, in order".
 #
 # `Tr.has` is `ops_webgpu.bend`'s matcher verbatim INCLUDING the fuel being the
-# TRACE length rather than the pattern length -- the defect that made eight of that
-# file's order rows unable to fail. `dk_has_rejects_reverse` and
-# `dk_has_rejects_absent` pin the matcher here rather than trusting it.
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, +got: U32) -> U32:
   match n:
@@ -549,11 +510,6 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
 # Python's `min` is `U32.min` -- `min(min(a, b), c)` for the three-term form.
-# `U32.min` destructures its arguments rather than reading them, so each one is
-# consumed ONCE; the `U32.is_le` spelling at the two sites below was a first
-# draft and read each term twice, which `U32` cannot express.
-# THE DEVICE. Sixteen fields and sixteen readers, and the readers are the floor
-# this port pays for a `Data` record with no field projections (rule 27).
 
 def Dev.of(name: String) -> Dev:
   Dev{name, 0, False{}, 0, False{}, 0, False{}, False{}, False{},
@@ -669,10 +625,6 @@ def Lst.acc(s: Lst) -> List<&2, Char>:
     case Lst{seen, acc}: acc
 
 # `seen` IS THE CONDITION, not a status: a slash is dropped only while nothing has
-# been kept yet. Dropping on `cut` alone is a `replace("/","")` and eats the
-# interior slash, which is what this did first -- `dk_shm_trailing_kept` is the row,
-# and it is the only row in the file that can tell `lstrip("/")` from a global
-# replace.
 def Lst.step(+cut: Bool, c: Char, s: Lst) -> Lst:
   match s:
     case Lst{seen, +acc}:
@@ -811,13 +763,6 @@ def dev_file.open.at(+dr: U32, +osx: Bool, +d: Dev) -> Dev:
 # < size: os.ftruncate(fd, size)`.
 #
 # THE `and` SHORT-CIRCUITS, and that is a CALL SEQUENCE question and not a predicate
-# question: `os.fstat` is an ARGUMENT of the second conjunct, so a block device never
-# stats the file at all and the trace has NO `fstat` in it. That is why this is TWO
-# `.at`s and not one -- my first version folded the conjunction into one parameter and
-# emitted `fstat` for the block-device fixture, which is wrong, and `dk_blockdev_fstat`
-# is the row that says so. A short-circuiting `and` in Python is TWO defs in Bend
-# whenever the right side has a side effect, and the gate row has to be the one that
-# counts the CALL rather than the one that tests the predicate.
 def dev_file.trunc.go(trunc: Bool, +size: U32, +d: Dev) -> Dev:
   match trunc:
     case True{}:
@@ -1119,10 +1064,6 @@ def shard_total(size: U32, +off: U32, +osx: Bool) -> U32:
   H.round_up_u32(U32.add(size, shard_minor(off, osx)), pagesize(osx))
 
 # `range(0, total_copy_size, seg_len)` -- the segment COUNT, which is
-# `ceil(total/seg)`. `seg == 0` is an empty range in Python and 0 here, because
-# `U32.div(x, 0) = 0`; that is one of the two places this file leans on the
-# documented div, and `dk_shard_seg0_n` is the row. `+seg` because the ceil reads it
-# twice.
 def shard_n(total: U32, +seg: U32) -> U32:
   Bool.pick(U32, U32.is_zero(seg), 0,
             U32.div(U32.add(total, U32.sub(seg, 1)), seg))
@@ -1219,9 +1160,6 @@ def shard_at(+seg_len: U32, +size: U32, +off: U32, devsize: U32, +osx: Bool,
 # ==== THE blind spots this port has, and none of them is a gap in the gate ====
 #
 # These are the places where the port is KNOWN to diverge from `ops_disk.py`. They
-# are listed because a divergence that is not written down is indistinguishable
-# from a port that is correct, and each one names the row that would catch it if it
-# were implemented.
 #
 # 1. THE `io_uring` ARM'S segment arithmetic is not ported. :119-141 is a pair
 #    of while-loops over `sq.ktail`/`cq.khead` and the port records the two

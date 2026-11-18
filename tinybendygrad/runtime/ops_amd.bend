@@ -34,20 +34,8 @@
 #
 
 # NO PROOFS FAIL HERE, and the brief expected some. `dtype.bend`'s seams are
-# `def ... -> IO(R)` over two `import "./x.c"` lines, and every one of them is
-# expected to make its importer print SOME PROOFS FAIL (constraints line 1868:
-# the foreign notice is a "who names whom" closure that `@unsafe` does not
-# shrink). This file does not take that route, because the WebGPU template does
-# not and `ops_metal.bend` does not: a driver call is RECORDED in a `Tr` trace,
-# so there is no foreign effect to declare and `--check-only` says ALL PROOFS
-# CHECK. The seam is `Tr.emit`, the ORDER is the artefact, and `wgsl.bend`'s
-# green lane is the precedent. See `.agents/slop/amd_oracle.py`.
 #
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
-# of one driver call (pure, and the gate checks it) OR records that call in the
-# trace (and the gate checks the ORDER and the IDENTITY). There is no third
-# kind. That is what puts every `raise` into the trace: a refusal records NOTHING
-# further, so it appears as a TRUNCATION and no step needs a guard of its own.
 #
 # THE HEADLINE, measured. `--check-only` says ALL PROOFS CHECK. Both lanes print
 # 520 IDENTICAL rows. All 520 are diffed against CPython by
@@ -70,9 +58,6 @@
 #   * `is_am` read as `iface == PCIIface` where `ops_amd.py:850` is an
 #
 # A fifth was found by the port's own arithmetic rather than the oracle: the SQTT
-# write pointer is `(raw & 0x1FFFFFFF) * 32`, which is up to 2^34, and the first
-# version computed it in `U32` and WRAPPED. It is an `H.I64` and an `i64row`,
-# which is what `ops_nv.bend` does for the same reason.
 #
 # WHAT IS PORTED, DEF BY DEF. `amd:NN` is ops_amd.py.
 #
@@ -361,11 +346,6 @@ def MOD_NBIO() -> U32: 5
 def MOD_N() -> U32: 6
 
 # THE TYPES.
-# ONE driver call and the object it acts on. `arg` is the iface kind for a
-# SELECT, the module id for an IMPORT, and a plain number otherwise. There is
-# deliberately no field for the rest of the call's ARGUMENTS: those are what
-# the defs around this record build, and the gate reads them from the record a
-# def RETURNS, not from the trace.
 type Call is Data:
   Call{k: U32, arg: U32}
 
@@ -374,10 +354,6 @@ type Call is Data:
 # ORDER and the right NUMBER of times.
 #
 # THE RAISE IS HERE. `Tr.emit` records NOTHING once a refusal has fired, and
-# `Tr.refuse` is IDEMPOTENT after the first. `nth` counts refusals so far and
-# `at` is the refusal ordinal the seam should fail on (0 = never), so one
-# fixture numbering reaches EVERY refusal site in turn; the failing refusal is
-# NOT recorded, because in Python the `raise` replaces it.
 type Tr is Data:
   Tr{calls: List<&2, Call>, next: U32, refused: Bool, nth: U32, at: U32}
 
@@ -1020,9 +996,6 @@ def qb_split(tag: String) -> List<&2, U32>:
 # what `ops_nv.bend` does for the same reason.
 #
 # THE SHAPE THAT MAKES IT TRACTABLE: `wptr = (raw & 0x1FFFFFFF) * 32`, so the
-# masked word is a 29-bit UNSIGNED value and the `* 32` is a `<< 5`. The fix
-# subtracts two values of that shape, so it is `(W - F) << 5` with `W - F` a
-# signed 30-bit number -- which fits an `I32` and needs no 64-bit subtract.
 def sq_shl5(+x: U32) -> H.I64:
   H.i64_of_hi_lo(U32.or(H.match_hi(H.i32_is_neg(x)), U32.shrn(x, 27n)), U32.shln(x, 5n))
 

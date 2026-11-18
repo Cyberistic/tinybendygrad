@@ -4,11 +4,6 @@
 # ninety-nine lines, and the headline is that the six regexes are a wall.
 #
 # `pretty_ptx(s)` is six `re.sub(pattern, lambda m: m[1] + colored(m[2], c) + m[3], s,
-# flags=re.M)` calls, IN SEQUENCE. Each one rewrites the WHOLE string, so the
-# sixth runs on text the first five have already changed, and a faithful port
-# needs a general left-to-right regex scanner with capture groups -- which is a
-# new abstraction and, at its core, Turing completeness, which this repository
-# forbids without approval. So the SCAN is the wall.
 #
 # What is ported is everything the scan CONSUMES and everything that decides
 # WHERE it fires, and both are gated against CPython's own `re` with the pattern
@@ -274,14 +269,6 @@ def cuda_disassemble.fail2() -> String:
   "Make sure your PATH contains ptxas/nvdisasm binary of compatible version."
 
 # `lib.rstrip(b'\x00')` drops TRAILING zeros and KEEPS leading ones, so
-# `b"\x00ptx\x00\x00"` -> `b"\x00ptx"`. `zr.go` counts the leading run.
-# `lib.rstrip(b'\x00')`: drop the LEADING run of zeros, and if the head is NOT
-# zero nothing is dropped at all -- so the surviving list is the WHOLE `bs` and
-# not `bs`'s tail, which is what the first version appended and which cost a
-# byte on every fixture.
-# `rstrip` drops the TRAILING run of zeros and KEEPS a leading one -- so the
-# test is "is the whole TAIL zero", not "is this element zero". The first
-# version dropped the leading run and lost a byte on every fixture.
 def rst.allzeros(+bs: List<&2, U32>) -> Bool:
   match bs:
     case Nil{}: True{}
@@ -512,12 +499,6 @@ def NVPTXCompiler.input_name() -> String: "<null>"
 def NVPTXCompiler.dis_row(+arch: String) -> String: String.concat(["cuda_disassemble(", arch, ")"])
 
 # the nth space-separated field of a joined list, as a two-arm ladder over a
-# FOUR element window -- `compile`'s recorded call NAMES are pinned by these
-# The nth field of a space-separated list. A two-arm ladder over a FOUR element
-# window is what `compiler_amd.bend` uses; here the list is longer than four
-# (`compile`'s nine call names), so the ladder is a DROP BY COUNT with a `Nat`
-# countdown -- an index ladder would call `ct.at` from `ct.go` and MUTUAL
-# RECURSION is refused.
 def ct.dropn(+k: Nat, +xs: List<&2, String>) -> List<&2, String>:
   match k:
     case 0n: xs
@@ -749,10 +730,6 @@ def t_nvptx() -> IO(Unit):
     IO.print("cu_nvptx_done=1")
 
 # the fresh-process rows. `CUDA_PATH` and `NO_COLOR` are both
-# `@functools.cache`d `getenv` reads, so BOTH values of each live in two
-# processes. `cu.cudapath` is compared against `@0` (unset) and
-# `cu.cudapath_set` against `@2` (`CUDA_PATH=/my/cuda`), and the latter is the
-# value the port uses as its PARAMETER default when the variable IS set.
 def t_env() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- srow("cu.cudapath_set", CUDA_PATH.set())

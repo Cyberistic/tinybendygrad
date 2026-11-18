@@ -139,10 +139,6 @@
 #     misspelled one silently matches nothing.
 #
 # ---------------------------------------------------------------------------
-# THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
-# of ONE driver call (pure, and the gate checks it) OR records that call in
-# the trace (and the gate checks the ORDER and the WORDS). There is no third
-# kind.
 #
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF. Python line numbers are ops_nv.py unless the
@@ -298,12 +294,6 @@
 # `nv_cpython_args_device_*` rows are the cross-implementation check.
 #
 # ===========================================================================
-# ELEVEN numbers were hand-TYPED wrong the first time. The `CLASS_*` class ids
-# below are the only numbers in this file not derived from the source text, and
-# nine of the eleven were out by more than a factor of two -- the oracle caught
-# every one. That is WHY `nv_ladder_*` and `nv_cls_*` rows print the DECIMAL id
-# and the whole sequence: a gate that only printed "the ladder is first-wins"
-# would have passed all eleven wrong.
 #
 # NO NVIDIA DRIVER IN THIS ENV. `NVKIface.root` is None and there is no
 # `/dev/nvidiactl`, so NOTHING here was measured against a live GPU. Every
@@ -330,12 +320,6 @@ import ../device.bend as D
 # FIRST-WINS pick) and `iface.mid`/`iface.ladder3` (the pair it walks).
 #
 # EVERY one of these eleven was hand-TYPED wrong the first time -- the oracle
-# caught all eleven, and nine of them by more than a factor of two. They are the
-# only numbers in this file that were not derived from the source text, and that
-# is why `nv_cls_*` rows print the DECIMAL id and the ladder row prints the whole
-# sequence: a decimal class id is not something a reader can check by eye, and a
-# gate that only printed "the ladder is first-wins" would have passed all eleven
-# wrong numbers.
 def CLASS_TURING_USERMODE() -> U32: 50273
 def CLASS_HOPPER_USERMODE() -> U32: 50785
 def CLASS_AMPERE_GPFIFO() -> U32: 50543
@@ -463,14 +447,6 @@ def CALL_MUNMAP() -> U32: 8
 def CALL_PROF() -> U32: 9
 
 # THE esc and uvm words are port-INTERNAL ordinals, not nv_570 values. They are
-# the `arg` a `Tr` records so a fixture can say "the UVM peer-access ENABLE, at
-# this point in the trace"; nv_570's real NV_ESC_* and UVM_* codes are 200, 201,
-# 41, 42, 43, 7 and 805306369, 75, 37, 25, 73, 33, 29, 34, 27 respectively. A
-# `uvm(cmd, ...)` call passes its code straight through to the ioctl, so the
-# NUMBER is load-bearing at the seam and INVISIBLE to the trace, which is the
-# one thing in this file a wrong ordinal can do that a wrong class id cannot:
-# it sends a well-formed word the driver does not accept. The seam owns the
-# translation and `nv_uvm_wire` is where it would be checked.
 def ESC_RM_ALLOC() -> U32: 2
 def ESC_RM_CONTROL() -> U32: 3
 def ESC_RM_FREE() -> U32: 5
@@ -495,10 +471,6 @@ def UVMTYPE_REGISTRATION() -> U32: 1
 # (1<<48)-1, so the top is 2^48-1 -- the 48 bits the comment claims.
 #
 # All four are 48-bit numbers and `U32` tops out at 32, so they live as `I64`
-# pairs (helpers.py's `data64`, `helpers.bend`'s `i64_of_hi_lo`) and the gate
-# prints the PAIR, because a 48-bit constant has no U32 image and a decimal row
-# would be a lie. `va.uvm_top_linux`/`va.uvm_top_osx` are the one place the
-# arithmetic matters and it is where the 48 bits are checked.
 def LOW_VA_HI() -> U32: 16
 def LOW_VA_LO() -> U32: 0
 def LOW_VA_BASE_OSX_HI() -> U32: 128
@@ -571,12 +543,6 @@ def Tr.emit(k: U32, arg: U32, t: Tr) -> Tr:
       Tr.step.go(False{}, refused, k, arg, calls, next, bad_at, seen)
 
 # THE RAISE SITE. The `bad_at`-th emit is the one that raises: it is still
-# recorded, and it sets `refused` in the same breath, so on entry its own
-# `refused` is still False and the very next step records nothing. Guarding
-# only SOME of the recorders was the first bug ops_webgpu.bend's gate found in
-# ITSELF (four pops and one create survived a refusal at pop 1, which is not
-# what Python does); `Tr.step.go` is the one function every step goes through,
-# so the recorders cannot disagree.
 def Tr.raise(k: U32, arg: U32, t: Tr) -> Tr:
   match t:
     case Tr{calls, next, +bad_at, +seen, +refused}:
@@ -591,11 +557,6 @@ def Call.arg(c: Call) -> U32:
   match c:
     case Call{k, arg}: arg
 
-# ===========================================================================
-# READING THE TRACE. `Tr.args` is the `arg` of every entry with tag `k`, IN
-# ORDER -- for a queue that is the command's payload words and for a driver
-# call it is the handles. `Tr.count` is how many there are and `Tr.has` is
-# "contains this (tag, arg) sequence, in order".
 # ===========================================================================
 
 def Tr.count.go(n: Nat, +k: U32, cs: List<&2, Call>, got: U32) -> U32:
@@ -717,10 +678,6 @@ def dev.iface_ix(i: U32) -> U32: U32.add(i, 1)
 # PORT'S constants are read from. THAT is a closed LOOP AND it is worth a row.
 #
 # THE version is a three-PART string and only the major part is read. `570` IS
-# THREE digits, SO a port that reads two digits answers `57` AND a port that
-# READS the whole string answers `570.00.00`. THE port reads the major part
-# AS AN INTEGER.
-# ===========================================================================
 
 def MOCK_DRV_MINOR() -> U32: 0
 def MOCK_DRV_PATCH() -> U32: 0
@@ -774,14 +731,6 @@ def win_lo(x: H.I64) -> U32: H.lo32(x)
 # with a `None` default.
 #
 # The pairs are the property: `nvclasses` is a SET of ids and the ladder is
-# "newest generation this GPU has", so BLACKWELL before AMPERE is not a style
-# choice. `iface.pick` answers the winner and `iface.want` names the FIRST
-# candidate of each ladder so a gate can pin the order rather than the answer.
-# ===========================================================================
-# A `U32` LITERAL arm ladder must be descending or carry a catch-ALL, because
-# `case 1:` is a PREFIX match that claims 1, 2, 3, ... (bend2-constraints.md,
-# "A `U32` LITERAL PATTERN IS A PREFIX MATCH"). All five ladders here are
-# ascending, so all five need the `case _:`.
 #
 # THE order is the policy and all five were reversed the first time. Python:
 #   :408 usermode  [HOPPER_USERMODE_A,     TURING_USERMODE_A]
@@ -1042,10 +991,6 @@ def dev.init(sm: U32, iface: U32, peer: Bool, pma: Bool) -> Dev:
   dev.init.at(sm, iface, peer, pma, Tr.of())
 
 # the mock's init, right here, because BEND requires definition-before-use and
-# `dev.init` IS the subject. `MOCK_INIT_SM` IS the sm version the mock
-# REPORTS: `test/mockgpu/nv/nvgpu.py`'s GPU ANSWERS `NV0000_CTRL_CMD_GPU_GET_
-# ID_INFO_V2`, AND THE PORT'S `dev.init` TAKES the sm version as a parameter
-# BECAUSE `arch_of`/`sass_of` ARE FUNCTIONS OF IT.
 def dev.mock_init(sm: U32) -> Dev:
   dev.init(sm, IFACE_MOCK(), False{}, False{})
 
@@ -1065,12 +1010,6 @@ def nvm.nvals32(n: U32) -> U32: n
 def nvm.nvals64(n: U32) -> U32: U32.mul(n, 2)
 
 # THE EMIT. The header is the argument of one driver call and each payload word
-# is recorded beside it, so `Tr.args(CALL_WORD(), t)` is EXACTLY
-# `array.array('I', cmds)` -- the list `_submit_cmds` uploads. `Bool.pick`
-# evaluates both arms, so the refusal guard is a parameter.
-# the payload words, each recorded under the SAME header word, so the trace is a
-# flat `array('I', cmds)` stream rather than a nested one. The shrinking list is
-# the FIRST argument so the decrease check sees it.
 def nvm.words(ws: List<&2, U32>, h: U32, acc: List<&2, Call>) -> List<&2, Call>:
   match ws:
     case Nil{}: acc
@@ -1110,10 +1049,6 @@ def nvm.emit(subc: U32, mthd: U32, nvals: U32, typ: U32, ws: List<&2, U32>,
 #    for k, v in kwargs.items()), 0)`
 #
 # TWO tables: `(reg, k) -> lo` (the `[1]` of a bitfield tuple) and
-# `(reg, k, v) -> the enum value`. The reduce is an OR, so the KWARG ORDER DOES
-# NOT MATTER -- and a port that put the terms in a fixed order would still be
-# right here, so the row that pins this is the one that reorders them.
-# ===========================================================================
 
 def FLD_SEM_PAYLOAD_SIZE() -> U32: 24
 def FLD_SEM_OPERATION() -> U32: 0
@@ -1658,10 +1593,6 @@ def pc.same(+a: PKey, +b: PKey) -> Bool:
   Bool.and(U32.is_eq(PKey.src3(a), PKey.src3(b)), U32.is_eq(PKey.dev0(a), PKey.dev0(b)))
 
 # THE MISS SENTINEL IS `len(keys)`, NOT 0. The first version answered 0 on a
-# miss and the hit test `found < len(keys)` read that as a HIT AT INDEX 0, so
-# `nv_pc_grow_3` answered 1 where CPython's dict holds three entries. `got` is
-# seeded with `len(ks)` and `at` is the index, so a match KEEPS its index (the
-# scan is first-wins) and a miss answers the length.
 def pc.find.go(+k: PKey, ks: List<&2, PKey>, +at: U32, got: U32) -> U32:
   match ks:
     case Nil{}: got
@@ -1724,11 +1655,6 @@ def PC.at(+p: PC, cnt: U32, ks: List<&2, PKey>, misses: U32, hits: U32,
 def pc.new_id(p: PC) -> U32: PC.next(p)
 
 # `if (cached := cache.get(key)) is None: ... cache[key] = ...` -- the branch is a
-# HIT when the key is already there, and `found` is the scan's answer: an INDEX,
-# so the hit test is `found < len(keys)` and a MISS appends. TWO ARMS AS TWO DEFS
-# and not one `Bool.pick`, because each arm builds a different `PC` and
-# `Bool.pick` evaluates both -- which is how the first version appended the
-# PREVIOUS last key instead of the one being inserted.
 def pc.hit_arm(+p: PC) -> PC:
   PC.at(p, PC.n(p), PC.ks(p), PC.miss(p), U32.add(PC.hit(p), 1), PC.ord(p), PC.next(p))
 
@@ -1749,11 +1675,6 @@ def pc.put(+k: PKey, +p: PC) -> PC: pc.put.at(pc.find(k, PC.ks(p)), k, p)
 # STAGE 4 (part one) -- THE BUFFER POOL and the device'S own buffers.
 #
 # `device.bend`'s rules are CONSUMED and not re-derived: a Buffer is a SLOT in a
-# `Bar` arena, `nbytes` is `size * itemsize` and is NOT a field, a view's offset
-# ACCUMULATES and a view's base is the ROOT. `dev.gpput_off` is the number that
-# becomes a `bview` offset and `nv_gpput_off` is what says the accumulation is
-# right.
-# ===========================================================================
 
 def GPPUT_OFF() -> U32: 140
 

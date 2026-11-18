@@ -1,22 +1,9 @@
 # tinybendygrad/runtime/webgpu_call.bend -- THE CALL LAYER for ops_webgpu.bend.
 #
-# `ops_webgpu.bend` ports the STRUCTURE of the browser target and records every
-# wgpu call in a trace. Every actual wgpu call there is a
-# `# TODO(p3) runtime/ops_webgpu.py:<line>` naming the JS import it becomes, and
-# "nothing here calls wgpu". THIS FILE IS THAT MISSING HALF: the ffi seam that
-# header names and `ops_webgpu.bend` does not have -- so it is the only reader
-# that can check that the RIGHT usage bitmask reaches the RIGHT call, and the
-# only one that can check that `pass.pipeline`'s entryPoint is the entry point
-# `Pass.of` was given.
-#
 
 # THE BOUNDARY, and why it is THIS one. Measured, not chosen by taste.
 #
 # `bend FILE -o FILE.mjs` emits an ES module of every NON-IO def, with
-# constructors as `{$: "Name", field: value}` and `Nat` as `BigInt`. Verified by
-# running it on `ops_webgpu.bend` itself: 490 exports, including `prog.call`,
-# `dev.init`, `bgl.of` and `Tr.calls`, and EXCLUDING every `do IO<>` block
-# (`main`, `t_call`, ... are all absent). So
 #
 #   bend tinybendygrad/runtime/webgpu_call.bend -o tinybendygrad/runtime/webgpu_call.mjs
 #
@@ -40,16 +27,8 @@
 #     that was missing.
 #
 # WHAT IS AND IS NOT DUPLICATED. No argument is re-derived here: `bgl.of`,
-# `slots`, `dev.uniform_bytes`, `alloc.size`, `copy.write_len`, `alloc.usage`,
-# `dev.uniform_usage`, `copy.readable_usage`, `prog.wants_wait`, `backend_of` and
-# `Tr.*` are CALLED, never reimplemented. What is written here is the step ORDER
-# and which descriptor belongs to which call -- the thing the trace cannot carry.
 #
 # and that order is pinned, not asserted. Every `Step` carries the trace entry
-# `W.Call` it must correspond to, and `wgc_call_trace` checks the two lists
-# against each other with `W.Tr.has` AT EQUAL LENGTH, which is an equality test.
-# A missing step, an extra step, or a wrong tag in THIS file moves that row, and
-# `wgc_call_len` is the length half of it.
 #
 # one place the trace is coarser than python, and it is load-bearing.
 # tinygrad/runtime/ops_webgpu.py:94 `bg_entry` calls `dev.create_uniform(x)` (tinygrad/runtime/ops_webgpu.py:202-206 symbol=create_uniform), which
@@ -75,10 +54,6 @@ import ./ops_webgpu.bend as W
 import ../helpers.bend as H
 
 # THE CONSTANTS ADDED HERE. All six are new to the port. Every one was READ out
-# of `tinygrad/runtime/autogen/webgpu.py` by importing that module; the
-# `file:line` is where the symbol is bound. The oracle is
-# `.agents/slop/webgpu_call_oracle.py`, its captured output is
-# `.agents/slop/webgpu_call_oracle_out.txt`, and NOTHING HERE IS TYPED BY HAND.
 #
 #   SHADER_STAGE_COMPUTE        4  autogen/webgpu.py:2601  WGPUShaderStage_Compute
 #   QUERY_TYPE_TIMESTAMP        2  autogen/webgpu.py:1213  WGPUQueryType_Timestamp
@@ -99,10 +74,6 @@ def STYPE_SHADER_SOURCE_WGSL() -> U32: 2
 def CALLBACK_MODE_WAIT_ANY_ONLY() -> U32: 1
 
 # THE LITERALS ops_webgpu.py writes into descriptors. Not enums, so the citation
-# is the `ops_webgpu.py` line the literal is written on and `wgc_lit_*` checks
-# each against that number. `QUERY_COUNT` is deliberately NOT reused from
-# `ops_webgpu.bend`: that one is the trace's own tag and this one is the
-# descriptor's, so `wgc_lit_resolve_agrees` is the row that keeps the two equal.
 #
 #   QUERY_BUF_BYTES 16  ops_webgpu.py:115  WGPUBufferDescriptor(size=16, usage=...)
 #   QUERY_COUNT     2  ops_webgpu.py:114  WGPUQuerySetDescriptor(count=2)
@@ -282,9 +253,6 @@ def Cs.bg(c: Cs) -> List<&2, Bind>:
 # and for the same reason.
 #
 # `Cs.mint` returns a state and the rest of the step must be built from that
-# ONE. Binding the mint to a name and then writing `Cs.at(Cs.push(c), ...)` --
-# threading the ORIGINAL `c` -- throws the mint away: the handle reads back
-# correctly and the counter never advances.
 #
 # measured, and it was invisible to every row above. Every handle came out
 # 4294967295, which is `Cs.next(0) - 1`, so all three layouts and the pipeline
@@ -300,10 +268,6 @@ def Cs.bg(c: Cs) -> List<&2, Bind>:
 def Cs.hand(n: U32) -> U32: U32.sub(n, 1)
 
 # THE BIND GROUP, as the two LISTS the gate reads: the sizes and the handles, in
-# binding order. `Pass.sizes` answers the first on the trace side and these answer
-# it on the seam side, which is what makes `wgc_bg_sizes` a comparison rather than
-# a restatement. The handle list is the thing NO reader had: `Pass` records the
-# size of each entry and not which buffer it is.
 def Cs.bg_sizes.go(n: Nat, bs: List<&2, Bind>, acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: acc
@@ -961,10 +925,6 @@ def fx_nowait() -> Cs: fx(False{})
 def fx_real_init() -> W.Dev: W.dev.init(METAL(), BOTH())
 
 # the pass with `dev.init`'s trace already gone and the shader module's still
-# THERE. `Tr.reset` on the DEV's trace is the operation: `prog.init` copies the
-# `Dev`'s trace, so emptying the `Dev` first empties the copy WITHOUT emptying
-# the `Pass` -- which is what `Pass.reset` (used one step too late) got wrong.
-# There is no `Tr` reader for this on the `Dev`, so the two lines are here.
 def fx_real_pass(+want: Bool) -> W.Pass:
   W.prog.init(CODE(), W.Dev.at(fx_real_init(), W.Tr.reset(W.Dev.tr(fx_real_init()))))
 
@@ -976,10 +936,6 @@ def fx_real(+want: Bool) -> W.Pass:
 # a repeated slot is two live objects in one map entry.
 #
 # `Cs.mints` and `Cs.slot` have one arm per constructor that HAS a `slot`, and a
-# final `case _` because `Bool.pick` evaluates both arms and so cannot skip the
-# append. The two are the SAME arm list written twice, and that is deliberate: one
-# answers "does this op mint?" and the other "which slot?", and a single def
-# returning a `Maybe` would allocate on every op of the walk.
 def Cs.mints(op: Op) -> Bool:
   match op:
     case ShaderModule{code, slot}: True{}
@@ -1059,12 +1015,6 @@ def Cs.uniform_bytes(+c: Cs) -> List<&2, U32>:
   Cs.uniform_bytes.go(List.length(&2, Step, Cs.ops(c)), Cs.ops(c), Nil{})
 
 # A Bend `List<&2, U32>` as the gate's own list type, for `uniform_bytes`'s fold to
-# cons into. `Cs.calls` already builds one of these for `Call`, and this is the
-# `U32` counterpart -- it exists so `uniform_bytes` does not hand `List.append` a
-# list of a different element type, which does not typecheck.
-# 0, 1, 2, ... in mint order. THE QUESTION NO OTHER ROW ASKS: is the counter
-# actually counting? A frozen counter hands out the same handle forever and every
-# other row in the file stays green, because nothing else reads `next`.
 def Cs.dupe_of.go(n: Nat, xs: List<&2, U32>, +seen: List<&2, U32>, +got: U32) -> U32:
   match n:
     case 0n: got

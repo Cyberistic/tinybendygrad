@@ -8,17 +8,8 @@
 #     disas_adreno(lib[(ofs := _read_lib(lib, 0xc0)):ofs + _read_lib(lib, 0x100)], self.chip_id)
 #
 # The offset is not a constant and not a field: it is read OUT OF THE BUFFER
-# being sliced, at a FIXED position, and the slice runs from there for a LENGTH
-# that is also read out of the buffer at a different fixed position. So the
-# slice is `lib[ofs : ofs + n2]` with BOTH ends data-dependent, and the two
-# reads are little-endian 32-bit reads at 0xc0 and 0x100.
 #
 # `_read_lib` is `struct.unpack("I", lib[off:off+4])[0]` (:8) and the LITTLE
-# ENDIAN is the load-bearing fact: the same four bytes read big-endian answer a
-# different library slice, and nothing downstream would notice. bend has no
-# byte buffer, so `q.read` takes the four bytes as four `U32`s in ADDRESS order
-# and the row that pins the order is `q.read_le_*` against CPython's
-# `struct.pack("I", ...)`.
 #
 
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
@@ -114,9 +105,6 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 # is what makes the endianness a decision rather than a convention.
 #
 # The boundary matters and is a real error case: `struct.unpack` raises when the
-# slice is shorter than four bytes, so `_read_lib(lib, 0x100)` on a 0x100-byte
-# library raises rather than returning a truncated read. `q.read_ok` is that
-# test, and `q.read` is only reached when it holds.
 
 def q.read_ok(+len: U32, +off: U32) -> Bool: U32.is_ge(U32.sub(len, off), 4)
 
@@ -231,15 +219,8 @@ def q.docker_flags(+fs: String, +root: String) -> List<&2, String>:
 # :27-32  checked(). Two facts, and the second is not a reformat of the first:
 #
 #   if not handle or (data := (hc.executable if hc.type == CL_HANDLE_LINKED
-#                              else hc.compiled).contents).error_code != 0:
-#     <destroy and recreate the llvm instance>
-#     raise RuntimeError("QCOM Compilation Error" +
-#                        ("" if not handle else f": {data.build_log}"))
 #
 # So a NULL handle gets the bare message and a handle with a non-zero error code
-# gets the message AND the build log, and in BOTH cases the instance is
-# recreated first. `q.picks_exe` is the handle-TYPE test and it is a different
-# question from the error code.
 
 def q.handle_linked() -> U32: 2          # CL_HANDLE_LINKED
 
@@ -276,11 +257,6 @@ def q.link_arg_n() -> U32: 6
 def q.binary_args() -> U32: 3
 
 # THE GATE.
-# a 0x110-byte library with a chosen u32 at 0xc0 and another at 0x100, built as
-# a LIST of byte values in ADDRESS order -- which is what makes `q.read`'s
-# endianness a decision the gate can see.
-# a run of `n` bytes starting at `v`, so a fixture library is a byte ADDRESS
-# list and the endianness of `q.read` is a decision the gate can see
 def BS.go(k: Nat, +b: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match k:
     case 0n: acc

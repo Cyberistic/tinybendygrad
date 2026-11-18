@@ -1,27 +1,12 @@
 # tinybendygrad/runtime/ops_null.bend -- port of tinygrad/runtime/ops_null.py
 #
 # one BEND file per upstream .py, at the same path. This was `ops_cpu_null.bend`,
-# which held `ops_cpu.py` AND `ops_null.py`; the 1:1 ruling gives each its own file.
-# `runtime/ops_cpu.bend` is the other half and the rows are the SAME rows -- 308 across
-# the pair before the split, 308 after. The unit's THE GATE paragraph, its FIXTURES
-# paragraph and the `device.bend` DEFECT REPORT are in `ops_cpu.bend`'s head.
 #
 # ops_null.py is the DEGENERATE BACKEND: `NullQueue` writes FOUR words per command
-# into a bytearray and the emulated device computes NOTHING. Eleven of the thirteen ops
-# answer all-zero and TWO DO NOT -- `eye` and `arange` -- and both are in the gate with
-# their CPython answers, so a port claiming "everything is zero" is caught by two rows.
 #
 # THE SPLIT, restated because it is the whole discipline here: a def EITHER BUILDS THE
-# ARGUMENT of one device call OR RECORDS that call in the trace. There is no third
-# kind, and that is what puts the `raise` in the trace, so a refusal appears as a
-# TRUNCATED trace and no step needs a guard of its own.
 #
 # ONE DEVIATION FROM ops_webgpu.bend, deliberate. There a `raise` lives INSIDE a loop of
-# calls, so it had to be a flag and a refusal showed as a TRUNCATED trace. Neither
-# refusal here is inside such a loop -- ops_null.py's two (`_copyout`'s panic,
-# `__init__`'s EMULATE assert) are both TERMINAL -- so `C.Tr.refused` is set once by
-# the assert and the device's trace is then EMPTY: the same observable for a different
-# reason, and `nr_assert_trace_n` is the row that pins it.
 #
 # the substrate is imported, not copied: `C.Tr`/`C.Tr.*` (the trace), `C.CALL_PING` (the
 # seam tag the `EMULATE` assert probes with), `C.Cn`/`C.cn_slot` (the slot walk the
@@ -76,18 +61,8 @@ def NTIMESTAMP() -> U32: 4
 # 0, 0, 0)][:4])`. three facts and all three are the file:
 #
 #   1. the tuple is (op, *args, 0, 0, 0) -- THREE trailing zeros, so a command
-#      with one argument is padded by two and one with two is padded by one;
-#   2. the slice is [:4], so the length is ALWAYS FOUR and an over-long argument
-#      list is TRUNCATED, not extended;
-#   3. word 0 is the op and the args follow in order, so a two-argument command
-#      has its second argument in word 2 and its PAD in word 3.
 #
 # (1) is `nr.pads` and (2) is `nr.words`, and they are separate because they are
-# separate facts: a port that padded correctly and emitted five words would pass
-# `nr_pads_*` and fail `nr_words`.
-# the arity of each `cmd` call site, as a `U32` literal ladder in descending
-# order (bend2-constraints.md, tc_ptx rule 4: an ascending ladder makes every
-# arm after `case 0:` dead code that still typechecks).
 def nr.nargs(op: U32) -> U32:
   match op:
     case 4: 1
@@ -222,20 +197,11 @@ def Ev.put(+k: Nk, +evs: List<&2, Nk>) -> List<&2, Nk>:
 # place its queue has a layout:
 #
 #   for offset, arg in sorted(args, key=lambda x: x[0]):
-#     words += [UOp(Ops.BINARY, arg=bytes(offset - end)), arg] if offset != end
-#              else [arg]
-#     end = offset + arg.dtype.itemsize
-#   return words + [UOp(Ops.BINARY, arg=bytes(size - end))]
 #
 # and the SIZE is ops_null.py:29's `8 * max(len(args), 1)`. MEASURED over five
 # arg lists:
 #
 #   itemsizes  size  offsets   nsrc  tail bytes
-#   [4]          8      [0]        2         4
-#   [4,4]       16     [0,4]       3         8
-#   [4,4,4]     24     [0,4,8]     4        12
-#   [8,4]       16     [0,8]       3         4
-#   [8,8]       16     [0,8]       3         0
 #
 # TWO facts fall out and they are independent: the LINEAR has `nargs + 1` srcs
 # one TAIL BINARY always, PLUS one per interior gap, and the tail's byte count
@@ -253,10 +219,6 @@ def pk.size(+nargs: U32) -> U32: U32.mul(Bool.pick(U32, U32.is_zero(nargs), 1, n
 def pk.nsrc(nargs: U32, pads: U32) -> U32: U32.add(U32.add(nargs, 1), pads)
 
 # the tail's byte count, `bytes(size - end)` with `end` the running sum of
-# itemsizes. A NEGATIVE tail is impossible for a signature whose itemsizes sum
-# to at most `8*nargs`, and the `[8,8]` row is the one where the tail is zero --
-# `bytes(0)` is a real BINARY node with an empty arg, which is why
-# `pk_tail_88` is 0 and not "absent".
 def pk.tail(nargs: U32, end: U32) -> U32: U32.sub(pk.size(nargs), end)
 
 # the interior-pad count, which is the port of hcq2.py:76's `if offset != end`:
@@ -368,10 +330,6 @@ def nprog.done.go(n: Nat, ws: List<&2, U32>, acc: U32) -> U32:
             U32.add(acc, Bool.to_u32(nprog.is_work(h))))
 
 # THE FUEL IS `quads + 1`, because `itertools.accumulate` answers element `i` with
-# the sum of elements `0..i` INCLUSIVE and this fold returns the accumulator after
-# `n` steps. `nprog_done_at_2` came out 0 where CPython says 1, and the COPY that
-# makes it 1 is quad 2 -- the row that found the off-by-one. `nprog_done_sum` is
-# the same fold over every quad, so it asks for `quads + 1` there too.
 def nprog.done_at(+ws: List<&2, U32>, quads: Nat) -> U32:
   nprog.done.go(Nat.add(quads, 1n), ws, 0)
 
@@ -465,12 +423,6 @@ def nprog.lane(+ds: List<&2, String>, +i: Nat) -> U32:
 def nprog.sig_one(st: U32, lane: U32, k: U32) -> U32: U32.add(U32.add(st, lane), k)
 
 # the INDEX is a parameter and the list is never matched. The first version read
-# `i` out of `len(acc)/2` and matched on `ds` in the same arm -- and
-# `case h <> t:` SPENDS its scrutinee, so `nprog.lane(ds, i)` was handed a spent
-# list, `nprog.dev_at_list` answered "" for every entry and every lane was 0.
-# `nprog_sigs_same` came out 1000,1001,1001,1002,1000,1001: the first two entries
-# right and every later one wrong. The fuel IS the length, so there is nothing to
-# walk and nothing to spend.
 def nprog.sigs.go(n: Nat, +ds: List<&2, String>, +st: U32, +acc: List<&2, U32>,
                   +i: U32) -> List<&2, U32>:
   match n:
@@ -501,10 +453,6 @@ def nprog.sig7() -> List<&2, Sg>:
 # arithmetic in either file.
 #
 #   def _alloc(self, size, options, va=itertools.count(1 << 40, 1 << 32)):
-#     return BufferStorage(next(va))
-#   def _copyin(self, dest, src): pass
-#   def _copyout(self, dest, src): NULL_ALLOW_COPYOUT or panic(RuntimeError, "no copyout on NULL")
-#   def _map(self, buf): return BufferStorage(buf._buf if buf.device.startswith("NULL") else buf.host.addr)
 #
 # `va` is a DEFAULT ARGUMENT, so the counter is created ONCE per `NullAllocator`
 # class and every `_alloc` in the process draws from the SAME sequence. That is
@@ -547,9 +495,6 @@ def nalloc.map_is_null(dev: String) -> Bool: String.starts_with(dev, "NULL")
 # overrides, and the overrides are the file's only STRING-BUILDING code.
 #
 #   has_local = False; float4 = "float4"; barrier = "// BARRIER"
-#   code_for_op = {CStyleLanguage.code_for_op,
-#                  Ops.THREEFRY: lambda a,b,dtype: f"threefry({a},{b})",
-#                  Ops.MAX:      lambda a,b,dtype: f"max({a},{b})"}
 #
 # MEASURED: `{CStyleLanguage.code_for_op}` has 21 entries, NullRenderer's has
 # 23, and the two it adds are EXACTLY MAX and THREEFRY -- every shared entry is
@@ -632,11 +577,6 @@ def ndev.emulate_table() -> List<&2, C.Ca>:
 def ndev.emulate_fallback() -> String: "<arch>"
 
 # the fallback is not the key here. `Ca.lookup`'s default arm is the key itself,
-# which is right for the CPU arch map (an unknown machine IS its own arch) and
-# wrong here (an unknown emu is literally the five-character string "<arch>").
-# So the substitution is this def's, and it is why `nr_emulate_arch_empty` and
-# `nr_emulate_arch_raw` are rows: both answer the PLACEHOLDER and neither answers
-# the key.
 def ndev.emulate_arch(+emu: String) -> String:
   Bool.pick(String, C.Cam.hit(C.Ca.lookup(emu, ndev.emulate_table())),
             C.Cam.to(C.Ca.lookup(emu, ndev.emulate_table())), ndev.emulate_fallback())
@@ -744,16 +684,8 @@ def nr.zero_of(+nm: String) -> U32:
 # ops_null.py:60-66 -- `NullDevice.__init__` and the assert.
 #
 #   assert (emu:=getenv("EMULATE", "")) == "", \
-#     "EMULATE is deprecated, use DEV=NULL:HIP:" + {...}.get(emu, "<arch>")
-#   super().__init__(device, NullAllocator(self), dedup(renderers), NullProgram)
-#   self.pm_bufferize = PatternMatcher([...])
 #
 # THE ASSERT IS FIRST, so a failing one means `super().__init__` NEVER RUNS and
-# there is no device at all -- not a half-built one. That is what the truncation
-# in the trace is for: `ndev.init` records the assert, sets `refused`, and then
-# records NOTHING else, because `Tr.emit` is a no-op once refused. The failing
-# assert IS still recorded, which is not a special case: it sets `refused` in the
-# same breath and so on entry its own `refused` is still False.
 
 type Nul is Data:
   Nul{dev: String, renders: List<&2, C.Cr>, enc: List<&2, String>, bufz: U32,
@@ -980,10 +912,6 @@ def t_pack() -> IO(Unit):
 # only argument is word 1 and its two pads are words 2 and 3.
 #
 # THE STREAM IS BUILT BY APPENDING, and `List.append(a, A, xs, ys)` is `xs ++ ys`,
-# so the nested appends below read left to right as the command order: the
-# INNERMOST is the LAST command. Consing here would put EXEC first and
-# `nprog_descs` -- which is the copy-then-exec order, and the thing setdefault's
-# ids depend on -- would come out reversed.
 def cmds() -> List<&2, U32>:
   List.append(&2, U32, nr.wait(11, 12, False{}),
     List.append(&2, U32, nr.timestamp(20),
@@ -1151,12 +1079,6 @@ def main() -> IO(Unit):
     IO.print("cn-done=1")
 
 #   M28  `EvA.step` last-wins. A SOUND EQUIVALENCE, with a proof rather than a
-#        shrug: `Nk.same` IS Python's tuple equality on `(device, name, key)`,
-#        `null_events` is a DICT so it never holds two equal keys, and `Ev.put`
-#        -- the only inserter, and pinned by M29's five rows -- appends on a
-#        miss only. Given "no equal pair in the table", first-wins and
-#        last-wins are the same function. The invariant that makes M28 sound is
-#        itself the thing M29 pins.
 #
 #   M53  `nr.zero_of.go` last-wins. THE SAME ARGUMENT: the thirteen names are
 #        thirteen separately MEASURED ops, so at most one row ever matches.

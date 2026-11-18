@@ -18,10 +18,6 @@ import ./ops_cuda.bend as CU
 # "what does HIP call that CUDA spells differently" finds the whole answer in
 # one file instead of three.
 #
-# WHAT IS HERE: `HP_*`, the HIP column of the vendor table `vend.hp`,
-# `hp_unchecked` (hp:16), `hp_err_of` (hp:10), `timing.scale_hp` (hp:57's
-# `ret.value * 1e-3`), `iter_sig` (TinyELF.iter_sig, tinygrad/device.py:352 symbol=iter_sig), `hp.*` and
-# `HpDev`.
 #
 # PART 3 -- HIP. `ops_hip.py`, all 71 lines.
 #
@@ -95,10 +91,6 @@ def vend.trace(cs: List<&2, CL.Call>) -> String:
 def HP_PTR_SZ() -> U32: 8
 
 # hp:42 `init_c_struct_t(fields[-1][2] + ctypes.sizeof(fields[-1][1]) if len(fields)
-# else 0, tuple(fields))` -- the struct's SIZE is the last field's OFFSET plus its
-# SIZE, and it is 0 for an empty signature. That is `fields[-1][2] + sizeof` and
-# NOT `sizeof(last)` alone, which is why the LAST argument's own size is in the
-# total.
 def hp.cargs_size(last_off: U32, last_sz: U32, n: U32) -> U32:
   Bool.pick(U32, U32.is_zero(n), 0, U32.add(last_off, last_sz))
 
@@ -134,11 +126,6 @@ def hp_buf_offsets.go(n: Nat, +i: U32, +acc: List<&2, U32>) -> List<&2, U32>:
 def hp_buf_offsets(nargs: Nat) -> List<&2, U32>: hp_buf_offsets.go(nargs, 0, Nil{})
 
 # hp:43-44 `self.vargs = (ctypes.c_void_p * 5)(1,
-# ctypes.cast(ctypes.byref(self.c_args), ctypes.c_void_p), 2,
-# ctypes.cast(ctypes.pointer(ctypes.c_size_t(ctypes.sizeof(self.c_args))),
-# ctypes.c_void_p), 3)` -- FIVE words: the FLAG, the struct address, 2, the struct
-# SIZE, and 3. The FLAG and the SIZE are the two that are not the address, and
-# `hp_vargs_words` prints all five so the row is the whole descriptor.
 def HP_VARGS_WORDS() -> U32: 5
 def HP_VARGS_FLAG() -> U32: 1
 def HP_VARGS_KIND() -> U32: 2
@@ -214,10 +201,6 @@ def hp.props(did: U32, +t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_GET_DEVICE_PROPS(),
 def hp.event_create(i: U32, +t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_QUEUE_CREATE(), "0", t)
 
 # hp:23-24 `synchronize` is `check(hip.hipSetDevice(self.device_id))` then
-# `check(hip.hipDeviceSynchronize())` -- TWO calls, where CL's is ONE and CUDA's
-# is TWO with a different second. `hipDeviceSynchronize` takes NO argument, so its
-# arg column is the constant "0" like every other zero-argument call here and NOT
-# the device id -- the id is already the arg of the `hipSetDevice` in front of it.
 def hp.set_device(did: U32, +t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_SET_DEVICE(), U32.show(did), t)
 
 def hp.sync(did: U32, +t: CL.Tr) -> CL.Tr: CL.Tr.emit(CL.OP_FINISH(), "0", hp.set_device(did, t))
@@ -285,10 +268,6 @@ def hp.event_elapsed(st: U32, en: U32, +t: CL.Tr) -> CL.Tr:
   CL.Tr.emit(CL.OP_TIME_END(), String.concat([U32.show(st), ":", U32.show(en)]), t)
 
 # hp:39-44 -- the ONCE-ONLY construction of `c_args` and `vargs`. It is guarded by
-# `if not hasattr(self, "vargs")`, so it happens on the first call and NOT on the
-# second. It MAKES NO CALL -- the struct is built by ctypes, not by the driver --
-# so `hp.build.at` returns the trace UNCHANGED on both arms and the gate pins that
-# with a count: `hp_call_first_n` and `hp_call_second_n` are EQUAL.
 def hp.build.at(built: Bool, +t: CL.Tr) -> CL.Tr:
   match built:
     case True{}: t

@@ -4,15 +4,6 @@
 # thirteen lines, and the port is mostly the protocol.
 #
 #   if __name__ == "__main__":
-#     assert len(sys.argv) >= 3, f"usage: {sys.argv[0]} <compiler> <arch> [<args>]"
-#     compiler = fromimport(*sys.argv[1].split(':'))(sys.argv[2], *(ast.literal_eval(arg) for arg in sys.argv[3:]))
-#     while (amt := sys.stdin.buffer.read(4)):
-#       try:   lib = compiler.compile(sys.stdin.buffer.read(struct.unpack("I", amt)[0]).decode())
-#       except Exception as e:
-#         lib = b""
-#         print(e, file=sys.stderr, flush=True)
-#       sys.stdout.buffer.write(struct.pack("I", len(lib)) + lib)
-#       sys.stdout.buffer.flush()
 #
 # Everything here is EXACTLY a length-prefixed frame in both directions, and the
 # framing is the port's whole content:
@@ -91,23 +82,6 @@ def Tr.n(tr: Tr) -> U32: U32.from_nat(List.length(&2, String, Tr.items(tr)))
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
 # the four bytes, as a lowercase hex string. bend has no `U32.get`, so the
-# index is a two-arm ladder over a FOUR element list, which is a literal.
-# the nth byte of a FOUR element list. `n: Nat` decrements as the walk descends,
-# so the decrease check is satisfied and the accumulator stays a `U32`.
-# THE FRAME. A little-endian 32-bit length, so byte 0 is the LOW byte.
-# `cs.pack` builds the four bytes IN ADDRESS ORDER -- which is the whole point:
-# if the byte order were a convention rather than a decision, `cs.unpack` would
-# answer the same number for both orders and the gate could not see the swap.
-# the nth byte of a FOUR element list. When the REMAINING index is zero the
-# HEAD is the answer; the first version had the two arms the other way round and
-# `cs.unpack_be_1` answered `00000100` for `00000001`, which is how the gate
-# caught it and which no count could.
-# ONE def, not a `.go`/`.step` pair: a split of one self-recursive walk is
-# mutual recursion and is refused, so the `Bool.pick` goes INLINE in the cons
-# arm. When the REMAINING index is zero the HEAD is the answer; the first
-# version had the two arms the other way round and `cs.unpack_be_1` answered
-# `00000100` for `00000001`, which is how the gate caught it and which no count
-# could have.
 def q.at(+xs: List<&2, U32>, +n: Nat) -> U32:
   match xs:
     case Nil{}: 0
@@ -187,11 +161,6 @@ def cs.more(+available: U32) -> Bool: U32.is_gt(available, 0)
 def cs.n_needed() -> U32: 4
 
 # argv. The assert is `len(sys.argv) >= 3` -- script, spec, arch -- and the
-# spec is `module:attr`, split on ':'. `cs.spec_n` is the field count and
-# `cs.spec_ok` is the two-field test; a spec with NO colon is a one-field
-# `fromimport` call, which Python answers with a TypeError, and a spec with
-# THREE is a three-argument `fromimport`, also a TypeError. Those two are the
-# rows, because "split on ':'" without the arity is not the same function.
 
 def cs.spec_n(+spec: String) -> U32: U32.from_nat(List.length(&2, String, String.split(spec, ':')))
 

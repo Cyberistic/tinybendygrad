@@ -4,10 +4,6 @@
 # WHAT THIS FILE ACTUALLY IS, because the name misleads.
 #
 # `nv/ip.py` is NOT the NVOS ioctl attribute file. There is no `nv_ioctl`, no
-# NV2080_ALLOC_MEMORY attribute table and no channel/allocation bitmask table in
-# it: all of those live in `tinygrad/runtime/autogen/nv.py` and `nv_570.py`,
-# which are GENERATED ctypes bindings. What ip.py is -- and what this file
-# ports -- is the GSP RPC RING PROTOCOL and the two bootloaders that drive it:
 #
 #   * `NVRpcQueue` (:19-91) -- the msgqTxHeader ring, the RPC record layout, the
 #     u64 checksum, the write-pointer advance, the wrap-around copy, the
@@ -20,10 +16,6 @@
 #     dispatch.
 #
 # So the STRUCT FIELD LAYOUTS this file uses are the load-bearing part, and they
-# are all here under THE LAYOUTS: 54 ctypes structs, 413 fields, in declaration
-# order, with byte offsets and widths. The generated block below is that
-# transcription; `.agents/slop/nv_ip_gen.py` produced it out of CPython with no
-# device present, and produced the gate rows from the same run.
 #
 
 # A disagreement with the task brief, REPORTED not reconciled.
@@ -33,18 +25,8 @@
 # exists. IT DOES NOT. Measured:
 #
 #     $ grep -n "nv/ip\|nv_ip" tinybendygrad/runtime/ops_nv.bend   -> no hits
-#     $ grep -c "nv/ip\|nv_ip" ops_nv.bend                          -> 0
-#     $ grep -o "[A-Za-z0-9_/]*\.py" ops_nv.bend | sort | uniq -c
-#        22 ops_nv.py   10 hcq2.py    2 tinygrad/runtime/ops_nv.py
-#         2 realize.py   1 support/elf.py  1 oracle.py  1 mutate.py
-#         1 helpers.py   1 diff.py     1 device.py    1 autogen/nv_570.py
-#         1 tinygrad/runtime/autogen/nv_570.py
 #
 # `ops_nv.bend` cites `hcq2.py` ten times and `ops_nv.py` twenty-two, and
-# `nv/ip.py` ZERO times. So there is no wall or row in that file for this port to
-# contradict, and nothing in it constrains the choices below. That is the honest
-# finding; it is not the same as agreement, and no row here is offered as
-# corroboration of anything in ops_nv.bend.
 #
 # THE shared contract with hcq2, AND why it is not settled yet.
 #
@@ -76,16 +58,8 @@
 #      string) and `ip_door_*` (the value and the two architecture bits).
 #
 # THE SPLIT, stated once and then obeyed: a def here EITHER builds the argument
-# of ONE call (pure, and the gate checks it) OR records that call in the trace
-# (and the gate checks the ORDER). There is no third kind. Every seam is a trace
-# tag and nothing else, so ORDER and IDENTITY are gateable even though none of
-# the calls is made here.
 #
 # THE RAISE IS IN THE TRACE. `Tr.emit` records nothing once the seam has
-# reported a failure, so a refusal shows up as a TRUNCATED trace and needs no
-# guard of its own anywhere downstream. The failing call IS recorded -- it is
-# what the seam refused -- so the rule is the same one ops_webgpu.bend uses for
-# its four pop sites, and the row that pins it is named `ip_refuse_*`.
 #
 
 
@@ -97,10 +71,6 @@
 # tinygrad/runtime/support/nv/ip.py:1-661 (the whole file)
 #
 # WHAT IS PORTED, DEF BY DEF. Every def named here EXISTS; the first draft of this
-# table named forty-eight defs that were never written -- a device-init entry, a
-# queue reader, a WPR-meta builder, a dispatch table -- which is what a plan
-# written before the code looks like from the outside. The names below are the
-# file's own namespaces.
 #
 #   GENERATED   cn_table / cn_rows / cn_names             the 64 U32 constants
 #               st_<struct> / st_rows / st_sum_*          the 54 layouts, 413 fields
@@ -162,33 +132,12 @@
 # THE MUTATION TABLE, in prose, because the file itself is the thing under test.
 #
 # `python3 .agents/slop/nv_ip_mutate.py` applies ONE textual edit per rule to this
-# file, runs the interpreted lane, and records how many rows moved. Thirty-seven
-# mutations: thirty-three move at least one row, and FOUR cannot move any row
-# because the mutant is the same function.
 #
 #   rd.trunc            `x - x%m` for `x/m*m`. Euclidean division gives
-#                       x == q*m + r with 0 <= r < m, so subtracting r gives q*m.
-#   rp.cont_more.ge     `>` -> `>=`. At plen == max_payload both guards reach
-#                       `cdiv(0, max_payload) == 0`, so `rp.cont_n` answers 1.
-#   rp.pickw.swap       exchange `hi` and `lo`. `rp.finish` XORs the two
-#                       accumulators together, so permuting the twenty words
-#                       between them is the identity -- the ENDIANNESS assumption
-#                       is not gateable through the checksum at all.
-#   rp.which.last_word  clamp 19 -> 18. Words 18 and 19 are both zero slots with
-#                       no `rp.word2` arm, so both answer 0.
 #
 # Two fixtures closed the spots that were NOT arithmetic:
 #
 #   rp.elem.no_header   dropping the 32-byte header from `elemCount` moved NO
-#                       rows, because all seven requests are small enough that
-#                       `plen + 48` and `plen + 80` round to the same element
-#                       count. The header matters only in the band
-#                       `4096k - 79 <= plen <= 4096k - 49`, so `ip_rp_elem_4017`,
-#                       `_4047` and `_4048` are the fixtures; it now moves four.
-#   rp.word2.*          the twenty `ip_rp_<i>_w<k>` rows exist for this. The folded
-#                       checksum sees the SET of words and their byte OFFSETS but
-#                       not which index each came from, so pinning every index
-#                       separately is what makes a zeroed arm move something.
 #
 # Two mutations found defects that prose did not:
 #
@@ -254,16 +203,6 @@ import ../../../device.bend as D
 # gate can ask for a value FROM a name and a name FROM a value over ONE transcription.
 #
 # The reverse arm is FIRST-WINS, and 8 names share the value 1:
-#   GSP_DMA_TARGET_COHERENT_SYSTEM
-#   GSP_FW_WPR_META_REVISION
-#   LIBOS_MEMORY_REGION_CONTIGUOUS
-#   LIBOS_MEMORY_REGION_LOC_SYSMEM
-#   NVOS02_FLAGS_ALLOC_USER_READ_ONLY_YES
-#   NVOS02_FLAGS_MAPPING_NO_MAP
-#   NVOS02_FLAGS_PHYSICALITY_NONCONTIGUOUS
-#   REGISTRY_TABLE_ENTRY_TYPE_DWORD
-# so the generated (name-sorted) order is load-bearing for `const_name`.
-# `ip_c_one_first` pins the winner and `ip_c_one_n` pins how many it beat.
 type Cn is Data:
   Cn{name: String, v: U32}
 
@@ -933,10 +872,6 @@ def ce_has(xs: List<&2, Ce>, id: U32) -> Bool: Cev.hit(ce_name.go(xs, Cev{False{
 
 
 # A 0..15 ladder is NOT a three-way `U32` choice, so this one is legal where
-# `case 0 / case 1 / case _:` over arbitrary U32 literals is refused with
-# "a declared constructor (unknown: U32)". `chr_g` in the Stage C part is the
-# OTHER spelling -- two `Bool.pick`s -- and both give the same digits, which is
-# what `ip_d_lbl_miss_hex` checks against Python's `'%x'`.
 def nib(c: U32) -> String:
   match c:
     case 0: "0"
@@ -1011,16 +946,6 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 
 
 # THREE rows per struct: nf, size, fields. nf and size are the record's own
-# values and the field string is a SECOND transcription of the same struct, so a
-# dropped name is caught by nf and a wrong offset only by the field row.
-# ELEVEN tags, AND eleven is the number of call sites this file emits. The list
-# used to run to twenty with gaps -- `C_HANDLE`, `C_ALLOC_MEM` and six RPC-kind
-# tags that nothing ever passed to `Tr.emit` -- and the gaps were load-bearing
-# twice over: they kept the dead constants out of the dead-def audit, and
-# `C_ALLOC_MEM` was passed to `rp.record` WHERE PYTHON PASSES A FUNCTION ID, so
-# the alloc trace claimed to send function 8 and sent function 4. The tags are
-# numbered densely because the gate prints them and a hole in a printed sequence
-# is a hole nobody can read.
 def C_RPC_SEND() -> U32: 0
 
 def C_QUEUE_WRITE() -> U32: 1
@@ -1204,20 +1129,8 @@ def tr.put(+t: Tr, +calls: List<&2, Cx>, n: U32) -> Tr:
 
 
 # ONE word of the image, by INDEX. The image is
-#   [0..7]   authTagBuffer (zero)          [8]  checkSum   (ZERO here -- see above)
-#   [8..15]  aadBuffer (zero)              [9]  seqNum
-#   [10]     elemCount                     [11] padding (zero)
-#   [12]     header_version                [13] signature
-#   [14]     length                        [15] function
-#   [16]     rpc_result                    [17] rpc_result_private
-#   [18]     sequence (zero)               [19] u (zero)
 #
 # `elemCount` is at [10] and not [11]. `ip_rp_0_w10` is 1 for the seven requests
-# and `ip_rp_0_w11` is 0, read off CPython's `bytes(phdr)`; this comment said the
-# other way round for the whole life of the file, which no gate could see because
-# a comment is not a row. The FOUR ZERO slots ([8], [11], [18], [19]) have no
-# `rp.w_*` constant because `rp.word2` has no arm for them -- the arm would answer
-# `0`, and a branch whose only answer is a literal is a comment with a runtime.
 def tr.go(+xs: List<&2, Cx>, +first: Bool) -> String:
   match xs:
     case Nil{}: ""
@@ -1252,12 +1165,5 @@ def tr.show(+t: Tr) -> String: tr.go(Tr.calls(t), False{})
 # defines nothing this file needs -- the line `gates/README.md:173` draws.
 #
 # What stayed here is the SEAM: `Tr` and `Cx` and the trace's own vocabulary, the
-# `C_*` call ids, and the three row printers, because
-# `runtime/support/nv/nvdev.bend` imports THIS file and uses `IP.Tr`, `IP.Cx`,
-# `IP.tr.tagname` and `IP.row`/`IP.urow`/`IP.srow`. A gate driver cannot hold a
-# type another file imports.
 #
 # Their 1,428 expectations are CPython's:
-# `oracles/tinybendygrad_runtime_support_nv_ip.bend.rows` records upstream's decoder
-# run over the section blobs `nvdisasm` emitted, and the driver's output is
-# byte-identical to it, sorted.

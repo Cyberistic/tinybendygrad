@@ -18,16 +18,8 @@
 # and prints, MEASURED, not inferred:
 #
 #   /bin/echo hi                    -> Done{(0, ("hi\n", ""))}
-#   /bin/sh -c cat      <- "PIPED"  -> Done{(0, ("PIPED", ""))}   stdin fed then closed
-#   /bin/sh -c 'echo e >&2; printf o' -> Done{(0, ("o", "e"))}     stderr is separate
-#   /bin/sh -c 'exit 42'            -> Done{(42, ("", ""))}        the exit code IS the value
-#   /nonexistent-tool-xyz           -> Fail{(2, <non-empty>)}       a spawn failure is a Fail
-#   "true"                          -> Done{(0, ...)}              PATH lookup works
 #
 # So `HIPCCCompiler.compile`'s two `subprocess.run(..., check=True)` calls port
-# ONTO `Process.run` with no new seam and no `@unsafe`. The second half of the
-# scope note is RIGHT and is what walls the rest of this file: there is no
-# importable runtime module, so `tinygrad.runtime.autogen.comgr` is unreachable.
 #
 # The remaining half of the note -- "an FFI seam, or nothing" -- is resolved by
 # the project rule this file follows: a binding DECLARATION for a device with
@@ -36,18 +28,8 @@
 # gated. See WALL 1.
 #
 # `Process.run` takes an ARGV LIST, and so does `tinygrad.helpers.system` --
-# it is `subprocess.check_output(cmd.split(), stderr=STDOUT)`, NOT a shell --
-# so the two agree on shape here and `os.system` is nowhere in this file. The
-# one thing `system()` has and `Process.run` does not is the MERGED stream
-# (`stderr=subprocess.STDOUT`); nothing in these four files needs it.
 #
 # THE SPLIT, stated once and obeyed. A def here EITHER builds the argument of
-# ONE comgr/hipcc call (pure, and the gate diffs it) OR records that call in
-# the trace (and the gate checks the ORDER and the IDENTITY). There is no
-# third kind, which is what puts the `raise` in the trace: a refusal is a
-# TRUNCATED trace, so no step needs a guard of its own. Every seam is a trace
-# tag, so this file declares NO foreign effect and is `ALL PROOFS CHECK` on
-# both lanes -- the `ops_webgpu.bend` lane, not the `dtype.bend` one.
 #
 # the measurement that deleted a family of bugs, and it belongs at the top
 # because it changed what got written rather than only how.
@@ -68,10 +50,6 @@
 #   "a\tb"       -> ["a\tb"]       n=1     (a tab is NOT a separator)
 #
 # So there is NO hand-written splitter in this file. Had one been written, the
-# `amd.split_empty.n=1` and `amd.split_dbl.n=3` rows would both have been the
-# difference between passing and sending comgr a wrong argument count. The
-# thirteen-element option list below splits into NINETEEN fields for exactly
-# this reason, and `h.opt_n` is the row that pins it.
 #
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
@@ -141,11 +119,6 @@
 import Base
 
 # THE TRACE. Which toolchain call the Python makes, in what order, with which
-# argument. `Tr.put` appends, so a REFUSAL is a trace that stops early -- which
-# is how `c.msg` is enforced: there is no `raise` in bend and no step guard.
-# `Tr` carries the recorded calls. The field is `items` and not `t`, because a
-# reader is spelled `Tr.items(tr)` and a field named `t` would collide with the
-# parameter of every def that reads it.
 type Tr is Data:
   Tr{items: List<&2, String>}
 
@@ -163,12 +136,6 @@ def Tr.n(tr: Tr) -> U32: U32.from_nat(List.length(&2, String, Tr.items(tr)))
 def Tr.text(tr: Tr) -> String: String.join(Tr.items(tr), " ")
 
 # The autogen enum values `compile_hip` passes. DECLARED, not invented: these
-# are constants of libcomgr, read out of `autogen/comgr.py` by the oracle.
-#   AMD_COMGR_DATA_KIND_SOURCE 1  AMD_COMGR_DATA_KIND_LOG 5  EXECUTABLE 8
-#   ACTION_ASSEMBLE_SOURCE_TO_RELOCATABLE 10  ACTION_CODEGEN_BC_TO_RELOCATABLE 6
-#   ACTION_LINK_RELOCATABLE_TO_EXECUTABLE 9
-#   ACTION_COMPILE_SOURCE_WITH_DEVICE_LIBS_TO_BC 15
-#   AMD_COMGR_LANGUAGE_HIP 4 (comgr.py) / 3 (comgr_3.py)
 def A.source_kind() -> U32: 1
 def A.log_kind() -> U32: 5
 def A.exec_kind() -> U32: 8
@@ -184,9 +151,6 @@ def A.act_compile() -> U32: 15
 #       assert comgr.AMD_COMGR_LANGUAGE_HIP == 3
 #
 # Two facts, not one: the VERSION selects which module the enums come from, and
-# the assert pins ONE enum in the selected module. `Ad.hip_lang` is the second
-# and `Ad.version` is the first. A port that treated the switch as a rename
-# would answer 3 for both versions and could never notice.
 
 def Ad.version(major: U32) -> U32: Bool.to_u32(Bool.and(U32.is_gt(major, 2), True{}))
 
@@ -228,17 +192,8 @@ def h.dataname(asm: Bool) -> String: Bool.pick(String, asm, "<null>.s", "<null>"
 # :60-63  THE THIRTEEN OPTIONS, and :64's `' '.join`.
 #
 # Written as an explicit LITERAL LIST rather than a fold, because a fold over a
-# function parameter is impossible in bend (a function value is `Type`, so `+`
-# is refused -- bend2-constraints.md POSITION 5043) and because this list is
-# data, not a computation. The `--offload-arch={arch}` element is the only one
-# that varies.
 #
 #   "-O3", "-mcumode", "--hip-version=6.0.32830", "-DHIP_VERSION_MAJOR=6",
-#   "-DHIP_VERSION_MINOR=0", "-DHIP_VERSION_PATCH=32830", "-D__HIPCC_RTC__",
-#   "-std=c++14", "-nogpuinc", "-Wno-gnu-line-marker", "-Wno-missing-prototypes",
-#   f"--offload-arch={arch}", "-I/opt/rocm/include", "-Xclang",
-#   "-disable-llvm-passes", "-Xclang", "-aux-triple", "-Xclang",
-#   "x86_64-unknown-linux-gnu"
 #
 # which is THIRTEEN list elements and, once `' '.join` then `.split(b' ')` have
 # been through `set_options`, NINETEEN comgr arguments. Measured: `optn0=19`.
@@ -373,11 +328,6 @@ def C.suffix_of(+i: U32) -> String:
 # :102-106  the two argv lists. the headline of this file.
 #
 #   subprocess.run(["hipcc", "-c", "-emit-llvm", "--cuda-device-only", "-O3", "-mcumode",
-#                   f"--offload-arch={self.arch}", f"-I{rocm_path}/include/hip",
-#                   "-o", bcf.name, srcf.name] + self.extra_options, check=True)
-#   subprocess.run(["hipcc", "-target", "amdgcn-amd-amdhsa", f"-mcpu={self.arch}",
-#                   "-O3", "-mllvm", "-amdgpu-internalize-symbols", "-c",
-#                   "-o", libf.name, bcf.name] + self.extra_options, check=True)
 #
 # `extra_options` is APPENDED, after the source file -- not before `-o`. So the
 # element count is 11 with no extras and 13 with two, and a port that spliced

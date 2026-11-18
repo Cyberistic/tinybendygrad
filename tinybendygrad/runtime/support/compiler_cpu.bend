@@ -5,9 +5,6 @@
 # WHICH `Process.run` ALREADY COVERS.
 #
 #   subprocess.check_output([getenv("CC", 'clang'), '-c', '-x', 'c', '-O2', '-fPIC',
-#                           '-ffreestanding', '-fno-math-errno', '-nostdlib', '-fno-ident',
-#                           f'--target={self.arch}-none-unknown-elf', *self.args, '-', '-o', '-'],
-#                          input=src.encode('utf-8'))
 #
 # `base.bend:205 symbol=Process.run`'s `Process.run(program, args, input, max_output, timeout_ms)` is
 # a real `posix_spawnp` with a stdin pipe, a stdout pipe, a stderr pipe, a poll
@@ -35,12 +32,6 @@
 #            (`cpu.x86_64f.args` and `cpu.x86blank.args` are the rows.)
 #
 #   arm64    ["-ffixed-x18", "-mcpu=" + "+".join([cpu] + feats)]
-#            with each feature `"no" + f[1:]` if it starts with `-`. So `-sve`
-#            becomes `nosve` -- the `-` is CONSUMED, unlike the x86 arm -- and
-#            `+crypto` stays `+crypto`, which makes the join read
-#            `apple-m1+nosve++crypto`. (`cpu.arm64f.args`.)
-#            NOTE the order: x18 is fixed because it is a reserved platform
-#            register, clobbered on context switch in macOS.
 #
 #   riscv64  "-march=" + "_".join(["rv64g" if cpu == "native" else cpu] + feats)
 #            MEASURED: `native` becomes `rv64g`, and the features are joined
@@ -523,10 +514,6 @@ def t_x86() -> IO(Unit):
     IO.print("cpu_x86_done=1")
 
 # the fresh-process rows. `getenv("CC", "clang")` is a process-boot constant, so
-# the two values of `CC` live in TWO processes: `@0` with `CC` unset answers
-# `clang` and `@1` with `CC=mycc` answers `mycc`. One bend program cannot read
-# the environment twice, so the row pair is written as the two DEFAULTS the port
-# would use, and the checker compares each against its own process.
 def t_env() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- srow("cpu.cc_prog_default", ClangCompiler.prog_default())
