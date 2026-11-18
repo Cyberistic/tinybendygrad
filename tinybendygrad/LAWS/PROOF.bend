@@ -853,6 +853,80 @@ def L.truncmod_is_elementwise(a, b, premise):
 # NOT VACUOUS. The conclusion is not the premise: the subject is a broadcast of
 # two INDEPENDENT shapes that happen to be equal, and it is wrong when they are
 # not -- which is what `zip_max_idempotent` being a real theorem buys.
+# `List.drop` of ZERO is the list itself, which is the base case the reduce's
+# own unfolding lands on.  AND IT HAS TO RECURSE, because `List.drop` matches
+# the list's head and a VARIABLE list is not a constructor: MEASURED, the
+# one-step version is REFUSED with "expected: List.drop(...), observed: l".
+def drop_zero(l: List<&2, S.Sdim>) -> {List.drop(&2, S.Sdim, l, 0n) == l : List<&2, S.Sdim>}:
+  match l:
+    case Nil{}:
+      {==}
+    case h <> t:
+      ih = drop_zero(t)
+      {==}
+
+
+# THE REDUCE's FOLD, for a TWO-AXIS shape: the shape of a reduce is its input's
+# shape with the first axis DROPPED, and `List.drop` of one is the tail.
+def reduce_two(k: Nat, d: Nat) -> {S.Sp.shape.reduce(Some{S.Shape.of([S.SN{k}, S.SN{d}])}, 1n) == Some{S.Shape.of([S.SN{d}])} : Maybe<&2, S.Shape>}:
+  {==}
+
+# The reduce of a shape, as a FUNCTION, so `Equal.cong` can relate two
+# reductions: the product's shape is `Some{Sh{[K, D]}}` by the law's premise,
+# so the reduce of the product's shape is the reduce of that.
+def reduce_of(m: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:
+  S.Sp.shape.reduce(m, 1n)
+
+
+# VI-ter. THE SPEC's GATHER COMPOSITION, and the claim is the NET SHAPE.
+#
+# tinyspec's "Common Ops as Compositions":
+#
+#   # gather: out[i] = T[idx[i]]. one-hot mask along gather axis, then reduce
+#   def gather(T, idx):
+#     K = T.shape[0]
+#     pos = arange(K).reshape(K, 1)                     # (K, 1)
+#     mask = (pos == idx.reshape(1, -1)).cast(T.dtype)  # (K, D)
+#     return (T.reshape(K, 1) * mask).sum(0)            # (D,)
+#
+# AND THE PROOF IS ONE `%` USE AND A CHAIN, and a `%` use REWRITES THE GOAL
+# -- MEASURED, SEE `.agents/slop/loc/bend-proof-rules.md`: the fit check is
+# `P(b, e) <= goal`, so THE MOTIVE IS "THE GOAL, WITH THE RIGHT-HAND SIDE
+# REPLACED BY THE HOLE", and the new goal is `P(a, {==})`.
+def L.gather_composition_has_the_gather_axis_shape(t, idx, k, d, pos, idxr, mask, tr, prod, out, pa, pb, pm, ptr, pp, cmask, cprod, cout, ca, ca2, cb, cc, same1, same2):
+  # AND THE SHAPES' DIM LISTS, and the law's premises NAME them.
+  +dp = snoc(S.SN{k}, snoc(S.SN{1n}, Nil{}))
+  +di = snoc(S.SN{1n}, snoc(S.SN{d}, Nil{}))
+  +dm = snoc(S.SN{k}, snoc(S.SN{d}, Nil{}))
+  # THE MASK's SHAPE: the comparison's answer is the `zip_max` of its two
+  # operands' shapes, and `bcast_axes` says `zip_max` is `elem_pick`.
+  ih = bcast_axes(dp, di, ca, cb, same1)
+  c1 = Equal.cong(List<&2, S.Sdim>, S.Shape, of_shape, S.zip_max(dp, di), S.elem_pick(dp, di), ih)
+  c2 = Equal.cong(S.Shape, Maybe<&2, S.Shape>, some_shape, S.Shape.of(S.zip_max(dp, di)), S.Shape.of(S.elem_pick(dp, di)), c1)
+  # AND THE PRODUCT's SHAPE: the same fold, with `(K, 1)` and the mask.
+  ih2 = bcast_axes(dp, dm, ca2, cc, same2)
+  c3 = Equal.cong(List<&2, S.Sdim>, S.Shape, of_shape, S.zip_max(dp, dm), S.elem_pick(dp, dm), ih2)
+  c4 = Equal.cong(S.Shape, Maybe<&2, S.Shape>, some_shape, S.Shape.of(S.zip_max(dp, dm)), S.Shape.of(S.elem_pick(dp, dm)), c3)
+  # AND THE EVIDENCE: THE REDUCE OF THE PRODUCT's SHAPE, and the product's
+  # shape is `Some{Sh{[K, D]}}` BY THE LAW's PREMISE -- so the reduce of the
+  # product's shape is the reduce of that, and the reduce of THAT is `(D,)`.
+  rf = reduce_two(k, d)
+  cr = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, reduce_of, S.Sp.shape(prod), Some{S.Shape.of([S.SN{k}, S.SN{d}])}, pp)
+  # AND THE EVIDENCE IS ONE FACT, AND ITS RIGHT ENDPOINT IS THE GOAL's
+  # RIGHT-HAND SIDE -- so the use's FIT CHECK PASSES -- AND ITS LEFT ENDPOINT
+  # BECOMES THE NEW GOAL.
+  ev = Equal.trans(Maybe<&2, S.Shape>, S.Sp.shape.reduce(S.Sp.shape(prod), 1n), S.Sp.shape.reduce(Some{S.Shape.of([S.SN{k}, S.SN{d}])}, 1n), Some{S.Shape.of([S.SN{d}])}, cr, rf)
+  # AND THE `%` USE: the motive is the goal with the RIGHT-HAND SIDE replaced
+  # by the hole, and the evidence's RIGHT endpoint IS the goal's right-hand
+  # side -- so the fit check passes -- and the evidence's LEFT endpoint becomes
+  # the NEW GOAL.
+  %ev : {S.Sp.shape(out) == _ : Maybe<&2, S.Shape>}
+  # AND THE NEW GOAL IS `{shape_of(out) == shape_of(SpReduce{prod, ...})}`, AND
+  # THE BODY PROVES IT: the output IS the reduce.
+  c5 = Equal.cong(S.Sp, Maybe<&2, S.Shape>, S.Sp.shape, out, S.SpReduce{prod, Nil{}, S.SpInvalid{}, 1n}, cout)
+  %c5 : {S.Sp.shape(out) == _ : Maybe<&2, S.Shape>}
+  {==}
+
 # VI-bis. THE SPEC'S OWN COMPOSITION, and the shape it claims.
 #
 # tinyspec's "Common Ops as Compositions": "def gemm(A, B): M,K = A.shape; _,N =

@@ -29781,6 +29781,40 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       the first axis and TWO were added for the rest: `cons_mid` (fixes a head
       AND a tail) and `cons_at` (a general position). The census reads
       `0/99/99`.
+- [x] **THE LAW SET IS NOW **100 LAWS**, AND THE SECOND COMPOSITION IS THE
+      GATHER.** MEASURED 2026-11-17 against the pin's spec
+      (`f5ac54685074:spec/tinyspec.tex`): the port stated the COMPONENTS (the
+      reshape law, the elementwise law, the reduce law) and not the
+      COMPOSITIONS, and the compositions are what the spec's readers care
+      about because they are the shapes the schedule's fusion decisions read.
+      THE GEMM is done; THE GATHER IS NOW TOO, and its claim is the NET SHAPE:
+      `(D,)` -- the gather axis, which is `idx`'s length and not `T`'s.  ITS
+      TWO BROADCASTS ARE `(K, 1)` WITH `(1, D)` AND `(K, 1)` WITH `(K, D)`, AND
+      THE REDUCE DROPS THE FIRST AXIS.  The census reads `0/100/100` and the
+      shape census reads **31 shape laws** with the SAME three masked laws it
+      had before -- AND THAT IS A MEASURED CONSTRAINT, NOT A COINCIDENCE: **THE
+      ORDER OF THE PROOF BOOK IS PART OF THE SPEC**, because `bend` names the
+      FIRST failing proof, and a law that sits BEFORE another law that reads
+      the same fold ARM is MASKED -- the census's word for a law that can fail
+      but is never the failure `bend` names.  THE GEMM SAT BEFORE THE
+      ELEMENTWISE LAWS AND MADE `mul_is_elementwise` MASKED, AND THE FIX WAS TO
+      MOVE THE PROOF AFTER THEM.  THE GATHER SAT AFTER, SO NOTHING CHANGED.
+- [x] **AND THE PROOF OF THE GATHER IS A `%` USE, WHICH REWRITES THE GOAL
+      RATHER THAN ADDING A FACT** -- AND THAT IS MEASURED FROM THE COMPILER,
+      NOT GUESSED.  `bend.ts:3793-3815` AND THE KERNEL AT `bendtt.lean:1614-1617`:
+      the EVIDENCE must be an equation `{a == b : T}`; the MOTIVE is a lambda
+      over the evidence's LEFT endpoint `_`; the FIT CHECK is `P(b, e) <=
+      goal`, where `b` is the evidence's RIGHT endpoint -- **SO THE MOTIVE IS
+      "THE GOAL, WITH THE RIGHT-HAND SIDE REPLACED BY THE HOLE"**; and the NEW
+      GOAL is `P(a, {==})`.  **AND THERE IS NO SEARCH:** a body that is a
+      hypothesis name is accepted iff its type fits the goal, so the checker
+      never picks a fact for you.  THE RULES ARE IN
+      `.agents/slop/loc/bend-proof-rules.md`, BECAUSE A PROOF IS WRITTEN BY HAND
+      AND THE SYNTAX IS NOT GUESSABLE.
+- [x] **AND A `Type` BINDER CAN BE CONSUMED ONLY ONCE** -- MEASURED: "ca
+      (consumed more than once)" -- SO A LAW WITH TWO BROADCASTS CARRIES TWO
+      "EVERY DIM IS CONCRETE" PREMISES, ONE PER BROADCAST.
+
 - [x] **AND THE ORDER OF THE PROOF BOOK IS PART OF THE SPEC, MEASURED.** `bend`
       names the FIRST failing proof, so an instrument that asks "which law goes
       red" reads the book's order. THE GEMM LAW SAT BEFORE THE ELEMENTWISE

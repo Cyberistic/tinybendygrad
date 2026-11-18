@@ -762,6 +762,58 @@ law gemm_broadcasts_to_the_three_axis_shape:
                               S.SpReshape{S.SpInvalid{}, S.SpInvalid{}, [S.SN{1n}, k, n]}})
    == some_of_shape(S.Shape.of([m, k, n])) : Maybe<&2, S.Shape>}
 
+# The GATHER composition, and the claim is the NET SHAPE: `(D,)` -- the
+# gather axis, which is `idx`'s length and not `T`'s.
+#
+# tinyspec's "Common Ops as Compositions":
+#
+#   # gather: out[i] = T[idx[i]]. one-hot mask along gather axis, then reduce
+#   def gather(T, idx):
+#     K = T.shape[0]
+#     pos = arange(K).reshape(K, 1)                     # (K, 1)
+#     mask = (pos == idx.reshape(1, -1)).cast(T.dtype)  # (K, D)
+#     return (T.reshape(K, 1) * mask).sum(0)            # (D,)
+#
+# AND THE TWO BROADCASTS ARE THE WORK: `(K, 1)` with `(1, D)` is `(K, D)`, and
+# `(K, 1)` with `(K, D)` is `(K, D)`.  AND THE REDUCE DROPS THE FIRST AXIS.
+law gather_composition_has_the_gather_axis_shape:
+  for +t: S.Sp
+  for +idx: S.Sp
+  for +k: Nat
+  for +d: Nat
+  for +pos: S.Sp
+  for +idxr: S.Sp
+  for +mask: S.Sp
+  for +tr: S.Sp
+  for +prod: S.Sp
+  for +out: S.Sp
+  # AND THE SHAPES, and the premises NAME THE CONCRETE LISTS -- the gemm law's
+  # own spelling, and the reason the gemm law's `elem_pick_gemm` lemma
+  # applies to it.
+  for +pa: {shape_of(pos) == Some{S.Shape.of([S.SN{k}, S.SN{1n}])} : Maybe<&2, S.Shape>}
+  for +pb: {shape_of(idxr) == Some{S.Shape.of([S.SN{1n}, S.SN{d}])} : Maybe<&2, S.Shape>}
+  for +pm: {shape_of(mask) == Some{S.Shape.of([S.SN{k}, S.SN{d}])} : Maybe<&2, S.Shape>}
+  for +ptr: {shape_of(tr) == Some{S.Shape.of([S.SN{k}, S.SN{1n}])} : Maybe<&2, S.Shape>}
+  for +pp: {shape_of(prod) == Some{S.Shape.of([S.SN{k}, S.SN{d}])} : Maybe<&2, S.Shape>}
+  # AND THE CONSTRUCTION, so the law is about the SPEC's gather and not about
+  # five unrelated nodes: the mask compares `pos` with `idx` reshaped, the
+  # product is the product of `mask` with `T` reshaped, and the output
+  # reduces the product's FIRST axis.
+  for +cmask: {mask == S.SpCmpEq{pos, idxr} : S.Sp}
+  for +cprod: {prod == S.SpMul{tr, mask} : S.Sp}
+  for +cout: {out == S.SpReduce{prod, Nil{}, S.SpInvalid{}, 1n} : S.Sp}
+  # AND THE "EVERY DIM IS CONCRETE" AND "SAME LENGTH" PROOFS, because the
+  # broadcast lemma needs them and the port's own broadcast law carries the
+  # same two premises.  AND THEY COME LAST, because a `Type` binder is not a
+  # `Data` one.
+  for ca: S.AllSN([S.SN{k}, S.SN{1n}])
+  for ca2: S.AllSN([S.SN{k}, S.SN{1n}])
+  for cb: S.AllSN([S.SN{1n}, S.SN{d}])
+  for cc: S.AllSN([S.SN{k}, S.SN{d}])
+  for same1: S.SameLen([S.SN{k}, S.SN{1n}], [S.SN{1n}, S.SN{d}])
+  for same2: S.SameLen([S.SN{k}, S.SN{1n}], [S.SN{k}, S.SN{d}])
+  {shape_of(out) == Some{S.Shape.of([S.SN{d}])} : Maybe<&2, S.Shape>}
+
 law add_is_elementwise:
   for +a: S.Sp
   for +b: S.Sp

@@ -114,12 +114,32 @@ and `cons_at` for a general position. The three are chained with two
 `Equal.trans` steps, and the whole list is then lifted through `Shape.of` and
 `Some`.
 
-**AND IT IS LOAD-BEARING, MEASURED NOT ASSUMED.** A law that cannot go red is
-worse than no row, so the mutation test is in
-`.agents/slop/loc/gemm-mutate.py`: it builds a book holding ONE law — the gemm
-law, its proof, and the port's own helpers — and breaks the broadcast's
-per-axis fold. The book goes red, and the failing def is inside the book, so
-the failure is the gemm law's own proof and not a neighbour's.
+**AND THE SECOND ONE IS THE GATHER**, and its claim is the NET SHAPE — `(D,)`,
+the gather axis, which is `idx`'s length and not `T`'s:
+
+```
+# gather: out[i] = T[idx[i]]. one-hot mask along gather axis, then reduce
+def gather(T, idx):
+  K = T.shape[0]
+  pos = arange(K).reshape(K, 1)                     # (K, 1)
+  mask = (pos == idx.reshape(1, -1)).cast(T.dtype)  # (K, D)
+  return (T.reshape(K, 1) * mask).sum(0)            # (D,)
+```
+
+Its two broadcasts are `(K, 1)` with `(1, D)` and `(K, 1)` with `(K, D)`, and
+the reduce drops the first axis. **AND THE PROOF IS A `%` USE**, and that is
+the shape of a proof that *rewrites* rather than *adds* — see
+`.agents/slop/loc/bend-proof-rules.md`. The evidence is the reduce of the
+product's shape; its right endpoint is the goal's right-hand side, so the use's
+fit check passes; and its left endpoint becomes the new goal, which the
+construction's congruence closes.
+
+**AND BOTH ARE LOAD-BEARING, MEASURED NOT ASSUMED.** A law that cannot go red
+is worse than no row, so the mutation test is in
+`.agents/slop/loc/comp-mutate.py`: it builds a book holding ONE law — the
+gemm's or the gather's — with its proof and the port's own helpers, and breaks
+the broadcast's per-axis fold. The book goes red, and the failing def is
+inside the book, so the failure is that law's own proof and not a neighbour's.
 
 That isolation was needed, and the reason is general: **the checker reports
 the FIRST failing proof, not all of them.** Mutating a shared fold arm is
