@@ -630,34 +630,25 @@ def xw_lk() -> String:
 # window sum into a hidden buffer, then a linear layer that reads that buffer. `h`'s node
 # index stays valid in the after-chain's arena because an augmented arena is a superset.
 def fwd_prog() -> RZ.RZProg:
+  # ONE CHAIN, NO FORKS: every `rz_input` takes the PREVIOUS tensor's arena, and the AFTERs are
+  # built last. MEASURED: two `rz_input`s on the SAME arena are two SIBLING copies whose node
+  # indices collide, which is what made the weight fold to a lone CONST.
   +h = RZ.rz_input(O.Arena.empty(), 0, 784, [1, 1, 28, 28])
-  +x = RZ.rz_input(T.Tensor.ar(h), 1, 784, [1, 1, 28, 28])
+  +o = RZ.rz_input(T.Tensor.ar(h), 2, 10, [1, 10])
+  +x = RZ.rz_input(T.Tensor.ar(o), 1, 784, [1, 1, 28, 28])
+  +w = RZ.rz_input(T.Tensor.ar(x), 3, 7840, [784, 10])
   +e = MX.mxw_expand(x, [3, 3])
   +f1 = T.tn_rop(T.Tensor.ar(e), T.Tensor.u(e), O.OpsADD{}, [0, 1])
   +a1 = RZ.rz_after(h, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
-  +o = RZ.rz_input(O.Found.ar(a1), 2, 10, [1, 10])
-  # THE AFTER IS THE READABLE HANDLE: `AFTER(buf, stores...)` means "buf, valid after those
-  # stores", so kernel B reads `a1` and not the bare buffer -- that edge is what orders the two.
   +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
-  # THE ARENA MUST BE CHAINED, NOT FORKED: `o` was built on `a1`'s arena and returned a GROWN one,
-  # and building `w` on `a1`'s again made the two SIBLING copies -- `o`'s nodes and `w`'s nodes then
-  # occupied the same indices, and the MUL mixed them (MEASURED: the weight folded to a lone CONST).
-  +w = RZ.rz_input(T.Tensor.ar(o), 3, 7840, [784, 10])
   +lhs = MX.mxw_reshape.go(hf, [1, 1, 784])
   +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w, [1, 784, 10]), [0, 2, 1])
   +m = T.tn_mul(lhs, rhs)
   +f2 = T.tn_rop(T.Tensor.ar(m), T.Tensor.u(m), O.OpsADD{}, [2])
-  # A FRESH DST AT SLOT 4 MADE THE SECOND STORE VANISH ENTIRELY (`fwd_lk` went 2 -> 1 and the
-  # pre-apply sink lost the after), so the original `o` is kept: the two-store shape is the one
-  # that must be explained, not papered over.
   +a2 = RZ.rz_after(o, T.tn_new(O.Found.ar(f2), O.Found.i(f2)))
   +snk = O.UOp.sink(O.Found.ar(a2), [O.Found.i(a1), O.Found.i(a2)])
   RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
 
-# EVERY KERNEL the LINEAR holds, rendered -- not just `sc_src0`. Three shapes forced by the
-# language: the accumulator is a PAIR bound only to a PARAMETER (a `+` local must be `Data`),
-# the match on `ks` must come BEFORE any local unpack, and the helper that unpacks `p` must NOT
-# recurse (a helper that calls back is mutual recursion, which is refused).
 def mk_emit(p: (O.Arena & List<&2, C.KU>), +i: U32, +acc: List<&2, String>) -> (O.Arena & List<&2, String>):
   (ar, +kus) = p
   (ar, List.append(&2, String, acc,
@@ -858,6 +849,16 @@ def mb_row() -> String:
                  " | res_u=", U32.show(T.Tensor.u(r)), " res=", RR.rr_node_str(T.Tensor.ar(r), T.Tensor.u(r)),
                  " res_dump=", RR.rr_dump(T.Tensor.ar(r), T.Tensor.u(r))])
 
+# `rz_input(..., [1,10])` ON AN EMPTY ARENA BESIDE THE SAME CALL ON A NON-EMPTY ONE. If the second
+# answers a bare BUFFER where the first answers a RESHAPE, the suspect is `mxw_stk`'s shape STACK.
+def rz_row() -> String:
+  +t1 = RZ.rz_input(O.Arena.empty(), 2, 10, [1, 10])
+  +t2 = RZ.rz_input(T.Tensor.ar(t1), 2, 10, [1, 10])
+  +t3 = RZ.rz_input(T.Tensor.ar(t2), 2, 10, [1, 10])
+  String.concat(["empty=", RR.rr_node_str(T.Tensor.ar(t1), T.Tensor.u(t1)), " {", RR.rr_dump(T.Tensor.ar(t1), T.Tensor.u(t1)), "}",
+                 " after1=", RR.rr_node_str(T.Tensor.ar(t2), T.Tensor.u(t2)), " {", RR.rr_dump(T.Tensor.ar(t2), T.Tensor.u(t2)), "}",
+                 " after2=", RR.rr_node_str(T.Tensor.ar(t3), T.Tensor.u(t3)), " {", RR.rr_dump(T.Tensor.ar(t3), T.Tensor.u(t3)), "}"])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -885,6 +886,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["rz_row=", rz_row()]))
     _ : Unit <- IO.print(String.concat(["mb_row=", mb_row()]))
     _ : Unit <- IO.print(String.concat(["fwd_ids=", fwd_ids()]))
     _ : Unit <- IO.print(String.concat(["buf_row=", buf_row()]))
