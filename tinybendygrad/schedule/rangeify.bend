@@ -54,6 +54,7 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../uop/movement.bend as M
+import ./../codegen/__init__.bend as CG
 
 # THE READERS. `movement.bend`'s `mp_*` are reused, not copied: they are the
 # same six reads of the same arena and a second copy would be pure weight. What
@@ -836,12 +837,15 @@ def aprt_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   aprt_scan(aprt_table(), fx, self, M.Hop{ar, 0})
 
 # TABLE 5: `split_kernels` -- rangeify.py:346-348. ONE RULE, and its body `split_store`
-# (rangeify.py:335) is NOT PORTED: the wall is `graph_rewrite` INSIDE a rule, which is the
-# engine calling itself, and it is the same wall `movement.bend` records for `mp_0`.
-# `split_store` also reads `x.ranges` (line 337), which is the `UOp.ranges` wall, and it
-# calls `graph_rewrite(x, to_define_global+pm_flatten_range, ctx=lctx, name="kernel split",
-# bottom_up=True)` -- a MUTABLE `lctx` threaded through a nested pass, which the no-`ctx`
-# wall is the other half of.
+# (rangeify.py:326) is PORTED below in the five steps upstream spells. The two walls this
+# header used to name are CLOSED and the reasons are worth keeping:
+#
+#   `x.ranges` (py:327) is `F.UOp.ranges` -- it is in `uop/fold.bend` and this file's
+#   `rf_ranges_miss` spelling was stale. MEASURED: `rf_in_ranges` has no caller.
+#   `graph_rewrite(..., bottom_up=True)` (py:330) is the engine's OWN order: this file's
+#   `eng_sweep` walks the arena in index (topological) order, so the children are final
+#   before the parent is reached. The MUTABLE `lctx` is the collection in `sk_walk` plus
+#   the map in `sk_db`/`sk_rg`, which is the same shape as the scheduler's `List<Rep>`.
 #
 # UPSTREAM'S TWO COMMENTS INSIDE `split_store` ARE THE TWO GATES, and they are
 # both about WHEN A KERNEL MAY BE CUT:
@@ -859,7 +863,212 @@ def aprt_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 #       the split is about the range structure, not about the memory, and the
 #       cross-device part is settled LATER by the scheduler as an SDMA copy.
 #       Doing it here would mean the split pass knew about devices.
-def sk_0(+ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
+# `debuf` -- rangeify.py:283. THE FRESH `ParamArg` IS FRESH: slot, dtype, addrspace and
+# device, and NONE of the buffer's name/vmin_vmax/val. MEASURED on CPython,
+# `debuf(0, UOp.new_buffer('CPU', 12, dtypes.float))` is
+# `PARAM(shape (12,), arg ParamArg(0, f32, device='CPU'), src (CONST 12,))`, and
+# `param.reshape((12,)) IS param` -- so this vendor's buffers are FLAT (`max_shape ==
+# (numel,)`) and `debuf` mints NO RESHAPE. A symbolic shape is the only case that would,
+# and it is refused: `ParamArg.size` answers `None` for it.
+#
+# EVERY `match` BELOW IS ON A PARAMETER. Bend refuses to scrutinise a computed value
+# ("a parameter or field scrutinee"), so each dispatch is a def that takes the value as
+# an argument -- the `.of` shape this file uses everywhere else.
+def db_arg(slot: U32, dt: S.Dt, addr: S.Addr, dev: Maybe<&2, S.Dev>) -> O.ParamArg:
+  O.ParamArg{slot, dt, None{}, None{}, None{}, addr, dev, False{}, None{}, None{}, False{}, None{}}
+
+def db_n(n: Maybe<&2, U32>, +pa: O.ParamArg, +ar: O.Arena, slot: U32) -> Maybe<&2, O.Found>:
+  match n:
+    case Some{k}:
+      Some{O.UOp.new.param(ar, O.OpsPARAM{}, Some{k},
+             O.AParam{db_arg(slot, O.ParamArg.dtype(pa), O.ParamArg.addrspace(pa), O.ParamArg.device(pa))},
+             O.TNone{})}
+    case None{}: None{}
+
+def db_argm(arg: O.Arg, n: Maybe<&2, U32>, +ar: O.Arena, slot: U32) -> Maybe<&2, O.Found>:
+  match arg:
+    case O.AParam{pa}: db_n(n, pa, ar, slot)
+    case _: None{}
+
+def debuf(+ar: O.Arena, slot: U32, +buf: U32) -> Maybe<&2, O.Found>:
+  db_argm(O.Arena.arg(ar, buf), O.ParamArg.size(ar, buf), ar, slot)
+
+# `if any(r.axis_type is not DEVICE for r in x.ranges)` -- rangeify.py:327. `x.ranges` is
+# `F.UOp.ranges`, which IS in the port (`uop/fold.bend`), and `Rng.ok` is the fold's own
+# "the set is computable" answer rather than the `rf_ranges_miss` refusal this file used
+# to spell.
+def sk_ax(ax: O.AxisType) -> Bool:
+  match ax:
+    case O.AXIS_DEVICE{}: True{}
+    case _: False{}
+
+def sk_axs.go(+ar: O.Arena, +rs: List<&2, U32>, ok: Bool) -> Bool:
+  match rs:
+    case Nil{}: ok
+    case r <> t: sk_axs.go(ar, t, Bool.and(ok, sk_ax(rf_axis(ar, r))))
+
+def sk_open(+ar: O.Arena, +self: U32) -> Bool:
+  +g = F.ranged(ar)
+  +r = F.UOp.ranges(F.Ranged.ar(g), F.Ranged.rt(g), self)
+  Bool.and(F.Rng.ok(r), sk_axs.go(ar, F.Rng.rs(r), True{}))
+
+def sk_mem.go(+xs: List<&2, U32>, +n: U32, seen: Bool) -> Bool:
+  match xs:
+    case Nil{}: seen
+    case x <> t: sk_mem.go(t, n, Bool.or(seen, U32.is_eq(x, n)))
+
+def sk_mem(+xs: List<&2, U32>, n: U32) -> Bool: sk_mem.go(xs, n, False{})
+
+def sk_addl(add: Bool, n: U32, +bs: List<&2, U32>) -> List<&2, U32>:
+  match add:
+    case True{} : List.append(&2, U32, bs, [n])
+    case False{}: bs
+
+# `to_define_global`'s COLLECTION, bottom-up, in the arena's topological order -- this
+# file's `eng_sweep` order, so the children are final before the parent is reached. The
+# state is `(arena, buffers, ranges, seen, refused)`:
+#   buffers  what `add_buf`/`handle_after` put in `lctx.map`, in ENCOUNTER order, because
+#            `enumerate(lctx.map)` IS the PARAM slot number.
+#   ranges   the RANGE nodes, in the same order, because `pm_renumber_range` numbers from
+#            that dict.
+#   refused  a node whose split needs a rule this port has not built: an AFTER
+#            (`handle_after`), a STAGE (no `BufferizeOpts`), a CALL (a body), or an ALU
+#            PARAM (`dg_3`'s INDEX-of-ALU). A refusal is a NO-ANSWER, so `sk_0` answers
+#            `M.Hop{ar, 0}` and the caller sees no kernel -- never a half-split.
+# A buffer is added and NOT descended into, which is `add_buf`'s `BottomUpGate`.
+def sk_alu(a: Maybe<&2, S.Addr>) -> Bool:
+  match a:
+    case Some{x}: O.eq_addr(x, S.Aalu{})
+    case None{}: False{}
+
+def sk_todo(descend: Bool, +ss: List<&2, U32>, +t: List<&2, U32>) -> List<&2, U32>:
+  match descend:
+    case True{} : List.concat(&2, U32, [ss, t])
+    case False{}: t
+
+# `to_define_global`'s COLLECTION, bottom-up -- this file's `eng_sweep` order, so the
+# children are final before the parent is reached. The state is
+# `(arena, buffers, ranges, seen, refused)`:
+#   buffers  what `add_buf`/`handle_after` put in `lctx.map`, in ENCOUNTER order, because
+#            `enumerate(lctx.map)` IS the PARAM slot number.
+#   ranges   the RANGE nodes, in the same order, because `pm_renumber_range` numbers from
+#            that dict.
+#   refused  a node whose split needs a rule this port has not built: an AFTER
+#            (`handle_after`), a STAGE (no `BufferizeOpts`), a CALL (a body), or an ALU
+#            PARAM (`dg_3`'s INDEX-of-ALU). A refusal is a NO-ANSWER, so `sk_0` answers
+#            `M.Hop{ar, 0}` and the caller sees no kernel -- never a half-split.
+# A buffer is added and NOT descended into, which is `add_buf`'s `BottomUpGate`.
+#
+# THE DISPATCH IS BOOLEAN AND THE RECURSION IS ONE CALL AT THE END. A `match` may not
+# scrutinise a computed value, and a helper that matched would have to call back into this
+# loop -- which is mutual recursion, and Bend refuses it. So each op test is a `Bool`
+# (`M.mp_is` matches its own parameter) and the ONE tail call carries the next state.
+def sk_walk(fuel: Nat, todo: List<&2, U32>,
+            acc: (O.Arena & List<&2, U32> & List<&2, U32> & List<&2, U32> & Bool)) ->
+            (O.Arena & List<&2, U32> & List<&2, U32> & List<&2, U32> & Bool):
+  match fuel:
+    case 0n: acc
+    case 1n+p:
+      match todo:
+        case Nil{}: acc
+        case +n <> t:
+          (+ar, +bs, +rs, +sn, bad) = acc
+          +seen = sk_mem(sn, n)
+          +take = Bool.not(seen)
+          +ispar = M.mp_is(ar, n, O.OpsPARAM{})
+          +isbuf = Bool.or(M.mp_is(ar, n, O.OpsBUFFER{}),
+                    Bool.or(M.mp_is(ar, n, O.OpsALLOC{}),
+                     Bool.or(M.mp_is(ar, n, O.OpsMSTACK{}), M.mp_is(ar, n, O.OpsMSELECT{}))))
+          +isrng = M.mp_is(ar, n, O.OpsRANGE{})
+          +isref = Bool.or(M.mp_is(ar, n, O.OpsAFTER{}),
+                    Bool.or(M.mp_is(ar, n, O.OpsSTAGE{}), M.mp_is(ar, n, O.OpsCALL{})))
+          +alu = Bool.and(ispar, sk_alu(F.addrspace_of.param(O.Arena.arg(ar, n))))
+          +addbuf = Bool.and(take, Bool.or(isbuf, Bool.and(ispar, Bool.not(alu))))
+          +refuse = Bool.and(take, Bool.or(isref, alu))
+          +descend = Bool.and(take, Bool.not(Bool.or(isbuf, Bool.or(ispar, Bool.or(isrng, isref)))))
+          sk_walk(p, sk_todo(descend, O.Arena.srcs(ar, n), t),
+                  (ar, sk_addl(addbuf, n, bs), sk_addl(Bool.and(take, isrng), n, rs),
+                   sk_addl(take, n, sn), Bool.or(bad, refuse)))
+
+# `(arena, dvars, refused)`, slots in ENCOUNTER order: `debuf(i, buf)` for the i-th buffer.
+# `Map.set` and NOT `Map.put` -- MEASURED, three `Map.put`s leave `Map.size = 1` while
+# `Map.set` keeps all three; the engine uses `Map.set` for the same reason.
+def sk_has(m: Maybe<&2, O.Found>) -> Bool:
+  match m:
+    case Some{_}: True{}
+    case None{} : False{}
+
+def sk_mset(hit: Bool, key: String, v: U32, +dv: Map<&2, U32>) -> Map<&2, U32>:
+  match hit:
+    case True{} : Map.set(&2, U32, dv, key, v)
+    case False{}: dv
+
+def sk_db.go(+bs: List<&2, U32>, +i: U32,
+             acc: (O.Arena & Map<&2, U32> & Bool)) -> (O.Arena & Map<&2, U32> & Bool):
+  match bs:
+    case Nil{}: acc
+    case b <> t:
+      (+ar, +dv, bad) = acc
+      +m = debuf(ar, i, b)
+      +hit = sk_has(m)
+      +f = Maybe.default(&2, O.Found, m, O.Found{ar, 0})
+      sk_db.go(t, U32.add(i, 1),
+               (O.Found.ar(f), sk_mset(hit, U32.show(b), O.Found.i(f), dv), Bool.or(bad, Bool.not(hit))))
+
+# `pm_renumber_range` -- rangeify.py:332. Ids start at 0 so two kernels doing the same work
+# intern to the same graph (`rangeify.py:318`), which is what kernel deduping needs.
+def sk_rg.go(+rs: List<&2, U32>, +i: U32,
+             acc: (O.Arena & Map<&2, U32> & Bool)) -> (O.Arena & Map<&2, U32> & Bool):
+  match rs:
+    case Nil{}: acc
+    case r <> t:
+      (+ar, +dv, bad) = acc
+      +f = O.UOp.new(ar, O.OpsRANGE{}, M.mp_srcs(ar, r), O.ARange{[i], rf_axis(ar, r)}, rf_no_tag())
+      sk_rg.go(t, U32.add(i, 1), (O.Found.ar(f), Map.set(&2, U32, dv, U32.show(r), O.Found.i(f)), bad))
+
+# `ret.sink(arg=KernelInfo()).call(*lctx.map.values())` -- rangeify.py:335. `UOp.sink` here
+# takes no arg, so the SINK is minted: its arg IS the `KernelInfo` that `to_program` reads,
+# and the CALL's srcs are the ORIGINAL buffers (the shadows), not the `debuf`'d PARAMs the
+# body now reads.
+def sk_build(+ar: O.Arena, +body: U32, +bufs: List<&2, U32>) -> O.Found:
+  +sk = O.UOp.new(ar, O.OpsSINK{}, [body], O.AKernel{O.KernelInfo.of()}, O.TNone{})
+  O.UOp.new(O.Found.ar(sk), O.OpsCALL{}, List.concat(&2, U32, [[O.Found.i(sk)], bufs]), O.ANone{}, O.TNone{})
+
+def sk_out(p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>), +bufs: List<&2, U32>) -> M.Hop:
+  (ar, mi, dv) = p
+  match mi:
+    case Some{b}: M.mp_hit(sk_build(ar, b, bufs))
+    case None{} : M.Hop{ar, 0}
+
+def sk_bad2(bad2: Bool, +a1: O.Arena, +dv: Map<&2, U32>, +bs: List<&2, U32>, +self: U32) -> M.Hop:
+  match bad2:
+    case True{} : M.Hop{a1, 0}
+    case False{}: sk_out(CG.UOp.substitute(a1, self, dv), bs)
+
+# A destructure is legal only on a PARAMETER, so a helper carries each computed tuple.
+def sk_fin2(p: (O.Arena & Map<&2, U32> & Bool), +bs: List<&2, U32>, +self: U32) -> M.Hop:
+  (a1, dv, bad2) = p
+  sk_bad2(bad2, a1, dv, bs, self)
+
+def sk_bad(bad: Bool, +a0: O.Arena, +bs: List<&2, U32>, +rs: List<&2, U32>, +self: U32) -> M.Hop:
+  match bad:
+    case True{}: M.Hop{a0, 0}
+    case False{}: sk_fin2(sk_rg.go(rs, 0, sk_db.go(bs, 0, (a0, Map.new(&2, U32), False{}))), bs, self)
+
+def sk_fin(p: (O.Arena & List<&2, U32> & List<&2, U32> & List<&2, U32> & Bool), +self: U32) -> M.Hop:
+  (+a0, +bs, +rs, sn, bad) = p
+  sk_bad(bad, a0, bs, rs, self)
+
+def sk_go(open: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
+  match open:
+    case False{}: M.Hop{ar, 0}
+    case True{}: sk_fin(sk_walk(O.Arena.budget(ar), [self], (ar, Nil{}, Nil{}, Nil{}, False{})), self)
+
+# `split_store` -- rangeify.py:326-341. Five steps: the open-range gate, the local
+# `to_define_global` collection, the `debuf` substitution, the range renumbering, and the
+# CALL. Steps 2-4 are ONE `CG.UOp.substitute` here: buffers and ranges are both nodes and
+# the map is keyed by node, so one walk carries both.
+def sk_0(+ar: O.Arena, +self: U32) -> M.Hop: sk_go(sk_open(ar, self), ar, self)
 
 def sk_dispatch.go(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
   match tag:

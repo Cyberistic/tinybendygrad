@@ -267,12 +267,36 @@ def ku_c.ad.go(op: O.Op, +done: List<&2, C.KU>, k: C.KU) -> S.Addr:
     case O.OpsSHL{}: S.Aalu{}
     case _: C.KU.addr(k)
 
+# `Counter(v for ru in uops for v in ru.src)` -- cstyle.py:212, the CHILD COUNT that
+# `KU.cc` carries and `cc_at(k) == 1` reads to decide inlining. `eddc2ef5a` added the
+# field and this file was not in that commit: both `C.KU{...}` literals below had SEVEN
+# fields against eight, so `kuconv.bend` did not compile at all -- a renderer lane that
+# cannot build a KU list. This is the count, over the LINEARIZED list `ix`.
+def ku_c.has.go(+us: List<&2, U32>, +u: U32, hit: Bool) -> Bool:
+  match us:
+    case Nil{}: hit
+    case x <> t: ku_c.has.go(t, u, Bool.or(hit, U32.is_eq(x, u)))
+
+def ku_c.has(+us: List<&2, U32>, u: U32) -> Bool: ku_c.has.go(us, u, False{})
+
+def ku_c.inc(hit: Bool, acc: U32) -> U32:
+  match hit:
+    case True{} : U32.add(acc, 1)
+    case False{}: acc
+
+def ku_c.cc.go(+ar: O.Arena, +ix: List<&2, U32>, +u: U32, acc: U32) -> U32:
+  match ix:
+    case Nil{}: acc
+    case x <> t: ku_c.cc.go(ar, t, u, ku_c.inc(ku_c.has(O.Arena.srcs(ar, x), u), acc))
+
+def ku_c.cc(+ar: O.Arena, +ix: List<&2, U32>, u: U32) -> U32: ku_c.cc.go(ar, ix, u, 0)
+
 def ku_c.fill.of(+done: List<&2, C.KU>, +op: O.Op, +k: C.KU) -> C.KU:
   +dt = ku_c.dt.go(op, done, k)
   +sh = ku_c.sh.go(op, done, k)
   +ad = ku_c.ad.go(op, done, k)
   +nm = kuconv.numel(sh)
-  C.KU{op, dt, ad, nm, sh, C.KU.arg(k), C.KU.srcs(k)}
+  C.KU{op, dt, ad, nm, sh, C.KU.arg(k), C.KU.srcs(k), C.KU.cc(k)}
 
 def ku_c.fill(+done: List<&2, C.KU>, +k: C.KU) -> C.KU:
   Bool.pick(C.KU, ku_c.refused(C.KU.op(k), k), ku_c.fill.of(done, C.KU.op(k), k), k)
@@ -294,7 +318,8 @@ def kuconv.ku(+fx: F.Folded, +ix: List<&2, U32>, +a: U32) -> C.KU:
   +nm = kuconv.numel(sh)
   +ag = kuconv.arg(ar, fx, a, nm, dt)
   +ss = kuconv.srcs(ix, O.Arena.srcs(ar, a))
-  C.KU{op, dt, ad, nm, sh, ag, ss}
+  +cc = ku_c.cc(ar, ix, a)
+  C.KU{op, dt, ad, nm, sh, ag, ss, cc}
 
 def kuconv.convert.go(+fx: F.Folded, +ix: List<&2, U32>, xs: List<&2, U32>,
                        +acc: List<&2, C.KU>) -> List<&2, C.KU>:
