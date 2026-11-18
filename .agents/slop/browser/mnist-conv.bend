@@ -405,6 +405,42 @@ def cv_lk() -> String:
   String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
     String.join(cv_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
 
+# THE SPATIAL STACK OF THE FORWARD PASS, AS ONE KERNEL: conv2x2 -> ReLU -> max_pool2x2.
+# (1,1,28,28) -conv-> (1,1,14,14) -relu-> (1,1,14,14) -pool-> (1,1,7,7) = 49 elements.
+# `T.tn_relu` is the port's own (tensor.bend:508), i.e. `maximum(t, 0)`, which is the ALU MAX
+# the late table rewrites into CMPLT+WHERE.
+def fw_prog() -> RZ.RZProg:
+  +dst = RZ.rz_input(O.Arena.empty(), 0, 49, [1, 1, 7, 7])
+  +x = RZ.rz_input(T.Tensor.ar(dst), 1, 784, [1, 1, 28, 28])
+  +w = RZ.rz_input(T.Tensor.ar(x), 2, 4, [1, 1, 2, 2])
+  +aft = RZ.rz_after(dst, cn_pool(T.tn_relu(cn_conv(x, w))))
+  +snk = RZ.rz_sink(O.Found.ar(aft), O.Found.i(aft))
+  RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
+
+def fw_c() -> String:
+  +q = RZ.rz_rebuild(fw_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  DEV.Prog.src(DEV.compile_sink(O.Found.ar(kg), O.Found.i(kg)))
+
+def fw_kg() -> String:
+  +q = RZ.rz_rebuild(fw_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  RR.rr_dump(O.Found.ar(kg), O.Found.i(kg))
+
+def fw_lk.go(+ar: O.Arena, +xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: fw_lk.go(ar, t, List.append(&2, String, acc,
+      [String.concat([RF.eng_op_name(O.Arena.op(ar, x)), ">", RF.eng_op_name(O.Arena.op(ar, SCH.sc_src0(ar, x)))])]))
+
+def fw_lk() -> String:
+  +q = RZ.rz_rebuild(fw_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ks = SCH.lin_kernels(lin)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
+    String.join(fw_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -425,6 +461,9 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["st2=", pc_stage(2)]))
     _ : Unit <- IO.print(String.concat(["st3=", pc_stage(3)]))
     _ : Unit <- IO.print(String.concat(["pool_low2=", pool_low2()]))
+    _ : Unit <- IO.print(String.concat(["fw_c=", fw_c()]))
+    _ : Unit <- IO.print(String.concat(["fw_lk=", fw_lk()]))
+    _ : Unit <- IO.print(String.concat(["fw_kg=", fw_kg()]))
     _ : Unit <- IO.print(String.concat(["conv_kg=", cv_kg()]))
     _ : Unit <- IO.print(String.concat(["conv_lk=", cv_lk()]))
     _ : Unit <- IO.print(String.concat(["pool_ku=", pool_ku()]))
