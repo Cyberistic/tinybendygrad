@@ -1,5 +1,5 @@
 <!-- FROM: tinybendygrad/runtime/ops_nvme.bend:685 -->
-
+# BLOCK:
 # THE GATE MOVED TO `gates/ops_nvme-gate.bend`.
 #
 # The rows are claims about upstream's arithmetic and every expectation is
@@ -70,3 +70,4 @@
 # and what the port cannot claim: that any of this has run against a
 # drive. no row in this file is a hardware result, and NONE is claimed to
 # be. every row is arithmetic, and every row is compared against CPYTHON.
+# END BLOCK

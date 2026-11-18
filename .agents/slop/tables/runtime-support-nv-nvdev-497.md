@@ -1,5 +1,5 @@
 <!-- FROM: tinybendygrad/runtime/support/nv/nvdev.bend:497 -->
-
+# BLOCK:
 # :58 `(self.entry(entry_id) & 1 == 1) if self.lv < level_cnt - 1 else True`.
 # The `else True` is not a default: at and above the top level EVERY entry is a
 # page, and getting the comparison the wrong way round makes the top level a
@@ -12,3 +12,4 @@
 # a claim about the device rather than a port of the predicate. The word is a
 # parameter of `nv.pte_ispage` now, and the gate passes both 0 and 1 so the branch
 # is exercised in BOTH directions.
+# END BLOCK
