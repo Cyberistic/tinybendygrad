@@ -109,6 +109,64 @@ upstream-comments [######....] 6/10      **UPSTREAM'S **COMMENTS **PORTED**, **�
                                          **PRE-EXISTING **`nn/onnx.bend` **CITATIONS**, **⇒⇒† AND **THE
                                          **STALE **`Defines` **QUOTE **IN **`uop/spec.bend`**, **⇒⇒† AND **THE
                                          **`tn_bitwise_not.bend:40`** **POINTER.**
+table-files     [##########] 10/10    **THE **TABLES **LEAVE **THE **COMMENT **BLOCKS.** **⇒⇒† AND
+                                         **A **TABLE **IS **DATA**, **⇒⇒† AND **DATA **IN **A
+                                         **COMMENT **BLOCK **IS **A **FILE **IN **THE **WRONG
+                                         **PLACE**. **⇒⇒† AND **THE **POPULATION **IS
+                                         **DISCOVERED** -- **THE **WALK **OF
+                                         **`.agents/slop/comments/table-census.py`**, **⇒⇒† AND
+                                         **AND **THE **CENSUS **IS **THE **INSTRUMENT**.
+                                         **⇒⇒† AND **MEASURED **IN **THE **SAME **WORKTREE**:
+                                         **114 **BLOCKS **/ **7,313 **LINES **BEFORE**, **⇒⇒† AND
+                                         **45 **BLOCKS **/ **4,400 **LINES **AFTER**, **⇒⇒† AND
+                                         **THE **NON-HEADER **BLOCKS **GO **82 **/ **3,647
+                                         **LINES **⇒⇒† AND **0 **/ **0**, **⇒⇒† AND **AND
+                                         **ZERO **TABLE-LIKE **BLOCK **IS **LEFT **IN **THE
+                                         **TREE**. **⇒⇒† AND **THE **TWO **SHAPES**: **A
+                                         **PIPE-ROW **TABLE **⇒⇒† AND **A **`.rows` **FILE**
+                                         **(8 **OF **THEM**, **WITH **THE **PIPES, **THE
+                                         **HEADER **ROW **AND **THE **SEPARATOR **ROW**)**;
+                                         **⇒⇒† AND **EVERYTHING **ELSE **⇒⇒† AND **A **`.md`
+                                         **FILE** **(64 **OF **THEM**)**. **⇒⇒† AND **EVERY
+                                         **MOVED **FILE **CARRIES **ITS **ORIGIN** -- **AND **A
+                                         **`.rows` **FILE **ALSO **CARRIES **A **`# BLOCK:`
+                                         **SECTION**, **⇒⇒† AND **BECAUSE **IT **HOLDS **ONLY
+                                         **THE **TABLE**, **⇒⇒† AND **WITHOUT **THE **SECTION
+                                         **THE **TABLE's **PROVENANCE **WOULD **BE **LOST**.
+                                         **⇒⇒† AND **THE **SOURCE **KEPS **A **ONE-LINE
+                                         **POINTER **THAT **CARRIES **THE **TABLE's **OWN
+                                         **TITLE**. **⇒⇒† AND **THE **CORPUS **IS **GREEN**
+                                         **AT **`c471ae128`**: **38 **graphs **/ **38 **agree
+                                         **/ **0 **disagree **/ **38 **byte-identical **/ **0
+                                         **refused**, **⇒⇒† AND **`plants-disagree=8 **of **8`**,
+                                         **⇒⇒† AND **`controls=5 **of **5`**, **⇒⇒† AND
+                                         **`substrate-start **== **substrate-end **==
+                                         **repro-substrate **== **`dbe12b26…`**, **⇒⇒† AND
+                                         **`REPRO: **339 **of **339 **files **identical`**, **⇒⇒† AND
+                                         **`gates/corpuswitness-gate.py` **⇒⇒† AND **`PASS **--
+                                         **the **claim **is **ESTABLISHED`**. **⇒⇒† AND **THE
+                                         **DIFF **IS **COMMENTS **ONLY**: **0 **NON-`#`
+                                         **LINES**. **⇒⇒† AND **THE **COMMIT **IS **NOT **THE
+                                         **WORKING **TREE** -- **`.agents/slop/tables/stage-mine.py`
+                                         **REBUILDS **EVERY **FILE **FROM **`HEAD`** **AND
+                                         **WRITES **THE **RESULT **INTO **THE **INDEX**
+                                         **(`git update-index --cacheinfo`)**, **⇒⇒† AND **SO
+                                         **ANOTHER **UNIT's **WORK **IS **NOT **CARRIED**.
+                                         **⇒⇒† AND **THE **BLOCK **MATCH **IS **EXACT **AND
+                                         **A **NON-UNIQUE **MATCH **IS **A **REFUSAL**.
+                                         **⇒⇒† AND **`runtime/ops_cpu.bend` **PRINTS
+                                         **`SOME **PROOFS **FAIL`**, **⇒⇒† AND **IT **PRINTS
+                                         **THE **SAME **AT **`HEAD`** -- **THE **`@extern`
+                                         **`Cpu.compile`/`Cpu.exec`**, **⇒⇒† AND **NOT **THIS
+                                         **CUT**. **⇒⇒† AND **THE **TREE's **OWN
+                                         **`checks/no-txt.py` **IS **rc=0**, **⇒⇒† AND **THIS
+                                         **CUT **ADDED **NO **`.txt`**. **⇒⇒† AND **THE
+                                         **INSTRUMENTS**: **`.agents/slop/tables/analyze.py`**,
+                                         **`.agents/slop/tables/move-tables.py`**,
+                                         **`.agents/slop/tables/stage-mine.py`**,
+                                         **`.agents/slop/tables/repair-blocks.py`**,
+                                         **`.agents/slop/tables/check-foreign.py`**,
+                                         **`.agents/slop/tables/verify-bends.py`**.
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
 backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
                                         `mixin/gradient.bend`. **15/15 rows AGREE with
