@@ -1,20 +1,7 @@
 # upat.bend -- tinygrad/uop/upat.py.
-#
 # WHAT THIS FILE IS. ops.bend builds the arena; this file is the COMPILER that
-# turns a `UPat` into source text, and ops.bend's NOT PORTED block already names
-# it: "the COMPILER is a separate file whose output is a def per rule, so the
-# machinery here dispatches a tag rather than calling a compiled function
-# pointer". The pipeline is three steps and no more:
-#
 #     UPat --_get_clause--> a predicate tree --do_process_and--> normalised
-#         --pm_renderer--> a string tree     --_final_render--> Python source
-#
 # #  UPat compiled 
-# # This file builds an IR of match predicates and compiles them to Python source.
-# # Ops used: CUSTOM (format-string predicate over operands), CUSTOMI (inline string fragment),
-# #           STORE (bind a matched UOp to a name), PYLITERAL (Python literal for CUSTOM operands),
-# #           AND/OR (clause combininers).
-#
 # the predicate tree is a tree, not an arena. Python builds the ir out of
 # `UOp(...)`, so it lands in the same `ucache` as the graph and two equal
 # subtrees are ONE object -- which is what `dedup` and the duplicate-store test
@@ -26,78 +13,14 @@
 # literal twice, `dup` emitted `k` where Python emits `dict_stores[k]`, and
 # `do_process_and` never read `Ds.out` at all. A permutation `src`
 # (`itertools.permutations`, ops.py:1461) visits the same sub-pattern once per
-# alternative and is the case that made the numbering visible; the fuel below
-# bounds the visit count. The clause IR is finite and acyclic by construction, so
-# nothing here needs the arena's index-into-a-store.
-#
 # THE `(bool, dict)` BECOMES A `String`. `upat_compile` returns a Python closure
-# built by `exec`ing the string this file renders. Bend has no `exec`, no `eval`
-# and no way to build a function value, so the honest terminal value is the
-# SOURCE, and the two consumers of the dict become parts of that string. So:
-#
 #   * `ctx` (the `dyn_lookup` dict) is a `List<&2, Bind>` THREADED through the
-#     renderer. It is not a field of a record: a dict is mutable, a Bend list is
-#     affine and has one owner, and a mutation is a new list. This is the second
-#     store ops.bend's header predicts, and it travels as a parameter beside
-#     the tree, not inside it.
-#   * `_get_code`'s `(str, dict)` is a `Code` record and not a pair, because a
-#     pair is a `Type` and every reader of one has to match a computed value --
-#     which is the whole reason ops.bend's `Found` is a two-field record.
-#   * `upat_compile` therefore returns the `Code` and `exec` is the WALL. The
-#     phase that owns it is P3 with the rewrite engine, because a compiled rule
-#     is a function value and rules become top-level defs.
-#
 # `# exec` IS THE ONE OMISSION and it is the LAST step, so everything this file
-# knows is still checked: `_get_code` returns exactly the string Python builds
-# and `main` prints rows built from it.
-#
 # A PYTHON `raise` BECOMES A NODE, uniformly, and it is one node: `marker()`.
-# `_final_render`'s `else` arm refuses anything that is not OR, STORE or
-# CUSTOMI, and a CONST is none of those, so a `UPatCompileError` and a fuel
-# exhaustion are both "a CONST where a predicate belongs". `start_ss` therefore
-# KEEPS a node that is not an AND instead of dropping it -- the port's `assert
-# x.op is AND` -- and `rend.go`'s `case _` sets `bad`, which is the port's
-# `raise`. The answer is then `None`, which is what `_get_code`'s `except`
-# returns, and a truncated clause is IMPOSSIBLE, because the marker rides the
-# same path as a real predicate. `bool` flags are the other option and they are
-# worse: `found` is read in five places in `do_process_and` and a `Bool` in the
-# accumulator would be threaded through all of them for a failure the tree can
-# carry.
-#
 # THE FUEL is one unit per step and it is a BOUND, not an exact count: every
-# `case 0n:` below yields `marker()`, so too small a fuel is a MISSED compile and
-# never a wrong one. The bound is `8 * len(pat.upats)`: `__init__` builds a
-# UPat's children before the UPat, so the pattern is a tree, a UPat contributes
-# at most six predicate nodes of its own plus its `src`, and `_get_clause` visits
-# a UPat once per alternative naming it -- which `itertools.permutations` can
-# double, and ops.bend already records `permutations` at arity >= 3 as not
-# ported. Four walks need it and no others do: `_get_clause` and `proc_fix`
-# recurse on a pattern-arena INDEX or on a fuel of their own, and `flatands`,
-# `wrap` and `rend.go` recurse on a field or a list tail.
-#
 # `pm_proc` IS A FIXPOINT AND THAT IS LOAD-BEARING. `do_process_and` splices ONE
-# level of AND per application, so `AND[C, C, AND(OR..) x4]` needs a second
-# round before `len(or_clause) >= 4` can see four ORs -- which is the only way
-# `too big to compile` is reachable at all, and the row `too_big` in `main` is
-# the proof. Measured against CPython, not guessed.
-#
 # THREE BEND RULES SHAPED THE SHAPE. (1) No mutual recursion: `A` may not call
-# `B` if `B` calls `A`, whatever the order, and the error is the very unhelpful
-# "an unfilled definition". So each recursive descent here is ONE self-recursive
-# def -- `get_clause.go` for the clause walk, `rend.go` for the render, `proc`
-# for the rewrite -- and every helper it needs is a leaf. (2) A self-call must
-# be DECREASING, read left to right: the arguments before the one that shrinks
-# are passed unchanged, so the `Nat` fuel is the FIRST parameter of every
-# self-recursive def here, and an arm that needs the old fuel twice writes
-# `+z: Nat = q` and calls itself with `z`. (3) A `match` kills every name bound
-# earlier in the same body -- parameters AND pattern binders -- so the flags a
-# def dispatches on are read in one order and never re-read after another
-# `match`. `rend.go`'s `br` is inside all four op arms for exactly that reason.
-#
 # WHERE THE ORDER MOVED. Bend has no forward references, so the field readers
-# and the equality helpers come first, then the three passes in Python's order.
-# The straight line of `if`s in `_get_clause` is spelled as one `Bool` match
-# per check, because a `Bool` match IS the whole of an `if` here.
 
 import Base
 import ./../helpers.bend as H
@@ -112,21 +35,8 @@ type Lit is Data:
   LInt{n: U32}
 
 # The predicate IR. One constructor, because the renderer's rules are keyed on
-# the op and the op IS the discriminant; a variant per op would be eight
-# constructors the `match` below could not collapse.
-#
 # `lit` is Python's `arg`, and the two things Python puts there are a STRING
-# (CUSTOM's format, CUSTOMI's text) and a PYTHON LITERAL (PYLITERAL, CONST's
-# `val`). `LOps`/`LDt` hold a LIST because Python's payload is a tuple
-# of length one or a `frozenset`, and `len(self.op) > 1` is the test that
-# chooses between them -- so the length is the same information Python has.
-#
 # THERE IS NO `LTag`. Upstream deleted the tag clause -- `35dab0a35` "no upat
-# tag" (#18889) removed `UPat.match_tag` from `__slots__`, `__init__`,
-# `__reduce__`, `named` and `match`, and removed the clause from `_get_clause`
-# would be a constructor nothing can build.
-# `C{op, lit, ss}` is `UOp(Ops.X, src=..., arg=...)`. The tag is `None` on every
-# node this file builds and no rule here reads it, so it is not a field.
 
 type C is Data:
   C{op: O.Op, lit: Lit, ss: List<&2, C>}
@@ -137,20 +47,18 @@ type C is Data:
 
 type Bind is Data:
   Bind{name: String, lit: Lit}
-# `_get_code`'s pair.
 
 type Code is Data:
   Code{s: String, dyn: List<&2, Bind>}
-# `x.arg[0]`: the format string of a CUSTOM and the text of a CUSTOMI, and the
-# only `arg` read anywhere in the file. `Maybe` because `LNone` has no text.
+# `x.arg[0]`: the format string of a CUSTOM and the text of a CUSTOMI, and the only `arg`
+# read anywhere in the file. `Maybe` because `LNone` has no text.
 
 def lit.text(l: Lit) -> Maybe<&2, String>:
   match l:
     case LText{s}: Some{s}
     case _ : None{}
-# `text_of`, and CONST's `.val`, which `_get_clause` writes as an int and the
-# INDEX rule reads back.
-# `y.arg[0]` for a src, the text of a CUSTOMI
+# `text_of`, and CONST's `.val`, which `_get_clause` writes as an int and the INDEX rule
+# reads back.
 
 def text_of(m: Maybe<&2, String>) -> String:
   match m:
@@ -178,8 +86,6 @@ def Bind.name(b: Bind) -> String:
 def Bind.lit(b: Bind) -> Lit:
   match b:
     case Bind{name, lit}: lit
-# A one-element `List`, which is what `self.op[0]` and `self.match_dtype[0]`
-# are: the head of a list Python already knows has one element.
 
 def head1(ys: List<&2, U32>) -> Maybe<&2, U32>:
   match ys:
@@ -188,26 +94,12 @@ def head1(ys: List<&2, U32>) -> Maybe<&2, U32>:
       match t:
         case Nil{}: Some{y}
         case _ <> _: None{}
-# The marker, and the ONE `raise` channel. See the header.
 
 def marker() -> C:
   C{O.OpsCONST{}, LInt{0}, Nil{}}
 
 # `ret = _get_clause(self, UOp(Ops.CUSTOMI, arg=("uop", dtypes.void)))`
-# `32 * len(pat.upats)`: the header's bound. A BOUND, not a count, and every
-# `case 0n:` is `marker()`, so too small a fuel is a missed compile.
-#
 # the constant is 32 and not 8 because `proc_fix` is a waitlist, not a depth.
-# `unified_rewrite` resolves a node's srcs before the node runs, so a round
-# promotes ONE more level of the whole tree and a store that moves into a branch
-# re-triggers everything above it. Measured on the shape that needs the most --
-# four arena UPats and an AND spine seven deep, `upatfuzz --seeds 158
-# --max-depth 5` seed 157 -- the fixpoint is 33 to 48 rounds, i.e. nine to
-# twelve rounds per UPat, so `8n` was short by four rounds and the port answered
-# `NONE` where CPython answered a whole clause. `12n` is the smallest multiplier
-# that reaches it; 32n is 2.5x that, and over-provisioning a bound costs rounds
-# and nothing else. Nothing here is a COUNT of rounds: it is fuel, and a round
-# that changes nothing ends the loop.
 
 def fuel(pat: O.Pat) -> Nat:
   Nat.mul(List.length(&2, O.UPat, O.Pat.upats(pat)), 32n)
@@ -215,8 +107,6 @@ def fuel(pat: O.Pat) -> Nat:
 def base_clause() -> C:
   C{O.OpsCUSTOMI{}, LText{"uop"}, Nil{}}
 
-# the one-element read, which is what a `List<&2, C>` fold over a single node
-# answers and what the wrap pass hands back: the tree, not a group list
 
 def head1c(gs: List<&2, C>) -> C:
   match gs:
@@ -224,33 +114,10 @@ def head1c(gs: List<&2, C>) -> C:
     case c <> _: c
 
 # `==` on a literal, which is what `dedup` and the duplicate-store test ask.
-# Python gets it from `ucache` (two equal nodes are one object and `UOp.__eq__`
-# is identity); here it is spelled out.
-#
 # the dedup key is the `arg`, and the `arg` of a multi-element op/dtype is a
 # `frozenset` -- upat.py:25 and 36 both build `UOp(Ops.PYLITERAL,
-# arg=frozenset(...))`. So the equality is SET equality and must be spelled as
-# such. Three facts, each measured, and they are why:
-#
 #   * `wrap` (upat.py:121-126) is a `graph_rewrite` RULE, and a rule runs at most
-#     once per UOp object: `unified_rewrite` is `if n in self.replace: continue`
-#     (ops.py:1815), and ops.py:1774 says so in a comment. So one `a{n}` per
-#     distinct PYLITERAL OBJECT -- and NOT per occurrence, and NOT per clause.
-#   * the `ctx` it fills is one `dyn_lookup` for the whole compile
-#     (upat.py:168-169) and the number is `len(ctx)` at first visit, so the scope
-#     is global and the numbering is first-visit order.
-#   * UOps are HASH-CONSED on `(op, src, arg, tag, type(arg))` (ops.py:200;
-#     ops.py:228-233: "structurally identical UOps are the same object and
-#     equality can be identity"), and a PYLITERAL has `src=()` and `tag=None`, so
-#     "same object" is exactly "same `arg` under Python's `==`".
-#
 # VALUE-KEYED IS THEREFORE RIGHT and node-keyed would be the same answer; what was
-# wrong is the `==`. Order-sensitive list equality read `('B','A')` and
-# `('A','B')` as two nodes, so a set filter reached by two clause branches
-# got one `a{n}` in CPython and a fresh one per path here (upatfuzz seed 50,
-# `--max-depth 8`: `uop.op in a2` against `uop.op in a7`). Both directions,
-# because a `frozenset` drops a repeated element and the tuple it came from does
-# not: `has_ops(x, y) and has_ops(y, x)`, never a length test.
 
 def has_ops(+xs: List<&2, O.Op>, +ys: List<&2, O.Op>) -> Bool:
   match xs:
@@ -272,10 +139,6 @@ def eq_lit(a: Lit, b: Lit) -> Bool:
     case LInt{x} LInt{n}: U32.is_eq(x, n)
     case _ _: False{}
 # `==` on a node. The two-list fold IS the recursion and there is NO fuel: a
-# `Data` node's own field is a subterm of a list of that type, so `eq_csl(ss, ..)`
-# descends on `ss` -- a FIELD of the head binder of `xs` -- exactly as the tail
-# does. `dedup` and `substitute` get this for free and `_get_clause` cannot,
-# because its children are indices into the pattern arena.
 
 def eq_csl(+xs: List<&2, C>, +ys: List<&2, C>, acc: Bool) -> Bool:
   match xs:
@@ -293,15 +156,7 @@ def eq_c(x: C, y: C) -> Bool:
   eq_csl([x], [y], True{})
 
 # flatands -- upat.py:12. `[x] if x.op is not AND else [y for s in x.src for y
-# in flatands(s)]`, the top level of a tree walk, and the ONE walk in this file
-# whose ORDER matters (it is the order the stores and preds are emitted in).
-#
 # The walk and the per-node dispatch are ONE def: a fold whose per-element work
-# is the recursive function cannot be split from it, because that is mutual
-# recursion. The `Maybe` is the walk's mode -- `Some` is "start at this node",
-# `None` is "continue over the pending children" -- and the node's children
-# become the pending list, so there is one pending list and no flag to disagree
-# with it.
 
 def flatands.go(f: Nat, t: Maybe<&2, C>, +rest: List<&2, C>, acc: List<&2, C>) -> List<&2, C>:
   match f:
@@ -326,10 +181,6 @@ def flatands(t: C, f: Nat) -> List<&2, C>:
   flatands.go(f, Some{t}, Nil{}, Nil{})
 
 # substitute -- ops.py:532 `UOp.substitute`, the one call in this file, in
-# `{it: base.index(0)}`: every node equal to `it` becomes the replacement, the
-# rest is rebuilt. `ops.py:532` is NOT PORTED as a UOp method (it is a
-# `graph_rewrite` with `_substitute`); this is the same rewrite over the clause
-# tree, and it is the ONLY reason the clause tree needs a top-down map.
 
 def substitute.put(hit: Bool, op: O.Op, lit: Lit, ss: List<&2, C>, rep: C) -> C:
   match hit:
@@ -340,13 +191,6 @@ def substitute.go(+ss: List<&2, C>, +it: C, +rep: C) -> List<&2, C>:
   match ss:
     case Nil{}: Nil{}
     # THE HEAD GOES FIRST. `List.append(a, b)` is `a ++ b`, so this line is
-    # `[node] ++ tail` and NOT `tail ++ [node]`: a two-element src list COMES BACK
-    # SWAPPED otherwise, and `INDEX(CUSTOMI, CONST)` is two elements. That is
-    # invisible until the repeat arm lifts a store whose value is an INDEX --
-    # i.e. until the repeat's CHILD has a src of its own -- and then `render`'s
-    # `idx` rule sees a CONST first, keeps the INDEX, `all_ci` fails on the
-    # `AND(pred)` inside `all([...])`, `rend.go` sets `bad` and `_get_code`
-    # answers None. `render.go` below spells the same fold the right way round.
     case C{op, lit, k} <> t:
       a = substitute.go(t, it, rep)
       b = substitute.go(k, it, rep)
@@ -386,7 +230,6 @@ def op_clause.of(ops: Maybe<&2, List<&2, O.Op>>, base: C) -> List<&2, C>:
 # `AFloat` is a float, so none of the eighteen is a Python `int`. The port reads
 # a ONE-ELEMENT `ATuple` as the int -- it is the only shape that is a bare
 # scalar, it is what `coalesce.py:105`'s `UPat(arg=4)` is, and it is disjoint
-# from the multi-element tuple the other arm renders as a literal. P3 with `Arg`.
 
 def arg_int(a: O.Arg) -> Maybe<&2, U32>:
   match a:
@@ -399,14 +242,6 @@ def arg_int(a: O.Arg) -> Maybe<&2, U32>:
     # False upstream (measured), so this arm is what the constructor forces -- not a tidy-up.
     case O.ACustom{_}: None{}
     # `AOpLit` is the UNPAIRED `Op` -- the port's spelling of `upat.py:26`'s
-    # `UOp(Ops.PYLITERAL, arg=self.op[0])`. `isinstance(Ops.ADD, int)` is False
-    # upstream, so this arm answers `None` for the same reason `ACustom` does.
-    # It was MISSING here, and the missing arm is not a warning: `ops.bend`'s
-    # `Arg` gained the constructor and this file's closed match did not, so
-    # `bend --check-only` refused the whole file with "expected : cases for
-    # ops.AOpLit" (measured 2026-10-20T16:16Z, rc=1). The other two closed `Arg`
-    # matches -- `ops.bend`'s `eq_arg.sel` and `render.bend`'s `arg_repr` --
-    # already had it.
     case O.AOpLit{_}: None{}
     case O.AKernel{_}: None{}
     case O.AProgram{_}: None{}
@@ -415,10 +250,6 @@ def arg_int(a: O.Arg) -> Maybe<&2, U32>:
     case O.AWmma{_, _, _, _}: None{}
     case O.ATuple{ys}: head1(ys)
     # A `tuple[bool, ...]` is not an `int` in CPython either, so this is `None`
-    # upstream's `isinstance(arg, int)` already answers. It is spelled because
-    # `arg_int` is one of the three CLOSED `Arg` matches (ops.bend `eq_arg.sel`,
-    # render.bend `arg_repr`, this), and a match that names every OTHER constructor
-    # is a 22-line claim that `ABoolList` does not exist.
     case O.ABoolList{_}: None{}
     case O.AStr{_}: None{}
     case O.AInk{_, _}: None{}
@@ -452,13 +283,11 @@ def len_clause.of(want: Bool, strict: Bool, req: U32, base: C) -> List<&2, C>:
     case True{}: [C{O.OpsCUSTOM{},
       LText{String.concat(["len({0}.src)", len_clause.mid(strict), U32.show(req)])}, [base]}]
     case False{}: Nil{}
-# `UOp(Ops.STORE, src=(UOp(Ops.CUSTOMI, arg=(self.name, dtypes.void)), base))`
 
 def name_clause.of(n: Maybe<&2, String>, base: C) -> List<&2, C>:
   match n:
     case Some{s}: [C{O.OpsSTORE{}, LNone{}, [C{O.OpsCUSTOMI{}, LText{s}, Nil{}}, base]}]
     case None{}: Nil{}
-# `"{0}.dtype in {1}"` / `"{0}.dtype is {1}"`
 
 def dt_clause.pick(two: Bool, ys: List<&2, S.Dt>, base: C, many: String, one: String) -> List<&2, C>:
   match two:
@@ -469,7 +298,6 @@ def dt_clause.of(md: Maybe<&2, List<&2, S.Dt>>, base: C) -> List<&2, C>:
   match md:
     case Some{+ys}: dt_clause.pick(ge2(List.length(&2, S.Dt, ys)), ys, base, "{0}.dtype in {1}", "{0}.dtype is {1}")
     case None{}: Nil{}
-# the six `if`s, in Python's order
 
 def pieces(u: O.UPat, +base: C) -> List<&2, C>:
   match u:
@@ -478,37 +306,18 @@ def pieces(u: O.UPat, +base: C) -> List<&2, C>:
         len_clause.of(Bool.or(strict, U32.is_gt(req, 0)), strict, req, base),
         name_clause.of(name, base),
         dt_clause.of(md, base)])
-# `base.index(i)`: an INDEX over the base and a CONST carrying the index. The
-# CONST's dtype is `dtypes.from_py(i)` and no rule here reads it.
+# `base.index(i)`: an INDEX over the base and a CONST carrying the index. The CONST's dtype
+# is `dtypes.from_py(i)` and no rule here reads it.
 
 def base_index(base: C, k: U32) -> C:
   C{O.OpsINDEX{}, LNone{}, [base, C{O.OpsCONST{}, LInt{k}, Nil{}}]}
-# `it = UOp(Ops.CUSTOMI, arg=(f"ituop{depth}", dtypes.void))`
 
 def it(depth: U32) -> C:
   C{O.OpsCUSTOMI{}, LText{String.concat(["ituop", U32.show(depth)])}, Nil{}}
 
 # The src arm, and the fold that carries it.
-#
-# `Groups` is `List<&2, List<&2, C>>`: one group per ALTERNATIVE, and a group is
-# that alternative's predicate pieces. The three src arms differ only in how they
-# fill it, and the assembly at the end is the only place that knows which:
-#   * one fixed alternative, not `is_any` -- the children's pieces are APPENDED
-#     to the node's own seven, so a group per child and a group per alternative
-#     give the same AND.
-#   * one fixed alternative, `is_any` -- `AND(OR(child for child in children))`,
-#     so each child is its own group and its own AND.
-#   * more than one alternative (the `permutations` path) -- the OR's children
-#     are ANDs of one alternative each, so a group per alternative.
-# So `ys` and `alts` never both have to be live, and which one is live is `rep`
-# and `forked` at the base case.
-#
-# The FUEL is here and nowhere else in the file, because a child's UPat is an
-# INDEX into the pattern arena, and `ys_of(child)` is a computed value: there is
-# no field to descend on. The walk, the per-child build and the alternative walk
-# are therefore ONE def -- splitting them is mutual recursion, which is refused.
-# `nested` is the fork's inner walk: it returns its groups without assembling a
-# node, because the OR wants the pieces and not an AND.
+# `Groups` is `List<&2, List<&2, C>>`: one group per ALTERNATIVE, and a group is that
+# The FUEL is here and nowhere else in the file, because a child's UPat is an INDEX into the
 
 def nth.of(hit: Maybe<&2, O.UPat>) -> O.UPat:
   match hit:
@@ -544,31 +353,13 @@ def alts_of(u: O.UPat) -> List<&2, O.UpAlt>:
   O.UPat.src(u)
 
 # _get_clause -- upat.py:15. `UPat` -> the predicate tree.
-#
 # THE AND CLAUSE IS THE ACCEPTANCE TEST. upat.py:21 -- the clause collects
-# every predicate the pattern must satisfy; the port keeps that order.
-#
 # THE `and_clause` CLAUSES ARE DEFS HERE, because a `Bool` match IS an `if` and
-# there is no other spelling. Each returns an empty list or a one-element list,
-# and `pieces` concatenates them in Python's order: op, arg, len, name, dtype.
-# FIVE of them, and FIVE is what upstream master has.
-#
 # THE SIXTH IS GONE, and it was the tag clause: upstream deleted it --
 # `35dab0a35` "no upat tag" (#18889) removed `UPat.match_tag` and the
 # `"{0}.tag in {1}"` / `"{0}.tag == {1}"` arms from `_get_clause`. Upstream's
 # `_get_clause` therefore lost one `if` of its EIGHT -- MEASURED, the count of
-# top-level `if`s is 8 at the pin `78d482262` and 7 at
-# `refs/remotes/upstream/master` -- and its seven are `is_any`, `op`, `arg`,
-# `len`, `name`, `dtype` and `src`. `is_any` and `src` are the src arm's
-# business here and are not clauses.
-#
 # A PYLITERAL always carries the WHOLE list, never just its head: at length one
-# `LOps{ys}` and `LOps{[ys[0]]}` are the same value, so the singular arm costs
-# nothing to spell as the plural arm's list, and the only difference between the
-# two forms -- the FORMAT STRING -- is chosen by `ge2`.
-# `len(self.op) > 1`, the one test that picks a frozenset over a single value.
-# A `match` may not scrutinise `List.length(..)`, so the length is a parameter
-# and this is the whole of the test.
 
 def one_alt(alts: List<&2, O.UpAlt>) -> Bool:
   match alts:
@@ -584,11 +375,6 @@ type Rp is Data:
   Rp{pred: List<&2, C>, extra: List<&2, C>}
 
 # `assert len(self.src) == 1` and `raise RuntimeError("broken")`, the two ways
-# `_get_clause` can fail before it builds anything. NEITHER is reachable from the
-# ported constructors: ops.bend's `UPat.or_any` always wraps ONE tuple, and
-# `__init__` makes a `repeat` alternative only for a UPat `src`, which is never a
-# list. This is a guard on the DATATYPE, and it exists because `SrcArg` can
-# spell a shape `__init__` cannot build.
 
 def no_repeat(alts: List<&2, O.UpAlt>) -> Bool:
   match alts:
@@ -688,19 +474,8 @@ type Sp is Data:
   Sp{srcs: List<&2, C>, ors: List<&2, C>, flat: Bool}
 
 # The repeat arm -- `elif len(self.src) == 1 and isinstance(self.src[0],
-# itertools.repeat)`. It is the only src arm that does not concatenate, and the
-# one place a named bind inside a repeated pattern is lifted to the OUTER clause.
-# Python's comment is the reason, and it is the rule the whole arm exists for:
-#
 #   # lift named binds out of the repeat: they bind the first src, and every
-#   # element must be identical to it
-#
 # `it` is the loop variable `ituop{depth}`, `first0` is `base.index(0)`, and the
-# `all([...])` predicate's three operands are the predicate AND, the loop
-# variable and the base -- in that order, because that is the format string's.
-# `for st in stores:` -- `pred.append(CUSTOM(st.src[1], first, "{0} is {1}"))`
-# then `and_clause.append(STORE(st.src[0], first))`, so the identity compares the
-# ORIGINAL and the SUBSTITUTED and the store keeps the substituted.
 
 def loop.put(v: C, k: C, +f: C, +r: Rp) -> Rp:
   +idn: C = C{O.OpsCUSTOM{}, LText{"{0} is {1}"}, [v, f]}
@@ -799,11 +574,7 @@ def push.go(+xs: List<&2, C>, +stores: List<&2, C>, acc: List<&2, C>) -> List<&2
     case C{op, lit, k} <> t:
       push.go(t, stores, List.append(&2, C, acc, [C{op, lit, List.append(&2, C, k, stores)}]))
 # A DUPLICATE STORE IS AN IDENTITY CHECK. upat.py:101 -- the first store of a
-# name wins, and a later store of that name must bind the same value, so the
-# duplicate becomes `{0} is {1}` rather than silently rebinding it.
-#
 # `dict_stores`: the first STORE of a name wins, and a repeat of it becomes the
-# identity `CUSTOM(first, second, "{0} is {1}")` with `found = True`.
 
 type Ds is Data:
   Ds{ks: List<&2, C>, vs: List<&2, C>, out: List<&2, C>, dup: Bool}
@@ -916,11 +687,6 @@ def do_process_and.dup.of(ors: List<&2, C>, +d: Ds) -> Rec:
 def do_process_and.dup(ors: List<&2, C>, r: Rp) -> Rec:
   do_process_and.dup.of(ors, dup.go(Rp.extra(r), empty_ds()))
 # `if len(stores)`: the OR takes them, otherwise the duplicates become identities
-# `itertools.product(*[x.src for x in or_clause])`: the LAST list varies fastest,
-# `x.replace(src=x.src+tuple(stores))` for each alternative of the single OR.
-# The `assert all(x.op is AND ...)` is stated, not checked: `do_process_and` only
-# ever builds an OR of ANDs, and a repeat's `all([...])` is its own CUSTOM.
-# `itertools.product(*[x.src for x in or_clause])`, one AND per combination
 
 def map_and(+xs: List<&2, List<&2, C>>) -> List<&2, C>:
   match xs:
@@ -928,11 +694,6 @@ def map_and(+xs: List<&2, List<&2, C>>) -> List<&2, C>:
     case x <> t: List.append(&2, C, [and_one(x)], map_and(t))
 
 # The three ways a clause can end. `is_any` returns before the pieces exist and
-# wraps one OR of the alternatives; the fork keeps the pieces and appends ONE OR
-# of per-permutation ANDs; a single match keeps the pieces and appends the
-# children as the SIBLINGS Python's `and_clause +=` puts them in. The two OR
-# arms read the same shape -- `map_and` because a fork branch is the AND of a
-# whole permutation, `flat` because an `is_any` branch is a clause already.
 
 def get_clause.assemble(any: Bool, forked: Bool, +gs: List<&2, List<&2, C>>, ps: List<&2, C>) -> C:
   match any forked:
@@ -953,24 +714,12 @@ def get_clause.done(+u: O.UPat, +base: C, depth: U32, f: Nat, forked: Bool, nest
     case False{} False{}: [[get_clause.of(u, base, forked, gs)]]
     case False{} True{}: [[get_clause.rep(u, base, depth, f, gs)]]
 # `alts` is DECLARED BEFORE `ys` because the two `match`es below are in that
-# order, and a match on a later parameter makes every earlier name unmatchable
-# ("this name is a def or a consumed binder"). Measured, and the least obvious
-# rule in `.agents/slop/notes/bend2-constraints.md` #5: the def works if the two
-# parameters are swapped, with the body untouched.
-# `len(self.src) == 1` is a single match -- `is_any` included, and both are
-# `and_clause += [clause(s), ...]` with the children SIBLINGS, so the groups go
-# in as they are. Anything longer is the fork, whose OR branch is the AND of one
-# permutation's children, so the whole alternative is ONE group.
 
 def alt_group(one: Bool, +a: List<&2, List<&2, C>>) -> List<&2, List<&2, C>>:
   match one:
     case True{}: a
     case False{}: [List.concat(&2, C, a)]
 # `if len(or_clause) > 1: or_clause = [OR(...)]`
-# A CHILD'S GROUPS GO IN AS THEY ARE: `get_clause.done` already answered
-# `[[clause]]` -- one group holding the clause node Python would have put in
-# `and_clause` directly -- so re-wrapping it is what put a second AND level
-# under every `is_any` branch.
 
 def get_clause.go(f: Nat, +u: O.UPat, +pat: O.Pat, +base: C, +depth: U32, +k: U32, +alts: List<&2, O.UpAlt>, +ys: List<&2, U32>, +any: Bool, forked: Bool, +one: Bool, +nested: Bool, +rep: Bool, gs: List<&2, List<&2, C>>) -> List<&2, List<&2, C>>:
   match f:
@@ -1000,19 +749,8 @@ def get_clause(pat: O.Pat, +u: O.UPat, base: C, depth: U32, f: Nat) -> List<&2, 
     forked_of(O.UPat.src(u)), one_alt(O.UPat.src(u)), False{}, False{}, Nil{})
 
 # ONE OR CLAUSE MAX. upat.py:82 -- several OR clauses are replaced by the
-# product of their alternatives, so the generated matcher has one top-level OR.
-#
 # do_process_and -- upat.py:51. The `pm_proc` rule: one rewrite per AND node,
-# applied bottom up, which flattens the nested ANDs `_get_clause` builds and
-# hoists the stores above the OR. `found` is Python's flag and it is spelled as
-# the three Bools that produce it, OR'd once at the end, because a fold cannot
-# thread a flag it does not otherwise need.
-#
 # The pass is `pm_proc` plus `graph_rewrite(ret, pm_proc, bottom_up=True)`, and
-# `graph_rewrite` is a FIXPOINT, not one application per node -- see
-# `proc_fix` and the header. A nested AND is spliced one level per round, so a
-# node whose children are all ANDs is spliced again on the next one, and only
-# then does `len(or_clause) >= 4` see four ORs.
 
 def ors_of(two: Bool, ors: List<&2, C>) -> List<&2, C>:
   match two:
@@ -1030,12 +768,6 @@ def do_process_and.of5(+all: List<&2, C>, found: Bool) -> Maybe<&2, C>:
     U32.is_ne(U32.from_nat(List.length(&2, C, dedup.go(all, Nil{}))), U32.from_nat(List.length(&2, C, all)))))
 
 # `stores, new_src = partition(new_src, ...)` LEAVES the stores OUT of `new_src`,
-# so `pred` is `Rp.pred` and not the whole child list: keeping them and leaning on
-# `dedup` happens to agree while every store survives the round trip, and it stops
-# agreeing the moment a duplicate store drops one of them. `Ds.out` is
-# `new_src.append(CUSTOM(dict_stores[k], store.src[1], "{0} is {1}"))`, and it goes
-# between `pred` and `stores_of` because Python appends it inside the store loop
-# and the stores after it.
 def do_process_and.of4(ors: List<&2, C>, flat: Bool, found: Bool, pred: List<&2, C>, +r: Rec) -> Maybe<&2, C>:
   do_process_and.of5(List.concat(&2, C, [pred, Ds.out(Rec.d(r)),
     stores_of(Ds.ks(Rec.d(r)), Ds.vs(Rec.d(r)), Nil{}), Rec.ors(r)]),
@@ -1101,15 +833,8 @@ def W.d(x: W) -> List<&2, Bind>:
     case W{w, n, d}: d
 
 # `ctx[ret:=f"a{len(ctx)}"] = x.arg` and a CUSTOMI naming it. The value is a
-# `Lit` and not a Python object, because rendering a `Lit` back to Python source
-# is the P3 host's `repr`.
-#
 # A SECOND `a{n}` FOR AN EQUAL `Lit`, which is what a tree without sharing gives,
 # is WRONG: Python's `wrap` is a graph rewrite and `UOp(Ops.PYLITERAL, arg=x)` is
-# interned, so a literal that appears twice is ONE node and is wrapped once --
-# `UPat(Ops.ADD, src=UPat(Ops.ADD))` renders `a0` twice, not `a0` and `a1`, and
-# neither does the `itertools.permutations` fork, whose two branches name the same
-# sub-patterns. `Bind.lit` IS the `arg`, so `eq_lit` is the ucache key.
 
 def wrap.found(+bs: List<&2, Bind>, ans: Maybe<&2, String>, +lit: Lit) -> Maybe<&2, String>:
   match bs:
@@ -1147,10 +872,6 @@ def wrap.rebuild(x: C, +kids: List<&2, C>) -> C:
   wrap.rebuild.of(x, kids)
 
 # PRE-ORDER, so the node comes before its children, and the fuel is the same
-# `Nat` the rest of the file carries. The accumulator IS the child list: a
-# nested `wrap.go` over the node's own srcs answers the rebuilt children and
-# nothing else, which is why `wrap.rebuild` needs both and why the flat
-# accumulation of `proc.go` would NOT work here.
 
 def wrap.go(+f: Nat, +ss: List<&2, C>, n: U32, +d: List<&2, Bind>, acc: List<&2, C>) -> W:
   match f:
@@ -1287,15 +1008,7 @@ def rend.or(+r: Rend, +a: Rend, +has_ctx: Bool, depth: U32) -> Rend:
   rend.put(r, Rend{Nil{}, Nil{}, branch_lines(Rend.bad(a), a, has_ctx, depth), Rend.bad(a)})
 
 # `_final_render(ss, has_ctx, depth+1)` OPENS with `assert x.op is Ops.AND` and
-# then iterates `x.src`, so an OR branch is an AND and it is TRANSPARENT: the AND
-# arm below splices it, and a branch that is neither leaves `bad` set.
-#
 # `br` is the one thing Python's recursion and this fold disagree about -- Python
-# calls `_final_render` once per branch and a fold cannot recurse into a sibling,
-# so `br` says whether the list being walked is the pieces of ONE clause (`False`)
-# or the branches of an OR (`True`). It is read inside every arm rather than
-# before the `match op`, because a `match` kills every name bound earlier in the
-# same body -- measured, and the reason the two are not one dispatch.
 
 def rend.go(f: Nat, +ss: List<&2, C>, +r: Rend, +has_ctx: Bool, +depth: U32, +br: Bool) -> Rend:
   match f:
@@ -1475,30 +1188,11 @@ def proc.put(c: C, hit: Maybe<&2, C>) -> C:
     case None{}: c
 
 # THE WAITLIST. `unified_rewrite` runs a node's rule at ops.py:1852, and the
-# loop before it (ops.py:1843) is what makes the pass bottom-up-to-a-FIXPOINT
-# rather than bottom-up-one-round: a node whose src is not yet in `self.replace`
-# does not run, it registers in `waitlist` and is re-queued when the src
-# resolves, so the rule ALWAYS sees a node whose children are FINAL.
-#
 # The port's fold is a round, and a round is not enough, and the difference is
 # a store. `_get_clause` puts a bind's `STORE` above its children, so a fork one
 # level down has the OR *inside* an AND child: `do_process_and`'s own `for x in
 # a.src` (upat.py:76-81) splices an AND's children into `new_src` WITHOUT
-# reclassifying them, so the OR lands in `new_src`, `or_clause` is empty, and
-# the store takes the `else` at upat.py:100-111 -- the duplicate path -- instead
-# of the push at upat.py:95-99. The rebuilt node is re-queued, and on THAT
-# application the OR is a direct child, so the store is pushed into the branches
-# and the parent never sees it. A round-based fold runs the parent in the first
-# round and merges `[STORE(b), STORE(x)]` into one `dict_stores`, so `b` binds
-# first and the `x=uop` that CPython puts inside the branch is hoisted beside it.
-#
 # So a node whose children CHANGED in this round does not run its rule: it
-# returns its new children and says so, and its parent defers in turn. A node
-# runs on the first round in which its children did not change, which is exactly
-# when they are final, and it runs once. `Pg.ch` is that "did not change" bit
-# summed up the fold, and `proc_fix` stops on it -- the OLD test, "is the root
-# the same", is wrong now, because a deferred root is the same node while its
-# children are not.
 
 type Pg is Data:
   Pg{cs: List<&2, C>, ch: Bool}
@@ -1540,14 +1234,6 @@ def proc.go(+ss: List<&2, C>) -> Pg:
       proc.join(a, r)
 
 # `graph_rewrite` is a FIXPOINT and `do_process_and` splices ONE level of AND per
-# application, so a node whose children are all ANDs is spliced again on the next
-# round -- and only then does `len(or_clause) >= 4` see four ORs. One pass is
-# therefore not a fixpoint, which is the whole reason `too big to compile` is
-# reachable at all.
-# The FUEL comes first because a self-call must be DECREASING and Bend reads the
-# arguments left to right: everything before the one that shrinks has to be
-# passed unchanged, and the fuel is what shrinks. `proc` is pure, so the round is
-# walked once and its answer is both the tree and the "anything moved" bit.
 
 def proc(t: C) -> Pg:
   +p: Pg = proc.go([t])
@@ -1572,14 +1258,7 @@ def group1(gs: List<&2, List<&2, C>>) -> C:
     case g <> _: group1.of(g)
 
 # _get_code -- upat.py:166. The three passes and the join.
-#
 # The `# match for {self.location}` header line is NOT PORTED, because
-# `UPat.location` is frame introspection and ops.bend already records it as P3
-# (see the `upat_compile` comment at the bottom). `Context(TRACK_MATCH_STATS=0)`
-# is not a def either: it is the profiler's, and ops.bend's NOT PORTED block
-# carries `TRACK_MATCH_STATS` with the P8 clock.
-# `\'\n\'.join([..., "def compiled_match(uop, ctx):"] + rendered + ["  return None"])`
-# `\n'.join([..., "def compiled_match(uop, ctx):"] + rendered + ["  return None"])`
 
 def code_of(rendered: Maybe<&2, List<&2, String>>, +dyn: List<&2, Bind>) -> Maybe<&2, Code>:
   match rendered:
@@ -1591,10 +1270,6 @@ def get_code.of6(rendered: Maybe<&2, List<&2, String>>, +dyn: List<&2, Bind>) ->
   code_of(rendered, dyn)
 
 # _get_code -- upat.py:162. The three passes, in Python's order and with
-# Python's names: `get_clause`, then `pm_proc` (a fixpoint -- see `proc_fix`),
-# then `pm_renderer` (`wrap` for the `a{n}` numbering, `render` for the other four
-# rules), then `_final_render`. The three omissions are listed once, on
-# `upat_compile`.
 
 def get_code.of5(+t: C, +w: W, has_ctx: Bool, f: Nat) -> Maybe<&2, Code>:
   get_code.of6(final_render(render(head1c(W.w(w))), has_ctx, f), W.d(w))
@@ -1620,28 +1295,13 @@ def get_code(+pat: O.Pat, +u: O.UPat, has_ctx: Bool) -> Maybe<&2, Code>:
   get_code.broken(broken_of(u), pat, u, has_ctx, fuel(pat))
 
 # upat_compile -- upat.py:173. `@functools.cache` and the `exec` are the wall.
-#
 # `has_ctx` is a PARAMETER here and not `inspect.signature(real_fxn)`: a Bend
-# rule is a top-level def with a fixed arity, and ops.py's `PatternMatcher`
-# dispatch (P3) is what knows it.
-#
 # TODO(p3) ops.py:1561 def upat_interpret -- `types.FunctionType(
-# deconstruct_function(fxn))` and `inspect.signature(real_fxn).parameters` are
-# Python reflection over a function object, and they and `upat_compile`'s copy of
-# the same two lines are the SAME omission: a rule is a def.
-# TODO(p3) ops.py:1433 def get_location -- `sys._getframe`, the
-# `# match for {...}` header line of `_get_code`, and `UPat.location`.
-# TODO(p3) upat.py:181  upat_compile -- exec -- `namespace["compiled_match"]`. The rendered `Code`
-# IS the artifact; running it is the rewrite engine's phase.
 
 def upat_compile(+pat: O.Pat, i: U32, has_ctx: Bool) -> Maybe<&2, Code>:
   get_code(pat, nth(pat, i), has_ctx)
 
 # THE GATE. Bend has no assertion form, so `main` PRINTS a row per claim and the
-# gate is that both lanes print the same rows and every one of them is `True`.
-# The strings are what `tinygrad`'s `_get_code` returns for these seven patterns,
-# read out of the Python file, so a row is not "does it look right" -- it is
-# "is it the text CPython compiles a rule to".
 
 def Code.s(c: Code) -> String:
   match c:
@@ -1768,25 +1428,8 @@ def pat_share() -> O.PatFound:
   O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, O.STuple{[0, 0]}, None{}, None{}, False{}, None{}, False{})
 
 # the same literal spelled in a different order --
-# `UPat((Ops.MUL, Ops.ADD), dtype=(dtypes.i32, dtypes.f16),
-# src=(UPat((Ops.ADD, Ops.MUL), dtype=(dtypes.f16, dtypes.i32)),))`.
-# BOTH multi-element arms are one node per axis, so both print the same
-# `a{n}` twice, and `a0`/`a1` are the whole of `dyn_lookup`.
-#
 # THE THIRD ARM IS GONE. The row used to spell `tag=('B','A')` as well, so three
-# multi-element arms shared the `a{n}` numbering. Upstream deleted the tag
-# carry a tag SET, and the row is re-spelled with the two arms master still has.
-# The EXPECTED STRING is DERIVED, not transcribed: it is the vendored CPython's
-# `tinygrad/uop/upat.py::_get_code` output for this pattern, minus its
-# `# match for ...` header -- the same derivation that reproduces this file's
-# other sixteen rows byte for byte.
-#
 # `share` cannot see this: it spells `Ops.MUL` twice, which is equal in ANY
-# equality. This is the row that pins `eq_lit`'s set arms, and the fuzzer
-# does NOT substitute for it -- `--seeds 400 --max-depth 8` finds no seed on
-# which the `LOps` arm alone can be reverted (0 disagreements), so the LTag arm
-# is the only one the harness reaches and only at seed 50. Two UPats with the
-# same op SET in two orders is rare, and rarer still at depth 8.
 
 def pat_set_ord() -> O.PatFound:
   c = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsADD{}, O.OpsMUL{}]}, Some{[S.half(), S.int32()]}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
@@ -1810,11 +1453,6 @@ def pat_bigor() -> O.PatFound:
   O.UPat.of(O.PatFound.pat(q), Some{[O.OpsBINARY{}]}, None{}, O.STuple{[4, 4, 4, 4]}, None{}, None{}, False{}, None{}, False{})
 
 # THE ORACLE. Every `want_*` below is CPython's own `_get_code` output for the
-# pattern above it, printed by `uv run` against `tinygrad/uop/upat.py` -- except
-# the `# match for {self.location}` first line, which is `get_location`'s and is
-# NOT PORTED. `row` prints one `name=True/False` per claim because Bend has no
-# assertion: a `False` here is a row that disagrees with CPython, and hiding it
-# would make this file worth less than an empty one.
 
 def want_var() -> String:
   String.join(["def compiled_match(uop, ctx):",
@@ -1867,31 +1505,10 @@ def want_set_ord() -> String:
     "  return None"
   ], "\n")
 # a bind one level above a fork, and a bind above that. This is the row that
-# pins `proc`'s WAITLIST, and it is the shape `upatfuzz` reaches at seed 40
-# (`--max-depth 4`, 5 and 6) and seed 39 (`--max-depth 8`).
-#
 #   p0 = UPat()                        -- arena 0
-#   p1 = UPat(Ops.CONST)               -- arena 1
-#   p2 = UPat(src=[p0, p1])            -- arena 2, the `permutations` fork
-#   p3 = UPat(name='x', src=(p2, p0))  -- arena 3
-#   p4 = UPat(name='b', src=(p0, p3))  -- arena 4, the root
-#
 # p1 CARRIES A PREDICATE, and it has to: the row's assertion is that the two
-# `name=` binds come out in a definite ORDER, and the two branches are told
-# apart only by the clause on p1. With p1 bare -- which is what `UPat(tag='A')`
-# was, before upstream deleted the tag clause -- the two branches render
-# IDENTICALLY and the row would assert nothing at all. `Ops.CONST` is the
-# predicate master still has that a bare CONST node can be told by.
-#
 # `_get_clause` puts p3's `STORE x` ABOVE p2's children, and p2's `OR` is inside
 # p2's own AND, so `do_process_and`'s `for x in a.src` (upat.py:76) splices p3's
-# children and brings the `OR` up as a plain `new_src` entry -- `or_clause` is
-# EMPTY, so without the waitlist p3's `STORE x` and p4's `STORE b` meet in ONE
-# `dict_stores` with `b` first, and the clause reads `b=uop, x=uop.src[1]`.
-# CPython never sees that state: `unified_rewrite` re-queues a node whose src is
-# unresolved (ops.py:1843-1846), so p3 pushes `x` into the branches FIRST and p4's
-# `b` lands after it. The order of two `name=` arguments IS the assertion, and
-# no other row has two binds over a fork.
 
 def pat_store_ord() -> O.PatFound:
   p0 = O.UPat.of(O.Pat{Nil{}}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
@@ -1909,21 +1526,8 @@ def want_store_ord() -> String:
     "  return None"
   ], "\n")
 # THE FUEL BOUND, and the only row that can see it. Five arena UPats and an AND
-# spine seven deep -- the shape `upatfuzz --seeds 158 --max-depth 5` seed 157 and
-# `--seeds 200 --max-depth 12` reach -- and `proc_fix` needs more than 32 rounds
-# to reach its fixpoint, so `8n` answers `NONE` here where CPython answers five
-# lines. Nothing else in the gate is deep enough to notice: `store_ord` is the
-# same bug class at depth two, and it passes on `8n`.
-#
 #   p0 = UPat()                                 -- arena 0
-#   p1 = UPat(name='b', dtype=(f32,h), src=[p0])
-#   p2 = UPat(arg=5, src=[p0, p1])
-#   p3 = UPat(Ops.CONST, name='a', dtype=(h,f32), src=(p2, p1))
-#   p4 = UPat(Ops.NEG, dtype=i32, src=(p3, p3, p1))  -- the root
-#
 # `src=(p3, p3, p1)` is what makes the spine: p3 is walked TWICE, at `src[0]` and
-# `src[1]`, and p1 a third time at `src[2]`, so the third walk's pieces are the
-# LAST of a long `new_src` and a fuel that runs out drops exactly them.
 
 def pat_deep() -> O.PatFound:
   p0 = O.UPat.of(O.Pat{Nil{}}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
@@ -1962,39 +1566,6 @@ def show.of(r: Maybe<&2, Code>) -> String:
 def show(+f: O.PatFound, has_ctx: Bool) -> IO(Unit):
   IO.print(show.of(upat_compile(O.PatFound.pat(f), O.PatFound.i(f), has_ctx)))
 
-# THE FUZZ DRIVER. `main` with NO argument is the gate and nothing else; with
-# ONE argument it reads a case file, builds the case's UPat in the pattern
-# arena, runs the SAME `upat_compile` the gate runs, and prints ONE canonical
-# line. No new logic: everything below is the case FORMAT's reader, and the
-# only call into the port is `upat_compile`.
-#
-# the case is a string and both sides read it. a case is one line, the `ctx`
-# flag, and a `|`-separated list of nodes in POST-ORDER -- a node's `src`
-# indices always name nodes already listed. That is what makes the fold below
-# a fold instead of a recursive parser, and it is what lets the fuzzer build
-# the SAME UPat in tinygrad's `UPat` and here from the same text, which is the
-# only way the diff means anything.
-#
-# Each node is eight `;`-separated fields, and EVERY field is spelled rather
-# than derived, so the case can express a shape `__init__` builds and one it
-# does not:
-#
-#   op    `-` (None) or `+`-joined op names -- `ADD`, `MUL`, `SUB`, `MAX`,
-#         `INDEX`, `CONST`, `NEG`, `CALL`. TWO or more is the `in {1}` arm.
-#   name  `-` or a bind name.
-#   arg   `-` (None) | `i<n>` the one-element `ATuple` the port reads as an int
-#         | `s` a string arg | `t<n>,<n>` a two-element tuple, i.e. the SAME
-#         `LArg` payload on the literal arm. `ATuple{[n]}` IS Python's `n`:
-#         that correspondence is the port's, and the fuzzer's cases obey it.
-#   dt    `-` or `+`-joined dtypes -- `f32`, `i32`, `h`.
-#   src   `-` (no src) | `r<k>` a repeat of child k | `t<k>,<k>,..` a tuple
-#         | `l<k>,<k>` a list, which is the `permutations` fork.
-#   any   1 for `is_any`, which Python also requires a tuple `src` for.
-#   aal   1 for `allow_any_len`.
-#
-# `strict_length` and `required_len` are NOT fields: `UPat.of` derives them
-# from `src` and `aal` exactly as `__init__` does, so the case tests that
-# derivation too.
 
 def drv.num(cs: List<&2, Char>, acc: U32) -> U32:
   match cs:
@@ -2017,7 +1588,6 @@ def drv.one(m: Maybe<&2, String>) -> String:
 def drv.field(ns: List<&2, String>, k: U32) -> String:
   drv.one(List.get(&2, String, ns, U32.to_nat(k)))
 
-# a `,`-separated index list, so `r0` and `t0,1,2` share one reader
 
 def drv.ids.go(ks: List<&2, String>, acc: List<&2, U32>) -> List<&2, U32>:
   match ks:
@@ -2030,8 +1600,8 @@ def drv.ids(s: String) -> List<&2, U32>:
 def drv.first(s: String) -> U32:
   drv.nth(List.get(&2, U32, drv.ids(s), 0n))
 
-# the three literal lists. `+` joins because it is `ge2` that picks the arm,
-# and a two-element list must be reachable.
+# the three literal lists. `+` joins because it is `ge2` that picks the arm, and a
+# two-element list must be reachable.
 
 def drv.op1(s: String) -> O.Op:
   match s:
@@ -2081,7 +1651,6 @@ def drv.nm.of(s: String) -> Maybe<&2, String>:
 # table, because `UPat.of` INTERNS: two equal nodes are ONE arena entry, so a
 # case position is not an arena index. Reading `2` as an arena index when the
 # first two nodes were equal silently reads the WRONG child, and the fuzzer
-# spends a whole day chasing a bug that is in the reader, not the port.
 
 def drv.at(xs: List<&2, U32>, k: U32) -> U32:
   drv.nth(List.get(&2, U32, xs, U32.to_nat(k)))
@@ -2117,18 +1686,8 @@ def drv.am.of2(+s: String) -> Maybe<&2, O.Arg>:
 def drv.bit.of(s: String) -> Bool:
   String.eq(s, "1")
 
-# ONE node, and the fold that threads the arena. `UPat.of` is the whole
-# construction API the gate's own fixtures use, so the driver adds no shape a
-# fixture could not have written.
-#
-# the input's field 4 is the tag, and it is accepted and ignored. The driver's
-# input format is eight `,`-separated fields -- 0 op, 1 name, 2 arg, 3 dtype,
-# 4 TAG, 5 src, 6 allow_any_len, 7 is_any -- and field 4 is STILL THERE so the
-# POSITIONS of 5, 6 and 7 do not move and the fuzzer's format is unchanged.
-# deleted the clause (`35dab0a35` "no upat tag"). So the driver parses a tag
-# and throws it away, which is what upstream's driver does too -- upstream's
-# `UPat.__init__` has no `tag` parameter, so a tag in the input is a TypeError
-# there and a no-op here.
+# ONE node, and the fold that threads the arena. `UPat.of` is the whole construction API
+# the input's field 4 is the tag, and it is accepted and ignored. The driver's input format
 
 def drv.build(+ns: List<&2, String>, +pat: O.Pat, +xs: List<&2, U32>) -> O.PatFound:
   +s: O.SrcArg = drv.src.of2(drv.field(ns, 5), xs)
@@ -2147,7 +1706,6 @@ def drv.go(+ns: List<&2, String>, +pat: O.Pat, +xs: List<&2, U32>, +i: U32) -> O
       drv.go(t, O.PatFound.pat(f), List.append(&2, U32, xs, [O.PatFound.i(f)]),
         O.PatFound.i(f))
 
-# the ctx flag and the node list, split off the `|`
 
 def drv.head(ps: List<&2, String>) -> String:
   drv.one(List.get(&2, String, ps, 0n))
@@ -2224,72 +1782,6 @@ def main() -> IO(Unit):
     IO.pure(Unit, u)
 
 # THE MUTATION TABLE. Single edits to THIS file, each run through the eighteen
-# rows above. The claim is not "it compiles" but "each of these is the only
-# thing standing between a row and `False`", and the honest entries are the
-# three marked `(none)`.
-#
 #  #   edit                                                  rows that move
-#  M1  `ge4` 4 -> 8, the `too big to compile` threshold        too_big
-#  M2  `alt_group` swaps its single/fork arms                  (none -- see below)
-#  M3  `loop.put` drops the hoisted STORE from `extra`         repeat rep_src
-#                                                             rep_src_src any_rep
-#                                                             dup_store
-#  M4  `dedup` becomes a pass-through                          (none -- see below)
-#  M5  `fmt`'s `{k}` counter never advances                    add repeat argint
-#                                                             rep_src rep_src_src
-#                                                             any_rep dup_store share
-#  M6  `final_shape` swaps its two arms                        var add repeat any
-#                                                             noctx argint rep_src
-#                                                             rep_src_src any_rep
-#                                                             dup_store share
-#  M7  `rep_len` drops the `len({0}.src) != 0` guard           repeat rep_src
-#                                                             rep_src_src any_rep
-#                                                             dup_store
-#  M8  `is_any` children read `base.index(0)`                  any any_rep
-#  M10 `proc_fix` runs the rewrite once                        too_big
-#  M27 `proc.node` never DEFERS: the waitlist is gone          store_ord deep
-#  M28 `proc.join` answers the HEAD's `ch`, not the list's      store_ord deep
-#  M29 `fuel`'s multiplier 32n -> 8n                            deep
-#  M11 `is_rep` is always False: the repeat arm is dead        repeat rep_src
-#                                                             rep_src_src any_rep
-#                                                             dup_store
-#  M12 the store lift skips `substitute`                      repeat rep_src
-#                                                             rep_src_src any_rep
-#                                                             dup_store
-#  M13 `or_true`: an empty clause is an AND, not `"True"`      (none -- see below)
-#  M15 `found` drops the nested-AND splice (`flat`)            add too_big rep_src
-#  M16 `rend.or` does not render a branch into lines           any any_rep
-#  M17 `pieces` is the op check alone                          all but var noctx
-#  M18 `substitute.go` rebuilds `tail ++ [node]`               rep_src_src dup_store
-#  M19 `do_process_and` drops `Ds.out`                         dup_store share
-#  M20 `do_process_and` never partitions the STOREs out        dup_store share
-#  M21 `dup.put` puts the KEY in the identity's `{0}`          dup_store share
-#  M22 `dup.first` does not advance `vs`                       dup_store
-#  M23 `wrap` never shares a PYLITERAL                         share
-#  M24 `idx` stops requiring a CUSTOMI first src               add repeat repeat_dyn
-#                                                             rep_src rep_src_src
-#                                                             any_rep dup_store share
-#  M26 `flatands` stops splicing a nested AND                  repeat repeat_dyn
-#                                                             rep_src rep_src_src
-#                                                             any_rep dup_store
-#                                                             rep_src_dyn
-#
 # M18 is the one this file lost a row over, and the pair of rows it took is the
-# interesting part. The repeat arm lifts `st.src[1].substitute({it: base.index(0)})`
-# and `INDEX(CUSTOMI, CONST)` is TWO elements, so rebuilding the list tail-first
-# SWAPS them; `render`'s `idx` rule then sees a CONST first, keeps the INDEX,
-# `all_ci` fails on the `AND(pred)` inside `all([...])`, `rend.go` sets `bad` and
-# `_get_code` answers None. `rep_src` -- the repeat inside a src tuple -- does NOT
-# move, because its child is a MUL with no src, so the value being substituted is
-# a childless CUSTOMI and a one-element `src` cannot show the order. The trigger
-# is NOT the repeat index and NOT an unreferenced arena entry, both of which were
-# ruled out by measurement: `rep_src_src` is the LOCALISED row and it is the
-# repeat's CHILD having a src of its own that makes it move.
-#
 # M2, M4 AND M13 MOVE NOTHING, and all three say the same thing. M2 nests a
-# single match's children in one AND, which is what the fork arm does and the
-# single arm does not; M4 stops deduping; M13 makes an empty clause an AND. The
-# rows are right about the RENDERED SOURCE and blind to the shape, because
-# `proc_fix` splices the extra level away again and `and_one` renders an empty AND
-# as `"True"`. `alt_group` keeps the distinction because Python's `and_clause`
-# really is a list of siblings and the port should say so.
