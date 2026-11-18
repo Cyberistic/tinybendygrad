@@ -1282,6 +1282,29 @@ comment-cut        [######...] 6/8      **THE **PORT's **COMMENT **MASS **IS **C
                                          **DELETE **A **COMMENT **THAT **RECORDS **A **BUG **THAT
                                          **WAS **FOUND"**, **AND **THE **PORT's **HISTORY **IS
                                          **LOAD-BEARING**.
+                                         **AND **THE **CUT's **OWN **OVER-CUT**, **AND **THE
+                                         **REPAIR **OF **IT** (**`2fad6e556`**), **AND **FOUR
+                                         **MORE **CLASSES**, **EACH **MEASURED **BY **COMPARING
+                                         **THE **BEFORE **AND **THE **AFTER**:
+                                         **(1)** **THE **QUOTED **UPSTREAM **RULE** -- **THE
+                                         **PORT **QUOTES **UPSTREAM's **OWN **COMMENT **AS **THE
+                                         **RULE's **NAME**, **AND **THE **QUOTE **IS **THE
+                                         **DIFFERENCE **AND **THE **EXPLANATION **IS **THE
+                                         **REASON**, **AND **THE **CUT **TOOK **THE **QUOTE **AND
+                                         **LEFT **THE **EXPLANATION** (**IN **TEN **FILES**).
+                                         **(2)** **A **BUG **RECORD **WITH **NO **KEYWORD** -- **"The
+                                         **first **revision **of **this **function **had **eight
+                                         **`is_eq` **tests **and **no **NONE **arm"** -- **AND **IT
+                                         **MATCHED **NO **MARKER **AT **ALL**. **(3)** **"THE **WALL"
+                                         **IS **NOT **A **BUG **RECORD** -- **IT **IS **THE
+                                         **SUBSTRATE **LIMIT** -- **AND **THE **BUG **MARKER's
+                                         **"THE **WALL" **WAS **MAKING **A **WHOLE **SECTION
+                                         **SURVIVE **FOR **NOTHING**. **(4)** **A **RE-WRAP **IS
+                                         **NOT **A **LOSS** -- **AND **THE **CHECK **THAT **SAYS
+                                         **"A **BUG-BEARING **SENTENCE **WAS **DELETED"** **FIRES
+                                         **ON **A **PARAGRAPH **THAT **WAS **ONLY **RE-WRAPPED**,
+                                         **AND **IT **IS **COMPARED **BY **THE **FIRST **35
+                                         **CHARACTERS** **AND **NOT **BY **THE **WHOLE **LINE**.
                                          **THE **OTHER **UNITS **WHO **FOUND **THE **SAME
                                          **CLASSES**: `04c695e0f` **"REPAIR **94 **DANGLING
                                          **COMMENT **BLOCKS"**, `f28ba8c7e` **"REPAIR **57
