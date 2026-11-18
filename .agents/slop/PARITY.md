@@ -7768,3 +7768,80 @@ gates/cstyle_render_census-gate.py`**) -- **⇒⇒† AND **THE **GATE's **OWN *
 **OWN **THROWAWAY **`cg_join.json`** (23:13) **ALREADY **DISAGREES **WITH **THE **LEDGER **IT **WROTE** -- **⇒⇒†
 **AND **THE **VERDICTS **WERE **RIGHT **ALL **THE **SAME** (**0 **DIFFERENCES **IN **2,406 **ROWS**)**, **⇒⇒†
 **AND **NO **COMMITTED **TREE **REPRODUCES **THOSE **LINE **NUMBERS**.
+
+### 138.16 THE **COMMENTS **ARE **CUT **TO **THE **RULE** -- **⇒⇒† AND **THE **CUT **IS **MEASURED, **AND
+**THE **CUT **PRODUCED **FOUR **TRUNCATIONS **THAT **HAD **TO **BE **REPAIRED**
+
+**⇒⇒† AND **THE **RULE**, **⇒⇒† AND **IT **IS **THE **TREE's **OWN** (`AGENTS.md:16`): *"IF **YOU **NEED
+**TO **WRITE **A **PARAGRAPH-LONG **COMMENT **TO **JUSTIFY **YOUR **CODE**, **YOU **ARE **DOING **IT
+**WRONG"* -- **⇒⇒† AND **THE **USER's **FORM**: **A **COMMENT **SHOULD **ONLY **BE **THERE **IF **IT
+**SHORTLY **EXPLAINS **A **DIFFERENCE **OR **WHY **WE **ARE **DOING **SOMETHING **WEIRD**.
+
+**⇒⇒† AND **A **COMMENT **EARNS **ITS **PLACE **IN **ONE **OF **THREE **WAYS** -- **DIFFERENCE** (IT **SAYS
+**WHAT **THE **PORT **DOES **THAT **UPSTREAM **DOES **NOT**, **⇒⇒† AND **IT **NAMES **THE **UPSTREAM **LINE
+**IT **DEPARTS **FROM**), **WEIRD** (WHY **SOMETHING **LOOKS **WRONG **BUT **IS **NOT**), **⇒⇒† AND
+**MEASURED** (IT **CARRIES **THE **NUMBER **THAT **JUSTIFIES **THE **CODE** -- **⇒⇒† AND **A **COMMENT
+**WITH **A **MEASUREMENT **IS **EVIDENCE** **⇒⇒† AND **WITHOUT **THE **NUMBER **IT **IS **AN **OPINION**)**.
+
+**⇒⇒† AND **THE **START**: **10,549 **COMMENT **BLOCKS**, **85,815 **COMMENT **LINES**, **⇒⇒† AND **THE
+**CENSUS's **VERDICT**: **6,510 **NARRATION** (61.7%), **⇒⇒† AND **THE **TABLES**: **158 **TABLE-LIKE
+**BLOCKS**, **11,327 **LINES** -- **⇒⇒† AND **A **TABLE **IS **DATA**, **⇒⇒† AND **DATA **IN **A **COMMENT
+**BLOCK **IS **A **FILE **IN **THE **WRONG **PLACE**.
+
+**⇒⇒† AND **THE **INSTRUMENTS**, **ALL **UNDER **`.agents/slop/comments/`**, **⇒⇒† AND **AND **THE
+**POPULATION **OF **EVERY **ONE **IS **DISCOVERED** (DOCTRINE 1)**:
+  · **`comment-census.py`** -- **CLASSIFIES **EVERY **BLOCK** **AND **PRINTS **THE **PER-FILE **MASS**.
+    **⇒⇒† AND **IT **IS **A **POINTER**, **NOT **THE **VERDICT** -- **⇒⇒† AND **THAT **IS **STATED **IN **THE
+    **SCRIPT**, **⇒⇒† AND **AND **IT **IS **TRUE **IN **THE **MEASUREMENTS**: **THE **RENDERER's **OWN **AGENT
+    **KEPT **445 **BLOCKS **THE **CLASSIFIER **CALLED **NARRATION**, **⇒⇒† AND **AND **SAID **WHY** (*"upstream-line
+    citations the classifier does not recognise as DIFFERENCE **... ** OR `TODO(p3)`/`WALL(p3)` markers **THAT
+    `gates/todo-cite-gate.py` **READS"*)**.
+  · **`comment-budget.py`** -- **A **RATCHET**: **NO **FILE's **COMMENT **MASS **MAY **GROW **PAST **ITS
+    **BUDGET**, **⇒⇒† AND **THE **BUDGET **IS **THE **CURRENT **MASS**.
+  · **`trim-plan.py`** -- **THE **CUT **AS **A **PLAN**: **IT **PRINTS **WHAT **IT **WOULD **DO** **AND **NEVER
+    **WRITES**.
+  · **`trim-apply.py`** -- **THE **HAND**: **THE **PLAN's **RULE **APPLIED **AT **SECTION **GRANULARITY**.
+  · **`table-census.py`** -- **THE **TABLES**, **NAMED **AND **COUNTED**.
+  · **`render/trunc.py`** -- **THE **TRUNCATION **DETECTOR** (see **below**).
+
+**⇒⇒† AND **THE **FINDING **THAT **COST **THE **MOST**, **⇒⇒† AND **IT **IS **THE **CLASS **THE **TREE
+**HAD **ALREADY **PAID **FOR **FOUR **TIMES**:
+**A **CUT **THAT **MATCHES **A **PREFIX **OF **A **COMMENT **BLOCK **LEAVES **THE **BLOCK **ENDING
+**MID-SENTENCE**, **⇒⇒† AND **A **TRUNCATED **COMMENT **IS **NOT **A **CUT** -- **⇒⇒† AND **THE **TREE **HAS
+**FOUR **REPAIR **COMMITS** (**`04c695e0f`** (94 **DANGLING **BLOCKS**), **`f28ba8c7e`** (57), **`8e3596ac8`**,
+**`525e7c5d1`** (37 **TRUNCATIONS**)) **⇒⇒† AND **AND **THE **`uop` **AGENT **MADE **THREE **MORE**, **⇒⇒† AND
+**AND **THE **`renderer` **AGENT **MADE **THIRTY-SEVEN**, **⇒⇒† AND **AND **EVERY **ONE **WAS **A **WALL
+**RECORD **OR **A **DIFFERENCE **LEFT **SAYING **LESS **THAN **THE **CODE **SAYS**.
+
+**⇒⇒† AND **SO **THE **APPLIER **HAS **FOUR **FIXES**, **EACH **MEASURED**:
+  1. **THE **BLOCK **WAS **TOO **COARSE** -- **A **FILE's **HEADER **IS **ONE **RUN **OF **170+ **LINES** **⇒⇒† AND
+     **IT **HELD **SEVEN **SEPARATE **DIFFERENCES** **⇒⇒† AND **THE **CURE**: **SPLIT **THE **RUN **AT **BLANK
+     **`#` **LINES** **AND **JUDGE **EACH **SECTION **BY **ITSELF**.
+  2. **THE **MARKER **LINE **IS **OFTEN **THE **CITATION **ON **THE **SECOND **LINE **OF **A **SENTENCE** **⇒⇒†
+     **AND **CUTTING **AT **IT **CUTS **MID-SENTENCE** **⇒⇒† AND **THE **CURE**: **KEEP **THE **WHOLE
+     **PARAGRAPH **THAT **CONTAINS **THE **MARKER**.
+  3. **A **SECTION **WITH **NO **MARKER **WAS **KEPT **THROUGH **ITS **FIRST **LINE**, **⇒⇒† AND **THE **FIRST
+     **LINE **IS **OFTEN **THE **MIDDLE **OF **A **SENTENCE** -- **⇒⇒† AND **THAT **COUNT **WAS **427 **AND
+     **IS **0 **AFTER **THE **FIX**.
+  4. **THE **FIRST **CUT **DELETED **FOUR **REAL **BUG **RECORDS** **⇒⇒† AND **THE **CURE**: **A **BUG **MARKER
+     **MAKES **A **WHOLE **SECTION **SURVIVE**, **⇒⇒† AND **BECAUSE **THE **RECORD **MAY **BEGIN **A **LINE
+     **OR **TWO **BEFORE **THE **MARKER**.
+
+**⇒⇒† AND **THE **SAFETY **PROPERTY**, **AND **IT **IS **THE **REASON **THE **APPLIER **CAN **BE
+**TRUSTED**: **A **KEPT **SECTION **IS **A **PREFIX **OF **THE **ORIGINAL **RUN **OF **`#` **LINES**, **⇒⇒† AND
+**SO **A **KEPT **LINE **IS **NEVER **REWRITTEN**, **⇒⇒† AND **ONLY **WHOLE **TRAILING **COMMENT **LINES **ARE
+**DELETED**, **⇒⇒† AND **AND **A **NON-COMMENT **LINE **IS **EMITTED **VERBATIM**.
+
+**⇒⇒† AND **THE **MEASURED **PER-LAYER **CUTS** (THE **AGENTS' **OWN **FIGURES**, **⇒⇒† AND **THE **CENSUS
+**IS **THE **SAME **INSTRUMENT **FOR **ALL **OF **THEM**)**:
+  · **`uop/`** (NINE **FILES**): **15,992 -> 3,245 **LINES** (**-79.7%**)
+  · **`renderer/`** (FOURTEEN **FILES**): **8,477 -> 3,183 **LINES** (**-62.5%**), **⇒⇒† AND **NARRATION
+    **744 **BLOCKS **/ **3,925 **LINES **-> **445 **/ **977**
+  · **THE **TABLES**: **69 **BLOCKS**, **3,000+ **LINES**, **MOVED **TO **`.agents/slop/tables/`**
+
+**⇒⇒† AND **AND **THE **CORPUS **DID **NOT **MOVE**, **⇒⇒† AND **THAT **IS **THE **POINT**: **A
+**COMMENTS-ONLY **CHANGE **CANNOT **MOVE **THE **RENDER** -- **⇒⇒† AND **THE **CERTIFICATE **WAS **TAKEN
+**IN **A **CLEAN **WORKTREE**: **38 **graphs / **38 **answered / **38 **agree / **0 **disagree / **38
+**byte-identical / **0 **refused**, **expect-moved=0**, **controls 5 of 5**, **plants-disagree 8 of 8**,
+**conflations 4 of 4**, **`substrate-start == substrate-end == live`**, **repro **339/339**, **⇒⇒† AND
+**`corpuswitness-gate` **PASS** -- **⇒⇒† AND **AND **THE **PROOF **GATE **READS **ALL **PROOFS **CHECK**.
