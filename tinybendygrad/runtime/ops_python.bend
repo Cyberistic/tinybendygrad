@@ -1,30 +1,27 @@
 # ops_python.bend -- port of tinygrad/runtime/ops_python.py: `PythonProgram.__call__`, the
-# BEND device. `bend-executor PACKET gx gy gz vals...` reads a packet, walks its
-# toposorted uops once per global work item, and writes PACKET.out.
+# BEND device. `bend-executor PACKET gx gy gz vals...` reads a packet, walks its toposorted
+# uops once per global work item, and writes PACKET.out.
 #
-# BUGS THIS FILE FIXED. The 153-fixture census
-# (`gates/ops_python_exec-fixtures.rows`, run through this file's own compiled
-# executor) reads 0 of 365 rows disagreeing with upstream's own interpreter.
+# BUGS THIS FILE FIXED. The 153-fixture census (`gates/ops_python_exec-fixtures.rows`, run
+# through this file's own compiled executor) reads 0 of 365 rows disagreeing with upstream's own
+# interpreter.
 #
-# - the 29 disagreements it left were not one defect and they were not the
-#   "vector-STORE lane". MEASURED, with the plants as the control: upstream's
-#   `exec_alu` tuple branch (`ops.py:1423`) NEVER FIRES ON THIS POPULATION --
-#   192899 `exec_alu` calls over 153 fixtures and 0 of them had a tuple operand --
-#   so four causes were: `symbolic.bend`'s `f32_where` (the arms swapped),
-#   `symbolic.bend`'s `exec_alu_i32.cmp` (CMPNE WAS `==`), THIS FILE's
-#   `Prog.cast.dt` (A FLOAT-TO-INT CAST KEPT THE FLOAT's BIT PATTERN), AND
-#   this file's STORE (the value is converted to the BUFFER by upstream and
-#   not written as its own BITS). Reverting all four reproduces the 29 pre-fix
-#   ROWS BYTE FOR BYTE (29 of 29).
-# - and a convolution now runs. MEASURED: the port's own conv shape --
-#   `x(1,3,32,32) conv2d w(8,3,3,3) padding=1` -> `(1,8,32,32)`, the shape
-#   `tinybendygrad/nn/layers.bend`'s five `conv_*` rows use -- agrees with
-#   CPython's PYTHON device on all 8192 values, and the SAME PACKET run through
-#   upstream's own `PythonProgram.__call__` gives BYTE-IDENTICAL buffers.
+# - the 29 disagreements it left were not one defect and they were not the "vector-STORE lane".
+#   MEASURED, with the plants as the control: upstream's `exec_alu` tuple branch (ops.py:1423)
+#   NEVER FIRES ON THIS POPULATION -- 192899 `exec_alu` calls over 153 fixtures and 0 of them
+#   had a tuple operand -- so four causes were: `symbolic.bend`'s `f32_where` (the arms
+#   swapped), `symbolic.bend`'s `exec_alu_i32.cmp` (CMPNE WAS `==`), THIS FILE's `Prog.cast.dt`
+#   (A FLOAT-TO-INT CAST KEPT THE FLOAT's BIT PATTERN), AND this file's STORE (the value is
+#   converted to the BUFFER by upstream and not written as its own BITS). Reverting all four
+#   reproduces the 29 pre-fix ROWS BYTE FOR BYTE (29 of 29).
+# - and a convolution now runs. MEASURED: the port's own conv shape -- `x(1,3,32,32) conv2d
+#   w(8,3,3,3) padding=1` -> `(1,8,32,32)`, the shape `tinybendygrad/nn/layers.bend`'s five
+#   `conv_*` rows use -- agrees with CPython's PYTHON device on all 8192 values, and the SAME
+#   PACKET run through upstream's own `PythonProgram.__call__` gives BYTE-IDENTICAL buffers.
 #
-# `run` is a real interpreter: an arena threaded through a fuel recursion, with a
-# DIE on fuel exhaustion, which is also the "stay turing-incomplete" answer since
-# a RANGE-driven kernel has no static step bound.
+# `run` is a real interpreter: an arena threaded through a fuel recursion, with a DIE on fuel
+# exhaustion, which is also the "stay turing-incomplete" answer since a RANGE-driven kernel has
+# no static step bound.
 #
 #   ops_python.py:15-31   _load/_store/_step        PORTED (the v1 lanes)
 #   ops_python.py:33-44   wmma                      WALL  (tensor cores)
@@ -58,182 +55,169 @@
 #   :150 WMMA           WALL  ops_python.py:150, as briefed
 #   :151 GroupOp.ALU    PORTED, by REUSING symbolic.bend's two lanes
 #
-# MEASURED FACTS. Eighteen kernels: elementwise add, sum, matmul, an int-to-float
-# cast, a 64-wide grid, div, cmp, and, 2-d sum, rowsum, max, prod, slice, reshape,
-# contiguous, permute, log, sqrt.
+# MEASURED FACTS. Eighteen kernels: elementwise add, sum, matmul, an int-to-float cast, a
+# 64-wide grid, div, cmp, and, 2-d sum, rowsum, max, prod, slice, reshape, contiguous, permute,
+# log, sqrt.
 #
-# 1. `Ops.REDUCE` IS NEVER EMITTED, and ops_python has no REDUCE arm. rangeify
-#    lowers a reduce into a RANGE plus a tree of ADD/MULACC before the renderer
-#    runs. So "a REDUCE fixture" is a RANGE loop, and this file needs no REDUCE
-#    arm at all.
+# 1. `Ops.REDUCE` IS NEVER EMITTED, and ops_python has no REDUCE arm. rangeify lowers a
+#    reduce into a RANGE plus a tree of ADD/MULACC before the renderer runs. So "a REDUCE
+#    fixture" is a RANGE loop, and this file needs no REDUCE arm at all.
 # 2. `Ops.FDIV` and `Ops.THREEFRY` are in `GroupOp.ALU` but not in `python_alu`
-#    (tinygrad/uop/ops.py:1412-1420 symbol=python_alu) `python_alu`, so tinygrad/uop/ops.py:1427 raises `KeyError` on them. They are
-#    WALL 3 below for the same reason rather than given an invented meaning.
-# 3. THERE ARE NO `DEFINE_*` OPS in this tinygrad. `Ops` has PARAM and BUFFER and
-#    an AddrSpace; the emitted stream uses `Ops.PARAM` with
-#    `addrspace=AddrSpace.GLOBAL` and never a DEFINE. That is amendment A1.
-# 4. `local_size` IS NEVER (1,1,1) FOR EVERY KERNEL -- measured (2,1,1), (4,1,1),
-#    (8,1,1), (16,1,1) -- SO THE CLI MUST FIX IT. See LOCAL SIZE below.
+#    (tinygrad/uop/ops.py:1412-1420 symbol=python_alu) `python_alu`, so tinygrad/uop/ops.py:1427
+#    raises `KeyError` on them. They are WALL 3 below for the same reason rather than given an
+#    invented meaning.
+# 3. THERE ARE NO `DEFINE_*` OPS in this tinygrad. `Ops` has PARAM and BUFFER and an AddrSpace;
+#    the emitted stream uses `Ops.PARAM` with `addrspace=AddrSpace.GLOBAL` and never a DEFINE.
+#    That is amendment A1.
+# 4. `local_size` IS NEVER (1,1,1) FOR EVERY KERNEL -- measured (2,1,1), (4,1,1), (8,1,1),
+#    (16,1,1) -- SO THE CLI MUST FIX IT. See LOCAL SIZE below.
 #
 # THE FOUR WALLS, measured against the substrate rather than guessed.
 #
-# 1. WIDE DTYPES. `_load`/`_store`'s second arm -- a bitcast reading WIDER than
-#    the buffer's storage word, assembled from `dtype.itemsize // w` words and
-#    split again on the store -- is reachable only when the storage word is
-#    narrower than the dtype: f16/bf16/fp8 (2 or 1 bytes) or i64/u64 (8). The v1
-#    lanes are i32, u32, f32 and bool, where `w == dtype.itemsize` always, so
-#    that arm is DEAD here and the four lanes take the first branch verbatim.
-#    `truncate` has the same shape: tinygrad/dtype.py:289 symbol=truncate answers float16, bfloat16,
-#    the four fp8s, float64, six narrow ints and int64/uint64 through ctypes and
-#    struct, and only bool/int32/uint32/float32 are pure in Bend. So CAST is
-#    ported for those four and REFUSES the rest -- a 64-bit truncate has no U32
-#    image and an F32 cannot hold a half. This file refuses rather than
-#    emulating half a width.
+# 1. WIDE DTYPES. `_load`/`_store`'s second arm -- a bitcast reading WIDER than the buffer's
+#    storage word, assembled from `dtype.itemsize // w` words and split again on the store -- is
+#    reachable only when the storage word is narrower than the dtype: f16/bf16/fp8 (2 or 1
+#    bytes) or i64/u64 (8). The v1 lanes are i32, u32, f32 and bool, where `w == dtype.itemsize`
+#    always, so that arm is DEAD here and the four lanes take the first branch verbatim.
+#    `truncate` has the same shape: tinygrad/dtype.py:289 symbol=truncate answers float16,
+#    bfloat16, the four fp8s, float64, six narrow ints and int64/uint64 through ctypes and
+#    struct, and only bool/int32/uint32/float32 are pure in Bend. So CAST is ported for those
+#    four and REFUSES the rest -- a 64-bit truncate has no U32 image and an F32 cannot hold a
+#    half. This file refuses rather than emulating half a width.
 #    TODO(p3) runtime/ops_python.py:21  symbol=_load -- the multi-word bitcast load arm.
 #    TODO(p3) runtime/ops_python.py:33  symbol=_store -- the multi-word store arm.
 #    TODO(p3) tinygrad/dtype.py:289  symbol=truncate -- `truncate` for the ten C widths.
 #
-# 2. TENSOR CORES. `wmma` (tinygrad/runtime/ops_python.py:35 symbol=wmma) needs
-#    three-way fragment layout, and its `arg` is a `(dims, dtype_in, threads)`
-#    tuple. There is no v1 spelling and no scalar lane for a fragment.
+# 2. TENSOR CORES. `wmma` (tinygrad/runtime/ops_python.py:35 symbol=wmma) needs three-way
+#    fragment layout, and its `arg` is a `(dims, dtype_in, threads)` tuple. There is no v1
+#    spelling and no scalar lane for a fragment.
 #    TODO(p3) runtime/ops_python.py:33  symbol=_store.
 #
 # 3. `Ops.FDIV` AND `Ops.THREEFRY` -- see MEASURED FACT 2.
 #
-# 4. THE TUPLE OPERAND BRANCH. `exec_alu`'s body (tinygrad/uop/ops.py:1422 symbol=exec_alu) opens with
-#    `if any(isinstance(x, tuple) for x in operands)` and it recurses per lane.
-#    symbolic.bend ports only the scalar spine, so `alu1/2/3` below call the same
-#    two lanes directly -- `exec_alu_i32` and `exec_alu_f32` -- and choose between
-#    them the way ops.py:1432 does, by the PYTHON TYPE of the operands. That is a
-#    reuse, not a re-implementation: the two lanes are ops.py:1432-1435's body.
-#    The Invalid poison (ops.py:1432) has no v1 spelling, because nothing in a v1
-#    packet is `CONST(Invalid)`.
-#    measured 2026-10-26: the branch is dead on this tree's population.
-#    wrapping upstream's own `exec_alu` over every fixture of
-#    `gates/ops_python_exec-fixtures.rows` COUNTS 192899 CALLS AND 0 OF
-#    them had a tuple operand, so the branch never fires and upstream's alu is
-#    scalar here too. the vector lanes live in the LOAD (ops_python.py:142,
-#    `values[u] = [load(...) for j in range(load_sz)]`) AND IN THE STACK
-#    (ops_python.py:135, `values[u] = src_values`), AND THE PORT's MODEL OF
-#    those is already right (see the program table). the instrument is
+# 4. THE TUPLE OPERAND BRANCH. `exec_alu`'s body (tinygrad/uop/ops.py:1422 symbol=exec_alu) opens
+#    with `if any(isinstance(x, tuple) for x in operands)` and it recurses per lane.
+#    symbolic.bend ports only the scalar spine, so `alu1/2/3` below call the same two lanes
+#    directly -- `exec_alu_i32` and `exec_alu_f32` -- and choose between them the way
+#    ops.py:1432 does, by the PYTHON TYPE of the operands. That is a reuse, not a
+#    re-implementation: the two lanes are ops.py:1432-1435's body. The Invalid poison
+#    (ops.py:1432) has no v1 spelling, because nothing in a v1 packet is `CONST(Invalid)`.
+#    measured 2026-10-26: the branch is dead on this tree's population. wrapping upstream's own
+#    `exec_alu` over every fixture of `gates/ops_python_exec-fixtures.rows` COUNTS 192899 CALLS
+#    AND 0 OF them had a tuple operand, so the branch never fires and upstream's alu is scalar
+#    here too. the vector lanes live in the LOAD (ops_python.py:142, `values[u] = [load(...) for
+#    j in range(load_sz)]`) AND IN THE STACK (ops_python.py:135, `values[u] = src_values`), AND
+#    THE PORT's MODEL OF those is already right (see the program table). the instrument is
 #    `.agents/slop/vslane/tuple_census.py` AND ITS READING IS
 #    `.agents/slop/vslane/tuple-census.rows`.
 #    ONE DIVERGENCE IS INHERITED, and it is named where it bites: `safe_pow`
-#    (tinygrad/uop/ops.py:1406-1410 symbol=safe_pow) answers `inf if x > 0 else -inf` for a negative base with a
-#    fractional exponent, where IEEE -- and therefore `exec_alu_f32` -- answers
-#    nan. Taking IEEE over a Python-shaped branch nobody can compute is
-#    symbolic.bend's call and this file does not relitigate it.
+#    (tinygrad/uop/ops.py:1406-1410 symbol=safe_pow) answers `inf if x > 0 else -inf` for a
+#    negative base with a fractional exponent, where IEEE -- and therefore `exec_alu_f32` --
+#    answers nan. Taking IEEE over a Python-shaped branch nobody can compute is symbolic.bend's
+#    call and this file does not relitigate it.
 #
 # THE WIRE FORMAT, v1.1
 #
 #   line 1:  bendexec1 <nuops> <nbuffers>
 #
-# `<op>` is the bare `Ops.name` (what `Ops.name.of` answers) and `<srcN>` is a
-# 1-based uop index. FOUR AMENDMENTS, each forced by a line of ops_python.
+# `<op>` is the bare `Ops.name` (what `Ops.name.of` answers) and `<srcN>` is a 1-based uop index.
+# FOUR AMENDMENTS, each forced by a line of ops_python.
 #
-# A1. There are no `DEFINE_*` ops (MEASURED FACT 3); the arms are `PARAM` and
-#     `BUFFER` plus an AddrSpace (tinygrad/runtime/ops_python.py:98-107). So the brief's
-#     DEFINE_GLOBAL/LOCAL/REG/VAR/BUF are spelled `PARAM`/`BUFFER` and the
-#     addrspace rides in `<arg>`:
+# A1. There are no `DEFINE_*` ops (MEASURED FACT 3); the arms are `PARAM` and `BUFFER` plus an
+#     AddrSpace (tinygrad/runtime/ops_python.py:98-107). So the brief's
+#     DEFINE_GLOBAL/LOCAL/REG/VAR/BUF are spelled `PARAM`/`BUFFER` and the addrspace rides in
+#     `<arg>`:
 #       PARAM  k:param:<nbytes>:<g|l|r|a>
 #         g binds the next packet buffer, r allocates zeros, a reads a `vals`
 #         entry -- ops_python.py:94,99-105
 #       BUFFER k:buffer:<nbytes>   allocates zeros and consumes NO packet buffer
 #         (ops_python.py:104 allocates; only PARAM pops pbufs)
-#     `nbytes` is `u.max_numel()*u.dtype.itemsize`, the size ops_python gives the
-#     memoryview, and the storage word width follows from the dtype, so the
-#     encoder never has to repeat it.
-#     PACKET BUFFER ORDER: packet buffer i is the i-th `PARAM` of addrspace g or l
-#     in uop order, because tinygrad/runtime/ops_python.py:107 symbol=__call__ pops upstream's `pargs` in exactly that order.
-#     A PARAM inside a RANGE loop would pop a second time in Python too, so
-#     resolving the index once at parse time is the same answer.
+#     `nbytes` is `u.max_numel()*u.dtype.itemsize`, the size ops_python gives the memoryview,
+#     and the storage word width follows from the dtype, so the encoder never has to repeat it.
+#     PACKET BUFFER ORDER: packet buffer i is the i-th `PARAM` of addrspace g or l in uop order,
+#     because tinygrad/runtime/ops_python.py:107 symbol=__call__ pops upstream's `pargs` in exactly that order.
+#     A PARAM inside a RANGE loop would pop a second time in Python too, so resolving the index
+#     once at parse time is the same answer.
 #
 # A2. `LOAD` and `STORE` need `u.max_numel()` (ops_python.py:88,137). Nothing in
 #     `<op>/<dtype>/<arg>/<src>` states it, so:
 #       LOAD/STORE   k:vec:<max_numel>     or `-` for a max_numel of 1
-#     The measured streams need it: an elementwise add of four floats emits a
-#     `LOAD` and a `STACK` and a `STORE` of max_numel 4.
+#     The measured streams need it: an elementwise add of four floats emits a `LOAD` and a
+#     `STACK` and a `STORE` of max_numel 4.
 #
 # A3. `INDEX`/`SHRINK` need `u.src[0]`'s shape and whether `src[0]` is a BITCAST
-#     (ops_python.py:115,120). The IMAGE arm is unreachable without a shape, so it
-#     is a wall, and the scale is passed precomputed:
+#     (ops_python.py:115,120). The IMAGE arm is unreachable without a shape, so it is a wall,
+#     and the scale is passed precomputed:
 #       INDEX/SHRINK k:idx:<scale>   scale 0 means the ALU arm (ops_python.py:114)
 #                                    otherwise `src[0].dtype.itemsize //
 #                                    src[0].src[0].dtype.itemsize`; `-` is 1.
-#     The ALU arm is the COMMON one in the measured streams: of 26 INDEX uops in
-#     the elementwise-add kernel, 24 take it (INDEX over a vector LOAD) and 2 do
-#     not (INDEX straight onto a PARAM).
+#     The ALU arm is the COMMON one in the measured streams: of 26 INDEX uops in the
+#     elementwise-add kernel, 24 take it (INDEX over a vector LOAD) and 2 do not (INDEX straight
+#     onto a PARAM).
 #
 # A4. `SPECIAL` carries its axis in `u.arg`, a tuple like `('l','idx',1)`
 #     (ops_python.py:108-109). The bare name is enough:
 #       SPECIAL     k:sp:<gidx0|gidx1|gidx2|lidx0|lidx1|lidx2>
 #
-# `<dtype>` is the bare dtype name ("int", "uint", "float", "bool", "weakint",
-# ...), which `to_dtype` already parses. `CONST` is `c:<decimal>` for an integer
-# lane and `f:<8 hex digits>` for a float lane.
+# `<dtype>` is the bare dtype name ("int", "uint", "float", "bool", "weakint", ...), which
+# `to_dtype` already parses. `CONST` is `c:<decimal>` for an integer lane and `f:<8 hex digits>`
+# for a float lane.
 #
-# local SIZE is a v1.1 amendment to the command line, not the packet.
+# local SIZE is a v1.1 amendment to the command line, not the packet. MEASURED FACT 4 says the
+# engine asks for (2,1,1) ... (16,1,1), and the v1 command line
+# `bend-executor PACKET gx gy gz vals...` has nowhere to put a local size. So v1 RUNS AT
+# local_size (1,1,1), which makes `warp` the one-element `[(0,0,0)]`, `warp_size` 1, every
+# "list of warp_size" in ops_python a one-element list, and a `lidxK` SPECIAL the constant 0. A
+# sibling encoder that wants a real local size must ADD it to the argv; until then it must
+# launch the BEND device with local_size (1,1,1), and tinygrad will then emit `gidx` instead of
+# `lidx`, which is what the `g` arm of tinygrad/runtime/ops_python.py:111 (`__call__`) answers
+# -- it reads `idxs`.
 #
-# MEASURED FACT 4 says the engine asks for (2,1,1) ... (16,1,1), and the v1
-# command line `bend-executor PACKET gx gy gz vals...` has nowhere to put a local
-# size. So v1 RUNS AT local_size (1,1,1), which makes `warp` the one-element
-# `[(0,0,0)]`, `warp_size` 1, every "list of warp_size" in ops_python a
-# one-element list, and a `lidxK` SPECIAL the constant 0. A sibling encoder that
-# wants a real local size must ADD it to the argv; until then it must launch the
-# BEND device with local_size (1,1,1), and tinygrad will then emit `gidx` instead
-# of `lidx`, which is what the `g` arm of tinygrad/runtime/ops_python.py:111 (`__call__`) answers -- it reads `idxs`.
+# BEND SUBSTRATE NOTES -- six rules every def below is written against, each measured against
+# bend 2.0.34 with ./bin/bend rather than read off a doc.
 #
-# BEND SUBSTRATE NOTES -- six rules every def below is written against, each
-# measured against bend 2.0.34 with ./bin/bend rather than read off a doc.
-#
-# 1. `Data` FIELDS MUST BE `Data`. A `Data` record cannot hold a `List` or an
-#    `Array`; both are `Type`. So a program table is NOT a field of a record: it
-#    is a `List` threaded beside the arena, and a `Uop` carries only `Data`.
-# 2. `match` ONLY SCRUTINEES A PARAMETER OR A FIELD. Both `match f(x):` and
-#    `x = f(y)` followed by `match x:` are refused -- "a match cannot
-#    scrutinize a computed value / a local binder: give it its own def". So
-#    every Maybe or sum a branch needs arrives as an ARGUMENT, and the branch
-#    itself is `Bool.pick` when the two arms are expressions. That is why
-#    `bytes.half` takes the second nibble as a `U32` and asks `hexdig_ok`
-#    instead of matching a `Maybe<&1, U32>`.
-# 3. `Array.get` ANSWERS A PAIR and its index is LINEAR: `Array.get(T, a, +i) ->
-#    Array<T> & T`. The pair must be destructured inside a def whose PARAMETER is
-#    the pair (`take(Array.get(...))` inside `rd`), never inline at the call site.
-#    `Array.set`'s index is an ordinary `U32`; `Array.new`'s depth is a `Nat`
-#    (`Array.new(T, 2n, v)` is 4 slots). A bound pair may be used ONCE, so a
-#    def that needs both halves must take the pair as a parameter.
-# 4. `Array` and a `type ... is Type` record are both affine: one use. This is
-#    why the arena is reached through `take`/`give` pairs rather than read twice,
-#    and why `Prog` below is nine arguments instead of one record.
+# 1. `Data` FIELDS MUST BE `Data`. A `Data` record cannot hold a `List` or an `Array`; both are
+#    `Type`. So a program table is NOT a field of a record: it is a `List` threaded beside the
+#    arena, and a `Uop` carries only `Data`.
+# 2. `match` ONLY SCRUTINEES A PARAMETER OR A FIELD. Both `match f(x):` and `x = f(y)` followed
+#    by `match x:` are refused -- "a match cannot scrutinize a computed value / a local binder:
+#    give it its own def". So every Maybe or sum a branch needs arrives as an ARGUMENT, and
+#    the branch itself is `Bool.pick` when the two arms are expressions. That is why
+#    `bytes.half` takes the second nibble as a `U32` and asks `hexdig_ok` instead of matching a
+#    `Maybe<&1, U32>`.
+# 3. `Array.get` ANSWERS A PAIR and its index is LINEAR: `Array.get(T, a, +i) -> Array<T> & T`.
+#    The pair must be destructured inside a def whose PARAMETER is the pair (`take(Array.get(...))`
+#    inside `rd`), never inline at the call site. `Array.set`'s index is an ordinary `U32`;
+#    `Array.new`'s depth is a `Nat` (`Array.new(T, 2n, v)` is 4 slots). A bound pair may be used
+#    ONCE, so a def that needs both halves must take the pair as a parameter.
+# 4. `Array` and a `type ... is Type` record are both affine: one use. This is why the arena is
+#    reached through `take`/`give` pairs rather than read twice, and why `Prog` below is nine
+#    arguments instead of one record.
 # 5. OPERATORS NEED AN ANNOTATION: `i + 1` is refused, it is `(i + 1 : U32)`.
-# 6. `U32.read` ANSWERS `Maybe` and reads "42" but refuses "-42" and any `k:`
-#    prefix, so every `<arg>` is split by hand. A `Nat` literal is `3n`, a `U32`
-#    index is `3`.
+# 6. `U32.read` ANSWERS `Maybe` and reads "42" but refuses "-42" and any `k:` prefix, so every
+#    `<arg>` is split by hand. A `Nat` literal is `3n`, a `U32` index is `3`.
 #
 # THE SHAPE OF THE MACHINE.
 #
 # `run` carries the mutable state ops_python.py:52-157 (`__call__`) keeps in four locals: the
-# `values` dict, the buffer bytearrays, `exec_masks`, and `pbufs`/`pvals`. Under
-# the rules above that is one `Prog` record threaded through a fuel recursion.
+# `values` dict, the buffer bytearrays, `exec_masks`, and `pbufs`/`pvals`. Under the rules above
+# that is one `Prog` record threaded through a fuel recursion.
 #
-#   * THE PC IS A LOOP, NOT A RECURSION. Python is `while i < len(self.uops)`
-#     with `BACKEDGE`/`END`/`RANGE` writing `i`. Bend has no loop and no
-#     `continue`, so `run` is `run(fuel, pr)` with the PC threaded and a DIE on
-#     fuel exhaustion -- which is also the "stay turing-incomplete" answer, since
-#     a RANGE-driven kernel has no static step bound.
-#   * the arena is strided, not bump-allocated. Python's `values` is keyed by
-#     UOp, so a RANGE body overwrites exactly the entries the first pass wrote
-#     (ops_python.py:125-127 increments `values[u]` in place, and :129 `del`s
-#     it). A bump allocator would append afresh on the second pass and the loop
-#     would read its own history, so uop `i` owns a FIXED slot run -- see
-#     `Uop.run_of.op` -- and a re-executed uop lands back on it.
+#   * THE PC IS A LOOP, NOT A RECURSION. Python is `while i < len(self.uops)` with
+#     `BACKEDGE`/`END`/`RANGE` writing `i`. Bend has no loop and no `continue`, so `run` is
+#     `run(fuel, pr)` with the PC threaded and a DIE on fuel exhaustion -- which is also the
+#     "stay turing-incomplete" answer, since a RANGE-driven kernel has no static step bound.
+#   * the arena is strided, not bump-allocated. Python's `values` is keyed by UOp, so a RANGE
+#     body overwrites exactly the entries the first pass wrote (ops_python.py:125-127 increments
+#     `values[u]` in place, and :129 `del`s it). A bump allocator would append afresh on the
+#     second pass and the loop would read its own history, so uop `i` owns a FIXED slot run --
+#     see `Uop.run_of.op` -- and a re-executed uop lands back on it.
 #
-# ONE KNOWN WRONG ANSWER, and it is measured rather than argued. `alu1(SQRT, ...)`
-# over an ELEMENT whose dtype is int32 answers 456459507 where Python's
-# `python_alu[Ops.SQRT](16)` is `math.sqrt(16)` = 4.0 (1082130432). The row is
-# in .agents/slop/exec_gate.bend, printed as KNOWN-FAIL so it cannot be mistaken
-# for a pass. `op_is_mathy` sends SQRT to the float lane and `f_of` reads the
-# 16 as 16.0, so the fault is inside the lane input, not the lane choice.
+# ONE KNOWN WRONG ANSWER, and it is measured rather than argued. `alu1(SQRT, ...)` over an
+# ELEMENT whose dtype is int32 answers 456459507 where Python's `python_alu[Ops.SQRT](16)` is
+# `math.sqrt(16)` = 4.0 (1082130432). The row is in .agents/slop/exec_gate.bend, printed as
+# KNOWN-FAIL so it cannot be mistaken for a pass. `op_is_mathy` sends SQRT to the float lane and
+# `f_of` reads the 16 as 16.0, so the fault is inside the lane input, not the lane choice.
 # TODO(p3) runtime/ops_python.py:138  symbol=__call__ -- the float lane's input for an int dtype.
 
 import Base
@@ -1129,36 +1113,33 @@ def Prog.zeros(+fs: List<&2, Buf>, acc: List<&2, U32>) -> List<&2, U32>:
     case Nil{}: acc
     case f <> t: Prog.zeros(t, Prog.pad(U32.to_nat(U32.mul(Buf.w(f), Buf.e(f))), acc))
 
-# THE STORE: the packet's bytes in packet order, then `nbytes` zeros for each
-# scratch buffer (ops_python.py:101,104 allocate `bytearray(n)`, and two scratch
-# buffers must not share bytes).
+# THE STORE: the packet's bytes in packet order, then `nbytes` zeros for each scratch
+# buffer (ops_python.py:101,104 allocate `bytearray(n)`, and two scratch buffers must not share
+# bytes).
 #
 # the zeros go after the packet's bytes, and there are `w*e` of them.
 #
 # `Prog.bases` gives the scratch buffer the base that FOLLOWS the packet's
 #
-# MEASURED 2026-10-26, and this was the port's SECOND defect, hidden behind the
-# first: with the zeros PREPENDED and counted in ELEMENTS, every packet with a
-# scratch `BUFFER` was shifted by `e` BYTES -- the packet's own bytes sat at the
-# wrong offset, so every load and every store read and wrote the wrong place.
-# The shift is visible in the tree's OWN census: `bool.maxpair.0.b1` is
-# `0100010001000100` upstream and `0001000100010001` in the port -- the same
-# bytes, shifted right by ONE, because that fixture's scratch is `k:buffer:1`
-# (a bool, `w=1`, so `e=1`). The port's OWN conv packet has a `k:buffer:64`
-# scratch (an f32, `w=4`, so `e=16`) and is shifted by 16 bytes -- four floats.
-# - every pinned divergence of the "loop-carried local reduction family" and of
-# the "VECTOR-STORE LANE family" IS THIS SHIFT, and the pin file's diagnosis
-# ("a nested END jumps to the inner head") is a DIFFERENT STORY.
+# MEASURED 2026-10-26, and this was the port's SECOND defect, hidden behind the first: with the
+# zeros PREPENDED and counted in ELEMENTS, every packet with a scratch `BUFFER` was shifted by `e`
+# BYTES -- the packet's own bytes sat at the wrong offset, so every load and every store read
+# and wrote the wrong place. The shift is visible in the tree's OWN census: `bool.maxpair.0.b1`
+# is `0100010001000100` upstream and `0001000100010001` in the port -- the same bytes, shifted
+# right by ONE, because that fixture's scratch is `k:buffer:1` (a bool, `w=1`, so `e=1`). The
+# port's OWN conv packet has a `k:buffer:64` scratch (an f32, `w=4`, so `e=16`) and is shifted
+# by 16 bytes -- four floats.
+# - every pinned divergence of the "loop-carried local reduction family" and of the
+# "VECTOR-STORE LANE family" IS THIS SHIFT, and the pin file's diagnosis ("a nested END jumps to
+# the inner head") is a DIFFERENT STORY.
 #
-# the order is the other half: prepending the zeros puts the packet's bytes at
-# offset `len(zeros)` while `Prog.bases` says their base is 0, so the shift is
-# `len(zeros)` however the zeros are counted. The zeros belong AT THE END, and
-# the one reversal that puts them there is the SAME reversal the byte order
-# needs.
-# 64 bytes per chunk, ONCE, at load: O(n) here and O(n/64 + 64) per store
-# afterwards. `n` counts a chunk DOWN, so every self-call consumes the head -- Bend
-# refuses a call whose first argument did not visibly shrink, and `List.drop` is not
-# visible to that check.
+# the order is the other half: prepending the zeros puts the packet's bytes at offset
+# `len(zeros)` while `Prog.bases` says their base is 0, so the shift is `len(zeros)` however the
+# zeros are counted. The zeros belong AT THE END, and the one reversal that puts them there is
+# the SAME reversal the byte order needs.
+# 64 bytes per chunk, ONCE, at load: O(n) here and O(n/64 + 64) per store afterwards. `n`
+# counts a chunk DOWN, so every self-call consumes the head -- Bend refuses a call whose first
+# argument did not visibly shrink, and `List.drop` is not visible to that check.
 def Prog.chunks.fin(cur: List<&2, U32>, acc: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
   match cur:
     case Nil{}: List.reverse(&2, List<&2, U32>, acc)
@@ -1500,24 +1481,22 @@ def Uop.of.arg2(+u: Uop, m: Maybe<&2, Arg>) -> Uop:
 
 def Uop.of.arg(+u: Uop, h: String) -> Uop: Uop.of.arg2(u, Arg.of(h))
 
-# a src index: 1-based on the wire, 0-based here, refused when `U32.read` refuses
-# the spelling. The bounds check is `Uop.at`'s: an index past the packet answers
-# the bottom, and the bottom of an INDEX is the zero this walk then reads.
+# a src index: 1-based on the wire, 0-based here, refused when `U32.read` refuses the
+# spelling. The bounds check is `Uop.at`'s: an index past the packet answers the bottom, and the
+# bottom of an INDEX is the zero this walk then reads.
 #
-# THE `+1`/`-1` IS THE WHOLE OF `uop_to_index`, and it is the only reason
-# `Prog.dispatch`'s END arm (:2025) may read `Uop.src1(u)` where ops_python.py:70
-# reads `i = self.uop_to_index[u.src[1]]` -- an INDEX LOOKUP CPython performs at
-# dispatch time. The port performs it HERE, once, for every src, because the
-# wire's `<src>` field IS that index: `ops_bend.encode` (ops_bend.py:135) builds
-# `idx = {u: i for i, u in enumerate(uops)}` -- the SAME comprehension ops_python
-# :49 builds -- and writes `str(idx[s]+1)` (ops_bend.py:142). MEASURED today, on
-# a real `encode` output: the wire field equals `uop_to_index[src]+1` for every
-# src of every uop, and on the END line the port's pc (2 - 1) equals
-# `uop_to_index[END.src[1]]` (1). So `Uop.src1(u)` IS that lookup, and it is not
-# an END special case: `Prog.src` and `Prog.slot` read every other src the same
-# way. A predecessor of this comment put the claim on a def that was DEAD -- it
-# returned `Nil{}` and was called by nothing -- and a comment citing a dead def
-# as its evidence is not evidence.
+# THE `+1`/`-1` IS THE WHOLE OF `uop_to_index`, and it is the only reason `Prog.dispatch`'s END
+# arm (:2025) may read `Uop.src1(u)` where ops_python.py:70 reads `i =
+# self.uop_to_index[u.src[1]]` -- an INDEX LOOKUP CPython performs at dispatch time. The port
+# performs it HERE, once, for every src, because the wire's `<src>` field IS that index:
+# `ops_bend.encode` (ops_bend.py:135) builds `idx = {u: i for i, u in enumerate(uops)}` -- the
+# SAME comprehension ops_python :49 builds -- and writes `str(idx[s]+1)` (ops_bend.py:142).
+# MEASURED today, on a real `encode` output: the wire field equals `uop_to_index[src]+1` for every
+# src of every uop, and on the END line the port's pc (2 - 1) equals `uop_to_index[END.src[1]]`
+# (1). So `Uop.src1(u)` IS that lookup, and it is not an END special case: `Prog.src` and
+# `Prog.slot` read every other src the same way. A predecessor of this comment put the claim on
+# a def that was DEAD -- it returned `Nil{}` and was called by nothing -- and a comment citing a
+# dead def as its evidence is not evidence.
 def Uop.of.sr(h: String) -> U32: U32.sub(num_of(num(h)), 1)
 
 # TWO things are decided HERE, and both are why the walk cannot stop at the first
@@ -2183,24 +2162,22 @@ def Prog.stack(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   Prog.stack.by(p, a, u)
 
 # :134 CAST -- `values[u] = [truncate.get(u.dtype, lambda dt: dt)(u.dtype.const(x))
-# for x in src_values[0]]` (ops_python.py:137-138). `DType.const` (dtype.py:84) IS
-# the value conversion: `float(val)` for a FLOAT, `bool(val)` for a BOOL, and
-# `int(val)` for an integer -- python's truncation toward zero. `truncate.get`
-# (dtype.py:289) IS THEN THE RANGE: `ctypes.c_int32(...)`/`ctypes.c_uint32(...)`.
+# for x in src_values[0]]` (ops_python.py:137-138). `DType.const` (dtype.py:84) IS the value
+# conversion: `float(val)` for a FLOAT, `bool(val)` for a BOOL, and `int(val)` for an integer --
+# python's truncation toward zero. `truncate.get` (dtype.py:289) IS THEN THE RANGE:
+# `ctypes.c_int32(...)`/`ctypes.c_uint32(...)`.
 #
 # the FLOAT-to-integer arm was the FLOAT's own bit pattern. it read
-# `F32.bits(F32.trunc(f_of(e)))`, WHICH IS THE BIT PATTERN OF THE FLOAT 1.0
-# (0x3F800000) and not the integer 1 (0x00000001) that `int(1.0)` is. measured
-# 2026-10-26: `f32.bitcast.0`'s OUTPUT BUFFER 0 WAS CPYTHON'S
-# `01000000020000000300000004000000...` (the integers 1,2,3,4) and the port's was
-# `0000803f0000004000004040000080...` (the floats' own bit patterns). the same
-# arm is what `x.abs().cast(dtypes.int32)` goes through, so it also broke
-# `f32.shl.0`, `f32.shr.0` AND `f32.cmod.0` -- FOUR of the 29 pinned rows.
-# `int(x)` AS THE TWO's-COMPLEMENT BITS OF A 32-BIT INT. `F32.to_u32`
-# truncates toward zero, which is half of what is wanted, but it clamps a
-# NEGATIVE TO ZERO: MEASURED 2026-10-26, `F32.to_u32(-1.0)` IS 0 AND NOT
-# 4294967295. so the magnitude is taken and the sign is put back by the
-# subtraction, which is the two's complement of the magnitude.
+# `F32.bits(F32.trunc(f_of(e)))`, WHICH IS THE BIT PATTERN OF THE FLOAT 1.0 (0x3F800000) and not
+# the integer 1 (0x00000001) that `int(1.0)` is. measured 2026-10-26: `f32.bitcast.0`'s OUTPUT
+# BUFFER 0 WAS CPYTHON'S `01000000020000000300000004000000...` (the integers 1,2,3,4) and the
+# port's was `0000803f0000004000004040000080...` (the floats' own bit patterns). the same arm is
+# what `x.abs().cast(dtypes.int32)` goes through, so it also broke `f32.shl.0`, `f32.shr.0` AND
+# `f32.cmod.0` -- FOUR of the 29 pinned rows.
+# `int(x)` AS THE TWO's-COMPLEMENT BITS OF A 32-BIT INT. `F32.to_u32` truncates toward zero,
+# which is half of what is wanted, but it clamps a NEGATIVE TO ZERO: MEASURED 2026-10-26,
+# `F32.to_u32(-1.0)` IS 0 AND NOT 4294967295. so the magnitude is taken and the sign is put back
+# by the subtraction, which is the two's complement of the magnitude.
 def f32_int_bits(+x: F32) -> U32:
   Bool.pick(U32, F32.is_lt(x, 0.0), U32.sub(0, F32.to_u32(F32.abs(x))), F32.to_u32(x))
 
@@ -2447,27 +2424,25 @@ def Prog.store.elem(a: Array<Elem>, +p: Prog, +u: Uop, +j: U32) -> Array<Elem> &
 # ops_python.py:29-33's `_store` writes
 #     if (w:=m.nbytes // len(m)) >= dtype.itemsize: m[i] = to_storage_scalar(v, dtype)
 # into the BUFFER's own memoryview, and `m`'s element TYPE is the BUFFER's own
-# (`storage_fmt_for_dtype(u.dtype)`, ops_python.py:99) -- SO THE VALUE IS
-# converted to the BUFFER and is not written as its own BITS. the two agree
-# when the value's dtype is the BUFFER's (the common case) and differ when they
-# are not: a BOOL stored into an F32 BUFFER is upstream's `m[0] = True`, which
-# IS 1.0f, AND NOT THE INTEGER 1.
+# (`storage_fmt_for_dtype(u.dtype)`, ops_python.py:99) -- SO THE VALUE IS converted to the
+# BUFFER and is not written as its own BITS. the two agree when the value's dtype is the
+# BUFFER's (the common case) and differ when they are not: a BOOL stored into an F32 BUFFER is
+# upstream's `m[0] = True`, which IS 1.0f, AND NOT THE INTEGER 1.
 # MEASURED 2026-10-26 on `alu.CMPNE.f`: CPython's output buffer 0 IS
 # `0000803f00000000` (1.0f) and the port's was `0100000000000000` (the integer 1).
 #
-# the conversion is the CAST's conversion and not a second one: upstream's
-# CAST is `truncate.get(u.dtype)(u.dtype.const(x))` AND upstream's STORE is
-# `m[i] = value` INTO A MEMORYVIEW OF THE BUFFER'S TYPE, AND `DType.const`
-# (dtype.py:84) and the memoryview are the same conversion for the four v1
-# lanes. so `Prog.cast.dt` is reused here, and it is the identity when the two
-# DTYPES ARE THE SAME.
+# the conversion is the CAST's conversion and not a second one: upstream's CAST is
+# `truncate.get(u.dtype)(u.dtype.const(x))` AND upstream's STORE is `m[i] = value` INTO A
+# MEMORYVIEW OF THE BUFFER'S TYPE, AND `DType.const` (dtype.py:84) and the memoryview are the
+# same conversion for the four v1 lanes. so `Prog.cast.dt` is reused here, and it is the identity
+# when the two DTYPES ARE THE SAME.
 # the STORE's per-lane invariants, looked up once.
 #
 # The old lane loop called `Prog.buf(p, u)` eight times per lane -- twice inside `store.bits`,
-# twice in `store.addr`, again in `store.open`, and `store.i` re-reads it -- and every one of those
-# is `Prog.src`: an arena read with its `Maybe`. A four-lane store made ~32 arena reads to write 4
-# elements, and `Prog_store_lane_at` is in the executor's own profile. Everything except the VALUE
-# is the same for every lane, so it is bound once in `Sb`.
+# twice in `store.addr`, again in `store.open`, and `store.i` re-reads it -- and every one of
+# those is `Prog.src`: an arena read with its `Maybe`. A four-lane store made ~32 arena reads to
+# write 4 elements, and `Prog_store_lane_at` is in the executor's own profile. Everything except
+# the VALUE is the same for every lane, so it is bound once in `Sb`.
 
 type Sb is Data:
   Sb{w: U32, dt: S.Dt, e: U32, base: U32, off: U32, step: U32, slot: U32, open: Bool}
@@ -2772,33 +2747,25 @@ def Prog.over(+pr: Prog) -> Bool: U32.is_ge(Prog.pc(pr), Prog.n(pr))
 def Prog.die(+pr: Prog) -> Prog:
   Prog{Prog.st(pr), Prog.gd(pr), Prog.ms(pr), Prog.mk(pr), Prog.pc(pr), Prog.bad(pr), True{}, Prog.un(pr)}
 
-# ONE def for the whole loop, and it has to be ONE: Bend refuses mutual
-# recursion, so `run` and a separate `run.at` cannot both exist. The shape that
-# works is MEASURED, not guessed:
+# ONE def for the whole loop, and it has to be ONE: Bend refuses mutual recursion, so `run`
+# and a separate `run.at` cannot both exist. The shape that works is MEASURED, not guessed:
 #   * `match` on the FUEL, with the termination test as the `Bool.pick` GUARD.
-#   * the countdown comes FIRST in the self-call: arguments are read left to
-#     right and nothing rebuilt may precede the one that shrinks, and
-#     `Prog.step(pr)` is rebuilt.
+#   * the countdown comes FIRST in the self-call: arguments are read left to right and nothing
+#     rebuilt may precede the one that shrinks, and `Prog.step(pr)` is rebuilt.
 #   * `+pr` because `Bool.pick` evaluates both arms and each consumes `pr`.
 # => and the termination test is a match on the cursor, not a `Bool.pick` guard.
 # MEASURED: `Bool.pick` EVALUATES BOTH ARMS, so the old body --
-# `Bool.pick(Prog, Prog.over(pr), pr, run(k, Prog.step(pr)))` -- ran the recursive
-# arm even after the program had finished, and EVERY LAUNCH BURNED THE WHOLE OF
-# `FUEL`: the step counter read 4 000 000 for a 16x16 packet AND 4 000 000 for a
-# 32x32 one, two different programs, both exactly the fuel, while the answers stayed
-# right because the guard threw the work away. `un` IS `pc < n`, so `match f un`
-# both stops and is a legal scrutinee (a computed Bool is not).
-# the step's pair has to be split to reach the cursor, and a computed pair cannot be matched, so it
-# is handed to a def whose PARAMETER is that pair
-# the pair has to be split to reach the cursor, and a computed pair cannot be matched, so the pair is
-# a PARAMETER here and the split happens at the top of the step
-# the LOOP matches the fuel and the pair together. `run` has to take its next cursor from the step's
-# RESULT, and the result is a computed `Prog & Array<Elem>` -- which cannot be matched. Matching the
-# fuel and the pair in one `match f av:` gives the record as a BINDER, so its `un` is matched at a
-# deeper level and the post-step cursor is reachable without splitting anything.
-# the LOOP takes its next cursor from the record it just built. The step returns a computed
-# `Prog & Array<Elem>`, which cannot be matched, so the pair is a PARAMETER and the record it holds is
-# matched at a deeper level -- that is how `un` is reachable without splitting anything.
+# `Bool.pick(Prog, Prog.over(pr), pr, run(k, Prog.step(pr)))` -- ran the recursive arm even after
+# the program had finished, and EVERY LAUNCH BURNED THE WHOLE OF `FUEL`: the step counter read
+# 4 000 000 for a 16x16 packet AND 4 000 000 for a 32x32 one, two different programs, both
+# exactly the fuel, while the answers stayed right because the guard threw the work away. `un` IS
+# `pc < n`, so `match f un` both stops and is a legal scrutinee (a computed Bool is not).
+# the step's pair has to be split to reach the cursor, and a computed pair cannot be matched, so
+# it is handed to a def whose PARAMETER is that pair
+# the LOOP matches the fuel and the pair together. `run` has to take its next cursor from the
+# step's RESULT, and the result is a computed `Prog & Array<Elem>` -- which cannot be matched.
+# Matching the fuel and the pair in one `match f av:` gives the record as a BINDER, so its `un`
+# is matched at a deeper level and the post-step cursor is reachable without splitting anything.
 def run(+f: Nat, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
   match f:
     case 0n:
@@ -3021,57 +2988,55 @@ def Prog.launch() -> IO(Unit):
 
 # THE RENDERER / COMPILER / DEVICE HALF -- ops_python.py:33-44 and :159-186
 #
-# ops_python.py has TWO halves. Everything ABOVE is `PythonProgram.__call__`:
-#
 # the central question, answered: how does this file represent a python literal?
 #
-# `PythonRenderer.render` (:180) is `base64.b64encode(pickle.dumps(uops)).decode()`
-# and its OUTPUT is a Python object: `bytes` holding a pickle, which is a Python
-# OBJECT GRAPH written in a byte language -- and `UOp.arg` is a Python object of
-# whatever type the rewrite that built it chose (a tuple, a list, a dtype, a
-# numpy array, an `Attr`). No such value exists in Bend and none can: a dynamic
-# value is precisely what a statically typed language refuses.
+# `PythonRenderer.render` (:180) is `base64.b64encode(pickle.dumps(uops)).decode()` and its
+# OUTPUT is a Python object: `bytes` holding a pickle, which is a Python OBJECT GRAPH written
+# in a byte language -- and `UOp.arg` is a Python object of whatever type the rewrite that
+# built it chose (a tuple, a list, a dtype, a numpy array, an `Attr`). No such value exists in
+# Bend and none can: a dynamic value is precisely what a statically typed language refuses.
 #
-# So the port does not represent one and does not fake one. It gives the same
-# information a different, total, byte-exact spelling:
+# So the port does not represent one and does not fake one. It gives the same information a
+# different, total, byte-exact spelling:
 #
 #   CPython                    this port
 #
-# The last row is the load-bearing one. A Python `bytes` and a Bend
+# The last row is the load-bearing one. A Python `bytes` and a Bend `List<&2, Char>` carry the
+# SAME total information about the SAME program; the port chose the spelling a total language
+# can inspect, and the seam (`ops_bend.py`'s `BendProgram`) reads it back.
 #
 # `PythonCompiler.compile` (:160) is the opposite case and is ported EXACTLY:
-# `base64.b64decode(src)` is a character-level transform with nothing dynamic in
-# it, bytes included. That asymmetry is the answer, not an evasion -- the defs
-# whose output is static get the real transform, and the one whose output is a
-# Python object graph gets a wire and says so.
+# `base64.b64decode(src)` is a character-level transform with nothing dynamic in it, bytes
+# included. That asymmetry is the answer, not an evasion -- the defs whose output is static get
+# the real transform, and the one whose output is a Python object graph gets a wire and says so.
 #
 # what is not ported, stated here rather than discovered later:
-#   * `wmma`'s fragment arithmetic (:35-43) needs `tcore.frag_coords()`, a
-#     three-way (row, col) layout from `renderer/tc.py`, which this project has
-#     not ported, and its `arg` is a `(dims, dtype_in, threads)` tuple. The core
-#     LOOKUP and the two ASSERTIONS are ported and gated; the multiply-accumulate
-#     is WALL 2 and stays there.
-#   * `supported_dtypes`' INHERITED half (:182) filters `super().supported_dtypes()`,
-#     a set this file does not own. The filter itself -- `d != dtypes.half or
-#     sys.version_info >= (3, 12)` -- is ported and gated; the set is a seam.
-#   * `render`'s pickle. See above. The v1 wire is the port's counterpart and is
-#     gated by `.agents/slop/bend_packets.py`, not here.
+#   * `wmma`'s fragment arithmetic (:35-43) needs `tcore.frag_coords()`, a three-way (row, col)
+#     layout from `renderer/tc.py`, which this project has not ported, and its `arg` is a
+#     `(dims, dtype_in, threads)` tuple. The core LOOKUP and the two ASSERTIONS are ported and
+#     gated; the multiply-accumulate is WALL 2 and stays there.
+#   * `supported_dtypes`' INHERITED half (:182) filters `super().supported_dtypes()`, a set this
+#     file does not own. The filter itself -- `d != dtypes.half or sys.version_info >= (3, 12)` --
+#     is ported and gated; the set is a seam.
+#   * `render`'s pickle. See above. The v1 wire is the port's counterpart and is gated by
+#     `.agents/slop/bend_packets.py`, not here.
+#
 # ---- PythonCompiler.compile, :160. base64.b64decode(src) ------------------
 #
-# WALL 5, AND IT IS A REAL ONE. `base64.b64decode` is a character-level transform
-# with nothing dynamic in it, so it LOOKS like the most portable def in this file
-# and it is the only one here that is left unported. The reason is measured, not
-# guessed, and it is worth writing down because the first draft compiled, ran and
-# produced plausible-looking hex:
+# WALL 5, AND IT IS A REAL ONE. `base64.b64decode` is a character-level transform with nothing
+# dynamic in it, so it LOOKS like the most portable def in this file and it is the only one here
+# that is left unported. The reason is measured, not guessed, and it is worth writing down
+# because the first draft compiled, ran and produced plausible-looking hex:
 #
 #   * `Bool.pick` EVALUATES BOTH ARMS. A losing arm that computes
-#     `Char.from_u32(U32.sub(v, 10))` for `v < 10` is `Char.from_u32(2**32 - 6)`,
-#     which is not a scalar value, and the run dies with
+#     `Char.from_u32(U32.sub(v, 10))` for `v < 10` is `Char.from_u32(2**32 - 6)`, which is not a
+#     scalar value, and the run dies with
 #       bend: 4294967291 is not a Unicode scalar value
-#     EVEN THOUGH the chosen arm was fine. (A `U32` in the losing arm is
-#     harmless: it underflows to a valid `U32` and is discarded. The trap is
-#     specific to a CHECKED type.) The nibble/byte printers below dodge it.
-#     CPython for every non-trivial input. Port vs CPython, measured:
+#     EVEN THOUGH the chosen arm was fine. (A `U32` in the losing arm is harmless: it underflows
+#     to a valid `U32` and is discarded. The trap is specific to a CHECKED type.) The
+#     nibble/byte printers below dodge it.
+#   * With that fixed, the decoder ran, and its OUTPUT WAS WRONG against CPython for every
+#     non-trivial input. Port vs CPython, measured:
 #         "AA=="      port 04          CPython 00
 #         "AP8="      port 04          CPython 00ff
 #         "AP9/"      port 00          CPython 00ff7f
@@ -3079,24 +3044,23 @@ def Prog.launch() -> IO(Unit):
 #         "dGhlIHF1..." port 9481c5ac... CPython 7468652071...
 #     The byte COUNTS were wrong too (3 where CPython says 4 on the last one).
 # `U32.shrn` is NOT the culprit -- measured `U32.shrn(4160, 16n) = 0` and
-# `U32.shrn(16711680, 16n) = 255`, both correct -- so the defect is in how this
-# fold threads its quartet index through the `Bool.pick` selects, and it was NOT
-# found inside the time this unit had.
+# `U32.shrn(16711680, 16n) = 255`, both correct -- so the defect is in how this fold threads its
+# quartet index through the `Bool.pick` selects, and it was NOT found inside the time this unit
+# had.
 #
-# There ARE two `pyc_*` rows, and neither of them runs the transform -- that is
-# what they are FOR, and it is the honest limit rather than a gap. `compile` IS
-# `base64.b64decode`: measured `PythonCompiler.compile.__func__ is
-# base64.b64decode` is False, but `compile(src) == base64.b64decode(src)` on
-# every fixture, i.e. it IS the function under another name. What the port can
-# decide WITHOUT a working quartet fold is the IDENTITY, so it declares which
+# There ARE two `pyc_*` rows, and neither of them runs the transform -- that is what they are
+# FOR, and it is the honest limit rather than a gap. `compile` IS `base64.b64decode`: measured
+# `PythonCompiler.compile.__func__ is base64.b64decode` is False, but `compile(src) ==
+# base64.b64decode(src)` on every fixture, i.e. it IS the function under another name. What the
+# port can decide WITHOUT a working quartet fold is the IDENTITY, so it declares which
 # transform each of the two names performs and compares them:
-#   * `pyc_is_b64decode` -- the transform `compile` performs IS the transform
-#     `base64.b64decode` performs.
+#   * `pyc_is_b64decode` -- the transform `compile` performs IS the transform `base64.b64decode`
+#     performs.
 #   * `pyc_refused` -- its negation, the port's spelling of "it is not".
-# the oracle can say more, and does: `B64_HOLDS` calls `compile` on eight
-# fixtures and compares the BYTES, which is an empirical identity where this row
-# is a declared one. That is the one row in this census where the port's answer
-# is the weaker fact, and the gate says so rather than letting a green run read
+# the oracle can say more, and does: `B64_HOLDS` calls `compile` on eight fixtures and compares
+# the BYTES, which is an empirical identity where this row is a declared one. That is the one
+# row in this census where the port's answer is the weaker fact, and the gate says so rather
+# than letting a green run read
 # TODO(p3) runtime/ops_python.py:164  symbol=compile -- the base64 quartet fold.
 def compile.transform() -> String: "base64.b64decode"
 def b64.transform() -> String: "base64.b64decode"
