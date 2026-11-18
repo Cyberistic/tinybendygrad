@@ -98,7 +98,8 @@ if __name__ == "__main__":
   if not budget:
     raise SystemExit(f"NO BUDGET: {BUDGET} does not exist. Run with --write to create it.")
   over = []
-  for rel, (b, l) in sorted(cur.items()):
+  for rel, v in sorted(cur.items()):
+    b, l = v["blocks"], v["lines"]
     if rel not in budget:
       over.append((rel, b, l, 0, 0, "NEW FILE"))
       continue
