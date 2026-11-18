@@ -4990,6 +4990,27 @@ second would be a forward pass, and there is no kernel executor to run one.
       so the sentence above stands unchanged: there is still no forward pass.
       See `.agents/slop/execgap/REPORT.md`.
 
+**`TENSOR SHADERS` is the other half of that bar, and it is a FOLDER, NOT A FEATURE.**
+`shaders/` answers whether Shadertoy's vocabulary is expressible in the port's UOps. It
+is answered: 2079 rows of preorder unfolding agree between `bin/bend` and CPython, and the
+formula is measured to be a circle. **`fwidth` NEEDS NO NEW OP** -- a quad neighbour is
+`pad` + `shrink`, so the screen-space derivative is a movement op. `smoothstep` and `clamp`
+are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
+
+- [x] **`shaders/` -- a fragment shader as a tensor program, gated** (2026-11-18, `6bc2b81fa`).
+      `shader.bend` builds the AA circle with the port's own Tensor API; `shader-oracle.py`
+      builds the same formula in CPython in the SAME spelling; `shader-gate.py` diffs the two
+      (**PASS**, 2079 rows) AND executes the formula in CPython for the question a graph diff
+      cannot answer (`centre=1.0000 corner=0.0000 partial=95`, `VALUES OK` -- `partial` is the
+      only number that sees `fwidth`, because a shader multiplying it by zero still agrees with
+      its own oracle). `--plant` rewrites `SH_R()` in a COPY of `shader.bend` so the PORT's
+      graph moves, and requires the diff to fire (measured: `PLANT FIRED`, row 37).
+- [ ] **THE SHADER CANNOT RUN, AND THE REASON IS THE SAME ONE AS ABOVE.** Its 55-node graph
+      is a `Tensor`, and turning a `Tensor` into a kernel is `rangeify` stage 1
+      (`rangeify.bend:2810`, `run_rangeify -- NOT PORTED`). So `shaders/` is a compiler result
+      and not a renderer: every number in it is CPython's except the row *structure*. The
+      single stage that would close it is the same one that would give the tree a forward pass.
+
 ---
 
 ## Phase P0 — toolchain and scaffolding
