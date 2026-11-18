@@ -24,6 +24,10 @@ fw_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,7,7 st_dims=
 pool_rl=STORE:none:RESHAPE,REDUCE:none
 fw_rl=STORE:none:RESHAPE,RESHAPE:none
 xp_rm=33:REDUCE:other:PERMUTE,35:STORE:none:RESHAPE,EXPAND
+tp_xp=n=22 uniq=22
+tp_pool=n=21 uniq=21
+nw_row=rs=0,0,1,2 tbl=3
+xp_len=red_dims=1,1,14,14 n=4 out=rm=True True in=12,13,0,0,11 out=0,0,11 tbl=24
 xp_dims=v_dims=2,1,1,14,14 marg=2 src_dims=1,1,14,14 nsrc=2
 xp_val=v=EXPAND:none:REDUCE,CONST [rm=False True in=8,9,10 out=4,5,6,7 tbl=24] src0=REDUCE:other:PERMUTE [rm=True True in=12,13,0,0,11 out=0,0,11 tbl=24]
 xp_lk=1/STORE>INDEX

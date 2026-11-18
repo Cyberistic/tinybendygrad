@@ -550,6 +550,43 @@ def xp_dims() -> String:
                  " src_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, s0)),
                  " nsrc=", U32.show(O.Arena.nsrc(ar, v))])
 
+# IS THE CLOSED LIST ONE ENTRY PER DIM? `flatten_bufferize` zips `x.shape` with the STAGE's
+# closed srcs, so a short list would make the collapse wrong rather than merely absent.
+def xp_len() -> String:
+  +ar = RZ.RZProg.ar(RZ.rz_rebuild(xp_prog(), False{}, False{}))
+  +sk = RZ.RZProg.sink(RZ.rz_rebuild(xp_prog(), False{}, False{}))
+  +tb = F.Folded.t(F.folded(ar))
+  +v = SCH.sc_src(ar, SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1), 1)
+  +r = SCH.sc_src0(ar, v)
+  String.concat(["red_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, r)),
+                 " n=", U32.show(U32.from_nat(List.length(&2, U32, RR.rr_dims(ar, tb, r)))),
+                 " out=", RR.rr_rngm_row(ar, sk, r)])
+
+# `rr_new.all` ON THE REDUCE'S OWN DIMS: one entry per dim, or not?
+def nw_row() -> String:
+  +n = RR.rr_new.all([1, 1, 14, 14], [IX.ix_rg_c0()], Nil{})
+  String.concat(["rs=", RR.rr_dims_str(RR.RrRs.rs(n)),
+                 " tbl=", U32.show(U32.from_nat(List.length(&2, IX.IxRange, RR.RrRs.tbl(n))))])
+
+def tp_uniq.go(+ns: List<&2, U32>, +seen: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      tp_uniq.go(t, seen, Bool.pick(List<&2, U32>, F.mem_u32(seen, x), acc,
+        List.append(&2, U32, acc, [x])))
+
+def tp_uniq(+ns: List<&2, U32>, +seen: List<&2, U32>) -> List<&2, U32>: tp_uniq.go(ns, seen, Nil{})
+
+# DOES THE TOPOSORT YIELD A NODE TWICE? The `ends` flag list is indexed by POSITION in the
+# reversed toposort, so a duplicate shifts every position after it -- and it would also explain
+# `rr_cons` answering 32 consumers for a node with one.
+def tp_row(+pr: RZ.RZProg) -> String:
+  +ar = RZ.RZProg.ar(pr)
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, RZ.RZProg.sink(pr))
+  +u = tp_uniq(ns, Nil{})
+  String.concat(["n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
+                 " uniq=", U32.show(U32.from_nat(List.length(&2, U32, u)))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -577,6 +614,10 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["tp_xp=", tp_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["tp_pool=", tp_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["nw_row=", nw_row()]))
+    _ : Unit <- IO.print(String.concat(["xp_len=", xp_len()]))
     _ : Unit <- IO.print(String.concat(["xp_dims=", xp_dims()]))
     _ : Unit <- IO.print(String.concat(["xp_val=", xp_val_row()]))
     _ : Unit <- IO.print(String.concat(["xp_lk=", xp_lk()]))
