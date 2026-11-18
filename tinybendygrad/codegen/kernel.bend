@@ -1326,11 +1326,111 @@ def lr_go(idm: Maybe<&2, O.Found>, rop: O.Op, +inp: U32, +rs: List<&2, U32>, +ar
     case None{}   : None{}
     case Some{idc}: lr_acc(rop, inp, rs, idc, ar, self)
 
+# ---- THE SMALL-REDUCE UNROLL ----------------------------------------------------
+#
+# A `REDUCE` over ONE STATIC range of small extent is UNROLLED, and that is the shape
+# CPython's own C has for this kernel: `((val5*val8)+(val3*val7)+(val4*val6))`.
+# `pm_reduce_simplify` does NOT do it (MEASURED: the ops list is unchanged), and the
+# ACCUMULATOR form this file builds renders with its store OUTSIDE the loop because the
+# port has no `pm_split_ends`/`pm_add_control_flow` to order an END -- so every
+# accumulator kernel is wrong today. The unroll is bounded (`LR_MAX`) so a real MNIST
+# conv (extent 25) still takes the accumulator path and is NOT claimed to work.
+def LR_MAX() -> U32: 8
+
+def lr_extent(+ar: O.Arena, +r: U32) -> Maybe<&2, U32>:
+  O.ParamArg.size.const(O.Arena.arg(ar, O.Arena.src0(ar, r)))
+
+# A ONE-ENTRY SUBSTITUTE. `CG.UOp.substitute` is in `codegen/__init__.bend`, which
+# IMPORTS this file, so the cycle forbids it; this is the same postorder rebuild over
+# `LRep`, and it is all the unroll needs.
+def lr_pickb(b: Bool, a: U32, c: U32) -> U32:
+  match b:
+    case True{} : a
+    case False{}: c
+
+# ONE recursive def and no helper that calls back: the range's replacement is chosen by
+# `lr_pickb` on an already-built index, so the rebuilt node is minted even when it is
+# discarded (interning makes that free of meaning, not of work).
+def lr_sub.go(+ns: List<&2, U32>, +ar: O.Arena, +rg: U32, +val: U32, +rep: List<&2, LRep>) -> (O.Arena & List<&2, LRep>):
+  match ns:
+    case Nil{}: (ar, rep)
+    case n <> t:
+      +srcs = lr_srcs.go(O.Arena.srcs(ar, n), rep, Nil{})
+      +f = O.UOp.new(ar, O.Arena.op(ar, n), srcs, O.Arena.arg(ar, n), O.Arena.tag(ar, n))
+      lr_sub.go(t, O.Found.ar(f), rg, val, LRep{n, lr_pickb(U32.is_eq(n, rg), val, O.Found.i(f))} <> rep)
+
+def lr_one.fin(p: (O.Arena & List<&2, LRep>), +inp: U32) -> Maybe<&2, O.Found>:
+  (ar, rep) = p
+  Some{O.Found{ar, lr_get(rep, inp)}}
+
+def lr_one(+ar: O.Arena, i0: U32, +inp: U32, +rg: U32) -> Maybe<&2, O.Found>:
+  +c = O.UOp.cconst(ar, O.CInt{H.i64_of_i32(i0)}, S.int32())
+  +a0 = O.Found.ar(c)
+  lr_one.fin(lr_sub.go(O.UOp.toposort(O.Arena.budget(a0), a0, inp), a0, rg, O.Found.i(c), Nil{}), inp)
+
+def lr_ur.put(acc: Maybe<&2, O.Found>, +a: O.Arena, rop: O.Op, u: U32) -> Maybe<&2, O.Found>:
+  match acc:
+    case None{} : Some{O.Found{a, u}}
+    case Some{f}: Some{O.UOp.alu(a, rop, [O.Found.i(f), u])}
+
+def lr_ur.fold(a: O.Arena, mi: Maybe<&2, U32>, rop: O.Op, acc: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
+  match mi:
+    case None{} : acc
+    case Some{u}: lr_ur.put(acc, a, rop, u)
+
+def lr_ur.step(m: Maybe<&2, O.Found>, rop: O.Op, acc: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
+  match m:
+    case None{} : acc
+    case Some{+f}: lr_ur.put(acc, O.Found.ar(f), rop, O.Found.i(f))
+
+# `go` is a PARAMETER: a helper that computed it would have to call back into this loop.
+def lr_g_of(m: Maybe<&2, O.Found>, ar: O.Arena) -> O.Found:
+  match m:
+    case Some{f}: f
+    case None{} : O.Found{ar, 0}
+
+def lr_ur.copies(fuel: Nat, go: Bool, +i: U32, +n: U32, +ar: O.Arena, +rop: O.Op, +inp: U32, +rg: U32, acc: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
+  match fuel:
+    case 0n: acc
+    case 1n+p:
+      match go:
+        case False{}: acc
+        case True{}:
+          +next = lr_ur.step(lr_one(ar, i, inp, rg), rop, acc)
+          +i1 = U32.add(i, 1)
+          lr_ur.copies(p, U32.is_lt(i1, n), i1, n, O.Found.ar(lr_g_of(next, ar)), rop, inp, rg, next)
+
+def lr_small.cap(too: Bool, n: U32) -> Maybe<&2, U32>:
+  match too:
+    case True{} : None{}
+    case False{}: Some{n}
+
+def lr_small.n(m: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  match m:
+    case Some{+n}: lr_small.cap(U32.is_gt(n, LR_MAX()), n)
+    case None{} : None{}
+
+def lr_small.rs(rs: List<&2, U32>, +ar: O.Arena) -> Maybe<&2, U32>:
+  match rs:
+    case e <> Nil{}: lr_small.n(lr_extent(ar, e))
+    case _: None{}
+
+def lr_small(+ar: O.Arena, +self: U32) -> Maybe<&2, U32>:
+  lr_small.rs(O.Arena.src_from(ar, self, 1), ar)
+
+def lr_pick.go(m: Maybe<&2, U32>, +rop: O.Op, +ar: O.Arena, +self: U32) -> Maybe<&2, O.Found>:
+  match m:
+    case Some{+k}: lr_ur.copies(Nat.add(U32.to_nat(k), 4n), U32.is_lt(0, k), 0, k, ar, rop, O.Arena.src0(ar, self), O.Arena.src(ar, self, 1), None{})
+    case None{} : lr_go(lr_ident(rop, ar, lr_dt(ar, self)), rop, O.Arena.src0(ar, self), O.Arena.src_from(ar, self, 1), ar, self)
+
+def lr_pick(rop: O.Op, +ar: O.Arena, +self: U32) -> Maybe<&2, O.Found>:
+  lr_pick.go(lr_small(ar, self), rop, ar, self)
+
 def lower_reduce.of(arg: O.Arg, +ar: O.Arena, +self: U32) -> Maybe<&2, O.Found>:
   match arg:
     case O.AReduce{+rop, num_axes}:
       match num_axes:
-        case 0: lr_go(lr_ident(rop, ar, lr_dt(ar, self)), rop, O.Arena.src0(ar, self), O.Arena.src_from(ar, self, 1), ar, self)
+        case 0: lr_pick(rop, ar, self)
         case _: None{}
     case _: None{}
 
