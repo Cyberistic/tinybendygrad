@@ -1,9 +1,5 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. An `if __name__ == "__main__":` block and NOTHING else -- all 21
-# lines are a top-level script that packs 3200 ImageNet rows into two `disk:` buffers.
-# There is no def to mirror, so the ported unit is `main`.
-#
 # upstream is broken, measured, and that is the first thing to know. Line 2 is
 #     from extra.datasets.imagenet import iterate, get_val_files
 # and `extra/datasets/imagenet.py` DEFINES NO `iterate`. Measured at HEAD: the only

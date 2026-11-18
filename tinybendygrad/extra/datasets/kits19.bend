@@ -1,9 +1,5 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. The KiTS19 kidney tumour 3-D segmentation loader. It is (b) and
-# the honest headline is that it is the only file in this slice that imports BOTH
-# torch and tinygrad, so it is also the only one where a tensor operation is
-# tinygrad's rather than numpy's:
 #   * `resample3d` (upstream:34) computes `new_shape = (spc_arr / targ_arr *
 #     shp_arr).astype(int).tolist()` (upstream:37) and then calls
 #     `F.interpolate(torch.from_numpy(...), size=new_shape, mode="trilinear",

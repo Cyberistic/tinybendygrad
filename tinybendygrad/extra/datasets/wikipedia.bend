@@ -1,9 +1,5 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. The largest file in this slice and the one with the most PORTABLE
-# logic: the BERT BasicTokenizer + Wordpiece front end is pure string work over
-# integer ranges, with no tensor and no network, so it is the best value per line
-# anywhere under `extra/`. It is (b).
 #   * `_is_punctuation` (upstream:34) is four inclusive ranges and nothing else --
 #     `range(33,48)`, `range(58,65)`, `range(91,97)`, `range(123,127)` (upstream:39) --
 #     with `unicodedata.category(char).startswith("P")` as the fallback (upstream:41).

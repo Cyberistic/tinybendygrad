@@ -1,8 +1,5 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. The MLPerf BERT 2020 corpus fetcher, off Google Drive. Not class
-# (c): the Drive ids are public links and `gdown` is a plain HTTP client, not a
-# credentialed account. It is (b) because its real work is the UNPACK and the CHECKSUM.
 #   * `wikipedia_uncompress_and_extract` (upstream:13) is gated on
 #     `if not os.path.exists(os.path.join(path, "results4"))` (upstream:14) -- an
 #     extracted-PRESENT probe, not an extracted-COMPLETE one -- then

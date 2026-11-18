@@ -1,7 +1,5 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. Two loaders, and NEITHER is a bare `fetch`: both do real work on
-# the bytes AFTER the download, which is why this file is class (b) and not (a).
 #   * `fetch_mnist(tensors=False)` (upstream:6) is four `fetch` calls and then IDX
 #     header arithmetic -- `[0x10:]` on the images (upstream:8, skipping the 16-byte
 #     magic+count header) and `[8:]` on the labels (upstream:9) -- then

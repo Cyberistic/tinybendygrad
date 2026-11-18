@@ -1,7 +1,5 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. A SPEECH-FEATURE EXTRACTOR, and it is the only file in this
-# directory whose WORK HAPPENS AT IMPORT TIME rather than inside a def.
 #   * `FILTER_BANK` (upstream:22) is a mel filter bank, built at module level by
 #     `librosa.filters.mel(sr=16000, n_fft=512, n_mels=80, fmin=0, fmax=8000)`, and
 #     `WINDOW` (upstream:23) is a Hann window of 320, built by

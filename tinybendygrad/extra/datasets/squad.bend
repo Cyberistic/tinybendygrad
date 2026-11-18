@@ -1,7 +1,5 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. SQuAD v1.1 to BERT features. It is (b) and the interesting part is
-# that HALF of it is pure arithmetic that ports cleanly once the tokenizer exists:
 # `_check_is_max_context` (upstream:43) and the `doc_spans` window loop (upstream:77-85)
 # are the part worth doing first, and neither touches the network.
 #   * `_check_is_max_context` (upstream:43) scores every span containing `position`

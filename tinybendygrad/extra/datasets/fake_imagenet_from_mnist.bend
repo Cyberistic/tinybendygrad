@@ -1,9 +1,5 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. The `MNISTMOCK` path made real: it writes a 10-class ImageNet
-# tree of upscaled 28x28 MNIST digits so `imagenet.py`'s mock branch has something to
-# glob. It is (b), not (a): the fetches it depends on happen in another file, and this
-# file's own work is writing 140k JPEGs across a process pool.
 #   * `act` (upstream:11) is per-image: `np.uint8(X_train[i]).reshape(28, 28)` (upstream:14),
 #     the name `f"train/{Y_train[i]}/{i}.jpg"` (upstream:15) -- note the class DIRECTORY
 #     is the digit label, which is exactly what `imagenet.py:22`'s

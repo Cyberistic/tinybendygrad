@@ -1,8 +1,6 @@
 # not yet ported.
 #
-# WHAT UPSTREAM IS. Open Images v6 -> COCO, for the detection MLPerf benchmark. It is
-# (b), and it is the only file in this slice whose constant table is bigger than its
-# logic: `MLPERF_CLASSES` (upstream:18-56) is 601 names in 39 lines, and the
+# The logic: `MLPERF_CLASSES` (upstream:18-56) is 601 names in 39 lines, and the
 # correctness hinge is the JOIN between that list and the CSV, not the list itself.
 #   * `get_image_list` (upstream:100) is two `isin` predicates chained:
 #     `class_map[class_map["DisplayName"].isin(classes)]["LabelName"]` then
