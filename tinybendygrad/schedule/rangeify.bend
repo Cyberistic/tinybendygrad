@@ -981,12 +981,18 @@ def sk_walk(fuel: Nat, todo: List<&2, U32>,
                     Bool.or(M.mp_is(ar, n, O.OpsALLOC{}),
                      Bool.or(M.mp_is(ar, n, O.OpsMSTACK{}), M.mp_is(ar, n, O.OpsMSELECT{}))))
           +isrng = M.mp_is(ar, n, O.OpsRANGE{})
-          +isref = Bool.or(M.mp_is(ar, n, O.OpsAFTER{}),
-                    Bool.or(M.mp_is(ar, n, O.OpsSTAGE{}), M.mp_is(ar, n, O.OpsCALL{})))
+          # `handle_after` -- rangeify.py:290-296 -- IS NOT A REFUSAL. Upstream REPLACES the AFTER
+          # with its BUFFER and records `ctx.map[buf] = after`, so the CALL's argument is the AFTER
+          # (the dependency) while the body reads a PARAM, and the walk does not descend into the
+          # producing stores. The port had AFTER in `isref`, i.e. it refused any kernel whose value
+          # read an intermediate through one -- MEASURED: the two-kernel chain's second store never
+          # split (`fwd_lk` = `2/CALL>SINK STORE>INDEX`) and only a PARAM-shaped read made it split.
+          +isafter = M.mp_is(ar, n, O.OpsAFTER{})
+          +isref = Bool.or(M.mp_is(ar, n, O.OpsSTAGE{}), M.mp_is(ar, n, O.OpsCALL{}))
           +alu = Bool.and(ispar, sk_alu(F.addrspace_of.param(O.Arena.arg(ar, n))))
-          +addbuf = Bool.and(take, Bool.or(isbuf, Bool.and(ispar, Bool.not(alu))))
+          +addbuf = Bool.and(take, Bool.or(isbuf, Bool.or(isafter, Bool.and(ispar, Bool.not(alu)))))
           +refuse = Bool.and(take, Bool.or(isref, alu))
-          +descend = Bool.and(take, Bool.not(Bool.or(isbuf, Bool.or(ispar, Bool.or(isrng, isref)))))
+          +descend = Bool.and(take, Bool.not(Bool.or(isbuf, Bool.or(ispar, Bool.or(isrng, Bool.or(isafter, isref))))))
           sk_walk(p, sk_todo(descend, O.Arena.srcs(ar, n), t),
                   (ar, sk_addl(addbuf, n, bs), sk_addl(Bool.and(take, isrng), n, rs),
                    sk_addl(take, n, sn), Bool.or(bad, refuse)))
@@ -1004,13 +1010,23 @@ def sk_mset(hit: Bool, key: String, v: U32, +dv: Map<&2, U32>) -> Map<&2, U32>:
     case True{} : Map.set(&2, U32, dv, key, v)
     case False{}: dv
 
+# `after.buf_uop` IS `after.src[0]` (`ops.py:246`'s `buf_uop` arm reads the base), so debuf reads
+# the buffer the AFTER wraps rather than the AFTER, whose arg is `ANone` and whose size would be 0.
+def sk_dbuf.of(isafter: Bool, +ar: O.Arena, i: U32, +b: U32) -> Maybe<&2, O.Found>:
+  match isafter:
+    case True{} : debuf(ar, i, O.Arena.src0(ar, b))
+    case False{}: debuf(ar, i, b)
+
+def sk_dbuf(+ar: O.Arena, i: U32, +b: U32) -> Maybe<&2, O.Found>:
+  sk_dbuf.of(M.mp_is(ar, b, O.OpsAFTER{}), ar, i, b)
+
 def sk_db.go(+bs: List<&2, U32>, +i: U32,
              acc: (O.Arena & Map<&2, U32> & Bool)) -> (O.Arena & Map<&2, U32> & Bool):
   match bs:
     case Nil{}: acc
     case b <> t:
       (+ar, +dv, bad) = acc
-      +m = debuf(ar, i, b)
+      +m = sk_dbuf(ar, i, b)
       +hit = sk_has(m)
       +f = Maybe.default(&2, O.Found, m, O.Found{ar, 0})
       sk_db.go(t, U32.add(i, 1),
