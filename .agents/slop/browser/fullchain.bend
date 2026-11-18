@@ -32,6 +32,7 @@ import ./../../../tinybendygrad/renderer/kuconv.bend as KC
 import ./../../../tinybendygrad/renderer/cstyle.bend as C
 import ./../../../tinybendygrad/uop/ops.bend as O
 import ./../../../tinybendygrad/uop/fold.bend as F
+import ./../../../tinybendygrad/LAWS/spec.bend as S
 import ./../../../tinybendygrad/uop/weak.bend as WK
 import ./../../../tinybendygrad/codegen/kernel.bend as KR
 
@@ -109,7 +110,7 @@ def chain_ksig.go(+ks: List<&2, C.KU>, acc: List<&2, String>) -> List<&2, String
   match ks:
     case Nil{}: acc
     case k <> t:
-      +opc = RF.eng_op_name(C.KU.op(k))
+      +opc = String.concat([RF.eng_op_name(C.KU.op(k)), "/", U32.show(S.Dt.bits(C.KU.dtype(k))), "/", U32.show(C.KU.nsrc(k))])
       chain_ksig.go(t, List.append(&2, String, acc,
         [String.concat([opc, ":", String.join(chain_u32s.go(C.KU.srcs(k), Nil{}), ",")])]))
 
